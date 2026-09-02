@@ -22,7 +22,8 @@ static union {
 } s_packets;
 static s32 s_failures;
 
-u8 *AddTilePrim(void *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h,
+u8 *AddTilePrim(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y, s32 w,
+                s32 h,
                 s32 r, s32 g, s32 b) {
     (void)ot; (void)x; (void)y; (void)w; (void)h;
     (void)r; (void)g; (void)b;
@@ -39,7 +40,7 @@ static void Check(s32 actual, s32 expected, const char *label) {
 static void Reset(void) {
     memset(&s_packets, 0, sizeof(s_packets));
     memset(&g_FrameContexts[0].layout.orderingTables[0][0], 0,
-           sizeof(OT_TYPE));
+           sizeof(GameOrderingTableEntry));
     g_RenderState.packetCursor = s_packets.bytes;
     g_DrawBuffer = &g_FrameContexts[0];
 }

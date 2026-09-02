@@ -12,7 +12,7 @@ void DrawRaceHudLabels(s32 mode) {
     GameSpriteDesc *descs = mode != 0 ? g_RaceHudSpriteDescsGp
                                       : g_RaceHudSpriteDescsTimeTrial;
     GameFrameContext *frame = g_DrawBuffer;
-    OT_TYPE *ot = GamePrimaryOrderingTable(0);
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     s32 label;
 
     for (label = 0; label < labelCount; label++) {
@@ -39,7 +39,7 @@ void DrawLapTimes(void) {
     s32 visibleCount = g_PlayerCar.lap;
     s32 activeLap = g_PlayerCar.drive.hudLapHighlightRow;
     GameFrameContext *frame = g_DrawBuffer;
-    OT_TYPE *ot = GamePrimaryOrderingTable(0);
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     GameSpriteDesc *descs = g_GrandPrixMode != 0
                                 ? g_RaceHudSpriteDescsGp
                                 : g_RaceHudSpriteDescsTimeTrial;
@@ -101,7 +101,7 @@ void DrawSplitDelta(s32 delta, s32 sign) {
     GameFrameContext *frame = g_DrawBuffer;
     SPRT *deltaDigit = &frame->layout.raceHud.labels[3];
     SPRT *signSprite = &frame->layout.raceHud.labels[4];
-    OT_TYPE *ot = GamePrimaryOrderingTable(0);
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
 
     deltaDigit->u0 = delta * 8 + 0x50;
     AddPrim(ot, deltaDigit);

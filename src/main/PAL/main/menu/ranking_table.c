@@ -46,7 +46,7 @@ static const RankingCarSprite s_carBadgeSprites[13] = {
     {0xE8, 0x30, 0x04, 0x50},
 };
 
-static void DrawRankingCarSprites(OT_TYPE *ot, s32 y, s32 carIndex) {
+static void DrawRankingCarSprites(GameOrderingTableEntry *ot, s32 y, s32 carIndex) {
     const RankingCarSprite *name;
     const RankingCarSprite *badge;
 
@@ -61,7 +61,7 @@ static void DrawRankingCarSprites(OT_TYPE *ot, s32 y, s32 carIndex) {
                badge->textureV, 0, 0, 0, 0x244, 1, 1, 0x3E);
 }
 
-static void DrawRankingCourseHeader(OT_TYPE *ot, s32 slide) {
+static void DrawRankingCourseHeader(GameOrderingTableEntry *ot, s32 slide) {
     const RankingCourseHeader *header = &s_courseHeaders[SeriesCourseIndex()];
     s32 contentY = slide + 0x26C;
 
@@ -76,7 +76,7 @@ static void DrawRankingCourseHeader(OT_TYPE *ot, s32 slide) {
 /* The animated five-row ranking/time-record panel. */
 s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
     char text[16];
-    OT_TYPE *ot = RENDER_OT_BASE_AS(OT_TYPE);
+    GameOrderingTableEntry *ot = RENDER_OT_BASE_AS(GameOrderingTableEntry);
     s32 phase;
     s32 slide;
     s16 panelY;

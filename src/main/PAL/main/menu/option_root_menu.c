@@ -22,7 +22,7 @@ static const OptionRootLabel s_optionRootLabels[OPTION_ROOT_ITEM_COUNT] = {
 };
 
 void DrawOptionRootMenu(void) {
-    OT_TYPE *ot = GamePrimaryOrderingTable(51);
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(51);
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
     s32 row;
 

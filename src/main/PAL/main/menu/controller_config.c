@@ -1,6 +1,7 @@
 #include "game/prim.h"
 #include "game/audio.h"
 #include "game/menu.h"
+#include "game/render.h"
 #include "game/render_internal.h"
 #include "game/input_internal.h"
 
@@ -18,7 +19,7 @@ void DrawControllerConfigScreen(void) {
     s32 selection;
     s32 leftLit;
     s32 rightLit;
-    u8 *ot;
+    GameOrderingTableEntry *ot;
     u8 *prim;
 
     if (g_PadType == 0x23) {
@@ -36,7 +37,7 @@ void DrawControllerConfigScreen(void) {
             DrawProportionalText(0x40, 0xEA, g_MsgControllerError, 0x7812);
         }
     } else {
-        ot = (u8 *)GameSecondaryOrderingTable(51);
+        ot = GameSecondaryOrderingTable(51);
         prim = RENDER_PRIM_CURSOR_AS(u8);
         prim = DrawLeftArrow(ot, prim, 0x28, 0xE0, leftLit);
         prim = DrawRightArrow(ot, prim, 0x108, 0xE0, rightLit);
@@ -126,12 +127,12 @@ void UpdateControllerConfigScreen(void) {
  * draw buffer from the shared render-state packet cursor. */
 void DrawNegconNeutralScreen(void) {
     u8 **cursor = &RENDER_PRIM_CURSOR_AS(u8);
-    u8 *ot;
+    GameOrderingTableEntry *ot;
     u8 *prim;
 
     DrawSpriteString(0x18, 0x30, g_MsgNegconUntwistedLine1, 0x7F81);
     DrawSpriteString(0x18, 0x48, g_MsgNegconUntwistedLine2, 0x7F81);
-    ot = (u8 *)GamePrimaryOrderingTable(52);
+    ot = GamePrimaryOrderingTable(52);
     prim = *cursor;
     prim = AddTilePrim(ot, prim, 0, 0x28, 0x124, 0x40, 0, 0, 0);
     *cursor = AddTilePrim(ot, prim, 0, 0x26, 0x125, 0x44, 0xFF, 0xFF, 0xFF);

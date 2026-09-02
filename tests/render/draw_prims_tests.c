@@ -12,7 +12,7 @@ static union {
     max_align_t alignment;
     u8 bytes[2048];
 } s_packets;
-static OT_TYPE s_ot;
+static GameOrderingTableEntry s_ot;
 static s32 s_queuePages[16];
 static u8 *s_queuePackets[16];
 static s32 s_queueCount;

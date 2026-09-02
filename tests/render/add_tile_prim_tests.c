@@ -14,7 +14,7 @@
     } while (0)
 
 int main(void) {
-    OT_TYPE ot = {0};
+    GameOrderingTableEntry ot = {0};
     TILE tile;
     u8 *next;
 

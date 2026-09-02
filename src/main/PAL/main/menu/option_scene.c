@@ -5,7 +5,7 @@
 enum { OPTION_MODE_SCREEN_ADJUST = 6, OPTION_MODE_NEGCON_NEUTRAL = 9 };
 
 void DrawOptionSceneOverlay(void) {
-    OT_TYPE *ot = GamePrimaryOrderingTable(54);
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(54);
     s32 targetHeight = g_GameMode == OPTION_MODE_SCREEN_ADJUST ? 0x1E0 : 0xF0;
     u8 *next;
 

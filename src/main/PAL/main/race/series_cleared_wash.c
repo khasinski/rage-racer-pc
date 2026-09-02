@@ -11,7 +11,7 @@ static s32 ClampColorChannel(s32 value) {
 }
 
 void DrawSeriesClearedWash(s32 washProgress, s32 fadeLevel) {
-    OT_TYPE *ot = GamePrimaryOrderingTable(0);
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     s32 red = ClampColorChannel(fadeLevel);
     s32 green = ClampColorChannel(fadeLevel + washProgress / 8);
     s32 blue = ClampColorChannel(fadeLevel + washProgress / 4);

@@ -46,14 +46,15 @@ u8 *GameQueueSpriteTrans(void *ot, u8 *prim, s32 x, s32 y, s32 width,
     return prim + 1;
 }
 
-u8 *AddTilePrim(void *ot, u8 *prim, s32 x, s32 y, s32 width, s32 height,
+u8 *AddTilePrim(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
+                s32 width, s32 height,
                 s32 r, s32 g, s32 b) {
     (void)width; (void)height; (void)r; (void)g; (void)b;
     s_tiles[s_tileCount++] = (DrawRecord){ot, x, y};
     return prim + 1;
 }
 
-u8 *DrawShadowedTile(void *ot, u8 *prim, s32 x, s32 y) {
+u8 *DrawShadowedTile(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y) {
     (void)ot; (void)x;
     s_shadowY[s_shadowCount++] = y;
     return prim + 1;
@@ -115,8 +116,8 @@ int main(void) {
         {"FIRST", 2, {0}},
         {"SECOND", 0, {0}},
     };
-    OT_TYPE *spriteOt;
-    OT_TYPE *tileOt;
+    GameOrderingTableEntry *spriteOt;
+    GameOrderingTableEntry *tileOt;
 
     Reset();
     spriteOt = GamePrimaryOrderingTable(51);

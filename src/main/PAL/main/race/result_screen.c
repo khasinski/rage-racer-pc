@@ -9,7 +9,7 @@
 #include "game/race_internal.h"
 
 void DrawResultScreen(void) {
-    OT_TYPE *ot = GamePrimaryOrderingTable(0);
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     s32 courseNameY = g_GrandPrixMode != 0 ? 0x3C : 0x39;
     u8 *next;
 
@@ -24,7 +24,7 @@ void DrawResultScreen(void) {
 }
 
 static void DrawClassPlaceBanner(void) {
-    OT_TYPE *ot = GamePrimaryOrderingTable(0);
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     const ResultPlaceBarPosition *bar =
         &g_ClassPlaceBarSizes[g_ClassResultPlace - 1];
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
@@ -41,7 +41,7 @@ static void DrawClassPlaceBanner(void) {
 }
 
 static void DrawResultPlace(void) {
-    OT_TYPE *ot = GamePrimaryOrderingTable(0);
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     const ResultPlaceSpriteLayout *placeSprite =
         &g_ResultPlaceSprites[g_RacePosition - 1];
     u8 *next;

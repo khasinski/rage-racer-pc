@@ -220,7 +220,7 @@ int main(int argc, char **argv) {
     DRAWENV draw;
     DISPENV display;
     FILE *file;
-    OT_TYPE *ot;
+    GameOrderingTableEntry *ot;
     s32 hudMode;
     int red = 24, green = 24, blue = 32;
     int index;
@@ -278,7 +278,7 @@ int main(int argc, char **argv) {
     g_DrawBuffer = &g_FrameContexts[0];
     g_FrameParity = 0;
     ot = GamePrimaryOrderingTable(0);
-    ClearOTagR(ot, GAME_FRAME_OT_LENGTH);
+    GameClearOrderingTable(ot, GAME_FRAME_OT_LENGTH);
     RENDER_PRIM_CURSOR_AS(u8) = g_FrameContexts[0].layout.primitiveBuffer;
 
     g_GrandPrixMode = hudMode;
@@ -329,7 +329,7 @@ int main(int argc, char **argv) {
     DrawSplitTimes();
     DrawTimeRemaining(OptionNumber(argc, argv, "--time-left", 4500));
 
-    DrawOTag(ot + GAME_FRAME_OT_LENGTH - 1);
+    GameDrawOrderingTable(ot + GAME_FRAME_OT_LENGTH - 1);
     DrawSync(0);
 
     if (!WritePpm(outputPath)) {

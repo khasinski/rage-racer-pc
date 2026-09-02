@@ -5,7 +5,7 @@
 
 void DrawMemoryCardScreen(s32 showSlotBar, s32 fromLoadMenu,
                           s32 selectedRow, s32 selectedSlot) {
-    OT_TYPE *base = GamePrimaryOrderingTable(51);
+    GameOrderingTableEntry *base = GamePrimaryOrderingTable(51);
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
     s32 i;
     s32 y;
@@ -51,7 +51,7 @@ void DrawMemoryCardMessage(s32 message) {
     s32 y;
     u8 column;
     u8 *next;
-    OT_TYPE *base;
+    GameOrderingTableEntry *base;
     s32 specialMessage;
 
     row = g_McMessageRows[message];

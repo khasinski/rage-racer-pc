@@ -1,6 +1,7 @@
 #include "game/prim.h"
 #include "game/audio.h"
 #include "game/menu.h"
+#include "game/render.h"
 #include "game/render_internal.h"
 #include "game/input_internal.h"
 
@@ -18,13 +19,13 @@
  * into pixels.
  */
 void DrawNegconSteerPlayScreen(void) {
-    u8 *ot;
+    GameOrderingTableEntry *ot;
     u8 *prim;
     s32 span;
     s32 y;
 
     DrawSpriteString(0x18, 0x30, g_MsgNegconSteerPlay, 0x7F81);
-    ot = (u8 *)GamePrimaryOrderingTable(51);
+    ot = GamePrimaryOrderingTable(51);
     prim = RENDER_PRIM_CURSOR_AS(u8);
     prim = DrawLeftArrow(ot, prim, 0x28, 0xE0, g_NegconSteerPlay != 0);
     prim = DrawRightArrow(ot, prim, 0x108, 0xE0, g_NegconSteerPlay != 3);
@@ -99,13 +100,13 @@ void UpdateNegconSteerPlayScreen(void) {
  * column follow the 0..3 setting, its end cap, and the framed panel.
  */
 void DrawNegconMaxTwistScreen(void) {
-    u8 *ot;
+    GameOrderingTableEntry *ot;
     u8 *prim;
     s32 xoff;
     s32 w;
 
     DrawSpriteString(0x18, 0x30, g_MsgNegconMaxTwist, 0x7F81);
-    ot = (u8 *)GamePrimaryOrderingTable(51);
+    ot = GamePrimaryOrderingTable(51);
     prim = RENDER_PRIM_CURSOR_AS(u8);
     prim = DrawLeftArrow(ot, prim, 0x28, 0xE0, g_NegconMaxTwist != 0);
     prim = DrawRightArrow(ot, prim, 0x108, 0xE0, g_NegconMaxTwist != 3);

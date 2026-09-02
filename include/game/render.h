@@ -562,7 +562,19 @@ u8 *GameQueueSpriteTrans(
     s32 u,
     s32 v,
     s32 clutIndex);
-u8 *DrawShadowedTile(void *ot, u8 *prim, s32 x, s32 y);
+u8 *DrawShadowedTile(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y);
+/* Controller-configuration widgets and their complete pad diagrams. */
+u8 *DrawLeftArrow(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
+                  s32 pulse);
+u8 *DrawRightArrow(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
+                   s32 pulse);
+u8 *DrawPadConfigSelector(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
+                          s32 selection);
+u8 *DrawPadConfigLabels(GameOrderingTableEntry *ot, u8 *prim, u8 *labelRow);
+u8 *DrawPadConfigCallouts(GameOrderingTableEntry *ot, u8 *prim, u8 *labelRow,
+                          u8 *buttonRow);
+u8 *DrawPadConfigDiagram(GameOrderingTableEntry *ot, u8 *prim);
+u8 *DrawNegconConfigDiagram(GameOrderingTableEntry *ot, u8 *prim);
 /* TILE, 16 bytes. */
 u8 *GameQueueTileTrans(
     void *ot,

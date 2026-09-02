@@ -3,11 +3,11 @@
 
 /* The bottom-right plate: grade digit, manufacturer sprite and model-name sprite. */
 void DrawCarNamePlate(s32 step, s32 model, s32 grade) {
-    OT_TYPE *ot;
+    GameOrderingTableEntry *ot;
     u32 idx;
     u32 shade;
 
-    ot = RENDER_OT_BASE_AS(OT_TYPE) + 1;
+    ot = RENDER_OT_BASE_AS(GameOrderingTableEntry) + 1;
     if (step == 0) {
         g_CarNamePlateFade = 0;
         return;

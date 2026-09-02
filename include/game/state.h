@@ -102,22 +102,6 @@ void UpdateNegconMaxTwistScreen(void);
 void DrawNegconMaxTwistScreen(void);
 void DrawControllerSetupScene(s32 variant);
 
-/*
- * Controller-configuration screen widgets. Two independent 0..7 selections:
- * g_PadMappingIndex for the standard pad, g_NegconMappingIndex for the NeGcon (pad type byte
- * g_PadType == 0x23 picks which diagram is drawn).
- */
-/* 16x32 arrow sprites at (0x28, 0xE0) and (0x108, 0xE0); `pulse` adds the glow. */
-u8 *DrawLeftArrow(void *ot, u8 *prim, s32 x, s32 y, s32 pulse);
-u8 *DrawRightArrow(void *ot, u8 *prim, s32 x, s32 y, s32 pulse);
-/* Framed panel showing the selected configuration number. */
-u8 *DrawPadConfigSelector(void *ot, u8 *prim, s32 x, s32 y, s32 selection);
-/* The five action labels, and the five lines from each label to its button. */
-u8 *DrawPadConfigLabels(void *ot, u8 *prim, u8 *labelRow);
-u8 *DrawPadConfigCallouts(void *ot, u8 *prim, u8 *labelRow, u8 *buttonRow);
-/* One whole controller diagram for the current selection: labels + callouts. */
-u8 *DrawPadConfigDiagram(void *ot, u8 *prim);
-u8 *DrawNegconConfigDiagram(void *ot, u8 *prim);
 /* Entry hook: backs both selections up to g_PadMappingIndexSaved / g_NegconMappingIndexSaved so a cancel
  * can restore them. Its caller sets g_GameMode = 7 in the same breath. */
 void BeginControllerConfig(void);

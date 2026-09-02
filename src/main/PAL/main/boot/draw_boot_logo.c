@@ -10,7 +10,7 @@ static s32 BootLogoFade(void) {
 }
 
 void DrawBootLogo(void) {
-    OT_TYPE *ot = GamePrimaryOrderingTable(0);
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
     const s32 fade = BootLogoFade();
 

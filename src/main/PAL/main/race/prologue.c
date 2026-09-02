@@ -84,7 +84,7 @@ static void UpdatePrologueLoadStep2(void) {
 void DrawPrologueText(void) {
     s32 i;
     const s32 scrollY = g_SceneTimer / 3 - 0xD0;
-    OT_TYPE *ot;
+    GameOrderingTableEntry *ot;
     s32 green;
     s32 blue;
     u8 *next;

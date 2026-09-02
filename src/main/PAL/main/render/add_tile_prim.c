@@ -1,9 +1,11 @@
 #include "game/prim.h"
 #include "game/render.h"
+#include "game/render_types.h"
 
-u8 *AddTilePrim(void *ot, u8 *prim, s32 x, s32 y, s32 width, s32 height,
-                s32 red, s32 green, s32 blue) {
-    TILE *tile = (TILE *)(void *)prim;
+u8 *AddTilePrim(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
+                s32 width, s32 height, s32 red, s32 green, s32 blue) {
+    RenderBufferAddress packet = {.bytes = prim};
+    TILE *tile = packet.tile;
 
     SetTile(tile);
     tile->x0 = x;
@@ -14,5 +16,6 @@ u8 *AddTilePrim(void *ot, u8 *prim, s32 x, s32 y, s32 width, s32 height,
     tile->g0 = green;
     tile->b0 = blue;
     AddPrim(ot, tile);
-    return (u8 *)(tile + 1);
+    packet.tile++;
+    return packet.bytes;
 }

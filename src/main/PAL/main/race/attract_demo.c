@@ -43,7 +43,7 @@ s32 GetAttractTitleFade(s32 element) {
 }
 
 void DrawAttractTitle(void) {
-    OT_TYPE *ot = GamePrimaryOrderingTable(0);
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     s32 fade;
 
     fade = GetAttractTitleFade(0);

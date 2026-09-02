@@ -35,7 +35,7 @@ static s32 SlideUp(s32 base, s32 frame, s32 distanceTimes32) {
     return base - ((frame * distanceTimes32 + 31) / 32);
 }
 
-static void DrawKeyboardCharacter(OT_TYPE *ot, s32 index, s32 x, s32 y,
+static void DrawKeyboardCharacter(GameOrderingTableEntry *ot, s32 index, s32 x, s32 y,
                                   s32 height, u32 flags) {
     s32 atlasIndex = index;
 
@@ -52,7 +52,7 @@ static void DrawKeyboardCharacter(OT_TYPE *ot, s32 index, s32 x, s32 y,
                flags);
 }
 
-static void DrawKeyboardGrid(OT_TYPE *ot, s32 frame, s32 cursorIndex) {
+static void DrawKeyboardGrid(GameOrderingTableEntry *ot, s32 frame, s32 cursorIndex) {
     s32 y = SlideUp(TEAM_NAME_GRID_Y, frame, 64);
     s32 height = frame * 2;
     s32 row;
@@ -79,7 +79,7 @@ static void DrawKeyboardGrid(OT_TYPE *ot, s32 frame, s32 cursorIndex) {
     }
 }
 
-static void DrawEnteredTeamName(OT_TYPE *ot, s32 frame) {
+static void DrawEnteredTeamName(GameOrderingTableEntry *ot, s32 frame) {
     s32 y = SlideUp(TEAM_NAME_GRID_Y, frame, 0x178);
     s32 i;
 
@@ -91,7 +91,7 @@ static void DrawEnteredTeamName(OT_TYPE *ot, s32 frame) {
 }
 
 void DrawTeamNameEntry(s32 step, s32 cursorIndex) {
-    OT_TYPE *ot = RENDER_OT_BASE;
+    GameOrderingTableEntry *ot = RENDER_OT_BASE;
     s32 frame;
     s32 sine;
 

@@ -29,7 +29,7 @@ static SpriteCall s_calls[10];
 static s32 s_callCount;
 static void *s_drawModeOt;
 static s32 s_drawMode;
-static OT_TYPE s_ot[2];
+static GameOrderingTableEntry s_ot[2];
 static u8 s_packet[64];
 
 void DrawSprite(void *ot, s16 x, s16 y, s16 width, u16 height, u16 textureU,

@@ -6,6 +6,16 @@
 #include "psyq/gpu.h"
 
 typedef s32 RaceHudPacketOffset;
+/* PSY-Z stores a native pointer and packet length in each ordering-table
+ * entry; retail PSY-Q stores the packed 32-bit link in one word. */
+#ifdef __psyz
+typedef struct GameOrderingTableEntry {
+    u_long tag;
+    u_long len;
+} GameOrderingTableEntry;
+#else
+typedef u_long GameOrderingTableEntry;
+#endif
 
 typedef union RenderBufferAddress {
     RaceHudPacketOffset hudPacketOffset;

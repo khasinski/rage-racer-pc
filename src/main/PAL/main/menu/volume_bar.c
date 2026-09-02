@@ -9,7 +9,7 @@ enum {
 };
 
 void DrawVolumeBar(s32 level, s32 y) {
-    OT_TYPE *ot = GamePrimaryOrderingTable(0);
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
     s32 segment;
 

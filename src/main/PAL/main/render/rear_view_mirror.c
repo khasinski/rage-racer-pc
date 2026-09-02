@@ -5,9 +5,9 @@
 #include "game/render_internal.h"
 
 DrawPacket *DrawMirrorFrame(u8 *packet) {
-    OT_TYPE *otArg;
+    GameOrderingTableEntry *otArg;
     u8 *prim;
-    OT_TYPE *ot;
+    GameOrderingTableEntry *ot;
     s32 colorIndex;
     s32 paletteIndex;
     s32 color;

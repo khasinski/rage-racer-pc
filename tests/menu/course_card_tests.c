@@ -13,7 +13,7 @@ s32 g_CourseCardSpinTarget;
 SVec g_CourseCardVerts[4];
 GameRenderState g_RenderState;
 
-static OT_TYPE s_orderingTable[2];
+static GameOrderingTableEntry s_orderingTable[2];
 static s32 s_rotationAngle;
 static s32 s_matrixCalls;
 static s32 s_drawCalls;
@@ -84,7 +84,7 @@ void GameDrawTexturedQuad(void *ot, s16 x0, s16 y0, s16 x1, u16 y1,
 
 static void Reset(void) {
     memset(&g_RenderState, 0, sizeof(g_RenderState));
-    RENDER_OT_BASE_AS(OT_TYPE) = s_orderingTable;
+    RENDER_OT_BASE_AS(GameOrderingTableEntry) = s_orderingTable;
     g_CourseCardFace = 1;
     g_CourseCardPendingGrade = -1;
     g_CourseCardSpin = 0;

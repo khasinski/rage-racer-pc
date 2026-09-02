@@ -18,12 +18,12 @@ void SetGteLightMatrix(Matrix *view) {
  * the secondary table after the primary backdrop; its natural model depth
  * then keeps it behind the secondary-table callouts and labels. */
 static void SubmitControllerModel(s32 model) {
-    OT_TYPE *otBase = RENDER_OT_BASE_AS(OT_TYPE);
+    GameOrderingTableEntry *otBase = RENDER_OT_BASE_AS(GameOrderingTableEntry);
     GameFrameContext *frame = g_DrawBuffer;
 
-    RENDER_OT_BASE_AS(OT_TYPE) = frame->layout.orderingTables[1];
+    RENDER_OT_BASE_AS(GameOrderingTableEntry) = frame->layout.orderingTables[1];
     SubmitModel((&g_RenderState), model);
-    RENDER_OT_BASE_AS(OT_TYPE) = otBase;
+    RENDER_OT_BASE_AS(GameOrderingTableEntry) = otBase;
 }
 
 /* Builds and submits the controller models shown by the pad and NeGcon setup
@@ -142,7 +142,8 @@ void DrawControllerSetupScene(s32 variant) {
 /* Wide-parameter view of the packet builders; see GameQueueSprite.c. */
 /* The 16x32 left arrow, plus - while `pulse` is set - a tile over it whose
  * green channel breathes with rsin of the shared arrow angle. */
-u8 *DrawLeftArrow(void *ot, u8 *prim, s32 x, s32 y, s32 pulse) {
+u8 *DrawLeftArrow(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
+                  s32 pulse) {
     prim = GameQueueSprite(ot, prim, x, y, 0x10, 0x20, 0x48, 0xB8, 0x7F82);
     prim = QueueDrawModePrim(ot, prim, 0x39);
     if (pulse != 0) {
@@ -156,7 +157,8 @@ u8 *DrawLeftArrow(void *ot, u8 *prim, s32 x, s32 y, s32 pulse) {
 
 /* The 16x32 right arrow, plus - while `pulse` is set - a tile over it whose
  * green channel breathes with rsin of the shared arrow angle. */
-u8 *DrawRightArrow(void *ot, u8 *prim, s32 x, s32 y, s32 pulse) {
+u8 *DrawRightArrow(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
+                   s32 pulse) {
     prim = GameQueueSprite(ot, prim, x, y, 0x10, 0x20, 0x58, 0xB8, 0x7F82);
     prim = QueueDrawModePrim(ot, prim, 0x39);
     if (pulse != 0) {
@@ -173,7 +175,8 @@ u8 *DrawRightArrow(void *ot, u8 *prim, s32 x, s32 y, s32 pulse) {
  * digit cells (the middle one steps 8 texels per configuration), then the
  * white frame drawn as four nested tiles.
  */
-u8 *DrawPadConfigSelector(void *ot, u8 *prim, s32 x, s32 y, s32 selection) {
+u8 *DrawPadConfigSelector(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
+                          s32 selection) {
     /* The shade argument was missing here, so the label took its colour from
      * whatever sat in the caller's outgoing argument slot. 0x80 is the
      * neutral value that leaves the texture as it is, which is what the other

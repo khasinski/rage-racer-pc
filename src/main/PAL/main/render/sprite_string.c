@@ -8,7 +8,7 @@
 void DrawSpriteString(long x, long y, const char *str, long clutIndex) {
     const u8 *character = (const u8 *)str;
     u8 *packet = RENDER_PRIM_CURSOR_AS(u8);
-    void *ot = GamePrimaryOrderingTable(0);
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
 
     while (*character != 0) {
         s32 glyph = *character++ - 0x20;
@@ -38,7 +38,7 @@ void DrawSpriteString(long x, long y, const char *str, long clutIndex) {
     RENDER_PRIM_CURSOR_AS(u8) = packet + sizeof(DrawPacket);
 }
 
-u8 *DrawShadowedTile(void *ot, u8 *prim, s32 x, s32 y) {
+u8 *DrawShadowedTile(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y) {
     u8 *next;
 
     next = AddTilePrim(ot, prim, x + 1, y + 2, 0xC2, 0x1C, 0, 0, 0);

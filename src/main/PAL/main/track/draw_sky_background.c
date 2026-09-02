@@ -59,7 +59,7 @@ typedef struct SkySkirtEdge {
 
 typedef struct SkyFrame {
     u8 *packetCursor;
-    OT_TYPE *orderingTable;
+    GameOrderingTableEntry *orderingTable;
     s32 cameraY;
     s32 pitch;
     s32 yaw;
@@ -240,7 +240,7 @@ static void MeasureSkyBand(const SkyFrame *frame, SkyBandSetup *band) {
 
 static void InitializeSkyFrame(SkyFrame *work) {
     work->packetCursor = RENDER_PRIM_CURSOR_AS(u8);
-    work->orderingTable = RENDER_OT_BASE_AS(OT_TYPE);
+    work->orderingTable = RENDER_OT_BASE_AS(GameOrderingTableEntry);
     work->cameraY = g_RenderState.viewY;
     work->pitch = g_RenderState.viewAngleX;
     work->yaw = g_RenderState.viewAngleY;

@@ -2,10 +2,10 @@
 #include "game/menu.h"
 
 void UpdateMenuMode(void) {
-    OT_TYPE *ot;
+    GameOrderingTableEntry *ot;
     u32 screenRange;
 
-    ot = RENDER_OT_BASE_AS(OT_TYPE);
+    ot = RENDER_OT_BASE_AS(GameOrderingTableEntry);
     g_AnimTimer++;
     g_SceneTimer++;
     if (g_SceneTimer == 2) {

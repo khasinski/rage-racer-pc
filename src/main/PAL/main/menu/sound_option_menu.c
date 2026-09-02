@@ -14,7 +14,7 @@ enum {
     OPTION_MODE_SOUND_EDIT = 5,
 };
 
-static void DrawOutputModeChoice(OT_TYPE *ot, u8 **next, s32 selected,
+static void DrawOutputModeChoice(GameOrderingTableEntry *ot, u8 **next, s32 selected,
                                  s32 x, s32 width, s32 textureU,
                                  s32 textureV) {
     s32 intensity = selected ? 0x7F : 0x20;
@@ -29,7 +29,7 @@ static void DrawOutputModeChoice(OT_TYPE *ot, u8 **next, s32 selected,
 }
 
 void DrawSoundOptionScreen(void) {
-    OT_TYPE *ot = GamePrimaryOrderingTable(0);
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
 
     DrawMenuCursorArrow(0x14, g_SoundOptionCursor * 32 + 56);

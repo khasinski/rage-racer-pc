@@ -90,12 +90,12 @@ static void ResetDraws(void) {
 }
 
 int main(void) {
-    OT_TYPE orderingTable[0x300];
+    GameOrderingTableEntry orderingTable[0x300];
     u8 packets[sizeof(POLY_G4) * 2];
     POLY_G4 *quad = (POLY_G4 *)packets;
     memset(orderingTable, 0, sizeof(orderingTable));
     memset(packets, 0, sizeof(packets));
-    RENDER_OT_BASE_AS(OT_TYPE) = orderingTable;
+    RENDER_OT_BASE_AS(GameOrderingTableEntry) = orderingTable;
     RENDER_PRIM_CURSOR_AS(u8) = packets;
 
     g_MenuLightBurstLevel = 99;

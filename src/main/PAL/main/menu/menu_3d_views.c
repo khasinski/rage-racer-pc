@@ -151,12 +151,12 @@ void DrawMenuCarView(void) {
      * 120-byte (30-entry) showroom-depth bias, but express it through the
      * native pointer-sized slot instead of relying on the absolute-address
      * scalar alias. */
-    RENDER_OT_BASE_AS(OT_TYPE) += 30;
+    RENDER_OT_BASE_AS(GameOrderingTableEntry) += 30;
     SetGteObjectMatrix((&g_ObjectMatrixWork),
                        AsPositionWords(&showroom->pose.position[0]), &mtxA);
     g_RenderState.envMode4 = 0;
     SubmitModel(&g_RenderState, g_ModelBankCount >= 6 ? 5 : 1);
-    RENDER_OT_BASE_AS(OT_TYPE) -= 30;
+    RENDER_OT_BASE_AS(GameOrderingTableEntry) -= 30;
 }
 
 /* The course diorama behind COURSE SELECT and RANKING, with the carousel easing. */

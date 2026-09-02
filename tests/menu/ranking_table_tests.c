@@ -174,12 +174,12 @@ int main(void) {
     static const s32 headerU[4] = {0x00, 0x54, 0x00, 0xA4};
     static const s32 headerV[4] = {0x9C, 0x9C, 0xAC, 0x9C};
     static const s32 badgeU[4] = {0x44, 0x64, 0x84, 0xA4};
-    OT_TYPE orderingTable[4];
+    GameOrderingTableEntry orderingTable[4];
     s32 progress;
     s32 batch;
     s32 row;
 
-    RENDER_OT_BASE_AS(OT_TYPE) = orderingTable;
+    RENDER_OT_BASE_AS(GameOrderingTableEntry) = orderingTable;
     strcpy(g_RankingRecords[0][0][0].driverName, "RANK");
     strcpy(g_TimeRecords[0][0][0].driverName, "TIME");
 

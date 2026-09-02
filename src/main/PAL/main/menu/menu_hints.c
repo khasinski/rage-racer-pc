@@ -5,7 +5,7 @@
 
 /* The 0xC x 0x18 selection arrow every setup-menu list draws beside its rows. */
 void DrawMenuCursorArrow(s32 x, s32 y) {
-    OT_TYPE *ot = GamePrimaryOrderingTable(51);
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(51);
     u8 *next = GameQueueSpriteTrans(ot, RENDER_PRIM_CURSOR_AS(u8), x, y,
                                     0xC, 0x18, 0xE0, 0x48, 0x7F40);
 
@@ -17,7 +17,7 @@ void DrawMenuCursorArrow(s32 x, s32 y) {
  * extra 0x30-wide sprite between the caption and the closing arrow. */
 void DrawOptionHintBar(s32 variant) {
     const OptionHintCaption *caption = &g_OptionHintCaptions[variant];
-    OT_TYPE *ot = GamePrimaryOrderingTable(0);
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     s32 x;
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
 
@@ -48,7 +48,7 @@ void DrawOptionHintBar(s32 variant) {
 
 /* Two glyphs plus a label naming the connected pad; caches the last valid g_PadType. */
 void DrawPadTypeHint(void) {
-    OT_TYPE *ot = GamePrimaryOrderingTable(0);
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     u8 padType = g_PadType;
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
     s32 textureU;

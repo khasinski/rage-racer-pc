@@ -57,7 +57,8 @@ u8 *QueueDrawModePrim(void *ot, u8 *prim, s32 tpage) {
     return prim + 1;
 }
 
-u8 *AddTilePrim(void *ot, u8 *prim, s32 x, s32 y, s32 width, s32 height,
+u8 *AddTilePrim(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
+                s32 width, s32 height,
                 s32 r, s32 g, s32 b) {
     (void)ot;
     (void)width;

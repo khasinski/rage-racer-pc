@@ -12,7 +12,7 @@ enum {
 };
 
 void DrawScreenAdjustScreen(void) {
-    OT_TYPE *ot = GamePrimaryOrderingTable(51);
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(51);
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
 
     next = GameQueueSpriteTrans(ot, next, 0x9A, 0x88, 0xC, 0x18,

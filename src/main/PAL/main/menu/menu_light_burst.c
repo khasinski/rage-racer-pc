@@ -50,7 +50,7 @@ static void DrawLightBurstBands(void *ot, s32 level) {
 }
 
 void DrawMenuLightBurst(s32 step) {
-    void *ot = &RENDER_OT_BASE_AS(OT_TYPE)[0x2BF];
+    void *ot = &RENDER_OT_BASE_AS(GameOrderingTableEntry)[0x2BF];
 
     if (step == 0) {
         g_MenuLightBurstLevel = 0;

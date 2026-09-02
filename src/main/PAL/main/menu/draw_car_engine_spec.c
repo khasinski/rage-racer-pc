@@ -18,7 +18,7 @@ static s32 DrawEngineSpecNumber(s32 x, s16 y, char *text, s32 value,
 }
 
 void DrawCarEngineSpec(s32 slide, s32 brightness) {
-    OT_TYPE *ot;
+    GameOrderingTableEntry *ot;
     char text[ENGINE_SPEC_TEXT_CAPACITY];
     u8 intensity;
     s16 powerY;
@@ -28,7 +28,7 @@ void DrawCarEngineSpec(s32 slide, s32 brightness) {
     if (g_MenuAltLayout != 0) {
         return;
     }
-    ot = RENDER_OT_BASE_AS(OT_TYPE) + 1;
+    ot = RENDER_OT_BASE_AS(GameOrderingTableEntry) + 1;
     intensity = (u8)brightness;
     powerY = 0xCC - slide;
     torqueY = 0xDA - slide;

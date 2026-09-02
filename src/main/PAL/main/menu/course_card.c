@@ -66,7 +66,7 @@ void UpdateAndDrawCourseCard(void) {
     }
 
     GameDrawTexturedQuad(
-        RENDER_OT_BASE_AS(OT_TYPE) + 1,
+        RENDER_OT_BASE_AS(GameOrderingTableEntry) + 1,
         projected[0].position.x + COURSE_CARD_CENTER_X,
         projected[0].position.y + COURSE_CARD_CENTER_Y,
         projected[1].position.x + COURSE_CARD_CENTER_X,

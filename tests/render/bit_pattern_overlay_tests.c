@@ -19,7 +19,7 @@ typedef struct SpriteCall {
 static SpriteCall s_calls[64];
 static s32 s_callCount;
 static s32 s_drawMode;
-static OT_TYPE s_ot[2];
+static GameOrderingTableEntry s_ot[2];
 static u8 s_packet[64];
 
 void DrawSprite(void *ot, s16 x, s16 y, s16 w, u16 h, u16 u, u16 v,

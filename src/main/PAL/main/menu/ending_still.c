@@ -33,7 +33,7 @@ void UpdateEndingStill(void) {
 
 /* The still itself: a 0x100 + 0x40 wide pair of full-height sprites. */
 void DrawEndingStill(void) {
-    OT_TYPE *ot = GamePrimaryOrderingTable(0);
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
 
     next = GameQueueSprite(ot, next, 0, 0, 0x100, 0xF0, 0, 0, 0x3FDB);

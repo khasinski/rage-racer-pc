@@ -105,7 +105,7 @@ void DrawStartCountdown(s32 sceneTimer) {
 
 
 void DrawRaceOptionMenu(s32 cursorRow) {
-    u8 *ot;
+    GameOrderingTableEntry *ot;
     u8 *next;
     s32 selectionY;
     POLY_FT4 *quad;
@@ -113,7 +113,7 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     RaceOptionMarqueeState marqueeState;
     RaceOptionPulseState pulseState;
 
-    ot = (u8 *)GamePrimaryOrderingTable(0);
+    ot = GamePrimaryOrderingTable(0);
     prim.bytes = RENDER_PRIM_CURSOR_AS(u8);
     SetSprt(prim.sprite);
     SetShadeTex(prim.sprite, 0);

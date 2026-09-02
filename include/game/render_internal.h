@@ -4,6 +4,7 @@
 #include "common.h"
 #include "game/camera_types.h"
 #include "game/render_state.h"
+#include "game/render_types.h"
 #include "game/vector.h"
 #include "psyq/gpu.h"
 #include "psyq/gte.h"
@@ -50,7 +51,7 @@ typedef struct RaceHudPackets {
 
 typedef struct GameFrameLayout {
     GameFrameEnvironmentHeader environment;
-    OT_TYPE orderingTables[2][GAME_FRAME_OT_LENGTH];
+    GameOrderingTableEntry orderingTables[2][GAME_FRAME_OT_LENGTH];
     /* Native packets contain pointer-sized ordering-table links. 0x22000 was
      * sized for four-byte PS1 links and cannot hold the same command stream. */
     u8 primitiveBuffer[GAME_FRAME_PRIMITIVE_BUFFER_SIZE];
@@ -64,6 +65,15 @@ typedef union GameFrameContext {
     GameFrameLayout layout;
     u8 bytes[sizeof(GameFrameLayout)];
 } GameFrameContext;
+
+static inline void GameClearOrderingTable(GameOrderingTableEntry *table,
+                                          s32 count) {
+    ClearOTagR((void *)table, count);
+}
+
+static inline void GameDrawOrderingTable(GameOrderingTableEntry *lastEntry) {
+    DrawOTag((void *)lastEntry);
+}
 
 typedef union ScreenOffset {
     s32 value;
@@ -84,10 +94,10 @@ extern CameraViewMode g_CameraViewMode;
 extern s16 g_AtanTable[];
 extern GameFrameContext *g_DrawBuffer;
 
-static inline OT_TYPE *GamePrimaryOrderingTable(s32 depth) {
+static inline GameOrderingTableEntry *GamePrimaryOrderingTable(s32 depth) {
     return &g_DrawBuffer->layout.orderingTables[0][depth];
 }
-static inline OT_TYPE *GameSecondaryOrderingTable(s32 depth) {
+static inline GameOrderingTableEntry *GameSecondaryOrderingTable(s32 depth) {
     return &g_DrawBuffer->layout.orderingTables[1][depth];
 }
 extern GameFrameContext g_FrameContexts[2];

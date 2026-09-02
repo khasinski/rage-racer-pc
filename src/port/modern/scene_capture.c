@@ -88,13 +88,13 @@ static GameFrameContext *CaptureFrameContext(void) {
  * +30-entry bias and the mirror pass's OT[1] both come through as data. */
 static void CaptureOtBase(uint8_t *table, int32_t *bias) {
     GameFrameContext *frame = CaptureFrameContext();
-    OT_TYPE *base = RENDER_OT_BASE_AS(OT_TYPE);
+    GameOrderingTableEntry *base = RENDER_OT_BASE_AS(GameOrderingTableEntry);
     int t;
     *table = 0;
     *bias = 0;
     if (frame == NULL || base == NULL) return;
     for (t = 0; t < 2; t++) {
-        OT_TYPE *start = frame->layout.orderingTables[t];
+        GameOrderingTableEntry *start = frame->layout.orderingTables[t];
         ptrdiff_t diff = base - start;
         if (diff >= 0 && diff < GAME_FRAME_OT_LENGTH) {
             *table = (uint8_t)t;
@@ -319,7 +319,7 @@ static int CapturePacketWords(const DR_ENV *packet, uint32_t *out, int cap) {
 }
 
 static void CaptureWalkTable(RageSceneSnapshot *snapshot, int tableIndex,
-                             OT_TYPE *table) {
+                             GameOrderingTableEntry *table) {
     const DR_ENV *node = (const DR_ENV *)&table[GAME_FRAME_OT_LENGTH - 1];
     int bucket = GAME_FRAME_OT_LENGTH - 1;
     while (1) {
@@ -336,7 +336,7 @@ static void CaptureWalkTable(RageSceneSnapshot *snapshot, int tableIndex,
             break;
         }
         if (address >= tableBegin && address < tableEnd) {
-            bucket = (int)((OT_TYPE *)node - table);
+            bucket = (int)((GameOrderingTableEntry *)node - table);
         } else if (CaptureIs3DPacket(address)) {
             snapshot->skipped3DPackets++;
         } else {

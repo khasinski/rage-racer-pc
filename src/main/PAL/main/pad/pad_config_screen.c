@@ -10,7 +10,7 @@
  * six sprites cover five slots - followed by the black plate and white frame
  * behind each slot and one DR_MODE packet to close the run.
  */
-u8 *DrawPadConfigLabels(void *ot, u8 *prim, u8 *labelRow) {
+u8 *DrawPadConfigLabels(GameOrderingTableEntry *ot, u8 *prim, u8 *labelRow) {
     u8 k;
     s32 i;
 
@@ -57,7 +57,8 @@ u8 *DrawPadConfigLabels(void *ot, u8 *prim, u8 *labelRow) {
  * vertical drop from the label, then a two-pixel-thick horizontal run to the
  * button. Suppressed while the panel is still sliding.
  */
-u8 *DrawPadConfigCallouts(void *ot, u8 *prim, u8 *labelRow, u8 *buttonRow) {
+u8 *DrawPadConfigCallouts(GameOrderingTableEntry *ot, u8 *prim, u8 *labelRow,
+                          u8 *buttonRow) {
     s32 i;
 
     if (g_ControllerSceneAngleY > -16 && g_ControllerSceneAngleY < 16) {
@@ -79,7 +80,7 @@ u8 *DrawPadConfigCallouts(void *ot, u8 *prim, u8 *labelRow, u8 *buttonRow) {
 
 /* One whole standard-pad diagram for the current selection: the five action
  * labels, then the five callout lines from each label to its button. */
-u8 *DrawPadConfigDiagram(void *ot, u8 *prim) {
+u8 *DrawPadConfigDiagram(GameOrderingTableEntry *ot, u8 *prim) {
     prim = DrawPadConfigLabels(ot, prim, &g_PadConfigLabelRows[g_PadMappingIndex * 5]);
     return DrawPadConfigCallouts(
         ot, prim, &g_PadConfigLabelRows[g_PadMappingIndex * 5], &g_PadConfigButtonRows[g_PadMappingIndex * 5]);
@@ -87,7 +88,7 @@ u8 *DrawPadConfigDiagram(void *ot, u8 *prim) {
 
 
 /* One whole NeGcon diagram for the current selection: labels, then callouts. */
-u8 *DrawNegconConfigDiagram(void *ot, u8 *prim) {
+u8 *DrawNegconConfigDiagram(GameOrderingTableEntry *ot, u8 *prim) {
     prim = DrawPadConfigLabels(ot, prim, &g_NegconConfigLabelRows[g_NegconMappingIndex * 5]);
     return DrawPadConfigCallouts(
         ot, prim, &g_NegconConfigLabelRows[g_NegconMappingIndex * 5], &g_NegconConfigButtonRows[g_NegconMappingIndex * 5]);

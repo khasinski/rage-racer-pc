@@ -15,7 +15,7 @@ s32 DrawDesignModeScreen(s32 step) {
     s32 column;
     u32 fadeValue;
 
-    ot = RENDER_OT_BASE_AS(OT_TYPE) + 1;
+    ot = RENDER_OT_BASE_AS(GameOrderingTableEntry) + 1;
     mask = g_DesignModeCellMask;
 
     if (step == 0) {

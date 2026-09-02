@@ -5,7 +5,7 @@
 
 void DrawWrongWayWarning(void) {
     SPRT *sprites = RENDER_PRIM_CURSOR_AS(SPRT);
-    OT_TYPE *ot = GamePrimaryOrderingTable(0);
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     s32 i;
     u8 *ret;
 

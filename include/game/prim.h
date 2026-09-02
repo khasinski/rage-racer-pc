@@ -2,13 +2,14 @@
 #define GAME_PRIM_H
 
 #include "common.h"
+#include "game/render_types.h"
 #include "psyq/gpu.h"
 
 u8 *QueueDrawModePrim(void *ot, u8 *prim, s32 tpage);
 u8 *QueueDrawAreaPrim(void *ot, DrawPacket *packet, s16 x, s16 y, s32 width,
                       s32 height);
 u8 *AddTilePrim(
-    void *ot,
+    GameOrderingTableEntry *ot,
     u8 *prim,
     s32 x,
     s32 y,

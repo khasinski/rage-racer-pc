@@ -5,7 +5,7 @@
 #include "game/render_internal.h"
 
 void DrawClassRecordDetail(void) {
-    OT_TYPE *base = GamePrimaryOrderingTable(51);
+    GameOrderingTableEntry *base = GamePrimaryOrderingTable(51);
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
     s32 idx = g_ScreenOffsetEditY * 6 + g_ScreenOffsetEditX;
     s32 x;
@@ -44,8 +44,8 @@ void DrawClassRecordDetail(void) {
 }
 
 void DrawClassRecordGrid(void) {
-    OT_TYPE *base;
-    OT_TYPE *labelBase;
+    GameOrderingTableEntry *base;
+    GameOrderingTableEntry *labelBase;
     u8 *next;
     s32 i;
     s32 x, y;

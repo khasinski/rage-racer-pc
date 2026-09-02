@@ -46,10 +46,12 @@ void MainLoop(void) {
 
         g_DrawBuffer = frame;
         g_FrameParity = parity;
-        RENDER_OT_BASE_AS(OT_TYPE) = frame->layout.orderingTables[0];
+        RENDER_OT_BASE_AS(GameOrderingTableEntry) = frame->layout.orderingTables[0];
         RENDER_PRIM_CURSOR_AS(u8) = frame->layout.primitiveBuffer;
-        ClearOTagR(frame->layout.orderingTables[0], GAME_FRAME_OT_LENGTH);
-        ClearOTagR(frame->layout.orderingTables[1], GAME_FRAME_OT_LENGTH);
+        GameClearOrderingTable(frame->layout.orderingTables[0],
+                               GAME_FRAME_OT_LENGTH);
+        GameClearOrderingTable(frame->layout.orderingTables[1],
+                               GAME_FRAME_OT_LENGTH);
         TickCdAudio();
         TickSequenceAudio();
         ServiceAssetLoad();
@@ -80,8 +82,10 @@ void MainLoop(void) {
         Psyz_GpuTraceContext(g_SceneId, g_SceneTimer);
         PutDrawEnv(&frame->environment.draw);
         PutDispEnv(&frame->environment.display);
-        DrawOTag(&frame->layout.orderingTables[0][GAME_FRAME_OT_LENGTH - 1]);
-        DrawOTag(&frame->layout.orderingTables[1][GAME_FRAME_OT_LENGTH - 1]);
+        GameDrawOrderingTable(
+            &frame->layout.orderingTables[0][GAME_FRAME_OT_LENGTH - 1]);
+        GameDrawOrderingTable(
+            &frame->layout.orderingTables[1][GAME_FRAME_OT_LENGTH - 1]);
         PortSampleAnalogPad();
         UpdatePadState();
         g_FrameCounter++;

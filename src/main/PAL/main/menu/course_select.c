@@ -88,8 +88,8 @@ static s32 DrawSlidingSprite(
 }
 
 s32 DrawCourseSelectScreen(s32 step) {
-    OT_TYPE *otBase;
-    OT_TYPE *ot;
+    GameOrderingTableEntry *otBase;
+    GameOrderingTableEntry *ot;
     u8 fade;
     u16 slide;
     s16 headerWidth = 0;
@@ -107,7 +107,7 @@ s32 DrawCourseSelectScreen(s32 step) {
     s32 gpSlide;
     u32 gpFade;
     u32 fadeValue;
-    otBase = RENDER_OT_BASE_AS(OT_TYPE);
+    otBase = RENDER_OT_BASE_AS(GameOrderingTableEntry);
     ot = otBase + 1;
     if (step == 0) {
         g_CourseSelectScrollValue = 0;

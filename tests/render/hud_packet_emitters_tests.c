@@ -62,7 +62,7 @@ static void ResetPackets(void *packet) {
 
 int main(void) {
     u8 packets[256];
-    OT_TYPE *ot = GamePrimaryOrderingTable(0);
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     SPRT_8 *digit;
     SPRT *warning;
     TILE *fade;

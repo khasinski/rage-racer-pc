@@ -3,7 +3,7 @@
 #include "game/render_internal.h"
 
 void DrawFullscreenFadeTile(s32 color, s32 tpage) {
-    OT_TYPE *ot = GamePrimaryOrderingTable(0);
+    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     TILE *tile = RENDER_PRIM_CURSOR_AS(TILE);
 
     if (color < 0) {

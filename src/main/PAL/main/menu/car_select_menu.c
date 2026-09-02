@@ -21,7 +21,7 @@ s32 DrawCarSelectScreen(s32 step) {
         g_CarSelectFadeAccum = 0;
     }
 
-    ot = RENDER_OT_BASE_AS(OT_TYPE) + 1;
+    ot = RENDER_OT_BASE_AS(GameOrderingTableEntry) + 1;
     brightness = (u8)(g_CarSelectFadeAccum / 4);
     transmission = g_CarTable[g_PlayerCarIndex].transmission;
     DrawRectOutline(ot, 0xA3, 0x180, 0x1A, 0x19, brightness, brightness,
