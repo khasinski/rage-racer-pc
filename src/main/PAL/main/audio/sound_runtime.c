@@ -8,6 +8,10 @@ enum {
     AUTO_SOUND_SLOT_COUNT = ENGINE_SOUND_SLOT_COUNT - 1,
     SOUND_RUNTIME_VOICE_COUNT = 10,
     DEFAULT_SOUND_SCALE = 128,
+    SOUND_TABLE_SEQUENCE_COUNT = 2,
+    SOUND_TABLE_TRACK_COUNT = 1,
+    SOUND_RUNTIME_REVERB_PRESET = 2,
+    SOUND_MASTER_VOLUME = 0x3FFF,
 };
 
 static void StopSoundSlotVoice(s32 slot) {
@@ -55,24 +59,17 @@ static void ResetSoundState(void) {
     g_AudioLoadedSlotMask = 1;
 }
 
-static void PrepareSoundRuntime(void) {
-    SsSetTableSize((char *)GetSndTableArea(), 2, 1);
+void InitSoundRuntime(void) {
+    SsSetTableSize((char *)GetSndTableArea(), SOUND_TABLE_SEQUENCE_COUNT,
+                   SOUND_TABLE_TRACK_COUNT);
     /* The native port owns the sequence clock in TickSequenceAudio; it does
      * not install a simulated PlayStation counter interrupt. */
     SsSetTickMode(SS_NOTICK);
     SsSetVoiceCount(SOUND_RUNTIME_VOICE_COUNT);
     SsUtReverbOff();
-    SetReverbPreset(2, 0, 0);
+    SetReverbPreset(SOUND_RUNTIME_REVERB_PRESET, 0, 0);
     ResetSoundState();
-}
-
-static void FinishSoundRuntimeInitialization(void) {
-    SsSetMVol(0x3FFF, 0x3FFF);
+    SsSetMVol(SOUND_MASTER_VOLUME, SOUND_MASTER_VOLUME);
     SsSetReservedVoice(0);
-}
-
-void InitSoundRuntime(void) {
-    PrepareSoundRuntime();
-    FinishSoundRuntimeInitialization();
     InitSequenceAudio();
 }
