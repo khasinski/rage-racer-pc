@@ -25,6 +25,10 @@ void *GetPlayerCarStorage(void);
     (*(s16 *)((u8 *)GetPlayerCarStorage() + 0xB8))
 #define g_PlayerVelocity \
     (*(Vec4 (*)[2])((u8 *)GetPlayerCarStorage() + 0xC4))
+/* Retail reuses +0xE4 as render depth in-race and as the selected tire
+ * compound while the same storage backs the showroom car. */
+#define g_PlayerTireCompound \
+    (*(s32 *)((u8 *)GetPlayerCarStorage() + 0xE4))
 #define g_PlayerTransmission \
     (*(s16 *)((u8 *)GetPlayerCarStorage() + 0x130))
 #define g_PlayerTargetRpm \
