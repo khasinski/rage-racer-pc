@@ -76,11 +76,10 @@ void DrawLargeText(s32 x, s16 y, const char *text, u8 r, u8 g, u8 b,
     s_textCount++;
 }
 
-void *FormatLapTime(void *destination, s32 time) {
+void FormatLapTime(char *destination, s32 time) {
     char *text = destination;
 
     snprintf(text, 16, "%d", time);
-    return destination;
 }
 
 void GameDrawMenuButton(s32 x, s32 y, s32 width, s32 height, u8 r, u8 g,

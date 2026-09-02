@@ -7,8 +7,8 @@
  * strings each one references. Signatures of still-stubbed entries are
  * best-effort. */
 
-/* Formats a lap/race time into dst as %1d'%02d"%03d, returns the write cursor. */
-void *FormatLapTime(void *dst, s32 timeMs);
+/* Formats a lap/race time into dst as %1d'%02d"%03d. */
+void FormatLapTime(char *dst, s32 timeMs);
 
 void DrawResultScreen(void);         /* "RESULT" */
 void DrawRaceEndPrompt(void);        /* "PRESS START BUTTON" */

@@ -6,6 +6,7 @@
 #include "game/race.h"
 #include "game/records_internal.h"
 #include "game/save_internal.h"
+#include "game/screens.h"
 #include "game/state.h"
 
 #define CHECK(condition) do { if (!(condition)) abort(); } while (0)
@@ -23,25 +24,6 @@ RaceRecord g_RankingRecords[2][4][5];
 RaceRecord g_TimeRecords[2][4][5];
 
 char g_FmtLapTime[] = "%d'%02d\"%03d";
-char g_TextTimeAttack[] = "TIME ATTACK";
-char g_TextCourseIn[] = "COURSE IN";
-
-void DrawProportionalText(s32 x, s32 y, char *text, s32 color) {
-    (void)x;
-    (void)y;
-    (void)text;
-    (void)color;
-}
-
-void DrawText8x8Trans(s32 x, s32 y, char *text, s32 color) {
-    (void)x;
-    (void)y;
-    (void)text;
-    (void)color;
-}
-
-void DrawResultScreen(void) {}
-
 int main(void) {
     static const char expectedNames[5][8] = {
         {'R', 'A', 'G', 'E', ' ', ' ', '\0', '\0'},
@@ -78,6 +60,15 @@ int main(void) {
     memset(g_TimeRecords, 0xA5, sizeof(g_TimeRecords));
     InitRecordTables();
 
+    {
+        char formatted[16];
+
+        FormatLapTime(formatted, 0);
+        CHECK(strcmp(formatted, "0'00\"000") == 0);
+        FormatLapTime(formatted, 125678);
+        CHECK(strcmp(formatted, "2'05\"678") == 0);
+    }
+
     for (series = 0; series < 2; series++) {
         for (course = 0; course < 4; course++) {
             s32 index = series * 4 + course;
@@ -105,6 +96,22 @@ int main(void) {
             }
         }
     }
+
+    g_BestLapTimes[1][2][0] = 0;
+    g_BestLapTimes[1][2][1] = 12345;
+    g_BestTotalTimes[0][3][0] = -1;
+    g_BestTotalTimes[0][3][1] = 23456;
+    g_BestSectorTimes[1][1][0] = 0;
+    g_BestSectorTimes[1][1][1] = -1;
+    g_BestSectorTimes[1][1][2] = 34567;
+    RepairRecordTimes();
+    CHECK(g_BestLapTimes[1][2][0] == g_DefaultLapTimes[6]);
+    CHECK(g_BestLapTimes[1][2][1] == 12345);
+    CHECK(g_BestTotalTimes[0][3][0] == g_DefaultTotalTimes[3]);
+    CHECK(g_BestTotalTimes[0][3][1] == 23456);
+    CHECK(g_BestSectorTimes[1][1][0] == g_DefaultLapTimes[5]);
+    CHECK(g_BestSectorTimes[1][1][1] == g_DefaultLapTimes[5]);
+    CHECK(g_BestSectorTimes[1][1][2] == 34567);
 
     {
         u8 nameCodes[6] = {0};
