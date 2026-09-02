@@ -259,6 +259,28 @@ endif()
 add_test(NAME race_end_rules COMMAND race_end_rules_tests)
 set_tests_properties(race_end_rules PROPERTIES LABELS unit)
 
+add_executable(result_screen_rules_tests
+    result_screen_rules_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/result_screen_rules.c)
+target_include_directories(result_screen_rules_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(result_screen_rules_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(result_screen_rules_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(result_screen_rules_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+endif()
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(result_screen_rules_tests PRIVATE
+        -Wall -Wextra -Wno-deprecated-non-prototype -Werror)
+endif()
+add_test(NAME result_screen_rules COMMAND result_screen_rules_tests)
+set_tests_properties(result_screen_rules PROPERTIES LABELS unit)
+
 add_executable(race_scene_rules_tests
     race_scene_rules_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/race_scene_rules.c)

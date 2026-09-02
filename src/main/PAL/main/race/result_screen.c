@@ -13,7 +13,7 @@ enum { RESULT_INTRO_TEXT_CAPACITY = 48 };
 
 void DrawResultScreen(void) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
-    s32 courseNameY = g_GrandPrixMode != 0 ? 0x3C : 0x39;
+    s32 courseNameY = ResultCourseNameY(g_GrandPrixMode);
     u8 *next;
 
     DrawProportionalText(0xDC, 0x1C, g_TextResult, 0x7812);
@@ -45,27 +45,31 @@ static void DrawClassPlaceBanner(void) {
 
 static void DrawResultPlace(void) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
-    const ResultPlaceSpriteLayout *placeSprite =
-        &g_ResultPlaceSprites[g_PlayerCar.drive.racePosition - 1];
+    s32 racePosition = g_PlayerCar.drive.racePosition;
+    const ResultPlaceSpriteLayout *placeSprite;
     u8 *next;
 
     DrawResultScreen();
+    if (!IsValidRaceResultPlace(racePosition)) {
+        return;
+    }
+    placeSprite = &g_ResultPlaceSprites[racePosition - 1];
     next = GameQueueSprite(ot, RENDER_PRIM_CURSOR_AS(u8),
                            0xB4, 0x60, 0x58, 0x38, 0xA8, 0xA8,
-                           g_ResultPanelCluts[g_PlayerCar.drive.racePosition]);
+                           g_ResultPanelCluts[racePosition]);
     g_RenderState.packetCursor = GameQueueSprite(
         ot, next, placeSprite->x, 0x5C, placeSprite->y, 0x1C,
-        placeSprite->width, 0xCC, g_ResultPlaceCluts[g_PlayerCar.drive.racePosition]);
+        placeSprite->width, 0xCC, g_ResultPlaceCluts[racePosition]);
 }
 
 void DrawGrandPrixIntro(void) {
     char text[RESULT_INTRO_TEXT_CAPACITY];
     s32 classIndex = g_GrandPrixClass;
-    char *grandPrixName =
-        g_GrandPrixNames[g_GrandPrixSeries ? classIndex + 6 : classIndex];
+    s32 nameIndex = GrandPrixNameIndex(g_GrandPrixSeries, classIndex);
+    const char *grandPrixName =
+        nameIndex >= 0 ? g_GrandPrixNames[nameIndex] : "";
 
-    if ((g_ClassResultPlace != 0) &&
-        (g_PrizeScreenState >= PRIZE_SCREEN_STATE_WAIT_FOR_BONUS_CONFIRM)) {
+    if (ShouldDrawClassPlaceBanner(g_ClassResultPlace, g_PrizeScreenState)) {
         DrawClassPlaceBanner();
     }
 
