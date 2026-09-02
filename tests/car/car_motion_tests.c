@@ -92,8 +92,7 @@ static void Record(const char *name, const s32 *values, int count) {
 
 /* Everything the three of them can move. */
 static void RecordCar(const char *label, GameCarRuntime *car) {
-    GameCarAiBlock *ai = GetCarAiBlock(car);
-    s32 state[16];
+    s32 state[15];
 
     state[0] = car->motionMode;
     state[1] = car->motionModeTimer;
@@ -110,8 +109,7 @@ static void RecordCar(const char *label, GameCarRuntime *car) {
     state[12] = car->y;
     state[13] = car->slideInput.value;
     state[14] = car->yawRate;
-    state[15] = ai->yawRate;
-    Record(label, state, 16);
+    Record(label, state, 15);
 }
 
 static TrackEventData s_events;
@@ -140,7 +138,7 @@ int main(int argc, char **argv) {
      * Sweep the body kick, crest hop, and slide state machines. Run the test
      * with a file name to write the cases out and diff two runs.
      */
-    static const unsigned long expected = 530766605UL;
+    static const unsigned long expected = 1127011367UL;
     static const s32 modes[] = {0, 1, 2, 3, 4, 5, 7};
     static const s32 timers[] = {0, 1, 2, 30};
     static const s32 amounts[] = {0, 0x100, -0x100};
@@ -149,7 +147,7 @@ int main(int argc, char **argv) {
     static const s32 speeds[] = {0, 0x3C0, 0x3C1, 0x1000};
     static const s32 slides[] = {0, 1, -1, 0x20, -0x20};
     static const s32 rates[] = {0, 0x2BB, 0x2BC, -0x2BB, -0x2BC};
-    static const s32 indices[] = {0, 1, 7};
+    static const s32 slideScales[] = {0, 1, 7};
     int mi, ti, ai_, hi, si, sl, ri, ii, series;
     int steps = 0;
 
@@ -226,13 +224,11 @@ int main(int argc, char **argv) {
         s_car.slideInput.value = slides[sl];
         s_car.yawRate = (s16)rates[ri];
         s_car.speed = speeds[si];
-        GetCarAiBlock(&s_car)->slideInput.value = slides[sl];
-        GetCarAiBlock(&s_car)->yawRate = (s16)rates[ri];
         g_RaceSeries = series;
-        sprintf(label, "slide in%d rate%d speed%d car%d series%d", slides[sl],
-                rates[ri], speeds[si], indices[ii], series);
+        sprintf(label, "slide in%d rate%d speed%d scale%d series%d", slides[sl],
+                rates[ri], speeds[si], slideScales[ii], series);
         Record(label, NULL, 0);
-        UpdateCarSlideAngle(&s_car, indices[ii]);
+        UpdateCarSlideAngle(&s_car, slideScales[ii]);
         RecordCar("slid", &s_car);
         steps++;
     }

@@ -1,46 +1,51 @@
 #include "game/car.h"
 #include "game/race.h"
 
-/* Ease a slide back towards straight and clear its direction at rest. */
-static void SettleSlide(GameCarAiBlock *ai) {
-    s32 rate = ai->yawRate;
+enum {
+    SLIDE_START_SPEED = 0x3C1,
+    SLIDE_INPUT_SPEED_SCALE = 0x320,
+    MAX_SLIDE_YAW_RATE = 0x2BC,
+};
 
-    if (rate == 0) return;
+/* Ease a slide back towards straight and clear its direction at rest. */
+static void SettleSlide(GameCarRuntime *car) {
+    s32 rate = car->yawRate;
+
+    if (rate == 0) {
+        return;
+    }
     rate = rate * 15 / 16;
-    ai->yawRate = rate;
-    if (rate == 0) ai->markerDirection = 0;
+    car->yawRate = rate;
+    if (rate == 0) {
+        car->routeMarkerActive = 0;
+    }
 }
 
-void UpdateCarSlideAngle(GameCarRuntime *car, s32 carIndex) {
-    GameCarAiBlock *ai = GetCarAiBlock(car);
-    s32 adjusted;
+void UpdateCarSlideAngle(GameCarRuntime *car, s32 slideScale) {
     s32 input;
     s32 rate;
 
     if (car->slideInput.value == 0) {
-        if (car->yawRate == 0 && carIndex != 0) {
-            if (car->speed < 0x3C1) return;
-            input = carIndex * car->speed / 0x320;
+        if (car->yawRate == 0 && slideScale != 0) {
+            if (car->speed < SLIDE_START_SPEED) {
+                return;
+            }
+            input = slideScale * car->speed / SLIDE_INPUT_SPEED_SCALE;
             car->slideInput.value = g_RaceSeries != 0 ? -input : input;
             car->yawRate = 0;
             return;
         }
-        if (ai->slideInput.value == 0) {
-            SettleSlide(ai);
-            return;
-        }
+        SettleSlide(car);
+        return;
     }
 
-    /* Decay the input by 31/32 towards zero. The sign bit preserves retail's
-     * rounding when half of the remaining input is removed from yaw. */
-    adjusted = ai->slideInput.value * 31;
-    if (adjusted < 0) adjusted += 0x1F;
-    input = adjusted >> 5;
-    ai->slideInput.value = input;
-    rate = ai->yawRate - ((input + (s32)((u32)adjusted >> 31)) >> 1);
-    if (rate > 0x2BB)
-        rate = 0x2BC;
-    else if (rate < -0x2BB)
-        rate = -0x2BC;
-    ai->yawRate = rate;
+    input = car->slideInput.value * 31 / 32;
+    car->slideInput.value = input;
+    rate = car->yawRate - input / 2;
+    if (rate > MAX_SLIDE_YAW_RATE) {
+        rate = MAX_SLIDE_YAW_RATE;
+    } else if (rate < -MAX_SLIDE_YAW_RATE) {
+        rate = -MAX_SLIDE_YAW_RATE;
+    }
+    car->yawRate = rate;
 }
