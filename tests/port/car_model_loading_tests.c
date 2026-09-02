@@ -55,6 +55,12 @@ static s32 s_installCarModelSlotCalls;
 static s32 s_serializedModelValid = 1;
 static s32 s_registerModelBankResult = 1;
 static size_t s_validatedModelSize;
+static size_t s_assetRoom = SIZE_MAX;
+
+size_t PortAssetRoomAt(const void *at) {
+    (void)at;
+    return s_assetRoom;
+}
 
 void ResetCdAudioState(void) {}
 
@@ -79,6 +85,22 @@ s32 RegisterModelBank(ModelBankHeader *bank, size_t size, s32 slot) {
     s_registeredBank = bank;
     s_registeredSlot = slot;
     return s_registerModelBankResult;
+}
+s32 IsValidModelBankAsset(const ModelBankHeader *bank, size_t size) {
+    (void)bank;
+    (void)size;
+    return s_registerModelBankResult;
+}
+s32 IsValidCourseModelAsset(const CourseModelAssetHeader *models,
+                            size_t size) {
+    (void)models;
+    (void)size;
+    return 1;
+}
+s32 IsValidImageAsset(const GameImageAssetHeaderWord *image, size_t size) {
+    (void)image;
+    (void)size;
+    return 1;
 }
 void SelectCarModelSlot(s32 slot) { g_CarModelAsset = g_CarModelSlots[slot]; }
 s32 RegisterCourseModels(CourseModelAssetHeader *models, size_t size) {
@@ -400,6 +422,18 @@ static void TestCarSelectAssetPhases(void) {
           "overlapping showroom blocks cancel installation");
     g_AssetLoadState = 3;
     pack->offsets[2] = 192;
+    s_assetRoom = CAR_MODEL_BUFFER_SIZE - 1;
+    s_registeredBank = NULL;
+    s_courseModels = NULL;
+    s_uploadedImage = NULL;
+    LoadCarSelectAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              s_registeredBank == NULL && s_courseModels == NULL &&
+              s_uploadedImage == NULL,
+          "undersized showroom arena publishes no shared assets");
+
+    g_AssetLoadState = 3;
+    s_assetRoom = SIZE_MAX;
     LoadCarSelectAssets();
     Check(s_registeredBank ==
               (ModelBankHeader *)(void *)(storage + 0xC) &&
@@ -445,6 +479,13 @@ static void TestCarSelectAssetPhases(void) {
     Check(g_AssetLoadState == 0, "car select asset load completes");
 
     g_AssetLoadState = 4;
+    g_PlayerCarIndex = GAME_CAR_COUNT;
+    LoadCarSelectAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed(),
+          "out-of-range showroom car is rejected before table access");
+
+    g_AssetLoadState = 4;
+    g_PlayerCarIndex = 1;
     g_CarModelSlot = 1;
     g_CarModelAsset = NULL;
     s_serializedModelValid = 0;
