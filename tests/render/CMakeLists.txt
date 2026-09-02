@@ -861,6 +861,18 @@ target_link_libraries(object_matrix_tests PRIVATE psyz)
 add_test(NAME object_matrix COMMAND object_matrix_tests)
 set_tests_properties(object_matrix PROPERTIES LABELS unit)
 
+add_executable(car_render_rules_tests
+    car_render_rules_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/car_render_rules.c)
+target_include_directories(car_render_rules_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/include)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(car_render_rules_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME car_render_rules COMMAND car_render_rules_tests)
+set_tests_properties(car_render_rules PROPERTIES LABELS unit)
+
 add_executable(add_tile_prim_tests
     add_tile_prim_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/add_tile_prim.c)
