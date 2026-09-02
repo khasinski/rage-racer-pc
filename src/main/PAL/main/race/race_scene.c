@@ -36,7 +36,6 @@ enum {
     PRE_START_SECTOR = -2,
     INITIAL_RACE_TIME = 15000,
     INITIAL_RIVAL_CUE_FLAGS = 0x1FE,
-    RACE_BGM_TRACK_OFFSET = 3,
     RACE_SCENE_ID = 12,
     RACE_FRAME_SYNC_THRESHOLD = 0x180,
 };
@@ -209,7 +208,7 @@ void EnterRaceScene(void) {
     SeedFlybyScenery();
     SeedRouteScenery();
     InitPathScenery();
-    RequestCdTrack(g_BgmTrack + RACE_BGM_TRACK_OFFSET);
+    RequestCdTrack(BgmCdTrack(g_BgmTrack));
     g_PauseDebounce = 0;
     g_RaceFadeTimer = 0;
     InitEffectVoiceRuntime();

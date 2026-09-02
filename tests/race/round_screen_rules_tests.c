@@ -59,12 +59,12 @@ static void TestBgmChoice(void) {
           "manual selection preserves the shuffle cursor");
 
     choice = ChooseRoundBgm(10, order, 4, 2);
-    Check(choice.track == 0xE && choice.shuffleIndex == 2,
-          "manual tenth entry maps to authored CD track 14");
+    Check(choice.track == 9 && choice.shuffleIndex == 2,
+          "manual selection returns the logical tenth track");
 
     choice = ChooseRoundBgm(0, order, 4, 1);
-    Check(choice.track == 0xE && choice.shuffleIndex == 2,
-          "shuffle consumes and remaps its selected entry");
+    Check(choice.track == 9 && choice.shuffleIndex == 2,
+          "shuffle consumes its selected logical track");
 
     choice = ChooseRoundBgm(0, order, 4, 3);
     Check(choice.track == 7 && choice.shuffleIndex == 0,

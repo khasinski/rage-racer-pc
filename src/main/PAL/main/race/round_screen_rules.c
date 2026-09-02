@@ -57,9 +57,5 @@ RoundBgmChoice ChooseRoundBgm(s32 selection, const u8 *shuffleOrder,
         choice.shuffleIndex = shuffleIndex;
     }
 
-    /* The tenth authored entry is CD track 14 rather than track 9. */
-    if (choice.track == 9) {
-        choice.track = 0xE;
-    }
     return choice;
 }
