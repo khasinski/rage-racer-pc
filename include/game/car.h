@@ -858,7 +858,7 @@ void UpdateCarCrestHop(GameCarRuntime *car);
 void UpdateCarSlideAngle(GameCarRuntime *car, s32 carIndex);
 void UpdateCarTiltCounter(GameCarRuntime *car);
 s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex,
-                        CarTrackLimits *limits);
+                        const CarTrackLimits *limits);
 void DrawTachometer(s32 rpm, s32 flash, s32 type, s32 amt);
 void DrawPlayerTachometer(void);
 void BeginCarStandingStart(PlayerCarRuntime *car);

@@ -38,7 +38,7 @@ void ApplyCarKnockback(GameCarRuntime *car) {
 }
 
 s32 UpdateCarTrackState(GameCarRuntime *car, s32 pointIndex,
-                        CarTrackLimits *limits) {
+                        const CarTrackLimits *limits) {
     (void)car;
     (void)pointIndex;
     (void)limits;

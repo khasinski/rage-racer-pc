@@ -244,17 +244,49 @@ static void UpdateCarTrackProgress(GameCarRuntime *obj, CarTrackWork *work,
     obj->trackSection = (s16)(sectionProgress >> 8);
 }
 
-s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits *limits) {
-    s16 curveMode;
-    s32 headingAngle;
-    s32 nextPointIndex;
-    s32 cosHeading;
-    s32 sinHeading;
+static void MeasureCarSegmentPosition(const GameCarRuntime *car,
+                                      CarTrackWork *work,
+                                      const GameTrackPoint *point,
+                                      s32 *alongSegment,
+                                      s32 *lateralOffset) {
+    s32 headingSin;
+    s32 headingCos;
+
+    work->edgeOffset.vx =
+        (s16)(u16)(((u16)car->x - (u16)point->x) * 4);
+    work->edgeOffset.vy = 0;
+    work->edgeOffset.vz =
+        (s16)(((u16)car->z - (u16)point->z) * 4);
+    headingSin = rsin(work->heading);
+    headingCos = rcos(work->heading);
+    *alongSegment = ProjectCarTrackAxis(
+        headingCos * work->edgeOffset.vx +
+        headingSin * work->edgeOffset.vz);
+    *lateralOffset = ProjectCarTrackAxis(
+        -headingSin * work->edgeOffset.vx +
+        headingCos * work->edgeOffset.vz);
+}
+
+static s32 ClampAlongSegment(s32 alongSegment, s16 segmentLength) {
+    if (alongSegment < 0) return 0;
+    if (alongSegment > segmentLength) return segmentLength;
+    return alongSegment;
+}
+
+static s32 NormalizeLateralOffset(s32 lateralOffset,
+                                  const CarTrackWork *work) {
+    if (lateralOffset < 0 && work->leftHalfWidth != 0)
+        return lateralOffset * 0x400 / work->leftHalfWidth;
+    if (lateralOffset >= 0 && work->rightHalfWidth != 0)
+        return lateralOffset * 0x400 / work->rightHalfWidth;
+    return 0;
+}
+
+s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex,
+                        const CarTrackLimits *limits) {
     s32 arcIndex;
     s32 lateralOffset;
     s32 alongSegment;
-    s32 rotated;
-    u16 segmentLength;
     GameTrackPoint *point;
     GameTrackPoint *nextPoint;
     CarTrackWork *work;
@@ -270,60 +302,30 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex, CarTrackLimits
         TraceCarTrackEnter(obj, trackPointIndex, limits);
     }
 
-    nextPointIndex = trackPointIndex + 1;
     work = &g_CarTrackWork;
     work->knockbackMode = 0;
     point = TrackPoint(trackPointIndex);
-    segmentLength = point->segmentLength;
-    work->segmentLength = segmentLength;
-    nextPoint = TrackPoint(nextPointIndex);
-    if ((s16)segmentLength <= 0) {
-        work->segmentLength = 1U;
-    }
+    nextPoint = TrackPoint(trackPointIndex + 1);
+    work->segmentLength = point->segmentLength;
+    if ((s16)work->segmentLength <= 0) work->segmentLength = 1;
     work->heading = (u16)point->angle;
     arcIndex = (s16)point->arcRef >> 4;
     work->arcIndex = (s16)arcIndex;
-    curveMode = point->arcRef & 3;
-    work->curveMode = curveMode;
-    if (curveMode != 0) {
+    work->curveMode = point->arcRef & 3;
+    if (work->curveMode != 0) {
         PlaceCarOnArc(obj, work, point, nextPoint, arcIndex);
     }
 
-    work->edgeOffset.vx =
-        (s16)(u16)(((u16)obj->x - (u16)point->x) * 4);
-    headingAngle = work->heading;
-    work->edgeOffset.vz =
-        (s16)(((u16)obj->z - (u16)point->z) * 4);
-    work->edgeOffset.vy = 0;
-    cosHeading = rcos(headingAngle);
-    rotated = cosHeading * work->edgeOffset.vx +
-              rsin(work->heading) * work->edgeOffset.vz;
-    alongSegment = ProjectCarTrackAxis(rotated);
-    sinHeading = rsin(work->heading);
-    rotated = -sinHeading * work->edgeOffset.vx +
-              rcos(work->heading) * work->edgeOffset.vz;
-    lateralOffset = ProjectCarTrackAxis(rotated);
-    if (work->curveMode != 0) {
-        lateralOffset = work->arcLateral;
-    }
+    MeasureCarSegmentPosition(obj, work, point, &alongSegment,
+                              &lateralOffset);
+    if (work->curveMode != 0) lateralOffset = work->arcLateral;
     lateralOffset = ClampCarToTrackEdges(obj, work, limits, point,
                                          nextPoint, alongSegment,
                                          lateralOffset);
-    if ((s16)work->segmentLength < alongSegment) {
-        alongSegment = (s16)work->segmentLength;
-    } else if (alongSegment < 0) {
-        alongSegment = 0;
-    }
+    alongSegment = ClampAlongSegment(alongSegment,
+                                     (s16)work->segmentLength);
     obj->segmentFraction = (alongSegment << 0xA) / (s16)work->segmentLength;
-    if (lateralOffset < 0 && work->leftHalfWidth != 0) {
-        obj->normalizedLateralOffset =
-            (lateralOffset * 0x400) / work->leftHalfWidth;
-    } else if (lateralOffset >= 0 && work->rightHalfWidth != 0) {
-        obj->normalizedLateralOffset =
-            (lateralOffset * 0x400) / work->rightHalfWidth;
-    } else {
-        obj->normalizedLateralOffset = 0;
-    }
+    obj->normalizedLateralOffset = NormalizeLateralOffset(lateralOffset, work);
     UpdateCarSurfaceOrientation(obj, work, point, nextPoint, alongSegment,
                                 lateralOffset);
     UpdateCarTrackProgress(obj, work, alongSegment, lateralOffset);

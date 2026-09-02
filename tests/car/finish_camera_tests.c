@@ -38,7 +38,7 @@ long SquareRoot12(long value) { return value; }
 void AccumulateLapProgress(GameCarRuntime *car) { (void)car; }
 
 s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
-                        CarTrackLimits *limits) {
+                        const CarTrackLimits *limits) {
     (void)car;
     (void)trackPointIndex;
     s_trackStateCalls++;

@@ -25,7 +25,7 @@
 #include <string.h>
 
 s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex,
-                        CarTrackLimits *limits);
+                        const CarTrackLimits *limits);
 
 /* These six come from the port's own state, which this test links; declaring
  * them here as well left two definitions of each, which only a linker that
@@ -142,7 +142,7 @@ static void Fold(FILE *out, const char *label, s32 result,
     }
 }
 
-static int CheckPlayerBoundaryKnockback(CarTrackLimits *limits) {
+static int CheckPlayerBoundaryKnockback(const CarTrackLimits *limits) {
     GameCarRuntime *car = AsRivalCar(&g_PlayerCar);
     s32 startZ;
     s32 result;

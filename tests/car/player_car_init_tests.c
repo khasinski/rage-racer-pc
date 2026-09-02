@@ -56,7 +56,7 @@ void SeedCarLapProgress(GameCarRuntime *car, s32 progress) {
 }
 
 s32 UpdateCarTrackState(GameCarRuntime *car, s32 pointIndex,
-                        CarTrackLimits *limits) {
+                        const CarTrackLimits *limits) {
     (void)pointIndex;
     (void)limits;
     car->y = 40;

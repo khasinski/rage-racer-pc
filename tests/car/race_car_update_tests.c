@@ -86,7 +86,7 @@ void ApplyCarKnockback(GameCarRuntime *car) {
 }
 
 s32 UpdateCarTrackState(GameCarRuntime *car, s32 point,
-                        CarTrackLimits *limits) {
+                        const CarTrackLimits *limits) {
     (void)car;
     (void)point;
     if (limits->leftInset != -0x3C || limits->rightInset != 0x3C) {
