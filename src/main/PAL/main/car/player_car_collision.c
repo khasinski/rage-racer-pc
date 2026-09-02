@@ -10,11 +10,11 @@
 #include <stdlib.h>
 
 static CarCollisionPoint Midpoint(CarCollisionPoint a, CarCollisionPoint b) {
-  CarCollisionPoint result;
+    CarCollisionPoint result;
 
-  result.x = (a.x + b.x) / 2;
-  result.z = (a.z + b.z) / 2;
-  return result;
+    result.x = (a.x + b.x) / 2;
+    result.z = (a.z + b.z) / 2;
+    return result;
 }
 
 static void BuildPlayerCollisionGrid(const PlayerCarRuntime *car,
@@ -52,12 +52,12 @@ static void BuildPlayerCollisionGrid(const PlayerCarRuntime *car,
 static void BuildOpponentCollisionSamples(const PlayerCarRuntime *player,
                                           const GameCarRuntime *opponent,
                                           CarCollisionPoint corners[4],
-                                          CarCollisionPoint samples[10]) {
+                                          CarCollisionPoint samples[9]) {
   Matrix rotationMatrix;
   SVec input;
   Vec4 transformed;
-  s32 offsetX = (u16)opponent->x - (u16)player->x;
-  s32 offsetZ = (u16)opponent->z - (u16)player->z;
+  s32 offsetX = (s16)((u16)opponent->x - (u16)player->x);
+  s32 offsetZ = (s16)((u16)opponent->z - (u16)player->z);
   s32 index;
 
   input.vx = (u16)opponent->bodyPitch;
@@ -78,15 +78,15 @@ static void BuildOpponentCollisionSamples(const PlayerCarRuntime *player,
   samples[2] = Midpoint(corners[1], corners[3]);
   samples[3] = Midpoint(corners[2], corners[3]);
   samples[4] = Midpoint(samples[0], samples[2]);
-  samples[6] = Midpoint(corners[0], samples[1]);
-  samples[7] = Midpoint(corners[1], samples[2]);
-  samples[8] = Midpoint(corners[2], samples[1]);
-  samples[9] = Midpoint(corners[3], samples[2]);
+  samples[5] = Midpoint(corners[0], samples[1]);
+  samples[6] = Midpoint(corners[1], samples[2]);
+  samples[7] = Midpoint(corners[2], samples[1]);
+  samples[8] = Midpoint(corners[3], samples[2]);
 }
 
 static s32 FindPlayerCollisionRegion(CarCollisionPoint grid[4][4],
                                      const CarCollisionPoint corners[4],
-                                     const CarCollisionPoint samples[10],
+                                     const CarCollisionPoint samples[9],
                                      s32 *sampleIndex, s32 *quadIndex) {
   s32 region = FirstQuadHit(grid, corners, 4, sampleIndex, quadIndex);
 
@@ -94,7 +94,7 @@ static s32 FindPlayerCollisionRegion(CarCollisionPoint grid[4][4],
     region = FirstQuadHit(grid, samples, 5, sampleIndex, quadIndex);
   }
   if (region <= 0) {
-    region = FirstQuadHit(grid, &samples[6], 4, sampleIndex, quadIndex);
+    region = FirstQuadHit(grid, &samples[5], 4, sampleIndex, quadIndex);
   }
   return region;
 }
@@ -117,7 +117,7 @@ static s32 AbsoluteDifference(s32 a, s32 b) {
 static PlayerCollisionHit FindPlayerCollision(
     PlayerCarRuntime *player, CarCollisionPoint playerGrid[4][4]) {
   PlayerCollisionHit hit = {0};
-  CarCollisionPoint samples[10];
+  CarCollisionPoint samples[9];
   CarCollisionPoint corners[4];
   s32 index;
 
@@ -193,7 +193,7 @@ static void PlayPlayerCollisionSound(const PlayerCarRuntime *player,
   if ((s16)player->motionTimer >= 0xB || g_RacePhase >= 3) {
     return;
   }
-  if ((u32)(hit->lateralDistance + 0x1D) < 0x3B) {
+  if (hit->lateralDistance < 30) {
     soundCue = hit->region >= 3 ? 0xD : 0xA;
   } else {
     soundCue = (hit->region & 1) != g_MirrorMode ? 0xB : 0xC;
@@ -213,8 +213,8 @@ static CarCollisionPoint GetCollisionVelocity(
   velocity.x = x / 0x20;
   velocity.z = z / 0x20;
   if (includeOpponentMotion) {
-    velocity.x -= (u16)opponent->velocityX;
-    velocity.z -= (u16)opponent->velocityZ;
+    velocity.x = (s16)(velocity.x - (s16)opponent->velocityX);
+    velocity.z = (s16)(velocity.z - (s16)opponent->velocityZ);
   }
   return velocity;
 }
@@ -246,10 +246,9 @@ static void ApplyLowRegionCollision(PlayerCarRuntime *player,
   if (player->speed >= 0x29) {
     SetCarKnockback(AsRivalCar(player), 0, 0, 4);
   } else {
-    SetCarKnockback(AsRivalCar(player), -(s16)velocity.x,
-                    -(s16)velocity.z, 4);
+    SetCarKnockback(AsRivalCar(player), -velocity.x, -velocity.z, 4);
   }
-  SetCarKnockback(opponent, (s16)velocity.x, (s16)velocity.z, 4);
+  SetCarKnockback(opponent, velocity.x, velocity.z, 4);
 }
 
 static void ApplyHighRegionCollision(PlayerCarRuntime *player,
@@ -264,8 +263,7 @@ static void ApplyHighRegionCollision(PlayerCarRuntime *player,
     SetCarKnockback(opponent, 0, 0, 4);
     SetCarKnockback(AsRivalCar(player), 0, 0, 4);
   } else {
-    SetCarKnockback(AsRivalCar(player), -(s16)velocity.x,
-                    -(s16)velocity.z, 4);
+    SetCarKnockback(AsRivalCar(player), -velocity.x, -velocity.z, 4);
     SetCarKnockback(opponent, 0, 0, 4);
   }
 }

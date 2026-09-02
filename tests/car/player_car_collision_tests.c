@@ -73,6 +73,92 @@ void GameRenderWorldSetCamera(s32 x, s32 y, s32 z, s32 pitch, s32 yaw,
     (void)x; (void)y; (void)z; (void)pitch; (void)yaw; (void)roll;
 }
 
+static void PrepareSoundCollision(PlayerCarRuntime *player,
+                                  s32 lateralDistance) {
+    GameCarRuntime *opponent = &g_Cars[0];
+    int index;
+
+    memset(player, 0, sizeof(*player));
+    memset(g_Cars, 0, sizeof(g_Cars));
+    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++)
+        g_Cars[index].activeFlag = -1;
+
+    g_GrandPrixMode = 1;
+    g_RaceSeries = 0;
+    g_RacePhase = 2;
+    g_MirrorMode = 0;
+    g_WrongWayTimer = 0;
+    g_TrackLength = 0x8000;
+    s_sound = -1;
+    s_knockbackCount = 0;
+
+    player->x = 0x2000;
+    player->z = 0x3000;
+    player->trackProgress = 0x1000;
+    player->speed = 80;
+    opponent->activeFlag = 0;
+    opponent->x = player->x;
+    opponent->z = player->z;
+    opponent->trackProgress = player->trackProgress;
+    opponent->trackLateralOffset = lateralDistance;
+    opponent->speed = 80;
+}
+
+static int CheckCollisionSoundGates(void) {
+    PlayerCarRuntime player;
+    s32 normalCue;
+    s32 mirrorCue;
+
+    PrepareSoundCollision(&player, 0);
+    player.motionTimer = 11;
+    if (CollidePlayerWithCars(&player) <= 0 || s_sound != -1) {
+        puts("FAIL collision sound was not gated by motion timer");
+        return 1;
+    }
+
+    PrepareSoundCollision(&player, 0);
+    g_RacePhase = 3;
+    if (CollidePlayerWithCars(&player) <= 0 || s_sound != -1) {
+        puts("FAIL collision sound was not gated by race phase");
+        return 1;
+    }
+
+    PrepareSoundCollision(&player, 49);
+    if (CollidePlayerWithCars(&player) <= 0) {
+        puts("FAIL side collision fixture did not collide");
+        return 1;
+    }
+    normalCue = s_sound;
+
+    PrepareSoundCollision(&player, 49);
+    g_MirrorMode = 1;
+    if (CollidePlayerWithCars(&player) <= 0) {
+        puts("FAIL mirrored side collision fixture did not collide");
+        return 1;
+    }
+    mirrorCue = s_sound;
+    if (!((normalCue == 0xB && mirrorCue == 0xC) ||
+          (normalCue == 0xC && mirrorCue == 0xB))) {
+        printf("FAIL mirror collision cues were %d and %d\n", normalCue,
+               mirrorCue);
+        return 1;
+    }
+    return 0;
+}
+
+static int CheckWrappedWorldCoordinates(void) {
+    PlayerCarRuntime player;
+
+    PrepareSoundCollision(&player, 0);
+    player.x = 0xFFFC;
+    g_Cars[0].x = 4;
+    if (CollidePlayerWithCars(&player) <= 0) {
+        puts("FAIL nearby cars did not collide across world-coordinate wrap");
+        return 1;
+    }
+    return 0;
+}
+
 int main(void) {
     static const s32 progressDeltas[] = {-201, -1, 0, 100, 199, 200, 900};
     static const s32 lateralDeltas[] = {-100, -49, 0, 49, 100};
@@ -85,6 +171,10 @@ int main(void) {
     s32 calls = 0;
     size_t gp, active, vertical, progress, lateral, height;
     size_t playerYaw, opponentYaw, nudge, speed, backwards;
+
+    if (CheckCollisionSoundGates() != 0 ||
+        CheckWrappedWorldCoordinates() != 0)
+        return 1;
 
     g_TrackLength = 0x8000;
     for (gp = 0; gp < 2; gp++)
