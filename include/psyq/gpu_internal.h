@@ -52,7 +52,6 @@ extern u_char g_GpuGp1Mirror[];
 extern volatile GpuLastCallback g_GpuLastCb;
 extern long g_GpuLastCbArg;
 extern long g_GpuLastCbData;
-extern volatile QEntry g_GpuQueue[];
 extern volatile long g_GpuQueueReadIdx;
 extern volatile long g_GpuQueueWriteIdx;
 extern long g_GpuResetIntrMask;

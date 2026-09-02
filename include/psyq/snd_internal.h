@@ -15,7 +15,6 @@ extern VabHdr *g_SndVabHeader[];
 extern ProgAtr *g_SndVabProgTable[];
 extern VagAtr *g_SndVabToneTable[];
 extern long g_SndTickResolution;
-extern long g_SndUpdateLock;
 extern long g_SndVabBodySize[];
 extern short g_SndDamper;
 extern short g_SndMonoMode;
@@ -48,7 +47,6 @@ extern u_short g_SndReverbOnLow;
 extern u_short g_SndVabOpenCount;
 extern short g_SndVabProgMax;
 
-extern volatile u_short D_801E4B5C;
 extern char g_MsgSeqNotSeqData[];
 extern char g_MsgSeqOldFormat[];
 extern char g_MsgSeqTableFull[];
