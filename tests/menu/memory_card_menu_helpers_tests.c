@@ -24,7 +24,7 @@ u16 g_PadPressedRepeat;
 char g_FmtSaveRow[] = "%d/";
 char g_FmtSaveRowEmpty[] = "%d/EMPTY";
 char g_FmtSaveRowTail[] = "/";
-u8 g_SaveNameCharset[44];
+u8 g_SaveNameCharset[SAVE_NAME_CHARSET_SIZE];
 char g_McSlotLabelError[] = "ERROR";
 char g_McSlotLabelNoFile[] = "NO FILE";
 char g_McSlotLabels[] = "NEW FILE";
@@ -113,7 +113,7 @@ static void Reset(void) {
     s32 i;
 
     memset(s_draws, 0, sizeof(s_draws));
-    for (i = 0; i < 44; i++) {
+    for (i = 0; i < SAVE_NAME_CHARSET_SIZE; i++) {
         g_SaveNameCharset[i] = (u8)('A' + i % 26);
     }
     s_drawCount = 0;
@@ -162,6 +162,13 @@ static void TestSaveRows(void) {
     DrawMemoryCardSaveRows(0, rows);
     CHECK(s_drawCount == 6);
     CHECK(strcmp(s_draws[1].text, "NO FILE") == 0);
+
+    Reset();
+    memset(rows, 0, sizeof(rows));
+    rows[0].fields.nameLength = 1;
+    rows[0].fields.name[0] = 0xFF;
+    DrawMemoryCardSaveRows(1, rows);
+    CHECK(strcmp(s_draws[1].text, "?     /") == 0);
 }
 
 static void TestMenuControls(void) {

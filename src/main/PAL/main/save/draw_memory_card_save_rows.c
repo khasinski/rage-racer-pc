@@ -6,6 +6,11 @@ enum {
     SAVE_ROW_VISIBLE_NAME_LENGTH = 6,
 };
 
+static char DecodeSaveNameCharacter(u8 characterIndex) {
+    if (characterIndex >= SAVE_NAME_CHARSET_SIZE) return '?';
+    return (char)g_SaveNameCharset[characterIndex];
+}
+
 static void DrawSaveRowSlotNumber(char *text, const char *format,
                                   s32 slotNumber, s32 y) {
     sprintf(text, format, slotNumber);
@@ -19,7 +24,7 @@ static void DrawUsedSaveRow(char *text, s32 slotNumber, s32 y,
     DrawSaveRowSlotNumber(text, g_FmtSaveRow, slotNumber, y);
     for (i = 0; i < SAVE_ROW_VISIBLE_NAME_LENGTH; i++) {
         text[i] = i < row->fields.nameLength
-                      ? g_SaveNameCharset[row->fields.name[i]]
+                      ? DecodeSaveNameCharacter(row->fields.name[i])
                       : ' ';
     }
     snprintf(text + SAVE_ROW_VISIBLE_NAME_LENGTH,

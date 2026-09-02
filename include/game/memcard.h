@@ -191,7 +191,8 @@ extern s32 g_McSwEventTimeout;
 extern char g_MsgSaveChecksumOk[];
 extern s32 g_SaveElapsedTicks;
 extern char g_SaveFilePath[];
-extern u8 g_SaveNameCharset[];
+enum { SAVE_NAME_CHARSET_SIZE = 44 };
+extern u8 g_SaveNameCharset[SAVE_NAME_CHARSET_SIZE];
 extern char g_SaveTitleSjis[];
 
 void BiosBuInit(void);
