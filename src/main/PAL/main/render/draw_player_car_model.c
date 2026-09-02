@@ -26,6 +26,13 @@ static s32 FindRenderedCarSlot(const GameRenderObject *object) {
     return -2;
 }
 
+static void SubmitCarPart(LVec *position, Matrix *transform, s32 materialMode,
+                          s32 modelBank) {
+    SetGteObjectMatrix(&g_ObjectMatrixWork, position, transform);
+    g_RenderState.envMode4 = materialMode;
+    SubmitModel(&g_RenderState, modelBank);
+}
+
 /*
  * GameRenderObject -> GPU-primitive submitter. Applies the model asset's
  * horizon offset, builds a stack of rotation matrices from the
@@ -44,10 +51,11 @@ void DrawPlayerCarModel(GameRenderObject *object) {
     Matrix wheelMatrices[2];
     Matrix axleMatrix;
     s16 wheelOffset[4];
-    s32 wheelPosition[8];
+    s32 wheelPosition[4];
     LVec modelPosition;
     s32 clipHandle = 0;
     s32 modelBankBase;
+    s32 passIndex;
     s32 sideIndex;
 
     GameRenderWorldSubmitPlayerCar(object, g_RenderState.orderingFlag != 0);
@@ -82,21 +90,15 @@ void DrawPlayerCarModel(GameRenderObject *object) {
     modelPosition.x = object->x;
     modelPosition.z = object->z;
     modelPosition.y = object->modelY;
-    SetGteObjectMatrix(&g_ObjectMatrixWork, &modelPosition, &scratchMatrix);
-    g_RenderState.envMode4 = 0;
-    SubmitModel(&g_RenderState, 1);
-
-    SetGteObjectMatrix(&g_ObjectMatrixWork, &modelPosition, &scratchMatrix);
-    g_RenderState.envMode4 = 0;
-    SubmitModel(&g_RenderState, 1);
+    /* The recovered retail path submits this shell twice with the same bank. */
+    for (passIndex = 0; passIndex < 2; passIndex++) {
+        SubmitCarPart(&modelPosition, &scratchMatrix, 0, 1);
+    }
 
     BuildRotMatrixZ(&partMatrix, object->bodyRoll);
     MulMatrix2(&bodyViewMatrix, &partMatrix);
-    SetGteObjectMatrix(&g_ObjectMatrixWork, AsPositionWords(&object->x),
-                       &partMatrix);
-    g_RenderState.envMode4 = 0;
-    SubmitModel(&g_RenderState,
-                ResolveCarModelBank(0, 0, g_ModelBankCount));
+    SubmitCarPart(AsPositionWords(&object->x), &partMatrix, 0,
+                  ResolveCarModelBank(0, 0, g_ModelBankCount));
 
     modelBankBase = object->renderDepth * 2;
     if (object->wheelRotation & 0x1000) {
@@ -114,11 +116,8 @@ void DrawPlayerCarModel(GameRenderObject *object) {
     MulMatrix2(&bodyViewMatrix, &wheelMatrices[0]);
 
     FlipMatrixXZColumns(&wheelMatrices[1], &wheelMatrices[0]);
-    SetGteObjectMatrix(&g_ObjectMatrixWork, AsPositionWords(&object->x),
-                       &axleMatrix);
-    g_RenderState.envMode4 = 0;
-    SubmitModel(&g_RenderState,
-                ResolveCarModelBank(modelBankBase, 3, g_ModelBankCount));
+    SubmitCarPart(AsPositionWords(&object->x), &axleMatrix, 0,
+                  ResolveCarModelBank(modelBankBase, 3, g_ModelBankCount));
 
     for (sideIndex = 0; sideIndex < 2; sideIndex++) {
         s32 lateralOffset = modelAsset->modelOffsetX;
@@ -132,13 +131,10 @@ void DrawPlayerCarModel(GameRenderObject *object) {
         wheelPosition[0] += object->x;
         wheelPosition[1] += object->y;
         wheelPosition[2] += object->z;
-        SetGteObjectMatrix(&g_ObjectMatrixWork,
-                           AsPositionWords(wheelPosition),
-                           &wheelMatrices[sideIndex]);
-        g_RenderState.envMode4 = 0;
-        SubmitModel(&g_RenderState,
-                    ResolveCarModelBank(modelBankBase, 2,
-                                        g_ModelBankCount));
+        SubmitCarPart(AsPositionWords(wheelPosition),
+                      &wheelMatrices[sideIndex], 0,
+                      ResolveCarModelBank(modelBankBase, 2,
+                                          g_ModelBankCount));
         SetLightMatrix(&lightMatrix);
     }
 
@@ -164,6 +160,7 @@ void DrawCar(GameRenderObject *object) {
     s32 viewPosition[4];
     s32 clipHandle = 0;
     s32 renderDistance;
+    s32 passIndex;
     s32 sideIndex;
     s32 model;
     s16 *lod;
@@ -234,25 +231,17 @@ void DrawCar(GameRenderObject *object) {
         modelPosition[0] = object->x;
         modelPosition[2] = object->z;
         modelPosition[1] = object->modelY;
-        SetGteObjectMatrix(&g_ObjectMatrixWork,
-                           AsPositionWords(modelPosition), &scratchMatrix);
-        g_RenderState.envMode4 = 0;
-        SubmitModel(&g_RenderState,
-                    ResolveCarModelBank(lod[0], 1, g_ModelBankCount));
-
-        SetGteObjectMatrix(&g_ObjectMatrixWork,
-                           AsPositionWords(modelPosition), &scratchMatrix);
-        g_RenderState.envMode4 = 0;
-        SubmitModel(&g_RenderState,
-                    ResolveCarModelBank(lod[0], 1, g_ModelBankCount));
+        /* The recovered retail path submits this shell twice with one bank. */
+        for (passIndex = 0; passIndex < 2; passIndex++) {
+            SubmitCarPart(AsPositionWords(modelPosition), &scratchMatrix, 0,
+                          ResolveCarModelBank(lod[0], 1,
+                                              g_ModelBankCount));
+        }
 
         BuildRotMatrixZ(&partMatrix, object->bodyRoll);
         MulMatrix2(&bodyViewMatrix, &partMatrix);
-        SetGteObjectMatrix(&g_ObjectMatrixWork, AsPositionWords(&object->x),
-                           &partMatrix);
-        g_RenderState.envMode4 = lod[1] << 16;
-        SubmitModel(&g_RenderState,
-                    ResolveCarModelBank(lod[0], 0, g_ModelBankCount));
+        SubmitCarPart(AsPositionWords(&object->x), &partMatrix, lod[1] << 16,
+                      ResolveCarModelBank(lod[0], 0, g_ModelBankCount));
 
         BuildRotMatrixZ(&scratchMatrix, object->bodyRoll - object->bodyRollVelocity);
         MulMatrix(&bodyLocalMatrix, &scratchMatrix);
@@ -266,11 +255,8 @@ void DrawCar(GameRenderObject *object) {
         MulMatrix2(&bodyViewMatrix, &wheelMatrices[0]);
 
         FlipMatrixXZColumns(&wheelMatrices[1], &wheelMatrices[0]);
-        SetGteObjectMatrix(&g_ObjectMatrixWork, AsPositionWords(&object->x),
-                           &axleMatrix);
-        g_RenderState.envMode4 = 0;
-        SubmitModel(&g_RenderState,
-                    ResolveCarModelBank(lod[0], 3, g_ModelBankCount));
+        SubmitCarPart(AsPositionWords(&object->x), &axleMatrix, 0,
+                      ResolveCarModelBank(lod[0], 3, g_ModelBankCount));
 
         for (sideIndex = 0; sideIndex < 2; sideIndex++) {
             s32 lateralOffset = g_TrackRenderTable->models[model].axis0;
@@ -284,13 +270,10 @@ void DrawCar(GameRenderObject *object) {
             wheelPosition[0] += object->x;
             wheelPosition[1] += object->y;
             wheelPosition[2] += object->z;
-            SetGteObjectMatrix(&g_ObjectMatrixWork,
-                               AsPositionWords(wheelPosition),
-                               &wheelMatrices[sideIndex]);
-            g_RenderState.envMode4 = 0;
-            SubmitModel(&g_RenderState,
-                        ResolveCarModelBank(lod[0], 2,
-                                           g_ModelBankCount));
+            SubmitCarPart(AsPositionWords(wheelPosition),
+                          &wheelMatrices[sideIndex], 0,
+                          ResolveCarModelBank(lod[0], 2,
+                                              g_ModelBankCount));
             SetLightMatrix(&lightMatrix);
         }
     } else {
@@ -307,11 +290,9 @@ void DrawCar(GameRenderObject *object) {
         BuildRotMatrixZ(&scratchMatrix, object->bodyRoll);
         MulMatrix2(&bodyLocalMatrix, &scratchMatrix);
         MulMatrix2(&g_RenderState.matrix, &scratchMatrix);
-        SetGteObjectMatrix(&g_ObjectMatrixWork,
-                           AsPositionWords(&object->x), &scratchMatrix);
-        g_RenderState.envMode4 = lod[1] << 16;
-        SubmitModel(&g_RenderState,
-                    ResolveCarModelBank(lod[0], 4, g_ModelBankCount));
+        SubmitCarPart(AsPositionWords(&object->x), &scratchMatrix,
+                      lod[1] << 16,
+                      ResolveCarModelBank(lod[0], 4, g_ModelBankCount));
     }
 
     object->y += g_TrackRenderTable->models[model].horizon;
