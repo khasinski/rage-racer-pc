@@ -17,8 +17,12 @@ void LoadOptionScreenAssets(void) {
 
     loadedSize = LoadAsset(ASSET_OPTION_SCREEN, g_AssetBase);
     if (loadedSize == 0) return;
-
     asset = GetOptionScreenAsset(g_AssetBase);
+    if (loadedSize < (s32)sizeof(asset->imageOffset)) {
+        g_AssetLoadState = 0;
+        return;
+    }
+
     if (asset->imageOffset <= (s32)offsetof(OptionScreenAsset, modelBank) ||
         asset->imageOffset > loadedSize ||
         !RegisterModelBank(

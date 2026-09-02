@@ -365,6 +365,16 @@ int main(void) {
     Check(g_AssetLoadState == 0 && s_modelBankRegistrations == 0,
           "invalid OPTION offsets cancel installation");
 
+    ((OptionScreenAsset *)pack.bytes)->imageOffset = 48;
+    g_AssetLoadState = 1;
+    g_ImageBlockBuffer = NULL;
+    s_loadResult = sizeof(s32) - 1;
+    s_modelBankRegistrations = 0;
+    LoadOptionScreenAssets();
+    Check(g_AssetLoadState == 0 && g_ImageBlockBuffer == NULL &&
+              s_modelBankRegistrations == 0,
+          "truncated OPTION header cancels installation");
+
     g_GrandPrixMode = 0;
     g_GrandPrixSeries = 0;
     g_MaxClassReached[0] = 4;

@@ -63,7 +63,8 @@ static void LoadCarSelectSharedAssets(void) {
     if (loadedSize == 0) return;
 
     header = (CarSelectAssetHeader *)g_AssetLoadCursor;
-    if (header->teamLogoSamplesOffset <=
+    if (loadedSize < (s32)offsetof(CarSelectAssetHeader, sceneModelBank) ||
+        header->teamLogoSamplesOffset <=
             (s32)offsetof(CarSelectAssetHeader, sceneModelBank) ||
         header->courseModelsOffset <= header->teamLogoSamplesOffset ||
         header->imageOffset <= header->courseModelsOffset ||

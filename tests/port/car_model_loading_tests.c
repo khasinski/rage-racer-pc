@@ -381,6 +381,15 @@ static void TestCarSelectAssetPhases(void) {
     Check(g_AssetLoadState == 3 && s_loadAssetId == 8,
           "pending shared car assets hold phase");
     s_loadResult = 512;
+    g_AssetLoadState = 3;
+    s_loadResult = 3 * (s32)sizeof(s32) - 1;
+    s_registeredBank = NULL;
+    LoadCarSelectAssets();
+    Check(g_AssetLoadState == 0 && s_registeredBank == NULL,
+          "truncated showroom header cancels installation");
+
+    g_AssetLoadState = 3;
+    s_loadResult = 512;
     pack->offsets[2] = pack->offsets[1];
     s_registeredBank = NULL;
     LoadCarSelectAssets();
