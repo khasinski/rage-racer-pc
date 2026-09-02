@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include "game/asset.h"
+#include "game/asset_internal.h"
 #include "game/car.h"
 #include "game/render.h"
 
