@@ -14,13 +14,11 @@ static void UploadBlockPixels(GameImageBlock *block) {
 }
 
 void UploadImageEntry(GameImageEntryHeader *entry) {
-    GameImageAssetAddress address = {.entry = entry + 1};
-    GameImageBlock *block = address.block;
+    GameImageBlock *block = (GameImageBlock *)(entry + 1);
 
     if ((entry->flags & GAME_IMAGE_ENTRY_HAS_CLUT) != 0) {
         UploadBlockPixels(block);
-        address.bytes += block->size;
-        block = address.block;
+        block = (GameImageBlock *)((u8 *)block + block->size);
     }
 
     if (block->w > 0 && block->h > 0) {

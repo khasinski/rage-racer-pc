@@ -128,73 +128,38 @@ extern s32 g_LoadBuffer[];
 typedef s32 TrackTextureShadowRow[0xE0];
 
 typedef union AssetAddress {
-    s32 offset;
     void *pointer;
-    u8 *bytes;
-    u16 *halfwords;
-    s32 *words;
     struct CarImageData *carImage;
     struct ModelBankHeader *modelBank;
-    struct CourseModelAssetHeader *courseModels;
-    struct SceneryMotionData *sceneryMotion;
-    struct RaceIntroCameraScript *raceIntroCamera;
-    struct PathSceneryPositionData *pathSceneryPosition;
-    struct OptionScreenAsset *optionScreen;
-    struct CarModelAsset *carModel;
-    struct SerializedCarModelAssetHeader *serializedCarModel;
-    struct SVec *shortVector;
-    TrackTextureShadowRow *trackTextureRows;
 } AssetAddress;
 
 static inline s32 *GetAssetWords(void *data) {
-    AssetAddress address;
-
-    address.pointer = data;
-    return address.words;
+    return (s32 *)data;
 }
 
 static inline u8 *GetAssetBytes(void *data) {
-    AssetAddress address;
-
-    address.pointer = data;
-    return address.bytes;
+    return (u8 *)data;
 }
 
 static inline TrackTextureShadowRow *GetTrackTextureShadowRows(void *data) {
-    AssetAddress address;
-
-    address.pointer = data;
-    return address.trackTextureRows;
+    return (TrackTextureShadowRow *)data;
 }
 
 static inline u16 *GetAssetHalfwords(void *data) {
-    AssetAddress address;
-
-    address.pointer = data;
-    return address.halfwords;
+    return (u16 *)data;
 }
 
 static inline struct CourseModelAssetHeader *GetCourseModelAssetHeader(
     void *data) {
-    AssetAddress address;
-
-    address.pointer = data;
-    return address.courseModels;
+    return (struct CourseModelAssetHeader *)data;
 }
 
 static inline struct ModelBankHeader *GetModelBankHeader(void *data) {
-    AssetAddress address;
-
-    address.pointer = data;
-    return address.modelBank;
+    return (struct ModelBankHeader *)data;
 }
 
 static inline void *ResolveAssetAddress(void *base, s32 offset) {
-    AssetAddress address;
-
-    address.pointer = base;
-    address.bytes += offset;
-    return address.pointer;
+    return (u8 *)base + offset;
 }
 
 typedef struct CarModelAsset {
@@ -236,17 +201,11 @@ _Static_assert(sizeof(SerializedCarModelAssetHeader) ==
 
 static inline SerializedCarModelAssetHeader *GetSerializedCarModelAssetHeader(
     void *data) {
-    AssetAddress address;
-
-    address.pointer = data;
-    return address.serializedCarModel;
+    return (SerializedCarModelAssetHeader *)data;
 }
 
 static inline CarModelAsset *GetCarModelAsset(void *data) {
-    AssetAddress address;
-
-    address.pointer = data;
-    return address.carModel;
+    return (CarModelAsset *)data;
 }
 
 extern CarModelAsset *g_CarModelAsset;
@@ -276,34 +235,13 @@ enum {
     GAME_IMAGE_ENTRY_HAS_CLUT = 1 << 3
 };
 
-typedef union GameImageAssetAddress {
-    void *pointer;
-    u8 *bytes;
-    GameImageAssetHeaderWord *words;
-    GameImageEntryHeader *entry;
-    GameImageBlock *block;
-} GameImageAssetAddress;
-
 static inline GameImageAssetHeaderWord *GetImageAssetHeaderWords(
     void *data) {
-    GameImageAssetAddress address;
-
-    address.pointer = data;
-    return address.words;
+    return (GameImageAssetHeaderWord *)data;
 }
 
 static inline GameImageEntryHeader *GetImageEntryHeader(void *data) {
-    GameImageAssetAddress address;
-
-    address.pointer = data;
-    return address.entry;
-}
-
-static inline GameImageBlock *GetImageBlock(void *data) {
-    GameImageAssetAddress address;
-
-    address.pointer = data;
-    return address.block;
+    return (GameImageEntryHeader *)data;
 }
 
 /* The offset table every asset pack starts with; sub-blocks live at
@@ -318,34 +256,16 @@ typedef struct VoiceBankAssetHeader {
     s32 audioBodyOffset;
 } VoiceBankAssetHeader;
 
-typedef union GameSceneAssetAddress {
-    s32 value;
-    u8 *bytes;
-    void *pointer;
-    GameSceneAssetHeader *header;
-    VoiceBankAssetHeader *voiceBankHeader;
-} GameSceneAssetAddress;
-
 static inline GameSceneAssetHeader *GetSceneAssetHeader(void *data) {
-    GameSceneAssetAddress address;
-
-    address.pointer = data;
-    return address.header;
+    return (GameSceneAssetHeader *)data;
 }
 
 static inline VoiceBankAssetHeader *GetVoiceBankAssetHeader(void *data) {
-    GameSceneAssetAddress address;
-
-    address.pointer = data;
-    return address.voiceBankHeader;
+    return (VoiceBankAssetHeader *)data;
 }
 
 static inline void *GetSceneAssetAddress(GameSceneAssetHeader *header, s32 offset) {
-    GameSceneAssetAddress address;
-
-    address.header = header;
-    address.bytes += offset;
-    return address.pointer;
+    return (u8 *)header + offset;
 }
 
 /*
@@ -479,10 +399,7 @@ typedef struct OptionScreenAsset {
 } OptionScreenAsset;
 
 static inline OptionScreenAsset *GetOptionScreenAsset(void *data) {
-    AssetAddress address;
-
-    address.pointer = data;
-    return address.optionScreen;
+    return (OptionScreenAsset *)data;
 }
 
 typedef struct TerrainCellAssetHeader {
@@ -499,15 +416,6 @@ typedef struct TerrainCellAsset {
     CellVisibilityRow visibility[32];
     TerrainCellAssetHeader header;
 } TerrainCellAsset;
-
-typedef union TerrainCellAssetAddress {
-    void *data;
-    u8 *bytes;
-    u16 *grid;
-    CellVisibilityRow *visibilityRows;
-    TerrainCellAsset *asset;
-    TerrainCellAssetHeader *header;
-} TerrainCellAssetAddress;
 
 typedef struct CourseModelAssetEntry {
     s32 geometryOffset;

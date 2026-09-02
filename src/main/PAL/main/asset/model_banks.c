@@ -86,23 +86,23 @@ void RegisterCourseModels(CourseModelAssetHeader *base) {
 }
 
 void InstallTerrainCellData(void *data) {
-    TerrainCellAssetAddress address;
+    u8 *cursor;
     TerrainCellAssetHeader *header;
     s32 count;
     s32 i;
 
-    address.data = data;
-    g_TerrainCellGrid = address.grid;
-    address.bytes += TERRAIN_CELL_GRID_SIZE;
-    g_CellVisibilityTable = address.visibilityRows;
-    address.bytes += CELL_VISIBILITY_TABLE_SIZE;
-    header = address.header;
+    cursor = data;
+    g_TerrainCellGrid = (u16 *)cursor;
+    cursor += TERRAIN_CELL_GRID_SIZE;
+    g_CellVisibilityTable = (CellVisibilityRow *)cursor;
+    cursor += CELL_VISIBILITY_TABLE_SIZE;
+    header = (TerrainCellAssetHeader *)cursor;
     count = ClampAssetCount(header->cellCount, GAME_TERRAIN_CELL_LIMIT);
     g_RenderState.cellTable = g_NativeTerrainCells;
     g_TerrainCellCount = count;
-    g_RenderState.cellFaces = address.bytes + header->facesOffset;
+    g_RenderState.cellFaces = cursor + header->facesOffset;
     for (i = 0; i < count; i++) {
-        g_NativeTerrainCells[i] = address.bytes + header->cellOffsets[i];
+        g_NativeTerrainCells[i] = cursor + header->cellOffsets[i];
     }
 }
 
