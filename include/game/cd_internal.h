@@ -59,5 +59,6 @@ extern u32 g_CdMixFullRL;
 
 /* Native CD backend notification used to advance to the next audio track. */
 s32 HostCdAudioEnded(void);
+void QueueCdTrackRestart(s32 track);
 
 #endif

@@ -87,7 +87,8 @@ set_tests_properties(cd_track_requests PROPERTIES LABELS unit)
 
 add_executable(cd_audio_runtime_tests
     cd_audio_runtime_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/cd/cd_audio.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/cd/cd_audio.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/cd/cd_audio_control.c)
 target_include_directories(cd_audio_runtime_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

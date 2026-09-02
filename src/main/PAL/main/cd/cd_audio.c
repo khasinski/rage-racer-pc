@@ -12,13 +12,6 @@ enum {
     BGM_SELECT_SCENE = 0x1C,
 };
 
-static void ScheduleCurrentTrackRestart(void) {
-    g_CdTrackStep = CD_TRACK_RESTART_WAIT_FOR_DRIVE;
-    g_CdCommandPending = CD_COMMAND_PLAY;
-    g_CdCommandStep = CD_PLAY_WAIT_FOR_DRIVE;
-    g_CdTrackPending = g_CdCurrentTrack;
-}
-
 void InitCdAudio(void) {
     SsSetSpuInputAttr(0, 0, 1);
     SsSetSerialVol(0, 0x7FFF, 0x7FFF);
@@ -73,7 +66,7 @@ void TickCdAudio(void) {
                 CdPosToInt_Local(&g_CdTrackLoopPoint[0]);
 
             if (CdTrackHasLoopPoint(firstLoopPoint, loopPoint)) {
-                ScheduleCurrentTrackRestart();
+                QueueCdTrackRestart(g_CdCurrentTrack);
             }
         }
     }
