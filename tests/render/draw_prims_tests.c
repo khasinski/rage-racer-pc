@@ -203,6 +203,23 @@ static void CheckClipRect(void) {
     SetDrawClipRect(&s_ot, 10, 480, 20, 1);
     CHECK_EQ(g_RenderState.packetCursor == s_packets.bytes, 1,
              "clip rejects bottom rectangle");
+
+    SetDrawClipRect(&s_ot, 10, 10, 0, 20);
+    SetDrawClipRect(&s_ot, 10, 10, -1, 20);
+    SetDrawClipRect(&s_ot, 10, 10, 20, 0);
+    SetDrawClipRect(&s_ot, 10, 10, 20, -1);
+    CHECK_EQ(g_RenderState.packetCursor == s_packets.bytes, 1,
+             "clip rejects non-positive dimensions");
+
+    SetDrawClipRect(&s_ot, INT32_MAX, 10, 20, 20);
+    SetDrawClipRect(&s_ot, 10, INT32_MAX, 20, 20);
+    CHECK_EQ(g_RenderState.packetCursor == s_packets.bytes, 1,
+             "clip rejects overflowing off-screen coordinates");
+
+    SetDrawClipRect(&s_ot, INT32_MIN, 10, INT32_MAX, 20);
+    SetDrawClipRect(&s_ot, 10, INT32_MIN, 20, INT32_MAX);
+    CHECK_EQ(g_RenderState.packetCursor == s_packets.bytes, 1,
+             "clip rejects extreme rectangles before the screen");
 }
 
 int main(void) {

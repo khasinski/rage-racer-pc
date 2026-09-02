@@ -3,37 +3,35 @@
 #include "game/render_state.h"
 #include "game/render.h"
 
+#include <stdint.h>
+
 static u16 LinearClutToVram(u16 index) {
     u16 row = index / 20;
     return ((row + 0x1E0) << 6) + index % 20;
 }
 
 void SetDrawClipRect(GameOrderingTableEntry *ot, s32 x, s32 y, s32 w, s32 h) {
-    s16 left = x;
-    s16 top = y;
-    s16 width = w;
-    s16 height = h;
+    int64_t right = (int64_t)x + w;
+    int64_t bottom = (int64_t)y + h;
+    s32 left;
+    s32 top;
     DrawPacket *packet;
     Rect rect;
 
-    if ((s16)x + (s16)w <= 0 || left >= 320) return;
-    if (left < 0) {
-        width = w + x;
-        left = 0;
+    if (w <= 0 || h <= 0 || right <= 0 || bottom <= 0 ||
+        x >= SCREEN_WIDTH || y >= 480) {
+        return;
     }
-    if (left + width >= 320) width = 320 - left;
 
-    if ((s16)y + (s16)h <= 0 || top >= 480) return;
-    if (top < 0) {
-        height = h + y;
-        top = 0;
-    }
-    if (top + height >= 480) height = 480 - top;
+    left = x < 0 ? 0 : x;
+    top = y < 0 ? 0 : y;
+    if (right > SCREEN_WIDTH) right = SCREEN_WIDTH;
+    if (bottom > 480) bottom = 480;
 
     rect.x = left;
     rect.y = top;
-    rect.w = width;
-    rect.h = height;
+    rect.w = right - left;
+    rect.h = bottom - top;
     packet = RENDER_PRIM_CURSOR_AS(DrawPacket);
     SetDrawArea(packet, &rect);
     AddPrim(ot, packet);
