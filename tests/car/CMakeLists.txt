@@ -441,7 +441,7 @@ set_tests_properties(paint_color PROPERTIES LABELS unit)
 
 add_executable(car_spatial_queries_tests
     car_spatial_queries_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_spatial_queries.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_facing_direction.c
     $<TARGET_OBJECTS:rage-host-state>)
 target_include_directories(car_spatial_queries_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
@@ -946,7 +946,7 @@ add_executable(player_car_collision_tests
     player_car_collision_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/player_car_collision.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/collision_quads.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_spatial_queries.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_facing_direction.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c
     $<TARGET_OBJECTS:rage-host-state>)
