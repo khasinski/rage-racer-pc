@@ -32,6 +32,7 @@ static void TraceTrackLimit(const Matrix *toTrack, const SVec *corner,
 void MeasurePlayerTrackLimits(const Matrix *toTrack,
                               CarTrackLimits *limits) {
     int traceLimits = ShouldTraceTrackLimits();
+    Matrix transform = *toTrack;
     SVec corner;
     Vec4 reach;
     s32 index;
@@ -44,7 +45,7 @@ void MeasurePlayerTrackLimits(const Matrix *toTrack,
         corner.vx = g_CarCornerOffsets[index].x * 4;
         corner.vy = 0;
         corner.vz = g_CarCornerOffsets[index].z * 4;
-        ApplyMatrix((Matrix *)toTrack, &corner, &reach);
+        ApplyMatrix(&transform, &corner, &reach);
         if (traceLimits) {
             TraceTrackLimit(toTrack, &corner, &reach);
         }
