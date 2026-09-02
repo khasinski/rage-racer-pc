@@ -97,6 +97,25 @@ endif()
 add_test(NAME commit_class_progress COMMAND commit_class_progress_tests)
 set_tests_properties(commit_class_progress PROPERTIES LABELS unit)
 
+add_executable(update_race_position_tests
+    update_race_position_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/update_race_position.c)
+target_include_directories(update_race_position_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(update_race_position_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(update_race_position_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(update_race_position_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME update_race_position COMMAND update_race_position_tests)
+set_tests_properties(update_race_position PROPERTIES LABELS unit)
+
 add_executable(race_time_text_tests
     race_time_text_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/race_time_text.c)
