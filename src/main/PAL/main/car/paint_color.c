@@ -123,8 +123,8 @@ void ApplyBodyColor1(u32 colour, CarImageData *imageData) {
     ApplyBodyColours(colour, imageData, 0);
 }
 
-void SetBodyColor1(u32 colour) {
-    ApplyBodyColor1(colour, g_CarModelAsset->imageData.carImage);
+void SetBodyColor1(s32 colour) {
+    ApplyBodyColor1((u32)colour, g_CarModelAsset->imageData.carImage);
     UploadCarImage(g_CarModelSlot);
 }
 
@@ -132,7 +132,7 @@ void ApplyBodyColor2(u32 colour, CarImageData *imageData) {
     ApplyBodyColours(colour, imageData, 1);
 }
 
-void SetBodyColor2(u32 colour) {
-    ApplyBodyColor2(colour, g_CarModelAsset->imageData.carImage);
+void SetBodyColor2(s32 colour) {
+    ApplyBodyColor2((u32)colour, g_CarModelAsset->imageData.carImage);
     UploadCarImage(g_CarModelSlot);
 }

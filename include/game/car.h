@@ -230,7 +230,9 @@ typedef struct CarHullPoint {
 } CarHullPoint;
 
 typedef union CarPaintPalette {
-    u16 entries[0x2CB];
+    /* The uploaded car image is a 64x256 halfword rectangle (0x8000 bytes),
+     * and this palette begins at byte 0x7060. */
+    u16 entries[(0x8000 - 0x7060) / sizeof(u16)];
     struct {
         u16 reserved[0x81];
         u16 bodyColor1;
@@ -246,6 +248,9 @@ typedef struct CarImageData {
     u8 reserved[0x7060];
     CarPaintPalette paintPalette;
 } CarImageData;
+
+_Static_assert(sizeof(CarImageData) == 0x8000,
+               "car image must match its 64x256 upload rectangle");
 
 /*
  * The player's car and a rival's share their first 0xBC bytes field for field,
@@ -777,6 +782,8 @@ struct CarModelAsset *GetSerializedCarModelAsset(struct CarModelAsset *nativeAss
 /* Repaint the loaded car's texture block in the two body colours. */
 void ApplyBodyColor1(u32 colour, CarImageData *imageData);
 void ApplyBodyColor2(u32 colour, CarImageData *imageData);
+void SetBodyColor1(s32 colour);
+void SetBodyColor2(s32 colour);
 s32 SmoothTrackAngle(s32 pointIndex, s32 weight);
 void UpdateRivalRubberBand(void);
 
