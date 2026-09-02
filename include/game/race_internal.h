@@ -40,6 +40,14 @@ s32 ShouldReturnFromAttractDemo(s32 timer);
 void UpdateAndDrawAttractWorld(void);
 void UpdateBgmSelectScene(void);
 void UpdateBgmSelectBar(void);
+void DrawBgmSelectBar(void);
+void AdvanceBgmShuffleBag(u32 track);
+void UpdateBgmSelectPlayback(void);
+void UpdateBgmSelectInput(void);
+void UpdateBgmSelectLoad(void);
+void UpdateBgmSelectFadeIn(void);
+void UpdateBgmSelect(void);
+void ExitBgmSelect(void);
 
 typedef union SectorReferenceTimes {
     s32 values[3];

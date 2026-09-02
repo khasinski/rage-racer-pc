@@ -1,6 +1,7 @@
 #include "common.h"
 #include "game/menu.h"
 #include "game/race.h"
+#include "game/race_internal.h"
 
 #include <stdio.h>
 

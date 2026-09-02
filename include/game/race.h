@@ -393,7 +393,6 @@ void EnterPrizeScreen(void);
 s32 CycleAttractCameraCar(u32 mask, s32 current);
 s32 CycleBgmSelectCameraCar(s32 mask, s32 current);
 void DrawAttractTitle(void);
-void DrawBgmSelectBar(void);
 void DrawLapNumber(void);
 void DrawLapTimes(void);
 void DrawPrologueText(void);
@@ -429,18 +428,11 @@ void ExitRaceScene(s32 sceneId);
 void EnterAttractScene(void);
 s32 GetTrackZoneBlend(s32 position);
 void PlayCountdownCues(s32 timer);
-void AdvanceBgmShuffleBag(u32 track);
-void UpdateBgmSelectPlayback(void);
-void UpdateBgmSelectInput(void);
 void ApplyReplayFrame(s32 subframe, struct GameCarRuntime *player,
                       struct GameCarRuntime *rival);
 void ApplyReplayFrameAndTilt(s32 subframe, struct GameCarRuntime *player,
                              struct GameCarRuntime *rival);
-void UpdateBgmSelectLoad(void);
-void UpdateBgmSelectFadeIn(void);
 void EnterBgmSelectScreen(void);
-void UpdateBgmSelect(void);
-void ExitBgmSelect(void);
 
 /* Declared identically by 5 translation units before this
  * header carried them. */
