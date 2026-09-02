@@ -8,7 +8,6 @@
 #include "rage/hud_config.h"
 
 enum {
-    HUD_LAP_TIME_DESC_COUNT = 6,
     TIME_ATTACK_STATIC_LABEL_COUNT = 3,
     GRAND_PRIX_STATIC_LABEL_COUNT = 6,
     GRAND_PRIX_LAP_TIMES_LABEL = 1,
@@ -41,7 +40,7 @@ void DrawRaceHudLabels(s32 grandPrixMode) {
     for (label = 0; label < labelCount; label++) {
         SPRT *sprite = &frame->layout.raceHud.labels[label];
 
-        sprite->x0 = HudAnchorX(descs[label + HUD_LAP_TIME_DESC_COUNT].x);
+        sprite->x0 = HudAnchorX(descs[label + COURSE_LONG_LAPS].x);
         if (RaceHudLabelVisible(grandPrixMode, label)) {
             AddPrim(ot, sprite);
         }
@@ -56,6 +55,7 @@ void DrawRaceHudLabels(s32 grandPrixMode) {
  * y stepping 0xA, the current lap highlighted and unset laps drawn as -1. */
 void DrawLapTimes(void) {
     s32 visibleCount = g_PlayerCar.lap;
+    s32 lapCount = g_LapCount;
     s32 activeLap = g_PlayerCar.drive.hudLapHighlightRow;
     GameFrameContext *frame = g_DrawBuffer;
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
@@ -68,11 +68,17 @@ void DrawLapTimes(void) {
         return;
     }
 
-    if (visibleCount > g_LapCount) {
-        visibleCount = g_LapCount;
+    if (lapCount > COURSE_LONG_LAPS) {
+        lapCount = COURSE_LONG_LAPS;
+    }
+    if (lapCount < 0) {
+        lapCount = 0;
+    }
+    if (visibleCount > lapCount) {
+        visibleCount = lapCount;
     }
 
-    for (lap = 0; lap < g_LapCount; lap++) {
+    for (lap = 0; lap < lapCount; lap++) {
         s32 lapTime = g_PlayerCar.lapTimes.table.milliseconds[lap];
         s32 color = lap == activeLap ? 0x780F
                     : lapTime >= RACE_TIME_MAX_MS ? 0x7890

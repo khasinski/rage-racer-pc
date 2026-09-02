@@ -6,7 +6,6 @@
 
 enum {
     HUD_FRAME_BUFFER_COUNT = 2,
-    HUD_LAP_TIME_SPRITE_COUNT = 6,
     TIME_ATTACK_HUD_SPRITE_COUNT = 11,
     GRAND_PRIX_HUD_SPRITE_COUNT = 12,
     GRAND_PRIX_FINAL_BADGE_ROW = 11,
@@ -36,10 +35,10 @@ void BuildRaceHudPrims(s32 grandPrixMode) {
 
     for (row = 0; row < rowCount; row++) {
         for (col = 0; col < HUD_FRAME_BUFFER_COUNT; col++) {
-            SPRT *sprite = row < HUD_LAP_TIME_SPRITE_COUNT
+            SPRT *sprite = row < COURSE_LONG_LAPS
                 ? &g_FrameContexts[col].layout.raceHud.lapTimes[row]
                 : &g_FrameContexts[col].layout.raceHud.labels[
-                      row - HUD_LAP_TIME_SPRITE_COUNT];
+                      row - COURSE_LONG_LAPS];
             BuildSpriteFromDesc(sprite, &descs[row]);
             /* Anchor every one of them to the edge the widescreen layout
              * pushes it to. DrawRaceHud recomputes this each frame for the

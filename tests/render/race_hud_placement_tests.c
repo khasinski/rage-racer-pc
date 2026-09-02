@@ -198,6 +198,27 @@ static void CheckStaticLabelOwnership(void) {
     }
 }
 
+static void CheckLapColumnCapacity(void) {
+    ResetHud();
+    BuildRaceHudPrims(0);
+    g_GrandPrixMode = 0;
+    g_LapCount = COURSE_LONG_LAPS + 2;
+    g_PlayerCar.lap = COURSE_LONG_LAPS + 2;
+
+    DrawLapTimes();
+
+    if (s_placementCount != COURSE_LONG_LAPS + 1) {
+        printf("FAIL lap column drew %d time values, expected %d\n",
+               s_placementCount, COURSE_LONG_LAPS + 1);
+        s_failures++;
+    }
+    if (CountPrimaryOtPrims() != COURSE_LONG_LAPS) {
+        printf("FAIL lap column queued more than %d row sprites\n",
+               COURSE_LONG_LAPS);
+        s_failures++;
+    }
+}
+
 /* One full HUD, every pass a race runs, at values that put something in each
  * of them. */
 static void DrawWholeHud(s32 mode) {
@@ -413,6 +434,7 @@ static void CheckSplitDeltaSprites(void) {
 
 int main(void) {
     CheckStaticLabelOwnership();
+    CheckLapColumnCapacity();
     CheckMode(0);
     CheckMode(1);
     CheckSplitDeltaIsAMagnitude();
