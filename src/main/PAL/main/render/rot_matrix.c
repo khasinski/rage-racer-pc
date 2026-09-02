@@ -1,6 +1,7 @@
 #include "game/render_internal.h"
 #include "rage/render_world_game.h"
 
+#include <stdint.h>
 
 void BuildRotMatrixZ(Matrix *mtx, s32 angle) {
     s32 s;
@@ -74,7 +75,22 @@ void SetCameraRotMatrix(void) {
 }
 
 
+static s32 FirstQuadrantAngle(uint64_t x, uint64_t y) {
+    uint64_t tableIndex;
+
+    if (x < y) {
+        tableIndex = (x << 10) / y;
+        return 0x400 - g_AtanTable[tableIndex];
+    }
+    tableIndex = (y << 10) / x;
+    return g_AtanTable[tableIndex];
+}
+
 s32 Atan2(s32 x, s32 y) {
+    uint64_t magnitudeX;
+    uint64_t magnitudeY;
+    s32 angle;
+
     if (x == 0) {
         if (y == 0) {
             return 0;
@@ -85,34 +101,12 @@ s32 Atan2(s32 x, s32 y) {
         return -0x400;
     }
 
-    if (x > 0) {
-        if (y >= 0) {
-            if (x < y) {
-                return 0x400 - g_AtanTable[(x << 10) / y];
-            }
-            return g_AtanTable[(y << 10) / x];
-        }
+    magnitudeX = x < 0 ? (uint64_t)-(int64_t)x : (uint64_t)x;
+    magnitudeY = y < 0 ? (uint64_t)-(int64_t)y : (uint64_t)y;
+    angle = FirstQuadrantAngle(magnitudeX, magnitudeY);
 
-        y = -y;
-        if (x < y) {
-            return g_AtanTable[(x << 10) / y] - 0x400;
-        }
-        return -g_AtanTable[(y << 10) / x];
-    }
-
-    x = -x;
-    if (y >= 0) {
-        if (x < y) {
-            return g_AtanTable[(x << 10) / y] + 0x400;
-        }
-        return 0x800 - g_AtanTable[(y << 10) / x];
-    }
-
-    y = -y;
-    if (x < y) {
-        return 0xC00 - g_AtanTable[(x << 10) / y];
-    }
-    return g_AtanTable[(y << 10) / x] + 0x800;
+    if (x > 0) return y >= 0 ? angle : -angle;
+    return y >= 0 ? 0x800 - angle : 0x800 + angle;
 }
 
 /*

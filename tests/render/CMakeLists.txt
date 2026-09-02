@@ -901,6 +901,26 @@ endif()
 add_test(NAME car_render_rules COMMAND car_render_rules_tests)
 set_tests_properties(car_render_rules PROPERTIES LABELS unit)
 
+add_executable(atan2_tests
+    atan2_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c)
+target_include_directories(atan2_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(atan2_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(atan2_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(atan2_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(atan2_tests PRIVATE psyz)
+add_test(NAME table_atan2 COMMAND atan2_tests)
+set_tests_properties(table_atan2 PROPERTIES LABELS unit)
+
 add_executable(car_model_matrix_tests
     car_model_matrix_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/car_model_matrix.c)
