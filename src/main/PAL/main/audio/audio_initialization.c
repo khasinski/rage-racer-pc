@@ -4,20 +4,28 @@
 #include "psyq/snd.h"
 #include "game/car.h"
 
+enum {
+    LIBSND_RESET = 0,
+    SEQUENCE_VOICE_COUNT = 18,
+    EFFECT_VOICE_RUNTIME_COUNT = 8,
+    EFFECT_REVERB_PRESET = 2,
+};
+
 void InitSequenceAudio(void) {
-    _SsVmInit(0);
-    SsSetVoiceCount(0x12);
-    SetReverbDepth(0x28, 0x28);
+    _SsVmInit(LIBSND_RESET);
+    SsSetVoiceCount(SEQUENCE_VOICE_COUNT);
+    SetDefaultReverbDepth();
     g_ReverbFadeStep = 0;
     RefreshSequenceVolumeScale();
 }
 
 void InitEffectVoiceRuntime(void) {
-    _SsVmInit(0);
-    SsSetVoiceCount(8);
+    _SsVmInit(LIBSND_RESET);
+    SsSetVoiceCount(EFFECT_VOICE_RUNTIME_COUNT);
     ResetAudioVoiceState();
 
     SetSoundSlotVoicesEnabled(1);
-    SetReverbPreset(2, 0, 0);
-    SetLoadedTableVolumeScale(g_CarSoundVolumeScales[GetOwnedCarAssetIndex(g_PlayerCarIndex)]);
+    SetReverbPreset(EFFECT_REVERB_PRESET, 0, 0);
+    SetLoadedTableVolumeScale(
+        g_CarSoundVolumeScales[GetOwnedCarAssetIndex(g_PlayerCarIndex)]);
 }

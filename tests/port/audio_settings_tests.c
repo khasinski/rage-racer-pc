@@ -1,5 +1,6 @@
 #include "common.h"
 #include "game/audio.h"
+#include "game/menu.h"
 #include "game/sound.h"
 
 #include <stdio.h>
@@ -7,6 +8,9 @@
 EngineSoundState g_EngineSoundState;
 SoundScale g_SoundScale;
 s32 g_StereoOutput;
+s32 g_BgmVolumeSetting;
+s32 g_SfxVolumeSetting;
+s32 g_MonoOutput;
 
 static s32 s_cdVolumeSetting;
 static s32 s_sequenceVolumeScale;
@@ -70,10 +74,31 @@ static void TestOutputMode(void) {
           "mono mode updates game, CD, and SPU state");
 }
 
+static void TestApplyingSavedSettings(void) {
+    g_BgmVolumeSetting = 6;
+    g_SfxVolumeSetting = 9;
+    g_MonoOutput = 0;
+    ApplyAudioSettings();
+    Check(s_cdVolumeSetting == 6 && s_sequenceVolumeScale == 6,
+          "saved BGM setting reaches CD and sequence output");
+    Check(g_SoundScale.scale == 76 && g_StereoOutput == 1,
+          "saved SFX and stereo settings reach the runtime");
+
+    g_BgmVolumeSetting = 99;
+    g_SfxVolumeSetting = -1;
+    g_MonoOutput = 1;
+    ApplyAudioSettings();
+    Check(s_cdVolumeSetting == 15 && g_SoundScale.scale == 0,
+          "saved volume settings are clamped while applying");
+    Check(g_StereoOutput == 0,
+          "saved mono setting reaches the runtime");
+}
+
 int main(void) {
     TestAudioSettingClamp();
     TestVolumeSettings();
     TestOutputMode();
+    TestApplyingSavedSettings();
 
     if (s_failures != 0) return 1;
     puts("audio settings clamp and update every output layer");

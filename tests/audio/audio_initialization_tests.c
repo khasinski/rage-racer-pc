@@ -39,9 +39,9 @@ unsigned char SsSetVoiceCount(unsigned char voices) {
     s_voiceCount = voices;
     return voices;
 }
-void SetReverbDepth(s32 left, s32 right) {
-    s_reverbLeft = left;
-    s_reverbRight = right;
+void SetDefaultReverbDepth(void) {
+    s_reverbLeft = 40;
+    s_reverbRight = 40;
 }
 void RefreshSequenceVolumeScale(void) { s_refreshCalls++; }
 void SetSoundSlotVoicesEnabled(s32 enabled) { s_slotEnable = enabled; }
