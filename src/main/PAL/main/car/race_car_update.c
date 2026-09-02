@@ -1,7 +1,6 @@
 #include "game/car.h"
 #include "game/car_internal.h"
 #include "game/race.h"
-#include "game/render.h"
 #include "game/state.h"
 #include "game/track.h"
 #include "rage/trace.h"
@@ -31,16 +30,14 @@ static void StartCarFrames(void) {
  * without anyone noticing at the back of the field.
  */
 static void AvoidTrafficThisFrame(void) {
-    s16 index;
+    s32 index;
 
     for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
-        s32 slot = (s16)index;
-
-        if (slot >= 4 && (index & 1) != (g_AnimTimer & 1)) {
+        if (index >= 4 && (index & 1) != (g_AnimTimer & 1)) {
             continue;
         }
-        if (g_Cars[slot].activeFlag != -1) {
-            UpdateCarTrafficAvoidance(&g_Cars[slot], slot);
+        if (g_Cars[index].activeFlag != -1) {
+            UpdateCarTrafficAvoidance(&g_Cars[index], index);
         }
     }
 }
@@ -113,106 +110,25 @@ static void SteerAllCars(void) {
  */
 static void PlaceAllCarsOnTrack(void) {
     CarTrackLimits limits;
-    s16 index;
+    s32 index;
 
     limits.rightInset = 0x3C;
     limits.leftInset = -0x3C;
     for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
-        GameCarRuntime *car = &g_Cars[(s16)index];
+        GameCarRuntime *car = &g_Cars[index];
 
         if (car->activeFlag != -1) {
             AccumulateLapProgress(car);
         }
     }
     for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
-        GameCarRuntime *car = &g_Cars[(s16)index];
+        GameCarRuntime *car = &g_Cars[index];
 
         if (car->activeFlag != -1) {
             if ((s16)car->motionTimer > 0) {
                 ApplyCarKnockback(car);
             }
             UpdateCarTrackState(car, car->trackPointIndex, &limits);
-        }
-    }
-}
-
-/*
- * Where every car ends up. The heading gives the world velocity, and the four
- * cars nearest the camera also get their body lean worked out properly: the
- * chassis is rotated into place, the lean is taken out along its own axis and
- * put back, so a car leaning into a corner does not slide sideways doing it.
- * The rest of the field skips that, because nobody can see it.
- */
-static void MoveAllCars(void) {
-    Matrix bodyRotation;
-    Matrix work;
-    SVec lean;
-    s32 index;
-
-    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
-        GameCarRuntime *car = &g_Cars[index];
-        GameCarAiBlock *ai = GetCarAiBlock(car);
-
-        if (car->activeFlag != -1) {
-            s32 scaled;
-
-            car->baseBodyYaw = car->bodyYaw;
-            scaled = rsin(car->headingAngle) * car->speed;
-            if (scaled < 0) {
-                scaled += 0xFF;
-            }
-            car->worldVelocityX = scaled >> 8;
-            scaled = rcos(car->headingAngle) * car->speed;
-            if (scaled < 0) {
-                scaled += 0xFF;
-            }
-            car->worldVelocityZ = scaled >> 8;
-            if (index < 4) {
-                s32 yawStep = car->yawRate;
-                s32 sixth = (yawStep < 0) ? -yawStep / 6 : yawStep / 6;
-
-                car->x = car->x - car->motionX;
-                car->z = car->z - car->motionZ;
-                BuildRotMatrixY(&bodyRotation, car->bodyYaw);
-                BuildRotMatrixX(&work, car->bodyPitch);
-                MulMatrix2(&work, &bodyRotation);
-                BuildRotMatrixZ(&work, car->bodyRoll);
-                MulMatrix2(&work, &bodyRotation);
-                lean.vx = 0;
-                lean.vy = 0;
-                lean.vz = -sixth - 0x32;
-                /* The transpose, which turns the rotation back the other way. */
-                work.m[0][0] = bodyRotation.m[0][0];
-                work.m[0][1] = bodyRotation.m[1][0];
-                work.m[0][2] = bodyRotation.m[2][0];
-                work.m[1][0] = bodyRotation.m[0][1];
-                work.m[1][1] = bodyRotation.m[1][1];
-                work.m[1][2] = bodyRotation.m[2][1];
-                work.m[2][0] = bodyRotation.m[0][2];
-                work.m[2][1] = bodyRotation.m[1][2];
-                work.m[2][2] = bodyRotation.m[2][2];
-                ApplyMatrix(&work, &lean, &car->motionX);
-                car->x = car->x + car->motionX;
-                car->z = car->z + car->motionZ;
-            }
-            car->x += ai->worldVelocityX * 6 / 1280;
-            car->z += ai->worldVelocityZ * 6 / 1280;
-            /* The body leans away from the steering and rights itself. */
-            if (car->steeringAngle >= 0x41) {
-                car->bodyRollVelocity = car->bodyRollVelocity - 6;
-            } else if (car->steeringAngle < -0x40) {
-                car->bodyRollVelocity = car->bodyRollVelocity + 6;
-            }
-            if (car->bodyRollVelocity != 0) {
-                car->bodyRollVelocity = car->bodyRollVelocity * 7 / 8;
-            }
-            car->steeringAngle = car->steeringAngle + ai->yawRate;
-            if (car->steeringAngle >= 0x12C) {
-                car->steeringAngle = 0x12C;
-            } else if (car->steeringAngle < -0x12B) {
-                car->steeringAngle = -0x12C;
-            }
-            car->bodyYaw = car->bodyYaw + ai->yawRate;
         }
     }
 }
@@ -238,7 +154,7 @@ void UpdateRaceCars(void) {
     UpdateRivalRubberBand();
     SlowTheCarsAhead();
     AccelerateAllCars();
-    MoveAllCars();
+    MoveRivalCars();
     PlaceAllCarsOnTrack();
     UpdateRivalBodyMotion();
 }
@@ -274,7 +190,9 @@ void UpdateAttractCars(void) {
         car->reservedF8 = 0;
         car->collisionFlag = 0;
         car->bodyYaw = car->baseBodyYaw;
-        car->progressA %= g_TrackLength;
+        if (g_TrackLength > 0) {
+            car->progressA %= g_TrackLength;
+        }
     }
     for (i = 0; i < RACE_CAR_SLOT_COUNT; i++) {
         if (g_Cars[i].activeFlag != -1) {
@@ -284,7 +202,7 @@ void UpdateAttractCars(void) {
     CollideAllCars();
     SteerAllCars();
     AccelerateAttractCars();
-    MoveAllCars();
+    MoveRivalCars();
     PlaceAllCarsOnTrack();
     UpdateRivalBodyMotion();
 }

@@ -812,3 +812,47 @@ endif()
 target_link_libraries(rival_body_motion_tests PRIVATE psyz)
 add_test(NAME rival_body_motion COMMAND rival_body_motion_tests)
 set_tests_properties(rival_body_motion PROPERTIES LABELS unit)
+
+add_executable(rival_car_movement_tests
+    rival_car_movement_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/rival_car_movement.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c
+    $<TARGET_OBJECTS:rage-host-state>)
+target_include_directories(rival_car_movement_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(rival_car_movement_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(rival_car_movement_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(rival_car_movement_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(rival_car_movement_tests PRIVATE psyz)
+add_test(NAME rival_car_movement COMMAND rival_car_movement_tests)
+set_tests_properties(rival_car_movement PROPERTIES LABELS functional)
+
+add_executable(race_car_update_tests
+    race_car_update_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/race_car_update.c)
+target_include_directories(race_car_update_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(race_car_update_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(race_car_update_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(race_car_update_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME race_car_update COMMAND race_car_update_tests)
+set_tests_properties(race_car_update PROPERTIES LABELS unit)

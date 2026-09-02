@@ -52,5 +52,7 @@ extern s16 g_TorqueLossBandEnd[CAR_TORQUE_BAND_COUNT];
 
 /* Final per-frame visual/vertical motion pass over the rival car slots. */
 void UpdateRivalBodyMotion(void);
+/* World translation and steering/body-lean pass over the rival car slots. */
+void MoveRivalCars(void);
 
 #endif
