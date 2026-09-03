@@ -805,16 +805,13 @@ MATRIX *MulMatrix0(MATRIX *left, MATRIX *right, MATRIX *output) {
     return output;
 }
 
-/* The following adapters keep optional PS1 services non-fatal on the host.
- * Their real filesystem/audio implementations are introduced before those
- * subsystems are enabled in the native startup path. */
-#define VOID_ADAPTER(name) void name(void) {}
-
 void BiosBuInit(void) { _bu_init(); }
-VOID_ADAPTER(BiosExit)
 void BiosSetMemSize(s32 megabytes) { (void)megabytes; }
-VOID_ADAPTER(KernelCallbackSlot3)
-VOID_ADAPTER(SetDMAInterruptState)
+void KernelCallbackSlot3(void) {}
+long SetDMAInterruptState(long value) {
+    (void)value;
+    return 0;
+}
 long BiosFileOpen(void *path, long mode) {
     if (path == NULL) return -1;
     return psyz_open(path, (int)mode);
@@ -825,10 +822,12 @@ long BiosFileSeek(long fd, long offset, long whence) {
 }
 
 long BiosFileRead(long fd, void *buffer, long length) {
+    if (length < 0) return -1;
     return read((int)fd, buffer, (size_t)length);
 }
 
 long BiosFileWrite(long fd, void *buffer, long length) {
+    if (length < 0) return -1;
     return write((int)fd, buffer, (size_t)length);
 }
 

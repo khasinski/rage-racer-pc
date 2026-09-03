@@ -25,6 +25,5 @@ long BiosFormatDevice(void *device);
 void *BiosFirstFile(char *path, void *entry);
 void *BiosNextFile(void *entry);
 void BiosSetMemSize(int megabytes);
-void BiosExit(int status) __attribute__((noreturn));
 
 #endif

@@ -92,7 +92,7 @@ void SsSepSetVol(long seq, long sep, long left, long right);
    (SpuVmGetSeqVol) reads the score's 0x74/0x76 volume pair through two
    out-pointers, and this is a one-line forwarder to it. */
 long SsSepGetVol(long seq, long sep, short *voll, short *volr);
-void SsSetReservedVoice(u_char voices);
+char SsSetReservedVoice(char voices);
 void SsSetMono(void);
 void SsSetStereo(void);
 u_char SsSetVoiceCount(u_char voices);
