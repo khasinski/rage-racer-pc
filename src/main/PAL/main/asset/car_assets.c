@@ -111,12 +111,16 @@ static void LoadInitialCarSelectModel(void) {
     s32 assetIndex;
     s32 loadedSize;
 
-    if ((u32)carIndex >= GAME_CAR_COUNT) {
+    if ((u32)carIndex >= GAME_CAR_COUNT || g_CarTable == NULL) {
         FailAssetLoad();
         return;
     }
     variantIndex = GetCarAssetIndex(
         carIndex, g_CarTable[carIndex].modelVariant);
+    if (variantIndex < 0) {
+        FailAssetLoad();
+        return;
+    }
     assetIndex = CarVariantAssetIndex(ASSET_CAR_1ST_BASE, variantIndex);
 
     loadedSize = LoadAsset(assetIndex, g_CarModelBuffer);

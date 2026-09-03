@@ -54,6 +54,7 @@ static GameImageAssetHeaderWord *s_uploadedImage;
 static s32 s_installCarModelSlotCalls;
 static s32 s_serializedModelValid = 1;
 static s32 s_registerModelBankResult = 1;
+static s32 s_forceInvalidAssetIndex;
 static size_t s_validatedModelSize;
 static size_t s_assetRoom = SIZE_MAX;
 
@@ -64,7 +65,9 @@ size_t PortAssetRoomAt(const void *at) {
 
 void ResetCdAudioState(void) {}
 
-s32 GetCarAssetIndex(s32 model, s32 grade) { return model * 10 + grade; }
+s32 GetCarAssetIndex(s32 model, s32 grade) {
+    return s_forceInvalidAssetIndex ? -1 : model * 10 + grade;
+}
 s32 LoadAsset(s32 assetId, void *destination) {
     s_loadAssetId = assetId;
     s_loadDestination = destination;
@@ -254,6 +257,25 @@ static void TestModelVariantLoads(void) {
     Check(g_AssetLoadState == 0 && s_loadAssetId == -123,
           "invalid pending model is cancelled before asset lookup");
 
+    g_AssetLoadState = 1;
+    g_PendingCarModelIndex = 2;
+    g_CarTable = NULL;
+    s_loadAssetId = -123;
+    LoadPendingCarModelAsset();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              s_loadAssetId == -123,
+          "missing car table is rejected before asset lookup");
+
+    g_CarTable = cars;
+    g_AssetLoadState = 1;
+    g_AssetLoadFailed = 0;
+    s_forceInvalidAssetIndex = 1;
+    LoadPendingCarModelAsset();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              s_loadAssetId == -123,
+          "invalid variant index is rejected before asset lookup");
+    s_forceInvalidAssetIndex = 0;
+
     g_CarModelSlot = 0;
     g_PendingCarModelIndex = 2;
     g_AssetLoadState = 1;
@@ -285,6 +307,12 @@ static void TestInvalidCarSkipsCustomPaint(void) {
 
     Check(s_color1Calls == 0 && s_color2Calls == 0,
           "invalid car index skips custom paint");
+
+    g_CarTable = NULL;
+    Check(InstallCarModelAsset(&model, sizeof(model), 0, 0) == 1,
+          "model installation does not require save data");
+    Check(s_color1Calls == 0 && s_color2Calls == 0,
+          "missing save data skips custom paint");
 }
 
 static void TestInvalidSlotSkipsInstallation(void) {
@@ -483,6 +511,26 @@ static void TestCarSelectAssetPhases(void) {
     LoadCarSelectAssets();
     Check(g_AssetLoadState == 0 && AssetLoadHasFailed(),
           "out-of-range showroom car is rejected before table access");
+
+    g_AssetLoadState = 4;
+    g_AssetLoadFailed = 0;
+    g_PlayerCarIndex = 1;
+    g_CarTable = NULL;
+    s_loadAssetId = -123;
+    LoadCarSelectAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              s_loadAssetId == -123,
+          "missing showroom car table is rejected before asset lookup");
+
+    g_CarTable = cars;
+    g_AssetLoadState = 4;
+    g_AssetLoadFailed = 0;
+    s_forceInvalidAssetIndex = 1;
+    LoadCarSelectAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              s_loadAssetId == -123,
+          "invalid showroom variant is rejected before asset lookup");
+    s_forceInvalidAssetIndex = 0;
 
     g_AssetLoadState = 4;
     g_PlayerCarIndex = 1;

@@ -35,7 +35,7 @@ s32 InstallCarModelAsset(CarModelAsset *asset, size_t size, s32 slot,
     }
     asset = g_CarModelSlots[slot];
     g_CarImageSlots[slot] = asset->imageData.carImage;
-    if ((u32)carIndex < CUSTOM_PAINT_CAR_COUNT) {
+    if ((u32)carIndex < CUSTOM_PAINT_CAR_COUNT && g_CarTable != NULL) {
         ApplyPrimaryBodyColor(g_CarTable[carIndex].paintColor1,
                               asset->imageData.carImage);
         ApplySecondaryBodyColor(g_CarTable[carIndex].paintColor2,
@@ -66,7 +66,7 @@ void LoadPendingCarModelAsset(void) {
     if (g_AssetLoadState != CAR_MODEL_LOAD_ASSET) {
         return;
     }
-    if ((u32)carIndex >= GAME_CAR_COUNT) {
+    if ((u32)carIndex >= GAME_CAR_COUNT || g_CarTable == NULL) {
         FailAssetLoad();
         return;
     }
@@ -75,6 +75,10 @@ void LoadPendingCarModelAsset(void) {
     destination = g_CarModelBuffer + targetSlot * CAR_MODEL_SLOT_SIZE;
     variantIndex = GetCarAssetIndex(
         carIndex, g_CarTable[carIndex].modelVariant + gradeOffset);
+    if (variantIndex < 0) {
+        FailAssetLoad();
+        return;
+    }
     assetId = CarVariantAssetIndex(ASSET_CAR_1ST_BASE, variantIndex);
     loadedSize = LoadAsset(assetId, destination);
     if (loadedSize == 0) return;
