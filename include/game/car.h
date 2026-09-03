@@ -72,10 +72,8 @@ typedef union CarMotionValue {
 
 typedef struct GameCarRuntime {
     s32 x;
-    /* +0x04 32 bits wide, not 16: `lw`/`sw` at nine sites in each of
-     * UpdateRaceCars / UpdateAttractCars, `s32 unk04` in
-     * UpdatePlayerCar's own layout, and the `*(s32 *)&ent->y` cast in
-     * InitRivalCar that the old `s16` forced. */
+    /* +0x04 is 32 bits wide: UpdateRaceCars / UpdateAttractCars use word
+     * loads and stores, as do the player layout and rival initialization. */
     s32 y;
     s32 z;
     /* +0x10..+0x18: per-frame motion, measured in-race. Not the world
@@ -468,16 +466,16 @@ typedef struct CarInputValue {
  * player object and 32-bit / AI-speed fields on the rival cars, so use
  * GameCarAiBlock for a g_Cars[] element. */
 typedef struct GameCarDrive {
-    s32 unk00;
-    s32 unk04;
+    s32 reserved00;
+    s32 reserved04;
     s32 accelPos;    /* +0x08 */
     s32 reserved0C;
     s32 brakePos;    /* +0x10 */
-    s32 unk14;
+    s32 reserved14;
     s32 reserved18;
     s32 steerPos;    /* +0x1C */
     s32 reserved20;
-    s32 unk24;
+    s32 reserved24;
     s32 launchThresholdIndex;
     s16 engineLoad;
     s16 drivetrainCoupled;
@@ -486,7 +484,7 @@ typedef struct GameCarDrive {
     s16 clutch;      /* +0x34 */
     s16 shiftSpeedDelta;
     s16 jumpTimer;
-    s16 unk3A;
+    s16 reserved3A;
     s16 shiftRpmDelta;
     s16 bodyLiftOffset;
     s16 trackCurveMode;
@@ -499,11 +497,11 @@ typedef struct GameCarDrive {
     s32 launchHeading;
     s32 launchSpeed;
     s32 yawOffset;
-    s32 unk64;
+    s32 reserved64;
     s32 standingStartBounceY;
     s32 standingStartBounceX;
-    s16 unk70;
-    s16 unk72;
+    s16 reserved70;
+    s16 reserved72;
     s16 manual;      /* +0x74 */
     s16 gear;        /* +0x76 */
     s32 engineRpm;   /* +0x78 */

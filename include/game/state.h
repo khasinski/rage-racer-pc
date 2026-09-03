@@ -30,8 +30,8 @@ typedef struct PadState {
     s16 buttonI;
     s16 buttonII;
     s16 buttonL;
-    s16 unk12;
-    s16 unk14;
+    s16 reserved12;
+    s16 reserved14;
     s16 steer;   /* twist after the neutral offset, play deadzone and clamp */
 } PadState;
 

@@ -7,7 +7,7 @@
 
 typedef struct ShowroomCarPose {
     s32 position[4];
-    s32 unk10[4];
+    s32 reserved10[4];
     Vec4 rotation;
 } ShowroomCarPose;
 
