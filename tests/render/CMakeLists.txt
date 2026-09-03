@@ -94,6 +94,25 @@ endif()
 add_test(NAME rear_view_mirror COMMAND rear_view_mirror_tests)
 set_tests_properties(rear_view_mirror PROPERTIES LABELS functional)
 
+add_executable(init_track_scene_tests
+    init_track_scene_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/init_track_scene.c)
+target_include_directories(init_track_scene_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(init_track_scene_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(init_track_scene_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(init_track_scene_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME init_track_scene COMMAND init_track_scene_tests)
+set_tests_properties(init_track_scene PROPERTIES LABELS functional)
+
 add_executable(scene_dispatch_tests
     scene_dispatch_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/boot/dispatch_scene.c)
