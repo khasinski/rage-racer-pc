@@ -16,7 +16,7 @@ typedef struct GameTrackPoint {
     u16 segmentLength;
 } GameTrackPoint;
 
-extern GameTrackPoint *g_TrackPoints;
+extern const GameTrackPoint *g_TrackPoints;
 extern s32 g_TrackPointCount;
 s32 BlendAngle(s32 angleA, s32 angleB, s32 weight);
 s32 InterpolateTrackAngle(s32 pointIndex, s32 weight);

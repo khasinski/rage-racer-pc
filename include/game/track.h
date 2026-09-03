@@ -245,14 +245,14 @@ typedef struct TrackPointTable {
 /* The retail asset stores its variable-length arc-centre table immediately
  * after the declared number of centreline points. Keep that format arithmetic
  * at the asset boundary instead of repeating a layout cast in consumers. */
-static inline GameTrackArcCenter *TrackPointTableArcCenters(
-    TrackPointTable *table) {
-    return (GameTrackArcCenter *)(table->points + table->count);
+static inline const GameTrackArcCenter *TrackPointTableArcCenters(
+    const TrackPointTable *table) {
+    return (const GameTrackArcCenter *)(table->points + table->count);
 }
 
 /* Track centreline points of the loaded course, g_TrackPointCount of them;
  * walked cyclically. */
-extern GameTrackPoint *g_TrackPoints;
+extern const GameTrackPoint *g_TrackPoints;
 
 /* Valid entries in g_TrackPoints; every walker wraps with `% this`. */
 extern s32 g_TrackPointCount;
@@ -276,7 +276,7 @@ static inline s32 WrapTrackPointIndex(s32 index) {
     return index;
 }
 
-static inline GameTrackPoint *TrackPoint(s32 index) {
+static inline const GameTrackPoint *TrackPoint(s32 index) {
     if (g_TrackPointCount <= 0) return g_TrackPoints;
     index = WrapTrackPointIndex(index);
     return &g_TrackPoints[index];

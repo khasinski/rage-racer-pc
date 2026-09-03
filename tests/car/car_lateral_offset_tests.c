@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-GameTrackPoint *g_TrackPoints;
+const GameTrackPoint *g_TrackPoints;
 s32 g_TrackPointCount;
 
 int main(void) {

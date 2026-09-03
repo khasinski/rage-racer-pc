@@ -141,7 +141,7 @@ s32 g_FogNear;
 VisibleTerrainCell g_MainVisibleCellList[64] __attribute__((aligned(16)));
 s32 g_EnvScriptLength;
 const GameTrackCameraNode *g_TrackCameras;
-GameTrackArcCenter *g_TrackArcCenters;
+const GameTrackArcCenter *g_TrackArcCenters;
 u32 g_MainVisibleCellMask[32] __attribute__((aligned(16)));
 u8 g_EnvScriptEnabled;
 s32 g_EnvScriptClock;

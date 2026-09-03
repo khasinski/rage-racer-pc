@@ -8,8 +8,8 @@
 void InterpolateTrackPoint(s32 pointIndex, s32 *out, s32 weight) {
     s32 next;
     s32 inv = 0x400 - weight;
-    GameTrackPoint *cur;
-    GameTrackPoint *nxt;
+    const GameTrackPoint *cur;
+    const GameTrackPoint *nxt;
     s32 sum;
 
     if (out == 0) {

@@ -81,7 +81,7 @@ typedef struct PathSceneryTransform {
     SVec rotation;
 } PathSceneryTransform;
 
-extern GameTrackArcCenter *g_TrackArcCenters;
+extern const GameTrackArcCenter *g_TrackArcCenters;
 extern s32 g_EnvScriptClock;
 extern const CourseObject *g_CourseObjects;
 extern s32 g_CourseObjectCount;

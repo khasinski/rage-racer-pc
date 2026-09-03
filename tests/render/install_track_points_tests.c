@@ -6,9 +6,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-GameTrackPoint *g_TrackPoints;
+const GameTrackPoint *g_TrackPoints;
 s32 g_TrackPointCount;
-GameTrackArcCenter *g_TrackArcCenters;
+const GameTrackArcCenter *g_TrackArcCenters;
 s32 g_TrackLength;
 u16 g_TrackSectionCount;
 
@@ -20,6 +20,7 @@ typedef struct TrackFixture {
 
 int main(void) {
     TrackFixture fixture;
+    u8 originalFixture[sizeof(fixture)];
     TrackPointTable *longTrack;
     size_t longTrackSize;
     s32 i;
@@ -30,15 +31,23 @@ int main(void) {
     fixture.points[0].arcRef = (1 << 4) | TRACK_CURVE_PRIMARY;
     fixture.points[1].segmentLength = 200;
     fixture.points[2].segmentLength = 300;
+    memcpy(originalFixture, &fixture, sizeof(fixture));
 
-    if (TrackPointTableArcCenters((TrackPointTable *)&fixture) !=
+    if (TrackPointTableArcCenters(
+            (const TrackPointTable *)(const void *)&fixture) !=
         fixture.arcCenters) {
         puts("FAIL: arc table asset layout");
         return 1;
     }
 
-    if (!InstallTrackPoints((TrackPointTable *)&fixture, sizeof(fixture))) {
+    if (!InstallTrackPoints(
+            (const TrackPointTable *)(const void *)&fixture,
+            sizeof(fixture))) {
         puts("FAIL: valid point table rejected");
+        return 1;
+    }
+    if (memcmp(originalFixture, &fixture, sizeof(fixture)) != 0) {
+        puts("FAIL: track point asset modified during installation");
         return 1;
     }
     if (g_TrackPointCount != 3 ||

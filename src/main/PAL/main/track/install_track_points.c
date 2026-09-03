@@ -57,7 +57,7 @@ s32 IsValidTrackPointAsset(const TrackPointTable *trackData, size_t size) {
 }
 
 /* Install the variable-length point table and its trailing arc-centre table. */
-s32 InstallTrackPoints(TrackPointTable *trackData, size_t size) {
+s32 InstallTrackPoints(const TrackPointTable *trackData, size_t size) {
     s32 i;
 
     if (!IsValidTrackPointAsset(trackData, size)) {

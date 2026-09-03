@@ -25,7 +25,7 @@ s32 GetAngleDistance(s32 from, s32 to);
 s32 GetAngleDelta(s32 from, s32 to);
 
 u32 g_RandomSeed;
-GameTrackPoint *g_TrackPoints;
+const GameTrackPoint *g_TrackPoints;
 s32 g_TrackPointCount;
 
 static int failures;

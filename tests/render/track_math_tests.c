@@ -17,7 +17,7 @@
 #include "game/vector.h"
 
 /* What the functions under test read and write. */
-GameTrackPoint *g_TrackPoints;
+const GameTrackPoint *g_TrackPoints;
 s32 g_TrackPointCount;
 s32 g_TrackTextureSectionLo;
 s32 g_TrackTextureSectionHi;

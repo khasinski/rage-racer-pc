@@ -5,7 +5,7 @@
 #include "game/track.h"
 
 void SeedFinishCamera(PlayerCarRuntime *car) {
-    GameTrackPoint *point;
+    const GameTrackPoint *point;
     s32 heading;
 
     if (g_TrackPointCount <= 0 || g_TrackPoints == NULL) {

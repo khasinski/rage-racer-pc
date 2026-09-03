@@ -494,7 +494,7 @@ s32 InstallCarModelAsset(CarModelAsset *asset, size_t size, s32 slot,
                          s32 carIndex);
 s32 InstallTrackTextureAssetPack(u8 *base, size_t size);
 s32 InstallTrackEventData(struct TrackEventData *eventData, size_t size);
-s32 InstallTrackPoints(struct TrackPointTable *trackData, size_t size);
+s32 InstallTrackPoints(const struct TrackPointTable *trackData, size_t size);
 s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
                                  s32 useSeriesCamera);
 void LoadGrandPrixScreen(void);

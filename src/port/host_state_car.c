@@ -37,7 +37,7 @@ CarCollisionPoint g_CarCollisionCorners[4] __attribute__((aligned(16))) = {
 };
 s32 g_RaceIntroCameraTimer;
 SVec g_RaceIntroCameraDelta __attribute__((aligned(16)));
-GameTrackPoint *g_TrackPoints;
+const GameTrackPoint *g_TrackPoints;
 s16 g_RivalCueEnabled;
 s32 g_TrackPointCount;
 s16 g_PeakOutputRpm;

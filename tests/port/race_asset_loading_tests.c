@@ -173,7 +173,7 @@ s32 RegisterModelBank(const ModelBankHeader *base, size_t size, s32 index) {
     s_installs[s_installCount++] = base;
     return 1;
 }
-s32 InstallTrackPoints(struct TrackPointTable *table, size_t size) {
+s32 InstallTrackPoints(const struct TrackPointTable *table, size_t size) {
     (void)size;
     s_installs[s_installCount++] = table;
     return 1;

@@ -9,7 +9,7 @@
 
 s32 g_RaceSeries;
 s32 g_TrackPointCount;
-GameTrackPoint *g_TrackPoints;
+const GameTrackPoint *g_TrackPoints;
 TrackEventData *g_TrackEventData;
 
 static s32 s_targetSegment;

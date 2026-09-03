@@ -15,7 +15,7 @@ s32 g_RaceSeries;
 s16 g_GrandPrixSeries;
 s32 g_SceneId;
 s32 g_TrackPointCount;
-GameTrackPoint *g_TrackPoints;
+const GameTrackPoint *g_TrackPoints;
 TrackEventData *g_TrackEventData;
 
 static s32 s_initCalls[RACE_CAR_SLOT_COUNT];

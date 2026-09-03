@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-GameTrackArcCenter *g_TrackArcCenters;
+const GameTrackArcCenter *g_TrackArcCenters;
 
 s32 Atan2(s32 x, s32 y) {
     if (x < 0 && y == 0) {

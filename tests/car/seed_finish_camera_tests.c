@@ -9,7 +9,7 @@
 #include <string.h>
 
 GameCarRuntime g_CameraCar;
-GameTrackPoint *g_TrackPoints;
+const GameTrackPoint *g_TrackPoints;
 s32 g_TrackPointCount;
 s32 g_CameraCarSeedYaw;
 
