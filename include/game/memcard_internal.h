@@ -6,12 +6,6 @@
 extern s32 g_FrameSyncThreshold;
 extern s32 GameMenuLoadPhase;
 
-s32 WriteMemoryCardSaveFile(
-    char *path,
-    char *title,
-    GameSaveIconBlock *iconBlock,
-    GameSaveHeaderRow *header,
-    GameSaveBlock *saveBlock);
 s32 ReadVerifiedSaveHeader(s32 fd, GameSaveHeaderRow *header);
 
 typedef enum MemoryCardMenuState {

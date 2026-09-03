@@ -239,14 +239,16 @@ static int TestLoadAndFailuresClose(void) {
 
 static int TestWriteAndDirectoryCount(void) {
     GameSaveHeaderRow header;
-    GameSaveIconBlock icon;
-    GameSaveBlock block;
 
     ResetMock();
     CHECK(WriteMemoryCardSaveSlot(-1, &header) == 0);
     CHECK(WriteMemoryCardSaveSlot(MEMORY_CARD_SAVE_SLOT_COUNT, &header) == 0);
+    CHECK(WriteMemoryCardSaveSlot(0, NULL) == 0);
     CHECK(LoadMemoryCardSaveSlot(-1, &header) == 0);
     CHECK(LoadMemoryCardSaveSlot(MEMORY_CARD_SAVE_SLOT_COUNT, &header) == 0);
+    CHECK(LoadMemoryCardSaveSlot(0, NULL) == 0);
+    CHECK(ScanMemoryCardSaveHeaders(NULL) == 0);
+    CHECK(ReadVerifiedSaveHeader(10, NULL) == 0);
     CHECK(s_openCalls == 0);
 
     ResetMock();
@@ -254,8 +256,7 @@ static int TestWriteAndDirectoryCount(void) {
     s_openResults[1] = 10;
     s_openResults[2] = 10;
     s_openResultCount = 3;
-    CHECK(WriteMemoryCardSaveFile(g_SaveFilePath, g_SaveTitleSjis, &icon,
-                                  &header, &block) == 1);
+    CHECK(WriteMemoryCardSaveSlot(0, &header) == 1);
     CHECK(s_writeCalls == 4);
     CHECK(s_closeCalls == 2);
     CHECK(GameMenuLoadPhase == 0x1570);
@@ -264,8 +265,7 @@ static int TestWriteAndDirectoryCount(void) {
     s_openResults[0] = 10;
     s_openResultCount = 1;
     s_failWriteCall = 2;
-    CHECK(WriteMemoryCardSaveFile(g_SaveFilePath, g_SaveTitleSjis, &icon,
-                                  &header, &block) == 0);
+    CHECK(WriteMemoryCardSaveSlot(0, &header) == 0);
     CHECK(s_closeCalls == 1);
 
     s_directoryFiles = 4;

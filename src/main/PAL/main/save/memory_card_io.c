@@ -38,7 +38,7 @@ static s32 SaveHeaderChecksumValid(const GameSaveHeaderRow *header) {
     return header->fields.checksum == CalculateSaveHeaderChecksum(header);
 }
 
-s32 WriteMemoryCardSaveFile(
+static s32 WriteMemoryCardSaveFile(
     char *path,
     char *title,
     GameSaveIconBlock *iconBlock,
@@ -95,7 +95,7 @@ s32 WriteMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *header) {
     GameSaveIconBlock block0;
     GameSaveBlock block1;
 
-    if (!MemoryCardSaveSlotValid(slot)) {
+    if (!MemoryCardSaveSlotValid(slot) || header == NULL) {
         return 0;
     }
     memset(&block0, 0, sizeof(block0));
@@ -112,6 +112,8 @@ s32 WriteMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *header) {
 /* The header is stored twice, at 0x1280 and at 0x200; the first copy whose
  * 16-bit sum matches the complement stored in its last word wins. */
 s32 ReadVerifiedSaveHeader(s32 fd, GameSaveHeaderRow *header) {
+    if (header == NULL) return 0;
+
     GameMenuLoadPhase = 0x120;
     if (BiosFileSeek(fd, MC_BACKUP_HEADER_OFS, 0) < 0) {
         return 0;
@@ -151,6 +153,7 @@ s32 ScanMemoryCardSaveHeaders(GameSaveHeaderRow *headers) {
     s32 i;
     s32 mask;
 
+    if (headers == NULL) return 0;
     mask = 0;
     GameMenuLoadPhase = 0x110;
     for (i = 0; i < MEMORY_CARD_SAVE_SLOT_COUNT; i++) {
@@ -175,7 +178,7 @@ s32 LoadMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *outHeader) {
     s32 fd;
     s32 i;
 
-    if (!MemoryCardSaveSlotValid(slot)) {
+    if (!MemoryCardSaveSlotValid(slot) || outHeader == NULL) {
         return 0;
     }
     GameMenuLoadPhase = 0x3000;
