@@ -1,4 +1,3 @@
-#include "game/audio_internal.h"
 #include "game/race.h"
 #include "game/race_internal.h"
 
@@ -63,24 +62,6 @@ s32 NextAttractRaceTimer(s32 timer) {
         return 0;
     }
     return timer < ATTRACT_RETURN_FRAME ? timer + 1 : ATTRACT_RETURN_FRAME;
-}
-
-s32 AttractBgmTrack(const u8 *shuffleOrder, s32 trackCount,
-                    s32 shuffleIndex) {
-    s32 track;
-
-    if (shuffleOrder == NULL || trackCount <= 0) {
-        return 0;
-    }
-    if (trackCount > BGM_PLAYABLE_TRACK_COUNT) {
-        trackCount = BGM_PLAYABLE_TRACK_COUNT;
-    }
-    shuffleIndex %= trackCount;
-    if (shuffleIndex < 0) {
-        shuffleIndex += trackCount;
-    }
-    track = shuffleOrder[shuffleIndex];
-    return track < trackCount ? track : 0;
 }
 
 s32 ShouldStartAttractExitFade(s32 timer) {

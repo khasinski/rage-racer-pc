@@ -81,8 +81,8 @@ static void UpdateAttractDemoStart(void) {
         InitTrackScene();
 
         g_AttractDemoStep = ATTRACT_DEMO_STEP_RACE;
-        shuffleTrack = AttractBgmTrack(g_BgmShuffleOrder, g_BgmTrackCount,
-                                       g_BgmShuffleIndex);
+        shuffleTrack = BgmShuffleTrackAt(g_BgmShuffleOrder, g_BgmTrackCount,
+                                         g_BgmShuffleIndex);
         AdvanceBgmShuffleBag(shuffleTrack);
 
         cdTrack = BgmCdTrack(shuffleTrack);

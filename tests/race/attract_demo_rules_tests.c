@@ -44,24 +44,9 @@ static void TestTimers(void) {
     assert(NextAttractRaceTimer(INT_MAX) == 0x708);
 }
 
-static void TestBgmSelection(void) {
-    const u8 order[] = {2, 0, 1, 3, 4, 5, 6, 7, 8, 9};
-
-    assert(AttractBgmTrack(order, 3, 0) == 2);
-    assert(AttractBgmTrack(order, 3, 4) == 0);
-    assert(AttractBgmTrack(order, 3, -1) == 1);
-    assert(AttractBgmTrack(order, 3, 3) == 2);
-    assert(AttractBgmTrack(order, 3, INT_MAX) == 0);
-    assert(AttractBgmTrack(order, 3, INT_MIN) == 0);
-    assert(AttractBgmTrack(order, 0, 0) == 0);
-    assert(AttractBgmTrack(NULL, 3, 0) == 0);
-    assert(AttractBgmTrack(order, INT_MAX, 9) == 9);
-}
-
 int main(void) {
     TestTitleFade();
     TestRaceFadeSchedule();
     TestTimers();
-    TestBgmSelection();
     return 0;
 }

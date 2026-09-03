@@ -312,7 +312,8 @@ set_tests_properties(attract_demo_rules PROPERTIES LABELS unit)
 add_executable(attract_demo_scene_tests
     attract_demo_scene_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/attract_demo.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/attract_demo_rules.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/attract_demo_rules.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/bgm_track.c)
 target_include_directories(attract_demo_scene_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
@@ -632,7 +633,8 @@ set_tests_properties(record_defaults PROPERTIES LABELS unit)
 
 add_executable(round_screen_rules_tests
     round_screen_rules_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/round_screen_rules.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/round_screen_rules.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/bgm_track.c)
 target_include_directories(round_screen_rules_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/include)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")

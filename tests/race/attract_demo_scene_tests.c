@@ -57,7 +57,6 @@ s32 RequestTrackDataAssets(void) { return 1; }
 s32 AssetLoadCompletedSuccessfully(void) { return 0; }
 void InitTrackScene(void) {}
 void AdvanceBgmShuffleBag(u32 track) { (void)track; }
-s32 BgmCdTrack(s32 track) { return track + 4; }
 void RequestCdTrack(s32 track) { (void)track; }
 void StartCdAudio(void) {}
 void DrawSprite(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1,

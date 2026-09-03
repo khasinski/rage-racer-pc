@@ -76,12 +76,7 @@ s32 RoundScreenTableIndicesValid(s32 series, s32 classIndex,
 }
 
 s32 ClampRoundBgmTrackCount(s32 trackCount) {
-    if (trackCount < 0) {
-        return 0;
-    }
-    return trackCount < BGM_PLAYABLE_TRACK_COUNT
-               ? trackCount
-               : BGM_PLAYABLE_TRACK_COUNT;
+    return ClampBgmTrackCount(trackCount);
 }
 
 s32 WrapRoundBgmSelection(s32 selection, s32 trackCount) {

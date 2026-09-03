@@ -1,8 +1,10 @@
 #include "common.h"
+#include "game/audio_internal.h"
 #include "game/menu.h"
 #include "game/race.h"
 #include "game/race_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 
 s32 g_BgmChangeDelay;
@@ -13,7 +15,7 @@ s32 g_BgmSelectCursor;
 s32 g_BgmSelectShowUi;
 s32 g_BgmSelectTrack;
 s32 g_BgmShuffleIndex;
-u8 g_BgmShuffleOrder[16];
+u8 g_BgmShuffleOrder[BGM_SHUFFLE_CAPACITY];
 s32 g_BgmTrackCount;
 s32 g_CdTrackEnded;
 s32 g_FadeStep;
@@ -102,6 +104,33 @@ int main(void) {
     CHECK(g_BgmShuffleIndex == 0 && s_shuffleCalls == 1);
 
     Reset();
+    g_BgmTrackCount = INT_MAX;
+    g_BgmShuffleIndex = INT_MAX;
+    AdvanceBgmShuffleBag(1);
+    CHECK(g_BgmTrackCount == BGM_PLAYABLE_TRACK_COUNT);
+    CHECK(g_BgmShuffleIndex == 8 && s_shuffleCalls == 0);
+
+    Reset();
+    g_BgmRandomPlay = 1;
+    g_BgmShuffleIndex = INT_MIN;
+    g_CdTrackEnded = 1;
+    UpdateBgmSelectPlayback();
+    CHECK(g_BgmSelectTrack == 1 && g_BgmShuffleIndex == 2);
+
+    Reset();
+    g_BgmRandomPlay = 1;
+    g_BgmShuffleOrder[0] = 0xFF;
+    g_CdTrackEnded = 1;
+    UpdateBgmSelectPlayback();
+    CHECK(g_BgmSelectTrack == 0);
+
+    Reset();
+    g_BgmSelectTrack = INT_MAX;
+    g_CdTrackEnded = 1;
+    UpdateBgmSelectPlayback();
+    CHECK(g_BgmSelectTrack == 2);
+
+    Reset();
     g_BgmSelectCursor = 0;
     g_BgmSelectTrack = 0;
     g_PadPressed = PAD_CONFIRM;
@@ -134,6 +163,18 @@ int main(void) {
     g_PadPressed = PAD_LEFT | PAD_L1 | PAD_R1;
     UpdateBgmSelectInput();
     CHECK(g_BgmSelectCursor == 0 && g_BgmSelectShowUi == 0);
+
+    Reset();
+    g_BgmSelectCursor = INT_MAX;
+    UpdateBgmSelectInput();
+    CHECK(g_BgmSelectCursor == 2);
+
+    Reset();
+    g_BgmSelectCursor = INT_MIN;
+    g_BgmTrackCount = INT_MAX;
+    UpdateBgmSelectInput();
+    CHECK(g_BgmSelectCursor == 0);
+    CHECK(g_BgmTrackCount == BGM_PLAYABLE_TRACK_COUNT);
 
     puts("BGM selector preserves playback delay, shuffle, and input");
     return 0;

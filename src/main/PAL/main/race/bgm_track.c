@@ -1,4 +1,7 @@
+#include "game/audio_internal.h"
 #include "game/race_internal.h"
+
+#include <stddef.h>
 
 enum {
     FIRST_BGM_CD_TRACK = 3,
@@ -18,4 +21,35 @@ s32 WrapBgmTrackIndex(s32 track, s32 trackCount) {
 
     track %= trackCount;
     return track < 0 ? track + trackCount : track;
+}
+
+s32 ClampBgmTrackCount(s32 trackCount) {
+    if (trackCount < 0) {
+        return 0;
+    }
+    return trackCount < BGM_PLAYABLE_TRACK_COUNT
+               ? trackCount
+               : BGM_PLAYABLE_TRACK_COUNT;
+}
+
+s32 ClampBgmShuffleCount(s32 trackCount) {
+    if (trackCount < 0) {
+        return 0;
+    }
+    return trackCount < BGM_SHUFFLE_CAPACITY
+               ? trackCount
+               : BGM_SHUFFLE_CAPACITY;
+}
+
+s32 BgmShuffleTrackAt(const u8 *shuffleOrder, s32 trackCount,
+                      s32 shuffleIndex) {
+    s32 track;
+
+    trackCount = ClampBgmTrackCount(trackCount);
+    if (shuffleOrder == NULL || trackCount == 0) {
+        return 0;
+    }
+    shuffleIndex = WrapBgmTrackIndex(shuffleIndex, trackCount);
+    track = shuffleOrder[shuffleIndex];
+    return track < trackCount ? track : 0;
 }

@@ -7,30 +7,39 @@
 enum {
     BGM_CHANGE_DELAY_AUTO = 6,
     BGM_CHANGE_DELAY_MANUAL = 0x40,
+    BGM_VOLUME_FADE_FRAMES = 60,
     BGM_RANDOM_LABEL_FRAMES = 60,
+    BGM_SELECT_EXIT_FADE_STEP = 4,
+    BGM_SELECT_FIRST_OPTION = 0,
+    BGM_SELECT_LAST_OPTION = 2,
 };
 
 static void PreventImmediateShuffleRepeat(u32 track) {
-    if (g_BgmTrackCount <= 1) {
+    s32 trackCount = ClampBgmTrackCount(g_BgmTrackCount);
+
+    if (trackCount <= 1) {
         return;
     }
 
     if (track == g_BgmShuffleOrder[0]) {
-        u8 replacement = g_BgmShuffleOrder[g_BgmTrackCount - 1];
+        u8 replacement = g_BgmShuffleOrder[trackCount - 1];
 
         g_BgmShuffleOrder[0] = replacement;
-        g_BgmShuffleOrder[g_BgmTrackCount - 1] = (u8)track;
+        g_BgmShuffleOrder[trackCount - 1] = (u8)track;
     }
 }
 
 void AdvanceBgmShuffleBag(u32 track) {
-    if (g_BgmTrackCount <= 0) {
+    s32 trackCount = ClampBgmTrackCount(g_BgmTrackCount);
+
+    g_BgmTrackCount = trackCount;
+    if (trackCount == 0) {
         g_BgmShuffleIndex = 0;
         return;
     }
 
-    g_BgmShuffleIndex++;
-    if (g_BgmShuffleIndex >= g_BgmTrackCount) {
+    g_BgmShuffleIndex = WrapBgmTrackIndex(g_BgmShuffleIndex, trackCount) + 1;
+    if (g_BgmShuffleIndex >= trackCount) {
         ShuffleBgmOrder();
         PreventImmediateShuffleRepeat(track);
     }
@@ -38,24 +47,28 @@ void AdvanceBgmShuffleBag(u32 track) {
 
 static void SelectNextBgmTrack(void) {
     if (g_BgmRandomPlay != 0 && g_BgmTrackCount > 0) {
-        g_BgmSelectTrack = g_BgmShuffleOrder[g_BgmShuffleIndex];
+        g_BgmSelectTrack = BgmShuffleTrackAt(
+            g_BgmShuffleOrder, g_BgmTrackCount, g_BgmShuffleIndex);
         AdvanceBgmShuffleBag((u32)g_BgmSelectTrack);
     } else {
-        g_BgmSelectTrack =
-            WrapBgmTrackIndex(g_BgmSelectTrack + 1, g_BgmTrackCount);
+        g_BgmSelectTrack = WrapBgmTrackIndex(
+            WrapBgmTrackIndex(g_BgmSelectTrack, g_BgmTrackCount) + 1,
+            g_BgmTrackCount);
     }
     g_BgmSelectCdTrack = BgmCdTrack(g_BgmSelectTrack);
 }
 
 static void BeginManualTrackChange(void) {
     if (g_BgmChangeDelay == 0) {
-        StartCdVolumeFade(60);
+        StartCdVolumeFade(BGM_VOLUME_FADE_FRAMES);
         g_BgmChangeDelay = BGM_CHANGE_DELAY_MANUAL;
     }
     g_BgmSelectCdTrack = BgmCdTrack(g_BgmSelectTrack);
 }
 
 void UpdateBgmSelectPlayback(void) {
+    g_BgmTrackCount = ClampBgmTrackCount(g_BgmTrackCount);
+
     if (g_BgmChangeDelay > 0) {
         g_BgmChangeDelay--;
         if (g_BgmChangeDelay == 0) {
@@ -77,17 +90,26 @@ static void EnableRandomPlay(void) {
 }
 
 static void ExitBgmSelectScreen(void) {
-    StartCdVolumeFade(60);
-    g_FadeStep = 4;
+    StartCdVolumeFade(BGM_VOLUME_FADE_FRAMES);
+    g_FadeStep = BGM_SELECT_EXIT_FADE_STEP;
 }
 
 void UpdateBgmSelectInput(void) {
     u16 buttons = g_PadPressed;
 
-    if ((buttons & PAD_LEFT) && g_BgmSelectCursor > 0) {
+    g_BgmTrackCount = ClampBgmTrackCount(g_BgmTrackCount);
+    if (g_BgmSelectCursor < BGM_SELECT_FIRST_OPTION) {
+        g_BgmSelectCursor = BGM_SELECT_FIRST_OPTION;
+    } else if (g_BgmSelectCursor > BGM_SELECT_LAST_OPTION) {
+        g_BgmSelectCursor = BGM_SELECT_LAST_OPTION;
+    }
+
+    if ((buttons & PAD_LEFT) &&
+        g_BgmSelectCursor > BGM_SELECT_FIRST_OPTION) {
         g_BgmSelectCursor--;
     }
-    if ((buttons & PAD_RIGHT) && g_BgmSelectCursor < 2) {
+    if ((buttons & PAD_RIGHT) &&
+        g_BgmSelectCursor < BGM_SELECT_LAST_OPTION) {
         g_BgmSelectCursor++;
     }
     if (buttons & PAD_L2) {
@@ -103,7 +125,8 @@ void UpdateBgmSelectInput(void) {
         case 0:
             if (g_BgmRandomPlay == 0) {
                 g_BgmSelectTrack = WrapBgmTrackIndex(
-                    g_BgmSelectTrack - 1, g_BgmTrackCount);
+                    WrapBgmTrackIndex(g_BgmSelectTrack, g_BgmTrackCount) - 1,
+                    g_BgmTrackCount);
             }
             BeginManualTrackChange();
             break;

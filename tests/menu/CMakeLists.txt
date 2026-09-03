@@ -1158,7 +1158,8 @@ set_tests_properties(title_menu_navigation PROPERTIES LABELS unit)
 
 add_executable(bgm_shuffle_tests
     bgm_shuffle_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/bgm_shuffle.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/bgm_shuffle.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/bgm_track.c)
 target_include_directories(bgm_shuffle_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
