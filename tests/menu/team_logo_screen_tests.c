@@ -129,7 +129,11 @@ void DrawLogoSamplePanel(s32 step, s32 sample) {
 static void Reset(void) {
     memset(&g_RenderState, 0, sizeof(g_RenderState));
     GameMenuBusy = 0;
+    g_MenuScreen = 0;
+    g_MenuHandlerIndex = 0;
+    g_MenuOutgoingHandlerIndex = 0;
     g_MenuOverlayPattern = 0;
+    g_MenuConfirmTimer = 0;
     g_MenuSubCursor = 0;
     g_PadPressed = 0;
     g_TeamLogoOption = 0;
@@ -207,6 +211,29 @@ int main(void) {
     CHECK(g_MenuScreen == MENU_SCREEN_DESIGN_MODE);
     CHECK(g_TeamLogoClut[0] == 0);
     CHECK(s_clutUploadCalls == 1);
+
+    Reset();
+    g_TeamLogoOption = INT_MAX;
+    g_MenuSubCursor = UINT8_MAX;
+    UpdateTeamLogoScreen();
+    CHECK(g_TeamLogoOption == 2 && g_MenuSubCursor == 1);
+
+    Reset();
+    GameMenuBusy = -2;
+    g_MenuConfirmTimer = INT_MAX;
+    UpdateTeamLogoScreen();
+    CHECK(g_MenuConfirmTimer == 34 && GameMenuBusy == -2);
+
+    Reset();
+    GameMenuBusy = INT_MIN;
+    g_UiScriptProgress2 = 12;
+    UpdateTeamLogoScreen();
+    CHECK(GameMenuBusy == 0 && g_UiScriptProgress2 == 12);
+
+    Reset();
+    GameMenuBusy = INT_MAX;
+    UpdateTeamLogoScreen();
+    CHECK(GameMenuBusy == 0 && g_MenuScreen == 0);
 
     Reset();
     g_LogoSampleCharIndex = 7;

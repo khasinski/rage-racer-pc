@@ -3,6 +3,25 @@
 #include "game/menu_internal.h"
 #include "game/team_logo.h"
 
+enum TeamLogoScreenState {
+    TEAM_LOGO_IDLE = 0,
+    TEAM_LOGO_EXIT_TO_SAMPLES = 1,
+    TEAM_LOGO_EXIT_TO_DESIGN = 2,
+    TEAM_LOGO_SAVE_PROMPT = -1,
+    TEAM_LOGO_SAVE_COUNTDOWN = -2,
+    TEAM_LOGO_PAINTING = -3,
+    TEAM_LOGO_PAINT_CLOSING = -4,
+};
+
+enum TeamLogoOption {
+    TEAM_LOGO_OPTION_SAMPLES,
+    TEAM_LOGO_OPTION_PAINT,
+    TEAM_LOGO_OPTION_EXIT,
+    TEAM_LOGO_OPTION_COUNT,
+};
+
+enum { TEAM_LOGO_SAVE_CONFIRM_FRAMES = 35 };
+
 s32 DrawTeamLogoScreen(s32 step) {
     return AdvanceMenuFade(&g_TeamLogoScreenFade, step);
 }
@@ -20,24 +39,24 @@ static void DrawTeamLogoSaveButtons(void *ot, s32 flash) {
 
 static void ChooseTeamLogoOption(void) {
     switch (g_TeamLogoOption) {
-    case 0:
+    case TEAM_LOGO_OPTION_SAMPLES:
         PlaySoundCue(2);
-        GameMenuBusy = -1;
+        GameMenuBusy = TEAM_LOGO_SAVE_PROMPT;
         g_MenuSubCursor = 0;
         g_UiScriptProgress2 = 0;
         g_TeamLogoSubPanelScript = g_MenuDialogPanelUpperScript;
         break;
-    case 1:
+    case TEAM_LOGO_OPTION_PAINT:
         PlaySoundCue(2);
         ApplyDuckedSequenceAudio();
-        GameMenuBusy = -3;
+        GameMenuBusy = TEAM_LOGO_PAINTING;
         g_TeamLogoPaintArmed = 0;
         g_UiScriptProgress2 = 0;
         g_TeamLogoSubPanelScript = g_MenuRow1MarkerScript;
         break;
-    case 2:
+    case TEAM_LOGO_OPTION_EXIT:
         PlaySoundCue(3);
-        GameMenuBusy = 2;
+        GameMenuBusy = TEAM_LOGO_EXIT_TO_DESIGN;
         g_MenuOverlayPattern = 2;
         break;
     }
@@ -60,17 +79,19 @@ static void UpdateTeamLogoIdle(void) {
     g_MenuOverlayPattern = -1;
     if (g_PadPressed & PAD_UP) {
         PlaySoundCue(1);
-        g_TeamLogoOption = g_TeamLogoOption > 0 ? g_TeamLogoOption - 1 : 2;
+        g_TeamLogoOption = WrapMenuIndex(
+            g_TeamLogoOption, -1, TEAM_LOGO_OPTION_COUNT);
     }
     if (g_PadPressed & PAD_DOWN) {
         PlaySoundCue(1);
-        g_TeamLogoOption = g_TeamLogoOption < 2 ? g_TeamLogoOption + 1 : 0;
+        g_TeamLogoOption = WrapMenuIndex(
+            g_TeamLogoOption, 1, TEAM_LOGO_OPTION_COUNT);
     }
     if (g_PadPressed & PAD_CONFIRM) {
         ChooseTeamLogoOption();
     } else if (g_PadPressed & PAD_CANCEL) {
         PlaySoundCue(3);
-        GameMenuBusy = 2;
+        GameMenuBusy = TEAM_LOGO_EXIT_TO_DESIGN;
         g_MenuOverlayPattern = 2;
     }
 }
@@ -86,8 +107,8 @@ static void UpdateTeamLogoSavePrompt(void *ot) {
         if (action == MENU_DIALOG_CONFIRM) {
             if (g_MenuSubCursor != 0) {
                 PlaySoundCue(2);
-                GameMenuBusy = -2;
-                g_MenuConfirmTimer = 0x23;
+                GameMenuBusy = TEAM_LOGO_SAVE_COUNTDOWN;
+                g_MenuConfirmTimer = TEAM_LOGO_SAVE_CONFIRM_FRAMES;
             } else {
                 PlaySoundCue(3);
                 GameMenuBusy = 0;
@@ -113,7 +134,7 @@ static void UpdateTeamLogoSaveCountdown(void *ot) {
         RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
         RunTimedDrawScript(g_TeamLogoSubPanelScript, &g_UiScriptProgress2, 0);
         if (g_UiScriptProgress2 <= 0) {
-            GameMenuBusy = 1;
+            GameMenuBusy = TEAM_LOGO_EXIT_TO_SAMPLES;
             g_MenuOverlayPattern = 1;
         }
     } else {
@@ -133,7 +154,7 @@ static void UpdateTeamLogoPainting(void) {
         if (g_PadPressed & PAD_START) {
             PlaySoundCue(3);
             ApplyCurrentSequenceAudio();
-            GameMenuBusy = -4;
+            GameMenuBusy = TEAM_LOGO_PAINT_CLOSING;
         }
         UpdateTeamLogoCanvas();
     }
@@ -157,16 +178,16 @@ static void UpdateTeamLogoPaintClosing(void) {
 
 static void UpdateActiveTeamLogoModal(void *ot, s32 state) {
     switch (state) {
-    case -1:
+    case TEAM_LOGO_SAVE_PROMPT:
         UpdateTeamLogoSavePrompt(ot);
         break;
-    case -2:
+    case TEAM_LOGO_SAVE_COUNTDOWN:
         UpdateTeamLogoSaveCountdown(ot);
         break;
-    case -3:
+    case TEAM_LOGO_PAINTING:
         UpdateTeamLogoPainting();
         break;
-    default:
+    case TEAM_LOGO_PAINT_CLOSING:
         UpdateTeamLogoPaintClosing();
         break;
     }
@@ -178,7 +199,7 @@ static void UpdateActiveTeamLogoModal(void *ot, s32 state) {
 static void UpdateTeamLogoOutgoing(s32 state) {
     g_MenuHandlerIndex = -1;
     g_MenuOutgoingHandlerIndex = MENU_SCREEN_TEAM_LOGO;
-    DrawTeamLogoCanvas(state == 2 ? -1 : 1, 0);
+    DrawTeamLogoCanvas(state == TEAM_LOGO_EXIT_TO_DESIGN ? -1 : 1, 0);
     RunTimedDrawScript(g_TeamLogoScreenScript, &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, g_TeamLogoOption);
@@ -187,13 +208,13 @@ static void UpdateTeamLogoOutgoing(s32 state) {
     }
 
     switch (state) {
-    case 1:
+    case TEAM_LOGO_EXIT_TO_SAMPLES:
         g_MenuScreen = MENU_SCREEN_LOGO_SAMPLE;
         g_MenuHandlerIndex = MENU_SCREEN_LOGO_SAMPLE;
         DrawLogoSamplePanel(0, 0);
         break;
 
-    case 2:
+    case TEAM_LOGO_EXIT_TO_DESIGN:
         g_MenuScreen = MENU_SCREEN_DESIGN_MODE;
         g_MenuHandlerIndex = MENU_SCREEN_DESIGN_MODE;
         g_TeamLogoOption = 0;
@@ -211,12 +232,23 @@ static void UpdateTeamLogoOutgoing(s32 state) {
 void UpdateTeamLogoScreen(void) {
     s32 state = GameMenuBusy;
 
+    g_TeamLogoOption = AddClampedMenuValue(
+        g_TeamLogoOption, 0, 0, TEAM_LOGO_OPTION_COUNT - 1);
+    g_MenuSubCursor = g_MenuSubCursor != 0;
+    if (state == TEAM_LOGO_SAVE_COUNTDOWN) {
+        g_MenuConfirmTimer = AddClampedMenuValue(
+            g_MenuConfirmTimer, 0, 0, TEAM_LOGO_SAVE_CONFIRM_FRAMES);
+    }
     g_MenuAltLayout = 0;
-    if (state == 0) {
+    if (state == TEAM_LOGO_IDLE) {
         UpdateTeamLogoIdle();
-    } else if (state < 0) {
+    } else if (state >= TEAM_LOGO_PAINT_CLOSING &&
+               state <= TEAM_LOGO_SAVE_PROMPT) {
         UpdateActiveTeamLogoModal(RENDER_OT_BASE, state);
-    } else {
+    } else if (state == TEAM_LOGO_EXIT_TO_SAMPLES ||
+               state == TEAM_LOGO_EXIT_TO_DESIGN) {
         UpdateTeamLogoOutgoing(state);
+    } else {
+        GameMenuBusy = TEAM_LOGO_IDLE;
     }
 }
