@@ -186,6 +186,16 @@ int main(void) {
     UpdateCustomizeScreen();
     CHECK(g_CustomizeOption == 2 && GameMenuBusy == 2);
 
+    Reset();
+    GameMenuBusy = -99;
+    UpdateCustomizeScreen();
+    CHECK(GameMenuBusy == 0);
+
+    Reset();
+    GameMenuBusy = 99;
+    UpdateCustomizeScreen();
+    CHECK(GameMenuBusy == 0);
+
     puts("customize screen tests passed");
     return 0;
 }
