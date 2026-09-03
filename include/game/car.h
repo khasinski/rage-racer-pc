@@ -193,7 +193,7 @@ typedef struct GameCarRuntime {
     s16 currentGear;
     s32 engineRpm;
     s16 routeMarkerIndex;
-    s16 routeMarkerActive;
+    s16 slideActive;
     s32 reserved13C;
     u8 pad140[0xC];
     u8 reserved14C;

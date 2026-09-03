@@ -157,7 +157,7 @@ static void TargetSpeedTests(void) {
     memset(&car, 0, sizeof(car));
     car.trackProgress = 0x18 << 4;
     car.routeMarkerIndex = 0;
-    car.routeMarkerActive = 0;
+    car.slideActive = 0;
     UpdateCarAiTargetSpeed(&car, 0);
     Check(car.accelerationLimit == (((150 * 1168) / 160) * 6) / 100,
           "limit halfway between two keys", car.accelerationLimit,
@@ -272,7 +272,7 @@ static void RouteMarkerSeedTests(void) {
     g_Cars[2].trackProgress = 0x150 << 4;
     g_Cars[3].trackProgress = 0x050 << 4;
     g_Cars[4].activeFlag = -1;
-    g_Cars[4].routeMarkerActive = 7;
+    g_Cars[4].slideActive = 7;
     g_Cars[4].routeMarkerIndex = 9;
 
     SeedCarRouteMarkers();
@@ -289,12 +289,12 @@ static void RouteMarkerSeedTests(void) {
         if (carIndex == 4) {
             continue;
         }
-        Check(g_Cars[carIndex].routeMarkerActive == 1,
-              "seed activates route marker", g_Cars[carIndex].routeMarkerActive,
+        Check(g_Cars[carIndex].slideActive == 1,
+              "seed activates slide updates", g_Cars[carIndex].slideActive,
               1);
     }
-    Check(g_Cars[4].routeMarkerActive == 7,
-          "disabled car keeps marker activity", g_Cars[4].routeMarkerActive,
+    Check(g_Cars[4].slideActive == 7,
+          "disabled car keeps slide activity", g_Cars[4].slideActive,
           7);
     Check(g_Cars[4].routeMarkerIndex == 9,
           "disabled car keeps marker index", g_Cars[4].routeMarkerIndex, 9);

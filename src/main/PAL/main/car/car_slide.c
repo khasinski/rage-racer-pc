@@ -19,7 +19,7 @@ static void SettleSlide(GameCarRuntime *car) {
     rate = WrapSigned32((int64_t)rate * 15) / 16;
     car->yawRate = rate;
     if (rate == 0) {
-        car->routeMarkerActive = 0;
+        car->slideActive = 0;
     }
 }
 

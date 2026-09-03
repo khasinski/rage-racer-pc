@@ -344,6 +344,23 @@ int main(int argc, char **argv) {
         puts("FAIL extreme slide start did not use the wrapped product");
         return 1;
     }
+
+    memset(&s_car, 0, sizeof(s_car));
+    s_car.slideActive = 1;
+    s_car.yawRate = 1;
+    UpdateCarSlideAngle(&s_car, 0);
+    if (s_car.yawRate != 0 || s_car.slideActive != 0) {
+        puts("FAIL settled slide stayed active");
+        return 1;
+    }
+
+    s_car.slideActive = 1;
+    s_car.yawRate = 2;
+    UpdateCarSlideAngle(&s_car, 0);
+    if (s_car.yawRate != 1 || s_car.slideActive != 1) {
+        puts("FAIL moving slide was marked inactive");
+        return 1;
+    }
     printf("car motion preserves %d validated states\n", steps);
     return 0;
 }

@@ -82,14 +82,14 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex) {
         car->accelerationLimit = WrapSigned16(
             TargetSpeedAccelerationLimit(blended));
     } else {
-        car->routeMarkerActive = 1;
+        car->slideActive = 1;
         car->routeMarkerIndex += highProgress < position ? 1 : -1;
         if (position < 0x20) {
             car->routeMarkerIndex = 0;
         }
     }
 
-    if (car->routeMarkerActive != 0) {
+    if (car->slideActive != 0) {
         UpdateCarSlideAngle(car, (s16)pitch);
     }
 }

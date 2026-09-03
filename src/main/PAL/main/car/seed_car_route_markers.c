@@ -27,7 +27,7 @@ void SeedCarRouteMarkers(void) {
         }
 
         position = car->trackProgress >> 4;
-        car->routeMarkerActive = 1;
+        car->slideActive = 1;
         car->routeMarkerIndex = 0;
         for (index = 0; index < TRACK_AI_SPEED_KEY_COUNT; index++) {
             const s32 progress =
