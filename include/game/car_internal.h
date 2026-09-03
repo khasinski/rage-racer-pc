@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "game/car.h"
+#include "game/car_collision_internal.h"
 #include "game/car_motion_internal.h"
 #include "game/integer.h"
 #include "game/car_runtime_state.h"
@@ -80,22 +81,6 @@ typedef struct {
     s32 motionResistance;
     s32 throttleAcceleration;
 } CarDrivetrainLoads;
-
-typedef struct CarCollisionHit {
-    s32 region;
-    s32 sampleIndex;
-    s32 quadIndex;
-} CarCollisionHit;
-
-enum {
-    CAR_COLLISION_QUAD_COUNT = 4,
-    LAST_FRONT_COLLISION_REGION = 2,
-};
-
-CarCollisionHit FindFirstCarCollisionQuad(
-    const CarCollisionPoint
-        grid[CAR_COLLISION_QUAD_COUNT][CAR_COLLISION_QUAD_COUNT],
-    const CarCollisionPoint *points, s32 count);
 
 void UpdateCarSteeringGrip(PlayerCarRuntime *car, const GameCarSpec *spec,
                            s32 gripBudget);

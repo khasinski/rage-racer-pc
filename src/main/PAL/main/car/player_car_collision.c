@@ -1,6 +1,7 @@
 #include "game/diagnostics.h"
 #include "game/car.h"
-#include "game/car_internal.h"
+#include "game/car_collision_internal.h"
+#include "game/car_motion_internal.h"
 #include "game/integer.h"
 #include "game/race.h"
 #include "game/audio.h"

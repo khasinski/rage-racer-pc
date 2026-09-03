@@ -736,14 +736,6 @@ void InitPlayerCar(PlayerCarRuntime *car);
  * and time-slices cars 4..10; attract has no player so every car runs. */
 void UpdateRaceCars(void);
 void UpdateAttractCars(void);
-/* Player-vs-field collision (detection, response and the crash cue), called
- * only from UpdatePlayerCar; returns the struck sub-quad 1..4 or 0. */
-/* update_player_car.c spells the argument void *; the body reads
- * GameCarRuntime *. */
-s32 CollidePlayerWithCars(PlayerCarRuntime *car);
-/* One row of the AI pairwise sweep: car[index] against car[index + 1 .. 10],
- * push-apart only - no sound, no damage globals, no mode gate. */
-s32 CollideRivalCars(GameCarRuntime *car, s32 index);
 /* Draws one car, from the DrawCars loop; two LOD tiers plus the mirrored
  * wheel pass, submitted through SubmitModel. */
 /* Selects model bank 1 and calls DrawCar for each of the 11 runtime cars
