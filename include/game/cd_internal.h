@@ -61,6 +61,13 @@ extern u32 g_CdMixFullLR;
 extern u32 g_CdMixFullRR;
 extern u32 g_CdMixFullRL;
 
+/* Internal stages pumped by TickCdAudio and InitCdAudio. */
+void BuildCdTrackTable(void);
+void StepCdTrackRequest(void);
+void StepCdPlayRequest(void);
+void StepCdPauseRequest(void);
+void StepCdVolumeFade(void);
+
 /* Native CD backend notification used to advance to the next audio track. */
 void QueueCdTrackRestart(s32 track);
 

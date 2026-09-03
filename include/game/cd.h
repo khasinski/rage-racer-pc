@@ -81,7 +81,6 @@ void ResetCdAudioState(void);
  */
 void SetCdVolume(s32 volume);
 void StartCdVolumeFade(s32 frames);
-void StepCdVolumeFade(void);
 /* Re-push the current g_CdVolume (used after a mode change). */
 /* Map the 0..15 option-screen level onto the 0..0x7F attenuator. */
 void SetCdVolumeSetting(s32 level);
@@ -96,17 +95,9 @@ void SetCdMixPreset(s32 preset);
  * clears the pending value when it finishes.
  */
 void TickCdAudio(void);
-void StepCdTrackRequest(void);   /* CdlSeekP 0x16 */
-/* CdlPlay 0x03, for both a fresh play and a resume: the sequence is the
- * same, so the dispatch sends both commands here. */
-void StepCdPlayRequest(void);
-void StepCdPauseRequest(void);   /* CdlGetlocP + CdlPause */
 /* Boot-time setup: SPU CD input on, drive into CD-DA mode, track table built,
  * every pending/step word cleared and the volume set to full. */
 void InitCdAudio(void);
-/* Build the g_CdTrackLocs CdlLOC table: CdGetToc, each audio track pushed 0x3C
- * sectors in, then the file-backed entries found with DsSearchFile. */
-void BuildCdTrackTable(void);
 
 extern CdCommandType g_CdCommandPending;
 extern s32 g_CdCommandStep;
