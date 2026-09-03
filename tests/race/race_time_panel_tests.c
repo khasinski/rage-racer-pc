@@ -4,6 +4,7 @@
 #include "game/save_internal.h"
 #include "game/screens.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -71,6 +72,12 @@ int main(void) {
     CHECK(strcmp(s_calls[4].text, "2/202") == 0);
     CHECK(s_calls[3].color == 0x7812 && s_calls[4].color == 0x784C);
     CHECK(s_calls[5].y == 5 + 0xB0 + 2 * 0xC);
+
+    Reset();
+    g_GrandPrixSeries = SHRT_MAX;
+    g_BestTotalTimes[0][1][0] = g_RaceTotalTime;
+    DrawRaceTimePanel(0);
+    CHECK(s_calls[1].color == 0x784C);
 
     Reset();
     g_CourseIndex = 7;

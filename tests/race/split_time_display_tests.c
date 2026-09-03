@@ -2,6 +2,7 @@
 #include <limits.h>
 
 #include "game/race_hud_internal.h"
+#include "game/race_internal.h"
 
 int main(void) {
     assert(SplitCurrentTimeVisible(59, 0));
@@ -20,10 +21,10 @@ int main(void) {
     assert(SplitTimeClut(599998) == 0x78CC);
     assert(SplitTimeClut(599999) == 0x7890);
     assert(SplitTimeClut(-1) == 0x7890);
-    assert(SplitRecordSeriesIndex(0) == 0);
-    assert(SplitRecordSeriesIndex(1) == 1);
-    assert(SplitRecordSeriesIndex(INT_MIN) == 0);
-    assert(SplitRecordSeriesIndex(INT_MAX) == 0);
+    assert(RaceSeriesIndex(0) == 0);
+    assert(RaceSeriesIndex(1) == 1);
+    assert(RaceSeriesIndex(INT_MIN) == 0);
+    assert(RaceSeriesIndex(INT_MAX) == 0);
     assert(SplitDisplaySectorIndex(2) == 2);
     assert(SplitDisplaySectorIndex(-1) == 0);
     assert(SplitDisplaySectorIndex(INT_MAX) == 0);

@@ -2,7 +2,6 @@
 
 enum {
     SPLIT_SECTOR_COUNT = 3,
-    SPLIT_SERIES_COUNT = 2,
     SPLIT_DISPLAY_FRAMES = 60,
     MAX_DISPLAY_TIME_MS = 599998,
     SPLIT_AHEAD_CLUT = 0x7810,
@@ -30,10 +29,6 @@ s32 SplitTimeClut(s32 timeMs) {
     return timeMs >= 0 && timeMs <= MAX_DISPLAY_TIME_MS
                ? SPLIT_TIME_CLUT
                : SPLIT_TIME_OVERFLOW_CLUT;
-}
-
-s32 SplitRecordSeriesIndex(s32 series) {
-    return (u32)series < SPLIT_SERIES_COUNT ? series : 0;
 }
 
 s32 SplitDisplaySectorIndex(s32 sector) {

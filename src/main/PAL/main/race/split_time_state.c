@@ -92,7 +92,7 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
         g_SectorIndex = 0;
         g_SplitSign = 0;
         g_SplitTargetTime =
-            g_BestSectorTimes[SplitRecordSeriesIndex(g_RaceSeries)]
+            g_BestSectorTimes[RaceSeriesIndex(g_RaceSeries)]
                              [SeriesCourseIndex()][0];
         g_SplitTimer = SPLIT_DISPLAY_FRAMES;
         g_SplitSector = 0;

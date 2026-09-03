@@ -31,6 +31,7 @@ void DrawRaceTimePanel(s32 slideY) {
     char text[LABELED_RACE_TIME_CAPACITY];
     s32 lapCount = CourseLapCount(g_CourseIndex);
     s32 recordMode = RaceRecordMode(g_GrandPrixMode);
+    s32 series = RaceSeriesIndex(g_GrandPrixSeries);
     s32 bestTimeColor;
     s32 lap;
 
@@ -39,7 +40,7 @@ void DrawRaceTimePanel(s32 slideY) {
 
     FormatLabeledRaceTime(text, 'T', g_RaceTotalTime);
     bestTimeColor =
-        g_BestTotalTimes[g_GrandPrixSeries][SeriesCourseIndex()]
+        g_BestTotalTimes[series][SeriesCourseIndex()]
                         [recordMode] == g_RaceTotalTime
             ? NEW_RECORD_TEXT_CLUT
             : PANEL_TEXT_CLUT;

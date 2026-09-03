@@ -29,6 +29,10 @@ static inline s32 RaceRecordMode(s32 grandPrixMode) {
     return grandPrixMode != 0;
 }
 
+static inline s32 RaceSeriesIndex(s32 series) {
+    return (u32)series < 2 ? series : 0;
+}
+
 s32 ReplayEndingWashActive(s32 sceneTimer, s32 frameCount);
 s32 ReplayEndingWashLevel(s32 sceneTimer, s32 frameCount);
 s32 AdvanceReplayFadeLevel(s32 level, s32 step);

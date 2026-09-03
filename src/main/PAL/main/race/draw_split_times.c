@@ -1,6 +1,7 @@
 #include "game/save_internal.h"
 #include "game/race.h"
 #include "game/race_hud_internal.h"
+#include "game/race_internal.h"
 #include "game/render.h"
 #include "game/player_car_internal.h"
 
@@ -44,7 +45,7 @@ void DrawSplitTimes(void) {
     DrawSplitIndicator(SplitDisplaySectorIndex(g_SplitSector), g_SplitSign);
 
     DrawTimeValue(HudRightX(BEST_TOTAL_TIME_X), BEST_TOTAL_TIME_Y,
-                  g_BestTotalTimes[SplitRecordSeriesIndex(g_RaceSeries)]
+                  g_BestTotalTimes[RaceSeriesIndex(g_RaceSeries)]
                                   [SeriesCourseIndex()][0],
                   DEFAULT_TIME_CLUT, MILLISECONDS_PER_SECOND);
 }
