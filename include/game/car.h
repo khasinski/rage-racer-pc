@@ -13,6 +13,8 @@ enum {
     CUSTOM_PAINT_CAR_COUNT = 10,
     RACE_CAR_SLOT_COUNT = 11,
     RIVAL_CONTENDER_COUNT = 4,
+    CAR_HULL_CORNER_COUNT = 4,
+    PLAYER_HULL_SAMPLE_COUNT = 6,
     CAR_MODEL_VARIANT_COUNT = 32,
     CAR_TIRE_COMPOUND_COUNT = 5,
     CAR_WHEEL_BLUR_FLAG = 0x1000,
@@ -295,10 +297,10 @@ static inline GameCarRuntime *AsRivalCar(struct PlayerCarRuntime *car) {
     return view.rival;
 }
 
-extern CarHullPoint g_PlayerHullPoints[6];
-extern CarHullPoint g_OpponentHullCorners[4];
-extern CarHullPoint g_CarCornerOffsets[4];
-extern CarCollisionPoint g_CarCollisionCorners[4];
+extern CarHullPoint g_PlayerHullPoints[PLAYER_HULL_SAMPLE_COUNT];
+extern CarHullPoint g_OpponentHullCorners[CAR_HULL_CORNER_COUNT];
+extern CarHullPoint g_CarCornerOffsets[CAR_HULL_CORNER_COUNT];
+extern CarCollisionPoint g_CarCollisionCorners[CAR_HULL_CORNER_COUNT];
 
 /* Per-car runtime state, player in slot 0. Individual slots and single fields
  * also have their own split symbols. */

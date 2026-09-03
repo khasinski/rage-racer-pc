@@ -6,6 +6,10 @@
 #include "game/render.h"
 #include "game/state.h"
 
+enum {
+    CAR_HULL_COORDINATE_SCALE = 4,
+};
+
 static int ShouldTraceTrackLimits(void) {
     if (!DiagnosticsEnabled("car.track_trace")) {
         return 0;
@@ -37,12 +41,14 @@ void MeasurePlayerTrackLimits(const Matrix *toTrack,
     limits->leftInset = -1;
     limits->rightContact = CAR_TRACK_CONTACT_NONE;
     limits->leftContact = CAR_TRACK_CONTACT_NONE;
-    for (index = 0; index < 4; index++) {
+    for (index = 0; index < CAR_HULL_CORNER_COUNT; index++) {
         corner.vx = WrapSigned16(
-            (int64_t)g_CarCornerOffsets[index].x * 4);
+            (int64_t)g_CarCornerOffsets[index].x *
+            CAR_HULL_COORDINATE_SCALE);
         corner.vy = 0;
         corner.vz = WrapSigned16(
-            (int64_t)g_CarCornerOffsets[index].z * 4);
+            (int64_t)g_CarCornerOffsets[index].z *
+            CAR_HULL_COORDINATE_SCALE);
         ApplyMatrix(&transform, &corner, &reach);
         if (traceLimits) {
             TraceTrackLimit(toTrack, &corner, &reach);

@@ -10,7 +10,7 @@ typedef struct CarCollisionHit {
 } CarCollisionHit;
 
 enum {
-    CAR_COLLISION_QUAD_COUNT = 4,
+    CAR_COLLISION_QUAD_COUNT = CAR_HULL_CORNER_COUNT,
     LAST_FRONT_COLLISION_REGION = 2,
 };
 
