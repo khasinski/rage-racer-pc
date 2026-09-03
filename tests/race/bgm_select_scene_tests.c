@@ -28,7 +28,10 @@ static s32 s_worldUpdates;
 
 void UpdateBgmSelectPlayback(void) { s_playbackUpdates++; }
 void UpdateBgmSelectInput(void) { s_inputUpdates++; }
-void RequestOptionScreenAssets(void) { s_assetRequests++; }
+s32 RequestOptionScreenAssets(void) {
+    s_assetRequests++;
+    return 1;
+}
 void SetDispMask(s32 enabled) { s_displayMask = enabled; }
 void DrawFullscreenFadeTile(s32 level, s32 tpage) {
     /* The assertion is the only reader, and a release build compiles it

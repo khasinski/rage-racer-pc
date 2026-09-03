@@ -394,6 +394,7 @@ void LoadCarSelectAssets(void);
 /* Phase 5/6: one car's CAR_xx.1ST pack into the double-buffered showroom slot;
  * the "Upgraded" pair asks for modelVariant + 1, i.e. the next grade's body. */
 /* Phase 7: OPTION.BIN. */
+s32 RequestOptionScreenAssets(void);
 void LoadOptionScreenAssets(void);
 /* Phase 8: the GP*.TMS round screen (series * 6 + class + 0x4A) plus VOICE.BIN.
  * The request also rolls a random class when g_GrandPrixMode is 0. */
@@ -492,7 +493,6 @@ s32 RegisterModelBank(ModelBankHeader *base, size_t size, s32 index);
 s32 RegisterCourseModels(CourseModelAssetHeader *base, size_t size);
 s32 RequestRaceStart(void);
 void RequestCarModel(s32 carIndex);
-void RequestOptionScreenAssets(void);
 void RequestUpgradedCarModel(s32 carIndex);
 void ResetTrackTextureSwap(void);
 s32 SetEnvironmentScript(struct GameEnvironmentScript *script, size_t size);

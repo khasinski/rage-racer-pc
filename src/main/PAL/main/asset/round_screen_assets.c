@@ -7,7 +7,9 @@
 
 enum {
     OVAL_MINIMUM_CLASS = 2,
+    GRAND_PRIX_SERIES_COUNT = 2,
     ROUND_SCREENS_PER_SERIES = 6,
+    ROUND_MAX_CLASS = ROUND_SCREENS_PER_SERIES - 1,
     ROUND_LOAD_SCREEN = 1,
     ROUND_LOAD_VOICE_BANK = 2,
 };
@@ -19,17 +21,29 @@ static s32 RandomClassInRange(s32 minimum, s32 maximum) {
     return minimum + (Random15() & 0xFFF) % (maximum - minimum + 1);
 }
 
+static s32 MaximumUnlockedRoundClass(void) {
+    s32 series = g_GrandPrixSeries;
+    s32 maximum;
+
+    if ((u32)series >= GRAND_PRIX_SERIES_COUNT) {
+        series = 0;
+    }
+    maximum = g_MaxClassReached[series];
+    if (maximum < 0) return 0;
+    return maximum < ROUND_MAX_CLASS ? maximum : ROUND_MAX_CLASS;
+}
+
 s32 RequestRoundAssets(void) {
     if (g_AssetLoadState != 0) {
         ResetAssetLoader();
     }
 
     if (g_GrandPrixMode == 0) {
-        g_GrandPrixClass = RandomClassInRange(
-            0, g_MaxClassReached[g_GrandPrixSeries]);
+        s32 maximum = MaximumUnlockedRoundClass();
+
+        g_GrandPrixClass = RandomClassInRange(0, maximum);
         if (SeriesCourseIndex() == 3 &&
             g_GrandPrixClass < OVAL_MINIMUM_CLASS) {
-            s32 maximum = g_MaxClassReached[g_GrandPrixSeries];
             g_GrandPrixClass =
                 RandomClassInRange(OVAL_MINIMUM_CLASS, maximum);
         }
@@ -50,6 +64,10 @@ static s32 RoundScreenAssetId(void) {
     if (g_GrandPrixMode == 0) {
         return ASSET_TIME_ATTACK_ROUND_SCREEN;
     }
+    if ((u32)g_GrandPrixSeries >= GRAND_PRIX_SERIES_COUNT ||
+        (u32)g_GrandPrixClass >= ROUND_SCREENS_PER_SERIES) {
+        return -1;
+    }
     return ASSET_ROUND_SCREEN_BASE +
            g_GrandPrixSeries * ROUND_SCREENS_PER_SERIES +
            g_GrandPrixClass;
@@ -58,7 +76,14 @@ static s32 RoundScreenAssetId(void) {
 /* Asset ASSET_VOICE_BANK is written immediately after the round-screen block.
  * Its first three words contain one shared value and two relative offsets. */
 static void LoadRoundScreen(void) {
-    s32 roundSize = LoadAsset(RoundScreenAssetId(), g_ImageBlockBuffer);
+    s32 assetId = RoundScreenAssetId();
+    s32 roundSize;
+
+    if (assetId < 0) {
+        FailAssetLoad();
+        return;
+    }
+    roundSize = LoadAsset(assetId, g_ImageBlockBuffer);
 
     if (roundSize <= 0) return;
 

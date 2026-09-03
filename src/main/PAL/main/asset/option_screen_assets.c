@@ -5,8 +5,9 @@
 
 enum { OPTION_SCREEN_LOAD_ASSET = 1 };
 
-void RequestOptionScreenAssets(void) {
-    RequestAssetLoad(ASSET_REQUEST_OPTION_SCREEN, OPTION_SCREEN_LOAD_ASSET, 1);
+s32 RequestOptionScreenAssets(void) {
+    return RequestAssetLoad(ASSET_REQUEST_OPTION_SCREEN,
+                            OPTION_SCREEN_LOAD_ASSET, 1);
 }
 
 void LoadOptionScreenAssets(void) {

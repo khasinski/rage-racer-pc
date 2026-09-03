@@ -8,6 +8,7 @@
 #include "game/render.h"
 #include "game/team_logo.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -339,19 +340,27 @@ int main(void) {
     g_AssetLoadState = 0;
     g_AssetRequestType = ASSET_REQUEST_IDLE;
     s_resetCalls = 0;
-    RequestOptionScreenAssets();
-    Check(g_AssetRequestType == ASSET_REQUEST_OPTION_SCREEN,
+    Check(RequestOptionScreenAssets() == 1 &&
+              g_AssetRequestType == ASSET_REQUEST_OPTION_SCREEN,
           "OPTION request type");
     Check(g_AssetLoadState == 1 && s_resetCalls == 1,
           "OPTION request starts loader and resets CD");
-    RequestOptionScreenAssets();
-    Check(g_AssetRequestType == ASSET_REQUEST_OPTION_SCREEN &&
+    Check(RequestOptionScreenAssets() == 1 &&
+              g_AssetRequestType == ASSET_REQUEST_OPTION_SCREEN &&
               g_AssetLoadState == 1 && s_resetCalls == 1,
           "busy OPTION request preserves loader state");
     g_AssetLoadState = 0;
-    RequestOptionScreenAssets();
-    Check(g_AssetRequestType == ASSET_REQUEST_IDLE,
+    Check(RequestOptionScreenAssets() == 0 &&
+              g_AssetRequestType == ASSET_REQUEST_IDLE,
           "OPTION request acknowledged");
+
+    Check(RequestOptionScreenAssets() == 1,
+          "OPTION request can restart after acknowledgement");
+    g_AssetLoadState = 0;
+    g_AssetLoadFailed = 1;
+    Check(RequestOptionScreenAssets() == -1 &&
+              g_AssetRequestType == ASSET_REQUEST_IDLE,
+          "failed OPTION request reports failure");
 
     memset(&pack, 0, sizeof(pack));
     ((OptionScreenAsset *)pack.bytes)->imageOffset = 48;
@@ -472,6 +481,36 @@ int main(void) {
     LoadRoundAssets();
     Check(s_lastAssetId == ASSET_ROUND_SCREEN_BASE + 10,
           "Extra GP class round screen asset id");
+
+    g_GrandPrixMode = 0;
+    g_GrandPrixSeries = -1;
+    g_MaxClassReached[0] = INT_MAX;
+    g_AssetLoadState = 0;
+    g_AssetRequestType = ASSET_REQUEST_IDLE;
+    s_randomValues[0] = 0xFFF;
+    s_randomCallCount = 0;
+    RequestRoundAssets();
+    Check(g_GrandPrixClass == 3,
+          "invalid series falls back to bounded primary progress");
+
+    g_GrandPrixMode = 1;
+    g_GrandPrixSeries = 2;
+    g_GrandPrixClass = 0;
+    g_AssetLoadState = 1;
+    g_AssetLoadFailed = 0;
+    s_lastAssetId = -1;
+    LoadRoundAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              s_lastAssetId == -1,
+          "invalid GP series is rejected before disc access");
+
+    g_GrandPrixSeries = 0;
+    g_GrandPrixClass = 6;
+    g_AssetLoadState = 1;
+    g_AssetLoadFailed = 0;
+    LoadRoundAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed(),
+          "invalid GP class is rejected before disc access");
 
     if (s_failures != 0) return 1;
     puts("asset requests acknowledge and install their BGM blocks");
