@@ -129,5 +129,25 @@ int main(void) {
     Check("series clear is not a promotion", g_ClassPromoted, 0);
     Check("standard finale unlocks Extra record", g_ClassRecords[6].place, 0);
 
+    Reset();
+    g_CourseProgress = NULL;
+    CommitClassProgress();
+    Check("missing course progress stays incomplete", g_ClassCompleted, 0);
+    Check("missing course progress clears stale grade", g_ClassResultPlace, 0);
+    Check("missing course progress clears stale fanfare",
+          g_ClassClearFanfareTimer, 0);
+
+    Reset();
+    g_RaceProgress = NULL;
+    CommitClassProgress();
+    Check("missing race progress stays incomplete", g_ClassCompleted, 0);
+
+    Reset();
+    g_GrandPrixSeries = 1;
+    g_GrandPrixClass = GRAND_PRIX_FINAL_CLASS_INDEX;
+    CommitClassProgress();
+    Check("invalid series-class pair stays incomplete", g_ClassCompleted, 0);
+    Check("invalid series-class pair does not update BGM", s_bgmUpdates, 0);
+
     return s_failures != 0;
 }

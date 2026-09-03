@@ -10,18 +10,40 @@ enum {
     CLASS_GRADE_COURSE_COUNT = 4,
     CLASS_GRADE_DISQUALIFIED = 0,
     UNUSED_COURSE_PLACE = 0xFF,
+    STANDARD_SERIES_CLASS_COUNT = 6,
+    EXTRA_SERIES_CLASS_COUNT = 5,
 };
 
 s32 GrandPrixCourseCount(s32 classIndex) {
+    if ((u32)classIndex >= STANDARD_SERIES_CLASS_COUNT) {
+        return 0;
+    }
     return classIndex < COURSE_UNLOCK_CLASS
         ? BEGINNER_CLASS_COURSE_COUNT
         : ADVANCED_CLASS_COURSE_COUNT;
+}
+
+s32 GrandPrixClassRecordIndex(s32 series, s32 classIndex) {
+    s32 classCount;
+
+    if ((u32)series >= 2) {
+        return CLASS_RECORD_NO_UNLOCK;
+    }
+    classCount = series == 0 ? STANDARD_SERIES_CLASS_COUNT
+                             : EXTRA_SERIES_CLASS_COUNT;
+    if ((u32)classIndex >= (u32)classCount) {
+        return CLASS_RECORD_NO_UNLOCK;
+    }
+    return series * STANDARD_SERIES_CLASS_COUNT + classIndex;
 }
 
 s32 NextUnlockedClassRecord(s32 classRecordIndex) {
     /* Finishing standard GP class 4 opens extra GP class 0 (record 6).
      * Finishing extra GP class 4 opens standard GP class 5 (record 5), while
      * standard class 5 is the branch point and opens no single next record. */
+    if ((u32)classRecordIndex >= CLASS_RECORD_COUNT) {
+        return CLASS_RECORD_NO_UNLOCK;
+    }
     if (classRecordIndex == 4) {
         return 6;
     }
@@ -76,6 +98,12 @@ s32 CountClassWins(const ScoreRecord *records, s32 recordCount) {
     s32 wins = 0;
     s32 record;
 
+    if (records == NULL || recordCount <= 0) {
+        return 0;
+    }
+    if (recordCount > CLASS_RECORD_COUNT) {
+        recordCount = CLASS_RECORD_COUNT;
+    }
     for (record = 0; record < recordCount; record++) {
         if (records[record].place == 1) {
             wins++;
@@ -97,6 +125,9 @@ s32 BgmTrackCountForClassWins(s32 classWinCount) {
 }
 
 s32 BestRacePlace(s32 previousPlace, s32 racePosition) {
+    if (racePosition < 1 || racePosition > 3) {
+        return previousPlace;
+    }
     return previousPlace == 0 || racePosition < previousPlace
         ? racePosition
         : previousPlace;
@@ -105,6 +136,10 @@ s32 BestRacePlace(s32 previousPlace, s32 racePosition) {
 s32 GrandPrixClassIsComplete(const u8 *bestPlaces, s32 courseCount) {
     s32 course;
 
+    if (bestPlaces == NULL || courseCount <= 0 ||
+        courseCount > CLASS_GRADE_COURSE_COUNT) {
+        return 0;
+    }
     for (course = 0; course < courseCount; course++) {
         if (bestPlaces[course] == 0) {
             return 0;
@@ -130,7 +165,7 @@ s32 ComputeClassGradeForPlaces(const u8 bestPlaces[4], s32 unlockPending) {
     s32 placeTotal = 0;
     s32 course;
 
-    if (unlockPending != 0) {
+    if (bestPlaces == NULL || unlockPending != 0) {
         return CLASS_GRADE_DISQUALIFIED;
     }
 

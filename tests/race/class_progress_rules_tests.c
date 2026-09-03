@@ -30,12 +30,22 @@ int main(void) {
     Check("class 1 courses", GrandPrixCourseCount(1), 3);
     Check("class 2 courses", GrandPrixCourseCount(2), 4);
     Check("class 5 courses", GrandPrixCourseCount(5), 4);
+    Check("invalid class has no courses", GrandPrixCourseCount(-1), 0);
+    Check("class past table has no courses", GrandPrixCourseCount(6), 0);
+
+    Check("standard class record", GrandPrixClassRecordIndex(0, 5), 5);
+    Check("extra class record", GrandPrixClassRecordIndex(1, 4), 10);
+    Check("invalid shared-extra record", GrandPrixClassRecordIndex(1, 5), -1);
+    Check("invalid series record", GrandPrixClassRecordIndex(2, 0), -1);
 
     for (i = 0; i < (s32)(sizeof(expectedUnlocks) / sizeof(expectedUnlocks[0]));
          i++) {
         Check("next class record", NextUnlockedClassRecord(i),
               expectedUnlocks[i]);
     }
+    Check("invalid next class record", NextUnlockedClassRecord(-1), -1);
+    Check("past last class record",
+          NextUnlockedClassRecord(CLASS_RECORD_COUNT), -1);
 
     Check("standard class 3", IsFinalGrandPrixClass(0, 3), 0);
     Check("standard class 4", IsFinalGrandPrixClass(0, 4), 1);
@@ -98,6 +108,9 @@ int main(void) {
     records[10].place = -1;
     Check("class wins", CountClassWins(records, CLASS_RECORD_COUNT), 2);
     Check("empty class record range", CountClassWins(records, 0), 0);
+    Check("missing class records", CountClassWins(NULL, 3), 0);
+    Check("oversized class record range",
+          CountClassWins(records, CLASS_RECORD_COUNT + 10), 2);
     Check("four wins keep default BGM", BgmTrackCountForClassWins(4), 9);
     Check("fifth win unlocks BGM", BgmTrackCountForClassWins(5), 10);
     Check("later wins keep unlocked BGM",
@@ -106,12 +119,17 @@ int main(void) {
     Check("first course result", BestRacePlace(0, 3), 3);
     Check("improved course result", BestRacePlace(3, 1), 1);
     Check("worse course result", BestRacePlace(2, 3), 2);
+    Check("invalid course result is ignored", BestRacePlace(2, -1), 2);
     Check("three-course class complete",
           GrandPrixClassIsComplete(shortFirstPlace, 3), 1);
     Check("fourth course still missing",
           GrandPrixClassIsComplete(missingFourthPlace, 4), 0);
     Check("four-course class complete",
           GrandPrixClassIsComplete(firstPlace, 4), 1);
+    Check("missing class progress is incomplete",
+          GrandPrixClassIsComplete(NULL, 4), 0);
+    Check("oversized class progress is incomplete",
+          GrandPrixClassIsComplete(firstPlace, 5), 0);
 
     Check("first class grade", BestClassGrade(0, 3), 3);
     Check("improved class grade", BestClassGrade(3, 1), 1);
@@ -132,6 +150,8 @@ int main(void) {
     Check("no class grade", ComputeClassGradeForPlaces(noGrade, 0), 0);
     Check("pending unlock blocks grade",
           ComputeClassGradeForPlaces(firstPlace, 1), 0);
+    Check("missing places have no grade",
+          ComputeClassGradeForPlaces(NULL, 0), 0);
 
     return s_failures != 0;
 }

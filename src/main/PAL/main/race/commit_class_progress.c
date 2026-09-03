@@ -12,9 +12,20 @@ void CommitClassProgress(void) {
     s32 grade;
     s32 carUnlockLevel;
 
-    coursePlace = &g_CourseProgress->bestPlace[SeriesCourseIndex()];
     g_ClassClearFanfareTimer = 0;
+    g_ClassCompleted = 0;
+    g_ClassPromoted = 0;
+    g_ClassResultPlace = 0;
+    g_SeriesCleared = 0;
 
+    classRecordIndex = GrandPrixClassRecordIndex(
+        g_GrandPrixSeries, g_GrandPrixClass);
+    if (g_CourseProgress == NULL || g_RaceProgress == NULL ||
+        classRecordIndex < 0) {
+        return;
+    }
+
+    coursePlace = &g_CourseProgress->bestPlace[SeriesCourseIndex()];
     *coursePlace = (u8)BestRacePlace(*coursePlace,
                                     g_PlayerCar.drive.racePosition);
 
@@ -27,7 +38,6 @@ void CommitClassProgress(void) {
     g_ClassCompleted = GrandPrixClassIsComplete(
         g_CourseProgress->bestPlace, courseCount);
     if (g_ClassCompleted) {
-        classRecordIndex = g_GrandPrixSeries * 6 + g_GrandPrixClass;
         nextRecordIndex = NextUnlockedClassRecord(classRecordIndex);
         if (nextRecordIndex >= 0 && g_ClassRecords[nextRecordIndex].place == -1) {
             g_ClassRecords[nextRecordIndex].place = 0;
