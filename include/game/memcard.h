@@ -28,25 +28,8 @@ typedef struct MemoryCardMessageRow {
 void AdvanceSaveHeaderCounter(void);
 void RestartMemoryCard(void);
 void ClearSaveHeaderRows(GameSaveHeaderRow *rows);
-void BuildSaveIconBlock(
-    GameSaveIconBlock *block,
-    const char *title,
-    s32 iconTile,
-    s32 imageX,
-    s32 imageY);
-void WriteSaveHeaderRow(GameSaveHeaderRow *row);
-s32 LoadSaveStateBlock(const GameSaveBlock *block);
-s32 WriteMemoryCardSaveFile(
-    char *path,
-    char *title,
-    GameSaveIconBlock *iconBlock,
-    GameSaveHeaderRow *header,
-    GameSaveBlock *saveBlock);
 s32 WriteMemoryCardSaveSlot(
     s32 slot,
-    GameSaveHeaderRow *header);
-s32 ReadVerifiedSaveHeader(
-    s32 fd,
     GameSaveHeaderRow *header);
 s32 ScanMemoryCardSaveHeaders(GameSaveHeaderRow *headers);
 s32 LoadMemoryCardSaveSlot(
@@ -168,7 +151,6 @@ extern char g_SaveTitleSjis[];
 void BiosBuInit(void);
 void DrawMemoryCardMessage(s32 message);
 s32 PollMemoryCardStatus(s32 a, s32 b);
-void StoreSaveStateBlock(GameSaveBlock *block);
 void DrawMemoryCardScreen(s32 showSlotBar, s32 fromLoadMenu,
                           s32 selectedRow, s32 selectedSlot);
 

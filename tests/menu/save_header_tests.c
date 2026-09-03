@@ -1,6 +1,7 @@
 #include "common.h"
 #include "game/memcard.h"
 #include "game/menu.h"
+#include "game/save_internal.h"
 
 #include <stdio.h>
 #include <string.h>
