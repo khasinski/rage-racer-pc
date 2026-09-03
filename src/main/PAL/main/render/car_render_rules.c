@@ -10,6 +10,8 @@ enum {
     CAR_MODEL_BANK_FALLBACK = 1,
     MIRROR_BADGE_STYLE_COUNT = 4,
     MIRROR_BADGE_SPRITE_STRIDE = 3,
+    MIRROR_PANEL_HIDDEN_Y = -44,
+    MIRROR_PANEL_VISIBLE_Y = 18,
 };
 
 s32 CarRenderManhattanDistance(s32 x, s32 z, s32 viewX, s32 viewZ) {
@@ -21,6 +23,13 @@ s32 CarRenderManhattanDistance(s32 x, s32 z, s32 viewX, s32 viewZ) {
     if (deltaZ < 0) deltaZ = -deltaZ;
     distance = deltaX + deltaZ;
     return distance > INT_MAX ? INT_MAX : (s32)distance;
+}
+
+s32 AdvanceMirrorPanelY(s32 currentY, int enabled) {
+    if (enabled) {
+        return currentY < MIRROR_PANEL_VISIBLE_Y ? currentY + 1 : currentY;
+    }
+    return currentY > MIRROR_PANEL_HIDDEN_Y ? currentY - 1 : currentY;
 }
 
 CarRenderRange ClassifyCarRenderRange(s32 viewDepth, s32 distance) {

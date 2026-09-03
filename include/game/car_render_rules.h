@@ -15,5 +15,6 @@ CarRenderRange ClassifyCarRenderRange(s32 viewDepth, s32 distance);
 s32 ResolveCarModelBank(s32 baseBank, s32 offset, s32 bankCount);
 s32 ResolveMirrorBadgeSpriteIndex(s32 carIndex, const u8 *styles,
                                   s32 carCount);
+s32 AdvanceMirrorPanelY(s32 currentY, int enabled);
 
 #endif

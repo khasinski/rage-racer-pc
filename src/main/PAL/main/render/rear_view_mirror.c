@@ -11,6 +11,7 @@ enum {
     MIRROR_FRAME_WIDTH = 0x98,
     MIRROR_FRAME_HEIGHT = 0x28,
     MIRROR_CONTENT_X = 0x56,
+    MIRROR_UNLOCK_MODE = 0x169,
 };
 
 DrawPacket *DrawMirrorFrame(u8 *packet) {
@@ -44,23 +45,10 @@ DrawPacket *DrawMirrorFrame(u8 *packet) {
 }
 
 
-static void UpdateMirrorPanelPosition(void) {
-    if (g_MirrorViewEnabled == 0) {
-        if (g_MirrorPanelY >= -0x2B) {
-            g_MirrorPanelY--;
-        }
-        return;
-    }
-
-    if (g_MirrorPanelY < 0x12) {
-        g_MirrorPanelY++;
-    }
-}
-
 void DrawRearViewMirror(s32 mode) {
     DrawPacket *packet;
 
-    if (mode >= 0x169) {
+    if (mode >= MIRROR_UNLOCK_MODE) {
         g_MirrorUnlocked = 1;
     }
 
@@ -68,7 +56,8 @@ void DrawRearViewMirror(s32 mode) {
         return;
     }
 
-    UpdateMirrorPanelPosition();
+    g_MirrorPanelY = AdvanceMirrorPanelY(g_MirrorPanelY,
+                                         g_MirrorViewEnabled != 0);
     if (BeginMirrorPass() == 0) {
         return;
     }

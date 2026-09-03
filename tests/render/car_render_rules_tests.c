@@ -44,6 +44,13 @@ int main(void) {
     CHECK_EQ(ResolveMirrorBadgeSpriteIndex(0, NULL, 5), 0);
     CHECK_EQ(ResolveMirrorBadgeSpriteIndex(1, badgeStyles, -1), 0);
 
+    CHECK_EQ(AdvanceMirrorPanelY(-44, 0), -44);
+    CHECK_EQ(AdvanceMirrorPanelY(-43, 0), -44);
+    CHECK_EQ(AdvanceMirrorPanelY(18, 0), 17);
+    CHECK_EQ(AdvanceMirrorPanelY(17, 1), 18);
+    CHECK_EQ(AdvanceMirrorPanelY(18, 1), 18);
+    CHECK_EQ(AdvanceMirrorPanelY(-44, 1), -43);
+
     puts("car render rules tests passed");
     return 0;
 }
