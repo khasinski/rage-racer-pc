@@ -130,6 +130,5 @@ void UpdateShuttleScenery(s32 instance);
 
 void GetVisibleCellScanOffset(s32 direction, s32 cellIndex, s32 rearView,
                               s32 offset[2]);
-s32 SmoothTrackAngle(s32 pointIndex, s32 weight);
 
 #endif

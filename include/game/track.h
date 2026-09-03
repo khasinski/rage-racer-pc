@@ -116,6 +116,7 @@ typedef struct TrackEventOffsets {
 } TrackEventOffsets;
 
 s32 InterpolateTrackAngle(s32 pointIndex, s32 weight);
+s32 SmoothTrackAngle(s32 pointIndex, s32 weight);
 
 typedef struct TrackAmbienceZone {
     s32 start;

@@ -1,5 +1,4 @@
-#include "game/track_internal.h"
-
+#include "game/track.h"
 
 /*
  * Smooths the track angle at `pointIndex` by blending it (half weight, 0x200)

@@ -94,11 +94,13 @@ static void test_angle_blending(void) {
 }
 
 static void test_track_angle_interpolation(void) {
-    GameTrackPoint points[3] = {0};
+    GameTrackPoint points[5] = {0};
 
     points[0].angle = 0xF00;
     points[1].angle = 0x100;
     points[2].angle = 0x500;
+    points[3].angle = 0x500;
+    points[4].angle = 0x700;
     g_TrackPoints = points;
     g_TrackPointCount = 3;
 
@@ -107,8 +109,14 @@ static void test_track_angle_interpolation(void) {
     EXPECT_EQ(0x200, InterpolateTrackAngle(2, 0x200));
     EXPECT_EQ(0x100, InterpolateTrackAngle(INT_MAX, 0x200));
 
+    g_TrackPointCount = 5;
+    points[2].angle = 0x300;
+    EXPECT_EQ(0x280, SmoothTrackAngle(0, 0x200));
+    EXPECT_EQ(0x4C0, SmoothTrackAngle(2, 0x200));
+
     g_TrackPoints = NULL;
     EXPECT_EQ(0, InterpolateTrackAngle(0, 0x200));
+    EXPECT_EQ(0, SmoothTrackAngle(0, 0x200));
     g_TrackPoints = points;
     g_TrackPointCount = 0;
     EXPECT_EQ(0, InterpolateTrackAngle(0, 0x200));

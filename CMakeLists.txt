@@ -97,6 +97,7 @@ set(RAGE_SIM_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/track/blend_angle.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/track/interpolate_track_angle.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/track/interpolate_track_point.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/track/smooth_track_angle.c
 )
 add_library(rage-sim STATIC ${RAGE_SIM_SOURCES})
 target_include_directories(rage-sim PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)

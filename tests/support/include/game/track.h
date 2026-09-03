@@ -20,6 +20,7 @@ extern const GameTrackPoint *g_TrackPoints;
 extern s32 g_TrackPointCount;
 s32 BlendAngle(s32 angleA, s32 angleB, s32 weight);
 s32 InterpolateTrackAngle(s32 pointIndex, s32 weight);
+s32 SmoothTrackAngle(s32 pointIndex, s32 weight);
 void InterpolateTrackPoint(s32 pointIndex, s32 *out, s32 weight);
 
 #endif
