@@ -20,7 +20,7 @@ s32 RelocateCarModel(void) {
         return 0;
     }
     byteCount = SERIALIZED_CAR_MODEL_HEADER_SIZE +
-                (size_t)source->serializedModelSize;
+                (size_t)source->serializedModelSize + sizeof(CarImageData);
     if (PortAssetRoomAt(g_AssetBase) < byteCount) return 0;
 
     memcpy(g_AssetBase, source, byteCount);
@@ -31,7 +31,7 @@ s32 RelocateCarModel(void) {
             (size_t)source->serializedModelSize, 0)) {
         return 0;
     }
-    if (!InstallSerializedCarModelSlot(destination, 0)) {
+    if (!InstallSerializedCarModelSlot(destination, byteCount, 0)) {
         return 0;
     }
     g_AssetLoadCursor = g_AssetBase + byteCount;

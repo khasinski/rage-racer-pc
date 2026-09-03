@@ -73,7 +73,9 @@ s32 LoadAsset(s32 assetId, void *destination) {
     s_loadDestination = destination;
     return s_loadResult;
 }
-s32 InstallSerializedCarModelSlot(CarModelAsset *asset, s32 slot) {
+s32 InstallSerializedCarModelSlot(CarModelAsset *asset, size_t size,
+                                  s32 slot) {
+    (void)size;
     s_installCarModelSlotCalls++;
     g_CarModelSlots[slot] = asset;
     return s_startAudioResult;

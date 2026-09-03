@@ -30,7 +30,7 @@ s32 InstallCarModelAsset(CarModelAsset *asset, size_t size, s32 slot,
                            (size_t)asset->serializedModelSize, slot)) {
         return 0;
     }
-    if (!InstallSerializedCarModelSlot(asset, slot)) {
+    if (!InstallSerializedCarModelSlot(asset, size, slot)) {
         return 0;
     }
     asset = g_CarModelSlots[slot];

@@ -261,9 +261,9 @@ static int TestCarAssetSlots(void) {
     g_CarModelSlots[0] = &sentinelModel;
     CHECK(IsValidSerializedCarModelAsset(view, completeSize) == 1);
     CHECK(IsValidSerializedCarModelAsset(view, completeSize - 1) == 0);
-    CHECK(InstallSerializedCarModelSlot(view, -1) == 0);
+    CHECK(InstallSerializedCarModelSlot(view, completeSize, -1) == 0);
     CHECK(g_CarModelSlots[0] == &sentinelModel);
-    CHECK(InstallSerializedCarModelSlot(view, 1) == 1);
+    CHECK(InstallSerializedCarModelSlot(view, completeSize, 1) == 1);
     CHECK(g_CarModelSlots[1] != view);
     CHECK(g_CarModelSlots[1]->gearCount == 6);
     CHECK(g_CarModelSlots[1]->serializedModelSize == 24);
@@ -273,22 +273,24 @@ static int TestCarAssetSlots(void) {
           storage.bytes + SERIALIZED_CAR_MODEL_HEADER_SIZE + 24);
     CHECK(FindSerializedCarModelAsset(g_CarModelSlots[1]) == view);
     CHECK(FindSerializedCarModelAsset(&unknownModel) == NULL);
-    CHECK(InstallSerializedCarModelSlot(view, 0) == 1);
+    CHECK(InstallSerializedCarModelSlot(view, completeSize, 0) == 1);
     g_CarModelSlots[0] = NULL;
     CHECK(FindSerializedCarModelAsset(NULL) == NULL);
     g_CarModelSlots[0] = &sentinelModel;
 
-    CHECK(InstallSerializedCarModelSlot(NULL, 0) == 0);
+    CHECK(InstallSerializedCarModelSlot(NULL, completeSize, 0) == 0);
+    CHECK(InstallSerializedCarModelSlot(view, completeSize - 1, 0) == 0);
+    CHECK(g_CarModelSlots[0] == &sentinelModel);
     serialized->modelOffset++;
-    CHECK(InstallSerializedCarModelSlot(view, 0) == 0);
+    CHECK(InstallSerializedCarModelSlot(view, completeSize, 0) == 0);
     CHECK(g_CarModelSlots[0] == &sentinelModel);
     serialized->modelOffset = SERIALIZED_CAR_MODEL_HEADER_SIZE;
     serialized->imageOffset++;
-    CHECK(InstallSerializedCarModelSlot(view, 0) == 0);
+    CHECK(InstallSerializedCarModelSlot(view, completeSize, 0) == 0);
     CHECK(g_CarModelSlots[0] == &sentinelModel);
     serialized->imageOffset = SERIALIZED_CAR_MODEL_HEADER_SIZE + 24;
     view->serializedModelSize = -1;
-    CHECK(InstallSerializedCarModelSlot(view, 0) == 0);
+    CHECK(InstallSerializedCarModelSlot(view, completeSize, 0) == 0);
     CHECK(g_CarModelSlots[0] == &sentinelModel);
 
     g_CarModelAsset = &sentinelModel;

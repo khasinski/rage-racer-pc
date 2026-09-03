@@ -33,12 +33,13 @@ void UploadCarImage(s32 index) {
     LoadImage(&g_CarImageRect, g_CarImageSlots[index]);
 }
 
-s32 InstallSerializedCarModelSlot(CarModelAsset *asset, s32 index) {
+s32 InstallSerializedCarModelSlot(CarModelAsset *asset, size_t size,
+                                  s32 index) {
     SerializedCarModelAssetHeader *serialized;
     u8 *bytes;
 
     if ((u32)index >= CAR_ASSET_SLOT_COUNT ||
-        !IsValidSerializedCarModelAsset(asset, CAR_MODEL_SLOT_SIZE)) {
+        !IsValidSerializedCarModelAsset(asset, size)) {
         return 0;
     }
 

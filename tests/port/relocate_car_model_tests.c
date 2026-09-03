@@ -12,6 +12,7 @@ CarModelAsset *g_CarModelAsset;
 static CarModelAsset *s_serializedAsset;
 static CarModelAsset s_nativeAsset;
 static CarModelAsset *s_installedAsset;
+static size_t s_installedSize;
 static s32 s_installedSlot;
 static s32 s_selectedSlot;
 static ModelBankHeader *s_registeredBank;
@@ -36,8 +37,10 @@ s32 IsValidModelBankAsset(const ModelBankHeader *bank, size_t size) {
     (void)size;
     return 1;
 }
-s32 InstallSerializedCarModelSlot(CarModelAsset *asset, s32 slot) {
+s32 InstallSerializedCarModelSlot(CarModelAsset *asset, size_t size,
+                                  s32 slot) {
     s_installedAsset = asset;
+    s_installedSize = size;
     s_installedSlot = slot;
     s_nativeAsset.modelData.pointer =
         (u8 *)asset + SERIALIZED_CAR_MODEL_HEADER_SIZE;
@@ -65,8 +68,11 @@ static void Check(s32 condition, const char *label) {
 }
 
 int main(void) {
-    enum { MODEL_DATA_SIZE = 16, TOTAL_SIZE =
-        SERIALIZED_CAR_MODEL_HEADER_SIZE + MODEL_DATA_SIZE };
+    enum {
+        MODEL_DATA_SIZE = 16,
+        TOTAL_SIZE = SERIALIZED_CAR_MODEL_HEADER_SIZE + MODEL_DATA_SIZE +
+                     sizeof(CarImageData),
+    };
     union {
         max_align_t alignment;
         u8 bytes[TOTAL_SIZE];
@@ -94,7 +100,8 @@ int main(void) {
     Check(g_AssetLoadCursor == destination.bytes + TOTAL_SIZE,
           "asset cursor follows relocated model");
     Check(s_installedAsset == (CarModelAsset *)(void *)destination.bytes &&
-              s_installedSlot == 0 && s_selectedSlot == 0,
+              s_installedSize == TOTAL_SIZE && s_installedSlot == 0 &&
+              s_selectedSlot == 0,
           "relocated model occupies slot zero");
     Check(s_nativeAsset.modelData.pointer ==
               destination.bytes + SERIALIZED_CAR_MODEL_HEADER_SIZE,
