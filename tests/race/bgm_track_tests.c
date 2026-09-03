@@ -12,6 +12,8 @@ int main(void) {
     assert(BgmCdTrack(8) == 11);
     assert(BgmCdTrack(9) == 17);
     assert(BgmCdTrack(10) == 13);
+    assert(BgmCdTrack(INT_MAX) == INT_MIN + 2);
+    assert(BgmCdTrack(INT_MIN) == INT_MIN + 3);
     assert(WrapBgmTrackIndex(-1, 10) == 9);
     assert(WrapBgmTrackIndex(0, 10) == 0);
     assert(WrapBgmTrackIndex(10, 10) == 0);

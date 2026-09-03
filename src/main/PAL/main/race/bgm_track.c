@@ -1,4 +1,5 @@
 #include "game/audio_internal.h"
+#include "game/integer.h"
 #include "game/race_internal.h"
 
 #include <stddef.h>
@@ -10,7 +11,8 @@ enum {
 };
 
 s32 BgmCdTrack(s32 selectedTrack) {
-    const s32 cdTrack = selectedTrack + FIRST_BGM_CD_TRACK;
+    const s32 cdTrack = WrapSigned32(
+        (int64_t)selectedTrack + FIRST_BGM_CD_TRACK);
     return cdTrack == NON_BGM_CD_TRACK ? REMAPPED_BGM_CD_TRACK : cdTrack;
 }
 
