@@ -31,5 +31,6 @@ int main(void) {
     EXPECT_EQ(8, pixels[20]);
     EXPECT_EQ(255, pixels[23]);
     EXPECT_EQ(0, CarPaintApply(pixels, mask, 6, 18, 0));
+    EXPECT_EQ(0, CarPaintApply(pixels, mask, SIZE_MAX, 0, 0));
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

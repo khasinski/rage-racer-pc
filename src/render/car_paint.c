@@ -41,6 +41,7 @@ int CarPaintApply(uint8_t *rgba, const uint8_t *mask, size_t pixelCount,
                       uint8_t firstColor, uint8_t secondColor) {
     size_t pixel;
     if (rgba == NULL || mask == NULL ||
+        pixelCount > SIZE_MAX / 4u ||
         firstColor >= RAGE_CAR_PAINT_COLOR_COUNT ||
         secondColor >= RAGE_CAR_PAINT_COLOR_COUNT) return 0;
     for (pixel = 0; pixel < pixelCount; pixel++) {
