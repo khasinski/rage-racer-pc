@@ -4,6 +4,7 @@
 #include "game/race.h"
 #include "game/track_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -121,6 +122,26 @@ int main(void) {
     if (digest != expected) {
         printf("FAIL: path scenery digest %u, expected %u\n", digest,
                expected);
+        return 1;
+    }
+
+    positions.keys[0].fields.x = INT_MIN;
+    positions.keys[0].fields.y = INT_MIN;
+    positions.keys[0].fields.z = INT_MIN;
+    positions.keys[1].fields.x = INT_MAX;
+    positions.keys[1].fields.y = INT_MAX;
+    positions.keys[1].fields.z = INT_MAX;
+    g_PlayerCar.x = INT_MAX;
+    g_PlayerCar.y = INT_MAX;
+    g_PlayerCar.z = INT_MAX;
+    g_RacePhase = 2;
+    InitPathScenery();
+    UpdatePathScenery();
+    if (g_PathSceneryHalfDelta[0] != -1 ||
+        g_PathSceneryHalfDelta[1] != -1 ||
+        g_PathSceneryHalfDelta[2] != -1 ||
+        g_LastVolume != 0) {
+        puts("FAIL: full-width path positions were not handled safely");
         return 1;
     }
     puts("path scenery playback preserved");

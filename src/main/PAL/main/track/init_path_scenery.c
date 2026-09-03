@@ -31,8 +31,8 @@ void InitPathScenery(void) {
 
     for (axis = 0; axis < 3; axis++) {
         g_PathSceneryHalfDelta[axis] =
-            (s16)((positionKeys[1].position.w[axis] -
-                   positionKeys[0].position.w[axis]) / 2);
+            PathSceneryHalfDelta(positionKeys[0].position.w[axis],
+                                 positionKeys[1].position.w[axis]);
     }
     g_PathSceneryRotHalfDelta[0] =
         (s16)((rotationKeys[1].fields.x - rotationKeys[0].fields.x) / 2);

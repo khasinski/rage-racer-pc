@@ -58,6 +58,15 @@ static inline s16 NormalizePathSceneryRate(s16 rate) {
     return rate == 0 ? 1 : rate;
 }
 
+static inline s16 PathSceneryHalfDelta(s32 start, s32 end) {
+    const int64_t half = ((int64_t)end - start) / 2;
+    const u16 bits = (u16)half;
+
+    return bits <= 0x7FFF
+        ? (s16)bits
+        : (s16)((s32)bits - 0x10000);
+}
+
 enum { SCENERY_MOTION_END = -1 };
 
 static inline s32 InterpolateSceneryMotionValue(s16 current, s16 next,

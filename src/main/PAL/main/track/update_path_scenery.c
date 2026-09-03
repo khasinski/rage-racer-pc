@@ -1,8 +1,11 @@
 #include "game/audio.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
+#include "game/render_internal.h"
 #include "game/track_internal.h"
 #include "psyq/gte.h"
+
+#include <stdint.h>
 
 enum {
     PATH_SCENERY_AUDIO_RANGE = 0x1000,
@@ -38,8 +41,8 @@ static void AdvancePositionKeyframe(void) {
     g_PathSceneryCursors.posSpan = keyframe->fields.span;
     for (axis = 0; axis < 3; axis++) {
         g_PathSceneryHalfDelta[axis] =
-            (s16)((keyframe[1].position.w[axis] -
-                   keyframe[0].position.w[axis]) / 2);
+            PathSceneryHalfDelta(keyframe[0].position.w[axis],
+                                 keyframe[1].position.w[axis]);
     }
 }
 
@@ -83,11 +86,15 @@ static s32 EasePathValue(s32 start, s32 end, s32 halfDelta,
         return end;
     }
 
-    angle = (phase << 11) / rate;
+    angle = (s32)((int64_t)phase * 0x800 / rate);
     if (phase <= rate / 2) {
-        return end - halfDelta * rcos(angle) / 4096 - halfDelta;
+        return WrapRenderCoordinate32(
+            (int64_t)end - (int64_t)halfDelta * rcos(angle) / 4096 -
+            halfDelta);
     }
-    return start + halfDelta * rsin(angle - 0x400) / 4096 + halfDelta;
+    return WrapRenderCoordinate32(
+        (int64_t)start +
+        (int64_t)halfDelta * rsin(angle - 0x400) / 4096 + halfDelta);
 }
 
 static void UpdatePathPosition(void) {
@@ -114,27 +121,41 @@ static void UpdatePathRotation(void) {
     const s16 phase = g_PathSceneryCursors.rotPhase.signedValue;
     const s16 rate = g_PathSceneryCursors.rotRate.signedValue;
 
-    g_PathSceneryTransform.rotation.vx = (s16)EasePathValue(
-        keyframe[0].fields.x, keyframe[1].fields.x,
-        g_PathSceneryRotHalfDelta[0], phase, rate);
-    g_PathSceneryTransform.rotation.vy = (s16)EasePathValue(
-        keyframe[0].fields.y, keyframe[1].fields.y,
-        g_PathSceneryRotHalfDelta[1], phase, rate);
-    g_PathSceneryTransform.rotation.vz = (s16)EasePathValue(
-        keyframe[0].fields.z, keyframe[1].fields.z,
-        g_PathSceneryRotHalfDelta[2], phase, rate);
+    g_PathSceneryTransform.rotation.vx = WrapRenderCoordinate16(
+        EasePathValue(keyframe[0].fields.x, keyframe[1].fields.x,
+                      g_PathSceneryRotHalfDelta[0], phase, rate));
+    g_PathSceneryTransform.rotation.vy = WrapRenderCoordinate16(
+        EasePathValue(keyframe[0].fields.y, keyframe[1].fields.y,
+                      g_PathSceneryRotHalfDelta[1], phase, rate));
+    g_PathSceneryTransform.rotation.vz = WrapRenderCoordinate16(
+        EasePathValue(keyframe[0].fields.z, keyframe[1].fields.z,
+                      g_PathSceneryRotHalfDelta[2], phase, rate));
     if (phase > rate) {
         g_PathSceneryTransform.rotation = keyframe[1].rotation;
     }
 }
 
+static s32 PathSceneryDistance(int64_t dx, int64_t dy, int64_t dz) {
+    const uint64_t x = dx < 0 ? (uint64_t)-dx : (uint64_t)dx;
+    const uint64_t y = dy < 0 ? (uint64_t)-dy : (uint64_t)dy;
+    const uint64_t z = dz < 0 ? (uint64_t)-dz : (uint64_t)dz;
+    const uint64_t squared = x * x / 4 + y * y / 8 + z * z / 4;
+    const uint64_t audibleRadius =
+        (uint64_t)PATH_SCENERY_MAX_VOLUME * 16;
+
+    if (squared >= audibleRadius * audibleRadius) {
+        return PATH_SCENERY_MAX_VOLUME;
+    }
+    return (s32)(SquareRoot12((long)squared) >> 10);
+}
+
 static void UpdatePathSceneryAudio(void) {
-    const s32 dx =
-        g_PlayerCar.x - g_PathSceneryTransform.position.w[0];
-    const s32 dy =
-        g_PlayerCar.y - g_PathSceneryTransform.position.w[1];
-    const s32 dz =
-        g_PlayerCar.z - g_PathSceneryTransform.position.w[2];
+    const int64_t dx =
+        (int64_t)g_PlayerCar.x - g_PathSceneryTransform.position.w[0];
+    const int64_t dy =
+        (int64_t)g_PlayerCar.y - g_PathSceneryTransform.position.w[1];
+    const int64_t dz =
+        (int64_t)g_PlayerCar.z - g_PathSceneryTransform.position.w[2];
     s32 pitch = 0;
     s32 volume = 0;
 
@@ -142,8 +163,7 @@ static void UpdatePathSceneryAudio(void) {
         dz < PATH_SCENERY_AUDIO_RANGE &&
         dx > -PATH_SCENERY_AUDIO_RANGE &&
         dz > -PATH_SCENERY_AUDIO_RANGE) {
-        const s32 distance =
-            SquareRoot12(dx * dx / 4 + dy * dy / 8 + dz * dz / 4) >> 10;
+        const s32 distance = PathSceneryDistance(dx, dy, dz);
         s32 volumeDelta;
 
         volume = PATH_SCENERY_MAX_VOLUME - distance;
