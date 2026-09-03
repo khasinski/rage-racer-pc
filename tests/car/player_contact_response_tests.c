@@ -1,8 +1,10 @@
 #include "game/car.h"
 #include "game/car_internal.h"
+#include "game/integer.h"
 #include "game/race.h"
 #include "game/track_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -140,6 +142,42 @@ int main(void) {
     ApplyPlayerContactResponse(&car, 1, 0);
     CHECK(car.drive.launchEnergy == 10000);
     CHECK(car.speed == 100 && s_soundCalls == 0);
+
+    Reset(&car);
+    car.y = INT_MAX;
+    car.drive.standingStartBounceY = INT_MAX;
+    ApplyPlayerContactResponse(&car, 0, 0);
+    CHECK(car.y == -2 && s_bodyKickCalls == 1);
+
+    Reset(&car);
+    car.speed = INT_MAX;
+    car.drive.launchEnergy = INT_MIN;
+    car.drive.drivetrainTorque = INT_MAX;
+    car.drive.engineLoad = INT16_MAX;
+    g_ShiftTargetRpm = INT_MAX;
+    ApplyPlayerContactResponse(&car, 0, 1);
+    CHECK(car.drive.launchEnergy == INT_MAX - 999);
+    CHECK(car.drive.drivetrainTorque ==
+          WrapSigned32((int64_t)INT_MAX * 98) / 100);
+    CHECK(car.speed == WrapSigned32((int64_t)INT_MAX * 97) / 100);
+    CHECK(car.drive.engineLoad == 31128);
+    CHECK(g_ShiftTargetRpm ==
+          WrapSigned32((int64_t)INT_MAX * 95) / 100);
+
+    Reset(&car);
+    car.speed = INT_MAX;
+    car.drive.launchEnergy = INT_MIN;
+    car.drive.drivetrainTorque = INT_MAX;
+    car.drive.engineLoad = INT16_MAX;
+    g_ShiftTargetRpm = INT_MAX;
+    ApplyPlayerContactResponse(&car, 1, 0);
+    CHECK(car.drive.launchEnergy == INT_MAX - 4999);
+    CHECK(car.drive.drivetrainTorque ==
+          WrapSigned32((int64_t)65 * INT_MAX) / 100);
+    CHECK(car.speed == WrapSigned32((int64_t)47 * INT_MAX) / 100);
+    CHECK(car.drive.engineLoad == 21298);
+    CHECK(g_ShiftTargetRpm ==
+          WrapSigned32((int64_t)65 * INT_MAX) / 100);
 
     if (s_failures != 0) {
         printf("%d player contact response checks failed\n", s_failures);

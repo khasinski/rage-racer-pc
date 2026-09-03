@@ -2,6 +2,7 @@
 #include "game/angle.h"
 #include "game/car.h"
 #include "game/car_internal.h"
+#include "game/integer.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/track_internal.h"
@@ -51,13 +52,17 @@ static void PlayPlayerSkidCue(const PlayerCarRuntime *car, s32 skid,
 static void ApplyPlayerCrashResponse(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
 
-    drive->launchEnergy -= 1000;
+    drive->launchEnergy = WrapSigned32(
+        (int64_t)drive->launchEnergy - 1000);
     if (car->speed < CONTACT_EFFECT_MIN_SPEED) return;
 
-    drive->drivetrainTorque = drive->drivetrainTorque * 98 / 100;
-    car->speed = car->speed * 97 / 100;
-    drive->engineLoad = drive->engineLoad * 95 / 100;
-    g_ShiftTargetRpm = g_ShiftTargetRpm * 95 / 100;
+    drive->drivetrainTorque = WrapSigned32(
+        (int64_t)drive->drivetrainTorque * 98) / 100;
+    car->speed = WrapSigned32((int64_t)car->speed * 97) / 100;
+    drive->engineLoad = WrapSigned16(
+        (int64_t)drive->engineLoad * 95 / 100);
+    g_ShiftTargetRpm = WrapSigned32(
+        (int64_t)g_ShiftTargetRpm * 95) / 100;
 }
 
 static void ApplyPlayerSkidResponse(PlayerCarRuntime *car, s32 skid) {
@@ -78,12 +83,15 @@ static void ApplyPlayerSkidResponse(PlayerCarRuntime *car, s32 skid) {
     slipSin = rsin(slip);
     drivetrainScale = 85 - slipSin * 20 / 4096;
     speedScale = 87 - slipSin * 40 / 4096;
-    drive->launchEnergy -= 5000;
-    drive->drivetrainTorque =
-        drivetrainScale * drive->drivetrainTorque / 100;
-    car->speed = speedScale * car->speed / 100;
-    drive->engineLoad = drive->engineLoad * drivetrainScale / 100;
-    g_ShiftTargetRpm = drivetrainScale * g_ShiftTargetRpm / 100;
+    drive->launchEnergy = WrapSigned32(
+        (int64_t)drive->launchEnergy - 5000);
+    drive->drivetrainTorque = WrapSigned32(
+        (int64_t)drivetrainScale * drive->drivetrainTorque) / 100;
+    car->speed = WrapSigned32((int64_t)speedScale * car->speed) / 100;
+    drive->engineLoad = WrapSigned16(
+        (int64_t)drive->engineLoad * drivetrainScale / 100);
+    g_ShiftTargetRpm = WrapSigned32(
+        (int64_t)drivetrainScale * g_ShiftTargetRpm) / 100;
     if (g_RacePhase < 3) {
         PlayPlayerSkidCue(car, skid, slip);
     }
@@ -91,7 +99,8 @@ static void ApplyPlayerSkidResponse(PlayerCarRuntime *car, s32 skid) {
 
 void ApplyPlayerContactResponse(PlayerCarRuntime *car, s32 skid, s32 crash) {
     if (skid == 0 && crash == 0) {
-        car->y += car->drive.standingStartBounceY;
+        car->y = WrapSigned32(
+            (int64_t)car->y + car->drive.standingStartBounceY);
         UpdateCarBodyKick(AsRivalCar(car));
     } else if (crash != 0) {
         ApplyPlayerCrashResponse(car);
