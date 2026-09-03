@@ -10,6 +10,10 @@ static float RenderShadowDot(RageRenderVec3 left, RageRenderVec3 right) {
     return left.x * right.x + left.y * right.y + left.z * right.z;
 }
 
+static int RenderShadowVec3IsFinite(RageRenderVec3 value) {
+    return isfinite(value.x) && isfinite(value.y) && isfinite(value.z);
+}
+
 static RageRenderVec3 RenderShadowScale(RageRenderVec3 value,
                                              float scale) {
     RageRenderVec3 out = {value.x * scale, value.y * scale, value.z * scale};
@@ -40,7 +44,9 @@ int RenderBuildDirectionalShadowMap(
     float snappedVertical;
 
     if (center == NULL || lightDirection == NULL || out == NULL ||
-        extent <= 0.0f || resolution == 0)
+        !RenderShadowVec3IsFinite(*center) ||
+        !RenderShadowVec3IsFinite(*lightDirection) ||
+        !isfinite(extent) || extent <= 0.0f || resolution == 0)
         return 0;
     length = sqrtf(RenderShadowDot(*lightDirection, *lightDirection));
     if (length <= 0.000001f) return 0;

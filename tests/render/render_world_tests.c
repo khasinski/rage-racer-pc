@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -505,6 +506,23 @@ static void test_high_resolution_vehicle_shadow_density(void) {
     EXPECT_EQ(200, (int)(shadow.texelWorldSize * 100.0f));
 }
 
+static void test_shadow_map_rejects_non_finite_geometry(void) {
+    RageRenderVec3 center = {0.0f, 0.0f, 0.0f};
+    RageRenderVec3 light = RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
+    RageRenderShadowMap shadow;
+
+    center.x = INFINITY;
+    EXPECT_EQ(0, RenderBuildDirectionalShadowMap(
+                     &center, &light, 4096.0f, 2048, &shadow));
+    center.x = 0.0f;
+    light.y = NAN;
+    EXPECT_EQ(0, RenderBuildDirectionalShadowMap(
+                     &center, &light, 4096.0f, 2048, &shadow));
+    light = RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
+    EXPECT_EQ(0, RenderBuildDirectionalShadowMap(
+                     &center, &light, INFINITY, 2048, &shadow));
+}
+
 static void test_default_shadow_light_stays_near_overhead(void) {
     const RageRenderVec3 light = RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
     float horizontalSquared = light.x * light.x + light.z * light.z;
@@ -535,6 +553,7 @@ int main(void) {
     test_psx_rotation_uses_the_same_basis_as_imported_positions();
     test_directional_shadow_map_is_texel_stable();
     test_high_resolution_vehicle_shadow_density();
+    test_shadow_map_rejects_non_finite_geometry();
     if (failures != 0) return EXIT_FAILURE;
     puts("render world tests passed");
     return EXIT_SUCCESS;
