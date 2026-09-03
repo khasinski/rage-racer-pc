@@ -2,11 +2,10 @@
 
 enum {
     COURSE_CLASS_HEADER_SERIES_COUNT = 2,
-    COURSE_CLASS_HEADER_MAX_CLASS_COUNT = 6,
 };
 
 static const CourseClassHeaderSprite s_classHeaders
-    [COURSE_CLASS_HEADER_SERIES_COUNT][COURSE_CLASS_HEADER_MAX_CLASS_COUNT] = {
+    [COURSE_CLASS_HEADER_SERIES_COUNT][GRAND_PRIX_PRIZE_CLASS_COUNT] = {
         {
             {0x24, 0x00, 0x38},
             {0x20, 0x24, 0x38},
@@ -25,6 +24,10 @@ static const CourseClassHeaderSprite s_classHeaders
         },
 };
 
+_Static_assert(sizeof(s_classHeaders[0]) / sizeof(s_classHeaders[0][0]) ==
+                   GRAND_PRIX_PRIZE_CLASS_COUNT,
+               "course headers must cover every Grand Prix class");
+
 int GetCourseClassHeaderSprite(s32 seriesSelection, s32 classIndex,
                                CourseClassHeaderSprite *sprite) {
     s32 series = seriesSelection != 0;
@@ -33,7 +36,7 @@ int GetCourseClassHeaderSprite(s32 seriesSelection, s32 classIndex,
         return 0;
     }
     *sprite = (CourseClassHeaderSprite){0};
-    if ((u32)classIndex >= COURSE_CLASS_HEADER_MAX_CLASS_COUNT) {
+    if (!CourseSelectClassIndexValid(classIndex)) {
         return 0;
     }
     *sprite = s_classHeaders[series][classIndex];

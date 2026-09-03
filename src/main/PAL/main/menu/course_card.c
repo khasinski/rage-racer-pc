@@ -6,15 +6,18 @@ enum {
     COURSE_CARD_CENTER_Y = 0x58,
     COURSE_CARD_MIN_ANGLE = 11,
     COURSE_CARD_FACE_CHANGE_ANGLE = 1024,
+    COURSE_CARD_FIRST_PLACE_FACE = 1,
+    COURSE_CARD_SECOND_PLACE_FACE = 2,
+    COURSE_CARD_THIRD_PLACE_FACE = 3,
 };
 
 static s32 CourseCardDepth(s32 face) {
     switch (face) {
-    case 1:
+    case COURSE_CARD_FIRST_PLACE_FACE:
         return 0x1F8;
-    case 2:
+    case COURSE_CARD_SECOND_PLACE_FACE:
         return 0x20B;
-    case 3:
+    case COURSE_CARD_THIRD_PLACE_FACE:
         return 0x1F9;
     default:
         return -1;
@@ -46,6 +49,8 @@ void UpdateAndDrawCourseCard(void) {
     if (angle < COURSE_CARD_MIN_ANGLE) {
         angle = COURSE_CARD_MIN_ANGLE;
     }
+    /* A place of zero means no result yet and 0xff marks a locked course.
+     * Both deliberately select no face, just like any damaged save value. */
     if (angle < COURSE_CARD_FACE_CHANGE_ANGLE &&
         g_CourseCardPendingGrade >= 0) {
         g_CourseCardFace = g_CourseCardPendingGrade;

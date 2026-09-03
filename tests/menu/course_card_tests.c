@@ -134,6 +134,18 @@ int main(void) {
     CHECK(s_matrixCalls == 0 && s_drawCalls == 0);
 
     Reset();
+    g_CourseCardPendingGrade = 0;
+    UpdateAndDrawCourseCard();
+    CHECK(g_CourseCardPendingGrade == -1 && g_CourseCardFace == 0);
+    CHECK(s_matrixCalls == 0 && s_drawCalls == 0);
+
+    Reset();
+    g_CourseCardPendingGrade = 0xFF;
+    UpdateAndDrawCourseCard();
+    CHECK(g_CourseCardPendingGrade == -1 && g_CourseCardFace == 0xFF);
+    CHECK(s_matrixCalls == 0 && s_drawCalls == 0);
+
+    Reset();
     g_CourseCardSpin = INT_MIN;
     g_CourseCardSpinTarget = INT_MAX;
     UpdateAndDrawCourseCard();
