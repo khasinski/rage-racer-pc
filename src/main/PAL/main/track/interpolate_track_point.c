@@ -22,22 +22,25 @@ void InterpolateTrackPoint(s32 pointIndex, s32 *out, s32 weight) {
         return;
     }
 
-    next = WrapTrackPointIndex(pointIndex + 1);
+    next = WrapTrackPointIndex((s32)((u32)pointIndex + 1U));
     cur = TrackPoint(pointIndex);
     nxt = TrackPoint(next);
-    sum = (cur->x * inv) + (nxt->x * weight);
+    sum = (s32)((u32)cur->x * (u32)inv +
+                (u32)nxt->x * (u32)weight);
     if (sum < 0) {
         sum += 0x3FF;
     }
     out[0] = sum >> 10;
 
-    sum = (inv * cur->y) + (weight * nxt->y);
+    sum = (s32)((u32)inv * (u32)cur->y +
+                (u32)weight * (u32)nxt->y);
     if (sum < 0) {
         sum += 0x7FF;
     }
     out[1] = sum >> 11;
 
-    sum = (cur->z * inv) + (nxt->z * weight);
+    sum = (s32)((u32)cur->z * (u32)inv +
+                (u32)nxt->z * (u32)weight);
     if (sum < 0) {
         sum += 0x3FF;
     }

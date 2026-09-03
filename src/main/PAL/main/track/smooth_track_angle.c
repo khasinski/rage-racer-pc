@@ -16,12 +16,12 @@ s32 SmoothTrackAngle(s32 pointIndex, s32 weight) {
 
     center = InterpolateTrackAngle(pointIndex, weight);
 
-    prevIndex = WrapTrackPointIndex(pointIndex - 2);
+    prevIndex = WrapTrackPointIndex((s32)((u32)pointIndex - 2U));
 
     prev = InterpolateTrackAngle(prevIndex, weight);
     left = BlendAngle(center, prev, 0x200);
 
-    nextIndex = WrapTrackPointIndex(pointIndex + 2);
+    nextIndex = WrapTrackPointIndex((s32)((u32)pointIndex + 2U));
     next = InterpolateTrackAngle(nextIndex, weight);
     right = BlendAngle(center, next, 0x200);
 

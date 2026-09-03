@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -102,6 +103,7 @@ static void test_track_angle_interpolation(void) {
     EXPECT_EQ(0, InterpolateTrackAngle(0, 0x200));
     EXPECT_EQ(0x300, InterpolateTrackAngle(1, 0x200));
     EXPECT_EQ(0x200, InterpolateTrackAngle(2, 0x200));
+    EXPECT_EQ(0x100, InterpolateTrackAngle(INT_MAX, 0x200));
 
     g_TrackPoints = NULL;
     EXPECT_EQ(0, InterpolateTrackAngle(0, 0x200));
@@ -132,6 +134,15 @@ static void test_track_point_interpolation(void) {
     EXPECT_EQ(-5, out[0]);
     EXPECT_EQ(-5, out[1]);
     EXPECT_EQ(-15, out[2]);
+
+    points[0].x = INT_MAX;
+    points[0].y = SHRT_MIN;
+    points[0].z = INT_MAX;
+    points[1] = points[0];
+    InterpolateTrackPoint(INT_MAX, out, INT_MAX);
+    EXPECT_EQ(-1, out[0]);
+    EXPECT_EQ(-16384, out[1]);
+    EXPECT_EQ(-1, out[2]);
 
     g_TrackPoints = NULL;
     InterpolateTrackPoint(0, out, 0x200);
