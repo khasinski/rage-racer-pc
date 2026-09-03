@@ -3,6 +3,7 @@
 #include "game/prim.h"
 #include "game/render_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -158,12 +159,29 @@ static int TestGridNavigation(void) {
     g_PadPressed = PAD_CANCEL;
     UpdateClassRecordBrowse();
     CHECK(g_GameMode == OPTION_MODE_CLASS_MENU && s_lastCue == 2);
+
+    CHECK(CheckBrowseMove(INT_MIN, INT_MAX, 0, 0, 1, 0) == 0);
+    CHECK(CheckBrowseMove(INT_MAX, INT_MIN, 0, 5, 0, 0) == 0);
+    return 0;
+}
+
+static int TestInvalidMenuCursor(void) {
+    Reset();
+    g_ClassRecordMenuCursor = INT_MIN;
+    UpdateClassRecordMenu();
+    CHECK(g_ClassRecordMenuCursor == 0 && s_soundCalls == 0);
+
+    Reset();
+    g_ClassRecordMenuCursor = INT_MAX;
+    UpdateClassRecordMenu();
+    CHECK(g_ClassRecordMenuCursor == 1 && s_soundCalls == 0);
     return 0;
 }
 
 int main(void) {
     CHECK(TestMenuNavigation() == 0);
     CHECK(TestGridNavigation() == 0);
+    CHECK(TestInvalidMenuCursor() == 0);
     puts("class record menu tests passed");
     return 0;
 }

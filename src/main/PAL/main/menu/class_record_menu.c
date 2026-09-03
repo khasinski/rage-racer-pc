@@ -18,12 +18,13 @@ static s32 SelectedClassRecordIndex(void) {
            g_ScreenOffsetEditX;
 }
 
-void DrawClassRecordDetail(void) {
+static void DrawClassRecordDetail(void) {
     GameOrderingTableEntry *detailOt = GamePrimaryOrderingTable(51);
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
     s32 recordIndex = SelectedClassRecordIndex();
     s32 panelX = 0xB4;
     s32 panelY = 0x38;
+    s32 clears;
     s32 i;
 
     if (g_GameMode == OPTION_MODE_CLASS_BROWSE) {
@@ -53,13 +54,15 @@ void DrawClassRecordDetail(void) {
 
     next = GameQueueSpriteTrans(detailOt, next, panelX + 8, panelY + 0x28,
                                 0x44, 0x10, 0x1C, 0x6C, 0x7F40);
+    clears = AddClampedMenuValue(
+        g_ClassRecords[recordIndex].clears, 0, 0, 99);
     next = GameQueueSpriteTrans(detailOt, next, panelX + 100,
                                 panelY + 0x28, 8, 0x10,
-                                (g_ClassRecords[recordIndex].clears / 10) << 3,
+                                (clears / 10) << 3,
                                 0x18, 0x7F40);
     next = GameQueueSpriteTrans(detailOt, next, panelX + 108,
                                 panelY + 0x28, 8, 0x10,
-                                (g_ClassRecords[recordIndex].clears % 10) << 3,
+                                (clears % 10) << 3,
                                 0x18, 0x7F40);
     next = QueueDrawModePrim(detailOt, next, 0x3B);
     next = AddTilePrim(detailOt, next, panelX + 78, panelY + 47,
@@ -72,7 +75,7 @@ void DrawClassRecordDetail(void) {
         0x7E, 0x42, 0xFF, 0xFF, 0xFF);
 }
 
-void DrawClassRecordGrid(void) {
+static void DrawClassRecordGrid(void) {
     GameOrderingTableEntry *base;
     GameOrderingTableEntry *labelBase;
     u8 *next;
@@ -130,20 +133,20 @@ void UpdateClassRecordMenu(void) {
     s32 oldCursor;
     u16 buttons;
 
+    g_ClassRecordMenuCursor = AddClampedMenuValue(
+        g_ClassRecordMenuCursor, 0, 0, CLASS_RECORD_MENU_ITEM_COUNT - 1);
     DrawClassRecordGrid();
 
     oldCursor = g_ClassRecordMenuCursor;
     buttons = g_PadPressed;
     if (buttons & PAD_UP) {
-        g_ClassRecordMenuCursor = oldCursor - 1;
+        g_ClassRecordMenuCursor = WrapMenuIndex(
+            g_ClassRecordMenuCursor, -1, CLASS_RECORD_MENU_ITEM_COUNT);
     }
     if (buttons & PAD_DOWN) {
-        g_ClassRecordMenuCursor++;
+        g_ClassRecordMenuCursor = WrapMenuIndex(
+            g_ClassRecordMenuCursor, 1, CLASS_RECORD_MENU_ITEM_COUNT);
     }
-
-    g_ClassRecordMenuCursor =
-        (g_ClassRecordMenuCursor + CLASS_RECORD_MENU_ITEM_COUNT) %
-        CLASS_RECORD_MENU_ITEM_COUNT;
     if (oldCursor != g_ClassRecordMenuCursor) {
         PlaySoundCue(1);
     }
@@ -170,6 +173,13 @@ void UpdateClassRecordBrowse(void) {
     s32 oldRow;
     u16 buttons;
 
+    g_ScreenOffsetEditX = AddClampedMenuValue(
+        g_ScreenOffsetEditX, 0, 0, CLASS_RECORD_GRID_LAST_TOP_COLUMN);
+    g_ScreenOffsetEditY = AddClampedMenuValue(
+        g_ScreenOffsetEditY, 0, 0, CLASS_RECORD_GRID_BOTTOM_ROW);
+    if (g_ScreenOffsetEditX == CLASS_RECORD_GRID_LAST_TOP_COLUMN) {
+        g_ScreenOffsetEditY = 0;
+    }
     DrawClassRecordGrid();
     oldColumn = g_ScreenOffsetEditX;
     oldRow = g_ScreenOffsetEditY;
@@ -182,14 +192,13 @@ void UpdateClassRecordBrowse(void) {
         g_ScreenOffsetEditY = CLASS_RECORD_GRID_BOTTOM_ROW;
     }
     if (buttons & PAD_LEFT) {
-        g_ScreenOffsetEditX--;
+        g_ScreenOffsetEditX = WrapMenuIndex(
+            g_ScreenOffsetEditX, -1, CLASS_RECORD_GRID_COLUMN_COUNT);
     }
     if (buttons & PAD_RIGHT) {
-        g_ScreenOffsetEditX++;
+        g_ScreenOffsetEditX = WrapMenuIndex(
+            g_ScreenOffsetEditX, 1, CLASS_RECORD_GRID_COLUMN_COUNT);
     }
-    g_ScreenOffsetEditX =
-        (g_ScreenOffsetEditX + CLASS_RECORD_GRID_COLUMN_COUNT) %
-        CLASS_RECORD_GRID_COLUMN_COUNT;
     if (g_ScreenOffsetEditX == CLASS_RECORD_GRID_LAST_TOP_COLUMN) {
         g_ScreenOffsetEditY = 0;
     }

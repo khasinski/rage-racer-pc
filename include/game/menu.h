@@ -619,8 +619,6 @@ void ShuffleBgmOrder(void);
 void StartOptionMenuExit(u32 scene);
 void UploadTeamNameTexture(const u8 *str, s32 len);
 s32 DrawClassChangeCurtain(s32 step);
-void DrawClassRecordDetail(void);
-void DrawClassRecordGrid(void);
 void DrawOptionSceneOverlay(void);
 void UpdateOptionScene(void);
 void UpdateOptionMenuFade(void);
