@@ -103,7 +103,7 @@ static void Reset(void) {
     g_BgmVolumeSetting = 7;
     g_SfxVolumeSetting = 5;
     g_MonoOutput = 0;
-    g_GameMode = 4;
+    g_GameMode = OPTION_MODE_SOUND_MENU;
     g_SoundOptionCursor = 0;
     g_PadPressed = 0;
     s_choiceCount = 0;
@@ -127,7 +127,7 @@ int main(void) {
     CHECK(s_tileCount == 4);
 
     Reset();
-    g_GameMode = 5;
+    g_GameMode = OPTION_MODE_SOUND_EDIT;
     g_MonoOutput = 1;
     g_SoundOptionCursor = 2;
     DrawSoundOptionScreen();
@@ -145,7 +145,7 @@ int main(void) {
         g_SoundOptionCursor = cursor;
         g_PadPressed = PAD_CONFIRM;
         UpdateSoundOptionMenu();
-        CHECK(g_GameMode == 5 && s_lastCue == 2);
+        CHECK(g_GameMode == OPTION_MODE_SOUND_EDIT && s_lastCue == 2);
         CHECK(g_ScreenOffsetEditX ==
               (cursor == 0 ? 7 : cursor == 1 ? 5 : 0));
     }
@@ -154,45 +154,54 @@ int main(void) {
     g_SoundOptionCursor = 3;
     g_PadPressed = PAD_CONFIRM;
     UpdateSoundOptionMenu();
-    CHECK(g_GameMode == 1 && s_lastCue == 2);
+    CHECK(g_GameMode == OPTION_MODE_ROOT && s_lastCue == 2);
 
     Reset();
     g_PadPressed = PAD_CANCEL;
     UpdateSoundOptionMenu();
-    CHECK(g_GameMode == 1 && s_lastCue == 3);
+    CHECK(g_GameMode == OPTION_MODE_ROOT && s_lastCue == 3);
 
     Reset();
-    g_GameMode = 5;
+    g_GameMode = OPTION_MODE_SOUND_EDIT;
     g_SoundOptionCursor = 0;
     g_PadPressed = PAD_RIGHT;
     UpdateSoundSettingAdjust();
-    CHECK(g_BgmVolumeSetting == 8 && g_GameMode == 5);
+    CHECK(g_BgmVolumeSetting == 8 && g_GameMode == OPTION_MODE_SOUND_EDIT);
     CHECK(s_lastCue == 1 && s_applyCalls == 1);
 
     Reset();
-    g_GameMode = 5;
+    g_GameMode = OPTION_MODE_SOUND_EDIT;
     g_SoundOptionCursor = 1;
     g_ScreenOffsetEditX = 9;
     g_PadPressed = PAD_CANCEL;
     UpdateSoundSettingAdjust();
-    CHECK(g_SfxVolumeSetting == 9 && g_GameMode == 4);
+    CHECK(g_SfxVolumeSetting == 9 && g_GameMode == OPTION_MODE_SOUND_MENU);
     CHECK(s_lastCue == 3 && s_applyCalls == 1);
 
     Reset();
-    g_GameMode = 5;
+    g_GameMode = OPTION_MODE_SOUND_EDIT;
     g_SoundOptionCursor = 2;
     g_PadPressed = PAD_RIGHT | PAD_CONFIRM;
     UpdateSoundSettingAdjust();
-    CHECK(g_MonoOutput == 1 && g_GameMode == 4);
+    CHECK(g_MonoOutput == 0 && g_GameMode == OPTION_MODE_SOUND_MENU);
     CHECK(s_lastCue == 2 && s_applyCalls == 1);
 
     Reset();
-    g_GameMode = 5;
+    g_GameMode = OPTION_MODE_SOUND_EDIT;
     g_SoundOptionCursor = 0;
     g_BgmVolumeSetting = 15;
     g_PadPressed = PAD_RIGHT;
     UpdateSoundSettingAdjust();
     CHECK(g_BgmVolumeSetting == 15 && s_lastCue == 0);
+
+    Reset();
+    g_GameMode = OPTION_MODE_SOUND_EDIT;
+    g_SoundOptionCursor = 99;
+    g_PadPressed = PAD_RIGHT;
+    UpdateSoundSettingAdjust();
+    CHECK(g_GameMode == OPTION_MODE_SOUND_MENU);
+    CHECK(g_BgmVolumeSetting == 7 && g_SfxVolumeSetting == 5);
+    CHECK(s_lastCue == 0 && s_applyCalls == 1);
 
     puts("sound option menu preserves output rendering and navigation");
     return 0;

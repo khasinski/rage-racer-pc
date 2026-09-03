@@ -11,6 +11,21 @@ enum {
     SOUND_OPTION_EXIT = 3,
 };
 
+static s32 *SelectedSoundSetting(s32 *maximum) {
+    *maximum = AUDIO_SETTING_MAX;
+    switch (g_SoundOptionCursor) {
+    case SOUND_OPTION_BGM:
+        return &g_BgmVolumeSetting;
+    case SOUND_OPTION_SFX:
+        return &g_SfxVolumeSetting;
+    case SOUND_OPTION_OUTPUT:
+        *maximum = 1;
+        return &g_MonoOutput;
+    default:
+        return NULL;
+    }
+}
+
 static void DrawOutputModeChoice(GameOrderingTableEntry *ot, u8 **next, s32 selected,
                                  s32 x, s32 width, s32 textureU,
                                  s32 textureV) {
@@ -73,7 +88,7 @@ void DrawSoundOptionScreen(void) {
     g_RenderState.packetCursor = next;
 }
 
-/* g_GameModeHandlers[4]: choose a setting, then mode 5 edits it. */
+/* OPTION_MODE_SOUND_MENU: choose a setting, then enter edit mode. */
 void UpdateSoundOptionMenu(void) {
     s32 oldCursor;
 
@@ -114,29 +129,26 @@ void UpdateSoundOptionMenu(void) {
     }
 }
 
-/* g_GameModeHandlers[5]: edits the setting selected by UpdateSoundOptionMenu.
+/* OPTION_MODE_SOUND_EDIT: edits the setting selected by UpdateSoundOptionMenu.
  * The original value is kept in g_ScreenOffsetEditX until confirm or cancel. */
 void UpdateSoundSettingAdjust(void) {
-    s32 *setting = NULL;
-    s32 maximum = AUDIO_SETTING_MAX;
+    s32 maximum;
+    s32 *setting;
     s32 previous;
 
     DrawSoundOptionScreen();
+    setting = SelectedSoundSetting(&maximum);
 
-    switch (g_SoundOptionCursor) {
-    case SOUND_OPTION_BGM:
-        setting = &g_BgmVolumeSetting;
-        break;
-    case SOUND_OPTION_SFX:
-        setting = &g_SfxVolumeSetting;
-        break;
-    case SOUND_OPTION_OUTPUT:
-        setting = &g_MonoOutput;
-        maximum = 1;
-        break;
-    }
-
-    if (setting != NULL) {
+    if (setting == NULL) {
+        g_GameMode = OPTION_MODE_SOUND_MENU;
+    } else if (g_PadPressed & PAD_CONFIRM) {
+        g_GameMode = OPTION_MODE_SOUND_MENU;
+        PlaySoundCue(2);
+    } else if (g_PadPressed & PAD_CANCEL) {
+        g_GameMode = OPTION_MODE_SOUND_MENU;
+        *setting = g_ScreenOffsetEditX;
+        PlaySoundCue(3);
+    } else {
         previous = *setting;
         if ((g_PadPressed & PAD_LEFT) && *setting > 0) {
             (*setting)--;
@@ -147,19 +159,7 @@ void UpdateSoundSettingAdjust(void) {
         if (previous != *setting) {
             PlaySoundCue(1);
         }
-
-        if (g_PadPressed & PAD_CONFIRM) {
-            g_GameMode = OPTION_MODE_SOUND_MENU;
-        } else if (g_PadPressed & PAD_CANCEL) {
-            g_GameMode = OPTION_MODE_SOUND_MENU;
-            *setting = g_ScreenOffsetEditX;
-        }
     }
 
     ApplyAudioSettings();
-    if (g_PadPressed & PAD_CONFIRM) {
-        PlaySoundCue(2);
-    } else if (g_PadPressed & PAD_CANCEL) {
-        PlaySoundCue(3);
-    }
 }
