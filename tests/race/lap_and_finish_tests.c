@@ -21,6 +21,7 @@
 #include "game/track.h"
 
 #include <stdio.h>
+#include <limits.h>
 #include <string.h>
 
 s32 g_BestLapThisRace;
@@ -336,6 +337,21 @@ int main(int argc, char **argv) {
         printf("FAIL laps and finishing behave differently: %d states making "
                "%d calls digest to %lu, expected %lu\n", steps, s_calls,
                s_digest, expected);
+        return 1;
+    }
+
+    memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
+    g_PlayerCar.lap = 1;
+    g_PlayerCar.progressA = -1;
+    g_PlayerCar.lapTimes.table.frameCounts[0] = INT_MAX;
+    g_LapCount = 1;
+    g_TrackLength = 0x10000;
+    g_RacePhase = 0;
+    s_jitter = 0;
+    UpdateLapAndFinish(&g_PlayerCar, 0);
+    if (g_PlayerCar.lapTimes.table.frameCounts[0] != 0x10000 ||
+        g_PlayerCar.lapTimes.table.milliseconds[0] != RACE_TIME_MAX_MS) {
+        puts("FAIL extreme lap timer did not saturate");
         return 1;
     }
     printf("laps and finishing take the same %d states they always did\n",

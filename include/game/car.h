@@ -522,10 +522,12 @@ typedef struct GameCarDrive {
     s16 hudLapHighlightRow;
 } GameCarDrive;
 
+enum { PLAYER_LAP_TIME_CAPACITY = 6 };
+
 typedef union PlayerLapTimes {
     struct {
-        s32 frameCounts[6];
-        s32 milliseconds[6];
+        s32 frameCounts[PLAYER_LAP_TIME_CAPACITY];
+        s32 milliseconds[PLAYER_LAP_TIME_CAPACITY];
     } table;
     s32 words[12];
 } PlayerLapTimes;

@@ -28,8 +28,14 @@ static void TickRunningLapTime(PlayerCarRuntime *car) {
     PlayerLapTimes *times = &car->lapTimes;
     s32 slot = car->lap - 1;
 
-    times->table.frameCounts[slot] += 1;
-    if (times->table.frameCounts[slot] >= LAP_FRAME_COUNT_MAX) {
+    if ((u32)slot >= PLAYER_LAP_TIME_CAPACITY) {
+        return;
+    }
+    if (times->table.frameCounts[slot] < 0) {
+        times->table.frameCounts[slot] = 0;
+    } else if (times->table.frameCounts[slot] < LAP_FRAME_COUNT_MAX) {
+        times->table.frameCounts[slot]++;
+    } else {
         times->table.frameCounts[slot] = LAP_FRAME_COUNT_MAX;
     }
     times->table.milliseconds[slot] =
@@ -74,6 +80,11 @@ static void FinishRace(PlayerCarRuntime *car, s32 recordMode,
     s32 course = SeriesCourseIndex();
     s32 i;
 
+    if (lapsRun < 0) {
+        lapsRun = 0;
+    } else if (lapsRun > PLAYER_LAP_TIME_CAPACITY) {
+        lapsRun = PLAYER_LAP_TIME_CAPACITY;
+    }
     for (i = 0; i < lapsRun; i++) {
         g_RaceTotalTime += car->lapTimes.table.milliseconds[i];
     }
