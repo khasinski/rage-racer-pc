@@ -474,7 +474,11 @@ extern TimedDrawCommand g_CourseSelectTimeAttackScript[];
 extern TimedDrawCommand g_CarSelectMenuScriptGp[];
 extern TimedDrawCommand g_CarSelectMenuScriptTimeAttack[];
 extern TimedDrawCommand g_UiEmptyScript[];
-extern s32 g_CarTuneUpPriceTable[];
+enum {
+    CAR_PRICE_COUNT = 32,
+    CAR_TUNE_UP_PRICE_COUNT = 31,
+};
+extern s32 g_CarTuneUpPriceTable[CAR_TUNE_UP_PRICE_COUNT];
 extern char *g_NativeCarManufacturerNames[];
 #define g_CarManufacturerNames g_NativeCarManufacturerNames
 /* The eight PS / rpm / kgm captions DrawEngineSpecLabel picks between. */
@@ -518,7 +522,7 @@ extern s32 g_TeamLogoOption;
 extern char *g_BgmTrackNames[];
 extern s32 g_BrowseArrowsFade;
 extern s32 g_CarNamePlateFade;
-extern s32 g_CarPriceTable[];
+extern s32 g_CarPriceTable[CAR_PRICE_COUNT];
 extern s32 g_CarSpecBars[4];
 extern s32 g_CarSpecGraphProgress;
 extern s32 g_ClassRecordMenuCursor;

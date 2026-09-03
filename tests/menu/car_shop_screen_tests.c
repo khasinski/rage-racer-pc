@@ -25,7 +25,7 @@ s32 GameMenuBusy;
 s32 g_CarListCursor;
 CarModelAsset *g_CarModelAsset;
 s32 g_CarNamePlateStep;
-s32 g_CarPriceTable[16];
+s32 g_CarPriceTable[CAR_PRICE_COUNT];
 /* The four buy prompts and the refusals are decoded command arrays; they are
  * never walked here, only identified. */
 TimedDrawCommand g_CarShopBuyPromptScript1[7];
@@ -72,6 +72,7 @@ static unsigned long s_digest = 2166136261UL;
 static FILE *s_out;
 static int s_calls;
 static s32 s_scriptResult;
+static s32 s_assetIndexOverride = -1;
 
 static void Fold(unsigned char byte) {
     s_digest = ((s_digest ^ byte) * 16777619UL) & 0xFFFFFFFFUL;
@@ -159,7 +160,7 @@ void GameDrawMenuButton(s32 x0, s32 y0, s32 x1, s32 y1, u8 r, u8 g, u8 b) {
 }
 s32 GetOwnedCarAssetIndex(s32 model) {
     RECORD("assetindex", model);
-    return model & 7;
+    return s_assetIndexOverride >= 0 ? s_assetIndexOverride : model & 7;
 }
 void UpdateCarListCursor(void) { RECORD("listcursor", 0); }
 void RequestCarModel(s32 carIndex) { RECORD("requestcar", carIndex); }
@@ -177,7 +178,7 @@ int main(int argc, char **argv) {
      * What the shop did before it was taken apart. Run the test with a file
      * name to write the sweep out and diff two runs.
      */
-    static const unsigned long expected = 2545655315UL;
+    static const unsigned long expected = 2674479376UL;
     static const s32 busyStates[] = {0, -1, -2, -3, 1, 2};
     static const u16 buttons[] = {0, PAD_UP, PAD_DOWN, PAD_CONFIRM, PAD_CANCEL,
                                   0x8000, 0x0080, 0x0010};
@@ -229,8 +230,10 @@ int main(int argc, char **argv) {
         memset(g_TimeAttackCars, 0, sizeof(g_TimeAttackCars));
         memset(ot, 0, sizeof(ot));
         RENDER_OT_BASE = ot;
-        for (i = 0; i < 16; i++) {
+        for (i = 0; i < CAR_PRICE_COUNT; i++) {
             g_CarPriceTable[i] = 1000 * (i + 1);
+        }
+        for (i = 0; i < 16; i++) {
             s_cars[i].enabled = (u8)(i & 1);
         }
         s_model.transmissionAvailable = (u8)transmission;
@@ -320,7 +323,7 @@ int main(int argc, char **argv) {
         memset(s_cars, 0, sizeof(s_cars));
         memset(ot, 0, sizeof(ot));
         RENDER_OT_BASE = ot;
-        for (i = 0; i < 16; i++) {
+        for (i = 0; i < CAR_PRICE_COUNT; i++) {
             g_CarPriceTable[i] = 1000 * (i + 1);
         }
         GameMenuBusy = 0;
@@ -353,7 +356,7 @@ int main(int argc, char **argv) {
         memset(s_cars, 0, sizeof(s_cars));
         memset(ot, 0, sizeof(ot));
         RENDER_OT_BASE = ot;
-        for (i = 0; i < 16; i++) {
+        for (i = 0; i < CAR_PRICE_COUNT; i++) {
             g_CarPriceTable[i] = 1000 * (i + 1);
         }
         GameMenuBusy = 0;
@@ -386,7 +389,7 @@ int main(int argc, char **argv) {
         memset(s_cars, 0, sizeof(s_cars));
         memset(ot, 0, sizeof(ot));
         RENDER_OT_BASE = ot;
-        for (i = 0; i < 16; i++) {
+        for (i = 0; i < CAR_PRICE_COUNT; i++) {
             g_CarPriceTable[i] = 1000 * (i + 1);
         }
         GameMenuBusy = -1;
@@ -416,6 +419,42 @@ int main(int argc, char **argv) {
         printf("FAIL the car shop behaves differently: %d states making %d "
                "calls digest to %lu, expected %lu\n", steps, s_calls, s_digest,
                expected);
+        return 1;
+    }
+
+    memset(s_cars, 0, sizeof(s_cars));
+    GameMenuBusy = -1;
+    s_scriptResult = 1;
+    g_UiScriptProgress2 = 0;
+    g_PadPressed = PAD_CONFIRM;
+    g_MenuSubCursor = 1;
+    g_CarListCursor = 4;
+    g_PlayerMoney = INT32_MAX;
+    s_assetIndexOverride = CAR_PRICE_COUNT;
+    UpdateCarShopScreen();
+    if (GameMenuBusy == -3) {
+        puts("FAIL an invalid car price started a free purchase");
+        return 1;
+    }
+
+    GameMenuBusy = 2;
+    g_UiScriptProgress = 0;
+    g_PlayerMoney = 12345;
+    UpdateCarShopScreen();
+    if (g_PlayerMoney != 12345) {
+        puts("FAIL an invalid car price changed player money");
+        return 1;
+    }
+
+    GameMenuBusy = -3;
+    g_UiScriptProgress2 = 0;
+    g_MenuConfirmTimer = 0;
+    s_cars[4].enabled = 0;
+    g_TimeAttackCars[4].enabled = 0;
+    UpdateCarShopScreen();
+    if (GameMenuBusy != 0 || s_cars[4].enabled != 0 ||
+        g_TimeAttackCars[4].enabled != 0) {
+        puts("FAIL an invalid car price completed the sale countdown");
         return 1;
     }
     printf("the car shop takes the same %d states it always did\n", steps);

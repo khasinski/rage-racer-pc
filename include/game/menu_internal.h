@@ -132,6 +132,22 @@ static inline MenuDialogAction ChooseMenuDialogAction(u16 pressed) {
     return MENU_DIALOG_NO_ACTION;
 }
 
+typedef struct ShopPrice {
+    s32 amount;
+    s32 available;
+} ShopPrice;
+
+static inline ShopPrice LookupShopPrice(const s32 *prices, size_t count,
+                                        s32 assetIndex) {
+    ShopPrice result = {0, 0};
+
+    if (prices != NULL && (u32)assetIndex < count) {
+        result.amount = prices[assetIndex];
+        result.available = 1;
+    }
+    return result;
+}
+
 void RestoreTeamLogoClut(void);
 void UploadTeamLogoClut(void);
 s32 AdvanceCarSpecPanel(s32 *progress, s32 step);

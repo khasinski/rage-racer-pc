@@ -512,6 +512,7 @@ void LoadPendingCarModelAsset(void);
 
 extern Rect g_TeamLogoClutLoadRect;
 extern GpuRectPacked g_TeamLogoClutMoveRect;
+extern u16 g_TeamLogoClut[16];
 extern Rect g_TrackTextureRect;
 
 #endif

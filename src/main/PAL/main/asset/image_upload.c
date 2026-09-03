@@ -1,6 +1,5 @@
-#include "game/menu_internal.h"
-#include "game/race.h"
 #include "game/asset.h"
+#include "game/race.h"
 
 #include <stddef.h>
 

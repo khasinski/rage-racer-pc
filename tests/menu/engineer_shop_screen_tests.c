@@ -23,7 +23,7 @@ s32 g_CarNamePlateStep;
 s32 g_CarSwapFromIndex;
 s32 g_CarSwapToIndex;
 CarEntry *g_CarTable;
-s32 g_CarTuneUpPriceTable[16];
+s32 g_CarTuneUpPriceTable[CAR_TUNE_UP_PRICE_COUNT];
 const TimedDrawCommand *g_EngineerShopModalScript;
 /* The prompts are decoded command arrays; never walked here, only named. */
 TimedDrawCommand g_EngineerShopNoFundsScript[2];
@@ -56,6 +56,8 @@ static unsigned long s_digest = 2166136261UL;
 static FILE *s_out;
 static int s_calls;
 static s32 s_scriptResult;
+static s32 s_assetIndexOverride = -1;
+static s32 s_upgradedModelRequests;
 
 static void Fold(unsigned char byte) {
     s_digest = ((s_digest ^ byte) * 16777619UL) & 0xFFFFFFFFUL;
@@ -136,9 +138,10 @@ void GameDrawMenuButton(s32 x0, s32 y0, s32 x1, s32 y1, u8 r, u8 g, u8 b) {
 }
 s32 GetOwnedCarAssetIndex(s32 model) {
     RECORD("assetindex", model);
-    return model & 7;
+    return s_assetIndexOverride >= 0 ? s_assetIndexOverride : model & 7;
 }
 void RequestUpgradedCarModel(s32 carIndex) {
+    s_upgradedModelRequests++;
     RECORD("upgradedmodel", carIndex);
 }
 void PlaySoundCue(s32 cue) { RECORD("cue", cue); }
@@ -189,7 +192,7 @@ int main(int argc, char **argv) {
         memset(g_TimeAttackCars, 0, sizeof(g_TimeAttackCars));
         memset(ot, 0, sizeof(ot));
         RENDER_OT_BASE = ot;
-        for (i = 0; i < 16; i++) {
+        for (i = 0; i < CAR_TUNE_UP_PRICE_COUNT; i++) {
             g_CarTuneUpPriceTable[i] = 1000 * (i + 1);
         }
         s_cars[cars[ci]].modelVariant = 2;
@@ -260,6 +263,50 @@ int main(int argc, char **argv) {
         printf("FAIL the engineer's shop behaves differently: %d states making "
                "%d calls digest to %lu, expected %lu\n", steps, s_calls,
                s_digest, expected);
+        return 1;
+    }
+
+
+    GameMenuBusy = 0;
+    s_scriptResult = 1;
+    g_UiScriptProgress2 = 0;
+    g_EngineerShopOption = 0;
+    g_PadPressed = PAD_CONFIRM;
+    g_PlayerCarIndex = 5;
+    g_PlayerMoney = INT32_MAX;
+    s_assetIndexOverride = CAR_TUNE_UP_PRICE_COUNT;
+    UpdateEngineerShopScreen();
+    if (GameMenuBusy == -1) {
+        puts("FAIL an invalid tune-up price opened the purchase prompt");
+        return 1;
+    }
+
+    GameMenuBusy = -1;
+    g_UiScriptProgress2 = 0;
+    g_MenuSubCursor = 1;
+    s_upgradedModelRequests = 0;
+    UpdateEngineerShopScreen();
+    if (GameMenuBusy == -2 || s_upgradedModelRequests != 0) {
+        puts("FAIL an invalid tune-up price requested an upgraded model");
+        return 1;
+    }
+
+    GameMenuBusy = 2;
+    g_UiScriptProgress = 0;
+    g_PlayerMoney = 12345;
+    s_cars[5].modelVariant = 2;
+    UpdateEngineerShopScreen();
+    if (g_PlayerMoney != 12345 || s_cars[5].modelVariant != 2) {
+        puts("FAIL an invalid tune-up price completed the transaction");
+        return 1;
+    }
+
+    GameMenuBusy = -2;
+    g_UiScriptProgress2 = 0;
+    g_MenuConfirmTimer = 0;
+    UpdateEngineerShopScreen();
+    if (GameMenuBusy != 0) {
+        puts("FAIL an invalid tune-up price completed the countdown");
         return 1;
     }
     printf("the engineer's shop takes the same %d states it always did\n",
