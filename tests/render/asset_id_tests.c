@@ -38,6 +38,10 @@ int main(void) {
                                 RAGE_RENDER_ASSET_TERRAIN, 0));
     EXPECT(!AssetMaterialId(id, 8, 0x58,
                                 RAGE_RENDER_ASSET_TERRAIN, 0));
+    EXPECT(!AssetMaterialVariantId(NULL, sizeof(id), 0x58,
+                                   RAGE_RENDER_ASSET_TERRAIN, 0, 1));
+    EXPECT(!AssetMaterialVariantId(id, 0, 0x58,
+                                   RAGE_RENDER_ASSET_TERRAIN, 0, 1));
 
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

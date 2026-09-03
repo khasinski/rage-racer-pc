@@ -52,11 +52,12 @@ int AssetMaterialId(char *out, size_t capacity, uint32_t assetKey,
 }
 
 int AssetMaterialVariantId(char *out, size_t capacity,
-                               uint32_t assetKey,
-                               RageRenderAssetSet assetSet,
-                               uint32_t material, uint8_t variant) {
+                           uint32_t assetKey,
+                           RageRenderAssetSet assetSet,
+                           uint32_t material, uint8_t variant) {
     char base[128];
     int written;
+    if (out == NULL || capacity == 0) return 0;
     if (!AssetMaterialId(base, sizeof(base), assetKey, assetSet, material))
         return 0;
     written = snprintf(out, capacity, "%s.variant.%u", base,
