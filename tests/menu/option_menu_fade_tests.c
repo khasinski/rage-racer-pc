@@ -2,6 +2,7 @@
 #include "game/prim.h"
 #include "game/render_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -89,7 +90,7 @@ static int TestFadeStateTransitions(void) {
     g_FadeLevel = 0;
     g_FadeStep = -8;
     UpdateOptionMenuFade();
-    CHECK(g_FadeLevel == -8 && g_FadeStep == 0);
+    CHECK(g_FadeLevel == 0 && g_FadeStep == 0);
     CHECK(g_GameMode == OPTION_MODE_ROOT && g_SceneId == 7);
     CHECK(s_tileColor == 0 && s_rootDraws == 1);
 
@@ -99,9 +100,25 @@ static int TestFadeStateTransitions(void) {
     g_FadeLevel = 0x100;
     g_FadeStep = 8;
     UpdateOptionMenuFade();
-    CHECK(g_FadeLevel == 0x108 && g_SceneId == 31);
+    CHECK(g_FadeLevel == 0x100 && g_SceneId == 31);
     CHECK(g_GameMode == OPTION_MODE_FADE && s_tileColor == 0xFF);
     CHECK(s_rootDraws == 1);
+
+    Reset();
+    g_GameMode = OPTION_MODE_FADE;
+    g_OptionMenuExitScene = 19;
+    g_FadeLevel = INT_MAX;
+    g_FadeStep = INT_MAX;
+    UpdateOptionMenuFade();
+    CHECK(g_FadeLevel == 0x100 && g_SceneId == 19);
+
+    Reset();
+    g_GameMode = OPTION_MODE_FADE;
+    g_FadeLevel = INT_MIN;
+    g_FadeStep = INT_MIN;
+    UpdateOptionMenuFade();
+    CHECK(g_FadeLevel == 0 && g_FadeStep == 0);
+    CHECK(g_GameMode == OPTION_MODE_ROOT && g_SceneId == 7);
     return 0;
 }
 

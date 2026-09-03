@@ -2,6 +2,8 @@
 #include "game/menu.h"
 #include "game/render_internal.h"
 
+#include <stdint.h>
+
 enum {
     OPTION_FADE_OPAQUE = 0x100,
     OPTION_FADE_EXIT_STEP = 8,
@@ -33,13 +35,17 @@ void StartOptionMenuExit(u32 scene) {
 /* OPTION_MODE_FADE: integrates the fade, then opens the root menu or leaves
  * for g_OptionMenuExitScene. */
 void UpdateOptionMenuFade(void) {
-    g_FadeLevel += g_FadeStep;
+    int64_t nextLevel = (int64_t)g_FadeLevel + g_FadeStep;
 
-    if (g_FadeLevel < 0) {
+    if (nextLevel < 0) {
+        g_FadeLevel = 0;
         g_FadeStep = 0;
         g_GameMode = OPTION_MODE_ROOT;
-    } else if (g_FadeLevel > OPTION_FADE_OPAQUE) {
+    } else if (nextLevel > OPTION_FADE_OPAQUE) {
+        g_FadeLevel = OPTION_FADE_OPAQUE;
         g_SceneId = g_OptionMenuExitScene;
+    } else {
+        g_FadeLevel = (s32)nextLevel;
     }
 
     DrawFullscreenFadeTile480(g_FadeLevel, 0x49);
