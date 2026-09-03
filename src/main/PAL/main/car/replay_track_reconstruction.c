@@ -116,8 +116,7 @@ static void UpdateReplayTrackOrientation(GameCarRuntime *car,
     car->modelYaw = car->bodyYaw;
     car->trackHeading.value = work->heading;
     car->previousTrackProgress = car->trackProgress;
-    progress = WrapSigned32(
-        (int64_t)car->progressA + car->progressB) % g_TrackLength;
+    progress = CarRaceProgress(car) % g_TrackLength;
     car->trackProgress = progress < 0 ? progress + g_TrackLength : progress;
     car->trackSection = WrapSigned16((g_RaceSeries != 0
         ? g_TrackLength - car->trackProgress

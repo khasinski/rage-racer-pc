@@ -2,6 +2,12 @@
 #include "game/car_internal.h"
 #include "game/integer.h"
 
+enum {
+    SLOW_RIVAL_GAP = 0x2800,
+    SLOW_RIVAL_MINIMUM_SPEED = 0x385,
+    SLOW_RIVAL_ACCELERATION_PERCENT = 85,
+};
+
 void SlowRivalAhead(s32 rank) {
     GameCarRuntime *car;
     GameCarRuntime *rivalAhead;
@@ -15,15 +21,14 @@ void SlowRivalAhead(s32 rank) {
 
     car = g_RankedCars[rank];
     rivalAhead = g_RankedCars[rank - 1];
-    progress = WrapSigned32(
-        (int64_t)car->progressA + car->progressB);
-    progressAhead = WrapSigned32(
-        (int64_t)rivalAhead->progressA + rivalAhead->progressB);
+    progress = CarRaceProgress(car);
+    progressAhead = CarRaceProgress(rivalAhead);
 
-    if (WrapSigned32((int64_t)progressAhead - progress) >= 0x2800 &&
-        rivalAhead->speed >= 0x385) {
+    if (WrapSigned32((int64_t)progressAhead - progress) >= SLOW_RIVAL_GAP &&
+        rivalAhead->speed >= SLOW_RIVAL_MINIMUM_SPEED) {
         rivalAhead->accelerationLimit =
-            (s32)rivalAhead->accelerationLimit * 85 / 100;
+            (s32)rivalAhead->accelerationLimit *
+            SLOW_RIVAL_ACCELERATION_PERCENT / 100;
     }
 }
 
@@ -35,8 +40,7 @@ void RankContenders(void) {
     s32 i;
 
     for (i = 0; i < RIVAL_CONTENDER_COUNT; i++) {
-        progress[i] = WrapSigned32(
-            (int64_t)g_Cars[i].progressA + g_Cars[i].progressB);
+        progress[i] = CarRaceProgress(&g_Cars[i]);
     }
 
     for (i = 1; i < RIVAL_CONTENDER_COUNT; i++) {

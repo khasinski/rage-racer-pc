@@ -90,8 +90,7 @@ void UpdateRivalRubberBand(void) {
         return;
     }
 
-    playerProgress = WrapSigned32(
-        (int64_t)g_PlayerCar.progressA + g_PlayerCar.progressB);
+    playerProgress = CarRaceProgress(AsRivalCar(&g_PlayerCar));
     if (SeriesCourseIndex() == EXTENDED_RUBBER_BAND_COURSE) {
         nearDistance = EXTENDED_NEAR_DISTANCE;
         farDistance = EXTENDED_FAR_DISTANCE;
@@ -111,8 +110,7 @@ void UpdateRivalRubberBand(void) {
         if (rival == NULL) {
             continue;
         }
-        gap = WrapSigned32(
-            (int64_t)rival->progressA + rival->progressB);
+        gap = CarRaceProgress(rival);
         gap = WrapSigned32((int64_t)gap - playerProgress);
 
         if (gap >= 0) {

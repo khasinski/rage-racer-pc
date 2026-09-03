@@ -225,8 +225,7 @@ static void UpdateCarTrackProgress(GameCarRuntime *car, CarTrackWork *work,
         ? (u32)alongSegment
         : (u32)((s16)work->segmentLength - alongSegment);
 
-    lapProgress = WrapSigned32(
-        (int64_t)car->progressA + car->progressB) % g_TrackLength;
+    lapProgress = CarRaceProgress(car) % g_TrackLength;
     car->trackHeading.value = work->heading;
     car->previousTrackProgress = car->trackProgress;
     car->trackProgress = lapProgress < 0
