@@ -76,11 +76,14 @@ static void UpdateTeamLogoIdle(void) {
 }
 
 static void UpdateTeamLogoSavePrompt(void *ot) {
+    MenuDialogAction action;
+
     RunTimedDrawScript(g_TeamLogoScreenScript2, &g_UiScriptProgress2, 0);
     RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
     if (RunTimedDrawScript(g_TeamLogoSubPanelScript, &g_UiScriptProgress2, 1) !=
         0) {
-        if (g_PadPressed & PAD_CONFIRM) {
+        action = ChooseMenuDialogAction(g_PadPressed);
+        if (action == MENU_DIALOG_CONFIRM) {
             if (g_MenuSubCursor != 0) {
                 PlaySoundCue(2);
                 GameMenuBusy = -2;
@@ -89,16 +92,13 @@ static void UpdateTeamLogoSavePrompt(void *ot) {
                 PlaySoundCue(3);
                 GameMenuBusy = 0;
             }
-        }
-        if (g_PadPressed & PAD_CANCEL) {
+        } else if (action == MENU_DIALOG_CANCEL) {
             PlaySoundCue(3);
             GameMenuBusy = 0;
-        }
-        if ((g_PadPressed & PAD_LEFT) && g_MenuSubCursor == 0) {
+        } else if (action == MENU_DIALOG_LEFT && g_MenuSubCursor == 0) {
             PlaySoundCue(1);
             g_MenuSubCursor = 1;
-        }
-        if ((g_PadPressed & PAD_RIGHT) && g_MenuSubCursor != 0) {
+        } else if (action == MENU_DIALOG_RIGHT && g_MenuSubCursor != 0) {
             PlaySoundCue(1);
             g_MenuSubCursor = 0;
         }
