@@ -394,7 +394,15 @@ static void TestInvalidModelBankPreservesSlot(void) {
 }
 
 static void TestCarSelectAssetPhases(void) {
-    static u8 storage[CAR_MODEL_BUFFER_SIZE + 512];
+    enum {
+        TEAM_LOGO_SAMPLES_OFFSET = 64,
+        COURSE_MODELS_OFFSET =
+            TEAM_LOGO_SAMPLES_OFFSET +
+            TEAM_LOGO_SAMPLE_RECORD_COUNT * sizeof(TeamLogoSample),
+        IMAGE_OFFSET = COURSE_MODELS_OFFSET + 64,
+        SHARED_ASSET_SIZE = IMAGE_OFFSET + 320,
+    };
+    static u8 storage[CAR_MODEL_BUFFER_SIZE + SHARED_ASSET_SIZE];
     GameSceneAssetHeader *pack = (GameSceneAssetHeader *)storage;
     CarEntry cars[2];
     CarModelAsset *model;
@@ -448,14 +456,14 @@ static void TestCarSelectAssetPhases(void) {
           "car select audio completion");
 
     g_AssetLoadCursor = storage;
-    pack->offsets[0] = 64;
-    pack->offsets[1] = 128;
-    pack->offsets[2] = 192;
+    pack->offsets[0] = TEAM_LOGO_SAMPLES_OFFSET;
+    pack->offsets[1] = COURSE_MODELS_OFFSET;
+    pack->offsets[2] = IMAGE_OFFSET;
     s_loadResult = 0;
     LoadCarSelectAssets();
     Check(g_AssetLoadState == 3 && s_loadAssetId == 8,
           "pending shared car assets hold phase");
-    s_loadResult = 512;
+    s_loadResult = SHARED_ASSET_SIZE;
     g_AssetLoadState = 3;
     s_loadResult = 3 * (s32)sizeof(s32) - 1;
     s_registeredBank = NULL;
@@ -464,14 +472,25 @@ static void TestCarSelectAssetPhases(void) {
           "truncated showroom header cancels installation");
 
     g_AssetLoadState = 3;
-    s_loadResult = 512;
+    s_loadResult = SHARED_ASSET_SIZE;
+    pack->offsets[1] = COURSE_MODELS_OFFSET - 1;
+    s_registeredBank = NULL;
+    s_courseModels = NULL;
+    s_uploadedImage = NULL;
+    LoadCarSelectAssets();
+    Check(g_AssetLoadState == 0 && s_registeredBank == NULL &&
+              s_courseModels == NULL && s_uploadedImage == NULL,
+          "truncated team-logo samples cancel installation");
+
+    g_AssetLoadState = 3;
+    pack->offsets[1] = COURSE_MODELS_OFFSET;
     pack->offsets[2] = pack->offsets[1];
     s_registeredBank = NULL;
     LoadCarSelectAssets();
     Check(g_AssetLoadState == 0 && s_registeredBank == NULL,
           "overlapping showroom blocks cancel installation");
     g_AssetLoadState = 3;
-    pack->offsets[2] = 192;
+    pack->offsets[2] = IMAGE_OFFSET;
     s_assetRoom = CAR_MODEL_BUFFER_SIZE - 1;
     s_registeredBank = NULL;
     s_courseModels = NULL;
@@ -493,20 +512,22 @@ static void TestCarSelectAssetPhases(void) {
               (ModelBankHeader *)(void *)(storage + 0xC) &&
               s_registeredSlot == 14,
           "showroom scene model bank follows its three offsets");
-    Check(g_TeamLogoSampleData == GetTeamLogoSample(storage + 64),
+    Check(g_TeamLogoSampleData ==
+              GetTeamLogoSample(storage + TEAM_LOGO_SAMPLES_OFFSET),
           "team logo samples installed");
-    Check(s_courseModels ==
-              (CourseModelAssetHeader *)(void *)(storage + 128),
+    Check(s_courseModels == (CourseModelAssetHeader *)(void *)(
+                                storage + COURSE_MODELS_OFFSET),
           "showroom course models installed");
-    Check(s_uploadedImage ==
-              (GameImageAssetHeaderWord *)(void *)(storage + 192),
+    Check(s_uploadedImage == (GameImageAssetHeaderWord *)(void *)(
+                                 storage + IMAGE_OFFSET),
           "showroom image uploaded");
-    Check(g_CarModelBuffer == storage + 192 &&
-              g_ImageBlockBuffer == storage + 192 + CAR_MODEL_BUFFER_SIZE &&
+    Check(g_CarModelBuffer == storage + IMAGE_OFFSET &&
+              g_ImageBlockBuffer == storage + IMAGE_OFFSET +
+                                        CAR_MODEL_BUFFER_SIZE &&
               g_AssetLoadState == 4,
           "shared assets publish car buffers");
 
-    model = (CarModelAsset *)(void *)(storage + 192);
+    model = (CarModelAsset *)(void *)(storage + IMAGE_OFFSET);
     model->imageData.carImage = &carImage;
     cars[1].modelVariant = 2;
     cars[1].paintColor1 = 6;

@@ -70,6 +70,9 @@ static void LoadCarSelectSharedAssets(void) {
         header->teamLogoSamplesOffset <=
             (s32)offsetof(CarSelectAssetHeader, sceneModelBank) ||
         header->courseModelsOffset <= header->teamLogoSamplesOffset ||
+        (size_t)(header->courseModelsOffset -
+                 header->teamLogoSamplesOffset) <
+            TEAM_LOGO_SAMPLE_RECORD_COUNT * sizeof(TeamLogoSample) ||
         header->imageOffset <= header->courseModelsOffset ||
         header->imageOffset > loadedSize) {
         FailAssetLoad();
