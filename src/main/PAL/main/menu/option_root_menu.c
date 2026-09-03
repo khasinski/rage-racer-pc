@@ -7,9 +7,15 @@
 #include "game/random.h"
 #include "game/render_internal.h"
 
-enum {
-    OPTION_ROOT_ITEM_COUNT = 6,
-};
+typedef enum OptionRootItem {
+    OPTION_ROOT_TROPHIES,
+    OPTION_ROOT_CONTROLLER,
+    OPTION_ROOT_SOUND,
+    OPTION_ROOT_RANDOM_RACE,
+    OPTION_ROOT_SCREEN,
+    OPTION_ROOT_EXIT,
+    OPTION_ROOT_ITEM_COUNT,
+} OptionRootItem;
 
 typedef struct OptionRootLabel {
     u8 width;
@@ -53,7 +59,7 @@ static void StartRandomOptionRace(void) {
     StartOptionMenuExit(0x1B);
 }
 
-/* g_GameModeHandlers[1]: the six-row root menu and where each row goes. */
+/* OPTION_MODE_ROOT: the six-row root menu and where each row goes. */
 void UpdateOptionRootMenu(void) {
     s32 oldCursor;
 
@@ -73,29 +79,29 @@ void UpdateOptionRootMenu(void) {
     if (g_PadPressed & PAD_CONFIRM) {
         PlaySoundCue(2);
         switch (g_OptionMenuCursor) {
-        case 0:
+        case OPTION_ROOT_TROPHIES:
             g_GameMode = OPTION_MODE_CLASS_MENU;
             g_ClassRecordMenuCursor = 0;
             g_ScreenOffsetEditX = 0;
             g_ScreenOffsetEditY = 0;
             break;
-        case 1:
+        case OPTION_ROOT_CONTROLLER:
             BeginControllerConfig();
             g_GameMode = OPTION_MODE_CONTROLLER_CONFIG;
             break;
-        case 2:
+        case OPTION_ROOT_SOUND:
             g_GameMode = OPTION_MODE_SOUND_MENU;
             g_SoundOptionCursor = 0;
             break;
-        case 3:
+        case OPTION_ROOT_RANDOM_RACE:
             StartRandomOptionRace();
             break;
-        case 4:
+        case OPTION_ROOT_SCREEN:
             g_GameMode = OPTION_MODE_SCREEN_ADJUST;
             g_ScreenOffsetEditX = g_ScreenOffsetX.value;
             g_ScreenOffsetEditY = g_ScreenOffsetY.value;
             break;
-        case 5:
+        case OPTION_ROOT_EXIT:
             StartOptionMenuExit(2);
             break;
         }

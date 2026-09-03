@@ -87,7 +87,7 @@ static void Reset(void) {
     memset(&s_frame, 0, sizeof(s_frame));
     g_DrawBuffer = &s_frame;
     g_RenderState.packetCursor = s_packets;
-    g_GameMode = 1;
+    g_GameMode = OPTION_MODE_ROOT;
     g_OptionMenuCursor = 0;
     g_PadPressed = 0;
     g_ClassRecordMenuCursor = -1;
@@ -136,16 +136,19 @@ int main(void) {
         UpdateOptionRootMenu();
         CHECK(s_lastCue == 2);
         if (cursor == 0) {
-            CHECK(g_GameMode == 2 && g_ClassRecordMenuCursor == 0);
+            CHECK(g_GameMode == OPTION_MODE_CLASS_MENU &&
+                  g_ClassRecordMenuCursor == 0);
             CHECK(g_ScreenOffsetEditX == 0 && g_ScreenOffsetEditY == 0);
         } else if (cursor == 1) {
-            CHECK(g_GameMode == 7 && s_controllerConfigCalls == 1);
+            CHECK(g_GameMode == OPTION_MODE_CONTROLLER_CONFIG &&
+                  s_controllerConfigCalls == 1);
         } else if (cursor == 2) {
-            CHECK(g_GameMode == 4 && g_SoundOptionCursor == 0);
+            CHECK(g_GameMode == OPTION_MODE_SOUND_MENU &&
+                  g_SoundOptionCursor == 0);
         } else if (cursor == 3) {
             CHECK(s_trackLoadCalls == 1 && s_lastExitScene == 0x1B);
         } else if (cursor == 4) {
-            CHECK(g_GameMode == 6);
+            CHECK(g_GameMode == OPTION_MODE_SCREEN_ADJUST);
             CHECK(g_ScreenOffsetEditX == 23 && g_ScreenOffsetEditY == -17);
         } else {
             CHECK(s_lastExitScene == 2);
