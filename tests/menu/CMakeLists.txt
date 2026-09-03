@@ -94,6 +94,25 @@ endif()
 add_test(NAME design_mode_state COMMAND design_mode_state_tests)
 set_tests_properties(design_mode_state PROPERTIES LABELS functional)
 
+add_executable(car_name_plate_tests
+    car_name_plate_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/draw_car_name_plate.c)
+target_include_directories(car_name_plate_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(car_name_plate_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(car_name_plate_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(car_name_plate_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME car_name_plate COMMAND car_name_plate_tests)
+set_tests_properties(car_name_plate PROPERTIES LABELS unit)
+
 add_executable(team_name_texture_tests
     team_name_texture_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/team_name_texture.c)

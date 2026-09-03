@@ -1,6 +1,67 @@
 #include "game/car.h"
 #include "game/menu.h"
 
+typedef struct CarNamePlateSprite {
+    s16 x;
+    u16 width;
+    u16 textureU;
+    u16 textureV;
+} CarNamePlateSprite;
+
+enum CarManufacturer {
+    CAR_MANUFACTURER_AGE,
+    CAR_MANUFACTURER_LIZARD,
+    CAR_MANUFACTURER_ASSOLUTO,
+    CAR_MANUFACTURER_GNADE,
+};
+
+enum {
+    CAR_NAME_PLATE_FADE_MAX = 508,
+    CAR_NAME_PLATE_SHADE_DIVISOR = 4,
+};
+
+static const CarNamePlateSprite s_manufacturerSprites[] = {
+    [CAR_MANUFACTURER_AGE] = {0x112, 0x14, 0x50, 0xBC},
+    [CAR_MANUFACTURER_LIZARD] = {0x105, 0x20, 0x00, 0xBC},
+    [CAR_MANUFACTURER_ASSOLUTO] = {0x106, 0x20, 0x64, 0xBC},
+    [CAR_MANUFACTURER_GNADE] = {0x0F6, 0x30, 0x20, 0xBC},
+};
+
+static const u8 s_carManufacturers[GAME_CAR_COUNT] = {
+    CAR_MANUFACTURER_AGE,      CAR_MANUFACTURER_AGE,
+    CAR_MANUFACTURER_AGE,      CAR_MANUFACTURER_LIZARD,
+    CAR_MANUFACTURER_ASSOLUTO, CAR_MANUFACTURER_ASSOLUTO,
+    CAR_MANUFACTURER_ASSOLUTO, CAR_MANUFACTURER_GNADE,
+    CAR_MANUFACTURER_GNADE,    CAR_MANUFACTURER_GNADE,
+    CAR_MANUFACTURER_AGE,      CAR_MANUFACTURER_ASSOLUTO,
+    CAR_MANUFACTURER_GNADE,
+};
+
+static const CarNamePlateSprite s_carNameSprites[GAME_CAR_COUNT] = {
+    {0x0FC, 0x2A, 0x0A, 0x30}, {0x106, 0x20, 0x48, 0x30},
+    {0x106, 0x20, 0x7C, 0x30}, {0x0F2, 0x34, 0x00, 0x40},
+    {0x0FD, 0x28, 0x74, 0x50}, {0x0FC, 0x2A, 0x3E, 0x50},
+    {0x107, 0x20, 0xB0, 0x50}, {0x0FE, 0x28, 0x40, 0x40},
+    {0x104, 0x22, 0x7A, 0x40}, {0x0F7, 0x30, 0xA0, 0x40},
+    {0x0FA, 0x2C, 0xA4, 0x30}, {0x0FC, 0x2A, 0x0A, 0x60},
+    {0x0F6, 0x30, 0x04, 0x50},
+};
+
+static void DrawNamePlateSprite(GameOrderingTableEntry *ot,
+                                const CarNamePlateSprite *sprite, s16 y,
+                                u8 shade, u32 flags) {
+    DrawSprite(ot, sprite->x, y, sprite->width, 0x10, sprite->textureU,
+               sprite->textureV, shade, shade, shade, 0x244, 0, 1, flags);
+}
+
+static void AdvanceCarNamePlateFade(s32 step) {
+    int64_t fade = (int64_t)g_CarNamePlateFade + step;
+
+    if (fade < 0) fade = 0;
+    if (fade > CAR_NAME_PLATE_FADE_MAX) fade = CAR_NAME_PLATE_FADE_MAX;
+    g_CarNamePlateFade = (s32)fade;
+}
+
 /* The bottom-right plate: grade digit, manufacturer sprite and model-name sprite. */
 void DrawCarNamePlate(s32 step, s32 model, s32 grade) {
     GameOrderingTableEntry *ot;
@@ -13,17 +74,14 @@ void DrawCarNamePlate(s32 step, s32 model, s32 grade) {
         return;
     }
     if (step < 0) {
-        g_CarNamePlateFade += step;
-        if (g_CarNamePlateFade < 0) {
-            g_CarNamePlateFade = 0;
-        }
+        AdvanceCarNamePlateFade(step);
     }
 
-    shade = g_CarNamePlateFade / 4U;
+    shade = g_CarNamePlateFade / CAR_NAME_PLATE_SHADE_DIVISOR;
     DrawSprite(ot, 0x100, 0x168, 0x20, 0x10, 0x7C, 0x7C, (u8)shade,
                   (u8)shade, (u8)shade, 0x244, 0, 1, 0x3B);
 
-    idx = (GetCarUnlockLevel(model) + grade) & 0xFFFF;
+    idx = ((u32)GetCarUnlockLevel(model) + (u32)grade) & UINT16_MAX;
     if (idx >= 5) {
         DrawSprite(ot, 0x11F, 0x168, 8, 0x10, 0x38, 0x28, (u8)shade,
                       (u8)shade, (u8)shade, 0x244, 0, 1, 0x3B);
@@ -33,95 +91,15 @@ void DrawCarNamePlate(s32 step, s32 model, s32 grade) {
                       0x3B);
     }
 
-    switch (model) {
-    case 0:
-    case 1:
-    case 2:
-    case 10:
-        DrawSprite(ot, 0x112, 0x178, 0x14, 0x10, 0x50, 0xBC, (u8)shade,
-                      (u8)shade, (u8)shade, 0x244, 0, 1, 0x3B);
-        break;
-    case 3:
-        DrawSprite(ot, 0x105, 0x178, 0x20, 0x10, 0, 0xBC, (u8)shade,
-                      (u8)shade, (u8)shade, 0x244, 0, 1, 0x3B);
-        break;
-    case 4:
-    case 5:
-    case 6:
-    case 11:
-        DrawSprite(ot, 0x106, 0x178, 0x20, 0x10, 0x64, 0xBC, (u8)shade,
-                      (u8)shade, (u8)shade, 0x244, 0, 1, 0x3B);
-        break;
-    case 7:
-    case 8:
-    case 9:
-    case 12:
-        DrawSprite(ot, 0xF6, 0x178, 0x30, 0x10, 0x20, 0xBC, (u8)shade,
-                      (u8)shade, (u8)shade, 0x244, 0, 1, 0x3B);
-        break;
-    default:
-        break;
-    }
-
-    switch (model) {
-    case 0:
-        DrawSprite(ot, 0xFC, 0x188, 0x2A, 0x10, 0xA, 0x30, (u8)shade,
-                      (u8)shade, (u8)shade, 0x244, 0, 1, 0x3E);
-        break;
-    case 1:
-        DrawSprite(ot, 0x106, 0x188, 0x20, 0x10, 0x48, 0x30, (u8)shade,
-                      (u8)shade, (u8)shade, 0x244, 0, 1, 0x3E);
-        break;
-    case 2:
-        DrawSprite(ot, 0x106, 0x188, 0x20, 0x10, 0x7C, 0x30, (u8)shade,
-                      (u8)shade, (u8)shade, 0x244, 0, 1, 0x3E);
-        break;
-    case 10:
-        DrawSprite(ot, 0xFA, 0x188, 0x2C, 0x10, 0xA4, 0x30, (u8)shade,
-                      (u8)shade, (u8)shade, 0x244, 0, 1, 0x3E);
-        break;
-    case 3:
-        DrawSprite(ot, 0xF2, 0x188, 0x34, 0x10, 0, 0x40, (u8)shade,
-                      (u8)shade, (u8)shade, 0x244, 0, 1, 0x3E);
-        break;
-    case 4:
-        DrawSprite(ot, 0xFD, 0x188, 0x28, 0x10, 0x74, 0x50, (u8)shade,
-                      (u8)shade, (u8)shade, 0x244, 0, 1, 0x3E);
-        break;
-    case 5:
-        DrawSprite(ot, 0xFC, 0x188, 0x2A, 0x10, 0x3E, 0x50, (u8)shade,
-                      (u8)shade, (u8)shade, 0x244, 0, 1, 0x3E);
-        break;
-    case 6:
-        DrawSprite(ot, 0x107, 0x188, 0x20, 0x10, 0xB0, 0x50, (u8)shade,
-                      (u8)shade, (u8)shade, 0x244, 0, 1, 0x3E);
-        break;
-    case 11:
-        DrawSprite(ot, 0xFC, 0x188, 0x2A, 0x10, 0xA, 0x60, (u8)shade,
-                      (u8)shade, (u8)shade, 0x244, 0, 1, 0x3E);
-        break;
-    case 7:
-        DrawSprite(ot, 0xFE, 0x188, 0x28, 0x10, 0x40, 0x40, (u8)shade,
-                      (u8)shade, (u8)shade, 0x244, 0, 1, 0x3E);
-        break;
-    case 8:
-        DrawSprite(ot, 0x104, 0x188, 0x22, 0x10, 0x7A, 0x40, (u8)shade,
-                      (u8)shade, (u8)shade, 0x244, 0, 1, 0x3E);
-        break;
-    case 9:
-        DrawSprite(ot, 0xF7, 0x188, 0x30, 0x10, 0xA0, 0x40, (u8)shade,
-                      (u8)shade, (u8)shade, 0x244, 0, 1, 0x3E);
-        break;
-    case 12:
-        DrawSprite(ot, 0xF6, 0x188, 0x30, 0x10, 4, 0x50, (u8)shade,
-                      (u8)shade, (u8)shade, 0x244, 0, 1, 0x3E);
-        break;
+    if ((u32)model < GAME_CAR_COUNT) {
+        DrawNamePlateSprite(ot, &s_manufacturerSprites
+                                    [s_carManufacturers[model]],
+                            0x178, (u8)shade, 0x3B);
+        DrawNamePlateSprite(ot, &s_carNameSprites[model], 0x188, (u8)shade,
+                            0x3E);
     }
 
     if (step > 0) {
-        g_CarNamePlateFade += step;
-        if (g_CarNamePlateFade >= 509) {
-            g_CarNamePlateFade = 508;
-        }
+        AdvanceCarNamePlateFade(step);
     }
 }
