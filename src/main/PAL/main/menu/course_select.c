@@ -1,66 +1,7 @@
-#include "game/asset.h"
-#include "game/audio.h"
 #include "game/course_select_internal.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
-#include "game/menu_scripts_internal.h"
-#include "game/player_car_internal.h"
-#include "game/save_internal.h"
 #include "game/race.h"
-
-const char g_NowLoadingText[] = "NOW LOADING";
-/* Blinks the "NOW LOADING" string at g_NowLoadingText. */
-static void DrawNowLoadingText(void) {
-    if (g_SceneTimer & 8) {
-        DrawText8x8(0x74, 0xEC, g_NowLoadingText, 0x78CC);
-    }
-}
-
-
-/* g_MenuScreenUpdate[0]: waits for the car-select assets, then opens screen 1. */
-void EnterCourseSelectScreen(void) {
-    s32 course;
-
-    DrawNowLoadingText();
-    if (RequestCarSelectAssets() != 0) {
-        return;
-    }
-
-    PlaySequence();
-    g_MenuHandlerIndex = 1;
-    g_MenuScreen = 1;
-    DrawBrowseArrows(0, 0, 0, 0);
-
-    g_MenuViewOffset = 0x3D090;
-    course = g_CourseIndex;
-    g_MenuViewSpin = 8;
-    g_UiScriptProgress = 0;
-    g_PlayerCar.x = 0;
-    g_PlayerCar.y = 0;
-    g_PlayerCar.z = 0;
-    g_PlayerCar.bodyPitch = 0;
-    g_PlayerCar.bodyYaw = 0;
-    g_PlayerCar.bodyRoll = 0;
-    g_PlayerCar.trackProgress = 0;
-    g_PlayerCar.steeringAngle = 0;
-    g_PlayerCar.wheelRotation = 0;
-    g_MenuViewAngleTarget = 0x7A120;
-    g_MenuViewAngle = 0x7A120;
-    g_MenuViewOffsetTarget = 0;
-    g_CourseCardSpin = 0x1F4000;
-    g_CourseCardSpinTarget = 0;
-    g_CourseCardPendingGrade = g_CourseProgress->bestPlace[course & 3];
-
-    if (course >= 4) {
-        g_TimeAttackPlateStep = 1;
-    } else {
-        g_TimeAttackPlateStep = -1;
-    }
-
-    LoadImage(&g_TeamLogoRect.rect, &g_TeamLogoCanvas);
-    LoadImage(&g_TeamLogoClutRect, g_TeamLogoClut);
-    UploadTeamNameTexture(g_TeamNameChars, g_TeamNameLength);
-}
 
 /* Draws the first half of a sliding label and returns its Y for the rest. */
 static s32 DrawSlidingSprite(
@@ -211,6 +152,7 @@ s32 DrawCourseSelectScreen(s32 step) {
     return g_CourseSelectScrollProgress;
 }
 
+/* Screen-fade callback used by the host menu renderer. */
 s32 DrawRankingScreen(s32 step) {
     return AdvanceMenuFade(&g_RankingScrollState, step);
 }

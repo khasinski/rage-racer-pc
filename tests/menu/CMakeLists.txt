@@ -39,6 +39,25 @@ endif()
 add_test(NAME showroom_car_model COMMAND showroom_car_model_tests)
 set_tests_properties(showroom_car_model PROPERTIES LABELS unit)
 
+add_executable(enter_course_select_tests
+    enter_course_select_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/enter_course_select.c)
+target_include_directories(enter_course_select_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(enter_course_select_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(enter_course_select_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(enter_course_select_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME enter_course_select COMMAND enter_course_select_tests)
+set_tests_properties(enter_course_select PROPERTIES LABELS functional)
+
 add_executable(team_name_texture_tests
     team_name_texture_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/team_name_texture.c)
