@@ -123,7 +123,7 @@ void UpdateRankingScreen(void) {
         return;
     }
     g_MenuHandlerIndex = -1;
-    g_MenuOutgoingHandlerIndex = 2;
+    g_MenuOutgoingHandlerIndex = MENU_SCREEN_RANKING;
     RunTimedDrawScript(g_RankingMenuScript, &g_UiScriptProgress2, -1);
     DrawFadingMenuSprites(g_UiScriptProgress2, 2, g_RankingCursor);
     RunTimedDrawScript(g_RankingPanelScript, &g_UiScriptProgress, -1);
@@ -131,8 +131,8 @@ void UpdateRankingScreen(void) {
     if (g_UiScriptProgress > 0) {
         return;
     }
-    g_MenuScreen = 1;
-    g_MenuHandlerIndex = 1;
+    g_MenuScreen = MENU_SCREEN_COURSE_SELECT;
+    g_MenuHandlerIndex = MENU_SCREEN_COURSE_SELECT;
     g_RankingCursor = 0;
     g_UiScriptProgress = 0;
     GameMenuBusy = 0;

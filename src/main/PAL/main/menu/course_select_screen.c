@@ -341,8 +341,8 @@ static void EnterChosenScreen(void) {
         if (g_MenuViewOffset <= 0x3D08F) {
             return;
         }
-        g_MenuScreen = 3;
-        g_MenuHandlerIndex = 4;
+        g_MenuScreen = MENU_SCREEN_ENTER_CAR_SELECT;
+        g_MenuHandlerIndex = MENU_SCREEN_CAR_SELECT;
         DrawOwnedCarCounter(0, 0);
         DrawBrowseArrows(0, 0, 0, 0);
         g_CarSwapToIndex = -1;
@@ -360,8 +360,8 @@ static void EnterChosenScreen(void) {
         HandOverToRace(2, g_CourseIndex & 3);
         break;
     case 3:
-        g_MenuScreen = 2;
-        g_MenuHandlerIndex = 2;
+        g_MenuScreen = MENU_SCREEN_RANKING;
+        g_MenuHandlerIndex = MENU_SCREEN_RANKING;
         break;
     case 4:
         /* The saved-game route reaches the race through the record screen. */
@@ -378,7 +378,7 @@ static void EnterChosenScreen(void) {
 
 static void UpdateCourseSelectOutgoing(void) {
     g_MenuHandlerIndex = -1;
-    g_MenuOutgoingHandlerIndex = 1;
+    g_MenuOutgoingHandlerIndex = MENU_SCREEN_COURSE_SELECT;
     DrawCourseArrows(-1);
     RunTimedDrawScript(CourseSelectMenuScript(), &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);

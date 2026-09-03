@@ -177,7 +177,7 @@ static void UpdateActiveTeamLogoModal(void *ot, s32 state) {
 
 static void UpdateTeamLogoOutgoing(s32 state) {
     g_MenuHandlerIndex = -1;
-    g_MenuOutgoingHandlerIndex = 7;
+    g_MenuOutgoingHandlerIndex = MENU_SCREEN_TEAM_LOGO;
     DrawTeamLogoCanvas(state == 2 ? -1 : 1, 0);
     RunTimedDrawScript(g_TeamLogoScreenScript, &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
