@@ -14,6 +14,10 @@ unsigned int SelectActiveInputDevice(
         if (devices[index].activity > selectedActivity) {
             selected = devices[index].id;
             selectedActivity = devices[index].activity;
+        } else if (devices[index].id == currentId &&
+                   devices[index].activity == selectedActivity &&
+                   selectedActivity > activationThreshold) {
+            selected = currentId;
         }
     }
     /* No controller moved: retain the current one if it is still connected,

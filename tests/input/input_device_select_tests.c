@@ -23,6 +23,9 @@ int main(void) {
     EXPECT_EQ(22, SelectActiveInputDevice(devices, 3, 22, 4096));
     devices[2].activity = 30000;
     EXPECT_EQ(33, SelectActiveInputDevice(devices, 3, 22, 4096));
+    devices[1].activity = 30000;
+    EXPECT_EQ(22, SelectActiveInputDevice(devices, 3, 22, 4096));
+    devices[1].activity = 0;
     devices[2].activity = 0;
     devices[0].activity = 4096;
     EXPECT_EQ(33, SelectActiveInputDevice(devices, 3, 33, 4096));
