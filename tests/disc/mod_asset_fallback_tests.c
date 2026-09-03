@@ -5,9 +5,11 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "archive_index.h"
 #include "mod_assets.h"
 
 static size_t s_room;
+static int s_patchCalls;
 static int failures;
 
 #define EXPECT(value) do { if (!(value)) { failures++;                         \
@@ -38,6 +40,7 @@ int TexturePatchAsset(const char *directory, int assetIndex,
     (void)assetIndex;
     (void)data;
     (void)size;
+    s_patchCalls++;
     return 0;
 }
 
@@ -88,6 +91,14 @@ int main(void) {
     EXPECT(destination[0] == 0xA5 && destination[15] == 0xA5);
 
     EXPECT(ModAssetLoad(2, destination, 2) == 0);
+    EXPECT(ModAssetLoad(-1, destination, 2) == 0);
+    EXPECT(ModAssetLoad(RAGE_ARCHIVE_INDEX_ENTRY_COUNT, destination, 2) == 0);
+    ModPatchTextures(-1, destination, sizeof(destination));
+    ModPatchTextures(RAGE_ARCHIVE_INDEX_ENTRY_COUNT, destination,
+                     sizeof(destination));
+    EXPECT(s_patchCalls == 0);
+    ModPatchTextures(0, destination, sizeof(destination));
+    EXPECT(s_patchCalls == 1);
     unlink(asset0);
     unlink(asset1);
     rmdir(raw);

@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "archive_index.h"
 #include "mod_assets.h"
 #include "texture_patch.h"
 #include "runtime_config.h"
@@ -65,7 +66,8 @@ static FILE *ModOpen(int index, long *size) {
     FILE *file;
     int written;
 
-    if (s_directory == NULL || !s_legacyLayout || index < 0 || size == NULL) {
+    if (s_directory == NULL || !s_legacyLayout ||
+        (unsigned)index >= RAGE_ARCHIVE_INDEX_ENTRY_COUNT || size == NULL) {
         return NULL;
     }
     written = snprintf(path, sizeof(path), "%s/raw/asset_%03d.bin",
@@ -93,7 +95,8 @@ int ModAssetLoad(int index, void *destination, unsigned int originalSize) {
     size_t loaded;
     int closeFailed;
 
-    if (destination == NULL || index < 0) return 0;
+    if (destination == NULL ||
+        (unsigned)index >= RAGE_ARCHIVE_INDEX_ENTRY_COUNT) return 0;
     ModAssetsInit();
     file = ModOpen(index, &size);
     if (file == NULL) return 0;
@@ -124,8 +127,8 @@ int ModAssetLoad(int index, void *destination, unsigned int originalSize) {
     memcpy(destination, replacement, (size_t)size);
     free(replacement);
     if ((unsigned int)size != originalSize) {
-        static int announced[512];
-        if (index >= 0 && index < 512 && !announced[index]) {
+        static int announced[RAGE_ARCHIVE_INDEX_ENTRY_COUNT];
+        if (!announced[index]) {
             announced[index] = 1;
             fprintf(stderr, "rage-port: asset %d overridden, %u -> %ld bytes\n",
                     index, originalSize, size);
@@ -136,6 +139,7 @@ int ModAssetLoad(int index, void *destination, unsigned int originalSize) {
 
 /* Apply the mod directory's edited images to an asset already in memory. */
 void ModPatchTextures(int index, void *data, size_t size) {
+    if ((unsigned)index >= RAGE_ARCHIVE_INDEX_ENTRY_COUNT) return;
     ModAssetsInit();
     if (s_directory == NULL || !s_legacyLayout) return;
     TexturePatchAsset(s_directory, index, data, size);
