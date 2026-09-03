@@ -59,7 +59,19 @@ static void EnterCarShop(void) {
     g_MenuOverlayPattern = 1;
     g_CarSwapFromIndex = g_PlayerCarIndex;
     g_CarSwapToIndex = g_CarListCursor;
-    g_MenuViewAngle = 0x927C0 - (previousTarget - g_MenuViewAngle);
+    g_MenuViewAngle =
+        RebaseMenuViewAngle(g_MenuViewAngle, previousTarget, 0x927C0);
+}
+
+static s32 PlayerCarCanBeUpgraded(void) {
+    s32 unlockLevel;
+
+    if ((u32)g_PlayerCarIndex >= GAME_CAR_COUNT || g_CarModelAsset == NULL ||
+        g_RaceProgress == NULL || g_CarModelAsset->upgradesAvailable == 0) {
+        return 0;
+    }
+    unlockLevel = GetCarUnlockLevel(g_PlayerCarIndex);
+    return unlockLevel >= 0 && g_RaceProgress->maxClassReached >= unlockLevel;
 }
 
 /*
@@ -106,9 +118,7 @@ static void ChooseCarSelectRow(s32 row) {
         return;
     }
     if (row == 3) {
-        if ((g_CarModelAsset->upgradesAvailable != 0) &&
-            (g_RaceProgress->maxClassReached >=
-             GetCarUnlockLevel(g_PlayerCarIndex))) {
+        if (PlayerCarCanBeUpgraded()) {
             GameMenuBusy = 4;
             g_MenuOverlayPattern = 1;
             PlaySoundCue(2);
@@ -154,7 +164,7 @@ static void UpdateCarSelectInput(void) {
     if (g_PadPressed & PAD_CONFIRM) {
         ChooseCarSelectRow(g_CarSelectCursor);
     } else if ((g_PadPressed & PAD_CANCEL) &&
-               ((u32)(g_MenuViewAngle - 0x2710) > 0x120160U)) {
+               ((u32)g_MenuViewAngle - 0x2710U > 0x120160U)) {
         LeaveCarSelectScreen();
     }
 }

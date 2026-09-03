@@ -330,6 +330,27 @@ int main(int argc, char **argv) {
                s_digest, expected);
         return 1;
     }
+
+    GameMenuBusy = 0;
+    s_scriptResult = 1;
+    g_UiScriptProgress2 = 0;
+    g_GrandPrixMode = 1;
+    g_CarSelectCursor = 3;
+    g_PadPressed = PAD_CONFIRM;
+    g_PadHeld = 0;
+    g_MenuViewAngle = 0;
+    g_MenuViewAngleTarget = 0;
+    g_CarSwapToIndex = -1;
+    g_PlayerCarIndex = 0;
+    g_CarModelAsset = NULL;
+    g_RaceProgress = NULL;
+    g_CarSelectPopupScript = NULL;
+    UpdateCarSelectScreen();
+    if (GameMenuBusy != -2 ||
+        g_CarSelectPopupScript != g_EngineerShopUnavailableScript) {
+        puts("FAIL missing car state opened the engineer shop");
+        return 1;
+    }
     printf("the car select screen takes the same %d states it always did\n",
            steps);
     return 0;
