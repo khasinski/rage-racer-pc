@@ -39,10 +39,11 @@ int DiscReadSavedPath(const char *configPath, char *path, size_t pathSize) {
     char *lineEnd;
     FILE *file;
 
-    if (configPath == NULL || path == NULL || pathSize < 2 ||
-        pathSize > INT_MAX) {
+    if (path == NULL || pathSize < 2 || pathSize > INT_MAX) {
         return 0;
     }
+    path[0] = '\0';
+    if (configPath == NULL) return 0;
     file = fopen(configPath, "r");
     if (file == NULL || fgets(path, (int)pathSize, file) == NULL) {
         if (file != NULL) fclose(file);

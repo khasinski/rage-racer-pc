@@ -129,6 +129,12 @@ static int TestSavedPathRejectsTruncation(void) {
     CHECK(DiscReadSavedPath(config, path, sizeof(path)));
     CHECK(strcmp(path, "a/complete/game.cue") == 0);
     RemoveFixture(directory, "saved");
+    strcpy(path, "stale.cue");
+    CHECK(!DiscReadSavedPath(config, path, sizeof(path)));
+    CHECK(path[0] == '\0');
+    strcpy(path, "stale.cue");
+    CHECK(!DiscReadSavedPath(NULL, path, sizeof(path)));
+    CHECK(path[0] == '\0');
     CHECK(rmdir(directory) == 0);
     return 0;
 }
