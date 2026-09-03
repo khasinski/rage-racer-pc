@@ -76,17 +76,21 @@ static void TestImageEntries(void) {
         GameImageEntryHeader header;
         GameImageBlock pixels;
     } noClut;
+    u8 originalEntry[sizeof(entry)];
 
     memset(&entry, 0, sizeof(entry));
     entry.header.flags = GAME_IMAGE_ENTRY_HAS_CLUT;
     InitBlock(&entry.clut, sizeof(entry.clut), 10, 20, 2, 1, 0xA1);
     InitBlock(&entry.pixels, sizeof(entry.pixels), 30, 40, 2, 1, 0xB2);
+    memcpy(originalEntry, &entry, sizeof(entry));
     s_loadCount = 0;
     s_syncCount = 0;
     Check(UploadImageEntry(&entry.header, sizeof(entry)) == 1,
           "complete CLUT entry is valid");
     Check(s_loadCount == 2 && s_syncCount == 2,
           "CLUT entry uploads two synchronized blocks");
+    Check(memcmp(originalEntry, &entry, sizeof(entry)) == 0,
+          "image entry remains unchanged during upload");
     Check(s_loadRects[0].x == 10 && s_loadRects[0].y == 20 &&
               s_loadRects[0].w == 2 && s_loadRects[0].h == 1 &&
               s_loadData[0] == entry.clut.pixels,
@@ -137,6 +141,7 @@ static void TestImageAssetChain(void) {
     GameImageAssetHeaderWord *secondLink;
     GameImageBlock *block;
     u8 *cursor;
+    u8 originalChain[sizeof(chain.bytes)];
     size_t chainSize;
     const s32 payloadSize = sizeof(GameImageEntryHeader) +
                             sizeof(GameImageBlock);
@@ -159,6 +164,7 @@ static void TestImageAssetChain(void) {
     ((GameImageAssetHeaderWord *)(void *)cursor)->size = 0;
     cursor += sizeof(*words);
     chainSize = (size_t)(cursor - chain.bytes);
+    memcpy(originalChain, chain.bytes, sizeof(chain.bytes));
 
     s_loadCount = 0;
     Check(UploadImageAsset(words, chainSize) == 1,
@@ -166,6 +172,8 @@ static void TestImageAssetChain(void) {
     Check(s_loadCount == 2 && s_loadRects[0].x == 1 &&
               s_loadRects[1].x == 5,
           "image asset walks every positive-size entry");
+    Check(memcmp(originalChain, chain.bytes, sizeof(chain.bytes)) == 0,
+          "image asset remains unchanged during upload");
 
     words[1].size = sizeof(GameImageEntryHeader) - 1;
     s_loadCount = 0;

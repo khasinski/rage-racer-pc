@@ -3,14 +3,14 @@
 
 #include <stddef.h>
 
-static void UploadBlockPixels(GameImageBlock *block) {
+static void UploadBlockPixels(const GameImageBlock *block) {
     Rect rect;
 
     rect.x = block->x;
     rect.y = block->y;
     rect.w = block->w;
     rect.h = block->h;
-    LoadImage(&rect, block->pixels);
+    LoadImage(&rect, (void *)(const void *)block->pixels);
     DrawSync(0);
 }
 
@@ -59,16 +59,16 @@ s32 IsValidImageEntry(const GameImageEntryHeader *entry, size_t size) {
     return ImageBlockFits(pixels, remaining);
 }
 
-s32 UploadImageEntry(GameImageEntryHeader *entry, size_t size) {
-    GameImageBlock *clut = NULL;
-    GameImageBlock *pixels;
+s32 UploadImageEntry(const GameImageEntryHeader *entry, size_t size) {
+    const GameImageBlock *clut = NULL;
+    const GameImageBlock *pixels;
 
     if (!IsValidImageEntry(entry, size)) return 0;
 
-    pixels = (GameImageBlock *)(entry + 1);
+    pixels = (const GameImageBlock *)(entry + 1);
     if ((entry->flags & GAME_IMAGE_ENTRY_HAS_CLUT) != 0) {
         clut = pixels;
-        pixels = (GameImageBlock *)((u8 *)pixels + clut->size);
+        pixels = (const GameImageBlock *)((const u8 *)pixels + clut->size);
     }
 
     if (clut != NULL) UploadBlockPixels(clut);
@@ -113,14 +113,15 @@ s32 IsValidImageAsset(const GameImageAssetHeaderWord *asset, size_t size) {
     return 0;
 }
 
-s32 UploadImageAsset(GameImageAssetHeaderWord *asset, size_t size) {
-    u8 *cursor;
+s32 UploadImageAsset(const GameImageAssetHeaderWord *asset, size_t size) {
+    const u8 *cursor;
 
     if (!IsValidImageAsset(asset, size)) return 0;
 
-    cursor = (u8 *)(asset + 1);
+    cursor = (const u8 *)(asset + 1);
     for (;;) {
-        s32 entrySize = ((GameImageAssetHeaderWord *)(void *)cursor)->size;
+        s32 entrySize =
+            ((const GameImageAssetHeaderWord *)(const void *)cursor)->size;
 
         cursor += sizeof(GameImageAssetHeaderWord);
         if (entrySize <= 0) return 1;

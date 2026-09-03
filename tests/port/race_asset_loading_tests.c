@@ -51,7 +51,7 @@ static size_t s_audioAuxiliarySize;
 static s32 s_startAudioResult = 1;
 static s32 s_renderCarAsset;
 static s32 s_uploadCount;
-static GameImageAssetHeaderWord *s_uploads[5];
+static const GameImageAssetHeaderWord *s_uploads[5];
 static size_t s_uploadSizes[5];
 static s32 s_validationCount;
 static s32 s_validationFailureAt = -1;
@@ -96,13 +96,13 @@ s32 GetCarAssetIndex(s32 model, s32 grade) {
     return s_invalidCarAssetIndex ? -1 : model * 10 + grade;
 }
 void GameRenderWorldSetTrackCarAsset(s32 asset) { s_renderCarAsset = asset; }
-s32 UploadImageAsset(GameImageAssetHeaderWord *asset, size_t size) {
+s32 UploadImageAsset(const GameImageAssetHeaderWord *asset, size_t size) {
     s32 index = s_uploadCount++;
     s_uploads[index] = asset;
     s_uploadSizes[index] = size;
     return 1;
 }
-s32 UploadImageEntry(GameImageEntryHeader *entry, size_t size) {
+s32 UploadImageEntry(const GameImageEntryHeader *entry, size_t size) {
     s32 index = s_uploadCount++;
     s_uploads[index] = (GameImageAssetHeaderWord *)entry;
     s_uploadSizes[index] = size;

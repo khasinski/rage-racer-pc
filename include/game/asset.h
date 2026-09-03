@@ -288,13 +288,14 @@ enum {
     GAME_IMAGE_ENTRY_HAS_CLUT = 1 << 3
 };
 
-static inline GameImageAssetHeaderWord *GetImageAssetHeaderWords(
-    void *data) {
-    return (GameImageAssetHeaderWord *)data;
+static inline const GameImageAssetHeaderWord *GetImageAssetHeaderWords(
+    const void *data) {
+    return (const GameImageAssetHeaderWord *)data;
 }
 
-static inline GameImageEntryHeader *GetImageEntryHeader(void *data) {
-    return (GameImageEntryHeader *)data;
+static inline const GameImageEntryHeader *GetImageEntryHeader(
+    const void *data) {
+    return (const GameImageEntryHeader *)data;
 }
 
 /* The offset table every asset pack starts with; sub-blocks live at
@@ -507,8 +508,8 @@ void ResetTrackTextureSwap(void);
 s32 SetEnvironmentScript(const struct GameEnvironmentScript *script,
                          size_t size);
 void StoreTeamLogoImage(void* dst);
-s32 UploadImageAsset(GameImageAssetHeaderWord *asset, size_t size);
-s32 UploadImageEntry(GameImageEntryHeader *entry, size_t size);
+s32 UploadImageAsset(const GameImageAssetHeaderWord *asset, size_t size);
+s32 UploadImageEntry(const GameImageEntryHeader *entry, size_t size);
 s32 UploadLoadBufferImage(void);
 extern s32 g_TerrainCellCount;
 extern RECT g_CarImageRect;

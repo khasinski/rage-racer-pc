@@ -50,7 +50,7 @@ static size_t s_audioAuxiliarySize;
 static s32 s_startAudioResult = 1;
 static s32 s_sequenceInitCalls;
 static const CourseModelAssetHeader *s_courseModels;
-static GameImageAssetHeaderWord *s_uploadedImage;
+static const GameImageAssetHeaderWord *s_uploadedImage;
 static s32 s_installCarModelSlotCalls;
 static s32 s_serializedModelValid = 1;
 static s32 s_registerModelBankResult = 1;
@@ -113,7 +113,7 @@ s32 RegisterCourseModels(const CourseModelAssetHeader *models, size_t size) {
     s_courseModels = models;
     return 1;
 }
-s32 UploadImageAsset(GameImageAssetHeaderWord *image, size_t size) {
+s32 UploadImageAsset(const GameImageAssetHeaderWord *image, size_t size) {
     (void)size;
     s_uploadedImage = image;
     return 1;

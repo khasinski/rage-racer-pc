@@ -122,7 +122,7 @@ void DrawFullscreenFadeTile480(s32 color, s32 tpage) {
     s_fadeTpage = tpage;
 }
 
-s32 UploadImageAsset(GameImageAssetHeaderWord *asset, size_t size) {
+s32 UploadImageAsset(const GameImageAssetHeaderWord *asset, size_t size) {
     CHECK(asset == GetImageAssetHeaderWords(g_ImageBlockBuffer));
     CHECK(size == g_ImageBlockSize);
     s_imageUploads++;

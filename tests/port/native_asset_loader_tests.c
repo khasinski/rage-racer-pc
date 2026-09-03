@@ -17,7 +17,7 @@ static s32 s_patchCalls;
 static size_t s_patchSize;
 static s32 s_archiveLoads;
 static s32 s_uploads;
-static GameImageAssetHeaderWord *s_uploadedAsset;
+static const GameImageAssetHeaderWord *s_uploadedAsset;
 static s32 s_requestCalls;
 static size_t s_availableRoom;
 static s32 s_failures;
@@ -57,7 +57,7 @@ int HostLoadArchiveIndex(void *entries, int count) {
     return 1;
 }
 
-s32 UploadImageAsset(GameImageAssetHeaderWord *asset, size_t size) {
+s32 UploadImageAsset(const GameImageAssetHeaderWord *asset, size_t size) {
     (void)size;
     s_uploads++;
     s_uploadedAsset = asset;

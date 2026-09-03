@@ -58,7 +58,7 @@ static size_t s_audioBodySize;
 static s32 s_startAudioResult = 1;
 static s32 s_pollResult;
 static s32 s_imageUploads;
-static GameImageAssetHeaderWord *s_lastImageUpload;
+static const GameImageAssetHeaderWord *s_lastImageUpload;
 static s32 s_storeImageCalls;
 static s32 s_drawSyncCalls;
 
@@ -81,7 +81,7 @@ s32 StartAudioSlotLoad(s32 slot, const AudioSlotAsset *asset) {
     return s_startAudioResult;
 }
 s32 PollAudioSlotLoad(void) { return s_pollResult; }
-s32 UploadImageAsset(GameImageAssetHeaderWord *data, size_t size) {
+s32 UploadImageAsset(const GameImageAssetHeaderWord *data, size_t size) {
     (void)size;
     s_lastImageUpload = data;
     s_imageUploads++;

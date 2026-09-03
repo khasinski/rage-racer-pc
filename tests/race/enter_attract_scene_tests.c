@@ -7,7 +7,7 @@
 #include "game/state.h"
 
 static u8 s_ImageData[16];
-static GameImageAssetHeaderWord *s_UploadedImage;
+static const GameImageAssetHeaderWord *s_UploadedImage;
 static s32 s_DisplayMask;
 static s32 s_RenderOtShift;
 static s32 s_DisplaySetups;
@@ -41,7 +41,7 @@ s32 AssetLoadCompletedSuccessfully(void) {
 }
 
 void SetDispMask(s32 enabled) { s_DisplayMask = enabled; }
-s32 UploadImageAsset(GameImageAssetHeaderWord *asset, size_t size) {
+s32 UploadImageAsset(const GameImageAssetHeaderWord *asset, size_t size) {
     (void)size;
     s_UploadedImage = asset;
     return 1;

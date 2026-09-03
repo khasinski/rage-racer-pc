@@ -47,7 +47,7 @@ void SetupDisplay240(s32 red, s32 green, s32 blue) {
     (void)green;
     (void)blue;
 }
-s32 UploadImageAsset(GameImageAssetHeaderWord *asset, size_t size) {
+s32 UploadImageAsset(const GameImageAssetHeaderWord *asset, size_t size) {
     (void)asset;
     (void)size;
     return s_uploadSucceeds;
