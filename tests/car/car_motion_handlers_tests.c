@@ -18,6 +18,7 @@
 #include "game/render_state.h"
 #include "game/track.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -283,6 +284,20 @@ int main(int argc, char **argv) {
         printf("car_motion_handlers: %d cases folded to %lu, expected %lu\n",
                cases, s_digest, expected);
         return 1;
+    }
+
+    {
+        PlayerCarRuntime car;
+
+        PrepareCar(&car, &spec);
+        car.drive.jumpTimer = 10;
+        car.drive.yawOffset = INT_MIN;
+        UpdateCarAirborne(&car);
+        if (car.drive.yawOffset != -67108864) {
+            printf("extreme airborne yaw decayed to %d\n",
+                   car.drive.yawOffset);
+            return 1;
+        }
     }
     printf("car_motion_handlers: %d cases unchanged\n", cases);
     return 0;
