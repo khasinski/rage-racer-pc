@@ -1,4 +1,5 @@
 #include "game/player_car_internal.h"
+#include "game/integer.h"
 #include "game/race.h"
 #include "game/state.h"
 #include "game/track.h"
@@ -37,11 +38,9 @@ static void ResetTrafficAvoidance(GameCarRuntime *car) {
     car->avoidanceTargetOffset = car->aiLateralOffset;
 }
 
-/* These fields were recovered through an unsigned halfword overlay. Keep its
- * wrap explicitly while the rest of the AI uses the canonical car layout. */
 static void AdvanceTrafficLateralOffset(GameCarRuntime *car) {
-    car->aiLateralOffset =
-        (s16)((u16)car->aiLateralOffset + (u16)car->avoidanceStep);
+    car->aiLateralOffset = WrapSigned16(
+        (s32)car->aiLateralOffset + car->avoidanceStep);
 }
 
 static void SelectTrafficAvoidanceDirection(GameCarRuntime *car,
@@ -52,21 +51,21 @@ static void SelectTrafficAvoidanceDirection(GameCarRuntime *car,
     if (scan->blockingLeft == 0 &&
         lateralOffset >= TRAFFIC_TARGET_OFFSET + 1) {
         car->avoidanceTargetOffset = -TRAFFIC_TARGET_OFFSET;
-        car->avoidanceStep = -8 - urgency * 2;
+        car->avoidanceStep = WrapSigned16(-8 - urgency * 2);
     } else if (scan->blockingRight == 0 &&
                lateralOffset < -TRAFFIC_TARGET_OFFSET) {
         car->avoidanceTargetOffset = TRAFFIC_TARGET_OFFSET;
-        car->avoidanceStep = 8 + urgency * 2;
+        car->avoidanceStep = WrapSigned16(8 + urgency * 2);
     } else if (scan->lane[0] <= scan->lane[1] &&
                scan->lane[0] <= scan->lane[2] &&
                scan->blockingLeft == 0) {
         car->avoidanceTargetOffset = -TRAFFIC_TARGET_OFFSET;
-        car->avoidanceStep = -6 - urgency * 2;
+        car->avoidanceStep = WrapSigned16(-6 - urgency * 2);
     } else if (scan->lane[2] <= scan->lane[1] &&
                scan->lane[2] <= scan->lane[0] &&
                scan->blockingRight == 0) {
         car->avoidanceTargetOffset = TRAFFIC_TARGET_OFFSET;
-        car->avoidanceStep = 6 + urgency * 2;
+        car->avoidanceStep = WrapSigned16(6 + urgency * 2);
     }
 }
 
@@ -87,14 +86,13 @@ static void SelectTrafficAvoidanceDirection(GameCarRuntime *car,
  */
 void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
     s32 trackLength = g_TrackLength;
-    s32 progress = car->trackProgress;
-    s32 lateralOffset = car->trackLateralOffset;
-    s32 speed = (u16)car->speed;
-    /* The faster this car is going, the further ahead it looks. */
-    s32 ownLookahead = car->speed * 2 + 0xC00;
-    s32 laneLeft = (s16)(lateralOffset - TRAFFIC_LANE_HALF_WIDTH);
-    s32 laneRight = (s16)(lateralOffset + TRAFFIC_LANE_HALF_WIDTH);
-    s32 behindLine = trackLength - TRAFFIC_BEHIND;
+    s32 progress;
+    s32 lateralOffset;
+    s32 speed;
+    s32 ownLookahead;
+    s32 laneLeft;
+    s32 laneRight;
+    s32 behindLine;
     /* Lane buckets are left, in front, right. */
     TrafficScan scan = {{0}, 0, 0};
     s32 crowding;
@@ -106,6 +104,15 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
         car->nearbyCarCount = 0;
         return;
     }
+
+    progress = car->trackProgress;
+    lateralOffset = car->trackLateralOffset;
+    speed = (u16)car->speed;
+    /* The faster this car is going, the further ahead it looks. */
+    ownLookahead = car->speed * 2 + 0xC00;
+    laneLeft = WrapSigned16(lateralOffset - TRAFFIC_LANE_HALF_WIDTH);
+    laneRight = WrapSigned16(lateralOffset + TRAFFIC_LANE_HALF_WIDTH);
+    behindLine = trackLength - TRAFFIC_BEHIND;
 
     car->avoidanceStep = 0;
     car->nearbyCarCount = 0;
@@ -128,7 +135,8 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
         }
 
         if (slot == TRAFFIC_PLAYER_SLOT) {
-            otherProgress = g_PlayerCar.trackProgress + trackLength;
+            otherProgress = WrapSigned32(
+                (int64_t)g_PlayerCar.trackProgress + trackLength);
             otherOffset = g_PlayerCar.trackLateralOffset;
             /* The four cars at the front of the field are not told how fast
              * the player is going, so they never treat it as pulling away. */
@@ -144,14 +152,15 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
             if (other->activeFlag == -1) {
                 continue;
             }
-            otherProgress = other->trackProgress + trackLength;
+            otherProgress = WrapSigned32(
+                (int64_t)other->trackProgress + trackLength);
             otherOffset = other->trackLateralOffset;
             otherSpeed = (u16)other->speed;
             alreadyAvoiding = (u16)car->avoidanceActive;
         }
 
         sideways = otherOffset - lateralOffset;
-        gap = (otherProgress - progress) % trackLength;
+        gap = WrapSigned32((int64_t)otherProgress - progress) % trackLength;
 
         if (gap <= 0 || gap >= lookahead) {
             /* Behind, but not far behind. */
@@ -169,8 +178,8 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
              * avoided stays in the way even if it is, so that a rival part way
              * round something does not change its mind halfway.
              */
-            s32 closing = otherSpeed - speed;
-            if (!((s16)closing > 0 && alreadyAvoiding == 0)) {
+            s16 closing = WrapSigned16(otherSpeed - speed);
+            if (!(closing > 0 && alreadyAvoiding == 0)) {
                 /*
                  * The lane test above holds the offset inside the lane, so
                  * this always picks 0, 1 or 2. The recovered code carried a
@@ -183,10 +192,12 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
                 if (slot == TRAFFIC_PLAYER_SLOT) {
                     /* The player counts full weight until it is inside 0xC00,
                      * and nearness only tells beyond that. */
-                    scan.lane[bucket] +=
-                        gap < 0xC00 ? 0xC00 - gap : 0xC00;
+                    scan.lane[bucket] = WrapSigned32(
+                        (int64_t)scan.lane[bucket] +
+                        (gap < 0xC00 ? 0xC00 - gap : 0xC00));
                 } else {
-                    scan.lane[bucket] += lookahead - gap;
+                    scan.lane[bucket] = WrapSigned32(
+                        (int64_t)scan.lane[bucket] + lookahead - gap);
                 }
             }
         }
@@ -194,15 +205,18 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
         /* Just off either shoulder and almost alongside: not in the way, but
          * no room to move over either. */
         if (gap < 0x200) {
-            if ((s16)sideways >= TRAFFIC_SHOULDER + 1) {
-                scan.blockingRight += 0xC00 - gap;
-            } else if ((s16)sideways < -TRAFFIC_SHOULDER) {
-                scan.blockingLeft += 0xC00 - gap;
+            if (WrapSigned16(sideways) >= TRAFFIC_SHOULDER + 1) {
+                scan.blockingRight = WrapSigned32(
+                    (int64_t)scan.blockingRight + 0xC00 - gap);
+            } else if (WrapSigned16(sideways) < -TRAFFIC_SHOULDER) {
+                scan.blockingLeft = WrapSigned32(
+                    (int64_t)scan.blockingLeft + 0xC00 - gap);
             }
         }
     }
 
-    crowding = scan.lane[0] + scan.lane[1] + scan.lane[2];
+    crowding = WrapSigned32((int64_t)scan.lane[0] + scan.lane[1]);
+    crowding = WrapSigned32((int64_t)crowding + scan.lane[2]);
     if (crowding <= 0) {
         ResetTrafficAvoidance(car);
         AdvanceTrafficLateralOffset(car);
