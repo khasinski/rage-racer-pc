@@ -106,7 +106,7 @@ extern Matrix g_SceneLightMatrix;
 extern Matrix g_SceneColorMatrix;
 extern Matrix g_TrackColorMatrix;
 extern Matrix g_TrackLightMatrix;
-extern TrackRenderTable *g_TrackRenderTable;
+extern const TrackRenderTable *g_TrackRenderTable;
 extern s32 g_TrackTextureSectionLo;
 extern s32 g_TrackTextureSectionHi;
 

@@ -54,7 +54,7 @@ extern const GameTrackCameraNode *g_TrackCameras;
 extern u16 g_TrackSectionCount;
 s32 IsValidTrackCameraTable(const TrackCameraTable *table, size_t size,
                             s32 useSeriesCamera);
-s32 SelectTrackCameraTable(TrackCameraTable *table, size_t size,
+s32 SelectTrackCameraTable(const TrackCameraTable *table, size_t size,
                            s32 useSeriesCamera);
 
 #endif

@@ -32,7 +32,7 @@ s32 g_CourseIndex;
 s32 g_GrandPrixClass;
 s16 g_GrandPrixSeries;
 TrackTextureShadowRow *g_TrackTextureShadow;
-TrackRenderTable *g_TrackRenderTable;
+const TrackRenderTable *g_TrackRenderTable;
 const EnvironmentPalette *g_EnvPaletteTable;
 const CourseObject *g_CourseObjects;
 s32 g_CourseObjectCount;
@@ -104,7 +104,7 @@ s32 UploadImageAsset(const GameImageAssetHeaderWord *asset, size_t size) {
 }
 s32 UploadImageEntry(const GameImageEntryHeader *entry, size_t size) {
     s32 index = s_uploadCount++;
-    s_uploads[index] = (GameImageAssetHeaderWord *)entry;
+    s_uploads[index] = (const GameImageAssetHeaderWord *)entry;
     s_uploadSizes[index] = size;
     return 1;
 }
@@ -193,7 +193,7 @@ s32 InstallTrackEventData(const struct TrackEventData *data, size_t size) {
     s_installs[s_installCount++] = data;
     return 1;
 }
-s32 SelectTrackCameraTable(TrackCameraTable *table, size_t size,
+s32 SelectTrackCameraTable(const TrackCameraTable *table, size_t size,
                            s32 useSeriesCamera) {
     (void)size;
     s_installs[s_installCount++] = table;
@@ -396,6 +396,7 @@ static void TestVoiceAndCarPhases(void) {
 
 static void TestTrackPhases(void) {
     u8 storage[TRACK_TEXTURE_SHADOW_SIZE + 2048];
+    u8 runtimeSnapshot[1088];
     GameSceneAssetHeader *pack = (GameSceneAssetHeader *)storage;
     CourseModelAssetHeader *courseModels;
     CourseObjectTable *courseObjects;
@@ -485,8 +486,11 @@ static void TestTrackPhases(void) {
           "runtime course objects published");
 
     s_installCount = 0;
+    memcpy(runtimeSnapshot, pack, sizeof(runtimeSnapshot));
     Check(InstallTrackRuntimeAssetPack(pack, 1088, s_loadAssetIndex, 0) == 1,
           "resident runtime pack is valid");
+    Check(memcmp(runtimeSnapshot, pack, sizeof(runtimeSnapshot)) == 0,
+          "runtime pack remains unchanged during installation");
     Check(s_installCount == 8 && s_seriesCamera == 0,
           "scene loads install the default camera table");
 

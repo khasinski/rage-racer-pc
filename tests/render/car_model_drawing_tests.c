@@ -16,7 +16,7 @@ GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
 PlayerCarRuntime g_PlayerCar;
 CarEntry *g_CarTable;
 CarModelAsset *g_CarModelAsset;
-TrackRenderTable *g_TrackRenderTable;
+const TrackRenderTable *g_TrackRenderTable;
 s16 g_CarModelBankTable[2][2];
 u8 g_CarModelByCourse[1][11];
 s32 g_CourseIndex;

@@ -64,12 +64,12 @@ static s32 IsTrackRuntimeAssetIndex(s32 assetIndex) {
             TRACK_ASSETS_PER_COURSE) == 0;
 }
 
-s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
+s32 InstallTrackRuntimeAssetPack(const void *data, size_t size, s32 assetIndex,
                                  s32 useSeriesCamera) {
-    GameSceneAssetHeader *header;
+    const GameSceneAssetHeader *header;
     const CourseModelAssetHeader *courseModels;
     const CourseObjectTable *courseObjects;
-    void *blocks[TRACK_RUNTIME_BLOCK_COUNT];
+    const void *blocks[TRACK_RUNTIME_BLOCK_COUNT];
     size_t blockSizes[TRACK_RUNTIME_BLOCK_COUNT];
     s32 i;
 
@@ -79,7 +79,7 @@ s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
         return 0;
     }
 
-    header = GetSceneAssetHeader(data);
+    header = (const GameSceneAssetHeader *)data;
     for (i = 0; i < TRACK_RUNTIME_BLOCK_COUNT; i++) {
         s32 start = header->offsets[i];
         s32 end = i + 1 < TRACK_RUNTIME_BLOCK_COUNT
@@ -90,7 +90,7 @@ s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
             (size_t)end > size) {
             return 0;
         }
-        blocks[i] = (u8 *)data + start;
+        blocks[i] = (const u8 *)data + start;
         blockSizes[i] = (size_t)(end - start);
     }
     courseObjects = blocks[TRACK_RUNTIME_COURSE_OBJECTS];

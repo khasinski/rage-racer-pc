@@ -58,7 +58,7 @@ s32 LoadAsset(s32 assetIndex, void *destination) {
     s_loadDestination = destination;
     return s_loadResult;
 }
-s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
+s32 InstallTrackRuntimeAssetPack(const void *data, size_t size, s32 assetIndex,
                                  s32 useSeriesCamera) {
     (void)data;
     (void)size;

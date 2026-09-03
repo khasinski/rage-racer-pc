@@ -56,7 +56,7 @@ s32 g_MenuCursorPulsePhase;
 s16 g_TachoNeedleQuad[4][2];
 union GameFrameContext;
 union GameFrameContext *g_DrawBuffer __attribute__((aligned(16)));
-TrackRenderTable *g_TrackRenderTable;
+const TrackRenderTable *g_TrackRenderTable;
 s32 g_TrackTextureCursorRow;
 s32 g_ModelBankCount;
 s32 g_TrackTextureSectionLo;

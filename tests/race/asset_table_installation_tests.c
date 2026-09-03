@@ -13,7 +13,7 @@ const RaceIntroCameraScript *g_RaceIntroCameraScript;
 const SceneryMotionData *g_RouteSceneryData;
 const PathSceneryPositionData *g_PathSceneryPosData;
 const PathSceneryRotationData *g_PathSceneryRotData;
-TrackRenderTable *g_TrackRenderTable;
+const TrackRenderTable *g_TrackRenderTable;
 const CourseObject *g_CourseObjects;
 s32 g_CourseObjectCount;
 static s32 s_failures;
