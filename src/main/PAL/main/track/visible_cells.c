@@ -3,6 +3,8 @@
 #include "game/render_internal.h"
 #include "game/track_internal.h"
 
+#include <limits.h>
+
 enum {
     TERRAIN_CELL_SIZE = 2048,
     TERRAIN_CELL_HALF_SIZE = TERRAIN_CELL_SIZE / 2,
@@ -24,12 +26,24 @@ static int IsCellVisibleFromRegion(s32 cellX, s32 cellZ, u32 region) {
 static void ClearVisibleCellOutput(void) {
     s32 index;
 
-    for (index = 0; index < TERRAIN_CELL_GRID_SIZE; index++) {
-        g_VisibleCellMask[index] = 0;
+    if (g_VisibleCellMask != NULL) {
+        for (index = 0; index < TERRAIN_CELL_GRID_SIZE; index++) {
+            g_VisibleCellMask[index] = 0;
+        }
     }
-    for (index = 0; index < VISIBLE_CELL_COUNT; index++) {
-        g_VisibleCellList[index].w = -1;
+    if (g_VisibleCellList != NULL) {
+        for (index = 0; index < VISIBLE_CELL_COUNT; index++) {
+            g_VisibleCellList[index].w = -1;
+        }
     }
+}
+
+static s32 NegatedTimesFour(s32 value) {
+    u32 bits = 0u - (u32)value * 4u;
+
+    return bits <= INT32_MAX
+        ? (s32)bits
+        : -(s32)(UINT32_MAX - bits) - 1;
 }
 
 void BuildVisibleCells(s32 near, s32 far) {
@@ -44,7 +58,8 @@ void BuildVisibleCells(s32 near, s32 far) {
     s32 index;
 
     ClearVisibleCellOutput();
-    if (g_TerrainCellGrid == NULL || g_CellVisibilityTable == NULL) {
+    if (g_VisibleCellMask == NULL || g_VisibleCellList == NULL ||
+        g_TerrainCellGrid == NULL || g_CellVisibilityTable == NULL) {
         return;
     }
     if ((u32)cameraCellX >= TERRAIN_CELL_GRID_SIZE ||
@@ -89,7 +104,8 @@ void BuildVisibleCells(s32 near, s32 far) {
             (cellX * TERRAIN_CELL_SIZE -
              (view->position.components.x.value - TERRAIN_CELL_HALF_SIZE)) *
             4;
-        worldOffset[1] = -view->position.components.y.value * 4;
+        worldOffset[1] = NegatedTimesFour(
+            view->position.components.y.value);
         worldOffset[2] =
             (cellZ * TERRAIN_CELL_SIZE -
              (view->position.components.z.value - TERRAIN_CELL_HALF_SIZE)) *

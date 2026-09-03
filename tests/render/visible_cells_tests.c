@@ -2,6 +2,7 @@
 #include "game/render_internal.h"
 #include "game/track_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -38,8 +39,9 @@ MATRIX *MulMatrix2(MATRIX *left, MATRIX *right) {
 
 void ApplyMatrixLV(void *matrix, const s32 *input, s32 *output) {
     (void)matrix;
-    (void)input;
-    (void)output;
+    output[0] = input[0];
+    output[1] = input[1];
+    output[2] = input[2];
 }
 
 void SetGteObjectMatrix(LVec *position, Matrix *rotation) {
@@ -137,6 +139,36 @@ static int TestVisibleCellOutputBounds(void) {
     return 0;
 }
 
+static int TestMissingVisibleCellOutput(void) {
+    g_VisibleCellMask = NULL;
+    g_VisibleCellList = NULL;
+    BuildVisibleCells(0, 1);
+    return 0;
+}
+
+static int TestCameraHeightWrapsLikeThePs1(void) {
+    u32 visibilityMask[TERRAIN_CELL_GRID_SIZE] = {0};
+    Vec4 visibleCells[VISIBLE_CELL_COUNT];
+    u16 terrainGrid[TERRAIN_CELL_GRID_SIZE * TERRAIN_CELL_GRID_SIZE] = {0};
+    CellVisibilityRow cellVisibility[TERRAIN_CELL_GRID_SIZE] = {{0}};
+
+    memset(visibleCells, 0, sizeof(visibleCells));
+    terrainGrid[(TERRAIN_CELL_GRID_SIZE - 1) * TERRAIN_CELL_GRID_SIZE] = 5;
+    cellVisibility[0][0] = 1;
+    g_VisibleCellMask = visibilityMask;
+    g_VisibleCellList = visibleCells;
+    g_TerrainCellGrid = terrainGrid;
+    g_CellVisibilityTable = cellVisibility;
+    memset(&g_RenderState, 0, sizeof(g_RenderState));
+    RENDER_VIEW_STATE->position.components.y.value = INT_MAX;
+
+    BuildVisibleCells(INT_MIN, INT_MAX);
+
+    CHECK(visibleCells[0].y == 4);
+    CHECK(visibleCells[0].w == 5);
+    return 0;
+}
+
 static int TestCourseObjectFlags(void) {
     CourseObject objects[] = {
         {.modelId = -1},
@@ -203,6 +235,8 @@ static int TestMissingCourseObjects(void) {
 
 int main(void) {
     if (TestVisibleCellOutputBounds() != 0 ||
+        TestMissingVisibleCellOutput() != 0 ||
+        TestCameraHeightWrapsLikeThePs1() != 0 ||
         TestCourseObjectFlags() != 0 || TestMissingCourseObjects() != 0) {
         return 1;
     }
