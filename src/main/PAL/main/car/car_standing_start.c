@@ -1,6 +1,7 @@
 #include "game/angle.h"
 #include "game/audio.h"
 #include "game/car.h"
+#include "game/integer.h"
 #include "game/random.h"
 #include "psyq/gte.h"
 
@@ -27,20 +28,28 @@ static void AlignStandingStartVelocity(PlayerCarRuntime *car) {
     s32 bodyCos;
     s32 alongBody;
 
-    car->bodyYaw += GetAngleDelta(car->bodyYaw, drive->targetHeading) /
-                    STANDING_START_YAW_RESPONSE;
+    car->bodyYaw = WrapSigned32(
+        (int64_t)car->bodyYaw +
+        GetAngleDelta(car->bodyYaw, drive->targetHeading) /
+            STANDING_START_YAW_RESPONSE);
     UpdateCarTravelVelocity(AsRivalCar(car));
 
     bodySin = rsin(car->bodyYaw);
     bodyCos = rcos(car->bodyYaw);
-    drive->accelPos =
-        rsin(car->headingAngle) * car->speed / TRAVEL_VELOCITY_DIVISOR;
-    drive->brakePos =
-        rcos(car->headingAngle) * car->speed / TRAVEL_VELOCITY_DIVISOR;
-    alongBody = (bodySin * drive->accelPos + bodyCos * drive->brakePos) /
-                TRIG_FIXED_ONE;
-    drive->accelPos = bodySin * alongBody / BODY_VELOCITY_DIVISOR;
-    drive->brakePos = bodyCos * alongBody / BODY_VELOCITY_DIVISOR;
+    drive->accelPos = WrapSigned32(
+        (int64_t)rsin(car->headingAngle) * car->speed) /
+        TRAVEL_VELOCITY_DIVISOR;
+    drive->brakePos = WrapSigned32(
+        (int64_t)rcos(car->headingAngle) * car->speed) /
+        TRAVEL_VELOCITY_DIVISOR;
+    alongBody = WrapSigned32(
+        (int64_t)WrapSigned32((int64_t)bodySin * drive->accelPos) +
+        WrapSigned32((int64_t)bodyCos * drive->brakePos)) /
+        TRIG_FIXED_ONE;
+    drive->accelPos = WrapSigned32(
+        (int64_t)bodySin * alongBody) / BODY_VELOCITY_DIVISOR;
+    drive->brakePos = WrapSigned32(
+        (int64_t)bodyCos * alongBody) / BODY_VELOCITY_DIVISOR;
 }
 
 static int UpdateStandingStartWheelspin(GameCarDrive *drive) {
@@ -54,7 +63,8 @@ static int UpdateStandingStartWheelspin(GameCarDrive *drive) {
     rpm = drive->engineRpm;
     grip = throttle + STANDING_START_BASE_GRIP;
 
-    g_StandingStartSpin -= drive->brakeInput * 2;
+    g_StandingStartSpin = WrapSigned32(
+        (int64_t)g_StandingStartSpin - drive->brakeInput * 2);
     if (rpm < STANDING_START_LOW_RPM) {
         grip += STANDING_START_LOW_RPM_GRIP_BONUS;
     } else if (rpm > STANDING_START_LOW_RPM &&
@@ -66,7 +76,8 @@ static int UpdateStandingStartWheelspin(GameCarDrive *drive) {
         (Random15() & 3) * grip / PEDAL_INPUT_FULL;
     drive->standingStartBounceX =
         (Random15() & 7) * grip / PEDAL_INPUT_FULL;
-    g_StandingStartSpin -= grip;
+    g_StandingStartSpin = WrapSigned32(
+        (int64_t)g_StandingStartSpin - grip);
     return g_StandingStartSpin > 0;
 }
 

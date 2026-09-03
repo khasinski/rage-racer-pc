@@ -1,4 +1,5 @@
 #include "game/car.h"
+#include "game/integer.h"
 
 /* Seeds launch spin from revs above the power peak. Starting in second gear
  * or higher also begins with a short loss of grip. */
@@ -17,13 +18,17 @@ void BeginCarStandingStart(PlayerCarRuntime *car) {
         revLimit = 1;
     }
 
-    spin = ((g_EngineRpm - g_PeakOutputRpm) * 10000) / revLimit;
+    spin = WrapSigned32(
+        (int64_t)g_EngineRpm - g_PeakOutputRpm);
+    spin = WrapSigned32((int64_t)spin * 10000) / revLimit;
     g_GripLossTimer = 0;
 
     if (spin < 0) {
         spin = g_EngineRpm < 2000 ? 0 : g_EngineRpm - 1000;
     } else {
-        spin *= g_PeakOutputValue / ((gear * 200) + 300);
+        spin = WrapSigned32(
+            (int64_t)spin *
+            (g_PeakOutputValue / ((gear * 200) + 300)));
         car->drive.drivetrainTorque /= gear;
         if (gear >= 2) {
             g_GripLossTimer = 200;

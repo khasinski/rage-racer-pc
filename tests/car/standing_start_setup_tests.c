@@ -1,5 +1,6 @@
 #include "game/car.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -79,6 +80,15 @@ int main(void) {
     UpdateCarStandingStart(&car);
     CHECK_EQ(g_StandingStartSpin, 968);
     CHECK_EQ(car.drive.motionState, CAR_MOTION_STANDING_START);
+
+    memset(&car, 0, sizeof(car));
+    car.drive.gear = 1;
+    spec.revLimit = 1;
+    g_EngineRpm = INT_MAX;
+    g_PeakOutputRpm = INT16_MIN;
+    g_PeakOutputValue = 1000;
+    BeginCarStandingStart(&car);
+    CHECK_EQ(g_StandingStartSpin, 655340000);
 
     puts("standing start setup tests passed");
     return 0;
