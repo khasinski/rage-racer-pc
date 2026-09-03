@@ -2,18 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "game/race.h"
 #include "runtime_config.h"
-
-extern char *g_NativeCarNames[13];
-
-typedef struct PrologueLine {
-    short x;
-    short y;
-    unsigned char *text;
-} PrologueLine;
-
-extern PrologueLine g_PrologueLines[17];
-extern int g_PrologueLineCount;
 
 typedef struct RageRegionalCarName {
     int modelIndex;
@@ -28,7 +18,7 @@ static const RageRegionalCarName kRegionalCarNames[] = {
     {12, "DRAGONE"},
 };
 
-static const char *kJapanesePrologueLines[17] = {
+static const char *const kJapanesePrologueLines[PROLOGUE_LINE_CAPACITY] = {
     "RAGE RACER....",
     "THE DEEP PRIMITIVE ROARING",
     "EXHAUST NOTES TITILLATE THE",
@@ -48,7 +38,7 @@ static const char *kJapanesePrologueLines[17] = {
     "THE #1 RAGE RACER.",
 };
 
-static const short kJapanesePrologueY[17] = {
+static const s16 kJapanesePrologueY[PROLOGUE_LINE_CAPACITY] = {
     6, 32, 49, 66, 83, 109, 126, 143, 169,
     186, 203, 220, 237, 254, 271, 288, 314,
 };
@@ -92,14 +82,13 @@ void ContentOptionsApply(void) {
                 "rage-port: content.prologue must be international or japanese; using international\n");
         return;
     }
-    for (lineIndex = 0; lineIndex < 17; lineIndex++) {
+    for (lineIndex = 0; lineIndex < PROLOGUE_LINE_CAPACITY; lineIndex++) {
         size_t length = strlen(kJapanesePrologueLines[lineIndex]);
         g_PrologueLines[lineIndex].x = (short)((320 - length * 8) / 2);
         g_PrologueLines[lineIndex].y = kJapanesePrologueY[lineIndex];
-        g_PrologueLines[lineIndex].text =
-            (unsigned char *)kJapanesePrologueLines[lineIndex];
+        g_PrologueLines[lineIndex].text = kJapanesePrologueLines[lineIndex];
     }
-    g_PrologueLineCount = 17;
+    g_PrologueLineCount = PROLOGUE_LINE_CAPACITY;
     fprintf(stderr,
             "rage-port: using the extended Japanese-release prologue text\n");
 }

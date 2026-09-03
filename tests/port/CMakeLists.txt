@@ -166,7 +166,8 @@ add_executable(content_options_tests
     content_options_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/content_options.c)
 target_include_directories(content_options_tests PRIVATE
-    ${CMAKE_SOURCE_DIR}/src/port)
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/include)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(content_options_tests PRIVATE -Wall -Wextra -Werror)
 endif()
