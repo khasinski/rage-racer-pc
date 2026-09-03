@@ -18,11 +18,10 @@
 #include "game/track.h"
 #include "psyq/gte.h"
 
-/* Cars further apart than this along or across the track cannot touch. */
-#define COLLISION_TRACK_REACH 200
-#define COLLISION_LATERAL_REACH 100
-
 enum {
+    /* Cars further apart than this along or across the track cannot touch. */
+    COLLISION_TRACK_REACH = 200,
+    COLLISION_LATERAL_REACH = 100,
     CAR_COLLISION_SAMPLE_COUNT = 5,
 };
 
@@ -181,20 +180,18 @@ s32 CollideRivalCars(GameCarRuntime *car, s32 index) {
     CarCollisionPoint carCorners[CAR_COLLISION_QUAD_COUNT];
     CarCollisionPoint otherCorners[CAR_COLLISION_QUAD_COUNT];
     CarCollisionPoint samples[CAR_COLLISION_SAMPLE_COUNT];
-    GameCarRuntime *other;
     s32 nextIndex;
     int hullBuilt = 0;
-    s32 hit = 0;
 
     if (index < 0 || index >= RACE_CAR_SLOT_COUNT - 1) {
         return 0;
     }
 
-    other = NULL;
     for (nextIndex = index + 1;
          nextIndex < RACE_CAR_SLOT_COUNT;
          nextIndex++) {
-        other = &g_Cars[nextIndex];
+        GameCarRuntime *other = &g_Cars[nextIndex];
+
         if (WithinCollisionReach(car, other)) {
             CarCollisionHit collision;
 
@@ -217,15 +214,11 @@ s32 CollideRivalCars(GameCarRuntime *car, s32 index) {
                 collision = FindFirstCarCollisionQuad(
                     quads, samples, CAR_COLLISION_SAMPLE_COUNT);
             }
-            hit = collision.region;
-            if (hit > 0) {
-                break;
+            if (collision.region > 0) {
+                ShoveApart(car, other, collision.region);
+                return collision.region;
             }
         }
     }
-
-    if (hit > 0) {
-        ShoveApart(car, other, hit);
-    }
-    return hit;
+    return 0;
 }
