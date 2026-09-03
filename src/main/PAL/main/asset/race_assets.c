@@ -31,6 +31,10 @@ typedef struct RaceCarAssetHeader {
     s32 imageOffset;
 } RaceCarAssetHeader;
 
+/* Performance setup derives gear loads and repairs invalid limits in-place.
+ * Keep those runtime values out of the serialized car pack. */
+static GameCarSpec s_RuntimeCarSpec;
+
 s32 RequestRaceAssets(void) {
     return RequestAssetLoad(ASSET_REQUEST_RACE,
                             RACE_LOAD_VOICE_HEADER, 0);
@@ -74,7 +78,8 @@ static void AdvanceAfterAudioLoad(s32 nextState) {
 static void LoadPlayerCarRaceAssets(void) {
     s32 carIndex = g_PlayerCarIndex;
     s32 carAsset;
-    RaceCarAssetHeader *pack;
+    const RaceCarAssetHeader *pack;
+    const u8 *sourceSpec;
     u8 *audioHeader;
     u8 *audioTable;
     u8 *audioBody;
@@ -100,7 +105,7 @@ static void LoadPlayerCarRaceAssets(void) {
         return;
     }
 
-    pack = (RaceCarAssetHeader *)g_AssetLoadCursor;
+    pack = (const RaceCarAssetHeader *)(const void *)g_AssetLoadCursor;
     if (loadedSize < (s32)sizeof(*pack) ||
         pack->specificationOffset < (s32)sizeof(*pack) ||
         pack->audioHeaderOffset <= pack->specificationOffset ||
@@ -120,6 +125,7 @@ static void LoadPlayerCarRaceAssets(void) {
     audioTable = g_AssetLoadCursor + pack->audioSequenceOffset;
     audioBody = g_AssetLoadCursor + pack->audioBodyOffset;
     carImage = g_AssetLoadCursor + pack->imageOffset;
+    sourceSpec = g_AssetLoadCursor + pack->specificationOffset;
     if (!IsValidImageAsset(
             GetImageAssetHeaderWords(carImage),
             (size_t)(loadedSize - pack->imageOffset))) {
@@ -140,9 +146,9 @@ static void LoadPlayerCarRaceAssets(void) {
         FailAssetLoad();
         return;
     }
+    memcpy(&s_RuntimeCarSpec, sourceSpec, sizeof(s_RuntimeCarSpec));
     GameRenderWorldSetTrackCarAsset(carAsset);
-    g_CarSpec = GetGameCarSpec(
-        g_AssetLoadCursor + pack->specificationOffset);
+    g_CarSpec = &s_RuntimeCarSpec;
     UploadImageAsset(GetImageAssetHeaderWords(carImage),
                      (size_t)(loadedSize - pack->imageOffset));
     g_AssetLoadCursor = audioBody;

@@ -227,6 +227,7 @@ static void TestRequestHandshake(void) {
 static void TestVoiceAndCarPhases(void) {
     u8 source[16];
     u8 destination[4096];
+    GameCarSpec sourceSpecSnapshot;
     s32 *offsets = (s32 *)(void *)destination;
     CarEntry cars[2];
     const s32 specificationOffset = 64;
@@ -370,10 +371,17 @@ static void TestVoiceAndCarPhases(void) {
     g_AssetLoadState = 3;
     s_startAudioResult = 1;
     s_uploadCount = 0;
+    memcpy(&sourceSpecSnapshot, destination + specificationOffset,
+           sizeof(sourceSpecSnapshot));
     LoadRaceAssets();
     Check(s_renderCarAsset == 13, "loaded car asset is selected for rendering");
-    Check(g_CarSpec == GetGameCarSpec(destination + specificationOffset),
-          "car spec installed");
+    Check((void *)g_CarSpec != destination + specificationOffset &&
+              memcmp(g_CarSpec, &sourceSpecSnapshot,
+                     sizeof(sourceSpecSnapshot)) == 0,
+          "car spec is copied into writable runtime state");
+    Check(memcmp(destination + specificationOffset, &sourceSpecSnapshot,
+                 sizeof(sourceSpecSnapshot)) == 0,
+          "serialized car specification remains unchanged");
     Check(s_audioSlot == 3 &&
               s_audioHeader == destination + audioHeaderOffset &&
               s_audioBody == destination + audioBodyOffset &&
