@@ -19,11 +19,13 @@ static int s_trackCalls;
 static int s_traceCalls;
 static int s_failures;
 
-void BuildRotMatrixY(void *output, s32 angle) {
-    Matrix *matrix = output;
-
+/* The track frame comes from the GTE rotation, whose Y convention is the
+ * transpose of BuildRotMatrixY. The helper must keep calling this one. */
+#undef RotMatrix
+MATRIX *RotMatrix(SVECTOR *rotation, MATRIX *matrix) {
     memset(matrix, 0, sizeof(*matrix));
-    s_rotation = angle;
+    s_rotation = rotation->vy;
+    return matrix;
 }
 
 void MeasurePlayerTrackLimits(const Matrix *toTrack,

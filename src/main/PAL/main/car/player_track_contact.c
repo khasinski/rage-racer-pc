@@ -32,7 +32,11 @@ s32 ResolvePlayerTrackContact(PlayerCarRuntime *car) {
          (u32)(s32)TrackPoint(car->trackPointIndex)->angle) &
         ANGLE_MASK);
     trackRotation.vz = 0;
-    BuildRotMatrixY(&toTrack, trackRotation.vy);
+    /* Retail builds this through the GTE convention, which rotates the
+     * opposite way from BuildRotMatrixY: the limits are measured in the
+     * track's frame, not the car's. Using the game builder here sent the
+     * car down a different racing line. */
+    RotMatrix(&trackRotation, &toTrack);
     MeasurePlayerTrackLimits(&toTrack, &limits);
 
     if (car->motionActive) {
