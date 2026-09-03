@@ -1,20 +1,16 @@
 /*
  * What updating a car's travel velocity does to its heading and speed.
  *
- * The function had no test at all, and it is written in the shape it was
- * recovered in: a volatile array whose middle element is never used, the sine
- * and cosine of both angles worked out three times over, and a comment saying
- * it integrates the world position, which it does not. None of that can be
- * tidied safely without something that says the answers did not move, because
- * every step is integer arithmetic and rounding is part of the result.
- *
- * This folds a sweep of headings, body angles, speeds and accelerations into
- * one number, while separately asserting that a zero travel vector has no new
- * direction and therefore preserves the previous heading.
+ * This characterisation test originally made it safe to remove a volatile
+ * scratch array and repeated trigonometry from the recovered function. It
+ * still folds a sweep of headings, body angles, speeds and accelerations into
+ * one number, while separately asserting that a zero travel vector preserves
+ * the previous heading.
  */
 
 #include "common.h"
 #include "game/car.h"
+#include "game/car_internal.h"
 #include "game/render.h"
 #include "game/render_state.h"
 

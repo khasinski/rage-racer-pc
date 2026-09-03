@@ -13,6 +13,7 @@
 #include "game/angle.h"
 #include "game/audio.h"
 #include "game/car.h"
+#include "game/car_internal.h"
 #include "game/random.h"
 #include "game/render.h"
 #include "game/render_state.h"

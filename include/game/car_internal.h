@@ -115,6 +115,11 @@ void ReadPlayerCarInput(GameCarDrive *drive);
  * shift buttons in the second half of the mapping table. */
 void ShiftPlayerGears(PlayerCarRuntime *car, int useAlternateMapping);
 void UpdateCarDrivetrain(PlayerCarRuntime *car);
+void UpdateCarDriving(PlayerCarRuntime *car);
+void UpdateCarLaunch(PlayerCarRuntime *car);
+void UpdateCarAirborne(PlayerCarRuntime *car);
+void UpdateCarStandingStart(PlayerCarRuntime *car);
+void UpdateCarTravelVelocity(GameCarRuntime *car);
 void UpdatePlayerJump(PlayerCarRuntime *car, s32 groundHeight);
 void UpdatePlayerEnginePresentation(PlayerCarRuntime *car);
 void MeasurePlayerTrackLimits(const Matrix *toTrack,

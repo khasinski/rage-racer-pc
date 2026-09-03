@@ -831,12 +831,7 @@ void InitRivalCar(GameCarRuntime *car, s32 gridPosition,
                   const RaceGridSlot *grid);
 void InitRivalCarAi(GameCarRuntime *car, s32 gridPosition,
                     const RaceGridSlot *grid);
-void UpdateCarDriving(PlayerCarRuntime *car);
-void UpdateCarLaunch(PlayerCarRuntime *car);
-void UpdateCarAirborne(PlayerCarRuntime *car);
-void UpdateCarStandingStart(PlayerCarRuntime *car);
 void AccumulateLapProgress(GameCarRuntime *car);
-void UpdateCarTravelVelocity(GameCarRuntime *car);
 void ApplyCarKnockback(GameCarRuntime *car);
 s32 FindTrackSegment(GameCarRuntime *car, s32 idx);
 s32 IsCarFacingBackwards(const PlayerCarRuntime *car);
