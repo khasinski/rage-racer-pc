@@ -10,8 +10,7 @@
  * Deadzone 0, saturation 1, linearity 0 and scaling 1 leave the axis alone.
  */
 float AxisCurve(float value, float deadzone, float saturation,
-                    float linearity, float scaling);
-
+                float linearity, float scaling);
 
 /* Combine a shaped stick reading with the d-pad into the twist byte a NeGcon
  * reports. The stick spans the whole byte, as the hardware does whatever the

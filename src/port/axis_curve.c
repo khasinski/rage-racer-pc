@@ -7,7 +7,7 @@ enum {
 
 
 float AxisCurve(float value, float deadzone, float saturation,
-                    float linearity, float scaling) {
+                float linearity, float scaling) {
     if (!isfinite(value)) return 0.0f;
     if (!isfinite(deadzone)) deadzone = 0.0f;
     if (!isfinite(saturation)) saturation = 1.0f;

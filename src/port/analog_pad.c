@@ -49,7 +49,7 @@ typedef struct WheelSetup {
 } WheelSetup;
 
 static float AxisSetting(const char *key, float fallback, float low,
-                             float high) {
+                         float high) {
     const char *text = RuntimeConfigGet(key);
     char *end;
     float value;
@@ -86,20 +86,18 @@ static void AxisSetupLoad(AxisSetup *setup, const char *axis) {
                 setup->scaling);
 }
 
-static int IntegerSetting(const char *key, int fallback, int low,
-                              int high) {
+static int IntegerSetting(const char *key, int fallback, int low, int high) {
     const char *text = RuntimeConfigGet(key);
-    char *end;
-    long value;
+    int value;
+
     if (text == NULL || text[0] == '\0') return fallback;
-    value = strtol(text, &end, 10);
-    if (*end != '\0' || value < low || value > high) {
+    if (!RuntimeParseInt(text, 10, low, high, &value)) {
         fprintf(stderr,
                 "rage-port: ignoring %s=%s (expected %d..%d); using %d\n",
                 key, text, low, high, fallback);
         return fallback;
     }
-    return (int)value;
+    return value;
 }
 
 static void WheelSetupLoad(WheelSetup *setup) {
@@ -136,7 +134,7 @@ static float AxisShaped(int axis, const AxisSetup *setup) {
     float shaped;
     if (magnitude > 1.0f) magnitude = 1.0f;
     shaped = AxisCurve(magnitude, setup->deadzone, setup->saturation,
-                           setup->linearity, setup->scaling);
+                       setup->linearity, setup->scaling);
     return axis < 0 ? -shaped : shaped;
 }
 
@@ -239,7 +237,7 @@ static int WheelButton(SDL_Joystick *wheel, int button) {
 }
 
 static unsigned int WheelButtons(SDL_Joystick *wheel,
-                                     const WheelSetup *setup) {
+                                 const WheelSetup *setup) {
     unsigned int held = 0;
     Uint8 hat = SDL_GetNumJoystickHats(wheel) > 0
                     ? SDL_GetJoystickHat(wheel, 0)
@@ -328,8 +326,8 @@ void PortSampleAnalogPad(void) {
     if (pad != NULL) held |= GamepadButtons(pad);
     range = GetNegconSteerRange();
     twist = NegconTwist(AxisShaped(lx, &steering),
-                            (held & PAD_LEFT) != 0, (held & PAD_RIGHT) != 0,
-                            range);
+                        (held & PAD_LEFT) != 0, (held & PAD_RIGHT) != 0,
+                        range);
 
     /* Those four are not ordinary buttons on a NeGcon: UpdatePadState
      * regenerates cross, square and L1 from the analog values, and the pad has
@@ -341,12 +339,12 @@ void PortSampleAnalogPad(void) {
     if (wheel != NULL) {
         analogI = (int)(AxisCurve(
             WheelPedal(wheel, wheelSetup.throttleAxis,
-                           wheelSetup.pedalsInverted),
+                       wheelSetup.pedalsInverted),
             throttle.deadzone, throttle.saturation, throttle.linearity,
             throttle.scaling) * (float)NEGCON_ANALOG_MAX);
         analogII = (int)(AxisCurve(
             WheelPedal(wheel, wheelSetup.brakeAxis,
-                           wheelSetup.pedalsInverted),
+                       wheelSetup.pedalsInverted),
             brake.deadzone, brake.saturation, brake.linearity, brake.scaling) *
             (float)NEGCON_ANALOG_MAX);
     } else {
