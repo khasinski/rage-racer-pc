@@ -73,6 +73,8 @@ int main(void) {
     CheckNegconMapping(5, 128, 256);
     CheckNegconMapping(6, 256, 128);
     CheckNegconMapping(7, 256, 256);
+    CheckNegconMapping(INT16_MIN, 256, 256);
+    CheckNegconMapping(INT16_MAX, 256, 256);
 
     g_NegconAnalogI = 0;
     g_NegconAnalogII = 106;

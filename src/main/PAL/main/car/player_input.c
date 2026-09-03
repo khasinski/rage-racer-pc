@@ -69,6 +69,9 @@ void ReadPlayerCarInput(GameCarDrive *drive) {
         break;
     case 4:
     case 7:
+    default:
+        /* Invalid saved mappings retain the button-based fallback sampled
+         * above, just like layouts without analog pedal assignments. */
         break;
     }
 }
