@@ -19,23 +19,20 @@ static void SubmitStaticScenery(const LVec *sourcePosition, s32 yaw,
     Matrix objectMatrix;
     Matrix worldMatrix;
     LVec position = *sourcePosition;
+    s32 useEnvironmentModel = g_IsEnvironmentMode4 != 0;
 
     BuildRotMatrixY(&objectMatrix, yaw);
     worldMatrix = objectMatrix;
     MulMatrix2(&g_RenderState.matrix, &objectMatrix);
     SetGteObjectMatrix(&position, &objectMatrix);
+    g_RenderState.envMode4 = useEnvironmentModel ? environmentMode : 0;
+    GameRenderWorldSubmitDynamicCourseObject(
+        worldObjectId, modelId, position.x, position.y, position.z,
+        worldMatrix.m, !useEnvironmentModel, 0);
 
-    if (g_IsEnvironmentMode4 != 0) {
-        g_RenderState.envMode4 = environmentMode;
-        GameRenderWorldSubmitDynamicCourseObject(
-            worldObjectId, modelId, position.x, position.y, position.z,
-            worldMatrix.m, 0, 0);
+    if (useEnvironmentModel) {
         SubmitCourseModel(&g_RenderState, modelId);
     } else {
-        g_RenderState.envMode4 = 0;
-        GameRenderWorldSubmitDynamicCourseObject(
-            worldObjectId, modelId, position.x, position.y, position.z,
-            worldMatrix.m, 1, 0);
         SubmitCourseModel2(&g_RenderState, modelId);
     }
 }
