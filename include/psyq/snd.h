@@ -92,7 +92,6 @@ long SsSepGetVol(long seq, long sep, short *voll, short *volr);
 char SsSetReservedVoice(char voices);
 void SsSetMono(void);
 void SsSetStereo(void);
-u_char SsSetVoiceCount(u_char voices);
 void SsVabClose(short vab_id);
 short SsVabOpen(u_char *addr, VabHdr *vab_header);
 short SsVabOpenHead(u_char *addr, short vab_id);

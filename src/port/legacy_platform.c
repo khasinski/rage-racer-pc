@@ -61,8 +61,6 @@
 #include "fmv_audio.h"
 
 extern CdlLOC *CdIntToPos(int sector, CdlLOC *position);
-extern char SsSetReservedVoice(char voices);
-extern void SsSeqClose(short sequence);
 extern int _snd_ev_flag;
 extern void _SsVmFlush(void);
 
@@ -707,9 +705,6 @@ void SpuVmDamperStep(void) {
         _SsVmFlush();
         _snd_ev_flag = 0;
     }
-}
-unsigned char SsSetVoiceCount(unsigned char voices) {
-    return (unsigned char)SsSetReservedVoice((char)voices);
 }
 CdlFILE *DsSearchFile(CdlFILE *file, char *name) {
     const char *marker;

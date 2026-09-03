@@ -33,7 +33,7 @@ static s32 s_failures;
 void _SsVmInit(int voices) {
     if (voices == 0) s_vmInitCalls++;
 }
-unsigned char SsSetVoiceCount(unsigned char voices) {
+char SsSetReservedVoice(char voices) {
     s_voiceCount = voices;
     return voices;
 }

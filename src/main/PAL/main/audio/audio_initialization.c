@@ -14,7 +14,7 @@ enum {
 
 void InitSequenceAudio(void) {
     _SsVmInit(LIBSND_RESET);
-    SsSetVoiceCount(SEQUENCE_VOICE_COUNT);
+    SsSetReservedVoice(SEQUENCE_VOICE_COUNT);
     SetDefaultReverbDepth();
     g_ReverbFadeStep = 0;
     RefreshSequenceVolumeScale();
@@ -24,7 +24,7 @@ void InitEffectVoiceRuntime(void) {
     s32 carAssetIndex;
 
     _SsVmInit(LIBSND_RESET);
-    SsSetVoiceCount(EFFECT_VOICE_RUNTIME_COUNT);
+    SsSetReservedVoice(EFFECT_VOICE_RUNTIME_COUNT);
     ResetAudioVoiceState();
 
     SetSoundSlotVoicesEnabled(1);

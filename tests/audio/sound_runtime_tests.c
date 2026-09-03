@@ -55,10 +55,6 @@ void SsSetTableSize(char *table, short sequences, short tracks) {
 void SsSetTickMode(long mode) {
     if (mode != SS_NOTICK) abort();
 }
-unsigned char SsSetVoiceCount(unsigned char voices) {
-    if (voices != 10) abort();
-    return voices;
-}
 void SsUtReverbOff(void) { s_reverbOffCalls++; }
 void SetReverbPreset(s32 type, s32 left, s32 right) {
     if (type == 2 && left == 0 && right == 0) s_presetCalls++;
@@ -67,7 +63,8 @@ void SsSetMVol(short left, short right) {
     if (left == 0x3FFF && right == 0x3FFF) s_mainVolumeCalls++;
 }
 char SsSetReservedVoice(char voices) {
-    if (voices == 0) s_reservedVoiceCalls++;
+    if (voices == 10 || voices == 0) s_reservedVoiceCalls++;
+    else abort();
     return voices;
 }
 void InitSequenceAudio(void) { s_sequenceInitCalls++; }
@@ -155,7 +152,7 @@ static void TestRuntimeInitialization(void) {
     InitSoundRuntime();
     Check(s_prepareCalls == 1 && s_reverbOffCalls == 1 && s_presetCalls == 1,
           "runtime initialization prepares libsnd");
-    Check(s_mainVolumeCalls == 1 && s_reservedVoiceCalls == 1,
+    Check(s_mainVolumeCalls == 1 && s_reservedVoiceCalls == 2,
           "runtime initialization finishes output setup");
     Check(s_sequenceInitCalls == 1,
           "runtime initialization starts sequence audio");

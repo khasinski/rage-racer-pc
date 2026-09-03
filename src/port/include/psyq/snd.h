@@ -6,7 +6,6 @@
 
 void SpuVmDamperStep(void);
 void SsSeqCalledTbyT(void);
-unsigned char SsSetVoiceCount(unsigned char voices);
 void _SsVmInit(int voices);
 
 #endif

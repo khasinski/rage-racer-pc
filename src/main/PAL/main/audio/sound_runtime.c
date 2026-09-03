@@ -65,7 +65,7 @@ void InitSoundRuntime(void) {
     /* The native port owns the sequence clock in TickSequenceAudio; it does
      * not install a simulated PlayStation counter interrupt. */
     SsSetTickMode(SS_NOTICK);
-    SsSetVoiceCount(SOUND_RUNTIME_VOICE_COUNT);
+    SsSetReservedVoice(SOUND_RUNTIME_VOICE_COUNT);
     SsUtReverbOff();
     SetReverbPreset(SOUND_RUNTIME_REVERB_PRESET, 0, 0);
     ResetSoundState();
