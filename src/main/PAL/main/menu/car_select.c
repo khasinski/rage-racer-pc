@@ -19,7 +19,7 @@ void UpdateOwnedCarNeighbours(void) {
 
 void EnterCarSelectScreen(void) {
     g_MenuAltLayout = g_MenuAltLayoutSetting;
-    InstallCarModelSlot();
+    ActivateShowroomCarModel();
     g_MenuScreen = 4;
     g_UiScriptProgress = 0;
     UpdateOwnedCarNeighbours();

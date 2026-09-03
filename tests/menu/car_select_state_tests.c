@@ -22,7 +22,7 @@ static s32 s_namePlateCalls;
 static s32 s_carViewCalls;
 static s32 s_lightBurstStep;
 
-void InstallCarModelSlot(void) { s_installCalls++; }
+void ActivateShowroomCarModel(void) { s_installCalls++; }
 void DrawCarNamePlate(s32 step, s32 model, s32 grade) {
     (void)step;
     (void)model;

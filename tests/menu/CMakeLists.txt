@@ -20,6 +20,25 @@ add_test(NAME team_logo COMMAND team_logo_tests)
 
 set_tests_properties(team_logo PROPERTIES LABELS functional)
 
+add_executable(showroom_car_model_tests
+    showroom_car_model_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/car_model_slots.c)
+target_include_directories(showroom_car_model_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(showroom_car_model_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(showroom_car_model_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(showroom_car_model_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME showroom_car_model COMMAND showroom_car_model_tests)
+set_tests_properties(showroom_car_model PROPERTIES LABELS unit)
+
 add_executable(team_name_texture_tests
     team_name_texture_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/team_name_texture.c)

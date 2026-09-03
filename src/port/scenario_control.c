@@ -468,7 +468,7 @@ static void ScenarioDirectBoot(void) {
              * VRAM; RelocateCarModel below moves the model without uploading
              * that image, and the race draws the player's own car from bank 0
              * only in the outside views. Skipping this loses the car there. */
-            InstallCarModelSlot();
+            ActivateShowroomCarModel();
             s_scenario.directStep = RAGE_DIRECT_ROUND_REQUEST;
         }
         break;

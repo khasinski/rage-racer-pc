@@ -5,10 +5,9 @@
 #include "game/track.h"
 
 
-/* Flips the double-buffered showroom slot and re-registers it. */
-void SwapCarModelSlot(void) {
+static void SwapShowroomCarModel(void) {
     g_CarModelSlot = g_CarModelSlot < 1;
-    InstallCarModelSlot();
+    ActivateShowroomCarModel();
 }
 
 static void UpdateMenuViewSpin(void) {
@@ -83,7 +82,7 @@ void DrawMenuCarView(void) {
                     if (!AssetLoadCompletedSuccessfully()) {
                         return;
                     }
-                    SwapCarModelSlot();
+                    SwapShowroomCarModel();
                     g_CarSwapFromIndex = g_CarSwapToIndex;
                     g_CarSwapToIndex = -1;
                 } else {
@@ -98,7 +97,7 @@ void DrawMenuCarView(void) {
                 if (!AssetLoadCompletedSuccessfully()) {
                     return;
                 }
-                SwapCarModelSlot();
+                SwapShowroomCarModel();
                 g_CarSwapFromIndex = g_CarSwapToIndex;
                 g_CarSwapToIndex = -1;
             } else {
