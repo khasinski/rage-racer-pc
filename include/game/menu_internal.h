@@ -35,6 +35,22 @@ static inline int MenuValueWithinWindow(s32 value, s32 target, u32 window) {
     return (uint64_t)distance <= window;
 }
 
+typedef enum MenuDialogAction {
+    MENU_DIALOG_NO_ACTION,
+    MENU_DIALOG_CONFIRM,
+    MENU_DIALOG_CANCEL,
+    MENU_DIALOG_LEFT,
+    MENU_DIALOG_RIGHT,
+} MenuDialogAction;
+
+static inline MenuDialogAction ChooseMenuDialogAction(u16 pressed) {
+    if (pressed & PAD_CONFIRM) return MENU_DIALOG_CONFIRM;
+    if (pressed & PAD_CANCEL) return MENU_DIALOG_CANCEL;
+    if (pressed & PAD_LEFT) return MENU_DIALOG_LEFT;
+    if (pressed & PAD_RIGHT) return MENU_DIALOG_RIGHT;
+    return MENU_DIALOG_NO_ACTION;
+}
+
 void RestoreTeamLogoClut(void);
 void UploadTeamLogoClut(void);
 s32 AdvanceCarSpecPanel(s32 *progress, s32 step);

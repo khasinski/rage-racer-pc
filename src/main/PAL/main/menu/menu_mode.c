@@ -88,7 +88,7 @@ void InitMenuMode(void) {
     g_MenuScreen = MENU_SCREEN_BOOTSTRAP;
     g_CourseSelectOption = 0;
     g_CarSelectCursor = 0;
-    g_RankingOption = 0;
+    g_CustomizeOption = 0;
     g_DesignModeOption = 0;
 
     DrawCourseSelectScreen(0);

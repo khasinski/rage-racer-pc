@@ -396,7 +396,7 @@ s32 g_CourseSelectOption;
 u32 g_OptionMenuExitScene;
 s32 g_OptionMenuCursor;
 s32 g_ShopCarIndex;
-s32 g_RankingOption;
+s32 g_CustomizeOption;
 CarEntry *g_CarTable __attribute__((aligned(16)));
 s32 g_SoundOptionCursor;
 s32 g_PlayerMoney;

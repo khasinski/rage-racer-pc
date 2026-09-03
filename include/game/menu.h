@@ -398,7 +398,7 @@ extern s16 g_NextOwnedCarIndex;
 extern s32 g_OptionMenuCursor;
 extern s32 g_PlayerMoney;
 extern s16 g_PrevOwnedCarIndex;
-extern s32 g_RankingOption;
+extern s32 g_CustomizeOption;
 extern s32 g_ScreenOffsetEditX;
 extern s32 g_ScreenOffsetEditY;
 extern s32 g_SoundOptionCursor;

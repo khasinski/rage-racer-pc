@@ -58,6 +58,23 @@ endif()
 add_test(NAME enter_course_select COMMAND enter_course_select_tests)
 set_tests_properties(enter_course_select PROPERTIES LABELS functional)
 
+add_executable(menu_dialog_input_tests menu_dialog_input_tests.c)
+target_include_directories(menu_dialog_input_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(menu_dialog_input_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(menu_dialog_input_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(menu_dialog_input_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME menu_dialog_input COMMAND menu_dialog_input_tests)
+set_tests_properties(menu_dialog_input PROPERTIES LABELS unit)
+
 add_executable(team_name_texture_tests
     team_name_texture_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/team_name_texture.c)
