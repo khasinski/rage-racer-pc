@@ -79,7 +79,12 @@ static int TestPortableStorage(void) {
     }
     CHECK(s_adjustPath(path, "bu00:*", sizeof(path)) > 0);
     CHECK(path[strlen(path) - 1] == separator);
+    snprintf(path, sizeof(path), "%s", "stale");
     CHECK(s_adjustPath(path, "bu20:SAVE", sizeof(path)) < 0);
+    CHECK(path[0] == '\0');
+    snprintf(path, sizeof(path), "%s", "stale");
+    CHECK(s_adjustPath(path, NULL, sizeof(path)) < 0);
+    CHECK(path[0] == '\0');
     CHECK(s_adjustPath(path, "bu00:SAVE", 4) < 0 && path[0] == '\0');
     return 0;
 }

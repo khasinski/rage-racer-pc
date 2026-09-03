@@ -25,8 +25,10 @@ static int AdjustMemoryCardPath(char *destination, const char *source,
     char card[5];
     int written;
 
-    if (destination == NULL || source == NULL || destinationSize <= 0 ||
-        strlen(source) < 5 || source[0] != 'b' || source[1] != 'u' ||
+    if (destination == NULL || destinationSize <= 0) return -1;
+    destination[0] = '\0';
+    if (source == NULL || strlen(source) < 5 || source[0] != 'b' ||
+        source[1] != 'u' ||
         source[4] != ':' ||
         !((source[2] == '0' || source[2] == '1') && source[3] == '0')) {
         return -1;
