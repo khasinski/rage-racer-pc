@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -25,6 +26,7 @@ static int s_initialized;
 static void ModAssetsInit(void) {
     char probe[1024];
     FILE *test;
+    int written;
 
     if (s_initialized) return;
     s_initialized = 1;
@@ -34,7 +36,13 @@ static void ModAssetsInit(void) {
     /* Say plainly when the directory is not the shape rage-extract writes,
      * rather than silently playing the disc and leaving a modder to wonder
      * why nothing changed. */
-    snprintf(probe, sizeof(probe), "%s/raw/asset_000.bin", s_directory);
+    written = snprintf(probe, sizeof(probe), "%s/raw/asset_000.bin",
+                       s_directory);
+    if (written < 0 || (size_t)written >= sizeof(probe)) {
+        fprintf(stderr, "rage-port: mods.directory path is too long\n");
+        s_directory = NULL;
+        return;
+    }
     test = fopen(probe, "rb");
     if (test == NULL) {
         fprintf(stderr,
@@ -55,8 +63,14 @@ const char *ModAssetsDirectory(void) {
 static FILE *ModOpen(int index, long *size) {
     char path[1024];
     FILE *file;
-    if (s_directory == NULL || !s_legacyLayout) return NULL;
-    snprintf(path, sizeof(path), "%s/raw/asset_%03d.bin", s_directory, index);
+    int written;
+
+    if (s_directory == NULL || !s_legacyLayout || index < 0 || size == NULL) {
+        return NULL;
+    }
+    written = snprintf(path, sizeof(path), "%s/raw/asset_%03d.bin",
+                       s_directory, index);
+    if (written < 0 || (size_t)written >= sizeof(path)) return NULL;
     file = fopen(path, "rb");
     if (file == NULL) return NULL;
     if (fseek(file, 0, SEEK_END) != 0) {
@@ -74,28 +88,41 @@ static FILE *ModOpen(int index, long *size) {
 int ModAssetLoad(int index, void *destination, unsigned int originalSize) {
     long size;
     FILE *file;
+    unsigned char *replacement;
     size_t room;
     size_t loaded;
+    int closeFailed;
 
+    if (destination == NULL || index < 0) return 0;
     ModAssetsInit();
     file = ModOpen(index, &size);
     if (file == NULL) return 0;
 
     room = PortAssetRoomAt(destination);
-    if (room == 0 || (size_t)size > room) {
+    if (room == 0 || (size_t)size > room || size > INT_MAX || (size & 3) != 0) {
         fclose(file);
         fprintf(stderr,
-                "rage-port: override for asset %d is %ld bytes with %zu available; using the original\n",
+                "rage-port: override for asset %d has invalid size %ld with %zu available; using the original\n",
                 index, size, room);
         return 0;
     }
 
-    loaded = fread(destination, 1, (size_t)size, file);
-    fclose(file);
-    if (loaded != (size_t)size) {
-        fprintf(stderr, "rage-port: override for asset %d could not be read\n", index);
+    replacement = malloc((size_t)size);
+    if (replacement == NULL) {
+        fclose(file);
         return 0;
     }
+    loaded = fread(replacement, 1, (size_t)size, file);
+    closeFailed = fclose(file) != 0;
+    if (loaded != (size_t)size || closeFailed) {
+        free(replacement);
+        fprintf(stderr,
+                "rage-port: override for asset %d could not be read\n",
+                index);
+        return 0;
+    }
+    memcpy(destination, replacement, (size_t)size);
+    free(replacement);
     if ((unsigned int)size != originalSize) {
         static int announced[512];
         if (index >= 0 && index < 512 && !announced[index]) {
@@ -104,10 +131,7 @@ int ModAssetLoad(int index, void *destination, unsigned int originalSize) {
                     index, originalSize, size);
         }
     }
-    /* Loads report their size with the low two bits cleared, the way the
-     * archive reader does, because callers add it straight onto word-aligned
-     * cursors. */
-    return (int)((unsigned long)size & ~3ul);
+    return (int)size;
 }
 
 /* Apply the mod directory's edited images to an asset already in memory. */

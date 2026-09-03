@@ -55,7 +55,8 @@ int main(void) {
     char root[] = "/tmp/rage-mod-fallback-XXXXXX";
     char raw[512], asset0[1024], asset1[1024];
     unsigned char destination[16];
-    static const unsigned char valid[] = {1, 2, 3, 4, 5, 6};
+    static const unsigned char valid[] = {1, 2, 3, 4, 5, 6, 7, 8};
+    static const unsigned char unaligned[] = {1, 2, 3, 4, 5, 6};
     static const unsigned char oversized[32] = {9};
 
     EXPECT(mkdtemp(root) != NULL);
@@ -69,7 +70,7 @@ int main(void) {
 
     memset(destination, 0xA5, sizeof(destination));
     s_room = sizeof(destination);
-    EXPECT(ModAssetLoad(0, destination, 2) == 4);
+    EXPECT(ModAssetLoad(0, destination, 2) == 8);
     EXPECT(memcmp(destination, valid, sizeof(valid)) == 0);
 
     memset(destination, 0xA5, sizeof(destination));
@@ -78,6 +79,11 @@ int main(void) {
     EXPECT(destination[0] == 0xA5 && destination[15] == 0xA5);
 
     s_room = 0;
+    EXPECT(ModAssetLoad(0, destination, 2) == 0);
+    EXPECT(destination[0] == 0xA5 && destination[15] == 0xA5);
+
+    EXPECT(WriteFile(asset0, unaligned, sizeof(unaligned)));
+    s_room = sizeof(destination);
     EXPECT(ModAssetLoad(0, destination, 2) == 0);
     EXPECT(destination[0] == 0xA5 && destination[15] == 0xA5);
 
