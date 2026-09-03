@@ -92,6 +92,9 @@ static int TestModelBank(void) {
     data.modelOffsets[1] = sizeof(data);
     CHECK(RegisterModelBank(header, sizeof(data), 2) == 0);
     CHECK(g_ModelBanks[2].modelCount == 3);
+    data.modelOffsets[1] = 53;
+    CHECK(RegisterModelBank(header, sizeof(data), 2) == 0);
+    CHECK(g_ModelBanks[2].modelCount == 3);
     data.modelOffsets[1] = 52;
     data.tableOffset = offsetof(ModelBankHeader, modelOffsets);
     CHECK(RegisterModelBank(header, sizeof(data), 2) == 0);
@@ -145,6 +148,9 @@ static int TestCourseModels(void) {
     CHECK(g_CourseModelCount == 3);
     data.models[1].modelOffset = 60;
     data.models[1].geometryOffset = 4;
+    CHECK(RegisterCourseModels(header, sizeof(data)) == 0);
+    CHECK(g_CourseModelCount == 3);
+    data.models[1].geometryOffset = 53;
     CHECK(RegisterCourseModels(header, sizeof(data)) == 0);
     CHECK(g_CourseModelCount == 3);
     data.models[1].geometryOffset = 52;
@@ -208,6 +214,9 @@ static int TestTerrainCells(void) {
     ((u16 *)data)[0] = 0;
 
     header->cellOffsets[1] = 64;
+    CHECK(InstallTerrainCellData(data, sizeof(data)) == 0);
+    CHECK(g_TerrainCellCount == 3);
+    header->cellOffsets[1] = 45;
     CHECK(InstallTerrainCellData(data, sizeof(data)) == 0);
     CHECK(g_TerrainCellCount == 3);
     header->cellOffsets[1] = 44;
