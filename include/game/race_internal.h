@@ -81,6 +81,12 @@ extern SectorReferenceTimes g_RefSectorTimes;
  * race scene; the lap update is what asks for it. */
 void QueueFinishFollowupCue(s32 cue);
 extern s32 g_PrologueStep;
+enum {
+    PROLOGUE_STEP_LOAD_TEXTURES,
+    PROLOGUE_STEP_LOAD_TRACK,
+    PROLOGUE_STEP_WAIT_FOR_FADE,
+    PROLOGUE_STEP_ACTIVE,
+};
 extern PrologueCameraCut g_PrologueCameraCuts[];
 s32 PrologueLineIntensity(s32 screenY);
 s32 IsPrologueWorldActive(s32 sceneTimer);

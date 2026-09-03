@@ -566,6 +566,25 @@ endif()
 add_test(NAME prologue_logic COMMAND prologue_logic_tests)
 set_tests_properties(prologue_logic PROPERTIES LABELS unit)
 
+add_executable(prologue_state_tests
+    prologue_state_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/prologue.c)
+target_include_directories(prologue_state_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(prologue_state_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(prologue_state_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(prologue_state_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME prologue_state COMMAND prologue_state_tests)
+set_tests_properties(prologue_state PROPERTIES LABELS functional)
+
 add_executable(record_defaults_tests
     record_defaults_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/records.c)

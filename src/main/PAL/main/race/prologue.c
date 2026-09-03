@@ -10,22 +10,37 @@
 #include "game/state.h"
 #include "game/track.h"
 
+enum {
+    PROLOGUE_FRAME_SYNC_THRESHOLD = 0x80,
+    PROLOGUE_INITIAL_FADE_LEVEL = 0x108,
+    PROLOGUE_FADE_IN_STEP = -4,
+    PROLOGUE_FADE_OUT_STEP = 4,
+    PROLOGUE_FADE_TPAGE = 0x49,
+    PROLOGUE_SCENE_ID = 0x20,
+    PROLOGUE_DISPLAY_ENABLE_FRAME = 2,
+    PROLOGUE_TRACK_SCENE_ID = 6,
+    PROLOGUE_SKIP_ENABLE_FRAME = 0x79,
+    PROLOGUE_TEXT_FADE_START_FRAME = 0x3C,
+    PROLOGUE_TEXT_FADE_END_FRAME = 0x42E,
+    PROLOGUE_END_FRAME = 0x500,
+};
+
 void EnterPrologue(void) {
     SetDispMask(0);
     SetupDisplay240(0, 0, 0);
 
-    g_FrameSyncThreshold = 0x80;
-    g_FadeLevel = 0x108;
-    g_FadeStep = -4;
-    g_SceneId = 0x20;
-    g_PrologueStep = 0;
+    g_FrameSyncThreshold = PROLOGUE_FRAME_SYNC_THRESHOLD;
+    g_FadeLevel = PROLOGUE_INITIAL_FADE_LEVEL;
+    g_FadeStep = PROLOGUE_FADE_IN_STEP;
+    g_SceneId = PROLOGUE_SCENE_ID;
+    g_PrologueStep = PROLOGUE_STEP_LOAD_TEXTURES;
     g_PrologueCutIndex = 0;
     g_SceneTimer = 0;
     g_CameraCarIndex = 3;
 }
 
 static void UpdatePrologueLoad(void) {
-    if (g_SceneTimer == 2) {
+    if (g_SceneTimer == PROLOGUE_DISPLAY_ENABLE_FRAME) {
         SetDispMask(1);
     }
 
@@ -37,18 +52,18 @@ static void UpdatePrologueLoad(void) {
             g_FadeStep = 0;
         }
 
-        DrawFullscreenFadeTile(g_FadeLevel, 0x49);
+        DrawFullscreenFadeTile(g_FadeLevel, PROLOGUE_FADE_TPAGE);
     } else if (g_FadeStep > 0) {
         g_FadeLevel += g_FadeStep;
 
-        DrawFullscreenFadeTile(g_FadeLevel, 0x49);
+        DrawFullscreenFadeTile(g_FadeLevel, PROLOGUE_FADE_TPAGE);
 
         if (g_FadeLevel >= 0x101) {
             SetDispMask(0);
             g_CourseIndex = 0;
             InitTrackScene();
             StartCdAudio();
-            g_PrologueStep = 3;
+            g_PrologueStep = PROLOGUE_STEP_ACTIVE;
             g_FadeLevel = 0x100;
             g_FadeStep = 0;
         }
@@ -57,31 +72,27 @@ static void UpdatePrologueLoad(void) {
     DrawProportionalText(0x5E, 0x72, g_TextNowLoading, 0x7812);
 }
 
-static void UpdatePrologueLoadStep0(void) {
+static void UpdatePrologueTextureLoad(void) {
     if (AssetLoadCompletedSuccessfully()) {
         if (g_ImageBlockBuffer > g_AssetBase &&
             InstallTrackTextureAssetPack(
                 g_AssetBase,
                 (size_t)(g_ImageBlockBuffer - g_AssetBase))) {
             RequestTrackDataAssets();
-            g_PrologueStep = 1;
+            g_PrologueStep = PROLOGUE_STEP_LOAD_TRACK;
         }
     }
 
     UpdatePrologueLoad();
 }
 
-static void UpdatePrologueLoadStep1(void) {
+static void UpdatePrologueTrackLoad(void) {
     if (AssetLoadCompletedSuccessfully()) {
-        g_FadeStep = 4;
+        g_FadeStep = PROLOGUE_FADE_OUT_STEP;
         RequestCdTrack(2);
-        g_PrologueStep = 2;
+        g_PrologueStep = PROLOGUE_STEP_WAIT_FOR_FADE;
     }
 
-    UpdatePrologueLoad();
-}
-
-static void UpdatePrologueLoadStep2(void) {
     UpdatePrologueLoad();
 }
 
@@ -109,11 +120,12 @@ static void DrawPrologueText(void) {
     blue = g_FadeLevel * 3 / 4 + 0x40;
     next = GameQueueTileTrans(ot, RENDER_PRIM_CURSOR_AS(u8), 0, 0, 0x140,
                               0xF0, g_FadeLevel, green, blue);
-    g_RenderState.packetCursor = QueueDrawModePrim(ot, next, 0x49);
+    g_RenderState.packetCursor =
+        QueueDrawModePrim(ot, next, PROLOGUE_FADE_TPAGE);
 }
 
 static void ExitPrologue(void) {
-    g_SceneId = 6;
+    g_SceneId = PROLOGUE_TRACK_SCENE_ID;
     PauseCdAudio();
     RequestSelectBgmAssets();
 }
@@ -123,20 +135,21 @@ static void UpdatePrologue(void) {
     s32 worldActive;
     s32 eventIndex;
 
-    if (g_SceneTimer == 2) {
+    if (g_SceneTimer == PROLOGUE_DISPLAY_ENABLE_FRAME) {
         SetDispMask(1);
     }
 
-    if (g_SceneTimer >= 0x79 && (g_PadPressed & PAD_CONFIRM)) {
+    if (g_SceneTimer >= PROLOGUE_SKIP_ENABLE_FRAME &&
+        (g_PadPressed & PAD_CONFIRM)) {
         ExitPrologue();
     }
 
     timer = g_SceneTimer;
-    if (timer == 0x3C) {
-        g_FadeStep = -4;
-    } else if (timer == 0x42E) {
+    if (timer == PROLOGUE_TEXT_FADE_START_FRAME) {
+        g_FadeStep = PROLOGUE_FADE_IN_STEP;
+    } else if (timer == PROLOGUE_TEXT_FADE_END_FRAME) {
         g_FadeStep = 2;
-    } else if (timer == 0x500) {
+    } else if (timer == PROLOGUE_END_FRAME) {
         ExitPrologue();
     }
 
@@ -181,16 +194,16 @@ void TickPrologueStep(void) {
     g_SceneTimer++;
 
     switch (g_PrologueStep) {
-    case 0:
-        UpdatePrologueLoadStep0();
+    case PROLOGUE_STEP_LOAD_TEXTURES:
+        UpdatePrologueTextureLoad();
         break;
-    case 1:
-        UpdatePrologueLoadStep1();
+    case PROLOGUE_STEP_LOAD_TRACK:
+        UpdatePrologueTrackLoad();
         break;
-    case 2:
-        UpdatePrologueLoadStep2();
+    case PROLOGUE_STEP_WAIT_FOR_FADE:
+        UpdatePrologueLoad();
         break;
-    case 3:
+    case PROLOGUE_STEP_ACTIVE:
         UpdatePrologue();
         break;
     }
