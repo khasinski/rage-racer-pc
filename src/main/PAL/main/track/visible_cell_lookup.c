@@ -1,6 +1,10 @@
 #include "game/render_internal.h"
 #include "game/track.h"
 
+#include <stdint.h>
+
+enum { VISIBILITY_CELL_SIZE = 2048 };
+
 /*
  * Whether the visibility mask holds the cell a world point falls in.
  *
@@ -17,12 +21,17 @@
  * each. They are the reason this is one function: a grid rule copied by hand
  * holds only until one copy is edited.
  */
-int TrackCellVisible(s32 x, s32 z) {
-    s32 row = z + 0x400;
-    s32 column = x + 0x400;
+static s32 VisibilityCellForCoordinate(s32 coordinate) {
+    int64_t biased = (int64_t)coordinate + 0x400;
 
-    if (row < 0) row = z + 0xBFF;
-    if (column < 0) column = x + 0xBFF;
-    return CellVisibilityMaskContains(g_VisibleCellMask, column >> 11,
-                                      row >> 11);
+    if (biased < 0) biased = (int64_t)coordinate + 0xBFF;
+    if (biased < 0 ||
+        biased >= VISIBILITY_CELL_SIZE * TERRAIN_CELL_GRID_SIZE) return -1;
+    return (s32)(biased >> 11);
+}
+
+int TrackCellVisible(s32 x, s32 z) {
+    return CellVisibilityMaskContains(
+        g_VisibleCellMask, VisibilityCellForCoordinate(x),
+        VisibilityCellForCoordinate(z));
 }

@@ -18,6 +18,7 @@
 #include "common.h"
 #include "game/track.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -74,6 +75,10 @@ int main(void) {
            TrackCellVisible(65536, 0), 0);
     Expect("row past the mask is invisible",
            TrackCellVisible(0, 65536), 0);
+    Expect("minimum coordinates are outside the mask",
+           TrackCellVisible(INT_MIN, INT_MIN), 0);
+    Expect("maximum coordinates are outside the mask",
+           TrackCellVisible(INT_MAX, INT_MAX), 0);
 
     /* A cleared mask hides everything, whatever the coordinate. */
     ClearMask();
