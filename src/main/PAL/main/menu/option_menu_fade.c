@@ -1,6 +1,4 @@
-#include "game/prim.h"
 #include "game/menu.h"
-#include "game/render_internal.h"
 
 #include <stdint.h>
 
@@ -8,22 +6,6 @@ enum {
     OPTION_FADE_OPAQUE = 0x100,
     OPTION_FADE_EXIT_STEP = 8,
 };
-
-/* The 0x140x0x1E0 twin of DrawFullscreenFadeTile, for the 480-line setup scene. */
-void DrawFullscreenFadeTile480(s32 color, s32 tpage) {
-    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
-    u8 *next;
-
-    if (color < 0) {
-        color = 0;
-    } else if (color >= OPTION_FADE_OPAQUE) {
-        color = OPTION_FADE_OPAQUE - 1;
-    }
-
-    next = GameQueueTileTrans(ot, RENDER_PRIM_CURSOR_AS(u8), 0, 0,
-                              0x140, 0x1E0, color, color, color);
-    g_RenderState.packetCursor = QueueDrawModePrim(ot, next, tpage);
-}
 
 /* Arms the fade-out that leaves the setup menu for scene `scene`. */
 void StartOptionMenuExit(u32 scene) {

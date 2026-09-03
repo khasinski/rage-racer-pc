@@ -15,25 +15,9 @@ GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
 
 static GameFrameContext s_frame;
-static u8 s_packets[8];
+static u8 s_packets[64];
 static s32 s_drawMode;
 static s32 s_rootDraws;
-static s32 s_tileColor;
-static s32 s_tileHeight;
-static s32 s_tileWidth;
-
-u8 *GameQueueTileTrans(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
-                       s32 w, s32 h, s32 r, s32 g, s32 b) {
-    (void)ot;
-    (void)x;
-    (void)y;
-    (void)g;
-    (void)b;
-    s_tileWidth = w;
-    s_tileHeight = h;
-    s_tileColor = r;
-    return prim + 1;
-}
 
 u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *prim, s32 tpage) {
     (void)ot;
@@ -63,21 +47,24 @@ static void Reset(void) {
     g_SceneId = 7;
     s_drawMode = -1;
     s_rootDraws = 0;
-    s_tileColor = -1;
-    s_tileHeight = 0;
-    s_tileWidth = 0;
 }
 
 static int TestFadeTileClamping(void) {
+    TILE *tile;
+
     Reset();
     DrawFullscreenFadeTile480(-4, 0x49);
-    CHECK(s_tileColor == 0 && s_tileWidth == 0x140);
-    CHECK(s_tileHeight == 0x1E0 && s_drawMode == 0x49);
-    CHECK(g_RenderState.packetCursor == s_packets + 2);
+    tile = (TILE *)s_packets;
+    CHECK(tile->r0 == 0 && tile->g0 == 0 && tile->b0 == 0);
+    CHECK(tile->w == 320 && tile->h == 480 && s_drawMode == 0x49);
+    CHECK(tile->code == 0x62);
+    CHECK(g_RenderState.packetCursor == (u8 *)(tile + 1) + 1);
 
     Reset();
     DrawFullscreenFadeTile480(0x100, 3);
-    CHECK(s_tileColor == 0xFF && s_drawMode == 3);
+    tile = (TILE *)s_packets;
+    CHECK(tile->r0 == 0xFF && tile->g0 == 0xFF && tile->b0 == 0xFF);
+    CHECK(s_drawMode == 3);
     return 0;
 }
 
@@ -92,7 +79,7 @@ static int TestFadeStateTransitions(void) {
     UpdateOptionMenuFade();
     CHECK(g_FadeLevel == 0 && g_FadeStep == 0);
     CHECK(g_GameMode == OPTION_MODE_ROOT && g_SceneId == 7);
-    CHECK(s_tileColor == 0 && s_rootDraws == 1);
+    CHECK(((TILE *)s_packets)->r0 == 0 && s_rootDraws == 1);
 
     Reset();
     g_GameMode = OPTION_MODE_FADE;
@@ -101,7 +88,8 @@ static int TestFadeStateTransitions(void) {
     g_FadeStep = 8;
     UpdateOptionMenuFade();
     CHECK(g_FadeLevel == 0x100 && g_SceneId == 31);
-    CHECK(g_GameMode == OPTION_MODE_FADE && s_tileColor == 0xFF);
+    CHECK(g_GameMode == OPTION_MODE_FADE &&
+          ((TILE *)s_packets)->r0 == 0xFF);
     CHECK(s_rootDraws == 1);
 
     Reset();

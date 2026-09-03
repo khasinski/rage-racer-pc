@@ -1277,7 +1277,8 @@ set_tests_properties(option_scene PROPERTIES LABELS unit)
 
 add_executable(option_menu_fade_tests
     option_menu_fade_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/option_menu_fade.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/option_menu_fade.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/fullscreen_fade.c)
 target_include_directories(option_menu_fade_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
@@ -1291,6 +1292,7 @@ else()
         "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
         -Wall -Wextra -Werror)
 endif()
+target_link_libraries(option_menu_fade_tests PRIVATE psyz)
 add_test(NAME option_menu_fade COMMAND option_menu_fade_tests)
 set_tests_properties(option_menu_fade PROPERTIES LABELS unit)
 
