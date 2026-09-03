@@ -1,8 +1,10 @@
 #include "common.h"
 #include "game/car.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/race.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -45,6 +47,14 @@ int main(void) {
     CHECK(DrawCarShopScreen(-MENU_FADE_MAX) == 0);
     CHECK(s_engineStep == MENU_FADE_MAX * MENU_FADE_MAX / 2048);
     CHECK(s_enginePhase == 0);
+
+    g_CarShopScreenProgress = INT_MAX;
+    CHECK(DrawCarShopScreen(-1) == MENU_FADE_MAX);
+    CHECK(s_engineStep == 0 && s_enginePhase == MENU_FADE_MAX / 4);
+    g_CarShopScreenProgress = INT_MIN;
+    CHECK(DrawCarShopScreen(1) == 0);
+    CHECK(s_enginePhase == 0);
+    CHECK(AdvanceCarSpecPanel(NULL, 1) == 0);
 
     memset(s_cars, 0, sizeof(s_cars));
     s_cars[2].enabled = 1;
