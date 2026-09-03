@@ -8,6 +8,16 @@ enum {
     MANUAL_SHIFT_INTERPOLATION_FRAMES = 15,
     AUTOMATIC_SHIFT_INTERPOLATION_FRAMES = 10,
     DOWNSHIFT_TARGET_SPEED_BONUS = 500,
+    FIRST_UPHILL_PENALTY_GEAR = 4,
+    FOURTH_GEAR_PENALTY_DIVISOR = 120,
+    FIFTH_GEAR_PENALTY_DIVISOR = 48,
+    TOP_GEAR_PENALTY_NUMERATOR = -7,
+    TOP_GEAR_PENALTY_DIVISOR = 240,
+    PERCENT_SCALE = 100,
+    GEAR_RATIO_INTERNAL_SCALE = 1168,
+    GEAR_RATIO_SOURCE_SCALE = 160,
+    RPM_FIXED_SCALE = 10000,
+    MINIMUM_RATIO_SCALE = 1,
 };
 
 static void UpdateAirborneGearShift(PlayerCarRuntime *car,
@@ -39,22 +49,28 @@ static void ApplyUphillManualShiftPenalty(GameCarDrive *drive,
     s32 gradeScale;
 
     if (drive->manual == 0 || drive->gearDisp >= targetGear ||
-        g_RoadGrade >= 0 || targetGear < 4) {
+        g_RoadGrade >= 0 || targetGear < FIRST_UPHILL_PENALTY_GEAR) {
         return;
     }
 
-    if (targetGear == 4) {
-        gradePenalty = WrapSigned32(-(int64_t)g_RoadGrade) / 120;
-    } else if (targetGear == 5) {
-        gradePenalty = WrapSigned32(-(int64_t)g_RoadGrade) / 48;
+    if (targetGear == FIRST_UPHILL_PENALTY_GEAR) {
+        gradePenalty = WrapSigned32(-(int64_t)g_RoadGrade) /
+                       FOURTH_GEAR_PENALTY_DIVISOR;
+    } else if (targetGear == FIRST_UPHILL_PENALTY_GEAR + 1) {
+        gradePenalty = WrapSigned32(-(int64_t)g_RoadGrade) /
+                       FIFTH_GEAR_PENALTY_DIVISOR;
     } else {
-        gradePenalty = WrapSigned32((int64_t)g_RoadGrade * -7) / 240;
+        gradePenalty = WrapSigned32(
+            (int64_t)g_RoadGrade * TOP_GEAR_PENALTY_NUMERATOR) /
+            TOP_GEAR_PENALTY_DIVISOR;
     }
-    gradeScale = WrapSigned32((int64_t)100 - gradePenalty);
+    gradeScale = WrapSigned32((int64_t)PERCENT_SCALE - gradePenalty);
     drive->engineLoad = WrapSigned16(
-        WrapSigned32((int64_t)WrapSigned16(wheelSpeed) * gradeScale) / 100);
+        WrapSigned32(
+            (int64_t)WrapSigned16(wheelSpeed) * gradeScale) /
+            PERCENT_SCALE);
     g_ShiftTargetSpeed = WrapSigned32(
-        (int64_t)gradeScale * g_ShiftTargetSpeed) / 100;
+        (int64_t)gradeScale * g_ShiftTargetSpeed) / PERCENT_SCALE;
 }
 
 static void BeginCarGearShift(PlayerCarRuntime *car,
@@ -63,14 +79,16 @@ static void BeginCarGearShift(PlayerCarRuntime *car,
     s16 targetGear = drive->gear;
     s32 wheelSpeed = (u16)car->acceleration;
     s32 targetRatio = GetPositiveCarGearRatio(spec, targetGear);
-    s32 ratioScale = WrapSigned32((int64_t)targetRatio * 1168) / 160;
+    s32 ratioScale = WrapSigned32(
+        (int64_t)targetRatio * GEAR_RATIO_INTERNAL_SCALE) /
+        GEAR_RATIO_SOURCE_SCALE;
 
     drive->engineLoad = WrapSigned16(wheelSpeed);
     if (ratioScale == 0) {
-        ratioScale = 1;
+        ratioScale = MINIMUM_RATIO_SCALE;
     }
     g_ShiftTargetSpeed =
-        WrapSigned32((int64_t)car->speed * 10000) / ratioScale;
+        WrapSigned32((int64_t)car->speed * RPM_FIXED_SCALE) / ratioScale;
     ApplyUphillManualShiftPenalty(drive, targetGear, wheelSpeed);
 
     *acceleration = 0;
