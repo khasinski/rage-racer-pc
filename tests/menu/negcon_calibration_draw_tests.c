@@ -95,7 +95,7 @@ u8 *GameQueueLine(GameOrderingTableEntry *ot, u8 *prim, s32 x0, s32 y0,
     return prim + 1;
 }
 
-void DrawSpriteString(long x, long y, const char *text, long clut) {
+void DrawSpriteString(s32 x, s32 y, const char *text, s32 clut) {
     (void)x;
     (void)y;
     (void)clut;

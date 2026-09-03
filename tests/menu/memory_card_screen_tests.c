@@ -81,7 +81,7 @@ u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *prim, s32 tpage) {
     s_drawModeCount++;
     return prim + 1;
 }
-void DrawSpriteString(long x, long y, const char *text, long clut) {
+void DrawSpriteString(s32 x, s32 y, const char *text, s32 clut) {
     (void)text; (void)clut;
     s_textRows[s_textCount++] = (DrawRecord){NULL, (s32)x, (s32)y};
 }

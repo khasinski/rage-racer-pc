@@ -29,6 +29,23 @@ static inline s32 PrintableAsciiGlyph(u8 character) {
         : PRINTABLE_ASCII_FALLBACK_GLYPH;
 }
 
+/* The retail renderer narrows through the PS1's 32- and 16-bit registers.
+ * Spell the wrap out so host builds do not depend on signed overflow or on
+ * implementation-defined narrowing conversions. */
+static inline s32 WrapRenderCoordinate32(int64_t value) {
+    uint32_t bits = (uint32_t)value;
+
+    if (bits <= INT32_MAX) return (s32)bits;
+    return (s32)((int64_t)bits - INT64_C(0x100000000));
+}
+
+static inline s16 WrapRenderCoordinate16(int64_t value) {
+    u16 bits = (u16)value;
+
+    if (bits <= INT16_MAX) return (s16)bits;
+    return (s16)((s32)bits - 0x10000);
+}
+
 typedef struct CameraKey {
     s32 eyeX;
     s32 eyeY;

@@ -605,7 +605,7 @@ void DrawMenuLightBurst(s32 arg);
 void DrawOptionHintBar(s32 variant);
 void RestoreNegconCalibrationSettings(void);
 void DrawOwnedCarCounter(s32 direction, s32 ownedCount);
-void DrawSpriteString(long x, long y, const char *str, long clutIndex);
+void DrawSpriteString(s32 x, s32 y, const char *str, s32 clutIndex);
 void RampTeamLogoCanvas(s32 from, s32 to);
 void ShuffleBgmOrder(void);
 void StartOptionMenuExit(u32 scene);

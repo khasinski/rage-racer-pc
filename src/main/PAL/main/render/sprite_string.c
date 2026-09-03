@@ -5,7 +5,7 @@
 #include "game/render_types.h"
 
 
-void DrawSpriteString(long x, long y, const char *str, long clutIndex) {
+void DrawSpriteString(s32 x, s32 y, const char *str, s32 clutIndex) {
     u8 *packet = RENDER_PRIM_CURSOR_AS(u8);
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
 
@@ -19,8 +19,8 @@ void DrawSpriteString(long x, long y, const char *str, long clutIndex) {
 
             SetSprt(sprite);
             SetShadeTex(sprite, 1);
-            sprite->x0 = (s16)x;
-            sprite->y0 = (s16)y;
+            sprite->x0 = WrapRenderCoordinate16(x);
+            sprite->y0 = WrapRenderCoordinate16(y);
             sprite->u0 = g_SpriteFontU[fontIndex];
             sprite->v0 = g_SpriteFontV[fontIndex];
             sprite->w = (u16)width;
@@ -29,7 +29,7 @@ void DrawSpriteString(long x, long y, const char *str, long clutIndex) {
             AddPrim(ot, sprite);
             packet = (u8 *)(sprite + 1);
         }
-        x += width;
+        x = WrapRenderCoordinate32((int64_t)x + width);
     }
 
     SetDrawMode((DrawPacket *)packet, 0, 1, 0x1D, g_DrawModeEnv);

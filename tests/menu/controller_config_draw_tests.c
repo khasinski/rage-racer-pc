@@ -133,7 +133,7 @@ void DrawProportionalText(s32 x, s32 y, const char *text, s32 clut) {
     s_proportionalText = text;
 }
 
-void DrawSpriteString(long x, long y, const char *text, long clut) {
+void DrawSpriteString(s32 x, s32 y, const char *text, s32 clut) {
     (void)x;
     (void)y;
     (void)text;

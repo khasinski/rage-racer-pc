@@ -4,6 +4,7 @@
 #include "game/render_internal.h"
 #include "game/render_state.h"
 
+#include <limits.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
@@ -132,10 +133,38 @@ static void TestInvalidBytesUseFallbackGlyph(void) {
     Check(sprite8->v0, 48, "8x8 invalid-byte fallback v");
 }
 
+static void TestTextCoordinatesWrapLikeRetailRegisters(void) {
+    const s32 glyph = 'A' - PRINTABLE_ASCII_FIRST;
+    SPRT_8 *textSprites;
+    SPRT *stringSprites;
+
+    g_Font8x8Cells[glyph * 2] = 1;
+    g_Font8x8Cells[glyph * 2 + 1] = 2;
+    g_SpriteFontWidth[glyph] = 9;
+    g_SpriteFontCells[glyph * 2] = 3;
+    g_SpriteFontCells[glyph * 2 + 1] = 4;
+
+    Reset();
+    DrawText8x8(INT_MAX, INT_MIN, "AA", 0);
+    textSprites = (SPRT_8 *)s_packets.bytes;
+    Check(textSprites[0].x0, -1, "8x8 maximum x wraps to packet");
+    Check(textSprites[0].y0, 0, "8x8 minimum y wraps to packet");
+    Check(textSprites[1].x0, 7, "8x8 advance wraps without overflow");
+
+    Reset();
+    DrawSpriteString(INT_MAX, INT_MIN, "AA", 0);
+    stringSprites = (SPRT *)s_packets.bytes;
+    Check(stringSprites[0].x0, -1, "sprite maximum x wraps to packet");
+    Check(stringSprites[0].y0, 0, "sprite minimum y wraps to packet");
+    Check(stringSprites[1].x0, 8,
+          "sprite-width advance wraps without overflow");
+}
+
 int main(void) {
     TestText8x8();
     TestSpriteString();
     TestInvalidBytesUseFallbackGlyph();
+    TestTextCoordinatesWrapLikeRetailRegisters();
     if (s_failures != 0) return 1;
     puts("basic text emitters queue glyph and draw-mode packets");
     return 0;

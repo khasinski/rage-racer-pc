@@ -7,6 +7,19 @@ typedef struct Text8x8Style {
     u8 drawMode;
 } Text8x8Style;
 
+typedef struct Text8x8Cell {
+    u8 column;
+    u8 row;
+} Text8x8Cell;
+
+static Text8x8Cell Text8x8CellAt(s32 glyph) {
+    Text8x8Cell cell;
+
+    cell.column = g_Font8x8Cells[glyph * 2];
+    cell.row = g_Font8x8Cells[glyph * 2 + 1];
+    return cell;
+}
+
 static void DrawText8x8Styled(s32 x, s32 y, const char *text, s32 clutIndex,
                               Text8x8Style style) {
     u8 *packet = RENDER_PRIM_CURSOR_AS(u8);
@@ -17,7 +30,7 @@ static void DrawText8x8Styled(s32 x, s32 y, const char *text, s32 clutIndex,
 
         if (cell != 0) {
             SPRT_8 *sprite = (SPRT_8 *)packet;
-            s32 fontIndex = cell * 2;
+            Text8x8Cell fontCell = Text8x8CellAt(cell);
 
             SetSprt8(sprite);
             if (style.shadeTexture) SetShadeTex(sprite, 1);
@@ -27,15 +40,15 @@ static void DrawText8x8Styled(s32 x, s32 y, const char *text, s32 clutIndex,
                 sprite->g0 = style.intensity;
                 sprite->b0 = style.intensity;
             }
-            sprite->x0 = (s16)x;
-            sprite->y0 = (s16)y;
-            sprite->u0 = (u8)(g_Font8x8Cells[fontIndex] * 8);
-            sprite->v0 = (u8)(g_Font8x8Cells[fontIndex + 1] * 8);
+            sprite->x0 = WrapRenderCoordinate16(x);
+            sprite->y0 = WrapRenderCoordinate16(y);
+            sprite->u0 = (u8)(fontCell.column * 8);
+            sprite->v0 = (u8)(fontCell.row * 8);
             sprite->clut = (u16)clutIndex;
             AddPrim(ot, sprite);
             packet = (u8 *)(sprite + 1);
         }
-        x += 8;
+        x = WrapRenderCoordinate32((int64_t)x + 8);
     }
 
     SetDrawMode((DrawPacket *)packet, 0, 1, style.drawMode, g_DrawModeEnv);
@@ -44,17 +57,28 @@ static void DrawText8x8Styled(s32 x, s32 y, const char *text, s32 clutIndex,
 }
 
 void DrawText8x8(s32 x, s32 y, const char *text, s32 clutIndex) {
-    Text8x8Style style = {0, 1, 0, 9};
+    Text8x8Style style = {
+        .shadeTexture = 1,
+        .drawMode = 9,
+    };
     DrawText8x8Styled(x, y, text, clutIndex, style);
 }
 
 void GameDrawText8x8Shaded(s32 x, s32 y, const char *text, s32 clutIndex,
                            u8 intensity) {
-    Text8x8Style style = {intensity, 0, 1, 0x29};
+    Text8x8Style style = {
+        .intensity = intensity,
+        .semiTransparent = 1,
+        .drawMode = 0x29,
+    };
     DrawText8x8Styled(x, y, text, clutIndex, style);
 }
 
 void DrawText8x8Trans(s32 x, s32 y, const char *text, s32 clutIndex) {
-    Text8x8Style style = {0, 1, 1, 0x49};
+    Text8x8Style style = {
+        .shadeTexture = 1,
+        .semiTransparent = 1,
+        .drawMode = 0x49,
+    };
     DrawText8x8Styled(x, y, text, clutIndex, style);
 }
