@@ -1,6 +1,7 @@
 #include "port_config.h"
 
 #include <ctype.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,7 +31,7 @@ static int ParseFloat(const char *value, float *out, float min, float max) {
     char *end;
     float parsed = strtof(value, &end);
     if (end == value || *Trim(end) != '\0') return 0;
-    if (parsed < min || parsed > max) return 0;
+    if (!isfinite(parsed) || parsed < min || parsed > max) return 0;
     *out = parsed;
     return 1;
 }

@@ -253,6 +253,18 @@ static void test_port_config(void) {
         EXPECT_EQ(0, RuntimeConfigInit(3, missingConfig));
         unlink(emptyPath);
     }
+    {
+        RagePortConfig invalidFloat;
+        char *arguments[] = {
+            "rage-test", "--set", "video.internal_scale=nan",
+            "--set", "video.draw_distance=inf"};
+
+        PortConfigDefaults(&invalidFloat);
+        EXPECT_EQ(1, RuntimeConfigInit(5, arguments));
+        EXPECT_EQ(0, PortConfigApplyRuntime(&invalidFloat));
+        EXPECT_EQ(20, (s32)(invalidFloat.modernInternalScale * 10.0f));
+        EXPECT_EQ(10, (s32)(invalidFloat.modernDrawDistance * 10.0f));
+    }
 }
 
 static void test_diagnostic_integer_values(void) {
