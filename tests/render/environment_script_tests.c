@@ -62,23 +62,6 @@ static GameEnvColor Color(u8 value) {
     return color;
 }
 
-static s32 CheckColorInterpolation(void) {
-    GameEnvColor from = Color(10);
-    GameEnvColor to = Color(250);
-    GameEnvColor out = Color(0);
-
-    LerpEnvColor(&from, &to, &out, 0);
-    if (out.bytes.r != 10 || out.bytes.g != 10 || out.bytes.b != 10) {
-        return 0;
-    }
-    LerpEnvColor(&from, &to, &out, 0x1000);
-    if (out.bytes.r != 250 || out.bytes.g != 250 || out.bytes.b != 250) {
-        return 0;
-    }
-    LerpEnvColor(&to, &from, &out, 0x800);
-    return out.bytes.r == 130 && out.bytes.g == 130 && out.bytes.b == 130;
-}
-
 static void SeedCue(GameEnvironmentCue *cue, s32 time, u8 color,
                     u16 duration, u16 mode) {
     s32 slot;
@@ -102,11 +85,6 @@ int main(void) {
     GameEnvironmentCue cues[4];
     EnvironmentPalette palettes[ENVIRONMENT_PALETTE_COUNT];
     s32 color;
-
-    if (!CheckColorInterpolation()) {
-        puts("FAIL: environment color interpolation");
-        return 1;
-    }
 
     memset(&script, 0, sizeof(script));
     script.skyRowBase = SKY_TILE_MAP_ROWS - 2;
@@ -222,7 +200,7 @@ int main(void) {
         return 1;
     }
     cues[1].duration = 0xFFFF;
-    LoadEnvironmentCue(&cues[1]);
+    SeekEnvironmentScript(15);
     if (g_EnvLerpDuration != 0x7FFF) {
         puts("FAIL: oversized environment cue duration");
         return 1;

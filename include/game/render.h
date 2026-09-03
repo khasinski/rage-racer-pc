@@ -704,7 +704,7 @@ void SetGteObjectMatrix(LVec *position, Matrix *rotation);
  * 2 mod 4, so every word in it is half-aligned and must be declared packed --
  * the compiler emits lwl/lwr, not lw. */
 /* One timeline slot: the live colour and the pair it is being lerped between.
- * LoadEnvironmentCue rolls `cur` into `from` and the cue's value into `to`;
+ * Loading a cue rolls `cur` into `from` and the cue's value into `to`;
  * UpdateEnvironment walks `cur` across over g_EnvLerpDuration frames. */
 /* The nine slots. [0] is the GTE far/fog colour (SetFarColor takes its three
  * bytes; its unused fourth byte carries auxiliary state), [1..8] the sky-gradient bands.

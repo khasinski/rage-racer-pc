@@ -648,9 +648,7 @@ set_tests_properties(race_cue PROPERTIES LABELS functional)
 
 add_executable(environment_script_tests
     environment_script_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/environment_script.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/load_environment_cue.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/env_palette.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/environment_script.c)
 target_include_directories(environment_script_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/src/port

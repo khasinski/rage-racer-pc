@@ -9,6 +9,46 @@ enum {
     ENVIRONMENT_FOG_STEP = 0xFA,
 };
 
+static s16 EnvironmentCueDuration(u16 duration) {
+    if (duration == 0) return 1;
+    return duration > INT16_MAX ? INT16_MAX : (s16)duration;
+}
+
+static void LerpEnvironmentColor(const GameEnvColor *from,
+                                 const GameEnvColor *to,
+                                 GameEnvColor *out, s32 blend) {
+    out->bytes.r = LerpColorChannel(from->bytes.r, to->bytes.r, blend);
+    out->bytes.g = LerpColorChannel(from->bytes.g, to->bytes.g, blend);
+    out->bytes.b = LerpColorChannel(from->bytes.b, to->bytes.b, blend);
+}
+
+static void LoadEnvironmentCue(const GameEnvironmentCue *cue) {
+    s32 slot;
+    s16 previousMode = g_EnvironmentMode;
+
+    g_EnvironmentColors.fields.fogEnabled = 1;
+    for (slot = 0; slot < ENV_SLOT_COUNT; slot++) {
+        GameEnvColorSlot *color =
+            &g_EnvironmentColors.fields.slots[slot];
+
+        color->from = color->cur;
+        color->to = cue->colors[slot];
+    }
+
+    /* A zero-duration cue is instantaneous. One update reaches its target
+     * without introducing a division-by-zero special case downstream. */
+    g_EnvLerpDuration = EnvironmentCueDuration(cue->duration);
+    g_EnvironmentModePrev = previousMode;
+    g_EnvironmentMode = (s16)cue->mode;
+    g_EnvSpareLerp = (cue->spareTarget & 0x8000) == 0;
+    if (g_EnvSpareLerp != 0) {
+        g_EnvSpareFrom =
+            g_EnvironmentColors.fields.slots[ENV_FOG].cur.bytes.unused;
+        g_EnvSpareTo = (s16)cue->spareTarget;
+    }
+    g_IsEnvironmentMode4 = g_EnvironmentMode == 4;
+}
+
 static void ClearEnvironmentScript(void) {
     g_SkyRowBase = 0;
     g_EnvScriptLength = 0;
@@ -171,24 +211,27 @@ static void UpdateEnvironmentColorSlots(s32 blend) {
     s32 slot;
 
     for (slot = ENV_FOG; slot <= ENV_SKY_BOTTOM; slot++) {
-        LerpEnvColor(&g_EnvironmentColors.fields.slots[slot].from,
-                     &g_EnvironmentColors.fields.slots[slot].to,
-                     &g_EnvironmentColors.fields.slots[slot].cur, blend);
+        LerpEnvironmentColor(&g_EnvironmentColors.fields.slots[slot].from,
+                             &g_EnvironmentColors.fields.slots[slot].to,
+                             &g_EnvironmentColors.fields.slots[slot].cur,
+                             blend);
     }
 
     if (g_CourseIndex == 2) {
         for (slot = ENV_GROUND_NEAR_TOP;
              slot <= ENV_GROUND_NEAR_BOTTOM; slot++) {
-            LerpEnvColor(&g_EnvironmentColors.fields.slots[slot].from,
-                         &g_EnvironmentColors.fields.slots[slot].to,
-                         &g_EnvironmentColors.fields.slots[slot].cur, blend);
+            LerpEnvironmentColor(
+                &g_EnvironmentColors.fields.slots[slot].from,
+                &g_EnvironmentColors.fields.slots[slot].to,
+                &g_EnvironmentColors.fields.slots[slot].cur, blend);
         }
     } else {
         for (slot = ENV_GROUND_FAR_TOP;
              slot <= ENV_GROUND_FAR_BOTTOM; slot++) {
-            LerpEnvColor(&g_EnvironmentColors.fields.slots[slot].from,
-                         &g_EnvironmentColors.fields.slots[slot].to,
-                         &g_EnvironmentColors.fields.slots[slot].cur, blend);
+            LerpEnvironmentColor(
+                &g_EnvironmentColors.fields.slots[slot].from,
+                &g_EnvironmentColors.fields.slots[slot].to,
+                &g_EnvironmentColors.fields.slots[slot].cur, blend);
         }
     }
 }
