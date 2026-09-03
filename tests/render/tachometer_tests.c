@@ -5,6 +5,7 @@
 #include "game/render.h"
 #include "game/render_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -178,6 +179,20 @@ int main(void) {
     needle = (POLY_F4 *)packets;
     CHECK(needle->r0 == 21 && needle->g0 == 26 && needle->b0 == 31);
     CHECK(g_TachoFaceR == 80);
+
+    memset(packets, 0, sizeof(packets));
+    ResetState(packets);
+    g_PlayerCar.speed = INT_MAX;
+    DrawTachometer(INT_MAX, 0, TACHOMETER_LIGHTING_NORMAL, 0);
+    CHECK(s_sineAngle == 1100 && s_cosineAngle == 1100);
+    CHECK(s_speed == 999);
+
+    memset(packets, 0, sizeof(packets));
+    ResetState(packets);
+    g_PlayerCar.speed = INT_MIN;
+    DrawTachometer(INT_MIN, 0, TACHOMETER_LIGHTING_NORMAL, 0);
+    CHECK(s_sineAngle == 100 && s_cosineAngle == 100);
+    CHECK(s_speed == 0);
 
     puts("tachometer tests passed");
     return 0;
