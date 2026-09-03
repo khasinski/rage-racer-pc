@@ -18,6 +18,7 @@ enum {
     TRACK_RUNTIME_COURSE_OBJECTS = 8,
     TRACK_RUNTIME_EVENTS = 9,
     TRACK_RUNTIME_CAMERAS = 10,
+    TRACK_RUNTIME_BLOCK_COUNT = 11,
     TRACK_RENDER_CAR_MODEL_COUNT = 11,
     COURSE_OBJECT_KNOWN_FLAGS =
         COURSE_OBJECT_ALTERNATE_NORMAL |
@@ -25,6 +26,11 @@ enum {
         COURSE_OBJECT_ENVIRONMENT_4 |
         COURSE_OBJECT_BLINK_ENVIRONMENT_4,
 };
+
+_Static_assert(TRACK_RUNTIME_BLOCK_COUNT ==
+                   sizeof(((GameSceneAssetHeader *)0)->offsets) /
+                       sizeof(((GameSceneAssetHeader *)0)->offsets[0]),
+               "runtime block names must cover the scene header");
 
 static s32 IsValidCourseObjectTable(const CourseObjectTable *table,
                                     size_t size, s32 modelCount) {
@@ -63,7 +69,8 @@ s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
     GameSceneAssetHeader *header;
     CourseModelAssetHeader *courseModels;
     const CourseObjectTable *courseObjects;
-    size_t blockSizes[11];
+    void *blocks[TRACK_RUNTIME_BLOCK_COUNT];
+    size_t blockSizes[TRACK_RUNTIME_BLOCK_COUNT];
     s32 i;
 
     if (!IsTrackRuntimeAssetIndex(assetIndex) || data == NULL ||
@@ -73,20 +80,22 @@ s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
     }
 
     header = GetSceneAssetHeader(data);
-    for (i = 0; i < 11; i++) {
+    for (i = 0; i < TRACK_RUNTIME_BLOCK_COUNT; i++) {
         s32 start = header->offsets[i];
-        s32 end = i + 1 < 11 ? header->offsets[i + 1] : (s32)size;
+        s32 end = i + 1 < TRACK_RUNTIME_BLOCK_COUNT
+                      ? header->offsets[i + 1]
+                      : (s32)size;
 
         if (start < (s32)sizeof(*header) || end <= start ||
             (size_t)end > size) {
             return 0;
         }
+        blocks[i] = (u8 *)data + start;
         blockSizes[i] = (size_t)(end - start);
     }
-    courseObjects = GetSceneAssetBlock(
-        header, TRACK_RUNTIME_COURSE_OBJECTS);
-    courseModels = GetCourseModelAssetHeader(GetSceneAssetBlock(
-        header, TRACK_RUNTIME_COURSE_MODELS));
+    courseObjects = blocks[TRACK_RUNTIME_COURSE_OBJECTS];
+    courseModels =
+        GetCourseModelAssetHeader(blocks[TRACK_RUNTIME_COURSE_MODELS]);
     if (blockSizes[TRACK_RUNTIME_RENDER_TABLE] <
             offsetof(TrackRenderTable, models) +
                 TRACK_RENDER_CAR_MODEL_COUNT *
@@ -98,8 +107,7 @@ s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
         return 0;
     }
     if (!IsValidModelBankAsset(
-            GetModelBankHeader(GetSceneAssetBlock(
-                header, TRACK_RUNTIME_PRIMARY_MODELS)),
+            GetModelBankHeader(blocks[TRACK_RUNTIME_PRIMARY_MODELS]),
             blockSizes[TRACK_RUNTIME_PRIMARY_MODELS]) ||
         !IsValidCourseModelAsset(
             courseModels,
@@ -108,40 +116,38 @@ s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
             courseObjects, blockSizes[TRACK_RUNTIME_COURSE_OBJECTS],
             courseModels->modelCount) ||
         !IsValidModelBankAsset(
-            GetModelBankHeader(GetSceneAssetBlock(
-                header, TRACK_RUNTIME_SECONDARY_MODELS)),
+            GetModelBankHeader(blocks[TRACK_RUNTIME_SECONDARY_MODELS]),
             blockSizes[TRACK_RUNTIME_SECONDARY_MODELS]) ||
         !IsValidTerrainCellAsset(
-            GetSceneAssetBlock(header, TRACK_RUNTIME_TERRAIN_CELLS),
+            blocks[TRACK_RUNTIME_TERRAIN_CELLS],
             blockSizes[TRACK_RUNTIME_TERRAIN_CELLS]) ||
         !IsValidEnvironmentScript(
-            GetSceneAssetBlock(header, TRACK_RUNTIME_ENVIRONMENT_SCRIPT),
+            blocks[TRACK_RUNTIME_ENVIRONMENT_SCRIPT],
             blockSizes[TRACK_RUNTIME_ENVIRONMENT_SCRIPT]) ||
         !IsValidTrackPointAsset(
-            GetSceneAssetBlock(header, TRACK_RUNTIME_POINTS),
+            blocks[TRACK_RUNTIME_POINTS],
             blockSizes[TRACK_RUNTIME_POINTS]) ||
         !IsValidTrackEventAsset(
-            GetSceneAssetBlock(header, TRACK_RUNTIME_EVENTS),
+            blocks[TRACK_RUNTIME_EVENTS],
             blockSizes[TRACK_RUNTIME_EVENTS]) ||
         !IsValidTrackCameraTable(
-            GetSceneAssetBlock(header, TRACK_RUNTIME_CAMERAS),
+            blocks[TRACK_RUNTIME_CAMERAS],
             blockSizes[TRACK_RUNTIME_CAMERAS], useSeriesCamera)) {
         return 0;
     }
 
     if (!SetEnvironmentScript(
-            GetSceneAssetBlock(header, TRACK_RUNTIME_ENVIRONMENT_SCRIPT),
+            blocks[TRACK_RUNTIME_ENVIRONMENT_SCRIPT],
             blockSizes[TRACK_RUNTIME_ENVIRONMENT_SCRIPT])) {
         return 0;
     }
     if (!RegisterModelBank(
-            GetModelBankHeader(GetSceneAssetBlock(
-                header, TRACK_RUNTIME_PRIMARY_MODELS)),
+            GetModelBankHeader(blocks[TRACK_RUNTIME_PRIMARY_MODELS]),
             blockSizes[TRACK_RUNTIME_PRIMARY_MODELS], 1)) {
         return 0;
     }
     if (!InstallTrackPoints(
-            GetSceneAssetBlock(header, TRACK_RUNTIME_POINTS),
+            blocks[TRACK_RUNTIME_POINTS],
             blockSizes[TRACK_RUNTIME_POINTS])) {
         return 0;
     }
@@ -149,28 +155,25 @@ s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
             courseModels,
             blockSizes[TRACK_RUNTIME_COURSE_MODELS]) ||
         !RegisterModelBank(
-            GetModelBankHeader(GetSceneAssetBlock(
-                header, TRACK_RUNTIME_SECONDARY_MODELS)),
+            GetModelBankHeader(blocks[TRACK_RUNTIME_SECONDARY_MODELS]),
             blockSizes[TRACK_RUNTIME_SECONDARY_MODELS], 2) ||
         !InstallTerrainCellData(
-            GetSceneAssetBlock(header, TRACK_RUNTIME_TERRAIN_CELLS),
+            blocks[TRACK_RUNTIME_TERRAIN_CELLS],
             blockSizes[TRACK_RUNTIME_TERRAIN_CELLS])) {
         return 0;
     }
     if (!InstallTrackEventData(
-            GetSceneAssetBlock(header, TRACK_RUNTIME_EVENTS),
+            blocks[TRACK_RUNTIME_EVENTS],
             blockSizes[TRACK_RUNTIME_EVENTS])) {
         return 0;
     }
     if (!SelectTrackCameraTable(
-            GetSceneAssetBlock(header, TRACK_RUNTIME_CAMERAS),
+            blocks[TRACK_RUNTIME_CAMERAS],
             blockSizes[TRACK_RUNTIME_CAMERAS], useSeriesCamera)) {
         return 0;
     }
-    g_TrackRenderTable = GetSceneAssetBlock(
-        header, TRACK_RUNTIME_RENDER_TABLE);
-    g_EnvPaletteTable = GetSceneAssetBlock(
-        header, TRACK_RUNTIME_ENVIRONMENT_PALETTE);
+    g_TrackRenderTable = blocks[TRACK_RUNTIME_RENDER_TABLE];
+    g_EnvPaletteTable = blocks[TRACK_RUNTIME_ENVIRONMENT_PALETTE];
     g_CourseObjects = courseObjects->objects;
     g_CourseObjectCount = (s32)courseObjects->count;
     TrackAssetIdentitySet(assetIndex);
