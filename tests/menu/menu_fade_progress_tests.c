@@ -20,6 +20,11 @@ int main(void) {
     CHECK(AddClampedMenuValue(INT_MAX, INT_MAX, 0, 20) == 20);
     CHECK(AddClampedMenuValue(INT_MIN, INT_MIN, 0, 20) == 0);
     CHECK(AddClampedMenuValue(10, 5, 20, 0) == 20);
+    CHECK(WrapMenuIndex(0, -1, 3) == 2);
+    CHECK(WrapMenuIndex(2, 1, 3) == 0);
+    CHECK(WrapMenuIndex(INT_MAX, INT_MAX, 20) == 14);
+    CHECK(WrapMenuIndex(INT_MIN, INT_MIN, 20) == 4);
+    CHECK(WrapMenuIndex(5, 1, 0) == 0);
 
     CHECK(AdvanceMenuFade(&progress, 20) == 120);
     CHECK(AdvanceMenuFade(&progress, -40) == 80);

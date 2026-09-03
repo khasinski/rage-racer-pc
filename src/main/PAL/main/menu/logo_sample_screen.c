@@ -5,14 +5,6 @@
 
 enum { LOGO_SAMPLE_COUNT = 20 };
 
-static s32 WrapLogoSampleIndex(s32 index, s32 step, s32 count) {
-    index += step;
-    if (index < 0) {
-        return count - 1;
-    }
-    return index >= count ? 0 : index;
-}
-
 static void ChooseLogoSampleRow(void) {
     switch (g_LogoSampleCursor) {
     case 0:
@@ -51,11 +43,11 @@ static void UpdateLogoSampleIdle(void) {
     g_MenuOverlayPattern = -1;
     if (g_PadPressed & PAD_UP) {
         PlaySoundCue(1);
-        g_LogoSampleCursor = WrapLogoSampleIndex(g_LogoSampleCursor, -1, 3);
+        g_LogoSampleCursor = WrapMenuIndex(g_LogoSampleCursor, -1, 3);
     }
     if (g_PadPressed & PAD_DOWN) {
         PlaySoundCue(1);
-        g_LogoSampleCursor = WrapLogoSampleIndex(g_LogoSampleCursor, 1, 3);
+        g_LogoSampleCursor = WrapMenuIndex(g_LogoSampleCursor, 1, 3);
     }
     if (g_PadPressed & PAD_CONFIRM) {
         ChooseLogoSampleRow();
@@ -85,10 +77,10 @@ static void UpdateLogoSamplePicker(s32 *selection) {
         *selection = g_LogoSampleSavedIndex;
     } else if (action == MENU_DIALOG_LEFT) {
         PlaySoundCue(1);
-        *selection = WrapLogoSampleIndex(*selection, -1, LOGO_SAMPLE_COUNT);
+        *selection = WrapMenuIndex(*selection, -1, LOGO_SAMPLE_COUNT);
     } else if (action == MENU_DIALOG_RIGHT) {
         PlaySoundCue(1);
-        *selection = WrapLogoSampleIndex(*selection, 1, LOGO_SAMPLE_COUNT);
+        *selection = WrapMenuIndex(*selection, 1, LOGO_SAMPLE_COUNT);
     }
 }
 

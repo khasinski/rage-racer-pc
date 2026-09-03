@@ -2,6 +2,7 @@
 #include "game/audio.h"
 #include "game/input_internal.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/prim.h"
 #include "game/race.h"
 #include "game/random.h"
@@ -71,7 +72,7 @@ void UpdateOptionRootMenu(void) {
         g_OptionMenuCursor++;
     }
     g_OptionMenuCursor =
-        (g_OptionMenuCursor + OPTION_ROOT_ITEM_COUNT) % OPTION_ROOT_ITEM_COUNT;
+        WrapMenuIndex(g_OptionMenuCursor, 0, OPTION_ROOT_ITEM_COUNT);
     if (oldCursor != g_OptionMenuCursor) {
         PlaySoundCue(1);
     }

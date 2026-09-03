@@ -1,5 +1,6 @@
 #include "game/audio.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/prim.h"
 #include "game/render_internal.h"
 
@@ -101,7 +102,7 @@ void UpdateSoundOptionMenu(void) {
         g_SoundOptionCursor++;
     }
     g_SoundOptionCursor =
-        (g_SoundOptionCursor + SOUND_OPTION_COUNT) % SOUND_OPTION_COUNT;
+        WrapMenuIndex(g_SoundOptionCursor, 0, SOUND_OPTION_COUNT);
     if (oldCursor != g_SoundOptionCursor) {
         PlaySoundCue(1);
     }

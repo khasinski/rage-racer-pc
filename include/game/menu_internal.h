@@ -23,6 +23,19 @@ static inline s32 AddClampedMenuValue(s32 value, s32 delta, s32 minimum,
     return (s32)updated;
 }
 
+static inline s32 WrapMenuIndex(s32 index, s32 delta, s32 count) {
+    int64_t wrapped;
+
+    if (count <= 0) {
+        return 0;
+    }
+    wrapped = ((int64_t)index + delta) % count;
+    if (wrapped < 0) {
+        wrapped += count;
+    }
+    return (s32)wrapped;
+}
+
 /* Screen draw entry points use step zero as a reset command. Other steps move
  * their fade within the brightness range accepted by the menu renderer. */
 static inline s32 AdvanceMenuFade(s32 *progress, s32 step) {
