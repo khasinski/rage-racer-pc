@@ -18,7 +18,7 @@ extern int32_t g_IsEnvironmentMode4;
 
 static int WriteModern(const RageModernDiagnosticFrame *frame,
                        const char *path) {
-    return frame->texture != NULL &&
+    return frame != NULL && path != NULL && frame->texture != NULL &&
            ModernWriteTexturePpm(frame->device, frame->texture,
                                      frame->width, frame->height, path);
 }
@@ -34,6 +34,7 @@ void ModernDiagnosticsMaybeDump(
     static long every;
     static long lastDumped = -1;
     static int done;
+    if (snapshot == NULL || output == NULL) return;
     if (!initialized) {
         const char *frameText = RuntimeConfigGet("diagnostics.modern_dump_frame");
         const char *everyText = RuntimeConfigGet("diagnostics.modern_dump_every");
@@ -160,12 +161,18 @@ static void WriteSceneInfo(FILE *file, const RageSceneSnapshot *snapshot,
     }
     for (index = 0; index < snapshot->terrainCount; index++) {
         const RageCaptureTerrainBatch *batch = &snapshot->terrain[index];
-        fprintf(file,
-                "terrain[%d] mirror=%d cells=%d shift=%d "
-                "cell0=%d,%d,%d#%d\n",
-                index, batch->mirror, batch->cellCount, batch->otShift,
-                batch->cells[0][0], batch->cells[0][1], batch->cells[0][2],
-                batch->cells[0][3]);
+        if (batch->cellCount > 0) {
+            fprintf(file,
+                    "terrain[%d] mirror=%d cells=%d shift=%d "
+                    "cell0=%d,%d,%d#%d\n",
+                    index, batch->mirror, batch->cellCount, batch->otShift,
+                    batch->cells[0][0], batch->cells[0][1],
+                    batch->cells[0][2], batch->cells[0][3]);
+        } else {
+            fprintf(file,
+                    "terrain[%d] mirror=%d cells=0 shift=%d cell0=none\n",
+                    index, batch->mirror, batch->otShift);
+        }
     }
     {
         const RageRenderWorld *world = GameRenderWorldCurrent();
@@ -204,9 +211,13 @@ void ModernDiagnosticsCheckMarker(
     static int wasDown;
     static int burstLeft;
     static int markerIndex = -1;
-    const bool *keys = SDL_GetKeyboardState(NULL);
-    int down = keys != NULL && keys[SDL_SCANCODE_M];
-    int pressed = down && !wasDown;
+    const bool *keys;
+    int down;
+    int pressed;
+    if (snapshot == NULL || output == NULL) return;
+    keys = SDL_GetKeyboardState(NULL);
+    down = keys != NULL && keys[SDL_SCANCODE_M];
+    pressed = down && !wasDown;
     /* A marker that only a key can take needs somebody at the keyboard, and
      * the offline tools that read markers then cannot be run from a script.
      * Naming a frame takes the same capture without anyone present. */
