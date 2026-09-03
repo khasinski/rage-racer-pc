@@ -20,6 +20,16 @@ enum {
     PLAYER_HULL_POINT_COUNT = 6,
     OPPONENT_COLLISION_SAMPLE_COUNT = 9,
     COARSE_COLLISION_SAMPLE_COUNT = 5,
+    COLLISION_SOUND_TIMER_LIMIT = 0xB,
+    COLLISION_SOUND_CLOSE_LATERAL_DISTANCE = 30,
+    RELATIVE_COLLISION_VELOCITY_DIVISOR = 0x20,
+    WRONG_WAY_COLLISION_MINIMUM_SPEED = 0x51,
+    WRONG_WAY_COLLISION_MINIMUM_FRAMES = 0xA,
+    COLLISION_TORQUE_RETENTION_PERCENT = 0x50,
+    HARD_COLLISION_SPEED_DIFFERENCE = 0x191,
+    HARD_COLLISION_GRIP_LOSS_FRAMES = 0x1E,
+    NORMAL_COLLISION_GRIP_LOSS_FRAMES = 0xF,
+    STATIONARY_COLLISION_SPEED = 0x29,
 };
 
 static void BuildPlayerCollisionGrid(const PlayerCarRuntime *car,
@@ -228,10 +238,11 @@ static void PlayPlayerCollisionSound(const PlayerCarRuntime *player,
                                      const PlayerCollisionHit *hit) {
     s32 soundCue;
 
-    if (WrapSigned16(player->motionTimer) >= 0xB || g_RacePhase >= 3) {
+    if (WrapSigned16(player->motionTimer) >= COLLISION_SOUND_TIMER_LIMIT ||
+        g_RacePhase >= 3) {
         return;
     }
-    if (hit->lateralDistance < 30) {
+    if (hit->lateralDistance < COLLISION_SOUND_CLOSE_LATERAL_DISTANCE) {
         soundCue = hit->region >= 3 ? 0xD : 0xA;
     } else {
         soundCue = (hit->region & 1) != g_MirrorMode ? 0xB : 0xC;
@@ -248,8 +259,8 @@ static CarCollisionPoint GetCollisionVelocity(
     s32 z = WrapSigned16((u16)opponent->worldVelocityZ -
                          (u16)player->drive.brakePos);
 
-    velocity.x = x / 0x20;
-    velocity.z = z / 0x20;
+    velocity.x = x / RELATIVE_COLLISION_VELOCITY_DIVISOR;
+    velocity.z = z / RELATIVE_COLLISION_VELOCITY_DIVISOR;
     if (includeOpponentMotion) {
         velocity.x = WrapSigned16(
             (s32)velocity.x - WrapSigned16(opponent->velocityX));
@@ -261,7 +272,8 @@ static CarCollisionPoint GetCollisionVelocity(
 
 static s32 IsWrongWayImpact(const PlayerCarRuntime *player) {
     return player->facingBackwards != g_RaceSeries &&
-           player->speed >= 0x51 && g_WrongWayTimer >= 0xA;
+           player->speed >= WRONG_WAY_COLLISION_MINIMUM_SPEED &&
+           g_WrongWayTimer >= WRONG_WAY_COLLISION_MINIMUM_FRAMES;
 }
 
 static void ApplyLowRegionCollision(PlayerCarRuntime *player,
@@ -274,17 +286,21 @@ static void ApplyLowRegionCollision(PlayerCarRuntime *player,
     } else {
         player->acceleration /= 2;
         player->drive.drivetrainTorque = WrapSigned32(
-            (int64_t)player->drive.drivetrainTorque * 0x50) / 100;
+            (int64_t)player->drive.drivetrainTorque *
+            COLLISION_TORQUE_RETENTION_PERCENT) / 100;
     }
-    g_GripLossTimer = WrapSigned32(
-        (int64_t)player->speed - opponent->speed) >= 0x191 ? 0x1E : 0xF;
+    g_GripLossTimer =
+        WrapSigned32((int64_t)player->speed - opponent->speed) >=
+                HARD_COLLISION_SPEED_DIFFERENCE
+            ? HARD_COLLISION_GRIP_LOSS_FRAMES
+            : NORMAL_COLLISION_GRIP_LOSS_FRAMES;
 
     if (IsWrongWayImpact(player)) {
         SetCarCollisionKnockback(opponent, 0, 0);
         SetCarCollisionKnockback(AsRivalCar(player), 0, 0);
         return;
     }
-    if (player->speed >= 0x29) {
+    if (player->speed >= STATIONARY_COLLISION_SPEED) {
         SetCarCollisionKnockback(AsRivalCar(player), 0, 0);
     } else {
         SetCarCollisionKnockback(AsRivalCar(player), -velocity.x,
