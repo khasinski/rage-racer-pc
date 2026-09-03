@@ -40,7 +40,8 @@ const char g_MsgSeqVabOpenHeadError[] __attribute__((aligned(16))) =
     "SsVabOpenHead Error\n";
 const char g_MsgSeqVabTransBodyError[] __attribute__((aligned(16))) =
     "SsVabTransBody Error\n";
-s16 g_SoundSlotTone[6][2] __attribute__((aligned(16))) = {
+s16 g_SoundSlotTone[ENGINE_SOUND_SLOT_COUNT][ENGINE_SOUND_BANK_COUNT]
+    __attribute__((aligned(16))) = {
     {1, 1}, {2, 2}, {3, 3}, {5, 4}, {7, 6}, {8, 8},
 };
 s32 g_StereoOutput = 1;

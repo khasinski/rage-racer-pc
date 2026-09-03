@@ -8,12 +8,15 @@ enum {
     AUDIO_EFFECT_VOICE_COUNT = 4,
     AUDIO_INDEXED_EFFECT_COUNT = 3,
     AUDIO_SOUND_MODE_COUNT = 4,
+    SOUND_SCALE_VAB_ID_CAPACITY = 8,
 };
 
 typedef struct SoundScale {
     s32 scale;
-    s16 vabIds[8];
+    s16 vabIds[SOUND_SCALE_VAB_ID_CAPACITY];
 } SoundScale;
+
+_Static_assert(sizeof(SoundScale) == 20, "sound-scale ABI changed");
 
 /* Master effect-volume scale plus the libsnd id of each loaded VAB. */
 extern SoundScale g_SoundScale;
@@ -104,11 +107,6 @@ extern s32 g_SeqVolume; /* current SEQ volume, also read as s16 */
 extern s32 g_SeqVolumeSetting; /* 0..15 OPTIONS level; volume = n * 114 / 15 */
 /* Step added to g_SeqVolume each frame; -4 while fading out. */
 extern s32 g_SeqVolumeFadeStep;
-/* Per-slot engine tone, one entry per bank; a slot is re-cued when its two
- * banks disagree. The old g_SoundSlotToneBank1 symbol (g_SoundSlotToneBank1) is [i][1]
- * of this table. Six slots. */
-extern s16 g_SoundSlotTone[][2];
-
 /*
  * Indexed effect table in rodata at g_IndexedEffects: three entries, twelve bytes
  * each, selected by SetIndexedEffectVoice (index clamped to 0..2). The old

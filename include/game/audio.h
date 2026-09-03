@@ -144,6 +144,11 @@ typedef struct EngineSoundState {
     s32 volumeScale;
 } EngineSoundState;
 
+/* Per-slot engine tone, one entry per bank. A slot is re-cued when its two
+ * banks select different tones. */
+extern s16
+    g_SoundSlotTone[ENGINE_SOUND_SLOT_COUNT][ENGINE_SOUND_BANK_COUNT];
+
 _Static_assert(sizeof(EngineSoundState) == 40,
                "engine sound runtime ABI changed");
 _Static_assert(__builtin_offsetof(EngineSoundState, maxRpm) == 8,

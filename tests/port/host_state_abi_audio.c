@@ -1,10 +1,14 @@
 #include "../../src/port/host_state_audio.c"
 
-_Static_assert(sizeof(g_IndexedEffects) == 3 * sizeof(IndexedEffect),
+_Static_assert(sizeof(g_IndexedEffects) ==
+                   AUDIO_INDEXED_EFFECT_COUNT * sizeof(IndexedEffect),
                "indexed-effect table shape changed");
-_Static_assert(sizeof(g_SoundModes) == 4 * sizeof(SoundModeEntry),
+_Static_assert(sizeof(g_SoundModes) ==
+                   AUDIO_SOUND_MODE_COUNT * sizeof(SoundModeEntry),
                "sound-mode table shape changed");
-_Static_assert(sizeof(g_SoundSlotTone) == 6 * 2 * sizeof(s16),
+_Static_assert(sizeof(g_SoundSlotTone) ==
+                   ENGINE_SOUND_SLOT_COUNT * ENGINE_SOUND_BANK_COUNT *
+                       sizeof(s16),
                "sound-slot tone table shape changed");
 _Static_assert(sizeof(g_EngineSoundCurves) == 1728,
                "engine-sound curve table shape changed");

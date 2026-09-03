@@ -11,7 +11,7 @@ s32 g_ReverbFadeStep;
 s32 g_SeqVolumeFadeStep;
 s32 g_SceneId;
 SoundScale g_SoundScale;
-s16 g_SoundSlotTone[6][2];
+s16 g_SoundSlotTone[ENGINE_SOUND_SLOT_COUNT][ENGINE_SOUND_BANK_COUNT];
 
 static s32 s_frameHz = 50;
 static s32 s_sequenceTicks;

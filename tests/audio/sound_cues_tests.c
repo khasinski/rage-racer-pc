@@ -7,10 +7,10 @@
 #include <string.h>
 
 SoundScale g_SoundScale;
-SoundCueParams g_SoundCueParams[30];
-SoundCueParams g_SoundCueParams2[70];
-s32 g_SpecialVoiceBits[6];
-s16 g_SoundSlotTone[ENGINE_SOUND_SLOT_COUNT][2];
+SoundCueParams g_SoundCueParams[MAIN_SOUND_CUE_COUNT];
+SoundCueParams g_SoundCueParams2[RACE_SOUND_CUE_COUNT];
+s32 g_SpecialVoiceBits[SPECIAL_VOICE_BIT_COUNT];
+s16 g_SoundSlotTone[ENGINE_SOUND_SLOT_COUNT][ENGINE_SOUND_BANK_COUNT];
 s32 g_SoundCueBank;
 s32 g_ActiveSpecialCue;
 s32 g_LastSpecialCueRequest;
