@@ -48,7 +48,7 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex) {
     s32 highSpeed;
     s32 pitch = 0;
 
-    if (g_TrackEventData == NULL || carIndex < 0 ||
+    if (car == NULL || g_TrackEventData == NULL || carIndex < 0 ||
         carIndex >= RACE_CAR_SLOT_COUNT) {
         return;
     }

@@ -22,7 +22,8 @@ s32 GetCarCrestTrigger(const GameCarRuntime *car) {
     s32 i;
     const TrackCrestEvent *events;
 
-    if (car->speed < CREST_MINIMUM_SPEED || g_TrackEventData == NULL ||
+    if (car == NULL || g_TrackEventData == NULL ||
+        car->speed < CREST_MINIMUM_SPEED ||
         g_TrackLength <= 0) {
         return 0;
     }

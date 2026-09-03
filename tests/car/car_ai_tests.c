@@ -135,6 +135,8 @@ static void CrestTests(void) {
     g_TrackEventData = NULL;
     Check(GetCarCrestTrigger(&car) == 0, "missing crest data",
           GetCarCrestTrigger(&car), 0);
+    Check(GetCarCrestTrigger(NULL) == 0, "missing crest car",
+          GetCarCrestTrigger(NULL), 0);
 }
 
 static void TargetSpeedTests(void) {
@@ -437,6 +439,7 @@ static void MissingAiDataTests(void) {
 
     ApplyCarRacingLineHint(&car, 0);
     UpdateCarAiTargetSpeed(&car, 0);
+    UpdateCarAiTargetSpeed(NULL, 0);
     SeedCarAiSpeedKeys();
 
     Check(car.racingLineHintIndex == 7,
