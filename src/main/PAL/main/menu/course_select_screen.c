@@ -146,32 +146,6 @@ static void ChooseCourseSelectRow(s32 row) {
     g_TimeAttackPlateStep = -1;
 }
 
-/* Idle: the pad steps through the courses and picks a row. */
-/*
- * Every press is acted on, and the directions are decided before confirm, so
- * confirming while holding a direction acts on the row just moved to. The
- * prompts read their cursor the other way round; both are deliberate and both
- * are checked.
- */
-CourseSelectInputOutcome DecideCourseSelectInput(u16 pressed, u16 held,
-                                                 s32 option) {
-    CourseSelectInputOutcome out;
-    out.cueCount = 0;
-    out.option = option;
-    if (pressed & PAD_UP) {
-        out.cues[out.cueCount++] = 1;
-        out.option = (out.option > 0) ? out.option - 1 : 2;
-    }
-    if (pressed & PAD_DOWN) {
-        out.cues[out.cueCount++] = 1;
-        out.option = (out.option < 2) ? out.option + 1 : 0;
-    }
-    out.wantsPrev = (held & PAD_LEFT) != 0;
-    out.wantsNext = (held & PAD_RIGHT) != 0;
-    out.choosesRow = (pressed & PAD_CONFIRM) != 0;
-    return out;
-}
-
 static void UpdateCourseSelectInput(void) {
     CourseSelectInputOutcome choice;
     s32 i;
@@ -211,40 +185,6 @@ static void UpdateCourseSelectIdle(void) {
     }
 }
 
-/* "Save the game?" with its own yes/no cursor. */
-/*
- * Every press is acted on, not just the first, so holding confirm and a
- * direction together plays two sounds and does two things. Confirm reads the
- * cursor before either direction can move it, which is why the order the
- * presses are handled in is part of the answer rather than an accident.
- */
-MenuPromptOutcome DecideSavePrompt(u16 pressed, s32 busy, s32 confirmTimer,
-                                   s32 subCursor) {
-    MenuPromptOutcome out;
-    out.cueCount = 0;
-    out.busy = busy;
-    out.confirmTimer = confirmTimer;
-    out.subCursor = subCursor;
-    if (pressed & PAD_CONFIRM) {
-        out.cues[out.cueCount++] = (out.subCursor != 0) ? 2 : 3;
-        out.busy = -3;
-        out.confirmTimer = 0x23;
-    }
-    if (pressed & PAD_CANCEL) {
-        out.cues[out.cueCount++] = 3;
-        out.busy = -4;
-    }
-    if (pressed & PAD_LEFT) {
-        out.cues[out.cueCount++] = 1;
-        out.subCursor = 1;
-    }
-    if (pressed & PAD_RIGHT) {
-        out.cues[out.cueCount++] = 1;
-        out.subCursor = 0;
-    }
-    return out;
-}
-
 static void UpdateSavePrompt(void *ot) {
     MenuPromptOutcome choice;
     s32 cue;
@@ -263,56 +203,6 @@ static void UpdateSavePrompt(void *ot) {
     g_MenuConfirmTimer = choice.confirmTimer;
     g_MenuSubCursor = (u8)choice.subCursor;
     DrawSavePromptButtons(ot, 0);
-}
-
-/* The class list. Picking the class already in use just closes it. */
-/*
- * Picking the class already in use just closes the prompt: the change resets
- * the player's progress through the series, so choosing what they already
- * have must not cost them it. Up and down wrap through the classes they have
- * reached, and as on the save prompt confirm reads the cursor before either
- * direction can move it.
- */
-static void Cue(MenuClassPromptOutcome *out, s32 cue) {
-    out->effects[out->effectCount].kind = MENU_PROMPT_CUE;
-    out->effects[out->effectCount++].value = cue;
-}
-
-MenuClassPromptOutcome DecideClassPrompt(u16 pressed, s32 busy,
-                                         s32 confirmTimer, s32 subCursor,
-                                         s32 currentClass, s32 maxClass,
-                                         s32 changeApplied) {
-    MenuClassPromptOutcome out;
-    out.effectCount = 0;
-    out.busy = busy;
-    out.confirmTimer = confirmTimer;
-    out.subCursor = subCursor;
-    out.changeApplied = changeApplied;
-    if (pressed & PAD_CONFIRM) {
-        Cue(&out, 2);
-        if (out.subCursor == currentClass) {
-            out.busy = 0;
-        } else {
-            out.busy = -5;
-            out.changeApplied = 0;
-            out.confirmTimer = 0x23;
-            out.effects[out.effectCount].kind = MENU_PROMPT_CURTAIN;
-            out.effects[out.effectCount++].value = 0;
-        }
-    }
-    if (pressed & PAD_CANCEL) {
-        Cue(&out, 3);
-        out.busy = 0;
-    }
-    if (pressed & PAD_UP) {
-        Cue(&out, 1);
-        out.subCursor = (out.subCursor != 0) ? out.subCursor - 1 : maxClass;
-    }
-    if (pressed & PAD_DOWN) {
-        Cue(&out, 1);
-        out.subCursor = (out.subCursor < maxClass) ? out.subCursor + 1 : 0;
-    }
-    return out;
 }
 
 static void UpdateClassPrompt(void *ot) {

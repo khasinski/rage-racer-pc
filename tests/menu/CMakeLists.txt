@@ -759,7 +759,8 @@ set_tests_properties(ending_still PROPERTIES LABELS functional)
 
 add_executable(course_select_screen_tests
     course_select_screen_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/course_select_screen.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/course_select_screen.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/course_select_input.c)
 target_include_directories(course_select_screen_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
