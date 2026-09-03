@@ -7,7 +7,15 @@
  */
 
 #include <libgte.h>
+#include <limits.h>
 #include <stdint.h>
+
+static short GteRegisterValue(int64_t value) {
+    uint16_t bits = (uint16_t)value;
+
+    if (bits <= INT16_MAX) return (short)bits;
+    return (short)((int32_t)bits - INT32_C(0x10000));
+}
 
 MATRIX *MulMatrix2(MATRIX *left, MATRIX *right) {
     MATRIX result = *right;
@@ -22,7 +30,7 @@ MATRIX *MulMatrix2(MATRIX *left, MATRIX *right) {
                 sum += (int64_t)left->m[row][inner] *
                        right->m[inner][column];
             }
-            result.m[row][column] = (short)(sum >> 12);
+            result.m[row][column] = GteRegisterValue(sum >> 12);
         }
     }
     for (row = 0; row < 3; row++) {
@@ -42,7 +50,7 @@ short *ApplyMatrixSV(void *matrix, void *input, short *output) {
         int64_t sum = (int64_t)m->m[row][0] * v->vx
                     + (int64_t)m->m[row][1] * v->vy
                     + (int64_t)m->m[row][2] * v->vz;
-        output[row] = (short)(sum >> 12);
+        output[row] = GteRegisterValue(sum >> 12);
     }
     return output;
 }

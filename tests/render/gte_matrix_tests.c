@@ -41,7 +41,7 @@ static int TestWideAccumulator(void) {
     MATRIX right;
     SVECTOR vector = {32767, 32767, 32767, 0};
     short output[3];
-    short expected = (short)(((int64_t)32767 * 32767 * 3) >> 12);
+    const short expected = -48;
     int row;
     int column;
 
