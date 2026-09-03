@@ -82,7 +82,7 @@ static void TestSteerNavigation(void) {
     ResetState();
     g_PadPressed = PAD_CONFIRM;
     UpdateNegconSteerPlayScreen();
-    CHECK(g_GameMode == 11);
+    CHECK(g_GameMode == OPTION_MODE_NEGCON_MAX_TWIST);
     CHECK(g_AnimTimer == 11);
     CHECK(g_SetupArrowPulse == 116);
     CHECK(s_soundCueCount == 1 && s_soundCues[0] == 2);
@@ -92,7 +92,7 @@ static void TestSteerNavigation(void) {
     ResetState();
     g_PadPressed = PAD_CANCEL;
     UpdateNegconSteerPlayScreen();
-    CHECK(g_GameMode == 1);
+    CHECK(g_GameMode == OPTION_MODE_ROOT);
     CHECK(s_soundCueCount == 1 && s_soundCues[0] == 3);
     CHECK(s_restoreCount == 1);
 }
@@ -101,7 +101,7 @@ static void TestTwistNavigation(void) {
     ResetState();
     g_PadPressed = PAD_CONFIRM;
     UpdateNegconMaxTwistScreen();
-    CHECK(g_GameMode == 1);
+    CHECK(g_GameMode == OPTION_MODE_ROOT);
     CHECK(g_AnimTimer == 11);
     CHECK(g_SetupArrowPulse == 20);
     CHECK(s_soundCueCount == 1 && s_soundCues[0] == 2);
@@ -111,7 +111,7 @@ static void TestTwistNavigation(void) {
     ResetState();
     g_PadPressed = PAD_CANCEL;
     UpdateNegconMaxTwistScreen();
-    CHECK(g_GameMode == 1);
+    CHECK(g_GameMode == OPTION_MODE_ROOT);
     CHECK(s_soundCueCount == 1 && s_soundCues[0] == 3);
     CHECK(s_restoreCount == 1);
 }
@@ -135,13 +135,26 @@ static void TestSettingRangeAndInputOrder(void) {
     UpdateNegconSteerPlayScreen();
     CHECK(g_NegconSteerPlay == 2);
     CHECK(s_soundCueCount == 2 && s_soundCues[0] == 8 && s_soundCues[1] == 8);
+
+    ResetState();
+    g_NegconSteerPlay = 2;
+    g_PadPressed = PAD_CANCEL | PAD_LEFT;
+    UpdateNegconSteerPlayScreen();
+    CHECK(g_GameMode == OPTION_MODE_ROOT && g_NegconSteerPlay == 2);
+    CHECK(s_restoreCount == 1);
+
+    ResetState();
+    g_NegconMaxTwist = 2;
+    g_PadPressed = PAD_CONFIRM | PAD_RIGHT;
+    UpdateNegconMaxTwistScreen();
+    CHECK(g_GameMode == OPTION_MODE_ROOT && g_NegconMaxTwist == 2);
 }
 
 static void TestDisconnectRestoresSettings(void) {
     ResetState();
     g_PadType = PAD_TYPE_DIGITAL;
     UpdateNegconMaxTwistScreen();
-    CHECK(g_GameMode == 1);
+    CHECK(g_GameMode == OPTION_MODE_ROOT);
     CHECK(s_restoreCount == 1);
     CheckSharedFrame(0, 1);
 }

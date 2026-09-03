@@ -40,8 +40,9 @@ void UpdateNegconSteerPlayScreen(void) {
     } else if (g_PadPressed & PAD_CONFIRM) {
         PlaySoundCue(2);
         g_GameMode = OPTION_MODE_NEGCON_MAX_TWIST;
+    } else {
+        AdjustCalibrationValue(&g_NegconSteerPlay);
     }
-    AdjustCalibrationValue(&g_NegconSteerPlay);
     FinishCalibrationFrame(DrawNegconSteerPlayScreen);
 }
 
@@ -54,7 +55,8 @@ void UpdateNegconMaxTwistScreen(void) {
     } else if (g_PadPressed & PAD_CONFIRM) {
         PlaySoundCue(2);
         g_GameMode = OPTION_MODE_ROOT;
+    } else {
+        AdjustCalibrationValue(&g_NegconMaxTwist);
     }
-    AdjustCalibrationValue(&g_NegconMaxTwist);
     FinishCalibrationFrame(DrawNegconMaxTwistScreen);
 }

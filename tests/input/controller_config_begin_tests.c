@@ -8,8 +8,6 @@ u16 g_PadMappingIndexSaved;
 u16 g_NegconMappingIndexSaved;
 s32 g_ControllerSceneAngleX;
 s32 g_ControllerSceneAngleY;
-s32 g_PadConfigFlipPhase;
-s32 g_PadConfigFlipTimer;
 
 #define CHECK(condition)                                                       \
     do {                                                                       \
@@ -25,8 +23,6 @@ int main(void) {
     g_NegconMappingIndex = 20;
     g_ControllerSceneAngleX = 1;
     g_ControllerSceneAngleY = 2;
-    g_PadConfigFlipPhase = 3;
-    g_PadConfigFlipTimer = 4;
 
     BeginControllerConfig();
 
@@ -35,7 +31,6 @@ int main(void) {
     CHECK(g_PadMappingIndexSaved == CONTROLLER_MAPPING_FIRST);
     CHECK(g_NegconMappingIndexSaved == CONTROLLER_MAPPING_LAST);
     CHECK(g_ControllerSceneAngleX == 0 && g_ControllerSceneAngleY == 0);
-    CHECK(g_PadConfigFlipPhase == 0 && g_PadConfigFlipTimer == 0);
 
     puts("controller config begins from normalized mapping selections");
     return 0;

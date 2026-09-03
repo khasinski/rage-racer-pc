@@ -10,8 +10,6 @@ void BeginControllerConfig(void) {
     g_NegconMappingIndex = ClampControllerMappingIndex(g_NegconMappingIndex);
     g_ControllerSceneAngleY = 0;
     g_ControllerSceneAngleX = 0;
-    g_PadConfigFlipTimer = 0;
-    g_PadConfigFlipPhase = 0;
     g_PadMappingIndexSaved = (u16)g_PadMappingIndex;
     g_NegconMappingIndexSaved = (u16)g_NegconMappingIndex;
 }
