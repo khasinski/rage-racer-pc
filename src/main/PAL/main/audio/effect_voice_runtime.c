@@ -5,7 +5,6 @@
 
 enum {
     BASIC_EFFECT_VOICE_FIRST = 8,
-    BASIC_EFFECT_VOICE_COUNT = 2,
     INDEXED_EFFECT_VOICE = 20,
     PAN_EFFECT_VOICE = 21,
     PAN_EFFECT_PROGRAM = 15,
@@ -13,6 +12,12 @@ enum {
     AUDIBLE_PAN_VOLUME_MIN = 2,
     SOUND_SCALE_ONE = 128,
 };
+
+static void StartBasicEffectVoice(s16 voice, const MusicChannel *channel) {
+    SsUtKeyOnV(voice, g_SoundScale.vabIds[AUDIO_SLOT_MAIN_CUES],
+               channel->left.half[0], channel->right.half[0],
+               EFFECT_BASE_NOTE, 0, 0, 0);
+}
 
 static s32 ScaleVoiceVolume(s32 volume) {
     return ClampVoiceVolume(volume * g_SoundScale.scale / SOUND_SCALE_ONE);
@@ -163,14 +168,13 @@ void ForceIndexedEffectVoiceEnabled(s32 enabled) {
 void UpdateBasicEffectVoices(void) {
     s32 i;
 
-    for (i = 0; i < BASIC_EFFECT_VOICE_COUNT; i++) {
+    for (i = 0; i < AUDIO_MUSIC_CHANNEL_COUNT; i++) {
         MusicChannel *channel = &g_MusicChannels[i];
         s16 voice = (s16)(BASIC_EFFECT_VOICE_FIRST + i);
 
         switch (channel->mode) {
         case MUSIC_CHANNEL_START:
-            SsUtKeyOnV(voice, g_SoundScale.vabIds[0], channel->left.half[0],
-                       channel->right.half[0], EFFECT_BASE_NOTE, 0, 0, 0);
+            StartBasicEffectVoice(voice, channel);
             /* A newly keyed voice needs the same volume update. */
             RAGE_FALLTHROUGH;
         case MUSIC_CHANNEL_UPDATE:
@@ -193,7 +197,7 @@ void UpdateBasicEffectVoices(void) {
 void ForceBasicEffectVoicesEnabled(s32 enabled) {
     s32 index;
 
-    for (index = 0; index < BASIC_EFFECT_VOICE_COUNT; index++) {
+    for (index = 0; index < AUDIO_MUSIC_CHANNEL_COUNT; index++) {
         MusicChannel *channel = &g_MusicChannels[index];
         s16 voice = (s16)(BASIC_EFFECT_VOICE_FIRST + index);
 
@@ -204,8 +208,7 @@ void ForceBasicEffectVoicesEnabled(s32 enabled) {
             if (channel->left.value < 0) {
                 continue;
             }
-            SsUtKeyOnV(voice, g_SoundScale.vabIds[0], channel->left.half[0],
-                       0, EFFECT_BASE_NOTE, 0, 0, 0);
+            StartBasicEffectVoice(voice, channel);
             SsUtSetVVol(voice, left, right);
         } else {
             SsUtKeyOffV(voice);

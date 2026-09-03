@@ -213,7 +213,8 @@ static int TestBasicEffectVoices(void) {
     ResetCalls();
     ForceBasicEffectVoicesEnabled(1);
     CHECK(s_keyOnCount == 1 && s_volumeCount == 1);
-    CHECK(s_keyOn[0].voice == 8 && s_keyOn[0].tone == 0);
+    CHECK(s_keyOn[0].voice == 8 && s_keyOn[0].program == 12);
+    CHECK(s_keyOn[0].tone == 3);
     ResetCalls();
     ForceBasicEffectVoicesEnabled(0);
     CHECK(s_keyOffCount == 2 && s_keyOff[0].voice == 8);
