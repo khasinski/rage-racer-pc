@@ -10,6 +10,8 @@ static void MeasureReplayArc(GameCarRuntime *car, CarTrackWork *work,
                              const GameTrackPoint *point,
                              const GameTrackPoint *nextPoint) {
     s32 sweptAngle;
+    s32 sweptContribution;
+    s32 remainingContribution;
     s32 lateralOffset;
 
     CarTrackMeasureArc(work, work->arcIndex, car->x, car->z, point,
@@ -20,17 +22,14 @@ static void MeasureReplayArc(GameCarRuntime *car, CarTrackWork *work,
     }
     sweptAngle = GetAngleDistance(work->pointAngle, work->sweptAngle);
     work->sweptAngle = sweptAngle;
-    {
-        s32 sweptContribution = WrapSigned32(
-            (int64_t)WrapSigned16(sweptAngle) * work->pointRadius.value);
-        s32 remainingContribution = WrapSigned32(
-            (int64_t)(work->arcSpan - WrapSigned16(sweptAngle)) *
-            work->nextPointRadius.value);
-
-        work->pointRadius.value = WrapSigned32(
-            (int64_t)sweptContribution + remainingContribution) /
-            work->arcSpan;
-    }
+    sweptContribution = WrapSigned32(
+        (int64_t)WrapSigned16(sweptAngle) * work->pointRadius.value);
+    remainingContribution = WrapSigned32(
+        (int64_t)(work->arcSpan - WrapSigned16(sweptAngle)) *
+        work->nextPointRadius.value);
+    work->pointRadius.value = WrapSigned32(
+        (int64_t)sweptContribution + remainingContribution) /
+        work->arcSpan;
 
     lateralOffset = WrapSigned16(
         (s32)work->carRadius.half.low - work->pointRadius.half.low);
