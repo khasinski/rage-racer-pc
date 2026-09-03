@@ -77,6 +77,7 @@ CarCollisionHit FindFirstCarCollisionQuad(
 
 void UpdateCarSteeringGrip(PlayerCarRuntime *car, const GameCarSpec *spec,
                            s32 gripBudget);
+void AdvanceCarJumpArc(GameCarRuntime *car, s32 groundHeight);
 CarDrivetrainLoads CalculateCarDrivetrainLoads(
     PlayerCarRuntime *car, const GameCarSpec *spec, s32 netTorque,
     s32 bandScale, s32 initialAcceleration);

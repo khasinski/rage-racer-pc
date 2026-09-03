@@ -9,35 +9,6 @@ enum {
     LANDING_SOUND_CUE = 0xE,
 };
 
-static void AdvancePlayerJumpArc(PlayerCarRuntime *car, s32 groundHeight) {
-    s32 tick = car->verticalMotionTimer + 1;
-
-    car->verticalMotionTimer = tick;
-    if (car->verticalMotionState == CAR_VERTICAL_RISING) {
-        s32 rise = (s16)tick;
-
-        car->y += car->verticalMotionRate * rise +
-                  rise * rise * CAR_JUMP_RISE_CURVE / CAR_JUMP_CURVE_SCALE;
-        if (car->y >= groundHeight) {
-            car->verticalMotionState = CAR_VERTICAL_GROUNDED;
-        }
-    } else if (car->verticalMotionState == CAR_VERTICAL_AT_CREST) {
-        car->y = car->verticalTargetY;
-        if (groundHeight - car->verticalMotionRate > car->verticalTargetY) {
-            car->verticalMotionState = CAR_VERTICAL_FALLING;
-            car->verticalMotionRate = car->verticalMotionTimer;
-        }
-    } else {
-        s32 fall = (s16)tick - car->verticalMotionRate;
-
-        car->y = car->verticalTargetY +
-                 fall * fall * CAR_JUMP_FALL_CURVE / CAR_JUMP_CURVE_SCALE;
-        if (car->y >= groundHeight) {
-            car->verticalMotionState = CAR_VERTICAL_GROUNDED;
-        }
-    }
-}
-
 static void ReconnectPlayerDrivetrain(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
 
@@ -72,7 +43,7 @@ void UpdatePlayerJump(PlayerCarRuntime *car, s32 groundHeight) {
         return;
     }
 
-    AdvancePlayerJumpArc(car, groundHeight);
+    AdvanceCarJumpArc(AsRivalCar(car), groundHeight);
     if (car->verticalMotionState == CAR_VERTICAL_GROUNDED) {
         LandPlayerCar(car, groundHeight);
     }

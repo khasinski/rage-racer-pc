@@ -2,6 +2,7 @@
 #include "game/car_internal.h"
 #include "game/race.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -124,6 +125,13 @@ int main(void) {
     UpdatePlayerJump(&car, 10);
     CHECK(car.drive.motionState == CAR_MOTION_AIRBORNE);
     CHECK(g_ShiftTargetRpm == 1600000);
+
+    Reset(&car);
+    car.verticalMotionState = CAR_VERTICAL_RISING;
+    car.verticalMotionTimer = INT16_MAX;
+    car.verticalMotionRate = INT16_MAX;
+    UpdatePlayerJump(&car, INT_MAX);
+    CHECK(car.verticalMotionTimer == INT16_MIN);
 
     if (s_failures != 0) {
         printf("%d player jump checks failed\n", s_failures);
