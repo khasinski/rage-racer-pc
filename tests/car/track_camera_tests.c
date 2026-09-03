@@ -347,6 +347,27 @@ int main(void) {
                    g_CamPathOffset[0]);
             s_failures++;
         }
+
+        memset(&car, 0, sizeof(car));
+        car.x = INT_MAX;
+        car.y = INT_MAX;
+        car.z = INT_MAX;
+        car.bodyPitch = INT_MAX;
+        car.tiltCounter = 1;
+        CameraViewFromCarBlock(&car, &extremeView);
+        if (extremeView.angleX != INT_MIN) {
+            printf("FAIL wrapped car camera pitch: %d\n",
+                   extremeView.angleX);
+            s_failures++;
+        }
+
+        g_OrbitCameraYaw = INT_MIN;
+        g_OrbitCameraDistance = INT_MAX;
+        CameraViewFromOrbit(&car, &extremeView);
+        if (g_CameraModePrev != TRACK_CAMERA_ORBIT) {
+            puts("FAIL extreme orbit camera did not complete");
+            s_failures++;
+        }
     }
 
     /*

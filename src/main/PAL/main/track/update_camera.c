@@ -21,10 +21,10 @@ void CameraViewFromCarBlock(GameRenderObject *car, GameViewWork *view) {
     cameraLift[2] = 0;
     TransposeMatrix(&objectRotation, &matrixWork);
     ApplyMatrix(&matrixWork, &cameraLift[0], &cameraLiftWorld[0]);
-    view->x += cameraLiftWorld[0] >> 4;
-    view->y += cameraLiftWorld[1] >> 4;
-    view->z += cameraLiftWorld[2] >> 4;
-    view->angleX += car->tiltCounter;
+    view->x = CameraAddWord(view->x, cameraLiftWorld[0] >> 4);
+    view->y = CameraAddWord(view->y, cameraLiftWorld[1] >> 4);
+    view->z = CameraAddWord(view->z, cameraLiftWorld[2] >> 4);
+    view->angleX = CameraAddWord(view->angleX, car->tiltCounter);
     g_CameraModePrev = TRACK_CAMERA_CAR;
 }
 
@@ -41,7 +41,8 @@ void CameraViewFromOrbit(GameRenderObject *car, GameViewWork *view) {
     Matrix cameraToWorld;
     Matrix objectRotation;
     CameraLoadViewPositionFromCar(view, car);
-    BuildRotMatrixY(&cameraRotation, 0 - g_OrbitCameraYaw);
+    BuildRotMatrixY(&cameraRotation,
+                    CameraSubtractWord(0, g_OrbitCameraYaw));
     CameraBuildCarRotation(&objectRotation, car);
     TransposeMatrix(&objectRotation, &inverseObjectRotation);
     MulMatrix2(&cameraRotation, &objectRotation);
@@ -51,9 +52,9 @@ void CameraViewFromOrbit(GameRenderObject *car, GameViewWork *view) {
     focusOffset[2] = 0x32;
     ApplyMatrixLV(&inverseObjectRotation, &focusOffset[0],
                   &focusWorld[0]);
-    view->x += focusWorld[0];
-    view->y += focusWorld[1];
-    view->z += focusWorld[2];
+    view->x = CameraAddWord(view->x, focusWorld[0]);
+    view->y = CameraAddWord(view->y, focusWorld[1]);
+    view->z = CameraAddWord(view->z, focusWorld[2]);
     eyeOffset[0] = 0;
     eyeOffset[1] = 0;
     eyeOffset[2] = g_OrbitCameraDistance;
@@ -65,9 +66,10 @@ void CameraViewFromOrbit(GameRenderObject *car, GameViewWork *view) {
     view->angleY = 0x400 - (Atan2(eyeWorld[0], eyeWorld[2]) & 0xFFF);
     view->angleZ = car->bodyRoll;
     g_CameraModePrev = TRACK_CAMERA_ORBIT;
-    view->x -= eyeWorld[0];
-    view->y = (view->y - 0x28) - eyeWorld[1];
-    view->z -= eyeWorld[2];
+    view->x = CameraSubtractWord(view->x, eyeWorld[0]);
+    view->y = CameraSubtractWord(
+        CameraSubtractWord(view->y, 0x28), eyeWorld[1]);
+    view->z = CameraSubtractWord(view->z, eyeWorld[2]);
 }
 
 void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
