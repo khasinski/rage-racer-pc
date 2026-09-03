@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "game/car.h"
 #include "game/race.h"
 #include "runtime_config.h"
 
@@ -68,8 +69,8 @@ void ContentOptionsApply(void) {
         fprintf(stderr,
                 "rage-port: content.car_names must be international or japanese; using international\n");
     } else if (nameStyle != NULL && strcmp(nameStyle, "japanese") == 0) {
-        for (modelIndex = 0; modelIndex < 13; modelIndex++) {
-            g_NativeCarNames[modelIndex] = (char *)ContentCarNameForStyle(
+        for (modelIndex = 0; modelIndex < GAME_CAR_COUNT; modelIndex++) {
+            g_NativeCarNames[modelIndex] = ContentCarNameForStyle(
                 modelIndex, g_NativeCarNames[modelIndex], nameStyle);
         }
         fprintf(stderr, "rage-port: using Japanese-release car names\n");

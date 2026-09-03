@@ -15,7 +15,8 @@
 
 #include "content_options.h"
 
-char *g_NativeCarNames[13];
+enum { TEST_CAR_COUNT = 13 };
+const char *g_NativeCarNames[TEST_CAR_COUNT];
 typedef struct PrologueLine {
     short x;
     short y;
@@ -51,12 +52,12 @@ const char *RuntimeConfigGet(const char *key) {
     return NULL;
 }
 
-static const char *kInternational[13] = {
+static const char *const kInternational[TEST_CAR_COUNT] = {
     "ERRISO", "ABEILLE", "PEGASE", "ESPERANZA", "ACCERON", "BAYONET",
     "HIJACK", "FATALITA", "ISTANTE", "GHEPARDO", "VAINQURE", "BULSHADE",
     "SQUALDON",
 };
-static const char *kJapanese[13] = {
+static const char *const kJapanese[TEST_CAR_COUNT] = {
     "ALOUETTE", "ABEILLE", "PEGASE", "ESPERANZA", "INSTINCT", "BAYONET",
     "HIJACK", "FATALITA", "ISTANTE", "GHEPARDO", "VICTOIRE", "TEMPEST",
     "DRAGONE",
@@ -92,7 +93,9 @@ static const struct {
  * alone that is visibly not the Japanese version. */
 static void LoadShippedContent(void) {
     int i;
-    for (i = 0; i < 13; i++) g_NativeCarNames[i] = (char *)kInternational[i];
+    for (i = 0; i < TEST_CAR_COUNT; i++) {
+        g_NativeCarNames[i] = kInternational[i];
+    }
     for (i = 0; i < 17; i++) {
         g_PrologueLines[i].x = (short)(1000 + i);
         g_PrologueLines[i].y = (short)(2000 + i);
@@ -104,7 +107,7 @@ static void LoadShippedContent(void) {
 static void ExpectContentUntouched(const char *what) {
     char label[128];
     int i;
-    for (i = 0; i < 13; i++) {
+    for (i = 0; i < TEST_CAR_COUNT; i++) {
         snprintf(label, sizeof(label), "%s leaves car %d alone", what, i);
         ExpectName(label, kInternational[i], g_NativeCarNames[i]);
     }
@@ -158,7 +161,7 @@ static void SettingsAreIndependentTests(void) {
                g_NativeCarNames[0]);
     ExpectName("prologue alone swaps the prologue",
                kJapanesePrologue[0].text, (char *)g_PrologueLines[0].text);
-    for (i = 0; i < 13; i++)
+    for (i = 0; i < TEST_CAR_COUNT; i++)
         ExpectName("prologue alone leaves every name", kInternational[i],
                    g_NativeCarNames[i]);
 }
@@ -168,7 +171,7 @@ static void SettingsAreIndependentTests(void) {
 static void CarNameTests(void) {
     int i;
 
-    for (i = 0; i < 13; i++) {
+    for (i = 0; i < TEST_CAR_COUNT; i++) {
         ExpectName("no style keeps the shipped name", kInternational[i],
                    ContentCarNameForStyle(i, kInternational[i], NULL));
         ExpectName("the shipped style keeps the shipped name",
@@ -193,7 +196,7 @@ static void CarNameTests(void) {
     s_prologue = NULL;
     ContentOptionsApply();
     ContentOptionsApply();
-    for (i = 0; i < 13; i++)
+    for (i = 0; i < TEST_CAR_COUNT; i++)
         ExpectName("applying twice is applying once", kJapanese[i],
                    g_NativeCarNames[i]);
 }

@@ -269,8 +269,8 @@ extern char g_CaptionRanking2[];
 extern char g_CaptionTotalMoney[];
 extern char g_CaptionTotalTime[];
 extern char g_CaptionTotalTime2[];
-extern char *g_NativeCarClassNames[];
-extern char *g_NativeCarNames[];
+extern const char *g_NativeCarClassNames[];
+extern const char *g_NativeCarNames[];
 #define g_CarClassNames g_NativeCarClassNames
 #define g_CarNames g_NativeCarNames
 extern char g_ChanceDigits[6][2];

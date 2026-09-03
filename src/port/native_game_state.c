@@ -204,7 +204,7 @@ static char g_CarNameErriso[] = "ERRISO";
 /* Retail g_CarNames stores pointers from the last adjacent string back to the
  * first. The model index order therefore runs ERRISO..SQUALDON; using the
  * declaration order made record tables label every car as another model. */
-char *g_NativeCarNames[13] = {
+const char *g_NativeCarNames[GAME_CAR_COUNT] = {
     g_CarNameErriso, g_CarNameAbeille, g_CarNamePegase,
     g_CarNameEsperanza, g_CarNameAcceron, g_CarNameBayonet,
     g_CarNameHijack, g_CarNameFatalita, g_CarNameIstante,
@@ -215,7 +215,7 @@ static char g_CarClassAge[] = "AGE";
 static char g_CarClassGnade[] = "GNADE";
 static char g_CarClassLizard[] = "LIZARD";
 static char g_CarClassAssolute[] = "ASSOLUTE";
-char *g_NativeCarClassNames[13] = {
+const char *g_NativeCarClassNames[GAME_CAR_COUNT] = {
     g_CarClassAge, g_CarClassAge, g_CarClassAge, g_CarClassGnade,
     g_CarClassLizard, g_CarClassLizard, g_CarClassLizard,
     g_CarClassAssolute, g_CarClassAssolute, g_CarClassAssolute,
@@ -225,7 +225,7 @@ static char g_CarManufacturerAge[] = "AGE";
 static char g_CarManufacturerGnade[] = "GNADE";
 static char g_CarManufacturerLeizard[] = "LEIZARD";
 static char g_CarManufacturerAssoluto[] = "ASSOLUTO";
-char *g_NativeCarManufacturerNames[13] = {
+const char *g_NativeCarManufacturerNames[GAME_CAR_COUNT] = {
     g_CarManufacturerAge, g_CarManufacturerAge, g_CarManufacturerAge,
     g_CarManufacturerGnade, g_CarManufacturerLeizard,
     g_CarManufacturerLeizard, g_CarManufacturerLeizard,
@@ -246,7 +246,7 @@ static char g_EngineSpecLabel09[] = "CAR-9";
 static char g_EngineSpecLabel10[] = "CAR-A";
 static char g_EngineSpecLabel11[] = "CAR-B";
 static char g_EngineSpecLabel12[] = "CAR-C";
-char *g_NativeEngineSpecLabels[13] = {
+const char *g_NativeEngineSpecLabels[GAME_CAR_COUNT] = {
     g_EngineSpecLabel00, g_EngineSpecLabel01, g_EngineSpecLabel02,
     g_EngineSpecLabel03, g_EngineSpecLabel04, g_EngineSpecLabel05,
     g_EngineSpecLabel06, g_EngineSpecLabel07, g_EngineSpecLabel08,

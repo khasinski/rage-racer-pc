@@ -455,10 +455,10 @@ enum {
     CAR_TUNE_UP_PRICE_COUNT = 31,
 };
 extern s32 g_CarTuneUpPriceTable[CAR_TUNE_UP_PRICE_COUNT];
-extern char *g_NativeCarManufacturerNames[];
+extern const char *g_NativeCarManufacturerNames[];
 #define g_CarManufacturerNames g_NativeCarManufacturerNames
 /* The eight PS / rpm / kgm captions DrawEngineSpecLabel picks between. */
-extern char *g_NativeEngineSpecLabels[];
+extern const char *g_NativeEngineSpecLabels[];
 #define g_EngineSpecLabels g_NativeEngineSpecLabels
 extern s32 g_LogoSampleCharIndex;
 extern s32 g_LogoSampleBackIndex;
