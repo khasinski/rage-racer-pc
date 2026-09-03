@@ -355,19 +355,29 @@ enum {
 };
 extern const unsigned char g_UiScriptData[RAGE_UI_SCRIPT_DATA_SIZE];
 
-static void *ResolveUiDataAddress(u32 address) {
+static void *ResolveUiDataAddress(u32 address, size_t size) {
     size_t offset;
+
     if (address < RAGE_UI_SCRIPT_DATA_ADDRESS) return NULL;
     offset = (size_t)(address - RAGE_UI_SCRIPT_DATA_ADDRESS);
-    if (offset >= RAGE_UI_SCRIPT_DATA_SIZE) return NULL;
+    if (offset > RAGE_UI_SCRIPT_DATA_SIZE ||
+        size > RAGE_UI_SCRIPT_DATA_SIZE - offset) {
+        return NULL;
+    }
     return (void *)(g_UiScriptData + offset);
 }
 
 static int LoadTimedDrawScript(
     TimedDrawCommand *destination, size_t count, u32 retailAddress) {
-    const RageSerializedTimedDrawCommand *source =
-        ResolveUiDataAddress(retailAddress);
+    const RageSerializedTimedDrawCommand *source;
     size_t i;
+
+    if (count > RAGE_UI_SCRIPT_DATA_SIZE /
+                    sizeof(RageSerializedTimedDrawCommand)) {
+        return 0;
+    }
+    source = ResolveUiDataAddress(
+        retailAddress, count * sizeof(RageSerializedTimedDrawCommand));
     if (source == NULL) return 0;
     for (i = 0; i < count; i++) {
         destination[i].time = source[i].time;
@@ -377,9 +387,9 @@ static int LoadTimedDrawScript(
             destination[i].motion.value = (s32)source[i].motionAddress;
         } else {
             destination[i].shape.pointer =
-                ResolveUiDataAddress(source[i].shapeAddress);
+                ResolveUiDataAddress(source[i].shapeAddress, 1);
             destination[i].motion.pointer =
-                ResolveUiDataAddress(source[i].motionAddress);
+                ResolveUiDataAddress(source[i].motionAddress, 1);
             if (destination[i].shape.pointer == NULL ||
                 destination[i].motion.pointer == NULL) {
                 return 0;
