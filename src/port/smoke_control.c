@@ -1,5 +1,7 @@
-#include <stdint.h>
 #include <ctype.h>
+#include <errno.h>
+#include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,8 +30,14 @@ static int SmokeFrameListContains(const char *list, int frame) {
 
     while (cursor != NULL && *cursor != '\0') {
         char *end;
-        long value = strtol(cursor, &end, 10);
-        if (end == cursor) return 0;
+        long value;
+
+        errno = 0;
+        value = strtol(cursor, &end, 10);
+        if (errno == ERANGE || end == cursor || value < INT_MIN ||
+            value > INT_MAX) {
+            return 0;
+        }
         if (value == frame) return 1;
         if (*end == '\0') return 0;
         if (*end != ',') return 0;
