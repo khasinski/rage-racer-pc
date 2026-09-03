@@ -2,6 +2,7 @@
 #include <float.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "render/render_world.h"
 #include "render/render_world_frame.h"
@@ -600,6 +601,25 @@ static void test_shadow_map_rejects_non_finite_geometry(void) {
     light = RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
     EXPECT_EQ(0, RenderBuildDirectionalShadowMap(
                      &center, &light, INFINITY, 2048, &shadow));
+    memset(&shadow, 0x7f, sizeof(shadow));
+    EXPECT_EQ(0, RenderBuildDirectionalShadowMap(
+                     &center, &light, FLT_MIN, UINT32_MAX, &shadow));
+    EXPECT_EQ(0, (int)shadow.texelWorldSize);
+
+    light = (RageRenderVec3){0.0f, FLT_MAX, 0.0f};
+    EXPECT_EQ(1, RenderBuildDirectionalShadowMap(
+                     &center, &light, 4096.0f, 2048, &shadow));
+    EXPECT_EQ(1, shadow.row2.y > 0.99f);
+
+    {
+        RageRenderVec3 projected = {1.0f, 2.0f, 3.0f};
+        RageRenderVec3 invalidPoint = {INFINITY, 0.0f, 0.0f};
+
+        RenderProjectShadowPoint(&shadow, &invalidPoint, &projected);
+        EXPECT_EQ(0, (int)projected.x);
+        EXPECT_EQ(0, (int)projected.y);
+        EXPECT_EQ(0, (int)projected.z);
+    }
 }
 
 static void test_default_shadow_light_stays_near_overhead(void) {
