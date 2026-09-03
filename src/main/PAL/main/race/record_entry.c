@@ -69,6 +69,9 @@ static s32 AnyRecordWasInserted(void) {
 }
 
 static void UpdateRecordEntryFadeIn(void) {
+    if (g_SceneTimer > RECORD_ENTRY_OPAQUE_FADE) {
+        g_SceneTimer = RECORD_ENTRY_OPAQUE_FADE;
+    }
     g_SceneTimer = g_SceneTimer <= RECORD_ENTRY_FADE_IN_STEP
                        ? 0
                        : g_SceneTimer - RECORD_ENTRY_FADE_IN_STEP;
@@ -128,6 +131,9 @@ static void UpdateAfterLapRecord(void) {
 }
 
 static void UpdateRecordPanelSwitch(void) {
+    if (g_RecordPanelSlide > 0) {
+        g_RecordPanelSlide = 0;
+    }
     g_RecordPanelSlide =
         g_RecordPanelSlide <= -RECORD_ENTRY_PANEL_WIDTH + RECORD_ENTRY_PANEL_STEP
             ? -RECORD_ENTRY_PANEL_WIDTH
@@ -180,6 +186,9 @@ static void UpdateBeforeRecordEntryExit(void) {
 }
 
 static void UpdateRecordEntryFadeOut(void) {
+    if (g_SceneTimer < 0) {
+        g_SceneTimer = 0;
+    }
     g_SceneTimer =
         g_SceneTimer >= RECORD_ENTRY_OPAQUE_FADE - RECORD_ENTRY_FADE_OUT_STEP
             ? RECORD_ENTRY_OPAQUE_FADE

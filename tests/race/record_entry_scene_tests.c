@@ -217,6 +217,24 @@ int main(void) {
     CHECK(g_RecordEntryState == RECORD_ENTRY_STATE_WAIT_TO_FINISH);
 
     Reset();
+    g_RecordEntryState = RECORD_ENTRY_STATE_SWITCH_TO_RACE_RECORD;
+    g_RecordPanelSlide = INT_MAX;
+    UpdateRecordEntry();
+    CHECK(g_RecordPanelSlide == -8);
+
+    Reset();
+    g_RecordEntryState = RECORD_ENTRY_STATE_FADE_IN;
+    g_SceneTimer = INT_MAX;
+    UpdateRecordEntry();
+    CHECK(g_SceneTimer == 248);
+
+    Reset();
+    g_RecordEntryState = RECORD_ENTRY_STATE_FADE_OUT;
+    g_SceneTimer = INT_MIN;
+    UpdateRecordEntry();
+    CHECK(g_SceneTimer == 2 && g_SceneId == 0);
+
+    Reset();
     g_RecordEntryState = RECORD_ENTRY_STATE_EDIT_LAP_NAME;
     g_RankingInsertRow = -1;
     UpdateRecordEntry();
