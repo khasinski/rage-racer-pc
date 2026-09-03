@@ -298,6 +298,7 @@ static int TestCarAssetSlots(void) {
     size_t completeSize;
 
     memset(&storage, 0, sizeof(storage));
+    memset(&unknownModel, 0, sizeof(unknownModel));
     view->gearCount = 6;
     view->serializedModelSize = 24;
     serialized->modelOffset = SERIALIZED_CAR_MODEL_HEADER_SIZE;

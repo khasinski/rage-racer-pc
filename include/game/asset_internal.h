@@ -57,7 +57,8 @@ s32 IsValidTrackEventAsset(const struct TrackEventData *eventData,
                            size_t size);
 s32 InstallSerializedCarModelSlot(CarModelAsset *asset, size_t size,
                                   s32 index);
-CarModelAsset *FindSerializedCarModelAsset(CarModelAsset *nativeAsset);
+const CarModelAsset *FindSerializedCarModelAsset(
+    const CarModelAsset *nativeAsset);
 s32 IsValidImageAsset(const GameImageAssetHeaderWord *asset, size_t size);
 s32 IsValidImageEntry(const GameImageEntryHeader *entry, size_t size);
 

@@ -5,7 +5,8 @@
 #include <string.h>
 
 s32 RelocateCarModel(void) {
-    CarModelAsset *source = FindSerializedCarModelAsset(g_CarModelAsset);
+    const CarModelAsset *source =
+        FindSerializedCarModelAsset(g_CarModelAsset);
     const ModelBankHeader *sourceBank;
     CarModelAsset *destination;
     size_t byteCount;
@@ -14,7 +15,7 @@ s32 RelocateCarModel(void) {
         return 0;
     }
     sourceBank = GetModelBankHeader(
-        GetAssetBytes(source) + SERIALIZED_CAR_MODEL_HEADER_SIZE);
+        (const u8 *)source + SERIALIZED_CAR_MODEL_HEADER_SIZE);
     if (!IsValidModelBankAsset(sourceBank,
                                (size_t)source->serializedModelSize)) {
         return 0;
@@ -23,7 +24,7 @@ s32 RelocateCarModel(void) {
                 (size_t)source->serializedModelSize + sizeof(CarImageData);
     if (PortAssetRoomAt(g_AssetBase) < byteCount) return 0;
 
-    memcpy(g_AssetBase, source, byteCount);
+    memmove(g_AssetBase, source, byteCount);
     destination = GetCarModelAsset(g_AssetBase);
 
     if (!RegisterModelBank(

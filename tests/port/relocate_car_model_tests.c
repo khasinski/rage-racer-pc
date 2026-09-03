@@ -21,7 +21,8 @@ static s32 s_registerResult = 1;
 static size_t s_destinationRoom;
 static s32 s_failures;
 
-CarModelAsset *FindSerializedCarModelAsset(CarModelAsset *nativeAsset) {
+const CarModelAsset *FindSerializedCarModelAsset(
+    const CarModelAsset *nativeAsset) {
     (void)nativeAsset;
     return s_serializedAsset;
 }
@@ -81,6 +82,12 @@ int main(void) {
         max_align_t alignment;
         u8 bytes[TOTAL_SIZE + 16];
     } destination;
+    union {
+        max_align_t alignment;
+        u8 bytes[TOTAL_SIZE + 8];
+    } overlap;
+    u8 overlapExpected[TOTAL_SIZE];
+    CarModelAsset *overlapSource;
     s32 i;
 
     for (i = 0; i < TOTAL_SIZE; i++) source.bytes[i] = (u8)(i + 1);
@@ -111,6 +118,22 @@ int main(void) {
                                           SERIALIZED_CAR_MODEL_HEADER_SIZE) &&
               s_registeredSlot == 0,
           "relocated model bank registered");
+
+    for (i = 0; i < (s32)sizeof(overlap.bytes); i++) {
+        overlap.bytes[i] = (u8)(i + 17);
+    }
+    overlapSource = (CarModelAsset *)(void *)(overlap.bytes + 8);
+    overlapSource->serializedModelSize = MODEL_DATA_SIZE;
+    memcpy(overlapExpected, overlapSource, sizeof(overlapExpected));
+    s_serializedAsset = overlapSource;
+    g_AssetBase = overlap.bytes;
+    s_destinationRoom = sizeof(overlap.bytes);
+    Check(RelocateCarModel() == 1,
+          "overlapping serialized model is relocated");
+    Check(memcmp(overlap.bytes, overlapExpected, sizeof(overlapExpected)) == 0,
+          "overlapping relocation preserves every serialized byte");
+    g_AssetBase = destination.bytes;
+    s_destinationRoom = sizeof(destination.bytes);
 
     s_serializedAsset = NULL;
     s_installedAsset = NULL;

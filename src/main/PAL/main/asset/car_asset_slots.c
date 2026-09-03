@@ -6,7 +6,7 @@
 #include "game/render.h"
 
 static CarModelAsset s_NativeCarModelAssets[CAR_ASSET_SLOT_COUNT];
-static CarModelAsset *s_SerializedCarModelAssets[CAR_ASSET_SLOT_COUNT];
+static const CarModelAsset *s_SerializedCarModelAssets[CAR_ASSET_SLOT_COUNT];
 
 s32 IsValidSerializedCarModelAsset(const CarModelAsset *asset, size_t size) {
     const SerializedCarModelAssetHeader *serialized;
@@ -56,7 +56,8 @@ s32 InstallSerializedCarModelSlot(CarModelAsset *asset, size_t size,
     return 1;
 }
 
-CarModelAsset *FindSerializedCarModelAsset(CarModelAsset *nativeAsset) {
+const CarModelAsset *FindSerializedCarModelAsset(
+    const CarModelAsset *nativeAsset) {
     u32 i;
 
     if (nativeAsset == NULL) return NULL;
