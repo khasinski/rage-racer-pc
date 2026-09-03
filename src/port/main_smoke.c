@@ -265,6 +265,114 @@ static void ReportAudioMetrics(void) {
     Psyz_AudioUnlock();
 }
 
+static void ReportCameraVramSamples(void) {
+    RECT paletteRect = {752, 224, 16, 1};
+    RECT textureRect = {704, 120, 16, 1};
+    u16 palette[16] = {0};
+    u16 texture[16] = {0};
+    int sample;
+
+    DrawSync(0);
+    StoreImage(&paletteRect, (u_long *)palette);
+    StoreImage(&textureRect, (u_long *)texture);
+    DrawSync(0);
+    printf("vram: clut=");
+    for (sample = 0; sample < 16; sample++) {
+        printf("%s%04x", sample ? "," : "", palette[sample]);
+    }
+    printf(" tex=");
+    for (sample = 0; sample < 16; sample++) {
+        printf("%s%04x", sample ? "," : "", texture[sample]);
+    }
+    putchar('\n');
+}
+
+static void ReportFirstModelStream(void) {
+    static const int recordSizes[] = {16, 24, 24, 32};
+    const u8 *stream;
+    const u8 *cursor;
+    int block;
+
+    if (g_ModelBanks[0].modelCount <= 0 || g_ModelBanks[0].models[0] == NULL) {
+        return;
+    }
+    stream = g_ModelBanks[0].models[0];
+    printf(" bank0=%d opcode=%08x face=%08x,%08x,%08x",
+           g_ModelBanks[0].modelCount, ReadLittleEndianU32(stream),
+           ReadLittleEndianU32(stream + 4), ReadLittleEndianU32(stream + 8),
+           ReadLittleEndianU32(stream + 12));
+    printf(" blocks=");
+    cursor = stream;
+    for (block = 0; block < 8; block++) {
+        u32 header = ReadLittleEndianU32(cursor);
+        int type = header & 0xffff;
+        int count = header >> 16;
+
+        printf("%s%d:%d", block ? "," : "", type, count);
+        if (type == 3 && count > 0) {
+            const u8 *uv = cursor + 20;
+            printf("[uv=%02x%02x/%02x%02x/%02x%02x/%02x%02x "
+                   "clut=%02x%02x tp=%02x%02x]",
+                   uv[0], uv[1], uv[4], uv[5], uv[8], uv[9], uv[10], uv[11],
+                   uv[2], uv[3], uv[6], uv[7]);
+        }
+        if (header == 0 || (unsigned)type >=
+                               sizeof(recordSizes) / sizeof(recordSizes[0])) {
+            break;
+        }
+        cursor += 4 + count * recordSizes[type];
+    }
+}
+
+static void ReportCameraState(void) {
+    if (!RuntimeConfigEnabled("report.camera_state")) return;
+    ReportCameraVramSamples();
+    printf("camera: pos=(%d,%d,%d) angle=(%d,%d,%d) mirror=%d "
+           "sky_row=%d key=%p",
+           g_RenderState.viewX, g_RenderState.viewY, g_RenderState.viewZ,
+           g_RenderState.viewAngleX, g_RenderState.viewAngleY,
+           g_RenderState.viewAngleZ, g_RenderState.orderingFlag, g_SkyRowBase,
+           (void *)g_RaceIntroCameraCursor);
+    printf(" mirror_mtx=%d,%d,%d;%d,%d,%d;%d,%d,%d",
+           g_MirrorViewMatrix.m[0][0], g_MirrorViewMatrix.m[0][1],
+           g_MirrorViewMatrix.m[0][2], g_MirrorViewMatrix.m[1][0],
+           g_MirrorViewMatrix.m[1][1], g_MirrorViewMatrix.m[1][2],
+           g_MirrorViewMatrix.m[2][0], g_MirrorViewMatrix.m[2][1],
+           g_MirrorViewMatrix.m[2][2]);
+    printf(" menu=%d busy=%d view=%d/%d offset=%d spin=%d yaw=%d/%d",
+           g_MenuScreen, GameMenuBusy, g_MenuViewAngle, g_MenuViewAngleTarget,
+           g_MenuViewOffset, g_MenuViewSpin, g_PlayerCar.bodyYaw,
+           g_PlayerCar.modelYaw);
+    printf(" scene_timer=%d fade=%d sync=%x",
+           g_SceneTimer, g_FadeLevel, g_FrameSyncThreshold);
+    if (g_RaceIntroCameraCursor != NULL) {
+        printf(" mode=%d start=%d duration=%d key_pos=(%d,%d,%d)",
+               g_RaceIntroCameraCursor->mode,
+               g_RaceIntroCameraCursor->startFrame,
+               g_RaceIntroCameraCursor->duration,
+               g_RaceIntroCameraCursor->x.word,
+               g_RaceIntroCameraCursor->y.word,
+               g_RaceIntroCameraCursor->z.word);
+    }
+    if (g_CarTable != NULL && g_PlayerCarIndex >= 0 &&
+        g_PlayerCarIndex < GAME_CAR_COUNT) {
+        const CarEntry *entry = &g_CarTable[g_PlayerCarIndex];
+        printf(" car=%d paint=%d,%d rgb=%04x,%04x",
+               g_PlayerCarIndex, entry->paintColor1, entry->paintColor2,
+               g_BodyColorPrimary[entry->paintColor1],
+               g_BodyColorPrimary[entry->paintColor2]);
+    }
+    ReportFirstModelStream();
+    printf(" ref_lap=%d time_text=%s gt4=%llu max=%u z=%d..%d "
+           "clip=%llu/%llu reject=%llu/%llu/%llu",
+           g_BestLapThisRace, g_TimeTextBuffer, g_RageGt4FacesEmitted,
+           g_RageGt4ColorMaximum, g_RageGt4DepthMinimum,
+           g_RageGt4DepthMaximum, g_RageGt4ClipPositive,
+           g_RageGt4ClipNegative, g_RageGt4RejectOffscreen,
+           g_RageGt4RejectBackface, g_RageGt4RejectDepth);
+    putchar('\n');
+}
+
 static int CheckSaveRoundtrip(void) {
     GameSaveHeaderRow header = {0};
     const int marker = 123456789;
@@ -377,98 +485,7 @@ int main(int argc, char **argv) {
     ReportInitialState();
     ReportWindowSize();
     ReportAudioMetrics();
-    if (RuntimeConfigEnabled("report.camera_state")) {
-        {
-            RECT paletteRect = {752, 224, 16, 1};
-            RECT textureRect = {704, 120, 16, 1};
-            u16 palette[16] = {0};
-            u16 texture[16] = {0};
-            int sample;
-            DrawSync(0);
-            StoreImage(&paletteRect, (u_long *)palette);
-            StoreImage(&textureRect, (u_long *)texture);
-            DrawSync(0);
-            printf("vram: clut=");
-            for (sample = 0; sample < 16; sample++)
-                printf("%s%04x", sample ? "," : "", palette[sample]);
-            printf(" tex=");
-            for (sample = 0; sample < 16; sample++)
-                printf("%s%04x", sample ? "," : "", texture[sample]);
-            putchar('\n');
-        }
-        printf("camera: pos=(%d,%d,%d) angle=(%d,%d,%d) mirror=%d "
-               "sky_row=%d key=%p",
-               g_RenderState.viewX, g_RenderState.viewY, g_RenderState.viewZ,
-               g_RenderState.viewAngleX, g_RenderState.viewAngleY,
-               g_RenderState.viewAngleZ, g_RenderState.orderingFlag, g_SkyRowBase,
-               (void *)g_RaceIntroCameraCursor);
-        printf(" mirror_mtx=%d,%d,%d;%d,%d,%d;%d,%d,%d",
-               g_MirrorViewMatrix.m[0][0], g_MirrorViewMatrix.m[0][1],
-               g_MirrorViewMatrix.m[0][2], g_MirrorViewMatrix.m[1][0],
-               g_MirrorViewMatrix.m[1][1], g_MirrorViewMatrix.m[1][2],
-               g_MirrorViewMatrix.m[2][0], g_MirrorViewMatrix.m[2][1],
-               g_MirrorViewMatrix.m[2][2]);
-        printf(" menu=%d busy=%d view=%d/%d offset=%d spin=%d yaw=%d/%d",
-               g_MenuScreen, GameMenuBusy, g_MenuViewAngle,
-               g_MenuViewAngleTarget, g_MenuViewOffset, g_MenuViewSpin,
-               g_PlayerCar.bodyYaw, g_PlayerCar.modelYaw);
-        printf(" scene_timer=%d fade=%d sync=%x",
-               g_SceneTimer, g_FadeLevel, g_FrameSyncThreshold);
-        if (g_RaceIntroCameraCursor != NULL) {
-            printf(" mode=%d start=%d duration=%d key_pos=(%d,%d,%d)",
-                   g_RaceIntroCameraCursor->mode,
-                   g_RaceIntroCameraCursor->startFrame,
-                   g_RaceIntroCameraCursor->duration,
-                   g_RaceIntroCameraCursor->x.word,
-                   g_RaceIntroCameraCursor->y.word,
-                   g_RaceIntroCameraCursor->z.word);
-        }
-        if (g_CarTable != NULL) {
-            CarEntry *entry = &g_CarTable[g_PlayerCarIndex];
-            printf(" car=%d paint=%d,%d rgb=%04x,%04x",
-                   g_PlayerCarIndex, entry->paintColor1, entry->paintColor2,
-                   g_BodyColorPrimary[entry->paintColor1],
-                   g_BodyColorPrimary[entry->paintColor2]);
-        }
-        if (g_ModelBanks[0].modelCount > 0 && g_ModelBanks[0].models[0]) {
-            const u8 *stream = g_ModelBanks[0].models[0];
-            u32 opcode = ReadLittleEndianU32(stream);
-            printf(" bank0=%d opcode=%08x face=%08x,%08x,%08x",
-                   g_ModelBanks[0].modelCount, opcode,
-                   ReadLittleEndianU32(stream + 4),
-                   ReadLittleEndianU32(stream + 8),
-                   ReadLittleEndianU32(stream + 12));
-            {
-                int block;
-                const u8 *cursor = stream;
-                printf(" blocks=");
-                for (block = 0; block < 8; block++) {
-                    u32 header = ReadLittleEndianU32(cursor);
-                    int type = header & 0xffff;
-                    int count = header >> 16;
-                    printf("%s%d:%d", block ? "," : "", type, count);
-                    if (type == 3 && count > 0) {
-                        const u8 *uv = cursor + 4 + 16;
-                        printf("[uv=%02x%02x/%02x%02x/%02x%02x/%02x%02x "
-                               "clut=%02x%02x tp=%02x%02x]",
-                               uv[0], uv[1], uv[4], uv[5], uv[8], uv[9],
-                               uv[10], uv[11], uv[2], uv[3], uv[6], uv[7]);
-                    }
-                    if (header == 0 || (unsigned)type >= 4) break;
-                    cursor += 4 + count * (const int[]){16,24,24,32}[type];
-                }
-            }
-        }
-        printf(" ref_lap=%d time_text=%s gt4=%llu max=%u z=%d..%d clip=%llu/%llu reject=%llu/%llu/%llu",
-               g_BestLapThisRace,
-               g_TimeTextBuffer,
-               g_RageGt4FacesEmitted,
-               g_RageGt4ColorMaximum, g_RageGt4DepthMinimum,
-               g_RageGt4DepthMaximum, g_RageGt4ClipPositive,
-               g_RageGt4ClipNegative, g_RageGt4RejectOffscreen,
-               g_RageGt4RejectBackface, g_RageGt4RejectDepth);
-        putchar('\n');
-    }
+    ReportCameraState();
     if (RuntimeConfigEnabled("capture.visible_cells")) {
         int cell;
         for (cell = 0; cell < 64; cell++) {
