@@ -12,10 +12,10 @@ enum {
     MIRROR_FRAME_WIDTH = 0x98,
     MIRROR_FRAME_HEIGHT = 0x28,
     MIRROR_CONTENT_X = 0x56,
-    MIRROR_UNLOCK_MODE = 0x169,
+    MIRROR_UNLOCK_FRAME = 0x169,
 };
 
-DrawPacket *DrawMirrorFrame(u8 *packet) {
+static u8 *QueueMirrorFrame(u8 *packet) {
     GameOrderingTableEntry *frameOt =
         &g_DrawBuffer->layout.orderingTables[0][1];
     GameOrderingTableEntry *contentOt =
@@ -42,14 +42,13 @@ DrawPacket *DrawMirrorFrame(u8 *packet) {
         g_MirrorBadgeWidths[badgeSpriteIndex], 8,
         g_MirrorBadgeTexU[badgeSpriteIndex],
         g_MirrorBadgeTexV[badgeSpriteIndex], 0x7800);
-    return (DrawPacket *)QueueDrawModePrim(contentOt, next, 9);
+    return QueueDrawModePrim(contentOt, next, 9);
 }
 
-
-void DrawRearViewMirror(s32 mode) {
+void DrawRearViewMirror(s32 sceneTimer) {
     DrawPacket *packet;
 
-    if (mode >= MIRROR_UNLOCK_MODE) {
+    if (sceneTimer >= MIRROR_UNLOCK_FRAME) {
         g_MirrorUnlocked = 1;
     }
 
@@ -64,7 +63,7 @@ void DrawRearViewMirror(s32 mode) {
     }
 
     DrawSkyBackground();
-    packet = DrawMirrorFrame(g_RenderState.packetCursor);
+    packet = (DrawPacket *)QueueMirrorFrame(g_RenderState.packetCursor);
     SetDrawArea(packet, &g_DrawBuffer->environment.mirrorDraw.clip);
     AddPrim(&g_DrawBuffer->layout.orderingTables[1][GAME_FRAME_OT_LENGTH - 1],
             packet);
