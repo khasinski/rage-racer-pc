@@ -51,9 +51,11 @@ static void RefuseWithModal(const TimedDrawCommand *script, s32 busyState) {
 static void EnterCarShop(void) {
     s32 previousTarget = g_MenuViewAngleTarget;
 
+    if (!RequestCarModel(g_ShopCarIndex)) {
+        return;
+    }
     PlaySoundCue(2);
     g_CarListCursor = g_ShopCarIndex;
-    RequestCarModel(g_CarListCursor);
     g_MenuViewAngleTarget = 0x124F80;
     GameMenuBusy = 3;
     g_MenuOverlayPattern = 1;

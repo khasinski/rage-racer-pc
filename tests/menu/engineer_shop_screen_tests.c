@@ -60,6 +60,7 @@ static int s_calls;
 static s32 s_scriptResult;
 static s32 s_assetIndexOverride = -1;
 static s32 s_upgradedModelRequests;
+static s32 s_upgradedModelRequestResult = 1;
 
 static void Fold(unsigned char byte) {
     s_digest = ((s_digest ^ byte) * 16777619UL) & 0xFFFFFFFFUL;
@@ -142,9 +143,10 @@ s32 GetOwnedCarAssetIndex(s32 model) {
     RECORD("assetindex", model);
     return s_assetIndexOverride >= 0 ? s_assetIndexOverride : model & 7;
 }
-void RequestUpgradedCarModel(s32 carIndex) {
+s32 RequestUpgradedCarModel(s32 carIndex) {
     s_upgradedModelRequests++;
     RECORD("upgradedmodel", carIndex);
+    return s_upgradedModelRequestResult;
 }
 void PlaySoundCue(s32 cue) { RECORD("cue", cue); }
 
@@ -155,7 +157,7 @@ int main(int argc, char **argv) {
      * What the shop did before it was taken apart. Run the test with a file
      * name to write the sweep out and diff two runs.
      */
-    static const unsigned long expected = 4203543157UL;
+    static const unsigned long expected = 2722601493UL;
     static const s32 busyStates[] = {0, -1, -2, -3, 1, 2};
     static const u16 buttons[] = {0, PAD_UP, PAD_DOWN, PAD_CONFIRM, PAD_CANCEL,
                                   PAD_LEFT, PAD_RIGHT};
@@ -343,6 +345,24 @@ int main(int argc, char **argv) {
         puts("FAIL tune-up prompt did not normalize its cursor");
         return 1;
     }
+
+    GameMenuBusy = ENGINEER_SHOP_TUNE_UP_PROMPT;
+    g_PadPressed = PAD_CONFIRM;
+    g_MenuSubCursor = 1;
+    g_MenuConfirmTimer = 17;
+    g_PlayerMoney = 5000;
+    s_cars[5].modelVariant = 2;
+    s_upgradedModelRequests = 0;
+    s_upgradedModelRequestResult = 0;
+    UpdateEngineerShopScreen();
+    if (s_upgradedModelRequests != 1 ||
+        GameMenuBusy != ENGINEER_SHOP_TUNE_UP_PROMPT ||
+        g_MenuConfirmTimer != 17 || g_PlayerMoney != 5000 ||
+        s_cars[5].modelVariant != 2) {
+        puts("FAIL rejected model request started a tune-up");
+        return 1;
+    }
+    s_upgradedModelRequestResult = 1;
 
     GameMenuBusy = -99;
     UpdateEngineerShopScreen();

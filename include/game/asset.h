@@ -495,8 +495,8 @@ void LoadGrandPrixScreen(void);
 s32 RegisterModelBank(const ModelBankHeader *base, size_t size, s32 index);
 s32 RegisterCourseModels(const CourseModelAssetHeader *base, size_t size);
 s32 RequestRaceStart(void);
-void RequestCarModel(s32 carIndex);
-void RequestUpgradedCarModel(s32 carIndex);
+s32 RequestCarModel(s32 carIndex);
+s32 RequestUpgradedCarModel(s32 carIndex);
 void ResetTrackTextureSwap(void);
 s32 SetEnvironmentScript(const struct GameEnvironmentScript *script,
                          size_t size);

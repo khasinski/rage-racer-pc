@@ -4,15 +4,16 @@
 
 enum { CAR_MODEL_LOAD_ASSET = 1 };
 
-static void RequestPendingCarModel(AssetRequestType request, s32 carIndex) {
+static s32 RequestPendingCarModel(AssetRequestType request, s32 carIndex) {
     if ((u32)carIndex >= GAME_CAR_COUNT || g_AssetLoadState != 0) {
-        return;
+        return 0;
     }
 
     g_AssetRequestType = request;
     g_AssetLoadFailed = 0;
     g_PendingCarModelIndex = carIndex;
     g_AssetLoadState = CAR_MODEL_LOAD_ASSET;
+    return 1;
 }
 
 s32 InstallCarModelAsset(CarModelAsset *asset, size_t size, s32 slot,
@@ -45,12 +46,12 @@ s32 InstallCarModelAsset(CarModelAsset *asset, size_t size, s32 slot,
     return 1;
 }
 
-void RequestCarModel(s32 carIndex) {
-    RequestPendingCarModel(ASSET_REQUEST_CAR_MODEL, carIndex);
+s32 RequestCarModel(s32 carIndex) {
+    return RequestPendingCarModel(ASSET_REQUEST_CAR_MODEL, carIndex);
 }
 
-void RequestUpgradedCarModel(s32 carIndex) {
-    RequestPendingCarModel(ASSET_REQUEST_UPGRADED_CAR_MODEL, carIndex);
+s32 RequestUpgradedCarModel(s32 carIndex) {
+    return RequestPendingCarModel(ASSET_REQUEST_UPGRADED_CAR_MODEL, carIndex);
 }
 
 void LoadPendingCarModelAsset(void) {

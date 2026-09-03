@@ -152,30 +152,31 @@ static void TestRequests(void) {
     g_AssetLoadState = 0;
     g_AssetLoadFailed = 1;
     g_AssetRequestType = ASSET_REQUEST_IDLE;
-    RequestCarModel(4);
+    Check(RequestCarModel(4), "car model request is accepted");
     Check(g_AssetRequestType == ASSET_REQUEST_CAR_MODEL &&
               g_PendingCarModelIndex == 4 && g_AssetLoadState == 1 &&
               !AssetLoadHasFailed(),
           "car model request");
 
-    RequestUpgradedCarModel(7);
+    Check(!RequestUpgradedCarModel(7), "busy model request is rejected");
     Check(g_AssetRequestType == ASSET_REQUEST_CAR_MODEL &&
               g_PendingCarModelIndex == 4,
           "busy loader preserves pending car request");
 
     g_AssetLoadState = 0;
-    RequestUpgradedCarModel(7);
+    Check(RequestUpgradedCarModel(7), "upgraded model request is accepted");
     Check(g_AssetRequestType == ASSET_REQUEST_UPGRADED_CAR_MODEL &&
               g_PendingCarModelIndex == 7 && g_AssetLoadState == 1,
           "upgraded car model request");
 
     g_AssetLoadState = 0;
     g_AssetRequestType = ASSET_REQUEST_IDLE;
-    RequestCarModel(-1);
+    Check(!RequestCarModel(-1), "negative model request reports rejection");
     Check(g_AssetRequestType == ASSET_REQUEST_IDLE &&
               g_AssetLoadState == 0,
           "negative car model request is rejected");
-    RequestUpgradedCarModel(GAME_CAR_COUNT);
+    Check(!RequestUpgradedCarModel(GAME_CAR_COUNT),
+          "out-of-range upgraded model request reports rejection");
     Check(g_AssetRequestType == ASSET_REQUEST_IDLE &&
               g_AssetLoadState == 0,
           "out-of-range upgraded model request is rejected");

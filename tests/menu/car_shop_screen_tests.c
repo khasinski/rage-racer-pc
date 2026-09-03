@@ -165,7 +165,10 @@ s32 GetOwnedCarAssetIndex(s32 model) {
     return s_assetIndexOverride >= 0 ? s_assetIndexOverride : model & 7;
 }
 void UpdateCarListCursor(void) { RECORD("listcursor", 0); }
-void RequestCarModel(s32 carIndex) { RECORD("requestcar", carIndex); }
+s32 RequestCarModel(s32 carIndex) {
+    RECORD("requestcar", carIndex);
+    return 1;
+}
 void PlaySoundCue(s32 cue) { RECORD("cue", cue); }
 void UploadTeamNameTexture(const u8 *str, s32 len) {
     RECORD("teamname", str == g_TeamNameChars, len);
@@ -180,7 +183,7 @@ int main(int argc, char **argv) {
      * What the shop did before it was taken apart. Run the test with a file
      * name to write the sweep out and diff two runs.
      */
-    static const unsigned long expected = 3717152877UL;
+    static const unsigned long expected = 880859133UL;
     static const s32 busyStates[] = {0, -1, -2, -3, 1, 2};
     static const u16 buttons[] = {0, PAD_UP, PAD_DOWN, PAD_CONFIRM, PAD_CANCEL,
                                   0x8000, 0x0080, 0x0010};

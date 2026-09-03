@@ -14,11 +14,13 @@ s32 g_PlayerCarIndex;
 
 static s32 s_lastRequestedCar;
 static s32 s_requestCount;
+static s32 s_requestResult;
 static s32 s_soundCount;
 
-void RequestCarModel(s32 carIndex) {
+s32 RequestCarModel(s32 carIndex) {
     s_lastRequestedCar = carIndex;
     s_requestCount++;
+    return s_requestResult;
 }
 
 void PlaySoundCue(s32 cue) {
@@ -39,6 +41,7 @@ void PlaySoundCue(s32 cue) {
 static void ResetCalls(void) {
     s_lastRequestedCar = -1;
     s_requestCount = 0;
+    s_requestResult = 1;
     s_soundCount = 0;
 }
 
@@ -65,6 +68,20 @@ int main(void) {
     CHECK(g_MenuLowerAltPanelStep == -1);
 
     ResetCalls();
+    s_requestResult = 0;
+    g_MenuViewAngle = 123;
+    g_MenuViewAngleTarget = 456;
+    g_MenuLowerAltPanelStep = 7;
+    g_CarSwapFromIndex = 8;
+    g_CarSwapToIndex = 9;
+    MenuSpinToCar(&shownCar, 6, 3, 789);
+    CHECK(s_requestCount == 1 && s_lastRequestedCar == 3);
+    CHECK(s_soundCount == 0 && shownCar == 6);
+    CHECK(g_MenuViewAngle == 123 && g_MenuViewAngleTarget == 456);
+    CHECK(g_MenuLowerAltPanelStep == 7);
+    CHECK(g_CarSwapFromIndex == 8 && g_CarSwapToIndex == 9);
+
+    ResetCalls();
     MenuSpinToCar(NULL, 2, 3, 0);
     MenuSpinToCar(&shownCar, 2, -1, 0);
     MenuSpinToCar(&shownCar, 2, GAME_CAR_COUNT, 0);
@@ -82,6 +99,19 @@ int main(void) {
     CHECK(g_CarSwapFromIndex == 9 && g_CarSwapToIndex == 4);
     CHECK(g_MenuViewAngleTarget == 0);
     CHECK(g_MenuViewAngle == -300000);
+
+    ResetCalls();
+    s_requestResult = 0;
+    g_CarListCursor = 7;
+    g_PlayerCarIndex = 4;
+    g_MenuViewAngle = 123;
+    g_MenuViewAngleTarget = 456;
+    g_CarSwapFromIndex = 8;
+    g_CarSwapToIndex = 9;
+    MenuSpinBackToPlayerCar();
+    CHECK(s_requestCount == 1 && s_lastRequestedCar == 4);
+    CHECK(g_MenuViewAngle == 123 && g_MenuViewAngleTarget == 456);
+    CHECK(g_CarSwapFromIndex == 8 && g_CarSwapToIndex == 9);
 
     ResetCalls();
     g_PlayerCarIndex = -1;

@@ -33,9 +33,11 @@ void MenuSpinToCar(s32 *shownCar, s32 fromIndex, s32 toIndex, s32 newTarget) {
     if (shownCar == NULL || (u32)toIndex >= GAME_CAR_COUNT) {
         return;
     }
+    if (!RequestCarModel(toIndex)) {
+        return;
+    }
     PlaySoundCue(8);
     *shownCar = toIndex;
-    RequestCarModel(toIndex);
     previousTarget = g_MenuViewAngleTarget;
     g_CarSwapFromIndex = fromIndex;
     g_MenuViewAngleTarget = newTarget;
@@ -55,7 +57,9 @@ void MenuSpinBackToPlayerCar(void) {
     if ((u32)g_PlayerCarIndex >= GAME_CAR_COUNT) {
         return;
     }
-    RequestCarModel(g_PlayerCarIndex);
+    if (!RequestCarModel(g_PlayerCarIndex)) {
+        return;
+    }
     previousTarget = g_MenuViewAngleTarget;
     g_MenuViewAngleTarget = 0;
     g_CarSwapFromIndex = g_CarListCursor;

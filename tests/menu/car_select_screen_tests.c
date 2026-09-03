@@ -157,7 +157,10 @@ void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
 s32 CountOwnedCars(void) { RECORD("countowned", 0); return 6; }
 void UpdateOwnedCarNeighbours(void) { RECORD("neighbours", 0); }
 void RefreshCarUnlockState(void) { RECORD("unlockstate", 0); }
-void RequestCarModel(s32 carIndex) { RECORD("requestcar", carIndex); }
+s32 RequestCarModel(s32 carIndex) {
+    RECORD("requestcar", carIndex);
+    return 1;
+}
 void StartSequenceFadeOut(void) { RECORD("fadeout", 0); }
 s32 RequestRoundAssets(void) { RECORD("roundassets", 0); return 0; }
 void PlaySoundCue(s32 cue) { RECORD("cue", cue); }
@@ -182,7 +185,7 @@ int main(int argc, char **argv) {
      * What the screen did before it was taken apart. Run the test with a file
      * name to write the sweep out and diff two runs.
      */
-    static const unsigned long expected = 1048880757UL;
+    static const unsigned long expected = 4235743045UL;
     static const s32 busyStates[] = {0, -1, 1, 2, 3, 4, 5};
     static const u16 buttons[] = {0, PAD_UP, PAD_DOWN, PAD_CONFIRM, PAD_CANCEL};
     /* Both directions at once is unreachable on a d-pad but not in the

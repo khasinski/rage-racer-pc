@@ -89,10 +89,13 @@ static void UpdateTuneUpPrompt(void *ot, s32 purchaseAvailable) {
     action = ChooseMenuDialogAction(g_PadPressed);
     if (action == MENU_DIALOG_CONFIRM) {
         if (g_MenuSubCursor != 0 && purchaseAvailable) {
+            if (!RequestUpgradedCarModel(g_PlayerCarIndex)) {
+                DrawShopPromptButtons(ot, 0);
+                return;
+            }
             PlaySoundCue(2);
             GameMenuBusy = ENGINEER_SHOP_TUNE_UP_COUNTDOWN;
             g_MenuConfirmTimer = 0x23;
-            RequestUpgradedCarModel(g_PlayerCarIndex);
         } else if (g_MenuSubCursor != 0) {
             PlaySoundCue(5);
             g_EngineerShopModalScript = g_EngineerShopNoFundsScript;
