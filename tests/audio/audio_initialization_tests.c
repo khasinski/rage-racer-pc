@@ -98,6 +98,12 @@ static void TestEffectInitialization(void) {
           "effect initialization clears special cue deduplication");
     Check(s_slotEnable == 1 && s_presetType == 2 && s_loadedScale == 91,
           "effect initialization enables slots and selects car volume");
+
+    g_PlayerCarIndex = -2;
+    g_CarSoundVolumeScales[0] = 37;
+    InitEffectVoiceRuntime();
+    Check(s_loadedScale == 37,
+          "invalid car asset uses the base volume scale");
 }
 
 int main(void) {

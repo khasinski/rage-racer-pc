@@ -9,6 +9,7 @@ enum {
     SEQUENCE_VOICE_COUNT = 18,
     EFFECT_VOICE_RUNTIME_COUNT = 8,
     EFFECT_REVERB_PRESET = 2,
+    CAR_SOUND_VOLUME_SCALE_COUNT = 32,
 };
 
 void InitSequenceAudio(void) {
@@ -20,12 +21,17 @@ void InitSequenceAudio(void) {
 }
 
 void InitEffectVoiceRuntime(void) {
+    s32 carAssetIndex;
+
     _SsVmInit(LIBSND_RESET);
     SsSetVoiceCount(EFFECT_VOICE_RUNTIME_COUNT);
     ResetAudioVoiceState();
 
     SetSoundSlotVoicesEnabled(1);
     SetReverbPreset(EFFECT_REVERB_PRESET, 0, 0);
-    SetLoadedTableVolumeScale(
-        g_CarSoundVolumeScales[GetOwnedCarAssetIndex(g_PlayerCarIndex)]);
+    carAssetIndex = GetOwnedCarAssetIndex(g_PlayerCarIndex);
+    if ((u32)carAssetIndex >= CAR_SOUND_VOLUME_SCALE_COUNT) {
+        carAssetIndex = 0;
+    }
+    SetLoadedTableVolumeScale(g_CarSoundVolumeScales[carAssetIndex]);
 }
