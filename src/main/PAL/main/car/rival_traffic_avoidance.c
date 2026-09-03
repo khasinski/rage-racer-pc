@@ -109,9 +109,12 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
     lateralOffset = car->trackLateralOffset;
     speed = (u16)car->speed;
     /* The faster this car is going, the further ahead it looks. */
-    ownLookahead = car->speed * 2 + 0xC00;
-    laneLeft = WrapSigned16(lateralOffset - TRAFFIC_LANE_HALF_WIDTH);
-    laneRight = WrapSigned16(lateralOffset + TRAFFIC_LANE_HALF_WIDTH);
+    ownLookahead = WrapSigned32(
+        (int64_t)WrapSigned32((int64_t)car->speed * 2) + 0xC00);
+    laneLeft = WrapSigned16(
+        (int64_t)lateralOffset - TRAFFIC_LANE_HALF_WIDTH);
+    laneRight = WrapSigned16(
+        (int64_t)lateralOffset + TRAFFIC_LANE_HALF_WIDTH);
     behindLine = trackLength - TRAFFIC_BEHIND;
 
     car->avoidanceStep = 0;
@@ -146,7 +149,9 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
             alreadyAvoiding = 0;
             /* The player is watched over a range of its own, and that range
              * shrinks as the player speeds up rather than growing. */
-            lookahead = 0x1800 - g_PlayerCar.speed * 2;
+            lookahead = WrapSigned32(
+                (int64_t)0x1800 -
+                WrapSigned32((int64_t)g_PlayerCar.speed * 2));
         } else {
             GameCarRuntime *other = &g_Cars[slot];
             if (other->activeFlag == -1) {
@@ -159,7 +164,7 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
             alreadyAvoiding = (u16)car->avoidanceActive;
         }
 
-        sideways = otherOffset - lateralOffset;
+        sideways = WrapSigned32((int64_t)otherOffset - lateralOffset);
         gap = WrapSigned32((int64_t)otherProgress - progress) % trackLength;
 
         if (gap <= 0 || gap >= lookahead) {
@@ -187,7 +192,8 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
                  * measured over the sweep and over all four courses, the value
                  * stayed between 1 and 95 of a possible 0 to 95.
                  */
-                s32 bucket = (sideways + TRAFFIC_LANE_HALF_WIDTH) >> 5;
+                s32 bucket = WrapSigned32(
+                    (int64_t)sideways + TRAFFIC_LANE_HALF_WIDTH) >> 5;
                 car->avoidanceActive = 1;
                 if (slot == TRAFFIC_PLAYER_SLOT) {
                     /* The player counts full weight until it is inside 0xC00,
@@ -233,8 +239,8 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
     /* Boxed in badly enough, and the car is not allowed to press on as hard.
      * Thirty hundredths, written as fifteen doubled. */
     if (crowding >= 0x3E9) {
-        car->accelerationLimit =
-            (s16)(car->accelerationLimit * 30 / 100);
+        car->accelerationLimit = WrapSigned16(
+            (int64_t)car->accelerationLimit * 30 / 100);
     }
 
     AdvanceTrafficLateralOffset(car);

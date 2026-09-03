@@ -572,6 +572,25 @@ int main(int argc, char **argv) {
     }
     g_TrackLength = TRACK_LENGTH;
 
+    memset(g_Cars, 0, sizeof(g_Cars));
+    { s32 i; for (i = 0; i < RIVAL_SLOTS; i++) g_Cars[i].activeFlag = -1; }
+    memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
+    g_SceneId = 0xC;
+    g_Cars[0].activeFlag = 0;
+    g_Cars[0].speed = INT_MAX;
+    g_Cars[0].trackLateralOffset = INT_MIN;
+    g_Cars[0].aiLateralOffset = 17;
+    g_PlayerCar.speed = INT_MAX;
+    g_PlayerCar.trackLateralOffset = INT_MAX;
+    UpdateCarTrafficAvoidance(&g_Cars[0], 0);
+    if (g_Cars[0].avoidanceActive != 0 ||
+        g_Cars[0].avoidanceTargetOffset != 17 ||
+        g_Cars[0].aiLateralOffset != 17 ||
+        g_Cars[0].nearbyCarCount != 0) {
+        puts("extreme traffic scan did not settle to a neutral decision");
+        return 1;
+    }
+
     /* The retail counter increments through an unsigned halfword view. Keep
      * the wrap defined when the decompiler's pointer union is removed. */
     memset(g_Cars, 0, sizeof(g_Cars));
