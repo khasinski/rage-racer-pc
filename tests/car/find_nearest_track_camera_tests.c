@@ -47,6 +47,8 @@ int main(void) {
     CHECK(FindNearestTrackCamera(&car) == -1);
 
     g_TrackCameras = nodes;
+    CHECK(FindNearestTrackCamera(NULL) == -1);
+
     nodes[0].trackSection.value = 10;
     g_TrackSectionCount = 0;
     CHECK(FindNearestTrackCamera(&car) == -1);

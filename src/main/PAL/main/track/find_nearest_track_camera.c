@@ -14,7 +14,7 @@ s32 FindNearestTrackCamera(GameRenderObject *car) {
     s32 target;
     s32 index;
 
-    if (g_TrackCameras == NULL || trackLength <= 0 ||
+    if (car == NULL || g_TrackCameras == NULL || trackLength <= 0 ||
         g_TrackCameras[0].trackSection.value == -1) {
         return -1;
     }
