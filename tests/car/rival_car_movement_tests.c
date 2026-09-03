@@ -67,6 +67,7 @@ int main(void) {
         car->motionX = 123;
         car->motionY = -77;
         car->motionZ = -234;
+        car->field_1C = 0x12345678;
         car->bodyPitch = 0x123;
         car->bodyYaw = -0x234;
         car->bodyRoll = 0x345;
@@ -79,6 +80,10 @@ int main(void) {
         car->yawRate = yawRates[yi];
 
         MoveRivalCars();
+        if (car->field_1C != 0x12345678) {
+            puts("rival lean overwrote state following its motion vector");
+            return 1;
+        }
         Fold(car->x);
         Fold(car->z);
         Fold(car->motionX);

@@ -1,10 +1,13 @@
 #include "game/car.h"
+#include "game/car_internal.h"
 #include "game/integer.h"
 #include "game/render.h"
 
 enum {
     DETAILED_RIVAL_MOTION_COUNT = 4,
     RIVAL_STEERING_LIMIT = 0x12C,
+    RIVAL_YAW_LEAN_DIVISOR = 6,
+    RIVAL_STATIC_BODY_LEAN = 0x32,
 };
 
 static void ApplyDetailedBodyLean(GameCarRuntime *car) {
@@ -12,10 +15,11 @@ static void ApplyDetailedBodyLean(GameCarRuntime *car) {
     Matrix inverseBodyRotation;
     Matrix work;
     SVec lean;
+    Vec4 transformedLean;
     s32 yawStep = car->yawRate;
     s32 yawLean = yawStep < 0
-        ? (s32)(-(int64_t)yawStep / 6)
-        : yawStep / 6;
+        ? (s32)(-(int64_t)yawStep / RIVAL_YAW_LEAN_DIVISOR)
+        : yawStep / RIVAL_YAW_LEAN_DIVISOR;
 
     car->x = WrapSigned32((int64_t)car->x - car->motionX);
     car->z = WrapSigned32((int64_t)car->z - car->motionZ);
@@ -27,9 +31,12 @@ static void ApplyDetailedBodyLean(GameCarRuntime *car) {
 
     lean.vx = 0;
     lean.vy = 0;
-    lean.vz = WrapSigned16(-(int64_t)yawLean - 0x32);
+    lean.vz = WrapSigned16(-(int64_t)yawLean - RIVAL_STATIC_BODY_LEAN);
     TransposeMatrix(&bodyRotation, &inverseBodyRotation);
-    ApplyMatrix(&inverseBodyRotation, &lean, &car->motionX);
+    ApplyMatrix(&inverseBodyRotation, &lean, &transformedLean);
+    car->motionX = transformedLean.x;
+    car->motionY = transformedLean.y;
+    car->motionZ = transformedLean.z;
     car->x = WrapSigned32((int64_t)car->x + car->motionX);
     car->z = WrapSigned32((int64_t)car->z + car->motionZ);
 }
