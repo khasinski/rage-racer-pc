@@ -83,6 +83,23 @@ static int CheckContenderRanking(void) {
             }
         }
     }
+
+    memset(g_Cars, 0, sizeof(g_Cars));
+    g_Cars[0].progressA = INT_MAX;
+    g_Cars[0].progressB = 1;
+    g_Cars[1].progressA = INT_MIN;
+    g_Cars[2].progressA = INT_MIN;
+    g_Cars[2].progressB = 1;
+    g_Cars[3].progressA = INT_MIN;
+    g_Cars[3].progressB = 2;
+    RankContenders();
+    if (g_RankedCars[0] != &g_Cars[3] ||
+        g_RankedCars[1] != &g_Cars[2] ||
+        g_RankedCars[2] != &g_Cars[0] ||
+        g_RankedCars[3] != &g_Cars[1]) {
+        puts("wrapped contender progress was ranked incorrectly");
+        return 1;
+    }
     return 0;
 }
 
@@ -126,6 +143,20 @@ static int CheckDistantRivalSlowdown(void) {
     SlowRivalAhead(0);
     SlowRivalAhead(4);
     SlowRivalAhead(1);
+
+    memset(g_Cars, 0, sizeof(g_Cars));
+    g_Cars[0].progressA = INT_MIN;
+    g_Cars[0].speed = 0x385;
+    g_Cars[0].accelerationLimit = 1000;
+    g_Cars[1].progressA = INT_MAX;
+    g_Cars[1].progressB = 1;
+    g_RankedCars[0] = &g_Cars[0];
+    g_RankedCars[1] = &g_Cars[1];
+    SlowRivalAhead(1);
+    if (g_Cars[0].accelerationLimit != 1000) {
+        puts("wrapped equal progress slowed the leading rival");
+        return 1;
+    }
     return 0;
 }
 

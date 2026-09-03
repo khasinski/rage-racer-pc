@@ -1,4 +1,5 @@
 #include "game/car.h"
+#include "game/integer.h"
 
 void SlowRivalAhead(s32 rank) {
     GameCarRuntime *car;
@@ -13,10 +14,13 @@ void SlowRivalAhead(s32 rank) {
 
     car = g_RankedCars[rank];
     rivalAhead = g_RankedCars[rank - 1];
-    progress = car->progressA + car->progressB;
-    progressAhead = rivalAhead->progressA + rivalAhead->progressB;
+    progress = WrapSigned32(
+        (int64_t)car->progressA + car->progressB);
+    progressAhead = WrapSigned32(
+        (int64_t)rivalAhead->progressA + rivalAhead->progressB);
 
-    if (progressAhead - progress >= 0x2800 && rivalAhead->speed >= 0x385) {
+    if (WrapSigned32((int64_t)progressAhead - progress) >= 0x2800 &&
+        rivalAhead->speed >= 0x385) {
         rivalAhead->accelerationLimit =
             (s32)rivalAhead->accelerationLimit * 85 / 100;
     }
@@ -30,7 +34,8 @@ void RankContenders(void) {
     s32 i;
 
     for (i = 0; i < RIVAL_CONTENDER_COUNT; i++) {
-        progress[i] = g_Cars[i].progressA + g_Cars[i].progressB;
+        progress[i] = WrapSigned32(
+            (int64_t)g_Cars[i].progressA + g_Cars[i].progressB);
     }
 
     for (i = 1; i < RIVAL_CONTENDER_COUNT; i++) {
