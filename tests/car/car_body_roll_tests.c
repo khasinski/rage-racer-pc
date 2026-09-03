@@ -146,6 +146,20 @@ int main(void) {
         return 1;
     }
 
+    memset(&car, 0, sizeof(car));
+    g_RacePhase = 2;
+    g_PlayerAutoSteer = 0;
+    g_PadType = PAD_TYPE_DIGITAL;
+    g_PadHeld = g_PadButtonMapping[0];
+    car.speed = 800;
+    car.drive.steerPos = INT_MIN;
+    UpdateCarBodyRoll(&car);
+    if (car.steeringAngle != INT_MIN) {
+        printf("FAIL: minimum digital steering produced %d\n",
+               car.steeringAngle);
+        return 1;
+    }
+
     printf("all %d body-roll states preserved\n", calls);
     return 0;
 }

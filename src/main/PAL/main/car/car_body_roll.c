@@ -61,7 +61,7 @@ static void UpdateDigitalSteering(PlayerCarRuntime *car) {
         drive->steerPos /= 3;
     }
 
-    car->steeringAngle = -drive->steerPos;
+    car->steeringAngle = WrapSigned32(-(int64_t)drive->steerPos);
     DampBodyRoll(car);
 }
 
