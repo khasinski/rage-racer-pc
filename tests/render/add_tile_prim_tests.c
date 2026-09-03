@@ -1,6 +1,7 @@
 #include "game/prim.h"
 #include "game/render.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -35,6 +36,12 @@ int main(void) {
     CHECK(tile.w == 30 && tile.h == 40);
     CHECK(tile.r0 == 50 && tile.g0 == 60 && tile.b0 == 70);
     CHECK(getlen(&tile) == 3 && getcode(&tile) == 0x62);
+
+    memset(&tile, 0, sizeof(tile));
+    AddTilePrim(&ot, (u8 *)&tile, INT_MAX, INT_MIN, INT_MAX, INT_MIN,
+                0, 0, 0);
+    CHECK(tile.x0 == -1 && tile.y0 == 0);
+    CHECK(tile.w == -1 && tile.h == 0);
 
     puts("opaque and semi-transparent tile emitters passed");
     return 0;

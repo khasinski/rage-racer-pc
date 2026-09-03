@@ -1,5 +1,6 @@
 #include "game/prim.h"
 #include "game/render.h"
+#include "game/render_internal.h"
 #include "game/render_types.h"
 
 static u8 *QueueTile(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
@@ -9,10 +10,10 @@ static u8 *QueueTile(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
 
     SetTile(tile);
     SetSemiTrans(tile, semiTransparent);
-    tile->x0 = x;
-    tile->y0 = y;
-    tile->w = width;
-    tile->h = height;
+    tile->x0 = WrapRenderCoordinate16(x);
+    tile->y0 = WrapRenderCoordinate16(y);
+    tile->w = WrapRenderCoordinate16(width);
+    tile->h = WrapRenderCoordinate16(height);
     tile->r0 = red;
     tile->g0 = green;
     tile->b0 = blue;
