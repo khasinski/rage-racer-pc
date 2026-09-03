@@ -5,6 +5,7 @@
 #include "game/render_internal.h"
 #include "game/render_state.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -94,6 +95,16 @@ int main(void) {
     UpdateBgmSelectBar();
     CHECK(g_BgmRandomLabelTimer == 1);
     UpdateBgmSelectBar();
+    UpdateBgmSelectBar();
+    CHECK(g_BgmRandomLabelTimer == 0);
+
+    Reset();
+    g_BgmRandomLabelTimer = INT_MIN;
+    g_BgmSelectCursor = INT_MAX;
+    g_BgmSelectTrack = INT_MAX;
+    DrawBgmSelectBar();
+    CHECK(s_sprites[0].clut == 0x3FEC);
+    CHECK(s_sprites[3].v == 7 * 12 + 0x1C);
     UpdateBgmSelectBar();
     CHECK(g_BgmRandomLabelTimer == 0);
 

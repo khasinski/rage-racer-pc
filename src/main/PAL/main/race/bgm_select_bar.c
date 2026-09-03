@@ -1,6 +1,8 @@
+#include "game/audio_internal.h"
 #include "game/menu.h"
 #include "game/prim.h"
 #include "game/race.h"
+#include "game/race_internal.h"
 #include "game/render_internal.h"
 
 enum {
@@ -14,6 +16,8 @@ enum {
 void UpdateBgmSelectBar(void) {
     if (g_BgmRandomLabelTimer > 0) {
         g_BgmRandomLabelTimer--;
+    } else if (g_BgmRandomLabelTimer < 0) {
+        g_BgmRandomLabelTimer = 0;
     }
 }
 
@@ -22,9 +26,16 @@ void DrawBgmSelectBar(void) {
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
     s32 labelV;
     s32 button;
+    s32 cursor = g_BgmSelectCursor;
+    s32 track;
+
+    if (cursor < 0 || cursor >= BGM_SELECT_BUTTON_COUNT) {
+        cursor = 0;
+    }
+    track = WrapBgmTrackIndex(g_BgmSelectTrack, BGM_PLAYABLE_TRACK_COUNT);
 
     for (button = 0; button < BGM_SELECT_BUTTON_COUNT; button++) {
-        s32 clut = button == g_BgmSelectCursor
+        s32 clut = button == cursor
                        ? BGM_SELECT_CLUT_ACTIVE
                        : BGM_SELECT_CLUT_INACTIVE;
 
@@ -34,10 +45,10 @@ void DrawBgmSelectBar(void) {
             button * BGM_SELECT_BUTTON_WIDTH, 0, clut);
     }
 
-    if (g_BgmRandomLabelTimer != 0) {
+    if (g_BgmRandomLabelTimer > 0) {
         labelV = 0x10;
     } else {
-        labelV = g_BgmSelectTrack * 12 + 0x1C;
+        labelV = track * 12 + 0x1C;
     }
 
     next = GameQueueSprite(ot, next, 0x64, 0xC2, 0xBA, 0xC, 0, labelV,
