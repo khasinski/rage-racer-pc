@@ -224,6 +224,31 @@ static void test_perspective_fog_uses_authored_near_and_far_depths(void) {
     EXPECT_EQ(100, (int)(RenderFogFactor(&camera, &point) * 100.0f));
 }
 
+static void test_projection_rejects_non_finite_camera_data(void) {
+    RageRenderCamera camera = {0};
+    RageRenderVec3 view = {0.0f, 0.0f, -10.0f};
+    RageRenderVec3 clip;
+    float scale, offset;
+
+    camera.verticalFovDegrees = 60.0f;
+    camera.nearPlane = 1.0f;
+    camera.farPlane = 100.0f;
+    camera.fogNear = 1.0f;
+    camera.fogFar = 100.0f;
+    EXPECT_EQ(0, RenderProject(&camera, &view, NAN, &clip));
+    camera.verticalFovDegrees = INFINITY;
+    EXPECT_EQ(0, RenderProject(&camera, &view, 1.0f, &clip));
+    camera.verticalFovDegrees = 60.0f;
+    camera.farPlane = NAN;
+    EXPECT_EQ(0, RenderPerspectiveDepthTerms(&camera, &scale, &offset));
+    camera.farPlane = 100.0f;
+    view.z = NAN;
+    EXPECT_EQ(0, RenderProject(&camera, &view, 1.0f, &clip));
+    view.z = -10.0f;
+    camera.fogFar = INFINITY;
+    EXPECT_EQ(0, (int)RenderFogFactor(&camera, &view));
+}
+
 static void test_terrain_grid_places_adjacent_cells_without_overlap(void) {
     RageRenderTransform left;
     RageRenderTransform right;
@@ -541,6 +566,7 @@ int main(void) {
     test_mirror_is_an_independent_scene_camera();
     test_camera_cuts_are_not_interpolated_as_motion();
     test_perspective_fog_uses_authored_near_and_far_depths();
+    test_projection_rejects_non_finite_camera_data();
     test_terrain_grid_places_adjacent_cells_without_overlap();
     test_presentation_interpolates_without_mutating_game_world();
     test_synchronized_presentation_keeps_previous_vehicle_models();

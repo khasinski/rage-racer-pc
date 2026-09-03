@@ -1,6 +1,7 @@
 #include "render_projection.h"
 
 #include <math.h>
+#include <stddef.h>
 
 static float Radians(float degrees) {
     return degrees * (3.14159265358979323846f / 180.0f);
@@ -65,9 +66,14 @@ void RenderWorldToView(const RageRenderCamera *camera,
 }
 
 int RenderProject(const RageRenderCamera *camera, const RageRenderVec3 *view,
-                      float aspect, RageRenderVec3 *clip) {
+                  float aspect, RageRenderVec3 *clip) {
     float verticalScale, depth, depthScale, depthOffset;
-    if (camera == 0 || view == 0 || clip == 0 || aspect <= 0.0f ||
+    if (camera == NULL || view == NULL || clip == NULL ||
+        !isfinite(aspect) || aspect <= 0.0f ||
+        !isfinite(camera->verticalFovDegrees) ||
+        camera->verticalFovDegrees <= 0.0f ||
+        camera->verticalFovDegrees >= 180.0f ||
+        !isfinite(view->x) || !isfinite(view->y) || !isfinite(view->z) ||
         (depth = -view->z) < camera->nearPlane ||
         depth > camera->farPlane) return 0;
     if (!RenderPerspectiveDepthTerms(camera, &depthScale, &depthOffset))
@@ -80,9 +86,10 @@ int RenderProject(const RageRenderCamera *camera, const RageRenderVec3 *view,
 }
 
 int RenderPerspectiveDepthTerms(const RageRenderCamera *camera,
-                                    float *scale, float *offset) {
+                                float *scale, float *offset) {
     float range;
-    if (camera == 0 || scale == 0 || offset == 0 ||
+    if (camera == NULL || scale == NULL || offset == NULL ||
+        !isfinite(camera->nearPlane) || !isfinite(camera->farPlane) ||
         camera->nearPlane <= 0.0f ||
         camera->farPlane <= camera->nearPlane) return 0;
     range = camera->farPlane - camera->nearPlane;
@@ -92,13 +99,17 @@ int RenderPerspectiveDepthTerms(const RageRenderCamera *camera,
 }
 
 float RenderFogFactor(const RageRenderCamera *camera,
-                          const RageRenderVec3 *world) {
+                      const RageRenderVec3 *world) {
     RageRenderVec3 view;
     float depth, inverseNear, inverseFar, factor;
-    if (camera == 0 || world == 0 || camera->fogNear <= 0.0f ||
+    if (camera == NULL || world == NULL ||
+        !isfinite(camera->fogNear) || !isfinite(camera->fogFar) ||
+        !isfinite(world->x) || !isfinite(world->y) || !isfinite(world->z) ||
+        camera->fogNear <= 0.0f ||
         camera->fogFar <= camera->fogNear) return 0.0f;
     RenderWorldToView(camera, world, &view);
     depth = -view.z;
+    if (!isfinite(depth)) return 0.0f;
     if (depth <= camera->fogNear) return 0.0f;
     if (depth >= camera->fogFar) return 1.0f;
     /* Perspective fog interpolates in reciprocal depth. This retains the
