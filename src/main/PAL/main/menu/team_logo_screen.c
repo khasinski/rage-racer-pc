@@ -1,6 +1,11 @@
 #include "game/audio.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/team_logo.h"
+
+s32 DrawTeamLogoScreen(s32 step) {
+    return AdvanceMenuFade(&g_TeamLogoScreenFade, step);
+}
 
 static void DrawTeamLogoSaveButtons(void *ot, s32 flash) {
     DrawMenuCursorBox(g_MenuSubCursor != 0 ? 0xB8 : 0xDA, 0x44, 0x20, 0x20,

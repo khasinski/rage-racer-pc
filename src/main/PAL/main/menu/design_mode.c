@@ -3,6 +3,28 @@
 #include "game/menu.h"
 #include "game/menu_internal.h"
 
+enum DesignModeState {
+    DESIGN_MODE_DENIED = -1,
+    DESIGN_MODE_IDLE = 0,
+    DESIGN_MODE_EXIT_TO_LOGO = 1,
+    DESIGN_MODE_EXIT_TO_NAME = 2,
+    DESIGN_MODE_EXIT_TO_PAINT = 3,
+    DESIGN_MODE_EXIT_TO_CUSTOMIZE = 4,
+};
+
+enum DesignModeOption {
+    DESIGN_MODE_OPTION_LOGO,
+    DESIGN_MODE_OPTION_NAME,
+    DESIGN_MODE_OPTION_PAINT,
+    DESIGN_MODE_OPTION_EXIT,
+    DESIGN_MODE_OPTION_COUNT,
+};
+
+enum {
+    DESIGN_MODE_VIEW_OFFSET = 250000,
+    TEAM_NAME_END_KEY = 43,
+};
+
 
 s32 DrawDesignModeScreen(s32 step) {
     DesignModeCellMask mask;
@@ -65,113 +87,142 @@ s32 DrawDesignModeScreen(s32 step) {
 }
 
 
-void UpdateDesignModeScreen(void) {
-    s32 sel;
+static void ExitDesignMode(void) {
+    PlaySoundCue(3);
+    GameMenuBusy = DESIGN_MODE_EXIT_TO_CUSTOMIZE;
+    g_MenuOverlayPattern = 2;
+}
 
-    g_MenuAltLayout = g_MenuAltLayoutSetting;
-    DrawMenuCarView();
-    if (GameMenuBusy == 0) {
-        RunTimedDrawScript(g_DesignModeDeniedScript, &g_UiScriptProgress2, -1);
-        RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
-        DrawFadingMenuSprites(g_UiScriptProgress, 3, g_DesignModeOption);
-        RunTimedDrawScript(g_DesignModeScript, &g_UiScriptProgress, 0);
-        if (RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1) != 0) {
-            g_MenuOverlayPattern = -1;
-            if (g_PadPressed & PAD_UP) {
-                PlaySoundCue(1);
-                g_DesignModeOption = (g_DesignModeOption > 0) ? g_DesignModeOption - 1 : 3;
-            }
-            if (g_PadPressed & PAD_DOWN) {
-                PlaySoundCue(1);
-                g_DesignModeOption = (g_DesignModeOption < 3) ? g_DesignModeOption + 1 : 0;
-            }
-            if (g_PadPressed & PAD_CONFIRM) {
-                sel = g_DesignModeOption;
-                if (sel == 0) {
-                    PlaySoundCue(2);
-                    RampTeamLogoCanvas(-256, -256);
-                    GameMenuBusy = 1;
-                    g_MenuOverlayPattern = 1;
-                } else if (sel == 1) {
-                    PlaySoundCue(2);
-                    GameMenuBusy = 2;
-                    g_MenuOverlayPattern = sel;
-                } else if (sel == 2) {
-                    if ((u32)g_PlayerCarIndex < CUSTOM_PAINT_CAR_COUNT) {
-                        GameMenuBusy = 3;
-                        g_MenuOverlayPattern = 1;
-                        PlaySoundCue(2);
-                    } else {
-                        GameMenuBusy = -1;
-                        g_UiScriptProgress2 = 0;
-                        PlaySoundCue(5);
-                    }
-                } else if (sel == 3) {
-                    PlaySoundCue(3);
-                    GameMenuBusy = 4;
-                    g_MenuOverlayPattern = 2;
-                }
-            } else if (g_PadPressed & PAD_CANCEL) {
-                PlaySoundCue(3);
-                GameMenuBusy = 4;
-                g_MenuOverlayPattern = 2;
-            }
+static void HandleDesignModeInput(void) {
+    if (g_PadPressed & PAD_UP) {
+        PlaySoundCue(1);
+        g_DesignModeOption = g_DesignModeOption > 0
+                                 ? g_DesignModeOption - 1
+                                 : DESIGN_MODE_OPTION_COUNT - 1;
+    }
+    if (g_PadPressed & PAD_DOWN) {
+        PlaySoundCue(1);
+        g_DesignModeOption = g_DesignModeOption < DESIGN_MODE_OPTION_COUNT - 1
+                                 ? g_DesignModeOption + 1
+                                 : DESIGN_MODE_OPTION_LOGO;
+    }
+
+    if (!(g_PadPressed & PAD_CONFIRM)) {
+        if (g_PadPressed & PAD_CANCEL) ExitDesignMode();
+        return;
+    }
+
+    switch (g_DesignModeOption) {
+    case DESIGN_MODE_OPTION_LOGO:
+        PlaySoundCue(2);
+        RampTeamLogoCanvas(-256, -256);
+        GameMenuBusy = DESIGN_MODE_EXIT_TO_LOGO;
+        g_MenuOverlayPattern = 1;
+        break;
+    case DESIGN_MODE_OPTION_NAME:
+        PlaySoundCue(2);
+        GameMenuBusy = DESIGN_MODE_EXIT_TO_NAME;
+        g_MenuOverlayPattern = DESIGN_MODE_OPTION_NAME;
+        break;
+    case DESIGN_MODE_OPTION_PAINT:
+        if ((u32)g_PlayerCarIndex < CUSTOM_PAINT_CAR_COUNT) {
+            GameMenuBusy = DESIGN_MODE_EXIT_TO_PAINT;
+            g_MenuOverlayPattern = 1;
+            PlaySoundCue(2);
+        } else {
+            GameMenuBusy = DESIGN_MODE_DENIED;
+            g_UiScriptProgress2 = 0;
+            PlaySoundCue(5);
         }
-    } else if (GameMenuBusy < 0) {
-        RunTimedDrawScript(g_DesignModeDeniedScript, &g_UiScriptProgress2, 0);
-        if (RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
-            if (g_PadPressed & (PAD_CONFIRM | PAD_CANCEL)) {
-                GameMenuBusy = 0;
-            }
-        }
-        DrawFadingMenuSprites(g_UiScriptProgress, 3, g_DesignModeOption);
-        RunTimedDrawScript(g_DesignModeScript, &g_UiScriptProgress, 0);
-        RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
-    } else {
-        g_MenuHandlerIndex = -1;
-        g_MenuOutgoingHandlerIndex = 6;
-        RunTimedDrawScript(g_DesignModeScript, &g_UiScriptProgress, -1);
-        RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
-        DrawFadingMenuSprites(g_UiScriptProgress, 3, g_DesignModeOption);
-        if (g_UiScriptProgress <= 0) {
-            switch (GameMenuBusy) {
-            case 1:
-                g_MenuScreen = MENU_SCREEN_TEAM_LOGO;
-                g_MenuHandlerIndex = MENU_SCREEN_TEAM_LOGO;
-                DrawTeamLogoCanvas(0, 0);
-                break;
-            case 2:
-                g_MenuScreen = MENU_SCREEN_TEAM_NAME;
-                g_MenuHandlerIndex = MENU_SCREEN_TEAM_NAME;
-                DrawTeamNameEntry(0, 0);
-                g_MenuViewOffset = 0x3D090;
-                g_MenuViewOffsetTarget = 0;
-                g_MenuViewAngleTarget = 0;
-                g_MenuViewAngle = 0;
-                GameMenuCursor = (g_TeamNameLength >= MENU_TEAM_NAME_MAX_LENGTH) ? 0x2B : 0;
-                g_TeamNameCharModel = GameMenuCursor;
-                break;
-            case 3:
-                g_MenuScreen = MENU_SCREEN_PAINT_COLOR;
-                g_MenuHandlerIndex = MENU_SCREEN_PAINT_COLOR;
-                g_UiScriptProgress2 = 0;
-                g_MenuViewOffset = 0x3D090;
-                g_MenuViewOffsetTarget = 0;
-                break;
-            case 4:
-                g_MenuScreen = MENU_SCREEN_CUSTOMIZE;
-                g_MenuHandlerIndex = MENU_SCREEN_CUSTOMIZE;
-                g_DesignModeOption = 0;
-                g_MenuViewOffset = 0x3D090;
-                g_MenuViewOffsetTarget = 0;
-                break;
-            }
-            g_UiScriptProgress = 0;
-            GameMenuBusy = 0;
-        }
+        break;
+    case DESIGN_MODE_OPTION_EXIT:
+        ExitDesignMode();
+        break;
     }
 }
 
-s32 DrawTeamLogoScreen(s32 step) {
-    return AdvanceMenuFade(&g_TeamLogoScreenFade, step);
+static void UpdateDesignModeIdle(void) {
+    RunTimedDrawScript(g_DesignModeDeniedScript, &g_UiScriptProgress2, -1);
+    RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
+    DrawFadingMenuSprites(g_UiScriptProgress, DESIGN_MODE_OPTION_COUNT - 1,
+                          g_DesignModeOption);
+    RunTimedDrawScript(g_DesignModeScript, &g_UiScriptProgress, 0);
+    if (RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1) != 0) {
+        g_MenuOverlayPattern = -1;
+        HandleDesignModeInput();
+    }
+}
+
+static void UpdateDesignModeDenied(void) {
+    RunTimedDrawScript(g_DesignModeDeniedScript, &g_UiScriptProgress2, 0);
+    if (RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0 &&
+        (g_PadPressed & (PAD_CONFIRM | PAD_CANCEL))) {
+        GameMenuBusy = DESIGN_MODE_IDLE;
+    }
+    DrawFadingMenuSprites(g_UiScriptProgress, DESIGN_MODE_OPTION_COUNT - 1,
+                          g_DesignModeOption);
+    RunTimedDrawScript(g_DesignModeScript, &g_UiScriptProgress, 0);
+    RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
+}
+
+static void FinishDesignModeExit(void) {
+    switch (GameMenuBusy) {
+    case DESIGN_MODE_EXIT_TO_LOGO:
+        g_MenuScreen = MENU_SCREEN_TEAM_LOGO;
+        g_MenuHandlerIndex = MENU_SCREEN_TEAM_LOGO;
+        DrawTeamLogoCanvas(0, 0);
+        break;
+    case DESIGN_MODE_EXIT_TO_NAME:
+        g_MenuScreen = MENU_SCREEN_TEAM_NAME;
+        g_MenuHandlerIndex = MENU_SCREEN_TEAM_NAME;
+        DrawTeamNameEntry(0, 0);
+        g_MenuViewOffset = DESIGN_MODE_VIEW_OFFSET;
+        g_MenuViewOffsetTarget = 0;
+        g_MenuViewAngleTarget = 0;
+        g_MenuViewAngle = 0;
+        GameMenuCursor = g_TeamNameLength >= MENU_TEAM_NAME_MAX_LENGTH
+                             ? TEAM_NAME_END_KEY
+                             : 0;
+        g_TeamNameCharModel = GameMenuCursor;
+        break;
+    case DESIGN_MODE_EXIT_TO_PAINT:
+        g_MenuScreen = MENU_SCREEN_PAINT_COLOR;
+        g_MenuHandlerIndex = MENU_SCREEN_PAINT_COLOR;
+        g_UiScriptProgress2 = 0;
+        g_MenuViewOffset = DESIGN_MODE_VIEW_OFFSET;
+        g_MenuViewOffsetTarget = 0;
+        break;
+    case DESIGN_MODE_EXIT_TO_CUSTOMIZE:
+        g_MenuScreen = MENU_SCREEN_CUSTOMIZE;
+        g_MenuHandlerIndex = MENU_SCREEN_CUSTOMIZE;
+        g_DesignModeOption = DESIGN_MODE_OPTION_LOGO;
+        g_MenuViewOffset = DESIGN_MODE_VIEW_OFFSET;
+        g_MenuViewOffsetTarget = 0;
+        break;
+    }
+    g_UiScriptProgress = 0;
+    GameMenuBusy = DESIGN_MODE_IDLE;
+}
+
+static void UpdateDesignModeExit(void) {
+    g_MenuHandlerIndex = -1;
+    g_MenuOutgoingHandlerIndex = MENU_SCREEN_DESIGN_MODE;
+    RunTimedDrawScript(g_DesignModeScript, &g_UiScriptProgress, -1);
+    RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
+    DrawFadingMenuSprites(g_UiScriptProgress, DESIGN_MODE_OPTION_COUNT - 1,
+                          g_DesignModeOption);
+    if (g_UiScriptProgress <= 0) FinishDesignModeExit();
+}
+
+void UpdateDesignModeScreen(void) {
+    g_MenuAltLayout = g_MenuAltLayoutSetting;
+    DrawMenuCarView();
+
+    if (GameMenuBusy == DESIGN_MODE_IDLE) {
+        UpdateDesignModeIdle();
+    } else if (GameMenuBusy < DESIGN_MODE_IDLE) {
+        UpdateDesignModeDenied();
+    } else {
+        UpdateDesignModeExit();
+    }
 }

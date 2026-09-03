@@ -75,6 +75,25 @@ endif()
 add_test(NAME menu_dialog_input COMMAND menu_dialog_input_tests)
 set_tests_properties(menu_dialog_input PROPERTIES LABELS unit)
 
+add_executable(design_mode_state_tests
+    design_mode_state_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/design_mode.c)
+target_include_directories(design_mode_state_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(design_mode_state_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(design_mode_state_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(design_mode_state_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME design_mode_state COMMAND design_mode_state_tests)
+set_tests_properties(design_mode_state PROPERTIES LABELS functional)
+
 add_executable(team_name_texture_tests
     team_name_texture_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/team_name_texture.c)

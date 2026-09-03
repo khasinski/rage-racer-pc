@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <string.h>
 
+s32 g_TeamLogoScreenFade;
+
 s32 GameMenuBusy;
 s32 g_LogoSampleBackIndex;
 s32 g_LogoSampleCharIndex;
