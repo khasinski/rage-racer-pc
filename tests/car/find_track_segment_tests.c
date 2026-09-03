@@ -12,6 +12,7 @@
 #include "game/render.h"
 #include "game/track.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -159,6 +160,26 @@ int main(int argc, char **argv) {
         emptyTrackCar.x != 123 || emptyTrackCar.z != 456) {
         fprintf(stderr, "missing track search changed the car\n");
         return 1;
+    }
+
+    g_TrackPoints = s_points;
+    {
+        GameCarRuntime lowWords;
+        GameCarRuntime signedExtreme;
+        s32 lowWordResult;
+        s32 extremeResult;
+
+        memset(&lowWords, 0, sizeof(lowWords));
+        memset(&signedExtreme, 0, sizeof(signedExtreme));
+        signedExtreme.x = INT_MIN;
+        signedExtreme.z = INT_MIN;
+        lowWordResult = FindTrackSegment(&lowWords, 0);
+        extremeResult = FindTrackSegment(&signedExtreme, 0);
+        if (extremeResult != lowWordResult) {
+            fprintf(stderr,
+                    "signed coordinate limits changed their low-word segment\n");
+            return 1;
+        }
     }
 
     if (out != NULL) {

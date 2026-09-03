@@ -1,5 +1,6 @@
 #include "game/car.h"
 #include "game/angle.h"
+#include "game/integer.h"
 #include "game/render.h"
 #include "game/track.h"
 
@@ -7,32 +8,40 @@ static int TrackSegmentContainsCar(const GameCarRuntime *car, s32 index) {
     DVecValue corners[5];
     const GameTrackPoint *near = TrackPoint(index);
     const GameTrackPoint *far = TrackPoint(index + 1);
-    s32 segmentX = far->x - near->x;
-    s32 segmentZ = far->z - near->z;
+    s32 segmentX = WrapSigned32((int64_t)far->x - near->x);
+    s32 segmentZ = WrapSigned32((int64_t)far->z - near->z);
     s32 nearCos = rcos(ANGLE_THREE_QUARTER_TURN - near->angle);
     s32 nearSin = rsin(ANGLE_THREE_QUARTER_TURN - near->angle);
     s32 farCos = rcos(ANGLE_THREE_QUARTER_TURN - far->angle);
     s32 farSin = rsin(ANGLE_THREE_QUARTER_TURN - far->angle);
-    s32 nearLeft = (s16)(near->leftHalfWidth * 2);
-    s32 nearRight = (s16)(near->rightHalfWidth * 2);
-    s32 farLeft = (s16)(far->leftHalfWidth * 2);
-    s32 farRight = (s16)(far->rightHalfWidth * 2);
+    s32 nearLeft = WrapSigned16(near->leftHalfWidth * 2);
+    s32 nearRight = WrapSigned16(near->rightHalfWidth * 2);
+    s32 farLeft = WrapSigned16(far->leftHalfWidth * 2);
+    s32 farRight = WrapSigned16(far->rightHalfWidth * 2);
 
     /* All corners use the near centre-line point as their origin. */
-    corners[0].components.vx = car->x - near->x;
-    corners[0].components.vy = car->z - near->z;
-    corners[1].components.vx = nearLeft * (s16)nearCos / ANGLE_FULL_TURN;
-    corners[1].components.vy = -nearLeft * (s16)nearSin / ANGLE_FULL_TURN;
-    corners[2].components.vx = -nearRight * (s16)nearCos / ANGLE_FULL_TURN;
-    corners[2].components.vy = nearRight * (s16)nearSin / ANGLE_FULL_TURN;
-    corners[3].components.vx =
-        segmentX + farLeft * (s16)farCos / ANGLE_FULL_TURN;
-    corners[3].components.vy =
-        segmentZ - farLeft * (s16)farSin / ANGLE_FULL_TURN;
-    corners[4].components.vx =
-        segmentX - farRight * (s16)farCos / ANGLE_FULL_TURN;
-    corners[4].components.vy =
-        segmentZ + farRight * (s16)farSin / ANGLE_FULL_TURN;
+    corners[0].components.vx = WrapSigned16((int64_t)car->x - near->x);
+    corners[0].components.vy = WrapSigned16((int64_t)car->z - near->z);
+    corners[1].components.vx = WrapSigned16(
+        nearLeft * WrapSigned16(nearCos) / ANGLE_FULL_TURN);
+    corners[1].components.vy = WrapSigned16(
+        -nearLeft * WrapSigned16(nearSin) / ANGLE_FULL_TURN);
+    corners[2].components.vx = WrapSigned16(
+        -nearRight * WrapSigned16(nearCos) / ANGLE_FULL_TURN);
+    corners[2].components.vy = WrapSigned16(
+        nearRight * WrapSigned16(nearSin) / ANGLE_FULL_TURN);
+    corners[3].components.vx = WrapSigned16(
+        (int64_t)segmentX +
+        farLeft * WrapSigned16(farCos) / ANGLE_FULL_TURN);
+    corners[3].components.vy = WrapSigned16(
+        (int64_t)segmentZ -
+        farLeft * WrapSigned16(farSin) / ANGLE_FULL_TURN);
+    corners[4].components.vx = WrapSigned16(
+        (int64_t)segmentX -
+        farRight * WrapSigned16(farCos) / ANGLE_FULL_TURN);
+    corners[4].components.vy = WrapSigned16(
+        (int64_t)segmentZ +
+        farRight * WrapSigned16(farSin) / ANGLE_FULL_TURN);
 
     return NormalClip(corners[1].packed, corners[2].packed,
                       corners[0].packed) >= 0 &&
