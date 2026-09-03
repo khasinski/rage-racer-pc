@@ -9,8 +9,8 @@
 GameRenderState g_RenderState;
 u32 *g_VisibleCellMask;
 Vec4 *g_VisibleCellList;
-u16 *g_TerrainCellGrid;
-CellVisibilityRow *g_CellVisibilityTable;
+const u16 *g_TerrainCellGrid;
+const CellVisibilityRow *g_CellVisibilityTable;
 const CourseObject *g_CourseObjects;
 s32 g_CourseObjectCount;
 s32 g_AnimTimer;

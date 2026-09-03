@@ -16,8 +16,8 @@ void *g_NativeTerrainCells[GAME_TERRAIN_CELL_LIMIT];
 s32 g_ModelBankCount;
 s32 g_CourseModelCount;
 s32 g_TerrainCellCount;
-u16 *g_TerrainCellGrid;
-CellVisibilityRow *g_CellVisibilityTable;
+const u16 *g_TerrainCellGrid;
+const CellVisibilityRow *g_CellVisibilityTable;
 u32 g_MainVisibleCellMask[32];
 Vec4 g_MainVisibleCellList[64];
 u32 *g_VisibleCellMask;
@@ -198,9 +198,9 @@ static int TestTerrainCells(void) {
     header->cellOffsets[1] = 44;
     header->cellOffsets[2] = 52;
     CHECK(InstallTerrainCellData(data, sizeof(data)) == 1);
-    CHECK(g_TerrainCellGrid == (u16 *)data);
+    CHECK(g_TerrainCellGrid == (const u16 *)data);
     CHECK(g_CellVisibilityTable ==
-          (CellVisibilityRow *)&data[TERRAIN_CELL_GRID_BYTES]);
+          (const CellVisibilityRow *)&data[TERRAIN_CELL_GRID_BYTES]);
     CHECK(g_TerrainCellCount == 3);
     CHECK(g_RenderState.cellTable == g_NativeTerrainCells);
     CHECK(g_RenderState.cellFaces == &data[HEADER_OFFSET + 32]);
