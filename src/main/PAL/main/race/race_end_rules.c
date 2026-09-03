@@ -6,6 +6,9 @@ enum {
     SCENE_RACE = 11,
     RACE_END_MAX_BRIGHTNESS = 127,
     RACE_END_SKIP_MIN_TIMER = 261,
+    RACE_END_INITIAL_TIMER = 555,
+    SCREEN_FADE_COMPLETE = 256,
+    SCREEN_FADE_STEP = 2,
     LOST_RACE_RETRY_DIGIT_COUNT = 6,
 };
 
@@ -20,7 +23,12 @@ s32 RaceEndBrightness(s32 level) {
 }
 
 s32 UpdateLostRaceChoice(s32 choice, u16 pressedButtons) {
-    s32 previousChoice = choice;
+    s32 previousChoice;
+
+    if (choice != 0 && choice != 1) {
+        choice = 0;
+    }
+    previousChoice = choice;
 
     if ((pressedButtons & PAD_UP) && previousChoice == 1) {
         choice = 0;
@@ -48,4 +56,23 @@ s32 LostRaceExitScene(s32 choice) {
 s32 CanSkipRaceEndScreen(s32 timer, u16 pressedButtons) {
     return timer >= RACE_END_SKIP_MIN_TIMER &&
         (pressedButtons & PAD_CONFIRM) != 0;
+}
+
+s32 NextLostRaceFadeTimer(s32 timer) {
+    if (timer < 0) {
+        return 0;
+    }
+    return timer >= SCREEN_FADE_COMPLETE - SCREEN_FADE_STEP
+               ? SCREEN_FADE_COMPLETE
+               : timer + SCREEN_FADE_STEP;
+}
+
+s32 NextRaceEndScreenTimer(s32 timer) {
+    if (timer <= 0) {
+        return 0;
+    }
+    if (timer > RACE_END_INITIAL_TIMER) {
+        timer = RACE_END_INITIAL_TIMER;
+    }
+    return timer - 1;
 }

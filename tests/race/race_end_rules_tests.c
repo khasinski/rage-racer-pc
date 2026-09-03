@@ -1,6 +1,7 @@
 #include "game/race_internal.h"
 #include "game/state.h"
 
+#include <limits.h>
 #include <stdio.h>
 
 static int s_failures;
@@ -24,6 +25,8 @@ int main(void) {
     Check("down does not wrap", UpdateLostRaceChoice(1, PAD_DOWN), 1);
     Check("opposite directions cancel",
           UpdateLostRaceChoice(1, PAD_UP | PAD_DOWN), 1);
+    Check("negative choice resets", UpdateLostRaceChoice(-1, 0), 0);
+    Check("large choice resets", UpdateLostRaceChoice(INT_MAX, 0), 0);
 
     Check("negative retries use zero digit", LostRaceRetryDigitIndex(-1), 0);
     Check("ordinary retries keep their digit", LostRaceRetryDigitIndex(3), 3);
@@ -36,6 +39,16 @@ int main(void) {
     Check("skip before threshold", CanSkipRaceEndScreen(260, PAD_CONFIRM), 0);
     Check("skip at threshold", CanSkipRaceEndScreen(261, PAD_CONFIRM), 1);
     Check("skip needs confirmation", CanSkipRaceEndScreen(555, PAD_UP), 0);
+
+    Check("lost fade starts at zero", NextLostRaceFadeTimer(INT_MIN), 0);
+    Check("lost fade advances", NextLostRaceFadeTimer(100), 102);
+    Check("lost fade reaches opaque", NextLostRaceFadeTimer(254), 256);
+    Check("lost fade stays opaque", NextLostRaceFadeTimer(INT_MAX), 256);
+
+    Check("race end timer stops at zero", NextRaceEndScreenTimer(INT_MIN), 0);
+    Check("race end timer advances", NextRaceEndScreenTimer(100), 99);
+    Check("race end timer bounds corrupt values",
+          NextRaceEndScreenTimer(INT_MAX), 554);
 
     return s_failures != 0;
 }

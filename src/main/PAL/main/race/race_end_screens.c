@@ -85,9 +85,7 @@ void UpdateLostRaceScreen(void) {
             }
         }
     } else {
-        timer = timer >= SCREEN_FADE_COMPLETE - 2
-                    ? SCREEN_FADE_COMPLETE
-                    : timer + 2;
+        timer = NextLostRaceFadeTimer(timer);
         g_SceneTimer = timer;
         DrawFullscreenFadeTile(timer, 0x49);
         if (g_SceneTimer >= SCREEN_FADE_COMPLETE) {
@@ -113,7 +111,7 @@ void EnterRaceEndScreen(void) {
 }
 
 void UpdateRaceEndScreen(void) {
-    s32 timer = g_SceneTimer > 0 ? g_SceneTimer - 1 : 0;
+    s32 timer = NextRaceEndScreenTimer(g_SceneTimer);
 
     g_SceneTimer = timer;
     if (CanSkipRaceEndScreen(timer, g_PadPressed)) {

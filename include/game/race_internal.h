@@ -135,6 +135,8 @@ s32 UpdateLostRaceChoice(s32 choice, u16 pressedButtons);
 s32 LostRaceRetryDigitIndex(s32 retriesRemaining);
 s32 LostRaceExitScene(s32 choice);
 s32 CanSkipRaceEndScreen(s32 timer, u16 pressedButtons);
+s32 NextLostRaceFadeTimer(s32 timer);
+s32 NextRaceEndScreenTimer(s32 timer);
 s32 ResultCourseNameY(s32 grandPrixMode);
 s32 IsValidRaceResultPlace(s32 racePosition);
 s32 ShouldDrawClassPlaceBanner(s32 classPlace, s32 prizeScreenState);

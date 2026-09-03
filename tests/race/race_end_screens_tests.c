@@ -149,6 +149,11 @@ static int TestLostRaceRetry(void) {
     g_SceneTimer = INT_MAX;
     UpdateLostRaceScreen();
     CHECK(g_SceneTimer == 256 && g_SceneId == 11);
+
+    ResetState();
+    g_SceneTimer = INT_MIN;
+    UpdateLostRaceScreen();
+    CHECK(g_SceneTimer == 0 && g_SceneId == -1);
     return 0;
 }
 
@@ -190,6 +195,11 @@ static int TestRaceEndScreen(void) {
     g_SceneTimer = INT_MIN;
     UpdateRaceEndScreen();
     CHECK(g_SceneTimer == 0 && g_SceneId == 6);
+
+    ResetState();
+    g_SceneTimer = INT_MAX;
+    UpdateRaceEndScreen();
+    CHECK(g_SceneTimer == 554 && g_SceneId == -1);
     return 0;
 }
 
