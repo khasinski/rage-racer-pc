@@ -56,11 +56,10 @@ size_t PortAssetRoomAt(const void *at) {
     if (room != 0) return room;
     return BufferRoomAt(at, g_LoadBuffer, sizeof(g_LoadBuffer));
 }
-u32 g_StreamSectorLimit;
 s32 g_AssetLoadFailed;
 u8 *g_AssetBlockPtr2;
 size_t g_AssetBlock2Size;
-u32 g_StreamSectorCount;
+u32 g_StreamFrameCount;
 u8 *g_AssetLoadCursor;
 u8 *g_CarModelBuffer;
 CarImageData *g_CarImageSlots[2];

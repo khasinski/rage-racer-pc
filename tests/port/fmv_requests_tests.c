@@ -16,8 +16,7 @@ s32 g_GrandPrixClass;
 s16 g_SeriesSelection;
 GameCdLoadEntry g_StreamCdEntries[11];
 GameCdLoadEntry *g_StreamLoc;
-u32 g_StreamSectorCount;
-u32 g_StreamSectorLimit;
+u32 g_StreamFrameCount;
 
 static s32 s_beginReturnScene;
 static s32 s_loadResult;
@@ -99,22 +98,19 @@ static void TestFmvSelection(void) {
 
     BeginIntroFmv(3);
     Check(s_beginReturnScene == 3, "intro return scene");
-    Check(g_StreamLoc == &g_StreamCdEntries[0] &&
-              g_StreamSectorCount == 100 && g_StreamSectorLimit == 200,
+    Check(g_StreamLoc == &g_StreamCdEntries[0] && g_StreamFrameCount == 100,
           "intro stream selection");
 
     g_SeriesSelection = 0;
     g_GrandPrixClass = 2;
     BeginClassFmv(7);
     Check(s_beginReturnScene == 7, "class return scene");
-    Check(g_StreamLoc == &g_StreamCdEntries[3] &&
-              g_StreamSectorCount == 103 && g_StreamSectorLimit == 206,
+    Check(g_StreamLoc == &g_StreamCdEntries[3] && g_StreamFrameCount == 103,
           "Grand Prix class stream selection");
 
     g_SeriesSelection = 1;
     BeginClassFmv(8);
-    Check(g_StreamLoc == &g_StreamCdEntries[7] &&
-              g_StreamSectorCount == 107 && g_StreamSectorLimit == 214,
+    Check(g_StreamLoc == &g_StreamCdEntries[7] && g_StreamFrameCount == 107,
           "Extra Grand Prix class stream selection");
 
     g_GrandPrixClass = -4;
@@ -128,8 +124,7 @@ static void TestFmvSelection(void) {
 
     BeginEndingFmv(0x21);
     Check(s_beginReturnScene == 0x21, "ending return scene");
-    Check(g_StreamLoc == &g_StreamCdEntries[10] &&
-              g_StreamSectorCount == 110 && g_StreamSectorLimit == 440,
+    Check(g_StreamLoc == &g_StreamCdEntries[10] && g_StreamFrameCount == 110,
           "ending stream selection");
 }
 

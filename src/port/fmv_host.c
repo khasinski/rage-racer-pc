@@ -184,7 +184,7 @@ static int HostDecodeFmvFrame(void) {
     }
     /* Every movie has a few trailing frames the game never shows; the stream
      * table names the last one it does. */
-    if (g_StreamSectorCount != 0 && s_frame >= g_StreamSectorCount) {
+    if (g_StreamFrameCount != 0 && s_frame >= g_StreamFrameCount) {
         g_FmvStreamEnded = 1;
         HostFmvAudioAllowTail();
     }
@@ -218,7 +218,7 @@ static long ResolveFmvStreamIndex(long streamIndex) {
         return streamIndex;
     }
 
-    g_StreamSectorCount = g_StreamCdEntries[chosen].size;
+    g_StreamFrameCount = g_StreamCdEntries[chosen].size;
     fprintf(stderr, "rage-port: FMV stream forced to %ld\n", chosen);
     return chosen;
 }
@@ -289,32 +289,32 @@ static unsigned int FmvArrivedSectors(void) {
 }
 
 void DecodeFmvFrame(void) {
+    unsigned int arrived;
+    int decoded = 0;
+
     g_SceneTimer++;
     if (g_FmvStreamEnded || (g_PadPressed & PAD_START)) {
         if (g_PadPressed & PAD_START) StartCdVolumeFade(1);
         g_FmvState = FMV_PLAYBACK_FINISH;
         return;
     }
-    {
-        unsigned int arrived = FmvArrivedSectors();
-        int decoded = 0;
-        while (s_sectorCursor < arrived && !g_FmvStreamEnded) {
-            if (!HostDecodeFmvFrame()) {
-                g_FmvStreamEnded = 1;
-                g_FmvState = FMV_PLAYBACK_FINISH;
-                break;
-            }
-            decoded = 1;
-        }
-        /* A slow host can fall several movie frames behind. Decode all of
-         * them to hold the cadence, but upload only the newest image. Reusing
-         * one GPU transfer buffer several times in the same pending command
-         * buffer lets later CPU writes overwrite data that earlier copies have
-         * not consumed yet on some Vulkan drivers. */
-        if (decoded && !HostUploadFmvFrame()) {
+    arrived = FmvArrivedSectors();
+    while (s_sectorCursor < arrived && !g_FmvStreamEnded) {
+        if (!HostDecodeFmvFrame()) {
             g_FmvStreamEnded = 1;
             g_FmvState = FMV_PLAYBACK_FINISH;
+            break;
         }
+        decoded = 1;
+    }
+    /* A slow host can fall several movie frames behind. Decode all of them to
+     * hold the cadence, but upload only the newest image. Reusing one GPU
+     * transfer buffer several times in the same pending command buffer lets
+     * later CPU writes overwrite data that earlier copies have not consumed
+     * yet on some Vulkan drivers. */
+    if (decoded && !HostUploadFmvFrame()) {
+        g_FmvStreamEnded = 1;
+        g_FmvState = FMV_PLAYBACK_FINISH;
     }
 }
 

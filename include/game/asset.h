@@ -161,13 +161,10 @@ extern GameCdLoadEntry g_AssetCdEntries[GAME_ASSET_COUNT];
  * `1 + class` in the Grand Prix and `5 + class` in the Extra GP. */
 extern GameCdLoadEntry g_StreamCdEntries[];
 
-/* The selected stream and its playback bounds, set by BeginIntroFmv and
- * friends and handed to the FMV streamer. The limit intentionally exceeds
- * the recorded size: the original player uses two passes for normal films
- * and four for the ending. */
+/* The selected stream and number of frames the retail game displays, set by
+ * BeginIntroFmv and friends and handed to the FMV streamer. */
 extern GameCdLoadEntry *g_StreamLoc;
-extern u32 g_StreamSectorCount;
-extern u32 g_StreamSectorLimit;
+extern u32 g_StreamFrameCount;
 
 /* Boot CD scratch buffer: the RAGE.BIN index first, then asset 0. */
 extern s32 g_LoadBuffer[];
