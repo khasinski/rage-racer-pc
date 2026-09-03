@@ -4,7 +4,6 @@
 #include "psyq/snd.h"
 
 enum {
-    EFFECT_VOICE_COUNT = 4,
     EFFECT_HARDWARE_VOICE_FIRST = 10,
     EFFECT_BASE_NOTE = 0x3C,
 };
@@ -34,7 +33,7 @@ static void ConsumeEffectVoiceUpdate(s16 hardwareVoice, EffectVoice *effect) {
 void ForcePitchEffectVoicesEnabled(s32 enabled) {
     s32 index;
 
-    for (index = 0; index < EFFECT_VOICE_COUNT; index++) {
+    for (index = 0; index < AUDIO_EFFECT_VOICE_COUNT; index++) {
         EffectVoice *effect = &g_EffectVoices[index];
         s16 hardwareVoice = (s16)(EFFECT_HARDWARE_VOICE_FIRST + index);
 
@@ -53,7 +52,7 @@ void ForcePitchEffectVoicesEnabled(s32 enabled) {
 void UpdateEffectVoiceStates(void) {
     s32 index;
 
-    for (index = 0; index < EFFECT_VOICE_COUNT; index++) {
+    for (index = 0; index < AUDIO_EFFECT_VOICE_COUNT; index++) {
         EffectVoice *effect = &g_EffectVoices[index];
         s16 hardwareVoice = (s16)(EFFECT_HARDWARE_VOICE_FIRST + index);
 

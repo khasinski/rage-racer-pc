@@ -3,15 +3,13 @@
 #include "game/sound.h"
 
 enum {
-    MUSIC_CHANNEL_COUNT = 2,
-    EFFECT_VOICE_COUNT = 4,
     DEFAULT_EFFECT_PITCH = 0x1E00,
 };
 
 void ResetAudioVoiceState(void) {
     s32 i;
 
-    for (i = 0; i < MUSIC_CHANNEL_COUNT; i++) {
+    for (i = 0; i < AUDIO_MUSIC_CHANNEL_COUNT; i++) {
         g_MusicChannels[i].mode = MUSIC_CHANNEL_IDLE;
         g_MusicChannels[i].left.value = -1;
         g_MusicChannels[i].right.value = -1;
@@ -19,7 +17,7 @@ void ResetAudioVoiceState(void) {
         g_MusicChannels[i].volRight = 0;
     }
 
-    for (i = 0; i < EFFECT_VOICE_COUNT; i++) {
+    for (i = 0; i < AUDIO_EFFECT_VOICE_COUNT; i++) {
         g_EffectVoices[i].state = EFFECT_VOICE_IDLE;
         g_EffectVoices[i].note.value = -1;
         g_EffectVoices[i].tone = -1;

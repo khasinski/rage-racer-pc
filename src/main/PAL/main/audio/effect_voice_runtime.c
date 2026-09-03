@@ -8,7 +8,6 @@ enum {
     BASIC_EFFECT_VOICE_COUNT = 2,
     INDEXED_EFFECT_VOICE = 20,
     PAN_EFFECT_VOICE = 21,
-    INDEXED_EFFECT_COUNT = 3,
     PAN_EFFECT_PROGRAM = 15,
     EFFECT_BASE_NOTE = 0x3C,
     AUDIBLE_PAN_VOLUME_MIN = 2,
@@ -108,8 +107,8 @@ static void ApplyIndexedEffectVoiceOutput(s32 index) {
 void SetIndexedEffectVoice(s32 index, s32 phase, s32 volume) {
     if (index < -1) {
         index = -1;
-    } else if (index >= INDEXED_EFFECT_COUNT) {
-        index = INDEXED_EFFECT_COUNT - 1;
+    } else if (index >= AUDIO_INDEXED_EFFECT_COUNT) {
+        index = AUDIO_INDEXED_EFFECT_COUNT - 1;
     }
 
     volume = ClampCueLevel(volume);

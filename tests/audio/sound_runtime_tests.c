@@ -9,8 +9,8 @@
 #include <string.h>
 
 EngineSoundState g_EngineSoundState;
-MusicChannel g_MusicChannels[2];
-EffectVoice g_EffectVoices[4];
+MusicChannel g_MusicChannels[AUDIO_MUSIC_CHANNEL_COUNT];
+EffectVoice g_EffectVoices[AUDIO_EFFECT_VOICE_COUNT];
 SoundScale g_SoundScale;
 s32 g_PanVoiceVolumeR;
 s32 g_PanVoiceVolumeL;

@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <string.h>
 
-EffectCueBank g_EffectCueTable[3];
-EffectVoice g_EffectVoices[5];
+EffectCueBank g_EffectCueTable[EFFECT_CUE_BANK_COUNT];
+EffectVoice g_EffectVoices[AUDIO_EFFECT_VOICE_COUNT];
 
 #define CHECK(condition) do {                                                  \
     if (!(condition)) {                                                        \
@@ -21,7 +21,7 @@ static void Reset(void) {
 
     memset(g_EffectCueTable, 0, sizeof(g_EffectCueTable));
     memset(g_EffectVoices, 0, sizeof(g_EffectVoices));
-    for (bank = 0; bank < 3; bank++) {
+    for (bank = 0; bank < EFFECT_CUE_BANK_COUNT; bank++) {
         g_EffectCueTable[bank].voiceCount = 2;
         g_EffectCueTable[bank].volumeScale = 64 + bank * 16;
         for (voice = 0; voice < 2; voice++) {

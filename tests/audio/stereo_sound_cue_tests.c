@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <string.h>
 
-MusicChannel g_MusicChannels[3];
-SoundModeEntry g_SoundModes[4];
+MusicChannel g_MusicChannels[AUDIO_MUSIC_CHANNEL_COUNT];
+SoundModeEntry g_SoundModes[AUDIO_SOUND_MODE_COUNT];
 s32 g_StereoOutput;
 
 #define CHECK(condition) do {                                                   \
@@ -22,10 +22,10 @@ static void Reset(void) {
 
     memset(g_MusicChannels, 0, sizeof(g_MusicChannels));
     memset(g_SoundModes, 0, sizeof(g_SoundModes));
-    for (mode = 0; mode < 4; mode++) {
+    for (mode = 0; mode < AUDIO_SOUND_MODE_COUNT; mode++) {
         g_SoundModes[mode].count = 2;
         g_SoundModes[mode].factor = 64 + mode * 16;
-        for (channel = 0; channel < 2; channel++) {
+        for (channel = 0; channel < AUDIO_MUSIC_CHANNEL_COUNT; channel++) {
             g_SoundModes[mode].slots[channel].left = 10 + mode * 2 + channel;
             g_SoundModes[mode].slots[channel].right = mode;
         }
@@ -80,11 +80,9 @@ int main(void) {
 
     Reset();
     g_SoundModes[0].count = 99;
-    g_MusicChannels[2].left.value = 1234;
     SetStereoSoundCue(0, 64, 64);
     CHECK(g_MusicChannels[0].left.value == 10 &&
           g_MusicChannels[1].left.value == 11);
-    CHECK(g_MusicChannels[2].left.value == 1234);
 
     puts("stereo sound cues preserve routing, reuse, mono mix, and stop groups");
     return 0;

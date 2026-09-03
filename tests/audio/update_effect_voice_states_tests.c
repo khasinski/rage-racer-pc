@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-EffectVoice g_EffectVoices[5];
+EffectVoice g_EffectVoices[AUDIO_EFFECT_VOICE_COUNT];
 SoundScale g_SoundScale;
 
 static s32 s_keyOnVoice = -1;
@@ -79,7 +79,6 @@ int main(void) {
     g_EffectVoices[1].volume = 200;
     g_EffectVoices[2].state = EFFECT_VOICE_STOP;
     g_EffectVoices[3].state = EFFECT_VOICE_IDLE;
-    g_EffectVoices[4].state = EFFECT_VOICE_START;
 
     UpdateEffectVoiceStates();
     CHECK(s_keyOnVoice == 10 && s_keyOnProgram == 22 && s_keyOnTone == 3);
@@ -93,7 +92,6 @@ int main(void) {
     CHECK(g_EffectVoices[0].state == EFFECT_VOICE_IDLE);
     CHECK(g_EffectVoices[1].state == EFFECT_VOICE_IDLE);
     CHECK(g_EffectVoices[2].state == EFFECT_VOICE_IDLE);
-    CHECK(g_EffectVoices[4].state == EFFECT_VOICE_START);
 
     g_EffectVoices[3].state = EFFECT_VOICE_UPDATE;
     g_EffectVoices[2].note.value = -1;

@@ -7,8 +7,8 @@
 #include <string.h>
 
 SoundScale g_SoundScale;
-MusicChannel g_MusicChannels[2];
-IndexedEffect g_IndexedEffects[3];
+MusicChannel g_MusicChannels[AUDIO_MUSIC_CHANNEL_COUNT];
+IndexedEffect g_IndexedEffects[AUDIO_INDEXED_EFFECT_COUNT];
 s32 g_StereoOutput;
 s32 g_PanVoiceActive;
 s32 g_PanVoiceVolumeL;

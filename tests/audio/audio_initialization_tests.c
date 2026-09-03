@@ -7,8 +7,8 @@
 #include <stdio.h>
 #include <string.h>
 
-MusicChannel g_MusicChannels[2];
-EffectVoice g_EffectVoices[4];
+MusicChannel g_MusicChannels[AUDIO_MUSIC_CHANNEL_COUNT];
+EffectVoice g_EffectVoices[AUDIO_EFFECT_VOICE_COUNT];
 s32 g_PanVoiceVolumeR;
 s32 g_PanVoiceVolumeL;
 s32 g_IndexedEffectIndexPrev;

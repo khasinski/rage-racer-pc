@@ -2,8 +2,6 @@
 #include "game/sound.h"
 
 enum {
-    STEREO_SOUND_CHANNEL_COUNT = 2,
-    STEREO_SOUND_MODE_COUNT = 4,
     STEREO_SOUND_GROUP_SIZE = 2,
     SOUND_MODE_FACTOR_ONE = 128,
 };
@@ -12,8 +10,8 @@ static s32 SoundModeChannelCount(const SoundModeEntry *mode) {
     if (mode->count < 0) {
         return 0;
     }
-    return mode->count > STEREO_SOUND_CHANNEL_COUNT
-               ? STEREO_SOUND_CHANNEL_COUNT
+    return mode->count > AUDIO_MUSIC_CHANNEL_COUNT
+               ? AUDIO_MUSIC_CHANNEL_COUNT
                : mode->count;
 }
 
@@ -49,8 +47,8 @@ void SetStereoSoundCue(s32 cue, s32 left, s32 right) {
 
     if (cue < 0) {
         cue = 0;
-    } else if (cue >= STEREO_SOUND_MODE_COUNT) {
-        cue = STEREO_SOUND_MODE_COUNT - 1;
+    } else if (cue >= AUDIO_SOUND_MODE_COUNT) {
+        cue = AUDIO_SOUND_MODE_COUNT - 1;
     }
 
     left = ClampCueLevel(left);

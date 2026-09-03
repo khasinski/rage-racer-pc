@@ -3,6 +3,13 @@
 
 #include "common.h"
 
+enum {
+    AUDIO_MUSIC_CHANNEL_COUNT = 2,
+    AUDIO_EFFECT_VOICE_COUNT = 4,
+    AUDIO_INDEXED_EFFECT_COUNT = 3,
+    AUDIO_SOUND_MODE_COUNT = 4,
+};
+
 typedef struct SoundScale {
     s32 scale;
     s16 vabIds[8];
@@ -39,7 +46,7 @@ _Static_assert(sizeof(MusicChannelState) == sizeof(s32),
 _Static_assert(sizeof(MusicChannel) == 0x18,
                "music channel record ABI changed");
 
-extern MusicChannel g_MusicChannels[];
+extern MusicChannel g_MusicChannels[AUDIO_MUSIC_CHANNEL_COUNT];
 
 /* Effect voice, 4 elements for hardware voices 10..13. SetPitchedSoundCue walks it
  * with a pointer to `.state`. */
@@ -79,7 +86,7 @@ _Static_assert(sizeof(EffectVoiceState) == sizeof(s32),
 _Static_assert(sizeof(EffectVoice) == 0x14,
                "effect voice record ABI changed");
 
-extern EffectVoice g_EffectVoices[];
+extern EffectVoice g_EffectVoices[AUDIO_EFFECT_VOICE_COUNT];
 
 /* Runtime reverb and sequence controls shared by the audio update paths. */
 extern s32 g_ReverbDepthL; /* reverb depth left  */
@@ -115,7 +122,7 @@ typedef struct IndexedEffect {
     s32 volume;
 } IndexedEffect; /* sizeof 0xC */
 
-extern IndexedEffect g_IndexedEffects[];
+extern IndexedEffect g_IndexedEffects[AUDIO_INDEXED_EFFECT_COUNT];
 
 typedef struct SoundModeSlot {
     s32 left;
@@ -128,7 +135,7 @@ typedef struct SoundModeEntry {
     SoundModeSlot slots[2];
 } SoundModeEntry;
 
-extern SoundModeEntry g_SoundModes[];
+extern SoundModeEntry g_SoundModes[AUDIO_SOUND_MODE_COUNT];
 
 /*
  * Pre-race BGM picker (scene 0xA, left/right on the pad). Per-file types.

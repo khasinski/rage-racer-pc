@@ -21,12 +21,14 @@ const char g_MsgVabOpenHeadError[] __attribute__((aligned(16))) =
     "SsVabOpenHead Error\n";
 const char g_MsgVabTransBodyError[] __attribute__((aligned(16))) =
     "SsVabTransBody Error\n";
-IndexedEffect g_IndexedEffects[3] __attribute__((aligned(16))) = {
+IndexedEffect g_IndexedEffects[AUDIO_INDEXED_EFFECT_COUNT]
+    __attribute__((aligned(16))) = {
     {14, 0, 64},
     {14, 0, 64},
     {16, 0, 90},
 };
-SoundModeEntry g_SoundModes[4] __attribute__((aligned(16))) = {
+SoundModeEntry g_SoundModes[AUDIO_SOUND_MODE_COUNT]
+    __attribute__((aligned(16))) = {
     {2, 40, {{18, 0}, {18, 1}}},
     {2, 80, {{19, 0}, {19, 1}}},
     {2, 55, {{20, 0}, {20, 0}}},
@@ -57,8 +59,8 @@ s32 g_IndexedEffectIndex;
 s32 g_IndexedEffectIndexPrev;
 s32 g_IndexedEffectPitch;
 s32 g_IndexedEffectVolume;
-MusicChannel g_MusicChannels[2];
-EffectVoice g_EffectVoices[4];
+MusicChannel g_MusicChannels[AUDIO_MUSIC_CHANNEL_COUNT];
+EffectVoice g_EffectVoices[AUDIO_EFFECT_VOICE_COUNT];
 s32 g_ReverbDepthL;
 s32 g_ReverbDepthR;
 s32 g_ReverbFadeStep;
