@@ -72,6 +72,14 @@ int main(void) {
         return 1;
     }
 
+    g_CameraCarIndex = -1;
+    g_Cars[0].trackSection = 45;
+    InitTrackScene();
+    if (g_CameraCarIndex != 0 || s_textureSection != 45) {
+        puts("FAIL: invalid camera car was not reset before track setup");
+        return 1;
+    }
+
     puts("track scene initializes rendering, assets, and scenery in order");
     return 0;
 }

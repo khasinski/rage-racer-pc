@@ -11,6 +11,10 @@ enum {
 };
 
 void InitTrackScene(void) {
+    if ((u32)g_CameraCarIndex >= RACE_CAR_SLOT_COUNT) {
+        g_CameraCarIndex = 0;
+    }
+
     InitRenderState(TRACK_SCENE_RENDER_OT_SHIFT);
     ApplyTrackTextureSectionRange();
     InitTrackLighting();
