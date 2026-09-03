@@ -7,14 +7,13 @@ enum {
     TERRAIN_FAR_DEPTH = 0x14000,
     RACE_TERRAIN_NEAR_DEPTH = -0x3000,
     WIDE_TERRAIN_NEAR_DEPTH = -0xA000,
-    TERRAIN_SUBMISSION_CAPACITY = 0x40,
 };
 
 void DrawTerrainCellsInRange(s32 nearDepth, s32 farDepth) {
     BuildVisibleCells(nearDepth, farDepth);
     SetRotMatrix(&g_RenderState.matrix);
     SubmitTerrainCells(&g_RenderState, g_VisibleCellList,
-                       TERRAIN_SUBMISSION_CAPACITY);
+                       VISIBLE_CELL_COUNT);
 }
 
 void DrawTerrainCells(void) {
