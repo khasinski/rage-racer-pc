@@ -9,49 +9,6 @@ enum {
     VIEW_ANGLE_PER_SCAN_DIRECTION = 128,
 };
 
-/* Draw each enabled object whose terrain cell is in the current view. */
-void DrawCourseObjects(void) {
-    Matrix mtx;
-    s32 i;
-
-    for (i = 0; i < g_CourseObjectCount; i++) {
-        CourseObject *obj = &g_CourseObjects[i];
-        s32 cellX;
-        s32 cellZ;
-        s32 flags;
-
-        if (obj->modelId == -1) continue;
-
-        cellX = obj->x / TERRAIN_CELL_SIZE;
-        cellZ = obj->z / TERRAIN_CELL_SIZE;
-        if (!CellVisibilityMaskContains(g_VisibleCellMask, cellX, cellZ)) {
-            continue;
-        }
-
-        BuildRotMatrixY(&mtx, obj->rotationY);
-        MulMatrix2(&g_RenderState.matrix, &mtx);
-        SetGteObjectMatrix(AsPositionWords(&obj->x), &mtx);
-
-        flags = obj->flags;
-        if (flags & COURSE_OBJECT_BLINK_ENVIRONMENT_4) {
-            g_RenderState.envMode4 = ((g_AnimTimer & 0x10) == 0) << 16;
-        } else if (flags & COURSE_OBJECT_ENVIRONMENT_4) {
-            g_RenderState.envMode4 = 0x10000;
-        } else {
-            g_RenderState.envMode4 = 0;
-        }
-
-        if (g_IsEnvironmentMode4
-                ? (flags & COURSE_OBJECT_ALTERNATE_ENVIRONMENT_4)
-                : (flags & COURSE_OBJECT_ALTERNATE_NORMAL)) {
-            SubmitCourseModel2(&g_RenderState, obj->modelId);
-        } else {
-            SubmitCourseModel(&g_RenderState, obj->modelId);
-        }
-    }
-}
-
-
 static u32 GetCellRegion(s32 cellX, s32 cellZ) {
     return g_TerrainCellGrid[cellZ * TERRAIN_CELL_GRID_SIZE + cellX] >>
            TERRAIN_CELL_REGION_SHIFT;

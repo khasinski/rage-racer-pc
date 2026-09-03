@@ -263,6 +263,7 @@ set_tests_properties(visible_cell_scan PROPERTIES LABELS unit)
 
 add_executable(visible_cells_tests
     visible_cells_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/draw_course_objects.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/visible_cells.c)
 target_include_directories(visible_cells_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/include
