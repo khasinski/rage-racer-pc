@@ -5,6 +5,17 @@
 
 extern s32 g_CourseSelectScrollProgress;
 
+typedef struct CourseClassHeaderSprite {
+    u16 width;
+    u16 textureU;
+    u16 textureV;
+} CourseClassHeaderSprite;
+
+/* Returns zero and clears the descriptor when the class has no header in the
+ * selected Grand Prix series. */
+int GetCourseClassHeaderSprite(s32 seriesSelection, s32 classIndex,
+                               CourseClassHeaderSprite *sprite);
+
 typedef struct CourseSelectScrollFrame {
     s32 progress;
     u16 slide;

@@ -1179,6 +1179,25 @@ endif()
 add_test(NAME course_select_scroll COMMAND course_select_scroll_tests)
 set_tests_properties(course_select_scroll PROPERTIES LABELS unit)
 
+add_executable(course_class_header_tests
+    course_class_header_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/course_class_header.c)
+target_include_directories(course_class_header_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(course_class_header_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(course_class_header_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(course_class_header_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME course_class_header COMMAND course_class_header_tests)
+set_tests_properties(course_class_header PROPERTIES LABELS unit)
+
 add_executable(menu_fade_progress_tests menu_fade_progress_tests.c)
 target_include_directories(menu_fade_progress_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include

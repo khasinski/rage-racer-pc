@@ -93,7 +93,7 @@ s32 DrawCourseSelectScreen(s32 step) {
     GameOrderingTableEntry *ot;
     u8 fade;
     u16 slide;
-    s16 headerWidth = 0;
+    CourseClassHeaderSprite classHeader;
     s32 coordinateY;
     s32 lineColor;
     s32 row;
@@ -129,78 +129,11 @@ s32 DrawCourseSelectScreen(s32 step) {
     course = SeriesCourseIndex();
 
     if (g_GrandPrixMode != 0) {
-        if (g_SeriesSelection == 0) {
-            switch (g_GrandPrixClass) {
-            case 0:
-                headerWidth = 0x24;
-                DrawSprite(
-                    ot, 0x50, 0xB0 - (s16)slide, 0x24, 0x10,
-                    0, 0x38, fade, fade, fade, 0x244, 0, 1, 0x5B);
-                break;
-            case 1:
-                headerWidth = 0x20;
-                DrawSprite(
-                    ot, 0x50, 0xB0 - (s16)slide, 0x20, 0x10,
-                    0x24, 0x38, fade, fade, fade, 0x244, 0, 1, 0x5B);
-                break;
-            case 2:
-                headerWidth = 0x28;
-                DrawSprite(
-                    ot, 0x50, 0xB0 - (s16)slide, 0x28, 0x10,
-                    0x44, 0x38, fade, fade, fade, 0x244, 0, 1, 0x5B);
-                break;
-            case 3:
-                headerWidth = 0x30;
-                DrawSprite(
-                    ot, 0x50, 0xB0 - (s16)slide, 0x30, 0x10,
-                    0x6C, 0x38, fade, fade, fade, 0x244, 0, 1, 0x5B);
-                break;
-            case 4:
-                headerWidth = 0x30;
-                DrawSprite(
-                    ot, 0x50, 0xB0 - (s16)slide, 0x30, 0x10,
-                    0x9C, 0x38, fade, fade, fade, 0x244, 0, 1, 0x5B);
-                break;
-            }
-        } else {
-            switch (g_GrandPrixClass) {
-            case 0:
-                headerWidth = 0x30;
-                DrawSprite(
-                    ot, 0x50, 0xB0 - (s16)slide, 0x30, 0x10,
-                    0xCC, 0x38, fade, fade, fade, 0x244, 0, 1, 0x5B);
-                break;
-            case 1:
-                headerWidth = 0x40;
-                DrawSprite(
-                    ot, 0x50, 0xB0 - (s16)slide, 0x40, 0x10,
-                    0, 0x48, fade, fade, fade, 0x244, 0, 1, 0x5B);
-                break;
-            case 2:
-                headerWidth = 0x3C;
-                DrawSprite(
-                    ot, 0x50, 0xB0 - (s16)slide, 0x3C, 0x10,
-                    0x40, 0x48, fade, fade, fade, 0x244, 0, 1, 0x5B);
-                break;
-            case 3:
-                headerWidth = 0x28;
-                DrawSprite(
-                    ot, 0x50, 0xB0 - (s16)slide, 0x28, 0x10,
-                    0x7C, 0x48, fade, fade, fade, 0x244, 0, 1, 0x5B);
-                break;
-            case 4:
-                headerWidth = 0x20;
-                DrawSprite(
-                    ot, 0x50, 0xB0 - (s16)slide, 0x20, 0x10,
-                    0xA4, 0x48, fade, fade, fade, 0x244, 0, 1, 0x5B);
-                break;
-            case 5:
-                headerWidth = 0x28;
-                DrawSprite(
-                    ot, 0x50, 0xB0 - (s16)slide, 0x28, 0x10,
-                    0xC4, 0x48, fade, fade, fade, 0x244, 0, 1, 0x5B);
-                break;
-            }
+        if (GetCourseClassHeaderSprite(
+                g_SeriesSelection, g_GrandPrixClass, &classHeader)) {
+            DrawSprite(ot, 0x50, 0xB0 - (s16)slide, classHeader.width, 0x10,
+                       classHeader.textureU, classHeader.textureV, fade, fade,
+                       fade, 0x244, 0, 1, 0x5B);
         }
 
         gpHeight = 0x10;
@@ -210,7 +143,7 @@ s32 DrawCourseSelectScreen(s32 step) {
         gpFade = fade;
         gpFlags = 0x5B;
         DrawSprite(
-            ot, headerWidth + 0x50, 0xB0 - gpSlide, 0x10,
+            ot, classHeader.width + 0x50, 0xB0 - gpSlide, 0x10,
             gpHeight, 0xEC, 0x48, gpFade, gpFade, gpFade,
             gpClut, 0, gpSemiTrans, gpFlags);
 
