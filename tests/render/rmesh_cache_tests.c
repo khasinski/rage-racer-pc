@@ -67,5 +67,15 @@ int main(void) {
     EXPECT(RuntimeMeshCacheFind(&cache, 10,
                                 RAGE_RENDER_ASSET_MODEL_BANK) == NULL);
     EXPECT(reads == 1);
+    entries[0].ownedBytes = entries;
+    RuntimeMeshCacheRelease(&cache);
+    EXPECT(frees == 2 && cache.count == 0);
+
+    RuntimeMeshCacheInit(&cache, index, sizeof(index) - 1, read_file,
+                         free_file, NULL, NULL, 1);
+    cache.count = 2;
+    RuntimeMeshCacheRelease(&cache);
+    EXPECT(frees == 2 && cache.count == 0);
+    RuntimeMeshCacheRelease(NULL);
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

@@ -53,10 +53,12 @@ const RageRuntimeCachedMesh *RuntimeMeshCacheFind(
 }
 
 void RuntimeMeshCacheRelease(RageRuntimeMeshCache *cache) {
+    uint32_t count;
     uint32_t i;
     if (cache == NULL) return;
-    if (cache->freeFile != NULL) {
-        for (i = 0; i < cache->count; i++) {
+    count = cache->count < cache->capacity ? cache->count : cache->capacity;
+    if (cache->freeFile != NULL && cache->entries != NULL) {
+        for (i = 0; i < count; i++) {
             cache->freeFile(cache->context, cache->entries[i].ownedBytes);
         }
     }
