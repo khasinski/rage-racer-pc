@@ -15,14 +15,25 @@ static void StoreCarSetup(SavedCarSetup *saved, const CarEntry *car) {
     saved->enabled = car->enabled;
 }
 
-static void StoreRaceProgress(
+static void StoreRaceProgressFields(
     SavedRaceProgress *saved,
     const GameRaceProgress *progress) {
     saved->course = progress->course;
     saved->carIndex = progress->carIndex;
     saved->classIndex = progress->classIndex;
     saved->maxClassReached = progress->maxClassReached;
+}
+
+static void StoreGrandPrixProgress(SavedRaceProgress *saved,
+                                   const GameRaceProgress *progress) {
+    StoreRaceProgressFields(saved, progress);
     saved->money = progress->money;
+}
+
+static void StoreTimeAttackProgress(SavedRaceProgress *saved,
+                                    const GameRaceProgress *progress) {
+    StoreRaceProgressFields(saved, progress);
+    saved->timeAttackSeries = progress->timeAttackSeries;
 }
 
 void StoreSaveStateBlock(GameSaveBlock *block) {
@@ -39,9 +50,10 @@ void StoreSaveStateBlock(GameSaveBlock *block) {
     block->negconMaxTwist = g_NegconMaxTwist;
     block->negconNeutralL = g_NegconNeutralL;
 
-    StoreRaceProgress(&block->grandPrixProgress, &g_GrandPrixSave);
-    StoreRaceProgress(&block->extraGrandPrixProgress, &g_ExtraGrandPrixSave);
-    StoreRaceProgress(&block->timeAttackProgress, &g_TimeAttackSave);
+    StoreGrandPrixProgress(&block->grandPrixProgress, &g_GrandPrixSave);
+    StoreGrandPrixProgress(&block->extraGrandPrixProgress,
+                           &g_ExtraGrandPrixSave);
+    StoreTimeAttackProgress(&block->timeAttackProgress, &g_TimeAttackSave);
     block->bgmSelection = g_BgmSelection;
     block->extraGrandPrixUnlocked = g_ExtraGrandPrixUnlocked;
     block->maxClassReached[0] = g_MaxClassReached[0];

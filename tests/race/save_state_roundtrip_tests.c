@@ -227,6 +227,7 @@ int main(void) {
     outOfRange.grandPrixProgress.maxClassReached = -20;
     outOfRange.grandPrixProgress.money = -1;
     outOfRange.extraGrandPrixProgress.money = RACE_MAX_PRIZE_MONEY + 1;
+    outOfRange.timeAttackProgress.timeAttackSeries = 99;
     outOfRange.bgmSelection = 99;
     outOfRange.extraGrandPrixUnlocked = 7;
     outOfRange.maxClassReached[0] = 99;
@@ -261,6 +262,7 @@ int main(void) {
     CHECK(g_GrandPrixSave.maxClassReached == -1);
     CHECK(g_GrandPrixSave.money == 0);
     CHECK(g_ExtraGrandPrixSave.money == RACE_MAX_PRIZE_MONEY);
+    CHECK(g_TimeAttackSave.timeAttackSeries == RECORD_SERIES_COUNT - 1);
     CHECK(g_BgmSelection == 10);
     CHECK(g_ExtraGrandPrixUnlocked == 1);
     CHECK(g_MaxClassReached[0] == GRAND_PRIX_FINAL_CLASS_INDEX);

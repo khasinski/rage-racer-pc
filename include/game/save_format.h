@@ -83,7 +83,10 @@ typedef struct SavedRaceProgress {
     s32 carIndex;
     s32 classIndex;
     s32 maxClassReached;
-    s32 money;
+    union {
+        s32 money;
+        s32 timeAttackSeries;
+    };
 } SavedRaceProgress;
 
 typedef enum SavedCarTableIndex {

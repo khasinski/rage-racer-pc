@@ -36,7 +36,7 @@ static void LoadCarSetup(CarEntry *car, const SavedCarSetup *saved,
     car->enabled = saved->enabled != 0;
 }
 
-static void LoadRaceProgress(
+static void LoadRaceProgressFields(
     GameRaceProgress *progress,
     const SavedRaceProgress *saved) {
     progress->course = ClampSaveValue(saved->course, 0, COURSE_LONG_SLOT);
@@ -46,7 +46,19 @@ static void LoadRaceProgress(
         saved->classIndex, 0, GRAND_PRIX_FINAL_CLASS_INDEX);
     progress->maxClassReached = ClampSaveValue(
         saved->maxClassReached, -1, GRAND_PRIX_FINAL_CLASS_INDEX);
+}
+
+static void LoadGrandPrixProgress(GameRaceProgress *progress,
+                                  const SavedRaceProgress *saved) {
+    LoadRaceProgressFields(progress, saved);
     progress->money = ClampPrizeMoney(saved->money);
+}
+
+static void LoadTimeAttackProgress(GameRaceProgress *progress,
+                                   const SavedRaceProgress *saved) {
+    LoadRaceProgressFields(progress, saved);
+    progress->timeAttackSeries = ClampSaveValue(
+        saved->timeAttackSeries, 0, RECORD_SERIES_COUNT - 1);
 }
 
 static void NormalizeRaceRecords(
@@ -115,9 +127,10 @@ s32 LoadSaveStateBlock(const GameSaveBlock *block) {
     g_NegconMaxTwist =
         ClampNegconCalibrationValue(block->negconMaxTwist);
 
-    LoadRaceProgress(&g_GrandPrixSave, &block->grandPrixProgress);
-    LoadRaceProgress(&g_ExtraGrandPrixSave, &block->extraGrandPrixProgress);
-    LoadRaceProgress(&g_TimeAttackSave, &block->timeAttackProgress);
+    LoadGrandPrixProgress(&g_GrandPrixSave, &block->grandPrixProgress);
+    LoadGrandPrixProgress(&g_ExtraGrandPrixSave,
+                          &block->extraGrandPrixProgress);
+    LoadTimeAttackProgress(&g_TimeAttackSave, &block->timeAttackProgress);
     g_BgmSelection = ClampSaveValue(
         block->bgmSelection, 0, MAX_SAVED_BGM_SELECTION);
     g_ExtraGrandPrixUnlocked = block->extraGrandPrixUnlocked != 0;
