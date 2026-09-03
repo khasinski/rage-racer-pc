@@ -12,6 +12,29 @@ enum SteeringDirection {
     STEERING_LEFT = 2
 };
 
+enum {
+    PLAYER_CONTROL_RACE_PHASE = 2,
+    FINISHED_RACE_PHASE = 4,
+    STEERING_FULL_LOCK = 4096,
+    DIGITAL_STEERING_STEP = 1536,
+    DIGITAL_STEERING_RELEASE_DIVISOR = 3,
+    STEERING_ROLL_STEP = 6,
+    BODY_ROLL_DAMPING_NUMERATOR = 7,
+    BODY_ROLL_DAMPING_DIVISOR = 8,
+    NEGCON_STEERING_SCALE = 13 * 512,
+    NEGCON_APPROACH_WINDOW = 256,
+    NEGCON_RESPONSE_ANGLE_DIVISOR = 8,
+    NEGCON_RESPONSE_DIVISOR = 4,
+    NEGCON_NEUTRAL_ANGLE_DIVISOR = 2,
+    NEGCON_NEUTRAL_POSITION_DIVISOR = 6,
+    AUTO_STEER_MIN_SPEED = 81,
+    AUTO_STEER_FAST_SPEED = 800,
+    AUTO_STEER_SLOW_LATERAL_RESPONSE = 6,
+    AUTO_STEER_FAST_LATERAL_RESPONSE = 4,
+    AUTO_STEER_HEADING_RESPONSE = 32,
+    AUTO_STEER_ROLL_DIVISOR = 128,
+};
+
 static s32 CurveModeForDriver(const PlayerCarRuntime *car,
                               enum SteeringDirection direction) {
     if (car->facingBackwards != 0) {
@@ -23,7 +46,8 @@ static s32 CurveModeForDriver(const PlayerCarRuntime *car,
 static void DampBodyRoll(PlayerCarRuntime *car) {
     if (car->bodyRollVelocity != 0) {
         car->bodyRollVelocity = WrapSigned32(
-            (int64_t)car->bodyRollVelocity * 7) / 8;
+            (int64_t)car->bodyRollVelocity * BODY_ROLL_DAMPING_NUMERATOR) /
+            BODY_ROLL_DAMPING_DIVISOR;
     }
 }
 
@@ -43,23 +67,23 @@ static void UpdateDigitalSteering(PlayerCarRuntime *car) {
         drive->trackCurveMode = CurveModeForDriver(car, STEERING_LEFT);
         if (steerPosition > 0) {
             drive->steerPos = 0;
-        } else if (steerPosition >= -4095) {
-            drive->steerPos = steerPosition - 1536;
+        } else if (steerPosition > -STEERING_FULL_LOCK) {
+            drive->steerPos = steerPosition - DIGITAL_STEERING_STEP;
         }
         car->bodyRollVelocity = WrapSigned32(
-            (int64_t)car->bodyRollVelocity - 6);
+            (int64_t)car->bodyRollVelocity - STEERING_ROLL_STEP);
     } else if (held & g_PadButtonMapping[1]) {
         drive->trackCurveMode = CurveModeForDriver(car, STEERING_RIGHT);
         if (steerPosition < 0) {
             drive->steerPos = 0;
-        } else if (steerPosition < 4096) {
-            drive->steerPos = steerPosition + 1536;
+        } else if (steerPosition < STEERING_FULL_LOCK) {
+            drive->steerPos = steerPosition + DIGITAL_STEERING_STEP;
         }
         car->bodyRollVelocity = WrapSigned32(
-            (int64_t)car->bodyRollVelocity + 6);
+            (int64_t)car->bodyRollVelocity + STEERING_ROLL_STEP);
     } else {
         drive->trackCurveMode = 0;
-        drive->steerPos /= 3;
+        drive->steerPos /= DIGITAL_STEERING_RELEASE_DIVISOR;
     }
 
     car->steeringAngle = WrapSigned32(-(int64_t)drive->steerPos);
@@ -69,7 +93,7 @@ static void UpdateDigitalSteering(PlayerCarRuntime *car) {
 static void UpdateNegconSteering(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
     s32 requestedSteer =
-        (g_NegconSteer * 13 * 512) / GetNegconSteerRange();
+        (g_NegconSteer * NEGCON_STEERING_SCALE) / GetNegconSteerRange();
     s32 steerPosition = drive->steerPos;
 
     if (requestedSteer < 0) {
@@ -77,33 +101,39 @@ static void UpdateNegconSteering(PlayerCarRuntime *car) {
         if (steerPosition > 0) {
             drive->steerPos = 0;
             car->steeringAngle = 0;
-        } else if (requestedSteer - 256 < steerPosition) {
-            drive->steerPos -= rcos(steerPosition / 8) / 4;
+        } else if (requestedSteer - NEGCON_APPROACH_WINDOW < steerPosition) {
+            drive->steerPos -=
+                rcos(steerPosition / NEGCON_RESPONSE_ANGLE_DIVISOR) /
+                NEGCON_RESPONSE_DIVISOR;
             car->steeringAngle = WrapSigned32(
-                (int64_t)car->steeringAngle + 1536);
+                (int64_t)car->steeringAngle + DIGITAL_STEERING_STEP);
         } else {
-            drive->steerPos = steerPosition / 3;
+            drive->steerPos =
+                steerPosition / DIGITAL_STEERING_RELEASE_DIVISOR;
         }
         car->bodyRollVelocity = WrapSigned32(
-            (int64_t)car->bodyRollVelocity - 6);
+            (int64_t)car->bodyRollVelocity - STEERING_ROLL_STEP);
     } else if (requestedSteer > 0) {
         drive->trackCurveMode = CurveModeForDriver(car, STEERING_RIGHT);
         if (steerPosition < 0) {
             drive->steerPos = 0;
             car->steeringAngle = 0;
-        } else if (steerPosition < requestedSteer + 256) {
-            drive->steerPos += rcos(steerPosition / 8) / 4;
+        } else if (steerPosition < requestedSteer + NEGCON_APPROACH_WINDOW) {
+            drive->steerPos +=
+                rcos(steerPosition / NEGCON_RESPONSE_ANGLE_DIVISOR) /
+                NEGCON_RESPONSE_DIVISOR;
             car->steeringAngle = WrapSigned32(
-                (int64_t)car->steeringAngle - 1536);
+                (int64_t)car->steeringAngle - DIGITAL_STEERING_STEP);
         } else {
-            drive->steerPos = steerPosition / 3;
+            drive->steerPos =
+                steerPosition / DIGITAL_STEERING_RELEASE_DIVISOR;
         }
         car->bodyRollVelocity = WrapSigned32(
-            (int64_t)car->bodyRollVelocity + 6);
+            (int64_t)car->bodyRollVelocity + STEERING_ROLL_STEP);
     } else {
         drive->trackCurveMode = 0;
-        car->steeringAngle /= 2;
-        drive->steerPos /= 6;
+        car->steeringAngle /= NEGCON_NEUTRAL_ANGLE_DIVISOR;
+        drive->steerPos /= NEGCON_NEUTRAL_POSITION_DIVISOR;
     }
 
     DampBodyRoll(car);
@@ -114,13 +144,16 @@ static void UpdateAutomaticSteering(PlayerCarRuntime *car) {
     s32 wantedHeading = WrapSigned32(
         (int64_t)car->facingBackwards * ANGLE_HALF_TURN +
         ANGLE_THREE_QUARTER_TURN - car->trackHeading.value);
-    s32 headingCorrection = GetAngleDelta(car->bodyYaw, wantedHeading) * 32;
-    s32 lateralCorrection = 4096 - rcos(WrapSigned32(
+    s32 headingCorrection = GetAngleDelta(car->bodyYaw, wantedHeading) *
+                            AUTO_STEER_HEADING_RESPONSE;
+    s32 lateralCorrection = STEERING_FULL_LOCK - rcos(WrapSigned32(
         (int64_t)car->trackLateralOffset * 2));
     s32 steerPosition;
 
-    lateralCorrection *= car->speed < 800 ? 6 : 4;
-    if (car->speed >= 81) {
+    lateralCorrection *= car->speed < AUTO_STEER_FAST_SPEED
+                             ? AUTO_STEER_SLOW_LATERAL_RESPONSE
+                             : AUTO_STEER_FAST_LATERAL_RESPONSE;
+    if (car->speed >= AUTO_STEER_MIN_SPEED) {
         if ((car->facingBackwards != 0 && car->trackLateralOffset < 0) ||
             (car->facingBackwards == 0 && car->trackLateralOffset > 0)) {
             lateralCorrection = -lateralCorrection;
@@ -130,20 +163,21 @@ static void UpdateAutomaticSteering(PlayerCarRuntime *car) {
         steerPosition = 0;
     }
 
-    if (steerPosition < -4096) {
-        steerPosition = -4096;
-    } else if (steerPosition > 4096) {
-        steerPosition = 4096;
+    if (steerPosition < -STEERING_FULL_LOCK) {
+        steerPosition = -STEERING_FULL_LOCK;
+    } else if (steerPosition > STEERING_FULL_LOCK) {
+        steerPosition = STEERING_FULL_LOCK;
     }
     drive->steerPos = steerPosition;
     car->steeringAngle = steerPosition;
-    car->bodyRollVelocity = steerPosition / 128;
+    car->bodyRollVelocity = steerPosition / AUTO_STEER_ROLL_DIVISOR;
 }
 
 void UpdateCarBodyRoll(PlayerCarRuntime *car) {
-    if (g_RacePhase < 2) {
+    if (g_RacePhase < PLAYER_CONTROL_RACE_PHASE) {
         CenterSteering(car);
-    } else if (g_RacePhase < 4 && g_PlayerAutoSteer == 0) {
+    } else if (g_RacePhase < FINISHED_RACE_PHASE &&
+               g_PlayerAutoSteer == 0) {
         if (g_PadType == PAD_TYPE_DIGITAL) {
             UpdateDigitalSteering(car);
         } else if (g_PadType == PAD_TYPE_NEGCON) {
@@ -155,8 +189,9 @@ void UpdateCarBodyRoll(PlayerCarRuntime *car) {
         UpdateAutomaticSteering(car);
     }
 
-    if (car->speed < 800) {
+    if (car->speed < AUTO_STEER_FAST_SPEED) {
         car->bodyRollVelocity = WrapSigned32(
-            (int64_t)car->bodyRollVelocity * car->speed) / 800;
+            (int64_t)car->bodyRollVelocity * car->speed) /
+            AUTO_STEER_FAST_SPEED;
     }
 }
