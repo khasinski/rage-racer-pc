@@ -305,9 +305,6 @@ void DrawTerrainCellsWide(void);
 void DrawScriptedScenery(s32 animate);
 void DrawStartGridScenery(s32 timer);
 void InitTrackScene(void);
-void InitPathScenery(void);
-void SeedFlybyScenery(void);
-void SeedRouteScenery(void);
 void TriggerRaceCues(void);
 void UpdatePointAmbience(s32 trackPosition);
 

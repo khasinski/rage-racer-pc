@@ -18,6 +18,7 @@
 #include "game/race_scene_internal.h"
 #include "game/screens.h"
 #include "game/track.h"
+#include "game/track_internal.h"
 #include "psyq/snd.h"
 
 /* A retirement is not a finish-line event. Keep following the player's car
