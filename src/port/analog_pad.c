@@ -1,4 +1,6 @@
 #include <SDL3/SDL.h>
+#include <errno.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -54,8 +56,10 @@ static float AxisSetting(const char *key, float fallback, float low,
     char *end;
     float value;
     if (text == NULL || text[0] == '\0') return fallback;
+    errno = 0;
     value = strtof(text, &end);
-    if (*end != '\0' || value < low || value > high) {
+    if (errno == ERANGE || end == text || *end != '\0' || !isfinite(value) ||
+        value < low || value > high) {
         fprintf(stderr,
                 "rage-port: ignoring %s=%s (expected %.2f..%.2f); using %.2f\n",
                 key, text, low, high, fallback);

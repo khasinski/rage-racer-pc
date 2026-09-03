@@ -3,6 +3,11 @@
 
 float AxisCurve(float value, float deadzone, float saturation,
                     float linearity, float scaling) {
+    if (!isfinite(value)) return 0.0f;
+    if (!isfinite(deadzone)) deadzone = 0.0f;
+    if (!isfinite(saturation)) saturation = 1.0f;
+    if (!isfinite(linearity)) linearity = 0.0f;
+    if (!isfinite(scaling)) scaling = 1.0f;
     if (saturation <= deadzone) saturation = deadzone + 0.0001f;
     value = (value - deadzone) / (saturation - deadzone);
     if (value < 0.0f) value = 0.0f;
@@ -20,8 +25,12 @@ float AxisCurve(float value, float deadzone, float saturation,
 #define NEGCON_TWIST_MAX 0x7F
 
 int NegconTwist(float shapedStick, int dpadLeft, int dpadRight, int range) {
-    int deflection = (int)(shapedStick * (float)NEGCON_TWIST_MAX);
+    int deflection;
     int twist;
+    if (!isfinite(shapedStick)) shapedStick = 0.0f;
+    if (shapedStick < -1.0f) shapedStick = -1.0f;
+    if (shapedStick > 1.0f) shapedStick = 1.0f;
+    deflection = (int)(shapedStick * (float)NEGCON_TWIST_MAX);
     if (range <= 0) range = NEGCON_TWIST_MAX;
     if (dpadLeft && deflection > -range) deflection = -range;
     if (dpadRight && deflection < range) deflection = range;

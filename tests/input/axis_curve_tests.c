@@ -46,11 +46,19 @@ int main(void) {
     /* Scaling multiplies afterwards and cannot push past full deflection. */
     Expect("scaled", AxisCurve(0.5f, 0.0f, 1.0f, 0.0f, 1.5f), 0.75f);
     Expect("scaling clamps", AxisCurve(0.9f, 0.0f, 1.0f, 0.0f, 4.0f), 1.0f);
+    Expect("NaN input rests", AxisCurve(NAN, 0.0f, 1.0f, 0.0f, 1.0f), 0.0f);
+    Expect("NaN deadzone uses zero", AxisCurve(0.5f, NAN, 1.0f, 0.0f, 1.0f),
+           0.5f);
+    Expect("infinite saturation uses full travel",
+           AxisCurve(0.5f, 0.0f, INFINITY, 0.0f, 1.0f), 0.5f);
 
     /* Twist reporting: the stick spans the byte whatever the calibration says,
      * so the smallest twist range still reaches full lock once the game
      * subtracts its play. Scaling here as well was what broke calibrating. */
     Expect("stick centred", (float)NegconTwist(0.0f, 0, 0, 25), 128.0f);
+    Expect("NaN stick centred", (float)NegconTwist(NAN, 0, 0, 25), 128.0f);
+    Expect("oversized stick clamps", (float)NegconTwist(2.0f, 0, 0, 25),
+           255.0f);
     Expect("stick full right, small range",
            (float)NegconTwist(1.0f, 0, 0, 25), 255.0f);
     Expect("stick full left, small range",
