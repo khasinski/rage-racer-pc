@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <string.h>
 
-s32 FindTrackSegment(GameCarRuntime *car, s32 idx);
+s32 FindTrackSegment(const GameCarRuntime *car, s32 idx);
 
 enum { TRACK_POINTS = 24, TRACK_RADIUS = 20000 };
 
@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
      * What the search answered before it was touched. Run with a file name to
      * write the sweep out and diff two runs to see which cases moved.
      */
-    static const unsigned long expected = 3072612995UL;
+    static const unsigned long expected = 17975191UL;
     static const s32 radii[] = {0, 19000, 19700, 20000, 20400, 21000, 40000};
     static const s32 guesses[] = {0, 5, 12, 23};
     FILE *out = NULL;
@@ -173,6 +173,13 @@ int main(int argc, char **argv) {
     }
 
     g_TrackPoints = s_points;
+    emptyTrackCar.x = 1000000;
+    emptyTrackCar.z = -1000000;
+    if (FindTrackSegment(&emptyTrackCar, 7) != -1 ||
+        emptyTrackCar.x != 1000000 || emptyTrackCar.z != -1000000) {
+        fprintf(stderr, "failed segment search changed the car\n");
+        return 1;
+    }
     {
         GameCarRuntime lowWords;
         GameCarRuntime signedExtreme;

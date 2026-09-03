@@ -14,7 +14,7 @@ const TrackEventData *g_TrackEventData;
 
 static s32 s_targetSegment;
 
-s32 FindTrackSegment(GameCarRuntime *car, s32 startIndex) {
+s32 FindTrackSegment(const GameCarRuntime *car, s32 startIndex) {
     (void)car;
     (void)startIndex;
     return s_targetSegment;

@@ -47,6 +47,8 @@ static void PlacePlayerCarOnGrid(PlayerCarRuntime *car) {
         FindTrackSegment(AsRivalCar(car), car->trackPointIndex);
     if (car->trackPointIndex < 0) {
         car->trackPointIndex = startPointIndex;
+        car->x = TrackPoint(startPointIndex)->x;
+        car->z = TrackPoint(startPointIndex)->z;
     }
 
     car->bodyPitch = 0;

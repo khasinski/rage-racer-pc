@@ -805,7 +805,7 @@ typedef enum TachometerLightingMode {
 void BuildStartingGrid(void);
 void BuildTachoNeedleQuad(void);
 void AccumulateLapProgress(GameCarRuntime *car);
-s32 FindTrackSegment(GameCarRuntime *car, s32 idx);
+s32 FindTrackSegment(const GameCarRuntime *car, s32 idx);
 void SeedCarLapProgress(GameCarRuntime *car, s32 mode);
 s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
                         const CarTrackLimits *limits);

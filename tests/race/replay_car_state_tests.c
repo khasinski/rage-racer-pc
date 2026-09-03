@@ -16,7 +16,7 @@ typedef enum ReplayCarCall {
 
 typedef struct CallRecord {
     ReplayCarCall call;
-    GameCarRuntime *car;
+    const GameCarRuntime *car;
     s32 value;
 } CallRecord;
 
@@ -29,7 +29,8 @@ s16 g_GrandPrixMode;
 s32 g_ReplayFrameCount;
 s32 g_ReplayReadCursor;
 
-static void RecordCall(ReplayCarCall call, GameCarRuntime *car, s32 value) {
+static void RecordCall(ReplayCarCall call, const GameCarRuntime *car,
+                       s32 value) {
     assert(s_CallCount < (s32)(sizeof(s_Calls) / sizeof(s_Calls[0])));
     s_Calls[s_CallCount++] = (CallRecord){call, car, value};
 }
@@ -45,7 +46,7 @@ void ApplyReplayFrameAndTrackPoint(s32 subframe, GameCarRuntime *player,
     assert(rival == &g_Cars[0]);
 }
 
-s32 FindTrackSegment(GameCarRuntime *car, s32 index) {
+s32 FindTrackSegment(const GameCarRuntime *car, s32 index) {
     RecordCall(CALL_FIND_SEGMENT, car, index);
     return index + 100;
 }
@@ -66,8 +67,8 @@ void RequestTrackTexturePage(s32 trackSection) {
     RecordCall(CALL_REQUEST_TEXTURE, NULL, trackSection);
 }
 
-static void ExpectCall(s32 index, ReplayCarCall call, GameCarRuntime *car,
-                       s32 value) {
+static void ExpectCall(s32 index, ReplayCarCall call,
+                       const GameCarRuntime *car, s32 value) {
     /* Only the assertions read these, and a release build compiles those
      * away, which leaves them unused and the build refusing them. */
     (void)index;

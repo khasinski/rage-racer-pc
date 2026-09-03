@@ -17,7 +17,7 @@ static s32 s_findStart;
 static s32 s_seedMode;
 static s32 s_trackCalls;
 
-s32 FindTrackSegment(GameCarRuntime *car, s32 startIndex) {
+s32 FindTrackSegment(const GameCarRuntime *car, s32 startIndex) {
     (void)car;
     s_findStart = startIndex;
     return s_findResult;
@@ -68,6 +68,8 @@ int main(void) {
     start->z = 2000;
     start->trackPointIndex = -1;
     start->modelId = 4;
+    points[2].x = 3000;
+    points[2].z = 4000;
     points[2].angle = 0x200;
     s_findResult = -1;
     s_trackCalls = 0;
@@ -76,7 +78,7 @@ int main(void) {
 
     CHECK(s_findStart == 2);
     CHECK(car.trackPointIndex == 2);
-    CHECK(car.x == 1000 && car.y == 40 && car.z == 2000);
+    CHECK(car.x == 3000 && car.y == 40 && car.z == 4000);
     CHECK(car.bodyYaw == 0x200 && car.headingAngle == 0x200);
     CHECK(car.baseBodyYaw == 0x200 && car.targetYaw == 0x200);
     CHECK(car.modelYaw == 0x200 && car.modelY == 40);

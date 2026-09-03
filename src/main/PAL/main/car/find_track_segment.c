@@ -58,7 +58,7 @@ static int TrackSegmentContainsCar(const GameCarRuntime *car, s32 index) {
  * The search starts at the caller's best guess and alternates forward and
  * backward over neighbouring segments.
  */
-s32 FindTrackSegment(GameCarRuntime *car, s32 startIndex) {
+s32 FindTrackSegment(const GameCarRuntime *car, s32 startIndex) {
     s32 attempts;
     s32 index;
     s32 stride = 0;
@@ -83,7 +83,5 @@ s32 FindTrackSegment(GameCarRuntime *car, s32 startIndex) {
         index = WrapTrackPointIndex(index);
     }
 
-    car->x = TrackPoint(startIndex)->x;
-    car->z = TrackPoint(startIndex)->z;
     return -1;
 }

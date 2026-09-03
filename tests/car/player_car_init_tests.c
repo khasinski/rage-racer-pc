@@ -44,7 +44,7 @@ static s32 s_findResult;
 
 void BuildTachoNeedleQuad(void) { s_tachoCalls++; }
 
-s32 FindTrackSegment(GameCarRuntime *car, s32 pointIndex) {
+s32 FindTrackSegment(const GameCarRuntime *car, s32 pointIndex) {
     (void)car;
     (void)pointIndex;
     s_findCalls++;
@@ -94,6 +94,8 @@ static void ResetFixtures(void) {
     s_eventData.rivalStarts[1][0].x = 1000;
     s_eventData.rivalStarts[1][0].z = 2000;
     s_eventData.rivalStarts[1][0].trackPointIndex = 0;
+    s_points[0].x = 300;
+    s_points[0].z = 400;
     s_points[1].angle = 0x200;
     g_TrackEventData = &s_eventData;
     g_TrackPoints = s_points;
@@ -184,7 +186,7 @@ int main(void) {
     InitPlayerCar(&car);
     CHECK(car.trackPointIndex == 0);
     CHECK(car.bodyYaw == ANGLE_QUARTER_TURN);
-    CHECK(car.x == 1005 && car.z == 1993);
+    CHECK(car.x == 305 && car.z == 393);
 
     ResetFixtures();
     memset(&car, 0x55, sizeof(car));

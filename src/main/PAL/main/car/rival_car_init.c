@@ -34,6 +34,8 @@ void InitRivalCar(GameCarRuntime *car,
     trackPointIndex = FindTrackSegment(car, car->trackPointIndex);
     if (trackPointIndex < 0) {
         trackPointIndex = startPointIndex;
+        car->x = TrackPoint(startPointIndex)->x;
+        car->z = TrackPoint(startPointIndex)->z;
     }
     car->trackPointIndex = trackPointIndex;
     car->bodyYaw = (ANGLE_THREE_QUARTER_TURN -
