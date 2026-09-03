@@ -184,6 +184,19 @@ static void ComposeTests(void) {
            2.0f, 0.0f);
     Expect("and counts what it could not", (float)world.overflowCount, 1.0f,
            0.0f);
+
+    /* An empty stage needs no backing array. Invalid non-empty inputs fail
+     * without dereferencing absent pose or instance storage. */
+    Expect("an empty stage needs no storage",
+           (float)RenderStageCompose(&world, NULL, 0, &stage, NULL, 0),
+           0.0f, 0.0f);
+    ExpectTrue("the empty stage still owns a camera", world.hasCamera != 0);
+    Expect("poses require storage",
+           (float)RenderStageCompose(&world, NULL, 1, &stage, poses, 1),
+           0.0f, 0.0f);
+    Expect("a non-empty stage requires poses",
+           (float)RenderStageCompose(&world, instances, 1, &stage, NULL, 1),
+           0.0f, 0.0f);
 }
 
 int main(void) {

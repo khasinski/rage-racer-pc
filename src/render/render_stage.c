@@ -8,7 +8,7 @@ static float Radians(float degrees) {
 }
 
 void RenderStageDefaults(RageRenderStage *stage) {
-    if (stage == 0) return;
+    if (stage == NULL) return;
     memset(stage, 0, sizeof(*stage));
     /* A car is roughly a thousand world units long, so this frames one with
      * room around it and puts the eye a little above the roof. */
@@ -51,7 +51,7 @@ static RageRenderQuaternion QuaternionFromEuler(const RageRenderVec3 *degrees) {
 }
 
 void RenderPoseDefaults(RageRenderPose *pose) {
-    if (pose == 0) return;
+    if (pose == NULL) return;
     memset(pose, 0, sizeof(*pose));
     pose->assetSet = RAGE_RENDER_ASSET_MODEL_BANK;
     pose->flags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING;
@@ -67,7 +67,7 @@ void RenderStageCamera(const RageRenderStage *stage,
                        RageRenderCamera *camera) {
     float pitch, yaw, cosPitch;
     RageRenderVec3 forward;
-    if (stage == 0 || camera == 0) return;
+    if (stage == NULL || camera == NULL) return;
     memset(camera, 0, sizeof(*camera));
 
     /* Climbing above the subject means looking down at it, which is a
@@ -104,12 +104,12 @@ uint32_t RenderStageCompose(RageRenderWorld *world,
                             const RageRenderPose *poses, uint32_t count) {
     uint32_t placed = 0;
     uint32_t index;
-    if (world == 0 || storage == 0 || stage == 0) return 0;
+    if (world == NULL || stage == NULL ||
+        (capacity != 0 && storage == NULL) ||
+        (count != 0 && poses == NULL)) return 0;
 
-    memset(world, 0, sizeof(*world));
-    memset(storage, 0, sizeof(*storage) * capacity);
-    world->instances = storage;
-    world->instanceCapacity = capacity;
+    RenderWorldInit(world, storage, capacity);
+    if (capacity != 0) memset(storage, 0, sizeof(*storage) * capacity);
 
     /* One light from over the camera's shoulder, so a subject turning on the
      * spot is lit the same way at every angle it is seen from. */
