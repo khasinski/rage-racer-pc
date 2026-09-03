@@ -2,6 +2,7 @@
 #include "game/car.h"
 #include "game/car_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -139,6 +140,16 @@ int main(void) {
 
     CHECK_EQ(g_Cars[0].wheelRotation, 0);
     CHECK_EQ(s_bodyKick[0], 0);
+
+    memset(g_Cars, 0, sizeof(g_Cars));
+    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
+        g_Cars[index].activeFlag = -1;
+    }
+    normal = Activate(0);
+    normal->bodyRoll = INT_MAX;
+    normal->bodyRollVelocity = 1;
+    UpdateRivalBodyMotion();
+    CHECK_EQ(normal->bodyRoll, INT_MIN);
 
     puts("rival body motion preserves wheels, jumps, landing, and collisions");
     return 0;

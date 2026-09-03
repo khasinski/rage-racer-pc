@@ -2,6 +2,7 @@
 #include "game/car_internal.h"
 #include "game/render_state.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -73,6 +74,11 @@ int main(void) {
     CHECK(car.motionX * car.motionX + car.motionY * car.motionY +
               car.motionZ * car.motionZ <=
           77 * 77);
+
+    memset(&car, 0, sizeof(car));
+    car.drive.bodyLiftOffset = INT16_MAX;
+    CalculatePlayerBodyOffset(&car);
+    CHECK(car.motionX == 0 && car.motionY == 0 && car.motionZ == 32719);
 
     if (s_failures != 0) {
         printf("%d player body offset checks failed\n", s_failures);

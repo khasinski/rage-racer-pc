@@ -12,6 +12,7 @@
 #include "game/render.h"
 #include "game/state.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -128,6 +129,20 @@ int main(void) {
     if (GetNegconSteerRange() != g_NegconSteerRange[0] ||
         car.drive.trackCurveMode == 0) {
         puts("FAIL: invalid NeGcon range selection was not repaired");
+        return 1;
+    }
+
+    memset(&car, 0, sizeof(car));
+    g_RacePhase = 2;
+    g_PlayerAutoSteer = 0;
+    g_PadType = PAD_TYPE_DIGITAL;
+    g_PadHeld = 0;
+    car.speed = 800;
+    car.bodyRollVelocity = INT_MAX;
+    UpdateCarBodyRoll(&car);
+    if (car.bodyRollVelocity != 268435455) {
+        printf("FAIL: wrapped body-roll damping produced %d\n",
+               car.bodyRollVelocity);
         return 1;
     }
 

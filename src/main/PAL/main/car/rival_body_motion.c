@@ -1,8 +1,10 @@
 #include "game/car.h"
 #include "game/car_internal.h"
+#include "game/integer.h"
 
 static void LandRivalCar(GameCarRuntime *car, s32 ground) {
-    car->y = ground + CAR_WHEEL_GROUND_OFFSET;
+    car->y = WrapSigned32(
+        (int64_t)ground + CAR_WHEEL_GROUND_OFFSET);
     car->verticalPitch = 0;
     car->verticalRoll = 0;
     StartCarBodyKick(car, CAR_BODY_KICK_LANDING);
@@ -19,10 +21,12 @@ void UpdateRivalBodyMotion(void) {
             continue;
         }
 
-        ground = car->y - CAR_WHEEL_GROUND_OFFSET;
+        ground = WrapSigned32(
+            (int64_t)car->y - CAR_WHEEL_GROUND_OFFSET);
         UpdateCarWheelRotation(car);
         CopyCarBodyRotationToModel(car);
-        car->bodyRoll += car->bodyRollVelocity;
+        car->bodyRoll = WrapSigned32(
+            (int64_t)car->bodyRoll + car->bodyRollVelocity);
         car->modelY = car->y;
         if (car->verticalMotionState != CAR_VERTICAL_GROUNDED) {
             AdvanceCarJumpArc(car, ground);
@@ -34,7 +38,8 @@ void UpdateRivalBodyMotion(void) {
             UpdateCarBodyKick(car);
             UpdateCarCrestHop(car);
         } else {
-            car->speed = car->speed * 97 / 100 * 97 / 100;
+            car->speed = WrapSigned32((int64_t)car->speed * 97) / 100;
+            car->speed = WrapSigned32((int64_t)car->speed * 97) / 100;
         }
     }
 }

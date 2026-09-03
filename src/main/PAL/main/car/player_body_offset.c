@@ -1,5 +1,6 @@
 #include "game/car.h"
 #include "game/car_internal.h"
+#include "game/integer.h"
 #include "game/render.h"
 
 void CalculatePlayerBodyOffset(PlayerCarRuntime *car) {
@@ -9,7 +10,8 @@ void CalculatePlayerBodyOffset(PlayerCarRuntime *car) {
     SVec bodyOffset = {
         .vx = 0,
         .vy = 0,
-        .vz = (s16)(-car->drive.bodyLiftOffset - 50),
+        .vz = WrapSigned16(
+            -(int64_t)car->drive.bodyLiftOffset - 50),
     };
 
     BuildRotMatrixY(&bodyRotation, car->bodyYaw);
