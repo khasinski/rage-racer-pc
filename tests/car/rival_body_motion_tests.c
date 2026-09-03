@@ -58,6 +58,7 @@ int main(void) {
     GameCarRuntime *crestHold;
     GameCarRuntime *falling;
     GameCarRuntime *fast;
+    GameCarRuntime *rounding;
     s32 index;
 
     memset(g_Cars, 0, sizeof(g_Cars));
@@ -99,6 +100,10 @@ int main(void) {
     fast = Activate(7);
     fast->speed = 12000;
 
+    rounding = Activate(8);
+    rounding->speed = 2;
+    rounding->collisionFlag = 1;
+
     UpdateRivalBodyMotion();
 
     CHECK_EQ(normal->wheelRotation, 310);
@@ -137,6 +142,10 @@ int main(void) {
     CHECK_EQ(s_crestHop[5], 1);
 
     CHECK_EQ(fast->wheelRotation, 0x249 | 0x1000);
+
+    CHECK_EQ(rounding->speed, 0);
+    CHECK_EQ(s_bodyKick[8], 0);
+    CHECK_EQ(s_crestHop[8], 0);
 
     CHECK_EQ(g_Cars[0].wheelRotation, 0);
     CHECK_EQ(s_bodyKick[0], 0);

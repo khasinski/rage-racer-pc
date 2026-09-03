@@ -10,6 +10,13 @@ static void LandRivalCar(GameCarRuntime *car, s32 ground) {
     StartCarBodyKick(car, CAR_BODY_KICK_LANDING);
 }
 
+static void DampCollidingRivalSpeed(GameCarRuntime *car) {
+    /* Retail applies two distinct 97% steps. Keep both divisions: folding
+     * them into one percentage changes low-speed rounding. */
+    car->speed = WrapSigned32((int64_t)car->speed * 97) / 100;
+    car->speed = WrapSigned32((int64_t)car->speed * 97) / 100;
+}
+
 void UpdateRivalBodyMotion(void) {
     s32 index;
 
@@ -38,8 +45,7 @@ void UpdateRivalBodyMotion(void) {
             UpdateCarBodyKick(car);
             UpdateCarCrestHop(car);
         } else {
-            car->speed = WrapSigned32((int64_t)car->speed * 97) / 100;
-            car->speed = WrapSigned32((int64_t)car->speed * 97) / 100;
+            DampCollidingRivalSpeed(car);
         }
     }
 }
