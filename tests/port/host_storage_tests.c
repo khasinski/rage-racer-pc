@@ -6,6 +6,7 @@
 static int s_portableAvailable;
 static int s_userAvailable;
 static int s_ensureCalls;
+static int s_ensureFailureCall;
 static char s_ensured[3][128];
 static int (*s_adjustPath)(char *, const char *, int);
 
@@ -28,11 +29,13 @@ int PlatformUserStateDirectory(char *path, size_t pathSize) {
 }
 
 int PlatformEnsureDirectory(const char *path) {
+    int call = s_ensureCalls;
+
     if (s_ensureCalls < 3) {
         snprintf(s_ensured[s_ensureCalls], sizeof(s_ensured[0]), "%s", path);
     }
     s_ensureCalls++;
-    return 1;
+    return call != s_ensureFailureCall;
 }
 
 void Psyz_AdjustPathCB(int (*callback)(char *, const char *, int)) {
@@ -61,6 +64,7 @@ static int TestPortableStorage(void) {
     s_portableAvailable = 1;
     s_userAvailable = 1;
     s_ensureCalls = 0;
+    s_ensureFailureCall = -1;
     s_adjustPath = NULL;
     CHECK(HostInitStorage());
     CHECK(s_ensureCalls == 3);
@@ -93,6 +97,7 @@ static int TestUserStorageFallback(void) {
     s_portableAvailable = 0;
     s_userAvailable = 1;
     s_ensureCalls = 0;
+    s_ensureFailureCall = -1;
     CHECK(HostInitStorage());
 #ifdef _WIN32
     CHECK(strcmp(s_ensured[0], "/user") == 0);
@@ -104,8 +109,34 @@ static int TestUserStorageFallback(void) {
     return 0;
 }
 
+static int TestPartialInitializationFailure(void) {
+    char path[128];
+
+    s_portableAvailable = 1;
+    s_userAvailable = 1;
+    s_ensureCalls = 0;
+    s_ensureFailureCall = -1;
+    s_adjustPath = NULL;
+    CHECK(HostInitStorage());
+
+    s_portableAvailable = 0;
+    s_ensureCalls = 0;
+    s_ensureFailureCall = 2;
+    CHECK(!HostInitStorage());
+    CHECK(s_ensureCalls == 3);
+    CHECK(s_adjustPath != NULL);
+    CHECK(s_adjustPath(path, "bu00:SAVE", sizeof(path)) > 0);
+#ifdef _WIN32
+    CHECK(strcmp(path, "/portable\\bu00\\SAVE") == 0);
+#else
+    CHECK(strcmp(path, "/portable/bu00/SAVE") == 0);
+#endif
+    return 0;
+}
+
 int main(void) {
     CHECK(TestPortableStorage() == 0);
+    CHECK(TestPartialInitializationFailure() == 0);
     CHECK(TestUserStorageFallback() == 0);
     puts("host storage maps both virtual memory cards into selected state data");
     return 0;

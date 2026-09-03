@@ -56,22 +56,21 @@ static int AdjustMemoryCardPath(char *destination, const char *source,
 int HostInitStorage(void) {
     char cardDirectory[PATH_MAX];
     char executableDirectory[PATH_MAX];
+    char stateDirectory[PATH_MAX];
     int card;
 
     if (!(PlatformExecutableDirectory(
               NULL, executableDirectory, sizeof(executableDirectory)) &&
           PlatformExistingPortableStateDirectory(
-              executableDirectory, s_MemoryCardDirectory,
-              sizeof(s_MemoryCardDirectory))) &&
-        !PlatformUserStateDirectory(s_MemoryCardDirectory,
-                                    sizeof(s_MemoryCardDirectory))) {
+              executableDirectory, stateDirectory, sizeof(stateDirectory))) &&
+        !PlatformUserStateDirectory(stateDirectory, sizeof(stateDirectory))) {
         return 0;
     }
-    if (!PlatformEnsureDirectory(s_MemoryCardDirectory)) return 0;
+    if (!PlatformEnsureDirectory(stateDirectory)) return 0;
 
     for (card = 0; card < 2; card++) {
         int written = snprintf(cardDirectory, sizeof(cardDirectory),
-                               "%s%cbu%d0", s_MemoryCardDirectory,
+                               "%s%cbu%d0", stateDirectory,
                                HOST_PATH_SEPARATOR, card);
 
         if (written < 0 || (size_t)written >= sizeof(cardDirectory) ||
@@ -79,6 +78,8 @@ int HostInitStorage(void) {
             return 0;
         }
     }
+    memcpy(s_MemoryCardDirectory, stateDirectory,
+           strlen(stateDirectory) + 1);
     Psyz_AdjustPathCB(AdjustMemoryCardPath);
     return 1;
 }
