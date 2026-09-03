@@ -138,6 +138,7 @@ static int TestArguments(void) {
     memset(&reader, 0, sizeof(reader));
     CHECK(!DiscIsoReadUserSector(&reader, 0, user));
     CHECK(!DiscIsoFindFile(&reader, NULL, &file));
+    CHECK(file.lba == 0 && file.size == 0);
     CHECK(DiscIsoReadWholeFile(&reader, NULL) == NULL);
     return 0;
 }
@@ -149,8 +150,11 @@ static int TestSectorResolution(void) {
     CHECK(DiscIsoResolveSector(&file, 0, &absolute) && absolute == 20);
     CHECK(DiscIsoResolveSector(&file, 1, &absolute) && absolute == 21);
     CHECK(!DiscIsoResolveSector(&file, 2, &absolute));
+    CHECK(absolute == 0);
     file.lba = UINT_MAX;
+    absolute = 123;
     CHECK(!DiscIsoResolveSector(&file, 1, &absolute));
+    CHECK(absolute == 0);
     file.size = 0;
     CHECK(!DiscIsoResolveSector(&file, 0, &absolute));
     CHECK(!DiscIsoResolveSector(NULL, 0, &absolute));

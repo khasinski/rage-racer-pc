@@ -133,7 +133,9 @@ int DiscIsoFindFile(DiscIsoReader *reader, const char *name,
                     DiscIsoFile *file) {
     FindFileContext context;
 
-    if (name == NULL || name[0] == '\0' || file == NULL) return 0;
+    if (file == NULL) return 0;
+    memset(file, 0, sizeof(*file));
+    if (name == NULL || name[0] == '\0') return 0;
     context.wanted = name;
     context.file = file;
     context.found = 0;
@@ -144,7 +146,9 @@ int DiscIsoResolveSector(const DiscIsoFile *file, unsigned int relativeSector,
                          unsigned int *absoluteSector) {
     unsigned int sectorCount;
 
-    if (file == NULL || absoluteSector == NULL || file->size == 0) return 0;
+    if (absoluteSector == NULL) return 0;
+    *absoluteSector = 0;
+    if (file == NULL || file->size == 0) return 0;
     sectorCount = file->size / DISC_ISO_SECTOR_SIZE +
                   (file->size % DISC_ISO_SECTOR_SIZE != 0);
     if (relativeSector >= sectorCount ||
