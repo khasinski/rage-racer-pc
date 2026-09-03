@@ -6,13 +6,14 @@
 extern s32 g_CourseIndex;
 
 enum {
+    COURSE_SLOT_COUNT = 4,
     COURSE_STANDARD_LAPS = 3,
     COURSE_LONG_SLOT = 3,
     COURSE_LONG_LAPS = 6,
 };
 
 static inline s32 CourseSlot(s32 physicalCourse) {
-    return physicalCourse & 3;
+    return physicalCourse & (COURSE_SLOT_COUNT - 1);
 }
 static inline s32 CourseSeries(s32 physicalCourse) {
     return (physicalCourse >> 2) & 1;
