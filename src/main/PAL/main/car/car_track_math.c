@@ -1,13 +1,21 @@
 #include "game/angle.h"
 #include "game/car_internal.h"
+#include "game/integer.h"
 
 s32 InterpolateCarTrackValue(s32 start, s32 end, s32 alongSegment,
                              s16 segmentLength) {
     if (segmentLength <= 0) {
         return start;
     }
-    return (end * alongSegment + start * (segmentLength - alongSegment)) /
-           segmentLength;
+    {
+        s32 endContribution = WrapSigned32(
+            (int64_t)end * alongSegment);
+        s32 startContribution = WrapSigned32(
+            (int64_t)start * (segmentLength - alongSegment));
+
+        return WrapSigned32(
+            (int64_t)endContribution + startContribution) / segmentLength;
+    }
 }
 
 s32 CarTrackFixed12ToInteger(s32 value) {
@@ -28,14 +36,23 @@ s32 ProjectCarTrackAxis(s32 value) {
 
 s16 InterpolateCarTrackHeading(s16 pointHeading, s16 nextHeading,
                                s32 swept, s16 arcSpan) {
+    s32 start = pointHeading;
+    s32 end = nextHeading;
+    s32 endContribution;
+    s32 startContribution;
+
     if (arcSpan <= 0) {
         return pointHeading;
     }
-    if (nextHeading - pointHeading > ANGLE_HALF_TURN) {
-        nextHeading -= ANGLE_FULL_TURN;
-    } else if (pointHeading - nextHeading > ANGLE_HALF_TURN) {
-        pointHeading -= ANGLE_FULL_TURN;
+    if (end - start > ANGLE_HALF_TURN) {
+        end -= ANGLE_FULL_TURN;
+    } else if (start - end > ANGLE_HALF_TURN) {
+        start -= ANGLE_FULL_TURN;
     }
-    return (s16)((nextHeading * swept +
-                  pointHeading * (arcSpan - swept)) / arcSpan);
+    endContribution = WrapSigned32((int64_t)end * swept);
+    startContribution = WrapSigned32(
+        (int64_t)start * (arcSpan - swept));
+    return WrapSigned16(
+        WrapSigned32((int64_t)endContribution + startContribution) /
+        arcSpan);
 }

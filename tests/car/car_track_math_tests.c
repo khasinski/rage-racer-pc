@@ -1,5 +1,6 @@
 #include "game/car_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 
 #define CHECK_EQ(actual, expected) do {                                        \
@@ -16,6 +17,7 @@ int main(void) {
     CHECK_EQ(InterpolateCarTrackValue(10, 30, 20, 20), 30);
     CHECK_EQ(InterpolateCarTrackValue(10, 30, 8, 0), 10);
     CHECK_EQ(InterpolateCarTrackValue(10, 30, 8, -1), 10);
+    CHECK_EQ(InterpolateCarTrackValue(INT_MAX, INT_MAX, 1, 2), -1);
 
     CHECK_EQ(CarTrackFixed12ToInteger(0x1FFF), 1);
     CHECK_EQ(CarTrackFixed12ToInteger(-0x1FFF), -1);
@@ -32,6 +34,8 @@ int main(void) {
     CHECK_EQ(InterpolateCarTrackHeading(0xF00, 0x100, 10, 20), 0);
     CHECK_EQ(InterpolateCarTrackHeading(123, 456, 8, 0), 123);
     CHECK_EQ(InterpolateCarTrackHeading(123, 456, 8, -1), 123);
+    CHECK_EQ(InterpolateCarTrackHeading(INT16_MAX, INT16_MAX,
+                                        INT_MAX, 1), INT16_MAX);
 
     puts("car track math tests passed");
     return 0;
