@@ -348,7 +348,17 @@ static void test_platform_config_path(void) {
         EXPECT_EQ(1, PlatformFindConfigFile(NULL, "rage-port.ini", found,
                                                 sizeof(found)));
         EXPECT_EQ(0, strcmp(filePath, found));
+        snprintf(filePath, sizeof(filePath), "%s/directory-only.ini",
+                 directory);
+        mkdir(filePath, 0700);
+        EXPECT_EQ(0, PlatformFindConfigFile(NULL, "directory-only.ini", found,
+                                            sizeof(found)));
+        rmdir(filePath);
     }
+    EXPECT_EQ(0, PlatformFindConfigFile(NULL, NULL, found, sizeof(found)));
+    EXPECT_EQ(0, PlatformFindConfigFile(NULL, "rage-port.ini", NULL, 0));
+    EXPECT_EQ(0, PlatformUserConfigPath(NULL, found, sizeof(found)));
+    EXPECT_EQ(0, PlatformEnsureDirectory(NULL));
     if (saved != NULL) {
 #ifdef __APPLE__
         setenv("HOME", saved, 1);
@@ -363,6 +373,7 @@ static void test_platform_config_path(void) {
         unsetenv("XDG_CONFIG_HOME");
 #endif
     }
+    snprintf(filePath, sizeof(filePath), "%s/rage-port.ini", directory);
     unlink(filePath);
     rmdir(directory);
 #ifdef __APPLE__

@@ -19,11 +19,20 @@
 #define Mkdir(path) mkdir(path, 0755)
 #endif
 
-static int PathExists(const char *path) {
-    FILE *file = fopen(path, "rb");
-    if (file == NULL) return 0;
-    fclose(file);
-    return 1;
+static int FileExists(const char *path) {
+#ifdef _WIN32
+    DWORD attributes;
+
+    if (path == NULL) return 0;
+    attributes = GetFileAttributesA(path);
+    return attributes != INVALID_FILE_ATTRIBUTES &&
+           (attributes & FILE_ATTRIBUTE_DIRECTORY) == 0;
+#else
+    struct stat status;
+
+    return path != NULL && stat(path, &status) == 0 &&
+           S_ISREG(status.st_mode);
+#endif
 }
 
 static int DirectoryExists(const char *path) {
@@ -44,13 +53,19 @@ static int JoinPath(char *out, size_t outSize, const char *directory,
 #else
     const char separator = '/';
 #endif
-    size_t length = strlen(directory);
-    int written = snprintf(out, outSize, "%s%s%s", directory,
-                           length > 0 && directory[length - 1] != '/' &&
-                                   directory[length - 1] != '\\'
-                               ? (char[2]){separator, '\0'}
-                               : "",
-                           name);
+    size_t length;
+    int written;
+
+    if (out == NULL || outSize == 0 || directory == NULL || name == NULL) {
+        return 0;
+    }
+    length = strlen(directory);
+    written = snprintf(out, outSize, "%s%s%s", directory,
+                       length > 0 && directory[length - 1] != '/' &&
+                               directory[length - 1] != '\\'
+                           ? (char[2]){separator, '\0'}
+                           : "",
+                       name);
     return written >= 0 && (size_t)written < outSize;
 }
 
@@ -59,6 +74,8 @@ static int ExecutableDirectory(const char *argv0, char *out,
     char executable[4096];
     size_t length = 0;
     char *slash;
+
+    if (out == NULL || outSize == 0) return 0;
 #ifdef _WIN32
     DWORD result = GetModuleFileNameA(NULL, executable, sizeof(executable));
     if (result == 0 || result >= sizeof(executable)) return 0;
@@ -106,8 +123,10 @@ int PlatformExistingPortableStateDirectory(
     size_t length;
     const char bundleSuffix[] = "/Contents/MacOS";
 
-    if (executableDirectory == NULL || executableDirectory[0] == '\0')
+    if (executableDirectory == NULL || executableDirectory[0] == '\0' ||
+        out == NULL || outSize == 0) {
         return 0;
+    }
     length = strlen(executableDirectory);
     if (length >= sizeof(candidate)) return 0;
     memcpy(candidate, executableDirectory, length + 1);
@@ -144,6 +163,8 @@ int PlatformExistingPortableStateDirectory(
 int PlatformUserConfigDirectory(char *out, size_t outSize) {
     const char *base;
     int written;
+
+    if (out == NULL || outSize == 0) return 0;
 #ifdef _WIN32
     base = getenv("APPDATA");
     if (base == NULL || base[0] == '\0') return 0;
@@ -167,6 +188,7 @@ int PlatformUserConfigDirectory(char *out, size_t outSize) {
 }
 
 int PlatformUserStateDirectory(char *out, size_t outSize) {
+    if (out == NULL || outSize == 0) return 0;
 #ifdef _WIN32
     return PlatformUserConfigDirectory(out, outSize);
 #elif defined(__APPLE__)
@@ -188,6 +210,9 @@ int PlatformUserStateDirectory(char *out, size_t outSize) {
 
 int PlatformUserConfigPath(const char *name, char *out, size_t outSize) {
     char directory[4096];
+    if (name == NULL || name[0] == '\0' || out == NULL || outSize == 0) {
+        return 0;
+    }
     return PlatformUserConfigDirectory(directory, sizeof(directory)) &&
            JoinPath(out, outSize, directory, name);
 }
@@ -223,12 +248,18 @@ int PlatformEnsureDirectory(const char *path) {
 int PlatformFindConfigFile(const char *argv0, const char *name,
                                char *path, size_t pathSize) {
     char directory[4096];
+    int written;
+
+    if (name == NULL || name[0] == '\0' || path == NULL || pathSize == 0) {
+        return 0;
+    }
+    path[0] = '\0';
     if (PlatformUserConfigDirectory(directory, sizeof(directory)) &&
-        JoinPath(path, pathSize, directory, name) && PathExists(path))
+        JoinPath(path, pathSize, directory, name) && FileExists(path))
         return 1;
     if (ExecutableDirectory(argv0, directory, sizeof(directory))) {
         if (JoinPath(path, pathSize, directory, name) &&
-            PathExists(path)) return 1;
+            FileExists(path)) return 1;
 #ifdef __APPLE__
         {
             char beside[4096];
@@ -237,19 +268,21 @@ int PlatformFindConfigFile(const char *argv0, const char *name,
              * signature, so editing it there stops the app from launching. */
             if (JoinPath(beside, sizeof(beside), directory, "../../..") &&
                 JoinPath(path, pathSize, beside, name) &&
-                PathExists(path)) return 1;
+                FileExists(path)) return 1;
         }
         {
             char resources[4096];
             if (JoinPath(resources, sizeof(resources), directory,
                              "../Resources") &&
                 JoinPath(path, pathSize, resources, name) &&
-                PathExists(path)) return 1;
+                FileExists(path)) return 1;
         }
 #endif
     }
-    if (snprintf(path, pathSize, "%s", name) < (int)pathSize &&
-        PathExists(path)) return 1;
+    written = snprintf(path, pathSize, "%s", name);
+    if (written >= 0 && (size_t)written < pathSize && FileExists(path)) {
+        return 1;
+    }
     path[0] = '\0';
     return 0;
 }
