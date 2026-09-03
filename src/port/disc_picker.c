@@ -15,16 +15,20 @@ typedef struct RageHostDiscDialog {
     char *path;
     size_t pathSize;
     int accepted;
+    int failed;
 } RageHostDiscDialog;
 
 static void SDLCALL HostDiscDialogComplete(
     void *userdata, const char *const *files, int filter) {
     RageHostDiscDialog *dialog = userdata;
+    int written;
+
     (void)filter;
-    if (files != NULL && files[0] != NULL &&
-        snprintf(dialog->path, dialog->pathSize, "%s", files[0]) <
-            (int)dialog->pathSize)
-        dialog->accepted = 1;
+    dialog->failed = files == NULL;
+    if (files != NULL && files[0] != NULL) {
+        written = snprintf(dialog->path, dialog->pathSize, "%s", files[0]);
+        dialog->accepted = written >= 0 && (size_t)written < dialog->pathSize;
+    }
     SDL_SetAtomicInt(&dialog->completed, 1);
 }
 
@@ -34,6 +38,8 @@ int HostShowDiscPicker(char *path, size_t size) {
         {"All files", "*"},
     };
     RageHostDiscDialog dialog;
+
+    if (path == NULL || size == 0) return 0;
     memset(&dialog, 0, sizeof(dialog));
     dialog.path = path;
     dialog.pathSize = size;
@@ -50,7 +56,7 @@ int HostShowDiscPicker(char *path, size_t size) {
         SDL_PumpEvents();
         SDL_Delay(10);
     }
-    if (!dialog.accepted && SDL_GetError()[0] != '\0')
+    if (dialog.failed)
         fprintf(stderr, "rage-port: disc picker failed: %s\n", SDL_GetError());
     return dialog.accepted;
 }

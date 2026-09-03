@@ -12,19 +12,25 @@ int DiagnosticLogOpen(char *path, size_t pathSize) {
     FILE *file;
     time_t now;
     struct tm *local;
+    int written;
+
+    if (path == NULL || pathSize == 0) return 0;
+    path[0] = '\0';
 
     if (override != NULL && override[0] != '\0' && strcmp(override, "auto") != 0) {
-        if (snprintf(path, pathSize, "%s", override) >= (int)pathSize) return 0;
+        written = snprintf(path, pathSize, "%s", override);
+        if (written < 0 || (size_t)written >= pathSize) return 0;
     } else {
         if (!PlatformUserStateDirectory(directory, sizeof(directory)) ||
             !PlatformEnsureDirectory(directory)) return 0;
-        if (snprintf(path, pathSize, "%s%srage-racer.log", directory,
+        written = snprintf(path, pathSize, "%s%srage-racer.log", directory,
 #ifdef _WIN32
                      "\\"
 #else
                      "/"
 #endif
-                     ) >= (int)pathSize) return 0;
+                     );
+        if (written < 0 || (size_t)written >= pathSize) return 0;
     }
     /* Say where the diagnostics went while stderr still reaches the terminal.
      * This call takes stderr away, so without the notice here the only record
