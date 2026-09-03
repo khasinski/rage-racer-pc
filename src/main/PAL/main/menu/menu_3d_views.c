@@ -226,28 +226,19 @@ void DrawMenuCourseView(void) {
                     : 1);
 }
 
-typedef struct MenuModelTransform {
-    s32 positionX;
-    s32 positionY;
-    s32 positionZ;
-    s32 reserved0C;
-    s32 rotationX;
-    s32 rotationY;
-    s32 rotationZ;
-} MenuModelTransform;
-
-
 /* The 3D character model under the TEAM NAME grid cursor; skips the BS and ED cells. */
 void DrawTeamNameCharModel(void) {
     Matrix mtxA;
     Matrix mtxB;
-    MenuModelTransform transform;
+    Vec4 position;
     Vec4 vcopy;
     s32 angleStep;
     s32 viewHeight;
     s32 baseHeight;
     s32 nextAngle;
     s32 modelIndex;
+    s32 rotationY;
+    s32 rotationZ;
 
     vcopy = g_TeamNameCharScale;
 
@@ -276,18 +267,17 @@ void DrawTeamNameCharModel(void) {
         baseHeight = 64;
     }
 
-    transform.positionX = 0;
-    transform.positionY =
+    position.x = 0;
+    position.y =
         (viewHeight - baseHeight) +
         rsin((g_AnimTimer * 32) & 0xFE0) * 12 / 4096;
-    transform.positionZ = 0;
-    transform.rotationX = 0;
-    transform.rotationY = g_MenuViewAngle / 1000;
-    transform.rotationZ =
-        rsin((g_AnimTimer * 20) & 0xFFC) * 72 / 4096;
+    position.z = 0;
+    position.w = 0;
+    rotationY = g_MenuViewAngle / 1000;
+    rotationZ = rsin((g_AnimTimer * 20) & 0xFFC) * 72 / 4096;
 
-    BuildRotMatrixY(&mtxB, 0x800 - transform.rotationY);
-    BuildRotMatrixZ(&mtxA, transform.rotationZ);
+    BuildRotMatrixY(&mtxB, 0x800 - rotationY);
+    BuildRotMatrixZ(&mtxA, rotationZ);
     MulMatrix2(&mtxB, &mtxA);
     MulMatrix2((&g_RenderState.matrix), &mtxA);
     ScaleMatrix(&mtxA, &vcopy);
@@ -295,7 +285,7 @@ void DrawTeamNameCharModel(void) {
     if (g_TeamNameCharModel != 10 &&
         (u32)(g_TeamNameCharModel - 42) >= 2U) {
         SetGteObjectMatrix((&g_ObjectMatrixWork),
-                           AsPositionWords(&transform.positionX), &mtxA);
+                           AsPositionWords(&position.x), &mtxA);
         g_RenderState.envMode4 = 0;
         modelIndex = g_TeamNameCharModel < g_CourseModelCount
                          ? g_TeamNameCharModel
