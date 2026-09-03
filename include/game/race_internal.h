@@ -49,6 +49,10 @@ s32 BgmCdTrack(s32 selectedTrack);
 s32 WrapBgmTrackIndex(s32 track, s32 trackCount);
 s32 AttractOpeningWashLevel(s32 timer);
 s32 AttractClosingWashLevel(s32 timer);
+s32 NextAttractLoadTimer(s32 timer);
+s32 NextAttractRaceTimer(s32 timer);
+s32 AttractBgmTrack(const u8 *shuffleOrder, s32 trackCount,
+                    s32 shuffleIndex);
 s32 ShouldStartAttractExitFade(s32 timer);
 s32 ShouldReturnFromAttractDemo(s32 timer);
 void UpdateAndDrawAttractWorld(void);

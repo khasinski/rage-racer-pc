@@ -202,6 +202,7 @@ typedef enum AttractDemoStep {
 } AttractDemoStep;
 
 extern AttractDemoStep g_AttractDemoStep;
+void UpdateAttractDemoScene(void);
 extern s32 g_BestLapThisRace;
 extern s32 g_BgmTrack;
 extern s32 g_BonusCountStep;

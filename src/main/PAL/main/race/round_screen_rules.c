@@ -1,3 +1,4 @@
+#include "game/audio_internal.h"
 #include "game/round_screen_internal.h"
 #include "game/state.h"
 
@@ -7,7 +8,6 @@
 enum {
     ROUND_SCREEN_SERIES_COUNT = 2,
     ROUND_SCREEN_CLASS_COUNT = 6,
-    ROUND_SCREEN_BGM_TRACK_COUNT = 10,
     ROUND_SCREEN_TIMER_LIMIT = 10000,
 };
 
@@ -79,9 +79,9 @@ s32 ClampRoundBgmTrackCount(s32 trackCount) {
     if (trackCount < 0) {
         return 0;
     }
-    return trackCount < ROUND_SCREEN_BGM_TRACK_COUNT
+    return trackCount < BGM_PLAYABLE_TRACK_COUNT
                ? trackCount
-               : ROUND_SCREEN_BGM_TRACK_COUNT;
+               : BGM_PLAYABLE_TRACK_COUNT;
 }
 
 s32 WrapRoundBgmSelection(s32 selection, s32 trackCount) {

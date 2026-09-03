@@ -9,12 +9,23 @@
 #include "game/render_internal.h"
 #include "game/track.h"
 
+enum {
+    ATTRACT_FRAME_SYNC_THRESHOLD = 0x80,
+    ATTRACT_INITIAL_TITLE_FADE = 0x80,
+    ATTRACT_SCENE_ID = 0x1E,
+    TITLE_SCENE_ID = 3,
+    ATTRACT_DISPLAY_ENABLE_FRAME = 2,
+    ATTRACT_TITLE_END_FRAME = 0x3D,
+    ATTRACT_EXIT_WASH_START_FRAME = 0x6CD,
+    ATTRACT_EXIT_AUDIO_FADE_FRAMES = 0x38,
+    ATTRACT_FADE_TPAGE = 0x49,
+};
 
 void EnterAttractDemo(void) {
     SetDispMask(0);
     SetupDisplay240(0, 0, 0);
 
-    g_FrameSyncThreshold = 0x80;
+    g_FrameSyncThreshold = ATTRACT_FRAME_SYNC_THRESHOLD;
     if (!UploadImageAsset(GetImageAssetHeaderWords(g_ImageBlockBuffer),
                           g_ImageBlockSize)) {
         return;
@@ -27,9 +38,9 @@ void EnterAttractDemo(void) {
     RequestTrackDataAssets();
 
     g_AttractDemoStep = ATTRACT_DEMO_STEP_LOAD;
-    g_FadeLevel = 0x80;
+    g_FadeLevel = ATTRACT_INITIAL_TITLE_FADE;
     g_SceneTimer = 0;
-    g_SceneId = 0x1E;
+    g_SceneId = ATTRACT_SCENE_ID;
     g_CameraCarIndex = 0;
 }
 
@@ -60,14 +71,9 @@ static void DrawAttractTitle(void) {
 static void UpdateAttractDemoStart(void) {
     s32 shuffleTrack;
     s32 cdTrack;
-    u32 timer;
+    g_SceneTimer = NextAttractLoadTimer(g_SceneTimer);
 
-    timer = g_SceneTimer;
-    if (timer < 0x2710) {
-        g_SceneTimer = timer + 1;
-    }
-
-    if (g_SceneTimer == 2) {
+    if (g_SceneTimer == ATTRACT_DISPLAY_ENABLE_FRAME) {
         SetDispMask(1);
     }
 
@@ -75,7 +81,8 @@ static void UpdateAttractDemoStart(void) {
         InitTrackScene();
 
         g_AttractDemoStep = ATTRACT_DEMO_STEP_RACE;
-        shuffleTrack = g_BgmShuffleOrder[g_BgmShuffleIndex];
+        shuffleTrack = AttractBgmTrack(g_BgmShuffleOrder, g_BgmTrackCount,
+                                       g_BgmShuffleIndex);
         AdvanceBgmShuffleBag(shuffleTrack);
 
         cdTrack = BgmCdTrack(shuffleTrack);
@@ -87,34 +94,37 @@ static void UpdateAttractDemoStart(void) {
 }
 
 static void ReturnToTitleScene(void) {
-    g_SceneId = 3;
+    g_SceneId = TITLE_SCENE_ID;
     g_StreamReturnScene = 0;
     ResetCdAudioState();
 }
 
 static void UpdateAttractDemoRace(void) {
-    u32 timer;
+    s32 timer;
 
-    g_SceneTimer++;
+    g_SceneTimer = NextAttractRaceTimer(g_SceneTimer);
     timer = g_SceneTimer;
-    if (timer < 0x3D) {
+    if (timer < ATTRACT_TITLE_END_FRAME) {
         DrawAttractTitle();
-        DrawFullscreenFadeTile(AttractOpeningWashLevel(timer), 0x49);
+        DrawFullscreenFadeTile(AttractOpeningWashLevel(timer),
+                               ATTRACT_FADE_TPAGE);
     }
 
     timer = g_SceneTimer;
     if (ShouldStartAttractExitFade(timer)) {
-        StartCdVolumeFade(0x38);
+        StartCdVolumeFade(ATTRACT_EXIT_AUDIO_FADE_FRAMES);
     }
-    if (timer >= 0x6CD) {
-        DrawFullscreenFadeTile(AttractClosingWashLevel(timer), 0x49);
+    if (timer >= ATTRACT_EXIT_WASH_START_FRAME) {
+        DrawFullscreenFadeTile(AttractClosingWashLevel(timer),
+                               ATTRACT_FADE_TPAGE);
     }
 
     if (ShouldReturnFromAttractDemo(timer)) {
         ReturnToTitleScene();
+        return;
     }
 
-    g_AnimTimer++;
+    g_AnimTimer = (s32)((u32)g_AnimTimer + 1);
     g_CameraCarIndex = CycleAttractCameraCar(0xFF, g_CameraCarIndex);
     UpdateAndDrawAttractWorld();
 }
@@ -131,10 +141,11 @@ void UpdateAttractDemoScene(void) {
         break;
     }
 
-    if (g_SceneId == 0x1E && (g_PadPressed & PAD_CONFIRM) != 0) {
+    if (g_SceneId == ATTRACT_SCENE_ID &&
+        (g_PadPressed & PAD_CONFIRM) != 0) {
         if (!AssetLoadCompletedSuccessfully()) {
             ResetAssetLoader();
-            g_SceneId = 3;
+            g_SceneId = TITLE_SCENE_ID;
             g_StreamReturnScene = 0;
         } else {
             ReturnToTitleScene();
