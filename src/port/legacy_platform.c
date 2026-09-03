@@ -2,7 +2,6 @@
 #include <libgte.h>
 #include <libpress.h>
 
-#include <stdint.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <ctype.h>
@@ -652,21 +651,6 @@ int HostLoadAsset(unsigned int byte_offset, unsigned int size, void *destination
     return HostReadArchive(byte_offset, destination, size)
                ? (int)(size & ~3u)
                : 0;
-}
-
-MATRIX *MulMatrix0(MATRIX *left, MATRIX *right, MATRIX *output) {
-    int row, column, inner;
-    MATRIX result = *output;
-    for (row = 0; row < 3; row++) {
-        for (column = 0; column < 3; column++) {
-            int64_t value = 0;
-            for (inner = 0; inner < 3; inner++)
-                value += (int64_t)left->m[row][inner] * right->m[inner][column];
-            result.m[row][column] = (short)(value >> 12);
-        }
-    }
-    *output = result;
-    return output;
 }
 
 long BiosFileOpen(void *path, long mode) {

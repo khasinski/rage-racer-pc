@@ -44,6 +44,18 @@ endif()
 add_test(NAME cdda_file COMMAND cdda_file_tests)
 set_tests_properties(cdda_file PROPERTIES LABELS unit)
 
+add_executable(gte_matrix_compat_tests
+    gte_matrix_compat_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/gte_matrix_compat.c)
+target_include_directories(gte_matrix_compat_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(gte_matrix_compat_tests PRIVATE
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME gte_matrix_compat COMMAND gte_matrix_compat_tests)
+set_tests_properties(gte_matrix_compat PROPERTIES LABELS unit)
+
 add_executable(archive_index_tests
     archive_index_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/archive_index.c)
