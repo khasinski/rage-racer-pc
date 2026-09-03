@@ -122,6 +122,22 @@ static int TestVisibleCellOutputBounds(void) {
         CHECK(list.values[index].w == -1);
     }
 
+    /* Missing terrain data produces the same empty frame for an in-grid
+     * camera instead of dereferencing an uninstalled asset. */
+    memset(mask.values, 0xA5, sizeof(mask.values));
+    memset(list.values, 0x5A, sizeof(list.values));
+    RENDER_VIEW_STATE->position.components.x.value = 0;
+    RENDER_VIEW_STATE->position.components.z.value = 0;
+    g_TerrainCellGrid = NULL;
+    g_CellVisibilityTable = NULL;
+    BuildVisibleCells(0, 1);
+    for (index = 0; index < TERRAIN_CELL_GRID_SIZE; index++) {
+        CHECK(mask.values[index] == 0);
+    }
+    for (index = 0; index < VISIBLE_CELL_COUNT; index++) {
+        CHECK(list.values[index].w == -1);
+    }
+
     return 0;
 }
 

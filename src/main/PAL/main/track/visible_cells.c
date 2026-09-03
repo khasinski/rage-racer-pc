@@ -107,6 +107,9 @@ void BuildVisibleCells(s32 near, s32 far) {
     s32 index;
 
     ClearVisibleCellOutput();
+    if (g_TerrainCellGrid == NULL || g_CellVisibilityTable == NULL) {
+        return;
+    }
     if ((u32)cameraCellX >= TERRAIN_CELL_GRID_SIZE ||
         (u32)cameraCellZ >= TERRAIN_CELL_GRID_SIZE) {
         return;
