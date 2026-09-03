@@ -435,6 +435,9 @@ void SetDrawClipRect(
  * (g_LargeFontGlyphs). Bit 0x80 of `flags` selects fixed-width cells instead of the
  * per-glyph widths in the table.
  */
+enum DrawAtlasTextFlags {
+    DRAW_ATLAS_TEXT_FIXED_WIDTH = 0x80,
+};
 void DrawSmallText(s32 x, s16 y, const char *text, u8 red, u8 green, u8 blue,
                    u16 clut, s32 flags);
 void DrawLargeText(s32 x, s16 y, const char *text, u8 red, u8 green, u8 blue,

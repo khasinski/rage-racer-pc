@@ -2,8 +2,9 @@
 #include "game/render.h"
 #include "game/render_internal.h"
 
+#include <string.h>
+
 enum {
-    TEXT_FIXED_WIDTH = 0x80,
     TEXT_TEXTURE_PAGE_MASK = 0x7f,
     TEXT_TEXTURE_PAGE_BASE = 27,
 };
@@ -61,21 +62,32 @@ static s32 LargeGlyph(u8 character) {
     }
 }
 
+static FontGlyph FontGlyphAt(const u8 *fontData, s32 glyphIndex) {
+    FontGlyph glyph;
+
+    memcpy(&glyph, fontData + glyphIndex * sizeof(glyph), sizeof(glyph));
+    return glyph;
+}
+
+_Static_assert(sizeof(FontGlyph) == FONT_GLYPH_RECORD_SIZE,
+               "font data record must preserve the retail layout");
+
 void DrawSmallText(s32 x, s16 y, const char *text, u8 red, u8 green, u8 blue,
                    u16 clut, s32 flags) {
     const u8 *cursor = (const u8 *)text;
     GameOrderingTableEntry *ot = RENDER_OT_BASE;
-    const s32 fixedWidth = (flags & TEXT_FIXED_WIDTH) != 0;
+    const s32 fixedWidth = (flags & DRAW_ATLAS_TEXT_FIXED_WIDTH) != 0;
 
     while (*cursor != '\0') {
         s32 glyphIndex;
         s32 glyphWidth;
         s32 textureU;
         s32 textureV;
+        FontGlyph glyph;
 
         if (*cursor == ' ') {
             cursor++;
-            x += 6;
+            x = WrapRenderCoordinate32((int64_t)x + 6);
             continue;
         }
 
@@ -84,14 +96,16 @@ void DrawSmallText(s32 x, s16 y, const char *text, u8 red, u8 green, u8 blue,
             continue;
         }
 
-        glyphWidth = fixedWidth ? 6 : g_SmallFontGlyphs[glyphIndex].width;
+        glyph = FontGlyphAt(g_SmallFontGlyphs, glyphIndex);
+        glyphWidth = fixedWidth ? 6 : glyph.width;
         textureU = fixedWidth ? (glyphIndex % 42) * 6
-                              : g_SmallFontGlyphs[glyphIndex].u;
+                              : glyph.u;
         textureV = fixedWidth ? (glyphIndex / 42) * 12
-                              : g_SmallFontGlyphs[glyphIndex].v;
-        DrawSprite(ot + 1, (s16)x, y, (s16)glyphWidth, 12, (s16)textureU,
-                   (s16)textureV, red, green, blue, clut, 0, 1, 0x80);
-        x += glyphWidth;
+                              : glyph.v;
+        DrawSprite(ot + 1, WrapRenderCoordinate16(x), y,
+                   WrapRenderCoordinate16(glyphWidth), 12, (u16)textureU,
+                   (u16)textureV, red, green, blue, clut, 0, 1, 0x80);
+        x = WrapRenderCoordinate32((int64_t)x + glyphWidth);
     }
 
     g_RenderState.packetCursor = QueueDrawModePrim(
@@ -103,7 +117,7 @@ void DrawLargeText(s32 x, s16 y, const char *text, u8 red, u8 green, u8 blue,
                    u16 clut, s32 flags) {
     const u8 *cursor = (const u8 *)text;
     GameOrderingTableEntry *ot = RENDER_OT_BASE;
-    const s32 fixedWidth = (flags & TEXT_FIXED_WIDTH) != 0;
+    const s32 fixedWidth = (flags & DRAW_ATLAS_TEXT_FIXED_WIDTH) != 0;
 
     while (*cursor != '\0') {
         s32 glyphIndex;
@@ -111,9 +125,10 @@ void DrawLargeText(s32 x, s16 y, const char *text, u8 red, u8 green, u8 blue,
         s32 textureU;
         s32 textureV;
         const u8 character = *cursor++;
+        FontGlyph glyph;
 
         if (character == ' ') {
-            x += 8;
+            x = WrapRenderCoordinate32((int64_t)x + 8);
             continue;
         }
 
@@ -122,14 +137,16 @@ void DrawLargeText(s32 x, s16 y, const char *text, u8 red, u8 green, u8 blue,
             continue;
         }
 
-        glyphWidth = fixedWidth ? 8 : g_LargeFontGlyphs[glyphIndex].width;
+        glyph = FontGlyphAt(g_LargeFontGlyphs, glyphIndex);
+        glyphWidth = fixedWidth ? 8 : glyph.width;
         textureU = fixedWidth ? (glyphIndex % 32) * 8
-                              : g_LargeFontGlyphs[glyphIndex].u;
+                              : glyph.u;
         textureV = fixedWidth ? (glyphIndex / 32) * 16 + 24
-                              : g_LargeFontGlyphs[glyphIndex].v;
-        DrawSprite(ot + 1, (s16)x, y, (s16)glyphWidth, 16, (s16)textureU,
-                   (s16)textureV, red, green, blue, clut, 0, 1, 0x80);
-        x += glyphWidth;
+                              : glyph.v;
+        DrawSprite(ot + 1, WrapRenderCoordinate16(x), y,
+                   WrapRenderCoordinate16(glyphWidth), 16, (u16)textureU,
+                   (u16)textureV, red, green, blue, clut, 0, 1, 0x80);
+        x = WrapRenderCoordinate32((int64_t)x + glyphWidth);
     }
 
     g_RenderState.packetCursor = QueueDrawModePrim(

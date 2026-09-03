@@ -1,12 +1,13 @@
 #include "game/render.h"
 #include "game/render_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
 GameRenderState g_RenderState;
-FontGlyph g_SmallFontGlyphs[64];
-FontGlyph g_LargeFontGlyphs[64];
+u8 g_SmallFontGlyphs[SMALL_FONT_GLYPH_COUNT * FONT_GLYPH_RECORD_SIZE];
+u8 g_LargeFontGlyphs[LARGE_FONT_GLYPH_COUNT * FONT_GLYPH_RECORD_SIZE];
 
 typedef struct SpriteCall {
     GameOrderingTableEntry *ot;
@@ -71,13 +72,17 @@ static void ResetCalls(void) {
     s_drawMode = -1;
 }
 
-static void InitGlyphs(FontGlyph *glyphs) {
+static void InitGlyphs(u8 *fontData, s32 glyphCount) {
     s32 index;
 
-    for (index = 0; index < 64; index++) {
-        glyphs[index].u = (u8)(index + 1);
-        glyphs[index].v = (u8)(index + 2);
-        glyphs[index].width = (u16)(index % 3 + 3);
+    for (index = 0; index < glyphCount; index++) {
+        FontGlyph glyph = {
+            .u = (u8)(index + 1),
+            .v = (u8)(index + 2),
+            .width = (u16)(index % 3 + 3),
+        };
+
+        memcpy(fontData + index * sizeof(glyph), &glyph, sizeof(glyph));
     }
 }
 
@@ -89,8 +94,8 @@ int main(void) {
     memset(&g_RenderState, 0, sizeof(g_RenderState));
     g_RenderState.primData = s_ot;
     g_RenderState.packetCursor = s_packet;
-    InitGlyphs(g_SmallFontGlyphs);
-    InitGlyphs(g_LargeFontGlyphs);
+    InitGlyphs(g_SmallFontGlyphs, SMALL_FONT_GLYPH_COUNT);
+    InitGlyphs(g_LargeFontGlyphs, LARGE_FONT_GLYPH_COUNT);
 
     DrawSmallText(10, 20, smallText, 1, 2, 3, 4, 5);
     CHECK(s_callCount == 4);
@@ -122,6 +127,18 @@ int main(void) {
     CHECK(s_calls[2].textureV == 40);
     CHECK(s_calls[3].x == 37 && s_calls[3].textureU == 64);
     CHECK(s_drawMode == 29);
+
+    ResetCalls();
+    DrawSmallText(INT_MAX, 0, "00", 0, 0, 0, 0,
+                  DRAW_ATLAS_TEXT_FIXED_WIDTH);
+    CHECK(s_callCount == 2);
+    CHECK(s_calls[0].x == -1 && s_calls[1].x == 5);
+
+    ResetCalls();
+    DrawLargeText(INT_MAX, 0, "00", 0, 0, 0, 0,
+                  DRAW_ATLAS_TEXT_FIXED_WIDTH);
+    CHECK(s_callCount == 2);
+    CHECK(s_calls[0].x == -1 && s_calls[1].x == 7);
 
     puts("atlas text tests passed");
     return 0;

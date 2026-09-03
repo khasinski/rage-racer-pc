@@ -16,6 +16,9 @@ typedef struct FontGlyph {
 } FontGlyph;
 
 enum {
+    FONT_GLYPH_RECORD_SIZE = 4,
+    SMALL_FONT_GLYPH_COUNT = 46,
+    LARGE_FONT_GLYPH_COUNT = 49,
     PRINTABLE_ASCII_FIRST = 0x20,
     PRINTABLE_ASCII_GLYPH_COUNT = 96,
     PRINTABLE_ASCII_FALLBACK_GLYPH = '?' - PRINTABLE_ASCII_FIRST,
@@ -133,8 +136,8 @@ static inline void ApplyTrackTextureSectionRange(void) {
 
 void InitTrackLighting(void);
 
-extern FontGlyph g_SmallFontGlyphs[];
-extern FontGlyph g_LargeFontGlyphs[];
+extern u8 g_SmallFontGlyphs[SMALL_FONT_GLYPH_COUNT * FONT_GLYPH_RECORD_SIZE];
+extern u8 g_LargeFontGlyphs[LARGE_FONT_GLYPH_COUNT * FONT_GLYPH_RECORD_SIZE];
 extern u32 g_MainVisibleCellMask[];
 extern Vec4 g_MainVisibleCellList[];
 extern u32 *g_VisibleCellMask;
