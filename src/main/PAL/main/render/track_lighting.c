@@ -5,13 +5,18 @@ enum {
     LIGHTING_BLEND_MAX = 0x100,
 };
 
-static void ScaleColorRow(Matrix *output, const Matrix *source, s32 row,
-                          s32 scale) {
+static void ScaleColorMatrix(Matrix *output, const Matrix *source,
+                             s32 redScale, s32 greenScale, s32 blueScale) {
+    const s32 rowScales[3] = {redScale, greenScale, blueScale};
+    s32 row;
     s32 column;
 
-    for (column = 0; column < 3; column++) {
-        output->m[row][column] =
-            source->m[row][column] * scale / LIGHTING_BLEND_MAX;
+    for (row = 0; row < 3; row++) {
+        for (column = 0; column < 3; column++) {
+            output->m[row][column] =
+                source->m[row][column] * rowScales[row] /
+                LIGHTING_BLEND_MAX;
+        }
     }
 }
 
@@ -33,7 +38,6 @@ static void BlendLightMatrix(Matrix *matrix, s32 blend) {
 /* Darkens the scene colour matrix by GetTrackZoneBlend's 0..0x100 ramp. */
 void ApplyZoneLighting(s32 blend, Matrix *lightMatrix) {
     Matrix colorMatrix;
-    s32 row;
 
     if (blend < 0) {
         blend = 0;
@@ -44,16 +48,14 @@ void ApplyZoneLighting(s32 blend, Matrix *lightMatrix) {
     if (g_TrackZoneCode != 0) {
         s32 scale = LIGHTING_BLEND_MAX - (blend * 3) / 4;
 
-        for (row = 0; row < 3; row++) {
-            ScaleColorRow(&colorMatrix, &g_SceneColorMatrix, row, scale);
-        }
+        ScaleColorMatrix(&colorMatrix, &g_SceneColorMatrix,
+                         scale, scale, scale);
     } else {
-        ScaleColorRow(&colorMatrix, &g_SceneColorMatrix, 0,
-                      LIGHTING_BLEND_MAX);
-        ScaleColorRow(&colorMatrix, &g_SceneColorMatrix, 1,
-                      LIGHTING_BLEND_MAX - blend / 2);
-        ScaleColorRow(&colorMatrix, &g_SceneColorMatrix, 2,
-                      LIGHTING_BLEND_MAX - (blend * 3) / 4);
+        ScaleColorMatrix(
+            &colorMatrix, &g_SceneColorMatrix,
+            LIGHTING_BLEND_MAX,
+            LIGHTING_BLEND_MAX - blend / 2,
+            LIGHTING_BLEND_MAX - (blend * 3) / 4);
         BlendLightMatrix(lightMatrix, blend);
     }
     SetColorMatrix(&colorMatrix);

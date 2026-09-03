@@ -757,7 +757,7 @@ extern s32 g_ModelBankCount;
 extern s16 g_NegconSteer;
 extern s32 g_SetupArrowPulse;
 
-void ApplyZoneLighting(s32 zone, Matrix *mtx);
+void ApplyZoneLighting(s32 blend, Matrix *lightMatrix);
 void EndMirrorPass(void);
 void RestoreColorMatrix(void);
 s32 rsin(s32 angle);
