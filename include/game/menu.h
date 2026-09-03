@@ -628,7 +628,6 @@ s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index);
 void DrawScreenAdjustScreen(void);
 void DrawTeamNameCharModel(void);
 void DrawTireCompoundSlider(u8 x, s32 useFlag);
-void DrawTitleFadeOverlay(s32 brightness);
 void DrawVolumeBar(s32 level, s32 y);
 void UpdateAndDrawCourseCard(void);
 void TickClassClearFanfare(void);
