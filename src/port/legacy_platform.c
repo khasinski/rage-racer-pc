@@ -731,26 +731,34 @@ int HostInitDisc(void) {
 /* Write the whole RAGE.BIN out of the mounted disc, so the modding tools can
  * work on a plain file instead of reimplementing ISO and CUE parsing. */
 int HostDumpArchive(const char *path) {
-    unsigned char *buffer;
+    unsigned char buffer[64 * 1024];
     FILE *output;
-    long size = g_RageHostDisc.archive_size;
-    int ok;
+    unsigned int offset = 0;
+    unsigned int remaining;
+    int ok = 1;
 
-    if (size <= 0) return 0;
-    buffer = malloc((size_t)size);
-    if (buffer == NULL) return 0;
-    if (!HostReadArchive(0, buffer, (unsigned int)size)) {
-        free(buffer);
+    if (path == NULL || g_RageHostDisc.archive_size <= 0 ||
+        (unsigned long)g_RageHostDisc.archive_size > UINT_MAX) {
         return 0;
     }
+    remaining = (unsigned int)g_RageHostDisc.archive_size;
     output = fopen(path, "wb");
-    if (output == NULL) {
-        free(buffer);
-        return 0;
+    if (output == NULL) return 0;
+    while (remaining > 0) {
+        unsigned int chunk = remaining < sizeof(buffer)
+                                 ? remaining
+                                 : (unsigned int)sizeof(buffer);
+
+        if (!HostReadArchive(offset, buffer, chunk) ||
+            fwrite(buffer, 1, chunk, output) != chunk) {
+            ok = 0;
+            break;
+        }
+        offset += chunk;
+        remaining -= chunk;
     }
-    ok = fwrite(buffer, 1, (size_t)size, output) == (size_t)size;
-    fclose(output);
-    free(buffer);
+    if (fclose(output) != 0) ok = 0;
+    if (!ok) remove(path);
     return ok;
 }
 
@@ -787,8 +795,11 @@ int HostLoadArchiveIndex(void *entries_ptr, int count) {
 }
 
 int HostLoadAsset(unsigned int byte_offset, unsigned int size, void *destination) {
+    if (size > INT_MAX) return 0;
     BeginDataRead();
-    return HostReadArchive(byte_offset, destination, size) ? (int)(size & ~3u) : 0;
+    return HostReadArchive(byte_offset, destination, size)
+               ? (int)(size & ~3u)
+               : 0;
 }
 
 MATRIX *MulMatrix0(MATRIX *left, MATRIX *right, MATRIX *output) {
