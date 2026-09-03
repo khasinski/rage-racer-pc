@@ -244,6 +244,37 @@ static void test_transform_interpolation_takes_short_angle_path(void) {
     EXPECT_EQ(10, (int)current.rotation.y);
 }
 
+static void test_transform_interpolation_normalizes_large_quaternions(void) {
+    RageRenderTransform previous = {0};
+    RageRenderTransform current = {0};
+    RageRenderTransform presentation;
+
+    previous.hasOrientation = current.hasOrientation = 1;
+    previous.orientation.y = current.orientation.y = FLT_MAX;
+    previous.orientation.w = current.orientation.w = FLT_MAX;
+    RenderInterpolateTransform(&previous, &current, 0.5f, &presentation);
+    EXPECT_EQ(1, presentation.hasOrientation);
+    EXPECT_EQ(70, (int)(presentation.orientation.y * 100.0f));
+    EXPECT_EQ(70, (int)(presentation.orientation.w * 100.0f));
+}
+
+static void test_interpolation_rejects_null_inputs(void) {
+    RageRenderTransform transform;
+    RageRenderCamera camera;
+
+    memset(&transform, 0x7f, sizeof(transform));
+    RenderInterpolateTransform(NULL, NULL, 0.5f, &transform);
+    EXPECT_EQ(0, (int)transform.position.x);
+    EXPECT_EQ(0, transform.hasOrientation);
+    RenderInterpolateTransform(NULL, NULL, 0.5f, NULL);
+
+    memset(&camera, 0x7f, sizeof(camera));
+    RenderInterpolateCamera(NULL, NULL, 0.5f, &camera);
+    EXPECT_EQ(0, (int)camera.verticalFovDegrees);
+    EXPECT_EQ(0, (int)camera.transform.position.x);
+    RenderInterpolateCamera(NULL, NULL, 0.5f, NULL);
+}
+
 static void test_non_finite_angles_do_not_stall_interpolation(void) {
     RageRenderTransform previous = {0};
     RageRenderTransform current = {0};
@@ -641,6 +672,8 @@ int main(void) {
     test_mirror_is_an_independent_scene_camera();
     test_camera_cuts_are_not_interpolated_as_motion();
     test_transform_interpolation_takes_short_angle_path();
+    test_transform_interpolation_normalizes_large_quaternions();
+    test_interpolation_rejects_null_inputs();
     test_non_finite_angles_do_not_stall_interpolation();
     test_perspective_fog_uses_authored_near_and_far_depths();
     test_projection_rejects_non_finite_camera_data();

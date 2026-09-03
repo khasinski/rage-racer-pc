@@ -40,6 +40,11 @@ void RenderInterpolateTransform(const RageRenderTransform *previous,
                                     const RageRenderTransform *current,
                                     float t,
                                     RageRenderTransform *out) {
+    if (out == NULL) return;
+    if (previous == NULL || current == NULL) {
+        memset(out, 0, sizeof(*out));
+        return;
+    }
     t = Clamp01(t);
     InterpolateVec3(&previous->position, &current->position, t,
                     &out->position);
@@ -51,12 +56,13 @@ void RenderInterpolateTransform(const RageRenderTransform *previous,
                                                   current->rotation.z, t);
     out->hasOrientation = previous->hasOrientation && current->hasOrientation;
     if (out->hasOrientation) {
-        float dot = previous->orientation.x * current->orientation.x +
-                    previous->orientation.y * current->orientation.y +
-                    previous->orientation.z * current->orientation.z +
-                    previous->orientation.w * current->orientation.w;
-        float sign = dot < 0.0f ? -1.0f : 1.0f;
-        float length;
+        double dot =
+            (double)previous->orientation.x * current->orientation.x +
+            (double)previous->orientation.y * current->orientation.y +
+            (double)previous->orientation.z * current->orientation.z +
+            (double)previous->orientation.w * current->orientation.w;
+        float sign = dot < 0.0 ? -1.0f : 1.0f;
+        double lengthSquared;
         out->orientation.x = previous->orientation.x +
             (current->orientation.x * sign - previous->orientation.x) * t;
         out->orientation.y = previous->orientation.y +
@@ -65,13 +71,21 @@ void RenderInterpolateTransform(const RageRenderTransform *previous,
             (current->orientation.z * sign - previous->orientation.z) * t;
         out->orientation.w = previous->orientation.w +
             (current->orientation.w * sign - previous->orientation.w) * t;
-        length = sqrtf(out->orientation.x * out->orientation.x +
-                       out->orientation.y * out->orientation.y +
-                       out->orientation.z * out->orientation.z +
-                       out->orientation.w * out->orientation.w);
-        if (length > 0.0f) {
-            out->orientation.x /= length; out->orientation.y /= length;
-            out->orientation.z /= length; out->orientation.w /= length;
+        lengthSquared =
+            (double)out->orientation.x * out->orientation.x +
+            (double)out->orientation.y * out->orientation.y +
+            (double)out->orientation.z * out->orientation.z +
+            (double)out->orientation.w * out->orientation.w;
+        if (isfinite(lengthSquared) && lengthSquared > 0.0) {
+            double inverseLength = 1.0 / sqrt(lengthSquared);
+            out->orientation.x =
+                (float)((double)out->orientation.x * inverseLength);
+            out->orientation.y =
+                (float)((double)out->orientation.y * inverseLength);
+            out->orientation.z =
+                (float)((double)out->orientation.z * inverseLength);
+            out->orientation.w =
+                (float)((double)out->orientation.w * inverseLength);
         }
     } else {
         out->orientation = current->orientation;
@@ -82,6 +96,11 @@ void RenderInterpolateTransform(const RageRenderTransform *previous,
 void RenderInterpolateCamera(const RageRenderCamera *previous,
                                  const RageRenderCamera *current, float t,
                                  RageRenderCamera *out) {
+    if (out == NULL) return;
+    if (previous == NULL || current == NULL) {
+        memset(out, 0, sizeof(*out));
+        return;
+    }
     RenderInterpolateTransform(&previous->transform, &current->transform,
                                    t, &out->transform);
     t = Clamp01(t);
