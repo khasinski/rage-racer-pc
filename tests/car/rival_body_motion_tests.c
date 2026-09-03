@@ -151,6 +151,17 @@ int main(void) {
     UpdateRivalBodyMotion();
     CHECK_EQ(normal->bodyRoll, INT_MIN);
 
+    memset(normal, 0, sizeof(*normal));
+    normal->speed = INT_MAX;
+    normal->wheelRotation = INT_MAX;
+    UpdateCarWheelRotation(normal);
+    CHECK_EQ(normal->wheelRotation, 0x1248);
+
+    normal->speed = INT_MIN;
+    normal->wheelRotation = INT_MAX;
+    UpdateCarWheelRotation(normal);
+    CHECK_EQ(normal->wheelRotation, ANGLE_MASK);
+
     puts("rival body motion preserves wheels, jumps, landing, and collisions");
     return 0;
 }
