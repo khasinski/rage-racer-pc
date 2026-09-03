@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <limits.h>
 #include <string.h>
 
 #include "game/race.h"
@@ -101,6 +102,28 @@ static void TestWritesDriverName(void) {
     WriteRecordDriverName(&record, nameCodes);
     CHECK(memcmp(record.driverName, "ABCDEF", 6) == 0);
     CHECK((u8)record.driverName[6] == 0xCC && (u8)record.driverName[7] == 0xCC);
+
+    nameCodes[2] = 0xFF;
+    WriteRecordDriverName(&record, nameCodes);
+    CHECK(record.driverName[2] == g_NameEntryCharset[0xB]);
+    WriteRecordDriverName(NULL, nameCodes);
+    WriteRecordDriverName(&record, NULL);
+}
+
+static void TestInvalidStateIsBounded(void) {
+    u8 nameCodes[6];
+
+    Reset(nameCodes);
+    g_NameEntryCursor = -1;
+    g_NameEntryChar = INT_MAX;
+    CHECK(UpdateRecordNameEntry(nameCodes) == 0);
+    CHECK(g_NameEntryCursor == 0);
+    CHECK(g_NameEntryChar == INT_MAX % 42);
+    CHECK(nameCodes[0] == INT_MAX % 42);
+
+    g_NameEntryCursor = RECORD_NAME_LENGTH;
+    CHECK(UpdateRecordNameEntry(nameCodes) == 1);
+    CHECK(UpdateRecordNameEntry(NULL) == 0);
 }
 
 int main(void) {
@@ -111,5 +134,6 @@ int main(void) {
     TestConfirmAndCancel();
     TestSixthCharacterCompletes();
     TestWritesDriverName();
+    TestInvalidStateIsBounded();
     return s_failures != 0;
 }
