@@ -3,6 +3,7 @@
 #include "game/integer.h"
 #include "game/render.h"
 #include "game/track.h"
+#include "game/track_internal.h"
 
 s32 CalculateTrackOffsetHeading(s32 pointIndex, s32 segmentFraction,
                                 s32 carX, s32 carZ, s32 lateralOffset) {

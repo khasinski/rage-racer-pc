@@ -1,5 +1,6 @@
 #include "game/audio.h"
 #include "game/car.h"
+#include "game/car_internal.h"
 #include "game/course_index.h"
 #include "game/integer.h"
 #include "game/player_car_internal.h"

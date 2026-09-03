@@ -1,4 +1,4 @@
-#include "game/track.h"
+#include "game/track_internal.h"
 
 
 /*

@@ -781,9 +781,6 @@ void ApplyPrimaryBodyColor(u32 colour, CarImageData *imageData);
 void ApplySecondaryBodyColor(u32 colour, CarImageData *imageData);
 void SetPrimaryBodyColor(s32 colour);
 void SetSecondaryBodyColor(s32 colour);
-s32 SmoothTrackAngle(s32 pointIndex, s32 weight);
-void UpdateRivalRubberBand(void);
-
 extern s16 g_LaunchEnergyThresholds[];
 extern s16 g_RedlineToPeakRpmHalf;
 extern s16 g_PeakToRevLimitRpmHalf;
@@ -819,13 +816,8 @@ typedef enum TachometerLightingMode {
 
 void BuildStartingGrid(void);
 void BuildTachoNeedleQuad(void);
-void InitRivalCar(GameCarRuntime *car, s32 gridPosition,
-                  const RaceGridSlot *grid);
-void InitRivalCarAi(GameCarRuntime *car, s32 gridPosition,
-                    const RaceGridSlot *grid);
 void AccumulateLapProgress(GameCarRuntime *car);
 s32 FindTrackSegment(GameCarRuntime *car, s32 idx);
-s32 IsCarFacingBackwards(const PlayerCarRuntime *car);
 void SeedCarLapProgress(GameCarRuntime *car, s32 mode);
 s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
                         const CarTrackLimits *limits);

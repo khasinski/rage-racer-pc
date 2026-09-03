@@ -64,6 +64,10 @@ s32 CalculateTrackOffsetHeading(s32 pointIndex, s32 segmentFraction,
 void MoveRivalCars(void);
 void AccelerateRaceRivals(void);
 void AccelerateAttractRivals(void);
+void InitRivalCar(GameCarRuntime *car, s32 gridPosition,
+                  const RaceGridSlot *grid);
+void InitRivalCarAi(GameCarRuntime *car, s32 gridPosition,
+                    const RaceGridSlot *grid);
 void PlaceRivalCarsOnTrack(void);
 void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex);
 void ClampCarLateralOffset(GameCarRuntime *car, s32 rivalSlot);
@@ -74,6 +78,10 @@ void SteerCarAlongRoute(GameCarRuntime *car);
 void SteerCarToTrackLine(PlayerCarRuntime *car);
 void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex);
 void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex);
+void UpdateRivalRubberBand(void);
+/* Whether the player's heading differs from the local road direction by more
+ * than a quarter turn. */
+s32 IsCarFacingBackwards(const PlayerCarRuntime *car);
 typedef struct {
     s32 longitudinalResistance;
     s32 motionResistance;

@@ -1,5 +1,6 @@
 #include "game/angle.h"
 #include "game/car.h"
+#include "game/car_internal.h"
 #include "game/track.h"
 
 /* A heading is backwards when it is more than a quarter-turn, but less than
