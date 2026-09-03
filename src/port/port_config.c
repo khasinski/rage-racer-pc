@@ -17,6 +17,7 @@ static char *Trim(char *text) {
 }
 
 void PortConfigDefaults(RagePortConfig *config) {
+    if (config == NULL) return;
     config->renderer = RAGE_RENDERER_CLASSIC;
     config->modernInternalScale = 2.0f;
     config->modernAspect = RAGE_MODERN_ASPECT_AUTO;
@@ -68,8 +69,8 @@ static int ApplySetting(RagePortConfig *config, const char *name,
         return 0;
     }
     if (strcmp(name, "modern.fps") == 0) {
-        char *end;
-        long parsed;
+        int parsed;
+
         if (strcmp(value, "logic") == 0) {
             config->modernFps = RAGE_MODERN_FPS_LOGIC;
             return 1;
@@ -78,11 +79,8 @@ static int ApplySetting(RagePortConfig *config, const char *name,
             config->modernFps = RAGE_MODERN_FPS_VSYNC;
             return 1;
         }
-        parsed = strtol(value, &end, 10);
-        if (end == value || *end != '\0' || parsed < 1 || parsed > 1000) {
-            return 0;
-        }
-        config->modernFps = (int)parsed;
+        if (!RuntimeParseInt(value, 10, 1, 1000, &parsed)) return 0;
+        config->modernFps = parsed;
         return 1;
     }
     if (strcmp(name, "modern.draw_distance") == 0) {
@@ -143,6 +141,8 @@ int PortConfigApplyRuntime(RagePortConfig *config) {
         {"video.grading", "modern.grading"}
     };
     int index, applied = 0;
+
+    if (config == NULL) return 0;
     for (index = 0; index < (int)(sizeof(keys) / sizeof(keys[0])); index++) {
         const char *value = RuntimeConfigGet(keys[index].runtimeKey);
         if (value) applied += ApplySetting(config, keys[index].legacyKey, value);
@@ -151,12 +151,18 @@ int PortConfigApplyRuntime(RagePortConfig *config) {
 }
 
 static RagePortConfig active_config = {
-    RAGE_RENDERER_CLASSIC, 2.0f, RAGE_MODERN_ASPECT_AUTO,
-    RAGE_MODERN_FPS_LOGIC, 1.0f, 0, RAGE_MODERN_POST_NONE,
-    0
+    .renderer = RAGE_RENDERER_CLASSIC,
+    .modernInternalScale = 2.0f,
+    .modernAspect = RAGE_MODERN_ASPECT_AUTO,
+    .modernFps = RAGE_MODERN_FPS_LOGIC,
+    .modernDrawDistance = 1.0f,
+    .modernTextureFilterLinear = 0,
+    .modernPost = RAGE_MODERN_POST_NONE,
+    .modernGrading = 0,
 };
 
 void PortConfigSetActive(const RagePortConfig *config) {
+    if (config == NULL) return;
     active_config = *config;
 }
 

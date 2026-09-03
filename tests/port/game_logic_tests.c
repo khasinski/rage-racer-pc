@@ -227,6 +227,9 @@ static void test_port_config(void) {
         "unknown.key = 1\n";
     int fd;
 
+    PortConfigDefaults(NULL);
+    EXPECT_EQ(0, PortConfigApplyRuntime(NULL));
+    PortConfigSetActive(NULL);
     PortConfigDefaults(&config);
     EXPECT_EQ(RAGE_RENDERER_CLASSIC, config.renderer);
     EXPECT_EQ(RAGE_MODERN_FPS_LOGIC, config.modernFps);
