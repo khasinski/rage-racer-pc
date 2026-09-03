@@ -19,14 +19,15 @@ void SteerCarAlongRoute(GameCarRuntime *car) {
     const GameTrackPoint *point;
     s32 raceSeries = g_RaceSeries != 0;
     s32 index;
-    s32 lateral = car->aiLateralOffset;
+    s32 lateral;
     s32 targetAngle;
     s32 trackFacing;
 
-    if (g_TrackPointCount <= 0 || g_TrackPoints == NULL) {
+    if (car == NULL || g_TrackPointCount <= 0 || g_TrackPoints == NULL) {
         return;
     }
 
+    lateral = car->aiLateralOffset;
     index = WrapSigned32(
         (int64_t)car->trackPointIndex +
         (raceSeries ? ROUTE_LOOKAHEAD_SEGMENTS

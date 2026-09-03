@@ -16,15 +16,16 @@ enum {
  */
 void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex) {
     const s32 series = g_RaceSeries != 0;
-    s32 position = car->trackProgress >> 4;
+    s32 position;
     const TrackRacingLineHint *hints;
     const TrackRacingLineHint *hint;
 
-    if (g_TrackEventData == NULL || carIndex < 0 ||
+    if (car == NULL || g_TrackEventData == NULL || carIndex < 0 ||
         carIndex >= RACE_CAR_SLOT_COUNT) {
         return;
     }
 
+    position = car->trackProgress >> 4;
     if (position < AI_TABLE_LAP_START_PROGRESS ||
         car->racingLineHintIndex < 0 ||
         car->racingLineHintIndex >= TRACK_RACING_LINE_HINT_COUNT) {

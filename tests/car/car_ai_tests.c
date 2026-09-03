@@ -438,6 +438,7 @@ static void MissingAiDataTests(void) {
     g_TrackEventData = NULL;
 
     ApplyCarRacingLineHint(&car, 0);
+    ApplyCarRacingLineHint(NULL, 0);
     UpdateCarAiTargetSpeed(&car, 0);
     UpdateCarAiTargetSpeed(NULL, 0);
     SeedCarAiSpeedKeys();

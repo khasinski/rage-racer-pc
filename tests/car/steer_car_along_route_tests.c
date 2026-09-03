@@ -111,6 +111,10 @@ int main(void) {
     CHECK_EQ(s_sampledIndex, -1);
     CHECK_EQ(car.headingAngle, 500);
 
+    g_TrackPointCount = 5;
+    SteerCarAlongRoute(NULL);
+    CHECK_EQ(s_sampledIndex, -1);
+
     s_coords[0] = INT_MAX;
     s_coords[2] = INT_MIN;
     s_smoothAngle = 0;
