@@ -27,18 +27,22 @@ static s32 ZoneBlend(const TrackZone *zone, s32 position, s32 *zonePhase) {
 }
 
 s32 GetTrackZoneBlend(s32 position) {
-    const TrackZone *zone = g_TrackEventData->zones;
+    const TrackZone *zones;
     s32 index;
-
-    position = TrackPositionForSeries(position, g_TrackLength, g_RaceSeries);
 
     g_TrackZoneCode = 0;
     g_ReverbZoneDepth = 0;
     g_TrackZoneDark = 0;
+    if (g_TrackEventData == NULL) {
+        return 0;
+    }
 
-    for (index = 0; index < TRACK_ZONE_COUNT && zone[index].start != -1;
+    position = TrackPositionForSeries(position, g_TrackLength, g_RaceSeries);
+    zones = g_TrackEventData->zones;
+
+    for (index = 0; index < TRACK_ZONE_COUNT && zones[index].start != -1;
          index++) {
-        const TrackZone *current = &zone[index];
+        const TrackZone *current = &zones[index];
         s32 phase;
         s32 blend;
         s32 code;

@@ -63,6 +63,12 @@ int main(void) {
     g_RaceSeries = 1;
     if (!Expect("reverse series", 1899, 1, 1, 7, 0)) return 1;
 
+    g_TrackEventData = NULL;
+    g_TrackZoneCode = 9;
+    g_ReverbZoneDepth = 10;
+    g_TrackZoneDark = 11;
+    if (!Expect("no installed track events", 500, 0, 0, 0, 0)) return 1;
+
     puts("track zone blend behavior preserved");
     return 0;
 }
