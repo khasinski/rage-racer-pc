@@ -15,7 +15,8 @@ typedef struct RageTransformBasis {
     int useMatrix;
 } RageTransformBasis;
 
-static RageTransformBasis BuildTransformBasis(const RageRenderTransform *transform) {
+static RageTransformBasis BuildTransformBasis(
+    const RageRenderTransform *transform) {
     RageTransformBasis basis = {0};
     float x = Radians(transform->rotation.x);
     float y = Radians(transform->rotation.y);
@@ -46,29 +47,35 @@ static RageTransformBasis BuildTransformBasis(const RageRenderTransform *transfo
     return basis;
 }
 
-static RageRenderVec3 TransformBasisVector(const RageTransformBasis *basis,
-                                                RageRenderVec3 out) {
+static RageRenderVec3 TransformBasisVector(
+    const RageTransformBasis *basis, RageRenderVec3 vector) {
     float x;
     if (basis->useMatrix) {
         RageRenderVec3 rotated;
-        rotated.x = basis->matrix[0][0] * out.x + basis->matrix[0][1] * out.y +
-                    basis->matrix[0][2] * out.z;
-        rotated.y = basis->matrix[1][0] * out.x + basis->matrix[1][1] * out.y +
-                    basis->matrix[1][2] * out.z;
-        rotated.z = basis->matrix[2][0] * out.x + basis->matrix[2][1] * out.y +
-                    basis->matrix[2][2] * out.z;
+        rotated.x = basis->matrix[0][0] * vector.x +
+                    basis->matrix[0][1] * vector.y +
+                    basis->matrix[0][2] * vector.z;
+        rotated.y = basis->matrix[1][0] * vector.x +
+                    basis->matrix[1][1] * vector.y +
+                    basis->matrix[1][2] * vector.z;
+        rotated.z = basis->matrix[2][0] * vector.x +
+                    basis->matrix[2][1] * vector.y +
+                    basis->matrix[2][2] * vector.z;
         return rotated;
     }
-    float y = out.y * basis->cx - out.z * basis->sx;
-    float z = out.y * basis->sx + out.z * basis->cx;
-    out.y = y; out.z = z;
-    x = out.x * basis->cy + out.z * basis->sy;
-    z = -out.x * basis->sy + out.z * basis->cy;
-    out.x = x; out.z = z;
-    x = out.x * basis->cz - out.y * basis->sz;
-    y = out.x * basis->sz + out.y * basis->cz;
-    out.x = x; out.y = y;
-    return out;
+    float y = vector.y * basis->cx - vector.z * basis->sx;
+    float z = vector.y * basis->sx + vector.z * basis->cx;
+    vector.y = y;
+    vector.z = z;
+    x = vector.x * basis->cy + vector.z * basis->sy;
+    z = -vector.x * basis->sy + vector.z * basis->cy;
+    vector.x = x;
+    vector.z = z;
+    x = vector.x * basis->cz - vector.y * basis->sz;
+    y = vector.x * basis->sz + vector.y * basis->cz;
+    vector.x = x;
+    vector.y = y;
+    return vector;
 }
 
 static RageRenderVec3 TransformPosition(const RageTransformBasis *basis,
@@ -387,6 +394,7 @@ static int BuildVertex(const RageTransformBasis *basis,
                            uint32_t *material, uint32_t *materialFlags,
                            uint8_t *depthDecal) {
     RageRuntimeVertex source;
+    RageRenderVec3 normal;
     RageRenderVec3 worldPosition;
     if (!RuntimeMeshVertex(mesh, index, &source)) return 0;
     *materialFlags = source.material &
@@ -407,11 +415,10 @@ static int BuildVertex(const RageTransformBasis *basis,
         source.material &= ~RAGE_RUNTIME_MATERIAL_SCROLL_U;
     }
     memcpy(out->color, source.color, sizeof(out->color));
-    {
-        RageRenderVec3 normal = TransformNormal(basis, &source);
-        out->normal[0] = normal.x; out->normal[1] = normal.y;
-        out->normal[2] = normal.z;
-    }
+    normal = TransformNormal(basis, &source);
+    out->normal[0] = normal.x;
+    out->normal[1] = normal.y;
+    out->normal[2] = normal.z;
     out->fog[0] = world->camera.fogColor.x;
     out->fog[1] = world->camera.fogColor.y;
     out->fog[2] = world->camera.fogColor.z;
