@@ -166,6 +166,27 @@ set_tests_properties(native_ui_script_layout PROPERTIES LABELS functional)
 endif()
 
 if(TARGET rage-host-state)
+    add_executable(menu_mode_init_tests
+        menu_mode_init_tests.c
+        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/menu_mode.c
+        $<TARGET_OBJECTS:rage-host-state>)
+    target_include_directories(menu_mode_init_tests PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/port/include
+        ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+        ${CMAKE_SOURCE_DIR}/include)
+    target_compile_definitions(menu_mode_init_tests PRIVATE __psyz=1)
+    if(MSVC)
+        target_compile_options(menu_mode_init_tests PRIVATE
+            "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+    else()
+        target_compile_options(menu_mode_init_tests PRIVATE
+            "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+            -Wall -Wextra -Werror)
+    endif()
+    target_link_libraries(menu_mode_init_tests PRIVATE psyz)
+    add_test(NAME menu_mode_init COMMAND menu_mode_init_tests)
+    set_tests_properties(menu_mode_init PROPERTIES LABELS functional)
+
 # The prize screen's arithmetic, which is what a race leaves behind.
 add_executable(prize_screen_tests
     prize_screen_tests.c
