@@ -31,6 +31,7 @@ static RageCaptureRange s_ranges[RAGE_CAPTURE_MAX_RANGES];
 static int s_rangeCount;
 static int s_rangeOverflow;
 static const uint8_t *s_scopeStart;
+static int s_scopeHasFaceOwner;
 
 int CaptureActive(void) {
     if (!s_traceInitialized) {
@@ -121,6 +122,7 @@ void CaptureFrameBegin(void) {
     s_rangeCount = 0;
     s_rangeOverflow = 0;
     s_scopeStart = NULL;
+    s_scopeHasFaceOwner = 0;
 }
 
 void CaptureModelBegin(int kind, int index, int fogged) {
@@ -129,11 +131,13 @@ void CaptureModelBegin(int kind, int index, int fogged) {
     if (!CaptureActive()) return;
     snapshot = &s_snapshots[s_current];
     s_scopeStart = RENDER_PRIM_CURSOR_AS(uint8_t);
+    s_scopeHasFaceOwner = 0;
     if (snapshot->drawCount >= RAGE_CAPTURE_MAX_DRAWS) {
         snapshot->drawOverflow++;
         return;
     }
     draw = &snapshot->draws[snapshot->drawCount++];
+    s_scopeHasFaceOwner = 1;
     memset(draw, 0, sizeof(*draw));
     draw->kind = (uint8_t)kind;
     draw->mirror = g_RenderState.orderingFlag != 0;
@@ -156,8 +160,11 @@ void CaptureTerrainBegin(const void *cells, int count) {
     if (!CaptureActive()) return;
     snapshot = &s_snapshots[s_current];
     s_scopeStart = RENDER_PRIM_CURSOR_AS(uint8_t);
-    if (snapshot->terrainCount >= RAGE_CAPTURE_MAX_TERRAIN) return;
+    s_scopeHasFaceOwner = 0;
+    if (snapshot->terrainCount >= RAGE_CAPTURE_MAX_TERRAIN || count < 0 ||
+        (count != 0 && cells == NULL)) return;
     batch = &snapshot->terrain[snapshot->terrainCount++];
+    s_scopeHasFaceOwner = 1;
     memset(batch, 0, sizeof(*batch));
     batch->mirror = g_RenderState.orderingFlag != 0;
     batch->envMode4 = g_RenderState.envMode4 != 0;
@@ -174,7 +181,7 @@ void CaptureFace3D(const RageCaptureFaceInput *input) {
     RageSceneSnapshot *snapshot;
     RageCaptureFace *face;
     int vertex;
-    if (!CaptureActive()) return;
+    if (!CaptureActive() || input == NULL) return;
     snapshot = &s_snapshots[s_current];
     if (snapshot->faceCount >= RAGE_CAPTURE_MAX_FACES) {
         snapshot->faceOverflow++;
@@ -182,11 +189,25 @@ void CaptureFace3D(const RageCaptureFaceInput *input) {
     }
     /* A face must belong to a recorded draw/batch; if the owner overflowed
      * the capture arrays, indexing terrain[-1]/draws[-1] would crash. */
-    if (input->kind == RAGE_CAPTURE_KIND_TERRAIN
+    if (!s_scopeHasFaceOwner ||
+        (input->kind == RAGE_CAPTURE_KIND_TERRAIN
             ? snapshot->terrainCount <= 0
-            : snapshot->drawCount <= 0) {
+            : snapshot->drawCount <= 0)) {
         snapshot->faceOverflow++;
         return;
+    }
+    if (input->kind < RAGE_CAPTURE_KIND_MODEL ||
+        input->kind > RAGE_CAPTURE_KIND_TERRAIN ||
+        input->klass < 0 || input->klass > 3 || input->colors == NULL ||
+        (input->colorCount != 1 && input->colorCount != 4)) {
+        snapshot->faceOverflow++;
+        return;
+    }
+    for (vertex = 0; vertex < 4; vertex++) {
+        if (input->v[vertex] == NULL) {
+            snapshot->faceOverflow++;
+            return;
+        }
     }
     face = &snapshot->faces[snapshot->faceCount++];
     memset(face, 0, sizeof(*face));
@@ -207,6 +228,9 @@ void CaptureFace3D(const RageCaptureFaceInput *input) {
     face->textureWindow = input->textureWindow;
     for (vertex = 0; vertex < 4; vertex++) {
         const SVECTOR *v = (const SVECTOR *)input->v[vertex];
+        const uint8_t *color = input->colorCount == 4
+                                   ? input->colors + vertex * 4
+                                   : input->colors;
         face->pos[vertex][0] = v->vx;
         face->pos[vertex][1] = v->vy;
         face->pos[vertex][2] = v->vz;
@@ -214,14 +238,9 @@ void CaptureFace3D(const RageCaptureFaceInput *input) {
             face->uv[vertex][0] = input->uv[vertex * 2];
             face->uv[vertex][1] = input->uv[vertex * 2 + 1];
         }
-        {
-            const uint8_t *color = input->colorCount == 4
-                                       ? input->colors + vertex * 4
-                                       : input->colors;
-            face->color[vertex][0] = color[0];
-            face->color[vertex][1] = color[1];
-            face->color[vertex][2] = color[2];
-        }
+        face->color[vertex][0] = color[0];
+        face->color[vertex][1] = color[1];
+        face->color[vertex][2] = color[2];
     }
 }
 
@@ -239,6 +258,7 @@ void CaptureSubmitEnd(void) {
         }
     }
     s_scopeStart = NULL;
+    s_scopeHasFaceOwner = 0;
 }
 
 static int CaptureIs3DPacket(const uint8_t *address) {
