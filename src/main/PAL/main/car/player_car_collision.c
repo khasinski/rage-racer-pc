@@ -175,34 +175,38 @@ static PlayerCollisionHit FindPlayerCollision(
             continue;
         }
 
-        if (lateralDistance < COLLISION_LATERAL_REACH &&
-            (progressDistance < COLLISION_PROGRESS_REACH ||
-             g_TrackLength - COLLISION_PROGRESS_REACH < progressDistance) &&
-            heightDistance < COLLISION_HEIGHT_REACH) {
-            if (progressDistance < COLLISION_PROGRESS_REACH &&
-                lateralDistance < SLIPSTREAM_LATERAL_REACH) {
-                g_DragScale = CLOSE_SLIPSTREAM_DRAG;
+        if (lateralDistance >= COLLISION_LATERAL_REACH ||
+            (progressDistance >= COLLISION_PROGRESS_REACH &&
+             progressDistance <=
+                 g_TrackLength - COLLISION_PROGRESS_REACH) ||
+            heightDistance >= COLLISION_HEIGHT_REACH) {
+            if (lateralDistance < SLIPSTREAM_LATERAL_REACH &&
+                progressDistance < SLIPSTREAM_PROGRESS_REACH) {
+                s32 remainingDistance = WrapSigned32(
+                    (int64_t)SLIPSTREAM_PROGRESS_REACH - progressDistance);
+
+                g_DragScale = WrapSigned32(
+                    (int64_t)SLIPSTREAM_PROGRESS_REACH -
+                    (remainingDistance >> 2));
             }
-            BuildOpponentCollisionSamples(player, opponent, corners, samples);
-            quadHit = FindPlayerCollisionRegion(playerGrid, corners, samples);
+            continue;
+        }
+
+        if (progressDistance < COLLISION_PROGRESS_REACH &&
+            lateralDistance < SLIPSTREAM_LATERAL_REACH) {
+            g_DragScale = CLOSE_SLIPSTREAM_DRAG;
+        }
+        BuildOpponentCollisionSamples(player, opponent, corners, samples);
+        quadHit = FindPlayerCollisionRegion(playerGrid, corners, samples);
+        if (quadHit.region > 0) {
+            hit.opponent = opponent;
+            hit.opponentIndex = index;
             hit.region = quadHit.region;
             hit.sampleIndex = quadHit.sampleIndex;
             hit.quadIndex = quadHit.quadIndex;
-            if (hit.region > 0) {
-                hit.opponent = opponent;
-                hit.opponentIndex = index;
-                hit.progressDistance = progressDistance;
-                hit.lateralDistance = lateralDistance;
-                return hit;
-            }
-        } else if (lateralDistance < SLIPSTREAM_LATERAL_REACH &&
-                   progressDistance < SLIPSTREAM_PROGRESS_REACH) {
-            s32 remainingDistance = WrapSigned32(
-                (int64_t)SLIPSTREAM_PROGRESS_REACH - progressDistance);
-
-            g_DragScale = WrapSigned32(
-                (int64_t)SLIPSTREAM_PROGRESS_REACH -
-                (remainingDistance >> 2));
+            hit.progressDistance = progressDistance;
+            hit.lateralDistance = lateralDistance;
+            return hit;
         }
     }
     return hit;
