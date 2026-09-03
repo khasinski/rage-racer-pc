@@ -75,7 +75,11 @@ int main(void) {
         FormatLapTime(output.formatted, 125678);
         CHECK(strcmp(output.formatted, "2'05\"678") == 0);
         FormatLapTime(output.formatted, 2147483647);
+        CHECK(strcmp(output.formatted, "9'59\"999") == 0);
         CHECK(output.guard == '!');
+        FormatLapTime(output.formatted, -1);
+        CHECK(strcmp(output.formatted, "0'00\"000") == 0);
+        FormatLapTime(NULL, 1234);
     }
 
     for (series = 0; series < 2; series++) {

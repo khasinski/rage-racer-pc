@@ -131,9 +131,21 @@ void RepairRecordTimes(void) {
 }
 
 void FormatLapTime(char dst[LAP_TIME_TEXT_CAPACITY], s32 value) {
-    s32 minutes = value / 60000;
-    s32 seconds = value / 1000 % 60;
-    s32 fraction = value % 1000;
+    s32 minutes;
+    s32 seconds;
+    s32 fraction;
+
+    if (dst == NULL) {
+        return;
+    }
+    if (value < 0) {
+        value = 0;
+    } else if (value > RACE_TIME_MAX_MS) {
+        value = RACE_TIME_MAX_MS;
+    }
+    minutes = value / 60000;
+    seconds = value / 1000 % 60;
+    fraction = value % 1000;
 
     snprintf(dst, LAP_TIME_TEXT_CAPACITY, g_FmtLapTime, minutes, seconds,
              fraction);
