@@ -5,9 +5,13 @@
 
 enum {
     DETAILED_RIVAL_MOTION_COUNT = 4,
+    RIVAL_STEERING_DEAD_ZONE = 0x40,
     RIVAL_STEERING_LIMIT = 0x12C,
+    RIVAL_BODY_ROLL_ACCELERATION = 6,
     RIVAL_YAW_LEAN_DIVISOR = 6,
     RIVAL_STATIC_BODY_LEAN = 0x32,
+    RIVAL_POSITION_STEP_NUMERATOR = 6,
+    RIVAL_POSITION_STEP_DIVISOR = 1280,
 };
 
 static void ApplyDetailedBodyLean(GameCarRuntime *car) {
@@ -42,12 +46,12 @@ static void ApplyDetailedBodyLean(GameCarRuntime *car) {
 }
 
 static void UpdateRivalSteeringLean(GameCarRuntime *car) {
-    if (car->steeringAngle >= 0x41) {
+    if (car->steeringAngle > RIVAL_STEERING_DEAD_ZONE) {
         car->bodyRollVelocity = WrapSigned32(
-            (int64_t)car->bodyRollVelocity - 6);
-    } else if (car->steeringAngle < -0x40) {
+            (int64_t)car->bodyRollVelocity - RIVAL_BODY_ROLL_ACCELERATION);
+    } else if (car->steeringAngle < -RIVAL_STEERING_DEAD_ZONE) {
         car->bodyRollVelocity = WrapSigned32(
-            (int64_t)car->bodyRollVelocity + 6);
+            (int64_t)car->bodyRollVelocity + RIVAL_BODY_ROLL_ACCELERATION);
     }
     if (car->bodyRollVelocity != 0) {
         car->bodyRollVelocity = WrapSigned32(
@@ -84,10 +88,14 @@ void MoveRivalCars(void) {
         }
         car->x = WrapSigned32(
             (int64_t)car->x +
-            WrapSigned32((int64_t)car->worldVelocityX * 6) / 1280);
+            WrapSigned32((int64_t)car->worldVelocityX *
+                         RIVAL_POSITION_STEP_NUMERATOR) /
+                RIVAL_POSITION_STEP_DIVISOR);
         car->z = WrapSigned32(
             (int64_t)car->z +
-            WrapSigned32((int64_t)car->worldVelocityZ * 6) / 1280);
+            WrapSigned32((int64_t)car->worldVelocityZ *
+                         RIVAL_POSITION_STEP_NUMERATOR) /
+                RIVAL_POSITION_STEP_DIVISOR);
         UpdateRivalSteeringLean(car);
     }
 }
