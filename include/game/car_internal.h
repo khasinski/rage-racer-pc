@@ -25,7 +25,6 @@ static inline s16 CalculateCarRpmDelta(s32 targetRpm, s32 currentRpm) {
     return WrapSigned16((u16)targetRpm - (u16)currentRpm);
 }
 
-extern u32 g_CarModelSlot;
 extern RaceIntroCameraKey *g_RaceIntroCameraCursor;
 extern LaunchSpeedThreshold
     g_LaunchSpeedThresholds[CAR_LAUNCH_THRESHOLD_COUNT];
@@ -53,6 +52,15 @@ void MoveRivalCars(void);
 void AccelerateRaceRivals(void);
 void AccelerateAttractRivals(void);
 void PlaceRivalCarsOnTrack(void);
+void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex);
+void ClampCarLateralOffset(GameCarRuntime *car, s32 rivalSlot);
+void RankContenders(void);
+void SeedCarRouteMarkers(void);
+void SlowRivalAhead(s32 rank);
+void SteerCarAlongRoute(GameCarRuntime *car);
+void SteerCarToTrackLine(PlayerCarRuntime *car);
+void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex);
+void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex);
 
 typedef struct {
     s32 longitudinalResistance;

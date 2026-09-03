@@ -16,6 +16,7 @@
 
 #include "common.h"
 #include "game/car.h"
+#include "game/car_internal.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/state.h"
@@ -24,8 +25,6 @@
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
-
-void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex);
 
 /* Everything the file reaches for that this sweep does not exercise. The
  * sound cue belongs to the rival chatter further down the same file. */

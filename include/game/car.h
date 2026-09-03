@@ -827,26 +827,17 @@ typedef enum TachometerLightingMode {
     TACHOMETER_LIGHTING_FADE_FROM_DARK,
 } TachometerLightingMode;
 
-void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex);
 void BuildStartingGrid(void);
 void BuildTachoNeedleQuad(void);
-void ClampCarLateralOffset(GameCarRuntime *car, s32 rivalSlot);
 void InitRivalCar(GameCarRuntime *car, s32 gridPosition,
                   const RaceGridSlot *grid);
 void InitRivalCarAi(GameCarRuntime *car, s32 gridPosition,
                     const RaceGridSlot *grid);
-void RankContenders(void);
-void SeedCarRouteMarkers(void);
-void SlowRivalAhead(s32 rank);
-void SteerCarAlongRoute(GameCarRuntime *car);
-void SteerCarToTrackLine(PlayerCarRuntime *car);
-void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex);
 void UpdateCarDrivetrain(PlayerCarRuntime *car);
 void UpdateCarDriving(PlayerCarRuntime *car);
 void UpdateCarLaunch(PlayerCarRuntime *car);
 void UpdateCarAirborne(PlayerCarRuntime *car);
 void UpdateCarStandingStart(PlayerCarRuntime *car);
-void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex);
 void AccumulateLapProgress(GameCarRuntime *car);
 void UpdateCarTravelVelocity(GameCarRuntime *car);
 void ApplyCarKnockback(GameCarRuntime *car);

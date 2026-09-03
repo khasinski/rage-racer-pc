@@ -1,3 +1,4 @@
+#include "game/car_internal.h"
 #include "game/player_car_internal.h"
 #include "game/integer.h"
 #include "game/race.h"
