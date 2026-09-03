@@ -7,11 +7,9 @@
 #include "game/menu.h"
 #include "game/save_internal.h"
 #include "game/screens.h"
+#include "game/scene.h"
 
 enum {
-    SCENE_TITLE = 6,
-    SCENE_LOST_RACE = 14,
-    SCENE_RACE_END = 16,
     LOST_RACE_INPUT_TIMER = -1,
     SCREEN_FADE_COMPLETE = 256,
     RACE_END_INITIAL_TIMER = 555,
@@ -25,7 +23,7 @@ void DrawLostRaceCaption(s32 level) {
 void EnterLostRaceScreen(void) {
     g_FrameSyncThreshold = 0x80;
     SetReverbDepth(0x28, 0x28);
-    g_SceneId = SCENE_LOST_RACE;
+    g_SceneId = GAME_SCENE_LOST_RACE;
     g_LostRaceChoice = 0;
     g_SceneTimer = LOST_RACE_INPUT_TIMER;
     DrawLostRaceCaption(0xFF);
@@ -105,7 +103,7 @@ void DrawRaceEndBanner(s32 level) {
 
 void EnterRaceEndScreen(void) {
     g_FrameSyncThreshold = 0x80;
-    g_SceneId = SCENE_RACE_END;
+    g_SceneId = GAME_SCENE_RACE_END;
     g_SceneTimer = RACE_END_INITIAL_TIMER;
     DrawRaceEndBanner(RACE_END_INITIAL_TIMER);
 }
@@ -121,7 +119,7 @@ void UpdateRaceEndScreen(void) {
     if (g_SceneTimer == 0) {
         RequestSelectBgmAssets();
         ResetCourseProgress(g_GrandPrixClass);
-        g_SceneId = SCENE_TITLE;
+        g_SceneId = GAME_SCENE_INIT_MENU;
     }
     DrawRaceEndBanner(g_SceneTimer);
 }

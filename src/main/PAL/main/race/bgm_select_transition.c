@@ -8,6 +8,7 @@
 #include "game/track.h"
 #include "game/render_internal.h"
 #include "game/state.h"
+#include "game/scene.h"
 
 enum {
     BGM_SELECT_FADE_TPAGE = 0x49,
@@ -16,12 +17,10 @@ enum {
     BGM_SELECT_INITIAL_FADE = 0x13C,
     BGM_SELECT_FADE_IN_STEP = -4,
     BGM_SELECT_FADE_OUT_STEP = 4,
-    BGM_SELECT_SCENE_ID = 0x1C,
     BGM_SELECT_DEFAULT_CURSOR = 1,
     BGM_SELECT_INITIAL_TRACK = 0,
     BGM_SELECT_INITIAL_CHANGE_DELAY = 30,
     BGM_SELECT_DISPLAY_ENABLE_FRAME = 15,
-    OPTION_SCENE_ID = 0x16,
 };
 
 void EnterBgmSelectScreen(void) {
@@ -30,7 +29,7 @@ void EnterBgmSelectScreen(void) {
     g_FrameSyncThreshold = BGM_SELECT_FRAME_SYNC_THRESHOLD;
     g_FadeLevel = BGM_SELECT_INITIAL_FADE;
     g_FadeStep = BGM_SELECT_FADE_IN_STEP;
-    g_SceneId = BGM_SELECT_SCENE_ID;
+    g_SceneId = GAME_SCENE_BGM_SELECT;
     g_BgmSelectCursor = BGM_SELECT_DEFAULT_CURSOR;
     g_BgmSelectShowUi = 1;
     g_BgmSelectCdTrack = BgmCdTrack(BGM_SELECT_INITIAL_TRACK);
@@ -101,7 +100,7 @@ void ExitBgmSelect(void) {
     }
 
     if (AdvanceBgmSelectFade()) {
-        g_SceneId = OPTION_SCENE_ID;
+        g_SceneId = GAME_SCENE_ENTER_ATTRACT;
     }
 
     DrawProportionalText(0x5E, 0x72, g_TextNowLoading, 0x7812);

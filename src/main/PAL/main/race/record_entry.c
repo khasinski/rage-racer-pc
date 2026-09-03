@@ -9,12 +9,12 @@
 #include "game/race_internal.h"
 #include "game/render.h"
 #include "game/screens.h"
+#include "game/scene.h"
 #include "game/state.h"
 
 enum {
     RECORD_ENTRY_OPAQUE_FADE = 0x100,
     RECORD_ENTRY_FRAME_SYNC_THRESHOLD = 0x80,
-    RECORD_ENTRY_SCENE_ID = 0x15,
     RECORD_ENTRY_MUSIC_TRACK = 0xE,
     RECORD_ENTRY_FADE_IN_STEP = 8,
     RECORD_ENTRY_FADE_OUT_STEP = 2,
@@ -22,7 +22,6 @@ enum {
     RECORD_ENTRY_PANEL_STEP = 8,
     DEFAULT_NAME_ENTRY_CHARACTER = 0xB,
     RECORD_ENTRY_MUSIC_FADE = 0x78,
-    BGM_SELECT_SCENE_ID = 6,
 };
 
 static void InsertRaceRecords(void) {
@@ -54,7 +53,7 @@ void EnterRecordEntry(void) {
     g_SceneTimer = RECORD_ENTRY_OPAQUE_FADE;
     g_FrameSyncThreshold = RECORD_ENTRY_FRAME_SYNC_THRESHOLD;
     g_RecordEntryState = RECORD_ENTRY_STATE_FADE_IN;
-    g_SceneId = RECORD_ENTRY_SCENE_ID;
+    g_SceneId = GAME_SCENE_RECORD_ENTRY;
     InsertRaceRecords();
 }
 
@@ -196,7 +195,7 @@ static void UpdateRecordEntryFadeOut(void) {
     DrawFullscreenFadeTile(g_SceneTimer, 0x49);
     if ((u32)g_SceneTimer >= RECORD_ENTRY_OPAQUE_FADE) {
         RequestSelectBgmAssets();
-        g_SceneId = BGM_SELECT_SCENE_ID;
+        g_SceneId = GAME_SCENE_INIT_MENU;
     }
     DrawTimeRecordPanel(0);
 }

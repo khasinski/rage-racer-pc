@@ -11,10 +11,9 @@
 #include "game/round_screen_internal.h"
 #include "game/save_internal.h"
 #include "game/screens.h"
+#include "game/scene.h"
 
 enum {
-    ROUND_SCREEN_SCENE = 10,
-    ROUND_SCREEN_RACE_SCENE = 11,
     ROUND_SCREEN_SETUP_FRAME = 1,
     ROUND_SCREEN_DISPLAY_FRAME = 15,
     ROUND_SCREEN_CUE_FRAME = 32,
@@ -44,7 +43,7 @@ void EnterRoundScreen(void) {
 
     g_FrameSyncThreshold = 0x180;
     g_SceneTimer = 0;
-    g_SceneId = ROUND_SCREEN_SCENE;
+    g_SceneId = GAME_SCENE_ROUND;
     g_FadeLevel = 0;
     g_GrandPrixRound = DetermineGrandPrixRound(
         g_CourseProgress != NULL ? g_CourseProgress->bestPlace : NULL,
@@ -55,7 +54,7 @@ void EnterRoundScreen(void) {
 static s32 NextRoundScreenFade(s32 stage) {
     s32 value;
 
-    if (g_SceneId == ROUND_SCREEN_SCENE) {
+    if (g_SceneId == GAME_SCENE_ROUND) {
         return RoundScreenFadeFromTimer(
             g_SceneTimer, g_RoundScreenFadeDelays[stage]);
     }
@@ -187,14 +186,14 @@ void UpdateRoundScreen(void) {
             g_FadeLevel = ROUND_SCREEN_FADE_READY;
         }
     } else if ((u32)g_SceneTimer >= ROUND_SCREEN_RACE_FRAME) {
-        g_SceneId = ROUND_SCREEN_RACE_SCENE;
+        g_SceneId = GAME_SCENE_ENTER_RACE;
         g_MirrorMode = IsRoundMirrorMode(g_PadHeld);
         bgm = ChooseRoundBgm(g_BgmSelection, g_BgmShuffleOrder,
                              trackCount, g_BgmShuffleIndex);
         g_BgmTrack = bgm.track;
         g_BgmShuffleIndex = bgm.shuffleIndex;
     }
-    if (g_SceneId == ROUND_SCREEN_SCENE) {
+    if (g_SceneId == GAME_SCENE_ROUND) {
         u16 flags = g_PadPressed;
         if (flags & PAD_LEFT) {
             g_BgmSelection--;

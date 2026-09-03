@@ -5,11 +5,11 @@
 #include "game/cd_internal.h"
 #include "game/race.h"
 #include "game/menu.h"
+#include "game/scene.h"
 #include "psyq/snd.h"
 
 enum {
     CD_AUDIO_MODE = CD_MODE_CDDA | CD_MODE_AUTO_PAUSE | CD_MODE_REPORT,
-    BGM_SELECT_SCENE = 0x1C,
 };
 
 void InitCdAudio(void) {
@@ -52,7 +52,7 @@ void TickCdAudio(void) {
      * seek step, or playback can never reach the command that clears EOF. */
     if (CdAudioRequestsIdle(g_CdTrackPending, g_CdCommandPending) &&
         Psyz_CdAudioEnded() && CdTrackIndexValid(g_CdCurrentTrack)) {
-        if (g_SceneId == BGM_SELECT_SCENE) {
+        if (g_SceneId == GAME_SCENE_BGM_SELECT) {
             g_CdTrackEnded = 1;
         } else {
             const s32 loopPoint =

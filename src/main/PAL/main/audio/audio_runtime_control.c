@@ -1,6 +1,7 @@
 #include "game/audio.h"
 #include "game/audio_internal.h"
 #include "game/sound.h"
+#include "game/scene.h"
 #include "game/state.h"
 #include "game/work_buffer.h"
 #include "psyq/snd.h"
@@ -15,7 +16,6 @@
  * arrive at fifty. */
 enum {
     SEQUENCE_TICK_HZ = 60,
-    SOUND_MODE_SCENE_ID = 0xC,
     DEFAULT_REVERB_DEPTH = 0x28,
     FIRST_REVERB_PRESET = 1,
     LAST_REVERB_PRESET = 9,
@@ -27,7 +27,7 @@ void TickSequenceAudio(void) {
     /* Ticks the sequencer is owed, in units of one game frame. */
     static s32 tickCredit;
 
-    if (g_SceneId == SOUND_MODE_SCENE_ID) {
+    if (g_SceneId == GAME_SCENE_RACE) {
         SpuVmDamperStep();
     } else {
         s32 frameHz = TimingBaseHz();

@@ -1,4 +1,5 @@
 #include "game/race_scene_internal.h"
+#include "game/scene.h"
 #include "game/state.h"
 
 #include <limits.h>
@@ -17,9 +18,6 @@ enum {
     RACE_END_BANNER_FRAME = 21,
     RACE_END_EXIT_FRAME = 101,
     RACE_RETRY_EXIT_FRAME = 126,
-    RACE_QUIT_SCENE = 6,
-    RACE_RESULT_SCENE = 15,
-    RACE_RETRY_SCENE = 13,
 };
 
 static s32 NonnegativeFade(int64_t fade) {
@@ -115,7 +113,7 @@ RaceEndFrame BuildRaceEndFrame(s16 phase, s16 grandPrixMode,
     };
 
     if (phase == 7) {
-        frame.exitScene = RACE_QUIT_SCENE;
+        frame.exitScene = GAME_SCENE_INIT_MENU;
         return frame;
     }
     if (phase != 5) {
@@ -133,13 +131,13 @@ RaceEndFrame BuildRaceEndFrame(s16 phase, s16 grandPrixMode,
         }
         frame.startMusic = fadeTimer == RACE_END_MUSIC_FRAME;
         if (fadeTimer >= RACE_END_EXIT_FRAME) {
-            frame.exitScene = RACE_RESULT_SCENE;
+            frame.exitScene = GAME_SCENE_ENTER_RACE_END;
         }
     } else if (frame.presentation == RACE_END_PRESENTATION_RETRY) {
         frame.drawPresentation = 1;
         frame.fade = NonnegativeFade((int64_t)fadeTimer * 2);
         if (fadeTimer >= RACE_RETRY_EXIT_FRAME) {
-            frame.exitScene = RACE_RETRY_SCENE;
+            frame.exitScene = GAME_SCENE_ENTER_LOST_RACE;
         }
     }
     return frame;

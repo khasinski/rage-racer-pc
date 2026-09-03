@@ -1,9 +1,8 @@
 #include "game/race_internal.h"
+#include "game/scene.h"
 #include "game/state.h"
 
 enum {
-    SCENE_TITLE = 6,
-    SCENE_RACE = 11,
     RACE_END_MAX_BRIGHTNESS = 127,
     RACE_END_SKIP_MIN_TIMER = 261,
     RACE_END_INITIAL_TIMER = 555,
@@ -50,7 +49,7 @@ s32 LostRaceRetryDigitIndex(s32 retriesRemaining) {
 }
 
 s32 LostRaceExitScene(s32 choice) {
-    return choice != 0 ? SCENE_TITLE : SCENE_RACE;
+    return choice != 0 ? GAME_SCENE_INIT_MENU : GAME_SCENE_ENTER_RACE;
 }
 
 s32 CanSkipRaceEndScreen(s32 timer, u16 pressedButtons) {

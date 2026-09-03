@@ -17,6 +17,7 @@
 #include "game/race_internal.h"
 #include "game/race_scene_internal.h"
 #include "game/screens.h"
+#include "game/scene.h"
 #include "game/track.h"
 #include "game/track_internal.h"
 #include "psyq/snd.h"
@@ -40,7 +41,6 @@ enum {
     PRE_START_SECTOR = -2,
     INITIAL_RACE_TIME = 15000,
     INITIAL_RIVAL_CUE_FLAGS = 0x1FE,
-    RACE_SCENE_ID = 12,
     RACE_FRAME_SYNC_THRESHOLD = 0x180,
 };
 
@@ -229,7 +229,7 @@ void EnterRaceScene(void) {
     g_RivalCueEnabled = 1;
     g_PlayerAutoSteer = 0;
     g_RaceCueDelay = 0;
-    g_SceneId = RACE_SCENE_ID;
+    g_SceneId = GAME_SCENE_RACE;
     g_FrameSyncThreshold = RACE_FRAME_SYNC_THRESHOLD;
     DrawRoundScreen();
     printf("%s", g_MsgGame0Ok);
