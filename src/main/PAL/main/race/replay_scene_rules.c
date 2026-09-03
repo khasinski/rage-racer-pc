@@ -45,6 +45,8 @@ s32 ReplayResultCue(s32 sceneTimer, s32 grandPrixMode, s32 seriesCleared,
 }
 
 s32 NextReplayReadCursor(s32 cursor, s32 frameCount) {
-    const s32 next = cursor + 1;
-    return next < frameCount ? next : 0;
+    if (frameCount <= 0 || cursor < 0 || cursor >= frameCount - 1) {
+        return 0;
+    }
+    return cursor + 1;
 }

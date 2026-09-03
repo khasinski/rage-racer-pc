@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <limits.h>
 
 #include "game/car.h"
 #include "game/player_car_internal.h"
@@ -166,9 +167,20 @@ static void TestReplayBadgeVisibility(void) {
     assert(s_SpriteDraws == 0 && s_DrawModeDraws == 0);
 }
 
+static void TestSceneCountersWrap(void) {
+    ResetState();
+    g_AnimTimer = INT_MAX;
+    g_SceneTimer = INT_MAX;
+
+    UpdateReplayScene();
+
+    assert(g_AnimTimer == INT_MIN && g_SceneTimer == INT_MIN);
+}
+
 int main(void) {
     TestFirstTimeAttackFrame();
     TestGrandPrixResultCueAndCar();
     TestReplayBadgeVisibility();
+    TestSceneCountersWrap();
     return 0;
 }

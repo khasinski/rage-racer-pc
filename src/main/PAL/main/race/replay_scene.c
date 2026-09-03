@@ -32,8 +32,8 @@ static void DrawReplayBadge(void) {
 void UpdateReplayScene(void) {
     s32 resultCue;
 
-    g_AnimTimer++;
-    g_SceneTimer++;
+    g_AnimTimer = (s32)((u32)g_AnimTimer + 1u);
+    g_SceneTimer = (s32)((u32)g_SceneTimer + 1u);
     resultCue = ReplayResultCue(g_SceneTimer, g_GrandPrixMode,
                                 g_SeriesCleared,
                                 g_PlayerCar.drive.racePosition);

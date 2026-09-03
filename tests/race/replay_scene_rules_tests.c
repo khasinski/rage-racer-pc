@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <limits.h>
 
 #include "game/race_internal.h"
 
@@ -44,6 +45,9 @@ static void TestReplayCursorWrap(void) {
     assert(NextReplayReadCursor(98, 100) == 99);
     assert(NextReplayReadCursor(99, 100) == 0);
     assert(NextReplayReadCursor(100, 100) == 0);
+    assert(NextReplayReadCursor(-2, 100) == 0);
+    assert(NextReplayReadCursor(0, 0) == 0);
+    assert(NextReplayReadCursor(INT_MAX, INT_MAX) == 0);
 }
 
 int main(void) {
