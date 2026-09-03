@@ -171,8 +171,12 @@ static void test_input_config(void) {
     InputConfigDefaults(&config);
     EXPECT_EQ(12, InputButtonIndex("UP"));
     EXPECT_EQ(-1, InputButtonIndex("up"));
+    EXPECT_EQ(-1, InputButtonIndex(NULL));
     EXPECT_EQ(0, strcmp(config.keys[12], "Up"));
     EXPECT_EQ(0, InputConfigLoad(&config, "/path/which/does/not/exist"));
+    EXPECT_EQ(0, InputConfigLoad(&config, NULL));
+    EXPECT_EQ(0, InputConfigLoad(NULL, path));
+    EXPECT_EQ(0, InputConfigApplyRuntime(NULL));
 
     fd = mkstemp(path);
     if (fd < 0 || write(fd, contents, sizeof(contents) - 1) != sizeof(contents) - 1) {
@@ -184,6 +188,24 @@ static void test_input_config(void) {
         EXPECT_EQ(0, strcmp(config.keys[6], "Space"));
         EXPECT_EQ(0, strcmp(config.keys[15], "Left"));
         unlink(path);
+    }
+    {
+        char longPath[] = "/tmp/rage-input-long-test-XXXXXX";
+        char contents[261];
+        int longFd = mkstemp(longPath);
+
+        contents[0] = '#';
+        memset(contents + 1, 'x', 254);
+        memcpy(contents + 255, "UP=J\n", 6);
+        if (longFd < 0 ||
+            write(longFd, contents, sizeof(contents)) != sizeof(contents)) {
+            failures++;
+        } else {
+            close(longFd);
+            EXPECT_EQ(0, InputConfigLoad(&config, longPath));
+            EXPECT_EQ(0, strcmp(config.keys[12], "I"));
+            unlink(longPath);
+        }
     }
 }
 

@@ -26,6 +26,8 @@ static char *Trim(char *text) {
 
 void InputConfigDefaults(RageInputConfig *config) {
     int i;
+
+    if (config == NULL) return;
     for (i = 0; i < RAGE_INPUT_BUTTON_COUNT; i++) {
         snprintf(config->keys[i], sizeof(config->keys[i]), "%s", default_keys[i]);
     }
@@ -33,6 +35,8 @@ void InputConfigDefaults(RageInputConfig *config) {
 
 int InputButtonIndex(const char *name) {
     int i;
+
+    if (name == NULL) return -1;
     for (i = 0; i < RAGE_INPUT_BUTTON_COUNT; i++) {
         if (strcmp(name, button_names[i]) == 0) return i;
     }
@@ -40,15 +44,27 @@ int InputButtonIndex(const char *name) {
 }
 
 int InputConfigLoad(RageInputConfig *config, const char *path) {
-    FILE *file = fopen(path, "r");
+    FILE *file;
     char line[256];
     int loaded = 0;
+
+    if (config == NULL || path == NULL) return 0;
+    file = fopen(path, "r");
     if (!file) return 0;
     while (fgets(line, sizeof(line), file)) {
         char *equals;
-        char *name = Trim(line);
+        char *name;
         char *key;
         int index;
+        if (strchr(line, '\n') == NULL && !feof(file)) {
+            int character;
+
+            do {
+                character = fgetc(file);
+            } while (character != '\n' && character != EOF);
+            continue;
+        }
+        name = Trim(line);
         if (*name == '\0' || *name == '#' || *name == ';') continue;
         equals = strchr(name, '=');
         if (!equals) continue;
@@ -70,6 +86,8 @@ int InputConfigLoad(RageInputConfig *config, const char *path) {
 int InputConfigApplyRuntime(RageInputConfig *config) {
     char key[32];
     int index, applied = 0;
+
+    if (config == NULL) return 0;
     for (index = 0; index < RAGE_INPUT_BUTTON_COUNT; index++) {
         const char *value;
         size_t at;
