@@ -262,8 +262,6 @@ char g_FmtSaveRow[6];
 char g_FmtSaveRowTail[3];
 char g_FmtSaveRowEmpty[15];
 u8 g_SaveNameCharset[44];
-u8 g_McMessageText[480];
-u8 g_McHelpText[1200];
 static char g_McMessage00[] = "Select file to save.";
 static char g_McMessage01[] = "Select file to load.";
 static char g_McMessage02[] = "No Memory card.";
@@ -308,10 +306,10 @@ MemoryCardMessageRow *g_McMessageRows[MEMORY_CARD_MESSAGE_COUNT] = {
     &g_RageMcMessageRowStorage[19], &g_RageMcMessageRowStorage[20],
     &g_RageMcMessageRowStorage[21], &g_RageMcMessageRowStorage[22]
 };
-s16 g_McMessageColumnX[70];
-char g_McSlotLabels[10];
-char g_McSlotLabelNoFile[20];
-char g_McSlotLabelError[10];
+s16 g_McMessageColumnX[5];
+char g_McSlotLabels[9];
+char g_McSlotLabelNoFile[8];
+char g_McSlotLabelError[11];
 static char g_CdAudioName00[] = "\\CDDA\\DA02PRO.DA;1";
 static char g_CdAudioName01[] = "\\CDDA\\DA03TECH.DA;1";
 static char g_CdAudioName02[] = "\\CDDA\\DA04HC.DA;1";

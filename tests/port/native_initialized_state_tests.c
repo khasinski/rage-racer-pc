@@ -1,7 +1,9 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "game/asset.h"
 #include "game/car.h"
+#include "game/memcard.h"
 #include "game/race.h"
 #include "game/render.h"
 
@@ -67,10 +69,24 @@ static void CheckInitialStartingGrids(void) {
           "attract starting-grid terminator");
 }
 
+static void CheckMemoryCardLabels(void) {
+    Check(g_McMessageColumnX[2] == 0x60 &&
+              g_McMessageColumnX[3] == 0x78 &&
+              g_McMessageColumnX[4] == 0xB4,
+          "memory-card message columns");
+    Check(strcmp(g_McSlotLabels, "NEW FILE") == 0,
+          "new-file label");
+    Check(strcmp(g_McSlotLabelNoFile, "NO FILE") == 0,
+          "no-file label");
+    Check(strcmp(g_McSlotLabelError, "FILE ERROR") == 0,
+          "file-error label");
+}
+
 int main(void) {
     CheckInitialRectangles();
     CheckInitialCountdownData();
     CheckInitialStartingGrids();
+    CheckMemoryCardLabels();
 
     if (s_failures != 0) return 1;
     puts("native initialized state retains its typed retail values");
