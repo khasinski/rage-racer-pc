@@ -65,10 +65,16 @@ int HostFmvAssembleStrFrame(const unsigned char *sectors, size_t sectorCount,
         if (chunkCount != 0 && chunksSeen >= chunkCount) {
             size_t declaredSize = 8 + (size_t)ReadLe16(bitstream) * 4;
 
-            if (declaredSize > size) {
+            /* The BS word count is an upper bound consumed by the VLC
+             * decoder, not necessarily the amount stored in the STR chunks.
+             * Retail frames can reach their end marker before that bound. */
+            if (declaredSize > bitstreamCapacity) {
                 return 0;
             }
-            frame->bitstreamSize = size;
+            if (declaredSize > size) {
+                memset(bitstream + size, 0, declaredSize - size);
+            }
+            frame->bitstreamSize = declaredSize > size ? declaredSize : size;
             return 1;
         }
     }

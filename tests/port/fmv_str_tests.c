@@ -86,11 +86,21 @@ static int TestIncompleteAndOverflow(void) {
 
 static int TestDeclaredBitstreamLength(void) {
     unsigned char sector[HOST_FMV_SECTOR_SIZE];
-    unsigned char bitstream[HOST_FMV_PAYLOAD_SIZE];
+    unsigned char bitstream[HOST_FMV_PAYLOAD_SIZE + 8];
     HostFmvStrFrame frame = {0};
     size_t cursor = 0;
 
     MakeChunk(sector, 0, 1, 320, 192, 0x11);
+    WriteLe16(sector + STR_HEADER_OFFSET + STR_PAYLOAD_OFFSET,
+              HOST_FMV_PAYLOAD_SIZE / 4);
+    memset(bitstream, 0xAA, sizeof(bitstream));
+    CHECK(HostFmvAssembleStrFrame(sector, 1, &cursor, bitstream,
+                                  sizeof(bitstream), &frame));
+    CHECK(frame.bitstreamSize == sizeof(bitstream));
+    CHECK(bitstream[HOST_FMV_PAYLOAD_SIZE] == 0);
+    CHECK(bitstream[sizeof(bitstream) - 1] == 0);
+
+    cursor = 0;
     WriteLe16(sector + STR_HEADER_OFFSET + STR_PAYLOAD_OFFSET, 0xFFFF);
     CHECK(!HostFmvAssembleStrFrame(sector, 1, &cursor, bitstream,
                                    sizeof(bitstream), &frame));
