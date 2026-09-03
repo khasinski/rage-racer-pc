@@ -130,6 +130,22 @@ int main(void) {
         CHECK(s_aiCalls[index] == active);
     }
 
+    memset(s_initCalls, 0, sizeof(s_initCalls));
+    memset(s_aiCalls, 0, sizeof(s_aiCalls));
+    g_GrandPrixSeries = 3;
+    g_SceneId = 11;
+    g_RaceGridSlots[4].value = 4;
+    s_expectedGrid = g_RaceGridSlots;
+    BuildStartingGrid();
+    CHECK(g_RaceSeries == 1);
+    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
+        s32 active = g_RaceGridSlots[index].value >= 0;
+
+        CHECK(s_initCalls[index] == active);
+        CHECK(s_aiCalls[index] == active);
+        CHECK(g_Cars[index].facingBackwards == 1);
+    }
+
     puts("starting grid initialization tests passed");
     return 0;
 }

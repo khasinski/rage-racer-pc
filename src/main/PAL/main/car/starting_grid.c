@@ -22,7 +22,7 @@ void BuildStartingGrid(void) {
     s32 index;
 
     g_ClosestRivalRank = 3;
-    g_RaceSeries = g_GrandPrixSeries;
+    g_RaceSeries = g_GrandPrixSeries & (TRACK_SERIES_COUNT - 1);
 
     if (g_TrackEventData == NULL || g_TrackPoints == NULL ||
         g_TrackPointCount <= 0) {
