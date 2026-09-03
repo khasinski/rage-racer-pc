@@ -3,6 +3,12 @@
 #include "game/integer.h"
 #include "psyq/gte.h"
 
+enum {
+    BODY_KICK_WAVE_CYCLES = 3,
+    BODY_KICK_AMPLITUDE_SCALE = 128,
+    BODY_KICK_WAVE_SCALE = 2048,
+};
+
 static void StopCarBodyKick(GameCarRuntime *car) {
     car->motionMode = CAR_BODY_KICK_INACTIVE;
     car->motionModeTimer = 0;
@@ -31,10 +37,11 @@ void UpdateCarBodyKick(GameCarRuntime *car) {
 
     car->motionModeTimer--;
     timer = car->motionModeTimer;
-    amplitude = timer * car->motionValue.value / 128;
+    amplitude = timer * car->motionValue.value / BODY_KICK_AMPLITUDE_SCALE;
     wave = WrapSigned32(
-        (int64_t)rsin(((timer * 3) << 12) / 30) * amplitude);
-    value = wave / 2048;
+        (int64_t)rsin(((timer * BODY_KICK_WAVE_CYCLES) << 12) /
+                     CAR_BODY_KICK_DURATION) * amplitude);
+    value = wave / BODY_KICK_WAVE_SCALE;
 
     switch (car->motionMode) {
     case CAR_BODY_KICK_LANDING:

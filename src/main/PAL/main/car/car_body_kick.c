@@ -6,7 +6,6 @@
 #include "game/track.h"
 
 enum {
-    BODY_KICK_DURATION = 30,
     BODY_KICK_MIN_SPEED = 0x140,
 };
 
@@ -20,7 +19,7 @@ void StartCarBodyKick(GameCarRuntime *car, s32 mode) {
     }
     car->motionMode = mode;
     if (mode == CAR_BODY_KICK_LANDING) {
-        car->motionModeTimer = BODY_KICK_DURATION;
+        car->motionModeTimer = CAR_BODY_KICK_DURATION;
         car->motionValue.value = WrapSigned16(
             car->verticalMotionTimer * 8);
         return;
@@ -38,7 +37,7 @@ void StartCarBodyKick(GameCarRuntime *car, s32 mode) {
         : WrapSigned16(
               WrapSigned32((int64_t)speedOverMinimum * lean) /
               ANGLE_FULL_TURN);
-    car->motionModeTimer = BODY_KICK_DURATION;
+    car->motionModeTimer = CAR_BODY_KICK_DURATION;
     if (Random15() & 0x80) {
         car->motionValue.value = WrapSigned16(
             -(s32)car->motionValue.unsignedValue);

@@ -60,8 +60,6 @@ void UpdateCarWheelRotation(GameCarRuntime *car);
 /* Heading from a car position to a laterally offset interpolated track point. */
 s32 CalculateTrackOffsetHeading(s32 pointIndex, s32 segmentFraction,
                                 s32 carX, s32 carZ, s32 lateralOffset);
-/* Internal course-event query used by the crest-hop state machine. */
-s32 GetCarCrestTrigger(GameCarRuntime *car);
 /* World translation and steering/body-lean pass over the rival car slots. */
 void MoveRivalCars(void);
 void AccelerateRaceRivals(void);

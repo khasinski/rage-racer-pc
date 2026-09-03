@@ -1,5 +1,5 @@
 #include "game/car.h"
-#include "game/car_internal.h"
+#include "game/car_motion_internal.h"
 #include "game/integer.h"
 #include "game/race.h"
 #include "game/track.h"
@@ -7,6 +7,10 @@
 enum {
     CREST_MINIMUM_SPEED = 0x320,
     MAX_CREST_PROGRESS_STEP = 0x1000,
+    CREST_ATTITUDE_CURVE_DIVISOR = 6,
+    CREST_STEEP_PITCH = 0x12C,
+    CREST_STEEP_CURVE_DIVISOR = 256,
+    CREST_SPEED_RATE_DIVISOR = -4800,
 };
 
 /* Return the track crest crossed this frame, or zero when none was crossed. */
@@ -57,10 +61,11 @@ void UpdateCarCrestHop(GameCarRuntime *car) {
     s32 trigger;
 
     if (car->verticalMotionState != CAR_VERTICAL_GROUNDED) {
-        s32 curve = car->verticalMotionTimer * car->verticalMotionTimer / 6;
+        s32 curve = car->verticalMotionTimer * car->verticalMotionTimer /
+                    CREST_ATTITUDE_CURVE_DIVISOR;
 
-        if (car->verticalPitch >= 0x12C) {
-            curve /= 256;
+        if (car->verticalPitch >= CREST_STEEP_PITCH) {
+            curve /= CREST_STEEP_CURVE_DIVISOR;
         }
         car->verticalPitch = WrapSigned16(
             (s32)car->verticalPitch + curve);
@@ -79,7 +84,8 @@ void UpdateCarCrestHop(GameCarRuntime *car) {
     car->verticalMotionState = CAR_VERTICAL_RISING;
     if (trigger > 0) {
         car->verticalMotionRate = WrapSigned16(
-            WrapSigned32((int64_t)trigger * car->speed) / -4800);
+            WrapSigned32((int64_t)trigger * car->speed) /
+            CREST_SPEED_RATE_DIVISOR);
     } else {
         car->verticalMotionState = CAR_VERTICAL_AT_CREST;
         car->verticalMotionRate = WrapSigned16(-(int64_t)trigger);
