@@ -219,8 +219,8 @@ extern uint16_t g_TeamLogoBlankClut[16];
 extern unsigned char g_SmallFontGlyphs[184];
 extern unsigned char g_LargeFontGlyphs[196];
 extern Vec4 g_MenuViewScale;
-extern unsigned char g_CarPriceTable[128];
-extern unsigned char g_CarTuneUpPriceTable[124];
+extern int32_t g_CarPriceTable[32];
+extern int32_t g_CarTuneUpPriceTable[31];
 extern unsigned char g_SoundSlotTone[24];
 extern unsigned char g_McSlotCursor[4];
 extern unsigned char g_McModeLabels[32];
@@ -408,8 +408,9 @@ static const HostStateBlob s_blobs[] = {
     {"g_SmallFontGlyphs", g_SmallFontGlyphs, 184},
     {"g_LargeFontGlyphs", g_LargeFontGlyphs, 196},
     {"g_MenuViewScale", (const unsigned char *)&g_MenuViewScale, 16},
-    {"g_CarPriceTable", g_CarPriceTable, 128},
-    {"g_CarTuneUpPriceTable", g_CarTuneUpPriceTable, 124},
+    {"g_CarPriceTable", (const unsigned char *)g_CarPriceTable, 128},
+    {"g_CarTuneUpPriceTable",
+     (const unsigned char *)g_CarTuneUpPriceTable, 124},
     {"g_SoundSlotTone", g_SoundSlotTone, 24},
     {"g_McSlotCursor", g_McSlotCursor, 4},
     {"g_McModeLabels", g_McModeLabels, 32},

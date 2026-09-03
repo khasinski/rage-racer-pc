@@ -319,10 +319,26 @@ endif()
 add_test(NAME memory_card_event_polling COMMAND memory_card_event_polling_tests)
 set_tests_properties(memory_card_event_polling PROPERTIES LABELS unit)
 
-add_test(NAME car_prices COMMAND python3
-    ${CMAKE_CURRENT_SOURCE_DIR}/verify_car_prices.py ${CMAKE_SOURCE_DIR})
-
-set_tests_properties(car_prices PROPERTIES LABELS functional)
+if(TARGET rage-host-state)
+    add_executable(car_price_table_tests
+        car_price_table_tests.c
+        $<TARGET_OBJECTS:rage-host-state>)
+    target_include_directories(car_price_table_tests PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/port/include
+        ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+        ${CMAKE_SOURCE_DIR}/include)
+    target_compile_definitions(car_price_table_tests PRIVATE __psyz=1)
+    if(MSVC)
+        target_compile_options(car_price_table_tests PRIVATE
+            "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+    else()
+        target_compile_options(car_price_table_tests PRIVATE
+            "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+            -Wall -Wextra -Werror)
+    endif()
+    add_test(NAME car_prices COMMAND car_price_table_tests)
+    set_tests_properties(car_prices PROPERTIES LABELS functional)
+endif()
 
 if(RAGE_RUBY_EXECUTABLE)
 add_test(
