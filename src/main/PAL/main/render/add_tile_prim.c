@@ -2,11 +2,13 @@
 #include "game/render.h"
 #include "game/render_types.h"
 
-u8 *AddTilePrim(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
-                s32 width, s32 height, s32 red, s32 green, s32 blue) {
+static u8 *QueueTile(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
+                     s32 width, s32 height, s32 red, s32 green, s32 blue,
+                     s32 semiTransparent) {
     TILE *tile = (TILE *)prim;
 
     SetTile(tile);
+    SetSemiTrans(tile, semiTransparent);
     tile->x0 = x;
     tile->y0 = y;
     tile->w = width;
@@ -16,4 +18,14 @@ u8 *AddTilePrim(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
     tile->b0 = blue;
     AddPrim(ot, tile);
     return (u8 *)(tile + 1);
+}
+
+u8 *AddTilePrim(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
+                s32 width, s32 height, s32 red, s32 green, s32 blue) {
+    return QueueTile(ot, prim, x, y, width, height, red, green, blue, 0);
+}
+
+u8 *GameQueueTileTrans(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
+                       s32 width, s32 height, s32 red, s32 green, s32 blue) {
+    return QueueTile(ot, prim, x, y, width, height, red, green, blue, 1);
 }

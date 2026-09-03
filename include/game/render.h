@@ -559,7 +559,7 @@ u8 *DrawPadConfigCallouts(GameOrderingTableEntry *ot, u8 *prim,
                           const u8 *labelRow, const u8 *buttonRow);
 u8 *DrawPadConfigDiagram(GameOrderingTableEntry *ot, u8 *prim);
 u8 *DrawNegconConfigDiagram(GameOrderingTableEntry *ot, u8 *prim);
-/* TILE, 16 bytes. */
+/* Semi-transparent TILE, 16 bytes. */
 u8 *GameQueueTileTrans(
     GameOrderingTableEntry *ot,
     u8 *prim,

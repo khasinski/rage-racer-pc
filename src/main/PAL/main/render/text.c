@@ -193,33 +193,6 @@ u8 *GameQueueSpriteTrans(
         ot, prim, x, y, w, h, u, v, clutIndex, 0, 1, 1);
 }
 
-/* TILE, 16 bytes: a semi-transparent solid rectangle linked into `ot`.
- * Returns the advanced packet cursor. */
-u8 *GameQueueTileTrans(
-    GameOrderingTableEntry *ot,
-    u8 *prim,
-    s32 x,
-    s32 y,
-    s32 w,
-    s32 h,
-    s32 r,
-    s32 g,
-    s32 b) {
-    TILE *tile = (TILE *)prim;
-
-    SetTile(tile);
-    SetSemiTrans(tile, 1);
-    tile->x0 = x;
-    tile->y0 = y;
-    tile->w = w;
-    tile->h = h;
-    tile->r0 = r;
-    tile->g0 = g;
-    tile->b0 = b;
-    AddPrim(ot, tile);
-    return (u8 *)(tile + 1);
-}
-
 /* LINE_F2, 16 bytes: one flat-shaded line, linked into `ot`. Returns the
  * advanced packet cursor. */
 u8 *GameQueueLine(

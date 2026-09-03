@@ -27,6 +27,15 @@ int main(void) {
     CHECK(tile.r0 == 55 && tile.g0 == 66 && tile.b0 == 77);
     CHECK(getlen(&tile) == 3 && getcode(&tile) == 0x60);
 
-    puts("tile primitive emitter tests passed");
+    memset(&tile, 0, sizeof(tile));
+    next = GameQueueTileTrans(&ot, (u8 *)&tile, -1, -2, 30, 40,
+                              50, 60, 70);
+    CHECK(next == (u8 *)(&tile + 1));
+    CHECK(tile.x0 == -1 && tile.y0 == -2);
+    CHECK(tile.w == 30 && tile.h == 40);
+    CHECK(tile.r0 == 50 && tile.g0 == 60 && tile.b0 == 70);
+    CHECK(getlen(&tile) == 3 && getcode(&tile) == 0x62);
+
+    puts("opaque and semi-transparent tile emitters passed");
     return 0;
 }
