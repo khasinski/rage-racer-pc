@@ -11,6 +11,15 @@ enum {
     REDLINE_EFFECT_RPM_MARGIN = 1000,
     REDLINE_EFFECT_HOLD_FRAMES = 41,
     REDLINE_EFFECT_MAX_LEVEL = 100,
+    VELOCITY_COMPONENT_DIVISOR = 256,
+    FIXED_TRIG_SCALE = 4096,
+    REDLINE_EFFECT_VOLUME_BASE = 24,
+    REDLINE_EFFECT_VOICE = 2,
+    REDLINE_EFFECT_PHASE = 0x1500,
+    STEERING_GRIP_BASE = 1000,
+    STEERING_GRIP_SPIN_SCALE = 8,
+    TAKEOFF_SPIN_MULTIPLIER = 2,
+    BRAKING_SIDEWAYS_SPEED_DIVISOR = 64,
 };
 
 static s32 UpdateDrivingVelocity(PlayerCarRuntime *car) {
@@ -31,20 +40,24 @@ static s32 UpdateDrivingVelocity(PlayerCarRuntime *car) {
     bodyCos = rcos(car->bodyYaw);
 
     drive->accelPos = WrapSigned32(
-        (int64_t)rsin(car->headingAngle) * car->speed) / 256;
+        (int64_t)rsin(car->headingAngle) * car->speed) /
+        VELOCITY_COMPONENT_DIVISOR;
     drive->brakePos = WrapSigned32(
-        (int64_t)rcos(car->headingAngle) * car->speed) / 256;
+        (int64_t)rcos(car->headingAngle) * car->speed) /
+        VELOCITY_COMPONENT_DIVISOR;
 
     sidewaysMotion = WrapSigned32(
         (int64_t)WrapSigned32((int64_t)bodyCos * drive->accelPos) -
-        WrapSigned32((int64_t)bodySin * drive->brakePos)) / 4096;
+        WrapSigned32((int64_t)bodySin * drive->brakePos)) /
+        FIXED_TRIG_SCALE;
     forwardMotion = WrapSigned32(
         (int64_t)WrapSigned32((int64_t)bodySin * drive->accelPos) +
-        WrapSigned32((int64_t)bodyCos * drive->brakePos)) / 4096;
+        WrapSigned32((int64_t)bodyCos * drive->brakePos)) /
+        FIXED_TRIG_SCALE;
     drive->accelPos = WrapSigned32(
-        (int64_t)bodySin * forwardMotion) / 4096;
+        (int64_t)bodySin * forwardMotion) / FIXED_TRIG_SCALE;
     drive->brakePos = WrapSigned32(
-        (int64_t)bodyCos * forwardMotion) / 4096;
+        (int64_t)bodyCos * forwardMotion) / FIXED_TRIG_SCALE;
     return sidewaysMotion;
 }
 
@@ -62,11 +75,12 @@ static void UpdateDrivingRedlineEffect(const PlayerCarRuntime *car,
         return;
     }
 
-    voiceLevel = g_SteerHoldFrames + 24;
+    voiceLevel = g_SteerHoldFrames + REDLINE_EFFECT_VOLUME_BASE;
     if (voiceLevel > REDLINE_EFFECT_MAX_LEVEL) {
         voiceLevel = REDLINE_EFFECT_MAX_LEVEL;
     }
-    SetIndexedEffectVoice(2, 0x1500, voiceLevel);
+    SetIndexedEffectVoice(
+        REDLINE_EFFECT_VOICE, REDLINE_EFFECT_PHASE, voiceLevel);
 }
 
 static void BeginDrivingTakeoff(PlayerCarRuntime *car, s32 spinRate) {
@@ -91,21 +105,24 @@ static void UpdateDrivingTakeoff(PlayerCarRuntime *car,
         if (launchThreshold->initial < car->speed &&
             drive->launchEnergy > drive->launchEnergyThreshold) {
             s32 gripDelta = WrapSigned32(
-                (int64_t)drive->steeringGripResponse - 1000);
+                (int64_t)drive->steeringGripResponse - STEERING_GRIP_BASE);
             s32 spinScale = WrapSigned32(
-                INT64_C(1000) -
-                WrapSigned32((int64_t)gripDelta * 8));
+                (int64_t)STEERING_GRIP_BASE -
+                WrapSigned32(
+                    (int64_t)gripDelta * STEERING_GRIP_SPIN_SCALE));
             s32 reversedSideways;
             s32 spinRate;
 
-            if (spinScale < 1000) {
-                spinScale = 1000;
+            if (spinScale < STEERING_GRIP_BASE) {
+                spinScale = STEERING_GRIP_BASE;
             }
             reversedSideways = WrapSigned32(-(int64_t)sidewaysMotion);
             spinRate = WrapSigned32(
-                (int64_t)reversedSideways * spinScale) / 1000;
+                (int64_t)reversedSideways * spinScale) /
+                STEERING_GRIP_BASE;
             BeginDrivingTakeoff(
-                car, WrapSigned32((int64_t)spinRate * 2));
+                car, WrapSigned32(
+                    (int64_t)spinRate * TAKEOFF_SPIN_MULTIPLIER));
         }
         return;
     }
@@ -121,7 +138,8 @@ static void UpdateDrivingTakeoff(PlayerCarRuntime *car,
             ? WrapSigned32(-(int64_t)sidewaysMotion)
             : sidewaysMotion;
         s32 sidewaysSpeed = WrapSigned32(
-            (int64_t)magnitude * car->speed) / 64;
+            (int64_t)magnitude * car->speed) /
+            BRAKING_SIDEWAYS_SPEED_DIVISOR;
 
         drive->launchEnergy = sidewaysSpeed;
         if (launchThreshold->sustain < car->speed &&
