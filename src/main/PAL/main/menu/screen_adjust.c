@@ -10,6 +10,20 @@ enum {
     SCREEN_OFFSET_MAX_Y = 23
 };
 
+static s32 AdjustScreenOffset(s32 value, u16 buttons, u16 decreaseButton,
+                              u16 increaseButton, s32 minimum, s32 maximum) {
+    s32 direction = ((buttons & increaseButton) != 0) -
+                    ((buttons & decreaseButton) != 0);
+
+    if (direction < 0 && value > minimum) {
+        return value - 1;
+    }
+    if (direction > 0 && value < maximum) {
+        return value + 1;
+    }
+    return value;
+}
+
 void DrawScreenAdjustScreen(void) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(51);
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
@@ -25,33 +39,13 @@ void DrawScreenAdjustScreen(void) {
     DrawOptionHintBar(3);
 }
 
-/* g_GameModeHandlers[6]: edits the display offset, then commits or restores it. */
+/* OPTION_MODE_SCREEN_ADJUST: edits the display offset, then commits or
+ * restores it. */
 void UpdateScreenAdjustScreen(void) {
     s32 previousX = g_ScreenOffsetEditX;
     s32 previousY = g_ScreenOffsetEditY;
 
     DrawScreenAdjustScreen();
-
-    if ((g_PadPressedRepeat & PAD_UP) &&
-        g_ScreenOffsetEditY > SCREEN_OFFSET_MIN_Y) {
-        g_ScreenOffsetEditY--;
-    }
-    if ((g_PadPressedRepeat & PAD_DOWN) &&
-        g_ScreenOffsetEditY < SCREEN_OFFSET_MAX_Y) {
-        g_ScreenOffsetEditY++;
-    }
-    if ((g_PadPressedRepeat & PAD_LEFT) &&
-        g_ScreenOffsetEditX > SCREEN_OFFSET_MIN_X) {
-        g_ScreenOffsetEditX--;
-    }
-    if ((g_PadPressedRepeat & PAD_RIGHT) &&
-        g_ScreenOffsetEditX < SCREEN_OFFSET_MAX_X) {
-        g_ScreenOffsetEditX++;
-    }
-
-    if (previousX != g_ScreenOffsetEditX || previousY != g_ScreenOffsetEditY) {
-        PlaySoundCue(1);
-    }
 
     if (g_PadPressed & PAD_CONFIRM) {
         PlaySoundCue(2);
@@ -63,6 +57,17 @@ void UpdateScreenAdjustScreen(void) {
         g_GameMode = OPTION_MODE_ROOT;
         g_ScreenOffsetEditX = g_ScreenOffsetX.value;
         g_ScreenOffsetEditY = g_ScreenOffsetY.value;
+    } else {
+        g_ScreenOffsetEditX = AdjustScreenOffset(
+            g_ScreenOffsetEditX, g_PadPressedRepeat, PAD_LEFT, PAD_RIGHT,
+            SCREEN_OFFSET_MIN_X, SCREEN_OFFSET_MAX_X);
+        g_ScreenOffsetEditY = AdjustScreenOffset(
+            g_ScreenOffsetEditY, g_PadPressedRepeat, PAD_UP, PAD_DOWN,
+            SCREEN_OFFSET_MIN_Y, SCREEN_OFFSET_MAX_Y);
+        if (previousX != g_ScreenOffsetEditX ||
+            previousY != g_ScreenOffsetEditY) {
+            PlaySoundCue(1);
+        }
     }
 
     g_DispEnv0ScreenX = g_ScreenOffsetEditX;

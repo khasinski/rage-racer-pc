@@ -53,7 +53,7 @@ void PlaySoundCue(s32 cue) { s_lastCue = cue; }
 static void Reset(void) {
     g_DrawBuffer = &s_frame;
     g_RenderState.packetCursor = s_packets;
-    g_GameMode = 6;
+    g_GameMode = OPTION_MODE_SCREEN_ADJUST;
     g_ScreenOffsetEditX = 0;
     g_ScreenOffsetEditY = 0;
     g_ScreenOffsetX.value = 5;
@@ -95,7 +95,7 @@ int main(void) {
     g_ScreenOffsetEditY = 13;
     g_PadPressed = PAD_CONFIRM;
     UpdateScreenAdjustScreen();
-    CHECK(g_GameMode == 1 && g_ScreenOffsetX.value == 12);
+    CHECK(g_GameMode == OPTION_MODE_ROOT && g_ScreenOffsetX.value == 12);
     CHECK(g_ScreenOffsetY.value == 13 && s_lastCue == 2);
 
     Reset();
@@ -103,8 +103,23 @@ int main(void) {
     g_ScreenOffsetEditY = 13;
     g_PadPressed = PAD_CANCEL;
     UpdateScreenAdjustScreen();
-    CHECK(g_GameMode == 1 && g_ScreenOffsetEditX == 5);
+    CHECK(g_GameMode == OPTION_MODE_ROOT && g_ScreenOffsetEditX == 5);
     CHECK(g_ScreenOffsetEditY == 6 && s_lastCue == 3);
+
+    Reset();
+    g_ScreenOffsetEditX = -11;
+    g_PadPressedRepeat = PAD_LEFT | PAD_RIGHT;
+    UpdateScreenAdjustScreen();
+    CHECK(g_ScreenOffsetEditX == -11 && s_lastCue == 0);
+
+    Reset();
+    g_ScreenOffsetEditX = 12;
+    g_ScreenOffsetEditY = 13;
+    g_PadPressed = PAD_CANCEL;
+    g_PadPressedRepeat = PAD_RIGHT | PAD_DOWN;
+    UpdateScreenAdjustScreen();
+    CHECK(g_ScreenOffsetEditX == 5 && g_ScreenOffsetEditY == 6);
+    CHECK(s_lastCue == 3);
 
     puts("screen adjustment tests passed");
     return 0;
