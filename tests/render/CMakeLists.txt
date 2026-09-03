@@ -17,6 +17,26 @@ endif()
 add_test(NAME scenery_object_matrix COMMAND scenery_object_matrix_tests)
 set_tests_properties(scenery_object_matrix PROPERTIES LABELS unit)
 
+add_executable(car_model_drawing_tests
+    car_model_drawing_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/draw_player_car_model.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/car_render_rules.c)
+target_include_directories(car_model_drawing_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(car_model_drawing_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(car_model_drawing_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(car_model_drawing_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME car_model_drawing COMMAND car_model_drawing_tests)
+set_tests_properties(car_model_drawing PROPERTIES LABELS functional)
+
 add_executable(terrain_draw_setup_tests
     terrain_draw_setup_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/draw_terrain_cells.c)
