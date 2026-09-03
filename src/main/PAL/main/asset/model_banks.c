@@ -55,7 +55,8 @@ s32 RegisterModelBank(const ModelBankHeader *base, size_t size, s32 index) {
 }
 
 void SelectModelBank(s32 index) {
-    NativeModelBank *bank;
+    const NativeModelBank *bank;
+
     if ((u32)index >= GAME_MODEL_BANK_LIMIT) return;
     bank = &g_ModelBanks[index];
     g_RenderState.modelTable1 = bank->table;

@@ -82,6 +82,17 @@ static int TestModelBank(void) {
     CHECK(g_RenderState.modelModels == g_ModelBanks[2].models);
     CHECK(g_ModelBankCount == 3);
 
+    SelectModelBank(-1);
+    CHECK(g_RenderState.modelTable1 == g_ModelBanks[2].table);
+    CHECK(g_RenderState.modelNormals == g_ModelBanks[2].normals);
+    CHECK(g_RenderState.modelModels == g_ModelBanks[2].models);
+    CHECK(g_ModelBankCount == 3);
+    SelectModelBank(GAME_MODEL_BANK_LIMIT);
+    CHECK(g_RenderState.modelTable1 == g_ModelBanks[2].table);
+    CHECK(g_RenderState.modelNormals == g_ModelBanks[2].normals);
+    CHECK(g_RenderState.modelModels == g_ModelBanks[2].models);
+    CHECK(g_ModelBankCount == 3);
+
     g_ModelBanks[0].modelCount = 77;
     CHECK(RegisterModelBank(header, sizeof(data), -1) == 0);
     CHECK(g_ModelBanks[0].modelCount == 77);
