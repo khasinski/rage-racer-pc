@@ -27,6 +27,7 @@
 #include "game/race.h"
 #include "game/cd.h"
 #include "game/memcard.h"
+#include "game/memcard_internal.h"
 #include "game/audio.h"
 #include "game/asset.h"
 #include "game/car_internal.h"
