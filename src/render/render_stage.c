@@ -67,8 +67,9 @@ void RenderStageCamera(const RageRenderStage *stage,
                        RageRenderCamera *camera) {
     float pitch, yaw, cosPitch;
     RageRenderVec3 forward;
-    if (stage == NULL || camera == NULL) return;
+    if (camera == NULL) return;
     memset(camera, 0, sizeof(*camera));
+    if (stage == NULL) return;
 
     /* Climbing above the subject means looking down at it, which is a
      * negative pitch. Elevation is stated the way a person means it. */
@@ -104,9 +105,14 @@ uint32_t RenderStageCompose(RageRenderWorld *world,
                             const RageRenderPose *poses, uint32_t count) {
     uint32_t placed = 0;
     uint32_t index;
-    if (world == NULL || stage == NULL ||
+    if (world == NULL) return 0;
+    if (stage == NULL ||
         (capacity != 0 && storage == NULL) ||
-        (count != 0 && poses == NULL)) return 0;
+        (count != 0 && poses == NULL) ||
+        (capacity != 0 && sizeof(*storage) > SIZE_MAX / capacity)) {
+        RenderWorldInit(world, NULL, 0);
+        return 0;
+    }
 
     RenderWorldInit(world, storage, capacity);
     if (capacity != 0) memset(storage, 0, sizeof(*storage) * capacity);

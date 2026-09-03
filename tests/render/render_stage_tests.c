@@ -15,6 +15,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 
 static int failures;
 
@@ -74,6 +75,18 @@ static void OrbitTests(void) {
             Expect("target is straight ahead", -view.z, stage.distance, 0.5f);
         }
     }
+}
+
+static void InvalidCameraTests(void) {
+    RageRenderCamera camera;
+
+    memset(&camera, 0xff, sizeof(camera));
+    RenderStageCamera(NULL, &camera);
+    Expect("a missing stage clears the camera position",
+           camera.transform.position.x, 0.0f, 0.0f);
+    Expect("a missing stage clears the camera projection",
+           camera.verticalFovDegrees, 0.0f, 0.0f);
+    RenderStageCamera(NULL, NULL);
 }
 
 static void ElevationTests(void) {
@@ -194,13 +207,27 @@ static void ComposeTests(void) {
     Expect("poses require storage",
            (float)RenderStageCompose(&world, NULL, 1, &stage, poses, 1),
            0.0f, 0.0f);
+    ExpectTrue("failed composition clears instance storage",
+               world.instances == NULL && world.instanceCapacity == 0 &&
+                   world.instanceCount == 0);
     Expect("a non-empty stage requires poses",
            (float)RenderStageCompose(&world, instances, 1, &stage, NULL, 1),
+           0.0f, 0.0f);
+    ExpectTrue("failed composition clears the camera", world.hasCamera == 0);
+    Expect("a stage is required",
+           (float)RenderStageCompose(&world, instances, 1, NULL, poses, 1),
+           0.0f, 0.0f);
+    ExpectTrue("a missing stage leaves an empty world",
+               world.instances == NULL && world.instanceCount == 0 &&
+                   world.hasCamera == 0);
+    Expect("a missing output world is harmless",
+           (float)RenderStageCompose(NULL, instances, 1, &stage, poses, 1),
            0.0f, 0.0f);
 }
 
 int main(void) {
     OrbitTests();
+    InvalidCameraTests();
     ElevationTests();
     AzimuthTests();
     ComposeTests();

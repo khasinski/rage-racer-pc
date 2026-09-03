@@ -1,3 +1,5 @@
+#include <float.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,6 +29,16 @@ static const RageRuntimeMesh *test_mesh_lookup(
                 __LINE__, expected_value, actual_value);                      \
         failures++;                                                            \
     }                                                                          \
+} while (0)
+
+#define EXPECT_NEAR(expected, actual, tolerance) do {                         \
+    float expected_value = (float)(expected);                                 \
+    float actual_value = (float)(actual);                                     \
+    if (fabsf(expected_value - actual_value) > (float)(tolerance)) {           \
+        fprintf(stderr, "%s:%d: expected %.4f, got %.4f\\n", __FILE__,      \
+                __LINE__, expected_value, actual_value);                      \
+        failures++;                                                           \
+    }                                                                         \
 } while (0)
 
 static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
@@ -101,8 +113,8 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
     EXPECT_EQ(3, spans[0].component);
     /* Per-instance basis matches the old X/Y/Z rotation order without
      * recalculating trigonometry for every emitted vertex. */
-    EXPECT_EQ(1000, (int)(vertices[0].position[0] * 100.0f));
-    EXPECT_EQ(99, (int)(vertices[0].position[2] * 100.0f));
+    EXPECT_NEAR(10.0f, vertices[0].position[0], 0.001f);
+    EXPECT_NEAR(1.0f, vertices[0].position[2], 0.001f);
     EXPECT_EQ(200, vertices[0].color[2]);
     EXPECT_EQ(100, (int)(vertices[0].normal[1] * 100.0f));
     EXPECT_EQ(25, (int)(vertices[0].fog[0] * 100.0f));
@@ -110,6 +122,21 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
     EXPECT_EQ(75, (int)(vertices[0].fog[2] * 100.0f));
     EXPECT_EQ(0, (int)(vertices[0].fog[3] * 100.0f));
     EXPECT_EQ(0, (int)(vertices[0].lighting * 100.0f));
+
+    /* Quaternion normalization must not overflow for a perfectly valid
+     * orientation whose components happen to use a large common scale. */
+    storage[0].transform.rotation.y = 0.0f;
+    storage[0].transform.hasOrientation = 1;
+    storage[0].transform.orientation.y = FLT_MAX;
+    storage[0].transform.orientation.w = FLT_MAX;
+    EXPECT_EQ(3, RenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                             &mesh, vertices, 3, spans, 1,
+                                             &spanCount));
+    EXPECT_NEAR(10.0f, vertices[0].position[0], 0.001f);
+    EXPECT_NEAR(1.0f, vertices[0].position[2], 0.001f);
+    storage[0].transform.hasOrientation = 0;
+    storage[0].transform.rotation.y = 90.0f;
+
     storage[0].flags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING;
     EXPECT_EQ(3, RenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
                                              &mesh, vertices, 3, spans, 1,
@@ -158,6 +185,37 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
                      &mesh, vertices, 3, spans, 1, &spanCount));
     EXPECT_EQ(1, spanCount);
     EXPECT_EQ(RAGE_RENDER_PASS_MIRROR, spans[0].pass);
+}
+
+static void test_native_draw_builder_rejects_invalid_inputs(void) {
+    RageRenderMeshInstance storage[1] = {0};
+    RageRenderWorld world;
+    RageNativeDrawVertex vertices[3];
+    RageNativeDrawSpan spans[1];
+    uint32_t spanCount = 99;
+
+    RenderWorldInit(&world, storage, 1);
+    world.instanceCount = 1;
+    world.instanceCapacity = 0;
+    EXPECT_EQ(0, RenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                        NULL, vertices, 3, spans, 1,
+                                        &spanCount));
+    EXPECT_EQ(0, spanCount);
+
+    world.instanceCapacity = 1;
+    world.instances = NULL;
+    spanCount = 99;
+    EXPECT_EQ(0, RenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                        NULL, vertices, 3, spans, 1,
+                                        &spanCount));
+    EXPECT_EQ(0, spanCount);
+
+    RenderWorldInit(&world, NULL, 0);
+    spanCount = 99;
+    EXPECT_EQ(0, RenderBuildNativeDraws(&world, NAN, test_mesh_lookup,
+                                        NULL, vertices, 3, spans, 1,
+                                        &spanCount));
+    EXPECT_EQ(0, spanCount);
 }
 
 static void test_native_draw_builder_keeps_triangles_for_gpu_frustum_clipping(void) {
@@ -687,6 +745,7 @@ static void test_native_draw_builder_keeps_instance_in_frustum_guard_band(void) 
 
 int main(void) {
     test_native_draw_builder_uses_render_world_and_imported_mesh();
+    test_native_draw_builder_rejects_invalid_inputs();
     test_native_draw_builder_keeps_triangles_for_gpu_frustum_clipping();
     test_native_draw_builder_culls_dynamic_course_backfaces();
     test_native_draw_builder_culls_terrain_per_authored_quad();

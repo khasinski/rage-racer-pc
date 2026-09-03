@@ -28,10 +28,15 @@ static RageTransformBasis BuildTransformBasis(
     basis.cz = cosf(z); basis.sz = sinf(z);
     if (transform->hasOrientation) {
         const RageRenderQuaternion *q = &transform->orientation;
-        float length = sqrtf(q->x * q->x + q->y * q->y + q->z * q->z + q->w * q->w);
-        if (length > 0.0f) {
-            float xq = q->x / length, yq = q->y / length;
-            float zq = q->z / length, wq = q->w / length;
+        double lengthSquared =
+            (double)q->x * q->x + (double)q->y * q->y +
+            (double)q->z * q->z + (double)q->w * q->w;
+        if (isfinite(lengthSquared) && lengthSquared > 0.0) {
+            double inverseLength = 1.0 / sqrt(lengthSquared);
+            float xq = (float)((double)q->x * inverseLength);
+            float yq = (float)((double)q->y * inverseLength);
+            float zq = (float)((double)q->z * inverseLength);
+            float wq = (float)((double)q->w * inverseLength);
             basis.matrix[0][0] = 1.0f - 2.0f * (yq * yq + zq * zq);
             basis.matrix[0][1] = 2.0f * (xq * yq - zq * wq);
             basis.matrix[0][2] = 2.0f * (xq * zq + yq * wq);
@@ -470,7 +475,9 @@ static uint32_t RenderBuildNativeDrawsFiltered(
     uint32_t instanceIndex, vertexCount = 0, spansUsed = 0;
     if (spanCount != NULL) *spanCount = 0;
     if (world == NULL || lookup == NULL || vertices == NULL || spans == NULL ||
-        spanCount == NULL) return 0;
+        spanCount == NULL || !isfinite(aspect) || aspect <= 0.0f ||
+        world->instanceCount > world->instanceCapacity ||
+        (world->instanceCount != 0 && world->instances == NULL)) return 0;
     for (instanceIndex = 0; instanceIndex < world->instanceCount; instanceIndex++) {
         const RageRenderMeshInstance *instance = &world->instances[instanceIndex];
         const RageRuntimeMesh *mesh = lookup(context, instance);
@@ -513,7 +520,8 @@ static uint32_t RenderBuildNativeDrawsFiltered(
                 materialFlags[0] != materialFlags[2] ||
                 depthDecals[0] != depthDecals[1] ||
                 depthDecals[0] != depthDecals[2] ||
-                vertexCount + 3 > vertexCapacity) continue;
+                vertexCount > vertexCapacity ||
+                vertexCapacity - vertexCount < 3) continue;
             if ((instance->flags & RAGE_RENDER_INSTANCE_FLAT_SHADED) != 0)
                 ApplyFlatTriangleNormal(triangle);
             if (depthDecals[0]) {
