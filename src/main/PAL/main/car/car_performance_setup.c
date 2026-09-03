@@ -1,5 +1,6 @@
 #include "game/car.h"
 #include "game/car_internal.h"
+#include "game/integer.h"
 #include "game/player_car_internal.h"
 
 static s32 ClampPositiveInt64ToS32(int64_t value) {
@@ -52,10 +53,11 @@ void PrepareCarPerformance(GameCarDrive *drive) {
     s32 gear;
     s32 index;
 
-    if (spec->topGear <= 0 || spec->topGear >= 6) {
-        spec->topGear = 6;
+    if (spec->topGear < 1 || spec->topGear > CAR_FORWARD_GEAR_COUNT) {
+        spec->topGear = CAR_FORWARD_GEAR_COUNT;
     }
-    drive->speedScale = (spec->tachometer.speedScale * 0x490) / 160;
+    drive->speedScale = WrapSigned32(
+        (int64_t)spec->tachometer.speedScale * 0x490) / 160;
 
     for (index = 0; index < 16; index++) {
         g_GearTorqueCurve[0].values[index] = spec->torqueCurve[index] / 20;
@@ -65,11 +67,12 @@ void PrepareCarPerformance(GameCarDrive *drive) {
         }
     }
     g_PeakOutputValue = peakOutput;
-    g_PeakOutputRpm = spec->torqueBand.halves[peakIndex * 2];
-    g_RedlineToPeakRpmHalf = ((s16)g_PeakOutputRpm - spec->redline) / 2;
-    g_PeakToRevLimitRpmHalf = (spec->revLimit - (s16)g_PeakOutputRpm) / 2;
+    g_PeakOutputRpm = WrapSigned16(
+        spec->torqueBand.halves[peakIndex * 2]);
+    g_RedlineToPeakRpmHalf = (g_PeakOutputRpm - spec->redline) / 2;
+    g_PeakToRevLimitRpmHalf = (spec->revLimit - g_PeakOutputRpm) / 2;
 
-    for (gear = 0; gear < 6; gear++) {
+    for (gear = 0; gear < CAR_FORWARD_GEAR_COUNT; gear++) {
         s32 gearRatio = GetPositiveCarGearRatio(spec, gear + 1);
         s32 divisor =
             CalculateTorqueCurveDivisor(spec->torqueScale[gear], gearRatio);

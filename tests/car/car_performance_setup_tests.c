@@ -1,8 +1,10 @@
 #include "common.h"
 #include "game/car.h"
 #include "game/car_internal.h"
+#include "game/integer.h"
 #include "game/player_car_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -162,6 +164,21 @@ int main(void) {
              "empty torque curve uses the first rpm band");
     CHECK_EQ(g_PeakOutputValue, 0,
              "empty torque curve clears stale peak output");
+
+    spec.tachometer.speedScale = INT_MAX;
+    spec.torqueBand.halves[0] = UINT16_MAX;
+    spec.redline = INT16_MIN;
+    spec.revLimit = INT16_MAX;
+    PrepareCarPerformance(&drive);
+    CHECK_EQ(drive.speedScale,
+             WrapSigned32((int64_t)INT_MAX * 0x490) / 160,
+             "speed scale preserves 32-bit multiplication");
+    CHECK_EQ(g_PeakOutputRpm, -1,
+             "peak rpm preserves signed halfword storage");
+    CHECK_EQ(g_RedlineToPeakRpmHalf, 16383,
+             "redline distance uses signed peak rpm");
+    CHECK_EQ(g_PeakToRevLimitRpmHalf, 16384,
+             "rev-limit distance uses signed peak rpm");
 
     if (s_failures != 0) {
         printf("%d car performance checks failed\n", s_failures);
