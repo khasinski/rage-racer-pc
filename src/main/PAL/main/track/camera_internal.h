@@ -4,6 +4,18 @@
 #include "game/render.h"
 #include "game/track_internal.h"
 
+static inline s32 CameraAddWord(s32 left, s32 right) {
+    return WrapSigned32((int64_t)left + right);
+}
+
+static inline s32 CameraSubtractWord(s32 left, s32 right) {
+    return WrapSigned32((int64_t)left - right);
+}
+
+static inline s32 CameraMultiplyWord(s32 left, s32 right) {
+    return WrapSigned32((int64_t)left * right);
+}
+
 void CameraLoadViewPositionFromCar(GameViewWork *view,
                                    const GameRenderObject *car);
 void CameraLoadViewPoseFromCar(GameViewWork *view,

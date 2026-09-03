@@ -19,9 +19,11 @@ static void SettleChaseYaw(s32 stepLimit, s32 acceleratedStep,
     if (stepLimit < acceleratedStep) {
         g_ChaseYawLag = negative ? -stepLimit : stepLimit;
         if (negative) {
-            g_ChaseYawRampNeg = SquareRoot0(stepLimit * g_ChaseYawDamping);
+            g_ChaseYawRampNeg = SquareRoot0(
+                CameraMultiplyWord(stepLimit, g_ChaseYawDamping));
         } else {
-            g_ChaseYawRampPos = SquareRoot0(stepLimit * g_ChaseYawDamping);
+            g_ChaseYawRampPos = SquareRoot0(
+                CameraMultiplyWord(stepLimit, g_ChaseYawDamping));
         }
     } else {
         g_ChaseYawLag = negative ? -acceleratedStep : acceleratedStep;
@@ -39,20 +41,23 @@ static void AdvanceChaseYawRamp(s32 stepLimit,
     }
     g_ChaseYawStepLimit = stepLimit;
     ramp = negative ? g_ChaseYawRampNeg : g_ChaseYawRampPos;
-    acceleratedStep = ((ramp + 8) * (ramp + 8)) / g_ChaseYawDamping;
+    ramp = CameraAddWord(ramp, 8);
+    acceleratedStep = CameraMultiplyWord(ramp, ramp) /
+                      g_ChaseYawDamping;
     if (negative) {
         g_ChaseYawRampPos = 0;
-        g_ChaseYawRampNeg += 8;
+        g_ChaseYawRampNeg = CameraAddWord(g_ChaseYawRampNeg, 8);
     } else {
         g_ChaseYawRampNeg = 0;
-        g_ChaseYawRampPos += 8;
+        g_ChaseYawRampPos = CameraAddWord(g_ChaseYawRampPos, 8);
     }
     g_ChaseYawStep = acceleratedStep;
     SettleChaseYaw(stepLimit, acceleratedStep, direction);
 }
 
 static s32 CalculateChaseYawDamping(s32 carSpeed) {
-    s32 speedDifference = 0x4E2 - carSpeed;
+    s32 speedDifference = CameraSubtractWord(0x4E2, carSpeed);
+    s32 damping;
 
     if (carSpeed >= 0x321) {
         if (speedDifference < 6) {
@@ -60,14 +65,16 @@ static s32 CalculateChaseYawDamping(s32 carSpeed) {
         }
         return ((((speedDifference * 8) / 50) + 8) / 10) + 1;
     }
-    return ((((speedDifference * 6 * speedDifference) / 2500) -
-             ((speedDifference * 0x46) / 50)) +
-            0xE0) /
-           10;
+    damping = CameraMultiplyWord(speedDifference, 6);
+    damping = CameraMultiplyWord(damping, speedDifference) / 2500;
+    damping = CameraSubtractWord(
+        damping, CameraMultiplyWord(speedDifference, 0x46) / 50);
+    damping = CameraAddWord(damping, 0xE0) / 10;
+    return damping > 0 ? damping : 1;
 }
 
 static void UpdateChaseYawStep(s32 targetYaw, s32 previousYaw) {
-    s32 rawError = targetYaw - previousYaw;
+    s32 rawError = CameraSubtractWord(targetYaw, previousYaw);
     s32 stepLimit;
     enum ChaseYawDirection direction;
 
@@ -84,7 +91,8 @@ static void UpdateChaseYawStep(s32 targetYaw, s32 previousYaw) {
             stepLimit = (((0x1000 + rawError) / 17) * 2) & 0xFFF;
             direction = CHASE_YAW_POSITIVE;
         } else {
-            stepLimit = (((-rawError) / 17) * 2) & 0xFFF;
+            stepLimit = ((CameraSubtractWord(0, rawError) / 17) * 2) &
+                        0xFFF;
             direction = CHASE_YAW_NEGATIVE;
         }
     } else {
@@ -131,21 +139,22 @@ void CameraViewFromChaseCamera(GameRenderObject *car, GameViewWork *view) {
     }
     g_ChaseYawDamping = CalculateChaseYawDamping(g_ChaseCarSpeed);
     UpdateChaseYawStep(g_ChaseTargetYaw, g_ChaseYawPrev);
-    settledYaw = (g_ChaseYawPrev + g_ChaseYawLag) & 0xFFF;
+    settledYaw = CameraAddWord(g_ChaseYawPrev, g_ChaseYawLag) & 0xFFF;
     g_ChaseYaw = settledYaw;
     /* How far the chase yaw still has to travel, taken the short way
      * round the circle. Which way that is depends on which side of the
      * target it started. */
-    chaseYawLag = chaseTargetYaw - settledYaw;
+    chaseYawLag = CameraSubtractWord(chaseTargetYaw, settledYaw);
     if (chaseTargetYaw < settledYaw) {
         if (chaseYawLag < -0x7FF) {
-            chaseYawLag += 0x1000;
+            chaseYawLag = CameraAddWord(chaseYawLag, 0x1000);
         }
     } else if (chaseYawLag >= 0x800) {
-        chaseYawLag -= 0x1000;
+        chaseYawLag = CameraSubtractWord(chaseYawLag, 0x1000);
     }
     g_ChaseYawLag = chaseYawLag;
-    BuildRotMatrixY(&cameraRotation, 0 - g_ChaseYawLag);
+    BuildRotMatrixY(&cameraRotation,
+                    CameraSubtractWord(0, g_ChaseYawLag));
     BuildRotMatrixX(&matrixWork, -0x80);
     MulMatrix2(&matrixWork, &cameraRotation);
     g_ChaseYawPrev = g_ChaseYaw;
@@ -162,9 +171,9 @@ void CameraViewFromChaseCamera(GameRenderObject *car, GameViewWork *view) {
     focusOffset[2] = 0x32;
     ApplyMatrixLV(&inverseObjectRotation, &focusOffset[0],
                   &focusWorld[0]);
-    view->x += focusWorld[0];
-    view->y += focusWorld[1];
-    view->z += focusWorld[2];
+    view->x = CameraAddWord(view->x, focusWorld[0]);
+    view->y = CameraAddWord(view->y, focusWorld[1]);
+    view->z = CameraAddWord(view->z, focusWorld[2]);
     /* Retail kept both offsets in the same stack slot, so a preset
      * outside 0..2 leaves the eye sitting on the look-at offset. The
      * switch has no default and the eye starts on that offset so it
@@ -187,15 +196,18 @@ void CameraViewFromChaseCamera(GameRenderObject *car, GameViewWork *view) {
         break;
     }
     ApplyMatrixLV(&matrixWork, &eyeOffset[0], &eyeWorld[0]);
-    view->x -= eyeWorld[0];
-    view->y -= eyeWorld[1];
-    view->z -= eyeWorld[2];
-    chaseDistance = SquareRoot0((eyeWorld[0] * eyeWorld[0]) +
-                                (eyeWorld[2] * eyeWorld[2]));
-    view->angleX = 0x400 - (Atan2(eyeWorld[1] + 0x28, chaseDistance) & 0xFFF);
+    view->x = CameraSubtractWord(view->x, eyeWorld[0]);
+    view->y = CameraSubtractWord(view->y, eyeWorld[1]);
+    view->z = CameraSubtractWord(view->z, eyeWorld[2]);
+    chaseDistance = SquareRoot0(CameraAddWord(
+        CameraMultiplyWord(eyeWorld[0], eyeWorld[0]),
+        CameraMultiplyWord(eyeWorld[2], eyeWorld[2])));
+    view->angleX = 0x400 -
+        (Atan2(CameraAddWord(eyeWorld[1], 0x28), chaseDistance) & 0xFFF);
     view->angleY = 0x400 - (Atan2(eyeWorld[0], eyeWorld[2]) & 0xFFF);
     view->angleY += ChaseCameraYawOffset(car->steeringAngle);
-    view->angleZ = car->bodyRoll - car->bodyRollVelocity;
+    view->angleZ = CameraSubtractWord(car->bodyRoll,
+                                      car->bodyRollVelocity);
     if (g_ChaseCameraPreset == 0) {
         pitchOffset = view->angleX - 0x90;
     } else {

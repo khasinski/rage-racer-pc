@@ -382,6 +382,13 @@ int main(void) {
                 s_failures++;
             }
         }
+
+        ChaseAdvance(0x40, INT_MIN);
+        if (g_ChaseYawDamping <= 0) {
+            printf("FAIL chase damping at extreme reverse speed: %d\n",
+                   g_ChaseYawDamping);
+            s_failures++;
+        }
     }
 
     /* Damping has separate low- and high-speed curves, including a clamp

@@ -1,50 +1,38 @@
 #include "camera_internal.h"
 
-static s32 AddCameraWord(s32 left, s32 right) {
-    return WrapSigned32((int64_t)left + right);
-}
-
-static s32 SubtractCameraWord(s32 left, s32 right) {
-    return WrapSigned32((int64_t)left - right);
-}
-
-static s32 MultiplyCameraWord(s32 left, s32 right) {
-    return WrapSigned32((int64_t)left * right);
-}
-
 /* Mode-3 nodes store orientation in the first four data words where modes
  * 2 and 4 store a world position; the record is a union keyed by node mode. */
 static s32 ShortestAngleDelta(s32 delta) {
     if (delta >= 0x800)
-        return SubtractCameraWord(delta, 0x1000);
+        return CameraSubtractWord(delta, 0x1000);
     if (delta < -0x7FF)
-        return AddCameraWord(delta, 0x1000);
+        return CameraAddWord(delta, 0x1000);
     return delta;
 }
 
 static s32 InterpolateCameraValue(s32 start, s32 delta, s32 blend) {
-    s32 product = MultiplyCameraWord(blend, delta);
+    s32 product = CameraMultiplyWord(blend, delta);
 
     if (product < 0) {
-        product = AddCameraWord(product, 0x1FFF);
+        product = CameraAddWord(product, 0x1FFF);
     }
-    return AddCameraWord(start, product >> 13);
+    return CameraAddWord(start, product >> 13);
 }
 
 static s32 BlendCameraCoordinate(s32 current, s32 target, s32 blend,
                                  s32 scale) {
-    s32 distance = SubtractCameraWord(current, target);
-    s32 adjustment = MultiplyCameraWord(distance, blend) / scale;
+    s32 distance = CameraSubtractWord(current, target);
+    s32 adjustment = CameraMultiplyWord(distance, blend) / scale;
 
-    return SubtractCameraWord(current, adjustment);
+    return CameraSubtractWord(current, adjustment);
 }
 
 static s32 MoveCameraCoordinate(s32 current, s32 target, s32 frame,
                                 s32 duration) {
-    s32 distance = SubtractCameraWord(target, current);
-    s32 movement = MultiplyCameraWord(distance, frame) / duration;
+    s32 distance = CameraSubtractWord(target, current);
+    s32 movement = CameraMultiplyWord(distance, frame) / duration;
 
-    return AddCameraWord(current, movement);
+    return CameraAddWord(current, movement);
 }
 
 static s32 CameraNodeDuration(const GameTrackCameraNode *node) {
@@ -56,18 +44,18 @@ static s32 CameraNodeDuration(const GameTrackCameraNode *node) {
  * the target, in the game's 0x1000-per-turn angle units, with no roll.
  */
 static void AimCameraAt(GameViewWork *view, s32 targetX, s32 targetY, s32 targetZ) {
-    s32 dx = SubtractCameraWord(view->x, targetX);
-    s32 dy = SubtractCameraWord(view->y, targetY);
-    s32 dz = SubtractCameraWord(view->z, targetZ);
-    s32 horizontalDistanceSquared = AddCameraWord(
-        MultiplyCameraWord(dx, dx), MultiplyCameraWord(dz, dz));
+    s32 dx = CameraSubtractWord(view->x, targetX);
+    s32 dy = CameraSubtractWord(view->y, targetY);
+    s32 dz = CameraSubtractWord(view->z, targetZ);
+    s32 horizontalDistanceSquared = CameraAddWord(
+        CameraMultiplyWord(dx, dx), CameraMultiplyWord(dz, dz));
 
     view->angleX = 0x400 -
-        (Atan2(SubtractCameraWord(0, dy),
+        (Atan2(CameraSubtractWord(0, dy),
                SquareRoot0(horizontalDistanceSquared)) & 0xFFF);
     view->angleY = 0x400 -
-        (Atan2(SubtractCameraWord(0, dx),
-               SubtractCameraWord(0, dz)) & 0xFFF);
+        (Atan2(CameraSubtractWord(0, dx),
+               CameraSubtractWord(0, dz)) & 0xFFF);
     view->angleZ = 0;
 }
 
@@ -98,12 +86,12 @@ void CameraViewFromBlendedNode(GameRenderObject *car, GameViewWork *view,
      * then in the world. */
     nodeOffset[0] = chaseNode->offset[0];
     nodeOffset[1] = chaseNode->offset[1];
-    nodeOffset[2] = AddCameraWord(chaseNode->offset[2], 0x32);
+    nodeOffset[2] = CameraAddWord(chaseNode->offset[2], 0x32);
     ApplyMatrixLV(&inverseObjectRotation, &nodeOffset[0],
                   &nodeWorld[0]);
-    focusX = AddCameraWord(car->x, nodeWorld[0]);
-    focusY = AddCameraWord(car->y, nodeWorld[1]);
-    focusZ = AddCameraWord(car->z, nodeWorld[2]);
+    focusX = CameraAddWord(car->x, nodeWorld[0]);
+    focusY = CameraAddWord(car->y, nodeWorld[1]);
+    focusZ = CameraAddWord(car->z, nodeWorld[2]);
     /* Pull the node's camera towards that point by the node's own blend,
      * then aim from where it ended up. */
     blend = chaseNode->data.world.blend;
@@ -171,24 +159,24 @@ void CameraViewFromCamPath(GameRenderObject *car, GameViewWork *view,
             g_CamPathAngleStart[CAMPATH_DIST] = prevNode->data.orientation.distance;
         }
         pathNode = &g_TrackCameras[g_CamPathNode];
-        g_CamPathOffsetDelta[0] = SubtractCameraWord(
+        g_CamPathOffsetDelta[0] = CameraSubtractWord(
             pathNode->offset[0], g_CamPathOffsetStart[0]);
-        g_CamPathOffsetDelta[1] = SubtractCameraWord(
+        g_CamPathOffsetDelta[1] = CameraSubtractWord(
             pathNode->offset[1], g_CamPathOffsetStart[1]);
-        g_CamPathOffsetDelta[2] = SubtractCameraWord(
+        g_CamPathOffsetDelta[2] = CameraSubtractWord(
             pathNode->offset[2], g_CamPathOffsetStart[2]);
-        pitchDelta = SubtractCameraWord(
+        pitchDelta = CameraSubtractWord(
             pathNode->data.orientation.pitch,
             g_CamPathAngleStart[CAMPATH_PITCH]);
         g_CamPathAngleDelta[CAMPATH_PITCH] =
             ShortestAngleDelta(pitchDelta);
-        g_CamPathAngleDelta[CAMPATH_YAW] = SubtractCameraWord(
+        g_CamPathAngleDelta[CAMPATH_YAW] = CameraSubtractWord(
             pathNode->data.orientation.yaw,
             g_CamPathAngleStart[CAMPATH_YAW]);
-        g_CamPathAngleDelta[CAMPATH_ROLL] = SubtractCameraWord(
+        g_CamPathAngleDelta[CAMPATH_ROLL] = CameraSubtractWord(
             pathNode->data.orientation.roll,
             g_CamPathAngleStart[CAMPATH_ROLL]);
-        g_CamPathAngleDelta[CAMPATH_DIST] = SubtractCameraWord(
+        g_CamPathAngleDelta[CAMPATH_DIST] = CameraSubtractWord(
             pathNode->data.orientation.distance,
             g_CamPathAngleStart[CAMPATH_DIST]);
         g_CamPathAngleDelta[CAMPATH_YAW] = ShortestAngleDelta(
@@ -230,7 +218,7 @@ void CameraViewFromCamPath(GameRenderObject *car, GameViewWork *view,
         g_CamPathAngleStart[CAMPATH_DIST],
         g_CamPathAngleDelta[CAMPATH_DIST], pathBlend);
     g_CamPathAngle[CAMPATH_DIST] = camPathAngle;
-    pathYawRelative = SubtractCameraWord(pathYaw, car->bodyYaw);
+    pathYawRelative = CameraSubtractWord(pathYaw, car->bodyYaw);
     BuildRotMatrixY(&cameraRotation, pathYawRelative);
     BuildRotMatrixX(&matrixWork, pathPitch);
     MulMatrix2(&matrixWork, &cameraRotation);
@@ -240,21 +228,21 @@ void CameraViewFromCamPath(GameRenderObject *car, GameViewWork *view,
     TransposeMatrix(&objectRotation, &inverseObjectRotation);
     MulMatrix2(&cameraRotation, &objectRotation);
     TransposeMatrix(&objectRotation, &matrixWork);
-    focusOffset[2] = AddCameraWord(focusOffset[2], 0x32);
+    focusOffset[2] = CameraAddWord(focusOffset[2], 0x32);
     ApplyMatrixLV(&inverseObjectRotation, &focusOffset[0],
                   &focusWorld[0]);
-    focusX = AddCameraWord(view->x, focusWorld[0]);
-    focusY = AddCameraWord(view->y, focusWorld[1]);
-    focusZ = AddCameraWord(view->z, focusWorld[2]);
+    focusX = CameraAddWord(view->x, focusWorld[0]);
+    focusY = CameraAddWord(view->y, focusWorld[1]);
+    focusZ = CameraAddWord(view->z, focusWorld[2]);
     /* Sit the path's distance behind the focus point, then look back at
      * it. */
     eyeOffset[0] = 0;
     eyeOffset[1] = 0;
     eyeOffset[2] = g_CamPathAngle[CAMPATH_DIST];
     ApplyMatrixLV(&matrixWork, &eyeOffset[0], &eyeWorld[0]);
-    view->x = SubtractCameraWord(focusX, eyeWorld[0]);
-    view->y = SubtractCameraWord(focusY, eyeWorld[1]);
-    view->z = SubtractCameraWord(focusZ, eyeWorld[2]);
+    view->x = CameraSubtractWord(focusX, eyeWorld[0]);
+    view->y = CameraSubtractWord(focusY, eyeWorld[1]);
+    view->z = CameraSubtractWord(focusZ, eyeWorld[2]);
     AimCameraAt(view, focusX, focusY, focusZ);
     /* Roll: take the camera's own right-hand axis back through the view
      * matrix and read how far off level it lands. */
@@ -262,7 +250,7 @@ void CameraViewFromCamPath(GameRenderObject *car, GameViewWork *view,
     rollProbe[1] = 0;
     rollProbe[2] = 0;
     BuildRotMatrixY(&cameraRotation,
-                    SubtractCameraWord(0, view->angleY));
+                    CameraSubtractWord(0, view->angleY));
     ApplyMatrixLV(&cameraRotation, &rollProbe[0], &rollWork[0]);
     TransposeMatrix(&matrixWork, &cameraRotation);
     ApplyMatrixLV(&cameraRotation, &rollWork[0], &rollProbe[0]);
@@ -310,8 +298,8 @@ void CameraViewFromSlidingNode(GameRenderObject *car, GameViewWork *view,
         view->y, orbitNode->offset[1], g_CamPathFrame, duration);
     view->z = MoveCameraCoordinate(
         view->z, orbitNode->offset[2], g_CamPathFrame, duration);
-    AimCameraAt(view, AddCameraWord(car->x, nodeWorld[0]),
-                AddCameraWord(car->y, nodeWorld[1]),
-                AddCameraWord(car->z, nodeWorld[2]));
+    AimCameraAt(view, CameraAddWord(car->x, nodeWorld[0]),
+                CameraAddWord(car->y, nodeWorld[1]),
+                CameraAddWord(car->z, nodeWorld[2]));
     g_CameraModePrev = TRACK_CAMERA_SLIDING_NODE;
 }
