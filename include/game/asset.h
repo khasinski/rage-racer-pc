@@ -193,13 +193,14 @@ static inline u16 *GetAssetHalfwords(void *data) {
     return (u16 *)data;
 }
 
-static inline struct CourseModelAssetHeader *GetCourseModelAssetHeader(
-    void *data) {
-    return (struct CourseModelAssetHeader *)data;
+static inline const struct CourseModelAssetHeader *GetCourseModelAssetHeader(
+    const void *data) {
+    return (const struct CourseModelAssetHeader *)data;
 }
 
-static inline struct ModelBankHeader *GetModelBankHeader(void *data) {
-    return (struct ModelBankHeader *)data;
+static inline const struct ModelBankHeader *GetModelBankHeader(
+    const void *data) {
+    return (const struct ModelBankHeader *)data;
 }
 
 static inline void *ResolveAssetAddress(void *base, s32 offset) {

@@ -33,11 +33,11 @@ typedef struct TeamLogoSample {
 } TeamLogoSample;
 
 typedef union TeamLogoSampleAddress {
-    void *data;
-    TeamLogoSample *sample;
+    const void *data;
+    const TeamLogoSample *sample;
 } TeamLogoSampleAddress;
 
-static inline TeamLogoSample *GetTeamLogoSample(void *data) {
+static inline const TeamLogoSample *GetTeamLogoSample(const void *data) {
     TeamLogoSampleAddress address;
 
     address.data = data;

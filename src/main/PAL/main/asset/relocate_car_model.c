@@ -6,7 +6,7 @@
 
 s32 RelocateCarModel(void) {
     CarModelAsset *source = FindSerializedCarModelAsset(g_CarModelAsset);
-    ModelBankHeader *sourceBank;
+    const ModelBankHeader *sourceBank;
     CarModelAsset *destination;
     size_t byteCount;
 

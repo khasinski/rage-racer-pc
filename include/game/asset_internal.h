@@ -5,7 +5,7 @@
 #include "game/asset.h"
 #include "game/menu_types.h"
 
-extern TeamLogoSample *g_TeamLogoSampleData;
+extern const TeamLogoSample *g_TeamLogoSampleData;
 extern char g_TextNowLoading[];
 extern s32 g_AssetLoadFailed;
 

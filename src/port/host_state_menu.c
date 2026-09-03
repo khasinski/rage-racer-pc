@@ -268,7 +268,7 @@ s16 g_NegconNeutralI;
 s16 g_NegconNeutralII;
 s16 g_NegconNeutralL;
 s16 g_PrevOwnedCarIndex;
-TeamLogoSample *g_TeamLogoSampleData __attribute__((aligned(16)));
+const TeamLogoSample *g_TeamLogoSampleData __attribute__((aligned(16)));
 s32 g_TeamLogoPaintArmed;
 s16 g_GrandPrixSeries;
 s16 g_ExtraGrandPrixUnlocked;

@@ -54,8 +54,8 @@ static void FinishCarSelectAudioLoad(void) {
 }
 
 static void LoadCarSelectSharedAssets(void) {
-    CarSelectAssetHeader *header;
-    CourseModelAssetHeader *courseModels;
+    const CarSelectAssetHeader *header;
+    const CourseModelAssetHeader *courseModels;
     u8 *image;
     size_t sceneModelSize;
     size_t courseModelSize;
@@ -65,7 +65,7 @@ static void LoadCarSelectSharedAssets(void) {
     loadedSize = LoadAsset(ASSET_CAR_SELECT_SCREEN, g_AssetLoadCursor);
     if (loadedSize == 0) return;
 
-    header = (CarSelectAssetHeader *)g_AssetLoadCursor;
+    header = (const CarSelectAssetHeader *)(const void *)g_AssetLoadCursor;
     if (loadedSize < (s32)offsetof(CarSelectAssetHeader, sceneModelBank) ||
         header->teamLogoSamplesOffset <=
             (s32)offsetof(CarSelectAssetHeader, sceneModelBank) ||
@@ -81,8 +81,8 @@ static void LoadCarSelectSharedAssets(void) {
                                header->courseModelsOffset);
     imageSize = (size_t)(loadedSize - header->imageOffset);
     courseModels = GetCourseModelAssetHeader(
-        ResolveAssetAddress(header, header->courseModelsOffset));
-    image = ResolveAssetAddress(header, header->imageOffset);
+        ResolveConstAssetAddress(header, header->courseModelsOffset));
+    image = g_AssetLoadCursor + header->imageOffset;
     if (!IsValidModelBankAsset(&header->sceneModelBank, sceneModelSize) ||
         !IsValidCourseModelAsset(courseModels, courseModelSize) ||
         !IsValidImageAsset(GetImageAssetHeaderWords(image), imageSize) ||
@@ -98,7 +98,7 @@ static void LoadCarSelectSharedAssets(void) {
         return;
     }
     g_TeamLogoSampleData = GetTeamLogoSample(
-        ResolveAssetAddress(header, header->teamLogoSamplesOffset));
+        ResolveConstAssetAddress(header, header->teamLogoSamplesOffset));
     g_CarModelBuffer = image;
     g_ImageBlockBuffer = image + CAR_MODEL_BUFFER_SIZE;
     g_ImageBlockSize = 0;

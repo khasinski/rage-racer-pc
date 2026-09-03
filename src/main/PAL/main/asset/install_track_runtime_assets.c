@@ -67,7 +67,7 @@ static s32 IsTrackRuntimeAssetIndex(s32 assetIndex) {
 s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
                                  s32 useSeriesCamera) {
     GameSceneAssetHeader *header;
-    CourseModelAssetHeader *courseModels;
+    const CourseModelAssetHeader *courseModels;
     const CourseObjectTable *courseObjects;
     void *blocks[TRACK_RUNTIME_BLOCK_COUNT];
     size_t blockSizes[TRACK_RUNTIME_BLOCK_COUNT];

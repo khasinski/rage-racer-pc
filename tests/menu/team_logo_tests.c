@@ -5,7 +5,7 @@
 #include "game/asset_internal.h"
 #include "game/menu.h"
 
-TeamLogoSample *g_TeamLogoSampleData;
+const TeamLogoSample *g_TeamLogoSampleData;
 TeamLogoCanvas g_TeamLogoCanvas;
 u16 g_TeamLogoClut[16];
 u16 g_TeamLogoSwatches[15];

@@ -27,7 +27,7 @@ CarEntry *g_CarTable;
 CarModelAsset *g_CarModelSlots[CAR_ASSET_SLOT_COUNT];
 CarImageData *g_CarImageSlots[CAR_ASSET_SLOT_COUNT];
 CarModelAsset *g_CarModelAsset;
-TeamLogoSample *g_TeamLogoSampleData;
+const TeamLogoSample *g_TeamLogoSampleData;
 
 static s32 s_loadResult;
 static s32 s_loadAssetId;
@@ -398,6 +398,7 @@ static void TestCarSelectAssetPhases(void) {
     CarEntry cars[2];
     CarModelAsset *model;
     CarImageData carImage;
+    u8 originalSharedAssets[512];
 
     memset(storage, 0, sizeof(storage));
     memset(cars, 0, sizeof(cars));
@@ -482,7 +483,11 @@ static void TestCarSelectAssetPhases(void) {
 
     g_AssetLoadState = 3;
     s_assetRoom = SIZE_MAX;
+    memcpy(originalSharedAssets, storage, sizeof(originalSharedAssets));
     LoadCarSelectAssets();
+    Check(memcmp(originalSharedAssets, storage,
+                 sizeof(originalSharedAssets)) == 0,
+          "shared showroom assets remain unchanged during installation");
     Check(s_registeredBank ==
               (ModelBankHeader *)(void *)(storage + 0xC) &&
               s_registeredSlot == 14,
