@@ -62,6 +62,7 @@ static s32 s_installCount;
 static void *s_installs[8];
 static s32 s_seriesCamera;
 static s32 s_cameraTableValid = 1;
+static s32 s_cameraSelectionResult = 1;
 static s32 s_enableCdResult;
 static s32 s_resetCdCalls;
 static s32 s_failures;
@@ -193,7 +194,7 @@ s32 SelectTrackCameraTable(TrackCameraTable *table, size_t size,
     (void)size;
     s_installs[s_installCount++] = table;
     s_seriesCamera = useSeriesCamera;
-    return 1;
+    return s_cameraSelectionResult;
 }
 s32 EnableCdAudioMode(void) { return s_enableCdResult; }
 void ResetCdAudioState(void) { s_resetCdCalls++; }
@@ -479,6 +480,20 @@ static void TestTrackPhases(void) {
               g_TrackRenderTable == NULL && g_EnvPaletteTable == NULL,
           "invalid camera table rejects the pack before publication");
     s_cameraTableValid = 1;
+
+    s_cameraSelectionResult = 0;
+    s_installCount = 0;
+    s_trackIdentity = -1;
+    g_TrackRenderTable = NULL;
+    g_EnvPaletteTable = NULL;
+    g_CourseObjects = NULL;
+    g_CourseObjectCount = -1;
+    Check(InstallTrackRuntimeAssetPack(pack, 1088, 123, 0) == 0 &&
+              s_installCount == 8 && s_trackIdentity == -1 &&
+              g_TrackRenderTable == NULL && g_EnvPaletteTable == NULL &&
+              g_CourseObjects == NULL && g_CourseObjectCount == -1,
+          "failed final installer publishes no top-level track state");
+    s_cameraSelectionResult = 1;
 
     s_enableCdResult = 0;
     LoadRaceAssets();

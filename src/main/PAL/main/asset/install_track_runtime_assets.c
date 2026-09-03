@@ -91,11 +91,6 @@ s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
         return 0;
     }
 
-    TrackAssetIdentitySet(assetIndex);
-    g_TrackRenderTable = GetSceneAssetBlock(
-        header, TRACK_RUNTIME_RENDER_TABLE);
-    g_EnvPaletteTable = GetSceneAssetBlock(
-        header, TRACK_RUNTIME_ENVIRONMENT_PALETTE);
     if (!SetEnvironmentScript(
             GetSceneAssetBlock(header, TRACK_RUNTIME_ENVIRONMENT_SCRIPT),
             blockSizes[TRACK_RUNTIME_ENVIRONMENT_SCRIPT])) {
@@ -125,8 +120,6 @@ s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
             blockSizes[TRACK_RUNTIME_TERRAIN_CELLS])) {
         return 0;
     }
-    g_CourseObjects = courseObjects->objects;
-    g_CourseObjectCount = (s32)courseObjects->count;
     if (!InstallTrackEventData(
             GetSceneAssetBlock(header, TRACK_RUNTIME_EVENTS),
             blockSizes[TRACK_RUNTIME_EVENTS])) {
@@ -137,5 +130,12 @@ s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
             blockSizes[TRACK_RUNTIME_CAMERAS], useSeriesCamera)) {
         return 0;
     }
+    g_TrackRenderTable = GetSceneAssetBlock(
+        header, TRACK_RUNTIME_RENDER_TABLE);
+    g_EnvPaletteTable = GetSceneAssetBlock(
+        header, TRACK_RUNTIME_ENVIRONMENT_PALETTE);
+    g_CourseObjects = courseObjects->objects;
+    g_CourseObjectCount = (s32)courseObjects->count;
+    TrackAssetIdentitySet(assetIndex);
     return 1;
 }
