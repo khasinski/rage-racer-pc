@@ -10,7 +10,8 @@ void TraceCarMotion(const char *phase, PlayerCarRuntime *car) {
         enabled = DiagnosticsEnabled("car.motion_trace");
         timer = DiagnosticsIntValue("car.motion_trace_timer", -1);
     }
-    if (!enabled || (timer >= 0 && timer != g_SceneTimer)) return;
+    if (!enabled || phase == NULL || car == NULL ||
+        (timer >= 0 && timer != g_SceneTimer)) return;
 
     Trace("car-motion", "phase=%s timer=%d x=%d z=%d rotation=%d,%d,%d "
            "roll_velocity=%d kick=%d,%d,%d,%d motion=%d,%d "
@@ -38,7 +39,7 @@ void TraceCarStates(void) {
     if (!enabled || (timerMin >= 0 && g_SceneTimer < timerMin) ||
         (timerMax >= 0 && g_SceneTimer > timerMax)) return;
 
-    for (index = 0; index < 11; index++) {
+    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
         GameCarRuntime *opponent = &g_Cars[index];
         Trace("car-state", "timer=%d index=%d x=%d z=%d progress=%d lateral=%d "
                "speed=%d point=%d yaw=%d active=%d collision=%d",

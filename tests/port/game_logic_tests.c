@@ -311,6 +311,8 @@ static void test_diagnostic_integer_values(void) {
     EXPECT_EQ(9, DiagnosticsIntValue("test_number", 9));
     EXPECT_EQ(1, RuntimeConfigInit(1, missing));
     EXPECT_EQ(11, DiagnosticsIntValue("test_number", 11));
+    EXPECT_EQ(13, DiagnosticsIntValue(NULL, 13));
+    EXPECT_EQ(17, DiagnosticsIntValue("", 17));
     EXPECT_EQ(0, RuntimeConfigInit(1, NULL));
     EXPECT_EQ(0, RuntimeConfigInit(-1, missing));
     EXPECT_EQ(1, RuntimeConfigInit(1, missing));

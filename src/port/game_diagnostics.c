@@ -18,7 +18,13 @@
  * key and keeps the historical exceptions in one table, so neither is needed.
  */
 static const char *FullKey(const char *key, char *buffer, size_t size) {
-    if (snprintf(buffer, size, "diagnostics.%s", key) >= (int)size) return NULL;
+    int written;
+
+    if (key == NULL || key[0] == '\0' || buffer == NULL || size == 0) {
+        return NULL;
+    }
+    written = snprintf(buffer, size, "diagnostics.%s", key);
+    if (written < 0 || (size_t)written >= size) return NULL;
     return buffer;
 }
 
