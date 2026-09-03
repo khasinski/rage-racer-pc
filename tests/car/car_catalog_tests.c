@@ -1,6 +1,7 @@
 #include "game/asset.h"
 #include "game/car.h"
 
+#include <limits.h>
 #include <stdio.h>
 
 static CarEntry s_cars[GAME_CAR_COUNT];
@@ -52,8 +53,15 @@ int main(void) {
     CHECK(GetOwnedCarAssetIndex(GAME_CAR_COUNT) == -1);
     CHECK(GetCarAssetIndex(-1, 0) == -1);
     CHECK(GetCarAssetIndex(GAME_CAR_COUNT, 0) == -1);
+    CHECK(GetCarAssetIndex(0, -1) == -1);
+    CHECK(GetCarAssetIndex(1, INT_MAX) == -1);
     CHECK(GetCarUnlockLevel(-1) == -1);
     CHECK(GetCarUnlockLevel(GAME_CAR_COUNT) == -1);
+
+    g_CarTable = NULL;
+    CHECK(GetCarUnlockLevel(0) == -1);
+    CHECK(GetOwnedCarAssetIndex(0) == -1);
+    CHECK(GetOwnedCarAssetIndex(9) == g_CarModelBaseIndex[9]);
 
     puts("car catalog tests passed");
     return 0;
