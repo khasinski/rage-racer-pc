@@ -3,9 +3,14 @@
 #include "game/menu_internal.h"
 
 enum {
-    TEAM_NAME_GRID_COLUMNS = 11,
-    TEAM_NAME_GRID_ROW_STRIDE = 11,
-    TEAM_NAME_GRID_LAST_ROW_OFFSET = 33,
+    TEAM_NAME_GRID_ROWS = 4,
+    TEAM_NAME_EXIT_VIEW_OFFSET = 250000,
+    TEAM_NAME_CURSOR_ENTRY_ANGLE = 4096000,
+};
+
+enum TeamNameScreenState {
+    TEAM_NAME_IDLE = 0,
+    TEAM_NAME_EXIT_TO_DESIGN = 1,
 };
 
 s32 DrawTeamNameScreen(s32 step) {
@@ -13,27 +18,22 @@ s32 DrawTeamNameScreen(s32 step) {
 }
 
 static s32 MoveTeamNameGridCursor(s32 cursor, u16 pressed) {
+    s32 row = cursor / MENU_TEAM_NAME_GRID_COLUMNS;
+    s32 column = cursor % MENU_TEAM_NAME_GRID_COLUMNS;
+
     if (pressed & PAD_UP) {
-        cursor = cursor < TEAM_NAME_GRID_COLUMNS
-                     ? cursor + TEAM_NAME_GRID_LAST_ROW_OFFSET
-                     : cursor - TEAM_NAME_GRID_ROW_STRIDE;
+        row = WrapMenuIndex(row, -1, TEAM_NAME_GRID_ROWS);
     }
     if (pressed & PAD_DOWN) {
-        cursor = cursor < TEAM_NAME_GRID_LAST_ROW_OFFSET
-                     ? cursor + TEAM_NAME_GRID_ROW_STRIDE
-                     : cursor - TEAM_NAME_GRID_LAST_ROW_OFFSET;
+        row = WrapMenuIndex(row, 1, TEAM_NAME_GRID_ROWS);
     }
     if (pressed & PAD_LEFT) {
-        cursor = cursor % TEAM_NAME_GRID_COLUMNS != 0
-                     ? cursor - 1
-                     : cursor + TEAM_NAME_GRID_COLUMNS - 1;
+        column = WrapMenuIndex(column, -1, MENU_TEAM_NAME_GRID_COLUMNS);
     }
     if (pressed & PAD_RIGHT) {
-        cursor = (cursor + 1) % TEAM_NAME_GRID_COLUMNS != 0
-                     ? cursor + 1
-                     : cursor - (TEAM_NAME_GRID_COLUMNS - 1);
+        column = WrapMenuIndex(column, 1, MENU_TEAM_NAME_GRID_COLUMNS);
     }
-    return cursor;
+    return row * MENU_TEAM_NAME_GRID_COLUMNS + column;
 }
 
 static void UpdateTeamNameCursor(void) {
@@ -54,7 +54,7 @@ static void UpdateTeamNameCursor(void) {
 
     GameMenuCursor = cursor;
     g_MenuViewAngleTarget = 0;
-    g_MenuViewAngle = 0x3E8000;
+    g_MenuViewAngle = TEAM_NAME_CURSOR_ENTRY_ANGLE;
     GameMenuCursorAnim = cursor;
     PlaySoundCue(1);
 }
@@ -74,14 +74,14 @@ static void ApplyTeamNameInput(void) {
         }
         PlaySoundCue(4);
         g_TeamNameLength--;
-        g_TeamNameChars[g_TeamNameLength] = 0xA;
+        g_TeamNameChars[g_TeamNameLength] = TEAM_NAME_HIDDEN_MODEL_KEY;
         return;
     }
     if (GameMenuCursor == TEAM_NAME_KEY_END) {
         PlaySoundCue(3);
-        GameMenuBusy = 1;
+        GameMenuBusy = TEAM_NAME_EXIT_TO_DESIGN;
         g_MenuOverlayPattern = 2;
-        g_MenuViewOffsetTarget = 0x3D090;
+        g_MenuViewOffsetTarget = TEAM_NAME_EXIT_VIEW_OFFSET;
         return;
     }
 
@@ -115,7 +115,8 @@ static void UpdateTeamNameOutgoing(void) {
     g_MenuOutgoingHandlerIndex = MENU_SCREEN_TEAM_NAME;
     DrawTeamNameEntry(-1, GameMenuCursor);
     RunTimedDrawScript(g_TeamNameScreenScript, &g_UiScriptProgress, -1);
-    if (g_UiScriptProgress > 0 || g_MenuViewOffset <= 0x3D08F) {
+    if (g_UiScriptProgress > 0 ||
+        g_MenuViewOffset < TEAM_NAME_EXIT_VIEW_OFFSET) {
         return;
     }
 
@@ -136,9 +137,11 @@ void UpdateTeamNameScreen(void) {
     }
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawTeamNameCharModel();
-    if (GameMenuBusy == 0) {
+    if (GameMenuBusy == TEAM_NAME_IDLE) {
         UpdateTeamNameIdle();
-    } else {
+    } else if (GameMenuBusy == TEAM_NAME_EXIT_TO_DESIGN) {
         UpdateTeamNameOutgoing();
+    } else {
+        GameMenuBusy = TEAM_NAME_IDLE;
     }
 }

@@ -104,6 +104,11 @@ int main(void) {
         return 1;
     }
 
+    if (CheckCursorMove(0, PAD_UP | PAD_LEFT, 43) ||
+        CheckCursorMove(43, PAD_DOWN | PAD_RIGHT, 0)) {
+        return 1;
+    }
+
     Reset();
     g_TeamNameLength = 6;
     GameMenuCursor = 0x2A;
@@ -162,6 +167,12 @@ int main(void) {
     CHECK(GameMenuBusy == 0);
     CHECK(s_uploadCalls == 1);
     CHECK(s_uploadedLength == 4);
+
+    Reset();
+    GameMenuBusy = INT32_MIN;
+    g_MenuViewOffset = 0x3D090;
+    UpdateTeamNameScreen();
+    CHECK(GameMenuBusy == 0 && s_uploadCalls == 0);
 
     puts("team name screen tests passed");
     return 0;
