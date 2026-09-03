@@ -343,6 +343,12 @@ typedef struct RageSerializedTimedDrawCommand {
     u32 motionAddress;
 } RageSerializedTimedDrawCommand;
 
+typedef struct NativeTimedDrawScript {
+    TimedDrawCommand *commands;
+    size_t commandCount;
+    u32 retailAddress;
+} NativeTimedDrawScript;
+
 enum {
     RAGE_UI_SCRIPT_DATA_ADDRESS = 0x8007fb50u,
     RAGE_UI_SCRIPT_DATA_SIZE = 0x321cu
@@ -383,46 +389,66 @@ static int LoadTimedDrawScript(
     return 1;
 }
 
+#define NATIVE_UI_SCRIPT(commands_, address_)                              \
+    {(commands_), sizeof(commands_) / sizeof((commands_)[0]), (address_)}
+
+static const NativeTimedDrawScript s_nativeUiScripts[] = {
+    NATIVE_UI_SCRIPT(g_CourseSelectGpScript, 0x800817a0u),
+    NATIVE_UI_SCRIPT(g_CourseSelectTimeAttackScript, 0x80081818u),
+    NATIVE_UI_SCRIPT(g_UiChromeScript, 0x80082460u),
+    NATIVE_UI_SCRIPT(g_MenuRowScript, 0x80082520u),
+    NATIVE_UI_SCRIPT(g_UiEmptyScript, 0x80082568u),
+    NATIVE_UI_SCRIPT(g_MenuHintBarScript, 0x80082a90u),
+    NATIVE_UI_SCRIPT(g_CarSelectMenuScriptGp, 0x800818ccu),
+    NATIVE_UI_SCRIPT(g_CarSelectMenuScriptTimeAttack, 0x800819a4u),
+    NATIVE_UI_SCRIPT(g_UiChromeScript2, 0x80082790u),
+    NATIVE_UI_SCRIPT(g_NativeRankingPanelScript, 0x80081890u),
+    NATIVE_UI_SCRIPT(g_NativeCustomizeMenuScriptGp, 0x80081a34u),
+    NATIVE_UI_SCRIPT(g_NativeCustomizeMenuScriptTimeAttack, 0x80081ad0u),
+    NATIVE_UI_SCRIPT(g_NativeDesignModeScript, 0x80081b54u),
+    NATIVE_UI_SCRIPT(g_NativeTeamLogoScreenScript, 0x80081c14u),
+    NATIVE_UI_SCRIPT(g_NativeLogoSampleScreenScript, 0x80081ca4u),
+    NATIVE_UI_SCRIPT(g_NativeTeamNameScreenScript, 0x80081d34u),
+    NATIVE_UI_SCRIPT(g_NativePaintColorScreenScript, 0x80082010u),
+    NATIVE_UI_SCRIPT(g_NativeCarShopScreenScript, 0x800820c4u),
+    NATIVE_UI_SCRIPT(g_NativeEngineerShopScreenScript, 0x80082130u),
+    NATIVE_UI_SCRIPT(g_NativeMenuDialogPanelUpperScript, 0x80082574u),
+    NATIVE_UI_SCRIPT(g_NativeMenuDialogPanelLowerScript, 0x800825a4u),
+    NATIVE_UI_SCRIPT(g_NativeCourseSelectSavePromptScript, 0x80082604u),
+    NATIVE_UI_SCRIPT(g_NativeCourseSelectSavePromptBanner, 0x800827fcu),
+    NATIVE_UI_SCRIPT(g_NativeMenuRow0MarkerScript, 0x80082634u),
+    NATIVE_UI_SCRIPT(g_NativeMenuRow1MarkerScript, 0x80082664u),
+    NATIVE_UI_SCRIPT(g_NativeRankingMenuScript, 0x80082724u),
+    NATIVE_UI_SCRIPT(g_NativeTransmissionUnavailableScript, 0x80082814u),
+    NATIVE_UI_SCRIPT(g_NativeTeamLogoScreenScript2, 0x80082844u),
+    NATIVE_UI_SCRIPT(g_NativeCarShopUnavailableScript, 0x8008285cu),
+    NATIVE_UI_SCRIPT(g_NativeEngineerShopUnavailableScript, 0x80082874u),
+    NATIVE_UI_SCRIPT(g_NativeEngineerShopNoFundsScript, 0x80082898u),
+    NATIVE_UI_SCRIPT(g_NativeCarShopNoFundsScript, 0x800828b0u),
+    NATIVE_UI_SCRIPT(g_NativeDesignModeDeniedScript, 0x800828ecu),
+    NATIVE_UI_SCRIPT(g_NativeCarShopBuyPromptScript2, 0x80082904u),
+    NATIVE_UI_SCRIPT(g_NativeCarShopBuyPromptScript1, 0x80082958u),
+    NATIVE_UI_SCRIPT(g_NativeCarShopBuyPromptScript3, 0x800829acu),
+    NATIVE_UI_SCRIPT(g_NativeCarShopBuyPromptScript4, 0x80082a00u),
+    NATIVE_UI_SCRIPT(g_NativeEngineerShopTuneUpPromptScript, 0x80082a54u),
+};
+
+#undef NATIVE_UI_SCRIPT
+
 int InitNativeGameData(void) {
-    return LoadTimedDrawScript(g_CourseSelectGpScript, 10, 0x800817a0u) &&
-        LoadTimedDrawScript(g_CourseSelectTimeAttackScript, 10, 0x80081818u) &&
-        LoadTimedDrawScript(g_UiChromeScript, 16, 0x80082460u) &&
-        LoadTimedDrawScript(g_MenuRowScript, FADING_MENU_ROW_COUNT + 1,
-                            0x80082520u) &&
-        LoadTimedDrawScript(g_UiEmptyScript, 1, 0x80082568u) &&
-        LoadTimedDrawScript(g_MenuHintBarScript, 61, 0x80082a90u) &&
-        LoadTimedDrawScript(g_CarSelectMenuScriptGp, 18, 0x800818ccu) &&
-        LoadTimedDrawScript(g_CarSelectMenuScriptTimeAttack, 12, 0x800819a4u) &&
-        LoadTimedDrawScript(g_UiChromeScript2, 9, 0x80082790u) &&
-        LoadTimedDrawScript(g_NativeRankingPanelScript, 5, 0x80081890u) &&
-        LoadTimedDrawScript(g_NativeCustomizeMenuScriptGp, 13, 0x80081a34u) &&
-        LoadTimedDrawScript(g_NativeCustomizeMenuScriptTimeAttack, 11, 0x80081ad0u) &&
-        LoadTimedDrawScript(g_NativeDesignModeScript, 16, 0x80081b54u) &&
-        LoadTimedDrawScript(g_NativeTeamLogoScreenScript, 12, 0x80081c14u) &&
-        LoadTimedDrawScript(g_NativeLogoSampleScreenScript, 12, 0x80081ca4u) &&
-        LoadTimedDrawScript(g_NativeTeamNameScreenScript, 61, 0x80081d34u) &&
-        LoadTimedDrawScript(g_NativePaintColorScreenScript, 15, 0x80082010u) &&
-        LoadTimedDrawScript(g_NativeCarShopScreenScript, 9, 0x800820c4u) &&
-        LoadTimedDrawScript(g_NativeEngineerShopScreenScript, 68, 0x80082130u) &&
-        LoadTimedDrawScript(g_NativeMenuDialogPanelUpperScript, 4, 0x80082574u) &&
-        LoadTimedDrawScript(g_NativeMenuDialogPanelLowerScript, 8, 0x800825a4u) &&
-        LoadTimedDrawScript(g_NativeCourseSelectSavePromptScript, 4, 0x80082604u) &&
-        LoadTimedDrawScript(g_NativeCourseSelectSavePromptBanner, 2, 0x800827fcu) &&
-        LoadTimedDrawScript(g_NativeMenuRow0MarkerScript, 4, 0x80082634u) &&
-        LoadTimedDrawScript(g_NativeMenuRow1MarkerScript, 16, 0x80082664u) &&
-        LoadTimedDrawScript(g_NativeRankingMenuScript, 9, 0x80082724u) &&
-        LoadTimedDrawScript(g_NativeTransmissionUnavailableScript, 4, 0x80082814u) &&
-        LoadTimedDrawScript(g_NativeTeamLogoScreenScript2, 2, 0x80082844u) &&
-        LoadTimedDrawScript(g_NativeCarShopUnavailableScript, 2, 0x8008285cu) &&
-        LoadTimedDrawScript(g_NativeEngineerShopUnavailableScript, 3, 0x80082874u) &&
-        LoadTimedDrawScript(g_NativeEngineerShopNoFundsScript, 2, 0x80082898u) &&
-        LoadTimedDrawScript(g_NativeCarShopNoFundsScript, 5, 0x800828b0u) &&
-        LoadTimedDrawScript(g_NativeDesignModeDeniedScript, 2, 0x800828ecu) &&
-        LoadTimedDrawScript(g_NativeCarShopBuyPromptScript2, 7, 0x80082904u) &&
-        LoadTimedDrawScript(g_NativeCarShopBuyPromptScript1, 7, 0x80082958u) &&
-        LoadTimedDrawScript(g_NativeCarShopBuyPromptScript3, 7, 0x800829acu) &&
-        LoadTimedDrawScript(g_NativeCarShopBuyPromptScript4, 7, 0x80082a00u) &&
-        LoadTimedDrawScript(g_NativeEngineerShopTuneUpPromptScript, 5, 0x80082a54u);
+    size_t index;
+
+    for (index = 0;
+         index < sizeof(s_nativeUiScripts) / sizeof(s_nativeUiScripts[0]);
+         index++) {
+        const NativeTimedDrawScript *script = &s_nativeUiScripts[index];
+
+        if (!LoadTimedDrawScript(script->commands, script->commandCount,
+                                 script->retailAddress)) {
+            return 0;
+        }
+    }
+    return 1;
 }
 static const char g_RagePrologueText0[] = "NO ONE KNOWS HOW THE RACE BEGAN";
 static const char g_RagePrologueText1[] = "OR HOW ITS DRIVERS BECAME KNOWN";
