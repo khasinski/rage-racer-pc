@@ -1,3 +1,22 @@
+add_executable(scenery_object_matrix_tests
+    scenery_object_matrix_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/build_scenery_object_matrix.c)
+target_include_directories(scenery_object_matrix_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(scenery_object_matrix_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(scenery_object_matrix_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(scenery_object_matrix_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME scenery_object_matrix COMMAND scenery_object_matrix_tests)
+set_tests_properties(scenery_object_matrix PROPERTIES LABELS unit)
+
 add_executable(draw_area_packet_tests
     draw_area_packet_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/draw_area_packet.c)
