@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 
 #include "timing_control.h"
 
@@ -23,6 +24,10 @@ int main(void) {
     /* Nothing measured yet is not drift. */
     Expect("no measurement", TimingNeedsRestore(0.0, 50), 0);
     Expect("negative measurement", TimingNeedsRestore(-5.0, 50), 0);
+    Expect("NaN measurement", TimingNeedsRestore(NAN, 50), 0);
+    Expect("infinite measurement", TimingNeedsRestore(INFINITY, 50), 0);
+    Expect("zero base frequency", TimingNeedsRestore(20000.0, 0), 0);
+    Expect("negative base frequency", TimingNeedsRestore(20000.0, -50), 0);
 
     /* Rounding in the platform's own bookkeeping must not cause a restore
      * every frame, which would keep resetting its drift compensation. */
