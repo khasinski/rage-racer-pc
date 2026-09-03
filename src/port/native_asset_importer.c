@@ -580,10 +580,6 @@ static int ImportFinalizeOffsets(RageImportedMeshEntry *entry,
  * once and retaken when the track's assets change, which is the point at
  * which new artwork has been put in place.
  */
-static uint16_t *s_vramSnapshot;
-static uint64_t s_vramSnapshotRevision;
-static int s_haveVramSnapshot;
-
 /*
  * The track's texture pages, held whole.
  *
@@ -831,6 +827,15 @@ void NativeAssetImporterShutdown(void) {
     }
     memset(s_entries, 0, sizeof(s_entries));
     s_entryCount = 0;
+    free(s_vramSnapshot);
+    s_vramSnapshot = NULL;
+    for (index = 0; index < RAGE_IMPORT_TRACK_PAGES; index++) {
+        free(s_trackPage[index]);
+        s_trackPage[index] = NULL;
+    }
+    s_vramSnapshotRevision = 0;
+    s_haveVramSnapshot = 0;
+    s_overlaidPage = -1;
     s_ready = 0;
 }
 
