@@ -22,9 +22,14 @@ enum {
     TRAFFIC_SHOULDER = 0x40,
     /* How far back down the road another car still counts as nearby. */
     TRAFFIC_BEHIND = 0x400,
+    TRAFFIC_BASE_LOOKAHEAD = 0xC00,
+    TRAFFIC_PLAYER_LOOKAHEAD = 0x1800,
+    TRAFFIC_SHOULDER_BLOCKING_GAP = 0x200,
     /* Where the rival aims once it has picked a side. */
     TRAFFIC_TARGET_OFFSET = 0x50,
     TRAFFIC_LANE_BUCKET_COUNT = 3,
+    TRAFFIC_CROWDING_SLOWDOWN_THRESHOLD = 0x3E9,
+    TRAFFIC_CROWDED_ACCELERATION_PERCENT = 30,
 };
 
 typedef struct TrafficScan {
@@ -111,7 +116,8 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
     speed = (u16)car->speed;
     /* The faster this car is going, the further ahead it looks. */
     ownLookahead = WrapSigned32(
-        (int64_t)WrapSigned32((int64_t)car->speed * 2) + 0xC00);
+        (int64_t)WrapSigned32((int64_t)car->speed * 2) +
+        TRAFFIC_BASE_LOOKAHEAD);
     laneLeft = WrapSigned16(
         (int64_t)lateralOffset - TRAFFIC_LANE_HALF_WIDTH);
     laneRight = WrapSigned16(
@@ -151,7 +157,7 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
             /* The player is watched over a range of its own, and that range
              * shrinks as the player speeds up rather than growing. */
             lookahead = WrapSigned32(
-                (int64_t)0x1800 -
+                (int64_t)TRAFFIC_PLAYER_LOOKAHEAD -
                 WrapSigned32((int64_t)g_PlayerCar.speed * 2));
         } else {
             GameCarRuntime *other = &g_Cars[slot];
@@ -197,11 +203,13 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
                     (int64_t)sideways + TRAFFIC_LANE_HALF_WIDTH) >> 5;
                 car->avoidanceActive = 1;
                 if (slot == TRAFFIC_PLAYER_SLOT) {
-                    /* The player counts full weight until it is inside 0xC00,
-                     * and nearness only tells beyond that. */
+                    /* The player counts full weight outside the base
+                     * lookahead; nearness only changes the weight within it. */
                     scan.lane[bucket] = WrapSigned32(
                         (int64_t)scan.lane[bucket] +
-                        (gap < 0xC00 ? 0xC00 - gap : 0xC00));
+                        (gap < TRAFFIC_BASE_LOOKAHEAD
+                             ? TRAFFIC_BASE_LOOKAHEAD - gap
+                             : TRAFFIC_BASE_LOOKAHEAD));
                 } else {
                     scan.lane[bucket] = WrapSigned32(
                         (int64_t)scan.lane[bucket] + lookahead - gap);
@@ -211,13 +219,13 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
 
         /* Just off either shoulder and almost alongside: not in the way, but
          * no room to move over either. */
-        if (gap < 0x200) {
+        if (gap < TRAFFIC_SHOULDER_BLOCKING_GAP) {
             if (WrapSigned16(sideways) >= TRAFFIC_SHOULDER + 1) {
                 scan.blockingRight = WrapSigned32(
-                    (int64_t)scan.blockingRight + 0xC00 - gap);
+                    (int64_t)scan.blockingRight + TRAFFIC_BASE_LOOKAHEAD - gap);
             } else if (WrapSigned16(sideways) < -TRAFFIC_SHOULDER) {
                 scan.blockingLeft = WrapSigned32(
-                    (int64_t)scan.blockingLeft + 0xC00 - gap);
+                    (int64_t)scan.blockingLeft + TRAFFIC_BASE_LOOKAHEAD - gap);
             }
         }
     }
@@ -237,11 +245,11 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
      */
     SelectTrafficAvoidanceDirection(car, lateralOffset, &scan);
 
-    /* Boxed in badly enough, and the car is not allowed to press on as hard.
-     * Thirty hundredths, written as fifteen doubled. */
-    if (crowding >= 0x3E9) {
+    /* A badly boxed-in car is not allowed to press on as hard. */
+    if (crowding >= TRAFFIC_CROWDING_SLOWDOWN_THRESHOLD) {
         car->accelerationLimit = WrapSigned16(
-            (int64_t)car->accelerationLimit * 30 / 100);
+            (int64_t)car->accelerationLimit *
+            TRAFFIC_CROWDED_ACCELERATION_PERCENT / 100);
     }
 
     AdvanceTrafficLateralOffset(car);
