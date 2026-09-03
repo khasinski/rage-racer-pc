@@ -12,8 +12,11 @@ enum {
 };
 
 static s32 AmbienceVolumeAtPosition(s32 position, s32 maximumVolume) {
-    const TrackAmbienceZone *zone = g_TrackEventData->ambienceZones;
+    const TrackAmbienceZone *zone;
     s32 index;
+
+    if (g_TrackEventData == NULL) return 0;
+    zone = g_TrackEventData->ambienceZones;
 
     for (index = 0;
          index < TRACK_AMBIENCE_ZONE_COUNT && zone->start != -1;
@@ -21,15 +24,19 @@ static s32 AmbienceVolumeAtPosition(s32 position, s32 maximumVolume) {
         if (position < zone->start || position > zone->end) {
             continue;
         }
-        if (position < zone->start + AMBIENCE_FADE_DISTANCE &&
+        if ((int64_t)position <
+                (int64_t)zone->start + AMBIENCE_FADE_DISTANCE &&
             (zone->flags & AMBIENCE_FADE_IN) != 0) {
-            return maximumVolume * (position - zone->start) /
-                   AMBIENCE_FADE_DISTANCE;
+            return (s32)((int64_t)maximumVolume *
+                         ((int64_t)position - zone->start) /
+                         AMBIENCE_FADE_DISTANCE);
         }
-        if (position > zone->end - AMBIENCE_FADE_DISTANCE &&
+        if ((int64_t)position >
+                (int64_t)zone->end - AMBIENCE_FADE_DISTANCE &&
             (zone->flags & AMBIENCE_FADE_OUT) != 0) {
-            return maximumVolume * (zone->end - position) /
-                   AMBIENCE_FADE_DISTANCE;
+            return (s32)((int64_t)maximumVolume *
+                         ((int64_t)zone->end - position) /
+                         AMBIENCE_FADE_DISTANCE);
         }
         return maximumVolume;
     }
@@ -46,6 +53,6 @@ void UpdateZoneAmbience(s32 trackPosition) {
 
     trackPosition = TrackPositionForSeries(trackPosition, g_TrackLength,
                                            g_RaceSeries);
-    volume = (s16)AmbienceVolumeAtPosition(trackPosition, maximumVolume);
+    volume = AmbienceVolumeAtPosition(trackPosition, maximumVolume);
     SetStereoSoundCue(cue, volume, volume);
 }

@@ -4,6 +4,7 @@
 #include "game/render.h"
 #include "game/track.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -93,6 +94,14 @@ int main(void) {
     g_TrackPoints = &trackPoint;
     g_TrackPointCount = 0;
     if (!ExpectVolumes(10, 0, 0)) {
+        return 1;
+    }
+
+    g_TrackPointCount = 1;
+    g_PlayerCar.normalizedLateralOffset = INT_MIN;
+    g_PlayerCar.speed = INT_MAX;
+    g_RenderState.viewAngleY = INT_MIN;
+    if (!ExpectVolumes(30, 990279935, 990279935)) {
         return 1;
     }
 

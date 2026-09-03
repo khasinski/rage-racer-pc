@@ -2,6 +2,7 @@
 #include "game/race.h"
 #include "game/track.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -58,6 +59,14 @@ int main(void) {
     g_GrandPrixClass = 4;
     g_RaceSeries = 1;
     if (!Expect(2000, 1, 96)) return 1;
+
+    g_TrackEventData = NULL;
+    if (!Expect(2000, 1, 0)) return 1;
+
+    g_TrackEventData = &events;
+    g_TrackLength = INT_MIN;
+    events.ambienceZones[0] = (TrackAmbienceZone){1, 1, 0, 0};
+    if (!Expect(INT_MAX, 1, 96)) return 1;
 
     puts("zone ambience behavior preserved");
     return 0;
