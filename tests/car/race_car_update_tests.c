@@ -17,6 +17,7 @@ s32 g_ClosestRivalRank;
 
 static int s_traceCalls;
 static int s_trafficCalls;
+static int s_trafficCallsBySlot[RACE_CAR_SLOT_COUNT];
 static int s_collisionCalls;
 static int s_targetSpeedCalls;
 static int s_hintCalls;
@@ -54,9 +55,9 @@ void TraceCarStates(void) {
 
 void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 index) {
     (void)car;
-    (void)index;
     RecordEvent('A');
     s_trafficCalls++;
+    s_trafficCallsBySlot[index]++;
 }
 
 s32 CollideRivalCars(GameCarRuntime *car, s32 index) {
@@ -231,6 +232,7 @@ int main(void) {
     g_AnimTimer = 0;
     g_ClosestRivalRank = 99;
     s_trafficCalls = 0;
+    memset(s_trafficCallsBySlot, 0, sizeof(s_trafficCallsBySlot));
     s_collisionCalls = 0;
     s_targetSpeedCalls = 0;
     s_hintCalls = 0;
@@ -258,6 +260,21 @@ int main(void) {
     CHECK_EQ(g_Cars[5].collisionFlag, 0);
     CHECK_EVENTS("KACSHLRSHLRSHLRSHLRSHLRSHLRSHLRSHLRSHLRSHLRSHLR"
                  "UWEMPB");
+
+    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
+        CHECK_EQ(s_trafficCallsBySlot[index],
+                 index < RIVAL_CONTENDER_COUNT || (index & 1) == 0);
+    }
+
+    g_AnimTimer = 1;
+    s_trafficCalls = 0;
+    memset(s_trafficCallsBySlot, 0, sizeof(s_trafficCallsBySlot));
+    UpdateRaceCars();
+    CHECK_EQ(s_trafficCalls, 7);
+    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
+        CHECK_EQ(s_trafficCallsBySlot[index],
+                 index < RIVAL_CONTENDER_COUNT || (index & 1) != 0);
+    }
 
     puts("attract car update preserves pass coverage and empty-track progress");
     return 0;
