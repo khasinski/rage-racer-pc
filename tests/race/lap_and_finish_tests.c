@@ -125,7 +125,7 @@ int main(int argc, char **argv) {
      */
     /* Digest produced with the real PAL 25 Hz frame-to-millisecond
      * conversion, not the former 20 ms test double. */
-    static const unsigned long expected = 3859405365UL;
+    static const unsigned long expected = 3836814421UL;
     static const s32 laps[] = {0, 1, 2, 3};
     static const s32 lapCounts[] = {2, 3};
     /* Where the car is against the distance the current lap needs: short of
@@ -356,6 +356,19 @@ int main(int argc, char **argv) {
     }
     if (UpdateLapAndFinish(NULL, 0) != 0) {
         puts("FAIL missing car was not rejected");
+        return 1;
+    }
+
+    memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
+    g_PlayerCar.lap = 0;
+    g_PlayerCar.progressA = 0;
+    g_LapCount = 3;
+    g_TrackLength = 0x10000;
+    g_RacePhase = 0;
+    g_GrandPrixMode = 1;
+    if (UpdateLapAndFinish(&g_PlayerCar, 1) != 0 ||
+        g_PlayerCar.lap != 0) {
+        puts("FAIL pre-start state crossed the lap line");
         return 1;
     }
 

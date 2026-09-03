@@ -21,6 +21,8 @@
 #include "game/screens.h"
 #include "game/track.h"
 
+#include <stdint.h>
+
 enum { LAP_FRAME_COUNT_MAX = 0x10000 };
 /* A lap's clock counts frames, and the frame count is converted to a time as
  * it goes. Both saturate: 0x10000 frames and just under ten minutes. */
@@ -52,9 +54,13 @@ static void TickRunningLapTime(PlayerCarRuntime *car) {
  */
 static void RecordBestLap(PlayerCarRuntime *car, s32 recordMode) {
     s32 lap = car->lap;
-    s32 lapTime = car->lapTimes.table.milliseconds[lap - 2];
+    s32 lapTime;
 
-    if ((lapTime >= g_BestLapThisRace) || (lap == 1)) {
+    if (lap < 2 || lap > PLAYER_LAP_TIME_CAPACITY + 1) {
+        return;
+    }
+    lapTime = car->lapTimes.table.milliseconds[lap - 2];
+    if (lapTime >= g_BestLapThisRace) {
         return;
     }
     car->drive.hudLapHighlightRow = (s16)((u16)lap - 2);
@@ -76,8 +82,9 @@ static void RecordBestLap(PlayerCarRuntime *car, s32 recordMode) {
  * beats the records, and hand over to the finish sequence. */
 static void FinishRace(PlayerCarRuntime *car, s32 recordMode,
                        s32 lapsRun) {
-    s32 series = g_RaceSeries;
+    s32 series = RaceSeriesIndex(g_RaceSeries);
     s32 course = SeriesCourseIndex();
+    int64_t totalTime = g_RaceTotalTime;
     s32 i;
 
     if (lapsRun < 0) {
@@ -85,12 +92,19 @@ static void FinishRace(PlayerCarRuntime *car, s32 recordMode,
     } else if (lapsRun > PLAYER_LAP_TIME_CAPACITY) {
         lapsRun = PLAYER_LAP_TIME_CAPACITY;
     }
+    if (totalTime < 0) {
+        totalTime = 0;
+    }
     for (i = 0; i < lapsRun; i++) {
-        g_RaceTotalTime += car->lapTimes.table.milliseconds[i];
+        s32 lapTime = car->lapTimes.table.milliseconds[i];
+
+        if (lapTime > 0) {
+            totalTime += lapTime;
+        }
     }
-    if (g_RaceTotalTime >= RACE_TIME_MAX_MS) {
-        g_RaceTotalTime = RACE_TIME_MAX_MS;
-    }
+    g_RaceTotalTime = totalTime < RACE_TIME_MAX_MS
+                          ? (s32)totalTime
+                          : RACE_TIME_MAX_MS;
     if (g_BestLapTimes[series][course][recordMode] > g_BestLapThisRace) {
         g_BestLapTimes[series][course][recordMode] = g_BestLapThisRace;
     }
@@ -116,7 +130,8 @@ static void RetireAtLastLap(void) {
     g_RacePhase = 5;
     SeedFinishCamera(&g_PlayerCar);
     StartCdVolumeFade(0x3C);
-    if (g_CourseProgress->retriesRemaining != 0) {
+    if (g_CourseProgress != NULL &&
+        g_CourseProgress->retriesRemaining != 0) {
         PlaySoundCue(0x3D);
     }
 }
@@ -152,11 +167,21 @@ static s32 CrossTheLine(PlayerCarRuntime *car, s32 recordMode) {
  * that starts the results music and then the replay.
  */
 static s32 AdvanceFinishFade(s32 returnValue) {
-    DrawFullscreenFadeTile(g_RaceFadeTimer * 2, 0x29);
-    if (g_RaceFadeTimer >= 2) {
+    s32 fadeTimer = g_RaceFadeTimer;
+
+    if (fadeTimer < 0) {
+        fadeTimer = 0;
+    } else if (fadeTimer > 0x83) {
+        fadeTimer = 0x83;
+    }
+    DrawFullscreenFadeTile(fadeTimer * 2, 0x29);
+    if (fadeTimer >= 2) {
         returnValue = 2;
     }
-    g_RaceFadeTimer = (s16)(g_RaceFadeTimer + 1);
+    if (fadeTimer < 0x83) {
+        fadeTimer++;
+    }
+    g_RaceFadeTimer = (s16)fadeTimer;
     if (g_RaceFadeTimer == 0x3F) {
         if (g_GrandPrixMode != 0) {
             CommitClassProgress();
@@ -177,10 +202,12 @@ static s32 AdvanceFinishFade(s32 returnValue) {
 /* Outside a Grand Prix, a car a whole lap behind the line or stuck facing the
  * wrong way for a second is retired where it stands. */
 static void RetireWrongWay(void) {
+    s32 series = RaceSeriesIndex(g_RaceSeries);
+    s32 course = SeriesCourseIndex();
+
     g_RacePhase = 5;
-    g_BestLapTimes[g_RaceSeries][SeriesCourseIndex()][0] =
-        g_RankingRecords[g_RaceSeries][SeriesCourseIndex()][0]
-            .raceTime;
+    g_BestLapTimes[series][course][0] =
+        g_RankingRecords[series][course][0].raceTime;
     StartCdVolumeFade(8);
     ForceAllEffectVoicesEnabled(0);
     g_RaceFadeTimer = 0;
@@ -221,7 +248,7 @@ static int IsWholeLapBehind(s32 trackLength, s32 progressA, s32 progressB) {
 }
 
 s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
-    s32 series = g_RaceSeries;
+    s32 series = RaceSeriesIndex(g_RaceSeries);
     s32 course = SeriesCourseIndex();
     s32 recordMode = RaceRecordMode(grandPrixMode);
     s16 lapAtEntry;
@@ -241,7 +268,8 @@ s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
     }
 
     lapAtEntry = car->lap;
-    if (HasCrossedCurrentLapLine(lapAtEntry, g_TrackLength,
+    if (lapAtEntry > 0 && lapAtEntry <= PLAYER_LAP_TIME_CAPACITY &&
+        HasCrossedCurrentLapLine(lapAtEntry, g_TrackLength,
                                 g_PlayerCar.progressA,
                                 g_PlayerCar.progressB) &&
         (lapAtEntry <= g_LapCount)) {
