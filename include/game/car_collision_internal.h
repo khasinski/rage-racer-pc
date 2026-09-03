@@ -24,6 +24,6 @@ CarCollisionHit FindFirstCarCollisionQuad(
 s32 CollidePlayerWithCars(PlayerCarRuntime *car);
 /* Test car[index] against the remaining AI slots, pushing apart the first
  * colliding pair. */
-s32 CollideRivalCars(GameCarRuntime *car, s32 index);
+s32 CollideRivalCars(s32 index);
 
 #endif

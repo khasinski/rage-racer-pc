@@ -174,17 +174,21 @@ static int WithinCollisionReach(const GameCarRuntime *car,
             (g_TrackLength - COLLISION_TRACK_REACH < progressDelta));
 }
 
-s32 CollideRivalCars(GameCarRuntime *car, s32 index) {
+s32 CollideRivalCars(s32 index) {
     CarCollisionPoint quads[CAR_COLLISION_QUAD_COUNT]
                            [CAR_COLLISION_QUAD_COUNT];
     CarCollisionPoint carCorners[CAR_COLLISION_QUAD_COUNT];
     CarCollisionPoint otherCorners[CAR_COLLISION_QUAD_COUNT];
     CarCollisionPoint samples[CAR_COLLISION_SAMPLE_COUNT];
+    GameCarRuntime *car;
     s32 nextIndex;
     int hullBuilt = 0;
 
-    if (index < 0 || index >= RACE_CAR_SLOT_COUNT - 1 ||
-        car->activeFlag == -1) {
+    if (index < 0 || index >= RACE_CAR_SLOT_COUNT - 1) {
+        return 0;
+    }
+    car = &g_Cars[index];
+    if (car->activeFlag == -1) {
         return 0;
     }
 

@@ -60,8 +60,7 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 index) {
     s_trafficCallsBySlot[index]++;
 }
 
-s32 CollideRivalCars(GameCarRuntime *car, s32 index) {
-    (void)car;
+s32 CollideRivalCars(s32 index) {
     (void)index;
     RecordEvent('C');
     s_collisionCalls++;

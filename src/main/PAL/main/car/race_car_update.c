@@ -43,7 +43,7 @@ static void CollideAllCars(void) {
     s32 index;
 
     for (index = 0; index < RACE_CAR_SLOT_COUNT - 1; index++) {
-        CollideRivalCars(&g_Cars[index], index);
+        CollideRivalCars(index);
     }
 }
 

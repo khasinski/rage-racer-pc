@@ -176,7 +176,7 @@ int main(int argc, char **argv) {
                 yaws[cy], yaws[oy], nudges[nudge], velocityDeltas[vel]);
         Record(label, NULL, 0);
 
-        result = CollideRivalCars(car, index);
+        result = CollideRivalCars(index);
 
         RECORD("result", result, s_knockbacks, car->collisionFlag,
                car->acceleration, other->collisionFlag, other->acceleration);
@@ -195,9 +195,8 @@ int main(int argc, char **argv) {
 
     memset(g_Cars, 0, sizeof(g_Cars));
     g_TrackLength = 0;
-    if (CollideRivalCars(&g_Cars[0], 0) != 0 ||
-        CollideRivalCars(&g_Cars[0], -1) != 0 ||
-        CollideRivalCars(&g_Cars[10], 10) != 0) {
+    if (CollideRivalCars(0) != 0 || CollideRivalCars(-1) != 0 ||
+        CollideRivalCars(10) != 0) {
         puts("FAIL invalid collision search bounds reported a hit");
         return 1;
     }
@@ -209,7 +208,7 @@ int main(int argc, char **argv) {
     g_Cars[0].acceleration = 1000;
     g_Cars[1].acceleration = 2000;
     s_knockbacks = 0;
-    if (CollideRivalCars(&g_Cars[0], 0) != 0 || s_knockbacks != 0 ||
+    if (CollideRivalCars(0) != 0 || s_knockbacks != 0 ||
         g_Cars[0].acceleration != 1000 ||
         g_Cars[1].acceleration != 2000) {
         puts("FAIL disabled source car participated in a collision");
@@ -242,7 +241,7 @@ int main(int argc, char **argv) {
         car->acceleration = INT_MAX;
         other->acceleration = INT_MAX;
 
-        if (CollideRivalCars(car, 0) <= 0 ||
+        if (CollideRivalCars(0) <= 0 ||
             !((car->acceleration == 0 && other->acceleration == INT_MAX) ||
               (other->acceleration == 0 && car->acceleration == INT_MAX))) {
             puts("FAIL wrapped collision arithmetic changed");
@@ -269,7 +268,7 @@ int main(int argc, char **argv) {
         car->trackLateralOffset = INT_MAX;
         other->trackLateralOffset = INT_MIN;
 
-        if (CollideRivalCars(car, 0) <= 0) {
+        if (CollideRivalCars(0) <= 0) {
             puts("FAIL wrapped lateral distance changed");
             return 1;
         }
