@@ -9,27 +9,16 @@ static s32 s_lastCue;
 
 void PlaySoundCue(s32 cue) { s_lastCue = cue; }
 
-static u32 ReadPixel(const TeamLogoCanvas *canvas, s32 x, s32 y) {
-    return (canvas->words[y][x / 8] >> ((x & 7) * 4)) & 0xF;
-}
-
-static void WritePixel(TeamLogoCanvas *canvas, s32 x, s32 y, u32 colour) {
-    s32 shift = (x & 7) * 4;
-    u32 mask = 0xFu << shift;
-
-    canvas->words[y][x / 8] =
-        (canvas->words[y][x / 8] & ~mask) | ((colour & 0xF) << shift);
-}
-
 static TeamLogoCanvas Pattern(void) {
     TeamLogoCanvas canvas = {0};
     s32 x;
     s32 y;
 
-    for (y = 0; y < 64; y++) {
-        for (x = 0; x < 64; x++) {
-            WritePixel(&canvas, x, y,
-                       (u32)(x * 3 + y * 5 + (x / 7) + (y / 11)));
+    for (y = 0; y < TEAM_LOGO_HEIGHT; y++) {
+        for (x = 0; x < TEAM_LOGO_WIDTH; x++) {
+            SetTeamLogoCanvasPixel(
+                &canvas, x, y,
+                (u32)(x * 3 + y * 5 + (x / 7) + (y / 11)));
         }
     }
     return canvas;
@@ -51,16 +40,16 @@ static int CheckTransform(const char *name, Transform transform,
         printf("FAIL %s played cue %d, expected %d\n", name, s_lastCue, cue);
         return 0;
     }
-    for (y = 0; y < 64; y++) {
-        for (x = 0; x < 64; x++) {
+    for (y = 0; y < TEAM_LOGO_HEIGHT; y++) {
+        for (x = 0; x < TEAM_LOGO_WIDTH; x++) {
             s32 sourceX;
             s32 sourceY;
             u32 actual;
             u32 expected;
 
             sourceCoordinate(x, y, &sourceX, &sourceY);
-            actual = ReadPixel(&g_TeamLogoCanvas, x, y);
-            expected = ReadPixel(&source, sourceX, sourceY);
+            actual = GetTeamLogoCanvasPixel(&g_TeamLogoCanvas, x, y);
+            expected = GetTeamLogoCanvasPixel(&source, sourceX, sourceY);
             if (actual != expected) {
                 printf("FAIL %s at %d,%d: %u, expected source %d,%d=%u\n",
                        name, x, y, actual, sourceX, sourceY, expected);
@@ -111,8 +100,23 @@ static void Clockwise(s32 x, s32 y, s32 *sx, s32 *sy) {
     *sy = 63 - x;
 }
 
+static int CheckPixelAccess(void) {
+    TeamLogoCanvas canvas = {0};
+
+    SetTeamLogoCanvasPixel(&canvas, 7, 0, 0x1F);
+    SetTeamLogoCanvasPixel(&canvas, 8, 0, 2);
+    if (GetTeamLogoCanvasPixel(&canvas, 7, 0) != 0xF ||
+        GetTeamLogoCanvasPixel(&canvas, 8, 0) != 2 ||
+        GetTeamLogoCanvasPixel(&canvas, 6, 0) != 0 ||
+        GetTeamLogoCanvasPixel(&canvas, 9, 0) != 0) {
+        puts("FAIL packed team logo pixel access");
+        return 0;
+    }
+    return 1;
+}
+
 int main(void) {
-    int ok = 1;
+    int ok = CheckPixelAccess();
 
     ok &= CheckTransform("scroll up", ScrollTeamLogoUp, Up, 1);
     ok &= CheckTransform("scroll down", ScrollTeamLogoDown, Down, 1);

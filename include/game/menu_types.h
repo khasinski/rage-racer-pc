@@ -4,7 +4,16 @@
 #include "common.h"
 #include "game/vector.h"
 
-enum { CLASS_RECORD_COUNT = 11 };
+enum {
+    CLASS_RECORD_COUNT = 11,
+    TEAM_LOGO_WIDTH = 64,
+    TEAM_LOGO_HEIGHT = 64,
+    TEAM_LOGO_EDITOR_VIEW_SIZE = 32,
+    TEAM_LOGO_BITS_PER_PIXEL = 4,
+    TEAM_LOGO_PIXELS_PER_WORD = 8,
+    TEAM_LOGO_WORDS_PER_ROW =
+        TEAM_LOGO_WIDTH / TEAM_LOGO_PIXELS_PER_WORD,
+};
 
 typedef struct ScoreRecord {
     s16 place;
@@ -20,7 +29,7 @@ typedef struct RaceRecord {
 
 typedef struct TeamLogoSample {
     u16 clut[2][16];
-    u16 canvas[64][16];
+    u16 canvas[TEAM_LOGO_HEIGHT][TEAM_LOGO_WIDTH / 4];
 } TeamLogoSample;
 
 typedef union TeamLogoSampleAddress {
@@ -36,10 +45,28 @@ static inline TeamLogoSample *GetTeamLogoSample(void *data) {
 }
 
 typedef union TeamLogoCanvas {
-    u8 bytes[0x800];
-    u16 halfwords[0x400];
-    u32 words[64][8];
+    u8 bytes[TEAM_LOGO_WIDTH * TEAM_LOGO_HEIGHT / 2];
+    u16 halfwords[TEAM_LOGO_WIDTH * TEAM_LOGO_HEIGHT / 4];
+    u32 words[TEAM_LOGO_HEIGHT][TEAM_LOGO_WORDS_PER_ROW];
 } TeamLogoCanvas;
+
+static inline u32 GetTeamLogoCanvasPixel(const TeamLogoCanvas *canvas, s32 x,
+                                         s32 y) {
+    s32 shift =
+        (x % TEAM_LOGO_PIXELS_PER_WORD) * TEAM_LOGO_BITS_PER_PIXEL;
+
+    return (canvas->words[y][x / TEAM_LOGO_PIXELS_PER_WORD] >> shift) & 0xF;
+}
+
+static inline void SetTeamLogoCanvasPixel(TeamLogoCanvas *canvas, s32 x,
+                                          s32 y, u32 color) {
+    s32 shift =
+        (x % TEAM_LOGO_PIXELS_PER_WORD) * TEAM_LOGO_BITS_PER_PIXEL;
+    u32 mask = 0xFu << shift;
+    u32 *word = &canvas->words[y][x / TEAM_LOGO_PIXELS_PER_WORD];
+
+    *word = (*word & ~mask) | ((color & 0xF) << shift);
+}
 
 typedef struct PaintColorTable {
     Rgb colors[18];

@@ -3,31 +3,6 @@
 #include "game/audio.h"
 #include "game/state.h"
 
-/* Four canvas pixels share a halfword, low nibble first. The editor can pan
- * the view, so keep the retail division rule for negative coordinates. */
-static u16 *TeamLogoCanvasPixelWord(s32 x, s32 y, s32 *shift) {
-    s32 adjustedX = x < 0 ? x + 3 : x;
-    s32 wordColumn = adjustedX >> 2;
-
-    *shift = (x - wordColumn * 4) * 4;
-    return &g_TeamLogoCanvas.halfwords[y * 16 + wordColumn];
-}
-
-static void SetTeamLogoCanvasPixel(s32 x, s32 y, u16 colour) {
-    s32 shift;
-    u16 *word = TeamLogoCanvasPixelWord(x, y, &shift);
-    u16 mask = (u16)(0xF << shift);
-
-    *word = (u16)((*word & ~mask) | ((colour & 0xF) << shift));
-}
-
-static u16 GetTeamLogoCanvasPixel(s32 x, s32 y) {
-    s32 shift;
-    u16 *word = TeamLogoCanvasPixelWord(x, y, &shift);
-
-    return (u16)((*word >> shift) & 0xF);
-}
-
 static void PaintTeamLogoBrush(u16 colour) {
     s32 row;
     s32 column;
@@ -36,7 +11,8 @@ static void PaintTeamLogoBrush(u16 colour) {
 
     for (row = 0; row < g_TeamLogoBrushSize; row++) {
         for (column = 0; column < g_TeamLogoBrushSize; column++) {
-            SetTeamLogoCanvasPixel(x + column, y + row, colour);
+            SetTeamLogoCanvasPixel(&g_TeamLogoCanvas, x + column, y + row,
+                                   colour);
         }
     }
 }
@@ -158,11 +134,15 @@ void EditLogoCanvas(void) {
             g_TeamLogoBrushSize = 1;
             break;
         }
-        if ((g_TeamLogoCursorX + g_TeamLogoBrushSize) >= 0x20) {
-            g_TeamLogoCursorX = 0x20 - g_TeamLogoBrushSize;
+        if ((g_TeamLogoCursorX + g_TeamLogoBrushSize) >=
+            TEAM_LOGO_EDITOR_VIEW_SIZE) {
+            g_TeamLogoCursorX =
+                TEAM_LOGO_EDITOR_VIEW_SIZE - g_TeamLogoBrushSize;
         }
-        if ((g_TeamLogoCursorY + g_TeamLogoBrushSize) >= 0x20) {
-            g_TeamLogoCursorY = 0x20 - g_TeamLogoBrushSize;
+        if ((g_TeamLogoCursorY + g_TeamLogoBrushSize) >=
+            TEAM_LOGO_EDITOR_VIEW_SIZE) {
+            g_TeamLogoCursorY =
+                TEAM_LOGO_EDITOR_VIEW_SIZE - g_TeamLogoBrushSize;
         }
     }
     if ((held & PAD_R1) && (g_TeamLogoExpertMode != 0)) {
@@ -207,10 +187,11 @@ void EditLogoCanvas(void) {
                 }
             }
             if (held & PAD_DOWN) {
-                if ((g_TeamLogoCursorY + g_TeamLogoBrushSize) < 0x20) {
+                if ((g_TeamLogoCursorY + g_TeamLogoBrushSize) <
+                    TEAM_LOGO_EDITOR_VIEW_SIZE) {
                     g_TeamLogoCursorY += 1;
                     movedVertically = 1;
-                } else if (g_TeamLogoViewY < 0x20) {
+                } else if (g_TeamLogoViewY < TEAM_LOGO_EDITOR_VIEW_SIZE) {
                     g_TeamLogoViewY += 1;
                     movedVertically = 1;
                 }
@@ -225,10 +206,11 @@ void EditLogoCanvas(void) {
                 }
             }
             if (held & PAD_RIGHT) {
-                if ((g_TeamLogoCursorX + g_TeamLogoBrushSize) < 0x20) {
+                if ((g_TeamLogoCursorX + g_TeamLogoBrushSize) <
+                    TEAM_LOGO_EDITOR_VIEW_SIZE) {
                     g_TeamLogoCursorX += 1;
                     movedHorizontally = 1;
-                } else if (g_TeamLogoViewX < 0x20) {
+                } else if (g_TeamLogoViewX < TEAM_LOGO_EDITOR_VIEW_SIZE) {
                     g_TeamLogoViewX += 1;
                     movedHorizontally = 1;
                 }
@@ -241,8 +223,8 @@ void EditLogoCanvas(void) {
     }
     if ((pressed & PAD_R2) && (g_TeamLogoExpertMode != 0)) {
         PlaySoundCue(4);
-        sampledColour = GetTeamLogoCanvasPixel(
-            g_TeamLogoViewX + g_TeamLogoCursorX,
+        sampledColour = (u16)GetTeamLogoCanvasPixel(
+            &g_TeamLogoCanvas, g_TeamLogoViewX + g_TeamLogoCursorX,
             g_TeamLogoViewY + g_TeamLogoCursorY);
         if (sampledColour == 0) {
             sampledColour = g_TeamLogoPenColor;
