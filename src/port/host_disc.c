@@ -47,9 +47,15 @@ typedef struct RageHostDisc {
 
 static RageHostDisc g_RageHostDisc;
 
+static void HostResetCdBackend(void) {
+    ChdClose();
+    Psyz_CdSetDiskPath(NULL);
+    g_RageHostDisc.chd = 0;
+}
+
 static void HostCloseDisc(void) {
     if (g_RageHostDisc.file != NULL) fclose(g_RageHostDisc.file);
-    ChdClose();
+    HostResetCdBackend();
     memset(&g_RageHostDisc, 0, sizeof(g_RageHostDisc));
 }
 
@@ -280,6 +286,7 @@ static int HostOpenDataTrack(const char *path) {
 static int HostOpenDiscImage(const char *discPath) {
     char dataTrackPath[PATH_MAX];
 
+    HostResetCdBackend();
     if (DiscPathIsChd(discPath)) {
         int written;
 
@@ -287,8 +294,7 @@ static int HostOpenDiscImage(const char *discPath) {
         g_RageHostDisc.chd = 1;
         g_RageHostDisc.track_offset = 0;
         if (!HostFindArchive()) {
-            ChdClose();
-            g_RageHostDisc.chd = 0;
+            HostResetCdBackend();
             return 0;
         }
         written = snprintf(g_RageHostDisc.source_path,
@@ -298,8 +304,7 @@ static int HostOpenDiscImage(const char *discPath) {
             (size_t)written < sizeof(g_RageHostDisc.source_path)) {
             return 1;
         }
-        ChdClose();
-        g_RageHostDisc.chd = 0;
+        HostResetCdBackend();
         return 0;
     }
     if (DiscPathIsBin(discPath)) {
@@ -311,12 +316,17 @@ static int HostOpenDiscImage(const char *discPath) {
         g_RageHostDisc.track_offset = 0;
         return HostOpenDataTrack(dataTrackPath);
     }
-    if (!DiscPathIsCue(discPath) || Psyz_CdSetDiskPath(discPath) != 0 ||
-        !DiscCueResolveDataTrack(discPath, dataTrackPath, sizeof(dataTrackPath),
-                                 &g_RageHostDisc.track_offset)) {
+    if (!DiscPathIsCue(discPath) || Psyz_CdSetDiskPath(discPath) != 0) {
         return 0;
     }
-    return HostOpenDataTrack(dataTrackPath);
+    if (!DiscCueResolveDataTrack(discPath, dataTrackPath,
+                                 sizeof(dataTrackPath),
+                                 &g_RageHostDisc.track_offset) ||
+        !HostOpenDataTrack(dataTrackPath)) {
+        HostResetCdBackend();
+        return 0;
+    }
+    return 1;
 }
 
 static int HostOpenDisc(const char *discPath) {
