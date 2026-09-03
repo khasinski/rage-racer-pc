@@ -148,6 +148,27 @@ static inline ShopPrice LookupShopPrice(const s32 *prices, size_t count,
     return result;
 }
 
+enum {
+    TEAM_NAME_HIDDEN_MODEL_KEY = 10,
+    TEAM_NAME_CONTROL_KEY_FIRST = 42,
+    TEAM_NAME_CONTROL_KEY_COUNT = 2,
+};
+
+static inline s32 TeamNameCharacterModelIndex(s32 key, s32 modelCount) {
+    if (key == TEAM_NAME_HIDDEN_MODEL_KEY ||
+        (u32)(key - TEAM_NAME_CONTROL_KEY_FIRST) <
+            TEAM_NAME_CONTROL_KEY_COUNT) {
+        return -1;
+    }
+    if ((u32)key < (u32)modelCount) {
+        return key;
+    }
+    if (modelCount > 1) {
+        return 1;
+    }
+    return modelCount == 1 ? 0 : -1;
+}
+
 void RestoreTeamLogoClut(void);
 void UploadTeamLogoClut(void);
 s32 AdvanceCarSpecPanel(s32 *progress, s32 step);

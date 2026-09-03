@@ -73,6 +73,15 @@ int main(void) {
     CHECK(RebaseCarouselValue(INT_MAX, -1, 0) == INT_MIN);
     CHECK(RebaseCarouselValue(INT_MIN, 1, -1) == INT_MAX - 1);
 
+    CHECK(TeamNameCharacterModelIndex(0, 44) == 0);
+    CHECK(TeamNameCharacterModelIndex(10, 44) == -1);
+    CHECK(TeamNameCharacterModelIndex(42, 44) == -1);
+    CHECK(TeamNameCharacterModelIndex(43, 44) == -1);
+    CHECK(TeamNameCharacterModelIndex(-1, 44) == 1);
+    CHECK(TeamNameCharacterModelIndex(44, 44) == 1);
+    CHECK(TeamNameCharacterModelIndex(INT_MAX, 1) == 0);
+    CHECK(TeamNameCharacterModelIndex(0, 0) == -1);
+
     puts("menu animation helper tests passed");
     return 0;
 }

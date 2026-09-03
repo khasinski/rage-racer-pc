@@ -105,8 +105,15 @@ void DrawMenuCarView(void) {
     horizontalAngle = MenuWrapAngle(g_MenuViewAngle, 600000) / 1000;
     carIndex = g_CarSwapFromIndex;
     viewHeight = AdvanceMenuViewOffset();
+    if ((u32)carIndex >= GAME_CAR_COUNT || g_CarTable == NULL ||
+        g_CarModelAsset == NULL) {
+        return;
+    }
     showroom->runtime.modelIndex =
         GetCarAssetIndex(carIndex, g_CarTable[carIndex].modelVariant);
+    if (showroom->runtime.modelIndex < 0) {
+        return;
+    }
     g_PlayerCar.showroomTireCompound = g_CarTable[carIndex].tireCompound;
 
     UpdateShowroomSteering();
@@ -272,14 +279,12 @@ void DrawTeamNameCharModel(void) {
     MulMatrix2((&g_RenderState.matrix), &mtxA);
     ScaleMatrix(&mtxA, &vcopy);
 
-    if (g_TeamNameCharModel != 10 &&
-        (u32)(g_TeamNameCharModel - 42) >= 2U) {
+    modelIndex = TeamNameCharacterModelIndex(g_TeamNameCharModel,
+                                             g_CourseModelCount);
+    if (modelIndex >= 0) {
         SetGteObjectMatrix((&g_ObjectMatrixWork),
                            AsPositionWords(&position.x), &mtxA);
         g_RenderState.envMode4 = 0;
-        modelIndex = g_TeamNameCharModel < g_CourseModelCount
-                         ? g_TeamNameCharModel
-                         : 1;
         SubmitCourseModel(&g_RenderState, modelIndex);
     }
 }
