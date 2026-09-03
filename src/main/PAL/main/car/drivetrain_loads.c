@@ -1,15 +1,18 @@
 #include "game/angle.h"
 #include "game/car.h"
 #include "game/car_internal.h"
+#include "game/integer.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/state.h"
 #include "game/track_internal.h"
 
 static void SettleSteeringGrip(GameCarDrive *drive, s32 gripBudget) {
-    drive->steeringGrip =
-        (s16)((drive->steeringGrip +
-               (gripBudget * drive->steeringGripResponse) / 1000) / 2);
+    s32 response = WrapSigned32(
+        (int64_t)gripBudget * drive->steeringGripResponse) / 1000;
+
+    drive->steeringGrip = WrapSigned16(
+        WrapSigned32((int64_t)drive->steeringGrip + response) / 2);
 }
 
 /*
@@ -37,8 +40,9 @@ void UpdateCarSteeringGrip(PlayerCarRuntime *car, const GameCarSpec *spec,
             TrackCurveMode pointCurveMode =
                 TrackPointCurveMode(TrackPoint(car->trackPointIndex));
 
-            drive->trackCurveBias = (u16)drive->trackCurveBias +
-                                    (driveCurveMode == pointCurveMode ? 2 : -1);
+            drive->trackCurveBias = WrapSigned16(
+                (s32)drive->trackCurveBias +
+                (driveCurveMode == pointCurveMode ? 2 : -1));
         }
         steerBias = drive->trackCurveBias;
         if (steerBias >= 0x1F) {
@@ -46,8 +50,10 @@ void UpdateCarSteeringGrip(PlayerCarRuntime *car, const GameCarSpec *spec,
         } else if (steerBias < -0x1E) {
             drive->trackCurveBias = -0x1E;
         }
-        gripBudget += spec->baseSteeringGrip - drive->trackCurveBias * 0xA;
-        drive->steeringGrip = (s16)gripBudget;
+        gripBudget = WrapSigned32(
+            (int64_t)gripBudget + spec->baseSteeringGrip -
+            drive->trackCurveBias * 0xA);
+        drive->steeringGrip = WrapSigned16(gripBudget);
         return;
     }
 
@@ -69,7 +75,7 @@ void UpdateCarSteeringGrip(PlayerCarRuntime *car, const GameCarSpec *spec,
         camberLean = TrackPointCurveMode(trackPoint) == TRACK_CURVE_PRIMARY
             ? -(camber * 0x3C) / 20
             : camber * 3;
-        gripBudget += camberLean;
+        gripBudget = WrapSigned32((int64_t)gripBudget + camberLean);
     }
     SettleSteeringGrip(drive, gripBudget);
 }
@@ -77,8 +83,11 @@ void UpdateCarSteeringGrip(PlayerCarRuntime *car, const GameCarSpec *spec,
 static void UpdateLongitudinalResistance(CarDrivetrainLoads *loads,
                                          const GameCarDrive *drive,
                                          s32 netTorque) {
-    s32 throttleTorque = netTorque * drive->acceleratorInput.value *
-                         drive->drivetrainCoupled;
+    s32 throttleTorque = WrapSigned32(
+        (int64_t)netTorque * drive->acceleratorInput.value);
+
+    throttleTorque = WrapSigned32(
+        (int64_t)throttleTorque * drive->drivetrainCoupled);
 
     if (throttleTorque < 0) {
         throttleTorque += 0xFF;
@@ -90,14 +99,18 @@ static void UpdateLongitudinalResistance(CarDrivetrainLoads *loads,
     } else {
         g_GripLossTimer = 0;
     }
-    loads->longitudinalResistance +=
-        drive->brakeInput * drive->engineRpm / 8192;
+    loads->longitudinalResistance = WrapSigned32(
+        (int64_t)loads->longitudinalResistance +
+        WrapSigned32(
+            (int64_t)drive->brakeInput * drive->engineRpm) / 8192);
     if (netTorque > 0) {
         if (drive->acceleratorInput.value < 0x7F) {
-            loads->longitudinalResistance += netTorque / 2;
+            loads->longitudinalResistance = WrapSigned32(
+                (int64_t)loads->longitudinalResistance + netTorque / 2);
         }
     } else {
-        loads->longitudinalResistance -= netTorque / 2;
+        loads->longitudinalResistance = WrapSigned32(
+            (int64_t)loads->longitudinalResistance - netTorque / 2);
     }
 }
 
@@ -110,22 +123,29 @@ static void UpdateSteeringResistance(CarDrivetrainLoads *loads,
     drive->steeringLoadAngle = headingError <= ANGLE_QUARTER_TURN
         ? headingError
         : ANGLE_HALF_TURN - headingError;
-    loads->motionResistance += drive->steeringLoadAngle / 256;
+    loads->motionResistance = WrapSigned32(
+        (int64_t)loads->motionResistance +
+        drive->steeringLoadAngle / 256);
     if (drive->motionState != CAR_MOTION_TAKEOFF &&
         g_PadType == PAD_TYPE_DIGITAL) {
-        s32 assistStep = spec->negconSteeringAssistScale *
-                         drive->steeringGripResponse / 1000;
+        s32 assistStep = WrapSigned32(
+            (int64_t)spec->negconSteeringAssistScale *
+            drive->steeringGripResponse) / 1000;
         s32 steerPosition = drive->steerPos;
 
         if (assistStep <= 0) {
             assistStep = 1;
         }
         if (steerPosition >= 0) {
-            loads->motionResistance +=
-                ((steerPosition * 5) / 6) / assistStep;
+            loads->motionResistance = WrapSigned32(
+                (int64_t)loads->motionResistance +
+                (WrapSigned32((int64_t)steerPosition * 5) / 6) /
+                    assistStep);
         } else {
-            loads->motionResistance -=
-                ((steerPosition * 5) / 6) / assistStep;
+            loads->motionResistance = WrapSigned32(
+                (int64_t)loads->motionResistance -
+                (WrapSigned32((int64_t)steerPosition * 5) / 6) /
+                    assistStep);
         }
     }
 }
@@ -152,13 +172,19 @@ static void UpdateRoadGradeResistance(CarDrivetrainLoads *loads,
     trackHeadingError = GetAngleDistance(
         car->headingAngle,
         ANGLE_THREE_QUARTER_TURN - trackPoint->angle);
-    pitchSum = trackPoint->surfacePitch * (0x400 - alongSegment);
-    pitchSum += nextTrackPoint->surfacePitch * alongSegment;
+    pitchSum = WrapSigned32(
+        (int64_t)trackPoint->surfacePitch *
+        WrapSigned32(INT64_C(0x400) - alongSegment));
+    pitchSum = WrapSigned32(
+        (int64_t)pitchSum +
+        WrapSigned32(
+            (int64_t)nextTrackPoint->surfacePitch * alongSegment));
     if (pitchSum < 0) {
         pitchSum += 0x3FF;
     }
     roadGrade = pitchSum >> 10;
-    roadGradeProduct = roadGrade * rcos(trackHeadingError);
+    roadGradeProduct = WrapSigned32(
+        (int64_t)roadGrade * rcos(trackHeadingError));
     roadGrade = roadGradeProduct < 0
         ? (roadGradeProduct + 0xFFF) >> 12
         : roadGradeProduct >> 12;
@@ -169,23 +195,29 @@ static void UpdateRoadGradeResistance(CarDrivetrainLoads *loads,
     }
     g_RoadGrade = roadGrade;
     sideForce = -rsin(roadGrade) * 0x708 / 0xA000;
-    loads->motionResistance +=
-        roadGrade < 0 ? sideForce : sideForce / 10;
+    loads->motionResistance = WrapSigned32(
+        (int64_t)loads->motionResistance +
+        (roadGrade < 0 ? sideForce : sideForce / 10));
 }
 
 static void ApplyTransientDriveLoads(CarDrivetrainLoads *loads,
                                      const GameCarDrive *drive) {
     if (g_RacePhase == 2 &&
         drive->motionState == CAR_MOTION_STANDING_START) {
-        loads->motionResistance += (g_StandingStartSpin & 0x1F) * 5;
+        loads->motionResistance = WrapSigned32(
+            (int64_t)loads->motionResistance +
+            (g_StandingStartSpin & 0x1F) * 5);
     }
     if (g_DriveBoostTimer > 0) {
-        loads->motionResistance += 0xC8 + g_DriveBoostTimer * 0x14;
-        g_DriveBoostTimer--;
+        loads->motionResistance = WrapSigned32(
+            (int64_t)loads->motionResistance + 0xC8 +
+            WrapSigned32((int64_t)g_DriveBoostTimer * 0x14));
+        g_DriveBoostTimer = WrapSigned32(
+            (int64_t)g_DriveBoostTimer - 1);
     }
     if (drive->motionState == CAR_MOTION_TAKEOFF) {
-        loads->throttleAcceleration =
-            loads->throttleAcceleration * 4 / 5;
+        loads->throttleAcceleration = WrapSigned32(
+            (int64_t)loads->throttleAcceleration * 4) / 5;
     }
 }
 
@@ -193,24 +225,29 @@ static void ApplyAerodynamicResistance(CarDrivetrainLoads *loads,
                                        const PlayerCarRuntime *car,
                                        const GameCarSpec *spec,
                                        s32 bandScale) {
-    s32 roadSpeed = car->speed * 0xA0 / 1168;
-    s32 dragScale = (s16)g_DragScale;
+    s32 roadSpeed = WrapSigned32((int64_t)car->speed * 0xA0) / 1168;
+    s32 dragScale = WrapSigned16(g_DragScale);
     s32 dragDivisor;
 
     if (dragScale <= 0) {
         dragScale = 1;
     }
-    dragDivisor = spec->speedDragDivisor * 0x3E8 / dragScale;
+    dragDivisor = WrapSigned32(
+        (int64_t)spec->speedDragDivisor * 0x3E8) / dragScale;
     if (dragDivisor <= 0) {
         dragDivisor = 1;
     }
-    loads->motionResistance += roadSpeed * roadSpeed / dragDivisor;
+    loads->motionResistance = WrapSigned32(
+        (int64_t)loads->motionResistance +
+        WrapSigned32((int64_t)roadSpeed * roadSpeed) / dragDivisor);
     g_DragScale = 0x3E8;
     if (car->verticalMotionState == CAR_VERTICAL_GROUNDED) {
-        loads->motionResistance =
-            loads->motionResistance * (0x64 - bandScale) / 100;
+        loads->motionResistance = WrapSigned32(
+            (int64_t)loads->motionResistance *
+            WrapSigned32(INT64_C(0x64) - bandScale)) / 100;
     } else {
-        loads->throttleAcceleration *= 2;
+        loads->throttleAcceleration = WrapSigned32(
+            (int64_t)loads->throttleAcceleration * 2);
         loads->motionResistance = 0;
     }
 }

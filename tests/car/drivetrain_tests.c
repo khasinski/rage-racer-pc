@@ -528,6 +528,32 @@ static void MissingTrackTests(void) {
           g_RoadGrade, 0);
 }
 
+static void ExtremeLoadArithmeticTests(void) {
+    CarDrivetrainLoads loads;
+
+    BuildSpec();
+    PlaceCar();
+    s_car.speed = INT_MAX;
+    s_car.drive.engineRpm = INT_MAX;
+    s_car.drive.acceleratorInput.value = 0x100;
+    s_car.drive.drivetrainCoupled = 1;
+    s_car.drive.steeringGrip = INT16_MAX;
+    s_car.drive.steeringGripResponse = INT_MAX;
+    s_spec.speedDragDivisor = 1;
+    s_spec.negconSteeringAssistScale = INT16_MAX;
+    g_DriveBoostTimer = INT_MAX;
+    g_DragScale = 1;
+
+    loads = CalculateCarDrivetrainLoads(
+        &s_car, &s_spec, INT_MAX, INT_MAX, INT_MAX);
+    (void)loads;
+    Check(g_DragScale == 1000, "extreme loads reset drag scale",
+          g_DragScale, 1000);
+    Check(g_DriveBoostTimer == INT_MAX - 1,
+          "extreme loads advance boost timer", g_DriveBoostTimer,
+          INT_MAX - 1);
+}
+
 int main(void) {
     Check(CalculateCarRpmDelta(0, INT16_MIN) == INT16_MIN,
           "RPM delta wraps at the negative limit",
@@ -541,6 +567,7 @@ int main(void) {
     TorqueBandTests();
     GearBoundsTests();
     MissingTrackTests();
+    ExtremeLoadArithmeticTests();
 
     if (s_failures != 0) {
         printf("%d drivetrain checks failed\n", s_failures);
