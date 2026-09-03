@@ -39,8 +39,8 @@ static void StartFlybyIfTriggered(void) {
         &g_FlybySceneryData->keyframes[keyframeIndex];
 }
 
-static SceneryMotionKeyframe *AdvanceFlybyKeyframe(void) {
-    SceneryMotionKeyframe *keyframe;
+static const SceneryMotionKeyframe *AdvanceFlybyKeyframe(void) {
+    const SceneryMotionKeyframe *keyframe;
 
     g_FlybyScenery.timer++;
     g_FlybyScenery.keyframeTime++;
@@ -61,7 +61,7 @@ static SceneryMotionKeyframe *AdvanceFlybyKeyframe(void) {
     return keyframe;
 }
 
-static void UpdateFlybyTransform(SceneryMotionKeyframe *keyframe) {
+static void UpdateFlybyTransform(const SceneryMotionKeyframe *keyframe) {
     Matrix rotationY;
     Matrix rotationX;
     SVec direction = {

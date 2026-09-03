@@ -755,7 +755,7 @@ extern s16 g_GripLossTimer;
 extern u16 g_HudGlyphClut;
 extern s16 g_PeakOutputRpm;
 extern s16 g_PeakOutputValue;
-extern RaceIntroCameraScript *g_RaceIntroCameraScript;
+extern const RaceIntroCameraScript *g_RaceIntroCameraScript;
 extern s32 g_RoadGrade;
 extern s32 g_ShiftSoundLevel;
 extern s32 g_ShiftTargetRpm;

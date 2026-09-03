@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-TrackEventData *g_TrackEventData;
+const TrackEventData *g_TrackEventData;
 s32 g_RaceSeries;
 s32 g_TrackLength;
 s16 g_TrackZoneCode;

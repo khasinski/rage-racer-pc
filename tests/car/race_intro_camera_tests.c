@@ -10,8 +10,8 @@
 #include <string.h>
 
 GameRenderState g_RenderState;
-RaceIntroCameraScript *g_RaceIntroCameraScript;
-RaceIntroCameraKey *g_RaceIntroCameraCursor;
+const RaceIntroCameraScript *g_RaceIntroCameraScript;
+const RaceIntroCameraKey *g_RaceIntroCameraCursor;
 SVec g_RaceIntroCameraDelta;
 s32 g_RaceIntroCameraTimer;
 s32 g_RaceSeries;

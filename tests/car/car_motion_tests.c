@@ -23,7 +23,7 @@
 #include <string.h>
 
 GameCarRuntime g_Cars[11];
-TrackEventData *g_TrackEventData;
+const TrackEventData *g_TrackEventData;
 s32 g_RaceSeries;
 s32 g_TrackLength;
 CarCollisionPoint g_CarCollisionCorners[4];

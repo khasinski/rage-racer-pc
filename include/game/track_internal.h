@@ -89,19 +89,19 @@ extern StartGridSceneryStep g_StartGridSceneryStep[];
 extern PathSceneryClock g_PathSceneryClock;
 extern PathSceneryTransform g_PathSceneryTransform;
 extern s32 g_TrackLength;
-extern TrackEventData *g_TrackEventData;
+extern const TrackEventData *g_TrackEventData;
 
-extern SceneryMotionData *g_RouteSceneryData;
-extern PathSceneryRotationData *g_PathSceneryRotData;
-extern SceneryMotionData *g_FlybySceneryData;
-extern PathSceneryPositionData *g_PathSceneryPosData;
+extern const SceneryMotionData *g_RouteSceneryData;
+extern const PathSceneryRotationData *g_PathSceneryRotData;
+extern const SceneryMotionData *g_FlybySceneryData;
+extern const PathSceneryPositionData *g_PathSceneryPosData;
 
 /* Positive while the route animation is active; the retail counter value had
  * no consumer, so the port keeps only its start/stop meaning. */
 extern s32 g_RouteSceneryActive;
 extern s16 g_RouteSceneryKeyIndex;
 extern s32 g_RouteSceneryRotY;
-extern SceneryMotionKeyframe *g_RouteSceneryKeyframe;
+extern const SceneryMotionKeyframe *g_RouteSceneryKeyframe;
 
 extern s32 g_EnvScriptLength;
 extern const GameEnvironmentCue *g_EnvScriptCursor;

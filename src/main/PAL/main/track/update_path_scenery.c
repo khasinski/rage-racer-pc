@@ -15,7 +15,7 @@ enum {
 };
 
 static void AdvancePositionKeyframe(void) {
-    PathSceneryPositionKey *keyframe;
+    const PathSceneryPositionKey *keyframe;
     s16 index;
     int axis;
 
@@ -47,7 +47,7 @@ static void AdvancePositionKeyframe(void) {
 }
 
 static void AdvanceRotationKeyframe(void) {
-    PathSceneryRotationKey *keyframe;
+    const PathSceneryRotationKey *keyframe;
     s16 index;
 
     if (g_PathSceneryClock.rotFrame != g_PathSceneryCursors.rotSpan) {
@@ -98,7 +98,7 @@ static s32 EasePathValue(s32 start, s32 end, s32 halfDelta,
 }
 
 static void UpdatePathPosition(void) {
-    PathSceneryPositionKey *keyframe =
+    const PathSceneryPositionKey *keyframe =
         &g_PathSceneryPosKeys[g_PathSceneryCursors.posIndex];
     const s16 phase = g_PathSceneryCursors.posPhase.signedValue;
     const s16 rate = g_PathSceneryCursors.posRate.signedValue;
@@ -116,7 +116,7 @@ static void UpdatePathPosition(void) {
 }
 
 static void UpdatePathRotation(void) {
-    PathSceneryRotationKey *keyframe =
+    const PathSceneryRotationKey *keyframe =
         &g_PathSceneryRotKeys[g_PathSceneryCursors.rotIndex];
     const s16 phase = g_PathSceneryCursors.rotPhase.signedValue;
     const s16 rate = g_PathSceneryCursors.rotRate.signedValue;

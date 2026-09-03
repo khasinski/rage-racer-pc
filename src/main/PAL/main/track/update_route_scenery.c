@@ -7,7 +7,7 @@ void SeedRouteScenery(void) {
     const s32 series = g_RaceSeries;
     const s16 firstKeyframe =
         g_RouteSceneryData->firstKeyframe[series][0];
-    SceneryMotionKeyframe *keyframe =
+    const SceneryMotionKeyframe *keyframe =
         &g_RouteSceneryData->keyframes[firstKeyframe];
 
     g_RouteSceneryKeyIndex = 0;
@@ -25,7 +25,7 @@ void UpdateRouteScenery(void) {
     Matrix mtx1;
     SVec vin;
     LVec vout;
-    SceneryMotionKeyframe *keyframe;
+    const SceneryMotionKeyframe *keyframe;
     s32 elapsed;
 
     if (g_RouteSceneryActive <= 0) {

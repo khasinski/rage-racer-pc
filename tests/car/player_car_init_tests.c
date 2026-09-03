@@ -27,7 +27,7 @@ s16 g_SteerHoldFrames;
 s16 g_GripLossTimer;
 s16 g_WrongWayTimer;
 s16 g_PlayerAutoSteer;
-TrackEventData *g_TrackEventData;
+const TrackEventData *g_TrackEventData;
 const GameTrackPoint *g_TrackPoints;
 s32 g_TrackPointCount;
 

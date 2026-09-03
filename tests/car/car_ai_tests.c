@@ -23,7 +23,7 @@
 /* The state the three of them read. g_Cars is only here because the file
  * defines other functions that touch it. */
 GameCarRuntime g_Cars[11];
-TrackEventData *g_TrackEventData;
+const TrackEventData *g_TrackEventData;
 s32 g_RaceSeries;
 s32 g_TrackLength;
 CarCollisionPoint g_CarCollisionCorners[4];

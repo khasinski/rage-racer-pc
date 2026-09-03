@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
-TrackEventData *g_TrackEventData;
+const TrackEventData *g_TrackEventData;
 GameRenderState g_RenderState;
 s32 g_RaceSeries;
 s32 g_TrackLength;

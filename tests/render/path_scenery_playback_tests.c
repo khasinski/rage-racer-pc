@@ -11,10 +11,10 @@
 s32 g_RaceSeries;
 s16 g_RacePhase;
 PlayerCarRuntime g_PlayerCar;
-PathSceneryPositionData *g_PathSceneryPosData;
-PathSceneryRotationData *g_PathSceneryRotData;
-PathSceneryPositionKey *g_PathSceneryPosKeys;
-PathSceneryRotationKey *g_PathSceneryRotKeys;
+const PathSceneryPositionData *g_PathSceneryPosData;
+const PathSceneryRotationData *g_PathSceneryRotData;
+const PathSceneryPositionKey *g_PathSceneryPosKeys;
+const PathSceneryRotationKey *g_PathSceneryRotKeys;
 PathSceneryClock g_PathSceneryClock;
 PathSceneryTransform g_PathSceneryTransform;
 PathSceneryCursors g_PathSceneryCursors;

@@ -9,7 +9,7 @@
 
 s32 g_RaceSeries;
 s32 g_TrackLength;
-TrackEventData *g_TrackEventData;
+const TrackEventData *g_TrackEventData;
 
 static int s_failures;
 

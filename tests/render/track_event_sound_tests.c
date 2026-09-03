@@ -10,7 +10,7 @@
 
 PlayerCarRuntime g_PlayerCar;
 GameRenderState g_RenderState;
-TrackEventData *g_TrackEventData;
+const TrackEventData *g_TrackEventData;
 const GameTrackPoint *g_TrackPoints;
 s32 g_TrackPointCount;
 s32 g_MirrorMode;

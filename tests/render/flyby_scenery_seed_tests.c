@@ -7,9 +7,9 @@
 
 s32 g_RaceSeries;
 s32 g_LapCount;
-SceneryMotionData *g_FlybySceneryData;
+const SceneryMotionData *g_FlybySceneryData;
 FlybySceneryState g_FlybyScenery;
-SceneryMotionKeyframe *g_FlybySceneryKeyframe;
+const SceneryMotionKeyframe *g_FlybySceneryKeyframe;
 
 static s32 g_RandomValue;
 

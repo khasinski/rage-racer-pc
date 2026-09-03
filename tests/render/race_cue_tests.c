@@ -8,7 +8,7 @@
 #include <string.h>
 
 PlayerCarRuntime g_PlayerCar;
-TrackEventData *g_TrackEventData;
+const TrackEventData *g_TrackEventData;
 s32 g_RaceCueFlags;
 s32 g_RaceSeries;
 s32 g_LapCount;

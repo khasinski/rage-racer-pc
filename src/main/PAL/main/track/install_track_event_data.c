@@ -221,24 +221,24 @@ s32 IsValidTrackEventAsset(const TrackEventData *eventData, size_t size) {
                offsets, offsets->pathSceneryRotation, variableDataEnd);
 }
 
-s32 InstallTrackEventData(TrackEventData *eventData, size_t size) {
-    TrackEventOffsets *offsets;
+s32 InstallTrackEventData(const TrackEventData *eventData, size_t size) {
+    const TrackEventOffsets *offsets;
 
     if (!IsValidTrackEventAsset(eventData, size)) {
         ClearTrackEventData();
         return 0;
     }
     offsets = &eventData->offsets;
-    g_FlybySceneryData =
-        (SceneryMotionData *)((u8 *)offsets + offsets->flybyScenery);
-    g_RaceIntroCameraScript = (RaceIntroCameraScript *)(
-        (u8 *)offsets + offsets->raceIntroCamera);
-    g_RouteSceneryData =
-        (SceneryMotionData *)((u8 *)offsets + offsets->routeScenery);
-    g_PathSceneryPosData = (PathSceneryPositionData *)(
-        (u8 *)offsets + offsets->pathSceneryPosition);
-    g_PathSceneryRotData = (PathSceneryRotationData *)(
-        (u8 *)offsets + offsets->pathSceneryRotation);
+    g_FlybySceneryData = (const SceneryMotionData *)(
+        (const u8 *)offsets + offsets->flybyScenery);
+    g_RaceIntroCameraScript = (const RaceIntroCameraScript *)(
+        (const u8 *)offsets + offsets->raceIntroCamera);
+    g_RouteSceneryData = (const SceneryMotionData *)(
+        (const u8 *)offsets + offsets->routeScenery);
+    g_PathSceneryPosData = (const PathSceneryPositionData *)(
+        (const u8 *)offsets + offsets->pathSceneryPosition);
+    g_PathSceneryRotData = (const PathSceneryRotationData *)(
+        (const u8 *)offsets + offsets->pathSceneryRotation);
     g_TrackEventData = eventData;
     return 1;
 }

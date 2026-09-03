@@ -343,7 +343,7 @@ extern s32 g_TrackLength;
 /* Base of the course's event/marker block (InstallTrackEventData installs it). Starts
  * with the s32 track-walk start index; sub-table offsets are at +0xB64..+0xB78
  * and the per-series marker rows at + g_RaceSeries * 576 + 0x474. */
-extern TrackEventData *g_TrackEventData;
+extern const TrackEventData *g_TrackEventData;
 
 extern s32 g_CameraCarSeedYaw;
 extern s32 g_CameraCarHeading;
@@ -448,7 +448,7 @@ typedef struct FlybySceneryState {
     s32 volume;
 } FlybySceneryState;
 
-extern SceneryMotionKeyframe *g_FlybySceneryKeyframe;
+extern const SceneryMotionKeyframe *g_FlybySceneryKeyframe;
 extern s32 g_FogNear;
 typedef struct SceneryPlacement {
     LVec position;
@@ -499,7 +499,7 @@ typedef struct PathSceneryRotationData {
     PathSceneryRotationKey keys[1];
 } PathSceneryRotationData;
 
-extern PathSceneryPositionKey *g_PathSceneryPosKeys;
+extern const PathSceneryPositionKey *g_PathSceneryPosKeys;
 typedef union PathSceneryRate {
     u16 value;
     s16 signedValue;
@@ -523,7 +523,7 @@ typedef struct PathSceneryCursors {
 
 extern PathSceneryCursors g_PathSceneryCursors;
 extern s16 g_PathSceneryRotHalfDelta[3];
-extern PathSceneryRotationKey *g_PathSceneryRotKeys;
+extern const PathSceneryRotationKey *g_PathSceneryRotKeys;
 extern s32 g_PathSceneryVolume;
 #define g_ShuttlePath2Points g_ShuttlePathPoints[2]
 extern s16 g_ShuttlePathTravelMax[];

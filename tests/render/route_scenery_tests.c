@@ -8,14 +8,14 @@
 #include <string.h>
 
 s32 g_RaceSeries;
-SceneryMotionData *g_RouteSceneryData;
+const SceneryMotionData *g_RouteSceneryData;
 s32 g_RouteSceneryActive;
 s32 g_RouteSceneryFrame;
 s16 g_RouteSceneryKeyIndex;
 s32 g_RouteSceneryRotX;
 s32 g_RouteSceneryRotY;
 s32 g_RouteSceneryRotZ;
-SceneryMotionKeyframe *g_RouteSceneryKeyframe;
+const SceneryMotionKeyframe *g_RouteSceneryKeyframe;
 Vec4 g_RouteSceneryPosition;
 
 static void BuildIdentity(void *matrix) {

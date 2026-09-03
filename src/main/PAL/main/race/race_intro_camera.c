@@ -25,10 +25,10 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
     LoadViewWork(&viewWork);
 
     if (mode < 2) {
-        RaceIntroCameraScript *script = g_RaceIntroCameraScript;
+        const RaceIntroCameraScript *script = g_RaceIntroCameraScript;
         s32 series = g_RaceSeries != 0;
         s16 keyIndex = script->firstKeyIndex[series];
-        RaceIntroCameraKey *key = &script->keys[keyIndex];
+        const RaceIntroCameraKey *key = &script->keys[keyIndex];
 
         g_RaceIntroCameraCursor = key;
         g_RenderState.viewX = key->x.word;
@@ -43,7 +43,7 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
             (int64_t)key[1].z.half.value - key[0].z.half.value);
         g_RaceIntroCameraTimer = key[0].duration;
     } else {
-        RaceIntroCameraKey *key = g_RaceIntroCameraCursor;
+        const RaceIntroCameraKey *key = g_RaceIntroCameraCursor;
 
         if (mode == key->startFrame) {
             g_RaceIntroCameraCursor = &key[1];

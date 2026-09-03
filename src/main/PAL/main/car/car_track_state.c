@@ -242,7 +242,7 @@ s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
     s32 lateralOffset;
     s32 alongSegment;
     const GameTrackPoint *point;
-    GameTrackPoint *nextPoint;
+    const GameTrackPoint *nextPoint;
     CarTrackWork *work;
     int traceThisCall;
 

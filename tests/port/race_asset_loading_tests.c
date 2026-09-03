@@ -188,7 +188,7 @@ s32 InstallTerrainCellData(const void *data, size_t size) {
     s_installs[s_installCount++] = data;
     return 1;
 }
-s32 InstallTrackEventData(struct TrackEventData *data, size_t size) {
+s32 InstallTrackEventData(const struct TrackEventData *data, size_t size) {
     (void)size;
     s_installs[s_installCount++] = data;
     return 1;

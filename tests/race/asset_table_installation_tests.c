@@ -7,12 +7,12 @@
 #include <stdio.h>
 #include <string.h>
 
-TrackEventData *g_TrackEventData;
-SceneryMotionData *g_FlybySceneryData;
-RaceIntroCameraScript *g_RaceIntroCameraScript;
-SceneryMotionData *g_RouteSceneryData;
-PathSceneryPositionData *g_PathSceneryPosData;
-PathSceneryRotationData *g_PathSceneryRotData;
+const TrackEventData *g_TrackEventData;
+const SceneryMotionData *g_FlybySceneryData;
+const RaceIntroCameraScript *g_RaceIntroCameraScript;
+const SceneryMotionData *g_RouteSceneryData;
+const PathSceneryPositionData *g_PathSceneryPosData;
+const PathSceneryRotationData *g_PathSceneryRotData;
 TrackRenderTable *g_TrackRenderTable;
 const CourseObject *g_CourseObjects;
 s32 g_CourseObjectCount;
@@ -54,6 +54,7 @@ static void SeedValidTrackEventTables(TrackEventData *data) {
 
 static void TestTrackEventData(void) {
     TrackEventData data;
+    u8 originalData[sizeof(data)];
     u8 *offsetBase = (u8 *)&data.offsets;
 
     memset(&data, 0, sizeof(data));
@@ -63,9 +64,12 @@ static void TestTrackEventData(void) {
     data.offsets.pathSceneryPosition = 608;
     data.offsets.pathSceneryRotation = 692;
     SeedValidTrackEventTables(&data);
+    memcpy(originalData, &data, sizeof(data));
 
     Check(InstallTrackEventData(&data, sizeof(data)) == 1,
           "valid event data accepted");
+    Check(memcmp(originalData, &data, sizeof(data)) == 0,
+          "event data remains unchanged during installation");
 
     Check(g_TrackEventData == &data, "event data owner");
     Check((u8 *)g_RouteSceneryData == offsetBase + 200,

@@ -46,10 +46,10 @@ s16 g_PlayerAutoSteer;
 s32 g_StandingStartSpin;
 s16 g_TrackZoneDark;
 s32 g_EngineRpm;
-RaceIntroCameraScript *g_RaceIntroCameraScript;
+const RaceIntroCameraScript *g_RaceIntroCameraScript;
 GameCarRuntime g_CameraCar __attribute__((aligned(16)));
 s32 g_CameraCarSeedYaw;
-RaceIntroCameraKey *g_RaceIntroCameraCursor;
+const RaceIntroCameraKey *g_RaceIntroCameraCursor;
 s32 g_RaceSeries;
 s32 g_TachoShiftLightOn;
 GameCarRuntime *g_RankedCars[RIVAL_CONTENDER_COUNT]
@@ -57,7 +57,7 @@ GameCarRuntime *g_RankedCars[RIVAL_CONTENDER_COUNT]
 s32 g_TrackLength;
 s16 g_TorqueBandEnd[CAR_TORQUE_BAND_COUNT] __attribute__((aligned(16)));
 u16 g_HudGlyphClut;
-TrackEventData *g_TrackEventData;
+const TrackEventData *g_TrackEventData;
 s16 g_TorqueLossBandEnd[CAR_TORQUE_BAND_COUNT]
     __attribute__((aligned(16)));
 s32 g_EngineRpmJitter;

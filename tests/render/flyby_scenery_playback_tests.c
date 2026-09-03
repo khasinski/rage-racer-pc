@@ -12,9 +12,9 @@ s32 g_CourseIndex;
 s32 g_RaceSeries;
 s16 g_RacePhase;
 PlayerCarRuntime g_PlayerCar;
-SceneryMotionData *g_FlybySceneryData;
+const SceneryMotionData *g_FlybySceneryData;
 FlybySceneryState g_FlybyScenery;
-SceneryMotionKeyframe *g_FlybySceneryKeyframe;
+const SceneryMotionKeyframe *g_FlybySceneryKeyframe;
 
 static s32 g_LastCue;
 static s32 g_LastPitch;
