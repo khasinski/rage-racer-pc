@@ -72,14 +72,21 @@ void DrawGrandPrixIntro(void) {
     char text[RESULT_INTRO_TEXT_CAPACITY];
     s32 classIndex = g_GrandPrixClass;
     s32 nameIndex = GrandPrixNameIndex(g_GrandPrixSeries, classIndex);
-    const char *grandPrixName =
-        nameIndex >= 0 ? g_GrandPrixNames[nameIndex] : "";
+    s32 classNumber = GrandPrixClassDisplayNumber(
+        g_GrandPrixSeries, classIndex);
+    const char *grandPrixName = nameIndex >= 0
+        ? g_GrandPrixNames[nameIndex]
+        : NULL;
+
+    if (grandPrixName == NULL) {
+        grandPrixName = "";
+    }
 
     if (ShouldDrawClassPlaceBanner(g_ClassResultPlace, g_PrizeScreenState)) {
         DrawClassPlaceBanner();
     }
 
-    snprintf(text, sizeof(text), g_FmtClassGrandPrix, classIndex + 1,
+    snprintf(text, sizeof(text), g_FmtClassGrandPrix, classNumber,
              grandPrixName);
     DrawText8x8Trans(0x10, 0x34, text, 0x78CC);
 

@@ -1,6 +1,7 @@
 #include "game/race.h"
 #include "game/race_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 
 static int s_failures;
@@ -38,6 +39,13 @@ int main(void) {
     Check("extra fifth name", GrandPrixNameIndex(1, 4), 10);
     Check("extra class overflow", GrandPrixNameIndex(1, 5), -1);
     Check("negative class", GrandPrixNameIndex(0, -1), -1);
+
+    Check("standard class number", GrandPrixClassDisplayNumber(0, 5), 6);
+    Check("extra class number", GrandPrixClassDisplayNumber(1, 4), 5);
+    Check("invalid negative class number",
+          GrandPrixClassDisplayNumber(0, INT_MIN), 0);
+    Check("invalid overflowing class number",
+          GrandPrixClassDisplayNumber(0, INT_MAX), 0);
 
     return s_failures != 0;
 }

@@ -123,5 +123,6 @@ s32 ResultCourseNameY(s32 grandPrixMode);
 s32 IsValidRaceResultPlace(s32 racePosition);
 s32 ShouldDrawClassPlaceBanner(s32 classPlace, s32 prizeScreenState);
 s32 GrandPrixNameIndex(s32 extraSeries, s32 classIndex);
+s32 GrandPrixClassDisplayNumber(s32 extraSeries, s32 classIndex);
 
 #endif

@@ -35,3 +35,9 @@ s32 GrandPrixNameIndex(s32 extraSeries, s32 classIndex) {
     return classIndex +
         (extraSeries != 0 ? EXTRA_GRAND_PRIX_NAME_OFFSET : 0);
 }
+
+s32 GrandPrixClassDisplayNumber(s32 extraSeries, s32 classIndex) {
+    return GrandPrixNameIndex(extraSeries, classIndex) >= 0
+        ? classIndex + 1
+        : 0;
+}
