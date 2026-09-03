@@ -30,8 +30,6 @@
  */
 
 #define NEGCON_ANALOG_MAX 0x6A
-#define NEGCON_TWIST_CENTRE 0x80
-#define NEGCON_TWIST_MAX 0x7F
 
 /* A NeGcon has no L2, R2 or select cluster. Reporting them released keeps the
  * packet inside the shape UpdatePadState validates for type 0x23. */

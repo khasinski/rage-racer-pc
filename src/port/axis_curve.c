@@ -1,5 +1,10 @@
 #include <math.h>
 
+enum {
+    NEGCON_TWIST_CENTRE = 0x80,
+    NEGCON_TWIST_MAX = 0x7F,
+};
+
 
 float AxisCurve(float value, float deadzone, float saturation,
                     float linearity, float scaling) {
@@ -20,9 +25,6 @@ float AxisCurve(float value, float deadzone, float saturation,
     if (value > 1.0f) value = 1.0f;
     return value;
 }
-
-#define NEGCON_TWIST_CENTRE 0x80
-#define NEGCON_TWIST_MAX 0x7F
 
 int NegconTwist(float shapedStick, int dpadLeft, int dpadRight, int range) {
     int deflection;
