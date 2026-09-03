@@ -1,5 +1,7 @@
 #include "disc_stream_table.h"
 
+#include <limits.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -17,8 +19,9 @@ enum {
     RAGE_DISC_SUBHEADER = 16,
     RAGE_DISC_USER_DATA = 24,
     RAGE_DISC_SUBMODE_AUDIO = 0x04,
-    RAGE_DISC_STR_MAGIC = 0x0160
 };
+
+static const unsigned int RAGE_DISC_STR_MAGIC = 0x80010160u;
 
 /* Retail main.exe @ 0x8007C6A8.  The second word of each entry is the final
  * STR frame, despite sharing GameCdLoadEntry with the sector-sized RAGE.BIN
@@ -54,7 +57,7 @@ static unsigned int Le32(const unsigned char *data) {
 }
 
 static int ReadUser(DiscReader *reader, unsigned int sector,
-                        unsigned char *user) {
+                    unsigned char *user) {
     unsigned char raw[RAGE_DISC_RAW_SECTOR];
     if (!reader->read(reader->context, sector, raw)) return 0;
     memcpy(user, raw + reader->userOffset, RAGE_DISC_ISO_SECTOR);
@@ -77,7 +80,7 @@ static int OpenReader(DiscReader *reader) {
 /* Compares an ISO directory entry's name, which carries a ";1" version tail,
  * against a plain file name. */
 static int NameMatches(const unsigned char *name, unsigned int length,
-                           const char *wanted) {
+                       const char *wanted) {
     size_t wantedLength = strlen(wanted);
     if (length < wantedLength) return 0;
     if (strncasecmp((const char *)name, wanted, wantedLength) != 0) return 0;
@@ -89,20 +92,28 @@ static int FindFile(DiscReader *reader, const char *wanted, DiscFile *file) {
     unsigned char volume[RAGE_DISC_ISO_SECTOR];
     unsigned int root;
     unsigned int size;
-    unsigned int offset;
+    unsigned int sector;
+    unsigned int sectorCount;
 
     if (!ReadUser(reader, 16, volume) || volume[156] < 34) return 0;
     root = Le32(volume + 158);
     size = Le32(volume + 166);
-    for (offset = 0; offset < size; offset += RAGE_DISC_ISO_SECTOR) {
+    sectorCount = size / RAGE_DISC_ISO_SECTOR +
+                  (size % RAGE_DISC_ISO_SECTOR != 0);
+    for (sector = 0; sector < sectorCount; sector++) {
         unsigned int cursor = 0;
-        if (!ReadUser(reader, root + offset / RAGE_DISC_ISO_SECTOR, user))
+        if (root > UINT_MAX - sector ||
+            !ReadUser(reader, root + sector, user)) {
             return 0;
+        }
         while (cursor < RAGE_DISC_ISO_SECTOR) {
             unsigned int length = user[cursor];
             const unsigned char *record = user + cursor;
             if (length == 0) break;
-            if (length < 34 || cursor + length > RAGE_DISC_ISO_SECTOR) return 0;
+            if (length < 34 || length > RAGE_DISC_ISO_SECTOR - cursor ||
+                record[32] > length - 33) {
+                return 0;
+            }
             if (NameMatches(record + 33, record[32], wanted)) {
                 file->lba = Le32(record + 2);
                 file->size = Le32(record + 10);
@@ -135,21 +146,29 @@ static int FindBootLikeName(DiscReader *reader, char *boot, size_t bootSize) {
     unsigned char volume[RAGE_DISC_ISO_SECTOR];
     unsigned int root;
     unsigned int size;
-    unsigned int offset;
+    unsigned int sector;
+    unsigned int sectorCount;
 
     if (bootSize < 12) return 0;
     if (!ReadUser(reader, 16, volume) || volume[156] < 34) return 0;
     root = Le32(volume + 158);
     size = Le32(volume + 166);
-    for (offset = 0; offset < size; offset += RAGE_DISC_ISO_SECTOR) {
+    sectorCount = size / RAGE_DISC_ISO_SECTOR +
+                  (size % RAGE_DISC_ISO_SECTOR != 0);
+    for (sector = 0; sector < sectorCount; sector++) {
         unsigned int cursor = 0;
-        if (!ReadUser(reader, root + offset / RAGE_DISC_ISO_SECTOR, user))
+        if (root > UINT_MAX - sector ||
+            !ReadUser(reader, root + sector, user)) {
             return 0;
+        }
         while (cursor < RAGE_DISC_ISO_SECTOR) {
             unsigned int length = user[cursor];
             const unsigned char *record = user + cursor;
             if (length == 0) break;
-            if (length < 34 || cursor + length > RAGE_DISC_ISO_SECTOR) return 0;
+            if (length < 34 || length > RAGE_DISC_ISO_SECTOR - cursor ||
+                record[32] > length - 33) {
+                return 0;
+            }
             if (LooksLikeSerial(record + 33, record[32])) {
                 memcpy(boot, record + 33, 11);
                 boot[11] = '\0';
@@ -162,13 +181,19 @@ static int FindBootLikeName(DiscReader *reader, char *boot, size_t bootSize) {
 }
 
 static unsigned char *ReadWholeFile(DiscReader *reader, const DiscFile *file) {
-    unsigned int sectors = (file->size + RAGE_DISC_ISO_SECTOR - 1) /
-                           RAGE_DISC_ISO_SECTOR;
-    unsigned char *data = malloc((size_t)sectors * RAGE_DISC_ISO_SECTOR);
+    unsigned int sectors = file->size / RAGE_DISC_ISO_SECTOR +
+                           (file->size % RAGE_DISC_ISO_SECTOR != 0);
+    unsigned char *data;
     unsigned int index;
+
+#if SIZE_MAX <= UINT_MAX
+    if (sectors > SIZE_MAX / RAGE_DISC_ISO_SECTOR) return NULL;
+#endif
+    data = malloc((size_t)sectors * RAGE_DISC_ISO_SECTOR);
     if (data == NULL) return NULL;
     for (index = 0; index < sectors; index++) {
-        if (!ReadUser(reader, file->lba + index,
+        if (file->lba > UINT_MAX - index ||
+            !ReadUser(reader, file->lba + index,
                       data + (size_t)index * RAGE_DISC_ISO_SECTOR)) {
             free(data);
             return NULL;
@@ -180,7 +205,7 @@ static unsigned char *ReadWholeFile(DiscReader *reader, const DiscFile *file) {
 /* SYSTEM.CNF's BOOT line names the executable, which is the disc's serial:
  * "BOOT = cdrom:\SLUS_004.03;1". */
 static int ParseBootName(const unsigned char *cnf, unsigned int size,
-                             char *boot, size_t bootSize) {
+                         char *boot, size_t bootSize) {
     unsigned int index;
     for (index = 0; index + 4 <= size; index++) {
         unsigned int cursor;
@@ -227,9 +252,9 @@ const char *DiscRegionForBootName(const char *boot) {
 /* Walks RAGE.STR's chunk headers looking for the eleven movies.  The file has
  * no table of contents; a movie ends where the frame numbering restarts. */
 static int ScanStreamStarts(DiscReader *reader, const DiscFile *stream,
-                                unsigned int *starts, unsigned int *total) {
-    unsigned int sectors = (stream->size + RAGE_DISC_ISO_SECTOR - 1) /
-                           RAGE_DISC_ISO_SECTOR;
+                            unsigned int *starts, unsigned int *total) {
+    unsigned int sectors = stream->size / RAGE_DISC_ISO_SECTOR +
+                           (stream->size % RAGE_DISC_ISO_SECTOR != 0);
     unsigned int index;
     unsigned int found = 0;
     unsigned int previous = 0;
@@ -241,10 +266,13 @@ static int ScanStreamStarts(DiscReader *reader, const DiscFile *stream,
         const unsigned char *body;
         unsigned int chunk;
         unsigned int frame;
-        if (!reader->read(reader->context, stream->lba + index, raw)) return 0;
+        if (stream->lba > UINT_MAX - index ||
+            !reader->read(reader->context, stream->lba + index, raw)) {
+            return 0;
+        }
         if (raw[RAGE_DISC_SUBHEADER + 2] & RAGE_DISC_SUBMODE_AUDIO) continue;
         body = raw + RAGE_DISC_USER_DATA;
-        if (Le16(body) != RAGE_DISC_STR_MAGIC) continue;
+        if (Le32(body) != RAGE_DISC_STR_MAGIC) continue;
         chunk = Le16(body + 4);
         frame = Le32(body + 8);
         if (!seenFrame || (chunk == 0 && frame < previous)) {
@@ -261,12 +289,12 @@ static int ScanStreamStarts(DiscReader *reader, const DiscFile *stream,
  * beside the last frame the game shows.  Finding the offsets in the executable
  * is what identifies it, and the frame counts sit next to them. */
 static int FindStreamTable(const unsigned char *executable, unsigned int size,
-                               const unsigned int *starts,
-                               unsigned int *frames) {
+                           const unsigned int *starts,
+                           unsigned int *frames) {
     unsigned int offset;
     unsigned int entries = RAGE_DISC_STREAM_COUNT * 8;
     if (size < entries) return 0;
-    for (offset = 0; offset + entries <= size; offset += 4) {
+    for (offset = 0; offset <= size - entries; offset += 4) {
         unsigned int index;
         for (index = 0; index < RAGE_DISC_STREAM_COUNT; index++) {
             if (Le32(executable + offset + index * 8) != starts[index]) break;
@@ -292,7 +320,7 @@ static int StartsAreSane(const unsigned int *starts, unsigned int total) {
 }
 
 static int ReadStreamTable(DiscReader *reader, DiscIdentity *identity,
-                               const char *boot) {
+                           const char *boot) {
     DiscFile stream;
     DiscFile executable;
     unsigned char *blob;
@@ -340,12 +368,13 @@ static int ReadStreamTable(DiscReader *reader, DiscIdentity *identity,
 }
 
 int DiscIdentify(DiscRawSectorReader read, void *context,
-                     DiscIdentity *identity) {
+                 DiscIdentity *identity) {
     DiscReader reader;
     DiscFile config;
     unsigned char *cnf;
     int named;
 
+    if (identity == NULL) return 0;
     memset(identity, 0, sizeof(*identity));
     identity->region = "unknown";
     identity->reason = "the disc could not be identified";
@@ -372,6 +401,8 @@ int DiscIdentify(DiscRawSectorReader read, void *context,
         return 1;
     }
     identity->region = DiscRegionForBootName(identity->boot);
-    if (ReadStreamTable(&reader, identity, identity->boot)) identity->reason = NULL;
+    if (ReadStreamTable(&reader, identity, identity->boot)) {
+        identity->reason = NULL;
+    }
     return 1;
 }

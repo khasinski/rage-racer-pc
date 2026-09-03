@@ -35,13 +35,13 @@ extern const DiscStreamTable g_RetailPalStreamTable;
 /* Reads one 2352-byte sector at an absolute disc address.  Returns 1 on
  * success. */
 typedef int (*DiscRawSectorReader)(void *context, unsigned int sector,
-                                       unsigned char *raw);
+                                   unsigned char *raw);
 
 /* Fills identity from the disc behind the reader.  Returns 1 when the disc was
  * identified at all; identity->tableValid says whether the stream table came
  * with it. */
 int DiscIdentify(DiscRawSectorReader read, void *context,
-                     DiscIdentity *identity);
+                 DiscIdentity *identity);
 
 /* The region a boot executable name belongs to.  Exposed for the tests. */
 const char *DiscRegionForBootName(const char *boot);

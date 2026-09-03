@@ -43,7 +43,7 @@ static void Check(int condition, const char *what) {
 }
 
 static void CheckUnsigned(unsigned int got, unsigned int want,
-                              const char *what) {
+                          const char *what) {
     if (got == want) return;
     fprintf(stderr, "FAIL: %s: got %u, expected %u\n", what, got, want);
     failures++;
@@ -74,7 +74,7 @@ static void MarkSector(FakeDisc *disc, unsigned int sector, int audio) {
 }
 
 static unsigned int WriteRecord(unsigned char *at, const char *name,
-                                    unsigned int lba, unsigned int size) {
+                                unsigned int lba, unsigned int size) {
     unsigned int nameLength = (unsigned int)strlen(name);
     unsigned int length = 33 + nameLength;
     if (length & 1) length++;
@@ -113,7 +113,7 @@ static void WriteStream(FakeDisc *disc) {
 }
 
 static void WriteExeTable(FakeDisc *disc, const unsigned int *offsets,
-                              const unsigned int *frames) {
+                          const unsigned int *frames) {
     unsigned char table[RAGE_DISC_STREAM_COUNT * 8];
     int index;
     for (index = 0; index < RAGE_DISC_STREAM_COUNT; index++) {
@@ -246,8 +246,46 @@ static void TestShiftedBoundary(void) {
     free(disc);
 }
 
+static void TestPartialStrMagic(void) {
+    FakeDisc *disc = malloc(sizeof(*disc));
+    DiscIdentity identity;
+    int stream;
+
+    BuildDisc(disc, "SLUS_004.03", 1);
+    for (stream = 0; stream < RAGE_DISC_STREAM_COUNT; stream++) {
+        unsigned int sector =
+            STR_SECTOR + (unsigned int)(stream * STREAM_SECTORS + 4);
+        unsigned char *body = User(disc, sector);
+
+        MarkSector(disc, sector, 0);
+        PutLe16(body, 0x0160);
+        PutLe16(body + 2, 0);
+        PutLe16(body + 4, 0);
+        PutLe32(body + 8, 0);
+    }
+    Check(DiscIdentify(ReadFake, disc, &identity), "identifies the disc");
+    Check(identity.tableValid, "ignores sectors with only half the STR magic");
+    free(disc);
+}
+
+static void TestMalformedDirectoryRecord(void) {
+    FakeDisc *disc = malloc(sizeof(*disc));
+    DiscIdentity identity;
+    unsigned char *record;
+
+    BuildDisc(disc, "SLUS_004.03", 1);
+    record = User(disc, ROOT_SECTOR);
+    record[32] = record[0];
+    Check(DiscIdentify(ReadFake, disc, &identity),
+          "recognizes a readable disc with a malformed directory");
+    Check(identity.boot[0] == '\0' && !identity.tableValid,
+          "rejects a file name that extends beyond its directory record");
+    free(disc);
+}
+
 static void TestUnreadableDisc(void) {
     DiscIdentity identity;
+    Check(!DiscIdentify(ReadFake, NULL, NULL), "rejects a null result");
     Check(!DiscIdentify(NULL, NULL, &identity), "rejects a disc it cannot read");
     Check(strcmp(identity.region, "unknown") == 0, "reports no region");
 }
@@ -267,6 +305,8 @@ int main(void) {
     TestEuropeanName();
     TestMissingTable();
     TestShiftedBoundary();
+    TestPartialStrMagic();
+    TestMalformedDirectoryRecord();
     TestUnreadableDisc();
     TestRegionNames();
     if (failures != 0) {
