@@ -33,7 +33,8 @@ void UpdateReplayScene(void) {
     s32 resultCue;
 
     g_AnimTimer = (s32)((u32)g_AnimTimer + 1u);
-    g_SceneTimer = (s32)((u32)g_SceneTimer + 1u);
+    g_SceneTimer = NextReplaySceneTimer(g_SceneTimer,
+                                        g_ReplayFrameCount);
     resultCue = ReplayResultCue(g_SceneTimer, g_GrandPrixMode,
                                 g_SeriesCleared,
                                 g_PlayerCar.drive.racePosition);
@@ -41,7 +42,9 @@ void UpdateReplayScene(void) {
         PlaySoundCue(resultCue);
     }
 
-    UpdateReplayFade();
+    if (UpdateReplayFade()) {
+        return;
+    }
 
     ApplyReplayFrame(g_ReplayReadCursor, AsRivalCar(&g_PlayerCar),
                      &g_Cars[0]);

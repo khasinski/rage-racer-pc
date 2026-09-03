@@ -60,7 +60,7 @@ static void TestFadeInClampsAtClear(void) {
     g_FadeLevel = 2;
     g_FadeStep = -4;
 
-    UpdateReplayFade();
+    assert(!UpdateReplayFade());
 
     assert(g_FadeLevel == 0 && g_FadeStep == 0);
     assert(g_EndingWashLevel == 0);
@@ -72,7 +72,7 @@ static void TestSeriesClearWashProgress(void) {
     g_SeriesCleared = 1;
     g_SceneTimer = 401;
 
-    UpdateReplayFade();
+    assert(!UpdateReplayFade());
 
     assert(g_EndingWashLevel == 1);
     assert(s_WashDraws == 1 && s_WashProgress == 1 && s_WashFade == 0);
@@ -83,7 +83,7 @@ static void TestConfirmStartsAudioFade(void) {
     ResetState();
     g_PadPressed = PAD_CONFIRM;
 
-    UpdateReplayFade();
+    assert(!UpdateReplayFade());
 
     assert(g_FadeStep == 4);
     assert(g_FadeLevel == 0);
@@ -93,7 +93,7 @@ static void TestConfirmStartsAudioFade(void) {
     g_ReplayBufferWrapped = 1;
     g_PadPressed = PAD_CONFIRM;
 
-    UpdateReplayFade();
+    assert(!UpdateReplayFade());
 
     assert(g_FadeStep == 4);
     assert(s_AudioFade == 60);
@@ -104,7 +104,7 @@ static void TestWrappedReplayAutoFadeKeepsAudio(void) {
     g_SceneTimer = 932;
     g_ReplayBufferWrapped = 1;
 
-    UpdateReplayFade();
+    assert(!UpdateReplayFade());
 
     assert(g_FadeStep == 4);
     assert(s_AudioFade == -1);
@@ -114,7 +114,7 @@ static void TestLinearReplayAutoFadeFadesAudio(void) {
     ResetState();
     g_SceneTimer = 932;
 
-    UpdateReplayFade();
+    assert(!UpdateReplayFade());
 
     assert(g_FadeStep == 4);
     assert(s_AudioFade == 60);
@@ -126,7 +126,7 @@ static void TestOpaqueFadeSelectsResultScene(void) {
     g_FadeStep = 4;
     g_GrandPrixMode = 2;
 
-    UpdateReplayFade();
+    assert(UpdateReplayFade());
 
     assert(g_FadeLevel == 257);
     assert(g_MirrorMode == 0);
@@ -138,9 +138,14 @@ static void TestOpaqueFadeSelectsResultScene(void) {
     g_FadeLevel = 254;
     g_FadeStep = 4;
 
-    UpdateReplayFade();
+    assert(UpdateReplayFade());
 
     assert(g_SceneId == 0x14);
+
+    ResetState();
+    g_FadeLevel = 257;
+    assert(!UpdateReplayFade());
+    assert(g_SceneId == 99);
 }
 
 int main(void) {

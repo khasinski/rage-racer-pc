@@ -26,6 +26,7 @@ s32 g_IsEnvironmentMode4;
 
 static s32 s_AppliedCursor;
 static s32 s_FadeUpdates;
+static s32 s_FadeExited;
 static s32 s_CarUpdates;
 static s32 s_CameraUpdates;
 static s32 s_TerrainDraws;
@@ -45,7 +46,10 @@ void PlaySoundCue(s32 cue) {
     s_SoundCues++;
     s_LastSoundCue = cue;
 }
-void UpdateReplayFade(void) { s_FadeUpdates++; }
+s32 UpdateReplayFade(void) {
+    s_FadeUpdates++;
+    return s_FadeExited;
+}
 void ApplyReplayFrame(s32 subframe, GameCarRuntime *player,
                       GameCarRuntime *rival) {
     assert(player == AsRivalCar(&g_PlayerCar));
@@ -105,6 +109,7 @@ static void ResetState(void) {
     g_RenderState.packetCursor = s_FrameContext.layout.primitiveBuffer;
     s_AppliedCursor = -1;
     s_FadeUpdates = 0;
+    s_FadeExited = 0;
     s_CarUpdates = 0;
     s_CameraUpdates = 0;
     s_TerrainDraws = 0;
@@ -141,6 +146,7 @@ static void TestFirstTimeAttackFrame(void) {
 static void TestGrandPrixResultCueAndCar(void) {
     ResetState();
     g_GrandPrixMode = 1;
+    g_ReplayFrameCount = 100;
     g_SceneTimer = 59;
 
     UpdateReplayScene();
@@ -167,20 +173,32 @@ static void TestReplayBadgeVisibility(void) {
     assert(s_SpriteDraws == 0 && s_DrawModeDraws == 0);
 }
 
-static void TestSceneCountersWrap(void) {
+static void TestSceneCountersStayUsable(void) {
     ResetState();
     g_AnimTimer = INT_MAX;
     g_SceneTimer = INT_MAX;
 
     UpdateReplayScene();
 
-    assert(g_AnimTimer == INT_MIN && g_SceneTimer == INT_MIN);
+    assert(g_AnimTimer == INT_MIN && g_SceneTimer == g_ReplayFrameCount);
+}
+
+static void TestFadeExitStopsReplayFrame(void) {
+    ResetState();
+    s_FadeExited = 1;
+
+    UpdateReplayScene();
+
+    assert(s_FadeUpdates == 1);
+    assert(s_AppliedCursor == -1 && s_CarUpdates == 0);
+    assert(s_CameraUpdates == 0 && s_TerrainDraws == 0);
 }
 
 int main(void) {
     TestFirstTimeAttackFrame();
     TestGrandPrixResultCueAndCar();
     TestReplayBadgeVisibility();
-    TestSceneCountersWrap();
+    TestSceneCountersStayUsable();
+    TestFadeExitStopsReplayFrame();
     return 0;
 }

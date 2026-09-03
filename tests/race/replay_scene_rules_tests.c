@@ -60,6 +60,16 @@ static void TestReplayCursorWrap(void) {
     assert(NextReplayReadCursor(INT_MAX, INT_MAX) == 0);
 }
 
+static void TestReplaySceneTimer(void) {
+    assert(NextReplaySceneTimer(0, 100) == 1);
+    assert(NextReplaySceneTimer(99, 100) == 100);
+    assert(NextReplaySceneTimer(100, 100) == 100);
+    assert(NextReplaySceneTimer(INT_MAX, 100) == 100);
+    assert(NextReplaySceneTimer(-1, 100) == 0);
+    assert(NextReplaySceneTimer(10, 0) == 0);
+    assert(NextReplaySceneTimer(10, INT_MIN) == 0);
+}
+
 int main(void) {
     TestEndingWashThreshold();
     TestAutomaticExitFadeThreshold();
@@ -67,5 +77,6 @@ int main(void) {
     TestReplayBadgeBlink();
     TestReplayResultCue();
     TestReplayCursorWrap();
+    TestReplaySceneTimer();
     return 0;
 }

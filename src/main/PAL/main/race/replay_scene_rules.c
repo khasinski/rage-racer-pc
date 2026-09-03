@@ -59,3 +59,10 @@ s32 NextReplayReadCursor(s32 cursor, s32 frameCount) {
     }
     return cursor + 1;
 }
+
+s32 NextReplaySceneTimer(s32 sceneTimer, s32 frameCount) {
+    if (sceneTimer < 0 || frameCount <= 0) {
+        return 0;
+    }
+    return sceneTimer < frameCount ? sceneTimer + 1 : frameCount;
+}

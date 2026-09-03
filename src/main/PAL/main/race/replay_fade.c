@@ -22,8 +22,9 @@ static void StartReplayExitFade(s32 fadeAudio) {
     }
 }
 
-void UpdateReplayFade(void) {
+s32 UpdateReplayFade(void) {
     s32 endingWashActive;
+    s32 sceneChanged = 0;
 
     if (g_FadeStep < 0) {
         g_FadeLevel = AdvanceReplayFadeLevel(g_FadeLevel, g_FadeStep);
@@ -32,7 +33,7 @@ void UpdateReplayFade(void) {
             g_EndingWashLevel = 0;
         }
         DrawFullscreenFadeTile(g_FadeLevel, REPLAY_FADE_IN_TPAGE);
-        return;
+        return 0;
     }
 
     endingWashActive = g_SeriesCleared != 0 &&
@@ -57,6 +58,7 @@ void UpdateReplayFade(void) {
             g_SceneId = g_GrandPrixMode == 0
                 ? TIME_ATTACK_RESULT_SCENE
                 : GRAND_PRIX_RESULT_SCENE;
+            sceneChanged = 1;
         }
     }
 
@@ -67,4 +69,5 @@ void UpdateReplayFade(void) {
     } else if (g_FadeLevel != 0) {
         DrawFullscreenFadeTile(g_FadeLevel, REPLAY_FADE_OUT_TPAGE);
     }
+    return sceneChanged;
 }
