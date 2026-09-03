@@ -56,6 +56,18 @@ endif()
 add_test(NAME gte_matrix_compat COMMAND gte_matrix_compat_tests)
 set_tests_properties(gte_matrix_compat PROPERTIES LABELS unit)
 
+add_executable(host_storage_tests
+    host_storage_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/host_storage.c)
+target_include_directories(host_storage_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(host_storage_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME host_storage COMMAND host_storage_tests)
+set_tests_properties(host_storage PROPERTIES LABELS functional)
+
 add_executable(archive_index_tests
     archive_index_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/archive_index.c)

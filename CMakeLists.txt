@@ -213,6 +213,7 @@ if(RAGE_BUILD_PORT)
         src/port/disc_iso.c
         src/port/disc_raw_file.c
         src/port/gte_matrix_compat.c
+        src/port/host_storage.c
         src/port/classic/native_geometry.c
         src/port/native_geometry_interpolation.c
         src/port/native_asset_loader.c
