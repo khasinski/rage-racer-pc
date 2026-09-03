@@ -10,12 +10,9 @@ void CameraViewFromCarBlock(GameRenderObject *car, GameViewWork *view) {
     s32 cameraLiftWorld[4];
     Matrix matrixWork;
     Matrix objectRotation;
+
     CameraLoadViewPoseFromCar(view, car);
-    BuildRotMatrixY(&objectRotation, view->angleY);
-    BuildRotMatrixX(&matrixWork, view->angleX);
-    MulMatrix2(&matrixWork, &objectRotation);
-    BuildRotMatrixZ(&matrixWork, view->angleZ);
-    MulMatrix2(&matrixWork, &objectRotation);
+    CameraBuildCarRotation(&objectRotation, car);
     cameraLift[0] = 0;
     cameraLift[1] = -0x1C0;
     cameraLift[2] = 0;

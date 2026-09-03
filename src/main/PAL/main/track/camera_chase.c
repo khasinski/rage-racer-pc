@@ -158,11 +158,7 @@ void CameraViewFromChaseCamera(GameRenderObject *car, GameViewWork *view) {
     BuildRotMatrixX(&matrixWork, -0x80);
     MulMatrix2(&matrixWork, &cameraRotation);
     g_ChaseYawPrev = g_ChaseYaw;
-    BuildRotMatrixY(&objectRotation, car->bodyYaw);
-    BuildRotMatrixX(&matrixWork, car->bodyPitch);
-    MulMatrix2(&matrixWork, &objectRotation);
-    BuildRotMatrixZ(&matrixWork, car->bodyRoll);
-    MulMatrix2(&matrixWork, &objectRotation);
+    CameraBuildCarRotation(&objectRotation, car);
     TransposeMatrix(&objectRotation, &inverseObjectRotation);
     MulMatrix2(&cameraRotation, &objectRotation);
     TransposeMatrix(&objectRotation, &matrixWork);
