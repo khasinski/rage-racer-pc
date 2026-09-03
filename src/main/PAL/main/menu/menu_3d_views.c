@@ -13,21 +13,12 @@ static void SwapShowroomCarModel(void) {
 }
 
 static void UpdateMenuViewSpin(void) {
-    if ((g_PadHeld & PAD_L1) && g_MenuViewSpin < 64) {
-        g_MenuViewSpin++;
-    }
-    if ((g_PadHeld & PAD_R1) && g_MenuViewSpin >= -63) {
-        g_MenuViewSpin--;
-    }
+    g_MenuViewSpin = UpdatedMenuViewSpin(g_MenuViewSpin, g_PadHeld);
 }
 
 static void UpdateShowroomSteering(void) {
-    if ((g_PadHeld & PAD_R2) && g_PlayerCar.steeringAngle < 6144) {
-        g_PlayerCar.steeringAngle += 192;
-    }
-    if ((g_PadHeld & PAD_L2) && g_PlayerCar.steeringAngle >= -6143) {
-        g_PlayerCar.steeringAngle -= 192;
-    }
+    g_PlayerCar.steeringAngle =
+        UpdatedShowroomSteering(g_PlayerCar.steeringAngle, g_PadHeld);
 }
 
 static void SetupMenuViewCamera(s32 pitch, s32 yaw) {

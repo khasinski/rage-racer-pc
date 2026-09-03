@@ -180,6 +180,22 @@ static inline int CourseCarouselAtSwapPoint(s32 angle, s32 target,
     return target > angle ? angle > 750000 : angle <= 249999;
 }
 
+static inline s32 UpdatedMenuViewSpin(s32 spin, u16 held) {
+    s32 delta = 0;
+
+    if (held & PAD_L1) delta++;
+    if (held & PAD_R1) delta--;
+    return AddClampedMenuValue(spin, delta, -64, 64);
+}
+
+static inline s32 UpdatedShowroomSteering(s32 steering, u16 held) {
+    s32 delta = 0;
+
+    if (held & PAD_R2) delta += 192;
+    if (held & PAD_L2) delta -= 192;
+    return AddClampedMenuValue(steering, delta, -6144, 6144);
+}
+
 static inline s32 TeamNameCharacterModelIndex(s32 key, s32 modelCount) {
     if (key == TEAM_NAME_HIDDEN_MODEL_KEY ||
         (u32)(key - TEAM_NAME_CONTROL_KEY_FIRST) <

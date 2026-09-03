@@ -101,6 +101,20 @@ int main(void) {
     CHECK(!CourseCarouselAtSwapPoint(249999, 0, -1));
     CHECK(!CourseCarouselAtSwapPoint(100, 100, 2));
 
+    CHECK(UpdatedMenuViewSpin(0, PAD_L1) == 1);
+    CHECK(UpdatedMenuViewSpin(0, PAD_R1) == -1);
+    CHECK(UpdatedMenuViewSpin(64, PAD_L1) == 64);
+    CHECK(UpdatedMenuViewSpin(-64, PAD_R1) == -64);
+    CHECK(UpdatedMenuViewSpin(64, PAD_L1 | PAD_R1) == 64);
+    CHECK(UpdatedMenuViewSpin(INT_MAX, 0) == 64);
+
+    CHECK(UpdatedShowroomSteering(0, PAD_R2) == 192);
+    CHECK(UpdatedShowroomSteering(0, PAD_L2) == -192);
+    CHECK(UpdatedShowroomSteering(6143, PAD_R2) == 6144);
+    CHECK(UpdatedShowroomSteering(-6143, PAD_L2) == -6144);
+    CHECK(UpdatedShowroomSteering(500, PAD_L2 | PAD_R2) == 500);
+    CHECK(UpdatedShowroomSteering(INT_MIN, 0) == -6144);
+
     puts("menu animation helper tests passed");
     return 0;
 }
