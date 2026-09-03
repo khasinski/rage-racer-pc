@@ -107,6 +107,7 @@ u16 UpdatedClassClearCount(u16 clears, s32 grade);
 s32 ComputeClassGradeForPlaces(const u8 bestPlaces[4], s32 unlockPending);
 s32 RaceEndBrightness(s32 level);
 s32 UpdateLostRaceChoice(s32 choice, u16 pressedButtons);
+s32 LostRaceRetryDigitIndex(s32 retriesRemaining);
 s32 LostRaceExitScene(s32 choice);
 s32 CanSkipRaceEndScreen(s32 timer, u16 pressedButtons);
 s32 ResultCourseNameY(s32 grandPrixMode);

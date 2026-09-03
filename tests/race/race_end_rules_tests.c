@@ -25,6 +25,11 @@ int main(void) {
     Check("opposite directions cancel",
           UpdateLostRaceChoice(1, PAD_UP | PAD_DOWN), 1);
 
+    Check("negative retries use zero digit", LostRaceRetryDigitIndex(-1), 0);
+    Check("ordinary retries keep their digit", LostRaceRetryDigitIndex(3), 3);
+    Check("excess retries use last digit", LostRaceRetryDigitIndex(6), 5);
+    Check("large retries use last digit", LostRaceRetryDigitIndex(99), 5);
+
     Check("retry returns to race", LostRaceExitScene(0), 11);
     Check("exit returns to title", LostRaceExitScene(1), 6);
 

@@ -6,6 +6,7 @@ enum {
     SCENE_RACE = 11,
     RACE_END_MAX_BRIGHTNESS = 127,
     RACE_END_SKIP_MIN_TIMER = 261,
+    LOST_RACE_RETRY_DIGIT_COUNT = 6,
 };
 
 s32 RaceEndBrightness(s32 level) {
@@ -28,6 +29,16 @@ s32 UpdateLostRaceChoice(s32 choice, u16 pressedButtons) {
         choice = 1;
     }
     return choice;
+}
+
+s32 LostRaceRetryDigitIndex(s32 retriesRemaining) {
+    if (retriesRemaining < 0) {
+        return 0;
+    }
+    if (retriesRemaining >= LOST_RACE_RETRY_DIGIT_COUNT) {
+        return LOST_RACE_RETRY_DIGIT_COUNT - 1;
+    }
+    return retriesRemaining;
 }
 
 s32 LostRaceExitScene(s32 choice) {

@@ -34,7 +34,7 @@ void EnterLostRaceScreen(void) {
 static void DrawRaceEndPrompt(void) {
     s32 color = 0x7812;
     s32 drawColor;
-    s16 index;
+    s32 index;
 
     if (g_SceneTimer & 4) {
         color = 0x784C;
@@ -54,7 +54,7 @@ static void DrawRaceEndPrompt(void) {
 
     DrawProportionalText(0x76, 0xB8, g_TextChance, 0x7812);
 
-    index = g_CourseProgress->retriesRemaining;
+    index = LostRaceRetryDigitIndex(g_CourseProgress->retriesRemaining);
     DrawProportionalText(0xBE, 0xB8, g_ChanceDigits[index], 0x7812);
 
     DrawText8x8(0x58, 0xD0, g_TextPressStart, 0x78CC);
