@@ -38,9 +38,10 @@ static int SmokeFrameListContains(const char *list, int frame) {
     return 0;
 }
 
-static uint32_t SmokeHashWords(const u32 *words, size_t count) {
-    uint32_t hash = 2166136261u;
+static uint32_t SmokeHashAppendWords(uint32_t hash, const u32 *words,
+                                     size_t count) {
     size_t index;
+
     for (index = 0; index < count; index++) {
         u32 value = words[index];
         int byteIndex;
@@ -50,6 +51,10 @@ static uint32_t SmokeHashWords(const u32 *words, size_t count) {
         }
     }
     return hash;
+}
+
+static uint32_t SmokeHashWords(const u32 *words, size_t count) {
+    return SmokeHashAppendWords(2166136261u, words, count);
 }
 
 static uint32_t SmokeHashBytes(const void *data, size_t size) {
@@ -79,16 +84,8 @@ static uint32_t SmokeHashCarRenderState(const GameCarRuntime *cars,
             (u32)(u16)car->activeFlag, (u32)(u16)car->modelIndex,
             (u32)car->aiEnabled
         };
-        size_t valueIndex;
-        for (valueIndex = 0; valueIndex < sizeof(values) / sizeof(values[0]);
-             valueIndex++) {
-            u32 value = values[valueIndex];
-            int byteIndex;
-            for (byteIndex = 0; byteIndex < 4; byteIndex++) {
-                hash ^= (value >> (byteIndex * 8)) & 0xff;
-                hash *= 16777619u;
-            }
-        }
+        hash = SmokeHashAppendWords(
+            hash, values, sizeof(values) / sizeof(values[0]));
     }
     return hash;
 }
@@ -109,18 +106,7 @@ static uint32_t SmokeHashPlayerRenderState(const PlayerCarRuntime *car) {
         (u32)car->trackProgress, (u32)renderObject->renderDepth,
         (u32)(u16)car->activeFlag, (u32)(u16)car->modelIndex
     };
-    uint32_t hash = 2166136261u;
-    size_t valueIndex;
-    for (valueIndex = 0; valueIndex < sizeof(values) / sizeof(values[0]);
-         valueIndex++) {
-        u32 value = values[valueIndex];
-        int byteIndex;
-        for (byteIndex = 0; byteIndex < 4; byteIndex++) {
-            hash ^= (value >> (byteIndex * 8)) & 0xff;
-            hash *= 16777619u;
-        }
-    }
-    return hash;
+    return SmokeHashWords(values, sizeof(values) / sizeof(values[0]));
 }
 
 static int SmokeCountDrawableCars(const GameCarRuntime *cars,
@@ -140,7 +126,6 @@ static uint32_t SmokeHashVisibleList(const VisibleTerrainCell *entries) {
     size_t entryIndex;
     for (entryIndex = 0; entryIndex < 64; entryIndex++) {
         u32 words[4];
-        int wordIndex;
         words[0] = entries[entryIndex].cellIndex == -1
                        ? 0
                        : (u32)entries[entryIndex].x;
@@ -151,13 +136,8 @@ static uint32_t SmokeHashVisibleList(const VisibleTerrainCell *entries) {
                        ? 0
                        : (u32)entries[entryIndex].z;
         words[3] = (u32)entries[entryIndex].cellIndex;
-        for (wordIndex = 0; wordIndex < 4; wordIndex++) {
-            int byteIndex;
-            for (byteIndex = 0; byteIndex < 4; byteIndex++) {
-                hash ^= (words[wordIndex] >> (byteIndex * 8)) & 0xff;
-                hash *= 16777619u;
-            }
-        }
+        hash = SmokeHashAppendWords(
+            hash, words, sizeof(words) / sizeof(words[0]));
     }
     return hash;
 }
