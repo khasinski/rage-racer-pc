@@ -24,11 +24,8 @@
 #define CARD_REST_WINDOW 0x3D08F
 
 static int CourseCardSettled(void) {
-    s32 target = g_MenuViewAngleTarget;
-    s32 angle = g_MenuViewAngle;
-
-    return target < angle ? (angle - target <= CARD_REST_WINDOW)
-                          : (target - angle <= CARD_REST_WINDOW);
+    return MenuValueWithinWindow(g_MenuViewAngle, g_MenuViewAngleTarget,
+                                 CARD_REST_WINDOW);
 }
 
 /*

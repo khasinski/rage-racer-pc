@@ -29,6 +29,13 @@ int main(void) {
     progress = 123;
     CHECK(AdvanceMenuFade(&progress, 0) == 0);
 
-    puts("menu fade progress tests passed");
+    CHECK(MenuValueWithinWindow(100, 110, 10));
+    CHECK(MenuValueWithinWindow(110, 100, 10));
+    CHECK(!MenuValueWithinWindow(100, 111, 10));
+    CHECK(!MenuValueWithinWindow(INT_MIN, INT_MAX, UINT_MAX - 1));
+    CHECK(MenuValueWithinWindow(INT_MIN, INT_MAX, UINT_MAX));
+    CHECK(MenuValueWithinWindow(INT_MIN, INT_MIN, 0));
+
+    puts("menu animation helper tests passed");
     return 0;
 }

@@ -11,17 +11,15 @@
 #include "game/audio.h"
 #include "game/car.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 
 /* The rest window is a fifth of a turn either side of the target. */
 #define TURNTABLE_REST_WINDOW 0x493DF
 #define TURNTABLE_SWING 0x927C0
 
 int MenuCarViewSettled(void) {
-    s32 target = g_MenuViewAngleTarget;
-    s32 angle = g_MenuViewAngle;
-
-    return target < angle ? (angle - target <= TURNTABLE_REST_WINDOW)
-                          : (target - angle <= TURNTABLE_REST_WINDOW);
+    return MenuValueWithinWindow(g_MenuViewAngle, g_MenuViewAngleTarget,
+                                 TURNTABLE_REST_WINDOW);
 }
 
 /*

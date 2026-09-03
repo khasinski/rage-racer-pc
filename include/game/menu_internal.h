@@ -26,6 +26,15 @@ static inline s32 AdvanceMenuFade(s32 *progress, s32 step) {
     return *progress;
 }
 
+static inline int MenuValueWithinWindow(s32 value, s32 target, u32 window) {
+    int64_t distance = (int64_t)value - target;
+
+    if (distance < 0) {
+        distance = -distance;
+    }
+    return (uint64_t)distance <= window;
+}
+
 void RestoreTeamLogoClut(void);
 void UploadTeamLogoClut(void);
 s32 AdvanceCarSpecPanel(s32 *progress, s32 step);
