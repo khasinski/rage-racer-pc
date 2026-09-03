@@ -59,7 +59,7 @@ void DrawMenuCarView(void) {
     Vec4 vec;
     s32 carIndex;
     s32 viewHeight;
-    s32 angleDelta;
+    int64_t angleDelta;
     s32 currentAngle;
     s32 horizontalAngle;
     s32 offset;
@@ -68,7 +68,7 @@ void DrawMenuCarView(void) {
     SetupMenuViewCamera(0x100, 0);
 
     currentAngle = g_MenuViewAngle;
-    angleDelta = g_MenuViewAngleTarget - currentAngle;
+    angleDelta = (int64_t)g_MenuViewAngleTarget - currentAngle;
     if (angleDelta != 0) {
         if (angleDelta < 0) {
             if (currentAngle <= 299999) {
@@ -80,11 +80,12 @@ void DrawMenuCarView(void) {
                     g_CarSwapFromIndex = g_CarSwapToIndex;
                     g_CarSwapToIndex = -1;
                 } else {
-                    g_MenuViewAngle =
-                        currentAngle + (angleDelta - 24) / 24;
+                    g_MenuViewAngle = AdvanceMenuViewAngleValue(
+                        currentAngle, g_MenuViewAngleTarget, 24);
                 }
             } else {
-                g_MenuViewAngle = currentAngle + (angleDelta - 24) / 24;
+                g_MenuViewAngle = AdvanceMenuViewAngleValue(
+                    currentAngle, g_MenuViewAngleTarget, 24);
             }
         } else {
             if (currentAngle > 900000 && g_CarSwapToIndex >= 0) {
@@ -95,7 +96,8 @@ void DrawMenuCarView(void) {
                 g_CarSwapFromIndex = g_CarSwapToIndex;
                 g_CarSwapToIndex = -1;
             } else {
-                g_MenuViewAngle = currentAngle + (angleDelta + 24) / 24;
+                g_MenuViewAngle = AdvanceMenuViewAngleValue(
+                    currentAngle, g_MenuViewAngleTarget, 24);
             }
         }
     }
@@ -157,14 +159,14 @@ void DrawMenuCourseView(void) {
     GameRenderObject *renderObject = ShowroomRenderObject();
     Matrix mtxA;
     Matrix mtxB;
-    s32 angleDelta;
+    int64_t angleDelta;
     s32 horizontalAngle;
     s32 courseModelIndex;
     s32 viewHeight;
 
     SetupMenuViewCamera(0x100, 0);
 
-    angleDelta = g_MenuViewAngleTarget - g_MenuViewAngle;
+    angleDelta = (int64_t)g_MenuViewAngleTarget - g_MenuViewAngle;
     if (angleDelta != 0) {
         if (angleDelta > 0) {
             if (g_MenuViewAngle > 750000 && g_MenuPendingCourseIndex >= 0) {
@@ -176,7 +178,8 @@ void DrawMenuCourseView(void) {
                     g_CourseSwapDelay++;
                 }
             } else {
-                g_MenuViewAngle += (angleDelta + 18) / 18;
+                g_MenuViewAngle = AdvanceMenuViewAngleValue(
+                    g_MenuViewAngle, g_MenuViewAngleTarget, 18);
             }
         } else {
             if (g_MenuViewAngle <= 249999 && g_MenuPendingCourseIndex >= 0) {
@@ -188,7 +191,8 @@ void DrawMenuCourseView(void) {
                     g_CourseSwapDelay++;
                 }
             } else {
-                g_MenuViewAngle += (angleDelta - 18) / 18;
+                g_MenuViewAngle = AdvanceMenuViewAngleValue(
+                    g_MenuViewAngle, g_MenuViewAngleTarget, 18);
             }
         }
     }
@@ -223,7 +227,6 @@ void DrawTeamNameCharModel(void) {
     Matrix mtxB;
     Vec4 position;
     Vec4 vcopy;
-    s32 angleStep;
     s32 viewHeight;
     s32 baseHeight;
     s32 nextAngle;
@@ -235,16 +238,8 @@ void DrawTeamNameCharModel(void) {
 
     SetupMenuViewCamera(0, -104);
 
-    angleStep = g_MenuViewAngleTarget - g_MenuViewAngle;
-    if (angleStep != 0) {
-        if (angleStep > 0) {
-            angleStep = (angleStep + 16) / 16;
-        } else {
-            angleStep = (angleStep - 16) / 16;
-        }
-    }
-
-    nextAngle = g_MenuViewAngle + angleStep;
+    nextAngle = AdvanceMenuViewAngleValue(
+        g_MenuViewAngle, g_MenuViewAngleTarget, 16);
     g_MenuViewAngle = nextAngle;
     if (nextAngle <= 3071999 && GameMenuCursorAnim >= 0) {
         g_MenuViewAngle = nextAngle - 2048000;

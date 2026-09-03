@@ -67,6 +67,20 @@ static inline s32 AdvanceMenuViewOffsetValue(s32 current, s32 target) {
     return (s32)next;
 }
 
+static inline s32 AdvanceMenuViewAngleValue(s32 current, s32 target,
+                                            s32 divisor) {
+    int64_t delta;
+    int64_t step;
+
+    if (divisor <= 0 || current == target) {
+        return current;
+    }
+    delta = (int64_t)target - current;
+    step = delta > 0 ? (delta + divisor) / divisor
+                     : (delta - divisor) / divisor;
+    return (s32)((int64_t)current + step);
+}
+
 typedef enum MenuDialogAction {
     MENU_DIALOG_NO_ACTION,
     MENU_DIALOG_CONFIRM,

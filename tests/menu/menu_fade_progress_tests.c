@@ -51,6 +51,14 @@ int main(void) {
     CHECK(AdvanceMenuViewOffsetValue(INT_MIN, INT_MAX) == INT_MIN);
     CHECK(AdvanceMenuViewOffsetValue(INT_MAX, INT_MIN) == 1789569705);
 
+    CHECK(AdvanceMenuViewAngleValue(100, 100, 24) == 100);
+    CHECK(AdvanceMenuViewAngleValue(100, 124, 24) == 102);
+    CHECK(AdvanceMenuViewAngleValue(100, 101, 24) == 101);
+    CHECK(AdvanceMenuViewAngleValue(100, 76, 24) == 98);
+    CHECK(AdvanceMenuViewAngleValue(100, 200, 0) == 100);
+    CHECK(AdvanceMenuViewAngleValue(INT_MIN, INT_MAX, 24) > INT_MIN);
+    CHECK(AdvanceMenuViewAngleValue(INT_MAX, INT_MIN, 24) < INT_MAX);
+
     puts("menu animation helper tests passed");
     return 0;
 }
