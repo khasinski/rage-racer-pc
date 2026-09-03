@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <limits.h>
 #include <string.h>
 
 #include "common.h"
@@ -125,6 +126,22 @@ int main(void) {
     CHECK(g_BestSectorTimes[1][1][0] == g_DefaultLapTimes[5]);
     CHECK(g_BestSectorTimes[1][1][1] == g_DefaultLapTimes[5]);
     CHECK(g_BestSectorTimes[1][1][2] == 34567);
+
+    g_DefaultLapTimes[0] = INT_MAX;
+    g_DefaultTotalTimes[0] = INT_MIN;
+    InitRecordTables();
+    CHECK(g_RankingRecords[0][0][4].raceTime == RACE_TIME_MAX_MS);
+    CHECK(g_TimeRecords[0][0][4].raceTime == 0);
+    g_BestLapTimes[0][0][0] = INT_MAX;
+    g_BestTotalTimes[0][0][0] = INT_MIN;
+    g_BestSectorTimes[0][0][0] = INT_MAX;
+    RepairRecordTimes();
+    CHECK(g_BestLapTimes[0][0][0] == RACE_TIME_MAX_MS);
+    CHECK(g_BestTotalTimes[0][0][0] == 0);
+    CHECK(g_BestSectorTimes[0][0][0] == RACE_TIME_MAX_MS);
+    g_DefaultLapTimes[0] = 100765;
+    g_DefaultTotalTimes[0] = 310765;
+    InitRecordTables();
 
     {
         u8 nameCodes[6] = {0};

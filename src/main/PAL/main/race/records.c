@@ -20,6 +20,16 @@ static const RaceRecord s_DefaultRecords[RECORD_TABLE_LENGTH] = {
     {{'R', 'A', 'C', 'E', 'R', ' ', '\0', '\0'}, 0, 3, 0},
 };
 
+static s32 ClampRaceTime(int64_t time) {
+    if (time < 0) {
+        return 0;
+    }
+    if (time > RACE_TIME_MAX_MS) {
+        return RACE_TIME_MAX_MS;
+    }
+    return (s32)time;
+}
+
 FastestLap FindFastestLap(const s32 *lapTimes, s32 lapCount) {
     FastestLap fastest = {
         .index = -1,
@@ -95,10 +105,12 @@ void InitRecordTables(void) {
                 g_RankingRecords[series][course][slot] =
                     s_DefaultRecords[slot];
                 g_RankingRecords[series][course][slot].raceTime =
-                    defaultLapTimes[index] + slot * 2000;
+                    ClampRaceTime((int64_t)defaultLapTimes[index] +
+                                  slot * 2000);
                 g_TimeRecords[series][course][slot] = s_DefaultRecords[slot];
                 g_TimeRecords[series][course][slot].raceTime =
-                    defaultTotalTimes[index] + slot * 10000;
+                    ClampRaceTime((int64_t)defaultTotalTimes[index] +
+                                  slot * 10000);
             }
         }
     }
@@ -116,19 +128,25 @@ void RepairRecordTimes(void) {
             s32 index = series * RECORD_COURSE_COUNT + course;
 
             for (slot = 0; slot < RECORD_REFERENCE_COUNT; slot++) {
-                if (g_BestLapTimes[series][course][slot] <= 0) {
+                if (g_BestLapTimes[series][course][slot] <= 0 ||
+                    g_BestLapTimes[series][course][slot] >
+                        RACE_TIME_MAX_MS) {
                     g_BestLapTimes[series][course][slot] =
-                        defaultLapTimes[index];
+                        ClampRaceTime(defaultLapTimes[index]);
                 }
-                if (g_BestTotalTimes[series][course][slot] <= 0) {
+                if (g_BestTotalTimes[series][course][slot] <= 0 ||
+                    g_BestTotalTimes[series][course][slot] >
+                        RACE_TIME_MAX_MS) {
                     g_BestTotalTimes[series][course][slot] =
-                        defaultTotalTimes[index];
+                        ClampRaceTime(defaultTotalTimes[index]);
                 }
             }
             for (slot = 0; slot < RECORD_SECTOR_COUNT; slot++) {
-                if (g_BestSectorTimes[series][course][slot] <= 0) {
+                if (g_BestSectorTimes[series][course][slot] <= 0 ||
+                    g_BestSectorTimes[series][course][slot] >
+                        RACE_TIME_MAX_MS) {
                     g_BestSectorTimes[series][course][slot] =
-                        defaultLapTimes[index];
+                        ClampRaceTime(defaultLapTimes[index]);
                 }
             }
         }
@@ -143,11 +161,7 @@ void FormatLapTime(char dst[LAP_TIME_TEXT_CAPACITY], s32 value) {
     if (dst == NULL) {
         return;
     }
-    if (value < 0) {
-        value = 0;
-    } else if (value > RACE_TIME_MAX_MS) {
-        value = RACE_TIME_MAX_MS;
-    }
+    value = ClampRaceTime(value);
     minutes = value / 60000;
     seconds = value / 1000 % 60;
     fraction = value % 1000;
