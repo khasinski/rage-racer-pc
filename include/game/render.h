@@ -794,8 +794,5 @@ extern u8 g_WordFontCells[40];
 void DecDCTReset(s32 mode);
 void DrawMinuteSecondTime(s32 x, s32 y, s32 ticks, s32 color);
 s32 Gpu_Reset(s32 mode);
-void MatrixApplyVectorComponents(Matrix *mtx, s32 x, s32 y, s32 z, s32 *outX,
-                                 s32 *outY, s32 *outZ);
-void MatrixApplyZRotation(Matrix* mtx, s32 degrees);
 
 #endif

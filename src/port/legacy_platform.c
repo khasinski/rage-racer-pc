@@ -790,33 +790,6 @@ int HostLoadAsset(unsigned int byte_offset, unsigned int size, void *destination
     return HostReadArchive(byte_offset, destination, size) ? (int)(size & ~3u) : 0;
 }
 
-/* Game-side, in render/rot_matrix.c; declared here rather than pulling a
- * game header into the platform layer. */
-void ApplyMatrixLV(const MATRIX *matrix, const int32_t *input, int32_t *output);
-
-void MatrixApplyVectorComponents(MATRIX *matrix, int32_t x, int32_t y, int32_t z,
-                                 int32_t *out_x, int32_t *out_y, int32_t *out_z) {
-    int32_t input[3] = {x, y, z};
-    int32_t output[3];
-    ApplyMatrixLV(matrix, input, output);
-    *out_x = output[0];
-    *out_y = output[1];
-    *out_z = output[2];
-}
-
-void MatrixApplyZRotation(MATRIX *matrix, int32_t degrees) {
-    MATRIX rotation = {0};
-    int angle;
-    if (degrees == 0) return;
-    angle = degrees / 360;
-    rotation.m[0][0] = (short)rcos(angle);
-    rotation.m[0][1] = (short)-rsin(angle);
-    rotation.m[1][0] = (short)rsin(angle);
-    rotation.m[1][1] = (short)rcos(angle);
-    rotation.m[2][2] = 0x1000;
-    MulMatrix(matrix, &rotation);
-}
-
 MATRIX *MulMatrix0(MATRIX *left, MATRIX *right, MATRIX *output) {
     int row, column, inner;
     MATRIX result = *output;
