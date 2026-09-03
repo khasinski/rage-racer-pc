@@ -129,6 +129,7 @@ int main(void) {
     {
         u8 nameCodes[6] = {0};
         RaceRecord *records = g_RankingRecords[0][0];
+        RaceRecord savedRecords[RECORD_TABLE_LENGTH];
         CHECK(InsertRaceRecord(records, 103000, 11, nameCodes) == 2);
         CHECK(records[0].raceTime == 100765);
         CHECK(records[1].raceTime == 102765);
@@ -146,13 +147,24 @@ int main(void) {
         CHECK(records[4].raceTime == 104765);
 
         memset(nameCodes, 0, sizeof(nameCodes));
-        CHECK(InsertRaceRecord(records, 100765, 13, nameCodes) == 2);
+        CHECK(InsertRaceRecord(records, 100765, 10, nameCodes) == 2);
         CHECK(records[1].raceTime == 100765);
-        CHECK(records[2].raceTime == 100765 && records[2].carIndex == 13);
+        CHECK(records[2].raceTime == 100765 && records[2].carIndex == 10);
 
         memset(nameCodes, 0x55, sizeof(nameCodes));
         CHECK(InsertRaceRecord(records, 999999, 12, nameCodes) == 5);
         for (slot = 0; slot < 6; slot++) CHECK(nameCodes[slot] == 0x55);
+
+        memcpy(savedRecords, records, sizeof(savedRecords));
+        CHECK(InsertRaceRecord(records, -1, 0, nameCodes) ==
+              RECORD_TABLE_LENGTH);
+        CHECK(InsertRaceRecord(records, 1, -1, nameCodes) ==
+              RECORD_TABLE_LENGTH);
+        CHECK(InsertRaceRecord(NULL, 1, 0, nameCodes) ==
+              RECORD_TABLE_LENGTH);
+        CHECK(InsertRaceRecord(records, 1, 0, NULL) ==
+              RECORD_TABLE_LENGTH);
+        CHECK(memcmp(records, savedRecords, sizeof(savedRecords)) == 0);
     }
 
     return 0;

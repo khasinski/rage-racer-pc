@@ -48,6 +48,11 @@ s32 InsertRaceRecord(RaceRecord records[RECORD_TABLE_LENGTH], s32 raceTime,
     s32 shift;
     s32 character;
 
+    if (records == NULL || nameCodes == NULL || raceTime < 0 ||
+        raceTime > RACE_TIME_MAX_MS || (u32)carIndex >= GAME_CAR_COUNT) {
+        return RECORD_TABLE_LENGTH;
+    }
+
     for (row = 0; row < RECORD_TABLE_LENGTH; row++) {
         if (raceTime >= records[row].raceTime) continue;
         for (shift = RECORD_TABLE_LENGTH - 1; shift > row; shift--) {
