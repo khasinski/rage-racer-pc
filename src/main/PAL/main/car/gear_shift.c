@@ -4,31 +4,12 @@
 #include "game/state.h"
 
 enum {
-    FIRST_GEAR = 1,
     PAD_MAPPING_STRIDE = 8,
     SHIFT_UP_MAPPING_SLOT = 4,
     SHIFT_DOWN_MAPPING_SLOT = 5,
     AUTO_SHIFT_COOLDOWN_FRAMES = 25,
     HARD_BRAKE_THRESHOLD = 129,
 };
-
-static s32 EffectiveTopGear(const GameCarSpec *spec) {
-    if (spec->topGear < FIRST_GEAR) {
-        return FIRST_GEAR;
-    }
-    if (spec->topGear > CAR_FORWARD_GEAR_COUNT) {
-        return CAR_FORWARD_GEAR_COUNT;
-    }
-    return spec->topGear;
-}
-
-static void ClampSelectedGear(GameCarDrive *drive, s32 topGear) {
-    if (drive->gear < FIRST_GEAR) {
-        drive->gear = FIRST_GEAR;
-    } else if (drive->gear > topGear) {
-        drive->gear = (s16)topGear;
-    }
-}
 
 static void ShiftManualGears(GameCarDrive *drive, s32 topGear,
                              s32 mappingBase) {
@@ -60,7 +41,7 @@ static void ResetStoppedAutomaticGear(PlayerCarRuntime *car) {
         drive->motionState == CAR_MOTION_STANDING_START) {
         return;
     }
-    drive->gear = FIRST_GEAR;
+    drive->gear = CAR_FIRST_FORWARD_GEAR;
     drive->clutch = 0;
     g_AutoShiftCooldown = 0;
 }
@@ -92,9 +73,9 @@ static void ShiftAutomaticGears(PlayerCarRuntime *car, s32 topGear) {
 /* Pick the bounded manual or automatic gear for this frame. */
 void ShiftPlayerGears(PlayerCarRuntime *car, int useAlternateMapping) {
     GameCarDrive *drive = &car->drive;
-    s32 topGear = EffectiveTopGear(g_CarSpec);
+    s32 topGear = ClampCarGear(g_CarSpec->topGear, CAR_FORWARD_GEAR_COUNT);
 
-    ClampSelectedGear(drive, topGear);
+    drive->gear = ClampCarGear(drive->gear, topGear);
     if (drive->manual != 0) {
         s32 mappingBase = useAlternateMapping ? PAD_MAPPING_STRIDE : 0;
 

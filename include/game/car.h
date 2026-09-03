@@ -386,6 +386,7 @@ typedef struct GameCarSpec {
 } GameCarSpec;
 
 enum {
+    CAR_FIRST_FORWARD_GEAR = 1,
     CAR_FORWARD_GEAR_COUNT = 6,
     CAR_TORQUE_LOSS_BOUNDARY_COUNT = 10,
     CAR_KNOCKBACK_VECTOR_MODE = 4,

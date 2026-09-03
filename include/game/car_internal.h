@@ -25,6 +25,18 @@ static inline s16 CalculateCarRpmDelta(s32 targetRpm, s32 currentRpm) {
     return WrapSigned16((u16)targetRpm - (u16)currentRpm);
 }
 
+static inline s16 ClampCarGear(s32 gear, s32 topGear) {
+    if (topGear < CAR_FIRST_FORWARD_GEAR) {
+        topGear = CAR_FIRST_FORWARD_GEAR;
+    } else if (topGear > CAR_FORWARD_GEAR_COUNT) {
+        topGear = CAR_FORWARD_GEAR_COUNT;
+    }
+    if (gear < CAR_FIRST_FORWARD_GEAR) {
+        return CAR_FIRST_FORWARD_GEAR;
+    }
+    return (s16)(gear > topGear ? topGear : gear);
+}
+
 extern RaceIntroCameraKey *g_RaceIntroCameraCursor;
 extern LaunchSpeedThreshold
     g_LaunchSpeedThresholds[CAR_LAUNCH_THRESHOLD_COUNT];

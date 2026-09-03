@@ -141,6 +141,25 @@ static void ManualTests(void) {
     ShiftPlayerGears(&s_car, 0);
     Check(s_car.drive.gear == 6, "invalid high gear is repaired",
           s_car.drive.gear, 6);
+
+    s_spec.topGear = 3;
+    Place(1, 5, 0);
+    ShiftPlayerGears(&s_car, 0);
+    Check(s_car.drive.gear == 3, "gear is capped by the configured gearbox",
+          s_car.drive.gear, 3);
+
+    s_spec.topGear = 0;
+    Place(1, 3, 0);
+    ShiftPlayerGears(&s_car, 0);
+    Check(s_car.drive.gear == 1, "invalid low top gear falls back to first",
+          s_car.drive.gear, 1);
+
+    s_spec.topGear = 7;
+    Place(1, 7, 0);
+    ShiftPlayerGears(&s_car, 0);
+    Check(s_car.drive.gear == 6, "invalid high top gear falls back to sixth",
+          s_car.drive.gear, 6);
+    s_spec.topGear = CAR_FORWARD_GEAR_COUNT;
 }
 
 static void AutomaticTests(void) {

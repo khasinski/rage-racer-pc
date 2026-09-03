@@ -7,7 +7,6 @@
 #include "game/state.h"
 
 enum {
-    FIRST_FORWARD_GEAR = 1,
     PEDAL_LATCH_ARM_THRESHOLD = 0x85,
     PEDAL_LATCH_RELEASE_THRESHOLD = 0x7C,
     ENGINE_RPM_LIMIT = 0x3A98,
@@ -18,16 +17,6 @@ typedef struct DrivetrainGearData {
     const s32 *torqueCurve;
     s32 ratio;
 } DrivetrainGearData;
-
-static s16 ClampDrivetrainGear(s16 gear) {
-    if (gear < FIRST_FORWARD_GEAR) {
-        return FIRST_FORWARD_GEAR;
-    }
-    if (gear > CAR_FORWARD_GEAR_COUNT) {
-        return CAR_FORWARD_GEAR_COUNT;
-    }
-    return gear;
-}
 
 /*
  * A pedal's three-state latch. Pressing past 0x85 arms it, the next frame
@@ -56,7 +45,7 @@ static DrivetrainGearData SelectDrivetrainGearData(GameCarDrive *drive,
 
     if (g_RacePhase < 2) {
         drive->gearDisp = drive->gear;
-        data.ratio = GetCarGearLoad(spec, FIRST_FORWARD_GEAR);
+        data.ratio = GetCarGearLoad(spec, CAR_FIRST_FORWARD_GEAR);
         data.torqueCurve = g_GearTorqueCurve[0].values;
     } else if (drive->motionState == CAR_MOTION_STANDING_START &&
                (drive->acceleratorInput.value < 0x40 ||
@@ -179,7 +168,7 @@ static void DispatchCarMotion(PlayerCarRuntime *car) {
 void UpdateCarDrivetrain(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
     const GameCarSpec *spec = g_CarSpec;
-    s16 gear = ClampDrivetrainGear(drive->gear);
+    s16 gear = ClampCarGear(drive->gear, CAR_FORWARD_GEAR_COUNT);
     DrivetrainGearData gearData;
     s32 gripBudget;
     s32 initialAcceleration;
