@@ -11,7 +11,6 @@
 
 GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
-ObjectMatrixWork g_ObjectMatrixWork;
 Matrix g_SceneLightMatrix;
 u8 g_PadType;
 s32 g_GameMode;

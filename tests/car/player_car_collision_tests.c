@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <string.h>
 
-ObjectMatrixWork g_ObjectMatrixWork;
 GameRenderState g_RenderState;
 GameCarRuntime g_Cars[11];
 

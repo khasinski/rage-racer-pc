@@ -1,5 +1,6 @@
 #include "game/render.h"
 #include "game/state.h"
+#include "psyz/gte.h"
 
 #include <limits.h>
 #include <stdarg.h>
@@ -7,7 +8,6 @@
 #include <string.h>
 
 GameRenderState g_RenderState;
-ObjectMatrixWork g_ObjectMatrixWork;
 s32 g_SceneTimer;
 
 int DiagnosticsEnabled(const char *key) {
@@ -44,7 +44,6 @@ static int TestObjectTranslation(void) {
     Matrix rotation;
 
     memset(&g_RenderState, 0, sizeof(g_RenderState));
-    memset(&g_ObjectMatrixWork, 0, sizeof(g_ObjectMatrixWork));
     memset(&rotation, 0, sizeof(rotation));
     RENDER_VIEW_STATE->position.vector.x = 100;
     RENDER_VIEW_STATE->position.vector.y = 200;
@@ -58,15 +57,9 @@ static int TestObjectTranslation(void) {
 
     SetGteObjectMatrix(&position, &rotation);
 
-    CHECK_EQ(g_ObjectMatrixWork.relative[0], 30);
-    CHECK_EQ(g_ObjectMatrixWork.relative[1], -20);
-    CHECK_EQ(g_ObjectMatrixWork.relative[2], 60);
-    CHECK_EQ(g_ObjectMatrixWork.view.x, 30);
-    CHECK_EQ(g_ObjectMatrixWork.view.y, -20);
-    CHECK_EQ(g_ObjectMatrixWork.view.z, 60);
-    CHECK_EQ(g_ObjectMatrixWork.mtx.t[0], 120);
-    CHECK_EQ(g_ObjectMatrixWork.mtx.t[1], -80);
-    CHECK_EQ(g_ObjectMatrixWork.mtx.t[2], 240);
+    CHECK_EQ((s32)Psyz_GteCtrlRead(5), 120);
+    CHECK_EQ((s32)Psyz_GteCtrlRead(6), -80);
+    CHECK_EQ((s32)Psyz_GteCtrlRead(7), 240);
 
     return 0;
 }
@@ -76,16 +69,18 @@ static int TestPositionSubtractionWrapsLikeThePs1(void) {
     Matrix rotation;
 
     memset(&g_RenderState, 0, sizeof(g_RenderState));
-    memset(&g_ObjectMatrixWork, 0, sizeof(g_ObjectMatrixWork));
     memset(&rotation, 0, sizeof(rotation));
+    g_RenderState.matrix.m[0][0] = 4096;
+    g_RenderState.matrix.m[1][1] = 4096;
+    g_RenderState.matrix.m[2][2] = 4096;
     RENDER_VIEW_STATE->position.vector.x = INT_MAX;
     RENDER_VIEW_STATE->position.vector.y = INT_MIN;
 
     SetGteObjectMatrix(&position, &rotation);
 
-    CHECK_EQ(g_ObjectMatrixWork.relative[0], 1);
-    CHECK_EQ(g_ObjectMatrixWork.relative[1], -1);
-    CHECK_EQ(g_ObjectMatrixWork.relative[2], 0);
+    CHECK_EQ((s32)Psyz_GteCtrlRead(5), 4);
+    CHECK_EQ((s32)Psyz_GteCtrlRead(6), -4);
+    CHECK_EQ((s32)Psyz_GteCtrlRead(7), 0);
     return 0;
 }
 

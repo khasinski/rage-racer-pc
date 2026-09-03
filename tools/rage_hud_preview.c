@@ -74,7 +74,6 @@ int RuntimeConfigEnabled(const char *key) {
  * None of that runs here, so answer it rather than link half the game in.
  */
 GameRenderState g_RenderState;
-ObjectMatrixWork g_ObjectMatrixWork;
 CarTrackWork g_CarTrackWork;
 
 int DiagnosticsEnabled(const char *key) { (void)key; return 0; }

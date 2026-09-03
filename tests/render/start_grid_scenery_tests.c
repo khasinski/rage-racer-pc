@@ -11,7 +11,6 @@ s32 g_CourseIndex;
 s16 g_RacePhase;
 s32 g_CourseModelCount;
 GameRenderState g_RenderState;
-ObjectMatrixWork g_ObjectMatrixWork;
 Vec4 g_StartGridSceneryPos[2];
 StartGridSceneryStep g_StartGridSceneryStep[2];
 s32 g_StartGridSceneryAngle[2];

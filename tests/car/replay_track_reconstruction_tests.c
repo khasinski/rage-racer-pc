@@ -11,7 +11,6 @@
 #include <stdio.h>
 #include <string.h>
 
-ObjectMatrixWork g_ObjectMatrixWork;
 CarTrackWork g_CarTrackWork;
 GameRenderState g_RenderState;
 

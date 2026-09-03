@@ -6,7 +6,6 @@
 #include <string.h>
 
 GameRenderState g_RenderState;
-ObjectMatrixWork g_ObjectMatrixWork;
 u32 *g_VisibleCellMask;
 Vec4 *g_VisibleCellList;
 u16 *g_TerrainCellGrid;
@@ -24,6 +23,7 @@ typedef struct CourseObjectSubmission {
 
 static CourseObjectSubmission s_submissions[16];
 static s32 s_submissionCount;
+static s32 s_objectMatrixCount;
 
 void BuildRotMatrixY(void *matrix, s32 angle) {
     (void)matrix;
@@ -36,21 +36,17 @@ MATRIX *MulMatrix2(MATRIX *left, MATRIX *right) {
     return right;
 }
 
-#undef ApplyMatrix
-void ApplyMatrix(MATRIX *matrix, SVECTOR *input, VECTOR *output) {
-    (void)matrix;
-    (void)input;
-    (void)output;
-}
-
 void ApplyMatrixLV(void *matrix, const s32 *input, s32 *output) {
     (void)matrix;
     (void)input;
     (void)output;
 }
 
-void SetRotMatrix(MATRIX *matrix) { (void)matrix; }
-void SetTransMatrix(MATRIX *matrix) { (void)matrix; }
+void SetGteObjectMatrix(LVec *position, Matrix *rotation) {
+    (void)position;
+    (void)rotation;
+    s_objectMatrixCount++;
+}
 
 void SubmitCourseModel(void *state, s32 model) {
     GameRenderState *renderState = state;
@@ -155,8 +151,8 @@ static int TestCourseObjectFlags(void) {
     u32 visibility[TERRAIN_CELL_GRID_SIZE] = {1};
 
     memset(&g_RenderState, 0, sizeof(g_RenderState));
-    memset(&g_ObjectMatrixWork, 0, sizeof(g_ObjectMatrixWork));
     memset(s_submissions, 0, sizeof(s_submissions));
+    s_objectMatrixCount = 0;
     g_CourseObjects = objects;
     g_CourseObjectCount = sizeof(objects) / sizeof(objects[0]);
     g_VisibleCellMask = visibility;
@@ -165,7 +161,7 @@ static int TestCourseObjectFlags(void) {
 
     DrawCourseObjects();
 
-    CHECK(s_submissionCount == 5);
+    CHECK(s_submissionCount == 5 && s_objectMatrixCount == 5);
     CHECK(s_submissions[0].modelId == 11 && !s_submissions[0].alternate &&
           s_submissions[0].environmentMode4 == 0);
     CHECK(s_submissions[1].modelId == 12 && s_submissions[1].alternate);
@@ -176,11 +172,12 @@ static int TestCourseObjectFlags(void) {
           s_submissions[4].environmentMode4 == 0x10000);
 
     s_submissionCount = 0;
+    s_objectMatrixCount = 0;
     g_IsEnvironmentMode4 = 1;
     g_AnimTimer = 0x10;
     DrawCourseObjects();
 
-    CHECK(s_submissionCount == 5);
+    CHECK(s_submissionCount == 5 && s_objectMatrixCount == 5);
     CHECK(!s_submissions[1].alternate);
     CHECK(s_submissions[2].alternate);
     CHECK(s_submissions[4].environmentMode4 == 0);

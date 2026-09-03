@@ -9,7 +9,6 @@
 
 PlayerCarRuntime g_PlayerCar;
 GameRenderState g_RenderState;
-ObjectMatrixWork g_ObjectMatrixWork;
 s32 g_CourseIndex;
 s32 g_CourseModelCount;
 s32 g_GrandPrixClass;

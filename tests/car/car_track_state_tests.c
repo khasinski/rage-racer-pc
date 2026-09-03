@@ -32,7 +32,6 @@ s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex,
  * merges tentative definitions would accept. */
 PlayerCarRuntime g_PlayerCar;
 /* The working set the track code hands its intermediate values through. */
-ObjectMatrixWork g_ObjectMatrixWork;
 CarTrackWork g_CarTrackWork;
 GameRenderState g_RenderState;
 

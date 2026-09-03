@@ -18,8 +18,6 @@ void DrawCourseObjects(void) {
         CourseObject *obj = &g_CourseObjects[i];
         s32 cellX;
         s32 cellZ;
-        s32 transformed;
-        s32 camera;
         s32 flags;
 
         if (obj->modelId == -1) continue;
@@ -32,25 +30,7 @@ void DrawCourseObjects(void) {
 
         BuildRotMatrixY(&mtx, obj->rotationY);
         MulMatrix2(&g_RenderState.matrix, &mtx);
-
-        transformed = (u16)obj->x;
-        camera = RENDER_VIEW_STATE->position.components.x.half.low;
-        g_ObjectMatrixWork.relative[0] = transformed - camera;
-        transformed = (u16)obj->y;
-        camera = RENDER_VIEW_STATE->position.components.y.half.low;
-        g_ObjectMatrixWork.relative[1] = transformed - camera;
-        transformed = (u16)obj->z;
-        camera = RENDER_VIEW_STATE->position.components.z.half.low;
-        g_ObjectMatrixWork.relative[2] = transformed - camera;
-
-        ApplyMatrix(&g_RenderState.matrix, g_ObjectMatrixWork.relative,
-                    &g_ObjectMatrixWork.view);
-        g_ObjectMatrixWork.mtx.t[0] = g_ObjectMatrixWork.view.x * 4;
-        g_ObjectMatrixWork.mtx.t[1] = g_ObjectMatrixWork.view.y * 4;
-        g_ObjectMatrixWork.mtx.t[2] = g_ObjectMatrixWork.view.z * 4;
-
-        SetRotMatrix(&mtx);
-        SetTransMatrix(&g_ObjectMatrixWork.mtx);
+        SetGteObjectMatrix(AsPositionWords(&obj->x), &mtx);
 
         flags = obj->flags;
         if (flags & COURSE_OBJECT_BLINK_ENVIRONMENT_4) {

@@ -55,22 +55,7 @@ typedef struct GameRenderState {
     s32 envMode4;
 } GameRenderState;
 
-typedef struct ObjectMatrixWork {
-    s16 relative[3];
-    s16 pad06;
-    LVec view;
-    s32 pad14;
-    Matrix mtx;
-} ObjectMatrixWork;
-
 extern GameRenderState g_RenderState;
-
-/*
- * The matrix the model path builds a transform in. It shared an address with
- * the car's track working set, which is safe only for as long as no frame
- * wants both; it does not share one now.
- */
-extern ObjectMatrixWork g_ObjectMatrixWork;
 
 typedef union GameViewCoordinate {
     s32 value;

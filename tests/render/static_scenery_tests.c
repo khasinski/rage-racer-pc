@@ -6,7 +6,6 @@
 #include <string.h>
 
 GameRenderState g_RenderState;
-ObjectMatrixWork g_ObjectMatrixWork;
 StaticSceneryState g_StaticSceneryState;
 s32 g_CourseModelCount;
 s32 g_IsEnvironmentMode4;

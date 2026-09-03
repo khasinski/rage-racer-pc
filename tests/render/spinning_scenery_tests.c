@@ -9,7 +9,6 @@
 s32 g_CourseIndex;
 s32 g_CourseModelCount;
 GameRenderState g_RenderState;
-ObjectMatrixWork g_ObjectMatrixWork;
 SpinningSceneryPlacement g_SpinningSceneryPlacements[4];
 s16 g_SpinningSceneryAngle[4];
 u16 g_SpinningSceneryRate[4];

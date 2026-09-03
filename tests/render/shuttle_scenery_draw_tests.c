@@ -8,7 +8,6 @@
 
 GameShuttleScenery g_ShuttleScenery[2];
 GameRenderState g_RenderState;
-ObjectMatrixWork g_ObjectMatrixWork;
 s32 g_CourseIndex;
 s32 g_CourseModelCount;
 
