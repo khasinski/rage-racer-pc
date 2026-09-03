@@ -10,7 +10,6 @@ enum {
     SEQUENCE_VOICE_COUNT = 18,
     EFFECT_VOICE_RUNTIME_COUNT = 8,
     EFFECT_REVERB_PRESET = 2,
-    CAR_SOUND_VOLUME_SCALE_COUNT = 32,
 };
 
 void InitSequenceAudio(void) {

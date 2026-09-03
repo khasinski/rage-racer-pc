@@ -13,7 +13,7 @@ EngineSoundState g_EngineSoundState;
 s32 g_AudioLoadSlot;
 s32 g_AudioLoadedSlotMask;
 s32 g_SoundCueBank;
-s32 g_VabSpuAddress[4];
+s32 g_VabSpuAddress[AUDIO_SLOT_COUNT];
 const char g_MsgVabOpenHeadError[] = "open";
 const char g_MsgVabTransBodyError[] = "body";
 
@@ -31,7 +31,6 @@ static s32 s_closeVab;
 static s32 s_reverbCalls;
 static s32 s_vmInitCalls;
 static s32 s_damperCalls;
-static s32 s_closeAudioResult = 1;
 static s32 s_closeAudioCalls;
 
 short SsVabOpenHeadSticky(u8 *header, short vabId, unsigned long address) {
@@ -76,9 +75,8 @@ void _SsVmInit(int voices) {
 
 void SsVabClose(short vabId) { s_closeVab = vabId; }
 void SpuVmDamperStep(void) { s_damperCalls++; }
-s32 CloseSequenceAudioSlot(void) {
+void CloseSequenceAudioSlot(void) {
     s_closeAudioCalls++;
-    return s_closeAudioResult;
 }
 
 void BiosExit(s32 code) {
@@ -246,14 +244,12 @@ int main(void) {
     s_damperCalls = 0;
     s_reverbCalls = 0;
     s_vmInitCalls = 0;
-    s_closeAudioResult = 1;
     CloseLoadedAudioSlots();
     CHECK(s_damperCalls == 1 && s_closeAudioCalls == 1 &&
           g_AudioLoadedSlotMask == 0 && s_closeVab == 23);
     CHECK(s_reverbCalls == 2 && s_vmInitCalls == 2);
 
     g_AudioLoadedSlotMask = 1 << 3;
-    s_closeAudioResult = 0;
     CloseLoadedAudioSlots();
     CHECK(g_AudioLoadedSlotMask == 0 && s_closeVab == 23);
 

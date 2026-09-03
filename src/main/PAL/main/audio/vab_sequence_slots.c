@@ -35,11 +35,11 @@ s32 OpenSequenceAudioSlot(u8 *header, u8 *body, void *seq) {
     return SsVabTransCompleted(0);
 }
 
-s32 CloseSequenceAudioSlot(void) {
+void CloseSequenceAudioSlot(void) {
     s32 bit = 1 << AUDIO_SLOT_SEQUENCE;
 
     if ((bit & g_AudioLoadedSlotMask) == 0) {
-        return 0;
+        return;
     }
 
     g_AudioLoadedSlotMask &= ~bit;
@@ -47,5 +47,4 @@ s32 CloseSequenceAudioSlot(void) {
     _SsVmInit(0);
     SsSeqClose(g_SeqHandle.value);
     SsVabClose(g_SoundScale.vabIds[AUDIO_SLOT_SEQUENCE]);
-    return 1;
 }

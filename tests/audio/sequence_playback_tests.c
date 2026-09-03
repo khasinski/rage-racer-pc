@@ -48,9 +48,8 @@ void SetSequenceVolume(s32 volume) {
     s_setVolume = volume;
     s_setVolumeCalls++;
 }
-int CloseSequenceAudioSlot(void) {
+void CloseSequenceAudioSlot(void) {
     s_closeCalls++;
-    return 0;
 }
 
 #define CHECK(condition) do {                                                  \

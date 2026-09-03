@@ -12,7 +12,7 @@ SequenceHandle g_SeqHandle;
 s32 g_SeqVolumeFadeStep;
 s32 g_AudioLoadSlot;
 s32 g_AudioLoadedSlotMask;
-s32 g_VabSpuAddress[7];
+s32 g_VabSpuAddress[AUDIO_SLOT_COUNT];
 const char g_MsgSeqVabOpenHeadError[] = "open";
 const char g_MsgSeqVabTransBodyError[] = "body";
 
@@ -113,12 +113,12 @@ int main(void) {
     s_sequenceOpenResult = (s16)0x8056;
 
     g_AudioLoadedSlotMask = 0;
-    Check(CloseSequenceAudioSlot() == 0 && s_reverbCalls == 0,
+    CloseSequenceAudioSlot();
+    Check(s_reverbCalls == 0,
           "absent sequence slot is not closed");
 
     g_AudioLoadedSlotMask = (1 << 1) | (1 << 3);
-    Check(CloseSequenceAudioSlot() == 1,
-          "loaded sequence slot reports successful close");
+    CloseSequenceAudioSlot();
     Check(g_AudioLoadedSlotMask == (1 << 3) && s_reverbCalls == 1 &&
               s_vmInitCalls == 1 &&
               s_closedSequence == (s16)0x8056 && s_closedVab == 8,

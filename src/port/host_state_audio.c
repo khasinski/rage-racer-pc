@@ -13,7 +13,8 @@
 #include "game/audio.h"
 #include "game/sound.h"
 
-s32 g_CarSoundVolumeScales[32] __attribute__((aligned(16))) = {
+s32 g_CarSoundVolumeScales[CAR_SOUND_VOLUME_SCALE_COUNT]
+    __attribute__((aligned(16))) = {
     20, 21, 22, 23, 21, 22, 23, 22, 23, 26, 27, 28, 29, 30, 50, 52, 54, 50,
     52, 54, 52, 42, 44, 28, 28, 29, 30, 31, 30, 26, 46, 80
 };

@@ -18,7 +18,7 @@ s32 g_PanVoiceActive;
 s32 g_ActiveSpecialCue;
 s32 g_LastSpecialCueRequest;
 s32 g_ReverbFadeStep;
-s32 g_CarSoundVolumeScales[4];
+s32 g_CarSoundVolumeScales[CAR_SOUND_VOLUME_SCALE_COUNT];
 s32 g_PlayerCarIndex;
 
 static s32 s_vmInitCalls;

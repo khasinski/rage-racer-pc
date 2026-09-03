@@ -23,6 +23,7 @@ enum {
     RACE_SOUND_CUE_COUNT = 70,
     EFFECT_CUE_BANK_COUNT = 3,
     SPECIAL_VOICE_BIT_COUNT = 6,
+    CAR_SOUND_VOLUME_SCALE_COUNT = 32,
 };
 
 
@@ -160,7 +161,7 @@ extern const char g_MsgTooManyVoices[];
 extern s32 g_ActiveSpecialCue;
 extern s32 g_AudioLoadSlot;
 extern s32 g_AudioLoadedSlotMask;
-extern s32 g_CarSoundVolumeScales[];
+extern s32 g_CarSoundVolumeScales[CAR_SOUND_VOLUME_SCALE_COUNT];
 extern EffectCueBank g_EffectCueTable[EFFECT_CUE_BANK_COUNT];
 extern s32 g_IndexedEffectIndex;
 extern s32 g_IndexedEffectIndexPrev;

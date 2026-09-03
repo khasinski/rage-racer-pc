@@ -14,7 +14,7 @@ extern s32 g_BgmShuffleIndex;
 extern u8 g_BgmShuffleOrder[BGM_SHUFFLE_CAPACITY];
 
 s32 OpenSequenceAudioSlot(u8 *vabHeader, u8 *vabBody, void *seqData);
-s32 CloseSequenceAudioSlot(void);
+void CloseSequenceAudioSlot(void);
 void LoadAudioParameterTable(const void *data, size_t size);
 void SetLoadedTableVolumeScale(s32 scale);
 void SetSequenceVolume(s32 volume);
