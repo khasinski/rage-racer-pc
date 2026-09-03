@@ -102,7 +102,8 @@ static void TestAssetLoadGate(void) {
 }
 
 static void TestBgmChoice(void) {
-    const u8 order[4] = {3, 9, 1, 7};
+    const u8 order[4] = {3, 0, 1, 2};
+    const u8 invalidOrder[4] = {3, 0xFF, 1, 2};
     RoundBgmChoice choice;
 
     choice = ChooseRoundBgm(3, order, 4, 2);
@@ -114,12 +115,16 @@ static void TestBgmChoice(void) {
           "invalid manual selection wraps to the current random choice");
 
     choice = ChooseRoundBgm(0, order, 4, 1);
-    Check(choice.track == 9 && choice.shuffleIndex == 2,
+    Check(choice.track == 0 && choice.shuffleIndex == 2,
           "shuffle consumes its selected logical track");
 
     choice = ChooseRoundBgm(0, order, 4, 3);
-    Check(choice.track == 7 && choice.shuffleIndex == 0,
+    Check(choice.track == 2 && choice.shuffleIndex == 0,
           "shuffle cursor wraps after its last entry");
+
+    choice = ChooseRoundBgm(0, invalidOrder, 4, 1);
+    Check(choice.track == 0 && choice.shuffleIndex == 2,
+          "invalid shuffle entry falls back to the first track");
 
     choice = ChooseRoundBgm(0, order, 0, 8);
     Check(choice.track == 0 && choice.shuffleIndex == 0,

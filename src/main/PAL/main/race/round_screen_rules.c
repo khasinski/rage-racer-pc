@@ -1,4 +1,5 @@
 #include "game/audio_internal.h"
+#include "game/race_internal.h"
 #include "game/round_screen_internal.h"
 #include "game/state.h"
 
@@ -97,12 +98,11 @@ RoundBgmChoice ChooseRoundBgm(s32 selection, const u8 *shuffleOrder,
     selection = WrapRoundBgmSelection(selection, trackCount);
 
     if (selection == 0 && shuffleOrder != NULL && trackCount > 0) {
-        shuffleIndex %= trackCount;
-        if (shuffleIndex < 0) {
-            shuffleIndex += trackCount;
-        }
-        choice.track = shuffleOrder[shuffleIndex];
-        choice.shuffleIndex = (shuffleIndex + 1) % trackCount;
+        shuffleIndex = WrapBgmTrackIndex(shuffleIndex, trackCount);
+        choice.track = BgmShuffleTrackAt(
+            shuffleOrder, trackCount, shuffleIndex);
+        choice.shuffleIndex = WrapBgmTrackIndex(
+            shuffleIndex + 1, trackCount);
     } else if (selection > 0) {
         choice.track = selection - 1;
         choice.shuffleIndex = shuffleIndex;
