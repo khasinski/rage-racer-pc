@@ -25,7 +25,9 @@ void StartSequenceFadeOut(void) {
 static void UpdateReverbFade(void) {
     s32 delta = g_ReverbFadeStep;
 
-    if (delta == 0) return;
+    if (delta == 0) {
+        return;
+    }
     g_ReverbDepthL += delta;
     if (g_ReverbDepthL < 0) {
         g_ReverbDepthL = 0;

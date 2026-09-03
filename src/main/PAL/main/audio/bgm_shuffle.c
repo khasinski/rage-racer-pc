@@ -2,6 +2,12 @@
 #include "game/menu.h"
 #include "game/random.h"
 
+enum {
+    EMPTY_BGM_SHUFFLE_SLOT = 0xFF,
+    BGM_RANDOM_VALUE_MASK = 0xFFF,
+    FIRST_EMPTY_SLOT_ORDINAL = 1,
+};
+
 /* Refills the BGM shuffle bag with a random permutation and rewinds it. */
 void ShuffleBgmOrder(void) {
     s32 track;
@@ -12,14 +18,16 @@ void ShuffleBgmOrder(void) {
     g_BgmTrackCount = ClampBgmTrackCount(g_BgmTrackCount);
 
     for (slot = 0; slot < g_BgmTrackCount; slot++) {
-        g_BgmShuffleOrder[slot] = 0xFF;
+        g_BgmShuffleOrder[slot] = EMPTY_BGM_SHUFFLE_SLOT;
     }
 
     for (track = 0; track < g_BgmTrackCount; track++) {
         emptyCount = g_BgmTrackCount - track;
-        selectedEmpty = ((Random15() & 0xFFF) % emptyCount) + 1;
+        selectedEmpty =
+            ((Random15() & BGM_RANDOM_VALUE_MASK) % emptyCount) +
+            FIRST_EMPTY_SLOT_ORDINAL;
         for (slot = 0; selectedEmpty != 0; slot++) {
-            if (g_BgmShuffleOrder[slot] == 0xFF) {
+            if (g_BgmShuffleOrder[slot] == EMPTY_BGM_SHUFFLE_SLOT) {
                 selectedEmpty--;
             }
         }
