@@ -21,6 +21,7 @@ const TrackEventData *g_TrackEventData;
 static s32 s_initCalls[RACE_CAR_SLOT_COUNT];
 static s32 s_aiCalls[RACE_CAR_SLOT_COUNT];
 static s32 s_routeSeedCalls;
+static s32 s_disabledStart = -1;
 static const RaceGridSlot *s_expectedGrid;
 
 static s32 CarIndex(GameCarRuntime *car) {
@@ -31,8 +32,8 @@ void InitRivalCar(GameCarRuntime *car, s32 index,
                   const RaceGridSlot *grid) {
     if (grid == s_expectedGrid && index == CarIndex(car)) {
         s_initCalls[index]++;
-        car->activeFlag = 1;
-        car->aiEnabled = 1;
+        car->activeFlag = index == s_disabledStart ? -1 : 1;
+        car->aiEnabled = car->activeFlag != -1;
         car->facingBackwards = (s16)g_RaceSeries;
     }
 }
@@ -145,6 +146,14 @@ int main(void) {
         CHECK(s_aiCalls[index] == active);
         CHECK(g_Cars[index].facingBackwards == 1);
     }
+
+    memset(s_initCalls, 0, sizeof(s_initCalls));
+    memset(s_aiCalls, 0, sizeof(s_aiCalls));
+    s_disabledStart = 4;
+    BuildStartingGrid();
+    CHECK(s_initCalls[4] == 1);
+    CHECK(g_Cars[4].activeFlag == -1 && g_Cars[4].aiEnabled == 0);
+    CHECK(s_aiCalls[4] == 0);
 
     puts("starting grid initialization tests passed");
     return 0;

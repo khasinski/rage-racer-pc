@@ -42,7 +42,9 @@ void BuildStartingGrid(void) {
         }
 
         InitRivalCar(car, index, grid);
-        InitRivalCarAi(car, index, grid);
+        if (car->activeFlag != -1) {
+            InitRivalCarAi(car, index, grid);
+        }
     }
 
     SeedCarRouteMarkers();
