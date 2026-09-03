@@ -219,9 +219,38 @@ static void TestInterpolationUsesDefinedMachineWrapping(void) {
     assert(player.x == -1073709057);
 }
 
+static void TestInvalidFramesAreIgnored(void) {
+    GameCarRuntime player;
+    GameCarRuntime rival;
+    GameCarRuntime originalPlayer;
+    GameCarRuntime originalRival;
+
+    memset(&player, 0x3C, sizeof(player));
+    memset(&rival, 0x5A, sizeof(rival));
+    originalPlayer = player;
+    originalRival = rival;
+
+    g_GrandPrixMode = 1;
+    ApplyReplayFrame(-1, &player, &rival);
+    assert(memcmp(&player, &originalPlayer, sizeof(player)) == 0);
+    assert(memcmp(&rival, &originalRival, sizeof(rival)) == 0);
+
+    ApplyReplayFrame(GRAND_PRIX_REPLAY_SUBFRAME_COUNT, &player, &rival);
+    assert(memcmp(&player, &originalPlayer, sizeof(player)) == 0);
+    ApplyReplayFrame(0, &player, NULL);
+    assert(memcmp(&player, &originalPlayer, sizeof(player)) == 0);
+
+    g_GrandPrixMode = 0;
+    ApplyReplayFrame(TIME_ATTACK_REPLAY_SUBFRAME_COUNT, &player, &rival);
+    assert(memcmp(&player, &originalPlayer, sizeof(player)) == 0);
+    ApplyReplayFrame(0, NULL, &rival);
+    assert(memcmp(&rival, &originalRival, sizeof(rival)) == 0);
+}
+
 int main(void) {
     TestGrandPrixFrames();
     TestTimeAttackFrames();
     TestInterpolationUsesDefinedMachineWrapping();
+    TestInvalidFramesAreIgnored();
     return 0;
 }

@@ -110,6 +110,14 @@ static void ApplyReplayFrameState(s32 subframe, GameCarRuntime *player,
                                   GameCarRuntime *rival,
                                   s32 restoreTrackPoint) {
     const s32 interpolate = subframe & 1;
+    const s32 frameCount = g_GrandPrixMode != 0
+        ? GRAND_PRIX_REPLAY_SUBFRAME_COUNT
+        : TIME_ATTACK_REPLAY_SUBFRAME_COUNT;
+
+    if (player == NULL || subframe < 0 || subframe >= frameCount ||
+        (g_GrandPrixMode != 0 && rival == NULL)) {
+        return;
+    }
 
     player->modelIndex = g_ReplayPlayerModelIndex;
     if (g_GrandPrixMode != 0) {
