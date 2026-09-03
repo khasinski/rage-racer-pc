@@ -3,7 +3,8 @@
 #include "game/track_internal.h"
 
 enum {
-    TRACK_LENGTH_MAX = ((u32)UINT16_MAX << 8) - 1,
+    /* Track positions and camera sections are stored as signed halfwords. */
+    TRACK_LENGTH_MAX = ((u32)INT16_MAX << 8) - 1,
 };
 
 static void ClearTrackPoints(void) {

@@ -10,7 +10,7 @@ static s32 WrapTrackSection(s32 section, s32 count) {
 s32 FindNearestTrackCamera(GameRenderObject *car) {
     s32 bestDistance = 0x7FFFFFFF;
     s32 selected = 0;
-    s32 trackLength = (s16)g_TrackSectionCount;
+    s32 trackLength = g_TrackSectionCount;
     s32 target;
     s32 index;
 

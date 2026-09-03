@@ -120,16 +120,24 @@ int main(void) {
     fixture.points[0].arcRef = (1 << 4) | TRACK_CURVE_PRIMARY;
 
     longTrackSize = offsetof(TrackPointTable, points) +
-                    513 * sizeof(GameTrackPoint);
+                    256 * sizeof(GameTrackPoint);
     longTrack = calloc(1, longTrackSize);
     if (longTrack == NULL) {
         puts("FAIL: long track fixture allocation");
         return 1;
     }
-    longTrack->count = 513;
-    for (i = 0; i < longTrack->count; i++) {
+    longTrack->count = 256;
+    for (i = 0; i < longTrack->count - 1; i++) {
         longTrack->points[i].segmentLength = INT16_MAX;
     }
+    longTrack->points[longTrack->count - 1].segmentLength = INT16_MAX - 1;
+    if (InstallTrackPoints(longTrack, longTrackSize) == 0 ||
+        g_TrackSectionCount != INT16_MAX) {
+        free(longTrack);
+        puts("FAIL: largest signed track section count was rejected");
+        return 1;
+    }
+    longTrack->points[longTrack->count - 1].segmentLength = INT16_MAX;
     if (InstallTrackPoints(longTrack, longTrackSize) != 0 ||
         g_TrackPoints != NULL || g_TrackSectionCount != 0) {
         free(longTrack);
