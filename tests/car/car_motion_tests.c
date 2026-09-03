@@ -286,6 +286,33 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    BuildEvents();
+    s_events.crestEvents[0][0].progress = 0x100;
+    s_events.crestEvents[0][0].motionValue = INT16_MAX;
+    s_events.crestEvents[0][1].motionValue = -1;
+    memset(&s_car, 0, sizeof(s_car));
+    s_car.speed = INT32_MAX;
+    s_car.previousTrackProgress = 0xFF;
+    s_car.trackProgress = 0x100;
+    UpdateCarCrestHop(&s_car);
+    if (s_car.verticalMotionState != CAR_VERTICAL_RISING ||
+        s_car.verticalMotionRate != 11367) {
+        puts("FAIL extreme crest launch did not use the wrapped product");
+        return 1;
+    }
+
+    s_events.crestEvents[0][0].motionValue = INT16_MIN;
+    memset(&s_car, 0, sizeof(s_car));
+    s_car.speed = 0x400;
+    s_car.previousTrackProgress = 0xFF;
+    s_car.trackProgress = 0x100;
+    UpdateCarCrestHop(&s_car);
+    if (s_car.verticalMotionState != CAR_VERTICAL_AT_CREST ||
+        s_car.verticalMotionRate != INT16_MIN) {
+        puts("FAIL minimum crest motion did not wrap into its halfword");
+        return 1;
+    }
+
     memset(&s_car, 0, sizeof(s_car));
     s_car.yawRate = INT32_MAX;
     UpdateCarSlideAngle(&s_car, 0);

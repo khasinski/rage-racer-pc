@@ -79,10 +79,10 @@ void UpdateCarCrestHop(GameCarRuntime *car) {
     car->verticalMotionState = CAR_VERTICAL_RISING;
     if (trigger > 0) {
         car->verticalMotionRate = WrapSigned16(
-            trigger * car->speed / -4800);
+            WrapSigned32((int64_t)trigger * car->speed) / -4800);
     } else {
         car->verticalMotionState = CAR_VERTICAL_AT_CREST;
-        car->verticalMotionRate = -trigger;
+        car->verticalMotionRate = WrapSigned16(-(int64_t)trigger);
     }
     car->verticalMotionTimer = 0;
     car->verticalPitch = WrapSigned16(car->bodyPitch);
