@@ -813,8 +813,10 @@ int PortShouldExit(int frame_number) {
                         g_AnimSceneryVariant, g_PresentationSceneryVariant,
                         g_SpinningSceneryAngle[0], g_SpinningSceneryAngle[1],
                         g_SpinningSceneryAngle[2], g_SpinningSceneryAngle[3],
-                        SmokeHashCarRenderState(g_Cars, 11),
-                        SmokeCountDrawableCars(g_Cars, 11),
+                        SmokeHashCarRenderState(g_Cars,
+                                                RACE_CAR_SLOT_COUNT),
+                        SmokeCountDrawableCars(g_Cars,
+                                               RACE_CAR_SLOT_COUNT),
                         g_Cars[0].x, g_Cars[0].z,
                         g_Cars[1].x, g_Cars[1].z,
                         g_Cars[2].x, g_Cars[2].z,
@@ -855,7 +857,8 @@ int PortShouldExit(int frame_number) {
                                     bytes[byteIndex]);
                         }
                     }
-                    for (rivalIndex = 0; rivalIndex < 11; rivalIndex++) {
+                    for (rivalIndex = 0;
+                         rivalIndex < RACE_CAR_SLOT_COUNT; rivalIndex++) {
                         fprintf(g_SmokeCaptureManifest, ",%u",
                                 SmokeHashOneCarRenderState(
                                     &g_Cars[rivalIndex]));

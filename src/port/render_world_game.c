@@ -2,7 +2,6 @@
 
 #include "course_coordinate.h"
 
-#include <stddef.h>
 #include <math.h>
 #include <string.h>
 
@@ -26,9 +25,15 @@ static RageRenderMeshInstance
     s_presentationInstances[RAGE_GAME_RENDER_WORLD_MAX_INSTANCES];
 static RageRenderWorld s_presentationWorld;
 static uint64_t s_presentationSerial;
-enum { RAGE_CAR_RENDER_PART_COUNT = 6 };
-static RageRenderTransform s_previousCars[12][RAGE_CAR_RENDER_PART_COUNT];
-static uint8_t s_havePreviousCars[12][RAGE_CAR_RENDER_PART_COUNT];
+enum {
+    RAGE_CAR_RENDER_PART_COUNT = 6,
+    RAGE_PLAYER_CAR_ENTITY = RACE_CAR_SLOT_COUNT,
+    RAGE_CAR_ENTITY_COUNT = RACE_CAR_SLOT_COUNT + 1
+};
+static RageRenderTransform
+    s_previousCars[RAGE_CAR_ENTITY_COUNT][RAGE_CAR_RENDER_PART_COUNT];
+static uint8_t
+    s_havePreviousCars[RAGE_CAR_ENTITY_COUNT][RAGE_CAR_RENDER_PART_COUNT];
 static int s_trackCarAsset = -1;
 static int s_initialized;
 static int s_currentWorld;
@@ -78,10 +83,15 @@ static uint32_t TrackDataAssetKey(void) {
 }
 
 static uint32_t CarEntity(const GameRenderObject *object) {
-    const GameCarRuntime *car = (const GameCarRuntime *)object;
-    ptrdiff_t index = car - g_Cars;
-    if (index >= 0 && index < 11) return (uint32_t)index;
-    return 11; /* Player storage is separate from g_Cars. */
+    uintptr_t address = (uintptr_t)object;
+    uintptr_t first = (uintptr_t)&g_Cars[0];
+    uintptr_t pastLast = (uintptr_t)&g_Cars[RACE_CAR_SLOT_COUNT];
+
+    if (address >= first && address < pastLast &&
+        (address - first) % sizeof(g_Cars[0]) == 0) {
+        return (uint32_t)((address - first) / sizeof(g_Cars[0]));
+    }
+    return RAGE_PLAYER_CAR_ENTITY;
 }
 
 static uint8_t TrackCarMaterialVariant(uint8_t paletteOffset) {
@@ -210,7 +220,8 @@ static void GameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
     instance.mesh = mesh;
     instance.assetSet = assetSet;
     instance.assetKey = asset;
-    if (assetSet == RAGE_RENDER_ASSET_MODEL_BANK && entity == 11 &&
+    if (assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
+        entity == RAGE_PLAYER_CAR_ENTITY &&
         g_CarTable != NULL && g_PlayerCarIndex >= 0 &&
         g_PlayerCarIndex < 10) {
         const CarEntry *entry = &g_CarTable[g_PlayerCarIndex];
@@ -686,7 +697,7 @@ void GameRenderWorldSubmitPlayerCar(const GameRenderObject *object,
     wheelBase = (uint32_t)object->renderDepth * 2u;
     if ((object->wheelRotation & 0x1000) != 0) wheelBase += 10u;
     if (wheelBase + 3u >= 22u) wheelBase = 0;
-    GameRenderWorldSubmitCarAssembly(object, 11, asset,
+    GameRenderWorldSubmitCarAssembly(object, RAGE_PLAYER_CAR_ENTITY, asset,
         RAGE_RENDER_ASSET_MODEL_BANK, 0, wheelBase + 2u, wheelBase + 3u,
         0,
         g_CarModelAsset->horizon, g_CarModelAsset->modelOffsetX,
@@ -717,10 +728,10 @@ void GameRenderWorldPublishRaceCars(void) {
         destination++;
     }
     world->instanceCount = destination;
-    for (car = 0; car < 11; car++) {
+    for (car = 0; car < RACE_CAR_SLOT_COUNT; car++) {
         if (g_Cars[car].activeFlag != -1 && g_Cars[car].aiEnabled == 1) {
             GameRenderWorldSubmitCar(
-                (const GameRenderObject *)&g_Cars[car], 0,
+                GetCarRenderObject(&g_Cars[car]), 0,
                 RAGE_GAME_CAR_RENDER_CLOSE);
         }
     }
