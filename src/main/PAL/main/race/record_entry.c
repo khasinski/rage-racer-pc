@@ -54,7 +54,7 @@ void EnterRecordEntry(void) {
 }
 
 static s32 RecordWasInserted(s32 row) {
-    return row < RECORD_TABLE_LENGTH;
+    return (u32)row < RECORD_TABLE_LENGTH;
 }
 
 static s32 AnyRecordWasInserted(void) {

@@ -143,6 +143,13 @@ int main(void) {
     CHECK(s_cdStarts == 0 && s_cdTrack == -1);
 
     Reset();
+    g_RankingInsertRow = -1;
+    g_RecordEntryState = RECORD_ENTRY_STATE_FADE_IN;
+    UpdateRecordEntry();
+    CHECK(g_RecordEntryState == RECORD_ENTRY_STATE_WAIT_AFTER_LAP_NAME);
+    CHECK(s_cdStarts == 0 && s_cdTrack == -1);
+
+    Reset();
     g_RankingInsertRow = 0;
     g_TimeRecordInsertRow = 1;
     g_RecordEntryState = RECORD_ENTRY_STATE_FADE_IN;
