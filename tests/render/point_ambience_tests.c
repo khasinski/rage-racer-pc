@@ -110,6 +110,22 @@ int main(void) {
         return 1;
     }
 
+    g_RaceSeries = 0;
+    g_MirrorMode = 0;
+    g_Sine = 4096;
+    g_RenderState.viewX = 0;
+    g_RenderState.viewZ = 0;
+    events.pointAmbienceZones[0] = (TrackPointAmbienceZone){
+        INT_MAX - 10, INT_MAX, 20, 20, 0, 0, -1};
+    if (!ExpectAmbience(INT_MAX - 5, 2, 32, 56)) {
+        return 1;
+    }
+
+    g_TrackEventData = NULL;
+    if (!ExpectAmbience(850, 3, 0, 0)) {
+        return 1;
+    }
+
     puts("point ambience behavior preserved");
     return 0;
 }

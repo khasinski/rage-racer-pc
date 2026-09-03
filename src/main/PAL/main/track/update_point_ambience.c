@@ -15,9 +15,11 @@ enum {
 
 static const TrackPointAmbienceZone *FindPointAmbienceZone(
     s32 trackPosition) {
-    const TrackPointAmbienceZone *zones =
-        g_TrackEventData->pointAmbienceZones;
+    const TrackPointAmbienceZone *zones;
     s32 index;
+
+    if (g_TrackEventData == NULL) return NULL;
+    zones = g_TrackEventData->pointAmbienceZones;
 
     for (index = 0; index < TRACK_POINT_AMBIENCE_ZONE_COUNT; index++) {
         if (zones[index].start == -1) {
@@ -36,13 +38,15 @@ static s32 PointAmbienceLevel(const TrackPointAmbienceZone *zone,
     const s32 fadeIn = (s16)zone->fadeInDistance;
     const s32 fadeOut = (s16)zone->fadeOutDistance;
 
-    if (fadeIn > 0 && trackPosition < zone->start + fadeIn) {
-        return (trackPosition - zone->start) * POINT_AMBIENCE_MAX_LEVEL /
-               fadeIn;
+    if (fadeIn > 0 &&
+        (int64_t)trackPosition < (int64_t)zone->start + fadeIn) {
+        return (s32)(((int64_t)trackPosition - zone->start) *
+                     POINT_AMBIENCE_MAX_LEVEL / fadeIn);
     }
-    if (fadeOut > 0 && trackPosition > zone->end - fadeOut) {
-        return (zone->end - trackPosition) * POINT_AMBIENCE_MAX_LEVEL /
-               fadeOut;
+    if (fadeOut > 0 &&
+        (int64_t)trackPosition > (int64_t)zone->end - fadeOut) {
+        return (s32)(((int64_t)zone->end - trackPosition) *
+                     POINT_AMBIENCE_MAX_LEVEL / fadeOut);
     }
     return POINT_AMBIENCE_MAX_LEVEL;
 }
@@ -88,7 +92,7 @@ void UpdatePointAmbience(s32 trackPosition) {
     level = zone != NULL ? PointAmbienceLevel(zone, trackPosition) : 0;
     authoredCue = zone != NULL ? zone->cue : 0;
 
-    if ((s16)level != 0 && zone != NULL) {
+    if (level != 0 && zone != NULL) {
         const int64_t sourceX =
             (int64_t)zone->sourceX - g_RenderState.viewX;
         const int64_t sourceZ =
