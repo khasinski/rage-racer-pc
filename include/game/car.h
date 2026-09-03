@@ -349,9 +349,14 @@ typedef struct GameCarSpecShiftPoint {
     s16 upshiftSpeed;
 } GameCarSpecShiftPoint;
 
+enum {
+    CAR_TORQUE_CURVE_SAMPLE_COUNT = 16,
+    CAR_TORQUE_BAND_HALFWORD_COUNT = CAR_TORQUE_CURVE_SAMPLE_COUNT * 2,
+};
+
 typedef union CarTorqueBand {
-    s32 values[16];
-    u16 halves[32];
+    s32 values[CAR_TORQUE_CURVE_SAMPLE_COUNT];
+    u16 halves[CAR_TORQUE_BAND_HALFWORD_COUNT];
 } CarTorqueBand;
 
 typedef struct CarTachometerSpec {
@@ -375,7 +380,8 @@ typedef struct CarTachometerSpec {
 
 /* The loaded car's spec block (`g_CarSpec`), from its asset pack. */
 typedef struct GameCarSpec {
-    s32 torqueCurve[16];      /* +0x00 engine torque samples */
+    s32 torqueCurve[CAR_TORQUE_CURVE_SAMPLE_COUNT];
+                                /* +0x00 engine torque samples */
     CarTorqueBand torqueBand; /* +0x40 interpolation boundaries */
     s32 torqueLossValue[10];  /* +0x80 loss curve samples */
     s32 torqueLossRpm[9];     /* +0xA8 loss interpolation boundaries */
@@ -436,7 +442,7 @@ extern GameCarSpec *g_CarSpec;
 /* Per-gear torque curve, one 16-entry row per gear: row 0 is the engine's own
  * curve, rows 1..6 are it divided by each gear's ratio. */
 typedef struct GearCurveRow {
-    s32 values[16];
+    s32 values[CAR_TORQUE_CURVE_SAMPLE_COUNT];
 } GearCurveRow;
 
 extern GearCurveRow g_GearTorqueCurve[];
