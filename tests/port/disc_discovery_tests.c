@@ -133,6 +133,46 @@ static int TestSavedPathRejectsTruncation(void) {
     return 0;
 }
 
+static int TestFileIdentity(void) {
+    char directory[1024];
+    char alias[1024];
+    char first[1024];
+    char second[1024];
+    int written;
+#ifdef _WIN32
+    const char separator = '\\';
+#else
+    const char separator = '/';
+#endif
+
+    CHECK(MakeTemporaryDirectory(directory, sizeof(directory)));
+    CHECK(WriteFixture(directory, "first.bin", "first"));
+    CHECK(WriteFixture(directory, "second.bin", "second"));
+    written = snprintf(first, sizeof(first), "%s%cfirst.bin", directory,
+                       separator);
+    CHECK(written >= 0 && (size_t)written < sizeof(first));
+    written = snprintf(second, sizeof(second), "%s%csecond.bin", directory,
+                       separator);
+    CHECK(written >= 0 && (size_t)written < sizeof(second));
+    written = snprintf(alias, sizeof(alias), "%s%calias.bin", directory,
+                       separator);
+    CHECK(written >= 0 && (size_t)written < sizeof(alias));
+#ifdef _WIN32
+    CHECK(CreateHardLinkA(alias, first, NULL));
+#else
+    CHECK(link(first, alias) == 0);
+#endif
+    CHECK(DiscPathsReferToSameFile(first, first));
+    CHECK(DiscPathsReferToSameFile(first, alias));
+    CHECK(!DiscPathsReferToSameFile(first, second));
+    CHECK(!DiscPathsReferToSameFile(first, "missing.bin"));
+    RemoveFixture(directory, "alias.bin");
+    RemoveFixture(directory, "first.bin");
+    RemoveFixture(directory, "second.bin");
+    CHECK(rmdir(directory) == 0);
+    return 0;
+}
+
 static int TestExtensionsAndArguments(void) {
     char path[8] = "dirty";
 
@@ -149,6 +189,7 @@ static int TestExtensionsAndArguments(void) {
 int main(void) {
     CHECK(TestDiscoveryContinuesAfterRejection() == 0);
     CHECK(TestSavedPathRejectsTruncation() == 0);
+    CHECK(TestFileIdentity() == 0);
     CHECK(TestExtensionsAndArguments() == 0);
     puts("disc discovery validates candidates instead of trusting extensions");
     return 0;

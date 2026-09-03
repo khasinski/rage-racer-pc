@@ -13,6 +13,7 @@ int _stricmp(const char *lhs, const char *rhs);
 #else
 #include <dirent.h>
 #include <strings.h>
+#include <sys/stat.h>
 #endif
 
 static int PathEndsWith(const char *path, const char *suffix) {
@@ -56,6 +57,51 @@ int DiscReadSavedPath(const char *configPath, char *path, size_t pathSize) {
     fclose(file);
     if (lineEnd != NULL) *lineEnd = '\0';
     return path[0] != '\0';
+}
+
+int DiscPathsReferToSameFile(const char *first, const char *second) {
+#ifdef _WIN32
+    BY_HANDLE_FILE_INFORMATION firstInfo;
+    BY_HANDLE_FILE_INFORMATION secondInfo;
+    HANDLE firstHandle;
+    HANDLE secondHandle;
+    int same;
+
+    if (first == NULL || second == NULL) return 0;
+    firstHandle = CreateFileA(first, FILE_READ_ATTRIBUTES,
+                              FILE_SHARE_READ | FILE_SHARE_WRITE |
+                                  FILE_SHARE_DELETE,
+                              NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    secondHandle = CreateFileA(second, FILE_READ_ATTRIBUTES,
+                               FILE_SHARE_READ | FILE_SHARE_WRITE |
+                                   FILE_SHARE_DELETE,
+                               NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
+                               NULL);
+    if (firstHandle == INVALID_HANDLE_VALUE ||
+        secondHandle == INVALID_HANDLE_VALUE ||
+        !GetFileInformationByHandle(firstHandle, &firstInfo) ||
+        !GetFileInformationByHandle(secondHandle, &secondInfo)) {
+        if (firstHandle != INVALID_HANDLE_VALUE) CloseHandle(firstHandle);
+        if (secondHandle != INVALID_HANDLE_VALUE) CloseHandle(secondHandle);
+        return 0;
+    }
+    same = firstInfo.dwVolumeSerialNumber == secondInfo.dwVolumeSerialNumber &&
+           firstInfo.nFileIndexHigh == secondInfo.nFileIndexHigh &&
+           firstInfo.nFileIndexLow == secondInfo.nFileIndexLow;
+    CloseHandle(firstHandle);
+    CloseHandle(secondHandle);
+    return same;
+#else
+    struct stat firstInfo;
+    struct stat secondInfo;
+
+    if (first == NULL || second == NULL || stat(first, &firstInfo) != 0 ||
+        stat(second, &secondInfo) != 0) {
+        return 0;
+    }
+    return firstInfo.st_dev == secondInfo.st_dev &&
+           firstInfo.st_ino == secondInfo.st_ino;
+#endif
 }
 
 static int BuildCandidate(char *path, size_t pathSize, const char *directory,

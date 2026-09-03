@@ -42,6 +42,7 @@ typedef struct RageHostDisc {
     DiscIsoFile archive;
     DiscIsoFile stream;
     int user_offset;
+    char source_path[PATH_MAX];
 } RageHostDisc;
 
 static RageHostDisc g_RageHostDisc;
@@ -258,8 +259,17 @@ static int HostReadArchive(unsigned int offset, void *destination,
 }
 
 static int HostOpenDataTrack(const char *path) {
+    int written;
+
     g_RageHostDisc.file = fopen(path, "rb");
-    if (g_RageHostDisc.file != NULL && HostFindArchive()) return 1;
+    if (g_RageHostDisc.file != NULL && HostFindArchive()) {
+        written = snprintf(g_RageHostDisc.source_path,
+                           sizeof(g_RageHostDisc.source_path), "%s", path);
+        if (written >= 0 &&
+            (size_t)written < sizeof(g_RageHostDisc.source_path)) {
+            return 1;
+        }
+    }
     if (g_RageHostDisc.file != NULL) fclose(g_RageHostDisc.file);
     g_RageHostDisc.file = NULL;
     return 0;
@@ -270,6 +280,8 @@ static int HostOpenDataTrack(const char *path) {
 static int HostOpenDiscImage(const char *discPath, char *dataTrackPath,
                              size_t dataTrackPathSize) {
     if (DiscPathIsChd(discPath)) {
+        int written;
+
         if (!ChdOpen(discPath)) return 0;
         g_RageHostDisc.chd = 1;
         g_RageHostDisc.track_offset = 0;
@@ -278,7 +290,16 @@ static int HostOpenDiscImage(const char *discPath, char *dataTrackPath,
             g_RageHostDisc.chd = 0;
             return 0;
         }
-        return 1;
+        written = snprintf(g_RageHostDisc.source_path,
+                           sizeof(g_RageHostDisc.source_path), "%s",
+                           discPath);
+        if (written >= 0 &&
+            (size_t)written < sizeof(g_RageHostDisc.source_path)) {
+            return 1;
+        }
+        ChdClose();
+        g_RageHostDisc.chd = 0;
+        return 0;
     }
     if (DiscPathIsBin(discPath)) {
         int written = snprintf(dataTrackPath, dataTrackPathSize, "%s",
@@ -388,7 +409,9 @@ int HostDumpArchive(const char *path) {
     unsigned int remaining;
     int ok = 1;
 
-    if (path == NULL || g_RageHostDisc.archive.size == 0) {
+    if (path == NULL || g_RageHostDisc.archive.size == 0 ||
+        g_RageHostDisc.source_path[0] == '\0' ||
+        DiscPathsReferToSameFile(g_RageHostDisc.source_path, path)) {
         return 0;
     }
     remaining = g_RageHostDisc.archive.size;
