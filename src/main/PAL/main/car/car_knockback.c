@@ -1,4 +1,5 @@
 #include "game/angle.h"
+#include "game/car_motion_internal.h"
 #include "game/diagnostics.h"
 #include "game/integer.h"
 #include "game/player_car_internal.h"

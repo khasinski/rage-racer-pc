@@ -1,5 +1,6 @@
 #include "common.h"
 #include "game/car.h"
+#include "game/car_motion_internal.h"
 #include "game/player_car_internal.h"
 
 #include <limits.h>

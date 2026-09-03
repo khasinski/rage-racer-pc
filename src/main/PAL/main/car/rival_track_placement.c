@@ -1,4 +1,5 @@
 #include "game/car.h"
+#include "game/car_motion_internal.h"
 
 enum { RIVAL_TRACK_INSET = 0x3C };
 

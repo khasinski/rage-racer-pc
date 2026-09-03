@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "game/car.h"
+#include "game/car_motion_internal.h"
 #include "game/integer.h"
 #include "game/car_runtime_state.h"
 #include "game/render.h"
@@ -74,7 +75,6 @@ void SteerCarAlongRoute(GameCarRuntime *car);
 void SteerCarToTrackLine(PlayerCarRuntime *car);
 void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex);
 void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex);
-
 typedef struct {
     s32 longitudinalResistance;
     s32 motionResistance;

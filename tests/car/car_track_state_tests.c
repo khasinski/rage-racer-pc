@@ -15,6 +15,7 @@
 
 #include "common.h"
 #include "game/car.h"
+#include "game/car_motion_internal.h"
 #include "game/track.h"
 #include "game/track_internal.h"
 #include "game/race.h"

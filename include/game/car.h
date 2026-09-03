@@ -832,17 +832,9 @@ void InitRivalCar(GameCarRuntime *car, s32 gridPosition,
 void InitRivalCarAi(GameCarRuntime *car, s32 gridPosition,
                     const RaceGridSlot *grid);
 void AccumulateLapProgress(GameCarRuntime *car);
-void ApplyCarKnockback(GameCarRuntime *car);
 s32 FindTrackSegment(GameCarRuntime *car, s32 idx);
 s32 IsCarFacingBackwards(const PlayerCarRuntime *car);
 void SeedCarLapProgress(GameCarRuntime *car, s32 mode);
-void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode);
-void StartCarBodyKick(GameCarRuntime *car, s32 mode);
-void UpdateCarBodyKick(GameCarRuntime *car);
-void UpdateCarBodyRoll(PlayerCarRuntime *car);
-void UpdateCarCrestHop(GameCarRuntime *car);
-void UpdateCarSlideAngle(GameCarRuntime *car, s32 slideScale);
-void UpdatePlayerTilt(PlayerCarRuntime *car);
 s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
                         const CarTrackLimits *limits);
 void DrawTachometer(s32 rpm, s32 shiftLightOn, TachometerLightingMode lighting,
