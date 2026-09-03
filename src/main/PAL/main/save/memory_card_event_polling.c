@@ -1,7 +1,7 @@
 #include "game/memcard.h"
 #include "game/memcard_internal.h"
 
-enum { MEMORY_CARD_POLL_TIMEOUT_TICKS = 91 };
+enum { MEMORY_CARD_POLL_DEADLINE_TICKS = 91 };
 
 enum { MEMORY_CARD_EVENT_COUNT = 4 };
 
@@ -43,7 +43,9 @@ MemoryCardEvent PollMemoryCardHwEvent(void) {
         }
     }
 
-    if (++g_McPollTicks >= MEMORY_CARD_POLL_TIMEOUT_TICKS) {
+    g_McPollTicks++;
+    if (result == MC_EVENT_NONE &&
+        g_McPollTicks >= MEMORY_CARD_POLL_DEADLINE_TICKS) {
         result = MC_EVENT_ERROR;
     }
 

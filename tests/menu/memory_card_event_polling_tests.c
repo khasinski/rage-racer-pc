@@ -87,6 +87,12 @@ static int TestPollPriority(void) {
     s_active[g_McHwEventTimeout] = 1;
     s_active[g_McHwEventNew] = 1;
     CHECK(PollMemoryCardHwEvent() == MC_EVENT_NEW_CARD);
+
+    ResetMock();
+    g_McPollTicks = 90;
+    s_active[g_McHwEventIoe] = 1;
+    CHECK(PollMemoryCardHwEvent() == MC_EVENT_IO_COMPLETE);
+    CHECK(g_McPollTicks == 91);
     return 0;
 }
 
