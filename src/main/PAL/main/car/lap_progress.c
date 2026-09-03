@@ -20,10 +20,11 @@ static void AddLapProgress(GameCarRuntime *car, s32 distance) {
 
 /*
  * Walks the track-point ring from the event's start point to the car's current
- * point, summing segment lengths into progressA. `mode` picks which way round
- * to walk and the race direction decides the sign of the accumulated distance.
+ * point, summing segment lengths into progressA. `seedSelector` picks which way
+ * round to walk and the race direction decides the sign of the accumulated
+ * distance.
  */
-void SeedCarLapProgress(GameCarRuntime *car, s32 mode) {
+void SeedCarLapProgress(GameCarRuntime *car, s32 seedSelector) {
     s32 current;
     s32 index;
     s32 total = 0;
@@ -38,7 +39,7 @@ void SeedCarLapProgress(GameCarRuntime *car, s32 mode) {
     index = WrapTrackPointIndex(g_TrackEventData->trackWalkStart);
 
     if (g_RaceSeries != 0) {
-        if (mode == 1) {
+        if (seedSelector == 1) {
             for (;;) {
                 index = WrapTrackPointIndex(index + 1);
                 if (index == current) {
@@ -59,7 +60,7 @@ void SeedCarLapProgress(GameCarRuntime *car, s32 mode) {
             }
         }
     } else {
-        if (mode == 0) {
+        if (seedSelector == 0) {
             do {
                 index = WrapTrackPointIndex(index + 1);
                 total = WrapSigned32(

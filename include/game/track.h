@@ -85,7 +85,7 @@ typedef struct TrackRivalStart {
     s32 x;
     s32 z;
     s16 trackPointIndex;
-    s16 modelId;
+    s16 activeFlag;
 } TrackRivalStart;
 
 typedef struct TrackRivalAiConfig {

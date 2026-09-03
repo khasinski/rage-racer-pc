@@ -44,10 +44,10 @@ void InitRivalCar(GameCarRuntime *car,
     car->baseBodyYaw = car->bodyYaw;
     car->targetYaw = car->bodyYaw;
     car->headingAngle = car->bodyYaw;
-    SeedCarLapProgress(car, start->modelId);
+    SeedCarLapProgress(car, start->activeFlag);
 
-    car->activeFlag = start->modelId;
-    if (start->modelId != -1) {
+    car->activeFlag = start->activeFlag;
+    if (start->activeFlag != -1) {
         UpdateCarTrackState(car, car->trackPointIndex, &trackLimits);
         car->modelY = car->y;
         car->previousTrackProgress = car->trackProgress;

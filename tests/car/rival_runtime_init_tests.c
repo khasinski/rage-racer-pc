@@ -23,9 +23,9 @@ s32 FindTrackSegment(const GameCarRuntime *car, s32 startIndex) {
     return s_findResult;
 }
 
-void SeedCarLapProgress(GameCarRuntime *car, s32 mode) {
+void SeedCarLapProgress(GameCarRuntime *car, s32 seedSelector) {
     car->progressA = 123;
-    s_seedMode = mode;
+    s_seedMode = seedSelector;
 }
 
 s32 UpdateCarTrackState(GameCarRuntime *car, s32 pointIndex,
@@ -67,7 +67,7 @@ int main(void) {
     start->x = 1000;
     start->z = 2000;
     start->trackPointIndex = -1;
-    start->modelId = 4;
+    start->activeFlag = 4;
     points[2].x = 3000;
     points[2].z = 4000;
     points[2].angle = 0x200;
@@ -97,7 +97,7 @@ int main(void) {
     CHECK(car.reserved116 == 0);
 
     memset(&car, 0x5A, sizeof(car));
-    start->modelId = -1;
+    start->activeFlag = -1;
     s_findResult = 1;
     s_trackCalls = 0;
     InitRivalCar(&car, 0, grid);

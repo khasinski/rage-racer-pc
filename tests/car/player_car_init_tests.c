@@ -51,8 +51,8 @@ s32 FindTrackSegment(const GameCarRuntime *car, s32 pointIndex) {
     return s_findResult;
 }
 
-void SeedCarLapProgress(GameCarRuntime *car, s32 progress) {
-    (void)progress;
+void SeedCarLapProgress(GameCarRuntime *car, s32 seedSelector) {
+    (void)seedSelector;
     car->progressA = 123;
     s_seedCalls++;
 }

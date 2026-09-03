@@ -813,7 +813,7 @@ void BuildStartingGrid(void);
 void BuildTachoNeedleQuad(void);
 void AccumulateLapProgress(GameCarRuntime *car);
 s32 FindTrackSegment(const GameCarRuntime *car, s32 idx);
-void SeedCarLapProgress(GameCarRuntime *car, s32 mode);
+void SeedCarLapProgress(GameCarRuntime *car, s32 seedSelector);
 s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
                         const CarTrackLimits *limits);
 void DrawTachometer(s32 rpm, s32 shiftLightOn, TachometerLightingMode lighting,
