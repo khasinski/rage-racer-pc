@@ -269,6 +269,24 @@ static void TestModelVariantLoads(void) {
           "missing car table is rejected before asset lookup");
 
     g_CarTable = cars;
+    g_CarModelBuffer = NULL;
+    g_AssetLoadState = 1;
+    g_AssetLoadFailed = 0;
+    LoadPendingCarModelAsset();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              s_loadAssetId == -123,
+          "missing car model buffer is rejected before pointer arithmetic");
+
+    g_CarModelBuffer = buffers;
+    g_CarModelSlot = CAR_ASSET_SLOT_COUNT;
+    g_AssetLoadState = 1;
+    g_AssetLoadFailed = 0;
+    LoadPendingCarModelAsset();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              s_loadAssetId == -123,
+          "invalid active model slot is rejected before asset lookup");
+
+    g_CarModelSlot = 0;
     g_AssetLoadState = 1;
     g_AssetLoadFailed = 0;
     s_forceInvalidAssetIndex = 1;

@@ -17,7 +17,8 @@ static void RequestPendingCarModel(AssetRequestType request, s32 carIndex) {
 
 s32 InstallCarModelAsset(CarModelAsset *asset, size_t size, s32 slot,
                          s32 carIndex) {
-    ModelBankHeader *modelBank;
+    const ModelBankHeader *modelBank;
+    CarModelAsset *installedAsset;
 
     if ((u32)slot >= CAR_ASSET_SLOT_COUNT ||
         !IsValidSerializedCarModelAsset(asset, size)) {
@@ -33,13 +34,13 @@ s32 InstallCarModelAsset(CarModelAsset *asset, size_t size, s32 slot,
     if (!InstallSerializedCarModelSlot(asset, size, slot)) {
         return 0;
     }
-    asset = g_CarModelSlots[slot];
-    g_CarImageSlots[slot] = asset->imageData.carImage;
+    installedAsset = g_CarModelSlots[slot];
+    g_CarImageSlots[slot] = installedAsset->imageData.carImage;
     if ((u32)carIndex < CUSTOM_PAINT_CAR_COUNT && g_CarTable != NULL) {
         ApplyPrimaryBodyColor(g_CarTable[carIndex].paintColor1,
-                              asset->imageData.carImage);
+                              installedAsset->imageData.carImage);
         ApplySecondaryBodyColor(g_CarTable[carIndex].paintColor2,
-                                asset->imageData.carImage);
+                                installedAsset->imageData.carImage);
     }
     return 1;
 }
@@ -66,7 +67,8 @@ void LoadPendingCarModelAsset(void) {
     if (g_AssetLoadState != CAR_MODEL_LOAD_ASSET) {
         return;
     }
-    if ((u32)carIndex >= GAME_CAR_COUNT || g_CarTable == NULL) {
+    if ((u32)carIndex >= GAME_CAR_COUNT || g_CarTable == NULL ||
+        g_CarModelBuffer == NULL || g_CarModelSlot >= CAR_ASSET_SLOT_COUNT) {
         FailAssetLoad();
         return;
     }
