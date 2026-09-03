@@ -19,6 +19,7 @@ import struct
 import subprocess
 import sys
 import zlib
+import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -205,6 +206,30 @@ def main() -> int:
             raise AssertionError(f"an oversized PNG stream was not refused: {message}")
         if {p.name: p.read_bytes() for p in (mod / "raw").glob("*.bin")} != guarded:
             raise AssertionError("an oversized PNG stream changed the asset")
+
+        # Palette offsets are byte offsets, not aligned uint16_t addresses.
+        # Keep an intentionally odd one valid and make sure packing still
+        # performs the edit (UBSan catches an accidental uint16_t cast here).
+        sidecar_path = target.with_suffix(".json")
+        sidecar = json.loads(sidecar_path.read_text())
+        raw_path = mod / "raw" / "asset_001.bin"
+        raw_asset = bytearray(raw_path.read_bytes())
+        clut_offset = sidecar["clut"]["offset"]
+        raw_asset.insert(clut_offset, 0)
+        sidecar["clut"]["offset"] += 1
+        if sidecar["pixels_offset"] >= clut_offset:
+            sidecar["pixels_offset"] += 1
+        raw_path.write_bytes(raw_asset)
+        sidecar_path.write_text(json.dumps(sidecar), encoding="utf-8")
+        painted[0] = next(pixel for pixel in pixels if pixel != painted[0]
+                          and pixel[3] == 255)
+        write_png(target, w8, h8, painted)
+        before_odd_edit = raw_path.read_bytes()
+        run = subprocess.run([pack, mod], capture_output=True, text=True)
+        if run.returncode != 0:
+            raise AssertionError(f"rage-pack failed on an odd palette offset: {run.stdout}{run.stderr}")
+        if raw_path.read_bytes() == before_odd_edit:
+            raise AssertionError("an odd palette offset prevented a texture edit")
 
     print("mod tools round trip, edit isolation and refusals all hold")
     return 0

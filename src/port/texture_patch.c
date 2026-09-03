@@ -244,16 +244,21 @@ static uint16_t RgbaToBgr555(const uint8_t *rgba) {
     return value == 0 ? 1 : value; /* zero is the transparent texel */
 }
 
-static int NearestIndex(const uint16_t *clut, int count, const uint8_t *rgba,
+static uint16_t ReadLe16(const uint8_t *data) {
+    return (uint16_t)(data[0] | ((uint16_t)data[1] << 8));
+}
+
+static int NearestIndex(const uint8_t *clut, int count, const uint8_t *rgba,
                         int *exact) {
     int best = 0, bestCost = 1 << 30, i;
     if (rgba[3] < 128) { *exact = 1; return 0; }
     for (i = 0; i < count; i++) {
-        int r = (clut[i] & 0x1F) * 255 / 31;
-        int g = ((clut[i] >> 5) & 0x1F) * 255 / 31;
-        int b = ((clut[i] >> 10) & 0x1F) * 255 / 31;
+        uint16_t entry = ReadLe16(clut + (size_t)i * 2);
+        int r = (entry & 0x1F) * 255 / 31;
+        int g = ((entry >> 5) & 0x1F) * 255 / 31;
+        int b = ((entry >> 10) & 0x1F) * 255 / 31;
         int cost;
-        if (clut[i] == 0) continue; /* reserved transparent slot */
+        if (entry == 0) continue; /* reserved transparent slot */
         cost = (r - rgba[0]) * (r - rgba[0]) + (g - rgba[1]) * (g - rgba[1]) +
                (b - rgba[2]) * (b - rgba[2]);
         if (cost < bestCost) { bestCost = cost; best = i; }
@@ -265,13 +270,14 @@ static int NearestIndex(const uint16_t *clut, int count, const uint8_t *rgba,
 /* Decode one texel the way rage-extract does, so packing can tell an untouched
  * pixel from an edited one. */
 static void DecodeTexel(const uint8_t *row, int x, int depth,
-                        const uint16_t *clut, uint8_t *rgba) {
+                        const uint8_t *clut, uint8_t *rgba) {
     uint16_t value;
     if (depth == 4) {
         uint8_t packed = row[x / 2];
-        value = clut[(x & 1) ? (packed >> 4) : (packed & 0x0F)];
+        int index = (x & 1) ? (packed >> 4) : (packed & 0x0F);
+        value = ReadLe16(clut + (size_t)index * 2);
     } else if (depth == 8) {
-        value = clut[row[x]];
+        value = ReadLe16(clut + (size_t)row[x] * 2);
     } else {
         value = (uint16_t)(row[x * 2] | (row[x * 2 + 1] << 8));
     }
@@ -291,7 +297,7 @@ static int PatchTexture(const char *jsonPath, const char *pngPath,
     uint8_t *rgba;
     const char *error;
     uint32_t w, h;
-    uint16_t *clut = NULL;
+    uint8_t *clut = NULL;
     uint8_t *bytes;
     int x, y, inexact = 0, edited = 0;
     size_t minimumRowBytes;
@@ -358,7 +364,7 @@ static int PatchTexture(const char *jsonPath, const char *pngPath,
     }
 
     bytes = data + sidecar.pixelsOffset;
-    if (sidecar.hasClut) clut = (uint16_t *)(void *)(data + sidecar.clutOffset);
+    if (sidecar.hasClut) clut = data + sidecar.clutOffset;
 
     for (y = 0; y < sidecar.height; y++) {
         size_t rowBytes =
