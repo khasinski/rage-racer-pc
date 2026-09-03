@@ -36,6 +36,7 @@ static s32 s_imageLoads;
 static s32 s_sequenceCalls;
 static s32 s_textCalls;
 static s32 s_teamNameUploads;
+static s32 s_teamLogoClutUploads;
 
 s32 RequestCarSelectAssets(void) { return s_assetRequestResult; }
 void PlaySequence(void) { s_sequenceCalls++; }
@@ -65,6 +66,7 @@ void UploadTeamNameTexture(const u8 *text, s32 length) {
     (void)length;
     s_teamNameUploads++;
 }
+void UploadTeamLogoClut(void) { s_teamLogoClutUploads++; }
 
 #define CHECK(condition)                                                       \
     do {                                                                       \
@@ -93,6 +95,7 @@ static void PoisonState(void) {
     s_imageLoads = 0;
     s_sequenceCalls = 0;
     s_teamNameUploads = 0;
+    s_teamLogoClutUploads = 0;
 }
 
 static int CheckShowroomReset(s32 expectedGrade, s32 expectedPlateStep) {
@@ -110,7 +113,8 @@ static int CheckShowroomReset(s32 expectedGrade, s32 expectedPlateStep) {
     CHECK(g_PlayerCar.trackProgress == 0 && g_PlayerCar.steeringAngle == 0 &&
           g_PlayerCar.wheelRotation == 0);
     CHECK(s_sequenceCalls == 1 && s_arrowCalls == 1);
-    CHECK(s_imageLoads == 2 && s_teamNameUploads == 1);
+    CHECK(s_imageLoads == 1 && s_teamLogoClutUploads == 1 &&
+          s_teamNameUploads == 1);
     return 0;
 }
 
@@ -126,7 +130,7 @@ int main(void) {
     CHECK(s_textCalls == 1);
     CHECK(g_MenuHandlerIndex == -7 && g_MenuScreen == -8);
     CHECK(s_sequenceCalls == 0 && s_arrowCalls == 0 && s_imageLoads == 0 &&
-          s_teamNameUploads == 0);
+          s_teamLogoClutUploads == 0 && s_teamNameUploads == 0);
 
     PoisonState();
     g_CourseIndex = 2;

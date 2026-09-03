@@ -113,6 +113,25 @@ endif()
 add_test(NAME car_name_plate COMMAND car_name_plate_tests)
 set_tests_properties(car_name_plate PROPERTIES LABELS unit)
 
+add_executable(team_logo_clut_tests
+    team_logo_clut_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/team_logo_clut.c)
+target_include_directories(team_logo_clut_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(team_logo_clut_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(team_logo_clut_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(team_logo_clut_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME team_logo_clut COMMAND team_logo_clut_tests)
+set_tests_properties(team_logo_clut PROPERTIES LABELS unit)
+
 add_executable(team_name_texture_tests
     team_name_texture_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/team_name_texture.c)

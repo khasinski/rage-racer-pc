@@ -2,6 +2,7 @@
 #include "game/audio.h"
 #include "game/course_index.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/player_car_internal.h"
 #include "game/save_internal.h"
 #include "game/state.h"
@@ -58,6 +59,6 @@ void EnterCourseSelectScreen(void) {
     DrawBrowseArrows(0, 0, 0, 0);
     ResetCourseSelectShowroom();
     LoadImage(&g_TeamLogoRect.rect, &g_TeamLogoCanvas);
-    LoadImage(&g_TeamLogoClutRect, g_TeamLogoClut);
+    UploadTeamLogoClut();
     UploadTeamNameTexture(g_TeamNameChars, g_TeamNameLength);
 }

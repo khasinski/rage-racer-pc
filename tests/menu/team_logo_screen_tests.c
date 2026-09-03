@@ -47,6 +47,7 @@ static s32 s_scriptFinished = 1;
 static s32 s_canvasUpdates;
 static s32 s_duckCalls;
 static s32 s_restoreCalls;
+static s32 s_clutUploadCalls;
 static s32 s_samplePanelCalls;
 static s32 s_composedCharacter;
 static s32 s_composedBackground;
@@ -69,6 +70,7 @@ void RampTeamLogoCanvas(s32 from, s32 to) {
     (void)from;
     (void)to;
 }
+void UploadTeamLogoClut(void) { s_clutUploadCalls++; }
 void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep) {
     (void)panelStep;
     (void)editorStep;
@@ -143,6 +145,7 @@ static void Reset(void) {
     s_canvasUpdates = 0;
     s_duckCalls = 0;
     s_restoreCalls = 0;
+    s_clutUploadCalls = 0;
     s_samplePanelCalls = 0;
     s_composedCharacter = -1;
     s_composedBackground = -1;
@@ -202,6 +205,7 @@ int main(void) {
     UpdateTeamLogoScreen();
     CHECK(g_MenuScreen == MENU_SCREEN_DESIGN_MODE);
     CHECK(g_TeamLogoClut[0] == 0);
+    CHECK(s_clutUploadCalls == 1);
 
     Reset();
     g_LogoSampleCharIndex = 7;

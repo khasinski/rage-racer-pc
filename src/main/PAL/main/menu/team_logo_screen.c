@@ -198,7 +198,7 @@ static void UpdateTeamLogoOutgoing(s32 state) {
         g_MenuHandlerIndex = MENU_SCREEN_DESIGN_MODE;
         g_TeamLogoOption = 0;
         g_TeamLogoClut[0] = 0;
-        LoadImage(&g_TeamLogoClutRect, g_TeamLogoClut);
+        UploadTeamLogoClut();
         break;
 
     default:
