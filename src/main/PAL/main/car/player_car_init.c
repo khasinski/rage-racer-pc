@@ -10,20 +10,30 @@
 
 #include <string.h>
 
+enum {
+    PLAYER_RENDER_MODEL_INDEX = 0x17,
+    INITIAL_RACE_POSITION = 1,
+    ACTIVE_RACE_PHASE = 2,
+    RACE_DIRECTION_BIT = 1,
+    MANUAL_HUD_GLYPH_CLUT = 0x7800,
+    AUTOMATIC_HUD_GLYPH_CLUT = 0x78CF,
+    DEFAULT_DRAG_SCALE = 1000,
+};
+
 static void ResetPlayerCarRuntime(PlayerCarRuntime *car) {
     s16 manual = car->drive.manual;
     s32 launchThresholdIndex = car->drive.launchThresholdIndex;
 
     memset(car, 0, sizeof(*car));
-    car->modelIndex = 0x17;
+    car->modelIndex = PLAYER_RENDER_MODEL_INDEX;
     car->drive.manual = manual;
     car->drive.launchThresholdIndex = launchThresholdIndex;
     car->drive.hudLapHighlightRow = -1;
     car->drive.motionState = CAR_MOTION_STANDING_START;
     car->drive.drivetrainCoupled = 1;
-    car->drive.gear = 1;
-    car->drive.racePosition = 1;
-    car->drive.gearDisp = 1;
+    car->drive.gear = CAR_FIRST_FORWARD_GEAR;
+    car->drive.racePosition = INITIAL_RACE_POSITION;
+    car->drive.gearDisp = CAR_FIRST_FORWARD_GEAR;
 }
 
 static void PlacePlayerCarOnGrid(PlayerCarRuntime *car) {
@@ -80,8 +90,10 @@ static void ResetPlayerDrivingGlobals(const GameCarDrive *drive) {
     g_EngineRpmSnapshot = 0;
     g_StandingStartSpin = 0;
     g_DriveBoostTimer = 0;
-    g_HudGlyphClut = drive->manual != 0 ? 0x7800 : 0x78CF;
-    g_DragScale = 0x3E8;
+    g_HudGlyphClut = drive->manual != 0
+        ? MANUAL_HUD_GLYPH_CLUT
+        : AUTOMATIC_HUD_GLYPH_CLUT;
+    g_DragScale = DEFAULT_DRAG_SCALE;
     g_SteerHoldFrames = 0;
     g_GripLossTimer = 0;
     g_WrongWayTimer = 0;
@@ -89,8 +101,8 @@ static void ResetPlayerDrivingGlobals(const GameCarDrive *drive) {
 }
 
 void InitPlayerCar(PlayerCarRuntime *car) {
-    g_RacePhase = 2;
-    g_RaceSeries = g_GrandPrixSeries & 1;
+    g_RacePhase = ACTIVE_RACE_PHASE;
+    g_RaceSeries = g_GrandPrixSeries & RACE_DIRECTION_BIT;
     BuildTachoNeedleQuad();
     g_AutoShiftCooldown = 0;
     g_TrackZoneDark = 0;
