@@ -477,6 +477,14 @@ static int HostReadArchive(unsigned int offset, void *destination,
     return 1;
 }
 
+static int HostOpenDataTrack(const char *path) {
+    g_RageHostDisc.file = fopen(path, "rb");
+    if (g_RageHostDisc.file != NULL && HostFindArchive()) return 1;
+    if (g_RageHostDisc.file != NULL) fclose(g_RageHostDisc.file);
+    g_RageHostDisc.file = NULL;
+    return 0;
+}
+
 /* Resolves a selected image all the way to a readable archive, so a path that
  * no longer works is reported before the game starts loading assets. */
 static int HostOpenDiscImage(const char *discPath, char *dataTrackPath,
@@ -493,31 +501,20 @@ static int HostOpenDiscImage(const char *discPath, char *dataTrackPath,
         return 1;
     }
     if (DiscPathIsBin(discPath)) {
-        if (snprintf(dataTrackPath, dataTrackPathSize, "%s", discPath) >=
-            (int)dataTrackPathSize) {
+        int written = snprintf(dataTrackPath, dataTrackPathSize, "%s",
+                               discPath);
+        if (written < 0 || (size_t)written >= dataTrackPathSize) {
             return 0;
         }
         g_RageHostDisc.track_offset = 0;
-        g_RageHostDisc.file = fopen(dataTrackPath, "rb");
-        if (g_RageHostDisc.file == NULL || !HostFindArchive()) {
-            if (g_RageHostDisc.file != NULL) fclose(g_RageHostDisc.file);
-            g_RageHostDisc.file = NULL;
-            return 0;
-        }
-        return 1;
+        return HostOpenDataTrack(dataTrackPath);
     }
     if (!DiscPathIsCue(discPath) || Psyz_CdSetDiskPath(discPath) != 0 ||
         !DiscCueResolveDataTrack(discPath, dataTrackPath, dataTrackPathSize,
                                  &g_RageHostDisc.track_offset)) {
         return 0;
     }
-    g_RageHostDisc.file = fopen(dataTrackPath, "rb");
-    if (g_RageHostDisc.file == NULL || !HostFindArchive()) {
-        if (g_RageHostDisc.file != NULL) fclose(g_RageHostDisc.file);
-        g_RageHostDisc.file = NULL;
-        return 0;
-    }
-    return 1;
+    return HostOpenDataTrack(dataTrackPath);
 }
 
 static int HostOpenDisc(const char *discPath, char *dataTrackPath,
