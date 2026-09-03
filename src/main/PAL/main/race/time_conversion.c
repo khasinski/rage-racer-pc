@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/race_internal.h"
 
 enum {
     GAME_FRAMES_PER_SECOND = 25,

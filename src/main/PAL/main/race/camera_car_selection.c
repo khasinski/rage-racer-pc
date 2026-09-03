@@ -1,6 +1,7 @@
 #include "game/asset.h"
 #include "game/car.h"
 #include "game/race.h"
+#include "game/race_internal.h"
 #include "game/random.h"
 #include "game/render.h"
 #include "game/state.h"

@@ -8,6 +8,7 @@ void DrawSpeedDigits(s32 x, s32 y, s32 speed);
 void DrawSplitTimes(void);
 void DrawSplitIndicator(s32 sectorIndex, s32 direction);
 void DrawStartCountdown(s32 sceneTimer);
+void BuildTileStrips(void);
 /* Draws the in-race option overlay. The "RAGE RACER GE" text is one half of
  * its scrolling marquee, not a title-screen label. */
 void DrawRaceOptionMenu(s32 cursorRow);

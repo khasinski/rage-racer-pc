@@ -1,6 +1,7 @@
 #include "common.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
+#include "game/race_internal.h"
 #include "game/save_internal.h"
 
 #include <stdio.h>

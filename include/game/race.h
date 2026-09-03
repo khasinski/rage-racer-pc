@@ -350,18 +350,13 @@ extern char g_TimeTextBuffer[];
 
 s32 BeginMirrorPass(void);
 void BuildRaceHudPrims(s32 grandPrixMode);
-void BuildTileStrips(void);
-void CommitClassProgress(void);
 void EnterPrizeScreen(void);
-s32 CycleAttractCameraCar(s32 mask, s32 current);
-s32 CycleBgmSelectCameraCar(s32 mask, s32 current);
 void DrawLapTimes(void);
 void DrawRaceHudLabels(s32 grandPrixMode);
 void DrawRacePosition(void);
 void DrawRaceTimePanel(s32 slideY);
 void DrawRearViewMirror(s32 mode);
 void DrawTimeRemaining(s32 timeMs);
-s32 FramesToMilliseconds(s32 frames, s32 subframeMillis);
 void ResetMirrorState(void);
 s32 UpdateLapAndFinish(struct PlayerCarRuntime *car, s32 grandPrixMode);
 void ExitRaceScene(s32 sceneId);
