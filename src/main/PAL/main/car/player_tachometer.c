@@ -1,4 +1,5 @@
 #include "game/car.h"
+#include "game/integer.h"
 #include "game/track_internal.h"
 
 enum {
@@ -12,6 +13,7 @@ enum {
 void DrawPlayerTachometer(void) {
     TachometerLightingMode lighting;
     s32 blendAmount;
+    s32 displayedRpm;
 
     if (g_TrackZoneDark == TACHOMETER_DARK_ZONE ||
         g_EnvScriptClock < DAWN_FADE_START ||
@@ -29,6 +31,8 @@ void DrawPlayerTachometer(void) {
         blendAmount = g_EnvScriptClock - DUSK_FADE_START;
     }
 
-    DrawTachometer(g_EngineRpm + g_EngineRpmJitter, g_TachoShiftLightOn,
+    displayedRpm = WrapSigned32(
+        (int64_t)g_EngineRpm + g_EngineRpmJitter);
+    DrawTachometer(displayedRpm, g_TachoShiftLightOn,
                    lighting, blendAmount);
 }

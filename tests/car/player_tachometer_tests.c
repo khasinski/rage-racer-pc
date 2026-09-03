@@ -1,6 +1,7 @@
 #include "game/car.h"
 #include "game/track_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 
 s32 g_EngineRpm;
@@ -56,6 +57,14 @@ int main(void) {
     CheckClock(0x549F, 0, TACHOMETER_LIGHTING_FADE_TO_DARK, 0x7F);
     CheckClock(0x54A0, 0, TACHOMETER_LIGHTING_DARK, 0);
     CheckClock(0x1154, 3, TACHOMETER_LIGHTING_DARK, 0);
+
+    g_EngineRpm = INT_MAX;
+    g_EngineRpmJitter = 1;
+    DrawPlayerTachometer();
+    if (s_rpm != INT_MIN) {
+        printf("FAIL extreme displayed RPM became %d\n", s_rpm);
+        s_failures++;
+    }
 
     if (s_failures != 0) {
         printf("%d player tachometer checks failed\n", s_failures);
