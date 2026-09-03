@@ -41,9 +41,10 @@ void DrawSplitTimes(void) {
     DrawTimeValue(HudLeftX(SPLIT_TIME_X), TARGET_SPLIT_TIME_Y,
                   g_SplitTargetTime, DEFAULT_TIME_CLUT,
                   MILLISECONDS_PER_SECOND);
-    DrawSplitIndicator(g_SplitSector, g_SplitSign);
+    DrawSplitIndicator(SplitDisplaySectorIndex(g_SplitSector), g_SplitSign);
 
     DrawTimeValue(HudRightX(BEST_TOTAL_TIME_X), BEST_TOTAL_TIME_Y,
-                  g_BestTotalTimes[g_RaceSeries][SeriesCourseIndex()][0],
+                  g_BestTotalTimes[SplitRecordSeriesIndex(g_RaceSeries)]
+                                  [SeriesCourseIndex()][0],
                   DEFAULT_TIME_CLUT, MILLISECONDS_PER_SECOND);
 }

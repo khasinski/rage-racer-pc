@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <limits.h>
 #include <string.h>
 
 #include "game/player_car_internal.h"
@@ -156,6 +157,47 @@ static void TestUnrepresentableTimeHasNoDelta(void) {
     assert(g_SplitSign == 0 && s_SoundCue == 0);
 }
 
+static void TestInvalidStateIsContained(void) {
+    PlayerCarRuntime car = {0};
+
+    ResetState();
+    g_SectorIndex = INT_MAX;
+    g_SplitSign = -1;
+    g_SplitTimer = 12;
+    g_RefSectorTimes.values[0] = 321;
+    UpdateSplitTimes(&car, 0, 0);
+    assert(g_SectorIndex == 0 && g_SplitSector == 0);
+    assert(g_SplitSign == 0 && g_SplitTimer == 0);
+    assert(g_SplitTargetTime == 321);
+
+    g_SectorIndex = 2;
+    UpdateSplitTimes(NULL, 0, 0);
+    assert(g_SectorIndex == 2);
+}
+
+static void TestExtremeArithmeticSaturates(void) {
+    PlayerCarRuntime car = {0};
+
+    ResetState();
+    car.lap = SHRT_MIN;
+    car.progressA = INT_MAX;
+    car.progressB = INT_MAX;
+    g_TrackLength = INT_MAX;
+    g_SectorEndDistance[0] = INT_MIN;
+    g_LapTimeMs = 0;
+    g_RefLapTime = INT_MAX;
+    UpdateSplitTimes(&car, 0, 1);
+    assert(g_SplitDelta == INT_MAX && g_SplitSign == 1);
+
+    ResetState();
+    car.lap = 1;
+    car.progressA = 100;
+    g_SectorEndDistance[0] = 100;
+    g_LapTimeMs = -1;
+    UpdateSplitTimes(&car, 0, 0);
+    assert(g_SplitSign == 0);
+}
+
 int main(void) {
     TestModesThatDoNotHaveSplits();
     TestInitialLapEvent();
@@ -163,5 +205,7 @@ int main(void) {
     TestSplitDisplayExpiry();
     TestInactiveLapResetsSplit();
     TestUnrepresentableTimeHasNoDelta();
+    TestInvalidStateIsContained();
+    TestExtremeArithmeticSaturates();
     return 0;
 }

@@ -17,6 +17,8 @@ s32 SplitDeltaVisible(s32 timer, s32 sectorIndex, s32 sign,
                       s32 lapCount, s32 playerLap);
 s32 SplitDeltaClut(s32 sign);
 s32 SplitTimeClut(s32 timeMs);
+s32 SplitRecordSeriesIndex(s32 series);
+s32 SplitDisplaySectorIndex(s32 sector);
 
 typedef struct StartCountdownTiming {
     s32 visible;

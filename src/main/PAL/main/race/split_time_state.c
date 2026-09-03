@@ -1,9 +1,13 @@
 #include "game/audio.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
+#include "game/race_hud_internal.h"
 #include "game/race_internal.h"
 #include "game/save_internal.h"
 #include "game/track.h"
+
+#include <limits.h>
+#include <stdint.h>
 
 enum {
     SPLIT_SECTOR_COUNT = 3,
@@ -14,25 +18,39 @@ enum {
     SPLIT_BEHIND_CUE = 0x3F,
 };
 
+static void ResetSplitDisplay(void) {
+    g_SectorIndex = 0;
+    g_SplitSector = 0;
+    g_SplitTimer = 0;
+    g_SplitSign = 0;
+    g_SplitTargetTime = g_RefSectorTimes.values[0];
+}
+
 void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
     s32 slot;
     s32 nextSlot;
-    s32 delta;
+    int64_t delta;
 
-    if (lapEvent == 2 || grandPrixMode != 0) {
+    if (car == NULL || lapEvent == 2 || grandPrixMode != 0) {
         return;
     }
 
     slot = g_SectorIndex;
+    if (slot >= SPLIT_SECTOR_COUNT) {
+        ResetSplitDisplay();
+        return;
+    }
     if (slot >= 0 &&
-        ((car->lap - 1) * g_TrackLength + g_SectorEndDistance[slot] <=
-             car->progressB + car->progressA ||
+        (((int64_t)car->lap - 1) * g_TrackLength +
+                 g_SectorEndDistance[slot] <=
+             (int64_t)car->progressB + car->progressA ||
          lapEvent != 0)) {
         g_SectorTimes[slot] = g_LapTimeMs;
-        if (g_LapTimeMs <= MAX_COMPARABLE_TIME_MS) {
+        if (g_LapTimeMs >= 0 && g_LapTimeMs <= MAX_COMPARABLE_TIME_MS) {
             delta = lapEvent != 0
-                        ? g_RefLapTime - g_LapTimeMs
-                        : g_RefSectorTimes.values[slot] - g_LapTimeMs;
+                        ? (int64_t)g_RefLapTime - g_LapTimeMs
+                        : (int64_t)g_RefSectorTimes.values[slot] -
+                              g_LapTimeMs;
 
             g_SplitSign = 1;
             if (delta < 0) {
@@ -44,7 +62,7 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
             } else if (delta > 0 && lapEvent == 0) {
                 PlaySoundCue(SPLIT_AHEAD_CUE);
             }
-            g_SplitDelta = delta;
+            g_SplitDelta = delta < INT_MAX ? (s32)delta : INT_MAX;
         } else {
             g_SplitSign = 0;
         }
@@ -74,10 +92,14 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
         g_SectorIndex = 0;
         g_SplitSign = 0;
         g_SplitTargetTime =
-            g_BestSectorTimes[g_RaceSeries][SeriesCourseIndex()][0];
+            g_BestSectorTimes[SplitRecordSeriesIndex(g_RaceSeries)]
+                             [SeriesCourseIndex()][0];
         g_SplitTimer = SPLIT_DISPLAY_FRAMES;
         g_SplitSector = 0;
     } else if (g_SectorIndex >= 0 && g_LapCount >= car->lap) {
+        if (g_SplitTimer < 0) {
+            g_SplitTimer = 0;
+        }
         if (g_SplitTimer < SPLIT_DISPLAY_FRAMES) {
             g_SplitTimer++;
             if (g_SplitTimer == SPLIT_DISPLAY_FRAMES) {
@@ -88,9 +110,6 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
             }
         }
     } else {
-        g_SplitSector = 0;
-        g_SplitTimer = 0;
-        g_SplitSign = 0;
-        g_SplitTargetTime = g_RefSectorTimes.values[0];
+        ResetSplitDisplay();
     }
 }

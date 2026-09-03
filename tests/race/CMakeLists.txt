@@ -467,7 +467,8 @@ set_tests_properties(enter_attract_scene PROPERTIES LABELS unit)
 
 add_executable(split_time_state_tests
     split_time_state_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/split_time_state.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/split_time_state.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/split_time_display.c)
 target_include_directories(split_time_state_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
