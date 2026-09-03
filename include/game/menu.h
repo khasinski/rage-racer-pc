@@ -154,16 +154,6 @@ extern s32 g_EngineerShopPanelSlide;
 void DrawCarShopPricePanel(s32 step, s32 money, s32 price);
 void DrawEngineerShopPricePanel(s32 step, s32 money, s32 price);
 
-void AdjustMenuSelectionVertical(
-    s32 *value,
-    s32 min,
-    s32 max);
-void SetMenuBinaryChoiceHorizontal(s32 *value);
-u16 PollMenuConfirmInput(void);
-u16 PollMenuBackInput(void);
-void DrawMenuFadeOverlay(s32 brightness);
-void StartMenuExitFade(void);
-
 /* Menu widgets: an outlined filled box, the two-ring selection frame, and the
  * timeline sprites whose brightness decays through g_MenuRowFlashLevels[]. */
 void GameDrawMenuButton(

@@ -1,4 +1,5 @@
 #include "game/audio.h"
+#include "game/memcard_internal.h"
 #include "game/menu.h"
 #include "game/state.h"
 
