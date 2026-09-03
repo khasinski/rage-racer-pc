@@ -82,11 +82,11 @@ int main(void) {
     memset(&activeModel, 0, sizeof(activeModel));
     activeModel.imageData.carImage = &activeImage;
     g_CarModelAsset = &activeModel;
-    g_CarModelSlot = 7;
+    g_CarModelSlot = 1;
     s_uploadCalls = 0;
     s_uploadedSlot = -1;
     SetPrimaryBodyColor(0);
-    if (s_uploadCalls != 1 || s_uploadedSlot != 7 ||
+    if (s_uploadCalls != 1 || s_uploadedSlot != 1 ||
         activeImage.paintPalette.gradients.bodyColor1Gradient[0] !=
             g_BodyColorPrimary[0] ||
         activeImage.paintPalette.gradients.bodyColor1Gradient[4] !=
@@ -98,7 +98,7 @@ int main(void) {
         return 1;
     }
     SetSecondaryBodyColor(0);
-    if (s_uploadCalls != 2 || s_uploadedSlot != 7 ||
+    if (s_uploadCalls != 2 || s_uploadedSlot != 1 ||
         activeImage.paintPalette.gradients.bodyColor2Gradient[0] !=
             g_BodyColorPrimary[0] ||
         activeImage.paintPalette.gradients.bodyColor2Gradient[4] !=
@@ -107,6 +107,22 @@ int main(void) {
                s_uploadCalls, s_uploadedSlot,
                activeImage.paintPalette.gradients.bodyColor2Gradient[0],
                activeImage.paintPalette.gradients.bodyColor2Gradient[4]);
+        return 1;
+    }
+
+    s_uploadCalls = 0;
+    g_CarModelAsset = NULL;
+    SetPrimaryBodyColor(0);
+    g_CarModelAsset = &activeModel;
+    activeModel.imageData.carImage = NULL;
+    SetSecondaryBodyColor(0);
+    activeModel.imageData.carImage = &activeImage;
+    g_CarModelSlot = CAR_ASSET_SLOT_COUNT;
+    SetPrimaryBodyColor(0);
+    ApplyPrimaryBodyColor(0, NULL);
+    ApplySecondaryBodyColor(0, NULL);
+    if (s_uploadCalls != 0) {
+        puts("FAIL invalid active paint target triggered an upload");
         return 1;
     }
 

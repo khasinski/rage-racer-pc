@@ -103,6 +103,9 @@ static void WriteFourStopPaintGradient(u16 *palette, const u16 *slots,
 
 static void ApplyBodyColours(u32 colour, CarImageData *imageData,
                              PaintLayer layer) {
+    if (imageData == NULL) {
+        return;
+    }
     if (colour >= PAINT_COLOR_COUNT) {
         colour = 0;
     }
@@ -143,16 +146,29 @@ void ApplyPrimaryBodyColor(u32 colour, CarImageData *imageData) {
     ApplyBodyColours(colour, imageData, PAINT_LAYER_PRIMARY);
 }
 
-void SetPrimaryBodyColor(s32 colour) {
-    ApplyPrimaryBodyColor((u32)colour, g_CarModelAsset->imageData.carImage);
-    UploadCarImage(g_CarModelSlot);
+static void SetBodyColour(s32 colour, PaintLayer layer) {
+    CarImageData *imageData;
+
+    if (g_CarModelAsset == NULL ||
+        (u32)g_CarModelSlot >= CAR_ASSET_SLOT_COUNT) {
+        return;
+    }
+    imageData = g_CarModelAsset->imageData.carImage;
+    if (imageData == NULL) {
+        return;
+    }
+    ApplyBodyColours((u32)colour, imageData, layer);
+    UploadCarImage((s32)g_CarModelSlot);
 }
 
 void ApplySecondaryBodyColor(u32 colour, CarImageData *imageData) {
     ApplyBodyColours(colour, imageData, PAINT_LAYER_SECONDARY);
 }
 
+void SetPrimaryBodyColor(s32 colour) {
+    SetBodyColour(colour, PAINT_LAYER_PRIMARY);
+}
+
 void SetSecondaryBodyColor(s32 colour) {
-    ApplySecondaryBodyColor((u32)colour, g_CarModelAsset->imageData.carImage);
-    UploadCarImage(g_CarModelSlot);
+    SetBodyColour(colour, PAINT_LAYER_SECONDARY);
 }
