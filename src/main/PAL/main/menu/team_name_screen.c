@@ -1,5 +1,6 @@
 #include "game/audio.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 
 /* The two keys on the name grid that are not characters. */
 #define TEAM_NAME_KEY_RUBOUT 0x2A
@@ -14,21 +15,7 @@ enum {
 };
 
 s32 DrawTeamNameScreen(s32 step) {
-    if (step == 0) {
-        g_TeamNameScreenProgress = 0;
-        return 0;
-    }
-
-    g_TeamNameScreenProgress += step;
-    if (step > 0) {
-        if (g_TeamNameScreenProgress >= MENU_FADE_COMPLETE) {
-            g_TeamNameScreenProgress = MENU_FADE_MAX;
-        }
-    } else if (g_TeamNameScreenProgress < 0) {
-        g_TeamNameScreenProgress = 0;
-    }
-
-    return g_TeamNameScreenProgress;
+    return AdvanceMenuFade(&g_TeamNameScreenProgress, step);
 }
 
 static s32 MoveTeamNameGridCursor(s32 cursor, u16 pressed) {

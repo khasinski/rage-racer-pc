@@ -1,23 +1,10 @@
 #include "game/audio.h"
 #include "game/car.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 
 s32 DrawPaintColorScreen(s32 step) {
-    if (step == 0) {
-        g_PaintColorScreenProgress = 0;
-        return 0;
-    }
-
-    g_PaintColorScreenProgress += step;
-    if (step > 0) {
-        if (g_PaintColorScreenProgress >= MENU_FADE_COMPLETE) {
-            g_PaintColorScreenProgress = MENU_FADE_MAX;
-        }
-    } else if (g_PaintColorScreenProgress < 0) {
-        g_PaintColorScreenProgress = 0;
-    }
-
-    return g_PaintColorScreenProgress;
+    return AdvanceMenuFade(&g_PaintColorScreenProgress, step);
 }
 
 static void LeavePaintColorScreen(s32 busyState) {

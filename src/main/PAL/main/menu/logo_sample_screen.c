@@ -1,5 +1,6 @@
 #include "game/audio.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/team_logo.h"
 
 enum { LOGO_SAMPLE_COUNT = 20 };
@@ -136,16 +137,5 @@ void UpdateLogoSampleScreen(void) {
 }
 
 s32 DrawLogoSampleScreen(s32 step) {
-    if (step == 0) {
-        g_LogoSampleScreenFade = 0;
-    } else {
-        g_LogoSampleScreenFade += step;
-        if (g_LogoSampleScreenFade >= MENU_FADE_COMPLETE) {
-            g_LogoSampleScreenFade = MENU_FADE_MAX;
-        } else if (g_LogoSampleScreenFade < 0) {
-            g_LogoSampleScreenFade = 0;
-        }
-    }
-
-    return g_LogoSampleScreenFade;
+    return AdvanceMenuFade(&g_LogoSampleScreenFade, step);
 }

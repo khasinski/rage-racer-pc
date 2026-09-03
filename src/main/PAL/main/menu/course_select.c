@@ -2,6 +2,7 @@
 #include "game/audio.h"
 #include "game/course_select_internal.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/menu_scripts_internal.h"
 #include "game/player_car_internal.h"
 #include "game/save_internal.h"
@@ -328,26 +329,5 @@ s32 DrawCourseSelectScreen(s32 step) {
 }
 
 s32 DrawRankingScreen(s32 step) {
-    s32 value;
-
-    if (step == 0) {
-        g_RankingScrollState = 0;
-        return 0;
-    }
-
-    if (step > 0) {
-        value = step + g_RankingScrollState;
-        g_RankingScrollState = value;
-        if (value >= 0x1FD) {
-            g_RankingScrollState = 0x1FC;
-        }
-    } else {
-        value = step + g_RankingScrollState;
-        g_RankingScrollState = value;
-        if (value < 0) {
-            g_RankingScrollState = 0;
-        }
-    }
-
-    return g_RankingScrollState;
+    return AdvanceMenuFade(&g_RankingScrollState, step);
 }

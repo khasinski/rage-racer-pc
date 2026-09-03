@@ -19,27 +19,14 @@ s32 DrawDesignModeScreen(s32 step) {
     mask = g_DesignModeCellMask;
 
     if (step == 0) {
-        g_DesignModeScreenFade = 0;
+        AdvanceMenuFade(&g_DesignModeScreenFade, step);
         return 0;
     }
+    AdvanceMenuFade(&g_DesignModeScreenFade, step);
 
     if (step > 0) {
-        s32 updated;
-
-        updated = g_DesignModeScreenFade + step;
-        g_DesignModeScreenFade = updated;
-        if (updated >= MENU_FADE_COMPLETE) {
-            g_DesignModeScreenFade = MENU_FADE_MAX;
-        }
         offset = 0;
     } else {
-        s32 updated;
-
-        updated = g_DesignModeScreenFade + step;
-        g_DesignModeScreenFade = updated;
-        if (updated < 0) {
-            g_DesignModeScreenFade = 0;
-        }
         limit = MENU_FADE_MAX - g_DesignModeScreenFade;
         offset = limit * limit / 2048;
     }
@@ -186,26 +173,5 @@ void UpdateDesignModeScreen(void) {
 }
 
 s32 DrawTeamLogoScreen(s32 step) {
-    s32 value;
-
-    if (step == 0) {
-        g_TeamLogoScreenFade = 0;
-        return 0;
-    }
-
-    if (step > 0) {
-        value = step + g_TeamLogoScreenFade;
-        g_TeamLogoScreenFade = value;
-        if (value >= MENU_FADE_COMPLETE) {
-            g_TeamLogoScreenFade = MENU_FADE_MAX;
-        }
-    } else {
-        value = step + g_TeamLogoScreenFade;
-        g_TeamLogoScreenFade = value;
-        if (value < 0) {
-            g_TeamLogoScreenFade = 0;
-        }
-    }
-
-    return g_TeamLogoScreenFade;
+    return AdvanceMenuFade(&g_TeamLogoScreenFade, step);
 }

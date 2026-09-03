@@ -1,0 +1,34 @@
+#include "game/menu.h"
+#include "game/menu_internal.h"
+
+#include <limits.h>
+#include <stdio.h>
+
+#define CHECK(condition)                                                       \
+    do {                                                                       \
+        if (!(condition)) {                                                    \
+            fprintf(stderr, "check failed at line %d: %s\n", __LINE__,       \
+                    #condition);                                               \
+            return 1;                                                          \
+        }                                                                      \
+    } while (0)
+
+int main(void) {
+    s32 progress = 100;
+
+    CHECK(AdvanceMenuFade(&progress, 20) == 120);
+    CHECK(AdvanceMenuFade(&progress, -40) == 80);
+    CHECK(AdvanceMenuFade(&progress, INT_MAX) == MENU_FADE_MAX);
+    CHECK(AdvanceMenuFade(&progress, INT_MIN) == 0);
+
+    progress = MENU_FADE_MAX;
+    CHECK(AdvanceMenuFade(&progress, 1) == MENU_FADE_MAX);
+    progress = 1;
+    CHECK(AdvanceMenuFade(&progress, -2) == 0);
+
+    progress = 123;
+    CHECK(AdvanceMenuFade(&progress, 0) == 0);
+
+    puts("menu fade progress tests passed");
+    return 0;
+}

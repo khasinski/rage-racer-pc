@@ -1,6 +1,7 @@
 #include "game/asset.h"
 #include "game/car.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 
 s32 DrawCarSelectScreen(s32 step) {
     void *ot;
@@ -10,16 +11,10 @@ s32 DrawCarSelectScreen(s32 step) {
     u8 transmission;
 
     if (step == 0) {
-        g_CarSelectFadeAccum = 0;
+        AdvanceMenuFade(&g_CarSelectFadeAccum, step);
         return 0;
     }
-
-    g_CarSelectFadeAccum += step;
-    if (g_CarSelectFadeAccum >= MENU_FADE_COMPLETE) {
-        g_CarSelectFadeAccum = MENU_FADE_MAX;
-    } else if (g_CarSelectFadeAccum < 0) {
-        g_CarSelectFadeAccum = 0;
-    }
+    AdvanceMenuFade(&g_CarSelectFadeAccum, step);
 
     ot = RENDER_OT_BASE + 1;
     brightness = (u8)(g_CarSelectFadeAccum / 4);
