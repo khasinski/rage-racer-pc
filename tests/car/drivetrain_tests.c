@@ -640,6 +640,43 @@ static void ExtremeDrivetrainArithmeticTests(void) {
           s_airborneCalls, 1);
 }
 
+static void ExtremeShiftArithmeticTests(void) {
+    s32 acceleration;
+
+    BuildSpec();
+    Check(CalculateAirborneEngineRpm(&s_spec, 1, INT_MAX) == 0,
+          "airborne RPM preserves wrapped wheel speed",
+          CalculateAirborneEngineRpm(&s_spec, 1, INT_MAX), 0);
+
+    PlaceCar();
+    s_car.drive.motionState = CAR_MOTION_DRIVING;
+    s_car.drive.gear = 6;
+    s_car.drive.gearDisp = 5;
+    s_car.drive.manual = 1;
+    s_car.speed = INT_MAX;
+    s_car.acceleration = INT_MAX;
+    s_spec.gearRatio[6] = INT_MAX;
+    g_RoadGrade = INT_MIN;
+    acceleration = INT_MAX;
+    UpdateCarGearShiftState(&s_car, &s_spec, &acceleration);
+    Check(s_car.drive.clutch == 10, "extreme shift engages the clutch",
+          s_car.drive.clutch, 10);
+    Check(acceleration == 0, "extreme shift clears initial acceleration",
+          acceleration, 0);
+
+    PlaceCar();
+    s_car.drive.motionState = CAR_MOTION_DRIVING;
+    s_car.drive.gearDisp = s_car.drive.gear;
+    s_car.drive.clutch = INT16_MAX;
+    s_car.drive.shiftSpeedDelta = INT16_MAX;
+    g_ShiftTargetSpeed = INT_MIN;
+    acceleration = 0;
+    UpdateCarGearShiftState(&s_car, &s_spec, &acceleration);
+    Check(s_car.drive.clutch == INT16_MAX - 1,
+          "extreme shift countdown advances", s_car.drive.clutch,
+          INT16_MAX - 1);
+}
+
 int main(void) {
     Check(CalculateCarRpmDelta(0, INT16_MIN) == INT16_MIN,
           "RPM delta wraps at the negative limit",
@@ -656,6 +693,7 @@ int main(void) {
     ExtremeLoadArithmeticTests();
     ExtremeTorqueArithmeticTests();
     ExtremeDrivetrainArithmeticTests();
+    ExtremeShiftArithmeticTests();
 
     if (s_failures != 0) {
         printf("%d drivetrain checks failed\n", s_failures);

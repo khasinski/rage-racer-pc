@@ -1,5 +1,6 @@
 #include "game/car.h"
 #include "game/car_internal.h"
+#include "game/integer.h"
 #include "game/race.h"
 
 enum {
@@ -13,7 +14,7 @@ static void UpdateAirborneGearShift(PlayerCarRuntime *car,
                                     const GameCarSpec *spec,
                                     s32 *acceleration) {
     GameCarDrive *drive = &car->drive;
-    s16 nextTimer = drive->jumpTimer - 1;
+    s16 nextTimer = WrapSigned16((int64_t)drive->jumpTimer - 1);
 
     drive->jumpTimer = nextTimer < 0 ? 0 : nextTimer;
     *acceleration = 0;
@@ -24,8 +25,11 @@ static void UpdateAirborneGearShift(PlayerCarRuntime *car,
         drive->shiftRpmDelta = CalculateCarRpmDelta(
             targetRpm, drive->engineRpm);
     }
-    drive->engineRpm = drive->shiftRpmDelta * drive->jumpTimer / 20 +
-                       g_ShiftTargetRpm;
+    drive->engineRpm = WrapSigned32(
+        (int64_t)WrapSigned32(
+            (int64_t)drive->shiftRpmDelta * drive->jumpTimer) /
+            20 +
+        g_ShiftTargetRpm);
 }
 
 static void ApplyUphillManualShiftPenalty(GameCarDrive *drive,
@@ -40,15 +44,17 @@ static void ApplyUphillManualShiftPenalty(GameCarDrive *drive,
     }
 
     if (targetGear == 4) {
-        gradePenalty = -g_RoadGrade / 120;
+        gradePenalty = WrapSigned32(-(int64_t)g_RoadGrade) / 120;
     } else if (targetGear == 5) {
-        gradePenalty = -g_RoadGrade / 48;
+        gradePenalty = WrapSigned32(-(int64_t)g_RoadGrade) / 48;
     } else {
-        gradePenalty = g_RoadGrade * -7 / 240;
+        gradePenalty = WrapSigned32((int64_t)g_RoadGrade * -7) / 240;
     }
-    gradeScale = 100 - gradePenalty;
-    drive->engineLoad = (u16)((s16)wheelSpeed * gradeScale / 100);
-    g_ShiftTargetSpeed = gradeScale * g_ShiftTargetSpeed / 100;
+    gradeScale = WrapSigned32((int64_t)100 - gradePenalty);
+    drive->engineLoad = WrapSigned16(
+        WrapSigned32((int64_t)WrapSigned16(wheelSpeed) * gradeScale) / 100);
+    g_ShiftTargetSpeed = WrapSigned32(
+        (int64_t)gradeScale * g_ShiftTargetSpeed) / 100;
 }
 
 static void BeginCarGearShift(PlayerCarRuntime *car,
@@ -57,15 +63,20 @@ static void BeginCarGearShift(PlayerCarRuntime *car,
     s16 targetGear = drive->gear;
     s32 wheelSpeed = (u16)car->acceleration;
     s32 targetRatio = GetPositiveCarGearRatio(spec, targetGear);
+    s32 ratioScale = WrapSigned32((int64_t)targetRatio * 1168) / 160;
 
-    drive->engineLoad = wheelSpeed;
-    g_ShiftTargetSpeed = (car->speed * 10000) /
-                         (targetRatio * 1168 / 160);
+    drive->engineLoad = WrapSigned16(wheelSpeed);
+    if (ratioScale == 0) {
+        ratioScale = 1;
+    }
+    g_ShiftTargetSpeed =
+        WrapSigned32((int64_t)car->speed * 10000) / ratioScale;
     ApplyUphillManualShiftPenalty(drive, targetGear, wheelSpeed);
 
     *acceleration = 0;
     if (drive->gearDisp > targetGear) {
-        g_ShiftTargetSpeed += DOWNSHIFT_TARGET_SPEED_BONUS;
+        g_ShiftTargetSpeed = WrapSigned32(
+            (int64_t)g_ShiftTargetSpeed + DOWNSHIFT_TARGET_SPEED_BONUS);
     }
     drive->clutch = GEAR_SHIFT_CLUTCH_FRAMES;
     drive->drivetrainCoupled = 0;
@@ -74,10 +85,11 @@ static void BeginCarGearShift(PlayerCarRuntime *car,
 }
 
 static void AdvanceCarGearShift(GameCarDrive *drive) {
-    s32 countdown = --drive->clutch;
+    s16 countdown = WrapSigned16((int64_t)drive->clutch - 1);
     s32 interpolationFrames;
 
-    if ((s16)countdown <= 0) {
+    drive->clutch = countdown;
+    if (countdown <= 0) {
         drive->drivetrainCoupled = 1;
         drive->engineLoad = 0;
         drive->clutch = 0;
@@ -87,9 +99,10 @@ static void AdvanceCarGearShift(GameCarDrive *drive) {
     interpolationFrames = drive->manual != 0
         ? MANUAL_SHIFT_INTERPOLATION_FRAMES
         : AUTOMATIC_SHIFT_INTERPOLATION_FRAMES;
-    drive->engineRpm = g_ShiftTargetSpeed -
-                       drive->shiftSpeedDelta * (s16)countdown /
-                           interpolationFrames;
+    drive->engineRpm = WrapSigned32(
+        (int64_t)g_ShiftTargetSpeed -
+        WrapSigned32((int64_t)drive->shiftSpeedDelta * countdown) /
+            interpolationFrames);
 }
 
 void UpdateCarGearShiftState(PlayerCarRuntime *car, const GameCarSpec *spec,

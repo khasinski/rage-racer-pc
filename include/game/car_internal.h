@@ -16,8 +16,9 @@ static inline s32 NormalizeCarLaunchThresholdIndex(s32 index) {
 static inline s32 CalculateAirborneEngineRpm(const GameCarSpec *spec,
                                              s32 gear, s32 speed) {
     s32 gearRatio = GetPositiveCarGearRatio(spec, gear);
+    s32 wheelRpm = WrapSigned32((int64_t)speed * 160) / 1168;
 
-    return speed * 160 / 1168 * 10000 / gearRatio;
+    return WrapSigned32((int64_t)wheelRpm * 10000) / gearRatio;
 }
 
 static inline s16 CalculateCarRpmDelta(s32 targetRpm, s32 currentRpm) {
