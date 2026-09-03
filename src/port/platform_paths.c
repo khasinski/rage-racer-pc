@@ -59,6 +59,7 @@ static int JoinPath(char *out, size_t outSize, const char *directory,
     if (out == NULL || outSize == 0 || directory == NULL || name == NULL) {
         return 0;
     }
+    out[0] = '\0';
     length = strlen(directory);
     written = snprintf(out, outSize, "%s%s%s", directory,
                        length > 0 && directory[length - 1] != '/' &&
@@ -66,7 +67,11 @@ static int JoinPath(char *out, size_t outSize, const char *directory,
                            ? (char[2]){separator, '\0'}
                            : "",
                        name);
-    return written >= 0 && (size_t)written < outSize;
+    if (written < 0 || (size_t)written >= outSize) {
+        out[0] = '\0';
+        return 0;
+    }
+    return 1;
 }
 
 static int ExecutableDirectory(const char *argv0, char *out,
@@ -76,6 +81,7 @@ static int ExecutableDirectory(const char *argv0, char *out,
     char *slash;
 
     if (out == NULL || outSize == 0) return 0;
+    out[0] = '\0';
 #ifdef _WIN32
     DWORD result = GetModuleFileNameA(NULL, executable, sizeof(executable));
     if (result == 0 || result >= sizeof(executable)) return 0;
@@ -123,8 +129,11 @@ int PlatformExistingPortableStateDirectory(
     size_t length;
     const char bundleSuffix[] = "/Contents/MacOS";
 
-    if (executableDirectory == NULL || executableDirectory[0] == '\0' ||
-        out == NULL || outSize == 0) {
+    if (out == NULL || outSize == 0) {
+        return 0;
+    }
+    out[0] = '\0';
+    if (executableDirectory == NULL || executableDirectory[0] == '\0') {
         return 0;
     }
     length = strlen(executableDirectory);
@@ -165,6 +174,7 @@ int PlatformUserConfigDirectory(char *out, size_t outSize) {
     int written;
 
     if (out == NULL || outSize == 0) return 0;
+    out[0] = '\0';
 #ifdef _WIN32
     base = getenv("APPDATA");
     if (base == NULL || base[0] == '\0') return 0;
@@ -184,11 +194,16 @@ int PlatformUserConfigDirectory(char *out, size_t outSize) {
         written = snprintf(out, outSize, "%s/.config/rage-racer", base);
     }
 #endif
-    return written >= 0 && (size_t)written < outSize;
+    if (written < 0 || (size_t)written >= outSize) {
+        out[0] = '\0';
+        return 0;
+    }
+    return 1;
 }
 
 int PlatformUserStateDirectory(char *out, size_t outSize) {
     if (out == NULL || outSize == 0) return 0;
+    out[0] = '\0';
 #ifdef _WIN32
     return PlatformUserConfigDirectory(out, outSize);
 #elif defined(__APPLE__)
@@ -204,15 +219,21 @@ int PlatformUserStateDirectory(char *out, size_t outSize) {
         if (base == NULL || base[0] == '\0') return 0;
         written = snprintf(out, outSize, "%s/.local/state/rage-racer", base);
     }
-    return written >= 0 && (size_t)written < outSize;
+    if (written < 0 || (size_t)written >= outSize) {
+        out[0] = '\0';
+        return 0;
+    }
+    return 1;
 #endif
 }
 
 int PlatformUserConfigPath(const char *name, char *out, size_t outSize) {
     char directory[4096];
-    if (name == NULL || name[0] == '\0' || out == NULL || outSize == 0) {
+    if (out == NULL || outSize == 0) {
         return 0;
     }
+    out[0] = '\0';
+    if (name == NULL || name[0] == '\0') return 0;
     return PlatformUserConfigDirectory(directory, sizeof(directory)) &&
            JoinPath(out, outSize, directory, name);
 }
@@ -250,10 +271,11 @@ int PlatformFindConfigFile(const char *argv0, const char *name,
     char directory[4096];
     int written;
 
-    if (name == NULL || name[0] == '\0' || path == NULL || pathSize == 0) {
+    if (path == NULL || pathSize == 0) {
         return 0;
     }
     path[0] = '\0';
+    if (name == NULL || name[0] == '\0') return 0;
     if (PlatformUserConfigDirectory(directory, sizeof(directory)) &&
         JoinPath(path, pathSize, directory, name) && FileExists(path))
         return 1;

@@ -389,9 +389,22 @@ static void test_platform_config_path(void) {
                                             sizeof(found)));
         rmdir(filePath);
     }
+    strcpy(found, "stale");
     EXPECT_EQ(0, PlatformFindConfigFile(NULL, NULL, found, sizeof(found)));
+    EXPECT_EQ('\0', found[0]);
     EXPECT_EQ(0, PlatformFindConfigFile(NULL, "rage-port.ini", NULL, 0));
+    strcpy(found, "stale");
     EXPECT_EQ(0, PlatformUserConfigPath(NULL, found, sizeof(found)));
+    EXPECT_EQ('\0', found[0]);
+    {
+        char tiny[2] = "x";
+
+        EXPECT_EQ(0, PlatformUserConfigDirectory(tiny, sizeof(tiny)));
+        EXPECT_EQ('\0', tiny[0]);
+        strcpy(tiny, "x");
+        EXPECT_EQ(0, PlatformUserStateDirectory(tiny, sizeof(tiny)));
+        EXPECT_EQ('\0', tiny[0]);
+    }
     EXPECT_EQ(0, PlatformEnsureDirectory(NULL));
     if (saved != NULL) {
 #ifdef __APPLE__
@@ -430,8 +443,14 @@ static void test_portable_state_path(void) {
     }
     snprintf(executable, sizeof(executable), "%s/game", root);
     mkdir(executable, 0700);
+    strcpy(found, "stale");
     EXPECT_EQ(0, PlatformExistingPortableStateDirectory(
                      executable, found, sizeof(found)));
+    EXPECT_EQ('\0', found[0]);
+    strcpy(found, "stale");
+    EXPECT_EQ(0, PlatformExistingPortableStateDirectory(
+                     NULL, found, sizeof(found)));
+    EXPECT_EQ('\0', found[0]);
     snprintf(card, sizeof(card), "%s/bu00", executable);
     mkdir(card, 0700);
     EXPECT_EQ(1, PlatformExistingPortableStateDirectory(
