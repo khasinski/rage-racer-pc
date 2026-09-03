@@ -39,7 +39,11 @@ int DiscIsoOpen(DiscIsoReader *reader, DiscRawSectorReader read,
     unsigned char volume[DISC_ISO_SECTOR_SIZE];
     int offset;
 
-    if (reader == NULL || read == NULL) return 0;
+    if (reader == NULL) return 0;
+    reader->read = NULL;
+    reader->context = NULL;
+    reader->userOffset = 0;
+    if (read == NULL) return 0;
     reader->read = read;
     reader->context = context;
     for (offset = 16; offset <= DISC_MODE2_USER_OFFSET; offset += 8) {
@@ -49,6 +53,9 @@ int DiscIsoOpen(DiscIsoReader *reader, DiscRawSectorReader read,
             return 1;
         }
     }
+    reader->read = NULL;
+    reader->context = NULL;
+    reader->userOffset = 0;
     return 0;
 }
 

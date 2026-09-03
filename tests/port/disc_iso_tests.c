@@ -122,12 +122,19 @@ static int TestDirectorySizeBounds(void) {
 }
 
 static int TestArguments(void) {
+    FakeDisc emptyDisc = {0};
     DiscIsoReader reader;
     DiscIsoFile file = {1, 1};
     unsigned char user[DISC_ISO_SECTOR_SIZE];
 
     CHECK(!DiscIsoOpen(NULL, ReadFake, NULL));
     CHECK(!DiscIsoOpen(&reader, NULL, NULL));
+    reader.read = ReadFake;
+    reader.context = &emptyDisc;
+    reader.userOffset = 99;
+    CHECK(!DiscIsoOpen(&reader, ReadFake, &emptyDisc));
+    CHECK(reader.read == NULL && reader.context == NULL &&
+          reader.userOffset == 0);
     memset(&reader, 0, sizeof(reader));
     CHECK(!DiscIsoReadUserSector(&reader, 0, user));
     CHECK(!DiscIsoFindFile(&reader, NULL, &file));
