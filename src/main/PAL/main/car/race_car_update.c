@@ -6,10 +6,6 @@
 #include "rage/trace.h"
 
 
-/*
- * Runs the rival-car update passes used by an interactive race. Cars 4..10
- * split their traffic-avoidance work across alternating frames.
- */
 /* Every car starts the frame from the heading it settled on last frame, and
  * keeps only the low bit of whatever it was touching. */
 static void StartCarFrames(void) {
@@ -19,7 +15,7 @@ static void StartCarFrames(void) {
         GameCarRuntime *car = &g_Cars[index];
 
         car->bodyYaw = car->baseBodyYaw;
-        car->collisionFlag = (u16)car->collisionFlag & 1;
+        car->collisionFlag &= 1;
     }
 }
 
@@ -81,6 +77,8 @@ static void SlowTheCarsAhead(void) {
     }
 }
 
+/* Run the rival-car passes for an interactive race. Rear rivals split their
+ * traffic-avoidance work across alternating frames. */
 void UpdateRaceCars(void) {
     StartCarFrames();
     RankContenders();

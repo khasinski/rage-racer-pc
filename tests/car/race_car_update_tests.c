@@ -226,6 +226,7 @@ int main(void) {
         g_Cars[index].collisionFlag = 6;
         g_Cars[index].baseBodyYaw = 100 + index;
     }
+    g_Cars[0].collisionFlag = -1;
     for (index = 0; index < RIVAL_CONTENDER_COUNT; index++) {
         g_RankedCars[index] = &g_Cars[index];
     }
@@ -258,6 +259,7 @@ int main(void) {
     CHECK_EQ(s_raceAccelerationCalls, 1);
     CHECK_EQ(g_Cars[5].bodyYaw, 105);
     CHECK_EQ(g_Cars[5].collisionFlag, 0);
+    CHECK_EQ(g_Cars[0].collisionFlag, 1);
     CHECK_EVENTS("KACSHLRSHLRSHLRSHLRSHLRSHLRSHLRSHLRSHLRSHLRSHLR"
                  "UWEMPB");
 
