@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,8 +24,9 @@ typedef struct RageScenarioState {
     int initialized, enabled;
     int mode, series, classIndex, course, car, transmission;
     int afterFinish, raceFinished, resultSeen, exitRequested;
-    int grid[11], customGrid, gridApplied;
-    int playerTrackPoint, rivalTrackPoints[11], rivalTrackPointCount;
+    int grid[RACE_CAR_SLOT_COUNT], customGrid, gridApplied;
+    int playerTrackPoint, rivalTrackPoints[RACE_CAR_SLOT_COUNT];
+    int rivalTrackPointCount;
     int customStart, startApplied, freezeStarts;
     int exactX, exactZ, exactHeading, hasExact;
     int directBoot, directStep, skipSequences;
@@ -51,14 +53,26 @@ enum {
 
 static RageScenarioState s_scenario;
 
-static int ScenarioParseTrackPoint(const char *text, int *result) {
+static int ScenarioParseNumber(const char *text, int base, int low, int high,
+                               int *result) {
     char *end;
     long value;
-    if (text == NULL || text[0] == '\0') return 0;
-    value = strtol(text, &end, 0);
-    if (*end != '\0' || value < 0 || value > INT_MAX) return 0;
+
+    if (text == NULL || text[0] == '\0' || result == NULL || low > high) {
+        return 0;
+    }
+    errno = 0;
+    value = strtol(text, &end, base);
+    if (errno == ERANGE || end == text || *end != '\0' ||
+        value < low || value > high) {
+        return 0;
+    }
     *result = (int)value;
     return 1;
+}
+
+static int ScenarioParseTrackPoint(const char *text, int *result) {
+    return ScenarioParseNumber(text, 0, 0, INT_MAX, result);
 }
 
 static void ScenarioParseTrackStarts(void) {
@@ -78,7 +92,8 @@ static void ScenarioParseTrackStarts(void) {
     if (strlen(rivals) >= sizeof(buffer)) goto invalid;
     strcpy(buffer, rivals);
     token = strtok(buffer, ",");
-    while (token != NULL && s_scenario.rivalTrackPointCount < 11) {
+    while (token != NULL &&
+           s_scenario.rivalTrackPointCount < RACE_CAR_SLOT_COUNT) {
         while (*token == ' ' || *token == '\t') token++;
         if (!strcmp(token, "-") || !strcmp(token, "default")) value = -1;
         else if (!ScenarioParseTrackPoint(token, &value)) goto invalid;
@@ -119,8 +134,8 @@ static void ScenarioPlaceExact(void);
 static void ScenarioApplyTrackStarts(void) {
     int index;
     if (s_scenario.playerTrackPoint >= 0 &&
-        !ScenarioPlaceCar((GameCarRuntime *)(void *)&g_PlayerCar,
-                              s_scenario.playerTrackPoint)) {
+        !ScenarioPlaceCar(AsRivalCar(&g_PlayerCar),
+                          s_scenario.playerTrackPoint)) {
         fprintf(stderr, "rage-port: player track point %d outside 0..%d\n",
                 s_scenario.playerTrackPoint, g_TrackPointCount - 1);
     } else if (s_scenario.playerTrackPoint >= 0) {
@@ -145,7 +160,15 @@ static void ScenarioApplyTrackStarts(void) {
     if (s_scenario.hasExact) ScenarioPlaceExact();
     {
         const char *view = RuntimeConfigGet("start.camera");
-        if (view != NULL) g_CameraViewMode = (s16)strtol(view, NULL, 0);
+        int parsedView;
+
+        if (view != NULL &&
+            ScenarioParseNumber(view, 0, CAMERA_VIEW_CAR, CAMERA_VIEW_TRACK,
+                                &parsedView)) {
+            g_CameraViewMode = (CameraViewMode)parsedView;
+        } else if (view != NULL) {
+            fprintf(stderr, "rage-port: invalid start.camera=%s\n", view);
+        }
     }
     SetTrackTexturePageNow(g_PlayerCar.trackSection);
     s_scenario.startApplied = 1;
@@ -160,26 +183,30 @@ static void ScenarioApplyTrackStarts(void) {
 static void ScenarioPlaceExact(void) {
     CarTrackLimits limits = {0, 0, 0, 0};
     PlayerCarRuntime *car = &g_PlayerCar;
+    GameCarRuntime *rivalView = AsRivalCar(car);
+
     car->x = s_scenario.exactX;
     car->z = s_scenario.exactZ;
     if (s_scenario.exactHeading >= 0) {
         car->bodyYaw = (s16)(s_scenario.exactHeading & 0xFFF);
         car->headingAngle = car->bodyYaw;
     }
-    car->trackPointIndex = FindTrackSegment((GameCarRuntime *)(void *)car,
-                                            car->trackPointIndex);
-    UpdateCarTrackState((GameCarRuntime *)(void *)car, car->trackPointIndex,
-                        &limits);
-    CopyCarBodyRotationToModel((GameCarRuntime *)(void *)car);
+    car->trackPointIndex = FindTrackSegment(rivalView, car->trackPointIndex);
+    UpdateCarTrackState(rivalView, car->trackPointIndex, &limits);
+    CopyCarBodyRotationToModel(rivalView);
     car->modelY = car->y;
 }
 
 static void ScenarioHoldTrackStarts(void) {
     int index;
-    if (s_scenario.hasExact) { ScenarioPlaceExact(); return; }
-    if (s_scenario.playerTrackPoint >= 0)
-        ScenarioPlaceCar((GameCarRuntime *)(void *)&g_PlayerCar,
-                             s_scenario.playerTrackPoint);
+    if (s_scenario.hasExact) {
+        ScenarioPlaceExact();
+        return;
+    }
+    if (s_scenario.playerTrackPoint >= 0) {
+        ScenarioPlaceCar(AsRivalCar(&g_PlayerCar),
+                         s_scenario.playerTrackPoint);
+    }
     for (index = 0; index < s_scenario.rivalTrackPointCount; index++) {
         int point = s_scenario.rivalTrackPoints[index];
         if (point >= 0 && g_Cars[index].activeFlag)
@@ -189,34 +216,32 @@ static void ScenarioHoldTrackStarts(void) {
 
 static int ScenarioInt(const char *key, int fallback, int low, int high) {
     const char *text = RuntimeConfigGet(key);
-    char *end = NULL;
-    long value;
+    int value;
     if (text == NULL || text[0] == '\0') return fallback;
-    value = strtol(text, &end, 10);
-    if (*end != '\0' || value < low || value > high || value > INT_MAX) {
+    if (!ScenarioParseNumber(text, 10, low, high, &value)) {
         fprintf(stderr, "rage-port: ignoring invalid %s=%s (expected %d..%d)\n",
                 key, text, low, high);
         return fallback;
     }
-    return (int)value;
+    return value;
 }
 
 static void ScenarioParseGrid(const char *text) {
     char buffer[256], *token;
-    int parsed[11], count = 0;
+    int parsed[RACE_CAR_SLOT_COUNT], count = 0;
     if (text == NULL || text[0] == '\0') return;
     if (strcmp(text, "default") == 0) return;
     if (strlen(text) >= sizeof(buffer)) goto invalid;
     strcpy(buffer, text);
     token = strtok(buffer, ",");
-    while (token != NULL && count < 11) {
-        char *end = NULL;
-        long value = strtol(token, &end, 10);
-        if (*end != '\0' || value < -1 || value > 12) goto invalid;
-        parsed[count++] = (int)value;
+    while (token != NULL && count < RACE_CAR_SLOT_COUNT) {
+        int value;
+
+        if (!ScenarioParseNumber(token, 10, -1, 12, &value)) goto invalid;
+        parsed[count++] = value;
         token = strtok(NULL, ",");
     }
-    if (count != 11 || token != NULL) goto invalid;
+    if (count != RACE_CAR_SLOT_COUNT || token != NULL) goto invalid;
     memcpy(s_scenario.grid, parsed, sizeof(parsed));
     s_scenario.customGrid = 1;
     return;
@@ -287,14 +312,27 @@ static void ScenarioInitialize(void) {
         const char *z = RuntimeConfigGet("start.player_z");
         const char *heading = RuntimeConfigGet("start.player_heading");
         if (x != NULL && z != NULL) {
-            s_scenario.exactX = (int)strtol(x, NULL, 0);
-            s_scenario.exactZ = (int)strtol(z, NULL, 0);
-            s_scenario.exactHeading =
-                heading != NULL ? (int)strtol(heading, NULL, 0) : -1;
-            s_scenario.hasExact = 1;
-            s_scenario.customStart = 1;
-            fprintf(stderr, "rage-port: exact start %d,%d heading=%d\n",
-                    s_scenario.exactX, s_scenario.exactZ, s_scenario.exactHeading);
+            int valid = ScenarioParseNumber(
+                x, 0, INT_MIN, INT_MAX, &s_scenario.exactX);
+            valid = valid && ScenarioParseNumber(
+                z, 0, INT_MIN, INT_MAX, &s_scenario.exactZ);
+            s_scenario.exactHeading = -1;
+            if (heading != NULL) {
+                valid = valid && ScenarioParseNumber(
+                    heading, 0, INT_MIN, INT_MAX, &s_scenario.exactHeading);
+            }
+            if (valid) {
+                s_scenario.hasExact = 1;
+                s_scenario.customStart = 1;
+                fprintf(stderr, "rage-port: exact start %d,%d heading=%d\n",
+                        s_scenario.exactX, s_scenario.exactZ,
+                        s_scenario.exactHeading);
+            } else {
+                fprintf(stderr, "rage-port: invalid exact start coordinates\n");
+            }
+        } else if (x != NULL || z != NULL) {
+            fprintf(stderr,
+                    "rage-port: exact start requires both start.player_x and start.player_z\n");
         }
     }
     s_scenario.skipSequences = RuntimeConfigGet("boot.skip_sequences") == NULL
@@ -654,7 +692,9 @@ void PortScenarioBeforeSceneHandler(void) {
     }
 
     if (g_SceneId == 11 && s_scenario.customGrid && !s_scenario.gridApplied) {
-        for (index = 0; index < 11; index++) g_RaceGridSlots[index].value = s_scenario.grid[index];
+        for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
+            g_RaceGridSlots[index].value = s_scenario.grid[index];
+        }
         s_scenario.gridApplied = 1;
         fprintf(stderr, "rage-port: custom rival grid applied\n");
     }
