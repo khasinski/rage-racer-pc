@@ -171,6 +171,15 @@ typedef enum CarShopState {
     CAR_SHOP_SALE_COUNTDOWN = -3,
 } CarShopState;
 
+typedef enum EngineerShopState {
+    ENGINEER_SHOP_IDLE = 0,
+    ENGINEER_SHOP_LEAVE = 1,
+    ENGINEER_SHOP_LEAVE_AFTER_TUNE_UP = 2,
+    ENGINEER_SHOP_TUNE_UP_PROMPT = -1,
+    ENGINEER_SHOP_TUNE_UP_COUNTDOWN = -2,
+    ENGINEER_SHOP_NO_FUNDS = -3,
+} EngineerShopState;
+
 enum {
     TEAM_NAME_HIDDEN_MODEL_KEY = 10,
     TEAM_NAME_KEY_RUBOUT = 42,

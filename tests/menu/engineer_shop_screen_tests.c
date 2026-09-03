@@ -13,8 +13,10 @@
 #include "game/asset.h"
 #include "game/car.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/render_state.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -153,7 +155,7 @@ int main(int argc, char **argv) {
      * What the shop did before it was taken apart. Run the test with a file
      * name to write the sweep out and diff two runs.
      */
-    static const unsigned long expected = 1502267853UL;
+    static const unsigned long expected = 4203543157UL;
     static const s32 busyStates[] = {0, -1, -2, -3, 1, 2};
     static const u16 buttons[] = {0, PAD_UP, PAD_DOWN, PAD_CONFIRM, PAD_CANCEL,
                                   PAD_LEFT, PAD_RIGHT};
@@ -307,6 +309,45 @@ int main(int argc, char **argv) {
     UpdateEngineerShopScreen();
     if (GameMenuBusy != 0) {
         puts("FAIL an invalid tune-up price completed the countdown");
+        return 1;
+    }
+
+    s_assetIndexOverride = 5;
+    g_CarTuneUpPriceTable[5] = -1;
+    GameMenuBusy = ENGINEER_SHOP_IDLE;
+    g_EngineerShopOption = 0;
+    g_PadPressed = PAD_CONFIRM;
+    g_PlayerMoney = INT_MAX;
+    UpdateEngineerShopScreen();
+    if (GameMenuBusy == ENGINEER_SHOP_TUNE_UP_PROMPT) {
+        puts("FAIL a negative tune-up price opened the purchase prompt");
+        return 1;
+    }
+
+    g_CarTuneUpPriceTable[5] = 5000;
+    s_cars[5].modelVariant = UINT8_MAX;
+    GameMenuBusy = ENGINEER_SHOP_IDLE;
+    g_PadPressed = PAD_CONFIRM;
+    UpdateEngineerShopScreen();
+    if (GameMenuBusy == ENGINEER_SHOP_TUNE_UP_PROMPT) {
+        puts("FAIL maximum car variant opened the tune-up prompt");
+        return 1;
+    }
+
+    s_cars[5].modelVariant = 2;
+    GameMenuBusy = ENGINEER_SHOP_TUNE_UP_PROMPT;
+    g_PadPressed = 0;
+    g_MenuSubCursor = UINT8_MAX;
+    UpdateEngineerShopScreen();
+    if (g_MenuSubCursor != 1) {
+        puts("FAIL tune-up prompt did not normalize its cursor");
+        return 1;
+    }
+
+    GameMenuBusy = -99;
+    UpdateEngineerShopScreen();
+    if (GameMenuBusy != ENGINEER_SHOP_IDLE) {
+        puts("FAIL unknown engineer-shop state did not recover to idle");
         return 1;
     }
     printf("the engineer's shop takes the same %d states it always did\n",

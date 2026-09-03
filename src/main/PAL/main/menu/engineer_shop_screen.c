@@ -15,6 +15,8 @@
 #include "game/menu_internal.h"
 #include "game/menu_scripts_internal.h"
 
+enum { ENGINEER_SHOP_TURNTABLE_HALF_TURN = 0x927C0 };
+
 /* Everything the shop keeps on the display whichever state it is in. */
 static void DrawEngineerShopChrome(s32 price) {
     DrawEngineerShopPricePanel(1, g_PlayerMoney, price);
@@ -25,13 +27,14 @@ static void DrawEngineerShopChrome(s32 price) {
 /* Backing out, and choosing the row that backs out, wind down the same way. */
 static void LeaveEngineerShop(void) {
     PlaySoundCue(3);
-    GameMenuBusy = 1;
+    GameMenuBusy = ENGINEER_SHOP_LEAVE;
     g_MenuOverlayPattern = 2;
 }
 
 /* Idle: two rows, tune up or leave. */
 static void UpdateEngineerShopInput(ShopPrice price) {
     g_MenuOverlayPattern = -1;
+    g_EngineerShopOption = AddClampedMenuValue(g_EngineerShopOption, 0, 0, 1);
     if (g_PadPressed & PAD_UP) {
         PlaySoundCue(1);
         g_EngineerShopOption =
@@ -47,13 +50,13 @@ static void UpdateEngineerShopInput(ShopPrice price) {
             if (price.available && g_PlayerMoney >= price.amount) {
                 PlaySoundCue(2);
                 g_EngineerShopModalScript = g_EngineerShopTuneUpPromptScript;
-                GameMenuBusy = -1;
+                GameMenuBusy = ENGINEER_SHOP_TUNE_UP_PROMPT;
                 g_UiScriptProgress2 = 0;
                 g_MenuSubCursor = 0;
             } else {
                 PlaySoundCue(5);
                 g_EngineerShopModalScript = g_EngineerShopNoFundsScript;
-                GameMenuBusy = -3;
+                GameMenuBusy = ENGINEER_SHOP_NO_FUNDS;
                 g_UiScriptProgress2 = 0;
             }
         } else if (g_EngineerShopOption == 1) {
@@ -82,24 +85,25 @@ static void UpdateTuneUpPrompt(void *ot, s32 purchaseAvailable) {
     if (RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1) == 0) {
         return;
     }
+    g_MenuSubCursor = (u8)AddClampedMenuValue(g_MenuSubCursor, 0, 0, 1);
     action = ChooseMenuDialogAction(g_PadPressed);
     if (action == MENU_DIALOG_CONFIRM) {
         if (g_MenuSubCursor != 0 && purchaseAvailable) {
             PlaySoundCue(2);
-            GameMenuBusy = -2;
+            GameMenuBusy = ENGINEER_SHOP_TUNE_UP_COUNTDOWN;
             g_MenuConfirmTimer = 0x23;
             RequestUpgradedCarModel(g_PlayerCarIndex);
         } else if (g_MenuSubCursor != 0) {
             PlaySoundCue(5);
             g_EngineerShopModalScript = g_EngineerShopNoFundsScript;
-            GameMenuBusy = -3;
+            GameMenuBusy = ENGINEER_SHOP_NO_FUNDS;
         } else {
             PlaySoundCue(3);
-            GameMenuBusy = 0;
+            GameMenuBusy = ENGINEER_SHOP_IDLE;
         }
     } else if (action == MENU_DIALOG_CANCEL) {
         PlaySoundCue(3);
-        GameMenuBusy = 0;
+        GameMenuBusy = ENGINEER_SHOP_IDLE;
     } else if (action == MENU_DIALOG_LEFT && g_MenuSubCursor == 0) {
         PlaySoundCue(1);
         g_MenuSubCursor = 1;
@@ -126,11 +130,11 @@ static void UpdateTuneUpCountdown(void *ot, s32 purchaseAvailable) {
     RunTimedDrawScript(g_EngineerShopModalScript, &g_UiScriptProgress2, -1);
     RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
     if (g_UiScriptProgress2 <= 0 && !purchaseAvailable) {
-        GameMenuBusy = 0;
+        GameMenuBusy = ENGINEER_SHOP_IDLE;
     } else if (g_UiScriptProgress2 <= 0) {
-        g_MenuViewAngle = 0x927C0;
+        g_MenuViewAngle = ENGINEER_SHOP_TURNTABLE_HALF_TURN;
         g_MenuViewAngleTarget = 0;
-        GameMenuBusy = 2;
+        GameMenuBusy = ENGINEER_SHOP_LEAVE_AFTER_TUNE_UP;
         g_MenuOverlayPattern = 2;
         g_CarSwapFromIndex = g_PlayerCarIndex;
         g_CarSwapToIndex = g_PlayerCarIndex;
@@ -142,18 +146,20 @@ static void UpdateNoFundsModal(void) {
     RunTimedDrawScript(g_EngineerShopModalScript, &g_UiScriptProgress2, 0);
     if (RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
         if (g_PadPressed & (PAD_CONFIRM | PAD_CANCEL)) {
-            GameMenuBusy = 0;
+            GameMenuBusy = ENGINEER_SHOP_IDLE;
         }
     }
 }
 
 static void UpdateEngineerShopModal(void *ot, ShopPrice price) {
-    if (GameMenuBusy == -1) {
+    if (GameMenuBusy == ENGINEER_SHOP_TUNE_UP_PROMPT) {
         UpdateTuneUpPrompt(ot, price.available);
-    } else if (GameMenuBusy == -2) {
+    } else if (GameMenuBusy == ENGINEER_SHOP_TUNE_UP_COUNTDOWN) {
         UpdateTuneUpCountdown(ot, price.available);
-    } else {
+    } else if (GameMenuBusy == ENGINEER_SHOP_NO_FUNDS) {
         UpdateNoFundsModal();
+    } else {
+        GameMenuBusy = ENGINEER_SHOP_IDLE;
     }
     DrawEngineerShopChrome(price.amount);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
@@ -171,7 +177,7 @@ static void UpdateEngineerShopOutgoing(ShopPrice price) {
     if (g_UiScriptProgress > 0) {
         return;
     }
-    if (GameMenuBusy == 2 && price.available) {
+    if (GameMenuBusy == ENGINEER_SHOP_LEAVE_AFTER_TUNE_UP && price.available) {
         CarEntry *car = &g_CarTable[g_PlayerCarIndex];
 
         car->modelVariant++;
@@ -184,7 +190,7 @@ static void UpdateEngineerShopOutgoing(ShopPrice price) {
     g_MenuScreen = MENU_SCREEN_CAR_SELECT;
     g_MenuHandlerIndex = MENU_SCREEN_CAR_SELECT;
     g_UiScriptProgress = 0;
-    GameMenuBusy = 0;
+    GameMenuBusy = ENGINEER_SHOP_IDLE;
     g_EngineerShopOption = 0;
 }
 
@@ -197,14 +203,18 @@ void UpdateEngineerShopScreen(void) {
     DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex, 0);
     DrawMenuCarView();
     g_MenuPlateCarIndex = g_PlayerCarIndex;
-    assetIndex = GetOwnedCarAssetIndex(g_PlayerCarIndex);
-    price = LookupShopPrice(g_CarTuneUpPriceTable, CAR_TUNE_UP_PRICE_COUNT,
-                            assetIndex);
     if ((u32)g_PlayerCarIndex >= GAME_CAR_COUNT || g_CarTable == NULL) {
-        price.available = 0;
+        price = (ShopPrice){0, 0};
+    } else {
+        assetIndex = GetOwnedCarAssetIndex(g_PlayerCarIndex);
+        price = LookupShopPrice(g_CarTuneUpPriceTable,
+                                CAR_TUNE_UP_PRICE_COUNT, assetIndex);
+        if (g_CarTable[g_PlayerCarIndex].modelVariant == UINT8_MAX) {
+            price.available = 0;
+        }
     }
 
-    if (GameMenuBusy == 0) {
+    if (GameMenuBusy == ENGINEER_SHOP_IDLE) {
         UpdateEngineerShopIdle(price);
     } else if (GameMenuBusy < 0) {
         UpdateEngineerShopModal(ot, price);
