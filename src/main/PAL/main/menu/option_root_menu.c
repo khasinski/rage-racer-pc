@@ -34,6 +34,8 @@ void DrawOptionRootMenu(void) {
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
     s32 row;
 
+    g_OptionMenuCursor = AddClampedMenuValue(
+        g_OptionMenuCursor, 0, 0, OPTION_ROOT_ITEM_COUNT - 1);
     for (row = 0; row < OPTION_ROOT_ITEM_COUNT; row++) {
         const OptionRootLabel *label = &s_optionRootLabels[row];
 
@@ -67,12 +69,12 @@ void UpdateOptionRootMenu(void) {
     DrawOptionRootMenu();
     oldCursor = g_OptionMenuCursor;
     if (g_PadPressed & PAD_UP) {
-        g_OptionMenuCursor--;
+        g_OptionMenuCursor = WrapMenuIndex(
+            g_OptionMenuCursor, -1, OPTION_ROOT_ITEM_COUNT);
     } else if (g_PadPressed & PAD_DOWN) {
-        g_OptionMenuCursor++;
+        g_OptionMenuCursor = WrapMenuIndex(
+            g_OptionMenuCursor, 1, OPTION_ROOT_ITEM_COUNT);
     }
-    g_OptionMenuCursor =
-        WrapMenuIndex(g_OptionMenuCursor, 0, OPTION_ROOT_ITEM_COUNT);
     if (oldCursor != g_OptionMenuCursor) {
         PlaySoundCue(1);
     }

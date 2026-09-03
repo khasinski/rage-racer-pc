@@ -4,6 +4,7 @@
 #include "game/render_internal.h"
 #include "game/render_state.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -124,10 +125,26 @@ int main(void) {
     CHECK(s_drawMode == 0x3F && s_cursorCalls == 1);
 
     Reset();
+    g_OptionMenuCursor = INT_MIN;
+    DrawOptionRootMenu();
+    CHECK(g_OptionMenuCursor == 0 && s_cursorCalls == 1);
+
+    Reset();
+    g_OptionMenuCursor = INT_MAX;
+    DrawOptionRootMenu();
+    CHECK(g_OptionMenuCursor == 5 && s_cursorCalls == 1);
+
+    Reset();
     g_OptionMenuCursor = 0;
     g_PadPressed = PAD_UP;
     UpdateOptionRootMenu();
     CHECK(g_OptionMenuCursor == 5 && s_lastCue == 1);
+
+    Reset();
+    g_OptionMenuCursor = INT_MAX;
+    g_PadPressed = PAD_DOWN;
+    UpdateOptionRootMenu();
+    CHECK(g_OptionMenuCursor == 0 && s_lastCue == 1);
 
     for (cursor = 0; cursor < 6; cursor++) {
         Reset();
