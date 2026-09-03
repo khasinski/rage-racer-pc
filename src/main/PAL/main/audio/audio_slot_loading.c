@@ -100,7 +100,26 @@ static s32 TransferVabToSlot(s32 slot, u8 *header, u8 *body,
     return 1;
 }
 
-static s32 StartEngineAudioSlotLoad(const AudioSlotAsset *asset);
+static s32 StartEngineAudioSlotLoad(const AudioSlotAsset *asset) {
+    const u16 *table = asset->auxiliaryData;
+
+    if (table != NULL &&
+        asset->auxiliarySize < ENGINE_SOUND_PARAMETER_TABLE_SIZE) {
+        return -1;
+    }
+    if (!TransferVabToSlot(AUDIO_SLOT_ENGINE, asset->vabHeader,
+                           asset->vabBody,
+                           g_VabSpuAddress[AUDIO_SLOT_ENGINE])) {
+        return -1;
+    }
+
+    if (table != NULL) {
+        LoadAudioParameterTable(table);
+    }
+
+    g_AudioLoadSlot = AUDIO_SLOT_ENGINE;
+    return SsVabTransCompleted(0);
+}
 
 s32 StartAudioSlotLoad(s32 slot, const AudioSlotAsset *asset) {
     if (slot < 0 || slot >= AUDIO_SLOT_COUNT || !IsValidVabAsset(asset)) {
@@ -176,25 +195,4 @@ void CloseLoadedAudioSlots(void) {
     CloseSequenceAudioSlot();
     CloseVabOnlyAudioSlot(AUDIO_SLOT_RACE_CUES);
     CloseVabOnlyAudioSlot(AUDIO_SLOT_ENGINE);
-}
-
-static s32 StartEngineAudioSlotLoad(const AudioSlotAsset *asset) {
-    const u16 *table = asset->auxiliaryData;
-
-    if (table != NULL &&
-        asset->auxiliarySize < ENGINE_SOUND_PARAMETER_TABLE_SIZE) {
-        return -1;
-    }
-    if (!TransferVabToSlot(AUDIO_SLOT_ENGINE, asset->vabHeader,
-                           asset->vabBody,
-                           g_VabSpuAddress[AUDIO_SLOT_ENGINE])) {
-        return -1;
-    }
-
-    if (table != NULL) {
-        LoadAudioParameterTable(table);
-    }
-
-    g_AudioLoadSlot = AUDIO_SLOT_ENGINE;
-    return SsVabTransCompleted(0);
 }
