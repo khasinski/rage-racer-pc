@@ -7,14 +7,13 @@
 #include "game/menu.h"
 #include "game/race.h"
 #include "game/race_internal.h"
+#include "game/scene.h"
 #include "game/render_internal.h"
 #include "game/track.h"
 
 enum {
     ATTRACT_FRAME_SYNC_THRESHOLD = 0x80,
     ATTRACT_INITIAL_TITLE_FADE = 0x80,
-    ATTRACT_SCENE_ID = 0x1E,
-    TITLE_SCENE_ID = 3,
     ATTRACT_DISPLAY_ENABLE_FRAME = 2,
     ATTRACT_TITLE_END_FRAME = 0x3D,
     ATTRACT_EXIT_WASH_START_FRAME = 0x6CD,
@@ -44,7 +43,7 @@ void EnterAttractDemo(void) {
     g_AttractDemoStep = ATTRACT_DEMO_STEP_LOAD;
     g_FadeLevel = ATTRACT_INITIAL_TITLE_FADE;
     g_SceneTimer = 0;
-    g_SceneId = ATTRACT_SCENE_ID;
+    g_SceneId = GAME_SCENE_ATTRACT_DEMO;
     g_CameraCarIndex = 0;
 }
 
@@ -98,7 +97,7 @@ static void UpdateAttractDemoStart(void) {
 }
 
 static void ReturnToTitleScene(void) {
-    g_SceneId = TITLE_SCENE_ID;
+    g_SceneId = GAME_SCENE_ENTER_TITLE;
     g_StreamReturnScene = 0;
     ResetCdAudioState();
 }
@@ -145,11 +144,11 @@ void UpdateAttractDemoScene(void) {
         break;
     }
 
-    if (g_SceneId == ATTRACT_SCENE_ID &&
+    if (g_SceneId == GAME_SCENE_ATTRACT_DEMO &&
         (g_PadPressed & PAD_CONFIRM) != 0) {
         if (!AssetLoadCompletedSuccessfully()) {
             ResetAssetLoader();
-            g_SceneId = TITLE_SCENE_ID;
+            g_SceneId = GAME_SCENE_ENTER_TITLE;
             g_StreamReturnScene = 0;
         } else {
             ReturnToTitleScene();

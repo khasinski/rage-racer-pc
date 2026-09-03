@@ -7,6 +7,7 @@
 #include "game/render.h"
 #include "game/render_internal.h"
 #include "game/race_internal.h"
+#include "game/scene.h"
 #include "game/state.h"
 #include "game/track.h"
 
@@ -18,9 +19,7 @@ enum {
     PROLOGUE_FADE_IN_STEP = -4,
     PROLOGUE_FADE_OUT_STEP = 4,
     PROLOGUE_FADE_TPAGE = 0x49,
-    PROLOGUE_SCENE_ID = 0x20,
     PROLOGUE_DISPLAY_ENABLE_FRAME = 2,
-    PROLOGUE_TRACK_SCENE_ID = 6,
     PROLOGUE_SKIP_ENABLE_FRAME = 0x79,
     PROLOGUE_TEXT_FADE_START_FRAME = 0x3C,
     PROLOGUE_TEXT_FADE_END_FRAME = 0x42E,
@@ -33,7 +32,7 @@ void EnterPrologue(void) {
     g_FrameSyncThreshold = PROLOGUE_FRAME_SYNC_THRESHOLD;
     g_FadeLevel = PROLOGUE_INITIAL_FADE_LEVEL;
     g_FadeStep = PROLOGUE_FADE_IN_STEP;
-    g_SceneId = PROLOGUE_SCENE_ID;
+    g_SceneId = GAME_SCENE_PROLOGUE;
     g_PrologueStep = PROLOGUE_STEP_LOAD_TEXTURES;
     g_PrologueCutIndex = 0;
     g_SceneTimer = 0;
@@ -135,7 +134,7 @@ static void DrawPrologueText(void) {
 }
 
 static void ExitPrologue(void) {
-    g_SceneId = PROLOGUE_TRACK_SCENE_ID;
+    g_SceneId = GAME_SCENE_INIT_MENU;
     PauseCdAudio();
     RequestSelectBgmAssets();
 }

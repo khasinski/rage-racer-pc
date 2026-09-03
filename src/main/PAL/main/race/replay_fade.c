@@ -4,6 +4,7 @@
 #include "game/race_internal.h"
 #include "game/render.h"
 #include "game/replay_internal.h"
+#include "game/scene.h"
 #include "game/state.h"
 
 enum {
@@ -11,8 +12,6 @@ enum {
     REPLAY_AUDIO_FADE_FRAMES = 60,
     REPLAY_FADE_IN_TPAGE = 0x29,
     REPLAY_FADE_OUT_TPAGE = 0x49,
-    TIME_ATTACK_RESULT_SCENE = 0x14,
-    GRAND_PRIX_RESULT_SCENE = 0x12,
 };
 
 static void StartReplayExitFade(s32 fadeAudio) {
@@ -56,8 +55,8 @@ s32 UpdateReplayFade(void) {
         if (g_FadeLevel >= REPLAY_OPAQUE_FADE) {
             g_MirrorMode = 0;
             g_SceneId = g_GrandPrixMode == 0
-                ? TIME_ATTACK_RESULT_SCENE
-                : GRAND_PRIX_RESULT_SCENE;
+                ? GAME_SCENE_ENTER_RECORD_ENTRY
+                : GAME_SCENE_ENTER_PRIZE;
             sceneChanged = 1;
         }
     }

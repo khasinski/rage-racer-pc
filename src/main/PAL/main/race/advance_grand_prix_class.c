@@ -3,14 +3,9 @@
 #include "game/menu.h"
 #include "game/race.h"
 #include "game/race_internal.h"
+#include "game/scene.h"
 #include "game/save_internal.h"
 #include "game/state.h"
-
-enum {
-    COURSE_SELECT_SCENE = 6,
-    CLASS_FMV_RETURN_SCENE = 7,
-    ENDING_FMV_RETURN_SCENE = 0x21,
-};
 
 void AdvanceGrandPrixClass(void) {
     s32 maxClassReached;
@@ -18,13 +13,13 @@ void AdvanceGrandPrixClass(void) {
     s32 *seriesMaxClass;
 
     if (!g_ClassCompleted) {
-        g_SceneId = COURSE_SELECT_SCENE;
+        g_SceneId = GAME_SCENE_INIT_MENU;
         return;
     }
 
     if (g_RaceProgress == NULL || g_CourseProgress == NULL ||
         (u32)g_SeriesSelection >= 2) {
-        g_SceneId = COURSE_SELECT_SCENE;
+        g_SceneId = GAME_SCENE_INIT_MENU;
         return;
     }
 
@@ -32,7 +27,7 @@ void AdvanceGrandPrixClass(void) {
         if (g_CarTable == NULL ||
             !IsFinalGrandPrixClass(g_SeriesSelection == 1,
                                    g_GrandPrixClass)) {
-            g_SceneId = COURSE_SELECT_SCENE;
+            g_SceneId = GAME_SCENE_INIT_MENU;
             return;
         }
         maxClassReached = g_RaceProgress->maxClassReached;
@@ -40,18 +35,18 @@ void AdvanceGrandPrixClass(void) {
         g_RaceProgress->money = RACE_MAX_PRIZE_MONEY;
         g_RaceProgress->maxClassReached = maxClassReached;
         ResetCourseProgress(0);
-        BeginEndingFmv(ENDING_FMV_RETURN_SCENE);
+        BeginEndingFmv(GAME_SCENE_RETURN_FROM_ENDING_FMV);
         return;
     }
 
     nextClass = NextGrandPrixClassForSeries(
         g_SeriesSelection, g_GrandPrixClass);
     if (nextClass < 0) {
-        g_SceneId = COURSE_SELECT_SCENE;
+        g_SceneId = GAME_SCENE_INIT_MENU;
         return;
     }
 
-    BeginClassFmv(CLASS_FMV_RETURN_SCENE);
+    BeginClassFmv(GAME_SCENE_RETURN_FROM_CLASS_FMV);
     g_GrandPrixClass = nextClass;
     g_RaceProgress->classIndex = nextClass;
     g_RaceProgress->course = 0;

@@ -2,10 +2,10 @@
 #include "game/menu.h"
 #include "game/race.h"
 #include "game/render_internal.h"
+#include "game/scene.h"
 #include "game/state.h"
 
 enum {
-    ATTRACT_SCENE_ID = 0x17,
     ATTRACT_RENDER_OT_SHIFT = 5,
     ATTRACT_VIEW_Z = -3520,
     ATTRACT_LETTERBOX_HEIGHT = 240,
@@ -37,7 +37,7 @@ void EnterAttractScene(void) {
     g_MirrorMode = 0;
     InitRenderState(ATTRACT_RENDER_OT_SHIFT);
     SetupDisplay480(0, 0, 0);
-    g_SceneId = ATTRACT_SCENE_ID;
+    g_SceneId = GAME_SCENE_OPTION;
     g_SceneTimer = 0;
     InitAttractLighting();
     g_RenderState.viewX = 0;

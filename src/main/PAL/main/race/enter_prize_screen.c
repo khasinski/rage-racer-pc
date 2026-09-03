@@ -1,10 +1,10 @@
 #include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/race_internal.h"
+#include "game/scene.h"
 #include "game/state.h"
 
 enum {
-    PRIZE_SCREEN_SCENE = 0x13,
     PRIZE_SCREEN_INITIAL_TIMER = 0x100,
     PRIZE_SCREEN_FRAME_SYNC_THRESHOLD = 0x80,
     PRIZE_COUNT_FRAMES = 80,
@@ -32,7 +32,7 @@ void EnterPrizeScreen(void) {
     g_PrizeScreenState = PRIZE_SCREEN_STATE_INTRO_FADE_IN;
     g_PrizeAmount = PrizeForRacePosition(
         prizes, PRIZE_PLACE_COUNT, g_PlayerCar.drive.racePosition);
-    g_SceneId = PRIZE_SCREEN_SCENE;
+    g_SceneId = GAME_SCENE_PRIZE;
 
     g_PromotionBonus = PromotionBonusForClass(
         g_PromotionBonusTable, PROMOTION_BONUS_COUNT, classIndex,
