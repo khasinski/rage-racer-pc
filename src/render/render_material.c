@@ -96,9 +96,14 @@ static int MaterialProperties(const char *line, size_t length,
 }
 
 int RenderMaterialParseProperties(const char *text, size_t size,
-                                      RageRenderMaterial *material) {
+                                  RageRenderMaterial *material) {
+    RageRenderMaterial parsed;
+
     if (text == NULL || material == NULL) return 0;
-    return MaterialProperties(text, size, 0, material);
+    parsed = *material;
+    if (!MaterialProperties(text, size, 0, &parsed)) return 0;
+    *material = parsed;
+    return 1;
 }
 
 void RenderMaterialDefault(RageRenderMaterial *material) {

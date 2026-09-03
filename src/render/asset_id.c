@@ -27,6 +27,14 @@ static const char *AssetSetMaterialName(RageRenderAssetSet assetSet) {
     }
 }
 
+static int AssetIdWasWritten(char *out, size_t capacity, int written) {
+    if (written < 0 || (size_t)written >= capacity) {
+        out[0] = '\0';
+        return 0;
+    }
+    return 1;
+}
+
 int AssetMaterialId(char *out, size_t capacity, uint32_t assetKey,
                         RageRenderAssetSet assetSet, uint32_t material) {
     const char *setName;
@@ -34,6 +42,7 @@ int AssetMaterialId(char *out, size_t capacity, uint32_t assetKey,
     int written;
 
     if (out == NULL || capacity == 0) return 0;
+    out[0] = '\0';
     if (assetSet == RAGE_RENDER_ASSET_MODEL_BANK) {
         uint32_t car;
         if (assetKey < 10u || assetKey > 72u || ((assetKey - 10u) & 1u) != 0)
@@ -41,14 +50,14 @@ int AssetMaterialId(char *out, size_t capacity, uint32_t assetKey,
         car = (assetKey - 10u) / 2u;
         written = snprintf(out, capacity, "car.%u.material.%u", car,
                            material);
-        return written >= 0 && (size_t)written < capacity;
+        return AssetIdWasWritten(out, capacity, written);
     }
     setName = AssetSetMaterialName(assetSet);
     if (setName == NULL || !TrackName(track, sizeof(track), assetKey))
         return 0;
     written = snprintf(out, capacity, "track.%s.%s.material.%u", track,
                        setName, material);
-    return written >= 0 && (size_t)written < capacity;
+    return AssetIdWasWritten(out, capacity, written);
 }
 
 int AssetMaterialVariantId(char *out, size_t capacity,
@@ -58,9 +67,10 @@ int AssetMaterialVariantId(char *out, size_t capacity,
     char base[128];
     int written;
     if (out == NULL || capacity == 0) return 0;
+    out[0] = '\0';
     if (!AssetMaterialId(base, sizeof(base), assetKey, assetSet, material))
         return 0;
     written = snprintf(out, capacity, "%s.variant.%u", base,
                        (unsigned)variant);
-    return written >= 0 && (size_t)written < capacity;
+    return AssetIdWasWritten(out, capacity, written);
 }

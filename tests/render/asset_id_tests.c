@@ -34,10 +34,14 @@ int main(void) {
     EXPECT(AssetMaterialId(id, sizeof(id), 16,
                                RAGE_RENDER_ASSET_MODEL_BANK, 7));
     EXPECT_STRING("car.3.material.7", id);
+    strcpy(id, "stale");
     EXPECT(!AssetMaterialId(id, sizeof(id), 87,
                                 RAGE_RENDER_ASSET_TERRAIN, 0));
+    EXPECT_STRING("", id);
+    strcpy(id, "stale");
     EXPECT(!AssetMaterialId(id, 8, 0x58,
                                 RAGE_RENDER_ASSET_TERRAIN, 0));
+    EXPECT_STRING("", id);
     EXPECT(!AssetMaterialVariantId(NULL, sizeof(id), 0x58,
                                    RAGE_RENDER_ASSET_TERRAIN, 0, 1));
     EXPECT(!AssetMaterialVariantId(id, 0, 0x58,

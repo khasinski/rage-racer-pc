@@ -29,6 +29,7 @@ int main(void) {
     static const char overflowingIndex[] =
         "# rage-rmat v4\n4294967296 wrapped-to-zero.rgba\n";
     RageRenderMaterial material;
+    RageRenderMaterial original;
 
     EXPECT(RenderMaterialParse(v4, sizeof(v4) - 1, 0, 1, &material));
     EXPECT(PathEquals(material.baseColorTexture, "blue.rgba"));
@@ -54,5 +55,13 @@ int main(void) {
     EXPECT(!RenderMaterialParse(overflowingIndex,
                                 sizeof(overflowingIndex) - 1,
                                 0, 0, &material));
+
+    RenderMaterialDefault(&material);
+    material.roughness = 0.35f;
+    original = material;
+    EXPECT(!RenderMaterialParseProperties(
+        "lit invalid 0.1 0.2 1 1 1 1 0 0 0",
+        sizeof("lit invalid 0.1 0.2 1 1 1 1 0 0 0") - 1, &material));
+    EXPECT(memcmp(&material, &original, sizeof(material)) == 0);
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
