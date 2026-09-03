@@ -75,9 +75,11 @@ void UpdateBgmSelectLoad(void) {
     size_t texturePackSize;
 
     if (AssetLoadCompletedSuccessfully()) {
-        if (AssetSpanSize(g_AssetBase, g_ImageBlockBuffer,
-                          &texturePackSize) &&
-            InstallTrackTextureAssetPack(g_AssetBase, texturePackSize)) {
+        if (!AssetSpanSize(g_AssetBase, g_ImageBlockBuffer,
+                           &texturePackSize) ||
+            !InstallTrackTextureAssetPack(g_AssetBase, texturePackSize)) {
+            FailAssetLoad();
+        } else {
             RequestTrackDataAssets();
             g_BgmSelectStep = BGM_SELECT_STEP_FADE_IN;
         }

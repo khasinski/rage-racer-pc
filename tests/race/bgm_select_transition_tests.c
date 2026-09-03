@@ -6,8 +6,8 @@
 
 #include <stdio.h>
 
+s32 g_AssetLoadFailed;
 s32 g_AssetLoadState;
-static s32 s_assetLoadFailed;
 u8 *g_AssetBase;
 u8 *g_ImageBlockBuffer;
 s32 g_BgmChangeDelay;
@@ -26,6 +26,7 @@ s32 g_SceneTimer;
 char g_TextNowLoading[] = "NOW LOADING";
 
 static s32 s_courseInstalls;
+static s32 s_installSucceeds;
 static s32 s_dataRequests;
 static s32 s_displayMask;
 static s32 s_displaySetups;
@@ -38,7 +39,7 @@ static u8 *s_installedCourseBase;
 static size_t s_installedCourseSize;
 
 s32 AssetLoadCompletedSuccessfully(void) {
-    return g_AssetLoadState == 0 && !s_assetLoadFailed;
+    return g_AssetLoadState == 0 && !g_AssetLoadFailed;
 }
 
 void SetDispMask(s32 enabled) { s_displayMask = enabled; }
@@ -52,7 +53,7 @@ s32 InstallTrackTextureAssetPack(u8 *base, size_t size) {
     s_installedCourseBase = base;
     s_installedCourseSize = size;
     s_courseInstalls++;
-    return 1;
+    return s_installSucceeds;
 }
 s32 RequestTrackDataAssets(void) {
     s_dataRequests++;
@@ -94,7 +95,8 @@ static void ResetCalls(void) {
     s_lastFade = -1;
     s_textCalls = 0;
     s_trackInits = 0;
-    s_assetLoadFailed = 0;
+    g_AssetLoadFailed = 0;
+    s_installSucceeds = 1;
 }
 
 int main(void) {
@@ -117,6 +119,7 @@ int main(void) {
     UpdateBgmSelectLoad();
     CHECK(s_courseInstalls == 0 && s_dataRequests == 0);
     CHECK(g_BgmSelectStep == BGM_SELECT_STEP_LOAD_ASSETS);
+    CHECK(g_AssetLoadFailed == 1);
 
     ResetCalls();
     g_AssetLoadState = 0;
@@ -127,6 +130,7 @@ int main(void) {
     UpdateBgmSelectLoad();
     CHECK(s_courseInstalls == 0 && s_dataRequests == 0);
     CHECK(g_BgmSelectStep == BGM_SELECT_STEP_LOAD_ASSETS);
+    CHECK(g_AssetLoadFailed == 1);
     ResetCalls();
     g_AssetLoadState = 1;
     g_FadeLevel = 2;
@@ -148,11 +152,18 @@ int main(void) {
 
     ResetCalls();
     g_AssetLoadState = 0;
-    s_assetLoadFailed = 1;
+    g_AssetLoadFailed = 1;
     g_BgmSelectStep = BGM_SELECT_STEP_LOAD_ASSETS;
     UpdateBgmSelectLoad();
     CHECK(s_courseInstalls == 0 && s_dataRequests == 0);
     CHECK(g_BgmSelectStep == BGM_SELECT_STEP_LOAD_ASSETS);
+
+    ResetCalls();
+    g_AssetLoadState = 0;
+    s_installSucceeds = 0;
+    UpdateBgmSelectLoad();
+    CHECK(s_courseInstalls == 1 && s_dataRequests == 0);
+    CHECK(g_AssetLoadFailed == 1 && g_AssetLoadState == 0);
 
     ResetCalls();
     g_AssetLoadState = 0;

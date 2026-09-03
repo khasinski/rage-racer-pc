@@ -14,6 +14,8 @@
 
 u8 *g_AssetBase;
 u8 *g_ImageBlockBuffer;
+s32 g_AssetLoadFailed;
+s32 g_AssetLoadState;
 s32 g_AnimTimer;
 s32 g_CameraCarIndex;
 CameraViewMode g_CameraViewMode;
@@ -40,6 +42,7 @@ static s32 s_assetReady;
 static s32 s_cdRequests;
 static s32 s_displayMask;
 static s32 s_installCalls;
+static s32 s_installSucceeds = 1;
 static size_t s_installedSize;
 static s32 s_startAudioCalls;
 static s32 s_trackDataRequests;
@@ -50,7 +53,9 @@ static s32 s_pauseCalls;
 void EnterPrologue(void);
 void TickPrologueStep(void);
 
-s32 AssetLoadCompletedSuccessfully(void) { return s_assetReady; }
+s32 AssetLoadCompletedSuccessfully(void) {
+    return s_assetReady && !g_AssetLoadFailed;
+}
 void DrawCars(void) {}
 void DrawCourseObjects(void) {}
 void DrawFullscreenFadeTile(s32 color, s32 tpage) {
@@ -94,7 +99,7 @@ s32 InstallTrackTextureAssetPack(u8 *base, size_t size) {
     (void)base;
     s_installCalls++;
     s_installedSize = size;
-    return 1;
+    return s_installSucceeds;
 }
 void PauseCdAudio(void) { s_pauseCalls++; }
 u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *prim, s32 tpage) {
@@ -158,6 +163,34 @@ int main(void) {
     CHECK(s_installCalls == 1 && s_installedSize == sizeof(asset));
     CHECK(s_trackDataRequests == 1);
 
+    EnterPrologue();
+    g_ImageBlockBuffer = g_AssetBase;
+    g_FadeLevel = 0;
+    g_FadeStep = 0;
+    g_AssetLoadFailed = 0;
+    TickPrologueStep();
+    CHECK(g_AssetLoadFailed == 1 && g_AssetLoadState == 0);
+    CHECK(g_PrologueStep == PROLOGUE_STEP_LOAD_TEXTURES);
+
+    EnterPrologue();
+    g_ImageBlockBuffer = asset + sizeof(asset);
+    g_FadeLevel = 0;
+    g_FadeStep = 0;
+    g_AssetLoadFailed = 0;
+    s_installSucceeds = 0;
+    TickPrologueStep();
+    CHECK(g_AssetLoadFailed == 1 && s_trackDataRequests == 1);
+    CHECK(g_PrologueStep == PROLOGUE_STEP_LOAD_TEXTURES);
+    s_installSucceeds = 1;
+
+    EnterPrologue();
+    g_ImageBlockBuffer = asset + sizeof(asset);
+    g_FadeLevel = 0;
+    g_FadeStep = 0;
+    g_AssetLoadFailed = 0;
+
+    TickPrologueStep();
+    CHECK(g_PrologueStep == PROLOGUE_STEP_LOAD_TRACK);
     TickPrologueStep();
     CHECK(g_PrologueStep == PROLOGUE_STEP_WAIT_FOR_FADE);
     CHECK(s_cdRequests == 1 && g_FadeLevel == 4 && g_FadeStep == 4);

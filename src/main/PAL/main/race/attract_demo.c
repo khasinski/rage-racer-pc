@@ -31,10 +31,12 @@ void EnterAttractDemo(void) {
     g_FrameSyncThreshold = ATTRACT_FRAME_SYNC_THRESHOLD;
     if (!UploadImageAsset(GetImageAssetHeaderWords(g_ImageBlockBuffer),
                           g_ImageBlockSize)) {
+        FailAssetLoad();
         return;
     }
     if (!AssetSpanSize(g_AssetBase, g_ImageBlockBuffer, &texturePackSize) ||
         !InstallTrackTextureAssetPack(g_AssetBase, texturePackSize)) {
+        FailAssetLoad();
         return;
     }
     RequestTrackDataAssets();

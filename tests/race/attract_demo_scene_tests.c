@@ -13,6 +13,8 @@
 #include "game/state.h"
 
 u8 *g_AssetBase;
+s32 g_AssetLoadFailed;
+s32 g_AssetLoadState;
 s32 g_AnimTimer;
 AttractDemoStep g_AttractDemoStep;
 s32 g_BgmShuffleIndex;
@@ -35,6 +37,8 @@ GameFrameContext *g_DrawBuffer = &s_frame;
 
 static s32 s_audioResets;
 static s32 s_cameraCycles;
+static s32 s_installSucceeds;
+static s32 s_uploadSucceeds;
 static s32 s_worldUpdates;
 
 void SetDispMask(int enabled) { (void)enabled; }
@@ -46,12 +50,12 @@ void SetupDisplay240(s32 red, s32 green, s32 blue) {
 s32 UploadImageAsset(GameImageAssetHeaderWord *asset, size_t size) {
     (void)asset;
     (void)size;
-    return 1;
+    return s_uploadSucceeds;
 }
 s32 InstallTrackTextureAssetPack(u8 *base, size_t size) {
     (void)base;
     (void)size;
-    return 1;
+    return s_installSucceeds;
 }
 s32 RequestTrackDataAssets(void) { return 1; }
 s32 AssetLoadCompletedSuccessfully(void) { return 0; }
@@ -101,7 +105,38 @@ static void Reset(void) {
     g_StreamReturnScene = 7;
     s_audioResets = 0;
     s_cameraCycles = 0;
+    s_installSucceeds = 1;
+    s_uploadSucceeds = 1;
     s_worldUpdates = 0;
+    g_AssetLoadFailed = 0;
+    g_AssetLoadState = 0;
+}
+
+static void TestEntryRejectsInvalidResidentAssets(void) {
+    u8 asset[2];
+
+    Reset();
+    g_AssetBase = asset;
+    g_ImageBlockBuffer = asset;
+    g_ImageBlockSize = sizeof(asset);
+    EnterAttractDemo();
+    assert(g_AssetLoadFailed == 1 && g_AssetLoadState == 0);
+
+    Reset();
+    g_AssetBase = asset;
+    g_ImageBlockBuffer = asset + sizeof(asset);
+    g_ImageBlockSize = sizeof(asset);
+    s_installSucceeds = 0;
+    EnterAttractDemo();
+    assert(g_AssetLoadFailed == 1 && g_AssetLoadState == 0);
+
+    Reset();
+    g_AssetBase = asset;
+    g_ImageBlockBuffer = asset + sizeof(asset);
+    g_ImageBlockSize = sizeof(asset);
+    s_uploadSucceeds = 0;
+    EnterAttractDemo();
+    assert(g_AssetLoadFailed == 1 && g_AssetLoadState == 0);
 }
 
 static void TestRaceFrame(void) {
@@ -140,6 +175,7 @@ static void TestCorruptTimerStillReturns(void) {
 }
 
 int main(void) {
+    TestEntryRejectsInvalidResidentAssets();
     TestRaceFrame();
     TestReturnFrameStopsRaceUpdate();
     TestCorruptTimerStillReturns();
