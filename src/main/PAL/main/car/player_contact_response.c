@@ -25,13 +25,17 @@ static int IsStraightSlip(s32 slip) {
 
 static void PlayPlayerSkidCue(const PlayerCarRuntime *car, s32 skid,
                               s32 slip) {
-    int lightTouch = skid == 1 || skid == 2;
-    int nearSide = skid == 1 || skid == 3;
+    int lightTouch;
+    int nearSide;
 
-    if (skid < 1 || skid > 4 ||
+    if (skid < CAR_TRACK_CONTACT_FRONT_LEFT ||
+        skid > CAR_TRACK_CONTACT_REAR_RIGHT ||
         WrapSigned16(car->motionTimer) < SKID_CUE_MIN_TIMER) {
         return;
     }
+    lightTouch = skid <= CAR_TRACK_CONTACT_FRONT_RIGHT;
+    nearSide = skid == CAR_TRACK_CONTACT_FRONT_LEFT ||
+               skid == CAR_TRACK_CONTACT_REAR_LEFT;
     if (IsStraightSlip(slip)) {
         if (lightTouch) {
             PlaySoundCue(CUE_LIGHT_SKID);

@@ -8,14 +8,12 @@
 
 enum {
     SLOW_SKID_SPEED_LIMIT = 64,
-    SLOW_SKID_FIRST_SUPPRESSED = 2,
-    SLOW_SKID_LAST_SUPPRESSED = 3,
 };
 
 static int ShouldSuppressSlowSkid(s32 skid, s32 speed) {
     return speed < SLOW_SKID_SPEED_LIMIT &&
-           skid >= SLOW_SKID_FIRST_SUPPRESSED &&
-           skid <= SLOW_SKID_LAST_SUPPRESSED;
+           skid >= CAR_TRACK_CONTACT_FRONT_RIGHT &&
+           skid <= CAR_TRACK_CONTACT_REAR_LEFT;
 }
 
 s32 ResolvePlayerTrackContact(PlayerCarRuntime *car) {

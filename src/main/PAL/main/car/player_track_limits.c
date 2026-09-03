@@ -47,12 +47,14 @@ void MeasurePlayerTrackLimits(const Matrix *toTrack,
         if (traceLimits) {
             TraceTrackLimit(toTrack, &corner, &reach);
         }
-        /* The modes are one-based, so zero means no reaching corner. */
+        /* Contact values are one-based, so zero means no reaching corner. */
         if (limits->rightInset < reach.x) {
-            limits->rightKnockbackMode = index + 1;
+            limits->rightKnockbackMode =
+                index + CAR_TRACK_CONTACT_FRONT_LEFT;
             limits->rightInset = reach.x;
         } else if (reach.x < limits->leftInset) {
-            limits->leftKnockbackMode = index + 1;
+            limits->leftKnockbackMode =
+                index + CAR_TRACK_CONTACT_FRONT_LEFT;
             limits->leftInset = reach.x;
         }
     }

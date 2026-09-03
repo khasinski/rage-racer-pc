@@ -21,6 +21,14 @@ enum {
     CAR_WHEEL_BLUR_FLAG = 0x1000,
 };
 
+typedef enum CarTrackContact {
+    CAR_TRACK_CONTACT_NONE,
+    CAR_TRACK_CONTACT_FRONT_LEFT,
+    CAR_TRACK_CONTACT_FRONT_RIGHT,
+    CAR_TRACK_CONTACT_REAR_LEFT,
+    CAR_TRACK_CONTACT_REAR_RIGHT,
+} CarTrackContact;
+
 _Static_assert(RACE_GRID_STORAGE_COUNT == RACE_CAR_SLOT_COUNT + 1,
                "starting grid needs one sentinel after the live cars");
 
