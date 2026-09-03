@@ -4,6 +4,7 @@
 #include "game/race.h"
 #include "game/render.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -117,11 +118,23 @@ int main(void) {
     CHECK_EQ(s_updateCameraCalls, 1);
     CHECK_EQ(g_RaceIntroCameraTimer, 2);
 
+    g_RaceIntroCameraScript = NULL;
+    RunRaceIntroCamera(&car, 0);
+    CHECK_EQ(s_updateCameraCalls, 2);
+    g_RaceIntroCameraScript = (RaceIntroCameraScript *)(void *)&script;
+
     script.keys[0].duration = 0;
     script.keys[0].mode = 0;
     RunRaceIntroCamera(&car, 0);
     CHECK_EQ(g_RaceIntroCameraTimer, 0);
     CHECK_EQ(g_RenderState.viewX, script.keys[1].x.word);
+
+    script.keys[0].x.word = INT_MAX;
+    script.keys[1].x.half.value = 0xFFFF;
+    script.keys[0].x.half.value = 0;
+    script.keys[0].duration = 1;
+    RunRaceIntroCamera(&car, 0);
+    CHECK_EQ(g_RaceIntroCameraDelta.vx, -1);
 
     puts("race intro camera preserves script, fade, and handoff modes");
     return 0;
