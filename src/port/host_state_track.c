@@ -169,7 +169,7 @@ PathSceneryPositionKey *g_PathSceneryPosKeys;
 PathSceneryRotationKey *g_PathSceneryRotKeys;
 GameEnvironmentCue *g_EnvScriptCues;
 FlybySceneryState g_FlybyScenery;
-s32 g_RouteSceneryClock;
+s32 g_RouteSceneryActive;
 s32 g_RouteSceneryFrame;
 s16 g_RouteSceneryKeyIndex;
 s32 g_RouteSceneryRotX;

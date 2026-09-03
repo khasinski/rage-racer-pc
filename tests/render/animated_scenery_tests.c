@@ -4,6 +4,7 @@
 #include "game/render.h"
 #include "game/track_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -196,6 +197,17 @@ int main(void) {
     DrawPresentationAnimatedScenery(8, 0, 0, 1);
     if (g_SubmissionCount != 0 || g_RandomCalls != 0) {
         puts("FAIL: replay visibility culling");
+        return 1;
+    }
+
+    g_Visible = 1;
+    g_CourseIndex = 3;
+    g_AnimSceneryPos[0].z = INT_MAX;
+    g_AnimSceneryRacePosition = 0;
+    Reset();
+    DrawAnimatedScenery(4, 0);
+    if (!ExpectPair("wrapped course offset", 0x20, 25, 8,
+                    100, -2147463169, 0)) {
         return 1;
     }
 

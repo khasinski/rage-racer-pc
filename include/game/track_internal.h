@@ -87,7 +87,9 @@ extern PathSceneryRotationData *g_PathSceneryRotData;
 extern SceneryMotionData *g_FlybySceneryData;
 extern PathSceneryPositionData *g_PathSceneryPosData;
 
-extern s32 g_RouteSceneryClock;
+/* Positive while the route animation is active; the retail counter value had
+ * no consumer, so the port keeps only its start/stop meaning. */
+extern s32 g_RouteSceneryActive;
 extern s16 g_RouteSceneryKeyIndex;
 extern s32 g_RouteSceneryRotY;
 extern SceneryMotionKeyframe *g_RouteSceneryKeyframe;

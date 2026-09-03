@@ -2,13 +2,17 @@
 #include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/render.h"
+#include "game/render_internal.h"
 #include "game/track_internal.h"
 #include "psyq/gte.h"
+
+#include <stdint.h>
 
 enum {
     FLYBY_LIFETIME_FRAMES = 0x1C3,
     FLYBY_MAX_VOLUME = 0x74,
     FLYBY_ENGINE_PITCH = 0x1900,
+    FLYBY_DISTANCE_SCALE = 64,
 };
 
 static void StartFlybyIfTriggered(void) {
@@ -60,7 +64,9 @@ static SceneryMotionKeyframe *AdvanceFlybyKeyframe(void) {
 static void UpdateFlybyTransform(SceneryMotionKeyframe *keyframe) {
     Matrix rotationY;
     Matrix rotationX;
-    SVec direction = {0, 0, (s16)(-keyframe->speed * 4), 0};
+    SVec direction = {
+        0, 0, WrapRenderCoordinate16(-(int64_t)keyframe->speed * 4), 0
+    };
     LVec step;
     const s32 elapsed = g_FlybyScenery.keyframeTime;
 
@@ -74,21 +80,41 @@ static void UpdateFlybyTransform(SceneryMotionKeyframe *keyframe) {
         keyframe->rotationZ, keyframe[1].rotationZ, elapsed,
         keyframe->duration);
 
-    BuildRotMatrixY(&rotationY, 0x800 - g_FlybyScenery.rotationY);
+    BuildRotMatrixY(
+        &rotationY,
+        WrapRenderCoordinate32(
+            (int64_t)0x800 - g_FlybyScenery.rotationY));
     BuildRotMatrixX(&rotationX, g_FlybyScenery.rotationX);
     MulMatrix2(&rotationY, &rotationX);
     BuildRotMatrixZ(&rotationY, g_FlybyScenery.rotationZ);
     MulMatrix(&rotationX, &rotationY);
     ApplyMatrix(&rotationX, &direction, &step);
-    g_FlybyScenery.position.x += step.x / 4;
-    g_FlybyScenery.position.y += step.y / 4;
-    g_FlybyScenery.position.z += step.z / 4;
+    g_FlybyScenery.position.x = WrapRenderCoordinate32(
+        (int64_t)g_FlybyScenery.position.x + step.x / 4);
+    g_FlybyScenery.position.y = WrapRenderCoordinate32(
+        (int64_t)g_FlybyScenery.position.y + step.y / 4);
+    g_FlybyScenery.position.z = WrapRenderCoordinate32(
+        (int64_t)g_FlybyScenery.position.z + step.z / 4);
+}
+
+static s32 FlybyDistance(int64_t dx, int64_t dy, int64_t dz) {
+    const uint64_t x = dx < 0 ? (uint64_t)-dx : (uint64_t)dx;
+    const uint64_t y = dy < 0 ? (uint64_t)-dy : (uint64_t)dy;
+    const uint64_t z = dz < 0 ? (uint64_t)-dz : (uint64_t)dz;
+    const uint64_t squared = x * x / 8 + y * y / 16 + z * z / 8;
+    const uint64_t audibleRadius =
+        (uint64_t)FLYBY_MAX_VOLUME * FLYBY_DISTANCE_SCALE;
+
+    if (squared >= audibleRadius * audibleRadius) {
+        return FLYBY_MAX_VOLUME;
+    }
+    return (s32)(SquareRoot12((long)squared) >> 12);
 }
 
 static void GetFlybyAudio(s32 active, s32 *pitch, s32 *volume) {
-    s32 dx;
-    s32 dy;
-    s32 dz;
+    int64_t dx;
+    int64_t dy;
+    int64_t dz;
     s32 distance;
 
     *pitch = 0;
@@ -98,14 +124,10 @@ static void GetFlybyAudio(s32 active, s32 *pitch, s32 *volume) {
         return;
     }
 
-    dx = g_PlayerCar.x - g_FlybyScenery.position.x;
-    dy = g_PlayerCar.y - g_FlybyScenery.position.y;
-    dz = g_PlayerCar.z - g_FlybyScenery.position.z;
-    distance = SquareRoot12(dx * dx / 8 + dy * dy / 16 + dz * dz / 8) >> 12;
-    if (distance < 0) {
-        g_FlybyScenery.soundEnabled = 0;
-        distance = FLYBY_MAX_VOLUME;
-    }
+    dx = (int64_t)g_PlayerCar.x - g_FlybyScenery.position.x;
+    dy = (int64_t)g_PlayerCar.y - g_FlybyScenery.position.y;
+    dz = (int64_t)g_PlayerCar.z - g_FlybyScenery.position.z;
+    distance = FlybyDistance(dx, dy, dz);
 
     *volume = FLYBY_MAX_VOLUME - distance;
     if (*volume > FLYBY_MAX_VOLUME) {

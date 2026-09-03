@@ -3,12 +3,13 @@
 #include "game/render.h"
 #include "game/track_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
 s32 g_RaceSeries;
 SceneryMotionData *g_RouteSceneryData;
-s32 g_RouteSceneryClock;
+s32 g_RouteSceneryActive;
 s32 g_RouteSceneryFrame;
 s16 g_RouteSceneryKeyIndex;
 s32 g_RouteSceneryRotX;
@@ -50,11 +51,11 @@ typedef struct RouteSceneryFixture {
 
 static int CheckState(const char *label, s32 clock, s32 frame, s16 key,
                       s32 rotX, s32 rotY, s32 rotZ) {
-    if (g_RouteSceneryClock != clock || g_RouteSceneryFrame != frame ||
+    if (g_RouteSceneryActive != clock || g_RouteSceneryFrame != frame ||
         g_RouteSceneryKeyIndex != key || g_RouteSceneryRotX != rotX ||
         g_RouteSceneryRotY != rotY || g_RouteSceneryRotZ != rotZ) {
         printf("FAIL %s: clock=%d frame=%d key=%d rot=(%d,%d,%d)\n",
-               label, g_RouteSceneryClock, g_RouteSceneryFrame,
+               label, g_RouteSceneryActive, g_RouteSceneryFrame,
                g_RouteSceneryKeyIndex, g_RouteSceneryRotX,
                g_RouteSceneryRotY, g_RouteSceneryRotZ);
         return 0;
@@ -92,15 +93,15 @@ int main(void) {
         return 1;
     }
     UpdateRouteScenery();
-    if (!CheckState("first half", 2, 1, 0, 200, 400, 600)) {
+    if (!CheckState("first half", 1, 1, 0, 200, 400, 600)) {
         return 1;
     }
     UpdateRouteScenery();
-    if (!CheckState("second key", 3, 0, 1, 300, 600, 900)) {
+    if (!CheckState("second key", 1, 0, 1, 300, 600, 900)) {
         return 1;
     }
     UpdateRouteScenery();
-    if (!CheckState("second half", 4, 1, 1, 400, 800, 1200)) {
+    if (!CheckState("second half", 1, 1, 1, 400, 800, 1200)) {
         return 1;
     }
     UpdateRouteScenery();
@@ -108,6 +109,14 @@ int main(void) {
         memcmp(&g_RouteSceneryPosition, &fixture.start[1].position,
                sizeof(g_RouteSceneryPosition)) != 0) {
         puts("FAIL loop: start position was not restored");
+        return 1;
+    }
+
+    fixture.keyframes[0].speed = 1;
+    g_RouteSceneryPosition.z = INT_MIN;
+    UpdateRouteScenery();
+    if (g_RouteSceneryPosition.z != INT_MAX) {
+        puts("FAIL wrapped route scenery position");
         return 1;
     }
 

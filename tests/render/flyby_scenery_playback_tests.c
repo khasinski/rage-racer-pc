@@ -4,6 +4,7 @@
 #include "game/render.h"
 #include "game/track_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -148,6 +149,24 @@ int main(void) {
     UpdateFlybyScenery();
     if (!CheckAudio(1, 0)) {
         puts("FAIL: finished race did not mute flyby");
+        return 1;
+    }
+
+    g_RacePhase = 2;
+    g_FlybyScenery.timer = 1;
+    g_FlybyScenery.keyframeTime = 0;
+    g_FlybyScenery.keyframeIndex = 0;
+    g_FlybyScenery.soundEnabled = 1;
+    g_FlybyScenery.position =
+        (Vec4){INT_MAX, INT_MAX, INT_MAX, 0};
+    g_FlybySceneryKeyframe = fixture.keyframes;
+    g_PlayerCar.x = INT_MIN;
+    g_PlayerCar.y = INT_MIN;
+    g_PlayerCar.z = INT_MIN;
+    UpdateFlybyScenery();
+    if (g_LastPitch != 0x1900 || g_LastVolume != 0 ||
+        g_FlybyScenery.soundEnabled != 1) {
+        puts("FAIL: distant flyby audio was not safely muted");
         return 1;
     }
 

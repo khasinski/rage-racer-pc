@@ -1,6 +1,6 @@
 #include "game/render.h"
 #include "game/race.h"
-
+#include "game/render_internal.h"
 #include "game/track_internal.h"
 
 static void RestartRouteScenery(void) {
@@ -16,7 +16,7 @@ static void RestartRouteScenery(void) {
     g_RouteSceneryRotY = keyframe->rotationY;
     g_RouteSceneryRotZ = keyframe->rotationZ;
     g_RouteSceneryPosition = g_RouteSceneryData->start[series].position;
-    g_RouteSceneryClock = 1;
+    g_RouteSceneryActive = 1;
     g_RouteSceneryFrame = 0;
 }
 
@@ -32,11 +32,11 @@ void UpdateRouteScenery(void) {
     SceneryMotionKeyframe *keyframe;
     s32 elapsed;
 
-    if (g_RouteSceneryClock <= 0) {
+    if (g_RouteSceneryActive <= 0) {
         return;
     }
-    g_RouteSceneryClock++;
-    g_RouteSceneryFrame++;
+    g_RouteSceneryFrame = WrapRenderCoordinate32(
+        (int64_t)g_RouteSceneryFrame + 1);
 
     keyframe = &g_RouteSceneryKeyframe[g_RouteSceneryKeyIndex];
     if (keyframe->duration == g_RouteSceneryFrame) {
@@ -63,8 +63,10 @@ void UpdateRouteScenery(void) {
 
     vin.vx = 0;
     vin.vy = 0;
-    vin.vz = -keyframe->speed * 4;
-    BuildRotMatrixY(&mtx0, 0x800 - g_RouteSceneryRotY);
+    vin.vz = WrapRenderCoordinate16(-(int64_t)keyframe->speed * 4);
+    BuildRotMatrixY(
+        &mtx0,
+        WrapRenderCoordinate32((int64_t)0x800 - g_RouteSceneryRotY));
 
     BuildRotMatrixX(&mtx1, g_RouteSceneryRotX);
     MulMatrix2(&mtx0, &mtx1);
@@ -72,7 +74,10 @@ void UpdateRouteScenery(void) {
     MulMatrix(&mtx1, &mtx0);
     ApplyMatrix(&mtx1, &vin, &vout);
 
-    g_RouteSceneryX += vout.x / 4;
-    g_RouteSceneryY += vout.y / 4;
-    g_RouteSceneryZ += vout.z / 4;
+    g_RouteSceneryX = WrapRenderCoordinate32(
+        (int64_t)g_RouteSceneryX + vout.x / 4);
+    g_RouteSceneryY = WrapRenderCoordinate32(
+        (int64_t)g_RouteSceneryY + vout.y / 4);
+    g_RouteSceneryZ = WrapRenderCoordinate32(
+        (int64_t)g_RouteSceneryZ + vout.z / 4);
 }
