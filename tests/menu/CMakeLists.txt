@@ -132,6 +132,26 @@ endif()
 add_test(NAME team_logo_clut COMMAND team_logo_clut_tests)
 set_tests_properties(team_logo_clut PROPERTIES LABELS unit)
 
+add_executable(main_menu_state_tests
+    main_menu_state_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/main_menu.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/title_menu_navigation.c)
+target_include_directories(main_menu_state_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(main_menu_state_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(main_menu_state_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(main_menu_state_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME main_menu_state COMMAND main_menu_state_tests)
+set_tests_properties(main_menu_state PROPERTIES LABELS functional)
+
 add_executable(team_name_texture_tests
     team_name_texture_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/team_name_texture.c)

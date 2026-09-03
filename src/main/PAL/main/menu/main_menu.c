@@ -49,6 +49,22 @@ void UpdateMainMenuOpen(void) {
     DrawMainMenuRows();
 }
 
+static void SelectGrandPrixSave(CarEntry *cars, GameRaceProgress *progress,
+                                CourseProgressState *courseProgress,
+                                s16 series) {
+    g_CarTable = cars;
+    g_RaceProgress = progress;
+    g_CourseProgress = courseProgress;
+    g_SeriesSelection = series;
+    if (progress->maxClassReached == -1) {
+        g_GrandPrixClass = 0;
+        g_CourseIndex = 3;
+        RequestCourseTextureAssets();
+    } else {
+        RequestSelectBgmAssetsKeepAudioSlots();
+    }
+}
+
 void UpdateMainMenuInput(void) {
     s32 oldSelection;
     s32 direction = 0;
@@ -72,30 +88,12 @@ void UpdateMainMenuInput(void) {
         ShuffleBgmOrder();
         switch (g_TitleMenuSelection) {
         case TITLE_MENU_GRAND_PRIX:
-            g_CarTable = g_GrandPrixCars;
-            g_RaceProgress = &g_GrandPrixSave;
-            g_CourseProgress = &g_GrandPrixCourseProgress;
-            g_SeriesSelection = 0;
-            if (g_GrandPrixSave.maxClassReached == -1) {
-                g_GrandPrixClass = 0;
-                g_CourseIndex = 3;
-                RequestCourseTextureAssets();
-            } else {
-                RequestSelectBgmAssetsKeepAudioSlots();
-            }
+            SelectGrandPrixSave(g_GrandPrixCars, &g_GrandPrixSave,
+                                &g_GrandPrixCourseProgress, 0);
             break;
         case TITLE_MENU_EXTRA_GRAND_PRIX:
-            g_CarTable = g_ExtraGrandPrixCars;
-            g_RaceProgress = &g_ExtraGrandPrixSave;
-            g_CourseProgress = &g_ExtraGrandPrixCourseProgress;
-            g_SeriesSelection = 1;
-            if (g_ExtraGrandPrixSaveMaxClass == -1) {
-                g_GrandPrixClass = 0;
-                g_CourseIndex = 3;
-                RequestCourseTextureAssets();
-            } else {
-                RequestSelectBgmAssetsKeepAudioSlots();
-            }
+            SelectGrandPrixSave(g_ExtraGrandPrixCars, &g_ExtraGrandPrixSave,
+                                &g_ExtraGrandPrixCourseProgress, 1);
             break;
         case TITLE_MENU_TIME_ATTACK:
             g_CarTable = g_TimeAttackCars;

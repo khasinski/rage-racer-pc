@@ -33,7 +33,6 @@ void EnterTitleScreen(void) {
     DrawPressStartPrompt();
 }
 
-
 void DrawTitleFadeOverlay(s32 brightness) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     u8 *next;
@@ -79,4 +78,3 @@ void UpdateTitleScreen(void) {
     }
     DrawPressStartPrompt();
 }
-
