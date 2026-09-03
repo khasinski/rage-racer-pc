@@ -164,6 +164,22 @@ static inline s32 MenuModelIndexOrFallback(s32 preferred, s32 modelCount) {
     return modelCount == 1 ? 0 : -1;
 }
 
+static inline int ShowroomCarAtSwapPoint(s32 angle, s32 target,
+                                         s32 pendingCar) {
+    if (pendingCar < 0 || angle == target) {
+        return 0;
+    }
+    return target < angle ? angle <= 299999 : angle > 900000;
+}
+
+static inline int CourseCarouselAtSwapPoint(s32 angle, s32 target,
+                                            s32 pendingCourse) {
+    if (pendingCourse < 0 || angle == target) {
+        return 0;
+    }
+    return target > angle ? angle > 750000 : angle <= 249999;
+}
+
 static inline s32 TeamNameCharacterModelIndex(s32 key, s32 modelCount) {
     if (key == TEAM_NAME_HIDDEN_MODEL_KEY ||
         (u32)(key - TEAM_NAME_CONTROL_KEY_FIRST) <

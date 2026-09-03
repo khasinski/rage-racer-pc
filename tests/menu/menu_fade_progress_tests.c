@@ -87,6 +87,20 @@ int main(void) {
     CHECK(MenuModelIndexOrFallback(5, 1) == 0);
     CHECK(MenuModelIndexOrFallback(0, 0) == -1);
 
+    CHECK(!ShowroomCarAtSwapPoint(300000, 0, 2));
+    CHECK(ShowroomCarAtSwapPoint(299999, 0, 2));
+    CHECK(!ShowroomCarAtSwapPoint(900000, 1000000, 2));
+    CHECK(ShowroomCarAtSwapPoint(900001, 1000000, 2));
+    CHECK(!ShowroomCarAtSwapPoint(299999, 0, -1));
+    CHECK(!ShowroomCarAtSwapPoint(100, 100, 2));
+
+    CHECK(!CourseCarouselAtSwapPoint(750000, 1000000, 2));
+    CHECK(CourseCarouselAtSwapPoint(750001, 1000000, 2));
+    CHECK(!CourseCarouselAtSwapPoint(250000, 0, 2));
+    CHECK(CourseCarouselAtSwapPoint(249999, 0, 2));
+    CHECK(!CourseCarouselAtSwapPoint(249999, 0, -1));
+    CHECK(!CourseCarouselAtSwapPoint(100, 100, 2));
+
     puts("menu animation helper tests passed");
     return 0;
 }

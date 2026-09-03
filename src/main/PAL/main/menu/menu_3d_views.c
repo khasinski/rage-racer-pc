@@ -61,7 +61,6 @@ void DrawMenuCarView(void) {
     s32 carIndex;
     s32 modelIndex;
     s32 viewHeight;
-    int64_t angleDelta;
     s32 currentAngle;
     s32 horizontalAngle;
     s32 offset;
@@ -70,38 +69,17 @@ void DrawMenuCarView(void) {
     SetupMenuViewCamera(0x100, 0);
 
     currentAngle = g_MenuViewAngle;
-    angleDelta = (int64_t)g_MenuViewAngleTarget - currentAngle;
-    if (angleDelta != 0) {
-        if (angleDelta < 0) {
-            if (currentAngle <= 299999) {
-                if (g_CarSwapToIndex >= 0) {
-                    if (!AssetLoadCompletedSuccessfully()) {
-                        return;
-                    }
-                    SwapShowroomCarModel();
-                    g_CarSwapFromIndex = g_CarSwapToIndex;
-                    g_CarSwapToIndex = -1;
-                } else {
-                    g_MenuViewAngle = AdvanceMenuViewAngleValue(
-                        currentAngle, g_MenuViewAngleTarget, 24);
-                }
-            } else {
-                g_MenuViewAngle = AdvanceMenuViewAngleValue(
-                    currentAngle, g_MenuViewAngleTarget, 24);
-            }
-        } else {
-            if (currentAngle > 900000 && g_CarSwapToIndex >= 0) {
-                if (!AssetLoadCompletedSuccessfully()) {
-                    return;
-                }
-                SwapShowroomCarModel();
-                g_CarSwapFromIndex = g_CarSwapToIndex;
-                g_CarSwapToIndex = -1;
-            } else {
-                g_MenuViewAngle = AdvanceMenuViewAngleValue(
-                    currentAngle, g_MenuViewAngleTarget, 24);
-            }
+    if (ShowroomCarAtSwapPoint(currentAngle, g_MenuViewAngleTarget,
+                               g_CarSwapToIndex)) {
+        if (!AssetLoadCompletedSuccessfully()) {
+            return;
         }
+        SwapShowroomCarModel();
+        g_CarSwapFromIndex = g_CarSwapToIndex;
+        g_CarSwapToIndex = -1;
+    } else if (currentAngle != g_MenuViewAngleTarget) {
+        g_MenuViewAngle = AdvanceMenuViewAngleValue(
+            currentAngle, g_MenuViewAngleTarget, 24);
     }
 
     horizontalAngle = MenuWrapAngle(g_MenuViewAngle, 600000) / 1000;
@@ -173,42 +151,24 @@ void DrawMenuCourseView(void) {
     GameRenderObject *renderObject = ShowroomRenderObject();
     Matrix mtxA;
     Matrix mtxB;
-    int64_t angleDelta;
     s32 horizontalAngle;
     s32 courseModelIndex;
     s32 viewHeight;
 
     SetupMenuViewCamera(0x100, 0);
 
-    angleDelta = (int64_t)g_MenuViewAngleTarget - g_MenuViewAngle;
-    if (angleDelta != 0) {
-        if (angleDelta > 0) {
-            if (g_MenuViewAngle > 750000 && g_MenuPendingCourseIndex >= 0) {
-                if (g_CourseSwapDelay >= 19) {
-                    g_CourseSwapDelay = 0;
-                    g_MenuCourseModelIndex = g_MenuPendingCourseIndex;
-                    g_MenuPendingCourseIndex = -1;
-                } else {
-                    g_CourseSwapDelay++;
-                }
-            } else {
-                g_MenuViewAngle = AdvanceMenuViewAngleValue(
-                    g_MenuViewAngle, g_MenuViewAngleTarget, 18);
-            }
+    if (CourseCarouselAtSwapPoint(g_MenuViewAngle, g_MenuViewAngleTarget,
+                                  g_MenuPendingCourseIndex)) {
+        if (g_CourseSwapDelay >= 19) {
+            g_CourseSwapDelay = 0;
+            g_MenuCourseModelIndex = g_MenuPendingCourseIndex;
+            g_MenuPendingCourseIndex = -1;
         } else {
-            if (g_MenuViewAngle <= 249999 && g_MenuPendingCourseIndex >= 0) {
-                if (g_CourseSwapDelay >= 19) {
-                    g_CourseSwapDelay = 0;
-                    g_MenuCourseModelIndex = g_MenuPendingCourseIndex;
-                    g_MenuPendingCourseIndex = -1;
-                } else {
-                    g_CourseSwapDelay++;
-                }
-            } else {
-                g_MenuViewAngle = AdvanceMenuViewAngleValue(
-                    g_MenuViewAngle, g_MenuViewAngleTarget, 18);
-            }
+            g_CourseSwapDelay++;
         }
+    } else if (g_MenuViewAngle != g_MenuViewAngleTarget) {
+        g_MenuViewAngle = AdvanceMenuViewAngleValue(
+            g_MenuViewAngle, g_MenuViewAngleTarget, 18);
     }
 
     horizontalAngle = MenuWrapAngle(g_MenuViewAngle, 500000) / 1000;
