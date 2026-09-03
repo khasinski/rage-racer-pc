@@ -4,6 +4,7 @@
 #include "game/render_state.h"
 
 #include <stdio.h>
+#include <limits.h>
 
 s32 g_CarSpecBars[4];
 s32 g_CarSpecGraphProgress;
@@ -123,6 +124,18 @@ int main(void) {
     CHECK(s_polyLineY[2] == 0x12E && s_polyLineY[3] == 0x12F);
     CHECK(s_polyLineY[10] == 0xEE && s_polyLineY[11] == 0xEF);
     CHECK(s_quadCount == 16);
+
+    g_CarModelAsset = NULL;
+    g_CarSpecGraphProgress = INT_MAX;
+    g_CarSpecBars[0] = INT_MAX;
+    g_CarSpecBars[1] = INT_MIN;
+    g_CarSpecBars[2] = 2;
+    g_CarSpecBars[3] = INT_MAX;
+    g_MenuAltLayout = 1;
+    DrawCarSpecGraph(INT_MAX, 5);
+    CHECK(g_CarSpecGraphProgress == 96);
+    CHECK(g_CarSpecBars[0] == 95 && g_CarSpecBars[1] == 0);
+    CHECK(g_CarSpecBars[2] == 1 && g_CarSpecBars[3] == 96);
 
     puts("car spec graph tests passed");
     return 0;

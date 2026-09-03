@@ -1,5 +1,6 @@
 #include "game/asset.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 
 enum {
     CAR_SPEC_BAR_COUNT = 4,
@@ -16,6 +17,7 @@ static const CVec s_carSpecGraphColors[CAR_SPEC_BAR_COUNT] = {
 };
 
 static void ApproachPerformanceRating(s32 *value, s32 target) {
+    *value = AddClampedMenuValue(*value, 0, 0, CAR_SPEC_BAR_MAX);
     if (*value < target && *value < CAR_SPEC_BAR_MAX) {
         (*value)++;
     } else if (*value > target && *value > 0) {
@@ -26,9 +28,17 @@ static void ApproachPerformanceRating(s32 *value, s32 target) {
 static void UpdateCarSpecValues(u32 tireGrade) {
     s32 i;
 
-    for (i = 0; i < 3; i++) {
-        ApproachPerformanceRating(&g_CarSpecBars[i],
-                                  g_CarModelAsset->performanceRatings[i]);
+    g_CarSpecBars[3] =
+        AddClampedMenuValue(g_CarSpecBars[3], 0, 0, CAR_SPEC_BAR_MAX);
+    if (g_CarModelAsset != NULL) {
+        for (i = 0; i < 3; i++) {
+            ApproachPerformanceRating(
+                &g_CarSpecBars[i], g_CarModelAsset->performanceRatings[i]);
+        }
+    } else {
+        for (i = 0; i < 3; i++) {
+            ApproachPerformanceRating(&g_CarSpecBars[i], 0);
+        }
     }
     if (tireGrade < 5) {
         ApproachPerformanceRating(&g_CarSpecBars[3],
@@ -121,12 +131,8 @@ void DrawCarSpecGraph(s32 step, u32 tireGrade) {
     }
 
     UpdateCarSpecValues(tireGrade);
-    g_CarSpecGraphProgress += step;
-    if (g_CarSpecGraphProgress > CAR_SPEC_BAR_MAX) {
-        g_CarSpecGraphProgress = CAR_SPEC_BAR_MAX;
-    } else if (g_CarSpecGraphProgress < 0) {
-        g_CarSpecGraphProgress = 0;
-    }
+    g_CarSpecGraphProgress = AddClampedMenuValue(
+        g_CarSpecGraphProgress, step, 0, CAR_SPEC_BAR_MAX);
 
     for (i = 0; i < CAR_SPEC_BAR_COUNT; i++) {
         revealed[i] = g_CarSpecGraphProgress - CAR_SPEC_BAR_MAX +
