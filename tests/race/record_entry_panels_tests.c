@@ -49,6 +49,7 @@ typedef struct TextCall {
 
 static TextCall s_calls[16];
 static s32 s_callCount;
+static s32 s_tileCalls;
 
 void FormatLapTime(char *dst, s32 timeMs) {
     snprintf(dst, LAP_TIME_TEXT_CAPACITY, "0'%02d\"000", timeMs / 1000);
@@ -83,6 +84,7 @@ u8 *AddTilePrim(GameOrderingTableEntry *ot, u8 *packet, s32 x, s32 y,
     (void)red;
     (void)green;
     (void)blue;
+    s_tileCalls++;
     return packet;
 }
 
@@ -140,6 +142,28 @@ int main(void) {
     CHECK(strcmp(s_calls[1].text, "T/0'09\"000") == 0);
     CHECK(strcmp(s_calls[3].text, "1ST/0'01\"000/N0/C0") == 0);
     CHECK(s_calls[3].x == 16 && s_calls[3].y == 0x78);
+
+    s_callCount = 0;
+    g_GrandPrixSeries = -1;
+    DrawRankingPanel(0);
+    DrawTimeRecordPanel(0);
+    CHECK(s_callCount == 0);
+
+    g_GrandPrixSeries = 0;
+    memset(g_RankingRecords[0][1][0].driverName, 'X', 8);
+    g_RankingRecords[0][1][0].carIndex = -1;
+    s_callCount = 0;
+    DrawRankingPanel(0);
+    CHECK(strstr(s_calls[5].text, "XXXXXXXX/C0") != NULL);
+    CHECK(strcmp(s_calls[6].text, "/CAR0") == 0);
+
+    g_AnimTimer = 8;
+    s_tileCalls = 0;
+    DrawNameEntryCursor(0, 0);
+    CHECK(s_tileCalls == 1);
+    DrawNameEntryCursor(-1, 0);
+    DrawNameEntryCursor(0, RECORD_TABLE_LENGTH);
+    CHECK(s_tileCalls == 1);
 
     puts("record entry panel tests passed");
     return 0;

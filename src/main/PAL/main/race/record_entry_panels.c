@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "game/player_car_internal.h"
 #include "game/prim.h"
@@ -29,8 +30,20 @@ static void DrawRecordRows(s32 slideX,
     for (row = 0; row < RECORD_TABLE_LENGTH; row++) {
         const RaceRecord *record = &records[row];
         s32 carIndex = record->carIndex;
+        char driverName[sizeof(record->driverName) + 1];
+        const char *carName;
+        const char *className;
         s32 color = insertedRow == row ? 0x780F : 0x78CC;
         s32 y = RECORD_ROW_FIRST_Y + row * RECORD_ROW_HEIGHT;
+
+        if ((u32)carIndex >= GAME_CAR_COUNT) {
+            carIndex = 0;
+        }
+        memcpy(driverName, record->driverName, sizeof(record->driverName));
+        driverName[sizeof(record->driverName)] = '\0';
+        carName = g_CarNames[carIndex] != NULL ? g_CarNames[carIndex] : "";
+        className =
+            g_CarClassNames[carIndex] != NULL ? g_CarClassNames[carIndex] : "";
 
         text[0] = g_PlaceSuffixNames[row][0];
         text[1] = g_PlaceSuffixNames[row][1];
@@ -38,10 +51,10 @@ static void DrawRecordRows(s32 slideX,
         text[3] = '/';
         FormatLapTime(&text[4], record->raceTime);
         snprintf(&text[0xC], textSize - 0xC, g_FmtRecordName,
-                 record->driverName, g_CarClassNames[carIndex]);
+                 driverName, className);
         DrawText8x8(slideX + 0x14, y, text, color);
 
-        snprintf(text, textSize, g_FmtCarName, g_CarNames[carIndex]);
+        snprintf(text, textSize, g_FmtCarName, carName);
         DrawText8x8(slideX + 0x2C, y + 0xA, text, color);
     }
 }
@@ -51,6 +64,10 @@ void DrawRankingPanel(s32 slideX) {
     s32 lapCount;
     s32 row;
     s32 course = SeriesCourseIndex();
+
+    if ((u32)g_GrandPrixSeries >= RECORD_SERIES_COUNT) {
+        return;
+    }
 
     DrawProportionalText(slideX + 0x10, 0x4C, g_CaptionLapTime2, 0x7852);
     text[1] = '/';
@@ -77,6 +94,10 @@ void DrawTimeRecordPanel(s32 slideX) {
     char text[48];
     s32 course = SeriesCourseIndex();
 
+    if ((u32)g_GrandPrixSeries >= RECORD_SERIES_COUNT) {
+        return;
+    }
+
     DrawProportionalText(slideX + 0x10, 0x4C, g_CaptionTotalTime2, 0x7852);
 
     text[0] = 'T';
@@ -90,7 +111,9 @@ void DrawTimeRecordPanel(s32 slideX) {
 }
 
 void DrawNameEntryCursor(s32 charIndex, s32 row) {
-    if ((g_AnimTimer & 8) == 0) {
+    if ((g_AnimTimer & 8) == 0 ||
+        (u32)charIndex >= RECORD_NAME_LENGTH ||
+        (u32)row >= RECORD_TABLE_LENGTH) {
         return;
     }
 
