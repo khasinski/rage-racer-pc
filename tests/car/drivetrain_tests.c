@@ -554,6 +554,55 @@ static void ExtremeLoadArithmeticTests(void) {
           INT_MAX - 1);
 }
 
+static void ExtremeTorqueArithmeticTests(void) {
+    s32 netTorque;
+    s32 bandScale;
+
+    BuildSpec();
+    PlaceCar();
+    s_car.drive.engineRpm = INT_MAX;
+    netTorque = 0;
+    bandScale = -1;
+    ReadCarEngineTorque(&s_car.drive, &s_spec,
+                        g_GearTorqueCurve[1].values,
+                        &netTorque, &bandScale);
+    Check(netTorque == 7200, "rev limiter keeps 32-bit arithmetic",
+          netTorque, 7200);
+    Check(bandScale == 0, "rev limiter clears engine braking",
+          bandScale, 0);
+
+    BuildSpec();
+    PlaceCar();
+    s_car.drive.engineRpm = 0;
+    s_spec.torqueBand.values[0] = INT_MIN;
+    s_spec.torqueBand.values[1] = INT_MAX;
+    s_spec.torqueLossRpm[0] = INT_MIN;
+    s_spec.torqueLossRpm[1] = INT_MAX;
+    g_GearTorqueCurve[1].values[0] = INT_MAX;
+    g_GearTorqueCurve[1].values[1] = INT_MAX;
+    s_spec.torqueLossValue[0] = INT_MAX;
+    s_spec.torqueLossValue[1] = INT_MAX;
+    g_TorqueBandEnd[0] = 1;
+    g_TorqueLossBandEnd[0] = 1;
+    netTorque = 123;
+    bandScale = -1;
+    ReadCarEngineTorque(&s_car.drive, &s_spec,
+                        g_GearTorqueCurve[1].values,
+                        &netTorque, &bandScale);
+    Check(netTorque == 0, "torque interpolation wraps its products",
+          netTorque, 0);
+    Check(bandScale == 0, "braking interpolation wraps its products",
+          bandScale, 0);
+
+    memset(&s_car.drive, 0, sizeof(s_car.drive));
+    s_car.drive.motionState = CAR_MOTION_TAKEOFF;
+    s_car.drive.engineRpm = INT_MAX;
+    s_car.drive.drivetrainTorque = INT_MIN;
+    Check(CalculateCarInitialAcceleration(&s_car.drive, INT_MAX) == -524287,
+          "initial acceleration wraps gear torque and load",
+          CalculateCarInitialAcceleration(&s_car.drive, INT_MAX), -524287);
+}
+
 int main(void) {
     Check(CalculateCarRpmDelta(0, INT16_MIN) == INT16_MIN,
           "RPM delta wraps at the negative limit",
@@ -568,6 +617,7 @@ int main(void) {
     GearBoundsTests();
     MissingTrackTests();
     ExtremeLoadArithmeticTests();
+    ExtremeTorqueArithmeticTests();
 
     if (s_failures != 0) {
         printf("%d drivetrain checks failed\n", s_failures);
