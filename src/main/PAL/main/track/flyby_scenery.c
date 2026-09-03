@@ -101,10 +101,15 @@ static s32 FlybyDistance(int64_t dx, int64_t dy, int64_t dz) {
     const uint64_t x = dx < 0 ? (uint64_t)-dx : (uint64_t)dx;
     const uint64_t y = dy < 0 ? (uint64_t)-dy : (uint64_t)dy;
     const uint64_t z = dz < 0 ? (uint64_t)-dz : (uint64_t)dz;
-    const uint64_t squared = x * x / 8 + y * y / 16 + z * z / 8;
     const uint64_t audibleRadius =
         (uint64_t)FLYBY_MAX_VOLUME * FLYBY_DISTANCE_SCALE;
+    uint64_t squared;
 
+    if (x >= audibleRadius * 3 || y >= audibleRadius * 4 ||
+        z >= audibleRadius * 3) {
+        return FLYBY_MAX_VOLUME;
+    }
+    squared = x * x / 8 + y * y / 16 + z * z / 8;
     if (squared >= audibleRadius * audibleRadius) {
         return FLYBY_MAX_VOLUME;
     }

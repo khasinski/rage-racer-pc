@@ -139,10 +139,15 @@ static s32 PathSceneryDistance(int64_t dx, int64_t dy, int64_t dz) {
     const uint64_t x = dx < 0 ? (uint64_t)-dx : (uint64_t)dx;
     const uint64_t y = dy < 0 ? (uint64_t)-dy : (uint64_t)dy;
     const uint64_t z = dz < 0 ? (uint64_t)-dz : (uint64_t)dz;
-    const uint64_t squared = x * x / 4 + y * y / 8 + z * z / 4;
     const uint64_t audibleRadius =
         (uint64_t)PATH_SCENERY_MAX_VOLUME * 16;
+    uint64_t squared;
 
+    if (x >= audibleRadius * 2 || y >= audibleRadius * 3 ||
+        z >= audibleRadius * 2) {
+        return PATH_SCENERY_MAX_VOLUME;
+    }
+    squared = x * x / 4 + y * y / 8 + z * z / 4;
     if (squared >= audibleRadius * audibleRadius) {
         return PATH_SCENERY_MAX_VOLUME;
     }

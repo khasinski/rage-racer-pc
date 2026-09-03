@@ -59,10 +59,12 @@ static s32 PointAmbienceOutputCue(s32 authoredCue) {
 static s32 PointAmbienceAttenuation(s32 level, int64_t dx, int64_t dz) {
     const uint64_t x = dx < 0 ? (uint64_t)-dx : (uint64_t)dx;
     const uint64_t z = dz < 0 ? (uint64_t)-dz : (uint64_t)dz;
-    const uint64_t squared = x * x + z * z;
     const uint64_t panRadius = (uint64_t)level * 64;
+    uint64_t squared;
     s32 distance;
 
+    if (x >= panRadius || z >= panRadius) return 0;
+    squared = x * x + z * z;
     if (squared >= panRadius * panRadius) return 0;
     distance = (s32)(SquareRoot12((long)(squared / 4)) >> 11);
     return distance < level ? level - distance : 0;
