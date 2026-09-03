@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/course_index.h"
 #include "game/menu.h"
 #include "game/player_car_internal.h"
 #include "game/save_internal.h"
@@ -144,6 +145,19 @@ int main(void) {
     g_CourseIndex = 5;
     EnterCourseSelectScreen();
     if (CheckShowroomReset(3, 1)) return 1;
+
+    PoisonState();
+    g_CourseIndex = INT32_MIN;
+    g_CourseProgress = NULL;
+    EnterCourseSelectScreen();
+    CHECK(g_CourseIndex == 0);
+    if (CheckShowroomReset(0, -1)) return 1;
+
+    PoisonState();
+    g_CourseIndex = INT32_MAX;
+    EnterCourseSelectScreen();
+    CHECK(g_CourseIndex == PHYSICAL_COURSE_COUNT - 1);
+    if (CheckShowroomReset(0, 1)) return 1;
 
     puts("enter course select tests passed");
     return 0;

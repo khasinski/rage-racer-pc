@@ -13,17 +13,19 @@ enum {
     COURSE_SELECT_INITIAL_CARD_SPIN = 2048000,
 };
 
-const char g_NowLoadingText[] = "NOW LOADING";
+static const char s_nowLoadingText[] = "NOW LOADING";
 
 static void DrawNowLoadingText(void) {
     if (g_SceneTimer & 8) {
-        DrawText8x8(0x74, 0xEC, g_NowLoadingText, 0x78CC);
+        DrawText8x8(0x74, 0xEC, s_nowLoadingText, 0x78CC);
     }
 }
 
 static void ResetCourseSelectShowroom(void) {
-    s32 course = g_CourseIndex;
+    s32 course = AddClampedMenuValue(
+        g_CourseIndex, 0, 0, PHYSICAL_COURSE_COUNT - 1);
 
+    g_CourseIndex = course;
     g_MenuViewOffset = COURSE_SELECT_INITIAL_VIEW_OFFSET;
     g_MenuViewSpin = 8;
     g_UiScriptProgress = 0;
@@ -41,8 +43,11 @@ static void ResetCourseSelectShowroom(void) {
     g_MenuViewOffsetTarget = 0;
     g_CourseCardSpin = COURSE_SELECT_INITIAL_CARD_SPIN;
     g_CourseCardSpinTarget = 0;
-    g_CourseCardPendingGrade = g_CourseProgress->bestPlace[course & 3];
-    g_TimeAttackPlateStep = course >= 4 ? 1 : -1;
+    g_CourseCardPendingGrade =
+        g_CourseProgress != NULL
+            ? g_CourseProgress->bestPlace[CourseSlot(course)]
+            : 0;
+    g_TimeAttackPlateStep = CourseSeries(course) != 0 ? 1 : -1;
 }
 
 /* g_MenuScreenUpdate[MENU_SCREEN_BOOTSTRAP]: wait for the shared car-select
