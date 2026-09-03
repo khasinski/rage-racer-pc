@@ -34,6 +34,7 @@ int NegconTwist(float shapedStick, int dpadLeft, int dpadRight, int range) {
     if (shapedStick > 1.0f) shapedStick = 1.0f;
     deflection = (int)(shapedStick * (float)NEGCON_TWIST_MAX);
     if (range <= 0) range = NEGCON_TWIST_MAX;
+    if (range > NEGCON_TWIST_CENTRE) range = NEGCON_TWIST_CENTRE;
     if (dpadLeft && deflection > -range) deflection = -range;
     if (dpadRight && deflection < range) deflection = range;
     twist = NEGCON_TWIST_CENTRE + deflection;

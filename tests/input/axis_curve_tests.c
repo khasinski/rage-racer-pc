@@ -1,4 +1,5 @@
 #include <math.h>
+#include <limits.h>
 #include <stdio.h>
 
 #include "axis_curve.h"
@@ -106,6 +107,10 @@ int main(void) {
            (float)NegconTwist(0.0f, 0, 1, 200), 255.0f);
     Expect("range past the byte stops at full left",
            (float)NegconTwist(0.0f, 1, 0, 200), 0.0f);
+    Expect("integer range stops at full right",
+           (float)NegconTwist(0.0f, 0, 1, INT_MAX), 255.0f);
+    Expect("integer range stops at full left",
+           (float)NegconTwist(0.0f, 1, 0, INT_MAX), 0.0f);
 
     /* The pedal axis takes a raw SDL reading
      * (one unit of the 16-bit range is 1.5e-5 of the result, so an off-by-one
