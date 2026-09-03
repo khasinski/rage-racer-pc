@@ -20,7 +20,8 @@ _Static_assert(sizeof(g_TrackCameras) == sizeof(void *),
                "g_TrackCameras must be one pointer");
 _Static_assert(sizeof(g_TrackArcCenters) == sizeof(void *),
                "g_TrackArcCenters must be one pointer");
-_Static_assert(sizeof(g_MainVisibleCellList) == sizeof(Vec4) * 64,
+_Static_assert(sizeof(g_MainVisibleCellList) ==
+                   sizeof(VisibleTerrainCell) * 64,
                "g_MainVisibleCellList ABI size changed");
 _Static_assert(sizeof(g_MainVisibleCellMask) == sizeof(u32) * 32,
                "g_MainVisibleCellMask ABI size changed");

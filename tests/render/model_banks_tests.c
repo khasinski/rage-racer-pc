@@ -19,9 +19,9 @@ s32 g_TerrainCellCount;
 const u16 *g_TerrainCellGrid;
 const CellVisibilityRow *g_CellVisibilityTable;
 u32 g_MainVisibleCellMask[32];
-Vec4 g_MainVisibleCellList[64];
+VisibleTerrainCell g_MainVisibleCellList[64];
 u32 *g_VisibleCellMask;
-Vec4 *g_VisibleCellList;
+VisibleTerrainCell *g_VisibleCellList;
 s32 g_MirrorMode;
 
 static CarEntry s_cars[2];

@@ -1,6 +1,7 @@
 #include "../../src/port/host_state.c"
 
-_Static_assert(sizeof(g_MirrorVisibleCellList) == 64 * sizeof(Vec4),
+_Static_assert(sizeof(g_MirrorVisibleCellList) ==
+                   64 * sizeof(VisibleTerrainCell),
                "mirror visible-cell list shape changed");
 _Static_assert(sizeof(g_MirrorVisibleCellMask) == 32 * sizeof(u32),
                "mirror visible-cell mask shape changed");

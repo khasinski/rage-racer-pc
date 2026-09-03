@@ -6,13 +6,13 @@
 #include <stdio.h>
 
 GameRenderState g_RenderState;
-Vec4 *g_VisibleCellList;
+VisibleTerrainCell *g_VisibleCellList;
 
 static s32 s_farDepth;
 static s32 s_nearDepth;
 static s32 s_rotMatrixCalls;
 static s32 s_submitCount;
-static void *s_submittedCells;
+static const void *s_submittedCells;
 
 void BuildVisibleCells(s32 nearDepth, s32 farDepth) {
     s_nearDepth = nearDepth;
@@ -21,7 +21,8 @@ void BuildVisibleCells(s32 nearDepth, s32 farDepth) {
 void SetRotMatrix(MATRIX *matrix) {
     if (matrix == &g_RenderState.matrix) s_rotMatrixCalls++;
 }
-void SubmitTerrainCells(void *state, void *cells, s32 count) {
+void SubmitTerrainCells(void *state, const VisibleTerrainCell *cells,
+                        s32 count) {
     (void)state;
     s_submittedCells = cells;
     s_submitCount = count;
@@ -45,7 +46,7 @@ static int CheckRange(s32 expectedNear, s32 expectedFar) {
 }
 
 int main(void) {
-    Vec4 visibleCells[1];
+    VisibleTerrainCell visibleCells[1];
 
     g_VisibleCellList = visibleCells;
     DrawTerrainCells();

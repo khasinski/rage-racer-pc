@@ -17,6 +17,15 @@ typedef struct GameOrderingTableEntry {
 typedef u_long GameOrderingTableEntry;
 #endif
 
+typedef struct VisibleTerrainCell {
+    s32 x;
+    s32 y;
+    s32 z;
+    s32 cellIndex;
+} VisibleTerrainCell;
+_Static_assert(sizeof(VisibleTerrainCell) == 16,
+               "VisibleTerrainCell must match the renderer ABI");
+
 typedef union RenderBufferAddress {
     RaceHudPacketOffset hudPacketOffset;
     s32 value;

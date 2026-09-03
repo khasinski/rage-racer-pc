@@ -49,7 +49,7 @@ extern int g_FadeLevel;
 extern int g_FrameSyncThreshold;
 extern s32 g_SkyRowBase;
 extern s32 g_MirrorPanelY;
-extern Vec4 g_MirrorVisibleCellList[];
+extern VisibleTerrainCell g_MirrorVisibleCellList[];
 extern u32 g_MainVisibleCellMask[];
 extern u32 g_MirrorVisibleCellMask[];
 extern unsigned long long g_RageGt4FacesEmitted;
@@ -386,12 +386,12 @@ int main(int argc, char **argv) {
     if (RuntimeConfigEnabled("capture.visible_cells")) {
         int cell;
         for (cell = 0; cell < 64; cell++) {
-            const Vec4 *mainEntry = &g_VisibleCellList[cell];
-            const Vec4 *entry = &g_MirrorVisibleCellList[cell];
+            const VisibleTerrainCell *mainEntry = &g_VisibleCellList[cell];
+            const VisibleTerrainCell *entry = &g_MirrorVisibleCellList[cell];
             Trace("visible-cell", "%d=%d,%d,%d,%d", cell, mainEntry->x,
-                   mainEntry->y, mainEntry->z, mainEntry->w);
+                   mainEntry->y, mainEntry->z, mainEntry->cellIndex);
             Trace("mirror-cell", "%d=%d,%d,%d,%d", cell, entry->x,
-                   entry->y, entry->z, entry->w);
+                   entry->y, entry->z, entry->cellIndex);
         }
         for (cell = 0; cell < 32; cell++) {
             Trace("visible-mask", "%d=%08x", cell,

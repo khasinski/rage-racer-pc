@@ -8,7 +8,7 @@
 
 GameRenderState g_RenderState;
 u32 *g_VisibleCellMask;
-Vec4 *g_VisibleCellList;
+VisibleTerrainCell *g_VisibleCellList;
 const u16 *g_TerrainCellGrid;
 const CellVisibilityRow *g_CellVisibilityTable;
 const CourseObject *g_CourseObjects;
@@ -93,9 +93,9 @@ static int TestVisibleCellOutputBounds(void) {
         u32 after;
     } mask;
     struct {
-        Vec4 before;
-        Vec4 values[VISIBLE_CELL_COUNT];
-        Vec4 after;
+        VisibleTerrainCell before;
+        VisibleTerrainCell values[VISIBLE_CELL_COUNT];
+        VisibleTerrainCell after;
     } list;
     s32 index;
 
@@ -114,10 +114,11 @@ static int TestVisibleCellOutputBounds(void) {
         CHECK(mask.values[index] == 0);
     }
 
-    CHECK(list.before.x == 0x5A5A5A5A && list.after.w == 0x5A5A5A5A);
+    CHECK(list.before.x == 0x5A5A5A5A &&
+          list.after.cellIndex == 0x5A5A5A5A);
     for (index = 0; index < VISIBLE_CELL_COUNT; index++) {
         CHECK(list.values[index].x == 0x5A5A5A5A);
-        CHECK(list.values[index].w == -1);
+        CHECK(list.values[index].cellIndex == -1);
     }
 
     /* Missing terrain data produces the same empty frame for an in-grid
@@ -133,7 +134,7 @@ static int TestVisibleCellOutputBounds(void) {
         CHECK(mask.values[index] == 0);
     }
     for (index = 0; index < VISIBLE_CELL_COUNT; index++) {
-        CHECK(list.values[index].w == -1);
+        CHECK(list.values[index].cellIndex == -1);
     }
 
     return 0;
@@ -148,7 +149,7 @@ static int TestMissingVisibleCellOutput(void) {
 
 static int TestCameraHeightWrapsLikeThePs1(void) {
     u32 visibilityMask[TERRAIN_CELL_GRID_SIZE] = {0};
-    Vec4 visibleCells[VISIBLE_CELL_COUNT];
+    VisibleTerrainCell visibleCells[VISIBLE_CELL_COUNT];
     u16 terrainGrid[TERRAIN_CELL_GRID_SIZE * TERRAIN_CELL_GRID_SIZE] = {0};
     CellVisibilityRow cellVisibility[TERRAIN_CELL_GRID_SIZE] = {{0}};
 
@@ -165,7 +166,7 @@ static int TestCameraHeightWrapsLikeThePs1(void) {
     BuildVisibleCells(INT_MIN, INT_MAX);
 
     CHECK(visibleCells[0].y == 4);
-    CHECK(visibleCells[0].w == 5);
+    CHECK(visibleCells[0].cellIndex == 5);
     return 0;
 }
 

@@ -18,6 +18,7 @@
 #include <stddef.h>
 
 #include "common.h"
+#include "game/render_types.h"
 #include "game/vector.h"
 #include "psyq/gte.h"
 
@@ -26,7 +27,7 @@ s32 g_FmvStreamEnded;
 u32 g_RandomSeed;
 s32 g_GameClock;
 s32 g_FrameCounter;
-Vec4 g_MirrorVisibleCellList[64];
+VisibleTerrainCell g_MirrorVisibleCellList[64];
 s32 g_FmvState;
 s32 g_FrontendState;
 s32 g_StreamReturnScene;

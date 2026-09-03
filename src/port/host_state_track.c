@@ -13,6 +13,7 @@
 
 #include "game/vector.h"
 #include "game/environment.h"
+#include "game/render_types.h"
 #include "game/shuttle_scenery.h"
 #include "game/terrain_internal.h"
 #include "game/track_internal.h"
@@ -137,7 +138,7 @@ s32 g_CameraNodeIndex;
 s32 g_CamPathFrame;
 s32 g_CamPathNode;
 s32 g_FogNear;
-Vec4 g_MainVisibleCellList[64] __attribute__((aligned(16)));
+VisibleTerrainCell g_MainVisibleCellList[64] __attribute__((aligned(16)));
 s32 g_EnvScriptLength;
 const GameTrackCameraNode *g_TrackCameras;
 GameTrackArcCenter *g_TrackArcCenters;
@@ -182,7 +183,7 @@ const CourseObject *g_CourseObjects;
 const CellVisibilityRow *g_CellVisibilityTable;
 PathSceneryPositionData *g_PathSceneryPosData;
 s32 g_CourseObjectCount;
-Vec4 *g_VisibleCellList;
+VisibleTerrainCell *g_VisibleCellList;
 PathSceneryClock g_PathSceneryClock;
 PathSceneryTransform g_PathSceneryTransform __attribute__((aligned(16)));
 s16 g_PathSceneryRotHalfDelta[3] __attribute__((aligned(16)));

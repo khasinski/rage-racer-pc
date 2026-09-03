@@ -120,9 +120,9 @@ void InitTrackLighting(void);
 extern u8 g_SmallFontGlyphs[SMALL_FONT_GLYPH_COUNT * FONT_GLYPH_RECORD_SIZE];
 extern u8 g_LargeFontGlyphs[LARGE_FONT_GLYPH_COUNT * FONT_GLYPH_RECORD_SIZE];
 extern u32 g_MainVisibleCellMask[];
-extern Vec4 g_MainVisibleCellList[];
+extern VisibleTerrainCell g_MainVisibleCellList[];
 extern u32 *g_VisibleCellMask;
-extern Vec4 *g_VisibleCellList;
+extern VisibleTerrainCell *g_VisibleCellList;
 extern CameraViewMode g_CameraViewMode;
 extern s16 g_AtanTable[];
 static inline GameOrderingTableEntry *GamePrimaryOrderingTable(s32 depth) {

@@ -1056,9 +1056,8 @@ void SubmitCourseModel2(void *ctx, int index) {
     (void)ctx;
     RageSubmitCourseModel(index, 1);
 }
-void SubmitTerrainCells(void *ctx, void *cells, int count) {
+void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
     static const uint8_t dispatchStride[4] = {32, 32, 36, 36};
-    const int32_t *visible = (const int32_t *)cells;
     void **cellTable = (void **)g_RenderState.cellTable;
     const SVECTOR *vertices = (const SVECTOR *)g_RenderState.cellFaces;
     uint8_t *cursor = RENDER_PRIM_CURSOR_AS(uint8_t);
@@ -1069,7 +1068,7 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
     int emittedFaces = 0;
     (void)ctx;
     GeometryDiagnosticsInit(&s_diagnostics);
-    if (visible == NULL || cellTable == NULL || vertices == NULL) return;
+    if (cells == NULL || cellTable == NULL || vertices == NULL) return;
 
     /* The hand-written retail dispatcher mirrors the active GTE view by
      * negating RT11, RT12 and RT13 when the render state's mirror flag is set.  It intentionally
@@ -1089,20 +1088,20 @@ void SubmitTerrainCells(void *ctx, void *cells, int count) {
      * one the cells are actually projected with. */
     CaptureTerrainBegin(cells, count);
 
-    for (cell = 0; cell < count; cell++, visible += 4) {
+    for (cell = 0; cell < count; cell++, cells++) {
         uint8_t *stream;
         uint32_t opcode;
         VECTOR translation;
-        int cellIndex = visible[3];
-        int farCell = visible[2] >= 0xa000;
+        int cellIndex = cells->cellIndex;
+        int farCell = cells->z >= 0xa000;
         if (cellIndex < 0 || cellIndex >= GAME_TERRAIN_CELL_LIMIT ||
             cellTable[cellIndex] == NULL) continue;
         /* The rear-view dispatcher reflects both RT1 and the already
          * transformed cell-center X.  Reflecting only the rotation row moves
          * otherwise correct terrain quads tens of pixels to the right. */
-        translation.vx = g_RenderState.orderingFlag ? -visible[0] : visible[0];
-        translation.vy = visible[1];
-        translation.vz = visible[2];
+        translation.vx = g_RenderState.orderingFlag ? -cells->x : cells->x;
+        translation.vy = cells->y;
+        translation.vz = cells->z;
         translation.pad = 0;
         SetTransVector(&translation);
         stream = (uint8_t *)cellTable[cellIndex];

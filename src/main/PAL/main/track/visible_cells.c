@@ -33,7 +33,7 @@ static void ClearVisibleCellOutput(void) {
     }
     if (g_VisibleCellList != NULL) {
         for (index = 0; index < VISIBLE_CELL_COUNT; index++) {
-            g_VisibleCellList[index].w = -1;
+            g_VisibleCellList[index].cellIndex = -1;
         }
     }
 }
@@ -69,7 +69,7 @@ void BuildVisibleCells(s32 near, s32 far) {
     cameraRegion = GetCellRegion(cameraCellX, cameraCellZ);
 
     for (index = 0; index < VISIBLE_CELL_COUNT; index++) {
-        Vec4 *out = &g_VisibleCellList[index];
+        VisibleTerrainCell *out = &g_VisibleCellList[index];
         s32 offset[2];
         s32 cellX;
         s32 cellZ;
@@ -118,6 +118,6 @@ void BuildVisibleCells(s32 near, s32 far) {
         out->x = projected[0];
         out->y = projected[1];
         out->z = projected[2];
-        out->w = cellIndex;
+        out->cellIndex = cellIndex;
     }
 }

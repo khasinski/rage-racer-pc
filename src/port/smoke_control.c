@@ -135,16 +135,22 @@ static int SmokeCountDrawableCars(const GameCarRuntime *cars,
     return drawable;
 }
 
-static uint32_t SmokeHashVisibleList(const Vec4 *entries) {
+static uint32_t SmokeHashVisibleList(const VisibleTerrainCell *entries) {
     uint32_t hash = 2166136261u;
     size_t entryIndex;
     for (entryIndex = 0; entryIndex < 64; entryIndex++) {
         u32 words[4];
         int wordIndex;
-        words[0] = entries[entryIndex].w == -1 ? 0 : (u32)entries[entryIndex].x;
-        words[1] = entries[entryIndex].w == -1 ? 0 : (u32)entries[entryIndex].y;
-        words[2] = entries[entryIndex].w == -1 ? 0 : (u32)entries[entryIndex].z;
-        words[3] = (u32)entries[entryIndex].w;
+        words[0] = entries[entryIndex].cellIndex == -1
+                       ? 0
+                       : (u32)entries[entryIndex].x;
+        words[1] = entries[entryIndex].cellIndex == -1
+                       ? 0
+                       : (u32)entries[entryIndex].y;
+        words[2] = entries[entryIndex].cellIndex == -1
+                       ? 0
+                       : (u32)entries[entryIndex].z;
+        words[3] = (u32)entries[entryIndex].cellIndex;
         for (wordIndex = 0; wordIndex < 4; wordIndex++) {
             int byteIndex;
             for (byteIndex = 0; byteIndex < 4; byteIndex++) {
@@ -182,7 +188,7 @@ static const char *g_SmokeCaptureDirectory;
 static FILE *g_SmokeCaptureManifest;
 
 static void SmokeWriteVisibleCells(const char *captureDirectory,
-                                       int frameNumber) {
+                                   int frameNumber) {
     char path[1024];
     FILE *file;
     int index;
@@ -194,12 +200,15 @@ static void SmokeWriteVisibleCells(const char *captureDirectory,
     fprintf(file, "visible-frame frame=%d scene=%d timer=%d\n",
             frameNumber, g_SceneId, g_SceneTimer);
     for (index = 0; index < 64; index++) {
-        const Vec4 *mainEntry = &g_MainVisibleCellList[index];
-        const Vec4 *mirrorEntry = &g_MirrorVisibleCellList[index];
+        const VisibleTerrainCell *mainEntry = &g_MainVisibleCellList[index];
+        const VisibleTerrainCell *mirrorEntry =
+            &g_MirrorVisibleCellList[index];
         fprintf(file, "visible-cell %d=%d,%d,%d,%d\n", index,
-                mainEntry->x, mainEntry->y, mainEntry->z, mainEntry->w);
+                mainEntry->x, mainEntry->y, mainEntry->z,
+                mainEntry->cellIndex);
         fprintf(file, "mirror-cell %d=%d,%d,%d,%d\n", index,
-                mirrorEntry->x, mirrorEntry->y, mirrorEntry->z, mirrorEntry->w);
+                mirrorEntry->x, mirrorEntry->y, mirrorEntry->z,
+                mirrorEntry->cellIndex);
     }
     for (index = 0; index < 32; index++) {
         fprintf(file, "visible-mask %d=%08x\n", index,

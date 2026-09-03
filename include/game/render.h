@@ -763,7 +763,7 @@ void RestoreColorMatrix(void);
 s32 rsin(s32 angle);
 s32 rcos(s32 angle);
 void ApplyMatrixLV(const Matrix *matrix, const s32 *input, s32 *output);
-void SubmitTerrainCells(void *ctx, void *cells, s32 count);
+void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, s32 count);
 void SetTrackTexturePageNow(s32 trackSection);
 
 extern Rect g_TrackTextureRowRect;
@@ -776,7 +776,7 @@ extern GameSpriteDesc g_RaceHudSpriteDescsTimeTrial[];
 extern Matrix g_CameraMatrixSaved;
 extern s32 g_MenuRowFlashLevels[];
 extern s32 g_MenuCursorPulsePhase;
-extern Vec4 g_MirrorVisibleCellList[];
+extern VisibleTerrainCell g_MirrorVisibleCellList[];
 extern u32 g_MirrorVisibleCellMask[];
 extern u8 g_TrackTextureShadowPage[256];
 extern s16 g_AtanTable[];
