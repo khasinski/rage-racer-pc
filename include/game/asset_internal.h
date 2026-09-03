@@ -9,6 +9,13 @@ extern TeamLogoSample *g_TeamLogoSampleData;
 extern char g_TextNowLoading[];
 extern s32 g_AssetLoadFailed;
 
+static inline s32 AssetPayloadOffsetIsValid(s32 offset,
+                                            size_t payloadOffset,
+                                            size_t size) {
+    return offset >= 0 && offset % (s32)sizeof(s32) == 0 &&
+           (size_t)offset >= payloadOffset && (size_t)offset < size;
+}
+
 /* Writable bytes remaining in the port-owned buffer containing `at`. */
 size_t PortAssetRoomAt(const void *at);
 
