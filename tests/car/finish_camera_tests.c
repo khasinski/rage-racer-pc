@@ -90,7 +90,7 @@ static int RunCase(s32 cameraPoint, s32 backwards, s32 expectedPoint) {
         g_CameraCarStepX != 256 || g_CameraCarStepZ != 512 ||
         g_CameraCar.x != 101 || g_CameraCarZ != 302 ||
         g_RenderState.viewX != 101 || g_RenderState.viewY != 136 ||
-        g_RenderState.viewZ != 300 || g_RenderState.reserved14 != 400 ||
+        g_RenderState.viewZ != 300 || g_RenderState.viewParameter != 400 ||
         g_RenderState.viewAngleX != 0x100 ||
         g_RenderState.viewAngleY != 0x200 ||
         g_RenderState.viewAngleZ != 0 ||

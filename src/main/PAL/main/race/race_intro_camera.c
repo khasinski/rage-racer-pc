@@ -28,7 +28,7 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
         g_RenderState.viewX = key->x.word;
         g_RenderState.viewY = key->y.word;
         g_RenderState.viewZ = key->z.word;
-        g_RenderState.reserved14 = key->mode;
+        g_RenderState.viewParameter = key->mode;
         g_RaceIntroCameraDelta.vx = key[1].x.half.value - key[0].x.half.value;
         g_RaceIntroCameraDelta.vy = key[1].y.half.value - key[0].y.half.value;
         g_RaceIntroCameraDelta.vz = key[1].z.half.value - key[0].z.half.value;
@@ -92,7 +92,7 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
         viewWork.x = car->x;
         viewWork.y = car->y - INTRO_CAR_VIEW_HEIGHT;
         viewWork.z = car->z;
-        viewWork.reserved = car->positionW;
+        viewWork.parameter = car->positionW;
         viewWork.angleX = car->bodyPitch;
         viewWork.angleY = car->bodyYaw;
         viewWork.angleZ = car->bodyRoll;

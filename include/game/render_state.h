@@ -23,7 +23,7 @@ typedef struct GameRenderState {
     s32 viewX;
     s32 viewY;
     s32 viewZ;
-    s32 reserved14;
+    s32 viewParameter;
     s32 viewAngleX;
     s32 viewAngleY;
     s32 viewAngleZ;
@@ -88,7 +88,9 @@ typedef union GameViewPosition {
 
 typedef struct GameViewState {
     GameViewPosition position;
-    s32 reserved14;
+    /* Fourth camera-source word. Its meaning belongs to the active source:
+     * car position W, node blend/distance, or an intro key mode. */
+    s32 parameter;
     s32 angleX;
     s32 angleY;
     s32 angleZ;
@@ -107,7 +109,7 @@ typedef struct GameViewWork {
     s32 x;
     s32 y;
     s32 z;
-    s32 reserved;
+    s32 parameter;
     s32 angleX;
     s32 angleY;
     s32 angleZ;
@@ -202,7 +204,7 @@ static inline void LoadViewWork(GameViewWork *view) {
     view->x = g_RenderState.viewX;
     view->y = g_RenderState.viewY;
     view->z = g_RenderState.viewZ;
-    view->reserved = g_RenderState.reserved14;
+    view->parameter = g_RenderState.viewParameter;
     view->angleX = g_RenderState.viewAngleX;
     view->angleY = g_RenderState.viewAngleY;
     view->angleZ = g_RenderState.viewAngleZ;
@@ -213,7 +215,7 @@ static inline void StoreViewWork(const GameViewWork *view) {
     g_RenderState.viewX = view->x;
     g_RenderState.viewY = view->y;
     g_RenderState.viewZ = view->z;
-    g_RenderState.reserved14 = view->reserved;
+    g_RenderState.viewParameter = view->parameter;
     g_RenderState.viewAngleX = view->angleX;
     g_RenderState.viewAngleY = view->angleY;
     g_RenderState.viewAngleZ = view->angleZ;

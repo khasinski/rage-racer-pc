@@ -45,7 +45,7 @@ void UpdateFinishCamera(PlayerCarRuntime *car) {
     viewWork.x = g_CameraCar.x;
     viewWork.y = g_CameraCar.y - 64;
     viewWork.z = g_CameraCar.z;
-    viewWork.reserved = g_CameraCar.positionW;
+    viewWork.parameter = g_CameraCar.positionW;
 
     delta[0] = obj->x - viewWork.x;
     delta[1] = obj->y - viewWork.y;

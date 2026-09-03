@@ -27,7 +27,7 @@ void CameraLoadViewPositionFromCar(GameViewWork *view,
     view->x = car->x;
     view->y = car->y;
     view->z = car->z;
-    view->reserved = car->positionW;
+    view->parameter = car->positionW;
 }
 
 void CameraLoadViewPoseFromCar(GameViewWork *view,

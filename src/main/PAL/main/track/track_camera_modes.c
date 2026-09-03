@@ -56,7 +56,7 @@ void CameraViewFromBlendedNode(GameRenderObject *car, GameViewWork *view,
     view->x = chaseNode->data.world.x;
     view->y = chaseNode->data.world.y;
     view->z = chaseNode->data.world.z;
-    view->reserved = chaseNode->data.world.blend;
+    view->parameter = chaseNode->data.world.blend;
     CameraBuildCarRotation(&objectRotation, car);
     TransposeMatrix(&objectRotation, &inverseObjectRotation);
     /* The point on the car the node looks at, in the car's frame and
@@ -239,7 +239,7 @@ void CameraViewFromSlidingNode(GameRenderObject *car, GameViewWork *view,
     view->x = orbitNode->data.world.x;
     view->y = orbitNode->data.world.y;
     view->z = orbitNode->data.world.z;
-    view->reserved = orbitNode->data.orientation.distance;
+    view->parameter = orbitNode->data.orientation.distance;
     if (nodeChanged || g_CameraModePrev != TRACK_CAMERA_SLIDING_NODE) {
         g_CamPathFrame = 0;
     } else if (g_CamPathFrame <
