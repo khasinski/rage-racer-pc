@@ -45,15 +45,8 @@ static void SetupMenuViewCamera(s32 pitch, s32 yaw) {
 }
 
 static s32 AdvanceMenuViewOffset(void) {
-    s32 delta = g_MenuViewOffsetTarget - g_MenuViewOffset;
-    s32 step = 0;
-
-    if (delta > 0) {
-        step = (250008 - delta) / 8;
-    } else if (delta < 0) {
-        step = (delta - 12) / 12;
-    }
-    g_MenuViewOffset += step;
+    g_MenuViewOffset = AdvanceMenuViewOffsetValue(
+        g_MenuViewOffset, g_MenuViewOffsetTarget);
     return g_MenuViewOffset / 1000;
 }
 

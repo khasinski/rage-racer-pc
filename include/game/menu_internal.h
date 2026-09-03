@@ -51,6 +51,22 @@ static inline s32 MenuWrapAngle(s32 angle, s32 period) {
     return (s32)(wrapped - half);
 }
 
+static inline s32 AdvanceMenuViewOffsetValue(s32 current, s32 target) {
+    int64_t delta = (int64_t)target - current;
+    int64_t step = 0;
+    int64_t next;
+
+    if (delta > 0) {
+        step = (250008 - delta) / 8;
+    } else if (delta < 0) {
+        step = (delta - 12) / 12;
+    }
+    next = (int64_t)current + step;
+    if (next < INT32_MIN) return INT32_MIN;
+    if (next > INT32_MAX) return INT32_MAX;
+    return (s32)next;
+}
+
 typedef enum MenuDialogAction {
     MENU_DIALOG_NO_ACTION,
     MENU_DIALOG_CONFIRM,
