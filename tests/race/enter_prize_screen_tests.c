@@ -88,5 +88,27 @@ int main(void) {
     Check("shared finale has no promotion bonus", g_PromotionBonus, 0);
     Check("zero bonus still has a progressing step", g_BonusCountStep, 1);
 
+    Reset();
+    g_GrandPrixClass = -1;
+    g_ClassPromoted = 1;
+    g_PlayerCar.drive.racePosition = 1;
+    EnterPrizeScreen();
+    Check("negative class earns no prize", g_PrizeAmount, 0);
+    Check("negative class earns no promotion bonus", g_PromotionBonus, 0);
+
+    Reset();
+    g_GrandPrixClass = GRAND_PRIX_PRIZE_CLASS_COUNT;
+    g_PlayerCar.drive.racePosition = 1;
+    EnterPrizeScreen();
+    Check("class past prize table earns no prize", g_PrizeAmount, 0);
+
+    Reset();
+    g_RaceProgress = NULL;
+    g_PlayerCar.drive.racePosition = 1;
+    g_PrizeMoney.values[0][0][PRIZE_PLACE_FIRST] = 1234;
+    EnterPrizeScreen();
+    Check("missing progress still prepares the scene", g_SceneId, 0x13);
+    Check("missing progress cannot start a payout", g_PrizeAmount, 0);
+
     return s_failures != 0;
 }

@@ -55,7 +55,8 @@ s32 PrizeCountStep(s32 amount, s32 frameCount) {
 
 s32 PromotionBonusForClass(const s32 *bonuses, s32 bonusCount,
                            s32 classIndex, s32 promoted) {
-    if (!promoted || classIndex < 0 || classIndex >= bonusCount) {
+    if (!promoted || bonuses == NULL || classIndex < 0 ||
+        classIndex >= bonusCount) {
         return 0;
     }
     return bonuses[classIndex];
@@ -65,7 +66,7 @@ s32 PrizeForRacePosition(const s32 *prizes, s32 prizeCount,
                          s32 racePosition) {
     s32 prizeIndex = racePosition - 1;
 
-    if (prizeIndex < 0 || prizeIndex >= prizeCount) {
+    if (prizes == NULL || prizeIndex < 0 || prizeIndex >= prizeCount) {
         return 0;
     }
     return prizes[prizeIndex];

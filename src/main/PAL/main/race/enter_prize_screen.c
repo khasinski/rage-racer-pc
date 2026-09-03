@@ -12,17 +12,23 @@ enum {
 };
 
 void EnterPrizeScreen(void) {
+    static const s32 noPrizes[PRIZE_PLACE_COUNT] = {0};
     s32 courseIndex;
     s32 classIndex;
-    const s32 *prizes;
+    const s32 *prizes = noPrizes;
 
     g_SceneTimer = PRIZE_SCREEN_INITIAL_TIMER;
     g_FrameSyncThreshold = PRIZE_SCREEN_FRAME_SYNC_THRESHOLD;
-    g_RaceProgress->money = ClampPrizeMoney(g_RaceProgress->money);
+    if (g_RaceProgress != NULL) {
+        g_RaceProgress->money = ClampPrizeMoney(g_RaceProgress->money);
+    }
 
     courseIndex = SeriesCourseIndex();
     classIndex = g_GrandPrixClass;
-    prizes = g_PrizeMoney.values[courseIndex][classIndex];
+    if (g_RaceProgress != NULL &&
+        (u32)classIndex < GRAND_PRIX_PRIZE_CLASS_COUNT) {
+        prizes = g_PrizeMoney.values[courseIndex][classIndex];
+    }
     g_PrizeScreenState = PRIZE_SCREEN_STATE_INTRO_FADE_IN;
     g_PrizeAmount = PrizeForRacePosition(
         prizes, PRIZE_PLACE_COUNT, g_PlayerCar.drive.racePosition);

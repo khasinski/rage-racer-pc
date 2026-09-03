@@ -10,13 +10,16 @@ typedef enum GrandPrixPrizePlace {
     PRIZE_PLACE_COUNT
 } GrandPrixPrizePlace;
 
-enum { RACE_MAX_PRIZE_MONEY = 999999999 };
+enum {
+    GRAND_PRIX_PRIZE_CLASS_COUNT = 6,
+    RACE_MAX_PRIZE_MONEY = 999999999,
+};
 
 s32 ClampPrizeMoney(s32 money);
 s32 CreditPrizeMoney(s32 balance, s32 amount);
 
 typedef struct GrandPrixPrizeTable {
-    s32 values[4][6][PRIZE_PLACE_COUNT];
+    s32 values[4][GRAND_PRIX_PRIZE_CLASS_COUNT][PRIZE_PLACE_COUNT];
 } GrandPrixPrizeTable;
 
 typedef struct RagePrizeMoneyRawStorage {
