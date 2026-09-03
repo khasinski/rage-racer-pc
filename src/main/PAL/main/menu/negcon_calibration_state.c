@@ -19,7 +19,7 @@ void BeginNegconCalibration(void) {
     g_ControllerSceneAngleX = 0;
     g_PadConfigFlipTimer = 0;
     g_PadConfigFlipPhase = 0;
-    g_GameMode = 9;
+    g_GameMode = OPTION_MODE_NEGCON_NEUTRAL;
 }
 
 void RestoreNegconCalibrationSettings(void) {
@@ -35,7 +35,7 @@ void UpdateNegconNeutralScreen(void) {
     g_AnimTimer++;
     if (g_PadPressed & PAD_START) {
         PlaySoundCue(2);
-        g_GameMode = 10;
+        g_GameMode = OPTION_MODE_NEGCON_STEER_PLAY;
         g_NegconSteerNeutral = g_NegconAxisSteer - 128;
         g_NegconNeutralI = g_NegconAxisI;
         g_NegconNeutralII = g_NegconAxisII;
@@ -43,7 +43,7 @@ void UpdateNegconNeutralScreen(void) {
     }
     if (g_PadType != PAD_TYPE_NEGCON) {
         RestoreNegconCalibrationSettings();
-        g_GameMode = 1;
+        g_GameMode = OPTION_MODE_ROOT;
     }
     DrawNegconNeutralScreen();
     DrawOptionHintBar(4);

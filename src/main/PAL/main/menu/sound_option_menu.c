@@ -9,9 +9,6 @@ enum {
     SOUND_OPTION_SFX = 1,
     SOUND_OPTION_OUTPUT = 2,
     SOUND_OPTION_EXIT = 3,
-    OPTION_MODE_ROOT = 1,
-    OPTION_MODE_SOUND_MENU = 4,
-    OPTION_MODE_SOUND_EDIT = 5,
 };
 
 static void DrawOutputModeChoice(GameOrderingTableEntry *ot, u8 **next, s32 selected,

@@ -48,6 +48,7 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 
 #include "psyq/cd_types.h"
 #include "game/render_state.h"
+#include "game/state.h"
 #include "game/fmv.h"
 #include "game/records_internal.h"
 #include "game/replay_internal.h"
@@ -206,7 +207,7 @@ void UpdateAttractDemoScene(void);
 void EnterPrologue(void);
 void TickPrologueStep(void);
 void UpdateEndingStill(void);
-void (*g_NativeGameModeHandlers[13])(void) = {
+void (*g_NativeGameModeHandlers[OPTION_MODE_COUNT])(void) = {
     UpdateOptionMenuFade,
     UpdateOptionRootMenu,
     UpdateClassRecordMenu,
@@ -219,7 +220,6 @@ void (*g_NativeGameModeHandlers[13])(void) = {
     UpdateNegconNeutralScreen,
     UpdateNegconSteerPlayScreen,
     UpdateNegconMaxTwistScreen,
-    NULL,
 };
 void (*g_SceneHandlers[40])(void) = {
     [1] = UpdateBootLogoScene,
@@ -872,7 +872,7 @@ MATRIX *MulMatrix0(MATRIX *left, MATRIX *right, MATRIX *output) {
 
 void BiosBuInit(void) { _bu_init(); }
 VOID_ADAPTER(BiosExit)
-VOID_ADAPTER(BiosSetMemSize)
+void BiosSetMemSize(s32 megabytes) { (void)megabytes; }
 VOID_ADAPTER(KernelCallbackSlot3)
 VOID_ADAPTER(SetDMAInterruptState)
 VOID_ADAPTER(StCdInterrupt)

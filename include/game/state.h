@@ -70,9 +70,25 @@ enum PadButton {
 
 /* Current top-level game mode; indexes g_GameModeHandlers, dispatched each
  * frame by UpdateOptionScene. */
+typedef enum OptionMode {
+    OPTION_MODE_FADE,
+    OPTION_MODE_ROOT,
+    OPTION_MODE_CLASS_MENU,
+    OPTION_MODE_CLASS_BROWSE,
+    OPTION_MODE_SOUND_MENU,
+    OPTION_MODE_SOUND_EDIT,
+    OPTION_MODE_SCREEN_ADJUST,
+    OPTION_MODE_CONTROLLER_CONFIG,
+    OPTION_MODE_NEGCON_BEGIN,
+    OPTION_MODE_NEGCON_NEUTRAL,
+    OPTION_MODE_NEGCON_STEER_PLAY,
+    OPTION_MODE_NEGCON_MAX_TWIST,
+    OPTION_MODE_COUNT,
+} OptionMode;
+
 extern s32 g_GameMode;
 #define g_GameModeHandlers g_NativeGameModeHandlers
-extern void (*g_GameModeHandlers[])(void);
+extern void (*g_GameModeHandlers[OPTION_MODE_COUNT])(void);
 
 /* Boot the game and run frames until the host requests shutdown. */
 void MainLoop(void);

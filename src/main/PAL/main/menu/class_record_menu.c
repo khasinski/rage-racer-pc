@@ -12,7 +12,7 @@ void DrawClassRecordDetail(void) {
     s32 y = 0x38;
     s32 i;
 
-    if (g_GameMode == 3) {
+    if (g_GameMode == OPTION_MODE_CLASS_BROWSE) {
         next = AddTilePrim(GamePrimaryOrderingTable(53), next,
                           g_ClassRecordCellPoints[idx].vx - 2, g_ClassRecordCellPoints[idx].vy - 4,
                           0x24, 0x58, 0x89, 0xFF, 0x76);
@@ -121,13 +121,13 @@ void UpdateClassRecordMenu(void) {
     if (buttons & PAD_CONFIRM) {
         PlaySoundCue(2);
         if (g_ClassRecordMenuCursor != 0) {
-            g_GameMode = 1;
+            g_GameMode = OPTION_MODE_ROOT;
         } else {
-            g_GameMode = 3;
+            g_GameMode = OPTION_MODE_CLASS_BROWSE;
         }
     } else if (buttons & PAD_CANCEL) {
         PlaySoundCue(3);
-        g_GameMode = 1;
+        g_GameMode = OPTION_MODE_ROOT;
     }
 
     DrawClassRecordDetail();
@@ -164,7 +164,7 @@ void UpdateClassRecordBrowse(void) {
     }
     if (g_PadPressed & (PAD_CONFIRM | PAD_CANCEL)) {
         PlaySoundCue(2);
-        g_GameMode = 2;
+        g_GameMode = OPTION_MODE_CLASS_MENU;
     }
     DrawClassRecordDetail();
 }

@@ -1044,6 +1044,25 @@ target_link_libraries(screen_adjust_tests PRIVATE psyz)
 add_test(NAME screen_adjust COMMAND screen_adjust_tests)
 set_tests_properties(screen_adjust PROPERTIES LABELS functional)
 
+add_executable(option_scene_tests
+    option_scene_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/option_scene.c)
+target_include_directories(option_scene_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(option_scene_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(option_scene_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(option_scene_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME option_scene COMMAND option_scene_tests)
+set_tests_properties(option_scene PROPERTIES LABELS unit)
+
 add_executable(option_root_menu_tests
     option_root_menu_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/option_root_menu.c)

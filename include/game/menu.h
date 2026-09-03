@@ -616,6 +616,7 @@ s32 DrawClassChangeCurtain(s32 step);
 void DrawClassRecordDetail(void);
 void DrawClassRecordGrid(void);
 void DrawOptionSceneOverlay(void);
+void UpdateOptionScene(void);
 s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index);
 void DrawScreenAdjustScreen(void);
 void DrawTeamNameCharModel(void);

@@ -2,8 +2,6 @@
 #include "game/prim.h"
 #include "game/render_internal.h"
 
-enum { OPTION_MODE_SCREEN_ADJUST = 6, OPTION_MODE_NEGCON_NEUTRAL = 9 };
-
 void DrawOptionSceneOverlay(void) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(54);
     s32 targetHeight = g_GameMode == OPTION_MODE_SCREEN_ADJUST ? 0x1E0 : 0xF0;
@@ -44,6 +42,9 @@ void UpdateOptionScene(void) {
     g_SceneTimer++;
     if (g_SceneTimer == 2) {
         SetDispMask(1);
+    }
+    if ((u32)g_GameMode >= OPTION_MODE_COUNT) {
+        g_GameMode = OPTION_MODE_ROOT;
     }
     g_GameModeHandlers[g_GameMode]();
     DrawOptionSceneOverlay();

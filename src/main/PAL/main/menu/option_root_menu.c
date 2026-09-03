@@ -36,7 +36,7 @@ void DrawOptionRootMenu(void) {
     }
     g_RenderState.packetCursor = QueueDrawModePrim(ot, next, 0x3F);
 
-    if (g_GameMode == 1) {
+    if (g_GameMode == OPTION_MODE_ROOT) {
         DrawMenuCursorArrow(0x14, g_OptionMenuCursor * 0x20 + 0x94);
     }
 }
@@ -74,24 +74,24 @@ void UpdateOptionRootMenu(void) {
         PlaySoundCue(2);
         switch (g_OptionMenuCursor) {
         case 0:
-            g_GameMode = 2;
+            g_GameMode = OPTION_MODE_CLASS_MENU;
             g_ClassRecordMenuCursor = 0;
             g_ScreenOffsetEditX = 0;
             g_ScreenOffsetEditY = 0;
             break;
         case 1:
             BeginControllerConfig();
-            g_GameMode = 7;
+            g_GameMode = OPTION_MODE_CONTROLLER_CONFIG;
             break;
         case 2:
-            g_GameMode = 4;
+            g_GameMode = OPTION_MODE_SOUND_MENU;
             g_SoundOptionCursor = 0;
             break;
         case 3:
             StartRandomOptionRace();
             break;
         case 4:
-            g_GameMode = 6;
+            g_GameMode = OPTION_MODE_SCREEN_ADJUST;
             g_ScreenOffsetEditX = g_ScreenOffsetX.value;
             g_ScreenOffsetEditY = g_ScreenOffsetY.value;
             break;

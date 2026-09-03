@@ -22,7 +22,7 @@ void DrawFullscreenFadeTile480(s32 color, s32 tpage) {
 /* Arms the fade-out that leaves the setup menu for scene `scene`. */
 void StartOptionMenuExit(u32 scene) {
     g_OptionMenuExitScene = scene;
-    g_GameMode = 0;
+    g_GameMode = OPTION_MODE_FADE;
     g_FadeStep = 8;
 }
 
@@ -32,7 +32,7 @@ void UpdateOptionMenuFade(void) {
 
     if (g_FadeLevel < 0) {
         g_FadeStep = 0;
-        g_GameMode = 1;
+        g_GameMode = OPTION_MODE_ROOT;
     } else if (g_FadeLevel >= 0x101) {
         g_SceneId = g_OptionMenuExitScene;
     }

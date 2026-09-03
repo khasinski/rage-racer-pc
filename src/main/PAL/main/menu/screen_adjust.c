@@ -4,7 +4,6 @@
 #include "game/render_internal.h"
 
 enum {
-    OPTION_MODE_ROOT = 1,
     SCREEN_OFFSET_MIN_X = -11,
     SCREEN_OFFSET_MAX_X = 32,
     SCREEN_OFFSET_MIN_Y = -32,

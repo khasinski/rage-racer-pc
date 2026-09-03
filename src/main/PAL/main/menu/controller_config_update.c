@@ -43,7 +43,7 @@ void UpdateControllerConfigScreen(void) {
     g_SetupArrowPulse += 96;
     if (pressed & PAD_CANCEL) {
         PlaySoundCue(3);
-        g_GameMode = 1;
+        g_GameMode = OPTION_MODE_ROOT;
         g_PadMappingIndex = g_PadMappingIndexSaved;
         g_NegconMappingIndex = g_NegconMappingIndexSaved;
     }
@@ -51,9 +51,9 @@ void UpdateControllerConfigScreen(void) {
         PlaySoundCue(2);
         LoadPadButtonMapping(g_PadMappingIndex, g_NegconMappingIndex);
         if (g_PadType == PAD_TYPE_NEGCON && (pressed & PAD_START)) {
-            g_GameMode = 8;
+            g_GameMode = OPTION_MODE_NEGCON_BEGIN;
         } else {
-            g_GameMode = 1;
+            g_GameMode = OPTION_MODE_ROOT;
         }
     }
     UpdateControllerMappingSelection(pressed);

@@ -21,7 +21,7 @@ static void AdjustCalibrationValue(NegconCalibrationValue *value) {
 
 static void FinishCalibrationFrame(void (*drawScreen)(void)) {
     if (g_PadType != PAD_TYPE_NEGCON) {
-        g_GameMode = 1;
+        g_GameMode = OPTION_MODE_ROOT;
         RestoreNegconCalibrationSettings();
     }
     g_ControllerSceneAngleX = CONTROLLER_SCENE_ANGLE_X;
@@ -35,11 +35,11 @@ void UpdateNegconSteerPlayScreen(void) {
     g_SetupArrowPulse += 96;
     if (g_PadPressed & PAD_CANCEL) {
         PlaySoundCue(3);
-        g_GameMode = 1;
+        g_GameMode = OPTION_MODE_ROOT;
         RestoreNegconCalibrationSettings();
     } else if (g_PadPressed & PAD_CONFIRM) {
         PlaySoundCue(2);
-        g_GameMode = 11;
+        g_GameMode = OPTION_MODE_NEGCON_MAX_TWIST;
     }
     AdjustCalibrationValue(&g_NegconSteerPlay);
     FinishCalibrationFrame(DrawNegconSteerPlayScreen);
@@ -49,11 +49,11 @@ void UpdateNegconMaxTwistScreen(void) {
     g_AnimTimer++;
     if (g_PadPressed & PAD_CANCEL) {
         PlaySoundCue(3);
-        g_GameMode = 1;
+        g_GameMode = OPTION_MODE_ROOT;
         RestoreNegconCalibrationSettings();
     } else if (g_PadPressed & PAD_CONFIRM) {
         PlaySoundCue(2);
-        g_GameMode = 1;
+        g_GameMode = OPTION_MODE_ROOT;
     }
     AdjustCalibrationValue(&g_NegconMaxTwist);
     FinishCalibrationFrame(DrawNegconMaxTwistScreen);
