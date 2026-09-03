@@ -22,7 +22,7 @@ char g_CaptionLapTime[8] __attribute__((aligned(16))) = "hfgi";
 char g_CaptionPrizeMoney[8] __attribute__((aligned(16))) = "hci";
 char g_FmtMoney[8] __attribute__((aligned(16))) = "%dv";
 char g_CaptionTotalMoney[8] __attribute__((aligned(16))) = "hebi";
-char g_CaptionPromotionBonus[40] __attribute__((aligned(16))) = {0x68,0x6a,0x69,0x00,0x44,0x0e,0x02,0x80,0x90,0x0e,0x02,0x80,0xc8,0x0e,0x02,0x80,0x10,0x0f,0x02,0x80,0x54,0x0f,0x02,0x80,0x44,0x10,0x02,0x80,0x74,0x10,0x02,0x80,0x30,0x11,0x02,0x80,0x90,0x11,0x02,0x80};
+char g_CaptionPromotionBonus[] __attribute__((aligned(16))) = "hji";
 char g_CaptionLostRace[24] __attribute__((aligned(16))) = "h L O S T  R A C E i";
 char g_TextTryAgain[12] __attribute__((aligned(16))) = "TRY AGAIN";
 char g_TextEndRace[12] __attribute__((aligned(16))) = "END RACE";
@@ -30,52 +30,14 @@ char g_TextChance[8] __attribute__((aligned(16))) = "CHANCE";
 char g_TextPressStart[20] __attribute__((aligned(16))) = "PRESS START BUTTON";
 char g_FmtLapTime[16] __attribute__((aligned(16))) = "%1d'%02d\"%03d";
 char g_TextTimeAttack[12] __attribute__((aligned(16))) = "TIME ATTACK";
-char g_TextCourseIn[192] __attribute__((aligned(16))) =
-    "COURSE IN\0\0\0"
-    "5TH\0"
-    "4TH\0"
-    "3RD\0"
-    "2ND\0"
-    "1ST\0"
-    "SQUALDON\0\0\0\0"
-    "BULSHADE\0\0\0\0"
-    "VAINQURE\0\0\0\0"
-    "GHEPARDO\0\0\0\0"
-    "ISTANTE\0"
-    "FATALITA\0\0\0\0"
-    "HIJACK\0\0"
-    "BAYONET\0"
-    "ACCERON\0"
-    "ESPERANZA\0\0\0"
-    "PEGASE\0\0"
-    "ABEILLE\0"
-    "ERRISO\0\0"
-    "ASSOLUTE\0\0\0\0"
-    "LIZARD\0\0"
-    "GNADE\0\0\0"
-    "AGE";
+char g_TextCourseIn[] __attribute__((aligned(16))) = "COURSE IN";
 char g_CaptionLapTime2[8] __attribute__((aligned(16))) = "hfgi";
 char g_CaptionRanking2[8] __attribute__((aligned(16))) = "hai";
 char g_FmtRecordName[8] __attribute__((aligned(16))) = "/%s/%s";
 char g_FmtCarName[8] __attribute__((aligned(16))) = "/%s";
 char g_CaptionTotalTime2[8] __attribute__((aligned(16))) = "hegi";
 unsigned char g_NameEntryCharset[96] __attribute__((aligned(16))) = {0x30,0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0x20,0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,0x4a,0x4b,0x4c,0x4d,0x4e,0x4f,0x50,0x51,0x52,0x53,0x54,0x55,0x56,0x57,0x58,0x59,0x5a,0x2e,0x2d,0x21,0x3f,0x40,0x00,0x00,0xe0,0x27,0x02,0x80,0x98,0x28,0x02,0x80,0x38,0x2b,0x02,0x80,0x70,0x2b,0x02,0x80,0x0c,0x2c,0x02,0x80,0x00,0x2e,0x02,0x80,0x74,0x2e,0x02,0x80,0x4c,0x3e,0x02,0x80,0x78,0x3e,0x02,0x80,0x94,0x3e,0x02,0x80,0xb0,0x3e,0x02,0x80,0x88,0x3f,0x02,0x80,0xcc,0x3f,0x02,0x80};
-char g_TextNowLoading[436] __attribute__((aligned(16))) =
-    "NOW LOADING\0"
-    "RAGE RACER!\0"
-    "CAN ONLY BE ONE ULTIMATE...\0"
-    "WORLD IS THEIR SPEEDWAY; BUT THERE\0\0"
-    "FOR THESE ELITE FEW, THE WHOLE\0\0"
-    "FOR VICTORY.\0\0\0\0"
-    "AND SHARE AN OVERWHELMING DESIRE\0\0\0\0"
-    "ARE FUELED BY THE RUSH OF SPEED;\0\0\0\0"
-    "THE BURNING FIRE OF COMPETITION;\0\0\0\0"
-    "THEMSELVES TO THE LIMIT. THEY FEED ON\0\0\0"
-    "EDGE; PUSHING BOTH THEIR CARS AND\0\0\0"
-    "THEY LIVE DANGEROUSLY CLOSE TO THE\0\0"
-    "AS RAGE RACERS.\0"
-    "OR HOW ITS DRIVERS BECAME KNOWN\0"
-    "NO ONE KNOWS HOW THE RACE BEGAN";
+char g_TextNowLoading[] __attribute__((aligned(16))) = "NOW LOADING";
 char g_MsgGameExit[12] __attribute__((aligned(16))) = "game_exit\n";
 char g_MsgGame0Ok[12] __attribute__((aligned(16))) = "game0 ok\n";
 s32 g_PromotionBonusTable[5] __attribute__((aligned(16))) = {

@@ -1,5 +1,9 @@
 #include "../../src/port/host_state_menu.c"
 
+_Static_assert(sizeof(g_MsgNegconMaxTwist) == sizeof("Maximum twist."),
+               "NeGcon caption must not absorb adjacent retail data");
+_Static_assert(sizeof(g_CaptionBestLapTime) == sizeof("hfdi"),
+               "lap-time caption must not absorb the BGM name table");
 _Static_assert(sizeof(g_CarPriceTable) == 128,
                "g_CarPriceTable ABI size changed");
 _Static_assert(sizeof(g_CarTuneUpPriceTable) == 124,

@@ -65,14 +65,14 @@ extern char g_MsgControllerError[20];
 extern char g_MsgNegconUntwistedLine1[36];
 extern char g_MsgNegconUntwistedLine2[36];
 extern char g_MsgNegconSteerPlay[12];
-extern char g_MsgNegconMaxTwist[2640];
+extern char g_MsgNegconMaxTwist[];
 extern char g_FmtRound[16];
 extern char g_CaptionPrizeMoney2[8];
 extern char g_FmtPrize1st[12];
 extern char g_FmtPrize2nd[12];
 extern char g_FmtPrize3rd[12];
 extern char g_CaptionBestTotalTime[8];
-extern char g_CaptionBestLapTime[188];
+extern char g_CaptionBestLapTime[];
 extern char g_TextResult[8];
 extern char g_FmtClassGrandPrix[24];
 extern char g_FmtRoundIn[12];
@@ -82,7 +82,7 @@ extern char g_CaptionLapTime[8];
 extern char g_CaptionPrizeMoney[8];
 extern char g_FmtMoney[8];
 extern char g_CaptionTotalMoney[8];
-extern char g_CaptionPromotionBonus[40];
+extern char g_CaptionPromotionBonus[];
 extern char g_CaptionLostRace[24];
 extern char g_TextTryAgain[12];
 extern char g_TextEndRace[12];
@@ -90,14 +90,14 @@ extern char g_TextChance[8];
 extern char g_TextPressStart[20];
 extern char g_FmtLapTime[16];
 extern char g_TextTimeAttack[12];
-extern char g_TextCourseIn[192];
+extern char g_TextCourseIn[];
 extern char g_CaptionLapTime2[8];
 extern char g_CaptionRanking2[8];
 extern char g_FmtRecordName[8];
 extern char g_FmtCarName[8];
 extern char g_CaptionTotalTime2[8];
 extern unsigned char g_NameEntryCharset[96];
-extern char g_TextNowLoading[436];
+extern char g_TextNowLoading[];
 extern unsigned char g_MsgResOk[8];
 extern unsigned char g_MsgEventOk[12];
 extern unsigned char g_MsgGameExit[12];
@@ -243,14 +243,14 @@ static const HostStateBlob s_blobs[] = {
     {"g_MsgNegconUntwistedLine1", BYTES(g_MsgNegconUntwistedLine1), 36},
     {"g_MsgNegconUntwistedLine2", BYTES(g_MsgNegconUntwistedLine2), 36},
     {"g_MsgNegconSteerPlay", BYTES(g_MsgNegconSteerPlay), 12},
-    {"g_MsgNegconMaxTwist", BYTES(g_MsgNegconMaxTwist), 2640},
+    {"g_MsgNegconMaxTwist", BYTES(g_MsgNegconMaxTwist), 15},
     {"g_FmtRound", BYTES(g_FmtRound), 16},
     {"g_CaptionPrizeMoney2", BYTES(g_CaptionPrizeMoney2), 8},
     {"g_FmtPrize1st", BYTES(g_FmtPrize1st), 12},
     {"g_FmtPrize2nd", BYTES(g_FmtPrize2nd), 12},
     {"g_FmtPrize3rd", BYTES(g_FmtPrize3rd), 12},
     {"g_CaptionBestTotalTime", BYTES(g_CaptionBestTotalTime), 8},
-    {"g_CaptionBestLapTime", BYTES(g_CaptionBestLapTime), 188},
+    {"g_CaptionBestLapTime", BYTES(g_CaptionBestLapTime), 5},
     {"g_TextResult", BYTES(g_TextResult), 8},
     {"g_FmtClassGrandPrix", BYTES(g_FmtClassGrandPrix), 24},
     {"g_FmtRoundIn", BYTES(g_FmtRoundIn), 12},
@@ -260,7 +260,7 @@ static const HostStateBlob s_blobs[] = {
     {"g_CaptionPrizeMoney", BYTES(g_CaptionPrizeMoney), 8},
     {"g_FmtMoney", BYTES(g_FmtMoney), 8},
     {"g_CaptionTotalMoney", BYTES(g_CaptionTotalMoney), 8},
-    {"g_CaptionPromotionBonus", BYTES(g_CaptionPromotionBonus), 40},
+    {"g_CaptionPromotionBonus", BYTES(g_CaptionPromotionBonus), 4},
     {"g_CaptionLostRace", BYTES(g_CaptionLostRace), 24},
     {"g_TextTryAgain", BYTES(g_TextTryAgain), 12},
     {"g_TextEndRace", BYTES(g_TextEndRace), 12},
@@ -268,14 +268,14 @@ static const HostStateBlob s_blobs[] = {
     {"g_TextPressStart", BYTES(g_TextPressStart), 20},
     {"g_FmtLapTime", BYTES(g_FmtLapTime), 16},
     {"g_TextTimeAttack", BYTES(g_TextTimeAttack), 12},
-    {"g_TextCourseIn", BYTES(g_TextCourseIn), 192},
+    {"g_TextCourseIn", BYTES(g_TextCourseIn), 10},
     {"g_CaptionLapTime2", BYTES(g_CaptionLapTime2), 8},
     {"g_CaptionRanking2", BYTES(g_CaptionRanking2), 8},
     {"g_FmtRecordName", BYTES(g_FmtRecordName), 8},
     {"g_FmtCarName", BYTES(g_FmtCarName), 8},
     {"g_CaptionTotalTime2", BYTES(g_CaptionTotalTime2), 8},
     {"g_NameEntryCharset", g_NameEntryCharset, 96},
-    {"g_TextNowLoading", BYTES(g_TextNowLoading), 436},
+    {"g_TextNowLoading", BYTES(g_TextNowLoading), 12},
     {"g_MsgResOk", g_MsgResOk, 8},
     {"g_MsgEventOk", g_MsgEventOk, 12},
     {"g_MsgGameExit", g_MsgGameExit, 12},
@@ -426,7 +426,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the canonical host constants alone. */
-    const unsigned long expected = 2593553891UL;
+    const unsigned long expected = 905262036UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

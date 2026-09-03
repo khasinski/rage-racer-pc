@@ -1,5 +1,15 @@
 #include "../../src/port/host_state_race.c"
 
+_Static_assert(sizeof(g_CaptionPromotionBonus) == sizeof("hji"),
+               "promotion caption must not absorb adjacent pointers");
+_Static_assert(sizeof(g_TextCourseIn) == sizeof("COURSE IN"),
+               "course caption must not absorb the car name table");
+_Static_assert(sizeof(g_TextNowLoading) == sizeof("NOW LOADING"),
+               "loading caption must not absorb the prologue text");
+_Static_assert(sizeof(g_ChanceDigits) == 6 * 2,
+               "chance digits must remain six fixed-width strings");
+_Static_assert(sizeof(g_RaceOptionMarquee) == 4 * 40,
+               "race option marquee must remain four fixed-width rows");
 _Static_assert(sizeof(g_BestSectorTimes) == 96,
                "g_BestSectorTimes ABI size changed");
 _Static_assert(sizeof(g_BestLapTimes) == 64,
