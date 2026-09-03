@@ -2,6 +2,7 @@
 #include "game/car.h"
 #include "game/menu.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -104,6 +105,13 @@ int main(void) {
     CHECK(s_lastCue == 2);
 
     Reset();
+    s_cars[3].paintColor1 = UINT8_MAX;
+    g_PadPressed = PAD_CONFIRM;
+    UpdatePaintColorScreen();
+    CHECK(GameMenuBusy == -1);
+    CHECK(g_PaintColorIndex == MENU_PAINT_COLOR_COUNT - 1);
+
+    Reset();
     GameMenuBusy = -1;
     g_PaintColorIndex = 17;
     g_PadPressedRepeat = PAD_RIGHT;
@@ -157,6 +165,30 @@ int main(void) {
     UpdatePaintColorScreen();
     CHECK(g_MenuScreen == 6);
     CHECK(GameMenuBusy == 0);
+
+    Reset();
+    g_PaintColorCursor = INT_MAX;
+    g_PaintColorIndex = INT_MIN;
+    UpdatePaintColorScreen();
+    CHECK(g_PaintColorCursor == 2 && g_PaintColorIndex == 0);
+
+    Reset();
+    g_CarTable = NULL;
+    g_PadPressed = PAD_CONFIRM;
+    UpdatePaintColorScreen();
+    CHECK(GameMenuBusy == 0 && s_lastCue == -1);
+
+    Reset();
+    g_PlayerCarIndex = GAME_CAR_COUNT;
+    GameMenuBusy = -1;
+    g_PadPressed = PAD_CONFIRM;
+    UpdatePaintColorScreen();
+    CHECK(GameMenuBusy == 0);
+
+    Reset();
+    GameMenuBusy = INT_MIN;
+    UpdatePaintColorScreen();
+    CHECK(GameMenuBusy == 0 && s_bodyColor1 == -1 && s_bodyColor2 == -1);
 
     puts("paint color screen tests passed");
     return 0;
