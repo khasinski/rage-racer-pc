@@ -1,9 +1,9 @@
 #include "game/menu.h"
 
 enum {
-    TEAM_NAME_MAX_LENGTH = 6,
     TEAM_NAME_GRID_COLUMNS = 11,
     TEAM_NAME_GRID_ROWS = 4,
+    TEAM_NAME_GRID_CELL_COUNT = TEAM_NAME_GRID_COLUMNS * TEAM_NAME_GRID_ROWS,
     TEAM_NAME_GRID_X = 0x56,
     TEAM_NAME_GRID_Y = 0xF9,
     TEAM_NAME_CELL_WIDTH = 0xC,
@@ -79,11 +79,12 @@ static void DrawKeyboardGrid(GameOrderingTableEntry *ot, s32 frame, s32 cursorIn
     }
 }
 
-static void DrawEnteredTeamName(GameOrderingTableEntry *ot, s32 frame) {
+static void DrawEnteredTeamName(GameOrderingTableEntry *ot, s32 frame,
+                                s32 length) {
     s32 y = SlideUp(TEAM_NAME_GRID_Y, frame, 0x178);
     s32 i;
 
-    for (i = 0; i < g_TeamNameLength; i++) {
+    for (i = 0; i < length; i++) {
         DrawKeyboardCharacter(ot, g_TeamNameChars[i],
                               TEAM_NAME_GRID_X + i * TEAM_NAME_CELL_WIDTH, y,
                               frame * 2, 0x3B);
@@ -92,12 +93,21 @@ static void DrawEnteredTeamName(GameOrderingTableEntry *ot, s32 frame) {
 
 void DrawTeamNameEntry(s32 step, s32 cursorIndex) {
     GameOrderingTableEntry *ot = RENDER_OT_BASE;
+    s32 nameLength;
     s32 frame;
     s32 sine;
 
     if (step == 0) {
         g_TeamNameEntrySlide = 0;
         return;
+    }
+
+    nameLength = g_TeamNameLength;
+    if (nameLength > MENU_TEAM_NAME_MAX_LENGTH) {
+        nameLength = MENU_TEAM_NAME_MAX_LENGTH;
+    }
+    if ((u32)cursorIndex >= TEAM_NAME_GRID_CELL_COUNT) {
+        cursorIndex = 0;
     }
     if (step < 0) {
         g_TeamNameEntrySlide += step;
@@ -107,8 +117,8 @@ void DrawTeamNameEntry(s32 step, s32 cursorIndex) {
     }
 
     if (g_TeamNameEntrySlide >= TEAM_NAME_LAST_FRAME &&
-        g_TeamNameLength < TEAM_NAME_MAX_LENGTH) {
-        DrawSprite(ot, g_TeamNameLength * TEAM_NAME_CELL_WIDTH + 0x53, 0x7D,
+        nameLength < MENU_TEAM_NAME_MAX_LENGTH) {
+        DrawSprite(ot, nameLength * TEAM_NAME_CELL_WIDTH + 0x53, 0x7D,
                    TEAM_NAME_CELL_WIDTH, 0x18, 0xF4, 0x28, 0, 0, 0, 0x244,
                    1, 1, 0x39);
     }
@@ -152,7 +162,7 @@ void DrawTeamNameEntry(s32 step, s32 cursorIndex) {
 
     frame = ClampAnimationFrame(g_TeamNameEntrySlide - 0x11, 8);
     if (frame >= 0) {
-        DrawEnteredTeamName(ot, frame);
+        DrawEnteredTeamName(ot, frame, nameLength);
     }
 
     if (step > 0) {

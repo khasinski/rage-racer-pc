@@ -133,6 +133,14 @@ int main(void) {
     CHECK(g_TeamNameCursorPhase == 0x60);
 
     ResetDraws();
+    memset(g_TeamNameChars, 1, sizeof(g_TeamNameChars));
+    g_TeamNameLength = 0xFF;
+    DrawTeamNameEntry(1, -1);
+    CHECK(s_rectCount == 1);
+    CHECK(s_rects[0].x == 0x54 && s_rects[0].y == 0xE5);
+    CHECK(s_spriteCount == 53);
+
+    ResetDraws();
     DrawTeamNameEntry(0, 0);
     CHECK(g_TeamNameEntrySlide == 0 && s_spriteCount == 0);
 
