@@ -3,6 +3,7 @@
 
 #include "game/car.h"
 #include "game/integer.h"
+#include "game/race.h"
 #include "game/render.h"
 #include "game/track.h"
 
@@ -12,6 +13,29 @@ s32 CarTrackFixed12ToInteger(s32 value);
 s32 ProjectCarTrackAxis(s32 value);
 s16 InterpolateCarTrackHeading(s16 pointHeading, s16 nextHeading,
                                s32 swept, s16 arcSpan);
+
+static inline s32 CarRaceProgress(const GameCarRuntime *car) {
+    return WrapSigned32((int64_t)car->progressA + car->progressB);
+}
+
+static inline s32 ClampCarTrackAlongSegment(s32 alongSegment,
+                                            s16 segmentLength) {
+    if (alongSegment < 0) return 0;
+    if (alongSegment > segmentLength) return segmentLength;
+    return alongSegment;
+}
+
+static inline void UpdateCarLapProgressState(GameCarRuntime *car) {
+    s32 progress = CarRaceProgress(car) % g_TrackLength;
+    s32 sectionProgress;
+
+    car->previousTrackProgress = car->trackProgress;
+    car->trackProgress = progress < 0 ? progress + g_TrackLength : progress;
+    sectionProgress = g_RaceSeries != 0
+        ? g_TrackLength - car->trackProgress
+        : car->trackProgress;
+    car->trackSection = WrapSigned16(sectionProgress >> 8);
+}
 
 static inline void MeasureCarTrackAxes(const GameCarRuntime *car,
                                        const GameTrackPoint *point,

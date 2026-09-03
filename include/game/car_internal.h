@@ -11,10 +11,6 @@
 #include "game/render.h"
 #include "game/vector.h"
 
-static inline s32 CarRaceProgress(const GameCarRuntime *car) {
-    return WrapSigned32((int64_t)car->progressA + car->progressB);
-}
-
 static inline s32 NormalizeCarLaunchThresholdIndex(s32 index) {
     index %= CAR_LAUNCH_THRESHOLD_COUNT;
     return index < 0 ? index + CAR_LAUNCH_THRESHOLD_COUNT : index;

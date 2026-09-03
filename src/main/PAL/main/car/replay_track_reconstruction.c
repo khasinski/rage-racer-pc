@@ -47,10 +47,8 @@ static s32 MeasureAlongSegment(const GameCarRuntime *car,
 
     MeasureCarTrackAxes(car, point, work->heading, &work->edgeOffset,
                         &alongSegment, NULL);
-    if (alongSegment > WrapSigned16(work->segmentLength)) {
-        return WrapSigned16(work->segmentLength);
-    }
-    return alongSegment < 0 ? 0 : alongSegment;
+    return ClampCarTrackAlongSegment(
+        alongSegment, WrapSigned16(work->segmentLength));
 }
 
 static void UpdateReplayTrackPosition(GameCarRuntime *car, CarTrackWork *work,
@@ -86,7 +84,6 @@ static void UpdateReplayTrackOrientation(GameCarRuntime *car,
         (u16)work->leftHalfWidth + (u16)work->rightHalfWidth);
     s32 nextCamber;
     s32 pointCamber;
-    s32 progress;
 
     work->relativeHeading = WrapSigned16(
         (u16)car->bodyYaw - 0xC00 + (u16)work->heading);
@@ -108,12 +105,7 @@ static void UpdateReplayTrackOrientation(GameCarRuntime *car,
         CarTrackFixed12ToInteger(work->surfacePitch * work->headingSin));
     car->modelYaw = car->bodyYaw;
     car->trackHeading.value = work->heading;
-    car->previousTrackProgress = car->trackProgress;
-    progress = CarRaceProgress(car) % g_TrackLength;
-    car->trackProgress = progress < 0 ? progress + g_TrackLength : progress;
-    car->trackSection = WrapSigned16((g_RaceSeries != 0
-        ? g_TrackLength - car->trackProgress
-        : car->trackProgress) >> 8);
+    UpdateCarLapProgressState(car);
 }
 
 void ReconstructReplayCarTrackState(GameCarRuntime *car) {

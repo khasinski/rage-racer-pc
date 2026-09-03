@@ -217,31 +217,12 @@ static void UpdateCarSurfaceOrientation(GameCarRuntime *car,
 
 static void UpdateCarTrackProgress(GameCarRuntime *car, CarTrackWork *work,
                                    s32 alongSegment, s32 lateralOffset) {
-    s32 lapProgress;
-    s32 sectionProgress;
-
     car->trackLateralOffset = lateralOffset;
     car->progressB = g_RaceSeries != 0
         ? (u32)alongSegment
         : (u32)((s16)work->segmentLength - alongSegment);
-
-    lapProgress = CarRaceProgress(car) % g_TrackLength;
     car->trackHeading.value = work->heading;
-    car->previousTrackProgress = car->trackProgress;
-    car->trackProgress = lapProgress < 0
-        ? lapProgress + g_TrackLength
-        : lapProgress;
-
-    sectionProgress = g_RaceSeries != 0
-        ? g_TrackLength - car->trackProgress
-        : car->trackProgress;
-    car->trackSection = WrapSigned16(sectionProgress >> 8);
-}
-
-static s32 ClampAlongSegment(s32 alongSegment, s16 segmentLength) {
-    if (alongSegment < 0) return 0;
-    if (alongSegment > segmentLength) return segmentLength;
-    return alongSegment;
+    UpdateCarLapProgressState(car);
 }
 
 static s32 NormalizeLateralOffset(s32 lateralOffset,
@@ -297,8 +278,8 @@ s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
     lateralOffset = ClampCarToTrackEdges(car, work, limits, point,
                                          nextPoint, alongSegment,
                                          lateralOffset);
-    alongSegment = ClampAlongSegment(alongSegment,
-                                     WrapSigned16(work->segmentLength));
+    alongSegment = ClampCarTrackAlongSegment(
+        alongSegment, WrapSigned16(work->segmentLength));
     car->segmentFraction = (alongSegment << 0xA) /
                            WrapSigned16(work->segmentLength);
     car->normalizedLateralOffset = NormalizeLateralOffset(lateralOffset, work);

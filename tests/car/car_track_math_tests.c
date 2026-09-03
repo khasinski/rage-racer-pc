@@ -29,6 +29,12 @@ int main(void) {
     CHECK_EQ(ProjectCarTrackAxis(-0x1000), -1);
     CHECK_EQ(ProjectCarTrackAxis(-0x0FFF), 0);
 
+    CHECK_EQ(ClampCarTrackAlongSegment(-1, 100), 0);
+    CHECK_EQ(ClampCarTrackAlongSegment(0, 100), 0);
+    CHECK_EQ(ClampCarTrackAlongSegment(40, 100), 40);
+    CHECK_EQ(ClampCarTrackAlongSegment(100, 100), 100);
+    CHECK_EQ(ClampCarTrackAlongSegment(101, 100), 100);
+
     CHECK_EQ(InterpolateCarTrackHeading(100, 300, 0, 20), 100);
     CHECK_EQ(InterpolateCarTrackHeading(100, 300, 10, 20), 200);
     CHECK_EQ(InterpolateCarTrackHeading(100, 300, 20, 20), 300);
