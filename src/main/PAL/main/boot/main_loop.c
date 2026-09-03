@@ -89,9 +89,10 @@ void MainLoop(void) {
 
         ServiceGameFrame();
         elapsed = WaitForFrameDeadline();
-        g_GameClock += 1 + elapsed / 256;
+        g_GameClock = (s32)((u32)g_GameClock + 1U +
+                            (u32)(elapsed / 256));
         PresentGameFrame(frame);
-        g_FrameCounter++;
+        g_FrameCounter = (s32)((u32)g_FrameCounter + 1U);
         if (PortShouldExit(g_FrameCounter)) {
             return;
         }

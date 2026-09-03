@@ -1,3 +1,22 @@
+add_executable(main_loop_frame_tests
+    main_loop_frame_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/boot/main_loop.c)
+target_include_directories(main_loop_frame_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(main_loop_frame_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(main_loop_frame_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(main_loop_frame_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME main_loop_frame COMMAND main_loop_frame_tests)
+set_tests_properties(main_loop_frame PROPERTIES LABELS functional)
+
 add_executable(game_logic_tests
     game_logic_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/input_config.c
