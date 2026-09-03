@@ -4,6 +4,7 @@
 #include "game/render_state.h"
 
 #include <stdio.h>
+#include <limits.h>
 #include <string.h>
 
 s32 g_MenuLightBurstLevel;
@@ -128,6 +129,16 @@ int main(void) {
     g_MenuLightBurstLevel = 510;
     DrawMenuLightBurst(7);
     CHECK(g_MenuLightBurstLevel == 512);
+
+    ResetDraws();
+    g_RenderState.packetCursor = packets;
+    g_MenuLightBurstLevel = INT_MAX;
+    DrawMenuLightBurst(INT_MAX);
+    CHECK(g_MenuLightBurstLevel == 512 && s_lineCount == 33);
+    ResetDraws();
+    g_MenuLightBurstLevel = INT_MIN;
+    DrawMenuLightBurst(-1);
+    CHECK(g_MenuLightBurstLevel == 0 && s_lineCount == 0);
 
     puts("menu light burst preserves its rays, bands, fade and animation");
     return 0;

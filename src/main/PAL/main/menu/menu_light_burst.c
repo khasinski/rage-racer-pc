@@ -56,11 +56,11 @@ void DrawMenuLightBurst(s32 step) {
         g_MenuLightBurstLevel = 0;
         return;
     }
+    g_MenuLightBurstLevel = AddClampedMenuValue(
+        g_MenuLightBurstLevel, 0, 0, LIGHT_BURST_MAX_LEVEL);
     if (step < 0) {
-        g_MenuLightBurstLevel += step;
-        if (g_MenuLightBurstLevel < 0) {
-            g_MenuLightBurstLevel = 0;
-        }
+        g_MenuLightBurstLevel = AddClampedMenuValue(
+            g_MenuLightBurstLevel, step, 0, LIGHT_BURST_MAX_LEVEL);
     }
 
     if (g_MenuLightBurstLevel > 0) {
@@ -72,9 +72,7 @@ void DrawMenuLightBurst(s32 step) {
     }
 
     if (step > 0) {
-        g_MenuLightBurstLevel += step;
-        if (g_MenuLightBurstLevel > LIGHT_BURST_MAX_LEVEL) {
-            g_MenuLightBurstLevel = LIGHT_BURST_MAX_LEVEL;
-        }
+        g_MenuLightBurstLevel = AddClampedMenuValue(
+            g_MenuLightBurstLevel, step, 0, LIGHT_BURST_MAX_LEVEL);
     }
 }
