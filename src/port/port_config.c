@@ -176,7 +176,7 @@ const RagePortConfig *PortActiveConfig(void) {
  * Scale that reach without touching the retail default. */
 int PortMirrorFarDepth(int retailFar) {
     static float multiplier = -1.0f;
-    long scaled;
+    double scaled;
     if (multiplier < 0.0f) {
         const char *text = RuntimeConfigGet("modern.mirror_distance");
         multiplier = 1.0f;
@@ -193,7 +193,7 @@ int PortMirrorFarDepth(int retailFar) {
         if (multiplier != 1.0f)
             fprintf(stderr, "rage-port: mirror draw distance x%.2f\n", multiplier);
     }
-    scaled = (long)((float)retailFar * multiplier);
+    scaled = (double)retailFar * multiplier;
     if (scaled < 0x1000) scaled = 0x1000;
     if (scaled > 0x14000) scaled = 0x14000;
     return (int)scaled;

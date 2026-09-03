@@ -47,4 +47,7 @@ int PortConfigApplyRuntime(RagePortConfig *config);
 void PortConfigSetActive(const RagePortConfig *config);
 const RagePortConfig *PortActiveConfig(void);
 
+/* Scale and clamp the retail mirror depth using the active runtime setting. */
+int PortMirrorFarDepth(int retailFar);
+
 #endif

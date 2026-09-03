@@ -290,6 +290,8 @@ static void test_port_config(void) {
         EXPECT_EQ(20, (s32)(invalidFloat.modernInternalScale * 10.0f));
         EXPECT_EQ(10, (s32)(invalidFloat.modernDrawDistance * 10.0f));
     }
+    EXPECT_EQ(0x14000, PortMirrorFarDepth(INT_MAX));
+    EXPECT_EQ(0x1000, PortMirrorFarDepth(INT_MIN));
 }
 
 static void test_diagnostic_integer_values(void) {
