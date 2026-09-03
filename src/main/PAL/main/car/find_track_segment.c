@@ -5,7 +5,11 @@
 #include "game/track.h"
 
 static int TrackSegmentContainsCar(const GameCarRuntime *car, s32 index) {
-    DVecValue corners[5];
+    DVecValue carPosition;
+    DVecValue nearLeftCorner;
+    DVecValue nearRightCorner;
+    DVecValue farLeftCorner;
+    DVecValue farRightCorner;
     const GameTrackPoint *near = TrackPoint(index);
     const GameTrackPoint *far = TrackPoint(index + 1);
     s32 segmentX = WrapSigned32((int64_t)far->x - near->x);
@@ -20,37 +24,37 @@ static int TrackSegmentContainsCar(const GameCarRuntime *car, s32 index) {
     s32 farRight = WrapSigned16(far->rightHalfWidth * 2);
 
     /* All corners use the near centre-line point as their origin. */
-    corners[0].components.vx = WrapSigned16((int64_t)car->x - near->x);
-    corners[0].components.vy = WrapSigned16((int64_t)car->z - near->z);
-    corners[1].components.vx = WrapSigned16(
+    carPosition.components.vx = WrapSigned16((int64_t)car->x - near->x);
+    carPosition.components.vy = WrapSigned16((int64_t)car->z - near->z);
+    nearLeftCorner.components.vx = WrapSigned16(
         nearLeft * WrapSigned16(nearCos) / ANGLE_FULL_TURN);
-    corners[1].components.vy = WrapSigned16(
+    nearLeftCorner.components.vy = WrapSigned16(
         -nearLeft * WrapSigned16(nearSin) / ANGLE_FULL_TURN);
-    corners[2].components.vx = WrapSigned16(
+    nearRightCorner.components.vx = WrapSigned16(
         -nearRight * WrapSigned16(nearCos) / ANGLE_FULL_TURN);
-    corners[2].components.vy = WrapSigned16(
+    nearRightCorner.components.vy = WrapSigned16(
         nearRight * WrapSigned16(nearSin) / ANGLE_FULL_TURN);
-    corners[3].components.vx = WrapSigned16(
+    farLeftCorner.components.vx = WrapSigned16(
         (int64_t)segmentX +
         farLeft * WrapSigned16(farCos) / ANGLE_FULL_TURN);
-    corners[3].components.vy = WrapSigned16(
+    farLeftCorner.components.vy = WrapSigned16(
         (int64_t)segmentZ -
         farLeft * WrapSigned16(farSin) / ANGLE_FULL_TURN);
-    corners[4].components.vx = WrapSigned16(
+    farRightCorner.components.vx = WrapSigned16(
         (int64_t)segmentX -
         farRight * WrapSigned16(farCos) / ANGLE_FULL_TURN);
-    corners[4].components.vy = WrapSigned16(
+    farRightCorner.components.vy = WrapSigned16(
         (int64_t)segmentZ +
         farRight * WrapSigned16(farSin) / ANGLE_FULL_TURN);
 
-    return NormalClip(corners[1].packed, corners[2].packed,
-                      corners[0].packed) >= 0 &&
-           NormalClip(corners[2].packed, corners[4].packed,
-                      corners[0].packed) >= 0 &&
-           NormalClip(corners[4].packed, corners[3].packed,
-                      corners[0].packed) > 0 &&
-           NormalClip(corners[3].packed, corners[1].packed,
-                      corners[0].packed) >= 0;
+    return NormalClip(nearLeftCorner.packed, nearRightCorner.packed,
+                      carPosition.packed) >= 0 &&
+           NormalClip(nearRightCorner.packed, farRightCorner.packed,
+                      carPosition.packed) >= 0 &&
+           NormalClip(farRightCorner.packed, farLeftCorner.packed,
+                      carPosition.packed) > 0 &&
+           NormalClip(farLeftCorner.packed, nearLeftCorner.packed,
+                      carPosition.packed) >= 0;
 }
 
 /*
