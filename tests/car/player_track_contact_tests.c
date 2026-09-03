@@ -3,6 +3,7 @@
 #include "game/render.h"
 #include "game/track_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -131,6 +132,12 @@ int main(void) {
     g_TrackPointCount = 0;
     CHECK(ResolvePlayerTrackContact(&car) == 0);
     CHECK(s_measureCalls == 0 && s_trackCalls == 0 && s_traceCalls == 0);
+
+    Reset(&car);
+    car.bodyYaw = INT_MAX;
+    s_points[0].angle = INT16_MAX;
+    ResolvePlayerTrackContact(&car);
+    CHECK(s_rotation == 0x3FE);
 
     if (s_failures != 0) {
         printf("%d player track contact checks failed\n", s_failures);

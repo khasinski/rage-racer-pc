@@ -29,9 +29,10 @@ s32 ResolvePlayerTrackContact(PlayerCarRuntime *car) {
     }
 
     trackRotation.vx = 0;
-    trackRotation.vy =
-        (s16)((car->bodyYaw - ANGLE_THREE_QUARTER_TURN +
-               TrackPoint(car->trackPointIndex)->angle) & ANGLE_MASK);
+    trackRotation.vy = (s16)(
+        ((u32)car->bodyYaw - ANGLE_THREE_QUARTER_TURN +
+         (u32)(s32)TrackPoint(car->trackPointIndex)->angle) &
+        ANGLE_MASK);
     trackRotation.vz = 0;
     BuildRotMatrixY(&toTrack, trackRotation.vy);
     MeasurePlayerTrackLimits(&toTrack, &limits);
