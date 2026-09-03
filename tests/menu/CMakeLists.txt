@@ -400,7 +400,8 @@ set_tests_properties(car_shop_menu PROPERTIES LABELS functional)
 
 add_executable(engineer_shop_menu_tests
     engineer_shop_menu_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/engineer_shop_menu.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/engineer_shop_menu.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/car_spec_panel_animation.c)
 target_include_directories(engineer_shop_menu_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
@@ -460,7 +461,8 @@ set_tests_properties(car_engine_spec PROPERTIES LABELS unit)
 
 add_executable(customize_menu_tests
     customize_menu_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/customize_menu.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/customize_menu.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/car_spec_panel_animation.c)
 target_include_directories(customize_menu_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

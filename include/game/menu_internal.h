@@ -8,6 +8,7 @@
 
 void RestoreTeamLogoClut(void);
 void UploadTeamLogoClut(void);
+s32 AdvanceCarSpecPanel(s32 *progress, s32 step);
 
 /*
  * What a prompt makes of a button press: the sound cues it plays, in the
