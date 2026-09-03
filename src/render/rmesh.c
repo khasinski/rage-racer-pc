@@ -1,5 +1,6 @@
 #include "rmesh.h"
 
+#include <float.h>
 #include <math.h>
 #include <string.h>
 
@@ -49,7 +50,9 @@ int RuntimeMeshOpen(RageRuntimeMesh *mesh, const void *bytes, size_t size) {
     uint32_t previous;
     uint32_t i;
 
-    if (mesh == 0 || p == 0 || size < RAGE_RMESH_HEADER_SIZE ||
+    if (mesh == NULL) return 0;
+    memset(mesh, 0, sizeof(*mesh));
+    if (p == NULL || size < RAGE_RMESH_HEADER_SIZE ||
         memcmp(p, s_magic, sizeof(s_magic)) != 0) return 0;
     version = RageReadU32(p + 8);
     meshCount = RageReadU32(p + 12);
@@ -100,7 +103,10 @@ int RuntimeMeshOpen(RageRuntimeMesh *mesh, const void *bytes, size_t size) {
 int RuntimeMeshRange(const RageRuntimeMesh *mesh, uint32_t meshIndex,
                          uint32_t *firstIndex, uint32_t *indexCount) {
     uint32_t first, end;
-    if (mesh == 0 || firstIndex == 0 || indexCount == 0 ||
+    if (firstIndex == NULL || indexCount == NULL) return 0;
+    *firstIndex = 0;
+    *indexCount = 0;
+    if (mesh == NULL || mesh->bytes == NULL ||
         meshIndex >= mesh->meshCount) return 0;
     first = RageReadU32(mesh->bytes + mesh->offsetsOffset + meshIndex * 4);
     end = RageReadU32(mesh->bytes + mesh->offsetsOffset + (meshIndex + 1) * 4);
@@ -113,7 +119,10 @@ int RuntimeMeshRange(const RageRuntimeMesh *mesh, uint32_t meshIndex,
 int RuntimeMeshVertex(const RageRuntimeMesh *mesh, uint32_t vertexIndex,
                           RageRuntimeVertex *out) {
     const uint8_t *p;
-    if (mesh == 0 || out == 0 || vertexIndex >= mesh->vertexCount) return 0;
+    if (out == NULL) return 0;
+    memset(out, 0, sizeof(*out));
+    if (mesh == NULL || mesh->bytes == NULL ||
+        vertexIndex >= mesh->vertexCount) return 0;
     p = mesh->bytes + mesh->verticesOffset + (size_t)vertexIndex * RAGE_RMESH_VERTEX_SIZE;
     memcpy(out->position, p, sizeof(out->position));
     memcpy(out->normal, p + 12, sizeof(out->normal));
@@ -126,7 +135,10 @@ int RuntimeMeshVertex(const RageRuntimeMesh *mesh, uint32_t vertexIndex,
 int RuntimeMeshIndex(const RageRuntimeMesh *mesh, uint32_t indexIndex,
                          uint32_t *out) {
     uint32_t index;
-    if (mesh == 0 || out == 0 || indexIndex >= mesh->indexCount) return 0;
+    if (out == NULL) return 0;
+    *out = 0;
+    if (mesh == NULL || mesh->bytes == NULL ||
+        indexIndex >= mesh->indexCount) return 0;
     index = RageReadU32(mesh->bytes + mesh->indicesOffset + indexIndex * 4);
     if (index >= mesh->vertexCount) return 0;
     *out = index;
@@ -138,8 +150,14 @@ int RuntimeMeshBounds(const RageRuntimeMesh *mesh, uint32_t meshIndex,
     RageRuntimeVertex vertex;
     uint32_t first, count, offset, index;
     float min[3], max[3];
-    if (center == 0 || radius == 0 || !RuntimeMeshRange(mesh, meshIndex,
-        &first, &count) || count == 0) return 0;
+    float resultCenter[3];
+    double radiusSquared = 0.0;
+
+    if (center == NULL || radius == NULL) return 0;
+    memset(center, 0, sizeof(resultCenter));
+    *radius = 0.0f;
+    if (!RuntimeMeshRange(mesh, meshIndex, &first, &count) || count == 0)
+        return 0;
     if (!RuntimeMeshIndex(mesh, first, &index) ||
         !RuntimeMeshVertex(mesh, index, &vertex)) return 0;
     memcpy(min, vertex.position, sizeof(min));
@@ -153,9 +171,18 @@ int RuntimeMeshBounds(const RageRuntimeMesh *mesh, uint32_t meshIndex,
             if (vertex.position[axis] > max[axis]) max[axis] = vertex.position[axis];
         }
     }
-    for (offset = 0; offset < 3; offset++) center[offset] = (min[offset] + max[offset]) * 0.5f;
-    *radius = sqrtf((max[0] - center[0]) * (max[0] - center[0]) +
-                    (max[1] - center[1]) * (max[1] - center[1]) +
-                    (max[2] - center[2]) * (max[2] - center[2]));
+    for (offset = 0; offset < 3; offset++) {
+        double middle = ((double)min[offset] + (double)max[offset]) * 0.5;
+        double extent = (double)max[offset] - middle;
+
+        if (!isfinite(middle) || middle < -FLT_MAX || middle > FLT_MAX)
+            return 0;
+        resultCenter[offset] = (float)middle;
+        radiusSquared += extent * extent;
+    }
+    if (!isfinite(radiusSquared) || radiusSquared > (double)FLT_MAX * FLT_MAX)
+        return 0;
+    memcpy(center, resultCenter, sizeof(resultCenter));
+    *radius = (float)sqrt(radiusSquared);
     return 1;
 }

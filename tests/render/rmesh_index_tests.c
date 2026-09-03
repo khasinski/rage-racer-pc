@@ -30,8 +30,11 @@ int main(void) {
                   asset.meshPathLength) == 0);
     EXPECT(RuntimeIndexFind(index, sizeof(index) - 1, 10,
                                 RAGE_RENDER_ASSET_MODEL_BANK, &asset));
+    memset(&asset, 0x7f, sizeof(asset));
     EXPECT(!RuntimeIndexFind(index, sizeof(index) - 1, 10,
                                  RAGE_RENDER_ASSET_COURSE, &asset));
+    EXPECT(asset.meshPath == NULL && asset.meshPathLength == 0 &&
+           asset.materialPath == NULL && asset.materialPathLength == 0);
     EXPECT(RuntimeIndexFind(index, sizeof(index) - 1, 91,
                                 RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, &asset));
     EXPECT(asset.meshPathLength == strlen("models/track-bank-1.rmesh"));

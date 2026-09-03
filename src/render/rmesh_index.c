@@ -68,9 +68,9 @@ int RuntimeIndexFind(const char *text, size_t size, uint32_t assetKey,
     const char *line = text;
     const char *end;
 
-    if (text == 0 || out == 0 || !AssetSetName(assetSet, &setName, &setLength)) {
-        return 0;
-    }
+    if (out == NULL) return 0;
+    memset(out, 0, sizeof(*out));
+    if (text == NULL || !AssetSetName(assetSet, &setName, &setLength)) return 0;
     end = text + size;
     while (line < end) {
         const char *lineEnd = line;

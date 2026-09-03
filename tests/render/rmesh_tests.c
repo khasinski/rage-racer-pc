@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <float.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,6 +25,8 @@ int main(void) {
     RageRuntimeMesh mesh;
     RageRuntimeVertex vertex;
     uint32_t first, count, index;
+    float center[3];
+    float radius;
     float position[3] = {3.0f, 4.0f, 5.0f};
     float normal[3] = {0.0f, 1.0f, 0.0f};
     float uv[2] = {0.5f, 0.25f};
@@ -52,6 +55,7 @@ int main(void) {
     EXPECT(RuntimeMeshIndex(&mesh, 1, &index) && index == 2);
     blob[0] = 0;
     EXPECT(!RuntimeMeshOpen(&mesh, blob, sizeof(blob)));
+    EXPECT(mesh.bytes == NULL && mesh.meshCount == 0);
     blob[0] = 'R';
     write_u32(blob + 28, 7);
     EXPECT(!RuntimeMeshOpen(&mesh, blob, sizeof(blob)));
@@ -74,5 +78,31 @@ int main(void) {
     uv[1] = INFINITY;
     memcpy(blob + 60, uv, sizeof(uv));
     EXPECT(!RuntimeMeshOpen(&mesh, blob, sizeof(blob)));
+
+    memset(&mesh, 0, sizeof(mesh));
+    first = count = index = 123;
+    memset(&vertex, 0x7f, sizeof(vertex));
+    center[0] = center[1] = center[2] = radius = 123.0f;
+    EXPECT(!RuntimeMeshRange(&mesh, 0, &first, &count));
+    EXPECT(first == 0 && count == 0);
+    EXPECT(!RuntimeMeshVertex(&mesh, 0, &vertex));
+    EXPECT(vertex.position[0] == 0.0f && vertex.material == 0);
+    EXPECT(!RuntimeMeshIndex(&mesh, 0, &index) && index == 0);
+    EXPECT(!RuntimeMeshBounds(&mesh, 0, center, &radius));
+    EXPECT(center[0] == 0.0f && center[1] == 0.0f &&
+           center[2] == 0.0f && radius == 0.0f);
+
+    uv[1] = 0.25f;
+    memcpy(blob + 60, uv, sizeof(uv));
+    position[0] = FLT_MAX;
+    position[1] = FLT_MAX;
+    memcpy(blob + 32, position, sizeof(position));
+    position[0] = -FLT_MAX;
+    position[1] = -FLT_MAX;
+    memcpy(blob + 72, position, sizeof(position));
+    EXPECT(RuntimeMeshOpen(&mesh, blob, sizeof(blob)));
+    center[0] = center[1] = center[2] = radius = 123.0f;
+    EXPECT(!RuntimeMeshBounds(&mesh, 0, center, &radius));
+    EXPECT(center[0] == 0.0f && radius == 0.0f);
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
