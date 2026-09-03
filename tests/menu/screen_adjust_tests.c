@@ -1,6 +1,7 @@
 #include "game/menu.h"
 #include "game/render_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 
 s32 g_GameMode;
@@ -67,7 +68,7 @@ static void Reset(void) {
 
 int main(void) {
     Reset();
-    DrawScreenAdjustScreen();
+    UpdateScreenAdjustScreen();
     CHECK(s_callCount == 4 && s_hintVariant == 3);
     CHECK(s_calls[0].ot == GamePrimaryOrderingTable(51));
     CHECK(s_calls[0].x == 0x9A && s_calls[0].y == 0x88);
@@ -120,6 +121,30 @@ int main(void) {
     UpdateScreenAdjustScreen();
     CHECK(g_ScreenOffsetEditX == 5 && g_ScreenOffsetEditY == 6);
     CHECK(s_lastCue == 3);
+
+    Reset();
+    g_ScreenOffsetEditX = INT_MIN;
+    g_ScreenOffsetEditY = INT_MAX;
+    g_ScreenOffsetX.value = INT_MAX;
+    g_ScreenOffsetY.value = INT_MIN;
+    UpdateScreenAdjustScreen();
+    CHECK(g_ScreenOffsetEditX == -11 && g_ScreenOffsetEditY == 23);
+    CHECK(g_ScreenOffsetX.value == 32 && g_ScreenOffsetY.value == -32);
+    CHECK(g_DispEnv0ScreenX == (u16)-11 && g_DispEnv0ScreenY == 52);
+
+    Reset();
+    g_ScreenOffsetEditX = INT_MAX;
+    g_ScreenOffsetEditY = INT_MIN;
+    g_PadPressed = PAD_CONFIRM;
+    UpdateScreenAdjustScreen();
+    CHECK(g_ScreenOffsetX.value == 32 && g_ScreenOffsetY.value == -32);
+
+    Reset();
+    g_ScreenOffsetX.value = INT_MIN;
+    g_ScreenOffsetY.value = INT_MAX;
+    g_PadPressed = PAD_CANCEL;
+    UpdateScreenAdjustScreen();
+    CHECK(g_ScreenOffsetEditX == -11 && g_ScreenOffsetEditY == 23);
 
     puts("screen adjustment tests passed");
     return 0;

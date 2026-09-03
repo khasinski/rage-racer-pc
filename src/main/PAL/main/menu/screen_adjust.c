@@ -1,5 +1,6 @@
 #include "game/audio.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/prim.h"
 #include "game/render_internal.h"
 
@@ -15,16 +16,21 @@ static s32 AdjustScreenOffset(s32 value, u16 buttons, u16 decreaseButton,
     s32 direction = ((buttons & increaseButton) != 0) -
                     ((buttons & decreaseButton) != 0);
 
-    if (direction < 0 && value > minimum) {
-        return value - 1;
-    }
-    if (direction > 0 && value < maximum) {
-        return value + 1;
-    }
-    return value;
+    return AddClampedMenuValue(value, direction, minimum, maximum);
 }
 
-void DrawScreenAdjustScreen(void) {
+static void NormalizeScreenOffsets(void) {
+    g_ScreenOffsetX.value = AddClampedMenuValue(
+        g_ScreenOffsetX.value, 0, SCREEN_OFFSET_MIN_X, SCREEN_OFFSET_MAX_X);
+    g_ScreenOffsetY.value = AddClampedMenuValue(
+        g_ScreenOffsetY.value, 0, SCREEN_OFFSET_MIN_Y, SCREEN_OFFSET_MAX_Y);
+    g_ScreenOffsetEditX = AddClampedMenuValue(
+        g_ScreenOffsetEditX, 0, SCREEN_OFFSET_MIN_X, SCREEN_OFFSET_MAX_X);
+    g_ScreenOffsetEditY = AddClampedMenuValue(
+        g_ScreenOffsetEditY, 0, SCREEN_OFFSET_MIN_Y, SCREEN_OFFSET_MAX_Y);
+}
+
+static void DrawScreenAdjustScreen(void) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(51);
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
 
@@ -42,9 +48,12 @@ void DrawScreenAdjustScreen(void) {
 /* OPTION_MODE_SCREEN_ADJUST: edits the display offset, then commits or
  * restores it. */
 void UpdateScreenAdjustScreen(void) {
-    s32 previousX = g_ScreenOffsetEditX;
-    s32 previousY = g_ScreenOffsetEditY;
+    s32 previousX;
+    s32 previousY;
 
+    NormalizeScreenOffsets();
+    previousX = g_ScreenOffsetEditX;
+    previousY = g_ScreenOffsetEditY;
     DrawScreenAdjustScreen();
 
     if (g_PadPressed & PAD_CONFIRM) {

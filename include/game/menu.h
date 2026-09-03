@@ -622,7 +622,6 @@ void DrawOptionSceneOverlay(void);
 void UpdateOptionScene(void);
 void UpdateOptionMenuFade(void);
 s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index);
-void DrawScreenAdjustScreen(void);
 void DrawTeamNameCharModel(void);
 void DrawTireCompoundSlider(u8 x, s32 useFlag);
 void DrawVolumeBar(s32 level, s32 y);
