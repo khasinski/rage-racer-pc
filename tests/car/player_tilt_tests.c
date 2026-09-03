@@ -1,6 +1,7 @@
 #include "game/car.h"
 #include "game/race.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -64,6 +65,21 @@ int main(void) {
     car.tiltCounter = 12;
     UpdatePlayerTilt(&car);
     CHECK(car.tiltCounter == 9);
+
+    car.verticalMotionState = CAR_VERTICAL_GROUNDED;
+    car.drive.engineRpm = 1000;
+    car.drive.acceleratorInput.value = 0x81;
+    car.drive.clutch = 0;
+    car.tiltCounter = INT16_MIN;
+    UpdatePlayerTilt(&car);
+    CHECK(car.tiltCounter == INT16_MAX - 3);
+
+    car.drive.engineRpm = 0;
+    car.drive.brakeInput = 0x81;
+    car.speed = 0x51;
+    car.tiltCounter = INT16_MAX;
+    UpdatePlayerTilt(&car);
+    CHECK(car.tiltCounter == INT16_MIN + 1);
 
     puts("player tilt tests passed");
     return 0;

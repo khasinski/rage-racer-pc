@@ -1,4 +1,5 @@
 #include "game/car.h"
+#include "game/integer.h"
 #include "game/race.h"
 
 enum {
@@ -20,22 +21,24 @@ void UpdatePlayerTilt(PlayerCarRuntime *car) {
         if (drive->engineRpm >= g_CarSpec->redline &&
             drive->acceleratorInput.value >= PEDAL_ACTIVE_THRESHOLD &&
             drive->clutch == 0) {
-            s32 tilt = (s16)((u16)car->tiltCounter - 4);
+            s32 tilt = WrapSigned16((s32)car->tiltCounter - 4);
             s32 minimum = -(9 - drive->manual) * 5;
 
-            car->tiltCounter = (s16)(tilt < minimum ? minimum : tilt);
+            car->tiltCounter = WrapSigned16(
+                tilt < minimum ? minimum : tilt);
             return;
         }
 
         if ((drive->brakeInput >= PEDAL_ACTIVE_THRESHOLD ||
              drive->clutch > 0) &&
             car->speed >= TILT_BRAKE_MIN_SPEED) {
-            s32 tilt = (s16)((u16)car->tiltCounter + 2);
+            s32 tilt = WrapSigned16((s32)car->tiltCounter + 2);
 
-            car->tiltCounter = (s16)(tilt >= 9 ? TILT_REST : tilt);
+            car->tiltCounter = WrapSigned16(
+                tilt >= 9 ? TILT_REST : tilt);
             return;
         }
     }
 
-    car->tiltCounter = (s16)(car->tiltCounter * 3 / 4);
+    car->tiltCounter = car->tiltCounter * 3 / 4;
 }
