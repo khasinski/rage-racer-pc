@@ -1,3 +1,4 @@
+#include <limits.h>
 #include <stdint.h>
 #include "native_geometry_interpolation.h"
 
@@ -28,11 +29,14 @@ int main(void) {
     CHECK(FloorShift12(4096) == 1);
     CHECK(FloorShift12(-1) == -1);
     CHECK(FloorShift12(-4096) == -1);
+    CHECK(FloorShift12(INT64_MIN) == INT_MIN);
+    CHECK(FloorShift12(INT64_MAX) == INT_MAX);
     CHECK(IntplComponent(100, 300, 0, 4) == 100);
     CHECK(IntplComponent(100, 300, 4, 4) == 300);
     CHECK(IntplComponent(100, 300, 2, 4) == 200);
     CHECK(IntplComponent(100, 300, 2, 0) == 100);
     CHECK(IntplComponent(50000, 300, 2, -1) == INT16_MAX);
+    CHECK(IntplComponent(INT_MIN, INT_MAX, 0, 1) == INT16_MAX);
 
     packed = BilerpSxy(sxy, 2, 2, 4, 4);
     CHECK((int16_t)packed == 20);
@@ -40,6 +44,9 @@ int main(void) {
     midpoint = BilerpVertex(&a, &b, &c, &d, 2, 2, 4, 4);
     CHECK(midpoint.vx == 50 && midpoint.vy == 50 && midpoint.vz == 25);
     CHECK(BilerpByte(0, 100, 100, 200, 2, 2, 4, 4) == 100);
+    CHECK(BilerpSxy(NULL, 0, 0, 1, 1) == 0);
+    midpoint = BilerpVertex(NULL, &b, &c, &d, 0, 0, 1, 1);
+    CHECK(midpoint.vx == 0 && midpoint.vy == 0 && midpoint.vz == 0);
     CHECK(ClampSubdivisionLevel(-1) == 0);
     CHECK(ClampSubdivisionLevel(4) == 4);
     CHECK(ClampSubdivisionLevel(7) == 6);
@@ -78,8 +85,9 @@ int main(void) {
         CHECK(!ScreenQuadOutsideBounds(crossing, 0, 320, 0, 240, 0));
         CHECK(ScreenQuadOutsideBounds(above, 0, 320, 0, 240, 0));
         CHECK(ScreenQuadOutsideBounds(right, 0, 320, 0, 240, 0));
-    CHECK(ScreenQuadOutsideBounds(below, 0, 320, 0, 240, 0));
+        CHECK(ScreenQuadOutsideBounds(below, 0, 320, 0, 240, 0));
     }
+    CHECK(ScreenQuadOutsideBounds(NULL, 0, 320, 0, 240, 0));
     CHECK(GeometryBufferHasSpace(buffer, sizeof(buffer), buffer, 16));
     CHECK(GeometryBufferHasSpace(buffer, sizeof(buffer), buffer + 8, 8));
     CHECK(!GeometryBufferHasSpace(buffer, sizeof(buffer), buffer + 8, 9));
@@ -90,6 +98,8 @@ int main(void) {
         (void *)((uintptr_t)buffer - 1), 0));
     CHECK(!GeometryBufferHasSpace(
         (void *)(uintptr_t)(UINTPTR_MAX - 3), 8, buffer, 0));
+    CHECK(!OrthonormalizeMatrix3x3(NULL, fallback));
+    CHECK(!OrthonormalizeMatrix3x3(rotating, NULL));
     CHECK(OrthonormalizeMatrix3x3(rotating, fallback));
     CHECK(rotating[0][0] > 2890 && rotating[0][0] < 2905);
     CHECK(rotating[0][2] == rotating[0][0]);

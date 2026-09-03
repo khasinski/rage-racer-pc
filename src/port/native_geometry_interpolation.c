@@ -1,13 +1,17 @@
 #include "native_geometry_interpolation.h"
 
+#include <limits.h>
 #include <math.h>
 
 int FloorShift12(int64_t value) {
-    if (value >= 0) return (int)(value >> 12);
-    return -(int)((-value + 0xfff) >> 12);
+    int64_t result = value / 4096;
+    if (value < 0 && value % 4096 != 0) result--;
+    if (result < INT_MIN) return INT_MIN;
+    if (result > INT_MAX) return INT_MAX;
+    return (int)result;
 }
 
-static int ClampInt16(int value) {
+static int ClampInt16(int64_t value) {
     if (value < INT16_MIN) return INT16_MIN;
     if (value > INT16_MAX) return INT16_MAX;
     return value;
@@ -15,18 +19,19 @@ static int ClampInt16(int value) {
 
 int IntplComponent(int start, int end, int index, int steps) {
     int64_t ir0;
-    int difference = start - end;
+    int difference;
     int result;
 
     if (steps <= 0) return ClampInt16(start);
     ir0 = 4096 - (int64_t)index * (4096 / steps);
-    difference = ClampInt16(difference);
+    difference = ClampInt16((int64_t)start - end);
     result = FloorShift12((int64_t)end * 4096 +
                           ir0 * difference);
     return ClampInt16(result);
 }
 
 int BilerpSxy(const int sxy[4], int u, int v, int uSteps, int vSteps) {
+    if (sxy == NULL) return 0;
     int topX = IntplComponent((int16_t)sxy[0], (int16_t)sxy[1], u,
                                   uSteps);
     int bottomX = IntplComponent((int16_t)sxy[2], (int16_t)sxy[3], u,
@@ -52,6 +57,11 @@ SVECTOR BilerpVertex(const SVECTOR *v0, const SVECTOR *v1,
                      const SVECTOR *v2, const SVECTOR *v3, int outer,
                      int inner, int outerSteps, int innerSteps) {
     SVECTOR result;
+
+    if (v0 == NULL || v1 == NULL || v2 == NULL || v3 == NULL) {
+        result = (SVECTOR){0, 0, 0, 0};
+        return result;
+    }
 
     result.vx = (short)BilerpComponent(
         v0->vx, v1->vx, v2->vx, v3->vx,
@@ -96,12 +106,14 @@ int ScreenQuadOutsideBounds(const int sxy[4], int left, int right, int top,
     int allBelow = 1;
     int i;
 
+    if (sxy == NULL) return 1;
+
     for (i = 0; i < 4; i++) {
         int x = (int16_t)sxy[i];
         int y = (int16_t)((uint32_t)sxy[i] >> 16);
 
-        allLeft &= x < left - horizontalMargin;
-        allRight &= x > right + horizontalMargin;
+        allLeft &= (int64_t)x < (int64_t)left - horizontalMargin;
+        allRight &= (int64_t)x > (int64_t)right + horizontalMargin;
         allAbove &= y < top;
         allBelow &= y > bottom;
     }
@@ -125,6 +137,7 @@ int OrthonormalizeMatrix3x3(void *matrixStorage,
     float r0[3], r1[3], r2[3], cross[3];
     float length0 = 0.0f, length1 = 0.0f, handedness = 0.0f, dot = 0.0f;
     int axis, row, column;
+    if (matrix == NULL || fallback == NULL) return 0;
     for (axis = 0; axis < 3; axis++) {
         r0[axis] = (float)matrix[0][axis];
         r1[axis] = (float)matrix[1][axis];
