@@ -549,6 +549,26 @@ target_link_libraries(team_name_screen_tests PRIVATE psyz)
 add_test(NAME team_name_screen COMMAND team_name_screen_tests)
 set_tests_properties(team_name_screen PROPERTIES LABELS functional)
 
+add_executable(customize_screen_tests
+    customize_screen_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/customize_screen.c)
+target_include_directories(customize_screen_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(customize_screen_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(customize_screen_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(customize_screen_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(customize_screen_tests PRIVATE psyz)
+add_test(NAME customize_screen COMMAND customize_screen_tests)
+set_tests_properties(customize_screen PROPERTIES LABELS functional)
+
 add_executable(paint_color_screen_tests
     paint_color_screen_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/paint_color_screen.c)

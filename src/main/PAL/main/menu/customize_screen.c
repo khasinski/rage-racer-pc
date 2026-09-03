@@ -19,7 +19,8 @@ enum CustomizeScreenState {
 
 enum {
     CUSTOMIZE_CONFIRM_FRAMES = 35,
-    CUSTOMIZE_DESIGN_VIEW_OFFSET = 0x3D090
+    CUSTOMIZE_DESIGN_VIEW_OFFSET = 0x3D090,
+    TIRE_COMPOUND_MAX = 4,
 };
 
 enum CustomizeOption {
@@ -40,7 +41,16 @@ static void DrawTransmissionChoice(void *ot, s32 flash) {
     GameDrawMenuButton(0xDA, 0x68, 0x20, 0x20, 0x1E, 0x8E, 0x95);
 }
 
-static void HandleCustomizeMenuInput(s32 lastOption) {
+static s32 CustomizeCarSetupAvailable(void) {
+    return (u32)g_PlayerCarIndex < GAME_CAR_COUNT && g_CarTable != NULL;
+}
+
+static s32 CustomizeTransmissionAvailable(void) {
+    return CustomizeCarSetupAvailable() && g_CarModelAsset != NULL &&
+           g_CarModelAsset->transmissionAvailable != 0;
+}
+
+static void HandleCustomizeMenuInput(s32 lastOption, s32 carAvailable) {
     if (g_PadPressed & PAD_UP) {
         PlaySoundCue(1);
         g_CustomizeOption = g_CustomizeOption > 0 ? g_CustomizeOption - 1
@@ -55,20 +65,26 @@ static void HandleCustomizeMenuInput(s32 lastOption) {
 
     if (g_PadPressed & PAD_CONFIRM) {
         if (g_CustomizeOption == CUSTOMIZE_OPTION_TIRES) {
+            if (!carAvailable) {
+                return;
+            }
             PlaySoundCue(2);
             g_CustomizePopupScript = g_MenuDialogPanelUpperScript;
             GameMenuBusy = CUSTOMIZE_TIRE_DIALOG;
             g_UiScriptProgress2 = 0;
-            g_MenuSubCursor = g_CarTable[g_PlayerCarIndex].tireCompound;
+            g_MenuSubCursor = (u8)AddClampedMenuValue(
+                g_CarTable[g_PlayerCarIndex].tireCompound, 0, 0,
+                TIRE_COMPOUND_MAX);
             return;
         }
         if (g_CustomizeOption == CUSTOMIZE_OPTION_TRANSMISSION) {
             g_UiScriptProgress2 = 0;
-            if (g_CarModelAsset->transmissionAvailable != 0) {
+            if (CustomizeTransmissionAvailable()) {
                 PlaySoundCue(2);
                 g_CustomizePopupScript = g_MenuDialogPanelLowerScript;
                 GameMenuBusy = CUSTOMIZE_TRANSMISSION_DIALOG;
-                g_MenuSubCursor = g_CarTable[g_PlayerCarIndex].transmission;
+                g_MenuSubCursor =
+                    g_CarTable[g_PlayerCarIndex].transmission != 0;
             } else {
                 PlaySoundCue(5);
                 g_CustomizePopupScript = g_TransmissionUnavailableScript;
@@ -99,6 +115,12 @@ static void HandleCustomizeMenuInput(s32 lastOption) {
 static void UpdateTireDialog(void) {
     MenuDialogAction action;
 
+    if (!CustomizeCarSetupAvailable()) {
+        GameMenuBusy = 0;
+        return;
+    }
+    g_MenuSubCursor = (u8)AddClampedMenuValue(
+        g_MenuSubCursor, 0, 0, TIRE_COMPOUND_MAX);
     if (RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, 1) ==
         0) {
         return;
@@ -124,6 +146,11 @@ static void UpdateTireDialog(void) {
 static void UpdateTransmissionDialog(void *ot) {
     MenuDialogAction action;
 
+    if (!CustomizeTransmissionAvailable()) {
+        GameMenuBusy = 0;
+        return;
+    }
+    g_MenuSubCursor = g_MenuSubCursor != 0;
     if (RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, 1) ==
         0) {
         return;
@@ -165,6 +192,12 @@ static void CloseUnavailableDialog(void) {
 }
 
 static void UpdateTireConfirmation(void) {
+    if (!CustomizeCarSetupAvailable()) {
+        GameMenuBusy = 0;
+        return;
+    }
+    g_MenuSubCursor = (u8)AddClampedMenuValue(
+        g_MenuSubCursor, 0, 0, TIRE_COMPOUND_MAX);
     if (g_MenuConfirmTimer > 0) {
         g_MenuConfirmTimer--;
         RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, 1);
@@ -225,6 +258,8 @@ void UpdateCustomizeScreen(void) {
     DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex, 0);
     DrawMenuCarView();
     lastOption = g_GrandPrixMode != 0 ? 3 : 2;
+    g_CustomizeOption =
+        AddClampedMenuValue(g_CustomizeOption, 0, 0, lastOption);
     cmdList = g_GrandPrixMode != 0 ? g_CustomizeMenuScriptGp
                                    : g_CustomizeMenuScriptTimeAttack;
 
@@ -237,7 +272,8 @@ void UpdateCustomizeScreen(void) {
         if (RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1) != 0 &&
             g_UiScriptProgress2 <= 0) {
             g_MenuOverlayPattern = -1;
-            HandleCustomizeMenuInput(lastOption);
+            HandleCustomizeMenuInput(lastOption,
+                                     CustomizeCarSetupAvailable());
         }
         return;
     }
