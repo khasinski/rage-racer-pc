@@ -25,6 +25,8 @@ static u8 *s_openHeader;
 static u8 *s_body;
 static s32 s_sequenceCalls;
 static s32 s_tableCalls;
+static const void *s_tableData;
+static size_t s_tableSize;
 static s32 s_closeVab;
 static s32 s_reverbCalls;
 static s32 s_vmInitCalls;
@@ -56,8 +58,9 @@ s32 OpenSequenceAudioSlot(u8 *header, u8 *body, void *sequence) {
     return 61;
 }
 
-void LoadAudioParameterTable(const u16 *table) {
-    (void)table;
+void LoadAudioParameterTable(const void *data, size_t size) {
+    s_tableData = data;
+    s_tableSize = size;
     s_tableCalls++;
 }
 
@@ -204,7 +207,8 @@ int main(void) {
     CHECK(StartAudioSlotLoad(AUDIO_SLOT_ENGINE, &invalid) == -1);
     CHECK(StartAudioSlotLoad(AUDIO_SLOT_ENGINE, &asset) == 1);
     CHECK(g_AudioLoadSlot == AUDIO_SLOT_ENGINE && s_openAddress == 0x34000);
-    CHECK(s_tableCalls == 1);
+    CHECK(s_tableCalls == 1 && s_tableData == table &&
+          s_tableSize == sizeof(table));
 
     s_completed = 0;
     g_AudioLoadedSlotMask = 0;

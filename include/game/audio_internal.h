@@ -1,6 +1,8 @@
 #ifndef GAME_AUDIO_INTERNAL_H
 #define GAME_AUDIO_INTERNAL_H
 
+#include <stddef.h>
+
 #include "common.h"
 
 enum {
@@ -13,7 +15,7 @@ extern u8 g_BgmShuffleOrder[BGM_SHUFFLE_CAPACITY];
 
 s32 OpenSequenceAudioSlot(u8 *vabHeader, u8 *vabBody, void *seqData);
 s32 CloseSequenceAudioSlot(void);
-void LoadAudioParameterTable(const u16 *table);
+void LoadAudioParameterTable(const void *data, size_t size);
 void SetLoadedTableVolumeScale(s32 scale);
 void SetSequenceVolume(s32 volume);
 void RefreshSequenceVolumeScale(void);

@@ -23,19 +23,32 @@ static void Check(s32 actual, s32 expected, const char *label) {
     }
 }
 
+static void WriteLittleEndianU16(u8 *destination, u16 value) {
+    destination[0] = (u8)value;
+    destination[1] = (u8)(value >> 8);
+}
+
 static void LoadWithMaxRpm(u16 maxRpm) {
-    u16 table[ENGINE_SOUND_PARAMETER_TABLE_WORD_COUNT];
+    u8 storage[ENGINE_SOUND_PARAMETER_TABLE_SIZE + 1];
+    u8 *table = storage + 1;
     s32 i;
 
     for (i = 0; i < ENGINE_SOUND_PARAMETER_TABLE_WORD_COUNT; i++) {
-        table[i] = (u16)(100 + i);
+        WriteLittleEndianU16(table + i * sizeof(u16), (u16)(100 + i));
     }
-    table[ENGINE_SOUND_PARAMETER_TABLE_WORD_COUNT - 1] = maxRpm;
-    LoadAudioParameterTable(table);
+    WriteLittleEndianU16(
+        table + (ENGINE_SOUND_PARAMETER_TABLE_WORD_COUNT - 1) * sizeof(u16),
+        maxRpm);
+    LoadAudioParameterTable(table, ENGINE_SOUND_PARAMETER_TABLE_SIZE);
 }
 
 int main(void) {
-    LoadAudioParameterTable(NULL);
+    u8 truncated[ENGINE_SOUND_PARAMETER_TABLE_SIZE - 1] = {0};
+
+    g_EngineSoundState.maxRpm = 123;
+    LoadAudioParameterTable(NULL, 0);
+    LoadAudioParameterTable(truncated, sizeof(truncated));
+    Check(g_EngineSoundState.maxRpm, 123, "truncated table ignored");
     memset(g_SoundSlotTone, 0, sizeof(g_SoundSlotTone));
     LoadWithMaxRpm(9000);
     Check(g_EngineSoundCurves[0][0].positions[0], 100,

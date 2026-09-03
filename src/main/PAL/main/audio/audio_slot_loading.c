@@ -101,9 +101,7 @@ static s32 TransferVabToSlot(s32 slot, u8 *header, u8 *body,
 }
 
 static s32 StartEngineAudioSlotLoad(const AudioSlotAsset *asset) {
-    const u16 *table = asset->auxiliaryData;
-
-    if (table != NULL &&
+    if (asset->auxiliaryData != NULL &&
         asset->auxiliarySize < ENGINE_SOUND_PARAMETER_TABLE_SIZE) {
         return -1;
     }
@@ -113,8 +111,9 @@ static s32 StartEngineAudioSlotLoad(const AudioSlotAsset *asset) {
         return -1;
     }
 
-    if (table != NULL) {
-        LoadAudioParameterTable(table);
+    if (asset->auxiliaryData != NULL) {
+        LoadAudioParameterTable(asset->auxiliaryData,
+                                asset->auxiliarySize);
     }
 
     g_AudioLoadSlot = AUDIO_SLOT_ENGINE;
