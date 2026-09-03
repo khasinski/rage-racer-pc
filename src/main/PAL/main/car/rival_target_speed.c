@@ -55,7 +55,7 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex) {
         marker = 0;
     }
 
-    table = g_TrackEventData->aiSpeedKeys[ReadStableRaceSeries() != 0];
+    table = g_TrackEventData->aiSpeedKeys[g_RaceSeries != 0];
     lowKey = &table[marker];
     highKey = &table[marker + 1];
     lowProgress = lowKey->progress;

@@ -33,7 +33,7 @@ void InitRivalCarAi(GameCarRuntime *car,
         configIndex = 0;
     }
     config = &g_TrackEventData->rivalAiConfigs[
-        ReadStableRaceSeries()][configIndex];
+        g_RaceSeries][configIndex];
 
     car->targetSpeed =
         (DecodeClampedConfigValue((u16)config->speed, 0, INT16_MAX) * 1168) /

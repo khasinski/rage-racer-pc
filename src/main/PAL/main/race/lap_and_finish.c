@@ -70,7 +70,7 @@ static void RecordBestLap(PlayerCarRuntime *car, s32 recordMode) {
  * beats the records, and hand over to the finish sequence. */
 static void FinishRace(PlayerCarRuntime *car, s32 recordMode,
                        s32 lapsRun) {
-    s32 series = ReadStableRaceSeries();
+    s32 series = g_RaceSeries;
     s32 course = SeriesCourseIndex();
     s32 i;
 
@@ -167,8 +167,8 @@ static s32 AdvanceFinishFade(s32 returnValue) {
  * wrong way for a second is retired where it stands. */
 static void RetireWrongWay(void) {
     g_RacePhase = 5;
-    g_BestLapTimes[ReadStableRaceSeries()][SeriesCourseIndex()][0] =
-        g_RankingRecords[ReadStableRaceSeries()][SeriesCourseIndex()][0]
+    g_BestLapTimes[g_RaceSeries][SeriesCourseIndex()][0] =
+        g_RankingRecords[g_RaceSeries][SeriesCourseIndex()][0]
             .raceTime;
     StartCdVolumeFade(8);
     ForceAllEffectVoicesEnabled(0);
@@ -200,7 +200,7 @@ static void CountDownTheLaps(PlayerCarRuntime *car) {
 }
 
 s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
-    s32 series = ReadStableRaceSeries();
+    s32 series = g_RaceSeries;
     s32 course = SeriesCourseIndex();
     s32 recordMode = RaceRecordMode(grandPrixMode);
     s16 lapAtEntry;

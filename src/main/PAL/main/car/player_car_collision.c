@@ -249,7 +249,7 @@ static CarCollisionPoint GetCollisionVelocity(
 }
 
 static s32 IsWrongWayImpact(const PlayerCarRuntime *player) {
-    return player->facingBackwards != ReadStableRaceSeries() &&
+    return player->facingBackwards != g_RaceSeries &&
            player->speed >= 0x51 && g_WrongWayTimer >= 0xA;
 }
 
@@ -257,7 +257,7 @@ static void ApplyLowRegionCollision(PlayerCarRuntime *player,
                                     GameCarRuntime *opponent) {
     CarCollisionPoint velocity = GetCollisionVelocity(player, opponent, 0);
 
-    if (player->facingBackwards != ReadStableRaceSeries()) {
+    if (player->facingBackwards != g_RaceSeries) {
         player->drive.drivetrainTorque = 0;
         player->acceleration = 0;
     } else {

@@ -9,7 +9,7 @@
  * are nudged, and only while no nearby car is blocking them.
  */
 void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex) {
-    const s32 series = ReadStableRaceSeries() != 0;
+    const s32 series = g_RaceSeries != 0;
     s32 position = car->trackProgress >> 4;
     const TrackRacingLineHint *hints;
     const TrackRacingLineHint *hint;

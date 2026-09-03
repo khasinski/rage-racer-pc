@@ -20,7 +20,7 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
 
     if (mode < 2) {
         RaceIntroCameraScript *script = g_RaceIntroCameraScript;
-        s32 series = ReadStableRaceSeries() != 0;
+        s32 series = g_RaceSeries != 0;
         s16 keyIndex = script->firstKeyIndex[series];
         RaceIntroCameraKey *key = &script->keys[keyIndex];
 

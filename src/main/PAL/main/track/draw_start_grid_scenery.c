@@ -27,7 +27,7 @@ void DrawStartGridScenery(s32 timer) {
         return;
     }
 
-    series = ReadStableRaceSeries();
+    series = g_RaceSeries;
     BuildRotMatrixY(&objectMatrix, g_StartGridSceneryAngle[series]);
     worldMatrix = objectMatrix;
     MulMatrix2(&g_RenderState.matrix, &objectMatrix);

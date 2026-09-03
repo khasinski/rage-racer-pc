@@ -10,7 +10,7 @@
  */
 void SteerCarAlongRoute(GameCarRuntime *car) {
     const GameTrackPoint *point;
-    s32 raceSeries = ReadStableRaceSeries() != 0;
+    s32 raceSeries = g_RaceSeries != 0;
     s32 index;
     s32 lateral = car->aiLateralOffset;
     s32 targetAngle;

@@ -48,14 +48,6 @@ extern s16 g_GrandPrixMode;
  * courses backwards, also the lap-direction flag. */
 extern s32 g_RaceSeries;
 
-static inline u16 ReadRaceTrackDirection(void) {
-    return (u16)g_RaceSeries;
-}
-
-static inline s32 ReadStableRaceSeries(void) {
-    return g_RaceSeries;
-}
-
 /* Race phase: 0 pre-start (physics frozen), 1 countdown, 2 racing, 4/5
  * finished, 7 goal/retire, 8 aborted. */
 extern s16 g_RacePhase;

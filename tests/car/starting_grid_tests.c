@@ -33,7 +33,7 @@ void InitRivalCar(GameCarRuntime *car, s32 index,
         s_initCalls[index]++;
         car->activeFlag = 1;
         car->aiEnabled = 1;
-        car->facingBackwards = (s16)ReadRaceTrackDirection();
+        car->facingBackwards = (s16)g_RaceSeries;
     }
 }
 

@@ -28,7 +28,7 @@ static void ResetPlayerCarRuntime(PlayerCarRuntime *car) {
 static void PlacePlayerCarOnGrid(PlayerCarRuntime *car) {
     CarTrackLimits trackLimits = {0};
     const TrackRivalStart *start;
-    s32 raceSeries = ReadStableRaceSeries();
+    s32 raceSeries = g_RaceSeries;
     s32 startPointIndex;
 
     if (g_TrackEventData == NULL || g_TrackPoints == NULL ||

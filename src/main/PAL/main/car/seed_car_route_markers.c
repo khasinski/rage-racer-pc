@@ -7,7 +7,7 @@
  * list is ordered along the track and ends with a -1 sentinel.
  */
 void SeedCarRouteMarkers(void) {
-    const s32 series = ReadStableRaceSeries() != 0;
+    const s32 series = g_RaceSeries != 0;
     s32 carIndex;
 
     if (g_TrackEventData == NULL) {

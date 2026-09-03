@@ -123,7 +123,7 @@ static void ToggleRacePause(void) {
         g_RaceFadeTimer = 0;
         g_RacePhase = 7;
         if (g_GrandPrixMode == 0) {
-            s32 series = ReadStableRaceSeries();
+            s32 series = g_RaceSeries;
             s32 course = SeriesCourseIndex();
 
             g_BestLapTimes[series][course][0] =
@@ -171,7 +171,7 @@ void EnterRaceScene(void) {
     SetTrackTexturePageNow(g_PlayerCar.trackSection);
     BuildStartingGrid();
     course = SeriesCourseIndex();
-    series = ReadStableRaceSeries();
+    series = g_RaceSeries;
     recordMode = RaceRecordMode(g_GrandPrixMode);
     g_LapTimeMs = 0;
     BuildRaceSectorEnds(g_TrackLength, g_SectorEndDistance);
@@ -265,7 +265,7 @@ static void UpdatePausedRaceScene(void) {
     if (g_GrandPrixMode != 0) {
         DrawCars();
     }
-    if ((g_PlayerCar.facingBackwards != ReadStableRaceSeries()) &&
+    if ((g_PlayerCar.facingBackwards != g_RaceSeries) &&
         WrongWayWarningVisible(g_WrongWayTimer)) {
         DrawWrongWayWarning();
     }
@@ -392,7 +392,7 @@ static void UpdateActiveRaceScene(void) {
 
     wrongWay = UpdateWrongWayState(
         g_WrongWayTimer,
-        g_PlayerCar.facingBackwards != ReadStableRaceSeries(), g_RacePhase,
+        g_PlayerCar.facingBackwards != g_RaceSeries, g_RacePhase,
         g_SceneTimer);
     g_WrongWayTimer = wrongWay.timer;
     if (wrongWay.drawWarning) {

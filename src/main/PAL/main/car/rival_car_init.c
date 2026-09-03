@@ -22,7 +22,7 @@ void InitRivalCar(GameCarRuntime *car,
     memset(car, 0, sizeof(*car));
     car->initializedFlag = 1;
     car->aiEnabled = 1;
-    car->facingBackwards = (s16)ReadRaceTrackDirection();
+    car->facingBackwards = (s16)g_RaceSeries;
     car->modelIndex = grid[gridPosition].halves.modelId;
     car->rivalModelId = grid[gridPosition].halves.modelId;
     startPointIndex = WrapTrackPointIndex(start->trackPointIndex);
@@ -36,7 +36,7 @@ void InitRivalCar(GameCarRuntime *car,
     }
     car->trackPointIndex = trackPointIndex;
     car->bodyYaw = (ANGLE_THREE_QUARTER_TURN -
-                    ReadStableRaceSeries() * ANGLE_HALF_TURN -
+                    g_RaceSeries * ANGLE_HALF_TURN -
                     TrackPoint(trackPointIndex)->angle) & ANGLE_MASK;
     car->baseBodyYaw = car->bodyYaw;
     car->targetYaw = car->bodyYaw;

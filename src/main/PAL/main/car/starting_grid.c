@@ -13,7 +13,7 @@ enum {
 static void DisableRivalCar(GameCarRuntime *car) {
     memset(car, 0, sizeof(*car));
     car->activeFlag = -1;
-    car->facingBackwards = (s16)ReadRaceTrackDirection();
+    car->facingBackwards = (s16)g_RaceSeries;
 }
 
 void BuildStartingGrid(void) {
