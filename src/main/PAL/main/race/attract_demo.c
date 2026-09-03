@@ -1,4 +1,5 @@
 #include "game/asset.h"
+#include "game/asset_internal.h"
 #include "game/audio_internal.h"
 #include "game/fmv_internal.h"
 #include "game/car.h"
@@ -22,6 +23,8 @@ enum {
 };
 
 void EnterAttractDemo(void) {
+    size_t texturePackSize;
+
     SetDispMask(0);
     SetupDisplay240(0, 0, 0);
 
@@ -30,9 +33,8 @@ void EnterAttractDemo(void) {
                           g_ImageBlockSize)) {
         return;
     }
-    if (g_ImageBlockBuffer <= g_AssetBase ||
-        !InstallTrackTextureAssetPack(
-            g_AssetBase, (size_t)(g_ImageBlockBuffer - g_AssetBase))) {
+    if (!AssetSpanSize(g_AssetBase, g_ImageBlockBuffer, &texturePackSize) ||
+        !InstallTrackTextureAssetPack(g_AssetBase, texturePackSize)) {
         return;
     }
     RequestTrackDataAssets();

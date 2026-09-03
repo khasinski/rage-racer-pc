@@ -109,6 +109,25 @@ int main(void) {
     CHECK(g_BgmChangeDelay == 0x1E && g_CameraCarIndex == 0);
 
     ResetCalls();
+    g_AssetLoadState = 0;
+    g_ImageBlockBuffer = g_AssetBase;
+    g_BgmSelectStep = BGM_SELECT_STEP_LOAD_ASSETS;
+    g_FadeLevel = 0;
+    g_FadeStep = 0;
+    UpdateBgmSelectLoad();
+    CHECK(s_courseInstalls == 0 && s_dataRequests == 0);
+    CHECK(g_BgmSelectStep == BGM_SELECT_STEP_LOAD_ASSETS);
+
+    ResetCalls();
+    g_AssetLoadState = 0;
+    g_ImageBlockBuffer = (u8 *)((uintptr_t)g_AssetBase - 1);
+    g_BgmSelectStep = BGM_SELECT_STEP_LOAD_ASSETS;
+    g_FadeLevel = 0;
+    g_FadeStep = 0;
+    UpdateBgmSelectLoad();
+    CHECK(s_courseInstalls == 0 && s_dataRequests == 0);
+    CHECK(g_BgmSelectStep == BGM_SELECT_STEP_LOAD_ASSETS);
+    ResetCalls();
     g_AssetLoadState = 1;
     g_FadeLevel = 2;
     g_FadeStep = -4;

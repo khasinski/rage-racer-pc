@@ -74,11 +74,12 @@ static void UpdatePrologueLoad(void) {
 }
 
 static void UpdatePrologueTextureLoad(void) {
+    size_t texturePackSize;
+
     if (AssetLoadCompletedSuccessfully()) {
-        if (g_ImageBlockBuffer > g_AssetBase &&
-            InstallTrackTextureAssetPack(
-                g_AssetBase,
-                (size_t)(g_ImageBlockBuffer - g_AssetBase))) {
+        if (AssetSpanSize(g_AssetBase, g_ImageBlockBuffer,
+                          &texturePackSize) &&
+            InstallTrackTextureAssetPack(g_AssetBase, texturePackSize)) {
             RequestTrackDataAssets();
             g_PrologueStep = PROLOGUE_STEP_LOAD_TRACK;
         }

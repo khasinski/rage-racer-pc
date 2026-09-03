@@ -12,6 +12,25 @@ extern s32 g_AssetLoadFailed;
 /* Writable bytes remaining in the port-owned buffer containing `at`. */
 size_t PortAssetRoomAt(const void *at);
 
+/* Computes a byte span without relational comparison or subtraction between
+ * C pointers that may have lost their common-array provenance in host state. */
+static inline s32 AssetSpanSize(const void *begin, const void *end,
+                                size_t *size) {
+    uintptr_t first;
+    uintptr_t last;
+
+    if (begin == NULL || end == NULL || size == NULL) {
+        return 0;
+    }
+    first = (uintptr_t)begin;
+    last = (uintptr_t)end;
+    if (last <= first || last - first > SIZE_MAX) {
+        return 0;
+    }
+    *size = (size_t)(last - first);
+    return 1;
+}
+
 static inline void FailAssetLoad(void) {
     g_AssetLoadFailed = 1;
     g_AssetLoadState = 0;
