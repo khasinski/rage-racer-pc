@@ -330,6 +330,25 @@ endif()
 add_test(NAME attract_demo_scene COMMAND attract_demo_scene_tests)
 set_tests_properties(attract_demo_scene PROPERTIES LABELS functional)
 
+add_executable(attract_world_tests
+    attract_world_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/attract_world.c)
+target_include_directories(attract_world_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(attract_world_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(attract_world_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(attract_world_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME attract_world COMMAND attract_world_tests)
+set_tests_properties(attract_world PROPERTIES LABELS functional)
+
 add_executable(bgm_track_tests
     bgm_track_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/bgm_track.c)

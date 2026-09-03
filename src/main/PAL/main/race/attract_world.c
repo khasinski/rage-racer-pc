@@ -6,10 +6,15 @@
 #include "game/track.h"
 
 void UpdateAndDrawAttractWorld(void) {
+    s32 cameraCarIndex = g_CameraCarIndex;
     GameCarRuntime *cameraCar;
 
+    if ((u32)cameraCarIndex >= RACE_CAR_SLOT_COUNT) {
+        cameraCarIndex = 0;
+        g_CameraCarIndex = cameraCarIndex;
+    }
     UpdateAttractCars();
-    cameraCar = &g_Cars[g_CameraCarIndex];
+    cameraCar = &g_Cars[cameraCarIndex];
     RequestTrackTexturePage(cameraCar->trackSection);
     UpdateCamera(g_CameraViewMode, GetCarRenderObject(cameraCar));
 
