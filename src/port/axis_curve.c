@@ -13,13 +13,15 @@ float AxisCurve(float value, float deadzone, float saturation,
     if (!isfinite(saturation)) saturation = 1.0f;
     if (!isfinite(linearity)) linearity = 0.0f;
     if (!isfinite(scaling)) scaling = 1.0f;
-    if (saturation <= deadzone) saturation = deadzone + 0.0001f;
-    value = (value - deadzone) / (saturation - deadzone);
+    if (saturation <= deadzone)
+        value = value <= deadzone ? 0.0f : 1.0f;
+    else
+        value = (value - deadzone) / (saturation - deadzone);
     if (value < 0.0f) value = 0.0f;
     if (value > 1.0f) value = 1.0f;
     /* DuckStation raises the travelled fraction to e^linearity, so 0 is linear,
      * positive softens the middle of the throw and negative sharpens it. */
-    value = powf(value, expf(linearity));
+    if (value != 0.0f) value = powf(value, expf(linearity));
     value *= scaling;
     if (value < 0.0f) value = 0.0f;
     if (value > 1.0f) value = 1.0f;

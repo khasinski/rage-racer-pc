@@ -1,3 +1,4 @@
+#include <float.h>
 #include <math.h>
 #include <limits.h>
 #include <stdio.h>
@@ -88,6 +89,10 @@ int main(void) {
            AxisCurve(0.6f, 0.5f, 0.5f, 0.0f, 1.0f), 1.0f);
     Expect("saturation below deadzone",
            AxisCurve(0.9f, 0.9f, 0.3f, 0.0f, 1.0f), 0.0f);
+    Expect("large equal limits remain finite",
+           AxisCurve(FLT_MAX, FLT_MAX, FLT_MAX, 0.0f, 1.0f), 0.0f);
+    Expect("extreme negative linearity preserves rest",
+           AxisCurve(0.0f, 0.0f, 1.0f, -FLT_MAX, 1.0f), 0.0f);
 
     /* A range of zero would peg the twist at centre however hard the d-pad is
      * held, so an unset range falls back to full lock. One unit of range is a
