@@ -69,8 +69,8 @@ typedef union CarTrackHeading {
 typedef struct CarTrackLimits {
     s16 rightInset;
     s16 leftInset;
-    s16 rightKnockbackMode;
-    s16 leftKnockbackMode;
+    s16 rightContact;
+    s16 leftContact;
 } CarTrackLimits;
 
 typedef union CarMotionValue {
@@ -395,7 +395,6 @@ enum {
     CAR_FIRST_FORWARD_GEAR = 1,
     CAR_FORWARD_GEAR_COUNT = 6,
     CAR_TORQUE_LOSS_BOUNDARY_COUNT = 10,
-    CAR_KNOCKBACK_VECTOR_MODE = 4,
 };
 
 /* The retail asset stores these two logical tables across adjacent named

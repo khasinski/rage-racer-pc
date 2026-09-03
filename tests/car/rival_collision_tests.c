@@ -72,7 +72,7 @@ static int s_knockbacks;
 
 void SetCarCollisionKnockback(GameCarRuntime *car, s32 x, s32 z) {
     RECORD("knockback", (s32)(car - g_Cars), x, z,
-           CAR_KNOCKBACK_VECTOR_MODE);
+           CAR_TRACK_CONTACT_REAR_RIGHT);
     s_knockbacks++;
 }
 

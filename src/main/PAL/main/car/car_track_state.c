@@ -39,8 +39,8 @@ static void TraceCarTrackEnter(const GameCarRuntime *car,
           "progress=%d lateral=%d yaw=%d limits=%d,%d,%d,%d",
           g_SceneTimer, trackPointIndex, car->x, car->z, car->speed,
           car->trackProgress, car->trackLateralOffset, car->bodyYaw,
-          limits->leftInset, limits->rightInset, limits->leftKnockbackMode,
-          limits->rightKnockbackMode);
+          limits->leftInset, limits->rightInset, limits->leftContact,
+          limits->rightContact);
 }
 
 static void TraceCarTrackExit(const GameCarRuntime *car, s32 trackPointIndex,
@@ -107,13 +107,13 @@ static s32 ClampCarToTrackEdges(GameCarRuntime *car, CarTrackWork *work,
     leftLimit = work->leftHalfWidth + limits->leftInset;
     if (lateralOffset < -leftLimit) {
         ApplyTrackEdgeCorrection(car, work, lateralOffset + leftLimit,
-                                 limits->leftKnockbackMode);
+                                 limits->leftContact);
         return -leftLimit;
     }
     rightLimit = WrapSigned16(rightHalfWidth) - limits->rightInset;
     if (rightLimit < lateralOffset) {
         ApplyTrackEdgeCorrection(car, work, lateralOffset - rightLimit,
-                                 limits->rightKnockbackMode);
+                                 limits->rightContact);
         lateralOffset = rightLimit;
     }
     return lateralOffset;

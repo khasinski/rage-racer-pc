@@ -35,8 +35,8 @@ void MeasurePlayerTrackLimits(const Matrix *toTrack,
 
     limits->rightInset = -1;
     limits->leftInset = -1;
-    limits->rightKnockbackMode = 0;
-    limits->leftKnockbackMode = 0;
+    limits->rightContact = CAR_TRACK_CONTACT_NONE;
+    limits->leftContact = CAR_TRACK_CONTACT_NONE;
     for (index = 0; index < 4; index++) {
         corner.vx = WrapSigned16(
             (int64_t)g_CarCornerOffsets[index].x * 4);
@@ -49,11 +49,11 @@ void MeasurePlayerTrackLimits(const Matrix *toTrack,
         }
         /* Contact values are one-based, so zero means no reaching corner. */
         if (limits->rightInset < reach.x) {
-            limits->rightKnockbackMode =
+            limits->rightContact =
                 index + CAR_TRACK_CONTACT_FRONT_LEFT;
             limits->rightInset = reach.x;
         } else if (reach.x < limits->leftInset) {
-            limits->leftKnockbackMode =
+            limits->leftContact =
                 index + CAR_TRACK_CONTACT_FRONT_LEFT;
             limits->leftInset = reach.x;
         }

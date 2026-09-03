@@ -13,8 +13,8 @@ void PlaceRivalCarsOnTrack(void) {
 
     limits.rightInset = RIVAL_TRACK_INSET;
     limits.leftInset = -RIVAL_TRACK_INSET;
-    limits.rightKnockbackMode = 0;
-    limits.leftKnockbackMode = 0;
+    limits.rightContact = CAR_TRACK_CONTACT_NONE;
+    limits.leftContact = CAR_TRACK_CONTACT_NONE;
 
     for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
         if (g_Cars[index].activeFlag != -1) {

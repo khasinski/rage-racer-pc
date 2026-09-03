@@ -129,5 +129,5 @@ void SetTrackBoundaryKnockback(GameCarRuntime *car, s32 x, s32 z,
 
 void SetCarCollisionKnockback(GameCarRuntime *car, s32 x, s32 z) {
     SetSuppliedKnockbackVector(car, x, z);
-    TraceCarKnockback(car, x, z, CAR_KNOCKBACK_VECTOR_MODE);
+    TraceCarKnockback(car, x, z, CAR_TRACK_CONTACT_REAR_RIGHT);
 }

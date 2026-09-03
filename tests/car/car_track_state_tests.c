@@ -229,8 +229,8 @@ int main(int argc, char **argv) {
 
                             limits.leftInset = 0x40;
                             limits.rightInset = 0x40;
-                            limits.leftKnockbackMode = 2;
-                            limits.rightKnockbackMode = 3;
+                            limits.leftContact = CAR_TRACK_CONTACT_FRONT_RIGHT;
+                            limits.rightContact = CAR_TRACK_CONTACT_REAR_LEFT;
 
                             g_RaceSeries = series;
                             g_SceneTimer = 100;
@@ -267,10 +267,10 @@ int main(int argc, char **argv) {
     }
 
     if (CheckPlayerBoundaryKnockback(&limits, -0x600,
-                                     limits.leftKnockbackMode,
+                                     limits.leftContact,
                                      "left") != 0 ||
         CheckPlayerBoundaryKnockback(&limits, 0x600,
-                                     limits.rightKnockbackMode,
+                                     limits.rightContact,
                                      "right") != 0) {
         return 1;
     }

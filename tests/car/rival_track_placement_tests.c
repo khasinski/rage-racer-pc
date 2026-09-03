@@ -25,8 +25,8 @@ void ApplyCarKnockback(GameCarRuntime *car) {
 s32 UpdateCarTrackState(GameCarRuntime *car, s32 point,
                         const CarTrackLimits *limits) {
     if (point != car->trackPointIndex || limits->leftInset != -0x3C ||
-        limits->rightInset != 0x3C || limits->leftKnockbackMode != 0 ||
-        limits->rightKnockbackMode != 0) {
+        limits->rightInset != 0x3C || limits->leftContact != 0 ||
+        limits->rightContact != 0) {
         return -1;
     }
     s_events[s_eventCount++] = 300 + CarIndex(car);

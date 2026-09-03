@@ -50,12 +50,12 @@ static void CheckLimits(const Matrix *matrix, s32 right, s32 left,
     memset(&limits, 0x7F, sizeof(limits));
     MeasurePlayerTrackLimits(matrix, &limits);
     if (limits.rightInset != right || limits.leftInset != left ||
-        limits.rightKnockbackMode != rightMode ||
-        limits.leftKnockbackMode != leftMode) {
+        limits.rightContact != rightMode ||
+        limits.leftContact != leftMode) {
         printf("FAIL limits: right=%d/%d left=%d/%d modes=%d/%d,%d/%d\n",
                limits.rightInset, right, limits.leftInset, left,
-               limits.rightKnockbackMode, rightMode,
-               limits.leftKnockbackMode, leftMode);
+               limits.rightContact, rightMode,
+               limits.leftContact, leftMode);
         s_failures++;
     }
 }
