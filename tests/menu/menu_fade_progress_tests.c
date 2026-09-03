@@ -58,8 +58,10 @@ int main(void) {
     CHECK(AdvanceMenuViewOffsetValue(2500, 250000) == 2813);
     CHECK(AdvanceMenuViewOffsetValue(250000, 0) == 229166);
     CHECK(AdvanceMenuViewOffsetValue(42, 42) == 42);
-    CHECK(AdvanceMenuViewOffsetValue(INT_MIN, INT_MAX) == INT_MIN);
-    CHECK(AdvanceMenuViewOffsetValue(INT_MAX, INT_MIN) == 1789569705);
+    CHECK(AdvanceMenuViewOffsetValue(INT_MIN, INT_MAX) == 1);
+    CHECK(AdvanceMenuViewOffsetValue(INT_MAX, INT_MIN) == 229166);
+    CHECK(NormalizeMenuViewOffset(-1) == MENU_VIEW_OFFSET_MIN);
+    CHECK(NormalizeMenuViewOffset(INT_MAX) == MENU_VIEW_OFFSET_MAX);
 
     CHECK(AdvanceMenuViewAngleValue(100, 100, 24) == 100);
     CHECK(AdvanceMenuViewAngleValue(100, 124, 24) == 102);

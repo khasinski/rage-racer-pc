@@ -30,6 +30,9 @@ int MenuCarViewSettled(void) {
 void MenuSpinToCar(s32 *shownCar, s32 fromIndex, s32 toIndex, s32 newTarget) {
     s32 previousTarget;
 
+    if (shownCar == NULL || (u32)toIndex >= GAME_CAR_COUNT) {
+        return;
+    }
     PlaySoundCue(8);
     *shownCar = toIndex;
     RequestCarModel(toIndex);
@@ -49,6 +52,9 @@ void MenuSpinToCar(s32 *shownCar, s32 fromIndex, s32 toIndex, s32 newTarget) {
 void MenuSpinBackToPlayerCar(void) {
     s32 previousTarget;
 
+    if ((u32)g_PlayerCarIndex >= GAME_CAR_COUNT) {
+        return;
+    }
     RequestCarModel(g_PlayerCarIndex);
     previousTarget = g_MenuViewAngleTarget;
     g_MenuViewAngleTarget = 0;
