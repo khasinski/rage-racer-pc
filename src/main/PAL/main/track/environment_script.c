@@ -4,9 +4,12 @@
 
 enum {
     ENVIRONMENT_PALETTE_COLOR_COUNT = 16,
+    ENVIRONMENT_CLUT_X = 0xE0,
+    ENVIRONMENT_CLUT_Y = 0x1E6,
     ENVIRONMENT_FOG_NEAR = 0x1770,
     ENVIRONMENT_FOG_FAR = 0x7FFF,
     ENVIRONMENT_FOG_STEP = 0xFA,
+    ENVIRONMENT_FAR_FOG_MODE = 2,
 };
 
 static s16 EnvironmentCueDuration(u16 duration) {
@@ -147,10 +150,10 @@ static void ApplyFogSettings(void) {
     g_EnvironmentColors.fields.fogEnabled = (s16)fogEnabled;
     SetFarColor(fog.bytes.r, fog.bytes.g, fog.bytes.b);
 
-    g_FogNear = g_EnvironmentMode == 2
+    g_FogNear = g_EnvironmentMode == ENVIRONMENT_FAR_FOG_MODE
         ? ENVIRONMENT_FOG_FAR
         : ENVIRONMENT_FOG_NEAR;
-    SetFogNear(g_FogNear, 0x140);
+    SetFogNear(g_FogNear, SCREEN_WIDTH);
 }
 
 void SeekEnvironmentScript(s32 targetTime) {
@@ -195,7 +198,12 @@ static u16 InterpolateClutColor(const Rgb *from, const Rgb *to, s32 blend) {
 }
 
 static void UpdateEnvironmentPalette(s32 blend) {
-    Rect rect = {0xE0, 0x1E6, 0x10, 1};
+    Rect rect = {
+        ENVIRONMENT_CLUT_X,
+        ENVIRONMENT_CLUT_Y,
+        ENVIRONMENT_PALETTE_COLOR_COUNT,
+        1,
+    };
     s32 color;
 
     for (color = 0; color < ENVIRONMENT_PALETTE_COLOR_COUNT; color++) {
@@ -209,6 +217,8 @@ static void UpdateEnvironmentPalette(s32 blend) {
 
 static void UpdateEnvironmentColorSlots(s32 blend) {
     s32 slot;
+    s32 firstGroundSlot;
+    s32 lastGroundSlot;
 
     for (slot = ENV_FOG; slot <= ENV_SKY_BOTTOM; slot++) {
         LerpEnvironmentColor(&g_EnvironmentColors.fields.slots[slot].from,
@@ -218,26 +228,22 @@ static void UpdateEnvironmentColorSlots(s32 blend) {
     }
 
     if (g_CourseIndex == 2) {
-        for (slot = ENV_GROUND_NEAR_TOP;
-             slot <= ENV_GROUND_NEAR_BOTTOM; slot++) {
-            LerpEnvironmentColor(
-                &g_EnvironmentColors.fields.slots[slot].from,
-                &g_EnvironmentColors.fields.slots[slot].to,
-                &g_EnvironmentColors.fields.slots[slot].cur, blend);
-        }
+        firstGroundSlot = ENV_GROUND_NEAR_TOP;
+        lastGroundSlot = ENV_GROUND_NEAR_BOTTOM;
     } else {
-        for (slot = ENV_GROUND_FAR_TOP;
-             slot <= ENV_GROUND_FAR_BOTTOM; slot++) {
-            LerpEnvironmentColor(
-                &g_EnvironmentColors.fields.slots[slot].from,
-                &g_EnvironmentColors.fields.slots[slot].to,
-                &g_EnvironmentColors.fields.slots[slot].cur, blend);
-        }
+        firstGroundSlot = ENV_GROUND_FAR_TOP;
+        lastGroundSlot = ENV_GROUND_FAR_BOTTOM;
+    }
+    for (slot = firstGroundSlot; slot <= lastGroundSlot; slot++) {
+        LerpEnvironmentColor(
+            &g_EnvironmentColors.fields.slots[slot].from,
+            &g_EnvironmentColors.fields.slots[slot].to,
+            &g_EnvironmentColors.fields.slots[slot].cur, blend);
     }
 }
 
 static void UpdateFogDistance(void) {
-    if (g_EnvironmentMode == 2) {
+    if (g_EnvironmentMode == ENVIRONMENT_FAR_FOG_MODE) {
         g_FogNear += ENVIRONMENT_FOG_STEP;
         if (g_FogNear > ENVIRONMENT_FOG_FAR) {
             g_FogNear = ENVIRONMENT_FOG_FAR;
@@ -248,7 +254,7 @@ static void UpdateFogDistance(void) {
             g_FogNear = ENVIRONMENT_FOG_NEAR;
         }
     }
-    SetFogNear(g_FogNear, 0x140);
+    SetFogNear(g_FogNear, SCREEN_WIDTH);
 }
 
 void UpdateEnvironment(void) {
