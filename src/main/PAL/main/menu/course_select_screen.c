@@ -20,12 +20,17 @@
 #include "game/race_internal.h"
 #include "game/save_internal.h"
 
-/* The course card has to have come to rest before it will take another one. */
-#define CARD_REST_WINDOW 0x3D08F
+enum {
+    COURSE_CARD_REST_WINDOW = MENU_VIEW_OFFSET_MAX - 1,
+    COURSE_VIEW_HALF_TURN = 0x7A120,
+    COURSE_VIEW_RIGHT_TARGET = 0xF4240,
+    COURSE_CARD_FULL_TURN = 0x1F4000,
+    COURSE_CLASS_CURTAIN_CLOSED = 0x19,
+};
 
 static int CourseCardSettled(void) {
     return MenuValueWithinWindow(g_MenuViewAngle, g_MenuViewAngleTarget,
-                                 CARD_REST_WINDOW);
+                                 COURSE_CARD_REST_WINDOW);
 }
 
 static s32 CourseBestPlace(s32 course) {
@@ -60,9 +65,11 @@ static void BrowseToCourse(s32 step, s32 newTarget) {
     course = AddClampedMenuValue(course, step, 0,
                                  PHYSICAL_COURSE_COUNT - 1);
     g_MenuViewAngle =
-        RebaseCarouselValue(g_MenuViewAngle, previousTarget, 0x7A120);
+        RebaseCarouselValue(g_MenuViewAngle, previousTarget,
+                            COURSE_VIEW_HALF_TURN);
     g_CourseCardSpin =
-        RebaseCarouselValue(g_CourseCardSpin, previousSpin, 0x1F4000);
+        RebaseCarouselValue(g_CourseCardSpin, previousSpin,
+                            COURSE_CARD_FULL_TURN);
     g_CourseIndex = course;
     g_MenuPendingCourseIndex = course;
     g_CourseCardPendingGrade = CourseBestPlace(course);
@@ -115,17 +122,17 @@ static void DrawClassList(void *ot, s32 flash) {
 /* Leaving the screen downwards, into the race or the ranking: the card spins
  * back to where the next screen wants it. */
 static void SpinCardAway(void) {
-    g_MenuViewOffsetTarget = 0x3D090;
+    g_MenuViewOffsetTarget = MENU_VIEW_OFFSET_MAX;
     g_CourseCardPendingGrade = 0;
     g_CourseCardSpin = RebaseCarouselValue(
-        g_CourseCardSpin, g_CourseCardSpinTarget, 0x1F4000);
+        g_CourseCardSpin, g_CourseCardSpinTarget, COURSE_CARD_FULL_TURN);
 }
 
 /* Confirm on the row the cursor is on. */
 static void ChooseCourseSelectRow(s32 row) {
     if (row == 0) {
         PlaySoundCue(2);
-        GameMenuBusy = 1;
+        GameMenuBusy = COURSE_SELECT_TO_CAR_SELECT;
         g_MenuOverlayPattern = 1;
         g_TimeAttackPlateStep = -1;
         SpinCardAway();
@@ -137,7 +144,7 @@ static void ChooseCourseSelectRow(s32 row) {
              * series, which has no round of its own to record. */
             PlaySoundCue(2);
             g_CourseSelectModalScript = g_CourseSelectSavePromptScript;
-            GameMenuBusy = -1;
+            GameMenuBusy = COURSE_SELECT_SAVE_PROMPT;
             g_GrandPrixSeries = (s16)GrandPrixAssetSeries(
                 g_GrandPrixSeries, g_GrandPrixClass);
             g_UiScriptProgress2 = 0;
@@ -148,7 +155,7 @@ static void ChooseCourseSelectRow(s32 row) {
         StartSequenceFadeOut();
         g_MenuHintBarStep = -1;
         g_TimeAttackPlateStep = -1;
-        GameMenuBusy = row;
+        GameMenuBusy = COURSE_SELECT_TO_RACE;
         g_GrandPrixSeries = g_CourseIndex >> 2;
         SpinCardAway();
         return;
@@ -156,12 +163,12 @@ static void ChooseCourseSelectRow(s32 row) {
     PlaySoundCue(2);
     if (g_GrandPrixMode != 0) {
         g_CourseSelectModalScript = g_MenuDialogPanelLowerScript;
-        GameMenuBusy = -2;
+        GameMenuBusy = COURSE_SELECT_CLASS_PROMPT;
         g_UiScriptProgress2 = 0;
         g_MenuSubCursor = g_GrandPrixClass;
         return;
     }
-    GameMenuBusy = 3;
+    GameMenuBusy = COURSE_SELECT_TO_RANKING;
     g_MenuOverlayPattern = 1;
     g_TimeAttackPlateStep = -1;
 }
@@ -185,7 +192,7 @@ static void UpdateCourseSelectInput(void) {
     }
     if (choice.wantsNext && (CanSelectNextCourse() != 0) &&
         CourseCardSettled() && (g_MenuPendingCourseIndex < 0)) {
-        BrowseToCourse(1, 0xF4240);
+        BrowseToCourse(1, COURSE_VIEW_RIGHT_TARGET);
     }
     if (choice.choosesRow) {
         ChooseCourseSelectRow(choice.option);
@@ -271,7 +278,9 @@ static void UpdateSaveCountdown(void *ot) {
     RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 0);
     if (g_UiScriptProgress2 <= 0) {
         StartSequenceFadeOut();
-        GameMenuBusy = (g_MenuSubCursor != 0) ? 4 : 2;
+        GameMenuBusy = (g_MenuSubCursor != 0)
+                           ? COURSE_SELECT_TO_RECORD_ENTRY
+                           : COURSE_SELECT_TO_RACE;
         g_MenuHintBarStep = -1;
         SpinCardAway();
     }
@@ -284,7 +293,7 @@ static void UpdateSaveDismissed(void) {
     RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
     RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 0);
     if (g_UiScriptProgress2 <= 0) {
-        GameMenuBusy = 0;
+        GameMenuBusy = COURSE_SELECT_IDLE;
     }
 }
 
@@ -295,10 +304,12 @@ static void UpdateSaveDismissed(void) {
  */
 static void UpdateClassChange(void *ot) {
     if (g_CourseProgress == NULL) {
-        GameMenuBusy = 0;
+        GameMenuBusy = COURSE_SELECT_IDLE;
         g_ClassChangeApplied = 0;
         return;
     }
+    g_MenuSubCursor = (u8)AddClampedMenuValue(
+        g_MenuSubCursor, 0, 0, MaxSelectableClass());
     if (g_MenuConfirmTimer > 0) {
         g_MenuConfirmTimer -= 1;
         RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 1);
@@ -307,17 +318,17 @@ static void UpdateClassChange(void *ot) {
     }
     if (g_ClassChangeApplied != 0) {
         if (DrawClassChangeCurtain(-1) == 0) {
-            GameMenuBusy = 0;
+            GameMenuBusy = COURSE_SELECT_IDLE;
             g_UiScriptProgress2 = 0;
         }
         return;
     }
-    if (DrawClassChangeCurtain(1) >= 0x19) {
+    if (DrawClassChangeCurtain(1) >= COURSE_CLASS_CURTAIN_CLOSED) {
         g_ClassChangeApplied = 1;
         g_GrandPrixClass = g_MenuSubCursor;
         ResetCourseProgress(g_MenuSubCursor);
-        g_MenuViewAngle = 0x7A120;
-        g_MenuViewAngleTarget = 0x7A120;
+        g_MenuViewAngle = COURSE_VIEW_HALF_TURN;
+        g_MenuViewAngleTarget = COURSE_VIEW_HALF_TURN;
         g_CourseSelectOption = 0;
         g_MenuPendingCourseIndex = -1;
         g_CourseCardSpin = 0;
@@ -330,16 +341,18 @@ static void UpdateClassChange(void *ot) {
 }
 
 static void UpdateCourseSelectModal(void *ot, s32 state) {
-    if (state == -1) {
+    if (state == COURSE_SELECT_SAVE_PROMPT) {
         UpdateSavePrompt(ot);
-    } else if (state == -2) {
+    } else if (state == COURSE_SELECT_CLASS_PROMPT) {
         UpdateClassPrompt(ot);
-    } else if (state == -3) {
+    } else if (state == COURSE_SELECT_SAVE_COUNTDOWN) {
         UpdateSaveCountdown(ot);
-    } else if (state == -4) {
+    } else if (state == COURSE_SELECT_SAVE_DISMISSED) {
         UpdateSaveDismissed();
-    } else if (state == -5) {
+    } else if (state == COURSE_SELECT_CLASS_CHANGE) {
         UpdateClassChange(ot);
+    } else {
+        GameMenuBusy = COURSE_SELECT_IDLE;
     }
     DrawCourseArrows(1);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, g_CourseSelectOption);
@@ -369,9 +382,9 @@ static void HandOverToRace(s32 sceneId, s32 course) {
 
 static void EnterChosenScreen(void) {
     switch (GameMenuBusy) {
-    case 1:
+    case COURSE_SELECT_TO_CAR_SELECT:
         /* To the car select screen, with the showroom put back at its start. */
-        if (g_MenuViewOffset <= 0x3D08F) {
+        if (g_MenuViewOffset < MENU_VIEW_OFFSET_MAX) {
             return;
         }
         g_MenuScreen = MENU_SCREEN_ENTER_CAR_SELECT;
@@ -381,32 +394,32 @@ static void EnterChosenScreen(void) {
         g_CarSwapToIndex = -1;
         g_MenuViewAngle = 0;
         g_MenuViewAngleTarget = 0;
-        g_MenuViewOffset = 0x3D090;
+        g_MenuViewOffset = MENU_VIEW_OFFSET_MAX;
         g_MenuViewOffsetTarget = 0;
         g_CarSwapFromIndex = g_PlayerCarIndex;
         break;
-    case 2:
+    case COURSE_SELECT_TO_RACE:
         if ((g_MenuOutgoingScreenProgress > 0) ||
-            (g_MenuViewOffset <= 0x3D08F)) {
+            (g_MenuViewOffset < MENU_VIEW_OFFSET_MAX)) {
             return;
         }
         HandOverToRace(2, CourseSlot(g_CourseIndex));
         break;
-    case 3:
+    case COURSE_SELECT_TO_RANKING:
         g_MenuScreen = MENU_SCREEN_RANKING;
         g_MenuHandlerIndex = MENU_SCREEN_RANKING;
         break;
-    case 4:
+    case COURSE_SELECT_TO_RECORD_ENTRY:
         /* The saved-game route reaches the race through the record screen. */
         if ((g_MenuOutgoingScreenProgress > 0) ||
-            (g_MenuViewOffset <= 0x3D08F)) {
+            (g_MenuViewOffset < MENU_VIEW_OFFSET_MAX)) {
             return;
         }
         HandOverToRace(0x18, SeriesCourseIndex());
         break;
     }
     g_UiScriptProgress = 0;
-    GameMenuBusy = 0;
+    GameMenuBusy = COURSE_SELECT_IDLE;
 }
 
 static void UpdateCourseSelectOutgoing(void) {
@@ -435,7 +448,7 @@ void UpdateCourseSelectScreen(void) {
     DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex, 0);
     DrawMenuCourseView();
 
-    if (state == 0) {
+    if (state == COURSE_SELECT_IDLE) {
         UpdateCourseSelectIdle();
     } else if (state < 0) {
         UpdateCourseSelectModal(ot, state);

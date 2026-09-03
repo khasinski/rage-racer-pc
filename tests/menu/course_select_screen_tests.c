@@ -839,6 +839,29 @@ int main(int argc, char **argv) {
         puts("FAIL a missing course-progress record changed class");
         return 1;
     }
+
+    GameMenuBusy = COURSE_SELECT_CLASS_CHANGE;
+    g_CourseProgress = &s_course;
+    g_RaceProgress = &s_progress;
+    s_progress.maxClassReached = 2;
+    g_MenuSubCursor = UINT8_MAX;
+    g_ClassChangeApplied = 0;
+    g_MenuConfirmTimer = 0;
+    s_curtain = 0x19;
+    s_progressResets = 0;
+    UpdateCourseSelectScreen();
+    if (g_MenuSubCursor != 2 || g_GrandPrixClass != 2 ||
+        s_progressResets != 1) {
+        puts("FAIL class change accepted an unavailable class");
+        return 1;
+    }
+
+    GameMenuBusy = -99;
+    UpdateCourseSelectScreen();
+    if (GameMenuBusy != COURSE_SELECT_IDLE) {
+        puts("FAIL unknown course-select state did not recover to idle");
+        return 1;
+    }
     printf("the course select screen takes the same %d states it always did\n",
            steps);
     return 0;

@@ -39,12 +39,12 @@ MenuPromptOutcome DecideSavePrompt(u16 pressed, s32 busy, s32 confirmTimer,
     out.subCursor = AddClampedMenuValue(subCursor, 0, 0, 1);
     if (pressed & PAD_CONFIRM) {
         out.cues[out.cueCount++] = (out.subCursor != 0) ? 2 : 3;
-        out.busy = -3;
+        out.busy = COURSE_SELECT_SAVE_COUNTDOWN;
         out.confirmTimer = 0x23;
     }
     if (pressed & PAD_CANCEL) {
         out.cues[out.cueCount++] = 3;
-        out.busy = -4;
+        out.busy = COURSE_SELECT_SAVE_DISMISSED;
     }
     if (pressed & PAD_LEFT) {
         out.cues[out.cueCount++] = 1;
@@ -80,9 +80,9 @@ MenuClassPromptOutcome DecideClassPrompt(u16 pressed, s32 busy,
     if (pressed & PAD_CONFIRM) {
         AddCue(&out, 2);
         if (out.subCursor == currentClass) {
-            out.busy = 0;
+            out.busy = COURSE_SELECT_IDLE;
         } else {
-            out.busy = -5;
+            out.busy = COURSE_SELECT_CLASS_CHANGE;
             out.changeApplied = 0;
             out.confirmTimer = 0x23;
             out.effects[out.effectCount].kind = MENU_PROMPT_CURTAIN;
@@ -91,7 +91,7 @@ MenuClassPromptOutcome DecideClassPrompt(u16 pressed, s32 busy,
     }
     if (pressed & PAD_CANCEL) {
         AddCue(&out, 3);
-        out.busy = 0;
+        out.busy = COURSE_SELECT_IDLE;
     }
     if (pressed & PAD_UP) {
         AddCue(&out, 1);

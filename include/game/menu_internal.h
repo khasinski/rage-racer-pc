@@ -250,6 +250,19 @@ typedef struct MenuPromptOutcome {
     s32 subCursor;
 } MenuPromptOutcome;
 
+typedef enum CourseSelectState {
+    COURSE_SELECT_IDLE = 0,
+    COURSE_SELECT_TO_CAR_SELECT = 1,
+    COURSE_SELECT_TO_RACE = 2,
+    COURSE_SELECT_TO_RANKING = 3,
+    COURSE_SELECT_TO_RECORD_ENTRY = 4,
+    COURSE_SELECT_SAVE_PROMPT = -1,
+    COURSE_SELECT_CLASS_PROMPT = -2,
+    COURSE_SELECT_SAVE_COUNTDOWN = -3,
+    COURSE_SELECT_SAVE_DISMISSED = -4,
+    COURSE_SELECT_CLASS_CHANGE = -5,
+} CourseSelectState;
+
 /* The save prompt offered when a course is chosen: confirm, cancel, and the
  * two directions that pick between its buttons. */
 MenuPromptOutcome DecideSavePrompt(u16 pressed, s32 busy, s32 confirmTimer,
