@@ -2,11 +2,17 @@
 #include "game/car.h"
 
 s32 GetCarAssetIndex(s32 model, s32 grade) {
-    if ((u32)model >= GAME_CAR_COUNT || grade < 0 ||
-        grade > INT32_MAX - g_CarModelBaseIndex[model]) {
+    s32 firstVariant;
+
+    if ((u32)model >= GAME_CAR_COUNT || grade < 0) {
         return -1;
     }
-    return g_CarModelBaseIndex[model] + grade;
+
+    firstVariant = g_CarModelBaseIndex[model];
+    if (grade >= CAR_MODEL_VARIANT_COUNT - firstVariant) {
+        return -1;
+    }
+    return firstVariant + grade;
 }
 
 s32 GetCarUnlockLevel(s32 model) {

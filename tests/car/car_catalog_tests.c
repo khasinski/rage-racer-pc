@@ -1,7 +1,6 @@
 #include "game/asset.h"
 #include "game/car.h"
 
-#include <limits.h>
 #include <stdio.h>
 
 static CarEntry s_cars[GAME_CAR_COUNT];
@@ -54,7 +53,13 @@ int main(void) {
     CHECK(GetCarAssetIndex(-1, 0) == -1);
     CHECK(GetCarAssetIndex(GAME_CAR_COUNT, 0) == -1);
     CHECK(GetCarAssetIndex(0, -1) == -1);
-    CHECK(GetCarAssetIndex(1, INT_MAX) == -1);
+    CHECK(GetCarAssetIndex(0, CAR_MODEL_VARIANT_COUNT - 1) ==
+          CAR_MODEL_VARIANT_COUNT - 1);
+    CHECK(GetCarAssetIndex(0, CAR_MODEL_VARIANT_COUNT) == -1);
+    CHECK(GetCarAssetIndex(8, 2) == 28);
+    CHECK(GetCarAssetIndex(GAME_CAR_COUNT - 1, 0) ==
+          CAR_MODEL_VARIANT_COUNT - 1);
+    CHECK(GetCarAssetIndex(GAME_CAR_COUNT - 1, 1) == -1);
     CHECK(GetCarUnlockLevel(-1) == -1);
     CHECK(GetCarUnlockLevel(GAME_CAR_COUNT) == -1);
 
