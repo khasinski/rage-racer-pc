@@ -53,6 +53,8 @@ int main(void) {
     Check("large prize", PrizeCountStep(801, 80), 10);
     Check("negative prize", PrizeCountStep(-80, 80), 1);
     Check("no promotion bonus", PrizeCountStep(0, 250), 1);
+    Check("zero count duration", PrizeCountStep(100, 0), 1);
+    Check("negative count duration", PrizeCountStep(100, -1), 1);
 
     Check("class promotion bonus",
           PromotionBonusForClass(promotionBonuses, 5, 3, 1), 100000);

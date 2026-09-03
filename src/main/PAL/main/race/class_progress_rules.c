@@ -44,7 +44,12 @@ s32 IsFinalGrandPrixClass(s32 extraSeries, s32 classIndex) {
 }
 
 s32 PrizeCountStep(s32 amount, s32 frameCount) {
-    s32 step = amount / frameCount;
+    s32 step;
+
+    if (frameCount <= 0) {
+        return 1;
+    }
+    step = amount / frameCount;
     return step > 0 ? step : 1;
 }
 
