@@ -51,25 +51,32 @@ static s32 IsValidVabAsset(const AudioSlotAsset *asset) {
         return 0;
     }
     header = asset->vabHeader;
-    if (header[1] != 'B' || header[2] != 'A' || header[3] != 'V') {
+    if (header[0] != 'p' || header[1] != 'B' ||
+        header[2] != 'A' || header[3] != 'V') {
         return 0;
     }
     version = ReadLittleEndianU32(header + VAB_VERSION_OFFSET);
     programCount = ReadLittleEndianU16(header + VAB_PROGRAM_COUNT_OFFSET);
     sampleCount = ReadLittleEndianU16(header + VAB_SAMPLE_COUNT_OFFSET);
-    if (sampleCount >= VAB_LENGTH_TABLE_ENTRIES) return 0;
+    if (sampleCount >= VAB_LENGTH_TABLE_ENTRIES) {
+        return 0;
+    }
 
-    programLimit = header[0] == 'p' && version >= 5
+    programLimit = version >= 5
                        ? VAB_NEW_PROGRAM_LIMIT
                        : VAB_OLD_PROGRAM_LIMIT;
-    if (programCount > programLimit) return 0;
+    if (programCount > programLimit) {
+        return 0;
+    }
 
     requiredHeaderSize = VAB_HEADER_SIZE +
                          (size_t)programLimit * VAB_PROGRAM_ATTRIBUTE_SIZE +
                          (size_t)programCount * VAB_TONES_PER_PROGRAM *
                              VAB_TONE_ATTRIBUTE_SIZE +
                          VAB_LENGTH_TABLE_ENTRIES * sizeof(u16);
-    if (requiredHeaderSize > asset->vabHeaderSize) return 0;
+    if (requiredHeaderSize > asset->vabHeaderSize) {
+        return 0;
+    }
 
     lengths = header + requiredHeaderSize -
               VAB_LENGTH_TABLE_ENTRIES * sizeof(u16);

@@ -18,7 +18,9 @@ void LoadAudioParameterTable(const void *data, size_t size) {
     s32 column;
     s32 maxRpm;
 
-    if (data == NULL || size < ENGINE_SOUND_PARAMETER_TABLE_SIZE) return;
+    if (data == NULL || size < ENGINE_SOUND_PARAMETER_TABLE_SIZE) {
+        return;
+    }
 
     for (bank = 0; bank < ENGINE_SOUND_BANK_COUNT; bank++) {
         for (row = 0; row < ENGINE_SOUND_PARAMETER_COUNT; row++) {

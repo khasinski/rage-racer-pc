@@ -175,6 +175,9 @@ int main(void) {
     header[1] = 'X';
     CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &asset) == -1);
     header[1] = 'B';
+    header[0] = 'X';
+    CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &asset) == -1);
+    header[0] = 'p';
     WriteLittleEndianU16(header + 18, 65);
     CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &asset) == -1);
     WriteLittleEndianU16(header + 18, 0);

@@ -39,6 +39,8 @@ s32 InterpolateAudioParameter(s32 parameter, s32 position, s32 bank) {
                 ((int64_t)position - curve->positions[upperPoint - 1]) /
                 positionSpan +
             curve->values[upperPoint - 1];
-    if (value < 0) return 0;
+    if (value < 0) {
+        return 0;
+    }
     return value >= 0x80 ? 0x7F : (s32)value;
 }
