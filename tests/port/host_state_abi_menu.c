@@ -38,8 +38,6 @@ _Static_assert(sizeof(g_TeamNameBlankTile) == 12 * 8 * sizeof(u16),
                "blank team-name texture ABI changed");
 _Static_assert(sizeof(g_FormatDecimal) == 4,
                "decimal format size changed");
-_Static_assert(sizeof(g_MenuBlankCaption) == 1,
-               "blank menu caption size changed");
 _Static_assert(sizeof(g_TimeAttackPlateProgress) == sizeof(s32),
                "time-attack plate progress ABI changed");
 _Static_assert(sizeof(g_TeamLogoClutRect) == 8,

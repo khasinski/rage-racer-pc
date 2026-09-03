@@ -43,7 +43,6 @@ u8 g_NameEntryCharset[42] __attribute__((aligned(16))) = {
     'Y', 'Z', '.', '-', '!', '?', '@',
 };
 char g_TextNowLoading[] __attribute__((aligned(16))) = "NOW LOADING";
-char g_MsgGameExit[12] __attribute__((aligned(16))) = "game_exit\n";
 char g_MsgGame0Ok[12] __attribute__((aligned(16))) = "game0 ok\n";
 s32 g_PromotionBonusTable[5] __attribute__((aligned(16))) = {
     500, 4800, 20000, 100000, 500000

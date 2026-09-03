@@ -371,7 +371,6 @@ typedef enum FrontendState {
 
 extern FrontendState g_FrontendState;
 extern s32 g_MainMenuSlide;
-extern u8 g_MenuBlankCaption;
 extern s32 g_MenuConfirmTimer;
 extern s32 g_MenuCourseModelIndex;
 extern s32 g_MenuHintBarProgress;

@@ -19,8 +19,6 @@
 #include "psyq/kernel.h"
 
 char g_FmtString[8] __attribute__((aligned(16))) = "%s";
-char g_MsgSaveChecksumOk[8] __attribute__((aligned(16))) = "ok \?";
-char g_FmtSaveChecksum[20] __attribute__((aligned(16))) = {0x64,0x20,0x25,0x78,0x6c,0x20,0x2c,0x20,0x73,0x75,0x6d,0x20,0x25,0x78,0x6c,0x0a,0x00,0x00,0x00,0x00};
 CarEntry g_SaveDefaults[GAME_CAR_COUNT] = {
     {0x00, 0x02, 0x00, 0x00, 0x00, 0x00, {0x00, 0x00}},
     {0x00, 0x03, 0x00, 0x01, 0x01, 0x00, {0x00, 0x00}},
@@ -40,10 +38,6 @@ s32 g_McLastCardStatus;
 s32 g_McMenuPage;
 s32 g_McMenuRowCursor;
 s32 g_McSlotCursor;
-char g_McModeLabels[32] __attribute__((aligned(16))) =
-    "SAVE\0\0\0\0\0\0"
-    "LOAD\0\0\0\0\0\0"
-    "EXIT";
 s32 g_McActionState;
 s32 g_McActionResult;
 s32 g_McConfirmChoice;

@@ -98,9 +98,6 @@ extern char g_FmtCarName[8];
 extern char g_CaptionTotalTime2[8];
 extern unsigned char g_NameEntryCharset[42];
 extern char g_TextNowLoading[];
-extern unsigned char g_MsgResOk[8];
-extern unsigned char g_MsgEventOk[12];
-extern unsigned char g_MsgGameExit[12];
 extern unsigned char g_MsgGame0Ok[12];
 extern const MenuLightBurstBand g_MenuLightBurstBandX;
 extern const MenuLightBurstBand g_MenuLightBurstBandY;
@@ -113,7 +110,6 @@ extern SVec g_CourseCardVerts[4];
 extern Vec4 g_MenuCarPivotOffset;
 extern const Vec4 g_TeamNameCharScale;
 extern const char g_FormatDecimal[4];
-extern unsigned char g_MenuBlankCaption;
 extern DesignModeCellMask g_DesignModeCellMask;
 extern unsigned char g_CarSoundVolumeScales[128];
 extern const char g_MsgVabOpenHeadError[21];
@@ -124,8 +120,6 @@ extern unsigned char g_MsgTooManyVoices[16];
 extern const char g_MsgSeqVabOpenHeadError[21];
 extern const char g_MsgSeqVabTransBodyError[22];
 extern unsigned char g_FmtString[8];
-extern unsigned char g_MsgSaveChecksumOk[8];
-extern unsigned char g_FmtSaveChecksum[20];
 extern unsigned char g_SaveDefaults[104];
 extern unsigned char g_DrawModeEnv[8];
 extern unsigned char g_PromotionBonusTable[20];
@@ -219,7 +213,6 @@ extern int32_t g_CarPriceTable[32];
 extern int32_t g_CarTuneUpPriceTable[31];
 extern unsigned char g_SoundSlotTone[24];
 extern unsigned char g_McSlotCursor[4];
-extern unsigned char g_McModeLabels[32];
 extern unsigned char g_CameraMatrixSaved[32];
 extern unsigned char g_SectorTimes[12];
 extern ContentSVec g_RaceIntroCameraDelta;
@@ -272,9 +265,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_CaptionTotalTime2", BYTES(g_CaptionTotalTime2), 8},
     {"g_NameEntryCharset", g_NameEntryCharset, 42},
     {"g_TextNowLoading", BYTES(g_TextNowLoading), 12},
-    {"g_MsgResOk", g_MsgResOk, 8},
-    {"g_MsgEventOk", g_MsgEventOk, 12},
-    {"g_MsgGameExit", g_MsgGameExit, 12},
     {"g_MsgGame0Ok", g_MsgGame0Ok, 12},
     {"g_MenuLightBurstBandX",
      (const unsigned char *)&g_MenuLightBurstBandX, 66},
@@ -289,7 +279,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_MenuCarPivotOffset", (const unsigned char *)&g_MenuCarPivotOffset, 16},
     {"g_TeamNameCharScale", (const unsigned char *)&g_TeamNameCharScale, 16},
     {"g_FormatDecimal", (const unsigned char *)g_FormatDecimal, 4},
-    {"g_MenuBlankCaption", &g_MenuBlankCaption, 1},
     {"g_DesignModeCellMask", (const unsigned char *)&g_DesignModeCellMask, 36},
     {"g_CarSoundVolumeScales", g_CarSoundVolumeScales, 128},
     {"g_MsgVabOpenHeadError",
@@ -304,8 +293,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_MsgSeqVabTransBodyError",
      (const unsigned char *)g_MsgSeqVabTransBodyError, 22},
     {"g_FmtString", g_FmtString, 8},
-    {"g_MsgSaveChecksumOk", g_MsgSaveChecksumOk, 8},
-    {"g_FmtSaveChecksum", g_FmtSaveChecksum, 20},
     {"g_SaveDefaults", g_SaveDefaults, 104},
     {"g_DrawModeEnv", g_DrawModeEnv, 8},
     {"g_TeamLogoClutRect", (const unsigned char *)&g_TeamLogoClutRect, 8},
@@ -407,7 +394,6 @@ static const HostStateBlob s_blobs[] = {
      (const unsigned char *)g_CarTuneUpPriceTable, 124},
     {"g_SoundSlotTone", g_SoundSlotTone, 24},
     {"g_McSlotCursor", g_McSlotCursor, 4},
-    {"g_McModeLabels", g_McModeLabels, 32},
     {"g_CameraMatrixSaved", g_CameraMatrixSaved, 32},
     {"g_SectorTimes", g_SectorTimes, 12},
     {"g_RaceIntroCameraDelta",
@@ -418,7 +404,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the canonical host constants alone. */
-    const unsigned long expected = 3077176982UL;
+    const unsigned long expected = 3467943191UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");
