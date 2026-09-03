@@ -21,6 +21,7 @@
 #include "game/state.h"
 #include "game/render_state.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -291,6 +292,19 @@ int main(int argc, char **argv) {
     UpdateCarTrackState(&car, 0, &limits);
     if (car.normalizedLateralOffset != 0) {
         puts("FAIL zero-width track produced a normalized offset");
+        return 1;
+    }
+
+    BuildTrack();
+    memset(&car, 0, sizeof(car));
+    car.x = s_points[0].x;
+    car.z = s_points[0].z;
+    car.progressA = INT_MAX;
+    g_RaceSeries = 0;
+    UpdateCarTrackState(&car, 0, &limits);
+    if (car.trackProgress != 0xFFF) {
+        printf("FAIL wrapped track progress is %d, expected %d\n",
+               car.trackProgress, 0xFFF);
         return 1;
     }
     printf("all %d placements put the car where they always did\n", steps);
