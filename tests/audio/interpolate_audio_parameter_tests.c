@@ -1,6 +1,8 @@
 #include "common.h"
 #include "game/audio.h"
+#include "game/audio_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -29,6 +31,7 @@ int main(void) {
     CHECK(InterpolateAudioParameter(3, 750, 1) == 0x7F);
     CHECK(InterpolateAudioParameter(3, 800, 1) == 160);
     CHECK(InterpolateAudioParameter(3, -50, 1) == 0);
+    CHECK(InterpolateAudioParameter(3, INT_MIN, 1) == 0);
 
     curve->positions[2] = curve->positions[1];
     curve->values[2] = 50;

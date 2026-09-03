@@ -2,6 +2,8 @@
 #include "game/audio_internal.h"
 #include "game/sound.h"
 
+#include <limits.h>
+
 enum {
     ENGINE_SOUND_POSITION_RANGE = 10240,
     ENGINE_SOUND_VOLUME_ONE = 128,
@@ -9,10 +11,14 @@ enum {
 };
 
 static s32 EngineSoundPositionForRpm(s32 rpm) {
-    if (g_EngineSoundState.maxRpm <= 0) {
+    int64_t position;
+
+    if (rpm <= 0 || g_EngineSoundState.maxRpm <= 0) {
         return 0;
     }
-    return rpm * ENGINE_SOUND_POSITION_RANGE / g_EngineSoundState.maxRpm;
+    position = (int64_t)rpm * ENGINE_SOUND_POSITION_RANGE /
+               g_EngineSoundState.maxRpm;
+    return position > INT_MAX ? INT_MAX : (s32)position;
 }
 
 static s32 ClampEngineSoundBank(s32 bank) {

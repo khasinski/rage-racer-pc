@@ -111,7 +111,6 @@ void SetIndexedEffectVoice(s32 index, s32 phase, s32 volume);
 void SetPitchedSoundCue(s32 cue, s32 pitch, s32 volume);
 void SetStereoSoundCue(s32 cue, s32 volLeft, s32 volRight);
 void PlaySoundCue(s32 cue);
-s32 InterpolateAudioParameter(s32 param, s32 position, s32 bank);
 void UpdateLoadedAudioVoices(s32 position, s32 bank);
 void InitEffectVoiceRuntime(void);
 void ForceAllEffectVoicesEnabled(s32 enabled);

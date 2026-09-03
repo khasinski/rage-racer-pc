@@ -3,6 +3,7 @@
 #include "game/audio_internal.h"
 #include "game/sound.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -122,6 +123,12 @@ int main(void) {
     UpdateLoadedAudioVoices(5000, ENGINE_SOUND_BANK_COUNT + 10);
     CHECK(g_EngineSoundState.position == 0 &&
           g_EngineSoundState.bank == ENGINE_SOUND_BANK_COUNT - 1);
+
+    g_EngineSoundState.maxRpm = 1;
+    UpdateLoadedAudioVoices(INT_MAX, 0);
+    CHECK(g_EngineSoundState.position == INT_MAX);
+    UpdateLoadedAudioVoices(-1, 0);
+    CHECK(g_EngineSoundState.position == 0);
 
     puts("engine sound runtime preserves slot routing, scaling, and updates");
     return 0;

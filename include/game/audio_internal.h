@@ -26,6 +26,7 @@ void ApplyPanVoiceVolume(void);
 void UpdateIndexedEffectVoice(void);
 void UpdateBasicEffectVoices(void);
 void UpdateEffectVoiceStates(void);
+s32 InterpolateAudioParameter(s32 parameter, s32 position, s32 bank);
 void SetSoundSlotTone(s32 slot, s32 bend, s32 volume, s32 toneIndex,
                       u16 vabSlot);
 void ForcePanVoiceEnabled(s32 enabled);

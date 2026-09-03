@@ -1,4 +1,5 @@
 #include "game/audio.h"
+#include "game/audio_internal.h"
 #include "game/sound.h"
 
 enum {
@@ -9,7 +10,7 @@ s32 InterpolateAudioParameter(s32 parameter, s32 position, s32 bank) {
     const EngineSoundCurveRow *curve;
     s32 upperPoint = 1;
     s32 positionSpan;
-    s32 value;
+    int64_t value;
 
     if ((u32)bank >= ENGINE_SOUND_BANK_COUNT ||
         (u32)parameter >= ENGINE_SOUND_PARAMETER_COUNT) {
@@ -33,8 +34,11 @@ s32 InterpolateAudioParameter(s32 parameter, s32 position, s32 bank) {
         return ClampCueLevel(curve->values[upperPoint]);
     }
 
-    value = (curve->values[upperPoint] - curve->values[upperPoint - 1]) *
-                (position - curve->positions[upperPoint - 1]) / positionSpan +
+    value = ((int64_t)curve->values[upperPoint] -
+             curve->values[upperPoint - 1]) *
+                ((int64_t)position - curve->positions[upperPoint - 1]) /
+                positionSpan +
             curve->values[upperPoint - 1];
-    return ClampCueLevel(value);
+    if (value < 0) return 0;
+    return value >= 0x80 ? 0x7F : (s32)value;
 }
