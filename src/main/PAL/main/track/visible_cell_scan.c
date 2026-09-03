@@ -6,6 +6,11 @@ void GetVisibleCellScanOffset(s32 direction, s32 cellIndex, s32 rearView,
     s32 xSign;
     s32 zSign;
 
+    if (offset == NULL) return;
+    offset[0] = 0;
+    offset[1] = 0;
+    if ((u32)cellIndex >= VISIBLE_CELL_COUNT) return;
+
     direction &= CELL_SCAN_DIRECTION_COUNT - 1;
     if (direction < 8) {
         scanDirection = direction;
