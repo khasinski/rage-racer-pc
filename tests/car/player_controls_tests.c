@@ -1,7 +1,9 @@
 #include "game/car.h"
 #include "game/car_internal.h"
+#include "game/integer.h"
 #include "game/state.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -99,6 +101,26 @@ int main(void) {
     g_SteerHoldFrames = 20;
     UpdatePlayerControlFeedback(&car);
     CHECK(g_SteerHoldFrames == -10);
+
+    Reset(&car);
+    car.speed = 256;
+    car.drive.steerPos = INT_MAX;
+    car.drive.steeringGrip = INT16_MAX;
+    car.drive.targetHeading = INT_MAX;
+    UpdatePlayerSteeringTarget(&car);
+    CHECK(car.drive.targetHeading ==
+          WrapSigned32(
+              (int64_t)INT_MAX +
+              WrapSigned32(
+                  (int64_t)(WrapSigned32((int64_t)INT_MAX * 6) / 5) *
+                  INT16_MAX) /
+                  0x10000));
+
+    Reset(&car);
+    car.steeringAngle = 4096;
+    g_SteerHoldFrames = INT16_MAX;
+    UpdatePlayerControlFeedback(&car);
+    CHECK(g_SteerHoldFrames == INT16_MIN);
 
     if (s_failures != 0) {
         printf("%d player control checks failed\n", s_failures);

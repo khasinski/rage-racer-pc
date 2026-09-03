@@ -1,5 +1,6 @@
 #include "game/car.h"
 #include "game/car_internal.h"
+#include "game/integer.h"
 #include "game/state.h"
 
 enum {
@@ -10,16 +11,23 @@ enum {
 void UpdatePlayerSteeringTarget(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
     s32 speed = car->speed;
-    s32 turn = (drive->steerPos * 6) / 5 * drive->steeringGrip;
+    s32 turn = WrapSigned32(
+        (int64_t)(WrapSigned32((int64_t)drive->steerPos * 6) / 5) *
+        drive->steeringGrip);
+    s32 headingChange;
 
     if (speed < 256 && drive->motionState == CAR_MOTION_DRIVING) {
-        drive->targetHeading += (turn / 256) * speed / 0x10000;
+        headingChange = WrapSigned32((int64_t)(turn / 256) * speed) /
+                        0x10000;
     } else if (speed < 512 &&
                drive->motionState == CAR_MOTION_STANDING_START) {
-        drive->targetHeading += (turn / 256) * speed / 0x20000;
+        headingChange = WrapSigned32((int64_t)(turn / 256) * speed) /
+                        0x20000;
     } else {
-        drive->targetHeading += turn / 0x10000;
+        headingChange = turn / 0x10000;
     }
+    drive->targetHeading = WrapSigned32(
+        (int64_t)drive->targetHeading + headingChange);
 }
 
 static void ClampPlayerSteeringAngle(PlayerCarRuntime *car) {
@@ -29,12 +37,14 @@ static void ClampPlayerSteeringAngle(PlayerCarRuntime *car) {
     if (car->steeringAngle >= STEERING_FULL_LOCK) {
         car->steeringAngle = STEERING_FULL_LOCK;
         if (!usesNegcon || drive->steerPos < -STEERING_FULL_LOCK) {
-            g_SteerHoldFrames++;
+            g_SteerHoldFrames = WrapSigned16(
+                (int64_t)g_SteerHoldFrames + 1);
         }
     } else if (car->steeringAngle <= -STEERING_FULL_LOCK) {
         car->steeringAngle = -STEERING_FULL_LOCK;
         if (!usesNegcon || drive->steerPos > STEERING_FULL_LOCK) {
-            g_SteerHoldFrames++;
+            g_SteerHoldFrames = WrapSigned16(
+                (int64_t)g_SteerHoldFrames + 1);
         }
     } else {
         g_SteerHoldFrames = usesNegcon ? NEGCON_STEERING_RELEASE_FRAMES : 0;
