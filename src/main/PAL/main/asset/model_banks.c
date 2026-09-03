@@ -4,13 +4,16 @@
 #include "game/render_internal.h"
 #include "game/track.h"
 
-static s32 AssetOffsetIsValid(s32 offset, size_t size) {
-    return offset >= 0 && (size_t)offset < size;
+static s32 AssetPayloadOffsetIsValid(s32 offset, size_t payloadOffset,
+                                     size_t size) {
+    return offset >= 0 && (size_t)offset >= payloadOffset &&
+           (size_t)offset < size;
 }
 
 s32 IsValidModelBankAsset(const ModelBankHeader *base, size_t size) {
     u32 count;
     u32 i;
+    size_t payloadOffset;
 
     if (base == NULL || size < offsetof(ModelBankHeader, modelOffsets)) {
         return 0;
@@ -18,14 +21,19 @@ s32 IsValidModelBankAsset(const ModelBankHeader *base, size_t size) {
 
     if (base->modelCount > GAME_MODEL_PER_BANK_LIMIT) return 0;
     count = base->modelCount;
-    if (size < offsetof(ModelBankHeader, modelOffsets) +
-                   count * sizeof(base->modelOffsets[0]) ||
-        !AssetOffsetIsValid(base->tableOffset, size) ||
-        !AssetOffsetIsValid(base->normalsOffset, size)) {
+    payloadOffset = offsetof(ModelBankHeader, modelOffsets) +
+                    count * sizeof(base->modelOffsets[0]);
+    if (size < payloadOffset ||
+        !AssetPayloadOffsetIsValid(base->tableOffset, payloadOffset, size) ||
+        !AssetPayloadOffsetIsValid(base->normalsOffset, payloadOffset,
+                                   size)) {
         return 0;
     }
     for (i = 0; i < count; i++) {
-        if (!AssetOffsetIsValid(base->modelOffsets[i], size)) return 0;
+        if (!AssetPayloadOffsetIsValid(base->modelOffsets[i], payloadOffset,
+                                       size)) {
+            return 0;
+        }
     }
     return 1;
 }
@@ -64,6 +72,7 @@ void SelectModelBank(s32 index) {
 s32 IsValidCourseModelAsset(const CourseModelAssetHeader *base, size_t size) {
     s32 count;
     s32 i;
+    size_t payloadOffset;
 
     if (base == NULL || size < offsetof(CourseModelAssetHeader, models)) {
         return 0;
@@ -73,15 +82,19 @@ s32 IsValidCourseModelAsset(const CourseModelAssetHeader *base, size_t size) {
         return 0;
     }
     count = base->modelCount;
-    if (size < offsetof(CourseModelAssetHeader, models) +
-                   (size_t)count * sizeof(base->models[0])) {
+    payloadOffset = offsetof(CourseModelAssetHeader, models) +
+                    (size_t)count * sizeof(base->models[0]);
+    if (size < payloadOffset) {
         return 0;
     }
     for (i = 0; i < count; i++) {
         const CourseModelAssetEntry *entry = &base->models[i];
 
-        if (!AssetOffsetIsValid(entry->geometryOffset, size) ||
-            !AssetOffsetIsValid(entry->modelOffset, size)) {
+        if (entry->vertexCount < 0 ||
+            !AssetPayloadOffsetIsValid(entry->geometryOffset, payloadOffset,
+                                       size) ||
+            !AssetPayloadOffsetIsValid(entry->modelOffset, payloadOffset,
+                                       size)) {
             return 0;
         }
     }
@@ -113,6 +126,7 @@ s32 IsValidTerrainCellAsset(const void *data, size_t size) {
     const u8 *cursor;
     const TerrainCellAssetHeader *header;
     size_t payloadSize;
+    size_t payloadOffset;
     s32 count;
     s32 i;
 
@@ -132,13 +146,18 @@ s32 IsValidTerrainCellAsset(const void *data, size_t size) {
         return 0;
     }
     count = header->cellCount;
-    if (payloadSize < offsetof(TerrainCellAssetHeader, cellOffsets) +
-                          (size_t)count * sizeof(header->cellOffsets[0]) ||
-        !AssetOffsetIsValid(header->facesOffset, payloadSize)) {
+    payloadOffset = offsetof(TerrainCellAssetHeader, cellOffsets) +
+                    (size_t)count * sizeof(header->cellOffsets[0]);
+    if (payloadSize < payloadOffset ||
+        !AssetPayloadOffsetIsValid(header->facesOffset, payloadOffset,
+                                   payloadSize)) {
         return 0;
     }
     for (i = 0; i < count; i++) {
-        if (!AssetOffsetIsValid(header->cellOffsets[i], payloadSize)) return 0;
+        if (!AssetPayloadOffsetIsValid(header->cellOffsets[i], payloadOffset,
+                                       payloadSize)) {
+            return 0;
+        }
     }
     return 1;
 }
