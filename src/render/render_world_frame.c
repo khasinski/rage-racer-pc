@@ -3,7 +3,12 @@
 #include <math.h>
 #include <string.h>
 
-enum { RAGE_RENDER_PRESENTATION_MATCH_CAPACITY = 4096 };
+static int RenderWorldInstancesAreValid(const RageRenderWorld *world) {
+    return world != NULL &&
+           world->instanceCount <= world->instanceCapacity &&
+           world->instanceCount <= RAGE_RENDER_PRESENTATION_MAX_INSTANCES &&
+           (world->instanceCount == 0 || world->instances != NULL);
+}
 
 static float Clamp01(float value) {
     if (value < 0.0f) return 0.0f;
@@ -144,9 +149,10 @@ uint32_t RenderWorldBuildSynchronizedPresentation(
     RageRenderMeshInstance *out, uint32_t capacity) {
     uint32_t outputCount = 0;
     uint32_t currentIndex;
-    uint8_t matched[RAGE_RENDER_PRESENTATION_MATCH_CAPACITY];
+    uint8_t matched[RAGE_RENDER_PRESENTATION_MAX_INSTANCES];
 
-    if (previous == 0 || current == 0 || out == 0) return 0;
+    if (!RenderWorldInstancesAreValid(previous) ||
+        !RenderWorldInstancesAreValid(current) || out == NULL) return 0;
     memset(matched, 0, sizeof(matched));
 
     /* Complete course and terrain publication is stable across ticks. Keep
@@ -174,7 +180,7 @@ uint32_t RenderWorldBuildSynchronizedPresentation(
          previousIndex++) {
         const RageRenderMeshInstance *base =
             &previous->instances[previousIndex];
-        const RageRenderMeshInstance *target = 0;
+        const RageRenderMeshInstance *target = NULL;
         uint32_t targetIndex = 0;
         float bestDistance = 0.0f;
 
@@ -184,19 +190,19 @@ uint32_t RenderWorldBuildSynchronizedPresentation(
             const RageRenderMeshInstance *candidate =
                 &current->instances[currentIndex];
             float distance;
-            if (currentIndex >= sizeof(matched) || matched[currentIndex] ||
+            if (matched[currentIndex] ||
                 !RenderVehicleIdentityMatches(base, candidate))
                 continue;
             distance = RenderTransformDistanceSquared(
                 &base->transform, &candidate->transform);
-            if (target == 0 || distance < bestDistance) {
+            if (target == NULL || distance < bestDistance) {
                 target = candidate;
                 targetIndex = currentIndex;
                 bestDistance = distance;
             }
         }
         out[outputCount] = *base;
-        if (target != 0) {
+        if (target != NULL) {
             matched[targetIndex] = 1;
             RenderInterpolateTransform(&base->transform,
                                            &target->transform, t,

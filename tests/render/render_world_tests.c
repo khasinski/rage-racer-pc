@@ -431,6 +431,25 @@ static void test_synchronized_presentation_moves_dynamic_scenery(void) {
     EXPECT_EQ(20, (int)presentation[0].transform.position.x);
 }
 
+static void test_synchronized_presentation_rejects_invalid_world_bounds(void) {
+    RageRenderMeshInstance instance = {0};
+    RageRenderMeshInstance presentation;
+    RageRenderWorld previous;
+    RageRenderWorld current;
+
+    RenderWorldInit(&previous, &instance, 1);
+    RenderWorldInit(&current, &instance, 1);
+    previous.instanceCount = 2;
+    EXPECT_EQ(0, RenderWorldBuildSynchronizedPresentation(
+                     &previous, &current, 0.5f, &presentation, 1));
+
+    previous.instanceCount = 0;
+    current.instanceCapacity = RAGE_RENDER_PRESENTATION_MAX_INSTANCES + 1;
+    current.instanceCount = RAGE_RENDER_PRESENTATION_MAX_INSTANCES + 1;
+    EXPECT_EQ(0, RenderWorldBuildSynchronizedPresentation(
+                     &previous, &current, 0.5f, &presentation, 1));
+}
+
 static void test_native_camera_projection_has_no_gte_quantization(void) {
     RageRenderCamera camera = {0};
     RageRenderVec3 world = {10.0f, 5.0f, -100.0f};
@@ -559,6 +578,7 @@ int main(void) {
     test_synchronized_presentation_keeps_wheel_sides_paired();
     test_synchronized_presentation_matches_animated_wheel_mesh();
     test_synchronized_presentation_moves_dynamic_scenery();
+    test_synchronized_presentation_rejects_invalid_world_bounds();
     test_native_camera_projection_has_no_gte_quantization();
     test_default_shadow_light_stays_near_overhead();
     test_psx_rotation_uses_the_same_basis_as_imported_positions();
