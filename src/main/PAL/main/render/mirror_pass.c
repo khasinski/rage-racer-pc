@@ -3,8 +3,6 @@
 #include "game/render_internal.h"
 
 enum {
-    MIRROR_VIEW_MODE = 9,
-    MAIN_VIEW_MODE = 10,
     MIRROR_X = 0x56,
     MIRROR_WIDTH = 0x94,
     MIRROR_HEIGHT = 0x24,
@@ -57,9 +55,9 @@ s32 BeginMirrorPass(void) {
     SetGeomOffset(SCREEN_WIDTH / 2, MIRROR_HEIGHT);
     SetGeomScreen(MIRROR_PROJECTION_DISTANCE);
 
-    state->mode = MIRROR_VIEW_MODE;
+    state->mode = GAME_RENDER_PASS_MIRROR;
     /* Retail state+0x6c was shared by the mirror mode and terrain LOD shift. */
-    state->faceOtShift = MIRROR_VIEW_MODE;
+    state->faceOtShift = GAME_RENDER_PASS_MIRROR;
     state->x0 = MIRROR_X;
     state->y0 = (s16)g_MirrorPanelY;
     state->x1 = MIRROR_X + MIRROR_WIDTH;
@@ -81,8 +79,8 @@ void EndMirrorPass(void) {
     SetGeomOffset(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
     SetGeomScreen(SCREEN_WIDTH);
 
-    state->mode = MAIN_VIEW_MODE;
-    state->faceOtShift = MAIN_VIEW_MODE;
+    state->mode = GAME_RENDER_PASS_MAIN;
+    state->faceOtShift = GAME_RENDER_PASS_MAIN;
     state->x0 = 0;
     state->y0 = 0;
     state->x1 = SCREEN_WIDTH;

@@ -81,7 +81,8 @@ static int TestAvailability(void) {
 static int TestHiddenPanelClip(void) {
     SetAvailable(-20);
     if (BeginMirrorPass() != 1) return 0;
-    return g_RenderState.mode == 9 && g_RenderState.faceOtShift == 9 &&
+    return g_RenderState.mode == GAME_RENDER_PASS_MIRROR &&
+           g_RenderState.faceOtShift == GAME_RENDER_PASS_MIRROR &&
            g_RenderState.x0 == 0x56 && g_RenderState.y0 == -20 &&
            g_RenderState.x1 == 0xEA && g_RenderState.y1 == 16 &&
            g_RenderState.depth == 100 + 0x800 &&
@@ -108,7 +109,8 @@ static int TestVisiblePanelAndRestore(void) {
         return 0;
     }
     EndMirrorPass();
-    return g_RenderState.mode == 0xA && g_RenderState.faceOtShift == 0xA &&
+    return g_RenderState.mode == GAME_RENDER_PASS_MAIN &&
+           g_RenderState.faceOtShift == GAME_RENDER_PASS_MAIN &&
            g_RenderState.x0 == 0 && g_RenderState.y0 == 0 &&
            g_RenderState.x1 == 0x140 && g_RenderState.y1 == 0xF0 &&
            g_RenderState.depth == 100 && g_RenderState.orderingFlag == 1 &&

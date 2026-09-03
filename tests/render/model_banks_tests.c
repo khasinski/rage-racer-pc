@@ -250,8 +250,10 @@ static int TestTerrainCells(void) {
 
 static int TestRenderStateAndCarIndexes(void) {
     g_MirrorMode = 7;
+    g_RenderState.mode = GAME_RENDER_PASS_MIRROR;
     InitRenderState(5);
     CHECK(g_RenderState.faceOtShift == 0xA);
+    CHECK(g_RenderState.mode == GAME_RENDER_PASS_MAIN);
     CHECK(g_RenderState.ft4Color[0] == 0x80);
     CHECK(g_RenderState.ft4Color[3] == POLY_FT4_CODE);
     CHECK(g_RenderState.gt4Color[0] == 0xFF);

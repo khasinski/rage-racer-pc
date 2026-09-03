@@ -16,7 +16,7 @@ void SetGteObjectMatrix(ObjectMatrixWork *work, LVec *position,
     SetTransMatrix(&work->mtx);
 
     if (DiagnosticsEnabled("render.car_draw_trace") &&
-        g_RenderState.mode == 9) {
+        g_RenderState.mode == GAME_RENDER_PASS_MIRROR) {
         if (g_SceneTimer == DiagnosticsIntValue(
                 "render.car_draw_trace_timer", g_SceneTimer)) {
             Trace("object-matrix", "timer=%d position=%d,%d,%d relative=%d,%d,%d "

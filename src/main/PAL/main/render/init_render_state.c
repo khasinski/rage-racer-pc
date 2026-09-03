@@ -4,6 +4,7 @@
 
 void InitRenderState(s32 otShift) {
     g_RenderState.faceOtShift = 0xA;
+    g_RenderState.mode = GAME_RENDER_PASS_MAIN;
     g_RenderState.ft4Color[0] = 0x80;
     g_RenderState.ft4Color[1] = 0x80;
     g_RenderState.ft4Color[2] = 0x80;

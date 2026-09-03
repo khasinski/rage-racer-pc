@@ -7,6 +7,11 @@
 #include "game/render_types.h"
 #include "psyq/gte.h"
 
+typedef enum GameRenderPassMode {
+    GAME_RENDER_PASS_MIRROR = 9,
+    GAME_RENDER_PASS_MAIN = 10,
+} GameRenderPassMode;
+
 /*
  * The working state the renderer and the car code keep between calls.
  *
@@ -38,7 +43,7 @@ typedef struct GameRenderState {
     s32 otShift;
     s32 orderingFlag;
     s32 faceOtShift;
-    s32 mode;
+    GameRenderPassMode mode;
     u8 ft4Color[4];
     u8 gt4Color[4];
     /* Screen clip rectangle every emitter rejects primitives against.
