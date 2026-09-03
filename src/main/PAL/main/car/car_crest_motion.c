@@ -1,5 +1,6 @@
 #include "game/car.h"
 #include "game/car_internal.h"
+#include "game/integer.h"
 #include "game/race.h"
 #include "game/track.h"
 
@@ -27,15 +28,15 @@ s32 GetCarCrestTrigger(GameCarRuntime *car) {
     events = g_TrackEventData->crestEvents[row];
 
     if (g_RaceSeries != 0) {
-        high = g_TrackLength - high;
-        low = g_TrackLength - low;
+        high = WrapSigned32((int64_t)g_TrackLength - high);
+        low = WrapSigned32((int64_t)g_TrackLength - low);
     }
     if (low >= high) {
         s32 swap = low;
         low = high;
         high = swap;
     }
-    if (high - low >= MAX_CREST_PROGRESS_STEP) {
+    if (WrapSigned32((int64_t)high - low) >= MAX_CREST_PROGRESS_STEP) {
         low = 0;
         high = 0;
     }
@@ -61,8 +62,10 @@ void UpdateCarCrestHop(GameCarRuntime *car) {
         if (car->verticalPitch >= 0x12C) {
             curve /= 256;
         }
-        car->verticalPitch += curve;
-        car->verticalRoll += curve / 4;
+        car->verticalPitch = WrapSigned16(
+            (s32)car->verticalPitch + curve);
+        car->verticalRoll = WrapSigned16(
+            (s32)car->verticalRoll + curve / 4);
         car->bodyPitch = car->verticalPitch;
         car->bodyRoll = car->verticalRoll;
         return;
@@ -75,13 +78,14 @@ void UpdateCarCrestHop(GameCarRuntime *car) {
 
     car->verticalMotionState = CAR_VERTICAL_RISING;
     if (trigger > 0) {
-        car->verticalMotionRate = trigger * car->speed / -4800;
+        car->verticalMotionRate = WrapSigned16(
+            trigger * car->speed / -4800);
     } else {
         car->verticalMotionState = CAR_VERTICAL_AT_CREST;
         car->verticalMotionRate = -trigger;
     }
     car->verticalMotionTimer = 0;
-    car->verticalPitch = (s16)car->bodyPitch;
-    car->verticalRoll = (s16)car->bodyRoll;
-    car->verticalTargetY = (s16)car->y;
+    car->verticalPitch = WrapSigned16(car->bodyPitch);
+    car->verticalRoll = WrapSigned16(car->bodyRoll);
+    car->verticalTargetY = WrapSigned16(car->y);
 }

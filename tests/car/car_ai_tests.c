@@ -117,6 +117,11 @@ static void CrestTests(void) {
     PlaceCar(&car, g_TrackLength - 0x0FF, g_TrackLength - 0x100);
     Check(GetCarCrestTrigger(&car) == 11, "reversed race",
           GetCarCrestTrigger(&car), 11);
+
+    PlaceCar(&car, INT_MAX, INT_MIN);
+    Check(GetCarCrestTrigger(&car) == 0,
+          "reversed crest scan wraps extreme progress",
+          GetCarCrestTrigger(&car), 0);
     g_RaceSeries = 0;
 
     /* Direction is a boolean state even if a damaged runtime contains a
