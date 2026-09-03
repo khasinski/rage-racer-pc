@@ -277,8 +277,9 @@ static int HostOpenDataTrack(const char *path) {
 
 /* Resolves a selected image all the way to a readable archive, so a path that
  * no longer works is reported before the game starts loading assets. */
-static int HostOpenDiscImage(const char *discPath, char *dataTrackPath,
-                             size_t dataTrackPathSize) {
+static int HostOpenDiscImage(const char *discPath) {
+    char dataTrackPath[PATH_MAX];
+
     if (DiscPathIsChd(discPath)) {
         int written;
 
@@ -302,25 +303,24 @@ static int HostOpenDiscImage(const char *discPath, char *dataTrackPath,
         return 0;
     }
     if (DiscPathIsBin(discPath)) {
-        int written = snprintf(dataTrackPath, dataTrackPathSize, "%s",
+        int written = snprintf(dataTrackPath, sizeof(dataTrackPath), "%s",
                                discPath);
-        if (written < 0 || (size_t)written >= dataTrackPathSize) {
+        if (written < 0 || (size_t)written >= sizeof(dataTrackPath)) {
             return 0;
         }
         g_RageHostDisc.track_offset = 0;
         return HostOpenDataTrack(dataTrackPath);
     }
     if (!DiscPathIsCue(discPath) || Psyz_CdSetDiskPath(discPath) != 0 ||
-        !DiscCueResolveDataTrack(discPath, dataTrackPath, dataTrackPathSize,
+        !DiscCueResolveDataTrack(discPath, dataTrackPath, sizeof(dataTrackPath),
                                  &g_RageHostDisc.track_offset)) {
         return 0;
     }
     return HostOpenDataTrack(dataTrackPath);
 }
 
-static int HostOpenDisc(const char *discPath, char *dataTrackPath,
-                        size_t dataTrackPathSize) {
-    if (!HostOpenDiscImage(discPath, dataTrackPath, dataTrackPathSize)) return 0;
+static int HostOpenDisc(const char *discPath) {
+    if (!HostOpenDiscImage(discPath)) return 0;
     HostAdoptDiscStreamTable();
     return 1;
 }
@@ -328,32 +328,23 @@ static int HostOpenDisc(const char *discPath, char *dataTrackPath,
 /* Release archives invite players to drop a disc image next to the
  * executable. Try every plausible file: an extracted RAGE.BIN or an audio
  * track may share the extension but is not itself a mountable game disc. */
-typedef struct AdjacentDiscContext {
-    char *dataTrackPath;
-    size_t dataTrackPathSize;
-} AdjacentDiscContext;
-
 static int HostTryOpenAdjacentDisc(void *context, const char *path) {
-    AdjacentDiscContext *disc = context;
+    (void)context;
     return access(path, R_OK) == 0 &&
-           HostOpenDisc(path, disc->dataTrackPath, disc->dataTrackPathSize);
+           HostOpenDisc(path);
 }
 
-static int HostOpenAdjacentDisc(char *path, size_t pathSize,
-                                char *dataTrackPath,
-                                size_t dataTrackPathSize) {
+static int HostOpenAdjacentDisc(char *path, size_t pathSize) {
     char directory[PATH_MAX];
-    AdjacentDiscContext context = {dataTrackPath, dataTrackPathSize};
 
     return PlatformExecutableDirectory(NULL, directory, sizeof(directory)) &&
            DiscDiscoverImage(directory, path, pathSize,
-                             HostTryOpenAdjacentDisc, &context);
+                             HostTryOpenAdjacentDisc, NULL);
 }
 
 int HostInitDisc(void) {
     const char *configuredPath = RuntimeConfigGet("disc.image");
     char discPath[PATH_MAX];
-    char dataTrackPath[PATH_MAX];
     int choose;
 
     if (configuredPath == NULL || configuredPath[0] == '\0')
@@ -370,14 +361,13 @@ int HostInitDisc(void) {
         if (testPath == NULL || testPath[0] == '\0')
             testPath = "disc/PAL/Rage Racer (Europe).cue";
         if (access(testPath, R_OK) == 0 &&
-            HostOpenDisc(testPath, dataTrackPath, sizeof(dataTrackPath))) {
+            HostOpenDisc(testPath)) {
             return 1;
         }
         return 1;
     }
     if (configuredPath != NULL && configuredPath[0] != '\0') {
-        return HostOpenDisc(configuredPath, dataTrackPath,
-                            sizeof(dataTrackPath));
+        return HostOpenDisc(configuredPath);
     }
     /* Remembering the choice means an install that once worked never asks
      * again, so offer a way back to the picker. */
@@ -387,15 +377,13 @@ int HostInitDisc(void) {
      * resolves has to send the player back to the picker rather than end the
      * session. */
     if (!choose && HostLoadSavedDiscPath(discPath, sizeof(discPath)) &&
-        HostOpenDisc(discPath, dataTrackPath, sizeof(dataTrackPath))) return 1;
-    if (!choose && HostOpenAdjacentDisc(
-                       discPath, sizeof(discPath), dataTrackPath,
-                       sizeof(dataTrackPath))) {
+        HostOpenDisc(discPath)) return 1;
+    if (!choose && HostOpenAdjacentDisc(discPath, sizeof(discPath))) {
         HostSaveDiscPath(discPath);
         return 1;
     }
     if (!HostChooseDisc(discPath, sizeof(discPath)) ||
-        !HostOpenDisc(discPath, dataTrackPath, sizeof(dataTrackPath))) return 0;
+        !HostOpenDisc(discPath)) return 0;
     HostSaveDiscPath(discPath);
     return 1;
 }
