@@ -22,11 +22,11 @@ enum DesignModeOption {
 
 enum {
     DESIGN_MODE_VIEW_OFFSET = 250000,
+    DESIGN_MODE_GRID_SIZE = 6,
 };
 
-
 s32 DrawDesignModeScreen(s32 step) {
-    DesignModeCellMask mask;
+    const DesignModeCellMask *mask = &g_DesignModeCellMask;
     void *ot;
     u32 limit;
     u32 offset;
@@ -37,8 +37,6 @@ s32 DrawDesignModeScreen(s32 step) {
     u32 fadeValue;
 
     ot = RENDER_OT_BASE + 1;
-    mask = g_DesignModeCellMask;
-
     if (step == 0) {
         AdvanceMenuFade(&g_DesignModeScreenFade, step);
         return 0;
@@ -63,11 +61,11 @@ s32 DrawDesignModeScreen(s32 step) {
                   (u8)intensity, (u8)intensity, (u8)intensity,
                   0x244, 0, 1, 0x3B);
 
-    for (row = 0; row < 6; row++) {
-        for (column = 0; column < 6; column++) {
+    for (row = 0; row < DESIGN_MODE_GRID_SIZE; row++) {
+        for (column = 0; column < DESIGN_MODE_GRID_SIZE; column++) {
             s32 clutX;
 
-            if (mask.cells[row][column] != 0) {
+            if (mask->cells[row][column] != 0) {
                 clutX = 0x26F;
             } else {
                 clutX = 0x244;
@@ -214,6 +212,9 @@ static void UpdateDesignModeExit(void) {
 }
 
 void UpdateDesignModeScreen(void) {
+    g_DesignModeOption = AddClampedMenuValue(
+        g_DesignModeOption, 0, DESIGN_MODE_OPTION_LOGO,
+        DESIGN_MODE_OPTION_COUNT - 1);
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawMenuCarView();
 

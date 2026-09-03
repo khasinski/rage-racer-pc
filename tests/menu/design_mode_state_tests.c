@@ -3,7 +3,9 @@
 #include "game/menu.h"
 #include "game/menu_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
+#include <string.h>
 
 DesignModeCellMask g_DesignModeCellMask;
 s32 g_DesignModeOption;
@@ -37,6 +39,8 @@ static s32 s_logoCanvasCalls;
 static s32 s_nameEntryCalls;
 static s32 s_rampCalls;
 static s32 s_scriptsReady;
+static s32 s_spriteCalls;
+static s32 s_selectedCellSprites;
 
 void DrawFadingMenuSprites(s32 progress, s32 lastRow, s32 selectedRow) {
     (void)progress;
@@ -61,6 +65,8 @@ void DrawSprite(GameOrderingTableEntry *ot, s16 x, s16 y, s16 width,
     (void)shadeTex;
     (void)semiTrans;
     (void)flags;
+    s_spriteCalls++;
+    if (clut == 0x26F) s_selectedCellSprites++;
 }
 void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep) {
     (void)panelStep;
@@ -112,6 +118,8 @@ static void ResetState(void) {
     s_logoCanvasCalls = 0;
     s_nameEntryCalls = 0;
     s_rampCalls = 0;
+    s_spriteCalls = 0;
+    s_selectedCellSprites = 0;
     s_scriptsReady = 1;
 }
 
@@ -137,11 +145,26 @@ static int CheckExit(s32 busy, s32 expectedScreen) {
 }
 
 int main(void) {
+    GameOrderingTableEntry ot[4];
+
+    memset(&g_DesignModeCellMask, 0, sizeof(g_DesignModeCellMask));
+    memset(ot, 0, sizeof(ot));
+    RENDER_OT_BASE = ot;
+    g_DesignModeCellMask.cells[2][3] = 1;
+    g_DesignModeScreenFade = 123;
+    CHECK(DrawDesignModeScreen(0) == 0 && s_spriteCalls == 0);
+    CHECK(DrawDesignModeScreen(MENU_FADE_MAX) == MENU_FADE_MAX);
+    CHECK(s_spriteCalls == 38 && s_selectedCellSprites == 1);
+
     if (CheckChoice(0, 1, 2)) return 1;
     CHECK(s_rampCalls == 1);
     if (CheckChoice(1, 2, 2)) return 1;
     if (CheckChoice(2, 3, 2)) return 1;
     if (CheckChoice(3, 4, 3)) return 1;
+    if (CheckChoice(INT_MIN, 1, 2)) return 1;
+    CHECK(g_DesignModeOption == 0);
+    if (CheckChoice(INT_MAX, 4, 3)) return 1;
+    CHECK(g_DesignModeOption == 3);
 
     ResetState();
     g_DesignModeOption = 2;
