@@ -5,9 +5,6 @@
 #include "game/state.h"
 #include "game/track_internal.h"
 
-/* The looping prop's live orientation: three 12-bit angles copied wholesale out
- * of the current rotation keyframe by InitPathScenery, which sees the same
- * eight bytes as one Blk8. */
 void DrawPathScenery(void) {
     Matrix objectMatrix;
     Matrix spinningPartMatrix;

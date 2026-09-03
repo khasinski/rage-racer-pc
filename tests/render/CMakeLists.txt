@@ -338,6 +338,26 @@ target_link_libraries(route_scenery_tests PRIVATE psyz)
 add_test(NAME route_scenery COMMAND route_scenery_tests)
 set_tests_properties(route_scenery PROPERTIES LABELS functional)
 
+add_executable(scripted_scenery_draw_tests
+    scripted_scenery_draw_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/draw_flyby_scenery.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/draw_path_scenery.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/draw_route_scenery.c)
+target_include_directories(scripted_scenery_draw_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include)
+target_compile_definitions(scripted_scenery_draw_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(scripted_scenery_draw_tests PRIVATE
+        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
+        "-iquote${CMAKE_SOURCE_DIR}/include"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(scripted_scenery_draw_tests PRIVATE psyz)
+add_test(NAME scripted_scenery_draw COMMAND scripted_scenery_draw_tests)
+set_tests_properties(scripted_scenery_draw PROPERTIES LABELS functional)
+
 add_executable(path_scenery_init_tests
     path_scenery_init_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/init_path_scenery.c)
