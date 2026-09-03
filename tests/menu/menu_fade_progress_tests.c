@@ -97,6 +97,19 @@ int main(void) {
     CHECK(MenuModelIndexOrFallback(5, 1) == 0);
     CHECK(MenuModelIndexOrFallback(0, 0) == -1);
 
+    {
+        const s32 prices[] = {0, 1200, -1};
+        ShopPrice price;
+
+        price = LookupShopPrice(prices, 3, 1);
+        CHECK(price.available && price.amount == 1200);
+        price = LookupShopPrice(prices, 3, 0);
+        CHECK(price.available && price.amount == 0);
+        CHECK(!LookupShopPrice(prices, 3, 2).available);
+        CHECK(!LookupShopPrice(prices, 3, -1).available);
+        CHECK(!LookupShopPrice(NULL, 3, 0).available);
+    }
+
     CHECK(!ShowroomCarAtSwapPoint(300000, 0, 2));
     CHECK(ShowroomCarAtSwapPoint(299999, 0, 2));
     CHECK(!ShowroomCarAtSwapPoint(900000, 1000000, 2));

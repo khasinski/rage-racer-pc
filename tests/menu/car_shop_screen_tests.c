@@ -16,8 +16,10 @@
 #include "game/asset.h"
 #include "game/car.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/render_state.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -178,7 +180,7 @@ int main(int argc, char **argv) {
      * What the shop did before it was taken apart. Run the test with a file
      * name to write the sweep out and diff two runs.
      */
-    static const unsigned long expected = 2674479376UL;
+    static const unsigned long expected = 3717152877UL;
     static const s32 busyStates[] = {0, -1, -2, -3, 1, 2};
     static const u16 buttons[] = {0, PAD_UP, PAD_DOWN, PAD_CONFIRM, PAD_CANCEL,
                                   0x8000, 0x0080, 0x0010};
@@ -455,6 +457,35 @@ int main(int argc, char **argv) {
     if (GameMenuBusy != 0 || s_cars[4].enabled != 0 ||
         g_TimeAttackCars[4].enabled != 0) {
         puts("FAIL an invalid car price completed the sale countdown");
+        return 1;
+    }
+
+    s_assetIndexOverride = 4;
+    g_CarPriceTable[4] = -1;
+    GameMenuBusy = CAR_SHOP_BUY_PROMPT;
+    g_PadPressed = PAD_CONFIRM;
+    g_MenuSubCursor = 1;
+    g_PlayerMoney = INT_MAX;
+    UpdateCarShopScreen();
+    if (GameMenuBusy == CAR_SHOP_SALE_COUNTDOWN) {
+        puts("FAIL a negative price started a purchase");
+        return 1;
+    }
+
+    g_CarPriceTable[4] = 5000;
+    GameMenuBusy = CAR_SHOP_BUY_PROMPT;
+    g_PadPressed = 0;
+    g_MenuSubCursor = UINT8_MAX;
+    UpdateCarShopScreen();
+    if (g_MenuSubCursor != 1) {
+        puts("FAIL buy prompt did not normalize its cursor");
+        return 1;
+    }
+
+    GameMenuBusy = -99;
+    UpdateCarShopScreen();
+    if (GameMenuBusy != CAR_SHOP_IDLE) {
+        puts("FAIL unknown car-shop state did not recover to idle");
         return 1;
     }
     printf("the car shop takes the same %d states it always did\n", steps);

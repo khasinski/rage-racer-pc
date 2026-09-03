@@ -155,12 +155,21 @@ static inline ShopPrice LookupShopPrice(const s32 *prices, size_t count,
                                         s32 assetIndex) {
     ShopPrice result = {0, 0};
 
-    if (prices != NULL && (u32)assetIndex < count) {
+    if (prices != NULL && (u32)assetIndex < count && prices[assetIndex] >= 0) {
         result.amount = prices[assetIndex];
         result.available = 1;
     }
     return result;
 }
+
+typedef enum CarShopState {
+    CAR_SHOP_IDLE = 0,
+    CAR_SHOP_LEAVE = 1,
+    CAR_SHOP_LEAVE_AFTER_SALE = 2,
+    CAR_SHOP_BUY_PROMPT = -1,
+    CAR_SHOP_NO_FUNDS = -2,
+    CAR_SHOP_SALE_COUNTDOWN = -3,
+} CarShopState;
 
 enum {
     TEAM_NAME_HIDDEN_MODEL_KEY = 10,
