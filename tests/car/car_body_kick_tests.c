@@ -61,6 +61,11 @@ int main(void) {
     StartCarBodyKick(&car, CAR_BODY_KICK_CORNERING);
     CHECK(car.motionValue.value == 0);
 
+    car.speed = INT_MAX;
+    s_random = 0;
+    StartCarBodyKick(&car, CAR_BODY_KICK_CORNERING);
+    CHECK(car.motionValue.value == -80);
+
     car.motionModeTimer = 12;
     car.motionValue.value = 34;
     car.motionMode = CAR_BODY_KICK_CORNERING;
