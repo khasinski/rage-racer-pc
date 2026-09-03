@@ -66,7 +66,7 @@ static void AimCameraAt(GameViewWork *view, s32 targetX, s32 targetY, s32 target
 void CameraViewFromBlendedNode(GameRenderObject *car, GameViewWork *view,
                                 s32 cameraNodeIndex) {
     s32 blend;
-    GameTrackCameraNode *chaseNode;
+    const GameTrackCameraNode *chaseNode;
     s32 focusX;
     s32 focusY;
     s32 focusZ;
@@ -123,7 +123,7 @@ void CameraViewFromCamPath(GameRenderObject *car, GameViewWork *view,
     Matrix matrixWork;
     Matrix objectRotation;
     s32 pathBlend;
-    GameTrackCameraNode *pathNode;
+    const GameTrackCameraNode *pathNode;
     s32 pathOffsetY;
     s32 pathOffsetZ;
     s32 pathPitch;
@@ -132,7 +132,7 @@ void CameraViewFromCamPath(GameRenderObject *car, GameViewWork *view,
     s32 pathYawRelative;
     s32 pitchDelta;
     s32 duration;
-    GameTrackCameraNode *prevNode;
+    const GameTrackCameraNode *prevNode;
     s32 rollProbe[3];
     s32 rollWork[3];
 
@@ -268,7 +268,7 @@ void CameraViewFromSlidingNode(GameRenderObject *car, GameViewWork *view,
     s32 nodeOffset[3];
     s32 nodeWorld[3];
     Matrix objectRotation;
-    GameTrackCameraNode *orbitNode;
+    const GameTrackCameraNode *orbitNode;
     s32 duration;
 
     orbitNode = &g_TrackCameras[cameraNodeIndex];

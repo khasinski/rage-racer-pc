@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 
-GameTrackCameraNode *g_TrackCameras;
+const GameTrackCameraNode *g_TrackCameras;
 u16 g_TrackSectionCount;
 
 #define CHECK(condition) do { \

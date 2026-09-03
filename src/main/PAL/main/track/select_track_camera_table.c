@@ -1,55 +1,49 @@
 #include "game/race.h"
 #include "game/track_camera_internal.h"
 
-static s32 CameraListHasTerminator(const TrackCameraTable *table, size_t size,
-                                   s32 offset) {
+static const GameTrackCameraNode *FindValidCameraList(
+    const TrackCameraTable *table, size_t size, s32 useSeriesCamera) {
+    s32 offset;
     const GameTrackCameraNode *node;
+    const GameTrackCameraNode *first;
     size_t remaining;
 
+    if (table == NULL || size < sizeof(*table)) return NULL;
+    offset = useSeriesCamera
+                 ? table->seriesOffset[g_GrandPrixSeries != 0]
+                 : table->defaultOffset;
     if (offset < (s32)sizeof(*table) ||
         offset % (s32)_Alignof(GameTrackCameraNode) != 0 ||
         (size_t)offset > size) {
-        return 0;
+        return NULL;
     }
     remaining = size - (size_t)offset;
-    node = (const GameTrackCameraNode *)((const u8 *)table + offset);
+    first = (const GameTrackCameraNode *)((const u8 *)table + offset);
+    node = first;
     while (remaining >= sizeof(*node)) {
-        if (node->trackSection.value == -1) return 1;
-        if ((u16)node->mode > TRACK_CAMERA_ORBIT) return 0;
+        if (node->trackSection.value == -1) return first;
+        if ((u16)node->mode > TRACK_CAMERA_ORBIT) return NULL;
         node++;
         remaining -= sizeof(*node);
     }
-    return 0;
+    return NULL;
 }
 
 s32 IsValidTrackCameraTable(const TrackCameraTable *table, size_t size,
                             s32 useSeriesCamera) {
-    s32 offset;
-
-    if (table == NULL || size < sizeof(*table)) return 0;
-
-    offset = table->defaultOffset;
-
-    if (useSeriesCamera) {
-        offset = table->seriesOffset[g_GrandPrixSeries != 0];
-    }
-
-    return CameraListHasTerminator(table, size, offset);
+    return FindValidCameraList(table, size, useSeriesCamera) != NULL;
 }
 
 s32 SelectTrackCameraTable(TrackCameraTable *table, size_t size,
                            s32 useSeriesCamera) {
-    s32 offset;
+    const GameTrackCameraNode *cameras =
+        FindValidCameraList(table, size, useSeriesCamera);
 
-    if (!IsValidTrackCameraTable(table, size, useSeriesCamera)) {
+    if (cameras == NULL) {
         g_TrackCameras = NULL;
         return 0;
     }
 
-    offset = useSeriesCamera
-                 ? table->seriesOffset[g_GrandPrixSeries != 0]
-                 : table->defaultOffset;
-
-    g_TrackCameras = (GameTrackCameraNode *)((u8 *)table + offset);
+    g_TrackCameras = cameras;
     return 1;
 }

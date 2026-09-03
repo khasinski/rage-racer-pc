@@ -50,7 +50,7 @@ typedef struct TrackCameraTable {
     s32 defaultOffset;
 } TrackCameraTable;
 
-extern GameTrackCameraNode *g_TrackCameras;
+extern const GameTrackCameraNode *g_TrackCameras;
 extern u16 g_TrackSectionCount;
 s32 IsValidTrackCameraTable(const TrackCameraTable *table, size_t size,
                             s32 useSeriesCamera);

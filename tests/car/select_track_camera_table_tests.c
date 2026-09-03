@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 s16 g_GrandPrixSeries;
-GameTrackCameraNode *g_TrackCameras;
+const GameTrackCameraNode *g_TrackCameras;
 
 typedef struct CameraTableFixture {
     TrackCameraTable table;
@@ -36,42 +36,44 @@ int main(void) {
     fixture.secondSeriesCamera.trackSection.value = -1;
 
     g_GrandPrixSeries = 1;
-    SelectTrackCameraTable(&fixture.table, sizeof(fixture), 0);
+    CHECK(SelectTrackCameraTable(&fixture.table, sizeof(fixture), 0) == 1);
     CHECK(g_TrackCameras == &fixture.defaultCamera);
 
     g_GrandPrixSeries = 0;
-    SelectTrackCameraTable(&fixture.table, sizeof(fixture), 1);
+    CHECK(SelectTrackCameraTable(&fixture.table, sizeof(fixture), 1) == 1);
     CHECK(g_TrackCameras == &fixture.firstSeriesCamera);
 
     g_GrandPrixSeries = 4;
-    SelectTrackCameraTable(&fixture.table, sizeof(fixture), 1);
+    CHECK(IsValidTrackCameraTable(&fixture.table, sizeof(fixture), 1) == 1);
+    CHECK(SelectTrackCameraTable(&fixture.table, sizeof(fixture), 1) == 1);
     CHECK(g_TrackCameras == &fixture.secondSeriesCamera);
 
-    SelectTrackCameraTable(NULL, 0, 0);
+    CHECK(IsValidTrackCameraTable(NULL, 0, 0) == 0);
+    CHECK(SelectTrackCameraTable(NULL, 0, 0) == 0);
     CHECK(g_TrackCameras == NULL);
 
     fixture.table.defaultOffset = -1;
-    SelectTrackCameraTable(&fixture.table, sizeof(fixture), 0);
+    CHECK(SelectTrackCameraTable(&fixture.table, sizeof(fixture), 0) == 0);
     CHECK(g_TrackCameras == NULL);
 
     fixture.table.defaultOffset = sizeof(fixture.table) - sizeof(s32);
-    SelectTrackCameraTable(&fixture.table, sizeof(fixture), 0);
+    CHECK(SelectTrackCameraTable(&fixture.table, sizeof(fixture), 0) == 0);
     CHECK(g_TrackCameras == NULL);
 
     fixture.table.defaultOffset = sizeof(fixture.table) + 1;
-    SelectTrackCameraTable(&fixture.table, sizeof(fixture), 0);
+    CHECK(SelectTrackCameraTable(&fixture.table, sizeof(fixture), 0) == 0);
     CHECK(g_TrackCameras == NULL);
 
     fixture.table.defaultOffset = offsetof(CameraTableFixture, defaultCamera);
     fixture.defaultCamera.trackSection.value = 0;
     fixture.defaultCamera.mode = TRACK_CAMERA_ORBIT + 1;
-    SelectTrackCameraTable(&fixture.table, sizeof(fixture), 0);
+    CHECK(SelectTrackCameraTable(&fixture.table, sizeof(fixture), 0) == 0);
     CHECK(g_TrackCameras == NULL);
 
     fixture.defaultCamera.mode = TRACK_CAMERA_CAR;
-    SelectTrackCameraTable(
-        &fixture.table,
-        offsetof(CameraTableFixture, firstSeriesCamera), 0);
+    CHECK(SelectTrackCameraTable(
+              &fixture.table,
+              offsetof(CameraTableFixture, firstSeriesCamera), 0) == 0);
     CHECK(g_TrackCameras == NULL);
 
     puts("track camera table selection tests passed");
