@@ -17,6 +17,7 @@ void DrawStartCountdown(s32 sceneTimer) {
     s32 row;
     s32 column;
     TILE *tiles;
+    TILE *backdrop;
     GameOrderingTableEntry *orderingTable;
     u8 *packet;
     StartCountdownTiming timing;
@@ -34,12 +35,12 @@ void DrawStartCountdown(s32 sceneTimer) {
         StartCountdownRow countdownRow = BuildStartCountdownRow(
             phase, row, timing.wipeHalfStep, g_CountdownGlyphTable,
             g_CountdownDigitPatterns);
+        const CVec *colors =
+            &g_CountdownCellColors[countdownRow.colorBank * 2];
         u32 pattern = countdownRow.pattern;
 
         for (column = 0; column < COUNTDOWN_TILE_COLUMNS; column++) {
             TILE *tile = &tiles[row * COUNTDOWN_TILE_COLUMNS + column];
-            CVec *colors =
-                &g_CountdownCellColors[countdownRow.colorBank * 2];
             CVec color = colors[pattern & 1];
 
             tile->r0 = color.r;
@@ -56,12 +57,11 @@ void DrawStartCountdown(s32 sceneTimer) {
     packet = QueueDrawModePrim(
         orderingTable, RENDER_PRIM_CURSOR_AS(u8), 9);
     packet = GameQueueTexturePacketWide(
-        orderingTable,
-        GameQueueTexturePacketWide(
-            orderingTable, packet, 0x70, g_CountdownBoardOffset + 66,
-            0x60, 0x18, 0xA0, 0xE8, 0x60, 0x18, 0x784E, 9,
-            GAME_TEXTURE_PACKET_SPRT),
-        0x70, g_CountdownBoardOffset + 122,
+        orderingTable, packet, 0x70, g_CountdownBoardOffset + 66,
+        0x60, 0x18, 0xA0, 0xE8, 0x60, 0x18, 0x784E, 9,
+        GAME_TEXTURE_PACKET_SPRT);
+    packet = GameQueueTexturePacketWide(
+        orderingTable, packet, 0x70, g_CountdownBoardOffset + 122,
         0x60, 0x18, 0xA0, 0xE8, 0x60, 0x18, 0x784E, 9,
         GAME_TEXTURE_PACKET_SPRT);
 
@@ -77,7 +77,7 @@ void DrawStartCountdown(s32 sceneTimer) {
         sprite->v0 = 0xD0;
         sprite->x0 = (row % 3) * 32 + 112;
         sprite->y0 =
-            (row / 3) * 56 + ((u16)g_CountdownBoardOffset + 66);
+            (row / 3) * 56 + g_CountdownBoardOffset + 66;
 
         sprite->clut = lamp.clut;
         sprite->r0 = lamp.intensity;
@@ -94,15 +94,15 @@ void DrawStartCountdown(s32 sceneTimer) {
         AddPrims(orderingTable, tiles, tiles + COUNTDOWN_TILE_COUNT - 1);
     }
 
-    tiles = (TILE *)packet;
-    SetTile(tiles);
-    tiles->w = 0x64;
-    tiles->h = 0x24;
-    tiles->x0 = 0x6E;
-    tiles->r0 = 5;
-    tiles->g0 = 5;
-    tiles->b0 = 5;
-    tiles->y0 = (u16)g_CountdownBoardOffset + 88;
-    AddPrim(orderingTable, tiles);
-    g_RenderState.packetCursor = tiles + 1;
+    backdrop = (TILE *)packet;
+    SetTile(backdrop);
+    backdrop->w = 0x64;
+    backdrop->h = 0x24;
+    backdrop->x0 = 0x6E;
+    backdrop->r0 = 5;
+    backdrop->g0 = 5;
+    backdrop->b0 = 5;
+    backdrop->y0 = g_CountdownBoardOffset + 88;
+    AddPrim(orderingTable, backdrop);
+    g_RenderState.packetCursor = backdrop + 1;
 }
