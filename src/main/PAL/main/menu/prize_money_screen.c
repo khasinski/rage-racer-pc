@@ -29,8 +29,8 @@ static void CountTowardsMoney(s32 *owed, s32 step) {
     s32 payment = amount < step ? amount : step;
 
     *owed = amount - payment;
-    g_RaceProgress->money.value =
-        CreditPrizeMoney(g_RaceProgress->money.value, payment);
+    g_RaceProgress->money =
+        CreditPrizeMoney(g_RaceProgress->money, payment);
 }
 
 /* Scene 19: counts the prize money and then the class-clear bonus into the save block. */

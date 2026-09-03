@@ -407,19 +407,19 @@ int main(int argc, char **argv) {
             fprintf(stderr, "save roundtrip has no active progress slot\n");
             return EXIT_FAILURE;
         }
-        g_RaceProgress->money.value = marker;
+        g_RaceProgress->money = marker;
         if (!WriteMemoryCardSaveSlot(0, &header)) {
             fprintf(stderr, "save roundtrip write failed\n");
             return EXIT_FAILURE;
         }
-        g_RaceProgress->money.value = 0;
+        g_RaceProgress->money = 0;
         if (!LoadMemoryCardSaveSlot(0, &header) ||
-            g_RaceProgress->money.value != marker) {
+            g_RaceProgress->money != marker) {
             fprintf(stderr, "save roundtrip load failed: money=%d\n",
-                    g_RaceProgress->money.value);
+                    g_RaceProgress->money);
             return EXIT_FAILURE;
         }
-        printf("save roundtrip ok: money=%d\n", g_RaceProgress->money.value);
+        printf("save roundtrip ok: money=%d\n", g_RaceProgress->money);
     }
     if (RuntimeConfigEnabled("checks.complete_save_load")) {
         GameSaveHeaderRow header = {0};
@@ -433,8 +433,8 @@ int main(int argc, char **argv) {
         if (!LoadMemoryCardSaveSlot(0, &header) ||
             g_ExtraGrandPrixUnlocked != 1 ||
             g_MaxClassReached[0] != 4 || g_MaxClassReached[1] != 5 ||
-            g_GrandPrixSave.money.value != 999999999 ||
-            g_ExtraGrandPrixSave.money.value != 999999999) {
+            g_GrandPrixSave.money != 999999999 ||
+            g_ExtraGrandPrixSave.money != 999999999) {
             fprintf(stderr, "complete generated save failed progression load\n");
             return EXIT_FAILURE;
         }

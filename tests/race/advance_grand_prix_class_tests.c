@@ -108,11 +108,11 @@ int main(void) {
     g_ClassCompleted = 1;
     g_SeriesCleared = 1;
     s_progress.maxClassReached = 5;
-    s_progress.money.value = 123;
+    s_progress.money = 123;
     AdvanceGrandPrixClass();
     Check("series clear resets slot", s_resetProgressCalls, 1);
     Check("series clear preserves unlock level", s_progress.maxClassReached, 5);
-    Check("series clear awards maximum money", s_progress.money.value,
+    Check("series clear awards maximum money", s_progress.money,
           RACE_MAX_PRIZE_MONEY);
     Check("series clear resets beginner progress", s_resetCourseMode, 0);
     Check("ending FMV return scene", s_endingFmvReturnScene, 0x21);

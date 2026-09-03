@@ -47,7 +47,7 @@ void DrawProportionalText(s32 x, s32 y, const char *text, s32 clut) {
 int main(void) {
     g_RaceProgress = &s_progress;
     g_PrizeAmount = 12345;
-    s_progress.money.value = 67890;
+    s_progress.money = 67890;
     g_ClassPromoted = 0;
 
     DrawPrizeMoneyPanel(20);

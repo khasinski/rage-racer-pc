@@ -316,7 +316,7 @@ int main(int argc, char **argv) {
             after[21] = g_MenuAltLayout;
             Record("state", after, 22);
             RECORD("saved", s_progress.course, s_progress.carIndex,
-                   s_progress.classIndex, s_progress.money.value);
+                   s_progress.classIndex, s_progress.money);
         }
         steps++;
     }

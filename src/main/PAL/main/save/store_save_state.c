@@ -22,7 +22,7 @@ static void StoreRaceProgress(
     saved->carIndex = progress->carIndex;
     saved->classIndex = progress->classIndex;
     saved->maxClassReached = progress->maxClassReached;
-    saved->money = progress->money.value;
+    saved->money = progress->money;
 }
 
 void StoreSaveStateBlock(GameSaveBlock *block) {

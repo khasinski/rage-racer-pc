@@ -38,7 +38,7 @@ static int TestProgressSlotReset(void) {
     CHECK(progress.carIndex == 3);
     CHECK(progress.classIndex == 0);
     CHECK(progress.maxClassReached == -1);
-    CHECK(progress.money.value == 0);
+    CHECK(progress.money == 0);
     return 0;
 }
 

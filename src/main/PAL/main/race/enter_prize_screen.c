@@ -18,7 +18,7 @@ void EnterPrizeScreen(void) {
 
     g_SceneTimer = PRIZE_SCREEN_INITIAL_TIMER;
     g_FrameSyncThreshold = PRIZE_SCREEN_FRAME_SYNC_THRESHOLD;
-    g_RaceProgress->money.value = ClampPrizeMoney(g_RaceProgress->money.value);
+    g_RaceProgress->money = ClampPrizeMoney(g_RaceProgress->money);
 
     courseIndex = SeriesCourseIndex();
     classIndex = g_GrandPrixClass;

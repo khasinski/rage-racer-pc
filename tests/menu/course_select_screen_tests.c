@@ -333,7 +333,7 @@ int main(int argc, char **argv) {
             after[22] = g_MenuViewAngleTarget;
             Record("state", after, 23);
             RECORD("saved", s_progress.course, s_progress.carIndex,
-                   s_progress.classIndex, s_progress.money.value,
+                   s_progress.classIndex, s_progress.money,
                    g_UiScriptProgress, g_MenuCourseModelIndex,
                    g_CarSwapFromIndex, g_CarSwapToIndex);
         }
@@ -490,7 +490,7 @@ int main(int argc, char **argv) {
              * reads. */
             RECORD("raceplan", g_SceneId, s_progress.course,
                    s_progress.carIndex, s_progress.classIndex,
-                   s_progress.money.value);
+                   s_progress.money);
             steps++;
         }
     }

@@ -44,7 +44,7 @@ static void LoadRaceProgress(
         saved->classIndex, 0, GRAND_PRIX_FINAL_CLASS_INDEX);
     progress->maxClassReached = ClampSaveValue(
         saved->maxClassReached, -1, GRAND_PRIX_FINAL_CLASS_INDEX);
-    progress->money.value = ClampPrizeMoney(saved->money);
+    progress->money = ClampPrizeMoney(saved->money);
 }
 
 static void NormalizeRaceRecords(

@@ -23,7 +23,7 @@ void AdvanceGrandPrixClass(void) {
     if (g_SeriesCleared) {
         maxClassReached = g_RaceProgress->maxClassReached;
         ResetProgressSlot(g_CarTable, g_RaceProgress);
-        g_RaceProgress->money.value = RACE_MAX_PRIZE_MONEY;
+        g_RaceProgress->money = RACE_MAX_PRIZE_MONEY;
         g_RaceProgress->maxClassReached = maxClassReached;
         ResetCourseProgress(0);
         BeginEndingFmv(ENDING_FMV_RETURN_SCENE);

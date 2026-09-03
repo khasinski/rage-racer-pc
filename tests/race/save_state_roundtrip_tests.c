@@ -56,7 +56,7 @@ static void SetRepresentativeState(void) {
     g_GrandPrixSave.carIndex = 7;
     g_GrandPrixSave.classIndex = 4;
     g_GrandPrixSave.maxClassReached = 5;
-    g_GrandPrixSave.money.value = 1234567;
+    g_GrandPrixSave.money = 1234567;
     g_ExtraGrandPrixSave.course = 3;
     g_TimeAttackSave.carIndex = 9;
     g_ExtraGrandPrixUnlocked = 1;
@@ -205,7 +205,7 @@ int main(void) {
     CHECK(s_loadedPadMapping == g_PadMappingIndex);
     CHECK(s_loadedNegconMapping == g_NegconMappingIndex);
     CHECK(s_recordRepairCalls == 1);
-    CHECK(g_GrandPrixSave.money.value == 1234567);
+    CHECK(g_GrandPrixSave.money == 1234567);
     CHECK(g_GrandPrixCars[4].paintColor2 == 7);
     CHECK(g_ClassRecords[2].clears == 12);
     CHECK(g_TeamLogoCanvas.halfwords[17] == 0x1357);
@@ -256,8 +256,8 @@ int main(void) {
     CHECK(g_GrandPrixSave.carIndex == 0);
     CHECK(g_GrandPrixSave.classIndex == GRAND_PRIX_FINAL_CLASS_INDEX);
     CHECK(g_GrandPrixSave.maxClassReached == -1);
-    CHECK(g_GrandPrixSave.money.value == 0);
-    CHECK(g_ExtraGrandPrixSave.money.value == RACE_MAX_PRIZE_MONEY);
+    CHECK(g_GrandPrixSave.money == 0);
+    CHECK(g_ExtraGrandPrixSave.money == RACE_MAX_PRIZE_MONEY);
     CHECK(g_ExtraGrandPrixUnlocked == 1);
     CHECK(g_MaxClassReached[0] == GRAND_PRIX_FINAL_CLASS_INDEX);
     CHECK(g_MaxClassReached[1] == 0);

@@ -54,7 +54,7 @@ int main(void) {
     g_PrizeMoney.values[2][3][PRIZE_PLACE_SECOND] = 16000;
     g_PrizeMoney.values[2][3][PRIZE_PLACE_THIRD] = 8000;
     g_PromotionBonusTable[3] = 100000;
-    s_progress.money.value = 1000000000;
+    s_progress.money = 1000000000;
 
     EnterPrizeScreen();
     Check("prize screen scene", g_SceneId, 0x13);
@@ -66,7 +66,7 @@ int main(void) {
     Check("promotion bonus", g_PromotionBonus, 100000);
     Check("prize count step", g_PrizeCountStep, 100);
     Check("bonus count step", g_BonusCountStep, 400);
-    Check("loaded money is clamped", s_progress.money.value,
+    Check("loaded money is clamped", s_progress.money,
           RACE_MAX_PRIZE_MONEY);
 
     Reset();

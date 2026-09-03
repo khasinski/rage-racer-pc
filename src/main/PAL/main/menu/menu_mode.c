@@ -23,7 +23,7 @@ void InitMenuMode(void) {
     g_CourseIndex = g_RaceProgress->course;
     g_PlayerCarIndex = g_RaceProgress->carIndex;
     g_GrandPrixClass = g_RaceProgress->classIndex;
-    g_PlayerMoney = g_RaceProgress->money.value;
+    g_PlayerMoney = g_RaceProgress->money;
     InitRenderState(1);
 
     SetupDisplay480(0, 0, 0);
@@ -32,7 +32,7 @@ void InitMenuMode(void) {
     if (g_GrandPrixMode != 0) {
         g_GrandPrixSeries = g_SeriesSelection;
     } else {
-        g_GrandPrixSeries = g_RaceProgress->money.half[0];
+        g_GrandPrixSeries = (u16)g_RaceProgress->money;
     }
     g_CourseIndex = (g_GrandPrixSeries << 2) | g_CourseIndex;
     InitMenuLighting();

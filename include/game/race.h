@@ -78,17 +78,12 @@ extern s32 g_MirrorMode;
 
 /* One save slot's Grand Prix / Time Attack progress; InitMenuMode copies it
  * straight into the live globals and UpdateCourseSelectScreen writes it back. */
-typedef union RaceProgressMoney {
-    s32 value;
-    u16 half[2];
-} RaceProgressMoney;
-
 typedef struct GameRaceProgress {
     s32 course;
     s32 carIndex;
     s32 classIndex;
     s32 maxClassReached; /* highest class unlocked in this slot */
-    RaceProgressMoney money; /* GP and Extra GP: prize money, capped at 999999999,
+    s32 money; /* GP and Extra GP: prize money, capped at 999999999,
                        confirmed against US and JP saves advertising that cap.
                        The Time Attack slot reuses the word for
                        g_GrandPrixSeries, read back as u16. */

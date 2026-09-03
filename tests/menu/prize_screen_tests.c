@@ -148,8 +148,8 @@ int main(void) {
     /* Everything owed reaches the player, prize first and then the bonus. */
     Reset(1000, 400);
     RunToEnd(0, 4000);
-    Check(s_progress.money.value == 1400, "prize and bonus both paid",
-          s_progress.money.value, 1400);
+    Check(s_progress.money == 1400, "prize and bonus both paid",
+          s_progress.money, 1400);
     Check(g_PrizeAmount == 0, "nothing left owed on the prize", g_PrizeAmount,
           0);
     Check(g_PromotionBonus == 0, "nothing left owed on the bonus",
@@ -160,10 +160,10 @@ int main(void) {
 
     /* Paying a prize cannot overflow the save's advertised money limit. */
     Reset(1000, 400);
-    s_progress.money.value = RACE_MAX_PRIZE_MONEY - 50;
+    s_progress.money = RACE_MAX_PRIZE_MONEY - 50;
     RunToEnd(0, 4000);
-    Check(s_progress.money.value == RACE_MAX_PRIZE_MONEY,
-          "prize money saturates at the save limit", s_progress.money.value,
+    Check(s_progress.money == RACE_MAX_PRIZE_MONEY,
+          "prize money saturates at the save limit", s_progress.money,
           RACE_MAX_PRIZE_MONEY);
     Check(g_PrizeAmount == 0 && g_PromotionBonus == 0,
           "capped money still finishes both counters", g_PrizeAmount,
@@ -180,24 +180,24 @@ int main(void) {
         for (i = 0; i < 120; i++) {
             UpdatePrizeMoneyScreen();
         }
-        Check(s_progress.money.value == 0, "nothing is paid during the wait",
-              s_progress.money.value, 0);
+        Check(s_progress.money == 0, "nothing is paid during the wait",
+              s_progress.money, 0);
         UpdatePrizeMoneyScreen();
-        Check(s_progress.money.value == 100, "the first step lands on frame 121",
-              s_progress.money.value, 100);
+        Check(s_progress.money == 100, "the first step lands on frame 121",
+              s_progress.money, 100);
     }
 
     /* An amount that is not a whole number of steps still pays out exactly,
      * rather than overshooting on the last one. */
     Reset(1050, 425);
     RunToEnd(0, 4000);
-    Check(s_progress.money.value == 1475, "part of a step still pays exactly",
-          s_progress.money.value, 1475);
+    Check(s_progress.money == 1475, "part of a step still pays exactly",
+          s_progress.money, 1475);
 
     /* No bonus at all skips straight past the bonus states. */
     Reset(300, 0);
     RunToEnd(0, 4000);
-    Check(s_progress.money.value == 300, "prize alone", s_progress.money.value,
+    Check(s_progress.money == 300, "prize alone", s_progress.money,
           300);
     Check(s_classAdvanced == 0, "the class only advances after the fade",
           s_classAdvanced, 0);
@@ -205,8 +205,8 @@ int main(void) {
     /* Nothing owed at all still walks the screen to its end. */
     Reset(0, 0);
     RunToEnd(0, 4000);
-    Check(s_progress.money.value == 0, "nothing owed pays nothing",
-          s_progress.money.value, 0);
+    Check(s_progress.money == 0, "nothing owed pays nothing",
+          s_progress.money, 0);
     Check(g_PrizeScreenState == PRIZE_SCREEN_STATE_FADE_OUT,
           "nothing owed still reaches the fade", g_PrizeScreenState,
           PRIZE_SCREEN_STATE_FADE_OUT);
@@ -217,13 +217,13 @@ int main(void) {
 
         Reset(4000, 2000);
         slow = RunToEnd(0, 20000);
-        Check(s_progress.money.value == 6000, "unhurried total",
-              s_progress.money.value, 6000);
+        Check(s_progress.money == 6000, "unhurried total",
+              s_progress.money, 6000);
 
         Reset(4000, 2000);
         fast = RunToEnd(1, 20000);
-        Check(s_progress.money.value == 6000, "hurried total",
-              s_progress.money.value, 6000);
+        Check(s_progress.money == 6000, "hurried total",
+              s_progress.money, 6000);
         if (fast >= slow) {
             printf("FAIL holding confirm did not speed the count up: "
                    "%d frames held against %d\n", fast, slow);
