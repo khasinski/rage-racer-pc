@@ -16,10 +16,20 @@ typedef struct CourseClassHeaderSprite {
     u16 textureV;
 } CourseClassHeaderSprite;
 
+typedef struct CourseLabelSprites {
+    u16 prefixTextureU;
+    u16 nameWidth;
+    u16 nameTextureU;
+    u16 nameTextureV;
+    u16 distanceWidth;
+    u16 distanceTextureU;
+} CourseLabelSprites;
+
 /* Returns zero and clears the descriptor when the class has no header in the
  * selected Grand Prix series. */
 int GetCourseClassHeaderSprite(s32 seriesSelection, s32 classIndex,
                                CourseClassHeaderSprite *sprite);
+int GetCourseLabelSprites(s32 courseIndex, CourseLabelSprites *sprites);
 
 typedef struct CourseSelectScrollFrame {
     s32 progress;

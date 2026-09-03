@@ -99,6 +99,7 @@ s32 DrawCourseSelectScreen(s32 step) {
     s32 digitCount;
     s32 prizeOffset;
     s32 course;
+    CourseLabelSprites courseLabel;
     CourseSelectScrollFrame scroll;
     ot = RENDER_OT_BASE + 1;
     if (step == 0) {
@@ -167,51 +168,18 @@ s32 DrawCourseSelectScreen(s32 step) {
         ot, 0x68, coordinateY, 0x1A, 0xC,
         0x46, 0xDC, fade, fade, fade, 0x244, 0, 1, 0x3A);
 
-    switch (course) {
-    case 0:
+    if (GetCourseLabelSprites(course, &courseLabel)) {
         coordinateY = DrawSlidingSprite(
-            ot, 0x4C, 0xE0, slide, 8, 0x10, 8, 0x18,
+            ot, 0x4C, 0xE0, slide, 8, 0x10, courseLabel.prefixTextureU, 0x18,
             fade, fade, fade, 0x244, 0, 1, 0x3B);
         DrawSprite(
-            ot, 0x54, coordinateY, 0x54, 0x10,
-            0, 0x9C, fade, fade, fade, 0x244, 0, 1, 0x3B);
+            ot, 0x54, coordinateY, courseLabel.nameWidth, 0x10,
+            courseLabel.nameTextureU, courseLabel.nameTextureV, fade, fade,
+            fade, 0x244, 0, 1, 0x3B);
         DrawSprite(
-            ot, 0x4C, 0x108 - slide, 0x20, 0x10,
-            0x44, 0xB4, fade, fade, fade, 0x244, 0, 1, 0x3A);
-        break;
-    case 1:
-        coordinateY = DrawSlidingSprite(
-            ot, 0x4C, 0xE0, slide, 8, 0x10, 0x10, 0x18,
-            fade, fade, fade, 0x244, 0, 1, 0x3B);
-        DrawSprite(
-            ot, 0x54, coordinateY, 0x4C, 0x10,
-            0x54, 0x9C, fade, fade, fade, 0x244, 0, 1, 0x3B);
-        DrawSprite(
-            ot, 0x4C, 0x108 - slide, 0x20, 0x10,
-            0x64, 0xB4, fade, fade, fade, 0x244, 0, 1, 0x3A);
-        break;
-    case 2:
-        coordinateY = DrawSlidingSprite(
-            ot, 0x4C, 0xE0, slide, 8, 0x10, 0x18, 0x18,
-            fade, fade, fade, 0x244, 0, 1, 0x3B);
-        DrawSprite(
-            ot, 0x54, coordinateY, 0x48, 0x10,
-            0, 0xAC, fade, fade, fade, 0x244, 0, 1, 0x3B);
-        DrawSprite(
-            ot, 0x4C, 0x108 - slide, 0x20, 0x10,
-            0x84, 0xB4, fade, fade, fade, 0x244, 0, 1, 0x3A);
-        break;
-    case 3:
-        coordinateY = DrawSlidingSprite(
-            ot, 0x4C, 0xE0, slide, 8, 0x10, 0x20, 0x18,
-            fade, fade, fade, 0x244, 0, 1, 0x3B);
-        DrawSprite(
-            ot, 0x54, coordinateY, 0x5C, 0x10,
-            0xA4, 0x9C, fade, fade, fade, 0x244, 0, 1, 0x3B);
-        DrawSprite(
-            ot, 0x4C, 0x108 - slide, 0x1E, 0x10,
-            0xA4, 0xB4, fade, fade, fade, 0x244, 0, 1, 0x3A);
-        break;
+            ot, 0x4C, 0x108 - slide, courseLabel.distanceWidth, 0x10,
+            courseLabel.distanceTextureU, 0xB4, fade, fade, fade, 0x244, 0, 1,
+            0x3A);
     }
 
     if (g_GrandPrixMode != 0) {
