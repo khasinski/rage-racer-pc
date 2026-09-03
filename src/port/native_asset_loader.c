@@ -1,5 +1,6 @@
 /* Native asset loader for the extracted retail RAGE.BIN archive. */
 #include <stdio.h>
+#include <string.h>
 
 #include "game/asset.h"
 #include "game/asset_internal.h"
@@ -49,7 +50,9 @@ s32 LoadAsset(s32 assetIndex, void *dst) {
 
 void LoadDiscArchiveIndex(void) {
     if (!HostLoadArchiveIndex(g_AssetCdEntries, GAME_ASSET_COUNT)) {
-        printf("Unable to load assets/PAL/RAGE.BIN\n");
+        memset(g_AssetCdEntries, 0, sizeof(g_AssetCdEntries));
+        g_AssetLoadFailed = 1;
+        fprintf(stderr, "rage-port: unable to load the disc archive index\n");
     }
 }
 
@@ -57,6 +60,7 @@ void InitAssetSystem(void) {
     s32 loadedSize;
 
     LoadDiscArchiveIndex();
+    if (g_AssetLoadFailed) return;
     loadedSize = LoadAsset(ASSET_BOOT_LOGO, g_LoadBuffer);
     if (loadedSize > 0) {
         UploadImageAsset(GetImageAssetHeaderWords(g_LoadBuffer),

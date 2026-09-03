@@ -16,6 +16,7 @@ static s32 s_hostLoads;
 static s32 s_patchCalls;
 static size_t s_patchSize;
 static s32 s_archiveLoads;
+static s32 s_archiveResult;
 static s32 s_uploads;
 static const GameImageAssetHeaderWord *s_uploadedAsset;
 static s32 s_requestCalls;
@@ -54,7 +55,7 @@ int HostLoadArchiveIndex(void *entries, int count) {
     (void)entries;
     (void)count;
     s_archiveLoads++;
-    return 1;
+    return s_archiveResult;
 }
 
 s32 UploadImageAsset(const GameImageAssetHeaderWord *asset, size_t size) {
@@ -87,6 +88,7 @@ static void ResetCalls(void) {
     s_patchCalls = 0;
     s_patchSize = 0;
     s_archiveLoads = 0;
+    s_archiveResult = 1;
     s_uploads = 0;
     s_uploadedAsset = NULL;
     s_requestCalls = 0;
@@ -139,11 +141,25 @@ int main(void) {
 
     ResetCalls();
     g_AssetCdEntries[ASSET_BOOT_LOGO].size = 16;
+    g_AssetLoadFailed = 0;
+    s_archiveResult = 0;
+    InitAssetSystem();
+    Check(s_archiveLoads == 1 && s_hostLoads == 0 && s_uploads == 0 &&
+              g_AssetLoadFailed == 1,
+          "failed archive index stops boot asset loading");
+    Check(g_AssetCdEntries[ASSET_BOOT_LOGO].size == 0,
+          "failed archive index cannot leave stale entries");
+
+    ResetCalls();
+    g_AssetLoadFailed = 0;
+    g_AssetCdEntries[ASSET_BOOT_LOGO].size = 16;
     InitAssetSystem();
     Check(s_archiveLoads == 1 && s_uploads == 0,
           "failed boot logo is not uploaded");
 
     ResetCalls();
+    g_AssetLoadFailed = 0;
+    g_AssetCdEntries[ASSET_BOOT_LOGO].size = 16;
     s_hostResult = 16;
     InitAssetSystem();
     Check(s_archiveLoads == 1 && s_uploads == 1 &&
