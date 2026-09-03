@@ -36,13 +36,18 @@ static s32 s_materialModes[8];
 static s32 s_restoreCalls;
 static s32 s_zoneLightCalls;
 static s32 s_lightMatrixCalls;
+static s32 s_currentPosition[3];
+static s32 s_submittedPositions[8][3];
+static s32 s_yAngles[8];
+static s32 s_yAngleCount;
 
 void BuildRotMatrixX(void *matrix, s32 angle) {
     (void)angle;
     memset(matrix, 0, sizeof(Matrix));
 }
 void BuildRotMatrixY(void *matrix, s32 angle) {
-    (void)angle;
+    if (s_yAngleCount < 8) s_yAngles[s_yAngleCount] = angle;
+    s_yAngleCount++;
     memset(matrix, 0, sizeof(Matrix));
 }
 void BuildRotMatrixZ(void *matrix, s32 angle) {
@@ -84,8 +89,10 @@ void SetLightMatrix(MATRIX *matrix) {
     s_lightMatrixCalls++;
 }
 void SetGteObjectMatrix(LVec *position, Matrix *rotation) {
-    (void)position;
     (void)rotation;
+    s_currentPosition[0] = position->x;
+    s_currentPosition[1] = position->y;
+    s_currentPosition[2] = position->z;
 }
 void FlipMatrixXZColumns(Matrix *destination, const Matrix *source) {
     if (destination != source) *destination = *source;
@@ -96,6 +103,8 @@ void SubmitModel(void *ctx, s32 bank) {
     if (s_submitCount < 8) {
         s_submittedBanks[s_submitCount] = bank;
         s_materialModes[s_submitCount] = state->envMode4;
+        memcpy(s_submittedPositions[s_submitCount], s_currentPosition,
+               sizeof(s_currentPosition));
     }
     s_submitCount++;
 }
@@ -147,6 +156,10 @@ static void ResetCounters(void) {
     s_restoreCalls = 0;
     s_zoneLightCalls = 0;
     s_lightMatrixCalls = 0;
+    s_yAngleCount = 0;
+    memset(s_currentPosition, 0, sizeof(s_currentPosition));
+    memset(s_submittedPositions, 0, sizeof(s_submittedPositions));
+    memset(s_yAngles, 0, sizeof(s_yAngles));
     memset(s_submittedBanks, 0, sizeof(s_submittedBanks));
     memset(s_materialModes, 0, sizeof(s_materialModes));
 }
@@ -216,6 +229,13 @@ int main(void) {
     CHECK(s_submittedBanks[0] == 21 && s_submittedBanks[1] == 21);
     CHECK(s_submittedBanks[2] == 20 && s_submittedBanks[3] == 23);
     CHECK(s_submittedBanks[4] == 22 && s_submittedBanks[5] == 22);
+    CHECK(s_submittedPositions[4][0] == 110 &&
+          s_submittedPositions[4][1] == 180 &&
+          s_submittedPositions[4][2] == 30);
+    CHECK(s_submittedPositions[5][0] == 90 &&
+          s_submittedPositions[5][1] == 180 &&
+          s_submittedPositions[5][2] == 30);
+    CHECK(s_yAngleCount == 3 && s_yAngles[2] == object.steeringAngle * 2);
     CHECK(object.y == originalY && object.modelY == originalModelY);
 
     ResetCounters();
@@ -233,6 +253,29 @@ int main(void) {
     DrawPlayerCarModel(&object);
     CHECK(s_modernPlayerCalls == 1 && s_submitCount == 6);
     CHECK(object.y == INT_MIN && object.modelY == INT_MIN);
+
+    ResetCounters();
+    memset(&object, 0, sizeof(object));
+    object.x = 100;
+    object.y = 200;
+    object.z = 300;
+    object.modelY = 220;
+    object.steeringAngle = 120;
+    playerAsset.modelOffsetX = 10;
+    playerAsset.modelOffsetY = 20;
+    playerAsset.modelOffsetZ = 30;
+    g_SceneId = 8;
+    s_zoneBlend = 7;
+    DrawPlayerCarModel(&object);
+    CHECK(s_submittedPositions[4][0] == 110 &&
+          s_submittedPositions[4][1] == 190 &&
+          s_submittedPositions[4][2] == 330);
+    CHECK(s_submittedPositions[5][0] == 90 &&
+          s_submittedPositions[5][1] == 190 &&
+          s_submittedPositions[5][2] == 330);
+    CHECK(s_yAngleCount == 3 && s_yAngles[2] == 10);
+    CHECK(s_zoneLightCalls == 0 && s_restoreCalls == 0);
+    CHECK(object.y == 200 && object.modelY == 220);
 
     puts("car model drawing tests passed");
     return 0;
