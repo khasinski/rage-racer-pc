@@ -81,11 +81,22 @@ static void test_odd_mip_dimensions_include_the_last_texel(void) {
     EXPECT_EQ(255, chain[12 + 3]);
 }
 
+static void test_invalid_mip_sizes_are_rejected(void) {
+    uint8_t pixel[4] = {0};
+
+    EXPECT_EQ(0, TextureMipLevelCount(0, 1, 4));
+    EXPECT_EQ(SIZE_MAX, TextureMipLevelOffsetRGBA8(0, 1, 1));
+    EXPECT_EQ(0, TextureMipChainSizeRGBA8(UINT32_MAX, UINT32_MAX, 1));
+    EXPECT_EQ(0, TextureBuildMipChainRGBA8(
+                     pixel, 1, 1, 2, pixel, sizeof(pixel)));
+}
+
 int main(void) {
     test_mip_chain_keeps_atlas_tiles_separate();
     test_mip_chain_filters_in_premultiplied_alpha();
     test_mip_chain_premultiplies_png_base_level();
     test_odd_mip_dimensions_include_the_last_texel();
+    test_invalid_mip_sizes_are_rejected();
     if (failures != 0) return EXIT_FAILURE;
     puts("texture mipmap tests passed");
     return EXIT_SUCCESS;

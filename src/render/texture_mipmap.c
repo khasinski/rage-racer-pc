@@ -7,6 +7,15 @@ static uint32_t MipDimension(uint32_t value, uint32_t level) {
     return value != 0 ? value : 1;
 }
 
+static int MipPixelCount(uint32_t width, uint32_t height, size_t *pixels) {
+    if (pixels == NULL || width == 0 || height == 0 ||
+        (size_t)width > SIZE_MAX / (size_t)height) {
+        return 0;
+    }
+    *pixels = (size_t)width * (size_t)height;
+    return 1;
+}
+
 uint32_t TextureMipLevelCount(uint32_t width, uint32_t height,
                                   uint32_t maximumLevels) {
     uint32_t levels = 0;
@@ -26,8 +35,10 @@ size_t TextureMipLevelOffsetRGBA8(uint32_t width, uint32_t height,
     uint32_t index;
     if (width == 0 || height == 0) return SIZE_MAX;
     for (index = 0; index < level; index++) {
-        size_t pixels = (size_t)width * (size_t)height;
-        if (pixels > (SIZE_MAX - offset) / 4u) return SIZE_MAX;
+        size_t pixels;
+
+        if (!MipPixelCount(width, height, &pixels) ||
+            pixels > (SIZE_MAX - offset) / 4u) return SIZE_MAX;
         offset += pixels * 4u;
         if (width > 1) width >>= 1;
         if (height > 1) height >>= 1;
@@ -44,8 +55,8 @@ size_t TextureMipChainSizeRGBA8(uint32_t width, uint32_t height,
     if (offset == SIZE_MAX) return 0;
     lastWidth = MipDimension(width, levels - 1);
     lastHeight = MipDimension(height, levels - 1);
-    pixels = (size_t)lastWidth * (size_t)lastHeight;
-    if (pixels > (SIZE_MAX - offset) / 4u) return 0;
+    if (!MipPixelCount(lastWidth, lastHeight, &pixels) ||
+        pixels > (SIZE_MAX - offset) / 4u) return 0;
     return offset + pixels * 4u;
 }
 
