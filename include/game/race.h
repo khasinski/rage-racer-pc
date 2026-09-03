@@ -296,7 +296,11 @@ typedef struct PrologueLine {
     const char *text;
 } PrologueLine;
 
-extern PrologueLine g_PrologueLines[17];
+enum {
+    PROLOGUE_LINE_CAPACITY = 17,
+    PROLOGUE_CAMERA_CUT_COUNT = 11,
+};
+extern PrologueLine g_PrologueLines[PROLOGUE_LINE_CAPACITY];
 extern s32 g_PrologueLineCount;
 enum { PROMOTION_BONUS_COUNT = 5 };
 extern s32 g_PromotionBonusTable[PROMOTION_BONUS_COUNT];

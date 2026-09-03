@@ -9,6 +9,7 @@
 #include "game/state.h"
 #include "game/track.h"
 
+#include <limits.h>
 #include <stdio.h>
 
 u8 *g_AssetBase;
@@ -18,13 +19,14 @@ s32 g_CameraCarIndex;
 CameraViewMode g_CameraViewMode;
 GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
 s32 g_CourseIndex;
-GameFrameContext *g_DrawBuffer;
+static GameFrameContext s_frame;
+GameFrameContext *g_DrawBuffer = &s_frame;
 s32 g_FadeLevel;
 s32 g_FadeStep;
 s32 g_FrameSyncThreshold;
 s32 g_IsEnvironmentMode4;
 u16 g_PadPressed;
-PrologueCameraCut g_PrologueCameraCuts[1];
+PrologueCameraCut g_PrologueCameraCuts[PROLOGUE_CAMERA_CUT_COUNT];
 s32 g_PrologueCutIndex;
 PrologueLine g_PrologueLines[17];
 s32 g_PrologueLineCount;
@@ -42,6 +44,8 @@ static size_t s_installedSize;
 static s32 s_startAudioCalls;
 static s32 s_trackDataRequests;
 static s32 s_trackInitCalls;
+static s32 s_exitRequests;
+static s32 s_pauseCalls;
 
 void EnterPrologue(void);
 void TickPrologueStep(void);
@@ -92,15 +96,7 @@ s32 InstallTrackTextureAssetPack(u8 *base, size_t size) {
     s_installedSize = size;
     return 1;
 }
-s32 IsPrologueWorldActive(s32 timer) {
-    (void)timer;
-    return 0;
-}
-void PauseCdAudio(void) {}
-s32 PrologueLineIntensity(s32 y) {
-    (void)y;
-    return 0;
-}
+void PauseCdAudio(void) { s_pauseCalls++; }
 u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *prim, s32 tpage) {
     (void)ot;
     (void)tpage;
@@ -110,7 +106,10 @@ void RequestCdTrack(s32 track) {
     (void)track;
     s_cdRequests++;
 }
-s32 RequestSelectBgmAssets(void) { return 1; }
+s32 RequestSelectBgmAssets(void) {
+    s_exitRequests++;
+    return 1;
+}
 s32 RequestTrackDataAssets(void) {
     s_trackDataRequests++;
     return 1;
@@ -171,6 +170,22 @@ int main(void) {
     CHECK(g_FadeLevel == 0x100 && g_FadeStep == 0);
     CHECK(g_CourseIndex == 0 && s_trackInitCalls == 1);
     CHECK(s_startAudioCalls == 1 && s_displayMask == 0);
+
+    g_PrologueStep = PROLOGUE_STEP_ACTIVE;
+    g_SceneTimer = 100;
+    g_PrologueCutIndex = INT_MAX;
+    g_CameraCarIndex = INT_MAX;
+    g_PrologueLineCount = INT_MAX;
+    g_RenderState.packetCursor = s_frame.layout.primitiveBuffer;
+    TickPrologueStep();
+    CHECK(g_SceneTimer == 101);
+    CHECK(g_PrologueCutIndex == PROLOGUE_CAMERA_CUT_COUNT - 1);
+    CHECK(g_CameraCarIndex == 0);
+
+    g_SceneTimer = 1279;
+    TickPrologueStep();
+    CHECK(g_SceneTimer == 1280 && g_SceneId == 6);
+    CHECK(s_exitRequests == 1 && s_pauseCalls == 1);
 
     puts("prologue state tests passed");
     return 0;

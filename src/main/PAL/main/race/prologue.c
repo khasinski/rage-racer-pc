@@ -10,6 +10,8 @@
 #include "game/state.h"
 #include "game/track.h"
 
+#include <limits.h>
+
 enum {
     PROLOGUE_FRAME_SYNC_THRESHOLD = 0x80,
     PROLOGUE_INITIAL_FADE_LEVEL = 0x108,
@@ -22,7 +24,6 @@ enum {
     PROLOGUE_SKIP_ENABLE_FRAME = 0x79,
     PROLOGUE_TEXT_FADE_START_FRAME = 0x3C,
     PROLOGUE_TEXT_FADE_END_FRAME = 0x42E,
-    PROLOGUE_END_FRAME = 0x500,
 };
 
 void EnterPrologue(void) {
@@ -45,16 +46,16 @@ static void UpdatePrologueLoad(void) {
     }
 
     if (g_FadeStep < 0) {
-        g_FadeLevel += g_FadeStep;
+        g_FadeLevel = AdvancePrologueFade(
+            g_FadeLevel, g_FadeStep, INT_MAX);
 
-        if (g_FadeLevel < 0) {
-            g_FadeLevel = 0;
+        if (g_FadeLevel == 0) {
             g_FadeStep = 0;
         }
 
         DrawFullscreenFadeTile(g_FadeLevel, PROLOGUE_FADE_TPAGE);
     } else if (g_FadeStep > 0) {
-        g_FadeLevel += g_FadeStep;
+        g_FadeLevel = AdvancePrologueFade(g_FadeLevel, g_FadeStep, 0x101);
 
         DrawFullscreenFadeTile(g_FadeLevel, PROLOGUE_FADE_TPAGE);
 
@@ -98,18 +99,24 @@ static void UpdatePrologueTrackLoad(void) {
 
 static void DrawPrologueText(void) {
     s32 i;
+    s32 lineCount = g_PrologueLineCount;
     const s32 scrollY = g_SceneTimer / 3 - 0xD0;
     GameOrderingTableEntry *ot;
     s32 green;
     s32 blue;
     u8 *next;
 
-    for (i = 0; i < g_PrologueLineCount; i++) {
+    if (lineCount < 0) {
+        lineCount = 0;
+    } else if (lineCount > PROLOGUE_LINE_CAPACITY) {
+        lineCount = PROLOGUE_LINE_CAPACITY;
+    }
+    for (i = 0; i < lineCount; i++) {
         const PrologueLine *line = &g_PrologueLines[i];
         const s32 screenY = line->y - scrollY;
         const s32 intensity = PrologueLineIntensity(screenY);
 
-        if (intensity != 0) {
+        if (intensity != 0 && line->text != NULL) {
             GameDrawText8x8Shaded(line->x, screenY, line->text, 0x78CC,
                                   intensity);
         }
@@ -142,6 +149,7 @@ static void UpdatePrologue(void) {
     if (g_SceneTimer >= PROLOGUE_SKIP_ENABLE_FRAME &&
         (g_PadPressed & PAD_CONFIRM)) {
         ExitPrologue();
+        return;
     }
 
     timer = g_SceneTimer;
@@ -151,14 +159,13 @@ static void UpdatePrologue(void) {
         g_FadeStep = 2;
     } else if (timer == PROLOGUE_END_FRAME) {
         ExitPrologue();
+        return;
     }
 
-    g_FadeLevel += g_FadeStep;
-    if (g_FadeLevel < 0) {
-        g_FadeLevel = 0;
+    g_FadeLevel = AdvancePrologueFade(g_FadeLevel, g_FadeStep, 0xFF);
+    if (g_FadeLevel == 0 && g_FadeStep < 0) {
         g_FadeStep = 0;
-    } else if (g_FadeLevel >= 0x100) {
-        g_FadeLevel = 0xFF;
+    } else if (g_FadeLevel == 0xFF && g_FadeStep > 0) {
         g_FadeStep = 0;
     }
 
@@ -167,11 +174,20 @@ static void UpdatePrologue(void) {
     worldActive = IsPrologueWorldActive(g_SceneTimer);
     if (worldActive) {
         eventIndex = g_PrologueCutIndex;
+        if ((u32)eventIndex >= PROLOGUE_CAMERA_CUT_COUNT) {
+            eventIndex = PROLOGUE_CAMERA_CUT_COUNT - 1;
+            g_PrologueCutIndex = eventIndex;
+        }
         g_AnimTimer++;
         if (g_PrologueCameraCuts[eventIndex].timer == g_SceneTimer) {
-            g_PrologueCutIndex = eventIndex + 1;
-            g_CameraCarIndex = g_PrologueCameraCuts[eventIndex].carIndex;
+            if (eventIndex + 1 < PROLOGUE_CAMERA_CUT_COUNT) {
+                g_PrologueCutIndex = eventIndex + 1;
+            }
+            g_CameraCarIndex = PrologueCameraIndex(
+                g_PrologueCameraCuts[eventIndex].carIndex);
         }
+
+        g_CameraCarIndex = PrologueCameraIndex(g_CameraCarIndex);
 
         UpdateAttractCars();
 
@@ -191,7 +207,7 @@ static void UpdatePrologue(void) {
 }
 
 void TickPrologueStep(void) {
-    g_SceneTimer++;
+    g_SceneTimer = NextPrologueTimer(g_SceneTimer);
 
     switch (g_PrologueStep) {
     case PROLOGUE_STEP_LOAD_TEXTURES:

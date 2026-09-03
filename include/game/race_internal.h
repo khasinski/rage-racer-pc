@@ -89,10 +89,14 @@ enum {
     PROLOGUE_STEP_LOAD_TRACK,
     PROLOGUE_STEP_WAIT_FOR_FADE,
     PROLOGUE_STEP_ACTIVE,
+    PROLOGUE_END_FRAME = 0x500,
 };
-extern PrologueCameraCut g_PrologueCameraCuts[];
+extern PrologueCameraCut g_PrologueCameraCuts[PROLOGUE_CAMERA_CUT_COUNT];
 s32 PrologueLineIntensity(s32 screenY);
 s32 IsPrologueWorldActive(s32 sceneTimer);
+s32 NextPrologueTimer(s32 sceneTimer);
+s32 AdvancePrologueFade(s32 level, s32 step, s32 maximum);
+s32 PrologueCameraIndex(s32 cameraIndex);
 extern ResultPlaceSpriteLayout g_ResultPlaceSprites[];
 extern ResultPlaceBarPosition g_ClassPlaceBarSizes[];
 

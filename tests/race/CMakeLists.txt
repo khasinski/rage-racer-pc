@@ -569,7 +569,8 @@ set_tests_properties(prologue_logic PROPERTIES LABELS unit)
 
 add_executable(prologue_state_tests
     prologue_state_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/prologue.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/prologue.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/prologue_logic.c)
 target_include_directories(prologue_state_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
