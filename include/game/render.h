@@ -361,8 +361,11 @@ void UpdateEnvironment(void);
  * cursor `*(u8 **)0x1F800000`, bump that cursor past the primitive and link it
  * into the ordering table `ot` with AddPrim. Sprites and textured quads turn a
  * linear CLUT index into VRAM clut coordinates (20 cluts per row, first row at
- * y = 0x1E0). Where an `alpha` argument exists, 0xFF means opaque; anything
- * else enables semi-transparency and appends a blend packet via func_80017390.
+ * y = 0x1E0). Where a `drawMode` argument exists, 0xFF means opaque; anything
+ * else enables semi-transparency and appends a GPU draw-mode packet carrying
+ * that value. For sprite and flat-polygon `flags`, bit 0x80 means that the
+ * caller already configured the draw mode; otherwise the low 16 bits are
+ * queued after the primitive.
  */
 void DrawSprite(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 u0, u16 v0,
                 u8 r, u8 g, u8 b, u16 clutX, s32 shadeTex, s32 semiTrans,
@@ -387,7 +390,7 @@ void DrawSolidRect(
     s32 r,
     s32 g,
     s32 b,
-    s32 alpha);
+    s32 drawMode);
 void DrawLine(
     GameOrderingTableEntry *ot,
     s32 x0,
@@ -397,10 +400,10 @@ void DrawLine(
     s32 r,
     s32 g,
     s32 b,
-    s32 alpha);
+    s32 drawMode);
 /* LINE_F3: flat-shaded 3-point polyline. */
 void DrawPolyLine3(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, s16 y1, s16 x2, s16 y2,
-                   u8 r, u8 g, u8 b, u8 alpha);
+                   u8 r, u8 g, u8 b, u8 drawMode);
 /* LINE_G2: line interpolating rgb0 -> rgb1. */
 void DrawGradientLine(
     GameOrderingTableEntry *ot,
@@ -414,7 +417,7 @@ void DrawGradientLine(
     u8 r1,
     u8 g1,
     u8 b1,
-    u8 alpha);
+    u8 drawMode);
 /* Two-pixel-thick rectangle border, built from six DrawLine calls. */
 void DrawRectOutline(void *buf, s32 xa, s32 ya, s32 w, s32 h, u8 r, u8 g,
                      u8 b, u8 code);
