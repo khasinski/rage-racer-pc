@@ -135,6 +135,9 @@ static int TestSavedPathRejectsTruncation(void) {
     strcpy(path, "stale.cue");
     CHECK(!DiscReadSavedPath(NULL, path, sizeof(path)));
     CHECK(path[0] == '\0');
+    path[0] = 'x';
+    CHECK(!DiscReadSavedPath(config, path, 1));
+    CHECK(path[0] == '\0');
     CHECK(rmdir(directory) == 0);
     return 0;
 }
@@ -189,6 +192,10 @@ static int TestExtensionsAndArguments(void) {
     CHECK(!DiscPathIsSupportedImage(NULL));
     CHECK(!DiscDiscoverImage(NULL, path, sizeof(path), AcceptSecondImage,
                              NULL));
+    CHECK(path[0] == '\0');
+    strcpy(path, "dirty");
+    CHECK(!DiscDiscoverImage(".", path, sizeof(path), NULL, NULL));
+    CHECK(path[0] == '\0');
     return 0;
 }
 

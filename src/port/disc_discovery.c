@@ -39,11 +39,11 @@ int DiscReadSavedPath(const char *configPath, char *path, size_t pathSize) {
     char *lineEnd;
     FILE *file;
 
-    if (path == NULL || pathSize < 2 || pathSize > INT_MAX) {
+    if (path == NULL || pathSize == 0) {
         return 0;
     }
     path[0] = '\0';
-    if (configPath == NULL) return 0;
+    if (pathSize < 2 || pathSize > INT_MAX || configPath == NULL) return 0;
     file = fopen(configPath, "r");
     if (file == NULL || fgets(path, (int)pathSize, file) == NULL) {
         if (file != NULL) fclose(file);
@@ -115,11 +115,11 @@ static int BuildCandidate(char *path, size_t pathSize, const char *directory,
 
 int DiscDiscoverImage(const char *directory, char *path, size_t pathSize,
                       DiscImageValidator validate, void *context) {
-    if (directory == NULL || path == NULL || pathSize == 0 ||
-        validate == NULL) {
+    if (path == NULL || pathSize == 0) {
         return 0;
     }
     path[0] = '\0';
+    if (directory == NULL || validate == NULL) return 0;
 #ifdef _WIN32
     {
         size_t patternSize = strlen(directory) + sizeof("\\*.*");
