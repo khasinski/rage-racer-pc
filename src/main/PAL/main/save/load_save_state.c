@@ -6,6 +6,8 @@
 #include "game/prize_money.h"
 #include "game/save_internal.h"
 
+enum { MAX_SAVED_BGM_SELECTION = 10 };
+
 static s32 ClampSaveValue(s32 value, s32 minimum, s32 maximum) {
     if (value < minimum) return minimum;
     return value > maximum ? maximum : value;
@@ -116,7 +118,8 @@ s32 LoadSaveStateBlock(const GameSaveBlock *block) {
     LoadRaceProgress(&g_GrandPrixSave, &block->grandPrixProgress);
     LoadRaceProgress(&g_ExtraGrandPrixSave, &block->extraGrandPrixProgress);
     LoadRaceProgress(&g_TimeAttackSave, &block->timeAttackProgress);
-    g_BgmSelection = block->bgmSelection;
+    g_BgmSelection = ClampSaveValue(
+        block->bgmSelection, 0, MAX_SAVED_BGM_SELECTION);
     g_ExtraGrandPrixUnlocked = block->extraGrandPrixUnlocked != 0;
     g_MaxClassReached[0] = ClampSaveValue(
         block->maxClassReached[0], 0, GRAND_PRIX_FINAL_CLASS_INDEX);

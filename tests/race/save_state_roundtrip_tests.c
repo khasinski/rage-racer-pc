@@ -225,6 +225,7 @@ int main(void) {
     outOfRange.grandPrixProgress.maxClassReached = -20;
     outOfRange.grandPrixProgress.money = -1;
     outOfRange.extraGrandPrixProgress.money = RACE_MAX_PRIZE_MONEY + 1;
+    outOfRange.bgmSelection = 99;
     outOfRange.extraGrandPrixUnlocked = 7;
     outOfRange.maxClassReached[0] = 99;
     outOfRange.maxClassReached[1] = -20;
@@ -258,6 +259,7 @@ int main(void) {
     CHECK(g_GrandPrixSave.maxClassReached == -1);
     CHECK(g_GrandPrixSave.money == 0);
     CHECK(g_ExtraGrandPrixSave.money == RACE_MAX_PRIZE_MONEY);
+    CHECK(g_BgmSelection == 10);
     CHECK(g_ExtraGrandPrixUnlocked == 1);
     CHECK(g_MaxClassReached[0] == GRAND_PRIX_FINAL_CLASS_INDEX);
     CHECK(g_MaxClassReached[1] == 0);
@@ -277,6 +279,11 @@ int main(void) {
     CHECK(g_GrandPrixCourseProgress.bestPlace[0] == 0xFF);
     CHECK(g_GrandPrixCourseProgress.unlockPending == 1);
     CHECK(g_GrandPrixCourseProgress.retriesRemaining == 0);
+
+    outOfRange.bgmSelection = -1;
+    outOfRange.checksum = CalculateSaveBlockChecksum(&outOfRange);
+    CHECK(LoadSaveStateBlock(&outOfRange) == 1);
+    CHECK(g_BgmSelection == 0);
 
     puts("save state blocks are deterministic and survive a full round trip");
     return 0;
