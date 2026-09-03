@@ -35,6 +35,22 @@ static inline int MenuValueWithinWindow(s32 value, s32 target, u32 window) {
     return (uint64_t)distance <= window;
 }
 
+/* Normalize an arbitrary fixed-point carousel angle around zero. */
+static inline s32 MenuWrapAngle(s32 angle, s32 period) {
+    int64_t half;
+    int64_t wrapped;
+
+    if (period <= 0) {
+        return 0;
+    }
+    half = period / 2;
+    wrapped = ((int64_t)angle + half) % period;
+    if (wrapped < 0) {
+        wrapped += period;
+    }
+    return (s32)(wrapped - half);
+}
+
 typedef enum MenuDialogAction {
     MENU_DIALOG_NO_ACTION,
     MENU_DIALOG_CONFIRM,

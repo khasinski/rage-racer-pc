@@ -1,6 +1,7 @@
 #include "game/asset.h"
 #include "game/showroom_internal.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/render_internal.h"
 #include "game/track.h"
 
@@ -106,8 +107,7 @@ void DrawMenuCarView(void) {
         }
     }
 
-    horizontalAngle =
-        ((g_MenuViewAngle + 300000) % 600000 - 300000) / 1000;
+    horizontalAngle = MenuWrapAngle(g_MenuViewAngle, 600000) / 1000;
     carIndex = g_CarSwapFromIndex;
     viewHeight = AdvanceMenuViewOffset();
     showroom->runtime.modelIndex =
@@ -200,8 +200,7 @@ void DrawMenuCourseView(void) {
         }
     }
 
-    horizontalAngle =
-        ((g_MenuViewAngle + 250000) % 500000 - 250000) / 1000;
+    horizontalAngle = MenuWrapAngle(g_MenuViewAngle, 500000) / 1000;
     courseModelIndex = g_MenuCourseModelIndex;
     viewHeight = AdvanceMenuViewOffset();
 

@@ -36,6 +36,15 @@ int main(void) {
     CHECK(MenuValueWithinWindow(INT_MIN, INT_MAX, UINT_MAX));
     CHECK(MenuValueWithinWindow(INT_MIN, INT_MIN, 0));
 
+    CHECK(MenuWrapAngle(0, 600000) == 0);
+    CHECK(MenuWrapAngle(299999, 600000) == 299999);
+    CHECK(MenuWrapAngle(300000, 600000) == -300000);
+    CHECK(MenuWrapAngle(-300001, 600000) == 299999);
+    CHECK(MenuWrapAngle(900000, 600000) == -300000);
+    CHECK(MenuWrapAngle(INT_MIN, 600000) == -83648);
+    CHECK(MenuWrapAngle(INT_MAX, 600000) == 83647);
+    CHECK(MenuWrapAngle(123, 0) == 0);
+
     puts("menu animation helper tests passed");
     return 0;
 }
