@@ -133,6 +133,21 @@ int main(void) {
     UpdatePlayerJump(&car, INT_MAX);
     CHECK(car.verticalMotionTimer == INT16_MIN);
 
+    Reset(&car);
+    s_spec.gearRatio[2] = 1;
+    s_spec.gearLoad[2] = INT_MAX;
+    car.speed = 100000;
+    car.drive.gear = 2;
+    car.drive.engineRpm = INT_MIN;
+    car.drive.manual = 0;
+    PrepareAirborneDrivetrain(&car);
+    CHECK(car.drive.motionState == CAR_MOTION_AIRBORNE);
+    CHECK(car.drive.jumpTimer == 20);
+    CHECK(car.drive.drivetrainTorque == 15107194);
+    CHECK(g_ShiftTargetRpm == 136980000);
+    CHECK(car.drive.shiftRpmDelta == 9760);
+    CHECK(car.drive.engineLoad == -1029);
+
     if (s_failures != 0) {
         printf("%d player jump checks failed\n", s_failures);
         return 1;
