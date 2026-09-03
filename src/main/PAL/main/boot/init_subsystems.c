@@ -57,7 +57,6 @@ void InitSubsystems(void) {
     ResetInputDefaults();
 
     g_MirrorMode = 0;
-    BindReplayFrameBuffers();
     ApplyPadButtonMapping();
     InitRecordTables();
     InitRenderState(DEFAULT_RENDER_OT_SHIFT);

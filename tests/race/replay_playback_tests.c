@@ -4,23 +4,18 @@
 #include "game/car.h"
 #include "game/race.h"
 #include "game/replay_internal.h"
+#include "game/work_buffer.h"
 
-static ReplayGrandPrixFrame
-    s_GrandPrixFrames[GRAND_PRIX_REPLAY_SAMPLE_COUNT];
-static ReplayTimeAttackFrame
-    s_TimeAttackFrames[TIME_ATTACK_REPLAY_SAMPLE_COUNT];
-
+GameWorkBuffer g_ReplayFrameBuffer;
 s16 g_GrandPrixMode;
-ReplayGrandPrixFrame *g_ReplayFramesGp = s_GrandPrixFrames;
-ReplayTimeAttackFrame *g_ReplayFramesTimeAttack = s_TimeAttackFrames;
 s16 g_ReplayPlayerModelIndex;
 s16 g_ReplayRivalModelIndex;
 
 static void TestGrandPrixFrames(void) {
     GameCarRuntime player = {0};
     GameCarRuntime rival = {0};
-    ReplayGrandPrixFrame *first = &s_GrandPrixFrames[0];
-    ReplayGrandPrixFrame *second = &s_GrandPrixFrames[1];
+    ReplayGrandPrixFrame *first = &g_ReplayFrameBuffer.grandPrixReplay[0];
+    ReplayGrandPrixFrame *second = &g_ReplayFrameBuffer.grandPrixReplay[1];
 
     g_GrandPrixMode = 1;
     g_ReplayPlayerModelIndex = 12;
@@ -136,8 +131,10 @@ static void TestGrandPrixFrames(void) {
 static void TestTimeAttackFrames(void) {
     GameCarRuntime player = {0};
     GameCarRuntime rival;
-    ReplayTimeAttackFrame *first = &s_TimeAttackFrames[0];
-    ReplayTimeAttackFrame *second = &s_TimeAttackFrames[1];
+    ReplayTimeAttackFrame *first =
+        &g_ReplayFrameBuffer.timeAttackReplay[0];
+    ReplayTimeAttackFrame *second =
+        &g_ReplayFrameBuffer.timeAttackReplay[1];
 
     memset(&rival, 0x5A, sizeof(rival));
     g_GrandPrixMode = 0;

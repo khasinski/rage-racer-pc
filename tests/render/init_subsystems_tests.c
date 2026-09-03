@@ -34,7 +34,6 @@ enum InitCall {
     INIT_PAD,
     INIT_MEMORY_CARD,
     APPLY_PAD_MAPPING,
-    BIND_REPLAY_BUFFERS,
     INIT_RECORDS,
     INIT_RENDER_STATE,
     INIT_SAVE_DEFAULTS,
@@ -74,7 +73,6 @@ long SetDMAInterruptState(long enabled) {
 void InitGeom(void) { RecordCall(INIT_GEOMETRY); }
 void GameInitPad(void) { RecordCall(INIT_PAD); }
 void RestartMemoryCard(void) { RecordCall(INIT_MEMORY_CARD); }
-void BindReplayFrameBuffers(void) { RecordCall(BIND_REPLAY_BUFFERS); }
 void ApplyPadButtonMapping(void) { RecordCall(APPLY_PAD_MAPPING); }
 void InitRecordTables(void) { RecordCall(INIT_RECORDS); }
 void InitRenderState(s32 otShift) {
@@ -97,8 +95,8 @@ int main(void) {
     static const enum InitCall expectedCalls[] = {
         INIT_SOUND_LIBRARY, INIT_SOUND_RUNTIME, RESET_GRAPH,
         SET_GRAPH_DEBUG, HIDE_DISPLAY, ENABLE_DMA_INTERRUPTS,
-        INIT_GEOMETRY, INIT_PAD, INIT_MEMORY_CARD, BIND_REPLAY_BUFFERS,
-        APPLY_PAD_MAPPING, INIT_RECORDS, INIT_RENDER_STATE,
+        INIT_GEOMETRY, INIT_PAD, INIT_MEMORY_CARD, APPLY_PAD_MAPPING,
+        INIT_RECORDS, INIT_RENDER_STATE,
         INIT_SAVE_DEFAULTS, SET_CAMERA_MATRIX,
     };
 

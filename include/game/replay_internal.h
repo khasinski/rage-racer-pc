@@ -6,8 +6,6 @@
 
 struct GameCarRuntime;
 
-extern ReplayGrandPrixFrame *g_ReplayFramesGp;
-extern ReplayTimeAttackFrame *g_ReplayFramesTimeAttack;
 extern s32 g_ReplayWriteCursor;
 extern s32 g_ReplayFrameCount;
 extern s32 g_ReplayBufferWrapped;
@@ -26,7 +24,6 @@ void DrawSeriesClearedWash(s32 washProgress, s32 fadeLevel);
 void SeedReplayCars(void);
 void UpdateReplayCars(void);
 void RecordReplayFrame(void);
-void BindReplayFrameBuffers(void);
 void ResetReplayWriteCursor(void);
 /* Rebuild track-relative progress and model orientation from replay position. */
 void ReconstructReplayCarTrackState(struct GameCarRuntime *car);

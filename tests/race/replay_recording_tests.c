@@ -9,8 +9,6 @@
 #include "game/work_buffer.h"
 
 GameWorkBuffer g_ReplayFrameBuffer;
-ReplayGrandPrixFrame *g_ReplayFramesGp;
-ReplayTimeAttackFrame *g_ReplayFramesTimeAttack;
 s32 g_ReplayWriteCursor;
 s32 g_ReplayFrameCount;
 s32 g_ReplayBufferWrapped;
@@ -39,10 +37,6 @@ static GameCarRuntime MakeCar(s32 base, s16 modelIndex) {
 }
 
 static void TestReplayBufferReset(void) {
-    BindReplayFrameBuffers();
-    assert(g_ReplayFramesGp == g_ReplayFrameBuffer.grandPrixReplay);
-    assert(g_ReplayFramesTimeAttack == g_ReplayFrameBuffer.timeAttackReplay);
-
     g_GrandPrixMode = 1;
     g_ReplayWriteCursor = 99;
     g_ReplayBufferWrapped = 1;
@@ -65,7 +59,6 @@ static void TestGrandPrixRecording(void) {
      * away, which leaves it set but unused. */
     (void)frame;
 
-    BindReplayFrameBuffers();
     memset(&untouched, 0xA5, sizeof(untouched));
     g_ReplayFrameBuffer.grandPrixReplay[0] = untouched;
     *AsRivalCar(&g_PlayerCar) = player;
@@ -113,7 +106,6 @@ static void TestTimeAttackRecording(void) {
      * away, which leaves it set but unused. */
     (void)frame;
 
-    BindReplayFrameBuffers();
     memset(&untouched, 0x5A, sizeof(untouched));
     g_ReplayFrameBuffer.timeAttackReplay[0] = untouched;
     *AsRivalCar(&g_PlayerCar) = player;

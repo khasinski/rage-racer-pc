@@ -1,6 +1,7 @@
 #include "game/car.h"
 #include "game/race.h"
 #include "game/replay_internal.h"
+#include "game/work_buffer.h"
 
 typedef struct ReplayCarPose {
     s32 x;
@@ -112,7 +113,8 @@ static void ApplyReplayFrameState(s32 subframe, GameCarRuntime *player,
     if (g_GrandPrixMode != 0) {
         const s32 index = ReplaySampleIndex(
             subframe, GRAND_PRIX_REPLAY_SAMPLE_COUNT);
-        const ReplayGrandPrixFrame *frame = &g_ReplayFramesGp[index];
+        const ReplayGrandPrixFrame *frame =
+            &g_ReplayFrameBuffer.grandPrixReplay[index];
         const ReplayCarPose playerPose = GrandPrixPlayerPose(frame);
         const ReplayCarPose rivalPose = GrandPrixRivalPose(frame);
 
@@ -127,7 +129,8 @@ static void ApplyReplayFrameState(s32 subframe, GameCarRuntime *player,
     } else {
         const s32 index = ReplaySampleIndex(
             subframe, TIME_ATTACK_REPLAY_SAMPLE_COUNT);
-        const ReplayTimeAttackFrame *frame = &g_ReplayFramesTimeAttack[index];
+        const ReplayTimeAttackFrame *frame =
+            &g_ReplayFrameBuffer.timeAttackReplay[index];
         const ReplayCarPose playerPose = TimeAttackPlayerPose(frame);
 
         ApplyReplayPose(player, &playerPose, interpolate);

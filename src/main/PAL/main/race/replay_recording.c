@@ -26,11 +26,6 @@ void RecordReplayFrame(void) {
     }
 }
 
-void BindReplayFrameBuffers(void) {
-    g_ReplayFramesGp = g_ReplayFrameBuffer.grandPrixReplay;
-    g_ReplayFramesTimeAttack = g_ReplayFrameBuffer.timeAttackReplay;
-}
-
 void ResetReplayWriteCursor(void) {
     g_ReplayWriteCursor = 0;
     g_ReplayFrameCount = g_GrandPrixMode != 0
@@ -50,7 +45,7 @@ static void StoreGrandPrixReplaySample(s32 subframe,
         return;
     }
 
-    dst = &g_ReplayFramesGp[subframe >> 1];
+    dst = &g_ReplayFrameBuffer.grandPrixReplay[subframe >> 1];
     dst->x0 = player->x;
     dst->y0 = player->y;
     dst->z0 = player->z;
@@ -83,7 +78,7 @@ static void StoreTimeAttackReplaySample(s32 subframe,
         return;
     }
 
-    dst = &g_ReplayFramesTimeAttack[subframe >> 1];
+    dst = &g_ReplayFrameBuffer.timeAttackReplay[subframe >> 1];
     dst->x = player->x;
     dst->y = player->y;
     dst->z = player->z;
