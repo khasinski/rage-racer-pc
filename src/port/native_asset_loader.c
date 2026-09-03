@@ -3,8 +3,15 @@
 
 #include "game/asset.h"
 #include "game/asset_internal.h"
+#include "archive_index.h"
 #include "mod_assets.h"
 #include "rage/compat.h"
+
+_Static_assert(sizeof(GameCdLoadEntry) == sizeof(RageArchiveIndexEntry),
+               "host and game archive entries must have the same layout");
+_Static_assert(offsetof(GameCdLoadEntry, size) ==
+                   offsetof(RageArchiveIndexEntry, size),
+               "host and game archive sizes must share an offset");
 
 void ResetAssetLoader(void) {
     g_CdLoadPhase = 0;

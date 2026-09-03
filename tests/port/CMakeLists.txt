@@ -1,3 +1,14 @@
+add_executable(archive_index_tests
+    archive_index_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/archive_index.c)
+target_include_directories(archive_index_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(archive_index_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME archive_index COMMAND archive_index_tests)
+set_tests_properties(archive_index PROPERTIES LABELS unit)
+
 add_executable(disc_cue_tests
     disc_cue_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/disc_cue.c)

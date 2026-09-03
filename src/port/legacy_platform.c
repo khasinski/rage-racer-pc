@@ -55,6 +55,7 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 #include "game/replay_internal.h"
 #include "game/round_screen_internal.h"
 #include "game/screens.h"
+#include "archive_index.h"
 #include "disc_cue.h"
 #include "disc_picker.h"
 #include "platform_paths.h"
@@ -727,11 +728,6 @@ int HostInitDisc(void) {
     return 1;
 }
 
-typedef struct RageHostCdEntry {
-    uint32_t byte_offset;
-    uint32_t size;
-} RageHostCdEntry;
-
 /* Write the whole RAGE.BIN out of the mounted disc, so the modding tools can
  * work on a plain file instead of reimplementing ISO and CUE parsing. */
 int HostDumpArchive(const char *path) {
@@ -773,15 +769,20 @@ static void BeginDataRead(void) {
 }
 
 int HostLoadArchiveIndex(void *entries_ptr, int count) {
-    RageHostCdEntry *entries = entries_ptr;
-    uint32_t words[270];
-    int index;
-    BeginDataRead();
-    if (count > 135 || !HostReadArchive(0, words, sizeof(words))) return 0;
-    for (index = 0; index < count; index++) {
-        entries[index].byte_offset = words[index * 2] * 2048u;
-        entries[index].size = words[index * 2 + 1];
+    unsigned char data[RAGE_ARCHIVE_INDEX_ENTRY_COUNT *
+                       RAGE_ARCHIVE_INDEX_ENTRY_SIZE];
+    RageArchiveIndexEntry entries[RAGE_ARCHIVE_INDEX_ENTRY_COUNT];
+
+    if (entries_ptr == NULL || count <= 0 ||
+        count > RAGE_ARCHIVE_INDEX_ENTRY_COUNT) {
+        return 0;
     }
+    BeginDataRead();
+    if (!HostReadArchive(0, data, sizeof(data)) ||
+        !RageArchiveDecodeIndex(data, sizeof(data), entries, (size_t)count)) {
+        return 0;
+    }
+    memcpy(entries_ptr, entries, (size_t)count * sizeof(entries[0]));
     return 1;
 }
 
