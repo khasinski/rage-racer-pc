@@ -603,6 +603,43 @@ static void ExtremeTorqueArithmeticTests(void) {
           CalculateCarInitialAcceleration(&s_car.drive, INT_MAX), -524287);
 }
 
+static void ExtremeDrivetrainArithmeticTests(void) {
+    BuildSpec();
+    PlaceCar();
+    s_spec.gearLoad[1] = INT_MAX;
+    s_spec.speedDragDivisor = 1;
+    s_car.speed = INT_MAX;
+    s_car.drive.engineRpm = INT_MAX;
+    s_car.drive.drivetrainTorque = INT_MIN;
+    s_car.drive.acceleratorInput.value = 0x100;
+    s_car.drive.brakeInput = INT16_MAX;
+    s_car.drive.motionState = CAR_MOTION_TAKEOFF;
+    g_DragScale = 1;
+    UpdateCarDrivetrain(&s_car);
+    Check(s_car.drive.engineRpm >= 0 &&
+              s_car.drive.engineRpm <= 0x3A98,
+          "extreme takeoff clamps engine RPM", s_car.drive.engineRpm,
+          0x3A98);
+    Check(s_launchCalls == 1, "extreme takeoff reaches launch motion",
+          s_launchCalls, 1);
+
+    BuildSpec();
+    PlaceCar();
+    s_spec.gearLoad[1] = INT_MAX;
+    s_car.speed = INT_MAX;
+    s_car.verticalMotionState = CAR_VERTICAL_RISING;
+    s_car.drive.engineRpm = INT_MAX;
+    s_car.drive.drivetrainTorque = INT_MIN;
+    s_car.drive.motionState = CAR_MOTION_AIRBORNE;
+    s_car.drive.jumpTimer = 1;
+    UpdateCarDrivetrain(&s_car);
+    Check(s_car.acceleration == 0,
+          "extreme airborne drivetrain leaves acceleration neutral",
+          s_car.acceleration, 0);
+    Check(s_airborneCalls == 1, "extreme drivetrain reaches airborne motion",
+          s_airborneCalls, 1);
+}
+
 int main(void) {
     Check(CalculateCarRpmDelta(0, INT16_MIN) == INT16_MIN,
           "RPM delta wraps at the negative limit",
@@ -618,6 +655,7 @@ int main(void) {
     MissingTrackTests();
     ExtremeLoadArithmeticTests();
     ExtremeTorqueArithmeticTests();
+    ExtremeDrivetrainArithmeticTests();
 
     if (s_failures != 0) {
         printf("%d drivetrain checks failed\n", s_failures);

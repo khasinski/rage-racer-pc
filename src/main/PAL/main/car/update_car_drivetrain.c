@@ -1,6 +1,7 @@
 #include "game/angle.h"
 #include "game/car.h"
 #include "game/car_internal.h"
+#include "game/integer.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/state.h"
@@ -72,21 +73,27 @@ static s32 UpdatePedalLatchesAndGrip(GameCarDrive *drive) {
 
     LatchPedal(&drive->acceleratorLatch, drive->acceleratorInput.value);
     LatchPedal(&drive->brakeLatch, drive->brakeInput);
-    acceleratorGripNumerator = drive->acceleratorInput.value * 0x64;
+    acceleratorGripNumerator = WrapSigned32(
+        (int64_t)drive->acceleratorInput.value * 100);
     acceleratorGripCost = acceleratorGripNumerator >> 8;
     if (acceleratorGripNumerator < 0) {
         acceleratorGripCost = (acceleratorGripNumerator + 0xFF) >> 8;
     }
-    gripBudget = 0x17C - acceleratorGripCost;
-    return gripBudget + drive->brakeInput * 0x64 / 256;
+    gripBudget = WrapSigned32((int64_t)0x17C - acceleratorGripCost);
+    return WrapSigned32(
+        (int64_t)gripBudget +
+        WrapSigned32((int64_t)drive->brakeInput * 100) / 256);
 }
 
 static void UpdateEngineRpm(GameCarDrive *drive,
                             const CarDrivetrainLoads *loads) {
     if (drive->jumpTimer <= 0 && drive->clutch <= 0) {
-        drive->engineRpm += loads->throttleAcceleration -
-                            loads->longitudinalResistance -
-                            loads->motionResistance;
+        drive->engineRpm = WrapSigned32(
+            (int64_t)drive->engineRpm + loads->throttleAcceleration);
+        drive->engineRpm = WrapSigned32(
+            (int64_t)drive->engineRpm - loads->longitudinalResistance);
+        drive->engineRpm = WrapSigned32(
+            (int64_t)drive->engineRpm - loads->motionResistance);
     }
     if (drive->engineRpm < 0) {
         drive->engineRpm = 0;
@@ -103,14 +110,17 @@ static void AlignStoppedCarHeading(PlayerCarRuntime *car) {
 
 static void UpdateTakeoffSpeed(PlayerCarRuntime *car, GameCarDrive *drive,
                                s32 motionResistance) {
-    s32 brakeDrag = drive->brakeInput * 0x14;
-    s32 coefficient = 0x26FC - 1 - motionResistance * 2;
+    s32 brakeDrag = WrapSigned32((int64_t)drive->brakeInput * 20);
+    s32 resistanceScale = WrapSigned32((int64_t)motionResistance * 2);
+    s32 coefficient = WrapSigned32((int64_t)(0x26FC - 1) - resistanceScale);
+    s32 speedScale;
     s32 torque = drive->drivetrainTorque;
 
     if (brakeDrag < 0) {
         brakeDrag += 0xFF;
     }
-    car->speed = (coefficient - (brakeDrag >> 8)) * car->speed / 10000;
+    speedScale = WrapSigned32((int64_t)coefficient - (brakeDrag >> 8));
+    car->speed = WrapSigned32((int64_t)speedScale * car->speed) / 10000;
     if (torque < 0) {
         torque += 0x1FFFFF;
     }
@@ -124,7 +134,7 @@ static void UpdateDrivenSpeed(PlayerCarRuntime *car, GameCarDrive *drive,
     if (car->verticalMotionState != CAR_VERTICAL_GROUNDED) {
         car->acceleration = 0;
         speedScale = 0x3E7;
-        car->speed = car->speed * speedScale / 1000;
+        car->speed = WrapSigned32((int64_t)car->speed * speedScale) / 1000;
         return;
     }
 
@@ -139,12 +149,14 @@ static void UpdateDrivenSpeed(PlayerCarRuntime *car, GameCarDrive *drive,
         shiftedTorque >>= 17;
         car->acceleration = drive->manual != 0
             ? shiftedTorque
-            : spec->automaticAccelerationScale * shiftedTorque / 1000;
+            : WrapSigned32(
+                  (int64_t)spec->automaticAccelerationScale * shiftedTorque) /
+                  1000;
     }
     if (g_GripLossTimer > 0) {
         car->acceleration /= 2;
     }
-    car->speed = car->speed * 0x5E / 100;
+    car->speed = WrapSigned32((int64_t)car->speed * 94) / 100;
 }
 
 static void DispatchCarMotion(PlayerCarRuntime *car) {
@@ -185,7 +197,10 @@ void UpdateCarDrivetrain(PlayerCarRuntime *car) {
         CalculateCarInitialAcceleration(drive, gearData.ratio);
     /* If RPM falls between configured bands, retail keeps the raw wheel/load
      * difference rather than replacing it with an interpolated curve value. */
-    netTorque = gearData.ratio * drive->engineRpm - drive->drivetrainTorque;
+    netTorque = WrapSigned32(
+        (int64_t)WrapSigned32(
+            (int64_t)gearData.ratio * drive->engineRpm) -
+        drive->drivetrainTorque);
     ReadCarEngineTorque(drive, spec, gearData.torqueCurve,
                         &netTorque, &bandScale);
     UpdateCarGearShiftState(car, spec, &initialAcceleration);
@@ -193,7 +208,8 @@ void UpdateCarDrivetrain(PlayerCarRuntime *car) {
         car, spec, netTorque, bandScale, initialAcceleration);
     UpdateEngineRpm(drive, &loads);
 
-    gearTorque = gearData.ratio * drive->engineRpm;
+    gearTorque = WrapSigned32(
+        (int64_t)gearData.ratio * drive->engineRpm);
     drive->drivetrainTorque = gearTorque;
     if (drive->motionState == CAR_MOTION_TAKEOFF) {
         UpdateTakeoffSpeed(car, drive, loads.motionResistance);
