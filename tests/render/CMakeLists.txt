@@ -75,6 +75,25 @@ endif()
 add_test(NAME draw_area_packet COMMAND draw_area_packet_tests)
 set_tests_properties(draw_area_packet PROPERTIES LABELS unit)
 
+add_executable(rear_view_mirror_tests
+    rear_view_mirror_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rear_view_mirror.c)
+target_include_directories(rear_view_mirror_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(rear_view_mirror_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(rear_view_mirror_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(rear_view_mirror_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME rear_view_mirror COMMAND rear_view_mirror_tests)
+set_tests_properties(rear_view_mirror PROPERTIES LABELS functional)
+
 add_executable(scene_dispatch_tests
     scene_dispatch_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/boot/dispatch_scene.c)
