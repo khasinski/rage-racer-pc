@@ -11,6 +11,27 @@ enum {
     PEDAL_LATCH_RELEASE_THRESHOLD = 0x7C,
     ENGINE_RPM_LIMIT = 0x3A98,
     STOPPED_SPEED_THRESHOLD = 8,
+    ACTIVE_RACE_PHASE = 2,
+    STANDING_START_ACCELERATOR_THRESHOLD = 0x40,
+    STANDING_START_BRAKE_THRESHOLD = 0x80,
+    GRIP_INPUT_PERCENT = 100,
+    PEDAL_FIXED_SCALE = 256,
+    PEDAL_FIXED_SHIFT = 8,
+    PEDAL_FIXED_ROUNDING_BIAS = 0xFF,
+    BASE_GRIP_BUDGET = 0x17C,
+    TAKEOFF_BRAKE_SCALE = 20,
+    TAKEOFF_RESISTANCE_SCALE = 2,
+    TAKEOFF_SPEED_SCALE = 0x26FC,
+    TAKEOFF_SPEED_DIVISOR = 10000,
+    TAKEOFF_TORQUE_ROUNDING_BIAS = 0x1FFFFF,
+    TAKEOFF_TORQUE_SHIFT = 21,
+    AIRBORNE_SPEED_RETENTION = 0x3E7,
+    PER_THOUSAND_SCALE = 1000,
+    DRIVING_TORQUE_ROUNDING_BIAS = 0x1FFFF,
+    DRIVING_TORQUE_SHIFT = 17,
+    GRIP_LOSS_ACCELERATION_DIVISOR = 2,
+    DRIVING_SPEED_RETENTION_PERCENT = 94,
+    PERCENT_SCALE = 100,
 };
 
 typedef struct DrivetrainGearData {
@@ -43,13 +64,14 @@ static DrivetrainGearData SelectDrivetrainGearData(GameCarDrive *drive,
         .ratio = GetCarGearLoad(spec, drive->gear),
     };
 
-    if (g_RacePhase < 2) {
+    if (g_RacePhase < ACTIVE_RACE_PHASE) {
         drive->gearDisp = drive->gear;
         data.ratio = GetCarGearLoad(spec, CAR_FIRST_FORWARD_GEAR);
         data.torqueCurve = g_GearTorqueCurve[0].values;
     } else if (drive->motionState == CAR_MOTION_STANDING_START &&
-               (drive->acceleratorInput.value < 0x40 ||
-                drive->brakeInput >= 0x80)) {
+               (drive->acceleratorInput.value <
+                    STANDING_START_ACCELERATOR_THRESHOLD ||
+                drive->brakeInput >= STANDING_START_BRAKE_THRESHOLD)) {
         data.torqueCurve = g_GearTorqueCurve[0].values;
     }
     return data;
@@ -63,15 +85,20 @@ static s32 UpdatePedalLatchesAndGrip(GameCarDrive *drive) {
     LatchPedal(&drive->acceleratorLatch, drive->acceleratorInput.value);
     LatchPedal(&drive->brakeLatch, drive->brakeInput);
     acceleratorGripNumerator = WrapSigned32(
-        (int64_t)drive->acceleratorInput.value * 100);
-    acceleratorGripCost = acceleratorGripNumerator >> 8;
+        (int64_t)drive->acceleratorInput.value * GRIP_INPUT_PERCENT);
+    acceleratorGripCost = acceleratorGripNumerator >> PEDAL_FIXED_SHIFT;
     if (acceleratorGripNumerator < 0) {
-        acceleratorGripCost = (acceleratorGripNumerator + 0xFF) >> 8;
+        acceleratorGripCost =
+            (acceleratorGripNumerator + PEDAL_FIXED_ROUNDING_BIAS) >>
+            PEDAL_FIXED_SHIFT;
     }
-    gripBudget = WrapSigned32((int64_t)0x17C - acceleratorGripCost);
+    gripBudget = WrapSigned32(
+        (int64_t)BASE_GRIP_BUDGET - acceleratorGripCost);
     return WrapSigned32(
         (int64_t)gripBudget +
-        WrapSigned32((int64_t)drive->brakeInput * 100) / 256);
+        WrapSigned32(
+            (int64_t)drive->brakeInput * GRIP_INPUT_PERCENT) /
+            PEDAL_FIXED_SCALE);
 }
 
 static void UpdateEngineRpm(GameCarDrive *drive,
@@ -99,21 +126,26 @@ static void AlignStoppedCarHeading(PlayerCarRuntime *car) {
 
 static void UpdateTakeoffSpeed(PlayerCarRuntime *car, GameCarDrive *drive,
                                s32 motionResistance) {
-    s32 brakeDrag = WrapSigned32((int64_t)drive->brakeInput * 20);
-    s32 resistanceScale = WrapSigned32((int64_t)motionResistance * 2);
-    s32 coefficient = WrapSigned32((int64_t)(0x26FC - 1) - resistanceScale);
+    s32 brakeDrag = WrapSigned32(
+        (int64_t)drive->brakeInput * TAKEOFF_BRAKE_SCALE);
+    s32 resistanceScale = WrapSigned32(
+        (int64_t)motionResistance * TAKEOFF_RESISTANCE_SCALE);
+    s32 coefficient = WrapSigned32(
+        (int64_t)(TAKEOFF_SPEED_SCALE - 1) - resistanceScale);
     s32 speedScale;
     s32 torque = drive->drivetrainTorque;
 
     if (brakeDrag < 0) {
-        brakeDrag += 0xFF;
+        brakeDrag += PEDAL_FIXED_ROUNDING_BIAS;
     }
-    speedScale = WrapSigned32((int64_t)coefficient - (brakeDrag >> 8));
-    car->speed = WrapSigned32((int64_t)speedScale * car->speed) / 10000;
+    speedScale = WrapSigned32(
+        (int64_t)coefficient - (brakeDrag >> PEDAL_FIXED_SHIFT));
+    car->speed = WrapSigned32(
+        (int64_t)speedScale * car->speed) / TAKEOFF_SPEED_DIVISOR;
     if (torque < 0) {
-        torque += 0x1FFFFF;
+        torque += TAKEOFF_TORQUE_ROUNDING_BIAS;
     }
-    car->acceleration = torque >> 21;
+    car->acceleration = torque >> TAKEOFF_TORQUE_SHIFT;
 }
 
 static void UpdateDrivenSpeed(PlayerCarRuntime *car, GameCarDrive *drive,
@@ -122,8 +154,9 @@ static void UpdateDrivenSpeed(PlayerCarRuntime *car, GameCarDrive *drive,
 
     if (car->verticalMotionState != CAR_VERTICAL_GROUNDED) {
         car->acceleration = 0;
-        speedScale = 0x3E7;
-        car->speed = WrapSigned32((int64_t)car->speed * speedScale) / 1000;
+        speedScale = AIRBORNE_SPEED_RETENTION;
+        car->speed = WrapSigned32(
+            (int64_t)car->speed * speedScale) / PER_THOUSAND_SCALE;
         return;
     }
 
@@ -133,19 +166,21 @@ static void UpdateDrivenSpeed(PlayerCarRuntime *car, GameCarDrive *drive,
         s32 shiftedTorque = gearTorque;
 
         if (shiftedTorque < 0) {
-            shiftedTorque += 0x1FFFF;
+            shiftedTorque += DRIVING_TORQUE_ROUNDING_BIAS;
         }
-        shiftedTorque >>= 17;
+        shiftedTorque >>= DRIVING_TORQUE_SHIFT;
         car->acceleration = drive->manual != 0
             ? shiftedTorque
             : WrapSigned32(
                   (int64_t)spec->automaticAccelerationScale * shiftedTorque) /
-                  1000;
+                  PER_THOUSAND_SCALE;
     }
     if (g_GripLossTimer > 0) {
-        car->acceleration /= 2;
+        car->acceleration /= GRIP_LOSS_ACCELERATION_DIVISOR;
     }
-    car->speed = WrapSigned32((int64_t)car->speed * 94) / 100;
+    car->speed = WrapSigned32(
+        (int64_t)car->speed * DRIVING_SPEED_RETENTION_PERCENT) /
+        PERCENT_SCALE;
 }
 
 static void DispatchCarMotion(PlayerCarRuntime *car) {
@@ -207,7 +242,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *car) {
     }
 
     AlignStoppedCarHeading(car);
-    if (g_RacePhase >= 2) {
+    if (g_RacePhase >= ACTIVE_RACE_PHASE) {
         DispatchCarMotion(car);
     } else {
         car->speed = 0;
