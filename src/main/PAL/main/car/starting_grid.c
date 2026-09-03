@@ -47,5 +47,5 @@ void BuildStartingGrid(void) {
         }
     }
 
-    SeedCarRouteMarkers();
+    SeedCarAiSpeedKeys();
 }

@@ -39,7 +39,7 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex) {
     const TrackAiSpeedKey *highKey;
     const TrackAiSpeedKey *table;
     s32 position;
-    s32 marker;
+    s32 keyIndex;
     s32 lowProgress;
     s32 highProgress;
     s32 lowSpeed;
@@ -52,16 +52,16 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex) {
     }
 
     position = car->trackProgress >> 4;
-    marker = car->routeMarkerIndex;
-    if (position < 0x20 || marker < 0 ||
-        marker >= TRACK_AI_SPEED_KEY_COUNT - 1) {
-        car->routeMarkerIndex = 0;
-        marker = 0;
+    keyIndex = car->speedKeyIndex;
+    if (position < 0x20 || keyIndex < 0 ||
+        keyIndex >= TRACK_AI_SPEED_KEY_COUNT - 1) {
+        car->speedKeyIndex = 0;
+        keyIndex = 0;
     }
 
     table = g_TrackEventData->aiSpeedKeys[g_RaceSeries != 0];
-    lowKey = &table[marker];
-    highKey = &table[marker + 1];
+    lowKey = &table[keyIndex];
+    highKey = &table[keyIndex + 1];
     lowProgress = lowKey->progress;
     highProgress = highKey->progress;
     lowSpeed = RivalTargetSpeed(lowKey, carIndex);
@@ -83,9 +83,9 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex) {
             TargetSpeedAccelerationLimit(blended));
     } else {
         car->slideActive = 1;
-        car->routeMarkerIndex += highProgress < position ? 1 : -1;
+        car->speedKeyIndex += highProgress < position ? 1 : -1;
         if (position < 0x20) {
-            car->routeMarkerIndex = 0;
+            car->speedKeyIndex = 0;
         }
     }
 

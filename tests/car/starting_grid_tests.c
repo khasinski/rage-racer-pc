@@ -45,7 +45,7 @@ void InitRivalCarAi(GameCarRuntime *car, s32 index,
     }
 }
 
-void SeedCarRouteMarkers(void) {
+void SeedCarAiSpeedKeys(void) {
     s_routeSeedCalls++;
 }
 

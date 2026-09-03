@@ -156,7 +156,7 @@ static void TargetSpeedTests(void) {
      * the same scaling the game applies. */
     memset(&car, 0, sizeof(car));
     car.trackProgress = 0x18 << 4;
-    car.routeMarkerIndex = 0;
+    car.speedKeyIndex = 0;
     car.slideActive = 0;
     UpdateCarAiTargetSpeed(&car, 0);
     Check(car.accelerationLimit == (((150 * 1168) / 160) * 6) / 100,
@@ -173,28 +173,28 @@ static void TargetSpeedTests(void) {
     /* Past the far key the marker steps forward and no limit is set. */
     memset(&car, 0, sizeof(car));
     car.trackProgress = 0x30 << 4;
-    car.routeMarkerIndex = 0;
+    car.speedKeyIndex = 0;
     UpdateCarAiTargetSpeed(&car, 0);
-    Check(car.routeMarkerIndex == 1, "marker steps forward past the pair",
-          car.routeMarkerIndex, 1);
+    Check(car.speedKeyIndex == 1, "marker steps forward past the pair",
+          car.speedKeyIndex, 1);
     Check(car.accelerationLimit == 0, "no limit while off the pair",
           car.accelerationLimit, 0);
 
     /* Short of the near key it steps back. */
     memset(&car, 0, sizeof(car));
     car.trackProgress = 0x1000;
-    car.routeMarkerIndex = 5;
+    car.speedKeyIndex = 5;
     keys[5].progress = 0x200;
     keys[6].progress = 0x300;
     UpdateCarAiTargetSpeed(&car, 0);
-    Check(car.routeMarkerIndex == 4, "marker steps back before the pair",
-          car.routeMarkerIndex, 4);
+    Check(car.speedKeyIndex == 4, "marker steps back before the pair",
+          car.speedKeyIndex, 4);
 
     /* Cars behind the front four use fourth place's target, tapered by their
      * grid slot. */
     memset(&car, 0, sizeof(car));
     car.trackProgress = 0x18 << 4;
-    car.routeMarkerIndex = 0;
+    car.speedKeyIndex = 0;
     UpdateCarAiTargetSpeed(&car, 5);
     Check(car.accelerationLimit ==
               (((((400 * (0x55 - 5)) / 100) * 1168) / 160) * 6) / 100,
@@ -206,7 +206,7 @@ static void TargetSpeedTests(void) {
     keys[0].progress = 0x40;
     keys[1].progress = 0x40;
     car.trackProgress = 0x40 << 4;
-    car.routeMarkerIndex = 0;
+    car.speedKeyIndex = 0;
     UpdateCarAiTargetSpeed(&car, 0);
     Check(car.accelerationLimit == (((100 * 1168) / 160) * 6) / 100,
           "two keys at one position", car.accelerationLimit,
@@ -218,10 +218,10 @@ static void TargetSpeedTests(void) {
     keys[1].progress = 0x20;
     memset(&car, 0, sizeof(car));
     car.trackProgress = 0x18 << 4;
-    car.routeMarkerIndex = 5;
+    car.speedKeyIndex = 5;
     UpdateCarAiTargetSpeed(&car, 0);
-    Check(car.routeMarkerIndex == 0, "lap start resets speed marker",
-          car.routeMarkerIndex, 0);
+    Check(car.speedKeyIndex == 0, "lap start resets speed marker",
+          car.speedKeyIndex, 0);
     Check(car.accelerationLimit == (((150 * 1168) / 160) * 6) / 100,
           "lap start immediately uses first speed pair", car.accelerationLimit,
           (((150 * 1168) / 160) * 6) / 100);
@@ -230,20 +230,20 @@ static void TargetSpeedTests(void) {
      * key immediately before the table. */
     memset(&car, 0, sizeof(car));
     car.trackProgress = 0x18 << 4;
-    car.routeMarkerIndex = -1;
+    car.speedKeyIndex = -1;
     UpdateCarAiTargetSpeed(&car, 0);
-    Check(car.routeMarkerIndex == 0, "negative speed marker resets",
-          car.routeMarkerIndex, 0);
+    Check(car.speedKeyIndex == 0, "negative speed marker resets",
+          car.speedKeyIndex, 0);
     Check(car.accelerationLimit == (((150 * 1168) / 160) * 6) / 100,
           "negative marker uses first speed pair", car.accelerationLimit,
           (((150 * 1168) / 160) * 6) / 100);
 
     memset(&car, 0, sizeof(car));
     car.trackProgress = 0x18 << 4;
-    car.routeMarkerIndex = 47;
+    car.speedKeyIndex = 47;
     UpdateCarAiTargetSpeed(&car, 0);
-    Check(car.routeMarkerIndex == 0, "last key cannot form a pair",
-          car.routeMarkerIndex, 0);
+    Check(car.speedKeyIndex == 0, "last key cannot form a pair",
+          car.speedKeyIndex, 0);
 
     memset(&car, 0, sizeof(car));
     keys[0].progress = INT16_MIN;
@@ -273,18 +273,18 @@ static void RouteMarkerSeedTests(void) {
     g_Cars[3].trackProgress = 0x050 << 4;
     g_Cars[4].activeFlag = -1;
     g_Cars[4].slideActive = 7;
-    g_Cars[4].routeMarkerIndex = 9;
+    g_Cars[4].speedKeyIndex = 9;
 
-    SeedCarRouteMarkers();
+    SeedCarAiSpeedKeys();
 
-    Check(g_Cars[0].routeMarkerIndex == 0, "seed at first speed key",
-          g_Cars[0].routeMarkerIndex, 0);
-    Check(g_Cars[1].routeMarkerIndex == 1, "seed at second speed key",
-          g_Cars[1].routeMarkerIndex, 1);
-    Check(g_Cars[2].routeMarkerIndex == 2, "seed at third speed key",
-          g_Cars[2].routeMarkerIndex, 2);
-    Check(g_Cars[3].routeMarkerIndex == 0, "seed before all speed keys",
-          g_Cars[3].routeMarkerIndex, 0);
+    Check(g_Cars[0].speedKeyIndex == 0, "seed at first speed key",
+          g_Cars[0].speedKeyIndex, 0);
+    Check(g_Cars[1].speedKeyIndex == 1, "seed at second speed key",
+          g_Cars[1].speedKeyIndex, 1);
+    Check(g_Cars[2].speedKeyIndex == 2, "seed at third speed key",
+          g_Cars[2].speedKeyIndex, 2);
+    Check(g_Cars[3].speedKeyIndex == 0, "seed before all speed keys",
+          g_Cars[3].speedKeyIndex, 0);
     for (carIndex = 0; carIndex < RACE_CAR_SLOT_COUNT; carIndex++) {
         if (carIndex == 4) {
             continue;
@@ -296,8 +296,8 @@ static void RouteMarkerSeedTests(void) {
     Check(g_Cars[4].slideActive == 7,
           "disabled car keeps slide activity", g_Cars[4].slideActive,
           7);
-    Check(g_Cars[4].routeMarkerIndex == 9,
-          "disabled car keeps marker index", g_Cars[4].routeMarkerIndex, 9);
+    Check(g_Cars[4].speedKeyIndex == 9,
+          "disabled car keeps speed-key index", g_Cars[4].speedKeyIndex, 9);
 }
 
 static void RacingLineTests(void) {
@@ -353,8 +353,9 @@ static void RacingLineTests(void) {
     car.trackProgress = 0x200 << 4;
     car.aiLateralOffset = 50;
     ApplyCarRacingLineHint(&car, 1);
-    Check(car.routeIndex == 0, "the stretch's last position is still inside",
-          car.routeIndex, 0);
+    Check(car.racingLineHintIndex == 0,
+          "the stretch's last position is still inside",
+          car.racingLineHintIndex, 0);
     Check(car.aiLateralOffset == 55, "and still drifts", car.aiLateralOffset,
           55);
 
@@ -370,14 +371,16 @@ static void RacingLineTests(void) {
     memset(&car, 0, sizeof(car));
     car.trackProgress = 0x250 << 4;
     ApplyCarRacingLineHint(&car, 1);
-    Check(car.routeIndex == 1, "advance to the next hint", car.routeIndex, 1);
+    Check(car.racingLineHintIndex == 1, "advance to the next hint",
+          car.racingLineHintIndex, 1);
 
     /* Past the last one, the list starts over rather than reading the -1. */
     memset(&car, 0, sizeof(car));
     car.trackProgress = 0x450 << 4;
-    car.routeIndex = 1;
+    car.racingLineHintIndex = 1;
     ApplyCarRacingLineHint(&car, 1);
-    Check(car.routeIndex == 0, "wrap at the end of the list", car.routeIndex, 0);
+    Check(car.racingLineHintIndex == 0, "wrap at the end of the list",
+          car.racingLineHintIndex, 0);
 
     /* Short of the stretch, the lateral target does not move. */
     memset(&car, 0, sizeof(car));
@@ -393,20 +396,21 @@ static void RacingLineTests(void) {
     hints[0].end = 0x20;
     memset(&car, 0, sizeof(car));
     car.trackProgress = 0x10 << 4;
-    car.routeIndex = 1;
+    car.racingLineHintIndex = 1;
     car.aiLateralOffset = 50;
     ApplyCarRacingLineHint(&car, 1);
-    Check(car.routeIndex == 0, "lap start resets the racing-line hint",
-          car.routeIndex, 0);
+    Check(car.racingLineHintIndex == 0,
+          "lap start resets the racing-line hint",
+          car.racingLineHintIndex, 0);
     Check(car.aiLateralOffset == 55, "lap start uses the first hint immediately",
           car.aiLateralOffset, 55);
 
     memset(&car, 0, sizeof(car));
     car.trackProgress = 0x10 << 4;
-    car.routeIndex = 30;
+    car.racingLineHintIndex = 30;
     ApplyCarRacingLineHint(&car, 1);
-    Check(car.routeIndex == 0, "invalid racing-line index resets",
-          car.routeIndex, 0);
+    Check(car.racingLineHintIndex == 0,
+          "invalid racing-line index resets", car.racingLineHintIndex, 0);
 
     hints[0].start = 0x100;
     hints[0].end = 0x200;
@@ -427,18 +431,19 @@ static void MissingAiDataTests(void) {
 
     Reset();
     memset(&car, 0, sizeof(car));
-    car.routeIndex = 7;
-    car.routeMarkerIndex = 7;
+    car.racingLineHintIndex = 7;
+    car.speedKeyIndex = 7;
     g_TrackEventData = NULL;
 
     ApplyCarRacingLineHint(&car, 0);
     UpdateCarAiTargetSpeed(&car, 0);
-    SeedCarRouteMarkers();
+    SeedCarAiSpeedKeys();
 
-    Check(car.routeIndex == 7, "missing hints leave route unchanged",
-          car.routeIndex, 7);
-    Check(car.routeMarkerIndex == 7, "missing keys leave marker unchanged",
-          car.routeMarkerIndex, 7);
+    Check(car.racingLineHintIndex == 7,
+          "missing hints leave hint index unchanged",
+          car.racingLineHintIndex, 7);
+    Check(car.speedKeyIndex == 7, "missing keys leave key index unchanged",
+          car.speedKeyIndex, 7);
 }
 
 int main(void) {

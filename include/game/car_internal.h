@@ -73,7 +73,7 @@ void PlaceRivalCarsOnTrack(void);
 void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex);
 void ClampCarLateralOffset(GameCarRuntime *car, s32 rivalSlot);
 void RankContenders(void);
-void SeedCarRouteMarkers(void);
+void SeedCarAiSpeedKeys(void);
 void SlowRivalAhead(s32 rank);
 void SteerCarAlongRoute(GameCarRuntime *car);
 void SteerCarToTrackLine(PlayerCarRuntime *car);

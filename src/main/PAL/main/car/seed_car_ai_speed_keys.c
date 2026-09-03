@@ -9,7 +9,7 @@
  * so neither sorting nor a -1 terminator is required. A terminator, when
  * present before a match, selects the first key.
  */
-void SeedCarRouteMarkers(void) {
+void SeedCarAiSpeedKeys(void) {
     const s32 series = g_RaceSeries != 0;
     s32 carIndex;
 
@@ -28,17 +28,17 @@ void SeedCarRouteMarkers(void) {
 
         position = car->trackProgress >> 4;
         car->slideActive = 1;
-        car->routeMarkerIndex = 0;
+        car->speedKeyIndex = 0;
         for (index = 0; index < TRACK_AI_SPEED_KEY_COUNT; index++) {
             const s32 progress =
                 g_TrackEventData->aiSpeedKeys[series][index].progress;
 
             if (progress == -1) {
-                car->routeMarkerIndex = 0;
+                car->speedKeyIndex = 0;
                 break;
             }
             if (position >= progress) {
-                car->routeMarkerIndex = index;
+                car->speedKeyIndex = index;
                 break;
             }
         }

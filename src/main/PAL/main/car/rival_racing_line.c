@@ -21,19 +21,19 @@ void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex) {
         return;
     }
 
-    if (position < 0x20 || car->routeIndex < 0 ||
-        car->routeIndex >= TRACK_RACING_LINE_HINT_COUNT) {
-        car->routeIndex = 0;
+    if (position < 0x20 || car->racingLineHintIndex < 0 ||
+        car->racingLineHintIndex >= TRACK_RACING_LINE_HINT_COUNT) {
+        car->racingLineHintIndex = 0;
         position = 0;
     }
     hints = g_TrackEventData->racingLineHints[series];
-    hint = &hints[car->routeIndex];
+    hint = &hints[car->racingLineHintIndex];
 
     if (hint->end < position) {
-        car->routeIndex++;
-        if (car->routeIndex >= TRACK_RACING_LINE_HINT_COUNT ||
-            hints[car->routeIndex].start == -1) {
-            car->routeIndex = 0;
+        car->racingLineHintIndex++;
+        if (car->racingLineHintIndex >= TRACK_RACING_LINE_HINT_COUNT ||
+            hints[car->racingLineHintIndex].start == -1) {
+            car->racingLineHintIndex = 0;
         }
         return;
     }

@@ -167,7 +167,7 @@ typedef struct GameCarRuntime {
     s32 yawRate;
     s32 reservedF8;
     s32 initialLateralOffset;
-    s32 routeIndex;
+    s32 racingLineHintIndex;
     s16 avoidanceActive;
     u8 pad106[2];
     s32 baseBodyYaw;
@@ -192,7 +192,7 @@ typedef struct GameCarRuntime {
     s16 accelerationLimit;
     s16 currentGear;
     s32 engineRpm;
-    s16 routeMarkerIndex;
+    s16 speedKeyIndex;
     s16 slideActive;
     s32 reserved13C;
     u8 pad140[0xC];
@@ -686,7 +686,7 @@ typedef struct GameCarAiBlock {
     CarSlideInput slideInput; /* +0x34 */
     s32 yawRate;   /* +0x38 yaw rate, added to both steeringAngle and bodyYaw */
     u8 pad3C[8];
-    s32 routeIndex; /* +0x44 */
+    s32 racingLineHintIndex; /* +0x44 */
     s16 avoidanceActive;  /* set to 1 while another car blocks this one */
     u8 pad4A[6];
     u16 nearbyCarCount;  /* count of cars close enough to matter this frame */
@@ -711,8 +711,8 @@ typedef struct GameCarAiBlock {
     s16 minimumSpeed;  /* clamped to >= 0x3C */
     s16 engineRpmLow;  /* low half of GameCarRuntime.engineRpm, clamped to >= 0 */
     u8 pad7A[2];
-    u16 markerCounter; /* +0x7C */
-    s16 markerDirection; /* +0x7E */
+    u16 speedKeyIndex; /* +0x7C */
+    s16 slideActive; /* +0x7E */
     u8 pad80[0x22];
     s16 brakeInput;  /* +0xA2 */
     u8 padA4[0x3C];
