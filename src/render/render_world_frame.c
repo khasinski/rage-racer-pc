@@ -103,24 +103,6 @@ void RenderInterpolateCamera(const RageRenderCamera *previous,
         (current->fogFar - previous->fogFar) * t;
 }
 
-uint32_t RenderWorldBuildPresentation(const RageRenderWorld *world,
-                                          float t,
-                                          RageRenderMeshInstance *out,
-                                          uint32_t capacity) {
-    uint32_t count;
-    uint32_t index;
-
-    if (world == 0 || out == 0) return 0;
-    count = world->instanceCount < capacity ? world->instanceCount : capacity;
-    for (index = 0; index < count; index++) {
-        out[index] = world->instances[index];
-        RenderInterpolateTransform(&world->instances[index].previousTransform,
-                                       &world->instances[index].transform, t,
-                                       &out[index].transform);
-    }
-    return count;
-}
-
 static int RenderInstanceIsVehicle(
     const RageRenderMeshInstance *instance) {
     return instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||

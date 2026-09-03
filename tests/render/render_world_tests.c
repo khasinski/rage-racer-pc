@@ -212,6 +212,19 @@ static void test_camera_cuts_are_not_interpolated_as_motion(void) {
     EXPECT_EQ(70, (int)(presentation.transform.orientation.w * 100.0f));
 }
 
+static void test_transform_interpolation_takes_short_angle_path(void) {
+    RageRenderTransform previous = {0};
+    RageRenderTransform current = {0};
+    RageRenderTransform presentation;
+
+    previous.rotation.y = 350.0f;
+    current.rotation.y = 10.0f;
+    RenderInterpolateTransform(&previous, &current, 0.5f, &presentation);
+    EXPECT_EQ(360, (int)presentation.rotation.y);
+    EXPECT_EQ(350, (int)previous.rotation.y);
+    EXPECT_EQ(10, (int)current.rotation.y);
+}
+
 static void test_perspective_fog_uses_authored_near_and_far_depths(void) {
     RageRenderCamera camera = {0};
     RageRenderVec3 point = {0.0f, 0.0f, -10.0f};
@@ -262,34 +275,6 @@ static void test_terrain_grid_places_adjacent_cells_without_overlap(void) {
     EXPECT_EQ(8192, (int)(right.position.x - left.position.x));
     EXPECT_EQ(-8192, (int)(south.position.z - left.position.z));
     EXPECT_EQ(1, (int)left.scale.x);
-}
-
-static void test_presentation_interpolates_without_mutating_game_world(void) {
-    RageRenderMeshInstance storage[2] = {0};
-    RageRenderMeshInstance presentation[2] = {0};
-    RageRenderWorld world;
-
-    RenderWorldInit(&world, storage, 2);
-    RenderWorldBeginFrame(&world, 1);
-    storage[0].entity = 9;
-    storage[0].assetSet = RAGE_RENDER_ASSET_TERRAIN;
-    storage[0].assetKey = 0x503;
-    storage[0].pass = RAGE_RENDER_PASS_MIRROR;
-    storage[0].previousTransform.position.x = 10.0f;
-    storage[0].transform.position.x = 30.0f;
-    storage[0].previousTransform.rotation.y = 350.0f;
-    storage[0].transform.rotation.y = 10.0f;
-    world.instanceCount = 1;
-    EXPECT_EQ(1, RenderWorldBuildPresentation(&world, 0.5f,
-                                                   presentation, 2));
-    EXPECT_EQ(9, presentation[0].entity);
-    EXPECT_EQ(RAGE_RENDER_ASSET_TERRAIN, presentation[0].assetSet);
-    EXPECT_EQ(0x503, presentation[0].assetKey);
-    EXPECT_EQ(RAGE_RENDER_PASS_MIRROR, presentation[0].pass);
-    EXPECT_EQ(20, (int)presentation[0].transform.position.x);
-    /* 350 -> 10 takes the 20 degree path, not a full 340 degree spin. */
-    EXPECT_EQ(360, (int)presentation[0].transform.rotation.y);
-    EXPECT_EQ(30, (int)storage[0].transform.position.x);
 }
 
 static void test_synchronized_presentation_keeps_previous_vehicle_models(void) {
@@ -565,10 +550,10 @@ int main(void) {
     test_directional_light_is_scene_data();
     test_mirror_is_an_independent_scene_camera();
     test_camera_cuts_are_not_interpolated_as_motion();
+    test_transform_interpolation_takes_short_angle_path();
     test_perspective_fog_uses_authored_near_and_far_depths();
     test_projection_rejects_non_finite_camera_data();
     test_terrain_grid_places_adjacent_cells_without_overlap();
-    test_presentation_interpolates_without_mutating_game_world();
     test_synchronized_presentation_keeps_previous_vehicle_models();
     test_synchronized_presentation_moves_matching_vehicle();
     test_synchronized_presentation_keeps_wheel_sides_paired();
