@@ -100,8 +100,7 @@ static void TestWritesDriverName(void) {
 
     memset(&record, 0xCC, sizeof(record));
     WriteRecordDriverName(&record, nameCodes);
-    CHECK(memcmp(record.driverName, "ABCDEF", 6) == 0);
-    CHECK((u8)record.driverName[6] == 0xCC && (u8)record.driverName[7] == 0xCC);
+    CHECK(memcmp(record.driverName, "ABCDEF\0\0", 8) == 0);
 
     nameCodes[2] = 0xFF;
     WriteRecordDriverName(&record, nameCodes);

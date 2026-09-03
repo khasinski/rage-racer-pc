@@ -35,6 +35,9 @@ void WriteRecordDriverName(RaceRecord *record, const u8 *nameCodes) {
         record->driverName[character] =
             g_NameEntryCharset[code];
     }
+    for (; character < (s32)sizeof(record->driverName); character++) {
+        record->driverName[character] = '\0';
+    }
 }
 
 s32 UpdateRecordNameEntry(u8 *nameCodes) {
