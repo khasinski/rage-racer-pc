@@ -196,6 +196,10 @@ static void LoadTrackRuntimeAssets(void) {
 }
 
 void LoadRaceAssets(void) {
+    if (g_AssetLoadState == 0) {
+        return;
+    }
+
     switch (g_AssetLoadState) {
     case RACE_LOAD_VOICE_HEADER:
         BeginRaceVoiceLoad();
@@ -220,6 +224,9 @@ void LoadRaceAssets(void) {
             g_AssetLoadState = 0;
         }
         break;
+    default:
+        FailAssetLoad();
+        break;
     }
 }
 
@@ -232,7 +239,11 @@ void LoadGrandPrixScreen(void) {
     s32 assetIndex;
     s32 loadedSize;
 
-    if (g_AssetLoadState != GRAND_PRIX_SCREEN_LOAD_ASSET) return;
+    if (g_AssetLoadState == 0) return;
+    if (g_AssetLoadState != GRAND_PRIX_SCREEN_LOAD_ASSET) {
+        FailAssetLoad();
+        return;
+    }
 
     if ((u32)g_GrandPrixSeries >= GRAND_PRIX_SERIES_COUNT ||
         (u32)g_GrandPrixClass >= GRAND_PRIX_PRIZE_CLASS_COUNT) {
@@ -258,7 +269,11 @@ void LoadCourseTextureAssets(void) {
     s32 loadedSize;
     s32 assetIndex;
 
-    if (g_AssetLoadState != COURSE_LOAD_TEXTURE_ASSET) return;
+    if (g_AssetLoadState == 0) return;
+    if (g_AssetLoadState != COURSE_LOAD_TEXTURE_ASSET) {
+        FailAssetLoad();
+        return;
+    }
 
     assetIndex = TrackCourseAssetIndex(
         ASSET_TRACK_1ST_BASE, g_GrandPrixClass, g_CourseIndex);

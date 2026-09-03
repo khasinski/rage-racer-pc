@@ -32,6 +32,10 @@ static void LoadStandaloneTrackRuntimeAssets(void) {
 }
 
 void LoadTrackDataAssets(void) {
+    if (g_AssetLoadState == 0) {
+        return;
+    }
+
     switch (g_AssetLoadState) {
     case TRACK_DATA_LOAD_ASSET:
         LoadStandaloneTrackRuntimeAssets();
@@ -40,6 +44,9 @@ void LoadTrackDataAssets(void) {
         if (EnableCdAudioMode() != 0) {
             g_AssetLoadState = 0;
         }
+        break;
+    default:
+        FailAssetLoad();
         break;
     }
 }

@@ -582,6 +582,15 @@ static void TestTrackPhases(void) {
     s_enableCdResult = 1;
     LoadRaceAssets();
     Check(g_AssetLoadState == 0, "CD mode completes race load");
+
+    g_AssetLoadState = 99;
+    g_AssetLoadFailed = 0;
+    LoadRaceAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed(),
+          "unknown race phase is rejected");
+    g_AssetLoadFailed = 0;
+    LoadRaceAssets();
+    Check(!AssetLoadHasFailed(), "idle race loader is a no-op");
 }
 
 static void TestRaceStartAndCourseRequests(void) {
@@ -634,6 +643,16 @@ static void TestRaceStartAndCourseRequests(void) {
               s_loadAssetIndex == -1,
           "invalid Grand Prix class rejects screen loading");
 
+    g_AssetLoadState = 99;
+    g_AssetLoadFailed = 0;
+    LoadGrandPrixScreen();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed(),
+          "unknown Grand Prix screen phase is rejected");
+    g_AssetLoadFailed = 0;
+    LoadGrandPrixScreen();
+    Check(!AssetLoadHasFailed(),
+          "idle Grand Prix screen loader is a no-op");
+
     g_AssetRequestType = ASSET_REQUEST_IDLE;
     Check(RequestCourseTextureAssets() == 1,
           "new course-texture request pending");
@@ -674,6 +693,15 @@ static void TestRaceStartAndCourseRequests(void) {
     Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
               s_loadAssetIndex == -1,
           "invalid standalone track slot is rejected before disc access");
+
+    g_AssetLoadState = 99;
+    g_AssetLoadFailed = 0;
+    LoadCourseTextureAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed(),
+          "unknown course-texture phase is rejected");
+    g_AssetLoadFailed = 0;
+    LoadCourseTextureAssets();
+    Check(!AssetLoadHasFailed(), "idle course-texture loader is a no-op");
 }
 
 static void TestResidentCourseInstallation(void) {

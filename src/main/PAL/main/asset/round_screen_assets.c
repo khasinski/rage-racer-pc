@@ -120,12 +120,19 @@ static void LoadRoundVoiceBank(void) {
 }
 
 void LoadRoundAssets(void) {
+    if (g_AssetLoadState == 0) {
+        return;
+    }
+
     switch (g_AssetLoadState) {
     case ROUND_LOAD_SCREEN:
         LoadRoundScreen();
         break;
     case ROUND_LOAD_VOICE_BANK:
         LoadRoundVoiceBank();
+        break;
+    default:
+        FailAssetLoad();
         break;
     }
 }

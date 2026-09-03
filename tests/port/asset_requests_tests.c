@@ -567,6 +567,15 @@ int main(void) {
     Check(g_AssetLoadState == 0 && AssetLoadHasFailed(),
           "invalid GP class is rejected before disc access");
 
+    g_AssetLoadState = 99;
+    g_AssetLoadFailed = 0;
+    LoadRoundAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed(),
+          "unknown round phase is rejected");
+    g_AssetLoadFailed = 0;
+    LoadRoundAssets();
+    Check(!AssetLoadHasFailed(), "idle round loader is a no-op");
+
     if (s_failures != 0) return 1;
     puts("asset requests acknowledge and install their BGM blocks");
     return 0;

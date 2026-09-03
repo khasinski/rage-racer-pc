@@ -156,6 +156,15 @@ static void TestTrackDataLoad(void) {
     s_enableCdResult = 1;
     LoadTrackDataAssets();
     Check(g_AssetLoadState == 0, "CD mode completes track data load");
+
+    g_AssetLoadState = 99;
+    g_AssetLoadFailed = 0;
+    LoadTrackDataAssets();
+    Check(g_AssetLoadState == 0 && g_AssetLoadFailed != 0,
+          "unknown track-data phase is rejected");
+    g_AssetLoadFailed = 0;
+    LoadTrackDataAssets();
+    Check(g_AssetLoadFailed == 0, "idle track-data loader is a no-op");
 }
 
 static void CheckDispatch(AssetRequestType request, s32 expectedLoader) {
