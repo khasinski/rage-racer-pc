@@ -174,6 +174,43 @@ int WriteCapturedFrame(const char *path) {
     return 1;
 }
 
+static int DumpSpuRam(void) {
+    const char *path = RuntimeConfigGet("dump.spu_ram");
+    FILE *output;
+    size_t size = 512u * 1024u;
+
+    if (path == NULL || path[0] == '\0') return 1;
+    output = fopen(path, "wb");
+    if (output == NULL) return 0;
+    if (fwrite(Psyz_SpuGetRam(), 1, size, output) != size) {
+        fclose(output);
+        return 0;
+    }
+    return fclose(output) == 0;
+}
+
+static int DumpVram(void) {
+    const char *path = RuntimeConfigGet("dump.vram");
+    const size_t pixelCount = 1024u * 512u;
+    RECT rect = {0, 0, 1024, 512};
+    u16 *vram;
+    FILE *output;
+    int written;
+
+    if (path == NULL || path[0] == '\0') return 1;
+    vram = malloc(pixelCount * sizeof(*vram));
+    if (vram == NULL) return 0;
+    DrawSync(0);
+    StoreImage(&rect, (u_long *)vram);
+    DrawSync(0);
+    output = fopen(path, "wb");
+    written = output != NULL &&
+              fwrite(vram, sizeof(*vram), pixelCount, output) == pixelCount;
+    if (output != NULL && fclose(output) != 0) written = 0;
+    free(vram);
+    return written;
+}
+
 int main(int argc, char **argv) {
     RageInputConfig inputConfig;
     RagePortConfig portConfig;
@@ -217,31 +254,13 @@ int main(int argc, char **argv) {
     TimingInit();
     if (!ModernInit(&portConfig)) return EXIT_FAILURE;
     MainLoop();
-    if (RuntimeConfigGet("dump.spu_ram") != NULL) {
-        FILE *output = fopen(RuntimeConfigGet("dump.spu_ram"), "wb");
-        if (output != NULL) {
-            fwrite(Psyz_SpuGetRam(), 1, 512 * 1024, output);
-            fclose(output);
-        }
+    if (!DumpSpuRam()) {
+        fprintf(stderr, "failed to dump SPU RAM\n");
+        return EXIT_FAILURE;
     }
-    if (RuntimeConfigGet("dump.vram") != NULL) {
-        const char *path = RuntimeConfigGet("dump.vram");
-        RECT rect = {0, 0, 1024, 512};
-        u16 *vram = malloc(1024u * 512u * sizeof(*vram));
-        FILE *output;
-        if (vram == NULL) return EXIT_FAILURE;
-        DrawSync(0);
-        StoreImage(&rect, (u_long *)vram);
-        DrawSync(0);
-        output = fopen(path, "wb");
-        if (output == NULL ||
-            fwrite(vram, sizeof(*vram), 1024u * 512u, output) != 1024u * 512u) {
-            if (output != NULL) fclose(output);
-            free(vram);
-            return EXIT_FAILURE;
-        }
-        fclose(output);
-        free(vram);
+    if (!DumpVram()) {
+        fprintf(stderr, "failed to dump VRAM\n");
+        return EXIT_FAILURE;
     }
     if (RuntimeConfigEnabled("report.initial_state")) {
         int enabled = 0;
