@@ -1,4 +1,5 @@
 #include "game/car.h"
+#include "game/car_track_internal.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/race_internal.h"
@@ -15,12 +16,12 @@ void UpdateRacePosition(void) {
         return;
     }
 
-    playerProgress = g_PlayerCar.progressA + g_PlayerCar.progressB;
+    playerProgress = CarRaceProgress(AsRivalCar(&g_PlayerCar));
     for (carIndex = 0; carIndex < RACE_CAR_SLOT_COUNT; carIndex++) {
         const GameCarRuntime *car = &g_Cars[carIndex];
 
         if (car->activeFlag != -1 &&
-            car->progressA + car->progressB > playerProgress) {
+            CarRaceProgress(car) > playerProgress) {
             position++;
         }
     }

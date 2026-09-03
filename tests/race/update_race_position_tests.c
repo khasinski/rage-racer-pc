@@ -4,6 +4,7 @@
 #include "game/race.h"
 #include "game/race_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -64,6 +65,15 @@ int main(void) {
     UpdateRacePosition();
     Check("position updates on an earlier lap",
           g_PlayerCar.drive.racePosition, 1);
+
+    Reset();
+    g_PlayerCar.progressA = INT_MAX;
+    g_PlayerCar.progressB = 1;
+    g_Cars[0].activeFlag = 0;
+    g_Cars[0].progressA = INT_MAX;
+    UpdateRacePosition();
+    Check("progress comparison wraps like the PS1",
+          g_PlayerCar.drive.racePosition, 2);
 
     return s_failures != 0;
 }
