@@ -1,5 +1,6 @@
 #include "disc_iso.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -134,12 +135,29 @@ static int TestArguments(void) {
     return 0;
 }
 
+static int TestSectorResolution(void) {
+    DiscIsoFile file = {20, DISC_ISO_SECTOR_SIZE + 1};
+    unsigned int absolute = 0;
+
+    CHECK(DiscIsoResolveSector(&file, 0, &absolute) && absolute == 20);
+    CHECK(DiscIsoResolveSector(&file, 1, &absolute) && absolute == 21);
+    CHECK(!DiscIsoResolveSector(&file, 2, &absolute));
+    file.lba = UINT_MAX;
+    CHECK(!DiscIsoResolveSector(&file, 1, &absolute));
+    file.size = 0;
+    CHECK(!DiscIsoResolveSector(&file, 0, &absolute));
+    CHECK(!DiscIsoResolveSector(NULL, 0, &absolute));
+    CHECK(!DiscIsoResolveSector(&file, 0, NULL));
+    return 0;
+}
+
 int main(void) {
     CHECK(TestDiscAtOffset(16) == 0);
     CHECK(TestDiscAtOffset(DISC_MODE2_USER_OFFSET) == 0);
     CHECK(TestMalformedDirectory() == 0);
     CHECK(TestDirectorySizeBounds() == 0);
     CHECK(TestArguments() == 0);
+    CHECK(TestSectorResolution() == 0);
     puts("ISO readers share validated MODE1 and MODE2 directory traversal");
     return 0;
 }

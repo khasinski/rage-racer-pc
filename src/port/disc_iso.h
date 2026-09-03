@@ -36,6 +36,8 @@ int DiscIsoVisitRoot(DiscIsoReader *reader, DiscIsoFileVisitor visitor,
                      void *context);
 int DiscIsoFindFile(DiscIsoReader *reader, const char *name,
                     DiscIsoFile *file);
+int DiscIsoResolveSector(const DiscIsoFile *file, unsigned int relativeSector,
+                         unsigned int *absoluteSector);
 unsigned char *DiscIsoReadWholeFile(DiscIsoReader *reader,
                                     const DiscIsoFile *file);
 

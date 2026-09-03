@@ -133,6 +133,21 @@ int DiscIsoFindFile(DiscIsoReader *reader, const char *name,
     return DiscIsoVisitRoot(reader, FindFileVisitor, &context) && context.found;
 }
 
+int DiscIsoResolveSector(const DiscIsoFile *file, unsigned int relativeSector,
+                         unsigned int *absoluteSector) {
+    unsigned int sectorCount;
+
+    if (file == NULL || absoluteSector == NULL || file->size == 0) return 0;
+    sectorCount = file->size / DISC_ISO_SECTOR_SIZE +
+                  (file->size % DISC_ISO_SECTOR_SIZE != 0);
+    if (relativeSector >= sectorCount ||
+        file->lba > UINT_MAX - relativeSector) {
+        return 0;
+    }
+    *absoluteSector = file->lba + relativeSector;
+    return 1;
+}
+
 unsigned char *DiscIsoReadWholeFile(DiscIsoReader *reader,
                                     const DiscIsoFile *file) {
     unsigned int sectors;
@@ -148,9 +163,11 @@ unsigned char *DiscIsoReadWholeFile(DiscIsoReader *reader,
     data = malloc((size_t)sectors * DISC_ISO_SECTOR_SIZE);
     if (data == NULL) return NULL;
     for (index = 0; index < sectors; index++) {
-        if (file->lba > UINT_MAX - index ||
+        unsigned int absoluteSector;
+
+        if (!DiscIsoResolveSector(file, index, &absoluteSector) ||
             !DiscIsoReadUserSector(
-                reader, file->lba + index,
+                reader, absoluteSector,
                 data + (size_t)index * DISC_ISO_SECTOR_SIZE)) {
             free(data);
             return NULL;

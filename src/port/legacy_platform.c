@@ -260,10 +260,8 @@ typedef struct RageHostDisc {
     FILE *file;
     int chd;
     long track_offset;
-    long archive_sector;
-    long archive_size;
-    long stream_sector;
-    long stream_size;
+    DiscIsoFile archive;
+    DiscIsoFile stream;
     int user_offset;
 } RageHostDisc;
 
@@ -339,10 +337,8 @@ static int HostFindArchive(void) {
         return 0;
     }
     g_RageHostDisc.user_offset = reader.userOffset;
-    g_RageHostDisc.archive_sector = archive.lba;
-    g_RageHostDisc.archive_size = archive.size;
-    g_RageHostDisc.stream_sector = stream.lba;
-    g_RageHostDisc.stream_size = stream.size;
+    g_RageHostDisc.archive = archive;
+    g_RageHostDisc.stream = stream;
     return 1;
 }
 
@@ -401,35 +397,25 @@ static void HostAdoptDiscStreamTable(void) {
 }
 
 int HostReadStreamSector(unsigned int sector, unsigned char *raw) {
-    unsigned long stream_sectors;
-    unsigned long absolute_sector;
+    unsigned int absoluteSector;
 
-    stream_sectors = (unsigned long)g_RageHostDisc.stream_size /
-                         DISC_ISO_SECTOR_SIZE +
-                     ((unsigned long)g_RageHostDisc.stream_size %
-                          DISC_ISO_SECTOR_SIZE !=
-                      0);
     if (raw == NULL || (!g_RageHostDisc.chd && g_RageHostDisc.file == NULL) ||
-        g_RageHostDisc.stream_size <= 0 || sector >= stream_sectors ||
-        g_RageHostDisc.stream_sector < 0 ||
-        (unsigned long)g_RageHostDisc.stream_sector > ULONG_MAX - sector) {
+        !DiscIsoResolveSector(&g_RageHostDisc.stream, sector,
+                              &absoluteSector)) {
         return 0;
     }
-    absolute_sector = (unsigned long)g_RageHostDisc.stream_sector + sector;
-    if (absolute_sector > UINT_MAX) return 0;
-    return HostReadRawSector(NULL, (unsigned int)absolute_sector, raw);
+    return HostReadRawSector(NULL, absoluteSector, raw);
 }
 
 int HostStreamAbsoluteSector(unsigned int sector) {
-    unsigned long absolute;
+    unsigned int absoluteSector;
 
-    if (g_RageHostDisc.stream_size <= 0 ||
-        g_RageHostDisc.stream_sector < 0 ||
-        (unsigned long)g_RageHostDisc.stream_sector > ULONG_MAX - sector) {
+    if (!DiscIsoResolveSector(&g_RageHostDisc.stream, sector,
+                              &absoluteSector) ||
+        absoluteSector > INT_MAX) {
         return -1;
     }
-    absolute = (unsigned long)g_RageHostDisc.stream_sector + sector;
-    return absolute <= INT_MAX ? (int)absolute : -1;
+    return (int)absoluteSector;
 }
 
 static int HostReadArchive(unsigned int offset, void *destination,
@@ -451,22 +437,20 @@ static int HostReadArchive(unsigned int offset, void *destination,
         fclose(test_archive);
         return loaded == size;
     }
-    if (g_RageHostDisc.archive_size < 0 ||
-        (unsigned long)offset > (unsigned long)g_RageHostDisc.archive_size ||
-        size > (unsigned long)g_RageHostDisc.archive_size - offset) {
+    if (offset > g_RageHostDisc.archive.size ||
+        size > g_RageHostDisc.archive.size - offset) {
         return 0;
     }
     while (size > 0) {
         unsigned int sector_offset = offset % DISC_ISO_SECTOR_SIZE;
         unsigned int chunk = DISC_ISO_SECTOR_SIZE - sector_offset;
         if (chunk > size) chunk = size;
-        if (g_RageHostDisc.archive_sector < 0 ||
-            (unsigned long)g_RageHostDisc.archive_sector >
-                UINT_MAX - offset / DISC_ISO_SECTOR_SIZE ||
-            !HostReadUserSector(
-                (unsigned int)g_RageHostDisc.archive_sector +
-                    offset / DISC_ISO_SECTOR_SIZE,
-                sector)) {
+        unsigned int absoluteSector;
+
+        if (!DiscIsoResolveSector(
+                &g_RageHostDisc.archive,
+                offset / DISC_ISO_SECTOR_SIZE, &absoluteSector) ||
+            !HostReadUserSector(absoluteSector, sector)) {
             return 0;
         }
         memcpy(output, sector + sector_offset, chunk);
@@ -609,11 +593,10 @@ int HostDumpArchive(const char *path) {
     unsigned int remaining;
     int ok = 1;
 
-    if (path == NULL || g_RageHostDisc.archive_size <= 0 ||
-        (unsigned long)g_RageHostDisc.archive_size > UINT_MAX) {
+    if (path == NULL || g_RageHostDisc.archive.size == 0) {
         return 0;
     }
-    remaining = (unsigned int)g_RageHostDisc.archive_size;
+    remaining = g_RageHostDisc.archive.size;
     output = fopen(path, "wb");
     if (output == NULL) return 0;
     while (remaining > 0) {
