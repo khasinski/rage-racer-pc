@@ -1,6 +1,8 @@
 #ifndef RAGE_DISC_STREAM_TABLE_H
 #define RAGE_DISC_STREAM_TABLE_H
 
+#include "disc_iso.h"
+
 /* What a mounted disc says about itself.
  *
  * The port finds RAGE.BIN and RAGE.STR through the ISO directory, so it mounts
@@ -31,11 +33,6 @@ typedef struct DiscIdentity {
  * It is what g_StreamCdEntries starts out holding and what it keeps when a
  * disc cannot be read. */
 extern const DiscStreamTable g_RetailPalStreamTable;
-
-/* Reads one 2352-byte sector at an absolute disc address.  Returns 1 on
- * success. */
-typedef int (*DiscRawSectorReader)(void *context, unsigned int sector,
-                                   unsigned char *raw);
 
 /* Fills identity from the disc behind the reader.  Returns 1 when the disc was
  * identified at all; identity->tableValid says whether the stream table came

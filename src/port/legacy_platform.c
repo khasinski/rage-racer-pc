@@ -57,6 +57,7 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 #include "game/screens.h"
 #include "archive_index.h"
 #include "disc_cue.h"
+#include "disc_iso.h"
 #include "disc_picker.h"
 #include "platform_paths.h"
 #include "runtime_config.h"
@@ -383,11 +384,6 @@ static int HostChooseDisc(char *cue, size_t size) {
            access(cue, R_OK) == 0;
 }
 
-static unsigned int HostLe32(const unsigned char *value) {
-    return (unsigned int)value[0] | ((unsigned int)value[1] << 8) |
-           ((unsigned int)value[2] << 16) | ((unsigned int)value[3] << 24);
-}
-
 static int HostReadSector(long sector, unsigned char *buffer) {
     long byte_offset;
     long maximum_sector;
@@ -420,62 +416,25 @@ static int HostReadSector(long sector, unsigned char *buffer) {
            RAGE_ISO_SECTOR_SIZE;
 }
 
-static int HostIsoNameMatches(const unsigned char *name,
-                              unsigned int name_length,
-                              const char *wanted) {
-    size_t wanted_length = strlen(wanted);
-
-    return name_length >= wanted_length &&
-           strncasecmp((const char *)name, wanted, wanted_length) == 0 &&
-           (name_length == wanted_length || name[wanted_length] == ';');
-}
+static int HostReadRawSector(void *context, unsigned int sector,
+                             unsigned char *raw);
 
 static int HostFindArchive(void) {
-    unsigned char sector[RAGE_ISO_SECTOR_SIZE];
-    unsigned int root_sector;
-    unsigned int root_size;
-    unsigned int directory_sector;
-    unsigned int directory_sector_count;
-    int user_offset;
+    DiscIsoReader reader;
+    DiscIsoFile archive;
+    DiscIsoFile stream;
 
-    for (user_offset = 16; user_offset <= 24; user_offset += 8) {
-        g_RageHostDisc.user_offset = user_offset;
-        if (HostReadSector(16, sector) && memcmp(&sector[1], "CD001", 5) == 0) break;
+    if (!DiscIsoOpen(&reader, HostReadRawSector, NULL) ||
+        !DiscIsoFindFile(&reader, "RAGE.BIN", &archive) ||
+        !DiscIsoFindFile(&reader, "RAGE.STR", &stream)) {
+        return 0;
     }
-    if (user_offset > 24 || sector[156] < 34) return 0;
-    root_sector = HostLe32(&sector[158]);
-    root_size = HostLe32(&sector[166]);
-    directory_sector_count = root_size / RAGE_ISO_SECTOR_SIZE +
-                             (root_size % RAGE_ISO_SECTOR_SIZE != 0);
-    for (directory_sector = 0;
-         directory_sector < directory_sector_count;
-         directory_sector++) {
-        unsigned int cursor = 0;
-        if (root_sector > UINT_MAX - directory_sector ||
-            !HostReadSector((long)(root_sector + directory_sector), sector)) {
-            return 0;
-        }
-        while (cursor < RAGE_ISO_SECTOR_SIZE) {
-            unsigned int length = sector[cursor];
-            unsigned int name_length;
-            const unsigned char *record;
-            if (length == 0) break;
-            if (length < 34 || length > RAGE_ISO_SECTOR_SIZE - cursor) return 0;
-            record = &sector[cursor];
-            name_length = record[32];
-            if (name_length > length - 33) return 0;
-            if (HostIsoNameMatches(record + 33, name_length, "RAGE.BIN")) {
-                g_RageHostDisc.archive_sector = HostLe32(&record[2]);
-                g_RageHostDisc.archive_size = HostLe32(&record[10]);
-            } else if (HostIsoNameMatches(record + 33, name_length,
-                                          "RAGE.STR")) {
-                g_RageHostDisc.stream_sector = HostLe32(&record[2]);
-                g_RageHostDisc.stream_size = HostLe32(&record[10]);
-            }
-            cursor += length;
-        }
-    }
-    return g_RageHostDisc.archive_size > 0 && g_RageHostDisc.stream_size > 0;
+    g_RageHostDisc.user_offset = reader.userOffset;
+    g_RageHostDisc.archive_sector = archive.lba;
+    g_RageHostDisc.archive_size = archive.size;
+    g_RageHostDisc.stream_sector = stream.lba;
+    g_RageHostDisc.stream_size = stream.size;
+    return 1;
 }
 
 /* How many sectors of RAGE.STR each movie occupies.  The retail PAL values

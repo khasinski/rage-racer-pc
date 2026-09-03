@@ -1,7 +1,6 @@
 #include "disc_stream_table.h"
 
 #include <limits.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -13,11 +12,8 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 #endif
 
 enum {
-    RAGE_DISC_RAW_SECTOR = 2352,
-    RAGE_DISC_ISO_SECTOR = 2048,
     /* Mode 2: the subheader, then the sector's user data. */
     RAGE_DISC_SUBHEADER = 16,
-    RAGE_DISC_USER_DATA = 24,
     RAGE_DISC_SUBMODE_AUDIO = 0x04,
 };
 
@@ -37,16 +33,8 @@ const DiscStreamTable g_RetailPalStreamTable = {
      0x3B40},
 };
 
-typedef struct DiscReader {
-    DiscRawSectorReader read;
-    void *context;
-    int userOffset;
-} DiscReader;
-
-typedef struct DiscFile {
-    unsigned int lba;
-    unsigned int size;
-} DiscFile;
+typedef DiscIsoReader DiscReader;
+typedef DiscIsoFile DiscFile;
 
 static unsigned int Le16(const unsigned char *data) {
     return (unsigned int)data[0] | ((unsigned int)data[1] << 8);
@@ -54,75 +42,6 @@ static unsigned int Le16(const unsigned char *data) {
 
 static unsigned int Le32(const unsigned char *data) {
     return Le16(data) | (Le16(data + 2) << 16);
-}
-
-static int ReadUser(DiscReader *reader, unsigned int sector,
-                    unsigned char *user) {
-    unsigned char raw[RAGE_DISC_RAW_SECTOR];
-    if (!reader->read(reader->context, sector, raw)) return 0;
-    memcpy(user, raw + reader->userOffset, RAGE_DISC_ISO_SECTOR);
-    return 1;
-}
-
-/* A MODE1 track puts its user data at byte 16 and a MODE2 one at byte 24. The
- * volume descriptor's own signature says which this disc is. */
-static int OpenReader(DiscReader *reader) {
-    unsigned char user[RAGE_DISC_ISO_SECTOR];
-    int offset;
-    for (offset = 16; offset <= 24; offset += 8) {
-        reader->userOffset = offset;
-        if (ReadUser(reader, 16, user) && memcmp(user + 1, "CD001", 5) == 0)
-            return 1;
-    }
-    return 0;
-}
-
-/* Compares an ISO directory entry's name, which carries a ";1" version tail,
- * against a plain file name. */
-static int NameMatches(const unsigned char *name, unsigned int length,
-                       const char *wanted) {
-    size_t wantedLength = strlen(wanted);
-    if (length < wantedLength) return 0;
-    if (strncasecmp((const char *)name, wanted, wantedLength) != 0) return 0;
-    return length == wantedLength || name[wantedLength] == ';';
-}
-
-static int FindFile(DiscReader *reader, const char *wanted, DiscFile *file) {
-    unsigned char user[RAGE_DISC_ISO_SECTOR];
-    unsigned char volume[RAGE_DISC_ISO_SECTOR];
-    unsigned int root;
-    unsigned int size;
-    unsigned int sector;
-    unsigned int sectorCount;
-
-    if (!ReadUser(reader, 16, volume) || volume[156] < 34) return 0;
-    root = Le32(volume + 158);
-    size = Le32(volume + 166);
-    sectorCount = size / RAGE_DISC_ISO_SECTOR +
-                  (size % RAGE_DISC_ISO_SECTOR != 0);
-    for (sector = 0; sector < sectorCount; sector++) {
-        unsigned int cursor = 0;
-        if (root > UINT_MAX - sector ||
-            !ReadUser(reader, root + sector, user)) {
-            return 0;
-        }
-        while (cursor < RAGE_DISC_ISO_SECTOR) {
-            unsigned int length = user[cursor];
-            const unsigned char *record = user + cursor;
-            if (length == 0) break;
-            if (length < 34 || length > RAGE_DISC_ISO_SECTOR - cursor ||
-                record[32] > length - 33) {
-                return 0;
-            }
-            if (NameMatches(record + 33, record[32], wanted)) {
-                file->lba = Le32(record + 2);
-                file->size = Le32(record + 10);
-                return file->size > 0;
-            }
-            cursor += length;
-        }
-    }
-    return 0;
 }
 
 /* "SLUS_004.03": four letters, an underscore, then three digits, a dot and two
@@ -141,65 +60,32 @@ static int LooksLikeSerial(const unsigned char *name, unsigned int length) {
     return length == 11 || name[11] == ';';
 }
 
-static int FindBootLikeName(DiscReader *reader, char *boot, size_t bootSize) {
-    unsigned char user[RAGE_DISC_ISO_SECTOR];
-    unsigned char volume[RAGE_DISC_ISO_SECTOR];
-    unsigned int root;
-    unsigned int size;
-    unsigned int sector;
-    unsigned int sectorCount;
+typedef struct BootNameSearch {
+    char *boot;
+    int found;
+} BootNameSearch;
 
-    if (bootSize < 12) return 0;
-    if (!ReadUser(reader, 16, volume) || volume[156] < 34) return 0;
-    root = Le32(volume + 158);
-    size = Le32(volume + 166);
-    sectorCount = size / RAGE_DISC_ISO_SECTOR +
-                  (size % RAGE_DISC_ISO_SECTOR != 0);
-    for (sector = 0; sector < sectorCount; sector++) {
-        unsigned int cursor = 0;
-        if (root > UINT_MAX - sector ||
-            !ReadUser(reader, root + sector, user)) {
-            return 0;
-        }
-        while (cursor < RAGE_DISC_ISO_SECTOR) {
-            unsigned int length = user[cursor];
-            const unsigned char *record = user + cursor;
-            if (length == 0) break;
-            if (length < 34 || length > RAGE_DISC_ISO_SECTOR - cursor ||
-                record[32] > length - 33) {
-                return 0;
-            }
-            if (LooksLikeSerial(record + 33, record[32])) {
-                memcpy(boot, record + 33, 11);
-                boot[11] = '\0';
-                return 1;
-            }
-            cursor += length;
-        }
-    }
-    return 0;
+static int FindBootNameVisitor(void *context, const unsigned char *name,
+                               unsigned int length,
+                               const DiscIsoFile *file) {
+    BootNameSearch *search = context;
+    (void)file;
+
+    if (!LooksLikeSerial(name, length)) return 0;
+    memcpy(search->boot, name, 11);
+    search->boot[11] = '\0';
+    search->found = 1;
+    return 1;
 }
 
-static unsigned char *ReadWholeFile(DiscReader *reader, const DiscFile *file) {
-    unsigned int sectors = file->size / RAGE_DISC_ISO_SECTOR +
-                           (file->size % RAGE_DISC_ISO_SECTOR != 0);
-    unsigned char *data;
-    unsigned int index;
+static int FindBootLikeName(DiscReader *reader, char *boot, size_t bootSize) {
+    BootNameSearch search;
 
-#if SIZE_MAX <= UINT_MAX
-    if (sectors > SIZE_MAX / RAGE_DISC_ISO_SECTOR) return NULL;
-#endif
-    data = malloc((size_t)sectors * RAGE_DISC_ISO_SECTOR);
-    if (data == NULL) return NULL;
-    for (index = 0; index < sectors; index++) {
-        if (file->lba > UINT_MAX - index ||
-            !ReadUser(reader, file->lba + index,
-                      data + (size_t)index * RAGE_DISC_ISO_SECTOR)) {
-            free(data);
-            return NULL;
-        }
-    }
-    return data;
+    if (bootSize < 12) return 0;
+    search.boot = boot;
+    search.found = 0;
+    return DiscIsoVisitRoot(reader, FindBootNameVisitor, &search) &&
+           search.found;
 }
 
 /* SYSTEM.CNF's BOOT line names the executable, which is the disc's serial:
@@ -253,13 +139,13 @@ const char *DiscRegionForBootName(const char *boot) {
  * no table of contents; a movie ends where the frame numbering restarts. */
 static int ScanStreamStarts(DiscReader *reader, const DiscFile *stream,
                             unsigned int *starts, unsigned int *total) {
-    unsigned int sectors = stream->size / RAGE_DISC_ISO_SECTOR +
-                           (stream->size % RAGE_DISC_ISO_SECTOR != 0);
+    unsigned int sectors = stream->size / DISC_ISO_SECTOR_SIZE +
+                           (stream->size % DISC_ISO_SECTOR_SIZE != 0);
     unsigned int index;
     unsigned int found = 0;
     unsigned int previous = 0;
     int seenFrame = 0;
-    unsigned char raw[RAGE_DISC_RAW_SECTOR];
+    unsigned char raw[DISC_RAW_SECTOR_SIZE];
 
     *total = sectors;
     for (index = 0; index < sectors; index++) {
@@ -271,7 +157,7 @@ static int ScanStreamStarts(DiscReader *reader, const DiscFile *stream,
             return 0;
         }
         if (raw[RAGE_DISC_SUBHEADER + 2] & RAGE_DISC_SUBMODE_AUDIO) continue;
-        body = raw + RAGE_DISC_USER_DATA;
+        body = raw + DISC_MODE2_USER_OFFSET;
         if (Le32(body) != RAGE_DISC_STR_MAGIC) continue;
         chunk = Le16(body + 4);
         frame = Le32(body + 8);
@@ -328,11 +214,11 @@ static int ReadStreamTable(DiscReader *reader, DiscIdentity *identity,
     unsigned int index;
     int found;
 
-    if (reader->userOffset != RAGE_DISC_USER_DATA) {
+    if (reader->userOffset != DISC_MODE2_USER_OFFSET) {
         identity->reason = "the disc has no Mode 2 track to read movies from";
         return 0;
     }
-    if (!FindFile(reader, "RAGE.STR", &stream)) {
+    if (!DiscIsoFindFile(reader, "RAGE.STR", &stream)) {
         identity->reason = "the disc has no RAGE.STR";
         return 0;
     }
@@ -341,11 +227,11 @@ static int ReadStreamTable(DiscReader *reader, DiscIdentity *identity,
         identity->reason = "RAGE.STR does not hold eleven movies";
         return 0;
     }
-    if (!FindFile(reader, boot, &executable)) {
+    if (!DiscIsoFindFile(reader, boot, &executable)) {
         identity->reason = "the boot executable named in SYSTEM.CNF is missing";
         return 0;
     }
-    blob = ReadWholeFile(reader, &executable);
+    blob = DiscIsoReadWholeFile(reader, &executable);
     if (blob == NULL) {
         identity->reason = "the boot executable could not be read";
         return 0;
@@ -378,14 +264,11 @@ int DiscIdentify(DiscRawSectorReader read, void *context,
     memset(identity, 0, sizeof(*identity));
     identity->region = "unknown";
     identity->reason = "the disc could not be identified";
-    reader.read = read;
-    reader.context = context;
-    reader.userOffset = RAGE_DISC_USER_DATA;
-    if (read == NULL || !OpenReader(&reader)) return 0;
+    if (!DiscIsoOpen(&reader, read, context)) return 0;
 
     named = 0;
-    if (FindFile(&reader, "SYSTEM.CNF", &config)) {
-        cnf = ReadWholeFile(&reader, &config);
+    if (DiscIsoFindFile(&reader, "SYSTEM.CNF", &config)) {
+        cnf = DiscIsoReadWholeFile(&reader, &config);
         if (cnf != NULL) {
             named = ParseBootName(cnf, config.size, identity->boot,
                                   sizeof(identity->boot));

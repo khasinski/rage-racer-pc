@@ -1,5 +1,6 @@
 add_executable(disc_stream_table_tests
     disc_stream_table_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/disc_iso.c
     ${CMAKE_SOURCE_DIR}/src/port/disc_stream_table.c
 )
 target_include_directories(disc_stream_table_tests PRIVATE
@@ -14,6 +15,7 @@ set_tests_properties(disc_stream_table PROPERTIES LABELS functional)
 add_executable(stream_table_disc_tests
     stream_table_disc_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/disc_cue.c
+    ${CMAKE_SOURCE_DIR}/src/port/disc_iso.c
     ${CMAKE_SOURCE_DIR}/src/port/disc_stream_table.c
 )
 target_include_directories(stream_table_disc_tests PRIVATE
