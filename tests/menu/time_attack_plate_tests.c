@@ -3,6 +3,7 @@
 #include "game/render_state.h"
 
 #include <stdio.h>
+#include <limits.h>
 #include <string.h>
 
 GameRenderState g_RenderState;
@@ -46,6 +47,13 @@ int main(void) {
     if (g_TimeAttackPlateProgress != 0xC || s_drawCount != 2) return 1;
     DrawTimeAttackPlate(-20);
     if (g_TimeAttackPlateProgress != 0 || s_drawCount != 2) return 1;
+
+    g_TimeAttackPlateProgress = INT_MAX;
+    DrawTimeAttackPlate(INT_MAX);
+    if (g_TimeAttackPlateProgress != 0xC || s_drawCount != 3) return 1;
+    g_TimeAttackPlateProgress = INT_MIN;
+    DrawTimeAttackPlate(-1);
+    if (g_TimeAttackPlateProgress != 0 || s_drawCount != 3) return 1;
 
     puts("time attack plate animation preserved");
     return 0;

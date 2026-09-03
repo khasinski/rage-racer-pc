@@ -3,6 +3,7 @@
 #include "game/render_state.h"
 
 #include <stdio.h>
+#include <limits.h>
 
 s32 g_CarShopPanelSlide;
 s32 g_EngineerShopPanelSlide;
@@ -107,6 +108,13 @@ static int CheckPanel(void (*draw)(s32, s32, s32), s32 *slide,
     CHECK(*slide == 0);
     CHECK(s_recordCount == 0);
     g_MenuAltLayout = 0;
+
+    *slide = INT_MAX;
+    draw(INT_MAX, 100, 50);
+    CHECK(*slide == SHOP_PANEL_SLIDE_MAX);
+    *slide = INT_MIN;
+    draw(-1, 100, 50);
+    CHECK(*slide == 0);
     return 0;
 }
 

@@ -1,6 +1,5 @@
 #include "game/menu.h"
-
-#include <limits.h>
+#include "game/menu_internal.h"
 
 enum {
     LOGO_SAMPLE_PANEL_LAST_FRAME = 5,
@@ -25,15 +24,11 @@ void DrawLogoSamplePanel(s32 step, s32 sample) {
     if (sample < 0) {
         sample = 0;
     }
+    g_LogoSamplePanelSlide = AddClampedMenuValue(
+        g_LogoSamplePanelSlide, 0, 0, LOGO_SAMPLE_PANEL_LAST_FRAME);
     if (step < 0) {
-        int64_t updated = (int64_t)g_LogoSamplePanelSlide + step;
-
-        if (updated < 0) {
-            g_LogoSamplePanelSlide = 0;
-        } else {
-            g_LogoSamplePanelSlide =
-                updated > INT_MAX ? INT_MAX : (s32)updated;
-        }
+        g_LogoSamplePanelSlide = AddClampedMenuValue(
+            g_LogoSamplePanelSlide, step, 0, LOGO_SAMPLE_PANEL_LAST_FRAME);
     }
 
     frame = g_LogoSamplePanelSlide;
@@ -64,13 +59,8 @@ void DrawLogoSamplePanel(s32 step, s32 sample) {
                     0xFF);
 
     if (step > 0) {
-        int64_t updated = (int64_t)g_LogoSamplePanelSlide + step;
-
-        if (updated > LOGO_SAMPLE_PANEL_LAST_FRAME) {
-            g_LogoSamplePanelSlide = LOGO_SAMPLE_PANEL_LAST_FRAME;
-        } else {
-            g_LogoSamplePanelSlide =
-                updated < INT_MIN ? INT_MIN : (s32)updated;
-        }
+        g_LogoSamplePanelSlide = AddClampedMenuValue(
+            g_LogoSamplePanelSlide, step, 0,
+            LOGO_SAMPLE_PANEL_LAST_FRAME);
     }
 }

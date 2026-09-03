@@ -2,8 +2,6 @@
 #include "game/menu_internal.h"
 #include "game/render.h"
 
-#include <limits.h>
-
 enum {
     PAINT_PALETTE_DRAW_START = 11,
     PAINT_PALETTE_LAST_FRAME = 10,
@@ -28,15 +26,11 @@ s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index) {
     if ((u32)index >= MENU_PAINT_COLOR_COUNT) {
         index = 0;
     }
+    *counter = AddClampedMenuValue(*counter, 0, 0, PAINT_PALETTE_COMPLETE);
 
     if (step < 0) {
-        int64_t updated = (int64_t)*counter + step;
-
-        if (updated < 0) {
-            *counter = 0;
-        } else {
-            *counter = updated > INT_MAX ? INT_MAX : (s32)updated;
-        }
+        *counter = AddClampedMenuValue(*counter, step, 0,
+                                       PAINT_PALETTE_COMPLETE);
     }
 
     frame = *counter - PAINT_PALETTE_DRAW_START;
@@ -80,13 +74,11 @@ s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index) {
     }
 
     if (step >= 0) {
-        int64_t updated = (int64_t)*counter + step;
-
-        if (updated >= PAINT_PALETTE_COMPLETE) {
-            *counter = PAINT_PALETTE_COMPLETE;
+        *counter = AddClampedMenuValue(*counter, step, 0,
+                                       PAINT_PALETTE_COMPLETE);
+        if (*counter >= PAINT_PALETTE_COMPLETE) {
             return 1;
         }
-        *counter = updated < INT_MIN ? INT_MIN : (s32)updated;
     }
 
     return 0;

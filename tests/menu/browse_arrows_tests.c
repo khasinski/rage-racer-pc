@@ -3,6 +3,7 @@
 #include "game/render_state.h"
 
 #include <stdio.h>
+#include <limits.h>
 
 s32 g_BrowseArrowsFade;
 s32 g_BrowseArrowsPulsePhase;
@@ -95,6 +96,17 @@ int main(void) {
     g_BrowseArrowsFade = 11;
     DrawBrowseArrows(-1, 0, 1, 1);
     CHECK(g_BrowseArrowsFade == 10 && s_spriteCount == 0);
+
+    ResetDraws();
+    g_MenuAltLayout = 0;
+    g_BrowseArrowsFade = INT_MAX;
+    g_BrowseArrowsPulsePhase = INT_MAX;
+    DrawBrowseArrows(INT_MAX, 0, 1, 1);
+    CHECK(g_BrowseArrowsFade == 25 && s_spriteCount == 2);
+    CHECK(g_BrowseArrowsPulsePhase == (s32)((u32)INT_MAX + 0x60u));
+    g_BrowseArrowsFade = INT_MIN;
+    DrawBrowseArrows(-1, 0, 1, 1);
+    CHECK(g_BrowseArrowsFade == 0);
 
     puts("browse arrows tests passed");
     return 0;

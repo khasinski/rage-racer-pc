@@ -6,6 +6,23 @@
 #include "game/team_logo.h"
 #include "psyq/gpu.h"
 
+static inline s32 AddClampedMenuValue(s32 value, s32 delta, s32 minimum,
+                                      s32 maximum) {
+    int64_t updated;
+
+    if (minimum > maximum) {
+        return minimum;
+    }
+    updated = (int64_t)value + delta;
+    if (updated < minimum) {
+        return minimum;
+    }
+    if (updated > maximum) {
+        return maximum;
+    }
+    return (s32)updated;
+}
+
 /* Screen draw entry points use step zero as a reset command. Other steps move
  * their fade within the brightness range accepted by the menu renderer. */
 static inline s32 AdvanceMenuFade(s32 *progress, s32 step) {

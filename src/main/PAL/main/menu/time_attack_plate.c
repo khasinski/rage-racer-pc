@@ -1,4 +1,5 @@
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/render.h"
 #include "game/render_state.h"
 
@@ -10,11 +11,12 @@ void DrawTimeAttackPlate(s32 step) {
         return;
     }
 
+    g_TimeAttackPlateProgress = AddClampedMenuValue(
+        g_TimeAttackPlateProgress, 0, 0, 0xC);
+
     if (step < 0) {
-        g_TimeAttackPlateProgress += step;
-        if (g_TimeAttackPlateProgress < 0) {
-            g_TimeAttackPlateProgress = 0;
-        }
+        g_TimeAttackPlateProgress = AddClampedMenuValue(
+            g_TimeAttackPlateProgress, step, 0, 0xC);
     }
 
     progress = g_TimeAttackPlateProgress;
@@ -29,9 +31,7 @@ void DrawTimeAttackPlate(s32 step) {
     }
 
     if (step > 0) {
-        g_TimeAttackPlateProgress += step;
-        if (g_TimeAttackPlateProgress >= 0xD) {
-            g_TimeAttackPlateProgress = 0xC;
-        }
+        g_TimeAttackPlateProgress = AddClampedMenuValue(
+            g_TimeAttackPlateProgress, step, 0, 0xC);
     }
 }

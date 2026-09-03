@@ -16,6 +16,11 @@
 int main(void) {
     s32 progress = 100;
 
+    CHECK(AddClampedMenuValue(10, 5, 0, 20) == 15);
+    CHECK(AddClampedMenuValue(INT_MAX, INT_MAX, 0, 20) == 20);
+    CHECK(AddClampedMenuValue(INT_MIN, INT_MIN, 0, 20) == 0);
+    CHECK(AddClampedMenuValue(10, 5, 20, 0) == 20);
+
     CHECK(AdvanceMenuFade(&progress, 20) == 120);
     CHECK(AdvanceMenuFade(&progress, -40) == 80);
     CHECK(AdvanceMenuFade(&progress, INT_MAX) == MENU_FADE_MAX);

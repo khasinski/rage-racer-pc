@@ -1,4 +1,5 @@
 #include "game/menu.h"
+#include "game/menu_internal.h"
 
 typedef struct ShopPriceCaption {
     u16 width;
@@ -15,11 +16,10 @@ static void DrawShopPricePanel(s32 step, s32 money, s32 price, s32 *slide,
         return;
     }
 
+    *slide = AddClampedMenuValue(*slide, 0, 0, SHOP_PANEL_SLIDE_MAX);
+
     if (step < 0) {
-        *slide += step;
-        if (*slide < 0) {
-            *slide = 0;
-        }
+        *slide = AddClampedMenuValue(*slide, step, 0, SHOP_PANEL_SLIDE_MAX);
     }
 
     risenFrames = *slide - SHOP_PANEL_VISIBLE_AT;
@@ -57,10 +57,7 @@ static void DrawShopPricePanel(s32 step, s32 money, s32 price, s32 *slide,
     }
 
     if (step > 0) {
-        *slide += step;
-        if (*slide > SHOP_PANEL_SLIDE_MAX) {
-            *slide = SHOP_PANEL_SLIDE_MAX;
-        }
+        *slide = AddClampedMenuValue(*slide, step, 0, SHOP_PANEL_SLIDE_MAX);
     }
 }
 
