@@ -16,14 +16,14 @@ s32 ReplayEndingWashActive(s32 sceneTimer, s32 frameCount) {
 }
 
 s32 ReplayEndingWashLevel(s32 sceneTimer, s32 frameCount) {
-    s32 level;
+    int64_t level;
 
     if (!ReplayEndingWashActive(sceneTimer, frameCount)) {
         return 0;
     }
 
-    level = sceneTimer + REPLAY_ENDING_WASH_FRAMES - frameCount;
-    return level > MAX_WASH_LEVEL ? MAX_WASH_LEVEL : level;
+    level = (int64_t)sceneTimer + REPLAY_ENDING_WASH_FRAMES - frameCount;
+    return level > MAX_WASH_LEVEL ? MAX_WASH_LEVEL : (s32)level;
 }
 
 s32 ShouldStartReplayExitFade(s32 sceneTimer, s32 frameCount) {

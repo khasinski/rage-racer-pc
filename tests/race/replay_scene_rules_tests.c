@@ -12,6 +12,8 @@ static void TestEndingWashThreshold(void) {
     assert(ReplayEndingWashLevel(401, 1000) == 1);
     assert(ReplayEndingWashLevel(500, 1000) == 100);
     assert(ReplayEndingWashLevel(1000, 1000) == 255);
+    assert(ReplayEndingWashLevel(INT_MAX, 600) == 255);
+    assert(ReplayEndingWashLevel(INT_MAX, INT_MAX) == 255);
 }
 
 static void TestAutomaticExitFadeThreshold(void) {
