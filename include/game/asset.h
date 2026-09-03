@@ -504,8 +504,6 @@ void StoreTeamLogoImage(void* dst);
 s32 UploadImageAsset(GameImageAssetHeaderWord *asset, size_t size);
 s32 UploadImageEntry(GameImageEntryHeader *entry, size_t size);
 s32 UploadLoadBufferImage(void);
-s32 GetCarAssetIndex(s32 model, s32 grade);
-
 extern s32 g_TerrainCellCount;
 extern RECT g_CarImageRect;
 struct CarImageData;

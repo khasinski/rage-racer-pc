@@ -1,4 +1,3 @@
-#include "game/asset.h"
 #include "game/car.h"
 
 s32 GetCarAssetIndex(s32 model, s32 grade) {
