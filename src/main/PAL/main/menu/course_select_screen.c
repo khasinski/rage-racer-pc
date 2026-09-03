@@ -28,6 +28,21 @@ static int CourseCardSettled(void) {
                                  CARD_REST_WINDOW);
 }
 
+static s32 CourseBestPlace(s32 course) {
+    if (g_CourseProgress == NULL) {
+        return 0;
+    }
+    return g_CourseProgress->bestPlace[CourseSlot(course)];
+}
+
+static s32 MaxSelectableClass(void) {
+    if (g_RaceProgress == NULL) {
+        return 0;
+    }
+    return AddClampedMenuValue(g_RaceProgress->maxClassReached, 0, 0,
+                               GRAND_PRIX_FINAL_CLASS_INDEX);
+}
+
 /*
  * Steps to the course either side. Both directions run the same arithmetic on
  * the view angle and on the card's spin, and differ only in which way the
@@ -42,12 +57,15 @@ static void BrowseToCourse(s32 step, s32 newTarget) {
     g_MenuViewAngleTarget = newTarget;
     g_CourseSwapDelay = 0;
     g_MenuCourseModelIndex = course;
-    course += step;
-    g_MenuViewAngle = (g_MenuViewAngle - previousTarget) + 0x7A120;
-    g_CourseCardSpin = (g_CourseCardSpin - previousSpin) + 0x1F4000;
+    course = AddClampedMenuValue(course, step, 0,
+                                 PHYSICAL_COURSE_COUNT - 1);
+    g_MenuViewAngle =
+        RebaseCarouselValue(g_MenuViewAngle, previousTarget, 0x7A120);
+    g_CourseCardSpin =
+        RebaseCarouselValue(g_CourseCardSpin, previousSpin, 0x1F4000);
     g_CourseIndex = course;
     g_MenuPendingCourseIndex = course;
-    g_CourseCardPendingGrade = g_CourseProgress->bestPlace[course & 3];
+    g_CourseCardPendingGrade = CourseBestPlace(course);
     /* The first four courses are the Grand Prix ones; the rest are time
      * attack, and only those show the plate. */
     g_TimeAttackPlateStep = (course < 4) ? -1 : 1;
@@ -81,10 +99,11 @@ static void DrawSavePromptButtons(void *ot, s32 flash) {
 
 /* One row per class the player has reached, with the cursor on the chosen. */
 static void DrawClassList(void *ot, s32 flash) {
+    s32 classCount = MaxSelectableClass() + 1;
     s32 i;
 
     DrawMenuCursorBox(0xB8, g_MenuSubCursor * 0x1E + 0x6C, 0x38, 0x20, flash);
-    for (i = 0; i < g_RaceProgress->maxClassReached + 1; i++) {
+    for (i = 0; i < classCount; i++) {
         DrawSprite(ot, 0xC0, i * 0x1E + 0x74, 0x1A, 0x10, 0x60, 0xCC, 0, 0, 0,
                    0x244, 1, 1, 0x3B);
         DrawSprite(ot, 0xE0, i * 0x1E + 0x74, 8, 0x10, i * 8 + 8, 0x18, 0, 0, 0,
@@ -98,7 +117,8 @@ static void DrawClassList(void *ot, s32 flash) {
 static void SpinCardAway(void) {
     g_MenuViewOffsetTarget = 0x3D090;
     g_CourseCardPendingGrade = 0;
-    g_CourseCardSpin = (g_CourseCardSpin - g_CourseCardSpinTarget) + 0x1F4000;
+    g_CourseCardSpin = RebaseCarouselValue(
+        g_CourseCardSpin, g_CourseCardSpinTarget, 0x1F4000);
 }
 
 /* Confirm on the row the cursor is on. */
@@ -207,14 +227,17 @@ static void UpdateSavePrompt(void *ot) {
 
 static void UpdateClassPrompt(void *ot) {
     MenuClassPromptOutcome choice;
+    s32 maxClass;
     s32 cue;
     if (RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 1)
         == 0) {
         return;
     }
+    maxClass = MaxSelectableClass();
+    g_MenuSubCursor =
+        (u8)AddClampedMenuValue(g_MenuSubCursor, 0, 0, maxClass);
     choice = DecideClassPrompt(g_PadPressed, GameMenuBusy, g_MenuConfirmTimer,
-                               g_MenuSubCursor, g_GrandPrixClass,
-                               g_RaceProgress->maxClassReached,
+                               g_MenuSubCursor, g_GrandPrixClass, maxClass,
                                g_ClassChangeApplied);
     for (cue = 0; cue < choice.effectCount; cue++) {
         if (choice.effects[cue].kind == MENU_PROMPT_CURTAIN) {
@@ -271,6 +294,11 @@ static void UpdateSaveDismissed(void) {
  * reset; then the curtain comes back and the screen returns to idle.
  */
 static void UpdateClassChange(void *ot) {
+    if (g_CourseProgress == NULL) {
+        GameMenuBusy = 0;
+        g_ClassChangeApplied = 0;
+        return;
+    }
     if (g_MenuConfirmTimer > 0) {
         g_MenuConfirmTimer -= 1;
         RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 1);
@@ -293,9 +321,9 @@ static void UpdateClassChange(void *ot) {
         g_CourseSelectOption = 0;
         g_MenuPendingCourseIndex = -1;
         g_CourseCardSpin = 0;
-        g_CourseIndex = g_CourseIndex & ~3;
+        g_CourseIndex = CourseSeries(g_CourseIndex) * COURSE_SLOT_COUNT;
         g_MenuCourseModelIndex = g_CourseIndex;
-        g_CourseCardPendingGrade = g_CourseProgress->bestPlace[0];
+        g_CourseCardPendingGrade = CourseBestPlace(0);
     }
     RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 1);
     DrawClassList(ot, 1);
@@ -322,6 +350,11 @@ static void UpdateCourseSelectModal(void *ot, s32 state) {
 
 /* What the race is started with, once the screen has finished sliding off. */
 static void HandOverToRace(s32 sceneId, s32 course) {
+    if (g_RaceProgress == NULL || (u32)course >= COURSE_SLOT_COUNT ||
+        (u32)g_PlayerCarIndex >= GAME_CAR_COUNT ||
+        (u32)g_GrandPrixClass > GRAND_PRIX_FINAL_CLASS_INDEX) {
+        return;
+    }
     g_SceneId = sceneId;
     g_CourseIndex = course;
     g_RaceProgress->course = course;
@@ -357,7 +390,7 @@ static void EnterChosenScreen(void) {
             (g_MenuViewOffset <= 0x3D08F)) {
             return;
         }
-        HandOverToRace(2, g_CourseIndex & 3);
+        HandOverToRace(2, CourseSlot(g_CourseIndex));
         break;
     case 3:
         g_MenuScreen = MENU_SCREEN_RANKING;

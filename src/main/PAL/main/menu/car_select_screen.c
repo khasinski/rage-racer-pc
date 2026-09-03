@@ -60,7 +60,7 @@ static void EnterCarShop(void) {
     g_CarSwapFromIndex = g_PlayerCarIndex;
     g_CarSwapToIndex = g_CarListCursor;
     g_MenuViewAngle =
-        RebaseMenuViewAngle(g_MenuViewAngle, previousTarget, 0x927C0);
+        RebaseCarouselValue(g_MenuViewAngle, previousTarget, 0x927C0);
 }
 
 static s32 PlayerCarCanBeUpgraded(void) {

@@ -111,9 +111,9 @@ static inline s32 AdvanceMenuViewAngleValue(s32 current, s32 target,
     return (s32)((int64_t)current + step);
 }
 
-static inline s32 RebaseMenuViewAngle(s32 angle, s32 previousTarget,
-                                      s32 swing) {
-    return (s32)((u32)angle - (u32)previousTarget + (u32)swing);
+static inline s32 RebaseCarouselValue(s32 value, s32 previousTarget,
+                                      s32 revolution) {
+    return (s32)((u32)value - (u32)previousTarget + (u32)revolution);
 }
 
 typedef enum MenuDialogAction {

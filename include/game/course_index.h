@@ -7,6 +7,7 @@ extern s32 g_CourseIndex;
 
 enum {
     COURSE_SLOT_COUNT = 4,
+    PHYSICAL_COURSE_COUNT = COURSE_SLOT_COUNT * 2,
     COURSE_STANDARD_LAPS = 3,
     COURSE_LONG_SLOT = 3,
     COURSE_LONG_LAPS = 6,

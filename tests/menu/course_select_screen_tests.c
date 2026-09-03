@@ -84,6 +84,7 @@ static s32 s_scriptResult;
 static s32 s_curtain;
 static s32 s_canPrev;
 static s32 s_canNext;
+static s32 s_progressResets;
 
 static void Fold(unsigned char byte) {
     s_digest = ((s_digest ^ byte) * 16777619UL) & 0xFFFFFFFFUL;
@@ -176,7 +177,10 @@ s32 DrawClassChangeCurtain(s32 step) {
     RECORD("curtain", step);
     return s_curtain;
 }
-void ResetCourseProgress(s32 mode) { RECORD("resetprogress", mode); }
+void ResetCourseProgress(s32 mode) {
+    s_progressResets++;
+    RECORD("resetprogress", mode);
+}
 void StartSequenceFadeOut(void) { RECORD("fadeout", 0); }
 void PlaySoundCue(s32 cue) { RECORD("cue", cue); }
 /* Whether the course either side of this one may be picked lives in the file
@@ -192,7 +196,7 @@ int main(int argc, char **argv) {
      * What the screen did before it was taken apart. Run the test with a file
      * name to write the sweep out and diff two runs.
      */
-    static const unsigned long expected = 4248666323UL;
+    static const unsigned long expected = 1559041927UL;
     static const s32 busyStates[] = {0, -1, -2, -3, -4, -5, 1, 2, 3, 4};
     static const u16 buttons[] = {0, PAD_UP, PAD_DOWN, PAD_LEFT, PAD_RIGHT,
                                   PAD_CONFIRM, PAD_CANCEL};
@@ -753,6 +757,64 @@ int main(int argc, char **argv) {
         printf("FAIL the course select screen behaves differently: %d states "
                "making %d calls digest to %lu, expected %lu\n", steps, s_calls,
                s_digest, expected);
+        return 1;
+    }
+
+    GameMenuBusy = 0;
+    s_scriptResult = 1;
+    s_canPrev = 1;
+    s_canNext = 0;
+    g_UiScriptProgress = 0;
+    g_UiScriptProgress2 = 0;
+    g_GrandPrixMode = 0;
+    g_CourseSelectOption = 0;
+    g_PadPressed = 0;
+    g_PadHeld = PAD_LEFT;
+    g_MenuViewAngle = 0;
+    g_MenuViewAngleTarget = 0;
+    g_MenuPendingCourseIndex = -1;
+    g_CourseIndex = 0;
+    g_CourseProgress = NULL;
+    UpdateCourseSelectScreen();
+    if (g_CourseIndex != 0 || g_CourseCardPendingGrade != 0) {
+        puts("FAIL browsing escaped the physical course range");
+        return 1;
+    }
+
+    GameMenuBusy = -2;
+    g_GrandPrixMode = 1;
+    g_PadPressed = PAD_CONFIRM;
+    g_PadHeld = 0;
+    g_MenuSubCursor = UINT8_MAX;
+    g_GrandPrixClass = 0;
+    g_RaceProgress = NULL;
+    UpdateCourseSelectScreen();
+    if (GameMenuBusy != 0 || g_MenuSubCursor != 0) {
+        puts("FAIL a missing race-progress record left an invalid class");
+        return 1;
+    }
+
+    GameMenuBusy = 2;
+    g_UiScriptProgress = 0;
+    g_MenuOutgoingScreenProgress = 0;
+    g_MenuViewOffset = 0x3D090;
+    g_SceneId = -1;
+    UpdateCourseSelectScreen();
+    if (g_SceneId != -1) {
+        puts("FAIL a missing race-progress record started a race");
+        return 1;
+    }
+
+    GameMenuBusy = -5;
+    g_CourseProgress = NULL;
+    g_ClassChangeApplied = 0;
+    g_MenuConfirmTimer = 0;
+    s_curtain = 0x19;
+    s_progressResets = 0;
+    UpdateCourseSelectScreen();
+    if (GameMenuBusy != 0 || g_ClassChangeApplied != 0 ||
+        s_progressResets != 0) {
+        puts("FAIL a missing course-progress record changed class");
         return 1;
     }
     printf("the course select screen takes the same %d states it always did\n",
