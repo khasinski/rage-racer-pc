@@ -372,7 +372,8 @@ typedef enum FrontendState {
     FRONTEND_STATE_TITLE,
     FRONTEND_STATE_MENU_OPENING,
     FRONTEND_STATE_MENU_INPUT,
-    FRONTEND_STATE_MENU_EXIT
+    FRONTEND_STATE_MENU_EXIT,
+    FRONTEND_STATE_COUNT
 } FrontendState;
 
 extern FrontendState g_FrontendState;
@@ -637,6 +638,6 @@ extern Matrix g_MenuLightMatrix;
 extern Vec4 g_MenuViewScale;
 
 void DrawPrizeMoneyPanel(s32 y);
-extern void (*g_FrontendDrawHandlers[4])(void);
+extern void (*g_FrontendDrawHandlers[FRONTEND_STATE_COUNT])(void);
 
 #endif

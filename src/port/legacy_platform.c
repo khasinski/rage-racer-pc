@@ -257,7 +257,7 @@ void (*g_SceneHandlers[40])(void) = {
     [33] = ReturnFromEndingFmv,
     [34] = UpdateEndingStill,
 };
-void (*g_FrontendDrawHandlers[4])(void) = {
+void (*g_FrontendDrawHandlers[])(void) = {
     UpdateTitleScreen,
     UpdateMainMenuOpen,
     UpdateMainMenuInput,

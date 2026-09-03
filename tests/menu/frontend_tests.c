@@ -30,7 +30,7 @@ s32 g_TitleAttractTimer;
 s32 g_TitleExitTimer;
 s32 g_TitleMenuSelection;
 s32 g_TitlePulse;
-void (*g_FrontendDrawHandlers[4])(void);
+void (*g_FrontendDrawHandlers[FRONTEND_STATE_COUNT])(void);
 GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
 
@@ -233,6 +233,18 @@ int main(void) {
     g_ClassWinCount = 11;
     UpdateTitleAttract();
     CHECK(s_lastAlpha == 0x7F && s_lastPanelClut == 0x7D80);
+
+    Reset();
+    g_FrontendState = FRONTEND_STATE_INVALID;
+    UpdateFrontend();
+    CHECK(g_FrontendState == FRONTEND_STATE_TITLE &&
+          s_drawHandlerCalls == 1);
+
+    Reset();
+    g_FrontendState = FRONTEND_STATE_COUNT;
+    UpdateFrontend();
+    CHECK(g_FrontendState == FRONTEND_STATE_TITLE &&
+          s_drawHandlerCalls == 1);
 
     puts("frontend transitions, attract loading and overlays are preserved");
     return 0;

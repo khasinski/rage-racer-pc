@@ -167,6 +167,9 @@ void UpdateFrontend(void) {
         SetupDisplay240(0, 0, 0);
     }
 
+    if ((u32)g_FrontendState >= FRONTEND_STATE_COUNT) {
+        g_FrontendState = FRONTEND_STATE_TITLE;
+    }
     g_FrontendDrawHandlers[g_FrontendState]();
     UpdateFrontendIdleAttract();
     UpdateTitleAttract();
