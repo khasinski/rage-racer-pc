@@ -196,7 +196,7 @@ int main(int argc, char **argv) {
      * What the screen did before it was taken apart. Run the test with a file
      * name to write the sweep out and diff two runs.
      */
-    static const unsigned long expected = 1559041927UL;
+    static const unsigned long expected = 1275887783UL;
     static const s32 busyStates[] = {0, -1, -2, -3, -4, -5, 1, 2, 3, 4};
     static const u16 buttons[] = {0, PAD_UP, PAD_DOWN, PAD_LEFT, PAD_RIGHT,
                                   PAD_CONFIRM, PAD_CANCEL};
@@ -746,6 +746,26 @@ int main(int argc, char **argv) {
                        cases[ci].next, cases[ci].choose);
                 promptFailures++;
             }
+        }
+    }
+
+    {
+        CourseSelectInputOutcome low =
+            DecideCourseSelectInput(0, 0, INT32_MIN);
+        CourseSelectInputOutcome high =
+            DecideCourseSelectInput(0, 0, INT32_MAX);
+        MenuPromptOutcome save = DecideSavePrompt(0, 9, 7, INT32_MIN);
+        MenuClassPromptOutcome classLow =
+            DecideClassPrompt(0, 9, 7, INT32_MIN, INT32_MIN, INT32_MIN, 0);
+        MenuClassPromptOutcome classHigh =
+            DecideClassPrompt(PAD_CONFIRM, 9, 7, INT32_MAX, INT32_MAX,
+                              INT32_MAX, 0);
+
+        if (low.option != 0 || high.option != 2 || save.subCursor != 1 ||
+            classLow.subCursor != 0 || classHigh.subCursor != 5 ||
+            classHigh.busy != 0) {
+            puts("FAIL course-select decisions did not normalize their input");
+            promptFailures++;
         }
     }
 

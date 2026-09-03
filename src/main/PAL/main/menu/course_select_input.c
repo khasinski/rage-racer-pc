@@ -1,4 +1,7 @@
 #include "game/menu_internal.h"
+#include "game/race.h"
+
+enum { COURSE_SELECT_OPTION_COUNT = 3 };
 
 /* Directions are applied before confirm on the main screen, so a combined
  * press chooses the row the cursor has just moved to. */
@@ -7,7 +10,8 @@ CourseSelectInputOutcome DecideCourseSelectInput(u16 pressed, u16 held,
     CourseSelectInputOutcome out;
 
     out.cueCount = 0;
-    out.option = option;
+    out.option = AddClampedMenuValue(option, 0, 0,
+                                     COURSE_SELECT_OPTION_COUNT - 1);
     if (pressed & PAD_UP) {
         out.cues[out.cueCount++] = 1;
         out.option = (out.option > 0) ? out.option - 1 : 2;
@@ -32,7 +36,7 @@ MenuPromptOutcome DecideSavePrompt(u16 pressed, s32 busy, s32 confirmTimer,
     out.cueCount = 0;
     out.busy = busy;
     out.confirmTimer = confirmTimer;
-    out.subCursor = subCursor;
+    out.subCursor = subCursor != 0;
     if (pressed & PAD_CONFIRM) {
         out.cues[out.cueCount++] = (out.subCursor != 0) ? 2 : 3;
         out.busy = -3;
@@ -64,10 +68,14 @@ MenuClassPromptOutcome DecideClassPrompt(u16 pressed, s32 busy,
                                          s32 changeApplied) {
     MenuClassPromptOutcome out;
 
+    maxClass = AddClampedMenuValue(maxClass, 0, 0,
+                                   GRAND_PRIX_FINAL_CLASS_INDEX);
+    currentClass = AddClampedMenuValue(currentClass, 0, 0,
+                                       GRAND_PRIX_FINAL_CLASS_INDEX);
     out.effectCount = 0;
     out.busy = busy;
     out.confirmTimer = confirmTimer;
-    out.subCursor = subCursor;
+    out.subCursor = AddClampedMenuValue(subCursor, 0, 0, maxClass);
     out.changeApplied = changeApplied;
     if (pressed & PAD_CONFIRM) {
         AddCue(&out, 2);
