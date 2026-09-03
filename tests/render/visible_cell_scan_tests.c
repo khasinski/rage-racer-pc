@@ -22,7 +22,8 @@ int main(void) {
     s32 invalidOffset[2] = {99, 99};
     s32 direction;
 
-    for (direction = 0; direction < CELL_SCAN_DIRECTION_COUNT; direction++) {
+    for (direction = 0; direction < CELL_SCAN_BASE_DIRECTION_COUNT;
+         direction++) {
         g_CellScanOffsets.values[direction][3][0] = (s8)(direction + 1);
         g_CellScanOffsets.values[direction][3][1] = (s8)(direction + 11);
     }
@@ -37,6 +38,7 @@ int main(void) {
     ExpectOffset("left end", 31, 0, -2, 12);
     ExpectOffset("rear-view reflection", 24, 1, 9, -19);
     ExpectOffset("direction wraps", 32, 0, 1, 11);
+    ExpectOffset("negative direction wraps", -1, 0, -2, 12);
 
     GetVisibleCellScanOffset(0, -1, 0, invalidOffset);
     if (invalidOffset[0] != 0 || invalidOffset[1] != 0) {
