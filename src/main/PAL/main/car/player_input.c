@@ -1,6 +1,7 @@
 #include "game/car.h"
 #include "game/car_internal.h"
 #include "game/input_internal.h"
+#include "game/integer.h"
 #include "game/race.h"
 #include "game/state.h"
 
@@ -14,7 +15,8 @@ enum {
 };
 
 static s16 ScaleNegconPedal(s16 pressure) {
-    return (s16)((s32)pressure * PEDAL_FULLY_PRESSED / NEGCON_PRESSURE_MAX);
+    return WrapSigned16(
+        (int64_t)pressure * PEDAL_FULLY_PRESSED / NEGCON_PRESSURE_MAX);
 }
 
 static s16 ReadMappedButtonPressure(s32 mappingSlot) {

@@ -4,6 +4,7 @@
 #include "game/race.h"
 #include "game/state.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -76,6 +77,10 @@ int main(void) {
     g_NegconAnalogI = 0;
     g_NegconAnalogII = 106;
     CheckNegconMapping(0, 0, 256);
+
+    g_NegconAnalogI = INT16_MAX;
+    g_NegconAnalogII = INT16_MIN;
+    CheckNegconMapping(0, 13599, -13601);
 
     memset(&drive, 0x7F, sizeof(drive));
     g_PadType = 0;
