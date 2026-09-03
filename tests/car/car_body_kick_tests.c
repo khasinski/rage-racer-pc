@@ -70,7 +70,7 @@ int main(void) {
     car.motionModeTimer = 12;
     car.motionValue.value = 34;
     car.motionMode = CAR_BODY_KICK_CORNERING;
-    StartCarBodyKick(&car, 7);
+    StartCarBodyKick(&car, (CarBodyKickMode)7);
     CHECK(car.motionMode == CAR_BODY_KICK_CORNERING);
     CHECK(car.motionModeTimer == 12 && car.motionValue.value == 34);
 

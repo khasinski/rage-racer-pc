@@ -14,7 +14,7 @@ void SetTrackBoundaryKnockback(GameCarRuntime *car, s32 x, s32 z,
                                CarTrackContact contact);
 /* Return the course crest crossed by this car during the current frame. */
 s32 GetCarCrestTrigger(const GameCarRuntime *car);
-void StartCarBodyKick(GameCarRuntime *car, s32 mode);
+void StartCarBodyKick(GameCarRuntime *car, CarBodyKickMode mode);
 void UpdateCarBodyKick(GameCarRuntime *car);
 void UpdateCarBodyRoll(PlayerCarRuntime *car);
 void UpdateCarCrestHop(GameCarRuntime *car);

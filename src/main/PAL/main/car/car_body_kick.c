@@ -10,7 +10,7 @@ enum {
 };
 
 /* Start the short body impulse produced by a landing or a fast sideways hit. */
-void StartCarBodyKick(GameCarRuntime *car, s32 mode) {
+void StartCarBodyKick(GameCarRuntime *car, CarBodyKickMode mode) {
     s32 lean;
     s32 speedOverMinimum;
 

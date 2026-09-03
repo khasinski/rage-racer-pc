@@ -15,11 +15,14 @@ enum {
     RIVAL_CONTENDER_COUNT = 4,
     CAR_MODEL_VARIANT_COUNT = 32,
     CAR_TIRE_COMPOUND_COUNT = 5,
+    CAR_WHEEL_BLUR_FLAG = 0x1000,
+};
+
+typedef enum CarBodyKickMode {
     CAR_BODY_KICK_INACTIVE = 0,
     CAR_BODY_KICK_LANDING = 1,
     CAR_BODY_KICK_CORNERING = 2,
-    CAR_WHEEL_BLUR_FLAG = 0x1000,
-};
+} CarBodyKickMode;
 
 typedef enum CarTrackContact {
     CAR_TRACK_CONTACT_NONE,
