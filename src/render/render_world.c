@@ -106,8 +106,10 @@ void RenderWorldSetMirrorCamera(RageRenderWorld *world,
 }
 
 int RenderWorldSubmitMesh(RageRenderWorld *world,
-                              const RageRenderMeshInstance *instance) {
-    if (world->instanceCount == world->instanceCapacity) {
+                          const RageRenderMeshInstance *instance) {
+    if (world == NULL || instance == NULL) return 0;
+    if (world->instances == NULL ||
+        world->instanceCount >= world->instanceCapacity) {
         world->overflowCount++;
         return 0;
     }

@@ -50,6 +50,23 @@ static void test_frame_reset_preserves_storage_and_resets_overflow(void) {
     EXPECT_EQ(20, (int)storage[0].previousTransform.position.x);
 }
 
+static void test_mesh_submission_rejects_invalid_storage(void) {
+    RageRenderMeshInstance storage[1] = {0};
+    RageRenderMeshInstance instance = {0};
+    RageRenderWorld world;
+
+    RenderWorldInit(&world, NULL, 1);
+    EXPECT_EQ(0, RenderWorldSubmitMesh(&world, &instance));
+    EXPECT_EQ(1, world.overflowCount);
+
+    RenderWorldInit(&world, storage, 1);
+    world.instanceCount = 2;
+    EXPECT_EQ(0, RenderWorldSubmitMesh(&world, &instance));
+    EXPECT_EQ(1, world.overflowCount);
+    EXPECT_EQ(0, RenderWorldSubmitMesh(NULL, &instance));
+    EXPECT_EQ(0, RenderWorldSubmitMesh(&world, NULL));
+}
+
 static void test_legacy_mirror_instances_can_be_removed_from_scene(void) {
     RageRenderMeshInstance storage[3] = {0};
     RageRenderWorld world;
@@ -188,6 +205,7 @@ static void test_camera_cuts_are_not_interpolated_as_motion(void) {
                                 &presentation);
     EXPECT_EQ(4096, (int)presentation.transform.position.x);
     EXPECT_EQ(70, (int)(presentation.transform.orientation.y * 100.0f));
+    EXPECT_EQ(70, (int)(presentation.transform.orientation.w * 100.0f));
 }
 
 static void test_perspective_fog_uses_authored_near_and_far_depths(void) {
@@ -495,6 +513,7 @@ static void test_default_shadow_light_stays_near_overhead(void) {
 
 int main(void) {
     test_frame_reset_preserves_storage_and_resets_overflow();
+    test_mesh_submission_rejects_invalid_storage();
     test_legacy_mirror_instances_can_be_removed_from_scene();
     test_camera_is_scene_data_not_backend_state();
     test_directional_light_is_scene_data();
