@@ -15,7 +15,7 @@ static CarModelAsset *s_installedAsset;
 static size_t s_installedSize;
 static s32 s_installedSlot;
 static s32 s_selectedSlot;
-static ModelBankHeader *s_registeredBank;
+static const ModelBankHeader *s_registeredBank;
 static s32 s_registeredSlot;
 static s32 s_registerResult = 1;
 static size_t s_destinationRoom;
@@ -50,7 +50,7 @@ void SelectCarModelSlot(s32 slot) {
     s_selectedSlot = slot;
     g_CarModelAsset = &s_nativeAsset;
 }
-s32 RegisterModelBank(ModelBankHeader *bank, size_t size, s32 slot) {
+s32 RegisterModelBank(const ModelBankHeader *bank, size_t size, s32 slot) {
     (void)size;
     s_registeredBank = bank;
     s_registeredSlot = slot;

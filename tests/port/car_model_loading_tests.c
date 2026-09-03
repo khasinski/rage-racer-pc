@@ -33,7 +33,7 @@ static s32 s_loadResult;
 static s32 s_loadAssetId;
 static void *s_loadDestination;
 static s32 s_registeredSlot;
-static ModelBankHeader *s_registeredBank;
+static const ModelBankHeader *s_registeredBank;
 static s32 s_color1Calls;
 static s32 s_color2Calls;
 static u32 s_color1;
@@ -49,7 +49,7 @@ static size_t s_audioBodySize;
 static size_t s_audioAuxiliarySize;
 static s32 s_startAudioResult = 1;
 static s32 s_sequenceInitCalls;
-static CourseModelAssetHeader *s_courseModels;
+static const CourseModelAssetHeader *s_courseModels;
 static GameImageAssetHeaderWord *s_uploadedImage;
 static s32 s_installCarModelSlotCalls;
 static s32 s_serializedModelValid = 1;
@@ -85,7 +85,7 @@ s32 IsValidSerializedCarModelAsset(const CarModelAsset *asset, size_t size) {
     s_validatedModelSize = size;
     return s_serializedModelValid;
 }
-s32 RegisterModelBank(ModelBankHeader *bank, size_t size, s32 slot) {
+s32 RegisterModelBank(const ModelBankHeader *bank, size_t size, s32 slot) {
     (void)size;
     s_registeredBank = bank;
     s_registeredSlot = slot;
@@ -108,7 +108,7 @@ s32 IsValidImageAsset(const GameImageAssetHeaderWord *image, size_t size) {
     return 1;
 }
 void SelectCarModelSlot(s32 slot) { g_CarModelAsset = g_CarModelSlots[slot]; }
-s32 RegisterCourseModels(CourseModelAssetHeader *models, size_t size) {
+s32 RegisterCourseModels(const CourseModelAssetHeader *models, size_t size) {
     (void)size;
     s_courseModels = models;
     return 1;

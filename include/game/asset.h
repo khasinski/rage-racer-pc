@@ -206,6 +206,11 @@ static inline void *ResolveAssetAddress(void *base, s32 offset) {
     return (u8 *)base + offset;
 }
 
+static inline const void *ResolveConstAssetAddress(const void *base,
+                                                   s32 offset) {
+    return (const u8 *)base + offset;
+}
+
 typedef struct CarModelAsset {
     s16 modelOffsetX;
     s16 modelOffsetY;
@@ -429,9 +434,9 @@ typedef struct ModelBankHeader {
 #define GAME_MODEL_PER_BANK_LIMIT 256
 typedef struct NativeModelBank {
     s32 modelCount;
-    void *table;
-    void *normals;
-    void *models[GAME_MODEL_PER_BANK_LIMIT];
+    const void *table;
+    const void *normals;
+    const void *models[GAME_MODEL_PER_BANK_LIMIT];
 } NativeModelBank;
 
 typedef struct OptionScreenAsset {
@@ -450,7 +455,7 @@ typedef struct TerrainCellAssetHeader {
 } TerrainCellAssetHeader;
 
 #define GAME_TERRAIN_CELL_LIMIT 2048
-extern void *g_NativeTerrainCells[GAME_TERRAIN_CELL_LIMIT];
+extern const void *g_NativeTerrainCells[GAME_TERRAIN_CELL_LIMIT];
 
 typedef struct TerrainCellAsset {
     u16 grid[32][32];
@@ -471,9 +476,9 @@ typedef struct CourseModelAssetHeader {
 
 #define GAME_COURSE_MODEL_LIMIT 256
 typedef struct NativeCourseModel {
-    void *geometry;
+    const void *geometry;
     s32 vertexCount;
-    void *model;
+    const void *model;
 } NativeCourseModel;
 extern NativeCourseModel g_NativeCourseModels[GAME_COURSE_MODEL_LIMIT];
 
@@ -484,7 +489,7 @@ void UploadCarImage(s32 slot);
 extern s32 g_PendingCarModelIndex;
 extern TrackTextureShadowRow *g_TrackTextureShadow;
 
-s32 InstallTerrainCellData(void *data, size_t size);
+s32 InstallTerrainCellData(const void *data, size_t size);
 s32 InstallCarModelAsset(CarModelAsset *asset, size_t size, s32 slot,
                          s32 carIndex);
 s32 InstallTrackTextureAssetPack(u8 *base, size_t size);
@@ -493,8 +498,8 @@ s32 InstallTrackPoints(struct TrackPointTable *trackData, size_t size);
 s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
                                  s32 useSeriesCamera);
 void LoadGrandPrixScreen(void);
-s32 RegisterModelBank(ModelBankHeader *base, size_t size, s32 index);
-s32 RegisterCourseModels(CourseModelAssetHeader *base, size_t size);
+s32 RegisterModelBank(const ModelBankHeader *base, size_t size, s32 index);
+s32 RegisterCourseModels(const CourseModelAssetHeader *base, size_t size);
 s32 RequestRaceStart(void);
 void RequestCarModel(s32 carIndex);
 void RequestUpgradedCarModel(s32 carIndex);

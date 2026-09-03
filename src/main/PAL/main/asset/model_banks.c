@@ -39,7 +39,7 @@ s32 IsValidModelBankAsset(const ModelBankHeader *base, size_t size) {
     return 1;
 }
 
-s32 RegisterModelBank(ModelBankHeader *base, size_t size, s32 index) {
+s32 RegisterModelBank(const ModelBankHeader *base, size_t size, s32 index) {
     NativeModelBank *bank;
     u32 count;
     u32 i;
@@ -52,10 +52,11 @@ s32 RegisterModelBank(ModelBankHeader *base, size_t size, s32 index) {
     count = base->modelCount;
     bank = &g_ModelBanks[index];
     bank->modelCount = (s32)count;
-    bank->table = ResolveAssetAddress(base, base->tableOffset);
-    bank->normals = ResolveAssetAddress(base, base->normalsOffset);
+    bank->table = ResolveConstAssetAddress(base, base->tableOffset);
+    bank->normals = ResolveConstAssetAddress(base, base->normalsOffset);
     for (i = 0; i < count; i++) {
-        bank->models[i] = ResolveAssetAddress(base, base->modelOffsets[i]);
+        bank->models[i] =
+            ResolveConstAssetAddress(base, base->modelOffsets[i]);
     }
     return 1;
 }
@@ -102,7 +103,7 @@ s32 IsValidCourseModelAsset(const CourseModelAssetHeader *base, size_t size) {
     return 1;
 }
 
-s32 RegisterCourseModels(CourseModelAssetHeader *base, size_t size) {
+s32 RegisterCourseModels(const CourseModelAssetHeader *base, size_t size) {
     s32 count;
     s32 i;
 
@@ -115,10 +116,10 @@ s32 RegisterCourseModels(CourseModelAssetHeader *base, size_t size) {
         const CourseModelAssetEntry *entry = &base->models[i];
 
         g_NativeCourseModels[i].geometry =
-            ResolveAssetAddress(base, entry->geometryOffset);
+            ResolveConstAssetAddress(base, entry->geometryOffset);
         g_NativeCourseModels[i].vertexCount = entry->vertexCount;
         g_NativeCourseModels[i].model =
-            ResolveAssetAddress(base, entry->modelOffset);
+            ResolveConstAssetAddress(base, entry->modelOffset);
     }
     return 1;
 }
@@ -172,9 +173,9 @@ s32 IsValidTerrainCellAsset(const void *data, size_t size) {
     return 1;
 }
 
-s32 InstallTerrainCellData(void *data, size_t size) {
-    u8 *cursor;
-    TerrainCellAssetHeader *header;
+s32 InstallTerrainCellData(const void *data, size_t size) {
+    const u8 *cursor;
+    const TerrainCellAssetHeader *header;
     s32 count;
     s32 i;
 
@@ -182,11 +183,12 @@ s32 InstallTerrainCellData(void *data, size_t size) {
 
     cursor = data;
     cursor += TERRAIN_CELL_GRID_BYTES + CELL_VISIBILITY_TABLE_SIZE;
-    header = (TerrainCellAssetHeader *)cursor;
+    header = (const TerrainCellAssetHeader *)cursor;
     count = header->cellCount;
     g_TerrainCellGrid = data;
     g_CellVisibilityTable =
-        (const CellVisibilityRow *)((u8 *)data + TERRAIN_CELL_GRID_BYTES);
+        (const CellVisibilityRow *)((const u8 *)data +
+                                    TERRAIN_CELL_GRID_BYTES);
     g_RenderState.cellTable = g_NativeTerrainCells;
     g_TerrainCellCount = count;
     g_RenderState.cellFaces = cursor + header->facesOffset;

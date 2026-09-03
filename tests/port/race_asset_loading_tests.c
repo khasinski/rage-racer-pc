@@ -59,7 +59,7 @@ static void *s_teamLogoSource;
 static s32 s_textureResetCalls;
 static s32 s_trackIdentity;
 static s32 s_installCount;
-static void *s_installs[8];
+static const void *s_installs[8];
 static s32 s_seriesCamera;
 static s32 s_cameraTableValid = 1;
 static s32 s_cameraSelectionResult = 1;
@@ -166,7 +166,7 @@ s32 SetEnvironmentScript(struct GameEnvironmentScript *script, size_t size) {
     s_installs[s_installCount++] = script;
     return 1;
 }
-s32 RegisterModelBank(ModelBankHeader *base, size_t size, s32 index) {
+s32 RegisterModelBank(const ModelBankHeader *base, size_t size, s32 index) {
     (void)size;
     (void)index;
     s_installs[s_installCount++] = base;
@@ -177,12 +177,12 @@ s32 InstallTrackPoints(struct TrackPointTable *table, size_t size) {
     s_installs[s_installCount++] = table;
     return 1;
 }
-s32 RegisterCourseModels(CourseModelAssetHeader *base, size_t size) {
+s32 RegisterCourseModels(const CourseModelAssetHeader *base, size_t size) {
     (void)size;
     s_installs[s_installCount++] = base;
     return 1;
 }
-s32 InstallTerrainCellData(void *data, size_t size) {
+s32 InstallTerrainCellData(const void *data, size_t size) {
     (void)size;
     s_installs[s_installCount++] = data;
     return 1;

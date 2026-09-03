@@ -763,12 +763,12 @@ static void RageSubmitModelFaces(
 }
 
 void SubmitModel(void *ctx, int index) {
-    uint8_t *stream;
+    const uint8_t *stream;
     uint32_t opcode;
-    void **models = (void **)g_RenderState.modelModels;
+    const void *const *models = g_RenderState.modelModels;
     (void)ctx;
     if (models == NULL || index < 0 || models[index] == NULL) return;
-    stream = (uint8_t *)models[index];
+    stream = models[index];
     g_RageSubmittedModelIndex = index;
     if (g_RageModelTraceEnabled &&
         (g_RageModelTraceTimer < 0 ||
@@ -794,8 +794,8 @@ void SubmitModel(void *ctx, int index) {
  * avoids hiding it among generic platform adapters. */
 static void RageSubmitCourseModel(int index, int fogged) {
     static const uint8_t strides[4] = {16, 28, 32, 32};
-    NativeCourseModel *models = (NativeCourseModel *)g_RenderState.courseBank;
-    uint8_t *stream;
+    const NativeCourseModel *models = g_RenderState.courseBank;
+    const uint8_t *stream;
     uint8_t *cursor = RENDER_PRIM_CURSOR_AS(uint8_t);
     /* The course dispatcher applies the same fixed +0x200-byte OT base. */
     GameOrderingTableEntry *ot = RENDER_OT_BASE + 128;
@@ -811,7 +811,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
         models[index].geometry == NULL || models[index].model == NULL) return;
     CaptureModelBegin(RAGE_CAPTURE_KIND_COURSE, index, fogged);
     vertices = (const SVECTOR *)models[index].geometry;
-    stream = (uint8_t *)models[index].model;
+    stream = models[index].model;
     while ((opcode = RageReadU32(stream)) != 0) {
         int type = opcode & 0xffff;
         int count = (int)(opcode >> 16);
@@ -1058,8 +1058,8 @@ void SubmitCourseModel2(void *ctx, int index) {
 }
 void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
     static const uint8_t dispatchStride[4] = {32, 32, 36, 36};
-    void **cellTable = (void **)g_RenderState.cellTable;
-    const SVECTOR *vertices = (const SVECTOR *)g_RenderState.cellFaces;
+    const void *const *cellTable = g_RenderState.cellTable;
+    const SVECTOR *vertices = g_RenderState.cellFaces;
     uint8_t *cursor = RENDER_PRIM_CURSOR_AS(uint8_t);
     /* func_80028E9C seeds its terrain OT register from the ordering-table base + 0x200. */
     GameOrderingTableEntry *ot = RENDER_OT_BASE + 128;
@@ -1089,7 +1089,7 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
     CaptureTerrainBegin(cells, count);
 
     for (cell = 0; cell < count; cell++, cells++) {
-        uint8_t *stream;
+        const uint8_t *stream;
         uint32_t opcode;
         VECTOR translation;
         int cellIndex = cells->cellIndex;
@@ -1104,7 +1104,7 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
         translation.vz = cells->z;
         translation.pad = 0;
         SetTransVector(&translation);
-        stream = (uint8_t *)cellTable[cellIndex];
+        stream = cellTable[cellIndex];
 
         while ((opcode = RageReadU32(stream)) != 0) {
             int mode = opcode & 0xffff;

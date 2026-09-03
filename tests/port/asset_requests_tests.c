@@ -105,7 +105,7 @@ void ResetAssetLoader(void) {
     g_AssetLoadState = 0;
     g_AssetLoadFailed = 0;
 }
-s32 RegisterModelBank(ModelBankHeader *base, size_t size, s32 index) {
+s32 RegisterModelBank(const ModelBankHeader *base, size_t size, s32 index) {
     (void)base;
     (void)size;
     (void)index;

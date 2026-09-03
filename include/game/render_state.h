@@ -34,12 +34,12 @@ typedef struct GameRenderState {
     s32 viewAngleZ;
     s32 depth;
     Matrix matrix;
-    void *courseBank;
-    void *modelModels;
-    void *modelTable1;
-    void *modelNormals;
-    void *cellTable;
-    void *cellFaces;
+    const void *courseBank;
+    const void *const *modelModels;
+    const void *modelTable1;
+    const void *modelNormals;
+    const void *const *cellTable;
+    const void *cellFaces;
     s32 otShift;
     s32 orderingFlag;
     s32 faceOtShift;

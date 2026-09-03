@@ -12,7 +12,7 @@
 GameRenderState g_RenderState;
 NativeModelBank g_ModelBanks[GAME_MODEL_BANK_LIMIT];
 NativeCourseModel g_NativeCourseModels[GAME_COURSE_MODEL_LIMIT];
-void *g_NativeTerrainCells[GAME_TERRAIN_CELL_LIMIT];
+const void *g_NativeTerrainCells[GAME_TERRAIN_CELL_LIMIT];
 s32 g_ModelBankCount;
 s32 g_CourseModelCount;
 s32 g_TerrainCellCount;
