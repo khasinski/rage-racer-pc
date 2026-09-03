@@ -25,31 +25,85 @@ static void Check(s32 condition, const char *label) {
     }
 }
 
+static void SeedValidTrackEventTables(TrackEventData *data) {
+    u8 *base = (u8 *)&data->offsets;
+    SceneryMotionData *flyby =
+        (SceneryMotionData *)(base + data->offsets.flybyScenery);
+    SceneryMotionData *route =
+        (SceneryMotionData *)(base + data->offsets.routeScenery);
+    RaceIntroCameraScript *camera =
+        (RaceIntroCameraScript *)(base + data->offsets.raceIntroCamera);
+    PathSceneryPositionData *position =
+        (PathSceneryPositionData *)(base + data->offsets.pathSceneryPosition);
+    PathSceneryRotationData *rotation =
+        (PathSceneryRotationData *)(base + data->offsets.pathSceneryRotation);
+
+    flyby->keyframes[0].duration = 1;
+    flyby->keyframes[1].duration = SCENERY_MOTION_END;
+    route->keyframes[0].duration = 1;
+    route->keyframes[1].duration = SCENERY_MOTION_END;
+    camera->keys[0].mode = 1;
+    camera->keys[0].duration = 0;
+    position->keys[0].fields.span = 0;
+    position->keys[1].fields.span = -1;
+    position->keys[1].fields.loopIndex = 0;
+    rotation->keys[0].fields.span = 0;
+    rotation->keys[1].fields.span = -1;
+    rotation->keys[1].fields.loopIndex = 0;
+}
+
 static void TestTrackEventData(void) {
     TrackEventData data;
     u8 *offsetBase = (u8 *)&data.offsets;
 
     memset(&data, 0, sizeof(data));
-    data.offsets.routeScenery = 32;
-    data.offsets.raceIntroCamera = 64;
-    data.offsets.pathSceneryPosition = 96;
-    data.offsets.pathSceneryRotation = 128;
-    data.offsets.flybyScenery = 160;
+    data.offsets.flybyScenery = 24;
+    data.offsets.routeScenery = 200;
+    data.offsets.raceIntroCamera = 424;
+    data.offsets.pathSceneryPosition = 608;
+    data.offsets.pathSceneryRotation = 692;
+    SeedValidTrackEventTables(&data);
 
     Check(InstallTrackEventData(&data, sizeof(data)) == 1,
           "valid event data accepted");
 
     Check(g_TrackEventData == &data, "event data owner");
-    Check((u8 *)g_RouteSceneryData == offsetBase + 32,
+    Check((u8 *)g_RouteSceneryData == offsetBase + 200,
           "route scenery relocation");
-    Check((u8 *)g_RaceIntroCameraScript == offsetBase + 64,
+    Check((u8 *)g_RaceIntroCameraScript == offsetBase + 424,
           "race intro camera relocation");
-    Check((u8 *)g_PathSceneryPosData == offsetBase + 96,
+    Check((u8 *)g_PathSceneryPosData == offsetBase + 608,
           "path position relocation");
-    Check((u8 *)g_PathSceneryRotData == offsetBase + 128,
+    Check((u8 *)g_PathSceneryRotData == offsetBase + 692,
           "path rotation relocation");
-    Check((u8 *)g_FlybySceneryData == offsetBase + 160,
+    Check((u8 *)g_FlybySceneryData == offsetBase + 24,
           "flyby scenery relocation");
+
+    data.offsets.routeScenery = data.offsets.flybyScenery;
+    Check(InstallTrackEventData(&data, sizeof(data)) == 0,
+          "overlapping event blocks rejected");
+    data.offsets.routeScenery = 200;
+
+    ((SceneryMotionData *)(offsetBase + data.offsets.routeScenery))
+        ->firstKeyframe[0][0] = INT16_MAX;
+    Check(InstallTrackEventData(&data, sizeof(data)) == 0,
+          "event key index beyond block rejected");
+    ((SceneryMotionData *)(offsetBase + data.offsets.routeScenery))
+        ->firstKeyframe[0][0] = 0;
+
+    ((PathSceneryPositionData *)(offsetBase +
+        data.offsets.pathSceneryPosition))->keys[1].fields.span = 1;
+    Check(InstallTrackEventData(&data, sizeof(data)) == 0,
+          "unterminated path table rejected");
+    ((PathSceneryPositionData *)(offsetBase +
+        data.offsets.pathSceneryPosition))->keys[1].fields.span = -1;
+
+    ((RaceIntroCameraScript *)(offsetBase +
+        data.offsets.raceIntroCamera))->keys[0].mode = 2;
+    Check(InstallTrackEventData(&data, sizeof(data)) == 0,
+          "unknown intro camera mode rejected");
+    ((RaceIntroCameraScript *)(offsetBase +
+        data.offsets.raceIntroCamera))->keys[0].mode = 1;
 
     data.offsets.routeScenery = sizeof(data.offsets) - sizeof(s32);
     Check(InstallTrackEventData(&data, sizeof(data)) == 0,
