@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "game/audio.h"
+#include "game/audio_internal.h"
 #include "game/sound.h"
 #include "psyq/snd.h"
 

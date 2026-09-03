@@ -1,5 +1,6 @@
 #include "common.h"
 #include "game/audio.h"
+#include "game/audio_internal.h"
 #include "game/menu.h"
 #include "game/sound.h"
 

@@ -65,8 +65,6 @@ typedef struct EffectCueBank {
     s32 volumeScale;
     EffectCueProgram programs[2];
 } EffectCueBank;
-void SetSequenceVolume(s32 volume);
-void RefreshSequenceVolumeScale(void);
 void PlaySequence(void);
 void StartSequenceFadeOut(void);
 void UpdateSequenceFadeOut(void);
@@ -76,11 +74,8 @@ void ApplyCurrentSequenceAudio(void);
 void TickSequenceAudio(void);
 void SetReverbDepth(s32 left, s32 right);
 void SetReverbPreset(s32 type, s32 left, s32 right);
-void PlaySoundSlotVoice(s32 slot, s32 tone, s32 vabSlot);
-void SetSoundSlotVoicesEnabled(s32 enabled);
 void InitSoundRuntime(void);
 void CloseLoadedAudioSlots(void);
-void SetLoadedTableVolumeScale(s32 scale);
 void SetSequenceVolumeSetting(s32 setting);
 /* The effect-side twin of SetSequenceVolumeSetting: clamps the 0..15
  * option-screen level and scales it onto g_SoundScale.scale's 0..0x80 range. */
@@ -88,7 +83,6 @@ void SetEffectVolumeSetting(s32 setting);
 /* Push all three saved audio settings (BGM level, SFX level, mono/stereo) into
  * the sound runtime; run at boot and again after a memory-card load. */
 void ApplyAudioSettings(void);
-void LoadAudioParameterTable(const u16 *table);
 typedef struct AudioSlotAsset {
     u8 *vabHeader;
     size_t vabHeaderSize;
@@ -104,9 +98,7 @@ typedef struct AudioSlotAsset {
 s32 StartAudioSlotLoad(s32 slot, const AudioSlotAsset *asset);
 s32 PollAudioSlotLoad(void);
 void SetPanVoiceTargetVolume(s32 left, s32 right);
-void ApplyPanVoiceVolume(void);
 void SetIndexedEffectVoice(s32 index, s32 phase, s32 volume);
-void UpdateIndexedEffectVoice(void);
 /*
  * The two positional-cue setters. `cue` is an index into the shared 7-record
  * table at D_800126D0 (stride 0x18); each cue owns a fixed pair of voices, and a
@@ -126,10 +118,8 @@ void ForceBasicEffectVoicesEnabled(s32 enabled);
 void ForcePitchEffectVoicesEnabled(s32 enabled);
 void ForceSoundSlotVoicePlayback(s32 enabled);
 void ForceAllEffectVoicesEnabled(s32 enabled);
-s32 OpenSequenceAudioSlot(u8 *vabHeader, u8 *vabBody, void *seqData);
 void SetDefaultReverbDepth(void);
 void InitSequenceAudio(void);
-int CloseSequenceAudioSlot(void);
 
 enum {
     ENGINE_SOUND_BANK_COUNT = 2,
@@ -208,7 +198,4 @@ extern s32 g_StereoOutput;
  * sound bank.
  */
 extern s32 g_VabSpuAddress[];
-void UpdateBasicEffectVoices(void);
-void UpdateEffectVoiceStates(void);
-
 #endif

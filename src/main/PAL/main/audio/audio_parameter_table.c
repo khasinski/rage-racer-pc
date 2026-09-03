@@ -1,4 +1,5 @@
 #include "game/audio.h"
+#include "game/audio_internal.h"
 #include "game/sound.h"
 
 enum { DEFAULT_ENGINE_MAX_RPM = 0x2800 };

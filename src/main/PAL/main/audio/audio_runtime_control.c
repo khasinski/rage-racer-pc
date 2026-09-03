@@ -1,4 +1,5 @@
 #include "game/audio.h"
+#include "game/audio_internal.h"
 #include "game/sound.h"
 #include "game/state.h"
 #include "game/work_buffer.h"
