@@ -32,18 +32,25 @@ void SlowRivalAhead(s32 rank) {
     }
 }
 
-/* Rank the front four cars by progress. Insertion sort keeps equal-progress
- * cars in stable slot order, which matters while they share the start line. */
+/* Rank the active front-four cars by progress. Insertion sort keeps
+ * equal-progress cars in stable slot order, which matters while they share
+ * the start line. Unused rank entries stay null so the rubber-band and cue
+ * passes cannot act on disabled grid slots. */
 void RankContenders(void) {
     s32 progress[RIVAL_CONTENDER_COUNT];
-    s32 indices[RIVAL_CONTENDER_COUNT] = {0, 1, 2, 3};
+    s32 indices[RIVAL_CONTENDER_COUNT];
+    s32 contenderCount = 0;
     s32 i;
 
     for (i = 0; i < RIVAL_CONTENDER_COUNT; i++) {
+        if (g_Cars[i].activeFlag == -1) {
+            continue;
+        }
         progress[i] = CarRaceProgress(&g_Cars[i]);
+        indices[contenderCount++] = i;
     }
 
-    for (i = 1; i < RIVAL_CONTENDER_COUNT; i++) {
+    for (i = 1; i < contenderCount; i++) {
         s32 index = indices[i];
         s32 position = i;
 
@@ -55,7 +62,10 @@ void RankContenders(void) {
         indices[position] = index;
     }
 
-    for (i = 0; i < RIVAL_CONTENDER_COUNT; i++) {
+    for (i = 0; i < contenderCount; i++) {
         g_RankedCars[i] = &g_Cars[indices[i]];
+    }
+    for (; i < RIVAL_CONTENDER_COUNT; i++) {
+        g_RankedCars[i] = NULL;
     }
 }

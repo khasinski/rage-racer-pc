@@ -99,6 +99,21 @@ static int CheckContenderRanking(void) {
         puts("wrapped contender progress was ranked incorrectly");
         return 1;
     }
+
+    memset(g_Cars, 0, sizeof(g_Cars));
+    g_Cars[0].progressA = 10;
+    g_Cars[1].activeFlag = -1;
+    g_Cars[1].progressA = 100;
+    g_Cars[2].progressA = 30;
+    g_Cars[3].activeFlag = -1;
+    g_Cars[3].progressA = 200;
+    RankContenders();
+    if (g_RankedCars[0] != &g_Cars[2] ||
+        g_RankedCars[1] != &g_Cars[0] ||
+        g_RankedCars[2] != NULL || g_RankedCars[3] != NULL) {
+        puts("disabled contenders were included in the ranking");
+        return 1;
+    }
     return 0;
 }
 
