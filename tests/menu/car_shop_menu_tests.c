@@ -21,13 +21,16 @@ GameRaceProgress *g_RaceProgress = &s_progress;
 
 static s32 s_engineStep;
 static s32 s_enginePhase;
+static s32 s_unlockLevelOverride = INT_MIN;
 
 void DrawCarEngineSpec(s32 step, s32 phase) {
     s_engineStep = step;
     s_enginePhase = phase;
 }
 
-s32 GetCarUnlockLevel(s32 carIndex) { return carIndex; }
+s32 GetCarUnlockLevel(s32 carIndex) {
+    return s_unlockLevelOverride != INT_MIN ? s_unlockLevelOverride : carIndex;
+}
 
 #define CHECK(condition)                                                       \
     do {                                                                       \
@@ -93,6 +96,34 @@ int main(void) {
     s_cars[0].enabled = 1;
     RefreshCarUnlockState();
     CHECK(g_ShopCarIndex == 1);
+
+    g_CarShopUnlockAll = 0;
+    s_unlockLevelOverride = -1;
+    RefreshCarUnlockState();
+    CHECK(g_ShopCarIndex == -1);
+    s_unlockLevelOverride = INT_MIN;
+
+    g_RaceProgress = NULL;
+    RefreshCarUnlockState();
+    UpdateCarListCursor();
+    CHECK(g_ShopCarIndex == -1 && g_PrevOwnedCarIndex == -1 &&
+          g_NextOwnedCarIndex == -1);
+    g_RaceProgress = &s_progress;
+
+    g_CarTable = NULL;
+    RefreshCarUnlockState();
+    UpdateCarListCursor();
+    CHECK(g_ShopCarIndex == -1 && g_PrevOwnedCarIndex == -1 &&
+          g_NextOwnedCarIndex == -1);
+    g_CarTable = s_cars;
+
+    g_CarShopUnlockAll = 1;
+    g_CarListCursor = INT_MIN;
+    UpdateCarListCursor();
+    CHECK(g_PrevOwnedCarIndex == -1 && g_NextOwnedCarIndex == -1);
+    g_CarListCursor = INT_MAX;
+    UpdateCarListCursor();
+    CHECK(g_PrevOwnedCarIndex == -1 && g_NextOwnedCarIndex == -1);
 
     g_CarShopUnlockAll = 0;
     s_progress.maxClassReached = 1;
