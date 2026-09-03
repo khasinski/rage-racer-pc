@@ -316,7 +316,8 @@ s32 Atan2(s32 x, s32 y);
 /*
  * Sets up both environments for the frame and clears to (r, g, b):
  * 240 = two 320x240 buffers stacked at y=0 / y=0xF0, 480 = one 320x480 pair.
- * Both also set the GTE projection (SetGeomOffset / SetGeomScreen 0x140).
+ * Both also set the GTE projection (SetGeomOffset / SetGeomScreen 0x140) and
+ * the render state's lower vertical clip boundary to the display height.
  */
 void SetupDisplay240(s32 r, s32 g, s32 b);
 void SetupDisplay480(s32 r, s32 g, s32 b);
