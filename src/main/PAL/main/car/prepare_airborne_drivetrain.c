@@ -3,7 +3,6 @@
 #include "game/integer.h"
 
 enum {
-    AIRBORNE_SHIFT_FRAMES = 20,
     AUTOMATIC_ENGINE_LOAD_SCALE = 985,
     ENGINE_LOAD_SCALE = 1000,
 };
@@ -21,7 +20,7 @@ void PrepareAirborneDrivetrain(PlayerCarRuntime *car) {
         WrapSigned32((int64_t)speedScale * car->speed) / 100;
     rpm = CalculateAirborneEngineRpm(spec, drive->gear, car->speed);
 
-    drive->jumpTimer = AIRBORNE_SHIFT_FRAMES;
+    drive->jumpTimer = CAR_AIRBORNE_SHIFT_FRAMES;
     drive->motionState = CAR_MOTION_AIRBORNE;
     g_ShiftTargetRpm = rpm;
     drive->shiftRpmDelta = CalculateCarRpmDelta(rpm, drive->engineRpm);

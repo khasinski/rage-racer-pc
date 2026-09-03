@@ -36,6 +36,7 @@ enum {
     CAR_JUMP_RISE_CURVE = 72,
     CAR_JUMP_FALL_CURVE = 216,
     CAR_JUMP_CURVE_SCALE = 100,
+    CAR_AIRBORNE_SHIFT_FRAMES = 20,
 };
 
 /* Final per-frame visual/vertical motion pass over the rival car slots. */
@@ -98,6 +99,10 @@ s32 CalculateCarInitialAcceleration(const GameCarDrive *drive,
 void UpdateCarGearShiftState(PlayerCarRuntime *car, const GameCarSpec *spec,
                              s32 *acceleration);
 void ReadPlayerCarInput(GameCarDrive *drive);
+/* Pick the player's gear for this frame. Alternate controllers keep their two
+ * shift buttons in the second half of the mapping table. */
+void ShiftPlayerGears(PlayerCarRuntime *car, int useAlternateMapping);
+void UpdateCarDrivetrain(PlayerCarRuntime *car);
 void UpdatePlayerJump(PlayerCarRuntime *car, s32 groundHeight);
 void UpdatePlayerEnginePresentation(PlayerCarRuntime *car);
 void MeasurePlayerTrackLimits(const Matrix *toTrack,

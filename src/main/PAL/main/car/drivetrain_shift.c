@@ -28,7 +28,7 @@ static void UpdateAirborneGearShift(PlayerCarRuntime *car,
     drive->engineRpm = WrapSigned32(
         (int64_t)WrapSigned32(
             (int64_t)drive->shiftRpmDelta * drive->jumpTimer) /
-            20 +
+            CAR_AIRBORNE_SHIFT_FRAMES +
         g_ShiftTargetRpm);
 }
 

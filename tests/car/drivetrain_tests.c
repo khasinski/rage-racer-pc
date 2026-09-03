@@ -1,12 +1,10 @@
 /*
  * The parts of the drivetrain a race does not reach.
  *
- * UpdateCarDrivetrain is one 800-line function, and the smoke runs only ever
- * get the car into first or second gear on a flat piece of track. That leaves
- * the tall-gear grade penalty and the mid-shift interpolation unexercised by
- * anything, which is exactly where the four gotos this replaced used to jump.
- * Here the function is handed a car spec and a car placed where those branches
- * run.
+ * The drivetrain used to be one 800-line function. It is split into named
+ * stages now, but smoke runs still only get the car into first or second gear
+ * on a flat piece of track. That leaves the tall-gear grade penalty and the
+ * mid-shift interpolation for these focused cases.
  *
  * The numbers are what the shipped code produces; they are here to catch a
  * branch changing, so a deliberate change means updating them on purpose.

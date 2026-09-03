@@ -729,9 +729,6 @@ static inline GameCarAiBlock *GetCarAiBlock(GameCarRuntime *car) {
 /* Race-entry init for the player object: start pose plus the speed/gear lookup
  * tables g_GearTorqueCurve / g_TorqueBandEnd / g_TorqueLossBandEnd. Logs "init_car" .. "init_ok". */
 void InitPlayerCar(PlayerCarRuntime *car);
-/* Pick the player's gear for this frame. Alternate controllers keep their two
- * shift buttons in the second half of the mapping table. */
-void ShiftPlayerGears(PlayerCarRuntime *car, int useAlternateMapping);
 /* The two variants of the rival-car driver over all RACE_CAR_SLOT_COUNT
  * slots. Race runs
  * only while `g_RacePhase >= 2 && g_GrandPrixMode`, adds three race-only passes
@@ -833,7 +830,6 @@ void InitRivalCar(GameCarRuntime *car, s32 gridPosition,
                   const RaceGridSlot *grid);
 void InitRivalCarAi(GameCarRuntime *car, s32 gridPosition,
                     const RaceGridSlot *grid);
-void UpdateCarDrivetrain(PlayerCarRuntime *car);
 void UpdateCarDriving(PlayerCarRuntime *car);
 void UpdateCarLaunch(PlayerCarRuntime *car);
 void UpdateCarAirborne(PlayerCarRuntime *car);
