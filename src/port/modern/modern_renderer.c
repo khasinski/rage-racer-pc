@@ -123,6 +123,23 @@ static int s_spanCount;
 static SDL_GPUTexture *s_finalTarget;
 static SDL_GPUGraphicsPipeline *s_pipeComposite;
 
+static void ModernDisableFrameHistory(void) {
+    int slot;
+
+    if (s_device != NULL) {
+        for (slot = 0; slot < MODERN_RING; slot++) {
+            if (s_ring[slot] != NULL) {
+                SDL_ReleaseGPUTexture(s_device, s_ring[slot]);
+                s_ring[slot] = NULL;
+            }
+        }
+    }
+    free(s_ringScene);
+    s_ringScene = NULL;
+    s_ringEnabled = 0;
+    s_ringNext = 0;
+}
+
 /* ---- resource creation ---- */
 
 static SDL_GPUShader *ModernCreateShader(
@@ -274,7 +291,6 @@ static SDL_GPUGraphicsPipeline *ModernCreateOverlayPipeline(
 }
 
 static void ModernDestroyResources(void) {
-    int slot;
     int hadResources = s_resourcesReady;
     if (s_device != NULL) {
 #define RAGE_RELEASE(kind, value) do {                                        \
@@ -295,22 +311,18 @@ static void ModernDestroyResources(void) {
         RAGE_RELEASE(Sampler, s_samplerLinear);
         RAGE_RELEASE(Texture, s_finalTarget);
         RAGE_RELEASE(GraphicsPipeline, s_pipeComposite);
-        for (slot = 0; slot < MODERN_RING; slot++)
-            RAGE_RELEASE(Texture, s_ring[slot]);
 #undef RAGE_RELEASE
     }
+    ModernDisableFrameHistory();
     free(s_vertices);
     free(s_spans);
-    free(s_ringScene);
     ModernNativeGpuShutdown();
     s_vertices = NULL;
     s_spans = NULL;
-    s_ringScene = NULL;
     s_resourcesReady = 0;
     s_haveRenderedFrame = 0;
     s_lastRenderedFrame = 0xFFFFFFFFu;
     s_vertexCount = s_spanCount = 0;
-    s_ringNext = 0;
     if (hadResources && RuntimeConfigEnabled("diagnostics.renderer_lifecycle")) {
         fprintf(stderr, "rage-port: modern resources destroyed generation=%u\n",
                 s_resourceGeneration);
@@ -413,8 +425,17 @@ static int ModernEnsureResources(void) {
         info.num_levels = 1;
         for (slot = 0; slot < MODERN_RING; slot++) {
             s_ring[slot] = SDL_CreateGPUTexture(s_device, &info);
+            if (s_ring[slot] == NULL) break;
         }
-        s_ringScene = malloc(MODERN_RING * sizeof(RageSceneSnapshot));
+        if (slot == MODERN_RING) {
+            s_ringScene = malloc(MODERN_RING * sizeof(RageSceneSnapshot));
+        }
+        if (slot != MODERN_RING || s_ringScene == NULL) {
+            fprintf(stderr,
+                    "rage-port: frame-history setup failed, disabling: %s\n",
+                    SDL_GetError());
+            ModernDisableFrameHistory();
+        }
     }
 
     if (s_config.modernPost != RAGE_MODERN_POST_NONE || s_config.modernGrading) {
@@ -530,8 +551,10 @@ static ModernSpan *ModernBeginSpan(int pipeline, const Modern2DState *state) {
 
 static int ModernPushVertices(ModernSpan *span, const ModernVertex *v,
                               int count) {
-    if (span == NULL) return 0;
-    if (s_vertexCount + count > MODERN_MAX_VERTICES) return 0;
+    if (span == NULL || v == NULL || count <= 0) return 0;
+    if (s_vertexCount < 0 || s_vertexCount > MODERN_MAX_VERTICES - count) {
+        return 0;
+    }
     memcpy(&s_vertices[s_vertexCount], v, count * sizeof(*v));
     s_vertexCount += count;
     span->count += count;
@@ -1066,6 +1089,7 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
     cmd = SDL_AcquireGPUCommandBuffer(s_device);
     if (cmd == NULL) return;
     if (s_vertexCount > 0) {
+        SDL_GPUCopyPass *copy;
         void *mapped = SDL_MapGPUTransferBuffer(s_device, s_vertexTransfer,
                                                 true);
         if (mapped == NULL) {
@@ -1074,8 +1098,12 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
         }
         memcpy(mapped, s_vertices, s_vertexCount * sizeof(ModernVertex));
         SDL_UnmapGPUTransferBuffer(s_device, s_vertexTransfer);
+        copy = SDL_BeginGPUCopyPass(cmd);
+        if (copy == NULL) {
+            SDL_CancelGPUCommandBuffer(cmd);
+            return;
+        }
         {
-            SDL_GPUCopyPass *copy = SDL_BeginGPUCopyPass(cmd);
             const SDL_GPUTransferBufferLocation source = {
                 .transfer_buffer = s_vertexTransfer, .offset = 0};
             const SDL_GPUBufferRegion destination = {
@@ -1083,8 +1111,8 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
                 .offset = 0,
                 .size = (Uint32)(s_vertexCount * sizeof(ModernVertex))};
             SDL_UploadToGPUBuffer(copy, &source, &destination, true);
-            SDL_EndGPUCopyPass(copy);
         }
+        SDL_EndGPUCopyPass(copy);
     }
     {
         static uint64_t reportedIncompleteFrame = UINT64_MAX;
@@ -1461,8 +1489,10 @@ void ModernToggle(void) {
  * cannot be looked at, which is the only way to tell whether the geometry it
  * draws is right. */
 int ModernCaptureFrame(const char *path) {
-    if (!s_enabled || s_device == NULL || path == NULL || path[0] == '\0')
+    if (!s_enabled || !s_resourcesReady || s_device == NULL || path == NULL ||
+        path[0] == '\0') {
         return 0;
+    }
     return ModernWriteTexturePpm(s_device, ModernPresentTexture(),
                                      s_targetW, s_targetH, path);
 }
