@@ -1,6 +1,7 @@
 #include "game/audio.h"
 #include "game/car.h"
 #include "game/course_index.h"
+#include "game/integer.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/state.h"
@@ -88,7 +89,8 @@ void UpdateRivalRubberBand(void) {
         return;
     }
 
-    playerProgress = g_PlayerCar.progressA + g_PlayerCar.progressB;
+    playerProgress = WrapSigned32(
+        (int64_t)g_PlayerCar.progressA + g_PlayerCar.progressB);
     if (SeriesCourseIndex() == EXTENDED_RUBBER_BAND_COURSE) {
         nearDistance = EXTENDED_NEAR_DISTANCE;
         farDistance = EXTENDED_FAR_DISTANCE;
@@ -108,7 +110,9 @@ void UpdateRivalRubberBand(void) {
         if (rival == NULL) {
             continue;
         }
-        gap = rival->progressA + rival->progressB - playerProgress;
+        gap = WrapSigned32(
+            (int64_t)rival->progressA + rival->progressB);
+        gap = WrapSigned32((int64_t)gap - playerProgress);
 
         if (gap >= 0) {
             if (rank == 0) {

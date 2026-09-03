@@ -21,6 +21,7 @@
 #include "game/state.h"
 #include "game/track.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -272,6 +273,17 @@ static int CheckRubberBandBranches(void) {
     if (g_ClosestRivalRank != -1) {
         printf("trailing field retained stale closest rank %d\n",
                g_ClosestRivalRank);
+        return 1;
+    }
+
+    ResetRubberBandState();
+    g_PlayerCar.progressA = INT_MAX;
+    g_PlayerCar.progressB = 1;
+    g_Cars[3].progressA = INT_MIN;
+    g_Cars[3].progressB = 0;
+    UpdateRivalRubberBand();
+    if (g_ClosestRivalRank != 3) {
+        puts("wrapped race progress did not identify the nearest rival");
         return 1;
     }
 
