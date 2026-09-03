@@ -1,4 +1,5 @@
 #include "game/car.h"
+#include "game/integer.h"
 #include "game/race.h"
 #include "game/replay_internal.h"
 #include "game/work_buffer.h"
@@ -28,7 +29,7 @@ static s32 ReplaySampleIndex(s32 subframe, s32 frameCount) {
 }
 
 static s32 AverageReplayValue(s32 recorded, s32 current) {
-    const s32 wrappedSum = (s32)((u32)recorded + (u32)current);
+    const s32 wrappedSum = WrapSigned32((int64_t)recorded + current);
 
     return wrappedSum / 2;
 }

@@ -217,6 +217,11 @@ static void TestInterpolationUsesDefinedMachineWrapping(void) {
     ApplyReplayFrame(1, &player, &rival);
 
     assert(player.x == -1073709057);
+
+    frame->bodyPitch = INT16_MIN;
+    player.bodyPitch = INT_MIN;
+    ApplyReplayFrame(1, &player, &rival);
+    assert(player.bodyPitch == 1073725440);
 }
 
 static void TestInvalidFramesAreIgnored(void) {
