@@ -262,8 +262,6 @@ s32 (*g_MenuScreenDraw[MENU_SCREEN_COUNT])(s32) = {
     [MENU_SCREEN_UNUSED] = DrawShopScreenNoOp,
 };
 
-enum { RAGE_CD_SECTOR_SIZE = 2352, RAGE_ISO_SECTOR_SIZE = 2048 };
-
 typedef struct RageHostDisc {
     FILE *file;
     int chd;
@@ -482,14 +480,13 @@ static void HostAdoptDiscStreamTable(void) {
 }
 
 int HostReadStreamSector(unsigned int sector, unsigned char *raw) {
-    long offset;
     unsigned long stream_sectors;
     unsigned long absolute_sector;
 
     stream_sectors = (unsigned long)g_RageHostDisc.stream_size /
-                         RAGE_ISO_SECTOR_SIZE +
+                         DISC_ISO_SECTOR_SIZE +
                      ((unsigned long)g_RageHostDisc.stream_size %
-                          RAGE_ISO_SECTOR_SIZE !=
+                          DISC_ISO_SECTOR_SIZE !=
                       0);
     if (raw == NULL || (!g_RageHostDisc.chd && g_RageHostDisc.file == NULL) ||
         g_RageHostDisc.stream_size <= 0 || sector >= stream_sectors ||
@@ -499,20 +496,7 @@ int HostReadStreamSector(unsigned int sector, unsigned char *raw) {
     }
     absolute_sector = (unsigned long)g_RageHostDisc.stream_sector + sector;
     if (absolute_sector > UINT_MAX) return 0;
-    if (g_RageHostDisc.chd) {
-        return ChdReadRawSector((unsigned int)absolute_sector, raw);
-    }
-    if (g_RageHostDisc.track_offset < 0 ||
-        absolute_sector > (unsigned long)LONG_MAX ||
-        (long)absolute_sector >
-            (LONG_MAX - g_RageHostDisc.track_offset) / RAGE_CD_SECTOR_SIZE) {
-        return 0;
-    }
-    offset = g_RageHostDisc.track_offset +
-             (long)absolute_sector * RAGE_CD_SECTOR_SIZE;
-    if (fseek(g_RageHostDisc.file, offset, SEEK_SET) != 0) return 0;
-    return fread(raw, 1, RAGE_CD_SECTOR_SIZE, g_RageHostDisc.file) ==
-           RAGE_CD_SECTOR_SIZE;
+    return HostReadRawSector(NULL, (unsigned int)absolute_sector, raw);
 }
 
 int HostStreamAbsoluteSector(unsigned int sector) {
@@ -529,7 +513,7 @@ int HostStreamAbsoluteSector(unsigned int sector) {
 
 static int HostReadArchive(unsigned int offset, void *destination,
                            unsigned int size) {
-    unsigned char sector[RAGE_ISO_SECTOR_SIZE];
+    unsigned char sector[DISC_ISO_SECTOR_SIZE];
     unsigned char *output = destination;
     FILE *test_archive;
 
@@ -552,15 +536,15 @@ static int HostReadArchive(unsigned int offset, void *destination,
         return 0;
     }
     while (size > 0) {
-        unsigned int sector_offset = offset % RAGE_ISO_SECTOR_SIZE;
-        unsigned int chunk = RAGE_ISO_SECTOR_SIZE - sector_offset;
+        unsigned int sector_offset = offset % DISC_ISO_SECTOR_SIZE;
+        unsigned int chunk = DISC_ISO_SECTOR_SIZE - sector_offset;
         if (chunk > size) chunk = size;
         if (g_RageHostDisc.archive_sector < 0 ||
             (unsigned long)g_RageHostDisc.archive_sector >
-                UINT_MAX - offset / RAGE_ISO_SECTOR_SIZE ||
+                UINT_MAX - offset / DISC_ISO_SECTOR_SIZE ||
             !HostReadUserSector(
                 (unsigned int)g_RageHostDisc.archive_sector +
-                    offset / RAGE_ISO_SECTOR_SIZE,
+                    offset / DISC_ISO_SECTOR_SIZE,
                 sector)) {
             return 0;
         }
