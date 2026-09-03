@@ -4,6 +4,8 @@
 #include "game/state.h"
 #include "game/track_internal.h"
 
+#include <stdint.h>
+
 enum {
     POINT_AMBIENCE_MAX_LEVEL = 0x30,
     POINT_AMBIENCE_VOLUME_BIAS = 0x20,
@@ -50,6 +52,18 @@ static s32 PointAmbienceOutputCue(s32 authoredCue) {
                             : POINT_AMBIENCE_OTHER_CUE_OUTPUT;
 }
 
+static s32 PointAmbienceAttenuation(s32 level, int64_t dx, int64_t dz) {
+    const uint64_t x = dx < 0 ? (uint64_t)-dx : (uint64_t)dx;
+    const uint64_t z = dz < 0 ? (uint64_t)-dz : (uint64_t)dz;
+    const uint64_t squared = x * x + z * z;
+    const uint64_t panRadius = (uint64_t)level * 64;
+    s32 distance;
+
+    if (squared >= panRadius * panRadius) return 0;
+    distance = (s32)(SquareRoot12((long)(squared / 4)) >> 11);
+    return distance < level ? level - distance : 0;
+}
+
 /*
  * Place the one point-source ambience the camera is near: pick the zone the
  * car has reached, work out how loud it should be from how far into the zone
@@ -75,34 +89,27 @@ void UpdatePointAmbience(s32 trackPosition) {
     authoredCue = zone != NULL ? zone->cue : 0;
 
     if ((s16)level != 0 && zone != NULL) {
-        s32 sourceX = zone->sourceX - g_RenderState.viewX;
-        s32 sourceZ = zone->sourceZ - g_RenderState.viewZ;
-        s16 attenuated;
-        s32 bearing;
-        s32 pan;
-        s32 sine;
+        const int64_t sourceX =
+            (int64_t)zone->sourceX - g_RenderState.viewX;
+        const int64_t sourceZ =
+            (int64_t)zone->sourceZ - g_RenderState.viewZ;
+        const s32 attenuated =
+            PointAmbienceAttenuation(level, sourceX, sourceZ);
+        s32 sine = 0;
 
-        /*
-         * Retail keeps attenuation in 16 bits. A sufficiently distant source
-         * can wrap the subtraction positive; the following clamp catches it.
-         */
-        attenuated = (s16)(level - (SquareRoot12((sourceX * sourceX) / 4 +
-                                                 (sourceZ * sourceZ) / 4) >> 11));
-        if ((s16)level < attenuated) {
-            attenuated = (s16)level;
+        if (attenuated != 0) {
+            const s32 bearing = Atan2((s32)sourceX, (s32)sourceZ);
+            const s32 pan = (s32)(
+                ((u32)g_RenderState.viewAngleY - 0xC00u + (u32)bearing) &
+                0xFFFu);
+            sine = rsin(pan);
         }
-        if (attenuated < 0) {
-            attenuated = 0;
-        }
-        bearing = Atan2(sourceX, sourceZ);
-        pan = (g_RenderState.viewAngleY - 0xC00 + bearing) & 0xFFF;
-        sine = rsin(pan);
         leftVolume = level + (attenuated * sine) / 4096 +
                      POINT_AMBIENCE_VOLUME_BIAS;
         rightVolume = level + (-attenuated * sine) / 4096 +
                       POINT_AMBIENCE_VOLUME_BIAS;
-        if (authoredCue < 0) {
-            authoredCue = -authoredCue;
+        if (authoredCue == -1) {
+            authoredCue = 1;
         }
     }
 

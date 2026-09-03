@@ -3,6 +3,7 @@
 #include "game/render.h"
 #include "game/track.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -93,6 +94,19 @@ int main(void) {
 
     g_Sine = -4096;
     if (!ExpectAmbience(850, 2, 32, 128)) {
+        return 1;
+    }
+
+    events.pointAmbienceZones[0].sourceX = INT_MAX;
+    events.pointAmbienceZones[0].sourceZ = INT_MAX;
+    g_RenderState.viewX = INT_MIN;
+    g_RenderState.viewZ = INT_MIN;
+    if (!ExpectAmbience(850, 2, 80, 80)) {
+        return 1;
+    }
+
+    events.pointAmbienceZones[0].cue = INT_MIN;
+    if (!ExpectAmbience(850, 3, 80, 80)) {
         return 1;
     }
 
