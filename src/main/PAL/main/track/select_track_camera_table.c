@@ -15,6 +15,7 @@ static s32 CameraListHasTerminator(const TrackCameraTable *table, size_t size,
     node = (const GameTrackCameraNode *)((const u8 *)table + offset);
     while (remaining >= sizeof(*node)) {
         if (node->trackSection.value == -1) return 1;
+        if ((u16)node->mode > TRACK_CAMERA_ORBIT) return 0;
         node++;
         remaining -= sizeof(*node);
     }

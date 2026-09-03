@@ -64,6 +64,11 @@ int main(void) {
 
     fixture.table.defaultOffset = offsetof(CameraTableFixture, defaultCamera);
     fixture.defaultCamera.trackSection.value = 0;
+    fixture.defaultCamera.mode = TRACK_CAMERA_ORBIT + 1;
+    SelectTrackCameraTable(&fixture.table, sizeof(fixture), 0);
+    CHECK(g_TrackCameras == NULL);
+
+    fixture.defaultCamera.mode = TRACK_CAMERA_CAR;
     SelectTrackCameraTable(
         &fixture.table,
         offsetof(CameraTableFixture, firstSeriesCamera), 0);

@@ -3,8 +3,10 @@
 #include "game/track.h"
 
 /*
- * Put every car on the speed key it has already reached at race start. The
- * list is ordered along the track and ends with a -1 sentinel.
+ * Pick the first authored speed threshold already reached by each car. Some
+ * retail tables contain local progress reversals and some use all 48 slots,
+ * so neither sorting nor a -1 terminator is required. A terminator, when
+ * present before a match, selects the first key.
  */
 void SeedCarRouteMarkers(void) {
     const s32 series = g_RaceSeries != 0;
