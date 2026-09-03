@@ -7,6 +7,11 @@ enum {
 };
 
 void TickClassClearFanfare(void) {
+    if (g_ClassClearFanfareTimer >
+        CLASS_CLEAR_FANFARE_DURATION_FRAMES) {
+        g_ClassClearFanfareTimer =
+            CLASS_CLEAR_FANFARE_DURATION_FRAMES;
+    }
     if (g_ClassClearFanfareTimer > 0) {
         g_ClassClearFanfareTimer--;
     } else if (g_ClassClearFanfareTimer < 0) {

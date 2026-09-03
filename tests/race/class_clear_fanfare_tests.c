@@ -49,6 +49,12 @@ int main(void) {
     g_ClassClearFanfareTimer = INT_MIN;
     TickClassClearFanfare();
     Check("negative timer resets", g_ClassClearFanfareTimer, 0);
+
+    g_ClassClearFanfareTimer = INT_MAX;
+    TickClassClearFanfare();
+    Check("large timer returns to authored duration",
+          g_ClassClearFanfareTimer,
+          CLASS_CLEAR_FANFARE_DURATION_FRAMES - 1);
     Check("negative timer has no cue", s_cueCount, 1);
 
     return s_failures != 0;
