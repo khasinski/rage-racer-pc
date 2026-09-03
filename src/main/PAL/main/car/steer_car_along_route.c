@@ -5,6 +5,12 @@
 #include "game/race.h"
 #include "game/track.h"
 
+enum {
+    ROUTE_LOOKAHEAD_SEGMENTS = 2,
+    NORMALIZED_LATERAL_DIVISOR = ANGLE_HALF_TURN,
+    RIVAL_STEERING_DISPLAY_SCALE = 3,
+};
+
 /*
  * Samples a point two segments ahead (or behind in the reverse series), moves
  * it sideways onto the rival's racing line, then turns the car towards it.
@@ -22,18 +28,20 @@ void SteerCarAlongRoute(GameCarRuntime *car) {
     }
 
     index = WrapSigned32(
-        (int64_t)car->trackPointIndex + (raceSeries ? 2 : -2));
+        (int64_t)car->trackPointIndex +
+        (raceSeries ? ROUTE_LOOKAHEAD_SEGMENTS
+                    : -ROUTE_LOOKAHEAD_SEGMENTS));
     index = WrapTrackPointIndex(index);
 
     point = TrackPoint(index);
     if (lateral > point->rightHalfWidth) {
         lateral = WrapSigned32(
             (int64_t)point->rightHalfWidth *
-            car->normalizedLateralOffset) / 2048;
+            car->normalizedLateralOffset) / NORMALIZED_LATERAL_DIVISOR;
     } else if (lateral < -point->leftHalfWidth) {
         lateral = WrapSigned32(
             -(int64_t)point->leftHalfWidth *
-            car->normalizedLateralOffset) / 2048;
+            car->normalizedLateralOffset) / NORMALIZED_LATERAL_DIVISOR;
     }
 
     targetAngle = CalculateTrackOffsetHeading(
@@ -44,7 +52,7 @@ void SteerCarAlongRoute(GameCarRuntime *car) {
     car->steeringAngle = WrapSigned32(
         (int64_t)WrapSigned32(
             -(int64_t)GetAngleDelta(trackFacing, targetAngle)) *
-        3);
+        RIVAL_STEERING_DISPLAY_SCALE);
 
     if (car->verticalMotionState == CAR_VERTICAL_GROUNDED) {
         car->headingAngle = WrapSigned32(

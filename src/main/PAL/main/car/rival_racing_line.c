@@ -4,6 +4,10 @@
 #include "game/race.h"
 #include "game/track.h"
 
+enum {
+    AI_TABLE_LAP_START_PROGRESS = 0x20,
+};
+
 /*
  * Each racing-line hint describes a stretch of track and the lateral range
  * in which a rival may be nudged. Passing the current stretch advances to the
@@ -21,7 +25,8 @@ void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex) {
         return;
     }
 
-    if (position < 0x20 || car->racingLineHintIndex < 0 ||
+    if (position < AI_TABLE_LAP_START_PROGRESS ||
+        car->racingLineHintIndex < 0 ||
         car->racingLineHintIndex >= TRACK_RACING_LINE_HINT_COUNT) {
         car->racingLineHintIndex = 0;
         position = 0;

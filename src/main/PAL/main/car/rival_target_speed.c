@@ -9,6 +9,8 @@ enum {
     TARGET_SPEED_SCALE = 1168,
     TARGET_SPEED_SOURCE_SCALE = 160,
     ACCELERATION_LIMIT_PERCENT = 6,
+    PERCENT_SCALE = 100,
+    AI_TABLE_LAP_START_PROGRESS = 0x20,
 };
 
 static s32 RivalTargetSpeed(const TrackAiSpeedKey *key, s32 carIndex) {
@@ -16,7 +18,7 @@ static s32 RivalTargetSpeed(const TrackAiSpeedKey *key, s32 carIndex) {
         return key->slotTargetSpeeds[carIndex];
     }
     return key->slotTargetSpeeds[RIVAL_CONTENDER_COUNT - 1] *
-           (TRAILING_RIVAL_BASE_PERCENT - carIndex) / 100;
+           (TRAILING_RIVAL_BASE_PERCENT - carIndex) / PERCENT_SCALE;
 }
 
 static s32 TargetSpeedAccelerationLimit(s32 targetSpeed) {
@@ -25,7 +27,7 @@ static s32 TargetSpeedAccelerationLimit(s32 targetSpeed) {
         TARGET_SPEED_SOURCE_SCALE;
 
     return WrapSigned32(
-        (int64_t)scaledSpeed * ACCELERATION_LIMIT_PERCENT) / 100;
+        (int64_t)scaledSpeed * ACCELERATION_LIMIT_PERCENT) / PERCENT_SCALE;
 }
 
 /*
@@ -53,7 +55,7 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex) {
 
     position = car->trackProgress >> 4;
     keyIndex = car->speedKeyIndex;
-    if (position < 0x20 || keyIndex < 0 ||
+    if (position < AI_TABLE_LAP_START_PROGRESS || keyIndex < 0 ||
         keyIndex >= TRACK_AI_SPEED_KEY_COUNT - 1) {
         car->speedKeyIndex = 0;
         keyIndex = 0;
@@ -84,7 +86,7 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex) {
     } else {
         car->slideActive = 1;
         car->speedKeyIndex += highProgress < position ? 1 : -1;
-        if (position < 0x20) {
+        if (position < AI_TABLE_LAP_START_PROGRESS) {
             car->speedKeyIndex = 0;
         }
     }

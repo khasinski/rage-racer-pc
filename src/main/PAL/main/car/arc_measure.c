@@ -45,10 +45,12 @@ void CarTrackMeasureArc(CarTrackWork *work, s32 arcIndex, s32 carX,
     work->nextPointToCenterZ =
         WrapSigned32((int64_t)nextPoint->z - centerZ);
 
-    work->sweptAngle = Atan2(work->carToCenterX, work->carToCenterZ) & 0xFFF;
-    work->pointAngle = Atan2(work->pointToCenterX, work->pointToCenterZ) & 0xFFF;
+    work->sweptAngle =
+        Atan2(work->carToCenterX, work->carToCenterZ) & ANGLE_MASK;
+    work->pointAngle =
+        Atan2(work->pointToCenterX, work->pointToCenterZ) & ANGLE_MASK;
     work->nextPointAngle =
-        Atan2(work->nextPointToCenterX, work->nextPointToCenterZ) & 0xFFF;
+        Atan2(work->nextPointToCenterX, work->nextPointToCenterZ) & ANGLE_MASK;
 
     work->carRadius.value = MeasureArcRadius(
         work->sweptAngle, work->carToCenterX, work->carToCenterZ);
