@@ -12,6 +12,7 @@
 #include "game/audio.h"
 #include "game/car.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/menu_scripts_internal.h"
 
 /* Everything the shop keeps on the display whichever state it is in. */
@@ -75,11 +76,14 @@ static void UpdateEngineerShopIdle(s32 price) {
 
 /* The tune-up prompt, with its own yes/no cursor. */
 static void UpdateTuneUpPrompt(void *ot) {
+    MenuDialogAction action;
+
     RunTimedDrawScript(g_EngineerShopModalScript, &g_UiScriptProgress2, 0);
     if (RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1) == 0) {
         return;
     }
-    if (g_PadPressed & PAD_CONFIRM) {
+    action = ChooseMenuDialogAction(g_PadPressed);
+    if (action == MENU_DIALOG_CONFIRM) {
         if (g_MenuSubCursor != 0) {
             PlaySoundCue(2);
             GameMenuBusy = -2;
@@ -89,17 +93,13 @@ static void UpdateTuneUpPrompt(void *ot) {
             PlaySoundCue(3);
             GameMenuBusy = 0;
         }
-    }
-    if (g_PadPressed & PAD_CANCEL) {
+    } else if (action == MENU_DIALOG_CANCEL) {
         PlaySoundCue(3);
         GameMenuBusy = 0;
-    }
-    /* Left picks yes, right picks no, and neither repeats itself. */
-    if ((g_PadPressed & PAD_LEFT) && (g_MenuSubCursor == 0)) {
+    } else if (action == MENU_DIALOG_LEFT && g_MenuSubCursor == 0) {
         PlaySoundCue(1);
         g_MenuSubCursor = 1;
-    }
-    if ((g_PadPressed & PAD_RIGHT) && (g_MenuSubCursor != 0)) {
+    } else if (action == MENU_DIALOG_RIGHT && g_MenuSubCursor != 0) {
         PlaySoundCue(1);
         g_MenuSubCursor = 0;
     }

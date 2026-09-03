@@ -138,12 +138,15 @@ static void UpdateCarShopIdle(s32 price) {
 /* The buy prompt, and the refusal that replaces it when the money is short.
  * Only the prompt itself takes input; the refusal just waits to be dismissed. */
 static void UpdateBuyPrompt(void *ot, s32 price) {
+    MenuDialogAction action;
+
     RunTimedDrawScript(g_CarShopModalScript, &g_UiScriptProgress2, 0);
     if (RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1) == 0) {
         return;
     }
     if (GameMenuBusy == -1) {
-        if (g_PadPressed & PAD_CONFIRM) {
+        action = ChooseMenuDialogAction(g_PadPressed);
+        if (action == MENU_DIALOG_CONFIRM) {
             if (g_MenuSubCursor == 0) {
                 PlaySoundCue(3);
                 GameMenuBusy = 0;
@@ -156,17 +159,13 @@ static void UpdateBuyPrompt(void *ot, s32 price) {
                 g_CarShopModalScript = g_CarShopNoFundsScript;
                 GameMenuBusy = -2;
             }
-        }
-        if (g_PadPressed & PAD_CANCEL) {
+        } else if (action == MENU_DIALOG_CANCEL) {
             PlaySoundCue(3);
             GameMenuBusy = 0;
-        }
-        /* Left picks yes, right picks no, and neither repeats itself. */
-        if ((g_PadPressed & PAD_LEFT) && (g_MenuSubCursor == 0)) {
+        } else if (action == MENU_DIALOG_LEFT && g_MenuSubCursor == 0) {
             PlaySoundCue(1);
             g_MenuSubCursor = 1;
-        }
-        if ((g_PadPressed & PAD_RIGHT) && (g_MenuSubCursor != 0)) {
+        } else if (action == MENU_DIALOG_RIGHT && g_MenuSubCursor != 0) {
             PlaySoundCue(1);
             g_MenuSubCursor = 0;
         }
