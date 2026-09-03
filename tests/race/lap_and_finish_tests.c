@@ -354,6 +354,22 @@ int main(int argc, char **argv) {
         puts("FAIL extreme lap timer did not saturate");
         return 1;
     }
+    if (UpdateLapAndFinish(NULL, 0) != 0) {
+        puts("FAIL missing car was not rejected");
+        return 1;
+    }
+
+    memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
+    g_PlayerCar.lap = 2;
+    g_LapCount = 3;
+    g_TrackLength = 1500000000;
+    g_RacePhase = 0;
+    g_GrandPrixMode = 1;
+    UpdateLapAndFinish(&g_PlayerCar, 1);
+    if (g_PlayerCar.lap != 2) {
+        puts("FAIL overflowed progress crossed the lap line");
+        return 1;
+    }
     printf("laps and finishing take the same %d states they always did\n",
            steps);
     return 0;

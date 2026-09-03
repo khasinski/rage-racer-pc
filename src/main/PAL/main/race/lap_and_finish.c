@@ -210,12 +210,26 @@ static void CountDownTheLaps(PlayerCarRuntime *car) {
     }
 }
 
+static int HasCrossedCurrentLapLine(s32 lap, s32 trackLength,
+                                    s32 progressA, s32 progressB) {
+    return (int64_t)lap * trackLength <=
+           (int64_t)progressA + progressB;
+}
+
+static int IsWholeLapBehind(s32 trackLength, s32 progressA, s32 progressB) {
+    return (int64_t)progressA + progressB <= -(int64_t)trackLength;
+}
+
 s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
     s32 series = g_RaceSeries;
     s32 course = SeriesCourseIndex();
     s32 recordMode = RaceRecordMode(grandPrixMode);
     s16 lapAtEntry;
     u16 returnValue;
+
+    if (car == NULL) {
+        return 0;
+    }
 
     if ((car->lap > 0) && (g_LapCount >= car->lap)) {
         TickRunningLapTime(car);
@@ -227,8 +241,9 @@ s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
     }
 
     lapAtEntry = car->lap;
-    if ((lapAtEntry * g_TrackLength <=
-         g_PlayerCar.progressB + g_PlayerCar.progressA) &&
+    if (HasCrossedCurrentLapLine(lapAtEntry, g_TrackLength,
+                                g_PlayerCar.progressA,
+                                g_PlayerCar.progressB) &&
         (lapAtEntry <= g_LapCount)) {
         returnValue = (u16)CrossTheLine(car, recordMode);
     } else {
@@ -238,7 +253,8 @@ s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
     if ((g_LapCount < car->lap) && (g_RacePhase == 4)) {
         returnValue = (u16)AdvanceFinishFade(returnValue);
     } else if ((g_GrandPrixMode == 0) &&
-               (((car->progressB + car->progressA) <= -g_TrackLength) ||
+               (IsWholeLapBehind(g_TrackLength, car->progressA,
+                                 car->progressB) ||
                 ((g_PlayerCar.lap == 0) && (g_WrongWayTimer >= 0x3C)))) {
         RetireWrongWay();
     }
