@@ -125,7 +125,7 @@ int main(int argc, char **argv) {
      */
     /* Digest produced with the real PAL 25 Hz frame-to-millisecond
      * conversion, not the former 20 ms test double. */
-    static const unsigned long expected = 3836814421UL;
+    static const unsigned long expected = 3859405365UL;
     static const s32 laps[] = {0, 1, 2, 3};
     static const s32 lapCounts[] = {2, 3};
     /* Where the car is against the distance the current lap needs: short of
@@ -380,16 +380,27 @@ int main(int argc, char **argv) {
 
     }
 
+    /* The grid is lap 0 and sits behind the start line. Reaching the line
+     * opens lap one without recording a lap time or a best lap. */
     memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
     g_PlayerCar.lap = 0;
-    g_PlayerCar.progressA = 0;
+    g_PlayerCar.progressA = -1;
     g_LapCount = 3;
     g_TrackLength = 0x10000;
     g_RacePhase = 0;
+    g_RaceCueDelay = 0;
     g_GrandPrixMode = 1;
+    g_BestLapThisRace = 0x7FFFFFFF;
     if (UpdateLapAndFinish(&g_PlayerCar, 1) != 0 ||
         g_PlayerCar.lap != 0) {
-        puts("FAIL pre-start state crossed the lap line");
+        puts("FAIL grid state crossed the start line early");
+        return 1;
+    }
+    g_PlayerCar.progressA = 0;
+    if (UpdateLapAndFinish(&g_PlayerCar, 1) != 1 ||
+        g_PlayerCar.lap != 1 || g_BestLapThisRace != 0x7FFFFFFF ||
+        g_PlayerCar.lapTimes.table.milliseconds[0] != 0) {
+        puts("FAIL crossing the start line did not open lap one");
         return 1;
     }
 

@@ -267,8 +267,10 @@ s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
         }
     }
 
+    /* Lap 0 is the grid: the first line crossed is the start line, and it
+     * opens lap one rather than completing a lap. */
     lapAtEntry = car->lap;
-    if (lapAtEntry > 0 && lapAtEntry <= PLAYER_LAP_TIME_CAPACITY &&
+    if (lapAtEntry >= 0 && lapAtEntry <= PLAYER_LAP_TIME_CAPACITY &&
         HasCrossedCurrentLapLine(lapAtEntry, g_TrackLength,
                                 car->progressA, car->progressB) &&
         (lapAtEntry <= g_LapCount)) {
