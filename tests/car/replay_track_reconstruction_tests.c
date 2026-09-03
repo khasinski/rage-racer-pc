@@ -8,6 +8,7 @@
 #include "game/track.h"
 #include "game/track_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -121,6 +122,19 @@ int main(void) {
     ReconstructReplayCarTrackState(&car);
     if (car.modelYaw != 123) {
         puts("FAIL: empty track reset changed the car");
+        return 1;
+    }
+
+    BuildTrack();
+    memset(&car, 0, sizeof(car));
+    g_RaceSeries = 0;
+    car.x = s_points[0].x;
+    car.z = s_points[0].z;
+    car.progressA = INT_MAX;
+    ReconstructReplayCarTrackState(&car);
+    if (car.trackProgress != 0xFFF) {
+        printf("FAIL: wrapped replay progress is %d, expected %d\n",
+               car.trackProgress, 0xFFF);
         return 1;
     }
     printf("all %d reset track states preserved\n", calls);
