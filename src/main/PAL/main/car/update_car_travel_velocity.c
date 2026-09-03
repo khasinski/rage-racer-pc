@@ -1,4 +1,5 @@
 #include "game/car.h"
+#include "game/integer.h"
 #include "game/render.h"
 
 /*
@@ -18,14 +19,22 @@ void UpdateCarTravelVelocity(GameCarRuntime *car) {
 
     /* Preserve retail's staged divisions: their integer truncation affects
      * the direction of the resulting vector. */
-    motionX = ((headingSin * car->speed) / 4 +
-               bodySin * car->acceleration) / 100;
-    motionZ = ((headingCos * car->speed) / 4 +
-               bodyCos * car->acceleration) / 100;
+    motionX = WrapSigned32(
+        (int64_t)(WrapSigned32(
+            (int64_t)headingSin * car->speed) / 4) +
+        WrapSigned32((int64_t)bodySin * car->acceleration)) / 100;
+    motionZ = WrapSigned32(
+        (int64_t)(WrapSigned32(
+            (int64_t)headingCos * car->speed) / 4) +
+        WrapSigned32((int64_t)bodyCos * car->acceleration)) / 100;
 
-    pushAlongHeading =
-        (headingSin * bodySin + headingCos * bodyCos) / 4096;
-    car->speed += (pushAlongHeading * car->acceleration) / 4096;
+    pushAlongHeading = WrapSigned32(
+        (int64_t)WrapSigned32((int64_t)headingSin * bodySin) +
+        WrapSigned32((int64_t)headingCos * bodyCos)) / 4096;
+    car->speed = WrapSigned32(
+        (int64_t)car->speed +
+        WrapSigned32(
+            (int64_t)pushAlongHeading * car->acceleration) / 4096);
 
     if (motionX != 0 || motionZ != 0) {
         car->headingAngle = ANGLE_QUARTER_TURN - Atan2(motionX, motionZ);

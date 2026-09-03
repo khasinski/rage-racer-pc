@@ -18,6 +18,7 @@
 #include "game/render.h"
 #include "game/render_state.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -105,6 +106,16 @@ int main(int argc, char **argv) {
     if (s_digest != expected) {
         printf("car travel velocity: %d cases folded to %lu, expected %lu\n",
                cases, s_digest, expected);
+        return 1;
+    }
+
+    memset(&stoppedCar, 0, sizeof(stoppedCar));
+    stoppedCar.speed = INT_MAX;
+    stoppedCar.acceleration = INT_MAX;
+    UpdateCarTravelVelocity(&stoppedCar);
+    if (stoppedCar.speed != INT_MAX - 1) {
+        printf("extreme travel velocity produced speed %d, expected %d\n",
+               stoppedCar.speed, INT_MAX - 1);
         return 1;
     }
     printf("car travel velocity: %d cases unchanged\n", cases);
