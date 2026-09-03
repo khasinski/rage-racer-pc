@@ -14,8 +14,8 @@ def main() -> int:
     values = dict(re.findall(
         r'static char (g_CarName\w+)\[\] = "([A-Z]+)";', source))
     match = re.search(
-        r"char \*g_NativeCarNames\[13\] = \{([^}]*)\};", source,
-        re.DOTALL)
+        r"const char \*g_NativeCarNames\[GAME_CAR_COUNT\] = \{([^}]*)\};",
+        source, re.DOTALL)
     if match is None:
         raise AssertionError("g_NativeCarNames does not have thirteen entries")
     names = [values[token] for token in re.findall(r"g_CarName\w+", match.group(1))]
