@@ -235,6 +235,7 @@ int main(int argc, char **argv) {
     static const s32 standingSpins[] = {0, 20, 200};
     static GameTrackPoint points[16];
     GameCarSpec spec;
+    PlayerCarRuntime extremeCar;
     FILE *out = NULL;
     size_t s, e, v, y, h, g, vert, ss;
     int cases = 0;
@@ -302,18 +303,23 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    {
-        PlayerCarRuntime car;
+    PrepareCar(&extremeCar, &spec);
+    extremeCar.drive.jumpTimer = 10;
+    extremeCar.drive.yawOffset = INT_MIN;
+    UpdateCarAirborne(&extremeCar);
+    if (extremeCar.drive.yawOffset != -67108864) {
+        printf("extreme airborne yaw decayed to %d\n",
+               extremeCar.drive.yawOffset);
+        return 1;
+    }
 
-        PrepareCar(&car, &spec);
-        car.drive.jumpTimer = 10;
-        car.drive.yawOffset = INT_MIN;
-        UpdateCarAirborne(&car);
-        if (car.drive.yawOffset != -67108864) {
-            printf("extreme airborne yaw decayed to %d\n",
-                   car.drive.yawOffset);
-            return 1;
-        }
+    PrepareCar(&extremeCar, &spec);
+    extremeCar.drive.jumpTimer = 10;
+    g_ShiftSoundLevel = INT_MAX;
+    UpdateCarAirborne(&extremeCar);
+    if (s_voiceVolume != INT_MIN + 24) {
+        printf("extreme shift sound volume became %d\n", s_voiceVolume);
+        return 1;
     }
     printf("car_motion_handlers: %d cases unchanged\n", cases);
     return 0;

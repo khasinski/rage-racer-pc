@@ -28,7 +28,9 @@ static void UpdateAirborneTyreVoice(const GameCarDrive *drive) {
 
         SetIndexedEffectVoice(0, phase, drive->jumpTimer * 2 + 80);
     } else {
-        SetIndexedEffectVoice(0, 0x1800, g_ShiftSoundLevel + 25);
+        SetIndexedEffectVoice(
+            0, 0x1800,
+            WrapSigned32((int64_t)g_ShiftSoundLevel + 25));
     }
 }
 
@@ -36,6 +38,7 @@ static void UpdateAirborneVelocity(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
     s32 bodySin;
     s32 bodyCos;
+    s32 motionHeading;
     s32 alongBody;
 
     car->bodyYaw = WrapSigned32(
@@ -46,15 +49,12 @@ static void UpdateAirborneVelocity(PlayerCarRuntime *car) {
 
     bodySin = rsin(car->bodyYaw);
     bodyCos = rcos(car->bodyYaw);
-    {
-        s32 motionHeading = WrapSigned32(
-            (int64_t)car->headingAngle + drive->yawOffset);
-
-        drive->accelPos = WrapSigned32(
-            (int64_t)rsin(motionHeading) * car->speed) / 256;
-        drive->brakePos = WrapSigned32(
-            (int64_t)rcos(motionHeading) * car->speed) / 256;
-    }
+    motionHeading = WrapSigned32(
+        (int64_t)car->headingAngle + drive->yawOffset);
+    drive->accelPos = WrapSigned32(
+        (int64_t)rsin(motionHeading) * car->speed) / 256;
+    drive->brakePos = WrapSigned32(
+        (int64_t)rcos(motionHeading) * car->speed) / 256;
     alongBody = WrapSigned32(
         (int64_t)WrapSigned32((int64_t)bodySin * drive->accelPos) +
         WrapSigned32((int64_t)bodyCos * drive->brakePos)) / 4096;
