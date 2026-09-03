@@ -50,9 +50,9 @@ static void DrawRankingCarSprites(GameOrderingTableEntry *ot, s32 y, s32 carInde
     }
     name = &s_carNameSprites[carIndex];
     badge = &s_carBadgeSprites[carIndex];
-    DrawSprite(ot, name->x, (s16)y, name->width, 0x10, name->textureU,
+    DrawSprite(ot, name->x, y, name->width, 0x10, name->textureU,
                name->textureV, 0, 0, 0, 0x244, 1, 1, 0x3B);
-    DrawSprite(ot, badge->x, (s16)y, badge->width, 0x10, badge->textureU,
+    DrawSprite(ot, badge->x, y, badge->width, 0x10, badge->textureU,
                badge->textureV, 0, 0, 0, 0x244, 1, 1, 0x3E);
 }
 
@@ -63,12 +63,12 @@ static void DrawRankingCourseHeader(GameOrderingTableEntry *ot, s32 slide) {
     if (!GetCourseLabelSprites(SeriesCourseIndex(), &label)) {
         return;
     }
-    DrawSprite(ot, 0xA4, (s16)contentY, 0x48, 0x10, 0x48, 0xAC, 0, 0, 0,
+    DrawSprite(ot, 0xA4, contentY, 0x48, 0x10, 0x48, 0xAC, 0, 0, 0,
                0x244, 1, 1, 0x3B);
-    DrawSprite(ot, 0xA4, (s16)(slide + 0x25C), label.nameWidth, 0x10,
+    DrawSprite(ot, 0xA4, slide + 0x25C, label.nameWidth, 0x10,
                label.nameTextureU, label.nameTextureV, 0, 0, 0, 0x244, 1, 1,
                0x3B);
-    DrawSprite(ot, 0xEC, (s16)contentY, 0x20, 0x10,
+    DrawSprite(ot, 0xEC, contentY, 0x20, 0x10,
                label.distanceTextureU, 0xB4, 0, 0, 0, 0x244, 1, 1, 0x3A);
 }
 
@@ -78,10 +78,10 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
     GameOrderingTableEntry *ot = RENDER_OT_BASE;
     s32 phase;
     s32 slide;
-    s16 panelY;
-    s16 rowY;
+    s32 panelY;
+    s32 rowY;
     s32 row;
-    s16 rowYStep;
+    s32 rowYStep;
 
     if (step == 0) {
         *progress = 0;
@@ -105,7 +105,7 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
         panelY = slide + 0x21A;
 
         if (g_CourseIndex >= 4) {
-            DrawSprite(ot, 0xA4, (s16)(slide + 0x1EA), 0x30, 0x18,
+            DrawSprite(ot, 0xA4, slide + 0x1EA, 0x30, 0x18,
                        0xCC, 0x38, 0, 0, 0, 0x20F, 1, 0, 0x3C);
         }
         DrawSprite(ot, 0xC8, (s16)(slide + 0x218), 0x20, 0x28, 0x48, 0xD8,
@@ -149,26 +149,25 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
             DrawLargeText(0x77, rowY, record->driverName, 0x7F, 0x7F, 0x7F,
                           0x244, 0xA0);
 
-            DrawSprite(ot, 0x17, (s16)(panelY + rowYStep), 8, 0x10,
-                       (s16)(row * 8 + 8), 0x18, 0, 0, 0, 0x244, 1, 1,
-                       0x3B);
-            DrawSprite(ot, 0xA7, (s16)(panelY + rowYStep), 8, 0x10, 0x58,
+            DrawSprite(ot, 0x17, panelY + rowYStep, 8, 0x10,
+                       row * 8 + 8, 0x18, 0, 0, 0, 0x244, 1, 1, 0x3B);
+            DrawSprite(ot, 0xA7, panelY + rowYStep, 8, 0x10, 0x58,
                        0x28, 0, 0, 0, 0x244, 1, 1, 0x3B);
-            DrawSprite(ot, 0xDF, (s16)(panelY + rowYStep), 8, 0x10, 0x58,
+            DrawSprite(ot, 0xDF, panelY + rowYStep, 8, 0x10, 0x58,
                        0x28, 0, 0, 0, 0x244, 1, 1, 0x3B);
 
             DrawRankingCarSprites(ot, panelY + rowYStep, record->carIndex);
         }
 
-        DrawLargeText(0x1E, (s16)(panelY + 0x82), g_MsgOrdinalSt, 0x7F,
+        DrawLargeText(0x1E, panelY + 0x82, g_MsgOrdinalSt, 0x7F,
                       0x7F, 0x7F, 0x244, 0x20);
-        DrawLargeText(0x1E, (s16)(panelY + 0xA2), g_MsgOrdinalNd, 0x7F,
+        DrawLargeText(0x1E, panelY + 0xA2, g_MsgOrdinalNd, 0x7F,
                       0x7F, 0x7F, 0x244, 0x20);
-        DrawLargeText(0x1F, (s16)(panelY + 0xC2), g_MsgOrdinalRd, 0x7F,
+        DrawLargeText(0x1F, panelY + 0xC2, g_MsgOrdinalRd, 0x7F,
                       0x7F, 0x7F, 0x244, 0x20);
-        DrawLargeText(0x1E, (s16)(panelY + 0xE2), g_MsgOrdinalTh, 0x7F,
+        DrawLargeText(0x1E, panelY + 0xE2, g_MsgOrdinalTh, 0x7F,
                       0x7F, 0x7F, 0x244, 0x20);
-        DrawLargeText(0x1E, (s16)(panelY + 0x102), g_MsgOrdinalTh, 0x7F,
+        DrawLargeText(0x1E, panelY + 0x102, g_MsgOrdinalTh, 0x7F,
                       0x7F, 0x7F, 0x244, 0x20);
 
         DrawRectOutline(ot + 1, 0, panelY + 0x7A, 0x124, 0xA0, 0xB4,
