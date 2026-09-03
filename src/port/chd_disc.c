@@ -15,7 +15,7 @@ static chd_file *s_chd;
 static unsigned char *s_hunk;
 static uint32_t s_hunkBytes;
 static uint32_t s_unitBytes;
-static int s_cachedHunk = -1;
+static uint32_t s_cachedHunk = UINT32_MAX;
 static RageChdTrack s_tracks[RAGE_CHD_MAX_TRACKS];
 static int s_trackCount;
 
@@ -31,7 +31,7 @@ void ChdClose(void) {
     s_chd = NULL;
     s_hunkBytes = 0;
     s_unitBytes = 0;
-    s_cachedHunk = -1;
+    s_cachedHunk = UINT32_MAX;
     s_trackCount = 0;
     memset(s_tracks, 0, sizeof(s_tracks));
 }
@@ -102,6 +102,10 @@ int ChdOpen(const char *path) {
     chd_error error;
 
     ChdClose();
+    if (path == NULL || path[0] == '\0') {
+        fprintf(stderr, "rage-port: no CHD path was provided\n");
+        return 0;
+    }
     error = chd_open(path, CHD_OPEN_READ, NULL, &s_chd);
     if (error != CHDERR_NONE) {
         fprintf(stderr, "rage-port: cannot open CHD %s: %s\n", path,
@@ -140,8 +144,8 @@ int ChdReadRawSector(unsigned int sector, unsigned char *raw) {
 
     if (s_chd == NULL || raw == NULL) return 0;
     for (index = 0; index < s_trackCount; index++) {
-        if ((int)sector >= s_tracks[index].sector &&
-            (int)sector < s_tracks[index].endSector) {
+        if (sector >= (uint32_t)s_tracks[index].sector &&
+            sector < (uint32_t)s_tracks[index].endSector) {
             track = &s_tracks[index];
             break;
         }
@@ -151,9 +155,9 @@ int ChdReadRawSector(unsigned int sector, unsigned char *raw) {
     framesPerHunk = s_hunkBytes / s_unitBytes;
     hunkNumber = storedFrame / framesPerHunk;
     hunkOffset = storedFrame % framesPerHunk;
-    if ((int)hunkNumber != s_cachedHunk) {
+    if (hunkNumber != s_cachedHunk) {
         if (chd_read(s_chd, hunkNumber, s_hunk) != CHDERR_NONE) return 0;
-        s_cachedHunk = (int)hunkNumber;
+        s_cachedHunk = hunkNumber;
     }
     memcpy(raw, s_hunk + hunkOffset * s_unitBytes, RAGE_CHD_RAW_SECTOR);
     return 1;
