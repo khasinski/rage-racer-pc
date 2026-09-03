@@ -16,7 +16,7 @@ void DrawCourseObjects(void) {
     if (g_CourseObjects == NULL || g_CourseObjectCount <= 0) return;
 
     for (i = 0; i < g_CourseObjectCount; i++) {
-        CourseObject *object = &g_CourseObjects[i];
+        const CourseObject *object = &g_CourseObjects[i];
         s32 cellX;
         s32 cellZ;
         s32 flags;

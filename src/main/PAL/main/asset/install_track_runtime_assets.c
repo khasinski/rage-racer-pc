@@ -62,7 +62,7 @@ s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
                                  s32 useSeriesCamera) {
     GameSceneAssetHeader *header;
     CourseModelAssetHeader *courseModels;
-    CourseObjectTable *courseObjects;
+    const CourseObjectTable *courseObjects;
     size_t blockSizes[11];
     s32 i;
 

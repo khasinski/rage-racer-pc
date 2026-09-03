@@ -14,7 +14,7 @@ SceneryMotionData *g_RouteSceneryData;
 PathSceneryPositionData *g_PathSceneryPosData;
 PathSceneryRotationData *g_PathSceneryRotData;
 TrackRenderTable *g_TrackRenderTable;
-CourseObject *g_CourseObjects;
+const CourseObject *g_CourseObjects;
 s32 g_CourseObjectCount;
 static s32 s_failures;
 

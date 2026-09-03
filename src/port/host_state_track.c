@@ -178,7 +178,7 @@ s32 g_RouteSceneryRotZ;
 Vec4 g_RouteSceneryPosition __attribute__((aligned(16)));
 SceneryMotionKeyframe *g_FlybySceneryKeyframe;
 SceneryMotionData *g_FlybySceneryData;
-CourseObject *g_CourseObjects;
+const CourseObject *g_CourseObjects;
 CellVisibilityRow *g_CellVisibilityTable;
 PathSceneryPositionData *g_PathSceneryPosData;
 s32 g_CourseObjectCount;

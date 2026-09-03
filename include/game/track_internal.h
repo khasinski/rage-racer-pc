@@ -83,7 +83,7 @@ typedef struct PathSceneryTransform {
 
 extern GameTrackArcCenter *g_TrackArcCenters;
 extern s32 g_EnvScriptClock;
-extern CourseObject *g_CourseObjects;
+extern const CourseObject *g_CourseObjects;
 extern s32 g_CourseObjectCount;
 extern StartGridSceneryStep g_StartGridSceneryStep[];
 extern PathSceneryClock g_PathSceneryClock;

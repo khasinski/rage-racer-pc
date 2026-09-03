@@ -30,8 +30,8 @@ static s32 FindRenderedCarSlot(const GameRenderObject *object) {
     return -2;
 }
 
-static void SubmitCarPart(LVec *position, Matrix *transform, s32 materialMode,
-                          s32 modelBank) {
+static void SubmitCarPart(const LVec *position, Matrix *transform,
+                          s32 materialMode, s32 modelBank) {
     SetGteObjectMatrix(position, transform);
     g_RenderState.envMode4 = materialMode;
     SubmitModel(&g_RenderState, modelBank);

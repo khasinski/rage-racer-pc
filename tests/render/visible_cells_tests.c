@@ -11,7 +11,7 @@ u32 *g_VisibleCellMask;
 Vec4 *g_VisibleCellList;
 u16 *g_TerrainCellGrid;
 CellVisibilityRow *g_CellVisibilityTable;
-CourseObject *g_CourseObjects;
+const CourseObject *g_CourseObjects;
 s32 g_CourseObjectCount;
 s32 g_AnimTimer;
 s32 g_IsEnvironmentMode4;
@@ -180,8 +180,10 @@ static int TestCourseObjectFlags(void) {
         {.modelId = 14, .flags = COURSE_OBJECT_ENVIRONMENT_4},
         {.modelId = 15, .flags = COURSE_OBJECT_BLINK_ENVIRONMENT_4},
     };
+    CourseObject originalObjects[sizeof(objects) / sizeof(objects[0])];
     u32 visibility[TERRAIN_CELL_GRID_SIZE] = {1};
 
+    memcpy(originalObjects, objects, sizeof(objects));
     memset(&g_RenderState, 0, sizeof(g_RenderState));
     memset(s_submissions, 0, sizeof(s_submissions));
     s_objectMatrixCount = 0;
@@ -213,6 +215,7 @@ static int TestCourseObjectFlags(void) {
     CHECK(!s_submissions[1].alternate);
     CHECK(s_submissions[2].alternate);
     CHECK(s_submissions[4].environmentMode4 == 0);
+    CHECK(memcmp(objects, originalObjects, sizeof(objects)) == 0);
     return 0;
 }
 

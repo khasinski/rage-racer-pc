@@ -107,10 +107,10 @@ static inline s32 *AsWords(Vec4 *vector) {
     return view.words;
 }
 
-static inline LVec *AsPositionWords(s32 *words) {
+static inline const LVec *AsPositionWords(const s32 *words) {
     union {
-        s32 *words;
-        LVec *position;
+        const s32 *words;
+        const LVec *position;
     } view;
 
     view.words = words;

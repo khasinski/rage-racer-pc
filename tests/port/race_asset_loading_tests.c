@@ -34,7 +34,7 @@ s16 g_GrandPrixSeries;
 TrackTextureShadowRow *g_TrackTextureShadow;
 TrackRenderTable *g_TrackRenderTable;
 EnvironmentPalette *g_EnvPaletteTable;
-CourseObject *g_CourseObjects;
+const CourseObject *g_CourseObjects;
 s32 g_CourseObjectCount;
 
 static s32 s_loadResult;
