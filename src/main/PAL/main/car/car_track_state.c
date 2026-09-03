@@ -262,7 +262,7 @@ s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
     CarTrackWork *work;
     int traceThisCall;
 
-    if (g_TrackPointCount <= 0 || g_TrackPoints == NULL ||
+    if (car == NULL || g_TrackPointCount <= 0 || g_TrackPoints == NULL ||
         g_TrackLength <= 0 || limits == NULL) {
         return 0;
     }

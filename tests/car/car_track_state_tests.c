@@ -282,8 +282,12 @@ int main(int argc, char **argv) {
         puts("FAIL empty track placement changed the car");
         return 1;
     }
-
     BuildTrack();
+    if (UpdateCarTrackState(NULL, 0, &limits) != 0) {
+        puts("FAIL missing car was accepted for track placement");
+        return 1;
+    }
+
     s_points[0].leftHalfWidth = 0;
     s_points[0].rightHalfWidth = 0;
     s_points[1].leftHalfWidth = 0;
