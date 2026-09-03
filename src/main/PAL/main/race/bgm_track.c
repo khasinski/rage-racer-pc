@@ -32,15 +32,6 @@ s32 ClampBgmTrackCount(s32 trackCount) {
                : BGM_PLAYABLE_TRACK_COUNT;
 }
 
-s32 ClampBgmShuffleCount(s32 trackCount) {
-    if (trackCount < 0) {
-        return 0;
-    }
-    return trackCount < BGM_SHUFFLE_CAPACITY
-               ? trackCount
-               : BGM_SHUFFLE_CAPACITY;
-}
-
 s32 BgmShuffleTrackAt(const u8 *shuffleOrder, s32 trackCount,
                       s32 shuffleIndex) {
     s32 track;

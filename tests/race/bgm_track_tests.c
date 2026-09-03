@@ -20,9 +20,6 @@ int main(void) {
     assert(ClampBgmTrackCount(-1) == 0);
     assert(ClampBgmTrackCount(9) == 9);
     assert(ClampBgmTrackCount(INT_MAX) == BGM_PLAYABLE_TRACK_COUNT);
-    assert(ClampBgmShuffleCount(-1) == 0);
-    assert(ClampBgmShuffleCount(11) == 11);
-    assert(ClampBgmShuffleCount(INT_MAX) == BGM_SHUFFLE_CAPACITY);
     assert(BgmShuffleTrackAt(order, 3, 0) == 2);
     assert(BgmShuffleTrackAt(order, 3, 4) == 0);
     assert(BgmShuffleTrackAt(order, 3, -1) == 1);

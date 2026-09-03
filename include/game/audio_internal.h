@@ -35,7 +35,6 @@ void ForcePitchEffectVoicesEnabled(s32 enabled);
 void ForceSoundSlotVoicePlayback(s32 enabled);
 
 s32 ClampBgmTrackCount(s32 trackCount);
-s32 ClampBgmShuffleCount(s32 trackCount);
 s32 BgmShuffleTrackAt(const u8 *shuffleOrder, s32 trackCount,
                       s32 shuffleIndex);
 

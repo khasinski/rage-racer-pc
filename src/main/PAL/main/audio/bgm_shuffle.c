@@ -9,7 +9,7 @@ void ShuffleBgmOrder(void) {
     s32 emptyCount;
     s32 selectedEmpty;
 
-    g_BgmTrackCount = ClampBgmShuffleCount(g_BgmTrackCount);
+    g_BgmTrackCount = ClampBgmTrackCount(g_BgmTrackCount);
 
     for (slot = 0; slot < g_BgmTrackCount; slot++) {
         g_BgmShuffleOrder[slot] = 0xFF;

@@ -33,14 +33,14 @@ static int IsPermutation(s32 count) {
 int main(void) {
     s32 count;
 
-    for (count = 1; count <= BGM_SHUFFLE_CAPACITY; count++) {
+    for (count = 1; count <= BGM_PLAYABLE_TRACK_COUNT; count++) {
         memset(g_BgmShuffleOrder, 0xA5, sizeof(g_BgmShuffleOrder));
         g_BgmTrackCount = count;
         g_BgmShuffleIndex = 7;
         s_randomState = (u32)count;
         ShuffleBgmOrder();
         if (g_BgmShuffleIndex != 0 || !IsPermutation(count) ||
-            (count < BGM_SHUFFLE_CAPACITY &&
+            (count < BGM_PLAYABLE_TRACK_COUNT &&
              g_BgmShuffleOrder[count] != 0xA5)) {
             fprintf(stderr, "invalid shuffle for %d tracks\n", count);
             return 1;
@@ -56,9 +56,11 @@ int main(void) {
     }
 
     g_BgmTrackCount = BGM_SHUFFLE_CAPACITY + 5;
+    memset(g_BgmShuffleOrder, 0xA5, sizeof(g_BgmShuffleOrder));
     ShuffleBgmOrder();
-    if (g_BgmTrackCount != BGM_SHUFFLE_CAPACITY ||
-        !IsPermutation(BGM_SHUFFLE_CAPACITY)) {
+    if (g_BgmTrackCount != BGM_PLAYABLE_TRACK_COUNT ||
+        !IsPermutation(BGM_PLAYABLE_TRACK_COUNT) ||
+        g_BgmShuffleOrder[BGM_PLAYABLE_TRACK_COUNT] != 0xA5) {
         puts("oversized shuffle was not bounded");
         return 1;
     }
