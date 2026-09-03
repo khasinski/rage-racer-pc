@@ -81,6 +81,11 @@ int main(void) {
     CHECK(TeamNameCharacterModelIndex(44, 44) == 1);
     CHECK(TeamNameCharacterModelIndex(INT_MAX, 1) == 0);
     CHECK(TeamNameCharacterModelIndex(0, 0) == -1);
+    CHECK(NormalizeTeamNameCursor(-1) == 0);
+    CHECK(NormalizeTeamNameCursor(INT_MAX) == TEAM_NAME_KEY_END);
+    CHECK(NormalizeTeamNameCursor(TEAM_NAME_KEY_RUBOUT) ==
+          TEAM_NAME_KEY_RUBOUT);
+    CHECK(NormalizeTeamNameCursor(5) == 5);
     CHECK(MenuModelIndexOrFallback(5, 6) == 5);
     CHECK(MenuModelIndexOrFallback(5, 2) == 1);
     CHECK(MenuModelIndexOrFallback(-1, 2) == 1);

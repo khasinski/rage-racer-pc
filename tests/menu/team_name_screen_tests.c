@@ -1,5 +1,6 @@
 #include "common.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -137,8 +138,12 @@ int main(void) {
 
     Reset();
     g_TeamNameLength = 0xFF;
+    GameMenuCursor = INT32_MIN;
+    GameMenuCursorAnim = INT32_MAX;
     UpdateTeamNameScreen();
     CHECK(g_TeamNameLength == MENU_TEAM_NAME_MAX_LENGTH);
+    CHECK(GameMenuCursor == 0);
+    CHECK(GameMenuCursorAnim == TEAM_NAME_KEY_END);
 
     Reset();
     GameMenuCursor = 0x2B;

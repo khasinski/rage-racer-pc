@@ -22,7 +22,6 @@ enum DesignModeOption {
 
 enum {
     DESIGN_MODE_VIEW_OFFSET = 250000,
-    TEAM_NAME_END_KEY = 43,
 };
 
 
@@ -181,7 +180,7 @@ static void FinishDesignModeExit(void) {
         g_MenuViewAngleTarget = 0;
         g_MenuViewAngle = 0;
         GameMenuCursor = g_TeamNameLength >= MENU_TEAM_NAME_MAX_LENGTH
-                             ? TEAM_NAME_END_KEY
+                             ? TEAM_NAME_KEY_END
                              : 0;
         g_TeamNameCharModel = GameMenuCursor;
         break;

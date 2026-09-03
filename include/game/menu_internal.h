@@ -150,9 +150,13 @@ static inline ShopPrice LookupShopPrice(const s32 *prices, size_t count,
 
 enum {
     TEAM_NAME_HIDDEN_MODEL_KEY = 10,
-    TEAM_NAME_CONTROL_KEY_FIRST = 42,
-    TEAM_NAME_CONTROL_KEY_COUNT = 2,
+    TEAM_NAME_KEY_RUBOUT = 42,
+    TEAM_NAME_KEY_END = 43,
 };
+
+static inline s32 NormalizeTeamNameCursor(s32 cursor) {
+    return AddClampedMenuValue(cursor, 0, 0, TEAM_NAME_KEY_END);
+}
 
 static inline s32 MenuModelIndexOrFallback(s32 preferred, s32 modelCount) {
     if ((u32)preferred < (u32)modelCount) {
@@ -198,8 +202,7 @@ static inline s32 UpdatedShowroomSteering(s32 steering, u16 held) {
 
 static inline s32 TeamNameCharacterModelIndex(s32 key, s32 modelCount) {
     if (key == TEAM_NAME_HIDDEN_MODEL_KEY ||
-        (u32)(key - TEAM_NAME_CONTROL_KEY_FIRST) <
-            TEAM_NAME_CONTROL_KEY_COUNT) {
+        key == TEAM_NAME_KEY_RUBOUT || key == TEAM_NAME_KEY_END) {
         return -1;
     }
     return MenuModelIndexOrFallback(key, modelCount);

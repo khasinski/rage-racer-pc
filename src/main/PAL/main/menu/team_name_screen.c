@@ -2,10 +2,6 @@
 #include "game/menu.h"
 #include "game/menu_internal.h"
 
-/* The two keys on the name grid that are not characters. */
-#define TEAM_NAME_KEY_RUBOUT 0x2A
-#define TEAM_NAME_KEY_END 0x2B
-
 enum {
     TEAM_NAME_GRID_COLUMNS = 11,
     TEAM_NAME_GRID_ROW_STRIDE = 11,
@@ -133,6 +129,10 @@ static void UpdateTeamNameOutgoing(void) {
 void UpdateTeamNameScreen(void) {
     if (g_TeamNameLength > MENU_TEAM_NAME_MAX_LENGTH) {
         g_TeamNameLength = MENU_TEAM_NAME_MAX_LENGTH;
+    }
+    GameMenuCursor = NormalizeTeamNameCursor(GameMenuCursor);
+    if (GameMenuCursorAnim >= 0) {
+        GameMenuCursorAnim = NormalizeTeamNameCursor(GameMenuCursorAnim);
     }
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawTeamNameCharModel();
