@@ -113,6 +113,7 @@ int main(void) {
     UpdatePlayerEnginePresentation(&car);
     CHECK(g_EngineRpm == 8000 && g_EngineRpmJitter == 74);
     CHECK(g_TachoShiftLightOn == 1 && s_audioPosition == 8074);
+    CHECK(s_audioBank == 1);
 
     Reset(&car);
     g_EngineRpm = 0;
