@@ -55,7 +55,7 @@ static void TestUnquotedFile(void) {
 
 static void TestInvalidInputs(void) {
     char image[8];
-    long offset;
+    long offset = 123;
 
     Check(WriteCue("FILE \"track.bin\" BINARY\n"
                    "TRACK 01 MODE2/2352\n"
@@ -64,6 +64,8 @@ static void TestInvalidInputs(void) {
     Check(!DiscCueResolveDataTrack("disc_cue_test.cue", image, sizeof(image),
                                    &offset),
           "rejects an invalid INDEX timestamp");
+    Check(image[0] == '\0' && offset == 0,
+          "clears outputs after an invalid INDEX timestamp");
     Check(WriteCue("FILE \"track.bin\" BINARY\n"
                    "TRACK 01 MODE2/2352\n"
                    "INDEX 01 00:00:00garbage\n"),
@@ -83,6 +85,13 @@ static void TestInvalidInputs(void) {
     Check(!DiscCueResolveDataTrack("disc_cue_test.cue", image, sizeof(image),
                                    &offset),
           "rejects an output path that is too small");
+    Check(image[0] == '\0' && offset == 0,
+          "does not publish an offset when the path is too small");
+    strcpy(image, "stale");
+    offset = 123;
+    Check(!DiscCueResolveDataTrack(NULL, image, sizeof(image), &offset) &&
+              image[0] == '\0' && offset == 0,
+          "clears valid output buffers for a missing CUE path");
     Check(!DiscCueResolveDataTrack(NULL, image, sizeof(image), &offset) &&
               !DiscCueResolveDataTrack("disc_cue_test.cue", NULL, 0, &offset),
           "rejects invalid output arguments");

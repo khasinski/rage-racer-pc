@@ -121,13 +121,16 @@ int DiscCueResolveDataTrack(const char *cue_path, char *image_path,
     char line[CUE_LINE_SIZE];
     char current_file[CUE_PATH_SIZE] = {0};
     char data_file[CUE_PATH_SIZE] = {0};
+    long data_offset = 0;
     int data_track = 0;
     int found = 0;
 
-    if (cue_path == NULL || image_path == NULL || image_path_size == 0 ||
-        track_offset == NULL) {
+    if (image_path == NULL || image_path_size == 0 || track_offset == NULL) {
         return 0;
     }
+    image_path[0] = '\0';
+    *track_offset = 0;
+    if (cue_path == NULL) return 0;
     cue = fopen(cue_path, "r");
     if (cue == NULL) return 0;
     while (fgets(line, sizeof(line), cue) != NULL) {
@@ -142,13 +145,18 @@ int DiscCueResolveDataTrack(const char *cue_path, char *image_path,
                          ContainsIgnoreCase(directive, "MODE2/2352");
         } else if (data_track && IsDirective(directive, "INDEX") &&
                    current_file[0] != '\0' &&
-                   ParseIndex(SkipSpace(directive + 5), track_offset)) {
+                   ParseIndex(SkipSpace(directive + 5), &data_offset)) {
             memcpy(data_file, current_file, sizeof(data_file));
             found = 1;
             break;
         }
     }
     fclose(cue);
-    return found && ResolveImagePath(cue_path, data_file, image_path,
-                                     image_path_size);
+    if (!found || !ResolveImagePath(cue_path, data_file, image_path,
+                                    image_path_size)) {
+        image_path[0] = '\0';
+        return 0;
+    }
+    *track_offset = data_offset;
+    return 1;
 }
