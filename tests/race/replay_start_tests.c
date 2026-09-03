@@ -90,6 +90,12 @@ static void TestFinalClassKeepsEnvironmentPosition(void) {
 }
 
 static void TestInvalidAndShortReplayBounds(void) {
+    assert(ClampReplayFrameCount(-1, 0) == 0);
+    assert(ClampReplayFrameCount(INT_MAX, 0) ==
+           TIME_ATTACK_REPLAY_SUBFRAME_COUNT);
+    assert(ClampReplayFrameCount(INT_MAX, 1) ==
+           GRAND_PRIX_REPLAY_SUBFRAME_COUNT);
+
     ResetState();
     g_ReplayWriteCursor = 1;
 
@@ -107,6 +113,21 @@ static void TestInvalidAndShortReplayBounds(void) {
     g_ReplayWriteCursor = INT_MAX;
     BeginReplay();
     assert(g_ReplayReadCursor == 0);
+    assert(g_ReplayFrameCount == 200);
+
+    ResetState();
+    g_ReplayBufferWrapped = 1;
+    g_ReplayWriteCursor = TIME_ATTACK_REPLAY_SUBFRAME_COUNT;
+    g_ReplayFrameCount = INT_MAX;
+    BeginReplay();
+    assert(g_ReplayReadCursor == 0);
+    assert(g_ReplayFrameCount == TIME_ATTACK_REPLAY_SUBFRAME_COUNT);
+}
+
+static void TestEnvironmentRewindBounds(void) {
+    assert(ReplayEnvironmentRewindTarget(5000, 0) == 2000);
+    assert(ReplayEnvironmentRewindTarget(5000, 1) == 3200);
+    assert(ReplayEnvironmentRewindTarget(INT_MIN, 0) == INT_MIN);
 }
 
 int main(void) {
@@ -115,5 +136,6 @@ int main(void) {
     TestWrappedCursorAtEndRestartsFromZero();
     TestFinalClassKeepsEnvironmentPosition();
     TestInvalidAndShortReplayBounds();
+    TestEnvironmentRewindBounds();
     return 0;
 }

@@ -12,9 +12,7 @@ static void StoreTimeAttackReplaySample(s32 subframe,
 
 void RecordReplayFrame(void) {
     const GameCarRuntime *player = AsRivalCar(&g_PlayerCar);
-    const s32 capacity = g_GrandPrixMode != 0
-        ? GRAND_PRIX_REPLAY_SUBFRAME_COUNT
-        : TIME_ATTACK_REPLAY_SUBFRAME_COUNT;
+    const s32 capacity = ReplayFrameCapacity(g_GrandPrixMode);
 
     if (g_ReplayFrameCount <= 0 || g_ReplayFrameCount > capacity ||
         g_ReplayWriteCursor < 0 ||
@@ -37,9 +35,7 @@ void RecordReplayFrame(void) {
 
 void ResetReplayWriteCursor(void) {
     g_ReplayWriteCursor = 0;
-    g_ReplayFrameCount = g_GrandPrixMode != 0
-                             ? GRAND_PRIX_REPLAY_SUBFRAME_COUNT
-                             : TIME_ATTACK_REPLAY_SUBFRAME_COUNT;
+    g_ReplayFrameCount = ReplayFrameCapacity(g_GrandPrixMode);
     g_ReplayBufferWrapped = 0;
 }
 
