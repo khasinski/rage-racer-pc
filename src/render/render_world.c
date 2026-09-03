@@ -54,6 +54,7 @@ void RenderDirectionalLightDefault(RageRenderDirectionalLight *light) {
 void RenderWorldInit(RageRenderWorld *world,
                          RageRenderMeshInstance *instances,
                          uint32_t capacity) {
+    if (world == NULL) return;
     memset(world, 0, sizeof(*world));
     world->instances = instances;
     world->instanceCapacity = capacity;
@@ -61,6 +62,7 @@ void RenderWorldInit(RageRenderWorld *world,
 }
 
 void RenderWorldBeginFrame(RageRenderWorld *world, uint64_t frame) {
+    if (world == NULL) return;
     if (world->hasCamera) world->previousCamera = world->camera;
     if (world->hasMirrorCamera) {
         world->previousMirrorCamera = world->mirrorCamera;
@@ -79,6 +81,7 @@ void RenderWorldSetDirectionalLight(
 
 void RenderWorldSetCamera(RageRenderWorld *world,
                               const RageRenderCamera *camera) {
+    if (world == NULL || camera == NULL) return;
     if (world->hasCamera &&
         RenderCameraIsCut(&world->previousCamera, camera))
         world->previousCamera = *camera;
@@ -90,6 +93,7 @@ void RenderWorldSetCamera(RageRenderWorld *world,
 void RenderWorldSetMirrorCamera(RageRenderWorld *world,
                                     const RageRenderCamera *camera,
                                     int active, float panelY) {
+    if (world == NULL || camera == NULL) return;
     if (world->hasMirrorCamera &&
         RenderCameraIsCut(&world->previousMirrorCamera, camera)) {
         world->previousMirrorCamera = *camera;
@@ -131,6 +135,7 @@ void RenderWorldDiscardPass(RageRenderWorld *world, RageRenderPass pass) {
 
 void RenderTerrainCellTransform(uint32_t grid_x, uint32_t grid_z,
                                     RageRenderTransform *transform) {
+    if (transform == NULL) return;
     memset(transform, 0, sizeof(*transform));
     /* Original cells are in an inverted 32x32 grid and use 8192 mesh units. */
     transform->position.x = (float)(grid_x * 8192u + 4096u);
@@ -143,6 +148,7 @@ void RenderTerrainCellTransform(uint32_t grid_x, uint32_t grid_z,
 void RenderConvertPsxMatrix(const float source[3][3], float out[3][3]) {
     static const float sign[3] = {1.0f, -1.0f, -1.0f};
     int row, column;
+    if (source == NULL || out == NULL) return;
     for (row = 0; row < 3; row++) {
         for (column = 0; column < 3; column++) {
             out[row][column] = source[row][column] * sign[row] * sign[column];

@@ -68,6 +68,23 @@ static void test_mesh_submission_rejects_invalid_storage(void) {
     EXPECT_EQ(0, RenderWorldSubmitMesh(&world, NULL));
 }
 
+static void test_public_world_mutators_reject_null_inputs(void) {
+    RageRenderWorld world;
+    RageRenderCamera camera = {0};
+
+    RenderWorldInit(NULL, NULL, 0);
+    RenderWorldInit(&world, NULL, 0);
+    RenderWorldBeginFrame(NULL, 1);
+    RenderWorldSetCamera(NULL, &camera);
+    RenderWorldSetCamera(&world, NULL);
+    RenderWorldSetMirrorCamera(NULL, &camera, 1, 0.0f);
+    RenderWorldSetMirrorCamera(&world, NULL, 1, 0.0f);
+    RenderTerrainCellTransform(0, 0, NULL);
+    RenderConvertPsxMatrix(NULL, NULL);
+    EXPECT_EQ(0, world.hasCamera);
+    EXPECT_EQ(0, world.hasMirrorCamera);
+}
+
 static void test_legacy_mirror_instances_can_be_removed_from_scene(void) {
     RageRenderMeshInstance storage[3] = {0};
     RageRenderWorld world;
@@ -564,6 +581,7 @@ static void test_default_shadow_light_stays_near_overhead(void) {
 int main(void) {
     test_frame_reset_preserves_storage_and_resets_overflow();
     test_mesh_submission_rejects_invalid_storage();
+    test_public_world_mutators_reject_null_inputs();
     test_legacy_mirror_instances_can_be_removed_from_scene();
     test_camera_is_scene_data_not_backend_state();
     test_directional_light_is_scene_data();
