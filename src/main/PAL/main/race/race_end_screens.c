@@ -54,7 +54,8 @@ static void DrawRaceEndPrompt(void) {
 
     DrawProportionalText(0x76, 0xB8, g_TextChance, 0x7812);
 
-    index = LostRaceRetryDigitIndex(g_CourseProgress->retriesRemaining);
+    index = LostRaceRetryDigitIndex(
+        g_CourseProgress != NULL ? g_CourseProgress->retriesRemaining : 0);
     DrawProportionalText(0xBE, 0xB8, g_ChanceDigits[index], 0x7812);
 
     DrawText8x8(0x58, 0xD0, g_TextPressStart, 0x78CC);
@@ -78,13 +79,18 @@ void UpdateLostRaceScreen(void) {
                 RequestSelectBgmAssets();
             }
             g_SceneTimer = 0;
-            g_CourseProgress->retriesRemaining--;
+            if (g_CourseProgress != NULL &&
+                g_CourseProgress->retriesRemaining > 0) {
+                g_CourseProgress->retriesRemaining--;
+            }
         }
     } else {
-        timer += 2;
+        timer = timer >= SCREEN_FADE_COMPLETE - 2
+                    ? SCREEN_FADE_COMPLETE
+                    : timer + 2;
         g_SceneTimer = timer;
         DrawFullscreenFadeTile(timer, 0x49);
-        if (g_SceneTimer == SCREEN_FADE_COMPLETE) {
+        if (g_SceneTimer >= SCREEN_FADE_COMPLETE) {
             g_SceneId = LostRaceExitScene(g_LostRaceChoice);
         }
     }
@@ -107,7 +113,7 @@ void EnterRaceEndScreen(void) {
 }
 
 void UpdateRaceEndScreen(void) {
-    s32 timer = g_SceneTimer - 1;
+    s32 timer = g_SceneTimer > 0 ? g_SceneTimer - 1 : 0;
 
     g_SceneTimer = timer;
     if (CanSkipRaceEndScreen(timer, g_PadPressed)) {

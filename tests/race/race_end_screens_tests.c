@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <limits.h>
 
 #include "game/asset.h"
 #include "game/race.h"
@@ -136,6 +137,18 @@ static int TestLostRaceRetry(void) {
     UpdateLostRaceScreen();
     CHECK(g_SceneTimer == 256 && s_FadeLevel == 256);
     CHECK(g_SceneId == 11);
+
+    ResetState();
+    s_CourseProgress.retriesRemaining = 0;
+    g_SceneTimer = -1;
+    g_PadPressed = PAD_START;
+    UpdateLostRaceScreen();
+    CHECK(s_CourseProgress.retriesRemaining == 0);
+
+    g_PadPressed = 0;
+    g_SceneTimer = INT_MAX;
+    UpdateLostRaceScreen();
+    CHECK(g_SceneTimer == 256 && g_SceneId == 11);
     return 0;
 }
 
@@ -172,6 +185,23 @@ static int TestRaceEndScreen(void) {
     UpdateRaceEndScreen();
     CHECK(g_SceneTimer == 0 && g_SceneId == 6 && s_AssetRequests == 1);
     CHECK(s_ResetProgressCalls == 1 && s_ResetProgressClass == 2);
+
+    ResetState();
+    g_SceneTimer = INT_MIN;
+    UpdateRaceEndScreen();
+    CHECK(g_SceneTimer == 0 && g_SceneId == 6);
+    return 0;
+}
+
+static int TestMissingCourseProgress(void) {
+    CourseProgressState *saved = g_CourseProgress;
+
+    ResetState();
+    g_CourseProgress = NULL;
+    g_SceneTimer = -1;
+    g_PadPressed = PAD_START;
+    UpdateLostRaceScreen();
+    g_CourseProgress = saved;
     return 0;
 }
 
@@ -179,6 +209,7 @@ int main(void) {
     if (TestLostRaceRetry() != 0) return 1;
     if (TestLostRaceExit() != 0) return 1;
     if (TestRaceEndScreen() != 0) return 1;
+    if (TestMissingCourseProgress() != 0) return 1;
     puts("race end screen transitions passed");
     return 0;
 }
