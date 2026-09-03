@@ -10,17 +10,17 @@ enum {
     TERRAIN_SUBMISSION_CAPACITY = 0x40,
 };
 
-static void DrawTerrainCellsFrom(s32 viewOffset) {
-    BuildVisibleCells(viewOffset, TERRAIN_FAR_DEPTH);
+void DrawTerrainCellsInRange(s32 nearDepth, s32 farDepth) {
+    BuildVisibleCells(nearDepth, farDepth);
     SetRotMatrix(&g_RenderState.matrix);
     SubmitTerrainCells(&g_RenderState, g_VisibleCellList,
                        TERRAIN_SUBMISSION_CAPACITY);
 }
 
 void DrawTerrainCells(void) {
-    DrawTerrainCellsFrom(RACE_TERRAIN_NEAR_DEPTH);
+    DrawTerrainCellsInRange(RACE_TERRAIN_NEAR_DEPTH, TERRAIN_FAR_DEPTH);
 }
 
 void DrawTerrainCellsWide(void) {
-    DrawTerrainCellsFrom(WIDE_TERRAIN_NEAR_DEPTH);
+    DrawTerrainCellsInRange(WIDE_TERRAIN_NEAR_DEPTH, TERRAIN_FAR_DEPTH);
 }

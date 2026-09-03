@@ -21,4 +21,6 @@ enum {
 };
 extern SkyTileUV g_SkyTileUV[SKY_TILE_COUNT];
 
+void DrawTerrainCellsInRange(s32 nearDepth, s32 farDepth);
+
 #endif

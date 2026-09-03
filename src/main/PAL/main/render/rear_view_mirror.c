@@ -4,6 +4,7 @@
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
+#include "game/terrain_internal.h"
 #include "game/track.h"
 
 enum {
@@ -68,10 +69,8 @@ void DrawRearViewMirror(s32 mode) {
     AddPrim(&g_DrawBuffer->layout.orderingTables[1][GAME_FRAME_OT_LENGTH - 1],
             packet);
     g_RenderState.packetCursor = packet + 1;
-    BuildVisibleCells(-0x3000, PortMirrorFarDepth(0x6000));
-    SetRotMatrix(&g_RenderState.matrix);
     g_RenderState.envMode4 = g_IsEnvironmentMode4;
-    SubmitTerrainCells(&g_RenderState, g_VisibleCellList, 0x40);
+    DrawTerrainCellsInRange(-0x3000, PortMirrorFarDepth(0x6000));
 
     packet = g_RenderState.packetCursor;
     SetDrawArea(packet, &g_DrawBuffer->environment.draw.clip);
