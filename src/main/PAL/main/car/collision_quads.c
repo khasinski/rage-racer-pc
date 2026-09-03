@@ -9,6 +9,15 @@
 #include "game/car_collision_internal.h"
 #include "psyq/gte.h"
 
+CarCollisionPoint CarCollisionMidpoint(CarCollisionPoint first,
+                                       CarCollisionPoint second) {
+    CarCollisionPoint midpoint;
+
+    midpoint.x = ((s32)first.x + second.x) / 2;
+    midpoint.z = ((s32)first.z + second.z) / 2;
+    return midpoint;
+}
+
 static int64_t CollisionQuadAreaTwice(
     const CarCollisionPoint quad[CAR_COLLISION_QUAD_COUNT]) {
     static const u8 order[CAR_COLLISION_QUAD_COUNT] = {2, 3, 1, 0};

@@ -14,6 +14,8 @@ enum {
     LAST_FRONT_COLLISION_REGION = 2,
 };
 
+CarCollisionPoint CarCollisionMidpoint(CarCollisionPoint first,
+                                       CarCollisionPoint second);
 CarCollisionHit FindFirstCarCollisionQuad(
     const CarCollisionPoint
         grid[CAR_COLLISION_QUAD_COUNT][CAR_COLLISION_QUAD_COUNT],

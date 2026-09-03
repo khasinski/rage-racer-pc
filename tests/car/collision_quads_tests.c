@@ -15,8 +15,17 @@
 int main(void) {
     CarCollisionPoint grid[4][4];
     CarCollisionPoint points[3];
+    CarCollisionPoint midpoint;
     CarCollisionHit hit;
     s32 i;
+
+    midpoint = CarCollisionMidpoint(
+        (CarCollisionPoint){-4, -3}, (CarCollisionPoint){1, 2});
+    CHECK(midpoint.x == -1 && midpoint.z == 0);
+    midpoint = CarCollisionMidpoint(
+        (CarCollisionPoint){INT16_MIN, INT16_MAX},
+        (CarCollisionPoint){INT16_MIN, INT16_MAX});
+    CHECK(midpoint.x == INT16_MIN && midpoint.z == INT16_MAX);
 
     memset(grid, 0, sizeof(grid));
     memset(points, 0, sizeof(points));

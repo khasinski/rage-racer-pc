@@ -55,17 +55,13 @@ static void TransformCarHull(const GameCarRuntime *source,
     }
 }
 
-static s16 AverageCoordinate(s16 first, s16 second) {
-    return (s16)(((s32)first + second) / 2);
-}
-
 /*
  * Cuts the hull into four quadrants: grid[q] is the quadrant whose own corner
  * is corners[q], and whose other three points are the two edge midpoints
  * beside it and the centre of the car.
  *
  * Every midpoint rounds toward zero, including negative coordinates. Keeping
- * that rule in AverageCoordinate replaces the recovered mix of signed shifts,
+ * that rule in CarCollisionMidpoint replaces the recovered mix of signed shifts,
  * unsigned shifts and divisions without changing the resulting halfwords.
  */
 static void BuildCollisionQuads(const CarCollisionPoint *corners,
@@ -83,16 +79,11 @@ static void BuildCollisionQuads(const CarCollisionPoint *corners,
         grid[corner][corner] = corners[corner];
     }
 
-    average01.x = AverageCoordinate(corners[0].x, corners[1].x);
-    average01.z = AverageCoordinate(corners[0].z, corners[1].z);
-    average02.x = AverageCoordinate(corners[0].x, corners[2].x);
-    average02.z = AverageCoordinate(corners[0].z, corners[2].z);
-    average13.x = AverageCoordinate(corners[1].x, corners[3].x);
-    average13.z = AverageCoordinate(corners[1].z, corners[3].z);
-    average23.x = AverageCoordinate(corners[2].x, corners[3].x);
-    average23.z = AverageCoordinate(corners[2].z, corners[3].z);
-    center.x = AverageCoordinate(average01.x, average23.x);
-    center.z = AverageCoordinate(average01.z, average23.z);
+    average01 = CarCollisionMidpoint(corners[0], corners[1]);
+    average02 = CarCollisionMidpoint(corners[0], corners[2]);
+    average13 = CarCollisionMidpoint(corners[1], corners[3]);
+    average23 = CarCollisionMidpoint(corners[2], corners[3]);
+    center = CarCollisionMidpoint(average01, average23);
 
     grid[1][0] = grid[0][1] = average01;
     grid[2][0] = grid[0][2] = average02;
@@ -104,16 +95,11 @@ static void BuildCollisionQuads(const CarCollisionPoint *corners,
 /* The four edge midpoints of the other car's hull, and its centre. */
 static void BuildHullSamples(const CarCollisionPoint *corners,
                              CarCollisionPoint *samples) {
-    samples[0].x = AverageCoordinate(corners[0].x, corners[1].x);
-    samples[0].z = AverageCoordinate(corners[0].z, corners[1].z);
-    samples[1].x = AverageCoordinate(corners[0].x, corners[2].x);
-    samples[1].z = AverageCoordinate(corners[0].z, corners[2].z);
-    samples[2].x = AverageCoordinate(corners[1].x, corners[3].x);
-    samples[2].z = AverageCoordinate(corners[1].z, corners[3].z);
-    samples[3].x = AverageCoordinate(corners[2].x, corners[3].x);
-    samples[3].z = AverageCoordinate(corners[2].z, corners[3].z);
-    samples[4].x = AverageCoordinate(samples[0].x, samples[2].x);
-    samples[4].z = AverageCoordinate(samples[0].z, samples[2].z);
+    samples[0] = CarCollisionMidpoint(corners[0], corners[1]);
+    samples[1] = CarCollisionMidpoint(corners[0], corners[2]);
+    samples[2] = CarCollisionMidpoint(corners[1], corners[3]);
+    samples[3] = CarCollisionMidpoint(corners[2], corners[3]);
+    samples[4] = CarCollisionMidpoint(samples[0], samples[2]);
 }
 
 /* How hard the shove is: the speed difference, a thirty-second of it, rounded

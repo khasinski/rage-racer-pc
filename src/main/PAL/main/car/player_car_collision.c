@@ -22,14 +22,6 @@ enum {
     COARSE_COLLISION_SAMPLE_COUNT = 5,
 };
 
-static CarCollisionPoint Midpoint(CarCollisionPoint a, CarCollisionPoint b) {
-    CarCollisionPoint result;
-
-    result.x = (a.x + b.x) / 2;
-    result.z = (a.z + b.z) / 2;
-    return result;
-}
-
 static void BuildPlayerCollisionGrid(const PlayerCarRuntime *car,
                                      CarCollisionPoint
                                          grid[CAR_COLLISION_QUAD_COUNT]
@@ -56,12 +48,14 @@ static void BuildPlayerCollisionGrid(const PlayerCarRuntime *car,
         }
     }
 
-    grid[0][1] = grid[1][0] = Midpoint(outline[0], outline[1]);
+    grid[0][1] = grid[1][0] =
+        CarCollisionMidpoint(outline[0], outline[1]);
     grid[0][2] = grid[2][0] = outline[4];
     grid[1][3] = grid[3][1] = outline[5];
-    grid[2][3] = grid[3][2] = Midpoint(outline[2], outline[3]);
+    grid[2][3] = grid[3][2] =
+        CarCollisionMidpoint(outline[2], outline[3]);
     grid[0][3] = grid[1][2] = grid[2][1] = grid[3][0] =
-        Midpoint(outline[4], outline[5]);
+        CarCollisionMidpoint(outline[4], outline[5]);
 }
 
 static void BuildOpponentCollisionSamples(const PlayerCarRuntime *player,
@@ -92,15 +86,15 @@ static void BuildOpponentCollisionSamples(const PlayerCarRuntime *player,
             (int64_t)(transformed.z >> 1) + offsetZ / 2);
     }
 
-    samples[0] = Midpoint(corners[0], corners[1]);
-    samples[1] = Midpoint(corners[0], corners[2]);
-    samples[2] = Midpoint(corners[1], corners[3]);
-    samples[3] = Midpoint(corners[2], corners[3]);
-    samples[4] = Midpoint(samples[0], samples[2]);
-    samples[5] = Midpoint(corners[0], samples[1]);
-    samples[6] = Midpoint(corners[1], samples[2]);
-    samples[7] = Midpoint(corners[2], samples[1]);
-    samples[8] = Midpoint(corners[3], samples[2]);
+    samples[0] = CarCollisionMidpoint(corners[0], corners[1]);
+    samples[1] = CarCollisionMidpoint(corners[0], corners[2]);
+    samples[2] = CarCollisionMidpoint(corners[1], corners[3]);
+    samples[3] = CarCollisionMidpoint(corners[2], corners[3]);
+    samples[4] = CarCollisionMidpoint(samples[0], samples[2]);
+    samples[5] = CarCollisionMidpoint(corners[0], samples[1]);
+    samples[6] = CarCollisionMidpoint(corners[1], samples[2]);
+    samples[7] = CarCollisionMidpoint(corners[2], samples[1]);
+    samples[8] = CarCollisionMidpoint(corners[3], samples[2]);
 }
 
 static CarCollisionHit FindPlayerCollisionRegion(
