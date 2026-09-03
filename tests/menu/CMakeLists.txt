@@ -907,7 +907,8 @@ set_tests_properties(menu_light_burst PROPERTIES LABELS unit)
 
 add_executable(ranking_table_tests
     ranking_table_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/ranking_table.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/ranking_table.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/course_label.c)
 target_include_directories(ranking_table_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

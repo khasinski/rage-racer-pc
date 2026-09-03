@@ -1,3 +1,5 @@
+#include "game/car.h"
+#include "game/course_select_internal.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
 #include "game/race.h"
@@ -12,21 +14,7 @@ typedef struct RankingCarSprite {
     u8 textureV;
 } RankingCarSprite;
 
-typedef struct RankingCourseHeader {
-    u8 width;
-    u8 titleU;
-    u8 titleV;
-    u8 badgeU;
-} RankingCourseHeader;
-
-static const RankingCourseHeader s_courseHeaders[4] = {
-    {0x54, 0x00, 0x9C, 0x44},
-    {0x4C, 0x54, 0x9C, 0x64},
-    {0x48, 0x00, 0xAC, 0x84},
-    {0x5C, 0xA4, 0x9C, 0xA4},
-};
-
-static const RankingCarSprite s_carNameSprites[13] = {
+static const RankingCarSprite s_carNameSprites[GAME_CAR_COUNT] = {
     {0xAE, 0x14, 0x50, 0xBC}, {0xAE, 0x14, 0x50, 0xBC},
     {0xAE, 0x14, 0x50, 0xBC}, {0xAF, 0x20, 0x00, 0xBC},
     {0xAF, 0x20, 0x64, 0xBC}, {0xAF, 0x20, 0x64, 0xBC},
@@ -36,7 +24,7 @@ static const RankingCarSprite s_carNameSprites[13] = {
     {0xAF, 0x30, 0x22, 0xBC},
 };
 
-static const RankingCarSprite s_carBadgeSprites[13] = {
+static const RankingCarSprite s_carBadgeSprites[GAME_CAR_COUNT] = {
     {0xE8, 0x2A, 0x16, 0x30}, {0xE8, 0x20, 0x48, 0x30},
     {0xE9, 0x20, 0x7C, 0x30}, {0xE7, 0x34, 0x00, 0x40},
     {0xE9, 0x28, 0x74, 0x50}, {0xE8, 0x2A, 0x3E, 0x50},
@@ -46,11 +34,18 @@ static const RankingCarSprite s_carBadgeSprites[13] = {
     {0xE8, 0x30, 0x04, 0x50},
 };
 
+_Static_assert(sizeof(s_carNameSprites) / sizeof(s_carNameSprites[0]) ==
+               GAME_CAR_COUNT,
+               "ranking needs a name sprite for every car");
+_Static_assert(sizeof(s_carBadgeSprites) / sizeof(s_carBadgeSprites[0]) ==
+               GAME_CAR_COUNT,
+               "ranking needs a badge sprite for every car");
+
 static void DrawRankingCarSprites(GameOrderingTableEntry *ot, s32 y, s32 carIndex) {
     const RankingCarSprite *name;
     const RankingCarSprite *badge;
 
-    if ((u32)carIndex >= 13) {
+    if ((u32)carIndex >= GAME_CAR_COUNT) {
         return;
     }
     name = &s_carNameSprites[carIndex];
@@ -62,15 +57,19 @@ static void DrawRankingCarSprites(GameOrderingTableEntry *ot, s32 y, s32 carInde
 }
 
 static void DrawRankingCourseHeader(GameOrderingTableEntry *ot, s32 slide) {
-    const RankingCourseHeader *header = &s_courseHeaders[SeriesCourseIndex()];
+    CourseLabelSprites label;
     s32 contentY = slide + 0x26C;
 
+    if (!GetCourseLabelSprites(SeriesCourseIndex(), &label)) {
+        return;
+    }
     DrawSprite(ot, 0xA4, (s16)contentY, 0x48, 0x10, 0x48, 0xAC, 0, 0, 0,
                0x244, 1, 1, 0x3B);
-    DrawSprite(ot, 0xA4, (s16)(slide + 0x25C), header->width, 0x10,
-               header->titleU, header->titleV, 0, 0, 0, 0x244, 1, 1, 0x3B);
-    DrawSprite(ot, 0xEC, (s16)contentY, 0x20, 0x10, header->badgeU, 0xB4, 0,
-               0, 0, 0x244, 1, 1, 0x3A);
+    DrawSprite(ot, 0xA4, (s16)(slide + 0x25C), label.nameWidth, 0x10,
+               label.nameTextureU, label.nameTextureV, 0, 0, 0, 0x244, 1, 1,
+               0x3B);
+    DrawSprite(ot, 0xEC, (s16)contentY, 0x20, 0x10,
+               label.distanceTextureU, 0xB4, 0, 0, 0, 0x244, 1, 1, 0x3A);
 }
 
 /* The animated five-row ranking/time-record panel. */
