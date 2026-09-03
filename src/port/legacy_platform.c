@@ -270,6 +270,7 @@ typedef struct RageHostDisc {
 static RageHostDisc g_RageHostDisc;
 
 static void HostMakeDiscConfigPath(char *path, size_t size) {
+    /* Keep the historical key so existing installations retain their choice. */
     if (!PlatformUserConfigPath("disc-cue-path", path, size))
         snprintf(path, size, "%s", "disc-cue-path");
 }
@@ -476,11 +477,12 @@ static int HostReadArchive(unsigned int offset, void *destination,
     return 1;
 }
 
-/* Resolves a cue all the way to a readable archive, so a path that no longer
- * works is reported as such instead of failing later on. */
-static int HostOpenDiscImage(const char *cue, char *image, size_t image_size) {
-    if (DiscPathIsChd(cue)) {
-        if (!ChdOpen(cue)) return 0;
+/* Resolves a selected image all the way to a readable archive, so a path that
+ * no longer works is reported before the game starts loading assets. */
+static int HostOpenDiscImage(const char *discPath, char *dataTrackPath,
+                             size_t dataTrackPathSize) {
+    if (DiscPathIsChd(discPath)) {
+        if (!ChdOpen(discPath)) return 0;
         g_RageHostDisc.chd = 1;
         g_RageHostDisc.track_offset = 0;
         if (!HostFindArchive()) {
@@ -490,11 +492,13 @@ static int HostOpenDiscImage(const char *cue, char *image, size_t image_size) {
         }
         return 1;
     }
-    if (DiscPathIsBin(cue)) {
-        if (snprintf(image, image_size, "%s", cue) >= (int)image_size)
+    if (DiscPathIsBin(discPath)) {
+        if (snprintf(dataTrackPath, dataTrackPathSize, "%s", discPath) >=
+            (int)dataTrackPathSize) {
             return 0;
+        }
         g_RageHostDisc.track_offset = 0;
-        g_RageHostDisc.file = fopen(image, "rb");
+        g_RageHostDisc.file = fopen(dataTrackPath, "rb");
         if (g_RageHostDisc.file == NULL || !HostFindArchive()) {
             if (g_RageHostDisc.file != NULL) fclose(g_RageHostDisc.file);
             g_RageHostDisc.file = NULL;
@@ -502,12 +506,12 @@ static int HostOpenDiscImage(const char *cue, char *image, size_t image_size) {
         }
         return 1;
     }
-    if (!DiscPathIsCue(cue) || Psyz_CdSetDiskPath(cue) != 0 ||
-        !DiscCueResolveDataTrack(cue, image, image_size,
+    if (!DiscPathIsCue(discPath) || Psyz_CdSetDiskPath(discPath) != 0 ||
+        !DiscCueResolveDataTrack(discPath, dataTrackPath, dataTrackPathSize,
                                  &g_RageHostDisc.track_offset)) {
         return 0;
     }
-    g_RageHostDisc.file = fopen(image, "rb");
+    g_RageHostDisc.file = fopen(dataTrackPath, "rb");
     if (g_RageHostDisc.file == NULL || !HostFindArchive()) {
         if (g_RageHostDisc.file != NULL) fclose(g_RageHostDisc.file);
         g_RageHostDisc.file = NULL;
@@ -516,8 +520,9 @@ static int HostOpenDiscImage(const char *cue, char *image, size_t image_size) {
     return 1;
 }
 
-static int HostOpenDisc(const char *cue, char *image, size_t image_size) {
-    if (!HostOpenDiscImage(cue, image, image_size)) return 0;
+static int HostOpenDisc(const char *discPath, char *dataTrackPath,
+                        size_t dataTrackPathSize) {
+    if (!HostOpenDiscImage(discPath, dataTrackPath, dataTrackPathSize)) return 0;
     HostAdoptDiscStreamTable();
     return 1;
 }
@@ -526,20 +531,21 @@ static int HostOpenDisc(const char *cue, char *image, size_t image_size) {
  * executable. Try every plausible file: an extracted RAGE.BIN or an audio
  * track may share the extension but is not itself a mountable game disc. */
 typedef struct AdjacentDiscContext {
-    char *image;
-    size_t imageSize;
+    char *dataTrackPath;
+    size_t dataTrackPathSize;
 } AdjacentDiscContext;
 
 static int HostTryOpenAdjacentDisc(void *context, const char *path) {
     AdjacentDiscContext *disc = context;
     return access(path, R_OK) == 0 &&
-           HostOpenDisc(path, disc->image, disc->imageSize);
+           HostOpenDisc(path, disc->dataTrackPath, disc->dataTrackPathSize);
 }
 
-static int HostOpenAdjacentDisc(char *path, size_t pathSize, char *image,
-                                size_t imageSize) {
+static int HostOpenAdjacentDisc(char *path, size_t pathSize,
+                                char *dataTrackPath,
+                                size_t dataTrackPathSize) {
     char directory[PATH_MAX];
-    AdjacentDiscContext context = {image, imageSize};
+    AdjacentDiscContext context = {dataTrackPath, dataTrackPathSize};
 
     return PlatformExecutableDirectory(NULL, directory, sizeof(directory)) &&
            DiscDiscoverImage(directory, path, pathSize,
@@ -547,13 +553,13 @@ static int HostOpenAdjacentDisc(char *path, size_t pathSize, char *image,
 }
 
 int HostInitDisc(void) {
-    const char *environment_cue = RuntimeConfigGet("disc.image");
-    char cue[PATH_MAX];
-    char image[PATH_MAX];
+    const char *configuredPath = RuntimeConfigGet("disc.image");
+    char discPath[PATH_MAX];
+    char dataTrackPath[PATH_MAX];
     int choose;
 
-    if (environment_cue == NULL || environment_cue[0] == '\0')
-        environment_cue = RuntimeConfigGetForced("disc.cue");
+    if (configuredPath == NULL || configuredPath[0] == '\0')
+        configuredPath = RuntimeConfigGetForced("disc.cue");
 
     ChdClose();
     HostSeedStreamTable();
@@ -563,16 +569,18 @@ int HostInitDisc(void) {
      * A checked-out disc image still has to reach PsyZ, or CD-DA plays
      * nothing during the smoke runs. */
     if (RuntimeConfigEnabled("runtime.test_mode")) {
-        const char *test_cue = environment_cue;
-        if (test_cue == NULL || test_cue[0] == '\0')
-            test_cue = "disc/PAL/Rage Racer (Europe).cue";
-        if (access(test_cue, R_OK) == 0 &&
-            HostOpenDisc(test_cue, image, sizeof(image))) return 1;
+        const char *testPath = configuredPath;
+        if (testPath == NULL || testPath[0] == '\0')
+            testPath = "disc/PAL/Rage Racer (Europe).cue";
+        if (access(testPath, R_OK) == 0 &&
+            HostOpenDisc(testPath, dataTrackPath, sizeof(dataTrackPath))) {
+            return 1;
+        }
         return 1;
     }
-    if (environment_cue != NULL && environment_cue[0] != '\0') {
-        snprintf(cue, sizeof(cue), "%s", environment_cue);
-        return HostOpenDisc(cue, image, sizeof(image));
+    if (configuredPath != NULL && configuredPath[0] != '\0') {
+        snprintf(discPath, sizeof(discPath), "%s", configuredPath);
+        return HostOpenDisc(discPath, dataTrackPath, sizeof(dataTrackPath));
     }
     /* Remembering the choice means an install that once worked never asks
      * again, so offer a way back to the picker. */
@@ -581,16 +589,17 @@ int HostInitDisc(void) {
      * track files move or get deleted on their own, and a cue that no longer
      * resolves has to send the player back to the picker rather than end the
      * session. */
-    if (!choose && HostLoadSavedDiscPath(cue, sizeof(cue)) &&
-        HostOpenDisc(cue, image, sizeof(image))) return 1;
-    if (!choose && HostOpenAdjacentDisc(cue, sizeof(cue), image,
-                                        sizeof(image))) {
-        HostSaveDiscPath(cue);
+    if (!choose && HostLoadSavedDiscPath(discPath, sizeof(discPath)) &&
+        HostOpenDisc(discPath, dataTrackPath, sizeof(dataTrackPath))) return 1;
+    if (!choose && HostOpenAdjacentDisc(
+                       discPath, sizeof(discPath), dataTrackPath,
+                       sizeof(dataTrackPath))) {
+        HostSaveDiscPath(discPath);
         return 1;
     }
-    if (!HostChooseDisc(cue, sizeof(cue)) ||
-        !HostOpenDisc(cue, image, sizeof(image))) return 0;
-    HostSaveDiscPath(cue);
+    if (!HostChooseDisc(discPath, sizeof(discPath)) ||
+        !HostOpenDisc(discPath, dataTrackPath, sizeof(dataTrackPath))) return 0;
+    HostSaveDiscPath(discPath);
     return 1;
 }
 
