@@ -15,7 +15,7 @@ s32 IsCarFacingBackwards(const PlayerCarRuntime *car) {
 
     point = TrackPoint(car->trackPointIndex);
     trackHeading = ANGLE_THREE_QUARTER_TURN - point->angle;
-    headingDelta = (car->headingAngle - trackHeading) & ANGLE_MASK;
+    headingDelta = ((u32)car->headingAngle - (u32)trackHeading) & ANGLE_MASK;
 
     return headingDelta > ANGLE_QUARTER_TURN &&
            headingDelta < ANGLE_THREE_QUARTER_TURN;

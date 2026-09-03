@@ -3,6 +3,7 @@
 #include "game/car.h"
 #include "game/track.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -52,6 +53,21 @@ static int TestFacingBackwards(void) {
                        ANGLE_HALF_TURN;
     if (IsCarFacingBackwards(&car) != 1) {
         puts("FAIL negative track index did not wrap");
+        return 0;
+    }
+
+    g_TrackPoints = &s_trackPoint;
+    g_TrackPointCount = 1;
+    s_trackPoint.angle = ANGLE_QUARTER_TURN;
+    car.trackPointIndex = 0;
+    car.headingAngle = INT32_MIN;
+    if (IsCarFacingBackwards(&car) != 1) {
+        puts("FAIL minimum heading did not wrap into the angle domain");
+        return 0;
+    }
+    car.headingAngle = INT32_MAX;
+    if (IsCarFacingBackwards(&car) != 1) {
+        puts("FAIL maximum heading did not wrap into the angle domain");
         return 0;
     }
     return 1;
