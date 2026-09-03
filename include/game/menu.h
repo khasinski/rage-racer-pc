@@ -346,7 +346,6 @@ extern s32 g_BgmTrackCount;
 extern s32 g_CarNamePlateStep;
 extern s32 g_CarSwapFromIndex;
 extern s32 g_CarSwapToIndex;
-extern s32 g_CdTrackEnded;
 extern s32 g_CourseSelectOption;
 extern s32 g_CourseSwapDelay;
 extern s32 g_DesignModeOption;

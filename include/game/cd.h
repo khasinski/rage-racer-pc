@@ -56,6 +56,7 @@ static inline int CdPlaybackPassedLoopPoint(
 }
 
 extern u8 g_CdVolume;
+extern s32 g_CdTrackEnded;
 /*
  * CD-DA (music) front end. Nothing here talks to the drive directly: each call
  * only posts a request into g_CdTrackPending..g_CdCommandStep, which TickCdAudio pumps
