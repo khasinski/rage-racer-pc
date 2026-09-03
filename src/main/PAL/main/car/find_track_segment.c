@@ -78,7 +78,8 @@ s32 FindTrackSegment(GameCarRuntime *car, s32 startIndex) {
         /* Preserve the recovered alternating order: start, +1, -1, +2, -2,
          * ... . Its first point-count entries visit every segment once. */
         stride++;
-        index += (stride % 2) != 0 ? stride : -stride;
+        index = WrapSigned32(
+            (int64_t)index + ((stride % 2) != 0 ? stride : -stride));
         index = WrapTrackPointIndex(index);
     }
 

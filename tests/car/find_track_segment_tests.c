@@ -77,6 +77,7 @@ int main(int argc, char **argv) {
     GameCarRuntime emptyTrackCar;
     s32 normalizedResult;
     s32 oversizedResult;
+    s32 extremeIndexResult;
     s32 step;
     size_t r, g;
     int cases = 0;
@@ -142,6 +143,15 @@ int main(int argc, char **argv) {
     if (oversizedResult != normalizedResult ||
         oversized.x != normalized.x || oversized.z != normalized.z) {
         fprintf(stderr, "oversized starting index was not normalized\n");
+        return 1;
+    }
+    oversized = normalized;
+    extremeIndexResult = FindTrackSegment(&oversized, INT_MAX);
+    normalizedResult = FindTrackSegment(
+        &normalized, INT_MAX % TRACK_POINTS);
+    if (extremeIndexResult != normalizedResult ||
+        oversized.x != normalized.x || oversized.z != normalized.z) {
+        fprintf(stderr, "maximum starting index was not normalized\n");
         return 1;
     }
 
