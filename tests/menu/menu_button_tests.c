@@ -19,11 +19,16 @@ typedef struct RectCall {
     s32 alpha;
 } RectCall;
 
-static RectCall s_outlines[6];
+static RectCall s_outlines[8];
 static RectCall s_fills[2];
 static s32 s_outlineCount;
 static s32 s_fillCount;
 static s32 s_failures;
+
+s32 rsin(s32 angle) {
+    (void)angle;
+    return -4096;
+}
 
 static void Check(s32 actual, s32 expected, const char *label) {
     if (actual != expected) {
@@ -86,6 +91,10 @@ int main(void) {
     g_AnimTimer = 2;
     DrawMenuCursorBox(0, 0, 1, 1, 1);
     Check(s_outlines[3].g, 0xFF, "bright cursor flash colour");
+
+    g_MenuCursorPulsePhase = 0;
+    DrawMenuCursorBox(0, 0, 1, 1, 0);
+    Check(s_outlines[5].g, 0x7F, "cursor pulse minimum colour");
 
     if (s_failures != 0) {
         printf("%d menu button assertion(s) failed\n", s_failures);

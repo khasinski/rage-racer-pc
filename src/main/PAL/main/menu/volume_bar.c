@@ -1,3 +1,4 @@
+#include "game/audio.h"
 #include "game/menu.h"
 #include "game/prim.h"
 #include "game/render_internal.h"
@@ -12,6 +13,10 @@ void DrawVolumeBar(s32 level, s32 y) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
     s32 segment;
+
+    if (level > AUDIO_SETTING_MAX) {
+        level = AUDIO_SETTING_MAX;
+    }
 
     next = GameQueueSpriteTrans(ot, next, 0x4E, y + 0xA, 0x10, 0xC, 0xB4,
                                 0xC4, 0x7F40);

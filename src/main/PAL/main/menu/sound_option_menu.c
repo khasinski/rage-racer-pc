@@ -121,7 +121,7 @@ void UpdateSoundOptionMenu(void) {
  * The original value is kept in g_ScreenOffsetEditX until confirm or cancel. */
 void UpdateSoundSettingAdjust(void) {
     s32 *setting = NULL;
-    s32 maximum = 15;
+    s32 maximum = AUDIO_SETTING_MAX;
     s32 previous;
 
     DrawSoundOptionScreen();

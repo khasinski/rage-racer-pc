@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/audio.h"
 #include "game/menu.h"
 #include "game/render_internal.h"
 #include "game/render_state.h"
@@ -106,6 +107,11 @@ int main(void) {
     CHECK(s_segments[0].x == 0x62 && s_segments[0].y == 0xD4);
     CHECK(s_segments[7].x == 0x9A && s_segments[7].y == 0xD4);
     CHECK(g_RenderState.packetCursor == s_packets + 14);
+
+    Reset();
+    DrawVolumeBar(99, 0);
+    CHECK(s_segmentCount == AUDIO_SETTING_MAX + 1);
+    CHECK(s_segments[AUDIO_SETTING_MAX].x == 0xDA);
 
     puts("volume bar preserves its caps, segments, draw modes and frame");
     return 0;
