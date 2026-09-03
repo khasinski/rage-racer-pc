@@ -5,17 +5,21 @@
 enum {
     RIVAL_SPEED_RETENTION_PERCENT = 94,
     RIVAL_BOOST_COAST_SPEED = 0x321,
+    RIVAL_YAW_RESPONSE = 5,
+    PERCENT_SCALE = 100,
 };
 
 static void TurnRivalBodyTowardsTarget(GameCarRuntime *car) {
     car->bodyYaw = WrapSigned32(
         (int64_t)car->bodyYaw +
-        GetAngleDelta(car->bodyYaw, car->targetYaw) / 5);
+        GetAngleDelta(car->bodyYaw, car->targetYaw) /
+            RIVAL_YAW_RESPONSE);
 }
 
 static void ApplyRivalSpeedDrag(GameCarRuntime *car) {
     car->speed = WrapSigned32(
-        (int64_t)car->speed * RIVAL_SPEED_RETENTION_PERCENT) / 100;
+        (int64_t)car->speed * RIVAL_SPEED_RETENTION_PERCENT) /
+        PERCENT_SCALE;
 }
 
 static void IncreaseRivalAcceleration(GameCarRuntime *car, s32 step) {

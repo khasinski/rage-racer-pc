@@ -4,7 +4,6 @@
 #include "game/render.h"
 
 enum {
-    DETAILED_RIVAL_MOTION_COUNT = 4,
     RIVAL_STEERING_DEAD_ZONE = 0x40,
     RIVAL_STEERING_LIMIT = 0x12C,
     RIVAL_BODY_ROLL_ACCELERATION = 6,
@@ -12,6 +11,9 @@ enum {
     RIVAL_STATIC_BODY_LEAN = 0x32,
     RIVAL_POSITION_STEP_NUMERATOR = 6,
     RIVAL_POSITION_STEP_DIVISOR = 1280,
+    BODY_ROLL_DAMPING_NUMERATOR = 7,
+    BODY_ROLL_DAMPING_DENOMINATOR = 8,
+    VELOCITY_COMPONENT_DIVISOR = 256,
 };
 
 static void ApplyDetailedBodyLean(GameCarRuntime *car) {
@@ -55,7 +57,8 @@ static void UpdateRivalSteeringLean(GameCarRuntime *car) {
     }
     if (car->bodyRollVelocity != 0) {
         car->bodyRollVelocity = WrapSigned32(
-            (int64_t)car->bodyRollVelocity * 7) / 8;
+            (int64_t)car->bodyRollVelocity * BODY_ROLL_DAMPING_NUMERATOR) /
+            BODY_ROLL_DAMPING_DENOMINATOR;
     }
 
     car->steeringAngle = WrapSigned32(
@@ -80,10 +83,12 @@ void MoveRivalCars(void) {
 
         car->baseBodyYaw = car->bodyYaw;
         car->worldVelocityX = WrapSigned32(
-            (int64_t)rsin(car->headingAngle) * car->speed) / 256;
+            (int64_t)rsin(car->headingAngle) * car->speed) /
+            VELOCITY_COMPONENT_DIVISOR;
         car->worldVelocityZ = WrapSigned32(
-            (int64_t)rcos(car->headingAngle) * car->speed) / 256;
-        if (index < DETAILED_RIVAL_MOTION_COUNT) {
+            (int64_t)rcos(car->headingAngle) * car->speed) /
+            VELOCITY_COMPONENT_DIVISOR;
+        if (index < RIVAL_CONTENDER_COUNT) {
             ApplyDetailedBodyLean(car);
         }
         car->x = WrapSigned32(

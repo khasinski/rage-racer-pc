@@ -12,6 +12,7 @@ enum {
     TARGET_SPEED_SCALE = 1168,
     TARGET_SPEED_SOURCE_SCALE = 160,
     ACCELERATION_LIMIT_PERCENT = 6,
+    PERCENT_SCALE = 100,
     FRONT_GRID_SLOT_COUNT = 4,
     INITIAL_GRID_TARGET_LAP_DIVISOR = 12,
     TRAILING_GRID_SPACING_DIVISOR = 40,
@@ -69,7 +70,7 @@ void InitRivalCarAi(GameCarRuntime *car,
     SetRivalEngineRpmLow(
         car, DecodeClampedConfigValue(config->initialEngineRpm, 0, INT16_MAX));
     car->accelerationLimit =
-        car->targetSpeed * ACCELERATION_LIMIT_PERCENT / 100;
+        car->targetSpeed * ACCELERATION_LIMIT_PERCENT / PERCENT_SCALE;
     car->gridTargetProgress =
         g_TrackLength / INITIAL_GRID_TARGET_LAP_DIVISOR;
     if (gridPosition >= FRONT_GRID_SLOT_COUNT) {
