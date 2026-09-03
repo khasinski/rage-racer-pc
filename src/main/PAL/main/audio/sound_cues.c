@@ -8,8 +8,6 @@
 enum {
     CUE_VOLUME_FULL = 128,
     SOUND_BASE_NOTE = 0x3C,
-    BANK_ONE_CUE_COUNT = 30,
-    BANK_TWO_CUE_COUNT = 70,
     REPEATED_SPECIAL_CUE_FIRST = 15,
     REPEATED_SPECIAL_CUE_LAST = 17,
     BANK_TWO_FIXED_VOICE_FIRST_CUE = 25,
@@ -140,7 +138,7 @@ void PlaySoundCue(s32 cue) {
     }
 
     if (g_SoundCueBank == 1) {
-        cue = ClampCueIndex(cue, BANK_ONE_CUE_COUNT);
+        cue = ClampCueIndex(cue, MAIN_SOUND_CUE_COUNT);
         if (IsRepeatedSpecialCue(cue)) {
             if (cue != g_LastSpecialCueRequest) {
                 g_LastSpecialCueRequest = cue;
@@ -153,7 +151,7 @@ void PlaySoundCue(s32 cue) {
     }
 
     if (g_SoundCueBank == 2) {
-        cue = ClampCueIndex(cue, BANK_TWO_CUE_COUNT);
+        cue = ClampCueIndex(cue, RACE_SOUND_CUE_COUNT);
         if (IsRepeatedSpecialCue(cue)) {
             if (cue != g_LastSpecialCueRequest) {
                 g_LastSpecialCueRequest = cue;

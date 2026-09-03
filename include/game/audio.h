@@ -18,6 +18,13 @@ typedef enum AudioSlotId {
     AUDIO_SLOT_COUNT,
 } AudioSlotId;
 
+enum {
+    MAIN_SOUND_CUE_COUNT = 30,
+    RACE_SOUND_CUE_COUNT = 70,
+    EFFECT_CUE_BANK_COUNT = 3,
+    SPECIAL_VOICE_BIT_COUNT = 6,
+};
+
 void SetSoundSlotTone(s32 slot, s32 bend, s32 volume, s32 toneIndex, u16 vabSlot);
 void SsSeqPlay(short sequence, char playMode, short loopCount);
 void SsSeqStop(short sequence);
@@ -165,7 +172,7 @@ extern s32 g_ActiveSpecialCue;
 extern s32 g_AudioLoadSlot;
 extern s32 g_AudioLoadedSlotMask;
 extern s32 g_CarSoundVolumeScales[];
-extern EffectCueBank g_EffectCueTable[3];
+extern EffectCueBank g_EffectCueTable[EFFECT_CUE_BANK_COUNT];
 extern s32 g_IndexedEffectIndex;
 extern s32 g_IndexedEffectIndexPrev;
 extern s32 g_IndexedEffectPitch;
@@ -188,14 +195,14 @@ typedef struct SoundCueParams {
     s32 reserved;
 } SoundCueParams;
 
-extern SoundCueParams g_SoundCueParams[];
-extern SoundCueParams g_SoundCueParams2[];
-extern s32 g_SpecialVoiceBits[];
+extern SoundCueParams g_SoundCueParams[MAIN_SOUND_CUE_COUNT];
+extern SoundCueParams g_SoundCueParams2[RACE_SOUND_CUE_COUNT];
+extern s32 g_SpecialVoiceBits[SPECIAL_VOICE_BIT_COUNT];
 extern s32 g_StereoOutput;
 /*
  * SPU addresses for the four VAB slots.  Slots 0..2 are loaded with
  * g_SoundScale.vabIds[slot] and g_VabSpuAddress[slot]; slot 3 is the engine
  * sound bank.
  */
-extern s32 g_VabSpuAddress[];
+extern s32 g_VabSpuAddress[AUDIO_SLOT_COUNT];
 #endif

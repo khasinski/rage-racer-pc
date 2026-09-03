@@ -2,7 +2,6 @@
 #include "game/sound.h"
 
 enum {
-    EFFECT_CUE_BANK_COUNT = 3,
     EFFECT_CUE_VOICE_COUNT = 2,
     EFFECT_CUE_SECONDARY_VOICE = 2,
     EFFECT_CUE_DEFAULT_PITCH = 0x1E00,

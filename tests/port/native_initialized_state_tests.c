@@ -2,7 +2,9 @@
 #include <string.h>
 
 #include "game/asset.h"
+#include "game/audio.h"
 #include "game/car.h"
+#include "game/cd_internal.h"
 #include "game/memcard.h"
 #include "game/race.h"
 #include "game/render.h"
@@ -13,6 +15,18 @@ static void Check(int condition, const char *message) {
     if (condition) return;
     s_failures++;
     printf("FAIL %s\n", message);
+}
+
+static u32 HashBytes(const void *data, size_t size) {
+    const u8 *bytes = data;
+    u32 hash = 2166136261u;
+    size_t index;
+
+    for (index = 0; index < size; index++) {
+        hash ^= bytes[index];
+        hash *= 16777619u;
+    }
+    return hash;
 }
 
 static void CheckInitialRectangles(void) {
@@ -82,11 +96,49 @@ static void CheckMemoryCardLabels(void) {
           "file-error label");
 }
 
+static void CheckInitialAudioTables(void) {
+    Check(HashBytes(g_SoundCueParams, sizeof(g_SoundCueParams)) ==
+              522356387u,
+          "main sound cue table bytes");
+    Check(HashBytes(g_SoundCueParams2, sizeof(g_SoundCueParams2)) ==
+              2735735337u,
+          "race sound cue table bytes");
+    Check(HashBytes(g_EffectCueTable, sizeof(g_EffectCueTable)) ==
+              2869815252u,
+          "effect cue table bytes");
+    Check(HashBytes(g_SpecialVoiceBits, sizeof(g_SpecialVoiceBits)) ==
+              3282707433u,
+          "special voice mask bytes");
+    Check(HashBytes(g_VabSpuAddress, sizeof(g_VabSpuAddress)) == 41473987u,
+          "VAB SPU address bytes");
+    Check(HashBytes(g_CdTrackLoopPoint, sizeof(g_CdTrackLoopPoint)) ==
+              380835909u,
+          "CD track loop-point bytes");
+    Check(g_EffectCueTable[0].voiceCount == 2 &&
+              g_EffectCueTable[0].volumeScale == 85 &&
+              g_EffectCueTable[2].programs[1].note == 26 &&
+              g_EffectCueTable[2].programs[1].tone == 1,
+          "effect cue banks");
+    Check(g_SpecialVoiceBits[0] == 0x00040000 &&
+              g_SpecialVoiceBits[5] == 0x00800000,
+          "special voice masks");
+    Check(g_VabSpuAddress[AUDIO_SLOT_MAIN_CUES] == 0x1000 &&
+              g_VabSpuAddress[AUDIO_SLOT_ENGINE] == 0x6A000,
+          "VAB SPU addresses");
+    Check(g_CdTrackLoopPoint[2].minute == 0 &&
+              g_CdTrackLoopPoint[3].minute == 5 &&
+              g_CdTrackLoopPoint[11].minute == 5 &&
+              g_CdTrackLoopPoint[12].minute == 0 &&
+              g_CdTrackLoopPoint[17].minute == 5,
+          "CD track loop points");
+}
+
 int main(void) {
     CheckInitialRectangles();
     CheckInitialCountdownData();
     CheckInitialStartingGrids();
     CheckMemoryCardLabels();
+    CheckInitialAudioTables();
 
     if (s_failures != 0) return 1;
     puts("native initialized state retains its typed retail values");
