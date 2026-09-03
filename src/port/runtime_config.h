@@ -17,6 +17,10 @@ int RuntimeConfigEnabled(const char *key);
  * be able to force whatever the shipped configuration says. */
 const char *RuntimeConfigGetForced(const char *key);
 
+/* Parse a complete integer string using the requested strtol base. */
+int RuntimeParseInt(const char *text, int base, int minimum, int maximum,
+                    int *result);
+
 /* Parse a complete decimal/hex integer and constrain it to the caller's
  * domain. Missing and malformed settings return fallback. */
 int RuntimeConfigInt(const char *key, int fallback, int minimum, int maximum);

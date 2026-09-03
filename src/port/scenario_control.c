@@ -1,4 +1,3 @@
-#include <errno.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,26 +52,8 @@ enum {
 
 static RageScenarioState s_scenario;
 
-static int ScenarioParseNumber(const char *text, int base, int low, int high,
-                               int *result) {
-    char *end;
-    long value;
-
-    if (text == NULL || text[0] == '\0' || result == NULL || low > high) {
-        return 0;
-    }
-    errno = 0;
-    value = strtol(text, &end, base);
-    if (errno == ERANGE || end == text || *end != '\0' ||
-        value < low || value > high) {
-        return 0;
-    }
-    *result = (int)value;
-    return 1;
-}
-
 static int ScenarioParseTrackPoint(const char *text, int *result) {
-    return ScenarioParseNumber(text, 0, 0, INT_MAX, result);
+    return RuntimeParseInt(text, 0, 0, INT_MAX, result);
 }
 
 static void ScenarioParseTrackStarts(void) {
@@ -163,8 +144,8 @@ static void ScenarioApplyTrackStarts(void) {
         int parsedView;
 
         if (view != NULL &&
-            ScenarioParseNumber(view, 0, CAMERA_VIEW_CAR, CAMERA_VIEW_TRACK,
-                                &parsedView)) {
+            RuntimeParseInt(view, 0, CAMERA_VIEW_CAR, CAMERA_VIEW_TRACK,
+                            &parsedView)) {
             g_CameraViewMode = (CameraViewMode)parsedView;
         } else if (view != NULL) {
             fprintf(stderr, "rage-port: invalid start.camera=%s\n", view);
@@ -218,7 +199,7 @@ static int ScenarioInt(const char *key, int fallback, int low, int high) {
     const char *text = RuntimeConfigGet(key);
     int value;
     if (text == NULL || text[0] == '\0') return fallback;
-    if (!ScenarioParseNumber(text, 10, low, high, &value)) {
+    if (!RuntimeParseInt(text, 10, low, high, &value)) {
         fprintf(stderr, "rage-port: ignoring invalid %s=%s (expected %d..%d)\n",
                 key, text, low, high);
         return fallback;
@@ -237,7 +218,7 @@ static void ScenarioParseGrid(const char *text) {
     while (token != NULL && count < RACE_CAR_SLOT_COUNT) {
         int value;
 
-        if (!ScenarioParseNumber(token, 10, -1, 12, &value)) goto invalid;
+        if (!RuntimeParseInt(token, 10, -1, 12, &value)) goto invalid;
         parsed[count++] = value;
         token = strtok(NULL, ",");
     }
@@ -312,13 +293,13 @@ static void ScenarioInitialize(void) {
         const char *z = RuntimeConfigGet("start.player_z");
         const char *heading = RuntimeConfigGet("start.player_heading");
         if (x != NULL && z != NULL) {
-            int valid = ScenarioParseNumber(
+            int valid = RuntimeParseInt(
                 x, 0, INT_MIN, INT_MAX, &s_scenario.exactX);
-            valid = valid && ScenarioParseNumber(
+            valid = valid && RuntimeParseInt(
                 z, 0, INT_MIN, INT_MAX, &s_scenario.exactZ);
             s_scenario.exactHeading = -1;
             if (heading != NULL) {
-                valid = valid && ScenarioParseNumber(
+                valid = valid && RuntimeParseInt(
                     heading, 0, INT_MIN, INT_MAX, &s_scenario.exactHeading);
             }
             if (valid) {

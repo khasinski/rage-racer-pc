@@ -316,20 +316,32 @@ const char *RuntimeConfigGetForced(const char *key) {
     return value ? value : ConfiguredValue(key);
 }
 
-int RuntimeConfigInt(const char *key, int fallback, int minimum, int maximum) {
-    const char *text = RuntimeConfigGet(key);
+int RuntimeParseInt(const char *text, int base, int minimum, int maximum,
+                    int *result) {
     char *end;
     long value;
 
-    if (text == NULL || text[0] == '\0' || minimum > maximum) return fallback;
+    if (text == NULL || text[0] == '\0' || result == NULL ||
+        minimum > maximum) {
+        return 0;
+    }
     errno = 0;
-    value = strtol(text, &end, 0);
+    value = strtol(text, &end, base);
     if (errno == ERANGE || end == text || *end != '\0' ||
         value < minimum || value > maximum ||
         value < INT_MIN || value > INT_MAX) {
-        return fallback;
+        return 0;
     }
-    return (int)value;
+    *result = (int)value;
+    return 1;
+}
+
+int RuntimeConfigInt(const char *key, int fallback, int minimum, int maximum) {
+    int value;
+
+    return RuntimeParseInt(RuntimeConfigGet(key), 0, minimum, maximum, &value)
+               ? value
+               : fallback;
 }
 
 int RuntimeConfigEnabled(const char *key) {

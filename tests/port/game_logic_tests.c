@@ -300,6 +300,20 @@ static void test_diagnostic_integer_values(void) {
         "rage-test", "--set",
         "diagnostics.test_number=999999999999999999999999999999"};
     char *missing[] = {"rage-test"};
+    int parsed = 91;
+
+    EXPECT_EQ(1, RuntimeParseInt("0x2a", 0, 0, 100, &parsed));
+    EXPECT_EQ(42, parsed);
+    EXPECT_EQ(1, RuntimeParseInt("-17", 10, -20, 20, &parsed));
+    EXPECT_EQ(-17, parsed);
+    EXPECT_EQ(0, RuntimeParseInt("0x2a", 10, 0, 100, &parsed));
+    EXPECT_EQ(0, RuntimeParseInt("12frames", 10, 0, 100, &parsed));
+    EXPECT_EQ(0, RuntimeParseInt("999999999999999999999999", 10,
+                                 INT_MIN, INT_MAX, &parsed));
+    EXPECT_EQ(0, RuntimeParseInt("101", 10, 0, 100, &parsed));
+    EXPECT_EQ(0, RuntimeParseInt(NULL, 10, 0, 100, &parsed));
+    EXPECT_EQ(0, RuntimeParseInt("1", 10, 0, 100, NULL));
+    EXPECT_EQ(-17, parsed);
 
     EXPECT_EQ(1, RuntimeConfigInit(3, valid));
     EXPECT_EQ(42, DiagnosticsIntValue("test_number", -1));
