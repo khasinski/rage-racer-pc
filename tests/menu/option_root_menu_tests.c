@@ -94,8 +94,8 @@ static void Reset(void) {
     g_ClassRecordMenuCursor = -1;
     g_ScreenOffsetEditX = -1;
     g_ScreenOffsetEditY = -1;
-    g_ScreenOffsetX.value = 23;
-    g_ScreenOffsetY.value = -17;
+    g_ScreenOffsetX = 23;
+    g_ScreenOffsetY = -17;
     g_SoundOptionCursor = -1;
     s_labelCount = 0;
     s_lastCue = 0;

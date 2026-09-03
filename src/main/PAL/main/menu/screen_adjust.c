@@ -20,10 +20,10 @@ static s32 AdjustScreenOffset(s32 value, u16 buttons, u16 decreaseButton,
 }
 
 static void NormalizeScreenOffsets(void) {
-    g_ScreenOffsetX.value = AddClampedMenuValue(
-        g_ScreenOffsetX.value, 0, SCREEN_OFFSET_MIN_X, SCREEN_OFFSET_MAX_X);
-    g_ScreenOffsetY.value = AddClampedMenuValue(
-        g_ScreenOffsetY.value, 0, SCREEN_OFFSET_MIN_Y, SCREEN_OFFSET_MAX_Y);
+    g_ScreenOffsetX = AddClampedMenuValue(
+        g_ScreenOffsetX, 0, SCREEN_OFFSET_MIN_X, SCREEN_OFFSET_MAX_X);
+    g_ScreenOffsetY = AddClampedMenuValue(
+        g_ScreenOffsetY, 0, SCREEN_OFFSET_MIN_Y, SCREEN_OFFSET_MAX_Y);
     g_ScreenOffsetEditX = AddClampedMenuValue(
         g_ScreenOffsetEditX, 0, SCREEN_OFFSET_MIN_X, SCREEN_OFFSET_MAX_X);
     g_ScreenOffsetEditY = AddClampedMenuValue(
@@ -59,13 +59,13 @@ void UpdateScreenAdjustScreen(void) {
     if (g_PadPressed & PAD_CONFIRM) {
         PlaySoundCue(2);
         g_GameMode = OPTION_MODE_ROOT;
-        g_ScreenOffsetX.value = g_ScreenOffsetEditX;
-        g_ScreenOffsetY.value = g_ScreenOffsetEditY;
+        g_ScreenOffsetX = g_ScreenOffsetEditX;
+        g_ScreenOffsetY = g_ScreenOffsetEditY;
     } else if (g_PadPressed & PAD_CANCEL) {
         PlaySoundCue(3);
         g_GameMode = OPTION_MODE_ROOT;
-        g_ScreenOffsetEditX = g_ScreenOffsetX.value;
-        g_ScreenOffsetEditY = g_ScreenOffsetY.value;
+        g_ScreenOffsetEditX = g_ScreenOffsetX;
+        g_ScreenOffsetEditY = g_ScreenOffsetY;
     } else {
         g_ScreenOffsetEditX = AdjustScreenOffset(
             g_ScreenOffsetEditX, g_PadPressedRepeat, PAD_LEFT, PAD_RIGHT,

@@ -57,8 +57,8 @@ static void Reset(void) {
     g_GameMode = OPTION_MODE_SCREEN_ADJUST;
     g_ScreenOffsetEditX = 0;
     g_ScreenOffsetEditY = 0;
-    g_ScreenOffsetX.value = 5;
-    g_ScreenOffsetY.value = 6;
+    g_ScreenOffsetX = 5;
+    g_ScreenOffsetY = 6;
     g_PadPressed = 0;
     g_PadPressedRepeat = 0;
     s_callCount = 0;
@@ -96,8 +96,8 @@ int main(void) {
     g_ScreenOffsetEditY = 13;
     g_PadPressed = PAD_CONFIRM;
     UpdateScreenAdjustScreen();
-    CHECK(g_GameMode == OPTION_MODE_ROOT && g_ScreenOffsetX.value == 12);
-    CHECK(g_ScreenOffsetY.value == 13 && s_lastCue == 2);
+    CHECK(g_GameMode == OPTION_MODE_ROOT && g_ScreenOffsetX == 12);
+    CHECK(g_ScreenOffsetY == 13 && s_lastCue == 2);
 
     Reset();
     g_ScreenOffsetEditX = 12;
@@ -125,11 +125,11 @@ int main(void) {
     Reset();
     g_ScreenOffsetEditX = INT_MIN;
     g_ScreenOffsetEditY = INT_MAX;
-    g_ScreenOffsetX.value = INT_MAX;
-    g_ScreenOffsetY.value = INT_MIN;
+    g_ScreenOffsetX = INT_MAX;
+    g_ScreenOffsetY = INT_MIN;
     UpdateScreenAdjustScreen();
     CHECK(g_ScreenOffsetEditX == -11 && g_ScreenOffsetEditY == 23);
-    CHECK(g_ScreenOffsetX.value == 32 && g_ScreenOffsetY.value == -32);
+    CHECK(g_ScreenOffsetX == 32 && g_ScreenOffsetY == -32);
     CHECK(g_DispEnv0ScreenX == (u16)-11 && g_DispEnv0ScreenY == 52);
 
     Reset();
@@ -137,11 +137,11 @@ int main(void) {
     g_ScreenOffsetEditY = INT_MIN;
     g_PadPressed = PAD_CONFIRM;
     UpdateScreenAdjustScreen();
-    CHECK(g_ScreenOffsetX.value == 32 && g_ScreenOffsetY.value == -32);
+    CHECK(g_ScreenOffsetX == 32 && g_ScreenOffsetY == -32);
 
     Reset();
-    g_ScreenOffsetX.value = INT_MIN;
-    g_ScreenOffsetY.value = INT_MAX;
+    g_ScreenOffsetX = INT_MIN;
+    g_ScreenOffsetY = INT_MAX;
     g_PadPressed = PAD_CANCEL;
     UpdateScreenAdjustScreen();
     CHECK(g_ScreenOffsetEditX == -11 && g_ScreenOffsetEditY == 23);

@@ -115,10 +115,7 @@ static inline void GameDrawOrderingTable(GameOrderingTableEntry *lastEntry) {
     DrawOTag((void *)lastEntry);
 }
 
-typedef union ScreenOffset {
-    s32 value;
-    u16 displayValue;
-} ScreenOffset;
+typedef s32 ScreenOffset;
 
 extern Matrix g_MirrorViewMatrix;
 extern Matrix g_SceneLightMatrix;
