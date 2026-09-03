@@ -137,18 +137,8 @@ extern s32 g_FrameParity;
 extern u8 g_Font8x8Cells[];
 extern u8 g_DrawModeEnv[];
 extern u8 g_PropFontCells[0x80];
-#define g_PropFontU g_PropFontCells
-#define g_PropFontV (g_PropFontCells + 1)
 extern u8 g_WordFontCells[40];
-#define g_WordFontU g_WordFontCells
-#define g_WordFontV (g_WordFontCells + 1)
-#define g_WordFontWidth (g_WordFontCells + 2)
-#define g_WordFontAdvance (g_WordFontCells + 3)
 extern u8 g_HighFontCell[4];
-#define g_HighFontU g_HighFontCell
-#define g_HighFontV (g_HighFontCell + 1)
-#define g_HighFontWidth (g_HighFontCell + 2)
-#define g_HighFontYOffset (g_HighFontCell + 3)
 extern s32 g_MenuOverlayPatternAnimOffset;
 extern u8 g_MenuOverlayPatternTable[];
 extern u8 g_SpriteFontCells[192];

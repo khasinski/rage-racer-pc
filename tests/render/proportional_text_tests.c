@@ -39,6 +39,7 @@ static void CheckFontClasses(void) {
     SPRT *fixed;
     SPRT *word;
     SPRT *high;
+    SPRT *afterCurrency;
 
     ResetTextState();
     packets = g_RenderState.packetCursor;
@@ -53,10 +54,11 @@ static void CheckFontClasses(void) {
     g_HighFontCell[2] = 8;
     g_HighFontCell[3] = 3;
 
-    DrawProportionalText(10, 20, "A av", 0x1234);
+    DrawProportionalText(10, 20, "A avA", 0x1234);
     fixed = (SPRT *)packets;
     word = fixed + 1;
     high = word + 1;
+    afterCurrency = high + 1;
 
     CHECK_EQ(fixed->x0, 10, "fixed x");
     CHECK_EQ(fixed->y0, 20, "fixed y");
@@ -70,8 +72,11 @@ static void CheckFontClasses(void) {
     CHECK_EQ(high->y0, 23, "high y offset");
     CHECK_EQ(high->u0, 31, "high u");
     CHECK_EQ(high->w, 8, "high width");
+    CHECK_EQ(afterCurrency->x0, 50,
+             "currency marker uses the retail word-cell advance");
+    CHECK_EQ(afterCurrency->u0, 11, "fixed glyph after currency");
     CHECK_EQ(g_RenderState.packetCursor ==
-                 packets + 3 * sizeof(SPRT) + sizeof(DrawPacket),
+                 packets + 4 * sizeof(SPRT) + sizeof(DrawPacket),
              1,
              "packet cursor");
 }

@@ -663,9 +663,10 @@ void GameDrawText8x8Shaded(s32 x, s32 y, const char *str, s32 clutIndex,
 void DrawText8x8Trans(s32 x, s32 y, const char *text, s32 clutIndex);
 /*
  * The proportional font: 12-pixel-tall SPRT cells. Characters below 'a' use
- * the {u, v} pairs at g_PropFontU with fixed 12x12 cells; 'a'..'u' and 'v'+ use
- * the {u, v, width, advance} rows at g_WordFontU / g_HighFontU, so lowercase is
- * proportionally spaced. Space advances 12 and emits nothing.
+ * the {u, v} pairs in g_PropFontCells with fixed 12x12 cells. Encoded characters
+ * 'a'..'u' select {u, v, width, advance} word cells, while 'v' selects the
+ * single {u, v, width, y-offset} currency-symbol cell. Space advances 12 and
+ * emits nothing.
  *
  * Those rows are four-byte records and read like one, but they stay four
  * parallel u8 arrays indexed at stride 4: folding them into a struct changes
@@ -777,24 +778,14 @@ extern u8 g_TrackTextureShadowPage[256];
 extern s16 g_AtanTable[];
 extern u8 g_Font8x8Cells[];
 extern u8 g_HighFontCell[4];
-#define g_HighFontU g_HighFontCell
-#define g_HighFontV (g_HighFontCell + 1)
-#define g_HighFontWidth (g_HighFontCell + 2)
-#define g_HighFontYOffset (g_HighFontCell + 3)
 extern s32 g_MirrorPanelY;
 extern s32 g_MirrorUnlocked;
 extern s32 g_NegconPlayScale[];
 extern u8 g_PropFontCells[0x80];
-#define g_PropFontU g_PropFontCells
-#define g_PropFontV (g_PropFontCells + 1)
 extern s32 g_TrackTextureCursorRow;
 extern s32 g_TrackTexturePageWanted;
 extern s32 g_TrackTextureTargetRow;
 extern u8 g_WordFontCells[40];
-#define g_WordFontU g_WordFontCells
-#define g_WordFontV (g_WordFontCells + 1)
-#define g_WordFontWidth (g_WordFontCells + 2)
-#define g_WordFontAdvance (g_WordFontCells + 3)
 
 void DecDCTReset(s32 mode);
 void DrawMinuteSecondTime(s32 x, s32 y, s32 ticks, s32 color);

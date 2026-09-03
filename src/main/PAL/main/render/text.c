@@ -1,14 +1,60 @@
 #include "game/render_types.h"
 #include "game/render_internal.h"
 
+#include <string.h>
+
+typedef struct FixedFontCell {
+    u8 textureU;
+    u8 textureV;
+} FixedFontCell;
+
+typedef struct WordFontCell {
+    u8 textureU;
+    u8 textureV;
+    u8 width;
+    u8 advance;
+} WordFontCell;
+
+typedef struct CurrencyFontCell {
+    u8 textureU;
+    u8 textureV;
+    u8 width;
+    u8 yOffset;
+} CurrencyFontCell;
+
 enum {
     PROP_FONT_FIRST_CHARACTER = 0x20,
-    PROP_FONT_GLYPH_COUNT = sizeof(g_PropFontCells) / 2,
+    PROP_FONT_GLYPH_COUNT =
+        sizeof(g_PropFontCells) / sizeof(FixedFontCell),
     WORD_FONT_FIRST_CHARACTER = 'a',
-    WORD_FONT_GLYPH_COUNT = sizeof(g_WordFontCells) / 4,
-    HIGH_FONT_FIRST_CHARACTER = 'v',
-    HIGH_FONT_GLYPH_COUNT = sizeof(g_HighFontCell) / 4,
+    WORD_FONT_GLYPH_COUNT =
+        sizeof(g_WordFontCells) / sizeof(WordFontCell),
+    CURRENCY_FONT_CHARACTER = 'v',
 };
+
+_Static_assert(sizeof(g_HighFontCell) == sizeof(CurrencyFontCell),
+               "currency font data must contain exactly one cell");
+
+static FixedFontCell FixedFontCellAt(u32 index) {
+    FixedFontCell cell;
+
+    memcpy(&cell, g_PropFontCells + index * sizeof(cell), sizeof(cell));
+    return cell;
+}
+
+static WordFontCell WordFontCellAt(u32 index) {
+    WordFontCell cell;
+
+    memcpy(&cell, g_WordFontCells + index * sizeof(cell), sizeof(cell));
+    return cell;
+}
+
+static CurrencyFontCell CurrencyFontCellValue(void) {
+    CurrencyFontCell cell;
+
+    memcpy(&cell, g_HighFontCell, sizeof(cell));
+    return cell;
+}
 
 static u8 *QueueProportionalGlyph(
     u8 *packet,
@@ -47,35 +93,40 @@ void GameDrawProportionalTextShaded(
     const char *str,
     s32 clutIndex,
     s32 intensity) {
+    CurrencyFontCell currencyCell = CurrencyFontCellValue();
+    WordFontCell firstWordCell = WordFontCellAt(0);
     s32 xPos = x;
     u8 *packet = RENDER_PRIM_CURSOR_AS(u8);
 
     while (*str != '\0') {
         u32 ch = (u8)*str++;
-        s32 index;
 
-        if (ch >= HIGH_FONT_FIRST_CHARACTER &&
-            ch < HIGH_FONT_FIRST_CHARACTER + HIGH_FONT_GLYPH_COUNT) {
-            index = (ch - HIGH_FONT_FIRST_CHARACTER) * 4;
+        if (ch == CURRENCY_FONT_CHARACTER) {
             packet = QueueProportionalGlyph(
-                packet, xPos, y + g_HighFontYOffset[index],
-                g_HighFontU[index], g_HighFontV[index],
-                g_HighFontWidth[index], clutIndex, intensity);
-            xPos += g_WordFontWidth[index];
+                packet, xPos, y + currencyCell.yOffset,
+                currencyCell.textureU, currencyCell.textureV,
+                currencyCell.width, clutIndex, intensity);
+            /* Retail uses the first word cell's width after the terminal
+             * currency marker. The shipped format strings place it last. */
+            xPos += firstWordCell.width;
         } else if (ch >= WORD_FONT_FIRST_CHARACTER &&
                    ch < WORD_FONT_FIRST_CHARACTER + WORD_FONT_GLYPH_COUNT) {
-            index = (ch - WORD_FONT_FIRST_CHARACTER) * 4;
+            WordFontCell cell =
+                WordFontCellAt(ch - WORD_FONT_FIRST_CHARACTER);
+
             packet = QueueProportionalGlyph(
-                packet, xPos, y, g_WordFontU[index], g_WordFontV[index],
-                g_WordFontWidth[index], clutIndex, intensity);
-            xPos += g_WordFontAdvance[index];
+                packet, xPos, y, cell.textureU, cell.textureV,
+                cell.width, clutIndex, intensity);
+            xPos += cell.advance;
         } else if (ch >= PROP_FONT_FIRST_CHARACTER &&
                    ch < PROP_FONT_FIRST_CHARACTER + PROP_FONT_GLYPH_COUNT) {
             if (ch != ' ') {
-                index = (ch - PROP_FONT_FIRST_CHARACTER) * 2;
+                FixedFontCell cell =
+                    FixedFontCellAt(ch - PROP_FONT_FIRST_CHARACTER);
+
                 packet = QueueProportionalGlyph(
-                    packet, xPos, y, g_PropFontU[index], g_PropFontV[index],
-                    12, clutIndex, intensity);
+                    packet, xPos, y, cell.textureU, cell.textureV, 12,
+                    clutIndex, intensity);
             }
             xPos += 12;
         } else {
