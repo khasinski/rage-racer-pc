@@ -163,6 +163,19 @@ static int CheckWrappedWorldCoordinates(void) {
     return 0;
 }
 
+static int CheckWrappedTrackProgress(void) {
+    PlayerCarRuntime player;
+
+    PrepareSoundCollision(&player, 0);
+    player.trackProgress = INT32_MAX - 10;
+    g_Cars[0].trackProgress = INT32_MIN + 9;
+    if (CollidePlayerWithCars(&player) <= 0) {
+        puts("FAIL nearby cars did not collide across track-progress wrap");
+        return 1;
+    }
+    return 0;
+}
+
 static int CheckAllCollisionFlagsReset(void) {
     PlayerCarRuntime player;
 
@@ -222,6 +235,7 @@ int main(void) {
 
     if (CheckCollisionSoundGates() != 0 ||
         CheckWrappedWorldCoordinates() != 0 ||
+        CheckWrappedTrackProgress() != 0 ||
         CheckAllCollisionFlagsReset() != 0 ||
         CheckMissingTrackLength() != 0 ||
         CheckExtremeCoordinateDifferences() != 0)

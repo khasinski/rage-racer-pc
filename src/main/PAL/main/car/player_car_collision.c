@@ -1,6 +1,7 @@
 #include "game/diagnostics.h"
 #include "game/car.h"
 #include "game/car_internal.h"
+#include "game/integer.h"
 #include "game/race.h"
 #include "game/audio.h"
 #include "game/render.h"
@@ -47,8 +48,8 @@ static void BuildPlayerCollisionGrid(const PlayerCarRuntime *car,
         input.vy = 0;
         input.vz = g_PlayerHullPoints[index].z;
         ApplyMatrix(&rotationMatrix, &input, &transformed);
-        outline[index].x = transformed.x >> 1;
-        outline[index].z = transformed.z >> 1;
+        outline[index].x = WrapSigned16(transformed.x >> 1);
+        outline[index].z = WrapSigned16(transformed.z >> 1);
         if (index < CAR_COLLISION_QUAD_COUNT) {
             grid[index][index] = outline[index];
         }
@@ -71,8 +72,8 @@ static void BuildOpponentCollisionSamples(const PlayerCarRuntime *player,
     Matrix rotationMatrix;
     SVec input;
     Vec4 transformed;
-    s32 offsetX = (s16)((u16)opponent->x - (u16)player->x);
-    s32 offsetZ = (s16)((u16)opponent->z - (u16)player->z);
+    s32 offsetX = WrapSigned16((u16)opponent->x - (u16)player->x);
+    s32 offsetZ = WrapSigned16((u16)opponent->z - (u16)player->z);
     s32 index;
 
     input.vx = (u16)opponent->bodyPitch;
@@ -84,8 +85,10 @@ static void BuildOpponentCollisionSamples(const PlayerCarRuntime *player,
         input.vy = 0;
         input.vz = g_OpponentHullCorners[index].z;
         ApplyMatrix(&rotationMatrix, &input, &transformed);
-        corners[index].x = (transformed.x >> 1) + offsetX / 2;
-        corners[index].z = (transformed.z >> 1) + offsetZ / 2;
+        corners[index].x = WrapSigned16(
+            (transformed.x >> 1) + offsetX / 2);
+        corners[index].z = WrapSigned16(
+            (transformed.z >> 1) + offsetZ / 2);
     }
 
     samples[0] = Midpoint(corners[0], corners[1]);
@@ -158,8 +161,11 @@ static PlayerCollisionHit FindPlayerCollision(
         if (opponent->activeFlag == -1) {
             continue;
         }
-        progressDistance = (opponent->trackProgress + g_TrackLength -
-                            player->trackProgress) % g_TrackLength;
+        progressDistance = WrapSigned32(
+            (int64_t)opponent->trackProgress + g_TrackLength);
+        progressDistance = WrapSigned32(
+            (int64_t)progressDistance - player->trackProgress) %
+            g_TrackLength;
         lateralDistance = AbsoluteDifference(opponent->trackLateralOffset,
                                              player->trackLateralOffset);
         heightDistance = AbsoluteDifference(opponent->y, player->y);
@@ -219,7 +225,7 @@ static void PlayPlayerCollisionSound(const PlayerCarRuntime *player,
                                      const PlayerCollisionHit *hit) {
     s32 soundCue;
 
-    if ((s16)player->motionTimer >= 0xB || g_RacePhase >= 3) {
+    if (WrapSigned16(player->motionTimer) >= 0xB || g_RacePhase >= 3) {
         return;
     }
     if (hit->lateralDistance < 30) {
@@ -234,16 +240,18 @@ static CarCollisionPoint GetCollisionVelocity(
     const PlayerCarRuntime *player, const GameCarRuntime *opponent,
     s32 includeOpponentMotion) {
     CarCollisionPoint velocity;
-    s32 x = (s16)((u16)opponent->worldVelocityX -
-                  (u16)player->drive.accelPos);
-    s32 z = (s16)((u16)opponent->worldVelocityZ -
-                  (u16)player->drive.brakePos);
+    s32 x = WrapSigned16((u16)opponent->worldVelocityX -
+                         (u16)player->drive.accelPos);
+    s32 z = WrapSigned16((u16)opponent->worldVelocityZ -
+                         (u16)player->drive.brakePos);
 
     velocity.x = x / 0x20;
     velocity.z = z / 0x20;
     if (includeOpponentMotion) {
-        velocity.x = (s16)(velocity.x - (s16)opponent->velocityX);
-        velocity.z = (s16)(velocity.z - (s16)opponent->velocityZ);
+        velocity.x = WrapSigned16(
+            (s32)velocity.x - WrapSigned16(opponent->velocityX));
+        velocity.z = WrapSigned16(
+            (s32)velocity.z - WrapSigned16(opponent->velocityZ));
     }
     return velocity;
 }
@@ -262,8 +270,8 @@ static void ApplyLowRegionCollision(PlayerCarRuntime *player,
         player->acceleration = 0;
     } else {
         player->acceleration /= 2;
-        player->drive.drivetrainTorque =
-            player->drive.drivetrainTorque * 0x50 / 100;
+        player->drive.drivetrainTorque = WrapSigned32(
+            (int64_t)player->drive.drivetrainTorque * 0x50) / 100;
     }
     g_GripLossTimer =
         player->speed - opponent->speed >= 0x191 ? 0x1E : 0xF;
