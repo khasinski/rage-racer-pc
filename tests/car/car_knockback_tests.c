@@ -2,6 +2,7 @@
 #include "game/car.h"
 #include "game/player_car_internal.h"
 
+#include <limits.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -102,12 +103,33 @@ static void SweepApplyCarKnockback(void) {
 
 int main(void) {
     static const unsigned long expected = 1747374351UL;
+    GameCarRuntime car;
 
     SweepSetCarKnockback();
     SweepApplyCarKnockback();
     if (s_digest != expected) {
         printf("FAIL car knockback digest %lu, expected %lu\n",
                s_digest, expected);
+        return 1;
+    }
+
+    memset(&car, 0, sizeof(car));
+    car.motionActive = 1;
+    car.motionTimer = 2;
+    car.x = INT_MIN;
+    car.z = INT_MAX;
+    car.velocityX = 1;
+    car.velocityZ = -1;
+    ApplyCarKnockback(&car);
+    if (car.x != INT_MAX || car.z != INT_MIN) {
+        puts("FAIL knockback position did not wrap like the PS1");
+        return 1;
+    }
+
+    memset(&car, 0, sizeof(car));
+    SetCarKnockback(&car, INT_MAX, INT_MIN, CAR_KNOCKBACK_VECTOR_MODE);
+    if (car.velocityX != -1 || car.velocityZ != 0) {
+        puts("FAIL collision knockback vector did not keep its low halfword");
         return 1;
     }
     puts("car knockback preserves its collision modes and decay");

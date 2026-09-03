@@ -1,5 +1,6 @@
 #include "game/angle.h"
 #include "game/diagnostics.h"
+#include "game/integer.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/state.h"
@@ -14,7 +15,8 @@ enum {
 };
 
 static s32 TrackOutwardAngle(const GameCarRuntime *car) {
-    return (s16)(ANGLE_THREE_QUARTER_TURN - car->trackHeading.half.low);
+    return WrapSigned16(
+        ANGLE_THREE_QUARTER_TURN - car->trackHeading.half.low);
 }
 
 /* The road-edge response points a quarter turn into the course from the
@@ -48,8 +50,8 @@ static void SetKnockbackVector(GameCarRuntime *car, s32 angle, s32 strength,
                                u16 duration) {
     car->motionActive = 1;
     car->motionTimer = duration;
-    car->velocityX = (s16)((rsin(angle) * strength) / 4096);
-    car->velocityZ = (s16)((rcos(angle) * strength) / 4096);
+    car->velocityX = WrapSigned16((rsin(angle) * strength) / 4096);
+    car->velocityZ = WrapSigned16((rcos(angle) * strength) / 4096);
 }
 
 static void TraceCarKnockback(GameCarRuntime *car, s32 inputX, s32 inputZ,
@@ -92,10 +94,10 @@ void ApplyCarKnockback(GameCarRuntime *car) {
         car->motionTimer--;
     }
 
-    car->x -= car->velocityX;
-    car->z -= car->velocityZ;
-    car->velocityX = (s16)(car->velocityX * 7 / 8);
-    car->velocityZ = (s16)(car->velocityZ * 7 / 8);
+    car->x = WrapSigned32((int64_t)car->x - car->velocityX);
+    car->z = WrapSigned32((int64_t)car->z - car->velocityZ);
+    car->velocityX = car->velocityX * 7 / 8;
+    car->velocityZ = car->velocityZ * 7 / 8;
 }
 
 void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
@@ -112,8 +114,8 @@ void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
     } else {
         car->motionActive = 1;
         car->motionTimer = CAR_COLLISION_KNOCKBACK_DURATION;
-        car->velocityX = (s16)(x / 2);
-        car->velocityZ = (s16)(z / 2);
+        car->velocityX = WrapSigned16(x / 2);
+        car->velocityZ = WrapSigned16(z / 2);
     }
 
     TraceCarKnockback(car, x, z, mode);
