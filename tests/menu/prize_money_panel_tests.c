@@ -68,6 +68,13 @@ int main(void) {
     CHECK(s_records[4].y == 192 && strcmp(s_records[4].text, "BONUS") == 0);
     CHECK(s_records[5].y == 204 && strcmp(s_records[5].text, "500000v") == 0);
 
+    s_recordCount = 0;
+    g_RaceProgress = NULL;
+    g_ClassPromoted = 0;
+    DrawPrizeMoneyPanel(0);
+    CHECK(s_recordCount == 4);
+    CHECK(strcmp(s_records[3].text, "0v") == 0);
+
     puts("prize money panel tests passed");
     return 0;
 }

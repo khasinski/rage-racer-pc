@@ -29,10 +29,12 @@ static void DrawMoneyRow(s32 yOffset, s32 labelY, s32 valueY,
 }
 
 void DrawPrizeMoneyPanel(s32 yOffset) {
+    s32 totalMoney = g_RaceProgress != NULL ? g_RaceProgress->money : 0;
+
     DrawMoneyRow(yOffset, PRIZE_LABEL_Y, PRIZE_VALUE_Y,
                  g_CaptionPrizeMoney, g_PrizeAmount);
     DrawMoneyRow(yOffset, TOTAL_LABEL_Y, TOTAL_VALUE_Y,
-                 g_CaptionTotalMoney, g_RaceProgress->money);
+                 g_CaptionTotalMoney, totalMoney);
 
     if (g_ClassPromoted) {
         DrawMoneyRow(yOffset, BONUS_LABEL_Y, BONUS_VALUE_Y,
