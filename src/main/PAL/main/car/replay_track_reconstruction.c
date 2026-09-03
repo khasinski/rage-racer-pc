@@ -124,7 +124,7 @@ void ReconstructReplayCarTrackState(GameCarRuntime *car) {
     point = TrackPoint(pointIndex);
     nextPoint = TrackPoint(pointIndex + 1);
 
-    work->knockbackMode = 0;
+    work->trackContact = CAR_TRACK_CONTACT_NONE;
     work->segmentLength = point->segmentLength;
     if (WrapSigned16(work->segmentLength) <= 0) {
         work->segmentLength = 1;

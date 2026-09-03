@@ -134,7 +134,7 @@ typedef struct CarTrackWork {
     s32 nextPointToCenterZ;
     s32 headingSin;
     s32 headingCos;
-    s32 knockbackMode;
+    s32 trackContact;
     MATRIX edgeCorrectionMatrix;
     SVec edgeOffset;
     LVec edgeCorrection;

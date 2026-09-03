@@ -48,20 +48,20 @@ static void TraceCarTrackExit(const GameCarRuntime *car, s32 trackPointIndex,
                               const CarTrackWork *work) {
     Trace("car-track-exit", "timer=%d point=%d x=%d z=%d progress=%d "
           "lateral=%d along=%d heading=%d curve=%d widths=%d,%d "
-          "correction=%d,%d knockback=%d motion=%d,%d,%d,%d",
+          "correction=%d,%d contact=%d motion=%d,%d,%d,%d",
           g_SceneTimer, trackPointIndex, car->x, car->z,
           car->trackProgress, car->trackLateralOffset, alongSegment,
           work->heading, work->curveMode, work->leftHalfWidth,
           work->rightHalfWidth, work->edgeCorrection.x,
           work->edgeCorrection.z,
-          work->knockbackMode, car->motionActive, car->motionTimer,
+          work->trackContact, car->motionActive, car->motionTimer,
           car->velocityX, car->velocityZ);
 }
 
 static void ApplyTrackEdgeCorrection(GameCarRuntime *car,
                                      CarTrackWork *work,
                                      s32 edgePenetration,
-                                     s32 knockbackMode) {
+                                     CarTrackContact contact) {
     work->edgeOffset.vx = 0;
     work->edgeOffset.vy = 0;
     work->edgeOffset.vz = WrapSigned16(edgePenetration);
@@ -71,11 +71,11 @@ static void ApplyTrackEdgeCorrection(GameCarRuntime *car,
     if (car == AsRivalCar(&g_PlayerCar)) {
         SetTrackBoundaryKnockback(
             car, work->edgeCorrection.x, work->edgeCorrection.z,
-            (CarTrackContact)knockbackMode);
+            contact);
     }
     car->x = WrapSigned32((int64_t)car->x - work->edgeCorrection.x);
     car->z = WrapSigned32((int64_t)car->z - work->edgeCorrection.z);
-    work->knockbackMode = knockbackMode;
+    work->trackContact = contact;
 }
 
 /*
@@ -106,14 +106,16 @@ static s32 ClampCarToTrackEdges(GameCarRuntime *car, CarTrackWork *work,
     work->rightHalfWidth = WrapSigned16(rightHalfWidth);
     leftLimit = work->leftHalfWidth + limits->leftInset;
     if (lateralOffset < -leftLimit) {
-        ApplyTrackEdgeCorrection(car, work, lateralOffset + leftLimit,
-                                 limits->leftContact);
+        ApplyTrackEdgeCorrection(
+            car, work, lateralOffset + leftLimit,
+            (CarTrackContact)limits->leftContact);
         return -leftLimit;
     }
     rightLimit = WrapSigned16(rightHalfWidth) - limits->rightInset;
     if (rightLimit < lateralOffset) {
-        ApplyTrackEdgeCorrection(car, work, lateralOffset - rightLimit,
-                                 limits->rightContact);
+        ApplyTrackEdgeCorrection(
+            car, work, lateralOffset - rightLimit,
+            (CarTrackContact)limits->rightContact);
         lateralOffset = rightLimit;
     }
     return lateralOffset;
@@ -258,7 +260,7 @@ s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
     }
 
     work = &g_CarTrackWork;
-    work->knockbackMode = 0;
+    work->trackContact = CAR_TRACK_CONTACT_NONE;
     point = TrackPoint(trackPointIndex);
     nextPoint = TrackPoint(trackPointIndex + 1);
     work->segmentLength = point->segmentLength;
@@ -290,5 +292,5 @@ s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
     if (traceThisCall) {
         TraceCarTrackExit(car, trackPointIndex, alongSegment, work);
     }
-    return work->knockbackMode;
+    return work->trackContact;
 }
