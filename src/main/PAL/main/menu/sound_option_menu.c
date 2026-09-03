@@ -27,6 +27,14 @@ static s32 *SelectedSoundSetting(s32 *maximum) {
     }
 }
 
+static void NormalizeSoundSettings(void) {
+    g_BgmVolumeSetting = AddClampedMenuValue(
+        g_BgmVolumeSetting, 0, 0, AUDIO_SETTING_MAX);
+    g_SfxVolumeSetting = AddClampedMenuValue(
+        g_SfxVolumeSetting, 0, 0, AUDIO_SETTING_MAX);
+    g_MonoOutput = g_MonoOutput != 0;
+}
+
 static void DrawOutputModeChoice(GameOrderingTableEntry *ot, u8 **next, s32 selected,
                                  s32 x, s32 width, s32 textureU,
                                  s32 textureV) {
@@ -41,7 +49,7 @@ static void DrawOutputModeChoice(GameOrderingTableEntry *ot, u8 **next, s32 sele
                         intensity * 2, intensity * 2);
 }
 
-void DrawSoundOptionScreen(void) {
+static void DrawSoundOptionScreen(void) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
 
@@ -93,6 +101,9 @@ void DrawSoundOptionScreen(void) {
 void UpdateSoundOptionMenu(void) {
     s32 oldCursor;
 
+    NormalizeSoundSettings();
+    g_SoundOptionCursor = AddClampedMenuValue(
+        g_SoundOptionCursor, 0, 0, SOUND_OPTION_COUNT - 1);
     DrawSoundOptionScreen();
     oldCursor = g_SoundOptionCursor;
     if (g_PadPressed & PAD_UP) {
@@ -137,6 +148,7 @@ void UpdateSoundSettingAdjust(void) {
     s32 *setting;
     s32 previous;
 
+    NormalizeSoundSettings();
     DrawSoundOptionScreen();
     setting = SelectedSoundSetting(&maximum);
 
@@ -147,7 +159,8 @@ void UpdateSoundSettingAdjust(void) {
         PlaySoundCue(2);
     } else if (g_PadPressed & PAD_CANCEL) {
         g_GameMode = OPTION_MODE_SOUND_MENU;
-        *setting = g_ScreenOffsetEditX;
+        *setting = AddClampedMenuValue(
+            g_ScreenOffsetEditX, 0, 0, maximum);
         PlaySoundCue(3);
     } else {
         previous = *setting;

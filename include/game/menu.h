@@ -416,7 +416,6 @@ void UpdateOptionRootMenu(void);
 void UpdateClassRecordMenu(void);
 void UpdateClassRecordBrowse(void);
 void DrawPadTypeHint(void);
-void DrawSoundOptionScreen(void);
 void UpdateSoundOptionMenu(void);
 void UpdateSoundSettingAdjust(void);
 void UpdateScreenAdjustScreen(void);

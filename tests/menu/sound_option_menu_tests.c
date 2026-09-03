@@ -4,6 +4,7 @@
 #include "game/render_internal.h"
 #include "game/render_state.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -118,7 +119,7 @@ int main(void) {
     s32 cursor;
 
     Reset();
-    DrawSoundOptionScreen();
+    UpdateSoundOptionMenu();
     CHECK(s_choiceCount == 2);
     CHECK(s_choices[0].v == 0xC4 && s_choices[0].intensity == 0x7F);
     CHECK(s_choices[1].v == 0xD0 && s_choices[1].intensity == 0x20);
@@ -130,7 +131,7 @@ int main(void) {
     g_GameMode = OPTION_MODE_SOUND_EDIT;
     g_MonoOutput = 1;
     g_SoundOptionCursor = 2;
-    DrawSoundOptionScreen();
+    UpdateSoundSettingAdjust();
     CHECK(s_choices[0].intensity == 0x20 &&
           s_choices[1].intensity == 0x7F);
     CHECK(s_tileCount == 5 && s_lastHighlightX == 0xA0);
@@ -202,6 +203,26 @@ int main(void) {
     CHECK(g_GameMode == OPTION_MODE_SOUND_MENU);
     CHECK(g_BgmVolumeSetting == 7 && g_SfxVolumeSetting == 5);
     CHECK(s_lastCue == 0 && s_applyCalls == 1);
+
+    Reset();
+    g_BgmVolumeSetting = INT_MIN;
+    g_SfxVolumeSetting = INT_MAX;
+    g_MonoOutput = INT_MIN;
+    g_SoundOptionCursor = INT_MAX;
+    UpdateSoundOptionMenu();
+    CHECK(g_BgmVolumeSetting == 0 &&
+          g_SfxVolumeSetting == AUDIO_SETTING_MAX);
+    CHECK(g_MonoOutput == 1 && g_SoundOptionCursor == 3);
+    CHECK(s_lastCue == 0);
+
+    Reset();
+    g_GameMode = OPTION_MODE_SOUND_EDIT;
+    g_SoundOptionCursor = 0;
+    g_ScreenOffsetEditX = INT_MAX;
+    g_PadPressed = PAD_CANCEL;
+    UpdateSoundSettingAdjust();
+    CHECK(g_BgmVolumeSetting == AUDIO_SETTING_MAX);
+    CHECK(g_GameMode == OPTION_MODE_SOUND_MENU && s_applyCalls == 1);
 
     puts("sound option menu preserves output rendering and navigation");
     return 0;
