@@ -17,5 +17,6 @@ RoundBgmChoice ChooseRoundBgm(s32 selection, const u8 *shuffleOrder,
                               s32 trackCount, s32 shuffleIndex);
 s32 ClampRoundScreenFade(s32 value);
 s32 IsRoundMirrorMode(u16 heldButtons);
+s32 IsRoundScreenAssetLoadComplete(s32 loadState, s32 loadFailed);
 
 #endif

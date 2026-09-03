@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "game/prim.h"
 #include "game/asset.h"
+#include "game/asset_internal.h"
 #include "game/audio.h"
 #include "game/audio_internal.h"
 #include "game/menu.h"
@@ -29,24 +30,26 @@ void EnterRoundScreen(void) {
     SetDispMask(0);
     g_FrameSyncThreshold = 0x80;
 
-    if (g_AssetLoadState != 1) {
-        CloseLoadedAudioSlots();
-        if (!UploadImageAsset(GetImageAssetHeaderWords(g_ImageBlockBuffer),
-                              g_ImageBlockSize)) {
-            return;
-        }
-        if (!RelocateCarModel()) {
-            return;
-        }
-
-        g_FrameSyncThreshold = 0x180;
-        g_SceneTimer = 0;
-        g_SceneId = ROUND_SCREEN_SCENE;
-        g_FadeLevel = 0;
-        g_GrandPrixRound = DetermineGrandPrixRound(
-            g_CourseProgress->bestPlace, g_GrandPrixClass,
-            SeriesCourseIndex());
+    if (!IsRoundScreenAssetLoadComplete(g_AssetLoadState,
+                                        g_AssetLoadFailed)) {
+        return;
     }
+    CloseLoadedAudioSlots();
+    if (!UploadImageAsset(GetImageAssetHeaderWords(g_ImageBlockBuffer),
+                          g_ImageBlockSize)) {
+        return;
+    }
+    if (!RelocateCarModel()) {
+        return;
+    }
+
+    g_FrameSyncThreshold = 0x180;
+    g_SceneTimer = 0;
+    g_SceneId = ROUND_SCREEN_SCENE;
+    g_FadeLevel = 0;
+    g_GrandPrixRound = DetermineGrandPrixRound(
+        g_CourseProgress->bestPlace, g_GrandPrixClass,
+        SeriesCourseIndex());
 }
 
 static s32 NextRoundScreenFade(s32 stage) {

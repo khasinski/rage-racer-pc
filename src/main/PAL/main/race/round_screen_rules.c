@@ -16,6 +16,10 @@ s32 IsRoundMirrorMode(u16 heldButtons) {
     return (heldButtons & mirrorChord) == mirrorChord;
 }
 
+s32 IsRoundScreenAssetLoadComplete(s32 loadState, s32 loadFailed) {
+    return loadState == 0 && loadFailed == 0;
+}
+
 s32 DetermineGrandPrixRound(const u8 bestPlaces[4], s32 classIndex,
                             s32 courseIndex) {
     s32 courseCount = classIndex < 2 ? 3 : 4;

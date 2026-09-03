@@ -55,6 +55,17 @@ static void TestFadeAndMirrorRules(void) {
           "unrelated held buttons do not cancel mirror mode");
 }
 
+static void TestAssetLoadGate(void) {
+    Check(IsRoundScreenAssetLoadComplete(0, 0),
+          "completed asset load enters the round screen");
+    Check(!IsRoundScreenAssetLoadComplete(1, 0),
+          "screen asset transfer keeps waiting");
+    Check(!IsRoundScreenAssetLoadComplete(2, 0),
+          "voice bank transfer keeps waiting");
+    Check(!IsRoundScreenAssetLoadComplete(0, 1),
+          "failed asset load does not install partial data");
+}
+
 static void TestBgmChoice(void) {
     const u8 order[4] = {3, 9, 1, 7};
     RoundBgmChoice choice;
@@ -88,6 +99,7 @@ int main(void) {
     TestRoundNumber();
     TestSelectionWrap();
     TestFadeAndMirrorRules();
+    TestAssetLoadGate();
     TestBgmChoice();
 
     if (s_failures != 0) {
