@@ -69,7 +69,9 @@ static void ApplyPlayerCrashResponse(PlayerCarRuntime *car) {
 
     drive->launchEnergy = WrapSigned32(
         (int64_t)drive->launchEnergy - CRASH_LAUNCH_ENERGY_LOSS);
-    if (car->speed < CONTACT_EFFECT_MIN_SPEED) return;
+    if (car->speed < CONTACT_EFFECT_MIN_SPEED) {
+        return;
+    }
 
     drive->drivetrainTorque = WrapSigned32(
         (int64_t)drive->drivetrainTorque *

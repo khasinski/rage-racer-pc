@@ -1,5 +1,11 @@
 #include "game/car.h"
 
+enum {
+    LIMITED_VARIANT_MODEL = 8,
+    LIMITED_VARIANT_MAXIMUM = 2,
+    FIRST_FIXED_ASSET_MODEL = 9,
+};
+
 s32 GetCarAssetIndex(s32 model, s32 grade) {
     s32 firstVariant;
 
@@ -15,7 +21,9 @@ s32 GetCarAssetIndex(s32 model, s32 grade) {
 }
 
 s32 GetCarUnlockLevel(s32 model) {
-    if ((u32)model >= GAME_CAR_COUNT || g_CarTable == NULL) return -1;
+    if ((u32)model >= GAME_CAR_COUNT || g_CarTable == NULL) {
+        return -1;
+    }
     return g_CarTable[model].modelVariant + g_CarModelUnlockBase[model];
 }
 
@@ -25,7 +33,7 @@ s32 GetOwnedCarAssetIndex(s32 model) {
     if ((u32)model >= GAME_CAR_COUNT) {
         return -1;
     }
-    if (model >= 9) {
+    if (model >= FIRST_FIXED_ASSET_MODEL) {
         return g_CarModelBaseIndex[model];
     }
     if (g_CarTable == NULL) {
@@ -33,8 +41,10 @@ s32 GetOwnedCarAssetIndex(s32 model) {
     }
 
     variant = g_CarTable[model].modelVariant;
-    if (model == 8) {
-        if (variant > 2) variant = 2;
+    if (model == LIMITED_VARIANT_MODEL) {
+        if (variant > LIMITED_VARIANT_MAXIMUM) {
+            variant = LIMITED_VARIANT_MAXIMUM;
+        }
         return GetCarAssetIndex(model, variant);
     }
     if (variant >= g_CarModelBaseIndex[model + 1] -

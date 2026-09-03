@@ -36,7 +36,9 @@ static void IntegratePlayerHorizontalPosition(PlayerCarRuntime *car) {
 static void ApplyGearShiftBodyPitch(PlayerCarRuntime *car) {
     s32 rpmSurplus;
 
-    if (car->drive.shiftRpmDelta == 0) return;
+    if (car->drive.shiftRpmDelta == 0) {
+        return;
+    }
 
     rpmSurplus = WrapSigned32(
         (int64_t)(g_CarSpec->revLimit + g_CarSpec->redline) / 2 -
