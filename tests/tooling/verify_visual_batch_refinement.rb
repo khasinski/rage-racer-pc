@@ -933,13 +933,14 @@ abort "player render hash omits model-selection renderDepth" unless
   source.match?(/SmokeHashPlayerRenderState.*?renderObject->renderDepth/m)
 abort "player render hash omits wheel phase" unless
   source.match?(/SmokeHashPlayerRenderState.*?car->wheelRotation/m)
-menu_header = File.read(File.expand_path("../../include/game/menu.h", __dir__))
+car_header = File.read(File.expand_path("../../include/game/car.h", __dir__))
 # Retail state is one segment split across a file per owning subsystem, so
 # read it back as the one thing it is.
 host_state = Dir[File.expand_path("../../src/port/host_state*.c", __dir__)]
   .sort.map { |path| File.read(path) }.join("\n")
-abort "split player tire/render-depth global was reintroduced" unless
-  menu_header.match?(/#define g_PlayerTireCompound.*?g_PlayerCar.*?renderDepth/m) &&
+abort "typed player showroom tire view was lost" unless
+  car_header.match?(/s32 showroomTireCompound;/) &&
+  car_header.match?(/offsetof\(PlayerCarRuntime, showroomTireCompound\).*?0xE4/m) &&
   !host_state.match?(/^unsigned char g_PlayerTireCompound\b/)
 
 Dir.mktmpdir("rage-visual-pre-state-") do |root|
