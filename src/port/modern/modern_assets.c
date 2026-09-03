@@ -269,185 +269,6 @@ const RageRuntimeMesh *ModernAssetsMeshLookup(
     return cached != NULL ? &cached->mesh : NULL;
 }
 
-static int ModernAssetsFindMaterialPaths(
-    const RageRenderMeshInstance *instance, uint32_t material,
-    uint8_t variant, const char **pathOut, size_t *pathLengthOut,
-    const char **paintPathOut, size_t *paintPathLengthOut) {
-    static const char semanticHeaderV4[] = "# rage-rmat v4\n";
-    static const char semanticHeaderV5[] = "# rage-rmat v5\n";
-    static const char semanticHeaderV6[] = "# rage-rmat v6\n";
-    const RageRuntimeCachedMesh *cached;
-    const void *mapBytes;
-    size_t mapSize, lineStart = 0;
-    const char *path = NULL;
-    size_t pathLength = 0, i;
-    const char *paintPath = NULL;
-    size_t paintPathLength = 0;
-    int semanticFormat, paintFormat;
-    int found = 0;
-    if (pathOut == NULL || pathLengthOut == NULL || paintPathOut == NULL ||
-        paintPathLengthOut == NULL || instance == NULL) return 0;
-    *paintPathOut = NULL;
-    *paintPathLengthOut = 0;
-    cached = ModernAssetsFind(instance);
-    if (cached == NULL || cached->location.materialPathLength == 1 ||
-        cached->location.materialPath[0] == '-' ||
-        !ModernAssetReadFile(NULL, cached->location.materialPath,
-                             cached->location.materialPathLength, &mapBytes,
-                             &mapSize)) return 0;
-    paintFormat =
-        (mapSize >= sizeof(semanticHeaderV5) - 1 &&
-         memcmp(mapBytes, semanticHeaderV5,
-                sizeof(semanticHeaderV5) - 1) == 0) ||
-        (mapSize >= sizeof(semanticHeaderV6) - 1 &&
-         memcmp(mapBytes, semanticHeaderV6,
-                sizeof(semanticHeaderV6) - 1) == 0);
-    semanticFormat = paintFormat ||
-        (mapSize >= sizeof(semanticHeaderV4) - 1 &&
-         memcmp(mapBytes, semanticHeaderV4,
-                sizeof(semanticHeaderV4) - 1) == 0);
-    for (i = 0; i <= mapSize; i++) {
-        if (i == mapSize || ((const char *)mapBytes)[i] == '\n') {
-            const char *line = (const char *)mapBytes + lineStart;
-            size_t length = i - lineStart, number = 0, cursor = 0;
-            uint32_t value = 0;
-            while (cursor < length && line[cursor] >= '0' && line[cursor] <= '9') {
-                value = value * 10u + (uint32_t)(line[cursor++] - '0'); number++;
-            }
-            if (number && cursor < length && line[cursor] == ' ' && value == material) {
-                size_t start;
-                cursor++;
-                if (semanticFormat) {
-                    size_t selectedStart = cursor, selectedLength = 0;
-                    uint32_t pathIndex = 0;
-                    int selected = 0;
-                    while (cursor <= length) {
-                        size_t candidateStart = cursor;
-                        while (cursor < length && line[cursor] != ' ') cursor++;
-                        if (paintFormat && cursor - candidateStart == 1 &&
-                            line[candidateStart] == '|') {
-                            while (cursor < length && line[cursor] == ' ')
-                                cursor++;
-                            paintPath = line + cursor;
-                            while (cursor < length && line[cursor] != ' ')
-                                cursor++;
-                            paintPathLength = (size_t)(line + cursor -
-                                                       paintPath);
-                            break;
-                        }
-                        if (pathIndex == variant) {
-                            selectedStart = candidateStart;
-                            selectedLength = cursor - candidateStart;
-                            selected = 1;
-                        }
-                        if (cursor == length) break;
-                        while (cursor < length && line[cursor] == ' ') cursor++;
-                        pathIndex++;
-                    }
-                    path = line + selectedStart;
-                    pathLength = selectedLength;
-                    /* A semantic cache lists every gameplay-selectable
-                     * variant, including duplicate paths. Falling back to
-                     * variant zero here rendered a valid but unrelated
-                     * texture whenever an old/truncated cache was used. */
-                    found = selected && pathLength != 0;
-                    break;
-                }
-                start = cursor;
-                while (cursor < length && line[cursor] >= '0' && line[cursor] <= '9') {
-                    cursor++;
-                }
-                if (cursor > start && cursor < length && line[cursor] == ' ') {
-                    size_t clutStart;
-                    cursor++;
-                    clutStart = cursor;
-                    while (cursor < length && line[cursor] >= '0' && line[cursor] <= '9') {
-                        cursor++;
-                    }
-                    if (cursor > clutStart && cursor < length && line[cursor] == ' ') {
-                        size_t primaryStart, primaryLength;
-                        size_t selectedStart = 0, selectedLength = 0;
-                        uint32_t pathIndex = 0;
-                        cursor++;
-                        /* v3 sidecar appends the decoded PS1 texture window
-                         * before the paths. Older sidecars begin with a path
-                         * and therefore retain the full-page defaults. */
-                        if (cursor < length && line[cursor] >= '0' &&
-                            line[cursor] <= '9') {
-                            uint32_t windowIndex;
-                            for (windowIndex = 0; windowIndex < 4;
-                                 windowIndex++) {
-                                size_t valueStart = cursor;
-                                while (cursor < length &&
-                                       line[cursor] >= '0' &&
-                                       line[cursor] <= '9') {
-                                    cursor++;
-                                }
-                                if (cursor == valueStart || cursor >= length ||
-                                    line[cursor] != ' ') break;
-                                cursor++;
-                            }
-                            if (windowIndex != 4) break;
-                        }
-                        primaryStart = cursor;
-                        while (cursor < length && line[cursor] != ' ') cursor++;
-                        primaryLength = cursor - primaryStart;
-                        selectedStart = primaryStart;
-                        selectedLength = primaryLength;
-                        while (cursor < length) {
-                            size_t candidateStart, candidateLength;
-                            while (cursor < length && line[cursor] == ' ')
-                                cursor++;
-                            candidateStart = cursor;
-                            while (cursor < length && line[cursor] != ' ')
-                                cursor++;
-                            candidateLength = cursor - candidateStart;
-                            pathIndex++;
-                            if (pathIndex == variant && candidateLength != 0) {
-                                selectedStart = candidateStart;
-                                selectedLength = candidateLength;
-                            }
-                        }
-                        path = line + selectedStart;
-                        pathLength = selectedLength;
-                        found = 1;
-                    }
-                } else {
-                    /* v1 sidecar: `material path`. Keep existing extracted
-                     * assets usable while the richer contract rolls out. */
-                    path = line + start; pathLength = length - start; found = 1;
-                }
-                break;
-            }
-            lineStart = i + 1;
-        }
-    }
-    if (found && pathLength < sizeof(s_materialPath)) {
-        memcpy(s_materialPath, path, pathLength);
-        s_materialPath[pathLength] = '\0';
-        *pathOut = s_materialPath; *pathLengthOut = pathLength;
-        if (paintPath != NULL && paintPathLength != 0 &&
-            !(paintPathLength == 1 && paintPath[0] == '-') &&
-            paintPathLength < sizeof(s_paintPath)) {
-            memcpy(s_paintPath, paintPath, paintPathLength);
-            s_paintPath[paintPathLength] = '\0';
-            *paintPathOut = s_paintPath;
-            *paintPathLengthOut = paintPathLength;
-        }
-        if (RuntimeConfigEnabled("diagnostics.modern_asset_trace")) {
-            fprintf(stderr,
-                    "rage-port: native material asset=%u set=%u material=%u "
-                    "variant=%u path=%s\n",
-                    instance->assetKey, (unsigned)instance->assetSet, material,
-                    variant, s_materialPath);
-        }
-    } else {
-        found = 0;
-    }
-    ModernAssetFreeFile(NULL, mapBytes);
-    return found;
-}
-
 static const char *ModernAssetsFindModMaterialProperties(
     const RageRenderMeshInstance *instance, uint32_t material,
     uint8_t variant) {
@@ -475,27 +296,43 @@ static int ModernAssetsFindMaterial(
     uint8_t variant, RageRenderMaterial *definition) {
     const RageRuntimeCachedMesh *cached;
     const void *mapBytes;
-    const char *path, *paintPath;
-    size_t mapSize, pathLength, paintPathLength;
-    if (definition == NULL ||
-        !ModernAssetsFindMaterialPaths(
-            instance, material, variant, &path, &pathLength,
-            &paintPath, &paintPathLength)) return 0;
+    size_t mapSize;
+    int parsed;
+    if (definition == NULL || instance == NULL) return 0;
     cached = ModernAssetsFind(instance);
-    if (cached == NULL ||
+    if (cached == NULL || cached->location.materialPathLength == 1 ||
+        cached->location.materialPath[0] == '-' ||
         !ModernAssetReadFile(NULL, cached->location.materialPath,
                              cached->location.materialPathLength,
                              &mapBytes, &mapSize)) return 0;
-    if (!RenderMaterialParse(
-            mapBytes, mapSize, material, variant, definition)) {
-        ModernAssetFreeFile(NULL, mapBytes);
-        return 0;
+    parsed = RenderMaterialParse(
+        mapBytes, mapSize, material, variant, definition);
+    if (parsed && definition->baseColorTexture.length != 0 &&
+        definition->baseColorTexture.length < sizeof(s_materialPath) &&
+        definition->paintMask.length < sizeof(s_paintPath)) {
+        memcpy(s_materialPath, definition->baseColorTexture.text,
+               definition->baseColorTexture.length);
+        s_materialPath[definition->baseColorTexture.length] = '\0';
+        if (definition->paintMask.length != 0) {
+            memcpy(s_paintPath, definition->paintMask.text,
+                   definition->paintMask.length);
+            s_paintPath[definition->paintMask.length] = '\0';
+        }
+    } else {
+        parsed = 0;
     }
     ModernAssetFreeFile(NULL, mapBytes);
-    definition->baseColorTexture.text = path;
-    definition->baseColorTexture.length = pathLength;
-    definition->paintMask.text = paintPath;
-    definition->paintMask.length = paintPathLength;
+    if (!parsed) return 0;
+    definition->baseColorTexture.text = s_materialPath;
+    definition->paintMask.text = definition->paintMask.length != 0
+        ? s_paintPath : NULL;
+    if (RuntimeConfigEnabled("diagnostics.modern_asset_trace")) {
+        fprintf(stderr,
+                "rage-port: native material asset=%u set=%u material=%u "
+                "variant=%u path=%s\n",
+                instance->assetKey, (unsigned)instance->assetSet, material,
+                variant, s_materialPath);
+    }
     if (s_modReady) {
         const char *properties = ModernAssetsFindModMaterialProperties(
             instance, material, variant);
