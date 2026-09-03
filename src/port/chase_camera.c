@@ -1,6 +1,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
+#include <math.h>
 
 #include "runtime_config.h"
 
@@ -19,8 +21,10 @@ static void ChaseCameraInit(void) {
     s_lookahead = 0.0f;
     text = RuntimeConfigGet("camera.chase_turn_lookahead");
     if (text == NULL || text[0] == '\0') return;
+    errno = 0;
     value = strtof(text, &end);
-    if (*end != '\0' || value < 0.0f || value > 1.0f) {
+    if (errno == ERANGE || end == text || *end != '\0' || !isfinite(value) ||
+        value < 0.0f || value > 1.0f) {
         fprintf(stderr,
                 "rage-port: ignoring camera.chase_turn_lookahead=%s "
                 "(expected 0..1); using 0\n",

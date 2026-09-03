@@ -33,8 +33,12 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(chase_camera_tests PRIVATE -Wall -Wextra -Werror)
 endif()
 add_test(NAME chase_camera COMMAND chase_camera_tests)
+add_test(NAME chase_camera_invalid COMMAND chase_camera_tests)
+set_tests_properties(chase_camera_invalid PROPERTIES
+    ENVIRONMENT "CHASE_TEST_VALUE=nan")
 
-set_tests_properties(chase_camera PROPERTIES LABELS functional)
+set_tests_properties(chase_camera chase_camera_invalid PROPERTIES
+    LABELS functional)
 
 add_executable(player_tachometer_tests
     player_tachometer_tests.c
