@@ -1,5 +1,6 @@
 #include "game/car_model_matrix.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -45,6 +46,16 @@ int main(void) {
     CHECK_EQ(source.m[1][1], 5);
     CHECK_EQ(source.m[1][2], -6);
     CHECK_EQ(source.t[1], 11);
+
+    source.m[0][0] = INT16_MIN;
+    source.m[0][2] = INT16_MIN;
+    FlipMatrixXZColumns(&flipped, &source);
+    CHECK_EQ(flipped.m[0][0], INT16_MIN);
+    CHECK_EQ(flipped.m[0][2], INT16_MIN);
+
+    FlipMatrixXZColumns(&source, &source);
+    CHECK_EQ(source.m[0][0], INT16_MIN);
+    CHECK_EQ(source.m[0][2], INT16_MIN);
 
     puts("car model matrix tests passed");
     return 0;
