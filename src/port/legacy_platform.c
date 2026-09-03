@@ -58,6 +58,7 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 #include "archive_index.h"
 #include "disc_cue.h"
 #include "disc_iso.h"
+#include "disc_raw_file.h"
 #include "disc_picker.h"
 #include "platform_paths.h"
 #include "runtime_config.h"
@@ -384,40 +385,29 @@ static int HostChooseDisc(char *cue, size_t size) {
            access(cue, R_OK) == 0;
 }
 
-static int HostReadSector(long sector, unsigned char *buffer) {
-    long byte_offset;
-    long maximum_sector;
+static int HostReadRawSector(void *context, unsigned int sector,
+                             unsigned char *raw) {
+    DiscRawFile disc;
 
-    if (sector < 0 || buffer == NULL || g_RageHostDisc.track_offset < 0 ||
-        g_RageHostDisc.user_offset < 0 ||
-        g_RageHostDisc.track_offset >
-            LONG_MAX - g_RageHostDisc.user_offset) {
-        return 0;
-    }
-    maximum_sector = (LONG_MAX - g_RageHostDisc.track_offset -
-                      g_RageHostDisc.user_offset) /
-                     RAGE_CD_SECTOR_SIZE;
-    if (sector > maximum_sector) return 0;
+    (void)context;
+    if (raw == NULL) return 0;
     if (g_RageHostDisc.chd) {
-        unsigned char raw[RAGE_CD_SECTOR_SIZE];
-        if ((unsigned long)sector > UINT_MAX) return 0;
-        if (!ChdReadRawSector((unsigned int)sector, raw)) return 0;
-        memcpy(buffer, raw + g_RageHostDisc.user_offset,
-               RAGE_ISO_SECTOR_SIZE);
-        return 1;
+        return ChdReadRawSector(sector, raw);
     }
-    byte_offset = g_RageHostDisc.track_offset +
-                  sector * RAGE_CD_SECTOR_SIZE + g_RageHostDisc.user_offset;
-    if (g_RageHostDisc.file == NULL ||
-        fseek(g_RageHostDisc.file, byte_offset, SEEK_SET) != 0) {
-        return 0;
-    }
-    return fread(buffer, 1, RAGE_ISO_SECTOR_SIZE, g_RageHostDisc.file) ==
-           RAGE_ISO_SECTOR_SIZE;
+    disc.file = g_RageHostDisc.file;
+    disc.trackOffset = g_RageHostDisc.track_offset;
+    return DiscRawFileReadSector(&disc, sector, raw);
 }
 
-static int HostReadRawSector(void *context, unsigned int sector,
-                             unsigned char *raw);
+static int HostReadUserSector(unsigned int sector, unsigned char *user) {
+    DiscIsoReader reader = {
+        HostReadRawSector,
+        NULL,
+        g_RageHostDisc.user_offset,
+    };
+
+    return DiscIsoReadUserSector(&reader, sector, user);
+}
 
 static int HostFindArchive(void) {
     DiscIsoReader reader;
@@ -455,19 +445,6 @@ static void HostSeedStreamTable(void) {
     for (stream = 0; stream < RAGE_DISC_STREAM_COUNT; stream++) {
         s_StreamSpans[stream] = g_RetailPalStreamTable.span[stream];
     }
-}
-
-static int HostReadRawSector(void *context, unsigned int sector,
-                             unsigned char *raw) {
-    (void)context;
-    if (g_RageHostDisc.chd) return ChdReadRawSector(sector, raw);
-    if (g_RageHostDisc.file == NULL) return 0;
-    if (fseek(g_RageHostDisc.file,
-              g_RageHostDisc.track_offset + (long)sector * RAGE_CD_SECTOR_SIZE,
-              SEEK_SET) != 0)
-        return 0;
-    return fread(raw, 1, RAGE_CD_SECTOR_SIZE, g_RageHostDisc.file) ==
-           RAGE_CD_SECTOR_SIZE;
 }
 
 /* Where the movies are and how long they run is a property of the disc in the
@@ -578,9 +555,13 @@ static int HostReadArchive(unsigned int offset, void *destination,
         unsigned int sector_offset = offset % RAGE_ISO_SECTOR_SIZE;
         unsigned int chunk = RAGE_ISO_SECTOR_SIZE - sector_offset;
         if (chunk > size) chunk = size;
-        if (!HostReadSector(g_RageHostDisc.archive_sector +
-                                offset / RAGE_ISO_SECTOR_SIZE,
-                            sector)) {
+        if (g_RageHostDisc.archive_sector < 0 ||
+            (unsigned long)g_RageHostDisc.archive_sector >
+                UINT_MAX - offset / RAGE_ISO_SECTOR_SIZE ||
+            !HostReadUserSector(
+                (unsigned int)g_RageHostDisc.archive_sector +
+                    offset / RAGE_ISO_SECTOR_SIZE,
+                sector)) {
             return 0;
         }
         memcpy(output, sector + sector_offset, chunk);
