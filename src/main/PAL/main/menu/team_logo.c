@@ -2,6 +2,7 @@
 #include "game/asset_internal.h"
 
 enum {
+    TEAM_LOGO_SAMPLE_CHOICE_COUNT = 20,
     TEAM_LOGO_BACKGROUND_SAMPLE_BASE = 10,
     TEAM_LOGO_CHARACTER_COLOR_FIRST = 1,
     TEAM_LOGO_BACKGROUND_COLOR_FIRST = 12,
@@ -25,15 +26,25 @@ static u16 CompositeLogoPixels(u16 characterPixels, u16 backgroundPixels) {
 
 /* Builds the editable logo from one character layer and one background layer. */
 void ComposeSampleTeamLogo(s32 character, s32 background) {
-    const TeamLogoSample *characterSample =
-        &g_TeamLogoSampleData[character / 2];
-    const TeamLogoSample *backgroundSample =
-        &g_TeamLogoSampleData[TEAM_LOGO_BACKGROUND_SAMPLE_BASE + background / 2];
-    const u16 *characterClut = characterSample->clut[character & 1];
-    const u16 *backgroundClut = backgroundSample->clut[background & 1];
+    const TeamLogoSample *characterSample;
+    const TeamLogoSample *backgroundSample;
+    const u16 *characterClut;
+    const u16 *backgroundClut;
     s32 row;
     s32 word;
     s32 index;
+
+    if (g_TeamLogoSampleData == NULL ||
+        (u32)character >= TEAM_LOGO_SAMPLE_CHOICE_COUNT ||
+        (u32)background >= TEAM_LOGO_SAMPLE_CHOICE_COUNT) {
+        return;
+    }
+
+    characterSample = &g_TeamLogoSampleData[character / 2];
+    backgroundSample =
+        &g_TeamLogoSampleData[TEAM_LOGO_BACKGROUND_SAMPLE_BASE + background / 2];
+    characterClut = characterSample->clut[character & 1];
+    backgroundClut = backgroundSample->clut[background & 1];
 
     for (index = TEAM_LOGO_CHARACTER_COLOR_FIRST;
          index < TEAM_LOGO_BACKGROUND_COLOR_FIRST; index++) {

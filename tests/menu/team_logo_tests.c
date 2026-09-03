@@ -20,6 +20,9 @@ static int Check(int condition, const char *message) {
 }
 
 int main(void) {
+    TeamLogoCanvas savedCanvas;
+    u16 savedClut[16];
+    u16 savedSwatches[15];
     s32 index;
     int ok = 1;
 
@@ -75,6 +78,23 @@ int main(void) {
         ok &= Check(g_TeamLogoClut[index] == (u16)(0x400 + index),
                     "odd background variant was not selected");
     }
+
+    savedCanvas = g_TeamLogoCanvas;
+    memcpy(savedClut, g_TeamLogoClut, sizeof(savedClut));
+    memcpy(savedSwatches, g_TeamLogoSwatches, sizeof(savedSwatches));
+    ComposeSampleTeamLogo(-1, 20);
+    ok &= Check(memcmp(&g_TeamLogoCanvas, &savedCanvas, sizeof(savedCanvas)) == 0,
+                "invalid sample changed the canvas");
+    ok &= Check(memcmp(g_TeamLogoClut, savedClut, sizeof(savedClut)) == 0,
+                "invalid sample changed the CLUT");
+    ok &= Check(memcmp(g_TeamLogoSwatches, savedSwatches,
+                       sizeof(savedSwatches)) == 0,
+                "invalid sample changed the swatches");
+
+    g_TeamLogoSampleData = NULL;
+    ComposeSampleTeamLogo(0, 0);
+    ok &= Check(memcmp(&g_TeamLogoCanvas, &savedCanvas, sizeof(savedCanvas)) == 0,
+                "missing sample bank changed the canvas");
 
     if (!ok) {
         return 1;
