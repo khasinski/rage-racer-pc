@@ -101,6 +101,7 @@ static void test_camera_is_scene_data_not_backend_state(void) {
     camera.skyHorizonColor.x = 0.30f;
     camera.skyBottomColor.x = 0.40f;
     camera.skyAssetKey = 88;
+    camera.skyCloudRow = 2;
     camera.fogNear = 100.0f;
     camera.fogFar = 500.0f;
     RenderWorldSetCamera(&world, &camera);
@@ -124,6 +125,7 @@ static void test_camera_is_scene_data_not_backend_state(void) {
     camera.skyHorizonColor.x = 0.90f;
     camera.skyBottomColor.x = 1.00f;
     camera.skyAssetKey = 90;
+    camera.skyCloudRow = 4;
     camera.fogNear = 200.0f;
     camera.fogFar = 1000.0f;
     RenderWorldSetCamera(&world, &camera);
@@ -137,6 +139,7 @@ static void test_camera_is_scene_data_not_backend_state(void) {
     EXPECT_EQ(60, (int)(camera.skyHorizonColor.x * 100.0f));
     EXPECT_EQ(70, (int)(camera.skyBottomColor.x * 100.0f));
     EXPECT_EQ(90, camera.skyAssetKey);
+    EXPECT_EQ(4, camera.skyCloudRow);
     EXPECT_EQ(150, (int)camera.fogNear);
     EXPECT_EQ(750, (int)camera.fogFar);
 }
