@@ -394,6 +394,19 @@ static void RacingLineTests(void) {
     ApplyCarRacingLineHint(&car, 1);
     Check(car.routeIndex == 0, "invalid racing-line index resets",
           car.routeIndex, 0);
+
+    hints[0].start = 0x100;
+    hints[0].end = 0x200;
+    hints[0].minHeight = INT16_MIN;
+    hints[0].maxHeight = INT16_MAX;
+    hints[0].heightAdjustment = 10;
+    memset(&car, 0, sizeof(car));
+    car.trackProgress = 0x180 << 4;
+    car.aiLateralOffset = INT16_MAX - 1;
+    ApplyCarRacingLineHint(&car, 1);
+    Check(car.aiLateralOffset == INT16_MIN + 8,
+          "racing-line adjustment wraps like the PS1",
+          car.aiLateralOffset, INT16_MIN + 8);
 }
 
 static void MissingAiDataTests(void) {

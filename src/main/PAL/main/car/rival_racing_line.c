@@ -1,4 +1,5 @@
 #include "game/car.h"
+#include "game/integer.h"
 #include "game/race.h"
 #include "game/track.h"
 
@@ -42,7 +43,8 @@ void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex) {
         const s32 offset = car->aiLateralOffset;
 
         if (hint->minHeight < offset && offset < hint->maxHeight) {
-            car->aiLateralOffset = offset + hint->heightAdjustment;
+            car->aiLateralOffset = WrapSigned16(
+                offset + hint->heightAdjustment);
         }
     }
 }
