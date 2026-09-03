@@ -3,7 +3,19 @@
 
 #include <stdio.h>
 
-CellScanOffsetTable g_CellScanOffsets;
+const CellScanOffsetTable g_CellScanOffsets = {
+    .values = {
+        [0][3] = {1, 11},
+        [1][3] = {2, 12},
+        [2][3] = {3, 13},
+        [3][3] = {4, 14},
+        [4][3] = {5, 15},
+        [5][3] = {6, 16},
+        [6][3] = {7, 17},
+        [7][3] = {8, 18},
+        [8][3] = {9, 19},
+    },
+};
 
 static int s_failures;
 
@@ -20,13 +32,6 @@ static void ExpectOffset(const char *what, s32 direction, s32 rearView,
 
 int main(void) {
     s32 invalidOffset[2] = {99, 99};
-    s32 direction;
-
-    for (direction = 0; direction < CELL_SCAN_BASE_DIRECTION_COUNT;
-         direction++) {
-        g_CellScanOffsets.values[direction][3][0] = (s8)(direction + 1);
-        g_CellScanOffsets.values[direction][3][1] = (s8)(direction + 11);
-    }
 
     ExpectOffset("front start", 0, 0, 1, 11);
     ExpectOffset("front end", 7, 0, 8, 18);

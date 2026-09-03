@@ -12,6 +12,6 @@ typedef union CellScanOffsetTable {
     s8 values[CELL_SCAN_BASE_DIRECTION_COUNT][VISIBLE_CELL_COUNT][2];
 } CellScanOffsetTable;
 
-extern CellScanOffsetTable g_CellScanOffsets;
+extern const CellScanOffsetTable g_CellScanOffsets;
 
 #endif
