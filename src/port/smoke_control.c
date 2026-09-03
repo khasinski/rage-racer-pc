@@ -19,8 +19,8 @@
 #include "modern/modern_renderer.h"
 
 typedef struct RageSmokeInput {
-    long firstFrame;
-    long lastFrame;
+    int firstFrame;
+    int lastFrame;
     unsigned short buttons;
     int held;
 } RageSmokeInput;
@@ -151,9 +151,9 @@ static uint32_t SmokeHashVisibleList(const VisibleTerrainCell *entries) {
 }
 
 typedef struct RageSmokeStateInput {
-    long scene;
-    long timer;
-    long phase;
+    int scene;
+    int timer;
+    int phase;
     int hasPhase;
     unsigned short buttons;
     int armed;
@@ -163,15 +163,15 @@ typedef struct RageSmokeStateInput {
 enum { RAGE_SMOKE_INPUT_CAPACITY = 256 };
 static RageSmokeInput g_SmokeInputs[RAGE_SMOKE_INPUT_CAPACITY];
 static int g_SmokeInputCount;
-static long g_SmokeFrameLimit;
-static long g_SmokeFinishFrame;
-static long g_SmokeAutoConfirmFrame;
-static long g_SmokeStopScene;
-static long g_SmokeStopSceneTimer;
-static long g_SmokeCaptureTimerStride;
-static long g_SmokeCaptureTimerMin;
-static long g_SmokeCaptureTimerMax;
-static long g_SmokeCaptureScene;
+static int g_SmokeFrameLimit;
+static int g_SmokeFinishFrame;
+static int g_SmokeAutoConfirmFrame;
+static int g_SmokeStopScene;
+static int g_SmokeStopSceneTimer;
+static int g_SmokeCaptureTimerStride;
+static int g_SmokeCaptureTimerMin;
+static int g_SmokeCaptureTimerMax;
+static int g_SmokeCaptureScene;
 static const char *g_SmokeCaptureDirectory;
 static FILE *g_SmokeCaptureManifest;
 
@@ -218,11 +218,11 @@ static RageSmokeStateInput g_SmokeStateInputs[32];
 static int g_SmokeRandomSyncEnabled;
 static int g_SmokeRandomSyncArmed;
 static int g_SmokeRandomSyncFired;
-static long g_SmokeRandomSyncScene;
-static long g_SmokeRandomSyncTimer;
+static int g_SmokeRandomSyncScene;
+static int g_SmokeRandomSyncTimer;
 static unsigned long g_SmokeRandomSyncSeed;
-static long g_SmokeRandomSyncVariant;
-static long g_SmokeRandomSyncPresentationVariant;
+static int g_SmokeRandomSyncVariant;
+static int g_SmokeRandomSyncPresentationVariant;
 static int g_SmokeRandomSyncHasVariants;
 static int g_SmokeRandomSyncEachFrame;
 static void SmokeInitialize(void);
@@ -288,15 +288,10 @@ static unsigned short SmokeButton(const char *name) {
 }
 
 static void SmokeInitialize(void) {
-    const char *limit = RuntimeConfigGet("run.frames");
     const char *script = RuntimeConfigGet("input.raw_script");
-    const char *finish = RuntimeConfigGet("hooks.finish_frame");
-    const char *autoConfirm = RuntimeConfigGet("hooks.auto_confirm_frame");
     const char *stopScene = RuntimeConfigGet("stop.scene");
     const char *stopTimer = RuntimeConfigGet("stop.timer");
     const char *captureDirectory = RuntimeConfigGet("capture.directory");
-    const char *captureStride =
-        RuntimeConfigGet("capture.timer_stride");
     const char *captureMin = RuntimeConfigGet("capture.timer_min");
     const char *captureMax = RuntimeConfigGet("capture.timer_max");
     const char *captureScene = RuntimeConfigGet("capture.scene");
@@ -305,22 +300,24 @@ static void SmokeInitialize(void) {
     char *copy;
     char *token;
 
-    g_SmokeFrameLimit = limit ? strtol(limit, NULL, 10) : 0;
-    g_SmokeFinishFrame = finish ? strtol(finish, NULL, 10) : 0;
-    g_SmokeAutoConfirmFrame = autoConfirm ? strtol(autoConfirm, NULL, 10) : 0;
-    g_SmokeHasStopScene = stopScene != NULL;
-    g_SmokeHasStopSceneTimer = stopTimer != NULL;
-    g_SmokeStopScene = stopScene ? strtol(stopScene, NULL, 10) : 0;
-    g_SmokeStopSceneTimer = stopTimer ? strtol(stopTimer, NULL, 10) : 0;
+    g_SmokeFrameLimit = RuntimeConfigInt("run.frames", 0, 0, INT_MAX);
+    g_SmokeFinishFrame =
+        RuntimeConfigInt("hooks.finish_frame", 0, 0, INT_MAX);
+    g_SmokeAutoConfirmFrame =
+        RuntimeConfigInt("hooks.auto_confirm_frame", 0, 0, INT_MAX);
+    g_SmokeHasStopScene =
+        RuntimeParseInt(stopScene, 0, 0, INT_MAX, &g_SmokeStopScene);
+    g_SmokeHasStopSceneTimer =
+        RuntimeParseInt(stopTimer, 0, 0, INT_MAX, &g_SmokeStopSceneTimer);
     g_SmokeCaptureDirectory = captureDirectory;
-    g_SmokeCaptureTimerStride =
-        captureStride ? strtol(captureStride, NULL, 10) : 0;
-    g_SmokeHasCaptureTimerMin = captureMin != NULL;
-    g_SmokeHasCaptureTimerMax = captureMax != NULL;
-    g_SmokeCaptureTimerMin = captureMin ? strtol(captureMin, NULL, 10) : 0;
-    g_SmokeCaptureTimerMax = captureMax ? strtol(captureMax, NULL, 10) : 0;
-    g_SmokeHasCaptureScene = captureScene != NULL;
-    g_SmokeCaptureScene = captureScene ? strtol(captureScene, NULL, 10) : 0;
+    g_SmokeCaptureTimerStride = RuntimeConfigInt(
+        "capture.timer_stride", 0, 0, INT_MAX);
+    g_SmokeHasCaptureTimerMin = RuntimeParseInt(
+        captureMin, 0, 0, INT_MAX, &g_SmokeCaptureTimerMin);
+    g_SmokeHasCaptureTimerMax = RuntimeParseInt(
+        captureMax, 0, 0, INT_MAX, &g_SmokeCaptureTimerMax);
+    g_SmokeHasCaptureScene = RuntimeParseInt(
+        captureScene, 0, 0, INT_MAX, &g_SmokeCaptureScene);
     g_SmokeCaptureAllPhases = RuntimeConfigEnabled("capture.all_phases");
     g_SmokeRandomSyncEachFrame = RuntimeConfigEnabled("sync.random_each_frame");
     if (randomSync != NULL && randomSync[0] != '\0') {
@@ -414,6 +411,8 @@ static void SmokeInitialize(void) {
         char *rangeSeparator;
         unsigned short buttons;
         char *name;
+        int firstFrame;
+        int lastFrame;
         if (separator == NULL) continue;
         *separator = '\0';
         name = separator + 1;
@@ -434,15 +433,21 @@ static void SmokeInitialize(void) {
         rangeSeparator = strchr(token, '-');
         if (rangeSeparator != NULL) {
             *rangeSeparator = '\0';
-            g_SmokeInputs[g_SmokeInputCount].lastFrame =
-                strtol(rangeSeparator + 1, NULL, 10);
-            g_SmokeInputs[g_SmokeInputCount].held = 1;
+            if (!RuntimeParseInt(rangeSeparator + 1, 10, 0, INT_MAX,
+                                 &lastFrame)) {
+                continue;
+            }
+        } else {
+            lastFrame = -1;
         }
-        g_SmokeInputs[g_SmokeInputCount].firstFrame = strtol(token, NULL, 10);
-        if (!g_SmokeInputs[g_SmokeInputCount].held) {
-            g_SmokeInputs[g_SmokeInputCount].lastFrame =
-                g_SmokeInputs[g_SmokeInputCount].firstFrame;
+        if (!RuntimeParseInt(token, 10, 0, INT_MAX, &firstFrame) ||
+            (rangeSeparator != NULL && lastFrame < firstFrame)) {
+            continue;
         }
+        g_SmokeInputs[g_SmokeInputCount].firstFrame = firstFrame;
+        g_SmokeInputs[g_SmokeInputCount].lastFrame =
+            rangeSeparator != NULL ? lastFrame : firstFrame;
+        g_SmokeInputs[g_SmokeInputCount].held = rangeSeparator != NULL;
         g_SmokeInputs[g_SmokeInputCount].buttons = buttons;
         g_SmokeInputCount++;
     }
@@ -457,22 +462,26 @@ static void SmokeInitialize(void) {
         char *phaseAt;
         char *colon = strchr(token, ':');
         unsigned short buttons;
+        int scene;
+        int timer;
+        int phase = 0;
         if (at == NULL || colon == NULL || at > colon) continue;
         *at = '\0';
         *colon = '\0';
         phaseAt = strchr(at + 1, '@');
         if (phaseAt != NULL) *phaseAt = '\0';
         buttons = SmokeButton(colon + 1);
-        if (buttons == 0) continue;
-        g_SmokeStateInputs[g_SmokeStateInputCount].scene =
-            strtol(token, NULL, 0);
-        g_SmokeStateInputs[g_SmokeStateInputCount].timer =
-            strtol(at + 1, NULL, 0);
-        if (phaseAt != NULL) {
-            g_SmokeStateInputs[g_SmokeStateInputCount].phase =
-                strtol(phaseAt + 1, NULL, 0);
-            g_SmokeStateInputs[g_SmokeStateInputCount].hasPhase = 1;
+        if (buttons == 0 ||
+            !RuntimeParseInt(token, 0, 0, INT_MAX, &scene) ||
+            !RuntimeParseInt(at + 1, 0, 0, INT_MAX, &timer) ||
+            (phaseAt != NULL &&
+             !RuntimeParseInt(phaseAt + 1, 0, 0, INT_MAX, &phase))) {
+            continue;
         }
+        g_SmokeStateInputs[g_SmokeStateInputCount].scene = scene;
+        g_SmokeStateInputs[g_SmokeStateInputCount].timer = timer;
+        g_SmokeStateInputs[g_SmokeStateInputCount].phase = phase;
+        g_SmokeStateInputs[g_SmokeStateInputCount].hasPhase = phaseAt != NULL;
         g_SmokeStateInputs[g_SmokeStateInputCount].buttons = buttons;
         g_SmokeStateInputCount++;
     }
