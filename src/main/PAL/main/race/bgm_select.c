@@ -22,8 +22,11 @@ void UpdateBgmSelect(void) {
     if (g_FadeStep == 0) {
         UpdateBgmSelectInput();
     } else {
+        g_FadeLevel = StepBgmSelectFade(
+            g_FadeLevel, 0, BGM_SELECT_OPAQUE_FADE);
         DrawFullscreenFadeTile(g_FadeLevel, BGM_SELECT_FADE_TPAGE);
-        g_FadeLevel += g_FadeStep;
+        g_FadeLevel = StepBgmSelectFade(
+            g_FadeLevel, g_FadeStep, BGM_SELECT_OPAQUE_FADE);
         if (g_FadeLevel >= BGM_SELECT_OPAQUE_FADE) {
             RequestOptionScreenAssets();
             g_BgmSelectStep = BGM_SELECT_STEP_EXIT;
@@ -36,14 +39,14 @@ void UpdateBgmSelect(void) {
         UpdateBgmSelectBar();
         DrawBgmSelectBar();
     }
-    g_AnimTimer++;
+    g_AnimTimer = (s32)((u32)g_AnimTimer + 1);
     g_CameraCarIndex =
         CycleBgmSelectCameraCar(BGM_SELECT_CAMERA_MASK, g_CameraCarIndex);
     UpdateAndDrawAttractWorld();
 }
 
 void UpdateBgmSelectScene(void) {
-    g_SceneTimer++;
+    g_SceneTimer = NextBgmSelectTimer(g_SceneTimer);
 
     switch (g_BgmSelectStep) {
     case BGM_SELECT_STEP_INVALID:

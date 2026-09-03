@@ -47,6 +47,8 @@ void UpdateRacePosition(void);
 s32 AttractTitleFadeLevel(s32 step, s32 timer, s32 fadeLevel, s32 delay);
 s32 BgmCdTrack(s32 selectedTrack);
 s32 WrapBgmTrackIndex(s32 track, s32 trackCount);
+s32 NextBgmSelectTimer(s32 timer);
+s32 StepBgmSelectFade(s32 fade, s32 step, s32 ceiling);
 s32 AttractOpeningWashLevel(s32 timer);
 s32 AttractClosingWashLevel(s32 timer);
 s32 NextAttractLoadTimer(s32 timer);

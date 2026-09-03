@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <limits.h>
 
 #include "game/car.h"
 #include "game/menu.h"
@@ -107,11 +108,30 @@ static void TestSceneDispatch(void) {
     g_BgmSelectStep = BGM_SELECT_STEP_EXIT;
     UpdateBgmSelectScene();
     assert(s_exitUpdates == 1);
+
+    Reset();
+    g_SceneTimer = INT_MAX;
+    UpdateBgmSelectScene();
+    assert(g_SceneTimer == 10000);
+}
+
+static void TestExtremeFadeAndAnimationState(void) {
+    Reset();
+    g_AnimTimer = INT_MAX;
+    g_FadeLevel = INT_MAX;
+    g_FadeStep = INT_MAX;
+
+    UpdateBgmSelect();
+
+    assert(s_fadeLevel == 256 && s_assetRequests == 1);
+    assert(g_FadeLevel == 256 && g_FadeStep == -4);
+    assert(g_AnimTimer == INT_MIN);
 }
 
 int main(void) {
     TestActiveFrame();
     TestExitFadeRequest();
     TestSceneDispatch();
+    TestExtremeFadeAndAnimationState();
     return 0;
 }

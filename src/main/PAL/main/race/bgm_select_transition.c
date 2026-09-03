@@ -46,9 +46,9 @@ static s32 AdvanceBgmSelectFade(void) {
         return 0;
     }
 
-    g_FadeLevel += g_FadeStep;
-    if (g_FadeLevel < 0) {
-        g_FadeLevel = 0;
+    g_FadeLevel = StepBgmSelectFade(
+        g_FadeLevel, g_FadeStep, BGM_SELECT_OPAQUE_FADE);
+    if (g_FadeLevel == 0 && g_FadeStep < 0) {
         g_FadeStep = 0;
     }
     DrawFullscreenFadeTile(g_FadeLevel, BGM_SELECT_FADE_TPAGE);

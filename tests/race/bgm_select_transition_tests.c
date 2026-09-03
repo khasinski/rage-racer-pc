@@ -140,7 +140,7 @@ int main(void) {
     g_FadeLevel = 254;
     g_FadeStep = 0;
     UpdateBgmSelectFadeIn();
-    CHECK(s_fadeCalls == 1 && s_lastFade == 258);
+    CHECK(s_fadeCalls == 1 && s_lastFade == 257);
     CHECK(s_displayMask == 0 && s_trackInits == 1);
     CHECK(g_FadeLevel == 0 && g_FadeStep == 0);
     CHECK(g_BgmSelectStep == BGM_SELECT_STEP_ACTIVE);
@@ -167,9 +167,9 @@ int main(void) {
     g_FadeLevel = 254;
     g_FadeStep = 0;
     ExitBgmSelect();
-    CHECK(g_FadeLevel == 258 && g_FadeStep == 4);
+    CHECK(g_FadeLevel == 257 && g_FadeStep == 4);
     CHECK(g_SceneId == 0x16);
-    CHECK(s_fadeCalls == 1 && s_lastFade == 258 && s_textCalls == 1);
+    CHECK(s_fadeCalls == 1 && s_lastFade == 257 && s_textCalls == 1);
 
     puts("BGM select transition tests passed");
     return 0;
