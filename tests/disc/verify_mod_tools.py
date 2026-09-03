@@ -110,18 +110,20 @@ def read_png(path: Path) -> tuple[int, int, list[tuple[int, int, int, int]]]:
     return w, h, [pixel for row in rows for pixel in row]
 
 
+def png_chunk(tag: bytes, body: bytes) -> bytes:
+    joined = tag + body
+    return (struct.pack(">I", len(body)) + joined
+            + struct.pack(">I", zlib.crc32(joined) & 0xFFFFFFFF))
+
+
 def write_png(path: Path, w: int, h: int, pixels: list[tuple[int, int, int, int]]) -> None:
     raw = b"".join(b"\x00" + bytes(c for pixel in pixels[y * w:(y + 1) * w] for c in pixel)
                    for y in range(h))
 
-    def chunk(tag: bytes, body: bytes) -> bytes:
-        joined = tag + body
-        return struct.pack(">I", len(body)) + joined + struct.pack(">I", zlib.crc32(joined) & 0xFFFFFFFF)
-
     path.write_bytes(b"\x89PNG\r\n\x1a\n"
-                     + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 6, 0, 0, 0))
-                     + chunk(b"IDAT", zlib.compress(raw))
-                     + chunk(b"IEND", b""))
+                     + png_chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 6, 0, 0, 0))
+                     + png_chunk(b"IDAT", zlib.compress(raw))
+                     + png_chunk(b"IEND", b""))
 
 
 def main() -> int:
@@ -189,6 +191,20 @@ def main() -> int:
         message = run.stdout + run.stderr
         if "is not a PNG" not in message:
             raise AssertionError(f"a corrupt PNG was not reported clearly: {message}")
+
+        # The decoder allocates only the scanline bytes promised by IHDR. A
+        # tiny compressed stream must not be allowed to expand without bound.
+        target.write_bytes(
+            b"\x89PNG\r\n\x1a\n"
+            + png_chunk(b"IHDR", struct.pack(">IIBBBBB", w8, h8, 8, 6, 0, 0, 0))
+            + png_chunk(b"IDAT", zlib.compress(b"\x00" * 1_000_000))
+            + png_chunk(b"IEND", b""))
+        run = subprocess.run([pack, mod], capture_output=True, text=True)
+        message = run.stdout + run.stderr
+        if "cannot be decompressed" not in message:
+            raise AssertionError(f"an oversized PNG stream was not refused: {message}")
+        if {p.name: p.read_bytes() for p in (mod / "raw").glob("*.bin")} != guarded:
+            raise AssertionError("an oversized PNG stream changed the asset")
 
     print("mod tools round trip, edit isolation and refusals all hold")
     return 0

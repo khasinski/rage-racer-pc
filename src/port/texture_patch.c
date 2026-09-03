@@ -1,8 +1,11 @@
 #include <stdint.h>
+#include <limits.h>
+#include <errno.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <miniz.h>
 
 /*
  * Putting an edited PNG back into an asset. The game does this in memory as it
@@ -12,191 +15,6 @@
  * Which textures belong to which asset comes from textures/index.txt, written
  * by rage-extract, so nothing here has to walk a directory.
  */
-
-/* ---- inflate, enough of RFC 1951 to read what image editors write ---- */
-
-typedef struct Bits {
-    const uint8_t *data;
-    size_t size, at;
-    uint32_t bits;
-    int count;
-} Bits;
-
-static int BitsGet(Bits *b, int need) {
-    while (b->count < need) {
-        if (b->at >= b->size) return -1;
-        b->bits |= (uint32_t)b->data[b->at++] << b->count;
-        b->count += 8;
-    }
-    {
-        int value = (int)(b->bits & (((uint32_t)1 << need) - 1));
-        b->bits >>= need;
-        b->count -= need;
-        return value;
-    }
-}
-
-typedef struct Huffman {
-    uint16_t counts[16], symbols[288];
-} Huffman;
-
-static void HuffmanBuild(Huffman *h, const uint8_t *lengths, int count) {
-    int i, offsets[16], total = 0;
-    memset(h->counts, 0, sizeof(h->counts));
-    for (i = 0; i < count; i++) h->counts[lengths[i]]++;
-    h->counts[0] = 0;
-    for (i = 0; i < 16; i++) { offsets[i] = total; total += h->counts[i]; }
-    for (i = 0; i < count; i++)
-        if (lengths[i]) h->symbols[offsets[lengths[i]]++] = (uint16_t)i;
-}
-
-static int HuffmanDecode(Bits *b, const Huffman *h) {
-    int code = 0, first = 0, index = 0, length;
-    for (length = 1; length < 16; length++) {
-        int bit = BitsGet(b, 1);
-        if (bit < 0) return -1;
-        code |= bit;
-        {
-            int count = h->counts[length];
-            if (code - first < count) return h->symbols[index + (code - first)];
-            index += count;
-            first = (first + count) << 1;
-            code <<= 1;
-        }
-    }
-    return -1;
-}
-
-static int Inflate(const uint8_t *data, size_t size, uint8_t **out,
-                   size_t *outSize) {
-    static const uint16_t lengthBase[29] = {
-        3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,
-        163,195,227,258};
-    static const uint8_t lengthExtra[29] = {
-        0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0};
-    static const uint16_t distBase[30] = {
-        1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,
-        2049,3073,4097,6145,8193,12289,16385,24577};
-    static const uint8_t distExtra[30] = {
-        0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13};
-    static const uint8_t order[19] = {
-        16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15};
-    Bits bits;
-    size_t capacity = size * 4 + 1024, length = 0;
-    uint8_t *buffer = malloc(capacity);
-    int final;
-
-    if (buffer == NULL) return 0;
-    bits.data = data; bits.size = size; bits.at = 0; bits.bits = 0; bits.count = 0;
-    do {
-        int type;
-        Huffman lit, dist;
-        final = BitsGet(&bits, 1);
-        type = BitsGet(&bits, 2);
-        if (final < 0 || type < 0) { free(buffer); return 0; }
-        if (type == 0) {
-            int len;
-            bits.bits = 0; bits.count = 0;
-            if (bits.at + 4 > bits.size) { free(buffer); return 0; }
-            len = bits.data[bits.at] | (bits.data[bits.at + 1] << 8);
-            bits.at += 4;
-            if (bits.at + (size_t)len > bits.size) { free(buffer); return 0; }
-            while (length + (size_t)len > capacity) {
-                capacity *= 2;
-                buffer = realloc(buffer, capacity);
-                if (buffer == NULL) return 0;
-            }
-            memcpy(buffer + length, bits.data + bits.at, (size_t)len);
-            bits.at += (size_t)len;
-            length += (size_t)len;
-            continue;
-        }
-        if (type == 1) {
-            uint8_t lengths[288];
-            int i;
-            for (i = 0; i < 144; i++) lengths[i] = 8;
-            for (; i < 256; i++) lengths[i] = 9;
-            for (; i < 280; i++) lengths[i] = 7;
-            for (; i < 288; i++) lengths[i] = 8;
-            HuffmanBuild(&lit, lengths, 288);
-            for (i = 0; i < 30; i++) lengths[i] = 5;
-            HuffmanBuild(&dist, lengths, 30);
-        } else if (type == 2) {
-            uint8_t lengths[320];
-            int hlit = BitsGet(&bits, 5), hdist = BitsGet(&bits, 5);
-            int hclen = BitsGet(&bits, 4), i, total;
-            uint8_t codeLengths[19];
-            Huffman codes;
-            if (hlit < 0 || hdist < 0 || hclen < 0) { free(buffer); return 0; }
-            hlit += 257; hdist += 1; hclen += 4;
-            memset(codeLengths, 0, sizeof(codeLengths));
-            for (i = 0; i < hclen; i++) {
-                int v = BitsGet(&bits, 3);
-                if (v < 0) { free(buffer); return 0; }
-                codeLengths[order[i]] = (uint8_t)v;
-            }
-            HuffmanBuild(&codes, codeLengths, 19);
-            total = hlit + hdist;
-            for (i = 0; i < total; ) {
-                int symbol = HuffmanDecode(&bits, &codes), repeat, value = 0;
-                if (symbol < 0) { free(buffer); return 0; }
-                if (symbol < 16) { lengths[i++] = (uint8_t)symbol; continue; }
-                if (symbol == 16) {
-                    if (i == 0) { free(buffer); return 0; }
-                    value = lengths[i - 1];
-                    repeat = 3 + BitsGet(&bits, 2);
-                } else if (symbol == 17) {
-                    repeat = 3 + BitsGet(&bits, 3);
-                } else {
-                    repeat = 11 + BitsGet(&bits, 7);
-                }
-                while (repeat-- > 0 && i < total) lengths[i++] = (uint8_t)value;
-            }
-            HuffmanBuild(&lit, lengths, hlit);
-            HuffmanBuild(&dist, lengths + hlit, hdist);
-        } else {
-            free(buffer);
-            return 0;
-        }
-        for (;;) {
-            int symbol = HuffmanDecode(&bits, &lit);
-            if (symbol < 0) { free(buffer); return 0; }
-            if (symbol == 256) break;
-            if (length + 1 > capacity) {
-                capacity *= 2;
-                buffer = realloc(buffer, capacity);
-                if (buffer == NULL) return 0;
-            }
-            if (symbol < 256) {
-                buffer[length++] = (uint8_t)symbol;
-                continue;
-            }
-            {
-                int index = symbol - 257, distSymbol, copy;
-                size_t from;
-                if (index >= 29) { free(buffer); return 0; }
-                copy = lengthBase[index] + BitsGet(&bits, lengthExtra[index]);
-                distSymbol = HuffmanDecode(&bits, &dist);
-                if (distSymbol < 0 || distSymbol >= 30) { free(buffer); return 0; }
-                from = (size_t)(distBase[distSymbol] +
-                                BitsGet(&bits, distExtra[distSymbol]));
-                if (from > length) { free(buffer); return 0; }
-                while (length + (size_t)copy > capacity) {
-                    capacity *= 2;
-                    buffer = realloc(buffer, capacity);
-                    if (buffer == NULL) return 0;
-                }
-                while (copy-- > 0) {
-                    buffer[length] = buffer[length - from];
-                    length++;
-                }
-            }
-        }
-    } while (!final);
-    *out = buffer;
-    *outSize = length;
-    return 1;
-}
 
 /* ---- PNG ---- */
 
@@ -218,13 +36,19 @@ static uint8_t *ReadPng(const char *path, uint32_t *width, uint32_t *height,
     uint8_t *file_data, *idat = NULL, *raw = NULL, *rgba = NULL;
     uint8_t palette[256 * 3], alpha[256];
     long size;
-    size_t at, idatSize = 0, rawSize;
+    size_t at, idatSize = 0, rawSize, rowSize, pixelCount;
+    mz_ulong inflatedSize;
     uint32_t w = 0, h = 0;
     int depth = 0, colour = 0, channels, paletteCount = 0, y;
 
     *error = NULL;
     if (file == NULL) { *error = "cannot be opened"; return NULL; }
-    fseek(file, 0, SEEK_END); size = ftell(file); fseek(file, 0, SEEK_SET);
+    if (fseek(file, 0, SEEK_END) != 0 || (size = ftell(file)) < 0 ||
+        fseek(file, 0, SEEK_SET) != 0) {
+        fclose(file);
+        *error = "cannot be read";
+        return NULL;
+    }
     if (size < 8) { fclose(file); *error = "is not a PNG"; return NULL; }
     file_data = malloc((size_t)size);
     if (file_data == NULL || fread(file_data, 1, (size_t)size, file) != (size_t)size) {
@@ -241,7 +65,8 @@ static uint8_t *ReadPng(const char *path, uint32_t *width, uint32_t *height,
         uint32_t length = Be32(file_data + at);
         const char *tag = (const char *)file_data + at + 4;
         const uint8_t *body = file_data + at + 8;
-        if (at + 12 + length > (size_t)size) break;
+        if ((size_t)size - at < 12 ||
+            (size_t)length > (size_t)size - at - 12) break;
         if (!memcmp(tag, "IHDR", 4) && length >= 13) {
             w = Be32(body); h = Be32(body + 4);
             depth = body[8]; colour = body[9];
@@ -254,7 +79,12 @@ static uint8_t *ReadPng(const char *path, uint32_t *width, uint32_t *height,
             uint32_t i;
             for (i = 0; i < length && i < 256; i++) alpha[i] = body[i];
         } else if (!memcmp(tag, "IDAT", 4)) {
-            uint8_t *grown = realloc(idat, idatSize + length);
+            uint8_t *grown;
+
+            if ((size_t)length > SIZE_MAX - idatSize) {
+                free(idat); free(file_data); *error = "is too large"; return NULL;
+            }
+            grown = realloc(idat, idatSize + length);
             if (grown == NULL) { free(idat); free(file_data); *error = "is too large"; return NULL; }
             idat = grown;
             memcpy(idat + idatSize, body, length);
@@ -271,16 +101,40 @@ static uint8_t *ReadPng(const char *path, uint32_t *width, uint32_t *height,
         free(idat); *error = "is not RGB, RGBA or palette colour"; return NULL;
     }
     channels = colour == 2 ? 3 : colour == 6 ? 4 : 1;
-    if (idat == NULL || idatSize < 2) { free(idat); *error = "has no image data"; return NULL; }
-    if (!Inflate(idat + 2, idatSize - 2, &raw, &rawSize)) {
+    if (w == 0 || h == 0 || w > INT_MAX || h > INT_MAX ||
+        w > (SIZE_MAX - 1) / (size_t)channels) {
+        free(idat); *error = "has invalid dimensions"; return NULL;
+    }
+    rowSize = 1 + (size_t)w * (size_t)channels;
+    if ((size_t)h > SIZE_MAX / rowSize ||
+        (size_t)w > SIZE_MAX / (size_t)h) {
+        free(idat); *error = "is too large"; return NULL;
+    }
+    rawSize = rowSize * (size_t)h;
+    pixelCount = (size_t)w * (size_t)h;
+    if (rawSize > ULONG_MAX || idatSize > ULONG_MAX ||
+        pixelCount > SIZE_MAX / 4) {
+        free(idat); *error = "is too large"; return NULL;
+    }
+    if (colour == 3 && paletteCount == 0) {
+        free(idat); *error = "has no palette"; return NULL;
+    }
+    if (idat == NULL || idatSize == 0) {
+        free(idat); *error = "has no image data"; return NULL;
+    }
+    raw = malloc(rawSize);
+    if (raw == NULL) {
+        free(idat); *error = "is too large"; return NULL;
+    }
+    inflatedSize = (mz_ulong)rawSize;
+    if (mz_uncompress(raw, &inflatedSize, idat, (mz_ulong)idatSize) != MZ_OK ||
+        inflatedSize != (mz_ulong)rawSize) {
+        free(raw);
         free(idat); *error = "has image data that cannot be decompressed"; return NULL;
     }
     free(idat);
-    if (rawSize < (size_t)h * (1 + (size_t)w * channels)) {
-        free(raw); *error = "is truncated"; return NULL;
-    }
 
-    rgba = malloc((size_t)w * h * 4);
+    rgba = malloc(pixelCount * 4);
     if (rgba == NULL) { free(raw); *error = "is too large"; return NULL; }
     for (y = 0; y < (int)h; y++) {
         size_t stride = (size_t)w * channels;
@@ -288,6 +142,9 @@ static uint8_t *ReadPng(const char *path, uint32_t *width, uint32_t *height,
         uint8_t filter = raw[(size_t)y * (1 + stride)];
         uint8_t *previous = y ? raw + (size_t)(y - 1) * (1 + stride) + 1 : NULL;
         size_t i;
+        if (filter > 4) {
+            free(raw); free(rgba); *error = "uses an invalid row filter"; return NULL;
+        }
         for (i = 0; i < stride; i++) {
             int a = i >= (size_t)channels ? row[i - channels] : 0;
             int b = previous ? previous[i] : 0;
@@ -331,10 +188,18 @@ typedef struct Sidecar {
 
 static int SidecarNumber(const char *text, const char *key, long *value) {
     const char *at = strstr(text, key);
+    char *end;
+    long parsed;
+
     if (at == NULL) return 0;
     at = strchr(at, ':');
     if (at == NULL) return 0;
-    *value = strtol(at + 1, NULL, 10);
+    errno = 0;
+    parsed = strtol(at + 1, &end, 10);
+    if (end == at + 1 || errno == ERANGE) return 0;
+    while (isspace((unsigned char)*end)) end++;
+    if (*end != ',' && *end != '}' && *end != '\0') return 0;
+    *value = parsed;
     return 1;
 }
 
@@ -349,14 +214,18 @@ static int ReadSidecar(const char *path, Sidecar *out) {
     text[length] = '\0';
     memset(out, 0, sizeof(*out));
     if (!SidecarNumber(text, "\"asset\"", &value)) return 0;
+    if (value < INT_MIN || value > INT_MAX) return 0;
     out->asset = (int)value;
     if (!SidecarNumber(text, "\"pixels_offset\"", &out->pixelsOffset)) return 0;
     if (!SidecarNumber(text, "\"pixel_bytes\"", &out->pixelBytes)) return 0;
     if (!SidecarNumber(text, "\"depth\"", &value)) return 0;
+    if (value < INT_MIN || value > INT_MAX) return 0;
     out->depth = (int)value;
     if (!SidecarNumber(text, "\"width\"", &value)) return 0;
+    if (value < INT_MIN || value > INT_MAX) return 0;
     out->width = (int)value;
     if (!SidecarNumber(text, "\"height\"", &value)) return 0;
+    if (value < INT_MIN || value > INT_MAX) return 0;
     out->height = (int)value;
     if (SidecarNumber(text, "\"colours\"", &out->clutColours) &&
         SidecarNumber(text, "\"offset\"", &out->clutOffset))
@@ -417,7 +286,7 @@ static void DecodeTexel(const uint8_t *row, int x, int depth,
 
 /* Patch one texture into an asset already in memory. */
 static int PatchTexture(const char *jsonPath, const char *pngPath,
-                        unsigned char *data, size_t size) {
+                        int assetIndex, unsigned char *data, size_t size) {
     Sidecar sidecar;
     uint8_t *rgba;
     const char *error;
@@ -425,9 +294,35 @@ static int PatchTexture(const char *jsonPath, const char *pngPath,
     uint16_t *clut = NULL;
     uint8_t *bytes;
     int x, y, inexact = 0, edited = 0;
+    size_t minimumRowBytes;
 
     if (!ReadSidecar(jsonPath, &sidecar)) {
         fprintf(stderr, "rage-port: %s is missing fields; skipping\n", jsonPath);
+        return 0;
+    }
+    if (sidecar.asset != assetIndex || sidecar.width <= 0 ||
+        sidecar.height <= 0 ||
+        (sidecar.depth != 4 && sidecar.depth != 8 && sidecar.depth != 16) ||
+        sidecar.pixelsOffset < 0 || sidecar.pixelBytes <= 0 ||
+        sidecar.pixelBytes % sidecar.height != 0) {
+        fprintf(stderr, "rage-port: %s has invalid texture metadata; skipping\n",
+                jsonPath);
+        return 0;
+    }
+    if ((size_t)sidecar.width >
+        (SIZE_MAX - 7) / (size_t)sidecar.depth) {
+        fprintf(stderr, "rage-port: %s has invalid texture storage; skipping\n",
+                jsonPath);
+        return 0;
+    }
+    minimumRowBytes = ((size_t)sidecar.width * (size_t)sidecar.depth + 7) / 8;
+    if ((size_t)(sidecar.pixelBytes / sidecar.height) < minimumRowBytes ||
+        (sidecar.depth != 16 &&
+         (!sidecar.hasClut || sidecar.clutOffset < 0 ||
+          sidecar.clutColours <= 0 ||
+          sidecar.clutColours > (sidecar.depth == 4 ? 16 : 256)))) {
+        fprintf(stderr, "rage-port: %s has invalid texture storage; skipping\n",
+                jsonPath);
         return 0;
     }
     rgba = ReadPng(pngPath, &w, &h, &error);
@@ -444,7 +339,8 @@ static int PatchTexture(const char *jsonPath, const char *pngPath,
         free(rgba);
         return 0;
     }
-    if ((size_t)(sidecar.pixelsOffset + sidecar.pixelBytes) > size) {
+    if ((size_t)sidecar.pixelsOffset > size ||
+        (size_t)sidecar.pixelBytes > size - (size_t)sidecar.pixelsOffset) {
         fprintf(stderr,
                 "rage-port: %s expects pixels at %ld but asset %d is %zu bytes; re-extract it\n",
                 jsonPath, sidecar.pixelsOffset, sidecar.asset, size);
@@ -452,7 +348,9 @@ static int PatchTexture(const char *jsonPath, const char *pngPath,
         return 0;
     }
     if (sidecar.hasClut &&
-        (size_t)(sidecar.clutOffset + sidecar.clutColours * 2) > size) {
+        ((size_t)sidecar.clutOffset > size ||
+         (size_t)sidecar.clutColours >
+             (size - (size_t)sidecar.clutOffset) / sizeof(uint16_t))) {
         fprintf(stderr, "rage-port: %s points at a palette outside asset %d\n",
                 jsonPath, sidecar.asset);
         free(rgba);
@@ -508,7 +406,14 @@ int TexturePatchAsset(const char *directory, int assetIndex,
     FILE *index;
     int patched = 0;
 
-    snprintf(indexPath, sizeof(indexPath), "%s/textures/index.txt", directory);
+    int written;
+
+    if (directory == NULL || directory[0] == '\0' || data == NULL || size == 0) {
+        return -1;
+    }
+    written = snprintf(indexPath, sizeof(indexPath), "%s/textures/index.txt",
+                       directory);
+    if (written < 0 || (size_t)written >= sizeof(indexPath)) return -1;
     index = fopen(indexPath, "rb");
     if (index == NULL) return -1;
     while (fgets(line, sizeof(line), index)) {
@@ -519,10 +424,13 @@ int TexturePatchAsset(const char *directory, int assetIndex,
         if (owner != assetIndex) continue;
         length = strlen(stem);
         if (length < 6) continue;
-        snprintf(jsonPath, sizeof(jsonPath), "%s/textures/%s", directory, stem);
-        snprintf(pngPath, sizeof(pngPath), "%s/textures/%.*s.png", directory,
-                 (int)(length - 5), stem);
-        patched += PatchTexture(jsonPath, pngPath, data, size);
+        written = snprintf(jsonPath, sizeof(jsonPath), "%s/textures/%s",
+                           directory, stem);
+        if (written < 0 || (size_t)written >= sizeof(jsonPath)) continue;
+        written = snprintf(pngPath, sizeof(pngPath), "%s/textures/%.*s.png",
+                           directory, (int)(length - 5), stem);
+        if (written < 0 || (size_t)written >= sizeof(pngPath)) continue;
+        patched += PatchTexture(jsonPath, pngPath, assetIndex, data, size);
     }
     fclose(index);
     return patched;

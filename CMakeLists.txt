@@ -146,6 +146,8 @@ if(RAGE_BUILD_PORT)
     set(CHDR_WANT_TESTS OFF CACHE BOOL "" FORCE)
     set(CHDR_WANT_SUBCODE OFF CACHE BOOL "" FORCE)
     add_subdirectory(external/libchdr external-libchdr)
+    target_include_directories(miniz PUBLIC
+        external/libchdr/deps/miniz-3.1.2)
     add_subdirectory(external/psyz/psyz external-psyz)
 
     file(GLOB_RECURSE RAGE_GAME_SOURCES CONFIGURE_DEPENDS
@@ -254,6 +256,7 @@ if(RAGE_BUILD_PORT)
     add_executable(rage-extract tools/rage_extract.c)
     add_executable(rage-pack tools/rage_pack.c src/port/texture_patch.c)
     target_include_directories(rage-pack PRIVATE src/port)
+    target_link_libraries(rage-pack PRIVATE miniz)
     add_executable(rage-save-generator tools/rage_save_generator.c)
     add_executable(rage-frame-replay
         tools/rage_frame_replay.c
@@ -280,7 +283,7 @@ if(RAGE_BUILD_PORT)
     target_include_directories(rage-render-stage PRIVATE
         src src/port src/port/include)
     target_link_libraries(rage-render-stage PRIVATE
-        rage-render-world SDL3::SDL3)
+        rage-render-world SDL3::SDL3 miniz)
     if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         target_compile_options(rage-render-stage PRIVATE
             ${RAGE_STRICT_WARNING_OPTIONS})
@@ -288,7 +291,7 @@ if(RAGE_BUILD_PORT)
     target_include_directories(rage-frame-replay PRIVATE
         src src/port src/port/include)
     target_link_libraries(rage-frame-replay PRIVATE
-        rage-render-world SDL3::SDL3)
+        rage-render-world SDL3::SDL3 miniz)
     if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         target_compile_options(rage-frame-replay PRIVATE
             ${RAGE_STRICT_WARNING_OPTIONS})
@@ -339,7 +342,7 @@ if(RAGE_BUILD_PORT)
             endif()
         endif()
         target_link_libraries(${RAGE_PORT_TARGET} PRIVATE
-            rage-sim psyz rage-render-world chdr-static)
+            rage-sim psyz rage-render-world chdr-static miniz)
         if(WIN32)
             target_link_libraries(${RAGE_PORT_TARGET} PRIVATE comdlg32 legacy_stdio_definitions)
         endif()
