@@ -1,5 +1,6 @@
 #include "game/angle.h"
 #include "game/car.h"
+#include "game/integer.h"
 
 enum {
     RIVAL_SPEED_RETENTION_PERCENT = 94,
@@ -7,16 +8,20 @@ enum {
 };
 
 static void TurnRivalBodyTowardsTarget(GameCarRuntime *car) {
-    car->bodyYaw += GetAngleDelta(car->bodyYaw, car->targetYaw) / 5;
+    car->bodyYaw = WrapSigned32(
+        (int64_t)car->bodyYaw +
+        GetAngleDelta(car->bodyYaw, car->targetYaw) / 5);
 }
 
 static void ApplyRivalSpeedDrag(GameCarRuntime *car) {
-    car->speed = car->speed * RIVAL_SPEED_RETENTION_PERCENT / 100;
+    car->speed = WrapSigned32(
+        (int64_t)car->speed * RIVAL_SPEED_RETENTION_PERCENT) / 100;
 }
 
 static void IncreaseRivalAcceleration(GameCarRuntime *car, s32 step) {
     if (car->accelerationLimit >= car->acceleration) {
-        car->acceleration += step;
+        car->acceleration = WrapSigned32(
+            (int64_t)car->acceleration + step);
     } else {
         car->acceleration = car->accelerationLimit;
     }
@@ -24,7 +29,8 @@ static void IncreaseRivalAcceleration(GameCarRuntime *car, s32 step) {
 
 static void AdvanceRivalSpeedAndYaw(GameCarRuntime *car) {
     ApplyRivalSpeedDrag(car);
-    car->speed += car->acceleration;
+    car->speed = WrapSigned32(
+        (int64_t)car->speed + car->acceleration);
     TurnRivalBodyTowardsTarget(car);
 }
 
@@ -68,7 +74,8 @@ void AccelerateAttractRivals(void) {
             continue;
         }
         if (car->acceleration < car->accelerationLimit) {
-            car->acceleration += car->accelerationStep;
+            car->acceleration = WrapSigned32(
+                (int64_t)car->acceleration + car->accelerationStep);
         } else {
             car->acceleration = car->accelerationLimit;
         }

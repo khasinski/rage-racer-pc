@@ -2,6 +2,7 @@
 #include "game/car.h"
 #include "game/car_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -80,6 +81,12 @@ int main(void) {
     CHECK_EQ(equalRace->speed, 119);
     CHECK_EQ(g_Cars[6].speed, 0);
     CHECK_EQ(g_Cars[6].bodyYaw, 0);
+
+    ResetCars();
+    normal = Activate(0, 30, INT_MAX);
+    AccelerateRaceRivals();
+    CHECK_EQ(normal->acceleration, 20);
+    CHECK_EQ(normal->speed, 20);
 
     ResetCars();
     normal = Activate(0, 10, 100);
