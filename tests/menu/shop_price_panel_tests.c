@@ -21,17 +21,17 @@ typedef struct DrawRecord {
 static DrawRecord s_records[8];
 static s32 s_recordCount;
 
-s32 GameDrawNumber(s32 x, s16 y, s32 digits, u32 value, u8 r, u8 g, u8 b,
-                   u16 clut, u8 flags) {
+s32 GameDrawNumber(s32 x, s16 y, s32 flags, u32 value, u8 r, u8 g, u8 b,
+                   u16 clut, u8 texturePageOffset) {
     (void)x;
-    (void)digits;
+    (void)flags;
     (void)r;
     (void)g;
     (void)b;
     (void)clut;
-    (void)flags;
+    (void)texturePageOffset;
     s_records[s_recordCount++] = (DrawRecord){1, y, 0, 0, (s32)value};
-    return digits;
+    return flags;
 }
 
 void DrawSprite(GameOrderingTableEntry *ot, s16 x, s16 y, s16 width, u16 height, u16 textureU,

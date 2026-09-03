@@ -1,6 +1,7 @@
 #include "game/render.h"
 #include "game/render_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -110,6 +111,11 @@ int main(void) {
     CHECK(s_callCount == 10);
     CHECK(s_calls[0].textureU == 24);
     CHECK(s_calls[9].x == 54 && s_calls[9].textureU == 30);
+
+    ResetCalls();
+    CHECK(GameDrawNumber(INT_MAX, 0, 0, 11, 0, 0, 0, 0, 0) == 2);
+    CHECK(s_callCount == 2);
+    CHECK(s_calls[0].x == -1 && s_calls[1].x == 5);
 
     puts("number drawing tests passed");
     return 0;

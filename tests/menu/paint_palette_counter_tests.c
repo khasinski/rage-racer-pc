@@ -77,14 +77,14 @@ void DrawSprite(GameOrderingTableEntry *ot, s16 x, s16 y, s16 width, u16 height,
 }
 
 s32 GameDrawNumber(s32 x, s16 y, s32 flags, u32 value, u8 r, u8 g, u8 b,
-                   u16 clut, u8 primitiveCount) {
+                   u16 clut, u8 texturePageOffset) {
     (void)x;
     (void)flags;
     (void)r;
     (void)g;
     (void)b;
     (void)clut;
-    (void)primitiveCount;
+    (void)texturePageOffset;
     if (s_numberCount == 0) {
         s_numberY = y;
         s_firstNumber = value;

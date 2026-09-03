@@ -450,10 +450,11 @@ enum DrawNumberFlags {
 };
 
 /* Draws an unsigned decimal with leading zeros omitted. TEN_DIGIT_FIELD keeps
- * their horizontal space, while the return value remains the sprite count. */
+ * their horizontal space, while the return value remains the sprite count.
+ * texturePageOffset selects the digit texture page relative to page 27. */
 s32 GameDrawNumber(s32 x, s16 y, s32 flags, u32 value, u8 red, u8 green,
                    u8 blue,
-                   u16 clut, u8 primitiveCount);
+                   u16 clut, u8 texturePageOffset);
 /* Blits an 8x6 bit pattern from g_MenuOverlayPatternTable as 4x8 blocks; negative argument
  * animates through the table. */
 void DrawBitPatternOverlay(s32 pattern);

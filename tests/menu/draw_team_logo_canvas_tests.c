@@ -118,8 +118,9 @@ void GameDrawTexturedQuad(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u1
 }
 
 s32 GameDrawNumber(s32 x, s16 y, s32 flags, u32 value, u8 r, u8 g, u8 b,
-                   u16 clut, u8 primitiveCount) {
-    RECORD("number", x, y, flags, (s32)value, r, g, b, clut, primitiveCount);
+                   u16 clut, u8 texturePageOffset) {
+    RECORD("number", x, y, flags, (s32)value, r, g, b, clut,
+           texturePageOffset);
     return 0;
 }
 
