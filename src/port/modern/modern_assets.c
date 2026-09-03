@@ -12,7 +12,10 @@
 #include "render/car_paint.h"
 #include "render/mod_manifest.h"
 
-enum { MODERN_ASSET_CACHE_CAPACITY = 4096 };
+enum {
+    MODERN_ASSET_CACHE_CAPACITY = 4096,
+    MODERN_ASSET_MAX_IMAGE_DIMENSION = 16384,
+};
 
 static char s_root[1024];
 static void *s_indexBytes;
@@ -213,7 +216,7 @@ int ModernAssetsLoadSkyImage(uint32_t assetKey, ModernAssetImage *image) {
     unsigned key, width, height;
     char path[1024];
     const void *pixels;
-    size_t size;
+    size_t size, expectedSize;
     if (image == NULL) return 0;
     memset(image, 0, sizeof(*image));
     if (s_importerSource)
@@ -230,14 +233,20 @@ int ModernAssetsLoadSkyImage(uint32_t assetKey, ModernAssetImage *image) {
                 if (sscanf(line, "%u %u %u %1023s", &key, &width, &height,
                            path) == 4 && key == assetKey && width != 0 &&
                     height != 0 &&
-                    ModernAssetReadFile(NULL, path, strlen(path), &pixels,
-                                        &size) &&
-                    size == (size_t)width * height * 4u) {
-                    image->pixels = (void *)pixels;
-                    image->size = size;
-                    image->width = width;
-                    image->height = height;
-                    return 1;
+                    width <= MODERN_ASSET_MAX_IMAGE_DIMENSION &&
+                    height <= MODERN_ASSET_MAX_IMAGE_DIMENSION) {
+                    expectedSize = (size_t)width * (size_t)height * 4u;
+                    if (ModernAssetReadFile(NULL, path, strlen(path), &pixels,
+                                            &size)) {
+                        if (size == expectedSize) {
+                            image->pixels = (void *)pixels;
+                            image->size = size;
+                            image->width = width;
+                            image->height = height;
+                            return 1;
+                        }
+                        ModernAssetFreeFile(NULL, pixels);
+                    }
                 }
             }
         }
@@ -536,7 +545,8 @@ static int ModernAssetsLoadModImage(const RageRenderMeshInstance *instance,
     converted = SDL_ConvertSurface(source, SDL_PIXELFORMAT_RGBA32);
     SDL_DestroySurface(source);
     if (converted == NULL || converted->w <= 0 || converted->h <= 0 ||
-        converted->w > 16384 || converted->h > 16384) goto fail;
+        converted->w > MODERN_ASSET_MAX_IMAGE_DIMENSION ||
+        converted->h > MODERN_ASSET_MAX_IMAGE_DIMENSION) goto fail;
     rowSize = (size_t)converted->w * 4u;
     if ((size_t)converted->h > SIZE_MAX / rowSize) goto fail;
     size = rowSize * (size_t)converted->h;
