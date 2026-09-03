@@ -396,6 +396,8 @@ static void TestVoiceAndCarPhases(void) {
 static void TestTrackPhases(void) {
     u8 storage[TRACK_TEXTURE_SHADOW_SIZE + 2048];
     GameSceneAssetHeader *pack = (GameSceneAssetHeader *)storage;
+    CourseModelAssetHeader *courseModels;
+    CourseObjectTable *courseObjects;
     static const s32 runtimeInstallSlots[8] = {2, 3, 4, 5, 6, 7, 9, 10};
     s32 i;
 
@@ -439,7 +441,12 @@ static void TestTrackPhases(void) {
     pack->offsets[1] = 192;
     pack->offsets[2] = 448;
     for (i = 3; i < 11; i++) pack->offsets[i] = 512 + (i - 3) * 64;
-    ((CourseObjectTable *)(void *)((u8 *)pack + pack->offsets[8]))->count = 2;
+    courseModels = (CourseModelAssetHeader *)(void *)(
+        (u8 *)pack + pack->offsets[5]);
+    courseModels->modelCount = 1;
+    courseObjects = (CourseObjectTable *)(void *)(
+        (u8 *)pack + pack->offsets[8]);
+    courseObjects->count = 2;
     s_loadResult = 1088;
     s_installCount = 0;
     s_seriesCamera = 0;
@@ -500,11 +507,22 @@ static void TestTrackPhases(void) {
               s_installCount == 0 && s_trackIdentity == -1,
           "overlapping runtime blocks reject the pack before installation");
     pack->offsets[1] = 192;
-    ((CourseObjectTable *)(void *)((u8 *)pack + pack->offsets[8]))->count = 4;
+    courseObjects->objects[0].modelId = 1;
+    Check(InstallTrackRuntimeAssetPack(pack, 1088, 124, 0) == 0 &&
+              s_installCount == 0 && s_trackIdentity == -1,
+          "unknown course-object model rejects the runtime pack");
+    courseObjects->objects[0].modelId = 0;
+    courseObjects->objects[0].flags = 0x10;
+    Check(InstallTrackRuntimeAssetPack(pack, 1088, 124, 0) == 0 &&
+              s_installCount == 0 && s_trackIdentity == -1,
+          "unknown course-object flags reject the runtime pack");
+    courseObjects->objects[0].flags = 0;
+
+    courseObjects->count = 4;
     Check(InstallTrackRuntimeAssetPack(pack, 1088, 124, 0) == 0 &&
               s_installCount == 0 && s_trackIdentity == -1,
           "oversized course-object table rejects the runtime pack");
-    ((CourseObjectTable *)(void *)((u8 *)pack + pack->offsets[8]))->count = 2;
+    courseObjects->count = 2;
 
     pack->offsets[1] = pack->offsets[0] + 64;
     s_installCount = 0;

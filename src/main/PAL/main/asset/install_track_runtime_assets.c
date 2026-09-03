@@ -19,7 +19,34 @@ enum {
     TRACK_RUNTIME_EVENTS = 9,
     TRACK_RUNTIME_CAMERAS = 10,
     TRACK_RENDER_CAR_MODEL_COUNT = 11,
+    COURSE_OBJECT_KNOWN_FLAGS =
+        COURSE_OBJECT_ALTERNATE_NORMAL |
+        COURSE_OBJECT_ALTERNATE_ENVIRONMENT_4 |
+        COURSE_OBJECT_ENVIRONMENT_4 |
+        COURSE_OBJECT_BLINK_ENVIRONMENT_4,
 };
+
+static s32 IsValidCourseObjectTable(const CourseObjectTable *table,
+                                    size_t size, s32 modelCount) {
+    u32 i;
+
+    if (size < offsetof(CourseObjectTable, objects) ||
+        table->count >
+            (size - offsetof(CourseObjectTable, objects)) /
+                sizeof(table->objects[0])) {
+        return 0;
+    }
+    for (i = 0; i < table->count; i++) {
+        const CourseObject *object = &table->objects[i];
+
+        if ((object->modelId != -1 &&
+             (object->modelId < 0 || object->modelId >= modelCount)) ||
+            (object->flags & ~COURSE_OBJECT_KNOWN_FLAGS) != 0) {
+            return 0;
+        }
+    }
+    return 1;
+}
 
 static s32 IsTrackRuntimeAssetIndex(s32 assetIndex) {
     const s32 lastAsset = TrackCourseAssetIndex(
@@ -34,6 +61,7 @@ static s32 IsTrackRuntimeAssetIndex(s32 assetIndex) {
 s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
                                  s32 useSeriesCamera) {
     GameSceneAssetHeader *header;
+    CourseModelAssetHeader *courseModels;
     CourseObjectTable *courseObjects;
     size_t blockSizes[11];
     s32 i;
@@ -57,6 +85,8 @@ s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
     }
     courseObjects = GetSceneAssetBlock(
         header, TRACK_RUNTIME_COURSE_OBJECTS);
+    courseModels = GetCourseModelAssetHeader(GetSceneAssetBlock(
+        header, TRACK_RUNTIME_COURSE_MODELS));
     if (blockSizes[TRACK_RUNTIME_RENDER_TABLE] <
             offsetof(TrackRenderTable, models) +
                 TRACK_RENDER_CAR_MODEL_COUNT *
@@ -64,11 +94,7 @@ s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
         blockSizes[TRACK_RUNTIME_ENVIRONMENT_PALETTE] <
             ENVIRONMENT_PALETTE_COUNT * sizeof(EnvironmentPalette) ||
         blockSizes[TRACK_RUNTIME_COURSE_OBJECTS] <
-            offsetof(CourseObjectTable, objects) ||
-        courseObjects->count >
-            (blockSizes[TRACK_RUNTIME_COURSE_OBJECTS] -
-             offsetof(CourseObjectTable, objects)) /
-                sizeof(courseObjects->objects[0])) {
+            offsetof(CourseObjectTable, objects)) {
         return 0;
     }
     if (!IsValidModelBankAsset(
@@ -76,9 +102,11 @@ s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
                 header, TRACK_RUNTIME_PRIMARY_MODELS)),
             blockSizes[TRACK_RUNTIME_PRIMARY_MODELS]) ||
         !IsValidCourseModelAsset(
-            GetCourseModelAssetHeader(GetSceneAssetBlock(
-                header, TRACK_RUNTIME_COURSE_MODELS)),
+            courseModels,
             blockSizes[TRACK_RUNTIME_COURSE_MODELS]) ||
+        !IsValidCourseObjectTable(
+            courseObjects, blockSizes[TRACK_RUNTIME_COURSE_OBJECTS],
+            courseModels->modelCount) ||
         !IsValidModelBankAsset(
             GetModelBankHeader(GetSceneAssetBlock(
                 header, TRACK_RUNTIME_SECONDARY_MODELS)),
@@ -118,8 +146,7 @@ s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
         return 0;
     }
     if (!RegisterCourseModels(
-            GetCourseModelAssetHeader(GetSceneAssetBlock(
-                header, TRACK_RUNTIME_COURSE_MODELS)),
+            courseModels,
             blockSizes[TRACK_RUNTIME_COURSE_MODELS]) ||
         !RegisterModelBank(
             GetModelBankHeader(GetSceneAssetBlock(
