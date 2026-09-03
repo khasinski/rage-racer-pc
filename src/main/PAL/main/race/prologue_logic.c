@@ -31,6 +31,16 @@ s32 PrologueCameraIndex(s32 cameraIndex) {
     return (u32)cameraIndex < RACE_CAR_SLOT_COUNT ? cameraIndex : 0;
 }
 
+s32 PrologueCameraCutIndex(s32 cutIndex) {
+    if (cutIndex < 0) {
+        return 0;
+    }
+    if (cutIndex >= PROLOGUE_CAMERA_CUT_COUNT) {
+        return PROLOGUE_CAMERA_CUT_COUNT - 1;
+    }
+    return cutIndex;
+}
+
 s32 PrologueLineIntensity(s32 screenY) {
     int64_t fade;
 

@@ -48,6 +48,16 @@ int main(void) {
     CHECK(PrologueCameraIndex(-1) == 0);
     CHECK(PrologueCameraIndex(RACE_CAR_SLOT_COUNT) == 0);
 
+    CHECK(PrologueCameraCutIndex(0) == 0);
+    CHECK(PrologueCameraCutIndex(PROLOGUE_CAMERA_CUT_COUNT - 1) ==
+          PROLOGUE_CAMERA_CUT_COUNT - 1);
+    CHECK(PrologueCameraCutIndex(-1) == 0);
+    CHECK(PrologueCameraCutIndex(INT_MIN) == 0);
+    CHECK(PrologueCameraCutIndex(PROLOGUE_CAMERA_CUT_COUNT) ==
+          PROLOGUE_CAMERA_CUT_COUNT - 1);
+    CHECK(PrologueCameraCutIndex(INT_MAX) ==
+          PROLOGUE_CAMERA_CUT_COUNT - 1);
+
     puts("prologue logic tests passed");
     return 0;
 }

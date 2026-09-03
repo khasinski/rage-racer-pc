@@ -182,6 +182,11 @@ int main(void) {
     CHECK(g_PrologueCutIndex == PROLOGUE_CAMERA_CUT_COUNT - 1);
     CHECK(g_CameraCarIndex == 0);
 
+    g_SceneTimer = 100;
+    g_PrologueCutIndex = -1;
+    TickPrologueStep();
+    CHECK(g_PrologueCutIndex == 0);
+
     g_SceneTimer = 1279;
     TickPrologueStep();
     CHECK(g_SceneTimer == 1280 && g_SceneId == 6);

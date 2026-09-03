@@ -105,6 +105,7 @@ s32 IsPrologueWorldActive(s32 sceneTimer);
 s32 NextPrologueTimer(s32 sceneTimer);
 s32 AdvancePrologueFade(s32 level, s32 step, s32 maximum);
 s32 PrologueCameraIndex(s32 cameraIndex);
+s32 PrologueCameraCutIndex(s32 cutIndex);
 extern ResultPlaceSpriteLayout g_ResultPlaceSprites[];
 extern ResultPlaceBarPosition g_ClassPlaceBarSizes[];
 

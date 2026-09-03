@@ -174,12 +174,9 @@ static void UpdatePrologue(void) {
 
     worldActive = IsPrologueWorldActive(g_SceneTimer);
     if (worldActive) {
-        eventIndex = g_PrologueCutIndex;
-        if ((u32)eventIndex >= PROLOGUE_CAMERA_CUT_COUNT) {
-            eventIndex = PROLOGUE_CAMERA_CUT_COUNT - 1;
-            g_PrologueCutIndex = eventIndex;
-        }
-        g_AnimTimer++;
+        eventIndex = PrologueCameraCutIndex(g_PrologueCutIndex);
+        g_PrologueCutIndex = eventIndex;
+        g_AnimTimer = (s32)((u32)g_AnimTimer + 1u);
         if (g_PrologueCameraCuts[eventIndex].timer == g_SceneTimer) {
             if (eventIndex + 1 < PROLOGUE_CAMERA_CUT_COUNT) {
                 g_PrologueCutIndex = eventIndex + 1;
