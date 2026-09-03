@@ -11,6 +11,7 @@ static int RenderWorldInstancesAreValid(const RageRenderWorld *world) {
 }
 
 static float Clamp01(float value) {
+    if (!isfinite(value)) return 0.0f;
     if (value < 0.0f) return 0.0f;
     if (value > 1.0f) return 1.0f;
     return value;
@@ -26,6 +27,8 @@ static void InterpolateVec3(const RageRenderVec3 *previous,
 
 float RenderLerpAngleDegrees(float from, float to, float t) {
     float delta;
+
+    if (!isfinite(from) || !isfinite(to)) return 0.0f;
     t = Clamp01(t);
     delta = to - from;
     while (delta > 180.0f) delta -= 360.0f;

@@ -242,6 +242,29 @@ static void test_transform_interpolation_takes_short_angle_path(void) {
     EXPECT_EQ(10, (int)current.rotation.y);
 }
 
+static void test_non_finite_angles_do_not_stall_interpolation(void) {
+    RageRenderTransform previous = {0};
+    RageRenderTransform current = {0};
+    RageRenderTransform presentation;
+    RageRenderMeshInstance storage[1];
+    RageRenderWorld world;
+    RageRenderCamera camera = {0};
+
+    EXPECT_EQ(0, (int)RenderLerpAngleDegrees(0.0f, INFINITY, 0.5f));
+    EXPECT_EQ(0, (int)RenderLerpAngleDegrees(NAN, 10.0f, 0.5f));
+    previous.rotation.y = 10.0f;
+    current.rotation.y = 20.0f;
+    RenderInterpolateTransform(&previous, &current, NAN, &presentation);
+    EXPECT_EQ(10, (int)presentation.rotation.y);
+
+    RenderWorldInit(&world, storage, 1);
+    RenderWorldSetCamera(&world, &camera);
+    RenderWorldBeginFrame(&world, 2);
+    camera.transform.rotation.y = INFINITY;
+    RenderWorldSetCamera(&world, &camera);
+    EXPECT_EQ(1, isinf(world.previousCamera.transform.rotation.y));
+}
+
 static void test_perspective_fog_uses_authored_near_and_far_depths(void) {
     RageRenderCamera camera = {0};
     RageRenderVec3 point = {0.0f, 0.0f, -10.0f};
@@ -588,6 +611,7 @@ int main(void) {
     test_mirror_is_an_independent_scene_camera();
     test_camera_cuts_are_not_interpolated_as_motion();
     test_transform_interpolation_takes_short_angle_path();
+    test_non_finite_angles_do_not_stall_interpolation();
     test_perspective_fog_uses_authored_near_and_far_depths();
     test_projection_rejects_non_finite_camera_data();
     test_terrain_grid_places_adjacent_cells_without_overlap();
