@@ -13,8 +13,8 @@ static ReplayTimeAttackFrame
 s16 g_GrandPrixMode;
 ReplayGrandPrixFrame *g_ReplayFramesGp = s_GrandPrixFrames;
 ReplayTimeAttackFrame *g_ReplayFramesTimeAttack = s_TimeAttackFrames;
-ReplayModelValue g_ReplayPlayerModel;
-ReplayModelValue g_ReplayRivalModel;
+s16 g_ReplayPlayerModelIndex;
+s16 g_ReplayRivalModelIndex;
 
 static void TestGrandPrixFrames(void) {
     GameCarRuntime player = {0};
@@ -23,8 +23,8 @@ static void TestGrandPrixFrames(void) {
     ReplayGrandPrixFrame *second = &s_GrandPrixFrames[1];
 
     g_GrandPrixMode = 1;
-    g_ReplayPlayerModel.model = 12;
-    g_ReplayRivalModel.model = 34;
+    g_ReplayPlayerModelIndex = 12;
+    g_ReplayRivalModelIndex = 34;
     first->x0 = 100;
     first->y0 = -20;
     first->z0 = 300;
@@ -141,7 +141,7 @@ static void TestTimeAttackFrames(void) {
 
     memset(&rival, 0x5A, sizeof(rival));
     g_GrandPrixMode = 0;
-    g_ReplayPlayerModel.model = 7;
+    g_ReplayPlayerModelIndex = 7;
     first->x = 80;
     first->y = -30;
     first->z = 160;

@@ -14,8 +14,8 @@ ReplayTimeAttackFrame *g_ReplayFramesTimeAttack;
 s32 g_ReplayWriteCursor;
 s32 g_ReplayFrameCount;
 s32 g_ReplayBufferWrapped;
-ReplayModelValue g_ReplayPlayerModel;
-ReplayModelValue g_ReplayRivalModel;
+s16 g_ReplayPlayerModelIndex;
+s16 g_ReplayRivalModelIndex;
 s16 g_GrandPrixMode;
 PlayerCarRuntime g_PlayerCar;
 GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
@@ -76,8 +76,8 @@ static void TestGrandPrixRecording(void) {
     RecordReplayFrame();
     assert(memcmp(&g_ReplayFrameBuffer.grandPrixReplay[0], &untouched,
                   sizeof(untouched)) == 0);
-    assert(g_ReplayPlayerModel.model == 3);
-    assert(g_ReplayRivalModel.model == 4);
+    assert(g_ReplayPlayerModelIndex == 3);
+    assert(g_ReplayRivalModelIndex == 4);
 
     assert(g_ReplayWriteCursor == 2);
     RecordReplayFrame();
@@ -123,7 +123,7 @@ static void TestTimeAttackRecording(void) {
     RecordReplayFrame();
     assert(memcmp(&g_ReplayFrameBuffer.timeAttackReplay[0], &untouched,
                   sizeof(untouched)) == 0);
-    assert(g_ReplayPlayerModel.model == 5);
+    assert(g_ReplayPlayerModelIndex == 5);
 
     assert(g_ReplayWriteCursor == 2);
     RecordReplayFrame();

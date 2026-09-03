@@ -108,7 +108,7 @@ static void ApplyReplayFrameState(s32 subframe, GameCarRuntime *player,
                                   s32 restoreTrackPoint) {
     const s32 interpolate = subframe & 1;
 
-    player->modelIndex = g_ReplayPlayerModel.model;
+    player->modelIndex = g_ReplayPlayerModelIndex;
     if (g_GrandPrixMode != 0) {
         const s32 index = ReplaySampleIndex(
             subframe, GRAND_PRIX_REPLAY_SAMPLE_COUNT);
@@ -116,7 +116,7 @@ static void ApplyReplayFrameState(s32 subframe, GameCarRuntime *player,
         const ReplayCarPose playerPose = GrandPrixPlayerPose(frame);
         const ReplayCarPose rivalPose = GrandPrixRivalPose(frame);
 
-        rival->modelIndex = g_ReplayRivalModel.model;
+        rival->modelIndex = g_ReplayRivalModelIndex;
         ApplyReplayPose(player, &playerPose, interpolate);
         ApplyReplayPose(rival, &rivalPose, interpolate);
         player->tiltCounter = frame->tiltCounter;

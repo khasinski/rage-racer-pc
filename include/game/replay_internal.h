@@ -6,18 +6,13 @@
 
 struct GameCarRuntime;
 
-typedef union ReplayModelValue {
-    s32 word;
-    u16 model;
-} ReplayModelValue;
-
 extern ReplayGrandPrixFrame *g_ReplayFramesGp;
 extern ReplayTimeAttackFrame *g_ReplayFramesTimeAttack;
 extern s32 g_ReplayWriteCursor;
 extern s32 g_ReplayFrameCount;
 extern s32 g_ReplayBufferWrapped;
-extern ReplayModelValue g_ReplayPlayerModel;
-extern ReplayModelValue g_ReplayRivalModel;
+extern s16 g_ReplayPlayerModelIndex;
+extern s16 g_ReplayRivalModelIndex;
 
 void ApplyReplayFrame(s32 subframe, struct GameCarRuntime *player,
                       struct GameCarRuntime *rival);

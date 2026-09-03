@@ -44,8 +44,8 @@ static void StoreGrandPrixReplaySample(s32 subframe,
                                        const GameCarRuntime *rival) {
     ReplayGrandPrixFrame *dst;
 
-    g_ReplayPlayerModel.word = player->modelIndex;
-    g_ReplayRivalModel.word = rival->modelIndex;
+    g_ReplayPlayerModelIndex = player->modelIndex;
+    g_ReplayRivalModelIndex = rival->modelIndex;
     if ((subframe & 1) != 0) {
         return;
     }
@@ -78,7 +78,7 @@ static void StoreTimeAttackReplaySample(s32 subframe,
                                         const GameCarRuntime *player) {
     ReplayTimeAttackFrame *dst;
 
-    g_ReplayPlayerModel.word = player->modelIndex;
+    g_ReplayPlayerModelIndex = player->modelIndex;
     if ((subframe & 1) != 0) {
         return;
     }

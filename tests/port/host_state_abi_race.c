@@ -14,3 +14,7 @@ _Static_assert(sizeof(g_TimeRecordInsertRow) == sizeof(s32),
                "time-record insertion row must be a scalar");
 _Static_assert(sizeof(g_CameraCarTrackSection) == sizeof(s16),
                "camera-car track section must be a scalar");
+_Static_assert(sizeof(g_ReplayPlayerModelIndex) == sizeof(s16),
+               "replay player model index must match the car field");
+_Static_assert(sizeof(g_ReplayRivalModelIndex) == sizeof(s16),
+               "replay rival model index must match the car field");
