@@ -682,10 +682,6 @@ static const uint16_t *ImportVramSnapshot(void) {
     return s_vramSnapshot;
 }
 
-/* Take the next snapshot afresh, for a caller that knows the picture has
- * moved on. */
-void NativeAssetImporterInvalidateVram(void) { s_haveVramSnapshot = 0; }
-
 static void ImportColor(uint16_t word, uint8_t rgba[4]) {
     uint8_t r = (uint8_t)((word & 0x1Fu) << 3);
     uint8_t g = (uint8_t)(((word >> 5) & 0x1Fu) << 3);
