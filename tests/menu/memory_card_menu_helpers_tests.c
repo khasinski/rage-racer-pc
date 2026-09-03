@@ -19,6 +19,17 @@ s32 g_McMenuPage;
 s32 g_McMenuRowCount;
 s32 g_McMenuRowCursor;
 s32 g_McMenuState;
+MemoryCardStatusState g_McStatusState;
+s32 g_McPollTicks;
+s32 g_McStatusResult;
+s32 g_McPollStatus;
+s32 g_McLastCardStatus;
+s32 g_McNoCardTicks;
+s32 g_McErrorTicks;
+s32 g_McErrorPending;
+s32 g_McErrorCountdown;
+s32 g_McSettleTicks;
+s32 g_McCardOkFrames;
 s32 g_SceneId;
 s32 g_SceneTimer;
 u16 g_PadPressed;
@@ -205,12 +216,30 @@ static void TestMenuControls(void) {
 
 static void TestMenuLifecycle(void) {
     Reset();
+    g_McStatusState = MC_STATUS_WAIT_LOAD;
+    g_McPollTicks = 40;
+    g_McStatusResult = MC_CARD_RESULT_READY;
+    g_McPollStatus = MC_CARD_RESULT_ERROR;
+    g_McLastCardStatus = MC_CARD_RESULT_READY;
+    g_McNoCardTicks = 6;
+    g_McErrorTicks = 4;
+    g_McErrorPending = 1;
+    g_McErrorCountdown = -1;
+    g_McSettleTicks = 3;
+    g_McCardOkFrames = 1;
     EnterMemoryCardMenu();
     CHECK(s_displayMask == 0 && s_displaySetup == 1 && s_startEvents == 1);
     CHECK(g_McMenuRowCount == 2 && g_McMenuState == -1);
     CHECK(g_McMenuPage == 0 && g_McMenuRowCursor == 0);
     CHECK(g_McFadeStep == -8 && g_McFadeLevel == 0xFF);
     CHECK(g_SceneId == 0x1A && g_SceneTimer == 0);
+    CHECK(g_McStatusState == MC_STATUS_REQUEST_INFO && g_McPollTicks == 0);
+    CHECK(g_McStatusResult == MC_CARD_RESULT_PENDING &&
+          g_McPollStatus == MC_CARD_RESULT_PENDING &&
+          g_McLastCardStatus == MC_CARD_RESULT_PENDING);
+    CHECK(g_McNoCardTicks == 0 && g_McErrorTicks == 0 &&
+          g_McErrorPending == 0 && g_McErrorCountdown == 3);
+    CHECK(g_McSettleTicks == 0 && g_McCardOkFrames == 0);
 
     StartMenuExitFade();
     CHECK(s_stopEvents == 1 && g_McFadeStep == 8);
