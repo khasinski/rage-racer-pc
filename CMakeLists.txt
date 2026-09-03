@@ -190,6 +190,7 @@ if(RAGE_BUILD_PORT)
         src/port/chase_camera.c
         src/port/content_options.c
         src/port/chd_disc.c
+        src/port/chd_track_layout.c
         src/port/disc_stream_table.c
         src/port/hud_config.c
         src/port/mod_assets.c

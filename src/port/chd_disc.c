@@ -1,4 +1,5 @@
 #include "chd_disc.h"
+#include "chd_track_layout.h"
 
 #include <libchdr/chd.h>
 #include <psyz/cd.h>
@@ -9,13 +10,6 @@
 #include <string.h>
 
 enum { RAGE_CHD_MAX_TRACKS = 99, RAGE_CHD_RAW_SECTOR = 2352 };
-
-typedef struct RageChdTrack {
-    int sector;
-    int endSector;
-    uint32_t frameOffset;
-    int audio;
-} RageChdTrack;
 
 static chd_file *s_chd;
 static unsigned char *s_hunk;
@@ -43,10 +37,10 @@ void ChdClose(void) {
 }
 
 static int ChdLoadToc(PsyzCdTrackInfo *psyzTracks, int *leadOut) {
-    int plba = -150;
-    uint32_t frameOffset = 0;
+    RageChdTrackLayout layout;
     int index;
 
+    ChdTrackLayoutInit(&layout);
     for (index = 0; index < RAGE_CHD_MAX_TRACKS; index++) {
         char metadata[256] = {0};
         char type[64] = {0};
@@ -77,40 +71,27 @@ static int ChdLoadToc(PsyzCdTrackInfo *psyzTracks, int *leadOut) {
                             &number, type, subtype, &frames);
             if (parsed != 4) return 0;
         }
-        if (number != index + 1 || frames <= 0 ||
-            (strcmp(type, "AUDIO") != 0 &&
+        if ((strcmp(type, "AUDIO") != 0 &&
              strcmp(type, "MODE2_RAW") != 0 &&
              strcmp(type, "MODE1_RAW") != 0)) {
             return 0;
         }
-        {
-            int logicalPregap = number == 1 ? 150
-                                : pgtype[0] == 'V' ? 0 : pregap;
-            int storedPregap = pgtype[0] == 'V' ? pregap : 0;
-            int playableFrames = frames - storedPregap;
-            RageChdTrack *track = &s_tracks[index];
-            if (playableFrames <= 0) return 0;
-            plba += logicalPregap + storedPregap;
-            frameOffset += (uint32_t)storedPregap;
-            track->sector = plba;
-            track->endSector = plba + playableFrames;
-            track->frameOffset = frameOffset;
-            track->audio = strcmp(type, "AUDIO") == 0;
-            psyzTracks[index].sector = track->sector;
-            psyzTracks[index].end_sector = track->endSector;
-            psyzTracks[index].is_audio = track->audio;
-            psyzTracks[index].audio_big_endian = track->audio;
-            frameOffset += (uint32_t)playableFrames + (uint32_t)postgap;
-            frameOffset += (((uint32_t)frames + 3U) & ~3U) -
-                           (uint32_t)frames;
-            plba += playableFrames + postgap;
+        if (!ChdTrackLayoutAppend(
+                &layout, index, number, frames, pregap, postgap,
+                pgtype[0] == 'V', &s_tracks[index])) {
+            return 0;
         }
+        s_tracks[index].audio = strcmp(type, "AUDIO") == 0;
+        psyzTracks[index].sector = s_tracks[index].sector;
+        psyzTracks[index].end_sector = s_tracks[index].endSector;
+        psyzTracks[index].is_audio = s_tracks[index].audio;
+        psyzTracks[index].audio_big_endian = s_tracks[index].audio;
         (void)subtype;
         (void)pgsub;
     }
     if (index == 0) return 0;
     s_trackCount = index;
-    *leadOut = plba;
+    *leadOut = layout.nextSector;
     return 1;
 }
 

@@ -31,6 +31,18 @@ endif()
 add_test(NAME disc_discovery COMMAND disc_discovery_tests)
 set_tests_properties(disc_discovery PROPERTIES LABELS functional)
 
+add_executable(chd_track_layout_tests
+    chd_track_layout_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/chd_track_layout.c)
+target_include_directories(chd_track_layout_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(chd_track_layout_tests PRIVATE
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME chd_track_layout COMMAND chd_track_layout_tests)
+set_tests_properties(chd_track_layout PROPERTIES LABELS unit)
+
 add_executable(cdda_file_tests
     cdda_file_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/cdda_file.c)
