@@ -15,10 +15,13 @@
 #include "common.h"
 #include "game/angle.h"
 #include "game/car.h"
+#include "game/car_internal.h"
+#include "game/integer.h"
 #include "game/render.h"
 #include "game/track.h"
 #include "game/render_state.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -164,6 +167,29 @@ int main(int argc, char **argv) {
         if (car.headingAngle != 123) {
             puts("missing car spec changed steering heading");
             return 1;
+        }
+
+        memset(&car, 0, sizeof(car));
+        g_CarSpec = &spec;
+        spec.steerResponse = 1;
+        car.trackPointIndex = INT_MAX;
+        car.drive.launchDirection = 1;
+        car.headingAngle = INT_MAX;
+        car.verticalMotionState = CAR_VERTICAL_GROUNDED;
+        {
+            s32 wanted = CalculateTrackOffsetHeading(
+                1, car.segmentFraction, car.x, car.z,
+                car.trackLateralOffset);
+            s32 towards = GetAngleDelta(car.headingAngle, wanted);
+            s32 expectedHeading = WrapSigned32(
+                (int64_t)car.headingAngle + towards * 20);
+
+            SteerCarToTrackLine(&car);
+            if (car.headingAngle != expectedHeading) {
+                printf("extreme steering heading=%d expected=%d\n",
+                       car.headingAngle, expectedHeading);
+                return 1;
+            }
         }
     }
     printf("steer_to_track_line: %d cases unchanged\n", cases);
