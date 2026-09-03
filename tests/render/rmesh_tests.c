@@ -92,6 +92,18 @@ int main(void) {
     EXPECT(center[0] == 0.0f && center[1] == 0.0f &&
            center[2] == 0.0f && radius == 0.0f);
 
+    mesh.bytes = blob;
+    mesh.size = sizeof(blob);
+    mesh.meshCount = mesh.vertexCount = mesh.indexCount = 1;
+    mesh.offsetsOffset = mesh.verticesOffset = mesh.indicesOffset = SIZE_MAX;
+    first = count = index = 123;
+    memset(&vertex, 0x7f, sizeof(vertex));
+    EXPECT(!RuntimeMeshRange(&mesh, 0, &first, &count));
+    EXPECT(first == 0 && count == 0);
+    EXPECT(!RuntimeMeshVertex(&mesh, 0, &vertex));
+    EXPECT(vertex.position[0] == 0.0f && vertex.material == 0);
+    EXPECT(!RuntimeMeshIndex(&mesh, 0, &index) && index == 0);
+
     uv[1] = 0.25f;
     memcpy(blob + 60, uv, sizeof(uv));
     position[0] = FLT_MAX;
