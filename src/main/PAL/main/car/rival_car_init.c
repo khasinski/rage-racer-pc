@@ -11,8 +11,9 @@
 void InitRivalCar(GameCarRuntime *car,
                   s32 gridPosition,
                   const RaceGridSlot *grid) {
+    const s32 series = g_RaceSeries != 0;
     const TrackRivalStart *start =
-        &g_TrackEventData->rivalStarts[g_RaceSeries][gridPosition + 1];
+        &g_TrackEventData->rivalStarts[series][gridPosition + 1];
     CarTrackLimits trackLimits = {
         .rightInset = 20,
         .leftInset = -20,
@@ -23,7 +24,7 @@ void InitRivalCar(GameCarRuntime *car,
     memset(car, 0, sizeof(*car));
     car->initializedFlag = 1;
     car->aiEnabled = 1;
-    car->facingBackwards = (s16)g_RaceSeries;
+    car->facingBackwards = (s16)series;
     car->modelIndex = grid[gridPosition].halves.modelId;
     car->rivalModelId = grid[gridPosition].halves.modelId;
     startPointIndex = WrapTrackPointIndex(start->trackPointIndex);
@@ -39,7 +40,7 @@ void InitRivalCar(GameCarRuntime *car,
     }
     car->trackPointIndex = trackPointIndex;
     car->bodyYaw = (ANGLE_THREE_QUARTER_TURN -
-                    g_RaceSeries * ANGLE_HALF_TURN -
+                    series * ANGLE_HALF_TURN -
                     TrackPoint(trackPointIndex)->angle) & ANGLE_MASK;
     car->baseBodyYaw = car->bodyYaw;
     car->targetYaw = car->bodyYaw;

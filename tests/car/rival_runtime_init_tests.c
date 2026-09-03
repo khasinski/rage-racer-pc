@@ -61,7 +61,7 @@ int main(void) {
     g_TrackEventData = &events;
     g_TrackPoints = points;
     g_TrackPointCount = 3;
-    g_RaceSeries = 1;
+    g_RaceSeries = 7;
     grid[0].halves.modelId = 7;
     start = &events.rivalStarts[1][1];
     start->x = 1000;
@@ -84,6 +84,7 @@ int main(void) {
     CHECK(car.modelYaw == 0x200 && car.modelY == 40);
     CHECK(car.modelIndex == 7 && car.rivalModelId == 7);
     CHECK(car.activeFlag == 4 && car.aiEnabled == 1);
+    CHECK(car.facingBackwards == 1);
     CHECK(car.initializedFlag == 1 && car.collisionFlag == 0);
     CHECK(car.progressA == 123 && car.previousTrackProgress == 502);
     CHECK(s_seedMode == 4 && s_trackCalls == 1);
