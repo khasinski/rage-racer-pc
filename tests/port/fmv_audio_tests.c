@@ -16,6 +16,7 @@ enum {
 static int s_audioPlaying;
 static int s_audioSector = -1;
 static int s_absoluteSector = 1000;
+static int s_rangeValid = 1;
 static int s_failReadAt = -1;
 static int s_readCalls;
 static long s_commands[16];
@@ -38,9 +39,14 @@ int HostReadStreamSector(unsigned int sector, unsigned char *raw) {
     return 1;
 }
 
-int HostStreamAbsoluteSector(unsigned int sector) {
-    (void)sector;
-    return s_absoluteSector;
+int HostStreamAbsoluteRange(unsigned int firstSector,
+                            unsigned int sectorCount, int *absoluteFirst,
+                            int *absoluteEnd) {
+    (void)firstSector;
+    if (!s_rangeValid || sectorCount == 0) return 0;
+    *absoluteFirst = s_absoluteSector;
+    *absoluteEnd = s_absoluteSector + (int)sectorCount;
+    return 1;
 }
 
 int RuntimeConfigEnabled(const char *key) {
@@ -82,6 +88,7 @@ static void Reset(void) {
     s_audioPlaying = 0;
     s_audioSector = -1;
     s_absoluteSector = 1000;
+    s_rangeValid = 1;
     s_failReadAt = -1;
     s_readCalls = 0;
     s_commandCount = 0;
@@ -145,6 +152,12 @@ static int TestMissingAudio(void) {
     s_failReadAt = 0;
     HostFmvAudioStart(50, 20);
     CHECK(s_readCalls == 1);
+    CHECK(s_commandCount == 1 && s_commands[0] == CD_SET_MODE);
+
+    Reset();
+    s_rangeValid = 0;
+    HostFmvAudioStart(50, 20);
+    CHECK(s_readCalls == 0);
     CHECK(s_commandCount == 1 && s_commands[0] == CD_SET_MODE);
     return 0;
 }

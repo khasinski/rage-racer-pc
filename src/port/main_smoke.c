@@ -10,6 +10,7 @@
 #include <stdlib.h>
 
 #include "host_storage.h"
+#include "host_disc.h"
 #include "game/diagnostics.h"
 
 #include "input_config.h"
@@ -34,7 +35,6 @@
 
 void MainLoop(void);
 int InitNativeGameData(void);
-int HostInitDisc(void);
 extern int g_SceneId;
 extern int g_FrameCounter;
 extern int g_FrontendState;

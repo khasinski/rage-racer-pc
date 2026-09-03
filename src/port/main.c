@@ -10,6 +10,7 @@
 #include "content_options.h"
 #include "diagnostic_log.h"
 #include "host_storage.h"
+#include "host_disc.h"
 #include "runtime_config.h"
 #include "timing_control.h"
 #include "modern/modern_renderer.h"
@@ -24,8 +25,6 @@
 
 void MainLoop(void);
 int InitNativeGameData(void);
-int HostInitDisc(void);
-int HostDumpArchive(const char *path);
 
 static void LoadInputConfig(RageInputConfig *config, const char *argv0) {
     char path[PATH_MAX];

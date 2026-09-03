@@ -22,6 +22,7 @@
 
 #include <psyz/cd.h>
 
+#include "host_disc.h"
 #include "archive_index.h"
 #include "disc_cue.h"
 #include "disc_discovery.h"
@@ -191,15 +192,26 @@ int HostReadStreamSector(unsigned int sector, unsigned char *raw) {
     return HostReadRawSector(NULL, absoluteSector, raw);
 }
 
-int HostStreamAbsoluteSector(unsigned int sector) {
-    unsigned int absoluteSector;
+int HostStreamAbsoluteRange(unsigned int firstSector,
+                            unsigned int sectorCount, int *absoluteFirst,
+                            int *absoluteEnd) {
+    unsigned int lastSector;
+    unsigned int first;
+    unsigned int last;
 
-    if (!DiscIsoResolveSector(&g_RageHostDisc.stream, sector,
-                              &absoluteSector) ||
-        absoluteSector > INT_MAX) {
-        return -1;
+    if (sectorCount == 0 || absoluteFirst == NULL || absoluteEnd == NULL ||
+        firstSector > UINT_MAX - (sectorCount - 1)) {
+        return 0;
     }
-    return (int)absoluteSector;
+    lastSector = firstSector + sectorCount - 1;
+    if (!DiscIsoResolveSector(&g_RageHostDisc.stream, firstSector, &first) ||
+        !DiscIsoResolveSector(&g_RageHostDisc.stream, lastSector, &last) ||
+        first > INT_MAX || last >= INT_MAX) {
+        return 0;
+    }
+    *absoluteFirst = (int)first;
+    *absoluteEnd = (int)last + 1;
+    return 1;
 }
 
 static int HostReadArchive(unsigned int offset, void *destination,

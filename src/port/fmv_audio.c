@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include "game/cd.h"
+#include "host_disc.h"
 #include "psyq/cd.h"
 #include <psyz/cd.h>
 #include "runtime_config.h"
@@ -26,9 +27,6 @@ enum {
 
 static int s_xaPlaying;
 static int s_xaTailAllowed;
-
-int HostReadStreamSector(unsigned int sector, unsigned char *raw);
-int HostStreamAbsoluteSector(unsigned int sector);
 
 static void FinishXaAudio(void) {
     unsigned char mode = RAGE_CDL_MODE_DA | CdlModeSpeed;
@@ -65,7 +63,8 @@ void HostFmvAudioStart(unsigned int firstSector, unsigned int sectorCount) {
     unsigned char filter[2] = {0, 0};
     unsigned char mode = RAGE_CDL_MODE_RT | CdlModeSpeed;
     CdlLOC location;
-    int absolute;
+    int absoluteFirst;
+    int absoluteEnd;
     unsigned int index;
     unsigned int searchCount = sectorCount < XA_FILTER_SEARCH_SECTORS
                                    ? sectorCount
@@ -73,6 +72,11 @@ void HostFmvAudioStart(unsigned int firstSector, unsigned int sectorCount) {
 
     s_xaPlaying = 0;
     s_xaTailAllowed = 0;
+    if (!HostStreamAbsoluteRange(firstSector, sectorCount, &absoluteFirst,
+                                 &absoluteEnd)) {
+        FinishXaAudio();
+        return;
+    }
     for (index = 0; index < searchCount; index++) {
         if (!HostReadStreamSector(firstSector + index, raw)) {
             FinishXaAudio();
@@ -86,21 +90,21 @@ void HostFmvAudioStart(unsigned int firstSector, unsigned int sectorCount) {
         }
     }
 
-    absolute = HostStreamAbsoluteSector(firstSector);
-    if (index == searchCount || absolute < 0) {
+    if (index == searchCount) {
         FinishXaAudio();
         return;
     }
 
-    CdIntToPos(absolute, &location);
+    CdIntToPos(absoluteFirst, &location);
     if (RuntimeConfigEnabled("diagnostics.fmv_trace")) {
-        fprintf(stderr, "fmv xa start: sector=%d filter=%u/%u\n", absolute,
+        fprintf(stderr, "fmv xa start: sector=%d filter=%u/%u\n",
+                absoluteFirst,
                 filter[0], filter[1]);
     }
     CdControl(RAGE_CDL_SETFILTER, filter, NULL);
     CdControl(RAGE_CDL_SETMODE, &mode, NULL);
     CdControl(RAGE_CDL_SETLOC, (unsigned char *)&location, NULL);
-    Psyz_CdSetXaEndSector(absolute + (int)sectorCount);
+    Psyz_CdSetXaEndSector(absoluteEnd);
     CdControl(RAGE_CDL_READN, NULL, NULL);
     s_xaPlaying = Psyz_CdAudioPlaying();
     if (!s_xaPlaying) {

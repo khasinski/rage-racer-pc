@@ -7,6 +7,7 @@
 #include <string.h>
 #include "disc_stream_table.h"
 #include "fmv_audio.h"
+#include "host_disc.h"
 #include "fmv_str.h"
 #include "fmv_stream_index.h"
 #include "host_clock.h"
@@ -76,11 +77,9 @@ static unsigned char *s_bitstream;
 static u_long *s_codes;
 static u_long s_macroblock[192];
 
-int HostReadStreamSector(unsigned int sector, unsigned char *raw);
 /* How many sectors of RAGE.STR a movie occupies, which is where the next one
  * begins.  The mounted disc decides it; the movies do not sit in the same
  * places on a PAL disc and an American one. */
-unsigned int HostStreamSectorSpan(int stream);
 
 /* The rest of the MDEC front end comes from game/render.h and psyq/cd.h;
  * only the VLC stage has no declaration there. */
