@@ -89,10 +89,9 @@ static s32 DrawSlidingSprite(
 }
 
 s32 DrawCourseSelectScreen(s32 step) {
-    GameOrderingTableEntry *otBase;
     GameOrderingTableEntry *ot;
     u8 fade;
-    u16 slide;
+    s32 slide;
     CourseClassHeaderSprite classHeader;
     s32 coordinateY;
     s32 lineColor;
@@ -100,16 +99,8 @@ s32 DrawCourseSelectScreen(s32 step) {
     s32 digitCount;
     s32 prizeOffset;
     s32 course;
-    s32 gpHeight;
-    s32 gpClut;
-    s32 gpSemiTrans;
-    s32 gpFlags;
-    s32 gpSlide;
-    u32 gpFade;
-    u32 fadeValue;
     CourseSelectScrollFrame scroll;
-    otBase = RENDER_OT_BASE;
-    ot = otBase + 1;
+    ot = RENDER_OT_BASE + 1;
     if (step == 0) {
         g_CourseSelectScrollProgress = 0;
         return 0;
@@ -123,63 +114,54 @@ s32 DrawCourseSelectScreen(s32 step) {
         return g_CourseSelectScrollProgress;
     }
 
-    slide -= 0x28;
-    fadeValue = g_CourseSelectScrollProgress;
-    fade = (u8)(fadeValue / 4);
+    fade = (u8)(g_CourseSelectScrollProgress / 4);
     course = SeriesCourseIndex();
 
     if (g_GrandPrixMode != 0) {
         if (GetCourseClassHeaderSprite(
                 g_SeriesSelection, g_GrandPrixClass, &classHeader)) {
-            DrawSprite(ot, 0x50, 0xB0 - (s16)slide, classHeader.width, 0x10,
+            DrawSprite(ot, 0x50, 0xB0 - slide, classHeader.width, 0x10,
                        classHeader.textureU, classHeader.textureV, fade, fade,
                        fade, 0x244, 0, 1, 0x5B);
         }
 
-        gpHeight = 0x10;
-        gpClut = 0x244;
-        gpSemiTrans = 1;
-        gpSlide = (s16)slide;
-        gpFade = fade;
-        gpFlags = 0x5B;
         DrawSprite(
-            ot, classHeader.width + 0x50, 0xB0 - gpSlide, 0x10,
-            gpHeight, 0xEC, 0x48, gpFade, gpFade, gpFade,
-            gpClut, 0, gpSemiTrans, gpFlags);
+            ot, classHeader.width + 0x50, 0xB0 - slide, 0x10,
+            0x10, 0xEC, 0x48, fade, fade, fade, 0x244, 0, 1, 0x5B);
 
         coordinateY = DrawSlidingSprite(
-            ot, 0x50, 0x97, gpSlide, 0x1A, gpHeight, 0x60, 0xCC,
-            gpFade, gpFade, gpFade, gpClut, 0, gpSemiTrans, gpFlags);
+            ot, 0x50, 0x97, slide, 0x1A, 0x10, 0x60, 0xCC,
+            fade, fade, fade, 0x244, 0, 1, 0x5B);
         DrawSprite(
             ot, 0x6C, coordinateY, 8, 0x10,
             g_GrandPrixClass * 8 + 8, 0x18,
-            gpFade, gpFade, gpFade, gpClut, 0, gpSemiTrans, gpFlags);
+            fade, fade, fade, 0x244, 0, 1, 0x5B);
 
-        lineColor = gpFade * 2;
+        lineColor = fade * 2;
         DrawLine(
-            ot, 0x48, 0xAA - gpSlide, 0xAF, 0xAA - gpSlide,
+            ot, 0x48, 0xAA - slide, 0xAF, 0xAA - slide,
             lineColor, lineColor, lineColor, 0x40);
         DrawLine(
-            ot, 0x48, 0xAB - gpSlide, 0xAF, 0xAB - gpSlide,
+            ot, 0x48, 0xAB - slide, 0xAF, 0xAB - slide,
             lineColor, lineColor, lineColor, 0x40);
         DrawSolidRect(
-            ot, 0x48, 0x94 - gpSlide, 0x68, 0x30,
+            ot, 0x48, 0x94 - slide, 0x68, 0x30,
             lineColor, lineColor, lineColor,
-            gpFade < 0x7F ? 0x20 : 0xFF);
+            fade < 0x7F ? 0x20 : 0xFF);
         DrawSprite(
-            ot, 0xB0, 0x94 - (s16)slide, 0x20, 0x30,
+            ot, 0xB0, 0x94 - slide, 0x20, 0x30,
             0x60, 0x88, fade, fade, fade, 0x25B, 0, 1, 0x39);
     }
 
     coordinateY = DrawSlidingSprite(
-        ot, 0x4C, 0xD0, (s16)slide, 0x18, 0xC, 0x18, 0xDC,
+        ot, 0x4C, 0xD0, slide, 0x18, 0xC, 0x18, 0xDC,
         fade, fade, fade, 0x244, 0, 1, 0x3A);
     DrawSprite(
         ot, 0x68, coordinateY, 0x12, 0xC,
         0x32, 0xDC, fade, fade, fade, 0x244, 0, 1, 0x3A);
 
     coordinateY = DrawSlidingSprite(
-        ot, 0x4C, 0xF8, (s16)slide, 0x18, 0xC, 0x18, 0xDC,
+        ot, 0x4C, 0xF8, slide, 0x18, 0xC, 0x18, 0xDC,
         fade, fade, fade, 0x244, 0, 1, 0x3A);
     DrawSprite(
         ot, 0x68, coordinateY, 0x1A, 0xC,
@@ -188,62 +170,62 @@ s32 DrawCourseSelectScreen(s32 step) {
     switch (course) {
     case 0:
         coordinateY = DrawSlidingSprite(
-            ot, 0x4C, 0xE0, (s16)slide, 8, 0x10, 8, 0x18,
+            ot, 0x4C, 0xE0, slide, 8, 0x10, 8, 0x18,
             fade, fade, fade, 0x244, 0, 1, 0x3B);
         DrawSprite(
             ot, 0x54, coordinateY, 0x54, 0x10,
             0, 0x9C, fade, fade, fade, 0x244, 0, 1, 0x3B);
         DrawSprite(
-            ot, 0x4C, 0x108 - (s16)slide, 0x20, 0x10,
+            ot, 0x4C, 0x108 - slide, 0x20, 0x10,
             0x44, 0xB4, fade, fade, fade, 0x244, 0, 1, 0x3A);
         break;
     case 1:
         coordinateY = DrawSlidingSprite(
-            ot, 0x4C, 0xE0, (s16)slide, 8, 0x10, 0x10, 0x18,
+            ot, 0x4C, 0xE0, slide, 8, 0x10, 0x10, 0x18,
             fade, fade, fade, 0x244, 0, 1, 0x3B);
         DrawSprite(
             ot, 0x54, coordinateY, 0x4C, 0x10,
             0x54, 0x9C, fade, fade, fade, 0x244, 0, 1, 0x3B);
         DrawSprite(
-            ot, 0x4C, 0x108 - (s16)slide, 0x20, 0x10,
+            ot, 0x4C, 0x108 - slide, 0x20, 0x10,
             0x64, 0xB4, fade, fade, fade, 0x244, 0, 1, 0x3A);
         break;
     case 2:
         coordinateY = DrawSlidingSprite(
-            ot, 0x4C, 0xE0, (s16)slide, 8, 0x10, 0x18, 0x18,
+            ot, 0x4C, 0xE0, slide, 8, 0x10, 0x18, 0x18,
             fade, fade, fade, 0x244, 0, 1, 0x3B);
         DrawSprite(
             ot, 0x54, coordinateY, 0x48, 0x10,
             0, 0xAC, fade, fade, fade, 0x244, 0, 1, 0x3B);
         DrawSprite(
-            ot, 0x4C, 0x108 - (s16)slide, 0x20, 0x10,
+            ot, 0x4C, 0x108 - slide, 0x20, 0x10,
             0x84, 0xB4, fade, fade, fade, 0x244, 0, 1, 0x3A);
         break;
     case 3:
         coordinateY = DrawSlidingSprite(
-            ot, 0x4C, 0xE0, (s16)slide, 8, 0x10, 0x20, 0x18,
+            ot, 0x4C, 0xE0, slide, 8, 0x10, 0x20, 0x18,
             fade, fade, fade, 0x244, 0, 1, 0x3B);
         DrawSprite(
             ot, 0x54, coordinateY, 0x5C, 0x10,
             0xA4, 0x9C, fade, fade, fade, 0x244, 0, 1, 0x3B);
         DrawSprite(
-            ot, 0x4C, 0x108 - (s16)slide, 0x1E, 0x10,
+            ot, 0x4C, 0x108 - slide, 0x1E, 0x10,
             0xA4, 0xB4, fade, fade, fade, 0x244, 0, 1, 0x3A);
         break;
     }
 
     if (g_GrandPrixMode != 0) {
         DrawSprite(
-            ot, 0x4C, 0x140 - (s16)slide, 0x18, 0x10,
+            ot, 0x4C, 0x140 - slide, 0x18, 0x10,
             0xB4, 0xCC, fade, fade, fade, 0x244, 0, 1, 0x3A);
         DrawSprite(
-            ot, 0x4C, 0x150 - (s16)slide, 0x18, 0x10,
+            ot, 0x4C, 0x150 - slide, 0x18, 0x10,
             0xCC, 0xCC, fade, fade, fade, 0x244, 0, 1, 0x3A);
         DrawSprite(
-            ot, 0x4C, 0x160 - (s16)slide, 0x18, 0x10,
+            ot, 0x4C, 0x160 - slide, 0x18, 0x10,
             0xE4, 0xCC, fade, fade, fade, 0x244, 0, 1, 0x3A);
 
-        prizeOffset = (s16)slide - 0x140;
+        prizeOffset = slide - 0x140;
         for (row = 0; row < 3; row++) {
             coordinateY = row * 0x10 - prizeOffset;
             digitCount = GameDrawNumber(

@@ -5,6 +5,11 @@
 
 extern s32 g_CourseSelectScrollProgress;
 
+enum {
+    COURSE_SELECT_SCROLL_MAX = 0x1FC,
+    COURSE_SELECT_REST_SLIDE = -0x28,
+};
+
 typedef struct CourseClassHeaderSprite {
     u16 width;
     u16 textureU;
@@ -18,23 +23,27 @@ int GetCourseClassHeaderSprite(s32 seriesSelection, s32 classIndex,
 
 typedef struct CourseSelectScrollFrame {
     s32 progress;
-    u16 slide;
+    s32 slide;
 } CourseSelectScrollFrame;
 
 static inline CourseSelectScrollFrame AdvanceCourseSelectScroll(
     s32 progress, s32 step) {
     CourseSelectScrollFrame frame;
+    int64_t updated = (int64_t)progress + step;
 
-    progress += step;
-    if (progress < 0) progress = 0;
-    if (progress > 0x1FC) progress = 0x1FC;
+    if (updated < 0) updated = 0;
+    if (updated > COURSE_SELECT_SCROLL_MAX) {
+        updated = COURSE_SELECT_SCROLL_MAX;
+    }
+    progress = (s32)updated;
 
     frame.progress = progress;
     if (step < 0) {
-        u32 remaining = (u32)(0x1FC - progress);
-        frame.slide = (u16)(remaining * remaining / 2048);
+        u32 remaining = (u32)(COURSE_SELECT_SCROLL_MAX - progress);
+        frame.slide = (s32)(remaining * remaining / 2048) +
+                      COURSE_SELECT_REST_SLIDE;
     } else {
-        frame.slide = 0;
+        frame.slide = COURSE_SELECT_REST_SLIDE;
     }
     return frame;
 }
