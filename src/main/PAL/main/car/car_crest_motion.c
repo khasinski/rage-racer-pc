@@ -10,6 +10,7 @@ enum {
     CREST_ATTITUDE_CURVE_DIVISOR = 6,
     CREST_STEEP_PITCH = 0x12C,
     CREST_STEEP_CURVE_DIVISOR = 256,
+    CREST_ROLL_CURVE_DIVISOR = 4,
     CREST_SPEED_RATE_DIVISOR = -4800,
 };
 
@@ -70,7 +71,7 @@ void UpdateCarCrestHop(GameCarRuntime *car) {
         car->verticalPitch = WrapSigned16(
             (s32)car->verticalPitch + curve);
         car->verticalRoll = WrapSigned16(
-            (s32)car->verticalRoll + curve / 4);
+            (s32)car->verticalRoll + curve / CREST_ROLL_CURVE_DIVISOR);
         car->bodyPitch = car->verticalPitch;
         car->bodyRoll = car->verticalRoll;
         return;

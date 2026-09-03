@@ -22,6 +22,8 @@ enum {
     FIXED_TRIG_SCALE = 4096,
     LARGE_YAW_SPEED_NUMERATOR = 4,
     LARGE_YAW_SPEED_DENOMINATOR = 5,
+    BODY_LIFT_DECAY_NUMERATOR = 2,
+    BODY_LIFT_DECAY_DENOMINATOR = 3,
 };
 
 static s32 AbsoluteYawOffset(s32 yawOffset) {
@@ -112,7 +114,9 @@ static void DecayAirborneMotion(GameCarDrive *drive) {
     drive->yawOffset = WrapSigned32(
         (int64_t)drive->yawOffset * AIRBORNE_DECAY_NUMERATOR) /
         AIRBORNE_DECAY_DENOMINATOR;
-    drive->bodyLiftOffset = drive->bodyLiftOffset * 2 / 3;
+    drive->bodyLiftOffset =
+        drive->bodyLiftOffset * BODY_LIFT_DECAY_NUMERATOR /
+        BODY_LIFT_DECAY_DENOMINATOR;
 }
 
 static void FinishAirborneMotion(PlayerCarRuntime *car) {
