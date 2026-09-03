@@ -1,5 +1,6 @@
 #include "game/car.h"
 #include "game/car_internal.h"
+#include "game/integer.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/audio.h"
@@ -21,21 +22,29 @@ static s32 UpdateDrivingVelocity(PlayerCarRuntime *car) {
     s32 headingCorrection;
 
     headingCorrection = GetAngleDelta(car->bodyYaw, drive->targetHeading);
-    car->bodyYaw += headingCorrection / DRIVING_YAW_RESPONSE;
+    car->bodyYaw = WrapSigned32(
+        (int64_t)car->bodyYaw +
+        headingCorrection / DRIVING_YAW_RESPONSE);
     UpdateCarTravelVelocity(AsRivalCar(car));
 
     bodySin = rsin(car->bodyYaw);
     bodyCos = rcos(car->bodyYaw);
 
-    drive->accelPos = rsin(car->headingAngle) * car->speed / 256;
-    drive->brakePos = rcos(car->headingAngle) * car->speed / 256;
+    drive->accelPos = WrapSigned32(
+        (int64_t)rsin(car->headingAngle) * car->speed) / 256;
+    drive->brakePos = WrapSigned32(
+        (int64_t)rcos(car->headingAngle) * car->speed) / 256;
 
-    sidewaysMotion =
-        (bodyCos * drive->accelPos - bodySin * drive->brakePos) / 4096;
-    forwardMotion =
-        (bodySin * drive->accelPos + bodyCos * drive->brakePos) / 4096;
-    drive->accelPos = bodySin * forwardMotion / 4096;
-    drive->brakePos = bodyCos * forwardMotion / 4096;
+    sidewaysMotion = WrapSigned32(
+        (int64_t)WrapSigned32((int64_t)bodyCos * drive->accelPos) -
+        WrapSigned32((int64_t)bodySin * drive->brakePos)) / 4096;
+    forwardMotion = WrapSigned32(
+        (int64_t)WrapSigned32((int64_t)bodySin * drive->accelPos) +
+        WrapSigned32((int64_t)bodyCos * drive->brakePos)) / 4096;
+    drive->accelPos = WrapSigned32(
+        (int64_t)bodySin * forwardMotion) / 4096;
+    drive->brakePos = WrapSigned32(
+        (int64_t)bodyCos * forwardMotion) / 4096;
     return sidewaysMotion;
 }
 
@@ -44,7 +53,8 @@ static void UpdateDrivingRedlineEffect(const PlayerCarRuntime *car,
     const GameCarDrive *drive = &car->drive;
     s32 voiceLevel;
 
-    if (drive->engineRpm <= spec->redline + REDLINE_EFFECT_RPM_MARGIN ||
+    if (drive->engineRpm <= WrapSigned32(
+            (int64_t)spec->redline + REDLINE_EFFECT_RPM_MARGIN) ||
         g_SteerHoldFrames < REDLINE_EFFECT_HOLD_FRAMES ||
         drive->gear != spec->topGear ||
         car->verticalMotionState != CAR_VERTICAL_GROUNDED) {
@@ -75,18 +85,27 @@ static void UpdateDrivingTakeoff(PlayerCarRuntime *car,
     GameCarDrive *drive = &car->drive;
 
     if (drive->acceleratorLatch == 1) {
-        drive->launchEnergy = car->speed * drive->coastFrames;
+        drive->launchEnergy = WrapSigned32(
+            (int64_t)car->speed * drive->coastFrames);
         drive->coastFrames = 0;
         if (launchThreshold->initial < car->speed &&
             drive->launchEnergy > drive->launchEnergyThreshold) {
-            s32 spinScale =
-                1000 - (drive->steeringGripResponse - 1000) * 8;
+            s32 gripDelta = WrapSigned32(
+                (int64_t)drive->steeringGripResponse - 1000);
+            s32 spinScale = WrapSigned32(
+                INT64_C(1000) -
+                WrapSigned32((int64_t)gripDelta * 8));
+            s32 reversedSideways;
+            s32 spinRate;
 
             if (spinScale < 1000) {
                 spinScale = 1000;
             }
+            reversedSideways = WrapSigned32(-(int64_t)sidewaysMotion);
+            spinRate = WrapSigned32(
+                (int64_t)reversedSideways * spinScale) / 1000;
             BeginDrivingTakeoff(
-                car, -sidewaysMotion * spinScale / 1000 * 2);
+                car, WrapSigned32((int64_t)spinRate * 2));
         }
         return;
     }
@@ -98,9 +117,11 @@ static void UpdateDrivingTakeoff(PlayerCarRuntime *car,
     }
 
     if (drive->brakeLatch == 1) {
-        s32 sidewaysSpeed =
-            (sidewaysMotion < 0 ? -sidewaysMotion : sidewaysMotion) *
-            car->speed / 64;
+        s32 magnitude = sidewaysMotion < 0
+            ? WrapSigned32(-(int64_t)sidewaysMotion)
+            : sidewaysMotion;
+        s32 sidewaysSpeed = WrapSigned32(
+            (int64_t)magnitude * car->speed) / 64;
 
         drive->launchEnergy = sidewaysSpeed;
         if (launchThreshold->sustain < car->speed &&
@@ -110,7 +131,8 @@ static void UpdateDrivingTakeoff(PlayerCarRuntime *car,
         return;
     }
 
-    drive->coastFrames++;
+    drive->coastFrames = WrapSigned32(
+        (int64_t)drive->coastFrames + 1);
     drive->launchEnergy = 0;
 }
 

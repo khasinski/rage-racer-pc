@@ -2,6 +2,7 @@
 #include "game/car_internal.h"
 #include "game/race.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -98,6 +99,14 @@ int main(void) {
     car.drive.gear = 6;
     UpdateCarDriving(&car);
     CHECK(s_voiceIndex == 2 && s_voiceLevel == 100);
+
+    memset(&car, 0, sizeof(car));
+    car.speed = INT_MAX;
+    car.drive.acceleratorLatch = 1;
+    car.drive.coastFrames = 2;
+    UpdateCarDriving(&car);
+    CHECK(car.drive.launchEnergy == -2);
+    CHECK(car.drive.motionState != CAR_MOTION_TAKEOFF);
 
     puts("normal car driving tests passed");
     return 0;
