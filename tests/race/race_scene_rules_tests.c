@@ -1,6 +1,7 @@
 #include "game/race_scene_internal.h"
 #include "game/state.h"
 
+#include <limits.h>
 #include <stdio.h>
 
 static s32 s_failures;
@@ -18,6 +19,7 @@ static void TestRaceGeometry(void) {
     BuildRaceSectorEnds(100, sectors);
     Check(sectors[0] == 33 && sectors[1] == 66 && sectors[2] == 100,
           "sector boundaries preserve retail integer thirds");
+    BuildRaceSectorEnds(100, NULL);
 }
 
 static void TestInputRules(void) {
@@ -29,6 +31,8 @@ static void TestInputRules(void) {
           "digital pad uses its camera mapping bank");
     Check(RaceCameraButtonMask(PAD_TYPE_NEGCON, mappings) == PAD_L2,
           "NeGcon uses its camera mapping bank");
+    Check(RaceCameraButtonMask(PAD_TYPE_DIGITAL, NULL) == 0,
+          "missing camera mapping has no button");
 
     Check(!CanPauseRace(0) && CanPauseRace(1) && CanPauseRace(2) &&
               !CanPauseRace(3),
@@ -95,6 +99,10 @@ static void TestPauseCursor(void) {
     result = MoveRacePauseCursor(PAD_UP | PAD_DOWN, 2, 0);
     Check(result.cursor == 2 && result.moveCount == 2,
           "simultaneous directions retain sequential retail input");
+    result = MoveRacePauseCursor(0, SHRT_MIN, 0);
+    Check(result.cursor == 0, "negative pause cursor resets");
+    result = MoveRacePauseCursor(0, SHRT_MAX, 1);
+    Check(result.cursor == 1, "past-end pause cursor is clamped");
 }
 
 static void TestRaceEndPresentation(void) {
@@ -146,6 +154,12 @@ static void TestRaceEndFrames(void) {
     Check(frame.advanceTimer && !frame.drawPresentation &&
               frame.exitScene == -1,
           "unsupported race modes still advance the retail fade timer");
+    frame = BuildRaceEndFrame(5, 0, 0, INT_MAX);
+    Check(frame.fade == INT_MAX && frame.exitScene == 15,
+          "final fade saturates for corrupt timers");
+    frame = BuildRaceEndFrame(5, 1, 2, INT_MIN);
+    Check(frame.fade == 0,
+          "retry fade does not expose negative brightness");
 }
 
 static void TestWrongWayState(void) {
@@ -160,6 +174,9 @@ static void TestWrongWayState(void) {
     update = UpdateWrongWayState(80, 1, 2, 100);
     Check(update.timer == 10 && update.drawWarning,
           "wrong-way counter returns to its visible baseline");
+    update = UpdateWrongWayState(SHRT_MAX, 1, 2, 100);
+    Check(update.timer == 10 && update.drawWarning,
+          "corrupt wrong-way counter returns to its baseline");
 
     update = UpdateWrongWayState(20, 1, 2, 256);
     Check(update.playCue,
@@ -227,6 +244,9 @@ static void TestRaceClock(void) {
     update = UpdateRaceClock(0, 2, 0);
     Check(update.remaining == 0 && update.expired,
           "time attack preserves the retail zero-clock fallback");
+    update = UpdateRaceClock(INT_MIN, 2, 1);
+    Check(update.remaining == INT_MIN && update.expired,
+          "race clock saturates at its lower bound");
 }
 
 static void TestRaceViewSelection(void) {
@@ -257,6 +277,9 @@ static void TestRaceViewSelection(void) {
               view.cameraView == CAMERA_VIEW_TRACK &&
               !view.useFinishTextureSection,
           "quit transition preserves the selected player camera");
+    view = SelectRaceView(2, 0, CAMERA_VIEW_INVALID);
+    Check(view.cameraView == CAMERA_VIEW_CAR,
+          "invalid camera mode falls back to the car view");
 }
 
 static void TestFinishFollowupQueue(void) {
@@ -272,6 +295,8 @@ static void TestFinishFollowupQueue(void) {
     Check(ReleaseFinishFollowupCue(&queuedCue, 0) == 0x2B &&
               queuedCue == -1,
           "idle special voices release and clear the finish cue");
+    Check(ReleaseFinishFollowupCue(NULL, 0) == -1,
+          "missing finish cue queue is empty");
 }
 
 int main(void) {

@@ -1,6 +1,10 @@
 #include "game/race_scene_internal.h"
 #include "game/state.h"
 
+#include <limits.h>
+#include <stddef.h>
+#include <stdint.h>
+
 enum {
     CAMERA_MAPPING_INDEX = 6,
     NEGCON_MAPPING_OFFSET = 8,
@@ -18,7 +22,17 @@ enum {
     RACE_RETRY_SCENE = 13,
 };
 
+static s32 NonnegativeFade(int64_t fade) {
+    if (fade <= 0) {
+        return 0;
+    }
+    return fade < INT_MAX ? (s32)fade : INT_MAX;
+}
+
 void BuildRaceSectorEnds(s32 trackLength, s32 sectorEnds[3]) {
+    if (sectorEnds == NULL) {
+        return;
+    }
     sectorEnds[0] = trackLength / 3;
     sectorEnds[1] = sectorEnds[0] * 2;
     sectorEnds[2] = trackLength;
@@ -28,7 +42,9 @@ u16 RaceCameraButtonMask(u8 padType, const u16 buttonMapping[16]) {
     s32 mappingOffset =
         padType == PAD_TYPE_NEGCON ? NEGCON_MAPPING_OFFSET : 0;
 
-    return buttonMapping[CAMERA_MAPPING_INDEX + mappingOffset];
+    return buttonMapping != NULL
+               ? buttonMapping[CAMERA_MAPPING_INDEX + mappingOffset]
+               : 0;
 }
 
 s32 CanPauseRace(s16 phase) { return phase == 1 || phase == 2; }
@@ -112,7 +128,8 @@ RaceEndFrame BuildRaceEndFrame(s16 phase, s16 grandPrixMode,
     if (frame.presentation == RACE_END_PRESENTATION_FINAL) {
         if (fadeTimer >= RACE_END_BANNER_FRAME) {
             frame.drawPresentation = 1;
-            frame.fade = (fadeTimer - RACE_END_FADE_FRAME) * 3;
+            frame.fade = NonnegativeFade(
+                ((int64_t)fadeTimer - RACE_END_FADE_FRAME) * 3);
         }
         frame.startMusic = fadeTimer == RACE_END_MUSIC_FRAME;
         if (fadeTimer >= RACE_END_EXIT_FRAME) {
@@ -120,7 +137,7 @@ RaceEndFrame BuildRaceEndFrame(s16 phase, s16 grandPrixMode,
         }
     } else if (frame.presentation == RACE_END_PRESENTATION_RETRY) {
         frame.drawPresentation = 1;
-        frame.fade = fadeTimer * 2;
+        frame.fade = NonnegativeFade((int64_t)fadeTimer * 2);
         if (fadeTimer >= RACE_RETRY_EXIT_FRAME) {
             frame.exitScene = RACE_RETRY_SCENE;
         }
@@ -134,13 +151,20 @@ RacePauseCursorResult MoveRacePauseCursor(u16 pressed, s16 cursor,
         .cursor = cursor,
         .moveCount = 0,
     };
+    s32 lastOption = LastRacePauseOption(grandPrixMode);
+
+    if (result.cursor < 0) {
+        result.cursor = 0;
+    } else if (result.cursor > lastOption) {
+        result.cursor = (s16)lastOption;
+    }
 
     if ((pressed & PAD_UP) && result.cursor > 0) {
         result.cursor--;
         result.moveCount++;
     }
     if ((pressed & PAD_DOWN) &&
-        result.cursor < LastRacePauseOption(grandPrixMode)) {
+        result.cursor < lastOption) {
         result.cursor++;
         result.moveCount++;
     }
@@ -163,12 +187,14 @@ WrongWayUpdate UpdateWrongWayState(s16 timer, s32 facingWrongWay, s16 phase,
         return result;
     }
 
-    result.timer = timer + 1;
+    result.timer = timer < 0 ? 0 : timer;
+    if (result.timer >= WRONG_WAY_COUNTER_RESET - 1) {
+        result.timer = WRONG_WAY_WARNING_FRAMES;
+    } else {
+        result.timer++;
+    }
     result.drawWarning = WrongWayWarningVisible(result.timer);
     if (result.drawWarning) {
-        if (result.timer >= WRONG_WAY_COUNTER_RESET) {
-            result.timer = WRONG_WAY_WARNING_FRAMES;
-        }
         result.playCue = (u8)sceneTimer == 0;
     }
     return result;
@@ -201,7 +227,9 @@ RaceClockUpdate UpdateRaceClock(s32 remaining, s16 phase,
     };
 
     if (phase >= 2 && grandPrixMode != 0) {
-        result.remaining--;
+        if (result.remaining > INT_MIN) {
+            result.remaining--;
+        }
     }
     result.expired = phase < 4 && result.remaining <= 0;
     return result;
@@ -214,6 +242,10 @@ RaceViewSelection SelectRaceView(s16 phase, s32 retiring,
         .cameraView = selectedView,
         .useFinishTextureSection = 0,
     };
+
+    if (selectedView < CAMERA_VIEW_CAR || selectedView > CAMERA_VIEW_TRACK) {
+        result.cameraView = CAMERA_VIEW_CAR;
+    }
 
     if (phase == 5 && !retiring) {
         result.cameraAction = RACE_CAMERA_ACTION_FINISH;
@@ -230,7 +262,7 @@ RaceViewSelection SelectRaceView(s16 phase, s32 retiring,
 s32 ReleaseFinishFollowupCue(s32 *queuedCue, s32 specialVoicesActive) {
     s32 cue;
 
-    if (*queuedCue < 0 || specialVoicesActive) {
+    if (queuedCue == NULL || *queuedCue < 0 || specialVoicesActive) {
         return -1;
     }
     cue = *queuedCue;
