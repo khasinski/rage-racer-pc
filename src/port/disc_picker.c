@@ -28,6 +28,7 @@ static void SDLCALL HostDiscDialogComplete(
     if (files != NULL && files[0] != NULL) {
         written = snprintf(dialog->path, dialog->pathSize, "%s", files[0]);
         dialog->accepted = written >= 0 && (size_t)written < dialog->pathSize;
+        if (!dialog->accepted) dialog->path[0] = '\0';
     }
     SDL_SetAtomicInt(&dialog->completed, 1);
 }
