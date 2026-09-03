@@ -238,29 +238,6 @@ static void UpdateCarTrackProgress(GameCarRuntime *car, CarTrackWork *work,
     car->trackSection = WrapSigned16(sectionProgress >> 8);
 }
 
-static void MeasureCarSegmentPosition(const GameCarRuntime *car,
-                                      CarTrackWork *work,
-                                      const GameTrackPoint *point,
-                                      s32 *alongSegment,
-                                      s32 *lateralOffset) {
-    s32 headingSin;
-    s32 headingCos;
-
-    work->edgeOffset.vx = WrapSigned16(
-        ((u16)car->x - (u16)point->x) * 4);
-    work->edgeOffset.vy = 0;
-    work->edgeOffset.vz = WrapSigned16(
-        ((u16)car->z - (u16)point->z) * 4);
-    headingSin = rsin(work->heading);
-    headingCos = rcos(work->heading);
-    *alongSegment = ProjectCarTrackAxis(
-        headingCos * work->edgeOffset.vx +
-        headingSin * work->edgeOffset.vz);
-    *lateralOffset = ProjectCarTrackAxis(
-        -headingSin * work->edgeOffset.vx +
-        headingCos * work->edgeOffset.vz);
-}
-
 static s32 ClampAlongSegment(s32 alongSegment, s16 segmentLength) {
     if (alongSegment < 0) return 0;
     if (alongSegment > segmentLength) return segmentLength;
@@ -312,8 +289,8 @@ s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
         PlaceCarOnArc(car, work, point, nextPoint, arcIndex);
     }
 
-    MeasureCarSegmentPosition(car, work, point, &alongSegment,
-                              &lateralOffset);
+    MeasureCarTrackAxes(car, point, work->heading, &work->edgeOffset,
+                        &alongSegment, &lateralOffset);
     if (work->curveMode != TRACK_CURVE_NONE) {
         lateralOffset = work->arcLateral;
     }

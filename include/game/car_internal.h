@@ -5,6 +5,7 @@
 #include "game/car.h"
 #include "game/car_collision_internal.h"
 #include "game/car_motion_internal.h"
+#include "game/car_track_internal.h"
 #include "game/integer.h"
 #include "game/car_runtime_state.h"
 #include "game/render.h"
@@ -125,12 +126,5 @@ void UpdatePlayerControlFeedback(PlayerCarRuntime *car);
 void CalculatePlayerBodyOffset(PlayerCarRuntime *car);
 s32 ResolvePlayerTrackContact(PlayerCarRuntime *car);
 void PrepareAirborneDrivetrain(PlayerCarRuntime *car);
-
-s32 InterpolateCarTrackValue(s32 start, s32 end, s32 alongSegment,
-                             s16 segmentLength);
-s32 CarTrackFixed12ToInteger(s32 value);
-s32 ProjectCarTrackAxis(s32 value);
-s16 InterpolateCarTrackHeading(s16 pointHeading, s16 nextHeading,
-                               s32 swept, s16 arcSpan);
 
 #endif

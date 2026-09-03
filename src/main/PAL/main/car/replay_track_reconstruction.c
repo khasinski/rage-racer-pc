@@ -43,17 +43,10 @@ static void MeasureReplayArc(GameCarRuntime *car, CarTrackWork *work,
 static s32 MeasureAlongSegment(const GameCarRuntime *car,
                                CarTrackWork *work,
                                const GameTrackPoint *point) {
-    s32 rotated;
     s32 alongSegment;
 
-    work->edgeOffset.vx = WrapSigned16(
-        ((u16)car->x - (u16)point->x) * 4);
-    work->edgeOffset.vy = 0;
-    work->edgeOffset.vz = WrapSigned16(
-        ((u16)car->z - (u16)point->z) * 4);
-    rotated = rcos(work->heading) * work->edgeOffset.vx +
-              rsin(work->heading) * work->edgeOffset.vz;
-    alongSegment = ProjectCarTrackAxis(rotated);
+    MeasureCarTrackAxes(car, point, work->heading, &work->edgeOffset,
+                        &alongSegment, NULL);
     if (alongSegment > WrapSigned16(work->segmentLength)) {
         return WrapSigned16(work->segmentLength);
     }
