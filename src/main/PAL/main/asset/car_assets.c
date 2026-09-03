@@ -43,7 +43,7 @@ static void BeginCarSelectAudioLoad(void) {
     g_AssetLoadState = CAR_SELECT_WAIT_FOR_AUDIO;
 }
 
-static void FinishCarSelectAudioLoad(void) {
+static void WaitForCarSelectAudio(void) {
     if (PollAudioSlotLoad() == 0) {
         return;
     }
@@ -114,7 +114,8 @@ static void LoadInitialCarSelectModel(void) {
     s32 assetIndex;
     s32 loadedSize;
 
-    if ((u32)carIndex >= GAME_CAR_COUNT || g_CarTable == NULL) {
+    if ((u32)carIndex >= GAME_CAR_COUNT || g_CarTable == NULL ||
+        g_CarModelBuffer == NULL) {
         FailAssetLoad();
         return;
     }
@@ -140,18 +141,25 @@ static void LoadInitialCarSelectModel(void) {
 }
 
 void LoadCarSelectAssets(void) {
+    if (g_AssetLoadState == 0) {
+        return;
+    }
+
     switch (g_AssetLoadState) {
     case CAR_SELECT_BEGIN_AUDIO:
         BeginCarSelectAudioLoad();
         break;
     case CAR_SELECT_WAIT_FOR_AUDIO:
-        FinishCarSelectAudioLoad();
+        WaitForCarSelectAudio();
         break;
     case CAR_SELECT_LOAD_SHARED_ASSETS:
         LoadCarSelectSharedAssets();
         break;
     case CAR_SELECT_LOAD_INITIAL_MODEL:
         LoadInitialCarSelectModel();
+        break;
+    default:
+        FailAssetLoad();
         break;
     }
 }

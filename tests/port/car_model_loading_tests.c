@@ -570,6 +570,16 @@ static void TestCarSelectAssetPhases(void) {
           "missing showroom car table is rejected before asset lookup");
 
     g_CarTable = cars;
+    g_CarModelBuffer = NULL;
+    g_AssetLoadState = 4;
+    g_AssetLoadFailed = 0;
+    s_loadAssetId = -123;
+    LoadCarSelectAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              s_loadAssetId == -123,
+          "missing showroom model buffer is rejected before asset lookup");
+
+    g_CarModelBuffer = storage + IMAGE_OFFSET;
     g_AssetLoadState = 4;
     g_AssetLoadFailed = 0;
     s_forceInvalidAssetIndex = 1;
@@ -590,6 +600,17 @@ static void TestCarSelectAssetPhases(void) {
               g_CarModelAsset == NULL && s_registeredBank == NULL,
           "invalid initial showroom model is not selected");
     s_serializedModelValid = 1;
+
+    g_AssetLoadState = 99;
+    g_AssetLoadFailed = 0;
+    LoadCarSelectAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed(),
+          "unknown car-select load phase is rejected");
+
+    g_AssetLoadFailed = 0;
+    LoadCarSelectAssets();
+    Check(g_AssetLoadState == 0 && !AssetLoadHasFailed(),
+          "idle car-select loader is a no-op");
 }
 
 int main(void) {
