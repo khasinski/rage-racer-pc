@@ -26,7 +26,7 @@ typedef struct FlybyFixture {
 
 int main(void) {
     static const s32 randomValues[] = {0, 1, 2, 5, 32767};
-    static const s32 lapCounts[] = {3, 6};
+    static const s32 lapCounts[] = {0, 3, 6};
     FlybyFixture fixture;
     size_t series;
     size_t count;
@@ -53,7 +53,9 @@ int main(void) {
                 SeedFlybyScenery();
 
                 if (g_FlybyScenery.lap !=
-                        randomValues[random] % lapCounts[count] + 1 ||
+                        (lapCounts[count] > 0
+                             ? randomValues[random] % lapCounts[count] + 1
+                             : 1) ||
                     g_FlybyScenery.soundEnabled != 1 ||
                     g_FlybyScenery.timer != 0 ||
                     g_FlybyScenery.volume != 0 ||
