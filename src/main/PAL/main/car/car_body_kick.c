@@ -7,6 +7,8 @@
 
 enum {
     BODY_KICK_MIN_SPEED = 0x140,
+    LANDING_KICK_TIMER_SCALE = 8,
+    KICK_DIRECTION_RANDOM_BIT = 0x80,
 };
 
 /* Start the short body impulse produced by a landing or a fast sideways hit. */
@@ -21,7 +23,7 @@ void StartCarBodyKick(GameCarRuntime *car, CarBodyKickMode mode) {
     if (mode == CAR_BODY_KICK_LANDING) {
         car->motionModeTimer = CAR_BODY_KICK_DURATION;
         car->motionValue.value = WrapSigned16(
-            car->verticalMotionTimer * 8);
+            car->verticalMotionTimer * LANDING_KICK_TIMER_SCALE);
         return;
     }
     lean = GetAngleDistance(
@@ -38,7 +40,7 @@ void StartCarBodyKick(GameCarRuntime *car, CarBodyKickMode mode) {
               WrapSigned32((int64_t)speedOverMinimum * lean) /
               ANGLE_FULL_TURN);
     car->motionModeTimer = CAR_BODY_KICK_DURATION;
-    if (Random15() & 0x80) {
+    if (Random15() & KICK_DIRECTION_RANDOM_BIT) {
         car->motionValue.value = WrapSigned16(
             -(s32)car->motionValue.unsignedValue);
     }

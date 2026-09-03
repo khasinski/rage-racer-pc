@@ -2,11 +2,20 @@
 #include "game/car_internal.h"
 #include "game/integer.h"
 
+enum {
+    COLLISION_SPEED_RETENTION_PERCENT = 97,
+    PERCENT_SCALE = 100,
+};
+
 static void DampCollidingRivalSpeed(GameCarRuntime *car) {
     /* Retail applies two distinct 97% steps. Keep both divisions: folding
      * them into one percentage changes low-speed rounding. */
-    car->speed = WrapSigned32((int64_t)car->speed * 97) / 100;
-    car->speed = WrapSigned32((int64_t)car->speed * 97) / 100;
+    car->speed = WrapSigned32(
+        (int64_t)car->speed * COLLISION_SPEED_RETENTION_PERCENT) /
+        PERCENT_SCALE;
+    car->speed = WrapSigned32(
+        (int64_t)car->speed * COLLISION_SPEED_RETENTION_PERCENT) /
+        PERCENT_SCALE;
 }
 
 void UpdateRivalBodyMotion(void) {

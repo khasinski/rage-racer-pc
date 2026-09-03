@@ -7,6 +7,9 @@ enum {
     BODY_KICK_WAVE_CYCLES = 3,
     BODY_KICK_AMPLITUDE_SCALE = 128,
     BODY_KICK_WAVE_SCALE = 2048,
+    BODY_KICK_WAVE_ANGLE_SHIFT = 12,
+    LANDING_ROLL_AMPLITUDE_DIVISOR = 2,
+    LANDING_ROLL_OUTPUT_DIVISOR = 2,
 };
 
 static void StopCarBodyKick(GameCarRuntime *car) {
@@ -39,7 +42,8 @@ void UpdateCarBodyKick(GameCarRuntime *car) {
     timer = car->motionModeTimer;
     amplitude = timer * car->motionValue.value / BODY_KICK_AMPLITUDE_SCALE;
     wave = WrapSigned32(
-        (int64_t)rsin(((timer * BODY_KICK_WAVE_CYCLES) << 12) /
+        (int64_t)rsin(((timer * BODY_KICK_WAVE_CYCLES) <<
+                       BODY_KICK_WAVE_ANGLE_SHIFT) /
                      CAR_BODY_KICK_DURATION) * amplitude);
     value = wave / BODY_KICK_WAVE_SCALE;
 
@@ -48,9 +52,11 @@ void UpdateCarBodyKick(GameCarRuntime *car) {
         car->bodyKickOffset = WrapSigned16(value + amplitude);
         car->bodyPitch = WrapSigned16(
             (s32)car->bodyPitch + car->bodyKickOffset);
-        car->bodyKickOffset = WrapSigned16(value + amplitude / 2);
+        car->bodyKickOffset = WrapSigned16(
+            value + amplitude / LANDING_ROLL_AMPLITUDE_DIVISOR);
         car->bodyRoll = WrapSigned16(
-            (s32)car->bodyRoll + car->bodyKickOffset / 2);
+            (s32)car->bodyRoll +
+            car->bodyKickOffset / LANDING_ROLL_OUTPUT_DIVISOR);
         break;
     case CAR_BODY_KICK_CORNERING:
         if (car->verticalMotionState == CAR_VERTICAL_GROUNDED) {
