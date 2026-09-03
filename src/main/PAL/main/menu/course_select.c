@@ -65,19 +65,20 @@ s32 DrawCourseSelectScreen(s32 step) {
             DrawSprite(ot, 0x50, 0xB0 - slide, classHeader.width, 0x10,
                        classHeader.textureU, classHeader.textureV, fade, fade,
                        fade, 0x244, 0, 1, 0x5B);
+            DrawSprite(
+                ot, classHeader.width + 0x50, 0xB0 - slide, 0x10,
+                0x10, 0xEC, 0x48, fade, fade, fade, 0x244, 0, 1, 0x5B);
         }
-
-        DrawSprite(
-            ot, classHeader.width + 0x50, 0xB0 - slide, 0x10,
-            0x10, 0xEC, 0x48, fade, fade, fade, 0x244, 0, 1, 0x5B);
 
         coordinateY = DrawSlidingSprite(
             ot, 0x50, 0x97, slide, 0x1A, 0x10, 0x60, 0xCC,
             fade, fade, fade, 0x244, 0, 1, 0x5B);
-        DrawSprite(
-            ot, 0x6C, coordinateY, 8, 0x10,
-            g_GrandPrixClass * 8 + 8, 0x18,
-            fade, fade, fade, 0x244, 0, 1, 0x5B);
+        if (CourseSelectClassIndexValid(g_GrandPrixClass)) {
+            DrawSprite(
+                ot, 0x6C, coordinateY, 8, 0x10,
+                g_GrandPrixClass * 8 + 8, 0x18,
+                fade, fade, fade, 0x244, 0, 1, 0x5B);
+        }
 
         lineColor = fade * 2;
         DrawLine(
@@ -134,18 +135,20 @@ s32 DrawCourseSelectScreen(s32 step) {
             ot, 0x4C, 0x160 - slide, 0x18, 0x10,
             0xE4, 0xCC, fade, fade, fade, 0x244, 0, 1, 0x3A);
 
-        prizeOffset = slide - 0x140;
-        for (row = 0; row < 3; row++) {
-            coordinateY = row * 0x10 - prizeOffset;
-            digitCount = GameDrawNumber(
-                0x65, coordinateY,
-                DRAW_NUMBER_LARGE_DIGITS | DRAW_NUMBER_OVERLAY_LAYER,
-                g_PrizeMoney.values[course][g_GrandPrixClass][row],
-                fade, fade, fade, 0x244, 0x20);
-            DrawSprite(
-                ot, digitCount * 8 + 0x65, coordinateY, 0xC, 0x10,
-                0xF4, 0x28, fade, fade, fade,
-                0x244, 0, 1, 0x3B);
+        if (CourseSelectClassIndexValid(g_GrandPrixClass)) {
+            prizeOffset = slide - 0x140;
+            for (row = 0; row < PRIZE_PLACE_COUNT; row++) {
+                coordinateY = row * 0x10 - prizeOffset;
+                digitCount = GameDrawNumber(
+                    0x65, coordinateY,
+                    DRAW_NUMBER_LARGE_DIGITS | DRAW_NUMBER_OVERLAY_LAYER,
+                    g_PrizeMoney.values[course][g_GrandPrixClass][row],
+                    fade, fade, fade, 0x244, 0x20);
+                DrawSprite(
+                    ot, digitCount * 8 + 0x65, coordinateY, 0xC, 0x10,
+                    0xF4, 0x28, fade, fade, fade,
+                    0x244, 0, 1, 0x3B);
+            }
         }
     }
 

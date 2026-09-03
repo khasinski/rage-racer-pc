@@ -25,24 +25,39 @@ static s32 LastSelectableCourse(s32 extraSeries, s32 maxClassReached) {
 
 s32 CanSelectPrevCourse(void) {
     s32 firstCourse = STANDARD_SERIES_FIRST_COURSE;
+    s32 lastCourse;
 
     if (g_GrandPrixMode && g_SeriesSelection) {
         firstCourse = EXTRA_SERIES_FIRST_COURSE;
     }
-    return g_CourseIndex > firstCourse;
+    if (g_GrandPrixMode) {
+        lastCourse = LastSelectableCourse(g_SeriesSelection != 0,
+                                          g_GrandPrixClass);
+    } else {
+        s32 extraSeries = g_ExtraGrandPrixUnlocked != 0;
+
+        lastCourse = LastSelectableCourse(
+            extraSeries, g_MaxClassReached[extraSeries]);
+    }
+    return g_CourseIndex > firstCourse && g_CourseIndex <= lastCourse;
 }
 
 s32 CanSelectNextCourse(void) {
     s32 extraSeries;
+    s32 firstCourse;
     s32 maxClassReached;
 
     if (g_GrandPrixMode) {
         extraSeries = g_SeriesSelection != 0;
+        firstCourse = extraSeries ? EXTRA_SERIES_FIRST_COURSE
+                                  : STANDARD_SERIES_FIRST_COURSE;
         maxClassReached = g_GrandPrixClass;
     } else {
         extraSeries = g_ExtraGrandPrixUnlocked != 0;
+        firstCourse = STANDARD_SERIES_FIRST_COURSE;
         maxClassReached = g_MaxClassReached[extraSeries];
     }
 
-    return g_CourseIndex < LastSelectableCourse(extraSeries, maxClassReached);
+    return g_CourseIndex >= firstCourse &&
+           g_CourseIndex < LastSelectableCourse(extraSeries, maxClassReached);
 }

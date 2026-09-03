@@ -1,6 +1,7 @@
 #include "common.h"
 #include "game/menu.h"
 
+#include <limits.h>
 #include <stdio.h>
 
 s32 g_CourseIndex;
@@ -34,8 +35,10 @@ static void CheckGrandPrixLimits(void) {
             g_GrandPrixClass = classIndex;
             for (course = 0; course <= 7; course++) {
                 g_CourseIndex = course;
-                Check("GP previous", CanSelectPrevCourse(), course > first);
-                Check("GP next", CanSelectNextCourse(), course < last);
+                Check("GP previous", CanSelectPrevCourse(),
+                      course > first && course <= last);
+                Check("GP next", CanSelectNextCourse(),
+                      course >= first && course < last);
             }
         }
     }
@@ -58,8 +61,10 @@ static void CheckTimeAttackLimits(void) {
             g_MaxClassReached[extraUnlocked] = classUnlocked;
             for (course = 0; course <= 7; course++) {
                 g_CourseIndex = course;
-                Check("TA previous", CanSelectPrevCourse(), course > first);
-                Check("TA next", CanSelectNextCourse(), course < last);
+                Check("TA previous", CanSelectPrevCourse(),
+                      course > first && course <= last);
+                Check("TA next", CanSelectNextCourse(),
+                      course >= first && course < last);
             }
         }
     }
@@ -68,5 +73,21 @@ static void CheckTimeAttackLimits(void) {
 int main(void) {
     CheckGrandPrixLimits();
     CheckTimeAttackLimits();
+
+    g_GrandPrixMode = 1;
+    g_SeriesSelection = 1;
+    g_GrandPrixClass = 2;
+    g_CourseIndex = 0;
+    Check("course below selected GP series has no previous",
+          CanSelectPrevCourse(), 0);
+    Check("course below selected GP series has no next",
+          CanSelectNextCourse(), 0);
+    g_CourseIndex = INT_MIN;
+    Check("minimum course has no previous", CanSelectPrevCourse(), 0);
+    Check("minimum course has no next", CanSelectNextCourse(), 0);
+    g_CourseIndex = INT_MAX;
+    Check("maximum course has no previous", CanSelectPrevCourse(), 0);
+    Check("maximum course has no next", CanSelectNextCourse(), 0);
+
     return s_failures != 0;
 }

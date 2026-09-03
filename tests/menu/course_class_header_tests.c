@@ -1,5 +1,6 @@
 #include "game/course_select_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 
 #define CHECK_HEADER(series, classIndex, expectedWidth, expectedU, expectedV)  \
@@ -35,6 +36,14 @@ int main(void) {
         GetCourseClassHeaderSprite(1, 6, &sprite) || sprite.width != 0 ||
         GetCourseClassHeaderSprite(0, 0, NULL)) {
         puts("invalid class unexpectedly has a header");
+        return 1;
+    }
+    if (!CourseSelectClassIndexValid(0) ||
+        !CourseSelectClassIndexValid(GRAND_PRIX_PRIZE_CLASS_COUNT - 1) ||
+        CourseSelectClassIndexValid(-1) ||
+        CourseSelectClassIndexValid(GRAND_PRIX_PRIZE_CLASS_COUNT) ||
+        CourseSelectClassIndexValid(INT_MAX)) {
+        puts("invalid class unexpectedly indexes the prize table");
         return 1;
     }
 

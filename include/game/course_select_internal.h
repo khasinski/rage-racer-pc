@@ -2,6 +2,7 @@
 #define GAME_COURSE_SELECT_INTERNAL_H
 
 #include "common.h"
+#include "game/prize_money.h"
 
 extern s32 g_CourseSelectScrollProgress;
 
@@ -30,6 +31,10 @@ typedef struct CourseLabelSprites {
 int GetCourseClassHeaderSprite(s32 seriesSelection, s32 classIndex,
                                CourseClassHeaderSprite *sprite);
 int GetCourseLabelSprites(s32 courseIndex, CourseLabelSprites *sprites);
+
+static inline int CourseSelectClassIndexValid(s32 classIndex) {
+    return (u32)classIndex < GRAND_PRIX_PRIZE_CLASS_COUNT;
+}
 
 typedef struct CourseSelectScrollFrame {
     s32 progress;

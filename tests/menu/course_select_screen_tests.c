@@ -754,14 +754,16 @@ int main(int argc, char **argv) {
             DecideCourseSelectInput(0, 0, INT32_MIN);
         CourseSelectInputOutcome high =
             DecideCourseSelectInput(0, 0, INT32_MAX);
-        MenuPromptOutcome save = DecideSavePrompt(0, 9, 7, INT32_MIN);
+        MenuPromptOutcome saveLow = DecideSavePrompt(0, 9, 7, INT32_MIN);
+        MenuPromptOutcome saveHigh = DecideSavePrompt(0, 9, 7, INT32_MAX);
         MenuClassPromptOutcome classLow =
             DecideClassPrompt(0, 9, 7, INT32_MIN, INT32_MIN, INT32_MIN, 0);
         MenuClassPromptOutcome classHigh =
             DecideClassPrompt(PAD_CONFIRM, 9, 7, INT32_MAX, INT32_MAX,
                               INT32_MAX, 0);
 
-        if (low.option != 0 || high.option != 2 || save.subCursor != 1 ||
+        if (low.option != 0 || high.option != 2 || saveLow.subCursor != 0 ||
+            saveHigh.subCursor != 1 ||
             classLow.subCursor != 0 || classHigh.subCursor != 5 ||
             classHigh.busy != 0) {
             puts("FAIL course-select decisions did not normalize their input");

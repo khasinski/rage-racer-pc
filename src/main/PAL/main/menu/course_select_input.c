@@ -36,7 +36,7 @@ MenuPromptOutcome DecideSavePrompt(u16 pressed, s32 busy, s32 confirmTimer,
     out.cueCount = 0;
     out.busy = busy;
     out.confirmTimer = confirmTimer;
-    out.subCursor = subCursor != 0;
+    out.subCursor = AddClampedMenuValue(subCursor, 0, 0, 1);
     if (pressed & PAD_CONFIRM) {
         out.cues[out.cueCount++] = (out.subCursor != 0) ? 2 : 3;
         out.busy = -3;
@@ -76,7 +76,7 @@ MenuClassPromptOutcome DecideClassPrompt(u16 pressed, s32 busy,
     out.busy = busy;
     out.confirmTimer = confirmTimer;
     out.subCursor = AddClampedMenuValue(subCursor, 0, 0, maxClass);
-    out.changeApplied = changeApplied;
+    out.changeApplied = changeApplied != 0;
     if (pressed & PAD_CONFIRM) {
         AddCue(&out, 2);
         if (out.subCursor == currentClass) {
