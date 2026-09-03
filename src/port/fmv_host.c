@@ -197,7 +197,7 @@ static int HostUploadFmvFrame(void) {
 
 static long ResolveFmvStreamIndex(long streamIndex) {
     const char *forced;
-    long chosen;
+    int chosen;
 
     if (streamIndex < 0 || streamIndex >= RAGE_DISC_STREAM_COUNT) {
         streamIndex = 0;
@@ -210,15 +210,15 @@ static long ResolveFmvStreamIndex(long streamIndex) {
         return streamIndex;
     }
 
-    chosen = strtol(forced, NULL, 10);
-    if (chosen < 0 || chosen >= RAGE_DISC_STREAM_COUNT) {
+    if (!RuntimeParseInt(forced, 10, 0, RAGE_DISC_STREAM_COUNT - 1,
+                         &chosen)) {
         fprintf(stderr, "rage-port: diagnostics.fmv_stream %s is not 0 to 10\n",
                 forced);
         return streamIndex;
     }
 
     g_StreamFrameCount = g_StreamCdEntries[chosen].size;
-    fprintf(stderr, "rage-port: FMV stream forced to %ld\n", chosen);
+    fprintf(stderr, "rage-port: FMV stream forced to %d\n", chosen);
     return chosen;
 }
 
