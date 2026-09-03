@@ -504,7 +504,8 @@ s32 RequestRaceStart(void);
 void RequestCarModel(s32 carIndex);
 void RequestUpgradedCarModel(s32 carIndex);
 void ResetTrackTextureSwap(void);
-s32 SetEnvironmentScript(struct GameEnvironmentScript *script, size_t size);
+s32 SetEnvironmentScript(const struct GameEnvironmentScript *script,
+                         size_t size);
 void StoreTeamLogoImage(void* dst);
 s32 UploadImageAsset(GameImageAssetHeaderWord *asset, size_t size);
 s32 UploadImageEntry(GameImageEntryHeader *entry, size_t size);

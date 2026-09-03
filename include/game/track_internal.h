@@ -104,7 +104,7 @@ extern s32 g_RouteSceneryRotY;
 extern SceneryMotionKeyframe *g_RouteSceneryKeyframe;
 
 extern s32 g_EnvScriptLength;
-extern GameEnvironmentCue *g_EnvScriptCursor;
+extern const GameEnvironmentCue *g_EnvScriptCursor;
 
 extern s32 g_SkyRowBase;
 

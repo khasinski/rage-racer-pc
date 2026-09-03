@@ -731,7 +731,7 @@ typedef struct EnvironmentPalette {
 
 enum { ENVIRONMENT_PALETTE_COUNT = 5 };
 
-extern EnvironmentPalette *g_EnvPaletteTable;
+extern const EnvironmentPalette *g_EnvPaletteTable;
 /* The 16 interpolated BGR555 entries uploaded to VRAM at (0xE0, 0x1E6). */
 extern u16 g_EnvironmentClut[16];
 /* g_EnvironmentMode == 4. Picks DrawStaticScenery's model 0x3B over 0x3A

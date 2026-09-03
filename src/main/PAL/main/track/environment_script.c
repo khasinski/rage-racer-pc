@@ -87,7 +87,7 @@ s32 IsValidEnvironmentScript(const GameEnvironmentScript *script,
     return 0;
 }
 
-s32 SetEnvironmentScript(GameEnvironmentScript *script, size_t size) {
+s32 SetEnvironmentScript(const GameEnvironmentScript *script, size_t size) {
     if (!IsValidEnvironmentScript(script, size)) {
         ClearEnvironmentScript();
         return 0;
@@ -99,8 +99,8 @@ s32 SetEnvironmentScript(GameEnvironmentScript *script, size_t size) {
     return 1;
 }
 
-static GameEnvironmentCue *LastEnvironmentCue(void) {
-    GameEnvironmentCue *cue = g_EnvScriptCues;
+static const GameEnvironmentCue *LastEnvironmentCue(void) {
+    const GameEnvironmentCue *cue = g_EnvScriptCues;
 
     while (cue[1].time != -1) {
         cue++;
@@ -108,12 +108,13 @@ static GameEnvironmentCue *LastEnvironmentCue(void) {
     return cue;
 }
 
-static GameEnvironmentCue *NextEnvironmentCue(GameEnvironmentCue *cue) {
+static const GameEnvironmentCue *NextEnvironmentCue(
+    const GameEnvironmentCue *cue) {
     return cue[1].time < 0 ? g_EnvScriptCues : cue + 1;
 }
 
-static GameEnvironmentCue *PreviousCueAtClock(s32 clock) {
-    GameEnvironmentCue *cue = g_EnvScriptCues;
+static const GameEnvironmentCue *PreviousCueAtClock(s32 clock) {
+    const GameEnvironmentCue *cue = g_EnvScriptCues;
     s32 cueCount = 0;
 
     while (cue[cueCount].time != -1 && cue[cueCount].time <= clock) {
@@ -157,8 +158,8 @@ static void ApplyFogSettings(void) {
 }
 
 void SeekEnvironmentScript(s32 targetTime) {
-    GameEnvironmentCue *previousCue;
-    GameEnvironmentCue *targetCue;
+    const GameEnvironmentCue *previousCue;
+    const GameEnvironmentCue *targetCue;
     s32 frame;
 
     if (g_EnvScriptLength <= 0 || g_EnvScriptCues == NULL) {
@@ -270,7 +271,7 @@ void UpdateEnvironment(void) {
     }
 
     if (g_EnvScriptCursor->time == g_EnvScriptClock) {
-        GameEnvironmentCue *cue = g_EnvScriptCursor;
+        const GameEnvironmentCue *cue = g_EnvScriptCursor;
 
         g_EnvLerpFrame = 0;
         g_EnvScriptCursor = NextEnvironmentCue(cue);

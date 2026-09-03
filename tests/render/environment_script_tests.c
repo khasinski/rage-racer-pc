@@ -7,8 +7,8 @@
 #include <stdio.h>
 #include <string.h>
 
-GameEnvironmentCue *g_EnvScriptCues;
-GameEnvironmentCue *g_EnvScriptCursor;
+const GameEnvironmentCue *g_EnvScriptCues;
+const GameEnvironmentCue *g_EnvScriptCursor;
 s32 g_EnvScriptLength;
 s32 g_EnvScriptClock;
 u8 g_EnvScriptEnabled;
@@ -25,7 +25,7 @@ s32 g_GrandPrixClass;
 s32 g_CourseIndex;
 s32 g_FogNear;
 s32 g_SkyRowBase;
-EnvironmentPalette *g_EnvPaletteTable;
+const EnvironmentPalette *g_EnvPaletteTable;
 u16 g_EnvironmentClut[16];
 
 static s32 g_LoadImageCalls;
@@ -82,6 +82,7 @@ int main(void) {
         u32 length;
         GameEnvironmentCue cues[2];
     } script;
+    u8 originalScript[sizeof(script)];
     GameEnvironmentCue cues[4];
     EnvironmentPalette palettes[ENVIRONMENT_PALETTE_COUNT];
     s32 color;
@@ -91,9 +92,15 @@ int main(void) {
     script.length = 123;
     script.cues[0].time = 0;
     script.cues[1].time = -1;
+    memcpy(originalScript, &script, sizeof(script));
     if (!SetEnvironmentScript(
-            (GameEnvironmentScript *)(void *)&script, sizeof(script))) {
+            (const GameEnvironmentScript *)(const void *)&script,
+            sizeof(script))) {
         puts("FAIL: valid environment script rejected");
+        return 1;
+    }
+    if (memcmp(originalScript, &script, sizeof(script)) != 0) {
+        puts("FAIL: environment script input modified");
         return 1;
     }
     if (g_SkyRowBase != SKY_TILE_MAP_ROWS - 2 || g_EnvScriptLength != 123 ||

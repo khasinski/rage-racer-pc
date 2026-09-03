@@ -353,7 +353,7 @@ extern s32 g_CameraCarStepZ;
 extern s32 g_CameraCarZ;
 extern s32 g_CourseModelCount;
 extern s16 g_EnvLerpDuration;
-extern GameEnvironmentCue *g_EnvScriptCues;
+extern const GameEnvironmentCue *g_EnvScriptCues;
 extern s16 g_EnvSpareFrom;
 extern s16 g_EnvSpareLerp;
 extern s16 g_EnvSpareTo;

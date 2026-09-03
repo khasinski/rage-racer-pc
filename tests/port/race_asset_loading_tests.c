@@ -33,7 +33,7 @@ s32 g_GrandPrixClass;
 s16 g_GrandPrixSeries;
 TrackTextureShadowRow *g_TrackTextureShadow;
 TrackRenderTable *g_TrackRenderTable;
-EnvironmentPalette *g_EnvPaletteTable;
+const EnvironmentPalette *g_EnvPaletteTable;
 const CourseObject *g_CourseObjects;
 s32 g_CourseObjectCount;
 
@@ -161,7 +161,8 @@ s32 IsValidTrackCameraTable(const TrackCameraTable *table, size_t size,
     (void)useSeriesCamera;
     return s_cameraTableValid;
 }
-s32 SetEnvironmentScript(struct GameEnvironmentScript *script, size_t size) {
+s32 SetEnvironmentScript(const struct GameEnvironmentScript *script,
+                         size_t size) {
     (void)size;
     s_installs[s_installCount++] = script;
     return 1;
