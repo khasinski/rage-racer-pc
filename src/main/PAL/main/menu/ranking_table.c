@@ -14,6 +14,12 @@ typedef struct RankingCarSprite {
     u8 textureV;
 } RankingCarSprite;
 
+enum {
+    RANKING_TABLE_DRAW_PHASE_MAX = 12,
+    RANKING_TABLE_PROGRESS_MAX = 15,
+    RANKING_TABLE_SLIDE_PER_PHASE = 35,
+};
+
 static const RankingCarSprite s_carNameSprites[GAME_CAR_COUNT] = {
     {0xAE, 0x14, 0x50, 0xBC}, {0xAE, 0x14, 0x50, 0xBC},
     {0xAE, 0x14, 0x50, 0xBC}, {0xAF, 0x20, 0x00, 0xBC},
@@ -83,6 +89,9 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
     s32 row;
     s32 rowYStep;
 
+    if (progress == NULL) {
+        return 0;
+    }
     if (step == 0) {
         *progress = 0;
         /* Initialization-only call; its caller ignores the return value. */
@@ -90,18 +99,17 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
     }
 
     if (step < 0) {
-        *progress += step;
-        if (*progress < 0) {
-            *progress = 0;
-        }
+        int64_t updated = (int64_t)*progress + step;
+
+        *progress = updated > 0 ? (s32)updated : 0;
     }
 
     phase = *progress;
     if (phase >= 0) {
-        if (phase > 12) {
-            phase = 12;
+        if (phase > RANKING_TABLE_DRAW_PHASE_MAX) {
+            phase = RANKING_TABLE_DRAW_PHASE_MAX;
         }
-        slide = -phase * 35;
+        slide = -phase * RANKING_TABLE_SLIDE_PER_PHASE;
         panelY = slide + 0x21A;
 
         if (g_CourseIndex >= 4) {
@@ -177,11 +185,13 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
     }
 
     if (step >= 0) {
-        *progress += step;
-        if (*progress >= 15) {
-            *progress = 15;
+        int64_t updated = (int64_t)*progress + step;
+
+        if (updated >= RANKING_TABLE_PROGRESS_MAX) {
+            *progress = RANKING_TABLE_PROGRESS_MAX;
             return 1;
         }
+        *progress = updated > 0 ? (s32)updated : 0;
     }
     return 0;
 }

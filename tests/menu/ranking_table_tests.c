@@ -4,6 +4,7 @@
 #include "game/render_state.h"
 
 #include <stdio.h>
+#include <limits.h>
 #include <string.h>
 
 s32 g_CourseIndex;
@@ -224,6 +225,17 @@ int main(void) {
     progress = 1;
     DrawRankingTable(&progress, -4, 0);
     CHECK(progress == 0 && s_buttonY == 0x21A);
+
+    ResetDraws();
+    progress = INT_MAX;
+    CHECK(DrawRankingTable(&progress, 1, 0) == 1 && progress == 15);
+
+    ResetDraws();
+    progress = INT_MIN;
+    CHECK(DrawRankingTable(&progress, -1, 0) == 0 && progress == 0);
+    CHECK(s_buttonY == 0x21A);
+
+    CHECK(DrawRankingTable(NULL, 1, 0) == 0);
 
     puts("ranking table preserves all car sprites, records and transitions");
     return 0;
