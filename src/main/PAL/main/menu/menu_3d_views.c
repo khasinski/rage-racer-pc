@@ -111,10 +111,12 @@ void DrawMenuCarView(void) {
 
     UpdateShowroomSteering();
     g_PlayerCar.drive.manual = g_CarTable[carIndex].transmission;
-    g_PlayerCar.wheelRotation = (g_PlayerCar.wheelRotation + 68) & 0xFFF;
+    g_PlayerCar.wheelRotation =
+        ((u32)g_PlayerCar.wheelRotation + 68u) & 0xFFFu;
 
     UpdateMenuViewSpin();
-    showroom->pose.rotation.y += g_MenuViewSpin;
+    showroom->pose.rotation.y =
+        (s32)((u32)showroom->pose.rotation.y + (u32)g_MenuViewSpin);
     BuildRotMatrixY(&mtxA, showroom->pose.rotation.y);
     vec.z = (s16)(-((s16)g_CarModelAsset->modelOffsetZ / 2));
     ApplyMatrixLV(&mtxA, AsWords(&vec), AsWords(&out));
@@ -206,7 +208,8 @@ void DrawMenuCourseView(void) {
     showroom->runtime.y = viewHeight + 15;
 
     UpdateMenuViewSpin();
-    showroom->runtime.bodyYaw += g_MenuViewSpin;
+    showroom->runtime.bodyYaw =
+        (s32)((u32)showroom->runtime.bodyYaw + (u32)g_MenuViewSpin);
     BuildRotMatrixY(&mtxB, 0x800 - showroom->runtime.bodyYaw);
     BuildRotMatrixX(&mtxA, showroom->runtime.bodyPitch);
     MulMatrix2(&mtxB, &mtxA);
@@ -242,7 +245,7 @@ void DrawTeamNameCharModel(void) {
         g_MenuViewAngle, g_MenuViewAngleTarget, 16);
     g_MenuViewAngle = nextAngle;
     if (nextAngle <= 3071999 && GameMenuCursorAnim >= 0) {
-        g_MenuViewAngle = nextAngle - 2048000;
+        g_MenuViewAngle = (s32)((u32)nextAngle - 2048000u);
         g_TeamNameCharModel = GameMenuCursorAnim;
         GameMenuCursorAnim = -1;
     }
@@ -256,11 +259,12 @@ void DrawTeamNameCharModel(void) {
     position.x = 0;
     position.y =
         (viewHeight - baseHeight) +
-        rsin((g_AnimTimer * 32) & 0xFE0) * 12 / 4096;
+        rsin((s32)((u32)g_AnimTimer * 32u & 0xFE0u)) * 12 / 4096;
     position.z = 0;
     position.w = 0;
     rotationY = g_MenuViewAngle / 1000;
-    rotationZ = rsin((g_AnimTimer * 20) & 0xFFC) * 72 / 4096;
+    rotationZ =
+        rsin((s32)((u32)g_AnimTimer * 20u & 0xFFCu)) * 72 / 4096;
 
     BuildRotMatrixY(&mtxB, 0x800 - rotationY);
     BuildRotMatrixZ(&mtxA, rotationZ);
