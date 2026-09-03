@@ -699,14 +699,13 @@ static void TestResidentCourseInstallation(void) {
     Check(s_textureResetCalls == 1, "resident course resets texture swapping");
 
     pack->offsets[1] = pack->offsets[0];
-    g_AssetLoadCursor = NULL;
     s_uploadCount = 0;
     s_textureResetCalls = 0;
     Check(InstallTrackTextureAssetPack(g_AssetBase, sizeof(storage)) == 0,
           "overlapping texture blocks reject the course pack");
     Check(s_uploadCount == 0 && s_textureResetCalls == 0 &&
-              g_AssetLoadCursor == NULL,
-          "invalid course pack publishes no texture state");
+              g_AssetLoadCursor == NULL && g_TrackTextureShadow == NULL,
+          "invalid course pack clears previously published texture state");
     pack->offsets[1] = 96;
 
     pack->offsets[4] = TRACK_TEXTURE_SHADOW_SIZE - 4;

@@ -7,74 +7,99 @@ enum {
     TRACK_TEXTURE_CAR_IMAGE = 2,
     TRACK_TEXTURE_ACTIVE_IMAGES = 3,
     TRACK_TEXTURE_DEFERRED_IMAGES = 4,
+    TRACK_TEXTURE_BLOCK_COUNT = 5,
 };
 
 typedef struct TrackTextureAssetHeader {
-    s32 offsets[5];
+    s32 offsets[TRACK_TEXTURE_BLOCK_COUNT];
 } TrackTextureAssetHeader;
 
-s32 InstallTrackTextureAssetPack(u8 *base, size_t size) {
-    TrackTextureAssetHeader *header;
-    void *primaryImages;
-    void *secondaryImages;
-    void *carImage;
-    void *activeImages;
-    void *deferredImages;
+typedef struct TrackTextureAssetView {
+    u8 *blocks[TRACK_TEXTURE_BLOCK_COUNT];
+    size_t sizes[TRACK_TEXTURE_BLOCK_COUNT];
+} TrackTextureAssetView;
+
+static void ClearTrackTextureAssetPack(void) {
+    g_TrackTextureShadow = NULL;
+    g_AssetLoadCursor = NULL;
+}
+
+static s32 ResolveTrackTextureAssetPack(u8 *base, size_t size,
+                                        TrackTextureAssetView *view) {
+    const TrackTextureAssetHeader *header;
     s32 i;
 
-    if (base == NULL || size < TRACK_TEXTURE_SHADOW_SIZE ||
+    if (base == NULL || view == NULL || size < TRACK_TEXTURE_SHADOW_SIZE ||
         size > INT32_MAX) {
         return 0;
     }
 
-    header = (TrackTextureAssetHeader *)base;
+    header = (const TrackTextureAssetHeader *)(const void *)base;
     if (header->offsets[TRACK_TEXTURE_DEFERRED_IMAGES] <
         TRACK_TEXTURE_SHADOW_SIZE) {
         return 0;
     }
-    for (i = 0; i < 5; i++) {
-        s32 end = i + 1 < 5 ? header->offsets[i + 1] : (s32)size;
+    for (i = 0; i < TRACK_TEXTURE_BLOCK_COUNT; i++) {
+        s32 start = header->offsets[i];
+        s32 end = i + 1 < TRACK_TEXTURE_BLOCK_COUNT
+                      ? header->offsets[i + 1]
+                      : (s32)size;
 
-        if (header->offsets[i] < (s32)sizeof(*header) ||
-            end <= header->offsets[i] || (size_t)end > size) {
+        if (start < (s32)sizeof(*header) || end <= start ||
+            (size_t)end > size) {
             return 0;
         }
+        view->blocks[i] = base + start;
+        view->sizes[i] = (size_t)(end - start);
     }
-
-    primaryImages = base + header->offsets[TRACK_TEXTURE_PRIMARY_IMAGES];
-    secondaryImages = base + header->offsets[TRACK_TEXTURE_SECONDARY_IMAGES];
-    carImage = base + header->offsets[TRACK_TEXTURE_CAR_IMAGE];
-    activeImages = base + header->offsets[TRACK_TEXTURE_ACTIVE_IMAGES];
-    deferredImages = base + header->offsets[TRACK_TEXTURE_DEFERRED_IMAGES];
 
     if (!IsValidImageAsset(
-            GetImageAssetHeaderWords(primaryImages),
-            (size_t)(header->offsets[1] - header->offsets[0])) ||
+            GetImageAssetHeaderWords(view->blocks[TRACK_TEXTURE_PRIMARY_IMAGES]),
+            view->sizes[TRACK_TEXTURE_PRIMARY_IMAGES]) ||
         !IsValidImageAsset(
-            GetImageAssetHeaderWords(secondaryImages),
-            (size_t)(header->offsets[2] - header->offsets[1])) ||
+            GetImageAssetHeaderWords(
+                view->blocks[TRACK_TEXTURE_SECONDARY_IMAGES]),
+            view->sizes[TRACK_TEXTURE_SECONDARY_IMAGES]) ||
         !IsValidImageEntry(
-            GetImageEntryHeader(carImage),
-            (size_t)(header->offsets[3] - header->offsets[2])) ||
+            GetImageEntryHeader(view->blocks[TRACK_TEXTURE_CAR_IMAGE]),
+            view->sizes[TRACK_TEXTURE_CAR_IMAGE]) ||
         !IsValidImageAsset(
-            GetImageAssetHeaderWords(activeImages),
-            (size_t)(header->offsets[4] - header->offsets[3])) ||
-        !IsValidImageAsset(GetImageAssetHeaderWords(deferredImages),
-                           size - (size_t)header->offsets[4])) {
+            GetImageAssetHeaderWords(view->blocks[TRACK_TEXTURE_ACTIVE_IMAGES]),
+            view->sizes[TRACK_TEXTURE_ACTIVE_IMAGES]) ||
+        !IsValidImageAsset(
+            GetImageAssetHeaderWords(
+                view->blocks[TRACK_TEXTURE_DEFERRED_IMAGES]),
+            view->sizes[TRACK_TEXTURE_DEFERRED_IMAGES])) {
         return 0;
     }
-    UploadImageAsset(GetImageAssetHeaderWords(primaryImages),
-                     (size_t)(header->offsets[1] - header->offsets[0]));
-    UploadImageAsset(GetImageAssetHeaderWords(secondaryImages),
-                     (size_t)(header->offsets[2] - header->offsets[1]));
-    UploadImageEntry(GetImageEntryHeader(carImage),
-                     (size_t)(header->offsets[3] - header->offsets[2]));
-    UploadImageAsset(GetImageAssetHeaderWords(activeImages),
-                     (size_t)(header->offsets[4] - header->offsets[3]));
+    return 1;
+}
+
+s32 InstallTrackTextureAssetPack(u8 *base, size_t size) {
+    TrackTextureAssetView view;
+
+    if (!ResolveTrackTextureAssetPack(base, size, &view)) {
+        ClearTrackTextureAssetPack();
+        return 0;
+    }
+
+    UploadImageAsset(
+        GetImageAssetHeaderWords(view.blocks[TRACK_TEXTURE_PRIMARY_IMAGES]),
+        view.sizes[TRACK_TEXTURE_PRIMARY_IMAGES]);
+    UploadImageAsset(
+        GetImageAssetHeaderWords(view.blocks[TRACK_TEXTURE_SECONDARY_IMAGES]),
+        view.sizes[TRACK_TEXTURE_SECONDARY_IMAGES]);
+    UploadImageEntry(
+        GetImageEntryHeader(view.blocks[TRACK_TEXTURE_CAR_IMAGE]),
+        view.sizes[TRACK_TEXTURE_CAR_IMAGE]);
+    UploadImageAsset(
+        GetImageAssetHeaderWords(view.blocks[TRACK_TEXTURE_ACTIVE_IMAGES]),
+        view.sizes[TRACK_TEXTURE_ACTIVE_IMAGES]);
     StoreTeamLogoImage(base);
     g_TrackTextureShadow = GetTrackTextureShadowRows(base);
-    UploadImageAsset(GetImageAssetHeaderWords(deferredImages),
-                     size - (size_t)header->offsets[4]);
+    UploadImageAsset(
+        GetImageAssetHeaderWords(view.blocks[TRACK_TEXTURE_DEFERRED_IMAGES]),
+        view.sizes[TRACK_TEXTURE_DEFERRED_IMAGES]);
     ResetTrackTextureSwap();
     g_AssetLoadCursor = base + TRACK_TEXTURE_SHADOW_SIZE;
     return 1;
