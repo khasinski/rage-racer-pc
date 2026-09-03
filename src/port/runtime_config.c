@@ -98,6 +98,10 @@ int RuntimeConfigInit(int argc, char **argv) {
     const char *configPath = NULL, *scenarioPath = NULL;
     char defaultPath[RAGE_RUNTIME_VALUE_MAX + 1];
     s_valueCount = 0;
+    if (argc < 0 || (argc > 0 && argv == NULL)) return 0;
+    for (index = 0; index < argc; index++) {
+        if (argv[index] == NULL) return 0;
+    }
     for (index = 1; index < argc; index++) {
         if (!strcmp(argv[index], "--config") ||
             !strcmp(argv[index], "--scenario")) {
@@ -125,11 +129,23 @@ int RuntimeConfigInit(int argc, char **argv) {
     for (index = 1; index < argc; index++) {
         if (!strcmp(argv[index], "--set") && index + 1 < argc) {
             char copy[1200], *equals;
-            snprintf(copy, sizeof(copy), "%s", argv[++index]);
+            const char *setting = argv[++index];
+            size_t length = strlen(setting);
+
+            if (length >= sizeof(copy)) {
+                fprintf(stderr, "rage-port: --set value is too long\n");
+                valid = 0;
+                continue;
+            }
+            memcpy(copy, setting, length + 1);
             equals = strchr(copy, '=');
             if (equals) {
                 *equals = '\0';
-                Store(Trim(copy), Trim(equals + 1));
+                if (!Store(Trim(copy), Trim(equals + 1))) {
+                    fprintf(stderr,
+                            "rage-port: --set key or value is too long\n");
+                    valid = 0;
+                }
             } else {
                 fprintf(stderr, "rage-port: --set expects key=value\n");
                 valid = 0;
@@ -248,10 +264,11 @@ static const EnvironmentAlias s_environmentAliases[] = {
 /* RAGE_PORT_ plus the key, dots to underscores, upper case. */
 static const char *DerivedName(const char *key, char *buffer, size_t size) {
     size_t at = sizeof("RAGE_PORT_") - 1;
-    if (size < sizeof("RAGE_PORT_")) return NULL;
+    if (key == NULL || size < sizeof("RAGE_PORT_")) return NULL;
     memcpy(buffer, "RAGE_PORT_", at);
     for (; *key != '\0' && at + 1 < size; key++)
         buffer[at++] = *key == '.' ? '_' : (char)toupper((unsigned char)*key);
+    if (*key != '\0') return NULL;
     buffer[at] = '\0';
     return buffer;
 }
@@ -276,6 +293,7 @@ static const char *EnvironmentValue(const char *key) {
 
 static const char *ConfiguredValue(const char *key) {
     int index;
+    if (key == NULL || key[0] == '\0') return NULL;
     for (index = s_valueCount - 1; index >= 0; index--)
         if (!strcmp(s_values[index].key, key)) return s_values[index].value;
     return NULL;
@@ -283,6 +301,7 @@ static const char *ConfiguredValue(const char *key) {
 
 /* A file or --set wins over the environment, which is the ambient default. */
 const char *RuntimeConfigGet(const char *key) {
+    if (key == NULL || key[0] == '\0') return NULL;
     const char *value = ConfiguredValue(key);
     return value ? value : EnvironmentValue(key);
 }
@@ -290,6 +309,7 @@ const char *RuntimeConfigGet(const char *key) {
 /* The other way round, for the few settings an outer harness has to be able to
  * force regardless of the shipped file: the log path and the disc image. */
 const char *RuntimeConfigGetForced(const char *key) {
+    if (key == NULL || key[0] == '\0') return NULL;
     const char *value = EnvironmentValue(key);
     return value ? value : ConfiguredValue(key);
 }

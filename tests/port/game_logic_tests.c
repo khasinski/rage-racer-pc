@@ -311,6 +311,21 @@ static void test_diagnostic_integer_values(void) {
     EXPECT_EQ(9, DiagnosticsIntValue("test_number", 9));
     EXPECT_EQ(1, RuntimeConfigInit(1, missing));
     EXPECT_EQ(11, DiagnosticsIntValue("test_number", 11));
+    EXPECT_EQ(0, RuntimeConfigInit(1, NULL));
+    EXPECT_EQ(0, RuntimeConfigInit(-1, missing));
+    EXPECT_EQ(1, RuntimeConfigInit(1, missing));
+    EXPECT_EQ(1, RuntimeConfigGet(NULL) == NULL);
+    EXPECT_EQ(1, RuntimeConfigGet("") == NULL);
+    EXPECT_EQ(1, RuntimeConfigGetForced(NULL) == NULL);
+    {
+        char setting[1300];
+        char *arguments[] = {"rage-test", "--set", setting};
+
+        memset(setting, 'x', sizeof(setting));
+        setting[1] = '=';
+        setting[sizeof(setting) - 1] = '\0';
+        EXPECT_EQ(0, RuntimeConfigInit(3, arguments));
+    }
 }
 
 static void test_platform_config_path(void) {
