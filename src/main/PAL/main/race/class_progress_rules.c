@@ -65,6 +65,20 @@ s32 IsFinalGrandPrixClass(s32 extraSeries, s32 classIndex) {
         : STANDARD_SERIES_FINAL_CLASS);
 }
 
+s32 NextGrandPrixClassForSeries(s32 series, s32 classIndex) {
+    s32 finalClass;
+
+    if ((u32)series >= 2) {
+        return CLASS_RECORD_NO_UNLOCK;
+    }
+    finalClass = series == 0 ? STANDARD_SERIES_FINAL_CLASS
+                             : EXTRA_SERIES_FINAL_CLASS;
+    if (classIndex < 0 || classIndex >= finalClass) {
+        return CLASS_RECORD_NO_UNLOCK;
+    }
+    return classIndex + 1;
+}
+
 s32 PrizeCountStep(s32 amount, s32 frameCount) {
     s32 step;
 

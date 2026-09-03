@@ -78,7 +78,8 @@ set_tests_properties(class_clear_fanfare PROPERTIES LABELS unit)
 
 add_executable(advance_grand_prix_class_tests
     advance_grand_prix_class_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/advance_grand_prix_class.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/advance_grand_prix_class.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/class_progress_rules.c)
 target_include_directories(advance_grand_prix_class_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

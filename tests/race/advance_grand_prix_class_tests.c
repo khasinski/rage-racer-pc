@@ -3,6 +3,7 @@
 #include "game/fmv.h"
 #include "game/menu.h"
 #include "game/race.h"
+#include "game/save_internal.h"
 #include "game/state.h"
 
 #include <stdio.h>
@@ -16,9 +17,11 @@ s32 g_SceneId;
 s32 g_SeriesCleared;
 s16 g_SeriesSelection;
 GameRaceProgress *g_RaceProgress;
+CourseProgressState *g_CourseProgress;
 CarEntry *g_CarTable;
 
 static GameRaceProgress s_progress;
+static CourseProgressState s_courseProgress;
 static CarEntry s_cars[GAME_CAR_COUNT];
 static s32 s_resetProgressCalls;
 static s32 s_resetCourseMode;
@@ -56,6 +59,7 @@ static void Reset(void) {
     memset(&s_progress, 0, sizeof(s_progress));
     memset(g_MaxClassReached, 0, sizeof(g_MaxClassReached));
     g_RaceProgress = &s_progress;
+    g_CourseProgress = &s_courseProgress;
     g_CarTable = s_cars;
     g_ClassCompleted = 0;
     g_ClassPromoted = 0;
@@ -107,6 +111,7 @@ int main(void) {
     Reset();
     g_ClassCompleted = 1;
     g_SeriesCleared = 1;
+    g_GrandPrixClass = 4;
     s_progress.maxClassReached = 5;
     s_progress.money = 123;
     AdvanceGrandPrixClass();
@@ -117,6 +122,43 @@ int main(void) {
     Check("series clear resets beginner progress", s_resetCourseMode, 0);
     Check("ending FMV return scene", s_endingFmvReturnScene, 0x21);
     Check("series clear skips class FMV", s_classFmvReturnScene, -1);
+
+    Reset();
+    g_ClassCompleted = 1;
+    g_RaceProgress = NULL;
+    AdvanceGrandPrixClass();
+    Check("missing save returns to course select", g_SceneId, 6);
+    Check("missing save does not start class FMV", s_classFmvReturnScene, -1);
+
+    Reset();
+    g_ClassCompleted = 1;
+    g_SeriesSelection = 2;
+    AdvanceGrandPrixClass();
+    Check("invalid series returns to course select", g_SceneId, 6);
+
+    Reset();
+    g_ClassCompleted = 1;
+    g_SeriesCleared = 1;
+    g_SeriesSelection = 2;
+    g_GrandPrixClass = 4;
+    AdvanceGrandPrixClass();
+    Check("invalid cleared series returns to course select", g_SceneId, 6);
+    Check("invalid cleared series does not reset save", s_resetProgressCalls,
+          0);
+
+    Reset();
+    g_ClassCompleted = 1;
+    g_GrandPrixClass = 4;
+    AdvanceGrandPrixClass();
+    Check("standard final cannot advance without clear", g_SceneId, 6);
+
+    Reset();
+    g_ClassCompleted = 1;
+    g_SeriesCleared = 1;
+    g_GrandPrixClass = 2;
+    AdvanceGrandPrixClass();
+    Check("non-final class cannot clear series", g_SceneId, 6);
+    Check("invalid series clear does not reset save", s_resetProgressCalls, 0);
 
     return s_failures != 0;
 }

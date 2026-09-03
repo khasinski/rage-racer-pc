@@ -100,6 +100,7 @@ s32 GrandPrixCourseCount(s32 classIndex);
 s32 GrandPrixClassRecordIndex(s32 series, s32 classIndex);
 s32 NextUnlockedClassRecord(s32 classRecordIndex);
 s32 IsFinalGrandPrixClass(s32 extraSeries, s32 classIndex);
+s32 NextGrandPrixClassForSeries(s32 series, s32 classIndex);
 static inline s32 GrandPrixAssetSeries(s32 selectedSeries, s32 classIndex) {
     return classIndex < GRAND_PRIX_FINAL_CLASS_INDEX ? selectedSeries : 0;
 }

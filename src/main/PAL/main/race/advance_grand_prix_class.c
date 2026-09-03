@@ -2,6 +2,8 @@
 #include "game/fmv.h"
 #include "game/menu.h"
 #include "game/race.h"
+#include "game/race_internal.h"
+#include "game/save_internal.h"
 #include "game/state.h"
 
 enum {
@@ -20,7 +22,19 @@ void AdvanceGrandPrixClass(void) {
         return;
     }
 
+    if (g_RaceProgress == NULL || g_CourseProgress == NULL ||
+        (u32)g_SeriesSelection >= 2) {
+        g_SceneId = COURSE_SELECT_SCENE;
+        return;
+    }
+
     if (g_SeriesCleared) {
+        if (g_CarTable == NULL ||
+            !IsFinalGrandPrixClass(g_SeriesSelection == 1,
+                                   g_GrandPrixClass)) {
+            g_SceneId = COURSE_SELECT_SCENE;
+            return;
+        }
         maxClassReached = g_RaceProgress->maxClassReached;
         ResetProgressSlot(g_CarTable, g_RaceProgress);
         g_RaceProgress->money = RACE_MAX_PRIZE_MONEY;
@@ -30,8 +44,14 @@ void AdvanceGrandPrixClass(void) {
         return;
     }
 
+    nextClass = NextGrandPrixClassForSeries(
+        g_SeriesSelection, g_GrandPrixClass);
+    if (nextClass < 0) {
+        g_SceneId = COURSE_SELECT_SCENE;
+        return;
+    }
+
     BeginClassFmv(CLASS_FMV_RETURN_SCENE);
-    nextClass = g_GrandPrixClass + 1;
     g_GrandPrixClass = nextClass;
     g_RaceProgress->classIndex = nextClass;
     g_RaceProgress->course = 0;

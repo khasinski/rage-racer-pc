@@ -53,6 +53,16 @@ int main(void) {
     Check("extra class 4", IsFinalGrandPrixClass(1, 4), 0);
     Check("extra class 5", IsFinalGrandPrixClass(1, 5), 1);
 
+    Check("next standard class", NextGrandPrixClassForSeries(0, 3), 4);
+    Check("standard final has no next class",
+          NextGrandPrixClassForSeries(0, 4), -1);
+    Check("Extra advances to shared finale",
+          NextGrandPrixClassForSeries(1, 4), 5);
+    Check("shared finale has no next class",
+          NextGrandPrixClassForSeries(1, 5), -1);
+    Check("invalid series has no next class",
+          NextGrandPrixClassForSeries(2, 0), -1);
+
     Check("standard asset series", GrandPrixAssetSeries(0, 4), 0);
     Check("extra asset series", GrandPrixAssetSeries(1, 4), 1);
     Check("shared finale asset series", GrandPrixAssetSeries(1, 5), 0);
