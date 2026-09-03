@@ -100,6 +100,18 @@ static void CheckNegativeMotionConfig(void) {
     CHECK_EQ(car.targetSpeed, 0, "negative target speed");
     CHECK_EQ(car.accelerationStep, 0, "negative acceleration step");
     CHECK_EQ(car.accelerationLimit, 0, "negative speed acceleration limit");
+
+    config->speed = INT16_MIN;
+    config->accelerationStep = 0x8000;
+    config->minimumSpeed = 0x8000;
+    config->initialEngineRpm = 0x8000;
+    InitRivalCarAi(&car, 0, &grid);
+    CHECK_EQ(car.targetSpeed, 0, "minimum encoded target speed");
+    CHECK_EQ(car.accelerationStep, 0, "minimum encoded acceleration step");
+    CHECK_EQ(GetCarAiBlock(&car)->minimumSpeed, 60,
+             "minimum encoded speed uses lower bound");
+    CHECK_EQ(GetCarAiBlock(&car)->engineRpmLow, 0,
+             "minimum encoded engine rpm uses lower bound");
 }
 
 int main(void) {

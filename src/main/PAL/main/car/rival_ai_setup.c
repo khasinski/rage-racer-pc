@@ -1,4 +1,5 @@
 #include "game/car.h"
+#include "game/integer.h"
 #include "game/race.h"
 #include "game/track.h"
 
@@ -11,7 +12,7 @@ enum {
 static s16 DecodeClampedConfigValue(u16 encoded,
                                     s16 minimum,
                                     s16 maximum) {
-    s16 value = (s16)encoded;
+    s16 value = WrapSigned16(encoded);
 
     if (value < minimum) {
         return minimum;
