@@ -3,7 +3,7 @@
 #include "game/render_internal.h"
 #include "game/track_internal.h"
 
-static void RestartRouteScenery(void) {
+void SeedRouteScenery(void) {
     const s32 series = g_RaceSeries;
     const s16 firstKeyframe =
         g_RouteSceneryData->firstKeyframe[series][0];
@@ -18,10 +18,6 @@ static void RestartRouteScenery(void) {
     g_RouteSceneryPosition = g_RouteSceneryData->start[series].position;
     g_RouteSceneryActive = 1;
     g_RouteSceneryFrame = 0;
-}
-
-void SeedRouteScenery(void) {
-    RestartRouteScenery();
 }
 
 void UpdateRouteScenery(void) {
@@ -46,7 +42,7 @@ void UpdateRouteScenery(void) {
     }
 
     if (keyframe->duration == SCENERY_MOTION_END) {
-        RestartRouteScenery();
+        SeedRouteScenery();
         keyframe = g_RouteSceneryKeyframe;
     }
 
