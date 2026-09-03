@@ -3,6 +3,7 @@
 #include "game/race.h"
 #include "game/render.h"
 
+#include <limits.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -92,6 +93,19 @@ int main(void) {
                s_enabledCalls, s_valueCalls, s_traceCalls);
         s_failures++;
     }
+
+    memset(&matrix, 0, sizeof(matrix));
+    matrix.m[0][0] = 4096;
+    g_CarCornerOffsets[0].x = INT16_MAX;
+    g_CarCornerOffsets[1].x = INT16_MIN;
+    g_CarCornerOffsets[2].x = 1;
+    g_CarCornerOffsets[3].x = -1;
+    g_CarCornerOffsets[0].z = 0;
+    g_CarCornerOffsets[1].z = 0;
+    g_CarCornerOffsets[2].z = 0;
+    g_CarCornerOffsets[3].z = 0;
+    s_traceEnabled = 0;
+    CheckLimits(&matrix, 4, -4, 3, 1);
 
     if (s_failures != 0) {
         printf("%d player track limit checks failed\n", s_failures);

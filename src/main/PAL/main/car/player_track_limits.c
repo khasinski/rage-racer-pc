@@ -1,6 +1,7 @@
 #include "game/car.h"
 #include "game/car_internal.h"
 #include "game/diagnostics.h"
+#include "game/integer.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/state.h"
@@ -37,9 +38,11 @@ void MeasurePlayerTrackLimits(const Matrix *toTrack,
     limits->rightKnockbackMode = 0;
     limits->leftKnockbackMode = 0;
     for (index = 0; index < 4; index++) {
-        corner.vx = g_CarCornerOffsets[index].x * 4;
+        corner.vx = WrapSigned16(
+            (int64_t)g_CarCornerOffsets[index].x * 4);
         corner.vy = 0;
-        corner.vz = g_CarCornerOffsets[index].z * 4;
+        corner.vz = WrapSigned16(
+            (int64_t)g_CarCornerOffsets[index].z * 4);
         ApplyMatrix(&transform, &corner, &reach);
         if (traceLimits) {
             TraceTrackLimit(toTrack, &corner, &reach);
