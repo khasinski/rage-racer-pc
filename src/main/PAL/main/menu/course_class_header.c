@@ -29,6 +29,9 @@ int GetCourseClassHeaderSprite(s32 seriesSelection, s32 classIndex,
                                CourseClassHeaderSprite *sprite) {
     s32 series = seriesSelection != 0;
 
+    if (sprite == NULL) {
+        return 0;
+    }
     *sprite = (CourseClassHeaderSprite){0};
     if ((u32)classIndex >= COURSE_CLASS_HEADER_MAX_CLASS_COUNT) {
         return 0;

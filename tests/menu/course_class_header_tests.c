@@ -32,7 +32,8 @@ int main(void) {
 
     if (GetCourseClassHeaderSprite(0, 5, &sprite) || sprite.width != 0 ||
         GetCourseClassHeaderSprite(0, -1, &sprite) || sprite.width != 0 ||
-        GetCourseClassHeaderSprite(1, 6, &sprite) || sprite.width != 0) {
+        GetCourseClassHeaderSprite(1, 6, &sprite) || sprite.width != 0 ||
+        GetCourseClassHeaderSprite(0, 0, NULL)) {
         puts("invalid class unexpectedly has a header");
         return 1;
     }
