@@ -147,7 +147,7 @@ void UpdateRivalRubberBand(void) {
                 g_RivalCueFlags |= farCueBit;
                 return;
             }
-            *cooldown = (s16)((u16)*cooldown + 1);
+            *cooldown = WrapSigned16((s32)*cooldown + 1);
             return;
         }
 
