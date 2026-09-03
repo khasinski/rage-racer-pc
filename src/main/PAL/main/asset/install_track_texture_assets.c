@@ -28,6 +28,10 @@ s32 InstallTrackTextureAssetPack(u8 *base, size_t size) {
     }
 
     header = (TrackTextureAssetHeader *)base;
+    if (header->offsets[TRACK_TEXTURE_DEFERRED_IMAGES] <
+        TRACK_TEXTURE_SHADOW_SIZE) {
+        return 0;
+    }
     for (i = 0; i < 5; i++) {
         s32 end = i + 1 < 5 ? header->offsets[i + 1] : (s32)size;
 

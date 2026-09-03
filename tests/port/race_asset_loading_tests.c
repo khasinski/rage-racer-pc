@@ -400,7 +400,8 @@ static void TestTrackPhases(void) {
     s32 i;
 
     memset(storage, 0, sizeof(storage));
-    for (i = 0; i < 11; i++) pack->offsets[i] = 128 + i * 32;
+    for (i = 0; i < 4; i++) pack->offsets[i] = 128 + i * 32;
+    pack->offsets[4] = TRACK_TEXTURE_SHADOW_SIZE;
     g_CourseIndex = 2;
     g_GrandPrixClass = 3;
     g_AssetLoadCursor = storage;
@@ -639,7 +640,8 @@ static void TestResidentCourseInstallation(void) {
     s32 i;
 
     memset(storage, 0, sizeof(storage));
-    for (i = 0; i < 5; i++) pack->offsets[i] = 64 + i * 32;
+    for (i = 0; i < 4; i++) pack->offsets[i] = 64 + i * 32;
+    pack->offsets[4] = TRACK_TEXTURE_SHADOW_SIZE;
     g_AssetBase = storage;
     g_AssetLoadCursor = NULL;
     Check(InstallTrackTextureAssetPack(g_AssetBase, 256) == 0 &&
@@ -654,8 +656,10 @@ static void TestResidentCourseInstallation(void) {
           "resident course texture pack is valid");
     Check(s_uploadCount == 5, "resident course uploads every texture block");
     Check(s_uploadSizes[0] == 32 && s_uploadSizes[1] == 32 &&
-              s_uploadSizes[2] == 32 && s_uploadSizes[3] == 32 &&
-              s_uploadSizes[4] == sizeof(storage) - 192,
+              s_uploadSizes[2] == 32 &&
+              s_uploadSizes[3] == TRACK_TEXTURE_SHADOW_SIZE - 160 &&
+              s_uploadSizes[4] ==
+                  sizeof(storage) - TRACK_TEXTURE_SHADOW_SIZE,
           "course uploader bounds every image sub-block");
     Check(s_teamLogoSource == storage, "resident course stores team logo");
     Check(g_TrackTextureShadow == (TrackTextureShadowRow *)(void *)storage,
@@ -674,6 +678,14 @@ static void TestResidentCourseInstallation(void) {
               g_AssetLoadCursor == NULL,
           "invalid course pack publishes no texture state");
     pack->offsets[1] = 96;
+
+    pack->offsets[4] = TRACK_TEXTURE_SHADOW_SIZE - 4;
+    g_AssetLoadCursor = NULL;
+    s_uploadCount = 0;
+    Check(InstallTrackTextureAssetPack(g_AssetBase, sizeof(storage)) == 0 &&
+              s_uploadCount == 0 && g_AssetLoadCursor == NULL,
+          "deferred images inside the overwritten shadow are rejected");
+    pack->offsets[4] = TRACK_TEXTURE_SHADOW_SIZE;
 
     g_AssetLoadCursor = NULL;
     g_TrackTextureShadow = NULL;
