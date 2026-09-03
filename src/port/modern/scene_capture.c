@@ -90,16 +90,19 @@ static GameFrameContext *CaptureFrameContext(void) {
 static void CaptureOtBase(uint8_t *table, int32_t *bias) {
     GameFrameContext *frame = CaptureFrameContext();
     GameOrderingTableEntry *base = RENDER_OT_BASE;
+    uintptr_t baseAddress = (uintptr_t)base;
     int t;
     *table = 0;
     *bias = 0;
     if (frame == NULL || base == NULL) return;
     for (t = 0; t < 2; t++) {
         GameOrderingTableEntry *start = frame->layout.orderingTables[t];
-        ptrdiff_t diff = base - start;
-        if (diff >= 0 && diff < GAME_FRAME_OT_LENGTH) {
+        uintptr_t startAddress = (uintptr_t)start;
+        uintptr_t endAddress = (uintptr_t)(start + GAME_FRAME_OT_LENGTH);
+        if (baseAddress >= startAddress && baseAddress < endAddress &&
+            (baseAddress - startAddress) % sizeof(*start) == 0) {
             *table = (uint8_t)t;
-            *bias = (int32_t)diff;
+            *bias = (int32_t)((baseAddress - startAddress) / sizeof(*start));
             return;
         }
     }
@@ -262,9 +265,11 @@ void CaptureSubmitEnd(void) {
 }
 
 static int CaptureIs3DPacket(const uint8_t *address) {
+    uintptr_t candidate = (uintptr_t)address;
     int i;
     for (i = 0; i < s_rangeCount; i++) {
-        if (address >= s_ranges[i].begin && address < s_ranges[i].end) {
+        if (candidate >= (uintptr_t)s_ranges[i].begin &&
+            candidate < (uintptr_t)s_ranges[i].end) {
             return 1;
         }
     }
@@ -347,16 +352,19 @@ static void CaptureWalkTable(RageSceneSnapshot *snapshot, int tableIndex,
         const uint8_t *tableBegin = (const uint8_t *)table;
         const uint8_t *tableEnd =
             (const uint8_t *)&table[GAME_FRAME_OT_LENGTH];
+        uintptr_t addressValue = (uintptr_t)address;
         /* Mirror PsyZ's GPU_Enqueue defenses: a game/pause path can link a
          * packet with a garbage or misaligned tag; the compat renderer
          * truncates the chain gracefully there, so the capture must too. */
-        if ((uintptr_t)address < 4096 ||
-            ((uintptr_t)address & (sizeof(uint32_t) - 1)) != 0) {
+        if (addressValue < 4096 ||
+            (addressValue & (sizeof(uint32_t) - 1)) != 0) {
             snapshot->oversizedPackets++;
             break;
         }
-        if (address >= tableBegin && address < tableEnd) {
-            bucket = (int)((GameOrderingTableEntry *)node - table);
+        if (addressValue >= (uintptr_t)tableBegin &&
+            addressValue < (uintptr_t)tableEnd) {
+            bucket = (int)((addressValue - (uintptr_t)tableBegin) /
+                           sizeof(*table));
         } else if (CaptureIs3DPacket(address)) {
             snapshot->skipped3DPackets++;
         } else {
