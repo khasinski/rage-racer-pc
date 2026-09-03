@@ -1,6 +1,8 @@
 #include "game/menu.h"
 #include "game/menu_internal.h"
 
+#include <limits.h>
+
 enum {
     OWNED_CAR_COUNTER_DRAW_START = 11,
     OWNED_CAR_COUNTER_LAST_FRAME = 10,
@@ -16,9 +18,13 @@ void DrawOwnedCarCounter(s32 direction, s32 ownedCount) {
         return;
     }
     if (direction < 0) {
-        g_OwnedCarCounterSlide += direction;
-        if (g_OwnedCarCounterSlide < 0) {
+        int64_t updated = (int64_t)g_OwnedCarCounterSlide + direction;
+
+        if (updated < 0) {
             g_OwnedCarCounterSlide = 0;
+        } else {
+            g_OwnedCarCounterSlide =
+                updated > INT_MAX ? INT_MAX : (s32)updated;
         }
     }
 
@@ -46,9 +52,13 @@ void DrawOwnedCarCounter(s32 direction, s32 ownedCount) {
     }
 
     if (direction > 0) {
-        g_OwnedCarCounterSlide += direction;
-        if (g_OwnedCarCounterSlide >= OWNED_CAR_COUNTER_COMPLETE) {
+        int64_t updated = (int64_t)g_OwnedCarCounterSlide + direction;
+
+        if (updated >= OWNED_CAR_COUNTER_COMPLETE) {
             g_OwnedCarCounterSlide = OWNED_CAR_COUNTER_COMPLETE;
+        } else {
+            g_OwnedCarCounterSlide =
+                updated < INT_MIN ? INT_MIN : (s32)updated;
         }
     }
 }

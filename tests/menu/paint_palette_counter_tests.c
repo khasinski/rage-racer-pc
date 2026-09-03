@@ -4,6 +4,7 @@
 #include "game/render_state.h"
 
 #include <stdio.h>
+#include <limits.h>
 
 PaintColorTable g_PaintColorTable;
 s32 g_PaintPalettePulsePhase;
@@ -146,6 +147,18 @@ int main(void) {
     CHECK(progress == 25);
 
     ResetDraws();
+    CHECK(DrawPaintColorPalette(NULL, 1, 0) == 0);
+    progress = 12;
+    CHECK(DrawPaintColorPalette(&progress, 0, -1) == 0);
+    CHECK(s_solidRects[0].r == 0 && s_solidRects[0].g == 1);
+    progress = INT_MAX;
+    CHECK(DrawPaintColorPalette(&progress, INT_MAX, 0) == 1);
+    CHECK(progress == 25);
+    progress = INT_MIN;
+    CHECK(DrawPaintColorPalette(&progress, -1, 0) == 0);
+    CHECK(progress == 0);
+
+    ResetDraws();
     g_MenuAltLayout = 0;
     DrawOwnedCarCounter(0, 9);
     CHECK(g_OwnedCarCounterSlide == 0 && s_spriteCount == 0);
@@ -167,6 +180,13 @@ int main(void) {
     g_MenuAltLayout = 1;
     DrawOwnedCarCounter(-1, 13);
     CHECK(g_OwnedCarCounterSlide == 24 && s_numberCount == 0);
+
+    g_OwnedCarCounterSlide = INT_MAX;
+    DrawOwnedCarCounter(INT_MAX, 13);
+    CHECK(g_OwnedCarCounterSlide == 25);
+    g_OwnedCarCounterSlide = INT_MIN;
+    DrawOwnedCarCounter(-1, 13);
+    CHECK(g_OwnedCarCounterSlide == 0);
 
     puts("paint palette and owned car counter preserve their animations");
     return 0;

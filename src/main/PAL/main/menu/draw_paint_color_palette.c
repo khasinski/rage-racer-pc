@@ -2,6 +2,8 @@
 #include "game/menu_internal.h"
 #include "game/render.h"
 
+#include <limits.h>
+
 enum {
     PAINT_PALETTE_DRAW_START = 11,
     PAINT_PALETTE_LAST_FRAME = 10,
@@ -20,10 +22,20 @@ s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index) {
     s32 highlight;
     s32 colorIndex;
 
+    if (counter == NULL) {
+        return 0;
+    }
+    if ((u32)index >= MENU_PAINT_COLOR_COUNT) {
+        index = 0;
+    }
+
     if (step < 0) {
-        *counter += step;
-        if (*counter < 0) {
+        int64_t updated = (int64_t)*counter + step;
+
+        if (updated < 0) {
             *counter = 0;
+        } else {
+            *counter = updated > INT_MAX ? INT_MAX : (s32)updated;
         }
     }
 
@@ -45,7 +57,8 @@ s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index) {
         }
         highlight = (highlight >> 6) - 0x41;
 
-        g_PaintPalettePulsePhase += 0x20;
+        g_PaintPalettePulsePhase =
+            (s32)((u32)g_PaintPalettePulsePhase + 0x20u);
 
         DrawRectOutline(ot, x + index * PAINT_SWATCH_WIDTH - 2, y, 0xD,
                         0x1A, 0, (u8)highlight, 0, 0xFF);
@@ -67,11 +80,13 @@ s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index) {
     }
 
     if (step >= 0) {
-        *counter += step;
-        if (*counter >= PAINT_PALETTE_COMPLETE) {
+        int64_t updated = (int64_t)*counter + step;
+
+        if (updated >= PAINT_PALETTE_COMPLETE) {
             *counter = PAINT_PALETTE_COMPLETE;
             return 1;
         }
+        *counter = updated < INT_MIN ? INT_MIN : (s32)updated;
     }
 
     return 0;
