@@ -2,10 +2,6 @@
 #include "game/car_internal.h"
 #include "game/integer.h"
 
-static void LandRivalCar(GameCarRuntime *car, s32 ground) {
-    ApplyCarLandingPose(car, ground);
-}
-
 static void DampCollidingRivalSpeed(GameCarRuntime *car) {
     /* Retail applies two distinct 97% steps. Keep both divisions: folding
      * them into one percentage changes low-speed rounding. */
@@ -34,7 +30,7 @@ void UpdateRivalBodyMotion(void) {
         if (car->verticalMotionState != CAR_VERTICAL_GROUNDED) {
             AdvanceCarJumpArc(car, ground);
             if (car->verticalMotionState == CAR_VERTICAL_GROUNDED) {
-                LandRivalCar(car, ground);
+                ApplyCarLandingPose(car, ground);
             }
         }
         if (car->collisionFlag == 0) {
