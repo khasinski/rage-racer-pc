@@ -3,6 +3,7 @@
 #include "game/menu.h"
 #include "game/render_state.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -62,6 +63,9 @@ void DrawSmallText(s32 x, s16 y, const char *text, u8 r, u8 g, u8 b,
     } while (0)
 
 int main(void) {
+    static GameOrderingTableEntry orderingTable[2];
+
+    RENDER_OT_BASE = orderingTable;
     s_model.maxPower = 765;
     s_model.maxPowerRpm = 7000;
     s_model.maxTorqueWhole = 12;
@@ -76,7 +80,7 @@ int main(void) {
     DrawCarEngineSpec(7, 300);
     CHECK(s_recordCount == 16);
     CHECK(s_records[0].kind == 'S' && s_records[0].x == 0xA1 &&
-          s_records[0].y == 0xCC - 7 && s_records[0].brightness == (u8)300);
+          s_records[0].y == 0xCC - 7 && s_records[0].brightness == UINT8_MAX);
     CHECK(s_records[2].kind == 'T' && s_records[2].x == 0xD2 &&
           strcmp(s_records[2].text, "765") == 0);
     CHECK(s_records[3].x == 0xE6 && s_records[3].textureU == 0x70);
@@ -89,6 +93,24 @@ int main(void) {
     CHECK(s_records[14].kind == 'T' && s_records[14].x == 0x101 &&
           strcmp(s_records[14].text, "4500") == 0);
     CHECK(s_records[15].x == 0x11B && s_records[15].textureU == 0x78);
+
+    s_recordCount = 0;
+    DrawCarEngineSpec(INT_MIN, -1);
+    CHECK(s_recordCount == 16);
+    CHECK(s_records[0].y == INT16_MAX && s_records[0].brightness == 0);
+
+    s_recordCount = 0;
+    DrawCarEngineSpec(INT_MAX, 1);
+    CHECK(s_records[0].y == INT16_MIN);
+
+    s_recordCount = 0;
+    g_CarModelAsset = NULL;
+    DrawCarEngineSpec(0, 1);
+    CHECK(s_recordCount == 0);
+    g_CarModelAsset = &s_model;
+    RENDER_OT_BASE = NULL;
+    DrawCarEngineSpec(0, 1);
+    CHECK(s_recordCount == 0);
 
     puts("car engine spec tests passed");
     return 0;

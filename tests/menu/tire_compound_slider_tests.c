@@ -2,6 +2,7 @@
 #include "game/menu.h"
 #include "game/render_state.h"
 
+#include <limits.h>
 #include <stdio.h>
 
 s32 g_AnimTimer;
@@ -112,6 +113,9 @@ static void ResetDraws(void) {
 }
 
 int main(void) {
+    static GameOrderingTableEntry orderingTable[3];
+
+    RENDER_OT_BASE = orderingTable;
     g_AnimTimer = 2;
     DrawTireCompoundSlider(4, 1);
     CHECK(s_directionTriangles == 1 && s_lineCount == 7);
@@ -134,6 +138,24 @@ int main(void) {
     CHECK(s_rsinAngle == 17);
     CHECK(s_highlight == (u8)(-4000 / 64 - 0x41));
     CHECK(g_TireSliderPulsePhase == 17 + 0x60);
+
+    ResetDraws();
+    g_TireSliderPulsePhase = -1;
+    DrawTireCompoundSlider(UINT8_MAX, 0);
+    CHECK(s_rsinAngle == 0xFFF);
+    CHECK(s_directionTriangles == 1 && s_lineCount == 7);
+
+    g_TireSliderPulsePhase = INT_MAX;
+    DrawTireCompoundSlider(2, 1);
+    CHECK(g_TireSliderPulsePhase ==
+          (s32)((u32)INT_MAX + 0x60u));
+
+    ResetDraws();
+    RENDER_OT_BASE = NULL;
+    g_TireSliderPulsePhase = 12;
+    DrawTireCompoundSlider(2, 0);
+    CHECK(s_lineCount == 0 && s_directionTriangles == 0);
+    CHECK(g_TireSliderPulsePhase == 12);
 
     puts("tire compound slider tests passed");
     return 0;

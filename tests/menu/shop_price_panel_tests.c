@@ -119,10 +119,20 @@ static int CheckPanel(void (*draw)(s32, s32, s32), s32 *slide,
 }
 
 int main(void) {
+    static GameOrderingTableEntry orderingTable[1];
+
+    RENDER_OT_BASE = orderingTable;
     CHECK(CheckPanel(DrawCarShopPricePanel, &g_CarShopPanelSlide, 0x18, 0x3C) ==
           0);
     CHECK(CheckPanel(DrawEngineerShopPricePanel, &g_EngineerShopPanelSlide,
                      0x34, 0x54) == 0);
+
+    s_recordCount = 0;
+    RENDER_OT_BASE = NULL;
+    g_CarShopPanelSlide = SHOP_PANEL_VISIBLE_AT;
+    DrawCarShopPricePanel(1, 100, 50);
+    CHECK(g_CarShopPanelSlide == SHOP_PANEL_VISIBLE_AT + 1);
+    CHECK(s_recordCount == 0);
     puts("shop price panel tests passed");
     return 0;
 }

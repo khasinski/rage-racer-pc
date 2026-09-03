@@ -84,6 +84,9 @@ void DrawFlatQuad(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u1
     } while (0)
 
 int main(void) {
+    static GameOrderingTableEntry orderingTable[4];
+
+    RENDER_OT_BASE = orderingTable;
     g_CarSpecGraphProgress = 42;
     g_CarSpecBars[0] = 7;
     DrawCarSpecGraph(0, 0);
@@ -105,7 +108,7 @@ int main(void) {
 
     DrawCarSpecGraph(-5, 5);
     CHECK(g_CarSpecGraphProgress == 0);
-    CHECK(g_CarSpecBars[0] == 2 && g_CarSpecBars[3] == 1);
+    CHECK(g_CarSpecBars[0] == 2 && g_CarSpecBars[3] == 2);
 
     s_model.performanceRatings[0] = 10;
     s_model.performanceRatings[1] = 20;
@@ -135,7 +138,13 @@ int main(void) {
     DrawCarSpecGraph(INT_MAX, 5);
     CHECK(g_CarSpecGraphProgress == 96);
     CHECK(g_CarSpecBars[0] == 95 && g_CarSpecBars[1] == 0);
-    CHECK(g_CarSpecBars[2] == 1 && g_CarSpecBars[3] == 96);
+    CHECK(g_CarSpecBars[2] == 1 && g_CarSpecBars[3] == 95);
+
+    s_spriteCount = 0;
+    s_quadCount = 0;
+    RENDER_OT_BASE = NULL;
+    DrawCarSpecGraph(1, UINT_MAX);
+    CHECK(s_spriteCount == 0 && s_quadCount == 0);
 
     puts("car spec graph tests passed");
     return 0;

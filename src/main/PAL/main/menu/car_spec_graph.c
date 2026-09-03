@@ -28,6 +28,9 @@ static void ApproachPerformanceRating(s32 *value, s32 target) {
 static void UpdateCarSpecValues(u32 tireGrade) {
     s32 i;
 
+    if (tireGrade >= 5) {
+        tireGrade = 4;
+    }
     g_CarSpecBars[3] =
         AddClampedMenuValue(g_CarSpecBars[3], 0, 0, CAR_SPEC_BAR_MAX);
     if (g_CarModelAsset != NULL) {
@@ -40,10 +43,8 @@ static void UpdateCarSpecValues(u32 tireGrade) {
             ApproachPerformanceRating(&g_CarSpecBars[i], 0);
         }
     }
-    if (tireGrade < 5) {
-        ApproachPerformanceRating(&g_CarSpecBars[3],
-                                  10 + (s32)tireGrade * 20);
-    }
+    ApproachPerformanceRating(&g_CarSpecBars[3],
+                              10 + (s32)tireGrade * 20);
 }
 
 static u8 Lighten(u8 value) {
@@ -145,7 +146,8 @@ void DrawCarSpecGraph(s32 step, u32 tireGrade) {
     if (floorProgress < 0) {
         floorProgress = 0;
     }
-    if (g_CarSpecGraphProgress == 0 || g_MenuAltLayout != 0) {
+    if (g_CarSpecGraphProgress == 0 || g_MenuAltLayout != 0 ||
+        RENDER_OT_BASE == NULL) {
         return;
     }
 

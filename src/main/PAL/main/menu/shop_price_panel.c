@@ -23,7 +23,7 @@ static void DrawShopPricePanel(s32 step, s32 money, s32 price, s32 *slide,
     }
 
     risenFrames = *slide - SHOP_PANEL_VISIBLE_AT;
-    if (risenFrames >= 0 && g_MenuAltLayout == 0) {
+    if (risenFrames >= 0 && g_MenuAltLayout == 0 && RENDER_OT_BASE != NULL) {
         s32 rise;
         s16 moneyY;
         s16 priceY;

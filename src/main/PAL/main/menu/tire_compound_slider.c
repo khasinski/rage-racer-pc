@@ -13,7 +13,8 @@ static u8 GetSliderHighlight(s32 confirming) {
     if (confirming != 0) {
         return g_AnimTimer & 2 ? 0xFF : 0x60;
     }
-    return (u8)(rsin(g_TireSliderPulsePhase % 0x1000) / 64 - 0x41);
+    return (u8)(rsin((s32)((u32)g_TireSliderPulsePhase & 0xFFFu)) / 64 -
+                0x41);
 }
 
 static void DrawLeftSliderArrow(void *ot, s16 x, u8 green) {
@@ -36,11 +37,20 @@ static void DrawRightSliderArrow(void *ot, s16 x, u8 green) {
 
 /* The five-position tire-compound slider of the CUSTOMIZE screen. */
 void DrawTireCompoundSlider(u8 compound, s32 confirming) {
-    void *ot = RENDER_OT_BASE + 2;
-    s16 x = compound < TIRE_COMPOUND_COUNT ? s_tireCompoundX[compound]
-                                           : compound;
-    u8 highlight = GetSliderHighlight(confirming);
+    void *ot;
+    s16 x;
+    u8 highlight;
     const u8 frameColor = 0xB4;
+
+    if (RENDER_OT_BASE == NULL) {
+        return;
+    }
+    ot = RENDER_OT_BASE + 2;
+    highlight = GetSliderHighlight(confirming);
+    if (compound >= TIRE_COMPOUND_COUNT) {
+        compound = TIRE_COMPOUND_COUNT - 1;
+    }
+    x = s_tireCompoundX[compound];
 
     DrawSprite(ot, 0xBC, 0x50, 0x14, 0x10, 0, 0xB4, 0, 0, 0, 0x244, 1, 1,
                0x3A);
@@ -66,5 +76,6 @@ void DrawTireCompoundSlider(u8 compound, s32 confirming) {
                      0x95, 0, 0x80);
     DrawSolidRect(ot, 0xB8, 0x48, 0x40, 0x40, 0x95, 0x25, 0x1E, 0xFF);
 
-    g_TireSliderPulsePhase += TIRE_SLIDER_PULSE_STEP;
+    g_TireSliderPulsePhase =
+        (s32)((u32)g_TireSliderPulsePhase + TIRE_SLIDER_PULSE_STEP);
 }

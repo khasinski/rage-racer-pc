@@ -1,5 +1,6 @@
 #include "game/asset.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 
 #include <stdio.h>
 
@@ -7,6 +8,18 @@ enum {
     ENGINE_SPEC_TEXT_CAPACITY = 16,
     SMALL_TEXT_ADVANCE = 6
 };
+
+static s16 EngineSpecY(s32 base, s32 slide) {
+    int64_t y = (int64_t)base - slide;
+
+    if (y < INT16_MIN) {
+        return INT16_MIN;
+    }
+    if (y > INT16_MAX) {
+        return INT16_MAX;
+    }
+    return (s16)y;
+}
 
 static s32 DrawEngineSpecNumber(s32 x, s16 y, char *text, s32 value,
                                 u8 brightness) {
@@ -25,13 +38,14 @@ void DrawCarEngineSpec(s32 slide, s32 brightness) {
     s16 torqueY;
     s32 cursorX;
 
-    if (g_MenuAltLayout != 0) {
+    if (g_MenuAltLayout != 0 || g_CarModelAsset == NULL ||
+        RENDER_OT_BASE == NULL) {
         return;
     }
     ot = RENDER_OT_BASE + 1;
-    intensity = (u8)brightness;
-    powerY = 0xCC - slide;
-    torqueY = 0xDA - slide;
+    intensity = (u8)AddClampedMenuValue(brightness, 0, 0, UINT8_MAX);
+    powerY = EngineSpecY(0xCC, slide);
+    torqueY = EngineSpecY(0xDA, slide);
 
     DrawSprite(ot, 0xA1, powerY, 0x10, 0xC, 0, 0xF4, intensity, intensity,
                intensity, 0x244, 0, 1, 0x3A);
