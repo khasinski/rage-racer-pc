@@ -86,7 +86,7 @@ static void UpdateAttractDemoStart(void) {
     DrawAttractTitle();
 }
 
-void ReturnToTitleScene(void) {
+static void ReturnToTitleScene(void) {
     g_SceneId = 3;
     g_StreamReturnScene = 0;
     ResetCdAudioState();

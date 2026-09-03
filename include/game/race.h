@@ -255,7 +255,6 @@ extern s16 g_TrackZoneCode;
  */
 void DrawLostRaceCaption(s32 level);
 void DrawRoundScreen(void);
-void ReturnToTitleScene(void);
 void RefreshClassWinState(void);
 void UpdateZoneAmbience(s32 zone);
 
