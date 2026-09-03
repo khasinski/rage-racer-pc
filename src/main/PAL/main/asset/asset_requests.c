@@ -101,6 +101,10 @@ static void LoadBootCarScreen(void) {
 }
 
 void LoadBootAssets(void) {
+    if (g_AssetLoadState == 0) {
+        return;
+    }
+
     switch (g_AssetLoadState) {
     case BOOT_LOAD_TITLE_SCREEN:
         LoadBootTitleScreen();
@@ -120,6 +124,9 @@ void LoadBootAssets(void) {
     case BOOT_LOAD_CAR_SCREEN:
         LoadBootCarScreen();
         break;
+    default:
+        FailAssetLoad();
+        break;
     }
 }
 
@@ -131,7 +138,11 @@ s32 RequestSaveScreenAssets(void) {
 void LoadSaveScreenAssets(void) {
     s32 loadedSize;
 
-    if (g_AssetLoadState != SAVE_SCREEN_LOAD_ASSET) return;
+    if (g_AssetLoadState == 0) return;
+    if (g_AssetLoadState != SAVE_SCREEN_LOAD_ASSET) {
+        FailAssetLoad();
+        return;
+    }
     loadedSize = LoadAsset(ASSET_SAVE_SCREEN, g_AssetBase);
     if (loadedSize == 0) return;
 
@@ -179,6 +190,10 @@ static void LoadSelectBgmAssetPack(void) {
 }
 
 void LoadSelectBgmAssets(void) {
+    if (g_AssetLoadState == 0) {
+        return;
+    }
+
     switch (g_AssetLoadState) {
     case SELECT_BGM_CLOSE_AUDIO:
         CloseLoadedAudioSlots();
@@ -187,6 +202,9 @@ void LoadSelectBgmAssets(void) {
         break;
     case SELECT_BGM_LOAD_ASSET:
         LoadSelectBgmAssetPack();
+        break;
+    default:
+        FailAssetLoad();
         break;
     }
 }

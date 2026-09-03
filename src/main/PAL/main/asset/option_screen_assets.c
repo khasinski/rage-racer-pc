@@ -14,7 +14,11 @@ void LoadOptionScreenAssets(void) {
     const OptionScreenAsset *asset;
     s32 loadedSize;
 
-    if (g_AssetLoadState != OPTION_SCREEN_LOAD_ASSET) return;
+    if (g_AssetLoadState == 0) return;
+    if (g_AssetLoadState != OPTION_SCREEN_LOAD_ASSET) {
+        FailAssetLoad();
+        return;
+    }
 
     loadedSize = LoadAsset(ASSET_OPTION_SCREEN, g_AssetBase);
     if (loadedSize == 0) return;

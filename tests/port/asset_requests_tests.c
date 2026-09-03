@@ -226,6 +226,15 @@ static void TestBootAssetPhases(void) {
     Check(s_storeImageCalls == 2 && s_drawSyncCalls == 1,
           "car screen captures team logo image and CLUT");
     Check(g_TeamLogoClut[0] == 0, "boot car screen clears logo CLUT entry");
+
+    g_AssetLoadState = 99;
+    g_AssetLoadFailed = 0;
+    LoadBootAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed(),
+          "unknown boot phase is rejected");
+    g_AssetLoadFailed = 0;
+    LoadBootAssets();
+    Check(!AssetLoadHasFailed(), "idle boot loader is a no-op");
 }
 
 static void TestSaveScreenAssets(u8 *assetBase) {
@@ -257,6 +266,15 @@ static void TestSaveScreenAssets(u8 *assetBase) {
               g_ImageBlockBuffer == assetBase && g_ImageBlockSize == 1 &&
               g_AssetLoadState == 0,
           "save screen installs loaded image block");
+
+    g_AssetLoadState = 99;
+    g_AssetLoadFailed = 0;
+    LoadSaveScreenAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed(),
+          "unknown save-screen phase is rejected");
+    g_AssetLoadFailed = 0;
+    LoadSaveScreenAssets();
+    Check(!AssetLoadHasFailed(), "idle save-screen loader is a no-op");
 }
 
 static void TestSelectBgmRequests(void) {
@@ -350,6 +368,15 @@ int main(void) {
     Check(g_AssetLoadState == 2, "incomplete BGM load stays pending");
     Check(g_AssetBlockPtr == NULL, "incomplete BGM load installs nothing");
 
+    g_AssetLoadState = 99;
+    g_AssetLoadFailed = 0;
+    LoadSelectBgmAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed(),
+          "unknown BGM phase is rejected");
+    g_AssetLoadFailed = 0;
+    LoadSelectBgmAssets();
+    Check(!AssetLoadHasFailed(), "idle BGM loader is a no-op");
+
     g_AssetLoadState = 0;
     g_AssetRequestType = ASSET_REQUEST_IDLE;
     s_resetCalls = 0;
@@ -417,6 +444,15 @@ int main(void) {
               g_ImageBlockBuffer == NULL &&
               s_modelBankRegistrations == 0,
           "truncated OPTION header cancels installation");
+
+    g_AssetLoadState = 99;
+    g_AssetLoadFailed = 0;
+    LoadOptionScreenAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed(),
+          "unknown OPTION phase is rejected");
+    g_AssetLoadFailed = 0;
+    LoadOptionScreenAssets();
+    Check(!AssetLoadHasFailed(), "idle OPTION loader is a no-op");
 
     g_GrandPrixMode = 0;
     g_GrandPrixSeries = 0;
