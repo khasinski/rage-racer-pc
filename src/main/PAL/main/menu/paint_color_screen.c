@@ -65,18 +65,12 @@ static void UpdatePaintColorIdle(void) {
 static void UpdateSelectedPaintColor(void) {
     CarEntry *car = &g_CarTable[g_PlayerCarIndex];
     CarEntry *timeAttackCar = &g_TimeAttackCars[g_PlayerCarIndex];
+    MenuDialogAction action;
     int editsPrimary = GameMenuBusy == -1;
 
     if (DrawPaintColorPalette(&g_UiScriptProgress2, 1, g_PaintColorIndex) != 0) {
-        if (g_PadPressedRepeat & PAD_LEFT) {
-            PlaySoundCue(1);
-            g_PaintColorIndex = g_PaintColorIndex > 0 ? g_PaintColorIndex - 1 : 17;
-        }
-        if (g_PadPressedRepeat & PAD_RIGHT) {
-            PlaySoundCue(1);
-            g_PaintColorIndex = g_PaintColorIndex < 17 ? g_PaintColorIndex + 1 : 0;
-        }
-        if (g_PadPressed & PAD_CONFIRM) {
+        action = ChooseMenuDialogAction(g_PadPressed);
+        if (action == MENU_DIALOG_CONFIRM) {
             PlaySoundCue(2);
             if (editsPrimary) {
                 car->paintColor1 = (u8)g_PaintColorIndex;
@@ -86,12 +80,17 @@ static void UpdateSelectedPaintColor(void) {
             timeAttackCar->paintColor1 = car->paintColor1;
             timeAttackCar->paintColor2 = car->paintColor2;
             GameMenuBusy = 0;
-        }
-        if (g_PadPressed & PAD_CANCEL) {
+        } else if (action == MENU_DIALOG_CANCEL) {
             PlaySoundCue(3);
             g_PaintColorIndex =
                 editsPrimary ? car->paintColor1 : car->paintColor2;
             GameMenuBusy = 0;
+        } else if (g_PadPressedRepeat & PAD_LEFT) {
+            PlaySoundCue(1);
+            g_PaintColorIndex = g_PaintColorIndex > 0 ? g_PaintColorIndex - 1 : 17;
+        } else if (g_PadPressedRepeat & PAD_RIGHT) {
+            PlaySoundCue(1);
+            g_PaintColorIndex = g_PaintColorIndex < 17 ? g_PaintColorIndex + 1 : 0;
         }
         if (editsPrimary) {
             SetPrimaryBodyColor(g_PaintColorIndex);

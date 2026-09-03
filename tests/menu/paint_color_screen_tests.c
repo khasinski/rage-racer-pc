@@ -124,6 +124,18 @@ int main(void) {
     CHECK(GameMenuBusy == 0);
 
     Reset();
+    s_cars[3].paintColor1 = 2;
+    GameMenuBusy = -1;
+    g_PaintColorIndex = 8;
+    g_PadPressed = PAD_CONFIRM | PAD_CANCEL;
+    g_PadPressedRepeat = PAD_RIGHT;
+    UpdatePaintColorScreen();
+    CHECK(s_cars[3].paintColor1 == 8);
+    CHECK(g_PaintColorIndex == 8);
+    CHECK(s_lastCue == 2);
+    CHECK(GameMenuBusy == 0);
+
+    Reset();
     s_cars[3].paintColor2 = 11;
     GameMenuBusy = -2;
     g_PaintColorIndex = 5;
