@@ -4,8 +4,6 @@
 #include <stdio.h>
 #include <string.h>
 
-char g_FmtString[] = "%s";
-
 static Rect s_rects[2];
 static void *s_destinations[2];
 static s32 s_storeCalls;
@@ -37,7 +35,7 @@ int main(void) {
     memset(longTitle, 'A', sizeof(longTitle) - 1);
     longTitle[sizeof(longTitle) - 1] = '\0';
 
-    BuildSaveIconBlock(&block, longTitle, 0x222, 0x3C0, 0x1F0);
+    BuildSaveIconBlock(&block, longTitle);
 
     CHECK(block.magic[0] == 'S' && block.magic[1] == 'C');
     CHECK(block.format == 0x11 && block.frameCount == 1);

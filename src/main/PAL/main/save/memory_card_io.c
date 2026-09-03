@@ -49,7 +49,7 @@ static s32 WriteMemoryCardSaveFile(
     s32 attempt;
 
     GameMenuLoadPhase = 0x1100;
-    BuildSaveIconBlock(iconBlock, title, 0x222, 0x3C0, 0x1F0);
+    BuildSaveIconBlock(iconBlock, title);
     GameMenuLoadPhase = 0x1200;
     WriteSaveHeaderRow(header);
     GameMenuLoadPhase = 0x1300;

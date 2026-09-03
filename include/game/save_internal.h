@@ -21,8 +21,7 @@ extern s32 g_BestLapTimes[2][4][2];
 extern s32 g_BestTotalTimes[2][4][2];
 extern s32 g_BestSectorTimes[2][4][3];
 
-void BuildSaveIconBlock(GameSaveIconBlock *block, const char *title,
-                        s32 iconTile, s32 imageX, s32 imageY);
+void BuildSaveIconBlock(GameSaveIconBlock *block, const char *title);
 void WriteSaveHeaderRow(GameSaveHeaderRow *row);
 s32 LoadSaveStateBlock(const GameSaveBlock *block);
 void StoreSaveStateBlock(GameSaveBlock *block);

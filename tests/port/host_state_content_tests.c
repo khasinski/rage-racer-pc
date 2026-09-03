@@ -119,7 +119,6 @@ extern unsigned char g_SoundModes[96];
 extern unsigned char g_MsgTooManyVoices[16];
 extern const char g_MsgSeqVabOpenHeadError[21];
 extern const char g_MsgSeqVabTransBodyError[22];
-extern unsigned char g_FmtString[8];
 extern unsigned char g_SaveDefaults[104];
 extern unsigned char g_DrawModeEnv[8];
 extern unsigned char g_PromotionBonusTable[20];
@@ -292,7 +291,6 @@ static const HostStateBlob s_blobs[] = {
      (const unsigned char *)g_MsgSeqVabOpenHeadError, 21},
     {"g_MsgSeqVabTransBodyError",
      (const unsigned char *)g_MsgSeqVabTransBodyError, 22},
-    {"g_FmtString", g_FmtString, 8},
     {"g_SaveDefaults", g_SaveDefaults, 104},
     {"g_DrawModeEnv", g_DrawModeEnv, 8},
     {"g_TeamLogoClutRect", (const unsigned char *)&g_TeamLogoClutRect, 8},
@@ -404,7 +402,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the canonical host constants alone. */
-    const unsigned long expected = 3467943191UL;
+    const unsigned long expected = 1658594987UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

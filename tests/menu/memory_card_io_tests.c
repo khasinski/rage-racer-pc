@@ -150,9 +150,8 @@ void *BiosNextFile(void *entry) {
     return s_directoryNextCalls < s_directoryFiles ? entry : NULL;
 }
 
-void BuildSaveIconBlock(GameSaveIconBlock *block, const char *title, s32 iconTile,
-                        s32 imageX, s32 imageY) {
-    (void)title; (void)iconTile; (void)imageX; (void)imageY;
+void BuildSaveIconBlock(GameSaveIconBlock *block, const char *title) {
+    (void)title;
     memset(block, 0x11, sizeof(*block));
 }
 

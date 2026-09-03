@@ -94,7 +94,6 @@ extern char g_FmtPlayTime[];
 extern char g_FmtSaveRow[];
 extern char g_FmtSaveRowEmpty[];
 extern char g_FmtSaveRowTail[];
-extern char g_FmtString[];
 extern s32 g_McActionBusy;
 extern s32 g_McActionElapsed;
 extern s32 g_McActionResult;
