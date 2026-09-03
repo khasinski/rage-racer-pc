@@ -1,6 +1,77 @@
 #include "game/render.h"
 #include "game/render_internal.h"
 
+static u8 *QueueSpritePacket(GameOrderingTableEntry *ot, u8 *packetCursor,
+                             s32 x, s32 y, s32 width, s32 height,
+                             s32 textureU, s32 textureV, s32 clutIndex,
+                             s32 intensity, s32 shadeTexture,
+                             s32 semiTransparent) {
+    SPRT *sprite = (SPRT *)packetCursor;
+
+    SetSprt(sprite);
+    SetShadeTex(sprite, shadeTexture);
+    SetSemiTrans(sprite, semiTransparent);
+    sprite->x0 = x;
+    sprite->y0 = y;
+    sprite->w = width;
+    sprite->h = height;
+    sprite->u0 = textureU;
+    sprite->v0 = textureV;
+    sprite->clut = clutIndex;
+    if (!shadeTexture) {
+        sprite->r0 = intensity;
+        sprite->g0 = intensity;
+        sprite->b0 = intensity;
+    }
+    AddPrim(ot, sprite);
+    return (u8 *)(sprite + 1);
+}
+
+u8 *GameQueueSprite(GameOrderingTableEntry *ot, u8 *packetCursor, s32 x,
+                    s32 y, s32 width, s32 height, s32 textureU,
+                    s32 textureV, s32 clutIndex) {
+    return QueueSpritePacket(ot, packetCursor, x, y, width, height, textureU,
+                             textureV, clutIndex, 0, 1, 0);
+}
+
+u8 *GameQueueShadedSprite(GameOrderingTableEntry *ot, u8 *packetCursor,
+                          s32 x, s32 y, s32 width, s32 height, s32 textureU,
+                          s32 textureV, s32 clutIndex, s32 intensity) {
+    return QueueSpritePacket(ot, packetCursor, x, y, width, height, textureU,
+                             textureV, clutIndex, intensity, 0, 0);
+}
+
+u8 *GameQueueShadedSpriteTrans(GameOrderingTableEntry *ot, u8 *packetCursor,
+                               s32 x, s32 y, s32 width, s32 height,
+                               s32 textureU, s32 textureV, s32 clutIndex,
+                               s32 intensity) {
+    return QueueSpritePacket(ot, packetCursor, x, y, width, height, textureU,
+                             textureV, clutIndex, intensity, 0, 1);
+}
+
+u8 *GameQueueSpriteTrans(GameOrderingTableEntry *ot, u8 *packetCursor, s32 x,
+                         s32 y, s32 width, s32 height, s32 textureU,
+                         s32 textureV, s32 clutIndex) {
+    return QueueSpritePacket(ot, packetCursor, x, y, width, height, textureU,
+                             textureV, clutIndex, 0, 1, 1);
+}
+
+u8 *GameQueueLine(GameOrderingTableEntry *ot, u8 *packetCursor, s32 x0,
+                  s32 y0, s32 x1, s32 y1, s32 red, s32 green, s32 blue) {
+    LINE_F2 *line = (LINE_F2 *)packetCursor;
+
+    SetLineF2(line);
+    line->x0 = x0;
+    line->y0 = y0;
+    line->x1 = x1;
+    line->y1 = y1;
+    line->r0 = red;
+    line->g0 = green;
+    line->b0 = blue;
+    AddPrim(ot, line);
+    return (u8 *)(line + 1);
+}
+
 /* DR_MODE, 12 bytes: sets the texture page (and the blend mode packed into it)
  * for the primitives that follow, links it into the ordering table and returns
  * the advanced packet cursor. */

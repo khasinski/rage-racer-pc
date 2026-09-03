@@ -91,7 +91,62 @@ static void CheckDrawMode(void) {
              "draw mode cursor");
 }
 
+static void CheckSpriteVariants(void) {
+    SPRT *sprite;
+    u8 *end;
+
+    ResetPackets();
+    sprite = (SPRT *)s_packets.bytes;
+    end = GameQueueSprite(&s_ot, s_packets.bytes, 1, 2, 3, 4, 5, 6, 7);
+    CHECK_EQ(end == (u8 *)(sprite + 1), 1, "raw sprite cursor");
+    CHECK_EQ(sprite->code & 3, 1, "raw sprite flags");
+    CHECK_EQ(sprite->x0, 1, "raw sprite x");
+    CHECK_EQ(sprite->h, 4, "raw sprite height");
+    CHECK_EQ(sprite->clut, 7, "raw sprite clut");
+
+    ResetPackets();
+    sprite = (SPRT *)s_packets.bytes;
+    end = GameQueueShadedSprite(&s_ot, s_packets.bytes, 8, 9, 10, 11,
+                                12, 13, 14, 0x45);
+    CHECK_EQ(end == (u8 *)(sprite + 1), 1, "shaded sprite cursor");
+    CHECK_EQ(sprite->code & 3, 0, "shaded sprite flags");
+    CHECK_EQ(sprite->r0, 0x45, "shaded sprite red");
+    CHECK_EQ(sprite->g0, 0x45, "shaded sprite green");
+    CHECK_EQ(sprite->b0, 0x45, "shaded sprite blue");
+
+    ResetPackets();
+    sprite = (SPRT *)s_packets.bytes;
+    GameQueueShadedSpriteTrans(&s_ot, s_packets.bytes, 1, 2, 3, 4, 5, 6,
+                               7, 0x67);
+    CHECK_EQ(sprite->code & 3, 2, "transparent shaded sprite flags");
+    CHECK_EQ(sprite->r0, 0x67, "transparent shaded sprite intensity");
+
+    ResetPackets();
+    sprite = (SPRT *)s_packets.bytes;
+    GameQueueSpriteTrans(&s_ot, s_packets.bytes, 1, 2, 3, 4, 5, 6, 7);
+    CHECK_EQ(sprite->code & 3, 3, "transparent raw sprite flags");
+}
+
+static void CheckLine(void) {
+    LINE_F2 *line;
+    u8 *end;
+
+    ResetPackets();
+    line = (LINE_F2 *)s_packets.bytes;
+    end = GameQueueLine(&s_ot, s_packets.bytes, -1, -2, 30, 40,
+                        50, 60, 70);
+    CHECK_EQ(end == (u8 *)(line + 1), 1, "line cursor");
+    CHECK_EQ(line->x0, -1, "line x0");
+    CHECK_EQ(line->y1, 40, "line y1");
+    CHECK_EQ(line->r0, 50, "line red");
+    CHECK_EQ(line->g0, 60, "line green");
+    CHECK_EQ(line->b0, 70, "line blue");
+    CHECK_EQ(line->code, 0x40, "line code");
+}
+
 int main(void) {
+    CheckSpriteVariants();
+    CheckLine();
     CheckShadedRect();
     CheckTexturedRect();
     CheckDrawMode();
