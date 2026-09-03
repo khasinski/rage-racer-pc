@@ -202,6 +202,20 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    memset(g_Cars, 0, sizeof(g_Cars));
+    g_TrackLength = 0x8000;
+    g_Cars[0].activeFlag = -1;
+    g_Cars[1].activeFlag = 0;
+    g_Cars[0].acceleration = 1000;
+    g_Cars[1].acceleration = 2000;
+    s_knockbacks = 0;
+    if (CollideRivalCars(&g_Cars[0], 0) != 0 || s_knockbacks != 0 ||
+        g_Cars[0].acceleration != 1000 ||
+        g_Cars[1].acceleration != 2000) {
+        puts("FAIL disabled source car participated in a collision");
+        return 1;
+    }
+
     /* Progress and acceleration are 32-bit machine words in the original.
      * Crossing their signed limits must retain that wrapping behaviour
      * without relying on undefined host arithmetic. */

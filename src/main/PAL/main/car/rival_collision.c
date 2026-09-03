@@ -183,7 +183,8 @@ s32 CollideRivalCars(GameCarRuntime *car, s32 index) {
     s32 nextIndex;
     int hullBuilt = 0;
 
-    if (index < 0 || index >= RACE_CAR_SLOT_COUNT - 1) {
+    if (index < 0 || index >= RACE_CAR_SLOT_COUNT - 1 ||
+        car->activeFlag == -1) {
         return 0;
     }
 
