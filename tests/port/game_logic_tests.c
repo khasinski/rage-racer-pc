@@ -406,6 +406,34 @@ static void test_portable_state_path(void) {
     rmdir(root);
 }
 
+static void test_ensure_directory(void) {
+    char root[] = "/tmp/rage-directory-test-XXXXXX";
+    char filePath[320];
+    char nestedPath[320];
+    FILE *file;
+
+    if (mkdtemp(root) == NULL) {
+        failures++;
+        return;
+    }
+    snprintf(filePath, sizeof(filePath), "%s/not-a-directory", root);
+    file = fopen(filePath, "wb");
+    if (file == NULL) {
+        failures++;
+    } else {
+        fclose(file);
+        EXPECT_EQ(0, PlatformEnsureDirectory(filePath));
+    }
+    snprintf(nestedPath, sizeof(nestedPath), "%s/one/two", root);
+    EXPECT_EQ(1, PlatformEnsureDirectory(nestedPath));
+    EXPECT_EQ(1, PlatformEnsureDirectory(nestedPath));
+    rmdir(nestedPath);
+    snprintf(nestedPath, sizeof(nestedPath), "%s/one", root);
+    rmdir(nestedPath);
+    unlink(filePath);
+    rmdir(root);
+}
+
 int main(void) {
     test_time_conversion();
     test_random15();
@@ -418,6 +446,7 @@ int main(void) {
     test_diagnostic_integer_values();
     test_platform_config_path();
     test_portable_state_path();
+    test_ensure_directory();
 
     if (failures != 0) {
         fprintf(stderr, "%d characterization assertion(s) failed\n", failures);

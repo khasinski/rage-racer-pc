@@ -195,7 +195,10 @@ int PlatformUserConfigPath(const char *name, char *out, size_t outSize) {
 int PlatformEnsureDirectory(const char *path) {
     char buffer[4096];
     char *cursor;
-    size_t length = strlen(path);
+    size_t length;
+
+    if (path == NULL) return 0;
+    length = strlen(path);
     if (length == 0 || length >= sizeof(buffer)) return 0;
     memcpy(buffer, path, length + 1);
     for (cursor = buffer + 1; *cursor != '\0'; cursor++) {
@@ -206,11 +209,15 @@ int PlatformEnsureDirectory(const char *path) {
         {
             char separator = *cursor;
             *cursor = '\0';
-            if (Mkdir(buffer) != 0 && errno != EEXIST) return 0;
+            if (Mkdir(buffer) != 0 &&
+                (errno != EEXIST || !DirectoryExists(buffer))) {
+                return 0;
+            }
             *cursor = separator;
         }
     }
-    return Mkdir(buffer) == 0 || errno == EEXIST;
+    return Mkdir(buffer) == 0 ||
+           (errno == EEXIST && DirectoryExists(buffer));
 }
 
 int PlatformFindConfigFile(const char *argv0, const char *name,
