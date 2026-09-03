@@ -6,8 +6,8 @@
 #include "psyq/gpu.h"
 
 u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *prim, s32 tpage);
-u8 *QueueDrawAreaPrim(GameOrderingTableEntry *ot, DrawPacket *packet, s16 x, s16 y, s32 width,
-                      s32 height);
+u8 *QueueDrawAreaPrim(GameOrderingTableEntry *ot, DrawPacket *packet,
+                      s16 x, s16 y, s32 width, s32 height);
 u8 *AddTilePrim(
     GameOrderingTableEntry *ot,
     u8 *prim,
