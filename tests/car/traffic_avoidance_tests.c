@@ -336,15 +336,15 @@ static int CheckRubberBandBranches(void) {
 }
 
 static void Fold(FILE *out, const char *label, const GameCarRuntime *car) {
-    const GameCarAiBlock *state = GetCarAiBlock((GameCarRuntime *)car);
     char line[256];
     const char *p;
 
     snprintf(line, sizeof(line),
              "%s -> step=%d active=%d target=%d lateral=%d nearby=%u limit=%d\n",
-             label, (int)state->avoidanceStep, (int)state->avoidanceActive,
-             (int)state->avoidanceTargetOffset, (int)state->aiLateralOffset,
-             (unsigned)state->nearbyCarCount, (int)state->accelerationLimit);
+             label, (int)(u16)car->avoidanceStep, (int)car->avoidanceActive,
+             (int)car->avoidanceTargetOffset, (int)(u16)car->aiLateralOffset,
+             (unsigned)(u16)car->nearbyCarCount,
+             (int)car->accelerationLimit);
     for (p = line; *p != '\0'; p++) {
         s_digest = (s_digest ^ (unsigned char)*p) * 16777619UL;
         s_digest &= 0xFFFFFFFFUL;
@@ -400,7 +400,6 @@ static void RunOne(FILE *out, const char *what, s32 sceneId, s32 subjectOffset,
                    s32 playerAhead, s32 priorLimit, s32 blockerSideways,
                    int *cases) {
     GameCarRuntime *subject;
-    GameCarAiBlock *state;
     char label[192];
     const s32 progress = 0x2000;
 
@@ -435,9 +434,8 @@ static void RunOne(FILE *out, const char *what, s32 sceneId, s32 subjectOffset,
     subject->trackProgress = progress;
     subject->trackLateralOffset = (s16)subjectOffset;
     subject->speed = subjectSpeed;
-    state = GetCarAiBlock(subject);
-    state->accelerationLimit = (s16)priorLimit;
-    state->aiLateralOffset = (s16)subjectOffset;
+    subject->accelerationLimit = (s16)priorLimit;
+    subject->aiLateralOffset = (s16)subjectOffset;
 
     snprintf(label, sizeof(label), "%s ahead=%d sideways=%d blocker=%d", what,
              rivalAhead, rivalSideways, (int)blockerSideways);
@@ -484,7 +482,6 @@ int main(int argc, char **argv) {
     for (a = 0; a < sizeof(priorActive) / sizeof(priorActive[0]); a++)
     for (m = 0; m < sizeof(priorLimits) / sizeof(priorLimits[0]); m++) {
         GameCarRuntime *subject;
-        GameCarAiBlock *state;
         char label[192];
         const s32 progress = 0x2000;
 
@@ -496,10 +493,9 @@ int main(int argc, char **argv) {
         subject->trackProgress = progress;
         subject->trackLateralOffset = (s16)subjectOffsets[o];
         subject->speed = subjectSpeeds[v];
-        state = GetCarAiBlock(subject);
-        state->avoidanceActive = priorActive[a];
-        state->accelerationLimit = priorLimits[m];
-        state->aiLateralOffset = (s16)subjectOffsets[o];
+        subject->avoidanceActive = priorActive[a];
+        subject->accelerationLimit = priorLimits[m];
+        subject->aiLateralOffset = (s16)subjectOffsets[o];
 
         snprintf(label, sizeof(label),
                  "layout=%d offset=%d speed=%d index=%d scene=%d active=%d "

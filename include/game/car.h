@@ -190,7 +190,7 @@ typedef struct GameCarRuntime {
     s16 boostAcceleration;
     s16 boostTimer;
     s16 accelerationLimit;
-    s16 currentGear;
+    s16 minimumSpeed;
     s32 engineRpm;
     s16 speedKeyIndex;
     s16 slideActive;
@@ -464,7 +464,7 @@ typedef struct CarInputValue {
  * g_Cars: it shares the stride but not the meaning of every byte.
  * +0x30, +0x38, +0x74 and +0x76 are 16-bit gearDisp/jumpTimer/manual/gear on the
  * player object and 32-bit / AI-speed fields on the rival cars, so use
- * GameCarAiBlock for a g_Cars[] element. */
+ * GameCarRuntime for a g_Cars[] element. */
 typedef struct GameCarDrive {
     s32 reserved00;
     s32 reserved04;
@@ -671,55 +671,6 @@ static inline void CopyCarBodyRotationToModel(GameCarRuntime *car) {
     car->modelYaw = car->bodyYaw;
     car->modelRoll = car->bodyRoll;
     car->modelRotationW = car->bodyRotationW;
-}
-
-/* A second, halfword-wide view of that same block, for the code that loads
- * 0x104..0x134 as s16 where GameCarDrive declares s32. */
-typedef struct GameCarAiBlock {
-    s32 enabled;
-    u8 pad4[8];
-    s32 worldVelocityX;   /* +0x0C world velocity x, sin(headingAngle) * speed / 256 */
-    u8 pad10[4];
-    s32 worldVelocityZ;   /* +0x14 world velocity z, cos(headingAngle) * speed / 256 */
-    u8 pad18[0x18];
-    s32 targetYaw;   /* +0x30 target angle: bodyYaw += GetAngleDelta(bodyYaw, this) / 5 */
-    CarSlideInput slideInput; /* +0x34 */
-    s32 yawRate;   /* +0x38 yaw rate, added to both steeringAngle and bodyYaw */
-    u8 pad3C[8];
-    s32 racingLineHintIndex; /* +0x44 */
-    s16 avoidanceActive;  /* set to 1 while another car blocks this one */
-    u8 pad4A[6];
-    u16 nearbyCarCount;  /* count of cars close enough to matter this frame */
-    s16 reserved10E;
-    u8 pad54[8];
-    s32 gridTargetProgress;  /* grid-seeded target progress (g_TrackLength / 12 steps) */
-    /* These two are physically the same halfwords as the signed fields in
-     * GameCarRuntime. The recovered AI arithmetic reads them unsigned before
-     * narrowing its results back to 16 bits; changing this view to s16 changes
-     * rival avoidance behaviour. Cast explicitly at sites that need a signed
-     * lateral comparison. */
-    u16 aiLateralOffset;
-    s16 avoidanceTargetOffset;  /* traffic-avoidance target, +-0x50 */
-    u16 avoidanceStep;
-    u8 pad66[2];
-    s16 targetSpeed;  /* grid-seeded speed, clamped >= 0 */
-    u8 pad6A[4];
-    s16 collisionBoostDuration;
-    s16 boostAcceleration;  /* clamped to 0..15; the boost-branch step of acceleration */
-    s16 boostTimer;  /* +0x72 slipstream-boost countdown, decremented while > 0 */
-    s16 accelerationLimit;  /* damped while boxed in; caps acceleration */
-    s16 minimumSpeed;  /* clamped to >= 0x3C */
-    s16 engineRpmLow;  /* low half of GameCarRuntime.engineRpm, clamped to >= 0 */
-    u8 pad7A[2];
-    u16 speedKeyIndex; /* +0x7C */
-    s16 slideActive; /* +0x7E */
-    u8 pad80[0x22];
-    s16 brakeInput;  /* +0xA2 */
-    u8 padA4[0x3C];
-} GameCarAiBlock;
-
-static inline GameCarAiBlock *GetCarAiBlock(GameCarRuntime *car) {
-    return (GameCarAiBlock *)&car->aiEnabled;
 }
 
 /*
