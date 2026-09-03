@@ -49,6 +49,8 @@ int main(void) {
         CHECK(fastest.index == 1 && fastest.time == 89999);
         fastest = FindFastestLap(sixLaps, 6);
         CHECK(fastest.index == 5 && fastest.time == 76000);
+        fastest = FindFastestLap(sixLaps, INT_MAX);
+        CHECK(fastest.index == 5 && fastest.time == 76000);
         fastest = FindFastestLap(tiedLaps, 3);
         CHECK(fastest.index == 0 && fastest.time == 70000);
         fastest = FindFastestLap(longLaps, 3);

@@ -40,6 +40,9 @@ FastestLap FindFastestLap(const s32 *lapTimes, s32 lapCount) {
     if (lapTimes == NULL || lapCount <= 0) {
         return fastest;
     }
+    if (lapCount > COURSE_LONG_LAPS) {
+        lapCount = COURSE_LONG_LAPS;
+    }
 
     fastest.index = 0;
     fastest.time = lapTimes[0];
