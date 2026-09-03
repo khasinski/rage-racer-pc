@@ -2,6 +2,7 @@
 #include "game/menu.h"
 #include "game/race.h"
 
+#include <limits.h>
 #include <stdio.h>
 
 s32 GameMenuBusy;
@@ -72,6 +73,9 @@ static void Reset(void) {
     s_tableResult = 0;
     s_lastCue = 0;
     s_timeAttackPlateStep = -99;
+    g_MenuScreen = 0;
+    g_MenuHandlerIndex = 0;
+    g_MenuOutgoingHandlerIndex = 0;
 }
 
 int main(void) {
@@ -135,6 +139,24 @@ int main(void) {
     g_PadPressed = PAD_CANCEL;
     UpdateRankingScreen();
     CHECK(GameMenuBusy == 1 && g_MenuOverlayPattern == 2);
+
+    Reset();
+    GameMenuBusy = -2;
+    g_RankingPendingState = INT_MAX;
+    g_UiScriptProgress2 = 0;
+    UpdateRankingScreen();
+    CHECK(GameMenuBusy == -1);
+
+    Reset();
+    GameMenuBusy = INT_MIN;
+    g_RankingCursor = INT_MAX;
+    UpdateRankingScreen();
+    CHECK(GameMenuBusy == -1 && g_RankingCursor == 2);
+
+    Reset();
+    GameMenuBusy = INT_MAX;
+    UpdateRankingScreen();
+    CHECK(GameMenuBusy == -1 && g_MenuScreen == 0);
 
     puts("ranking screen tests passed");
     return 0;
