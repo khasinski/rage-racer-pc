@@ -287,6 +287,68 @@ static unsigned short SmokeButton(const char *name) {
     return 0;
 }
 
+static int SmokeParseRandomSync(const char *text) {
+    char *copy;
+    char *at;
+    char *equals;
+    char *firstColon;
+    char *secondColon = NULL;
+    char *seedText;
+    char *seedEnd;
+    unsigned long seed;
+    int seedValid;
+    int scene;
+    int timer;
+    int variant = 0;
+    int presentationVariant = 0;
+    int valid;
+
+    if (text == NULL || text[0] == '\0') return 0;
+    copy = strdup(text);
+    if (copy == NULL) return 0;
+    at = strchr(copy, '@');
+    equals = at != NULL ? strchr(at + 1, '=') : NULL;
+    if (at == NULL || equals == NULL) {
+        free(copy);
+        return 0;
+    }
+    *at = '\0';
+    *equals = '\0';
+    firstColon = strchr(equals + 1, ':');
+    if (firstColon != NULL) {
+        *firstColon = '\0';
+        secondColon = strchr(firstColon + 1, ':');
+        if (secondColon != NULL) *secondColon = '\0';
+    }
+
+    seedText = equals + 1;
+    while (isspace((unsigned char)*seedText)) seedText++;
+    errno = 0;
+    seed = strtoul(seedText, &seedEnd, 0);
+    seedValid = errno != ERANGE && seedEnd != seedText && *seedEnd == '\0' &&
+                *seedText != '-' && seed <= UINT32_MAX;
+    valid = RuntimeParseInt(copy, 0, 0, INT_MAX, &scene) &&
+            RuntimeParseInt(at + 1, 0, 0, INT_MAX, &timer) &&
+            seedValid;
+    if (firstColon != NULL) {
+        valid = valid && secondColon != NULL &&
+                RuntimeParseInt(firstColon + 1, 0, SHRT_MIN, SHRT_MAX,
+                                &variant) &&
+                RuntimeParseInt(secondColon + 1, 0, SHRT_MIN, SHRT_MAX,
+                                &presentationVariant);
+    }
+    if (valid) {
+        g_SmokeRandomSyncScene = scene;
+        g_SmokeRandomSyncTimer = timer;
+        g_SmokeRandomSyncSeed = seed;
+        g_SmokeRandomSyncVariant = variant;
+        g_SmokeRandomSyncPresentationVariant = presentationVariant;
+        g_SmokeRandomSyncHasVariants = firstColon != NULL;
+    }
+    free(copy);
+    return valid;
+}
+
 static void SmokeInitialize(void) {
     const char *script = RuntimeConfigGet("input.raw_script");
     const char *stopScene = RuntimeConfigGet("stop.scene");
@@ -321,23 +383,7 @@ static void SmokeInitialize(void) {
     g_SmokeCaptureAllPhases = RuntimeConfigEnabled("capture.all_phases");
     g_SmokeRandomSyncEachFrame = RuntimeConfigEnabled("sync.random_each_frame");
     if (randomSync != NULL && randomSync[0] != '\0') {
-        char *end;
-        g_SmokeRandomSyncScene = strtol(randomSync, &end, 0);
-        if (*end == '@') {
-            g_SmokeRandomSyncTimer = strtol(end + 1, &end, 0);
-            if (*end == '=') {
-                g_SmokeRandomSyncSeed = strtoul(end + 1, &end, 0);
-                if (*end == ':') {
-                    g_SmokeRandomSyncVariant = strtol(end + 1, &end, 0);
-                    if (*end == ':') {
-                        g_SmokeRandomSyncPresentationVariant =
-                            strtol(end + 1, &end, 0);
-                        g_SmokeRandomSyncHasVariants = *end == '\0';
-                    }
-                }
-                g_SmokeRandomSyncEnabled = *end == '\0';
-            }
-        }
+        g_SmokeRandomSyncEnabled = SmokeParseRandomSync(randomSync);
         if (!g_SmokeRandomSyncEnabled) {
             fprintf(stderr,
                     "RAGE_PORT_SYNC_RANDOM must be scene@timer=seed[:variant:variant2]\n");
