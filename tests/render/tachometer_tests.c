@@ -194,6 +194,21 @@ int main(void) {
     CHECK(s_sineAngle == 100 && s_cosineAngle == 100);
     CHECK(s_speed == 0);
 
+    memset(packets, 0, sizeof(packets));
+    ResetState(packets);
+    DrawTachometer(0, 0, TACHOMETER_LIGHTING_FADE_FROM_DARK, INT_MIN);
+    needle = (POLY_F4 *)packets;
+    CHECK(needle->r0 == 32 && needle->g0 == 32 && needle->b0 == 32);
+    CHECK(g_TachoFaceR == 32);
+
+    memset(packets, 0, sizeof(packets));
+    ResetState(packets);
+    spec->shiftLightDX = UINT16_MAX;
+    spec->shiftLightDY = UINT16_MAX;
+    DrawTachometer(0, 0, TACHOMETER_LIGHTING_NORMAL, 0);
+    shiftLight = (TILE *)(packets + sizeof(POLY_F4) + sizeof(SPRT_8));
+    CHECK(shiftLight->x0 == 119 && shiftLight->y0 == 29);
+
     puts("tachometer tests passed");
     return 0;
 }

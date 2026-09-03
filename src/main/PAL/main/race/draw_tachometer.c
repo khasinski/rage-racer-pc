@@ -73,7 +73,11 @@ static void SetTachometerNeedleColor(POLY_F4 *needle,
         needle->b0 = BlendTachometerChannel(
             spec->needleColor[2], TACHOMETER_DARK_LEVEL, amount);
     } else if (lighting == TACHOMETER_LIGHTING_FADE_FROM_DARK) {
-        amount = ClampTachometerBlend(amount - TACHOMETER_DARK_LEVEL);
+        if (amount <= TACHOMETER_DARK_LEVEL) {
+            amount = 0;
+        } else {
+            amount = ClampTachometerBlend(amount - TACHOMETER_DARK_LEVEL);
+        }
         SetTachometerFaceBrightness(TACHOMETER_DARK_LEVEL + amount);
         needle->r0 = BlendTachometerChannel(
             TACHOMETER_DARK_LEVEL, spec->needleColor[0], amount);
@@ -120,8 +124,12 @@ void DrawTachometer(s32 rpm, s32 shiftLightOn, TachometerLightingMode lighting,
     for (i = 0; i < 4; i++) {
         const s32 localX = g_TachoNeedleQuad[i][0];
         const s32 localY = g_TachoNeedleQuad[i][1];
-        *vertex++ = centerX + (sine * localX - cosine * localY) / 4096;
-        *vertex++ = centerY + (cosine * localX + sine * localY) / 4096;
+        *vertex++ = WrapRenderCoordinate16(
+            (int64_t)centerX +
+            ((int64_t)sine * localX - (int64_t)cosine * localY) / 4096);
+        *vertex++ = WrapRenderCoordinate16(
+            (int64_t)centerY +
+            ((int64_t)cosine * localX + (int64_t)sine * localY) / 4096);
     }
 
     SetTachometerNeedleColor(needle, spec, lighting, amount, frame);
@@ -149,15 +157,18 @@ void DrawTachometer(s32 rpm, s32 shiftLightOn, TachometerLightingMode lighting,
     frame->layout.raceHud.tachometerFace.r0 = g_TachoFaceR;
     frame->layout.raceHud.tachometerFace.g0 = g_TachoFaceG;
     frame->layout.raceHud.tachometerFace.b0 = g_TachoFaceB;
-    frame->layout.raceHud.tachometerFace.x0 = HudRightX(g_TachoNeedleSprite.x);
+    frame->layout.raceHud.tachometerFace.x0 =
+        WrapRenderCoordinate16(HudRightX(g_TachoNeedleSprite.x));
     AddPrim(ot, &frame->layout.raceHud.tachometerDrawModes[0]);
     AddPrim(ot, &frame->layout.raceHud.tachometerFace);
     AddPrim(ot, &frame->layout.raceHud.tachometerDrawModes[1]);
 
     shiftLight = RENDER_PRIM_CURSOR_AS(TILE);
     SetTile(shiftLight);
-    shiftLight->x0 = centerX + spec->shiftLightDX;
-    shiftLight->y0 = centerY + spec->shiftLightDY;
+    shiftLight->x0 = WrapRenderCoordinate16(
+        (int64_t)centerX + spec->shiftLightDX);
+    shiftLight->y0 = WrapRenderCoordinate16(
+        (int64_t)centerY + spec->shiftLightDY);
     shiftLight->w = 0x10;
     shiftLight->h = 0x10;
     shiftLight->r0 = shiftLightOn ? 255 : 32;

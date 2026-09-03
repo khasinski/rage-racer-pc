@@ -4,6 +4,7 @@
 #include "game/render.h"
 #include "game/render_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -86,6 +87,12 @@ int main(void) {
     ResetPackets(packets);
     DrawHudDigit(packets, 0, 0, 10, 0);
     CHECK(((SPRT_8 *)packets)->u0 == 72);
+
+    memset(packets, 0, sizeof(packets));
+    ResetPackets(packets);
+    DrawHudDigit(packets, INT_MAX, INT_MIN, 0, 0);
+    digit = (SPRT_8 *)packets;
+    CHECK(digit->x0 == -1 && digit->y0 == 0);
 
     memset(packets, 0, sizeof(packets));
     ResetPackets(packets);
