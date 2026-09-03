@@ -1,6 +1,7 @@
 #include "common.h"
 #include "game/track_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -74,6 +75,19 @@ int main(void) {
     if (state->position.x != 0 || state->position.y != 10 ||
         state->position.z != 20) {
         puts("FAIL: invalid shuttle path data changed position");
+        return 1;
+    }
+
+    g_ShuttlePathPoints[0].endpoint[0] =
+        (Vec4){INT_MAX, INT_MAX, INT_MAX, 0};
+    g_ShuttlePathPoints[0].endpoint[1] =
+        (Vec4){INT_MIN, INT_MIN, INT_MIN, 0};
+    g_ShuttlePathTravelMax[0] = 2;
+    state->travelStep = 1;
+    UpdateShuttleScenery(0);
+    if (state->position.x != 0 || state->position.y != 0 ||
+        state->position.z != 0) {
+        puts("FAIL: shuttle interpolation did not preserve 32-bit wrapping");
         return 1;
     }
 

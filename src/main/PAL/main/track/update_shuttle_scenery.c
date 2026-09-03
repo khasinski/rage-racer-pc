@@ -1,8 +1,17 @@
 #include "game/track_internal.h"
+#include "game/render_internal.h"
 
 static s32 InterpolateCoordinate(s32 from, s32 to, s32 step,
                                  s32 travelDuration) {
-    return ((travelDuration - step) * from + step * to) / travelDuration;
+    const s32 remaining = WrapRenderCoordinate32(
+        (int64_t)travelDuration - step);
+    const s32 fromContribution = WrapRenderCoordinate32(
+        (int64_t)remaining * from);
+    const s32 toContribution = WrapRenderCoordinate32((int64_t)step * to);
+    const s32 total = WrapRenderCoordinate32(
+        (int64_t)fromContribution + toContribution);
+
+    return total / travelDuration;
 }
 
 void UpdateShuttleScenery(s32 instance) {
