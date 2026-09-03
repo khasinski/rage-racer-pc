@@ -1,4 +1,5 @@
 #include "game/car.h"
+#include "game/integer.h"
 #include "game/race.h"
 
 enum {
@@ -14,7 +15,7 @@ static void SettleSlide(GameCarRuntime *car) {
     if (rate == 0) {
         return;
     }
-    rate = rate * 15 / 16;
+    rate = WrapSigned32((int64_t)rate * 15) / 16;
     car->yawRate = rate;
     if (rate == 0) {
         car->routeMarkerActive = 0;
@@ -30,8 +31,11 @@ void UpdateCarSlideAngle(GameCarRuntime *car, s32 slideScale) {
             if (car->speed < SLIDE_START_SPEED) {
                 return;
             }
-            input = slideScale * car->speed / SLIDE_INPUT_SPEED_SCALE;
-            car->slideInput.value = g_RaceSeries != 0 ? -input : input;
+            input = WrapSigned32((int64_t)slideScale * car->speed) /
+                    SLIDE_INPUT_SPEED_SCALE;
+            car->slideInput.value = g_RaceSeries != 0
+                                        ? WrapSigned32(-(int64_t)input)
+                                        : input;
             car->yawRate = 0;
             return;
         }
@@ -39,9 +43,9 @@ void UpdateCarSlideAngle(GameCarRuntime *car, s32 slideScale) {
         return;
     }
 
-    input = car->slideInput.value * 31 / 32;
+    input = WrapSigned32((int64_t)car->slideInput.value * 31) / 32;
     car->slideInput.value = input;
-    rate = car->yawRate - input / 2;
+    rate = WrapSigned32((int64_t)car->yawRate - input / 2);
     if (rate > MAX_SLIDE_YAW_RATE) {
         rate = MAX_SLIDE_YAW_RATE;
     } else if (rate < -MAX_SLIDE_YAW_RATE) {

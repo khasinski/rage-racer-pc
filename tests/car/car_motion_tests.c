@@ -285,6 +285,40 @@ int main(int argc, char **argv) {
         puts("FAIL extreme body kick did not advance one frame");
         return 1;
     }
+
+    memset(&s_car, 0, sizeof(s_car));
+    s_car.yawRate = INT32_MAX;
+    UpdateCarSlideAngle(&s_car, 0);
+    if (s_car.yawRate != 134217727) {
+        puts("FAIL extreme slide settling did not wrap like the console");
+        return 1;
+    }
+
+    memset(&s_car, 0, sizeof(s_car));
+    s_car.slideInput.value = INT32_MAX;
+    s_car.yawRate = INT32_MIN;
+    UpdateCarSlideAngle(&s_car, 0);
+    if (s_car.slideInput.value != 67108863 || s_car.yawRate != 0x2BC) {
+        puts("FAIL extreme positive slide did not wrap before clamping");
+        return 1;
+    }
+
+    memset(&s_car, 0, sizeof(s_car));
+    s_car.slideInput.value = INT32_MIN;
+    s_car.yawRate = INT32_MAX;
+    UpdateCarSlideAngle(&s_car, 0);
+    if (s_car.slideInput.value != -67108864 || s_car.yawRate != -0x2BC) {
+        puts("FAIL extreme negative slide did not wrap before clamping");
+        return 1;
+    }
+
+    memset(&s_car, 0, sizeof(s_car));
+    s_car.speed = INT32_MAX;
+    UpdateCarSlideAngle(&s_car, INT32_MAX);
+    if (s_car.slideInput.value != 0 || s_car.yawRate != 0) {
+        puts("FAIL extreme slide start did not use the wrapped product");
+        return 1;
+    }
     printf("car motion preserves %d validated states\n", steps);
     return 0;
 }
