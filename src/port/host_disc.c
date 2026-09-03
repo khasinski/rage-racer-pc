@@ -45,6 +45,12 @@ typedef struct RageHostDisc {
 
 static RageHostDisc g_RageHostDisc;
 
+static void HostCloseDisc(void) {
+    if (g_RageHostDisc.file != NULL) fclose(g_RageHostDisc.file);
+    ChdClose();
+    memset(&g_RageHostDisc, 0, sizeof(g_RageHostDisc));
+}
+
 static void HostMakeDiscConfigPath(char *path, size_t size) {
     /* Keep the historical key so existing installations retain their choice. */
     if (!PlatformUserConfigPath("disc-cue-path", path, size))
@@ -320,9 +326,8 @@ int HostInitDisc(void) {
     if (configuredPath == NULL || configuredPath[0] == '\0')
         configuredPath = RuntimeConfigGetForced("disc.cue");
 
-    ChdClose();
+    HostCloseDisc();
     HostSeedStreamTable();
-    memset(&g_RageHostDisc, 0, sizeof(g_RageHostDisc));
     /* The smoke executable characterizes renderer and game state without
      * bundling retail data.  The release executable never sets this flag.
      * A checked-out disc image still has to reach PsyZ, or CD-DA plays
@@ -338,8 +343,8 @@ int HostInitDisc(void) {
         return 1;
     }
     if (configuredPath != NULL && configuredPath[0] != '\0') {
-        snprintf(discPath, sizeof(discPath), "%s", configuredPath);
-        return HostOpenDisc(discPath, dataTrackPath, sizeof(dataTrackPath));
+        return HostOpenDisc(configuredPath, dataTrackPath,
+                            sizeof(dataTrackPath));
     }
     /* Remembering the choice means an install that once worked never asks
      * again, so offer a way back to the picker. */
