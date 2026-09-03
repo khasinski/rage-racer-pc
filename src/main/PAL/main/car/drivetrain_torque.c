@@ -10,6 +10,13 @@ enum {
     DRIVING_LOAD_SHIFT = 11,
     HIGH_LOAD_THRESHOLD = 100000,
     LOW_LOAD_THRESHOLD = -12500,
+    MAX_ENGINE_BRAKING_PERCENT = 100,
+    FIRST_GEAR_BRAKING_MULTIPLIER = 2,
+    RPM_PER_TORQUE_BAND = 1000,
+    STANDING_START_LOAD_DIVISOR = 768,
+    HIGH_LOAD_COARSE_SHIFT = 8,
+    HIGH_LOAD_RESPONSE_NUMERATOR = 70,
+    HIGH_LOAD_RESPONSE_DENOMINATOR = 200,
 };
 
 static s32 BandStartIndex(const s16 *bandEnds, s32 bandIndex) {
@@ -94,13 +101,13 @@ static s32 InterpolateEngineBraking(const GameCarSpec *spec, s32 engineRpm,
                   segmentLength;
         break;
     }
-    if (braking >= 0x64) {
-        braking = 0x64;
+    if (braking >= MAX_ENGINE_BRAKING_PERCENT) {
+        braking = MAX_ENGINE_BRAKING_PERCENT;
     } else if (braking <= 0) {
         braking = 0;
     }
-    if (gear == 1 && engineRpm < spec->redline) {
-        braking *= 2;
+    if (gear == CAR_FIRST_FORWARD_GEAR && engineRpm < spec->redline) {
+        braking *= FIRST_GEAR_BRAKING_MULTIPLIER;
     }
     return braking;
 }
@@ -120,7 +127,7 @@ void ReadCarEngineTorque(const GameCarDrive *drive, const GameCarSpec *spec,
         *netTorque = overRevResponse / REV_LIMIT_RESPONSE_DENOMINATOR;
         return;
     }
-    bandIndex = drive->engineRpm / 1000;
+    bandIndex = drive->engineRpm / RPM_PER_TORQUE_BAND;
     if (bandIndex < 0) {
         bandIndex = 0;
     } else if (bandIndex >= CAR_TORQUE_BAND_COUNT) {
@@ -146,13 +153,15 @@ s32 CalculateCarInitialAcceleration(const GameCarDrive *drive,
     }
     if (netLoad < LOW_LOAD_THRESHOLD) {
         if (drive->motionState == CAR_MOTION_STANDING_START) {
-            return netLoad / 768;
+            return netLoad / STANDING_START_LOAD_DIVISOR;
         }
         roundedLoad = netLoad + ((1 << DRIVING_LOAD_SHIFT) - 1);
         return roundedLoad >> DRIVING_LOAD_SHIFT;
     }
     if (netLoad > HIGH_LOAD_THRESHOLD) {
-        return ((netLoad >> 8) * 70) / 200;
+        return ((netLoad >> HIGH_LOAD_COARSE_SHIFT) *
+                HIGH_LOAD_RESPONSE_NUMERATOR) /
+               HIGH_LOAD_RESPONSE_DENOMINATOR;
     }
     return 0;
 }
