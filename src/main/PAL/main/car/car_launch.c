@@ -5,6 +5,26 @@
 #include "game/integer.h"
 #include "psyq/gte.h"
 
+enum {
+    LAUNCH_STEERING_CENTRE_LIMIT = 127,
+    LAUNCH_STEERING_CENTRE_WIDTH =
+        LAUNCH_STEERING_CENTRE_LIMIT * 2 + 1,
+    LAUNCH_SPIN_LIMIT = 0x3600,
+    LAUNCH_RECOVERY_SPIN_THRESHOLD = 0x1000,
+};
+
+static s32 AbsoluteSpinRate(s32 spinRate) {
+    return spinRate < 0 ? WrapSigned32(-(int64_t)spinRate) : spinRate;
+}
+
+/* This form preserves the original wrapped range test even for corrupted
+ * steering values near INT32_MAX. For normal input it means -127..127. */
+static s32 IsLaunchSteeringCentred(s32 steerPos) {
+    return (u32)WrapSigned32(
+               (int64_t)steerPos + LAUNCH_STEERING_CENTRE_LIMIT) <
+           LAUNCH_STEERING_CENTRE_WIDTH;
+}
+
 static void UpdateLaunchTyreVoice(const PlayerCarRuntime *car, s32 skid) {
     if (car->verticalMotionState != CAR_VERTICAL_GROUNDED) {
         SetIndexedEffectVoice(-1, 0, 0);
@@ -56,7 +76,7 @@ static void UpdatePoweredLaunch(PlayerCarRuntime *car, s32 spinMagnitude) {
         (int64_t)drive->spinRate +
         WrapSigned32((int64_t)towardsTarget * 16));
 
-    if ((u32)WrapSigned32((int64_t)drive->steerPos + 127) < 255) {
+    if (IsLaunchSteeringCentred(drive->steerPos)) {
         if (GetAngleDistance(car->bodyYaw, car->headingAngle) < 0x200) {
             drive->spinRate = WrapSigned32(
                 (int64_t)drive->spinRate * 31) / 32;
@@ -69,8 +89,10 @@ static void UpdatePoweredLaunch(PlayerCarRuntime *car, s32 spinMagnitude) {
         }
     }
 
-    if (drive->spinRate > 0x3600) drive->spinRate = 0x3600;
-    if (drive->spinRate < -0x3600) drive->spinRate = -0x3600;
+    if (drive->spinRate > LAUNCH_SPIN_LIMIT)
+        drive->spinRate = LAUNCH_SPIN_LIMIT;
+    if (drive->spinRate < -LAUNCH_SPIN_LIMIT)
+        drive->spinRate = -LAUNCH_SPIN_LIMIT;
     car->bodyYaw = WrapSigned32(
         (int64_t)car->bodyYaw + drive->spinRate / 256);
 
@@ -81,7 +103,7 @@ static void UpdatePoweredLaunch(PlayerCarRuntime *car, s32 spinMagnitude) {
         (int64_t)drive->launchEnergy - skid * skid / 65536);
     drive->launchEnergy = WrapSigned32(
         (int64_t)drive->launchEnergy -
-        WrapSigned32(INT64_C(0x3600) - spinMagnitude) / 64);
+        WrapSigned32((int64_t)LAUNCH_SPIN_LIMIT - spinMagnitude) / 64);
     if (car->speed < drive->speedScale / 2) {
         s32 speedDeficit = WrapSigned32(
             (int64_t)(drive->speedScale / 2) - car->speed);
@@ -108,7 +130,7 @@ static void UpdateDepletedLaunch(PlayerCarRuntime *car, s32 spinMagnitude) {
 
     drive->spinRate = WrapSigned32(
         (int64_t)drive->spinRate * 15) / 16;
-    if (spinMagnitude >= 0x1000) return;
+    if (spinMagnitude >= LAUNCH_RECOVERY_SPIN_THRESHOLD) return;
 
     drive->yawOffset = GetAngleDelta(car->headingAngle, car->bodyYaw);
     drive->launchHeading = car->headingAngle;
@@ -144,7 +166,8 @@ static void FinishLaunchFrame(PlayerCarRuntime *car, s32 spinMagnitude) {
     skid = GetAngleDistance(car->bodyYaw, car->headingAngle);
     if (skid >= 0x401) {
         s32 push = car->acceleration;
-        s32 scaled = WrapSigned32(INT64_C(0x3600) - spinMagnitude);
+        s32 scaled = WrapSigned32(
+            (int64_t)LAUNCH_SPIN_LIMIT - spinMagnitude);
 
         scaled = WrapSigned32((int64_t)scaled * 4);
         scaled = WrapSigned32((int64_t)scaled * push);
@@ -171,9 +194,7 @@ void UpdateCarLaunch(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
     s32 startYaw = car->bodyYaw;
     s32 startHeading = car->headingAngle;
-    s32 spinMagnitude = drive->spinRate < 0
-        ? WrapSigned32(-(int64_t)drive->spinRate)
-        : drive->spinRate;
+    s32 spinMagnitude = AbsoluteSpinRate(drive->spinRate);
     s32 skid;
 
     skid = GetAngleDistance(startYaw, startHeading);
