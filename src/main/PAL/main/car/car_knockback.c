@@ -55,6 +55,13 @@ static void SetKnockbackVector(GameCarRuntime *car, s32 angle, s32 strength,
     car->velocityZ = WrapSigned16((rcos(angle) * strength) / 4096);
 }
 
+static void SetSuppliedKnockbackVector(GameCarRuntime *car, s32 x, s32 z) {
+    car->motionActive = 1;
+    car->motionTimer = CAR_COLLISION_KNOCKBACK_DURATION;
+    car->velocityX = WrapSigned16(x / 2);
+    car->velocityZ = WrapSigned16(z / 2);
+}
+
 static void TraceCarKnockback(GameCarRuntime *car, s32 inputX, s32 inputZ,
                               s32 mode) {
     static int enabled = -1;
@@ -101,23 +108,26 @@ void ApplyCarKnockback(GameCarRuntime *car) {
     car->velocityZ = car->velocityZ * 7 / 8;
 }
 
-void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
+void SetTrackBoundaryKnockback(GameCarRuntime *car, s32 x, s32 z,
+                               CarTrackContact contact) {
     /* Track contact passes its one-based hull-corner value. The front-left
      * contact uses a speed-scaled response, the next two use fixed strength,
      * and rear-right shares the supplied-vector mode used by car collisions. */
-    if (mode < FIXED_TRACK_KNOCKBACK_FIRST_MODE) {
+    if (contact < FIXED_TRACK_KNOCKBACK_FIRST_MODE) {
         SetKnockbackVector(car, TrackBoundaryPushAngle(car),
                            TrackBoundaryPushStrength(car),
                            TRACK_BOUNDARY_KNOCKBACK_DURATION);
-    } else if (mode < CAR_KNOCKBACK_VECTOR_MODE) {
+    } else if (contact < CAR_TRACK_CONTACT_REAR_RIGHT) {
         SetKnockbackVector(car, TrackBoundaryPushAngle(car), 20,
                            CAR_COLLISION_KNOCKBACK_DURATION);
     } else {
-        car->motionActive = 1;
-        car->motionTimer = CAR_COLLISION_KNOCKBACK_DURATION;
-        car->velocityX = WrapSigned16(x / 2);
-        car->velocityZ = WrapSigned16(z / 2);
+        SetSuppliedKnockbackVector(car, x, z);
     }
 
-    TraceCarKnockback(car, x, z, mode);
+    TraceCarKnockback(car, x, z, contact);
+}
+
+void SetCarCollisionKnockback(GameCarRuntime *car, s32 x, s32 z) {
+    SetSuppliedKnockbackVector(car, x, z);
+    TraceCarKnockback(car, x, z, CAR_KNOCKBACK_VECTOR_MODE);
 }

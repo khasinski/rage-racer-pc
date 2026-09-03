@@ -43,7 +43,7 @@ static void Fold(s32 value) {
     }
 }
 
-static void SweepSetCarKnockback(void) {
+static void SweepTrackBoundaryKnockback(void) {
     static const s16 headings[] = {0, 0x400, 0xC00, -1};
     static const s32 laterals[] = {-100, 0, 100};
     static const s32 speeds[] = {0, 0x320, 0x321, 0x708, 0x709, 0x10001};
@@ -65,7 +65,8 @@ static void SweepSetCarKnockback(void) {
         car.trackLateralOffset = laterals[li];
         car.speed = speeds[si];
         car.bodyYaw = yaws[yi];
-        SetCarKnockback(&car, inputs[ii][0], inputs[ii][1], mode);
+        SetTrackBoundaryKnockback(
+            &car, inputs[ii][0], inputs[ii][1], (CarTrackContact)mode);
         Fold(car.motionActive);
         Fold(car.motionTimer);
         Fold(car.velocityX);
@@ -106,7 +107,7 @@ int main(void) {
     static const unsigned long expected = 1747374351UL;
     GameCarRuntime car;
 
-    SweepSetCarKnockback();
+    SweepTrackBoundaryKnockback();
     SweepApplyCarKnockback();
     if (s_digest != expected) {
         printf("FAIL car knockback digest %lu, expected %lu\n",
@@ -128,7 +129,7 @@ int main(void) {
     }
 
     memset(&car, 0, sizeof(car));
-    SetCarKnockback(&car, INT_MAX, INT_MIN, CAR_KNOCKBACK_VECTOR_MODE);
+    SetCarCollisionKnockback(&car, INT_MAX, INT_MIN);
     if (car.velocityX != -1 || car.velocityZ != 0) {
         puts("FAIL collision knockback vector did not keep its low halfword");
         return 1;

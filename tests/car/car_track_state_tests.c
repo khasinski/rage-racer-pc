@@ -45,12 +45,13 @@ static s32 s_lastKnockX;
 static s32 s_lastKnockZ;
 static s32 s_lastKnockMode;
 
-void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
+void SetTrackBoundaryKnockback(GameCarRuntime *car, s32 x, s32 z,
+                               CarTrackContact contact) {
     (void)car;
     s_knockbacks++;
     s_lastKnockX = x;
     s_lastKnockZ = z;
-    s_lastKnockMode = mode;
+    s_lastKnockMode = contact;
 }
 
 /* The diagnostics hooks are off in a test run. */

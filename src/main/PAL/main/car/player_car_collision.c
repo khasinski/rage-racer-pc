@@ -280,20 +280,17 @@ static void ApplyLowRegionCollision(PlayerCarRuntime *player,
         (int64_t)player->speed - opponent->speed) >= 0x191 ? 0x1E : 0xF;
 
     if (IsWrongWayImpact(player)) {
-        SetCarKnockback(opponent, 0, 0, CAR_KNOCKBACK_VECTOR_MODE);
-        SetCarKnockback(AsRivalCar(player), 0, 0,
-                        CAR_KNOCKBACK_VECTOR_MODE);
+        SetCarCollisionKnockback(opponent, 0, 0);
+        SetCarCollisionKnockback(AsRivalCar(player), 0, 0);
         return;
     }
     if (player->speed >= 0x29) {
-        SetCarKnockback(AsRivalCar(player), 0, 0,
-                        CAR_KNOCKBACK_VECTOR_MODE);
+        SetCarCollisionKnockback(AsRivalCar(player), 0, 0);
     } else {
-        SetCarKnockback(AsRivalCar(player), -velocity.x, -velocity.z,
-                        CAR_KNOCKBACK_VECTOR_MODE);
+        SetCarCollisionKnockback(AsRivalCar(player), -velocity.x,
+                                 -velocity.z);
     }
-    SetCarKnockback(opponent, velocity.x, velocity.z,
-                    CAR_KNOCKBACK_VECTOR_MODE);
+    SetCarCollisionKnockback(opponent, velocity.x, velocity.z);
 }
 
 static void ApplyHighRegionCollision(PlayerCarRuntime *player,
@@ -305,13 +302,12 @@ static void ApplyHighRegionCollision(PlayerCarRuntime *player,
     opponent->boostTimer = opponent->collisionBoostDuration;
     velocity = GetCollisionVelocity(player, opponent, 1);
     if (IsWrongWayImpact(player)) {
-        SetCarKnockback(opponent, 0, 0, CAR_KNOCKBACK_VECTOR_MODE);
-        SetCarKnockback(AsRivalCar(player), 0, 0,
-                        CAR_KNOCKBACK_VECTOR_MODE);
+        SetCarCollisionKnockback(opponent, 0, 0);
+        SetCarCollisionKnockback(AsRivalCar(player), 0, 0);
     } else {
-        SetCarKnockback(AsRivalCar(player), -velocity.x, -velocity.z,
-                        CAR_KNOCKBACK_VECTOR_MODE);
-        SetCarKnockback(opponent, 0, 0, CAR_KNOCKBACK_VECTOR_MODE);
+        SetCarCollisionKnockback(AsRivalCar(player), -velocity.x,
+                                 -velocity.z);
+        SetCarCollisionKnockback(opponent, 0, 0);
     }
 }
 

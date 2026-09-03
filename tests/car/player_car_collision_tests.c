@@ -33,8 +33,9 @@ void PlaySoundCue(s32 cue) {
     s_sound = cue;
 }
 
-void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
+void SetCarCollisionKnockback(GameCarRuntime *car, s32 x, s32 z) {
     int slot = s_knockbackCount * 4;
+    s32 mode = CAR_KNOCKBACK_VECTOR_MODE;
     s32 carIndex = car >= g_Cars && car < g_Cars + 11
         ? (s32)(car - g_Cars)
         : -1;

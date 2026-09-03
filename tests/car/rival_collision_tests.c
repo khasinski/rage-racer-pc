@@ -70,8 +70,9 @@ static void Record(const char *name, const s32 *values, int count) {
 
 static int s_knockbacks;
 
-void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
-    RECORD("knockback", (s32)(car - g_Cars), x, z, mode);
+void SetCarCollisionKnockback(GameCarRuntime *car, s32 x, s32 z) {
+    RECORD("knockback", (s32)(car - g_Cars), x, z,
+           CAR_KNOCKBACK_VECTOR_MODE);
     s_knockbacks++;
 }
 

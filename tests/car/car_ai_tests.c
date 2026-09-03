@@ -28,9 +28,6 @@ s32 g_RaceSeries;
 s32 g_TrackLength;
 CarCollisionPoint g_CarCollisionCorners[4];
 
-void SetCarKnockback(GameCarRuntime *car, s32 x, s32 z, s32 mode) {
-    (void)car; (void)x; (void)z; (void)mode;
-}
 void TransformCollisionVector(const s16 *input, s32 *output) {
     (void)input; (void)output;
 }

@@ -69,8 +69,9 @@ static void ApplyTrackEdgeCorrection(GameCarRuntime *car,
     ApplyMatrix(&work->edgeCorrectionMatrix, &work->edgeOffset,
                 &work->edgeCorrection);
     if (car == AsRivalCar(&g_PlayerCar)) {
-        SetCarKnockback(car, work->edgeCorrection.x,
-                        work->edgeCorrection.z, knockbackMode);
+        SetTrackBoundaryKnockback(
+            car, work->edgeCorrection.x, work->edgeCorrection.z,
+            (CarTrackContact)knockbackMode);
     }
     car->x = WrapSigned32((int64_t)car->x - work->edgeCorrection.x);
     car->z = WrapSigned32((int64_t)car->z - work->edgeCorrection.z);
