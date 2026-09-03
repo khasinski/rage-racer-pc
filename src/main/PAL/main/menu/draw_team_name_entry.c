@@ -1,4 +1,5 @@
 #include "game/menu.h"
+#include "game/menu_internal.h"
 
 enum {
     TEAM_NAME_GRID_COLUMNS = 11,
@@ -109,11 +110,11 @@ void DrawTeamNameEntry(s32 step, s32 cursorIndex) {
     if ((u32)cursorIndex >= TEAM_NAME_GRID_CELL_COUNT) {
         cursorIndex = 0;
     }
+    g_TeamNameEntrySlide = AddClampedMenuValue(
+        g_TeamNameEntrySlide, 0, 0, TEAM_NAME_LAST_FRAME);
     if (step < 0) {
-        g_TeamNameEntrySlide += step;
-        if (g_TeamNameEntrySlide < 0) {
-            g_TeamNameEntrySlide = 0;
-        }
+        g_TeamNameEntrySlide = AddClampedMenuValue(
+            g_TeamNameEntrySlide, step, 0, TEAM_NAME_LAST_FRAME);
     }
 
     if (g_TeamNameEntrySlide >= TEAM_NAME_LAST_FRAME &&
@@ -139,7 +140,8 @@ void DrawTeamNameEntry(s32 step, s32 cursorIndex) {
                       y + (cursorIndex / TEAM_NAME_GRID_COLUMNS) *
                               TEAM_NAME_CELL_HEIGHT,
                       0xB, frame * 2, 0, (sine >> 6) - 0x41, 0, 0xFF);
-        g_TeamNameCursorPhase += 0x60;
+        g_TeamNameCursorPhase =
+            (s32)((u32)g_TeamNameCursorPhase + 0x60u);
     }
 
     frame = ClampAnimationFrame(g_TeamNameEntrySlide - 0x11, 8);
@@ -166,9 +168,7 @@ void DrawTeamNameEntry(s32 step, s32 cursorIndex) {
     }
 
     if (step > 0) {
-        g_TeamNameEntrySlide += step;
-        if (g_TeamNameEntrySlide > TEAM_NAME_LAST_FRAME) {
-            g_TeamNameEntrySlide = TEAM_NAME_LAST_FRAME;
-        }
+        g_TeamNameEntrySlide = AddClampedMenuValue(
+            g_TeamNameEntrySlide, step, 0, TEAM_NAME_LAST_FRAME);
     }
 }

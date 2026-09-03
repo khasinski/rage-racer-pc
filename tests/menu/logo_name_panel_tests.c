@@ -154,6 +154,19 @@ int main(void) {
     CHECK(s_spriteCount == 53);
 
     ResetDraws();
+    g_TeamNameEntrySlide = INT_MAX;
+    g_TeamNameCursorPhase = INT_MAX;
+    DrawTeamNameEntry(INT_MAX, 0);
+    CHECK(g_TeamNameEntrySlide == 25);
+    CHECK(g_TeamNameCursorPhase == (s32)((u32)INT_MAX + 0x60u));
+
+    ResetDraws();
+    g_TeamNameEntrySlide = INT_MIN;
+    DrawTeamNameEntry(-1, 0);
+    CHECK(g_TeamNameEntrySlide == 0);
+    CHECK(s_spriteCount == 0);
+
+    ResetDraws();
     DrawTeamNameEntry(0, 0);
     CHECK(g_TeamNameEntrySlide == 0 && s_spriteCount == 0);
 
