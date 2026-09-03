@@ -29,7 +29,7 @@ static void PlayPlayerSkidCue(const PlayerCarRuntime *car, s32 skid,
     int nearSide = skid == 1 || skid == 3;
 
     if (skid < 1 || skid > 4 ||
-        (s16)car->motionTimer < SKID_CUE_MIN_TIMER) {
+        WrapSigned16(car->motionTimer) < SKID_CUE_MIN_TIMER) {
         return;
     }
     if (IsStraightSlip(slip)) {

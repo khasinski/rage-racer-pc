@@ -125,6 +125,12 @@ int main(void) {
 
     Reset(&car);
     car.speed = 100;
+    car.motionTimer = UINT16_MAX;
+    ApplyPlayerContactResponse(&car, 1, 0);
+    CHECK(s_soundCalls == 0);
+
+    Reset(&car);
+    car.speed = 100;
     g_RacePhase = 3;
     ApplyPlayerContactResponse(&car, 1, 0);
     CHECK(s_soundCalls == 0);
