@@ -90,7 +90,7 @@ static void ResetCalls(void) {
     s_uploads = 0;
     s_uploadedAsset = NULL;
     s_requestCalls = 0;
-    s_availableRoom = 0;
+    s_availableRoom = 32;
 }
 
 int main(void) {
@@ -103,6 +103,15 @@ int main(void) {
     s_availableRoom = 23;
     Check(LoadAsset(3, destination) == 0 && s_hostLoads == 0,
           "asset larger than the destination is rejected before I/O");
+
+    ResetCalls();
+    s_availableRoom = 0;
+    Check(LoadAsset(3, destination) == 0 && s_hostLoads == 0 &&
+              s_patchCalls == 0,
+          "destination outside the asset arenas is rejected before I/O");
+    s_availableRoom = 32;
+    Check(LoadAsset(3, NULL) == 0 && s_hostLoads == 0,
+          "null destination is rejected before I/O");
 
     ResetCalls();
     s_modResult = 20;
