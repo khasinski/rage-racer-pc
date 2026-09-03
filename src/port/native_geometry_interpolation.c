@@ -7,17 +7,23 @@ int FloorShift12(int64_t value) {
     return -(int)((-value + 0xfff) >> 12);
 }
 
+static int ClampInt16(int value) {
+    if (value < INT16_MIN) return INT16_MIN;
+    if (value > INT16_MAX) return INT16_MAX;
+    return value;
+}
+
 int IntplComponent(int start, int end, int index, int steps) {
-    int ir0 = 4096 - index * (4096 / steps);
+    int64_t ir0;
     int difference = start - end;
     int result;
-    if (difference < -32768) difference = -32768;
-    if (difference > 32767) difference = 32767;
+
+    if (steps <= 0) return ClampInt16(start);
+    ir0 = 4096 - (int64_t)index * (4096 / steps);
+    difference = ClampInt16(difference);
     result = FloorShift12((int64_t)end * 4096 +
-                              (int64_t)ir0 * difference);
-    if (result < -32768) result = -32768;
-    if (result > 32767) result = 32767;
-    return result;
+                          ir0 * difference);
+    return ClampInt16(result);
 }
 
 int BilerpSxy(const int sxy[4], int u, int v, int uSteps, int vSteps) {
@@ -34,19 +40,28 @@ int BilerpSxy(const int sxy[4], int u, int v, int uSteps, int vSteps) {
     return (int)((uint16_t)x | ((uint32_t)(uint16_t)y << 16));
 }
 
+static int BilerpComponent(int c0, int c1, int c2, int c3,
+                           int outer, int inner,
+                           int outerSteps, int innerSteps) {
+    return IntplComponent(
+        IntplComponent(c0, c1, outer, outerSteps),
+        IntplComponent(c2, c3, outer, outerSteps), inner, innerSteps);
+}
+
 SVECTOR BilerpVertex(const SVECTOR *v0, const SVECTOR *v1,
-                         const SVECTOR *v2, const SVECTOR *v3, int outer,
-                         int inner, int outerSteps, int innerSteps) {
+                     const SVECTOR *v2, const SVECTOR *v3, int outer,
+                     int inner, int outerSteps, int innerSteps) {
     SVECTOR result;
-#define RAGE_BILERP_VERTEX_COMPONENT(field) \
-    IntplComponent( \
-        IntplComponent(v0->field, v1->field, outer, outerSteps), \
-        IntplComponent(v2->field, v3->field, outer, outerSteps), \
-        inner, innerSteps)
-    result.vx = (short)RAGE_BILERP_VERTEX_COMPONENT(vx);
-    result.vy = (short)RAGE_BILERP_VERTEX_COMPONENT(vy);
-    result.vz = (short)RAGE_BILERP_VERTEX_COMPONENT(vz);
-#undef RAGE_BILERP_VERTEX_COMPONENT
+
+    result.vx = (short)BilerpComponent(
+        v0->vx, v1->vx, v2->vx, v3->vx,
+        outer, inner, outerSteps, innerSteps);
+    result.vy = (short)BilerpComponent(
+        v0->vy, v1->vy, v2->vy, v3->vy,
+        outer, inner, outerSteps, innerSteps);
+    result.vz = (short)BilerpComponent(
+        v0->vz, v1->vz, v2->vz, v3->vz,
+        outer, inner, outerSteps, innerSteps);
     result.pad = 0;
     return result;
 }

@@ -31,6 +31,8 @@ int main(void) {
     CHECK(IntplComponent(100, 300, 0, 4) == 100);
     CHECK(IntplComponent(100, 300, 4, 4) == 300);
     CHECK(IntplComponent(100, 300, 2, 4) == 200);
+    CHECK(IntplComponent(100, 300, 2, 0) == 100);
+    CHECK(IntplComponent(50000, 300, 2, -1) == INT16_MAX);
 
     packed = BilerpSxy(sxy, 2, 2, 4, 4);
     CHECK((int16_t)packed == 20);
