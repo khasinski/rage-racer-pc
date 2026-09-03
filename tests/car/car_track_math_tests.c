@@ -18,6 +18,7 @@ int main(void) {
     CHECK_EQ(InterpolateCarTrackValue(10, 30, 8, 0), 10);
     CHECK_EQ(InterpolateCarTrackValue(10, 30, 8, -1), 10);
     CHECK_EQ(InterpolateCarTrackValue(INT_MAX, INT_MAX, 1, 2), -1);
+    CHECK_EQ(InterpolateCarTrackValue(1, 1, INT_MIN, 1), 1);
 
     CHECK_EQ(CarTrackFixed12ToInteger(0x1FFF), 1);
     CHECK_EQ(CarTrackFixed12ToInteger(-0x1FFF), -1);
@@ -36,6 +37,7 @@ int main(void) {
     CHECK_EQ(InterpolateCarTrackHeading(123, 456, 8, -1), 123);
     CHECK_EQ(InterpolateCarTrackHeading(INT16_MAX, INT16_MAX,
                                         INT_MAX, 1), INT16_MAX);
+    CHECK_EQ(InterpolateCarTrackHeading(1, 1, INT_MIN, 1), 1);
 
     puts("car track math tests passed");
     return 0;
