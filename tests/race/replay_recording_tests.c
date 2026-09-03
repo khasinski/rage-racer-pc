@@ -146,10 +146,37 @@ static void TestRecordingCursorWrap(void) {
     assert(g_ReplayBufferWrapped == 1);
 }
 
+static void TestInvalidRecordingBoundsAreIgnored(void) {
+    GameWorkBuffer untouched;
+
+    memset(&g_ReplayFrameBuffer, 0x6C, sizeof(g_ReplayFrameBuffer));
+    untouched = g_ReplayFrameBuffer;
+    g_GrandPrixMode = 1;
+    g_ReplayBufferWrapped = 0;
+
+    g_ReplayFrameCount = 0;
+    g_ReplayWriteCursor = 0;
+    RecordReplayFrame();
+    assert(memcmp(&g_ReplayFrameBuffer, &untouched, sizeof(untouched)) == 0);
+    assert(g_ReplayWriteCursor == 0 && g_ReplayBufferWrapped == 0);
+
+    g_ReplayFrameCount = GRAND_PRIX_REPLAY_SUBFRAME_COUNT;
+    g_ReplayWriteCursor = -1;
+    RecordReplayFrame();
+    assert(memcmp(&g_ReplayFrameBuffer, &untouched, sizeof(untouched)) == 0);
+    assert(g_ReplayWriteCursor == -1);
+
+    g_ReplayFrameCount = GRAND_PRIX_REPLAY_SUBFRAME_COUNT + 1;
+    g_ReplayWriteCursor = 0;
+    RecordReplayFrame();
+    assert(memcmp(&g_ReplayFrameBuffer, &untouched, sizeof(untouched)) == 0);
+}
+
 int main(void) {
     TestReplayBufferReset();
     TestGrandPrixRecording();
     TestTimeAttackRecording();
     TestRecordingCursorWrap();
+    TestInvalidRecordingBoundsAreIgnored();
     return 0;
 }

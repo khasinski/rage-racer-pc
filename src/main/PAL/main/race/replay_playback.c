@@ -28,7 +28,9 @@ static s32 ReplaySampleIndex(s32 subframe, s32 frameCount) {
 }
 
 static s32 AverageReplayValue(s32 recorded, s32 current) {
-    return (recorded + current) / 2;
+    const s32 wrappedSum = (s32)((u32)recorded + (u32)current);
+
+    return wrappedSum / 2;
 }
 
 static ReplayCarPose GrandPrixPlayerPose(const ReplayGrandPrixFrame *frame) {

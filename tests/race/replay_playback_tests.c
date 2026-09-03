@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <limits.h>
 #include <string.h>
 
 #include "game/car.h"
@@ -202,8 +203,25 @@ static void TestTimeAttackFrames(void) {
     assert(player.trackPointIndex == 71);
 }
 
+static void TestInterpolationUsesDefinedMachineWrapping(void) {
+    GameCarRuntime player = {0};
+    GameCarRuntime rival = {0};
+    ReplayTimeAttackFrame *frame =
+        &g_ReplayFrameBuffer.timeAttackReplay[1];
+
+    memset(frame, 0, sizeof(*frame));
+    g_GrandPrixMode = 0;
+    frame->x = UINT16_MAX;
+    player.x = INT_MAX;
+
+    ApplyReplayFrame(1, &player, &rival);
+
+    assert(player.x == -1073709057);
+}
+
 int main(void) {
     TestGrandPrixFrames();
     TestTimeAttackFrames();
+    TestInterpolationUsesDefinedMachineWrapping();
     return 0;
 }
