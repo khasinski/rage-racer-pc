@@ -1,5 +1,6 @@
 #include "game/car.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -37,6 +38,10 @@ int main(void) {
 
     memset(&car, 0, sizeof(car));
     car.verticalMotionTimer = -1;
+    StartCarBodyKick(&car, CAR_BODY_KICK_LANDING);
+    CHECK(car.motionValue.value == -8);
+
+    car.verticalMotionTimer = INT16_MAX;
     StartCarBodyKick(&car, CAR_BODY_KICK_LANDING);
     CHECK(car.motionValue.value == -8);
 

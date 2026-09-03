@@ -1,5 +1,6 @@
 #include "game/angle.h"
 #include "game/car.h"
+#include "game/integer.h"
 #include "game/random.h"
 #include "game/track.h"
 
@@ -16,10 +17,11 @@ void StartCarBodyKick(GameCarRuntime *car, s32 mode) {
     if (mode != CAR_BODY_KICK_LANDING && mode != CAR_BODY_KICK_CORNERING) {
         return;
     }
-    car->motionMode = (s16)mode;
+    car->motionMode = mode;
     if (mode == CAR_BODY_KICK_LANDING) {
         car->motionModeTimer = BODY_KICK_DURATION;
-        car->motionValue.value = (s16)(car->verticalMotionTimer * 8);
+        car->motionValue.value = WrapSigned16(
+            car->verticalMotionTimer * 8);
         return;
     }
     lean = GetAngleDistance(
@@ -35,6 +37,7 @@ void StartCarBodyKick(GameCarRuntime *car, s32 mode) {
                                  : speedOverMinimum * lean / ANGLE_FULL_TURN;
     car->motionModeTimer = BODY_KICK_DURATION;
     if (Random15() & 0x80) {
-        car->motionValue.value = -car->motionValue.unsignedValue;
+        car->motionValue.value = WrapSigned16(
+            -(s32)car->motionValue.unsignedValue);
     }
 }

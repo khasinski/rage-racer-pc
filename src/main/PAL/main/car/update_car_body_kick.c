@@ -1,4 +1,5 @@
 #include "game/car.h"
+#include "game/integer.h"
 #include "psyq/gte.h"
 
 static void StopCarBodyKick(GameCarRuntime *car) {
@@ -30,19 +31,22 @@ void UpdateCarBodyKick(GameCarRuntime *car) {
     car->motionModeTimer--;
     timer = car->motionModeTimer;
     amplitude = timer * car->motionValue.value / 128;
-    wave = rsin(((timer * 3) << 12) / 30) * amplitude;
+    wave = WrapSigned32(
+        (int64_t)rsin(((timer * 3) << 12) / 30) * amplitude);
     value = wave / 2048;
 
     switch (car->motionMode) {
     case CAR_BODY_KICK_LANDING:
-        car->bodyKickOffset = value + amplitude;
-        car->bodyPitch += car->bodyKickOffset;
-        car->bodyKickOffset = value + amplitude / 2;
-        car->bodyRoll += car->bodyKickOffset / 2;
+        car->bodyKickOffset = WrapSigned16(value + amplitude);
+        car->bodyPitch = WrapSigned16(
+            (s32)car->bodyPitch + car->bodyKickOffset);
+        car->bodyKickOffset = WrapSigned16(value + amplitude / 2);
+        car->bodyRoll = WrapSigned16(
+            (s32)car->bodyRoll + car->bodyKickOffset / 2);
         break;
     case CAR_BODY_KICK_CORNERING:
         if (car->verticalMotionState == CAR_VERTICAL_GROUNDED) {
-            car->bodyRoll += value;
+            car->bodyRoll = WrapSigned16((s32)car->bodyRoll + value);
         }
         break;
     }

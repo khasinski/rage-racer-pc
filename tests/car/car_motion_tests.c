@@ -17,6 +17,7 @@
 #include "game/race.h"
 #include "game/track.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -272,6 +273,16 @@ int main(int argc, char **argv) {
         printf("FAIL car motion behaves differently: %d states making %d "
                "records digest to %lu, expected %lu\n", steps, s_calls,
                s_digest, expected);
+        return 1;
+    }
+
+    memset(&s_car, 0, sizeof(s_car));
+    s_car.motionMode = CAR_BODY_KICK_LANDING;
+    s_car.motionModeTimer = INT16_MAX;
+    s_car.motionValue.value = INT16_MAX;
+    UpdateCarBodyKick(&s_car);
+    if (s_car.motionModeTimer != INT16_MAX - 1) {
+        puts("FAIL extreme body kick did not advance one frame");
         return 1;
     }
     printf("car motion preserves %d validated states\n", steps);
