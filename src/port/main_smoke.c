@@ -33,6 +33,7 @@
 #include "game/car_internal.h"
 #include "game/render_internal.h"
 #include "game/sound.h"
+#include "game/visible_cell_scan.h"
 
 void MainLoop(void);
 int InitNativeGameData(void);
@@ -373,6 +374,27 @@ static void ReportCameraState(void) {
     putchar('\n');
 }
 
+static void ReportVisibleCells(void) {
+    int cell;
+
+    if (!RuntimeConfigEnabled("capture.visible_cells")) return;
+    for (cell = 0; cell < VISIBLE_CELL_COUNT; cell++) {
+        const VisibleTerrainCell *mainEntry = &g_VisibleCellList[cell];
+        const VisibleTerrainCell *mirrorEntry =
+            &g_MirrorVisibleCellList[cell];
+        Trace("visible-cell", "%d=%d,%d,%d,%d", cell, mainEntry->x,
+              mainEntry->y, mainEntry->z, mainEntry->cellIndex);
+        Trace("mirror-cell", "%d=%d,%d,%d,%d", cell, mirrorEntry->x,
+              mirrorEntry->y, mirrorEntry->z, mirrorEntry->cellIndex);
+    }
+    for (cell = 0; cell < TERRAIN_CELL_GRID_SIZE; cell++) {
+        Trace("visible-mask", "%d=%08x", cell,
+              (unsigned)g_MainVisibleCellMask[cell]);
+        Trace("mirror-mask", "%d=%08x", cell,
+              (unsigned)g_MirrorVisibleCellMask[cell]);
+    }
+}
+
 static int CheckSaveRoundtrip(void) {
     GameSaveHeaderRow header = {0};
     const int marker = 123456789;
@@ -486,23 +508,7 @@ int main(int argc, char **argv) {
     ReportWindowSize();
     ReportAudioMetrics();
     ReportCameraState();
-    if (RuntimeConfigEnabled("capture.visible_cells")) {
-        int cell;
-        for (cell = 0; cell < 64; cell++) {
-            const VisibleTerrainCell *mainEntry = &g_VisibleCellList[cell];
-            const VisibleTerrainCell *entry = &g_MirrorVisibleCellList[cell];
-            Trace("visible-cell", "%d=%d,%d,%d,%d", cell, mainEntry->x,
-                   mainEntry->y, mainEntry->z, mainEntry->cellIndex);
-            Trace("mirror-cell", "%d=%d,%d,%d,%d", cell, entry->x,
-                   entry->y, entry->z, entry->cellIndex);
-        }
-        for (cell = 0; cell < 32; cell++) {
-            Trace("visible-mask", "%d=%08x", cell,
-                   (unsigned)g_MainVisibleCellMask[cell]);
-            Trace("mirror-mask", "%d=%08x", cell,
-                   (unsigned)g_MirrorVisibleCellMask[cell]);
-        }
-    }
+    ReportVisibleCells();
     if (!CheckSaveRoundtrip() || !CheckCompleteSaveLoad()) return EXIT_FAILURE;
     if (!WriteCapturedFrame(
             RuntimeConfigGet("capture.path"))) {
