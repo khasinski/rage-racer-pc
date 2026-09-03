@@ -271,6 +271,9 @@ static void RouteMarkerSeedTests(void) {
     g_Cars[1].trackProgress = 0x250 << 4;
     g_Cars[2].trackProgress = 0x150 << 4;
     g_Cars[3].trackProgress = 0x050 << 4;
+    g_Cars[4].activeFlag = -1;
+    g_Cars[4].routeMarkerActive = 7;
+    g_Cars[4].routeMarkerIndex = 9;
 
     SeedCarRouteMarkers();
 
@@ -283,10 +286,18 @@ static void RouteMarkerSeedTests(void) {
     Check(g_Cars[3].routeMarkerIndex == 0, "seed before all speed keys",
           g_Cars[3].routeMarkerIndex, 0);
     for (carIndex = 0; carIndex < RACE_CAR_SLOT_COUNT; carIndex++) {
+        if (carIndex == 4) {
+            continue;
+        }
         Check(g_Cars[carIndex].routeMarkerActive == 1,
               "seed activates route marker", g_Cars[carIndex].routeMarkerActive,
               1);
     }
+    Check(g_Cars[4].routeMarkerActive == 7,
+          "disabled car keeps marker activity", g_Cars[4].routeMarkerActive,
+          7);
+    Check(g_Cars[4].routeMarkerIndex == 9,
+          "disabled car keeps marker index", g_Cars[4].routeMarkerIndex, 9);
 }
 
 static void RacingLineTests(void) {

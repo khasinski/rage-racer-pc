@@ -18,21 +18,27 @@ void SeedCarRouteMarkers(void) {
     }
 
     for (carIndex = 0; carIndex < RACE_CAR_SLOT_COUNT; carIndex++) {
-        const s32 position = g_Cars[carIndex].trackProgress >> 4;
+        GameCarRuntime *car = &g_Cars[carIndex];
+        s32 position;
         s32 index;
 
-        g_Cars[carIndex].routeMarkerActive = 1;
-        g_Cars[carIndex].routeMarkerIndex = 0;
+        if (car->activeFlag == -1) {
+            continue;
+        }
+
+        position = car->trackProgress >> 4;
+        car->routeMarkerActive = 1;
+        car->routeMarkerIndex = 0;
         for (index = 0; index < TRACK_AI_SPEED_KEY_COUNT; index++) {
             const s32 progress =
                 g_TrackEventData->aiSpeedKeys[series][index].progress;
 
             if (progress == -1) {
-                g_Cars[carIndex].routeMarkerIndex = 0;
+                car->routeMarkerIndex = 0;
                 break;
             }
             if (position >= progress) {
-                g_Cars[carIndex].routeMarkerIndex = index;
+                car->routeMarkerIndex = index;
                 break;
             }
         }
