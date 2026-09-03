@@ -177,6 +177,7 @@ static int ScanStreamStarts(DiscReader *reader, const DiscFile *stream,
 static int FindStreamTable(const unsigned char *executable, unsigned int size,
                            const unsigned int *starts,
                            unsigned int *frames) {
+    unsigned int candidate[RAGE_DISC_STREAM_COUNT];
     unsigned int offset;
     unsigned int entries = RAGE_DISC_STREAM_COUNT * 8;
     if (size < entries) return 0;
@@ -189,9 +190,12 @@ static int FindStreamTable(const unsigned char *executable, unsigned int size,
         for (index = 0; index < RAGE_DISC_STREAM_COUNT; index++) {
             unsigned int count = Le32(executable + offset + index * 8 + 4);
             if (count == 0 || count > 100000) break;
-            frames[index] = count;
+            candidate[index] = count;
         }
-        if (index == RAGE_DISC_STREAM_COUNT) return 1;
+        if (index == RAGE_DISC_STREAM_COUNT) {
+            memcpy(frames, candidate, sizeof(candidate));
+            return 1;
+        }
     }
     return 0;
 }

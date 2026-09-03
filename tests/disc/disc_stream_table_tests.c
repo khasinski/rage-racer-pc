@@ -229,6 +229,24 @@ static void TestMissingTable(void) {
     free(disc);
 }
 
+static void TestInvalidFrameTableIsNotPartiallyPublished(void) {
+    FakeDisc *disc = malloc(sizeof(*disc));
+    DiscIdentity identity;
+    unsigned char *table;
+    int index;
+
+    BuildDisc(disc, "SLUS_004.03", 1);
+    table = User(disc, EXE_SECTOR) + TABLE_OFFSET;
+    PutLe32(table + 5 * 8 + 4, 0);
+    Check(DiscIdentify(ReadFake, disc, &identity), "identifies the disc");
+    Check(!identity.tableValid, "rejects a zero movie frame count");
+    for (index = 0; index < RAGE_DISC_STREAM_COUNT; index++) {
+        CheckUnsigned(identity.table.frames[index], 0,
+                      "does not publish a partial frame table");
+    }
+    free(disc);
+}
+
 /* A movie boundary found one sector late stops matching the executable, which
  * is what keeps a half-right scan from being adopted. */
 static void TestShiftedBoundary(void) {
@@ -304,6 +322,7 @@ int main(void) {
     TestBootNameFallback();
     TestEuropeanName();
     TestMissingTable();
+    TestInvalidFrameTableIsNotPartiallyPublished();
     TestShiftedBoundary();
     TestPartialStrMagic();
     TestMalformedDirectoryRecord();
