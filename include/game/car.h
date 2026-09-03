@@ -82,7 +82,7 @@ typedef struct GameCarRuntime {
     s32 motionX;
     s32 motionY;
     s32 motionZ;
-    s32 field_1C;
+    s32 reserved1C;
     s32 bodyPitch;
     s32 bodyYaw;
     s32 bodyRoll;
@@ -94,11 +94,11 @@ typedef struct GameCarRuntime {
     s32 reserved40;
     s32 steeringAngle;
     s32 wheelRotation;
-    s32 field_4C;
+    s32 reserved4C;
     s32 modelPitch;
     s32 modelYaw;
     s32 modelRoll;
-    s32 field_5C;
+    s32 modelRotationW;
     s32 modelY;
     s32 bodyRollVelocity;
     s32 progressA;
@@ -106,7 +106,7 @@ typedef struct GameCarRuntime {
     s32 trackProgress;
     s32 previousTrackProgress;
     s16 trackSection;
-    s16 field_7A;
+    s16 reserved7A;
     s16 velocityX;
     s16 velocityZ;
     s16 motionActive;
@@ -139,12 +139,12 @@ typedef struct GameCarRuntime {
     s16 facingBackwards;
     u8 padBA[2];
     s32 aiEnabled;
-    s32 field_C0;
+    s32 reservedC0;
     s32 reservedC4;
     s32 worldVelocityX;
     s32 reservedCC;
     s32 worldVelocityZ;
-    s32 field_D4;
+    s32 reservedD4;
     s32 reservedD8;
     s32 reservedDC;
     s32 reservedE0;
@@ -551,7 +551,7 @@ typedef struct PlayerCarRuntime {
     s32 motionX;
     s32 motionY;
     s32 motionZ;
-    s32 field_1C;
+    s32 reserved1C;
     s32 bodyPitch;
     s32 bodyYaw;
     s32 bodyRoll;
@@ -563,13 +563,13 @@ typedef struct PlayerCarRuntime {
     s32 reserved40;
     s32 steeringAngle;
     s32 wheelRotation;
-    s32 field_4C;
+    s32 reserved4C;
     union {
         struct {
             s32 modelPitch;
             s32 modelYaw;
             s32 modelRoll;
-            s32 field_5C;
+            s32 modelRotationW;
         };
         Vec4 modelRotation;
     };
@@ -580,7 +580,7 @@ typedef struct PlayerCarRuntime {
     s32 trackProgress;
     s32 previousTrackProgress;
     s16 trackSection;
-    s16 field_7A;
+    s16 reserved7A;
     s16 velocityX;
     s16 velocityZ;
     s16 motionActive;
@@ -663,14 +663,14 @@ static inline void CopyPlayerBodyRotationToModel(PlayerCarRuntime *car) {
     car->modelPitch = car->bodyPitch;
     car->modelYaw = car->bodyYaw;
     car->modelRoll = car->bodyRoll;
-    car->field_5C = car->bodyRotationW;
+    car->modelRotationW = car->bodyRotationW;
 }
 
 static inline void CopyCarBodyRotationToModel(GameCarRuntime *car) {
     car->modelPitch = car->bodyPitch;
     car->modelYaw = car->bodyYaw;
     car->modelRoll = car->bodyRoll;
-    car->field_5C = car->bodyRotationW;
+    car->modelRotationW = car->bodyRotationW;
 }
 
 /* A second, halfword-wide view of that same block, for the code that loads

@@ -37,10 +37,10 @@ int main(void) {
     PlayerCarRuntime car;
 
     memset(&car, 0, sizeof(car));
-    car.field_1C = 0x12345678;
+    car.reserved1C = 0x12345678;
     CalculatePlayerBodyOffset(&car);
     CHECK(car.motionX == 0 && car.motionY == 0 && car.motionZ == -50);
-    CHECK(car.field_1C == 0x12345678);
+    CHECK(car.reserved1C == 0x12345678);
 
     memset(&car, 0, sizeof(car));
     car.drive.bodyLiftOffset = 25;

@@ -156,7 +156,7 @@ int main(void) {
     CHECK(car.drive.hudLapHighlightRow == -1 && car.drive.speedScale == 777);
     CHECK(car.drive.acceleratorInput.value == 0 && car.drive.brakeInput == 0);
     CHECK(car.drive.spinRate == 0 && car.drive.yawOffset == 0);
-    CHECK(car.positionW == 0 && car.bodyRotationW == 0 && car.field_4C == 0);
+    CHECK(car.positionW == 0 && car.bodyRotationW == 0 && car.reserved4C == 0);
     CHECK(car.lapTimes.words[11] == 0);
 
     CHECK(g_AutoShiftCooldown == 0 && g_TrackZoneDark == 0);

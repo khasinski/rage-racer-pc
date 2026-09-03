@@ -196,7 +196,7 @@ typedef struct GameRenderObject {
     s32 motionX;
     s32 motionY;
     s32 motionZ;
-    s32 field_1C;
+    s32 reserved1C;
     s32 bodyPitch; /* 0x20 */
     s32 bodyYaw;   /* 0x24 */
     s32 bodyRoll;  /* 0x28 */
@@ -208,11 +208,11 @@ typedef struct GameRenderObject {
     s32 reserved40;
     s32 steeringAngle; /* 0x44 */
     s32 wheelRotation; /* 0x48, 12-bit phase plus high-speed bit 0x1000 */
-    s32 field_4C;
+    s32 reserved4C;
     s32 modelPitch; /* 0x50 */
     s32 modelYaw;   /* 0x54 */
     s32 modelRoll;  /* 0x58 */
-    s32 field_5C;
+    s32 modelRotationW;
     s32 modelY;     /* 0x60 secondary model origin, normally copied from y */
     s32 bodyRollVelocity; /* 0x64, damped and accumulated into bodyRoll */
     s32 progressA;
@@ -220,7 +220,7 @@ typedef struct GameRenderObject {
     s32 trackProgress;   /* 0x70 */
     s32 previousTrackProgress;
     s16 trackSection;
-    s16 field_7A;
+    s16 reserved7A;
     s16 velocityX;
     s16 velocityZ;
     s16 motionActive;
@@ -249,12 +249,12 @@ typedef struct GameRenderObject {
     s16 facingBackwards;
     u8 padBA[2];
     s32 aiEnabled;
-    s32 field_C0;
+    s32 reservedC0;
     s32 reservedC4;
     s32 worldVelocityX;
     s32 reservedCC;
     s32 worldVelocityZ;
-    s32 field_D4;
+    s32 reservedD4;
     s32 reservedD8;
     s32 reservedDC;
     s32 reservedE0;
