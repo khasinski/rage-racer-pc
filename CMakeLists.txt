@@ -208,7 +208,7 @@ if(RAGE_BUILD_PORT)
     )
     set(RAGE_PORT_LEGACY_SOURCES
         src/port/platform_stubs.c
-        src/port/legacy_platform.c
+        src/port/host_disc.c
         src/port/archive_index.c
         src/port/bios_file.c
         src/port/cdda_file.c
