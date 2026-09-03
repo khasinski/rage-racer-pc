@@ -185,13 +185,6 @@ static s32 PathRotationBlockIsValid(const TrackEventOffsets *offsets,
     return 1;
 }
 
-static void *ResolveTrackEventOffset(TrackEventOffsets *offsets, s32 offset,
-                                     size_t remaining) {
-    if (!TrackEventOffsetIsValid(offset, remaining)) return NULL;
-
-    return (u8 *)offsets + offset;
-}
-
 s32 IsValidTrackEventAsset(const TrackEventData *eventData, size_t size) {
     const TrackEventOffsets *offsets;
     size_t offsetsPosition = offsetof(TrackEventData, offsets);
@@ -230,24 +223,22 @@ s32 IsValidTrackEventAsset(const TrackEventData *eventData, size_t size) {
 
 s32 InstallTrackEventData(TrackEventData *eventData, size_t size) {
     TrackEventOffsets *offsets;
-    size_t remaining;
 
     if (!IsValidTrackEventAsset(eventData, size)) {
         ClearTrackEventData();
         return 0;
     }
     offsets = &eventData->offsets;
-    remaining = size - offsetof(TrackEventData, offsets);
-    g_FlybySceneryData = ResolveTrackEventOffset(
-        offsets, offsets->flybyScenery, remaining);
-    g_RaceIntroCameraScript = ResolveTrackEventOffset(
-        offsets, offsets->raceIntroCamera, remaining);
-    g_RouteSceneryData = ResolveTrackEventOffset(
-        offsets, offsets->routeScenery, remaining);
-    g_PathSceneryPosData = ResolveTrackEventOffset(
-        offsets, offsets->pathSceneryPosition, remaining);
-    g_PathSceneryRotData = ResolveTrackEventOffset(
-        offsets, offsets->pathSceneryRotation, remaining);
+    g_FlybySceneryData =
+        (SceneryMotionData *)((u8 *)offsets + offsets->flybyScenery);
+    g_RaceIntroCameraScript = (RaceIntroCameraScript *)(
+        (u8 *)offsets + offsets->raceIntroCamera);
+    g_RouteSceneryData =
+        (SceneryMotionData *)((u8 *)offsets + offsets->routeScenery);
+    g_PathSceneryPosData = (PathSceneryPositionData *)(
+        (u8 *)offsets + offsets->pathSceneryPosition);
+    g_PathSceneryRotData = (PathSceneryRotationData *)(
+        (u8 *)offsets + offsets->pathSceneryRotation);
     g_TrackEventData = eventData;
     return 1;
 }
