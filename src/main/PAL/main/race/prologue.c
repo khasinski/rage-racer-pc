@@ -85,7 +85,7 @@ static void UpdatePrologueLoadStep2(void) {
     UpdatePrologueLoad();
 }
 
-void DrawPrologueText(void) {
+static void DrawPrologueText(void) {
     s32 i;
     const s32 scrollY = g_SceneTimer / 3 - 0xD0;
     GameOrderingTableEntry *ot;
@@ -112,7 +112,7 @@ void DrawPrologueText(void) {
     g_RenderState.packetCursor = QueueDrawModePrim(ot, next, 0x49);
 }
 
-void ExitPrologue(void) {
+static void ExitPrologue(void) {
     g_SceneId = 6;
     PauseCdAudio();
     RequestSelectBgmAssets();
