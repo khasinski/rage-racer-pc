@@ -12,6 +12,8 @@ enum {
     CLOCK_MINUTES_UNITS = 1,
     CLOCK_SECONDS_TENS = 3,
     CLOCK_SECONDS_UNITS = 4,
+    TIME_DISPLAY_MAX_SECONDS = 9 * 60 + 59,
+    CLOCK_DISPLAY_MAX_SECONDS = 99 * 60 + 59,
 };
 
 static void FillTimeDigits(char digit) {
@@ -34,7 +36,15 @@ static void FillTimeDigits(char digit) {
 void DrawTimeValue(s32 x, s32 y, s32 value, s32 color, s32 divisor) {
     if (value >= 0 && divisor > 0) {
         s32 totalSeconds = value / divisor;
-        s32 fraction = (value % divisor) * 1000 / divisor;
+        s32 fraction;
+
+        if (totalSeconds > TIME_DISPLAY_MAX_SECONDS) {
+            totalSeconds = TIME_DISPLAY_MAX_SECONDS;
+            fraction = 999;
+        } else {
+            fraction =
+                (s32)(((int64_t)(value % divisor) * 1000) / divisor);
+        }
 
         g_TimeTextBuffer[TIME_MINUTES] = totalSeconds / 60 + '0';
         g_TimeTextBuffer[TIME_SECONDS_TENS] = totalSeconds % 60 / 10 + '0';
@@ -50,9 +60,14 @@ void DrawTimeValue(s32 x, s32 y, s32 value, s32 color, s32 divisor) {
 }
 
 void DrawMinuteSecondTime(s32 x, s32 y, s32 ticks, s32 color) {
-    s32 totalSeconds = ticks / 25;
+    s32 totalSeconds = ticks > 0 ? ticks / 25 : 0;
     s32 minutes = totalSeconds / 60;
     s32 seconds = totalSeconds % 60;
+
+    if (totalSeconds > CLOCK_DISPLAY_MAX_SECONDS) {
+        minutes = 99;
+        seconds = 59;
+    }
 
     g_ClockTextCells[CLOCK_MINUTES_TENS] =
         minutes < 10 ? ' ' : minutes / 10 + '0';

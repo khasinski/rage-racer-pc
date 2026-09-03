@@ -2,6 +2,7 @@
 #include "game/render.h"
 
 #include <stdio.h>
+#include <limits.h>
 #include <string.h>
 
 char g_ClockTextCells[8] = "00'00\"";
@@ -45,9 +46,19 @@ int main(void) {
     DrawTimeValue(15, 16, 1, 0x7812, 25);
     if (CheckDraw("0'00\"040", 15, 16, 0x7812)) return 1;
 
+    DrawTimeValue(17, 18, INT_MAX, 0x7813, 1000);
+    if (CheckDraw("9'59\"999", 17, 18, 0x7813)) return 1;
+    DrawTimeValue(19, 20, INT_MAX - 1, 0x7814, INT_MAX);
+    if (CheckDraw("0'00\"999", 19, 20, 0x7814)) return 1;
+
     DrawMinuteSecondTime(7, 8, 9 * 60 * 25 + 59 * 25, 0x780F);
     if (CheckDraw(" 9'59\"", 7, 8, 0x780F)) return 1;
 
     DrawMinuteSecondTime(11, 12, 12 * 60 * 25 + 34 * 25, 0x7811);
-    return CheckDraw("12'34\"", 11, 12, 0x7811);
+    if (CheckDraw("12'34\"", 11, 12, 0x7811)) return 1;
+
+    DrawMinuteSecondTime(21, 22, INT_MAX, 0x7815);
+    if (CheckDraw("99'59\"", 21, 22, 0x7815)) return 1;
+    DrawMinuteSecondTime(23, 24, INT_MIN, 0x7816);
+    return CheckDraw(" 0'00\"", 23, 24, 0x7816);
 }
