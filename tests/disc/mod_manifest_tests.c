@@ -24,6 +24,10 @@ int main(void) {
         "\"unlit blend 0.2 0 1 1 1 1 0.4 0.3 0.2\"\n";
     static const char traversal[] =
         "[textures]\n\"track.big1.terrain.material.3\" = \"../secret.png\"\n";
+    static const char partialThenInvalid[] =
+        "[textures]\n"
+        "\"track.big1.terrain.material.3\" = \"textures/road.png\"\n"
+        "\"track.big1.course.material.2\" = \"../secret.png\"\n";
     static const char invalidKey[] =
         "[textures]\n\"asset_088.material.3\" = \"texture.png\"\n";
     static const char invalidMaterial[] =
@@ -46,6 +50,11 @@ int main(void) {
     EXPECT(!ModManifestParse(traversal, sizeof(traversal) - 1,
                                  &manifest));
     EXPECT(manifest.errorLine == 2);
+    EXPECT(manifest.textureCount == 0 && manifest.materialCount == 0 &&
+           manifest.id[0] == '\0');
+    EXPECT(!ModManifestParse(partialThenInvalid,
+                             sizeof(partialThenInvalid) - 1, &manifest));
+    EXPECT(manifest.errorLine == 3 && manifest.textureCount == 0);
     EXPECT(!ModManifestParse(invalidKey, sizeof(invalidKey) - 1,
                                  &manifest));
     EXPECT(!ModManifestParse(invalidMaterial,

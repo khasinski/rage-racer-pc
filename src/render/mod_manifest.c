@@ -164,6 +164,7 @@ next:
     }
     return 1;
 invalid:
+    memset(out, 0, sizeof(*out));
     out->errorLine = lineNumber;
     return 0;
 }
