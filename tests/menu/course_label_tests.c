@@ -33,7 +33,8 @@ int main(void) {
         return 1;
     }
     if (GetCourseLabelSprites(-1, &sprites) || sprites.nameWidth != 0 ||
-        GetCourseLabelSprites(4, &sprites) || sprites.nameWidth != 0) {
+        GetCourseLabelSprites(4, &sprites) || sprites.nameWidth != 0 ||
+        GetCourseLabelSprites(0, NULL)) {
         puts("invalid course unexpectedly has a label");
         return 1;
     }

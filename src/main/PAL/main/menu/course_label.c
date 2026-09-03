@@ -14,6 +14,9 @@ _Static_assert(sizeof(s_courseLabels) / sizeof(s_courseLabels[0]) ==
                "course label table must cover every course slot");
 
 int GetCourseLabelSprites(s32 courseIndex, CourseLabelSprites *sprites) {
+    if (sprites == NULL) {
+        return 0;
+    }
     *sprites = (CourseLabelSprites){0};
     if ((u32)courseIndex >= COURSE_LABEL_COUNT) {
         return 0;
