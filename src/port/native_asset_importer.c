@@ -585,6 +585,7 @@ static uint16_t *s_trackPage[RAGE_IMPORT_TRACK_PAGES];
 static uint64_t s_vramSnapshotRevision;
 static s32 s_overlaidPage = -1;
 static int s_haveVramSnapshot;
+static int s_haveTrackPages;
 
 static uint16_t *ImportTrackRow(uint16_t *page, s32 row) {
     return page + (size_t)row * RAGE_IMPORT_TRACK_ROW_W;
@@ -631,7 +632,7 @@ static void ImportOverlayTrackPage(uint16_t *vram, s32 page) {
     s_overlaidPage = page;
 }
 
-static const uint16_t *ImportVramSnapshot(void) {
+static const uint16_t *ImportVramSnapshot(int requireTrackPages) {
     RECT rect = {0, 0, RAGE_IMPORT_VRAM_WIDTH, RAGE_IMPORT_VRAM_HEIGHT};
     uint64_t revision = TrackAssetIdentityRevision();
     if (s_vramSnapshot == NULL) {
@@ -647,11 +648,17 @@ static const uint16_t *ImportVramSnapshot(void) {
         DrawSync(0);
         s_vramSnapshotRevision = revision;
         s_haveVramSnapshot = 1;
+        s_haveTrackPages = 0;
         s_overlaidPage = -1;
-        (void)ImportBuildTrackPages(s_vramSnapshot);
     }
-    ImportOverlayTrackPage(s_vramSnapshot,
-                           g_TrackTexturePageWanted != 0 ? 1 : 0);
+    if (requireTrackPages && !s_haveTrackPages) {
+        if (!ImportBuildTrackPages(s_vramSnapshot)) return NULL;
+        s_haveTrackPages = 1;
+    }
+    if (requireTrackPages) {
+        ImportOverlayTrackPage(s_vramSnapshot,
+                               g_TrackTexturePageWanted != 0 ? 1 : 0);
+    }
     return s_vramSnapshot;
 }
 
@@ -804,6 +811,7 @@ void NativeAssetImporterShutdown(void) {
     }
     s_vramSnapshotRevision = 0;
     s_haveVramSnapshot = 0;
+    s_haveTrackPages = 0;
     s_overlaidPage = -1;
     s_ready = 0;
 }
@@ -855,7 +863,8 @@ int NativeAssetImporterLoadMaterial(
     else if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN)
         clutOffset = variant % 2u;
     clut = (uint16_t)(texture->clut + clutOffset);
-    vram = ImportVramSnapshot();
+    vram = ImportVramSnapshot(
+        instance->assetSet != RAGE_RENDER_ASSET_MODEL_BANK);
     if (vram == NULL ||
         !ImportDecodeTexture(texture, clut, vram, &pixels,
                                  instance->hasCarPaint ? &paint : NULL)) {
@@ -911,7 +920,7 @@ int NativeAssetImporterLoadSky(uint32_t assetKey,
     memset(&texture, 0, sizeof(texture));
     texture.tpage = 0x18;
     texture.clut = 0x798E;
-    vram = ImportVramSnapshot();
+    vram = ImportVramSnapshot(1);
     if (vram == NULL ||
         !ImportDecodeTexture(&texture, texture.clut, vram, &page, NULL)) {
         SDL_free(page);
