@@ -1,4 +1,5 @@
 #include "game/memcard.h"
+#include "game/memcard_internal.h"
 
 enum {
     MEMORY_CARD_EVENT_COUNT = 4,

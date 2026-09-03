@@ -1,4 +1,5 @@
 #include "game/memcard.h"
+#include "game/memcard_internal.h"
 
 #include <stdio.h>
 

@@ -1,6 +1,7 @@
 #include "game/prim.h"
 #include "game/render_internal.h"
 #include "game/memcard.h"
+#include "game/memcard_internal.h"
 #include "game/menu.h"
 
 void DrawMemoryCardScreen(s32 showSlotBar, s32 fromLoadMenu,

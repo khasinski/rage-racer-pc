@@ -15,6 +15,26 @@ typedef enum MemoryCardMenuState {
     MC_MENU_STATE_BUSY = 3,
 } MemoryCardMenuState;
 
+void ClearSaveHeaderRows(GameSaveHeaderRow *rows);
+s32 WriteMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *header);
+s32 ScanMemoryCardSaveHeaders(GameSaveHeaderRow *headers);
+s32 LoadMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *header);
+s32 CountMemoryCardFiles(s32 device, s32 port);
+s32 CalculateMemoryCardFreeBlocks(s32 fileCount);
+s32 RefreshMemoryCardSaveStatus(GameSaveHeaderRow *headers);
+enum { SAVE_ELAPSED_TIME_CAPACITY = 16 };
+char *FormatSaveElapsedTime(char dst[SAVE_ELAPSED_TIME_CAPACITY], u32 ticks);
+void DrawMemoryCardSaveRows(s32 flags, GameSaveHeaderRow *rows);
+
+void ClearMemoryCardHwEvents(void);
+void ClearMemoryCardSwEvents(void);
+MemoryCardEvent WaitMemoryCardSwEvent(void);
+MemoryCardEvent PollMemoryCardHwEvent(void);
+/* libcard _card_clear (see psyq/): _new_card() + _card_write(chan, 0x3F, 0). */
+s32 FormatMemoryCard(s32 port, s32 slot);
+void StartMemoryCardEvents(void);
+void StopMemoryCardEvents(void);
+
 void AdjustMenuSelectionVertical(s32 *value, s32 min, s32 max);
 void SetMenuBinaryChoiceHorizontal(s32 *value);
 u16 PollMenuConfirmInput(void);
@@ -28,5 +48,9 @@ void RunCardSlotActions(void);
 void RunUnformattedCardPage(s32 fadeBusy);
 void RunCardWorkingActions(s32 fadeBusy);
 void RunNoCardActions(s32 fadeBusy);
+void DrawMemoryCardMessage(s32 message);
+s32 PollMemoryCardStatus(s32 port, s32 slot);
+void DrawMemoryCardScreen(s32 showSlotBar, s32 fromLoadMenu,
+                          s32 selectedRow, s32 selectedSlot);
 
 #endif

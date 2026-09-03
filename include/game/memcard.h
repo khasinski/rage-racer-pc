@@ -27,29 +27,11 @@ typedef struct MemoryCardMessageRow {
 
 void AdvanceSaveHeaderCounter(void);
 void RestartMemoryCard(void);
-void ClearSaveHeaderRows(GameSaveHeaderRow *rows);
-s32 WriteMemoryCardSaveSlot(
-    s32 slot,
-    GameSaveHeaderRow *header);
-s32 ScanMemoryCardSaveHeaders(GameSaveHeaderRow *headers);
-s32 LoadMemoryCardSaveSlot(
-    s32 slot,
-    GameSaveHeaderRow *header);
-s32 CountMemoryCardFiles(s32 device, s32 port);
-s32 CalculateMemoryCardFreeBlocks(s32 fileCount);
-s32 RefreshMemoryCardSaveStatus(GameSaveHeaderRow *headers);
-enum { SAVE_ELAPSED_TIME_CAPACITY = 16 };
-char *FormatSaveElapsedTime(char dst[SAVE_ELAPSED_TIME_CAPACITY], u32 ticks);
-void DrawMemoryCardSaveRows(
-    s32 flags,
-    GameSaveHeaderRow *rows);
 
 /*
  * Memory card BIOS front end. These were labelled Cd until the event classes
  * were decoded: every one operates on SwCARD/HwCARD, never on the drive.
  */
-void ClearMemoryCardHwEvents(void);
-void ClearMemoryCardSwEvents(void);
 typedef enum MemoryCardEvent {
     MC_EVENT_INVALID = -1,
     MC_EVENT_NONE,
@@ -67,15 +49,6 @@ typedef enum MemoryCardResult {
     MC_CARD_RESULT_READY = 1,
     MC_CARD_RESULT_NEW_CARD = 2,
 } MemoryCardResult;
-MemoryCardEvent WaitMemoryCardSwEvent(void);
-MemoryCardEvent PollMemoryCardHwEvent(void);
-/* libcard _card_clear (see psyq/): _new_card() + _card_write(chan, 0x3F, 0). */
-s32 FormatMemoryCard(s32 port, s32 slot);
-
-/* Moved here from menu.h and audio.h: these belong to the card, not to
- * the menu or the mixer. */
-void StartMemoryCardEvents(void);
-void StopMemoryCardEvents(void);
 void EnterMemoryCardMenu(void);
 void EnterMemoryCardMenuFromLoad(void);
 void UpdateMemoryCardMenu(void);
@@ -139,10 +112,5 @@ extern char g_SaveFilePath[];
 enum { SAVE_NAME_CHARSET_SIZE = 44 };
 extern u8 g_SaveNameCharset[SAVE_NAME_CHARSET_SIZE];
 extern char g_SaveTitleSjis[];
-
-void DrawMemoryCardMessage(s32 message);
-s32 PollMemoryCardStatus(s32 a, s32 b);
-void DrawMemoryCardScreen(s32 showSlotBar, s32 fromLoadMenu,
-                          s32 selectedRow, s32 selectedSlot);
 
 #endif
