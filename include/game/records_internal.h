@@ -11,6 +11,9 @@ enum {
     RECORD_TABLE_LENGTH = 5,
 };
 
+extern s32 g_DefaultLapTimes[RECORD_SERIES_COUNT * RECORD_COURSE_COUNT];
+extern s32 g_DefaultTotalTimes[RECORD_SERIES_COUNT * RECORD_COURSE_COUNT];
+
 extern RaceRecord
     g_RankingRecords[RECORD_SERIES_COUNT][RECORD_COURSE_COUNT]
                     [RECORD_TABLE_LENGTH];

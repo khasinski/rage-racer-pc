@@ -279,8 +279,6 @@ extern s32 g_CountdownBoardOffset;
 extern u32 g_CountdownGlyphTable[64];
 extern u32 g_CountdownDigitPatterns[16];
 extern char *g_CourseNames[];
-extern s32 g_DefaultLapTimes[8];
-extern s32 g_DefaultTotalTimes[8];
 extern s32 g_EndingWashLevel;
 extern char g_FmtCarName[];
 extern char g_FmtClassGrandPrix[];
