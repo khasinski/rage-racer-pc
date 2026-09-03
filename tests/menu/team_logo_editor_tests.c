@@ -13,6 +13,7 @@
 #include "game/menu_internal.h"
 #include "game/state.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -104,6 +105,40 @@ static int TestEditorControl(void) {
     return 1;
 }
 
+static int TestInvalidEditorState(void) {
+    memset(&g_TeamLogoCanvas, 0, sizeof(g_TeamLogoCanvas));
+    g_TeamLogoPenColor = INT_MIN;
+    g_TeamLogoColorChannel = INT_MAX;
+    g_TeamLogoBrushSize = INT_MAX;
+    g_TeamLogoCursorX = INT_MAX;
+    g_TeamLogoCursorY = INT_MAX;
+    g_TeamLogoViewX = INT_MAX;
+    g_TeamLogoViewY = INT_MAX;
+    g_TeamLogoDpadRepeatTimer = INT_MAX;
+    g_TeamLogoDpadRepeatMask = INT_MAX;
+    g_TeamLogoExpertMode = UINT8_MAX;
+    g_TeamLogoGuideMode = INT_MAX;
+    g_TeamLogoGuideModePrev = INT_MIN;
+    g_TeamLogoPaintArmed = INT_MAX;
+    g_TeamLogoPaletteMode = 0;
+    g_PadHeld = PAD_CIRCLE;
+    g_PadPressed = 0;
+    g_PadPressedRepeat = 0;
+
+    UpdateTeamLogoCanvas();
+    if (g_TeamLogoPenColor != 1 || g_TeamLogoColorChannel != 2 ||
+        g_TeamLogoBrushSize != 1 || g_TeamLogoCursorX != 31 ||
+        g_TeamLogoCursorY != 31 || g_TeamLogoViewX != 32 ||
+        g_TeamLogoViewY != 32 || g_TeamLogoDpadRepeatTimer != 0 ||
+        g_TeamLogoDpadRepeatMask != 0 || g_TeamLogoExpertMode != 1 ||
+        g_TeamLogoGuideMode != 2 || g_TeamLogoGuideModePrev != 0 ||
+        GetTeamLogoCanvasPixel(&g_TeamLogoCanvas, 63, 63) != 1) {
+        puts("FAIL invalid team logo editor state was not normalized");
+        return 0;
+    }
+    return 1;
+}
+
 static void Fold(FILE *out, const char *label) {
     char line[320];
     const char *p;
@@ -135,20 +170,21 @@ static void Fold(FILE *out, const char *label) {
 
 int main(int argc, char **argv) {
     /*
-     * What the editor did before it was taken apart. Run the test with a file
-     * name to write the sweep out and diff two runs when this moves.
+     * Sweep the editor's public frame update. Run the test with a file name to
+     * write the result out and diff two runs when this code moves.
      */
-    static const unsigned long expected = 1059771453UL;
+    static const unsigned long expected = 323189082UL;
     static const u16 buttons[] = {
         0x0000, 0x0010, 0x0020, 0x0040, 0x0080, 0x1000, 0x2000, 0x4000,
         0x8000, 0x0001, 0x0002, 0x0004, 0x0008, 0x0100, 0x0200, 0x0060,
     };
+    static const s32 brushSizes[] = {1, 2, 4};
     FILE *out = NULL;
     size_t held, pressed;
     int expert, palette, channel, brush, repeat, steps = 0;
     char label[96];
 
-    if (!TestEditorControl()) return 1;
+    if (!TestEditorControl() || !TestInvalidEditorState()) return 1;
 
     if (argc > 1) {
         out = fopen(argv[1], "w");
@@ -186,12 +222,15 @@ int main(int argc, char **argv) {
                                 }
                                 g_TeamLogoPenColor = (TeamLogoColorIndex)3;
                                 g_TeamLogoColorChannel = channel;
-                                g_TeamLogoBrushSize = brush;
+                                g_TeamLogoBrushSize = brushSizes[brush];
                                 g_TeamLogoCursorX = (TeamLogoCoordinate)20;
                                 g_TeamLogoCursorY = 30;
                                 g_TeamLogoViewX = (TeamLogoCoordinate)4;
                                 g_TeamLogoViewY = 6;
                                 g_TeamLogoDpadRepeatTimer = repeats[repeat];
+                                g_TeamLogoDpadRepeatMask =
+                                    buttons[held] &
+                                    (PAD_UP | PAD_RIGHT | PAD_DOWN | PAD_LEFT);
                                 g_TeamLogoExpertMode = (u8)expert;
                                 g_TeamLogoGuideMode = 1;
                                 g_TeamLogoGuideModePrev = 0;
@@ -202,15 +241,12 @@ int main(int argc, char **argv) {
                                 g_PadPressedRepeat = buttons[pressed];
                                 s_cues = 0;
 
-                                if (palette == 1) {
-                                    EditLogoPalette();
-                                } else {
-                                    EditLogoCanvas();
-                                }
+                                UpdateTeamLogoCanvas();
 
                                 sprintf(label,
                                         "e%d/p%d/c%d/b%d/r%d/h%04x/x%04x",
-                                        expert, palette, channel, brush,
+                                        expert, palette, channel,
+                                        brushSizes[brush],
                                         repeats[repeat], buttons[held],
                                         buttons[pressed]);
                                 Fold(out, label);
@@ -231,6 +267,6 @@ int main(int argc, char **argv) {
                "%lu, expected %lu\n", steps, s_digest, expected);
         return 1;
     }
-    printf("the logo editor takes the same %d steps it always did\n", steps);
+    printf("the logo editor public update passes %d swept states\n", steps);
     return 0;
 }

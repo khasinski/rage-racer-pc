@@ -311,10 +311,6 @@ void FlipTeamLogoVertical(void);
  * w swapped with word 7 - w. */
 void FlipTeamLogoHorizontal(void);
 
-/* The two halves of the logo editor: mixing a colour in the palette, and
- * drawing with it on the canvas. Which one a frame runs is g_TeamLogoPaletteMode. */
-void EditLogoPalette(void);
-void EditLogoCanvas(void);
 /* dst(y, x) = src(x, 63 - y). */
 void RotateTeamLogoCcw(void);
 /* dst(y, x) = src(63 - x, y). */

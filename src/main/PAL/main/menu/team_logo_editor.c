@@ -33,9 +33,40 @@ static s32 TeamLogoDpadRepeatsNow(void) {
            g_TeamLogoDpadRepeatTimer == 1;
 }
 
+static void NormalizeTeamLogoEditorState(void) {
+    if (g_TeamLogoBrushSize != 1 && g_TeamLogoBrushSize != 2 &&
+        g_TeamLogoBrushSize != 4) {
+        g_TeamLogoBrushSize = 1;
+    }
+    g_TeamLogoPenColor = AddClampedMenuValue(
+        g_TeamLogoPenColor, 0, 1, 15);
+    g_TeamLogoColorChannel = AddClampedMenuValue(
+        g_TeamLogoColorChannel, 0, 0, 2);
+    g_TeamLogoViewX = AddClampedMenuValue(
+        g_TeamLogoViewX, 0, 0, TEAM_LOGO_EDITOR_VIEW_SIZE);
+    g_TeamLogoViewY = AddClampedMenuValue(
+        g_TeamLogoViewY, 0, 0, TEAM_LOGO_EDITOR_VIEW_SIZE);
+    g_TeamLogoCursorX = AddClampedMenuValue(
+        g_TeamLogoCursorX, 0, 0,
+        TEAM_LOGO_EDITOR_VIEW_SIZE - g_TeamLogoBrushSize);
+    g_TeamLogoCursorY = AddClampedMenuValue(
+        g_TeamLogoCursorY, 0, 0,
+        TEAM_LOGO_EDITOR_VIEW_SIZE - g_TeamLogoBrushSize);
+    g_TeamLogoDpadRepeatTimer = AddClampedMenuValue(
+        g_TeamLogoDpadRepeatTimer, 0, 0, 23);
+    g_TeamLogoDpadRepeatMask &= PAD_UP | PAD_RIGHT | PAD_DOWN | PAD_LEFT;
+    g_TeamLogoExpertMode = g_TeamLogoExpertMode != 0;
+    g_TeamLogoGuideMode = AddClampedMenuValue(
+        g_TeamLogoGuideMode, 0, 0, 2);
+    g_TeamLogoGuideModePrev = AddClampedMenuValue(
+        g_TeamLogoGuideModePrev, 0, 0, 2);
+    g_TeamLogoPaintArmed = g_TeamLogoPaintArmed != 0;
+    g_TeamLogoPaletteMode = g_TeamLogoPaletteMode != 0;
+}
+
 /* Mixing a colour: the cursor walks the editable palette slots and the three
  * five-bit channels of the selected colour. */
-void EditLogoPalette(void) {
+static void EditLogoPalette(void) {
     u16 pressed = g_PadPressed;
     u16 held = g_PadHeld;
 
@@ -98,7 +129,7 @@ void EditLogoPalette(void) {
  * brush down and the other rubs it out, both at whatever size the brush
  * is set to. Every plot is a nibble inside a canvas word.
  */
-void EditLogoCanvas(void) {
+static void EditLogoCanvas(void) {
     s32 movedHorizontally;
     u16 sampledColour;
     s32 movedVertically;
@@ -237,6 +268,7 @@ void UpdateTeamLogoCanvas(void) {
     u16 held = g_PadHeld;
     s32 repeatDelay = (held & (PAD_L2 | PAD_L1)) ? 0 : 3;
 
+    NormalizeTeamLogoEditorState();
     if (held & g_TeamLogoDpadRepeatMask) {
         if (g_TeamLogoDpadRepeatTimer < 0x14 + repeatDelay) {
             g_TeamLogoDpadRepeatTimer++;
