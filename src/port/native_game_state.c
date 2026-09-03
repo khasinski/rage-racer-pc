@@ -16,6 +16,9 @@
 #include "game/cd_internal.h"
 #include "game/memcard.h"
 
+GameRenderState g_RenderState;
+CarTrackWork g_CarTrackWork;
+
 GameFrameContext g_FrameContexts[2];
 NativeModelBank g_ModelBanks[GAME_MODEL_BANK_LIMIT];
 void *g_NativeTerrainCells[GAME_TERRAIN_CELL_LIMIT];
