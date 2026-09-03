@@ -28,6 +28,7 @@ void BuildTileStrips(void) {
                 TILE *tile = &tiles[index];
 
                 SetTile(tile);
+                TermPrim(tile);
                 tile->w = 2;
                 tile->h = 1;
                 tile->x0 = 0xCD - column * 3;
