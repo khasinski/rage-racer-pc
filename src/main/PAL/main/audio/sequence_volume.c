@@ -2,6 +2,7 @@
 #include "game/audio_internal.h"
 #include "game/cd.h"
 #include "game/sound.h"
+#include "psyq/snd.h"
 
 enum {
     SEQUENCE_VOLUME_AT_MAX_SETTING = 114,

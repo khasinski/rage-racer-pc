@@ -1,5 +1,6 @@
 #include "common.h"
 #include "game/audio.h"
+#include "game/audio_internal.h"
 
 #include <stdio.h>
 

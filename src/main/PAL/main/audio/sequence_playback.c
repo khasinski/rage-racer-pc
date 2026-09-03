@@ -1,6 +1,7 @@
 #include "game/audio.h"
 #include "game/audio_internal.h"
 #include "game/sound.h"
+#include "psyq/snd.h"
 
 enum {
     SEQUENCE_PLAY_MODE = 1,
@@ -15,8 +16,6 @@ enum {
 void PlaySequence(void) {
     SsSeqPlay(g_SeqHandle.value, SEQUENCE_PLAY_MODE, SEQUENCE_LOOP_COUNT);
 }
-
-static void StopSequence(void) { SsSeqStop(g_SeqHandle.value); }
 
 void StartSequenceFadeOut(void) {
     g_SeqVolumeFadeStep = SEQUENCE_VOLUME_FADE_STEP;
@@ -45,7 +44,7 @@ static void UpdateReverbFade(void) {
 static void FinishSequenceFadeOut(void) {
     g_SeqVolume = 0;
     g_SeqVolumeFadeStep = 0;
-    StopSequence();
+    SsSeqStop(g_SeqHandle.value);
     CloseSequenceAudioSlot();
     SetDefaultReverbDepth();
 }

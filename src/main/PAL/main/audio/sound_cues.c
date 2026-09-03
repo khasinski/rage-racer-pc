@@ -1,5 +1,6 @@
 #include "game/diagnostics.h"
 #include "game/audio.h"
+#include "game/audio_internal.h"
 #include "psyq/snd.h"
 #include "game/sound.h"
 

@@ -25,10 +25,6 @@ enum {
     SPECIAL_VOICE_BIT_COUNT = 6,
 };
 
-void SetSoundSlotTone(s32 slot, s32 bend, s32 volume, s32 toneIndex, u16 vabSlot);
-void SsSeqPlay(short sequence, char playMode, short loopCount);
-void SsSeqStop(short sequence);
-void SsSeqSetVol(short sequence, short left, short right);
 
 /*
  * The SPU takes a voice volume in 0..0x80, and a cue level in 0..0x7F. Both
@@ -74,7 +70,6 @@ typedef struct EffectCueBank {
 } EffectCueBank;
 void PlaySequence(void);
 void StartSequenceFadeOut(void);
-void UpdateSequenceFadeOut(void);
 void ApplyDuckedSequenceAudio(void);
 void ApplyCurrentSequenceAudio(void);
 /* Service libsnd's 60 Hz sequence clock from the game frame loop. */
@@ -116,14 +111,9 @@ void SetIndexedEffectVoice(s32 index, s32 phase, s32 volume);
 void SetPitchedSoundCue(s32 cue, s32 pitch, s32 volume);
 void SetStereoSoundCue(s32 cue, s32 volLeft, s32 volRight);
 void PlaySoundCue(s32 cue);
-void ForcePanVoiceEnabled(s32 enabled);
-void ForceIndexedEffectVoiceEnabled(s32 enabled);
 s32 InterpolateAudioParameter(s32 param, s32 position, s32 bank);
 void UpdateLoadedAudioVoices(s32 position, s32 bank);
 void InitEffectVoiceRuntime(void);
-void ForceBasicEffectVoicesEnabled(s32 enabled);
-void ForcePitchEffectVoicesEnabled(s32 enabled);
-void ForceSoundSlotVoicePlayback(s32 enabled);
 void ForceAllEffectVoicesEnabled(s32 enabled);
 void SetDefaultReverbDepth(void);
 void InitSequenceAudio(void);

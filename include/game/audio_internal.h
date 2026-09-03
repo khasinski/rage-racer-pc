@@ -19,12 +19,20 @@ void LoadAudioParameterTable(const void *data, size_t size);
 void SetLoadedTableVolumeScale(s32 scale);
 void SetSequenceVolume(s32 volume);
 void RefreshSequenceVolumeScale(void);
+void UpdateSequenceFadeOut(void);
 void PlaySoundSlotVoice(s32 slot, s32 tone, s32 vabSlot);
 void SetSoundSlotVoicesEnabled(s32 enabled);
 void ApplyPanVoiceVolume(void);
 void UpdateIndexedEffectVoice(void);
 void UpdateBasicEffectVoices(void);
 void UpdateEffectVoiceStates(void);
+void SetSoundSlotTone(s32 slot, s32 bend, s32 volume, s32 toneIndex,
+                      u16 vabSlot);
+void ForcePanVoiceEnabled(s32 enabled);
+void ForceIndexedEffectVoiceEnabled(s32 enabled);
+void ForceBasicEffectVoicesEnabled(s32 enabled);
+void ForcePitchEffectVoicesEnabled(s32 enabled);
+void ForceSoundSlotVoicePlayback(s32 enabled);
 
 s32 ClampBgmTrackCount(s32 trackCount);
 s32 ClampBgmShuffleCount(s32 trackCount);
