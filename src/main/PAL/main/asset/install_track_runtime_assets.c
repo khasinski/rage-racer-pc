@@ -22,6 +22,16 @@ enum {
     TRACK_ENVIRONMENT_PALETTE_COUNT = 5,
 };
 
+static s32 IsTrackRuntimeAssetIndex(s32 assetIndex) {
+    const s32 lastAsset = TrackCourseAssetIndex(
+        ASSET_TRACK_2ND_BASE, TRACK_CLASS_COUNT - 1,
+        TRACK_COURSE_COUNT - 1);
+
+    return assetIndex >= ASSET_TRACK_2ND_BASE && assetIndex <= lastAsset &&
+           ((assetIndex - ASSET_TRACK_2ND_BASE) %
+            TRACK_ASSETS_PER_COURSE) == 0;
+}
+
 s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
                                  s32 useSeriesCamera) {
     GameSceneAssetHeader *header;
@@ -29,7 +39,8 @@ s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
     size_t blockSizes[11];
     s32 i;
 
-    if (data == NULL || size < sizeof(GameSceneAssetHeader) ||
+    if (!IsTrackRuntimeAssetIndex(assetIndex) || data == NULL ||
+        size < sizeof(GameSceneAssetHeader) ||
         size > INT32_MAX) {
         return 0;
     }

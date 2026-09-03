@@ -482,29 +482,40 @@ static void TestTrackPhases(void) {
     Check(s_installCount == 8 && s_seriesCamera == 0,
           "scene loads install the default camera table");
 
+    s_installCount = 0;
+    s_trackIdentity = -1;
+    Check(InstallTrackRuntimeAssetPack(
+              pack, 1088, ASSET_TRACK_2ND_BASE + 1, 0) == 0 &&
+              s_installCount == 0 && s_trackIdentity == -1,
+          "texture-pack identity cannot be published as runtime data");
+    Check(InstallTrackRuntimeAssetPack(
+              pack, 1088, GAME_ASSET_COUNT, 0) == 0 &&
+              s_installCount == 0 && s_trackIdentity == -1,
+          "out-of-range identity cannot be published as runtime data");
+
     pack->offsets[1] = pack->offsets[0];
     s_installCount = 0;
     s_trackIdentity = -1;
-    Check(InstallTrackRuntimeAssetPack(pack, 1088, 123, 0) == 0 &&
+    Check(InstallTrackRuntimeAssetPack(pack, 1088, 124, 0) == 0 &&
               s_installCount == 0 && s_trackIdentity == -1,
           "overlapping runtime blocks reject the pack before installation");
     pack->offsets[1] = 192;
     ((CourseObjectTable *)(void *)((u8 *)pack + pack->offsets[8]))->count = 4;
-    Check(InstallTrackRuntimeAssetPack(pack, 1088, 123, 0) == 0 &&
+    Check(InstallTrackRuntimeAssetPack(pack, 1088, 124, 0) == 0 &&
               s_installCount == 0 && s_trackIdentity == -1,
           "oversized course-object table rejects the runtime pack");
     ((CourseObjectTable *)(void *)((u8 *)pack + pack->offsets[8]))->count = 2;
 
     pack->offsets[1] = pack->offsets[0] + 64;
     s_installCount = 0;
-    Check(InstallTrackRuntimeAssetPack(pack, 1088, 123, 0) == 0 &&
+    Check(InstallTrackRuntimeAssetPack(pack, 1088, 124, 0) == 0 &&
               s_installCount == 0,
           "truncated render table rejects the runtime pack");
     pack->offsets[1] = 192;
 
     pack->offsets[2] = pack->offsets[1] + 128;
     s_installCount = 0;
-    Check(InstallTrackRuntimeAssetPack(pack, 1088, 123, 0) == 0 &&
+    Check(InstallTrackRuntimeAssetPack(pack, 1088, 124, 0) == 0 &&
               s_installCount == 0,
           "truncated environment palettes reject the runtime pack");
     pack->offsets[2] = 448;
@@ -514,7 +525,7 @@ static void TestTrackPhases(void) {
     s_trackIdentity = -1;
     g_TrackRenderTable = NULL;
     g_EnvPaletteTable = NULL;
-    Check(InstallTrackRuntimeAssetPack(pack, 1088, 123, 0) == 0 &&
+    Check(InstallTrackRuntimeAssetPack(pack, 1088, 124, 0) == 0 &&
               s_installCount == 0 && s_trackIdentity == -1 &&
               g_TrackRenderTable == NULL && g_EnvPaletteTable == NULL,
           "invalid camera table rejects the pack before publication");
@@ -527,7 +538,7 @@ static void TestTrackPhases(void) {
     g_EnvPaletteTable = NULL;
     g_CourseObjects = NULL;
     g_CourseObjectCount = -1;
-    Check(InstallTrackRuntimeAssetPack(pack, 1088, 123, 0) == 0 &&
+    Check(InstallTrackRuntimeAssetPack(pack, 1088, 124, 0) == 0 &&
               s_installCount == 8 && s_trackIdentity == -1 &&
               g_TrackRenderTable == NULL && g_EnvPaletteTable == NULL &&
               g_CourseObjects == NULL && g_CourseObjectCount == -1,
