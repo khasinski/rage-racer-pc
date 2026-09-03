@@ -20,7 +20,7 @@ typedef struct RectCall {
     s32 alpha;
 } RectCall;
 
-static RectCall s_outlines[8];
+static RectCall s_outlines[10];
 static RectCall s_fills[2];
 static s32 s_outlineCount;
 static s32 s_fillCount;
@@ -67,6 +67,9 @@ void DrawSolidRect(GameOrderingTableEntry *ot, s32 x, s32 y, s32 width, s32 heig
 }
 
 int main(void) {
+    GameOrderingTableEntry orderingTable[1] = {0};
+
+    g_RenderState.primData = orderingTable;
     GameDrawMenuButton(10, 20, 30, 40, 1, 2, 3);
     Check(s_outlineCount, 1, "button outline count");
     Check(s_fillCount, 1, "button fill count");
@@ -101,6 +104,14 @@ int main(void) {
     DrawMenuCursorBox(0, 0, 1, 1, 0);
     Check(g_MenuCursorPulsePhase, (s32)((u32)INT_MAX + 0x60u),
           "cursor phase wrap");
+
+    g_RenderState.primData = NULL;
+    GameDrawMenuButton(10, 20, 30, 40, 1, 2, 3);
+    DrawMenuCursorBox(0, 0, 1, 1, 0);
+    Check(s_outlineCount, 9, "null renderer outline count");
+    Check(s_fillCount, 1, "null renderer fill count");
+    Check(g_MenuCursorPulsePhase, (s32)((u32)INT_MAX + 0x60u),
+          "null renderer cursor phase");
 
     if (s_failures != 0) {
         printf("%d menu button assertion(s) failed\n", s_failures);

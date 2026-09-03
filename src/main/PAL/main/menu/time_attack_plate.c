@@ -20,7 +20,7 @@ void DrawTimeAttackPlate(s32 step) {
     }
 
     progress = g_TimeAttackPlateProgress;
-    if (progress != 0) {
+    if (progress != 0 && RENDER_OT_BASE != NULL) {
         s16 top = (s16)(0xD7 - progress);
         s16 bottom = (s16)(0xD8 + progress);
 

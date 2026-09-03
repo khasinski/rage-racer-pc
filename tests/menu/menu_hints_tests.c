@@ -1,13 +1,14 @@
 #include "game/menu.h"
 #include "game/render_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 
 u8 g_LastValidPadType;
 u8 g_PadType;
 GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
-OptionHintCaption g_OptionHintCaptions[7];
+OptionHintCaption g_OptionHintCaptions[MENU_OPTION_HINT_COUNT];
 
 typedef struct SpriteCall {
     GameOrderingTableEntry *ot;
@@ -105,6 +106,33 @@ int main(void) {
     CHECK(s_calls[0].u == 0x90 && s_calls[1].u == 0x98);
     CHECK(s_drawModeOt == ot0 && s_drawMode == 0x3F);
     CHECK(g_RenderState.packetCursor == s_packets + 4);
+
+    ResetCalls();
+    DrawOptionHintBar(-1);
+    DrawOptionHintBar(MENU_OPTION_HINT_COUNT);
+    DrawOptionHintBar(INT_MAX);
+    CHECK(s_callCount == 0 && g_RenderState.packetCursor == s_packets);
+
+    ResetCalls();
+    g_PadType = 0;
+    g_LastValidPadType = 0;
+    DrawPadTypeHint();
+    CHECK(g_LastValidPadType == PAD_TYPE_DIGITAL);
+    CHECK(s_calls[0].u == 0x90 && s_calls[1].u == 0x98);
+
+    ResetCalls();
+    g_DrawBuffer = NULL;
+    DrawMenuCursorArrow(12, 34);
+    DrawOptionHintBar(2);
+    DrawPadTypeHint();
+    CHECK(s_callCount == 0 && g_RenderState.packetCursor == s_packets);
+
+    g_DrawBuffer = &s_frame;
+    g_RenderState.packetCursor = NULL;
+    DrawMenuCursorArrow(12, 34);
+    DrawOptionHintBar(2);
+    DrawPadTypeHint();
+    CHECK(s_callCount == 0 && g_RenderState.packetCursor == NULL);
 
     puts("menu hint tests passed");
     return 0;

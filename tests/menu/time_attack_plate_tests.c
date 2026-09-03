@@ -55,6 +55,11 @@ int main(void) {
     DrawTimeAttackPlate(-1);
     if (g_TimeAttackPlateProgress != 0 || s_drawCount != 3) return 1;
 
+    g_RenderState.primData = NULL;
+    g_TimeAttackPlateProgress = 5;
+    DrawTimeAttackPlate(1);
+    if (g_TimeAttackPlateProgress != 6 || s_drawCount != 3) return 1;
+
     puts("time attack plate animation preserved");
     return 0;
 }

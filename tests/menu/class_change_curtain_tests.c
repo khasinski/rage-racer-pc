@@ -100,6 +100,11 @@ int main(void) {
     CHECK(DrawClassChangeCurtain(3) == 3);
     CHECK(s_rectCount == 0);
 
+    g_MenuAltLayout = 0;
+    g_RenderState.primData = NULL;
+    CHECK(DrawClassChangeCurtain(3) == 6);
+    CHECK(s_rectCount == 0);
+
     puts("class change curtain tests passed");
     return 0;
 }

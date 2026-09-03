@@ -2,12 +2,20 @@
 #include "game/menu.h"
 #include "game/render_internal.h"
 
+static int CanDrawMenuHint(void) {
+    return g_DrawBuffer != NULL && g_RenderState.packetCursor != NULL;
+}
 
 /* The 0xC x 0x18 selection arrow every setup-menu list draws beside its rows. */
 void DrawMenuCursorArrow(s32 x, s32 y) {
-    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(51);
-    u8 *next = GameQueueSpriteTrans(ot, RENDER_PRIM_CURSOR_AS(u8), x, y,
-                                    0xC, 0x18, 0xE0, 0x48, 0x7F40);
+    GameOrderingTableEntry *ot;
+    u8 *next;
+
+    if (!CanDrawMenuHint()) return;
+
+    ot = GamePrimaryOrderingTable(51);
+    next = GameQueueSpriteTrans(ot, RENDER_PRIM_CURSOR_AS(u8), x, y,
+                                0xC, 0x18, 0xE0, 0x48, 0x7F40);
 
     g_RenderState.packetCursor = QueueDrawModePrim(ot, next, 0x3F);
 }
@@ -16,10 +24,16 @@ void DrawMenuCursorArrow(s32 x, s32 y) {
  * right arrow. Variant 4 is the wide one and gets a fixed position plus an
  * extra 0x30-wide sprite between the caption and the closing arrow. */
 void DrawOptionHintBar(s32 variant) {
-    const OptionHintCaption *caption = &g_OptionHintCaptions[variant];
-    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
+    const OptionHintCaption *caption;
+    GameOrderingTableEntry *ot;
     s32 x;
-    u8 *next = RENDER_PRIM_CURSOR_AS(u8);
+    u8 *next;
+
+    if ((u32)variant >= MENU_OPTION_HINT_COUNT || !CanDrawMenuHint()) return;
+
+    caption = &g_OptionHintCaptions[variant];
+    ot = GamePrimaryOrderingTable(0);
+    next = RENDER_PRIM_CURSOR_AS(u8);
 
     if (variant == 4) {
         x = 0x5A;
@@ -48,17 +62,23 @@ void DrawOptionHintBar(s32 variant) {
 
 /* Two glyphs plus a label naming the connected pad; caches the last valid g_PadType. */
 void DrawPadTypeHint(void) {
-    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
+    GameOrderingTableEntry *ot;
     u8 padType = g_PadType;
-    u8 *next = RENDER_PRIM_CURSOR_AS(u8);
+    u8 *next;
     s32 textureU;
+
+    if (!CanDrawMenuHint()) return;
 
     if (padType != PAD_TYPE_DIGITAL && padType != PAD_TYPE_NEGCON) {
         padType = g_LastValidPadType;
-    } else {
-        g_LastValidPadType = padType;
     }
+    if (padType != PAD_TYPE_DIGITAL && padType != PAD_TYPE_NEGCON) {
+        padType = PAD_TYPE_DIGITAL;
+    }
+    g_LastValidPadType = padType;
 
+    ot = GamePrimaryOrderingTable(0);
+    next = RENDER_PRIM_CURSOR_AS(u8);
     textureU = padType == PAD_TYPE_NEGCON ? 0xA0 : 0x90;
     next = GameQueueSpriteTrans(ot, next, 0x7A, 0x1A0, 8, 0x10,
                                 textureU, 0xB8, 0x7F40);

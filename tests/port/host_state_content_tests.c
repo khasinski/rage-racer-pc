@@ -162,7 +162,7 @@ extern unsigned char g_ChanceDigits[12];
 extern unsigned char g_PlaceSuffixNames[20];
 extern unsigned char g_CarNames[52];
 extern unsigned char g_CarClassNames[52];
-extern OptionHintCaption g_OptionHintCaptions[7];
+extern OptionHintCaption g_OptionHintCaptions[MENU_OPTION_HINT_COUNT];
 extern DVec g_ClassRecordCellPoints[CLASS_RECORD_COUNT];
 extern ClassRecordSprite g_ClassRecordCellSprites[CLASS_RECORD_COUNT];
 extern Rgb g_ClassRecordNameSprites[CLASS_RECORD_COUNT + 1];

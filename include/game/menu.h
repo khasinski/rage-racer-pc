@@ -128,9 +128,9 @@ enum MenuLayout {
 /*
  * One caption of the setup-screen hint bar. `width` both sizes the sprite and
  * centres it, and `advance` is how far down the bar the next element starts.
- * Seven records, indexed by the DrawOptionHintBar argument.
+ * Records are indexed by the DrawOptionHintBar argument.
  */
-extern OptionHintCaption g_OptionHintCaptions[];
+extern OptionHintCaption g_OptionHintCaptions[MENU_OPTION_HINT_COUNT];
 
 /*
  * Slide geometry shared by the CAR SHOP and ENGINEER SHOP money panels. Both

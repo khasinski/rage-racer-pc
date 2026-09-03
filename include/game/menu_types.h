@@ -93,6 +93,8 @@ enum MenuPalette {
     MENU_PAINT_COLOR_COUNT = 18
 };
 
+enum { MENU_OPTION_HINT_COUNT = 7 };
+
 /* One entry in the setup-screen hint bar. */
 typedef struct OptionHintCaption {
     u8 u;
