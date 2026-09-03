@@ -46,11 +46,13 @@ void UpdateReplayScene(void) {
         return;
     }
 
-    ApplyReplayFrame(g_ReplayReadCursor, AsRivalCar(&g_PlayerCar),
-                     &g_Cars[0]);
-    g_ReplayReadCursor = NextReplayReadCursor(
-        g_ReplayReadCursor, g_ReplayFrameCount);
-    UpdateReplayCars();
+    if (g_ReplayFrameCount > 0) {
+        ApplyReplayFrame(g_ReplayReadCursor, AsRivalCar(&g_PlayerCar),
+                         &g_Cars[0]);
+        g_ReplayReadCursor = NextReplayReadCursor(
+            g_ReplayReadCursor, g_ReplayFrameCount);
+        UpdateReplayCars();
+    }
     UpdateCamera(CAMERA_VIEW_TRACK,
                  GetCarRenderObject(AsRivalCar(&g_PlayerCar)));
     g_RenderState.envMode4 = g_IsEnvironmentMode4;

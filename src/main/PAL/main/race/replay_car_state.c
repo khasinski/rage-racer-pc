@@ -21,6 +21,9 @@ void SeedReplayCars(void) {
     GameCarRuntime *rival = &g_Cars[0];
 
     InitShuttleScenery();
+    if (g_ReplayFrameCount <= 0) {
+        return;
+    }
     ApplyReplayFrameAndTrackPoint(g_ReplayReadCursor, player, rival);
 
     SeedReplayCarTrackState(player);

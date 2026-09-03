@@ -194,11 +194,23 @@ static void TestFadeExitStopsReplayFrame(void) {
     assert(s_CameraUpdates == 0 && s_TerrainDraws == 0);
 }
 
+static void TestEmptyReplayKeepsCurrentCarState(void) {
+    ResetState();
+    g_ReplayFrameCount = 0;
+
+    UpdateReplayScene();
+
+    assert(g_SceneTimer == 0 && s_AppliedCursor == -1);
+    assert(g_ReplayReadCursor == 7 && s_CarUpdates == 0);
+    assert(s_CameraUpdates == 1 && s_TerrainDraws == 1);
+}
+
 int main(void) {
     TestFirstTimeAttackFrame();
     TestGrandPrixResultCueAndCar();
     TestReplayBadgeVisibility();
     TestSceneCountersStayUsable();
     TestFadeExitStopsReplayFrame();
+    TestEmptyReplayKeepsCurrentCarState();
     return 0;
 }

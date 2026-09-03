@@ -26,6 +26,7 @@ static s32 s_CallCount;
 PlayerCarRuntime g_PlayerCar;
 GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
 s16 g_GrandPrixMode;
+s32 g_ReplayFrameCount;
 s32 g_ReplayReadCursor;
 
 static void RecordCall(ReplayCarCall call, GameCarRuntime *car, s32 value) {
@@ -83,6 +84,7 @@ static void TestSeedTimeAttackCar(void) {
 
     s_CallCount = 0;
     g_GrandPrixMode = 0;
+    g_ReplayFrameCount = 100;
     g_ReplayReadCursor = 42;
     player->trackPointIndex = 7;
 
@@ -104,6 +106,7 @@ static void TestSeedGrandPrixCarsForAnyNonzeroMode(void) {
 
     s_CallCount = 0;
     g_GrandPrixMode = 2;
+    g_ReplayFrameCount = 100;
     g_ReplayReadCursor = 9;
     player->trackPointIndex = 3;
     rival->trackPointIndex = 5;
@@ -118,6 +121,16 @@ static void TestSeedGrandPrixCarsForAnyNonzeroMode(void) {
     ExpectCall(9, CALL_RECONSTRUCT_TRACK_STATE, rival, 0);
     assert(player->trackPointIndex == 103);
     assert(rival->trackPointIndex == 105);
+}
+
+static void TestSeedWithoutRecordedFrames(void) {
+    s_CallCount = 0;
+    g_ReplayFrameCount = 0;
+
+    SeedReplayCars();
+
+    assert(s_CallCount == 1);
+    ExpectCall(0, CALL_INIT_SCENERY, NULL, 0);
 }
 
 static void TestUpdateCarsAndRequestPlayerTexture(void) {
@@ -156,6 +169,7 @@ static void TestUpdateTimeAttackCarWithoutRival(void) {
 int main(void) {
     TestSeedTimeAttackCar();
     TestSeedGrandPrixCarsForAnyNonzeroMode();
+    TestSeedWithoutRecordedFrames();
     TestUpdateCarsAndRequestPlayerTexture();
     TestUpdateTimeAttackCarWithoutRival();
     return 0;
