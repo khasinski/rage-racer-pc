@@ -1,6 +1,7 @@
 #include "game/render_state.h"
 #include "game/track_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -64,6 +65,23 @@ int main(void) {
     CarTrackMeasureArc(&work, 1, -50, 75, &point, &nextPoint);
     CHECK_EQ(work.carRadius.value, 0);
     CHECK_EQ(work.pointRadius.value, 0);
+    CHECK_EQ(work.nextPointRadius.value, 0);
+
+    centers[0].x = INT_MAX;
+    centers[0].z = INT_MIN;
+    point.x = INT_MIN;
+    point.z = INT_MAX;
+    nextPoint.x = INT_MAX;
+    nextPoint.z = INT_MIN;
+    CarTrackMeasureArc(&work, 0, INT_MIN, INT_MAX, &point, &nextPoint);
+    CHECK_EQ(work.carToCenterX, 1);
+    CHECK_EQ(work.carToCenterZ, -1);
+    CHECK_EQ(work.pointToCenterX, 1);
+    CHECK_EQ(work.pointToCenterZ, -1);
+    CHECK_EQ(work.nextPointToCenterX, 0);
+    CHECK_EQ(work.nextPointToCenterZ, 0);
+    CHECK_EQ(work.carRadius.value, 1);
+    CHECK_EQ(work.pointRadius.value, 1);
     CHECK_EQ(work.nextPointRadius.value, 0);
 
     puts("car arc measurement tests passed");
