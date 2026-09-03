@@ -235,6 +235,15 @@ int main(void) {
     CHECK(DrawRankingTable(&progress, -1, 0) == 0 && progress == 0);
     CHECK(s_buttonY == 0x21A);
 
+    ResetDraws();
+    progress = INT_MIN;
+    CHECK(DrawRankingTable(&progress, 1, 0) == 0 && progress == 1);
+    CHECK(s_buttonY == 0x21A);
+
+    ResetDraws();
+    progress = 1;
+    CHECK(DrawRankingTable(&progress, INT_MAX, 0) == 1 && progress == 15);
+
     CHECK(DrawRankingTable(NULL, 1, 0) == 0);
 
     puts("ranking table preserves all car sprites, records and transitions");

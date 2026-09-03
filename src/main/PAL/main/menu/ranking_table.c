@@ -98,10 +98,11 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
         return 0;
     }
 
+    *progress = AddClampedMenuValue(
+        *progress, 0, 0, RANKING_TABLE_PROGRESS_MAX);
     if (step < 0) {
-        int64_t updated = (int64_t)*progress + step;
-
-        *progress = updated > 0 ? (s32)updated : 0;
+        *progress = AddClampedMenuValue(
+            *progress, step, 0, RANKING_TABLE_PROGRESS_MAX);
     }
 
     phase = *progress;
@@ -185,13 +186,9 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
     }
 
     if (step >= 0) {
-        int64_t updated = (int64_t)*progress + step;
-
-        if (updated >= RANKING_TABLE_PROGRESS_MAX) {
-            *progress = RANKING_TABLE_PROGRESS_MAX;
-            return 1;
-        }
-        *progress = updated > 0 ? (s32)updated : 0;
+        *progress = AddClampedMenuValue(
+            *progress, step, 0, RANKING_TABLE_PROGRESS_MAX);
+        return *progress >= RANKING_TABLE_PROGRESS_MAX;
     }
     return 0;
 }
