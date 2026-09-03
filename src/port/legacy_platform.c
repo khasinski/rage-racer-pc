@@ -55,6 +55,7 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 #include "game/replay_internal.h"
 #include "game/round_screen_internal.h"
 #include "game/screens.h"
+#include "disc_cue.h"
 #include "disc_picker.h"
 #include "platform_paths.h"
 #include "runtime_config.h"
@@ -386,79 +387,6 @@ static unsigned int HostLe32(const unsigned char *value) {
            ((unsigned int)value[2] << 16) | ((unsigned int)value[3] << 24);
 }
 
-static int HostParseCue(const char *cue, char *image, size_t image_size,
-                        long *track_offset) {
-    FILE *file = fopen(cue, "r");
-    char line[PATH_MAX + 64];
-    char cue_directory[PATH_MAX];
-    char image_name[PATH_MAX] = {0};
-    char *slash;
-    char *backslash;
-    int data_track_seen = 0;
-    int data_index_found = 0;
-
-    if (file == NULL) return 0;
-    snprintf(cue_directory, sizeof(cue_directory), "%s", cue);
-    slash = strrchr(cue_directory, '/');
-    backslash = strrchr(cue_directory, '\\');
-    if (backslash != NULL && (slash == NULL || backslash > slash)) {
-        slash = backslash;
-    }
-    if (slash != NULL) {
-        *slash = '\0';
-    } else {
-        snprintf(cue_directory, sizeof(cue_directory), ".");
-    }
-    *track_offset = 0;
-    while (fgets(line, sizeof(line), file)) {
-        char *quote;
-        if (strncasecmp(line, "FILE", 4) == 0) {
-            quote = strchr(line, '\"');
-            if (quote != NULL) {
-                char *end = strchr(quote + 1, '\"');
-                if (end != NULL) {
-                    *end = '\0';
-                    snprintf(image_name, sizeof(image_name), "%s", quote + 1);
-                }
-            }
-        } else if (strncasecmp(line, "  TRACK", 7) == 0 ||
-                   strncasecmp(line, "TRACK", 5) == 0) {
-            data_track_seen = strstr(line, "MODE1/2352") != NULL ||
-                              strstr(line, "MODE2/2352") != NULL;
-        } else if (data_track_seen &&
-                   (strncasecmp(line, "    INDEX 01", 12) == 0 ||
-                    strncasecmp(line, "INDEX 01", 8) == 0)) {
-            int minute, second, frame;
-            if (sscanf(line, "%*s %*s %d:%d:%d", &minute, &second, &frame) ==
-                    3 &&
-                minute >= 0 && second >= 0 && second < 60 && frame >= 0 &&
-                frame < 75) {
-                long sectors = (long)minute * 60 * 75 + second * 75 + frame;
-
-                if (sectors <= LONG_MAX / RAGE_CD_SECTOR_SIZE) {
-                    *track_offset = sectors * RAGE_CD_SECTOR_SIZE;
-                    data_index_found = 1;
-                }
-            }
-            break;
-        }
-    }
-    fclose(file);
-    if (image_name[0] == '\0' || !data_index_found) return 0;
-    if (image_name[0] == '/' ||
-        (isalpha((unsigned char)image_name[0]) && image_name[1] == ':')) {
-        snprintf(image, image_size, "%s", image_name);
-    } else {
-        size_t directory_length = strlen(cue_directory);
-        size_t name_length = strlen(image_name);
-        if (directory_length + 1 + name_length + 1 > image_size) return 0;
-        memcpy(image, cue_directory, directory_length);
-        image[directory_length] = '/';
-        memcpy(image + directory_length + 1, image_name, name_length + 1);
-    }
-    return access(image, R_OK) == 0;
-}
-
 static int HostReadSector(long sector, unsigned char *buffer) {
     long byte_offset;
     long maximum_sector;
@@ -730,8 +658,10 @@ static int HostOpenDiscImage(const char *cue, char *image, size_t image_size) {
         return 1;
     }
     if (!HostPathEndsWithCue(cue) || Psyz_CdSetDiskPath(cue) != 0 ||
-        !HostParseCue(cue, image, image_size,
-                          &g_RageHostDisc.track_offset)) return 0;
+        !DiscCueResolveDataTrack(cue, image, image_size,
+                                 &g_RageHostDisc.track_offset)) {
+        return 0;
+    }
     g_RageHostDisc.file = fopen(image, "rb");
     if (g_RageHostDisc.file == NULL || !HostFindArchive()) {
         if (g_RageHostDisc.file != NULL) fclose(g_RageHostDisc.file);

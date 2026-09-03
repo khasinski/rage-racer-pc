@@ -92,8 +92,8 @@ def play(executable: str, source_dir: str, stream: int, frames: int) -> str:
 
 
 def cue_track_one(cue: Path) -> tuple[Path, int]:
-    """The data track's image file and where it starts in it, as HostParseCue
-    reads them."""
+    """The data track's image file and where it starts in it, following the
+    same CUE semantics as DiscCueResolveDataTrack."""
     image = None
     data_track = False
     for line in cue.read_text(errors="replace").splitlines():

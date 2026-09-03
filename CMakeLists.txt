@@ -206,6 +206,7 @@ if(RAGE_BUILD_PORT)
     set(RAGE_PORT_LEGACY_SOURCES
         src/port/platform_stubs.c
         src/port/legacy_platform.c
+        src/port/disc_cue.c
         src/port/classic/native_geometry.c
         src/port/native_geometry_interpolation.c
         src/port/native_asset_loader.c

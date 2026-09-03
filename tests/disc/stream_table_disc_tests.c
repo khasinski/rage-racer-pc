@@ -22,13 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef _WIN32
-int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
-#define strncasecmp _strnicmp
-#else
-#include <strings.h>
-#endif
-
+#include "disc_cue.h"
 #include "disc_stream_table.h"
 
 /* ctest reads this exit code as "skipped" rather than "failed". */
@@ -84,61 +78,13 @@ static int EndsWith(const char *path, const char *suffix) {
     return 1;
 }
 
-/* The data track's image file and where it starts in it, as HostParseCue reads
- * them. A cue that names no 2352-byte track is not a disc this can read. */
-static int ParseCue(const char *cue, char *image, size_t imageSize,
-                        long *firstSector) {
-    FILE *file = fopen(cue, "r");
-    char line[2048];
-    char name[1024] = {0};
-    const char *slash;
-    int dataTrack = 0;
-
-    *firstSector = 0;
-    if (file == NULL) return 0;
-    while (fgets(line, sizeof(line), file) != NULL) {
-        char *text = line;
-        char *quote;
-        while (*text == ' ' || *text == '\t') text++;
-        if (strncasecmp(text, "FILE", 4) == 0) {
-            quote = strchr(text, '"');
-            if (quote != NULL) {
-                char *end = strchr(quote + 1, '"');
-                if (end != NULL) {
-                    *end = '\0';
-                    snprintf(name, sizeof(name), "%s", quote + 1);
-                }
-            }
-        } else if (strncasecmp(text, "TRACK", 5) == 0) {
-            dataTrack = strstr(text, "MODE1/2352") != NULL ||
-                        strstr(text, "MODE2/2352") != NULL;
-        } else if (dataTrack && strncasecmp(text, "INDEX 01", 8) == 0) {
-            int minute, second, frame;
-            if (sscanf(text, "%*s %*s %d:%d:%d", &minute, &second, &frame) == 3)
-                *firstSector = (long)minute * 60 * 75 + (long)second * 75 + frame;
-            break;
-        }
-    }
-    fclose(file);
-    if (name[0] == '\0') return 0;
-    if (name[0] == '/') {
-        snprintf(image, imageSize, "%s", name);
-        return 1;
-    }
-    slash = strrchr(cue, '/');
-    if (slash == NULL) {
-        snprintf(image, imageSize, "%s", name);
-        return 1;
-    }
-    snprintf(image, imageSize, "%.*s%s", (int)(slash - cue + 1), cue, name);
-    return 1;
-}
-
 static int OpenDisc(const char *path, ImageReader *reader) {
     char image[2048];
     if (EndsWith(path, ".cue")) {
-        if (!ParseCue(path, image, sizeof(image), &reader->firstSector))
+        long trackOffset;
+        if (!DiscCueResolveDataTrack(path, image, sizeof(image), &trackOffset))
             return 0;
+        reader->firstSector = trackOffset / RAW_SECTOR_SIZE;
     } else {
         snprintf(image, sizeof(image), "%s", path);
         reader->firstSector = 0;

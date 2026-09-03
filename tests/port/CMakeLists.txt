@@ -1,3 +1,14 @@
+add_executable(disc_cue_tests
+    disc_cue_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/disc_cue.c)
+target_include_directories(disc_cue_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(disc_cue_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME disc_cue COMMAND disc_cue_tests)
+set_tests_properties(disc_cue PROPERTIES LABELS unit)
+
 add_executable(main_loop_frame_tests
     main_loop_frame_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/boot/main_loop.c)
