@@ -2,6 +2,7 @@
 #include "game/audio.h"
 #include "game/menu.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -249,6 +250,26 @@ int main(void) {
     UpdateLogoSampleScreen();
     CHECK(GameMenuBusy == 0);
     CHECK(g_LogoSampleBackIndex == 4);
+
+    Reset();
+    g_LogoSampleCursor = INT_MAX;
+    g_LogoSampleCharIndex = INT_MIN;
+    g_LogoSampleBackIndex = INT_MAX;
+    g_LogoSampleSavedIndex = INT_MAX;
+    UpdateLogoSampleScreen();
+    CHECK(g_LogoSampleCursor == 2);
+    CHECK(g_LogoSampleCharIndex == 0 && g_LogoSampleBackIndex == 19);
+    CHECK(g_LogoSampleSavedIndex == 19);
+    CHECK(s_composedCharacter == 0 && s_composedBackground == 19);
+
+    Reset();
+    GameMenuBusy = INT_MIN;
+    g_LogoSampleCharIndex = 6;
+    g_LogoSampleBackIndex = 7;
+    g_PadPressed = PAD_RIGHT;
+    UpdateLogoSampleScreen();
+    CHECK(GameMenuBusy == 0);
+    CHECK(g_LogoSampleCharIndex == 6 && g_LogoSampleBackIndex == 7);
 
     g_LogoSampleScreenFade = 100;
     CHECK(DrawLogoSampleScreen(25) == 125);

@@ -3,27 +3,41 @@
 #include "game/menu_internal.h"
 #include "game/team_logo.h"
 
+enum LogoSampleScreenState {
+    LOGO_SAMPLE_IDLE = 0,
+    LOGO_SAMPLE_EXIT_TO_EDITOR = 1,
+    LOGO_SAMPLE_PICK_CHARACTER = -1,
+    LOGO_SAMPLE_PICK_BACKGROUND = -2,
+};
+
+enum LogoSampleOption {
+    LOGO_SAMPLE_OPTION_CHARACTER,
+    LOGO_SAMPLE_OPTION_BACKGROUND,
+    LOGO_SAMPLE_OPTION_EXIT,
+    LOGO_SAMPLE_OPTION_COUNT,
+};
+
 enum { LOGO_SAMPLE_COUNT = 20 };
 
 static void ChooseLogoSampleRow(void) {
     switch (g_LogoSampleCursor) {
-    case 0:
+    case LOGO_SAMPLE_OPTION_CHARACTER:
         PlaySoundCue(2);
-        GameMenuBusy = -1;
+        GameMenuBusy = LOGO_SAMPLE_PICK_CHARACTER;
         g_UiScriptProgress2 = 0;
         g_LogoSampleSubPanelScript = g_MenuRow0MarkerScript;
         g_LogoSampleSavedIndex = g_LogoSampleCharIndex;
         break;
-    case 1:
+    case LOGO_SAMPLE_OPTION_BACKGROUND:
         PlaySoundCue(2);
-        GameMenuBusy = -2;
+        GameMenuBusy = LOGO_SAMPLE_PICK_BACKGROUND;
         g_UiScriptProgress2 = 0;
         g_LogoSampleSubPanelScript = g_MenuRow1MarkerScript;
         g_LogoSampleSavedIndex = g_LogoSampleBackIndex;
         break;
-    case 2:
+    case LOGO_SAMPLE_OPTION_EXIT:
         PlaySoundCue(3);
-        GameMenuBusy = 1;
+        GameMenuBusy = LOGO_SAMPLE_EXIT_TO_EDITOR;
         g_MenuOverlayPattern = 2;
         break;
     }
@@ -43,17 +57,19 @@ static void UpdateLogoSampleIdle(void) {
     g_MenuOverlayPattern = -1;
     if (g_PadPressed & PAD_UP) {
         PlaySoundCue(1);
-        g_LogoSampleCursor = WrapMenuIndex(g_LogoSampleCursor, -1, 3);
+        g_LogoSampleCursor = WrapMenuIndex(
+            g_LogoSampleCursor, -1, LOGO_SAMPLE_OPTION_COUNT);
     }
     if (g_PadPressed & PAD_DOWN) {
         PlaySoundCue(1);
-        g_LogoSampleCursor = WrapMenuIndex(g_LogoSampleCursor, 1, 3);
+        g_LogoSampleCursor = WrapMenuIndex(
+            g_LogoSampleCursor, 1, LOGO_SAMPLE_OPTION_COUNT);
     }
     if (g_PadPressed & PAD_CONFIRM) {
         ChooseLogoSampleRow();
     } else if (g_PadPressed & PAD_CANCEL) {
         PlaySoundCue(3);
-        GameMenuBusy = 1;
+        GameMenuBusy = LOGO_SAMPLE_EXIT_TO_EDITOR;
         g_MenuOverlayPattern = 2;
     }
 }
@@ -84,9 +100,10 @@ static void UpdateLogoSamplePicker(s32 *selection) {
     }
 }
 
-static void UpdateLogoSampleModal(void) {
-    s32 *selection = GameMenuBusy == -1 ? &g_LogoSampleCharIndex
-                                        : &g_LogoSampleBackIndex;
+static void UpdateLogoSampleModal(s32 state) {
+    s32 *selection = state == LOGO_SAMPLE_PICK_CHARACTER
+                         ? &g_LogoSampleCharIndex
+                         : &g_LogoSampleBackIndex;
 
     RampTeamLogoCanvas(10, 0);
     UpdateLogoSamplePicker(selection);
@@ -115,16 +132,27 @@ static void UpdateLogoSampleOutgoing(void) {
 void UpdateLogoSampleScreen(void) {
     s32 state = GameMenuBusy;
 
+    g_LogoSampleCursor = AddClampedMenuValue(
+        g_LogoSampleCursor, 0, 0, LOGO_SAMPLE_OPTION_COUNT - 1);
+    g_LogoSampleCharIndex = AddClampedMenuValue(
+        g_LogoSampleCharIndex, 0, 0, LOGO_SAMPLE_COUNT - 1);
+    g_LogoSampleBackIndex = AddClampedMenuValue(
+        g_LogoSampleBackIndex, 0, 0, LOGO_SAMPLE_COUNT - 1);
+    g_LogoSampleSavedIndex = AddClampedMenuValue(
+        g_LogoSampleSavedIndex, 0, 0, LOGO_SAMPLE_COUNT - 1);
     g_MenuAltLayout = 0;
     ComposeSampleTeamLogo(g_LogoSampleCharIndex, g_LogoSampleBackIndex);
     DrawTeamLogoCanvas(1, 0);
 
-    if (state == 0) {
+    if (state == LOGO_SAMPLE_IDLE) {
         UpdateLogoSampleIdle();
-    } else if (state < 0) {
-        UpdateLogoSampleModal();
-    } else {
+    } else if (state == LOGO_SAMPLE_PICK_CHARACTER ||
+               state == LOGO_SAMPLE_PICK_BACKGROUND) {
+        UpdateLogoSampleModal(state);
+    } else if (state > LOGO_SAMPLE_IDLE) {
         UpdateLogoSampleOutgoing();
+    } else {
+        GameMenuBusy = LOGO_SAMPLE_IDLE;
     }
 }
 
