@@ -23,6 +23,8 @@ enum {
     COLLISION_TRACK_REACH = 200,
     COLLISION_LATERAL_REACH = 100,
     CAR_COLLISION_SAMPLE_COUNT = 5,
+    COLLISION_PUSH_DIVISOR = 32,
+    UNSHOVED_ACCELERATION_PERCENT = 90,
 };
 
 /* Transforms the four hull corners into the frame of `source`, offset by
@@ -68,27 +70,27 @@ static void BuildCollisionQuads(const CarCollisionPoint *corners,
                                 CarCollisionPoint
                                     grid[CAR_COLLISION_QUAD_COUNT]
                                         [CAR_COLLISION_QUAD_COUNT]) {
-    CarCollisionPoint average01;
-    CarCollisionPoint average02;
-    CarCollisionPoint average13;
-    CarCollisionPoint average23;
+    CarCollisionPoint midpoint01;
+    CarCollisionPoint midpoint02;
+    CarCollisionPoint midpoint13;
+    CarCollisionPoint midpoint23;
     CarCollisionPoint center;
     s32 corner;
 
-    for (corner = 0; corner < 4; corner++) {
+    for (corner = 0; corner < CAR_COLLISION_QUAD_COUNT; corner++) {
         grid[corner][corner] = corners[corner];
     }
 
-    average01 = CarCollisionMidpoint(corners[0], corners[1]);
-    average02 = CarCollisionMidpoint(corners[0], corners[2]);
-    average13 = CarCollisionMidpoint(corners[1], corners[3]);
-    average23 = CarCollisionMidpoint(corners[2], corners[3]);
-    center = CarCollisionMidpoint(average01, average23);
+    midpoint01 = CarCollisionMidpoint(corners[0], corners[1]);
+    midpoint02 = CarCollisionMidpoint(corners[0], corners[2]);
+    midpoint13 = CarCollisionMidpoint(corners[1], corners[3]);
+    midpoint23 = CarCollisionMidpoint(corners[2], corners[3]);
+    center = CarCollisionMidpoint(midpoint01, midpoint23);
 
-    grid[1][0] = grid[0][1] = average01;
-    grid[2][0] = grid[0][2] = average02;
-    grid[3][1] = grid[1][3] = average13;
-    grid[3][2] = grid[2][3] = average23;
+    grid[1][0] = grid[0][1] = midpoint01;
+    grid[2][0] = grid[0][2] = midpoint02;
+    grid[3][1] = grid[1][3] = midpoint13;
+    grid[3][2] = grid[2][3] = midpoint23;
     grid[3][0] = grid[2][1] = grid[1][2] = grid[0][3] = center;
 }
 
@@ -107,7 +109,7 @@ static void BuildHullSamples(const CarCollisionPoint *corners,
 static s16 ScaledSpeedDelta(s32 faster, s32 slower) {
     s16 delta = WrapSigned16((u16)faster - (u16)slower);
 
-    return delta / 32;
+    return delta / COLLISION_PUSH_DIVISOR;
 }
 
 /*
@@ -123,12 +125,13 @@ static void ShoveApart(GameCarRuntime *car, GameCarRuntime *other, s32 hit) {
         SetCarCollisionKnockback(car, 0, 0);
         SetCarCollisionKnockback(other, pushX, pushZ);
         car->acceleration = WrapSigned32(
-            (int64_t)car->acceleration * 90) / 100;
+            (int64_t)car->acceleration * UNSHOVED_ACCELERATION_PERCENT) / 100;
     } else {
         SetCarCollisionKnockback(car, -pushX, -pushZ);
         SetCarCollisionKnockback(other, 0, 0);
         other->acceleration = WrapSigned32(
-            (int64_t)other->acceleration * 90) / 100;
+            (int64_t)other->acceleration * UNSHOVED_ACCELERATION_PERCENT) /
+            100;
     }
     car->collisionFlag = 1;
     other->collisionFlag = 1;
