@@ -31,7 +31,7 @@ long CdSync(long mode, u_char *result) {
     return s_syncResult;
 }
 
-long CdPosToInt_Local(CdlLOC *location) {
+int CdPosToInt(CdlLOC *location) {
     return location->minute * 60 * 75 + location->second * 75 +
            location->sector;
 }

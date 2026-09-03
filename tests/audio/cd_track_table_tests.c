@@ -23,7 +23,7 @@ long CdGetToc(CdlLOC *tracks) {
     return s_tocCount;
 }
 
-long CdPosToInt_Local(CdlLOC *location) {
+int CdPosToInt(CdlLOC *location) {
     return location->sector;
 }
 

@@ -809,15 +809,12 @@ MATRIX *MulMatrix0(MATRIX *left, MATRIX *right, MATRIX *output) {
  * Their real filesystem/audio implementations are introduced before those
  * subsystems are enabled in the native startup path. */
 #define VOID_ADAPTER(name) void name(void) {}
-#define ZERO_ADAPTER(name) long name(void) { return 0; }
 
 void BiosBuInit(void) { _bu_init(); }
 VOID_ADAPTER(BiosExit)
 void BiosSetMemSize(s32 megabytes) { (void)megabytes; }
 VOID_ADAPTER(KernelCallbackSlot3)
 VOID_ADAPTER(SetDMAInterruptState)
-VOID_ADAPTER(StCdInterrupt)
-VOID_ADAPTER(StUnSetRing)
 long BiosFileOpen(void *path, long mode) {
     if (path == NULL) return -1;
     return psyz_open(path, (int)mode);
@@ -844,8 +841,6 @@ void *BiosFirstFile(char *path, void *entry) {
 void *BiosNextFile(void *entry) { return nextfile(entry); }
 
 long BiosFormatDevice(void *device) { return format(device); }
-ZERO_ADAPTER(CdPosToInt_Local)
-ZERO_ADAPTER(CdReadBreak)
 s32 HostCdAudioEnded(void) { return Psyz_CdAudioEnded(); }
 void InitPad(void *buf0, int len0, void *buf1, int len1) {
     (void)InitPAD((char *)buf0, len0, (char *)buf1, len1);
@@ -858,14 +853,16 @@ void SpuVmDamperStep(void) {
     }
 }
 void SsSeqCloseWrapper(short sequence) { SsSeqClose(sequence); }
-ZERO_ADAPTER(SsSetSpuInputAttr)
+void SsSetSpuInputAttr(unsigned char source, unsigned char field,
+                       unsigned char value) {
+    (void)source;
+    (void)field;
+    (void)value;
+}
 unsigned char SsSetVoiceCount(unsigned char voices) {
     return (unsigned char)SsSetReservedVoice((char)voices);
 }
-ZERO_ADAPTER(SsStartSoundTickMode1)
-ZERO_ADAPTER(SsStopSoundTick)
-ZERO_ADAPTER(StGetBackloc)
-ZERO_ADAPTER(ssinit)
+void ssinit(void) {}
 
 CdlFILE *DsSearchFile(CdlFILE *file, char *name) {
     const char *marker;

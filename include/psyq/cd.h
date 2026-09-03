@@ -22,7 +22,7 @@ u_char CdLastCom(void);
 /* Returns the last reported disc position. */
 CdlLOC *CdLastPos(void);
 CdlLOC *CdIntToPos(long i, CdlLOC *p);
-long CdPosToInt_Local(CdlLOC *loc);
+int CdPosToInt(CdlLOC *loc);
 long CdGetToc(CdlLOC *toc);
 long CdGetToc2(long maxTracks, u_char *out);
 void CD_initintr(void);
@@ -33,14 +33,11 @@ long CD_vol(CdlATV *vol);
 CdlFILE *DsSearchFile(CdlFILE *file, char *name);
 long DS_searchdir(long type, u_char *name);
 void StClearRing(void);
-long StGetBackloc(CdlLOC *loc);
 /* LibRef47 spells these `u_long *ring_addr, u_long ring_size` and StSetStream's
  * last two arguments as function pointers; kept as-is to match the call sites. */
 void StSetRing(void *base, long size);
 void StSetStream(long mode, long start_frame, long end_frame, long callback, long user_data);
 u_long StFreeRing(u_long *base);
-/* Legacy libds CD interrupt entry point. */
-void StCdInterrupt(void);
 
 /*
  * libcd command interface. All three share the same retry-3 body over CD_cw;
@@ -90,7 +87,6 @@ long CdReadyCallback(long callback);
 
 long CdRead(long sectors, void *buf, long mode);
 long CdReadSync(long mode, u_char *result);
-void CdReadBreak(void);
 /* cdread.c's `data_ready_callback`: drains one sector per CdReady interrupt. */
 void CdReadDataReadyCallback(u_char intr, long result);
 /* cdread.c's `read_retry`: re-issues CdlSetmode + CdlReadN after a shell open,
@@ -102,10 +98,6 @@ void CdDataCallback(long callback);
 /* Fetch the next ready ring frame: *addr = its data, *header = its ring entry;
  * returns 0 when one was handed out. */
 long StGetNext(StRingEventRecord **addr, StRingEventRecord **header);
-/* Tear the stream down: clears the CD data / ready callbacks and both kernel
- * callback slots inside a critical section. */
-void StUnSetRing(void);
-
 long CD_init(long mode);
 long CD_sync(long mode, u_char *result);
 long CD_ready(long mode, u_char *result);

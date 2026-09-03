@@ -12,7 +12,7 @@ static void CopyTocTrackLocations(CdlLOC *toc, s32 trackCount) {
     }
 
     for (index = 1; index <= trackCount; index++) {
-        CdIntToPos(CdPosToInt_Local(&toc[index]) + CD_TRACK_LEAD_IN_SECTORS,
+        CdIntToPos(CdPosToInt(&toc[index]) + CD_TRACK_LEAD_IN_SECTORS,
                    &g_CdTrackLocs[index]);
     }
 }

@@ -11,8 +11,6 @@ long SpuTransferStatus(void *address, long mode);
  * force-included ahead of the one that defines those. */
 void SetReverbPreset(int type, int left, int right);
 struct CdlLOC;
-long StGetBackloc(struct CdlLOC *location);
-void StUnSetRing(void);
 int HostLoadArchiveIndex(void *entries, int count);
 int HostLoadAsset(unsigned int byte_offset, unsigned int size,
                   void *destination);

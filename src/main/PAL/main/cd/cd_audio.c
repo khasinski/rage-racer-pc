@@ -55,9 +55,9 @@ void TickCdAudio(void) {
             g_CdTrackEnded = 1;
         } else {
             const s32 loopPoint =
-                CdPosToInt_Local(&g_CdTrackLoopPoint[g_CdCurrentTrack]);
+                CdPosToInt(&g_CdTrackLoopPoint[g_CdCurrentTrack]);
             const s32 firstLoopPoint =
-                CdPosToInt_Local(&g_CdTrackLoopPoint[0]);
+                CdPosToInt(&g_CdTrackLoopPoint[0]);
 
             if (CdTrackHasLoopPoint(firstLoopPoint, loopPoint)) {
                 QueueCdTrackRestart(g_CdCurrentTrack);

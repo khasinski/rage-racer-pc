@@ -15,11 +15,11 @@ static void CaptureCdPauseLocation(void) {
         return;
     }
 
-    loopPoint = CdPosToInt_Local(&g_CdTrackLoopPoint[g_CdCurrentTrack]);
-    firstLoopPoint = CdPosToInt_Local(&g_CdTrackLoopPoint[0]);
+    loopPoint = CdPosToInt(&g_CdTrackLoopPoint[g_CdCurrentTrack]);
+    firstLoopPoint = CdPosToInt(&g_CdTrackLoopPoint[0]);
 
     g_CdRestartOnResume = CdPlaybackPassedLoopPoint(
-        firstLoopPoint, loopPoint, CdPosToInt_Local(&g_CdTrackElapsedLoc));
+        firstLoopPoint, loopPoint, CdPosToInt(&g_CdTrackElapsedLoc));
 }
 
 void StepCdPauseRequest(void) {
