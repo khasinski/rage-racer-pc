@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -57,6 +58,21 @@ int main(void) {
     write_u32(blob + 28, 6);
     write_u32(blob + 192, 4);
     EXPECT(!RuntimeMeshOpen(&mesh, blob, sizeof(blob)));
+    write_u32(blob + 192, 0);
+
+    write_u32(blob + 20, 5);
+    write_u32(blob + 28, 5);
+    EXPECT(!RuntimeMeshOpen(&mesh, blob, sizeof(blob)));
+    write_u32(blob + 20, 6);
+    write_u32(blob + 28, 6);
+
+    position[0] = NAN;
+    memcpy(blob + 32, position, sizeof(position));
+    EXPECT(!RuntimeMeshOpen(&mesh, blob, sizeof(blob)));
+    position[0] = 3.0f;
+    memcpy(blob + 32, position, sizeof(position));
+    uv[1] = INFINITY;
+    memcpy(blob + 60, uv, sizeof(uv));
+    EXPECT(!RuntimeMeshOpen(&mesh, blob, sizeof(blob)));
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
-

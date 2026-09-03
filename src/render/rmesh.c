@@ -15,6 +15,16 @@ static uint32_t RageReadU32(const uint8_t *p) {
            ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
 }
 
+static int RageFloatArrayIsFinite(const uint8_t *bytes, size_t count) {
+    size_t index;
+    for (index = 0; index < count; index++) {
+        float value;
+        memcpy(&value, bytes + index * sizeof(value), sizeof(value));
+        if (!isfinite(value)) return 0;
+    }
+    return 1;
+}
+
 static int Range(size_t offset, size_t length, size_t size) {
     return offset <= size && length <= size - offset;
 }
@@ -60,10 +70,17 @@ int RuntimeMeshOpen(RageRuntimeMesh *mesh, const void *bytes, size_t size) {
     if (previous != 0) return 0;
     for (i = 1; i <= meshCount; i++) {
         uint32_t offset = RageReadU32(p + RAGE_RMESH_HEADER_SIZE + i * 4);
-        if (offset < previous || offset > indexCount) return 0;
+        if (offset < previous || offset > indexCount ||
+            (offset - previous) % 3u != 0) return 0;
         previous = offset;
     }
     if (previous != indexCount) return 0;
+    for (i = 0; i < vertexCount; i++) {
+        const uint8_t *vertex = p + verticesOffset +
+            (size_t)i * RAGE_RMESH_VERTEX_SIZE;
+        if (!RageFloatArrayIsFinite(vertex, 6) ||
+            !RageFloatArrayIsFinite(vertex + 28, 2)) return 0;
+    }
     for (i = 0; i < indexCount; i++) {
         if (RageReadU32(p + indicesOffset + (size_t)i * 4) >= vertexCount) {
             return 0;
