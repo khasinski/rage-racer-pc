@@ -18,6 +18,12 @@ void DrawSpeedDigits(s32 x, s32 y, s32 value) {
     s32 ones;
     u16 color;
 
+    if (value < 0) {
+        value = 0;
+    } else if (value > 999) {
+        value = 999;
+    }
+
     hundreds = value / 100;
     screenX = g_CarSpec->tachometer.digitsX + x;
     screenY = g_CarSpec->tachometer.digitsY + y;

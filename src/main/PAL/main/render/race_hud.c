@@ -14,7 +14,7 @@ enum {
     GRAND_PRIX_TIME_LIMIT_LABEL = 2,
     HUD_DEFAULT_CLUT = 0x78CC,
     TIME_LIMIT_WARNING_CLUT = 0x7811,
-    TIME_LIMIT_WARNING_MS = 1500,
+    TIME_LIMIT_WARNING_TICKS = 1500,
     HUD_DYNAMIC_DIGIT_LABEL = 3,
     HUD_DYNAMIC_SIGN_OR_ONES_LABEL = 4,
     RACE_POSITION_DIGIT_WIDTH = 24,
@@ -111,18 +111,18 @@ void DrawLapTimes(void) {
                   0x78CC, 0x3E8);
 }
 
-void DrawTimeRemaining(s32 timeMs) {
+void DrawTimeRemaining(s32 ticks) {
     s32 clut = HUD_DEFAULT_CLUT;
 
     if (!HudShowTimeLimit()) {
         return;
     }
 
-    if (timeMs < TIME_LIMIT_WARNING_MS) {
+    if (ticks < TIME_LIMIT_WARNING_TICKS) {
         clut = TIME_LIMIT_WARNING_CLUT;
     }
 
-    DrawMinuteSecondTime(HudLeftX(0xE), 0xD2, timeMs, clut);
+    DrawMinuteSecondTime(HudLeftX(0xE), 0xD2, ticks, clut);
 }
 
 /* The two race-position digits, from g_PlayerCar.drive.racePosition; the tens digit is

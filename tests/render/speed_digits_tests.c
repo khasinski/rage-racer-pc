@@ -81,5 +81,7 @@ int main(void) {
     CheckSpeed(7, 0, 0, 7);
     CheckSpeed(160, 1, 6, 0);
     CheckSpeed(999, 9, 9, 9);
+    CheckSpeed(-1, 0, 0, 0);
+    CheckSpeed(1000, 9, 9, 9);
     return 0;
 }

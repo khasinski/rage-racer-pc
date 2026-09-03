@@ -79,6 +79,16 @@ int main(void) {
 
     memset(packets, 0, sizeof(packets));
     ResetPackets(packets);
+    DrawHudDigit(packets, 0, 0, -1, 0);
+    CHECK(((SPRT_8 *)packets)->u0 == 0);
+
+    memset(packets, 0, sizeof(packets));
+    ResetPackets(packets);
+    DrawHudDigit(packets, 0, 0, 10, 0);
+    CHECK(((SPRT_8 *)packets)->u0 == 72);
+
+    memset(packets, 0, sizeof(packets));
+    ResetPackets(packets);
     DrawFullscreenFadeTile(-20, 0x49);
     fade = (TILE *)packets;
     CHECK(fade->x0 == 0 && fade->y0 == 0);
