@@ -23,11 +23,6 @@
 #include <stdio.h>
 #include <string.h>
 
-void UpdateCarLaunch(PlayerCarRuntime *car);
-void UpdateCarAirborne(PlayerCarRuntime *car);
-void UpdateCarStandingStart(PlayerCarRuntime *car);
-
-
 /* A ring of points, so an index maps to a position without a course. */
 void InterpolateTrackPoint(s32 pointIndex, s32 *out, s32 weight) {
     s32 angle = (pointIndex * 4096) / (g_TrackPointCount > 0 ? g_TrackPointCount : 1);
