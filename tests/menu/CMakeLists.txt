@@ -1063,6 +1063,25 @@ endif()
 add_test(NAME option_scene COMMAND option_scene_tests)
 set_tests_properties(option_scene PROPERTIES LABELS unit)
 
+add_executable(option_menu_fade_tests
+    option_menu_fade_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/option_menu_fade.c)
+target_include_directories(option_menu_fade_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(option_menu_fade_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(option_menu_fade_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(option_menu_fade_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME option_menu_fade COMMAND option_menu_fade_tests)
+set_tests_properties(option_menu_fade PROPERTIES LABELS unit)
+
 add_executable(class_record_menu_tests
     class_record_menu_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/class_record_menu.c)
