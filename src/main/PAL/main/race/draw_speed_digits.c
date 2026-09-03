@@ -25,8 +25,10 @@ void DrawSpeedDigits(s32 x, s32 y, s32 value) {
     }
 
     hundreds = value / 100;
-    screenX = g_CarSpec->tachometer.digitsX + x;
-    screenY = g_CarSpec->tachometer.digitsY + y;
+    screenX = WrapRenderCoordinate32(
+        (int64_t)x + g_CarSpec->tachometer.digitsX);
+    screenY = WrapRenderCoordinate32(
+        (int64_t)y + g_CarSpec->tachometer.digitsY);
     color = g_HudGlyphClut;
     prim = RENDER_PRIM_CURSOR_AS(u8);
 
@@ -34,10 +36,13 @@ void DrawSpeedDigits(s32 x, s32 y, s32 value) {
     ones = value % 10;
 
     prim = DrawHudDigit(prim, screenX, screenY, hundreds, color);
-    prim = DrawHudDigit(prim, screenX + SPEED_DIGIT_SPACING, screenY,
-                        tens, color);
-    prim = DrawHudDigit(prim, screenX + SPEED_DIGIT_SPACING * 2, screenY,
-                        ones, color);
+    prim = DrawHudDigit(
+        prim, WrapRenderCoordinate32((int64_t)screenX + SPEED_DIGIT_SPACING),
+        screenY, tens, color);
+    prim = DrawHudDigit(
+        prim,
+        WrapRenderCoordinate32((int64_t)screenX + SPEED_DIGIT_SPACING * 2),
+        screenY, ones, color);
     g_RenderState.packetCursor =
         QueueDrawModePrim(GamePrimaryOrderingTable(0), prim,
                           SPEED_DIGIT_TEXTURE_PAGE);

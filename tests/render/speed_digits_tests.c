@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <limits.h>
 #include <string.h>
 
 #include "game/car.h"
@@ -71,6 +72,8 @@ static void CheckSpeed(s32 value, s32 hundreds, s32 tens, s32 ones) {
 }
 
 int main(void) {
+    u8 packets[64];
+
     memset(&s_CarSpec, 0, sizeof(s_CarSpec));
     memset(&s_Frame, 0, sizeof(s_Frame));
     s_CarSpec.tachometer.digitsX = 100;
@@ -83,5 +86,16 @@ int main(void) {
     CheckSpeed(999, 9, 9, 9);
     CheckSpeed(-1, 0, 0, 0);
     CheckSpeed(1000, 9, 9, 9);
+
+    memset(packets, 0, sizeof(packets));
+    s_DigitCount = 0;
+    g_RenderState.packetCursor = packets;
+    s_CarSpec.tachometer.digitsX = 1;
+    s_CarSpec.tachometer.digitsY = 1;
+    DrawSpeedDigits(INT_MAX, INT_MAX, 0);
+    assert(s_Digits[0].x == INT_MIN && s_Digits[1].x == INT_MIN + 8 &&
+           s_Digits[2].x == INT_MIN + 16);
+    assert(s_Digits[0].y == INT_MIN && s_Digits[1].y == INT_MIN &&
+           s_Digits[2].y == INT_MIN);
     return 0;
 }
