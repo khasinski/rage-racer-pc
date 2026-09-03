@@ -86,9 +86,9 @@ static void BuildOpponentCollisionSamples(const PlayerCarRuntime *player,
         input.vz = g_OpponentHullCorners[index].z;
         ApplyMatrix(&rotationMatrix, &input, &transformed);
         corners[index].x = WrapSigned16(
-            (transformed.x >> 1) + offsetX / 2);
+            (int64_t)(transformed.x >> 1) + offsetX / 2);
         corners[index].z = WrapSigned16(
-            (transformed.z >> 1) + offsetZ / 2);
+            (int64_t)(transformed.z >> 1) + offsetZ / 2);
     }
 
     samples[0] = Midpoint(corners[0], corners[1]);
@@ -196,8 +196,12 @@ static PlayerCollisionHit FindPlayerCollision(
             }
         } else if (lateralDistance < SLIPSTREAM_LATERAL_REACH &&
                    progressDistance < SLIPSTREAM_PROGRESS_REACH) {
-            g_DragScale = SLIPSTREAM_PROGRESS_REACH -
-                ((SLIPSTREAM_PROGRESS_REACH - progressDistance) >> 2);
+            s32 remainingDistance = WrapSigned32(
+                (int64_t)SLIPSTREAM_PROGRESS_REACH - progressDistance);
+
+            g_DragScale = WrapSigned32(
+                (int64_t)SLIPSTREAM_PROGRESS_REACH -
+                (remainingDistance >> 2));
         }
     }
     return hit;
@@ -273,8 +277,8 @@ static void ApplyLowRegionCollision(PlayerCarRuntime *player,
         player->drive.drivetrainTorque = WrapSigned32(
             (int64_t)player->drive.drivetrainTorque * 0x50) / 100;
     }
-    g_GripLossTimer =
-        player->speed - opponent->speed >= 0x191 ? 0x1E : 0xF;
+    g_GripLossTimer = WrapSigned32(
+        (int64_t)player->speed - opponent->speed) >= 0x191 ? 0x1E : 0xF;
 
     if (IsWrongWayImpact(player)) {
         SetCarKnockback(opponent, 0, 0, CAR_KNOCKBACK_VECTOR_MODE);

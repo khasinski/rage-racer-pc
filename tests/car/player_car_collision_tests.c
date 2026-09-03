@@ -220,6 +220,39 @@ static int CheckExtremeCoordinateDifferences(void) {
     return 0;
 }
 
+static int CheckExtremeSpeedDifference(void) {
+    PlayerCarRuntime player;
+    s32 region;
+
+    PrepareSoundCollision(&player, 0);
+    player.speed = INT32_MIN;
+    g_Cars[0].speed = INT32_MAX;
+    g_Cars[0].x -= 40;
+    g_Cars[0].z -= 80;
+    region = CollidePlayerWithCars(&player);
+    if (region != 1 || g_GripLossTimer != 0xF) {
+        printf("FAIL extreme collision speed difference: region=%d grip=%d\n",
+               region, g_GripLossTimer);
+        return 1;
+    }
+    return 0;
+}
+
+static int CheckWrappedSlipstreamDistance(void) {
+    PlayerCarRuntime player;
+
+    PrepareSoundCollision(&player, 0);
+    player.trackProgress = INT32_MAX;
+    g_Cars[0].trackProgress = 0;
+    g_Cars[0].y = 60;
+    if (CollidePlayerWithCars(&player) != 0 || g_DragScale != -7441) {
+        printf("FAIL wrapped slipstream drag is %d, expected -7441\n",
+               g_DragScale);
+        return 1;
+    }
+    return 0;
+}
+
 int main(void) {
     static const s32 progressDeltas[] = {-201, -1, 0, 100, 199, 200, 900};
     static const s32 lateralDeltas[] = {-100, -49, 0, 49, 100};
@@ -238,7 +271,9 @@ int main(void) {
         CheckWrappedTrackProgress() != 0 ||
         CheckAllCollisionFlagsReset() != 0 ||
         CheckMissingTrackLength() != 0 ||
-        CheckExtremeCoordinateDifferences() != 0)
+        CheckExtremeCoordinateDifferences() != 0 ||
+        CheckExtremeSpeedDifference() != 0 ||
+        CheckWrappedSlipstreamDistance() != 0)
         return 1;
 
     g_TrackLength = 0x8000;
