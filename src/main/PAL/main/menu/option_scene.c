@@ -2,6 +2,22 @@
 #include "game/prim.h"
 #include "game/render_internal.h"
 
+enum { OPTION_LETTERBOX_STEP = 4 };
+
+static s32 ApproachLetterboxHeight(s32 height, s32 target) {
+    if (height < target) {
+        return height > target - OPTION_LETTERBOX_STEP
+                   ? target
+                   : height + OPTION_LETTERBOX_STEP;
+    }
+    if (height > target) {
+        return height < target + OPTION_LETTERBOX_STEP
+                   ? target
+                   : height - OPTION_LETTERBOX_STEP;
+    }
+    return height;
+}
+
 void DrawOptionSceneOverlay(void) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(54);
     s32 targetHeight = g_GameMode == OPTION_MODE_SCREEN_ADJUST ? 0x1E0 : 0xF0;
@@ -11,11 +27,8 @@ void DrawOptionSceneOverlay(void) {
         DrawPadTypeHint();
     }
 
-    if (g_OptionLetterboxHeight < targetHeight) {
-        g_OptionLetterboxHeight += 4;
-    } else if (g_OptionLetterboxHeight > targetHeight) {
-        g_OptionLetterboxHeight -= 4;
-    }
+    g_OptionLetterboxHeight =
+        ApproachLetterboxHeight(g_OptionLetterboxHeight, targetHeight);
 
     next = RENDER_PRIM_CURSOR_AS(u8);
     if (g_GameMode == OPTION_MODE_SCREEN_ADJUST) {

@@ -19,6 +19,7 @@ static s32 s_handlerCalls[OPTION_MODE_COUNT];
 static s32 s_hintCalls;
 static s32 s_lineCalls;
 static s32 s_tileCalls;
+static s32 s_lastTileHeight;
 
 #define DEFINE_HANDLER(index)                                                  \
     static void Handler##index(void) { s_handlerCalls[index]++; }
@@ -47,11 +48,11 @@ u8 *AddTilePrim(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y, s32 w,
     (void)x;
     (void)y;
     (void)w;
-    (void)h;
     (void)r;
     (void)g;
     (void)b;
     s_tileCalls++;
+    s_lastTileHeight = h;
     return prim + 1;
 }
 
@@ -94,6 +95,7 @@ static void Reset(OptionMode mode) {
     s_hintCalls = 0;
     s_lineCalls = 0;
     s_tileCalls = 0;
+    s_lastTileHeight = -1;
 }
 
 int main(void) {
@@ -118,6 +120,21 @@ int main(void) {
     UpdateOptionScene();
     CHECK(s_handlerCalls[OPTION_MODE_NEGCON_NEUTRAL] == 1);
     CHECK(s_hintCalls == 0);
+
+    Reset(OPTION_MODE_ROOT);
+    g_OptionLetterboxHeight = 239;
+    DrawOptionSceneOverlay();
+    CHECK(g_OptionLetterboxHeight == 240 && s_lastTileHeight == 240);
+
+    Reset(OPTION_MODE_ROOT);
+    g_OptionLetterboxHeight = 241;
+    DrawOptionSceneOverlay();
+    CHECK(g_OptionLetterboxHeight == 240 && s_lastTileHeight == 240);
+
+    Reset(OPTION_MODE_SCREEN_ADJUST);
+    g_OptionLetterboxHeight = 479;
+    DrawOptionSceneOverlay();
+    CHECK(g_OptionLetterboxHeight == 480 && s_lastTileHeight == 480);
 
     Reset(OPTION_MODE_FADE);
     g_GameMode = OPTION_MODE_COUNT;
