@@ -2,6 +2,7 @@
 #include "game/render_types.h"
 #include "game/render_state.h"
 #include "game/render.h"
+#include "game/render_internal.h"
 
 #include <stdint.h>
 
@@ -267,10 +268,10 @@ void DrawGradientLine(GameOrderingTableEntry *ot, s32 x0, s32 y0, s32 x1,
 
 void DrawRectOutline(void *buf, s32 xa, s32 ya, s32 w, s32 h, u8 r, u8 g,
                      u8 b, u8 code) {
-    s16 left = xa;
-    s16 right = xa + w - 1;
-    s16 top = ya;
-    s16 bottom = ya + h - 1;
+    const s16 left = WrapRenderCoordinate16(xa);
+    const s16 right = WrapRenderCoordinate16((int64_t)xa + w - 1);
+    const s16 top = WrapRenderCoordinate16(ya);
+    const s16 bottom = WrapRenderCoordinate16((int64_t)ya + h - 1);
 
     DrawLine(buf, left, top, right, top, r, g, b, code);
     DrawLine(buf, left, top + 1, right, top + 1, r, g, b, code);

@@ -172,6 +172,15 @@ static void CheckRectOutline(void) {
     CHECK_EQ(g_RenderState.packetCursor ==
                  s_packets.bytes + sizeof(LINE_F2) * 6,
              1, "outline cursor");
+
+    ResetPackets();
+    DrawRectOutline(&s_ot, INT32_MAX, INT32_MIN, INT32_MAX, INT32_MIN,
+                    1, 2, 3, 0xFF);
+    lines = (LINE_F2 *)s_packets.bytes;
+    CHECK_EQ(lines[0].x0, -1, "extreme outline wrapped left");
+    CHECK_EQ(lines[0].x1, -3, "extreme outline wrapped right");
+    CHECK_EQ(lines[0].y0, 0, "extreme outline wrapped top");
+    CHECK_EQ(lines[4].y0, -1, "extreme outline wrapped bottom");
 }
 
 static void CheckClipRect(void) {
