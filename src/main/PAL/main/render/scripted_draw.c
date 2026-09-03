@@ -8,8 +8,8 @@ static s32 LimitScriptElapsed(s32 elapsed, s32 limit) {
 static s32 ScriptVelocity(s32 packed, s32 upperHalf) {
     u32 bits = (u32)packed;
 
-    return upperHalf ? WrapRenderCoordinate16(bits >> 16)
-                     : WrapRenderCoordinate16(bits);
+    return upperHalf ? WrapSigned16(bits >> 16)
+                     : WrapSigned16(bits);
 }
 
 /* Retail performs this multiply and division as unsigned operations. Keeping
@@ -48,7 +48,7 @@ void DrawScriptedSprite(s32 elapsed, const ScriptedSpriteShape *shape,
     alpha = type != 0 ? shape->alpha & 0x7F : 0x80;
 
     DrawSprite(ot + ScriptOtOffset(shape->flags),
-               WrapRenderCoordinate16(x), WrapRenderCoordinate16(y),
+               WrapSigned16(x), WrapSigned16(y),
                shape->width, shape->height, shape->u, shape->v,
                motion->r, motion->g, motion->b, motion->clut,
                shape->flags & 8, shape->flags & 4, alpha);
@@ -75,8 +75,8 @@ void DrawScriptedLine(s32 elapsed, const ScriptedLineShape *shape,
     alpha = shape->flags & 4 ? shape->flags & 0x60 : 0xFF;
 
     DrawLine(ot + ScriptOtOffset(shape->flags),
-             WrapRenderCoordinate16(x0), WrapRenderCoordinate16(y0),
-             WrapRenderCoordinate16(x1), WrapRenderCoordinate16(y1),
+             WrapSigned16(x0), WrapSigned16(y0),
+             WrapSigned16(x1), WrapSigned16(y1),
              shape->r, shape->g, shape->b, alpha);
 }
 
@@ -97,11 +97,11 @@ void DrawScriptedTriangle(s32 elapsed, const ScriptedTriangleShape *shape,
     alpha = semiTrans ? shape->flags & 0x60 : 0x80;
 
     DrawFlatTriangle(ot + ScriptOtOffset(shape->flags),
-                     WrapRenderCoordinate16(x), WrapRenderCoordinate16(y),
-                     WrapRenderCoordinate16((int64_t)x + shape->x1),
-                     WrapRenderCoordinate16((int64_t)y + shape->y1),
-                     WrapRenderCoordinate16((int64_t)x + shape->x2),
-                     WrapRenderCoordinate16((int64_t)y + shape->y2),
+                     WrapSigned16(x), WrapSigned16(y),
+                     WrapSigned16((int64_t)x + shape->x1),
+                     WrapSigned16((int64_t)y + shape->y1),
+                     WrapSigned16((int64_t)x + shape->x2),
+                     WrapSigned16((int64_t)y + shape->y2),
                      shape->r, shape->g, shape->b, semiTrans, alpha);
 }
 
@@ -124,13 +124,13 @@ void DrawScriptedQuad(s32 elapsed, const ScriptedQuadShape *shape,
         elapsed, ScriptVelocity(motion->packedSizeVelocity, 1));
 
     GameDrawTexturedQuad(ot + ScriptOtOffset(shape->flags),
-                         WrapRenderCoordinate16(x), WrapRenderCoordinate16(y),
-                         WrapRenderCoordinate16((int64_t)x + width),
-                         WrapRenderCoordinate16(y),
-                         WrapRenderCoordinate16(x),
-                         WrapRenderCoordinate16((int64_t)y + height),
-                         WrapRenderCoordinate16((int64_t)x + width),
-                         WrapRenderCoordinate16((int64_t)y + height),
+                         WrapSigned16(x), WrapSigned16(y),
+                         WrapSigned16((int64_t)x + width),
+                         WrapSigned16(y),
+                         WrapSigned16(x),
+                         WrapSigned16((int64_t)y + height),
+                         WrapSigned16((int64_t)x + width),
+                         WrapSigned16((int64_t)y + height),
                          shape->u0, shape->v0, shape->u1, shape->v1,
                          shape->u2, shape->v2, shape->u3, shape->v3,
                          shape->r, shape->g, shape->b, shape->clut,
@@ -299,8 +299,8 @@ void DrawFadingMenuSprites(s32 progress, s32 lastRow, s32 selectedRow) {
 
         fade >>= 2;
         DrawSprite(ot + 2,
-                   WrapRenderCoordinate16((int64_t)motion->x + xOffset),
-                   WrapRenderCoordinate16((int64_t)motion->y + yOffset),
+                   WrapSigned16((int64_t)motion->x + xOffset),
+                   WrapSigned16((int64_t)motion->y + yOffset),
                    shape->width, shape->height, shape->u, shape->v,
                    fade, fade, fade, motion->clut, 0, 1, shape->alpha);
         *timer = (*timer & 0x1FF) >= 60 ? (*timer & 0x1FF) - 60 : 0;

@@ -49,8 +49,9 @@ static void TriggerSpeedCue(void) {
             continue;
         }
 
-        speedThreshold =
-            cue->speedPercent * g_PlayerCar.drive.speedScale / PERCENT_SCALE;
+        speedThreshold = WrapSigned32(
+            (int64_t)cue->speedPercent * g_PlayerCar.drive.speedScale);
+        speedThreshold /= PERCENT_SCALE;
         if (g_PlayerCar.speed > speedThreshold &&
             g_PlayerCar.motionMode <= 0) {
             g_RaceCueFlags |= flag;

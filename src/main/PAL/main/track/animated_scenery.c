@@ -21,7 +21,7 @@ static Vec4 AnimatedSceneryPosition(s32 instance) {
     Vec4 position = g_AnimSceneryPos[instance];
 
     if (SeriesCourseIndex() == 3) {
-        position.z = WrapRenderCoordinate32((int64_t)position.z + 0x5000);
+        position.z = WrapSigned32((int64_t)position.z + 0x5000);
     }
     return position;
 }

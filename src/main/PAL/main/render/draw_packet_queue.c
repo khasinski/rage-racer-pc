@@ -11,10 +11,10 @@ static u8 *QueueSpritePacket(GameOrderingTableEntry *ot, u8 *packetCursor,
     SetSprt(sprite);
     SetShadeTex(sprite, shadeTexture);
     SetSemiTrans(sprite, semiTransparent);
-    sprite->x0 = WrapRenderCoordinate16(x);
-    sprite->y0 = WrapRenderCoordinate16(y);
-    sprite->w = WrapRenderCoordinate16(width);
-    sprite->h = WrapRenderCoordinate16(height);
+    sprite->x0 = WrapSigned16(x);
+    sprite->y0 = WrapSigned16(y);
+    sprite->w = WrapSigned16(width);
+    sprite->h = WrapSigned16(height);
     sprite->u0 = textureU;
     sprite->v0 = textureV;
     sprite->clut = clutIndex;
@@ -61,10 +61,10 @@ u8 *GameQueueLine(GameOrderingTableEntry *ot, u8 *packetCursor, s32 x0,
     LINE_F2 *line = (LINE_F2 *)packetCursor;
 
     SetLineF2(line);
-    line->x0 = WrapRenderCoordinate16(x0);
-    line->y0 = WrapRenderCoordinate16(y0);
-    line->x1 = WrapRenderCoordinate16(x1);
-    line->y1 = WrapRenderCoordinate16(y1);
+    line->x0 = WrapSigned16(x0);
+    line->y0 = WrapSigned16(y0);
+    line->x1 = WrapSigned16(x1);
+    line->y1 = WrapSigned16(y1);
     line->r0 = red;
     line->g0 = green;
     line->b0 = blue;
@@ -88,8 +88,8 @@ u8 *GameQueueShadedTexturedRect(GameOrderingTableEntry *ot, u8 *packetCursor,
                                 s32 x, s32 y, s32 w, s32 h, s32 u, s32 v,
                                 s32 clutIndex, s32 tpage, s32 intensity) {
     POLY_FT4 *packet = (POLY_FT4 *)packetCursor;
-    s16 width = WrapRenderCoordinate16(w);
-    s16 height = WrapRenderCoordinate16(h);
+    s16 width = WrapSigned16(w);
+    s16 height = WrapSigned16(h);
     u8 textureU = u;
     u8 textureV = v;
 
@@ -103,13 +103,13 @@ u8 *GameQueueShadedTexturedRect(GameOrderingTableEntry *ot, u8 *packetCursor,
         textureV -= height;
     }
 
-    packet->x0 = WrapRenderCoordinate16(x);
-    packet->y0 = WrapRenderCoordinate16(y);
-    packet->x1 = WrapRenderCoordinate16(
+    packet->x0 = WrapSigned16(x);
+    packet->y0 = WrapSigned16(y);
+    packet->x1 = WrapSigned16(
         (int64_t)x + (width < 0 ? -width : width));
-    packet->y1 = WrapRenderCoordinate16(y);
-    packet->x2 = WrapRenderCoordinate16(x);
-    packet->y2 = WrapRenderCoordinate16(
+    packet->y1 = WrapSigned16(y);
+    packet->x2 = WrapSigned16(x);
+    packet->y2 = WrapSigned16(
         (int64_t)y + (height < 0 ? -height : height));
     packet->x3 = packet->x1;
     packet->y3 = packet->y2;
@@ -134,8 +134,8 @@ u8 *GameQueueTexturedRect(GameOrderingTableEntry *ot, u8 *packetCursor, s32 x,
                           s32 y, s32 w, s32 h, s32 u, s32 v, s32 uSpan,
                           s32 vSpan, s32 clutIndex, s32 tpage) {
     POLY_FT4 *packet = (POLY_FT4 *)packetCursor;
-    s16 width = WrapRenderCoordinate16(w);
-    s16 height = WrapRenderCoordinate16(h);
+    s16 width = WrapSigned16(w);
+    s16 height = WrapSigned16(h);
     u8 textureU = u;
     u8 textureV = v;
 
@@ -149,13 +149,13 @@ u8 *GameQueueTexturedRect(GameOrderingTableEntry *ot, u8 *packetCursor, s32 x,
         textureV -= height + 1;
     }
 
-    packet->x0 = WrapRenderCoordinate16(x);
-    packet->y0 = WrapRenderCoordinate16(y);
-    packet->x1 = WrapRenderCoordinate16(
+    packet->x0 = WrapSigned16(x);
+    packet->y0 = WrapSigned16(y);
+    packet->x1 = WrapSigned16(
         (int64_t)x + (width < 0 ? -width : width));
-    packet->y1 = WrapRenderCoordinate16(y);
-    packet->x2 = WrapRenderCoordinate16(x);
-    packet->y2 = WrapRenderCoordinate16(
+    packet->y1 = WrapSigned16(y);
+    packet->x2 = WrapSigned16(x);
+    packet->y2 = WrapSigned16(
         (int64_t)y + (height < 0 ? -height : height));
     packet->x3 = packet->x1;
     packet->y3 = packet->y2;

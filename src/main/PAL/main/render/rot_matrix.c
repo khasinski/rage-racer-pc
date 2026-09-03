@@ -120,6 +120,6 @@ void ApplyMatrixLV(const Matrix *matrix, const s32 *input, s32 *output) {
         int64_t value = (int64_t)matrix->m[row][0] * input[0]
                       + (int64_t)matrix->m[row][1] * input[1]
                       + (int64_t)matrix->m[row][2] * input[2];
-        output[row] = WrapRenderCoordinate32(value >> 12);
+        output[row] = WrapSigned32(value >> 12);
     }
 }

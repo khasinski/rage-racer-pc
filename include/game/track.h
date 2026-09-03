@@ -3,6 +3,7 @@
 
 #include "common.h"
 
+#include "game/integer.h"
 #include "game/vector.h"
 #include "game/shuttle_scenery.h"
 #include "game/visibility.h"
@@ -179,9 +180,7 @@ static inline s32 TrackPositionForSeries(s32 position, s32 trackLength,
 
     if (series == 0) return position;
     reversed = (u32)trackLength - (u32)position;
-    return reversed <= 0x7FFFFFFFu
-        ? (s32)reversed
-        : (s32)((int64_t)reversed - INT64_C(0x100000000));
+    return WrapSigned32(reversed);
 }
 
 typedef struct TrackFinishCue {

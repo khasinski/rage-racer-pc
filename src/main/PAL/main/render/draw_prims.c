@@ -268,10 +268,10 @@ void DrawGradientLine(GameOrderingTableEntry *ot, s32 x0, s32 y0, s32 x1,
 
 void DrawRectOutline(void *buf, s32 xa, s32 ya, s32 w, s32 h, u8 r, u8 g,
                      u8 b, u8 code) {
-    const s16 left = WrapRenderCoordinate16(xa);
-    const s16 right = WrapRenderCoordinate16((int64_t)xa + w - 1);
-    const s16 top = WrapRenderCoordinate16(ya);
-    const s16 bottom = WrapRenderCoordinate16((int64_t)ya + h - 1);
+    const s16 left = WrapSigned16(xa);
+    const s16 right = WrapSigned16((int64_t)xa + w - 1);
+    const s16 top = WrapSigned16(ya);
+    const s16 bottom = WrapSigned16((int64_t)ya + h - 1);
 
     DrawLine(buf, left, top, right, top, r, g, b, code);
     DrawLine(buf, left, top + 1, right, top + 1, r, g, b, code);

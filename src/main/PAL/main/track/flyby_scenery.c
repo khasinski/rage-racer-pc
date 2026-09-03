@@ -65,7 +65,7 @@ static void UpdateFlybyTransform(SceneryMotionKeyframe *keyframe) {
     Matrix rotationY;
     Matrix rotationX;
     SVec direction = {
-        0, 0, WrapRenderCoordinate16(-(int64_t)keyframe->speed * 4), 0
+        0, 0, WrapSigned16(-(int64_t)keyframe->speed * 4), 0
     };
     LVec step;
     const s32 elapsed = g_FlybyScenery.keyframeTime;
@@ -82,18 +82,18 @@ static void UpdateFlybyTransform(SceneryMotionKeyframe *keyframe) {
 
     BuildRotMatrixY(
         &rotationY,
-        WrapRenderCoordinate32(
+        WrapSigned32(
             (int64_t)0x800 - g_FlybyScenery.rotationY));
     BuildRotMatrixX(&rotationX, g_FlybyScenery.rotationX);
     MulMatrix2(&rotationY, &rotationX);
     BuildRotMatrixZ(&rotationY, g_FlybyScenery.rotationZ);
     MulMatrix(&rotationX, &rotationY);
     ApplyMatrix(&rotationX, &direction, &step);
-    g_FlybyScenery.position.x = WrapRenderCoordinate32(
+    g_FlybyScenery.position.x = WrapSigned32(
         (int64_t)g_FlybyScenery.position.x + step.x / 4);
-    g_FlybyScenery.position.y = WrapRenderCoordinate32(
+    g_FlybyScenery.position.y = WrapSigned32(
         (int64_t)g_FlybyScenery.position.y + step.y / 4);
-    g_FlybyScenery.position.z = WrapRenderCoordinate32(
+    g_FlybyScenery.position.z = WrapSigned32(
         (int64_t)g_FlybyScenery.position.z + step.z / 4);
 }
 

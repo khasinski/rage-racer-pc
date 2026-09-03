@@ -3,6 +3,7 @@
 #include "game/race.h"
 #include "game/track.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -125,6 +126,17 @@ int main(void) {
     TriggerRaceCues();
     if (g_PlayCount != 0 || g_RaceCueFlags != 0) {
         puts("FAIL: invalid race cue series");
+        return 1;
+    }
+
+    ResetRuntime();
+    events.raceCues.speed[0][0].speedPercent = INT16_MAX;
+    g_PlayerCar.drive.speedScale = INT_MIN;
+    g_PlayerCar.trackSection = 30;
+    TriggerRaceCues();
+    if (g_RaceCueFlags != 0x10 || g_PlayedCue != 0x23) {
+        printf("FAIL: wrapped speed threshold flags=%d cue=%d plays=%d\n",
+               g_RaceCueFlags, g_PlayedCue, g_PlayCount);
         return 1;
     }
 

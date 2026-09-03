@@ -28,8 +28,8 @@ static void ConfigureFrameColors(s32 red, s32 green, s32 blue) {
         environment->mirrorDraw.g0 = green;
         environment->mirrorDraw.b0 = blue;
         environment->display.screen.x =
-            WrapRenderCoordinate16(g_ScreenOffsetX);
-        environment->display.screen.y = WrapRenderCoordinate16(
+            WrapSigned16(g_ScreenOffsetX);
+        environment->display.screen.y = WrapSigned16(
             (int64_t)g_ScreenOffsetY + DISPLAY_SCREEN_Y_OFFSET);
     }
 }

@@ -37,16 +37,16 @@ void DrawStartGridScenery(s32 timer) {
         animationFrame =
             (timer - START_GRID_MOTION_FRAME) / START_GRID_FRAMES_PER_MODEL;
         movementStep = animationFrame / START_GRID_MODEL_COUNT;
-        position.x = WrapRenderCoordinate32(
+        position.x = WrapSigned32(
             (int64_t)position.x +
             (int64_t)g_StartGridSceneryStep[series].x * movementStep);
-        position.z = WrapRenderCoordinate32(
+        position.z = WrapSigned32(
             (int64_t)position.z +
             (int64_t)g_StartGridSceneryStep[series].y * movementStep);
         animationFrame -= movementStep * START_GRID_MODEL_COUNT;
     }
     if (SeriesCourseIndex() == 3) {
-        position.z = WrapRenderCoordinate32(
+        position.z = WrapSigned32(
             (int64_t)position.z + SERIES_COURSE_Z_OFFSET);
     }
 

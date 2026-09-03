@@ -44,14 +44,14 @@ s32 GameDrawNumber(s32 x, s16 y, s32 flags, u32 value, u8 red, u8 green,
     }
 
     fieldStart = (flags & DRAW_NUMBER_TEN_DIGIT_FIELD) != 0 ? 0 : firstDigit;
-    x = WrapRenderCoordinate32(
+    x = WrapSigned32(
         (int64_t)x + (firstDigit - fieldStart) * digitWidth);
     for (digitIndex = firstDigit; digitIndex < NUMBER_DIGIT_COUNT;
          digitIndex++) {
-        DrawSprite(ot, WrapRenderCoordinate16(x), y, digitWidth, digitHeight,
+        DrawSprite(ot, WrapSigned16(x), y, digitWidth, digitHeight,
                    digits[digitIndex] * digitWidth, textureV, red, green, blue,
                    clut, 0, 1, 0x80);
-        x = WrapRenderCoordinate32((int64_t)x + digitWidth);
+        x = WrapSigned32((int64_t)x + digitWidth);
     }
 
     g_RenderState.packetCursor = QueueDrawModePrim(

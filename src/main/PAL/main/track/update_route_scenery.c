@@ -35,7 +35,7 @@ void UpdateRouteScenery(void) {
     if (g_RouteSceneryActive <= 0) {
         return;
     }
-    g_RouteSceneryFrame = WrapRenderCoordinate32(
+    g_RouteSceneryFrame = WrapSigned32(
         (int64_t)g_RouteSceneryFrame + 1);
 
     keyframe = &g_RouteSceneryKeyframe[g_RouteSceneryKeyIndex];
@@ -63,10 +63,10 @@ void UpdateRouteScenery(void) {
 
     vin.vx = 0;
     vin.vy = 0;
-    vin.vz = WrapRenderCoordinate16(-(int64_t)keyframe->speed * 4);
+    vin.vz = WrapSigned16(-(int64_t)keyframe->speed * 4);
     BuildRotMatrixY(
         &mtx0,
-        WrapRenderCoordinate32((int64_t)0x800 - g_RouteSceneryRotY));
+        WrapSigned32((int64_t)0x800 - g_RouteSceneryRotY));
 
     BuildRotMatrixX(&mtx1, g_RouteSceneryRotX);
     MulMatrix2(&mtx0, &mtx1);
@@ -74,10 +74,10 @@ void UpdateRouteScenery(void) {
     MulMatrix(&mtx1, &mtx0);
     ApplyMatrix(&mtx1, &vin, &vout);
 
-    g_RouteSceneryX = WrapRenderCoordinate32(
+    g_RouteSceneryX = WrapSigned32(
         (int64_t)g_RouteSceneryX + vout.x / 4);
-    g_RouteSceneryY = WrapRenderCoordinate32(
+    g_RouteSceneryY = WrapSigned32(
         (int64_t)g_RouteSceneryY + vout.y / 4);
-    g_RouteSceneryZ = WrapRenderCoordinate32(
+    g_RouteSceneryZ = WrapSigned32(
         (int64_t)g_RouteSceneryZ + vout.z / 4);
 }

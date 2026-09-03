@@ -87,7 +87,7 @@ void DrawSmallText(s32 x, s16 y, const char *text, u8 red, u8 green, u8 blue,
 
         if (*cursor == ' ') {
             cursor++;
-            x = WrapRenderCoordinate32((int64_t)x + 6);
+            x = WrapSigned32((int64_t)x + 6);
             continue;
         }
 
@@ -102,10 +102,10 @@ void DrawSmallText(s32 x, s16 y, const char *text, u8 red, u8 green, u8 blue,
                               : glyph.u;
         textureV = fixedWidth ? (glyphIndex / 42) * 12
                               : glyph.v;
-        DrawSprite(ot + 1, WrapRenderCoordinate16(x), y,
-                   WrapRenderCoordinate16(glyphWidth), 12, (u16)textureU,
+        DrawSprite(ot + 1, WrapSigned16(x), y,
+                   WrapSigned16(glyphWidth), 12, (u16)textureU,
                    (u16)textureV, red, green, blue, clut, 0, 1, 0x80);
-        x = WrapRenderCoordinate32((int64_t)x + glyphWidth);
+        x = WrapSigned32((int64_t)x + glyphWidth);
     }
 
     g_RenderState.packetCursor = QueueDrawModePrim(
@@ -128,7 +128,7 @@ void DrawLargeText(s32 x, s16 y, const char *text, u8 red, u8 green, u8 blue,
         FontGlyph glyph;
 
         if (character == ' ') {
-            x = WrapRenderCoordinate32((int64_t)x + 8);
+            x = WrapSigned32((int64_t)x + 8);
             continue;
         }
 
@@ -143,10 +143,10 @@ void DrawLargeText(s32 x, s16 y, const char *text, u8 red, u8 green, u8 blue,
                               : glyph.u;
         textureV = fixedWidth ? (glyphIndex / 32) * 16 + 24
                               : glyph.v;
-        DrawSprite(ot + 1, WrapRenderCoordinate16(x), y,
-                   WrapRenderCoordinate16(glyphWidth), 16, (u16)textureU,
+        DrawSprite(ot + 1, WrapSigned16(x), y,
+                   WrapSigned16(glyphWidth), 16, (u16)textureU,
                    (u16)textureV, red, green, blue, clut, 0, 1, 0x80);
-        x = WrapRenderCoordinate32((int64_t)x + glyphWidth);
+        x = WrapSigned32((int64_t)x + glyphWidth);
     }
 
     g_RenderState.packetCursor = QueueDrawModePrim(

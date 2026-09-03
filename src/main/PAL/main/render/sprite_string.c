@@ -19,8 +19,8 @@ void DrawSpriteString(s32 x, s32 y, const char *str, s32 clutIndex) {
 
             SetSprt(sprite);
             SetShadeTex(sprite, 1);
-            sprite->x0 = WrapRenderCoordinate16(x);
-            sprite->y0 = WrapRenderCoordinate16(y);
+            sprite->x0 = WrapSigned16(x);
+            sprite->y0 = WrapSigned16(y);
             sprite->u0 = g_SpriteFontU[fontIndex];
             sprite->v0 = g_SpriteFontV[fontIndex];
             sprite->w = (u16)width;
@@ -29,7 +29,7 @@ void DrawSpriteString(s32 x, s32 y, const char *str, s32 clutIndex) {
             AddPrim(ot, sprite);
             packet = (u8 *)(sprite + 1);
         }
-        x = WrapRenderCoordinate32((int64_t)x + width);
+        x = WrapSigned32((int64_t)x + width);
     }
 
     SetDrawMode((DrawPacket *)packet, 0, 1, 0x1D, g_DrawModeEnv);
@@ -42,8 +42,8 @@ u8 *DrawShadowedTile(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y) {
 
     next = AddTilePrim(
         ot, prim,
-        WrapRenderCoordinate32((int64_t)x + 1),
-        WrapRenderCoordinate32((int64_t)y + 2),
+        WrapSigned32((int64_t)x + 1),
+        WrapSigned32((int64_t)y + 2),
         0xC2, 0x1C, 0, 0, 0);
     return AddTilePrim(ot, next, x, y, 0xC4, 0x20, 0xFF, 0xFF, 0xFF);
 }

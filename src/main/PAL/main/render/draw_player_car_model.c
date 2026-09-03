@@ -38,8 +38,8 @@ static void SubmitCarPart(LVec *position, Matrix *transform, s32 materialMode,
 }
 
 static void OffsetCarHorizon(GameRenderObject *object, s32 offset) {
-    object->y = WrapRenderCoordinate32((int64_t)object->y + offset);
-    object->modelY = WrapRenderCoordinate32((int64_t)object->modelY + offset);
+    object->y = WrapSigned32((int64_t)object->y + offset);
+    object->modelY = WrapSigned32((int64_t)object->modelY + offset);
 }
 
 static s32 CarMaterialMode(s16 palette) {
@@ -76,7 +76,7 @@ void DrawPlayerCarModel(GameRenderObject *object) {
     OffsetCarHorizon(object, -modelAsset->horizon);
     BuildRotMatrixY(
         &scratchMatrix,
-        WrapRenderCoordinate32((int64_t)ANGLE_HALF_TURN - object->bodyYaw));
+        WrapSigned32((int64_t)ANGLE_HALF_TURN - object->bodyYaw));
     BuildRotMatrixX(&bodyViewMatrix, object->bodyPitch);
     MulMatrix2(&scratchMatrix, &bodyViewMatrix);
     MulMatrix0(&g_SceneLightMatrix, &bodyViewMatrix, &lightMatrix);
@@ -96,7 +96,7 @@ void DrawPlayerCarModel(GameRenderObject *object) {
 
     BuildRotMatrixY(
         &scratchMatrix,
-        WrapRenderCoordinate32((int64_t)ANGLE_HALF_TURN - object->modelYaw));
+        WrapSigned32((int64_t)ANGLE_HALF_TURN - object->modelYaw));
     BuildRotMatrixX(&partMatrix, object->modelPitch);
     MulMatrix2(&scratchMatrix, &partMatrix);
     MulMatrix2(&g_RenderState.matrix, &partMatrix);
@@ -116,13 +116,13 @@ void DrawPlayerCarModel(GameRenderObject *object) {
     SubmitCarPart(AsPositionWords(&object->x), &partMatrix, 0,
                   ResolveCarModelBank(0, 0, g_ModelBankCount));
 
-    modelBankBase = WrapRenderCoordinate32((int64_t)object->renderDepth * 2);
+    modelBankBase = WrapSigned32((int64_t)object->renderDepth * 2);
     if (object->wheelRotation & CAR_WHEEL_BLUR_FLAG) {
-        modelBankBase = WrapRenderCoordinate32((int64_t)modelBankBase + 10);
+        modelBankBase = WrapSigned32((int64_t)modelBankBase + 10);
     }
     BuildRotMatrixZ(
         &scratchMatrix,
-        WrapRenderCoordinate32(
+        WrapSigned32(
             (int64_t)object->bodyRoll - object->bodyRollVelocity));
     MulMatrix(&bodyLocalMatrix, &scratchMatrix);
     MulMatrix(&bodyViewMatrix, &scratchMatrix);
@@ -142,15 +142,15 @@ void DrawPlayerCarModel(GameRenderObject *object) {
         const int64_t lateralOffset = sideIndex == 0
             ? modelAsset->modelOffsetX
             : -(int64_t)modelAsset->modelOffsetX;
-        wheelOffset[0] = WrapRenderCoordinate16(lateralOffset);
+        wheelOffset[0] = WrapSigned16(lateralOffset);
         wheelOffset[1] = modelAsset->modelOffsetY;
         wheelOffset[2] = modelAsset->modelOffsetZ;
         ApplyMatrix(&bodyLocalMatrix, wheelOffset, wheelPosition);
-        wheelPosition[0] = WrapRenderCoordinate32(
+        wheelPosition[0] = WrapSigned32(
             (int64_t)wheelPosition[0] + object->x);
-        wheelPosition[1] = WrapRenderCoordinate32(
+        wheelPosition[1] = WrapSigned32(
             (int64_t)wheelPosition[1] + object->y);
-        wheelPosition[2] = WrapRenderCoordinate32(
+        wheelPosition[2] = WrapSigned32(
             (int64_t)wheelPosition[2] + object->z);
         SubmitCarPart(AsPositionWords(wheelPosition),
                       &wheelMatrices[sideIndex], 0,
@@ -190,10 +190,10 @@ void DrawCar(GameRenderObject *object) {
     model = g_CarModelByCourse[SeriesCourseIndex()][object->modelIndex];
     lod = g_CarModelBankTable[model];
 
-    cameraOffset[0] = WrapRenderCoordinate32(
+    cameraOffset[0] = WrapSigned32(
         (int64_t)object->x - g_RenderState.viewX);
     cameraOffset[1] = 0;
-    cameraOffset[2] = WrapRenderCoordinate32(
+    cameraOffset[2] = WrapSigned32(
         (int64_t)object->z - g_RenderState.viewZ);
     ApplyMatrixLV(&g_RenderState.matrix, cameraOffset, viewPosition);
     renderDistance = CarRenderManhattanDistance(
@@ -231,7 +231,7 @@ void DrawCar(GameRenderObject *object) {
     if (renderRange == CAR_RENDER_CLOSE) {
         BuildRotMatrixY(
             &scratchMatrix,
-            WrapRenderCoordinate32(
+            WrapSigned32(
                 (int64_t)ANGLE_HALF_TURN - object->bodyYaw));
         BuildRotMatrixX(&bodyViewMatrix, object->bodyPitch);
         MulMatrix2(&scratchMatrix, &bodyViewMatrix);
@@ -249,7 +249,7 @@ void DrawCar(GameRenderObject *object) {
 
         BuildRotMatrixY(
             &scratchMatrix,
-            WrapRenderCoordinate32(
+            WrapSigned32(
                 (int64_t)ANGLE_HALF_TURN - object->modelYaw));
         BuildRotMatrixX(&partMatrix, object->modelPitch);
         MulMatrix2(&scratchMatrix, &partMatrix);
@@ -275,7 +275,7 @@ void DrawCar(GameRenderObject *object) {
 
         BuildRotMatrixZ(
             &scratchMatrix,
-            WrapRenderCoordinate32(
+            WrapSigned32(
                 (int64_t)object->bodyRoll - object->bodyRollVelocity));
         MulMatrix(&bodyLocalMatrix, &scratchMatrix);
         MulMatrix(&bodyViewMatrix, &scratchMatrix);
@@ -284,7 +284,7 @@ void DrawCar(GameRenderObject *object) {
 
         BuildRotMatrixY(
             &scratchMatrix,
-            WrapRenderCoordinate32((int64_t)object->steeringAngle * 2));
+            WrapSigned32((int64_t)object->steeringAngle * 2));
         BuildRotMatrixX(&wheelMatrices[0], object->wheelRotation);
         MulMatrix2(&scratchMatrix, &wheelMatrices[0]);
         MulMatrix2(&bodyViewMatrix, &wheelMatrices[0]);
@@ -299,15 +299,15 @@ void DrawCar(GameRenderObject *object) {
             const int64_t lateralOffset = sideIndex == 0
                 ? params->axis0
                 : -(int64_t)params->axis0;
-            wheelOffset[0] = WrapRenderCoordinate16(lateralOffset);
-            wheelOffset[1] = WrapRenderCoordinate16(params->axis1);
-            wheelOffset[2] = WrapRenderCoordinate16(params->axis2);
+            wheelOffset[0] = WrapSigned16(lateralOffset);
+            wheelOffset[1] = WrapSigned16(params->axis1);
+            wheelOffset[2] = WrapSigned16(params->axis2);
             ApplyMatrix(&bodyLocalMatrix, wheelOffset, wheelPosition);
-            wheelPosition[0] = WrapRenderCoordinate32(
+            wheelPosition[0] = WrapSigned32(
                 (int64_t)wheelPosition[0] + object->x);
-            wheelPosition[1] = WrapRenderCoordinate32(
+            wheelPosition[1] = WrapSigned32(
                 (int64_t)wheelPosition[1] + object->y);
-            wheelPosition[2] = WrapRenderCoordinate32(
+            wheelPosition[2] = WrapSigned32(
                 (int64_t)wheelPosition[2] + object->z);
             SubmitCarPart(AsPositionWords(wheelPosition),
                           &wheelMatrices[sideIndex], 0,
@@ -318,7 +318,7 @@ void DrawCar(GameRenderObject *object) {
     } else {
         BuildRotMatrixY(
             &scratchMatrix,
-            WrapRenderCoordinate32(
+            WrapSigned32(
                 (int64_t)ANGLE_HALF_TURN - object->bodyYaw));
         BuildRotMatrixX(&bodyLocalMatrix, object->bodyPitch);
         MulMatrix2(&scratchMatrix, &bodyLocalMatrix);

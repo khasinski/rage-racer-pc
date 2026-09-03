@@ -88,11 +88,11 @@ static s32 EasePathValue(s32 start, s32 end, s32 halfDelta,
 
     angle = (s32)((int64_t)phase * 0x800 / rate);
     if (phase <= rate / 2) {
-        return WrapRenderCoordinate32(
+        return WrapSigned32(
             (int64_t)end - (int64_t)halfDelta * rcos(angle) / 4096 -
             halfDelta);
     }
-    return WrapRenderCoordinate32(
+    return WrapSigned32(
         (int64_t)start +
         (int64_t)halfDelta * rsin(angle - 0x400) / 4096 + halfDelta);
 }
@@ -121,13 +121,13 @@ static void UpdatePathRotation(void) {
     const s16 phase = g_PathSceneryCursors.rotPhase.signedValue;
     const s16 rate = g_PathSceneryCursors.rotRate.signedValue;
 
-    g_PathSceneryTransform.rotation.vx = WrapRenderCoordinate16(
+    g_PathSceneryTransform.rotation.vx = WrapSigned16(
         EasePathValue(keyframe[0].fields.x, keyframe[1].fields.x,
                       g_PathSceneryRotHalfDelta[0], phase, rate));
-    g_PathSceneryTransform.rotation.vy = WrapRenderCoordinate16(
+    g_PathSceneryTransform.rotation.vy = WrapSigned16(
         EasePathValue(keyframe[0].fields.y, keyframe[1].fields.y,
                       g_PathSceneryRotHalfDelta[1], phase, rate));
-    g_PathSceneryTransform.rotation.vz = WrapRenderCoordinate16(
+    g_PathSceneryTransform.rotation.vz = WrapSigned16(
         EasePathValue(keyframe[0].fields.z, keyframe[1].fields.z,
                       g_PathSceneryRotHalfDelta[2], phase, rate));
     if (phase > rate) {

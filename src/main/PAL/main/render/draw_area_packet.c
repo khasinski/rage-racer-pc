@@ -8,10 +8,10 @@ u8 *QueueDrawAreaPrim(GameOrderingTableEntry *ot, DrawPacket *packet,
                       s16 x, s16 y, s32 width, s32 height) {
     Rect rect = {
         .x = x,
-        .y = WrapRenderCoordinate16(
+        .y = WrapSigned16(
             (int64_t)y + (int64_t)g_FrameParity * 240),
-        .w = WrapRenderCoordinate16(width),
-        .h = WrapRenderCoordinate16(height),
+        .w = WrapSigned16(width),
+        .h = WrapSigned16(height),
     };
 
     SetDrawArea(packet, &rect);

@@ -3,7 +3,6 @@
 #include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/render.h"
-#include "game/render_internal.h"
 #include "game/state.h"
 #include "game/track_internal.h"
 
@@ -43,7 +42,7 @@ static s32 DecayTowardZero(s32 value, s32 step) {
 
 /* The retail MIPS sequence rounds signed fixed-point products toward zero. */
 static s32 MultiplyCosine(s32 value, s32 angle) {
-    return WrapRenderCoordinate32(
+    return WrapSigned32(
         (int64_t)value * rcos(angle) / 4096);
 }
 
@@ -67,7 +66,7 @@ static void CalculateEventSoundVolumes(s32 flags, s32 *left, s32 *right) {
         return;
     }
 
-    lean = WrapRenderCoordinate32(
+    lean = WrapSigned32(
         (int64_t)lean * g_PlayerCar.speed / EVENT_SOUND_SPEED_SCALE);
     angle = (s32)(
         ((u32)g_RenderState.viewAngleY - ANGLE_THREE_QUARTER_TURN +
@@ -75,12 +74,12 @@ static void CalculateEventSoundVolumes(s32 flags, s32 *left, s32 *right) {
 
     if (lean < 0 && (flags & EVENT_SOUND_LEFT_SIDE) != 0) {
         const s32 cosine = MultiplyCosine(lean, angle);
-        *left = WrapRenderCoordinate32(-(int64_t)lean - cosine);
-        *right = WrapRenderCoordinate32(-(int64_t)lean + cosine);
+        *left = WrapSigned32(-(int64_t)lean - cosine);
+        *right = WrapSigned32(-(int64_t)lean + cosine);
     } else if (lean > 0 && (flags & EVENT_SOUND_RIGHT_SIDE) != 0) {
         const s32 cosine = MultiplyCosine(lean, angle);
-        *right = WrapRenderCoordinate32((int64_t)lean + cosine);
-        *left = WrapRenderCoordinate32((int64_t)lean - cosine);
+        *right = WrapSigned32((int64_t)lean + cosine);
+        *left = WrapSigned32((int64_t)lean - cosine);
     }
 }
 

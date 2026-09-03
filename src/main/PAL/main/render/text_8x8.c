@@ -40,15 +40,15 @@ static void DrawText8x8Styled(s32 x, s32 y, const char *text, s32 clutIndex,
                 sprite->g0 = style.intensity;
                 sprite->b0 = style.intensity;
             }
-            sprite->x0 = WrapRenderCoordinate16(x);
-            sprite->y0 = WrapRenderCoordinate16(y);
+            sprite->x0 = WrapSigned16(x);
+            sprite->y0 = WrapSigned16(y);
             sprite->u0 = (u8)(fontCell.column * 8);
             sprite->v0 = (u8)(fontCell.row * 8);
             sprite->clut = (u16)clutIndex;
             AddPrim(ot, sprite);
             packet = (u8 *)(sprite + 1);
         }
-        x = WrapRenderCoordinate32((int64_t)x + 8);
+        x = WrapSigned32((int64_t)x + 8);
     }
 
     SetDrawMode((DrawPacket *)packet, 0, 1, style.drawMode, g_DrawModeEnv);

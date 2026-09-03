@@ -6,9 +6,9 @@ void FlipMatrixXZColumns(Matrix *destination, const Matrix *source) {
 
     *destination = *source;
     for (row = 0; row < 3; row++) {
-        destination->m[row][0] = WrapRenderCoordinate16(
+        destination->m[row][0] = WrapSigned16(
             -(int64_t)destination->m[row][0]);
-        destination->m[row][2] = WrapRenderCoordinate16(
+        destination->m[row][2] = WrapSigned16(
             -(int64_t)destination->m[row][2]);
     }
 }

@@ -124,10 +124,10 @@ void DrawTachometer(s32 rpm, s32 shiftLightOn, TachometerLightingMode lighting,
     for (i = 0; i < 4; i++) {
         const s32 localX = g_TachoNeedleQuad[i][0];
         const s32 localY = g_TachoNeedleQuad[i][1];
-        *vertex++ = WrapRenderCoordinate16(
+        *vertex++ = WrapSigned16(
             (int64_t)centerX +
             ((int64_t)sine * localX - (int64_t)cosine * localY) / 4096);
-        *vertex++ = WrapRenderCoordinate16(
+        *vertex++ = WrapSigned16(
             (int64_t)centerY +
             ((int64_t)cosine * localX + (int64_t)sine * localY) / 4096);
     }
@@ -158,16 +158,16 @@ void DrawTachometer(s32 rpm, s32 shiftLightOn, TachometerLightingMode lighting,
     frame->layout.raceHud.tachometerFace.g0 = g_TachoFaceG;
     frame->layout.raceHud.tachometerFace.b0 = g_TachoFaceB;
     frame->layout.raceHud.tachometerFace.x0 =
-        WrapRenderCoordinate16(HudRightX(g_TachoNeedleSprite.x));
+        WrapSigned16(HudRightX(g_TachoNeedleSprite.x));
     AddPrim(ot, &frame->layout.raceHud.tachometerDrawModes[0]);
     AddPrim(ot, &frame->layout.raceHud.tachometerFace);
     AddPrim(ot, &frame->layout.raceHud.tachometerDrawModes[1]);
 
     shiftLight = RENDER_PRIM_CURSOR_AS(TILE);
     SetTile(shiftLight);
-    shiftLight->x0 = WrapRenderCoordinate16(
+    shiftLight->x0 = WrapSigned16(
         (int64_t)centerX + spec->shiftLightDX);
-    shiftLight->y0 = WrapRenderCoordinate16(
+    shiftLight->y0 = WrapSigned16(
         (int64_t)centerY + spec->shiftLightDY);
     shiftLight->w = 0x10;
     shiftLight->h = 0x10;

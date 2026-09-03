@@ -14,8 +14,8 @@ u8 *DrawHudDigit(u8 *packet, s32 x, s32 y, s32 digit, u16 clut) {
 
     SetSprt8(sprite);
     SetShadeTex(sprite, 1);
-    sprite->x0 = WrapRenderCoordinate16(x);
-    sprite->y0 = WrapRenderCoordinate16(y);
+    sprite->x0 = WrapSigned16(x);
+    sprite->y0 = WrapSigned16(y);
     sprite->u0 = digit << 3;
     sprite->v0 = 0x10;
     sprite->clut = clut;
