@@ -88,7 +88,7 @@ void SetLightMatrix(MATRIX *matrix) {
     (void)matrix;
     s_lightMatrixCalls++;
 }
-void SetGteObjectMatrix(LVec *position, Matrix *rotation) {
+void SetGteObjectMatrix(const LVec *position, Matrix *rotation) {
     (void)rotation;
     s_currentPosition[0] = position->x;
     s_currentPosition[1] = position->y;

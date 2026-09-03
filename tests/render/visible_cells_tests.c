@@ -44,7 +44,7 @@ void ApplyMatrixLV(const Matrix *matrix, const s32 *input, s32 *output) {
     output[2] = input[2];
 }
 
-void SetGteObjectMatrix(LVec *position, Matrix *rotation) {
+void SetGteObjectMatrix(const LVec *position, Matrix *rotation) {
     (void)position;
     (void)rotation;
     s_objectMatrixCount++;

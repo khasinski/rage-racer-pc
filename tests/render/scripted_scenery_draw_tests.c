@@ -49,7 +49,7 @@ MATRIX *MulMatrix2(MATRIX *left, MATRIX *right) {
 
 void SelectModelBank(s32 bank) { s_selectedBank = bank; }
 
-void SetGteObjectMatrix(LVec *position, Matrix *rotation) {
+void SetGteObjectMatrix(const LVec *position, Matrix *rotation) {
     (void)rotation;
     s_position = *position;
 }

@@ -693,7 +693,7 @@ void DrawProportionalText(s32 x, s32 y, const char *str, s32 clutIndex);
  * view matrix, scales the result by 4 into the translation matrix, then
  * installs the supplied rotation and calculated translation in the GTE.
  */
-void SetGteObjectMatrix(LVec *position, Matrix *rotation);
+void SetGteObjectMatrix(const LVec *position, Matrix *rotation);
 
 /*
  * The environment colour timeline and the sky it feeds. The state is nine

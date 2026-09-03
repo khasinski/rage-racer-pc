@@ -13,7 +13,7 @@ static s16 SubtractPositionComponent(s32 position, s32 camera) {
 }
 
 /* Converts a world-space object position to the camera-relative GTE matrix. */
-void SetGteObjectMatrix(LVec *position, Matrix *rotation) {
+void SetGteObjectMatrix(const LVec *position, Matrix *rotation) {
     SVec relative;
     LVec view;
     Matrix translation;

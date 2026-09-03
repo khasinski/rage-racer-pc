@@ -33,20 +33,21 @@ void DrawSpinningScenery(s32 timer, s32 animate) {
         ? &s_singleSpinnerRange
         : &s_multipleSpinnerRange;
     for (spinner = range->first; spinner < range->limit; spinner++) {
-        SpinningSceneryPlacement *placement =
+        const SpinningSceneryPlacement *placement =
             &g_SpinningSceneryPlacements[spinner];
+        u32 angle = (u16)g_SpinningSceneryAngle[spinner];
 
         if (animate != 0) {
-            g_SpinningSceneryAngle[spinner] +=
-                g_SpinningSceneryRate[range->rateIndex];
+            angle += g_SpinningSceneryRate[range->rateIndex];
         }
-        g_SpinningSceneryAngle[spinner] &= 0xFFF;
+        angle &= 0xFFF;
+        g_SpinningSceneryAngle[spinner] = (s16)angle;
 
         BuildRotMatrixY(&yawMatrix, placement->yaw);
-        BuildRotMatrixZ(&worldMatrix, g_SpinningSceneryAngle[spinner]);
+        BuildRotMatrixZ(&worldMatrix, (s32)angle);
         MulMatrix2(&yawMatrix, &worldMatrix);
         MulMatrix2(&g_RenderState.matrix, &yawMatrix);
-        BuildRotMatrixZ(&objectMatrix, g_SpinningSceneryAngle[spinner]);
+        BuildRotMatrixZ(&objectMatrix, (s32)angle);
         MulMatrix2(&yawMatrix, &objectMatrix);
         SetGteObjectMatrix(&placement->position,
                            &objectMatrix);

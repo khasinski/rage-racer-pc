@@ -72,7 +72,7 @@ void SetLightMatrix(MATRIX *matrix) {
     s_lightMatrixCount++;
 }
 
-void SetGteObjectMatrix(LVec *position, Matrix *rotation) {
+void SetGteObjectMatrix(const LVec *position, Matrix *rotation) {
     (void)rotation;
     CHECK(position->x == 0 && position->y == 0 && position->z == 0);
     s_objectMatrixCount++;

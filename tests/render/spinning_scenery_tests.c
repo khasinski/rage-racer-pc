@@ -3,6 +3,7 @@
 #include "game/render.h"
 #include "game/track_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -40,7 +41,7 @@ MATRIX *MulMatrix2(MATRIX *left, MATRIX *right) {
     return right;
 }
 
-void SetGteObjectMatrix(LVec *position, Matrix *rotation) {
+void SetGteObjectMatrix(const LVec *position, Matrix *rotation) {
     (void)position;
     (void)rotation;
 }
@@ -114,6 +115,14 @@ int main(void) {
     DrawSpinningScenery(2, 0);
     if (g_SpinningSceneryAngle[1] != 0xFFF) {
         puts("FAIL: frozen spinner angle");
+        return 1;
+    }
+
+    g_SpinningSceneryAngle[1] = INT16_MAX;
+    g_SpinningSceneryRate[1] = 64;
+    DrawSpinningScenery(2, 1);
+    if (g_SpinningSceneryAngle[1] != 63) {
+        puts("FAIL: spinner angle did not wrap as a 16-bit PS1 value");
         return 1;
     }
 
