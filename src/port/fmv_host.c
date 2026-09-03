@@ -2,6 +2,7 @@
 #include <psyz/cd.h>
 #include <libgpu.h>
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,7 +49,7 @@ static unsigned char *s_pixels;
 static int s_width;
 static int s_height;
 static unsigned int s_frame;
-static unsigned int s_tickSectors;
+static uint64_t s_tickSectors;
 static unsigned long long s_startNs;
 static int s_wallClock;
 
@@ -105,8 +106,14 @@ static void ReleaseFmvPixels(void) {
 
 static int HostExtractFmv(unsigned int first, unsigned int count) {
     unsigned int index;
+
     ReleaseFmvBuffers();
-    if (count == 0) return 0;
+    if (count == 0 || first > UINT_MAX - (count - 1)) {
+        return 0;
+    }
+#if SIZE_MAX <= UINT_MAX
+    if (count > SIZE_MAX / HOST_FMV_SECTOR_SIZE) return 0;
+#endif
     s_sectors = malloc((size_t)count * HOST_FMV_SECTOR_SIZE);
     s_bitstream = malloc(RAGE_BS_MAX);
     s_codes = malloc((size_t)RAGE_CODES_MAX * 2 + 64);
@@ -278,13 +285,23 @@ void StartFmvPlayback(void) {
 
 /* How much of the stream the drive would have delivered by now. */
 static unsigned int FmvArrivedSectors(void) {
+    uint64_t arrived;
+
     if (s_wallClock) {
-        unsigned long long elapsed = HostNanoseconds() - s_startNs;
-        return (unsigned int)((elapsed * RAGE_STR_SECTORS_PER_SECOND) /
-                              1000000000u);
+        uint64_t elapsed = HostNanoseconds() - s_startNs;
+        uint64_t seconds = elapsed / 1000000000u;
+        uint64_t nanoseconds = elapsed % 1000000000u;
+
+        if (seconds > UINT_MAX / RAGE_STR_SECTORS_PER_SECOND) {
+            return UINT_MAX;
+        }
+        arrived = seconds * RAGE_STR_SECTORS_PER_SECOND +
+                  nanoseconds * RAGE_STR_SECTORS_PER_SECOND / 1000000000u;
+        return arrived > UINT_MAX ? UINT_MAX : (unsigned int)arrived;
     }
     s_tickSectors += RAGE_STR_SECTORS_PER_SECOND;
-    return s_tickSectors / (unsigned int)TimingBaseHz();
+    arrived = s_tickSectors / (unsigned int)TimingBaseHz();
+    return arrived > UINT_MAX ? UINT_MAX : (unsigned int)arrived;
 }
 
 void DecodeFmvFrame(void) {
