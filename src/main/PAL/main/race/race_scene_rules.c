@@ -269,3 +269,26 @@ s32 ReleaseFinishFollowupCue(s32 *queuedCue, s32 specialVoicesActive) {
     *queuedCue = -1;
     return cue;
 }
+
+s32 NormalizeRaceSceneTimer(s32 timer) {
+    return timer < 0 ? 0 : timer;
+}
+
+s32 NextRaceSceneTimer(s32 timer) {
+    timer = NormalizeRaceSceneTimer(timer);
+    return timer < INT_MAX ? timer + 1 : INT_MAX;
+}
+
+s32 NextRaceAnimationTimer(s32 timer) {
+    if (timer < 0 || timer == INT_MAX) {
+        return 0;
+    }
+    return timer + 1;
+}
+
+s16 NextRaceFadeTimer(s16 timer) {
+    if (timer < 0) {
+        return 0;
+    }
+    return timer < SHRT_MAX ? (s16)(timer + 1) : SHRT_MAX;
+}

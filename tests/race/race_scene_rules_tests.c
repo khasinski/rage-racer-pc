@@ -299,6 +299,24 @@ static void TestFinishFollowupQueue(void) {
           "missing finish cue queue is empty");
 }
 
+static void TestRaceTimers(void) {
+    Check(NormalizeRaceSceneTimer(-1) == 0 &&
+              NormalizeRaceSceneTimer(24) == 24,
+          "race scene timer rejects corrupt negative values");
+    Check(NextRaceSceneTimer(-1) == 1 &&
+              NextRaceSceneTimer(24) == 25 &&
+              NextRaceSceneTimer(INT_MAX) == INT_MAX,
+          "race scene timer advances without signed overflow");
+    Check(NextRaceAnimationTimer(-1) == 0 &&
+              NextRaceAnimationTimer(24) == 25 &&
+              NextRaceAnimationTimer(INT_MAX) == 0,
+          "cyclic race animation timer restarts safely");
+    Check(NextRaceFadeTimer(-1) == 0 &&
+              NextRaceFadeTimer(24) == 25 &&
+              NextRaceFadeTimer(SHRT_MAX) == SHRT_MAX,
+          "race end fade timer stays within its storage type");
+}
+
 int main(void) {
     TestRaceGeometry();
     TestInputRules();
@@ -312,6 +330,7 @@ int main(void) {
     TestRaceClock();
     TestRaceViewSelection();
     TestFinishFollowupQueue();
+    TestRaceTimers();
 
     if (s_failures != 0) {
         return 1;

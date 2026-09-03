@@ -71,11 +71,17 @@ static void UpdateFinishFollowupCue(void) {
     PlaySoundCue(cue);
 }
 
-static void UpdateRaceEndState(void) {
+static s32 RaceRetriesRemaining(void) {
+    return g_CourseProgress != NULL
+               ? g_CourseProgress->retriesRemaining
+               : 0;
+}
+
+static s32 UpdateRaceEndState(void) {
     RaceEndFrame frame;
 
     frame = BuildRaceEndFrame(g_RacePhase, g_GrandPrixMode,
-                              g_CourseProgress->retriesRemaining,
+                              RaceRetriesRemaining(),
                               g_RaceFadeTimer);
     if (frame.drawPresentation) {
         if (frame.presentation == RACE_END_PRESENTATION_FINAL) {
@@ -91,12 +97,14 @@ static void UpdateRaceEndState(void) {
     }
     if (frame.exitScene >= 0) {
         ExitRaceScene(frame.exitScene);
+        return 1;
     }
     if (!frame.advanceTimer) {
-        return;
+        return 0;
     }
     g_MirrorViewEnabled = 0;
-    g_RaceFadeTimer++;
+    g_RaceFadeTimer = NextRaceFadeTimer(g_RaceFadeTimer);
+    return 0;
 }
 
 static void ToggleRacePause(void) {
@@ -123,7 +131,7 @@ static void ToggleRacePause(void) {
         g_RaceFadeTimer = 0;
         g_RacePhase = 7;
         if (g_GrandPrixMode == 0) {
-            s32 series = g_RaceSeries;
+            s32 series = RaceSeriesIndex(g_RaceSeries);
             s32 course = SeriesCourseIndex();
 
             g_BestLapTimes[series][course][0] =
@@ -135,7 +143,7 @@ static void ToggleRacePause(void) {
         g_RaceFadeTimer = 0;
         g_RacePhase = 5;
         s_RetireCameraActive = 1;
-        if (g_CourseProgress->retriesRemaining != 0) {
+        if (RaceRetriesRemaining() != 0) {
             PlaySoundCue(0x3D);
         }
         StartCdVolumeFade(8);
@@ -171,7 +179,8 @@ void EnterRaceScene(void) {
     SetTrackTexturePageNow(g_PlayerCar.trackSection);
     BuildStartingGrid();
     course = SeriesCourseIndex();
-    series = g_RaceSeries;
+    series = RaceSeriesIndex(g_RaceSeries);
+    g_RaceSeries = series;
     recordMode = RaceRecordMode(g_GrandPrixMode);
     g_LapTimeMs = 0;
     BuildRaceSectorEnds(g_TrackLength, g_SectorEndDistance);
@@ -234,7 +243,6 @@ static void UpdatePausedRaceScene(void) {
         PlaySoundCue(1);
     }
 
-    g_SceneTimer--;
     DrawRaceOptionMenu(g_RaceOptionCursor);
     if (g_GrandPrixMode == 0) {
         DrawSplitTimes();
@@ -297,7 +305,7 @@ static void UpdateActiveRaceScene(void) {
     WrongWayUpdate wrongWay;
 
     lapUpdateResult = 0;
-    g_AnimTimer++;
+    g_AnimTimer = NextRaceAnimationTimer(g_AnimTimer);
     raceClock = UpdateRaceClock(g_RaceTimeRemaining, g_RacePhase,
                                 g_GrandPrixMode);
     g_RaceTimeRemaining = raceClock.remaining;
@@ -333,7 +341,7 @@ static void UpdateActiveRaceScene(void) {
             DrawTimeRemaining(g_RaceTimeRemaining);
         }
         if (raceClock.expired) {
-            if (g_CourseProgress->retriesRemaining != 0) {
+            if (RaceRetriesRemaining() != 0) {
                 PlaySoundCue(0x3D);
             }
             ForceAllEffectVoicesEnabled(0);
@@ -372,6 +380,7 @@ static void UpdateActiveRaceScene(void) {
 
     raceView = SelectRaceView(g_RacePhase, s_RetireCameraActive,
                               g_CameraViewMode);
+    g_CameraViewMode = raceView.cameraView;
     if (raceView.cameraAction == RACE_CAMERA_ACTION_FINISH) {
         UpdateFinishCamera(&g_PlayerCar);
     } else if (raceView.cameraAction == RACE_CAMERA_ACTION_FOLLOW_PLAYER) {
@@ -445,7 +454,9 @@ static void UpdateActiveRaceScene(void) {
 }
 
 void UpdateRaceScene(void) {
-    g_SceneTimer++;
+    s32 frameStartTimer = NormalizeRaceSceneTimer(g_SceneTimer);
+
+    g_SceneTimer = NextRaceSceneTimer(frameStartTimer);
     UpdateFinishFollowupCue();
     if (g_SceneTimer < 0x3D) {
         DrawRoundScreen();
@@ -457,9 +468,12 @@ void UpdateRaceScene(void) {
     }
 
     ToggleRacePause();
-    UpdateRaceEndState();
+    if (UpdateRaceEndState()) {
+        return;
+    }
 
     if (g_RacePaused != 0) {
+        g_SceneTimer = frameStartTimer;
         UpdatePausedRaceScene();
     } else {
         UpdateActiveRaceScene();

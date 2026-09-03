@@ -96,5 +96,9 @@ RaceClockUpdate UpdateRaceClock(s32 remaining, s16 phase,
 RaceViewSelection SelectRaceView(s16 phase, s32 retiring,
                                  CameraViewMode selectedView);
 s32 ReleaseFinishFollowupCue(s32 *queuedCue, s32 specialVoicesActive);
+s32 NormalizeRaceSceneTimer(s32 timer);
+s32 NextRaceSceneTimer(s32 timer);
+s32 NextRaceAnimationTimer(s32 timer);
+s16 NextRaceFadeTimer(s16 timer);
 
 #endif
