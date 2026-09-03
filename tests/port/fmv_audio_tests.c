@@ -162,10 +162,27 @@ static int TestMissingAudio(void) {
     return 0;
 }
 
+static int TestFailedRestartStopsPreviousAudio(void) {
+    Reset();
+    s_audioSector = 0;
+    s_audioPlaying = 1;
+    HostFmvAudioStart(50, 4);
+    CHECK(FmvXaStreaming());
+
+    s_commandCount = 0;
+    s_rangeValid = 0;
+    HostFmvAudioStart(50, 4);
+    CHECK(s_commandCount == 2);
+    CHECK(s_commands[0] == CD_PAUSE && s_commands[1] == CD_SET_MODE);
+    CHECK(s_lastXaEndSector == -1 && !FmvXaStreaming());
+    return 0;
+}
+
 int main(void) {
     CHECK(TestStartAndStop() == 0);
     CHECK(TestAllowedTail() == 0);
     CHECK(TestMissingAudio() == 0);
+    CHECK(TestFailedRestartStopsPreviousAudio() == 0);
     puts("FMV XA audio starts, tails, stops, and recovers from missing data");
     return 0;
 }

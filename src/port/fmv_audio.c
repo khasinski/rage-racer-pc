@@ -44,6 +44,15 @@ static void StopXaAudio(void) {
     FinishXaAudio();
 }
 
+static void PrepareXaAudioStart(void) {
+    if (s_xaPlaying) {
+        CdControl(RAGE_CDL_PAUSE, NULL, NULL);
+    }
+    Psyz_CdSetXaEndSector(-1);
+    s_xaPlaying = 0;
+    s_xaTailAllowed = 0;
+}
+
 void HostFmvAudioTick(void) {
     if (s_xaPlaying && !Psyz_CdAudioPlaying()) {
         if (RuntimeConfigEnabled("diagnostics.fmv_trace")) {
@@ -70,8 +79,7 @@ void HostFmvAudioStart(unsigned int firstSector, unsigned int sectorCount) {
                                    ? sectorCount
                                    : XA_FILTER_SEARCH_SECTORS;
 
-    s_xaPlaying = 0;
-    s_xaTailAllowed = 0;
+    PrepareXaAudioStart();
     if (!HostStreamAbsoluteRange(firstSector, sectorCount, &absoluteFirst,
                                  &absoluteEnd)) {
         FinishXaAudio();
