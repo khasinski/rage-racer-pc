@@ -82,7 +82,7 @@ int main(void) {
         return 1;
     }
 
-    g_RaceSeries = 1;
+    g_RaceSeries = 7;
     g_CourseIndex = 3;
     if (!Expect(135, 1, 0x28, 1100, 3200 + 0x5000)) {
         return 1;

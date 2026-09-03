@@ -4,7 +4,7 @@
 #include "game/track_internal.h"
 
 void SeedRouteScenery(void) {
-    const s32 series = g_RaceSeries;
+    const s32 series = g_RaceSeries != 0;
     const s16 firstKeyframe =
         g_RouteSceneryData->firstKeyframe[series][0];
     const SceneryMotionKeyframe *keyframe =

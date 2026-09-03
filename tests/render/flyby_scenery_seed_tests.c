@@ -46,7 +46,7 @@ int main(void) {
                  random < sizeof(randomValues) / sizeof(randomValues[0]);
                  random++) {
                 memset(&g_FlybyScenery, 0x7F, sizeof(g_FlybyScenery));
-                g_RaceSeries = (s32)series;
+                g_RaceSeries = series == 0 ? 0 : 7;
                 g_LapCount = lapCounts[count];
                 g_RandomValue = randomValues[random];
 

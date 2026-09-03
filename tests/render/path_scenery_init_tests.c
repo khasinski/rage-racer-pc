@@ -59,7 +59,7 @@ static int RunCase(s16 positionRate, s16 rotationRate,
     rotations.keys[2].fields.y = -209;
     rotations.keys[2].fields.z = 310;
 
-    g_RaceSeries = 1;
+    g_RaceSeries = 7;
     g_PathSceneryPosData = (PathSceneryPositionData *)&positions;
     g_PathSceneryRotData = (PathSceneryRotationData *)&rotations;
     g_PathSceneryVolume = 123;

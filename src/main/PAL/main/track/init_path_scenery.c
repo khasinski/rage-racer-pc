@@ -2,12 +2,13 @@
 #include "game/track_internal.h"
 
 void InitPathScenery(void) {
+    const s32 series = g_RaceSeries != 0;
     const PathSceneryPositionKey *positionKeys =
         &g_PathSceneryPosData->keys[
-            g_PathSceneryPosData->firstKey[g_RaceSeries]];
+            g_PathSceneryPosData->firstKey[series]];
     const PathSceneryRotationKey *rotationKeys =
         &g_PathSceneryRotData->keys[
-            g_PathSceneryRotData->firstKey[g_RaceSeries]];
+            g_PathSceneryRotData->firstKey[series]];
     int axis;
 
     g_PathSceneryPosKeys = positionKeys;

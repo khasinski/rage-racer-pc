@@ -76,7 +76,7 @@ int main(void) {
     fixture.keyframes[2] =
         (SceneryMotionKeyframe){500, 1000, 1500, -1, 0, 0};
 
-    g_RaceSeries = 1;
+    g_RaceSeries = 7;
     g_RouteSceneryData = (SceneryMotionData *)&fixture;
     g_RouteSceneryPosition = (Vec4){10, 20, 30, 40};
 

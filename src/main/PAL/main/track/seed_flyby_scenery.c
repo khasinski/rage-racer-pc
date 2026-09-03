@@ -3,7 +3,7 @@
 #include "game/track_internal.h"
 
 void SeedFlybyScenery(void) {
-    const s32 series = g_RaceSeries;
+    const s32 series = g_RaceSeries != 0;
     const s32 keyframeIndex =
         g_FlybySceneryData->firstKeyframe[series][0];
 

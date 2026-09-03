@@ -72,14 +72,15 @@ int main(void) {
 
     memset(&fixture, 0, sizeof(fixture));
     memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
-    fixture.triggerSection[0][0] = 7;
-    fixture.start[0].position = (Vec4){100, 200, 300, 400};
+    fixture.triggerSection[1][0] = 7;
+    fixture.start[1].position = (Vec4){100, 200, 300, 400};
     fixture.keyframes[0] =
         (SceneryMotionKeyframe){0, 0, 0, 2, 4, 0};
     fixture.keyframes[1] =
         (SceneryMotionKeyframe){200, 400, 600, 2, 4, 0};
     fixture.keyframes[2].duration = -1;
     g_FlybySceneryData = (SceneryMotionData *)&fixture;
+    g_RaceSeries = 7;
     g_FlybySceneryKeyframe = fixture.keyframes;
     g_PlayerCar.x = 100;
     g_PlayerCar.y = 200;
