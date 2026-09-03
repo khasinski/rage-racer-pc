@@ -19,7 +19,6 @@ enum {
     TRACK_RUNTIME_EVENTS = 9,
     TRACK_RUNTIME_CAMERAS = 10,
     TRACK_RENDER_CAR_MODEL_COUNT = 11,
-    TRACK_ENVIRONMENT_PALETTE_COUNT = 5,
 };
 
 static s32 IsTrackRuntimeAssetIndex(s32 assetIndex) {
@@ -63,7 +62,7 @@ s32 InstallTrackRuntimeAssetPack(void *data, size_t size, s32 assetIndex,
                 TRACK_RENDER_CAR_MODEL_COUNT *
                     sizeof(CarModelRenderParams) ||
         blockSizes[TRACK_RUNTIME_ENVIRONMENT_PALETTE] <
-            TRACK_ENVIRONMENT_PALETTE_COUNT * sizeof(EnvironmentPalette) ||
+            ENVIRONMENT_PALETTE_COUNT * sizeof(EnvironmentPalette) ||
         blockSizes[TRACK_RUNTIME_COURSE_OBJECTS] <
             offsetof(CourseObjectTable, objects) ||
         courseObjects->count >

@@ -19,6 +19,7 @@ s32 IsValidEnvironmentScript(const GameEnvironmentScript *script,
                              size_t size) {
     size_t cueCount;
     size_t i;
+    s32 previousTime = -1;
 
     if (script == NULL || size < offsetof(GameEnvironmentScript, cues) ||
         script->skyRowBase > SKY_TILE_MAP_ROWS - 2 ||
@@ -27,20 +28,20 @@ s32 IsValidEnvironmentScript(const GameEnvironmentScript *script,
     }
     cueCount = (size - offsetof(GameEnvironmentScript, cues)) /
                sizeof(script->cues[0]);
-    if (cueCount < 2 || script->cues[0].time < 0) {
-        return 0;
-    }
-    for (i = 1; i < cueCount; i++) {
-        if (script->cues[i].time == -1) break;
-        if (script->cues[i].time < 0) {
+    if (cueCount < 2) return 0;
+
+    for (i = 0; i < cueCount; i++) {
+        const GameEnvironmentCue *cue = &script->cues[i];
+
+        if (cue->time == -1) return i != 0;
+        if (cue->time < 0 || (u32)cue->time >= script->length ||
+            cue->time <= previousTime ||
+            cue->mode >= ENVIRONMENT_PALETTE_COUNT) {
             return 0;
         }
+        previousTime = cue->time;
     }
-    if (i == cueCount) {
-        return 0;
-    }
-
-    return 1;
+    return 0;
 }
 
 s32 SetEnvironmentScript(GameEnvironmentScript *script, size_t size) {

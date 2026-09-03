@@ -100,7 +100,7 @@ int main(void) {
         GameEnvironmentCue cues[2];
     } script;
     GameEnvironmentCue cues[4];
-    EnvironmentPalette palettes[5];
+    EnvironmentPalette palettes[ENVIRONMENT_PALETTE_COUNT];
     s32 color;
 
     if (!CheckColorInterpolation()) {
@@ -108,6 +108,7 @@ int main(void) {
         return 1;
     }
 
+    memset(&script, 0, sizeof(script));
     script.skyRowBase = SKY_TILE_MAP_ROWS - 2;
     script.length = 123;
     script.cues[0].time = 0;
@@ -140,6 +141,29 @@ int main(void) {
         puts("FAIL: unterminated environment script published");
         return 1;
     }
+
+    script.cues[0].time = 10;
+    script.cues[1].time = 10;
+    if (SetEnvironmentScript(
+            (GameEnvironmentScript *)(void *)&script, sizeof(script)) != 0) {
+        puts("FAIL: duplicate environment cue time accepted");
+        return 1;
+    }
+    script.cues[0].time = 123;
+    script.cues[1].time = -1;
+    if (SetEnvironmentScript(
+            (GameEnvironmentScript *)(void *)&script, sizeof(script)) != 0) {
+        puts("FAIL: cue outside environment loop accepted");
+        return 1;
+    }
+    script.cues[0].time = 0;
+    script.cues[0].mode = ENVIRONMENT_PALETTE_COUNT;
+    if (SetEnvironmentScript(
+            (GameEnvironmentScript *)(void *)&script, sizeof(script)) != 0) {
+        puts("FAIL: out-of-range environment palette accepted");
+        return 1;
+    }
+    script.cues[0].mode = 0;
 
     SeedCue(&cues[0], 0, 4, 10, 0);
     SeedCue(&cues[1], 10, 12, 10, 2);
