@@ -29,6 +29,6 @@ void DrawPlayerTachometer(void) {
         blendAmount = g_EnvScriptClock - DUSK_FADE_START;
     }
 
-    DrawTachometer(g_EngineRpm + g_EngineRpmJitter, g_TachoNeedleFlash,
+    DrawTachometer(g_EngineRpm + g_EngineRpmJitter, g_TachoShiftLightOn,
                    lighting, blendAmount);
 }

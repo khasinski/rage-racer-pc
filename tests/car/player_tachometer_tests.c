@@ -5,7 +5,7 @@
 
 s32 g_EngineRpm;
 s32 g_EngineRpmJitter;
-s32 g_TachoNeedleFlash;
+s32 g_TachoShiftLightOn;
 s32 g_EnvScriptClock;
 s16 g_TrackZoneDark;
 
@@ -32,7 +32,7 @@ static void CheckClock(s32 clock, s32 dark,
     g_TrackZoneDark = (s16)dark;
     s_calls = 0;
     DrawPlayerTachometer();
-    if (s_calls != 1 || s_rpm != 5123 || s_flash != 2 ||
+    if (s_calls != 1 || s_rpm != 5123 || s_flash != 1 ||
         s_lighting != expectedLighting || s_amount != expectedAmount) {
         printf("FAIL clock=%d dark=%d: calls=%d rpm=%d flash=%d "
                "type=%d amount=%d; expected type=%d amount=%d\n",
@@ -45,7 +45,7 @@ static void CheckClock(s32 clock, s32 dark,
 int main(void) {
     g_EngineRpm = 5000;
     g_EngineRpmJitter = 123;
-    g_TachoNeedleFlash = 2;
+    g_TachoShiftLightOn = 1;
 
     CheckClock(0x1153, 0, TACHOMETER_LIGHTING_DARK, 0);
     CheckClock(0x1154, 0, TACHOMETER_LIGHTING_FADE_FROM_DARK, 0);

@@ -28,10 +28,10 @@ static void UpdatePlayerEngineAudio(PlayerCarRuntime *car) {
 
     if (g_EngineRpm >= g_CarSpec->revLimit - 100 &&
         drive->acceleratorInput.value >= 129) {
-        g_TachoNeedleFlash = g_AnimTimer & 2;
+        g_TachoShiftLightOn = (g_AnimTimer & 2) != 0;
         g_EngineRpmJitter = Random15() % 150 / 2;
     } else if (drive->engineRpm == 0 && (g_AnimTimer & 8)) {
-        g_TachoNeedleFlash = 0;
+        g_TachoShiftLightOn = 0;
         g_EngineRpmJitter = rsin(Random15() & 0xFFF) * 150 / 4096;
         if (g_EngineRpmJitter <= 0) {
             g_EngineRpmJitter = 0;
@@ -39,7 +39,7 @@ static void UpdatePlayerEngineAudio(PlayerCarRuntime *car) {
         revFlag = g_EngineRpmJitter < 37;
     } else {
         g_EngineRpmJitter = 0;
-        g_TachoNeedleFlash = 0;
+        g_TachoShiftLightOn = 0;
     }
 
     g_EngineRpmSnapshot = g_EngineRpm;

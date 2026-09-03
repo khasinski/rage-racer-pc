@@ -815,7 +815,7 @@ extern RaceGridSlot g_RaceGridSlots[RACE_GRID_STORAGE_COUNT];
 extern SVec g_RaceIntroCameraDelta;
 extern s32 g_RaceIntroCameraTimer;
 extern s32 g_ShiftTargetSpeed;
-extern s32 g_TachoNeedleFlash;
+extern s32 g_TachoShiftLightOn;
 
 typedef enum TachometerLightingMode {
     TACHOMETER_LIGHTING_NORMAL,
@@ -859,7 +859,7 @@ void UpdateCarSlideAngle(GameCarRuntime *car, s32 slideScale);
 void UpdatePlayerTilt(PlayerCarRuntime *car);
 s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
                         const CarTrackLimits *limits);
-void DrawTachometer(s32 rpm, s32 flash, TachometerLightingMode lighting,
+void DrawTachometer(s32 rpm, s32 shiftLightOn, TachometerLightingMode lighting,
                     s32 blendAmount);
 void DrawPlayerTachometer(void);
 void BeginCarStandingStart(PlayerCarRuntime *car);

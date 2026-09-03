@@ -51,7 +51,7 @@ GameCarRuntime g_CameraCar __attribute__((aligned(16)));
 s32 g_CameraCarSeedYaw;
 RaceIntroCameraKey *g_RaceIntroCameraCursor;
 s32 g_RaceSeries;
-s32 g_TachoNeedleFlash;
+s32 g_TachoShiftLightOn;
 GameCarRuntime *g_RankedCars[RIVAL_CONTENDER_COUNT]
     __attribute__((aligned(16)));
 s32 g_TrackLength;

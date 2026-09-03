@@ -75,7 +75,7 @@ static void SetTachometerNeedleColor(POLY_F4 *needle,
     }
 }
 
-void DrawTachometer(s32 rpm, s32 flash, TachometerLightingMode lighting,
+void DrawTachometer(s32 rpm, s32 shiftLightOn, TachometerLightingMode lighting,
                     s32 amount) {
     const CarTachometerSpec *spec = &g_CarSpec->tachometer;
     GameFrameContext *frame = g_DrawBuffer;
@@ -135,7 +135,7 @@ void DrawTachometer(s32 rpm, s32 flash, TachometerLightingMode lighting,
     shiftLight->y0 = centerY + spec->shiftLightDY;
     shiftLight->w = 0x10;
     shiftLight->h = 0x10;
-    shiftLight->r0 = flash * 223 + 32;
+    shiftLight->r0 = shiftLightOn ? 255 : 32;
     shiftLight->g0 = 0x20;
     shiftLight->b0 = 0x20;
     AddPrim(ot, shiftLight);

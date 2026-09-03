@@ -745,7 +745,7 @@ int PortShouldExit(int frame_number) {
                         g_IsEnvironmentMode4,
                         g_RenderState.envMode4, g_RandomSeed, g_AnimTimer,
                         g_EngineRpm + g_EngineRpmJitter,
-                        g_EngineRpm, g_EngineRpmJitter, g_TachoNeedleFlash,
+                        g_EngineRpm, g_EngineRpmJitter, g_TachoShiftLightOn,
                         g_PlayerCar.drive.acceleratorInput.value,
                         g_CarSpec != NULL ? g_CarSpec->revLimit : 0,
                         g_PlayerCar.drive.engineRpm, g_RacePhase,

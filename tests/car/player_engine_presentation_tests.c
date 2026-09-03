@@ -12,7 +12,7 @@ s32 g_AnimTimer;
 s32 g_EngineRpm;
 s32 g_EngineRpmJitter;
 s32 g_EngineRpmSnapshot;
-s32 g_TachoNeedleFlash;
+s32 g_TachoShiftLightOn;
 
 static GameCarSpec s_spec;
 static s32 s_randomValue;
@@ -62,7 +62,7 @@ static void Reset(PlayerCarRuntime *car) {
     g_EngineRpm = 1000;
     g_EngineRpmJitter = 99;
     g_EngineRpmSnapshot = 0;
-    g_TachoNeedleFlash = 3;
+    g_TachoShiftLightOn = 1;
     s_randomValue = 0;
     s_audioPosition = 0;
     s_audioBank = 0;
@@ -111,7 +111,7 @@ int main(void) {
     car.drive.acceleratorInput.value = 256;
     UpdatePlayerEnginePresentation(&car);
     CHECK(g_EngineRpm == 8000 && g_EngineRpmJitter == 74);
-    CHECK(g_TachoNeedleFlash == 2 && s_audioPosition == 8074);
+    CHECK(g_TachoShiftLightOn == 1 && s_audioPosition == 8074);
 
     Reset(&car);
     g_EngineRpm = 0;
