@@ -1,3 +1,4 @@
+#include "game/car_track_internal.h"
 #include "game/render_state.h"
 #include "game/track_internal.h"
 

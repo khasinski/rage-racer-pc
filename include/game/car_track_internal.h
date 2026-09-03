@@ -13,6 +13,10 @@ s32 CarTrackFixed12ToInteger(s32 value);
 s32 ProjectCarTrackAxis(s32 value);
 s16 InterpolateCarTrackHeading(s16 pointHeading, s16 nextHeading,
                                s32 swept, s16 arcSpan);
+/* Measure the car and a segment's endpoints relative to an arc centre. */
+void CarTrackMeasureArc(CarTrackWork *work, s32 arcIndex, s32 carX,
+                        s32 carZ, const GameTrackPoint *point,
+                        const GameTrackPoint *nextPoint);
 
 static inline s32 CarRaceProgress(const GameCarRuntime *car) {
     return WrapSigned32((int64_t)car->progressA + car->progressB);

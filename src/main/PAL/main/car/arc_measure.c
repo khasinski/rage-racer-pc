@@ -1,5 +1,5 @@
 #include "game/car.h"
-#include "game/car_internal.h"
+#include "game/car_track_internal.h"
 #include "game/integer.h"
 #include "game/race.h"
 #include "game/render.h"
@@ -27,7 +27,7 @@ static s32 MeasureArcRadius(s32 angle, s32 offsetX, s32 offsetZ) {
  * bracketing. They then diverge on what to do with the span between the two
  * points, which is why that part stays with them.
  */
-void CarTrackMeasureArc(struct CarTrackWork *work, s32 arcIndex, s32 carX,
+void CarTrackMeasureArc(CarTrackWork *work, s32 arcIndex, s32 carX,
                         s32 carZ, const GameTrackPoint *point,
                         const GameTrackPoint *nextPoint) {
     const GameTrackArcCenter *arcCenter = &g_TrackArcCenters[arcIndex];

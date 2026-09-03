@@ -129,13 +129,4 @@ void GetVisibleCellScanOffset(s32 direction, s32 cellIndex, s32 rearView,
                               s32 offset[2]);
 s32 SmoothTrackAngle(s32 pointIndex, s32 weight);
 
-/* Where a car and the two track points around it sit on a curve's arc: the
- * offsets from the arc centre, the angle each stands at, and the radius each
- * is out by. Callers decide for themselves what to do with the span between
- * the two points, which is where they stop agreeing. */
-struct CarTrackWork;
-void CarTrackMeasureArc(struct CarTrackWork *work, s32 arcIndex, s32 carX,
-                        s32 carZ, const GameTrackPoint *point,
-                        const GameTrackPoint *nextPoint);
-
 #endif
