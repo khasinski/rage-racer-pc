@@ -75,7 +75,8 @@ static int TestIncompleteAndOverflow(void) {
     memset(sectors[1], 0, HOST_FMV_SECTOR_SIZE);
     CHECK(!HostFmvAssembleStrFrame(&sectors[0][0], 2, &cursor, bitstream,
                                    sizeof(bitstream), &frame));
-    CHECK(cursor == 2 && frame.bitstreamSize == 0);
+    CHECK(cursor == 2 && frame.bitstreamSize == 0 && frame.width == 0 &&
+          frame.height == 0);
 
     cursor = 0;
     CHECK(!HostFmvAssembleStrFrame(&sectors[0][0], 2, &cursor, bitstream,
@@ -108,6 +109,31 @@ static int TestDeclaredBitstreamLength(void) {
     return 0;
 }
 
+static int TestChunkSequenceResynchronization(void) {
+    unsigned char sectors[3][HOST_FMV_SECTOR_SIZE];
+    unsigned char bitstream[HOST_FMV_PAYLOAD_SIZE * 2];
+    HostFmvStrFrame frame = {0};
+    size_t cursor = 0;
+
+    MakeChunk(sectors[0], 0, 2, 320, 192, 0x11);
+    MakeChunk(sectors[1], 2, 2, 320, 192, 0x22);
+    MakeChunk(sectors[2], 0, 1, 256, 144, 0x33);
+    CHECK(HostFmvAssembleStrFrame(&sectors[0][0], 3, &cursor, bitstream,
+                                  sizeof(bitstream), &frame));
+    CHECK(cursor == 3);
+    CHECK(frame.width == 256 && frame.height == 144);
+    CHECK(bitstream[8] == 0x33);
+
+    MakeChunk(sectors[0], 0, 2, 320, 192, 0x11);
+    MakeChunk(sectors[1], 1, 3, 320, 192, 0x22);
+    MakeChunk(sectors[2], 0, 1, 256, 144, 0x44);
+    cursor = 0;
+    CHECK(HostFmvAssembleStrFrame(&sectors[0][0], 3, &cursor, bitstream,
+                                  sizeof(bitstream), &frame));
+    CHECK(cursor == 3 && bitstream[8] == 0x44);
+    return 0;
+}
+
 static int TestInvalidArguments(void) {
     unsigned char sector[HOST_FMV_SECTOR_SIZE] = {0};
     unsigned char bitstream[HOST_FMV_PAYLOAD_SIZE];
@@ -129,6 +155,7 @@ int main(void) {
     CHECK(TestAssemblyAndResync() == 0);
     CHECK(TestIncompleteAndOverflow() == 0);
     CHECK(TestDeclaredBitstreamLength() == 0);
+    CHECK(TestChunkSequenceResynchronization() == 0);
     CHECK(TestInvalidArguments() == 0);
     puts("STR frame assembly resynchronizes and rejects incomplete data");
     return 0;
