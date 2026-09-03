@@ -190,8 +190,8 @@ void EnterRaceScene(void) {
     BuildRaceSectorEnds(g_TrackLength, g_SectorEndDistance);
     g_RefSectorTimes.fields.first = g_BestSectorTimes[series][course][0];
     g_RefSectorTimes.fields.second = g_BestSectorTimes[series][course][1];
-    g_SectorIndex = PRE_START_SECTOR;
     g_RefSectorTimes.fields.third = g_BestSectorTimes[series][course][2];
+    g_SectorIndex = PRE_START_SECTOR;
     /* The retail expression builds a 32-bit address through integer/union
      * arithmetic. On a 64-bit host that truncates the native table pointer.
      * This is the same game lookup expressed with its actual dimensions. */
@@ -233,6 +233,28 @@ void EnterRaceScene(void) {
     g_FrameSyncThreshold = RACE_FRAME_SYNC_THRESHOLD;
     DrawRoundScreen();
     printf("%s", g_MsgGame0Ok);
+}
+
+/* The track, its objects, and the scenery, then the same scenery again
+ * for the rear-view mirror. The scenery only animates while the race runs;
+ * the mirror pass never animates it. */
+static void DrawRaceWorld(s32 animateScenery) {
+    g_RenderState.envMode4 = g_IsEnvironmentMode4;
+    DrawTerrainCells();
+    DrawCourseObjects();
+    if (g_GrandPrixMode != 0) {
+        if (g_GrandPrixClass != GRAND_PRIX_FINAL_CLASS_INDEX) {
+            DrawStartGridScenery(g_SceneTimer);
+        }
+        SetLightMatrix(&g_SceneLightMatrix);
+        DrawScriptedScenery(animateScenery);
+        DrawRearViewMirror(g_SceneTimer);
+    }
+    DrawCourseScenery(SeriesCourseIndex(), g_SceneTimer, animateScenery);
+    if (BeginMirrorPass() != 0) {
+        DrawCourseScenery(SeriesCourseIndex(), g_SceneTimer, 0);
+        EndMirrorPass();
+    }
 }
 
 static void UpdatePausedRaceScene(void) {
@@ -282,22 +304,7 @@ static void UpdatePausedRaceScene(void) {
         DrawWrongWayWarning();
     }
     DrawSkyBackground();
-    g_RenderState.envMode4 = g_IsEnvironmentMode4;
-    DrawTerrainCells();
-    DrawCourseObjects();
-    if (g_GrandPrixMode != 0) {
-        if (g_GrandPrixClass != GRAND_PRIX_FINAL_CLASS_INDEX) {
-            DrawStartGridScenery(g_SceneTimer);
-        }
-        SetLightMatrix(&g_SceneLightMatrix);
-        DrawScriptedScenery(0);
-        DrawRearViewMirror(g_SceneTimer);
-    }
-    DrawCourseScenery(SeriesCourseIndex(), g_SceneTimer, 0);
-    if (BeginMirrorPass() != 0) {
-        DrawCourseScenery(SeriesCourseIndex(), g_SceneTimer, 0);
-        EndMirrorPass();
-    }
+    DrawRaceWorld(0);
 }
 
 static void UpdateActiveRaceScene(void) {
@@ -415,22 +422,7 @@ static void UpdateActiveRaceScene(void) {
         PlaySoundCue(0x2C);
     }
 
-    g_RenderState.envMode4 = g_IsEnvironmentMode4;
-    DrawTerrainCells();
-    DrawCourseObjects();
-    if (g_GrandPrixMode != 0) {
-        if (g_GrandPrixClass != GRAND_PRIX_FINAL_CLASS_INDEX) {
-            DrawStartGridScenery(g_SceneTimer);
-        }
-        SetLightMatrix(&g_SceneLightMatrix);
-        DrawScriptedScenery(1);
-        DrawRearViewMirror(g_SceneTimer);
-    }
-    DrawCourseScenery(SeriesCourseIndex(), g_SceneTimer, 1);
-    if (BeginMirrorPass() != 0) {
-        DrawCourseScenery(SeriesCourseIndex(), g_SceneTimer, 0);
-        EndMirrorPass();
-    }
+    DrawRaceWorld(1);
 
     GetTrackZoneBlend(g_PlayerCar.trackProgress);
     if (g_RacePhase >= 4) {
