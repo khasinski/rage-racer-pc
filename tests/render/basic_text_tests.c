@@ -22,12 +22,20 @@ static union {
     u8 bytes[2048];
 } s_packets;
 static s32 s_failures;
+static s32 s_tileCalls;
+static s32 s_tileX[2];
+static s32 s_tileY[2];
 
 u8 *AddTilePrim(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y, s32 w,
                 s32 h,
                 s32 r, s32 g, s32 b) {
-    (void)ot; (void)x; (void)y; (void)w; (void)h;
+    (void)ot; (void)w; (void)h;
     (void)r; (void)g; (void)b;
+    if (s_tileCalls < 2) {
+        s_tileX[s_tileCalls] = x;
+        s_tileY[s_tileCalls] = y;
+    }
+    s_tileCalls++;
     return prim;
 }
 
@@ -160,11 +168,24 @@ static void TestTextCoordinatesWrapLikeRetailRegisters(void) {
           "sprite-width advance wraps without overflow");
 }
 
+static void TestShadowedTileCoordinatesWrap(void) {
+    u8 packet;
+
+    s_tileCalls = 0;
+    DrawShadowedTile(NULL, &packet, INT_MAX, INT_MAX);
+    Check(s_tileCalls, 2, "shadowed tile count");
+    Check(s_tileX[0], INT_MIN, "shadowed tile x wraps");
+    Check(s_tileY[0], INT_MIN + 1, "shadowed tile y wraps");
+    Check(s_tileX[1], INT_MAX, "foreground tile x");
+    Check(s_tileY[1], INT_MAX, "foreground tile y");
+}
+
 int main(void) {
     TestText8x8();
     TestSpriteString();
     TestInvalidBytesUseFallbackGlyph();
     TestTextCoordinatesWrapLikeRetailRegisters();
+    TestShadowedTileCoordinatesWrap();
     if (s_failures != 0) return 1;
     puts("basic text emitters queue glyph and draw-mode packets");
     return 0;

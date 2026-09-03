@@ -40,6 +40,10 @@ void DrawSpriteString(s32 x, s32 y, const char *str, s32 clutIndex) {
 u8 *DrawShadowedTile(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y) {
     u8 *next;
 
-    next = AddTilePrim(ot, prim, x + 1, y + 2, 0xC2, 0x1C, 0, 0, 0);
+    next = AddTilePrim(
+        ot, prim,
+        WrapRenderCoordinate32((int64_t)x + 1),
+        WrapRenderCoordinate32((int64_t)y + 2),
+        0xC2, 0x1C, 0, 0, 0);
     return AddTilePrim(ot, next, x, y, 0xC4, 0x20, 0xFF, 0xFF, 0xFF);
 }
