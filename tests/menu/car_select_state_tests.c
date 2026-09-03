@@ -8,6 +8,7 @@
 
 static CarEntry s_cars[GAME_CAR_COUNT];
 CarEntry *g_CarTable = s_cars;
+u32 g_CarModelSlot;
 s32 g_CarNamePlateStep;
 s32 g_MenuAltLayout;
 s32 g_MenuAltLayoutSetting;
@@ -23,7 +24,11 @@ static s32 s_namePlateCalls;
 static s32 s_carViewCalls;
 static s32 s_lightBurstStep;
 
-void ActivateShowroomCarModel(void) { s_installCalls++; }
+s32 ActivateShowroomCarModel(s32 slot) {
+    (void)slot;
+    s_installCalls++;
+    return 1;
+}
 void DrawCarNamePlate(s32 step, s32 model, s32 grade) {
     (void)step;
     (void)model;

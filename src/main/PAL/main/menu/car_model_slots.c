@@ -2,12 +2,14 @@
 #include "game/asset.h"
 #include "game/render.h"
 
-void ActivateShowroomCarModel(void) {
-    if (g_CarModelSlot >= CAR_ASSET_SLOT_COUNT ||
-        g_CarModelSlots[g_CarModelSlot] == NULL) {
-        return;
+s32 ActivateShowroomCarModel(s32 slot) {
+    if ((u32)slot >= CAR_ASSET_SLOT_COUNT ||
+        g_CarModelSlots[slot] == NULL) {
+        return 0;
     }
-    SelectCarModelSlot(g_CarModelSlot);
-    SelectModelBank(g_CarModelSlot);
-    UploadCarImage(g_CarModelSlot);
+    SelectCarModelSlot(slot);
+    SelectModelBank(slot);
+    UploadCarImage(slot);
+    g_CarModelSlot = (u32)slot;
+    return 1;
 }

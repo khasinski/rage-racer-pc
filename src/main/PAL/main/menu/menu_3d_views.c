@@ -15,9 +15,8 @@ enum {
     SHOWROOM_OT_DEPTH_BIAS = 30,
 };
 
-static void SwapShowroomCarModel(void) {
-    g_CarModelSlot = g_CarModelSlot < 1;
-    ActivateShowroomCarModel();
+static s32 SwapShowroomCarModel(void) {
+    return ActivateShowroomCarModel(g_CarModelSlot < 1);
 }
 
 static void UpdateMenuViewSpin(void) {
@@ -73,7 +72,10 @@ void DrawMenuCarView(void) {
         if (!AssetLoadCompletedSuccessfully()) {
             return;
         }
-        SwapShowroomCarModel();
+        if (!SwapShowroomCarModel()) {
+            g_CarSwapToIndex = -1;
+            return;
+        }
         g_CarSwapFromIndex = g_CarSwapToIndex;
         g_CarSwapToIndex = -1;
     } else if (currentAngle != g_MenuViewAngleTarget) {

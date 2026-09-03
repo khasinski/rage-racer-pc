@@ -401,9 +401,9 @@ void UpdateSoundOptionMenu(void);
 void UpdateSoundSettingAdjust(void);
 void UpdateScreenAdjustScreen(void);
 void DrawTimeAttackPlate(s32 stepArg);
-/* Make the currently selected double-buffered showroom model active for both
- * CPU-side model access and rendering. */
-void ActivateShowroomCarModel(void);
+/* Validate and activate one double-buffered showroom model for both CPU-side
+ * model access and rendering. */
+s32 ActivateShowroomCarModel(s32 slot);
 
 extern char g_MsgInsertController[];
 extern char g_MsgControllerError[];
