@@ -2,13 +2,26 @@
 #include "game/render.h"
 #include "game/state.h"
 
+#include <limits.h>
+
+static s16 SubtractPositionComponent(s32 position, s32 camera) {
+    u16 lowBits = (u16)((u32)position - (u32)camera);
+
+    return lowBits <= INT16_MAX
+        ? (s16)lowBits
+        : (s16)((s32)lowBits - 0x10000);
+}
+
 /* Converts a world-space object position to the camera-relative GTE matrix. */
 void SetGteObjectMatrix(LVec *position, Matrix *rotation) {
     ObjectMatrixWork *work = &g_ObjectMatrixWork;
 
-    work->relative[0] = position->x - RENDER_VIEW_STATE->position.vector.x;
-    work->relative[1] = position->y - RENDER_VIEW_STATE->position.vector.y;
-    work->relative[2] = position->z - RENDER_VIEW_STATE->position.vector.z;
+    work->relative[0] = SubtractPositionComponent(
+        position->x, RENDER_VIEW_STATE->position.vector.x);
+    work->relative[1] = SubtractPositionComponent(
+        position->y, RENDER_VIEW_STATE->position.vector.y);
+    work->relative[2] = SubtractPositionComponent(
+        position->z, RENDER_VIEW_STATE->position.vector.z);
     ApplyMatrix(&g_RenderState.matrix, work->relative, &work->view);
     work->mtx.t[0] = work->view.x * 4;
     work->mtx.t[1] = work->view.y * 4;

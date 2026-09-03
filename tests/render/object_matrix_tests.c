@@ -1,6 +1,7 @@
 #include "game/render.h"
 #include "game/state.h"
 
+#include <limits.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -38,7 +39,7 @@ void Trace(const char *topic, const char *format, ...) {
         }                                                                      \
     } while (0)
 
-int main(void) {
+static int TestObjectTranslation(void) {
     LVec position = {130, 180, 360};
     Matrix rotation;
 
@@ -67,6 +68,32 @@ int main(void) {
     CHECK_EQ(g_ObjectMatrixWork.mtx.t[1], -80);
     CHECK_EQ(g_ObjectMatrixWork.mtx.t[2], 240);
 
+    return 0;
+}
+
+static int TestPositionSubtractionWrapsLikeThePs1(void) {
+    LVec position = {INT_MIN, INT_MAX, 0};
+    Matrix rotation;
+
+    memset(&g_RenderState, 0, sizeof(g_RenderState));
+    memset(&g_ObjectMatrixWork, 0, sizeof(g_ObjectMatrixWork));
+    memset(&rotation, 0, sizeof(rotation));
+    RENDER_VIEW_STATE->position.vector.x = INT_MAX;
+    RENDER_VIEW_STATE->position.vector.y = INT_MIN;
+
+    SetGteObjectMatrix(&position, &rotation);
+
+    CHECK_EQ(g_ObjectMatrixWork.relative[0], 1);
+    CHECK_EQ(g_ObjectMatrixWork.relative[1], -1);
+    CHECK_EQ(g_ObjectMatrixWork.relative[2], 0);
+    return 0;
+}
+
+int main(void) {
+    if (TestObjectTranslation() != 0 ||
+        TestPositionSubtractionWrapsLikeThePs1() != 0) {
+        return 1;
+    }
     puts("object matrix tests passed");
     return 0;
 }
