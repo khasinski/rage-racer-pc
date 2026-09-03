@@ -1,5 +1,7 @@
 #include "../../src/port/host_state_render.c"
 
+_Static_assert(sizeof(g_SpriteFontWidth) == 96,
+               "font widths must not absorb adjacent pointer tables");
 _Static_assert(sizeof(g_CameraMatrixSaved) == sizeof(Matrix),
                "saved camera matrix type changed");
 _Static_assert(sizeof(g_MenuRowFlashLevels) == 5 * sizeof(s32),

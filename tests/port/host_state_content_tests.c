@@ -96,7 +96,7 @@ extern char g_CaptionRanking2[8];
 extern char g_FmtRecordName[8];
 extern char g_FmtCarName[8];
 extern char g_CaptionTotalTime2[8];
-extern unsigned char g_NameEntryCharset[96];
+extern unsigned char g_NameEntryCharset[42];
 extern char g_TextNowLoading[];
 extern unsigned char g_MsgResOk[8];
 extern unsigned char g_MsgEventOk[12];
@@ -159,17 +159,13 @@ extern unsigned char g_ResultPlaceCluts[8];
 extern unsigned char g_ResultPanelCluts[10];
 extern unsigned char g_ClassPlaceBarSizes[8];
 extern char g_ChanceDigits[6][2];
-extern unsigned char g_PlaceSuffixNames[20];
-extern unsigned char g_CarNames[52];
-extern unsigned char g_CarClassNames[52];
 extern OptionHintCaption g_OptionHintCaptions[MENU_OPTION_HINT_COUNT];
 extern DVec g_ClassRecordCellPoints[CLASS_RECORD_COUNT];
 extern ClassRecordSprite g_ClassRecordCellSprites[CLASS_RECORD_COUNT];
 extern Rgb g_ClassRecordNameSprites[CLASS_RECORD_COUNT + 1];
-extern unsigned char g_BgmSelectSteps[20];
 extern unsigned char g_AttractTitleDelays[8];
 extern unsigned char g_SpriteFontCells[192];
-extern unsigned char g_SpriteFontWidth[288];
+extern unsigned char g_SpriteFontWidth[96];
 extern int32_t g_RoadGrade;
 extern ContentCarPoint g_PlayerHullPoints[6];
 extern ContentCarPoint g_OpponentHullCorners[4];
@@ -274,7 +270,7 @@ static const HostStateBlob s_blobs[] = {
     {"g_FmtRecordName", BYTES(g_FmtRecordName), 8},
     {"g_FmtCarName", BYTES(g_FmtCarName), 8},
     {"g_CaptionTotalTime2", BYTES(g_CaptionTotalTime2), 8},
-    {"g_NameEntryCharset", g_NameEntryCharset, 96},
+    {"g_NameEntryCharset", g_NameEntryCharset, 42},
     {"g_TextNowLoading", BYTES(g_TextNowLoading), 12},
     {"g_MsgResOk", g_MsgResOk, 8},
     {"g_MsgEventOk", g_MsgEventOk, 12},
@@ -347,9 +343,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_ResultPanelCluts", g_ResultPanelCluts, 10},
     {"g_ClassPlaceBarSizes", g_ClassPlaceBarSizes, 8},
     {"g_ChanceDigits", BYTES(g_ChanceDigits), 12},
-    {"g_PlaceSuffixNames", g_PlaceSuffixNames, 20},
-    {"g_CarNames", g_CarNames, 52},
-    {"g_CarClassNames", g_CarClassNames, 52},
     {"g_OptionHintCaptions", (const unsigned char *)g_OptionHintCaptions, 28},
     {"g_ClassRecordCellPoints", (const unsigned char *)g_ClassRecordCellPoints,
      44},
@@ -357,10 +350,9 @@ static const HostStateBlob s_blobs[] = {
      (const unsigned char *)g_ClassRecordCellSprites, 132},
     {"g_ClassRecordNameSprites",
      (const unsigned char *)g_ClassRecordNameSprites, 36},
-    {"g_BgmSelectSteps", g_BgmSelectSteps, 20},
     {"g_AttractTitleDelays", g_AttractTitleDelays, 8},
     {"g_SpriteFontCells", g_SpriteFontCells, 192},
-    {"g_SpriteFontWidth", g_SpriteFontWidth, 288},
+    {"g_SpriteFontWidth", g_SpriteFontWidth, 96},
     {"g_RoadGrade", (const unsigned char *)&g_RoadGrade,
      sizeof(g_RoadGrade)},
     {"g_PlayerHullPoints", (const unsigned char *)g_PlayerHullPoints,
@@ -426,7 +418,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the canonical host constants alone. */
-    const unsigned long expected = 905262036UL;
+    const unsigned long expected = 3077176982UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");
