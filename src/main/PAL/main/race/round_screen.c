@@ -15,7 +15,6 @@
 enum {
     ROUND_SCREEN_SCENE = 10,
     ROUND_SCREEN_RACE_SCENE = 11,
-    ROUND_SCREEN_TIMER_LIMIT = 10000,
     ROUND_SCREEN_SETUP_FRAME = 1,
     ROUND_SCREEN_DISPLAY_FRAME = 15,
     ROUND_SCREEN_CUE_FRAME = 32,
@@ -48,7 +47,8 @@ void EnterRoundScreen(void) {
     g_SceneId = ROUND_SCREEN_SCENE;
     g_FadeLevel = 0;
     g_GrandPrixRound = DetermineGrandPrixRound(
-        g_CourseProgress->bestPlace, g_GrandPrixClass,
+        g_CourseProgress != NULL ? g_CourseProgress->bestPlace : NULL,
+        g_GrandPrixClass,
         SeriesCourseIndex());
 }
 
@@ -56,13 +56,13 @@ static s32 NextRoundScreenFade(s32 stage) {
     s32 value;
 
     if (g_SceneId == ROUND_SCREEN_SCENE) {
-        value = (g_SceneTimer * 4) - g_RoundScreenFadeDelays[stage];
-    } else {
-        if (g_FadeLevel > 0) {
-            g_FadeLevel--;
-        }
-        value = g_FadeLevel;
+        return RoundScreenFadeFromTimer(
+            g_SceneTimer, g_RoundScreenFadeDelays[stage]);
     }
+    if (g_FadeLevel > 0) {
+        g_FadeLevel--;
+    }
+    value = g_FadeLevel;
     return ClampRoundScreenFade(value);
 }
 
@@ -95,8 +95,14 @@ void DrawRoundScreen(void) {
     if (g_GrandPrixMode != 0) {
         GameDrawProportionalTextShaded(0x80, 0x88, g_CaptionPrizeMoney2,
                                       0x7812, col);
-        const s32 *prizes =
-            g_PrizeMoney.values[SeriesCourseIndex()][g_GrandPrixClass];
+        const s32 *prizes;
+
+        if (!RoundScreenTableIndicesValid(g_GrandPrixSeries,
+                                          g_GrandPrixClass,
+                                          g_GrandPrixMode)) {
+            return;
+        }
+        prizes = g_PrizeMoney.values[SeriesCourseIndex()][g_GrandPrixClass];
 
         snprintf(text, sizeof(text), g_FmtPrize1st,
                  prizes[PRIZE_PLACE_FIRST]);
@@ -113,6 +119,11 @@ void DrawRoundScreen(void) {
 
         GameDrawProportionalTextShaded(0x62, 0x7c, g_CaptionBestTotalTime,
                                       0x7812, col);
+        if (!RoundScreenTableIndicesValid(g_GrandPrixSeries,
+                                          g_GrandPrixClass,
+                                          g_GrandPrixMode)) {
+            return;
+        }
         FormatLapTime(
             text,
             g_BestTotalTimes[g_GrandPrixSeries][course][recordMode]);
@@ -133,6 +144,8 @@ static void DrawBgmSelector(void) {
     u8 *p;
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(1);
 
+    g_BgmSelection = WrapRoundBgmSelection(
+        g_BgmSelection, ClampRoundBgmTrackCount(g_BgmTrackCount));
     p = RENDER_PRIM_CURSOR_AS(u8);
     p = GameQueueSprite(ot, p, 0x14, 0xce, 0x58, 8, 0xa8, 0xe0, 0x7812);
     x = (g_BgmSelection == 0xa) ? 0x6c : 0x70;
@@ -156,10 +169,9 @@ static void DrawBgmSelector(void) {
 /* Scene 10: draws the ROUND screen, takes the BGM choice and starts the race at frame 121. */
 void UpdateRoundScreen(void) {
     RoundBgmChoice bgm;
+    const s32 trackCount = ClampRoundBgmTrackCount(g_BgmTrackCount);
 
-    if ((u32)g_SceneTimer < ROUND_SCREEN_TIMER_LIMIT) {
-        g_SceneTimer++;
-    }
+    g_SceneTimer = NextRoundScreenTimer(g_SceneTimer);
     if (g_SceneTimer == ROUND_SCREEN_DISPLAY_FRAME) {
         SetDispMask(1);
     }
@@ -178,7 +190,7 @@ void UpdateRoundScreen(void) {
         g_SceneId = ROUND_SCREEN_RACE_SCENE;
         g_MirrorMode = IsRoundMirrorMode(g_PadHeld);
         bgm = ChooseRoundBgm(g_BgmSelection, g_BgmShuffleOrder,
-                             g_BgmTrackCount, g_BgmShuffleIndex);
+                             trackCount, g_BgmShuffleIndex);
         g_BgmTrack = bgm.track;
         g_BgmShuffleIndex = bgm.shuffleIndex;
     }
@@ -190,7 +202,7 @@ void UpdateRoundScreen(void) {
             g_BgmSelection++;
         }
         g_BgmSelection =
-            WrapRoundBgmSelection(g_BgmSelection, g_BgmTrackCount);
+            WrapRoundBgmSelection(g_BgmSelection, trackCount);
         DrawBgmSelector();
     }
 }

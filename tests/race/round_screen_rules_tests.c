@@ -1,6 +1,7 @@
 #include "game/round_screen_internal.h"
 #include "game/state.h"
 
+#include <limits.h>
 #include <stdio.h>
 
 static s32 s_failures;
@@ -27,6 +28,9 @@ static void TestRoundNumber(void) {
     Check(DetermineGrandPrixRound(laterClasses, 2, -1) == 0 &&
               DetermineGrandPrixRound(laterClasses, 2, 4) == 0,
           "invalid course index has no round");
+    Check(DetermineGrandPrixRound(laterClasses, -1, 0) == 0 &&
+              DetermineGrandPrixRound(laterClasses, 6, 0) == 0,
+          "invalid class index has no round");
 }
 
 static void TestSelectionWrap(void) {
@@ -36,6 +40,12 @@ static void TestSelectionWrap(void) {
           "right wraps from the last track to shuffle");
     Check(WrapRoundBgmSelection(4, 0) == 0,
           "empty track list only exposes shuffle");
+    Check(ClampRoundBgmTrackCount(-1) == 0 &&
+              ClampRoundBgmTrackCount(8) == 8 &&
+              ClampRoundBgmTrackCount(100) == 10,
+          "track count stays within the displayed name table");
+    Check(WrapRoundBgmSelection(11, 100) == 0,
+          "oversized track count cannot expose missing names");
 }
 
 static void TestFadeAndMirrorRules(void) {
@@ -46,6 +56,16 @@ static void TestFadeAndMirrorRules(void) {
     Check(ClampRoundScreenFade(0x80) == 0x7F &&
               ClampRoundScreenFade(1000) == 0x7F,
           "fade saturates at the PS1 brightness limit");
+    Check(RoundScreenFadeFromTimer(20, 15) == 65,
+          "timer fade preserves the retail ramp");
+    Check(RoundScreenFadeFromTimer(INT_MAX, INT_MIN) == 0x7F &&
+              RoundScreenFadeFromTimer(INT_MIN, INT_MAX) == 0,
+          "timer fade avoids signed overflow at corrupt extremes");
+    Check(NextRoundScreenTimer(-1) == 0 &&
+              NextRoundScreenTimer(9999) == 10000 &&
+              NextRoundScreenTimer(10000) == 10000 &&
+              NextRoundScreenTimer(INT_MAX) == 10000,
+          "scene timer recovers and saturates at its limit");
 
     Check(!IsRoundMirrorMode(PAD_START | PAD_R1),
           "partial mirror chord stays in normal mode");
@@ -53,6 +73,21 @@ static void TestFadeAndMirrorRules(void) {
           "complete mirror chord enables mirror mode");
     Check(IsRoundMirrorMode(PAD_START | PAD_R1 | PAD_L1 | PAD_CONFIRM),
           "unrelated held buttons do not cancel mirror mode");
+}
+
+static void TestTableIndices(void) {
+    Check(RoundScreenTableIndicesValid(0, 0, 1) &&
+              RoundScreenTableIndicesValid(1, 5, 1),
+          "Grand Prix table accepts both series and all six classes");
+    Check(!RoundScreenTableIndicesValid(-1, 0, 1) &&
+              !RoundScreenTableIndicesValid(2, 0, 1) &&
+              !RoundScreenTableIndicesValid(0, -1, 1) &&
+              !RoundScreenTableIndicesValid(0, 6, 1),
+          "Grand Prix table rejects invalid series and classes");
+    Check(RoundScreenTableIndicesValid(1, INT_MAX, 0),
+          "time attack records do not depend on the GP class");
+    Check(!RoundScreenTableIndicesValid(2, 0, 0),
+          "time attack still validates its record series");
 }
 
 static void TestAssetLoadGate(void) {
@@ -75,8 +110,8 @@ static void TestBgmChoice(void) {
           "manual selection preserves the shuffle cursor");
 
     choice = ChooseRoundBgm(10, order, 4, 2);
-    Check(choice.track == 9 && choice.shuffleIndex == 2,
-          "manual selection returns the logical tenth track");
+    Check(choice.track == 1 && choice.shuffleIndex == 3,
+          "invalid manual selection wraps to the current random choice");
 
     choice = ChooseRoundBgm(0, order, 4, 1);
     Check(choice.track == 9 && choice.shuffleIndex == 2,
@@ -100,6 +135,7 @@ int main(void) {
     TestSelectionWrap();
     TestFadeAndMirrorRules();
     TestAssetLoadGate();
+    TestTableIndices();
     TestBgmChoice();
 
     if (s_failures != 0) {
