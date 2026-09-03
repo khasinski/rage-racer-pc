@@ -7,6 +7,8 @@
 
 struct PlayerCarRuntime;
 
+enum { REPLAY_OPAQUE_FADE = 257 };
+
 typedef struct PrologueCameraCut {
     s16 timer;
     s16 carIndex;
@@ -29,6 +31,7 @@ static inline s32 RaceRecordMode(s32 grandPrixMode) {
 
 s32 ReplayEndingWashActive(s32 sceneTimer, s32 frameCount);
 s32 ReplayEndingWashLevel(s32 sceneTimer, s32 frameCount);
+s32 AdvanceReplayFadeLevel(s32 level, s32 step);
 s32 ShouldStartReplayExitFade(s32 sceneTimer, s32 frameCount);
 s32 ReplayBadgeVisible(s32 sceneTimer, s32 seriesCleared);
 s32 ReplayResultCue(s32 sceneTimer, s32 grandPrixMode, s32 seriesCleared,

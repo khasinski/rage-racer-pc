@@ -128,10 +128,10 @@ static void TestOpaqueFadeSelectsResultScene(void) {
 
     UpdateReplayFade();
 
-    assert(g_FadeLevel == 258);
+    assert(g_FadeLevel == 257);
     assert(g_MirrorMode == 0);
     assert(g_SceneId == 0x12);
-    assert(s_FadeDraws == 1 && s_FadeColor == 258 &&
+    assert(s_FadeDraws == 1 && s_FadeColor == 257 &&
            s_FadeTpage == 0x49);
 
     ResetState();

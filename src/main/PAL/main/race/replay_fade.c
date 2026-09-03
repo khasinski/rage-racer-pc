@@ -9,7 +9,6 @@
 enum {
     REPLAY_FADE_STEP = 4,
     REPLAY_AUDIO_FADE_FRAMES = 60,
-    REPLAY_OPAQUE_FADE = 257,
     REPLAY_FADE_IN_TPAGE = 0x29,
     REPLAY_FADE_OUT_TPAGE = 0x49,
     TIME_ATTACK_RESULT_SCENE = 0x14,
@@ -27,9 +26,8 @@ void UpdateReplayFade(void) {
     s32 endingWashActive;
 
     if (g_FadeStep < 0) {
-        g_FadeLevel += g_FadeStep;
-        if (g_FadeLevel < 0) {
-            g_FadeLevel = 0;
+        g_FadeLevel = AdvanceReplayFadeLevel(g_FadeLevel, g_FadeStep);
+        if (g_FadeLevel == 0) {
             g_FadeStep = 0;
             g_EndingWashLevel = 0;
         }
@@ -53,7 +51,7 @@ void UpdateReplayFade(void) {
             StartReplayExitFade(g_ReplayBufferWrapped == 0);
         }
     } else {
-        g_FadeLevel += g_FadeStep;
+        g_FadeLevel = AdvanceReplayFadeLevel(g_FadeLevel, g_FadeStep);
         if (g_FadeLevel >= REPLAY_OPAQUE_FADE) {
             g_MirrorMode = 0;
             g_SceneId = g_GrandPrixMode == 0

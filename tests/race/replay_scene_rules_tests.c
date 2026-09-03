@@ -24,6 +24,14 @@ static void TestAutomaticExitFadeThreshold(void) {
     assert(!ShouldStartReplayExitFade(933, 1000));
 }
 
+static void TestFadeLevelAdvance(void) {
+    assert(AdvanceReplayFadeLevel(255, -4) == 251);
+    assert(AdvanceReplayFadeLevel(2, -4) == 0);
+    assert(AdvanceReplayFadeLevel(254, 4) == 257);
+    assert(AdvanceReplayFadeLevel(INT_MAX, INT_MAX) == 257);
+    assert(AdvanceReplayFadeLevel(INT_MIN, INT_MIN) == 0);
+}
+
 static void TestReplayBadgeBlink(void) {
     assert(!ReplayBadgeVisible(15, 0));
     assert(ReplayBadgeVisible(16, 0));
@@ -55,6 +63,7 @@ static void TestReplayCursorWrap(void) {
 int main(void) {
     TestEndingWashThreshold();
     TestAutomaticExitFadeThreshold();
+    TestFadeLevelAdvance();
     TestReplayBadgeBlink();
     TestReplayResultCue();
     TestReplayCursorWrap();

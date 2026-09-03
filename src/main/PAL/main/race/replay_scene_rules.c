@@ -10,6 +10,15 @@ enum {
     NO_REPLAY_RESULT_CUE = -1,
 };
 
+s32 AdvanceReplayFadeLevel(s32 level, s32 step) {
+    int64_t next = (int64_t)level + step;
+
+    if (next <= 0) {
+        return 0;
+    }
+    return next < REPLAY_OPAQUE_FADE ? (s32)next : REPLAY_OPAQUE_FADE;
+}
+
 s32 ReplayEndingWashActive(s32 sceneTimer, s32 frameCount) {
     return frameCount >= REPLAY_ENDING_WASH_FRAMES &&
            sceneTimer > frameCount - REPLAY_ENDING_WASH_FRAMES;
