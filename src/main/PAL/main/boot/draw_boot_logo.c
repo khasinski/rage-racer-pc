@@ -10,10 +10,14 @@ static s32 BootLogoFade(void) {
 }
 
 void DrawBootLogo(void) {
-    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
-    u8 *next = RENDER_PRIM_CURSOR_AS(u8);
+    GameOrderingTableEntry *ot;
+    u8 *next;
     const s32 fade = BootLogoFade();
 
+    if (g_DrawBuffer == NULL || g_RenderState.packetCursor == NULL) return;
+
+    ot = GamePrimaryOrderingTable(0);
+    next = RENDER_PRIM_CURSOR_AS(u8);
     next = GameQueueShadedSprite(ot, next, 0x64, 0xEC, 0x7C, 0x18, 0x80, 0,
                                  0x3F97, fade);
     next = GameQueueShadedSprite(ot, next, 0xDC, 0xC4, 8, 0x10, 0, 0x20,

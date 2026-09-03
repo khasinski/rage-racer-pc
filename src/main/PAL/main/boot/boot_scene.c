@@ -15,6 +15,9 @@ enum {
 };
 
 static void AdvanceBootLogoFadeIn(void) {
+    if (g_SceneTimer < 0) {
+        g_SceneTimer = 0;
+    }
     if (g_SceneTimer < BOOT_LOGO_FADE_LIMIT) {
         g_SceneTimer += BOOT_LOGO_FADE_STEP;
         if (g_SceneTimer > BOOT_LOGO_FADE_LIMIT) {
@@ -27,6 +30,9 @@ static void AdvanceBootLogoFadeIn(void) {
 }
 
 static void AdvanceBootLogoFadeOut(void) {
+    if (g_SceneTimer > BOOT_LOGO_FADE_LIMIT) {
+        g_SceneTimer = BOOT_LOGO_FADE_LIMIT;
+    }
     if (g_SceneTimer > BOOT_LOGO_FADE_STEP) {
         g_SceneTimer -= BOOT_LOGO_FADE_STEP;
         return;
@@ -38,6 +44,9 @@ static void AdvanceBootLogoFadeOut(void) {
 }
 
 void UpdateBootLogoScene(void) {
+    if (g_BootLogoTimer < 0) {
+        g_BootLogoTimer = 0;
+    }
     if (g_BootLogoTimer < BOOT_ENDING_STILL_FRAMES) {
         if (g_BootLogoTimer >= BOOT_ENDING_STILL_DISPLAY_AT) {
             SetDispMask(1);
@@ -77,8 +86,13 @@ void UpdateBootLogoScene(void) {
         AdvanceBootLogoFadeOut();
         break;
     case BOOT_LOGO_STATE_START_FMV:
-        g_SceneTimer++;
-        if ((u32)g_SceneTimer >= BOOT_FMV_START_DELAY) {
+        if (g_SceneTimer < 0) {
+            g_SceneTimer = 0;
+        }
+        if (g_SceneTimer < BOOT_FMV_START_DELAY) {
+            g_SceneTimer++;
+        }
+        if (g_SceneTimer >= BOOT_FMV_START_DELAY) {
             BeginIntroFmv(TITLE_SCENE_ID);
         }
         break;

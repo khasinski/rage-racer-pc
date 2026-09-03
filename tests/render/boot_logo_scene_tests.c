@@ -2,6 +2,7 @@
 #include "game/fmv.h"
 #include "game/state.h"
 
+#include <limits.h>
 #include <stdio.h>
 
 s32 g_AssetLoadState;
@@ -126,6 +127,31 @@ int main(void) {
     s_fmvReturnScene = -1;
     UpdateBootLogoScene();
     CHECK(g_SceneTimer == 21 && s_fmvReturnScene == 3);
+
+    g_BootLogoState = BOOT_LOGO_STATE_FADE_IN;
+    g_SceneTimer = INT_MIN;
+    UpdateBootLogoScene();
+    CHECK(g_SceneTimer == 8);
+
+    g_BootLogoState = BOOT_LOGO_STATE_FADE_OUT;
+    g_SceneTimer = INT_MAX;
+    UpdateBootLogoScene();
+    CHECK(g_SceneTimer == 248);
+
+    g_BootLogoState = BOOT_LOGO_STATE_START_FMV;
+    g_SceneTimer = INT_MIN;
+    s_fmvReturnScene = -1;
+    UpdateBootLogoScene();
+    CHECK(g_SceneTimer == 1 && s_fmvReturnScene == -1);
+
+    g_SceneTimer = INT_MAX;
+    UpdateBootLogoScene();
+    CHECK(g_SceneTimer == INT_MAX && s_fmvReturnScene == 3);
+
+    g_BootLogoTimer = -1;
+    g_BootLogoState = BOOT_LOGO_STATE_INVALID;
+    UpdateBootLogoScene();
+    CHECK(g_BootLogoTimer == 1);
 
     puts("boot logo scene tests passed");
     return 0;

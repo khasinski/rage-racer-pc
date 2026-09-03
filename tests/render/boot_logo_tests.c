@@ -86,6 +86,17 @@ int main(void) {
     DrawAtFade(256, packets);
     CHECK(s_calls[0].intensity == 255 && s_calls[2].intensity == 255);
 
+    g_RenderState.packetCursor = packets;
+    g_DrawBuffer = NULL;
+    s_callCount = 0;
+    DrawBootLogo();
+    CHECK(s_callCount == 0 && g_RenderState.packetCursor == packets);
+
+    g_DrawBuffer = &s_frame;
+    g_RenderState.packetCursor = NULL;
+    DrawBootLogo();
+    CHECK(s_callCount == 0 && g_RenderState.packetCursor == NULL);
+
     puts("boot logo tests passed");
     return 0;
 }
