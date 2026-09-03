@@ -1,5 +1,7 @@
 
 #include <ctype.h>
+#include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -312,6 +314,22 @@ const char *RuntimeConfigGetForced(const char *key) {
     if (key == NULL || key[0] == '\0') return NULL;
     const char *value = EnvironmentValue(key);
     return value ? value : ConfiguredValue(key);
+}
+
+int RuntimeConfigInt(const char *key, int fallback, int minimum, int maximum) {
+    const char *text = RuntimeConfigGet(key);
+    char *end;
+    long value;
+
+    if (text == NULL || text[0] == '\0' || minimum > maximum) return fallback;
+    errno = 0;
+    value = strtol(text, &end, 0);
+    if (errno == ERANGE || end == text || *end != '\0' ||
+        value < minimum || value > maximum ||
+        value < INT_MIN || value > INT_MAX) {
+        return fallback;
+    }
+    return (int)value;
 }
 
 int RuntimeConfigEnabled(const char *key) {

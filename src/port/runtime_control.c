@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <stdlib.h>
+#include <limits.h>
 
 #include "modern/scene_capture.h"
 #include "runtime_config.h"
@@ -20,12 +20,10 @@ int PortShouldExit(int frame_number) {
     static int resolved;
 
     if (!resolved) {
-        const char *scene = RuntimeConfigGet("stop.scene");
-        const char *timer = RuntimeConfigGet("stop.timer");
         resolved = 1;
         capturePath = RuntimeConfigGet("capture.path");
-        if (scene != NULL) stopScene = strtol(scene, NULL, 10);
-        if (timer != NULL) stopTimer = strtol(timer, NULL, 10);
+        stopScene = RuntimeConfigInt("stop.scene", -1, 0, INT_MAX);
+        stopTimer = RuntimeConfigInt("stop.timer", -1, 0, INT_MAX);
     }
     (void)frame_number;
 

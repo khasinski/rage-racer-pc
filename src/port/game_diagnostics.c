@@ -1,9 +1,7 @@
-#include <errno.h>
 #include <limits.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 #include "runtime_config.h"
 
@@ -39,18 +37,11 @@ int DiagnosticsEnabled(const char *key) {
 }
 
 int DiagnosticsIntValue(const char *key, int fallback) {
-    const char *text = DiagnosticsValue(key);
-    char *end;
-    long value;
+    char full[128];
 
-    if (text == NULL || *text == '\0') return fallback;
-    errno = 0;
-    value = strtol(text, &end, 0);
-    if (errno == ERANGE || end == text || *end != '\0' ||
-        value < INT_MIN || value > INT_MAX) {
-        return fallback;
-    }
-    return (int)value;
+    return FullKey(key, full, sizeof(full))
+               ? RuntimeConfigInt(full, fallback, INT_MIN, INT_MAX)
+               : fallback;
 }
 
 void Trace(const char *topic, const char *format, ...) {
