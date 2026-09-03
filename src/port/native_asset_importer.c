@@ -73,8 +73,10 @@ typedef struct RageImportedScan {
 
 typedef struct RageImportedWrite {
     RageImportedMeshEntry *entry;
+    uint8_t *offsets;
     uint8_t *vertexCursor;
     uint8_t *indexCursor;
+    uint32_t currentMesh;
     uint32_t vertexCount;
     uint32_t indexCount;
 } RageImportedWrite;
@@ -395,7 +397,11 @@ static int ImportWriteFace(uint32_t mesh, const RageImportedFace *face,
     uint32_t encodedMaterial = material;
     uint32_t corner;
     static const uint32_t order[] = {0, 2, 1, 1, 2, 3};
-    (void)mesh;
+    while (write->currentMesh < mesh) {
+        write->currentMesh++;
+        ImportWrite32(write->offsets + write->currentMesh * 4,
+                      write->indexCount);
+    }
     if (face->depthBias != 0 ||
         (write->entry->cached.assetSet == RAGE_RENDER_ASSET_TERRAIN &&
          ((face->flags & 2) != 0 || face->prim < 2))) {
@@ -466,7 +472,7 @@ static RageImportedMeshEntry *ImportBuildMesh(
     RageImportedScan scan;
     RageImportedWrite write;
     RageImportedMeshEntry *entry;
-    uint32_t meshCount, mesh;
+    uint32_t meshCount;
     size_t offsetsSize, verticesSize, indicesSize, total, cursor;
     uint8_t *bytes;
     if (s_entryCount == RAGE_IMPORT_ENTRY_LIMIT) return NULL;
@@ -507,6 +513,7 @@ static RageImportedMeshEntry *ImportBuildMesh(
     entry->cached.ownedBytes = bytes;
     memset(&write, 0, sizeof(write));
     write.entry = entry;
+    write.offsets = bytes + RAGE_IMPORT_HEADER_SIZE;
     write.vertexCursor = bytes + RAGE_IMPORT_HEADER_SIZE + offsetsSize;
     write.indexCursor = write.vertexCursor + verticesSize;
     if (!ImportVisit(instance, ImportWriteFace, &write, &meshCount) ||
@@ -517,52 +524,18 @@ static RageImportedMeshEntry *ImportBuildMesh(
         memset(entry, 0, sizeof(*entry));
         return NULL;
     }
-    /* Fill mesh offsets with a third bounded pass. */
-    for (mesh = 0; mesh <= meshCount; mesh++)
-        ImportWrite32(bytes + RAGE_IMPORT_HEADER_SIZE + mesh * 4, 0);
-    /* A separate visitor below overwrites these values before the mesh is
-     * exposed to the renderer. */
-    return entry;
-}
-
-/* This first implementation section builds conventional vertices. Mesh range
- * offsets are finalized by ImportFinalizeOffsets, kept separate so the
- * face visitors stay identical for scanning and writing. */
-typedef struct RageImportedOffsetWrite {
-    uint8_t *offsets;
-    uint32_t currentMesh;
-    uint32_t indices;
-} RageImportedOffsetWrite;
-
-static int ImportOffsetFace(uint32_t mesh, const RageImportedFace *face,
-                                void *context) {
-    RageImportedOffsetWrite *write = context;
-    (void)face;
-    while (write->currentMesh < mesh) {
-        write->currentMesh++;
-        ImportWrite32(write->offsets + write->currentMesh * 4,
-                          write->indices);
-    }
-    write->indices += 6;
-    return 1;
-}
-
-static int ImportFinalizeOffsets(RageImportedMeshEntry *entry,
-                                     const RageRenderMeshInstance *instance,
-                                     size_t size) {
-    RageImportedOffsetWrite write;
-    uint32_t meshCount;
-    memset(&write, 0, sizeof(write));
-    write.offsets = (uint8_t *)entry->bytes + RAGE_IMPORT_HEADER_SIZE;
-    ImportWrite32(write.offsets, 0);
-    if (!ImportVisit(instance, ImportOffsetFace, &write, &meshCount))
-        return 0;
     while (write.currentMesh < meshCount) {
         write.currentMesh++;
         ImportWrite32(write.offsets + write.currentMesh * 4,
-                          write.indices);
+                      write.indexCount);
     }
-    return RuntimeMeshOpen(&entry->cached.mesh, entry->bytes, size);
+    if (!RuntimeMeshOpen(&entry->cached.mesh, entry->bytes, total)) {
+        free(entry->bytes);
+        free(entry->materials);
+        memset(entry, 0, sizeof(*entry));
+        return NULL;
+    }
+    return entry;
 }
 
 /*
@@ -840,23 +813,11 @@ int NativeAssetImporterReady(void) { return s_ready; }
 const RageRuntimeCachedMesh *NativeAssetImporterFind(
     const RageRenderMeshInstance *instance) {
     RageImportedMeshEntry *entry;
-    size_t offsets, vertices, indices, size;
     if (!s_ready || instance == NULL) return NULL;
     entry = ImportFindEntry(instance->assetKey, instance->assetSet);
     if (entry != NULL) return &entry->cached;
     entry = ImportBuildMesh(instance);
     if (entry == NULL) return NULL;
-    offsets = ((size_t)ImportRead32((uint8_t *)entry->bytes + 12) + 1u) * 4u;
-    vertices = (size_t)ImportRead32((uint8_t *)entry->bytes + 16) *
-               RAGE_IMPORT_VERTEX_SIZE;
-    indices = (size_t)ImportRead32((uint8_t *)entry->bytes + 20) * 4u;
-    size = RAGE_IMPORT_HEADER_SIZE + offsets + vertices + indices;
-    if (!ImportFinalizeOffsets(entry, instance, size)) {
-        free(entry->bytes);
-        free(entry->materials);
-        memset(entry, 0, sizeof(*entry));
-        return NULL;
-    }
     s_entryCount++;
     fprintf(stderr,
             "rage-port: imported native mesh asset=%u set=%u meshes=%u "
