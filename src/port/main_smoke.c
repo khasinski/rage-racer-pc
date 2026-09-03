@@ -67,6 +67,11 @@ extern unsigned long long g_RageTerrainChildRejectBackface;
 extern unsigned long long g_RageTerrainChildSecondTriangleVisible;
 int RetireCameraActive(void);
 
+static u32 ReadLittleEndianU32(const u8 *bytes) {
+    return (u32)bytes[0] | ((u32)bytes[1] << 8) |
+           ((u32)bytes[2] << 16) | ((u32)bytes[3] << 24);
+}
+
 int WriteCapturedFrame(const char *path) {
     unsigned char *pixels;
     FILE *output;
@@ -344,20 +349,18 @@ int main(int argc, char **argv) {
         }
         if (g_ModelBanks[0].modelCount > 0 && g_ModelBanks[0].models[0]) {
             const u8 *stream = g_ModelBanks[0].models[0];
-            u32 opcode = stream[0] | ((u32)stream[1] << 8) |
-                         ((u32)stream[2] << 16) | ((u32)stream[3] << 24);
+            u32 opcode = ReadLittleEndianU32(stream);
             printf(" bank0=%d opcode=%08x face=%08x,%08x,%08x",
                    g_ModelBanks[0].modelCount, opcode,
-                   *(const u32 *)(stream + 4), *(const u32 *)(stream + 8),
-                   *(const u32 *)(stream + 12));
+                   ReadLittleEndianU32(stream + 4),
+                   ReadLittleEndianU32(stream + 8),
+                   ReadLittleEndianU32(stream + 12));
             {
                 int block;
                 const u8 *cursor = stream;
                 printf(" blocks=");
                 for (block = 0; block < 8; block++) {
-                    u32 header = cursor[0] | ((u32)cursor[1] << 8) |
-                                 ((u32)cursor[2] << 16) |
-                                 ((u32)cursor[3] << 24);
+                    u32 header = ReadLittleEndianU32(cursor);
                     int type = header & 0xffff;
                     int count = header >> 16;
                     printf("%s%d:%d", block ? "," : "", type, count);
