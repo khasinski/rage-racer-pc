@@ -41,7 +41,9 @@
  * five times the worst of them.
  */
 enum {
-    MODERN_NATIVE_MAX_VERTICES = 1000000,
+    MODERN_NATIVE_MAX_VERTICES_PER_VIEW = 1000000,
+    MODERN_NATIVE_MAX_BUFFER_VERTICES =
+        MODERN_NATIVE_MAX_VERTICES_PER_VIEW * 2,
     MODERN_NATIVE_MAX_SPANS = 32768,
     MODERN_NATIVE_MAX_TEXTURES = 2048,
     MODERN_NATIVE_TEXTURE_HASH_SIZE = 4096,
@@ -554,7 +556,12 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
     if (colorFragment != NULL) SDL_ReleaseGPUShader(s_device, colorFragment);
 
     buffer.usage = SDL_GPU_BUFFERUSAGE_VERTEX;
-    buffer.size = MODERN_NATIVE_MAX_VERTICES * sizeof(RageNativeDrawVertex);
+    /* The main and rear-view cameras build the same semantic scene. Reserve
+     * a full scene budget for each: making the mirror use only whatever the
+     * main camera happened to leave made its contents depend on main-view
+     * visibility and instance order. */
+    buffer.size =
+        MODERN_NATIVE_MAX_BUFFER_VERTICES * sizeof(RageNativeDrawVertex);
     s_vertexBuffer = SDL_CreateGPUBuffer(s_device, &buffer);
     transfer.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
     transfer.size = buffer.size;
@@ -602,7 +609,8 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
         shadowSampler.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
         s_shadowSampler = SDL_CreateGPUSampler(s_device, &shadowSampler);
     }
-    s_vertices = malloc(MODERN_NATIVE_MAX_VERTICES * sizeof(*s_vertices));
+    s_vertices =
+        malloc(MODERN_NATIVE_MAX_BUFFER_VERTICES * sizeof(*s_vertices));
     s_spans = malloc(MODERN_NATIVE_MAX_SPANS * sizeof(*s_spans));
     s_mirrorSpans = malloc(MODERN_NATIVE_MAX_SPANS * sizeof(*s_mirrorSpans));
     if (s_texturedOpaque == NULL || s_texturedTransparent == NULL ||
@@ -785,20 +793,19 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
     s_vertexCount = RenderBuildNativePassDraws(
         world, RAGE_RENDER_PASS_MAIN, aspect, ModernAssetsMeshLookup, NULL,
         s_vertices,
-        MODERN_NATIVE_MAX_VERTICES, s_spans, MODERN_NATIVE_MAX_SPANS,
+        MODERN_NATIVE_MAX_VERTICES_PER_VIEW, s_spans, MODERN_NATIVE_MAX_SPANS,
         &s_spanCount);
     s_mirrorVertexCount = 0;
     s_mirrorSpanCount = 0;
     mirrorFirstVertex = s_vertexCount;
-    if (world->mirrorActive && world->hasMirrorCamera &&
-        mirrorFirstVertex < MODERN_NATIVE_MAX_VERTICES) {
+    if (world->mirrorActive && world->hasMirrorCamera) {
         RageRenderWorld mirrorWorld = *world;
         uint32_t span;
         mirrorWorld.camera = world->mirrorCamera;
         s_mirrorVertexCount = RenderBuildNativePassDraws(
             &mirrorWorld, RAGE_RENDER_PASS_MAIN, s_mirrorAspect,
             ModernAssetsMeshLookup, NULL, s_vertices + mirrorFirstVertex,
-            MODERN_NATIVE_MAX_VERTICES - mirrorFirstVertex, s_mirrorSpans,
+            MODERN_NATIVE_MAX_VERTICES_PER_VIEW, s_mirrorSpans,
             MODERN_NATIVE_MAX_SPANS, &s_mirrorSpanCount);
         for (span = 0; span < s_mirrorSpanCount; span++)
             s_mirrorSpans[span].firstVertex += mirrorFirstVertex;
