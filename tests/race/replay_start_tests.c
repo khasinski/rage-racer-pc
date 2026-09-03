@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <limits.h>
 
 #include "game/race.h"
 #include "game/race_internal.h"
@@ -88,10 +89,31 @@ static void TestFinalClassKeepsEnvironmentPosition(void) {
     assert(s_SeedCalls == 1);
 }
 
+static void TestInvalidAndShortReplayBounds(void) {
+    ResetState();
+    g_ReplayWriteCursor = 1;
+
+    BeginReplay();
+
+    assert(g_ReplayReadCursor == 0 && g_ReplayFrameCount == 0);
+
+    ResetState();
+    g_ReplayBufferWrapped = 1;
+    g_ReplayWriteCursor = -1;
+    g_ReplayFrameCount = 200;
+    BeginReplay();
+    assert(g_ReplayReadCursor == 0);
+
+    g_ReplayWriteCursor = INT_MAX;
+    BeginReplay();
+    assert(g_ReplayReadCursor == 0);
+}
+
 int main(void) {
     TestLinearTimeAttackReplay();
     TestWrappedGrandPrixReplay();
     TestWrappedCursorAtEndRestartsFromZero();
     TestFinalClassKeepsEnvironmentPosition();
+    TestInvalidAndShortReplayBounds();
     return 0;
 }
