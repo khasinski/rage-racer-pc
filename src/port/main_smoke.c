@@ -211,6 +211,84 @@ static int DumpVram(void) {
     return written;
 }
 
+static void ReportInitialState(void) {
+    int enabled = 0;
+    int car;
+
+    if (!RuntimeConfigEnabled("report.initial_state")) return;
+    for (car = 0; car < GAME_CAR_COUNT; car++) {
+        enabled += g_TimeAttackCars[car].enabled != 0;
+    }
+    printf("initial state: time_attack_enabled=%d selected_car=%d\n",
+           enabled, g_TimeAttackSave.carIndex);
+}
+
+static void ReportWindowSize(void) {
+    PsyzSize size;
+
+    if (!RuntimeConfigEnabled("report.window_size")) return;
+    size = Psyz_VideoGetDisplaySize();
+    printf("window size: %dx%d\n", size.w, size.h);
+}
+
+static int CheckSaveRoundtrip(void) {
+    GameSaveHeaderRow header = {0};
+    const int marker = 123456789;
+
+    if (!RuntimeConfigEnabled("checks.save_roundtrip")) return 1;
+    _bu_init();
+    if (g_RaceProgress == NULL) {
+        fprintf(stderr, "save roundtrip has no active progress slot\n");
+        return 0;
+    }
+    g_RaceProgress->money = marker;
+    if (!WriteMemoryCardSaveSlot(0, &header)) {
+        fprintf(stderr, "save roundtrip write failed\n");
+        return 0;
+    }
+    g_RaceProgress->money = 0;
+    if (!LoadMemoryCardSaveSlot(0, &header) ||
+        g_RaceProgress->money != marker) {
+        fprintf(stderr, "save roundtrip load failed: money=%d\n",
+                g_RaceProgress->money);
+        return 0;
+    }
+    printf("save roundtrip ok: money=%d\n", g_RaceProgress->money);
+    return 1;
+}
+
+static int CheckCompleteSaveLoad(void) {
+    GameSaveHeaderRow header = {0};
+    CarEntry *tables[] = {
+        g_GrandPrixCars, g_ExtraGrandPrixCars, g_TimeAttackCars
+    };
+    size_t table;
+    int car;
+
+    if (!RuntimeConfigEnabled("checks.complete_save_load")) return 1;
+    _bu_init();
+    if (!LoadMemoryCardSaveSlot(0, &header) ||
+        g_ExtraGrandPrixUnlocked != 1 ||
+        g_MaxClassReached[0] != 4 || g_MaxClassReached[1] != 5 ||
+        g_GrandPrixSave.money != 999999999 ||
+        g_ExtraGrandPrixSave.money != 999999999) {
+        fprintf(stderr, "complete generated save failed progression load\n");
+        return 0;
+    }
+    for (table = 0; table < sizeof(tables) / sizeof(tables[0]); table++) {
+        for (car = 0; car < GAME_CAR_COUNT; car++) {
+            if (tables[table][car].enabled != 1) {
+                fprintf(stderr,
+                        "complete generated save missing table %zu car %d\n",
+                        table, car);
+                return 0;
+            }
+        }
+    }
+    printf("complete generated save loaded: classes=4/5 cars=13/13/13\n");
+    return 1;
+}
+
 int main(int argc, char **argv) {
     RageInputConfig inputConfig;
     RagePortConfig portConfig;
@@ -262,18 +340,8 @@ int main(int argc, char **argv) {
         fprintf(stderr, "failed to dump VRAM\n");
         return EXIT_FAILURE;
     }
-    if (RuntimeConfigEnabled("report.initial_state")) {
-        int enabled = 0;
-        int car;
-        for (car = 0; car < 13; car++)
-            enabled += g_TimeAttackCars[car].enabled != 0;
-        printf("initial state: time_attack_enabled=%d selected_car=%d\n",
-               enabled, g_TimeAttackSave.carIndex);
-    }
-    if (RuntimeConfigEnabled("report.window_size")) {
-        PsyzSize size = Psyz_VideoGetDisplaySize();
-        printf("window size: %dx%d\n", size.w, size.h);
-    }
+    ReportInitialState();
+    ReportWindowSize();
     if (RuntimeConfigEnabled("report.audio_metrics")) {
         /* The SDL callback updates both the metrics and an optional PCM dump.
          * Stop it before sampling either so a final callback cannot make the
@@ -422,58 +490,7 @@ int main(int argc, char **argv) {
                    (unsigned)g_MirrorVisibleCellMask[cell]);
         }
     }
-    if (RuntimeConfigEnabled("checks.save_roundtrip")) {
-        GameSaveHeaderRow header = {0};
-        const int marker = 123456789;
-
-        _bu_init();
-        if (g_RaceProgress == NULL) {
-            fprintf(stderr, "save roundtrip has no active progress slot\n");
-            return EXIT_FAILURE;
-        }
-        g_RaceProgress->money = marker;
-        if (!WriteMemoryCardSaveSlot(0, &header)) {
-            fprintf(stderr, "save roundtrip write failed\n");
-            return EXIT_FAILURE;
-        }
-        g_RaceProgress->money = 0;
-        if (!LoadMemoryCardSaveSlot(0, &header) ||
-            g_RaceProgress->money != marker) {
-            fprintf(stderr, "save roundtrip load failed: money=%d\n",
-                    g_RaceProgress->money);
-            return EXIT_FAILURE;
-        }
-        printf("save roundtrip ok: money=%d\n", g_RaceProgress->money);
-    }
-    if (RuntimeConfigEnabled("checks.complete_save_load")) {
-        GameSaveHeaderRow header = {0};
-        int table;
-        int car;
-        CarEntry *tables[3] = {
-            g_GrandPrixCars, g_ExtraGrandPrixCars, g_TimeAttackCars
-        };
-
-        _bu_init();
-        if (!LoadMemoryCardSaveSlot(0, &header) ||
-            g_ExtraGrandPrixUnlocked != 1 ||
-            g_MaxClassReached[0] != 4 || g_MaxClassReached[1] != 5 ||
-            g_GrandPrixSave.money != 999999999 ||
-            g_ExtraGrandPrixSave.money != 999999999) {
-            fprintf(stderr, "complete generated save failed progression load\n");
-            return EXIT_FAILURE;
-        }
-        for (table = 0; table < 3; table++) {
-            for (car = 0; car < 13; car++) {
-                if (tables[table][car].enabled != 1) {
-                    fprintf(stderr,
-                            "complete generated save missing table %d car %d\n",
-                            table, car);
-                    return EXIT_FAILURE;
-                }
-            }
-        }
-        printf("complete generated save loaded: classes=4/5 cars=13/13/13\n");
-    }
+    if (!CheckSaveRoundtrip() || !CheckCompleteSaveLoad()) return EXIT_FAILURE;
     if (!WriteCapturedFrame(
             RuntimeConfigGet("capture.path"))) {
         fprintf(stderr, "failed to capture smoke frame\n");
