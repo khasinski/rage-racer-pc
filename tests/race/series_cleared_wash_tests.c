@@ -2,6 +2,7 @@
 #include "game/replay_internal.h"
 #include "game/render_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 
 GameFrameContext *g_DrawBuffer;
@@ -66,6 +67,13 @@ int main(void) {
           s_tile.blue == 0xFF);
 
     DrawAndCheck(-80, -20, 0, 0, 0);
+    CHECK(s_tile.red == 0 && s_tile.green == 0 && s_tile.blue == 0);
+
+    DrawAndCheck(INT_MAX, INT_MAX, 0xFF, 0xFF, 0xFF);
+    CHECK(s_tile.red == 0xFF && s_tile.green == 0xFF &&
+          s_tile.blue == 0xFF);
+
+    DrawAndCheck(INT_MIN, INT_MIN, 0, 0, 0);
     CHECK(s_tile.red == 0 && s_tile.green == 0 && s_tile.blue == 0);
 
     puts("series-cleared wash tests passed");
