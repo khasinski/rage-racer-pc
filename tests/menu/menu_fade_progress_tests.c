@@ -59,6 +59,10 @@ int main(void) {
     CHECK(AdvanceMenuViewAngleValue(INT_MIN, INT_MAX, 24) > INT_MIN);
     CHECK(AdvanceMenuViewAngleValue(INT_MAX, INT_MIN, 24) < INT_MAX);
 
+    CHECK(RebaseMenuViewAngle(700000, 500000, 600000) == 800000);
+    CHECK(RebaseMenuViewAngle(INT_MAX, -1, 0) == INT_MIN);
+    CHECK(RebaseMenuViewAngle(INT_MIN, 1, -1) == INT_MAX - 1);
+
     puts("menu animation helper tests passed");
     return 0;
 }

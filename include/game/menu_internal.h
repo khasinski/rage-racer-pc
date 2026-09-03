@@ -81,6 +81,11 @@ static inline s32 AdvanceMenuViewAngleValue(s32 current, s32 target,
     return (s32)((int64_t)current + step);
 }
 
+static inline s32 RebaseMenuViewAngle(s32 angle, s32 previousTarget,
+                                      s32 swing) {
+    return (s32)((u32)angle - (u32)previousTarget + (u32)swing);
+}
+
 typedef enum MenuDialogAction {
     MENU_DIALOG_NO_ACTION,
     MENU_DIALOG_CONFIRM,

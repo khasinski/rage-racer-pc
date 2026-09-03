@@ -38,7 +38,8 @@ void MenuSpinToCar(s32 *shownCar, s32 fromIndex, s32 toIndex, s32 newTarget) {
     g_MenuViewAngleTarget = newTarget;
     g_MenuLowerAltPanelStep = -1;
     g_CarSwapToIndex = *shownCar;
-    g_MenuViewAngle = (g_MenuViewAngle - previousTarget) + TURNTABLE_SWING;
+    g_MenuViewAngle = RebaseMenuViewAngle(
+        g_MenuViewAngle, previousTarget, TURNTABLE_SWING);
 }
 
 /*
@@ -53,5 +54,6 @@ void MenuSpinBackToPlayerCar(void) {
     g_MenuViewAngleTarget = 0;
     g_CarSwapFromIndex = g_CarListCursor;
     g_CarSwapToIndex = g_PlayerCarIndex;
-    g_MenuViewAngle = (g_MenuViewAngle - previousTarget) + TURNTABLE_SWING;
+    g_MenuViewAngle = RebaseMenuViewAngle(
+        g_MenuViewAngle, previousTarget, TURNTABLE_SWING);
 }
