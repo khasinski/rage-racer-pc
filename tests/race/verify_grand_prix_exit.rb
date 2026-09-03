@@ -11,7 +11,7 @@ native_state = File.read(File.join(source_dir, "src/port/native_game_state.c"))
 
 abort "save-prompt banner is not decoded as a native UI script" unless
   menu_header.include?("RAGE_NATIVE_UI_SCRIPT(CourseSelectSavePromptBanner, 2);") &&
-  native_state.include?("LoadTimedDrawScript(g_NativeCourseSelectSavePromptBanner, 2, 0x800827fcu)")
+  native_state.include?("NATIVE_UI_SCRIPT(g_NativeCourseSelectSavePromptBanner, 0x800827fcu)")
 environment = {
   "SDL_AUDIODRIVER" => "dummy",
   "RAGE_PORT_SMOKE_FRAMES" => "2200",
