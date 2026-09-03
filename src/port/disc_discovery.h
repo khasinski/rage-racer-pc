@@ -10,6 +10,7 @@ int DiscPathIsChd(const char *path);
 int DiscPathIsBin(const char *path);
 int DiscPathIsSupportedImage(const char *path);
 int DiscReadSavedPath(const char *configPath, char *path, size_t pathSize);
+int DiscWriteSavedPath(const char *configPath, const char *path);
 int DiscPathsReferToSameFile(const char *first, const char *second);
 
 /* Tries supported files in directory until validate accepts one. */

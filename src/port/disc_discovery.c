@@ -1,6 +1,7 @@
 #include "disc_discovery.h"
 
 #include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -58,6 +59,41 @@ int DiscReadSavedPath(const char *configPath, char *path, size_t pathSize) {
     fclose(file);
     if (lineEnd != NULL) *lineEnd = '\0';
     return path[0] != '\0';
+}
+
+int DiscWriteSavedPath(const char *configPath, const char *path) {
+    char *temporaryPath;
+    size_t temporarySize;
+    FILE *file;
+    int ok;
+
+    if (configPath == NULL || configPath[0] == '\0' || path == NULL ||
+        path[0] == '\0' || strpbrk(path, "\r\n") != NULL ||
+        strlen(configPath) > SIZE_MAX - sizeof(".tmp")) {
+        return 0;
+    }
+    temporarySize = strlen(configPath) + sizeof(".tmp");
+    temporaryPath = malloc(temporarySize);
+    if (temporaryPath == NULL) return 0;
+    snprintf(temporaryPath, temporarySize, "%s.tmp", configPath);
+    file = fopen(temporaryPath, "w");
+    if (file == NULL) {
+        free(temporaryPath);
+        return 0;
+    }
+    ok = fputs(path, file) >= 0 && fputc('\n', file) != EOF;
+    if (fclose(file) != 0) ok = 0;
+    if (ok) {
+#ifdef _WIN32
+        ok = MoveFileExA(temporaryPath, configPath,
+                         MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
+#else
+        ok = rename(temporaryPath, configPath) == 0;
+#endif
+    }
+    if (!ok) remove(temporaryPath);
+    free(temporaryPath);
+    return ok;
 }
 
 int DiscPathsReferToSameFile(const char *first, const char *second) {

@@ -59,32 +59,35 @@ static void HostCloseDisc(void) {
     memset(&g_RageHostDisc, 0, sizeof(g_RageHostDisc));
 }
 
-static void HostMakeDiscConfigPath(char *path, size_t size) {
+static int HostMakeDiscConfigPath(char *path, size_t size) {
+    int written;
+
     /* Keep the historical key so existing installations retain their choice. */
-    if (!PlatformUserConfigPath("disc-cue-path", path, size))
-        snprintf(path, size, "%s", "disc-cue-path");
+    if (PlatformUserConfigPath("disc-cue-path", path, size)) return 1;
+    if (path == NULL || size == 0) return 0;
+    written = snprintf(path, size, "%s", "disc-cue-path");
+    if (written < 0 || (size_t)written >= size) {
+        path[0] = '\0';
+        return 0;
+    }
+    return 1;
 }
 
 static int HostLoadSavedDiscPath(char *path, size_t size) {
     char configPath[PATH_MAX];
 
-    HostMakeDiscConfigPath(configPath, sizeof(configPath));
-    return DiscReadSavedPath(configPath, path, size);
+    return HostMakeDiscConfigPath(configPath, sizeof(configPath)) &&
+           DiscReadSavedPath(configPath, path, size);
 }
 
 static void HostSaveDiscPath(const char *discPath) {
     char directory[PATH_MAX];
     char path[PATH_MAX];
-    FILE *file;
 
     if (!PlatformUserConfigDirectory(directory, sizeof(directory)) ||
         !PlatformEnsureDirectory(directory)) return;
-    HostMakeDiscConfigPath(path, sizeof(path));
-    file = fopen(path, "w");
-    if (file == NULL) return;
-    fputs(discPath, file);
-    fputc('\n', file);
-    fclose(file);
+    if (HostMakeDiscConfigPath(path, sizeof(path)))
+        DiscWriteSavedPath(path, discPath);
 }
 
 /* The picker asks the desktop for a path; whether it names a disc this build

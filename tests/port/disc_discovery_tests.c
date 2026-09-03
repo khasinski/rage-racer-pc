@@ -142,6 +142,39 @@ static int TestSavedPathRejectsTruncation(void) {
     return 0;
 }
 
+static int TestSavedPathWriting(void) {
+    char directory[1024];
+    char config[1024];
+    char temporary[1028];
+    char path[64];
+    int written;
+#ifdef _WIN32
+    const char separator = '\\';
+#else
+    const char separator = '/';
+#endif
+
+    CHECK(MakeTemporaryDirectory(directory, sizeof(directory)));
+    written = snprintf(config, sizeof(config), "%s%csaved", directory,
+                       separator);
+    CHECK(written >= 0 && (size_t)written < sizeof(config));
+    written = snprintf(temporary, sizeof(temporary), "%s.tmp", config);
+    CHECK(written >= 0 && (size_t)written < sizeof(temporary));
+    CHECK(DiscWriteSavedPath(config, "disc/game.cue"));
+    CHECK(DiscReadSavedPath(config, path, sizeof(path)));
+    CHECK(strcmp(path, "disc/game.cue") == 0);
+    CHECK(!DiscWriteSavedPath(config, "broken\npath.cue"));
+    CHECK(DiscReadSavedPath(config, path, sizeof(path)));
+    CHECK(strcmp(path, "disc/game.cue") == 0);
+    CHECK(!DiscWriteSavedPath(NULL, "disc/game.cue"));
+    CHECK(!DiscWriteSavedPath(config, NULL));
+    CHECK(!DiscWriteSavedPath(config, ""));
+    CHECK(remove(config) == 0);
+    CHECK(remove(temporary) != 0);
+    CHECK(rmdir(directory) == 0);
+    return 0;
+}
+
 static int TestFileIdentity(void) {
     char directory[1024];
     char alias[1024];
@@ -202,6 +235,7 @@ static int TestExtensionsAndArguments(void) {
 int main(void) {
     CHECK(TestDiscoveryContinuesAfterRejection() == 0);
     CHECK(TestSavedPathRejectsTruncation() == 0);
+    CHECK(TestSavedPathWriting() == 0);
     CHECK(TestFileIdentity() == 0);
     CHECK(TestExtensionsAndArguments() == 0);
     puts("disc discovery validates candidates instead of trusting extensions");
