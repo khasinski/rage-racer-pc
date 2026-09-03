@@ -233,6 +233,31 @@ int main(int argc, char **argv) {
             return 1;
         }
     }
+
+    /* Lateral positions are also 32-bit machine words. These two pairs are
+     * adjacent after word wrapping, despite lying at opposite signed limits.
+     * Keep the broad-phase result deterministic on hosts with checked signed
+     * arithmetic. */
+    {
+        GameCarRuntime *car = &g_Cars[0];
+        GameCarRuntime *other = &g_Cars[1];
+        int i;
+
+        memset(g_Cars, 0, sizeof(g_Cars));
+        for (i = 0; i < 11; i++) {
+            g_Cars[i].activeFlag = -1;
+        }
+        g_TrackLength = 0x8000;
+        car->activeFlag = 0;
+        other->activeFlag = 0;
+        car->trackLateralOffset = INT_MAX;
+        other->trackLateralOffset = INT_MIN;
+
+        if (CollideRivalCars(car, 0) <= 0) {
+            puts("FAIL wrapped lateral distance changed");
+            return 1;
+        }
+    }
     printf("rival collisions take the same %d states they always did\n", steps);
     return 0;
 }

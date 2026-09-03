@@ -49,9 +49,9 @@ static void TransformCarHull(const GameCarRuntime *source,
         input.vz = g_CarCollisionCorners[corner].z;
         ApplyRotMatrix(&input, &transformed);
         corners[corner].x = WrapSigned16(
-            (transformed.vx >> 2) + offsetX);
+            (int64_t)(transformed.vx >> 2) + offsetX);
         corners[corner].z = WrapSigned16(
-            (transformed.vz >> 2) + offsetZ);
+            (int64_t)(transformed.vz >> 2) + offsetZ);
     }
 }
 
@@ -164,9 +164,10 @@ static int WithinCollisionReach(const GameCarRuntime *car,
         (int64_t)other->trackProgress + g_TrackLength);
     progressDelta = WrapSigned32(
         (int64_t)progressDelta - car->trackProgress) % g_TrackLength;
-    distance = other->trackLateralOffset - car->trackLateralOffset;
+    distance = WrapSigned32((int64_t)other->trackLateralOffset -
+                            car->trackLateralOffset);
     if (distance < 0) {
-        distance = -distance;
+        distance = WrapSigned32(-(int64_t)distance);
     }
     return (distance < COLLISION_LATERAL_REACH) &&
            ((progressDelta < COLLISION_TRACK_REACH) ||
