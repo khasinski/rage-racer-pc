@@ -53,12 +53,29 @@ static void SetAvailable(s32 panelY) {
 }
 
 static int TestAvailability(void) {
+    GameRenderState original;
+
     SetAvailable(0);
+    original = g_RenderState;
+    g_MirrorUnlocked = 0;
+    if (BeginMirrorPass() != 0 ||
+        memcmp(&g_RenderState, &original, sizeof(original)) != 0) return 0;
+    g_MirrorUnlocked = 1;
     g_MirrorViewEnabled = 0;
-    if (BeginMirrorPass() != 0 || g_RenderState.depth != 100) return 0;
+    if (BeginMirrorPass() != 0 ||
+        memcmp(&g_RenderState, &original, sizeof(original)) != 0) return 0;
     g_MirrorViewEnabled = 1;
+    g_CameraViewMode = CAMERA_VIEW_CHASE;
+    if (BeginMirrorPass() != 0 ||
+        memcmp(&g_RenderState, &original, sizeof(original)) != 0) return 0;
+    g_CameraViewMode = CAMERA_VIEW_CAR;
+    g_GrandPrixMode = 0;
+    if (BeginMirrorPass() != 0 ||
+        memcmp(&g_RenderState, &original, sizeof(original)) != 0) return 0;
+    g_GrandPrixMode = 1;
     g_RacePhase = 1;
-    return BeginMirrorPass() == 0 && g_RenderState.depth == 100;
+    return BeginMirrorPass() == 0 &&
+           memcmp(&g_RenderState, &original, sizeof(original)) == 0;
 }
 
 static int TestHiddenPanelClip(void) {
@@ -101,11 +118,29 @@ static int TestVisiblePanelAndRestore(void) {
            s_geomX == 0xA0 && s_geomY == 0x78 && s_geomScreen == 0x140;
 }
 
+static int TestPanelClipLimits(void) {
+    SetAvailable(-44);
+    if (BeginMirrorPass() != 1 ||
+        g_FrameContexts[0].environment.mirrorDraw.clip.h != 0 ||
+        g_FrameContexts[1].environment.mirrorDraw.clip.h != 0) {
+        return 0;
+    }
+    EndMirrorPass();
+
+    SetAvailable(18);
+    return BeginMirrorPass() == 1 &&
+           g_FrameContexts[0].environment.mirrorDraw.clip.y == 18 &&
+           g_FrameContexts[1].environment.mirrorDraw.clip.y == 258 &&
+           g_FrameContexts[0].environment.mirrorDraw.clip.h == 36 &&
+           g_FrameContexts[1].environment.mirrorDraw.clip.h == 36;
+}
+
 int main(void) {
     ResetMirrorState();
     if (g_MirrorViewEnabled != 1 || g_MirrorPanelY != -0x2C ||
         g_MirrorUnlocked != 0 || !TestAvailability() ||
-        !TestHiddenPanelClip() || !TestVisiblePanelAndRestore()) {
+        !TestHiddenPanelClip() || !TestVisiblePanelAndRestore() ||
+        !TestPanelClipLimits()) {
         puts("mirror pass state failed");
         return 1;
     }
