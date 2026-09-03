@@ -1,10 +1,9 @@
 #include "game/state.h"
 #include "game/input_internal.h"
 
-/* The two live 0..7 selections: standard pad and NeGcon. */
-/* Entry hook for the controller-configuration screen: clears the four screen
- * animation counters and snapshots both button-mapping selections so a cancel
- * can put them back. */
+/* Entry hook for the controller-configuration screen: clamps and snapshots
+ * both button-mapping selections so a cancel can put them back, then resets
+ * the controller model orientation. */
 void BeginControllerConfig(void) {
     g_PadMappingIndex = ClampControllerMappingIndex(g_PadMappingIndex);
     g_NegconMappingIndex = ClampControllerMappingIndex(g_NegconMappingIndex);

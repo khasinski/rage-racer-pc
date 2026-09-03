@@ -114,7 +114,7 @@ void UpdateNegconSteerPlayScreen(void);
 void DrawNegconSteerPlayScreen(void);
 void UpdateNegconMaxTwistScreen(void);
 void DrawNegconMaxTwistScreen(void);
-void DrawControllerSetupScene(s32 variant);
+void DrawControllerSetupScene(s32 showButtonOverlays);
 
 /* Identity of the running scene: queried (`== 0xC`, `== 0x11`, `== 0x1E`, ...)
  * but never dispatched. Every writer also resets g_SceneTimer. */

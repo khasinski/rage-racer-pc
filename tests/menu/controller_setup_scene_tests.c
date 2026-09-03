@@ -100,7 +100,7 @@ static void Reset(void) {
     g_DrawBuffer = &s_frame;
     RENDER_OT_BASE = s_originalOt;
     g_PadType = PAD_TYPE_DIGITAL;
-    g_GameMode = 7;
+    g_GameMode = OPTION_MODE_CONTROLLER_CONFIG;
     g_AnimTimer = 5;
     g_ControllerSceneAngleX = 100;
     g_ControllerSceneAngleY = 200;
@@ -138,7 +138,7 @@ static void TestDigitalPadModels(void) {
 static void TestNegconPartsAndOverlays(void) {
     Reset();
     g_PadType = PAD_TYPE_NEGCON;
-    g_GameMode = 10;
+    g_GameMode = OPTION_MODE_NEGCON_STEER_PLAY;
     DrawControllerSetupScene(1);
     CHECK(g_RenderState.viewY == 0 && g_RenderState.viewZ == -0xC80);
     CHECK(s_pitchCount == 2);
@@ -150,7 +150,7 @@ static void TestNegconPartsAndOverlays(void) {
 
     Reset();
     g_PadType = PAD_TYPE_NEGCON;
-    g_GameMode = 11;
+    g_GameMode = OPTION_MODE_NEGCON_MAX_TWIST;
     DrawControllerSetupScene(0);
     CHECK(s_pitchAngles[0] == 40 && s_pitchAngles[1] == 32);
     CHECK(s_modelCount == 2 && s_models[0] == 1 && s_models[1] == 2);
