@@ -1,8 +1,13 @@
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/prim.h"
 #include "game/render_internal.h"
 
-enum { OPTION_LETTERBOX_STEP = 4 };
+enum {
+    OPTION_LETTERBOX_STEP = 4,
+    OPTION_LETTERBOX_MENU_HEIGHT = 240,
+    OPTION_LETTERBOX_FULL_HEIGHT = 480,
+};
 
 static s32 ApproachLetterboxHeight(s32 height, s32 target) {
     if (height < target) {
@@ -20,13 +25,17 @@ static s32 ApproachLetterboxHeight(s32 height, s32 target) {
 
 void DrawOptionSceneOverlay(void) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(54);
-    s32 targetHeight = g_GameMode == OPTION_MODE_SCREEN_ADJUST ? 0x1E0 : 0xF0;
+    s32 targetHeight = g_GameMode == OPTION_MODE_SCREEN_ADJUST
+                           ? OPTION_LETTERBOX_FULL_HEIGHT
+                           : OPTION_LETTERBOX_MENU_HEIGHT;
     u8 *next;
 
     if (g_GameMode != OPTION_MODE_NEGCON_NEUTRAL) {
         DrawPadTypeHint();
     }
 
+    g_OptionLetterboxHeight = AddClampedMenuValue(
+        g_OptionLetterboxHeight, 0, 0, OPTION_LETTERBOX_FULL_HEIGHT);
     g_OptionLetterboxHeight =
         ApproachLetterboxHeight(g_OptionLetterboxHeight, targetHeight);
 
@@ -51,8 +60,8 @@ void UpdateOptionScene(void) {
     g_RenderState.packetCursor = AddTilePrim(
         GamePrimaryOrderingTable(0), RENDER_PRIM_CURSOR_AS(u8),
         0, 0, 0x140, 2, 0, 0, 0);
-    g_AnimTimer++;
-    g_SceneTimer++;
+    g_AnimTimer = (s32)((u32)g_AnimTimer + 1u);
+    g_SceneTimer = (s32)((u32)g_SceneTimer + 1u);
     if (g_SceneTimer == 2) {
         SetDispMask(1);
     }

@@ -2,6 +2,7 @@
 #include "game/prim.h"
 #include "game/render_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -145,6 +146,23 @@ int main(void) {
     g_GameMode = -1;
     UpdateOptionScene();
     CHECK(g_GameMode == OPTION_MODE_ROOT && s_handlerCalls[OPTION_MODE_ROOT] == 1);
+
+    Reset(OPTION_MODE_ROOT);
+    g_OptionLetterboxHeight = INT_MIN;
+    DrawOptionSceneOverlay();
+    CHECK(g_OptionLetterboxHeight == 4 && s_lastTileHeight == 4);
+
+    Reset(OPTION_MODE_ROOT);
+    g_OptionLetterboxHeight = INT_MAX;
+    DrawOptionSceneOverlay();
+    CHECK(g_OptionLetterboxHeight == 476 && s_lastTileHeight == 476);
+
+    Reset(OPTION_MODE_ROOT);
+    g_AnimTimer = INT_MAX;
+    g_SceneTimer = INT_MAX;
+    UpdateOptionScene();
+    CHECK(g_AnimTimer == INT_MIN && g_SceneTimer == INT_MIN);
+    CHECK(s_handlerCalls[OPTION_MODE_ROOT] == 1);
 
     puts("option scene tests passed");
     return 0;
