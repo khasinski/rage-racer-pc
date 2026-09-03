@@ -1,11 +1,21 @@
 #include "game/car.h"
-#include "game/track.h"
+#include "game/integer.h"
 #include "game/race.h"
+#include "game/track.h"
 
 static s32 TrackSegmentLength(s32 index) {
     s32 length = (s16)g_TrackPoints[index].segmentLength;
 
     return length > 0 ? length : 0;
+}
+
+static s32 OffsetTrackPointIndex(s32 index, s32 offset) {
+    return WrapTrackPointIndex(
+        WrapSigned32((int64_t)index + offset));
+}
+
+static void AddLapProgress(GameCarRuntime *car, s32 distance) {
+    car->progressA = WrapSigned32((int64_t)car->progressA + distance);
 }
 
 /*
@@ -34,12 +44,14 @@ void SeedCarLapProgress(GameCarRuntime *car, s32 mode) {
                 if (index == current) {
                     break;
                 }
-                total += TrackSegmentLength(index);
+                total = WrapSigned32(
+                    (int64_t)total + TrackSegmentLength(index));
             }
         } else {
             for (;;) {
                 index = WrapTrackPointIndex(index);
-                total -= TrackSegmentLength(index);
+                total = WrapSigned32(
+                    (int64_t)total - TrackSegmentLength(index));
                 if (index == current) {
                     break;
                 }
@@ -50,11 +62,13 @@ void SeedCarLapProgress(GameCarRuntime *car, s32 mode) {
         if (mode == 0) {
             do {
                 index = WrapTrackPointIndex(index + 1);
-                total -= TrackSegmentLength(index);
+                total = WrapSigned32(
+                    (int64_t)total - TrackSegmentLength(index));
             } while (index != current);
         } else {
             while ((index = WrapTrackPointIndex(index)) != current) {
-                total += TrackSegmentLength(index);
+                total = WrapSigned32(
+                    (int64_t)total + TrackSegmentLength(index));
                 index--;
             }
         }
@@ -95,33 +109,41 @@ void AccumulateLapProgress(GameCarRuntime *car) {
         return;
     }
 
-    forwardDistance = (target - current + g_TrackPointCount) % g_TrackPointCount;
-    backwardDistance = (current - target + g_TrackPointCount) % g_TrackPointCount;
+    forwardDistance = target >= current
+                          ? target - current
+                          : g_TrackPointCount - (current - target);
+    backwardDistance = current >= target
+                           ? current - target
+                           : g_TrackPointCount - (target - current);
     moveForward = forwardDistance < backwardDistance ||
                   (forwardDistance == backwardDistance && g_RaceSeries != 0);
 
     if (g_RaceSeries == 0) {
         if (moveForward) {
-            for (i = 1; i <= forwardDistance; i++) {
-                car->progressA -= TrackSegmentLength(
-                    WrapTrackPointIndex(current + i));
+            for (i = 0; i < forwardDistance; i++) {
+                AddLapProgress(
+                    car, -TrackSegmentLength(
+                             OffsetTrackPointIndex(current, i + 1)));
             }
         } else {
             for (i = 0; i < backwardDistance; i++) {
-                car->progressA += TrackSegmentLength(
-                    WrapTrackPointIndex(current - i));
+                AddLapProgress(
+                    car, TrackSegmentLength(
+                             OffsetTrackPointIndex(current, -i)));
             }
         }
     } else {
         if (moveForward) {
             for (i = 0; i < forwardDistance; i++) {
-                car->progressA += TrackSegmentLength(
-                    WrapTrackPointIndex(current + i));
+                AddLapProgress(
+                    car, TrackSegmentLength(
+                             OffsetTrackPointIndex(current, i)));
             }
         } else {
-            for (i = 1; i <= backwardDistance; i++) {
-                car->progressA -= TrackSegmentLength(
-                    WrapTrackPointIndex(current - i));
+            for (i = 0; i < backwardDistance; i++) {
+                AddLapProgress(
+                    car, -TrackSegmentLength(
+                             OffsetTrackPointIndex(current, -(i + 1))));
             }
         }
     }

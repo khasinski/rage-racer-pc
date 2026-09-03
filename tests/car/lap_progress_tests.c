@@ -3,6 +3,7 @@
 #include "game/race.h"
 #include "game/track.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -116,6 +117,17 @@ int main(void) {
     AccumulateLapProgress(&car);
     CHECK_EQ(car.progressA, 100);
     points[1].segmentLength = 20;
+
+    ResetCar(&car, 1, INT_MAX);
+    s_targetSegment = 2;
+    g_RaceSeries = 1;
+    AccumulateLapProgress(&car);
+    CHECK_EQ(car.progressA, INT_MIN + 19);
+
+    ResetCar(&car, 1, INT_MIN);
+    g_RaceSeries = 0;
+    AccumulateLapProgress(&car);
+    CHECK_EQ(car.progressA, INT_MAX - 29);
 
     g_TrackPointCount = 0;
     ResetCar(&car, 2, 77);
