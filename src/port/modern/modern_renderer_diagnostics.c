@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL.h>
 #include <psyz/video.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "modern_texture_dump.h"
@@ -28,39 +29,39 @@ void ModernDiagnosticsMaybeDump(
     const RageModernDiagnosticFrame *output) {
     static int initialized;
     static const char *path;
-    static long frame = -1;
-    static long scene = -1;
-    static long timer = -1;
-    static long every;
-    static long lastDumped = -1;
+    static int frame = -1;
+    static int scene = -1;
+    static int timer = -1;
+    static int every;
+    static int64_t lastDumped = -1;
     static int done;
     if (snapshot == NULL || output == NULL) return;
     if (!initialized) {
-        const char *frameText = RuntimeConfigGet("diagnostics.modern_dump_frame");
-        const char *everyText = RuntimeConfigGet("diagnostics.modern_dump_every");
-        const char *sceneText = RuntimeConfigGet(
-            "diagnostics.modern_dump_scene_id");
-        const char *timerText = RuntimeConfigGet(
-            "diagnostics.modern_dump_timer");
         path = RuntimeConfigGet("diagnostics.modern_dump");
-        if (frameText != NULL) frame = strtol(frameText, NULL, 0);
-        if (everyText != NULL) every = strtol(everyText, NULL, 0);
-        if (sceneText != NULL) scene = strtol(sceneText, NULL, 0);
-        if (timerText != NULL) timer = strtol(timerText, NULL, 0);
+        frame = RuntimeConfigInt(
+            "diagnostics.modern_dump_frame", -1, 0, INT_MAX);
+        every = RuntimeConfigInt(
+            "diagnostics.modern_dump_every", 0, 0, INT_MAX);
+        scene = RuntimeConfigInt(
+            "diagnostics.modern_dump_scene_id", -1, 0, INT_MAX);
+        timer = RuntimeConfigInt(
+            "diagnostics.modern_dump_timer", -1, 0, INT_MAX);
         initialized = 1;
     }
     if (path == NULL || done ||
-        (frame >= 0 && (long)snapshot->frameCounter < frame) ||
+        (frame >= 0 && snapshot->frameCounter < (uint32_t)frame) ||
         (scene >= 0 && snapshot->sceneId != scene) ||
-        (timer >= 0 && (long)snapshot->sceneTimer < timer)) return;
+        (timer >= 0 && snapshot->sceneTimer < timer)) return;
     if (every > 0) {
         char numbered[512];
         if (lastDumped >= 0 &&
-            (long)snapshot->frameCounter < lastDumped + every) return;
+            snapshot->frameCounter < (uint64_t)lastDumped + (uint64_t)every) {
+            return;
+        }
         snprintf(numbered, sizeof(numbered), "%s-%06u.ppm", path,
                  snapshot->frameCounter);
         if (WriteModern(output, numbered))
-            lastDumped = (long)snapshot->frameCounter;
+            lastDumped = snapshot->frameCounter;
         return;
     }
     if (WriteModern(output, path))
@@ -222,22 +223,22 @@ void ModernDiagnosticsCheckMarker(
      * the offline tools that read markers then cannot be run from a script.
      * Naming a frame takes the same capture without anyone present. */
     {
-        static long atFrame = -2;
-        static long every;
-        static long nextFrame;
+        static int atFrame = -2;
+        static int every;
+        static int64_t nextFrame;
         if (atFrame == -2) {
-            const char *value = RuntimeConfigGet("diagnostics.marker_frame");
-            const char *repeat = RuntimeConfigGet("diagnostics.marker_every");
-            atFrame = value != NULL ? strtol(value, NULL, 0) : -1;
-            every = repeat != NULL ? strtol(repeat, NULL, 0) : 0;
+            atFrame = RuntimeConfigInt(
+                "diagnostics.marker_frame", -1, 0, INT_MAX);
+            every = RuntimeConfigInt(
+                "diagnostics.marker_every", 0, 0, INT_MAX);
             nextFrame = atFrame;
         }
-        if (nextFrame >= 0 && (long)snapshot->frameCounter >= nextFrame) {
+        if (nextFrame >= 0 && snapshot->frameCounter >= (uint64_t)nextFrame) {
             /* Repeating matters for anything whose correctness depends on the
              * camera moving: one marker cannot tell a horizon that follows
              * the pitch from one that follows half of it. */
             nextFrame = every > 0
-                ? (long)snapshot->frameCounter + every : -1;
+                ? (int64_t)snapshot->frameCounter + every : -1;
             pressed = 1;
         }
     }
