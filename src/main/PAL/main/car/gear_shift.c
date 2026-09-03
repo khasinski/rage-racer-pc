@@ -9,6 +9,8 @@ enum {
     SHIFT_DOWN_MAPPING_SLOT = 5,
     AUTO_SHIFT_COOLDOWN_FRAMES = 25,
     HARD_BRAKE_THRESHOLD = 129,
+    NORMAL_COOLDOWN_STEP = 1,
+    HARD_BRAKE_COOLDOWN_STEP = 2,
 };
 
 static void ShiftManualGears(GameCarDrive *drive, s32 topGear,
@@ -21,23 +23,27 @@ static void ShiftManualGears(GameCarDrive *drive, s32 topGear,
     }
     if ((g_PadPressed &
          g_PadButtonMapping[SHIFT_DOWN_MAPPING_SLOT + mappingBase]) != 0 &&
-        drive->gear >= 2) {
+        drive->gear > CAR_FIRST_FORWARD_GEAR) {
         drive->gear--;
         g_SteerHoldFrames = 0;
     }
 }
 
 static void UpdateAutoShiftCooldown(const GameCarDrive *drive) {
-    if (g_AutoShiftCooldown <= 0) return;
+    if (g_AutoShiftCooldown <= 0) {
+        return;
+    }
 
     g_AutoShiftCooldown -=
-        drive->brakeInput >= HARD_BRAKE_THRESHOLD ? 2 : 1;
+        drive->brakeInput >= HARD_BRAKE_THRESHOLD
+            ? HARD_BRAKE_COOLDOWN_STEP
+            : NORMAL_COOLDOWN_STEP;
 }
 
 static void ResetStoppedAutomaticGear(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
 
-    if (car->speed != 0 || drive->gear < 2 ||
+    if (car->speed != 0 || drive->gear <= CAR_FIRST_FORWARD_GEAR ||
         drive->motionState == CAR_MOTION_STANDING_START) {
         return;
     }
@@ -54,7 +60,7 @@ static void ShiftAutomaticGears(PlayerCarRuntime *car, s32 topGear) {
         s32 gear = drive->gear;
 
         if (car->speed < g_CarSpec->shiftPoints[gear - 1].downshiftSpeed) {
-            if (gear >= 2) {
+            if (gear > CAR_FIRST_FORWARD_GEAR) {
                 drive->gear--;
                 g_AutoShiftCooldown = AUTO_SHIFT_COOLDOWN_FRAMES;
                 g_SteerHoldFrames = 0;
