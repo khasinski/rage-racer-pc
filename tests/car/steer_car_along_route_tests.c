@@ -1,9 +1,11 @@
 #include "common.h"
 #include "game/angle.h"
 #include "game/car.h"
+#include "game/car_internal.h"
 #include "game/race.h"
 #include "game/track.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -108,6 +110,15 @@ int main(void) {
     SteerCarAlongRoute(&car);
     CHECK_EQ(s_sampledIndex, -1);
     CHECK_EQ(car.headingAngle, 500);
+
+    s_coords[0] = INT_MAX;
+    s_coords[2] = INT_MIN;
+    s_smoothAngle = 0;
+    s_atanResult = INT_MIN;
+    CHECK_EQ(CalculateTrackOffsetHeading(0, 0, INT_MIN, INT_MAX, 0),
+             INT_MIN + ANGLE_QUARTER_TURN);
+    CHECK_EQ(s_atanX, -1);
+    CHECK_EQ(s_atanZ, 1);
 
     puts("route steering preserves direction, road limits, and airborne yaw");
     return 0;
