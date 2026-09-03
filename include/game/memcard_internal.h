@@ -6,8 +6,6 @@
 extern s32 g_FrameSyncThreshold;
 extern s32 GameMenuLoadPhase;
 
-s32 ReadVerifiedSaveHeader(s32 fd, GameSaveHeaderRow *header);
-
 typedef enum MemoryCardMenuState {
     MC_MENU_STATE_ERROR = -3,
     MC_MENU_STATE_UNFORMATTED = -2,

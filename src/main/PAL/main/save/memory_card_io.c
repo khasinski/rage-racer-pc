@@ -111,7 +111,7 @@ s32 WriteMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *header) {
 
 /* The header is stored twice, at 0x1280 and at 0x200; the first copy whose
  * 16-bit sum matches the complement stored in its last word wins. */
-s32 ReadVerifiedSaveHeader(s32 fd, GameSaveHeaderRow *header) {
+static s32 ReadVerifiedSaveHeader(s32 fd, GameSaveHeaderRow *header) {
     if (header == NULL) return 0;
 
     GameMenuLoadPhase = 0x120;

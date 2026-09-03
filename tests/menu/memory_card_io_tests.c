@@ -163,40 +163,23 @@ void ClearSaveHeaderRows(GameSaveHeaderRow *rows) {
     memset(rows, 0, 3 * sizeof(*rows));
 }
 
-static int TestVerifiedHeaders(void) {
-    GameSaveHeaderRow header;
-
-    ResetMock();
-    s_exists[0] = 1;
-    PutHeader(0, 0x1280, 1, 1);
-    CHECK(ReadVerifiedSaveHeader(10, &header) == 1);
-    CHECK(header.fields.name[0] == 1);
-    CHECK(GameMenuLoadPhase == 0x140);
-
-    PutHeader(0, 0x1280, 2, 0);
-    PutHeader(0, 0x200, 3, 1);
-    CHECK(ReadVerifiedSaveHeader(10, &header) == 1);
-    CHECK(header.fields.name[0] == 3);
-    CHECK(GameMenuLoadPhase == 0x170);
-
-    PutHeader(0, 0x200, 4, 0);
-    CHECK(ReadVerifiedSaveHeader(10, &header) == 0);
-    CHECK(GameMenuLoadPhase == 0x180);
-    return 0;
-}
-
 static int TestHeaderScan(void) {
     GameSaveHeaderRow headers[MEMORY_CARD_SAVE_SLOT_COUNT];
 
     ResetMock();
     s_exists[0] = 1;
     s_exists[1] = 1;
-    PutHeader(0, 0x1280, 10, 1);
-    PutHeader(1, 0x1280, 11, 0);
-    PutHeader(1, 0x200, 12, 0);
-    CHECK(ScanMemoryCardSaveHeaders(headers) == ((1 << 0) | (0x10000 << 1)));
-    CHECK(headers[0].fields.name[0] == 10);
-    CHECK(s_closeCalls == 2);
+    s_exists[2] = 1;
+    PutHeader(0, 0x1280, 1, 1);
+    PutHeader(1, 0x1280, 2, 0);
+    PutHeader(1, 0x200, 3, 1);
+    PutHeader(2, 0x1280, 4, 0);
+    PutHeader(2, 0x200, 5, 0);
+    CHECK(ScanMemoryCardSaveHeaders(headers) ==
+          ((1 << 0) | (1 << 1) | (0x10000 << 2)));
+    CHECK(headers[0].fields.name[0] == 1);
+    CHECK(headers[1].fields.name[0] == 3);
+    CHECK(s_closeCalls == 3);
     CHECK(GameMenuLoadPhase == 0x190);
     return 0;
 }
@@ -248,7 +231,6 @@ static int TestWriteAndDirectoryCount(void) {
     CHECK(LoadMemoryCardSaveSlot(MEMORY_CARD_SAVE_SLOT_COUNT, &header) == 0);
     CHECK(LoadMemoryCardSaveSlot(0, NULL) == 0);
     CHECK(ScanMemoryCardSaveHeaders(NULL) == 0);
-    CHECK(ReadVerifiedSaveHeader(10, NULL) == 0);
     CHECK(s_openCalls == 0);
 
     ResetMock();
@@ -316,7 +298,6 @@ static int TestCardStatus(void) {
 }
 
 int main(void) {
-    if (TestVerifiedHeaders() != 0) return 1;
     if (TestHeaderScan() != 0) return 1;
     if (TestLoadAndFailuresClose() != 0) return 1;
     if (TestWriteAndDirectoryCount() != 0) return 1;
