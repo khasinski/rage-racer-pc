@@ -13,6 +13,7 @@ char *g_CdAudioFileNames[CD_FILE_TRACK_COUNT];
 
 static s32 s_searchCount;
 static s32 s_tocCount = 2;
+static s32 s_fileTrackCount = 3;
 
 long CdGetToc(CdlLOC *tracks) {
     s32 index;
@@ -34,7 +35,7 @@ CdlLOC *CdIntToPos(long sectors, CdlLOC *location) {
 
 CdlFILE *DsSearchFile(CdlFILE *file, char *name) {
     (void)name;
-    if (s_searchCount == 3) {
+    if (s_searchCount == s_fileTrackCount) {
         return NULL;
     }
     file->pos.minute = (u8)(s_searchCount + 1);
@@ -73,6 +74,16 @@ int main(void) {
     BuildCdTrackTable();
     CHECK(g_CdTrackLocs[CD_TRACK_LOCATION_COUNT - 1].sector ==
           (u8)(170 + 60));
+
+    memset(g_CdTrackLocs, 0x7f, sizeof(g_CdTrackLocs));
+    memset(s_bgmTracks, 0x7f, sizeof(s_bgmTracks));
+    s_searchCount = 0;
+    s_tocCount = -1;
+    s_fileTrackCount = 1;
+    BuildCdTrackTable();
+    CHECK(g_CdTrackLocs[1].sector == 0);
+    CHECK(s_bgmTracks[0].minute == 1);
+    CHECK(s_bgmTracks[1].minute == 0);
 
     puts("CD track table tests passed");
     return 0;
