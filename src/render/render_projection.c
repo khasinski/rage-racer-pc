@@ -1,5 +1,6 @@
 #include "render_projection.h"
 
+#include <float.h>
 #include <math.h>
 #include <stddef.h>
 
@@ -27,16 +28,21 @@ static void RotateZ(RageRenderVec3 *v, float radians) {
 
 static void RotateByCameraOrientation(RageRenderVec3 *v,
                                           const RageRenderQuaternion *orientation) {
-    float length = sqrtf(orientation->x * orientation->x +
-                         orientation->y * orientation->y +
-                         orientation->z * orientation->z +
-                         orientation->w * orientation->w);
+    double lengthSquared =
+        (double)orientation->x * orientation->x +
+        (double)orientation->y * orientation->y +
+        (double)orientation->z * orientation->z +
+        (double)orientation->w * orientation->w;
+    double inverseLength;
     float x = v->x, y = v->y, z = v->z;
     float qx, qy, qz, qw, xx, yy, zz, xy, xz, yz, wx, wy, wz;
-    if (length <= 0.0f) return;
+    if (!isfinite(lengthSquared) || lengthSquared <= 0.0) return;
+    inverseLength = 1.0 / sqrt(lengthSquared);
+    qx = (float)(-(double)orientation->x * inverseLength);
+    qy = (float)(-(double)orientation->y * inverseLength);
+    qz = (float)(-(double)orientation->z * inverseLength);
+    qw = (float)((double)orientation->w * inverseLength);
     /* The scene stores camera local->world orientation; view uses its inverse. */
-    qx = -orientation->x / length; qy = -orientation->y / length;
-    qz = -orientation->z / length; qw = orientation->w / length;
     xx = qx * qx; yy = qy * qy; zz = qz * qz;
     xy = qx * qy; xz = qx * qz; yz = qy * qz;
     wx = qw * qx; wy = qw * qy; wz = qw * qz;
@@ -51,6 +57,9 @@ static void RotateByCameraOrientation(RageRenderVec3 *v,
 void RenderWorldToView(const RageRenderCamera *camera,
                            const RageRenderVec3 *world,
                            RageRenderVec3 *view) {
+    if (view == NULL) return;
+    *view = (RageRenderVec3){0.0f, 0.0f, 0.0f};
+    if (camera == NULL || world == NULL) return;
     *view = *world;
     view->x -= camera->transform.position.x;
     view->y -= camera->transform.position.y;
@@ -67,8 +76,13 @@ void RenderWorldToView(const RageRenderCamera *camera,
 
 int RenderProject(const RageRenderCamera *camera, const RageRenderVec3 *view,
                   float aspect, RageRenderVec3 *clip) {
-    float verticalScale, depth, depthScale, depthOffset;
-    if (camera == NULL || view == NULL || clip == NULL ||
+    float depthScale, depthOffset;
+    double verticalScale, depth;
+    double x, y, z;
+
+    if (clip == NULL) return 0;
+    *clip = (RageRenderVec3){0.0f, 0.0f, 0.0f};
+    if (camera == NULL || view == NULL ||
         !isfinite(aspect) || aspect <= 0.0f ||
         !isfinite(camera->verticalFovDegrees) ||
         camera->verticalFovDegrees <= 0.0f ||
@@ -78,23 +92,44 @@ int RenderProject(const RageRenderCamera *camera, const RageRenderVec3 *view,
         depth > camera->farPlane) return 0;
     if (!RenderPerspectiveDepthTerms(camera, &depthScale, &depthOffset))
         return 0;
-    verticalScale = 1.0f / tanf(Radians(camera->verticalFovDegrees) * 0.5f);
-    clip->x = view->x * verticalScale / (depth * aspect);
-    clip->y = view->y * verticalScale / depth;
-    clip->z = depthScale + depthOffset / depth;
+    verticalScale =
+        1.0 / tan((double)camera->verticalFovDegrees *
+                  (3.14159265358979323846 / 180.0) * 0.5);
+    x = (double)view->x * verticalScale / (depth * aspect);
+    y = (double)view->y * verticalScale / depth;
+    z = (double)depthScale + (double)depthOffset / depth;
+    if (!isfinite(x) || !isfinite(y) || !isfinite(z) ||
+        fabs(x) > FLT_MAX || fabs(y) > FLT_MAX || fabs(z) > FLT_MAX) {
+        return 0;
+    }
+    clip->x = (float)x;
+    clip->y = (float)y;
+    clip->z = (float)z;
     return 1;
 }
 
 int RenderPerspectiveDepthTerms(const RageRenderCamera *camera,
                                 float *scale, float *offset) {
-    float range;
-    if (camera == NULL || scale == NULL || offset == NULL ||
+    double range;
+    double resultScale;
+    double resultOffset;
+
+    if (scale == NULL || offset == NULL) return 0;
+    *scale = 0.0f;
+    *offset = 0.0f;
+    if (camera == NULL ||
         !isfinite(camera->nearPlane) || !isfinite(camera->farPlane) ||
         camera->nearPlane <= 0.0f ||
         camera->farPlane <= camera->nearPlane) return 0;
-    range = camera->farPlane - camera->nearPlane;
-    *scale = camera->farPlane / range;
-    *offset = -(camera->nearPlane * camera->farPlane) / range;
+    range = (double)camera->farPlane - camera->nearPlane;
+    resultScale = (double)camera->farPlane / range;
+    resultOffset = -((double)camera->nearPlane * camera->farPlane) / range;
+    if (!isfinite(resultScale) || !isfinite(resultOffset) ||
+        fabs(resultScale) > FLT_MAX || fabs(resultOffset) > FLT_MAX) {
+        return 0;
+    }
+    *scale = (float)resultScale;
+    *offset = (float)resultOffset;
     return 1;
 }
 

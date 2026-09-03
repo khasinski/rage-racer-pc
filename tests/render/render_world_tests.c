@@ -1,4 +1,5 @@
 #include <math.h>
+#include <float.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -288,12 +289,21 @@ static void test_projection_rejects_non_finite_camera_data(void) {
     camera.farPlane = 100.0f;
     camera.fogNear = 1.0f;
     camera.fogFar = 100.0f;
+    clip = (RageRenderVec3){1.0f, 2.0f, 3.0f};
     EXPECT_EQ(0, RenderProject(&camera, &view, NAN, &clip));
+    EXPECT_EQ(0, (int)clip.x);
     camera.verticalFovDegrees = INFINITY;
     EXPECT_EQ(0, RenderProject(&camera, &view, 1.0f, &clip));
     camera.verticalFovDegrees = 60.0f;
     camera.farPlane = NAN;
+    scale = offset = 1.0f;
     EXPECT_EQ(0, RenderPerspectiveDepthTerms(&camera, &scale, &offset));
+    EXPECT_EQ(0, (int)scale);
+    EXPECT_EQ(0, (int)offset);
+    camera.nearPlane = nextafterf(FLT_MAX, 0.0f);
+    camera.farPlane = FLT_MAX;
+    EXPECT_EQ(0, RenderPerspectiveDepthTerms(&camera, &scale, &offset));
+    camera.nearPlane = 1.0f;
     camera.farPlane = 100.0f;
     view.z = NAN;
     EXPECT_EQ(0, RenderProject(&camera, &view, 1.0f, &clip));
