@@ -67,13 +67,8 @@ typedef enum MemoryCardResult {
     MC_CARD_RESULT_READY = 1,
     MC_CARD_RESULT_NEW_CARD = 2,
 } MemoryCardResult;
-MemoryCardEvent WaitMemoryCardHwEvent(void);
 MemoryCardEvent WaitMemoryCardSwEvent(void);
 MemoryCardEvent PollMemoryCardHwEvent(void);
-void OpenMemoryCardEvents(void);
-void EnableMemoryCardEvents(void);
-void DisableMemoryCardEvents(void);
-void CloseMemoryCardEvents(void);
 /* libcard _card_clear (see psyq/): _new_card() + _card_write(chan, 0x3F, 0). */
 s32 FormatMemoryCard(s32 port, s32 slot);
 

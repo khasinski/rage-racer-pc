@@ -98,8 +98,6 @@ static int TestPollPriority(void) {
 
 static int TestWaitAndClear(void) {
     ResetMock();
-    s_active[g_McHwEventTimeout] = 1;
-    CHECK(WaitMemoryCardHwEvent() == MC_EVENT_TIMEOUT);
     s_active[g_McSwEventError] = 1;
     CHECK(WaitMemoryCardSwEvent() == MC_EVENT_ERROR);
 

@@ -66,10 +66,6 @@ static MemoryCardEvent WaitForEvent(s32 *const *handles) {
     }
 }
 
-MemoryCardEvent WaitMemoryCardHwEvent(void) {
-    return WaitForEvent(s_hwEventHandles);
-}
-
 MemoryCardEvent WaitMemoryCardSwEvent(void) {
     return WaitForEvent(s_swEventHandles);
 }

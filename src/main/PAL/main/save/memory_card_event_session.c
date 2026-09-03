@@ -40,22 +40,22 @@ static void ApplyToEventHandles(long (*operation)(long)) {
     }
 }
 
-void OpenMemoryCardEvents(void) {
+static void OpenMemoryCardEvents(void) {
     EnterCriticalSection();
     OpenEventClass(MEMORY_CARD_HW_EVENT_CLASS, s_hwEventHandles);
     OpenEventClass(MEMORY_CARD_SW_EVENT_CLASS, s_swEventHandles);
     ExitCriticalSection();
 }
 
-void EnableMemoryCardEvents(void) {
+static void EnableMemoryCardEvents(void) {
     ApplyToEventHandles(EnableEvent);
 }
 
-void DisableMemoryCardEvents(void) {
+static void DisableMemoryCardEvents(void) {
     ApplyToEventHandles(DisableEvent);
 }
 
-void CloseMemoryCardEvents(void) {
+static void CloseMemoryCardEvents(void) {
     EnterCriticalSection();
     ApplyToEventHandles(CloseEvent);
     ExitCriticalSection();
