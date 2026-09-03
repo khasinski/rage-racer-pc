@@ -2,6 +2,7 @@
 #include "game/car.h"
 #include "game/track.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -112,6 +113,13 @@ static void CheckNegativeMotionConfig(void) {
              "minimum encoded speed uses lower bound");
     CHECK_EQ(GetCarAiBlock(&car)->engineRpmLow, 0,
              "minimum encoded engine rpm uses lower bound");
+
+    config->speed = INT16_MAX;
+    InitRivalCarAi(&car, 0, &grid);
+    CHECK_EQ(car.targetSpeed, -22945,
+             "maximum encoded target speed keeps its low halfword");
+    CHECK_EQ(car.accelerationLimit, -1376,
+             "wrapped target speed feeds acceleration limit");
 }
 
 int main(void) {

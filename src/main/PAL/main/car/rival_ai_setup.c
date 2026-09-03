@@ -36,9 +36,9 @@ void InitRivalCarAi(GameCarRuntime *car,
     config = &g_TrackEventData->rivalAiConfigs[
         g_RaceSeries][configIndex];
 
-    car->targetSpeed =
-        (DecodeClampedConfigValue((u16)config->speed, 0, INT16_MAX) * 1168) /
-        160;
+    car->targetSpeed = WrapSigned16(
+        DecodeClampedConfigValue((u16)config->speed, 0, INT16_MAX) * 1168 /
+        160);
     car->accelerationStep =
         DecodeClampedConfigValue(config->accelerationStep, 0, INT16_MAX);
     car->boostAccelerationThreshold =
