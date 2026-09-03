@@ -59,8 +59,9 @@ static s32 IsValidVabAsset(const AudioSlotAsset *asset) {
     sampleCount = ReadLittleEndianU16(header + VAB_SAMPLE_COUNT_OFFSET);
     if (sampleCount >= VAB_LENGTH_TABLE_ENTRIES) return 0;
 
-    programLimit = version >= 5 ? VAB_NEW_PROGRAM_LIMIT
-                                : VAB_OLD_PROGRAM_LIMIT;
+    programLimit = header[0] == 'p' && version >= 5
+                       ? VAB_NEW_PROGRAM_LIMIT
+                       : VAB_OLD_PROGRAM_LIMIT;
     if (programCount > programLimit) return 0;
 
     requiredHeaderSize = VAB_HEADER_SIZE +

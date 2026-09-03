@@ -112,7 +112,7 @@ static void WriteLittleEndianU32(u8 *destination, u32 value) {
 }
 
 int main(void) {
-    u8 header[2048];
+    u8 header[40000];
     u8 body[16];
     u8 sequence[16];
     u16 table[ENGINE_SOUND_PARAMETER_TABLE_WORD_COUNT];
@@ -179,6 +179,15 @@ int main(void) {
     header[1] = 'B';
     WriteLittleEndianU16(header + 18, 65);
     CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &asset) == -1);
+    WriteLittleEndianU16(header + 18, 0);
+    header[0] = 'X';
+    WriteLittleEndianU32(header + 4, 5);
+    WriteLittleEndianU16(header + 18, 65);
+    invalid = asset;
+    invalid.vabHeaderSize = sizeof(header);
+    CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &invalid) == -1);
+    header[0] = 'p';
+    WriteLittleEndianU32(header + 4, 4);
     WriteLittleEndianU16(header + 18, 0);
     WriteLittleEndianU16(header + 22, 256);
     CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &asset) == -1);
