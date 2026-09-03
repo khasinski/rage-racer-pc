@@ -3,6 +3,8 @@
 
 #include "common.h"
 
+#include <stddef.h>
+
 enum {
     TERRAIN_CELL_GRID_SIZE = 32,
     TERRAIN_CELL_INDEX_MASK = 0x3FF,
@@ -15,7 +17,7 @@ typedef u32 CellVisibilityRow[TERRAIN_CELL_GRID_SIZE];
 
 static inline int CellVisibilityMaskContains(const u32 *mask, s32 column,
                                              s32 row) {
-    if ((u32)column >= TERRAIN_CELL_GRID_SIZE ||
+    if (mask == NULL || (u32)column >= TERRAIN_CELL_GRID_SIZE ||
         (u32)row >= TERRAIN_CELL_GRID_SIZE) {
         return 0;
     }

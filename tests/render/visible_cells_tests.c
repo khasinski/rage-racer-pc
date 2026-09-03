@@ -184,9 +184,26 @@ static int TestCourseObjectFlags(void) {
     return 0;
 }
 
+static int TestMissingCourseObjects(void) {
+    u32 visibility[TERRAIN_CELL_GRID_SIZE] = {1};
+
+    s_submissionCount = 0;
+    s_objectMatrixCount = 0;
+    g_VisibleCellMask = visibility;
+    g_CourseObjects = NULL;
+    g_CourseObjectCount = 1;
+    DrawCourseObjects();
+    CHECK(s_submissionCount == 0 && s_objectMatrixCount == 0);
+
+    g_CourseObjectCount = 0;
+    DrawCourseObjects();
+    CHECK(s_submissionCount == 0 && s_objectMatrixCount == 0);
+    return 0;
+}
+
 int main(void) {
     if (TestVisibleCellOutputBounds() != 0 ||
-        TestCourseObjectFlags() != 0) {
+        TestCourseObjectFlags() != 0 || TestMissingCourseObjects() != 0) {
         return 1;
     }
     puts("visible-cell bounds and course-object flags behave as expected");

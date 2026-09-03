@@ -38,6 +38,9 @@ static void ClearMask(void) { memset(s_mask, 0, sizeof(s_mask)); }
 static void SetCell(int column, int row) { s_mask[row] |= 1u << column; }
 
 int main(void) {
+    g_VisibleCellMask = NULL;
+    Expect("a missing mask hides every cell", TrackCellVisible(0, 0), 0);
+
     g_VisibleCellMask = s_mask;
 
     ClearMask();

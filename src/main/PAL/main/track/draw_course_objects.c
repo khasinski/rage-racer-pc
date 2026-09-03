@@ -6,11 +6,14 @@
 
 enum {
     TERRAIN_CELL_SIZE = 2048,
+    COURSE_OBJECT_ENVIRONMENT_MATERIAL = 1 << 16,
 };
 
 void DrawCourseObjects(void) {
     Matrix objectMatrix;
     s32 i;
+
+    if (g_CourseObjects == NULL || g_CourseObjectCount <= 0) return;
 
     for (i = 0; i < g_CourseObjectCount; i++) {
         CourseObject *object = &g_CourseObjects[i];
@@ -32,9 +35,11 @@ void DrawCourseObjects(void) {
 
         flags = object->flags;
         if (flags & COURSE_OBJECT_BLINK_ENVIRONMENT_4) {
-            g_RenderState.envMode4 = ((g_AnimTimer & 0x10) == 0) << 16;
+            g_RenderState.envMode4 = (g_AnimTimer & 0x10) == 0
+                ? COURSE_OBJECT_ENVIRONMENT_MATERIAL
+                : 0;
         } else if (flags & COURSE_OBJECT_ENVIRONMENT_4) {
-            g_RenderState.envMode4 = 0x10000;
+            g_RenderState.envMode4 = COURSE_OBJECT_ENVIRONMENT_MATERIAL;
         } else {
             g_RenderState.envMode4 = 0;
         }
