@@ -62,6 +62,9 @@ int main(void) {
     CHECK(AdvanceMenuViewOffsetValue(INT_MAX, INT_MIN) == 229166);
     CHECK(NormalizeMenuViewOffset(-1) == MENU_VIEW_OFFSET_MIN);
     CHECK(NormalizeMenuViewOffset(INT_MAX) == MENU_VIEW_OFFSET_MAX);
+    CHECK(NormalizeCourseSwapDelay(INT_MIN) == 0);
+    CHECK(NormalizeCourseSwapDelay(7) == 7);
+    CHECK(NormalizeCourseSwapDelay(INT_MAX) == 19);
 
     CHECK(AdvanceMenuViewAngleValue(100, 100, 24) == 100);
     CHECK(AdvanceMenuViewAngleValue(100, 124, 24) == 102);

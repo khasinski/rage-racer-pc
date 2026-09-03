@@ -6,6 +6,14 @@
 #include "game/render_internal.h"
 #include "game/track.h"
 
+enum {
+    MENU_VIEW_FIXED_SCALE = 1000,
+    CAR_VIEW_ANGLE_PERIOD = 600000,
+    COURSE_VIEW_ANGLE_PERIOD = 500000,
+    SHOWROOM_FLOOR_MODEL = 5,
+    SHOWROOM_MODEL_BANK = 14,
+    SHOWROOM_OT_DEPTH_BIAS = 30,
+};
 
 static void SwapShowroomCarModel(void) {
     g_CarModelSlot = g_CarModelSlot < 1;
@@ -73,7 +81,9 @@ void DrawMenuCarView(void) {
             currentAngle, g_MenuViewAngleTarget, 24);
     }
 
-    horizontalAngle = MenuWrapAngle(g_MenuViewAngle, 600000) / 1000;
+    horizontalAngle =
+        MenuWrapAngle(g_MenuViewAngle, CAR_VIEW_ANGLE_PERIOD) /
+        MENU_VIEW_FIXED_SCALE;
     carIndex = g_CarSwapFromIndex;
     viewHeight = AdvanceMenuViewOffset();
     if ((u32)carIndex >= GAME_CAR_COUNT || g_CarTable == NULL ||
@@ -101,7 +111,7 @@ void DrawMenuCarView(void) {
     BuildRotMatrixY(&mtxB, 0x800 - showroom->pose.rotation.y);
     BuildRotMatrixX(&mtxA, showroom->pose.rotation.x);
     MulMatrix2(&mtxB, &mtxA);
-    MulMatrix2((&g_RenderState.matrix), &mtxA);
+    MulMatrix2(&g_RenderState.matrix, &mtxA);
 
     if (g_MenuAltLayout != 0) {
         offset = horizontalAngle - 23;
@@ -120,20 +130,21 @@ void DrawMenuCarView(void) {
         (g_MenuAltLayout != 0 ? 23 : 52) - horizontalAngle;
     showroom->pose.position[1] = viewHeight + 30;
     showroom->pose.position[2] = 0;
-    SelectModelBank(14);
+    SelectModelBank(SHOWROOM_MODEL_BANK);
     /* The render state's ordering-table base. Keep the retail
      * 120-byte (30-entry) showroom-depth bias, but express it through the
      * native pointer-sized slot instead of relying on the absolute-address
      * scalar alias. */
-    RENDER_OT_BASE += 30;
-    SetGteObjectMatrix((&g_ObjectMatrixWork),
+    RENDER_OT_BASE += SHOWROOM_OT_DEPTH_BIAS;
+    SetGteObjectMatrix(&g_ObjectMatrixWork,
                        AsPositionWords(&showroom->pose.position[0]), &mtxA);
     g_RenderState.envMode4 = 0;
-    modelIndex = MenuModelIndexOrFallback(5, g_ModelBankCount);
+    modelIndex = MenuModelIndexOrFallback(SHOWROOM_FLOOR_MODEL,
+                                          g_ModelBankCount);
     if (modelIndex >= 0) {
         SubmitModel(&g_RenderState, modelIndex);
     }
-    RENDER_OT_BASE -= 30;
+    RENDER_OT_BASE -= SHOWROOM_OT_DEPTH_BIAS;
 }
 
 /* The course diorama behind COURSE SELECT and RANKING, with the carousel easing. */
@@ -150,6 +161,7 @@ void DrawMenuCourseView(void) {
 
     if (CourseCarouselAtSwapPoint(g_MenuViewAngle, g_MenuViewAngleTarget,
                                   g_MenuPendingCourseIndex)) {
+        g_CourseSwapDelay = NormalizeCourseSwapDelay(g_CourseSwapDelay);
         if (g_CourseSwapDelay >= 19) {
             g_CourseSwapDelay = 0;
             g_MenuCourseModelIndex = g_MenuPendingCourseIndex;
@@ -162,7 +174,9 @@ void DrawMenuCourseView(void) {
             g_MenuViewAngle, g_MenuViewAngleTarget, 18);
     }
 
-    horizontalAngle = MenuWrapAngle(g_MenuViewAngle, 500000) / 1000;
+    horizontalAngle =
+        MenuWrapAngle(g_MenuViewAngle, COURSE_VIEW_ANGLE_PERIOD) /
+        MENU_VIEW_FIXED_SCALE;
     courseModelIndex = g_MenuCourseModelIndex;
     viewHeight = AdvanceMenuViewOffset();
 
@@ -176,8 +190,8 @@ void DrawMenuCourseView(void) {
     BuildRotMatrixY(&mtxB, 0x800 - showroom->runtime.bodyYaw);
     BuildRotMatrixX(&mtxA, showroom->runtime.bodyPitch);
     MulMatrix2(&mtxB, &mtxA);
-    MulMatrix2((&g_RenderState.matrix), &mtxA);
-    SelectModelBank(14);
+    MulMatrix2(&g_RenderState.matrix, &mtxA);
+    SelectModelBank(SHOWROOM_MODEL_BANK);
     SetGteObjectMatrix(&g_ObjectMatrixWork,
                        AsPositionWords(&renderObject->x), &mtxA);
     g_RenderState.envMode4 = 0;
@@ -226,7 +240,7 @@ void DrawTeamNameCharModel(void) {
         rsin((s32)((u32)g_AnimTimer * 32u & 0xFE0u)) * 12 / 4096;
     position.z = 0;
     position.w = 0;
-    rotationY = g_MenuViewAngle / 1000;
+    rotationY = g_MenuViewAngle / MENU_VIEW_FIXED_SCALE;
     rotationZ =
         rsin((s32)((u32)g_AnimTimer * 20u & 0xFFCu)) * 72 / 4096;
 
@@ -239,7 +253,7 @@ void DrawTeamNameCharModel(void) {
     modelIndex = TeamNameCharacterModelIndex(g_TeamNameCharModel,
                                              g_CourseModelCount);
     if (modelIndex >= 0) {
-        SetGteObjectMatrix((&g_ObjectMatrixWork),
+        SetGteObjectMatrix(&g_ObjectMatrixWork,
                            AsPositionWords(&position.x), &mtxA);
         g_RenderState.envMode4 = 0;
         SubmitCourseModel(&g_RenderState, modelIndex);

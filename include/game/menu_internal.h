@@ -91,6 +91,10 @@ static inline s32 NormalizeMenuViewOffset(s32 offset) {
                                MENU_VIEW_OFFSET_MAX);
 }
 
+static inline s32 NormalizeCourseSwapDelay(s32 delay) {
+    return AddClampedMenuValue(delay, 0, 0, 19);
+}
+
 static inline s32 AdvanceMenuViewOffsetValue(s32 current, s32 target) {
     int64_t delta;
     int64_t step = 0;
