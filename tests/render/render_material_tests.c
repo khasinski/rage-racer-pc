@@ -26,6 +26,8 @@ int main(void) {
     static const char invalid[] =
         "# rage-rmat v6\n"
         "8 sign.rgba | - | glow mask 0.25 0.5 1 1 1 1 0 0 0\n";
+    static const char overflowingIndex[] =
+        "# rage-rmat v4\n4294967296 wrapped-to-zero.rgba\n";
     RageRenderMaterial material;
 
     EXPECT(RenderMaterialParse(v4, sizeof(v4) - 1, 0, 1, &material));
@@ -49,5 +51,8 @@ int main(void) {
     EXPECT(material.emissiveFactor[0] == 1.0f);
     EXPECT(!RenderMaterialParse(invalid, sizeof(invalid) - 1,
                                     8, 0, &material));
+    EXPECT(!RenderMaterialParse(overflowingIndex,
+                                sizeof(overflowingIndex) - 1,
+                                0, 0, &material));
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

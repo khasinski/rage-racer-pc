@@ -36,6 +36,22 @@ static int MaterialFloat(RageMaterialToken token, float *value) {
     return end == buffer + token.length && isfinite(*value);
 }
 
+static int MaterialIndex(const char *line, size_t length, size_t *cursor,
+                         uint32_t *index) {
+    uint32_t value = 0;
+    size_t start = *cursor;
+    while (*cursor < length && line[*cursor] >= '0' &&
+           line[*cursor] <= '9') {
+        uint32_t digit = (uint32_t)(line[*cursor] - '0');
+        if (value > (UINT32_MAX - digit) / 10u) return 0;
+        value = value * 10u + digit;
+        (*cursor)++;
+    }
+    if (*cursor == start) return 0;
+    *index = value;
+    return 1;
+}
+
 static int MaterialProperties(const char *line, size_t length,
                                   size_t cursor,
                                   RageRenderMaterial *material) {
@@ -126,11 +142,8 @@ int RenderMaterialParse(const void *bytes, size_t size,
         length = cursor - lineStart;
         lineStart = cursor + 1;
         if (length == 0 || line[0] == '#') continue;
-        while (at < length && line[at] >= '0' && line[at] <= '9') {
-            index = index * 10u + (uint32_t)(line[at] - '0');
-            at++;
-        }
-        if (at == 0 || at == length || line[at++] != ' ' ||
+        if (!MaterialIndex(line, length, &at, &index) ||
+            at == length || line[at++] != ' ' ||
             index != materialIndex) continue;
         while (MaterialNextToken(line, length, &at, &token)) {
             if (MaterialTokenEquals(token, "|")) break;
