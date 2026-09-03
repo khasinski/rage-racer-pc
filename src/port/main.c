@@ -26,6 +26,12 @@
 void MainLoop(void);
 int InitNativeGameData(void);
 
+typedef enum ArchiveDumpResult {
+    ARCHIVE_DUMP_NOT_REQUESTED,
+    ARCHIVE_DUMP_COMPLETE,
+    ARCHIVE_DUMP_FAILED,
+} ArchiveDumpResult;
+
 static void LoadInputConfig(RageInputConfig *config, const char *argv0) {
     char path[PATH_MAX];
     if (PlatformFindConfigFile(argv0, "rage-input.cfg", path,
@@ -33,9 +39,27 @@ static void LoadInputConfig(RageInputConfig *config, const char *argv0) {
         InputConfigLoad(config, path);
 }
 
+static ArchiveDumpResult DumpRequestedArchive(void) {
+    const char *path = RuntimeConfigGet("tools.dump_archive");
+
+    if (path == NULL || path[0] == '\0') {
+        return ARCHIVE_DUMP_NOT_REQUESTED;
+    }
+    if (!HostInitDisc()) {
+        return ARCHIVE_DUMP_FAILED;
+    }
+    if (!HostDumpArchive(path)) {
+        fprintf(stderr, "rage-port: cannot write %s\n", path);
+        return ARCHIVE_DUMP_FAILED;
+    }
+    fprintf(stderr, "rage-port: archive written to %s\n", path);
+    return ARCHIVE_DUMP_COMPLETE;
+}
+
 int main(int argc, char **argv) {
     RageInputConfig inputConfig;
     RagePortConfig portConfig;
+    ArchiveDumpResult archiveDumpResult;
     int inputIndex;
     char logPath[PATH_MAX];
 
@@ -69,17 +93,11 @@ int main(int argc, char **argv) {
     for (inputIndex = 0; inputIndex < RAGE_INPUT_BUTTON_COUNT; inputIndex++) {
         Psyz_SetKeyboardKey(inputIndex, inputConfig.keys[inputIndex]);
     }
-    {
-        const char *dump = RuntimeConfigGet("tools.dump_archive");
-        if (dump != NULL && dump[0] != '\0') {
-            if (!HostInitDisc()) return EXIT_FAILURE;
-            if (!HostDumpArchive(dump)) {
-                fprintf(stderr, "rage-port: cannot write %s\n", dump);
-                return EXIT_FAILURE;
-            }
-            fprintf(stderr, "rage-port: archive written to %s\n", dump);
-            return EXIT_SUCCESS;
-        }
+    archiveDumpResult = DumpRequestedArchive();
+    if (archiveDumpResult != ARCHIVE_DUMP_NOT_REQUESTED) {
+        return archiveDumpResult == ARCHIVE_DUMP_COMPLETE
+                   ? EXIT_SUCCESS
+                   : EXIT_FAILURE;
     }
     if (!HostInitDisc()) {
         fprintf(stderr, "failed to initialize disc image\n");
