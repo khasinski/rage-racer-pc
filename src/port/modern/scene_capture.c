@@ -206,6 +206,14 @@ void CaptureFace3D(const RageCaptureFaceInput *input) {
         snapshot->faceOverflow++;
         return;
     }
+    if (input->kind == RAGE_CAPTURE_KIND_TERRAIN) {
+        const RageCaptureTerrainBatch *batch =
+            &snapshot->terrain[snapshot->terrainCount - 1];
+        if (input->cellSlot < 0 || input->cellSlot >= batch->cellCount) {
+            snapshot->faceOverflow++;
+            return;
+        }
+    }
     for (vertex = 0; vertex < 4; vertex++) {
         if (input->v[vertex] == NULL) {
             snapshot->faceOverflow++;
