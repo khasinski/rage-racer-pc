@@ -382,12 +382,12 @@ static int HostChooseDisc(char *cue, size_t size) {
 }
 
 static unsigned int HostLe32(const unsigned char *value) {
-    return (unsigned int)value[0] | ((unsigned int)value[1] << 8)
-         | ((unsigned int)value[2] << 16) | ((unsigned int)value[3] << 24);
+    return (unsigned int)value[0] | ((unsigned int)value[1] << 8) |
+           ((unsigned int)value[2] << 16) | ((unsigned int)value[3] << 24);
 }
 
 static int HostParseCue(const char *cue, char *image, size_t image_size,
-                            long *track_offset) {
+                        long *track_offset) {
     FILE *file = fopen(cue, "r");
     char line[PATH_MAX + 64];
     char cue_directory[PATH_MAX];
@@ -395,6 +395,7 @@ static int HostParseCue(const char *cue, char *image, size_t image_size,
     char *slash;
     char *backslash;
     int data_track_seen = 0;
+    int data_index_found = 0;
 
     if (file == NULL) return 0;
     snprintf(cue_directory, sizeof(cue_directory), "%s", cue);
@@ -403,7 +404,11 @@ static int HostParseCue(const char *cue, char *image, size_t image_size,
     if (backslash != NULL && (slash == NULL || backslash > slash)) {
         slash = backslash;
     }
-    if (slash != NULL) *slash = '\0'; else snprintf(cue_directory, sizeof(cue_directory), ".");
+    if (slash != NULL) {
+        *slash = '\0';
+    } else {
+        snprintf(cue_directory, sizeof(cue_directory), ".");
+    }
     *track_offset = 0;
     while (fgets(line, sizeof(line), file)) {
         char *quote;
@@ -416,22 +421,34 @@ static int HostParseCue(const char *cue, char *image, size_t image_size,
                     snprintf(image_name, sizeof(image_name), "%s", quote + 1);
                 }
             }
-        } else if (strncasecmp(line, "  TRACK", 7) == 0 || strncasecmp(line, "TRACK", 5) == 0) {
-            data_track_seen = strstr(line, "MODE1/2352") != NULL || strstr(line, "MODE2/2352") != NULL;
-        } else if (data_track_seen && (strncasecmp(line, "    INDEX 01", 12) == 0 || strncasecmp(line, "INDEX 01", 8) == 0)) {
+        } else if (strncasecmp(line, "  TRACK", 7) == 0 ||
+                   strncasecmp(line, "TRACK", 5) == 0) {
+            data_track_seen = strstr(line, "MODE1/2352") != NULL ||
+                              strstr(line, "MODE2/2352") != NULL;
+        } else if (data_track_seen &&
+                   (strncasecmp(line, "    INDEX 01", 12) == 0 ||
+                    strncasecmp(line, "INDEX 01", 8) == 0)) {
             int minute, second, frame;
-            if (sscanf(line, "%*s %*s %d:%d:%d", &minute, &second, &frame) == 3)
-                *track_offset = (long)(minute * 60 * 75 + second * 75 + frame) * RAGE_CD_SECTOR_SIZE;
+            if (sscanf(line, "%*s %*s %d:%d:%d", &minute, &second, &frame) ==
+                    3 &&
+                minute >= 0 && second >= 0 && second < 60 && frame >= 0 &&
+                frame < 75) {
+                long sectors = (long)minute * 60 * 75 + second * 75 + frame;
+
+                if (sectors <= LONG_MAX / RAGE_CD_SECTOR_SIZE) {
+                    *track_offset = sectors * RAGE_CD_SECTOR_SIZE;
+                    data_index_found = 1;
+                }
+            }
             break;
         }
     }
     fclose(file);
-    if (image_name[0] == '\0') return 0;
+    if (image_name[0] == '\0' || !data_index_found) return 0;
     if (image_name[0] == '/' ||
         (isalpha((unsigned char)image_name[0]) && image_name[1] == ':')) {
         snprintf(image, image_size, "%s", image_name);
-    }
-    else {
+    } else {
         size_t directory_length = strlen(cue_directory);
         size_t name_length = strlen(image_name);
         if (directory_length + 1 + name_length + 1 > image_size) return 0;
@@ -443,25 +460,53 @@ static int HostParseCue(const char *cue, char *image, size_t image_size,
 }
 
 static int HostReadSector(long sector, unsigned char *buffer) {
+    long byte_offset;
+    long maximum_sector;
+
+    if (sector < 0 || buffer == NULL || g_RageHostDisc.track_offset < 0 ||
+        g_RageHostDisc.user_offset < 0 ||
+        g_RageHostDisc.track_offset >
+            LONG_MAX - g_RageHostDisc.user_offset) {
+        return 0;
+    }
+    maximum_sector = (LONG_MAX - g_RageHostDisc.track_offset -
+                      g_RageHostDisc.user_offset) /
+                     RAGE_CD_SECTOR_SIZE;
+    if (sector > maximum_sector) return 0;
     if (g_RageHostDisc.chd) {
         unsigned char raw[RAGE_CD_SECTOR_SIZE];
+        if ((unsigned long)sector > UINT_MAX) return 0;
         if (!ChdReadRawSector((unsigned int)sector, raw)) return 0;
         memcpy(buffer, raw + g_RageHostDisc.user_offset,
                RAGE_ISO_SECTOR_SIZE);
         return 1;
     }
-    if (g_RageHostDisc.file == NULL
-        || fseek(g_RageHostDisc.file, g_RageHostDisc.track_offset
-                 + sector * RAGE_CD_SECTOR_SIZE + g_RageHostDisc.user_offset, SEEK_SET) != 0)
+    byte_offset = g_RageHostDisc.track_offset +
+                  sector * RAGE_CD_SECTOR_SIZE + g_RageHostDisc.user_offset;
+    if (g_RageHostDisc.file == NULL ||
+        fseek(g_RageHostDisc.file, byte_offset, SEEK_SET) != 0) {
         return 0;
-    return fread(buffer, 1, RAGE_ISO_SECTOR_SIZE, g_RageHostDisc.file) == RAGE_ISO_SECTOR_SIZE;
+    }
+    return fread(buffer, 1, RAGE_ISO_SECTOR_SIZE, g_RageHostDisc.file) ==
+           RAGE_ISO_SECTOR_SIZE;
+}
+
+static int HostIsoNameMatches(const unsigned char *name,
+                              unsigned int name_length,
+                              const char *wanted) {
+    size_t wanted_length = strlen(wanted);
+
+    return name_length >= wanted_length &&
+           strncasecmp((const char *)name, wanted, wanted_length) == 0 &&
+           (name_length == wanted_length || name[wanted_length] == ';');
 }
 
 static int HostFindArchive(void) {
     unsigned char sector[RAGE_ISO_SECTOR_SIZE];
     unsigned int root_sector;
     unsigned int root_size;
-    unsigned int offset;
+    unsigned int directory_sector;
+    unsigned int directory_sector_count;
     int user_offset;
 
     for (user_offset = 16; user_offset <= 24; user_offset += 8) {
@@ -471,24 +516,30 @@ static int HostFindArchive(void) {
     if (user_offset > 24 || sector[156] < 34) return 0;
     root_sector = HostLe32(&sector[158]);
     root_size = HostLe32(&sector[166]);
-    for (offset = 0; offset < root_size; offset += RAGE_ISO_SECTOR_SIZE) {
+    directory_sector_count = root_size / RAGE_ISO_SECTOR_SIZE +
+                             (root_size % RAGE_ISO_SECTOR_SIZE != 0);
+    for (directory_sector = 0;
+         directory_sector < directory_sector_count;
+         directory_sector++) {
         unsigned int cursor = 0;
-        if (!HostReadSector(root_sector + offset / RAGE_ISO_SECTOR_SIZE, sector)) return 0;
+        if (root_sector > UINT_MAX - directory_sector ||
+            !HostReadSector((long)(root_sector + directory_sector), sector)) {
+            return 0;
+        }
         while (cursor < RAGE_ISO_SECTOR_SIZE) {
             unsigned int length = sector[cursor];
             unsigned int name_length;
             const unsigned char *record;
             if (length == 0) break;
-            if (length < 34 || cursor + length > RAGE_ISO_SECTOR_SIZE) return 0;
+            if (length < 34 || length > RAGE_ISO_SECTOR_SIZE - cursor) return 0;
             record = &sector[cursor];
             name_length = record[32];
-            if (name_length >= 8 && strncasecmp((const char *)&record[33], "RAGE.BIN", 8) == 0
-                && (name_length == 8 || record[41] == ';')) {
+            if (name_length > length - 33) return 0;
+            if (HostIsoNameMatches(record + 33, name_length, "RAGE.BIN")) {
                 g_RageHostDisc.archive_sector = HostLe32(&record[2]);
                 g_RageHostDisc.archive_size = HostLe32(&record[10]);
-            } else if (name_length >= 8 &&
-                       strncasecmp((const char *)&record[33], "RAGE.STR", 8) == 0 &&
-                       (name_length == 8 || record[41] == ';')) {
+            } else if (HostIsoNameMatches(record + 33, name_length,
+                                          "RAGE.STR")) {
                 g_RageHostDisc.stream_sector = HostLe32(&record[2]);
                 g_RageHostDisc.stream_size = HostLe32(&record[10]);
             }
@@ -519,7 +570,7 @@ static void HostSeedStreamTable(void) {
 }
 
 static int HostReadRawSector(void *context, unsigned int sector,
-                                 unsigned char *raw) {
+                             unsigned char *raw) {
     (void)context;
     if (g_RageHostDisc.chd) return ChdReadRawSector(sector, raw);
     if (g_RageHostDisc.file == NULL) return 0;
@@ -567,30 +618,57 @@ static void HostAdoptDiscStreamTable(void) {
 
 int HostReadStreamSector(unsigned int sector, unsigned char *raw) {
     long offset;
+    unsigned long stream_sectors;
+    unsigned long absolute_sector;
+
+    stream_sectors = (unsigned long)g_RageHostDisc.stream_size /
+                         RAGE_ISO_SECTOR_SIZE +
+                     ((unsigned long)g_RageHostDisc.stream_size %
+                          RAGE_ISO_SECTOR_SIZE !=
+                      0);
     if (raw == NULL || (!g_RageHostDisc.chd && g_RageHostDisc.file == NULL) ||
-        sector >= (unsigned long)((g_RageHostDisc.stream_size + 2047) / 2048)) {
+        g_RageHostDisc.stream_size <= 0 || sector >= stream_sectors ||
+        g_RageHostDisc.stream_sector < 0 ||
+        (unsigned long)g_RageHostDisc.stream_sector > ULONG_MAX - sector) {
         return 0;
     }
-    if (g_RageHostDisc.chd)
-        return ChdReadRawSector(
-            (unsigned int)(g_RageHostDisc.stream_sector + (long)sector), raw);
+    absolute_sector = (unsigned long)g_RageHostDisc.stream_sector + sector;
+    if (absolute_sector > UINT_MAX) return 0;
+    if (g_RageHostDisc.chd) {
+        return ChdReadRawSector((unsigned int)absolute_sector, raw);
+    }
+    if (g_RageHostDisc.track_offset < 0 ||
+        absolute_sector > (unsigned long)LONG_MAX ||
+        (long)absolute_sector >
+            (LONG_MAX - g_RageHostDisc.track_offset) / RAGE_CD_SECTOR_SIZE) {
+        return 0;
+    }
     offset = g_RageHostDisc.track_offset +
-             (g_RageHostDisc.stream_sector + (long)sector) * RAGE_CD_SECTOR_SIZE;
+             (long)absolute_sector * RAGE_CD_SECTOR_SIZE;
     if (fseek(g_RageHostDisc.file, offset, SEEK_SET) != 0) return 0;
     return fread(raw, 1, RAGE_CD_SECTOR_SIZE, g_RageHostDisc.file) ==
            RAGE_CD_SECTOR_SIZE;
 }
 
 int HostStreamAbsoluteSector(unsigned int sector) {
-    if (g_RageHostDisc.stream_size <= 0) return -1;
-    return (int)(g_RageHostDisc.stream_sector + sector);
+    unsigned long absolute;
+
+    if (g_RageHostDisc.stream_size <= 0 ||
+        g_RageHostDisc.stream_sector < 0 ||
+        (unsigned long)g_RageHostDisc.stream_sector > ULONG_MAX - sector) {
+        return -1;
+    }
+    absolute = (unsigned long)g_RageHostDisc.stream_sector + sector;
+    return absolute <= INT_MAX ? (int)absolute : -1;
 }
 
-static int HostReadArchive(unsigned int offset, void *destination, unsigned int size) {
+static int HostReadArchive(unsigned int offset, void *destination,
+                           unsigned int size) {
     unsigned char sector[RAGE_ISO_SECTOR_SIZE];
     unsigned char *output = destination;
     FILE *test_archive;
 
+    if (destination == NULL) return 0;
     if (g_RageHostDisc.file == NULL && !g_RageHostDisc.chd &&
         RuntimeConfigEnabled("runtime.test_mode")) {
         size_t loaded;
@@ -603,12 +681,20 @@ static int HostReadArchive(unsigned int offset, void *destination, unsigned int 
         fclose(test_archive);
         return loaded == size;
     }
-    if ((long)offset + size > g_RageHostDisc.archive_size) return 0;
+    if (g_RageHostDisc.archive_size < 0 ||
+        (unsigned long)offset > (unsigned long)g_RageHostDisc.archive_size ||
+        size > (unsigned long)g_RageHostDisc.archive_size - offset) {
+        return 0;
+    }
     while (size > 0) {
         unsigned int sector_offset = offset % RAGE_ISO_SECTOR_SIZE;
         unsigned int chunk = RAGE_ISO_SECTOR_SIZE - sector_offset;
         if (chunk > size) chunk = size;
-        if (!HostReadSector(g_RageHostDisc.archive_sector + offset / RAGE_ISO_SECTOR_SIZE, sector)) return 0;
+        if (!HostReadSector(g_RageHostDisc.archive_sector +
+                                offset / RAGE_ISO_SECTOR_SIZE,
+                            sector)) {
+            return 0;
+        }
         memcpy(output, sector + sector_offset, chunk);
         output += chunk;
         offset += chunk;
