@@ -387,6 +387,7 @@ int main(void) {
     s_loadResult = sizeof(pack.bytes);
     s_modelBankRegistrations = 0;
     s_selectModelBankCalls = 0;
+    memcpy(packSnapshot, pack.bytes, sizeof(packSnapshot));
     LoadOptionScreenAssets();
     Check(s_lastAssetId == 9, "OPTION asset id");
     Check(g_ImageBlockBuffer == pack.bytes + 48 &&
@@ -395,6 +396,8 @@ int main(void) {
     Check(g_AssetLoadState == 0 && s_modelBankRegistrations == 1 &&
               s_selectModelBankCalls == 1,
           "OPTION asset installed");
+    Check(memcmp(packSnapshot, pack.bytes, sizeof(packSnapshot)) == 0,
+          "OPTION installation leaves serialized data unchanged");
 
     ((OptionScreenAsset *)pack.bytes)->imageOffset = 2;
     g_AssetLoadState = 1;
@@ -440,7 +443,7 @@ int main(void) {
               g_ImageBlockSize == 16,
           "round screen advances to voice bank");
 
-    voiceHeader = GetVoiceBankAssetHeader(pack.bytes + 16);
+    voiceHeader = (VoiceBankAssetHeader *)(void *)(pack.bytes + 16);
     voiceHeader->sharedHeaderSize = 20;
     voiceHeader->audioHeaderOffset = 20;
     voiceHeader->audioBodyOffset = 40;
@@ -450,6 +453,7 @@ int main(void) {
     Check(g_AssetLoadState == 2 && g_RaceVoiceHeaderSize == -1,
           "incomplete voice load installs nothing");
     s_loadResult = 80;
+    memcpy(packSnapshot, pack.bytes, sizeof(packSnapshot));
     LoadRoundAssets();
     Check(s_lastAssetId == ASSET_VOICE_BANK, "round voice asset id");
     Check(g_RaceVoiceHeaderSize == 20, "round shared header size");
@@ -459,6 +463,8 @@ int main(void) {
               g_AssetSubBlockSize == 40,
           "round voice offsets relocated");
     Check(g_AssetLoadState == 0, "round load completes");
+    Check(memcmp(packSnapshot, pack.bytes, sizeof(packSnapshot)) == 0,
+          "round voice splitting leaves serialized data unchanged");
 
     voiceHeader->audioBodyOffset = 39;
     g_AssetLoadState = 2;

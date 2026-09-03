@@ -92,13 +92,13 @@ static void LoadRoundScreen(void) {
 }
 
 static void LoadRoundVoiceBank(void) {
-    VoiceBankAssetHeader *header;
+    const VoiceBankAssetHeader *header;
     s32 loadedSize;
 
     loadedSize = LoadAsset(ASSET_VOICE_BANK, g_AssetBlockPtr2);
     if (loadedSize == 0) return;
 
-    header = GetVoiceBankAssetHeader(g_AssetBlockPtr2);
+    header = (const VoiceBankAssetHeader *)(const void *)g_AssetBlockPtr2;
     if (loadedSize < (s32)sizeof(*header) || header->sharedHeaderSize < 0 ||
         header->audioHeaderOffset < (s32)sizeof(*header) ||
         header->audioHeaderOffset > loadedSize ||

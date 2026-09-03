@@ -315,10 +315,6 @@ static inline GameSceneAssetHeader *GetSceneAssetHeader(void *data) {
     return (GameSceneAssetHeader *)data;
 }
 
-static inline VoiceBankAssetHeader *GetVoiceBankAssetHeader(void *data) {
-    return (VoiceBankAssetHeader *)data;
-}
-
 static inline void *GetSceneAssetAddress(GameSceneAssetHeader *header,
                                          s32 offset) {
     return (u8 *)header + offset;
@@ -334,8 +330,8 @@ static inline void *GetSceneAssetBlock(GameSceneAssetHeader *header,
  * advanced by byte counts (a load's returned size, TRACK_TEXTURE_SHADOW_SIZE,
  * g_RaceVoiceHeaderSize) and by offsets read out of the pack that happens to sit
  * there, so u8 * is the correct type. A pack header is a
- * view taken through GetSceneAssetHeader/GetVoiceBankAssetHeader at the asset
- * boundary; consumers then operate on a named serialized layout.
+ * view taken at the asset boundary; consumers then operate on a named
+ * serialized layout.
  */
 
 /*
@@ -445,10 +441,6 @@ typedef struct OptionScreenAsset {
     s32 imageOffset;
     ModelBankHeader modelBank;
 } OptionScreenAsset;
-
-static inline OptionScreenAsset *GetOptionScreenAsset(void *data) {
-    return (OptionScreenAsset *)data;
-}
 
 typedef struct TerrainCellAssetHeader {
     s32 cellCount;
