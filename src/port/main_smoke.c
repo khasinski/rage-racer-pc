@@ -231,6 +231,40 @@ static void ReportWindowSize(void) {
     printf("window size: %dx%d\n", size.w, size.h);
 }
 
+static void ReportAudioMetrics(void) {
+    if (!RuntimeConfigEnabled("report.audio_metrics")) return;
+    /* The SDL callback updates both the metrics and an optional PCM dump.
+     * Stop it before sampling either so a final callback cannot make the two
+     * observations disagree by one buffer. */
+    Psyz_AudioPause();
+    Psyz_AudioLock();
+    printf("audio metrics: frames=%llu energy=%llu seq_notes=%llu seq_voices=%llu "
+           "pitch_updates=%llu cdda=%d cdda_frames=%llu cdda_energy=%llu "
+           "cdda_mix_energy=%llu reverb_in=%llu reverb_out=%llu "
+           "reverb_tail=%llu loaded=%x cue_bank=%d "
+           "vab=%d,%d,%d,%d slots=%d,%d,%d,%d,%d,%d scale=%d "
+           "seq_fade=%d seq_volume=%d cd_track=%u cd_pending=%d "
+           "cd_fade=%d\n",
+           Psyz_AudioRenderedFrames(), Psyz_AudioRenderedEnergy(),
+           Psyz_SeqNoteOnCount(), Psyz_SeqVoiceStartCount(),
+           Psyz_SndPitchUpdateCount(), Psyz_CdAudioPlaying(),
+           Psyz_CdAudioFramesPulled(), Psyz_CdAudioEnergy(),
+           Psyz_SpuCdMixEnergy(), Psyz_SpuReverbInputEnergy(),
+           Psyz_SpuReverbOutputEnergy(), Psyz_SpuReverbTailFrames(),
+           g_AudioLoadedSlotMask, g_SoundCueBank,
+           g_SoundScale.vabIds[0], g_SoundScale.vabIds[1],
+           g_SoundScale.vabIds[2], g_SoundScale.vabIds[3],
+           g_EngineSoundState.slotActive[0],
+           g_EngineSoundState.slotActive[1],
+           g_EngineSoundState.slotActive[2],
+           g_EngineSoundState.slotActive[3],
+           g_EngineSoundState.slotActive[4],
+           g_EngineSoundState.slotActive[5], g_SoundScale.scale,
+           g_SeqVolumeFadeStep, g_SeqVolume, g_CdCurrentTrack,
+           g_CdTrackPending, g_CdFadeFrames);
+    Psyz_AudioUnlock();
+}
+
 static int CheckSaveRoundtrip(void) {
     GameSaveHeaderRow header = {0};
     const int marker = 123456789;
@@ -342,45 +376,7 @@ int main(int argc, char **argv) {
     }
     ReportInitialState();
     ReportWindowSize();
-    if (RuntimeConfigEnabled("report.audio_metrics")) {
-        /* The SDL callback updates both the metrics and an optional PCM dump.
-         * Stop it before sampling either so a final callback cannot make the
-         * two observations disagree by one buffer. */
-        Psyz_AudioPause();
-        Psyz_AudioLock();
-        printf("audio metrics: frames=%llu energy=%llu seq_notes=%llu seq_voices=%llu "
-               "pitch_updates=%llu cdda=%d cdda_frames=%llu cdda_energy=%llu "
-               "cdda_mix_energy=%llu "
-               "reverb_in=%llu reverb_out=%llu "
-               "reverb_tail=%llu "
-               "loaded=%x cue_bank=%d "
-               "vab=%d,%d,%d,%d slots=%d,%d,%d,%d,%d,%d scale=%d "
-               "seq_fade=%d seq_volume=%d cd_track=%u cd_pending=%d "
-               "cd_fade=%d\n",
-               Psyz_AudioRenderedFrames(), Psyz_AudioRenderedEnergy(),
-               Psyz_SeqNoteOnCount(),
-               Psyz_SeqVoiceStartCount(),
-               Psyz_SndPitchUpdateCount(),
-               Psyz_CdAudioPlaying(),
-               Psyz_CdAudioFramesPulled(),
-               Psyz_CdAudioEnergy(),
-               Psyz_SpuCdMixEnergy(),
-               Psyz_SpuReverbInputEnergy(),
-               Psyz_SpuReverbOutputEnergy(),
-               Psyz_SpuReverbTailFrames(),
-               g_AudioLoadedSlotMask, g_SoundCueBank,
-               g_SoundScale.vabIds[0], g_SoundScale.vabIds[1],
-               g_SoundScale.vabIds[2], g_SoundScale.vabIds[3],
-               g_EngineSoundState.slotActive[0],
-               g_EngineSoundState.slotActive[1],
-               g_EngineSoundState.slotActive[2],
-               g_EngineSoundState.slotActive[3],
-               g_EngineSoundState.slotActive[4],
-               g_EngineSoundState.slotActive[5], g_SoundScale.scale,
-               g_SeqVolumeFadeStep, g_SeqVolume, g_CdCurrentTrack,
-               g_CdTrackPending, g_CdFadeFrames);
-        Psyz_AudioUnlock();
-    }
+    ReportAudioMetrics();
     if (RuntimeConfigEnabled("report.camera_state")) {
         {
             RECT paletteRect = {752, 224, 16, 1};
