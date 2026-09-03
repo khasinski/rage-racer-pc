@@ -118,6 +118,13 @@ int main(void) {
     CHECK(g_MenuUpperAltPanelProgress == 0 && g_MenuLowerAltPanelProgress == 0);
     CHECK(s_callCount == 0);
 
+    g_RenderState.primData = NULL;
+    DrawMenuAltPanel(1, 1);
+    DrawMenuAltPanel(1, 1);
+    CHECK(g_MenuUpperAltPanelProgress == 2);
+    CHECK(g_MenuLowerAltPanelProgress == 2);
+    CHECK(s_callCount == 0);
+
     puts("menu alternate panel tests passed");
     return 0;
 }

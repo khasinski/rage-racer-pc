@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/car.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
 #include "game/render_state.h"
@@ -122,9 +123,11 @@ static void ResetDraws(void) {
 }
 
 int main(void) {
+    GameOrderingTableEntry orderingTable[1] = {0};
     s32 progress = 10;
     s32 i;
 
+    g_RenderState.primData = orderingTable;
     for (i = 0; i < MENU_PAINT_COLOR_COUNT; i++) {
         g_PaintColorTable.colors[i] = (Rgb){i, i + 1, i + 2};
     }
@@ -187,6 +190,23 @@ int main(void) {
     g_OwnedCarCounterSlide = INT_MIN;
     DrawOwnedCarCounter(-1, 13);
     CHECK(g_OwnedCarCounterSlide == 0);
+
+    ResetDraws();
+    g_MenuAltLayout = 0;
+    g_OwnedCarCounterSlide = 11;
+    DrawOwnedCarCounter(1, -10);
+    CHECK(s_firstNumber == 0);
+    ResetDraws();
+    g_OwnedCarCounterSlide = 11;
+    DrawOwnedCarCounter(1, INT_MAX);
+    CHECK(s_firstNumber == GAME_CAR_COUNT);
+
+    ResetDraws();
+    g_RenderState.primData = NULL;
+    g_OwnedCarCounterSlide = 11;
+    DrawOwnedCarCounter(1, 9);
+    CHECK(g_OwnedCarCounterSlide == 12);
+    CHECK(s_numberCount == 0 && s_spriteCount == 0 && s_buttonCount == 0);
 
     puts("paint palette and owned car counter preserve their animations");
     return 0;

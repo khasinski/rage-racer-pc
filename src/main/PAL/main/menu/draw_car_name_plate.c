@@ -65,10 +65,10 @@ static void AdvanceCarNamePlateFade(s32 step) {
 /* The bottom-right plate: grade digit, manufacturer sprite and model-name sprite. */
 void DrawCarNamePlate(s32 step, s32 model, s32 grade) {
     GameOrderingTableEntry *ot;
-    u32 idx;
+    s32 unlockLevel;
+    int64_t displayedGrade;
     u32 shade;
 
-    ot = RENDER_OT_BASE + 1;
     if (step == 0) {
         g_CarNamePlateFade = 0;
         return;
@@ -77,27 +77,35 @@ void DrawCarNamePlate(s32 step, s32 model, s32 grade) {
         AdvanceCarNamePlateFade(step);
     }
 
+    unlockLevel = GetCarUnlockLevel(model);
+    displayedGrade = (int64_t)unlockLevel + grade;
+    if ((u32)model >= GAME_CAR_COUNT || unlockLevel < 0 || grade < 0 ||
+        RENDER_OT_BASE == NULL) {
+        if (step > 0) {
+            AdvanceCarNamePlateFade(step);
+        }
+        return;
+    }
+
+    ot = RENDER_OT_BASE + 1;
     shade = g_CarNamePlateFade / CAR_NAME_PLATE_SHADE_DIVISOR;
     DrawSprite(ot, 0x100, 0x168, 0x20, 0x10, 0x7C, 0x7C, (u8)shade,
                   (u8)shade, (u8)shade, 0x244, 0, 1, 0x3B);
 
-    idx = ((u32)GetCarUnlockLevel(model) + (u32)grade) & UINT16_MAX;
-    if (idx >= 5) {
+    if (displayedGrade >= 5) {
         DrawSprite(ot, 0x11F, 0x168, 8, 0x10, 0x38, 0x28, (u8)shade,
                       (u8)shade, (u8)shade, 0x244, 0, 1, 0x3B);
     } else {
-        DrawSprite(ot, 0x11F, 0x168, 8, 0x10, (s16)((idx * 8) + 8), 0x18,
-                      (u8)shade, (u8)shade, (u8)shade, 0x244, 0, 1,
-                      0x3B);
+        DrawSprite(ot, 0x11F, 0x168, 8, 0x10,
+                   (s16)(displayedGrade * 8 + 8), 0x18, (u8)shade,
+                   (u8)shade, (u8)shade, 0x244, 0, 1, 0x3B);
     }
 
-    if ((u32)model < GAME_CAR_COUNT) {
-        DrawNamePlateSprite(ot, &s_manufacturerSprites
-                                    [s_carManufacturers[model]],
-                            0x178, (u8)shade, 0x3B);
-        DrawNamePlateSprite(ot, &s_carNameSprites[model], 0x188, (u8)shade,
-                            0x3E);
-    }
+    DrawNamePlateSprite(ot,
+                        &s_manufacturerSprites[s_carManufacturers[model]],
+                        0x178, (u8)shade, 0x3B);
+    DrawNamePlateSprite(ot, &s_carNameSprites[model], 0x188, (u8)shade,
+                        0x3E);
 
     if (step > 0) {
         AdvanceCarNamePlateFade(step);

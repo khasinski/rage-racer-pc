@@ -30,11 +30,10 @@ void DrawBrowseArrows(s32 step, s32 wide, s32 drawLeft, s32 drawRight) {
             g_BrowseArrowsFade, step, 0, BROWSE_ARROWS_FADE_MAX);
     }
 
-    ot = RENDER_OT_BASE;
     halfWidth = wide != 0 || g_MenuAltLayout != 0 ? 0x58 : 1;
     y = wide != 0 ? 0x144 : 0x119;
     slidePhase = g_BrowseArrowsFade - BROWSE_ARROWS_VISIBLE_AT;
-    if (slidePhase >= 0) {
+    if (slidePhase >= 0 && RENDER_OT_BASE != NULL) {
         s32 leftX;
         s16 leftEdge;
         s16 rightEdge;
@@ -46,9 +45,12 @@ void DrawBrowseArrows(s32 step, s32 wide, s32 drawLeft, s32 drawRight) {
         leftX = -25 + (slidePhase * 0x250) / 32;
         leftEdge = leftX - halfWidth;
         rightEdge = 0x1BF - leftX;
-        intensity = (u8)(rsin(g_BrowseArrowsPulsePhase % 0x1000) / 64 - 65);
+        intensity =
+            (u8)(rsin((s32)((u32)g_BrowseArrowsPulsePhase & 0xFFFu)) / 64 -
+                 65);
         g_BrowseArrowsPulsePhase =
             (s32)((u32)g_BrowseArrowsPulsePhase + BROWSE_ARROWS_PULSE_STEP);
+        ot = RENDER_OT_BASE;
 
         DrawSprite(ot, leftEdge, y, 0x10, 0x20, 0x48, 0xB8, 0, 0, 0, 0x25A,
                    1, 0, 0x19);

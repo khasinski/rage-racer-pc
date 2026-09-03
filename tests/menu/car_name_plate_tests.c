@@ -57,6 +57,7 @@ static int CheckSprite(const DrawnSprite *sprite, s16 x, s16 y, s16 width,
 }
 
 int main(void) {
+    GameOrderingTableEntry orderingTable[2] = {0};
     static const DrawnSprite expectedManufacturers[GAME_CAR_COUNT] = {
         {0x112, 0, 0x14, 0x50, 0xBC, 0, 0},
         {0x112, 0, 0x14, 0x50, 0xBC, 0, 0},
@@ -89,6 +90,7 @@ int main(void) {
     };
     s32 model;
 
+    g_RenderState.primData = orderingTable;
     g_CarNamePlateFade = 99;
     s_drawCount = 0;
     DrawCarNamePlate(0, 0, 0);
@@ -112,8 +114,16 @@ int main(void) {
     g_CarNamePlateFade = 8;
     s_drawCount = 0;
     DrawCarNamePlate(-20, -1, 0);
-    CHECK(g_CarNamePlateFade == 0 && s_drawCount == 2);
-    CHECK(s_draws[0].shade == 0 && s_draws[1].shade == 0);
+    CHECK(g_CarNamePlateFade == 0 && s_drawCount == 0);
+
+    g_CarNamePlateFade = 100;
+    DrawCarNamePlate(1, 0, -1);
+    CHECK(g_CarNamePlateFade == 101 && s_drawCount == 0);
+
+    g_RenderState.primData = NULL;
+    DrawCarNamePlate(10, 0, 0);
+    CHECK(g_CarNamePlateFade == 111 && s_drawCount == 0);
+    g_RenderState.primData = orderingTable;
 
     g_CarNamePlateFade = 1;
     DrawCarNamePlate(INT_MIN, 0, INT_MAX);

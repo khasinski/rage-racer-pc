@@ -20,9 +20,10 @@ static DrawRecord s_sprites[2];
 static DrawRecord s_highlights[2];
 static s32 s_spriteCount;
 static s32 s_highlightCount;
+static s32 s_sineAngle;
 
 s32 rsin(s32 angle) {
-    (void)angle;
+    s_sineAngle = angle;
     return 4096;
 }
 
@@ -70,6 +71,9 @@ static void ResetDraws(void) {
 }
 
 int main(void) {
+    GameOrderingTableEntry orderingTable[1] = {0};
+
+    g_RenderState.primData = orderingTable;
     g_BrowseArrowsFade = 9;
     DrawBrowseArrows(0, 0, 1, 1);
     CHECK(g_BrowseArrowsFade == 0 && s_spriteCount == 0);
@@ -107,6 +111,20 @@ int main(void) {
     g_BrowseArrowsFade = INT_MIN;
     DrawBrowseArrows(-1, 0, 1, 1);
     CHECK(g_BrowseArrowsFade == 0);
+
+    ResetDraws();
+    g_BrowseArrowsFade = 25;
+    g_BrowseArrowsPulsePhase = -1;
+    DrawBrowseArrows(1, 0, 1, 1);
+    CHECK(s_sineAngle == 0xFFF);
+
+    ResetDraws();
+    g_RenderState.primData = NULL;
+    g_BrowseArrowsFade = 11;
+    g_BrowseArrowsPulsePhase = 123;
+    DrawBrowseArrows(1, 0, 1, 1);
+    CHECK(g_BrowseArrowsFade == 12 && g_BrowseArrowsPulsePhase == 123);
+    CHECK(s_spriteCount == 0 && s_highlightCount == 0);
 
     puts("browse arrows tests passed");
     return 0;
