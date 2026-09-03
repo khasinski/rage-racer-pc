@@ -128,11 +128,9 @@ static void ChooseCourseSelectRow(s32 row) {
         StartSequenceFadeOut();
         g_MenuHintBarStep = -1;
         g_TimeAttackPlateStep = -1;
-        g_MenuViewOffsetTarget = 0x3D090;
         GameMenuBusy = row;
-        g_CourseCardPendingGrade = 0;
         g_GrandPrixSeries = g_CourseIndex >> 2;
-        g_CourseCardSpin = (g_CourseCardSpin - g_CourseCardSpinTarget) + 0x1F4000;
+        SpinCardAway();
         return;
     }
     PlaySoundCue(2);
