@@ -55,7 +55,8 @@ s32 LoadMemoryCardSaveSlot(
 s32 CountMemoryCardFiles(s32 device, s32 port);
 s32 CalculateMemoryCardFreeBlocks(s32 fileCount);
 s32 RefreshMemoryCardSaveStatus(GameSaveHeaderRow *headers);
-char *FormatSaveElapsedTime(char *dst, u32 ticks);
+enum { SAVE_ELAPSED_TIME_CAPACITY = 16 };
+char *FormatSaveElapsedTime(char dst[SAVE_ELAPSED_TIME_CAPACITY], u32 ticks);
 void DrawMemoryCardSaveRows(
     s32 flags,
     GameSaveHeaderRow *rows);

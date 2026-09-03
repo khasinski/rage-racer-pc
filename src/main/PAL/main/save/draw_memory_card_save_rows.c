@@ -13,7 +13,7 @@ static char DecodeSaveNameCharacter(u8 characterIndex) {
 
 static void DrawSaveRowSlotNumber(char *text, const char *format,
                                   s32 slotNumber, s32 y) {
-    sprintf(text, format, slotNumber);
+    snprintf(text, SAVE_ROW_TEXT_SIZE, format, slotNumber);
     DrawLargeText(0x48, y, text, 0x7F, 0x7F, 0x7F, 0x244, 0xA0);
 }
 

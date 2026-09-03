@@ -38,7 +38,7 @@ s32 RefreshMemoryCardSaveStatus(GameSaveHeaderRow *header) {
     return ret;
 }
 
-char *FormatSaveElapsedTime(char *dst, u32 ticks) {
+char *FormatSaveElapsedTime(char dst[SAVE_ELAPSED_TIME_CAPACITY], u32 ticks) {
     enum {
         TICKS_PER_SECOND = 60,
         TICKS_PER_MINUTE = 60 * TICKS_PER_SECOND,
@@ -49,8 +49,8 @@ char *FormatSaveElapsedTime(char *dst, u32 ticks) {
     u32 totalMinutes = ticks / TICKS_PER_MINUTE;
     u32 totalSeconds = ticks / TICKS_PER_SECOND;
 
-    sprintf(dst, g_FmtPlayTime, (s32)hours,
-            (s32)(totalMinutes - hours * 60),
-            (s32)(totalSeconds - totalMinutes * 60));
+    snprintf(dst, SAVE_ELAPSED_TIME_CAPACITY, g_FmtPlayTime, (s32)hours,
+             (s32)(totalMinutes - hours * 60),
+             (s32)(totalSeconds - totalMinutes * 60));
     return dst + PLAY_TIME_HIDDEN_PADDING;
 }
