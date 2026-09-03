@@ -82,6 +82,23 @@ static void CheckInvalidConfigIndex(void) {
     CHECK_EQ(car.gridTargetProgress, 1000, "front grid target");
 }
 
+static void CheckSeriesIsNormalized(void) {
+    TrackEventData events;
+    RaceGridSlot grid = {0};
+    GameCarRuntime car;
+
+    memset(&events, 0, sizeof(events));
+    memset(&car, 0, sizeof(car));
+    g_TrackEventData = &events;
+    g_RaceSeries = 7;
+    g_TrackLength = 12000;
+    events.rivalAiConfigs[0][0].speed = 80;
+    events.rivalAiConfigs[1][0].speed = 160;
+
+    InitRivalCarAi(&car, 0, &grid);
+    CHECK_EQ(car.targetSpeed, 1168, "nonzero series uses reverse config");
+}
+
 static void CheckNegativeMotionConfig(void) {
     TrackEventData events;
     RaceGridSlot grid = {0};
@@ -125,6 +142,7 @@ static void CheckNegativeMotionConfig(void) {
 int main(void) {
     CheckConfiguredRival();
     CheckInvalidConfigIndex();
+    CheckSeriesIsNormalized();
     CheckNegativeMotionConfig();
     if (s_failures != 0) {
         return 1;

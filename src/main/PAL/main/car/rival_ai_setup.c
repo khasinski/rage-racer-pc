@@ -38,16 +38,17 @@ static void SetRivalEngineRpmLow(GameCarRuntime *car, s16 rpm) {
 }
 
 void InitRivalCarAi(GameCarRuntime *car,
-                    s32 gridPosition,
+    s32 gridPosition,
                     const RaceGridSlot *grid) {
     s32 configIndex = grid[gridPosition].value;
+    s32 series = g_RaceSeries != 0;
     const TrackRivalAiConfig *config;
 
     if ((u32)configIndex >= TRACK_RIVAL_COUNT) {
         configIndex = 0;
     }
     config = &g_TrackEventData->rivalAiConfigs[
-        g_RaceSeries][configIndex];
+        series][configIndex];
 
     car->targetSpeed = WrapSigned16(
         DecodeClampedConfigValue((u16)config->speed, 0, INT16_MAX) *
