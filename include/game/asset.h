@@ -137,6 +137,8 @@ enum {
 
 /* Load asset assetIndex into dst; returns its positive byte count on success
  * and zero on failure. */
+/* Positive: loaded byte count; zero: asynchronous load still pending;
+ * negative: the request cannot complete. */
 s32 LoadAsset(s32 assetIndex, void *dst);
 
 /* Phase of LoadAsset's own CD state machine, 0..6 (seek, SetLoc, CdRead,

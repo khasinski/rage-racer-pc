@@ -84,7 +84,7 @@ void LoadPendingCarModelAsset(void) {
     }
     assetId = CarVariantAssetIndex(ASSET_CAR_1ST_BASE, variantIndex);
     loadedSize = LoadAsset(assetId, destination);
-    if (loadedSize == 0) return;
+    if (AssetLoadDidNotComplete(loadedSize)) return;
 
     asset = GetCarModelAsset(destination);
     if (!InstallCarModelAsset(asset, (size_t)loadedSize, targetSlot,

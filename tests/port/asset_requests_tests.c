@@ -259,6 +259,15 @@ static void TestSaveScreenAssets(u8 *assetBase) {
     LoadSaveScreenAssets();
     Check(g_AssetLoadState == 1 && g_ImageBlockBuffer == NULL,
           "pending save screen installs nothing");
+
+    s_loadResult = -1;
+    LoadSaveScreenAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              g_ImageBlockBuffer == NULL,
+          "failed save-screen read stops the loader");
+
+    g_AssetLoadState = 1;
+    g_AssetLoadFailed = 0;
     s_loadResult = 1;
     LoadSaveScreenAssets();
     Check(s_lastAssetId == ASSET_SAVE_SCREEN &&

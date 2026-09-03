@@ -22,7 +22,7 @@ static void LoadStandaloneTrackRuntimeAssets(void) {
         return;
     }
     loadedSize = LoadAsset(assetIndex, g_AssetLoadCursor);
-    if (loadedSize == 0) return;
+    if (AssetLoadDidNotComplete(loadedSize)) return;
     if (!InstallTrackRuntimeAssetPack(g_AssetLoadCursor, (size_t)loadedSize,
                                       assetIndex, 0)) {
         FailAssetLoad();

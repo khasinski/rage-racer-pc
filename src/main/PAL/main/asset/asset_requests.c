@@ -30,7 +30,7 @@ static void LoadBootTitleScreen(void) {
     u8 *base = GetAssetBytes(g_LoadBuffer);
     s32 loadedSize = LoadAsset(ASSET_TITLE_SCREEN, base);
 
-    if (loadedSize == 0) return;
+    if (AssetLoadDidNotComplete(loadedSize)) return;
     g_LoadBufferImageSize = (size_t)loadedSize;
     if (!UploadLoadBufferImage()) {
         FailAssetLoad();
@@ -43,7 +43,7 @@ static void LoadBootTitleScreen(void) {
 static void LoadBootAudioHeader(void) {
     s32 loadedSize = LoadAsset(ASSET_BOOT_AUDIO_HEADER, g_AssetBlockPtr);
 
-    if (loadedSize == 0) return;
+    if (AssetLoadDidNotComplete(loadedSize)) return;
     g_AssetBlockSize = (size_t)loadedSize;
     g_AssetLoadCursor = g_AssetBlockPtr + loadedSize;
     g_AssetLoadState = BOOT_LOAD_AUDIO_BODY;
@@ -53,7 +53,7 @@ static void LoadBootAudioBody(void) {
     AudioSlotAsset asset;
     s32 loadedSize = LoadAsset(ASSET_BOOT_AUDIO_BODY, g_AssetLoadCursor);
 
-    if (loadedSize == 0) return;
+    if (AssetLoadDidNotComplete(loadedSize)) return;
     asset = (AudioSlotAsset){
         .vabHeader = g_AssetBlockPtr,
         .vabHeaderSize = g_AssetBlockSize,
@@ -76,7 +76,7 @@ static void WaitForBootAudio(void) {
 static void LoadBootResources(void) {
     s32 loadedSize = LoadAsset(ASSET_BOOT_RESOURCES, g_AssetLoadCursor);
 
-    if (loadedSize == 0) return;
+    if (AssetLoadDidNotComplete(loadedSize)) return;
     g_AssetLoadCursor += loadedSize;
     g_AssetLoadState = BOOT_LOAD_CAR_SCREEN;
 }
@@ -86,7 +86,7 @@ static void LoadBootCarScreen(void) {
     s32 loadedSize;
 
     loadedSize = LoadAsset(ASSET_BOOT_CAR_SCREEN, assetBase);
-    if (loadedSize == 0) return;
+    if (AssetLoadDidNotComplete(loadedSize)) return;
     if (!UploadImageAsset(GetImageAssetHeaderWords(assetBase),
                           (size_t)loadedSize)) {
         FailAssetLoad();
@@ -144,7 +144,7 @@ void LoadSaveScreenAssets(void) {
         return;
     }
     loadedSize = LoadAsset(ASSET_SAVE_SCREEN, g_AssetBase);
-    if (loadedSize == 0) return;
+    if (AssetLoadDidNotComplete(loadedSize)) return;
 
     g_AssetLoadState = 0;
     g_ImageBlockBuffer = g_AssetBase;
@@ -166,7 +166,7 @@ static void LoadSelectBgmAssetPack(void) {
     s32 loadedSize;
 
     loadedSize = LoadAsset(ASSET_SELECT_BGM, g_AssetBase);
-    if (loadedSize == 0) return;
+    if (AssetLoadDidNotComplete(loadedSize)) return;
 
     header = (const SelectBgmAssetHeader *)(const void *)g_AssetBase;
     if (loadedSize < (s32)sizeof(*header) ||

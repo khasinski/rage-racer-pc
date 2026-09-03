@@ -21,7 +21,7 @@ void LoadOptionScreenAssets(void) {
     }
 
     loadedSize = LoadAsset(ASSET_OPTION_SCREEN, g_AssetBase);
-    if (loadedSize == 0) return;
+    if (AssetLoadDidNotComplete(loadedSize)) return;
     asset = (const OptionScreenAsset *)(const void *)g_AssetBase;
     if (loadedSize < (s32)sizeof(asset->imageOffset)) {
         FailAssetLoad();

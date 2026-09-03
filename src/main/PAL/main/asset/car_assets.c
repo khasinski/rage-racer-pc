@@ -63,7 +63,7 @@ static void LoadCarSelectSharedAssets(void) {
     s32 loadedSize;
 
     loadedSize = LoadAsset(ASSET_CAR_SELECT_SCREEN, g_AssetLoadCursor);
-    if (loadedSize == 0) return;
+    if (AssetLoadDidNotComplete(loadedSize)) return;
 
     header = (const CarSelectAssetHeader *)(const void *)g_AssetLoadCursor;
     if (loadedSize < (s32)offsetof(CarSelectAssetHeader, sceneModelBank) ||
@@ -128,7 +128,7 @@ static void LoadInitialCarSelectModel(void) {
     assetIndex = CarVariantAssetIndex(ASSET_CAR_1ST_BASE, variantIndex);
 
     loadedSize = LoadAsset(assetIndex, g_CarModelBuffer);
-    if (loadedSize == 0) return;
+    if (AssetLoadDidNotComplete(loadedSize)) return;
 
     if (!InstallCarModelAsset(GetCarModelAsset(g_CarModelBuffer),
                               (size_t)loadedSize, 0, carIndex)) {

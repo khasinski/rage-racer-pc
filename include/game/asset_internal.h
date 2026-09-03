@@ -43,6 +43,15 @@ static inline void FailAssetLoad(void) {
     g_AssetLoadState = 0;
 }
 
+/* Keep the retail asynchronous zero result, but distinguish a permanent host
+ * failure so a state machine cannot wait on it forever. */
+static inline s32 AssetLoadDidNotComplete(s32 result) {
+    if (result < 0) {
+        FailAssetLoad();
+    }
+    return result <= 0;
+}
+
 s32 RequestAssetLoad(AssetRequestType request, s32 firstLoadState,
                      s32 resetCdAudio);
 s32 IsValidModelBankAsset(const ModelBankHeader *base, size_t size);

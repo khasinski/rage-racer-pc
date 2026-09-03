@@ -101,7 +101,7 @@ static void LoadPlayerCarRaceAssets(void) {
     loadedSize = LoadAsset(
         CarVariantAssetIndex(ASSET_CAR_2ND_BASE, carAsset),
         g_AssetLoadCursor);
-    if (loadedSize == 0) {
+    if (AssetLoadDidNotComplete(loadedSize)) {
         return;
     }
 
@@ -165,7 +165,7 @@ static void LoadTrackTextureAssets(void) {
         return;
     }
     loadedSize = LoadAsset(assetIndex, g_AssetLoadCursor);
-    if (loadedSize == 0) return;
+    if (AssetLoadDidNotComplete(loadedSize)) return;
 
     if (!InstallTrackTextureAssetPack(g_AssetLoadCursor,
                                       (size_t)loadedSize)) {
@@ -185,7 +185,7 @@ static void LoadTrackRuntimeAssets(void) {
         return;
     }
     loadedSize = LoadAsset(assetIndex, g_AssetLoadCursor);
-    if (loadedSize == 0) return;
+    if (AssetLoadDidNotComplete(loadedSize)) return;
 
     if (!InstallTrackRuntimeAssetPack(g_AssetLoadCursor, (size_t)loadedSize,
                                       assetIndex, 1)) {
@@ -254,10 +254,9 @@ void LoadGrandPrixScreen(void) {
                  g_GrandPrixSeries * GRAND_PRIX_PRIZE_CLASS_COUNT +
                  g_GrandPrixClass;
     loadedSize = LoadAsset(assetIndex, g_ImageBlockBuffer);
-    if (loadedSize != 0) {
-        g_ImageBlockSize = (size_t)loadedSize;
-        g_AssetLoadState = 0;
-    }
+    if (AssetLoadDidNotComplete(loadedSize)) return;
+    g_ImageBlockSize = (size_t)loadedSize;
+    g_AssetLoadState = 0;
 }
 
 s32 RequestCourseTextureAssets(void) {
@@ -282,9 +281,8 @@ void LoadCourseTextureAssets(void) {
         return;
     }
     loadedSize = LoadAsset(assetIndex, g_AssetBase);
-    if (loadedSize != 0) {
-        g_AssetLoadState = 0;
-        g_ImageBlockBuffer = g_AssetBase + loadedSize;
-        g_ImageBlockSize = 0;
-    }
+    if (AssetLoadDidNotComplete(loadedSize)) return;
+    g_AssetLoadState = 0;
+    g_ImageBlockBuffer = g_AssetBase + loadedSize;
+    g_ImageBlockSize = 0;
 }

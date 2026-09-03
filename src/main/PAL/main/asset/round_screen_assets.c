@@ -84,7 +84,7 @@ static void LoadRoundScreen(void) {
     }
     roundSize = LoadAsset(assetId, g_ImageBlockBuffer);
 
-    if (roundSize <= 0) return;
+    if (AssetLoadDidNotComplete(roundSize)) return;
 
     g_ImageBlockSize = (size_t)roundSize;
     g_AssetBlockPtr2 = g_ImageBlockBuffer + roundSize;
@@ -96,7 +96,7 @@ static void LoadRoundVoiceBank(void) {
     s32 loadedSize;
 
     loadedSize = LoadAsset(ASSET_VOICE_BANK, g_AssetBlockPtr2);
-    if (loadedSize == 0) return;
+    if (AssetLoadDidNotComplete(loadedSize)) return;
 
     header = (const VoiceBankAssetHeader *)(const void *)g_AssetBlockPtr2;
     if (loadedSize < (s32)sizeof(*header) || header->sharedHeaderSize < 0 ||

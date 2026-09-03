@@ -28,9 +28,9 @@ s32 LoadAsset(s32 assetIndex, void *dst) {
     s32 loaded;
     size_t room;
 
-    if ((u32)assetIndex >= GAME_ASSET_COUNT || dst == NULL) return 0;
+    if ((u32)assetIndex >= GAME_ASSET_COUNT || dst == NULL) return -1;
     room = PortAssetRoomAt(dst);
-    if (room == 0 || g_AssetCdEntries[assetIndex].size > room) return 0;
+    if (room == 0 || g_AssetCdEntries[assetIndex].size > room) return -1;
     loaded = ModAssetLoad((int)assetIndex, dst,
                           g_AssetCdEntries[assetIndex].size);
     if (loaded <= 0) {
@@ -44,7 +44,7 @@ s32 LoadAsset(s32 assetIndex, void *dst) {
         ModPatchTextures((int)assetIndex, dst, (size_t)loaded);
         return loaded;
     }
-    return 0;
+    return -1;
 }
 
 void LoadDiscArchiveIndex(void) {

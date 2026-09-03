@@ -101,16 +101,16 @@ int main(void) {
 
     ResetCalls();
     s_availableRoom = 23;
-    Check(LoadAsset(3, destination) == 0 && s_hostLoads == 0,
+    Check(LoadAsset(3, destination) < 0 && s_hostLoads == 0,
           "asset larger than the destination is rejected before I/O");
 
     ResetCalls();
     s_availableRoom = 0;
-    Check(LoadAsset(3, destination) == 0 && s_hostLoads == 0 &&
+    Check(LoadAsset(3, destination) < 0 && s_hostLoads == 0 &&
               s_patchCalls == 0,
           "destination outside the asset arenas is rejected before I/O");
     s_availableRoom = 32;
-    Check(LoadAsset(3, NULL) == 0 && s_hostLoads == 0,
+    Check(LoadAsset(3, NULL) < 0 && s_hostLoads == 0,
           "null destination is rejected before I/O");
 
     ResetCalls();
@@ -131,10 +131,10 @@ int main(void) {
     ResetCalls();
     s_modResult = -1;
     s_hostResult = -1;
-    Check(LoadAsset(3, destination) == 0,
-          "negative backend result is normalized to failure");
+    Check(LoadAsset(3, destination) < 0,
+          "negative backend result remains a permanent failure");
     Check(s_patchCalls == 0, "failed asset is never patched");
-    Check(LoadAsset(-1, destination) == 0 && s_hostLoads == 1,
+    Check(LoadAsset(-1, destination) < 0 && s_hostLoads == 1,
           "invalid asset index does not reach a backend");
 
     ResetCalls();
