@@ -208,6 +208,7 @@ if(RAGE_BUILD_PORT)
         src/port/legacy_platform.c
         src/port/archive_index.c
         src/port/disc_cue.c
+        src/port/disc_discovery.c
         src/port/disc_iso.c
         src/port/disc_raw_file.c
         src/port/classic/native_geometry.c

@@ -15,8 +15,6 @@
 #include <commdlg.h>
 #include <direct.h>
 #include <io.h>
-int _stricmp(const char *lhs, const char *rhs);
-int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 /* WinAPI turns several of its own calls into macros that take the names of
  * PSY-Q functions. OpenEvent and LoadImage are the two this file reaches. */
 #ifdef OpenEvent
@@ -27,8 +25,6 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 #endif
 #define access _access
 #define close _close
-#define strcasecmp _stricmp
-#define strncasecmp _strnicmp
 #ifndef R_OK
 #define R_OK 4
 #endif
@@ -36,9 +32,6 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 #define PATH_MAX 4096
 #endif
 #else
-#include <dirent.h>
-#include <strings.h>
-#include <sys/stat.h>
 #include <unistd.h>
 #endif
 
@@ -57,6 +50,7 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 #include "game/screens.h"
 #include "archive_index.h"
 #include "disc_cue.h"
+#include "disc_discovery.h"
 #include "disc_iso.h"
 #include "disc_raw_file.h"
 #include "disc_picker.h"
@@ -275,30 +269,6 @@ typedef struct RageHostDisc {
 
 static RageHostDisc g_RageHostDisc;
 
-static int HostPathEndsWith(const char *path, const char *suffix) {
-    size_t length = strlen(path);
-    size_t suffixLength = strlen(suffix);
-    return length > suffixLength &&
-           strcasecmp(path + length - suffixLength, suffix) == 0;
-}
-
-static int HostPathEndsWithCue(const char *path) {
-    return HostPathEndsWith(path, ".cue");
-}
-
-static int HostPathEndsWithChd(const char *path) {
-    return HostPathEndsWith(path, ".chd");
-}
-
-static int HostPathEndsWithBin(const char *path) {
-    return HostPathEndsWith(path, ".bin");
-}
-
-static int HostPathEndsWithDisc(const char *path) {
-    return HostPathEndsWithCue(path) || HostPathEndsWithBin(path) ||
-           HostPathEndsWithChd(path);
-}
-
 static int HostReadTextFile(const char *path, char *value, size_t size) {
     FILE *file = fopen(path, "r");
     if (file == NULL || fgets(value, (int)size, file) == NULL) {
@@ -308,52 +278,6 @@ static int HostReadTextFile(const char *path, char *value, size_t size) {
     fclose(file);
     value[strcspn(value, "\r\n")] = '\0';
     return value[0] != '\0';
-}
-
-/* A disc image dropped next to the executable is the layout the release
- * archives invite, and the one players reach for first. */
-static int HostFindAdjacentCue(char *cue, size_t size) {
-    char directory[PATH_MAX];
-    if (!PlatformExecutableDirectory(NULL, directory, sizeof(directory)))
-        return 0;
-#ifdef _WIN32
-    {
-        char pattern[PATH_MAX];
-        WIN32_FIND_DATAA entry;
-        HANDLE search;
-        if (snprintf(pattern, sizeof(pattern), "%s\\*.*", directory) >=
-            (int)sizeof(pattern)) return 0;
-        search = FindFirstFileA(pattern, &entry);
-        if (search == INVALID_HANDLE_VALUE) return 0;
-        do {
-            if (entry.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
-            if (!HostPathEndsWithDisc(entry.cFileName)) continue;
-            if (snprintf(cue, size, "%s\\%s", directory, entry.cFileName) <
-                    (int)size && access(cue, R_OK) == 0) {
-                FindClose(search);
-                return 1;
-            }
-        } while (FindNextFileA(search, &entry));
-        FindClose(search);
-    }
-#else
-    {
-        DIR *handle = opendir(directory);
-        struct dirent *entry;
-        if (handle == NULL) return 0;
-        while ((entry = readdir(handle)) != NULL) {
-            if (!HostPathEndsWithDisc(entry->d_name)) continue;
-            if (snprintf(cue, size, "%s/%s", directory, entry->d_name) <
-                    (int)size && access(cue, R_OK) == 0) {
-                closedir(handle);
-                return 1;
-            }
-        }
-        closedir(handle);
-    }
-#endif
-    cue[0] = '\0';
-    return 0;
 }
 
 static void HostMakeDiscConfigPath(char *path, size_t size) {
@@ -379,7 +303,7 @@ static void HostSaveDiscCue(const char *cue) {
 /* The picker asks the desktop for a path; whether it names a disc this build
  * can read is decided here. */
 static int HostChooseDisc(char *cue, size_t size) {
-    return HostShowDiscPicker(cue, size) && HostPathEndsWithDisc(cue) &&
+    return HostShowDiscPicker(cue, size) && DiscPathIsSupportedImage(cue) &&
            access(cue, R_OK) == 0;
 }
 
@@ -559,7 +483,7 @@ static int HostReadArchive(unsigned int offset, void *destination,
 /* Resolves a cue all the way to a readable archive, so a path that no longer
  * works is reported as such instead of failing later on. */
 static int HostOpenDiscImage(const char *cue, char *image, size_t image_size) {
-    if (HostPathEndsWithChd(cue)) {
+    if (DiscPathIsChd(cue)) {
         if (!ChdOpen(cue)) return 0;
         g_RageHostDisc.chd = 1;
         g_RageHostDisc.track_offset = 0;
@@ -570,7 +494,7 @@ static int HostOpenDiscImage(const char *cue, char *image, size_t image_size) {
         }
         return 1;
     }
-    if (HostPathEndsWithBin(cue)) {
+    if (DiscPathIsBin(cue)) {
         if (snprintf(image, image_size, "%s", cue) >= (int)image_size)
             return 0;
         g_RageHostDisc.track_offset = 0;
@@ -582,7 +506,7 @@ static int HostOpenDiscImage(const char *cue, char *image, size_t image_size) {
         }
         return 1;
     }
-    if (!HostPathEndsWithCue(cue) || Psyz_CdSetDiskPath(cue) != 0 ||
+    if (!DiscPathIsCue(cue) || Psyz_CdSetDiskPath(cue) != 0 ||
         !DiscCueResolveDataTrack(cue, image, image_size,
                                  &g_RageHostDisc.track_offset)) {
         return 0;
@@ -600,6 +524,30 @@ static int HostOpenDisc(const char *cue, char *image, size_t image_size) {
     if (!HostOpenDiscImage(cue, image, image_size)) return 0;
     HostAdoptDiscStreamTable();
     return 1;
+}
+
+/* Release archives invite players to drop a disc image next to the
+ * executable. Try every plausible file: an extracted RAGE.BIN or an audio
+ * track may share the extension but is not itself a mountable game disc. */
+typedef struct AdjacentDiscContext {
+    char *image;
+    size_t imageSize;
+} AdjacentDiscContext;
+
+static int HostTryOpenAdjacentDisc(void *context, const char *path) {
+    AdjacentDiscContext *disc = context;
+    return access(path, R_OK) == 0 &&
+           HostOpenDisc(path, disc->image, disc->imageSize);
+}
+
+static int HostOpenAdjacentDisc(char *path, size_t pathSize, char *image,
+                                size_t imageSize) {
+    char directory[PATH_MAX];
+    AdjacentDiscContext context = {image, imageSize};
+
+    return PlatformExecutableDirectory(NULL, directory, sizeof(directory)) &&
+           DiscDiscoverImage(directory, path, pathSize,
+                             HostTryOpenAdjacentDisc, &context);
 }
 
 int HostInitDisc(void) {
@@ -641,8 +589,8 @@ int HostInitDisc(void) {
      * session. */
     if (!choose && HostReadTextFile(config_path, cue, sizeof(cue)) &&
         HostOpenDisc(cue, image, sizeof(image))) return 1;
-    if (!choose && HostFindAdjacentCue(cue, sizeof(cue)) &&
-        HostOpenDisc(cue, image, sizeof(image))) {
+    if (!choose && HostOpenAdjacentDisc(cue, sizeof(cue), image,
+                                        sizeof(image))) {
         HostSaveDiscCue(cue);
         return 1;
     }
