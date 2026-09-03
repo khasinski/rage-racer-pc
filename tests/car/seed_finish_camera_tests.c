@@ -4,6 +4,7 @@
 #include "game/race_internal.h"
 #include "game/track.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -48,6 +49,10 @@ int main(void) {
     car.facingBackwards = 1;
     SeedFinishCamera(&car);
     CHECK_EQ(g_CameraCar.headingAngle, 0x12E0);
+
+    car.speed = INT_MAX;
+    SeedFinishCamera(&car);
+    CHECK_EQ(g_CameraCar.speed, INT_MIN + 63);
 
     g_CameraCar.x = 777;
     g_TrackPointCount = 0;

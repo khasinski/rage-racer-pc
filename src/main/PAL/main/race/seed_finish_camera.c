@@ -17,7 +17,7 @@ void SeedFinishCamera(PlayerCarRuntime *car) {
     g_CameraCar.x = point->x;
     g_CameraCar.z = point->z;
     g_CameraCar.y = point->y - 0x40;
-    g_CameraCar.speed += 0x40;
+    g_CameraCar.speed = WrapSigned32((int64_t)g_CameraCar.speed + 0x40);
 
     heading = car->facingBackwards * ANGLE_HALF_TURN +
               ANGLE_THREE_QUARTER_TURN - point->angle;
