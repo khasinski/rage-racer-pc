@@ -10,7 +10,29 @@ enum {
     RACE_OPTION_SELECTION_TOP = 0x68,
     RACE_OPTION_SELECTION_ROW_HEIGHT = 10,
     RACE_OPTION_DIM_PASSES = 2,
+    RACE_OPTION_RETRY_DIGIT_COUNT = 6,
 };
+
+static s32 ClampRaceOptionCursor(s32 cursor, s32 grandPrixMode) {
+    s32 lastOption = grandPrixMode != 0 ? 1 : 2;
+
+    if (cursor < 0) {
+        return 0;
+    }
+    return cursor < lastOption ? cursor : lastOption;
+}
+
+static s32 RaceOptionRetryDigit(void) {
+    s32 retries =
+        g_CourseProgress != NULL ? g_CourseProgress->retriesRemaining : 0;
+
+    if (retries < 0) {
+        return 0;
+    }
+    return retries < RACE_OPTION_RETRY_DIGIT_COUNT
+               ? retries
+               : RACE_OPTION_RETRY_DIGIT_COUNT - 1;
+}
 
 void DrawRaceOptionMenu(s32 cursorRow) {
     GameOrderingTableEntry *ot;
@@ -23,6 +45,7 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     RaceOptionPulseState pulseState;
     s32 pass;
 
+    cursorRow = ClampRaceOptionCursor(cursorRow, g_GrandPrixMode);
     ot = GamePrimaryOrderingTable(0);
     marquee = RENDER_PRIM_CURSOR_AS(SPRT);
     SetSprt(marquee);
@@ -63,7 +86,7 @@ void DrawRaceOptionMenu(s32 cursorRow) {
             ot, packet, 0x84, 0x7E, 0x30, 8, 0xD0, 0x28, 0x7893);
         packet = GameQueueSprite(
             ot, packet, 0xB8, 0x7E, 8, 8,
-            g_CourseProgress->retriesRemaining * 8, 0, 0x78CC);
+            RaceOptionRetryDigit() * 8, 0, 0x78CC);
         packet = GameQueueSprite(
             ot, packet, 0x78, 0x7E, 8, 8, 0xD8, 8, 0x78CC);
         packet = GameQueueSprite(

@@ -4,6 +4,7 @@
 #include "game/render_internal.h"
 #include "game/save_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -25,6 +26,7 @@ static s32 s_drawAreaCount;
 static s32 s_textCount;
 static s32 s_drawModeCount;
 static s32 s_selectionY[4];
+static s32 s_retryDigitU;
 static u8 *s_drawModePacket;
 
 s32 rcos(s32 angle) {
@@ -64,6 +66,7 @@ u8 *GameQueueSprite(GameOrderingTableEntry *ot, u8 *packet, s32 x, s32 y,
     (void)v;
     (void)clut;
     s_spriteCount++;
+    if (x == 0xB8 && y == 0x7E) s_retryDigitU = u;
     return (u8 *)((SPRT *)packet + 1);
 }
 
@@ -121,6 +124,7 @@ static void Reset(void) {
     s_textCount = 0;
     s_drawModeCount = 0;
     s_drawModePacket = NULL;
+    s_retryDigitU = -1;
     g_RenderState.packetCursor = s_frame.layout.primitiveBuffer;
     g_RaceOptionScroll0 = 0;
     g_RaceOptionScroll1 = 0;
@@ -130,6 +134,7 @@ static void Reset(void) {
 static int CheckLayout(s32 grandPrix, s32 expectedSprites) {
     CourseProgressState progress = {0};
     POLY_FT4 *pulse;
+    s32 expectedSelectionY = grandPrix != 0 ? 0x72 : 0x7C;
 
     Reset();
     progress.retriesRemaining = 2;
@@ -140,8 +145,10 @@ static int CheckLayout(s32 grandPrix, s32 expectedSprites) {
     CHECK(s_spriteCount == expectedSprites);
     CHECK(s_tileCount == 4 && s_translucentTileCount == 2);
     CHECK(s_drawAreaCount == 2 && s_textCount == 2 && s_drawModeCount == 1);
-    CHECK(s_selectionY[0] == 0x7C && s_selectionY[1] == 0x87);
-    CHECK(s_selectionY[2] == 0x7C && s_selectionY[3] == 0x7C);
+    CHECK(s_selectionY[0] == expectedSelectionY);
+    CHECK(s_selectionY[1] == expectedSelectionY + 0xB);
+    CHECK(s_selectionY[2] == expectedSelectionY);
+    CHECK(s_selectionY[3] == expectedSelectionY);
     CHECK(g_RaceOptionScroll0 == -4 && g_RaceOptionScroll1 == -4);
     CHECK(g_RaceOptionPulseAngle == 0);
 
@@ -155,6 +162,19 @@ static int CheckLayout(s32 grandPrix, s32 expectedSprites) {
 
 int main(void) {
     if (CheckLayout(1, 6) || CheckLayout(0, 3)) return 1;
+
+    Reset();
+    g_CourseProgress = NULL;
+    g_GrandPrixMode = 1;
+    DrawRaceOptionMenu(INT_MAX);
+    CHECK(s_selectionY[0] == 0x72 && s_retryDigitU == 0);
+
+    Reset();
+    g_CourseProgress = NULL;
+    g_GrandPrixMode = 0;
+    DrawRaceOptionMenu(INT_MIN);
+    CHECK(s_selectionY[0] == 0x68);
+
     puts("race option menu emits both layouts with bounded packet cursors");
     return 0;
 }

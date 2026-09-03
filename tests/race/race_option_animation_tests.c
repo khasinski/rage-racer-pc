@@ -1,5 +1,6 @@
 #include "game/race_hud_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 
 static int Check(s32 first, s32 second, s32 timer,
@@ -27,6 +28,7 @@ int main(void) {
     if (Check(-620, -624, 2, -624, 240, 0x80, 2)) return 1;
     if (Check(-624, -628, 3, 240, 240, 0x80, 3)) return 1;
     if (Check(16, 15, 4, 12, 11, 0x80, 0)) return 1;
+    if (Check(INT_MIN, INT_MAX, INT_MIN, 240, 240, 0x40, 0)) return 1;
 
     pulse = AdvanceRaceOptionPulse(-32);
     if (pulse.angle != 0 || pulse.halfWidth != 44) return 1;
@@ -37,5 +39,7 @@ int main(void) {
     pulse = AdvanceRaceOptionPulse(3040);
     if (pulse.angle != 3072 || pulse.halfWidth != 0) return 1;
     pulse = AdvanceRaceOptionPulse(4064);
-    return pulse.angle != 0 || pulse.halfWidth != 44;
+    if (pulse.angle != 0 || pulse.halfWidth != 44) return 1;
+    pulse = AdvanceRaceOptionPulse(INT_MAX);
+    return pulse.angle != 31;
 }

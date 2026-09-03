@@ -2,8 +2,10 @@
 #include "psyq/gte.h"
 
 static s32 AdvanceMarqueeLine(s32 scroll) {
-    scroll -= 4;
-    return scroll < -624 ? 240 : scroll;
+    if (scroll <= -624 || scroll > 240) {
+        return 240;
+    }
+    return scroll - 4;
 }
 
 RaceOptionMarqueeState AdvanceRaceOptionMarquee(s32 firstScroll,
@@ -21,7 +23,7 @@ RaceOptionMarqueeState AdvanceRaceOptionMarquee(s32 firstScroll,
 RaceOptionPulseState AdvanceRaceOptionPulse(s32 angle) {
     RaceOptionPulseState state;
 
-    state.angle = (angle + 0x20) & 0xFFF;
+    state.angle = (s32)(((u32)angle + 0x20) & 0xFFF);
     state.halfWidth = rcos(state.angle) * 0x2C / 4096;
     return state;
 }
