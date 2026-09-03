@@ -3,6 +3,7 @@
 #include "game/race.h"
 #include "game/state.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -128,6 +129,13 @@ int main(void) {
     car.drive.gear = 1;
     UpdatePlayerEnginePresentation(&car);
     CHECK(s_effectCalls == 1 && s_effectIndex == -1);
+
+    Reset(&car);
+    g_EngineRpm = INT_MIN;
+    car.drive.engineRpm = 0;
+    UpdatePlayerEnginePresentation(&car);
+    CHECK(g_EngineRpm == 8000 && g_EngineRpmSnapshot == 8000);
+    CHECK(s_audioCalls == 1 && s_audioPosition == 8000);
 
     if (s_failures != 0) {
         printf("%d player engine presentation checks failed\n", s_failures);

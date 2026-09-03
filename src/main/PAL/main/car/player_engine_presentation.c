@@ -1,6 +1,7 @@
 #include "game/audio.h"
 #include "game/car.h"
 #include "game/car_internal.h"
+#include "game/integer.h"
 #include "game/race.h"
 #include "game/random.h"
 #include "game/render.h"
@@ -10,10 +11,11 @@
 
 static void SettleDisplayedEngineRpm(const GameCarDrive *drive) {
     s32 shown = g_EngineRpm;
-    s32 gap = drive->engineRpm - shown;
+    s32 gap = WrapSigned32((int64_t)drive->engineRpm - shown);
     s32 limit = g_CarSpec->revLimit;
 
-    shown += drive->clutch > 0 ? gap / 2 : gap / 4;
+    shown = WrapSigned32(
+        (int64_t)shown + (drive->clutch > 0 ? gap / 2 : gap / 4));
     if (shown >= limit) {
         shown = limit;
     } else if (shown < 500) {
