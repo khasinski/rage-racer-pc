@@ -16,6 +16,7 @@
 #include "game/track.h"
 #include "game/race.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -241,6 +242,17 @@ static void TargetSpeedTests(void) {
     UpdateCarAiTargetSpeed(&car, 0);
     Check(car.routeMarkerIndex == 0, "last key cannot form a pair",
           car.routeMarkerIndex, 0);
+
+    memset(&car, 0, sizeof(car));
+    keys[0].progress = INT16_MIN;
+    keys[1].progress = INT16_MAX;
+    keys[0].slotTargetSpeeds[0] = INT16_MIN;
+    keys[1].slotTargetSpeeds[0] = INT16_MAX;
+    car.trackProgress = INT16_MAX << 4;
+    UpdateCarAiTargetSpeed(&car, 0);
+    Check(car.accelerationLimit == -14353,
+          "extreme target-speed interpolation wraps like the PS1",
+          car.accelerationLimit, -14353);
 }
 
 static void RouteMarkerSeedTests(void) {

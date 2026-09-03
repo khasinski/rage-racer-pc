@@ -1,4 +1,5 @@
 #include "game/car.h"
+#include "game/integer.h"
 #include "game/race.h"
 #include "game/track.h"
 
@@ -18,10 +19,12 @@ static s32 RivalTargetSpeed(const TrackAiSpeedKey *key, s32 carIndex) {
 }
 
 static s32 TargetSpeedAccelerationLimit(s32 targetSpeed) {
-    s32 scaledSpeed = targetSpeed * TARGET_SPEED_SCALE /
-                      TARGET_SPEED_SOURCE_SCALE;
+    s32 scaledSpeed = WrapSigned32(
+        (int64_t)targetSpeed * TARGET_SPEED_SCALE) /
+        TARGET_SPEED_SOURCE_SCALE;
 
-    return scaledSpeed * ACCELERATION_LIMIT_PERCENT / 100;
+    return WrapSigned32(
+        (int64_t)scaledSpeed * ACCELERATION_LIMIT_PERCENT) / 100;
 }
 
 /*
@@ -71,9 +74,12 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex) {
         if (range <= 0) {
             range = 1;
         }
-        blended = lowSpeed +
-                  ((highSpeed - lowSpeed) * (position - lowProgress)) / range;
-        car->accelerationLimit = TargetSpeedAccelerationLimit(blended);
+        blended = WrapSigned32(
+            (int64_t)(highSpeed - lowSpeed) *
+            (position - lowProgress));
+        blended = WrapSigned32((int64_t)lowSpeed + blended / range);
+        car->accelerationLimit = WrapSigned16(
+            TargetSpeedAccelerationLimit(blended));
     } else {
         car->routeMarkerActive = 1;
         car->routeMarkerIndex += highProgress < position ? 1 : -1;
