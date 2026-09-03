@@ -47,6 +47,8 @@ static void test_time_conversion(void) {
     EXPECT_EQ(1234, FramesToMilliseconds(30, 34));
     EXPECT_EQ(59999, FramesToMilliseconds(1499, 39));
     EXPECT_EQ(60000, FramesToMilliseconds(1500, 0));
+    EXPECT_EQ(INT_MAX, FramesToMilliseconds(INT_MAX, INT_MAX));
+    EXPECT_EQ(INT_MIN, FramesToMilliseconds(INT_MIN, INT_MIN));
 }
 
 static void test_random15(void) {
