@@ -202,6 +202,21 @@ static int CheckSixthGearLaunchAssets(GameCarSpec *spec) {
     return 0;
 }
 
+static int CheckExtremeLaunchSpin(GameCarSpec *spec) {
+    PlayerCarRuntime car;
+
+    PrepareCar(&car, spec);
+    car.drive.gear = 1;
+    car.drive.spinRate = INT_MIN;
+    car.drive.launchEnergy = INT_MIN;
+    UpdateCarLaunch(&car);
+    if (car.drive.spinRate < -0x3600 || car.drive.spinRate > 0x3600) {
+        puts("extreme launch spin escaped its clamp");
+        return 1;
+    }
+    return 0;
+}
+
 int main(int argc, char **argv) {
     /*
      * What the handlers did before they were touched. Run with a file name to
@@ -237,7 +252,8 @@ int main(int argc, char **argv) {
 
     if (CheckAirborneYawSymmetry(&spec) != 0 ||
         CheckLaunchShiftSoundRange(&spec) != 0 ||
-        CheckSixthGearLaunchAssets(&spec) != 0)
+        CheckSixthGearLaunchAssets(&spec) != 0 ||
+        CheckExtremeLaunchSpin(&spec) != 0)
         return 1;
 
     for (s = 0; s < sizeof(spins) / sizeof(spins[0]); s++)
