@@ -1,4 +1,5 @@
 #include "game/car.h"
+#include "game/integer.h"
 #include "game/render.h"
 
 enum {
@@ -12,10 +13,12 @@ static void ApplyDetailedBodyLean(GameCarRuntime *car) {
     Matrix work;
     SVec lean;
     s32 yawStep = car->yawRate;
-    s32 yawLean = yawStep < 0 ? -yawStep / 6 : yawStep / 6;
+    s32 yawLean = yawStep < 0
+        ? (s32)(-(int64_t)yawStep / 6)
+        : yawStep / 6;
 
-    car->x -= car->motionX;
-    car->z -= car->motionZ;
+    car->x = WrapSigned32((int64_t)car->x - car->motionX);
+    car->z = WrapSigned32((int64_t)car->z - car->motionZ);
     BuildRotMatrixY(&bodyRotation, car->bodyYaw);
     BuildRotMatrixX(&work, car->bodyPitch);
     MulMatrix2(&work, &bodyRotation);
@@ -24,30 +27,34 @@ static void ApplyDetailedBodyLean(GameCarRuntime *car) {
 
     lean.vx = 0;
     lean.vy = 0;
-    lean.vz = -yawLean - 0x32;
+    lean.vz = WrapSigned16(-(int64_t)yawLean - 0x32);
     TransposeMatrix(&bodyRotation, &inverseBodyRotation);
     ApplyMatrix(&inverseBodyRotation, &lean, &car->motionX);
-    car->x += car->motionX;
-    car->z += car->motionZ;
+    car->x = WrapSigned32((int64_t)car->x + car->motionX);
+    car->z = WrapSigned32((int64_t)car->z + car->motionZ);
 }
 
 static void UpdateRivalSteeringLean(GameCarRuntime *car) {
     if (car->steeringAngle >= 0x41) {
-        car->bodyRollVelocity -= 6;
+        car->bodyRollVelocity = WrapSigned32(
+            (int64_t)car->bodyRollVelocity - 6);
     } else if (car->steeringAngle < -0x40) {
-        car->bodyRollVelocity += 6;
+        car->bodyRollVelocity = WrapSigned32(
+            (int64_t)car->bodyRollVelocity + 6);
     }
     if (car->bodyRollVelocity != 0) {
-        car->bodyRollVelocity = car->bodyRollVelocity * 7 / 8;
+        car->bodyRollVelocity = WrapSigned32(
+            (int64_t)car->bodyRollVelocity * 7) / 8;
     }
 
-    car->steeringAngle += car->yawRate;
+    car->steeringAngle = WrapSigned32(
+        (int64_t)car->steeringAngle + car->yawRate);
     if (car->steeringAngle > RIVAL_STEERING_LIMIT) {
         car->steeringAngle = RIVAL_STEERING_LIMIT;
     } else if (car->steeringAngle < -RIVAL_STEERING_LIMIT) {
         car->steeringAngle = -RIVAL_STEERING_LIMIT;
     }
-    car->bodyYaw += car->yawRate;
+    car->bodyYaw = WrapSigned32((int64_t)car->bodyYaw + car->yawRate);
 }
 
 void MoveRivalCars(void) {
@@ -61,13 +68,19 @@ void MoveRivalCars(void) {
         }
 
         car->baseBodyYaw = car->bodyYaw;
-        car->worldVelocityX = rsin(car->headingAngle) * car->speed / 256;
-        car->worldVelocityZ = rcos(car->headingAngle) * car->speed / 256;
+        car->worldVelocityX = WrapSigned32(
+            (int64_t)rsin(car->headingAngle) * car->speed) / 256;
+        car->worldVelocityZ = WrapSigned32(
+            (int64_t)rcos(car->headingAngle) * car->speed) / 256;
         if (index < DETAILED_RIVAL_MOTION_COUNT) {
             ApplyDetailedBodyLean(car);
         }
-        car->x += car->worldVelocityX * 6 / 1280;
-        car->z += car->worldVelocityZ * 6 / 1280;
+        car->x = WrapSigned32(
+            (int64_t)car->x +
+            WrapSigned32((int64_t)car->worldVelocityX * 6) / 1280);
+        car->z = WrapSigned32(
+            (int64_t)car->z +
+            WrapSigned32((int64_t)car->worldVelocityZ * 6) / 1280);
         UpdateRivalSteeringLean(car);
     }
 }

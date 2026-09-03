@@ -3,6 +3,7 @@
 #include "game/car_internal.h"
 #include "game/render.h"
 
+#include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -95,6 +96,34 @@ int main(void) {
     if (s_digest != expected) {
         printf("rival movement: %d cases folded to %u, expected %u\n",
                cases, s_digest, expected);
+        return 1;
+    }
+
+    memset(g_Cars, 0, sizeof(g_Cars));
+    for (si = 0; si < RACE_CAR_SLOT_COUNT; si++) {
+        g_Cars[si].activeFlag = -1;
+    }
+    g_Cars[4].activeFlag = 0;
+    g_Cars[4].speed = INT_MIN;
+    g_Cars[4].yawRate = INT_MIN;
+    g_Cars[4].bodyRollVelocity = INT_MAX;
+    MoveRivalCars();
+    if (g_Cars[4].worldVelocityX != 0 ||
+        g_Cars[4].worldVelocityZ != 0 ||
+        g_Cars[4].steeringAngle != -300 ||
+        g_Cars[4].bodyYaw != INT_MIN ||
+        g_Cars[4].bodyRollVelocity != 268435455) {
+        puts("rival movement did not preserve word wrapping at extremes");
+        return 1;
+    }
+
+    g_Cars[4].activeFlag = -1;
+    g_Cars[0].activeFlag = 0;
+    g_Cars[0].yawRate = INT_MIN;
+    MoveRivalCars();
+    if (g_Cars[0].steeringAngle != -300 ||
+        g_Cars[0].bodyYaw != INT_MIN) {
+        puts("detailed rival lean did not handle the minimum yaw rate");
         return 1;
     }
     printf("rival movement preserves %d fixed-point states\n", cases);
