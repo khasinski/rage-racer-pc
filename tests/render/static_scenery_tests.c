@@ -2,6 +2,7 @@
 #include "game/render.h"
 #include "game/track.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -129,6 +130,15 @@ int main(void) {
     if (!Expect("high-class landmark",
                 (Submission){1, 0x3F, 400, 500, 600,
                              0, 0x10000, 1})) {
+        return 1;
+    }
+
+    g_StaticSceneryState.standard.position.z = INT_MAX;
+    Reset();
+    DrawStaticScenery(1);
+    if (!Expect("wrapped standard landmark shift",
+                (Submission){0, 0x3A, 100, 200, -2147463169,
+                             0, 0, 1})) {
         return 1;
     }
 

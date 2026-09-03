@@ -46,7 +46,8 @@ void DrawStaticScenery(s32 shiftForSeriesCourse) {
     s32 modelId;
 
     if (shiftForSeriesCourse != 0) {
-        position.z += SERIES_COURSE_Z_OFFSET;
+        position.z = WrapRenderCoordinate32(
+            (int64_t)position.z + SERIES_COURSE_Z_OFFSET);
     }
     if (!TrackCellVisible(position.x, position.z)) {
         return;

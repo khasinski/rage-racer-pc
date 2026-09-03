@@ -3,6 +3,7 @@
 #include "game/render.h"
 #include "game/track_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -94,6 +95,18 @@ int main(void) {
 
     g_RacePhase = 2;
     if (!Expect(135, 0, 0, 0, 0)) {
+        return 1;
+    }
+
+    g_RacePhase = 1;
+    g_RaceSeries = 0;
+    g_CourseIndex = 0;
+    g_CourseModelCount = 64;
+    g_StartGridSceneryPos[0].x = INT_MAX;
+    g_StartGridSceneryPos[0].z = INT_MIN;
+    g_StartGridSceneryStep[0] =
+        (StartGridSceneryStep){INT16_MAX, INT16_MAX};
+    if (!Expect(INT_MAX, 1, 0x34, -1813523841, -1813523840)) {
         return 1;
     }
 
