@@ -66,10 +66,26 @@ static void test_mip_chain_premultiplies_png_base_level(void) {
     EXPECT_EQ(128, chain[3]);
 }
 
+static void test_odd_mip_dimensions_include_the_last_texel(void) {
+    const uint8_t source[12] = {
+        255, 0, 0, 255,
+        255, 0, 0, 255,
+        0, 0, 255, 255,
+    };
+    uint8_t chain[16];
+    EXPECT_EQ(1, TextureBuildMipChainRGBA8(
+                     source, 3, 1, 2, chain, sizeof(chain)));
+    EXPECT_EQ(170, chain[12 + 0]);
+    EXPECT_EQ(0, chain[12 + 1]);
+    EXPECT_EQ(85, chain[12 + 2]);
+    EXPECT_EQ(255, chain[12 + 3]);
+}
+
 int main(void) {
     test_mip_chain_keeps_atlas_tiles_separate();
     test_mip_chain_filters_in_premultiplied_alpha();
     test_mip_chain_premultiplies_png_base_level();
+    test_odd_mip_dimensions_include_the_last_texel();
     if (failures != 0) return EXIT_FAILURE;
     puts("texture mipmap tests passed");
     return EXIT_SUCCESS;

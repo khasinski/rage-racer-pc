@@ -91,14 +91,21 @@ int TextureBuildMipChainRGBA8(const uint8_t *source,
                     ((size_t)y * targetWidth + x) * 4u;
                 for (channel = 0; channel < 4; channel++) {
                     uint32_t total = 0, samples = 0;
-                    uint32_t oy, ox;
-                    for (oy = 0; oy < 2; oy++) {
-                        uint32_t sy = y * 2u + oy;
-                        if (sy >= sourceHeight) continue;
-                        for (ox = 0; ox < 2; ox++) {
-                            uint32_t sx = x * 2u + ox;
+                    uint32_t sy, sx;
+                    uint32_t sourceYBegin =
+                        (uint32_t)(((uint64_t)y * sourceHeight) /
+                                   targetHeight);
+                    uint32_t sourceYEnd =
+                        (uint32_t)(((uint64_t)(y + 1u) * sourceHeight) /
+                                   targetHeight);
+                    uint32_t sourceXBegin =
+                        (uint32_t)(((uint64_t)x * sourceWidth) / targetWidth);
+                    uint32_t sourceXEnd =
+                        (uint32_t)(((uint64_t)(x + 1u) * sourceWidth) /
+                                   targetWidth);
+                    for (sy = sourceYBegin; sy < sourceYEnd; sy++) {
+                        for (sx = sourceXBegin; sx < sourceXEnd; sx++) {
                             size_t at;
-                            if (sx >= sourceWidth) continue;
                             at = sourceOffset +
                                 ((size_t)sy * sourceWidth + sx) * 4u;
                             total += destination[at + channel];
