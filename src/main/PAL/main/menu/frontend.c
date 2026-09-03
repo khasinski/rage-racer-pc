@@ -25,8 +25,8 @@ void UpdateMainMenuExit(void) {
 
     if (g_TitlePulse >= 0x81) {
         switch (g_TitleMenuSelection) {
-        case 0:
-        case 1:
+        case TITLE_MENU_GRAND_PRIX:
+        case TITLE_MENU_EXTRA_GRAND_PRIX:
             g_GrandPrixMode = 1;
             if (g_RaceProgress->maxClassReached == -1) {
                 g_RaceProgress->maxClassReached = 0;
@@ -36,14 +36,14 @@ void UpdateMainMenuExit(void) {
                 g_SceneId = 6;
             }
             break;
-        case 2:
+        case TITLE_MENU_TIME_ATTACK:
             g_GrandPrixMode = 0;
             g_SceneId = 6;
             break;
-        case 3:
+        case TITLE_MENU_LOAD_SAVE:
             g_SceneId = 0x19;
             break;
-        case 4:
+        case TITLE_MENU_OPTIONS:
             g_SceneId = 0x16;
             break;
         }

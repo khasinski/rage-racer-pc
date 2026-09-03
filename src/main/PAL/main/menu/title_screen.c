@@ -121,22 +121,23 @@ void DrawMainMenuRows(void) {
     width = 0x70;
     y = 0x64;
 
-    while (i < 5) {
+    while (i < TITLE_MENU_ITEM_COUNT) {
         s32 code;
         s32 frame;
         s32 delta;
 
         code = 0x7E85;
 
-        if ((g_ExtraGrandPrixUnlocked == 0) && (i == 1)) {
-            i = 2;
+        if ((g_ExtraGrandPrixUnlocked == 0) &&
+            (i == TITLE_MENU_EXTRA_GRAND_PRIX)) {
+            i = TITLE_MENU_TIME_ATTACK;
         }
 
         if (i == g_TitleMenuSelection) {
             code = 0x7E86;
         }
 
-        if (g_FrontendState == 1) {
+        if (g_FrontendState == FRONTEND_STATE_MENU_OPENING) {
             code = 0x7E85;
         }
 
@@ -176,28 +177,21 @@ void UpdateMainMenuOpen(void) {
 
 void UpdateMainMenuInput(void) {
     s32 oldSelection;
-    s32 newSelection;
+    s32 direction = 0;
     u16 flags = g_PadPressed;
 
     if (flags != 0) {
         g_FrontendIdleTimer = 0;
     }
     oldSelection = g_TitleMenuSelection;
-    newSelection = oldSelection;
-
     if (flags & PAD_UP) {
-        newSelection--;
-        if (g_ExtraGrandPrixUnlocked == 0 && newSelection == 1) {
-            newSelection--;
-        }
+        direction = -1;
     } else if (flags & PAD_DOWN) {
-        newSelection++;
-        if (g_ExtraGrandPrixUnlocked == 0 && newSelection == 1) {
-            newSelection++;
-        }
+        direction = 1;
     }
 
-    g_TitleMenuSelection = (newSelection + 5) % 5;
+    g_TitleMenuSelection = MoveTitleMenuSelection(
+        oldSelection, direction, g_ExtraGrandPrixUnlocked != 0);
     if (oldSelection != g_TitleMenuSelection) {
         PlaySoundCue(1);
     }
@@ -209,7 +203,7 @@ void UpdateMainMenuInput(void) {
         }
         ShuffleBgmOrder();
         switch (g_TitleMenuSelection) {
-        case 0:
+        case TITLE_MENU_GRAND_PRIX:
             g_CarTable = g_GrandPrixCars;
             g_RaceProgress = &g_GrandPrixSave;
             g_CourseProgress = &g_GrandPrixCourseProgress;
@@ -222,7 +216,7 @@ void UpdateMainMenuInput(void) {
                 RequestSelectBgmAssetsKeepAudioSlots();
             }
             break;
-        case 1:
+        case TITLE_MENU_EXTRA_GRAND_PRIX:
             g_CarTable = g_ExtraGrandPrixCars;
             g_RaceProgress = &g_ExtraGrandPrixSave;
             g_CourseProgress = &g_ExtraGrandPrixCourseProgress;
@@ -235,16 +229,16 @@ void UpdateMainMenuInput(void) {
                 RequestSelectBgmAssetsKeepAudioSlots();
             }
             break;
-        case 2:
+        case TITLE_MENU_TIME_ATTACK:
             g_CarTable = g_TimeAttackCars;
             g_RaceProgress = &g_TimeAttackSave;
             g_SeriesSelection = 0;
             RequestSelectBgmAssetsKeepAudioSlots();
             break;
-        case 3:
+        case TITLE_MENU_LOAD_SAVE:
             RequestSaveScreenAssets();
             break;
-        case 4:
+        case TITLE_MENU_OPTIONS:
             RequestOptionScreenAssets();
             g_OptionMenuCursor = 0;
             break;

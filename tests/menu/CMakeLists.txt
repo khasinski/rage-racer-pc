@@ -946,6 +946,25 @@ target_link_libraries(frontend_tests PRIVATE psyz)
 add_test(NAME frontend COMMAND frontend_tests)
 set_tests_properties(frontend PROPERTIES LABELS functional)
 
+add_executable(title_menu_navigation_tests
+    title_menu_navigation_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/title_menu_navigation.c)
+target_include_directories(title_menu_navigation_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(title_menu_navigation_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(title_menu_navigation_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(title_menu_navigation_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME title_menu_navigation COMMAND title_menu_navigation_tests)
+set_tests_properties(title_menu_navigation PROPERTIES LABELS unit)
+
 add_executable(bgm_shuffle_tests
     bgm_shuffle_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/bgm_shuffle.c)
