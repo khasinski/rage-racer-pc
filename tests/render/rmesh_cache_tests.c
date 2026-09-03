@@ -52,6 +52,20 @@ int main(void) {
                                     RAGE_RENDER_ASSET_MODEL_BANK) == 0);
     RuntimeMeshCacheRelease(&cache);
     EXPECT(frees == 1 && cache.count == 0);
+
+    RuntimeMeshCacheInit(NULL, index, sizeof(index) - 1, read_file,
+                         free_file, NULL, entries, 1);
+    RuntimeMeshCacheInit(&cache, index, sizeof(index) - 1, read_file,
+                         free_file, NULL, NULL, 1);
+    EXPECT(RuntimeMeshCacheFind(&cache, 10,
+                                RAGE_RENDER_ASSET_MODEL_BANK) == NULL);
+    EXPECT(reads == 1);
+
+    RuntimeMeshCacheInit(&cache, index, sizeof(index) - 1, read_file,
+                         free_file, NULL, entries, 1);
+    cache.count = 2;
+    EXPECT(RuntimeMeshCacheFind(&cache, 10,
+                                RAGE_RENDER_ASSET_MODEL_BANK) == NULL);
+    EXPECT(reads == 1);
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
-
