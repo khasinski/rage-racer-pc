@@ -776,7 +776,7 @@ int HostLoadAsset(unsigned int byte_offset, unsigned int size, void *destination
 
 /* Game-side, in render/rot_matrix.c; declared here rather than pulling a
  * game header into the platform layer. */
-void ApplyMatrixLV(void *matrix, const int32_t *input, int32_t *output);
+void ApplyMatrixLV(const MATRIX *matrix, const int32_t *input, int32_t *output);
 
 void MatrixApplyVectorComponents(MATRIX *matrix, int32_t x, int32_t y, int32_t z,
                                  int32_t *out_x, int32_t *out_y, int32_t *out_z) {

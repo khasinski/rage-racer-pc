@@ -114,13 +114,12 @@ s32 Atan2(s32 x, s32 y) {
  * 16-bit, so the game keeps this one for the camera, whose offsets and
  * distances do not fit in a short.
  */
-void ApplyMatrixLV(void *matrix, const s32 *input, s32 *output) {
-    const s16 *m = matrix;
+void ApplyMatrixLV(const Matrix *matrix, const s32 *input, s32 *output) {
     int row;
     for (row = 0; row < 3; row++) {
-        int64_t value = (int64_t)m[row * 3] * input[0]
-                      + (int64_t)m[row * 3 + 1] * input[1]
-                      + (int64_t)m[row * 3 + 2] * input[2];
-        output[row] = (s32)(value >> 12);
+        int64_t value = (int64_t)matrix->m[row][0] * input[0]
+                      + (int64_t)matrix->m[row][1] * input[1]
+                      + (int64_t)matrix->m[row][2] * input[2];
+        output[row] = WrapRenderCoordinate32(value >> 12);
     }
 }

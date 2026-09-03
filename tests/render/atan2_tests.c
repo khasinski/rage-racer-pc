@@ -40,6 +40,11 @@ MATRIX *MulMatrix2(MATRIX *left, MATRIX *right) {
     } while (0)
 
 int main(void) {
+    Matrix matrix = {0};
+    s32 input[3] = {100, -200, 300};
+    s32 output[3];
+    s32 row;
+    s32 column;
     s32 index;
 
     for (index = 0; index < 1026; index++) {
@@ -64,6 +69,27 @@ int main(void) {
     CHECK_EQ(Atan2(INT_MIN, INT_MAX), 0x601);
     CHECK_EQ(Atan2(INT_MIN, INT_MIN), 0xA00);
 
-    puts("table atan2 handles every quadrant and full-width inputs");
+    matrix.m[0][0] = 0x1000;
+    matrix.m[1][1] = 0x1000;
+    matrix.m[2][2] = 0x1000;
+    ApplyMatrixLV(&matrix, input, output);
+    CHECK_EQ(output[0], 100);
+    CHECK_EQ(output[1], -200);
+    CHECK_EQ(output[2], 300);
+
+    for (row = 0; row < 3; row++) {
+        for (column = 0; column < 3; column++) {
+            matrix.m[row][column] = INT16_MAX;
+        }
+    }
+    input[0] = INT_MAX;
+    input[1] = INT_MAX;
+    input[2] = INT_MAX;
+    ApplyMatrixLV(&matrix, input, output);
+    CHECK_EQ(output[0], -1572888);
+    CHECK_EQ(output[1], -1572888);
+    CHECK_EQ(output[2], -1572888);
+
+    puts("rotation math handles full-width inputs");
     return 0;
 }

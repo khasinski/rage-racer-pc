@@ -37,7 +37,7 @@ MATRIX *MulMatrix2(MATRIX *left, MATRIX *right) {
     return right;
 }
 
-void ApplyMatrixLV(void *matrix, const s32 *input, s32 *output) {
+void ApplyMatrixLV(const Matrix *matrix, const s32 *input, s32 *output) {
     (void)matrix;
     output[0] = input[0];
     output[1] = input[1];
