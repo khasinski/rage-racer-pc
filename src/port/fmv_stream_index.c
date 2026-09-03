@@ -1,5 +1,6 @@
 #include "fmv_stream_index.h"
 
+#include <limits.h>
 #include <stdint.h>
 
 int HostFmvStreamIndex(const GameCdLoadEntry *entries, size_t entryCount,
@@ -8,7 +9,8 @@ int HostFmvStreamIndex(const GameCdLoadEntry *entries, size_t entryCount,
     uintptr_t address = (uintptr_t)selected;
     uintptr_t offset;
 
-    if (entries == NULL || selected == NULL || address < base) {
+    if (entries == NULL || selected == NULL || entryCount > INT_MAX ||
+        address < base) {
         return -1;
     }
 
