@@ -216,6 +216,8 @@ static int ReadInstance(FILE *file, RageRenderMeshInstance *value,
 
 int RenderWorldSnapshotWrite(const char *path,
                                  const RageRenderWorld *world) {
+    char *temporaryPath;
+    size_t pathLength;
     FILE *file;
     uint32_t instance;
     int ok;
@@ -223,8 +225,17 @@ int RenderWorldSnapshotWrite(const char *path,
         world->instanceCount > world->instanceCapacity ||
         world->instanceCount > RAGE_RENDER_WORLD_SNAPSHOT_MAX_INSTANCES ||
         (world->instanceCount != 0 && world->instances == NULL)) return 0;
-    file = fopen(path, "wb");
-    if (file == NULL) return 0;
+    pathLength = strlen(path);
+    if (pathLength > SIZE_MAX - sizeof(".tmp")) return 0;
+    temporaryPath = malloc(pathLength + sizeof(".tmp"));
+    if (temporaryPath == NULL) return 0;
+    memcpy(temporaryPath, path, pathLength);
+    memcpy(temporaryPath + pathLength, ".tmp", sizeof(".tmp"));
+    file = fopen(temporaryPath, "wb");
+    if (file == NULL) {
+        free(temporaryPath);
+        return 0;
+    }
     ok = WriteBytes(file, RAGE_RENDER_WORLD_SNAPSHOT_MAGIC,
                     sizeof(RAGE_RENDER_WORLD_SNAPSHOT_MAGIC)) &&
          WriteU32(file, RAGE_RENDER_WORLD_SNAPSHOT_VERSION) &&
@@ -244,7 +255,9 @@ int RenderWorldSnapshotWrite(const char *path,
     for (instance = 0; ok && instance < world->instanceCount; instance++)
         ok = WriteInstance(file, &world->instances[instance]);
     if (fclose(file) != 0) ok = 0;
-    if (!ok) remove(path);
+    if (ok) ok = rename(temporaryPath, path) == 0;
+    if (!ok) remove(temporaryPath);
+    free(temporaryPath);
     return ok;
 }
 

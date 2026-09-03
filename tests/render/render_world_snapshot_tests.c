@@ -170,7 +170,26 @@ static void TestRejectsInvalidWorldBounds(void) {
     world.instances = &instance;
     world.instanceCapacity = 1;
     world.instanceCount = 2;
+    {
+        FILE *file = fopen(path, "wb");
+        CHECK(file != NULL);
+        if (file != NULL) {
+            CHECK(fwrite("keep", 1, 4, file) == 4);
+            CHECK(fclose(file) == 0);
+        }
+    }
     CHECK(!RenderWorldSnapshotWrite(path, &world));
+    {
+        char contents[4];
+        FILE *file = fopen(path, "rb");
+        CHECK(file != NULL);
+        if (file != NULL) {
+            CHECK(fread(contents, 1, sizeof(contents), file) ==
+                  sizeof(contents));
+            CHECK(memcmp(contents, "keep", sizeof(contents)) == 0);
+            CHECK(fclose(file) == 0);
+        }
+    }
     remove(path);
 }
 
