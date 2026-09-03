@@ -19,6 +19,7 @@
 #include "game/track.h"
 #include "psyq/gte.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -197,6 +198,34 @@ int main(int argc, char **argv) {
         CollideRivalCars(&g_Cars[10], 10) != 0) {
         puts("FAIL invalid collision search bounds reported a hit");
         return 1;
+    }
+
+    /* Progress and acceleration are 32-bit machine words in the original.
+     * Crossing their signed limits must retain that wrapping behaviour
+     * without relying on undefined host arithmetic. */
+    {
+        GameCarRuntime *car = &g_Cars[0];
+        GameCarRuntime *other = &g_Cars[1];
+        int i;
+
+        memset(g_Cars, 0, sizeof(g_Cars));
+        for (i = 0; i < 11; i++) {
+            g_Cars[i].activeFlag = -1;
+        }
+        g_TrackLength = 0x8000;
+        car->activeFlag = 0;
+        other->activeFlag = 0;
+        car->trackProgress = INT_MAX - 10;
+        other->trackProgress = INT_MIN + 9;
+        car->acceleration = INT_MAX;
+        other->acceleration = INT_MAX;
+
+        if (CollideRivalCars(car, 0) <= 0 ||
+            !((car->acceleration == 0 && other->acceleration == INT_MAX) ||
+              (other->acceleration == 0 && car->acceleration == INT_MAX))) {
+            puts("FAIL wrapped collision arithmetic changed");
+            return 1;
+        }
     }
     printf("rival collisions take the same %d states they always did\n", steps);
     return 0;

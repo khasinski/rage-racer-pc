@@ -13,6 +13,7 @@
 
 #include "game/car.h"
 #include "game/car_internal.h"
+#include "game/integer.h"
 #include "game/track.h"
 #include "psyq/gte.h"
 
@@ -47,8 +48,10 @@ static void TransformCarHull(const GameCarRuntime *source,
         input.vx = g_CarCollisionCorners[corner].x;
         input.vz = g_CarCollisionCorners[corner].z;
         ApplyRotMatrix(&input, &transformed);
-        corners[corner].x = (transformed.vx >> 2) + offsetX;
-        corners[corner].z = (transformed.vz >> 2) + offsetZ;
+        corners[corner].x = WrapSigned16(
+            (transformed.vx >> 2) + offsetX);
+        corners[corner].z = WrapSigned16(
+            (transformed.vz >> 2) + offsetZ);
     }
 }
 
@@ -116,9 +119,9 @@ static void BuildHullSamples(const CarCollisionPoint *corners,
 /* How hard the shove is: the speed difference, a thirty-second of it, rounded
  * toward zero. */
 static s16 ScaledSpeedDelta(s32 faster, s32 slower) {
-    s32 delta = (s16)((u16)faster - (u16)slower);
+    s16 delta = WrapSigned16((u16)faster - (u16)slower);
 
-    return (s16)(delta / 32);
+    return delta / 32;
 }
 
 /*
@@ -133,11 +136,13 @@ static void ShoveApart(GameCarRuntime *car, GameCarRuntime *other, s32 hit) {
     if (hit <= LAST_FRONT_COLLISION_REGION) {
         SetCarKnockback(car, 0, 0, CAR_KNOCKBACK_VECTOR_MODE);
         SetCarKnockback(other, pushX, pushZ, CAR_KNOCKBACK_VECTOR_MODE);
-        car->acceleration = (car->acceleration * 90) / 100;
+        car->acceleration = WrapSigned32(
+            (int64_t)car->acceleration * 90) / 100;
     } else {
         SetCarKnockback(car, -pushX, -pushZ, CAR_KNOCKBACK_VECTOR_MODE);
         SetCarKnockback(other, 0, 0, CAR_KNOCKBACK_VECTOR_MODE);
-        other->acceleration = (other->acceleration * 90) / 100;
+        other->acceleration = WrapSigned32(
+            (int64_t)other->acceleration * 90) / 100;
     }
     car->collisionFlag = 1;
     other->collisionFlag = 1;
@@ -155,8 +160,10 @@ static int WithinCollisionReach(const GameCarRuntime *car,
         g_TrackLength <= 0) {
         return 0;
     }
-    progressDelta = (other->trackProgress + g_TrackLength - car->trackProgress) %
-                    g_TrackLength;
+    progressDelta = WrapSigned32(
+        (int64_t)other->trackProgress + g_TrackLength);
+    progressDelta = WrapSigned32(
+        (int64_t)progressDelta - car->trackProgress) % g_TrackLength;
     distance = other->trackLateralOffset - car->trackLateralOffset;
     if (distance < 0) {
         distance = -distance;
@@ -195,8 +202,8 @@ s32 CollideRivalCars(GameCarRuntime *car, s32 index) {
                 hullBuilt = 1;
             }
             TransformCarHull(other, otherCorners,
-                             (s16)((u16)other->x - (u16)car->x),
-                             (s16)((u16)other->z - (u16)car->z));
+                             WrapSigned16((u16)other->x - (u16)car->x),
+                             WrapSigned16((u16)other->z - (u16)car->z));
             BuildHullSamples(otherCorners, samples);
 
             /* Corners first, then the edge and centre points: the cheapest
