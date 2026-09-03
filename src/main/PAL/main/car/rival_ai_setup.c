@@ -9,6 +9,12 @@ enum {
     MAX_BOOST_ACCELERATION = 15,
     MIN_RIVAL_SPEED = 60,
     ENGINE_RPM_LOW_MASK = 0xFFFF,
+    TARGET_SPEED_SCALE = 1168,
+    TARGET_SPEED_SOURCE_SCALE = 160,
+    ACCELERATION_LIMIT_PERCENT = 6,
+    FRONT_GRID_SLOT_COUNT = 4,
+    INITIAL_GRID_TARGET_LAP_DIVISOR = 12,
+    TRAILING_GRID_SPACING_DIVISOR = 40,
 };
 
 static s16 DecodeClampedConfigValue(u16 encoded,
@@ -43,8 +49,8 @@ void InitRivalCarAi(GameCarRuntime *car,
         g_RaceSeries][configIndex];
 
     car->targetSpeed = WrapSigned16(
-        DecodeClampedConfigValue((u16)config->speed, 0, INT16_MAX) * 1168 /
-        160);
+        DecodeClampedConfigValue((u16)config->speed, 0, INT16_MAX) *
+        TARGET_SPEED_SCALE / TARGET_SPEED_SOURCE_SCALE);
     car->accelerationStep =
         DecodeClampedConfigValue(config->accelerationStep, 0, INT16_MAX);
     car->boostAccelerationThreshold =
@@ -62,10 +68,13 @@ void InitRivalCarAi(GameCarRuntime *car,
                                  INT16_MAX);
     SetRivalEngineRpmLow(
         car, DecodeClampedConfigValue(config->initialEngineRpm, 0, INT16_MAX));
-    car->accelerationLimit = car->targetSpeed * 6 / 100;
-    car->gridTargetProgress = g_TrackLength / 12;
-    if (gridPosition >= 4) {
+    car->accelerationLimit =
+        car->targetSpeed * ACCELERATION_LIMIT_PERCENT / 100;
+    car->gridTargetProgress =
+        g_TrackLength / INITIAL_GRID_TARGET_LAP_DIVISOR;
+    if (gridPosition >= FRONT_GRID_SLOT_COUNT) {
         car->gridTargetProgress +=
-            (g_TrackLength / 40) * (gridPosition - 4);
+            (g_TrackLength / TRAILING_GRID_SPACING_DIVISOR) *
+            (gridPosition - FRONT_GRID_SLOT_COUNT);
     }
 }
