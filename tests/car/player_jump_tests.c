@@ -148,6 +148,17 @@ int main(void) {
     CHECK(car.drive.shiftRpmDelta == 9760);
     CHECK(car.drive.engineLoad == -1029);
 
+    Reset(&car);
+    car.verticalMotionState = CAR_VERTICAL_RISING;
+    car.verticalMotionTimer = -1;
+    car.verticalMotionRate = 0;
+    car.y = INT_MAX;
+    car.drive.motionState = CAR_MOTION_AIRBORNE;
+    UpdatePlayerJump(&car, INT_MAX);
+    CHECK(car.verticalMotionState == CAR_VERTICAL_GROUNDED);
+    CHECK(car.y == INT_MIN + CAR_WHEEL_GROUND_OFFSET - 1);
+    CHECK(s_kickCalls == 1 && s_kickMode == CAR_BODY_KICK_LANDING);
+
     if (s_failures != 0) {
         printf("%d player jump checks failed\n", s_failures);
         return 1;

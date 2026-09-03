@@ -1,6 +1,7 @@
 #include "game/audio.h"
 #include "game/car.h"
 #include "game/car_internal.h"
+#include "game/integer.h"
 #include "game/race.h"
 
 enum {
@@ -23,7 +24,8 @@ static void ReconnectPlayerDrivetrain(PlayerCarRuntime *car) {
 static void LandPlayerCar(PlayerCarRuntime *car, s32 groundHeight) {
     GameCarDrive *drive = &car->drive;
 
-    car->y = groundHeight + CAR_WHEEL_GROUND_OFFSET;
+    car->y = WrapSigned32(
+        (int64_t)groundHeight + CAR_WHEEL_GROUND_OFFSET);
     car->verticalPitch = 0;
     car->verticalRoll = 0;
     StartCarBodyKick(AsRivalCar(car), CAR_BODY_KICK_LANDING);
