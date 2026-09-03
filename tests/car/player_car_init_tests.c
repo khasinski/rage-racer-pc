@@ -4,6 +4,7 @@
 #include "game/track.h"
 #include "game/track_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -203,6 +204,14 @@ int main(void) {
     InitPlayerCar(&car);
     CHECK(s_findCalls == 0 && s_seedCalls == 0 && s_trackCalls == 0);
     CHECK(car.x == 0 && car.y == 0 && car.z == 0);
+
+    ResetFixtures();
+    memset(&car, 0, sizeof(car));
+    s_eventData.rivalStarts[1][0].x = INT_MAX;
+    s_eventData.rivalStarts[1][0].z = INT_MIN;
+    InitPlayerCar(&car);
+    CHECK(car.x == INT_MIN + 4);
+    CHECK(car.z == INT_MAX - 6);
 
     if (s_failures != 0) {
         printf("%d player initialization checks failed\n", s_failures);

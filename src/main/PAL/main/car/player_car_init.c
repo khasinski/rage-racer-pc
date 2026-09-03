@@ -2,6 +2,7 @@
 #include "game/angle.h"
 #include "game/car.h"
 #include "game/car_internal.h"
+#include "game/integer.h"
 #include "game/menu.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
@@ -66,8 +67,8 @@ static void PlacePlayerCarOnGrid(PlayerCarRuntime *car) {
 
     CalculatePlayerBodyOffset(car);
 
-    car->x += car->motionX;
-    car->z += car->motionZ;
+    car->x = WrapSigned32((int64_t)car->x + car->motionX);
+    car->z = WrapSigned32((int64_t)car->z + car->motionZ);
     car->facingBackwards = IsCarFacingBackwards(car);
 }
 
