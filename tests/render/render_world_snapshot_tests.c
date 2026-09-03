@@ -35,6 +35,7 @@ static void FillCamera(RageRenderCamera *camera, float base) {
     camera->skyBottomColor =
         (RageRenderVec3){base + 35, base + 36, base + 37};
     camera->skyAssetKey = (uint32_t)(base + 38);
+    camera->skyCloudRow = (uint32_t)(base + 39);
     camera->fogNear = base + 39;
     camera->fogFar = base + 40;
 }
@@ -62,6 +63,7 @@ static int SameCamera(const RageRenderCamera *a, const RageRenderCamera *b) {
            memcmp(&a->skyBottomColor, &b->skyBottomColor,
                   sizeof(a->skyBottomColor)) == 0 &&
            a->skyAssetKey == b->skyAssetKey &&
+           a->skyCloudRow == b->skyCloudRow &&
            a->fogNear == b->fogNear && a->fogFar == b->fogFar;
 }
 
@@ -160,8 +162,21 @@ static void TestRejectsInvalidFile(void) {
     remove(path);
 }
 
+static void TestRejectsInvalidWorldBounds(void) {
+    const char *path = "render-world-snapshot-invalid-bounds.bin";
+    RageRenderMeshInstance instance = {0};
+    RageRenderWorld world = {0};
+
+    world.instances = &instance;
+    world.instanceCapacity = 1;
+    world.instanceCount = 2;
+    CHECK(!RenderWorldSnapshotWrite(path, &world));
+    remove(path);
+}
+
 int main(void) {
     TestRoundTrip();
     TestRejectsInvalidFile();
+    TestRejectsInvalidWorldBounds();
     return failures == 0 ? 0 : 1;
 }

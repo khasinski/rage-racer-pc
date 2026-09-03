@@ -220,6 +220,8 @@ int RenderWorldSnapshotWrite(const char *path,
     uint32_t instance;
     int ok;
     if (path == NULL || world == NULL ||
+        world->instanceCount > world->instanceCapacity ||
+        world->instanceCount > RAGE_RENDER_WORLD_SNAPSHOT_MAX_INSTANCES ||
         (world->instanceCount != 0 && world->instances == NULL)) return 0;
     file = fopen(path, "wb");
     if (file == NULL) return 0;
