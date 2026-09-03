@@ -296,6 +296,7 @@ int main(void) {
         max_align_t alignment;
         u8 bytes[128];
     } pack;
+    u8 packSnapshot[sizeof(pack.bytes)];
     GameSceneAssetHeader *header = GetSceneAssetHeader(pack.bytes);
     VoiceBankAssetHeader *voiceHeader;
 
@@ -310,6 +311,7 @@ int main(void) {
     g_AssetBase = pack.bytes;
     g_AssetLoadState = 1;
     s_loadResult = sizeof(pack.bytes);
+    memcpy(packSnapshot, pack.bytes, sizeof(packSnapshot));
     LoadSelectBgmAssets();
     Check(s_closeCalls == 1, "BGM load closes previous audio slots");
     Check(g_AssetLoadState == 0, "BGM load completes");
@@ -319,15 +321,26 @@ int main(void) {
     Check(g_AssetBlockSize == 16 && g_AssetBlock2Size == 32 &&
               g_AssetSubBlockSize == 64,
           "BGM publishes exact audio sub-block sizes");
+    Check(memcmp(packSnapshot, pack.bytes, sizeof(packSnapshot)) == 0,
+          "BGM pack splitting leaves serialized data unchanged");
 
     header->offsets[1] = header->offsets[0];
     g_AssetLoadState = 2;
-    g_AssetBlockPtr = NULL;
+    g_AssetBlockPtr = pack.bytes + 1;
+    g_AssetBlockPtr2 = pack.bytes + 2;
+    g_AssetSubBlockPtr = pack.bytes + 3;
+    g_AssetBlockSize = 4;
+    g_AssetBlock2Size = 5;
+    g_AssetSubBlockSize = 6;
     s_loadResult = sizeof(pack.bytes);
     LoadSelectBgmAssets();
     Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
-              g_AssetBlockPtr == NULL,
-          "overlapping BGM blocks cancel installation");
+              g_AssetBlockPtr == pack.bytes + 1 &&
+              g_AssetBlockPtr2 == pack.bytes + 2 &&
+              g_AssetSubBlockPtr == pack.bytes + 3 &&
+              g_AssetBlockSize == 4 && g_AssetBlock2Size == 5 &&
+              g_AssetSubBlockSize == 6,
+          "overlapping BGM blocks publish no partial state");
     header->offsets[1] = 32;
 
     g_AssetLoadState = 2;

@@ -151,13 +151,13 @@ s32 RequestSelectBgmAssets(void) {
 }
 
 static void LoadSelectBgmAssetPack(void) {
-    SelectBgmAssetHeader *header;
+    const SelectBgmAssetHeader *header;
     s32 loadedSize;
 
     loadedSize = LoadAsset(ASSET_SELECT_BGM, g_AssetBase);
     if (loadedSize == 0) return;
 
-    header = (SelectBgmAssetHeader *)g_AssetBase;
+    header = (const SelectBgmAssetHeader *)(const void *)g_AssetBase;
     if (loadedSize < (s32)sizeof(*header) ||
         header->audioHeaderOffset < (s32)sizeof(*header) ||
         header->sequenceOffset <= header->audioHeaderOffset ||
