@@ -233,6 +233,15 @@ int main(void) {
     CHECK(g_LogoSampleBackIndex == 0);
 
     Reset();
+    GameMenuBusy = -1;
+    g_LogoSampleCharIndex = 8;
+    g_PadPressed = PAD_CONFIRM | PAD_RIGHT;
+    UpdateLogoSampleScreen();
+    CHECK(GameMenuBusy == 0);
+    CHECK(g_LogoSampleSavedIndex == 8);
+    CHECK(g_LogoSampleCharIndex == 8);
+
+    Reset();
     GameMenuBusy = -2;
     g_LogoSampleBackIndex = 12;
     g_LogoSampleSavedIndex = 4;

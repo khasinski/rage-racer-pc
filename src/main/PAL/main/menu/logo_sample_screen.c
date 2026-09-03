@@ -67,26 +67,26 @@ static void UpdateLogoSampleIdle(void) {
 }
 
 static void UpdateLogoSamplePicker(s32 *selection) {
+    MenuDialogAction action;
+
     if (RunTimedDrawScript(g_LogoSampleSubPanelScript, &g_UiScriptProgress2,
                            1) == 0) {
         return;
     }
 
-    if (g_PadPressed & PAD_CONFIRM) {
+    action = ChooseMenuDialogAction(g_PadPressed);
+    if (action == MENU_DIALOG_CONFIRM) {
         PlaySoundCue(2);
         GameMenuBusy = 0;
         g_LogoSampleSavedIndex = *selection;
-    }
-    if (g_PadPressed & PAD_CANCEL) {
+    } else if (action == MENU_DIALOG_CANCEL) {
         PlaySoundCue(3);
         GameMenuBusy = 0;
         *selection = g_LogoSampleSavedIndex;
-    }
-    if (g_PadPressed & PAD_LEFT) {
+    } else if (action == MENU_DIALOG_LEFT) {
         PlaySoundCue(1);
         *selection = WrapLogoSampleIndex(*selection, -1, LOGO_SAMPLE_COUNT);
-    }
-    if (g_PadPressed & PAD_RIGHT) {
+    } else if (action == MENU_DIALOG_RIGHT) {
         PlaySoundCue(1);
         *selection = WrapLogoSampleIndex(*selection, 1, LOGO_SAMPLE_COUNT);
     }
