@@ -6,8 +6,6 @@
 enum {
     TERRAIN_CELL_SIZE = 2048,
     TERRAIN_CELL_HALF_SIZE = TERRAIN_CELL_SIZE / 2,
-    TERRAIN_REGION_COUNT = 32,
-    TERRAIN_MISSING_CLUT = 0x3FF,
     VIEW_ANGLE_PER_SCAN_DIRECTION = 128,
 };
 
@@ -75,11 +73,12 @@ void DrawCourseObjects(void) {
 
 
 static u32 GetCellRegion(s32 cellX, s32 cellZ) {
-    return g_TerrainCellGrid[cellZ * TERRAIN_CELL_GRID_SIZE + cellX] >> 10;
+    return g_TerrainCellGrid[cellZ * TERRAIN_CELL_GRID_SIZE + cellX] >>
+           TERRAIN_CELL_REGION_SHIFT;
 }
 
 static int IsCellVisibleFromRegion(s32 cellX, s32 cellZ, u32 region) {
-    if (region >= TERRAIN_REGION_COUNT) {
+    if (region >= TERRAIN_CELL_REGION_COUNT) {
         return 0;
     }
     return g_CellVisibilityTable[cellZ][cellX] & (1u << region);
@@ -119,7 +118,7 @@ void BuildVisibleCells(s32 near, s32 far) {
         s32 offset[2];
         s32 cellX;
         s32 cellZ;
-        s32 clut;
+        s32 cellIndex;
         s32 worldOffset[3];
         s32 projected[3];
 
@@ -133,12 +132,13 @@ void BuildVisibleCells(s32 near, s32 far) {
             continue;
         }
 
-        clut = g_TerrainCellGrid[(TERRAIN_CELL_GRID_SIZE - 1 - cellZ) *
-                                     TERRAIN_CELL_GRID_SIZE +
-                                 cellX] &
-               TERRAIN_MISSING_CLUT;
+        cellIndex =
+            g_TerrainCellGrid[(TERRAIN_CELL_GRID_SIZE - 1 - cellZ) *
+                                  TERRAIN_CELL_GRID_SIZE +
+                              cellX] &
+            TERRAIN_CELL_INDEX_MASK;
         g_VisibleCellMask[cellZ] |= 1u << cellX;
-        if (clut == TERRAIN_MISSING_CLUT) {
+        if (cellIndex == TERRAIN_MISSING_CELL_INDEX) {
             continue;
         }
 
@@ -162,6 +162,6 @@ void BuildVisibleCells(s32 near, s32 far) {
         out->x = projected[0];
         out->y = projected[1];
         out->z = projected[2];
-        out->w = clut;
+        out->w = cellIndex;
     }
 }

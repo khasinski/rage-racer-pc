@@ -124,6 +124,7 @@ s32 RegisterCourseModels(CourseModelAssetHeader *base, size_t size) {
 
 s32 IsValidTerrainCellAsset(const void *data, size_t size) {
     const u8 *cursor;
+    const u16 *grid;
     const TerrainCellAssetHeader *header;
     size_t payloadSize;
     size_t payloadOffset;
@@ -136,16 +137,24 @@ s32 IsValidTerrainCellAsset(const void *data, size_t size) {
                                            cellOffsets)) {
         return 0;
     }
+    grid = data;
     cursor = data;
     cursor += TERRAIN_CELL_GRID_BYTES;
     cursor += CELL_VISIBILITY_TABLE_SIZE;
     header = (const TerrainCellAssetHeader *)cursor;
     payloadSize = size - (size_t)(cursor - (const u8 *)data);
     if (header->cellCount < 0 ||
-        header->cellCount > GAME_TERRAIN_CELL_LIMIT) {
+        header->cellCount > TERRAIN_MISSING_CELL_INDEX) {
         return 0;
     }
     count = header->cellCount;
+    for (i = 0; i < TERRAIN_CELL_GRID_SIZE * TERRAIN_CELL_GRID_SIZE; i++) {
+        u16 cellIndex = grid[i] & TERRAIN_CELL_INDEX_MASK;
+
+        if (cellIndex != TERRAIN_MISSING_CELL_INDEX && cellIndex >= count) {
+            return 0;
+        }
+    }
     payloadOffset = offsetof(TerrainCellAssetHeader, cellOffsets) +
                     (size_t)count * sizeof(header->cellOffsets[0]);
     if (payloadSize < payloadOffset ||

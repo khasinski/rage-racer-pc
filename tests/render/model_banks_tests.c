@@ -200,6 +200,13 @@ static int TestTerrainCells(void) {
     CHECK(g_RenderState.cellFaces == &data[HEADER_OFFSET + 32]);
     CHECK(g_NativeTerrainCells[2] == &data[HEADER_OFFSET + 52]);
 
+    ((u16 *)data)[0] = 3;
+    CHECK(InstallTerrainCellData(data, sizeof(data)) == 0);
+    CHECK(g_TerrainCellCount == 3);
+    ((u16 *)data)[0] = TERRAIN_MISSING_CELL_INDEX;
+    CHECK(InstallTerrainCellData(data, sizeof(data)) == 1);
+    ((u16 *)data)[0] = 0;
+
     header->cellOffsets[1] = 64;
     CHECK(InstallTerrainCellData(data, sizeof(data)) == 0);
     CHECK(g_TerrainCellCount == 3);
@@ -223,7 +230,7 @@ static int TestTerrainCells(void) {
 
         CHECK(large != NULL);
         largeHeader = (TerrainCellAssetHeader *)&large[HEADER_OFFSET];
-        largeHeader->cellCount = GAME_TERRAIN_CELL_LIMIT + 1;
+        largeHeader->cellCount = TERRAIN_MISSING_CELL_INDEX + 1;
         largeHeader->cellOffsets[GAME_TERRAIN_CELL_LIMIT - 1] = 1;
         CHECK(InstallTerrainCellData(large, size) == 0);
         CHECK(g_TerrainCellCount == 3);

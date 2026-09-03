@@ -553,7 +553,7 @@ extern SVec g_ShuttlePathAngles[];
 extern Vec4 g_StartGridSceneryPos[];
 
 /* The two tables InstallTerrainCellData splits out of sub-block 7: the
- * 32x32 cell grid (clut index in the low 10 bits) and the per-cell
+ * 32x32 cell grid (terrain-cell index in the low 10 bits) and the per-cell
  * visibility rows read by GetCellVisibility. */
 extern u16 *g_TerrainCellGrid;
 extern CellVisibilityRow *g_CellVisibilityTable;
