@@ -19,6 +19,7 @@
 #include "game/race.h"
 #include "game/state.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -528,6 +529,12 @@ static void MissingTrackTests(void) {
 }
 
 int main(void) {
+    Check(CalculateCarRpmDelta(0, INT16_MIN) == INT16_MIN,
+          "RPM delta wraps at the negative limit",
+          CalculateCarRpmDelta(0, INT16_MIN), INT16_MIN);
+    Check(CalculateCarRpmDelta(INT16_MAX, -1) == INT16_MIN,
+          "RPM delta wraps at the positive limit",
+          CalculateCarRpmDelta(INT16_MAX, -1), INT16_MIN);
     CurveBiasTests();
     ShiftInterpolationTests();
     GradePenaltyTests();

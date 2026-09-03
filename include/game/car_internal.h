@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "game/car.h"
+#include "game/integer.h"
 #include "game/car_runtime_state.h"
 #include "game/render.h"
 #include "game/vector.h"
@@ -17,6 +18,10 @@ static inline s32 CalculateAirborneEngineRpm(const GameCarSpec *spec,
     s32 gearRatio = GetPositiveCarGearRatio(spec, gear);
 
     return speed * 160 / 1168 * 10000 / gearRatio;
+}
+
+static inline s16 CalculateCarRpmDelta(s32 targetRpm, s32 currentRpm) {
+    return WrapSigned16((u16)targetRpm - (u16)currentRpm);
 }
 
 extern u32 g_CarModelSlot;

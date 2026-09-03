@@ -19,7 +19,7 @@ void PrepareAirborneDrivetrain(PlayerCarRuntime *car) {
     drive->jumpTimer = AIRBORNE_SHIFT_FRAMES;
     drive->motionState = CAR_MOTION_AIRBORNE;
     g_ShiftTargetRpm = rpm;
-    drive->shiftRpmDelta = (s16)((u16)rpm - (u16)drive->engineRpm);
+    drive->shiftRpmDelta = CalculateCarRpmDelta(rpm, drive->engineRpm);
     drive->engineLoad = rpm * GetCarGearLoad(spec, drive->gear) / 0x20000;
     if (drive->manual == 0) {
         drive->engineLoad =

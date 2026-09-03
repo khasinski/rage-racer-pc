@@ -20,10 +20,9 @@ static void UpdateAirborneGearShift(PlayerCarRuntime *car,
     if (drive->gearDisp != drive->gear) {
         s32 targetRpm =
             CalculateAirborneEngineRpm(spec, drive->gear, car->speed);
-        u16 currentRpm = (u16)drive->engineRpm;
-
         g_ShiftTargetRpm = targetRpm;
-        drive->shiftRpmDelta = (s16)((u16)targetRpm - currentRpm);
+        drive->shiftRpmDelta = CalculateCarRpmDelta(
+            targetRpm, drive->engineRpm);
     }
     drive->engineRpm = drive->shiftRpmDelta * drive->jumpTimer / 20 +
                        g_ShiftTargetRpm;
@@ -70,8 +69,8 @@ static void BeginCarGearShift(PlayerCarRuntime *car,
     }
     drive->clutch = GEAR_SHIFT_CLUTCH_FRAMES;
     drive->drivetrainCoupled = 0;
-    drive->shiftSpeedDelta =
-        (s16)((u16)g_ShiftTargetSpeed - (u16)drive->engineRpm);
+    drive->shiftSpeedDelta = CalculateCarRpmDelta(
+        g_ShiftTargetSpeed, drive->engineRpm);
 }
 
 static void AdvanceCarGearShift(GameCarDrive *drive) {
