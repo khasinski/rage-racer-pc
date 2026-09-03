@@ -31,6 +31,19 @@ endif()
 add_test(NAME disc_discovery COMMAND disc_discovery_tests)
 set_tests_properties(disc_discovery PROPERTIES LABELS functional)
 
+add_executable(cdda_file_tests
+    cdda_file_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/cdda_file.c)
+target_include_directories(cdda_file_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port/include)
+target_compile_definitions(cdda_file_tests PRIVATE __psyz=1)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(cdda_file_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME cdda_file COMMAND cdda_file_tests)
+set_tests_properties(cdda_file PROPERTIES LABELS unit)
+
 add_executable(archive_index_tests
     archive_index_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/archive_index.c)

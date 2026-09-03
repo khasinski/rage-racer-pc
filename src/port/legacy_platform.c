@@ -60,7 +60,6 @@
 #include "disc_stream_table.h"
 #include "fmv_audio.h"
 
-extern CdlLOC *CdIntToPos(int sector, CdlLOC *position);
 extern int _snd_ev_flag;
 extern void _SsVmFlush(void);
 
@@ -705,26 +704,4 @@ void SpuVmDamperStep(void) {
         _SsVmFlush();
         _snd_ev_flag = 0;
     }
-}
-CdlFILE *DsSearchFile(CdlFILE *file, char *name) {
-    const char *marker;
-    int track;
-    int sector;
-
-    if (file == NULL || name == NULL) return NULL;
-    marker = name;
-    while ((marker = strstr(marker, "DA")) != NULL) {
-        if (marker[2] >= '0' && marker[2] <= '9' &&
-            marker[3] >= '0' && marker[3] <= '9') break;
-        marker += 2;
-    }
-    if (marker == NULL) return NULL;
-    track = (marker[2] - '0') * 10 + marker[3] - '0';
-    sector = Psyz_CdGetTrackSector(track);
-    if (sector < 0) return NULL;
-    CdIntToPos(sector, &file->pos);
-    file->size = 0;
-    strncpy(file->name, marker, sizeof(file->name) - 1);
-    file->name[sizeof(file->name) - 1] = '\0';
-    return file;
 }
