@@ -13,24 +13,24 @@
 
 #include "common.h"
 
-unsigned char g_TextResult[8] __attribute__((aligned(16))) = "RESULT";
-unsigned char g_FmtClassGrandPrix[24] __attribute__((aligned(16))) = "CLASS%d %s GRANDPRIX";
-unsigned char g_FmtRoundIn[12] __attribute__((aligned(16))) = "ROUND%d IN";
-unsigned char g_CaptionRanking[8] __attribute__((aligned(16))) = "hai";
-unsigned char g_CaptionTotalTime[8] __attribute__((aligned(16))) = "hegi";
-unsigned char g_CaptionLapTime[8] __attribute__((aligned(16))) = "hfgi";
-unsigned char g_CaptionPrizeMoney[8] __attribute__((aligned(16))) = "hci";
-unsigned char g_FmtMoney[8] __attribute__((aligned(16))) = "%dv";
-unsigned char g_CaptionTotalMoney[8] __attribute__((aligned(16))) = "hebi";
-unsigned char g_CaptionPromotionBonus[40] __attribute__((aligned(16))) = {0x68,0x6a,0x69,0x00,0x44,0x0e,0x02,0x80,0x90,0x0e,0x02,0x80,0xc8,0x0e,0x02,0x80,0x10,0x0f,0x02,0x80,0x54,0x0f,0x02,0x80,0x44,0x10,0x02,0x80,0x74,0x10,0x02,0x80,0x30,0x11,0x02,0x80,0x90,0x11,0x02,0x80};
-unsigned char g_CaptionLostRace[24] __attribute__((aligned(16))) = "h L O S T  R A C E i";
-unsigned char g_TextTryAgain[12] __attribute__((aligned(16))) = "TRY AGAIN";
-unsigned char g_TextEndRace[12] __attribute__((aligned(16))) = "END RACE";
-unsigned char g_TextChance[8] __attribute__((aligned(16))) = "CHANCE";
-unsigned char g_TextPressStart[20] __attribute__((aligned(16))) = "PRESS START BUTTON";
-unsigned char g_FmtLapTime[16] __attribute__((aligned(16))) = "%1d'%02d\"%03d";
-unsigned char g_TextTimeAttack[12] __attribute__((aligned(16))) = "TIME ATTACK";
-unsigned char g_TextCourseIn[192] __attribute__((aligned(16))) =
+char g_TextResult[8] __attribute__((aligned(16))) = "RESULT";
+char g_FmtClassGrandPrix[24] __attribute__((aligned(16))) = "CLASS%d %s GRANDPRIX";
+char g_FmtRoundIn[12] __attribute__((aligned(16))) = "ROUND%d IN";
+char g_CaptionRanking[8] __attribute__((aligned(16))) = "hai";
+char g_CaptionTotalTime[8] __attribute__((aligned(16))) = "hegi";
+char g_CaptionLapTime[8] __attribute__((aligned(16))) = "hfgi";
+char g_CaptionPrizeMoney[8] __attribute__((aligned(16))) = "hci";
+char g_FmtMoney[8] __attribute__((aligned(16))) = "%dv";
+char g_CaptionTotalMoney[8] __attribute__((aligned(16))) = "hebi";
+char g_CaptionPromotionBonus[40] __attribute__((aligned(16))) = {0x68,0x6a,0x69,0x00,0x44,0x0e,0x02,0x80,0x90,0x0e,0x02,0x80,0xc8,0x0e,0x02,0x80,0x10,0x0f,0x02,0x80,0x54,0x0f,0x02,0x80,0x44,0x10,0x02,0x80,0x74,0x10,0x02,0x80,0x30,0x11,0x02,0x80,0x90,0x11,0x02,0x80};
+char g_CaptionLostRace[24] __attribute__((aligned(16))) = "h L O S T  R A C E i";
+char g_TextTryAgain[12] __attribute__((aligned(16))) = "TRY AGAIN";
+char g_TextEndRace[12] __attribute__((aligned(16))) = "END RACE";
+char g_TextChance[8] __attribute__((aligned(16))) = "CHANCE";
+char g_TextPressStart[20] __attribute__((aligned(16))) = "PRESS START BUTTON";
+char g_FmtLapTime[16] __attribute__((aligned(16))) = "%1d'%02d\"%03d";
+char g_TextTimeAttack[12] __attribute__((aligned(16))) = "TIME ATTACK";
+char g_TextCourseIn[192] __attribute__((aligned(16))) =
     "COURSE IN\0\0\0"
     "5TH\0"
     "4TH\0"
@@ -54,13 +54,13 @@ unsigned char g_TextCourseIn[192] __attribute__((aligned(16))) =
     "LIZARD\0\0"
     "GNADE\0\0\0"
     "AGE";
-unsigned char g_CaptionLapTime2[8] __attribute__((aligned(16))) = "hfgi";
-unsigned char g_CaptionRanking2[8] __attribute__((aligned(16))) = "hai";
-unsigned char g_FmtRecordName[8] __attribute__((aligned(16))) = "/%s/%s";
-unsigned char g_FmtCarName[8] __attribute__((aligned(16))) = "/%s";
-unsigned char g_CaptionTotalTime2[8] __attribute__((aligned(16))) = "hegi";
+char g_CaptionLapTime2[8] __attribute__((aligned(16))) = "hfgi";
+char g_CaptionRanking2[8] __attribute__((aligned(16))) = "hai";
+char g_FmtRecordName[8] __attribute__((aligned(16))) = "/%s/%s";
+char g_FmtCarName[8] __attribute__((aligned(16))) = "/%s";
+char g_CaptionTotalTime2[8] __attribute__((aligned(16))) = "hegi";
 unsigned char g_NameEntryCharset[96] __attribute__((aligned(16))) = {0x30,0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0x20,0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,0x4a,0x4b,0x4c,0x4d,0x4e,0x4f,0x50,0x51,0x52,0x53,0x54,0x55,0x56,0x57,0x58,0x59,0x5a,0x2e,0x2d,0x21,0x3f,0x40,0x00,0x00,0xe0,0x27,0x02,0x80,0x98,0x28,0x02,0x80,0x38,0x2b,0x02,0x80,0x70,0x2b,0x02,0x80,0x0c,0x2c,0x02,0x80,0x00,0x2e,0x02,0x80,0x74,0x2e,0x02,0x80,0x4c,0x3e,0x02,0x80,0x78,0x3e,0x02,0x80,0x94,0x3e,0x02,0x80,0xb0,0x3e,0x02,0x80,0x88,0x3f,0x02,0x80,0xcc,0x3f,0x02,0x80};
-unsigned char g_TextNowLoading[436] __attribute__((aligned(16))) =
+char g_TextNowLoading[436] __attribute__((aligned(16))) =
     "NOW LOADING\0"
     "RAGE RACER!\0"
     "CAN ONLY BE ONE ULTIMATE...\0"
@@ -89,13 +89,10 @@ u16 g_ResultPanelCluts[5] __attribute__((aligned(16))) = {
     0, 30803, 30795, 30859, 0
 };
 unsigned char g_ClassPlaceBarSizes[8] __attribute__((aligned(16))) = {0xb8,0x18,0xb0,0x1c,0xa8,0x24,0x00,0x00};
-unsigned char g_ChanceDigits[12] __attribute__((aligned(16))) =
-    "0\0"
-    "1\0"
-    "2\0"
-    "3\0"
-    "4\0"
-    "5";
+char g_ChanceDigits[6][2] __attribute__((aligned(16))) = {
+    {'0', '\0'}, {'1', '\0'}, {'2', '\0'},
+    {'3', '\0'}, {'4', '\0'}, {'5', '\0'},
+};
 unsigned char g_PlaceSuffixNames[20] __attribute__((aligned(16))) = {0xec,0x0e,0x01,0x80,0xe8,0x0e,0x01,0x80,0xe4,0x0e,0x01,0x80,0xe0,0x0e,0x01,0x80,0xdc,0x0e,0x01,0x80};
 unsigned char g_CarNames[52] __attribute__((aligned(16))) = {0x68,0x0f,0x01,0x80,0x60,0x0f,0x01,0x80,0x58,0x0f,0x01,0x80,0x4c,0x0f,0x01,0x80,0x44,0x0f,0x01,0x80,0x3c,0x0f,0x01,0x80,0x34,0x0f,0x01,0x80,0x28,0x0f,0x01,0x80,0x20,0x0f,0x01,0x80,0x14,0x0f,0x01,0x80,0x08,0x0f,0x01,0x80,0xfc,0x0e,0x01,0x80,0xf0,0x0e,0x01,0x80};
 unsigned char g_CarClassNames[52] __attribute__((aligned(16))) = {0x8c,0x0f,0x01,0x80,0x8c,0x0f,0x01,0x80,0x8c,0x0f,0x01,0x80,0x84,0x0f,0x01,0x80,0x7c,0x0f,0x01,0x80,0x7c,0x0f,0x01,0x80,0x7c,0x0f,0x01,0x80,0x70,0x0f,0x01,0x80,0x70,0x0f,0x01,0x80,0x70,0x0f,0x01,0x80,0x8c,0x0f,0x01,0x80,0x7c,0x0f,0x01,0x80,0x70,0x0f,0x01,0x80};
@@ -125,15 +122,12 @@ s32 g_CountdownBoardOffset;
 s32 g_RaceOptionPulseAngle;
 s16 g_RaceOptionScroll0 = -240;
 s16 g_RaceOptionScroll1 = 240;
-unsigned char g_RaceOptionMarquee[160] __attribute__((aligned(16))) =
-    "  RAGE RACER GE\0\0\0\0\0"
-    "TS YOU GOING!  \0\0\0\0\0"
-    "  RAGE RACER GE\0\0\0\0\0"
-    "TS YOU GOING!  \0\0\0\0\0"
-    "   KICK BACK AN\0\0\0\0\0"
-    "D CHILL OUT!   \0\0\0\0\0"
-    "     SLASH THOS\0\0\0\0\0"
-    "E RECORDS!     ";
+char g_RaceOptionMarquee[4][40] __attribute__((aligned(16))) = {
+    "  RAGE RACER GE\0\0\0\0\0TS YOU GOING!  \0\0\0\0\0",
+    "  RAGE RACER GE\0\0\0\0\0TS YOU GOING!  \0\0\0\0\0",
+    "   KICK BACK AN\0\0\0\0\0D CHILL OUT!   \0\0\0\0\0",
+    "     SLASH THOS\0\0\0\0\0E RECORDS!     ",
+};
 s32 g_LastSectorTime;
 s32 g_SplitDelta;
 s32 g_SectorTimes[3] __attribute__((aligned(16))) = {

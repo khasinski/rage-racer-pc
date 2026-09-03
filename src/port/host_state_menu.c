@@ -26,12 +26,12 @@ typedef struct CarEntry CarEntry;
 typedef struct CarModelAsset CarModelAsset;
 typedef struct GameRaceProgress GameRaceProgress;
 
-unsigned char g_MsgInsertController[20] __attribute__((aligned(16))) = "INSERT CONTROLLER";
-unsigned char g_MsgControllerError[20] __attribute__((aligned(16))) = "CONTROLLER ERROR";
-unsigned char g_MsgNegconUntwistedLine1[36] __attribute__((aligned(16))) = "Hold the \"NeGcon\" in an untwisted";
-unsigned char g_MsgNegconUntwistedLine2[36] __attribute__((aligned(16))) = "position and press start button.";
-unsigned char g_MsgNegconSteerPlay[12] __attribute__((aligned(16))) = "Steer play.";
-unsigned char g_MsgNegconMaxTwist[2640] __attribute__((aligned(16))) =
+char g_MsgInsertController[20] __attribute__((aligned(16))) = "INSERT CONTROLLER";
+char g_MsgControllerError[20] __attribute__((aligned(16))) = "CONTROLLER ERROR";
+char g_MsgNegconUntwistedLine1[36] __attribute__((aligned(16))) = "Hold the \"NeGcon\" in an untwisted";
+char g_MsgNegconUntwistedLine2[36] __attribute__((aligned(16))) = "position and press start button.";
+char g_MsgNegconSteerPlay[12] __attribute__((aligned(16))) = "Steer play.";
+char g_MsgNegconMaxTwist[2640] __attribute__((aligned(16))) =
     "Maximum twist.\0\0"
     "\\..\\PACK\\OVAL6.2ND\0\0"
     "\\..\\PACK\\OVAL6.1ST\0\0"
@@ -168,13 +168,13 @@ unsigned char g_MsgNegconMaxTwist[2640] __attribute__((aligned(16))) =
     "\\DATA\\RG3.VH\0\0\0\0"
     "\\DATA\\TITLE.TMS\0"
     "\\DATA\\LOGO.TMS";
-unsigned char g_FmtRound[16] __attribute__((aligned(16))) = "R O U N D %d";
-unsigned char g_CaptionPrizeMoney2[8] __attribute__((aligned(16))) = "hci";
-unsigned char g_FmtPrize1st[12] __attribute__((aligned(16))) = "1ST/%7dv";
-unsigned char g_FmtPrize2nd[12] __attribute__((aligned(16))) = "2ND/%7dv";
-unsigned char g_FmtPrize3rd[12] __attribute__((aligned(16))) = "3RD/%7dv";
-unsigned char g_CaptionBestTotalTime[8] __attribute__((aligned(16))) = "hedi";
-unsigned char g_CaptionBestLapTime[188] __attribute__((aligned(16))) =
+char g_FmtRound[16] __attribute__((aligned(16))) = "R O U N D %d";
+char g_CaptionPrizeMoney2[8] __attribute__((aligned(16))) = "hci";
+char g_FmtPrize1st[12] __attribute__((aligned(16))) = "1ST/%7dv";
+char g_FmtPrize2nd[12] __attribute__((aligned(16))) = "2ND/%7dv";
+char g_FmtPrize3rd[12] __attribute__((aligned(16))) = "3RD/%7dv";
+char g_CaptionBestTotalTime[8] __attribute__((aligned(16))) = "hedi";
+char g_CaptionBestLapTime[188] __attribute__((aligned(16))) =
     "hfdi\0\0\0\0"
     "\"DEEP DRIVE\"\0\0\0\0"
     "\"VOLCANO VEHICLE\"\0\0\0"

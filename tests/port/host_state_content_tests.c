@@ -60,44 +60,44 @@ typedef struct StaticSceneryState {
     SceneryPlacement highClass;
 } StaticSceneryState;
 
-extern unsigned char g_MsgInsertController[20];
-extern unsigned char g_MsgControllerError[20];
-extern unsigned char g_MsgNegconUntwistedLine1[36];
-extern unsigned char g_MsgNegconUntwistedLine2[36];
-extern unsigned char g_MsgNegconSteerPlay[12];
-extern unsigned char g_MsgNegconMaxTwist[2640];
-extern unsigned char g_FmtRound[16];
-extern unsigned char g_CaptionPrizeMoney2[8];
-extern unsigned char g_FmtPrize1st[12];
-extern unsigned char g_FmtPrize2nd[12];
-extern unsigned char g_FmtPrize3rd[12];
-extern unsigned char g_CaptionBestTotalTime[8];
-extern unsigned char g_CaptionBestLapTime[188];
-extern unsigned char g_TextResult[8];
-extern unsigned char g_FmtClassGrandPrix[24];
-extern unsigned char g_FmtRoundIn[12];
-extern unsigned char g_CaptionRanking[8];
-extern unsigned char g_CaptionTotalTime[8];
-extern unsigned char g_CaptionLapTime[8];
-extern unsigned char g_CaptionPrizeMoney[8];
-extern unsigned char g_FmtMoney[8];
-extern unsigned char g_CaptionTotalMoney[8];
-extern unsigned char g_CaptionPromotionBonus[40];
-extern unsigned char g_CaptionLostRace[24];
-extern unsigned char g_TextTryAgain[12];
-extern unsigned char g_TextEndRace[12];
-extern unsigned char g_TextChance[8];
-extern unsigned char g_TextPressStart[20];
-extern unsigned char g_FmtLapTime[16];
-extern unsigned char g_TextTimeAttack[12];
-extern unsigned char g_TextCourseIn[192];
-extern unsigned char g_CaptionLapTime2[8];
-extern unsigned char g_CaptionRanking2[8];
-extern unsigned char g_FmtRecordName[8];
-extern unsigned char g_FmtCarName[8];
-extern unsigned char g_CaptionTotalTime2[8];
+extern char g_MsgInsertController[20];
+extern char g_MsgControllerError[20];
+extern char g_MsgNegconUntwistedLine1[36];
+extern char g_MsgNegconUntwistedLine2[36];
+extern char g_MsgNegconSteerPlay[12];
+extern char g_MsgNegconMaxTwist[2640];
+extern char g_FmtRound[16];
+extern char g_CaptionPrizeMoney2[8];
+extern char g_FmtPrize1st[12];
+extern char g_FmtPrize2nd[12];
+extern char g_FmtPrize3rd[12];
+extern char g_CaptionBestTotalTime[8];
+extern char g_CaptionBestLapTime[188];
+extern char g_TextResult[8];
+extern char g_FmtClassGrandPrix[24];
+extern char g_FmtRoundIn[12];
+extern char g_CaptionRanking[8];
+extern char g_CaptionTotalTime[8];
+extern char g_CaptionLapTime[8];
+extern char g_CaptionPrizeMoney[8];
+extern char g_FmtMoney[8];
+extern char g_CaptionTotalMoney[8];
+extern char g_CaptionPromotionBonus[40];
+extern char g_CaptionLostRace[24];
+extern char g_TextTryAgain[12];
+extern char g_TextEndRace[12];
+extern char g_TextChance[8];
+extern char g_TextPressStart[20];
+extern char g_FmtLapTime[16];
+extern char g_TextTimeAttack[12];
+extern char g_TextCourseIn[192];
+extern char g_CaptionLapTime2[8];
+extern char g_CaptionRanking2[8];
+extern char g_FmtRecordName[8];
+extern char g_FmtCarName[8];
+extern char g_CaptionTotalTime2[8];
 extern unsigned char g_NameEntryCharset[96];
-extern unsigned char g_TextNowLoading[436];
+extern char g_TextNowLoading[436];
 extern unsigned char g_MsgResOk[8];
 extern unsigned char g_MsgEventOk[12];
 extern unsigned char g_MsgGameExit[12];
@@ -158,7 +158,7 @@ extern unsigned char g_ResultPlaceSprites[10];
 extern unsigned char g_ResultPlaceCluts[8];
 extern unsigned char g_ResultPanelCluts[10];
 extern unsigned char g_ClassPlaceBarSizes[8];
-extern unsigned char g_ChanceDigits[12];
+extern char g_ChanceDigits[6][2];
 extern unsigned char g_PlaceSuffixNames[20];
 extern unsigned char g_CarNames[52];
 extern unsigned char g_CarClassNames[52];
@@ -178,8 +178,8 @@ extern ContentLaunchSpeedThreshold g_LaunchSpeedThresholds[5];
 extern unsigned char g_LaunchEnergyThresholds[12];
 extern unsigned char g_TachoNeedleSprite[20];
 extern unsigned char g_CountdownGlyphTable[256];
-extern unsigned char g_ClockTextCells[8];
-extern unsigned char g_RaceOptionMarquee[160];
+extern char g_ClockTextCells[8];
+extern char g_RaceOptionMarquee[4][40];
 extern ContentCarPoint g_CarCollisionCorners[4];
 typedef struct StartGridSceneryStep {
     int16_t x;
@@ -235,45 +235,47 @@ typedef struct HostStateBlob {
     unsigned long size;
 } HostStateBlob;
 
+#define BYTES(value) ((const unsigned char *)(value))
+
 static const HostStateBlob s_blobs[] = {
-    {"g_MsgInsertController", g_MsgInsertController, 20},
-    {"g_MsgControllerError", g_MsgControllerError, 20},
-    {"g_MsgNegconUntwistedLine1", g_MsgNegconUntwistedLine1, 36},
-    {"g_MsgNegconUntwistedLine2", g_MsgNegconUntwistedLine2, 36},
-    {"g_MsgNegconSteerPlay", g_MsgNegconSteerPlay, 12},
-    {"g_MsgNegconMaxTwist", g_MsgNegconMaxTwist, 2640},
-    {"g_FmtRound", g_FmtRound, 16},
-    {"g_CaptionPrizeMoney2", g_CaptionPrizeMoney2, 8},
-    {"g_FmtPrize1st", g_FmtPrize1st, 12},
-    {"g_FmtPrize2nd", g_FmtPrize2nd, 12},
-    {"g_FmtPrize3rd", g_FmtPrize3rd, 12},
-    {"g_CaptionBestTotalTime", g_CaptionBestTotalTime, 8},
-    {"g_CaptionBestLapTime", g_CaptionBestLapTime, 188},
-    {"g_TextResult", g_TextResult, 8},
-    {"g_FmtClassGrandPrix", g_FmtClassGrandPrix, 24},
-    {"g_FmtRoundIn", g_FmtRoundIn, 12},
-    {"g_CaptionRanking", g_CaptionRanking, 8},
-    {"g_CaptionTotalTime", g_CaptionTotalTime, 8},
-    {"g_CaptionLapTime", g_CaptionLapTime, 8},
-    {"g_CaptionPrizeMoney", g_CaptionPrizeMoney, 8},
-    {"g_FmtMoney", g_FmtMoney, 8},
-    {"g_CaptionTotalMoney", g_CaptionTotalMoney, 8},
-    {"g_CaptionPromotionBonus", g_CaptionPromotionBonus, 40},
-    {"g_CaptionLostRace", g_CaptionLostRace, 24},
-    {"g_TextTryAgain", g_TextTryAgain, 12},
-    {"g_TextEndRace", g_TextEndRace, 12},
-    {"g_TextChance", g_TextChance, 8},
-    {"g_TextPressStart", g_TextPressStart, 20},
-    {"g_FmtLapTime", g_FmtLapTime, 16},
-    {"g_TextTimeAttack", g_TextTimeAttack, 12},
-    {"g_TextCourseIn", g_TextCourseIn, 192},
-    {"g_CaptionLapTime2", g_CaptionLapTime2, 8},
-    {"g_CaptionRanking2", g_CaptionRanking2, 8},
-    {"g_FmtRecordName", g_FmtRecordName, 8},
-    {"g_FmtCarName", g_FmtCarName, 8},
-    {"g_CaptionTotalTime2", g_CaptionTotalTime2, 8},
+    {"g_MsgInsertController", BYTES(g_MsgInsertController), 20},
+    {"g_MsgControllerError", BYTES(g_MsgControllerError), 20},
+    {"g_MsgNegconUntwistedLine1", BYTES(g_MsgNegconUntwistedLine1), 36},
+    {"g_MsgNegconUntwistedLine2", BYTES(g_MsgNegconUntwistedLine2), 36},
+    {"g_MsgNegconSteerPlay", BYTES(g_MsgNegconSteerPlay), 12},
+    {"g_MsgNegconMaxTwist", BYTES(g_MsgNegconMaxTwist), 2640},
+    {"g_FmtRound", BYTES(g_FmtRound), 16},
+    {"g_CaptionPrizeMoney2", BYTES(g_CaptionPrizeMoney2), 8},
+    {"g_FmtPrize1st", BYTES(g_FmtPrize1st), 12},
+    {"g_FmtPrize2nd", BYTES(g_FmtPrize2nd), 12},
+    {"g_FmtPrize3rd", BYTES(g_FmtPrize3rd), 12},
+    {"g_CaptionBestTotalTime", BYTES(g_CaptionBestTotalTime), 8},
+    {"g_CaptionBestLapTime", BYTES(g_CaptionBestLapTime), 188},
+    {"g_TextResult", BYTES(g_TextResult), 8},
+    {"g_FmtClassGrandPrix", BYTES(g_FmtClassGrandPrix), 24},
+    {"g_FmtRoundIn", BYTES(g_FmtRoundIn), 12},
+    {"g_CaptionRanking", BYTES(g_CaptionRanking), 8},
+    {"g_CaptionTotalTime", BYTES(g_CaptionTotalTime), 8},
+    {"g_CaptionLapTime", BYTES(g_CaptionLapTime), 8},
+    {"g_CaptionPrizeMoney", BYTES(g_CaptionPrizeMoney), 8},
+    {"g_FmtMoney", BYTES(g_FmtMoney), 8},
+    {"g_CaptionTotalMoney", BYTES(g_CaptionTotalMoney), 8},
+    {"g_CaptionPromotionBonus", BYTES(g_CaptionPromotionBonus), 40},
+    {"g_CaptionLostRace", BYTES(g_CaptionLostRace), 24},
+    {"g_TextTryAgain", BYTES(g_TextTryAgain), 12},
+    {"g_TextEndRace", BYTES(g_TextEndRace), 12},
+    {"g_TextChance", BYTES(g_TextChance), 8},
+    {"g_TextPressStart", BYTES(g_TextPressStart), 20},
+    {"g_FmtLapTime", BYTES(g_FmtLapTime), 16},
+    {"g_TextTimeAttack", BYTES(g_TextTimeAttack), 12},
+    {"g_TextCourseIn", BYTES(g_TextCourseIn), 192},
+    {"g_CaptionLapTime2", BYTES(g_CaptionLapTime2), 8},
+    {"g_CaptionRanking2", BYTES(g_CaptionRanking2), 8},
+    {"g_FmtRecordName", BYTES(g_FmtRecordName), 8},
+    {"g_FmtCarName", BYTES(g_FmtCarName), 8},
+    {"g_CaptionTotalTime2", BYTES(g_CaptionTotalTime2), 8},
     {"g_NameEntryCharset", g_NameEntryCharset, 96},
-    {"g_TextNowLoading", g_TextNowLoading, 436},
+    {"g_TextNowLoading", BYTES(g_TextNowLoading), 436},
     {"g_MsgResOk", g_MsgResOk, 8},
     {"g_MsgEventOk", g_MsgEventOk, 12},
     {"g_MsgGameExit", g_MsgGameExit, 12},
@@ -344,7 +346,7 @@ static const HostStateBlob s_blobs[] = {
     {"g_ResultPlaceCluts", g_ResultPlaceCluts, 8},
     {"g_ResultPanelCluts", g_ResultPanelCluts, 10},
     {"g_ClassPlaceBarSizes", g_ClassPlaceBarSizes, 8},
-    {"g_ChanceDigits", g_ChanceDigits, 12},
+    {"g_ChanceDigits", BYTES(g_ChanceDigits), 12},
     {"g_PlaceSuffixNames", g_PlaceSuffixNames, 20},
     {"g_CarNames", g_CarNames, 52},
     {"g_CarClassNames", g_CarClassNames, 52},
@@ -373,8 +375,8 @@ static const HostStateBlob s_blobs[] = {
     {"g_LaunchEnergyThresholds", g_LaunchEnergyThresholds, 12},
     {"g_TachoNeedleSprite", g_TachoNeedleSprite, 20},
     {"g_CountdownGlyphTable", g_CountdownGlyphTable, 256},
-    {"g_ClockTextCells", g_ClockTextCells, 8},
-    {"g_RaceOptionMarquee", g_RaceOptionMarquee, 160},
+    {"g_ClockTextCells", BYTES(g_ClockTextCells), 8},
+    {"g_RaceOptionMarquee", BYTES(g_RaceOptionMarquee), 160},
     {"g_CarCollisionCorners", (const unsigned char *)g_CarCollisionCorners,
      sizeof(g_CarCollisionCorners)},
     {"g_StartGridSceneryStep",
