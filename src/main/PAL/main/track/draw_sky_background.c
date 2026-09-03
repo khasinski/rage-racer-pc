@@ -34,6 +34,12 @@ enum SkyOrderingTableIndex {
     SKY_OT_FAR = 702,
     SKY_OT_NEAR = 703,
 };
+
+enum {
+    SKY_TEXTURE_PAGE = 0x18,
+    SKY_TEXTURE_CLUT = 0x798E,
+    SKY_TEXTURE_NEUTRAL_COLOR = 0x80,
+};
 /*
  * The sky's geometry for this frame: where the bands start on screen, how far
  * a step along each axis moves, and the roll they were rotated by. The band
@@ -254,6 +260,18 @@ static void SetSkyQuadUV(POLY_FT4 *quad, const SkyTileUV *tile) {
     quad->v3 = tile->corner[3].bytes.v;
 }
 
+static void InitializeTexturedSkyQuad(POLY_FT4 *quad,
+                                      const SkyTileUV *tile) {
+    SetPolyFT4(quad);
+    SetShadeTex(quad, 0);
+    quad->tpage = SKY_TEXTURE_PAGE;
+    quad->clut = SKY_TEXTURE_CLUT;
+    quad->r0 = SKY_TEXTURE_NEUTRAL_COLOR;
+    quad->g0 = SKY_TEXTURE_NEUTRAL_COLOR;
+    quad->b0 = SKY_TEXTURE_NEUTRAL_COLOR;
+    SetSkyQuadUV(quad, tile);
+}
+
 static u8 *DrawTexturedSkyGrid(SkyFrame *work, const SkyBandSetup *band,
                                u8 *packet) {
     s32 rowShearX = 0;
@@ -276,10 +294,7 @@ static u8 *DrawTexturedSkyGrid(SkyFrame *work, const SkyBandSetup *band,
             s32 rightX = nextCellX - rowShearX;
             s32 topY = cellY - rowShearY;
             s32 bottomY = nextCellY - rowShearY;
-            SetPolyFT4(quad);
-            SetShadeTex(quad, 0);
-            quad->tpage = 0x18;
-            SetSkyQuadUV(quad, tileUv);
+            InitializeTexturedSkyQuad(quad, tileUv);
             screenX[0] = Fixed8ToScreen(leftX);
             screenX[1] = Fixed8ToScreen(rightX);
             screenX[2] = Fixed8ToScreen(leftX + band->rowStepX);
@@ -292,10 +307,6 @@ static u8 *DrawTexturedSkyGrid(SkyFrame *work, const SkyBandSetup *band,
             quad->y1 = Fixed8ToScreen(bottomY);
             quad->y2 = Fixed8ToScreen(topY + band->rowStepY);
             quad->y3 = Fixed8ToScreen(bottomY + band->rowStepY);
-            quad->r0 = 0x80;
-            quad->g0 = 0x80;
-            quad->b0 = 0x80;
-            quad->clut = 0x798E;
             AddPrim(&work->orderingTable[SKY_OT_NEAR], quad);
 
             packet = (u8 *)(quad + 1);
@@ -343,10 +354,7 @@ static u8 *DrawHorizonTileStrip(SkyFrame *work, const SkyBandSetup *band,
                 [(band->textureColumn + column) &
                  (SKY_TILE_MAP_COLUMNS - 1)];
             const SkyTileUV *tileUv = &g_SkyTileUV[tileIndex];
-            SetPolyFT4(quad);
-            SetShadeTex(quad, 0);
-            quad->tpage = 0x18;
-            SetSkyQuadUV(quad, tileUv);
+            InitializeTexturedSkyQuad(quad, tileUv);
             quad->x0 = screenX[0];
             quad->x1 = screenX[1];
             quad->x2 = screenX[2];
@@ -355,10 +363,6 @@ static u8 *DrawHorizonTileStrip(SkyFrame *work, const SkyBandSetup *band,
             quad->y1 = Fixed8ToScreen(nextPanelY);
             quad->y2 = Fixed8ToScreen(panelY + band->rowStepY);
             quad->y3 = Fixed8ToScreen(nextPanelY + band->rowStepY);
-            quad->r0 = 0x80;
-            quad->g0 = 0x80;
-            quad->b0 = 0x80;
-            quad->clut = 0x798E;
             AddPrim(&work->orderingTable[SKY_OT_NEAR], quad);
             packet = (u8 *)(quad + 1);
         }

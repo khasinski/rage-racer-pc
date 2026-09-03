@@ -94,17 +94,32 @@ static int TestSkyGradientPaletteSlots(void) {
     PacketStorage packets;
     GameOrderingTableEntry orderingTable[GAME_FRAME_OT_LENGTH];
     POLY_G4 *gradient;
+    POLY_FT4 *horizonTile;
     u8 *packetEnd;
 
     PrepareFrame(&packets, orderingTable);
     g_CourseIndex = 2;
     g_SkyRowBase = 0;
+    /* Column zero is fully left of the viewport; column one is the first
+     * emitted tile and samples map column five at yaw zero. */
+    g_SkyTileMap[0][5] = 3;
+    g_SkyTileUV[3].corner[0].bytes.u = 11;
+    g_SkyTileUV[3].corner[0].bytes.v = 12;
+    g_SkyTileUV[3].corner[3].bytes.u = 31;
+    g_SkyTileUV[3].corner[3].bytes.v = 32;
     g_EnvironmentColors.fields.slots[ENV_SKY_MIDDLE].cur.bytes.r = 10;
     g_EnvironmentColors.fields.slots[ENV_SKY_HORIZON].cur.bytes.r = 20;
     g_EnvironmentColors.fields.slots[ENV_SKY_TOP].cur.bytes.r = 30;
 
     DrawSkyBackground();
 
+    horizonTile = (POLY_FT4 *)(void *)packets.bytes;
+    CHECK(horizonTile->x0 == -32 && horizonTile->x1 == 32);
+    CHECK(horizonTile->u0 == 11 && horizonTile->v0 == 12);
+    CHECK(horizonTile->u3 == 31 && horizonTile->v3 == 32);
+    CHECK(horizonTile->tpage == 0x18 && horizonTile->clut == 0x798E);
+    CHECK(horizonTile->r0 == 0x80 && horizonTile->g0 == 0x80 &&
+          horizonTile->b0 == 0x80);
     packetEnd = g_RenderState.packetCursor;
     gradient = (POLY_G4 *)(void *)(packetEnd - 4 * sizeof(POLY_G4));
     CHECK(gradient[0].r0 == 10 && gradient[0].r2 == 20);
