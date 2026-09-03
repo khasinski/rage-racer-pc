@@ -82,7 +82,7 @@ int ModAssetLoad(int index, void *destination, unsigned int originalSize) {
     if (file == NULL) return 0;
 
     room = PortAssetRoomAt(destination);
-    if (room != 0 && (size_t)size > room) {
+    if (room == 0 || (size_t)size > room) {
         fclose(file);
         fprintf(stderr,
                 "rage-port: override for asset %d is %ld bytes with %zu available; using the original\n",

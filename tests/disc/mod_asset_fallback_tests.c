@@ -77,6 +77,10 @@ int main(void) {
     EXPECT(ModAssetLoad(1, destination, 2) == 0);
     EXPECT(destination[0] == 0xA5 && destination[15] == 0xA5);
 
+    s_room = 0;
+    EXPECT(ModAssetLoad(0, destination, 2) == 0);
+    EXPECT(destination[0] == 0xA5 && destination[15] == 0xA5);
+
     EXPECT(ModAssetLoad(2, destination, 2) == 0);
     unlink(asset0);
     unlink(asset1);
