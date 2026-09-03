@@ -2,6 +2,7 @@
 #include "game/race.h"
 #include "game/car.h"
 #include "game/car_internal.h"
+#include "game/integer.h"
 #include "game/random.h"
 
 #include "rage/trace.h"
@@ -17,13 +18,19 @@ enum {
 static void IntegratePlayerHorizontalPosition(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
 
-    car->x -= car->motionX;
-    car->z -= car->motionZ;
+    car->x = WrapSigned32((int64_t)car->x - car->motionX);
+    car->z = WrapSigned32((int64_t)car->z - car->motionZ);
     CalculatePlayerBodyOffset(car);
-    car->x += car->motionX +
-              drive->accelPos * PEDAL_POSITION_SCALE / PEDAL_POSITION_DIVISOR;
-    car->z += car->motionZ +
-              drive->brakePos * PEDAL_POSITION_SCALE / PEDAL_POSITION_DIVISOR;
+    car->x = WrapSigned32((int64_t)car->x + car->motionX);
+    car->x = WrapSigned32(
+        (int64_t)car->x +
+        WrapSigned32((int64_t)drive->accelPos * PEDAL_POSITION_SCALE) /
+            PEDAL_POSITION_DIVISOR);
+    car->z = WrapSigned32((int64_t)car->z + car->motionZ);
+    car->z = WrapSigned32(
+        (int64_t)car->z +
+        WrapSigned32((int64_t)drive->brakePos * PEDAL_POSITION_SCALE) /
+            PEDAL_POSITION_DIVISOR);
 }
 
 static void ApplyGearShiftBodyPitch(PlayerCarRuntime *car) {
@@ -31,11 +38,14 @@ static void ApplyGearShiftBodyPitch(PlayerCarRuntime *car) {
 
     if (car->drive.shiftRpmDelta == 0) return;
 
-    rpmSurplus = (g_CarSpec->revLimit + g_CarSpec->redline) / 2 -
-                 g_ShiftTargetRpm;
+    rpmSurplus = WrapSigned32(
+        (int64_t)(g_CarSpec->revLimit + g_CarSpec->redline) / 2 -
+        g_ShiftTargetRpm);
     if (rpmSurplus > 0) {
-        car->bodyPitch +=
-            rpmSurplus * Random15() / (SHIFT_PITCH_SCALE * RANDOM15_MAX);
+        s32 pitchKick = WrapSigned32((int64_t)rpmSurplus * Random15()) /
+                        (SHIFT_PITCH_SCALE * RANDOM15_MAX);
+
+        car->bodyPitch = WrapSigned32((int64_t)car->bodyPitch + pitchKick);
     }
 }
 
@@ -82,9 +92,11 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     }
 
     CopyPlayerBodyRotationToModel(car);
-    car->bodyRoll += car->bodyRollVelocity;
+    car->bodyRoll = WrapSigned32(
+        (int64_t)car->bodyRoll + car->bodyRollVelocity);
     car->modelY = car->y;
-    groundHeight = car->y - PLAYER_BODY_GROUND_OFFSET;
+    groundHeight = WrapSigned32(
+        (int64_t)car->y - PLAYER_BODY_GROUND_OFFSET);
 
     UpdatePlayerJump(car, groundHeight);
 

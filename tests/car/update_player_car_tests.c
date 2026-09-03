@@ -3,6 +3,7 @@
 #include "game/race.h"
 #include "game/state.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -203,6 +204,25 @@ int main(void) {
     CHECK(s_shiftMapping == 1);
     CHECK(car.bodyPitch > 0);
     CHECK(s_responseSkid == 3 && s_responseCrash == 1);
+
+    Reset(&car);
+    car.x = INT_MIN;
+    car.z = INT_MAX;
+    car.y = INT_MIN;
+    car.motionX = INT_MAX;
+    car.motionZ = INT_MIN;
+    car.drive.accelPos = INT_MAX;
+    car.drive.brakePos = INT_MIN;
+    car.drive.shiftRpmDelta = 1;
+    car.bodyPitch = INT_MAX;
+    car.bodyRoll = INT_MAX;
+    car.bodyRollVelocity = INT_MAX;
+    g_ShiftTargetRpm = -100000;
+    UpdatePlayerCar(&car);
+    CHECK(car.x == 6 && car.z == 6);
+    CHECK(car.bodyPitch == 2147483407);
+    CHECK(car.bodyRoll == -2);
+    CHECK(s_jumpGround == 2147483640);
 
     if (s_failures != 0) {
         printf("%d player update orchestration checks failed\n", s_failures);
