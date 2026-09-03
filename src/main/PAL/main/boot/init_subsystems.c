@@ -8,8 +8,6 @@
 #include "game/render_internal.h"
 #include "game/replay_internal.h"
 #include "game/state.h"
-#include "psyq/kernel.h"
-#include "psyq/snd.h"
 
 enum {
     DEFAULT_PAD_VALIDATION_FRAMES = 0x21,
@@ -41,7 +39,6 @@ static void FinalizeBootCamera(void) {
 void InitSubsystems(void) {
     /* Keep this order explicit: save defaults also applies audio settings,
      * while the camera matrix must see the final boot view. */
-    ssinit();
     InitSoundRuntime();
 
     ResetGraph(0);
@@ -49,7 +46,6 @@ void InitSubsystems(void) {
     SetDispMask(0);
     g_ScreenOffsetY = 0;
     g_ScreenOffsetX = 0;
-    SetDMAInterruptState(1);
     InitGeom();
 
     GameInitPad();

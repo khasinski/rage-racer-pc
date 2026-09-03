@@ -15,7 +15,6 @@ long VSync(long mode);
 void waitVSync(long target, long timeoutFrames);
 void ChangeClearRCnt(long clear);
 void ChangeClearInterruptMask(long index, long clear);
-void KernelCallbackSlot3(void);
 long KernelCallbackSlot2();
 /* BIOS DMA callback installer: spec 0=MDECin 1=MDECout 2=GPU 3=CD-ROM 4=SPU.
  * Was declared ResetCallback here; that was wrong. */
@@ -50,7 +49,6 @@ void *startIntrDMA(void);
 void intrDMADispatcher(void);
 u_long setIntrDMA(long index, u_long callback);
 void clearIntrDMACallbacks(u_long *dst, long count);
-long SetDMAInterruptState(long value);
 long GetDMAInterruptState(void);
 
 /* LibRef47 narrows `target` to unsigned short; kept long here because narrowing

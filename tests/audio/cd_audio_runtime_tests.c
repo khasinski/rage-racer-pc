@@ -28,7 +28,6 @@ static s32 s_hostEnded;
 static s32 s_buildCalls;
 static s32 s_setVolume;
 static s32 s_cdCommand;
-static s32 s_spuInputCalls;
 static s32 s_serialVolumeCalls;
 
 void StepCdTrackRequest(void) { s_trackSteps++; }
@@ -38,12 +37,6 @@ void StepCdVolumeFade(void) { s_fadeSteps++; }
 s32 HostCdAudioEnded(void) { return s_hostEnded; }
 void BuildCdTrackTable(void) { s_buildCalls++; }
 void SetCdVolume(s32 volume) { s_setVolume = volume; }
-
-void SsSetSpuInputAttr(u8 arg0, u8 arg1, u8 arg2) {
-    if (arg0 == 0 && arg1 == 0 && arg2 == 1) {
-        s_spuInputCalls++;
-    }
-}
 
 void SsSetSerialVol(u8 channel, short left, short right) {
     if (channel == 0 && left == 0x7fff && right == 0x7fff) {
@@ -90,10 +83,9 @@ static int TestInitialization(void) {
     s_buildCalls = 0;
     s_setVolume = -1;
     s_cdCommand = -1;
-    s_spuInputCalls = 0;
     s_serialVolumeCalls = 0;
     InitCdAudio();
-    CHECK(s_spuInputCalls == 1 && s_serialVolumeCalls == 1);
+    CHECK(s_serialVolumeCalls == 1);
     CHECK(s_cdCommand == CD_DRIVE_SET_MODE &&
           g_CdModeParam ==
               (CD_MODE_CDDA | CD_MODE_AUTO_PAUSE | CD_MODE_REPORT));

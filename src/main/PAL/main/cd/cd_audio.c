@@ -11,7 +11,6 @@ enum {
 };
 
 void InitCdAudio(void) {
-    SsSetSpuInputAttr(0, 0, 1);
     SsSetSerialVol(0, 0x7FFF, 0x7FFF);
     g_CdModeParam = CD_AUDIO_MODE;
     CdControl(CD_DRIVE_SET_MODE, &g_CdModeParam, 0);

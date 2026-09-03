@@ -673,12 +673,6 @@ MATRIX *MulMatrix0(MATRIX *left, MATRIX *right, MATRIX *output) {
 }
 
 void BiosBuInit(void) { _bu_init(); }
-void BiosSetMemSize(s32 megabytes) { (void)megabytes; }
-void KernelCallbackSlot3(void) {}
-long SetDMAInterruptState(long value) {
-    (void)value;
-    return 0;
-}
 long BiosFileOpen(void *path, long mode) {
     if (path == NULL) return -1;
     return psyz_open(path, (int)mode);
@@ -719,17 +713,9 @@ void SpuVmDamperStep(void) {
     }
 }
 void SsSeqCloseWrapper(short sequence) { SsSeqClose(sequence); }
-void SsSetSpuInputAttr(unsigned char source, unsigned char field,
-                       unsigned char value) {
-    (void)source;
-    (void)field;
-    (void)value;
-}
 unsigned char SsSetVoiceCount(unsigned char voices) {
     return (unsigned char)SsSetReservedVoice((char)voices);
 }
-void ssinit(void) {}
-
 CdlFILE *DsSearchFile(CdlFILE *file, char *name) {
     const char *marker;
     int track;

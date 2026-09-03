@@ -26,8 +26,6 @@ static s32 s_presentCalls;
 static s32 s_saveTicks;
 static s32 s_textureTicks;
 
-void KernelCallbackSlot3(void) {}
-void BiosSetMemSize(s32 megabytes) { (void)megabytes; }
 long CdInit(void) { return 1; }
 void InitSubsystems(void) {}
 void InitAssetSystem(void) {}

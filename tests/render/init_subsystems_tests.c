@@ -24,12 +24,10 @@ ScreenOffset g_ScreenOffsetY;
 GameRenderState g_RenderState;
 
 enum InitCall {
-    INIT_SOUND_LIBRARY,
     INIT_SOUND_RUNTIME,
     RESET_GRAPH,
     SET_GRAPH_DEBUG,
     HIDE_DISPLAY,
-    ENABLE_DMA_INTERRUPTS,
     INIT_GEOMETRY,
     INIT_PAD,
     INIT_MEMORY_CARD,
@@ -49,7 +47,6 @@ static void RecordCall(enum InitCall call) {
     s_calls[s_callCount++] = call;
 }
 
-void ssinit(void) { RecordCall(INIT_SOUND_LIBRARY); }
 void InitSoundRuntime(void) { RecordCall(INIT_SOUND_RUNTIME); }
 s32 ResetGraph(s32 mode) {
     s_resetGraphMode = mode;
@@ -64,11 +61,6 @@ int SetGraphDebug(int level) {
 void SetDispMask(int enabled) {
     (void)enabled;
     RecordCall(HIDE_DISPLAY);
-}
-long SetDMAInterruptState(long enabled) {
-    (void)enabled;
-    RecordCall(ENABLE_DMA_INTERRUPTS);
-    return 0;
 }
 void InitGeom(void) { RecordCall(INIT_GEOMETRY); }
 void GameInitPad(void) { RecordCall(INIT_PAD); }
@@ -93,8 +85,7 @@ void SetCameraRotMatrix(void) { RecordCall(SET_CAMERA_MATRIX); }
 
 int main(void) {
     static const enum InitCall expectedCalls[] = {
-        INIT_SOUND_LIBRARY, INIT_SOUND_RUNTIME, RESET_GRAPH,
-        SET_GRAPH_DEBUG, HIDE_DISPLAY, ENABLE_DMA_INTERRUPTS,
+        INIT_SOUND_RUNTIME, RESET_GRAPH, SET_GRAPH_DEBUG, HIDE_DISPLAY,
         INIT_GEOMETRY, INIT_PAD, INIT_MEMORY_CARD, APPLY_PAD_MAPPING,
         INIT_RECORDS, INIT_RENDER_STATE,
         INIT_SAVE_DEFAULTS, SET_CAMERA_MATRIX,

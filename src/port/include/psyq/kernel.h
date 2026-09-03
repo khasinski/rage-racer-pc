@@ -14,8 +14,6 @@ typedef struct DirEntry {
     char system[8];
 } DirEntry;
 
-void KernelCallbackSlot3(void);
-long SetDMAInterruptState(long value);
 long BiosFileOpen(void *path, long mode);
 long BiosFileSeek(long fd, long offset, long whence);
 long BiosFileRead(long fd, void *buffer, long length);
@@ -24,6 +22,5 @@ long BiosFileClose(long fd);
 long BiosFormatDevice(void *device);
 void *BiosFirstFile(char *path, void *entry);
 void *BiosNextFile(void *entry);
-void BiosSetMemSize(int megabytes);
 
 #endif

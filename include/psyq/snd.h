@@ -56,7 +56,6 @@ void _SsVmInit(int voices);
 
 void SsSetMVol(short left, short right);
 void SsSetSerialVol(u_char source, short left, short right);
-void SsSetSpuInputAttr(u_char source, u_char field, u_char value);
 long SsSeqOpen(u_char *seqData, long vabId);
 void SsSeqAdvanceChannelDelta(long seq, long channel);
 void SsSeqSetChannelPitchBend(long seq, long channel, long pitch, long amount);
@@ -74,7 +73,6 @@ void SsSeqClose(short seq);
 void SsSeqCloseWrapper(short seq);
 void SsSepCloseWrapper(short seq);
 void _SsInitTables(void);
-void ssinit(void);
 void SsQuit(void);
 void SsStartSoundTick(long mode);
 void SsStartSoundTickMode0(void);

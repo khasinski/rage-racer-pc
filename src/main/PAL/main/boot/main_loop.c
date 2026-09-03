@@ -10,11 +10,8 @@
 #include "game/state.h"
 #include "game/input_internal.h"
 #include "psyq/cd.h"
-#include "psyq/kernel.h"
 
 static void InitializeGameLoop(void) {
-    KernelCallbackSlot3();
-    BiosSetMemSize(2);
     CdInit();
     InitSubsystems();
     InitAssetSystem();
