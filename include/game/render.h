@@ -680,16 +680,11 @@ void DrawProportionalText(s32 x, s32 y, const char *str, s32 clutIndex);
 
 /*
  * Per-object GTE setup: writes (object position - camera position) as an
- * SVECTOR into `work`, runs it through the render state's view matrix at
- * 0x1F800028, scales the result by 4 into work's Matrix translation, then
- * SetRotMatrix(rot) + SetTransMatrix(&work->mtx).
- * `work` layout: SVECTOR @0, VECTOR @8, Matrix @24 (m @24, t @44).
+ * SVECTOR in the shared object workspace, runs it through the render state's
+ * view matrix, scales the result by 4 into the translation matrix, then
+ * installs the supplied rotation and calculated translation in the GTE.
  */
-/* Callers spell the third argument Matrix *, void * or Vec4 *; an empty
- * parameter list lets each keep its own.  The body reads
- * (void *work, void *objectPos, Matrix *rot). */
-void SetGteObjectMatrix(ObjectMatrixWork *work, LVec *position,
-                        Matrix *rotation);
+void SetGteObjectMatrix(LVec *position, Matrix *rotation);
 
 /*
  * The environment colour timeline and the sky it feeds. The state is nine

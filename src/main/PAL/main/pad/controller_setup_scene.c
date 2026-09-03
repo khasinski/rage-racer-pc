@@ -40,7 +40,7 @@ static void BuildControllerPartTransform(Matrix *transform, s32 pitch) {
 }
 
 static void SubmitControllerPart(LVec *position, Matrix *transform, s32 model) {
-    SetGteObjectMatrix(&g_ObjectMatrixWork, position, transform);
+    SetGteObjectMatrix(position, transform);
     g_RenderState.envMode4 = 0;
     SubmitControllerModel(model);
 }

@@ -23,7 +23,7 @@ static void SubmitStaticScenery(const LVec *sourcePosition, s32 yaw,
     BuildRotMatrixY(&objectMatrix, yaw);
     worldMatrix = objectMatrix;
     MulMatrix2(&g_RenderState.matrix, &objectMatrix);
-    SetGteObjectMatrix(&g_ObjectMatrixWork, &position, &objectMatrix);
+    SetGteObjectMatrix(&position, &objectMatrix);
 
     if (g_IsEnvironmentMode4 != 0) {
         g_RenderState.envMode4 = environmentMode;

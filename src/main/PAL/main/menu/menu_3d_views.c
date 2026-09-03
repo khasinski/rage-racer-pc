@@ -136,8 +136,7 @@ void DrawMenuCarView(void) {
      * native pointer-sized slot instead of relying on the absolute-address
      * scalar alias. */
     RENDER_OT_BASE += SHOWROOM_OT_DEPTH_BIAS;
-    SetGteObjectMatrix(&g_ObjectMatrixWork,
-                       AsPositionWords(&showroom->pose.position[0]), &mtxA);
+    SetGteObjectMatrix(AsPositionWords(&showroom->pose.position[0]), &mtxA);
     g_RenderState.envMode4 = 0;
     modelIndex = MenuModelIndexOrFallback(SHOWROOM_FLOOR_MODEL,
                                           g_ModelBankCount);
@@ -192,8 +191,7 @@ void DrawMenuCourseView(void) {
     MulMatrix2(&mtxB, &mtxA);
     MulMatrix2(&g_RenderState.matrix, &mtxA);
     SelectModelBank(SHOWROOM_MODEL_BANK);
-    SetGteObjectMatrix(&g_ObjectMatrixWork,
-                       AsPositionWords(&renderObject->x), &mtxA);
+    SetGteObjectMatrix(AsPositionWords(&renderObject->x), &mtxA);
     g_RenderState.envMode4 = 0;
     courseModelIndex = MenuModelIndexOrFallback(
         CourseSlot(courseModelIndex), g_ModelBankCount);
@@ -253,8 +251,7 @@ void DrawTeamNameCharModel(void) {
     modelIndex = TeamNameCharacterModelIndex(g_TeamNameCharModel,
                                              g_CourseModelCount);
     if (modelIndex >= 0) {
-        SetGteObjectMatrix(&g_ObjectMatrixWork,
-                           AsPositionWords(&position.x), &mtxA);
+        SetGteObjectMatrix(AsPositionWords(&position.x), &mtxA);
         g_RenderState.envMode4 = 0;
         SubmitCourseModel(&g_RenderState, modelIndex);
     }

@@ -42,7 +42,7 @@ static void SubmitAnimatedSceneryLayer(AnimatedSceneryTransform *transform,
     Vec4 *position = &transform->position;
 
     modelId = ModelOrFallback(modelId, g_CourseModelCount);
-    SetGteObjectMatrix(&g_ObjectMatrixWork, AsPosition(position),
+    SetGteObjectMatrix(AsPosition(position),
                        &transform->objectMatrix);
     g_RenderState.envMode4 = tint;
     GameRenderWorldSubmitDynamicCourseOverlay(

@@ -47,7 +47,7 @@ void DrawStartGridScenery(s32 timer) {
 
     modelId = ModelOrFallback(animationFrame + START_GRID_FIRST_MODEL,
                               g_CourseModelCount);
-    SetGteObjectMatrix(&g_ObjectMatrixWork, AsPosition(&position),
+    SetGteObjectMatrix(AsPosition(&position),
                        &objectMatrix);
     g_RenderState.envMode4 = 0;
     GameRenderWorldSubmitDynamicCourseObject(

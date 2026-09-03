@@ -14,7 +14,7 @@ void DrawFlybyScenery(void) {
     BuildSceneryObjectMatrix(&objectMatrix, state->rotationX,
                               state->rotationY, state->rotationZ);
     SelectModelBank(2);
-    SetGteObjectMatrix(&g_ObjectMatrixWork, AsPosition(&state->position),
+    SetGteObjectMatrix(AsPosition(&state->position),
                        &objectMatrix);
     g_RenderState.envMode4 = 0;
     SubmitModel(&g_RenderState, ModelOrFallback(0, g_ModelBankCount));

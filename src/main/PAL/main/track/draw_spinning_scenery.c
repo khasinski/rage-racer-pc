@@ -48,7 +48,7 @@ void DrawSpinningScenery(s32 timer, s32 animate) {
         MulMatrix2(&g_RenderState.matrix, &yawMatrix);
         BuildRotMatrixZ(&objectMatrix, g_SpinningSceneryAngle[spinner]);
         MulMatrix2(&yawMatrix, &objectMatrix);
-        SetGteObjectMatrix(&g_ObjectMatrixWork, &placement->position,
+        SetGteObjectMatrix(&placement->position,
                            &objectMatrix);
 
         g_RenderState.envMode4 = 0;

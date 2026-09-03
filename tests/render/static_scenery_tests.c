@@ -43,9 +43,7 @@ MATRIX *MulMatrix2(MATRIX *left, MATRIX *right) {
     return right;
 }
 
-void SetGteObjectMatrix(ObjectMatrixWork *work, LVec *position,
-                        Matrix *rotation) {
-    (void)work;
+void SetGteObjectMatrix(LVec *position, Matrix *rotation) {
     (void)position;
     (void)rotation;
 }

@@ -3,8 +3,9 @@
 #include "game/state.h"
 
 /* Converts a world-space object position to the camera-relative GTE matrix. */
-void SetGteObjectMatrix(ObjectMatrixWork *work, LVec *position,
-                        Matrix *rotation) {
+void SetGteObjectMatrix(LVec *position, Matrix *rotation) {
+    ObjectMatrixWork *work = &g_ObjectMatrixWork;
+
     work->relative[0] = position->x - RENDER_VIEW_STATE->position.vector.x;
     work->relative[1] = position->y - RENDER_VIEW_STATE->position.vector.y;
     work->relative[2] = position->z - RENDER_VIEW_STATE->position.vector.z;

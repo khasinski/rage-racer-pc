@@ -30,7 +30,7 @@ void DrawShuttleScenery(s32 instance) {
     modelId = SeriesCourseIndex() >= 2 ? 0x3C : 0x3F;
     modelId = ModelOrFallback(modelId, g_CourseModelCount);
 
-    SetGteObjectMatrix(&g_ObjectMatrixWork, AsPosition(&state->position),
+    SetGteObjectMatrix(AsPosition(&state->position),
                        &objectMatrix);
     g_RenderState.envMode4 = 0;
     GameRenderWorldSubmitDynamicCourseObject(
