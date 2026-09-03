@@ -13,6 +13,7 @@
  */
 
 #include "common.h"
+#include "camera_internal.h"
 #include "game/render.h"
 #include "game/track_internal.h"
 #include "game/track_camera_internal.h"
@@ -20,6 +21,7 @@
 #include "game/render_state.h"
 #include "rage/chase_camera.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -307,6 +309,44 @@ int main(void) {
         g_OrbitCameraYaw = 0x100;
         Run(2, view);
         Check("mode 5, orbit behind", view, wanted);
+    }
+
+    /* Camera assets and host state are full-width words. Preserve the PS1's
+     * wrap at their extremes instead of invoking signed-overflow UB. */
+    {
+        GameRenderObject car;
+        GameViewWork extremeView = {0};
+
+        memset(&car, 0, sizeof(car));
+        car.x = INT_MIN;
+        memset(&s_nodes[0], 0, sizeof(s_nodes[0]));
+        s_nodes[0].data.world.x = INT_MAX;
+        s_nodes[0].offset[2] = -0x32;
+        CameraViewFromBlendedNode(&car, &extremeView, 0);
+        if (extremeView.x != INT_MAX || extremeView.angleX != 0 ||
+            extremeView.angleY != 0x400) {
+            printf("FAIL wrapped node aim: x=%d angles=(%d,%d)\n",
+                   extremeView.x, extremeView.angleX, extremeView.angleY);
+            s_failures++;
+        }
+
+        memset(&s_nodes[0], 0, sizeof(s_nodes[0]));
+        s_nodes[0].duration = 2;
+        g_CameraModePrev = TRACK_CAMERA_PATH;
+        g_CamPathNode = 0;
+        g_CamPathFrame = 0;
+        memset(g_CamPathOffsetStart, 0, sizeof(g_CamPathOffsetStart));
+        memset(g_CamPathOffsetDelta, 0, sizeof(g_CamPathOffsetDelta));
+        memset(g_CamPathAngleStart, 0, sizeof(g_CamPathAngleStart));
+        memset(g_CamPathAngleDelta, 0, sizeof(g_CamPathAngleDelta));
+        g_CamPathOffsetStart[0] = INT_MAX;
+        g_CamPathOffsetDelta[0] = INT_MAX;
+        CameraViewFromCamPath(&car, &extremeView, 0, 0);
+        if (g_CamPathOffset[0] != INT_MAX) {
+            printf("FAIL wrapped path interpolation: %d\n",
+                   g_CamPathOffset[0]);
+            s_failures++;
+        }
     }
 
     /*

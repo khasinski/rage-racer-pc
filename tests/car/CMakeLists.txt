@@ -283,6 +283,7 @@ add_executable(track_camera_tests
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c
     $<TARGET_OBJECTS:rage-host-state>)
 target_include_directories(track_camera_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
     ${CMAKE_SOURCE_DIR}/include)
