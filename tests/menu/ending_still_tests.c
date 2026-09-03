@@ -4,6 +4,7 @@
 #include "game/render_internal.h"
 #include "game/state.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -106,6 +107,31 @@ int main(void) {
     CHECK(s_spriteX[1] == 0x100 && s_spriteWidth[1] == 0x40);
     CHECK(s_drawModes[0] == 6 && s_drawModes[1] == 7);
     CHECK(g_RenderState.packetCursor == packets + 24);
+
+    g_SceneTimer = INT_MAX;
+    g_FadeLevel = INT_MAX;
+    g_FadeStep = INT_MAX;
+    UpdateEndingStill();
+    CHECK(g_SceneTimer == INT_MAX);
+    CHECK(g_FadeLevel == 0x100 && g_FadeStep == 0);
+
+    g_SceneTimer = 0;
+    g_FadeLevel = 3;
+    g_FadeStep = INT_MIN;
+    g_SceneId = 34;
+    UpdateEndingStill();
+    CHECK(g_FadeLevel == 0 && g_SceneId == 2);
+
+    g_RenderState.packetCursor = packets;
+    g_DrawBuffer = NULL;
+    s_spriteCount = 0;
+    DrawEndingStill();
+    CHECK(s_spriteCount == 0 && g_RenderState.packetCursor == packets);
+
+    g_DrawBuffer = &s_frame;
+    g_RenderState.packetCursor = NULL;
+    DrawEndingStill();
+    CHECK(s_spriteCount == 0 && g_RenderState.packetCursor == NULL);
 
     puts("ending still tests passed");
     return 0;
