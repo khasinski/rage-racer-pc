@@ -4,6 +4,7 @@
 #include "game/menu.h"
 #include "game/render_state.h"
 
+#include <limits.h>
 #include <stdio.h>
 
 s32 g_CarSelectFadeAccum;
@@ -66,6 +67,9 @@ void DrawSprite(GameOrderingTableEntry *ot, s16 x, s16 y, s16 width, u16 height,
     } while (0)
 
 int main(void) {
+    static GameOrderingTableEntry orderingTable[2];
+
+    RENDER_OT_BASE = orderingTable;
     g_CarSelectFadeAccum = 100;
     CHECK(DrawCarSelectScreen(0) == 0);
     CHECK(s_outlineCount == 0 && s_spriteCount == 0);
@@ -90,6 +94,24 @@ int main(void) {
     s_model.gearCount = 3;
     DrawCarSelectScreen(1);
     CHECK(s_spriteCount == 1);
+
+    s_outlineCount = 0;
+    s_spriteCount = 0;
+    g_PlayerCarIndex = INT_MIN;
+    CHECK(DrawCarSelectScreen(1) == 2);
+    CHECK(s_outlineCount == 0 && s_spriteCount == 0);
+    g_PlayerCarIndex = 0;
+    g_CarModelAsset = NULL;
+    DrawCarSelectScreen(1);
+    CHECK(s_outlineCount == 0 && s_spriteCount == 0);
+    g_CarModelAsset = &s_model;
+    g_CarTable = NULL;
+    DrawCarSelectScreen(1);
+    CHECK(s_outlineCount == 0 && s_spriteCount == 0);
+    g_CarTable = s_cars;
+    RENDER_OT_BASE = NULL;
+    DrawCarSelectScreen(1);
+    CHECK(s_outlineCount == 0 && s_spriteCount == 0);
 
     puts("car select menu tests passed");
     return 0;

@@ -2,6 +2,7 @@
 #include "game/car.h"
 #include "game/menu.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -60,6 +61,19 @@ int main(void) {
     UpdateOwnedCarNeighbours();
     CHECK(g_PrevOwnedCarIndex == 4);
     CHECK(g_NextOwnedCarIndex == -1);
+
+    g_PlayerCarIndex = INT_MIN;
+    UpdateOwnedCarNeighbours();
+    CHECK(g_PrevOwnedCarIndex == -1 && g_NextOwnedCarIndex == -1);
+    g_PlayerCarIndex = INT_MAX;
+    UpdateOwnedCarNeighbours();
+    CHECK(g_PrevOwnedCarIndex == -1 && g_NextOwnedCarIndex == -1);
+    g_CarTable = NULL;
+    g_PlayerCarIndex = 4;
+    UpdateOwnedCarNeighbours();
+    CHECK(g_PrevOwnedCarIndex == -1 && g_NextOwnedCarIndex == -1);
+    g_CarTable = s_cars;
+    g_PlayerCarIndex = 10;
 
     g_MenuAltLayoutSetting = 3;
     g_UiScriptProgress = 99;

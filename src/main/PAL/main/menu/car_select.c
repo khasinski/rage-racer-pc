@@ -13,6 +13,11 @@ static s32 FindOwnedCar(s32 from, s32 step) {
 }
 
 void UpdateOwnedCarNeighbours(void) {
+    if (g_CarTable == NULL || (u32)g_PlayerCarIndex >= GAME_CAR_COUNT) {
+        g_PrevOwnedCarIndex = -1;
+        g_NextOwnedCarIndex = -1;
+        return;
+    }
     g_PrevOwnedCarIndex = FindOwnedCar(g_PlayerCarIndex - 1, -1);
     g_NextOwnedCarIndex = FindOwnedCar(g_PlayerCarIndex + 1, 1);
 }

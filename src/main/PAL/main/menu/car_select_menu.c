@@ -16,6 +16,11 @@ s32 DrawCarSelectScreen(s32 step) {
     }
     AdvanceMenuFade(&g_CarSelectFadeAccum, step);
 
+    if (g_CarTable == NULL || g_CarModelAsset == NULL ||
+        (u32)g_PlayerCarIndex >= GAME_CAR_COUNT || RENDER_OT_BASE == NULL) {
+        return g_CarSelectFadeAccum;
+    }
+
     ot = RENDER_OT_BASE + 1;
     brightness = (u8)(g_CarSelectFadeAccum / 4);
     transmission = g_CarTable[g_PlayerCarIndex].transmission;

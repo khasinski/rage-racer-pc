@@ -27,6 +27,9 @@ int main(void) {
     memset(s_cars, 1, sizeof(s_cars));
     CHECK(CountOwnedCars() == GAME_CAR_COUNT);
 
+    g_CarTable = NULL;
+    CHECK(CountOwnedCars() == 0);
+
     puts("owned car count tests passed");
     return 0;
 }
