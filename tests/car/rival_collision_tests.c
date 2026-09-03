@@ -217,6 +217,12 @@ int main(int argc, char **argv) {
         other->activeFlag = 0;
         car->trackProgress = INT_MAX - 10;
         other->trackProgress = INT_MIN + 9;
+        car->bodyPitch = INT_MAX;
+        car->bodyYaw = INT_MIN;
+        car->bodyRoll = INT_MAX;
+        other->bodyPitch = INT_MIN;
+        other->bodyYaw = INT_MAX;
+        other->bodyRoll = INT_MIN;
         car->acceleration = INT_MAX;
         other->acceleration = INT_MAX;
 

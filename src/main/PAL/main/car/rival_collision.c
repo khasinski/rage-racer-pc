@@ -36,9 +36,9 @@ static void TransformCarHull(const GameCarRuntime *source,
     Matrix matrix;
     s32 corner;
 
-    rotation.vx = (u16)source->bodyPitch;
-    rotation.vy = (u16)source->bodyYaw;
-    rotation.vz = (u16)source->bodyRoll;
+    rotation.vx = WrapSigned16(source->bodyPitch);
+    rotation.vy = WrapSigned16(source->bodyYaw);
+    rotation.vz = WrapSigned16(source->bodyRoll);
     rotation.pad = 0;
     RotMatrix(&rotation, &matrix);
     SetRotMatrix(&matrix);
