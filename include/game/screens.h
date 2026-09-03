@@ -28,6 +28,7 @@ void DrawGrandPrixIntro(void);       /* "CLASS%d %s GRANDPRIX" */
 
 /* Enters the title screen (g_GameModeHandlers slot 3, requested when an attract
  * or real race ends); EnterFrontend is its twin on slot 2. */
+void EnterFrontend(void);
 void EnterTitleScreen(void);
 
 /* The pulsing "PRESS START" sprite: a 112x16 cell at (0x68, 0xC8), brightness

@@ -145,7 +145,6 @@ int HostInitStorage(void) {
     return 1;
 }
 
-void EnterFrontend(void);
 void EnterRaceScene(void);
 void UpdateRaceScene(void);
 void EnterPrizeScreen(void);
