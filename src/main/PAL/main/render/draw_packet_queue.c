@@ -1,6 +1,15 @@
 #include "game/render.h"
 #include "game/render_internal.h"
 
+#include <stdint.h>
+
+static s16 WrapPacketCoordinate(int64_t value) {
+    u16 bits = (u16)value;
+
+    if (bits <= INT16_MAX) return (s16)bits;
+    return (s16)((s32)bits - 0x10000);
+}
+
 static u8 *QueueSpritePacket(GameOrderingTableEntry *ot, u8 *packetCursor,
                              s32 x, s32 y, s32 width, s32 height,
                              s32 textureU, s32 textureV, s32 clutIndex,
@@ -11,10 +20,10 @@ static u8 *QueueSpritePacket(GameOrderingTableEntry *ot, u8 *packetCursor,
     SetSprt(sprite);
     SetShadeTex(sprite, shadeTexture);
     SetSemiTrans(sprite, semiTransparent);
-    sprite->x0 = x;
-    sprite->y0 = y;
-    sprite->w = width;
-    sprite->h = height;
+    sprite->x0 = WrapPacketCoordinate(x);
+    sprite->y0 = WrapPacketCoordinate(y);
+    sprite->w = WrapPacketCoordinate(width);
+    sprite->h = WrapPacketCoordinate(height);
     sprite->u0 = textureU;
     sprite->v0 = textureV;
     sprite->clut = clutIndex;
@@ -61,10 +70,10 @@ u8 *GameQueueLine(GameOrderingTableEntry *ot, u8 *packetCursor, s32 x0,
     LINE_F2 *line = (LINE_F2 *)packetCursor;
 
     SetLineF2(line);
-    line->x0 = x0;
-    line->y0 = y0;
-    line->x1 = x1;
-    line->y1 = y1;
+    line->x0 = WrapPacketCoordinate(x0);
+    line->y0 = WrapPacketCoordinate(y0);
+    line->x1 = WrapPacketCoordinate(x1);
+    line->y1 = WrapPacketCoordinate(y1);
     line->r0 = red;
     line->g0 = green;
     line->b0 = blue;
@@ -88,8 +97,8 @@ u8 *GameQueueShadedTexturedRect(GameOrderingTableEntry *ot, u8 *packetCursor,
                                 s32 x, s32 y, s32 w, s32 h, s32 u, s32 v,
                                 s32 clutIndex, s32 tpage, s32 intensity) {
     POLY_FT4 *packet = (POLY_FT4 *)packetCursor;
-    s16 width = w;
-    s16 height = h;
+    s16 width = WrapPacketCoordinate(w);
+    s16 height = WrapPacketCoordinate(h);
     u8 textureU = u;
     u8 textureV = v;
 
@@ -103,14 +112,16 @@ u8 *GameQueueShadedTexturedRect(GameOrderingTableEntry *ot, u8 *packetCursor,
         textureV -= height;
     }
 
-    packet->x0 = x;
-    packet->y0 = y;
-    packet->x1 = x + (width < 0 ? -width : width);
-    packet->y1 = y;
-    packet->x2 = x;
-    packet->y2 = y + (height < 0 ? -height : height);
-    packet->x3 = x + (width < 0 ? -width : width);
-    packet->y3 = y + (height < 0 ? -height : height);
+    packet->x0 = WrapPacketCoordinate(x);
+    packet->y0 = WrapPacketCoordinate(y);
+    packet->x1 = WrapPacketCoordinate(
+        (int64_t)x + (width < 0 ? -width : width));
+    packet->y1 = WrapPacketCoordinate(y);
+    packet->x2 = WrapPacketCoordinate(x);
+    packet->y2 = WrapPacketCoordinate(
+        (int64_t)y + (height < 0 ? -height : height));
+    packet->x3 = packet->x1;
+    packet->y3 = packet->y2;
     packet->u0 = textureU;
     packet->v0 = textureV;
     packet->u1 = textureU + width;
@@ -132,8 +143,8 @@ u8 *GameQueueTexturedRect(GameOrderingTableEntry *ot, u8 *packetCursor, s32 x,
                           s32 y, s32 w, s32 h, s32 u, s32 v, s32 uSpan,
                           s32 vSpan, s32 clutIndex, s32 tpage) {
     POLY_FT4 *packet = (POLY_FT4 *)packetCursor;
-    s16 width = w;
-    s16 height = h;
+    s16 width = WrapPacketCoordinate(w);
+    s16 height = WrapPacketCoordinate(h);
     u8 textureU = u;
     u8 textureV = v;
 
@@ -147,14 +158,16 @@ u8 *GameQueueTexturedRect(GameOrderingTableEntry *ot, u8 *packetCursor, s32 x,
         textureV -= height + 1;
     }
 
-    packet->x0 = x;
-    packet->y0 = y;
-    packet->x1 = x + (width < 0 ? -width : width);
-    packet->y1 = y;
-    packet->x2 = x;
-    packet->y2 = y + (height < 0 ? -height : height);
-    packet->x3 = x + (width < 0 ? -width : width);
-    packet->y3 = y + (height < 0 ? -height : height);
+    packet->x0 = WrapPacketCoordinate(x);
+    packet->y0 = WrapPacketCoordinate(y);
+    packet->x1 = WrapPacketCoordinate(
+        (int64_t)x + (width < 0 ? -width : width));
+    packet->y1 = WrapPacketCoordinate(y);
+    packet->x2 = WrapPacketCoordinate(x);
+    packet->y2 = WrapPacketCoordinate(
+        (int64_t)y + (height < 0 ? -height : height));
+    packet->x3 = packet->x1;
+    packet->y3 = packet->y2;
     packet->u0 = textureU;
     packet->v0 = textureV;
     packet->u1 = textureU + uSpan;

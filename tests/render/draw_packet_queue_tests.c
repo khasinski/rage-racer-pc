@@ -2,6 +2,7 @@
 #include "game/render.h"
 #include "game/render_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -80,6 +81,15 @@ static void CheckTexturedRect(void) {
     CHECK_EQ(packet->v3, 62, "textured v3");
     CHECK_EQ(packet->clut, 0x222, "textured clut");
     CHECK_EQ(packet->tpage, 0x333, "textured tpage");
+
+    ResetPackets();
+    GameQueueTexturedRect(&s_ot, s_packets.bytes, INT_MAX, INT_MAX, 10, 12,
+                          0, 0, 10, 12, 0, 0);
+    packet = (POLY_FT4 *)s_packets.bytes;
+    CHECK_EQ(packet->x0, -1, "extreme textured x0 wraps");
+    CHECK_EQ(packet->y0, -1, "extreme textured y0 wraps");
+    CHECK_EQ(packet->x3, 9, "extreme textured x3 wraps");
+    CHECK_EQ(packet->y3, 11, "extreme textured y3 wraps");
 }
 
 static void CheckDrawMode(void) {
@@ -103,6 +113,15 @@ static void CheckSpriteVariants(void) {
     CHECK_EQ(sprite->x0, 1, "raw sprite x");
     CHECK_EQ(sprite->h, 4, "raw sprite height");
     CHECK_EQ(sprite->clut, 7, "raw sprite clut");
+
+    ResetPackets();
+    sprite = (SPRT *)s_packets.bytes;
+    GameQueueSprite(&s_ot, s_packets.bytes, INT_MAX, INT_MIN, INT_MAX,
+                    INT_MIN, 0, 0, 0);
+    CHECK_EQ(sprite->x0, -1, "extreme sprite x wraps");
+    CHECK_EQ(sprite->y0, 0, "extreme sprite y wraps");
+    CHECK_EQ(sprite->w, -1, "extreme sprite width wraps");
+    CHECK_EQ(sprite->h, 0, "extreme sprite height wraps");
 
     ResetPackets();
     sprite = (SPRT *)s_packets.bytes;
