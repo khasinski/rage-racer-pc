@@ -64,6 +64,13 @@ static void TestInvalidInputs(void) {
     Check(!DiscCueResolveDataTrack("disc_cue_test.cue", image, sizeof(image),
                                    &offset),
           "rejects an invalid INDEX timestamp");
+    Check(WriteCue("FILE \"track.bin\" BINARY\n"
+                   "TRACK 01 MODE2/2352\n"
+                   "INDEX 01 00:00:00garbage\n"),
+          "writes an INDEX with trailing garbage");
+    Check(!DiscCueResolveDataTrack("disc_cue_test.cue", image, sizeof(image),
+                                   &offset),
+          "rejects trailing INDEX characters");
     Check(WriteCue("FILE \"track.bin\" BINARY\nTRACK 01 MODE2/2352\n"),
           "writes a CUE without an index");
     Check(!DiscCueResolveDataTrack("disc_cue_test.cue", image, sizeof(image),

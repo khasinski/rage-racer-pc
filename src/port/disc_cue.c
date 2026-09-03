@@ -26,7 +26,8 @@ static char *SkipSpace(char *text) {
 static int IsDirective(const char *line, const char *directive) {
     size_t length = strlen(directive);
 
-    return strncasecmp(line, directive, length) == 0 &&
+    return strlen(line) > length &&
+           strncasecmp(line, directive, length) == 0 &&
            isspace((unsigned char)line[length]);
 }
 
@@ -65,14 +66,18 @@ static int ParseIndex(const char *line, long *track_offset) {
     int minute;
     int second;
     int frame;
+    int consumed = 0;
     long sectors;
     long sector_tail;
 
-    if (sscanf(line, "%d %d:%d:%d", &index, &minute, &second, &frame) != 4 ||
+    if (sscanf(line, "%d %d:%d:%d%n", &index, &minute, &second, &frame,
+               &consumed) != 4 ||
         index != 1 || minute < 0 || second < 0 || second >= 60 || frame < 0 ||
         frame >= 75) {
         return 0;
     }
+    while (isspace((unsigned char)line[consumed])) consumed++;
+    if (line[consumed] != '\0') return 0;
     sector_tail = (long)second * 75 + frame;
     if ((long)minute > (LONG_MAX - sector_tail) / (60 * 75)) return 0;
     sectors = (long)minute * 60 * 75 + sector_tail;
