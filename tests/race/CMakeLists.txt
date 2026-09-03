@@ -896,6 +896,26 @@ target_link_libraries(race_time_panel_tests PRIVATE psyz)
 add_test(NAME race_time_panel COMMAND race_time_panel_tests)
 set_tests_properties(race_time_panel PROPERTIES LABELS functional)
 
+add_executable(record_entry_panels_tests
+    record_entry_panels_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/record_entry_panels.c)
+target_include_directories(record_entry_panels_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(record_entry_panels_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(record_entry_panels_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(record_entry_panels_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+target_link_libraries(record_entry_panels_tests PRIVATE psyz)
+add_test(NAME record_entry_panels COMMAND record_entry_panels_tests)
+set_tests_properties(record_entry_panels PROPERTIES LABELS functional)
+
 add_executable(bgm_select_bar_tests
     bgm_select_bar_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/bgm_select_bar.c)
