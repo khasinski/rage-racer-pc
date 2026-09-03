@@ -14,7 +14,7 @@ enum {
 };
 
 /* Return the track crest crossed this frame, or zero when none was crossed. */
-s32 GetCarCrestTrigger(GameCarRuntime *car) {
+s32 GetCarCrestTrigger(const GameCarRuntime *car) {
     s32 low;
     s32 high;
     s32 row;
