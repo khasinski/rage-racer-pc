@@ -3,6 +3,7 @@
 #include "game/render_internal.h"
 #include "game/render_state.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -131,6 +132,18 @@ int main(void) {
     g_CourseCardFace = 0;
     UpdateAndDrawCourseCard();
     CHECK(s_matrixCalls == 0 && s_drawCalls == 0);
+
+    Reset();
+    g_CourseCardSpin = INT_MIN;
+    g_CourseCardSpinTarget = INT_MAX;
+    UpdateAndDrawCourseCard();
+    CHECK(g_CourseCardSpin > INT_MIN && g_CourseCardSpin < INT_MAX);
+
+    Reset();
+    g_CourseCardSpin = INT_MAX;
+    g_CourseCardSpinTarget = INT_MIN;
+    UpdateAndDrawCourseCard();
+    CHECK(g_CourseCardSpin < INT_MAX && g_CourseCardSpin > INT_MIN);
 
     puts("course card easing, face swap, and rendering are preserved");
     return 0;

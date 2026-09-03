@@ -22,15 +22,15 @@ static s32 CourseCardDepth(s32 face) {
 }
 
 static s32 AdvanceCourseCardSpin(void) {
-    s32 delta = g_CourseCardSpinTarget - g_CourseCardSpin;
-    s32 step = 0;
+    int64_t delta = (int64_t)g_CourseCardSpinTarget - g_CourseCardSpin;
+    int64_t step = 0;
 
     if (delta > 0) {
         step = (delta + 12) / 12;
     } else if (delta < 0) {
         step = (delta - 12) / 12;
     }
-    g_CourseCardSpin += step;
+    g_CourseCardSpin = (s32)((int64_t)g_CourseCardSpin + step);
     return g_CourseCardSpin / 1000;
 }
 
