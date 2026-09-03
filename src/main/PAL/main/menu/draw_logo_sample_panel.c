@@ -1,5 +1,7 @@
 #include "game/menu.h"
 
+#include <limits.h>
+
 enum {
     LOGO_SAMPLE_PANEL_LAST_FRAME = 5,
     LOGO_SAMPLE_PANEL_Y = 494,
@@ -20,10 +22,17 @@ void DrawLogoSamplePanel(s32 step, s32 sample) {
         g_LogoSamplePanelSlide = 0;
         return;
     }
+    if (sample < 0) {
+        sample = 0;
+    }
     if (step < 0) {
-        g_LogoSamplePanelSlide += step;
-        if (g_LogoSamplePanelSlide < 0) {
+        int64_t updated = (int64_t)g_LogoSamplePanelSlide + step;
+
+        if (updated < 0) {
             g_LogoSamplePanelSlide = 0;
+        } else {
+            g_LogoSamplePanelSlide =
+                updated > INT_MAX ? INT_MAX : (s32)updated;
         }
     }
 
@@ -55,9 +64,13 @@ void DrawLogoSamplePanel(s32 step, s32 sample) {
                     0xFF);
 
     if (step > 0) {
-        g_LogoSamplePanelSlide += step;
-        if (g_LogoSamplePanelSlide > LOGO_SAMPLE_PANEL_LAST_FRAME) {
+        int64_t updated = (int64_t)g_LogoSamplePanelSlide + step;
+
+        if (updated > LOGO_SAMPLE_PANEL_LAST_FRAME) {
             g_LogoSamplePanelSlide = LOGO_SAMPLE_PANEL_LAST_FRAME;
+        } else {
+            g_LogoSamplePanelSlide =
+                updated < INT_MIN ? INT_MIN : (s32)updated;
         }
     }
 }

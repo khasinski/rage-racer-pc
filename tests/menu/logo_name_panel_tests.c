@@ -3,6 +3,7 @@
 #include "game/render_state.h"
 
 #include <stdio.h>
+#include <limits.h>
 #include <string.h>
 
 s32 g_LogoSamplePanelSlide;
@@ -110,6 +111,18 @@ int main(void) {
     g_LogoSamplePanelSlide = 5;
     DrawLogoSamplePanel(1, 1);
     CHECK(g_LogoSamplePanelSlide == 5 && s_sprites[0].y == 344);
+
+    ResetDraws();
+    g_LogoSamplePanelSlide = INT_MAX;
+    DrawLogoSamplePanel(INT_MAX, -1);
+    CHECK(g_LogoSamplePanelSlide == 5);
+    CHECK(s_sprites[0].u == 0 && s_sprites[1].u == 0);
+
+    ResetDraws();
+    g_LogoSamplePanelSlide = INT_MIN;
+    DrawLogoSamplePanel(-1, 99);
+    CHECK(g_LogoSamplePanelSlide == 0);
+    CHECK(s_sprites[0].u == 72 && s_sprites[1].u == 72);
 
     ResetDraws();
     g_TeamNameLength = 3;
