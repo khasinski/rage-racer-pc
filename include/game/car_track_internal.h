@@ -7,6 +7,11 @@
 #include "game/render.h"
 #include "game/track.h"
 
+enum {
+    CAR_TRACK_WORLD_COORDINATE_SCALE = 4,
+    CAR_TRACK_SURFACE_HEIGHT_SHIFT = 7,
+};
+
 s32 InterpolateCarTrackValue(s32 start, s32 end, s32 alongSegment,
                              s16 segmentLength);
 s32 CarTrackFixed12ToInteger(s32 value);
@@ -24,8 +29,12 @@ static inline s32 CarRaceProgress(const GameCarRuntime *car) {
 
 static inline s32 ClampCarTrackAlongSegment(s32 alongSegment,
                                             s16 segmentLength) {
-    if (alongSegment < 0) return 0;
-    if (alongSegment > segmentLength) return segmentLength;
+    if (alongSegment < 0) {
+        return 0;
+    }
+    if (alongSegment > segmentLength) {
+        return segmentLength;
+    }
     return alongSegment;
 }
 
@@ -49,9 +58,13 @@ static inline void MeasureCarTrackAxes(const GameCarRuntime *car,
     s32 headingSin;
     s32 headingCos;
 
-    offset->vx = WrapSigned16(((u16)car->x - (u16)point->x) * 4);
+    offset->vx = WrapSigned16(
+        ((u16)car->x - (u16)point->x) *
+        CAR_TRACK_WORLD_COORDINATE_SCALE);
     offset->vy = 0;
-    offset->vz = WrapSigned16(((u16)car->z - (u16)point->z) * 4);
+    offset->vz = WrapSigned16(
+        ((u16)car->z - (u16)point->z) *
+        CAR_TRACK_WORLD_COORDINATE_SCALE);
     headingSin = rsin(heading);
     headingCos = rcos(heading);
     *alongSegment = ProjectCarTrackAxis(

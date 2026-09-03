@@ -86,19 +86,23 @@ static void UpdateReplayTrackOrientation(GameCarRuntime *car,
     s32 pointCamber;
 
     work->relativeHeading = WrapSigned16(
-        (u16)car->bodyYaw - 0xC00 + (u16)work->heading);
+        (u16)car->bodyYaw - ANGLE_THREE_QUARTER_TURN +
+        (u16)work->heading);
     work->trackWidth = trackWidth;
     nextCamber = Atan2(trackWidth,
-                       (nextPoint->crossSlope * trackWidth) >> 7);
+                       (nextPoint->crossSlope * trackWidth) >>
+                           CAR_TRACK_SURFACE_HEIGHT_SHIFT);
     pointCamber = Atan2(work->trackWidth,
-                        (point->crossSlope * work->trackWidth) >> 7);
+                        (point->crossSlope * work->trackWidth) >>
+                            CAR_TRACK_SURFACE_HEIGHT_SHIFT);
     work->camberAngle = WrapSigned16(InterpolateCarTrackValue(
         pointCamber, nextCamber, alongSegment, segmentLength));
     work->headingCos = rcos(work->relativeHeading);
     work->headingSin = rsin(work->relativeHeading);
 
     car->modelPitch = WrapSigned16(
-        (work->surfacePitch * work->headingCos) / 4096 +
+        CarTrackFixed12ToInteger(
+            work->surfacePitch * work->headingCos) +
         CarTrackFixed12ToInteger(work->camberAngle * work->headingSin));
     car->modelRoll = WrapSigned16(
         CarTrackFixed12ToInteger(-work->headingCos * work->camberAngle) +

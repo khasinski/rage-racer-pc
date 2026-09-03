@@ -14,6 +14,11 @@ typedef struct {
     int lastTimer;
 } CarTrackTraceConfig;
 
+enum {
+    MINIMUM_SEGMENT_LENGTH = 1,
+    SEGMENT_FRACTION_SHIFT = 10,
+};
+
 static int ShouldTraceCarTrackState(const GameCarRuntime *car) {
     static CarTrackTraceConfig config = {-1, -1, -1, -1};
 
@@ -189,11 +194,13 @@ static void UpdateCarSurfaceOrientation(GameCarRuntime *car,
         point->y, nextPoint->y, alongSegment, segmentLength);
     car->y = WrapSigned32(
         (int64_t)(WrapSigned32(
-            (int64_t)work->crossSlope * lateralOffset) >> 7) +
+            (int64_t)work->crossSlope * lateralOffset) >>
+                  CAR_TRACK_SURFACE_HEIGHT_SHIFT) +
         surfaceHeight);
 
     work->relativeHeading = WrapSigned16(
-        (u16)car->bodyYaw - 0xC00 + (u16)work->heading);
+        (u16)car->bodyYaw - ANGLE_THREE_QUARTER_TURN +
+        (u16)work->heading);
     work->surfacePitch = WrapSigned16(InterpolateCarTrackValue(
         point->surfacePitch, nextPoint->surfacePitch, alongSegment,
         segmentLength));
@@ -202,9 +209,11 @@ static void UpdateCarSurfaceOrientation(GameCarRuntime *car,
         (u16)work->rightHalfWidth + (u16)work->leftHalfWidth);
     work->trackWidth = trackWidth;
     nextCamber = Atan2(trackWidth,
-                       (nextPoint->crossSlope * trackWidth) >> 7);
+                       (nextPoint->crossSlope * trackWidth) >>
+                           CAR_TRACK_SURFACE_HEIGHT_SHIFT);
     pointCamber = Atan2(work->trackWidth,
-                        (point->crossSlope * work->trackWidth) >> 7);
+                        (point->crossSlope * work->trackWidth) >>
+                            CAR_TRACK_SURFACE_HEIGHT_SHIFT);
     work->camberAngle = WrapSigned16(InterpolateCarTrackValue(
         pointCamber, nextCamber, alongSegment, segmentLength));
 
@@ -230,12 +239,16 @@ static void UpdateCarTrackProgress(GameCarRuntime *car, CarTrackWork *work,
 
 static s32 NormalizeLateralOffset(s32 lateralOffset,
                                   const CarTrackWork *work) {
-    if (lateralOffset < 0 && work->leftHalfWidth != 0)
-        return WrapSigned32((int64_t)lateralOffset * 0x400) /
+    if (lateralOffset < 0 && work->leftHalfWidth != 0) {
+        return WrapSigned32(
+                   (int64_t)lateralOffset * ANGLE_QUARTER_TURN) /
                work->leftHalfWidth;
-    if (lateralOffset >= 0 && work->rightHalfWidth != 0)
-        return WrapSigned32((int64_t)lateralOffset * 0x400) /
+    }
+    if (lateralOffset >= 0 && work->rightHalfWidth != 0) {
+        return WrapSigned32(
+                   (int64_t)lateralOffset * ANGLE_QUARTER_TURN) /
                work->rightHalfWidth;
+    }
     return 0;
 }
 
@@ -264,7 +277,9 @@ s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
     point = TrackPoint(trackPointIndex);
     nextPoint = TrackPoint(trackPointIndex + 1);
     work->segmentLength = point->segmentLength;
-    if (WrapSigned16(work->segmentLength) <= 0) work->segmentLength = 1;
+    if (WrapSigned16(work->segmentLength) <= 0) {
+        work->segmentLength = MINIMUM_SEGMENT_LENGTH;
+    }
     work->heading = (u16)point->angle;
     arcIndex = TrackPointArcIndex(point);
     work->arcIndex = (s16)arcIndex;
@@ -283,7 +298,7 @@ s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
                                          lateralOffset);
     alongSegment = ClampCarTrackAlongSegment(
         alongSegment, WrapSigned16(work->segmentLength));
-    car->segmentFraction = (alongSegment << 0xA) /
+    car->segmentFraction = (alongSegment << SEGMENT_FRACTION_SHIFT) /
                            WrapSigned16(work->segmentLength);
     car->normalizedLateralOffset = NormalizeLateralOffset(lateralOffset, work);
     UpdateCarSurfaceOrientation(car, work, point, nextPoint, alongSegment,
