@@ -380,7 +380,8 @@ set_tests_properties(paint_color_screen PROPERTIES LABELS functional)
 
 add_executable(car_shop_menu_tests
     car_shop_menu_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/car_shop_menu.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/car_shop_menu.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/car_spec_panel_animation.c)
 target_include_directories(car_shop_menu_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

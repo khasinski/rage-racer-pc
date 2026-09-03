@@ -1,33 +1,10 @@
 #include "game/car.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/race.h"
 
 s32 DrawCarShopScreen(s32 step) {
-    s32 engineSpecStep = 0;
-
-    if (step == 0) {
-        g_CarShopScreenProgress = 0;
-        return 0;
-    }
-
-    g_CarShopScreenProgress += step;
-    if (step > 0) {
-        if (g_CarShopScreenProgress >= MENU_FADE_COMPLETE) {
-            g_CarShopScreenProgress = MENU_FADE_MAX;
-        }
-    } else {
-        s32 fadeRemaining;
-
-        if (g_CarShopScreenProgress < 0) {
-            g_CarShopScreenProgress = 0;
-        }
-        fadeRemaining = MENU_FADE_MAX - g_CarShopScreenProgress;
-        engineSpecStep = fadeRemaining * fadeRemaining / 2048;
-    }
-
-    DrawCarEngineSpec(engineSpecStep, (u8)(g_CarShopScreenProgress / 4U));
-
-    return g_CarShopScreenProgress;
+    return AdvanceCarSpecPanel(&g_CarShopScreenProgress, step);
 }
 /* Below the last class, the shop previews cars from the class coming next. */
 static s32 IsCarOnOffer(s32 index) {
