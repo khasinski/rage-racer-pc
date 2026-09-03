@@ -59,7 +59,7 @@ s32 PromotionBonusForClass(const s32 *bonuses, s32 bonusCount,
         classIndex >= bonusCount) {
         return 0;
     }
-    return bonuses[classIndex];
+    return bonuses[classIndex] > 0 ? bonuses[classIndex] : 0;
 }
 
 s32 PrizeForRacePosition(const s32 *prizes, s32 prizeCount,
@@ -69,7 +69,7 @@ s32 PrizeForRacePosition(const s32 *prizes, s32 prizeCount,
     if (prizes == NULL || prizeIndex < 0 || prizeIndex >= prizeCount) {
         return 0;
     }
-    return prizes[prizeIndex];
+    return prizes[prizeIndex] > 0 ? prizes[prizeIndex] : 0;
 }
 
 s32 CountClassWins(const ScoreRecord *records, s32 recordCount) {

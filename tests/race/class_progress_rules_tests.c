@@ -64,12 +64,22 @@ int main(void) {
           PromotionBonusForClass(promotionBonuses, 5, 5, 1), 0);
     Check("missing promotion table",
           PromotionBonusForClass(NULL, 5, 0, 1), 0);
+    {
+        const s32 negativeBonuses[1] = {-500};
+        Check("negative promotion bonus",
+              PromotionBonusForClass(negativeBonuses, 1, 0, 1), 0);
+    }
 
     Check("first-place prize", PrizeForRacePosition(prizes, 3, 1), 10000);
     Check("third-place prize", PrizeForRacePosition(prizes, 3, 3), 2500);
     Check("zero-place prize", PrizeForRacePosition(prizes, 3, 0), 0);
     Check("place past prize table", PrizeForRacePosition(prizes, 3, 4), 0);
     Check("missing prize table", PrizeForRacePosition(NULL, 3, 1), 0);
+    {
+        const s32 negativePrizes[1] = {-100};
+        Check("negative race prize",
+              PrizeForRacePosition(negativePrizes, 1, 1), 0);
+    }
 
     Check("money below cap", ClampPrizeMoney(1234), 1234);
     Check("negative money", ClampPrizeMoney(-1), 0);

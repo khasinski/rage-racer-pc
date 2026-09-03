@@ -14,6 +14,7 @@
 #include "game/sound.h"
 #include "game/state.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -288,6 +289,42 @@ int main(void) {
         Check(s_classAdvanced == 0, "a cleared series fades at half the speed",
               s_classAdvanced, 0);
     }
+
+    /* Invalid persisted state recovers without arithmetic overflow or an
+     * endless payout. */
+    Reset(100, -1);
+    g_PrizeScreenState = PRIZE_SCREEN_STATE_INTRO_FADE_IN;
+    g_SceneTimer = INT_MIN;
+    UpdatePrizeMoneyScreen();
+    Check(g_SceneTimer == 0 &&
+              g_PrizeScreenState == PRIZE_SCREEN_STATE_WAIT_FOR_INTRO_CONFIRM,
+          "invalid intro timer recovers", g_SceneTimer, 0);
+
+    Reset(100, 0);
+    g_PrizeScreenState = PRIZE_SCREEN_STATE_COUNT_PRIZE;
+    g_SceneTimer = INT_MAX;
+    g_PrizeCountStep = INT_MAX;
+    g_PadHeld = PAD_CONFIRM;
+    UpdatePrizeMoneyScreen();
+    Check(g_PrizeAmount == 0 && s_progress.money == 100,
+          "fast count saturates its step", g_PrizeAmount, 0);
+
+    Reset(100, 0);
+    g_PrizeScreenState = PRIZE_SCREEN_STATE_COUNT_PRIZE;
+    g_SceneTimer = 120;
+    g_RaceProgress = NULL;
+    UpdatePrizeMoneyScreen();
+    Check(g_PrizeAmount == 0 &&
+              g_PrizeScreenState == PRIZE_SCREEN_STATE_WAIT_TO_FINISH,
+          "missing progress cancels an unsafe payout", g_PrizeAmount, 0);
+
+    Reset(0, 0);
+    g_PrizeScreenState = PRIZE_SCREEN_STATE_FADE_OUT;
+    g_SceneTimer = INT_MAX;
+    UpdatePrizeMoneyScreen();
+    Check(g_SceneTimer == 0x100 && s_classAdvanced == 1,
+          "invalid fade timer saturates before advancing", g_SceneTimer,
+          0x100);
 
     if (s_failures != 0) {
         printf("%d prize screen checks failed\n", s_failures);
