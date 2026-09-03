@@ -1,5 +1,6 @@
 #include "disc_discovery.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,6 +32,30 @@ int DiscPathIsBin(const char *path) { return PathEndsWith(path, ".bin"); }
 
 int DiscPathIsSupportedImage(const char *path) {
     return DiscPathIsCue(path) || DiscPathIsBin(path) || DiscPathIsChd(path);
+}
+
+int DiscReadSavedPath(const char *configPath, char *path, size_t pathSize) {
+    char *lineEnd;
+    FILE *file;
+
+    if (configPath == NULL || path == NULL || pathSize < 2 ||
+        pathSize > INT_MAX) {
+        return 0;
+    }
+    file = fopen(configPath, "r");
+    if (file == NULL || fgets(path, (int)pathSize, file) == NULL) {
+        if (file != NULL) fclose(file);
+        return 0;
+    }
+    lineEnd = strpbrk(path, "\r\n");
+    if (lineEnd == NULL && !feof(file)) {
+        fclose(file);
+        path[0] = '\0';
+        return 0;
+    }
+    fclose(file);
+    if (lineEnd != NULL) *lineEnd = '\0';
+    return path[0] != '\0';
 }
 
 static int BuildCandidate(char *path, size_t pathSize, const char *directory,

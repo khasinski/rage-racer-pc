@@ -33,7 +33,8 @@ static int AcceptSecondImage(void *context, const char *path) {
     return state->attempts == 2;
 }
 
-static int Touch(const char *directory, const char *name) {
+static int WriteFixture(const char *directory, const char *name,
+                        const char *contents) {
     char path[1024];
     FILE *file;
 #ifdef _WIN32
@@ -47,6 +48,10 @@ static int Touch(const char *directory, const char *name) {
         return 0;
     file = fopen(path, "wb");
     if (file == NULL) return 0;
+    if (fputs(contents, file) < 0) {
+        fclose(file);
+        return 0;
+    }
     return fclose(file) == 0;
 }
 
@@ -88,9 +93,9 @@ static int TestDiscoveryContinuesAfterRejection(void) {
     ValidationState state = {0};
 
     CHECK(MakeTemporaryDirectory(directory, sizeof(directory)));
-    CHECK(Touch(directory, "notes.txt"));
-    CHECK(Touch(directory, "RAGE.BIN"));
-    CHECK(Touch(directory, "game.cue"));
+    CHECK(WriteFixture(directory, "notes.txt", ""));
+    CHECK(WriteFixture(directory, "RAGE.BIN", ""));
+    CHECK(WriteFixture(directory, "game.cue", ""));
     CHECK(DiscDiscoverImage(directory, selected, sizeof(selected),
                             AcceptSecondImage, &state));
     CHECK(DiscPathIsSupportedImage(selected));
@@ -98,6 +103,32 @@ static int TestDiscoveryContinuesAfterRejection(void) {
     RemoveFixture(directory, "notes.txt");
     RemoveFixture(directory, "RAGE.BIN");
     RemoveFixture(directory, "game.cue");
+    CHECK(rmdir(directory) == 0);
+    return 0;
+}
+
+static int TestSavedPathRejectsTruncation(void) {
+    char directory[1024];
+    char config[1024];
+    char path[64];
+    int written;
+#ifdef _WIN32
+    const char separator = '\\';
+#else
+    const char separator = '/';
+#endif
+
+    CHECK(MakeTemporaryDirectory(directory, sizeof(directory)));
+    CHECK(WriteFixture(directory, "saved", "a/complete/game.cue\r\n"));
+    written = snprintf(config, sizeof(config), "%s%csaved", directory,
+                       separator);
+    CHECK(written >= 0 && (size_t)written < sizeof(config));
+    memset(path, 'x', sizeof(path));
+    CHECK(!DiscReadSavedPath(config, path, 8));
+    CHECK(path[0] == '\0');
+    CHECK(DiscReadSavedPath(config, path, sizeof(path)));
+    CHECK(strcmp(path, "a/complete/game.cue") == 0);
+    RemoveFixture(directory, "saved");
     CHECK(rmdir(directory) == 0);
     return 0;
 }
@@ -117,6 +148,7 @@ static int TestExtensionsAndArguments(void) {
 
 int main(void) {
     CHECK(TestDiscoveryContinuesAfterRejection() == 0);
+    CHECK(TestSavedPathRejectsTruncation() == 0);
     CHECK(TestExtensionsAndArguments() == 0);
     puts("disc discovery validates candidates instead of trusting extensions");
     return 0;

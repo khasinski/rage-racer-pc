@@ -269,23 +269,19 @@ typedef struct RageHostDisc {
 
 static RageHostDisc g_RageHostDisc;
 
-static int HostReadTextFile(const char *path, char *value, size_t size) {
-    FILE *file = fopen(path, "r");
-    if (file == NULL || fgets(value, (int)size, file) == NULL) {
-        if (file != NULL) fclose(file);
-        return 0;
-    }
-    fclose(file);
-    value[strcspn(value, "\r\n")] = '\0';
-    return value[0] != '\0';
-}
-
 static void HostMakeDiscConfigPath(char *path, size_t size) {
     if (!PlatformUserConfigPath("disc-cue-path", path, size))
         snprintf(path, size, "%s", "disc-cue-path");
 }
 
-static void HostSaveDiscCue(const char *cue) {
+static int HostLoadSavedDiscPath(char *path, size_t size) {
+    char configPath[PATH_MAX];
+
+    HostMakeDiscConfigPath(configPath, sizeof(configPath));
+    return DiscReadSavedPath(configPath, path, size);
+}
+
+static void HostSaveDiscPath(const char *discPath) {
     char directory[PATH_MAX];
     char path[PATH_MAX];
     FILE *file;
@@ -295,16 +291,16 @@ static void HostSaveDiscCue(const char *cue) {
     HostMakeDiscConfigPath(path, sizeof(path));
     file = fopen(path, "w");
     if (file == NULL) return;
-    fputs(cue, file);
+    fputs(discPath, file);
     fputc('\n', file);
     fclose(file);
 }
 
 /* The picker asks the desktop for a path; whether it names a disc this build
  * can read is decided here. */
-static int HostChooseDisc(char *cue, size_t size) {
-    return HostShowDiscPicker(cue, size) && DiscPathIsSupportedImage(cue) &&
-           access(cue, R_OK) == 0;
+static int HostChooseDisc(char *path, size_t size) {
+    return HostShowDiscPicker(path, size) && DiscPathIsSupportedImage(path) &&
+           access(path, R_OK) == 0;
 }
 
 static int HostReadRawSector(void *context, unsigned int sector,
@@ -554,7 +550,6 @@ int HostInitDisc(void) {
     const char *environment_cue = RuntimeConfigGet("disc.image");
     char cue[PATH_MAX];
     char image[PATH_MAX];
-    char config_path[PATH_MAX];
     int choose;
 
     if (environment_cue == NULL || environment_cue[0] == '\0')
@@ -582,21 +577,20 @@ int HostInitDisc(void) {
     /* Remembering the choice means an install that once worked never asks
      * again, so offer a way back to the picker. */
     choose = RuntimeConfigEnabled("disc.choose");
-    HostMakeDiscConfigPath(config_path, sizeof(config_path));
     /* Opening the disc is the test, not whether the cue is still there: its
      * track files move or get deleted on their own, and a cue that no longer
      * resolves has to send the player back to the picker rather than end the
      * session. */
-    if (!choose && HostReadTextFile(config_path, cue, sizeof(cue)) &&
+    if (!choose && HostLoadSavedDiscPath(cue, sizeof(cue)) &&
         HostOpenDisc(cue, image, sizeof(image))) return 1;
     if (!choose && HostOpenAdjacentDisc(cue, sizeof(cue), image,
                                         sizeof(image))) {
-        HostSaveDiscCue(cue);
+        HostSaveDiscPath(cue);
         return 1;
     }
     if (!HostChooseDisc(cue, sizeof(cue)) ||
         !HostOpenDisc(cue, image, sizeof(image))) return 0;
-    HostSaveDiscCue(cue);
+    HostSaveDiscPath(cue);
     return 1;
 }
 
