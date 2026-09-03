@@ -44,7 +44,7 @@ s32 CloseSequenceAudioSlot(void) {
     g_AudioLoadedSlotMask &= ~bit;
     SsUtSetReverbDepth(0, 0);
     _SsVmInit(0);
-    SsSeqCloseWrapper(g_SeqHandle.value);
+    SsSeqClose(g_SeqHandle.value);
     SsVabClose(g_SoundScale.vabIds[AUDIO_SLOT_SEQUENCE]);
     return 1;
 }

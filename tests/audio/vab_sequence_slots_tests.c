@@ -56,7 +56,7 @@ void SsUtSetReverbDepth(short left, short right) {
 void _SsVmInit(int voices) {
     if (voices == 0) s_vmInitCalls++;
 }
-void SsSeqCloseWrapper(short sequence) { s_closedSequence = sequence; }
+void SsSeqClose(short sequence) { s_closedSequence = sequence; }
 void SsVabClose(short vabId) { s_closedVab = vabId; }
 void BiosExit(s32 code) {
     (void)code;

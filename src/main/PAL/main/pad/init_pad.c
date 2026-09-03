@@ -1,3 +1,5 @@
+#include <libapi.h>
+
 #include "game/diagnostics.h"
 #include "game/state.h"
 #include "game/input_internal.h"
@@ -7,7 +9,8 @@
 
 /* Attach the two retail 0x28-byte pad buffers to the host input backend. */
 void GameInitPad(void) {
-    InitPad(g_PadBuffers, 0x28, g_PadBuffers + 0x28, 0x28);
+    (void)InitPAD((char *)g_PadBuffers, 0x28,
+                  (char *)g_PadBuffers + 0x28, 0x28);
 }
 
 /* The live mapping UpdatePadState reads: the pad's eight masks at +0,

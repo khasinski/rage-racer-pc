@@ -21,8 +21,9 @@
 
 void UpdatePadState(void);
 
-void InitPad(void *buf0, int len0, void *buf1, int len1) {
+int InitPAD(char *buf0, int len0, char *buf1, int len1) {
     (void)buf0; (void)len0; (void)buf1; (void)len1;
+    return 1;
 }
 int DiagnosticsEnabled(int channel) { (void)channel; return 0; }
 

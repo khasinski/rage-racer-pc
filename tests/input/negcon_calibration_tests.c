@@ -30,8 +30,9 @@ void UpdatePadState(void);
 
 /* UpdatePadState reaches these; nothing it does on the path under test uses
  * them, and the host backend they belong to has no place in a unit test. */
-void InitPad(void *buf0, int len0, void *buf1, int len1) {
+int InitPAD(char *buf0, int len0, char *buf1, int len1) {
     (void)buf0; (void)len0; (void)buf1; (void)len1;
+    return 1;
 }
 int DiagnosticsEnabled(int channel) { (void)channel; return 0; }
 

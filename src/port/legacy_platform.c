@@ -672,7 +672,6 @@ MATRIX *MulMatrix0(MATRIX *left, MATRIX *right, MATRIX *output) {
     return output;
 }
 
-void BiosBuInit(void) { _bu_init(); }
 long BiosFileOpen(void *path, long mode) {
     if (path == NULL) return -1;
     return psyz_open(path, (int)mode);
@@ -702,9 +701,6 @@ void *BiosNextFile(void *entry) { return nextfile(entry); }
 
 long BiosFormatDevice(void *device) { return format(device); }
 s32 HostCdAudioEnded(void) { return Psyz_CdAudioEnded(); }
-void InitPad(void *buf0, int len0, void *buf1, int len1) {
-    (void)InitPAD((char *)buf0, len0, (char *)buf1, len1);
-}
 void SpuVmDamperStep(void) {
     if (_snd_ev_flag != 1) {
         _snd_ev_flag = 1;
@@ -712,7 +708,6 @@ void SpuVmDamperStep(void) {
         _snd_ev_flag = 0;
     }
 }
-void SsSeqCloseWrapper(short sequence) { SsSeqClose(sequence); }
 unsigned char SsSetVoiceCount(unsigned char voices) {
     return (unsigned char)SsSetReservedVoice((char)voices);
 }

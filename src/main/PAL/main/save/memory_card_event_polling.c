@@ -1,3 +1,5 @@
+#include <libapi.h>
+
 #include "game/memcard.h"
 #include "game/memcard_internal.h"
 
@@ -72,7 +74,7 @@ MemoryCardEvent WaitMemoryCardSwEvent(void) {
     return WaitForEvent(s_swEventHandles);
 }
 void RestartMemoryCard(void) {
-    BiosBuInit();
+    _bu_init();
     g_SaveElapsedTicks = 0;
 }
 

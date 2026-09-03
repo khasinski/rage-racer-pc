@@ -40,7 +40,7 @@ long TestEvent(long event) {
     return s_active[event];
 }
 
-void BiosBuInit(void) { s_buInitCalls++; }
+void _bu_init(void) { s_buInitCalls++; }
 void EnterCriticalSection(void) { s_criticalDepth++; }
 void ExitCriticalSection(void) { s_criticalDepth--; }
 long OpenEvent(unsigned long descriptor, long spec, long mode,

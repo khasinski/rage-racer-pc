@@ -148,7 +148,6 @@ enum { SAVE_NAME_CHARSET_SIZE = 44 };
 extern u8 g_SaveNameCharset[SAVE_NAME_CHARSET_SIZE];
 extern char g_SaveTitleSjis[];
 
-void BiosBuInit(void);
 void DrawMemoryCardMessage(s32 message);
 s32 PollMemoryCardStatus(s32 a, s32 b);
 void DrawMemoryCardScreen(s32 showSlotBar, s32 fromLoadMenu,

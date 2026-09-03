@@ -3,6 +3,7 @@
 #include <psyz/audio.h>
 #include <psyz/cd.h>
 #include <psyz/spu.h>
+#include <libapi.h>
 #include <libetc.h>
 
 #include <stdio.h>
@@ -402,7 +403,7 @@ int main(int argc, char **argv) {
         GameSaveHeaderRow header = {0};
         const int marker = 123456789;
 
-        BiosBuInit();
+        _bu_init();
         if (g_RaceProgress == NULL) {
             fprintf(stderr, "save roundtrip has no active progress slot\n");
             return EXIT_FAILURE;
@@ -429,7 +430,7 @@ int main(int argc, char **argv) {
             g_GrandPrixCars, g_ExtraGrandPrixCars, g_TimeAttackCars
         };
 
-        BiosBuInit();
+        _bu_init();
         if (!LoadMemoryCardSaveSlot(0, &header) ||
             g_ExtraGrandPrixUnlocked != 1 ||
             g_MaxClassReached[0] != 4 || g_MaxClassReached[1] != 5 ||
