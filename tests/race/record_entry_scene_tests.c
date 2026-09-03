@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <limits.h>
 #include <string.h>
 
 #include "game/player_car_internal.h"
@@ -136,6 +137,12 @@ static void Reset(void) {
 
 int main(void) {
     Reset();
+    g_GrandPrixSeries = -1;
+    EnterRecordEntry();
+    CHECK(g_RankingInsertRow == RECORD_TABLE_LENGTH);
+    CHECK(g_TimeRecordInsertRow == RECORD_TABLE_LENGTH);
+
+    Reset();
     g_RecordEntryState = RECORD_ENTRY_STATE_FADE_IN;
     UpdateRecordEntry();
     CHECK(g_RecordEntryState == RECORD_ENTRY_STATE_WAIT_AFTER_LAP_NAME);
@@ -194,6 +201,34 @@ int main(void) {
     CHECK(g_SceneTimer == 256 && g_SceneId == 6);
     CHECK(s_assetRequests == 1);
     CHECK(s_courseIntroDraws == 8);
+
+    Reset();
+    g_RecordEntryState = RECORD_ENTRY_STATE_FADE_IN;
+    g_SceneTimer = 3;
+    UpdateRecordEntry();
+    CHECK(g_SceneTimer == 0);
+    CHECK(g_RecordEntryState == RECORD_ENTRY_STATE_WAIT_AFTER_LAP_NAME);
+
+    Reset();
+    g_RecordEntryState = RECORD_ENTRY_STATE_SWITCH_TO_RACE_RECORD;
+    g_RecordPanelSlide = INT_MIN;
+    UpdateRecordEntry();
+    CHECK(g_RecordPanelSlide == -320);
+    CHECK(g_RecordEntryState == RECORD_ENTRY_STATE_WAIT_TO_FINISH);
+
+    Reset();
+    g_RecordEntryState = RECORD_ENTRY_STATE_EDIT_LAP_NAME;
+    g_RankingInsertRow = -1;
+    UpdateRecordEntry();
+    CHECK(g_RecordEntryState == RECORD_ENTRY_STATE_WAIT_AFTER_LAP_NAME);
+    CHECK(s_writeCount == 0);
+
+    Reset();
+    g_RecordEntryState = RECORD_ENTRY_STATE_FADE_OUT;
+    g_SceneTimer = INT_MAX;
+    g_AnimTimer = INT_MAX;
+    UpdateRecordEntry();
+    CHECK(g_SceneTimer == 256 && g_AnimTimer == INT_MIN);
 
     puts("record entry scene tests passed");
     return 0;

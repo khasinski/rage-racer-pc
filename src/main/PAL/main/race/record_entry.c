@@ -36,6 +36,11 @@ static void InsertRaceRecords(void) {
     g_BestLapIndex = fastestLap.index;
 
     course = SeriesCourseIndex();
+    if ((u32)g_GrandPrixSeries >= RECORD_SERIES_COUNT) {
+        g_RankingInsertRow = RECORD_TABLE_LENGTH;
+        g_TimeRecordInsertRow = RECORD_TABLE_LENGTH;
+        return;
+    }
     g_RankingInsertRow = InsertRaceRecord(
         g_RankingRecords[g_GrandPrixSeries][course], fastestLap.time,
         g_PlayerCarIndex,
@@ -54,7 +59,8 @@ void EnterRecordEntry(void) {
 }
 
 static s32 RecordWasInserted(s32 row) {
-    return (u32)row < RECORD_TABLE_LENGTH;
+    return (u32)g_GrandPrixSeries < RECORD_SERIES_COUNT &&
+           (u32)row < RECORD_TABLE_LENGTH;
 }
 
 static s32 AnyRecordWasInserted(void) {
@@ -63,7 +69,9 @@ static s32 AnyRecordWasInserted(void) {
 }
 
 static void UpdateRecordEntryFadeIn(void) {
-    g_SceneTimer -= RECORD_ENTRY_FADE_IN_STEP;
+    g_SceneTimer = g_SceneTimer <= RECORD_ENTRY_FADE_IN_STEP
+                       ? 0
+                       : g_SceneTimer - RECORD_ENTRY_FADE_IN_STEP;
     DrawFullscreenFadeTile(g_SceneTimer, 0x49);
     if (g_SceneTimer == 0) {
         if (AnyRecordWasInserted()) {
@@ -83,6 +91,12 @@ static void UpdateRecordEntryFadeIn(void) {
 
 static void UpdateLapRecordName(void) {
     s32 course = SeriesCourseIndex();
+
+    if (!RecordWasInserted(g_RankingInsertRow)) {
+        g_RecordEntryState = RECORD_ENTRY_STATE_WAIT_AFTER_LAP_NAME;
+        DrawRankingPanel(0);
+        return;
+    }
 
     if (UpdateRecordNameEntry(g_RankingNameCodes)) {
         g_RecordEntryState = RECORD_ENTRY_STATE_WAIT_AFTER_LAP_NAME;
@@ -114,7 +128,10 @@ static void UpdateAfterLapRecord(void) {
 }
 
 static void UpdateRecordPanelSwitch(void) {
-    g_RecordPanelSlide -= RECORD_ENTRY_PANEL_STEP;
+    g_RecordPanelSlide =
+        g_RecordPanelSlide <= -RECORD_ENTRY_PANEL_WIDTH + RECORD_ENTRY_PANEL_STEP
+            ? -RECORD_ENTRY_PANEL_WIDTH
+            : g_RecordPanelSlide - RECORD_ENTRY_PANEL_STEP;
     DrawRankingPanel(g_RecordPanelSlide);
     DrawTimeRecordPanel(g_RecordPanelSlide + RECORD_ENTRY_PANEL_WIDTH);
     if (g_RecordPanelSlide <= -RECORD_ENTRY_PANEL_WIDTH) {
@@ -130,6 +147,12 @@ static void UpdateRecordPanelSwitch(void) {
 
 static void UpdateRaceRecordName(void) {
     s32 course = SeriesCourseIndex();
+
+    if (!RecordWasInserted(g_TimeRecordInsertRow)) {
+        g_RecordEntryState = RECORD_ENTRY_STATE_WAIT_TO_FINISH;
+        DrawTimeRecordPanel(0);
+        return;
+    }
 
     if (UpdateRecordNameEntry(g_TimeRecordNameCodes)) {
         g_RecordEntryState = RECORD_ENTRY_STATE_WAIT_TO_FINISH;
@@ -157,7 +180,10 @@ static void UpdateBeforeRecordEntryExit(void) {
 }
 
 static void UpdateRecordEntryFadeOut(void) {
-    g_SceneTimer += RECORD_ENTRY_FADE_OUT_STEP;
+    g_SceneTimer =
+        g_SceneTimer >= RECORD_ENTRY_OPAQUE_FADE - RECORD_ENTRY_FADE_OUT_STEP
+            ? RECORD_ENTRY_OPAQUE_FADE
+            : g_SceneTimer + RECORD_ENTRY_FADE_OUT_STEP;
     DrawFullscreenFadeTile(g_SceneTimer, 0x49);
     if ((u32)g_SceneTimer >= RECORD_ENTRY_OPAQUE_FADE) {
         RequestSelectBgmAssets();
@@ -167,7 +193,7 @@ static void UpdateRecordEntryFadeOut(void) {
 }
 
 void UpdateRecordEntry(void) {
-    g_AnimTimer++;
+    g_AnimTimer = (s32)((u32)g_AnimTimer + 1u);
 
     switch (g_RecordEntryState) {
     case RECORD_ENTRY_STATE_INVALID:
