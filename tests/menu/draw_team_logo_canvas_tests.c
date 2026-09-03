@@ -22,6 +22,7 @@
 #include "game/team_logo.h"
 
 #include <stdio.h>
+#include <limits.h>
 #include <string.h>
 
 /* The editor's own state. */
@@ -209,7 +210,9 @@ int main(int argc, char **argv) {
         for (x = 0; x < 16; x++) {
             g_TeamLogoClut[x] = (u16)(0x0421 * x);
             g_TeamLogoFadedClut[x] = 0;
-            g_TeamLogoSwatches[x] = (u16)(0x1111 * x);
+            if (x < 15) {
+                g_TeamLogoSwatches[x] = (u16)(0x1111 * x);
+            }
         }
         memset(ot, 0, sizeof(ot));
         RENDER_OT_BASE = ot;
@@ -276,6 +279,22 @@ int main(int argc, char **argv) {
     if (g_TeamLogoFadeLevel != 0x40 || g_TeamLogoZoomLevel != 0 ||
         g_TeamLogoZoomSpan != 0x220) {
         puts("FAIL logo canvas lower ramp limit");
+        return 1;
+    }
+    g_TeamLogoFadeLevel = INT_MAX;
+    g_TeamLogoZoomLevel = INT_MIN;
+    RampTeamLogoCanvas(INT_MAX, INT_MIN);
+    if (g_TeamLogoFadeLevel != 0x100 || g_TeamLogoZoomLevel != 0 ||
+        g_TeamLogoZoomSpan != 0x220) {
+        puts("FAIL logo canvas extreme ramp limits");
+        return 1;
+    }
+    g_TeamLogoPanelStep = INT_MAX;
+    g_TeamLogoEditorStep = INT_MIN;
+    g_TeamLogoColorCycleAngle = INT_MAX;
+    DrawTeamLogoCanvas(1, -1);
+    if (g_TeamLogoPanelStep != 0x19 || g_TeamLogoEditorStep != 0) {
+        puts("FAIL logo canvas extreme panel steps");
         return 1;
     }
     printf("the logo screen draws the same %d commands over %d states it "

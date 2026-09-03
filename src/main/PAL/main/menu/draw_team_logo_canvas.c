@@ -3,7 +3,9 @@
 #include "game/menu_internal.h"
 
 static u8 LogoPulseShade(void) {
-    return (u8)((rsin((g_TeamLogoColorCycleAngle * 2) % 0x1000) / 64) - 0x41);
+    u32 phase = (u32)g_TeamLogoColorCycleAngle * 2u & 0xFFFu;
+
+    return (u8)((rsin((s32)phase) / 64) - 0x41);
 }
 
 static u8 TeamLogoTexturePage(void) {
@@ -14,26 +16,6 @@ static u8 TeamLogoTexturePage(void) {
 static u8 LogoColorRed(u16 color) { return (u8)((color & 0x1F) << 3); }
 static u8 LogoColorGreen(u16 color) { return (u8)((color & 0x3E0) >> 2); }
 static u8 LogoColorBlue(u16 color) { return (u8)((color & 0x7C00) >> 7); }
-
-static s32 AdvancePanelStep(s32 value, s32 step, s32 maximum) {
-    if (step < 0) {
-        value += step;
-        return value < 0 ? 0 : value;
-    }
-    if (step > 0) {
-        value += step;
-        return value > maximum ? maximum : value;
-    }
-    return value;
-}
-
-static s32 AdvanceBoundedValue(s32 value, s32 step, s32 minimum, s32 maximum) {
-    value += step;
-    if (step > 0) {
-        return value > maximum ? maximum : value;
-    }
-    return value < minimum ? minimum : value;
-}
 
 /*
  * The big canvas: its frame slides down, the brush outline blinks over the
@@ -342,20 +324,21 @@ static void DrawChannelSliders(void *ot, s32 slide) {
  * then dimmed by the fade level into the second CLUT the panels draw with.
  */
 static void AnimateLogoClut(void) {
+    u32 phase = (u32)g_TeamLogoColorCycleAngle;
     s32 fade;
     s32 blue;
     s32 i;
 
     g_TeamLogoClut[0] = 0x8000;
-    g_TeamLogoClut[0] |= ((rsin(g_TeamLogoColorCycleAngle % 0x1000) / 128) + 0x20) >> 3;
-    g_TeamLogoClut[0] |= (((rsin((g_TeamLogoColorCycleAngle + 0x55) % 0x1000) / 128) + 0x20) >> 3)
+    g_TeamLogoClut[0] |= ((rsin((s32)(phase & 0xFFFu)) / 128) + 0x20) >> 3;
+    g_TeamLogoClut[0] |= (((rsin((s32)((phase + 0x55u) & 0xFFFu)) / 128) + 0x20) >> 3)
                          << 5;
-    blue = rsin((g_TeamLogoColorCycleAngle + 0xAA) % 0x1000);
+    blue = rsin((s32)((phase + 0xAAu) & 0xFFFu));
     if (blue < 0) {
         blue += 0x7F;
     }
     g_TeamLogoClut[0] |= (((blue >> 7) + 0x20) >> 3) << 10;
-    g_TeamLogoColorCycleAngle += 0x20;
+    g_TeamLogoColorCycleAngle = (s32)(phase + 0x20u);
 
     fade = g_TeamLogoFadeLevel;
     for (i = 0; i < 16; i++) {
@@ -386,9 +369,11 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep) {
     LoadImage(&g_TeamLogoClutRect, g_TeamLogoClut);
     LoadImage(&g_TeamLogoFadedClutRect, g_TeamLogoFadedClut);
     g_TeamLogoPanelStep =
-        AdvancePanelStep(g_TeamLogoPanelStep, panelStep < 0 ? panelStep : 0, 0x19);
+        AddClampedMenuValue(g_TeamLogoPanelStep,
+                            panelStep < 0 ? panelStep : 0, 0, 0x19);
     g_TeamLogoEditorStep =
-        AdvancePanelStep(g_TeamLogoEditorStep, editorStep < 0 ? editorStep : 0, 0x10);
+        AddClampedMenuValue(g_TeamLogoEditorStep,
+                            editorStep < 0 ? editorStep : 0, 0, 0x10);
     DrawCanvasPanel(ot, g_TeamLogoPanelStep - 0xA);
 
     DrawPreviewPanel(ot, g_TeamLogoPanelStep - 0xE);
@@ -402,13 +387,17 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep) {
     }
 
     g_TeamLogoPanelStep =
-        AdvancePanelStep(g_TeamLogoPanelStep, panelStep > 0 ? panelStep : 0, 0x19);
+        AddClampedMenuValue(g_TeamLogoPanelStep,
+                            panelStep > 0 ? panelStep : 0, 0, 0x19);
     g_TeamLogoEditorStep =
-        AdvancePanelStep(g_TeamLogoEditorStep, editorStep > 0 ? editorStep : 0, 0x10);
+        AddClampedMenuValue(g_TeamLogoEditorStep,
+                            editorStep > 0 ? editorStep : 0, 0, 0x10);
 }
 
 void RampTeamLogoCanvas(s32 stepA, s32 stepB) {
-    g_TeamLogoFadeLevel = AdvanceBoundedValue(g_TeamLogoFadeLevel, stepA, 0x40, 0x100);
-    g_TeamLogoZoomLevel = AdvanceBoundedValue(g_TeamLogoZoomLevel, stepB, 0, 0x100);
+    g_TeamLogoFadeLevel =
+        AddClampedMenuValue(g_TeamLogoFadeLevel, stepA, 0x40, 0x100);
+    g_TeamLogoZoomLevel =
+        AddClampedMenuValue(g_TeamLogoZoomLevel, stepB, 0, 0x100);
     g_TeamLogoZoomSpan = 0x220 - ((g_TeamLogoZoomLevel * 17) / 16);
 }
