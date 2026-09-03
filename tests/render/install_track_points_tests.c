@@ -3,6 +3,7 @@
 #include "game/track_internal.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 GameTrackPoint *g_TrackPoints;
@@ -19,6 +20,9 @@ typedef struct TrackFixture {
 
 int main(void) {
     TrackFixture fixture;
+    TrackPointTable *longTrack;
+    size_t longTrackSize;
+    s32 i;
 
     memset(&fixture, 0, sizeof(fixture));
     fixture.count = 3;
@@ -93,6 +97,46 @@ int main(void) {
         puts("FAIL: truncated point table was published");
         return 1;
     }
+
+    fixture.points[0].segmentLength = 0;
+    if (InstallTrackPoints((TrackPointTable *)&fixture, sizeof(fixture)) != 0 ||
+        g_TrackPoints != NULL) {
+        puts("FAIL: zero-length track segment was published");
+        return 1;
+    }
+    fixture.points[0].segmentLength = 0x8000;
+    if (InstallTrackPoints((TrackPointTable *)&fixture, sizeof(fixture)) != 0 ||
+        g_TrackPoints != NULL) {
+        puts("FAIL: negative signed track segment was published");
+        return 1;
+    }
+    fixture.points[0].segmentLength = 100;
+    fixture.points[0].arcRef = 3;
+    if (InstallTrackPoints((TrackPointTable *)&fixture, sizeof(fixture)) != 0 ||
+        g_TrackPoints != NULL) {
+        puts("FAIL: unknown track curve mode was published");
+        return 1;
+    }
+    fixture.points[0].arcRef = (1 << 4) | TRACK_CURVE_PRIMARY;
+
+    longTrackSize = offsetof(TrackPointTable, points) +
+                    513 * sizeof(GameTrackPoint);
+    longTrack = calloc(1, longTrackSize);
+    if (longTrack == NULL) {
+        puts("FAIL: long track fixture allocation");
+        return 1;
+    }
+    longTrack->count = 513;
+    for (i = 0; i < longTrack->count; i++) {
+        longTrack->points[i].segmentLength = INT16_MAX;
+    }
+    if (InstallTrackPoints(longTrack, longTrackSize) != 0 ||
+        g_TrackPoints != NULL || g_TrackSectionCount != 0) {
+        free(longTrack);
+        puts("FAIL: track length overflowing section count was published");
+        return 1;
+    }
+    free(longTrack);
 
     puts("track point installation preserved");
     return 0;
