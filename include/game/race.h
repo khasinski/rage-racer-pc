@@ -13,11 +13,14 @@ struct GameCarRuntime;
 struct GameRenderSourcePoint;
 struct CarEntry;
 
-enum { GRAND_PRIX_FINAL_CLASS_INDEX = 5 };
+enum {
+    GRAND_PRIX_SERIES_COUNT = 2,
+    GRAND_PRIX_FINAL_CLASS_INDEX = 5,
+};
 
 /* Grand Prix class index, 0-based; displayed as CLASS(n+1). Also the track
- * tier: course asset index = 0x57 + (course << 1) + (class << 3). OVAL is
- * gated to class >= 2. */
+ * tier: course asset index = 0x57 + (CourseSlot(course) << 1) + (class << 3).
+ * OVAL is gated to class >= 2. */
 extern s32 g_GrandPrixClass;
 
 /* Physical course asset selector. Extra GP uses indices 4..7 for its track
@@ -62,7 +65,7 @@ extern s16 g_ExtraGrandPrixUnlocked;
 
 /* Highest class reached per series/save file. Unlocks courses and bounds the
  * attract-demo class roll. Saved at save+0x50. */
-extern s32 g_MaxClassReached[2];
+extern s32 g_MaxClassReached[GRAND_PRIX_SERIES_COUNT];
 
 /* Mirror mode, armed by holding the 0x80C pad combination as the race starts:
  * swaps left/right in steering, body roll, stereo pan and the sound cue. */

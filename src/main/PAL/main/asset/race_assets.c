@@ -82,12 +82,16 @@ static void LoadPlayerCarRaceAssets(void) {
     AudioSlotAsset audioAsset;
     s32 loadedSize;
 
-    if ((u32)carIndex >= GAME_CAR_COUNT) {
+    if ((u32)carIndex >= GAME_CAR_COUNT || g_CarTable == NULL) {
         FailAssetLoad();
         return;
     }
     carAsset = GetCarAssetIndex(carIndex,
                                 g_CarTable[carIndex].modelVariant);
+    if (carAsset < 0) {
+        FailAssetLoad();
+        return;
+    }
 
     loadedSize = LoadAsset(
         CarVariantAssetIndex(ASSET_CAR_2ND_BASE, carAsset),
@@ -150,6 +154,10 @@ static void LoadTrackTextureAssets(void) {
         ASSET_TRACK_1ST_BASE, g_GrandPrixClass, g_CourseIndex);
     s32 loadedSize;
 
+    if (assetIndex < 0) {
+        FailAssetLoad();
+        return;
+    }
     loadedSize = LoadAsset(assetIndex, g_AssetLoadCursor);
     if (loadedSize == 0) return;
 
@@ -166,6 +174,10 @@ static void LoadTrackRuntimeAssets(void) {
         ASSET_TRACK_2ND_BASE, g_GrandPrixClass, g_CourseIndex);
     s32 loadedSize;
 
+    if (assetIndex < 0) {
+        FailAssetLoad();
+        return;
+    }
     loadedSize = LoadAsset(assetIndex, g_AssetLoadCursor);
     if (loadedSize == 0) return;
 
@@ -216,7 +228,13 @@ void LoadGrandPrixScreen(void) {
 
     if (g_AssetLoadState != GRAND_PRIX_SCREEN_LOAD_ASSET) return;
 
-    assetIndex = ASSET_ROUND_SCREEN_BASE + g_GrandPrixSeries * 6 +
+    if ((u32)g_GrandPrixSeries >= GRAND_PRIX_SERIES_COUNT ||
+        (u32)g_GrandPrixClass >= GRAND_PRIX_PRIZE_CLASS_COUNT) {
+        FailAssetLoad();
+        return;
+    }
+    assetIndex = ASSET_ROUND_SCREEN_BASE +
+                 g_GrandPrixSeries * GRAND_PRIX_PRIZE_CLASS_COUNT +
                  g_GrandPrixClass;
     loadedSize = LoadAsset(assetIndex, g_ImageBlockBuffer);
     if (loadedSize != 0) {
@@ -238,6 +256,10 @@ void LoadCourseTextureAssets(void) {
 
     assetIndex = TrackCourseAssetIndex(
         ASSET_TRACK_1ST_BASE, g_GrandPrixClass, g_CourseIndex);
+    if (assetIndex < 0) {
+        FailAssetLoad();
+        return;
+    }
     loadedSize = LoadAsset(assetIndex, g_AssetBase);
     if (loadedSize != 0) {
         g_AssetLoadState = 0;

@@ -17,6 +17,10 @@ static void LoadStandaloneTrackRuntimeAssets(void) {
         ASSET_TRACK_2ND_BASE, g_GrandPrixClass, g_CourseIndex);
     s32 loadedSize;
 
+    if (assetIndex < 0) {
+        FailAssetLoad();
+        return;
+    }
     loadedSize = LoadAsset(assetIndex, g_AssetLoadCursor);
     if (loadedSize == 0) return;
     if (!InstallTrackRuntimeAssetPack(g_AssetLoadCursor, (size_t)loadedSize,

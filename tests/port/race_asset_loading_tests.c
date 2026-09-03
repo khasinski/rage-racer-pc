@@ -67,6 +67,7 @@ static s32 s_enableCdResult;
 static s32 s_resetCdCalls;
 static s32 s_failures;
 static size_t s_assetRoom = SIZE_MAX;
+static s32 s_invalidCarAssetIndex;
 
 size_t PortAssetRoomAt(const void *at) {
     (void)at;
@@ -91,7 +92,9 @@ s32 StartAudioSlotLoad(s32 slot, const AudioSlotAsset *asset) {
 }
 
 s32 PollAudioSlotLoad(void) { return s_pollResult; }
-s32 GetCarAssetIndex(s32 model, s32 grade) { return model * 10 + grade; }
+s32 GetCarAssetIndex(s32 model, s32 grade) {
+    return s_invalidCarAssetIndex ? -1 : model * 10 + grade;
+}
 void GameRenderWorldSetTrackCarAsset(s32 asset) { s_renderCarAsset = asset; }
 s32 UploadImageAsset(GameImageAssetHeaderWord *asset, size_t size) {
     s32 index = s_uploadCount++;
@@ -300,8 +303,24 @@ static void TestVoiceAndCarPhases(void) {
     *(u16 *)(void *)(destination + audioSequenceOffset) = 7;
     memset(cars, 0, sizeof(cars));
     cars[1].modelVariant = 3;
-    g_CarTable = cars;
+    g_CarTable = NULL;
     g_PlayerCarIndex = 1;
+    s_loadAssetIndex = -1;
+    LoadRaceAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              s_loadAssetIndex == -1,
+          "missing car table rejects the race car pack before disc access");
+
+    g_AssetLoadState = 3;
+    g_CarTable = cars;
+    s_invalidCarAssetIndex = 1;
+    LoadRaceAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              s_loadAssetIndex == -1,
+          "invalid car variant rejects the race car pack before disc access");
+
+    g_AssetLoadState = 3;
+    s_invalidCarAssetIndex = 0;
     g_AssetLoadCursor = destination;
     s_renderCarAsset = -1;
     s_loadResult = 0;
@@ -386,6 +405,15 @@ static void TestTrackPhases(void) {
     g_GrandPrixClass = 3;
     g_AssetLoadCursor = storage;
     g_AssetLoadState = 5;
+    g_GrandPrixClass = TRACK_CLASS_COUNT;
+    s_loadAssetIndex = -1;
+    LoadRaceAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              s_loadAssetIndex == -1,
+          "invalid track class rejects texture loading before disc access");
+
+    g_AssetLoadState = 5;
+    g_GrandPrixClass = 3;
     s_loadResult = sizeof(storage);
     s_uploadCount = 0;
     LoadRaceAssets();
@@ -414,6 +442,16 @@ static void TestTrackPhases(void) {
     s_loadResult = 1088;
     s_installCount = 0;
     s_seriesCamera = 0;
+    g_AssetLoadState = 6;
+    g_CourseIndex = TRACK_COURSE_COUNT;
+    s_loadAssetIndex = -1;
+    LoadRaceAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              s_loadAssetIndex == -1 && s_installCount == 0,
+          "invalid track slot rejects runtime loading before disc access");
+
+    g_AssetLoadState = 6;
+    g_CourseIndex = 2;
     LoadRaceAssets();
     Check(s_loadAssetIndex == ASSET_TRACK_2ND_BASE + 28,
           "track runtime asset index");
@@ -516,7 +554,7 @@ static void TestRaceStartAndCourseRequests(void) {
     g_AssetLoadState = 0;
     Check(RequestRaceStart() == 0, "race start request acknowledged");
 
-    g_GrandPrixSeries = 2;
+    g_GrandPrixSeries = 1;
     g_GrandPrixClass = 3;
     g_ImageBlockBuffer = storage;
     s_loadAssetIndex = -1;
@@ -531,11 +569,27 @@ static void TestRaceStartAndCourseRequests(void) {
           "Grand Prix screen waits for an incomplete load");
     s_loadResult = 16;
     LoadGrandPrixScreen();
-    Check(s_loadAssetIndex == ASSET_ROUND_SCREEN_BASE + 15,
+    Check(s_loadAssetIndex == ASSET_ROUND_SCREEN_BASE + 9,
           "Grand Prix screen asset index");
     Check(s_loadDestination == storage && g_ImageBlockSize == 16 &&
               g_AssetLoadState == 0,
           "Grand Prix screen completes after load");
+
+    g_AssetLoadState = 1;
+    g_GrandPrixSeries = GRAND_PRIX_SERIES_COUNT;
+    s_loadAssetIndex = -1;
+    LoadGrandPrixScreen();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              s_loadAssetIndex == -1,
+          "invalid Grand Prix series rejects screen loading");
+
+    g_AssetLoadState = 1;
+    g_GrandPrixSeries = 0;
+    g_GrandPrixClass = GRAND_PRIX_PRIZE_CLASS_COUNT;
+    LoadGrandPrixScreen();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              s_loadAssetIndex == -1,
+          "invalid Grand Prix class rejects screen loading");
 
     g_AssetRequestType = ASSET_REQUEST_IDLE;
     Check(RequestCourseTextureAssets() == 1,
@@ -569,6 +623,14 @@ static void TestRaceStartAndCourseRequests(void) {
     Check(s_loadDestination == storage && g_ImageBlockBuffer == storage + 20 &&
               g_ImageBlockSize == 0 && g_AssetLoadState == 0,
           "standalone course load publishes trailing image buffer");
+
+    g_AssetLoadState = 1;
+    g_CourseIndex = TRACK_COURSE_COUNT;
+    s_loadAssetIndex = -1;
+    LoadCourseTextureAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              s_loadAssetIndex == -1,
+          "invalid standalone track slot is rejected before disc access");
 }
 
 static void TestResidentCourseInstallation(void) {
@@ -635,6 +697,15 @@ static void TestResidentCourseInstallation(void) {
           "track data request initializes loader");
     g_AssetLoadState = 0;
     Check(RequestTrackDataAssets() == 0, "track data request acknowledged");
+
+    g_AssetLoadState = 1;
+    g_GrandPrixClass = 0;
+    g_CourseIndex = TRACK_COURSE_COUNT;
+    s_loadAssetIndex = -1;
+    LoadTrackDataAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              s_loadAssetIndex == -1,
+          "standalone runtime loader rejects a physical course selector");
 }
 
 int main(void) {
