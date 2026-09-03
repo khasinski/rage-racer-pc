@@ -129,10 +129,40 @@ static int TestSkyGradientPaletteSlots(void) {
     return 0;
 }
 
+static int TestInvalidSkyMapFallsBackToFirstTile(void) {
+    PacketStorage packets;
+    GameOrderingTableEntry orderingTable[GAME_FRAME_OT_LENGTH];
+    POLY_FT4 *firstTile;
+
+    PrepareFrame(&packets, orderingTable);
+    g_CourseIndex = 2;
+    g_SkyRowBase = INT32_MAX;
+    g_SkyTileMap[1][4] = SKY_TILE_COUNT;
+    g_SkyTileUV[0].corner[0].bytes.u = 17;
+    g_SkyTileUV[0].corner[0].bytes.v = 23;
+
+    DrawSkyBackground();
+
+    firstTile = (POLY_FT4 *)(void *)packets.bytes;
+    CHECK(firstTile->u0 == 17 && firstTile->v0 == 23);
+    CHECK(g_RenderState.packetCursor ==
+          packets.bytes + 32 * sizeof(POLY_FT4) + sizeof(POLY_G4));
+
+    PrepareFrame(&packets, orderingTable);
+    g_CourseIndex = 2;
+    g_SkyTileMap[1][4] = -1;
+    g_SkyTileUV[0].corner[0].bytes.u = 29;
+    DrawSkyBackground();
+    firstTile = (POLY_FT4 *)(void *)packets.bytes;
+    CHECK(firstTile->u0 == 29);
+    return 0;
+}
+
 int main(void) {
     if (TestNearGroundCourseSkirt() != 0 ||
         TestFarGroundCourseSkirt() != 0 ||
-        TestSkyGradientPaletteSlots() != 0) {
+        TestSkyGradientPaletteSlots() != 0 ||
+        TestInvalidSkyMapFallsBackToFirstTile() != 0) {
         return 1;
     }
     puts("sky packet layout and both course-skirt paths are stable");

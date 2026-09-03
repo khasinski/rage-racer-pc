@@ -272,6 +272,19 @@ static void InitializeTexturedSkyQuad(POLY_FT4 *quad,
     SetSkyQuadUV(quad, tile);
 }
 
+static const SkyTileUV *SkyTileAt(s32 row, s32 column) {
+    s32 tileIndex;
+
+    if ((u32)row >= SKY_TILE_MAP_ROWS) {
+        return &g_SkyTileUV[0];
+    }
+    tileIndex = g_SkyTileMap[row][column & (SKY_TILE_MAP_COLUMNS - 1)];
+    if ((u32)tileIndex >= SKY_TILE_COUNT) {
+        tileIndex = 0;
+    }
+    return &g_SkyTileUV[tileIndex];
+}
+
 static u8 *DrawTexturedSkyGrid(SkyFrame *work, const SkyBandSetup *band,
                                u8 *packet) {
     s32 rowShearX = 0;
@@ -284,10 +297,9 @@ static u8 *DrawTexturedSkyGrid(SkyFrame *work, const SkyBandSetup *band,
 
         for (s32 column = 0; column < 8; column++) {
             POLY_FT4 *quad = (POLY_FT4 *)packet;
-            s16 tileIndex = g_SkyTileMap[(row & 1) + g_SkyRowBase]
-                [(band->textureColumn + column) &
-                 (SKY_TILE_MAP_COLUMNS - 1)];
-            const SkyTileUV *tileUv = &g_SkyTileUV[tileIndex];
+            const SkyTileUV *tileUv = SkyTileAt(
+                (row & 1) + g_SkyRowBase,
+                band->textureColumn + column);
             s32 nextCellX = cellX + band->columnStepX;
             s32 nextCellY = cellY + band->columnStepY;
             s32 leftX = cellX - rowShearX;
@@ -350,10 +362,8 @@ static u8 *DrawHorizonTileStrip(SkyFrame *work, const SkyBandSetup *band,
 
         if (SkyQuadIntersectsScreen(screenX)) {
             POLY_FT4 *quad = (POLY_FT4 *)packet;
-            s32 tileIndex = g_SkyTileMap[0]
-                [(band->textureColumn + column) &
-                 (SKY_TILE_MAP_COLUMNS - 1)];
-            const SkyTileUV *tileUv = &g_SkyTileUV[tileIndex];
+            const SkyTileUV *tileUv =
+                SkyTileAt(0, band->textureColumn + column);
             InitializeTexturedSkyQuad(quad, tileUv);
             quad->x0 = screenX[0];
             quad->x1 = screenX[1];
