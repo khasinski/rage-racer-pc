@@ -1,6 +1,8 @@
 #ifndef RAGE_RUNTIME_CONFIG_H
 #define RAGE_RUNTIME_CONFIG_H
 
+#include "runtime_parse.h"
+
 /* Process-wide configuration assembled once at startup. Files use INI
  * sections and dotted keys (for example [race] mode = grand-prix becomes
  * race.mode). --set key=value overrides files. */
@@ -16,10 +18,6 @@ int RuntimeConfigEnabled(const char *key);
 /* Environment wins over the file. For the few settings an outer harness must
  * be able to force whatever the shipped configuration says. */
 const char *RuntimeConfigGetForced(const char *key);
-
-/* Parse a complete integer string using the requested strtol base. */
-int RuntimeParseInt(const char *text, int base, int minimum, int maximum,
-                    int *result);
 
 /* Parse a complete decimal/hex integer and constrain it to the caller's
  * domain. Missing and malformed settings return fallback. */

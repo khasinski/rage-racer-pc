@@ -883,6 +883,7 @@ set_tests_properties(native_geometry_interpolation PROPERTIES LABELS functional)
 
 add_executable(native_geometry_diagnostics_tests
     native_geometry_diagnostics_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/runtime_parse.c
     ${CMAKE_SOURCE_DIR}/src/port/classic/native_geometry_diagnostics.c)
 target_include_directories(native_geometry_diagnostics_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port

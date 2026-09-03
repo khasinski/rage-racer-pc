@@ -1,7 +1,6 @@
+#include "runtime_config.h"
 
 #include <ctype.h>
-#include <errno.h>
-#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -314,26 +313,6 @@ const char *RuntimeConfigGetForced(const char *key) {
     if (key == NULL || key[0] == '\0') return NULL;
     const char *value = EnvironmentValue(key);
     return value ? value : ConfiguredValue(key);
-}
-
-int RuntimeParseInt(const char *text, int base, int minimum, int maximum,
-                    int *result) {
-    char *end;
-    long value;
-
-    if (text == NULL || text[0] == '\0' || result == NULL ||
-        minimum > maximum) {
-        return 0;
-    }
-    errno = 0;
-    value = strtol(text, &end, base);
-    if (errno == ERANGE || end == text || *end != '\0' ||
-        value < minimum || value > maximum ||
-        value < INT_MIN || value > INT_MAX) {
-        return 0;
-    }
-    *result = (int)value;
-    return 1;
 }
 
 int RuntimeConfigInt(const char *key, int fallback, int minimum, int maximum) {

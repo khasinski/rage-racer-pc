@@ -135,6 +135,7 @@ add_executable(game_logic_tests
     ${CMAKE_SOURCE_DIR}/src/port/input_config.c
     ${CMAKE_SOURCE_DIR}/src/port/port_config.c
     ${CMAKE_SOURCE_DIR}/src/port/runtime_config.c
+    ${CMAKE_SOURCE_DIR}/src/port/runtime_parse.c
     ${CMAKE_SOURCE_DIR}/src/port/game_diagnostics.c
     ${CMAKE_SOURCE_DIR}/src/port/platform_paths.c
 )
