@@ -1,5 +1,6 @@
 #include "game/race_hud_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 
 static int Check(s32 timer, s32 visible, s32 phase, s32 wipeHalfStep) {
@@ -35,6 +36,13 @@ int main(void) {
     if (Check(242, 1, -1, 8)) return 1;
     if (Check(299, 1, -1, 8)) return 1;
     if (Check(300, 0, 0, 0)) return 1;
+    if (Check(INT_MIN, 0, 0, 0)) return 1;
+    if (Check(INT_MAX, 0, 0, 0)) return 1;
+
+    if (CountdownTileBufferIndex(0) != 0 ||
+        CountdownTileBufferIndex(1) != 1 ||
+        CountdownTileBufferIndex(INT_MIN) != 0 ||
+        CountdownTileBufferIndex(INT_MAX) != 0) return 1;
 
     glyphs[16 + 3] = 0x12345678;
     first[3] = 0x89ABCDEF;
@@ -46,6 +54,12 @@ int main(void) {
     if (row.pattern != 0x89ABCDEF || row.colorBank != 1) return 1;
     row = BuildStartCountdownRow(-1, 3, 0, glyphs, first);
     if (row.pattern != 0x89ABCDEF || row.colorBank != 1) return 1;
+    row = BuildStartCountdownRow(1, -1, 0, glyphs, first);
+    if (row.pattern != 0) return 1;
+    row = BuildStartCountdownRow(1, 16, 0, glyphs, first);
+    if (row.pattern != 0) return 1;
+    row = BuildStartCountdownRow(1, 3, 0, NULL, first);
+    if (row.pattern != 0) return 1;
 
     glyphs[16 + 5] = 0x0F0F0F0F;
     glyphs[16 + 6] = 0x00FF00FF;
@@ -59,6 +73,8 @@ int main(void) {
     if (AdvanceStartCountdownBoard(-1, 0) != -16) return 1;
     if (AdvanceStartCountdownBoard(-1, -224) != -240) return 1;
     if (AdvanceStartCountdownBoard(-1, -240) != -240) return 1;
+    if (AdvanceStartCountdownBoard(-1, INT_MIN) != -240) return 1;
+    if (AdvanceStartCountdownBoard(-1, INT_MAX) != -16) return 1;
 
     lamp = BuildStartCountdownLamp(0, 105, 0);
     if (lamp.intensity != 0x80 || lamp.clut != 0x784F) return 1;
@@ -75,5 +91,7 @@ int main(void) {
     lamp = BuildStartCountdownLamp(4, 225, 4);
     if (lamp.intensity != 0x80 || lamp.clut != 0x7850) return 1;
     lamp = BuildStartCountdownLamp(-1, 250, 5);
-    return lamp.intensity != 0x80 || lamp.clut != 0x7850;
+    if (lamp.intensity != 0x80 || lamp.clut != 0x7850) return 1;
+    lamp = BuildStartCountdownLamp(1, INT_MIN, -3);
+    return lamp.intensity < 0 || lamp.intensity > 0x80;
 }

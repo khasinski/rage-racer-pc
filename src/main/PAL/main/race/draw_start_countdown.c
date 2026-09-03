@@ -29,7 +29,8 @@ void DrawStartCountdown(s32 sceneTimer) {
 
     orderingTable = GamePrimaryOrderingTable(1);
     phase = timing.phase;
-    tiles = g_TileStripBuffers[g_FrameParity].tile;
+    tiles = g_TileStripBuffers[
+        CountdownTileBufferIndex(g_FrameParity)].tile;
 
     for (row = 0; row < COUNTDOWN_TILE_ROWS; row++) {
         StartCountdownRow countdownRow = BuildStartCountdownRow(

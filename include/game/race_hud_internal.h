@@ -25,6 +25,7 @@ typedef struct StartCountdownTiming {
 } StartCountdownTiming;
 
 StartCountdownTiming CalculateStartCountdownTiming(s32 sceneTimer);
+s32 CountdownTileBufferIndex(s32 frameParity);
 
 typedef struct StartCountdownRow {
     u32 pattern;
