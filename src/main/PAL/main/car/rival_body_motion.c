@@ -3,11 +3,7 @@
 #include "game/integer.h"
 
 static void LandRivalCar(GameCarRuntime *car, s32 ground) {
-    car->y = WrapSigned32(
-        (int64_t)ground + CAR_WHEEL_GROUND_OFFSET);
-    car->verticalPitch = 0;
-    car->verticalRoll = 0;
-    StartCarBodyKick(car, CAR_BODY_KICK_LANDING);
+    ApplyCarLandingPose(car, ground);
 }
 
 static void DampCollidingRivalSpeed(GameCarRuntime *car) {

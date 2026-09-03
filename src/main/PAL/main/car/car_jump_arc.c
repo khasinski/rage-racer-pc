@@ -9,6 +9,14 @@ static s32 JumpCurve(s32 tick, s32 scale) {
            CAR_JUMP_CURVE_SCALE;
 }
 
+void ApplyCarLandingPose(GameCarRuntime *car, s32 groundHeight) {
+    car->y = WrapSigned32(
+        (int64_t)groundHeight + CAR_WHEEL_GROUND_OFFSET);
+    car->verticalPitch = 0;
+    car->verticalRoll = 0;
+    StartCarBodyKick(car, CAR_BODY_KICK_LANDING);
+}
+
 static void AdvanceRisingJump(GameCarRuntime *car, s16 tick,
                               s32 groundHeight) {
     s32 velocity = WrapSigned32(

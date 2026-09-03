@@ -24,11 +24,7 @@ static void ReconnectPlayerDrivetrain(PlayerCarRuntime *car) {
 static void LandPlayerCar(PlayerCarRuntime *car, s32 groundHeight) {
     GameCarDrive *drive = &car->drive;
 
-    car->y = WrapSigned32(
-        (int64_t)groundHeight + CAR_WHEEL_GROUND_OFFSET);
-    car->verticalPitch = 0;
-    car->verticalRoll = 0;
-    StartCarBodyKick(AsRivalCar(car), CAR_BODY_KICK_LANDING);
+    ApplyCarLandingPose(AsRivalCar(car), groundHeight);
     g_ShiftSoundLevel = 0;
     if (car->verticalMotionTimer >= LONG_LANDING_SOUND_FRAMES &&
         g_RacePhase < 3) {
