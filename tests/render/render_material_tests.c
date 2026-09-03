@@ -50,11 +50,16 @@ int main(void) {
     EXPECT(material.baseColorFactor[0] == 0.8f);
     EXPECT(material.baseColorFactor[3] == 0.5f);
     EXPECT(material.emissiveFactor[0] == 1.0f);
+    original = material;
     EXPECT(!RenderMaterialParse(invalid, sizeof(invalid) - 1,
                                     8, 0, &material));
+    EXPECT(memcmp(&material, &original, sizeof(material)) == 0);
     EXPECT(!RenderMaterialParse(overflowingIndex,
                                 sizeof(overflowingIndex) - 1,
                                 0, 0, &material));
+    EXPECT(memcmp(&material, &original, sizeof(material)) == 0);
+    EXPECT(!RenderMaterialParse(v5, sizeof(v5) - 1, 3, 9, &material));
+    EXPECT(memcmp(&material, &original, sizeof(material)) == 0);
 
     RenderMaterialDefault(&material);
     material.roughness = 0.35f;

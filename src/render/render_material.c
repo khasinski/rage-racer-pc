@@ -123,10 +123,11 @@ int RenderMaterialParse(const void *bytes, size_t size,
     static const char v5[] = "# rage-rmat v5\n";
     static const char v6[] = "# rage-rmat v6\n";
     const char *text = (const char *)bytes;
+    RageRenderMaterial parsed;
     size_t lineStart = 0, cursor;
     int version;
     if (bytes == NULL || material == NULL) return 0;
-    RenderMaterialDefault(material);
+    RenderMaterialDefault(&parsed);
     if (size >= sizeof(v6) - 1 && memcmp(text, v6, sizeof(v6) - 1) == 0)
         version = 6;
     else if (size >= sizeof(v5) - 1 &&
@@ -153,24 +154,32 @@ int RenderMaterialParse(const void *bytes, size_t size,
         while (MaterialNextToken(line, length, &at, &token)) {
             if (MaterialTokenEquals(token, "|")) break;
             if (pathIndex++ == variant) {
-                material->baseColorTexture.text = token.text;
-                material->baseColorTexture.length = token.length;
+                parsed.baseColorTexture.text = token.text;
+                parsed.baseColorTexture.length = token.length;
             }
         }
-        if (material->baseColorTexture.length == 0) return 0;
-        if (version == 4) return at == length;
+        if (parsed.baseColorTexture.length == 0) return 0;
+        if (version == 4) {
+            if (at != length) return 0;
+            *material = parsed;
+            return 1;
+        }
         if (!MaterialNextToken(line, length, &at, &token)) return 0;
         if (!MaterialTokenEquals(token, "-")) {
-            material->paintMask.text = token.text;
-            material->paintMask.length = token.length;
+            parsed.paintMask.text = token.text;
+            parsed.paintMask.length = token.length;
         }
         if (version == 5) {
             while (at < length && line[at] == ' ') at++;
-            return at == length;
+            if (at != length) return 0;
+            *material = parsed;
+            return 1;
         }
         if (!MaterialNextToken(line, length, &at, &token) ||
             !MaterialTokenEquals(token, "|")) return 0;
-        return MaterialProperties(line, length, at, material);
+        if (!MaterialProperties(line, length, at, &parsed)) return 0;
+        *material = parsed;
+        return 1;
     }
     return 0;
 }
