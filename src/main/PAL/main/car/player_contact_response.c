@@ -12,6 +12,17 @@ enum {
     SKID_CUE_MIN_TIMER = 15,
     STRAIGHT_SLIP_MIN = 768,
     STRAIGHT_SLIP_SPAN = 257,
+    PERCENT_SCALE = 100,
+    TRIG_SCALE = 4096,
+    CRASH_LAUNCH_ENERGY_LOSS = 1000,
+    CRASH_TORQUE_RETENTION_PERCENT = 98,
+    CRASH_SPEED_RETENTION_PERCENT = 97,
+    CRASH_ENGINE_RETENTION_PERCENT = 95,
+    SKID_LAUNCH_ENERGY_LOSS = 5000,
+    SKID_TORQUE_BASE_PERCENT = 85,
+    SKID_TORQUE_SLIP_PERCENT = 20,
+    SKID_SPEED_BASE_PERCENT = 87,
+    SKID_SPEED_SLIP_PERCENT = 40,
     CUE_LIGHT_SKID = 0xA,
     CUE_NEAR_SIDE_SKID = 0xB,
     CUE_FAR_SIDE_SKID = 0xC,
@@ -57,16 +68,20 @@ static void ApplyPlayerCrashResponse(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
 
     drive->launchEnergy = WrapSigned32(
-        (int64_t)drive->launchEnergy - 1000);
+        (int64_t)drive->launchEnergy - CRASH_LAUNCH_ENERGY_LOSS);
     if (car->speed < CONTACT_EFFECT_MIN_SPEED) return;
 
     drive->drivetrainTorque = WrapSigned32(
-        (int64_t)drive->drivetrainTorque * 98) / 100;
-    car->speed = WrapSigned32((int64_t)car->speed * 97) / 100;
+        (int64_t)drive->drivetrainTorque *
+        CRASH_TORQUE_RETENTION_PERCENT) / PERCENT_SCALE;
+    car->speed = WrapSigned32(
+        (int64_t)car->speed * CRASH_SPEED_RETENTION_PERCENT) / PERCENT_SCALE;
     drive->engineLoad = WrapSigned16(
-        (int64_t)drive->engineLoad * 95 / 100);
+        (int64_t)drive->engineLoad * CRASH_ENGINE_RETENTION_PERCENT /
+        PERCENT_SCALE);
     g_ShiftTargetRpm = WrapSigned32(
-        (int64_t)g_ShiftTargetRpm * 95) / 100;
+        (int64_t)g_ShiftTargetRpm * CRASH_ENGINE_RETENTION_PERCENT) /
+        PERCENT_SCALE;
 }
 
 static void ApplyPlayerSkidResponse(PlayerCarRuntime *car, s32 skid) {
@@ -85,17 +100,22 @@ static void ApplyPlayerSkidResponse(PlayerCarRuntime *car, s32 skid) {
         car->headingAngle);
 
     slipSin = rsin(slip);
-    drivetrainScale = 85 - slipSin * 20 / 4096;
-    speedScale = 87 - slipSin * 40 / 4096;
+    drivetrainScale =
+        SKID_TORQUE_BASE_PERCENT -
+        slipSin * SKID_TORQUE_SLIP_PERCENT / TRIG_SCALE;
+    speedScale =
+        SKID_SPEED_BASE_PERCENT -
+        slipSin * SKID_SPEED_SLIP_PERCENT / TRIG_SCALE;
     drive->launchEnergy = WrapSigned32(
-        (int64_t)drive->launchEnergy - 5000);
+        (int64_t)drive->launchEnergy - SKID_LAUNCH_ENERGY_LOSS);
     drive->drivetrainTorque = WrapSigned32(
-        (int64_t)drivetrainScale * drive->drivetrainTorque) / 100;
-    car->speed = WrapSigned32((int64_t)speedScale * car->speed) / 100;
+        (int64_t)drivetrainScale * drive->drivetrainTorque) / PERCENT_SCALE;
+    car->speed = WrapSigned32(
+        (int64_t)speedScale * car->speed) / PERCENT_SCALE;
     drive->engineLoad = WrapSigned16(
-        (int64_t)drive->engineLoad * drivetrainScale / 100);
+        (int64_t)drive->engineLoad * drivetrainScale / PERCENT_SCALE);
     g_ShiftTargetRpm = WrapSigned32(
-        (int64_t)drivetrainScale * g_ShiftTargetRpm) / 100;
+        (int64_t)drivetrainScale * g_ShiftTargetRpm) / PERCENT_SCALE;
     if (g_RacePhase < 3) {
         PlayPlayerSkidCue(car, skid, slip);
     }
