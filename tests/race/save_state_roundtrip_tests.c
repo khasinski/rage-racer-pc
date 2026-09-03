@@ -59,6 +59,7 @@ static void SetRepresentativeState(void) {
     g_GrandPrixSave.money = 1234567;
     g_ExtraGrandPrixSave.course = 3;
     g_TimeAttackSave.carIndex = 9;
+    g_TimeAttackSave.timeAttackSeries = 1;
     g_ExtraGrandPrixUnlocked = 1;
     g_MaxClassReached[0] = 5;
     g_MaxClassReached[1] = 4;
@@ -206,6 +207,7 @@ int main(void) {
     CHECK(s_loadedNegconMapping == g_NegconMappingIndex);
     CHECK(s_recordRepairCalls == 1);
     CHECK(g_GrandPrixSave.money == 1234567);
+    CHECK(g_TimeAttackSave.timeAttackSeries == 1);
     CHECK(g_GrandPrixCars[4].paintColor2 == 7);
     CHECK(g_ClassRecords[2].clears == 12);
     CHECK(g_TeamLogoCanvas.halfwords[17] == 0x1357);

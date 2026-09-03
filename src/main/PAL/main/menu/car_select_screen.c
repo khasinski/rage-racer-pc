@@ -217,10 +217,11 @@ static void EnterChosenScreen(void) {
         g_RaceProgress->course = g_CourseIndex;
         g_RaceProgress->carIndex = g_PlayerCarIndex;
         g_RaceProgress->classIndex = g_GrandPrixClass;
-        /* Outside a Grand Prix the slot carries the series instead of a
-         * balance, because there is no money in time attack. */
-        g_RaceProgress->money =
-            (g_GrandPrixMode != 0) ? g_PlayerMoney : g_GrandPrixSeries;
+        if (g_GrandPrixMode != 0) {
+            g_RaceProgress->money = g_PlayerMoney;
+        } else {
+            g_RaceProgress->timeAttackSeries = g_GrandPrixSeries;
+        }
         break;
     case 2:
         g_MenuScreen = 5;

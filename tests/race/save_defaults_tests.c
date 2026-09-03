@@ -93,6 +93,7 @@ static int TestAllDefaults(void) {
     CHECK(g_ExtraGrandPrixCourseProgress.bestPlace[3] == 0xFF);
     CHECK(g_TimeAttackSave.carIndex == 3);
     CHECK(g_TimeAttackSave.maxClassReached == 0);
+    CHECK(g_TimeAttackSave.timeAttackSeries == 0);
     CHECK(g_GrandPrixSave.maxClassReached == -1);
     CHECK(g_ExtraGrandPrixSave.maxClassReached == -1);
     CHECK(g_BgmTrackCount == 9 && g_BgmSelection == 0);

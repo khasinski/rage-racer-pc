@@ -75,10 +75,12 @@ typedef struct GameRaceProgress {
     s32 carIndex;
     s32 classIndex;
     s32 maxClassReached; /* highest class unlocked in this slot */
-    s32 money; /* GP and Extra GP: prize money, capped at 999999999,
-                       confirmed against US and JP saves advertising that cap.
-                       The Time Attack slot reuses the word for
-                       g_GrandPrixSeries, read back as u16. */
+    union {
+        /* GP and Extra GP prize money, capped at 999999999. */
+        s32 money;
+        /* The Time Attack slot has no balance and stores its series here. */
+        s32 timeAttackSeries;
+    };
 } GameRaceProgress;
 
 _Static_assert(sizeof(GameRaceProgress) == 0x14,
@@ -87,6 +89,8 @@ _Static_assert(__builtin_offsetof(GameRaceProgress, maxClassReached) == 0x0C,
                "race progress max class must retain its retail offset");
 _Static_assert(__builtin_offsetof(GameRaceProgress, money) == 0x10,
                "race progress money/series must retain its retail offset");
+_Static_assert(__builtin_offsetof(GameRaceProgress, timeAttackSeries) == 0x10,
+               "time attack series must share the retail money word");
 
 /* The save slot the front end is editing; repointed at one of the three below,
  * matching the title-menu row that g_CarTable was repointed for. Declared s32
