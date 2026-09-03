@@ -9,6 +9,8 @@ enum {
 void TickClassClearFanfare(void) {
     if (g_ClassClearFanfareTimer > 0) {
         g_ClassClearFanfareTimer--;
+    } else if (g_ClassClearFanfareTimer < 0) {
+        g_ClassClearFanfareTimer = 0;
     }
     if (g_ClassClearFanfareTimer == CLASS_CLEAR_CUE_TIMER) {
         PlaySoundCue(SOUND_CUE_CLASS_CLEAR);
