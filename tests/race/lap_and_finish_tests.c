@@ -359,6 +359,27 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    {
+        PlayerCarRuntime otherCar;
+
+        memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
+        memset(&otherCar, 0, sizeof(otherCar));
+        otherCar.lap = 1;
+        otherCar.progressA = 0x10000;
+        otherCar.drive.racePosition = 0;
+        g_LapCount = 3;
+        g_TrackLength = 0x10000;
+        g_RacePhase = 0;
+        g_RaceCueDelay = 0;
+        g_GrandPrixMode = 1;
+        if (UpdateLapAndFinish(&otherCar, 1) != 1 || otherCar.lap != 2 ||
+            g_PlayerCar.lap != 0) {
+            puts("FAIL lap crossing ignored the supplied car");
+            return 1;
+        }
+
+    }
+
     memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
     g_PlayerCar.lap = 0;
     g_PlayerCar.progressA = 0;

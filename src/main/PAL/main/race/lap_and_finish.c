@@ -270,8 +270,7 @@ s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
     lapAtEntry = car->lap;
     if (lapAtEntry > 0 && lapAtEntry <= PLAYER_LAP_TIME_CAPACITY &&
         HasCrossedCurrentLapLine(lapAtEntry, g_TrackLength,
-                                g_PlayerCar.progressA,
-                                g_PlayerCar.progressB) &&
+                                car->progressA, car->progressB) &&
         (lapAtEntry <= g_LapCount)) {
         returnValue = (u16)CrossTheLine(car, recordMode);
     } else {
@@ -283,7 +282,7 @@ s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
     } else if ((g_GrandPrixMode == 0) &&
                (IsWholeLapBehind(g_TrackLength, car->progressA,
                                  car->progressB) ||
-                ((g_PlayerCar.lap == 0) && (g_WrongWayTimer >= 0x3C)))) {
+                ((car->lap == 0) && (g_WrongWayTimer >= 0x3C)))) {
         RetireWrongWay();
     }
 
