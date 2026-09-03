@@ -33,7 +33,8 @@ void StartCarBodyKick(GameCarRuntime *car, CarBodyKickMode mode) {
         lean = ANGLE_HALF_TURN - lean;
     }
 
-    speedOverMinimum = car->speed - BODY_KICK_MIN_SPEED;
+    speedOverMinimum = WrapSigned32(
+        (int64_t)car->speed - BODY_KICK_MIN_SPEED);
     car->motionValue.value = speedOverMinimum < 0
         ? 0
         : WrapSigned16(
