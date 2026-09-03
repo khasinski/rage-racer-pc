@@ -123,8 +123,22 @@ int main(void) {
     g_PadPressed = PAD_CANCEL;
     UpdateTeamNameScreen();
     CHECK(g_TeamNameLength == 1);
-    CHECK(g_TeamNameChars[2] == 0xA);
+    CHECK(g_TeamNameChars[1] == 0xA);
     CHECK(s_lastCue == 4);
+
+    Reset();
+    g_TeamNameLength = MENU_TEAM_NAME_MAX_LENGTH;
+    GameMenuCursor = 5;
+    g_PadPressed = PAD_CONFIRM;
+    UpdateTeamNameScreen();
+    CHECK(g_TeamNameLength == MENU_TEAM_NAME_MAX_LENGTH);
+    CHECK(g_TeamNameChars[MENU_TEAM_NAME_MAX_LENGTH] == 0);
+    CHECK(s_lastCue == -1);
+
+    Reset();
+    g_TeamNameLength = 0xFF;
+    UpdateTeamNameScreen();
+    CHECK(g_TeamNameLength == MENU_TEAM_NAME_MAX_LENGTH);
 
     Reset();
     GameMenuCursor = 0x2B;

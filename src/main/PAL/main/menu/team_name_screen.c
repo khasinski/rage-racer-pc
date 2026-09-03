@@ -10,8 +10,6 @@ enum {
     TEAM_NAME_GRID_COLUMNS = 11,
     TEAM_NAME_GRID_ROW_STRIDE = 11,
     TEAM_NAME_GRID_LAST_ROW_OFFSET = 33,
-    TEAM_NAME_FREE_CURSOR_LENGTH = 6,
-    TEAM_NAME_MAX_LENGTH = 7,
 };
 
 s32 DrawTeamNameScreen(s32 step) {
@@ -49,7 +47,7 @@ static void UpdateTeamNameCursor(void) {
     if (directions == 0 || GameMenuCursorAnim >= 0) {
         return;
     }
-    if (g_TeamNameLength < TEAM_NAME_FREE_CURSOR_LENGTH) {
+    if (g_TeamNameLength < MENU_TEAM_NAME_MAX_LENGTH) {
         cursor = MoveTeamNameGridCursor(GameMenuCursor, directions);
     } else if (directions & (PAD_LEFT | PAD_RIGHT)) {
         cursor = GameMenuCursor == TEAM_NAME_KEY_RUBOUT ? TEAM_NAME_KEY_END
@@ -79,8 +77,8 @@ static void ApplyTeamNameInput(void) {
             return;
         }
         PlaySoundCue(4);
-        g_TeamNameChars[g_TeamNameLength] = 0xA;
         g_TeamNameLength--;
+        g_TeamNameChars[g_TeamNameLength] = 0xA;
         return;
     }
     if (GameMenuCursor == TEAM_NAME_KEY_END) {
@@ -91,15 +89,18 @@ static void ApplyTeamNameInput(void) {
         return;
     }
 
+    if (g_TeamNameLength >= MENU_TEAM_NAME_MAX_LENGTH ||
+        (u32)GameMenuCursor >= TEAM_NAME_KEY_RUBOUT) {
+        return;
+    }
+
     PlaySoundCue(2);
     newLength = g_TeamNameLength;
     g_TeamNameChars[newLength] = (u8)GameMenuCursor;
-    if (newLength >= TEAM_NAME_FREE_CURSOR_LENGTH - 1) {
+    if (newLength >= MENU_TEAM_NAME_MAX_LENGTH - 1) {
         GameMenuCursor = TEAM_NAME_KEY_END;
     }
-    if (newLength < TEAM_NAME_MAX_LENGTH) {
-        g_TeamNameLength = (u8)(newLength + 1);
-    }
+    g_TeamNameLength = (u8)(newLength + 1);
 }
 
 static void UpdateTeamNameIdle(void) {
@@ -130,6 +131,9 @@ static void UpdateTeamNameOutgoing(void) {
 }
 
 void UpdateTeamNameScreen(void) {
+    if (g_TeamNameLength > MENU_TEAM_NAME_MAX_LENGTH) {
+        g_TeamNameLength = MENU_TEAM_NAME_MAX_LENGTH;
+    }
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawTeamNameCharModel();
     if (GameMenuBusy == 0) {
