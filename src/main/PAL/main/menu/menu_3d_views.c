@@ -1,4 +1,5 @@
 #include "game/asset.h"
+#include "game/course_index.h"
 #include "game/showroom_internal.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
@@ -58,6 +59,7 @@ void DrawMenuCarView(void) {
     Vec4 out;
     Vec4 vec;
     s32 carIndex;
+    s32 modelIndex;
     s32 viewHeight;
     int64_t angleDelta;
     s32 currentAngle;
@@ -158,7 +160,10 @@ void DrawMenuCarView(void) {
     SetGteObjectMatrix((&g_ObjectMatrixWork),
                        AsPositionWords(&showroom->pose.position[0]), &mtxA);
     g_RenderState.envMode4 = 0;
-    SubmitModel(&g_RenderState, g_ModelBankCount >= 6 ? 5 : 1);
+    modelIndex = MenuModelIndexOrFallback(5, g_ModelBankCount);
+    if (modelIndex >= 0) {
+        SubmitModel(&g_RenderState, modelIndex);
+    }
     RENDER_OT_BASE -= 30;
 }
 
@@ -225,10 +230,11 @@ void DrawMenuCourseView(void) {
     SetGteObjectMatrix(&g_ObjectMatrixWork,
                        AsPositionWords(&renderObject->x), &mtxA);
     g_RenderState.envMode4 = 0;
-    SubmitModel(&g_RenderState,
-                (courseModelIndex & 3) < g_ModelBankCount
-                    ? courseModelIndex & 3
-                    : 1);
+    courseModelIndex = MenuModelIndexOrFallback(
+        CourseSlot(courseModelIndex), g_ModelBankCount);
+    if (courseModelIndex >= 0) {
+        SubmitModel(&g_RenderState, courseModelIndex);
+    }
 }
 
 /* The 3D character model under the TEAM NAME grid cursor; skips the BS and ED cells. */

@@ -81,6 +81,11 @@ int main(void) {
     CHECK(TeamNameCharacterModelIndex(44, 44) == 1);
     CHECK(TeamNameCharacterModelIndex(INT_MAX, 1) == 0);
     CHECK(TeamNameCharacterModelIndex(0, 0) == -1);
+    CHECK(MenuModelIndexOrFallback(5, 6) == 5);
+    CHECK(MenuModelIndexOrFallback(5, 2) == 1);
+    CHECK(MenuModelIndexOrFallback(-1, 2) == 1);
+    CHECK(MenuModelIndexOrFallback(5, 1) == 0);
+    CHECK(MenuModelIndexOrFallback(0, 0) == -1);
 
     puts("menu animation helper tests passed");
     return 0;
