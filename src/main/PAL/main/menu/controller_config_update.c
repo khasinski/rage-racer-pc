@@ -29,8 +29,8 @@ static void UpdateControllerMappingSelection(u16 pressed) {
 void UpdateControllerConfigScreen(void) {
     u16 pressed = g_PadPressed;
 
-    g_AnimTimer++;
-    g_SetupArrowPulse += 96;
+    g_AnimTimer = (s32)((u32)g_AnimTimer + 1u);
+    g_SetupArrowPulse = (s32)((u32)g_SetupArrowPulse + 96u);
     if (pressed & PAD_CANCEL) {
         PlaySoundCue(3);
         g_GameMode = OPTION_MODE_ROOT;

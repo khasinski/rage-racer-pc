@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <limits.h>
 
 #include "game/input_internal.h"
 #include "game/state.h"
@@ -95,6 +96,13 @@ static void TestSteerNavigation(void) {
     CHECK(g_GameMode == OPTION_MODE_ROOT);
     CHECK(s_soundCueCount == 1 && s_soundCues[0] == 3);
     CHECK(s_restoreCount == 1);
+
+    ResetState();
+    g_AnimTimer = INT_MAX;
+    g_SetupArrowPulse = INT_MAX;
+    UpdateNegconSteerPlayScreen();
+    CHECK(g_AnimTimer == INT_MIN);
+    CHECK(g_SetupArrowPulse == (s32)((u32)INT_MAX + 96u));
 }
 
 static void TestTwistNavigation(void) {

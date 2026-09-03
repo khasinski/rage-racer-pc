@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <limits.h>
 
 #include "game/input_internal.h"
 #include "game/menu.h"
@@ -114,6 +115,13 @@ static void TestMappingSelection(void) {
     CHECK(g_ControllerSceneAngleY == -1920);
     CHECK(g_AnimTimer == 11 && g_SetupArrowPulse == 116);
     CHECK(s_configDraws == 1 && s_hintVariant == 1 && s_sceneVariant == 0);
+
+    ResetState();
+    g_AnimTimer = INT_MAX;
+    g_SetupArrowPulse = INT_MAX;
+    UpdateControllerConfigScreen();
+    CHECK(g_AnimTimer == INT_MIN);
+    CHECK(g_SetupArrowPulse == (s32)((u32)INT_MAX + 96u));
 }
 
 static void TestMappingNavigation(void) {

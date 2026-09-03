@@ -3,6 +3,7 @@
 #include "game/render_state.h"
 
 #include <stdio.h>
+#include <limits.h>
 
 GameRenderState g_RenderState;
 s32 g_AnimTimer;
@@ -95,6 +96,11 @@ int main(void) {
     g_MenuCursorPulsePhase = 0;
     DrawMenuCursorBox(0, 0, 1, 1, 0);
     Check(s_outlines[5].g, 0x7F, "cursor pulse minimum colour");
+
+    g_MenuCursorPulsePhase = INT_MAX;
+    DrawMenuCursorBox(0, 0, 1, 1, 0);
+    Check(g_MenuCursorPulsePhase, (s32)((u32)INT_MAX + 0x60u),
+          "cursor phase wrap");
 
     if (s_failures != 0) {
         printf("%d menu button assertion(s) failed\n", s_failures);

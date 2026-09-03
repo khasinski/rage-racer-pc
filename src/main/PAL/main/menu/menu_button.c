@@ -17,7 +17,7 @@ void DrawMenuCursorBox(s32 x, s32 y, s32 width, s32 height, s32 useFlash) {
     if (useFlash) {
         colour = g_AnimTimer & 2 ? 0xFF : 0x60;
     } else {
-        colour = 0xBF + rsin(g_MenuCursorPulsePhase % 4096) / 64;
+        colour = 0xBF + rsin((s32)((u32)g_MenuCursorPulsePhase & 0xFFFu)) / 64;
     }
 
     DrawRectOutline(ot, (s16)(x - 1), (s16)(y - 2),
@@ -25,5 +25,5 @@ void DrawMenuCursorBox(s32 x, s32 y, s32 width, s32 height, s32 useFlash) {
                     0, (u8)colour, 0, 0xFF);
     DrawRectOutline(ot, (s16)x, (s16)y, (s16)width, (s16)height,
                     0, (u8)colour, 0, 0xFF);
-    g_MenuCursorPulsePhase += 0x60;
+    g_MenuCursorPulsePhase = (s32)((u32)g_MenuCursorPulsePhase + 0x60u);
 }
