@@ -17,10 +17,14 @@ enum {
     STANDING_START_EFFECT_PHASE = 0x1A80,
     STANDING_START_EFFECT_BASE_VOLUME = 0x60,
     STANDING_START_EFFECT_SPIN_MASK = 0x1F,
+    STANDING_START_EFFECT_SPIN_SCALE = 2,
     TRIG_FIXED_ONE = 4096,
     TRAVEL_VELOCITY_DIVISOR = 256,
     BODY_VELOCITY_DIVISOR = 16384,
     PEDAL_INPUT_FULL = 256,
+    BRAKE_SPIN_REDUCTION_SCALE = 2,
+    VERTICAL_BOUNCE_RANDOM_MASK = 3,
+    LATERAL_BOUNCE_RANDOM_MASK = 7,
 };
 
 static void AlignStandingStartVelocity(PlayerCarRuntime *car) {
@@ -58,14 +62,17 @@ static int UpdateStandingStartWheelspin(GameCarDrive *drive) {
     s32 rpm;
     s32 grip;
 
-    if (g_StandingStartSpin < STANDING_START_SPIN_THRESHOLD) return 0;
+    if (g_StandingStartSpin < STANDING_START_SPIN_THRESHOLD) {
+        return 0;
+    }
 
     throttle = drive->acceleratorInput.value;
     rpm = drive->engineRpm;
     grip = throttle + STANDING_START_BASE_GRIP;
 
     g_StandingStartSpin = WrapSigned32(
-        (int64_t)g_StandingStartSpin - drive->brakeInput * 2);
+        (int64_t)g_StandingStartSpin -
+        drive->brakeInput * BRAKE_SPIN_REDUCTION_SCALE);
     if (rpm < STANDING_START_LOW_RPM) {
         grip += STANDING_START_LOW_RPM_GRIP_BONUS;
     } else if (rpm > STANDING_START_LOW_RPM &&
@@ -74,9 +81,11 @@ static int UpdateStandingStartWheelspin(GameCarDrive *drive) {
     }
 
     drive->standingStartBounceY =
-        (Random15() & 3) * grip / PEDAL_INPUT_FULL;
+        (Random15() & VERTICAL_BOUNCE_RANDOM_MASK) * grip /
+        PEDAL_INPUT_FULL;
     drive->standingStartBounceX =
-        (Random15() & 7) * grip / PEDAL_INPUT_FULL;
+        (Random15() & LATERAL_BOUNCE_RANDOM_MASK) * grip /
+        PEDAL_INPUT_FULL;
     g_StandingStartSpin = WrapSigned32(
         (int64_t)g_StandingStartSpin - grip);
     return g_StandingStartSpin > 0;
@@ -97,10 +106,13 @@ void UpdateCarStandingStart(PlayerCarRuntime *car) {
     SetIndexedEffectVoice(
         0, STANDING_START_EFFECT_PHASE,
         (STANDING_START_EFFECT_BASE_VOLUME -
-         (g_StandingStartSpin & STANDING_START_EFFECT_SPIN_MASK) * 2) *
+         (g_StandingStartSpin & STANDING_START_EFFECT_SPIN_MASK) *
+             STANDING_START_EFFECT_SPIN_SCALE) *
             drive->acceleratorInput.value / PEDAL_INPUT_FULL);
     car->speed /= STANDING_START_SPEED_DAMPING;
 
-    if (UpdateStandingStartWheelspin(drive)) return;
+    if (UpdateStandingStartWheelspin(drive)) {
+        return;
+    }
     FinishStandingStart(drive);
 }

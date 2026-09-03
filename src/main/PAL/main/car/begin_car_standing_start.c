@@ -2,7 +2,6 @@
 #include "game/integer.h"
 
 enum {
-    FIRST_FORWARD_GEAR = 1,
     MINIMUM_REV_LIMIT = 1,
     STANDING_START_SPIN_SCALE = 10000,
     LOW_RPM_SPIN_CUTOFF = 2000,
@@ -20,8 +19,8 @@ void BeginCarStandingStart(PlayerCarRuntime *car) {
     s32 gear = car->drive.gear;
     s32 revLimit = g_CarSpec->revLimit;
 
-    if (gear < FIRST_FORWARD_GEAR) {
-        gear = FIRST_FORWARD_GEAR;
+    if (gear < CAR_FIRST_FORWARD_GEAR) {
+        gear = CAR_FIRST_FORWARD_GEAR;
     } else if (gear > CAR_FORWARD_GEAR_COUNT) {
         gear = CAR_FORWARD_GEAR_COUNT;
     }
