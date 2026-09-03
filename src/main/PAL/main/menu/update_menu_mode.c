@@ -4,7 +4,6 @@
 
 void UpdateMenuMode(void) {
     GameOrderingTableEntry *ot;
-    u32 screenRange;
 
     ot = RENDER_OT_BASE;
     g_AnimTimer++;
@@ -14,17 +13,22 @@ void UpdateMenuMode(void) {
     }
     DrawSolidRect(ot, 0, 0, 0x140, 2, 0, 0, 0, 0xFF);
 
-    screenRange = g_MenuScreen - 1;
-    if (screenRange < 2) {
+    if ((u32)g_MenuScreen >= MENU_SCREEN_COUNT) {
+        g_MenuScreen = MENU_SCREEN_BOOTSTRAP;
+    }
+    if (g_MenuScreen == MENU_SCREEN_COURSE_SELECT ||
+        g_MenuScreen == MENU_SCREEN_RANKING) {
         g_RenderState.otShift = 1;
     } else {
         g_RenderState.otShift = 5;
     }
 
-    if (g_MenuHandlerIndex > 0) {
+    if (g_MenuHandlerIndex > MENU_SCREEN_BOOTSTRAP &&
+        g_MenuHandlerIndex < MENU_SCREEN_COUNT) {
         g_MenuScreenDraw[g_MenuHandlerIndex](0x14);
     }
-    if (g_MenuOutgoingHandlerIndex > 0) {
+    if (g_MenuOutgoingHandlerIndex > MENU_SCREEN_BOOTSTRAP &&
+        g_MenuOutgoingHandlerIndex < MENU_SCREEN_COUNT) {
         g_MenuOutgoingScreenProgress = g_MenuScreenDraw[g_MenuOutgoingHandlerIndex](-10);
     }
     g_MenuScreenUpdate[g_MenuScreen]();

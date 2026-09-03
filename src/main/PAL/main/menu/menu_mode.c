@@ -84,7 +84,7 @@ void InitMenuMode(void) {
     g_MenuOutgoingHandlerIndex = -1;
     g_MenuAltLayoutSetting = 0;
     g_CarShopUnlockAll = 0;
-    g_MenuScreen = 0;
+    g_MenuScreen = MENU_SCREEN_BOOTSTRAP;
     g_CourseSelectOption = 0;
     g_CarSelectCursor = 0;
     g_RankingOption = 0;

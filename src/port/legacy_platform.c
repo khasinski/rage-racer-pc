@@ -49,6 +49,7 @@ int _strnicmp(const char *lhs, const char *rhs, unsigned long long count);
 #include "psyq/cd_types.h"
 #include "game/render_state.h"
 #include "game/state.h"
+#include "game/menu.h"
 #include "game/fmv.h"
 #include "game/records_internal.h"
 #include "game/replay_internal.h"
@@ -144,59 +145,12 @@ int HostInitStorage(void) {
     return 1;
 }
 
-void UpdateBootLogoScene(void);
 void EnterFrontend(void);
-void EnterTitleScreen(void);
-void UpdateFrontend(void);
-void UpdateFmv(void);
-void UpdateTitleScreen(void);
-void UpdateMainMenuOpen(void);
-void UpdateMainMenuInput(void);
-void UpdateMainMenuExit(void);
-void EnterCourseSelectScreen(void);
-void UpdateCourseSelectScreen(void);
-void UpdateRankingScreen(void);
-void EnterCarSelectScreen(void);
-void UpdateCarSelectScreen(void);
-void UpdateCustomizeScreen(void);
-void UpdateDesignModeScreen(void);
-void UpdateTeamLogoScreen(void);
-void UpdateLogoSampleScreen(void);
-void UpdateTeamNameScreen(void);
-void UpdatePaintColorScreen(void);
-void UpdateCarShopScreen(void);
-void UpdateEngineerShopScreen(void);
-int DrawCourseSelectScreen(int step);
-int DrawRankingScreen(int step);
-int DrawCarSelectScreen(int step);
-int DrawCustomizeScreen(int step);
-int DrawDesignModeScreen(int step);
-int DrawTeamLogoScreen(int step);
-int DrawLogoSampleScreen(int step);
-int DrawTeamNameScreen(int step);
-int DrawPaintColorScreen(int step);
-int DrawCarShopScreen(int step);
-int DrawEngineerShopScreen(int step);
-void InitMenuMode(void);
-void UpdateMenuMode(void);
 void EnterRaceScene(void);
 void UpdateRaceScene(void);
 void EnterPrizeScreen(void);
 void UpdatePrizeMoneyScreen(void);
 void EnterAttractScene(void);
-void UpdateOptionScene(void);
-void UpdateOptionMenuFade(void);
-void UpdateOptionRootMenu(void);
-void UpdateClassRecordMenu(void);
-void UpdateClassRecordBrowse(void);
-void UpdateSoundOptionMenu(void);
-void UpdateSoundSettingAdjust(void);
-void UpdateScreenAdjustScreen(void);
-void UpdateControllerConfigScreen(void);
-void BeginNegconCalibration(void);
-void UpdateNegconNeutralScreen(void);
-void UpdateNegconSteerPlayScreen(void);
-void UpdateNegconMaxTwistScreen(void);
 void EnterMemoryCardMenu(void);
 void EnterMemoryCardMenuFromLoad(void);
 void UpdateMemoryCardMenu(void);
@@ -273,37 +227,37 @@ static void ShopScreenNoOp(void) {}
 
 /* Retail main.exe tables at 0x80082EB8 and 0x80082EF0.  They contain code
  * addresses, so copying their 32-bit words into native storage is invalid. */
-void (*g_MenuScreenUpdate[14])(void) = {
-    EnterCourseSelectScreen,
-    UpdateCourseSelectScreen,
-    UpdateRankingScreen,
-    EnterCarSelectScreen,
-    UpdateCarSelectScreen,
-    UpdateCustomizeScreen,
-    UpdateDesignModeScreen,
-    UpdateTeamLogoScreen,
-    UpdateLogoSampleScreen,
-    UpdateTeamNameScreen,
-    UpdatePaintColorScreen,
-    UpdateCarShopScreen,
-    UpdateEngineerShopScreen,
-    ShopScreenNoOp,
+void (*g_MenuScreenUpdate[MENU_SCREEN_COUNT])(void) = {
+    [MENU_SCREEN_BOOTSTRAP] = EnterCourseSelectScreen,
+    [MENU_SCREEN_COURSE_SELECT] = UpdateCourseSelectScreen,
+    [MENU_SCREEN_RANKING] = UpdateRankingScreen,
+    [MENU_SCREEN_ENTER_CAR_SELECT] = EnterCarSelectScreen,
+    [MENU_SCREEN_CAR_SELECT] = UpdateCarSelectScreen,
+    [MENU_SCREEN_CUSTOMIZE] = UpdateCustomizeScreen,
+    [MENU_SCREEN_DESIGN_MODE] = UpdateDesignModeScreen,
+    [MENU_SCREEN_TEAM_LOGO] = UpdateTeamLogoScreen,
+    [MENU_SCREEN_LOGO_SAMPLE] = UpdateLogoSampleScreen,
+    [MENU_SCREEN_TEAM_NAME] = UpdateTeamNameScreen,
+    [MENU_SCREEN_PAINT_COLOR] = UpdatePaintColorScreen,
+    [MENU_SCREEN_CAR_SHOP] = UpdateCarShopScreen,
+    [MENU_SCREEN_ENGINEER_SHOP] = UpdateEngineerShopScreen,
+    [MENU_SCREEN_UNUSED] = ShopScreenNoOp,
 };
-s32 (*g_MenuScreenDraw[14])(s32) = {
-    DrawShopScreenNoOp,
-    DrawCourseSelectScreen,
-    DrawRankingScreen,
-    DrawShopScreenNoOp,
-    DrawCarSelectScreen,
-    DrawCustomizeScreen,
-    DrawDesignModeScreen,
-    DrawTeamLogoScreen,
-    DrawLogoSampleScreen,
-    DrawTeamNameScreen,
-    DrawPaintColorScreen,
-    DrawCarShopScreen,
-    DrawEngineerShopScreen,
-    DrawShopScreenNoOp,
+s32 (*g_MenuScreenDraw[MENU_SCREEN_COUNT])(s32) = {
+    [MENU_SCREEN_BOOTSTRAP] = DrawShopScreenNoOp,
+    [MENU_SCREEN_COURSE_SELECT] = DrawCourseSelectScreen,
+    [MENU_SCREEN_RANKING] = DrawRankingScreen,
+    [MENU_SCREEN_ENTER_CAR_SELECT] = DrawShopScreenNoOp,
+    [MENU_SCREEN_CAR_SELECT] = DrawCarSelectScreen,
+    [MENU_SCREEN_CUSTOMIZE] = DrawCustomizeScreen,
+    [MENU_SCREEN_DESIGN_MODE] = DrawDesignModeScreen,
+    [MENU_SCREEN_TEAM_LOGO] = DrawTeamLogoScreen,
+    [MENU_SCREEN_LOGO_SAMPLE] = DrawLogoSampleScreen,
+    [MENU_SCREEN_TEAM_NAME] = DrawTeamNameScreen,
+    [MENU_SCREEN_PAINT_COLOR] = DrawPaintColorScreen,
+    [MENU_SCREEN_CAR_SHOP] = DrawCarShopScreen,
+    [MENU_SCREEN_ENGINEER_SHOP] = DrawEngineerShopScreen,
+    [MENU_SCREEN_UNUSED] = DrawShopScreenNoOp,
 };
 
 enum { RAGE_CD_SECTOR_SIZE = 2352, RAGE_ISO_SECTOR_SIZE = 2048 };

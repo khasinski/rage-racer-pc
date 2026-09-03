@@ -16,6 +16,24 @@
  * externs below - not a struct - are the usable handles.
  */
 
+enum MenuScreenId {
+    MENU_SCREEN_BOOTSTRAP = 0,
+    MENU_SCREEN_COURSE_SELECT,
+    MENU_SCREEN_RANKING,
+    MENU_SCREEN_ENTER_CAR_SELECT,
+    MENU_SCREEN_CAR_SELECT,
+    MENU_SCREEN_CUSTOMIZE,
+    MENU_SCREEN_DESIGN_MODE,
+    MENU_SCREEN_TEAM_LOGO,
+    MENU_SCREEN_LOGO_SAMPLE,
+    MENU_SCREEN_TEAM_NAME,
+    MENU_SCREEN_PAINT_COLOR,
+    MENU_SCREEN_CAR_SHOP,
+    MENU_SCREEN_ENGINEER_SHOP,
+    MENU_SCREEN_UNUSED,
+    MENU_SCREEN_COUNT,
+};
+
 /* Grid-menu cursor (0..0x2B, a 4x11 grid; 0x2A/0x2B are the confirm buttons). */
 extern s32 GameMenuCursor;
 /* Non-zero while a screen transition is in progress; gates re-entry. */
@@ -41,8 +59,8 @@ extern s32 g_MenuScreen;
  * overlays (selected by g_MenuHandlerIndex / g_MenuOutgoingHandlerIndex). See the
  * screen-table block at the bottom of this header for the entries.
  */
-extern void (*g_MenuScreenUpdate[14])(void);
-extern s32 (*g_MenuScreenDraw[])(s32 step);
+extern void (*g_MenuScreenUpdate[MENU_SCREEN_COUNT])(void);
+extern s32 (*g_MenuScreenDraw[MENU_SCREEN_COUNT])(s32 step);
 
 /*
  * Title-menu cursor, 0..4 (UpdateMainMenuInput wraps it with `(sel + 5) % 5` on the
@@ -98,21 +116,6 @@ extern s32 g_MenuViewAngle;
 extern s32 g_MenuViewAngleTarget;
 extern s32 g_MenuViewOffset;
 extern s32 g_MenuViewOffsetTarget;
-
-enum MenuScreenId {
-    MENU_SCREEN_COURSE_SELECT = 1,
-    MENU_SCREEN_RANKING,
-    MENU_SCREEN_ENTER_CAR_SELECT,
-    MENU_SCREEN_CAR_SELECT,
-    MENU_SCREEN_CUSTOMIZE,
-    MENU_SCREEN_DESIGN_MODE,
-    MENU_SCREEN_TEAM_LOGO,
-    MENU_SCREEN_LOGO_SAMPLE,
-    MENU_SCREEN_TEAM_NAME,
-    MENU_SCREEN_PAINT_COLOR,
-    MENU_SCREEN_CAR_SHOP,
-    MENU_SCREEN_ENGINEER_SHOP
-};
 
 enum MenuLayout {
     MENU_FADE_MAX = 0x1FC,
@@ -186,6 +189,7 @@ void DrawFadingMenuSprites(
  * render state, zeroes 0x8009B2F8..0x8009B378 and resets all
  * fourteen per-screen transition accumulators. */
 void InitMenuMode(void);
+void UpdateMenuMode(void);
 
 /*
  * The menu-mode screen table pair: everything the front end shows once

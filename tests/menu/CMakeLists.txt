@@ -1121,6 +1121,25 @@ target_link_libraries(option_root_menu_tests PRIVATE psyz)
 add_test(NAME option_root_menu COMMAND option_root_menu_tests)
 set_tests_properties(option_root_menu PROPERTIES LABELS functional)
 
+add_executable(update_menu_mode_tests
+    update_menu_mode_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/update_menu_mode.c)
+target_include_directories(update_menu_mode_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(update_menu_mode_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(update_menu_mode_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(update_menu_mode_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME update_menu_mode COMMAND update_menu_mode_tests)
+set_tests_properties(update_menu_mode PROPERTIES LABELS unit)
+
 add_executable(course_card_tests
     course_card_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/course_card.c)
