@@ -37,9 +37,6 @@
 #include "disc_stream_table.h"
 #include "fmv_audio.h"
 
-extern int _snd_ev_flag;
-extern void _SsVmFlush(void);
-
 typedef struct RageHostDisc {
     FILE *file;
     int chd;
@@ -469,11 +466,3 @@ void *BiosFirstFile(char *path, void *entry) {
 void *BiosNextFile(void *entry) { return nextfile(entry); }
 
 long BiosFormatDevice(void *device) { return format(device); }
-s32 HostCdAudioEnded(void) { return Psyz_CdAudioEnded(); }
-void SpuVmDamperStep(void) {
-    if (_snd_ev_flag != 1) {
-        _snd_ev_flag = 1;
-        _SsVmFlush();
-        _snd_ev_flag = 0;
-    }
-}

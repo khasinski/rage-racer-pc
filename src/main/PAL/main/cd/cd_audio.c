@@ -1,3 +1,5 @@
+#include <psyz/cd.h>
+
 #include "psyq/cd.h"
 #include "game/cd.h"
 #include "game/cd_internal.h"
@@ -49,7 +51,7 @@ void TickCdAudio(void) {
      * Do not let repeated ticks rewind an in-flight restart back to its first
      * seek step, or playback can never reach the command that clears EOF. */
     if (CdAudioRequestsIdle(g_CdTrackPending, g_CdCommandPending) &&
-        HostCdAudioEnded() && CdTrackIndexValid(g_CdCurrentTrack)) {
+        Psyz_CdAudioEnded() && CdTrackIndexValid(g_CdCurrentTrack)) {
         if (g_SceneId == BGM_SELECT_SCENE) {
             g_CdTrackEnded = 1;
         } else {

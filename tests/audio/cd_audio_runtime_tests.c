@@ -34,7 +34,7 @@ void StepCdTrackRequest(void) { s_trackSteps++; }
 void StepCdPlayRequest(void) { s_playSteps++; }
 void StepCdPauseRequest(void) { s_pauseSteps++; }
 void StepCdVolumeFade(void) { s_fadeSteps++; }
-s32 HostCdAudioEnded(void) { return s_hostEnded; }
+int Psyz_CdAudioEnded(void) { return s_hostEnded; }
 void BuildCdTrackTable(void) { s_buildCalls++; }
 void SetCdVolume(s32 volume) { s_setVolume = volume; }
 

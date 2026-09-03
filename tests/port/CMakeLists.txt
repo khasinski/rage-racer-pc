@@ -68,6 +68,15 @@ endif()
 add_test(NAME host_storage COMMAND host_storage_tests)
 set_tests_properties(host_storage PROPERTIES LABELS functional)
 
+add_executable(spu_vm_flush_tests
+    spu_vm_flush_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/spu_vm_flush.c)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(spu_vm_flush_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME spu_vm_flush COMMAND spu_vm_flush_tests)
+set_tests_properties(spu_vm_flush PROPERTIES LABELS unit)
+
 add_executable(archive_index_tests
     archive_index_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/archive_index.c)
