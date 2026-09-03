@@ -6,6 +6,7 @@
 #include "game/render_state.h"
 #include "game/track.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -105,7 +106,20 @@ static int RunCase(s32 cameraPoint, s32 backwards, s32 expectedPoint) {
 }
 
 int main(void) {
+    PlayerCarRuntime target = {0};
+
     if (RunCase(1, 0, 9) || RunCase(9, 1, 1)) return 1;
+
+    target.x = 1000;
+    target.y = 2000;
+    target.z = 3000;
+    g_CameraCarSpeed = INT_MIN;
+    s_atanCall = 0;
+    UpdateFinishCamera(&target);
+    if (g_CameraCarStepX != 0 || g_CameraCarStepZ != 0) {
+        puts("FAIL: finish camera velocity did not wrap as a PS1 word");
+        return 1;
+    }
 
     g_TrackPoints = NULL;
     g_TrackPointCount = 0;
