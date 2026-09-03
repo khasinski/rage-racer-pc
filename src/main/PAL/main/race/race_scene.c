@@ -107,14 +107,15 @@ static s32 UpdateRaceEndState(void) {
     return 0;
 }
 
-static void ToggleRacePause(void) {
+/* Returns non-zero when the selected action has already replaced this scene. */
+static s32 UpdateRacePause(void) {
     RacePauseToggleResult toggle;
 
     toggle = DecideRacePauseToggle(
         g_RacePhase, g_RacePaused, (g_PadPressed & PAD_START) != 0,
         g_PauseDebounce, g_GrandPrixMode, g_RaceOptionCursor);
     if (!toggle.toggled) {
-        return;
+        return 0;
     }
 
     g_PauseDebounce = PAUSE_TOGGLE_DEBOUNCE;
@@ -124,7 +125,7 @@ static void ToggleRacePause(void) {
         ForceAllEffectVoicesEnabled(0);
         g_RaceOptionCursor = 0;
         PlaySoundCue(2);
-        return;
+        return 0;
     }
 
     if (toggle.action == RACE_PAUSE_QUIT) {
@@ -150,6 +151,7 @@ static void ToggleRacePause(void) {
     } else if (toggle.action == RACE_PAUSE_RESTART) {
         ExitRaceScene(0xB);
         g_RacePhase = 8;
+        return 1;
     } else {
         g_PauseDebounce = PAUSE_RESUME_DEBOUNCE;
         ForceAllEffectVoicesEnabled(1);
@@ -157,6 +159,7 @@ static void ToggleRacePause(void) {
             ResumeCdAudio();
         }
     }
+    return 0;
 }
 
 int RetireCameraActive(void) {
@@ -467,7 +470,9 @@ void UpdateRaceScene(void) {
         g_PauseDebounce--;
     }
 
-    ToggleRacePause();
+    if (UpdateRacePause()) {
+        return;
+    }
     if (UpdateRaceEndState()) {
         return;
     }
