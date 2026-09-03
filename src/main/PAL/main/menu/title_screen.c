@@ -1,12 +1,10 @@
 #include "game/prim.h"
 #include "game/asset.h"
 #include "game/audio.h"
-#include "game/audio_internal.h"
 #include "game/cd.h"
 #include "game/frontend_internal.h"
 #include "game/menu.h"
 #include "game/race.h"
-#include "game/random.h"
 #include "game/render_internal.h"
 #include "game/fmv_internal.h"
 #include "game/save_internal.h"
@@ -173,41 +171,6 @@ void UpdateMainMenuOpen(void) {
     }
 
     DrawMainMenuRows();
-}
-
-
-/* Refills g_BgmShuffleOrder with a random permutation of the
- * g_BgmTrackCount tracks and rewinds g_BgmShuffleIndex. */
-void ShuffleBgmOrder(void) {
-    s32 i;
-    s32 count;
-    s32 j;
-    s32 remaining;
-
-    for (i = 0; i < g_BgmTrackCount; i++) {
-        g_BgmShuffleOrder[i] = 0xFF;
-    }
-
-    for (i = 0; i < g_BgmTrackCount; i++) {
-        count = 0;
-        for (j = 0; j < g_BgmTrackCount; j++) {
-            if (g_BgmShuffleOrder[j] == 0xFF) {
-                count++;
-            }
-        }
-
-        remaining = ((Random15() & 0xFFF) % count) + 1;
-        j = 0;
-        while (remaining != 0) {
-            if (g_BgmShuffleOrder[j] == 0xFF) {
-                remaining--;
-            }
-            j++;
-        }
-        g_BgmShuffleOrder[j - 1] = i;
-    }
-
-    g_BgmShuffleIndex = 0;
 }
 
 
