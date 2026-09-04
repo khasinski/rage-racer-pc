@@ -28,6 +28,10 @@ static s32 ScaleCueVolume(s32 volume, s32 cueScale) {
     return ScaleClampedVoiceVolume(volume, g_SoundScale.scale);
 }
 
+static int HasValidVabSlot(const SoundCueParams *params) {
+    return (u32)params->vab < AUDIO_SLOT_COUNT;
+}
+
 static s32 StartPooledCueTone(const SoundCueParams *params, s32 tone,
                               s32 volumeLeft, s32 volumeRight,
                               s32 busy[POOLED_VOICE_COUNT]) {
@@ -58,6 +62,9 @@ static void StartPairedSoundCue(s32 cue, s32 volL, s32 volR) {
     s32 voiceB;
     s32 i;
 
+    if (!HasValidVabSlot(params)) {
+        return;
+    }
     volL = ScaleCueVolume(volL, params->volume);
     volR = ScaleCueVolume(volR, params->volume);
 
@@ -87,10 +94,13 @@ static void StartPairedSoundCue(s32 cue, s32 volL, s32 volR) {
 
 /* Cues 15..17 always live in the main cue bank, including while the race cue
  * bank is active. They share fixed voice 19 and suppress repeat requests. */
-static void StartSharedSingleCue(s32 cue, s32 volume) {
+static int StartSharedSingleCue(s32 cue, s32 volume) {
     const SoundCueParams *params = &g_SoundCueParams[cue];
     s32 voiceVolume;
 
+    if (!HasValidVabSlot(params)) {
+        return 0;
+    }
     if (g_ActiveSpecialCue != cue) {
         voiceVolume = ScaleCueVolume(volume, params->volume);
         SsUtKeyOnV(
@@ -100,11 +110,15 @@ static void StartSharedSingleCue(s32 cue, s32 volume) {
     }
 
     g_ActiveSpecialCue = cue;
+    return 1;
 }
 
 static void StartSpecialCueVoice(s32 cue, s32 volumeLeft, s32 volumeRight) {
     const SoundCueParams *params = &g_SoundCueParams2[cue];
 
+    if (!HasValidVabSlot(params)) {
+        return;
+    }
     volumeLeft = ScaleCueVolume(volumeLeft, params->volume);
     volumeRight = ScaleCueVolume(volumeRight, params->volume);
 
@@ -143,8 +157,9 @@ void PlaySoundCue(s32 cue) {
         cue = ClampCueIndex(cue, MAIN_SOUND_CUE_COUNT);
         if (IsRepeatedSpecialCue(cue)) {
             if (cue != g_LastSpecialCueRequest) {
-                g_LastSpecialCueRequest = cue;
-                StartSharedSingleCue(cue, CUE_VOLUME_FULL);
+                if (StartSharedSingleCue(cue, CUE_VOLUME_FULL)) {
+                    g_LastSpecialCueRequest = cue;
+                }
             }
             return;
         }
@@ -156,8 +171,9 @@ void PlaySoundCue(s32 cue) {
         cue = ClampCueIndex(cue, RACE_SOUND_CUE_COUNT);
         if (IsRepeatedSpecialCue(cue)) {
             if (cue != g_LastSpecialCueRequest) {
-                g_LastSpecialCueRequest = cue;
-                StartSharedSingleCue(cue, CUE_VOLUME_FULL);
+                if (StartSharedSingleCue(cue, CUE_VOLUME_FULL)) {
+                    g_LastSpecialCueRequest = cue;
+                }
             }
             return;
         }

@@ -199,6 +199,17 @@ static int TestBankOne(void) {
     s_fixedFailureCall = 1;
     PlaySoundCue(0);
     CHECK(s_voiceErrorMessages == 1);
+
+    Reset();
+    g_SoundCueBank = 1;
+    g_SoundCueParams[0].vab = -1;
+    PlaySoundCue(0);
+    CHECK(s_fixedCount == 0);
+
+    g_SoundCueParams[15].vab = AUDIO_SLOT_COUNT;
+    PlaySoundCue(15);
+    CHECK(s_fixedCount == 0 && g_ActiveSpecialCue == -1 &&
+          g_LastSpecialCueRequest == -1);
     return 0;
 }
 
@@ -243,6 +254,16 @@ static int TestBankTwo(void) {
     s_dynamicFailureCall = 1;
     PlaySoundCue(20);
     CHECK(s_voiceErrorMessages == 1);
+
+    Reset();
+    g_SoundCueBank = 2;
+    g_SoundCueParams2[20].vab = AUDIO_SLOT_COUNT;
+    PlaySoundCue(20);
+    CHECK(s_dynamicCount == 0);
+
+    g_SoundCueParams2[26].vab = -1;
+    PlaySoundCue(26);
+    CHECK(s_fixedCount == 0);
     return 0;
 }
 
