@@ -71,6 +71,17 @@ int main(void) {
         }
     }
 
+    g_FlybySceneryData = NULL;
+    g_FlybyScenery.timer = 12;
+    g_FlybyScenery.soundEnabled = 1;
+    g_FlybyScenery.volume = 99;
+    SeedFlybyScenery();
+    if (g_FlybyScenery.timer != 0 || g_FlybyScenery.soundEnabled != 0 ||
+        g_FlybyScenery.volume != 0 || g_FlybySceneryKeyframe != NULL) {
+        puts("FAIL: missing flyby data was not disabled");
+        return 1;
+    }
+
     puts("flyby scenery seeding preserved");
     return 0;
 }

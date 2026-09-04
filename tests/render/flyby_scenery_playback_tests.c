@@ -171,6 +171,15 @@ int main(void) {
         return 1;
     }
 
+    g_CourseIndex = 2;
+    g_FlybySceneryData = NULL;
+    UpdateFlybyScenery();
+    if (!CheckAudio(2, 0) || g_FlybyScenery.timer != 0 ||
+        g_FlybyScenery.soundEnabled != 0 || g_FlybyScenery.volume != 0) {
+        puts("FAIL: missing flyby data was not safely disabled");
+        return 1;
+    }
+
     puts("flyby scenery playback preserved");
     return 0;
 }

@@ -164,6 +164,16 @@ void UpdateFlybyScenery(void) {
     s32 cue;
     s32 active;
 
+    if (g_FlybySceneryData == NULL || g_FlybySceneryKeyframe == NULL) {
+        pitch = 0;
+        volume = 0;
+        g_FlybyScenery.timer = 0;
+        g_FlybyScenery.soundEnabled = 0;
+        g_FlybyScenery.volume = 0;
+        cue = FlybySoundCue(SeriesCourseIndex(), &pitch, &volume);
+        SetPitchedSoundCue(cue, pitch, volume);
+        return;
+    }
     StartFlybyIfTriggered();
     active = g_FlybyScenery.timer > 0;
     if (active) {
