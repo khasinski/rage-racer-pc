@@ -127,6 +127,15 @@ static void TestImageEntries(void) {
     entry.clut.size = sizeof(entry.clut);
     Check(UploadImageEntry(&entry.header, sizeof(entry) - 1) == 0,
           "truncated pixel payload rejects the whole entry");
+
+    entry.pixels.x = 1023;
+    Check(UploadImageEntry(&entry.header, sizeof(entry)) == 0,
+          "image crossing the right VRAM edge is invalid");
+    entry.pixels.x = 30;
+    entry.pixels.y = 511;
+    entry.pixels.h = 2;
+    Check(UploadImageEntry(&entry.header, sizeof(entry)) == 0,
+          "image crossing the bottom VRAM edge is invalid");
 }
 
 static void TestImageAssetChain(void) {

@@ -3,6 +3,11 @@
 
 #include <stddef.h>
 
+enum {
+    IMAGE_VRAM_WIDTH = 1024,
+    IMAGE_VRAM_HEIGHT = 512,
+};
+
 static void UploadBlockPixels(const GameImageBlock *block) {
     Rect rect;
 
@@ -25,7 +30,11 @@ static s32 ImageBlockFits(const GameImageBlock *block, size_t size) {
         return 0;
     }
     pixelBytes = pixelCount * sizeof(u16);
-    return pixelBytes <= size - offsetof(GameImageBlock, pixels);
+    return pixelBytes <= size - offsetof(GameImageBlock, pixels) &&
+           (block->w == 0 ||
+            (size_t)block->x + block->w <= IMAGE_VRAM_WIDTH) &&
+           (block->h == 0 ||
+            (size_t)block->y + block->h <= IMAGE_VRAM_HEIGHT);
 }
 
 s32 IsValidImageEntry(const GameImageEntryHeader *entry, size_t size) {
