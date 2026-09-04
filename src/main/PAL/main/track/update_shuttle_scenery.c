@@ -37,6 +37,12 @@ void UpdateShuttleScenery(s32 instance) {
     if (travelDuration <= 0) {
         return;
     }
+    if (step < 0) {
+        step = 0;
+        state->travelStep = 0;
+    } else if (step > travelDuration) {
+        step = travelDuration;
+    }
     from = &g_ShuttlePathPoints[pathIndex].endpoint[state->startEndpoint];
     to = &g_ShuttlePathPoints[pathIndex]
               .endpoint[1 - state->startEndpoint];

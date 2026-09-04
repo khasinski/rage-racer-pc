@@ -91,6 +91,27 @@ int main(void) {
         return 1;
     }
 
+    g_ShuttlePathPoints[0].endpoint[0] = (Vec4){10, 20, 30, 0};
+    g_ShuttlePathPoints[0].endpoint[1] = (Vec4){110, 220, 330, 0};
+    state->startEndpoint = 0;
+    state->travelStep = -1;
+    state->dwellCounter = 0;
+    UpdateShuttleScenery(0);
+    if (state->position.x != 10 || state->position.y != 20 ||
+        state->position.z != 30 || state->travelStep != 0) {
+        puts("FAIL: negative shuttle step was not normalized");
+        return 1;
+    }
+
+    state->travelStep = INT_MAX;
+    UpdateShuttleScenery(0);
+    if (state->position.x != 110 || state->position.y != 220 ||
+        state->position.z != 330 || state->travelStep != 0 ||
+        state->startEndpoint != 1) {
+        puts("FAIL: oversized shuttle step was not completed safely");
+        return 1;
+    }
+
     puts("shuttle scenery playback preserved");
     return 0;
 }
