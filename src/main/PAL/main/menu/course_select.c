@@ -157,8 +157,3 @@ s32 DrawCourseSelectScreen(s32 step) {
 
     return g_CourseSelectScrollProgress;
 }
-
-/* Screen-fade callback used by the host menu renderer. */
-s32 DrawRankingScreen(s32 step) {
-    return AdvanceMenuFade(&g_RankingScrollState, step);
-}

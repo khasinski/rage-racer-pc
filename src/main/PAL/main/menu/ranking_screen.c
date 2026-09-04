@@ -27,6 +27,11 @@ enum RankingTable {
     RANKING_TABLE_LAP,
 };
 
+/* Screen-fade callback used by the host menu renderer. */
+s32 DrawRankingScreen(s32 step) {
+    return AdvanceMenuFade(&g_RankingScrollState, step);
+}
+
 static void DrawRankingScreenChrome(s32 panelStep) {
     RunTimedDrawScript(g_RankingPanelScript, &g_UiScriptProgress, panelStep);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress,

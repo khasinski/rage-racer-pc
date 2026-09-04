@@ -14,6 +14,7 @@ s32 g_MenuOverlayPattern;
 s32 g_MenuScreen;
 s32 g_RankingCursor;
 s32 g_RankingPendingState;
+s32 g_RankingScrollState;
 s32 g_TimeAttackPlateStep;
 s32 g_UiScriptProgress;
 s32 g_UiScriptProgress2;
@@ -79,6 +80,10 @@ static void Reset(void) {
 }
 
 int main(void) {
+    g_RankingScrollState = 100;
+    CHECK(DrawRankingScreen(20) == 120);
+    CHECK(DrawRankingScreen(0) == 0 && g_RankingScrollState == 0);
+
     Reset();
     g_UiScriptProgress2 = 9;
     UpdateRankingScreen();
