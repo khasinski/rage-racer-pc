@@ -122,6 +122,13 @@ static void TestMappingSelection(void) {
     UpdateControllerConfigScreen();
     CHECK(g_AnimTimer == INT_MIN);
     CHECK(g_SetupArrowPulse == (s32)((u32)INT_MAX + 96u));
+
+    ResetState();
+    g_ControllerSceneAngleY = INT_MAX;
+    g_PadPressed = PAD_LEFT;
+    UpdateControllerConfigScreen();
+    CHECK(g_ControllerSceneAngleY ==
+          (s32)(((int64_t)(s32)((u32)INT_MAX + 2048u) * 15) / 16));
 }
 
 static void TestMappingNavigation(void) {
@@ -204,6 +211,12 @@ static void TestNeutralCaptureAndDisconnect(void) {
     CHECK(g_GameMode == OPTION_MODE_ROOT && g_NegconSteerNeutral == 11);
     CHECK(g_NegconNeutralI == 22 && g_NegconNeutralII == 33);
     CHECK(g_NegconNeutralL == 44);
+
+    ResetState();
+    g_PadType = PAD_TYPE_NEGCON;
+    g_AnimTimer = INT_MAX;
+    UpdateNegconNeutralScreen();
+    CHECK(g_AnimTimer == INT_MIN);
 }
 
 int main(void) {

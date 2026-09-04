@@ -17,12 +17,14 @@ static void UpdateControllerMappingSelection(u16 pressed) {
     if ((pressed & PAD_LEFT) && *selection > CONTROLLER_MAPPING_FIRST) {
         PlaySoundCue(8);
         (*selection)--;
-        g_ControllerSceneAngleY += CONTROLLER_HALF_TURN;
+        g_ControllerSceneAngleY =
+            (s32)((u32)g_ControllerSceneAngleY + CONTROLLER_HALF_TURN);
     }
     if ((pressed & PAD_RIGHT) && *selection < CONTROLLER_MAPPING_LAST) {
         PlaySoundCue(8);
         (*selection)++;
-        g_ControllerSceneAngleY -= CONTROLLER_HALF_TURN;
+        g_ControllerSceneAngleY =
+            (s32)((u32)g_ControllerSceneAngleY - CONTROLLER_HALF_TURN);
     }
 }
 
@@ -47,7 +49,8 @@ void UpdateControllerConfigScreen(void) {
     } else {
         UpdateControllerMappingSelection(pressed);
     }
-    g_ControllerSceneAngleY = (g_ControllerSceneAngleY * 15) / 16;
+    g_ControllerSceneAngleY =
+        (s32)(((int64_t)g_ControllerSceneAngleY * 15) / 16);
     DrawControllerConfigScreen();
     DrawOptionHintBar(1);
     DrawControllerSetupScene(0);

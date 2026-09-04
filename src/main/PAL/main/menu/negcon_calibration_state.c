@@ -30,7 +30,7 @@ void RestoreNegconCalibrationSettings(void) {
 }
 
 void UpdateNegconNeutralScreen(void) {
-    g_AnimTimer++;
+    g_AnimTimer = (s32)((u32)g_AnimTimer + 1u);
     if (g_PadPressed & PAD_START) {
         PlaySoundCue(2);
         g_GameMode = OPTION_MODE_NEGCON_STEER_PLAY;
