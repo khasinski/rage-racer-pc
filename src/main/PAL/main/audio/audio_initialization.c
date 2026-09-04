@@ -23,10 +23,12 @@ void InitSequenceAudio(void) {
 void InitEffectVoiceRuntime(void) {
     s32 carAssetIndex;
 
+    SetSoundSlotVoicesEnabled(0);
     _SsVmInit(LIBSND_RESET);
     SsSetReservedVoice(EFFECT_VOICE_RUNTIME_COUNT);
     ResetAudioVoiceState();
 
+    g_EngineSoundState.bank = -1;
     SetSoundSlotVoicesEnabled(1);
     SetReverbPreset(EFFECT_REVERB_PRESET, 0, 0);
     carAssetIndex = GetOwnedCarAssetIndex(g_PlayerCarIndex);

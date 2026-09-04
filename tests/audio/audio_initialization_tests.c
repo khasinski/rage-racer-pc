@@ -9,6 +9,7 @@
 
 MusicChannel g_MusicChannels[AUDIO_MUSIC_CHANNEL_COUNT];
 EffectVoice g_EffectVoices[AUDIO_EFFECT_VOICE_COUNT];
+EngineSoundState g_EngineSoundState;
 s32 g_PanVoiceVolumeR;
 s32 g_PanVoiceVolumeL;
 s32 g_IndexedEffectIndexPrev;
@@ -26,7 +27,8 @@ static s32 s_voiceCount;
 static s32 s_reverbLeft;
 static s32 s_reverbRight;
 static s32 s_refreshCalls;
-static s32 s_slotEnable;
+static s32 s_slotEnableCalls;
+static s32 s_slotEnable[2];
 static s32 s_presetType;
 static s32 s_loadedScale;
 static s32 s_failures;
@@ -43,7 +45,12 @@ void SetDefaultReverbDepth(void) {
     s_reverbRight = 40;
 }
 void RefreshSequenceVolumeScale(void) { s_refreshCalls++; }
-void SetSoundSlotVoicesEnabled(s32 enabled) { s_slotEnable = enabled; }
+void SetSoundSlotVoicesEnabled(s32 enabled) {
+    if (s_slotEnableCalls < 2) {
+        s_slotEnable[s_slotEnableCalls] = enabled;
+    }
+    s_slotEnableCalls++;
+}
 void SetReverbPreset(s32 type, s32 left, s32 right) {
     (void)left;
     (void)right;
@@ -79,7 +86,9 @@ static void TestEffectInitialization(void) {
     g_LastSpecialCueRequest = 15;
     g_PlayerCarIndex = 2;
     g_CarSoundVolumeScales[3] = 91;
+    g_EngineSoundState.bank = 1;
     s_vmInitCalls = 0;
+    s_slotEnableCalls = 0;
     InitEffectVoiceRuntime();
 
     Check(s_vmInitCalls == 1 && s_voiceCount == 8,
@@ -97,8 +106,11 @@ static void TestEffectInitialization(void) {
     }
     Check(g_ActiveSpecialCue == -1 && g_LastSpecialCueRequest == -1,
           "effect initialization clears special cue deduplication");
-    Check(s_slotEnable == 1 && s_presetType == 2 && s_loadedScale == 91,
-          "effect initialization enables slots and selects car volume");
+    Check(s_slotEnableCalls == 2 && s_slotEnable[0] == 0 &&
+              s_slotEnable[1] == 1 && g_EngineSoundState.bank == -1,
+          "effect initialization rebuilds engine voices and bank state");
+    Check(s_presetType == 2 && s_loadedScale == 91,
+          "effect initialization selects reverb and car volume");
 
     g_PlayerCarIndex = -2;
     g_CarSoundVolumeScales[0] = 37;
