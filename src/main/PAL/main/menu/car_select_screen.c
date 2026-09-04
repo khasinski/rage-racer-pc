@@ -212,6 +212,29 @@ static void UpdateCarSelectModal(void) {
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
 }
 
+/* Publish the menu selection only when the persistent race state can accept
+ * it.  Asset/bootstrap failures must leave the outgoing screen alive for a
+ * later retry instead of dereferencing an absent save-state record. */
+static s32 HandOverToRace(void) {
+    if (g_RaceProgress == NULL ||
+        (u32)g_PlayerCarIndex >= GAME_CAR_COUNT ||
+        (u32)g_GrandPrixClass > GRAND_PRIX_FINAL_CLASS_INDEX) {
+        return 0;
+    }
+
+    g_SceneId = 9;
+    g_CourseIndex = CourseSlot(g_CourseIndex);
+    g_RaceProgress->course = g_CourseIndex;
+    g_RaceProgress->carIndex = g_PlayerCarIndex;
+    g_RaceProgress->classIndex = g_GrandPrixClass;
+    if (g_GrandPrixMode != 0) {
+        g_RaceProgress->money = g_PlayerMoney;
+    } else {
+        g_RaceProgress->timeAttackSeries = g_GrandPrixSeries;
+    }
+    return 1;
+}
+
 /*
  * On the way out. The chrome slides off, and once it has gone the chosen
  * screen is handed the controls. Returns without doing so while the view is
@@ -224,15 +247,8 @@ static void EnterChosenScreen(void) {
             (g_MenuViewOffset <= 0x3D08F)) {
             return;
         }
-        g_SceneId = 9;
-        g_CourseIndex &= 3;
-        g_RaceProgress->course = g_CourseIndex;
-        g_RaceProgress->carIndex = g_PlayerCarIndex;
-        g_RaceProgress->classIndex = g_GrandPrixClass;
-        if (g_GrandPrixMode != 0) {
-            g_RaceProgress->money = g_PlayerMoney;
-        } else {
-            g_RaceProgress->timeAttackSeries = g_GrandPrixSeries;
+        if (!HandOverToRace()) {
+            return;
         }
         break;
     case 2:
@@ -270,9 +286,11 @@ static void EnterChosenScreen(void) {
         g_CourseCardSpin = 0x1F4000;
         g_MenuCourseModelIndex = g_CourseIndex;
         g_CourseCardPendingGrade =
-            g_CourseProgress->bestPlace[g_CourseIndex & 3];
+            g_CourseProgress != NULL
+                ? g_CourseProgress->bestPlace[CourseSlot(g_CourseIndex)]
+                : 0;
         DrawTimeAttackPlate(0);
-        g_TimeAttackPlateStep = (g_CourseIndex >= 4) ? 1 : -1;
+        g_TimeAttackPlateStep = CourseSeries(g_CourseIndex) != 0 ? 1 : -1;
         break;
     }
     g_UiScriptProgress = 0;

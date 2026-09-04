@@ -822,7 +822,7 @@ int main(int argc, char **argv) {
     g_MenuViewOffset = 0x3D090;
     g_SceneId = -1;
     UpdateCourseSelectScreen();
-    if (g_SceneId != -1) {
+    if (g_SceneId != -1 || GameMenuBusy != COURSE_SELECT_TO_RACE) {
         puts("FAIL a missing race-progress record started a race");
         return 1;
     }

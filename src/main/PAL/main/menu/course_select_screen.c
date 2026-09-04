@@ -362,11 +362,11 @@ static void UpdateCourseSelectModal(void *ot, s32 state) {
 }
 
 /* What the race is started with, once the screen has finished sliding off. */
-static void HandOverToRace(s32 sceneId, s32 course) {
+static s32 HandOverToRace(s32 sceneId, s32 course) {
     if (g_RaceProgress == NULL || (u32)course >= COURSE_SLOT_COUNT ||
         (u32)g_PlayerCarIndex >= GAME_CAR_COUNT ||
         (u32)g_GrandPrixClass > GRAND_PRIX_FINAL_CLASS_INDEX) {
-        return;
+        return 0;
     }
     g_SceneId = sceneId;
     g_CourseIndex = course;
@@ -378,6 +378,7 @@ static void HandOverToRace(s32 sceneId, s32 course) {
     } else {
         g_RaceProgress->timeAttackSeries = g_GrandPrixSeries;
     }
+    return 1;
 }
 
 static void EnterChosenScreen(void) {
@@ -403,7 +404,9 @@ static void EnterChosenScreen(void) {
             (g_MenuViewOffset < MENU_VIEW_OFFSET_MAX)) {
             return;
         }
-        HandOverToRace(2, CourseSlot(g_CourseIndex));
+        if (!HandOverToRace(2, CourseSlot(g_CourseIndex))) {
+            return;
+        }
         break;
     case COURSE_SELECT_TO_RANKING:
         g_MenuScreen = MENU_SCREEN_RANKING;
@@ -415,7 +418,9 @@ static void EnterChosenScreen(void) {
             (g_MenuViewOffset < MENU_VIEW_OFFSET_MAX)) {
             return;
         }
-        HandOverToRace(0x18, SeriesCourseIndex());
+        if (!HandOverToRace(0x18, SeriesCourseIndex())) {
+            return;
+        }
         break;
     }
     g_UiScriptProgress = 0;

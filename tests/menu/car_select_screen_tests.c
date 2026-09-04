@@ -354,6 +354,33 @@ int main(int argc, char **argv) {
         puts("FAIL missing car state opened the engineer shop");
         return 1;
     }
+
+    GameMenuBusy = 1;
+    g_UiScriptProgress = 0;
+    g_MenuOutgoingScreenProgress = 0;
+    g_MenuViewOffset = 0x3D090;
+    g_PlayerCarIndex = 0;
+    g_GrandPrixClass = 0;
+    g_SceneId = -1;
+    g_RaceProgress = NULL;
+    UpdateCarSelectScreen();
+    if (GameMenuBusy != 1 || g_SceneId != -1) {
+        puts("FAIL missing race progress completed the race transition");
+        return 1;
+    }
+
+    GameMenuBusy = 5;
+    g_CourseProgress = NULL;
+    g_CourseIndex = 4;
+    g_MenuViewOffset = 0x3D090;
+    g_CourseCardPendingGrade = -1;
+    UpdateCarSelectScreen();
+    if (GameMenuBusy != 0 ||
+        g_MenuScreen != MENU_SCREEN_COURSE_SELECT ||
+        g_CourseCardPendingGrade != 0) {
+        puts("FAIL missing course progress prevented a safe menu return");
+        return 1;
+    }
     printf("the car select screen takes the same %d states it always did\n",
            steps);
     return 0;
