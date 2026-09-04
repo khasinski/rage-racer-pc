@@ -329,6 +329,8 @@ static void ErrorHandlingTests(void) {
     Check("an unplugged pad has no type", g_PadState.type, 0);
     Check("an unplugged pad reports an error", g_PadErrorState,
           PAD_ERROR_STATE_DISCONNECTED);
+    Check("validation leaves the BIOS packet type intact", g_PadBuffers[1],
+          PAD_TYPE_DIGITAL);
     Check("an unplugged pad rearms the validation", g_PadValidateCountdown,
           0x22);
     Check("an unplugged pad holds nothing", g_PadState.held, 0);
