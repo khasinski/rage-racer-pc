@@ -102,6 +102,32 @@ static void TestTrackEventData(void) {
     ((PathSceneryPositionData *)(offsetBase +
         data.offsets.pathSceneryPosition))->keys[1].fields.span = -1;
 
+    ((PathSceneryPositionData *)(offsetBase +
+        data.offsets.pathSceneryPosition))->keys[0].fields.span = 2;
+    ((PathSceneryPositionData *)(offsetBase +
+        data.offsets.pathSceneryPosition))->keys[1].fields.span = 1;
+    ((PathSceneryPositionData *)(offsetBase +
+        data.offsets.pathSceneryPosition))->keys[2].fields.span = -1;
+    Check(InstallTrackEventData(&data, sizeof(data)) == 0,
+          "decreasing path position timeline rejected");
+    ((PathSceneryPositionData *)(offsetBase +
+        data.offsets.pathSceneryPosition))->keys[0].fields.span = 0;
+    ((PathSceneryPositionData *)(offsetBase +
+        data.offsets.pathSceneryPosition))->keys[1].fields.span = -1;
+
+    ((PathSceneryRotationData *)(offsetBase +
+        data.offsets.pathSceneryRotation))->keys[0].fields.span = 2;
+    ((PathSceneryRotationData *)(offsetBase +
+        data.offsets.pathSceneryRotation))->keys[1].fields.span = 2;
+    ((PathSceneryRotationData *)(offsetBase +
+        data.offsets.pathSceneryRotation))->keys[2].fields.span = -1;
+    Check(InstallTrackEventData(&data, sizeof(data)) == 0,
+          "duplicate path rotation timeline rejected");
+    ((PathSceneryRotationData *)(offsetBase +
+        data.offsets.pathSceneryRotation))->keys[0].fields.span = 0;
+    ((PathSceneryRotationData *)(offsetBase +
+        data.offsets.pathSceneryRotation))->keys[1].fields.span = -1;
+
     ((RaceIntroCameraScript *)(offsetBase +
         data.offsets.raceIntroCamera))->keys[0].mode = 2;
     Check(InstallTrackEventData(&data, sizeof(data)) == 0,

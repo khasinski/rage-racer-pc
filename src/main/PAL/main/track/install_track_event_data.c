@@ -102,6 +102,7 @@ static s32 RaceIntroCameraBlockIsValid(const TrackEventOffsets *offsets,
 static s32 PathPositionSequenceIsValid(
     const PathSceneryPositionKey *keys, size_t keyCount, size_t first) {
     size_t i;
+    s16 previousSpan = -1;
 
     for (i = first; i < keyCount; i++) {
         s16 span = keys[i].fields.span;
@@ -110,7 +111,8 @@ static s32 PathPositionSequenceIsValid(
             size_t loop = keys[i].fields.loopIndex;
             return i > first && loop < i - first;
         }
-        if (span < 0 || i + 1 >= keyCount) return 0;
+        if (span <= previousSpan || i + 1 >= keyCount) return 0;
+        previousSpan = span;
     }
     return 0;
 }
@@ -145,6 +147,7 @@ static s32 PathPositionBlockIsValid(const TrackEventOffsets *offsets,
 static s32 PathRotationSequenceIsValid(
     const PathSceneryRotationKey *keys, size_t keyCount, size_t first) {
     size_t i;
+    s16 previousSpan = -1;
 
     for (i = first; i < keyCount; i++) {
         s16 span = keys[i].fields.span;
@@ -153,7 +156,8 @@ static s32 PathRotationSequenceIsValid(
             size_t loop = keys[i].fields.loopIndex;
             return i > first && loop < i - first;
         }
-        if (span < 0 || i + 1 >= keyCount) return 0;
+        if (span <= previousSpan || i + 1 >= keyCount) return 0;
+        previousSpan = span;
     }
     return 0;
 }
