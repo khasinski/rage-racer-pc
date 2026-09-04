@@ -27,7 +27,7 @@ void CameraViewFromCarBlock(GameRenderObject *car, GameViewWork *view) {
 
 static void CameraViewFromOrbitPosition(GameRenderObject *car,
                                         GameViewWork *view, s32 yaw,
-                                        s32 distance) {
+                                        s32 distance, s32 height) {
     Matrix cameraRotation;
     s32 eyeOffset[3];
     s32 eyeWorld[3];
@@ -52,7 +52,7 @@ static void CameraViewFromOrbitPosition(GameRenderObject *car,
     view->y = CameraAddWord(view->y, focusWorld[1]);
     view->z = CameraAddWord(view->z, focusWorld[2]);
     eyeOffset[0] = 0;
-    eyeOffset[1] = 0;
+    eyeOffset[1] = height;
     eyeOffset[2] = distance;
     ApplyMatrixLV(&cameraToWorld, &eyeOffset[0], &eyeWorld[0]);
     /* Pitch uses the orbit distance rather than the flattened eye vector,
@@ -70,16 +70,17 @@ static void CameraViewFromOrbitPosition(GameRenderObject *car,
 
 void CameraViewFromOrbit(GameRenderObject *car, GameViewWork *view) {
     CameraViewFromOrbitPosition(car, view, g_OrbitCameraYaw,
-                                g_OrbitCameraDistance);
+                                g_OrbitCameraDistance, 0);
 }
 
 void CameraViewFromLookBehind(GameRenderObject *car, GameViewWork *view) {
     enum {
         LOOK_BEHIND_YAW = 0x800,
-        LOOK_BEHIND_DISTANCE = 0xA0,
+        LOOK_BEHIND_DISTANCE = 0xE0,
+        LOOK_BEHIND_HEIGHT = 0x50,
     };
     CameraViewFromOrbitPosition(car, view, LOOK_BEHIND_YAW,
-                                LOOK_BEHIND_DISTANCE);
+                                LOOK_BEHIND_DISTANCE, LOOK_BEHIND_HEIGHT);
 }
 
 void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
