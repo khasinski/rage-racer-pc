@@ -1,6 +1,7 @@
 #include "common.h"
 #include "game/cd.h"
 #include "game/fmv.h"
+#include "game/scene.h"
 #include "game/state.h"
 #include "psyq/cd.h"
 
@@ -72,7 +73,7 @@ static void TestClassFmvReturn(void) {
     Check(s_cdSyncCalls == 1 && s_cdSyncMode == CD_SYNC_WAIT &&
               s_cdCommand == CD_DRIVE_PAUSE,
           "class FMV return pauses disc playback");
-    Check(g_SceneId == 6 && s_assetRequests == 1,
+    Check(g_SceneId == GAME_SCENE_INIT_MENU && s_assetRequests == 1,
           "class FMV return enters BGM select");
     Check(s_displayCalls == 0,
           "class FMV return preserves the current display mode");
@@ -95,7 +96,8 @@ static void TestEndingFmvReturn(void) {
               s_displayGreen == 0 && s_displayBlue == 0,
           "ending FMV return restores a black 240-line display");
     Check(g_FrameSyncThreshold == 0x80 && g_FadeStep == 4 &&
-              g_FadeLevel == 0 && g_SceneId == 0x22 && g_SceneTimer == 0,
+              g_FadeLevel == 0 &&
+              g_SceneId == GAME_SCENE_ENDING_STILL && g_SceneTimer == 0,
           "ending FMV return initializes the ending scene");
     Check(s_assetRequests == 0,
           "ending FMV return does not request BGM select assets");

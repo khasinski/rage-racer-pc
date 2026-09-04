@@ -2,6 +2,7 @@
 #include "game/asset.h"
 #include "game/cd.h"
 #include "game/fmv.h"
+#include "game/scene.h"
 #include "game/state.h"
 
 #include <stdio.h>
@@ -55,7 +56,7 @@ static void TestBeginFmv(void) {
     Check(s_closeCalls == 1 && s_resetCalls == 1,
           "FMV start releases game audio");
     Check(g_FmvState == FMV_PLAYBACK_START && g_StreamReturnScene == 27 &&
-              g_SceneId == 5,
+              g_SceneId == GAME_SCENE_FMV,
           "FMV start records playback and return states");
     Check(s_cdSyncCalls == 1 && s_cdSyncMode == CD_SYNC_WAIT &&
               s_cdCommand == CD_DRIVE_PAUSE,
@@ -81,6 +82,11 @@ static void TestUpdateFmv(void) {
     g_FmvState = FMV_PLAYBACK_FINISH;
     UpdateFmv();
     Check(s_endCalls == 1, "FMV finish state ends playback");
+
+    g_FmvState = (FmvPlaybackState)99;
+    UpdateFmv();
+    Check(g_FmvState == FMV_PLAYBACK_FINISH && s_endCalls == 2,
+          "corrupt FMV state exits through normal cleanup");
 }
 
 int main(void) {

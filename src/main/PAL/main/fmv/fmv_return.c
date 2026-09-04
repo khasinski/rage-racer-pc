@@ -3,11 +3,12 @@
 #include "game/fmv.h"
 #include "game/fmv_internal.h"
 #include "game/render.h"
+#include "game/scene.h"
 #include "game/state.h"
 
 void ReturnFromClassFmv(void) {
     StopFmvDiscPlayback();
-    g_SceneId = 6;
+    g_SceneId = GAME_SCENE_INIT_MENU;
     RequestSelectBgmAssets();
 }
 
@@ -18,6 +19,6 @@ void ReturnFromEndingFmv(void) {
     g_FrameSyncThreshold = 0x80;
     g_FadeStep = 4;
     g_FadeLevel = 0;
-    g_SceneId = 0x22;
+    g_SceneId = GAME_SCENE_ENDING_STILL;
     g_SceneTimer = 0;
 }
