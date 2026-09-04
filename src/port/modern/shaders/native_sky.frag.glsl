@@ -1,6 +1,7 @@
 #version 450
 
 layout(location = 0) in vec3 worldDirection;
+layout(location = 1) in vec2 screenPosition;
 layout(location = 0) out vec4 outColor;
 layout(set = 2, binding = 0) uniform sampler2D panorama;
 
@@ -9,6 +10,8 @@ layout(set = 3, binding = 0, std140) uniform NativeSkyColors {
     vec4 middle;
     vec4 horizon;
     vec4 bottom;
+    vec4 gridOrigin;
+    vec4 gridBasis;
 } sky;
 
 void main() {
@@ -48,23 +51,27 @@ void main() {
      * four authored bands alternating the two map rows selected for this
      * skybox; the explicit mapping below reproduces that bounded layout.
      */
-    float cloudBand = clamp((0.535 - height) / 0.43, 0.0, 1.0);
+    /* Classic's clouds are a screen-space 64x128-pixel grid, not a sphere.
+     * Reconstruct that grid in the 240-line logical viewport. This keeps its
+     * authored pixel density, its tile boundary, pitch and roll together. */
+    vec2 screenPixel = vec2((screenPosition.x + 1.0) *
+                                sky.gridOrigin.w * 0.5,
+                            (1.0 - screenPosition.y) * 120.0);
+    vec2 relative = screenPixel - sky.gridOrigin.xy;
+    float gridX = dot(relative, sky.gridBasis.xy);
+    float gridY = dot(relative, sky.gridBasis.zw);
+    float cloudBand = gridY * (1.0 / 128.0);
     float panoramaHeight = float(textureSize(panorama, 0).y);
-    float panoramaV = cloudBand;
+    float panoramaV = fract(cloudBand);
     if (panoramaHeight > 128.0) {
         /* Classic draws four vertical bands and alternates the two map rows
          * selected by g_SkyRowBase. The 256-row native texture stores those
          * two panoramas one above the other. */
-        float band = min(cloudBand * 4.0, 3.9999);
-        float row = mod(floor(band), 2.0);
-        panoramaV = (row + fract(band)) * 0.5;
+        float row = mod(floor(cloudBand), 2.0);
+        panoramaV = (row + fract(cloudBand)) * 0.5;
     }
-    vec2 panoramaUV = vec2(
-        /* Classic advances one 64-texel tile by 64 screen pixels. At the
-         * 41.112-degree race FOV that exposes about 320 of the panorama's
-         * 512 texels, rather than treating the strip as half a physical
-         * turn. Preserve that authored screen-space density. */
-        fract(atan(direction.z, direction.x) * 0.87105793), panoramaV);
+    vec2 panoramaUV = vec2(fract((sky.gridOrigin.z + gridX) / 512.0),
+                            panoramaV);
     vec4 authored = texture(panorama, panoramaUV);
     /* The band ends where the sheet ends. Fading it out over a stretch of
      * sky instead makes the cloud look like it is dissolving, and the sheet
@@ -72,7 +79,7 @@ void main() {
     /* The classic grid continues above the viewport during pitched intro
      * cameras. Its texture alpha supplies the upper edge; an extra height
      * cutoff made a conspicuous horizontal end to the clouds. */
-    float cloudCoverage = smoothstep(0.09, 0.15, height);
+    float cloudCoverage = step(0.0, cloudBand) * step(cloudBand, 4.0);
     color = mix(color, authored.rgb,
                 authored.a * sky.bottom.a * cloudCoverage);
     outColor = vec4(color, 1.0);

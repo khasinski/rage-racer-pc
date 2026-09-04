@@ -62,6 +62,8 @@ typedef struct ModernNativeSkyUniform {
     float middle[4];
     float horizon[4];
     float bottom[4];
+    float gridOrigin[4];
+    float gridBasis[4];
 } ModernNativeSkyUniform;
 
 typedef struct ModernNativeLightUniform {
@@ -395,6 +397,15 @@ static void ModernNativeBuildCamera(const RageRenderCamera *camera,
 
 static void ModernNativeBuildSky(const RageRenderCamera *camera,
                                  ModernNativeSkyUniform *out) {
+    float pitch = -camera->transform.rotation.x * (4096.0f / 360.0f);
+    float yaw = -camera->transform.rotation.y * (4096.0f / 360.0f);
+    float roll = camera->transform.rotation.z * 0.017453292519943295f;
+    float yawAngle;
+    float cameraPitch;
+    float horizontal;
+    float vertical;
+    float sine = sinf(roll);
+    float cosine = cosf(roll);
     memset(out, 0, sizeof(*out));
     out->top[0] = camera->skyTopColor.x;
     out->top[1] = camera->skyTopColor.y;
@@ -414,6 +425,22 @@ static void ModernNativeBuildSky(const RageRenderCamera *camera,
     /* Alpha carries the cloud sheet, which the game tiles over the gradient
      * rather than instead of it. */
     out->bottom[3] = 1.0f;
+    yawAngle = fmodf(yaw + 512.0f, 4096.0f);
+    if (yawAngle < 0.0f) yawAngle += 4096.0f;
+    cameraPitch = pitch + 2.0f + (-camera->transform.position.y - 6000.0f) /
+                                      32.0f;
+    horizontal = -256.0f - fmodf(floorf(yawAngle * 0.5f), 64.0f);
+    vertical = -128.0f - floorf(cameraPitch * 0.5f);
+    out->gridOrigin[0] = cosine * horizontal + sine * vertical + 160.0f;
+    out->gridOrigin[1] = -sine * horizontal + cosine * vertical + 120.0f;
+    out->gridOrigin[2] = floorf(yawAngle / 128.0f) * 64.0f;
+    out->gridOrigin[3] = 240.0f * s_aspect;
+    /* Dot products against these inverse rotation axes recover the classic
+     * grid's horizontal and vertical texel coordinates. */
+    out->gridBasis[0] = cosine;
+    out->gridBasis[1] = -sine;
+    out->gridBasis[2] = sine;
+    out->gridBasis[3] = cosine;
 }
 
 static void ModernNativeBuildLight(const RageRenderDirectionalLight *light,

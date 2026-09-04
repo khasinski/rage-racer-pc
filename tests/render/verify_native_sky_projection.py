@@ -31,12 +31,12 @@ def require(condition, message):
 dense = glsl.replace(" ", "").replace("\n", "")
 require("cloudBand" in dense,
         "the cloud sheet must stay a band round the horizon")
-require("fract(atan" in dense or "fract(atan2" in dense,
-        "the sheet must wrap by heading, so it repeats round the turn")
+require("screenPosition" in glsl and "gridOrigin" in glsl,
+        "the cloud sheet must use the classic screen-space grid")
 require("cloudCoverage" in dense,
         "cloud must fade out rather than fill the sky")
-require("0.87105793" in glsl,
-        "the panorama must retain classic's screen-space texel density")
+require("gridX)/512.0" in dense,
+        "the panorama must advance one texel per logical screen pixel")
 require("1.0 - smoothstep(0.528, 0.535, height)" not in glsl,
         "the intro sky must not cut clouds off at a fixed world height")
 
@@ -48,7 +48,7 @@ require("address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT" in sampler,
         "the cloud sheet must repeat round the horizon")
 require("address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE" in sampler,
         "vertical repetition must stay bounded in the sky shader")
-require("cloudBand * 4.0" in glsl and "mod(floor(band), 2.0)" in glsl,
+require("mod(floor(cloudBand),2.0)" in dense,
         "the sky must alternate its two classic map rows over four bands")
 # Sampled a texel at a time, as the original does: smoothing softens every
 # cloud edge and reads as a stretched, low-resolution sky.
