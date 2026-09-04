@@ -11,6 +11,8 @@ enum {
     RECORD_TABLE_LENGTH = 5,
 };
 
+extern const char *const g_PlaceSuffixNames[RECORD_TABLE_LENGTH];
+
 extern s32 g_DefaultLapTimes[RECORD_SERIES_COUNT * RECORD_COURSE_COUNT];
 extern s32 g_DefaultTotalTimes[RECORD_SERIES_COUNT * RECORD_COURSE_COUNT];
 

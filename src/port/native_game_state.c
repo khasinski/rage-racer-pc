@@ -12,6 +12,7 @@
 #include "game/race.h"
 #include "game/race_hud_internal.h"
 #include "game/race_internal.h"
+#include "game/records_internal.h"
 #include "game/state.h"
 #include "game/work_buffer.h"
 #include "game/sound.h"
@@ -186,12 +187,12 @@ static char g_CourseName03[] = "THE EXTREME OVAL";
 char *g_CourseNames[4] = {
     g_CourseName00, g_CourseName01, g_CourseName02, g_CourseName03
 };
-static u8 g_PlaceSuffix1st[] = "1ST";
-static u8 g_PlaceSuffix2nd[] = "2ND";
-static u8 g_PlaceSuffix3rd[] = "3RD";
-static u8 g_PlaceSuffix4th[] = "4TH";
-static u8 g_PlaceSuffix5th[] = "5TH";
-u8 *g_NativePlaceSuffixNames[5] = {
+static const char g_PlaceSuffix1st[] = "1ST";
+static const char g_PlaceSuffix2nd[] = "2ND";
+static const char g_PlaceSuffix3rd[] = "3RD";
+static const char g_PlaceSuffix4th[] = "4TH";
+static const char g_PlaceSuffix5th[] = "5TH";
+const char *const g_PlaceSuffixNames[RECORD_TABLE_LENGTH] = {
     g_PlaceSuffix1st, g_PlaceSuffix2nd, g_PlaceSuffix3rd,
     g_PlaceSuffix4th, g_PlaceSuffix5th
 };

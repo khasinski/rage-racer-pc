@@ -30,12 +30,12 @@ char g_FmtRecordName[] = "/%s/%s";
 char g_FmtCarName[] = "/%s";
 const char *g_NativeCarNames[GAME_CAR_COUNT] = {"CAR0", "CAR1", "CAR2"};
 const char *g_NativeCarClassNames[GAME_CAR_COUNT] = {"C0", "C1", "C2"};
-static u8 s_first[] = "1ST";
-static u8 s_second[] = "2ND";
-static u8 s_third[] = "3RD";
-static u8 s_fourth[] = "4TH";
-static u8 s_fifth[] = "5TH";
-u8 *g_NativePlaceSuffixNames[] = {
+static const char s_first[] = "1ST";
+static const char s_second[] = "2ND";
+static const char s_third[] = "3RD";
+static const char s_fourth[] = "4TH";
+static const char s_fifth[] = "5TH";
+const char *const g_PlaceSuffixNames[RECORD_TABLE_LENGTH] = {
     s_first, s_second, s_third, s_fourth, s_fifth,
 };
 
