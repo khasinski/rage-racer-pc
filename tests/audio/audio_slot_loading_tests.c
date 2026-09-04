@@ -153,7 +153,12 @@ int main(void) {
     g_AudioLoadedSlotMask = 0;
     g_SoundCueBank = 0;
     CHECK(PollAudioSlotLoad() == 1);
-    CHECK(g_AudioLoadedSlotMask == 1 && g_SoundCueBank == 1);
+    CHECK(g_AudioLoadedSlotMask == 1 && g_SoundCueBank == 1 &&
+          g_AudioLoadSlot == -1);
+    g_AudioLoadedSlotMask = 0;
+    g_SoundCueBank = -1;
+    CHECK(PollAudioSlotLoad() == 1);
+    CHECK(g_AudioLoadedSlotMask == 0 && g_SoundCueBank == -1);
 
     asset.auxiliaryData = sequence;
     asset.auxiliarySize = sizeof(sequence);

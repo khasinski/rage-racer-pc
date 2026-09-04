@@ -58,6 +58,7 @@ static void ResetSoundState(void) {
     g_SoundScale.scale = DEFAULT_SOUND_SCALE;
     g_EngineSoundState.volumeScale = DEFAULT_SOUND_SCALE;
     g_AudioLoadedSlotMask = 1;
+    g_AudioLoadSlot = -1;
 }
 
 void InitSoundRuntime(void) {

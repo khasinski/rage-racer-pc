@@ -160,6 +160,7 @@ s32 PollAudioSlotLoad(void) {
     completed = SsVabTransCompleted(0);
     if (completed != 0) {
         slot = g_AudioLoadSlot;
+        g_AudioLoadSlot = -1;
         if ((u32)slot >= AUDIO_SLOT_COUNT) {
             return completed;
         }

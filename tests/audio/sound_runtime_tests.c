@@ -20,6 +20,7 @@ s32 g_IndexedEffectPitch;
 s32 g_PanVoiceActive;
 s32 g_ActiveSpecialCue;
 s32 g_LastSpecialCueRequest;
+s32 g_AudioLoadSlot;
 s32 g_AudioLoadedSlotMask;
 const char g_MsgVabOpenHeadError[] = "open error";
 const char g_MsgVabTransBodyError[] = "body error";
@@ -113,6 +114,7 @@ static void TestSoundStateReset(void) {
     memset(g_EffectVoices, 0x7F, sizeof(g_EffectVoices));
     g_ActiveSpecialCue = 15;
     g_LastSpecialCueRequest = 15;
+    g_AudioLoadSlot = AUDIO_SLOT_ENGINE;
     InitSoundRuntime();
 
     for (index = 0; index < 6; index++) {
@@ -139,7 +141,8 @@ static void TestSoundStateReset(void) {
           "reset clears special cue deduplication");
     Check(g_EngineSoundState.bank == -1 &&
               g_EngineSoundState.volumeScale == 128 &&
-              g_SoundScale.scale == 128 && g_AudioLoadedSlotMask == 1,
+              g_SoundScale.scale == 128 && g_AudioLoadedSlotMask == 1 &&
+              g_AudioLoadSlot == -1,
           "reset restores sound runtime defaults");
 }
 
