@@ -557,10 +557,6 @@ u8 *DrawRightArrow(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
                    s32 pulse);
 u8 *DrawPadConfigSelector(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
                           s32 selection);
-u8 *DrawPadConfigLabels(GameOrderingTableEntry *ot, u8 *prim,
-                        const u8 *labelRow);
-u8 *DrawPadConfigCallouts(GameOrderingTableEntry *ot, u8 *prim,
-                          const u8 *labelRow, const u8 *buttonRow);
 u8 *DrawPadConfigDiagram(GameOrderingTableEntry *ot, u8 *prim);
 u8 *DrawNegconConfigDiagram(GameOrderingTableEntry *ot, u8 *prim);
 /* Semi-transparent TILE, 16 bytes. */

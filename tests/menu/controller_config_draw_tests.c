@@ -29,6 +29,7 @@ char g_MsgNegconUntwistedLine2[] = "PRESS START";
 static GameFrameContext s_frame;
 static u8 s_packets[128];
 static s32 s_spriteCount;
+static s32 s_firstSpriteX;
 static s32 s_tileCount;
 static s32 s_lineCount;
 static s32 s_modeCount;
@@ -52,7 +53,7 @@ static s32 s_failures;
 u8 *GameQueueSpriteTrans(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
                          s32 width, s32 height, s32 u, s32 v, s32 clut) {
     (void)ot;
-    (void)x;
+    if (s_spriteCount == 0) s_firstSpriteX = x;
     (void)y;
     (void)width;
     (void)height;
@@ -169,6 +170,7 @@ static void Reset(void) {
     g_NegconMappingIndex = 3;
     g_ControllerSceneAngleY = 0;
     s_spriteCount = 0;
+    s_firstSpriteX = -1;
     s_tileCount = 0;
     s_lineCount = 0;
     s_modeCount = 0;
@@ -228,9 +230,24 @@ static void TestCalloutVisibilityAndNeutralPanel(void) {
     CHECK(g_RenderState.packetCursor == s_packets + 2);
 }
 
+static void TestDiagramClampsMappingRows(void) {
+    Reset();
+    g_PadMappingIndex = -1;
+    g_PadConfigLabelRows[0] = 1;
+    DrawPadConfigDiagram(GameSecondaryOrderingTable(51), s_packets);
+    CHECK(s_firstSpriteX == g_PadLabelSlots[1].vx + 4);
+
+    Reset();
+    g_NegconMappingIndex = 99;
+    g_NegconConfigLabelRows[CONTROLLER_MAPPING_LAST * 5] = 2;
+    DrawNegconConfigDiagram(GameSecondaryOrderingTable(51), s_packets);
+    CHECK(s_firstSpriteX == g_PadLabelSlots[2].vx + 4);
+}
+
 int main(void) {
     TestPadAndNegconScreens();
     TestErrorScreens();
     TestCalloutVisibilityAndNeutralPanel();
+    TestDiagramClampsMappingRows();
     return s_failures != 0;
 }
