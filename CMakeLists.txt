@@ -18,6 +18,7 @@ set(RAGE_HOST_STATE_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_audio.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_car.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_cd.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_fmv.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_menu.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_pad.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_race.c

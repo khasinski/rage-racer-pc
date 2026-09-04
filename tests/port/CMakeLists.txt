@@ -425,6 +425,7 @@ add_executable(host_state_abi_tests
     host_state_abi_audio.c
     host_state_abi_car.c
     host_state_abi_cd.c
+    host_state_abi_fmv.c
     host_state_abi_forbidden.c
     host_state_abi_menu.c
     host_state_abi_native.c

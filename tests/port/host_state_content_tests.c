@@ -1,11 +1,11 @@
 /*
  * What the retail data actually is, byte for byte.
  *
- * host_state.c is the retail data segment transcribed into C, and it is being
- * untangled: strings written as hexadecimal are becoming strings, arrays that
- * swallowed their neighbours are being cut apart and named, and the whole file
- * is being split up by subsystem. Meaningful data has to retain its bytes;
- * padding and dead retail pointer tables are deliberately dropped.
+ * The host_state_*.c files are the retail data segment transcribed into C.
+ * Strings written as hexadecimal became strings, arrays that swallowed their
+ * neighbours were cut apart and named, and the original monolith was split by
+ * subsystem. Meaningful data has to retain its bytes; padding and dead retail
+ * pointer tables are deliberately dropped.
  *
  * So this folds the contents themselves. Only the bytes are folded, never the
  * names or the sizes, which is deliberate: cutting one array into two named

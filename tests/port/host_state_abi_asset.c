@@ -1,5 +1,8 @@
 #include "../../src/port/host_state_asset.c"
 
+_Static_assert(sizeof(g_CdLoadPhase) == sizeof(s16),
+               "asset CD-load phase type changed");
+
 _Static_assert(sizeof(g_AssetRequestType) == sizeof(s32),
                "g_AssetRequestType ABI size changed");
 _Static_assert(sizeof(g_LoadBuffer) == 1037896,

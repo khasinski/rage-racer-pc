@@ -19,6 +19,7 @@
 typedef struct CarImageData CarImageData;
 typedef struct GameCdLoadEntry GameCdLoadEntry;
 
+s16 g_CdLoadPhase;
 s32 g_AssetLoadState;
 u8 g_CarModelBaseIndex[GAME_CAR_COUNT] __attribute__((aligned(16))) = {
     0, 4, 7, 9, 14, 18, 21, 23, 26, 28, 29, 30, 31

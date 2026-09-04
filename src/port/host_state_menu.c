@@ -26,6 +26,7 @@ typedef struct CarEntry CarEntry;
 typedef struct CarModelAsset CarModelAsset;
 typedef struct GameRaceProgress GameRaceProgress;
 
+s32 g_FrontendState;
 char g_MsgInsertController[20] __attribute__((aligned(16))) = "INSERT CONTROLLER";
 char g_MsgControllerError[20] __attribute__((aligned(16))) = "CONTROLLER ERROR";
 char g_MsgNegconUntwistedLine1[36] __attribute__((aligned(16))) = "Hold the \"NeGcon\" in an untwisted";

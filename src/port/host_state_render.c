@@ -11,10 +11,15 @@
 #include <stddef.h>
 
 #include "common.h"
+#include "game/render_types.h"
 #include "psyq/gte.h"
 
 typedef struct TrackRenderTable TrackRenderTable;
 
+VisibleTerrainCell g_MirrorVisibleCellList[64];
+u32 g_MirrorVisibleCellMask[32];
+Matrix g_MirrorViewMatrix;
+s32 g_TrackTexturePageWanted;
 unsigned char g_DrawModeEnv[8] __attribute__((aligned(16))) = {0x00,0x00,0x00,0x00,0x00,0x01,0x00,0x01};
 unsigned char g_CarMirrorBadgeStyles[16] __attribute__((aligned(16))) = {0x00,0x00,0x00,0x01,0x02,0x02,0x02,0x03,0x03,0x03,0x00,0x02,0x03,0x00,0x00,0x00};
 /* Retail stores the four mirror-badge styles as interleaved {u,v,width}

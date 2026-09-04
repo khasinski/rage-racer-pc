@@ -1,5 +1,7 @@
 #include "../../src/port/host_state_menu.c"
 
+_Static_assert(sizeof(g_FrontendState) == sizeof(s32),
+               "frontend state must be a scalar");
 _Static_assert(sizeof(g_MsgNegconMaxTwist) == sizeof("Maximum twist."),
                "NeGcon caption must not absorb adjacent retail data");
 _Static_assert(sizeof(g_CaptionBestLapTime) == sizeof("hfdi"),

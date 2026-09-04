@@ -1,9 +1,9 @@
 # Untangling host_state.c
 
-`src/port/host_state.c` is the retail data segment transcribed into C. Every
-subsystem's globals sit in one file, in the order the original build happened
-to lay them out in memory, and that address order is the only organising
-principle the file has.
+The `src/port/host_state_*.c` files are the retail data segment transcribed
+into C. They began as one `host_state.c`, ordered only by the addresses chosen
+by the original build; the completed split now keeps each global with the
+subsystem that owns it.
 
 ## What is actually wrong with it
 
@@ -59,9 +59,9 @@ storage does not need to be rediscovered with a source-text parser.
    was worked out by counting which `.c` files read each symbol, then adjusted
    where the count and the subject disagreed. The result is one
    `host_state_<area>.c` per subsystem: menu 262, race 138, track 102, save 64,
-   car 60, audio 39, asset 25, render 24, cd 23, and pad 18. `host_state.c`
-   keeps the 17 that belong to nobody:
-   the frame counter, the scene, the mirror, the random seed.
+   car 60, audio 39, asset, render, CD, FMV, and pad. `host_state.c` keeps only
+   the six genuinely cross-subsystem values: the two clocks, scene id and
+   timer, mirror mode, and random seed.
 
    The counting put the CD driver's state in a bucket with the boot loop's
    clock; the drive is its own subsystem and got its own file. Fifteen symbols
