@@ -30,7 +30,7 @@ enum CustomizeOption {
     CUSTOMIZE_OPTION_EXIT,
 };
 
-static void DrawTransmissionChoice(void *ot, s32 flash) {
+static void DrawTransmissionChoice(GameOrderingTableEntry *ot, s32 flash) {
     DrawMenuCursorBox(g_MenuSubCursor != 0 ? 0xDA : 0xB8, 0x68, 0x20, 0x20,
                       flash);
     DrawSprite(ot, 0xC2, 0x70, 0xC, 0x10, 0x60, 0x7C, 0, 0, 0, 0x244, 1, 1,
@@ -143,7 +143,7 @@ static void UpdateTireDialog(void) {
     DrawTireCompoundSlider(g_MenuSubCursor, 0);
 }
 
-static void UpdateTransmissionDialog(void *ot) {
+static void UpdateTransmissionDialog(GameOrderingTableEntry *ot) {
     MenuDialogAction action;
 
     if (!CustomizeTransmissionAvailable()) {
@@ -212,7 +212,7 @@ static void UpdateTireConfirmation(void) {
     }
 }
 
-static void UpdateTransmissionConfirmation(void *ot) {
+static void UpdateTransmissionConfirmation(GameOrderingTableEntry *ot) {
     if (g_MenuConfirmTimer > 0) {
         g_MenuConfirmTimer--;
         RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, 1);
@@ -225,7 +225,7 @@ static void UpdateTransmissionConfirmation(void *ot) {
     }
 }
 
-static void UpdateCustomizeDialog(void *ot) {
+static void UpdateCustomizeDialog(GameOrderingTableEntry *ot) {
     switch (GameMenuBusy) {
     case CUSTOMIZE_TIRE_DIALOG:
         UpdateTireDialog();
@@ -252,7 +252,7 @@ static void UpdateCustomizeDialog(void *ot) {
 }
 
 void UpdateCustomizeScreen(void) {
-    void *ot;
+    GameOrderingTableEntry *ot;
     s32 exitOption;
     const TimedDrawCommand *cmdList;
 

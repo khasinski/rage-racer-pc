@@ -29,7 +29,7 @@ static u16 FadeLogoColor(u16 color, s32 fade) {
  * The big canvas: its frame slides down, the brush outline blinks over the
  * cursor, and the canvas itself goes down as one zoomed textured quad.
  */
-static void DrawCanvasPanel(void *ot, s32 slide) {
+static void DrawCanvasPanel(GameOrderingTableEntry *ot, s32 slide) {
     s32 panelTop;
     s32 frameX;
     s32 quadLeft;
@@ -94,7 +94,7 @@ static void DrawCanvasPanel(void *ot, s32 slide) {
  * The small unzoomed preview, with the guide lines that mark the brush and
  * its row across the whole logo.
  */
-static void DrawPreviewPanel(void *ot, s32 slide) {
+static void DrawPreviewPanel(GameOrderingTableEntry *ot, s32 slide) {
     s32 panelTop;
     s32 viewLeft;
     s32 viewTop;
@@ -176,7 +176,7 @@ static void DrawPreviewPanel(void *ot, s32 slide) {
  * The fifteen fixed colours, the pen well showing the mixed colour, and the
  * four button prompts, whose glyphs differ between pad and NeGcon.
  */
-static void DrawSwatchStrip(void *ot, s32 slide) {
+static void DrawSwatchStrip(GameOrderingTableEntry *ot, s32 slide) {
     s32 panelTop;
     s32 stripX;
     s32 wellX;
@@ -249,7 +249,7 @@ static void DrawSwatchStrip(void *ot, s32 slide) {
 /*
  * The caption that slides in from the left edge.
  */
-static void DrawEditorHint(void *ot, s32 slide) {
+static void DrawEditorHint(GameOrderingTableEntry *ot, s32 slide) {
     if (slide < 0) {
         return;
     }
@@ -264,7 +264,7 @@ static void DrawEditorHint(void *ot, s32 slide) {
  * Expert mode's three colour channels: a numeric readout and a bar for each
  * of red, green and blue.
  */
-static void DrawChannelSliders(void *ot, s32 slide) {
+static void DrawChannelSliders(GameOrderingTableEntry *ot, s32 slide) {
     /* Red, green and blue, one slider each, 0x30 apart down the screen. */
     static const u8 glyphU[3] = {0xD8, 0x80, 0x58};
     static const u8 barRed[3] = {0xC0, 0, 0};
@@ -355,7 +355,7 @@ static void AnimateLogoClut(void) {
 }
 
 void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep) {
-    void *ot;
+    GameOrderingTableEntry *ot;
 
     ot = RENDER_OT_BASE;
     if (panelStep == 0) {

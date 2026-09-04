@@ -13,7 +13,7 @@ enum {
 
 /* The 18-swatch PAINT COLOR strip with its selection frame and enlarged preview. */
 s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index) {
-    void *ot = RENDER_OT_BASE;
+    GameOrderingTableEntry *ot = RENDER_OT_BASE;
     s32 frame;
     s32 x;
     s32 y;

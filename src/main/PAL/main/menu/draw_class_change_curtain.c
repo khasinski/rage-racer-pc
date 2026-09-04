@@ -13,7 +13,7 @@ static void DrawClassChangeCurtainPanels(s32 slide) {
                           : CLASS_CHANGE_CURTAIN_MAX_DRAW_PHASE;
     const s32 upperPanelY = -CLASS_CHANGE_CURTAIN_HEIGHT + phase * 16;
     const s32 lowerPanelY = CLASS_CHANGE_CURTAIN_HEIGHT - upperPanelY;
-    void *ot = RENDER_OT_BASE;
+    GameOrderingTableEntry *ot = RENDER_OT_BASE;
 
     if (ot == NULL) return;
 

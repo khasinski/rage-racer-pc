@@ -90,7 +90,7 @@ static const TimedDrawCommand *CourseSelectMenuScript(void) {
 }
 
 /* The save prompt's two buttons, and the box round whichever is picked. */
-static void DrawSavePromptButtons(void *ot, s32 flash) {
+static void DrawSavePromptButtons(GameOrderingTableEntry *ot, s32 flash) {
     DrawMenuCursorBox((g_MenuSubCursor != 0) ? 0xB8 : 0xDA, 0x8C, 0x20, 0x20,
                       flash);
     DrawSprite(ot, 0xC0, 0x94, 0x10, 0x10, 0x9D, 0x7C, 0, 0, 0, 0x244, 1, 1,
@@ -102,7 +102,7 @@ static void DrawSavePromptButtons(void *ot, s32 flash) {
 }
 
 /* One row per class the player has reached, with the cursor on the chosen. */
-static void DrawClassList(void *ot, s32 flash) {
+static void DrawClassList(GameOrderingTableEntry *ot, s32 flash) {
     s32 classCount = MaxSelectableClass() + 1;
     s32 i;
 
@@ -209,7 +209,7 @@ static void UpdateCourseSelectIdle(void) {
     }
 }
 
-static void UpdateSavePrompt(void *ot) {
+static void UpdateSavePrompt(GameOrderingTableEntry *ot) {
     MenuPromptOutcome choice;
     s32 cue;
     RunTimedDrawScript(g_CourseSelectSavePromptBanner, &g_UiScriptProgress2, 0);
@@ -229,7 +229,7 @@ static void UpdateSavePrompt(void *ot) {
     DrawSavePromptButtons(ot, 0);
 }
 
-static void UpdateClassPrompt(void *ot) {
+static void UpdateClassPrompt(GameOrderingTableEntry *ot) {
     MenuClassPromptOutcome choice;
     s32 maxClass;
     s32 effect;
@@ -257,7 +257,7 @@ static void UpdateClassPrompt(void *ot) {
 
 /* The save going through: the prompt flashes for a while, then the screen
  * starts on its way out, to the race or to the record entry. */
-static void UpdateSaveCountdown(void *ot) {
+static void UpdateSaveCountdown(GameOrderingTableEntry *ot) {
     if (g_MenuConfirmTimer > 0) {
         g_MenuConfirmTimer -= 1;
         RunTimedDrawScript(g_CourseSelectSavePromptBanner,
@@ -297,7 +297,7 @@ static void UpdateSaveDismissed(void) {
  * the new class is applied and the player's progress through the series is
  * reset; then the curtain comes back and the screen returns to idle.
  */
-static void UpdateClassChange(void *ot) {
+static void UpdateClassChange(GameOrderingTableEntry *ot) {
     if (g_CourseProgress == NULL) {
         GameMenuBusy = COURSE_SELECT_IDLE;
         g_ClassChangeApplied = 0;
@@ -335,7 +335,7 @@ static void UpdateClassChange(void *ot) {
     DrawClassList(ot, 1);
 }
 
-static void UpdateCourseSelectModal(void *ot, s32 state) {
+static void UpdateCourseSelectModal(GameOrderingTableEntry *ot, s32 state) {
     switch (state) {
     case COURSE_SELECT_SAVE_PROMPT:
         UpdateSavePrompt(ot);
@@ -443,7 +443,7 @@ static void UpdateCourseSelectOutgoing(void) {
 }
 
 void UpdateCourseSelectScreen(void) {
-    void *ot = RENDER_OT_BASE;
+    GameOrderingTableEntry *ot = RENDER_OT_BASE;
     s32 state = GameMenuBusy;
 
     g_MenuAltLayout = g_MenuAltLayoutSetting;

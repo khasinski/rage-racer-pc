@@ -9,7 +9,7 @@ enum {
 };
 
 void DrawLogoSamplePanel(s32 step, s32 sample) {
-    void *ot = RENDER_OT_BASE;
+    GameOrderingTableEntry *ot = RENDER_OT_BASE;
     s32 frame;
     s32 y;
     s32 i;

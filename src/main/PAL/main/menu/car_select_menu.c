@@ -17,7 +17,7 @@ static u16 CarGearTextureU(u8 gearCount) {
 }
 
 s32 DrawCarSelectScreen(s32 step) {
-    void *ot;
+    GameOrderingTableEntry *ot;
     u8 brightness;
     s16 gearX;
     u16 gearTextureU;

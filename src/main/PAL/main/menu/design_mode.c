@@ -26,7 +26,7 @@ enum {
 
 s32 DrawDesignModeScreen(s32 step) {
     const DesignModeCellMask *mask = &g_DesignModeCellMask;
-    void *ot;
+    GameOrderingTableEntry *ot;
     s32 remainingFade;
     s32 offset = 0;
     s32 fade;

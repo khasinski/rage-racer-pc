@@ -6,7 +6,7 @@ enum {
     LIGHT_BURST_MAX_LEVEL = 0x200,
 };
 
-static void DrawLightBurstFadeQuad(void *ot, s32 level) {
+static void DrawLightBurstFadeQuad(GameOrderingTableEntry *ot, s32 level) {
     POLY_G4 *quad = RENDER_PRIM_CURSOR_AS(POLY_G4);
     u8 shade = (u8)(level / 5);
 
@@ -21,7 +21,7 @@ static void DrawLightBurstFadeQuad(void *ot, s32 level) {
     g_RenderState.packetCursor = quad + 1;
 }
 
-static void DrawLightBurstRays(void *ot, s32 level) {
+static void DrawLightBurstRays(GameOrderingTableEntry *ot, s32 level) {
     s32 i;
     u8 topShade = (u8)((level * 11) / 256);
     u8 bottomShade = (u8)((level * 75) / 256);
@@ -33,7 +33,7 @@ static void DrawLightBurstRays(void *ot, s32 level) {
     }
 }
 
-static void DrawLightBurstBands(void *ot, s32 level) {
+static void DrawLightBurstBands(GameOrderingTableEntry *ot, s32 level) {
     s32 i;
 
     for (i = 0; i < MENU_LIGHT_BURST_RAY_COUNT; i++) {

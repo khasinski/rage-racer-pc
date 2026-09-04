@@ -58,7 +58,7 @@ static u8 Darken(u8 value) {
     return value > CAR_SPEC_COLOR_DELTA ? value - CAR_SPEC_COLOR_DELTA : 0;
 }
 
-static void DrawCarSpecFloorLine(void *ot, s32 lineStep) {
+static void DrawCarSpecFloorLine(GameOrderingTableEntry *ot, s32 lineStep) {
     s32 y = 0x13E - lineStep;
 
     DrawPolyLine3(ot, 0x52, y, 0x61, y, 0x99, y + 0x38, 0xB4, 0xB4,
@@ -67,7 +67,7 @@ static void DrawCarSpecFloorLine(void *ot, s32 lineStep) {
                   0xB4, 0xB4, 0xFF);
 }
 
-static void DrawCarSpecFloor(void *ot, s32 progress) {
+static void DrawCarSpecFloor(GameOrderingTableEntry *ot, s32 progress) {
     s32 lineStep;
 
     for (lineStep = 0; lineStep < progress; lineStep += 0x10) {
@@ -76,7 +76,8 @@ static void DrawCarSpecFloor(void *ot, s32 progress) {
     DrawCarSpecFloorLine(ot, progress);
 }
 
-static void DrawCarSpecBar(void *ot, s32 index, s32 revealedHeight) {
+static void DrawCarSpecBar(GameOrderingTableEntry *ot, s32 index,
+                           s32 revealedHeight) {
     const CVec *color;
     s32 offset;
     s32 height;
@@ -125,7 +126,7 @@ void DrawCarSpecGraph(s32 step, u32 tireGrade) {
     s32 revealed[CAR_SPEC_BAR_COUNT];
     s32 floorProgress;
     s32 i;
-    void *ot;
+    GameOrderingTableEntry *ot;
 
     if (step == 0) {
         g_CarSpecGraphProgress = 0;

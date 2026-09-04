@@ -5,7 +5,7 @@ enum {
     MENU_LOWER_ALT_PANEL_MAX_PROGRESS = 16,
 };
 
-static void DrawUpperAltPanel(void *ot, s32 progress) {
+static void DrawUpperAltPanel(GameOrderingTableEntry *ot, s32 progress) {
     const s32 verticalOffset = (progress - 1) * 2;
     const s32 left = g_MenuAltLayout != 0 ? 0x69 : 0xA8;
     const s32 right = left + 0x1C;
@@ -17,7 +17,7 @@ static void DrawUpperAltPanel(void *ot, s32 progress) {
                          0x6C, 0x7F, 0x7F, 0x7F, 0x232, 0, 0, 0x1C);
 }
 
-static void DrawLowerAltPanel(void *ot, s32 progress) {
+static void DrawLowerAltPanel(GameOrderingTableEntry *ot, s32 progress) {
     const s32 verticalOffset = progress - 1;
     const s32 left = g_MenuAltLayout != 0 ? 0x92 : 0xC0;
     const s32 right = left + 0x4E;
@@ -30,7 +30,7 @@ static void DrawLowerAltPanel(void *ot, s32 progress) {
 }
 
 void DrawMenuAltPanel(s32 upperStep, s32 lowerStep) {
-    void *ot = RENDER_OT_BASE;
+    GameOrderingTableEntry *ot = RENDER_OT_BASE;
 
     if (upperStep == 0 && lowerStep == 0) {
         g_MenuUpperAltPanelProgress = 0;

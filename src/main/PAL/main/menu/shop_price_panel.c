@@ -8,7 +8,7 @@ typedef struct ShopPriceCaption {
 
 static void DrawShopPricePanel(s32 step, s32 money, s32 price, s32 *slide,
                                ShopPriceCaption priceCaption) {
-    void *ot = RENDER_OT_BASE;
+    GameOrderingTableEntry *ot = RENDER_OT_BASE;
     s32 risenFrames;
 
     if (step == 0) {
