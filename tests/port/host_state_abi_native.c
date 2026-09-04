@@ -1,8 +1,12 @@
 #include "../../src/port/native_initialized_state.c"
 
-_Static_assert(sizeof(g_SaveFilePath) == 80,
+_Static_assert(MEMORY_CARD_SAVE_PATH_STORAGE_SIZE == 80,
+               "memory-card path storage ABI changed");
+_Static_assert(MEMORY_CARD_SAVE_TITLE_STORAGE_SIZE == 212,
+               "memory-card title storage ABI changed");
+_Static_assert(sizeof(g_SaveFilePath) == MEMORY_CARD_SAVE_PATH_STORAGE_SIZE,
                "g_SaveFilePath ABI size changed");
-_Static_assert(sizeof(g_SaveTitleSjis) == 212,
+_Static_assert(sizeof(g_SaveTitleSjis) == MEMORY_CARD_SAVE_TITLE_STORAGE_SIZE,
                "g_SaveTitleSjis ABI size changed");
 _Static_assert(sizeof(g_SaveNameCharset) == 44,
                "save-name charset ABI size changed");

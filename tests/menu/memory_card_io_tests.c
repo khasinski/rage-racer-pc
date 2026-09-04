@@ -9,8 +9,8 @@
 enum { MOCK_FILE_SIZE = 0x1400, MOCK_FILE_COUNT = 3 };
 
 s32 GameMenuLoadPhase;
-char g_SaveFilePath[MEMORY_CARD_SAVE_SLOT_COUNT * MC_SAVE_PATH_SIZE];
-char g_SaveTitleSjis[MEMORY_CARD_SAVE_SLOT_COUNT * MC_SAVE_TITLE_SIZE];
+char g_SaveFilePath[MEMORY_CARD_SAVE_PATH_STORAGE_SIZE];
+char g_SaveTitleSjis[MEMORY_CARD_SAVE_TITLE_STORAGE_SIZE];
 char g_FmtCardWildcard[] = "bu%d%d:*";
 u8 g_TeamNameChars[16];
 u8 g_TeamNameLength;

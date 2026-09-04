@@ -235,6 +235,32 @@ static void CheckInitialStartingGrids(void) {
 }
 
 static void CheckMemoryCardLabels(void) {
+    static const char *const expectedPaths[MEMORY_CARD_SAVE_SLOT_COUNT] = {
+        "bu00:BESCES-00650 RAGE000",
+        "bu00:BESCES-00650 RAGE001",
+        "bu00:BESCES-00650 RAGE002",
+    };
+    s32 slot;
+
+    for (slot = 0; slot < MEMORY_CARD_SAVE_SLOT_COUNT; slot++) {
+        const char *path = &g_SaveFilePath[slot * MC_SAVE_PATH_SIZE];
+        const u8 *title =
+            (const u8 *)&g_SaveTitleSjis[slot * MC_SAVE_TITLE_SIZE];
+
+        Check(strcmp(path, expectedPaths[slot]) == 0,
+              "memory-card save path row");
+        Check(title[0] == 0x82 && title[1] == 0x71 &&
+                  title[55] == (u8)(0x50 + slot) && title[56] == 0,
+              "memory-card Shift-JIS title row");
+    }
+    Check(g_SaveFilePath[MEMORY_CARD_SAVE_SLOT_COUNT *
+                             MC_SAVE_PATH_SIZE] == 0 &&
+              g_SaveFilePath[MEMORY_CARD_SAVE_PATH_STORAGE_SIZE - 1] == 0,
+          "memory-card save path table padding");
+    Check(g_SaveTitleSjis[MEMORY_CARD_SAVE_SLOT_COUNT *
+                              MC_SAVE_TITLE_SIZE] == 0 &&
+              g_SaveTitleSjis[MEMORY_CARD_SAVE_TITLE_STORAGE_SIZE - 1] == 0,
+          "memory-card save title table padding");
     Check(memcmp(g_SaveNameCharset,
                  "0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ.-!?@",
                  SAVE_NAME_CHARACTER_COUNT) == 0 &&

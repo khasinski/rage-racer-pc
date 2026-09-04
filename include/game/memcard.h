@@ -18,6 +18,15 @@
 enum {
     MEMORY_CARD_MESSAGE_COUNT = MC_PROMPT_NO_FILE,
     MEMORY_CARD_MESSAGE_COLUMN_COUNT = 5,
+    /* Both retail tables leave two zero bytes after their three fixed-width
+     * rows. Keep that tail explicit because the symbols are ABI fixtures. */
+    MEMORY_CARD_SAVE_TABLE_PADDING = 2,
+    MEMORY_CARD_SAVE_PATH_STORAGE_SIZE =
+        MEMORY_CARD_SAVE_SLOT_COUNT * MC_SAVE_PATH_SIZE +
+        MEMORY_CARD_SAVE_TABLE_PADDING,
+    MEMORY_CARD_SAVE_TITLE_STORAGE_SIZE =
+        MEMORY_CARD_SAVE_SLOT_COUNT * MC_SAVE_TITLE_SIZE +
+        MEMORY_CARD_SAVE_TABLE_PADDING,
 };
 
 extern MemoryCardPrompt g_McMenuPhase;
@@ -109,12 +118,12 @@ extern s32 g_McSwEventIoe;
 extern s32 g_McSwEventNew;
 extern s32 g_McSwEventTimeout;
 extern s32 g_SaveElapsedTicks;
-extern char g_SaveFilePath[];
+extern char g_SaveFilePath[MEMORY_CARD_SAVE_PATH_STORAGE_SIZE];
 enum {
     SAVE_NAME_CHARACTER_COUNT = 42,
     SAVE_NAME_CHARSET_STORAGE_SIZE = 44,
 };
 extern char g_SaveNameCharset[SAVE_NAME_CHARSET_STORAGE_SIZE];
-extern char g_SaveTitleSjis[];
+extern char g_SaveTitleSjis[MEMORY_CARD_SAVE_TITLE_STORAGE_SIZE];
 
 #endif

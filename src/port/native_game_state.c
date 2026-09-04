@@ -258,8 +258,8 @@ const char *g_NativeEngineSpecLabels[GAME_CAR_COUNT] = {
     g_EngineSpecLabel09, g_EngineSpecLabel10, g_EngineSpecLabel11,
     g_EngineSpecLabel12
 };
-char g_SaveTitleSjis[212];
-char g_SaveFilePath[80];
+char g_SaveTitleSjis[MEMORY_CARD_SAVE_TITLE_STORAGE_SIZE];
+char g_SaveFilePath[MEMORY_CARD_SAVE_PATH_STORAGE_SIZE];
 char g_FmtCardDevice[12];
 char g_FmtCardWildcard[12];
 char g_FmtPlayTime[14];
