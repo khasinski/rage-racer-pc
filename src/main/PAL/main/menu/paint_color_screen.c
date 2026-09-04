@@ -3,13 +3,13 @@
 #include "game/menu.h"
 #include "game/menu_internal.h"
 
-enum PaintColorScreenState {
+typedef enum PaintColorScreenState {
     PAINT_COLOR_IDLE = 0,
     PAINT_COLOR_EXIT = 1,
     PAINT_COLOR_CANCEL_EXIT = 3,
     PAINT_COLOR_EDIT_PRIMARY = -1,
     PAINT_COLOR_EDIT_SECONDARY = -2,
-};
+} PaintColorScreenState;
 
 enum PaintColorOption {
     PAINT_COLOR_OPTION_PRIMARY,
@@ -27,9 +27,9 @@ static s32 PaintColorCarAvailable(void) {
            (u32)g_PlayerCarIndex < CUSTOM_PAINT_CAR_COUNT;
 }
 
-static void LeavePaintColorScreen(s32 busyState) {
+static void LeavePaintColorScreen(PaintColorScreenState state) {
     PlaySoundCue(3);
-    GameMenuBusy = busyState;
+    GameMenuBusy = state;
     g_MenuOverlayPattern = 2;
     g_MenuViewOffsetTarget = MENU_VIEW_OFFSET_MAX;
 }
@@ -90,7 +90,7 @@ static void UpdatePaintColorIdle(void) {
     }
 }
 
-static void UpdateSelectedPaintColor(s32 state) {
+static void UpdateSelectedPaintColor(PaintColorScreenState state) {
     CarEntry *car = &g_CarTable[g_PlayerCarIndex];
     CarEntry *timeAttackCar = &g_TimeAttackCars[g_PlayerCarIndex];
     MenuDialogAction action;
@@ -151,7 +151,7 @@ static void UpdatePaintColorOutgoing(void) {
 }
 
 void UpdatePaintColorScreen(void) {
-    s32 state = GameMenuBusy;
+    PaintColorScreenState state = (PaintColorScreenState)GameMenuBusy;
 
     g_PaintColorCursor = AddClampedMenuValue(
         g_PaintColorCursor, 0, 0, PAINT_COLOR_OPTION_COUNT - 1);
