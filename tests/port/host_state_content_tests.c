@@ -199,7 +199,8 @@ extern int16_t g_SkyTileMap[5][16];
 extern unsigned char g_SkyTileUV[64];
 extern unsigned char g_CdMixPresets[8];
 extern int32_t g_CdCommandPending;
-extern unsigned char g_MenuOverlayPatternTable[584];
+extern MenuOverlayPatternFrame
+    g_MenuOverlayPatternTable[MENU_OVERLAY_PATTERN_FRAME_COUNT];
 extern TeamLogoCoordinate g_TeamLogoCursorX;
 extern TeamLogoCoordinate g_TeamLogoViewX;
 extern TeamLogoColorIndex g_TeamLogoPenColor;
@@ -383,7 +384,8 @@ static const HostStateBlob s_blobs[] = {
     {"g_CdMixPresets", g_CdMixPresets, 8},
     {"g_CdCommandPending", (const unsigned char *)&g_CdCommandPending,
      sizeof(g_CdCommandPending)},
-    {"g_MenuOverlayPatternTable", g_MenuOverlayPatternTable, 584},
+    {"g_MenuOverlayPatternTable", BYTES(g_MenuOverlayPatternTable),
+     sizeof(g_MenuOverlayPatternTable)},
     {"g_TeamLogoCursorX", (const unsigned char *)&g_TeamLogoCursorX, 4},
     {"g_TeamLogoViewX", (const unsigned char *)&g_TeamLogoViewX, 4},
     {"g_TeamLogoPenColor", (const unsigned char *)&g_TeamLogoPenColor, 4},

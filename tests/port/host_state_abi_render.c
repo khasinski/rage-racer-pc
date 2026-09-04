@@ -19,6 +19,10 @@ _Static_assert(sizeof(g_SpriteFontCells[0]) == 2,
                "sprite font cell must remain a UV byte pair");
 _Static_assert(sizeof(g_TachoNeedleSprite) == sizeof(GameSpriteDesc),
                "tachometer needle sprite description type changed");
+_Static_assert(sizeof(g_MenuOverlayPatternTable) == 584,
+               "menu overlay pattern table ABI changed");
+_Static_assert(sizeof(g_MenuOverlayPatternTable[0]) == 8,
+               "menu overlay pattern frame layout changed");
 _Static_assert(sizeof(g_CameraMatrixSaved) == sizeof(Matrix),
                "saved camera matrix type changed");
 _Static_assert(sizeof(g_MenuRowFlashLevels) == 5 * sizeof(s32),

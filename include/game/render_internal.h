@@ -146,8 +146,9 @@ extern ProportionalFontCell
     g_PropFontCells[PROPORTIONAL_FONT_CELL_COUNT];
 extern u8 g_WordFontCells[40];
 extern u8 g_HighFontCell[4];
-extern s32 g_MenuOverlayPatternAnimOffset;
-extern u8 g_MenuOverlayPatternTable[];
+extern s32 g_MenuOverlayPatternAnimFrame;
+extern MenuOverlayPatternFrame
+    g_MenuOverlayPatternTable[MENU_OVERLAY_PATTERN_FRAME_COUNT];
 extern SpriteFontCell g_SpriteFontCells[SPRITE_FONT_CELL_COUNT];
 extern u8 g_SpriteFontWidth[SPRITE_FONT_CELL_COUNT];
 

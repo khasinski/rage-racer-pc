@@ -79,6 +79,18 @@ enum { FONT_8X8_CELL_COUNT = 96 };
 _Static_assert(sizeof(Font8x8Cell) == 2,
                "8x8 font cell must remain a column/row byte pair");
 
+enum {
+    MENU_OVERLAY_PATTERN_ROW_COUNT = 8,
+    MENU_OVERLAY_PATTERN_FRAME_COUNT = 73,
+};
+
+typedef struct MenuOverlayPatternFrame {
+    u8 rows[MENU_OVERLAY_PATTERN_ROW_COUNT];
+} MenuOverlayPatternFrame;
+
+_Static_assert(sizeof(MenuOverlayPatternFrame) == 8,
+               "menu overlay pattern frame must remain eight rows");
+
 typedef union RenderBufferAddress {
     RaceHudPacketOffset hudPacketOffset;
     s32 value;

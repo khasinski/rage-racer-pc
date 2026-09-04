@@ -4,44 +4,40 @@
 #include "game/state.h"
 
 enum {
-    PATTERN_FRAME_SIZE = 8,
     PATTERN_VISIBLE_ROWS = 6,
     PATTERN_STATIC_COUNT = 2,
-    PATTERN_ANIMATION_START = 16,
+    PATTERN_ANIMATION_FIRST_FRAME = PATTERN_STATIC_COUNT,
     PATTERN_ANIMATION_PERIOD = 6,
     PATTERN_FOOTER_BLOCKS = 16,
-    PATTERN_TABLE_SIZE = 584,
 };
 
-static const u8 *AnimatedPatternRows(void) {
-    const u8 *candidate;
+static const MenuOverlayPatternFrame *AnimatedPatternFrame(void) {
+    const MenuOverlayPatternFrame *candidate;
 
-    if (g_MenuOverlayPatternAnimOffset < PATTERN_ANIMATION_START ||
-        g_MenuOverlayPatternAnimOffset >
-            PATTERN_TABLE_SIZE - PATTERN_FRAME_SIZE ||
-        g_MenuOverlayPatternAnimOffset % PATTERN_FRAME_SIZE != 0) {
-        g_MenuOverlayPatternAnimOffset = PATTERN_ANIMATION_START;
+    if (g_MenuOverlayPatternAnimFrame < PATTERN_ANIMATION_FIRST_FRAME ||
+        g_MenuOverlayPatternAnimFrame >= MENU_OVERLAY_PATTERN_FRAME_COUNT) {
+        g_MenuOverlayPatternAnimFrame = PATTERN_ANIMATION_FIRST_FRAME;
     }
 
     if ((g_AnimTimer % PATTERN_ANIMATION_PERIOD) == 0) {
-        if (g_MenuOverlayPatternAnimOffset <=
-            PATTERN_TABLE_SIZE - 2 * PATTERN_FRAME_SIZE) {
-            g_MenuOverlayPatternAnimOffset += PATTERN_FRAME_SIZE;
+        if (g_MenuOverlayPatternAnimFrame <
+            MENU_OVERLAY_PATTERN_FRAME_COUNT - 1) {
+            g_MenuOverlayPatternAnimFrame++;
         } else {
-            g_MenuOverlayPatternAnimOffset = PATTERN_ANIMATION_START;
+            g_MenuOverlayPatternAnimFrame = PATTERN_ANIMATION_FIRST_FRAME;
         }
     }
 
-    candidate = &g_MenuOverlayPatternTable[g_MenuOverlayPatternAnimOffset];
-    if (candidate[PATTERN_FRAME_SIZE - 1] != 0) {
-        g_MenuOverlayPatternAnimOffset = PATTERN_ANIMATION_START;
+    candidate = &g_MenuOverlayPatternTable[g_MenuOverlayPatternAnimFrame];
+    if (candidate->rows[MENU_OVERLAY_PATTERN_ROW_COUNT - 1] != 0) {
+        g_MenuOverlayPatternAnimFrame = PATTERN_ANIMATION_FIRST_FRAME;
     }
-    return &g_MenuOverlayPatternTable[g_MenuOverlayPatternAnimOffset];
+    return &g_MenuOverlayPatternTable[g_MenuOverlayPatternAnimFrame];
 }
 
 void DrawBitPatternOverlay(s32 pattern) {
     GameOrderingTableEntry *ot = RENDER_OT_BASE + 1;
-    const u8 *rows;
+    const MenuOverlayPatternFrame *frame;
     s32 rowIndex;
     s32 bitIndex;
 
@@ -49,12 +45,12 @@ void DrawBitPatternOverlay(s32 pattern) {
         return;
     }
 
-    rows = pattern < 0
-        ? AnimatedPatternRows()
-        : &g_MenuOverlayPatternTable[(pattern - 1) * PATTERN_FRAME_SIZE];
+    frame = pattern < 0
+        ? AnimatedPatternFrame()
+        : &g_MenuOverlayPatternTable[pattern - 1];
 
     for (rowIndex = 0; rowIndex < PATTERN_VISIBLE_ROWS; rowIndex++) {
-        const u8 row = rows[rowIndex];
+        const u8 row = frame->rows[rowIndex];
 
         for (bitIndex = 0; bitIndex < 8; bitIndex++) {
             if ((row & (0x80U >> bitIndex)) != 0) {
