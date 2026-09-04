@@ -59,6 +59,19 @@ int main(void) {
     SeedFinishCamera(&car);
     CHECK_EQ(g_CameraCar.x, 777);
 
+    g_TrackPointCount = 3;
+    g_TrackPoints = NULL;
+    SeedFinishCamera(&car);
+    CHECK_EQ(g_CameraCar.x, 777);
+
+    g_TrackPoints = points;
+    SeedFinishCamera(NULL);
+    CHECK_EQ(g_CameraCar.x, 777);
+
+    car.facingBackwards = SHRT_MAX;
+    SeedFinishCamera(&car);
+    CHECK_EQ(g_CameraCar.headingAngle, 0x12E0);
+
     puts("finish camera seeds from a wrapped track point");
     return 0;
 }
