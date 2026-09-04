@@ -156,6 +156,19 @@ static void TestSettingRangeAndInputOrder(void) {
     g_PadPressed = PAD_CONFIRM | PAD_RIGHT;
     UpdateNegconMaxTwistScreen();
     CHECK(g_GameMode == OPTION_MODE_ROOT && g_NegconMaxTwist == 2);
+
+    ResetState();
+    g_NegconSteerPlay = -1;
+    UpdateNegconSteerPlayScreen();
+    CHECK(g_NegconSteerPlay == NEGCON_CALIBRATION_FIRST);
+    CHECK(s_soundCueCount == 0);
+
+    ResetState();
+    g_NegconMaxTwist = 99;
+    g_PadPressed = PAD_RIGHT;
+    UpdateNegconMaxTwistScreen();
+    CHECK(g_NegconMaxTwist == NEGCON_CALIBRATION_FIRST + 1);
+    CHECK(s_soundCueCount == 1 && s_soundCues[0] == 8);
 }
 
 static void TestDisconnectRestoresSettings(void) {

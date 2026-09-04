@@ -60,6 +60,7 @@ void DrawControllerSetupScene(s32 showButtonOverlays) {
     s32 steer;
     s32 model;
     s32 isCalibrationGauge;
+    s32 play;
 
     g_RenderState.viewZ = -0x1080;
     g_RenderState.viewY = 0;
@@ -90,8 +91,9 @@ void DrawControllerSetupScene(s32 showButtonOverlays) {
     if (g_GameMode == OPTION_MODE_NEGCON_MAX_TWIST) {
         steer = (rsin(g_AnimTimer * 16) * GetNegconSteerRange()) / 512;
     } else if (g_GameMode == OPTION_MODE_NEGCON_STEER_PLAY) {
+        play = NegconCalibrationIndex(g_NegconSteerPlay);
         steer = ((rsin(g_AnimTimer * 16) * 16) *
-                 g_NegconPlayScale[g_NegconSteerPlay]) / 4096;
+                 g_NegconPlayScale[play]) / 4096;
     } else {
         steer = g_NegconSteer * 8;
     }

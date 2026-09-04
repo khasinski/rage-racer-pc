@@ -162,9 +162,20 @@ static void TestUnknownPadDrawsNoModel(void) {
     CHECK(RENDER_OT_BASE == s_originalOt);
 }
 
+static void TestInvalidPlayUsesFirstPreset(void) {
+    Reset();
+    g_PadType = PAD_TYPE_NEGCON;
+    g_GameMode = OPTION_MODE_NEGCON_STEER_PLAY;
+    g_NegconSteerPlay = 99;
+    g_NegconPlayScale[0] = 5;
+    DrawControllerSetupScene(0);
+    CHECK(s_pitchAngles[0] == 41 && s_pitchAngles[1] == 31);
+}
+
 int main(void) {
     TestDigitalPadModels();
     TestNegconPartsAndOverlays();
     TestUnknownPadDrawsNoModel();
+    TestInvalidPlayUsesFirstPreset();
     return s_failures != 0;
 }

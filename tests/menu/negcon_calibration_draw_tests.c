@@ -160,9 +160,27 @@ static int TestMaxTwistGauge(void) {
     return 0;
 }
 
+static int TestInvalidValuesUseFirstPreset(void) {
+    Reset();
+    g_NegconSteerPlay = -1;
+    DrawNegconSteerPlayScreen();
+    CHECK(s_leftEnabled == 0 && s_rightEnabled == 1);
+    CHECK(s_sprites[1].u == 152);
+    CHECK(s_lineY[0] == 230 && s_lineY[2] == 230);
+
+    Reset();
+    g_NegconMaxTwist = 99;
+    DrawNegconMaxTwistScreen();
+    CHECK(s_leftEnabled == 0 && s_rightEnabled == 1);
+    CHECK(s_sprites[0].x == 0x94 && s_sprites[0].width == 0x18);
+    CHECK(s_sprites[0].u == 0);
+    return 0;
+}
+
 int main(void) {
     CHECK(TestSteerPlayGauge() == 0);
     CHECK(TestMaxTwistGauge() == 0);
+    CHECK(TestInvalidValuesUseFirstPreset() == 0);
     puts("Negcon calibration drawing tests passed");
     return 0;
 }

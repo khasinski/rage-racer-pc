@@ -27,8 +27,7 @@ int InitPAD(char *buf0, int len0, char *buf1, int len1) {
 }
 int DiagnosticsEnabled(int channel) { (void)channel; return 0; }
 
-/* The pad's live state: plain storage the game refills every frame. The
- * calibration tables it reads are the real ones out of host_state.c. */
+/* The pad's live state: plain storage the game refills every frame. */
 u8 g_PadBuffers[0x50];
 PadState g_PadState;
 u8 g_PadType;

@@ -40,8 +40,7 @@ int DiagnosticsEnabled(int channel) { (void)channel; return 0; }
  * The pad's own live state. It is plain storage that the game fills in every
  * frame, so standing it up here costs the test nothing. The two tables a
  * calibration actually selects from, g_NegconSteerRange and
- * g_NegconSteerDeadZone, are the real ones: they come from host_state.c, which
- * is where a wrong value would hide.
+ * g_NegconSteerDeadZone, are the real initialized-data definitions.
  */
 u8 g_PadBuffers[0x50];
 PadState g_PadState;
@@ -141,6 +140,15 @@ int main(void) {
             }
         }
     }
+
+    /* Corrupt runtime selectors must not become out-of-bounds table indices. */
+    g_NegconMaxTwist = 99;
+    g_NegconSteerPlay = -1;
+    g_NegconSteerNeutral = 0;
+    Report(0xFF);
+    Check(g_PadState.steer == g_NegconSteerRange[0],
+          "invalid selectors use first presets", 99, -1,
+          g_PadState.steer, g_NegconSteerRange[0]);
 
     if (s_failures != 0) {
         printf("%d NeGcon calibration checks failed\n", s_failures);

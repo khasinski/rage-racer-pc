@@ -45,9 +45,10 @@ static s16 ClampNegconPressure(s32 pressure) {
 }
 
 static s16 CalibrateNegconSteering(s32 twist) {
+    s32 play = NegconCalibrationIndex(g_NegconSteerPlay);
     s32 neutral = g_NegconSteerNeutral + 0x80;
     s32 delta = twist - neutral;
-    s32 deadZone = g_NegconSteerDeadZone[g_NegconSteerPlay][0];
+    s32 deadZone = g_NegconSteerDeadZone[play][0];
     s32 range = GetNegconSteerRange();
     s32 steering;
 

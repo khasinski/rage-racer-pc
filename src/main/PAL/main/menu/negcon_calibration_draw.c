@@ -29,20 +29,21 @@ void DrawNegconSteerPlayScreen(void) {
     s32 halfSpan;
     s32 upperY;
     s32 lowerY;
+    s32 play = NegconCalibrationIndex(g_NegconSteerPlay);
 
     DrawSpriteString(0x18, 0x30, g_MsgNegconSteerPlay, 0x7F81);
     ot = GamePrimaryOrderingTable(51);
     prim = RENDER_PRIM_CURSOR_AS(u8);
-    prim = QueueCalibrationArrows(ot, prim, g_NegconSteerPlay);
+    prim = QueueCalibrationArrows(ot, prim, play);
     prim = GameQueueSpriteTrans(
         ot, prim, 0x70, 0x30, 0xC, 0x18, 0x8C, 0x18, 0x7F81);
     prim = GameQueueSpriteTrans(
-        ot, prim, 0x7C, 0x30, 0xC, 0x18, g_NegconSteerPlay * 12 + 152, 0x18, 0x7F81);
+        ot, prim, 0x7C, 0x30, 0xC, 0x18, play * 12 + 152, 0x18, 0x7F81);
     prim = GameQueueSpriteTrans(
         ot, prim, 0x88, 0x30, 0xC, 0x18, 0x6C, 0x30, 0x7F81);
     prim = QueueCalibrationPanel(ot, prim);
 
-    halfSpan = ((g_NegconPlayPercent[g_NegconSteerPlay] << 7) / 100) * 2;
+    halfSpan = ((g_NegconPlayPercent[play] << 7) / 100) * 2;
     upperY = NEGCON_GAUGE_CENTER_Y - halfSpan;
     lowerY = NEGCON_GAUGE_CENTER_Y + halfSpan;
     prim = GameQueueLine(ot, prim, 0x94, upperY, 0xA8, upperY, 0x20, 0x40, 0xFF);
@@ -60,12 +61,13 @@ void DrawNegconMaxTwistScreen(void) {
     u8 *prim;
     s32 gaugeXOffset;
     s32 gaugeWidth;
+    s32 maxTwist = NegconCalibrationIndex(g_NegconMaxTwist);
 
     DrawSpriteString(0x18, 0x30, g_MsgNegconMaxTwist, 0x7F81);
     ot = GamePrimaryOrderingTable(51);
     prim = RENDER_PRIM_CURSOR_AS(u8);
-    prim = QueueCalibrationArrows(ot, prim, g_NegconMaxTwist);
-    if (g_NegconMaxTwist == NEGCON_CALIBRATION_LAST) {
+    prim = QueueCalibrationArrows(ot, prim, maxTwist);
+    if (maxTwist == NEGCON_CALIBRATION_LAST) {
         gaugeXOffset = 0;
         gaugeWidth = 0x24;
     } else {
@@ -79,7 +81,7 @@ void DrawNegconMaxTwistScreen(void) {
         0x30,
         gaugeWidth,
         0x18,
-        g_NegconMaxTwist * 24,
+        maxTwist * 24,
         0x30,
         0x7F81);
     prim = GameQueueSpriteTrans(ot, prim, 0xAC, 0x30, 4, 0x18, 0x78, 0x30, 0x7F81);

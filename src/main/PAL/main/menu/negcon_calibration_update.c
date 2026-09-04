@@ -9,6 +9,7 @@ enum {
 };
 
 static void AdjustCalibrationValue(NegconCalibrationValue *value) {
+    *value = (NegconCalibrationValue)NegconCalibrationIndex(*value);
     if ((g_PadPressed & PAD_LEFT) && *value > NEGCON_CALIBRATION_FIRST) {
         PlaySoundCue(8);
         (*value)--;

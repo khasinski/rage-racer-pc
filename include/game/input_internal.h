@@ -48,17 +48,22 @@ static inline NegconCalibrationValue ClampNegconCalibrationValue(s32 value) {
 }
 extern s16 g_NegconSteerRange[NEGCON_STEER_RANGE_COUNT];
 
+/* Runtime calibration state normally comes from a validated save or from the
+ * option screen. Treat any damaged value as the first retail preset before it
+ * is used as a table index. */
+static inline s32 NegconCalibrationIndex(NegconCalibrationValue value) {
+    return (u32)value < NEGCON_CALIBRATION_COUNT ? value
+                                                 : NEGCON_CALIBRATION_FIRST;
+}
+
 /* Reset controller-screen animation and retain both mapping selections so
  * cancelling the screen can restore them. */
 void BeginControllerConfig(void);
 
 static inline s32 GetNegconSteerRange(void) {
-    s32 index = g_NegconMaxTwist;
+    s32 index = NegconCalibrationIndex(g_NegconMaxTwist);
     s32 range;
 
-    if ((u32)index >= NEGCON_STEER_RANGE_COUNT) {
-        index = 0;
-    }
     range = g_NegconSteerRange[index];
     return range > 0 ? range : 1;
 }
