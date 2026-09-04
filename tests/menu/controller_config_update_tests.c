@@ -23,12 +23,12 @@ NegconCalibrationValue g_NegconSteerNeutral;
 NegconCalibrationValue g_NegconNeutralI;
 NegconCalibrationValue g_NegconNeutralII;
 NegconCalibrationValue g_NegconNeutralL;
-u16 g_NegconMaxTwistSaved;
-u16 g_NegconSteerPlaySaved;
-u16 g_NegconSteerNeutralSaved;
-u16 g_NegconNeutralISaved;
-u16 g_NegconNeutralIISaved;
-u16 g_NegconNeutralLSaved;
+s16 g_NegconMaxTwistSaved;
+s16 g_NegconSteerPlaySaved;
+s16 g_NegconSteerNeutralSaved;
+s16 g_NegconNeutralISaved;
+s16 g_NegconNeutralIISaved;
+s16 g_NegconNeutralLSaved;
 u8 g_NegconAxisI;
 u8 g_NegconAxisII;
 u8 g_NegconAxisL;
@@ -161,9 +161,9 @@ static void TestMappingNavigation(void) {
 }
 
 static void SetCalibrationValues(void) {
-    g_NegconSteerNeutral = 11;
+    g_NegconSteerNeutral = -11;
     g_NegconNeutralI = 22;
-    g_NegconNeutralII = 33;
+    g_NegconNeutralII = -33;
     g_NegconNeutralL = 44;
     g_NegconSteerPlay = 2;
     g_NegconMaxTwist = 3;
@@ -173,8 +173,8 @@ static void TestCalibrationSnapshot(void) {
     ResetState();
     SetCalibrationValues();
     BeginNegconCalibration();
-    CHECK(g_NegconSteerNeutralSaved == 11 && g_NegconNeutralISaved == 22);
-    CHECK(g_NegconNeutralIISaved == 33 && g_NegconNeutralLSaved == 44);
+    CHECK(g_NegconSteerNeutralSaved == -11 && g_NegconNeutralISaved == 22);
+    CHECK(g_NegconNeutralIISaved == -33 && g_NegconNeutralLSaved == 44);
     CHECK(g_NegconSteerPlaySaved == 2 && g_NegconMaxTwistSaved == 3);
     CHECK(g_NegconSteerNeutral == 0 && g_NegconNeutralI == 0);
     CHECK(g_NegconNeutralII == 0 && g_NegconNeutralL == 0);
@@ -182,8 +182,8 @@ static void TestCalibrationSnapshot(void) {
     CHECK(g_GameMode == OPTION_MODE_NEGCON_NEUTRAL);
 
     RestoreNegconCalibrationSettings();
-    CHECK(g_NegconSteerNeutral == 11 && g_NegconNeutralI == 22);
-    CHECK(g_NegconNeutralII == 33 && g_NegconNeutralL == 44);
+    CHECK(g_NegconSteerNeutral == -11 && g_NegconNeutralI == 22);
+    CHECK(g_NegconNeutralII == -33 && g_NegconNeutralL == 44);
     CHECK(g_NegconSteerPlay == 2 && g_NegconMaxTwist == 3);
 }
 
@@ -208,8 +208,8 @@ static void TestNeutralCaptureAndDisconnect(void) {
     BeginNegconCalibration();
     g_PadType = PAD_TYPE_DIGITAL;
     UpdateNegconNeutralScreen();
-    CHECK(g_GameMode == OPTION_MODE_ROOT && g_NegconSteerNeutral == 11);
-    CHECK(g_NegconNeutralI == 22 && g_NegconNeutralII == 33);
+    CHECK(g_GameMode == OPTION_MODE_ROOT && g_NegconSteerNeutral == -11);
+    CHECK(g_NegconNeutralI == 22 && g_NegconNeutralII == -33);
     CHECK(g_NegconNeutralL == 44);
 
     ResetState();
