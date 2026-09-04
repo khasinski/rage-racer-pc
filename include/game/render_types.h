@@ -59,6 +59,16 @@ enum { PROPORTIONAL_FONT_CELL_COUNT = 64 };
 _Static_assert(sizeof(ProportionalFontCell) == 2,
                "proportional font cell must remain a UV byte pair");
 
+typedef struct SpriteFontCell {
+    u8 textureU;
+    u8 textureV;
+} SpriteFontCell;
+
+enum { SPRITE_FONT_CELL_COUNT = 96 };
+
+_Static_assert(sizeof(SpriteFontCell) == 2,
+               "sprite font cell must remain a UV byte pair");
+
 typedef union RenderBufferAddress {
     RaceHudPacketOffset hudPacketOffset;
     s32 value;

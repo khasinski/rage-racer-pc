@@ -15,14 +15,14 @@ void DrawSpriteString(s32 x, s32 y, const char *str, s32 clutIndex) {
 
         if (glyph != 0) {
             SPRT *sprite = (SPRT *)packet;
-            s32 fontIndex = glyph * 2;
+            SpriteFontCell cell = g_SpriteFontCells[glyph];
 
             SetSprt(sprite);
             SetShadeTex(sprite, 1);
             sprite->x0 = WrapSigned16(x);
             sprite->y0 = WrapSigned16(y);
-            sprite->u0 = g_SpriteFontU[fontIndex];
-            sprite->v0 = g_SpriteFontV[fontIndex];
+            sprite->u0 = cell.textureU;
+            sprite->v0 = cell.textureV;
             sprite->w = (u16)width;
             sprite->h = 0x18;
             sprite->clut = (u16)clutIndex;

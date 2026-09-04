@@ -27,6 +27,7 @@
 
 #include "game/menu_types.h"
 #include "game/race_hud_internal.h"
+#include "game/render_internal.h"
 #include "game/team_logo.h"
 #include "game/visible_cell_scan.h"
 
@@ -158,8 +159,6 @@ extern DVec g_ClassRecordCellPoints[CLASS_RECORD_COUNT];
 extern ClassRecordSprite g_ClassRecordCellSprites[CLASS_RECORD_COUNT];
 extern Rgb g_ClassRecordNameSprites[CLASS_RECORD_COUNT + 1];
 extern unsigned char g_AttractTitleDelays[8];
-extern unsigned char g_SpriteFontCells[192];
-extern unsigned char g_SpriteFontWidth[96];
 extern int32_t g_RoadGrade;
 extern ContentCarPoint g_PlayerHullPoints[6];
 extern ContentCarPoint g_OpponentHullCorners[4];
@@ -336,8 +335,10 @@ static const HostStateBlob s_blobs[] = {
     {"g_ClassRecordNameSprites",
      (const unsigned char *)g_ClassRecordNameSprites, 36},
     {"g_AttractTitleDelays", g_AttractTitleDelays, 8},
-    {"g_SpriteFontCells", g_SpriteFontCells, 192},
-    {"g_SpriteFontWidth", g_SpriteFontWidth, 96},
+    {"g_SpriteFontCells", BYTES(g_SpriteFontCells),
+     sizeof(g_SpriteFontCells)},
+    {"g_SpriteFontWidth", g_SpriteFontWidth,
+     sizeof(g_SpriteFontWidth)},
     {"g_RoadGrade", (const unsigned char *)&g_RoadGrade,
      sizeof(g_RoadGrade)},
     {"g_PlayerHullPoints", (const unsigned char *)g_PlayerHullPoints,

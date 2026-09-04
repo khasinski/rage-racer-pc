@@ -26,6 +26,9 @@ enum {
     PRINTABLE_ASCII_FALLBACK_GLYPH = '?' - PRINTABLE_ASCII_FIRST,
 };
 
+_Static_assert(PRINTABLE_ASCII_GLYPH_COUNT == SPRITE_FONT_CELL_COUNT,
+               "sprite font must cover the printable ASCII lookup");
+
 static inline s32 PrintableAsciiGlyph(u8 character) {
     s32 glyph = character - PRINTABLE_ASCII_FIRST;
 
@@ -143,9 +146,7 @@ extern u8 g_WordFontCells[40];
 extern u8 g_HighFontCell[4];
 extern s32 g_MenuOverlayPatternAnimOffset;
 extern u8 g_MenuOverlayPatternTable[];
-extern u8 g_SpriteFontCells[192];
-#define g_SpriteFontU g_SpriteFontCells
-#define g_SpriteFontV (g_SpriteFontCells + 1)
-extern u8 g_SpriteFontWidth[];
+extern SpriteFontCell g_SpriteFontCells[SPRITE_FONT_CELL_COUNT];
+extern u8 g_SpriteFontWidth[SPRITE_FONT_CELL_COUNT];
 
 #endif
