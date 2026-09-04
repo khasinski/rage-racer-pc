@@ -203,4 +203,6 @@ void CloseLoadedAudioSlots(void) {
     CloseSequenceAudioSlot();
     CloseVabOnlyAudioSlot(AUDIO_SLOT_RACE_CUES);
     CloseVabOnlyAudioSlot(AUDIO_SLOT_ENGINE);
+    g_SoundCueBank =
+        (g_AudioLoadedSlotMask & (1 << AUDIO_SLOT_MAIN_CUES)) != 0 ? 1 : 0;
 }

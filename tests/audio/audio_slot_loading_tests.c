@@ -245,7 +245,8 @@ int main(void) {
     g_AudioLoadSlot = 3;
     CHECK(PollAudioSlotLoad() == 1 && g_SoundCueBank == 2);
 
-    g_AudioLoadedSlotMask = (1 << 2) | (1 << 3);
+    g_AudioLoadedSlotMask = (1 << 0) | (1 << 2) | (1 << 3);
+    g_SoundCueBank = 2;
     g_SoundScale.vabIds[2] = 22;
     g_SoundScale.vabIds[3] = 23;
     s_closeAudioCalls = 0;
@@ -254,12 +255,15 @@ int main(void) {
     s_vmInitCalls = 0;
     CloseLoadedAudioSlots();
     CHECK(s_damperCalls == 1 && s_closeAudioCalls == 1 &&
-          g_AudioLoadedSlotMask == 0 && s_closeVab == 23);
+          g_AudioLoadedSlotMask == 1 && s_closeVab == 23);
     CHECK(s_reverbCalls == 2 && s_vmInitCalls == 2);
+    CHECK(g_SoundCueBank == 1);
 
     g_AudioLoadedSlotMask = 1 << 3;
+    g_SoundCueBank = 2;
     CloseLoadedAudioSlots();
-    CHECK(g_AudioLoadedSlotMask == 0 && s_closeVab == 23);
+    CHECK(g_AudioLoadedSlotMask == 0 && s_closeVab == 23 &&
+          g_SoundCueBank == 0);
 
     puts("audio slot loading preserves VAB routing, polling, and close state");
     return 0;
