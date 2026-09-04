@@ -212,6 +212,8 @@ void ModernDiagnosticsCheckMarker(
     static int wasDown;
     static int burstLeft;
     static int markerIndex = -1;
+    static char markerDirectory[4096];
+    static int markerDirectoryReady;
     const bool *keys;
     int down;
     int pressed;
@@ -242,25 +244,37 @@ void ModernDiagnosticsCheckMarker(
             pressed = 1;
         }
     }
-    char path[256];
+    char path[4608];
     FILE *file;
     int index;
     wasDown = down;
     if (pressed) burstLeft = 4;
+    if (pressed && !markerDirectoryReady) {
+        char stateDirectory[4096];
+        if (PlatformUserStateDirectory(stateDirectory,
+                                       sizeof(stateDirectory)) &&
+            snprintf(markerDirectory, sizeof(markerDirectory), "%s/markers",
+                     stateDirectory) < (int)sizeof(markerDirectory) &&
+            PlatformEnsureDirectory(markerDirectory)) {
+            markerDirectoryReady = 1;
+        } else {
+            fprintf(stderr, "rage-port: cannot create marker directory\n");
+            burstLeft = 0;
+        }
+    }
     if (pressed && output->ringTextures != NULL) {
-        PlatformEnsureDirectory("markers");
         for (index = 0; index < output->ringCount; index++) {
             int slot = (output->ringNext + index) % output->ringCount;
             if (output->ringFrames[slot] == 0) continue;
-            snprintf(path, sizeof(path), "markers/ring-%02d-f%u-%s.ppm",
-                     index, output->ringFrames[slot],
+            snprintf(path, sizeof(path), "%s/ring-%02d-f%u-%s.ppm",
+                     markerDirectory, index, output->ringFrames[slot],
                      output->ringInterpolation[slot] < -1.5f ? "lerp" : "snap");
             ModernWriteTexturePpm(output->device,
                                       output->ringTextures[slot], output->width,
                                       output->height, path);
             if (output->ringScenes != NULL) {
-                snprintf(path, sizeof(path),
-                         "markers/ring-%02d-f%u-scene.bin", index,
+                snprintf(path, sizeof(path), "%s/ring-%02d-f%u-scene.bin",
+                         markerDirectory, index,
                          output->ringFrames[slot]);
                 file = fopen(path, "wb");
                 if (file != NULL) {
@@ -274,11 +288,12 @@ void ModernDiagnosticsCheckMarker(
     }
     if (burstLeft <= 0) return;
     burstLeft--;
-    PlatformEnsureDirectory("markers");
+    if (!markerDirectoryReady) return;
     if (markerIndex < 0) {
         markerIndex = 0;
         for (index = 0; index < 1000; index++) {
-            snprintf(path, sizeof(path), "markers/marker-%d-info.txt", index);
+            snprintf(path, sizeof(path), "%s/marker-%d-info.txt",
+                     markerDirectory, index);
             file = fopen(path, "r");
             if (file != NULL) {
                 fclose(file);
@@ -288,14 +303,18 @@ void ModernDiagnosticsCheckMarker(
     }
     index = markerIndex++;
     if (haveModernImage) {
-        snprintf(path, sizeof(path), "markers/marker-%d-modern.ppm", index);
+        snprintf(path, sizeof(path), "%s/marker-%d-modern.ppm",
+                 markerDirectory, index);
         WriteModern(output, path);
     }
-    snprintf(path, sizeof(path), "markers/marker-%d-compat.ppm", index);
+    snprintf(path, sizeof(path), "%s/marker-%d-compat.ppm", markerDirectory,
+             index);
     WriteCompat(path);
-    snprintf(path, sizeof(path), "markers/marker-%d-vram.raw", index);
+    snprintf(path, sizeof(path), "%s/marker-%d-vram.raw", markerDirectory,
+             index);
     WriteVram(path);
-    snprintf(path, sizeof(path), "markers/marker-%d-scene.bin", index);
+    snprintf(path, sizeof(path), "%s/marker-%d-scene.bin", markerDirectory,
+             index);
     file = fopen(path, "wb");
     if (file != NULL) {
         fwrite(snapshot, sizeof(*snapshot), 1, file);
@@ -304,12 +323,14 @@ void ModernDiagnosticsCheckMarker(
     {
         const RageRenderWorld *world = ModernNativeGpuPreparedWorld();
         if (world != NULL) {
-            snprintf(path, sizeof(path), "markers/marker-%d-world.bin", index);
+            snprintf(path, sizeof(path), "%s/marker-%d-world.bin",
+                     markerDirectory, index);
             if (!RenderWorldSnapshotWrite(path, world))
                 fprintf(stderr,
                         "rage-port: marker %d render-world save failed\n",
                         index);
-            snprintf(path, sizeof(path), "markers/marker-%d-draws.txt", index);
+            snprintf(path, sizeof(path), "%s/marker-%d-draws.txt",
+                     markerDirectory, index);
             file = fopen(path, "w");
             if (file != NULL) {
                 if (!ModernNativeGpuWriteDrawDump(file))
@@ -319,7 +340,8 @@ void ModernDiagnosticsCheckMarker(
             }
         }
     }
-    snprintf(path, sizeof(path), "markers/marker-%d-info.txt", index);
+    snprintf(path, sizeof(path), "%s/marker-%d-info.txt", markerDirectory,
+             index);
     file = fopen(path, "w");
     if (file != NULL) {
         WriteSceneInfo(file, snapshot, output, haveModernImage);
@@ -328,7 +350,8 @@ void ModernDiagnosticsCheckMarker(
     {
         unsigned char palette[9][3];
         int slot;
-        snprintf(path, sizeof(path), "markers/marker-%d-palette.txt", index);
+        snprintf(path, sizeof(path), "%s/marker-%d-palette.txt",
+                 markerDirectory, index);
         file = fopen(path, "w");
         if (file != NULL) {
             GameRenderWorldEnvironmentPalette(palette);
