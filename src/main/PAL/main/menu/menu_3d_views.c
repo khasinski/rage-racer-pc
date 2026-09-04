@@ -201,24 +201,21 @@ void DrawTeamNameCharModel(void) {
     Vec4 vcopy;
     s32 viewHeight;
     s32 baseHeight;
-    s32 nextAngle;
     s32 modelIndex;
     s32 rotationY;
     s32 rotationZ;
+    TeamNameModelAnimation animation;
 
     vcopy = g_TeamNameCharScale;
 
     SetupMenuViewCamera(0, -104);
 
-    nextAngle = AdvanceMenuViewAngleValue(
-        g_MenuViewAngle, g_MenuViewAngleTarget, 16);
-    g_MenuViewAngle = nextAngle;
-    if (nextAngle < TEAM_NAME_MODEL_SWAP_ANGLE && GameMenuCursorAnim >= 0) {
-        g_MenuViewAngle =
-            (s32)((u32)nextAngle - TEAM_NAME_MODEL_HALF_TURN);
-        g_TeamNameCharModel = GameMenuCursorAnim;
-        GameMenuCursorAnim = -1;
-    }
+    animation = AdvanceTeamNameModelAnimation(
+        g_MenuViewAngle, g_MenuViewAngleTarget, g_TeamNameCharModel,
+        GameMenuCursorAnim);
+    g_MenuViewAngle = animation.angle;
+    g_TeamNameCharModel = animation.displayedModel;
+    GameMenuCursorAnim = animation.pendingModel;
 
     viewHeight = AdvanceMenuViewOffset();
     baseHeight = g_MenuAltLayout != 0 ? 64 : 40;

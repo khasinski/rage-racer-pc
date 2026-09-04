@@ -14,6 +14,8 @@
     } while (0)
 
 int main(void) {
+    TeamNameModelAnimation animation;
+
     s32 progress = 100;
 
     CHECK(AddClampedMenuValue(10, 5, 0, 20) == 15);
@@ -82,6 +84,23 @@ int main(void) {
     CHECK(AdvanceMenuViewAngleValue(100, 200, 0) == 100);
     CHECK(AdvanceMenuViewAngleValue(INT_MIN, INT_MAX, 24) > INT_MIN);
     CHECK(AdvanceMenuViewAngleValue(INT_MAX, INT_MIN, 24) < INT_MAX);
+
+    animation = AdvanceTeamNameModelAnimation(
+        TEAM_NAME_CURSOR_ENTRY_ANGLE, 0, 3, 7);
+    CHECK(animation.angle == 3839999);
+    CHECK(animation.displayedModel == 3 && animation.pendingModel == 7);
+    animation = AdvanceTeamNameModelAnimation(3276800, 0, 3, 7);
+    CHECK(animation.angle == 1023999);
+    CHECK(animation.displayedModel == 7 && animation.pendingModel == -1);
+    animation = AdvanceTeamNameModelAnimation(
+        TEAM_NAME_MODEL_SWAP_ANGLE, TEAM_NAME_MODEL_SWAP_ANGLE, 3, 7);
+    CHECK(animation.angle == TEAM_NAME_MODEL_SWAP_ANGLE);
+    CHECK(animation.displayedModel == 3 && animation.pendingModel == 7);
+    animation = AdvanceTeamNameModelAnimation(
+        TEAM_NAME_MODEL_SWAP_ANGLE - 1, TEAM_NAME_MODEL_SWAP_ANGLE - 1, 3,
+        -1);
+    CHECK(animation.angle == TEAM_NAME_MODEL_SWAP_ANGLE - 1);
+    CHECK(animation.displayedModel == 3 && animation.pendingModel == -1);
 
     CHECK(RebaseCarouselValue(700000, 500000, 600000) == 800000);
     CHECK(RebaseCarouselValue(INT_MAX, -1, 0) == INT_MIN);

@@ -200,7 +200,31 @@ enum {
     TEAM_NAME_CURSOR_ENTRY_ANGLE = 4096000,
     TEAM_NAME_MODEL_SWAP_ANGLE = 3072000,
     TEAM_NAME_MODEL_HALF_TURN = 2048000,
+    TEAM_NAME_MODEL_EASE_DIVISOR = 16,
 };
+
+typedef struct TeamNameModelAnimation {
+    s32 angle;
+    s32 displayedModel;
+    s32 pendingModel;
+} TeamNameModelAnimation;
+
+static inline TeamNameModelAnimation AdvanceTeamNameModelAnimation(
+    s32 angle, s32 target, s32 displayedModel, s32 pendingModel) {
+    TeamNameModelAnimation result;
+
+    result.angle = AdvanceMenuViewAngleValue(
+        angle, target, TEAM_NAME_MODEL_EASE_DIVISOR);
+    result.displayedModel = displayedModel;
+    result.pendingModel = pendingModel;
+    if (result.angle < TEAM_NAME_MODEL_SWAP_ANGLE && pendingModel >= 0) {
+        result.angle =
+            (s32)((u32)result.angle - TEAM_NAME_MODEL_HALF_TURN);
+        result.displayedModel = pendingModel;
+        result.pendingModel = -1;
+    }
+    return result;
+}
 
 static inline s32 NormalizeTeamNameCursor(s32 cursor) {
     return AddClampedMenuValue(cursor, 0, 0, TEAM_NAME_KEY_END);
