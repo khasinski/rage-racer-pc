@@ -217,6 +217,8 @@ void ModernDiagnosticsCheckMarker(
     const bool *keys;
     int down;
     int pressed;
+    int probeX;
+    int probeY;
     if (snapshot == NULL || output == NULL) return;
     keys = SDL_GetKeyboardState(NULL);
     down = keys != NULL && keys[SDL_SCANCODE_M];
@@ -302,6 +304,10 @@ void ModernDiagnosticsCheckMarker(
         }
     }
     index = markerIndex++;
+    probeX = RuntimeConfigInt("diagnostics.marker_probe_x", -1, -1,
+                              INT_MAX);
+    probeY = RuntimeConfigInt("diagnostics.marker_probe_y", -1, -1,
+                              INT_MAX);
     if (haveModernImage) {
         snprintf(path, sizeof(path), "%s/marker-%d-modern.ppm",
                  markerDirectory, index);
@@ -337,6 +343,18 @@ void ModernDiagnosticsCheckMarker(
                     fprintf(stderr,
                             "rage-port: marker %d draw dump failed\n", index);
                 fclose(file);
+            }
+            if (probeX >= 0 && probeY >= 0) {
+                snprintf(path, sizeof(path), "%s/marker-%d-probe.txt",
+                         markerDirectory, index);
+                file = fopen(path, "w");
+                if (file != NULL) {
+                    if (!ModernNativeGpuWriteProbe(file, probeX, probeY,
+                                                   output->width, output->height))
+                        fprintf(stderr,
+                                "rage-port: marker %d probe failed\n", index);
+                    fclose(file);
+                }
             }
         }
     }

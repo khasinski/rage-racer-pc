@@ -17,8 +17,8 @@ CASES = {
 # inspected before recording them: the race start with its light gantry,
 # banners and HUD, and the same scene in 16:9 with FXAA and vibrant grading.
 MODERN_GOLDENS = {
-    "baseline": "5eac85c788445eb35e577e51d979714600b6aec497e4feb88ba64b1e41ca5485",
-    "enhanced": "8cdf13e623bb1de486834eab6614986bd68147b19440b23430abb1b42002823c",
+    "baseline": "143e2456ddfff0060d069accb782614c112c0458b1c2e8654f4120f49c3f35e8",
+    "enhanced": "c812b0282b356a4bbf70b2747dabfac614f5e18e23077b2b07e76257752f7b0c",
 }
 
 

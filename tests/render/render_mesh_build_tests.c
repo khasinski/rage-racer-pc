@@ -461,7 +461,7 @@ static void test_native_draw_builder_applies_authored_course_texture_scroll(void
     EXPECT_EQ(50, (int)(vertices[0].uv[1] * 100.0f));
 }
 
-static void test_native_draw_builder_strips_ot_bias_from_material_lookup(void) {
+static void test_native_draw_builder_preserves_terrain_ot_bias(void) {
     unsigned char bytes[164] = {0};
     RageRuntimeMesh mesh;
     RageRenderMeshInstance storage[1] = {0};
@@ -500,7 +500,7 @@ static void test_native_draw_builder_strips_ot_bias_from_material_lookup(void) {
                                              &spanCount));
     EXPECT_EQ(4, spans[0].material);
     EXPECT_EQ(0, spans[0].depthDecal);
-    EXPECT_EQ(0, (int)vertices[0].depthBias);
+    EXPECT_EQ(-4, (int)vertices[0].depthBias);
 }
 
 static void test_native_draw_builder_preserves_dynamic_terrain_material_flags(void) {
@@ -548,7 +548,7 @@ static void test_native_draw_builder_preserves_dynamic_terrain_material_flags(vo
                   RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT,
               spans[0].materialFlags);
     EXPECT_EQ(0, spans[0].depthDecal);
-    EXPECT_EQ(0, (int)vertices[0].depthBias);
+    EXPECT_EQ(-4, (int)vertices[0].depthBias);
 }
 
 static void test_native_draw_builder_makes_road_paint_real_geometry(void) {
@@ -751,7 +751,7 @@ int main(void) {
     test_native_draw_builder_culls_terrain_per_authored_quad();
     test_native_draw_builder_welds_terrain_cell_boundaries();
     test_native_draw_builder_applies_authored_course_texture_scroll();
-    test_native_draw_builder_strips_ot_bias_from_material_lookup();
+    test_native_draw_builder_preserves_terrain_ot_bias();
     test_native_draw_builder_preserves_dynamic_terrain_material_flags();
     test_native_draw_builder_makes_road_paint_real_geometry();
     test_native_draw_builder_keeps_terrain_detail_at_long_range();

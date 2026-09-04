@@ -191,6 +191,7 @@ Diagnostic settings:
 | `log` | `auto`, or an explicit log path | `auto` |
 | `marker_capture` | Enables the `M`-key frame/world debug bundle | `false` |
 | `marker_history` | Retains 16 preceding frames when marker capture is enabled | `false` |
+| `marker_probe_x`, `marker_probe_y` | Optional modern-target pixel to list overlapping native triangles in each marker | `-1`, `-1` |
 | `performance` | Logs average modern renderer costs every 120 frames | `false` |
 
 Input-device settings:

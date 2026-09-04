@@ -447,8 +447,6 @@ static int BuildVertex(const RageTransformBasis *basis,
         out->environmentLight[1] = 1.0f;
         out->environmentLight[2] = 1.0f;
     }
-    /* Native scene depth comes only from geometry. PS1 ordering-table hints
-     * and old per-instance overlap nudges must never alter the Z buffer. */
     out->depthBias = 0.0f;
     out->shadowReception =
         instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
@@ -457,8 +455,14 @@ static int BuildVertex(const RageTransformBasis *basis,
     *depthDecal =
         (instance->flags & RAGE_RENDER_INSTANCE_DEPTH_DECAL) != 0;
     if ((source.material & RAGE_RUNTIME_MATERIAL_METADATA) != 0) {
-        /* The packed byte is a PS1 ordering-table hint, not native material
-         * semantics. Strip it with the rest of the import metadata. */
+        /* Terrain's packed signed OT offset distinguishes coplanar course
+         * layers (for example a chevron barrier from its backing strip).
+         * Preserve it as the native renderer's tiny depth separation.  It
+         * is intentionally not an instance-wide nudge: each face retains
+         * the exact ordering the retail emitter authored. */
+        if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN)
+            out->depthBias = (float)(int8_t)(source.material >>
+                RAGE_RUNTIME_MATERIAL_DEPTH_BIAS_SHIFT);
         source.material &= RAGE_RUNTIME_MATERIAL_INDEX_MASK;
         if (source.material == RAGE_RUNTIME_MATERIAL_INDEX_MASK)
             source.material = UINT32_MAX;
