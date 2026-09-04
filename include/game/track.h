@@ -159,7 +159,7 @@ typedef struct TrackPointAmbienceZone {
     u16 fadeOutDistance;
     s32 sourceX;
     s32 sourceZ;
-    s32 cue; /* 1 picks one sound, anything else the other; sign unused */
+    s32 cue; /* 1 or -1 picks one sound, anything else the other */
 } TrackPointAmbienceZone;
 
 enum {

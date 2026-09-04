@@ -51,9 +51,10 @@ static s32 PointAmbienceLevel(const TrackPointAmbienceZone *zone,
     return POINT_AMBIENCE_MAX_LEVEL;
 }
 
-static s32 PointAmbienceOutputCue(s32 authoredCue) {
-    return authoredCue == 1 ? POINT_AMBIENCE_CUE_ONE_OUTPUT
-                            : POINT_AMBIENCE_OTHER_CUE_OUTPUT;
+static s32 PointAmbienceOutputCue(s32 authoredCue, s32 active) {
+    return active != 0 && (authoredCue == 1 || authoredCue == -1)
+               ? POINT_AMBIENCE_CUE_ONE_OUTPUT
+               : POINT_AMBIENCE_OTHER_CUE_OUTPUT;
 }
 
 static s32 PointAmbienceAttenuation(s32 level, int64_t dx, int64_t dz) {
@@ -114,13 +115,10 @@ void UpdatePointAmbience(s32 trackPosition) {
                      POINT_AMBIENCE_VOLUME_BIAS;
         rightVolume = level + (-attenuated * sine) / 4096 +
                       POINT_AMBIENCE_VOLUME_BIAS;
-        if (authoredCue == -1) {
-            authoredCue = 1;
-        }
     }
 
     outputLeft = g_MirrorMode != 0 ? leftVolume : rightVolume;
     outputRight = g_MirrorMode != 0 ? rightVolume : leftVolume;
-    SetStereoSoundCue(PointAmbienceOutputCue(authoredCue), (s16)outputLeft,
-                      (s16)outputRight);
+    SetStereoSoundCue(PointAmbienceOutputCue(authoredCue, level),
+                      (s16)outputLeft, (s16)outputRight);
 }

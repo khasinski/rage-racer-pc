@@ -82,6 +82,12 @@ int main(void) {
     events.pointAmbienceZones[0].fadeInDistance = 20;
     events.pointAmbienceZones[0].fadeOutDistance = 20;
 
+    events.pointAmbienceZones[0].cue = 1;
+    if (!ExpectAmbience(150, 2, 32, 128)) {
+        return 1;
+    }
+    events.pointAmbienceZones[0].cue = -1;
+
     g_RaceSeries = 1;
     if (!ExpectAmbience(890, 2, 32, 80)) {
         return 1;
