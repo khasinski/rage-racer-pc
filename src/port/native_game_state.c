@@ -240,26 +240,6 @@ const char *g_NativeCarManufacturerNames[GAME_CAR_COUNT] = {
     g_CarManufacturerAssoluto, g_CarManufacturerAge,
     g_CarManufacturerLeizard, g_CarManufacturerAssoluto
 };
-static char g_EngineSpecLabel00[] = "CAR-0";
-static char g_EngineSpecLabel01[] = "CAR-1";
-static char g_EngineSpecLabel02[] = "CAR-2";
-static char g_EngineSpecLabel03[] = "CAR-3";
-static char g_EngineSpecLabel04[] = "CAR-4";
-static char g_EngineSpecLabel05[] = "CAR-5";
-static char g_EngineSpecLabel06[] = "CAR-6";
-static char g_EngineSpecLabel07[] = "CAR-7";
-static char g_EngineSpecLabel08[] = "CAR-8";
-static char g_EngineSpecLabel09[] = "CAR-9";
-static char g_EngineSpecLabel10[] = "CAR-A";
-static char g_EngineSpecLabel11[] = "CAR-B";
-static char g_EngineSpecLabel12[] = "CAR-C";
-const char *g_NativeEngineSpecLabels[GAME_CAR_COUNT] = {
-    g_EngineSpecLabel00, g_EngineSpecLabel01, g_EngineSpecLabel02,
-    g_EngineSpecLabel03, g_EngineSpecLabel04, g_EngineSpecLabel05,
-    g_EngineSpecLabel06, g_EngineSpecLabel07, g_EngineSpecLabel08,
-    g_EngineSpecLabel09, g_EngineSpecLabel10, g_EngineSpecLabel11,
-    g_EngineSpecLabel12
-};
 char g_SaveTitleSjis[MEMORY_CARD_SAVE_TITLE_STORAGE_SIZE];
 char g_SaveFilePath[MEMORY_CARD_SAVE_PATH_STORAGE_SIZE];
 char g_FmtCardDevice[12];
