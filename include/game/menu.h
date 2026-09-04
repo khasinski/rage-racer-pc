@@ -606,7 +606,7 @@ void UpdateOptionScene(void);
 void UpdateOptionMenuFade(void);
 s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index);
 void DrawTeamNameCharModel(void);
-void DrawTireCompoundSlider(u8 x, s32 useFlag);
+void DrawTireCompoundSlider(u8 compound, s32 confirming);
 void DrawVolumeBar(s32 level, s32 y);
 void UpdateAndDrawCourseCard(void);
 void TickClassClearFanfare(void);

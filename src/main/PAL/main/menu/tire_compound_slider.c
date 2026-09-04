@@ -1,11 +1,11 @@
+#include "game/car.h"
 #include "game/menu.h"
 
 enum {
-    TIRE_COMPOUND_COUNT = 5,
     TIRE_SLIDER_PULSE_STEP = 0x60
 };
 
-static const s16 s_tireCompoundX[TIRE_COMPOUND_COUNT] = {
+static const s16 s_tireCompoundX[CAR_TIRE_COMPOUND_COUNT] = {
     0xF7, 0xE7, 0xD7, 0xC7, 0xB8,
 };
 
@@ -47,8 +47,8 @@ void DrawTireCompoundSlider(u8 compound, s32 confirming) {
     }
     ot = RENDER_OT_BASE + 2;
     highlight = GetSliderHighlight(confirming);
-    if (compound >= TIRE_COMPOUND_COUNT) {
-        compound = TIRE_COMPOUND_COUNT - 1;
+    if (compound >= CAR_TIRE_COMPOUND_COUNT) {
+        compound = CAR_TIRE_COMPOUND_COUNT - 1;
     }
     x = s_tireCompoundX[compound];
 
@@ -57,10 +57,10 @@ void DrawTireCompoundSlider(u8 compound, s32 confirming) {
     DrawSprite(ot, 0xE0, 0x72, 0x14, 0x10, 0x14, 0xB4, 0, 0, 0, 0x244, 1,
                1, 0x3A);
 
-    if (x != s_tireCompoundX[4]) {
+    if (compound != CAR_TIRE_COMPOUND_COUNT - 1) {
         DrawLeftSliderArrow(ot, x, highlight);
     }
-    if (x != s_tireCompoundX[0]) {
+    if (compound != 0) {
         DrawRightSliderArrow(ot, x, highlight);
     }
 
