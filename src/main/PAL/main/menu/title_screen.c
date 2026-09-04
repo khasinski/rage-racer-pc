@@ -31,7 +31,7 @@ void EnterTitleScreen(void) {
     }
     g_FrameSyncThreshold = 0x80;
     g_SceneTimer = 0;
-    g_SceneId = 4;
+    g_SceneId = GAME_SCENE_FRONTEND;
     g_FrontendIdleTimer = 0;
     g_MainMenuSlide = 0;
     g_FrontendState = FRONTEND_STATE_TITLE;
@@ -79,7 +79,7 @@ void UpdateTitleScreen(void) {
         PlaySoundCue(2);
         g_FrontendState = FRONTEND_STATE_MENU_OPENING;
         g_FrontendIdleTimer = 0;
-        g_TitleMenuSelection = 0;
+        g_TitleMenuSelection = TITLE_MENU_GRAND_PRIX;
         if (g_TitleAttractTimer > 0) {
             g_TitleAttractTimer = 0;
             StartCdVolumeFade(1);

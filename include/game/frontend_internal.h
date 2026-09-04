@@ -14,7 +14,7 @@ typedef enum TitleMenuItem {
     TITLE_MENU_ITEM_COUNT,
 } TitleMenuItem;
 
-s32 MoveTitleMenuSelection(s32 selection, s32 direction,
-                           int extraGrandPrixUnlocked);
+TitleMenuItem MoveTitleMenuSelection(s32 selection, s32 direction,
+                                     int extraGrandPrixUnlocked);
 
 #endif

@@ -1,7 +1,7 @@
 #include "game/frontend_internal.h"
 
-s32 MoveTitleMenuSelection(s32 selection, s32 direction,
-                           int extraGrandPrixUnlocked) {
+TitleMenuItem MoveTitleMenuSelection(s32 selection, s32 direction,
+                                     int extraGrandPrixUnlocked) {
     selection %= TITLE_MENU_ITEM_COUNT;
     if (selection < 0) {
         selection += TITLE_MENU_ITEM_COUNT;
@@ -20,5 +20,5 @@ s32 MoveTitleMenuSelection(s32 selection, s32 direction,
             selection = TITLE_MENU_TIME_ATTACK;
         }
     }
-    return selection;
+    return (TitleMenuItem)selection;
 }
