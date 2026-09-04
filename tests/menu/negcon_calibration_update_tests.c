@@ -178,6 +178,24 @@ static void TestDisconnectRestoresSettings(void) {
     CHECK(g_GameMode == OPTION_MODE_ROOT);
     CHECK(s_restoreCount == 1);
     CheckSharedFrame(0, 1);
+
+    ResetState();
+    g_PadType = PAD_TYPE_DIGITAL;
+    g_PadPressed = PAD_CONFIRM | PAD_CANCEL | PAD_RIGHT;
+    UpdateNegconSteerPlayScreen();
+    CHECK(g_GameMode == OPTION_MODE_ROOT);
+    CHECK(g_NegconSteerPlay == 2 && s_soundCueCount == 0);
+    CHECK(s_restoreCount == 1);
+    CheckSharedFrame(1, 0);
+
+    ResetState();
+    g_PadType = PAD_TYPE_DIGITAL;
+    g_PadPressed = PAD_CONFIRM | PAD_CANCEL | PAD_LEFT;
+    UpdateNegconMaxTwistScreen();
+    CHECK(g_GameMode == OPTION_MODE_ROOT);
+    CHECK(g_NegconMaxTwist == 2 && s_soundCueCount == 0);
+    CHECK(s_restoreCount == 1);
+    CheckSharedFrame(0, 1);
 }
 
 int main(void) {

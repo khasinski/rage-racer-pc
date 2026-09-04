@@ -21,43 +21,52 @@ static void AdjustCalibrationValue(NegconCalibrationValue *value) {
 }
 
 static void FinishCalibrationFrame(void (*drawScreen)(void)) {
-    if (g_PadType != PAD_TYPE_NEGCON) {
-        g_GameMode = OPTION_MODE_ROOT;
-        RestoreNegconCalibrationSettings();
-    }
     g_ControllerSceneAngleX = CONTROLLER_SCENE_ANGLE_X;
     drawScreen();
     DrawOptionHintBar(MENU_OPTION_HINT_NEGCON_CALIBRATION);
     DrawControllerSetupScene(1);
 }
 
+static int LeaveIfNegconDisconnected(void) {
+    if (g_PadType == PAD_TYPE_NEGCON) {
+        return 0;
+    }
+    g_GameMode = OPTION_MODE_ROOT;
+    RestoreNegconCalibrationSettings();
+    return 1;
+}
+
 void UpdateNegconSteerPlayScreen(void) {
     g_AnimTimer = (s32)((u32)g_AnimTimer + 1u);
     g_SetupArrowPulse = (s32)((u32)g_SetupArrowPulse + 96u);
-    if (g_PadPressed & PAD_CANCEL) {
-        PlaySoundCue(3);
-        g_GameMode = OPTION_MODE_ROOT;
-        RestoreNegconCalibrationSettings();
-    } else if (g_PadPressed & PAD_CONFIRM) {
-        PlaySoundCue(2);
-        g_GameMode = OPTION_MODE_NEGCON_MAX_TWIST;
-    } else {
-        AdjustCalibrationValue(&g_NegconSteerPlay);
+    if (!LeaveIfNegconDisconnected()) {
+        if (g_PadPressed & PAD_CANCEL) {
+            PlaySoundCue(3);
+            g_GameMode = OPTION_MODE_ROOT;
+            RestoreNegconCalibrationSettings();
+        } else if (g_PadPressed & PAD_CONFIRM) {
+            PlaySoundCue(2);
+            g_GameMode = OPTION_MODE_NEGCON_MAX_TWIST;
+        } else {
+            AdjustCalibrationValue(&g_NegconSteerPlay);
+        }
     }
     FinishCalibrationFrame(DrawNegconSteerPlayScreen);
 }
 
 void UpdateNegconMaxTwistScreen(void) {
     g_AnimTimer = (s32)((u32)g_AnimTimer + 1u);
-    if (g_PadPressed & PAD_CANCEL) {
-        PlaySoundCue(3);
-        g_GameMode = OPTION_MODE_ROOT;
-        RestoreNegconCalibrationSettings();
-    } else if (g_PadPressed & PAD_CONFIRM) {
-        PlaySoundCue(2);
-        g_GameMode = OPTION_MODE_ROOT;
-    } else {
-        AdjustCalibrationValue(&g_NegconMaxTwist);
+    if (!LeaveIfNegconDisconnected()) {
+        if (g_PadPressed & PAD_CANCEL) {
+            PlaySoundCue(3);
+            g_GameMode = OPTION_MODE_ROOT;
+            RestoreNegconCalibrationSettings();
+        } else if (g_PadPressed & PAD_CONFIRM) {
+            PlaySoundCue(2);
+            g_GameMode = OPTION_MODE_ROOT;
+        } else {
+            AdjustCalibrationValue(&g_NegconMaxTwist);
+        }
     }
     FinishCalibrationFrame(DrawNegconMaxTwistScreen);
 }
