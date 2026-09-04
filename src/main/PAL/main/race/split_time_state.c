@@ -26,9 +26,24 @@ static void ResetSplitDisplay(void) {
 void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
     s32 slot;
     s32 nextSlot;
+    s32 targetTime;
     int64_t delta;
 
     if (car == NULL || lapEvent == 2 || grandPrixMode != 0) {
+        return;
+    }
+
+    if (g_SectorIndex == SPLIT_STATE_WAITING_FOR_LAP) {
+        if (lapEvent == 0) {
+            return;
+        }
+        g_SectorIndex = 0;
+        g_SplitSign = 0;
+        g_SplitTargetTime =
+            g_BestSectorTimes[RaceSeriesIndex(g_RaceSeries)]
+                             [SeriesCourseIndex()][0];
+        g_SplitTimer = SPLIT_DISPLAY_FRAMES;
+        g_SplitSector = 0;
         return;
     }
 
@@ -43,11 +58,11 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
              (int64_t)car->progressB + car->progressA ||
          lapEvent != 0)) {
         g_SectorTimes[slot] = g_LapTimeMs;
-        if (g_LapTimeMs >= 0 && g_LapTimeMs <= SPLIT_TIME_MAX_MS) {
-            delta = lapEvent != 0
-                        ? (int64_t)g_RefLapTime - g_LapTimeMs
-                        : (int64_t)g_RefSectorTimes.values[slot] -
-                              g_LapTimeMs;
+        targetTime = lapEvent != 0 ? g_RefLapTime
+                                   : g_RefSectorTimes.values[slot];
+        if (g_LapTimeMs >= 0 && g_LapTimeMs <= SPLIT_TIME_MAX_MS &&
+            targetTime > 0 && targetTime <= SPLIT_TIME_MAX_MS) {
+            delta = (int64_t)targetTime - g_LapTimeMs;
 
             g_SplitSign = 1;
             if (delta < 0) {
@@ -85,15 +100,7 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
         return;
     }
 
-    if (g_SectorIndex == SPLIT_STATE_WAITING_FOR_LAP && lapEvent != 0) {
-        g_SectorIndex = 0;
-        g_SplitSign = 0;
-        g_SplitTargetTime =
-            g_BestSectorTimes[RaceSeriesIndex(g_RaceSeries)]
-                             [SeriesCourseIndex()][0];
-        g_SplitTimer = SPLIT_DISPLAY_FRAMES;
-        g_SplitSector = 0;
-    } else if (g_SectorIndex >= 0 && g_LapCount >= car->lap) {
+    if (g_SectorIndex >= 0 && g_LapCount >= car->lap) {
         if (g_SplitTimer < 0) {
             g_SplitTimer = 0;
         }

@@ -76,6 +76,36 @@ static void TestInitialLapEvent(void) {
     assert(g_SplitSector == 0);
 }
 
+static void TestPreStartWaitsForStartLine(void) {
+    PlayerCarRuntime car = {0};
+
+    ResetState();
+    g_SectorIndex = -2;
+    g_SplitTargetTime = 98765;
+    UpdateSplitTimes(&car, 0, 0);
+
+    assert(g_SectorIndex == -2);
+    assert(g_SplitTargetTime == 98765);
+}
+
+static void TestBlankReferenceDoesNotCreateDelta(void) {
+    PlayerCarRuntime car = {0};
+
+    ResetState();
+    car.lap = 1;
+    car.progressA = 100;
+    g_SectorEndDistance[0] = 100;
+    g_LapTimeMs = 900;
+    g_RefSectorTimes.values[0] = 0;
+    g_SplitSign = -1;
+    UpdateSplitTimes(&car, 0, 0);
+
+    assert(g_SectorTimes[0] == 900);
+    assert(g_SectorIndex == 1);
+    assert(g_SplitSign == 0);
+    assert(s_SoundCue == 0);
+}
+
 static void TestSectorClose(void) {
     PlayerCarRuntime car = {0};
 
@@ -188,7 +218,7 @@ static void TestExtremeArithmeticSaturates(void) {
     g_LapTimeMs = 0;
     g_RefLapTime = INT_MAX;
     UpdateSplitTimes(&car, 0, 1);
-    assert(g_SplitDelta == INT_MAX && g_SplitSign == 1);
+    assert(g_SplitSign == 0);
 
     ResetState();
     car.lap = 1;
@@ -202,6 +232,8 @@ static void TestExtremeArithmeticSaturates(void) {
 int main(void) {
     TestModesThatDoNotHaveSplits();
     TestInitialLapEvent();
+    TestPreStartWaitsForStartLine();
+    TestBlankReferenceDoesNotCreateDelta();
     TestSectorClose();
     TestSplitDisplayExpiry();
     TestInactiveLapResetsSplit();

@@ -100,8 +100,7 @@ int main(void) {
                       g_DefaultTotalTimes[index]);
             }
             for (slot = 0; slot < 3; slot++) {
-                CHECK(g_BestSectorTimes[series][course][slot] ==
-                      g_DefaultLapTimes[index]);
+                CHECK(g_BestSectorTimes[series][course][slot] == 0);
             }
             for (slot = 0; slot < 5; slot++) {
                 RaceRecord *ranking = &g_RankingRecords[series][course][slot];
@@ -130,9 +129,17 @@ int main(void) {
     CHECK(g_BestLapTimes[1][2][1] == 12345);
     CHECK(g_BestTotalTimes[0][3][0] == g_DefaultTotalTimes[3]);
     CHECK(g_BestTotalTimes[0][3][1] == 23456);
-    CHECK(g_BestSectorTimes[1][1][0] == g_DefaultLapTimes[5]);
-    CHECK(g_BestSectorTimes[1][1][1] == g_DefaultLapTimes[5]);
+    CHECK(g_BestSectorTimes[1][1][0] == 0);
+    CHECK(g_BestSectorTimes[1][1][1] == 0);
     CHECK(g_BestSectorTimes[1][1][2] == 34567);
+
+    g_BestSectorTimes[0][2][0] = g_DefaultLapTimes[2];
+    g_BestSectorTimes[0][2][1] = g_DefaultLapTimes[2];
+    g_BestSectorTimes[0][2][2] = g_DefaultLapTimes[2];
+    RepairRecordTimes();
+    CHECK(g_BestSectorTimes[0][2][0] == 0);
+    CHECK(g_BestSectorTimes[0][2][1] == 0);
+    CHECK(g_BestSectorTimes[0][2][2] == 0);
 
     g_DefaultLapTimes[0] = INT_MAX;
     g_DefaultTotalTimes[0] = INT_MIN;
@@ -145,7 +152,7 @@ int main(void) {
     RepairRecordTimes();
     CHECK(g_BestLapTimes[0][0][0] == RACE_TIME_MAX_MS);
     CHECK(g_BestTotalTimes[0][0][0] == 0);
-    CHECK(g_BestSectorTimes[0][0][0] == RACE_TIME_MAX_MS);
+    CHECK(g_BestSectorTimes[0][0][0] == 0);
     g_DefaultLapTimes[0] = 100765;
     g_DefaultTotalTimes[0] = 310765;
     InitRecordTables();

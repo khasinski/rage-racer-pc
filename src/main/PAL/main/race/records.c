@@ -97,10 +97,9 @@ void InitRecordTables(void) {
                     defaultTotalTimes[index];
             }
             for (slot = 0; slot < RECORD_SECTOR_COUNT; slot++) {
-                /* Retail seeds all three sector references from the course's
-                 * default lap time; memory-card data may replace them later. */
-                g_BestSectorTimes[series][course][slot] =
-                    defaultLapTimes[index];
+                /* A new Time Attack file has no measured sector references.
+                 * They become available after the first completed lap. */
+                g_BestSectorTimes[series][course][slot] = 0;
             }
             for (slot = 0; slot < RECORD_TABLE_LENGTH; slot++) {
                 g_RankingRecords[series][course][slot] =
@@ -143,11 +142,23 @@ void RepairRecordTimes(void) {
                 }
             }
             for (slot = 0; slot < RECORD_SECTOR_COUNT; slot++) {
-                if (g_BestSectorTimes[series][course][slot] <= 0 ||
-                    g_BestSectorTimes[series][course][slot] >
-                        RACE_TIME_MAX_MS) {
-                    g_BestSectorTimes[series][course][slot] =
-                        ClampRaceTime(defaultLapTimes[index]);
+                s32 *sector = &g_BestSectorTimes[series][course][slot];
+
+                if (*sector < 0 || *sector > RACE_TIME_MAX_MS) {
+                    *sector = 0;
+                }
+            }
+            /* Earlier ports filled every blank sector with the course's full
+             * default lap time. Recognize and clear that impossible triplet
+             * when loading their memory-card data. */
+            if (g_BestSectorTimes[series][course][0] ==
+                    defaultLapTimes[index] &&
+                g_BestSectorTimes[series][course][1] ==
+                    defaultLapTimes[index] &&
+                g_BestSectorTimes[series][course][2] ==
+                    defaultLapTimes[index]) {
+                for (slot = 0; slot < RECORD_SECTOR_COUNT; slot++) {
+                    g_BestSectorTimes[series][course][slot] = 0;
                 }
             }
         }

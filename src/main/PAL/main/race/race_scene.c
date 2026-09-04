@@ -194,6 +194,11 @@ void EnterRaceScene(void) {
     g_RefSectorTimes.fields.second = g_BestSectorTimes[series][course][1];
     g_RefSectorTimes.fields.third = g_BestSectorTimes[series][course][2];
     g_SectorIndex = PRE_START_SECTOR;
+    g_SplitSector = 0;
+    g_SplitTimer = SPLIT_DISPLAY_FRAMES;
+    g_SplitSign = 0;
+    g_SplitTargetTime = 0;
+    g_LastSectorTime = -1;
     /* The retail expression builds a 32-bit address through integer/union
      * arithmetic. On a 64-bit host that truncates the native table pointer.
      * This is the same game lookup expressed with its actual dimensions. */

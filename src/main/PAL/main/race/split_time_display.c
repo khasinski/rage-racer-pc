@@ -28,6 +28,11 @@ s32 SplitTimeClut(s32 timeMs) {
                : SPLIT_TIME_OVERFLOW_CLUT;
 }
 
+s32 SplitTargetVisible(s32 sectorIndex, s32 targetTime) {
+    return sectorIndex >= 0 && sectorIndex < SPLIT_SECTOR_COUNT &&
+           targetTime > 0 && targetTime <= SPLIT_TIME_MAX_MS;
+}
+
 s32 SplitDisplaySectorIndex(s32 sector) {
     return (u32)sector < SPLIT_SECTOR_COUNT ? sector : 0;
 }
