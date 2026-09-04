@@ -527,6 +527,7 @@ typedef struct Modern2DState {
 
 static uint8_t s_currentPass;
 enum {
+    MODERN_LAYER_SKY,
     MODERN_LAYER_HUD,
     MODERN_LAYER_MIRROR_FOREGROUND,
 };
@@ -934,15 +935,22 @@ static void ModernBuildOverlayFrame(const RageSceneSnapshot *snapshot) {
     memset(&state2d, 0, sizeof(state2d));
     state2d.twin = 0x0000FFFFu;
 
-    /* Native rendering owns the complete sky and all 3D. Retain only the
-     * captured foreground UI while continuing to consume GPU state words. */
+    /* DrawSkyBackground's exact screen-space primitives are part of the
+     * modern render, not a classic framebuffer fallback. Their source tag is
+     * required because far terrain shares the same OT buckets. */
     for (i = 0; i < snapshot->packetCount; i++) {
         const RageCapturePacket *packet = &snapshot->packets[i];
         uint32_t command = packet->words[0] >> 24;
         if (packet->table != 0) continue;
+        if ((packet->flags & RAGE_CAPTURE_PACKET_SKY) != 0) {
+            s_currentLayer = MODERN_LAYER_SKY;
+            ModernReplay2DPacket(packet, &state2d);
+            continue;
+        }
         if (packet->bucket >= MODERN_BACKGROUND_BUCKET && command < 0xE0u) {
             continue;
         }
+        s_currentLayer = MODERN_LAYER_HUD;
         ModernReplay2DPacket(packet, &state2d);
     }
 
@@ -1127,7 +1135,9 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
     }
     {
         static uint64_t reportedIncompleteFrame = UINT64_MAX;
-        ModernNativeGpuDraw(cmd, s_target, s_depth, 1, s_targetH);
+        ModernRenderOverlaySelection(cmd, vram, 0,
+                                     1u << MODERN_LAYER_SKY, 1);
+        ModernNativeGpuDraw(cmd, s_target, s_depth, 0, 0, s_targetH);
         if (!ModernNativeGpuWorldComplete() &&
             reportedIncompleteFrame != snapshot->frameCounter) {
             reportedIncompleteFrame = snapshot->frameCounter;

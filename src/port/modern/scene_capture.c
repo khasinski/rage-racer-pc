@@ -32,6 +32,9 @@ static int s_rangeCount;
 static int s_rangeOverflow;
 static const uint8_t *s_scopeStart;
 static int s_scopeHasFaceOwner;
+static RageCaptureRange s_skyRanges[2];
+static int s_skyRangeCount;
+static const uint8_t *s_skyScopeStart;
 
 int CaptureActive(void) {
     if (!s_traceInitialized) {
@@ -126,6 +129,35 @@ void CaptureFrameBegin(void) {
     s_rangeOverflow = 0;
     s_scopeStart = NULL;
     s_scopeHasFaceOwner = 0;
+    s_skyRangeCount = 0;
+    s_skyScopeStart = NULL;
+}
+
+void CaptureSkyBegin(void) {
+    if (!CaptureActive()) return;
+    s_skyScopeStart = RENDER_PRIM_CURSOR_AS(const uint8_t);
+}
+
+void CaptureSkyEnd(void) {
+    const uint8_t *end;
+    if (!CaptureActive() || s_skyScopeStart == NULL) return;
+    end = RENDER_PRIM_CURSOR_AS(const uint8_t);
+    if (end > s_skyScopeStart && s_skyRangeCount < 2) {
+        s_skyRanges[s_skyRangeCount].begin = s_skyScopeStart;
+        s_skyRanges[s_skyRangeCount].end = end;
+        s_skyRangeCount++;
+    }
+    s_skyScopeStart = NULL;
+}
+
+static int CaptureIsSkyPacket(const uint8_t *address) {
+    uintptr_t candidate = (uintptr_t)address;
+    int i;
+    for (i = 0; i < s_skyRangeCount; i++) {
+        if (candidate >= (uintptr_t)s_skyRanges[i].begin &&
+            candidate < (uintptr_t)s_skyRanges[i].end) return 1;
+    }
+    return 0;
 }
 
 void CaptureModelBegin(int kind, int index, int fogged) {
@@ -392,6 +424,8 @@ static void CaptureWalkTable(RageSceneSnapshot *snapshot, int tableIndex,
                     memset(out, 0, sizeof(*out));
                     out->bucket = (uint16_t)bucket;
                     out->table = (uint8_t)tableIndex;
+                    if (CaptureIsSkyPacket(address))
+                        out->flags |= RAGE_CAPTURE_PACKET_SKY;
                     out->size = (uint8_t)CapturePacketWords(
                         node, out->words, RAGE_CAPTURE_PACKET_WORDS);
                 }

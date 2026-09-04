@@ -487,6 +487,7 @@ void DrawSkyBackground(void) {
                                   work.mirrorFlag != g_MirrorMode);
     }
     packet = work.packet;
+    GameRenderWorldBeginSkyPackets();
 
     geometry.panelX = setup.panelXFixed;
     geometry.panelY = setup.panelYFixed;
@@ -506,4 +507,5 @@ void DrawSkyBackground(void) {
 
     packet = DrawCourseSkirt(&work, &geometry, packet);
     g_RenderState.packetCursor = packet;
+    GameRenderWorldEndSkyPackets();
 }

@@ -27,6 +27,9 @@ void GameRenderWorldSetSkyGrid(const GameSkyGridLayout *layout,
     s_publishedMirror = mirrorPass;
 }
 
+void GameRenderWorldBeginSkyPackets(void) {}
+void GameRenderWorldEndSkyPackets(void) {}
+
 typedef union PacketStorage {
     max_align_t alignment;
     u8 bytes[4096];

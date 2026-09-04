@@ -22,6 +22,11 @@ void GameRenderWorldPublishCurrentCamera(void);
  * pass. Scripted cameras may advance again before the scene handler ends. */
 void GameRenderWorldSetSkyGrid(const struct GameSkyGridLayout *layout,
                                int mirror_pass);
+/* Delimit the exact packet-buffer region emitted by DrawSkyBackground so the
+ * modern backend can replay it without confusing far terrain in the same OT
+ * buckets for sky. */
+void GameRenderWorldBeginSkyPackets(void);
+void GameRenderWorldEndSkyPackets(void);
 void GameRenderWorldSubmitCourseObject(uint32_t entity, int32_t mesh,
                                            int32_t x, int32_t y, int32_t z,
                                            int32_t yaw, int fogged,

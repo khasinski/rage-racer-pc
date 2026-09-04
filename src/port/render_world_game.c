@@ -14,6 +14,7 @@
 #include "game/track_internal.h"
 #include "render/render_world_frame.h"
 #include "render/car_paint.h"
+#include "modern/scene_capture.h"
 #include "rage/track_asset_identity.h"
 #include "rage/track_lighting.h"
 
@@ -381,6 +382,10 @@ void GameRenderWorldSetSkyGrid(const GameSkyGridLayout *layout,
     s_skyGrid[index] = *layout;
     s_haveSkyGrid[index] = 1;
 }
+
+void GameRenderWorldBeginSkyPackets(void) { CaptureSkyBegin(); }
+
+void GameRenderWorldEndSkyPackets(void) { CaptureSkyEnd(); }
 
 void GameRenderWorldSetCamera(int32_t x, int32_t y, int32_t z,
                                   int32_t pitch, int32_t yaw, int32_t roll) {

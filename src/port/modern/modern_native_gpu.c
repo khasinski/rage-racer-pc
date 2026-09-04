@@ -1386,6 +1386,7 @@ static void ModernNativeDrawShadowMap(SDL_GPUCommandBuffer *command) {
 static void ModernNativeGpuDrawSet(
     SDL_GPUCommandBuffer *command,
     SDL_GPUTexture *colorTarget, SDL_GPUTexture *depthTarget, int clearColor,
+    int drawSky,
     const RageRenderCamera *renderCamera, float aspect,
     const RageNativeDrawSpan *spans, uint32_t spanCount,
     uint32_t drawVertexCount, const char *viewName, int targetHeight) {
@@ -1414,7 +1415,8 @@ static void ModernNativeGpuDrawSet(
     if (renderCamera == NULL) return;
     for (spanIndex = 0; spanIndex < spanCount; spanIndex++)
         (void)ModernNativeLoadTexture(command, &spans[spanIndex]);
-    if (!ModernNativeEnsureSkyTexture(command, renderCamera->skyAssetKey,
+    if (drawSky &&
+        !ModernNativeEnsureSkyTexture(command, renderCamera->skyAssetKey,
                                       renderCamera->skyCloudRow))
         return;
     pass = SDL_BeginGPURenderPass(command, &color, 1, &depth);
@@ -1422,16 +1424,18 @@ static void ModernNativeGpuDrawSet(
     ModernNativeBuildCamera(renderCamera, &camera);
     camera.projection[0] /= aspect;
     SDL_PushGPUVertexUniformData(command, 0, &camera, sizeof(camera));
-    ModernNativeBuildSky(renderCamera, aspect, targetHeight, &sky);
-    SDL_PushGPUFragmentUniformData(command, 0, &sky, sizeof(sky));
-    SDL_BindGPUGraphicsPipeline(pass, s_sky);
-    {
-        SDL_GPUTextureSamplerBinding binding = {
-            .texture = s_skyTexture,
-            .sampler = s_skySampler};
-        SDL_BindGPUFragmentSamplers(pass, 0, &binding, 1);
+    if (drawSky) {
+        ModernNativeBuildSky(renderCamera, aspect, targetHeight, &sky);
+        SDL_PushGPUFragmentUniformData(command, 0, &sky, sizeof(sky));
+        SDL_BindGPUGraphicsPipeline(pass, s_sky);
+        {
+            SDL_GPUTextureSamplerBinding binding = {
+                .texture = s_skyTexture,
+                .sampler = s_skySampler};
+            SDL_BindGPUFragmentSamplers(pass, 0, &binding, 1);
+        }
+        SDL_DrawGPUPrimitives(pass, 3, 1, 0, 0);
     }
-    SDL_DrawGPUPrimitives(pass, 3, 1, 0, 0);
     ModernNativeBuildLight(&s_world->light, renderCamera, &light);
     SDL_PushGPUFragmentUniformData(command, 0, &light, sizeof(light));
     ModernNativeBuildShadowCamera(&s_shadowMap, &shadowCamera);
@@ -1533,13 +1537,14 @@ static void ModernNativeGpuDrawSet(
 void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,
                          SDL_GPUTexture *colorTarget,
                          SDL_GPUTexture *depthTarget,
-                         int clearColor, int targetHeight) {
+                         int clearColor, int drawSky, int targetHeight) {
     if (s_world == NULL || !s_world->hasCamera) return;
     if (ModernNativeGpuHasDraws()) {
         if (!ModernNativeUploadVertices(command)) return;
         ModernNativeDrawShadowMap(command);
     }
     ModernNativeGpuDrawSet(command, colorTarget, depthTarget, clearColor,
+                           drawSky,
                            &s_world->camera, s_aspect, s_spans, s_spanCount,
                            s_vertexCount, "main", targetHeight);
 }
@@ -1548,7 +1553,7 @@ void ModernNativeGpuDrawMirror(SDL_GPUCommandBuffer *command,
                                SDL_GPUTexture *colorTarget,
                                SDL_GPUTexture *depthTarget, int targetHeight) {
     if (!ModernNativeGpuHasMirrorDraws()) return;
-    ModernNativeGpuDrawSet(command, colorTarget, depthTarget, 1,
+    ModernNativeGpuDrawSet(command, colorTarget, depthTarget, 1, 1,
                            &s_world->mirrorCamera, s_mirrorAspect,
                            s_mirrorSpans, s_mirrorSpanCount,
                            s_mirrorVertexCount, "mirror", targetHeight);

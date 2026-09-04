@@ -64,10 +64,16 @@ typedef struct RageCaptureTerrainBatch {
 
 #define RAGE_CAPTURE_PACKET_WORDS 16
 
+enum {
+    RAGE_CAPTURE_PACKET_SKY = 1u << 0,
+};
+
 typedef struct RageCapturePacket {
     uint16_t bucket; /* ordering-table entry the packet is linked under */
     uint8_t table;   /* 0 = main, 1 = mirror/overlay */
     uint8_t size;    /* canonical GP0 payload length in words */
+    uint8_t flags;   /* RAGE_CAPTURE_PACKET_* source classification */
+    uint8_t pad[3];
     uint32_t words[RAGE_CAPTURE_PACKET_WORDS];
 } RageCapturePacket;
 
@@ -160,6 +166,8 @@ void CaptureFrameEnd(void);
 void CaptureModelBegin(int kind, int index, int fogged);
 void CaptureTerrainBegin(const void *cells, int count);
 void CaptureSubmitEnd(void);
+void CaptureSkyBegin(void);
+void CaptureSkyEnd(void);
 
 /* The snapshot of the frame captured last / the one before it. */
 const RageSceneSnapshot *CaptureCurrent(void);
