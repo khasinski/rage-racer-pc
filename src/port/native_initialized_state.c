@@ -78,7 +78,9 @@ char g_FmtPlayTime[] __attribute__((aligned(16))) = "%5d:%02d:%02d";
 char g_FmtSaveRow[] __attribute__((aligned(16))) = "%1d /";
 char g_FmtSaveRowTail[] __attribute__((aligned(16))) = " /";
 char g_FmtSaveRowEmpty[] __attribute__((aligned(16))) = "%1d /        /";
-unsigned char g_SaveNameCharset[44] __attribute__((aligned(16))) = {0x30,0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0x20,0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,0x4a,0x4b,0x4c,0x4d,0x4e,0x4f,0x50,0x51,0x52,0x53,0x54,0x55,0x56,0x57,0x58,0x59,0x5a,0x2e,0x2d,0x21,0x3f,0x40,0x00,0x00};
+char g_SaveNameCharset[SAVE_NAME_CHARSET_STORAGE_SIZE]
+                          __attribute__((aligned(16))) =
+    "0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ.-!?@";
 s16 g_McMessageColumnX[5] __attribute__((aligned(16))) = {0, 0, 0x60, 0x78, 0xB4};
 char g_McSlotLabels[] __attribute__((aligned(16))) = "NEW FILE";
 char g_McSlotLabelNoFile[] __attribute__((aligned(16))) = "NO FILE";

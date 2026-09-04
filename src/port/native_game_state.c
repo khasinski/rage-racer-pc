@@ -266,7 +266,7 @@ char g_FmtPlayTime[14];
 char g_FmtSaveRow[6];
 char g_FmtSaveRowTail[3];
 char g_FmtSaveRowEmpty[15];
-u8 g_SaveNameCharset[44];
+char g_SaveNameCharset[SAVE_NAME_CHARSET_STORAGE_SIZE];
 static char g_McMessage00[] = "Select file to save.";
 static char g_McMessage01[] = "Select file to load.";
 static char g_McMessage02[] = "No Memory card.";

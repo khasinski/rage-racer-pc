@@ -8,8 +8,8 @@ enum {
 };
 
 static char DecodeSaveNameCharacter(u8 characterIndex) {
-    if (characterIndex >= SAVE_NAME_CHARSET_SIZE) return '?';
-    return (char)g_SaveNameCharset[characterIndex];
+    if (characterIndex >= SAVE_NAME_CHARACTER_COUNT) return '?';
+    return g_SaveNameCharset[characterIndex];
 }
 
 static void DrawSaveRowSlotNumber(char *text, const char *format,

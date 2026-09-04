@@ -110,8 +110,11 @@ extern s32 g_McSwEventNew;
 extern s32 g_McSwEventTimeout;
 extern s32 g_SaveElapsedTicks;
 extern char g_SaveFilePath[];
-enum { SAVE_NAME_CHARSET_SIZE = 44 };
-extern u8 g_SaveNameCharset[SAVE_NAME_CHARSET_SIZE];
+enum {
+    SAVE_NAME_CHARACTER_COUNT = 42,
+    SAVE_NAME_CHARSET_STORAGE_SIZE = 44,
+};
+extern char g_SaveNameCharset[SAVE_NAME_CHARSET_STORAGE_SIZE];
 extern char g_SaveTitleSjis[];
 
 #endif

@@ -221,6 +221,12 @@ static void CheckInitialStartingGrids(void) {
 }
 
 static void CheckMemoryCardLabels(void) {
+    Check(memcmp(g_SaveNameCharset,
+                 "0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ.-!?@",
+                 SAVE_NAME_CHARACTER_COUNT) == 0 &&
+              g_SaveNameCharset[SAVE_NAME_CHARACTER_COUNT] == '\0' &&
+              g_SaveNameCharset[SAVE_NAME_CHARSET_STORAGE_SIZE - 1] == '\0',
+          "save-name character set and padding");
     Check(g_McMessageColumnX[2] == 0x60 &&
               g_McMessageColumnX[3] == 0x78 &&
               g_McMessageColumnX[4] == 0xB4,
