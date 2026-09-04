@@ -17,6 +17,17 @@ NegconCalibrationValue g_NegconNeutralL;
 PadErrorState g_PadErrorState;
 s32 g_PadValidateCountdown;
 s32 g_PadErrorHoldBits;
+PadState g_PadState;
+u8 g_PadType;
+u16 g_PadPrevHeld;
+u16 g_PadHeld;
+u16 g_PadPressed;
+u16 g_PadPressedRepeat;
+u8 g_PadRepeatTimer;
+s16 g_NegconAnalogI;
+s16 g_NegconAnalogII;
+s16 g_NegconAnalogL;
+s16 g_NegconSteer;
 s32 g_MirrorMode;
 s16 g_ExtraGrandPrixUnlocked;
 ScreenOffset g_ScreenOffsetX;
@@ -90,6 +101,7 @@ int main(void) {
         INIT_RECORDS, INIT_RENDER_STATE,
         INIT_SAVE_DEFAULTS, SET_CAMERA_MATRIX,
     };
+    const PadState clearedPad = {0};
 
     memset(&g_RenderState, 0x7F, sizeof(g_RenderState));
     g_ScreenOffsetX = 12;
@@ -105,6 +117,17 @@ int main(void) {
     g_PadErrorState = PAD_ERROR_STATE_INVALID_INPUT;
     g_PadValidateCountdown = -1;
     g_PadErrorHoldBits = -1;
+    memset(&g_PadState, 0x7F, sizeof(g_PadState));
+    g_PadType = 0x41;
+    g_PadPrevHeld = PAD_LEFT;
+    g_PadHeld = PAD_RIGHT;
+    g_PadPressed = PAD_CROSS;
+    g_PadPressedRepeat = PAD_DOWN;
+    g_PadRepeatTimer = 30;
+    g_NegconAnalogI = 1;
+    g_NegconAnalogII = 2;
+    g_NegconAnalogL = 3;
+    g_NegconSteer = 4;
     g_MirrorMode = 1;
     g_ExtraGrandPrixUnlocked = 1;
 
@@ -121,6 +144,12 @@ int main(void) {
     CHECK(g_NegconNeutralL == 0);
     CHECK(g_PadErrorState == PAD_ERROR_STATE_NONE);
     CHECK(g_PadValidateCountdown == 0x21 && g_PadErrorHoldBits == 0);
+    CHECK(memcmp(&g_PadState, &clearedPad, sizeof(clearedPad)) == 0);
+    CHECK(g_PadType == 0 && g_PadPrevHeld == 0 && g_PadHeld == 0);
+    CHECK(g_PadPressed == 0 && g_PadPressedRepeat == 0);
+    CHECK(g_PadRepeatTimer == 0);
+    CHECK(g_NegconAnalogI == 0 && g_NegconAnalogII == 0 &&
+          g_NegconAnalogL == 0 && g_NegconSteer == 0);
     CHECK(g_MirrorMode == 0 && g_ExtraGrandPrixUnlocked == 0);
     CHECK(g_RenderState.viewX == 0 && g_RenderState.viewY == -64);
     CHECK(g_RenderState.viewZ == -256);

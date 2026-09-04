@@ -1,4 +1,5 @@
 #include <psyz/gpu.h>
+#include <string.h>
 
 #include "game/audio.h"
 #include "game/input_internal.h"
@@ -15,6 +16,18 @@ enum {
 };
 
 static void ResetInputDefaults(void) {
+    memset(&g_PadState, 0, sizeof(g_PadState));
+    g_PadType = 0;
+    g_PadPrevHeld = 0;
+    g_PadHeld = 0;
+    g_PadPressed = 0;
+    g_PadPressedRepeat = 0;
+    g_PadRepeatTimer = 0;
+    g_NegconAnalogI = 0;
+    g_NegconAnalogII = 0;
+    g_NegconAnalogL = 0;
+    g_NegconSteer = 0;
+
     g_NegconSteerPlay = 1;
     g_PadMappingIndex = 0;
     g_NegconMappingIndex = 0;
