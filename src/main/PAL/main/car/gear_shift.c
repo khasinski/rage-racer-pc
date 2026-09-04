@@ -15,6 +15,10 @@ enum {
 
 static void ShiftManualGears(GameCarDrive *drive, s32 topGear,
                              s32 mappingBase) {
+    /* Retail accepts another upshift only after its clutch counter reaches
+     * zero, but accepts a downshift immediately. Preserve that asymmetric
+     * behaviour: its eleven race frames are about 440 ms on PAL and 367 ms on
+     * NTSC, so comparing the two releases by wall-clock time is misleading. */
     if ((g_PadPressed &
          g_PadButtonMapping[SHIFT_UP_MAPPING_SLOT + mappingBase]) != 0 &&
         drive->gear < topGear && drive->clutch == 0) {

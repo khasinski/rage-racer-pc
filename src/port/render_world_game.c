@@ -698,6 +698,11 @@ void GameRenderWorldSubmitPlayerCar(const GameRenderObject *object,
     wheelBase = (uint32_t)object->renderDepth * 2u;
     if ((object->wheelRotation & 0x1000) != 0) wheelBase += 10u;
     if (wheelBase + 3u >= 22u) wheelBase = 0;
+    /* Unlike rivals, the player car does not select a CLUT from the shared
+     * track model bank. Each car/grade has already selected its own MODEL_BANK
+     * asset above, whose native materials carry that model's CLUTs; body paint
+     * is then supplied through hasCarPaint in GameRenderWorldSubmitCarPart.
+     * Keep the palette offset at zero: lod[1] belongs only to the rival path. */
     GameRenderWorldSubmitCarAssembly(object, RAGE_PLAYER_CAR_ENTITY, asset,
         RAGE_RENDER_ASSET_MODEL_BANK, 0, wheelBase + 2u, wheelBase + 3u,
         0,
