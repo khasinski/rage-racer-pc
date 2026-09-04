@@ -3,6 +3,19 @@
 #include "game/menu.h"
 #include "game/menu_internal.h"
 
+static u16 CarGearTextureU(u8 gearCount) {
+    switch (gearCount) {
+    case 4:
+        return 0x20;
+    case 5:
+        return 0x28;
+    case 6:
+        return 0x30;
+    default:
+        return 0;
+    }
+}
+
 s32 DrawCarSelectScreen(s32 step) {
     void *ot;
     u8 brightness;
@@ -18,6 +31,10 @@ s32 DrawCarSelectScreen(s32 step) {
 
     if (g_CarTable == NULL || g_CarModelAsset == NULL ||
         (u32)g_PlayerCarIndex >= GAME_CAR_COUNT || RENDER_OT_BASE == NULL) {
+        return g_CarSelectFadeAccum;
+    }
+    gearTextureU = CarGearTextureU(g_CarModelAsset->gearCount);
+    if (gearTextureU == 0) {
         return g_CarSelectFadeAccum;
     }
 
@@ -37,19 +54,6 @@ s32 DrawCarSelectScreen(s32 step) {
         gearX = 0xA6;
     }
 
-    switch (g_CarModelAsset->gearCount) {
-    case 4:
-        gearTextureU = 0x20;
-        break;
-    case 5:
-        gearTextureU = 0x28;
-        break;
-    case 6:
-        gearTextureU = 0x30;
-        break;
-    default:
-        return g_CarSelectFadeAccum;
-    }
     DrawSprite(ot, gearX, 0x185, 8, 0x10, gearTextureU, 0x18, brightness,
                brightness, brightness, 0x244, 0, 1, 0x3B);
     return g_CarSelectFadeAccum;

@@ -90,10 +90,11 @@ int main(void) {
     CHECK(s_sprites[1].x == 0xA6 && s_sprites[1].textureU == 0x30);
     CHECK(s_sprites[1].brightness == 0);
 
+    s_outlineCount = 0;
     s_spriteCount = 0;
     s_model.gearCount = 3;
     DrawCarSelectScreen(1);
-    CHECK(s_spriteCount == 1);
+    CHECK(s_outlineCount == 0 && s_spriteCount == 0);
 
     s_outlineCount = 0;
     s_spriteCount = 0;
