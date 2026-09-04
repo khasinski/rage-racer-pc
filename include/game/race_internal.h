@@ -11,6 +11,7 @@ enum {
     REPLAY_OPAQUE_FADE = 257,
     RACE_END_SCREEN_FADE_COMPLETE = 256,
     RACE_END_SCREEN_INITIAL_TIMER = 555,
+    RACE_FRAMES_PER_SECOND = 25,
 };
 
 typedef struct PrologueCameraCut {

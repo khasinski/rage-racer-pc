@@ -1,4 +1,5 @@
 #include "game/race.h"
+#include "game/race_internal.h"
 #include "game/render.h"
 
 enum {
@@ -60,7 +61,7 @@ void DrawTimeValue(s32 x, s32 y, s32 value, s32 color, s32 divisor) {
 }
 
 void DrawMinuteSecondTime(s32 x, s32 y, s32 ticks, s32 color) {
-    s32 totalSeconds = ticks > 0 ? ticks / 25 : 0;
+    s32 totalSeconds = ticks > 0 ? ticks / RACE_FRAMES_PER_SECOND : 0;
     s32 minutes = totalSeconds / 60;
     s32 seconds = totalSeconds % 60;
 
