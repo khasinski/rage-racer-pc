@@ -198,6 +198,11 @@ static void UpdatePathSceneryAudio(void) {
 }
 
 void UpdatePathScenery(void) {
+    if (g_PathSceneryPosKeys == NULL || g_PathSceneryRotKeys == NULL) {
+        g_PathSceneryVolume = 0;
+        SetPitchedSoundCue(0, 0, 0);
+        return;
+    }
     AdvancePositionKeyframe();
     UpdatePathPosition();
     AdvanceRotationKeyframe();

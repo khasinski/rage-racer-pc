@@ -109,6 +109,22 @@ int main(void) {
         !RunCase(-32767 - 1, -32767 - 1, 32767, 32767)) {
         return 1;
     }
+
+    g_PathSceneryPosData = NULL;
+    g_PathSceneryRotData = NULL;
+    g_PathSceneryVolume = 123;
+    memset(&g_PathSceneryClock, 0x7F, sizeof(g_PathSceneryClock));
+    memset(&g_PathSceneryTransform, 0x7F, sizeof(g_PathSceneryTransform));
+    memset(&g_PathSceneryCursors, 0x7F, sizeof(g_PathSceneryCursors));
+    InitPathScenery();
+    if (g_PathSceneryPosKeys != NULL || g_PathSceneryRotKeys != NULL ||
+        g_PathSceneryClock.posFrame != 0 ||
+        g_PathSceneryClock.rotFrame != 0 ||
+        g_PathSceneryTransform.position.w[0] != 0 ||
+        g_PathSceneryCursors.posSpan != 0 || g_PathSceneryVolume != 0) {
+        puts("FAIL: missing path scenery data was not cleared");
+        return 1;
+    }
     puts("path scenery initialization preserved");
     return 0;
 }

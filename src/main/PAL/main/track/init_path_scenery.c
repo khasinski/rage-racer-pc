@@ -2,14 +2,29 @@
 #include "game/track_internal.h"
 
 void InitPathScenery(void) {
-    const s32 series = g_RaceSeries != 0;
-    const PathSceneryPositionKey *positionKeys =
-        &g_PathSceneryPosData->keys[
-            g_PathSceneryPosData->firstKey[series]];
-    const PathSceneryRotationKey *rotationKeys =
-        &g_PathSceneryRotData->keys[
-            g_PathSceneryRotData->firstKey[series]];
+    s32 series;
+    const PathSceneryPositionKey *positionKeys;
+    const PathSceneryRotationKey *rotationKeys;
     int axis;
+
+    if (g_PathSceneryPosData == NULL || g_PathSceneryRotData == NULL) {
+        g_PathSceneryPosKeys = NULL;
+        g_PathSceneryRotKeys = NULL;
+        g_PathSceneryClock = (PathSceneryClock){0};
+        g_PathSceneryTransform = (PathSceneryTransform){0};
+        g_PathSceneryCursors = (PathSceneryCursors){0};
+        for (axis = 0; axis < 3; axis++) {
+            g_PathSceneryHalfDelta[axis] = 0;
+            g_PathSceneryRotHalfDelta[axis] = 0;
+        }
+        g_PathSceneryVolume = 0;
+        return;
+    }
+    series = g_RaceSeries != 0;
+    positionKeys = &g_PathSceneryPosData->keys[
+        g_PathSceneryPosData->firstKey[series]];
+    rotationKeys = &g_PathSceneryRotData->keys[
+        g_PathSceneryRotData->firstKey[series]];
 
     g_PathSceneryPosKeys = positionKeys;
     g_PathSceneryRotKeys = rotationKeys;

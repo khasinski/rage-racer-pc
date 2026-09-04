@@ -144,6 +144,17 @@ int main(void) {
         puts("FAIL: full-width path positions were not handled safely");
         return 1;
     }
+
+    g_PathSceneryPosKeys = NULL;
+    g_PathSceneryVolume = 99;
+    g_LastPitch = -1;
+    g_LastVolume = -1;
+    UpdatePathScenery();
+    if (g_PathSceneryVolume != 0 || g_LastCue != 0 ||
+        g_LastPitch != 0 || g_LastVolume != 0) {
+        puts("FAIL: missing path scenery keys were not safely muted");
+        return 1;
+    }
     puts("path scenery playback preserved");
     return 0;
 }
