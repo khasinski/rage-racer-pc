@@ -86,6 +86,13 @@ static void CheckInitialProportionalFont(void) {
               g_PropFontCells[PROPORTIONAL_FONT_CELL_COUNT - 1].textureV ==
                   0x90,
           "proportional final font cell");
+    Check(HashBytes(g_Font8x8Cells, sizeof(g_Font8x8Cells)) == 647106748u,
+          "8x8 font cell bytes");
+    Check(g_Font8x8Cells[0].column == 0 &&
+              g_Font8x8Cells[0].row == 0 &&
+              g_Font8x8Cells[FONT_8X8_CELL_COUNT - 1].column == 0x1f &&
+              g_Font8x8Cells[FONT_8X8_CELL_COUNT - 1].row == 1,
+          "8x8 font cell endpoints");
 }
 
 static void CheckInitialAtanTable(void) {

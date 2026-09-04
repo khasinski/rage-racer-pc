@@ -12,7 +12,7 @@
 GameRenderState g_RenderState;
 GameFrameContext g_FrameContexts[2];
 GameFrameContext *g_DrawBuffer;
-u8 g_Font8x8Cells[192];
+Font8x8Cell g_Font8x8Cells[FONT_8X8_CELL_COUNT];
 u8 g_DrawModeEnv[8];
 SpriteFontCell g_SpriteFontCells[SPRITE_FONT_CELL_COUNT];
 u8 g_SpriteFontWidth[SPRITE_FONT_CELL_COUNT];
@@ -58,8 +58,7 @@ static void TestText8x8(void) {
     SPRT_8 *sprite;
     s32 glyph = 'A' - 0x20;
 
-    g_Font8x8Cells[glyph * 2] = 3;
-    g_Font8x8Cells[glyph * 2 + 1] = 5;
+    g_Font8x8Cells[glyph] = (Font8x8Cell){3, 5};
 
     Reset();
     DrawText8x8(10, 20, " A", 0x123);
@@ -122,8 +121,7 @@ static void TestInvalidBytesUseFallbackGlyph(void) {
 
     g_SpriteFontWidth[fallback] = 7;
     g_SpriteFontCells[fallback] = (SpriteFontCell){9, 11};
-    g_Font8x8Cells[fallback * 2] = 4;
-    g_Font8x8Cells[fallback * 2 + 1] = 6;
+    g_Font8x8Cells[fallback] = (Font8x8Cell){4, 6};
 
     Reset();
     DrawSpriteString(10, 20, "\x01", 3);
@@ -144,8 +142,7 @@ static void TestTextCoordinatesWrapLikeRetailRegisters(void) {
     SPRT_8 *textSprites;
     SPRT *stringSprites;
 
-    g_Font8x8Cells[glyph * 2] = 1;
-    g_Font8x8Cells[glyph * 2 + 1] = 2;
+    g_Font8x8Cells[glyph] = (Font8x8Cell){1, 2};
     g_SpriteFontWidth[glyph] = 9;
     g_SpriteFontCells[glyph] = (SpriteFontCell){3, 4};
 

@@ -28,6 +28,8 @@ enum {
 
 _Static_assert(PRINTABLE_ASCII_GLYPH_COUNT == SPRITE_FONT_CELL_COUNT,
                "sprite font must cover the printable ASCII lookup");
+_Static_assert(PRINTABLE_ASCII_GLYPH_COUNT == FONT_8X8_CELL_COUNT,
+               "8x8 font must cover the printable ASCII lookup");
 
 static inline s32 PrintableAsciiGlyph(u8 character) {
     s32 glyph = character - PRINTABLE_ASCII_FIRST;
@@ -138,7 +140,7 @@ extern GameFrameContext g_FrameContexts[2];
 extern ScreenOffset g_ScreenOffsetX;
 extern ScreenOffset g_ScreenOffsetY;
 extern s32 g_FrameParity;
-extern u8 g_Font8x8Cells[];
+extern Font8x8Cell g_Font8x8Cells[FONT_8X8_CELL_COUNT];
 extern u8 g_DrawModeEnv[];
 extern ProportionalFontCell
     g_PropFontCells[PROPORTIONAL_FONT_CELL_COUNT];

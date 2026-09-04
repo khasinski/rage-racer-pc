@@ -7,19 +7,6 @@ typedef struct Text8x8Style {
     u8 drawMode;
 } Text8x8Style;
 
-typedef struct Text8x8Cell {
-    u8 column;
-    u8 row;
-} Text8x8Cell;
-
-static Text8x8Cell Text8x8CellAt(s32 glyph) {
-    Text8x8Cell cell;
-
-    cell.column = g_Font8x8Cells[glyph * 2];
-    cell.row = g_Font8x8Cells[glyph * 2 + 1];
-    return cell;
-}
-
 static void DrawText8x8Styled(s32 x, s32 y, const char *text, s32 clutIndex,
                               Text8x8Style style) {
     u8 *packet = RENDER_PRIM_CURSOR_AS(u8);
@@ -30,7 +17,7 @@ static void DrawText8x8Styled(s32 x, s32 y, const char *text, s32 clutIndex,
 
         if (cell != 0) {
             SPRT_8 *sprite = (SPRT_8 *)packet;
-            Text8x8Cell fontCell = Text8x8CellAt(cell);
+            Font8x8Cell fontCell = g_Font8x8Cells[cell];
 
             SetSprt8(sprite);
             if (style.shadeTexture) SetShadeTex(sprite, 1);
