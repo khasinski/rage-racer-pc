@@ -10,7 +10,7 @@ TeamLogoCanvas g_TeamLogoCanvas;
 u16 g_TeamLogoClut[16];
 u16 g_TeamLogoSwatches[15];
 
-static TeamLogoSample samples[20];
+static TeamLogoSample samples[TEAM_LOGO_SAMPLE_RECORD_COUNT];
 
 static int Check(int condition, const char *message) {
     if (!condition) {

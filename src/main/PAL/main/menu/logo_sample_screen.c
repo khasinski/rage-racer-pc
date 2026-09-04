@@ -17,8 +17,6 @@ enum LogoSampleOption {
     LOGO_SAMPLE_OPTION_COUNT,
 };
 
-enum { LOGO_SAMPLE_COUNT = 20 };
-
 static void ChooseLogoSampleRow(void) {
     switch (g_LogoSampleCursor) {
     case LOGO_SAMPLE_OPTION_CHARACTER:
@@ -93,10 +91,12 @@ static void UpdateLogoSamplePicker(s32 *selection) {
         *selection = g_LogoSampleSavedIndex;
     } else if (action == MENU_DIALOG_LEFT) {
         PlaySoundCue(1);
-        *selection = WrapMenuIndex(*selection, -1, LOGO_SAMPLE_COUNT);
+        *selection = WrapMenuIndex(*selection, -1,
+                                   TEAM_LOGO_SAMPLE_CHOICE_COUNT);
     } else if (action == MENU_DIALOG_RIGHT) {
         PlaySoundCue(1);
-        *selection = WrapMenuIndex(*selection, 1, LOGO_SAMPLE_COUNT);
+        *selection = WrapMenuIndex(*selection, 1,
+                                   TEAM_LOGO_SAMPLE_CHOICE_COUNT);
     }
 }
 
@@ -135,11 +135,11 @@ void UpdateLogoSampleScreen(void) {
     g_LogoSampleCursor = AddClampedMenuValue(
         g_LogoSampleCursor, 0, 0, LOGO_SAMPLE_OPTION_COUNT - 1);
     g_LogoSampleCharIndex = AddClampedMenuValue(
-        g_LogoSampleCharIndex, 0, 0, LOGO_SAMPLE_COUNT - 1);
+        g_LogoSampleCharIndex, 0, 0, TEAM_LOGO_SAMPLE_CHOICE_COUNT - 1);
     g_LogoSampleBackIndex = AddClampedMenuValue(
-        g_LogoSampleBackIndex, 0, 0, LOGO_SAMPLE_COUNT - 1);
+        g_LogoSampleBackIndex, 0, 0, TEAM_LOGO_SAMPLE_CHOICE_COUNT - 1);
     g_LogoSampleSavedIndex = AddClampedMenuValue(
-        g_LogoSampleSavedIndex, 0, 0, LOGO_SAMPLE_COUNT - 1);
+        g_LogoSampleSavedIndex, 0, 0, TEAM_LOGO_SAMPLE_CHOICE_COUNT - 1);
     g_MenuAltLayout = 0;
     ComposeSampleTeamLogo(g_LogoSampleCharIndex, g_LogoSampleBackIndex);
     DrawTeamLogoCanvas(1, 0);

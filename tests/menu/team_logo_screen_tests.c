@@ -247,6 +247,26 @@ int main(void) {
     CHECK(g_LogoSampleSubPanelScript == g_MenuRow0MarkerScript);
 
     Reset();
+    g_LogoSampleCursor = 1;
+    g_LogoSampleBackIndex = 11;
+    g_PadPressed = PAD_CONFIRM;
+    UpdateLogoSampleScreen();
+    CHECK(GameMenuBusy == -2);
+    CHECK(g_LogoSampleSavedIndex == 11);
+    CHECK(g_LogoSampleSubPanelScript == g_MenuRow1MarkerScript);
+
+    Reset();
+    g_LogoSampleCursor = 2;
+    g_PadPressed = PAD_CONFIRM;
+    UpdateLogoSampleScreen();
+    CHECK(GameMenuBusy == 1 && g_MenuOverlayPattern == 2);
+
+    Reset();
+    g_PadPressed = PAD_CANCEL;
+    UpdateLogoSampleScreen();
+    CHECK(GameMenuBusy == 1 && g_MenuOverlayPattern == 2);
+
+    Reset();
     GameMenuBusy = -1;
     g_LogoSampleCharIndex = 0;
     g_PadPressed = PAD_LEFT;
