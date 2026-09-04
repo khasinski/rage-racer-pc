@@ -160,6 +160,19 @@ static int CaptureIsSkyPacket(const uint8_t *address) {
     return 0;
 }
 
+static uint16_t CaptureSkyPacketIndex(const uint8_t *address) {
+    uintptr_t candidate = (uintptr_t)address;
+    int i;
+    for (i = 0; i < s_skyRangeCount; i++) {
+        if (candidate >= (uintptr_t)s_skyRanges[i].begin &&
+            candidate < (uintptr_t)s_skyRanges[i].end) {
+            return (uint16_t)((candidate -
+                (uintptr_t)s_skyRanges[i].begin) / sizeof(POLY_FT4));
+        }
+    }
+    return UINT16_MAX;
+}
+
 void CaptureModelBegin(int kind, int index, int fogged) {
     RageSceneSnapshot *snapshot;
     RageCaptureModelDraw *draw;
@@ -422,10 +435,13 @@ static void CaptureWalkTable(RageSceneSnapshot *snapshot, int tableIndex,
                     RageCapturePacket *out =
                         &snapshot->packets[snapshot->packetCount++];
                     memset(out, 0, sizeof(*out));
+                    out->skyIndex = UINT16_MAX;
                     out->bucket = (uint16_t)bucket;
                     out->table = (uint8_t)tableIndex;
-                    if (CaptureIsSkyPacket(address))
+                    if (CaptureIsSkyPacket(address)) {
                         out->flags |= RAGE_CAPTURE_PACKET_SKY;
+                        out->skyIndex = CaptureSkyPacketIndex(address);
+                    }
                     out->size = (uint8_t)CapturePacketWords(
                         node, out->words, RAGE_CAPTURE_PACKET_WORDS);
                 }

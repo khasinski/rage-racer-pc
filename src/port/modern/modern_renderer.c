@@ -556,6 +556,40 @@ static void ModernTransformSkyPoint(float *x, float *y) {
          row * to->skyGridRow.y;
 }
 
+static int ModernBuildSmoothSkyQuad(const RageCapturePacket *packet,
+                                    float rawX[4], float rawY[4]) {
+    const RageRenderCamera *camera = s_skyPresentationCamera;
+    int index, row, column;
+    float originX, originY, cellX, cellY;
+    if (camera == NULL || packet->skyIndex == UINT16_MAX ||
+        packet->skyIndex >= 96) return 0;
+    index = packet->skyIndex;
+    if (camera->skyCloudRow == 0) {
+        if (index >= 24) return 0;
+        row = 0;
+        originX = camera->skyGridOrigin.z;
+        originY = camera->skyGridRow.z;
+    } else {
+        row = index / 24;
+        originX = camera->skyGridOrigin.x;
+        originY = camera->skyGridOrigin.y;
+    }
+    column = index % 24 - 8;
+    cellX = originX + column * camera->skyGridColumn.x -
+            row * camera->skyGridRow.x;
+    cellY = originY + column * camera->skyGridColumn.y -
+            row * camera->skyGridRow.y;
+    rawX[0] = cellX;
+    rawY[0] = cellY;
+    rawX[1] = cellX + camera->skyGridColumn.x;
+    rawY[1] = cellY + camera->skyGridColumn.y;
+    rawX[2] = cellX + camera->skyGridRow.x;
+    rawY[2] = cellY + camera->skyGridRow.y;
+    rawX[3] = rawX[1] + camera->skyGridRow.x;
+    rawY[3] = rawY[1] + camera->skyGridRow.y;
+    return 1;
+}
+
 static ModernSpan *ModernBeginSpan(int pipeline, const Modern2DState *state) {
     ModernSpan *span;
     if (s_spanCount > 0) {
@@ -797,10 +831,16 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
                         rawX[vertex] = 320.0f + s_overscanX;
                 }
             }
-            for (vertex = 0; vertex < count; vertex++) {
-                if ((packet->flags & RAGE_CAPTURE_PACKET_SKY) != 0)
+            {
+                int smoothSky = textured && quad &&
+                    (packet->flags & RAGE_CAPTURE_PACKET_SKY) != 0 &&
+                    ModernBuildSmoothSkyQuad(packet, rawX, rawY);
+                for (vertex = 0; vertex < count; vertex++) {
+                    if (!smoothSky &&
+                        (packet->flags & RAGE_CAPTURE_PACKET_SKY) != 0)
                     ModernTransformSkyPoint(&rawX[vertex], &rawY[vertex]);
-                ModernOrtho(&corners[vertex], rawX[vertex], rawY[vertex]);
+                    ModernOrtho(&corners[vertex], rawX[vertex], rawY[vertex]);
+                }
             }
             for (vertex = 0; vertex < count; vertex++) {
                 ModernVertex *out = &corners[vertex];
@@ -975,6 +1015,19 @@ static void ModernBuildOverlayFrame(const RageSceneSnapshot *snapshot) {
             s_skyPacketCamera = &current->previousCamera;
             s_skyPresentationCamera = &presentation->camera;
         }
+    }
+    if (RuntimeConfigEnabled("diagnostics.sky_trace") &&
+        s_skyPacketCamera != NULL && s_skyPresentationCamera != NULL) {
+        fprintf(stderr,
+                "rage-port: sky-present frame=%u source=%.3f,%.3f,%.3f "
+                "target=%.3f,%.3f,%.3f\n",
+                snapshot->frameCounter,
+                s_skyPacketCamera->skyGridOrigin.x,
+                s_skyPacketCamera->skyGridOrigin.y,
+                s_skyPacketCamera->skyGridColumn.z,
+                s_skyPresentationCamera->skyGridOrigin.x,
+                s_skyPresentationCamera->skyGridOrigin.y,
+                s_skyPresentationCamera->skyGridColumn.z);
     }
 
     memset(&state2d, 0, sizeof(state2d));

@@ -73,7 +73,8 @@ typedef struct RageCapturePacket {
     uint8_t table;   /* 0 = main, 1 = mirror/overlay */
     uint8_t size;    /* canonical GP0 payload length in words */
     uint8_t flags;   /* RAGE_CAPTURE_PACKET_* source classification */
-    uint8_t pad[3];
+    uint8_t pad;
+    uint16_t skyIndex; /* allocation-order primitive within the sky range */
     uint32_t words[RAGE_CAPTURE_PACKET_WORDS];
 } RageCapturePacket;
 
