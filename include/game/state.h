@@ -171,9 +171,6 @@ extern u16 g_NegconButtonPresets[];
 extern u8 g_NegconConfigButtonRows[];
 extern u8 g_NegconConfigLabelRows[];
 extern u8 g_PadBuffers[0x50];
-#define g_PadBufferType g_PadBuffers[1]
-#define g_PadBufferButtonsHigh g_PadBuffers[2]
-#define g_PadBufferButtonsLow g_PadBuffers[3]
 extern u16 g_PadButtonPresets[];
 extern u8 g_PadConfigButtonRows[];
 extern u8 g_PadConfigLabelRows[];
