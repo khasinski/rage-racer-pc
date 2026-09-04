@@ -50,6 +50,8 @@ require("atan(direction.x,-direction.z)" in dense and
         "horizontal clouds must be anchored to four world-space panorama repeats")
 require("sky.gridParams.z==1.0" in dense and ":1.0" in dense,
         "only the single-row horizon variant may expose a cloud-sheet edge")
+require("cloudCoverage*=step(0.0,height)*validGrid" in dense,
+        "clouds must stop at the camera horizon instead of covering water")
 require("1.0 - smoothstep(0.528, 0.535, height)" not in glsl,
         "the intro sky must not cut clouds off at a fixed world height")
 

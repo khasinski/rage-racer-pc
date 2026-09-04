@@ -107,7 +107,10 @@ void main() {
                               ? step(0.0, cloudBand) *
                                     step(cloudBand, 1.0)
                               : 1.0;
-    cloudCoverage *= validGrid;
+    /* Course geometry and water belong below the camera horizon. The classic
+     * renderer hides this part of the sheet with its ground skirt; the native
+     * renderer must apply the equivalent mask before drawing real geometry. */
+    cloudCoverage *= step(0.0, height) * validGrid;
     color = mix(color, authored.rgb,
                 authored.a * sky.bottom.a * cloudCoverage);
     outColor = vec4(color, 1.0);
