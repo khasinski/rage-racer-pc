@@ -14,6 +14,8 @@ static CarModelAsset s_nativeAsset;
 static CarModelAsset *s_installedAsset;
 static size_t s_installedSize;
 static s32 s_installedSlot;
+static const void *s_installedModelData;
+static CarImageData *s_installedImageData;
 static s32 s_selectedSlot;
 static const ModelBankHeader *s_registeredBank;
 static s32 s_registeredSlot;
@@ -45,6 +47,18 @@ s32 InstallSerializedCarModelSlot(CarModelAsset *asset, size_t size,
     s_installedSlot = slot;
     s_nativeAsset.modelData.pointer =
         (u8 *)asset + SERIALIZED_CAR_MODEL_HEADER_SIZE;
+    return 1;
+}
+s32 PublishCarModelSlot(const CarModelAsset *serializedAsset,
+                        const void *metadata, void *modelData,
+                        CarImageData *imageData, s32 slot) {
+    (void)metadata;
+    s_installedAsset = (CarModelAsset *)(void *)serializedAsset;
+    s_installedSlot = slot;
+    s_installedModelData = modelData;
+    s_installedImageData = imageData;
+    s_nativeAsset.modelData.pointer = modelData;
+    s_nativeAsset.imageData.carImage = imageData;
     return 1;
 }
 void SelectCarModelSlot(s32 slot) {
@@ -94,6 +108,9 @@ int main(void) {
     memset(destination.bytes, 0xCC, sizeof(destination.bytes));
     s_serializedAsset = (CarModelAsset *)(void *)source.bytes;
     s_serializedAsset->serializedModelSize = MODEL_DATA_SIZE;
+    GetSerializedCarModelAssetHeader(source.bytes)->modelOffset =
+        SERIALIZED_CAR_MODEL_HEADER_SIZE;
+    GetSerializedCarModelAssetHeader(source.bytes)->imageOffset = MODEL_SIZE;
     g_CarModelAsset = &s_nativeAsset;
     g_AssetBase = destination.bytes;
     s_destinationRoom = sizeof(destination.bytes);
@@ -107,9 +124,14 @@ int main(void) {
     Check(g_AssetLoadCursor == destination.bytes + MODEL_SIZE,
           "asset cursor follows the relocated model like retail");
     Check(s_installedAsset == (CarModelAsset *)(void *)source.bytes &&
-              s_installedSize == TOTAL_SIZE && s_installedSlot == 0 &&
+              s_installedSlot == 0 &&
               s_selectedSlot == 0,
           "slot zero keeps the source and its image");
+    Check(s_installedModelData ==
+              destination.bytes + SERIALIZED_CAR_MODEL_HEADER_SIZE &&
+              s_installedImageData ==
+                  (CarImageData *)(void *)(source.bytes + MODEL_SIZE),
+          "slot publication uses captured model and image addresses");
     Check(s_nativeAsset.modelData.pointer ==
               destination.bytes + SERIALIZED_CAR_MODEL_HEADER_SIZE,
           "native model points at relocated model bank");
@@ -124,6 +146,9 @@ int main(void) {
     }
     overlapSource = (CarModelAsset *)(void *)(overlap.bytes + 8);
     overlapSource->serializedModelSize = MODEL_DATA_SIZE;
+    GetSerializedCarModelAssetHeader(overlapSource)->modelOffset =
+        SERIALIZED_CAR_MODEL_HEADER_SIZE;
+    GetSerializedCarModelAssetHeader(overlapSource)->imageOffset = MODEL_SIZE;
     memcpy(overlapExpected, overlapSource, sizeof(overlapExpected));
     s_serializedAsset = overlapSource;
     g_AssetBase = overlap.bytes;
@@ -132,6 +157,11 @@ int main(void) {
           "overlapping serialized model is relocated");
     Check(memcmp(overlap.bytes, overlapExpected, MODEL_SIZE) == 0,
           "overlapping relocation preserves every model byte");
+    Check(s_installedModelData ==
+              overlap.bytes + SERIALIZED_CAR_MODEL_HEADER_SIZE &&
+              s_installedImageData ==
+                  (CarImageData *)(void *)(overlap.bytes + 8 + MODEL_SIZE),
+          "overlapping relocation does not reread the overwritten header");
     g_AssetBase = destination.bytes;
     s_destinationRoom = sizeof(destination.bytes);
 

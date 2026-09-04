@@ -45,14 +45,28 @@ s32 InstallSerializedCarModelSlot(CarModelAsset *asset, size_t size,
 
     serialized = GetSerializedCarModelAssetHeader(asset);
     bytes = GetAssetBytes(serialized);
-    memcpy(&s_NativeCarModelAssets[index], serialized->metadata,
-           sizeof(serialized->metadata));
-    s_NativeCarModelAssets[index].modelData.pointer =
-        bytes + serialized->modelOffset;
-    s_NativeCarModelAssets[index].imageData.pointer =
-        bytes + serialized->imageOffset;
-    s_SerializedCarModelAssets[index] = asset;
-    g_CarModelSlots[index] = &s_NativeCarModelAssets[index];
+    return PublishCarModelSlot(
+        asset, serialized->metadata, bytes + serialized->modelOffset,
+        (CarImageData *)(void *)(bytes + serialized->imageOffset), index);
+}
+
+s32 PublishCarModelSlot(const CarModelAsset *serializedAsset,
+                        const void *metadata, void *modelData,
+                        CarImageData *imageData, s32 index) {
+    CarModelAsset *nativeAsset;
+
+    if ((u32)index >= CAR_ASSET_SLOT_COUNT || serializedAsset == NULL ||
+        metadata == NULL || modelData == NULL || imageData == NULL) {
+        return 0;
+    }
+
+    nativeAsset = &s_NativeCarModelAssets[index];
+    memcpy(nativeAsset, metadata,
+           sizeof(((SerializedCarModelAssetHeader *)0)->metadata));
+    nativeAsset->modelData.pointer = modelData;
+    nativeAsset->imageData.carImage = imageData;
+    s_SerializedCarModelAssets[index] = serializedAsset;
+    g_CarModelSlots[index] = nativeAsset;
     return 1;
 }
 
