@@ -147,7 +147,8 @@ extern MirrorBadgeStyle
     g_CarMirrorBadgeStyles[MIRROR_BADGE_STYLE_STORAGE_COUNT];
 extern MirrorBadgeSprite g_MirrorBadgeSprites[MIRROR_BADGE_STYLE_COUNT];
 extern unsigned char g_RoundScreenFadeDelays[8];
-extern unsigned char g_TeamNameFontGlyphs[2688];
+extern unsigned char g_TeamNameFontGlyphs
+    [TEAM_NAME_FONT_GLYPH_COUNT * TEAM_NAME_FONT_GLYPH_BYTES];
 extern unsigned char g_TeamNameBlankTile[192];
 extern unsigned char g_ResultPlaceSprites[10];
 extern unsigned char g_ResultPlaceCluts[8];
@@ -321,7 +322,8 @@ static const HostStateBlob s_blobs[] = {
     {"g_MirrorBadgeSprites", BYTES(g_MirrorBadgeSprites),
      sizeof(g_MirrorBadgeSprites)},
     {"g_RoundScreenFadeDelays", g_RoundScreenFadeDelays, 8},
-    {"g_TeamNameFontGlyphs", g_TeamNameFontGlyphs, 2688},
+    {"g_TeamNameFontGlyphs", g_TeamNameFontGlyphs,
+     sizeof(g_TeamNameFontGlyphs)},
     {"g_TeamNameBlankTile", g_TeamNameBlankTile, 192},
     {"g_ResultPlaceSprites", g_ResultPlaceSprites, 10},
     {"g_ResultPlaceCluts", g_ResultPlaceCluts, 8},

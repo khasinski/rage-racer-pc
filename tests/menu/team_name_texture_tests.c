@@ -7,7 +7,8 @@ typedef struct ImageUpload {
     void *pixels;
 } ImageUpload;
 
-u8 g_TeamNameFontGlyphs[2688];
+u8 g_TeamNameFontGlyphs
+    [TEAM_NAME_FONT_GLYPH_COUNT * TEAM_NAME_FONT_GLYPH_BYTES];
 u8 g_TeamNameBlankTile[192];
 
 static ImageUpload s_uploads[8];
@@ -51,9 +52,13 @@ int main(void) {
                     s_uploads[2].rect.x == 0x287 &&
                     s_uploads[3].rect.x == 0x289,
                 "three glyphs are centred and advance by their width");
-    ok &= Check(s_uploads[1].pixels == &g_TeamNameFontGlyphs[2 * 32] &&
-                    s_uploads[2].pixels == &g_TeamNameFontGlyphs[5 * 32] &&
-                    s_uploads[3].pixels == &g_TeamNameFontGlyphs[83 * 32],
+    ok &= Check(s_uploads[1].pixels ==
+                        &g_TeamNameFontGlyphs[2 * TEAM_NAME_FONT_GLYPH_BYTES] &&
+                    s_uploads[2].pixels ==
+                        &g_TeamNameFontGlyphs[5 * TEAM_NAME_FONT_GLYPH_BYTES] &&
+                    s_uploads[3].pixels ==
+                        &g_TeamNameFontGlyphs[
+                            83 * TEAM_NAME_FONT_GLYPH_BYTES],
                 "glyph indices address 32-byte atlas cells");
 
     ResetUploads();
