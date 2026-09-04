@@ -2,6 +2,17 @@
 #include "game/menu.h"
 #include "game/state.h"
 
+static u32 CurrentMenuCarTireCompound(void) {
+    s32 carIndex = g_MenuScreen == MENU_SCREEN_CAR_SHOP
+                       ? g_CarListCursor
+                       : g_PlayerCarIndex;
+
+    if (g_CarTable == NULL || (u32)carIndex >= GAME_CAR_COUNT) {
+        return 0;
+    }
+    return g_CarTable[carIndex].tireCompound;
+}
+
 void UpdateMenuMode(void) {
     GameOrderingTableEntry *ot;
 
@@ -33,7 +44,7 @@ void UpdateMenuMode(void) {
     }
     g_MenuScreenUpdate[g_MenuScreen]();
 
-    DrawCarSpecGraph(g_CarSpecGraphStep, g_CarTable[(g_MenuScreen == MENU_SCREEN_CAR_SHOP) ? g_CarListCursor : g_PlayerCarIndex].tireCompound);
+    DrawCarSpecGraph(g_CarSpecGraphStep, CurrentMenuCarTireCompound());
 
     if (g_MenuHintBarStep == 0) {
         return;

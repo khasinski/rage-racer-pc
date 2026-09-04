@@ -168,6 +168,22 @@ static int TestInvalidIndices(void) {
     CHECK(g_MenuScreen == MENU_SCREEN_BOOTSTRAP);
     CHECK(s_updateCalls == 1 && s_drawCalls == 0);
     CHECK(g_RenderState.otShift == 5);
+
+    Reset();
+    g_PlayerCarIndex = -1;
+    UpdateMenuMode();
+    CHECK(s_specCarTire == 0);
+
+    Reset();
+    g_MenuScreen = MENU_SCREEN_CAR_SHOP;
+    g_CarListCursor = GAME_CAR_COUNT;
+    UpdateMenuMode();
+    CHECK(s_specCarTire == 0);
+
+    Reset();
+    g_CarTable = NULL;
+    UpdateMenuMode();
+    CHECK(s_specCarTire == 0);
     return 0;
 }
 
