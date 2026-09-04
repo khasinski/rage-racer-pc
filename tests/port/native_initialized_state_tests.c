@@ -6,8 +6,11 @@
 #include "game/car.h"
 #include "game/cd_internal.h"
 #include "game/memcard.h"
+#include "game/menu.h"
 #include "game/race.h"
 #include "game/render.h"
+#include "game/render_internal.h"
+#include "game/state.h"
 
 static int s_failures;
 
@@ -109,6 +112,47 @@ static void CheckInitialCountdownData(void) {
     }
 }
 
+static void CheckMatrix(const Matrix *actual, const s16 expected[3][3],
+                        const char *message) {
+    int row;
+    int column;
+
+    for (row = 0; row < 3; row++) {
+        for (column = 0; column < 3; column++) {
+            Check(actual->m[row][column] == expected[row][column], message);
+        }
+        Check(actual->t[row] == 0, message);
+    }
+}
+
+static void CheckInitialLightingMatrices(void) {
+    static const s16 trackColor[3][3] = {
+        {819, 0, 192}, {819, 0, 192}, {819, 0, 192},
+    };
+    static const s16 trackLight[3][3] = {
+        {3072, -6144, 6144}, {7094, -7094, -7094}, {-7094, -7094, -7094},
+    };
+    static const s16 defaultColor[3][3] = {
+        {4096, 4096, 4096}, {4096, 4096, 4096}, {4096, 4096, 4096},
+    };
+    static const s16 defaultLight[3][3] = {
+        {0, 0, -2048}, {682, -1024, -512}, {-682, -1024, -512},
+    };
+    static const s16 menuColor[3][3] = {
+        {3072, 4096, 4096}, {3072, 4096, 4096}, {3072, 4096, 4096},
+    };
+    static const s16 menuLight[3][3] = {
+        {0, -1024, 2048}, {682, -1024, -512}, {-682, -1024, -512},
+    };
+
+    CheckMatrix(&g_TrackColorMatrix, trackColor, "track colour matrix");
+    CheckMatrix(&g_TrackLightMatrix, trackLight, "track light matrix");
+    CheckMatrix(&g_DefaultColorMatrix, defaultColor, "default colour matrix");
+    CheckMatrix(&g_DefaultLightMatrix, defaultLight, "default light matrix");
+    CheckMatrix(&g_MenuColorMatrix, menuColor, "menu colour matrix");
+    CheckMatrix(&g_MenuLightMatrix, menuLight, "menu light matrix");
+}
+
 static void CheckInitialStartingGrids(void) {
     int index;
 
@@ -180,6 +224,7 @@ int main(void) {
     CheckInitialCarModelBanks();
     CheckInitialCourseCarModels();
     CheckInitialCountdownData();
+    CheckInitialLightingMatrices();
     CheckInitialStartingGrids();
     CheckMemoryCardLabels();
     CheckInitialAudioTables();

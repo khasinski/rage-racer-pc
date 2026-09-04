@@ -28,6 +28,18 @@ _Static_assert(sizeof(g_CountdownCellColors) == 16,
                "countdown cell-colour table ABI changed");
 _Static_assert(sizeof(g_TrackTextureRowRect) == 8,
                "track texture row rectangle ABI changed");
+_Static_assert(sizeof(g_TrackColorMatrix) == 32,
+               "track colour matrix ABI changed");
+_Static_assert(sizeof(g_TrackLightMatrix) == 32,
+               "track light matrix ABI changed");
+_Static_assert(sizeof(g_DefaultColorMatrix) == 32,
+               "default colour matrix ABI changed");
+_Static_assert(sizeof(g_DefaultLightMatrix) == 32,
+               "default light matrix ABI changed");
+_Static_assert(sizeof(g_MenuColorMatrix) == 32,
+               "menu colour matrix ABI changed");
+_Static_assert(sizeof(g_MenuLightMatrix) == 32,
+               "menu light matrix ABI changed");
 _Static_assert(sizeof(g_RaceHudSpriteDescsGp) == 240,
                "g_RaceHudSpriteDescsGp ABI size changed");
 _Static_assert(sizeof(g_RaceHudSpriteDescsTimeTrial) == 220,
