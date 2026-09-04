@@ -2,6 +2,7 @@
 #include "game/random.h"
 #include "game/state.h"
 
+#include <inttypes.h>
 #include <stdio.h>
 
 enum {
@@ -18,10 +19,13 @@ static void TraceRandom15(u32 seed, s32 result, void *caller) {
         traceEnabled = DiagnosticsEnabled("random.trace");
     }
     if (traceEnabled) {
+        intptr_t callerDelta = (intptr_t)(
+            (uintptr_t)caller - (uintptr_t)(void *)&Random15);
+
         printf("random index=%llu frame=%d scene=%d timer=%d "
-               "caller_delta=%td seed=%08x value=%04x\n",
+               "caller_delta=%" PRIdPTR " seed=%08x value=%04x\n",
                traceIndex, g_FrameCounter, g_SceneId, g_SceneTimer,
-               (char *)caller - (char *)&Random15,
+               callerDelta,
                seed, result);
     }
     traceIndex++;
