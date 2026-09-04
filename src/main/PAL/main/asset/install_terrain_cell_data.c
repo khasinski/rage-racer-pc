@@ -1,7 +1,29 @@
 #include "game/asset.h"
 #include "game/asset_internal.h"
 #include "game/render.h"
+#include "game/terrain_internal.h"
 #include "game/track.h"
+
+static s32 TerrainCellStreamIsValid(const u8 *payload, size_t size,
+                                    s32 offset) {
+    size_t cursor = (size_t)offset;
+
+    while (cursor <= size && size - cursor >= sizeof(u32)) {
+        const u16 primitive = (u16)(payload[cursor] |
+                                    (u16)payload[cursor + 1] << 8);
+        const u16 count = (u16)(payload[cursor + 2] |
+                                (u16)payload[cursor + 3] << 8);
+        const s32 stride = TerrainPrimitiveStride(primitive);
+
+        cursor += sizeof(u32);
+        if (count == 0) return 1;
+        if (stride == 0 || count > (size - cursor) / (size_t)stride) {
+            return 0;
+        }
+        cursor += (size_t)count * (size_t)stride;
+    }
+    return 0;
+}
 
 s32 IsValidTerrainCellAsset(const void *data, size_t size) {
     const u8 *cursor;
@@ -46,7 +68,9 @@ s32 IsValidTerrainCellAsset(const void *data, size_t size) {
     }
     for (i = 0; i < count; i++) {
         if (!AssetPayloadOffsetIsValid(header->cellOffsets[i], payloadOffset,
-                                       payloadSize)) {
+                                       payloadSize) ||
+            !TerrainCellStreamIsValid(cursor, payloadSize,
+                                      header->cellOffsets[i])) {
             return 0;
         }
     }

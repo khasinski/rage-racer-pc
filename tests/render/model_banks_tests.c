@@ -217,6 +217,11 @@ static int TestTerrainCells(void) {
     CHECK(g_RenderState.cellFaces == &data[HEADER_OFFSET + 32]);
     CHECK(g_NativeTerrainCells[2] == &data[HEADER_OFFSET + 52]);
 
+    ((u16 *)&data[HEADER_OFFSET + 52])[1] = 1;
+    CHECK(InstallTerrainCellData(data, sizeof(data)) == 0);
+    CHECK(g_TerrainCellCount == 3);
+    ((u16 *)&data[HEADER_OFFSET + 52])[1] = 0;
+
     ((u16 *)data)[0] = 3;
     CHECK(InstallTerrainCellData(data, sizeof(data)) == 0);
     CHECK(g_TerrainCellCount == 3);

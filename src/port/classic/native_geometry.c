@@ -8,6 +8,7 @@
 
 #include "game/render_internal.h"
 #include "game/asset.h"
+#include "game/terrain_internal.h"
 
 #include "../modern/scene_capture.h"
 #include "native_geometry_diagnostics.h"
@@ -1057,7 +1058,6 @@ void SubmitCourseModel2(void *ctx, int index) {
     RageSubmitCourseModel(index, 1);
 }
 void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
-    static const uint8_t dispatchStride[4] = {32, 32, 36, 36};
     const void *const *cellTable = g_RenderState.cellTable;
     const SVECTOR *vertices = g_RenderState.cellFaces;
     uint8_t *cursor = RENDER_PRIM_CURSOR_AS(uint8_t);
@@ -1116,7 +1116,7 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
             if ((unsigned)mode >= 6 || faceCount <= 0) break;
             dispatch = mode < 2 ? mode * 2 + (g_RenderState.envMode4 != 0)
                                 : mode - 2;
-            stride = dispatchStride[dispatch];
+            stride = TerrainPrimitiveStride(mode);
             decodedFaces += faceCount;
             for (faceIndex = 0; faceIndex < faceCount;
                  faceIndex++, stream += stride) {
