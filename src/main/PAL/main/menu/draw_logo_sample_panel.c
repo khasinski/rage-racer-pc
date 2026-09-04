@@ -4,12 +4,9 @@
 enum {
     LOGO_SAMPLE_PANEL_LAST_FRAME = 5,
     LOGO_SAMPLE_PANEL_Y = 494,
+    LOGO_SAMPLE_PANEL_FRAME_DISTANCE = 30,
     LOGO_SAMPLE_SWATCH_COUNT = 15,
 };
-
-static s32 SlideUp(s32 base, s32 frame, s32 distanceTimes32) {
-    return base - ((frame * distanceTimes32 + 31) / 32);
-}
 
 void DrawLogoSamplePanel(s32 step, s32 sample) {
     void *ot = RENDER_OT_BASE;
@@ -38,7 +35,7 @@ void DrawLogoSamplePanel(s32 step, s32 sample) {
     }
     if (ot == NULL) return;
 
-    y = SlideUp(LOGO_SAMPLE_PANEL_Y, frame, 960);
+    y = LOGO_SAMPLE_PANEL_Y - frame * LOGO_SAMPLE_PANEL_FRAME_DISTANCE;
 
     DrawSprite(ot, 0xDA, (s16)y, 8, 0x10, (u8)((sample / 10) << 3), 0x18,
                0, 0, 0, 0x244, 1, 1, 0x3B);
