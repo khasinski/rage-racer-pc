@@ -1,5 +1,6 @@
 #include "game/asset.h"
 #include "game/fmv.h"
+#include "game/scene.h"
 #include "game/state.h"
 
 #include <limits.h>
@@ -126,7 +127,8 @@ int main(void) {
     g_SceneTimer = 20;
     s_fmvReturnScene = -1;
     UpdateBootLogoScene();
-    CHECK(g_SceneTimer == 21 && s_fmvReturnScene == 3);
+    CHECK(g_SceneTimer == 21 &&
+          s_fmvReturnScene == GAME_SCENE_ENTER_TITLE);
 
     g_BootLogoState = BOOT_LOGO_STATE_FADE_IN;
     g_SceneTimer = INT_MIN;
@@ -146,7 +148,15 @@ int main(void) {
 
     g_SceneTimer = INT_MAX;
     UpdateBootLogoScene();
-    CHECK(g_SceneTimer == INT_MAX && s_fmvReturnScene == 3);
+    CHECK(g_SceneTimer == INT_MAX &&
+          s_fmvReturnScene == GAME_SCENE_ENTER_TITLE);
+
+    g_BootLogoTimer = 111;
+    g_BootLogoState = (BootLogoState)99;
+    g_SceneTimer = 123;
+    UpdateBootLogoScene();
+    CHECK(g_BootLogoState == BOOT_LOGO_STATE_FADE_IN);
+    CHECK(g_SceneTimer == 0);
 
     g_BootLogoTimer = -1;
     g_BootLogoState = BOOT_LOGO_STATE_INVALID;

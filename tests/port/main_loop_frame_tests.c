@@ -1,5 +1,6 @@
 #include "common.h"
 #include "game/render_internal.h"
+#include "game/scene.h"
 #include "game/state.h"
 #include "psyq/gpu.h"
 
@@ -25,6 +26,7 @@ static s32 s_padUpdates;
 static s32 s_presentCalls;
 static s32 s_saveTicks;
 static s32 s_textureTicks;
+static s32 s_bootSceneAtRequest;
 
 long CdInit(void) { return 1; }
 void InitSubsystems(void) {}
@@ -37,7 +39,10 @@ void SetupDisplay240(s32 r, s32 g, s32 b) {
     (void)g;
     (void)b;
 }
-s32 RequestBootAssets(void) { return 1; }
+s32 RequestBootAssets(void) {
+    s_bootSceneAtRequest = g_SceneId;
+    return 1;
+}
 void TickCdAudio(void) { s_audioTicks++; }
 void TickSequenceAudio(void) { s_audioTicks++; }
 void ServiceAssetLoad(void) { s_assetServices++; }
@@ -103,6 +108,7 @@ int main(void) {
     CHECK(s_clearCalls == 2);
     CHECK(s_audioTicks == 2 && s_assetServices == 1 && s_saveTicks == 1);
     CHECK(s_dispatchCalls == 1 && s_textureTicks == 1);
+    CHECK(s_bootSceneAtRequest == GAME_SCENE_BOOT_LOGO);
     CHECK(s_presentCalls == 2 && s_drawCalls == 2 && s_padUpdates == 1);
     CHECK(g_GameClock == INT_MIN && g_FrameCounter == INT_MIN);
 

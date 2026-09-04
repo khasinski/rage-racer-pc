@@ -7,6 +7,7 @@
 #include "game/memcard.h"
 #include "game/render.h"
 #include "game/render_internal.h"
+#include "game/scene.h"
 #include "game/state.h"
 #include "game/input_internal.h"
 #include "psyq/cd.h"
@@ -21,7 +22,7 @@ static void InitializeGameLoop(void) {
     SetDispMask(0);
     SetupDisplay240(0, 0, 0);
     g_SceneTimer = 0;
-    g_SceneId = 1;
+    g_SceneId = GAME_SCENE_BOOT_LOGO;
     RequestBootAssets();
     g_GameClock = 0;
     g_FrameCounter = 0;

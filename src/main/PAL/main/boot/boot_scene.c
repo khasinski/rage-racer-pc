@@ -4,6 +4,7 @@
 #include "game/menu.h"
 #include "game/race.h"
 #include "game/render_internal.h"
+#include "game/scene.h"
 
 enum {
     BOOT_ENDING_STILL_FRAMES = 110,
@@ -11,7 +12,6 @@ enum {
     BOOT_LOGO_FADE_LIMIT = 0x100,
     BOOT_LOGO_FADE_STEP = 8,
     BOOT_FMV_START_DELAY = 21,
-    TITLE_SCENE_ID = 3,
 };
 
 static void AdvanceBootLogoFadeIn(void) {
@@ -93,8 +93,12 @@ void UpdateBootLogoScene(void) {
             g_SceneTimer++;
         }
         if (g_SceneTimer >= BOOT_FMV_START_DELAY) {
-            BeginIntroFmv(TITLE_SCENE_ID);
+            BeginIntroFmv(GAME_SCENE_ENTER_TITLE);
         }
+        break;
+    default:
+        g_BootLogoState = BOOT_LOGO_STATE_FADE_IN;
+        g_SceneTimer = 0;
         break;
     }
 
