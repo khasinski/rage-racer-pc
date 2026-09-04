@@ -6,10 +6,14 @@
 
 void DrawMemoryCardScreen(s32 showSlotBar, s32 fromLoadMenu,
                           s32 selectedRow, s32 selectedSlot) {
-    GameOrderingTableEntry *base = GamePrimaryOrderingTable(51);
-    u8 *next = RENDER_PRIM_CURSOR_AS(u8);
+    GameOrderingTableEntry *base;
+    u8 *next;
     s32 i;
     s32 y;
+
+    if (g_DrawBuffer == NULL || g_RenderState.packetCursor == NULL) return;
+    base = GamePrimaryOrderingTable(51);
+    next = RENDER_PRIM_CURSOR_AS(u8);
 
     next = GameQueueSpriteTrans(
         base, next, 0x24, 0x38, 0x20, 0x18, 0xA0, 0x90, 0x7F40);

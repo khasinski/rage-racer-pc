@@ -24,6 +24,7 @@ static void DrawMemoryCardMessageText(s32 message) {
     s32 y = 0x40;
     u8 nextColumn = 1;
 
+    if (row == NULL) return;
     for (;;) {
         if (nextColumn != 1) {
             x = g_McMessageColumnX[nextColumn];
@@ -35,12 +36,21 @@ static void DrawMemoryCardMessageText(s32 message) {
         if (nextColumn == 0) {
             break;
         }
+        if (nextColumn >= MEMORY_CARD_MESSAGE_COLUMN_COUNT) {
+            break;
+        }
     }
 }
 
 void DrawMemoryCardMessage(s32 message) {
-    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(51);
+    GameOrderingTableEntry *ot;
     u8 *prim;
+
+    if ((u32)message >= MEMORY_CARD_MESSAGE_COUNT || g_DrawBuffer == NULL ||
+        g_RenderState.packetCursor == NULL) {
+        return;
+    }
+    ot = GamePrimaryOrderingTable(51);
 
     if (IsMemoryCardBanner(message)) {
         prim = RENDER_PRIM_CURSOR_AS(u8);

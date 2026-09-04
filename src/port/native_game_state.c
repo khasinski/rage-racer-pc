@@ -306,7 +306,7 @@ MemoryCardMessageRow *g_McMessageRows[MEMORY_CARD_MESSAGE_COUNT] = {
     &g_RageMcMessageRowStorage[19], &g_RageMcMessageRowStorage[20],
     &g_RageMcMessageRowStorage[21], &g_RageMcMessageRowStorage[22]
 };
-s16 g_McMessageColumnX[5];
+s16 g_McMessageColumnX[MEMORY_CARD_MESSAGE_COLUMN_COUNT];
 char g_McSlotLabels[9];
 char g_McSlotLabelNoFile[8];
 char g_McSlotLabelError[11];

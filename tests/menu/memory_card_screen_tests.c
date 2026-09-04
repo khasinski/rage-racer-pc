@@ -11,7 +11,7 @@
 GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
 s32 g_SceneTimer;
-s16 g_McMessageColumnX[8];
+s16 g_McMessageColumnX[MEMORY_CARD_MESSAGE_COLUMN_COUNT];
 MemoryCardMessageRow *g_McMessageRows[MEMORY_CARD_MESSAGE_COUNT];
 
 typedef struct DrawRecord {
@@ -205,6 +205,29 @@ int main(void) {
     CHECK(s_textRows[1].x == 42 && s_textRows[1].y == 0x60);
     CHECK(s_messageSpriteCount == 0);
     CHECK(s_drawModeCount == 1 && s_drawMode == 0x3D);
+
+    Reset();
+    DrawMemoryCardMessage(-1);
+    DrawMemoryCardMessage(MEMORY_CARD_MESSAGE_COUNT);
+    CHECK(s_textCount == 0 && s_messageSpriteCount == 0 &&
+          s_drawModeCount == 0);
+
+    g_McMessageRows[0] = NULL;
+    DrawMemoryCardMessage(0);
+    CHECK(s_textCount == 0 && s_drawModeCount == 1);
+
+    Reset();
+    textRows[0].column = MEMORY_CARD_MESSAGE_COLUMN_COUNT;
+    g_McMessageRows[0] = textRows;
+    DrawMemoryCardMessage(0);
+    CHECK(s_textCount == 1 && s_drawModeCount == 1);
+    textRows[0].column = 2;
+
+    Reset();
+    g_DrawBuffer = NULL;
+    DrawMemoryCardScreen(1, 1, 1, 1);
+    DrawMemoryCardMessage(0);
+    CHECK(s_spriteCount == 0 && s_tileCount == 0 && s_drawModeCount == 0);
 
     puts("memory card screen and message drawing preserved");
     return 0;

@@ -15,7 +15,10 @@
  * DrawMemoryCardMessage is called with the value minus one. The names come
  * from the retail strings the index reaches through g_McMessageRows, quoted here.
  */
-enum { MEMORY_CARD_MESSAGE_COUNT = MC_PROMPT_NO_FILE };
+enum {
+    MEMORY_CARD_MESSAGE_COUNT = MC_PROMPT_NO_FILE,
+    MEMORY_CARD_MESSAGE_COLUMN_COUNT = 5,
+};
 
 extern MemoryCardPrompt g_McMenuPhase;
 
@@ -86,7 +89,7 @@ extern s32 g_McHwEventTimeout;
 extern s32 g_McLastCardStatus;
 extern s32 g_McLastMenuState;
 extern s32 g_McLastSlot;
-extern s16 g_McMessageColumnX[];
+extern s16 g_McMessageColumnX[MEMORY_CARD_MESSAGE_COLUMN_COUNT];
 extern MemoryCardMessageRow *g_McMessageRows[MEMORY_CARD_MESSAGE_COUNT];
 extern s32 g_McNoCardTicks;
 extern s32 g_McPollStatus;
