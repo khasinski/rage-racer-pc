@@ -97,6 +97,12 @@ int main(void) {
 
     ResetDraws();
     g_MenuAltLayout = 1;
+    g_BrowseArrowsFade = 25;
+    DrawBrowseArrows(1, 0, 1, 1);
+    CHECK(s_sprites[0].x == 72 && s_sprites[0].y == 0x119);
+    CHECK(s_sprites[1].x == 287 && s_sprites[1].y == 0x119);
+
+    ResetDraws();
     g_BrowseArrowsFade = 11;
     DrawBrowseArrows(-1, 0, 1, 1);
     CHECK(g_BrowseArrowsFade == 10 && s_spriteCount == 0);

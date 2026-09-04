@@ -585,7 +585,7 @@ extern s16 g_RoundScreenFadeDelays[];
 void AdvanceGrandPrixClass(void);
 s32 CountOwnedCars(void);
 void ComposeSampleTeamLogo(s32 character, s32 background);
-void DrawBrowseArrows(s32 step, s32 wide, s32 drawLeft, s32 drawRight);
+void DrawBrowseArrows(s32 step, s32 courseLayout, s32 drawLeft, s32 drawRight);
 void DrawLogoSamplePanel(s32 step, s32 sample);
 void DrawMenuCursorArrow(s32 x, s32 y);
 void DrawMenuLightBurst(s32 arg);
