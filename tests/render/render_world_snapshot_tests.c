@@ -36,8 +36,14 @@ static void FillCamera(RageRenderCamera *camera, float base) {
         (RageRenderVec3){base + 35, base + 36, base + 37};
     camera->skyAssetKey = (uint32_t)(base + 38);
     camera->skyCloudRow = (uint32_t)(base + 39);
-    camera->fogNear = base + 39;
-    camera->fogFar = base + 40;
+    camera->skyGridOrigin =
+        (RageRenderVec3){base + 40, base + 41, base + 42};
+    camera->skyGridColumn =
+        (RageRenderVec3){base + 43, base + 44, base + 45};
+    camera->skyGridRow =
+        (RageRenderVec3){base + 46, base + 47, base + 48};
+    camera->fogNear = base + 49;
+    camera->fogFar = base + 50;
 }
 
 static int SameTransform(const RageRenderTransform *a,
@@ -64,6 +70,12 @@ static int SameCamera(const RageRenderCamera *a, const RageRenderCamera *b) {
                   sizeof(a->skyBottomColor)) == 0 &&
            a->skyAssetKey == b->skyAssetKey &&
            a->skyCloudRow == b->skyCloudRow &&
+           memcmp(&a->skyGridOrigin, &b->skyGridOrigin,
+                  sizeof(a->skyGridOrigin)) == 0 &&
+           memcmp(&a->skyGridColumn, &b->skyGridColumn,
+                  sizeof(a->skyGridColumn)) == 0 &&
+           memcmp(&a->skyGridRow, &b->skyGridRow,
+                  sizeof(a->skyGridRow)) == 0 &&
            a->fogNear == b->fogNear && a->fogFar == b->fogFar;
 }
 

@@ -124,6 +124,19 @@ void RenderInterpolateCamera(const RageRenderCamera *previous,
     /* Texture identities and authored sheet rows are discrete scene state;
      * both switch together instead of being numerically interpolated. */
     out->skyCloudRow = current->skyCloudRow;
+    if (previous->skyCloudRow != current->skyCloudRow ||
+        previous->skyAssetKey != current->skyAssetKey) {
+        out->skyGridOrigin = current->skyGridOrigin;
+        out->skyGridColumn = current->skyGridColumn;
+        out->skyGridRow = current->skyGridRow;
+    } else {
+        InterpolateVec3(&previous->skyGridOrigin, &current->skyGridOrigin, t,
+                        &out->skyGridOrigin);
+        InterpolateVec3(&previous->skyGridColumn, &current->skyGridColumn, t,
+                        &out->skyGridColumn);
+        InterpolateVec3(&previous->skyGridRow, &current->skyGridRow, t,
+                        &out->skyGridRow);
+    }
     out->fogNear = previous->fogNear +
         (current->fogNear - previous->fogNear) * t;
     out->fogFar = previous->fogFar +

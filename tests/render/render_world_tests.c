@@ -122,6 +122,9 @@ static void test_camera_is_scene_data_not_backend_state(void) {
     camera.skyBottomColor.x = 0.40f;
     camera.skyAssetKey = 88;
     camera.skyCloudRow = 2;
+    camera.skyGridOrigin = (RageRenderVec3){-96.0f, 112.0f, -96.0f};
+    camera.skyGridColumn = (RageRenderVec3){64.0f, 0.0f, 4.0f};
+    camera.skyGridRow = (RageRenderVec3){0.0f, 128.0f, 107.0f};
     camera.fogNear = 100.0f;
     camera.fogFar = 500.0f;
     RenderWorldSetCamera(&world, &camera);
@@ -146,6 +149,9 @@ static void test_camera_is_scene_data_not_backend_state(void) {
     camera.skyBottomColor.x = 1.00f;
     camera.skyAssetKey = 90;
     camera.skyCloudRow = 4;
+    camera.skyGridOrigin = (RageRenderVec3){-32.0f, 96.0f, -32.0f};
+    camera.skyGridColumn = (RageRenderVec3){64.0f, 0.0f, 5.0f};
+    camera.skyGridRow = (RageRenderVec3){0.0f, 128.0f, 91.0f};
     camera.fogNear = 200.0f;
     camera.fogFar = 1000.0f;
     RenderWorldSetCamera(&world, &camera);
@@ -160,8 +166,22 @@ static void test_camera_is_scene_data_not_backend_state(void) {
     EXPECT_EQ(70, (int)(camera.skyBottomColor.x * 100.0f));
     EXPECT_EQ(90, camera.skyAssetKey);
     EXPECT_EQ(4, camera.skyCloudRow);
+    /* The row and texture identity changed together, so interpolation must
+     * not create an in-between grid which exists in neither renderer. */
+    EXPECT_EQ(-32, (int)camera.skyGridOrigin.x);
+    EXPECT_EQ(96, (int)camera.skyGridOrigin.y);
+    EXPECT_EQ(50, (int)(camera.skyGridColumn.z * 10.0f));
+    EXPECT_EQ(91, (int)camera.skyGridRow.z);
     EXPECT_EQ(150, (int)camera.fogNear);
     EXPECT_EQ(750, (int)camera.fogFar);
+
+    world.previousCamera.skyAssetKey = world.camera.skyAssetKey;
+    world.previousCamera.skyCloudRow = world.camera.skyCloudRow;
+    RenderInterpolateCamera(&world.previousCamera, &world.camera, 0.5f,
+                            &camera);
+    EXPECT_EQ(-64, (int)camera.skyGridOrigin.x);
+    EXPECT_EQ(104, (int)camera.skyGridOrigin.y);
+    EXPECT_EQ(45, (int)(camera.skyGridColumn.z * 10.0f));
 }
 
 static void test_directional_light_is_scene_data(void) {

@@ -296,6 +296,7 @@ static RageRenderCamera GameRenderWorldBuildCamera(
     float verticalFovDegrees, int rearFacing) {
     RageRenderCamera camera;
     RageSceneMat3 view;
+    GameSkyGridLayout skyGrid;
 
     memset(&camera, 0, sizeof(camera));
     camera.transform.position.x = (float)x;
@@ -346,6 +347,17 @@ static RageRenderCamera GameRenderWorldBuildCamera(
     GameRenderWorldEnvironmentColor(ENV_SKY_BOTTOM, &camera.skyBottomColor);
     camera.skyAssetKey = TrackDataAssetKey();
     camera.skyCloudRow = (uint32_t)g_SkyRowBase;
+    MeasureSkyGridLayout(y, pitch, yaw, roll, g_RenderState.orderingFlag,
+                         g_MirrorMode, &skyGrid);
+    camera.skyGridOrigin.x = skyGrid.panelXFixed * (1.0f / 256.0f);
+    camera.skyGridOrigin.y = skyGrid.panelYFixed * (1.0f / 256.0f);
+    camera.skyGridOrigin.z = skyGrid.lowerPanelXFixed * (1.0f / 256.0f);
+    camera.skyGridColumn.x = skyGrid.columnStepX * (1.0f / 256.0f);
+    camera.skyGridColumn.y = skyGrid.columnStepY * (1.0f / 256.0f);
+    camera.skyGridColumn.z = (float)skyGrid.textureColumn;
+    camera.skyGridRow.x = skyGrid.rowStepX * (1.0f / 256.0f);
+    camera.skyGridRow.y = skyGrid.rowStepY * (1.0f / 256.0f);
+    camera.skyGridRow.z = skyGrid.lowerPanelYFixed * (1.0f / 256.0f);
     /* Course geometry is stored in GTE units while Render World uses the
      * game's world units (four GTE units each). SetFogNear reaches full fog
      * at five times its authored near distance. */

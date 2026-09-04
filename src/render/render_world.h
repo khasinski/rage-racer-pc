@@ -52,6 +52,11 @@ typedef struct RageRenderCamera {
      * from the course's own camera script, so cloud is a property of the
      * course rather than of the renderer. */
     uint32_t skyCloudRow;
+    /* The retail cloud layer is screen-space geometry. These three vectors
+     * preserve its measured origin and two tile axes for native backends. */
+    RageRenderVec3 skyGridOrigin;
+    RageRenderVec3 skyGridColumn;
+    RageRenderVec3 skyGridRow;
     float fogNear;
     float fogFar;
 } RageRenderCamera;

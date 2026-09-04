@@ -35,8 +35,8 @@ require("screenPosition" in glsl and "gridOrigin" in glsl,
         "the cloud sheet must use the classic screen-space grid")
 require("cloudCoverage" in dense,
         "cloud must fade out rather than fill the sky")
-require("gridX)/512.0" in dense,
-        "the panorama must advance one texel per logical screen pixel")
+require("gridColumn)/8.0" in dense,
+        "the panorama must advance one tile per classic grid column")
 require("1.0 - smoothstep(0.528, 0.535, height)" not in glsl,
         "the intro sky must not cut clouds off at a fixed world height")
 
@@ -50,6 +50,10 @@ require("address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE" in sampler,
         "vertical repetition must stay bounded in the sky shader")
 require("mod(floor(cloudBand),2.0)" in dense,
         "the sky must alternate its two classic map rows over four bands")
+require("sky.gridParams.z" in glsl,
+        "the shader must distinguish the one-row horizon from the 4-row grid")
+require("camera->skyGridOrigin" in gpu and "camera->skyGridColumn" in gpu,
+        "native sky uniforms must consume the classic grid carried by scene data")
 # Sampled a texel at a time, as the original does: smoothing softens every
 # cloud edge and reads as a stretched, low-resolution sky.
 require("min_filter = SDL_GPU_FILTER_NEAREST" in sampler,

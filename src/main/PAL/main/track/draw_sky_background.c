@@ -204,18 +204,18 @@ static s32 SignedAngle12(s32 angle) {
     return angle >= 0x800 ? angle - 0x1000 : angle;
 }
 
-static void MeasureSkyBand(const SkyFrame *frame, SkyBandSetup *band) {
-    s32 pitch = frame->mirrorFlag != g_MirrorMode
-                    ? -frame->pitch
-                    : frame->pitch;
+void MeasureSkyGridLayout(s32 cameraY, s32 sourcePitch, s32 sourceYaw,
+                          s32 sourceRoll, s32 orderingFlag, s32 mirrorMode,
+                          GameSkyGridLayout *band) {
+    s32 pitch = orderingFlag != mirrorMode ? -sourcePitch : sourcePitch;
     s32 cameraPitch = SignedAngle12(pitch) + 2 +
-                      DivideBy32TowardZero(frame->cameraY - 6000);
-    s32 yaw = frame->mirrorFlag != 0 ? -frame->yaw : frame->yaw;
+                      DivideBy32TowardZero(cameraY - 6000);
+    s32 yaw = orderingFlag != 0 ? -sourceYaw : sourceYaw;
     s32 yawAngle = (yaw + 0x200) & 0xFFF;
     s32 nearVerticalFixed = (-0x80 - cameraPitch / 2) * 256;
     s32 farVerticalFixed = (-0x80 - (cameraPitch / 2 + 0x50)) * 256;
     s32 horizontalFixed = (-0x100 - ((yawAngle >> 1) & 0x3F)) * 256;
-    s32 rollAngle = g_MirrorMode == 0 ? -frame->roll : frame->roll;
+    s32 rollAngle = mirrorMode == 0 ? -sourceRoll : sourceRoll;
     s32 sinRoll = rsin(rollAngle);
     s32 cosRoll = rcos(rollAngle);
     s32 rotatedHorizontalY = -sinRoll * horizontalFixed;
@@ -223,8 +223,7 @@ static void MeasureSkyBand(const SkyFrame *frame, SkyBandSetup *band) {
     s32 nearY = rotatedHorizontalY + cosRoll * nearVerticalFixed;
     s32 farX = cosRoll * horizontalFixed + sinRoll * farVerticalFixed;
     s32 farY = rotatedHorizontalY + cosRoll * farVerticalFixed;
-    s32 verticalOrigin =
-        g_MirrorMode != g_RenderState.orderingFlag ? 0x2400 : 0x7800;
+    s32 verticalOrigin = mirrorMode != orderingFlag ? 0x2400 : 0x7800;
 
     band->panelXFixed = nearX / 4096 + 0xA000;
     band->panelYFixed = nearY / 4096 + verticalOrigin;
@@ -232,11 +231,26 @@ static void MeasureSkyBand(const SkyFrame *frame, SkyBandSetup *band) {
     band->lowerPanelYFixed = farY / 4096 + verticalOrigin;
     band->columnStepX = cosRoll * 4;
     band->columnStepY = -sinRoll * 4;
-    band->sinRoll = sinRoll;
-    band->cosRoll = cosRoll;
     band->rowStepX = sinRoll * 8;
     band->rowStepY = cosRoll * 8;
     band->textureColumn = yawAngle >> 7;
+}
+
+static void MeasureSkyBand(const SkyFrame *frame, SkyBandSetup *band) {
+    GameSkyGridLayout layout;
+    MeasureSkyGridLayout(frame->cameraY, frame->pitch, frame->yaw, frame->roll,
+                         frame->mirrorFlag, g_MirrorMode, &layout);
+    band->panelXFixed = layout.panelXFixed;
+    band->panelYFixed = layout.panelYFixed;
+    band->lowerPanelXFixed = layout.lowerPanelXFixed;
+    band->lowerPanelYFixed = layout.lowerPanelYFixed;
+    band->columnStepX = layout.columnStepX;
+    band->columnStepY = layout.columnStepY;
+    band->rowStepX = layout.rowStepX;
+    band->rowStepY = layout.rowStepY;
+    band->textureColumn = layout.textureColumn;
+    band->sinRoll = layout.rowStepX / 8;
+    band->cosRoll = layout.rowStepY / 8;
 }
 
 static void InitializeSkyFrame(SkyFrame *work) {

@@ -3,8 +3,10 @@
 #include "game/render_internal.h"
 #include "game/terrain_internal.h"
 #include "game/track.h"
+#include "game/track_internal.h"
 
 #include <stddef.h>
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -158,11 +160,77 @@ static int TestInvalidSkyMapFallsBackToFirstTile(void) {
     return 0;
 }
 
+static double NativeGridCoordinate(const GameSkyGridLayout *grid,
+                                   double screenX, double screenY,
+                                   int vertical) {
+    double originX = grid->panelXFixed / 256.0;
+    double originY = grid->panelYFixed / 256.0;
+    double columnX = grid->columnStepX / 256.0;
+    double columnY = grid->columnStepY / 256.0;
+    double rowX = grid->rowStepX / 256.0;
+    double rowY = grid->rowStepY / 256.0;
+    double x = screenX - originX;
+    double y = screenY - originY;
+    double determinant = columnX * rowY - columnY * rowX;
+    return vertical ? (columnX * y - columnY * x) / determinant
+                    : (x * rowY - y * rowX) / determinant;
+}
+
+static int TestNativeGridMatchesClassicPackets(void) {
+    static const struct {
+        s32 y, pitch, yaw, roll;
+    } cameras[] = {
+        {6000, 0, 0, 0},
+        {7120, -384, 511, 0},
+        {4200, 640, 2047, 96},
+        {9800, -900, 3584, -160},
+    };
+    PacketStorage packets;
+    GameOrderingTableEntry orderingTable[GAME_FRAME_OT_LENGTH];
+
+    for (size_t index = 0; index < sizeof(cameras) / sizeof(cameras[0]);
+         index++) {
+        GameSkyGridLayout grid;
+        POLY_FT4 *first;
+        PrepareFrame(&packets, orderingTable);
+        g_CourseIndex = 2;
+        g_RenderState.viewY = cameras[index].y;
+        g_RenderState.viewAngleX = cameras[index].pitch;
+        g_RenderState.viewAngleY = cameras[index].yaw;
+        g_RenderState.viewAngleZ = cameras[index].roll;
+        MeasureSkyGridLayout(cameras[index].y, cameras[index].pitch,
+                             cameras[index].yaw, cameras[index].roll, 0, 0,
+                             &grid);
+        DrawSkyBackground();
+        first = (POLY_FT4 *)(void *)packets.bytes;
+        CHECK(first->x0 == grid.panelXFixed / 256);
+        CHECK(first->y0 == grid.panelYFixed / 256);
+        CHECK(first->x1 ==
+              (grid.panelXFixed + grid.columnStepX) / 256);
+        CHECK(first->y2 == (grid.panelYFixed + grid.rowStepY) / 256);
+        /* Emulate the native shader at the first classic quad's center. It
+         * must land in classic column/row zero for pitched and rolled intro
+         * cameras, not cross a hard visibility boundary. */
+        CHECK(fabs(NativeGridCoordinate(
+                       &grid, (first->x0 + first->x1 + first->x2 + first->x3) /
+                                  4.0,
+                       (first->y0 + first->y1 + first->y2 + first->y3) / 4.0,
+                       0) - 0.5) < 0.02);
+        CHECK(fabs(NativeGridCoordinate(
+                       &grid, (first->x0 + first->x1 + first->x2 + first->x3) /
+                                  4.0,
+                       (first->y0 + first->y1 + first->y2 + first->y3) / 4.0,
+                       1) - 0.5) < 0.02);
+    }
+    return 0;
+}
+
 int main(void) {
     if (TestNearGroundCourseSkirt() != 0 ||
         TestFarGroundCourseSkirt() != 0 ||
         TestSkyGradientPaletteSlots() != 0 ||
-        TestInvalidSkyMapFallsBackToFirstTile() != 0) {
+        TestInvalidSkyMapFallsBackToFirstTile() != 0 ||
+        TestNativeGridMatchesClassicPackets() != 0) {
         return 1;
     }
     puts("sky packet layout and both course-skirt paths are stable");

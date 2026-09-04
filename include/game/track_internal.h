@@ -81,6 +81,25 @@ typedef struct PathSceneryTransform {
     SVec rotation;
 } PathSceneryTransform;
 
+/* Exact screen-space cloud grid produced by the retail sky routine.  Native
+ * renderers consume this instead of reconstructing it from an interpolated
+ * 3D camera, which is not equivalent during scripted camera motion. */
+typedef struct GameSkyGridLayout {
+    s32 panelXFixed;
+    s32 panelYFixed;
+    s32 lowerPanelXFixed;
+    s32 lowerPanelYFixed;
+    s32 columnStepX;
+    s32 columnStepY;
+    s32 rowStepX;
+    s32 rowStepY;
+    s32 textureColumn;
+} GameSkyGridLayout;
+
+void MeasureSkyGridLayout(s32 cameraY, s32 pitch, s32 yaw, s32 roll,
+                          s32 orderingFlag, s32 mirrorMode,
+                          GameSkyGridLayout *layout);
+
 extern const GameTrackArcCenter *g_TrackArcCenters;
 extern s32 g_EnvScriptClock;
 extern const CourseObject *g_CourseObjects;

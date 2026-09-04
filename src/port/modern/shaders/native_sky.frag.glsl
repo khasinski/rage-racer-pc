@@ -12,6 +12,7 @@ layout(set = 3, binding = 0, std140) uniform NativeSkyColors {
     vec4 bottom;
     vec4 gridOrigin;
     vec4 gridBasis;
+    vec4 gridParams;
 } sky;
 
 void main() {
@@ -57,10 +58,20 @@ void main() {
     vec2 screenPixel = vec2((screenPosition.x + 1.0) *
                                 sky.gridOrigin.w * 0.5,
                             (1.0 - screenPosition.y) * 120.0);
-    vec2 relative = screenPixel - sky.gridOrigin.xy;
-    float gridX = dot(relative, sky.gridBasis.xy);
-    float gridY = dot(relative, sky.gridBasis.zw);
-    float cloudBand = gridY * (1.0 / 128.0);
+    vec2 gridStart = sky.gridParams.z == 1.0
+                         ? sky.gridParams.xy
+                         : sky.gridOrigin.xy;
+    vec2 relative = screenPixel - gridStart;
+    vec2 columnAxis = sky.gridBasis.xy;
+    vec2 rowAxis = sky.gridBasis.zw;
+    float determinant = columnAxis.x * rowAxis.y -
+                        columnAxis.y * rowAxis.x;
+    float validGrid = step(0.0001, abs(determinant));
+    determinant = validGrid != 0.0 ? determinant : 1.0;
+    float gridColumn = (relative.x * rowAxis.y -
+                        relative.y * rowAxis.x) / determinant;
+    float cloudBand = (columnAxis.x * relative.y -
+                       columnAxis.y * relative.x) / determinant;
     float panoramaHeight = float(textureSize(panorama, 0).y);
     float panoramaV = fract(cloudBand);
     if (panoramaHeight > 128.0) {
@@ -70,7 +81,7 @@ void main() {
         float row = mod(floor(cloudBand), 2.0);
         panoramaV = (row + fract(cloudBand)) * 0.5;
     }
-    vec2 panoramaUV = vec2(fract((sky.gridOrigin.z + gridX) / 512.0),
+    vec2 panoramaUV = vec2(fract((sky.gridOrigin.z + gridColumn) / 8.0),
                             panoramaV);
     vec4 authored = texture(panorama, panoramaUV);
     /* The band ends where the sheet ends. Fading it out over a stretch of
@@ -79,7 +90,8 @@ void main() {
     /* The classic grid continues above the viewport during pitched intro
      * cameras. Its texture alpha supplies the upper edge; an extra height
      * cutoff made a conspicuous horizontal end to the clouds. */
-    float cloudCoverage = step(0.0, cloudBand) * step(cloudBand, 4.0);
+    float cloudCoverage = step(0.0, cloudBand) *
+                          step(cloudBand, sky.gridParams.z) * validGrid;
     color = mix(color, authored.rgb,
                 authored.a * sky.bottom.a * cloudCoverage);
     outColor = vec4(color, 1.0);
