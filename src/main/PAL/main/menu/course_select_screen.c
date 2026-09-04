@@ -73,9 +73,8 @@ static void BrowseToCourse(s32 step, s32 newTarget) {
     g_CourseIndex = course;
     g_MenuPendingCourseIndex = course;
     g_CourseCardPendingGrade = CourseBestPlace(course);
-    /* The first four courses are the Grand Prix ones; the rest are time
-     * attack, and only those show the plate. */
-    g_TimeAttackPlateStep = (course < 4) ? -1 : 1;
+    /* Only the extra series shows the time-attack plate. */
+    g_TimeAttackPlateStep = CourseSeries(course) == 0 ? -1 : 1;
 }
 
 /* Which way out of this screen is reachable is asked three times a frame. */
@@ -156,7 +155,7 @@ static void ChooseCourseSelectRow(s32 row) {
         g_MenuHintBarStep = -1;
         g_TimeAttackPlateStep = -1;
         GameMenuBusy = COURSE_SELECT_TO_RACE;
-        g_GrandPrixSeries = g_CourseIndex >> 2;
+        g_GrandPrixSeries = CourseSeries(g_CourseIndex);
         SpinCardAway();
         return;
     }
