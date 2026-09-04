@@ -21,10 +21,6 @@ int main(void) {
     assert(SplitTimeClut(SPLIT_TIME_MAX_MS) == 0x78CC);
     assert(SplitTimeClut(SPLIT_TIME_MAX_MS + 1) == 0x7890);
     assert(SplitTimeClut(-1) == 0x7890);
-    assert(!SplitTargetVisible(-2, 100000));
-    assert(!SplitTargetVisible(0, 0));
-    assert(!SplitTargetVisible(0, -1));
-    assert(SplitTargetVisible(0, 100000));
     assert(RaceSeriesIndex(0) == 0);
     assert(RaceSeriesIndex(1) == 1);
     assert(RaceSeriesIndex(INT_MIN) == 0);

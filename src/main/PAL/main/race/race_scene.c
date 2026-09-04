@@ -197,7 +197,7 @@ void EnterRaceScene(void) {
     g_SplitSector = 0;
     g_SplitTimer = SPLIT_DISPLAY_FRAMES;
     g_SplitSign = 0;
-    g_SplitTargetTime = 0;
+    g_SplitTargetTime = g_RefSectorTimes.fields.first;
     g_LastSectorTime = -1;
     /* The retail expression builds a 32-bit address through integer/union
      * arithmetic. On a 64-bit host that truncates the native table pointer.
