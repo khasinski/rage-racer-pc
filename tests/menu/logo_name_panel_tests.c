@@ -177,6 +177,10 @@ int main(void) {
     DrawTeamNameEntry(3, 0);
     CHECK(g_TeamNameEntrySlide == 3 && s_spriteCount == 0);
 
+    g_LogoSamplePanelSlide = 0;
+    DrawLogoSamplePanel(3, 0);
+    CHECK(g_LogoSamplePanelSlide == 3 && s_spriteCount == 0);
+
     puts("logo and team name panels preserve their layout and animation");
     return 0;
 }

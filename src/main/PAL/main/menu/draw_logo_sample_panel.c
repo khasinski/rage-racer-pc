@@ -30,11 +30,14 @@ void DrawLogoSamplePanel(s32 step, s32 sample) {
         g_LogoSamplePanelSlide = AddClampedMenuValue(
             g_LogoSamplePanelSlide, step, 0, LOGO_SAMPLE_PANEL_LAST_FRAME);
     }
-
     frame = g_LogoSamplePanelSlide;
-    if (frame > LOGO_SAMPLE_PANEL_LAST_FRAME) {
-        frame = LOGO_SAMPLE_PANEL_LAST_FRAME;
+    if (step > 0) {
+        g_LogoSamplePanelSlide = AddClampedMenuValue(
+            g_LogoSamplePanelSlide, step, 0,
+            LOGO_SAMPLE_PANEL_LAST_FRAME);
     }
+    if (ot == NULL) return;
+
     y = SlideUp(LOGO_SAMPLE_PANEL_Y, frame, 960);
 
     DrawSprite(ot, 0xDA, (s16)y, 8, 0x10, (u8)((sample / 10) << 3), 0x18,
@@ -57,10 +60,4 @@ void DrawLogoSamplePanel(s32 step, s32 sample) {
     }
     DrawRectOutline(ot, 0x8A, y + 32, 0x7A, 0x14, 0xB4, 0xB4, 0xB4,
                     0xFF);
-
-    if (step > 0) {
-        g_LogoSamplePanelSlide = AddClampedMenuValue(
-            g_LogoSamplePanelSlide, step, 0,
-            LOGO_SAMPLE_PANEL_LAST_FRAME);
-    }
 }
