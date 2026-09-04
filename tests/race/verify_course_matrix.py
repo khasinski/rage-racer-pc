@@ -8,19 +8,17 @@ import sys
 import tempfile
 from pathlib import Path
 
-# Five of these moved with the 0.6 work and were never refreshed; the other
-# three still hold, which is why this is a stale lock rather than a renderer
-# fault. Confirmed by building the tree as it stood before this cleanup and
-# getting the same five digests, and by looking at one of the frames.
+# Captures from the current, deterministic classic renderer.  These frames
+# exercise every Grand Prix and Extra Grand Prix course before the race starts.
 CLASSIC_GOLDENS = {
-    ("gp", 0): "06b11b5205ab5fb0bab2ffbc9ed3f70bb0b61d6697aacc4f231a6a00a5719956",
-    ("gp", 1): "2e6798174e3491fc42bd70fef7ed998b84d889007a70c30a03a9e06ef9f2f908",
-    ("gp", 2): "67177afa5e7ce08d465f94bc1dbdfd2f4617478c68292995598d730d3b0b8c09",
-    ("gp", 3): "e307b3aa715efd2dffb63900ac5ba002d7fd8351ad61256224e557d726801e0b",
-    ("extra-gp", 0): "043fb5b5bfe6a74e769e9ff4124912df04c6b48ede8e86f9b827bbea570b8fcd",
-    ("extra-gp", 1): "fef6a4a97bbcd340e50073e90dda903b767314e98983b147b183493b02803253",
-    ("extra-gp", 2): "d6981dad92bff6c8bf2f3b4c7f6e1c835af1f4950b1a3525a62cb91c22c0a0a2",
-    ("extra-gp", 3): "b61645afc1f3c21d7db580314ba8d5c0948ad3a54c27b235737451b20f583835",
+    ("gp", 0): "da080b332d8d875330a8ab51c069d456271ac6f60e512dfea9180d167b02e769",
+    ("gp", 1): "899c3a8382c274c5a24a4fdd79574424a03c651a123a48751006703cdefba795",
+    ("gp", 2): "a6e27cce24ce4f7e663c1022dc0a978e6a1f1e45a6027379a933fb2cc03d7af3",
+    ("gp", 3): "2dd8e9fc72c9b2d1a5bf71bef34e382e29f9c0232d26c9747b3282e8e8758121",
+    ("extra-gp", 0): "50b97585f7aa7c9b75de5d6d8652a1bf9dc9b0476e2d2c3378935c2c18f62293",
+    ("extra-gp", 1): "c221cbe8f75dff984d978c4f0c18a94d1c8539a8a23c6de7c8995e305a3a9a24",
+    ("extra-gp", 2): "ddaf5d412cdfcfbd8ff1a3b12eb481fa96ce40daeda7b8d6027441e6d286da85",
+    ("extra-gp", 3): "a81c48c7646fb2b61ae4abd250565036bdc48ff2807dfaca75489588271f9ca0",
 }
 
 

@@ -32,6 +32,7 @@ static s32 s_RetireCameraActive;
  * voices 22/23 in one frame makes 0x2B replace FINISHED before it is audible,
  * so retain the retail ordering by waiting for those voices to become idle. */
 static s32 s_FinishFollowupCue = -1;
+static s32 s_FinishFollowupWaitFrames;
 
 enum {
     FINISH_CUE_SPECIAL_VOICE_GROUP = 4,
@@ -42,10 +43,15 @@ enum {
     INITIAL_RACE_TIME = 15000,
     INITIAL_RIVAL_CUE_FLAGS = 0x1FE,
     RACE_FRAME_SYNC_THRESHOLD = 0x180,
+    /* FINISHED has enough time to be heard before its next cue may reclaim
+     * the shared special voices.  Do not leave that next cue stranded when a
+     * host audio backend reports those voices active through the scene exit. */
+    FINISH_FOLLOWUP_MAX_WAIT_FRAMES = 60,
 };
 
 void QueueFinishFollowupCue(s32 cue) {
     s_FinishFollowupCue = cue;
+    s_FinishFollowupWaitFrames = 0;
     if (DiagnosticsEnabled("sound_cue_trace")) {
         fprintf(stderr, "rage-port: finish follow-up queued cue=0x%02x\n",
                 (unsigned)cue);
@@ -54,14 +60,20 @@ void QueueFinishFollowupCue(s32 cue) {
 
 static void UpdateFinishFollowupCue(void) {
     s32 cue;
+    s32 specialVoicesActive;
 
     if (s_FinishFollowupCue < 0) {
         return;
     }
+    specialVoicesActive = SpuGetKeyStatus(
+        g_SpecialVoiceBits[FINISH_CUE_SPECIAL_VOICE_GROUP]) != 0;
+    if (specialVoicesActive &&
+        s_FinishFollowupWaitFrames < FINISH_FOLLOWUP_MAX_WAIT_FRAMES) {
+        s_FinishFollowupWaitFrames++;
+        return;
+    }
     cue = ReleaseFinishFollowupCue(
-        &s_FinishFollowupCue,
-        SpuGetKeyStatus(
-            g_SpecialVoiceBits[FINISH_CUE_SPECIAL_VOICE_GROUP]) != 0);
+        &s_FinishFollowupCue, 0);
     if (cue < 0) {
         return;
     }
@@ -220,6 +232,7 @@ void EnterRaceScene(void) {
     g_RacePhase = RACE_PHASE_INTRO;
     s_RetireCameraActive = 0;
     s_FinishFollowupCue = -1;
+    s_FinishFollowupWaitFrames = 0;
     g_RaceCueFlags = 0;
     g_RivalCueFlags = INITIAL_RIVAL_CUE_FLAGS;
     for (i = 0; i < RIVAL_CONTENDER_COUNT; i++) {

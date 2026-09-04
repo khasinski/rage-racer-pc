@@ -1177,15 +1177,16 @@ set_tests_properties(grand_prix_results PROPERTIES LABELS e2e)
     set_tests_properties(grand_prix_results PROPERTIES TIMEOUT 225
         SKIP_RETURN_CODE 77)
 
-    add_test(
-        NAME grand_prix_exit
-        COMMAND ruby
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_grand_prix_exit.rb
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
-    )
-set_tests_properties(grand_prix_exit PROPERTIES LABELS e2e)
-    set_tests_properties(grand_prix_exit PROPERTIES TIMEOUT 225)
+    if(RAGE_RUBY_EXECUTABLE)
+        add_test(
+            NAME grand_prix_exit
+            COMMAND ${RAGE_RUBY_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/verify_grand_prix_exit.rb
+                $<TARGET_FILE:rage-racer-smoke>
+                ${CMAKE_SOURCE_DIR}
+        )
+        set_tests_properties(grand_prix_exit PROPERTIES LABELS e2e TIMEOUT 225)
+    endif()
 
     add_test(
         NAME time_attack_records

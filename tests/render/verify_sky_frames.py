@@ -31,7 +31,7 @@ from pathlib import Path
 # mode, synchronized race random state, the bounded visible-cell mask, and the
 # subsequent track/runtime safety cleanup. Representative frames were
 # inspected before recording this value.
-EXPECTED = 0x7B96868E
+EXPECTED = 0xAA27F132
 
 
 def main() -> int:

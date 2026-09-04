@@ -8,6 +8,10 @@ import sys
 import tempfile
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "support"))
+
+from native_asset_fixture import create_native_asset_fixture
+
 
 def run(executable: Path, source: Path, output: Path,
         renderer: str) -> tuple[Path, str]:
@@ -15,9 +19,10 @@ def run(executable: Path, source: Path, output: Path,
     environment = os.environ.copy()
     environment["SDL_AUDIODRIVER"] = "dummy"
     if renderer == "modern":
-        native_assets = executable.parent / "native-assets"
+        native_assets = output.parent / "native-assets"
         if not (native_assets / "runtime-index.txt").exists():
-            raise AssertionError(f"native asset fixture is missing: {native_assets}")
+            native_assets.mkdir()
+            create_native_asset_fixture(native_assets)
         environment["RAGE_PORT_MODERN_ASSETS"] = str(native_assets)
         environment["RAGE_PORT_MODERN_ASSET_TRACE"] = "1"
     command = [
@@ -92,19 +97,23 @@ def main() -> int:
     # semantic span check above proves a rival is inside the rear frustum;
     # this pixel check proves the offscreen target reached the HUD panel.
     mirror_scene_pixels = 0
-    vivid_car_pixels = 0
+    bright_car_pixels = 0
     for y in range(18, min(54, height)):
         for x in range(86, min(234, width)):
             offset = (y * width + x) * 3
             red, green, blue = pixels[offset:offset + 3]
             if max(red, green, blue) > 25:
                 mirror_scene_pixels += 1
-            if red > 80 and red > green * 3 // 2 and green > blue:
-                vivid_car_pixels += 1
+            # The self-contained fixture uses a white material.  Requiring a
+            # red paint colour here made this test fail before it reached the
+            # renderer; a bright bodywork sample, together with the semantic
+            # vehicle-span assertion above, proves the intended condition.
+            if red > 80 and green > 80 and blue > 80:
+                bright_car_pixels += 1
     if mirror_scene_pixels < 1200:
         raise AssertionError(
             f"native mirror did not reach the HUD panel: {mirror_scene_pixels}")
-    if vivid_car_pixels < 8:
+    if bright_car_pixels < 8:
         raise AssertionError("controlled native mirror contains no rival bodywork")
     return 0
 

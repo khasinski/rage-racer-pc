@@ -1514,15 +1514,16 @@ set_tests_properties(native_render_world PROPERTIES LABELS e2e)
 set_tests_properties(grand_prix_terrain_frame PROPERTIES LABELS e2e)
     set_tests_properties(grand_prix_terrain_frame PROPERTIES TIMEOUT 120)
 
-    add_test(
-        NAME mirror_entry
-        COMMAND ruby
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_mirror_entry.rb
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
-    )
-set_tests_properties(mirror_entry PROPERTIES LABELS e2e)
-    set_tests_properties(mirror_entry PROPERTIES TIMEOUT 150)
+    if(RAGE_RUBY_EXECUTABLE)
+        add_test(
+            NAME mirror_entry
+            COMMAND ${RAGE_RUBY_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/verify_mirror_entry.rb
+                $<TARGET_FILE:rage-racer-smoke>
+                ${CMAKE_SOURCE_DIR}
+        )
+        set_tests_properties(mirror_entry PROPERTIES LABELS e2e TIMEOUT 150)
+    endif()
     add_test(NAME mirror_cars COMMAND python3
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_mirror_cars.py
         $<TARGET_FILE:rage-racer-smoke> ${CMAKE_SOURCE_DIR})

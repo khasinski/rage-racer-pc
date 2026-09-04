@@ -377,7 +377,7 @@ int HostInitDisc(void) {
     if (RuntimeConfigEnabled("runtime.test_mode")) {
         const char *testPath = configuredPath;
         if (testPath == NULL || testPath[0] == '\0')
-            testPath = "disc/PAL/Rage Racer (Europe).cue";
+            testPath = "disc/PAL/Rage Racer (Europe)/Rage Racer (Europe).cue";
         if (access(testPath, R_OK) == 0 &&
             HostOpenDisc(testPath)) {
             return 1;

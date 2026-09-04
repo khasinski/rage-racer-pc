@@ -18,7 +18,8 @@ from pathlib import Path
 # ctest reads this exit code as "skipped" rather than "failed".
 SKIP_EXIT_CODE = 77
 
-DEFAULT_CUE = Path("disc") / "PAL" / "Rage Racer (Europe).cue"
+DEFAULT_CUE = (Path("disc") / "PAL" / "Rage Racer (Europe)" /
+               "Rage Racer (Europe).cue")
 
 
 def find_disc(source: Path) -> Path | None:

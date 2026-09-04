@@ -25,7 +25,10 @@ def main() -> int:
         environment = os.environ.copy()
         environment.update(
             SDL_AUDIODRIVER="dummy",
-            RAGE_PORT_SMOKE_FRAMES="360",
+            # The opening movie enters at about vblank 314.  Run long enough
+            # to reach its XA packets as well as its first decoded pictures;
+            # 360 stops during the silent lead-in on Linux's dummy backend.
+            RAGE_PORT_SMOKE_FRAMES="720",
             RAGE_PORT_CAPTURE_PATH=str(capture),
             RAGE_PORT_FMV_TRACE="1",
             RAGE_PORT_SMOKE_AUDIO_METRICS="1",
