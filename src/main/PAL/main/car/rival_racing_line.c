@@ -26,14 +26,20 @@ void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex) {
     }
 
     position = car->trackProgress >> 4;
-    if (position < AI_TABLE_LAP_START_PROGRESS ||
-        car->racingLineHintIndex < 0 ||
+    hints = g_TrackEventData->racingLineHints[series];
+    if (car->racingLineHintIndex < 0 ||
         car->racingLineHintIndex >= TRACK_RACING_LINE_HINT_COUNT) {
+        /* Retail would read outside the table; the first hint stands in. */
+        car->racingLineHintIndex = 0;
+    }
+    /* Retail picks this frame's hint before the lap-start reset, so the
+     * reset only takes effect from the next frame. Reading hint zero a
+     * frame early nudged every rival's steering at the line. */
+    hint = &hints[car->racingLineHintIndex];
+    if (position < AI_TABLE_LAP_START_PROGRESS) {
         car->racingLineHintIndex = 0;
         position = 0;
     }
-    hints = g_TrackEventData->racingLineHints[series];
-    hint = &hints[car->racingLineHintIndex];
 
     if (hint->end < position) {
         car->racingLineHintIndex++;

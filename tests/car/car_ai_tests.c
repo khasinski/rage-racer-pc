@@ -393,10 +393,13 @@ static void RacingLineTests(void) {
     Check(car.aiLateralOffset == 50, "before the stretch, no drift",
           car.aiLateralOffset, 50);
 
-    /* Resetting the route index at the start of a lap must also select the
-     * first hint immediately, rather than retaining the old hint for a frame. */
+    /* Resetting the hint index at the start of a lap takes effect from the
+     * next frame: retail picks this frame's hint before the reset, and the
+     * stale hint does not cover position zero, so nothing drifts yet. */
     hints[0].start = 0;
     hints[0].end = 0x20;
+    hints[1].start = 0x100;
+    hints[1].end = 0x200;
     memset(&car, 0, sizeof(car));
     car.trackProgress = 0x10 << 4;
     car.racingLineHintIndex = 1;
@@ -405,8 +408,9 @@ static void RacingLineTests(void) {
     Check(car.racingLineHintIndex == 0,
           "lap start resets the racing-line hint",
           car.racingLineHintIndex, 0);
-    Check(car.aiLateralOffset == 55, "lap start uses the first hint immediately",
-          car.aiLateralOffset, 55);
+    Check(car.aiLateralOffset == 50,
+          "lap start still reads the stale hint this frame",
+          car.aiLateralOffset, 50);
 
     memset(&car, 0, sizeof(car));
     car.trackProgress = 0x10 << 4;
