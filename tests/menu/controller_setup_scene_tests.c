@@ -22,7 +22,7 @@ s16 g_NegconSteer;
 NegconCalibrationValue g_NegconSteerPlay;
 NegconCalibrationValue g_NegconMaxTwist;
 s16 g_NegconSteerRange[NEGCON_STEER_RANGE_COUNT];
-s32 g_NegconPlayScale[4];
+s32 g_NegconPlayScale[NEGCON_CALIBRATION_COUNT];
 
 static GameFrameContext s_frame;
 static GameOrderingTableEntry s_originalOt[4];

@@ -762,7 +762,6 @@ extern u8 g_TrackTextureShadowPage[256];
 extern u8 g_HighFontCell[4];
 extern s32 g_MirrorPanelY;
 extern s32 g_MirrorUnlocked;
-extern s32 g_NegconPlayScale[];
 extern ProportionalFontCell
     g_PropFontCells[PROPORTIONAL_FONT_CELL_COUNT];
 extern s32 g_TrackTextureCursorRow;

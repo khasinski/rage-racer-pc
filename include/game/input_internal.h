@@ -59,6 +59,7 @@ enum {
     NEGCON_CALIBRATION_COUNT = 4,
     NEGCON_CALIBRATION_LAST = NEGCON_CALIBRATION_COUNT - 1,
     NEGCON_STEER_RANGE_COUNT = NEGCON_CALIBRATION_COUNT,
+    NEGCON_DEAD_ZONE_VALUE_COUNT = 2,
 };
 
 static inline NegconCalibrationValue ClampNegconCalibrationValue(s32 value) {
@@ -67,6 +68,9 @@ static inline NegconCalibrationValue ClampNegconCalibrationValue(s32 value) {
     return (NegconCalibrationValue)value;
 }
 extern s16 g_NegconSteerRange[NEGCON_STEER_RANGE_COUNT];
+extern u16 g_NegconSteerDeadZone[NEGCON_CALIBRATION_COUNT]
+                                [NEGCON_DEAD_ZONE_VALUE_COUNT];
+extern s32 g_NegconPlayScale[NEGCON_CALIBRATION_COUNT];
 
 /* Runtime calibration state normally comes from a validated save or from the
  * option screen. Treat any damaged value as the first retail preset before it

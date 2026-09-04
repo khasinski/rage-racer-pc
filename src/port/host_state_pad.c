@@ -17,11 +17,14 @@
 s16 g_NegconSteerRange[4] __attribute__((aligned(16))) = {
     25, 38, 75, 113
 };
-u16 g_NegconSteerDeadZone[4][2] __attribute__((aligned(16))) = {
+u16 g_NegconSteerDeadZone[NEGCON_CALIBRATION_COUNT]
+                         [NEGCON_DEAD_ZONE_VALUE_COUNT]
+    __attribute__((aligned(16))) = {
     {0, 0}, {6, 0}, {10, 0}, {14, 0},
 };
 s32 g_SetupArrowPulse;
-s32 g_NegconPlayScale[4] __attribute__((aligned(16))) = {
+s32 g_NegconPlayScale[NEGCON_CALIBRATION_COUNT]
+    __attribute__((aligned(16))) = {
     0, 3, 5, 7
 };
 DVec g_PadLabelSlots[CONTROLLER_CONFIG_LABEL_SLOT_COUNT]

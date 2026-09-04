@@ -160,7 +160,6 @@ typedef enum PadErrorState {
 extern PadErrorState g_PadErrorState;
 
 
-extern u16 g_NegconSteerDeadZone[][2];
 extern s32 g_BootLogoHoldTimer;
 typedef enum BootLogoState {
     BOOT_LOGO_STATE_INVALID = -1,
