@@ -3,6 +3,7 @@
 
 #include "game/prim.h"
 #include "game/render.h"
+#include "game/input_internal.h"
 
 s32 g_SetupArrowPulse;
 
@@ -16,6 +17,8 @@ static s32 s_modePages[4];
 static s32 s_modeCount;
 static s32 s_shade;
 static s32 s_shadedCount;
+static s32 s_expectedSineAngle;
+static s32 s_sineValue;
 static s32 s_failures;
 
 #define CHECK(condition)                                                                  \
@@ -27,8 +30,8 @@ static s32 s_failures;
     } while (0)
 
 int rsin(int angle) {
-    CHECK(angle == 0x123);
-    return 4096;
+    CHECK(angle == s_expectedSineAngle);
+    return s_sineValue;
 }
 
 u8 *GameQueueSprite(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
@@ -104,6 +107,8 @@ static void Reset(void) {
     s_modeCount = 0;
     s_shade = -1;
     s_shadedCount = 0;
+    s_expectedSineAngle = 0;
+    s_sineValue = 0;
 }
 
 static void TestArrows(void) {
@@ -118,9 +123,18 @@ static void TestArrows(void) {
 
     Reset();
     g_SetupArrowPulse = 0x1123;
+    s_expectedSineAngle = 0x123;
+    s_sineValue = 4096;
     CHECK(DrawRightArrow(&ot, packets, 30, 40, 1) == packets + 3);
     CHECK(s_spriteCount == 1 && s_spriteU[0] == 0x58);
-    CHECK(s_tileCount == 1 && s_tileGreen == (u8)-1);
+    CHECK(s_tileCount == 1 && s_tileGreen == 0xFF);
+
+    Reset();
+    g_SetupArrowPulse = -1;
+    s_expectedSineAngle = 0xFFF;
+    s_sineValue = -4096;
+    DrawLeftArrow(&ot, packets, 10, 20, 1);
+    CHECK(s_tileCount == 1 && s_tileGreen == 0x7F);
 }
 
 static void TestSelector(void) {
@@ -135,6 +149,15 @@ static void TestSelector(void) {
     CHECK(s_modeCount == 2);
     CHECK(s_modePages[0] == 0x3A && s_modePages[1] == 0x5B);
     CHECK(s_tileCount == 4);
+
+    Reset();
+    DrawPadConfigSelector(&ot, packets, 100, 50, -1);
+    CHECK(s_transU[1] == 80);
+
+    Reset();
+    DrawPadConfigSelector(&ot, packets, 100, 50,
+                          CONTROLLER_MAPPING_COUNT);
+    CHECK(s_transU[1] == 80 + CONTROLLER_MAPPING_LAST * 8);
 }
 
 int main(void) {

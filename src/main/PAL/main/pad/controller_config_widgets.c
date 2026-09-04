@@ -1,5 +1,11 @@
 #include "game/prim.h"
 #include "game/render.h"
+#include "game/input_internal.h"
+
+enum {
+    ARROW_GLOW_CENTER = 0xBF,
+    ARROW_GLOW_SINE_DIVISOR = 64,
+};
 
 static u8 *DrawConfigArrow(GameOrderingTableEntry *ot, u8 *prim, s32 x,
                            s32 y, s32 textureU, s32 pulse) {
@@ -7,7 +13,9 @@ static u8 *DrawConfigArrow(GameOrderingTableEntry *ot, u8 *prim, s32 x,
         ot, prim, x, y, 0x10, 0x20, textureU, 0xB8, 0x7F82);
     prim = QueueDrawModePrim(ot, prim, 0x39);
     if (pulse != 0) {
-        u8 glow = rsin(g_SetupArrowPulse % 0x1000) / 64 - 65;
+        s32 phase = (s32)((u32)g_SetupArrowPulse & ANGLE_MASK);
+        u8 glow = (u8)(ARROW_GLOW_CENTER +
+                       rsin(phase) / ARROW_GLOW_SINE_DIVISOR);
 
         prim = AddTilePrim(ot, prim, x, y, 0x10, 0x20, 0, glow, 0);
     }
@@ -28,6 +36,7 @@ u8 *DrawRightArrow(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
  * plates for each of its upper and lower halves. */
 u8 *DrawPadConfigSelector(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
                           s32 selection) {
+    selection = ClampControllerMappingIndex(selection);
     prim = GameQueueShadedSprite(
         ot, prim, x + 6, y + 8, 0x30, 0xC, 0x78, 0xC0, 0x7F40, 0x80);
     prim = QueueDrawModePrim(ot, prim, 0x3A);
