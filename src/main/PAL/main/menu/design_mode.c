@@ -21,7 +21,6 @@ enum DesignModeOption {
 };
 
 enum {
-    DESIGN_MODE_VIEW_OFFSET = 250000,
     DESIGN_MODE_GRID_SIZE = 6,
 };
 
@@ -164,7 +163,7 @@ static void FinishDesignModeExit(void) {
         g_MenuScreen = MENU_SCREEN_TEAM_NAME;
         g_MenuHandlerIndex = MENU_SCREEN_TEAM_NAME;
         DrawTeamNameEntry(0, 0);
-        g_MenuViewOffset = DESIGN_MODE_VIEW_OFFSET;
+        g_MenuViewOffset = MENU_VIEW_OFFSET_MAX;
         g_MenuViewOffsetTarget = 0;
         g_MenuViewAngleTarget = 0;
         g_MenuViewAngle = 0;
@@ -177,14 +176,14 @@ static void FinishDesignModeExit(void) {
         g_MenuScreen = MENU_SCREEN_PAINT_COLOR;
         g_MenuHandlerIndex = MENU_SCREEN_PAINT_COLOR;
         g_UiScriptProgress2 = 0;
-        g_MenuViewOffset = DESIGN_MODE_VIEW_OFFSET;
+        g_MenuViewOffset = MENU_VIEW_OFFSET_MAX;
         g_MenuViewOffsetTarget = 0;
         break;
     case DESIGN_MODE_EXIT_TO_CUSTOMIZE:
         g_MenuScreen = MENU_SCREEN_CUSTOMIZE;
         g_MenuHandlerIndex = MENU_SCREEN_CUSTOMIZE;
         g_DesignModeOption = DESIGN_MODE_OPTION_LOGO;
-        g_MenuViewOffset = DESIGN_MODE_VIEW_OFFSET;
+        g_MenuViewOffset = MENU_VIEW_OFFSET_MAX;
         g_MenuViewOffsetTarget = 0;
         break;
     }
