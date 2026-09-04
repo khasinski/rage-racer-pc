@@ -13,15 +13,12 @@ CASES = {
     "baseline": ("auto", "nearest", "none", "off", (320, 240)),
     "enhanced": ("16:9", "linear", "fxaa", "vibrant", (426, 240)),
 }
-# Refreshed after the renderer changes that landed on top of the previous
-# lock: present ordering, the Vulkan shadow map coordinate, material texture
-# indexing, sky uploads and the texture upload buffers. Each of those moves
-# pixels, and none refreshed these. Both frames were looked at before being
-# written down: the race start with its light gantry, banners and HUD, and the
-# same scene again in 16:9 with FXAA and the vibrant grade.
+# Refreshed after the renderer and race-state cleanup. Both frames were
+# inspected before recording them: the race start with its light gantry,
+# banners and HUD, and the same scene in 16:9 with FXAA and vibrant grading.
 MODERN_GOLDENS = {
-    "baseline": "cf496656d0584392ae2a5ecc9b38c93424a8994d42b46b96c84256239a692b70",
-    "enhanced": "17b7c6b9d98090bb16cd919f461139632a9f6412cb5931887f97d92685f34378",
+    "baseline": "8fac628422f47ac1e6e15b89c06cf9733e822dedc42ea59ecb80ee1c99208cfe",
+    "enhanced": "4c9a5cd89b579421a4546c5dfe754076ea512faaf39a8479918f9bce67a382dd",
 }
 
 
