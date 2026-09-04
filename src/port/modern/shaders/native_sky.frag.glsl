@@ -60,13 +60,19 @@ void main() {
         panoramaV = (row + fract(band)) * 0.5;
     }
     vec2 panoramaUV = vec2(
-        fract(atan(direction.z, direction.x) * 0.31830989), panoramaV);
+        /* Classic advances one 64-texel tile by 64 screen pixels. At the
+         * 41.112-degree race FOV that exposes about 320 of the panorama's
+         * 512 texels, rather than treating the strip as half a physical
+         * turn. Preserve that authored screen-space density. */
+        fract(atan(direction.z, direction.x) * 0.87105793), panoramaV);
     vec4 authored = texture(panorama, panoramaUV);
     /* The band ends where the sheet ends. Fading it out over a stretch of
      * sky instead makes the cloud look like it is dissolving, and the sheet
      * is already transparent at its top edge, so there is nothing to hide. */
-    float cloudCoverage = smoothstep(0.09, 0.15, height) *
-        (1.0 - smoothstep(0.528, 0.535, height));
+    /* The classic grid continues above the viewport during pitched intro
+     * cameras. Its texture alpha supplies the upper edge; an extra height
+     * cutoff made a conspicuous horizontal end to the clouds. */
+    float cloudCoverage = smoothstep(0.09, 0.15, height);
     color = mix(color, authored.rgb,
                 authored.a * sky.bottom.a * cloudCoverage);
     outColor = vec4(color, 1.0);

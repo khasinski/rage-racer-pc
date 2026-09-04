@@ -35,6 +35,10 @@ require("fract(atan" in dense or "fract(atan2" in dense,
         "the sheet must wrap by heading, so it repeats round the turn")
 require("cloudCoverage" in dense,
         "cloud must fade out rather than fill the sky")
+require("0.87105793" in glsl,
+        "the panorama must retain classic's screen-space texel density")
+require("1.0 - smoothstep(0.528, 0.535, height)" not in glsl,
+        "the intro sky must not cut clouds off at a fixed world height")
 
 # The sheet repeats round the horizon. Vertical addressing remains clamped;
 # the shader itself selects the four bounded classic bands.
