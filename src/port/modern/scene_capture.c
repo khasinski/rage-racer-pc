@@ -484,8 +484,8 @@ void CaptureFrameEnd(void) {
                 const RageCapturePacket *packet = &snapshot->packets[i];
                 int word;
                 fprintf(s_trace, "scene-packet frame=%u index=%d table=%d "
-                        "bucket=%d words=", snapshot->frameCounter, i,
-                        packet->table, packet->bucket);
+                        "bucket=%d flags=%02x words=", snapshot->frameCounter,
+                        i, packet->table, packet->bucket, packet->flags);
                 for (word = 0; word < packet->size; word++) {
                     fprintf(s_trace, "%s%08x", word ? "," : "",
                             packet->words[word]);
