@@ -17,6 +17,14 @@ static u8 LogoColorRed(u16 color) { return (u8)((color & 0x1F) << 3); }
 static u8 LogoColorGreen(u16 color) { return (u8)((color & 0x3E0) >> 2); }
 static u8 LogoColorBlue(u16 color) { return (u8)((color & 0x7C00) >> 7); }
 
+static u16 FadeLogoColor(u16 color, s32 fade) {
+    s32 red = (color & 0x1F) * fade / 256;
+    s32 green = ((color >> 5) & 0x1F) * fade / 256;
+    s32 blue = ((color >> 10) & 0x1F) * fade / 256;
+
+    return (u16)(0x8000 | red | (green << 5) | (blue << 10));
+}
+
 /*
  * The big canvas: its frame slides down, the brush outline blinks over the
  * cursor, and the canvas itself goes down as one zoomed textured quad.
@@ -342,15 +350,7 @@ static void AnimateLogoClut(void) {
 
     fade = g_TeamLogoFadeLevel;
     for (i = 0; i < 16; i++) {
-        s32 source = g_TeamLogoClut[i];
-
-        blue = ((source >> 10) & 0x1F) * fade;
-        if (blue < 0) {
-            blue += 0xFF;
-        }
-        g_TeamLogoFadedClut[i] =
-            (u16)(0x8000 | (((source & 0x1F) * fade) / 256) |
-                  (((((source >> 5) & 0x1F) * fade) / 256) << 5) | ((blue >> 8) << 10));
+        g_TeamLogoFadedClut[i] = FadeLogoColor(g_TeamLogoClut[i], fade);
     }
 }
 
