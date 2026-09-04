@@ -7,7 +7,6 @@ enum {
     TEAM_LOGO_CHARACTER_COLOR_FIRST = 1,
     TEAM_LOGO_BACKGROUND_COLOR_FIRST = 12,
     TEAM_LOGO_COLOR_COUNT = 16,
-    TEAM_LOGO_HALFWORDS_PER_ROW = 16,
 };
 
 /* A zero character pixel is transparent and lets the background through. */
@@ -56,10 +55,9 @@ void ComposeSampleTeamLogo(s32 character, s32 background) {
         g_TeamLogoClut[index] = backgroundClut[index];
     }
 
-    for (row = 0; row < 64; row++) {
+    for (row = 0; row < TEAM_LOGO_HEIGHT; row++) {
         for (word = 0; word < TEAM_LOGO_HALFWORDS_PER_ROW; word++) {
-            g_TeamLogoCanvas
-                .halfwords[row * TEAM_LOGO_HALFWORDS_PER_ROW + word] =
+            g_TeamLogoCanvas.halfwordRows[row][word] =
                 CompositeLogoPixels(characterSample->canvas[row][word],
                                     backgroundSample->canvas[row][word]);
         }

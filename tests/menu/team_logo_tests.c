@@ -66,9 +66,12 @@ int main(void) {
 
     ComposeSampleTeamLogo(3, 5);
 
-    ok &= Check(g_TeamLogoCanvas.halfwords[0] == 0x1B2D,
+    ok &= Check(g_TeamLogoCanvas.halfwordRows[0][0] == 0x1B2D,
                 "transparent character pixels were not composited");
-    ok &= Check(g_TeamLogoCanvas.halfwords[1023] == 0x5678,
+    ok &= Check(g_TeamLogoCanvas
+                        .halfwordRows[TEAM_LOGO_HEIGHT - 1]
+                                     [TEAM_LOGO_HALFWORDS_PER_ROW - 1] ==
+                    0x5678,
                 "last background word was not copied");
     for (index = 1; index < 12; index++) {
         ok &= Check(g_TeamLogoClut[index] == (u16)(0x300 + index),

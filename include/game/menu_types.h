@@ -11,7 +11,10 @@ enum {
     TEAM_LOGO_EDITOR_VIEW_SIZE = 32,
     TEAM_LOGO_SAMPLE_RECORD_COUNT = 20,
     TEAM_LOGO_BITS_PER_PIXEL = 4,
+    TEAM_LOGO_PIXELS_PER_HALFWORD = 4,
     TEAM_LOGO_PIXELS_PER_WORD = 8,
+    TEAM_LOGO_HALFWORDS_PER_ROW =
+        TEAM_LOGO_WIDTH / TEAM_LOGO_PIXELS_PER_HALFWORD,
     TEAM_LOGO_WORDS_PER_ROW =
         TEAM_LOGO_WIDTH / TEAM_LOGO_PIXELS_PER_WORD,
     TEAM_NAME_FONT_GLYPH_BYTES = 32,
@@ -32,7 +35,7 @@ typedef struct RaceRecord {
 
 typedef struct TeamLogoSample {
     u16 clut[2][16];
-    u16 canvas[TEAM_LOGO_HEIGHT][TEAM_LOGO_WIDTH / 4];
+    u16 canvas[TEAM_LOGO_HEIGHT][TEAM_LOGO_HALFWORDS_PER_ROW];
 } TeamLogoSample;
 
 typedef union TeamLogoSampleAddress {
@@ -50,6 +53,7 @@ static inline const TeamLogoSample *GetTeamLogoSample(const void *data) {
 typedef union TeamLogoCanvas {
     u8 bytes[TEAM_LOGO_WIDTH * TEAM_LOGO_HEIGHT / 2];
     u16 halfwords[TEAM_LOGO_WIDTH * TEAM_LOGO_HEIGHT / 4];
+    u16 halfwordRows[TEAM_LOGO_HEIGHT][TEAM_LOGO_HALFWORDS_PER_ROW];
     u32 words[TEAM_LOGO_HEIGHT][TEAM_LOGO_WORDS_PER_ROW];
 } TeamLogoCanvas;
 
