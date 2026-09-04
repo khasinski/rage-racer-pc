@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "game/render_internal.h"
+#include "game/render.h"
 #include "game/asset.h"
 #include "game/model_stream.h"
 #include "game/terrain_internal.h"
@@ -769,7 +770,10 @@ void SubmitModel(void *ctx, int index) {
     uint32_t opcode;
     const void *const *models = g_RenderState.modelModels;
     (void)ctx;
-    if (models == NULL || index < 0 || models[index] == NULL) return;
+    if (models == NULL || index < 0 || index >= g_ModelBankCount ||
+        index >= GAME_MODEL_PER_BANK_LIMIT || models[index] == NULL) {
+        return;
+    }
     stream = models[index];
     g_RageSubmittedModelIndex = index;
     if (g_RageModelTraceEnabled &&
