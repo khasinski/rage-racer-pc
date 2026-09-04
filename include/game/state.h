@@ -167,11 +167,9 @@ typedef enum BootLogoState {
 extern BootLogoState g_BootLogoState;
 extern s32 g_BootLogoTimer;
 extern s32 g_FrameCounter;
-extern u16 g_NegconButtonPresets[];
 extern u8 g_NegconConfigButtonRows[];
 extern u8 g_NegconConfigLabelRows[];
 extern u8 g_PadBuffers[0x50];
-extern u16 g_PadButtonPresets[];
 extern u8 g_PadConfigButtonRows[];
 extern u8 g_PadConfigLabelRows[];
 extern u16 g_PadPrevHeld;

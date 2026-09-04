@@ -7,6 +7,7 @@
 #include "game/render_internal.h"
 #include "game/asset.h"
 #include "game/car.h"
+#include "game/input_internal.h"
 #include "game/race.h"
 #include "game/race_internal.h"
 #include "game/state.h"
@@ -67,8 +68,10 @@ _Static_assert(sizeof(g_TimeRecords) == 640, "time table ABI changed");
 Rect g_TrackTextureRowRect;
 u8 g_TrackTextureShadowPage[256];
 u16 g_PadButtonMapping[16];
-u16 g_PadButtonPresets[64];
-u16 g_NegconButtonPresets[64];
+u16 g_PadButtonPresets[CONTROLLER_MAPPING_COUNT]
+                      [CONTROLLER_MAPPING_BUTTON_COUNT];
+u16 g_NegconButtonPresets[CONTROLLER_MAPPING_COUNT]
+                         [CONTROLLER_MAPPING_BUTTON_COUNT];
 /* InitPAD writes two 0x28-byte BIOS packets. Retail's byte symbols at +1..+3
  * are aliases into the first packet, not independent objects. */
 u8 g_PadBuffers[0x50];

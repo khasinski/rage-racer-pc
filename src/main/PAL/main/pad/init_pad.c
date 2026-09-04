@@ -26,9 +26,10 @@ void LoadPadButtonMapping(s32 mapping0, s32 mapping1) {
 
     mapping0 = ClampControllerMappingIndex(mapping0);
     mapping1 = ClampControllerMappingIndex(mapping1);
-    for (i = 0; i < 8; i++) {
-        g_PadButtonMapping[i] = g_PadButtonPresets[mapping0 * 8 + i];
-        g_PadButtonMapping[8 + i] = g_NegconButtonPresets[mapping1 * 8 + i];
+    for (i = 0; i < CONTROLLER_MAPPING_BUTTON_COUNT; i++) {
+        g_PadButtonMapping[i] = g_PadButtonPresets[mapping0][i];
+        g_PadButtonMapping[CONTROLLER_MAPPING_BUTTON_COUNT + i] =
+            g_NegconButtonPresets[mapping1][i];
     }
 }
 

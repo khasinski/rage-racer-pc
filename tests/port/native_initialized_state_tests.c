@@ -5,6 +5,7 @@
 #include "game/audio.h"
 #include "game/car.h"
 #include "game/cd_internal.h"
+#include "game/input_internal.h"
 #include "game/memcard.h"
 #include "game/menu.h"
 #include "game/race.h"
@@ -82,6 +83,23 @@ static void CheckInitialCourseCarModels(void) {
 
     Check(memcmp(g_CarModelByCourse, expected, sizeof(expected)) == 0,
           "course car-model ordering");
+}
+
+static void CheckInitialControllerMappings(void) {
+    Check(HashBytes(g_PadButtonPresets, sizeof(g_PadButtonPresets)) ==
+              2570916421u,
+          "pad button preset bytes");
+    Check(HashBytes(g_NegconButtonPresets,
+                    sizeof(g_NegconButtonPresets)) == 2254807281u,
+          "NeGcon button preset bytes");
+    Check(g_PadButtonPresets[0][0] == PAD_LEFT &&
+              g_PadButtonPresets[0][1] == PAD_RIGHT &&
+              g_PadButtonPresets[7][7] == PAD_SQUARE,
+          "pad button preset coordinates");
+    Check(g_NegconButtonPresets[0][4] == PAD_DOWN &&
+              g_NegconButtonPresets[7][6] == PAD_SQUARE &&
+              g_NegconButtonPresets[7][7] == PAD_CROSS,
+          "NeGcon button preset coordinates");
 }
 
 static void CheckInitialCountdownData(void) {
@@ -223,6 +241,7 @@ int main(void) {
     CheckInitialPaintData();
     CheckInitialCarModelBanks();
     CheckInitialCourseCarModels();
+    CheckInitialControllerMappings();
     CheckInitialCountdownData();
     CheckInitialLightingMatrices();
     CheckInitialStartingGrids();

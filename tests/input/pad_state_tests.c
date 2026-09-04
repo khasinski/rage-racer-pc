@@ -431,8 +431,12 @@ static void ButtonMappingTests(void) {
     int i;
 
     for (i = 0; i < 64; i++) {
-        g_PadButtonPresets[i] = (u16)(0x100 + i);
-        g_NegconButtonPresets[i] = (u16)(0x200 + i);
+        g_PadButtonPresets[i / CONTROLLER_MAPPING_BUTTON_COUNT]
+                          [i % CONTROLLER_MAPPING_BUTTON_COUNT] =
+            (u16)(0x100 + i);
+        g_NegconButtonPresets[i / CONTROLLER_MAPPING_BUTTON_COUNT]
+                             [i % CONTROLLER_MAPPING_BUTTON_COUNT] =
+            (u16)(0x200 + i);
     }
     memset(g_PadButtonMapping, 0xFF, sizeof(g_PadButtonMapping));
 

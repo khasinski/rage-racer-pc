@@ -40,6 +40,10 @@ _Static_assert(sizeof(g_MenuColorMatrix) == 32,
                "menu colour matrix ABI changed");
 _Static_assert(sizeof(g_MenuLightMatrix) == 32,
                "menu light matrix ABI changed");
+_Static_assert(sizeof(g_PadButtonPresets) == 128,
+               "pad button presets ABI changed");
+_Static_assert(sizeof(g_NegconButtonPresets) == 128,
+               "NeGcon button presets ABI changed");
 _Static_assert(sizeof(g_RaceHudSpriteDescsGp) == 240,
                "g_RaceHudSpriteDescsGp ABI size changed");
 _Static_assert(sizeof(g_RaceHudSpriteDescsTimeTrial) == 220,
