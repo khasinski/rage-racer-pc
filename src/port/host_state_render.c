@@ -38,18 +38,17 @@ MirrorBadgeStyle g_CarMirrorBadgeStyles[MIRROR_BADGE_STYLE_STORAGE_COUNT]
     MIRROR_BADGE_STYLE_LARGE,  MIRROR_BADGE_STYLE_NARROW,
     MIRROR_BADGE_STYLE_NARROW, MIRROR_BADGE_STYLE_NARROW,
 };
-/* Retail stores the four mirror-badge styles as interleaved {u,v,width}
- * triples beginning at 0x8007C738.  The three linker symbols point one byte
- * apart into that table and DrawMirrorFrame indexes each by style * 3.  Native
- * globals cannot overlap that way, so preserve the same indexed view in each
- * array explicitly. */
-unsigned char g_MirrorBadgeTexU[10] __attribute__((aligned(16))) = {
-    0xe8,0,0, 0x50,0,0, 0x78,0,0, 0xa0
+MirrorBadgeSprite g_MirrorBadgeSprites[MIRROR_BADGE_STYLE_COUNT]
+    __attribute__((aligned(16))) = {
+    [MIRROR_BADGE_STYLE_NARROW] = {
+        .textureU = 0xe8, .textureV = 0x30, .width = 0x10},
+    [MIRROR_BADGE_STYLE_WIDE] = {
+        .textureU = 0x50, .textureV = 0x10, .width = 0x28},
+    [MIRROR_BADGE_STYLE_MEDIUM] = {
+        .textureU = 0x78, .textureV = 0x10, .width = 0x28},
+    [MIRROR_BADGE_STYLE_LARGE] = {
+        .textureU = 0xa0, .textureV = 0x10, .width = 0x30},
 };
-unsigned char g_MirrorBadgeTexV[10] __attribute__((aligned(16))) = {
-    0x30,0,0, 0x10,0,0, 0x10,0,0, 0x10
-};
-unsigned char g_MirrorBadgeWidths[10] __attribute__((aligned(16))) = {0x10,0x50,0x10,0x28,0x78,0x10,0x28,0xa0,0x10,0x30};
 u8 g_SpriteFontWidth[SPRITE_FONT_CELL_COUNT]
                     __attribute__((aligned(16))) = {
     0x04, 0x0c, 0x06, 0x0c, 0x0c, 0x0c, 0x0c, 0x0c,

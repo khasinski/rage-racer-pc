@@ -749,9 +749,7 @@ void SetTrackTexturePageNow(s32 trackSection);
 extern Rect g_TrackTextureRowRect;
 extern MirrorBadgeStyle
     g_CarMirrorBadgeStyles[MIRROR_BADGE_STYLE_STORAGE_COUNT];
-extern u8 g_MirrorBadgeTexU[];
-extern u8 g_MirrorBadgeTexV[];
-extern u8 g_MirrorBadgeWidths[];
+extern MirrorBadgeSprite g_MirrorBadgeSprites[MIRROR_BADGE_STYLE_COUNT];
 extern GameSpriteDesc g_RaceHudSpriteDescsGp[GRAND_PRIX_HUD_SPRITE_COUNT];
 extern GameSpriteDesc
     g_RaceHudSpriteDescsTimeTrial[TIME_ATTACK_HUD_SPRITE_COUNT];

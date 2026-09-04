@@ -20,7 +20,8 @@ static u8 *QueueMirrorFrame(u8 *packet) {
         &g_DrawBuffer->layout.orderingTables[0][1];
     GameOrderingTableEntry *contentOt =
         &g_DrawBuffer->layout.orderingTables[1][1];
-    s32 badgeSpriteIndex;
+    MirrorBadgeStyle badgeStyle;
+    const MirrorBadgeSprite *badge;
     u8 *next;
     TILE *tile = (TILE *)packet;
 
@@ -35,13 +36,12 @@ static u8 *QueueMirrorFrame(u8 *packet) {
     AddPrim(frameOt, tile);
     packet = (u8 *)(tile + 1);
 
-    badgeSpriteIndex = ResolveMirrorBadgeSpriteIndex(
+    badgeStyle = ResolveMirrorBadgeStyle(
         g_PlayerCarIndex, g_CarMirrorBadgeStyles, GAME_CAR_COUNT);
+    badge = &g_MirrorBadgeSprites[badgeStyle];
     next = GameQueueSprite(
         contentOt, packet, MIRROR_CONTENT_X, g_MirrorPanelY,
-        g_MirrorBadgeWidths[badgeSpriteIndex], 8,
-        g_MirrorBadgeTexU[badgeSpriteIndex],
-        g_MirrorBadgeTexV[badgeSpriteIndex], 0x7800);
+        badge->width, 8, badge->textureU, badge->textureV, 0x7800);
     return QueueDrawModePrim(contentOt, next, 9);
 }
 

@@ -12,9 +12,7 @@ GameFrameContext g_FrameContexts[2];
 GameFrameContext *g_DrawBuffer;
 s32 g_PlayerCarIndex;
 MirrorBadgeStyle g_CarMirrorBadgeStyles[MIRROR_BADGE_STYLE_STORAGE_COUNT];
-u8 g_MirrorBadgeTexU[1];
-u8 g_MirrorBadgeTexV[1];
-u8 g_MirrorBadgeWidths[1];
+MirrorBadgeSprite g_MirrorBadgeSprites[MIRROR_BADGE_STYLE_COUNT];
 s32 g_MirrorPanelY;
 s32 g_MirrorUnlocked;
 s16 g_MirrorViewEnabled;
@@ -33,13 +31,12 @@ static s32 s_terrainFar;
 static s32 s_lastWorldCall;
 static s32 s_endOrder;
 
-s32 ResolveMirrorBadgeSpriteIndex(s32 carIndex,
-                                  const MirrorBadgeStyle *styles,
-                                  s32 carCount) {
+MirrorBadgeStyle ResolveMirrorBadgeStyle(
+    s32 carIndex, const MirrorBadgeStyle *styles, s32 carCount) {
     (void)carIndex;
     (void)styles;
     (void)carCount;
-    return 0;
+    return MIRROR_BADGE_STYLE_NARROW;
 }
 
 s32 AdvanceMirrorPanelY(s32 currentY, int enabled) {

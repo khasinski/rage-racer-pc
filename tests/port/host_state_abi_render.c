@@ -27,6 +27,8 @@ _Static_assert(sizeof(g_DrawModeEnv) == 8,
                "draw-mode texture window ABI changed");
 _Static_assert(sizeof(g_CarMirrorBadgeStyles) == 16,
                "car mirror badge style table ABI changed");
+_Static_assert(sizeof(g_MirrorBadgeSprites) == 12,
+               "mirror badge sprite table ABI changed");
 _Static_assert(sizeof(g_SmallFontGlyphs) == 184,
                "small atlas font table ABI changed");
 _Static_assert(sizeof(g_LargeFontGlyphs) == 196,

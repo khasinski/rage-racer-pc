@@ -8,7 +8,6 @@ enum {
     CAR_CLOSE_DISTANCE = 0xD00,
     CAR_CULL_DISTANCE = 0x2500,
     CAR_MODEL_BANK_FALLBACK = 1,
-    MIRROR_BADGE_SPRITE_STRIDE = 3,
     MIRROR_PANEL_HIDDEN_Y = -44,
     MIRROR_PANEL_VISIBLE_Y = 18,
 };
@@ -52,16 +51,15 @@ s32 ResolveCarModelBank(s32 baseBank, s32 offset, s32 bankCount) {
         : CAR_MODEL_BANK_FALLBACK;
 }
 
-s32 ResolveMirrorBadgeSpriteIndex(s32 carIndex,
-                                  const MirrorBadgeStyle *styles,
-                                  s32 carCount) {
+MirrorBadgeStyle ResolveMirrorBadgeStyle(
+    s32 carIndex, const MirrorBadgeStyle *styles, s32 carCount) {
     MirrorBadgeStyle style;
 
     if (styles == NULL || carCount <= 0 || (u32)carIndex >= (u32)carCount) {
-        return 0;
+        return MIRROR_BADGE_STYLE_NARROW;
     }
     style = styles[carIndex];
     return style < MIRROR_BADGE_STYLE_COUNT
-        ? style * MIRROR_BADGE_SPRITE_STRIDE
-        : 0;
+        ? style
+        : MIRROR_BADGE_STYLE_NARROW;
 }

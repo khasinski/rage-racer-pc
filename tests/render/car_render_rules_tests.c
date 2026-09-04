@@ -40,15 +40,24 @@ int main(void) {
     CHECK_EQ(ResolveCarModelBank(INT_MAX, 1, 6), 1);
     CHECK_EQ(ResolveCarModelBank(INT_MIN, -1, 6), 1);
 
-    CHECK_EQ(ResolveMirrorBadgeSpriteIndex(0, badgeStyles, 5), 0);
-    CHECK_EQ(ResolveMirrorBadgeSpriteIndex(1, badgeStyles, 5), 3);
-    CHECK_EQ(ResolveMirrorBadgeSpriteIndex(2, badgeStyles, 5), 6);
-    CHECK_EQ(ResolveMirrorBadgeSpriteIndex(3, badgeStyles, 5), 9);
-    CHECK_EQ(ResolveMirrorBadgeSpriteIndex(4, badgeStyles, 5), 0);
-    CHECK_EQ(ResolveMirrorBadgeSpriteIndex(-1, badgeStyles, 5), 0);
-    CHECK_EQ(ResolveMirrorBadgeSpriteIndex(5, badgeStyles, 5), 0);
-    CHECK_EQ(ResolveMirrorBadgeSpriteIndex(0, NULL, 5), 0);
-    CHECK_EQ(ResolveMirrorBadgeSpriteIndex(1, badgeStyles, -1), 0);
+    CHECK_EQ(ResolveMirrorBadgeStyle(0, badgeStyles, 5),
+             MIRROR_BADGE_STYLE_NARROW);
+    CHECK_EQ(ResolveMirrorBadgeStyle(1, badgeStyles, 5),
+             MIRROR_BADGE_STYLE_WIDE);
+    CHECK_EQ(ResolveMirrorBadgeStyle(2, badgeStyles, 5),
+             MIRROR_BADGE_STYLE_MEDIUM);
+    CHECK_EQ(ResolveMirrorBadgeStyle(3, badgeStyles, 5),
+             MIRROR_BADGE_STYLE_LARGE);
+    CHECK_EQ(ResolveMirrorBadgeStyle(4, badgeStyles, 5),
+             MIRROR_BADGE_STYLE_NARROW);
+    CHECK_EQ(ResolveMirrorBadgeStyle(-1, badgeStyles, 5),
+             MIRROR_BADGE_STYLE_NARROW);
+    CHECK_EQ(ResolveMirrorBadgeStyle(5, badgeStyles, 5),
+             MIRROR_BADGE_STYLE_NARROW);
+    CHECK_EQ(ResolveMirrorBadgeStyle(0, NULL, 5),
+             MIRROR_BADGE_STYLE_NARROW);
+    CHECK_EQ(ResolveMirrorBadgeStyle(1, badgeStyles, -1),
+             MIRROR_BADGE_STYLE_NARROW);
 
     CHECK_EQ(AdvanceMirrorPanelY(-44, 0), -44);
     CHECK_EQ(AdvanceMirrorPanelY(-43, 0), -44);
