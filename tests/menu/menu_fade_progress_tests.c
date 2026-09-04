@@ -60,6 +60,14 @@ int main(void) {
     CHECK(AdvanceMenuViewOffsetValue(42, 42) == 42);
     CHECK(AdvanceMenuViewOffsetValue(INT_MIN, INT_MAX) == 1);
     CHECK(AdvanceMenuViewOffsetValue(INT_MAX, INT_MIN) == 229166);
+    CHECK(PrepareMenuViewOffset(0, MENU_VIEW_OFFSET_MAX) ==
+          MENU_VIEW_OFFSET_RISE_START);
+    CHECK(PrepareMenuViewOffset(INT_MIN, INT_MAX) ==
+          MENU_VIEW_OFFSET_RISE_START);
+    CHECK(PrepareMenuViewOffset(MENU_VIEW_OFFSET_RISE_START,
+                                MENU_VIEW_OFFSET_MAX) ==
+          MENU_VIEW_OFFSET_RISE_START);
+    CHECK(PrepareMenuViewOffset(0, MENU_VIEW_OFFSET_MAX - 1) == 0);
     CHECK(NormalizeMenuViewOffset(-1) == MENU_VIEW_OFFSET_MIN);
     CHECK(NormalizeMenuViewOffset(INT_MAX) == MENU_VIEW_OFFSET_MAX);
     CHECK(NormalizeCourseSwapDelay(INT_MIN) == 0);

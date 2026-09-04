@@ -84,11 +84,20 @@ static inline s32 MenuWrapAngle(s32 angle, s32 period) {
 enum {
     MENU_VIEW_OFFSET_MIN = 0,
     MENU_VIEW_OFFSET_MAX = 250000,
+    MENU_VIEW_OFFSET_RISE_START = 2500,
 };
 
 static inline s32 NormalizeMenuViewOffset(s32 offset) {
     return AddClampedMenuValue(offset, 0, MENU_VIEW_OFFSET_MIN,
                                MENU_VIEW_OFFSET_MAX);
+}
+
+static inline s32 PrepareMenuViewOffset(s32 current, s32 target) {
+    if (target >= MENU_VIEW_OFFSET_MAX &&
+        current < MENU_VIEW_OFFSET_RISE_START) {
+        return MENU_VIEW_OFFSET_RISE_START;
+    }
+    return current;
 }
 
 static inline s32 NormalizeCourseSwapDelay(s32 delay) {

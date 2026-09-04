@@ -29,9 +29,8 @@ static void SetupMenuViewCamera(s32 pitch, s32 yaw) {
     SetCameraRotMatrix();
     ScaleMatrix(&g_RenderState.matrix, &g_MenuViewScale);
 
-    if (g_MenuViewOffsetTarget > 249999 && g_MenuViewOffset < 2500) {
-        g_MenuViewOffset = 2500;
-    }
+    g_MenuViewOffset = PrepareMenuViewOffset(
+        g_MenuViewOffset, g_MenuViewOffsetTarget);
 }
 
 static s32 AdvanceMenuViewOffset(void) {
