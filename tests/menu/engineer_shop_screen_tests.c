@@ -157,7 +157,7 @@ int main(int argc, char **argv) {
      * What the shop did before it was taken apart. Run the test with a file
      * name to write the sweep out and diff two runs.
      */
-    static const unsigned long expected = 2722601493UL;
+    static const unsigned long expected = 3796990581UL;
     static const s32 busyStates[] = {0, -1, -2, -3, 1, 2};
     static const u16 buttons[] = {0, PAD_UP, PAD_DOWN, PAD_CONFIRM, PAD_CANCEL,
                                   PAD_LEFT, PAD_RIGHT};
@@ -363,6 +363,18 @@ int main(int argc, char **argv) {
         return 1;
     }
     s_upgradedModelRequestResult = 1;
+
+    GameMenuBusy = ENGINEER_SHOP_TUNE_UP_PROMPT;
+    g_PadPressed = PAD_CONFIRM;
+    g_MenuSubCursor = 1;
+    g_PlayerMoney = 4999;
+    s_upgradedModelRequests = 0;
+    UpdateEngineerShopScreen();
+    if (GameMenuBusy != ENGINEER_SHOP_NO_FUNDS ||
+        s_upgradedModelRequests != 0) {
+        puts("FAIL tune-up prompt accepted insufficient funds");
+        return 1;
+    }
 
     GameMenuBusy = -99;
     UpdateEngineerShopScreen();

@@ -78,7 +78,7 @@ static void UpdateEngineerShopIdle(ShopPrice price) {
 }
 
 /* The tune-up prompt, with its own yes/no cursor. */
-static void UpdateTuneUpPrompt(void *ot, s32 purchaseAvailable) {
+static void UpdateTuneUpPrompt(void *ot, ShopPrice price) {
     MenuDialogAction action;
 
     RunTimedDrawScript(g_EngineerShopModalScript, &g_UiScriptProgress2, 0);
@@ -88,7 +88,8 @@ static void UpdateTuneUpPrompt(void *ot, s32 purchaseAvailable) {
     g_MenuSubCursor = (u8)AddClampedMenuValue(g_MenuSubCursor, 0, 0, 1);
     action = ChooseMenuDialogAction(g_PadPressed);
     if (action == MENU_DIALOG_CONFIRM) {
-        if (g_MenuSubCursor != 0 && purchaseAvailable) {
+        if (g_MenuSubCursor != 0 && price.available &&
+            g_PlayerMoney >= price.amount) {
             if (!RequestUpgradedCarModel(g_PlayerCarIndex)) {
                 DrawShopPromptButtons(ot, 0);
                 return;
@@ -156,7 +157,7 @@ static void UpdateNoFundsModal(void) {
 
 static void UpdateEngineerShopModal(void *ot, ShopPrice price) {
     if (GameMenuBusy == ENGINEER_SHOP_TUNE_UP_PROMPT) {
-        UpdateTuneUpPrompt(ot, price.available);
+        UpdateTuneUpPrompt(ot, price);
     } else if (GameMenuBusy == ENGINEER_SHOP_TUNE_UP_COUNTDOWN) {
         UpdateTuneUpCountdown(ot, price.available);
     } else if (GameMenuBusy == ENGINEER_SHOP_NO_FUNDS) {
