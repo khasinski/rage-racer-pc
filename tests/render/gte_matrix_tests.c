@@ -63,9 +63,31 @@ static int TestWideAccumulator(void) {
     return 0;
 }
 
+static int TestMatrixMultiplyAliasing(void) {
+    MATRIX matrix = {
+        .m = {
+            {4096, 4096, 0},
+            {0, 4096, 4096},
+            {4096, 0, 4096},
+        },
+        .t = {11, 22, 33},
+    };
+
+    CHECK(MulMatrix2(&matrix, &matrix) == &matrix);
+    CHECK(matrix.m[0][0] == 4096 && matrix.m[0][1] == 8192 &&
+          matrix.m[0][2] == 4096);
+    CHECK(matrix.m[1][0] == 4096 && matrix.m[1][1] == 4096 &&
+          matrix.m[1][2] == 8192);
+    CHECK(matrix.m[2][0] == 8192 && matrix.m[2][1] == 4096 &&
+          matrix.m[2][2] == 4096);
+    CHECK(matrix.t[0] == 11 && matrix.t[1] == 22 && matrix.t[2] == 33);
+    return 0;
+}
+
 int main(void) {
     if (TestMatrixMultiply() != 0) return 1;
     if (TestWideAccumulator() != 0) return 1;
+    if (TestMatrixMultiplyAliasing() != 0) return 1;
     puts("GTE matrix helpers retain translation and use wide accumulators");
     return 0;
 }

@@ -33,11 +33,7 @@ MATRIX *MulMatrix2(MATRIX *left, MATRIX *right) {
             result.m[row][column] = GteRegisterValue(sum >> 12);
         }
     }
-    for (row = 0; row < 3; row++) {
-        for (column = 0; column < 3; column++) {
-            right->m[row][column] = result.m[row][column];
-        }
-    }
+    *right = result;
     return right;
 }
 
