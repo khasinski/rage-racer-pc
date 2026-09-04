@@ -1,6 +1,8 @@
 #include "game/car.h"
 #include "game/asset.h"
 
+#include <string.h>
+
 /* Body paint is 15-bit RGB with the semi-transparency bit on top. */
 enum PaintColor {
     PAINT_STP = 0x8000,
@@ -114,7 +116,6 @@ static void ApplyBodyColours(u32 colour, CarImageData *imageData,
     u16 secondary = g_BodyColorSecondary[colour];
     u16 *palette = imageData->paintPalette.entries;
     PaintGradient fiveStop = BuildFiveStopPaintGradient(primary, secondary);
-    s32 i;
 
     if (layer == PAINT_LAYER_SECONDARY) {
         WriteThreeStopPaintGradient(
@@ -123,10 +124,8 @@ static void ApplyBodyColours(u32 colour, CarImageData *imageData,
         WriteFourStopPaintGradient(
             palette, g_PaintSlots4Stop, FOUR_STOP_SLOT_COUNT,
             SECONDARY_FOUR_STOP_COLUMN, primary, secondary);
-        for (i = 0; i < PAINT_GRADIENT_STOP_COUNT; i++) {
-            imageData->paintPalette.gradients.bodyColor2Gradient[i] =
-                fiveStop.stops[i];
-        }
+        memcpy(imageData->paintPalette.gradients.bodyColor2Gradient,
+               fiveStop.stops, sizeof(fiveStop.stops));
     } else {
         imageData->paintPalette.fixed.bodyColor1 = primary;
         WriteThreeStopPaintGradient(
@@ -135,10 +134,8 @@ static void ApplyBodyColours(u32 colour, CarImageData *imageData,
         WriteFourStopPaintGradient(
             palette, g_PaintSlots4Stop, FOUR_STOP_SLOT_COUNT,
             PRIMARY_FOUR_STOP_COLUMN, primary, secondary);
-        for (i = 0; i < PAINT_GRADIENT_STOP_COUNT; i++) {
-            imageData->paintPalette.gradients.bodyColor1Gradient[i] =
-                fiveStop.stops[i];
-        }
+        memcpy(imageData->paintPalette.gradients.bodyColor1Gradient,
+               fiveStop.stops, sizeof(fiveStop.stops));
     }
 }
 

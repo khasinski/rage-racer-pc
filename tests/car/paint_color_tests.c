@@ -77,6 +77,13 @@ int main(void) {
         puts("FAIL invalid paint colour did not use the first palette entry");
         return 1;
     }
+    if (firstColour.paintPalette.entries[slots4[0]] != 0x8000 ||
+        firstColour.paintPalette.entries[slots4[0] + 1] != 0xD294 ||
+        firstColour.paintPalette.entries[slots4[0] + 2] != 0xA94A ||
+        firstColour.paintPalette.entries[slots4[0] + 3] != 0xFFFF) {
+        puts("FAIL retail four-stop paint gradient changed");
+        return 1;
+    }
 
     memset(&activeImage, 0x5A, sizeof(activeImage));
     memset(&activeModel, 0, sizeof(activeModel));
