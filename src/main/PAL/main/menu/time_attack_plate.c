@@ -3,6 +3,8 @@
 #include "game/render.h"
 #include "game/render_state.h"
 
+enum { TIME_ATTACK_PLATE_PROGRESS_MAX = 12 };
+
 void DrawTimeAttackPlate(s32 step) {
     s32 progress;
 
@@ -12,11 +14,12 @@ void DrawTimeAttackPlate(s32 step) {
     }
 
     g_TimeAttackPlateProgress = AddClampedMenuValue(
-        g_TimeAttackPlateProgress, 0, 0, 0xC);
+        g_TimeAttackPlateProgress, 0, 0, TIME_ATTACK_PLATE_PROGRESS_MAX);
 
     if (step < 0) {
         g_TimeAttackPlateProgress = AddClampedMenuValue(
-            g_TimeAttackPlateProgress, step, 0, 0xC);
+            g_TimeAttackPlateProgress, step, 0,
+            TIME_ATTACK_PLATE_PROGRESS_MAX);
     }
 
     progress = g_TimeAttackPlateProgress;
@@ -32,6 +35,7 @@ void DrawTimeAttackPlate(s32 step) {
 
     if (step > 0) {
         g_TimeAttackPlateProgress = AddClampedMenuValue(
-            g_TimeAttackPlateProgress, step, 0, 0xC);
+            g_TimeAttackPlateProgress, step, 0,
+            TIME_ATTACK_PLATE_PROGRESS_MAX);
     }
 }
