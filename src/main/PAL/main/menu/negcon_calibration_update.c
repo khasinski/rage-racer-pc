@@ -27,7 +27,7 @@ static void FinishCalibrationFrame(void (*drawScreen)(void)) {
     }
     g_ControllerSceneAngleX = CONTROLLER_SCENE_ANGLE_X;
     drawScreen();
-    DrawOptionHintBar(4);
+    DrawOptionHintBar(MENU_OPTION_HINT_NEGCON_CALIBRATION);
     DrawControllerSetupScene(1);
 }
 

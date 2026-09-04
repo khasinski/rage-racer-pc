@@ -52,6 +52,6 @@ void UpdateControllerConfigScreen(void) {
     g_ControllerSceneAngleY =
         (s32)(((int64_t)g_ControllerSceneAngleY * 15) / 16);
     DrawControllerConfigScreen();
-    DrawOptionHintBar(1);
+    DrawOptionHintBar(MENU_OPTION_HINT_CONTROLLER);
     DrawControllerSetupScene(0);
 }

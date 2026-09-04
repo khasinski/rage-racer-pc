@@ -44,6 +44,6 @@ void UpdateNegconNeutralScreen(void) {
         g_GameMode = OPTION_MODE_ROOT;
     }
     DrawNegconNeutralScreen();
-    DrawOptionHintBar(4);
+    DrawOptionHintBar(MENU_OPTION_HINT_NEGCON_CALIBRATION);
     DrawControllerSetupScene(0);
 }

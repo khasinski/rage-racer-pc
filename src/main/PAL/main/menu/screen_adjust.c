@@ -42,7 +42,7 @@ static void DrawScreenAdjustScreen(void) {
                                 0xE0, 0x48, 0x7F40);
     g_RenderState.packetCursor = GameQueueSpriteTrans(
         ot, next, 0x8E, 0xA0, 0xC, 0x18, 0xEC, 0x48, 0x7F40);
-    DrawOptionHintBar(3);
+    DrawOptionHintBar(MENU_OPTION_HINT_SCREEN_ADJUST);
 }
 
 /* OPTION_MODE_SCREEN_ADJUST: edits the display offset, then commits or

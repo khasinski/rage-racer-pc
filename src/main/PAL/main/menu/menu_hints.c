@@ -35,7 +35,7 @@ void DrawOptionHintBar(s32 variant) {
     ot = GamePrimaryOrderingTable(0);
     next = RENDER_PRIM_CURSOR_AS(u8);
 
-    if (variant == 4) {
+    if (variant == MENU_OPTION_HINT_NEGCON_CALIBRATION) {
         x = 0x5A;
     } else {
         x = (0x120 - caption->width) / 2;
@@ -49,7 +49,7 @@ void DrawOptionHintBar(s32 variant) {
                                 caption->u, caption->v, 0x7F40);
 
     x += caption->advance;
-    if (variant == 4) {
+    if (variant == MENU_OPTION_HINT_NEGCON_CALIBRATION) {
         next = GameQueueSpriteTrans(ot, next, x, 0x180, 0x30, 0x18,
                                     0, 0x78, 0x7F40);
         x += 0x34;

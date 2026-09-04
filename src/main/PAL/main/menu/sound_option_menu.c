@@ -64,7 +64,7 @@ static void DrawSoundOptionScreen(void) {
                                 0x60, 0x7F40);
     g_RenderState.packetCursor = next;
 
-    DrawOptionHintBar(2);
+    DrawOptionHintBar(MENU_OPTION_HINT_SOUND);
     next = RENDER_PRIM_CURSOR_AS(u8);
     DrawOutputModeChoice(ot, &next, g_MonoOutput == 0, 0x46, 0x18, 0xD4,
                          0xC4);

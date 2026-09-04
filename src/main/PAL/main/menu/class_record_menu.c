@@ -125,7 +125,7 @@ static void DrawClassRecordGrid(void) {
     next = QueueDrawModePrim(base, next, 0x3E);
     next = QueueDrawModePrim(base + 1, next, 0x3C);
     g_RenderState.packetCursor = next;
-    DrawOptionHintBar(0);
+    DrawOptionHintBar(MENU_OPTION_HINT_CLASS_RECORDS);
 }
 
 /* OPTION_MODE_CLASS_MENU: two-row menu into the class-record grid. */

@@ -32,7 +32,8 @@ void DrawMemoryCardScreen(s32 showSlotBar, s32 fromLoadMenu,
         base, next, 0xB0, 0xB8, 0x14, 0x10, 0x44, 0xC8, 0x7F40);
     g_RenderState.packetCursor = next;
     DrawMenuCursorArrow(0x14, selectedRow * 32 + 0x38);
-    DrawOptionHintBar(fromLoadMenu + 5);
+    DrawOptionHintBar(fromLoadMenu ? MENU_OPTION_HINT_MEMORY_CARD_LOAD
+                                   : MENU_OPTION_HINT_MEMORY_CARD_SAVE);
     DrawPadTypeHint();
 
     /* The arrow and the hints queue their own packets, so the cursor has to
