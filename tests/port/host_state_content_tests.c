@@ -165,7 +165,7 @@ extern ContentCarPoint g_OpponentHullCorners[4];
 extern ContentCarPoint g_CarCornerOffsets[4];
 extern ContentLaunchSpeedThreshold g_LaunchSpeedThresholds[5];
 extern unsigned char g_LaunchEnergyThresholds[12];
-extern unsigned char g_TachoNeedleSprite[20];
+extern GameSpriteDesc g_TachoNeedleSprite;
 extern char g_ClockTextCells[8];
 extern char g_RaceOptionMarquee[4][40];
 extern ContentCarPoint g_CarCollisionCorners[4];
@@ -351,7 +351,9 @@ static const HostStateBlob s_blobs[] = {
      (const unsigned char *)g_LaunchSpeedThresholds,
      sizeof(g_LaunchSpeedThresholds)},
     {"g_LaunchEnergyThresholds", g_LaunchEnergyThresholds, 12},
-    {"g_TachoNeedleSprite", g_TachoNeedleSprite, 20},
+    {"g_TachoNeedleSprite",
+     (const unsigned char *)&g_TachoNeedleSprite,
+     sizeof(g_TachoNeedleSprite)},
     {"g_CountdownGlyphTable", BYTES(g_CountdownGlyphTable),
      sizeof(g_CountdownGlyphTable)},
     {"g_ClockTextCells", BYTES(g_ClockTextCells), 8},
