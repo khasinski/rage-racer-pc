@@ -15,10 +15,6 @@ enum {
     SHOWROOM_OT_DEPTH_BIAS = 30,
 };
 
-static s32 SwapShowroomCarModel(void) {
-    return ActivateShowroomCarModel(g_CarModelSlot < 1);
-}
-
 static void SetupMenuViewCamera(s32 pitch, s32 yaw) {
     g_RenderState.viewX = 0;
     g_RenderState.viewY = -64;
@@ -62,7 +58,7 @@ void DrawMenuCarView(void) {
         if (!AssetLoadCompletedSuccessfully()) {
             return;
         }
-        if (!SwapShowroomCarModel()) {
+        if (!ActivateShowroomCarModel(g_CarModelSlot < 1)) {
             g_CarSwapToIndex = -1;
             return;
         }
