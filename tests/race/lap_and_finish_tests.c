@@ -52,6 +52,7 @@ s16 g_WrongWayTimer;
 static unsigned long s_digest = 2166136261UL;
 static FILE *s_out;
 static int s_calls;
+static s32 s_lastSoundCue;
 
 static void Fold(unsigned char byte) {
     s_digest = ((s_digest ^ byte) * 16777619UL) & 0xFFFFFFFFUL;
@@ -99,7 +100,10 @@ static void Record(const char *name, const s32 *values, int count) {
 static s32 s_jitter = 7;
 
 s32 Random15(void) { return s_jitter; }
-void PlaySoundCue(s32 cue) { RECORD("cue", cue); }
+void PlaySoundCue(s32 cue) {
+    s_lastSoundCue = cue;
+    RECORD("cue", cue);
+}
 void QueueFinishFollowupCue(s32 cue) { RECORD("followup", cue); }
 void SeedFinishCamera(PlayerCarRuntime *car) {
     RECORD("finishcamera", car == &g_PlayerCar);
@@ -356,6 +360,23 @@ int main(int argc, char **argv) {
     }
     if (UpdateLapAndFinish(NULL, 0) != 0) {
         puts("FAIL missing car was not rejected");
+        return 1;
+    }
+
+    memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
+    g_PlayerCar.lap = 1;
+    g_PlayerCar.progressA = 0x10000;
+    g_PlayerCar.drive.racePosition = 5;
+    g_LapCount = 1;
+    g_TrackLength = 0x10000;
+    g_RacePhase = 0;
+    g_RaceCueDelay = 0;
+    g_GrandPrixMode = 1;
+    s_course.retriesRemaining = -1;
+    s_lastSoundCue = -1;
+    UpdateLapAndFinish(&g_PlayerCar, 1);
+    if (g_RacePhase != 5 || s_lastSoundCue != -1) {
+        puts("FAIL corrupt retry count announced another attempt");
         return 1;
     }
 

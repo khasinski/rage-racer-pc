@@ -92,7 +92,7 @@ RacePauseToggleResult DecideRacePauseToggle(s16 phase, s32 paused,
 RaceEndPresentation ChooseRaceEndPresentation(s16 grandPrixMode,
                                               s32 retriesRemaining) {
     if (grandPrixMode == 0 ||
-        (grandPrixMode == 1 && retriesRemaining == 0)) {
+        (grandPrixMode == 1 && retriesRemaining <= 0)) {
         return RACE_END_PRESENTATION_FINAL;
     }
     if (grandPrixMode == 1 && retriesRemaining > 0) {

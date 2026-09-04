@@ -73,9 +73,11 @@ static void UpdateFinishFollowupCue(void) {
 }
 
 static s32 RaceRetriesRemaining(void) {
-    return g_CourseProgress != NULL
-               ? g_CourseProgress->retriesRemaining
-               : 0;
+    if (g_CourseProgress == NULL ||
+        g_CourseProgress->retriesRemaining <= 0) {
+        return 0;
+    }
+    return g_CourseProgress->retriesRemaining;
 }
 
 static s32 UpdateRaceEndState(void) {
@@ -145,7 +147,7 @@ static s32 UpdateRacePause(void) {
         g_RaceFadeTimer = 0;
         g_RacePhase = 5;
         s_RetireCameraActive = 1;
-        if (RaceRetriesRemaining() != 0) {
+        if (RaceRetriesRemaining() > 0) {
             PlaySoundCue(0x3D);
         }
         StartCdVolumeFade(8);
@@ -352,7 +354,7 @@ static void UpdateActiveRaceScene(void) {
             DrawTimeRemaining(g_RaceTimeRemaining);
         }
         if (raceClock.expired) {
-            if (RaceRetriesRemaining() != 0) {
+            if (RaceRetriesRemaining() > 0) {
                 PlaySoundCue(0x3D);
             }
             ForceAllEffectVoicesEnabled(0);

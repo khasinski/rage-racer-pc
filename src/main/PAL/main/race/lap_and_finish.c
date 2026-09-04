@@ -131,7 +131,7 @@ static void RetireAtLastLap(void) {
     SeedFinishCamera(&g_PlayerCar);
     StartCdVolumeFade(0x3C);
     if (g_CourseProgress != NULL &&
-        g_CourseProgress->retriesRemaining != 0) {
+        g_CourseProgress->retriesRemaining > 0) {
         PlaySoundCue(0x3D);
     }
 }

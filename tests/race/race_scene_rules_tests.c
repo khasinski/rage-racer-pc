@@ -111,6 +111,8 @@ static void TestRaceEndPresentation(void) {
           "time attack always uses the final result presentation");
     Check(ChooseRaceEndPresentation(1, 0) == RACE_END_PRESENTATION_FINAL,
           "Grand Prix without retries uses the final result presentation");
+    Check(ChooseRaceEndPresentation(1, -1) == RACE_END_PRESENTATION_FINAL,
+          "corrupt negative retry count cannot stall the final presentation");
     Check(ChooseRaceEndPresentation(1, 2) == RACE_END_PRESENTATION_RETRY,
           "Grand Prix with retries offers another attempt");
     Check(ChooseRaceEndPresentation(2, 0) == RACE_END_PRESENTATION_NONE &&
