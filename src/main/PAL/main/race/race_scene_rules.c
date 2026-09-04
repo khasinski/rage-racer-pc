@@ -53,6 +53,11 @@ s32 CanToggleRaceCamera(s16 phase) {
     return phase >= RACE_PHASE_ACTIVE && phase < RACE_PHASE_FINISHED;
 }
 
+s32 RaceLookBehindActive(u16 held, s16 phase, CameraViewMode selectedView) {
+    return (held & PAD_DOWN) != 0 && CanToggleRaceCamera(phase) &&
+           selectedView == CAMERA_VIEW_CHASE;
+}
+
 s32 LastRacePauseOption(s16 grandPrixMode) {
     return grandPrixMode != 0 ? 1 : 2;
 }

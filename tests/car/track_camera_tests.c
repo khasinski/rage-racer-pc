@@ -311,6 +311,27 @@ int main(void) {
         Check("mode 5, orbit behind", view, wanted);
     }
 
+    /* Holding down in the third-person view puts the eye ahead of the hood
+     * and points it back at the car.  It is a separate transient camera, so
+     * none of the chase camera's smoothing state is repurposed. */
+    {
+        GameRenderObject car;
+        GameViewWork look = {0};
+
+        PlaceCar(&car);
+        CameraViewFromLookBehind(&car, &look);
+        if (look.x == car.x && look.z == car.z) {
+            puts("FAIL look-behind eye did not move ahead of the car");
+            s_failures++;
+        }
+        if (((look.angleY - car.bodyYaw) & 0xFFF) < 0x600 ||
+            ((look.angleY - car.bodyYaw) & 0xFFF) > 0xA00) {
+            printf("FAIL look-behind camera does not face back: car=%d view=%d\n",
+                   car.bodyYaw, look.angleY);
+            s_failures++;
+        }
+    }
+
     /* Camera assets and host state are full-width words. Preserve the PS1's
      * wrap at their extremes instead of invoking signed-overflow UB. */
     {

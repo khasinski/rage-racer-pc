@@ -403,8 +403,14 @@ static void UpdateActiveRaceScene(void) {
     if (raceView.cameraAction == RACE_CAMERA_ACTION_FINISH) {
         UpdateFinishCamera(&g_PlayerCar);
     } else if (raceView.cameraAction == RACE_CAMERA_ACTION_FOLLOW_PLAYER) {
-        UpdateCamera(raceView.cameraView,
-                     GetCarRenderObject(AsRivalCar(&g_PlayerCar)));
+        GameRenderObject *player =
+            GetCarRenderObject(AsRivalCar(&g_PlayerCar));
+        if (RaceLookBehindActive(g_PadHeld, g_RacePhase,
+                                 raceView.cameraView)) {
+            UpdateLookBehindCamera(player);
+        } else {
+            UpdateCamera(raceView.cameraView, player);
+        }
     }
 
     textureSection = raceView.useFinishTextureSection

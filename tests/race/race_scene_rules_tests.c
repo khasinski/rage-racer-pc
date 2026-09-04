@@ -282,6 +282,18 @@ static void TestRaceViewSelection(void) {
     view = SelectRaceView(2, 0, CAMERA_VIEW_INVALID);
     Check(view.cameraView == CAMERA_VIEW_CAR,
           "invalid camera mode falls back to the car view");
+
+    Check(RaceLookBehindActive(PAD_DOWN, RACE_PHASE_ACTIVE,
+                               CAMERA_VIEW_CHASE),
+          "holding digital down looks behind from the chase camera");
+    Check(!RaceLookBehindActive(0, RACE_PHASE_ACTIVE, CAMERA_VIEW_CHASE) &&
+              !RaceLookBehindActive(PAD_DOWN, RACE_PHASE_ACTIVE,
+                                    CAMERA_VIEW_CAR) &&
+              !RaceLookBehindActive(PAD_DOWN, RACE_PHASE_INTRO,
+                                    CAMERA_VIEW_CHASE) &&
+              !RaceLookBehindActive(PAD_DOWN, RACE_PHASE_FINISHED,
+                                    CAMERA_VIEW_CHASE),
+          "look behind is momentary, chase-only, and limited to live racing");
 }
 
 static void TestFinishFollowupQueue(void) {

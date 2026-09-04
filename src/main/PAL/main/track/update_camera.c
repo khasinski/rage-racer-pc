@@ -25,10 +25,9 @@ void CameraViewFromCarBlock(GameRenderObject *car, GameViewWork *view) {
     g_CameraModePrev = TRACK_CAMERA_CAR;
 }
 
-/*
- * Mode 5: orbiting behind the car at a set distance.
- */
-void CameraViewFromOrbit(GameRenderObject *car, GameViewWork *view) {
+static void CameraViewFromOrbitPosition(GameRenderObject *car,
+                                        GameViewWork *view, s32 yaw,
+                                        s32 distance) {
     Matrix cameraRotation;
     s32 eyeOffset[3];
     s32 eyeWorld[3];
@@ -39,7 +38,7 @@ void CameraViewFromOrbit(GameRenderObject *car, GameViewWork *view) {
     Matrix objectRotation;
     CameraLoadViewPositionFromCar(view, car);
     BuildRotMatrixY(&cameraRotation,
-                    CameraSubtractWord(0, g_OrbitCameraYaw));
+                    CameraSubtractWord(0, yaw));
     CameraBuildCarRotation(&objectRotation, car);
     TransposeMatrix(&objectRotation, &inverseObjectRotation);
     MulMatrix2(&cameraRotation, &objectRotation);
@@ -54,12 +53,12 @@ void CameraViewFromOrbit(GameRenderObject *car, GameViewWork *view) {
     view->z = CameraAddWord(view->z, focusWorld[2]);
     eyeOffset[0] = 0;
     eyeOffset[1] = 0;
-    eyeOffset[2] = g_OrbitCameraDistance;
+    eyeOffset[2] = distance;
     ApplyMatrixLV(&cameraToWorld, &eyeOffset[0], &eyeWorld[0]);
     /* Pitch uses the orbit distance rather than the flattened eye vector,
      * so a pitched camera tilts a shade less than a true look-at would.
      * Retail's, and the view players know. */
-    view->angleX = 0x400 - (Atan2(eyeWorld[1], g_OrbitCameraDistance) & 0xFFF);
+    view->angleX = 0x400 - (Atan2(eyeWorld[1], distance) & 0xFFF);
     view->angleY = 0x400 - (Atan2(eyeWorld[0], eyeWorld[2]) & 0xFFF);
     view->angleZ = car->bodyRoll;
     g_CameraModePrev = TRACK_CAMERA_ORBIT;
@@ -67,6 +66,20 @@ void CameraViewFromOrbit(GameRenderObject *car, GameViewWork *view) {
     view->y = CameraSubtractWord(
         CameraSubtractWord(view->y, 0x28), eyeWorld[1]);
     view->z = CameraSubtractWord(view->z, eyeWorld[2]);
+}
+
+void CameraViewFromOrbit(GameRenderObject *car, GameViewWork *view) {
+    CameraViewFromOrbitPosition(car, view, g_OrbitCameraYaw,
+                                g_OrbitCameraDistance);
+}
+
+void CameraViewFromLookBehind(GameRenderObject *car, GameViewWork *view) {
+    enum {
+        LOOK_BEHIND_YAW = 0x800,
+        LOOK_BEHIND_DISTANCE = 0xA0,
+    };
+    CameraViewFromOrbitPosition(car, view, LOOK_BEHIND_YAW,
+                                LOOK_BEHIND_DISTANCE);
 }
 
 void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
@@ -118,4 +131,15 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
         SelectModelBank(0);
         DrawPlayerCarModel(car);
     }
+}
+
+void UpdateLookBehindCamera(GameRenderObject *car) {
+    GameViewWork viewWork;
+
+    LoadViewWork(&viewWork);
+    CameraViewFromLookBehind(car, &viewWork);
+    StoreViewWork(&viewWork);
+    SetCameraRotMatrix();
+    SelectModelBank(0);
+    DrawPlayerCarModel(car);
 }

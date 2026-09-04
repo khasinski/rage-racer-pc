@@ -30,5 +30,6 @@ void CameraViewFromCamPath(GameRenderObject *car, GameViewWork *view,
 void CameraViewFromSlidingNode(GameRenderObject *car, GameViewWork *view,
                                s32 cameraNodeIndex, int nodeChanged);
 void CameraViewFromOrbit(GameRenderObject *car, GameViewWork *view);
+void CameraViewFromLookBehind(GameRenderObject *car, GameViewWork *view);
 
 #endif

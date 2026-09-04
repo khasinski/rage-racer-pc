@@ -313,6 +313,7 @@ void DrawFullscreenFadeTile480(s32 color, s32 tpage);
 void RequestTrackTexturePage(s32 trackSection);
 s32 TrackTexturePageForSection(s32 trackSection);
 void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car);
+void UpdateLookBehindCamera(GameRenderObject *car);
 void DrawPlayerCarModel(GameRenderObject *object);
 void DrawTimeValue(s32 x, s32 y, s32 value, s32 color, s32 divisor);
 
