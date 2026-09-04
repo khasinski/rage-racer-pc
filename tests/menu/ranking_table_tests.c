@@ -182,6 +182,7 @@ int main(void) {
     RENDER_OT_BASE = orderingTable;
     strcpy(g_RankingRecords[0][0][0].driverName, "RANK");
     strcpy(g_TimeRecords[0][0][0].driverName, "TIME");
+    strcpy(g_TimeRecords[1][0][0].driverName, "EXTRA");
 
     progress = 8;
     DrawRankingTable(&progress, 0, 0);
@@ -222,6 +223,13 @@ int main(void) {
     CHECK(s_firstDriverName == g_RankingRecords[0][0][0].driverName);
 
     ResetDraws();
+    g_CourseIndex = 4;
+    progress = 15;
+    CHECK(DrawRankingTable(&progress, 1, 0) == 1);
+    CHECK(s_firstDriverName == g_TimeRecords[1][0][0].driverName);
+
+    ResetDraws();
+    g_CourseIndex = 0;
     progress = 1;
     DrawRankingTable(&progress, -4, 0);
     CHECK(progress == 0 && s_buttonY == 0x21A);

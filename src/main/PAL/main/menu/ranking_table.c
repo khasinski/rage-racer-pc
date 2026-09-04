@@ -3,6 +3,7 @@
 #include "game/menu.h"
 #include "game/menu_internal.h"
 #include "game/race.h"
+#include "game/records_internal.h"
 #include "game/render.h"
 #include "game/screens.h"
 #include "game/state.h"
@@ -82,6 +83,9 @@ static void DrawRankingCourseHeader(GameOrderingTableEntry *ot, s32 slide) {
 s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
     char text[16];
     GameOrderingTableEntry *ot = RENDER_OT_BASE;
+    const RaceRecord (*records)[RECORD_TABLE_LENGTH];
+    s32 series;
+    s32 course;
     s32 phase;
     s32 slide;
     s32 panelY;
@@ -105,6 +109,10 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
             *progress, step, 0, RANKING_TABLE_PROGRESS_MAX);
     }
 
+    series = CourseSeries(g_CourseIndex);
+    course = SeriesCourseIndex();
+    records = ranking != 0 ? g_RankingRecords[series]
+                           : g_TimeRecords[series];
     phase = *progress;
     if (phase >= 0) {
         if (phase > RANKING_TABLE_DRAW_PHASE_MAX) {
@@ -113,7 +121,7 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
         slide = -phase * RANKING_TABLE_SLIDE_PER_PHASE;
         panelY = slide + 0x21A;
 
-        if (g_CourseIndex >= 4) {
+        if (series != 0) {
             DrawSprite(ot, 0xA4, slide + 0x1EA, 0x30, 0x18,
                        0xCC, 0x38, 0, 0, 0, 0x20F, 1, 0, 0x3C);
         }
@@ -140,17 +148,10 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
         }
         GameDrawMenuButton(0, panelY, 0x99, 0x23, 0, 0, 0);
 
-        for (row = 0, rowYStep = 0x82; row < 5;
+        for (row = 0, rowYStep = 0x82; row < RECORD_TABLE_LENGTH;
              row++, rowYStep += 0x20) {
-            const RaceRecord *record;
+            const RaceRecord *record = &records[course][row];
 
-            if (ranking != 0) {
-                record = &g_RankingRecords[CourseSeries(g_CourseIndex)]
-                                          [SeriesCourseIndex()][row];
-            } else {
-                record = &g_TimeRecords[CourseSeries(g_CourseIndex)]
-                                       [SeriesCourseIndex()][row];
-            }
             FormatLapTime(text, record->raceTime);
             rowY = panelY + rowYStep;
             DrawLargeText(0x36, rowY, text, 0x7F, 0x7F, 0x7F, 0x244,

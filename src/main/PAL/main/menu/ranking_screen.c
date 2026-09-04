@@ -171,9 +171,5 @@ void UpdateRankingScreen(void) {
     g_UiScriptProgress = 0;
     GameMenuBusy = 0;
     DrawTimeAttackPlate(0);
-    if (g_CourseIndex >= 4) {
-        g_TimeAttackPlateStep = 1;
-    } else {
-        g_TimeAttackPlateStep = -1;
-    }
+    g_TimeAttackPlateStep = CourseSeries(g_CourseIndex) != 0 ? 1 : -1;
 }
