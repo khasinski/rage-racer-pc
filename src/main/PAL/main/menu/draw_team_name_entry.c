@@ -93,7 +93,7 @@ static void DrawEnteredTeamName(GameOrderingTableEntry *ot, s32 frame,
 }
 
 void DrawTeamNameEntry(s32 step, s32 cursorIndex) {
-    GameOrderingTableEntry *ot = RENDER_OT_BASE;
+    GameOrderingTableEntry *ot;
     s32 nameLength;
     s32 frame;
     s32 sine;
@@ -102,6 +102,12 @@ void DrawTeamNameEntry(s32 step, s32 cursorIndex) {
         g_TeamNameEntrySlide = 0;
         return;
     }
+    if (RENDER_OT_BASE == NULL) {
+        g_TeamNameEntrySlide = AddClampedMenuValue(
+            g_TeamNameEntrySlide, step, 0, TEAM_NAME_LAST_FRAME);
+        return;
+    }
+    ot = RENDER_OT_BASE;
 
     nameLength = g_TeamNameLength;
     if (nameLength > MENU_TEAM_NAME_MAX_LENGTH) {

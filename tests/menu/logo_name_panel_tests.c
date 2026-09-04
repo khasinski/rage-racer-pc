@@ -94,6 +94,9 @@ static void ResetDraws(void) {
 }
 
 int main(void) {
+    static GameOrderingTableEntry orderingTable[2];
+
+    RENDER_OT_BASE = orderingTable;
     g_TeamLogoSwatches[0] = 0x7FFF;
     DrawLogoSamplePanel(0, 0);
     CHECK(g_LogoSamplePanelSlide == 0 && s_spriteCount == 0);
@@ -169,6 +172,10 @@ int main(void) {
     ResetDraws();
     DrawTeamNameEntry(0, 0);
     CHECK(g_TeamNameEntrySlide == 0 && s_spriteCount == 0);
+
+    RENDER_OT_BASE = NULL;
+    DrawTeamNameEntry(3, 0);
+    CHECK(g_TeamNameEntrySlide == 3 && s_spriteCount == 0);
 
     puts("logo and team name panels preserve their layout and animation");
     return 0;
