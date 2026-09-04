@@ -444,9 +444,17 @@ static void ScenarioApplyCarSetup(void) {
  * resets the loader whenever it is called mid-load, so it is issued once and
  * waited on through g_AssetLoadState. */
 static int ScenarioAssetRequestSucceeded(s32 result, const char *stage) {
+    /* The loader clears its state when it fails, so remember the last state
+     * it was seen in: that names the step that rejected the asset. */
+    static s32 lastLoadState;
+
+    if (g_AssetLoadState != 0) {
+        lastLoadState = g_AssetLoadState;
+    }
     if (result < 0) {
-        fprintf(stderr, "rage-port: direct boot %s asset load failed\n",
-                stage);
+        fprintf(stderr,
+                "rage-port: direct boot %s asset load failed in state %d\n",
+                stage, lastLoadState);
         s_scenario.enabled = 0;
         return 0;
     }

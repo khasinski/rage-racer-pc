@@ -7,6 +7,7 @@
 #include "archive_index.h"
 #include "mod_assets.h"
 #include "rage/compat.h"
+#include "runtime_config.h"
 
 _Static_assert(sizeof(GameCdLoadEntry) == sizeof(RageArchiveIndexEntry),
                "host and game archive entries must have the same layout");
@@ -31,7 +32,17 @@ s32 LoadAsset(s32 assetIndex, void *dst) {
 
     if ((u32)assetIndex >= GAME_ASSET_COUNT || dst == NULL) return -1;
     room = PortAssetRoomAt(dst);
-    if (room == 0 || g_AssetCdEntries[assetIndex].size > room) return -1;
+    if (room == 0 || g_AssetCdEntries[assetIndex].size > room) {
+        if (RuntimeConfigEnabled("diagnostics.asset_trace")) {
+            fprintf(stderr,
+                    "rage-port: asset %d needs %u bytes but %zu remain "
+                    "%td bytes into the arena, %td into the load buffer\n",
+                    assetIndex, (unsigned)g_AssetCdEntries[assetIndex].size,
+                    room, (const u8 *)dst - g_AssetBase,
+                    (const u8 *)dst - (const u8 *)g_LoadBuffer);
+        }
+        return -1;
+    }
     loaded = ModAssetLoad((int)assetIndex, dst,
                           g_AssetCdEntries[assetIndex].size);
     if (loaded <= 0) {
