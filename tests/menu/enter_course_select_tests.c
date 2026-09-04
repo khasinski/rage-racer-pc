@@ -1,6 +1,7 @@
 #include "common.h"
 #include "game/course_index.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/player_car_internal.h"
 #include "game/save_internal.h"
 #include "game/state.h"
@@ -103,7 +104,8 @@ static int CheckShowroomReset(s32 expectedGrade, s32 expectedPlateStep) {
     CHECK(g_MenuHandlerIndex == MENU_SCREEN_COURSE_SELECT);
     CHECK(g_MenuScreen == MENU_SCREEN_COURSE_SELECT);
     CHECK(g_MenuViewOffset == 250000 && g_MenuViewOffsetTarget == 0);
-    CHECK(g_MenuViewAngle == 500000 && g_MenuViewAngleTarget == 500000);
+    CHECK(g_MenuViewAngle == MENU_COURSE_VIEW_REBASE_SPAN);
+    CHECK(g_MenuViewAngleTarget == MENU_COURSE_VIEW_REBASE_SPAN);
     CHECK(g_MenuViewSpin == 8 && g_UiScriptProgress == 0);
     CHECK(g_CourseCardSpin == 2048000 && g_CourseCardSpinTarget == 0);
     CHECK(g_CourseCardPendingGrade == expectedGrade);

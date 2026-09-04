@@ -248,6 +248,9 @@ enum {
     MENU_CAR_VIEW_REBASE_SPAN = 600000,
     MENU_CAR_VIEW_SETTLE_WINDOW = MENU_CAR_VIEW_REBASE_SPAN / 2 - 1,
     MENU_CAR_VIEW_RIGHT_TARGET = MENU_CAR_VIEW_REBASE_SPAN * 2,
+    MENU_COURSE_VIEW_REBASE_SPAN = 500000,
+    MENU_COURSE_VIEW_SWAP_DISTANCE = MENU_COURSE_VIEW_REBASE_SPAN / 2,
+    MENU_COURSE_VIEW_RIGHT_TARGET = MENU_COURSE_VIEW_REBASE_SPAN * 2,
 };
 
 static inline int ShowroomCarAtSwapPoint(s32 angle, s32 target,
@@ -266,7 +269,10 @@ static inline int CourseCarouselAtSwapPoint(s32 angle, s32 target,
     if (pendingCourse < 0 || angle == target) {
         return 0;
     }
-    return target > angle ? angle > 750000 : angle <= 249999;
+    return target > angle
+               ? angle > MENU_COURSE_VIEW_RIGHT_TARGET -
+                             MENU_COURSE_VIEW_SWAP_DISTANCE
+               : angle < MENU_COURSE_VIEW_SWAP_DISTANCE;
 }
 
 /* The showroom turntable is implementation shared by CAR SELECT and SHOP. */

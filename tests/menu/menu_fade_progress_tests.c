@@ -129,11 +129,17 @@ int main(void) {
     CHECK(!ShowroomCarAtSwapPoint(299999, 0, -1));
     CHECK(!ShowroomCarAtSwapPoint(100, 100, 2));
 
-    CHECK(!CourseCarouselAtSwapPoint(750000, 1000000, 2));
-    CHECK(CourseCarouselAtSwapPoint(750001, 1000000, 2));
-    CHECK(!CourseCarouselAtSwapPoint(250000, 0, 2));
-    CHECK(CourseCarouselAtSwapPoint(249999, 0, 2));
-    CHECK(!CourseCarouselAtSwapPoint(249999, 0, -1));
+    CHECK(!CourseCarouselAtSwapPoint(
+        MENU_COURSE_VIEW_RIGHT_TARGET - MENU_COURSE_VIEW_SWAP_DISTANCE,
+        MENU_COURSE_VIEW_RIGHT_TARGET, 2));
+    CHECK(CourseCarouselAtSwapPoint(
+        MENU_COURSE_VIEW_RIGHT_TARGET - MENU_COURSE_VIEW_SWAP_DISTANCE + 1,
+        MENU_COURSE_VIEW_RIGHT_TARGET, 2));
+    CHECK(!CourseCarouselAtSwapPoint(MENU_COURSE_VIEW_SWAP_DISTANCE, 0, 2));
+    CHECK(CourseCarouselAtSwapPoint(MENU_COURSE_VIEW_SWAP_DISTANCE - 1, 0,
+                                    2));
+    CHECK(!CourseCarouselAtSwapPoint(MENU_COURSE_VIEW_SWAP_DISTANCE - 1, 0,
+                                     -1));
     CHECK(!CourseCarouselAtSwapPoint(100, 100, 2));
 
     CHECK(UpdatedMenuViewSpin(0, PAD_L1) == 1);

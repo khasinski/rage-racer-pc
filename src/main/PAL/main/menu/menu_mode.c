@@ -1,13 +1,10 @@
 #include "game/car.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/menu_scripts_internal.h"
 #include "game/race.h"
 #include "game/render_internal.h"
 #include "game/scene.h"
-
-enum {
-    MENU_INITIAL_VIEW_ANGLE = 500000,
-};
 
 /* The menu-mode twin of InitTrackLighting. */
 static void InitMenuLighting(void) {
@@ -56,8 +53,8 @@ static void ResetMenuNavigation(void) {
     g_LogoSampleSubPanelScript = g_UiEmptyScript;
     g_CarShopModalScript = g_UiEmptyScript;
     g_EngineerShopModalScript = g_UiEmptyScript;
-    g_MenuViewAngle = MENU_INITIAL_VIEW_ANGLE;
-    g_MenuViewAngleTarget = MENU_INITIAL_VIEW_ANGLE;
+    g_MenuViewAngle = MENU_COURSE_VIEW_REBASE_SPAN;
+    g_MenuViewAngleTarget = MENU_COURSE_VIEW_REBASE_SPAN;
     g_UiScriptProgress = 0;
     g_UiScriptProgress2 = 0;
     g_MenuHintBarProgress = 0;

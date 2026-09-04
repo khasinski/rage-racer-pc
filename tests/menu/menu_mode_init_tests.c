@@ -1,5 +1,6 @@
 #include "game/car.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/menu_scripts_internal.h"
 #include "game/race.h"
 #include "game/render_internal.h"
@@ -159,7 +160,8 @@ static int CheckCommonEntryState(const GameRaceProgress *progress) {
     CHECK(g_LogoSampleSubPanelScript == g_UiEmptyScript);
     CHECK(g_CarShopModalScript == g_UiEmptyScript);
     CHECK(g_EngineerShopModalScript == g_UiEmptyScript);
-    CHECK(g_MenuViewAngle == 500000 && g_MenuViewAngleTarget == 500000);
+    CHECK(g_MenuViewAngle == MENU_COURSE_VIEW_REBASE_SPAN);
+    CHECK(g_MenuViewAngleTarget == MENU_COURSE_VIEW_REBASE_SPAN);
     CHECK(g_UiScriptProgress == 0 && g_UiScriptProgress2 == 0);
     CHECK(g_MenuHintBarProgress == 0 && GameMenuBusy == 0);
     CHECK(g_MenuConfirmTimer == 0 && g_MenuHintBarStep == 0);

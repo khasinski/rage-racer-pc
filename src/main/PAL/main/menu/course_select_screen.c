@@ -22,8 +22,6 @@
 
 enum {
     COURSE_CARD_REST_WINDOW = MENU_VIEW_OFFSET_MAX - 1,
-    COURSE_VIEW_HALF_TURN = 0x7A120,
-    COURSE_VIEW_RIGHT_TARGET = 0xF4240,
     COURSE_CARD_FULL_TURN = 0x1F4000,
     COURSE_CLASS_CURTAIN_CLOSED = 0x19,
 };
@@ -66,7 +64,7 @@ static void BrowseToCourse(s32 step, s32 newTarget) {
                                  PHYSICAL_COURSE_COUNT - 1);
     g_MenuViewAngle =
         RebaseCarouselValue(g_MenuViewAngle, previousTarget,
-                            COURSE_VIEW_HALF_TURN);
+                            MENU_COURSE_VIEW_REBASE_SPAN);
     g_CourseCardSpin =
         RebaseCarouselValue(g_CourseCardSpin, previousSpin,
                             COURSE_CARD_FULL_TURN);
@@ -191,7 +189,7 @@ static void UpdateCourseSelectInput(void) {
     }
     if (choice.wantsNext && (CanSelectNextCourse() != 0) &&
         CourseCardSettled() && (g_MenuPendingCourseIndex < 0)) {
-        BrowseToCourse(1, COURSE_VIEW_RIGHT_TARGET);
+        BrowseToCourse(1, MENU_COURSE_VIEW_RIGHT_TARGET);
     }
     if (choice.choosesRow) {
         ChooseCourseSelectRow(choice.option);
@@ -324,8 +322,8 @@ static void UpdateClassChange(void *ot) {
         g_ClassChangeApplied = 1;
         g_GrandPrixClass = g_MenuSubCursor;
         ResetCourseProgress(g_MenuSubCursor);
-        g_MenuViewAngle = COURSE_VIEW_HALF_TURN;
-        g_MenuViewAngleTarget = COURSE_VIEW_HALF_TURN;
+        g_MenuViewAngle = MENU_COURSE_VIEW_REBASE_SPAN;
+        g_MenuViewAngleTarget = MENU_COURSE_VIEW_REBASE_SPAN;
         g_CourseSelectOption = 0;
         g_MenuPendingCourseIndex = -1;
         g_CourseCardSpin = 0;

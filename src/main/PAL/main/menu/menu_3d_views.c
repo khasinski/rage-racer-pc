@@ -8,7 +8,6 @@
 
 enum {
     MENU_VIEW_FIXED_SCALE = 1000,
-    COURSE_VIEW_ANGLE_PERIOD = 500000,
     SHOWROOM_FLOOR_MODEL = 5,
     SHOWROOM_MODEL_BANK = 14,
     SHOWROOM_OT_DEPTH_BIAS = 30,
@@ -168,7 +167,7 @@ void DrawMenuCourseView(void) {
     }
 
     horizontalAngle =
-        MenuWrapAngle(g_MenuViewAngle, COURSE_VIEW_ANGLE_PERIOD) /
+        MenuWrapAngle(g_MenuViewAngle, MENU_COURSE_VIEW_REBASE_SPAN) /
         MENU_VIEW_FIXED_SCALE;
     courseModelIndex = g_MenuCourseModelIndex;
     viewHeight = AdvanceMenuViewOffset();

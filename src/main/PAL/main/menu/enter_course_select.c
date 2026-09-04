@@ -8,7 +8,6 @@
 #include "game/state.h"
 
 enum {
-    COURSE_SELECT_VIEW_ANGLE = 500000,
     COURSE_SELECT_INITIAL_VIEW_OFFSET = MENU_VIEW_OFFSET_MAX,
     COURSE_SELECT_INITIAL_CARD_SPIN = 2048000,
 };
@@ -38,8 +37,8 @@ static void ResetCourseSelectShowroom(void) {
     g_PlayerCar.trackProgress = 0;
     g_PlayerCar.steeringAngle = 0;
     g_PlayerCar.wheelRotation = 0;
-    g_MenuViewAngleTarget = COURSE_SELECT_VIEW_ANGLE;
-    g_MenuViewAngle = COURSE_SELECT_VIEW_ANGLE;
+    g_MenuViewAngleTarget = MENU_COURSE_VIEW_REBASE_SPAN;
+    g_MenuViewAngle = MENU_COURSE_VIEW_REBASE_SPAN;
     g_MenuViewOffsetTarget = 0;
     g_CourseCardSpin = COURSE_SELECT_INITIAL_CARD_SPIN;
     g_CourseCardSpinTarget = 0;
