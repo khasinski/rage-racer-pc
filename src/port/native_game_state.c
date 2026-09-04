@@ -49,8 +49,9 @@ struct SeqStruct *GetSndTableArea(void) {
     return g_SndTableArea;
 }
 
-GameSpriteDesc g_RaceHudSpriteDescsGp[12];
-GameSpriteDesc g_RaceHudSpriteDescsTimeTrial[11];
+GameSpriteDesc g_RaceHudSpriteDescsGp[GRAND_PRIX_HUD_SPRITE_COUNT];
+GameSpriteDesc
+    g_RaceHudSpriteDescsTimeTrial[TIME_ATTACK_HUD_SPRITE_COUNT];
 RaceGridSlot g_RaceGridSlots[RACE_GRID_STORAGE_COUNT];
 RaceGridSlot g_AttractGridSlots[RACE_GRID_STORAGE_COUNT];
 RECT g_CarImageRect;

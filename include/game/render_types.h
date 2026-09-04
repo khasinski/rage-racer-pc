@@ -26,6 +26,29 @@ typedef struct VisibleTerrainCell {
 _Static_assert(sizeof(VisibleTerrainCell) == 16,
                "VisibleTerrainCell must match the renderer ABI");
 
+/* A ready-made SPRT description stored in the game's data tables. */
+typedef struct GameSpriteDesc {
+    u16 x;
+    u16 y;
+    u16 w;
+    u16 h;
+    u8 u0;
+    u8 pad9;
+    u8 v0;
+    u8 padB;
+    u16 clut;
+    u8 padE[2];
+    s32 semiTrans;
+} GameSpriteDesc;
+
+enum {
+    TIME_ATTACK_HUD_SPRITE_COUNT = 11,
+    GRAND_PRIX_HUD_SPRITE_COUNT = 12,
+};
+
+_Static_assert(sizeof(GameSpriteDesc) == 20,
+               "GameSpriteDesc must match the retail data layout");
+
 typedef union RenderBufferAddress {
     RaceHudPacketOffset hudPacketOffset;
     s32 value;

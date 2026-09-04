@@ -171,6 +171,24 @@ static void CheckInitialLightingMatrices(void) {
     CheckMatrix(&g_MenuLightMatrix, menuLight, "menu light matrix");
 }
 
+static void CheckInitialRaceHudSprites(void) {
+    Check(HashBytes(g_RaceHudSpriteDescsGp,
+                    sizeof(g_RaceHudSpriteDescsGp)) == 379897236u,
+          "Grand Prix HUD sprite descriptor bytes");
+    Check(HashBytes(g_RaceHudSpriteDescsTimeTrial,
+                    sizeof(g_RaceHudSpriteDescsTimeTrial)) == 46032874u,
+          "time-attack HUD sprite descriptor bytes");
+    Check(g_RaceHudSpriteDescsGp[0].x == 240 &&
+              g_RaceHudSpriteDescsGp[GRAND_PRIX_HUD_SPRITE_COUNT - 1].u0 ==
+                  0xe8,
+          "Grand Prix HUD sprite coordinates");
+    Check(g_RaceHudSpriteDescsTimeTrial[TIME_ATTACK_HUD_SPRITE_COUNT - 1].x ==
+                  120 &&
+              g_RaceHudSpriteDescsTimeTrial
+                  [TIME_ATTACK_HUD_SPRITE_COUNT - 1].clut == 0x78cc,
+          "time-attack split-sign descriptor");
+}
+
 static void CheckInitialStartingGrids(void) {
     int index;
 
@@ -244,6 +262,7 @@ int main(void) {
     CheckInitialControllerMappings();
     CheckInitialCountdownData();
     CheckInitialLightingMatrices();
+    CheckInitialRaceHudSprites();
     CheckInitialStartingGrids();
     CheckMemoryCardLabels();
     CheckInitialAudioTables();

@@ -139,22 +139,7 @@ TimedDrawScriptTick AdvanceTimedDrawScript(
     const TimedDrawCommand *commands, s32 *progress, s32 step);
 void DrawTimedDrawScript(const TimedDrawCommand *commands, s32 progress);
 
-/* A ready-made SPRT description stored in the game's data tables.
- * BuildSpriteFromDesc expands it into a render-state SPRT. */
-typedef struct GameSpriteDesc {
-    u16 x;
-    u16 y;
-    u16 w;
-    u16 h;
-    u8 u0;
-    u8 pad9;
-    u8 v0;
-    u8 padB;
-    u16 clut;
-    u8 padE[2];
-    s32 semiTrans;
-} GameSpriteDesc;
-
+/* Expands a ready-made retail sprite description into a render-state SPRT. */
 extern GameSpriteDesc g_TachoNeedleSprite;
 void BuildSpriteFromDesc(SPRT *sprite, const GameSpriteDesc *desc);
 enum {
@@ -765,8 +750,9 @@ extern u8 g_CarMirrorBadgeStyles[];
 extern u8 g_MirrorBadgeTexU[];
 extern u8 g_MirrorBadgeTexV[];
 extern u8 g_MirrorBadgeWidths[];
-extern GameSpriteDesc g_RaceHudSpriteDescsGp[];
-extern GameSpriteDesc g_RaceHudSpriteDescsTimeTrial[];
+extern GameSpriteDesc g_RaceHudSpriteDescsGp[GRAND_PRIX_HUD_SPRITE_COUNT];
+extern GameSpriteDesc
+    g_RaceHudSpriteDescsTimeTrial[TIME_ATTACK_HUD_SPRITE_COUNT];
 extern Matrix g_CameraMatrixSaved;
 extern s32 g_MenuRowFlashLevels[];
 extern s32 g_MenuCursorPulsePhase;
