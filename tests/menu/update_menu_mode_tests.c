@@ -2,6 +2,7 @@
 #include "game/menu.h"
 #include "game/render_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -187,9 +188,20 @@ static int TestInvalidIndices(void) {
     return 0;
 }
 
+static int TestTimerWrap(void) {
+    Reset();
+    g_AnimTimer = INT_MAX;
+    g_SceneTimer = INT_MAX;
+    UpdateMenuMode();
+    CHECK(g_AnimTimer == INT_MIN && g_SceneTimer == INT_MIN);
+    CHECK(s_displayMask == 0);
+    return 0;
+}
+
 int main(void) {
     CHECK(TestDispatchAndLayers() == 0);
     CHECK(TestInvalidIndices() == 0);
+    CHECK(TestTimerWrap() == 0);
     puts("menu mode dispatcher tests passed");
     return 0;
 }

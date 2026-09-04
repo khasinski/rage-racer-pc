@@ -17,8 +17,8 @@ void UpdateMenuMode(void) {
     GameOrderingTableEntry *ot;
 
     ot = RENDER_OT_BASE;
-    g_AnimTimer++;
-    g_SceneTimer++;
+    g_AnimTimer = (s32)((u32)g_AnimTimer + 1u);
+    g_SceneTimer = (s32)((u32)g_SceneTimer + 1u);
     if (g_SceneTimer == 2) {
         SetDispMask(1);
     }
