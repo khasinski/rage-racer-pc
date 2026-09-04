@@ -34,8 +34,7 @@ static s32 s_buttonCount;
 static s32 s_buttonY;
 
 s32 rsin(s32 angle) {
-    (void)angle;
-    return 4096;
+    return angle == 0x800 ? -4096 : 4096;
 }
 
 void DrawSolidRect(GameOrderingTableEntry *ot, s32 x, s32 y, s32 width, s32 height, s32 r,
@@ -143,6 +142,13 @@ int main(void) {
     CHECK(g_PaintPalettePulsePhase == 0x20);
 
     ResetDraws();
+    progress = 12;
+    g_PaintPalettePulsePhase = 0x400;
+    CHECK(DrawPaintColorPalette(&progress, 0, 0) == 0);
+    CHECK(s_outlineCount == 2 && s_outlines[0].g == 127);
+    CHECK(g_PaintPalettePulsePhase == 0x420);
+
+    ResetDraws();
     progress = 25;
     g_MenuAltLayout = 1;
     CHECK(DrawPaintColorPalette(&progress, 0, 17) == 1);
@@ -160,6 +166,13 @@ int main(void) {
     progress = INT_MIN;
     CHECK(DrawPaintColorPalette(&progress, -1, 0) == 0);
     CHECK(progress == 0);
+
+    ResetDraws();
+    g_RenderState.primData = NULL;
+    progress = 12;
+    CHECK(DrawPaintColorPalette(&progress, 1, 0) == 0);
+    CHECK(progress == 13 && s_solidCount == 0 && s_outlineCount == 0);
+    g_RenderState.primData = orderingTable;
 
     ResetDraws();
     g_MenuAltLayout = 0;

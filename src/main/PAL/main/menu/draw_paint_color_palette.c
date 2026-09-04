@@ -34,7 +34,7 @@ s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index) {
     }
 
     frame = *counter - PAINT_PALETTE_DRAW_START;
-    if (frame >= 0) {
+    if (frame >= 0 && ot != NULL) {
         if (frame > PAINT_PALETTE_LAST_FRAME) {
             frame = PAINT_PALETTE_LAST_FRAME;
         }
@@ -45,11 +45,8 @@ s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index) {
         }
         y = 0x20B - frame * 15;
 
-        highlight = rsin((g_PaintPalettePulsePhase * 2) & 0xFFF);
-        if (highlight < 0) {
-            highlight += 0x3F;
-        }
-        highlight = (highlight >> 6) - 0x41;
+        highlight =
+            rsin((g_PaintPalettePulsePhase * 2) & 0xFFF) / 64 - 0x41;
 
         g_PaintPalettePulsePhase =
             (s32)((u32)g_PaintPalettePulsePhase + 0x20u);

@@ -18,10 +18,6 @@ enum PaintColorOption {
     PAINT_COLOR_OPTION_COUNT,
 };
 
-enum {
-    PAINT_COLOR_VIEW_OFFSET = 250000,
-};
-
 s32 DrawPaintColorScreen(s32 step) {
     return AdvanceMenuFade(&g_PaintColorScreenProgress, step);
 }
@@ -35,7 +31,7 @@ static void LeavePaintColorScreen(s32 busyState) {
     PlaySoundCue(3);
     GameMenuBusy = busyState;
     g_MenuOverlayPattern = 2;
-    g_MenuViewOffsetTarget = PAINT_COLOR_VIEW_OFFSET;
+    g_MenuViewOffsetTarget = MENU_VIEW_OFFSET_MAX;
 }
 
 static void ChoosePaintColorRow(void) {
