@@ -17,7 +17,7 @@ static u8 GetSliderHighlight(s32 confirming) {
                 0x41);
 }
 
-static void DrawLeftSliderArrow(void *ot, s16 x, u8 green) {
+static void DrawLeftSliderArrow(GameOrderingTableEntry *ot, s16 x, u8 green) {
     DrawLine(ot, x - 1, 0x4C, x - 1, 0x84, 0, green, 0, 0xFF);
     DrawLine(ot, x - 3, 0x60, x - 3, 0x68, 0, green, 0, 0xFF);
     DrawLine(ot, x - 5, 0x60, x - 5, 0x68, 0, green, 0, 0xFF);
@@ -26,7 +26,8 @@ static void DrawLeftSliderArrow(void *ot, s16 x, u8 green) {
                      green, 0, 0, 0x80);
 }
 
-static void DrawRightSliderArrow(void *ot, s16 x, u8 green) {
+static void DrawRightSliderArrow(GameOrderingTableEntry *ot, s16 x,
+                                 u8 green) {
     DrawLine(ot, x + 1, 0x4C, x + 1, 0x84, 0, green, 0, 0xFF);
     DrawLine(ot, x + 3, 0x6A, x + 3, 0x72, 0, green, 0, 0xFF);
     DrawLine(ot, x + 5, 0x6A, x + 5, 0x72, 0, green, 0, 0xFF);
@@ -37,7 +38,7 @@ static void DrawRightSliderArrow(void *ot, s16 x, u8 green) {
 
 /* The five-position tire-compound slider of the CUSTOMIZE screen. */
 void DrawTireCompoundSlider(u8 compound, s32 confirming) {
-    void *ot;
+    GameOrderingTableEntry *ot;
     s16 x;
     u8 highlight;
     const u8 frameColor = 0xB4;

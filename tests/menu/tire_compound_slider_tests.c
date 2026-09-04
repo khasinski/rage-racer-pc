@@ -71,7 +71,8 @@ void DrawSprite(GameOrderingTableEntry *ot, s16 x, s16 y, s16 width, u16 height,
     (void)flags;
 }
 
-void DrawRectOutline(void *ot, s32 x, s32 y, s32 width, s32 height, u8 r,
+void DrawRectOutline(GameOrderingTableEntry *ot, s32 x, s32 y, s32 width,
+                     s32 height, u8 r,
                      u8 g, u8 b, u8 code) {
     (void)ot;
     (void)x;

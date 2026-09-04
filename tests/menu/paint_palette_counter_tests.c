@@ -46,7 +46,8 @@ void DrawSolidRect(GameOrderingTableEntry *ot, s32 x, s32 y, s32 width, s32 heig
     s_solidRects[s_solidCount++] = (RectRecord){x, y, r, g, b};
 }
 
-void DrawRectOutline(void *ot, s32 x, s32 y, s32 width, s32 height, u8 r,
+void DrawRectOutline(GameOrderingTableEntry *ot, s32 x, s32 y, s32 width,
+                     s32 height, u8 r,
                      u8 g, u8 b, u8 alpha) {
     (void)ot;
     (void)width;

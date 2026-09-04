@@ -39,7 +39,8 @@ static void Check(s32 actual, s32 expected, const char *label) {
     }
 }
 
-void DrawRectOutline(void *ot, s32 x, s32 y, s32 width, s32 height,
+void DrawRectOutline(GameOrderingTableEntry *ot, s32 x, s32 y, s32 width,
+                     s32 height,
                      u8 r, u8 g, u8 b, u8 alpha) {
     RectCall *call = &s_outlines[s_outlineCount++];
     (void)ot;

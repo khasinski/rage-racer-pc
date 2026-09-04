@@ -266,17 +266,17 @@ void DrawGradientLine(GameOrderingTableEntry *ot, s32 x0, s32 y0, s32 x1,
     g_RenderState.packetCursor = next;
 }
 
-void DrawRectOutline(void *buf, s32 xa, s32 ya, s32 w, s32 h, u8 r, u8 g,
-                     u8 b, u8 code) {
+void DrawRectOutline(GameOrderingTableEntry *ot, s32 xa, s32 ya, s32 w,
+                     s32 h, u8 r, u8 g, u8 b, u8 code) {
     const s16 left = WrapSigned16(xa);
     const s16 right = WrapSigned16((int64_t)xa + w - 1);
     const s16 top = WrapSigned16(ya);
     const s16 bottom = WrapSigned16((int64_t)ya + h - 1);
 
-    DrawLine(buf, left, top, right, top, r, g, b, code);
-    DrawLine(buf, left, top + 1, right, top + 1, r, g, b, code);
-    DrawLine(buf, left, top + 2, left, bottom - 2, r, g, b, code);
-    DrawLine(buf, right, top + 2, right, bottom - 2, r, g, b, code);
-    DrawLine(buf, left, bottom, right, bottom, r, g, b, code);
-    DrawLine(buf, left, bottom - 1, right, bottom - 1, r, g, b, code);
+    DrawLine(ot, left, top, right, top, r, g, b, code);
+    DrawLine(ot, left, top + 1, right, top + 1, r, g, b, code);
+    DrawLine(ot, left, top + 2, left, bottom - 2, r, g, b, code);
+    DrawLine(ot, right, top + 2, right, bottom - 2, r, g, b, code);
+    DrawLine(ot, left, bottom, right, bottom, r, g, b, code);
+    DrawLine(ot, left, bottom - 1, right, bottom - 1, r, g, b, code);
 }

@@ -26,7 +26,8 @@ static s32 s_spriteCount;
 static s32 s_outlineCount;
 static u8 s_outlineBrightness;
 
-void DrawRectOutline(void *ot, s32 x, s32 y, s32 width, s32 height, u8 r,
+void DrawRectOutline(GameOrderingTableEntry *ot, s32 x, s32 y, s32 width,
+                     s32 height, u8 r,
                      u8 g, u8 b, u8 flags) {
     (void)ot;
     (void)x;

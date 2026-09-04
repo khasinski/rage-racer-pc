@@ -97,7 +97,8 @@ void DrawLine(
     s32 alpha) {
     RECORD("drawline", x0, y0, x1, y1, r, g, b, alpha);
 }
-void DrawRectOutline(void *buf, s32 xa, s32 ya, s32 w, s32 h, u8 r, u8 g,
+void DrawRectOutline(GameOrderingTableEntry *buf, s32 xa, s32 ya, s32 w,
+                     s32 h, u8 r, u8 g,
                      u8 b, u8 code) {
 }
 void DrawSmallText(s32 x0, s16 y, const char *str0, u8 color, u8 g, u8 b,

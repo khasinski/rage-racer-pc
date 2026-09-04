@@ -82,7 +82,8 @@ static void Record(const char *name, const s32 *values, int count) {
         Record(name, v, (int)(sizeof(v) / sizeof(v[0])));                       \
     } while (0)
 
-void DrawRectOutline(void *buf, s32 xa, s32 ya, s32 w, s32 h, u8 r, u8 g, u8 b,
+void DrawRectOutline(GameOrderingTableEntry *buf, s32 xa, s32 ya, s32 w,
+                     s32 h, u8 r, u8 g, u8 b,
                      u8 code) {
     (void)buf;
     RECORD("outline", xa, ya, w, h, r, g, b, code);

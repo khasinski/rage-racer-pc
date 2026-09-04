@@ -405,8 +405,8 @@ void DrawGradientLine(
     u8 b1,
     u8 drawMode);
 /* Two-pixel-thick rectangle border, built from six DrawLine calls. */
-void DrawRectOutline(void *buf, s32 xa, s32 ya, s32 w, s32 h, u8 r, u8 g,
-                     u8 b, u8 code);
+void DrawRectOutline(GameOrderingTableEntry *ot, s32 xa, s32 ya, s32 w,
+                     s32 h, u8 r, u8 g, u8 b, u8 code);
 /* Clips (x, y, w, h) to the 320x480 frame and queues a SetDrawArea packet. */
 void SetDrawClipRect(
     GameOrderingTableEntry *ot,
