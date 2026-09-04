@@ -4,6 +4,7 @@
 #include "game/render.h"
 #include "game/track_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -240,6 +241,23 @@ int main(void) {
     UpdateEnvironment();
     if (g_EnvScriptClock != 1) {
         puts("FAIL: environment clock advances after wrapping");
+        return 1;
+    }
+
+    g_EnvironmentColors.fields.fogEnabled = 1;
+    g_EnvironmentMode = 2;
+    g_FogNear = INT_MAX;
+    UpdateEnvironment();
+    if (g_FogNear != 0x7FFF) {
+        puts("FAIL: far fog distance saturates from corrupt high state");
+        return 1;
+    }
+    g_EnvironmentColors.fields.fogEnabled = 1;
+    g_EnvironmentMode = 0;
+    g_FogNear = INT_MIN;
+    UpdateEnvironment();
+    if (g_FogNear != 0x1770) {
+        puts("FAIL: near fog distance saturates from corrupt low state");
         return 1;
     }
 

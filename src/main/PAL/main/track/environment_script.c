@@ -253,14 +253,16 @@ static void UpdateEnvironmentColorSlots(s32 blend) {
 
 static void UpdateFogDistance(void) {
     if (g_EnvironmentMode == ENVIRONMENT_FAR_FOG_MODE) {
-        g_FogNear += ENVIRONMENT_FOG_STEP;
-        if (g_FogNear > ENVIRONMENT_FOG_FAR) {
+        if (g_FogNear >= ENVIRONMENT_FOG_FAR - ENVIRONMENT_FOG_STEP) {
             g_FogNear = ENVIRONMENT_FOG_FAR;
+        } else {
+            g_FogNear += ENVIRONMENT_FOG_STEP;
         }
     } else {
-        g_FogNear -= ENVIRONMENT_FOG_STEP;
-        if (g_FogNear < ENVIRONMENT_FOG_NEAR) {
+        if (g_FogNear <= ENVIRONMENT_FOG_NEAR + ENVIRONMENT_FOG_STEP) {
             g_FogNear = ENVIRONMENT_FOG_NEAR;
+        } else {
+            g_FogNear -= ENVIRONMENT_FOG_STEP;
         }
     }
     SetFogNear(g_FogNear, SCREEN_WIDTH);
