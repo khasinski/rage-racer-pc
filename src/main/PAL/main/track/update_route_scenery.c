@@ -90,10 +90,10 @@ void UpdateRouteScenery(void) {
     MulMatrix(&mtx1, &mtx0);
     ApplyMatrix(&mtx1, &vin, &vout);
 
-    g_RouteSceneryX = WrapSigned32(
-        (int64_t)g_RouteSceneryX + vout.x / 4);
-    g_RouteSceneryY = WrapSigned32(
-        (int64_t)g_RouteSceneryY + vout.y / 4);
-    g_RouteSceneryZ = WrapSigned32(
-        (int64_t)g_RouteSceneryZ + vout.z / 4);
+    g_RouteSceneryPosition.x = WrapSigned32(
+        (int64_t)g_RouteSceneryPosition.x + vout.x / 4);
+    g_RouteSceneryPosition.y = WrapSigned32(
+        (int64_t)g_RouteSceneryPosition.y + vout.y / 4);
+    g_RouteSceneryPosition.z = WrapSigned32(
+        (int64_t)g_RouteSceneryPosition.z + vout.z / 4);
 }

@@ -363,12 +363,8 @@ extern s32 g_RaceCueFlags;
 extern s32 g_RouteSceneryFrame;
 extern s32 g_RouteSceneryRotX;
 extern s32 g_RouteSceneryRotZ;
-/* Position of the animated route prop. The component aliases keep the motion
- * update readable while seed/reset code can copy the complete vector. */
+/* Position of the animated route prop. */
 extern Vec4 g_RouteSceneryPosition;
-#define g_RouteSceneryX g_RouteSceneryPosition.x
-#define g_RouteSceneryY g_RouteSceneryPosition.y
-#define g_RouteSceneryZ g_RouteSceneryPosition.z
 
 extern s16 g_ShuttlePathDwellMax[];
 

@@ -9,8 +9,7 @@ void DrawRouteScenery(void) {
     BuildSceneryObjectMatrix(&objectMatrix, g_RouteSceneryRotX,
                               g_RouteSceneryRotY, g_RouteSceneryRotZ);
     SelectModelBank(1);
-    SetGteObjectMatrix(AsPositionWords(&g_RouteSceneryX),
-                       &objectMatrix);
+    SetGteObjectMatrix(AsPosition(&g_RouteSceneryPosition), &objectMatrix);
     g_RenderState.envMode4 = 0;
     SubmitModel(&g_RenderState, ModelOrFallback(0x25, g_ModelBankCount));
 }
