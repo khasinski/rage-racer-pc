@@ -85,6 +85,7 @@ enum {
     MENU_VIEW_OFFSET_MIN = 0,
     MENU_VIEW_OFFSET_MAX = 250000,
     MENU_VIEW_OFFSET_RISE_START = 2500,
+    MENU_COURSE_SWAP_DELAY_FRAMES = 20,
 };
 
 static inline s32 NormalizeMenuViewOffset(s32 offset) {
@@ -101,7 +102,8 @@ static inline s32 PrepareMenuViewOffset(s32 current, s32 target) {
 }
 
 static inline s32 NormalizeCourseSwapDelay(s32 delay) {
-    return AddClampedMenuValue(delay, 0, 0, 19);
+    return AddClampedMenuValue(delay, 0, 0,
+                               MENU_COURSE_SWAP_DELAY_FRAMES - 1);
 }
 
 static inline s32 AdvanceMenuViewOffsetValue(s32 current, s32 target) {

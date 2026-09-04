@@ -72,7 +72,8 @@ int main(void) {
     CHECK(NormalizeMenuViewOffset(INT_MAX) == MENU_VIEW_OFFSET_MAX);
     CHECK(NormalizeCourseSwapDelay(INT_MIN) == 0);
     CHECK(NormalizeCourseSwapDelay(7) == 7);
-    CHECK(NormalizeCourseSwapDelay(INT_MAX) == 19);
+    CHECK(NormalizeCourseSwapDelay(INT_MAX) ==
+          MENU_COURSE_SWAP_DELAY_FRAMES - 1);
 
     CHECK(AdvanceMenuViewAngleValue(100, 100, 24) == 100);
     CHECK(AdvanceMenuViewAngleValue(100, 124, 24) == 102);

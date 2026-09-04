@@ -154,7 +154,7 @@ void DrawMenuCourseView(void) {
     if (CourseCarouselAtSwapPoint(g_MenuViewAngle, g_MenuViewAngleTarget,
                                   g_MenuPendingCourseIndex)) {
         g_CourseSwapDelay = NormalizeCourseSwapDelay(g_CourseSwapDelay);
-        if (g_CourseSwapDelay >= 19) {
+        if (g_CourseSwapDelay >= MENU_COURSE_SWAP_DELAY_FRAMES - 1) {
             g_CourseSwapDelay = 0;
             g_MenuCourseModelIndex = g_MenuPendingCourseIndex;
             g_MenuPendingCourseIndex = -1;
