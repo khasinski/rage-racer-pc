@@ -532,6 +532,29 @@ enum {
     MODERN_LAYER_MIRROR_FOREGROUND,
 };
 static uint8_t s_currentLayer;
+static const RageRenderCamera *s_skyPacketCamera;
+static const RageRenderCamera *s_skyPresentationCamera;
+
+static void ModernTransformSkyPoint(float *x, float *y) {
+    const RageRenderCamera *from = s_skyPacketCamera;
+    const RageRenderCamera *to = s_skyPresentationCamera;
+    float determinant;
+    float dx, dy, column, row;
+    if (from == NULL || to == NULL) return;
+    determinant = from->skyGridColumn.x * from->skyGridRow.y -
+                  from->skyGridColumn.y * from->skyGridRow.x;
+    if (fabsf(determinant) < 0.0001f) return;
+    dx = *x - from->skyGridOrigin.x;
+    dy = *y - from->skyGridOrigin.y;
+    column = (dx * from->skyGridRow.y -
+              dy * from->skyGridRow.x) / determinant;
+    row = (from->skyGridColumn.x * dy -
+           from->skyGridColumn.y * dx) / determinant;
+    *x = to->skyGridOrigin.x + column * to->skyGridColumn.x +
+         row * to->skyGridRow.x;
+    *y = to->skyGridOrigin.y + column * to->skyGridColumn.y +
+         row * to->skyGridRow.y;
+}
 
 static ModernSpan *ModernBeginSpan(int pipeline, const Modern2DState *state) {
     ModernSpan *span;
@@ -713,6 +736,12 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
         int semi = (command & 0x02u) != 0;
         int raw = (command & 0x01u) != 0;
         Modern2DState spanState = *state;
+        if ((packet->flags & RAGE_CAPTURE_PACKET_SKY) != 0) {
+            /* The PS1 drawing area is 320 pixels wide. The extended authored
+             * grid is intentionally allowed into the native ultrawide area;
+             * the render target remains its final clip boundary. */
+            spanState.hasScissor = 0;
+        }
         /* The overlay renders at 320x240 logical coordinates; scale the
          * scissor to the target. */
         if (spanState.hasScissor) {
@@ -769,6 +798,8 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
                 }
             }
             for (vertex = 0; vertex < count; vertex++) {
+                if ((packet->flags & RAGE_CAPTURE_PACKET_SKY) != 0)
+                    ModernTransformSkyPoint(&rawX[vertex], &rawY[vertex]);
                 ModernOrtho(&corners[vertex], rawX[vertex], rawY[vertex]);
             }
             for (vertex = 0; vertex < count; vertex++) {
@@ -931,6 +962,20 @@ static void ModernBuildOverlayFrame(const RageSceneSnapshot *snapshot) {
     s_areaPageY = snapshot->displayPageY;
     s_currentPass = 0;
     s_currentLayer = MODERN_LAYER_HUD;
+    s_skyPacketCamera = NULL;
+    s_skyPresentationCamera = NULL;
+    if (s_config.modernFps != RAGE_MODERN_FPS_LOGIC) {
+        const RageRenderWorld *current = GameRenderWorldCurrent();
+        const RageRenderWorld *presentation = ModernNativeGpuPreparedWorld();
+        if (current != NULL && presentation != NULL &&
+            current->previousCamera.skyAssetKey ==
+                presentation->camera.skyAssetKey &&
+            current->previousCamera.skyCloudRow ==
+                presentation->camera.skyCloudRow) {
+            s_skyPacketCamera = &current->previousCamera;
+            s_skyPresentationCamera = &presentation->camera;
+        }
+    }
 
     memset(&state2d, 0, sizeof(state2d));
     state2d.twin = 0x0000FFFFu;

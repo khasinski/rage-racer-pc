@@ -138,19 +138,50 @@ void RenderInterpolateCamera(const RageRenderCamera *previous,
         out->skyGridColumn = current->skyGridColumn;
         out->skyGridRow = current->skyGridRow;
     } else {
-        InterpolateVec3(&previous->skyGridOrigin, &current->skyGridOrigin, t,
-                        &out->skyGridOrigin);
         InterpolateVec3(&previous->skyGridColumn, &current->skyGridColumn, t,
                         &out->skyGridColumn);
         InterpolateVec3(&previous->skyGridRow, &current->skyGridRow, t,
                         &out->skyGridRow);
-        /* The panorama is eight tiles wide, while the classic layout's
-         * texture column wraps after the 32 half-angle steps.  Treating the
-         * 31 -> 0 boundary as an ordinary scalar sends an interpolated frame
-         * backwards through almost four panoramas, which looks like flashing
-         * and counter-motion during rotating attract cameras. */
-        out->skyGridColumn.z = InterpolateWrapped(
-            previous->skyGridColumn.z, current->skyGridColumn.z, 8.0f, t);
+        {
+            float previousTexture = previous->skyGridColumn.z;
+            float currentTexture = InterpolateWrapped(
+                previousTexture, current->skyGridColumn.z, 32.0f, 1.0f);
+            float texture = previousTexture +
+                (currentTexture - previousTexture) * t;
+            float previousAnchorX = previous->skyGridOrigin.x -
+                previousTexture * previous->skyGridColumn.x;
+            float previousAnchorY = previous->skyGridOrigin.y -
+                previousTexture * previous->skyGridColumn.y;
+            float currentAnchorX = current->skyGridOrigin.x -
+                currentTexture * current->skyGridColumn.x;
+            float currentAnchorY = current->skyGridOrigin.y -
+                currentTexture * current->skyGridColumn.y;
+            float previousLowerAnchorX = previous->skyGridOrigin.z -
+                previousTexture * previous->skyGridColumn.x;
+            float previousLowerAnchorY = previous->skyGridRow.z -
+                previousTexture * previous->skyGridColumn.y;
+            float currentLowerAnchorX = current->skyGridOrigin.z -
+                currentTexture * current->skyGridColumn.x;
+            float currentLowerAnchorY = current->skyGridRow.z -
+                currentTexture * current->skyGridColumn.y;
+
+            /* Origin and texture column jump together at each tile boundary.
+             * Interpolate their continuous anchor so the presentation-rate
+             * geometry does not jump backwards between logic frames. */
+            out->skyGridColumn.z = texture;
+            out->skyGridOrigin.x =
+                previousAnchorX + (currentAnchorX - previousAnchorX) * t +
+                texture * out->skyGridColumn.x;
+            out->skyGridOrigin.y =
+                previousAnchorY + (currentAnchorY - previousAnchorY) * t +
+                texture * out->skyGridColumn.y;
+            out->skyGridOrigin.z = previousLowerAnchorX +
+                (currentLowerAnchorX - previousLowerAnchorX) * t +
+                texture * out->skyGridColumn.x;
+            out->skyGridRow.z = previousLowerAnchorY +
+                (currentLowerAnchorY - previousLowerAnchorY) * t +
+                texture * out->skyGridColumn.y;
+        }
     }
     out->fogNear = previous->fogNear +
         (current->fogNear - previous->fogNear) * t;
