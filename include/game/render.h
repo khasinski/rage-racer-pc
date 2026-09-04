@@ -4,6 +4,7 @@
 #include "common.h"
 #include "game/angle.h"
 #include "game/camera_types.h"
+#include "game/car_render_rules.h"
 #include "game/environment.h"
 #include "game/render_types.h"
 #include "game/vector.h"
@@ -746,7 +747,8 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, s32 count);
 void SetTrackTexturePageNow(s32 trackSection);
 
 extern Rect g_TrackTextureRowRect;
-extern u8 g_CarMirrorBadgeStyles[];
+extern MirrorBadgeStyle
+    g_CarMirrorBadgeStyles[MIRROR_BADGE_STYLE_STORAGE_COUNT];
 extern u8 g_MirrorBadgeTexU[];
 extern u8 g_MirrorBadgeTexV[];
 extern u8 g_MirrorBadgeWidths[];

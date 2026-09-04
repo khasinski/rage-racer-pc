@@ -11,6 +11,7 @@
 #include <stddef.h>
 
 #include "common.h"
+#include "game/car_render_rules.h"
 #include "game/render_types.h"
 #include "psyq/gte.h"
 
@@ -26,7 +27,17 @@ Rect g_DrawModeEnv __attribute__((aligned(16))) = {
     .w = 256,
     .h = 256,
 };
-unsigned char g_CarMirrorBadgeStyles[16] __attribute__((aligned(16))) = {0x00,0x00,0x00,0x01,0x02,0x02,0x02,0x03,0x03,0x03,0x00,0x02,0x03,0x00,0x00,0x00};
+MirrorBadgeStyle g_CarMirrorBadgeStyles[MIRROR_BADGE_STYLE_STORAGE_COUNT]
+    __attribute__((aligned(16))) = {
+    MIRROR_BADGE_STYLE_NARROW, MIRROR_BADGE_STYLE_NARROW,
+    MIRROR_BADGE_STYLE_NARROW, MIRROR_BADGE_STYLE_WIDE,
+    MIRROR_BADGE_STYLE_MEDIUM, MIRROR_BADGE_STYLE_MEDIUM,
+    MIRROR_BADGE_STYLE_MEDIUM, MIRROR_BADGE_STYLE_LARGE,
+    MIRROR_BADGE_STYLE_LARGE,  MIRROR_BADGE_STYLE_LARGE,
+    MIRROR_BADGE_STYLE_NARROW, MIRROR_BADGE_STYLE_MEDIUM,
+    MIRROR_BADGE_STYLE_LARGE,  MIRROR_BADGE_STYLE_NARROW,
+    MIRROR_BADGE_STYLE_NARROW, MIRROR_BADGE_STYLE_NARROW,
+};
 /* Retail stores the four mirror-badge styles as interleaved {u,v,width}
  * triples beginning at 0x8007C738.  The three linker symbols point one byte
  * apart into that table and DrawMirrorFrame indexes each by style * 3.  Native

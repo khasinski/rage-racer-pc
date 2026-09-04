@@ -13,7 +13,13 @@
     } while (0)
 
 int main(void) {
-    static const u8 badgeStyles[] = {0, 1, 2, 3, 4};
+    static const MirrorBadgeStyle badgeStyles[] = {
+        MIRROR_BADGE_STYLE_NARROW,
+        MIRROR_BADGE_STYLE_WIDE,
+        MIRROR_BADGE_STYLE_MEDIUM,
+        MIRROR_BADGE_STYLE_LARGE,
+        MIRROR_BADGE_STYLE_COUNT,
+    };
 
     CHECK_EQ(CarRenderManhattanDistance(100, -50, 70, -20), 60);
     CHECK_EQ(CarRenderManhattanDistance(-100, 50, -70, 20), 60);

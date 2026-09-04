@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "game/car_render_rules.h"
 #include "game/menu_types.h"
 #include "game/race_hud_internal.h"
 #include "game/render_internal.h"
@@ -142,7 +143,8 @@ extern unsigned char g_CarModelUnlockBase[13];
 extern Rect g_TrackTextureRect;
 extern Rect g_TeamLogoClutLoadRect;
 extern GpuRectPacked g_TeamLogoClutMoveRect;
-extern unsigned char g_CarMirrorBadgeStyles[16];
+extern MirrorBadgeStyle
+    g_CarMirrorBadgeStyles[MIRROR_BADGE_STYLE_STORAGE_COUNT];
 extern unsigned char g_MirrorBadgeTexU[10];
 extern unsigned char g_MirrorBadgeTexV[10];
 extern unsigned char g_MirrorBadgeWidths[10];

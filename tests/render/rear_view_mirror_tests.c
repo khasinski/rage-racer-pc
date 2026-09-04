@@ -11,7 +11,7 @@ GameRenderState g_RenderState;
 GameFrameContext g_FrameContexts[2];
 GameFrameContext *g_DrawBuffer;
 s32 g_PlayerCarIndex;
-u8 g_CarMirrorBadgeStyles[GAME_CAR_COUNT];
+MirrorBadgeStyle g_CarMirrorBadgeStyles[MIRROR_BADGE_STYLE_STORAGE_COUNT];
 u8 g_MirrorBadgeTexU[1];
 u8 g_MirrorBadgeTexV[1];
 u8 g_MirrorBadgeWidths[1];
@@ -33,7 +33,8 @@ static s32 s_terrainFar;
 static s32 s_lastWorldCall;
 static s32 s_endOrder;
 
-s32 ResolveMirrorBadgeSpriteIndex(s32 carIndex, const u8 *styles,
+s32 ResolveMirrorBadgeSpriteIndex(s32 carIndex,
+                                  const MirrorBadgeStyle *styles,
                                   s32 carCount) {
     (void)carIndex;
     (void)styles;
