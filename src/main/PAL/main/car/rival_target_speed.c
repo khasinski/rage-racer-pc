@@ -55,10 +55,15 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex) {
 
     position = car->trackProgress >> 4;
     keyIndex = car->speedKeyIndex;
-    if (position < AI_TABLE_LAP_START_PROGRESS || keyIndex < 0 ||
-        keyIndex >= TRACK_AI_SPEED_KEY_COUNT - 1) {
+    if (keyIndex < 0 || keyIndex >= TRACK_AI_SPEED_KEY_COUNT - 1) {
+        /* Retail would read past the table here; the first pair stands in. */
         car->speedKeyIndex = 0;
         keyIndex = 0;
+    } else if (position < AI_TABLE_LAP_START_PROGRESS) {
+        /* Retail resets the marker for the next frame but still interpolates
+         * this frame with the pair it read before the reset. Using the first
+         * pair a frame early changes every rival's speed at the lap start. */
+        car->speedKeyIndex = 0;
     }
 
     table = g_TrackEventData->aiSpeedKeys[g_RaceSeries != 0];

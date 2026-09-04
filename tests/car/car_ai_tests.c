@@ -214,8 +214,9 @@ static void TargetSpeedTests(void) {
           "two keys at one position", car.accelerationLimit,
           (((100 * 1168) / 160) * 6) / 100);
 
-    /* A stale marker at the lap boundary is reset before the table is read,
-     * so this frame already uses the first pair. */
+    /* A stale marker at the lap boundary is reset for the next frame, but
+     * retail still reads this frame through the stale pair: off that pair,
+     * so no limit is set yet. */
     keys[0].progress = 0x10;
     keys[1].progress = 0x20;
     memset(&car, 0, sizeof(car));
@@ -224,9 +225,9 @@ static void TargetSpeedTests(void) {
     UpdateCarAiTargetSpeed(&car, 0);
     Check(car.speedKeyIndex == 0, "lap start resets speed marker",
           car.speedKeyIndex, 0);
-    Check(car.accelerationLimit == (((150 * 1168) / 160) * 6) / 100,
-          "lap start immediately uses first speed pair", car.accelerationLimit,
-          (((150 * 1168) / 160) * 6) / 100);
+    Check(car.accelerationLimit == 0,
+          "lap start still reads the stale pair this frame",
+          car.accelerationLimit, 0);
 
     /* A negative signed marker is invalid input, not permission to read the
      * key immediately before the table. */
