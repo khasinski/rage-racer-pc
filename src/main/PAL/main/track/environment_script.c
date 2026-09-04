@@ -71,7 +71,7 @@ s32 IsValidEnvironmentScript(const GameEnvironmentScript *script,
     }
     cueCount = (size - offsetof(GameEnvironmentScript, cues)) /
                sizeof(script->cues[0]);
-    if (cueCount < 2) return 0;
+    if (cueCount < 2 || script->cues[0].time != 0) return 0;
 
     for (i = 0; i < cueCount; i++) {
         const GameEnvironmentCue *cue = &script->cues[i];
@@ -278,9 +278,9 @@ void UpdateEnvironment(void) {
         LoadEnvironmentCue(cue);
     }
 
-    g_EnvScriptClock = g_EnvScriptClock < g_EnvScriptLength
-        ? g_EnvScriptClock + 1
-        : 0;
+    g_EnvScriptClock = g_EnvScriptClock < g_EnvScriptLength - 1
+                           ? g_EnvScriptClock + 1
+                           : 0;
     if (g_EnvironmentColors.fields.fogEnabled == 0) {
         return;
     }

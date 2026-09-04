@@ -134,6 +134,13 @@ int main(void) {
         puts("FAIL: duplicate environment cue time accepted");
         return 1;
     }
+    script.cues[0].time = 1;
+    script.cues[1].time = -1;
+    if (SetEnvironmentScript(
+            (GameEnvironmentScript *)(void *)&script, sizeof(script)) != 0) {
+        puts("FAIL: environment script without a cue at zero accepted");
+        return 1;
+    }
     script.cues[0].time = 123;
     script.cues[1].time = -1;
     if (SetEnvironmentScript(
@@ -218,13 +225,13 @@ int main(void) {
     g_EnvironmentColors.fields.fogEnabled = 0;
     g_EnvScriptClock = 29;
     UpdateEnvironment();
-    if (g_EnvScriptClock != 30) {
-        puts("FAIL: environment clock reaches script length");
+    if (g_EnvScriptClock != 0) {
+        puts("FAIL: environment clock wraps at script length");
         return 1;
     }
     UpdateEnvironment();
-    if (g_EnvScriptClock != 0) {
-        puts("FAIL: environment clock wraps after script length");
+    if (g_EnvScriptClock != 1) {
+        puts("FAIL: environment clock advances after wrapping");
         return 1;
     }
 
