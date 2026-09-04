@@ -17,7 +17,10 @@ enum {
 };
 
 static int CardStatusSettledAfterIo(void) {
-    if (PollMemoryCardStatus(0, 0) != MC_MENU_STATE_READY) return 0;
+    if (PollMemoryCardStatus(0, 0) != MC_MENU_STATE_READY) {
+        g_McSettleTicks = 0;
+        return 0;
+    }
     return ++g_McSettleTicks >= CARD_STABLE_STATUS_FRAMES;
 }
 

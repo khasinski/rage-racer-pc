@@ -286,6 +286,43 @@ static int TestFormatOperationReportsItsResult(void) {
     return 1;
 }
 
+static int TestCardSettleRequiresConsecutiveReadyPolls(void) {
+    int i;
+
+    g_McActionState = 0x25;
+    g_McSettleTicks = 2;
+
+    s_cardStatusAnswer = MC_MENU_STATE_READY;
+    RunCardSlotActions();
+    if (g_McSettleTicks != 3 || g_McActionState != 0x25) {
+        printf("FAIL settle did not accept the third ready poll\n");
+        return 0;
+    }
+
+    s_cardStatusAnswer = MC_MENU_STATE_NO_CARD;
+    RunCardSlotActions();
+    if (g_McSettleTicks != 0 || g_McActionState != 0x25) {
+        printf("FAIL interrupted settle kept %d ready polls in action %x\n",
+               g_McSettleTicks, g_McActionState);
+        return 0;
+    }
+
+    s_cardStatusAnswer = MC_MENU_STATE_READY;
+    for (i = 0; i < 3; i++) {
+        RunCardSlotActions();
+    }
+    if (g_McActionState != 0x25) {
+        printf("FAIL settle completed after only three consecutive polls\n");
+        return 0;
+    }
+    RunCardSlotActions();
+    if (g_McActionState != 0x26) {
+        printf("FAIL settle did not complete after four consecutive polls\n");
+        return 0;
+    }
+    return 1;
+}
+
 int main(int argc, char **argv) {
     static const s32 states[] = {3, 1, 2, -1, -2, -3, 7};
     static const s32 actions[] = {0, 1, 2, 3, 5, 6, 7, 8, 9, 0xA, 0xB, 0xC,
@@ -309,7 +346,8 @@ int main(int argc, char **argv) {
     char label[64];
 
     if (!TestFailedLoadReportsError() || !TestOverwritePromptResetsChoice() ||
-        !TestFormatOperationReportsItsResult()) {
+        !TestFormatOperationReportsItsResult() ||
+        !TestCardSettleRequiresConsecutiveReadyPolls()) {
         return 1;
     }
 
