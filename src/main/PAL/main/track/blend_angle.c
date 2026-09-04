@@ -9,7 +9,7 @@
 s32 BlendAngle(s32 angleA, s32 angleB, s32 weight) {
     s32 lhs = angleA & 0xFFF;
     s32 rhs = angleB & 0xFFF;
-    s32 inv = 0x400 - weight;
+    s32 inv = (s32)(0x400u - (u32)weight);
     s32 sum;
 
     if (rhs < lhs) {

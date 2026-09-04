@@ -91,6 +91,7 @@ static void test_angle_blending(void) {
     EXPECT_EQ(0, BlendAngle(0xF00, 0x100, 0x200));
     EXPECT_EQ(0, BlendAngle(0x100, 0xF00, 0x200));
     EXPECT_EQ(0x800, BlendAngle(0, 0x800, 0x400));
+    EXPECT_EQ(0x123, BlendAngle(0x123, 0x123, INT_MIN));
 }
 
 static void test_track_angle_interpolation(void) {
@@ -153,6 +154,14 @@ static void test_track_point_interpolation(void) {
     EXPECT_EQ(-1, out[0]);
     EXPECT_EQ(-16384, out[1]);
     EXPECT_EQ(-1, out[2]);
+
+    points[0].x = points[1].x = 10;
+    points[0].y = points[1].y = 20;
+    points[0].z = points[1].z = 30;
+    InterpolateTrackPoint(0, out, INT_MIN);
+    EXPECT_EQ(10, out[0]);
+    EXPECT_EQ(10, out[1]);
+    EXPECT_EQ(30, out[2]);
 
     g_TrackPoints = NULL;
     InterpolateTrackPoint(0, out, 0x200);

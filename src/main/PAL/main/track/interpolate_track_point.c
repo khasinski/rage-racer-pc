@@ -7,15 +7,15 @@
  */
 void InterpolateTrackPoint(s32 pointIndex, s32 *out, s32 weight) {
     s32 next;
-    s32 inv = 0x400 - weight;
+    s32 inv = (s32)(0x400u - (u32)weight);
     const GameTrackPoint *cur;
     const GameTrackPoint *nxt;
     s32 sum;
 
-    if (out == 0) {
+    if (out == NULL) {
         return;
     }
-    if (g_TrackPoints == 0 || g_TrackPointCount <= 0) {
+    if (g_TrackPoints == NULL || g_TrackPointCount <= 0) {
         out[0] = 0;
         out[1] = 0;
         out[2] = 0;
