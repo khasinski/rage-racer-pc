@@ -3,7 +3,6 @@
 #include "game/menu_internal.h"
 
 enum {
-    TEAM_NAME_GRID_ROWS = 4,
     TEAM_NAME_CURSOR_ENTRY_ANGLE = 4096000,
 };
 
@@ -21,10 +20,10 @@ static s32 MoveTeamNameGridCursor(s32 cursor, u16 pressed) {
     s32 column = cursor % MENU_TEAM_NAME_GRID_COLUMNS;
 
     if (pressed & PAD_UP) {
-        row = WrapMenuIndex(row, -1, TEAM_NAME_GRID_ROWS);
+        row = WrapMenuIndex(row, -1, MENU_TEAM_NAME_GRID_ROWS);
     }
     if (pressed & PAD_DOWN) {
-        row = WrapMenuIndex(row, 1, TEAM_NAME_GRID_ROWS);
+        row = WrapMenuIndex(row, 1, MENU_TEAM_NAME_GRID_ROWS);
     }
     if (pressed & PAD_LEFT) {
         column = WrapMenuIndex(column, -1, MENU_TEAM_NAME_GRID_COLUMNS);

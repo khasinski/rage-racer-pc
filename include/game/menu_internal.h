@@ -191,8 +191,10 @@ typedef enum EngineerShopState {
 
 enum {
     TEAM_NAME_HIDDEN_MODEL_KEY = 10,
-    TEAM_NAME_KEY_RUBOUT = 42,
-    TEAM_NAME_KEY_END = 43,
+    TEAM_NAME_KEY_COUNT =
+        MENU_TEAM_NAME_GRID_COLUMNS * MENU_TEAM_NAME_GRID_ROWS,
+    TEAM_NAME_KEY_RUBOUT = TEAM_NAME_KEY_COUNT - 2,
+    TEAM_NAME_KEY_END = TEAM_NAME_KEY_COUNT - 1,
 };
 
 static inline s32 NormalizeTeamNameCursor(s32 cursor) {

@@ -2,9 +2,8 @@
 #include "game/menu_internal.h"
 
 enum {
-    TEAM_NAME_GRID_ROWS = 4,
     TEAM_NAME_GRID_CELL_COUNT =
-        MENU_TEAM_NAME_GRID_COLUMNS * TEAM_NAME_GRID_ROWS,
+        MENU_TEAM_NAME_GRID_COLUMNS * MENU_TEAM_NAME_GRID_ROWS,
     TEAM_NAME_GRID_X = 0x56,
     TEAM_NAME_GRID_Y = 0xF9,
     TEAM_NAME_CELL_WIDTH = 0xC,
@@ -18,7 +17,7 @@ typedef struct TeamNameKeyboardRow {
     u8 textureV;
 } TeamNameKeyboardRow;
 
-static const TeamNameKeyboardRow s_keyboardRows[TEAM_NAME_GRID_ROWS] = {
+static const TeamNameKeyboardRow s_keyboardRows[MENU_TEAM_NAME_GRID_ROWS] = {
     {10, 0x00, 0x18},
     {11, 0x50, 0x18},
     {11, 0xA8, 0x18},
@@ -67,7 +66,7 @@ static void DrawKeyboardGrid(GameOrderingTableEntry *ot, s32 frame, s32 cursorIn
                                   TEAM_NAME_CELL_HEIGHT,
                           height, 0x5B);
 
-    for (row = 0; row < TEAM_NAME_GRID_ROWS; row++) {
+    for (row = 0; row < MENU_TEAM_NAME_GRID_ROWS; row++) {
         const TeamNameKeyboardRow *layout = &s_keyboardRows[row];
 
         for (column = 0; column < layout->length; column++) {
