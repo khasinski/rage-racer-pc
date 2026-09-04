@@ -11,6 +11,7 @@
 
 #include "game/render.h"
 #include "game/asset.h"
+#include "game/model_stream.h"
 #include "game/render_state.h"
 #include "game/terrain_internal.h"
 #include "game/track.h"
@@ -148,7 +149,6 @@ static void ImportTextureWindow(uint32_t word,
 static int ImportVisitModelStream(
     uint32_t mesh, const uint8_t *stream, const SVec *vertices,
     const SVec *normals, RageImportedFaceVisitor visitor, void *context) {
-    static const uint8_t strides[] = {0x10, 0x18, 0x18, 0x20};
     uint32_t batches = 0;
     while (batches++ < RAGE_IMPORT_BATCH_GUARD) {
         uint16_t prim = ImportRead16(stream);
@@ -156,15 +156,16 @@ static int ImportVisitModelStream(
         uint16_t face;
         stream += 4;
         if (count == 0) return 1;
-        if (prim >= sizeof(strides)) return 0;
-        for (face = 0; face < count; face++, stream += strides[prim]) {
+        const s32 stride = ModelPrimitiveStride(prim);
+        if (stride == 0) return 0;
+        for (face = 0; face < count; face++, stream += stride) {
             RageImportedFace value;
             uint32_t corner;
             memset(&value, 0, sizeof(value));
             value.vertices = vertices;
             value.normals = normals;
             value.prim = (uint8_t)prim;
-            value.depthBias = (int8_t)stream[strides[prim] - 3];
+            value.depthBias = (int8_t)stream[stride - 3];
             value.color[0] = value.color[1] = value.color[2] = 255;
             for (corner = 0; corner < 4; corner++)
                 value.vertex[corner] = ImportRead16(stream + corner * 2);
@@ -222,7 +223,6 @@ static int ImportVisitModelBank(const NativeModelBank *bank,
 static int ImportVisitCourseStream(
     uint32_t mesh, const uint8_t *stream, const SVec *vertices,
     RageImportedFaceVisitor visitor, void *context) {
-    static const uint8_t strides[] = {0x10, 0x1C, 0x20, 0x20};
     static const uint8_t biasOffsets[] = {0x0D, 0x19, 0x19, 0x19};
     uint32_t batches = 0;
     while (batches++ < RAGE_IMPORT_BATCH_GUARD) {
@@ -231,8 +231,9 @@ static int ImportVisitCourseStream(
         uint16_t face;
         stream += 4;
         if (count == 0) return 1;
-        if (prim >= sizeof(strides)) return 0;
-        for (face = 0; face < count; face++, stream += strides[prim]) {
+        const s32 stride = CoursePrimitiveStride(prim);
+        if (stride == 0) return 0;
+        for (face = 0; face < count; face++, stream += stride) {
             RageImportedFace value;
             uint32_t corner;
             static const uint8_t offsets[] = {0x0C, 0x10, 0x14, 0x16};

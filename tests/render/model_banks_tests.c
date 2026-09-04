@@ -76,6 +76,13 @@ static int TestModelBank(void) {
     CHECK(g_ModelBanks[2].normals == (u8 *)&data + 40);
     CHECK(g_ModelBanks[2].models[1] == (u8 *)&data + 52);
 
+    data.modelOffsets[2] = sizeof(data) - sizeof(u32);
+    ((u16 *)((u8 *)&data + data.modelOffsets[2]))[1] = 1;
+    CHECK(RegisterModelBank(header, sizeof(data), 2) == 0);
+    CHECK(g_ModelBanks[2].modelCount == 3);
+    ((u16 *)((u8 *)&data + data.modelOffsets[2]))[1] = 0;
+    data.modelOffsets[2] = 60;
+
     SelectModelBank(2);
     CHECK(g_RenderState.modelTable1 == g_ModelBanks[2].table);
     CHECK(g_RenderState.modelNormals == g_ModelBanks[2].normals);
@@ -153,6 +160,13 @@ static int TestCourseModels(void) {
     CHECK(g_NativeCourseModels[1].geometry == (u8 *)&data + 52);
     CHECK(g_NativeCourseModels[1].vertexCount == 34);
     CHECK(g_NativeCourseModels[1].model == (u8 *)&data + 60);
+
+    data.models[2].modelOffset = sizeof(data) - sizeof(u32);
+    ((u16 *)((u8 *)&data + data.models[2].modelOffset))[1] = 1;
+    CHECK(RegisterCourseModels(header, sizeof(data)) == 0);
+    CHECK(g_CourseModelCount == 3);
+    ((u16 *)((u8 *)&data + data.models[2].modelOffset))[1] = 0;
+    data.models[2].modelOffset = 72;
 
     data.models[1].modelOffset = sizeof(data);
     CHECK(RegisterCourseModels(header, sizeof(data)) == 0);

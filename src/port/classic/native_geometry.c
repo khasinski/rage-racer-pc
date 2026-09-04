@@ -8,6 +8,7 @@
 
 #include "game/render_internal.h"
 #include "game/asset.h"
+#include "game/model_stream.h"
 #include "game/terrain_internal.h"
 
 #include "../modern/scene_capture.h"
@@ -785,7 +786,7 @@ void SubmitModel(void *ctx, int index) {
                              (const SVECTOR *)g_RenderState.modelTable1,
                              (const SVECTOR *)g_RenderState.modelNormals);
         if ((unsigned)type >= 4) break;
-        stream += count * (const uint8_t[]){16,24,24,32}[type];
+        stream += count * ModelPrimitiveStride(type);
     }
     CaptureSubmitEnd();
 }
@@ -794,7 +795,6 @@ void SubmitModel(void *ctx, int index) {
  * non-rendering bodies here makes the remaining fidelity gap visible and
  * avoids hiding it among generic platform adapters. */
 static void RageSubmitCourseModel(int index, int fogged) {
-    static const uint8_t strides[4] = {16, 28, 32, 32};
     const NativeCourseModel *models = g_RenderState.courseBank;
     const uint8_t *stream;
     uint8_t *cursor = RENDER_PRIM_CURSOR_AS(uint8_t);
@@ -820,7 +820,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
         int i;
         stream += 4;
         if ((unsigned)type >= 4 || count <= 0) break;
-        stride = strides[type];
+        stride = CoursePrimitiveStride(type);
         for (i = 0; i < count; i++, stream += stride) {
             int sxy[4] = {0}, depth = 0, fog = 0, rawDepth = 0;
             int projected;

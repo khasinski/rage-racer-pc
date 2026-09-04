@@ -1,8 +1,32 @@
 #include "game/asset.h"
 #include "game/asset_internal.h"
+#include "game/model_stream.h"
 #include "game/render.h"
 #include "game/render_internal.h"
 #include "game/track.h"
+
+typedef s32 (*PrimitiveStride)(s32 primitive);
+
+static s32 PrimitiveStreamIsValid(const u8 *base, size_t size, s32 offset,
+                                  PrimitiveStride primitiveStride) {
+    size_t cursor = (size_t)offset;
+
+    while (cursor <= size && size - cursor >= sizeof(u32)) {
+        const u16 primitive = (u16)(base[cursor] |
+                                    (u16)base[cursor + 1] << 8);
+        const u16 count = (u16)(base[cursor + 2] |
+                                (u16)base[cursor + 3] << 8);
+        const s32 stride = primitiveStride(primitive);
+
+        cursor += sizeof(u32);
+        if (count == 0) return 1;
+        if (stride == 0 || count > (size - cursor) / (size_t)stride) {
+            return 0;
+        }
+        cursor += (size_t)count * (size_t)stride;
+    }
+    return 0;
+}
 
 s32 IsValidModelBankAsset(const ModelBankHeader *base, size_t size) {
     u32 count;
@@ -25,7 +49,10 @@ s32 IsValidModelBankAsset(const ModelBankHeader *base, size_t size) {
     }
     for (i = 0; i < count; i++) {
         if (!AssetPayloadOffsetIsValid(base->modelOffsets[i], payloadOffset,
-                                       size)) {
+                                       size) ||
+            !PrimitiveStreamIsValid((const u8 *)base, size,
+                                    base->modelOffsets[i],
+                                    ModelPrimitiveStride)) {
             return 0;
         }
     }
@@ -90,7 +117,10 @@ s32 IsValidCourseModelAsset(const CourseModelAssetHeader *base, size_t size) {
             !AssetPayloadOffsetIsValid(entry->geometryOffset, payloadOffset,
                                        size) ||
             !AssetPayloadOffsetIsValid(entry->modelOffset, payloadOffset,
-                                       size)) {
+                                       size) ||
+            !PrimitiveStreamIsValid((const u8 *)base, size,
+                                    entry->modelOffset,
+                                    CoursePrimitiveStride)) {
             return 0;
         }
     }
