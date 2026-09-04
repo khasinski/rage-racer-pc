@@ -42,7 +42,7 @@ int DiagnosticsEnabled(int channel) { (void)channel; return 0; }
  * calibration actually selects from, g_NegconSteerRange and
  * g_NegconSteerDeadZone, are the real initialized-data definitions.
  */
-u8 g_PadBuffers[0x50];
+u8 g_PadBuffers[PAD_BUFFER_SIZE];
 PadState g_PadState;
 u8 g_PadType;
 u16 g_PadButtonMapping[16];

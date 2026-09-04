@@ -36,7 +36,7 @@ int InitPAD(char *buf0, int len0, char *buf1, int len1) {
 int DiagnosticsEnabled(int channel) { (void)channel; return 0; }
 
 /* The pad's live state: plain storage the game refills every frame. */
-u8 g_PadBuffers[0x50];
+u8 g_PadBuffers[PAD_BUFFER_SIZE];
 PadState g_PadState;
 u8 g_PadType;
 u16 g_PadButtonMapping[16];
@@ -476,9 +476,13 @@ static void PadInitializationTests(void) {
     Check("first BIOS packet starts at the pad buffer",
           s_initPadBuffer0 == (char *)g_PadBuffers, 1);
     Check("second BIOS packet follows the first",
-          s_initPadBuffer1 == (char *)g_PadBuffers + 0x28, 1);
-    Check("first BIOS packet has the retail size", s_initPadLength0, 0x28);
-    Check("second BIOS packet has the retail size", s_initPadLength1, 0x28);
+          s_initPadBuffer1 ==
+              (char *)g_PadBuffers + PAD_PORT_BUFFER_SIZE,
+          1);
+    Check("first BIOS packet has the retail size", s_initPadLength0,
+          PAD_PORT_BUFFER_SIZE);
+    Check("second BIOS packet has the retail size", s_initPadLength1,
+          PAD_PORT_BUFFER_SIZE);
 }
 
 int main(void) {

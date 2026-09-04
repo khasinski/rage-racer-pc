@@ -78,7 +78,7 @@ u16 g_NegconButtonPresets[CONTROLLER_MAPPING_COUNT]
                          [CONTROLLER_MAPPING_BUTTON_COUNT];
 /* InitPAD writes two 0x28-byte BIOS packets. Retail's byte symbols at +1..+3
  * are aliases into the first packet, not independent objects. */
-u8 g_PadBuffers[0x50];
+u8 g_PadBuffers[PAD_BUFFER_SIZE];
 PadState g_PadState;
 u8 g_PadType;
 u16 g_PadPrevHeld;

@@ -9,8 +9,9 @@
 
 /* Attach the two retail 0x28-byte pad buffers to the host input backend. */
 void GameInitPad(void) {
-    (void)InitPAD((char *)g_PadBuffers, 0x28,
-                  (char *)g_PadBuffers + 0x28, 0x28);
+    (void)InitPAD((char *)g_PadBuffers, PAD_PORT_BUFFER_SIZE,
+                  (char *)g_PadBuffers + PAD_PORT_BUFFER_SIZE,
+                  PAD_PORT_BUFFER_SIZE);
 }
 
 /* The live mapping UpdatePadState reads: the pad's eight masks at +0,

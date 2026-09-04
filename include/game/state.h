@@ -35,6 +35,12 @@ typedef struct PadState {
     s16 steer;   /* twist after the neutral offset, play deadzone and clamp */
 } PadState;
 
+enum {
+    PAD_PORT_BUFFER_SIZE = 0x28,
+    PAD_PORT_COUNT = 2,
+    PAD_BUFFER_SIZE = PAD_PORT_BUFFER_SIZE * PAD_PORT_COUNT,
+};
+
 enum PadType {
     PAD_TYPE_NEGCON = 0x23,
     PAD_TYPE_DIGITAL = 0x41
@@ -169,7 +175,7 @@ extern s32 g_BootLogoTimer;
 extern s32 g_FrameCounter;
 extern u8 g_NegconConfigButtonRows[];
 extern u8 g_NegconConfigLabelRows[];
-extern u8 g_PadBuffers[0x50];
+extern u8 g_PadBuffers[PAD_BUFFER_SIZE];
 extern u8 g_PadConfigButtonRows[];
 extern u8 g_PadConfigLabelRows[];
 extern u16 g_PadPrevHeld;
