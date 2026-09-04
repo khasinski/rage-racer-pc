@@ -6,7 +6,7 @@
 typedef MATRIX Matrix;
 
 MATRIX *MulMatrix2(MATRIX *left, MATRIX *right);
-short *ApplyMatrixSV(void *matrix, void *input, short *output);
+short *ApplyMatrixSV(const void *matrix, const void *input, short *output);
 void Intpl(void *input, long blend, void *output);
 
 static inline MATRIX *RageMulMatrix(void *left, void *right) {

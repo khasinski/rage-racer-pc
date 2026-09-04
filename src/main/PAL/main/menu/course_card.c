@@ -38,7 +38,6 @@ static s32 AdvanceCourseCardSpin(void) {
 }
 
 void UpdateAndDrawCourseCard(void) {
-    SVec vertices[4];
     MenuProjectedVertex projected[4];
     Matrix rotation;
     s32 angle;
@@ -62,12 +61,10 @@ void UpdateAndDrawCourseCard(void) {
         return;
     }
 
-    for (i = 0; i < 4; i++) {
-        vertices[i] = g_CourseCardVerts[i];
-    }
     BuildRotMatrixY(&rotation, angle);
     for (i = 0; i < 4; i++) {
-        ApplyMatrixSV(&rotation, &vertices[i], projected[i].components);
+        ApplyMatrixSV(&rotation, &g_CourseCardVerts[i],
+                      projected[i].components);
     }
 
     GameDrawTexturedQuad(

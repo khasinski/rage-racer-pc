@@ -20,6 +20,8 @@ static s32 s_matrixCalls;
 static s32 s_drawCalls;
 static s32 s_drawDepth;
 static s32 s_wrongOrderingTable;
+static s32 s_wrongMatrixSource;
+static s32 s_matrixSourceIndex;
 static s16 s_drawX[4];
 static u16 s_drawY[4];
 
@@ -28,10 +30,15 @@ void BuildRotMatrixY(void *matrix, s32 angle) {
     s_rotationAngle = angle;
 }
 
-short *ApplyMatrixSV(void *matrix, void *source, short *destination) {
+short *ApplyMatrixSV(const void *matrix, const void *source,
+                     short *destination) {
     const SVec *vertex = source;
 
     (void)matrix;
+    if (source != &g_CourseCardVerts[s_matrixSourceIndex]) {
+        s_wrongMatrixSource = 1;
+    }
+    s_matrixSourceIndex++;
     destination[0] = vertex->vx;
     destination[1] = vertex->vy;
     destination[2] = vertex->vz;
@@ -99,6 +106,8 @@ static void Reset(void) {
     s_drawCalls = 0;
     s_drawDepth = -1;
     s_wrongOrderingTable = 0;
+    s_wrongMatrixSource = 0;
+    s_matrixSourceIndex = 0;
 }
 
 int main(void) {
@@ -106,6 +115,7 @@ int main(void) {
     UpdateAndDrawCourseCard();
     CHECK(g_CourseCardSpin == 1001);
     CHECK(s_rotationAngle == 11 && s_matrixCalls == 4);
+    CHECK(s_wrongMatrixSource == 0);
     CHECK(s_drawCalls == 1 && s_drawDepth == 0x1F8);
     CHECK(s_wrongOrderingTable == 0);
     CHECK(s_drawX[0] == 0xE4 - 10 && s_drawY[0] == 0x58 - 20);

@@ -41,9 +41,9 @@ MATRIX *MulMatrix2(MATRIX *left, MATRIX *right) {
     return right;
 }
 
-short *ApplyMatrixSV(void *matrix, void *input, short *output) {
-    MATRIX *m = matrix;
-    SVECTOR *v = input;
+short *ApplyMatrixSV(const void *matrix, const void *input, short *output) {
+    const MATRIX *m = matrix;
+    const SVECTOR *v = input;
     int row;
 
     for (row = 0; row < 3; row++) {

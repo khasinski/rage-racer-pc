@@ -81,7 +81,7 @@ void *MulMatrix0(void *m0, void *m1, void *m2);
 /* v1 = m * v0 through the same MVMVA; v0 is a short vector, v1 gets MAC1..3. */
 void *ApplyMatrix(void *m, void *v0, void *v1);
 /* SVECTOR in, SVECTOR out; returns v1. LibRef47 8-23. */
-short *ApplyMatrixSV(void *m, void *v0, short *v1);
+short *ApplyMatrixSV(const void *m, const void *v0, short *v1);
 
 /* Matrix scaling. ScaleMatrix does m[i][j] *= v[j] (column j scaled by
  * v[j]); ScaleMatrixL does m[i][j] *= v[i]. LibRef47 8-150 / 8-151. */
