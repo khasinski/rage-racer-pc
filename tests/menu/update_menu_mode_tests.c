@@ -31,6 +31,7 @@ static s32 s_drawCalls;
 static s32 s_drawSteps[2];
 static s32 s_hintResult;
 static s32 s_overlayCalls;
+static s32 s_solidRectCalls;
 static s32 s_specCarTire;
 static s32 s_spriteCount;
 static u16 s_spriteTextureV;
@@ -58,6 +59,7 @@ void DrawSolidRect(GameOrderingTableEntry *ot, s32 x, s32 y, s32 width,
     (void)g;
     (void)b;
     (void)depth;
+    s_solidRectCalls++;
 }
 
 void DrawCarSpecGraph(s32 step, u32 tireGrade) {
@@ -139,6 +141,7 @@ static void Reset(void) {
     s_drawCalls = 0;
     s_hintResult = 0;
     s_overlayCalls = 0;
+    s_solidRectCalls = 0;
     s_specCarTire = -1;
     s_spriteCount = 0;
     s_spriteTextureV = 0;
@@ -153,6 +156,7 @@ static int TestDispatchAndLayers(void) {
     UpdateMenuMode();
     CHECK(g_AnimTimer == 11 && g_SceneTimer == 2 && s_displayMask == 1);
     CHECK(g_RenderState.otShift == 1 && s_updateCalls == 1);
+    CHECK(s_solidRectCalls == 1);
     CHECK(s_drawCalls == 2 && s_drawSteps[0] == 0x14);
     CHECK(s_drawSteps[1] == -10 && g_MenuOutgoingScreenProgress == 123);
     CHECK(s_specCarTire == 4 && s_overlayCalls == 0);
@@ -202,6 +206,15 @@ static int TestInvalidIndices(void) {
     g_CarTable = NULL;
     UpdateMenuMode();
     CHECK(s_specCarTire == 0);
+
+    Reset();
+    RENDER_OT_BASE = NULL;
+    g_MenuHintBarStep = 1;
+    g_MenuHintButtonsVisible = 1;
+    s_hintResult = 1;
+    UpdateMenuMode();
+    CHECK(s_solidRectCalls == 0 && s_spriteCount == 0);
+    CHECK(s_updateCalls == 1 && s_overlayCalls == 1);
     return 0;
 }
 
