@@ -23,7 +23,7 @@ static s32 ApproachLetterboxHeight(s32 height, s32 target) {
     return height;
 }
 
-void DrawOptionSceneOverlay(void) {
+static void DrawOptionSceneOverlay(void) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(54);
     s32 targetHeight = g_GameMode == OPTION_MODE_SCREEN_ADJUST
                            ? OPTION_LETTERBOX_FULL_HEIGHT

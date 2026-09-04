@@ -124,17 +124,17 @@ int main(void) {
 
     Reset(OPTION_MODE_ROOT);
     g_OptionLetterboxHeight = 239;
-    DrawOptionSceneOverlay();
+    UpdateOptionScene();
     CHECK(g_OptionLetterboxHeight == 240 && s_lastTileHeight == 240);
 
     Reset(OPTION_MODE_ROOT);
     g_OptionLetterboxHeight = 241;
-    DrawOptionSceneOverlay();
+    UpdateOptionScene();
     CHECK(g_OptionLetterboxHeight == 240 && s_lastTileHeight == 240);
 
     Reset(OPTION_MODE_SCREEN_ADJUST);
     g_OptionLetterboxHeight = 479;
-    DrawOptionSceneOverlay();
+    UpdateOptionScene();
     CHECK(g_OptionLetterboxHeight == 480 && s_lastTileHeight == 480);
 
     Reset(OPTION_MODE_FADE);
@@ -149,12 +149,12 @@ int main(void) {
 
     Reset(OPTION_MODE_ROOT);
     g_OptionLetterboxHeight = INT_MIN;
-    DrawOptionSceneOverlay();
+    UpdateOptionScene();
     CHECK(g_OptionLetterboxHeight == 4 && s_lastTileHeight == 4);
 
     Reset(OPTION_MODE_ROOT);
     g_OptionLetterboxHeight = INT_MAX;
-    DrawOptionSceneOverlay();
+    UpdateOptionScene();
     CHECK(g_OptionLetterboxHeight == 476 && s_lastTileHeight == 476);
 
     Reset(OPTION_MODE_ROOT);

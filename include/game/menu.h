@@ -599,7 +599,6 @@ void ShuffleBgmOrder(void);
 void StartOptionMenuExit(GameSceneId scene);
 void UploadTeamNameTexture(const u8 *str, s32 len);
 s32 DrawClassChangeCurtain(s32 step);
-void DrawOptionSceneOverlay(void);
 void UpdateOptionScene(void);
 void UpdateOptionMenuFade(void);
 s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index);
