@@ -3,6 +3,7 @@
 #include "game/render_internal.h"
 #include "game/track_internal.h"
 #include "game/terrain_internal.h"
+#include "rage/render_world_game.h"
 
 static s32 DivideBy32TowardZero(s32 value) {
     if (value < 0) {
@@ -475,6 +476,16 @@ void DrawSkyBackground(void) {
 
     InitializeSkyFrame(&work);
     MeasureSkyBand(&work, &setup);
+    {
+        GameSkyGridLayout exact = {
+            setup.panelXFixed, setup.panelYFixed,
+            setup.lowerPanelXFixed, setup.lowerPanelYFixed,
+            setup.columnStepX, setup.columnStepY,
+            setup.rowStepX, setup.rowStepY, setup.textureColumn,
+        };
+        GameRenderWorldSetSkyGrid(&exact,
+                                  work.mirrorFlag != g_MirrorMode);
+    }
     packet = work.packet;
 
     geometry.panelX = setup.panelXFixed;

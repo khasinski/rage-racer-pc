@@ -43,8 +43,13 @@ require("screenPosition" not in glsl,
         "cloud placement must not depend on backend clip-space Y")
 require("cloudCoverage" in dense,
         "cloud must fade out rather than fill the sky")
-require("gridColumn)/8.0" in dense,
-        "the panorama must advance one tile per classic grid column")
+require("mod(-floor(cloudBand),2.0)" in dense,
+        "authored cloud rows must alternate upwards like the classic grid")
+require("atan(direction.x,-direction.z)" in dense and
+        "(4.0/tau)" in dense,
+        "horizontal clouds must be anchored to four world-space panorama repeats")
+require("sky.gridParams.z==1.0" in dense and ":1.0" in dense,
+        "only the single-row horizon variant may expose a cloud-sheet edge")
 require("1.0 - smoothstep(0.528, 0.535, height)" not in glsl,
         "the intro sky must not cut clouds off at a fixed world height")
 
@@ -56,8 +61,6 @@ require("address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT" in sampler,
         "the cloud sheet must repeat round the horizon")
 require("address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE" in sampler,
         "vertical repetition must stay bounded in the sky shader")
-require("mod(floor(cloudBand),2.0)" in dense,
-        "the sky must alternate its two classic map rows over four bands")
 require("sky.gridParams.z" in glsl,
         "the shader must distinguish the one-row horizon from the 4-row grid")
 require("camera->skyGridOrigin" in gpu and "camera->skyGridColumn" in gpu,

@@ -38,6 +38,8 @@ static int s_trackCarAsset = -1;
 static int s_initialized;
 static int s_currentWorld;
 static int s_haveCompletedFrame;
+static GameSkyGridLayout s_skyGrid[2];
+static int s_haveSkyGrid[2];
 
 static int GameSceneUsesRaceWorld(void) {
     return g_SceneId == 12 || g_SceneId == 0x1E;
@@ -261,6 +263,8 @@ static void GameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
 }
 
 void GameRenderWorldBeginFrame(uint64_t frame) {
+    s_haveSkyGrid[0] = 0;
+    s_haveSkyGrid[1] = 0;
     if (!s_initialized) {
         RenderWorldInit(&s_worlds[0], s_instances[0],
                             RAGE_GAME_RENDER_WORLD_MAX_INSTANCES);
@@ -347,8 +351,12 @@ static RageRenderCamera GameRenderWorldBuildCamera(
     GameRenderWorldEnvironmentColor(ENV_SKY_BOTTOM, &camera.skyBottomColor);
     camera.skyAssetKey = TrackDataAssetKey();
     camera.skyCloudRow = (uint32_t)g_SkyRowBase;
-    MeasureSkyGridLayout(y, pitch, yaw, roll, g_RenderState.orderingFlag,
-                         g_MirrorMode, &skyGrid);
+    if (s_haveSkyGrid[rearFacing != 0]) {
+        skyGrid = s_skyGrid[rearFacing != 0];
+    } else {
+        MeasureSkyGridLayout(y, pitch, yaw, roll, g_RenderState.orderingFlag,
+                             g_MirrorMode, &skyGrid);
+    }
     camera.skyGridOrigin.x = skyGrid.panelXFixed * (1.0f / 256.0f);
     camera.skyGridOrigin.y = skyGrid.panelYFixed * (1.0f / 256.0f);
     camera.skyGridOrigin.z = skyGrid.lowerPanelXFixed * (1.0f / 256.0f);
@@ -364,6 +372,14 @@ static RageRenderCamera GameRenderWorldBuildCamera(
     camera.fogNear = (float)g_FogNear * 0.25f;
     camera.fogFar = camera.fogNear * 5.0f;
     return camera;
+}
+
+void GameRenderWorldSetSkyGrid(const GameSkyGridLayout *layout,
+                               int mirrorPass) {
+    int index = mirrorPass != 0;
+    if (layout == NULL) return;
+    s_skyGrid[index] = *layout;
+    s_haveSkyGrid[index] = 1;
 }
 
 void GameRenderWorldSetCamera(int32_t x, int32_t y, int32_t z,

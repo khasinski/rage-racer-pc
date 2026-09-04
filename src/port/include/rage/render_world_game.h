@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 struct GameRenderObject;
+struct GameSkyGridLayout;
 struct RageRenderWorld;
 
 typedef enum RageGameCarRenderDetail {
@@ -17,6 +18,10 @@ void GameRenderWorldBeginFrame(uint64_t frame);
 void GameRenderWorldSetCamera(int32_t x, int32_t y, int32_t z,
                                   int32_t pitch, int32_t yaw, int32_t roll);
 void GameRenderWorldPublishCurrentCamera(void);
+/* Publish the layout measured by DrawSkyBackground for this exact render
+ * pass. Scripted cameras may advance again before the scene handler ends. */
+void GameRenderWorldSetSkyGrid(const struct GameSkyGridLayout *layout,
+                               int mirror_pass);
 void GameRenderWorldSubmitCourseObject(uint32_t entity, int32_t mesh,
                                            int32_t x, int32_t y, int32_t z,
                                            int32_t yaw, int fogged,

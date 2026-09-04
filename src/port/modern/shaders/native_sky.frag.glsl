@@ -72,21 +72,26 @@ void main() {
                         columnAxis.y * rowAxis.x;
     float validGrid = step(0.0001, abs(determinant));
     determinant = validGrid != 0.0 ? determinant : 1.0;
-    float gridColumn = (relative.x * rowAxis.y -
-                        relative.y * rowAxis.x) / determinant;
     float cloudBand = (columnAxis.x * relative.y -
                        columnAxis.y * relative.x) / determinant;
     float panoramaHeight = float(textureSize(panorama, 0).y);
     float panoramaV = fract(cloudBand);
     if (panoramaHeight > 128.0) {
-        /* Classic draws four vertical bands and alternates the two map rows
-         * selected by g_SkyRowBase. The 256-row native texture stores those
-         * two panoramas one above the other. */
-        float row = mod(floor(cloudBand), 2.0);
+        /* Classic starts row zero at the origin, then places rows 1..3 above
+         * it by subtracting rowStep. Thus the visible grid coordinates are
+         * -3..1, with the two authored map rows alternating upwards. */
+        float row = mod(-floor(cloudBand), 2.0);
         panoramaV = (row + fract(cloudBand)) * 0.5;
     }
-    vec2 panoramaUV = vec2(fract((sky.gridOrigin.z + gridColumn) / 8.0),
-                            panoramaV);
+    /* The original advances through 32 tile columns over one camera turn,
+     * while the packed panorama contains eight columns. Anchor those four
+     * repeats in world direction so scripted and interpolated cameras cannot
+     * make the clouds counter-scroll relative to the course. At yaw zero the
+     * classic centre sample is 10.5 tiles into the eight-tile panorama. */
+    const float tau = 6.283185307179586;
+    float panoramaU = fract(atan(direction.x, -direction.z) *
+                            (4.0 / tau) + 0.3125);
+    vec2 panoramaUV = vec2(panoramaU, panoramaV);
     vec4 authored = texture(panorama, panoramaUV);
     /* The band ends where the sheet ends. Fading it out over a stretch of
      * sky instead makes the cloud look like it is dissolving, and the sheet
@@ -94,8 +99,15 @@ void main() {
     /* The classic grid continues above the viewport during pitched intro
      * cameras. Its texture alpha supplies the upper edge; an extra height
      * cutoff made a conspicuous horizontal end to the clouds. */
-    float cloudCoverage = step(0.0, cloudBand) *
-                          step(cloudBand, sky.gridParams.z) * validGrid;
+    /* The four 128-line classic rows are taller than the 240-line viewport.
+     * Repeating their vertical mapping avoids exposing a hard sheet edge when
+     * a scripted camera advances after the classic background pass. The
+     * one-row horizon variant remains deliberately bounded. */
+    float cloudCoverage = sky.gridParams.z == 1.0
+                              ? step(0.0, cloudBand) *
+                                    step(cloudBand, 1.0)
+                              : 1.0;
+    cloudCoverage *= validGrid;
     color = mix(color, authored.rgb,
                 authored.a * sky.bottom.a * cloudCoverage);
     outColor = vec4(color, 1.0);

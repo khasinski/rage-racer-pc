@@ -4,6 +4,7 @@
 #include "game/terrain_internal.h"
 #include "game/track.h"
 #include "game/track_internal.h"
+#include "rage/render_world_game.h"
 
 #include <stddef.h>
 #include <math.h>
@@ -17,6 +18,14 @@ SkyTileUV g_SkyTileUV[SKY_TILE_COUNT];
 s32 g_CourseIndex;
 s32 g_MirrorMode;
 s32 g_SkyRowBase;
+static GameSkyGridLayout s_publishedGrid;
+static int s_publishedMirror;
+
+void GameRenderWorldSetSkyGrid(const GameSkyGridLayout *layout,
+                               int mirrorPass) {
+    s_publishedGrid = *layout;
+    s_publishedMirror = mirrorPass;
+}
 
 typedef union PacketStorage {
     max_align_t alignment;
@@ -44,6 +53,8 @@ static void PrepareFrame(PacketStorage *packets,
     g_RenderState.primData = orderingTable;
     g_SkyRowBase = 1;
     g_MirrorMode = 0;
+    memset(&s_publishedGrid, 0, sizeof(s_publishedGrid));
+    s_publishedMirror = -1;
 }
 
 static int TestNearGroundCourseSkirt(void) {
@@ -191,7 +202,7 @@ static int TestNativeGridMatchesClassicPackets(void) {
     for (size_t index = 0; index < sizeof(cameras) / sizeof(cameras[0]);
          index++) {
         GameSkyGridLayout grid;
-        POLY_FT4 *first;
+        POLY_FT4 *tiles;
         PrepareFrame(&packets, orderingTable);
         g_CourseIndex = 2;
         g_RenderState.viewY = cameras[index].y;
@@ -202,25 +213,33 @@ static int TestNativeGridMatchesClassicPackets(void) {
                              cameras[index].yaw, cameras[index].roll, 0, 0,
                              &grid);
         DrawSkyBackground();
-        first = (POLY_FT4 *)(void *)packets.bytes;
-        CHECK(first->x0 == grid.panelXFixed / 256);
-        CHECK(first->y0 == grid.panelYFixed / 256);
-        CHECK(first->x1 ==
+        CHECK(s_publishedMirror == 0);
+        CHECK(memcmp(&s_publishedGrid, &grid, sizeof(grid)) == 0);
+        tiles = (POLY_FT4 *)(void *)packets.bytes;
+        CHECK(tiles[0].x0 == grid.panelXFixed / 256);
+        CHECK(tiles[0].y0 == grid.panelYFixed / 256);
+        CHECK(tiles[0].x1 ==
               (grid.panelXFixed + grid.columnStepX) / 256);
-        CHECK(first->y2 == (grid.panelYFixed + grid.rowStepY) / 256);
-        /* Emulate the native shader at the first classic quad's center. It
-         * must land in classic column/row zero for pitched and rolled intro
-         * cameras, not cross a hard visibility boundary. */
-        CHECK(fabs(NativeGridCoordinate(
-                       &grid, (first->x0 + first->x1 + first->x2 + first->x3) /
-                                  4.0,
-                       (first->y0 + first->y1 + first->y2 + first->y3) / 4.0,
-                       0) - 0.5) < 0.02);
-        CHECK(fabs(NativeGridCoordinate(
-                       &grid, (first->x0 + first->x1 + first->x2 + first->x3) /
-                                  4.0,
-                       (first->y0 + first->y1 + first->y2 + first->y3) / 4.0,
-                       1) - 0.5) < 0.02);
+        CHECK(tiles[0].y2 ==
+              (grid.panelYFixed + grid.rowStepY) / 256);
+        /* Emulate the native shader at every classic quad centre. Classic
+         * resets each row to the origin and subtracts rowStep, so rows 1..3
+         * occupy negative grid coordinates rather than extending down. */
+        for (int row = 0; row < 4; row++) {
+            for (int column = 0; column < 8; column++) {
+                POLY_FT4 *tile = &tiles[row * 8 + column];
+                double centerX =
+                    (tile->x0 + tile->x1 + tile->x2 + tile->x3) / 4.0;
+                double centerY =
+                    (tile->y0 + tile->y1 + tile->y2 + tile->y3) / 4.0;
+                CHECK(fabs(NativeGridCoordinate(
+                               &grid, centerX, centerY, 0) -
+                           (column + 0.5)) < 0.03);
+                CHECK(fabs(NativeGridCoordinate(
+                               &grid, centerX, centerY, 1) -
+                           (0.5 - row)) < 0.03);
+            }
+        }
     }
     {
         GameSkyGridLayout before, after;
