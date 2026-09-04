@@ -13,13 +13,9 @@
 #include "game/menu.h"
 #include "game/menu_internal.h"
 
-/* The rest window is a fifth of a turn either side of the target. */
-#define TURNTABLE_REST_WINDOW 0x493DF
-#define TURNTABLE_SWING 0x927C0
-
 int MenuCarViewSettled(void) {
     return MenuValueWithinWindow(g_MenuViewAngle, g_MenuViewAngleTarget,
-                                 TURNTABLE_REST_WINDOW);
+                                 MENU_CAR_VIEW_SETTLE_WINDOW);
 }
 
 /*
@@ -44,7 +40,7 @@ void MenuSpinToCar(s32 *shownCar, s32 fromIndex, s32 toIndex, s32 newTarget) {
     g_MenuLowerAltPanelStep = -1;
     g_CarSwapToIndex = *shownCar;
     g_MenuViewAngle = RebaseCarouselValue(
-        g_MenuViewAngle, previousTarget, TURNTABLE_SWING);
+        g_MenuViewAngle, previousTarget, MENU_CAR_VIEW_REBASE_SPAN);
 }
 
 /*
@@ -65,5 +61,5 @@ void MenuSpinBackToPlayerCar(void) {
     g_CarSwapFromIndex = g_CarListCursor;
     g_CarSwapToIndex = g_PlayerCarIndex;
     g_MenuViewAngle = RebaseCarouselValue(
-        g_MenuViewAngle, previousTarget, TURNTABLE_SWING);
+        g_MenuViewAngle, previousTarget, MENU_CAR_VIEW_REBASE_SPAN);
 }

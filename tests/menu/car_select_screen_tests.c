@@ -14,6 +14,7 @@
 #include "common.h"
 #include "game/asset.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/race.h"
 #include "game/save_internal.h"
 
@@ -195,7 +196,12 @@ int main(int argc, char **argv) {
     static const s32 cursors[] = {0, 1, 2, 3, 4};
     static const s32 owned[] = {-1, 5};
     static const s32 offsets[] = {0x3D08F, 0x3D090};
-    static const s32 settledOffsets[] = {0, 0x493DF, 0x493E0, -0x493DF};
+    static const s32 settledOffsets[] = {
+        0,
+        MENU_CAR_VIEW_SETTLE_WINDOW,
+        MENU_CAR_VIEW_SETTLE_WINDOW + 1,
+        -MENU_CAR_VIEW_SETTLE_WINDOW,
+    };
     int bi, sr, p2, gp, ci, pb, hb, settled, swap, oi, shop, upgrade, prog, off;
     int steps = 0;
 
@@ -246,8 +252,8 @@ int main(int argc, char **argv) {
         g_PadPressed = buttons[pb];
         g_PadHeld = held[hb];
         /* The screen only lets a car be swapped once the view has come to rest
-         * within 0x493DF of its target, so the sweep sits on both sides of
-         * that distance and on both sides of the target. */
+         * within the settle window of its target, so the sweep sits on both
+         * sides of that distance and on both sides of the target. */
         g_MenuViewAngleTarget = 0x7A120;
         g_MenuViewAngle = 0x7A120 + settledOffsets[settled];
         g_CarSwapToIndex = swap ? -1 : 3;

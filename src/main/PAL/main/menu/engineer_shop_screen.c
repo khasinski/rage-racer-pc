@@ -15,8 +15,6 @@
 #include "game/menu_internal.h"
 #include "game/menu_scripts_internal.h"
 
-enum { ENGINEER_SHOP_TURNTABLE_HALF_TURN = 0x927C0 };
-
 /* Everything the shop keeps on the display whichever state it is in. */
 static void DrawEngineerShopChrome(s32 price) {
     DrawEngineerShopPricePanel(1, g_PlayerMoney, price);
@@ -136,7 +134,7 @@ static void UpdateTuneUpCountdown(void *ot, s32 purchaseAvailable) {
     if (g_UiScriptProgress2 <= 0 && !purchaseAvailable) {
         GameMenuBusy = ENGINEER_SHOP_IDLE;
     } else if (g_UiScriptProgress2 <= 0) {
-        g_MenuViewAngle = ENGINEER_SHOP_TURNTABLE_HALF_TURN;
+        g_MenuViewAngle = MENU_CAR_VIEW_REBASE_SPAN;
         g_MenuViewAngleTarget = 0;
         GameMenuBusy = ENGINEER_SHOP_LEAVE_AFTER_TUNE_UP;
         g_MenuOverlayPattern = 2;

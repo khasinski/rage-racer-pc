@@ -49,7 +49,7 @@ int main(void) {
     s32 shownCar = 2;
 
     g_MenuViewAngleTarget = 500000;
-    g_MenuViewAngle = 500000 + 0x493DF;
+    g_MenuViewAngle = 500000 + MENU_CAR_VIEW_SETTLE_WINDOW;
     CHECK(MenuCarViewSettled());
     g_MenuViewAngle++;
     CHECK(!MenuCarViewSettled());

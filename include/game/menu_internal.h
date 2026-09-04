@@ -254,6 +254,14 @@ static inline s32 TeamNameCharacterModelIndex(s32 key, s32 modelCount) {
     return MenuModelIndexOrFallback(key, modelCount);
 }
 
+/* The showroom carousel rebases its fixed-point view angle by this span when
+ * changing direction. Input is accepted through the inclusive window ending
+ * one unit below half that span. */
+enum {
+    MENU_CAR_VIEW_REBASE_SPAN = 600000,
+    MENU_CAR_VIEW_SETTLE_WINDOW = MENU_CAR_VIEW_REBASE_SPAN / 2 - 1,
+};
+
 /* The showroom turntable is implementation shared by CAR SELECT and SHOP. */
 int MenuCarViewSettled(void);
 void MenuSpinToCar(s32 *shownCar, s32 fromIndex, s32 toIndex, s32 newTarget);
