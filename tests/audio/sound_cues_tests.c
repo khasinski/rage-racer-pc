@@ -37,6 +37,15 @@ static s32 s_bendVoice;
 static s32 s_bendVab;
 static s32 s_bendProgram;
 static s32 s_bendValue;
+static s32 s_fixedFailureCall;
+static s32 s_dynamicFailureCall;
+static s32 s_voiceErrorMessages;
+
+int printf(const char *format, ...) {
+    (void)format;
+    s_voiceErrorMessages++;
+    return 0;
+}
 
 int DiagnosticsEnabled(const char *key) {
     (void)key;
@@ -56,7 +65,8 @@ long SpuGetKeyStatus(unsigned long voiceBit) {
 
 short SsUtKeyOnV(short voice, short vab, short program, short tone,
                  short note, short fine, short left, short right) {
-    KeyCall *call = &s_fixed[s_fixedCount++];
+    s32 callIndex = s_fixedCount++;
+    KeyCall *call = &s_fixed[callIndex];
     (void)note;
     (void)fine;
     call->voice = voice;
@@ -65,21 +75,22 @@ short SsUtKeyOnV(short voice, short vab, short program, short tone,
     call->tone = tone;
     call->left = left;
     call->right = right;
-    return voice;
+    return callIndex == s_fixedFailureCall ? -1 : voice;
 }
 
 short SsUtKeyOn(short vab, short program, short tone, short note, short fine,
                 short left, short right) {
-    KeyCall *call = &s_dynamic[s_dynamicCount++];
+    s32 callIndex = s_dynamicCount++;
+    KeyCall *call = &s_dynamic[callIndex];
     (void)note;
     (void)fine;
-    call->voice = 40 + s_dynamicCount;
+    call->voice = 41 + callIndex;
     call->vab = vab;
     call->program = program;
     call->tone = tone;
     call->left = left;
     call->right = right;
-    return (short)call->voice;
+    return callIndex == s_dynamicFailureCall ? -1 : (short)call->voice;
 }
 
 short SsUtSetVVol(short voice, short left, short right) {
@@ -138,6 +149,9 @@ static void Reset(void) {
     s_dynamicCount = 0;
     s_volumeVoice = -1;
     s_bendVoice = -1;
+    s_fixedFailureCall = -1;
+    s_dynamicFailureCall = -1;
+    s_voiceErrorMessages = 0;
 }
 
 static int TestBankOne(void) {
@@ -172,6 +186,18 @@ static int TestBankOne(void) {
     s_keyStatus[4] = 1;
     PlaySoundCue(0);
     CHECK(s_fixedCount == 1 && s_fixed[0].voice == 23);
+
+    Reset();
+    g_SoundCueBank = 1;
+    s_fixedFailureCall = 0;
+    PlaySoundCue(0);
+    CHECK(s_voiceErrorMessages == 1);
+
+    Reset();
+    g_SoundCueBank = 1;
+    s_fixedFailureCall = 1;
+    PlaySoundCue(0);
+    CHECK(s_voiceErrorMessages == 1);
     return 0;
 }
 
@@ -204,6 +230,18 @@ static int TestBankTwo(void) {
     CHECK(s_fixedCount == 1 && s_fixed[0].voice == 19);
     CHECK(s_fixed[0].vab == 7 && s_fixed[0].program == 116);
     CHECK(s_fixed[0].tone == 26 && s_fixed[0].left == 32);
+
+    Reset();
+    g_SoundCueBank = 2;
+    s_dynamicFailureCall = 0;
+    PlaySoundCue(20);
+    CHECK(s_voiceErrorMessages == 1);
+
+    Reset();
+    g_SoundCueBank = 2;
+    s_dynamicFailureCall = 1;
+    PlaySoundCue(20);
+    CHECK(s_voiceErrorMessages == 1);
     return 0;
 }
 

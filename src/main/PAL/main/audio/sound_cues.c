@@ -68,7 +68,6 @@ static void StartPairedSoundCue(s32 cue, s32 volL, s32 volR) {
             params, params->toneA, volL, volR, busy);
         voiceB = StartPooledCueTone(
             params, params->toneB, volL, volR, busy);
-        failed = voiceA < 0;
     } else {
         voiceA = SsUtKeyOn(
             g_SoundScale.vabIds[params->vab], params->program,
@@ -76,8 +75,9 @@ static void StartPairedSoundCue(s32 cue, s32 volL, s32 volR) {
         voiceB = SsUtKeyOn(
             g_SoundScale.vabIds[params->vab], params->program,
             params->toneB, SOUND_BASE_NOTE, 0, volL, volR);
-        failed = voiceB < 0;
     }
+
+    failed = voiceA < 0 || voiceB < 0;
 
     if (failed) {
         printf("%s", g_MsgTooManyVoices);
