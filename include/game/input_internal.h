@@ -2,6 +2,7 @@
 #define GAME_INPUT_INTERNAL_H
 
 #include "common.h"
+#include "game/vector.h"
 
 extern u16 g_PadButtonMapping[16];
 typedef s16 ControllerMappingIndex;
@@ -9,6 +10,8 @@ enum {
     CONTROLLER_MAPPING_COUNT = 8,
     CONTROLLER_MAPPING_BUTTON_COUNT = 8,
     CONTROLLER_CONFIG_ACTION_COUNT = 5,
+    CONTROLLER_CONFIG_LABEL_SLOT_COUNT = 6,
+    CONTROLLER_CONFIG_BUTTON_POINT_COUNT = 16,
     CONTROLLER_CONFIG_ROW_COUNT =
         CONTROLLER_MAPPING_COUNT * CONTROLLER_CONFIG_ACTION_COUNT,
     CONTROLLER_MAPPING_FIRST = 0,
@@ -23,6 +26,10 @@ extern u8 g_PadConfigLabelRows[CONTROLLER_CONFIG_ROW_COUNT];
 extern u8 g_PadConfigButtonRows[CONTROLLER_CONFIG_ROW_COUNT];
 extern u8 g_NegconConfigLabelRows[CONTROLLER_CONFIG_ROW_COUNT];
 extern u8 g_NegconConfigButtonRows[CONTROLLER_CONFIG_ROW_COUNT];
+extern DVec g_PadLabelSlots[CONTROLLER_CONFIG_LABEL_SLOT_COUNT];
+extern DVec g_PadCalloutLabelPoints[CONTROLLER_CONFIG_LABEL_SLOT_COUNT];
+extern DVec
+    g_PadCalloutButtonPoints[CONTROLLER_CONFIG_BUTTON_POINT_COUNT];
 
 static inline ControllerMappingIndex ClampControllerMappingIndex(s32 index) {
     if (index < CONTROLLER_MAPPING_FIRST) {

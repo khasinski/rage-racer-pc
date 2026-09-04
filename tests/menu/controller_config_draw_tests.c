@@ -14,9 +14,9 @@ PadErrorState g_PadErrorState;
 ControllerMappingIndex g_PadMappingIndex;
 ControllerMappingIndex g_NegconMappingIndex;
 s32 g_ControllerSceneAngleY;
-DVec g_PadLabelSlots[8];
-DVec g_PadCalloutLabelPoints[8];
-DVec g_PadCalloutButtonPoints[8];
+DVec g_PadLabelSlots[CONTROLLER_CONFIG_LABEL_SLOT_COUNT];
+DVec g_PadCalloutLabelPoints[CONTROLLER_CONFIG_LABEL_SLOT_COUNT];
+DVec g_PadCalloutButtonPoints[CONTROLLER_CONFIG_BUTTON_POINT_COUNT];
 u8 g_PadConfigLabelRows[CONTROLLER_CONFIG_ROW_COUNT];
 u8 g_PadConfigButtonRows[CONTROLLER_CONFIG_ROW_COUNT];
 u8 g_NegconConfigLabelRows[CONTROLLER_CONFIG_ROW_COUNT];
@@ -151,9 +151,11 @@ static void Reset(void) {
     memset(g_PadConfigButtonRows, 0, sizeof(g_PadConfigButtonRows));
     memset(g_NegconConfigLabelRows, 0, sizeof(g_NegconConfigLabelRows));
     memset(g_NegconConfigButtonRows, 0, sizeof(g_NegconConfigButtonRows));
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < CONTROLLER_CONFIG_LABEL_SLOT_COUNT; i++) {
         g_PadLabelSlots[i] = (DVec){i * 10, i * 12};
         g_PadCalloutLabelPoints[i] = (DVec){i * 10, i * 12};
+    }
+    for (i = 0; i < CONTROLLER_CONFIG_BUTTON_POINT_COUNT; i++) {
         g_PadCalloutButtonPoints[i] = (DVec){100 + i, 80 + i};
     }
     for (i = 0; i < CONTROLLER_CONFIG_ACTION_COUNT; i++) {

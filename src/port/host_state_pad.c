@@ -24,15 +24,18 @@ s32 g_SetupArrowPulse;
 s32 g_NegconPlayScale[4] __attribute__((aligned(16))) = {
     0, 3, 5, 7
 };
-DVec g_PadLabelSlots[6] __attribute__((aligned(16))) = {
+DVec g_PadLabelSlots[CONTROLLER_CONFIG_LABEL_SLOT_COUNT]
+    __attribute__((aligned(16))) = {
     {32, 112}, {124, 112}, {212, 112},
     {32, 344}, {124, 344}, {212, 344},
 };
-DVec g_PadCalloutLabelPoints[6] __attribute__((aligned(16))) = {
+DVec g_PadCalloutLabelPoints[CONTROLLER_CONFIG_LABEL_SLOT_COUNT]
+    __attribute__((aligned(16))) = {
     {68, 128}, {160, 128}, {248, 128},
     {68, 360}, {160, 360}, {248, 360},
 };
-DVec g_PadCalloutButtonPoints[16] __attribute__((aligned(16))) = {
+DVec g_PadCalloutButtonPoints[CONTROLLER_CONFIG_BUTTON_POINT_COUNT]
+    __attribute__((aligned(16))) = {
     {196, 266}, {212, 296}, {213, 235}, {228, 266},
     {106, 171}, {214, 171}, {112, 162}, {208, 162},
     {198, 246}, {212, 277}, {212, 214}, {228, 245},

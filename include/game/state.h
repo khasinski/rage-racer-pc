@@ -196,8 +196,4 @@ void StepTrackTextureSwap(void);
 
 extern Matrix g_DefaultColorMatrix;
 extern Matrix g_DefaultLightMatrix;
-extern DVec g_PadCalloutButtonPoints[];
-extern DVec g_PadCalloutLabelPoints[];
-extern DVec g_PadLabelSlots[];
-
 #endif
