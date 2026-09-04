@@ -7,6 +7,7 @@
 #include "game/save_internal.h"
 #include "game/screens.h"
 
+#include <limits.h>
 #include <stdio.h>
 
 CarEntry g_GrandPrixCars[GAME_CAR_COUNT];
@@ -162,6 +163,20 @@ int main(void) {
     s_assetComplete = 1;
     UpdateMainMenuInput();
     CHECK(s_resetCalls == 0);
+
+    ResetState(TITLE_MENU_GRAND_PRIX);
+    g_PadPressed = 0;
+    g_FrontendState = FRONTEND_STATE_MENU_OPENING;
+    g_MainMenuSlide = INT_MAX;
+    UpdateMainMenuOpen();
+    CHECK(g_MainMenuSlide == 0x30);
+    CHECK(g_FrontendState == FRONTEND_STATE_MENU_INPUT);
+
+    g_FrontendState = FRONTEND_STATE_MENU_OPENING;
+    g_MainMenuSlide = INT_MIN;
+    UpdateMainMenuOpen();
+    CHECK(g_MainMenuSlide == 1);
+    CHECK(g_FrontendState == FRONTEND_STATE_MENU_OPENING);
 
     puts("main menu state tests passed");
     return 0;

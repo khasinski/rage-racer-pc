@@ -2,10 +2,13 @@
 #include "game/audio.h"
 #include "game/frontend_internal.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/race.h"
 #include "game/render_internal.h"
 #include "game/save_internal.h"
 #include "game/screens.h"
+
+enum { MAIN_MENU_OPEN_FRAMES = 0x30 };
 
 void DrawMainMenuRows(void) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
@@ -43,7 +46,11 @@ void DrawMainMenuRows(void) {
 }
 
 void UpdateMainMenuOpen(void) {
-    if (++g_MainMenuSlide == 0x30) {
+    g_MainMenuSlide = AddClampedMenuValue(
+        g_MainMenuSlide, 0, 0, MAIN_MENU_OPEN_FRAMES);
+    g_MainMenuSlide = AddClampedMenuValue(
+        g_MainMenuSlide, 1, 0, MAIN_MENU_OPEN_FRAMES);
+    if (g_MainMenuSlide >= MAIN_MENU_OPEN_FRAMES) {
         g_FrontendState = FRONTEND_STATE_MENU_INPUT;
     }
     DrawMainMenuRows();
