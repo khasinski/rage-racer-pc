@@ -7,21 +7,38 @@
 
 typedef s32 (*PrimitiveStride)(s32 primitive);
 
+static u16 ReadAssetU16(const u8 *bytes) {
+    return (u16)(bytes[0] | (u16)bytes[1] << 8);
+}
+
 static s32 PrimitiveStreamIsValid(const u8 *base, size_t size, s32 offset,
-                                  PrimitiveStride primitiveStride) {
+                                  PrimitiveStride primitiveStride,
+                                  s32 vertexCount) {
     size_t cursor = (size_t)offset;
 
     while (cursor <= size && size - cursor >= sizeof(u32)) {
-        const u16 primitive = (u16)(base[cursor] |
-                                    (u16)base[cursor + 1] << 8);
-        const u16 count = (u16)(base[cursor + 2] |
-                                (u16)base[cursor + 3] << 8);
+        const u16 primitive = ReadAssetU16(&base[cursor]);
+        const u16 count = ReadAssetU16(&base[cursor + 2]);
         const s32 stride = primitiveStride(primitive);
+        u16 record;
 
         cursor += sizeof(u32);
         if (count == 0) return 1;
         if (stride == 0 || count > (size - cursor) / (size_t)stride) {
             return 0;
+        }
+        if (vertexCount >= 0) {
+            for (record = 0; record < count; record++) {
+                const u8 *face = &base[cursor + (size_t)record * stride];
+                s32 corner;
+
+                for (corner = 0; corner < 4; corner++) {
+                    if (ReadAssetU16(&face[corner * sizeof(u16)]) >=
+                        vertexCount) {
+                        return 0;
+                    }
+                }
+            }
         }
         cursor += (size_t)count * (size_t)stride;
     }
@@ -52,7 +69,7 @@ s32 IsValidModelBankAsset(const ModelBankHeader *base, size_t size) {
                                        size) ||
             !PrimitiveStreamIsValid((const u8 *)base, size,
                                     base->modelOffsets[i],
-                                    ModelPrimitiveStride)) {
+                                    ModelPrimitiveStride, -1)) {
             return 0;
         }
     }
@@ -120,7 +137,8 @@ s32 IsValidCourseModelAsset(const CourseModelAssetHeader *base, size_t size) {
                                        size) ||
             !PrimitiveStreamIsValid((const u8 *)base, size,
                                     entry->modelOffset,
-                                    CoursePrimitiveStride)) {
+                                    CoursePrimitiveStride,
+                                    entry->vertexCount)) {
             return 0;
         }
     }

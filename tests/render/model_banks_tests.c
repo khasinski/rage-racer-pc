@@ -161,6 +161,12 @@ static int TestCourseModels(void) {
     CHECK(g_NativeCourseModels[1].vertexCount == 34);
     CHECK(g_NativeCourseModels[1].model == (u8 *)&data + 60);
 
+    ((u16 *)((u8 *)&data + data.models[2].modelOffset))[1] = 1;
+    ((u16 *)((u8 *)&data + data.models[2].modelOffset))[2] = 56;
+    CHECK(RegisterCourseModels(header, sizeof(data)) == 0);
+    CHECK(g_CourseModelCount == 3);
+    ((u16 *)((u8 *)&data + data.models[2].modelOffset))[1] = 0;
+
     data.models[2].modelOffset = sizeof(data) - sizeof(u32);
     ((u16 *)((u8 *)&data + data.models[2].modelOffset))[1] = 1;
     CHECK(RegisterCourseModels(header, sizeof(data)) == 0);
