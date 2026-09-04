@@ -22,21 +22,21 @@ void StartSequenceFadeOut(void) {
     g_ReverbFadeStep = REVERB_VOLUME_FADE_STEP;
 }
 
+static s32 ApplyFadeOutStep(s32 value, s32 step) {
+    int64_t next = (int64_t)value + step;
+
+    return next > 0 ? (s32)next : 0;
+}
+
 static void UpdateReverbFade(void) {
     s32 delta = g_ReverbFadeStep;
 
-    if (delta == 0) {
+    if (delta >= 0) {
+        g_ReverbFadeStep = 0;
         return;
     }
-    g_ReverbDepthL += delta;
-    if (g_ReverbDepthL < 0) {
-        g_ReverbDepthL = 0;
-    }
-
-    g_ReverbDepthR += delta;
-    if (g_ReverbDepthR < 0) {
-        g_ReverbDepthR = 0;
-    }
+    g_ReverbDepthL = ApplyFadeOutStep(g_ReverbDepthL, delta);
+    g_ReverbDepthR = ApplyFadeOutStep(g_ReverbDepthR, delta);
 
     if (g_ReverbDepthL == 0 && g_ReverbDepthR == 0) {
         g_ReverbFadeStep = 0;
@@ -52,11 +52,19 @@ static void FinishSequenceFadeOut(void) {
 }
 
 void UpdateSequenceFadeOut(void) {
+    if (g_SeqVolumeFadeStep > 0) {
+        g_SeqVolumeFadeStep = 0;
+    }
     UpdateReverbFade();
 
     SetReverbDepth(g_ReverbDepthL, g_ReverbDepthR);
 
-    g_SeqVolume += g_SeqVolumeFadeStep;
+    if (g_SeqVolumeFadeStep == 0) {
+        SetSequenceVolume(g_SeqVolume);
+        return;
+    }
+
+    g_SeqVolume = ApplyFadeOutStep(g_SeqVolume, g_SeqVolumeFadeStep);
     if (g_SeqVolume <= 0) {
         FinishSequenceFadeOut();
         return;

@@ -3,6 +3,7 @@
 #include "game/audio_internal.h"
 #include "game/sound.h"
 
+#include <limits.h>
 #include <stdio.h>
 
 s32 g_ReverbDepthL;
@@ -102,6 +103,27 @@ int main(void) {
     UpdateSequenceFadeOut();
     CHECK(g_ReverbDepthR == 0 && g_ReverbFadeStep == 0);
     CHECK(s_setVolumeCalls == 1 && s_setVolume == 10);
+
+    g_ReverbDepthL = INT_MAX;
+    g_ReverbDepthR = 1;
+    g_ReverbFadeStep = INT_MIN;
+    g_SeqVolume = INT_MAX;
+    g_SeqVolumeFadeStep = INT_MIN;
+    UpdateSequenceFadeOut();
+    CHECK(g_ReverbDepthL == 0 && g_ReverbDepthR == 0);
+    CHECK(g_SeqVolume == 0 && g_SeqVolumeFadeStep == 0);
+    CHECK(s_sequenceStops == 2 && s_closeCalls == 2);
+
+    g_ReverbDepthL = 10;
+    g_ReverbDepthR = 20;
+    g_ReverbFadeStep = 3;
+    g_SeqVolume = 30;
+    g_SeqVolumeFadeStep = 4;
+    UpdateSequenceFadeOut();
+    CHECK(g_ReverbDepthL == 10 && g_ReverbDepthR == 20 &&
+          g_ReverbFadeStep == 0);
+    CHECK(g_SeqVolume == 30 && g_SeqVolumeFadeStep == 0);
+    CHECK(s_setVolume == 30);
 
     puts("sequence playback preserves ducking and fade completion");
     return 0;
