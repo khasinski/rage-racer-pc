@@ -40,6 +40,7 @@ char g_TextNowLoading[] = "NOW LOADING";
 
 static s32 s_assetReady;
 static s32 s_cdRequests;
+static s32 s_cdTrack = -1;
 static s32 s_displayMask;
 static s32 s_installCalls;
 static s32 s_installSucceeds = 1;
@@ -108,7 +109,7 @@ u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *prim, s32 tpage) {
     return prim;
 }
 void RequestCdTrack(s32 track) {
-    (void)track;
+    s_cdTrack = track;
     s_cdRequests++;
 }
 s32 RequestSelectBgmAssets(void) {
@@ -193,7 +194,11 @@ int main(void) {
     CHECK(g_PrologueStep == PROLOGUE_STEP_LOAD_TRACK);
     TickPrologueStep();
     CHECK(g_PrologueStep == PROLOGUE_STEP_WAIT_FOR_FADE);
-    CHECK(s_cdRequests == 1 && g_FadeLevel == 4 && g_FadeStep == 4);
+    /* Physical Track 02 is instrumental on the international releases and
+     * carries the English prologue narration on NTSC-J. The content option
+     * changes the matching text, but must not sever that authored audio. */
+    CHECK(s_cdRequests == 1 && s_cdTrack == 2);
+    CHECK(g_FadeLevel == 4 && g_FadeStep == 4);
 
     for (i = 0; i < 63; i++) TickPrologueStep();
     CHECK(g_PrologueStep == PROLOGUE_STEP_WAIT_FOR_FADE);
