@@ -3,6 +3,24 @@
 
 #include "common.h"
 
+#include "game/vector.h"
+
+enum {
+    START_COUNTDOWN_PATTERN_ROW_COUNT = 16,
+    START_COUNTDOWN_GLYPH_PATTERN_COUNT = 4,
+    START_COUNTDOWN_COLOR_BANK_COUNT = 2,
+    START_COUNTDOWN_COLORS_PER_BANK = 2,
+};
+
+typedef u32 StartCountdownPattern[START_COUNTDOWN_PATTERN_ROW_COUNT];
+typedef CVec StartCountdownColorBank[START_COUNTDOWN_COLORS_PER_BANK];
+
+extern StartCountdownPattern
+    g_CountdownGlyphTable[START_COUNTDOWN_GLYPH_PATTERN_COUNT];
+extern StartCountdownPattern g_CountdownDigitPatterns;
+extern StartCountdownColorBank
+    g_CountdownCellColors[START_COUNTDOWN_COLOR_BANK_COUNT];
+
 u8 *DrawHudDigit(u8 *packet, s32 x, s32 y, s32 digit, u16 clut);
 void DrawSpeedDigits(s32 x, s32 y, s32 speed);
 void DrawSplitTimes(void);
@@ -35,8 +53,8 @@ typedef struct StartCountdownRow {
 
 StartCountdownRow BuildStartCountdownRow(s32 phase, s32 row,
                                          s32 wipeHalfStep,
-                                         const u32 *glyphPatterns,
-                                         const u32 *firstPattern);
+                                         const StartCountdownPattern *glyphPatterns,
+                                         const StartCountdownPattern firstPattern);
 s32 AdvanceStartCountdownBoard(s32 phase, s32 currentOffset);
 
 typedef struct StartCountdownLamp {

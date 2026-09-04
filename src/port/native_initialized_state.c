@@ -8,6 +8,7 @@
 #include "game/cd_internal.h"
 #include "game/input_internal.h"
 #include "game/memcard.h"
+#include "game/race_hud_internal.h"
 #include "game/render_types.h"
 #include "game/vector.h"
 #include "psyq/gpu.h"
@@ -299,17 +300,18 @@ RaceGridSlot g_AttractGridSlots[RACE_GRID_STORAGE_COUNT]
         {.value = 8},  {.value = 9}, {.value = 10}, {.value = -1},
 };
 Rect g_CarImageRect __attribute__((aligned(16))) = {704, 0, 64, 256};
-u32 g_CountdownDigitPatterns[16] __attribute__((aligned(16))) = {
+StartCountdownPattern g_CountdownDigitPatterns
+    __attribute__((aligned(16))) = {
     0x00000000, 0x00000000, 0x3FFF3FFF, 0x3FFF3FFF,
     0x3FFF3FFF, 0x3C1F3C1F, 0x7C007C1E, 0x7CFE7C1E,
     0x78FE783E, 0x783E783E, 0xF83CF83C, 0xFFFCFFFC,
     0xFFFCFFFC, 0xFFFCFFFC, 0x00000000, 0x00000000,
 };
-CVec g_CountdownCellColors[4] __attribute__((aligned(16))) = {
-    {0xFF, 0x20, 0x00, 0x60},
-    {0x40, 0x10, 0x00, 0x60},
-    {0x00, 0x40, 0xFF, 0x60},
-    {0x00, 0x10, 0x40, 0x60},
+StartCountdownColorBank
+    g_CountdownCellColors[START_COUNTDOWN_COLOR_BANK_COUNT]
+                         __attribute__((aligned(16))) = {
+    {{0xFF, 0x20, 0x00, 0x60}, {0x40, 0x10, 0x00, 0x60}},
+    {{0x00, 0x40, 0xFF, 0x60}, {0x00, 0x10, 0x40, 0x60}},
 };
 char g_TimeTextBuffer[12] __attribute__((aligned(16))) = {0x30,0x27,0x30,0x30,0x22,0x30,0x30,0x30,0x00,0x00,0x00,0x00};
 Rect g_TrackTextureRowRect __attribute__((aligned(16))) = {576, 0, 448, 1};

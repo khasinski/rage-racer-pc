@@ -2,10 +2,7 @@
 
 #include <stddef.h>
 
-enum {
-    COUNTDOWN_ROW_COUNT = 16,
-    COUNTDOWN_MAX_WIPE_HALF_STEP = 8,
-};
+enum { COUNTDOWN_MAX_WIPE_HALF_STEP = 8 };
 
 StartCountdownTiming CalculateStartCountdownTiming(s32 sceneTimer) {
     StartCountdownTiming timing = {0};
@@ -40,13 +37,13 @@ s32 CountdownTileBufferIndex(s32 frameParity) {
 
 StartCountdownRow BuildStartCountdownRow(s32 phase, s32 row,
                                          s32 wipeHalfStep,
-                                         const u32 *glyphPatterns,
-                                         const u32 *firstPattern) {
+                                         const StartCountdownPattern *glyphPatterns,
+                                         const StartCountdownPattern firstPattern) {
     StartCountdownRow result;
 
     result.pattern = 0;
     result.colorBank = phase >= 4 || phase < 0;
-    if ((u32)row >= COUNTDOWN_ROW_COUNT) {
+    if ((u32)row >= START_COUNTDOWN_PATTERN_ROW_COUNT) {
         return result;
     }
     if (wipeHalfStep < 0) {
@@ -60,7 +57,7 @@ StartCountdownRow BuildStartCountdownRow(s32 phase, s32 row,
         if (glyphPatterns == NULL) {
             return result;
         }
-        result.pattern = glyphPatterns[phase * 16 + row];
+        result.pattern = glyphPatterns[phase][row];
     } else {
         if (firstPattern == NULL) {
             return result;

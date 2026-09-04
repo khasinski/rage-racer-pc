@@ -36,6 +36,9 @@ _Static_assert(sizeof(g_CountdownDigitPatterns) == 64,
                "countdown digit-pattern table ABI changed");
 _Static_assert(sizeof(g_CountdownCellColors) == 16,
                "countdown cell-colour table ABI changed");
+_Static_assert(sizeof(g_CountdownCellColors[0]) ==
+                   START_COUNTDOWN_COLORS_PER_BANK * sizeof(CVec),
+               "countdown colour-bank layout changed");
 _Static_assert(sizeof(g_TrackTextureRowRect) == 8,
                "track texture row rectangle ABI changed");
 _Static_assert(sizeof(g_TrackColorMatrix) == 32,

@@ -7,7 +7,7 @@
 
 enum {
     COUNTDOWN_TILE_COLUMNS = 32,
-    COUNTDOWN_TILE_ROWS = 16,
+    COUNTDOWN_TILE_ROWS = START_COUNTDOWN_PATTERN_ROW_COUNT,
     COUNTDOWN_TILE_COUNT = COUNTDOWN_TILE_COLUMNS * COUNTDOWN_TILE_ROWS,
     COUNTDOWN_LAMP_COUNT = 6,
 };
@@ -36,8 +36,7 @@ void DrawStartCountdown(s32 sceneTimer) {
         StartCountdownRow countdownRow = BuildStartCountdownRow(
             phase, row, timing.wipeHalfStep, g_CountdownGlyphTable,
             g_CountdownDigitPatterns);
-        const CVec *colors =
-            &g_CountdownCellColors[countdownRow.colorBank * 2];
+        const CVec *colors = g_CountdownCellColors[countdownRow.colorBank];
         u32 pattern = countdownRow.pattern;
 
         for (column = 0; column < COUNTDOWN_TILE_COLUMNS; column++) {

@@ -13,9 +13,11 @@ GameFrameContext *g_DrawBuffer = &s_frame;
 RenderBufferAddress g_TileStripBuffers[2];
 u8 g_TileStripStorage[2 * 512 * sizeof(TILE)];
 s32 g_CountdownBoardOffset;
-u32 g_CountdownGlyphTable[64];
-u32 g_CountdownDigitPatterns[16];
-CVec g_CountdownCellColors[4];
+StartCountdownPattern
+    g_CountdownGlyphTable[START_COUNTDOWN_GLYPH_PATTERN_COUNT];
+StartCountdownPattern g_CountdownDigitPatterns;
+StartCountdownColorBank
+    g_CountdownCellColors[START_COUNTDOWN_COLOR_BANK_COUNT];
 s32 g_FrameParity;
 s32 g_RacePaused;
 
@@ -123,11 +125,11 @@ int main(void) {
     u8 packets[512] = {0};
     TILE *tiles;
 
-    g_CountdownCellColors[0] = (CVec){1, 2, 3, 0x60};
-    g_CountdownCellColors[1] = (CVec){11, 12, 13, 0x60};
-    g_CountdownCellColors[2] = (CVec){21, 22, 23, 0x60};
-    g_CountdownCellColors[3] = (CVec){31, 32, 33, 0x60};
-    g_CountdownGlyphTable[16] = 1;
+    g_CountdownCellColors[0][0] = (CVec){1, 2, 3, 0x60};
+    g_CountdownCellColors[0][1] = (CVec){11, 12, 13, 0x60};
+    g_CountdownCellColors[1][0] = (CVec){21, 22, 23, 0x60};
+    g_CountdownCellColors[1][1] = (CVec){31, 32, 33, 0x60};
+    g_CountdownGlyphTable[1][0] = 1;
 
     ResetCalls(packets);
     DrawStartCountdown(104);

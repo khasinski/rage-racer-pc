@@ -116,8 +116,7 @@ extern s32 g_ClosestRivalRank;
  * Extra GP. This is the OVAL unlock. */
 
 /* The race-start signal gantry, live for 105 <= g_SceneTimer < 300: the "3" /
- * "2" / "1" / "GO" dot-matrix board from g_CountdownGlyphTable[1..4] plus the six start
- * lamps. */
+ * "2" / "1" / "GO" dot-matrix board plus the six start lamps. */
 void DrawRaceEndBanner(s32 level);
 
 /*
@@ -277,8 +276,6 @@ extern char g_ChanceDigits[6][2];
 extern s32 g_ClassPromoted;
 extern char g_ClockTextCells[8];
 extern s32 g_CountdownBoardOffset;
-extern u32 g_CountdownGlyphTable[64];
-extern u32 g_CountdownDigitPatterns[16];
 extern char *g_CourseNames[COURSE_SLOT_COUNT];
 extern s32 g_EndingWashLevel;
 extern char g_FmtCarName[];
@@ -362,5 +359,4 @@ void EnterAttractScene(void);
 s32 GetTrackZoneBlend(s32 position);
 void EnterBgmSelectScreen(void);
 
-extern CVec g_CountdownCellColors[];
 #endif

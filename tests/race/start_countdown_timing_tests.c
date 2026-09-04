@@ -17,8 +17,9 @@ static int Check(s32 timer, s32 visible, s32 phase, s32 wipeHalfStep) {
 }
 
 int main(void) {
-    u32 glyphs[5 * 16] = {0};
-    u32 first[16] = {0};
+    StartCountdownPattern
+        glyphs[START_COUNTDOWN_GLYPH_PATTERN_COUNT] = {{0}};
+    StartCountdownPattern first = {0};
     StartCountdownRow row;
     StartCountdownLamp lamp;
 
@@ -44,7 +45,7 @@ int main(void) {
         CountdownTileBufferIndex(INT_MIN) != 0 ||
         CountdownTileBufferIndex(INT_MAX) != 0) return 1;
 
-    glyphs[16 + 3] = 0x12345678;
+    glyphs[1][3] = 0x12345678;
     first[3] = 0x89ABCDEF;
     row = BuildStartCountdownRow(0, 3, 0, glyphs, first);
     if (row.pattern != UINT32_MAX || row.colorBank != 0) return 1;
@@ -61,8 +62,8 @@ int main(void) {
     row = BuildStartCountdownRow(1, 3, 0, NULL, first);
     if (row.pattern != 0) return 1;
 
-    glyphs[16 + 5] = 0x0F0F0F0F;
-    glyphs[16 + 6] = 0x00FF00FF;
+    glyphs[1][5] = 0x0F0F0F0F;
+    glyphs[1][6] = 0x00FF00FF;
     row = BuildStartCountdownRow(1, 5, 2, glyphs, first);
     if (row.pattern != 0x0F0F0F0F) return 1;
     row = BuildStartCountdownRow(1, 6, 2, glyphs, first);

@@ -10,6 +10,11 @@ _Static_assert(sizeof(g_ChanceDigits) == 6 * 2,
                "chance digits must remain six fixed-width strings");
 _Static_assert(sizeof(g_RaceOptionMarquee) == 4 * 40,
                "race option marquee must remain four fixed-width rows");
+_Static_assert(sizeof(g_CountdownGlyphTable) == 256,
+               "countdown glyph table ABI size changed");
+_Static_assert(sizeof(g_CountdownGlyphTable[0]) ==
+                   START_COUNTDOWN_PATTERN_ROW_COUNT * sizeof(u32),
+               "countdown glyph rows changed");
 _Static_assert(sizeof(g_NameEntryCharset) == 42,
                "record-name charset must not absorb handler addresses");
 _Static_assert(sizeof(g_BestSectorTimes) == 96,

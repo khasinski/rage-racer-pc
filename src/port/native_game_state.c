@@ -10,6 +10,7 @@
 #include "game/car.h"
 #include "game/input_internal.h"
 #include "game/race.h"
+#include "game/race_hud_internal.h"
 #include "game/race_internal.h"
 #include "game/state.h"
 #include "game/work_buffer.h"
@@ -58,8 +59,9 @@ RaceGridSlot g_AttractGridSlots[RACE_GRID_STORAGE_COUNT];
 RECT g_CarImageRect;
 RenderBufferAddress g_TileStripBuffers[2];
 u8 g_TileStripStorage[2 * 512 * sizeof(TILE)];
-u32 g_CountdownDigitPatterns[16];
-CVec g_CountdownCellColors[4];
+StartCountdownPattern g_CountdownDigitPatterns;
+StartCountdownColorBank
+    g_CountdownCellColors[START_COUNTDOWN_COLOR_BANK_COUNT];
 char g_TimeTextBuffer[12];
 GameWorkBuffer g_ReplayFrameBuffer;
 RaceRecord g_RankingRecords[2][4][5];

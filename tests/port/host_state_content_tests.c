@@ -26,6 +26,7 @@
 #include <stdlib.h>
 
 #include "game/menu_types.h"
+#include "game/race_hud_internal.h"
 #include "game/team_logo.h"
 #include "game/visible_cell_scan.h"
 
@@ -166,7 +167,6 @@ extern ContentCarPoint g_CarCornerOffsets[4];
 extern ContentLaunchSpeedThreshold g_LaunchSpeedThresholds[5];
 extern unsigned char g_LaunchEnergyThresholds[12];
 extern unsigned char g_TachoNeedleSprite[20];
-extern unsigned char g_CountdownGlyphTable[256];
 extern char g_ClockTextCells[8];
 extern char g_RaceOptionMarquee[4][40];
 extern ContentCarPoint g_CarCollisionCorners[4];
@@ -351,7 +351,8 @@ static const HostStateBlob s_blobs[] = {
      sizeof(g_LaunchSpeedThresholds)},
     {"g_LaunchEnergyThresholds", g_LaunchEnergyThresholds, 12},
     {"g_TachoNeedleSprite", g_TachoNeedleSprite, 20},
-    {"g_CountdownGlyphTable", g_CountdownGlyphTable, 256},
+    {"g_CountdownGlyphTable", BYTES(g_CountdownGlyphTable),
+     sizeof(g_CountdownGlyphTable)},
     {"g_ClockTextCells", BYTES(g_ClockTextCells), 8},
     {"g_RaceOptionMarquee", BYTES(g_RaceOptionMarquee), 160},
     {"g_CarCollisionCorners", (const unsigned char *)g_CarCollisionCorners,

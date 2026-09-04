@@ -9,6 +9,7 @@
 #include "game/memcard.h"
 #include "game/menu.h"
 #include "game/race.h"
+#include "game/race_hud_internal.h"
 #include "game/render.h"
 #include "game/render_internal.h"
 #include "game/state.h"
@@ -133,30 +134,30 @@ static void CheckInitialControllerMappings(void) {
 }
 
 static void CheckInitialCountdownData(void) {
-    static const u32 expectedPatterns[16] = {
+    static const StartCountdownPattern expectedPatterns = {
         0x00000000, 0x00000000, 0x3FFF3FFF, 0x3FFF3FFF,
         0x3FFF3FFF, 0x3C1F3C1F, 0x7C007C1E, 0x7CFE7C1E,
         0x78FE783E, 0x783E783E, 0xF83CF83C, 0xFFFCFFFC,
         0xFFFCFFFC, 0xFFFCFFFC, 0x00000000, 0x00000000,
     };
-    static const CVec expectedColors[4] = {
-        {0xFF, 0x20, 0x00, 0x60},
-        {0x40, 0x10, 0x00, 0x60},
-        {0x00, 0x40, 0xFF, 0x60},
-        {0x00, 0x10, 0x40, 0x60},
+    static const StartCountdownColorBank
+        expectedColors[START_COUNTDOWN_COLOR_BANK_COUNT] = {
+            {{0xFF, 0x20, 0x00, 0x60}, {0x40, 0x10, 0x00, 0x60}},
+            {{0x00, 0x40, 0xFF, 0x60}, {0x00, 0x10, 0x40, 0x60}},
     };
+    int bank;
     int index;
 
-    for (index = 0; index < 16; index++) {
+    for (index = 0; index < START_COUNTDOWN_PATTERN_ROW_COUNT; index++) {
         Check(g_CountdownDigitPatterns[index] == expectedPatterns[index],
               "countdown digit pattern");
     }
-    for (index = 0; index < 4; index++) {
-        Check(g_CountdownCellColors[index].r == expectedColors[index].r &&
-                  g_CountdownCellColors[index].g == expectedColors[index].g &&
-                  g_CountdownCellColors[index].b == expectedColors[index].b &&
-                  g_CountdownCellColors[index].cd == expectedColors[index].cd,
-              "countdown cell colour");
+    for (bank = 0; bank < START_COUNTDOWN_COLOR_BANK_COUNT; bank++) {
+        for (index = 0; index < START_COUNTDOWN_COLORS_PER_BANK; index++) {
+            Check(memcmp(&g_CountdownCellColors[bank][index],
+                         &expectedColors[bank][index], sizeof(CVec)) == 0,
+                  "countdown cell colour");
+        }
     }
 }
 
