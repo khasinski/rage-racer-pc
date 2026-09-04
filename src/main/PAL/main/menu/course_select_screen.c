@@ -235,22 +235,20 @@ static void UpdateSavePrompt(void *ot) {
 static void UpdateClassPrompt(void *ot) {
     MenuClassPromptOutcome choice;
     s32 maxClass;
-    s32 cue;
+    s32 effect;
     if (RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 1)
         == 0) {
         return;
     }
     maxClass = MaxSelectableClass();
-    g_MenuSubCursor =
-        (u8)AddClampedMenuValue(g_MenuSubCursor, 0, 0, maxClass);
     choice = DecideClassPrompt(g_PadPressed, GameMenuBusy, g_MenuConfirmTimer,
                                g_MenuSubCursor, g_GrandPrixClass, maxClass,
                                g_ClassChangeApplied);
-    for (cue = 0; cue < choice.effectCount; cue++) {
-        if (choice.effects[cue].kind == MENU_PROMPT_CURTAIN) {
-            DrawClassChangeCurtain(choice.effects[cue].value);
+    for (effect = 0; effect < choice.effectCount; effect++) {
+        if (choice.effects[effect].kind == MENU_PROMPT_CURTAIN) {
+            DrawClassChangeCurtain(choice.effects[effect].value);
         } else {
-            PlaySoundCue(choice.effects[cue].value);
+            PlaySoundCue(choice.effects[effect].value);
         }
     }
     GameMenuBusy = choice.busy;
