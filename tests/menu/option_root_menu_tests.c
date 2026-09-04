@@ -73,7 +73,7 @@ s32 RequestCourseTextureAssets(void) {
     s_trackLoadCalls++;
     return 0;
 }
-void StartOptionMenuExit(u32 scene) { s_lastExitScene = (s32)scene; }
+void StartOptionMenuExit(GameSceneId scene) { s_lastExitScene = (s32)scene; }
 
 #define CHECK(condition)                                                       \
     do {                                                                       \

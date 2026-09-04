@@ -20,6 +20,7 @@
 #include "game/course_select_internal.h"
 #include "game/menu_types.h"
 #include "game/menu_scripts_internal.h"
+#include "game/scene.h"
 #include "game/team_logo.h"
 
 typedef struct CarEntry CarEntry;
@@ -254,7 +255,7 @@ const TimedDrawCommand *g_CourseSelectModalScript;
 s32 g_LogoSampleCursor;
 const TimedDrawCommand *g_CustomizePopupScript;
 s32 g_CourseSelectOption;
-u32 g_OptionMenuExitScene;
+GameSceneId g_OptionMenuExitScene;
 s32 g_OptionMenuCursor;
 s32 g_ShopCarIndex;
 s32 g_CustomizeOption;

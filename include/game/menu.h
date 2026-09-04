@@ -5,6 +5,7 @@
 
 #include "game/menu_types.h"
 #include "game/render_state.h"
+#include "game/scene.h"
 #include "game/state.h"
 #include "game/vector.h"
 #include "psyq/gte.h"
@@ -579,7 +580,7 @@ extern s16 g_NegconNeutralISaved;
 extern s16 g_NegconNeutralLSaved;
 extern s16 g_NegconPlayPercent[];
 extern s16 g_NegconSteerNeutralSaved;
-extern u32 g_OptionMenuExitScene;
+extern GameSceneId g_OptionMenuExitScene;
 extern s16 g_RoundScreenFadeDelays[];
 
 void AdvanceGrandPrixClass(void);
@@ -595,7 +596,7 @@ void DrawOwnedCarCounter(s32 direction, s32 ownedCount);
 void DrawSpriteString(s32 x, s32 y, const char *str, s32 clutIndex);
 void RampTeamLogoCanvas(s32 from, s32 to);
 void ShuffleBgmOrder(void);
-void StartOptionMenuExit(u32 scene);
+void StartOptionMenuExit(GameSceneId scene);
 void UploadTeamNameTexture(const u8 *str, s32 len);
 s32 DrawClassChangeCurtain(s32 step);
 void DrawOptionSceneOverlay(void);

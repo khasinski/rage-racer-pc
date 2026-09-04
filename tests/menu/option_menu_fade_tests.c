@@ -9,7 +9,7 @@
 s32 g_FadeLevel;
 s32 g_FadeStep;
 s32 g_GameMode;
-u32 g_OptionMenuExitScene;
+GameSceneId g_OptionMenuExitScene;
 s32 g_SceneId;
 GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
@@ -70,8 +70,8 @@ static int TestFadeTileClamping(void) {
 
 static int TestFadeStateTransitions(void) {
     Reset();
-    StartOptionMenuExit(27);
-    CHECK(g_OptionMenuExitScene == 27);
+    StartOptionMenuExit(GAME_SCENE_ENTER_BGM_SELECT);
+    CHECK(g_OptionMenuExitScene == GAME_SCENE_ENTER_BGM_SELECT);
     CHECK(g_GameMode == OPTION_MODE_FADE && g_FadeStep == 8);
 
     g_FadeLevel = 0;
@@ -83,22 +83,22 @@ static int TestFadeStateTransitions(void) {
 
     Reset();
     g_GameMode = OPTION_MODE_FADE;
-    g_OptionMenuExitScene = 31;
+    g_OptionMenuExitScene = GAME_SCENE_ENTER_PROLOGUE;
     g_FadeLevel = 0x100;
     g_FadeStep = 8;
     UpdateOptionMenuFade();
-    CHECK(g_FadeLevel == 0x100 && g_SceneId == 31);
+    CHECK(g_FadeLevel == 0x100 && g_SceneId == GAME_SCENE_ENTER_PROLOGUE);
     CHECK(g_GameMode == OPTION_MODE_FADE &&
           ((TILE *)s_packets)->r0 == 0xFF);
     CHECK(s_rootDraws == 1);
 
     Reset();
     g_GameMode = OPTION_MODE_FADE;
-    g_OptionMenuExitScene = 19;
+    g_OptionMenuExitScene = GAME_SCENE_PRIZE;
     g_FadeLevel = INT_MAX;
     g_FadeStep = INT_MAX;
     UpdateOptionMenuFade();
-    CHECK(g_FadeLevel == 0x100 && g_SceneId == 19);
+    CHECK(g_FadeLevel == 0x100 && g_SceneId == GAME_SCENE_PRIZE);
 
     Reset();
     g_GameMode = OPTION_MODE_FADE;

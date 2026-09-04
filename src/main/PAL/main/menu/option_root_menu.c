@@ -59,7 +59,7 @@ static void StartRandomOptionRace(void) {
         g_CourseIndex = (Random15() & 0xFFF) % 3;
     }
     RequestCourseTextureAssets();
-    StartOptionMenuExit(0x1B);
+    StartOptionMenuExit(GAME_SCENE_ENTER_BGM_SELECT);
 }
 
 /* OPTION_MODE_ROOT: the six-row root menu and where each row goes. */
@@ -105,11 +105,11 @@ void UpdateOptionRootMenu(void) {
             g_ScreenOffsetEditY = g_ScreenOffsetY;
             break;
         case OPTION_ROOT_EXIT:
-            StartOptionMenuExit(2);
+            StartOptionMenuExit(GAME_SCENE_ENTER_FRONTEND);
             break;
         }
     } else if (g_PadPressed & PAD_CANCEL) {
         PlaySoundCue(3);
-        StartOptionMenuExit(2);
+        StartOptionMenuExit(GAME_SCENE_ENTER_FRONTEND);
     }
 }

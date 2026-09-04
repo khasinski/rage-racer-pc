@@ -8,7 +8,7 @@ enum {
 };
 
 /* Arms the fade-out that leaves the setup menu for scene `scene`. */
-void StartOptionMenuExit(u32 scene) {
+void StartOptionMenuExit(GameSceneId scene) {
     g_OptionMenuExitScene = scene;
     g_GameMode = OPTION_MODE_FADE;
     g_FadeStep = OPTION_FADE_EXIT_STEP;
