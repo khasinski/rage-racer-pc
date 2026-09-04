@@ -222,6 +222,21 @@ static int TestNativeGridMatchesClassicPackets(void) {
                        (first->y0 + first->y1 + first->y2 + first->y3) / 4.0,
                        1) - 0.5) < 0.02);
     }
+    {
+        GameSkyGridLayout before, after;
+        double beforeTexture, afterTexture;
+        MeasureSkyGridLayout(6000, 0, 0, 0, 0, 0, &before);
+        MeasureSkyGridLayout(6000, 0, 64, 0, 0, 0, &after);
+        beforeTexture = before.textureColumn +
+            NativeGridCoordinate(&before, 160.0, 120.0, 0);
+        afterTexture = after.textureColumn +
+            NativeGridCoordinate(&after, 160.0, 120.0, 0);
+        /* A positive camera yaw advances the original texture lookup. The
+         * native background must therefore move the picture in the same
+         * direction, not counter-scroll it. */
+        CHECK(afterTexture > beforeTexture);
+        CHECK(afterTexture - beforeTexture < 1.0);
+    }
     return 0;
 }
 

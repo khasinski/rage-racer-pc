@@ -1116,7 +1116,7 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
     }
     {
         static uint64_t reportedIncompleteFrame = UINT64_MAX;
-        ModernNativeGpuDraw(cmd, s_target, s_depth, 1);
+        ModernNativeGpuDraw(cmd, s_target, s_depth, 1, s_targetH);
         if (!ModernNativeGpuWorldComplete() &&
             reportedIncompleteFrame != snapshot->frameCounter) {
             reportedIncompleteFrame = snapshot->frameCounter;
@@ -1128,7 +1128,8 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
         ModernRenderOverlaySelection(cmd, vram, 0,
                                      1u << MODERN_LAYER_HUD, 0);
         if (ModernNativeGpuHasMirrorDraws()) {
-            ModernNativeGpuDrawMirror(cmd, s_mirrorTarget, s_mirrorDepth);
+            ModernNativeGpuDrawMirror(cmd, s_mirrorTarget, s_mirrorDepth,
+                                      s_mirrorTargetH);
             ModernCompositeNativeMirror(cmd);
         }
         ModernRenderOverlaySelection(cmd, vram, 1,

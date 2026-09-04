@@ -397,6 +397,8 @@ static void ModernNativeBuildCamera(const RageRenderCamera *camera,
 }
 
 static void ModernNativeBuildSky(const RageRenderCamera *camera,
+                                 float aspect,
+                                 int targetHeight,
                                  ModernNativeSkyUniform *out) {
     memset(out, 0, sizeof(*out));
     out->top[0] = camera->skyTopColor.x;
@@ -420,7 +422,7 @@ static void ModernNativeBuildSky(const RageRenderCamera *camera,
     out->gridOrigin[0] = camera->skyGridOrigin.x;
     out->gridOrigin[1] = camera->skyGridOrigin.y;
     out->gridOrigin[2] = camera->skyGridColumn.z;
-    out->gridOrigin[3] = 240.0f * s_aspect;
+    out->gridOrigin[3] = 240.0f * aspect;
     out->gridBasis[0] = camera->skyGridColumn.x;
     out->gridBasis[1] = camera->skyGridColumn.y;
     out->gridBasis[2] = camera->skyGridRow.x;
@@ -428,6 +430,7 @@ static void ModernNativeBuildSky(const RageRenderCamera *camera,
     out->gridParams[0] = camera->skyGridOrigin.z;
     out->gridParams[1] = camera->skyGridRow.z;
     out->gridParams[2] = camera->skyCloudRow == 0 ? 1.0f : 4.0f;
+    out->gridParams[3] = (float)targetHeight;
 }
 
 static void ModernNativeBuildLight(const RageRenderDirectionalLight *light,
@@ -1385,7 +1388,7 @@ static void ModernNativeGpuDrawSet(
     SDL_GPUTexture *colorTarget, SDL_GPUTexture *depthTarget, int clearColor,
     const RageRenderCamera *renderCamera, float aspect,
     const RageNativeDrawSpan *spans, uint32_t spanCount,
-    uint32_t drawVertexCount, const char *viewName) {
+    uint32_t drawVertexCount, const char *viewName, int targetHeight) {
     SDL_GPUColorTargetInfo color = {
         .texture = colorTarget,
         .clear_color = {renderCamera != NULL ? renderCamera->skyColor.x : 0.0f,
@@ -1419,7 +1422,7 @@ static void ModernNativeGpuDrawSet(
     ModernNativeBuildCamera(renderCamera, &camera);
     camera.projection[0] /= aspect;
     SDL_PushGPUVertexUniformData(command, 0, &camera, sizeof(camera));
-    ModernNativeBuildSky(renderCamera, &sky);
+    ModernNativeBuildSky(renderCamera, aspect, targetHeight, &sky);
     SDL_PushGPUFragmentUniformData(command, 0, &sky, sizeof(sky));
     SDL_BindGPUGraphicsPipeline(pass, s_sky);
     {
@@ -1530,7 +1533,7 @@ static void ModernNativeGpuDrawSet(
 void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,
                          SDL_GPUTexture *colorTarget,
                          SDL_GPUTexture *depthTarget,
-                         int clearColor) {
+                         int clearColor, int targetHeight) {
     if (s_world == NULL || !s_world->hasCamera) return;
     if (ModernNativeGpuHasDraws()) {
         if (!ModernNativeUploadVertices(command)) return;
@@ -1538,17 +1541,17 @@ void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,
     }
     ModernNativeGpuDrawSet(command, colorTarget, depthTarget, clearColor,
                            &s_world->camera, s_aspect, s_spans, s_spanCount,
-                           s_vertexCount, "main");
+                           s_vertexCount, "main", targetHeight);
 }
 
 void ModernNativeGpuDrawMirror(SDL_GPUCommandBuffer *command,
                                SDL_GPUTexture *colorTarget,
-                               SDL_GPUTexture *depthTarget) {
+                               SDL_GPUTexture *depthTarget, int targetHeight) {
     if (!ModernNativeGpuHasMirrorDraws()) return;
     ModernNativeGpuDrawSet(command, colorTarget, depthTarget, 1,
                            &s_world->mirrorCamera, s_mirrorAspect,
                            s_mirrorSpans, s_mirrorSpanCount,
-                           s_mirrorVertexCount, "mirror");
+                           s_mirrorVertexCount, "mirror", targetHeight);
 }
 
 void ModernNativeGpuShutdown(void) {

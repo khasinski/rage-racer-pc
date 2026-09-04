@@ -31,12 +31,16 @@ def require(condition, message):
 dense = glsl.replace(" ", "").replace("\n", "")
 require("cloudBand" in dense,
         "the cloud sheet must stay a band round the horizon")
-require("screenPosition" in glsl and "gridOrigin" in glsl,
+require("gl_FragCoord.x" in glsl and "gl_FragCoord.y" in glsl and
+        "gridOrigin" in glsl,
         "the cloud sheet must use the classic screen-space grid")
-require("(screenPosition.y+1.0)*120.0" in dense,
-        "Metal's top-left viewport must map to classic's downward screen Y")
-require("(1.0-screenPosition.y)*120.0" not in dense,
-        "the classic cloud grid must not be reflected vertically")
+require("sky.gridParams.w-gl_FragCoord.y" in dense and
+        "(240.0/sky.gridParams.w)" in dense,
+        "physical fragments must map from GPU bottom-left to classic screen Y")
+require("(sky.gridOrigin.w-320.0)*0.5" in dense,
+        "widescreen fragments must remain centred on the classic 320-pixel grid")
+require("screenPosition" not in glsl,
+        "cloud placement must not depend on backend clip-space Y")
 require("cloudCoverage" in dense,
         "cloud must fade out rather than fill the sky")
 require("gridColumn)/8.0" in dense,

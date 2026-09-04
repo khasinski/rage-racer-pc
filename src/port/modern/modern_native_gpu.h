@@ -20,9 +20,9 @@ float ModernNativeGpuMirrorPanelY(void);
 void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,
                          SDL_GPUTexture *colorTarget,
                          SDL_GPUTexture *depthTarget,
-                         int clearColor);
+                         int clearColor, int targetHeight);
 void ModernNativeGpuDrawMirror(SDL_GPUCommandBuffer *command,
                                SDL_GPUTexture *colorTarget,
-                               SDL_GPUTexture *depthTarget);
+                               SDL_GPUTexture *depthTarget, int targetHeight);
 
 #endif
