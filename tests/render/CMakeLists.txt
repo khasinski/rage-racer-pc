@@ -358,6 +358,18 @@ target_link_libraries(sky_background_tests PRIVATE psyz)
 add_test(NAME sky_background COMMAND sky_background_tests)
 set_tests_properties(sky_background PROPERTIES LABELS unit)
 
+add_executable(sky_panorama_layout_tests
+    sky_panorama_layout_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/sky_panorama_layout.c)
+target_include_directories(sky_panorama_layout_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(sky_panorama_layout_tests PRIVATE
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME sky_panorama_layout COMMAND sky_panorama_layout_tests)
+set_tests_properties(sky_panorama_layout PROPERTIES LABELS unit)
+
 add_executable(route_scenery_tests
     route_scenery_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/update_route_scenery.c

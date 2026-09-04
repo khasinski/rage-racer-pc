@@ -184,6 +184,7 @@ if(RAGE_BUILD_PORT)
         src/port/game_diagnostics.c
         src/port/rage_trace.c
         src/port/render_world_game.c
+        src/port/sky_panorama_layout.c
         src/port/track_asset_identity.c
         src/port/track_lighting.c
         src/port/runtime_config.c

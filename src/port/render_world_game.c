@@ -345,6 +345,7 @@ static RageRenderCamera GameRenderWorldBuildCamera(
     GameRenderWorldEnvironmentColor(ENV_SKY_HORIZON, &camera.skyHorizonColor);
     GameRenderWorldEnvironmentColor(ENV_SKY_BOTTOM, &camera.skyBottomColor);
     camera.skyAssetKey = TrackDataAssetKey();
+    camera.skyCloudRow = (uint32_t)g_SkyRowBase;
     /* Course geometry is stored in GTE units while Render World uses the
      * game's world units (four GTE units each). SetFogNear reaches full fog
      * at five times its authored near distance. */

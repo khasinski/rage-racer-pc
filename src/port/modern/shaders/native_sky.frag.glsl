@@ -44,15 +44,23 @@ void main() {
     }
     /*
      * The cloud sheet wraps the horizon as a band, the way the game's tile
-     * grid does: sixteen columns round a full turn, two rows deep. It does
-     * not repeat upwards. Tiling it in both directions instead, as a plane
-     * overhead would, turns the sky into wallpaper, and no amount of scaling
-     * hides that: the eye reads the repetition, not the cloud.
+     * grid does: sixteen columns round a full turn. Vertically, classic draws
+     * four authored bands alternating the two map rows selected for this
+     * skybox; the explicit mapping below reproduces that bounded layout.
      */
     float cloudBand = clamp((0.535 - height) / 0.43, 0.0, 1.0);
+    float panoramaHeight = float(textureSize(panorama, 0).y);
+    float panoramaV = cloudBand;
+    if (panoramaHeight > 128.0) {
+        /* Classic draws four vertical bands and alternates the two map rows
+         * selected by g_SkyRowBase. The 256-row native texture stores those
+         * two panoramas one above the other. */
+        float band = min(cloudBand * 4.0, 3.9999);
+        float row = mod(floor(band), 2.0);
+        panoramaV = (row + fract(band)) * 0.5;
+    }
     vec2 panoramaUV = vec2(
-        fract(atan(direction.z, direction.x) * 0.31830989),
-        cloudBand);
+        fract(atan(direction.z, direction.x) * 0.31830989), panoramaV);
     vec4 authored = texture(panorama, panoramaUV);
     /* The band ends where the sheet ends. Fading it out over a stretch of
      * sky instead makes the cloud look like it is dissolving, and the sheet

@@ -1,5 +1,6 @@
 #include "rage/track_asset_identity.h"
 #include "native_asset_importer.h"
+#include "sky_panorama_layout.h"
 
 #include <SDL3/SDL.h>
 
@@ -15,6 +16,7 @@
 #include "game/render_state.h"
 #include "game/terrain_internal.h"
 #include "game/track.h"
+#include "game/track_internal.h"
 #include "render/car_paint.h"
 
 enum {
@@ -914,7 +916,7 @@ int NativeAssetImporterLoadSky(uint32_t assetKey,
     const uint16_t *vram;
     uint8_t *page = NULL;
     uint8_t *sky;
-    uint32_t tile, row, pixel;
+    uint32_t panoramaRow, column, row, pixel;
     uint32_t opaquePixels = 0;
     (void)assetKey;
     if (!s_ready || image == NULL) return 0;
@@ -928,21 +930,27 @@ int NativeAssetImporterLoadSky(uint32_t assetKey,
         SDL_free(page);
         return 0;
     }
-    sky = SDL_calloc(512u * 128u, 4u);
+    sky = SDL_calloc(512u * 256u, 4u);
     if (sky == NULL) {
         SDL_free(page);
         return 0;
     }
-    for (tile = 0; tile < 8; tile++) {
-        uint32_t sourceX = (tile % 4u) * 64u;
-        uint32_t sourceY = (tile / 4u) * 128u;
-        for (row = 0; row < 128; row++)
-            memcpy(sky + (row * 512u + tile * 64u) * 4u,
-                   page + ((sourceY + row) * 256u + sourceX) * 4u,
-                   64u * 4u);
+    for (panoramaRow = 0; panoramaRow < RAGE_SKY_PANORAMA_ROWS;
+         panoramaRow++) {
+        for (column = 0; column < 8; column++) {
+            uint32_t tile = (uint32_t)RageSkyPanoramaTile(
+                g_SkyTileMap, g_SkyRowBase, (int)panoramaRow, (int)column);
+            uint32_t sourceX = (tile % 4u) * 64u;
+            uint32_t sourceY = (tile / 4u) * 128u;
+            for (row = 0; row < 128; row++)
+                memcpy(sky + (((panoramaRow * 128u + row) * 512u +
+                                column * 64u) * 4u),
+                       page + ((sourceY + row) * 256u + sourceX) * 4u,
+                       64u * 4u);
+        }
     }
     SDL_free(page);
-    for (pixel = 0; pixel < 512u * 128u; pixel++) {
+    for (pixel = 0; pixel < 512u * 256u; pixel++) {
         uint8_t *rgba = sky + pixel * 4u;
         uint8_t brightness = rgba[0];
         if (rgba[1] > brightness) brightness = rgba[1];
@@ -962,8 +970,8 @@ int NativeAssetImporterLoadSky(uint32_t assetKey,
         return 0;
     }
     image->pixels = sky;
-    image->size = 512u * 128u * 4u;
+    image->size = 512u * 256u * 4u;
     image->width = 512;
-    image->height = 128;
+    image->height = 256;
     return 1;
 }

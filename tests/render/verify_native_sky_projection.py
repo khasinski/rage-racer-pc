@@ -2,10 +2,9 @@
 """What the native sky must keep doing.
 
 The cloud sheet wraps the horizon as a band, the way the game's tile grid
-does: sixteen columns round a full turn, two rows deep. It repeats round the
-turn and never upwards. Projecting it as a plane overhead tiles it in both
-directions and turns the sky into wallpaper, and scaling does not hide that:
-the eye reads the repetition rather than the cloud.
+does: sixteen columns round a full turn and four vertical bands alternating
+the two map rows selected by the skybox. It repeats round the turn, while the
+vertical repetition is explicitly bounded to those four authored bands.
 
 The shader is checked as source, not as a picture, because it is cheap and it
 says which line is wrong. There used to be a second check here holding the
@@ -37,16 +36,16 @@ require("fract(atan" in dense or "fract(atan2" in dense,
 require("cloudCoverage" in dense,
         "cloud must fade out rather than fill the sky")
 
-# The sheet repeats round the horizon and never upwards. Tiling it vertically
-# as well turns the sky into wallpaper, which no scaling hides: the eye reads
-# the repetition rather than the cloud.
+# The sheet repeats round the horizon. Vertical addressing remains clamped;
+# the shader itself selects the four bounded classic bands.
 sampler = gpu[:gpu.find("s_skySampler = SDL_CreateGPUSampler")]
 sampler = sampler[sampler.rfind("s_sampler = SDL_CreateGPUSampler"):]
 require("address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT" in sampler,
         "the cloud sheet must repeat round the horizon")
 require("address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE" in sampler,
-        "the cloud sheet must not repeat upwards, or the sky becomes "
-        "wallpaper")
+        "vertical repetition must stay bounded in the sky shader")
+require("cloudBand * 4.0" in glsl and "mod(floor(band), 2.0)" in glsl,
+        "the sky must alternate its two classic map rows over four bands")
 # Sampled a texel at a time, as the original does: smoothing softens every
 # cloud edge and reads as a stretched, low-resolution sky.
 require("min_filter = SDL_GPU_FILTER_NEAREST" in sampler,

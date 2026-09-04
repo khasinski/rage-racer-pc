@@ -8,6 +8,9 @@
 #include "port/mod_assets.h"
 #include "port/platform_paths.h"
 #include "port/runtime_config.h"
+#include "port/sky_panorama_layout.h"
+#include "game/track.h"
+#include "game/track_internal.h"
 #include "render/asset_id.h"
 #include "render/car_paint.h"
 #include "render/mod_manifest.h"
@@ -239,10 +242,28 @@ int ModernAssetsLoadSkyImage(uint32_t assetKey, ModernAssetImage *image) {
                     if (ModernAssetReadFile(NULL, path, strlen(path), &pixels,
                                             &size)) {
                         if (size == expectedSize) {
-                            image->pixels = (void *)pixels;
-                            image->size = size;
-                            image->width = width;
-                            image->height = height;
+                            if (width == 512 && height == 128) {
+                                size_t expandedSize = 512u * 256u * 4u;
+                                uint8_t *expanded = SDL_malloc(expandedSize);
+                                if (expanded == NULL ||
+                                    !RageSkyExpandPanorama(
+                                        expanded, expandedSize, pixels, size,
+                                        g_SkyTileMap, g_SkyRowBase)) {
+                                    SDL_free(expanded);
+                                    ModernAssetFreeFile(NULL, pixels);
+                                    return 0;
+                                }
+                                ModernAssetFreeFile(NULL, pixels);
+                                image->pixels = expanded;
+                                image->size = expandedSize;
+                                image->width = 512;
+                                image->height = 256;
+                            } else {
+                                image->pixels = (void *)pixels;
+                                image->size = size;
+                                image->width = width;
+                                image->height = height;
+                            }
                             return 1;
                         }
                         ModernAssetFreeFile(NULL, pixels);

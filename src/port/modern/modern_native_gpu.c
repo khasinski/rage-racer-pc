@@ -104,6 +104,7 @@ static SDL_GPUGraphicsPipeline *s_sky;
 static SDL_GPUTexture *s_skyTexture;
 static SDL_GPUSampler *s_skySampler;
 static uint32_t s_skyAssetKey = UINT32_MAX;
+static uint32_t s_skyCloudRow = UINT32_MAX;
 static int s_skyHasPanorama;
 static uint32_t s_skyRetryFrames;
 static SDL_GPUGraphicsPipeline *s_shadowDepth;
@@ -657,12 +658,14 @@ static void ModernNativeReleaseSkyTexture(void) {
     }
     s_skyTexture = NULL;
     s_skyAssetKey = UINT32_MAX;
+    s_skyCloudRow = UINT32_MAX;
     s_skyHasPanorama = 0;
     s_skyRetryFrames = 0;
 }
 
 static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
-                                        uint32_t assetKey) {
+                                        uint32_t assetKey,
+                                        uint32_t cloudRow) {
     static const uint8_t transparent[4] = {0, 0, 0, 0};
     ModernAssetImage image = {0};
     SDL_GPUTextureCreateInfo texture = {0};
@@ -676,7 +679,8 @@ static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
     uint32_t width = 1, height = 1;
     void *mapped;
     int loaded;
-    if (s_skyTexture != NULL && s_skyAssetKey == assetKey) {
+    if (s_skyTexture != NULL && s_skyAssetKey == assetKey &&
+        s_skyCloudRow == cloudRow) {
         /* The first native present can occur while the game's sky atlas is
          * still being uploaded to VRAM. Do not retain that blank import for
          * the rest of the course: keep the gradient briefly, then retry. */
@@ -741,12 +745,14 @@ static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
      * so keeping one beside every resident texture only doubles memory use. */
     SDL_ReleaseGPUTransferBuffer(s_device, upload);
     s_skyAssetKey = assetKey;
+    s_skyCloudRow = cloudRow;
     s_skyHasPanorama = loaded;
     s_skyRetryFrames = loaded ? 0 : 30;
     if (RuntimeConfigEnabled("diagnostics.modern_asset_trace")) {
         fprintf(stderr,
-                "rage-port: native sky asset=%u panorama=%s %ux%u\n",
-                assetKey, loaded ? "loaded" : "gradient", width, height);
+                "rage-port: native sky asset=%u row=%u panorama=%s %ux%u\n",
+                assetKey, cloudRow, loaded ? "loaded" : "gradient", width,
+                height);
     }
     ModernAssetsFreeMaterialImage(&image);
     return 1;
@@ -1391,7 +1397,8 @@ static void ModernNativeGpuDrawSet(
     if (renderCamera == NULL) return;
     for (spanIndex = 0; spanIndex < spanCount; spanIndex++)
         (void)ModernNativeLoadTexture(command, &spans[spanIndex]);
-    if (!ModernNativeEnsureSkyTexture(command, renderCamera->skyAssetKey))
+    if (!ModernNativeEnsureSkyTexture(command, renderCamera->skyAssetKey,
+                                      renderCamera->skyCloudRow))
         return;
     pass = SDL_BeginGPURenderPass(command, &color, 1, &depth);
     if (pass == NULL) return;
