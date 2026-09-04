@@ -110,11 +110,15 @@ int main(void) {
         return 1;
     }
 
+    g_EnvScriptClock = 77;
+    g_EnvScriptCursor = script.cues;
+    g_EnvScriptEnabled = 1;
     script.skyRowBase = SKY_TILE_MAP_ROWS - 1;
     if (SetEnvironmentScript(
             (GameEnvironmentScript *)(void *)&script, sizeof(script)) != 0 ||
         g_SkyRowBase != 0 || g_EnvScriptCues != NULL ||
-        g_EnvScriptLength != 0) {
+        g_EnvScriptCursor != NULL || g_EnvScriptLength != 0 ||
+        g_EnvScriptClock != 0 || g_EnvScriptEnabled != 0) {
         puts("FAIL: out-of-range sky rows published");
         return 1;
     }

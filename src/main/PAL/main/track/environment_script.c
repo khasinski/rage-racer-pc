@@ -55,7 +55,10 @@ static void LoadEnvironmentCue(const GameEnvironmentCue *cue) {
 static void ClearEnvironmentScript(void) {
     g_SkyRowBase = 0;
     g_EnvScriptLength = 0;
+    g_EnvScriptClock = 0;
     g_EnvScriptCues = NULL;
+    g_EnvScriptCursor = NULL;
+    g_EnvScriptEnabled = 0;
 }
 
 s32 IsValidEnvironmentScript(const GameEnvironmentScript *script,
