@@ -166,11 +166,11 @@ void GameDrawMenuButton(
     u8 g,
     u8 b);
 void DrawMenuCursorBox(
-    s32 x0,
-    s32 y0,
-    s32 x1,
-    s32 y1,
-    s32 flash);
+    s32 x,
+    s32 y,
+    s32 width,
+    s32 height,
+    s32 useFlash);
 void DrawFadingMenuSprites(
     s32 progress,
     s32 lastRow,

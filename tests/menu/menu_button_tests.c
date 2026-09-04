@@ -25,9 +25,10 @@ static RectCall s_fills[2];
 static s32 s_outlineCount;
 static s32 s_fillCount;
 static s32 s_failures;
+static s32 s_sineAngle;
 
 s32 rsin(s32 angle) {
-    (void)angle;
+    s_sineAngle = angle;
     return -4096;
 }
 
@@ -102,6 +103,7 @@ int main(void) {
 
     g_MenuCursorPulsePhase = INT_MAX;
     DrawMenuCursorBox(0, 0, 1, 1, 0);
+    Check(s_sineAngle, 0xFFF, "cursor wrapped sine angle");
     Check(g_MenuCursorPulsePhase, (s32)((u32)INT_MAX + 0x60u),
           "cursor phase wrap");
 
