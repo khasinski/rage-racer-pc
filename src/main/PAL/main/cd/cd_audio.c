@@ -42,6 +42,10 @@ void TickCdAudio(void) {
         case CD_COMMAND_PAUSE:
             StepCdPauseRequest();
             break;
+        default:
+            g_CdCommandPending = CD_COMMAND_NONE;
+            g_CdCommandStep = CD_PLAY_WAIT_FOR_DRIVE;
+            break;
         }
     } else {
         StepCdTrackRequest();

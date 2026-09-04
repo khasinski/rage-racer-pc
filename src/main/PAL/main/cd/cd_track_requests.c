@@ -82,5 +82,9 @@ void StepCdTrackRequest(void) {
     case CD_TRACK_FINISH_RESTART:
         FinishTrackRequest(0);
         break;
+    default:
+        g_CdTrackPending = -1;
+        g_CdTrackStep = CD_TRACK_WAIT_FOR_DRIVE;
+        break;
     }
 }

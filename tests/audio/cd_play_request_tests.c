@@ -39,6 +39,12 @@ long CdControl(long command, void *param, u_char *result) {
 
 int main(void) {
     g_CdCommandPending = CD_COMMAND_PLAY;
+    g_CdCommandStep = 99;
+    StepCdPlayRequest();
+    CHECK(g_CdCommandPending == CD_COMMAND_NONE &&
+          g_CdCommandStep == CD_PLAY_WAIT_FOR_DRIVE);
+
+    g_CdCommandPending = CD_COMMAND_PLAY;
     g_CdCommandStep = CD_PLAY_WAIT_FOR_DRIVE;
     s_syncResult = CD_SYNC_COMPLETE;
     s_controlResult = 1;

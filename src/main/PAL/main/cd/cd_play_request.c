@@ -32,5 +32,9 @@ void StepCdPlayRequest(void) {
         g_CdCommandPending = CD_COMMAND_NONE;
         g_CdCommandStep = CD_PLAY_WAIT_FOR_DRIVE;
         break;
+    default:
+        g_CdCommandPending = CD_COMMAND_NONE;
+        g_CdCommandStep = CD_PLAY_WAIT_FOR_DRIVE;
+        break;
     }
 }

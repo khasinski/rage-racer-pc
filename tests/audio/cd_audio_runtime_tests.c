@@ -97,6 +97,15 @@ static int TestInitialization(void) {
 
 static int TestRequestDispatch(void) {
     Reset();
+    g_CdCommandPending = (CdCommandType)99;
+    g_CdCommandStep = 99;
+    TickCdAudio();
+    CHECK(g_CdCommandPending == CD_COMMAND_NONE &&
+          g_CdCommandStep == CD_PLAY_WAIT_FOR_DRIVE);
+    CHECK(s_trackSteps == 0 && s_playSteps == 0 && s_pauseSteps == 0 &&
+          s_fadeSteps == 1);
+
+    Reset();
     g_CdTrackPending = 4;
     g_CdCommandPending = CD_COMMAND_PAUSE;
     TickCdAudio();
