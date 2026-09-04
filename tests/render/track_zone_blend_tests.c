@@ -3,6 +3,7 @@
 #include "game/race.h"
 #include "game/track.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -59,6 +60,10 @@ int main(void) {
     events.zones[0].code = -4;
     if (!Expect("negative zone code", 101, 0x100, 4, 7, 0)) return 1;
 
+    events.zones[0] = (TrackZone){INT_MIN, INT_MAX, 1, 7};
+    if (!Expect("full-width zone", 0, 0x100, 1, 7, 0)) return 1;
+
+    events.zones[0] = (TrackZone){100, 1000, 1, 7};
     events.zones[0].code = 1;
     g_RaceSeries = 1;
     if (!Expect("reverse series", 1899, 1, 1, 7, 0)) return 1;

@@ -14,13 +14,16 @@ enum {
 };
 
 static s32 ZoneBlend(const TrackZone *zone, s32 position, s32 *zonePhase) {
-    if (position < zone->start + TRACK_ZONE_FADE_DISTANCE) {
+    int64_t distanceFromStart = (int64_t)position - zone->start;
+    int64_t distanceToEnd = (int64_t)zone->end - position;
+
+    if (distanceFromStart < TRACK_ZONE_FADE_DISTANCE) {
         *zonePhase = TRACK_ZONE_PHASE_FADE_IN;
-        return position - zone->start;
+        return (s32)distanceFromStart;
     }
-    if (position > zone->end - TRACK_ZONE_FADE_DISTANCE) {
+    if (distanceToEnd < TRACK_ZONE_FADE_DISTANCE) {
         *zonePhase = TRACK_ZONE_PHASE_FADE_OUT;
-        return zone->end - position;
+        return (s32)distanceToEnd;
     }
     *zonePhase = TRACK_ZONE_PHASE_FULL;
     return TRACK_ZONE_FADE_DISTANCE;
