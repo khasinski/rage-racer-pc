@@ -33,6 +33,10 @@ require("cloudBand" in dense,
         "the cloud sheet must stay a band round the horizon")
 require("screenPosition" in glsl and "gridOrigin" in glsl,
         "the cloud sheet must use the classic screen-space grid")
+require("(screenPosition.y+1.0)*120.0" in dense,
+        "Metal's top-left viewport must map to classic's downward screen Y")
+require("(1.0-screenPosition.y)*120.0" not in dense,
+        "the classic cloud grid must not be reflected vertically")
 require("cloudCoverage" in dense,
         "cloud must fade out rather than fill the sky")
 require("gridColumn)/8.0" in dense,

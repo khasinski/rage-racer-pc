@@ -57,7 +57,7 @@ void main() {
      * authored pixel density, its tile boundary, pitch and roll together. */
     vec2 screenPixel = vec2((screenPosition.x + 1.0) *
                                 sky.gridOrigin.w * 0.5,
-                            (1.0 - screenPosition.y) * 120.0);
+                            (screenPosition.y + 1.0) * 120.0);
     vec2 gridStart = sky.gridParams.z == 1.0
                          ? sky.gridParams.xy
                          : sky.gridOrigin.xy;
