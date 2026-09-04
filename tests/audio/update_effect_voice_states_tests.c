@@ -93,15 +93,25 @@ int main(void) {
     CHECK(g_EffectVoices[1].state == EFFECT_VOICE_IDLE);
     CHECK(g_EffectVoices[2].state == EFFECT_VOICE_IDLE);
 
+    g_EffectVoices[0].state = (EffectVoiceState)99;
+    s_keyOnVoice = -1;
+    s_keyOffVoice = -1;
+    s_volumeCalls = 0;
+    s_pitchCalls = 0;
+    UpdateEffectVoiceStates();
+    CHECK(g_EffectVoices[0].state == EFFECT_VOICE_IDLE);
+    CHECK(s_keyOnVoice == -1 && s_keyOffVoice == -1);
+    CHECK(s_volumeCalls == 0 && s_pitchCalls == 0);
+
     g_EffectVoices[3].state = EFFECT_VOICE_UPDATE;
     g_EffectVoices[2].note.value = -1;
     g_EffectVoices[3].note.value = -1;
-    s_volumeCalls = 2;
-    s_pitchCalls = 2;
+    s_volumeCalls = 0;
+    s_pitchCalls = 0;
     ForcePitchEffectVoicesEnabled(1);
     CHECK(s_keyOnVoice == 11);
-    CHECK(s_volumeCalls == 4 && s_volumeVoice[3] == 11);
-    CHECK(s_pitchCalls == 4 && s_pitchVoice[3] == 11);
+    CHECK(s_volumeCalls == 2 && s_volumeVoice[1] == 11);
+    CHECK(s_pitchCalls == 2 && s_pitchVoice[1] == 11);
     CHECK(g_EffectVoices[3].state == EFFECT_VOICE_UPDATE);
     ForcePitchEffectVoicesEnabled(0);
     CHECK(s_keyOffVoice == 13);

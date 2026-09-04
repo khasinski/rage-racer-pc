@@ -70,6 +70,9 @@ void UpdateEffectVoiceStates(void) {
             break;
         case EFFECT_VOICE_IDLE:
             break;
+        default:
+            effect->state = EFFECT_VOICE_IDLE;
+            break;
         }
     }
 }
