@@ -138,6 +138,12 @@ static int TestSteerPlayGauge(void) {
     CHECK(s_lineY[2] == 242 && s_lineY[3] == 243);
     CHECK(s_lineY[4] == 230 && s_lineY[5] == 231);
     CHECK(g_RenderState.packetCursor == s_packets + 14);
+
+    Reset();
+    g_NegconSteerPlay = 1;
+    DrawNegconSteerPlayScreen();
+    CHECK(s_lineY[0] == 224 && s_lineY[1] == 225);
+    CHECK(s_lineY[2] == 236 && s_lineY[3] == 237);
     return 0;
 }
 

@@ -6,7 +6,22 @@
 
 enum {
     NEGCON_GAUGE_CENTER_Y = 230,
+    NEGCON_GAUGE_LEFT = 0x94,
+    NEGCON_GAUGE_RIGHT = 0xA8,
+    NEGCON_PLAY_PERCENT_SCALE = 128,
 };
+
+static s32 NegconPlayGaugeHalfSpan(s32 percent) {
+    return (percent * NEGCON_PLAY_PERCENT_SCALE / 100) * 2;
+}
+
+static u8 *QueueDoubleGaugeLine(GameOrderingTableEntry *ot, u8 *prim, s32 y,
+                                s32 r, s32 g, s32 b) {
+    prim = GameQueueLine(ot, prim, NEGCON_GAUGE_LEFT, y, NEGCON_GAUGE_RIGHT,
+                         y, r, g, b);
+    return GameQueueLine(ot, prim, NEGCON_GAUGE_LEFT, y + 1,
+                         NEGCON_GAUGE_RIGHT, y + 1, r, g, b);
+}
 
 static u8 *QueueCalibrationArrows(GameOrderingTableEntry *ot, u8 *prim,
                                   NegconCalibrationValue value) {
@@ -43,17 +58,13 @@ void DrawNegconSteerPlayScreen(void) {
         ot, prim, 0x88, 0x30, 0xC, 0x18, 0x6C, 0x30, 0x7F81);
     prim = QueueCalibrationPanel(ot, prim);
 
-    halfSpan = ((g_NegconPlayPercent[play] << 7) / 100) * 2;
+    halfSpan = NegconPlayGaugeHalfSpan(g_NegconPlayPercent[play]);
     upperY = NEGCON_GAUGE_CENTER_Y - halfSpan;
     lowerY = NEGCON_GAUGE_CENTER_Y + halfSpan;
-    prim = GameQueueLine(ot, prim, 0x94, upperY, 0xA8, upperY, 0x20, 0x40, 0xFF);
-    prim = GameQueueLine(ot, prim, 0x94, upperY + 1, 0xA8, upperY + 1, 0x20, 0x40, 0xFF);
-    prim = GameQueueLine(ot, prim, 0x94, lowerY, 0xA8, lowerY, 0x20, 0x40, 0xFF);
-    prim = GameQueueLine(ot, prim, 0x94, lowerY + 1, 0xA8, lowerY + 1, 0x20, 0x40, 0xFF);
-    prim = GameQueueLine(
-        ot, prim, 0x94, NEGCON_GAUGE_CENTER_Y, 0xA8, NEGCON_GAUGE_CENTER_Y, 0, 0, 0);
-    g_RenderState.packetCursor = GameQueueLine(
-        ot, prim, 0x94, NEGCON_GAUGE_CENTER_Y + 1, 0xA8, NEGCON_GAUGE_CENTER_Y + 1, 0, 0, 0);
+    prim = QueueDoubleGaugeLine(ot, prim, upperY, 0x20, 0x40, 0xFF);
+    prim = QueueDoubleGaugeLine(ot, prim, lowerY, 0x20, 0x40, 0xFF);
+    g_RenderState.packetCursor =
+        QueueDoubleGaugeLine(ot, prim, NEGCON_GAUGE_CENTER_Y, 0, 0, 0);
 }
 
 void DrawNegconMaxTwistScreen(void) {
@@ -84,6 +95,7 @@ void DrawNegconMaxTwistScreen(void) {
         maxTwist * 24,
         0x30,
         0x7F81);
-    prim = GameQueueSpriteTrans(ot, prim, 0xAC, 0x30, 4, 0x18, 0x78, 0x30, 0x7F81);
+    prim = GameQueueSpriteTrans(ot, prim, 0xAC, 0x30, 4, 0x18, 0x78, 0x30,
+                                0x7F81);
     g_RenderState.packetCursor = QueueCalibrationPanel(ot, prim);
 }
