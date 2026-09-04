@@ -277,6 +277,7 @@ enum {
     MENU_COURSE_VIEW_REBASE_SPAN = 500000,
     MENU_COURSE_VIEW_SWAP_DISTANCE = MENU_COURSE_VIEW_REBASE_SPAN / 2,
     MENU_COURSE_VIEW_RIGHT_TARGET = MENU_COURSE_VIEW_REBASE_SPAN * 2,
+    MENU_COURSE_VIEW_EASE_DIVISOR = 18,
 };
 
 static inline int ShowroomCarAtSwapPoint(s32 angle, s32 target,
@@ -299,6 +300,39 @@ static inline int CourseCarouselAtSwapPoint(s32 angle, s32 target,
                ? angle > MENU_COURSE_VIEW_RIGHT_TARGET -
                              MENU_COURSE_VIEW_SWAP_DISTANCE
                : angle < MENU_COURSE_VIEW_SWAP_DISTANCE;
+}
+
+typedef struct CourseCarouselAnimation {
+    s32 angle;
+    s32 swapDelay;
+    s32 displayedCourse;
+    s32 pendingCourse;
+} CourseCarouselAnimation;
+
+static inline CourseCarouselAnimation AdvanceCourseCarouselAnimation(
+    s32 angle, s32 target, s32 swapDelay, s32 displayedCourse,
+    s32 pendingCourse) {
+    CourseCarouselAnimation result = {
+        angle,
+        swapDelay,
+        displayedCourse,
+        pendingCourse,
+    };
+
+    if (CourseCarouselAtSwapPoint(angle, target, pendingCourse)) {
+        result.swapDelay = NormalizeCourseSwapDelay(swapDelay);
+        if (result.swapDelay >= MENU_COURSE_SWAP_DELAY_FRAMES - 1) {
+            result.swapDelay = 0;
+            result.displayedCourse = pendingCourse;
+            result.pendingCourse = -1;
+        } else {
+            result.swapDelay++;
+        }
+    } else if (angle != target) {
+        result.angle = AdvanceMenuViewAngleValue(
+            angle, target, MENU_COURSE_VIEW_EASE_DIVISOR);
+    }
+    return result;
 }
 
 /* The showroom turntable is implementation shared by CAR SELECT and SHOP. */

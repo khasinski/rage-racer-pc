@@ -15,6 +15,7 @@
 
 int main(void) {
     TeamNameModelAnimation animation;
+    CourseCarouselAnimation courseAnimation;
 
     s32 progress = 100;
 
@@ -161,6 +162,29 @@ int main(void) {
     CHECK(!CourseCarouselAtSwapPoint(MENU_COURSE_VIEW_SWAP_DISTANCE - 1, 0,
                                      -1));
     CHECK(!CourseCarouselAtSwapPoint(100, 100, 2));
+
+    courseAnimation = AdvanceCourseCarouselAnimation(0, 100, 4, 2, -1);
+    CHECK(courseAnimation.angle == 6 && courseAnimation.swapDelay == 4);
+    CHECK(courseAnimation.displayedCourse == 2 &&
+          courseAnimation.pendingCourse == -1);
+    courseAnimation = AdvanceCourseCarouselAnimation(
+        MENU_COURSE_VIEW_RIGHT_TARGET - MENU_COURSE_VIEW_SWAP_DISTANCE + 1,
+        MENU_COURSE_VIEW_RIGHT_TARGET, 0, 2, 5);
+    CHECK(courseAnimation.swapDelay == 1);
+    CHECK(courseAnimation.displayedCourse == 2 &&
+          courseAnimation.pendingCourse == 5);
+    courseAnimation = AdvanceCourseCarouselAnimation(
+        MENU_COURSE_VIEW_RIGHT_TARGET - MENU_COURSE_VIEW_SWAP_DISTANCE + 1,
+        MENU_COURSE_VIEW_RIGHT_TARGET,
+        MENU_COURSE_SWAP_DELAY_FRAMES - 1, 2, 5);
+    CHECK(courseAnimation.swapDelay == 0);
+    CHECK(courseAnimation.displayedCourse == 5 &&
+          courseAnimation.pendingCourse == -1);
+    courseAnimation = AdvanceCourseCarouselAnimation(100, 100, INT_MAX, 2,
+                                                      5);
+    CHECK(courseAnimation.angle == 100 && courseAnimation.swapDelay == INT_MAX);
+    CHECK(courseAnimation.displayedCourse == 2 &&
+          courseAnimation.pendingCourse == 5);
 
     CHECK(UpdatedMenuViewSpin(0, PAD_L1) == 1);
     CHECK(UpdatedMenuViewSpin(0, PAD_R1) == -1);

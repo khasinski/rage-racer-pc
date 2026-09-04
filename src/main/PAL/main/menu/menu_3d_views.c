@@ -148,23 +148,17 @@ void DrawMenuCourseView(void) {
     s32 horizontalAngle;
     s32 courseModelIndex;
     s32 viewHeight;
+    CourseCarouselAnimation animation;
 
     SetupMenuViewCamera(0x100, 0);
 
-    if (CourseCarouselAtSwapPoint(g_MenuViewAngle, g_MenuViewAngleTarget,
-                                  g_MenuPendingCourseIndex)) {
-        g_CourseSwapDelay = NormalizeCourseSwapDelay(g_CourseSwapDelay);
-        if (g_CourseSwapDelay >= MENU_COURSE_SWAP_DELAY_FRAMES - 1) {
-            g_CourseSwapDelay = 0;
-            g_MenuCourseModelIndex = g_MenuPendingCourseIndex;
-            g_MenuPendingCourseIndex = -1;
-        } else {
-            g_CourseSwapDelay++;
-        }
-    } else if (g_MenuViewAngle != g_MenuViewAngleTarget) {
-        g_MenuViewAngle = AdvanceMenuViewAngleValue(
-            g_MenuViewAngle, g_MenuViewAngleTarget, 18);
-    }
+    animation = AdvanceCourseCarouselAnimation(
+        g_MenuViewAngle, g_MenuViewAngleTarget, g_CourseSwapDelay,
+        g_MenuCourseModelIndex, g_MenuPendingCourseIndex);
+    g_MenuViewAngle = animation.angle;
+    g_CourseSwapDelay = animation.swapDelay;
+    g_MenuCourseModelIndex = animation.displayedCourse;
+    g_MenuPendingCourseIndex = animation.pendingCourse;
 
     horizontalAngle =
         MenuWrapAngle(g_MenuViewAngle, MENU_COURSE_VIEW_REBASE_SPAN) /
