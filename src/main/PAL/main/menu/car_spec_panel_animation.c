@@ -3,7 +3,6 @@
 
 s32 AdvanceCarSpecPanel(s32 *progress, s32 step) {
     s32 engineSpecStep = 0;
-    int64_t updated;
 
     if (progress == NULL) {
         return 0;
@@ -13,13 +12,7 @@ s32 AdvanceCarSpecPanel(s32 *progress, s32 step) {
         return 0;
     }
 
-    updated = (int64_t)*progress + step;
-    if (updated < 0) {
-        updated = 0;
-    } else if (updated >= MENU_FADE_COMPLETE) {
-        updated = MENU_FADE_MAX;
-    }
-    *progress = (s32)updated;
+    *progress = AddClampedMenuValue(*progress, step, 0, MENU_FADE_MAX);
 
     if (step < 0) {
         s32 fadeRemaining;
@@ -28,6 +21,7 @@ s32 AdvanceCarSpecPanel(s32 *progress, s32 step) {
         engineSpecStep = fadeRemaining * fadeRemaining / 2048;
     }
 
-    DrawCarEngineSpec(engineSpecStep, (u8)(*progress / 4));
+    DrawCarEngineSpec(
+        engineSpecStep, (u8)(*progress / MENU_FADE_INTENSITY_DIVISOR));
     return *progress;
 }
