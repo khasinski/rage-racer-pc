@@ -156,6 +156,12 @@ int main(void) {
     CHECK(DrawDesignModeScreen(MENU_FADE_MAX) == MENU_FADE_MAX);
     CHECK(s_spriteCalls == 38 && s_selectedCellSprites == 1);
 
+    s_spriteCalls = 0;
+    RENDER_OT_BASE = NULL;
+    CHECK(DrawDesignModeScreen(-1) == MENU_FADE_MAX - 1);
+    CHECK(s_spriteCalls == 0);
+    RENDER_OT_BASE = ot;
+
     if (CheckChoice(0, 1, 2)) return 1;
     CHECK(s_rampCalls == 1);
     if (CheckChoice(1, 2, 2)) return 1;

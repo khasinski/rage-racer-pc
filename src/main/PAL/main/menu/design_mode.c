@@ -36,12 +36,15 @@ s32 DrawDesignModeScreen(s32 step) {
     s32 column;
     u32 fadeValue;
 
-    ot = RENDER_OT_BASE + 1;
     if (step == 0) {
         AdvanceMenuFade(&g_DesignModeScreenFade, step);
         return 0;
     }
     AdvanceMenuFade(&g_DesignModeScreenFade, step);
+    if (RENDER_OT_BASE == NULL) {
+        return g_DesignModeScreenFade;
+    }
+    ot = RENDER_OT_BASE + 1;
 
     if (step > 0) {
         offset = 0;
@@ -54,12 +57,10 @@ s32 DrawDesignModeScreen(s32 step) {
     fadeValue = g_DesignModeScreenFade;
     intensity = fadeValue / MENU_FADE_INTENSITY_DIVISOR;
 
-    DrawSprite(ot, 0xB4, y, 0x18, 0xC, 0x94, 0xDC,
-                  (u8)intensity, (u8)intensity, (u8)intensity,
-                  0x244, 0, 1, 0x3B);
-    DrawSprite(ot, 0xCE, y, 0x14, 0xC, 0xE0, 0xDC,
-                  (u8)intensity, (u8)intensity, (u8)intensity,
-                  0x244, 0, 1, 0x3B);
+    DrawSprite(ot, 0xB4, y, 0x18, 0xC, 0x94, 0xDC, (u8)intensity,
+               (u8)intensity, (u8)intensity, 0x244, 0, 1, 0x3B);
+    DrawSprite(ot, 0xCE, y, 0x14, 0xC, 0xE0, 0xDC, (u8)intensity,
+               (u8)intensity, (u8)intensity, 0x244, 0, 1, 0x3B);
 
     for (row = 0; row < DESIGN_MODE_GRID_SIZE; row++) {
         for (column = 0; column < DESIGN_MODE_GRID_SIZE; column++) {
@@ -72,17 +73,14 @@ s32 DrawDesignModeScreen(s32 step) {
             }
 
             DrawSprite(ot, 0xB4 + column * 0x10,
-                          0xC0 + row * 0x20 - (s16)offset,
-                          0xC, 0x18, 0xF4, 0x60,
-                          (u8)intensity, (u8)intensity,
-                          (u8)intensity,
-                          clutX, 0, 1, 0x39);
+                       0xC0 + row * 0x20 - (s16)offset, 0xC, 0x18, 0xF4,
+                       0x60, (u8)intensity, (u8)intensity, (u8)intensity,
+                       clutX, 0, 1, 0x39);
         }
     }
 
     return g_DesignModeScreenFade;
 }
-
 
 static void ExitDesignMode(void) {
     PlaySoundCue(3);
