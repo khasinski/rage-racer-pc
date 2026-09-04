@@ -18,11 +18,16 @@ s32 g_DefaultLapTimes[8] = {
 s32 g_DefaultTotalTimes[8] = {
     310765, 448765, 445765, 220765, 301765, 415765, 394765, 220765,
 };
-s32 g_BestLapTimes[2][4][2];
-s32 g_BestTotalTimes[2][4][2];
-s32 g_BestSectorTimes[2][4][3];
-RaceRecord g_RankingRecords[2][4][5];
-RaceRecord g_TimeRecords[2][4][5];
+s32 g_BestLapTimes[RECORD_SERIES_COUNT][RECORD_COURSE_COUNT]
+                      [RECORD_REFERENCE_COUNT];
+s32 g_BestTotalTimes[RECORD_SERIES_COUNT][RECORD_COURSE_COUNT]
+                        [RECORD_REFERENCE_COUNT];
+s32 g_BestSectorTimes[RECORD_SERIES_COUNT][RECORD_COURSE_COUNT]
+                         [RECORD_SECTOR_COUNT];
+RaceRecord g_RankingRecords[RECORD_SERIES_COUNT][RECORD_COURSE_COUNT]
+                           [RECORD_TABLE_LENGTH];
+RaceRecord g_TimeRecords[RECORD_SERIES_COUNT][RECORD_COURSE_COUNT]
+                        [RECORD_TABLE_LENGTH];
 
 char g_FmtLapTime[] = "%d'%02d\"%03d";
 int main(void) {

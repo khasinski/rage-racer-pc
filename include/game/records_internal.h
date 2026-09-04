@@ -9,6 +9,8 @@ enum {
     RECORD_COURSE_COUNT = 4,
     RECORD_NAME_LENGTH = 6,
     RECORD_TABLE_LENGTH = 5,
+    RECORD_REFERENCE_COUNT = 2,
+    RECORD_SECTOR_COUNT = 3,
 };
 
 extern const char *const g_PlaceSuffixNames[RECORD_TABLE_LENGTH];

@@ -6,8 +6,6 @@
 #include "game/screens.h"
 
 enum {
-    RECORD_REFERENCE_COUNT = 2,
-    RECORD_SECTOR_COUNT = 3,
     DEFAULT_RECORD_NAME_CODE = 0xB,
     DEFAULT_RECORD_NAME_CHARACTER = 'A',
 };
