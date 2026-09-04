@@ -32,6 +32,8 @@ static s32 s_drawSteps[2];
 static s32 s_hintResult;
 static s32 s_overlayCalls;
 static s32 s_specCarTire;
+static s32 s_spriteCount;
+static u16 s_spriteTextureV;
 static s32 s_updateCalls;
 
 static void CountUpdate(void) { s_updateCalls++; }
@@ -79,7 +81,9 @@ void DrawSprite(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1,
     (void)x1;
     (void)y1;
     (void)u0;
-    (void)v0;
+    if (s_spriteCount == 0) {
+        s_spriteTextureV = v0;
+    }
     (void)r;
     (void)g;
     (void)b;
@@ -87,6 +91,7 @@ void DrawSprite(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1,
     (void)shadeTex;
     (void)semiTrans;
     (void)flags;
+    s_spriteCount++;
 }
 
 void DrawBitPatternOverlay(s32 pattern) {
@@ -135,6 +140,8 @@ static void Reset(void) {
     s_hintResult = 0;
     s_overlayCalls = 0;
     s_specCarTire = -1;
+    s_spriteCount = 0;
+    s_spriteTextureV = 0;
     s_updateCalls = 0;
 }
 
@@ -153,10 +160,20 @@ static int TestDispatchAndLayers(void) {
     Reset();
     g_MenuScreen = MENU_SCREEN_CAR_SHOP;
     g_MenuHintBarStep = 1;
+    g_MenuHintButtonsVisible = 1;
     s_hintResult = 1;
     UpdateMenuMode();
     CHECK(g_RenderState.otShift == 5 && s_specCarTire == 8);
     CHECK(g_MenuHintBarProgress == 1 && s_overlayCalls == 1);
+    CHECK(s_spriteCount == 2 && s_spriteTextureV == 0xE8);
+
+    Reset();
+    g_MenuHintBarStep = 1;
+    g_MenuHintButtonsVisible = 1;
+    g_PadType = PAD_TYPE_NEGCON;
+    s_hintResult = 1;
+    UpdateMenuMode();
+    CHECK(s_spriteCount == 2 && s_spriteTextureV == 0xF4);
     return 0;
 }
 
