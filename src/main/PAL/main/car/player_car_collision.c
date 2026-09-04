@@ -239,7 +239,7 @@ static void PlayPlayerCollisionSound(const PlayerCarRuntime *player,
     s32 soundCue;
 
     if (WrapSigned16(player->motionTimer) >= COLLISION_SOUND_TIMER_LIMIT ||
-        g_RacePhase >= 3) {
+        g_RacePhase >= RACE_PHASE_UNOBSERVED) {
         return;
     }
     if (hit->lateralDistance < COLLISION_SOUND_CLOSE_LATERAL_DISTANCE) {

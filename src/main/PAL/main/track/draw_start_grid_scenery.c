@@ -23,7 +23,8 @@ void DrawStartGridScenery(s32 timer) {
     s32 modelId;
     s32 series;
 
-    if (g_RacePhase >= 2 || timer < START_GRID_FIRST_VISIBLE_FRAME) {
+    if (g_RacePhase >= RACE_PHASE_ACTIVE ||
+        timer < START_GRID_FIRST_VISIBLE_FRAME) {
         return;
     }
 

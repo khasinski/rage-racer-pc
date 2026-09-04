@@ -190,7 +190,7 @@ static void UpdatePathSceneryAudio(void) {
         g_PathSceneryVolume = 0;
     }
 
-    if (g_RacePhase >= 3) {
+    if (g_RacePhase >= RACE_PHASE_UNOBSERVED) {
         pitch = 0;
         volume = 0;
     }

@@ -21,7 +21,7 @@ static s32 MirrorPassIsAvailable(void) {
            g_MirrorViewEnabled != 0 &&
            g_CameraViewMode == CAMERA_VIEW_CAR &&
            g_GrandPrixMode != 0 &&
-           g_RacePhase == 2;
+           g_RacePhase == RACE_PHASE_ACTIVE;
 }
 
 static void SetMirrorClip(s32 panelY) {

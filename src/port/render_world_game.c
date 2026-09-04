@@ -387,7 +387,8 @@ void GameRenderWorldPublishCurrentCamera(void) {
     mirrorCamera.fogFar *= 2.0f;
     mirrorActive = g_MirrorUnlocked != 0 && g_MirrorViewEnabled != 0 &&
                    g_CameraViewMode == CAMERA_VIEW_CAR &&
-                   g_GrandPrixMode != 0 && g_RacePhase == 2;
+                   g_GrandPrixMode != 0 &&
+                   g_RacePhase == RACE_PHASE_ACTIVE;
     RenderWorldSetMirrorCamera(GameRenderWorldMutable(), &mirrorCamera,
                                    mirrorActive, (float)g_MirrorPanelY);
 }

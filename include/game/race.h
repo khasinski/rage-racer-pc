@@ -51,8 +51,21 @@ extern s16 g_GrandPrixMode;
  * courses backwards, also the lap-direction flag. */
 extern s32 g_RaceSeries;
 
-/* Race phase: 0 pre-start (physics frozen), 1 countdown, 2 racing, 4/5
- * finished, 7 goal/retire, 8 aborted. */
+/* Phase 3 is accepted by a few retail state checks as another driving phase,
+ * but no recovered runtime path assigns it. Keep that gap explicit instead
+ * of inventing a transition name for an unobserved state. */
+typedef enum RacePhase {
+    RACE_PHASE_INTRO = 0,
+    RACE_PHASE_COUNTDOWN = 1,
+    RACE_PHASE_ACTIVE = 2,
+    RACE_PHASE_UNOBSERVED = 3,
+    RACE_PHASE_FINISHED = 4,
+    RACE_PHASE_RETIRED = 5,
+    RACE_PHASE_QUIT = 7,
+    RACE_PHASE_RESTART = 8,
+} RacePhase;
+
+/* Stored as s16 to preserve the retail global layout. */
 extern s16 g_RacePhase;
 
 /* Series / save file the title menu picked (0 first, 1 Extra GP); also indexes
@@ -138,8 +151,8 @@ enum { RACE_TIME_MAX_MS = 0x927BF };
 /* Elapsed time of the lap in progress. */
 extern s32 g_LapTimeMs;
 
-/* Grand Prix time limit, in frames; counts down while g_RacePhase >= 2 and
- * forces g_RacePhase = 5 when it reaches 0. Seeded to 15000. */
+/* Grand Prix time limit, in frames; counts down from the active phase onward
+ * and retires the race when it reaches zero. Seeded to 15000. */
 extern s32 g_RaceTimeRemaining;
 
 /* Sector being timed, 0..2; -2 before the first start-line crossing. */

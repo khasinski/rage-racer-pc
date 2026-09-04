@@ -13,7 +13,6 @@
 enum {
     PLAYER_RENDER_MODEL_INDEX = 0x17,
     INITIAL_RACE_POSITION = 1,
-    ACTIVE_RACE_PHASE = 2,
     RACE_DIRECTION_BIT = 1,
     MANUAL_HUD_GLYPH_CLUT = 0x7800,
     AUTOMATIC_HUD_GLYPH_CLUT = 0x78CF,
@@ -101,7 +100,7 @@ static void ResetPlayerDrivingGlobals(const GameCarDrive *drive) {
 }
 
 void InitPlayerCar(PlayerCarRuntime *car) {
-    g_RacePhase = ACTIVE_RACE_PHASE;
+    g_RacePhase = RACE_PHASE_ACTIVE;
     g_RaceSeries = g_GrandPrixSeries & RACE_DIRECTION_BIT;
     BuildTachoNeedleQuad();
     g_AutoShiftCooldown = 0;

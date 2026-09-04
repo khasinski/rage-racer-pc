@@ -185,7 +185,7 @@ void UpdateFlybyScenery(void) {
     }
     GetFlybyAudio(active, &pitch, &volume);
 
-    if (g_RacePhase >= 3) {
+    if (g_RacePhase >= RACE_PHASE_UNOBSERVED) {
         pitch = 0;
         volume = 0;
     }

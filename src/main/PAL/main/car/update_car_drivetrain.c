@@ -11,7 +11,6 @@ enum {
     PEDAL_LATCH_RELEASE_THRESHOLD = 0x7C,
     ENGINE_RPM_LIMIT = 0x3A98,
     STOPPED_SPEED_THRESHOLD = 8,
-    ACTIVE_RACE_PHASE = 2,
     STANDING_START_ACCELERATOR_THRESHOLD = 0x40,
     STANDING_START_BRAKE_THRESHOLD = 0x80,
     GRIP_INPUT_PERCENT = 100,
@@ -64,7 +63,7 @@ static DrivetrainGearData SelectDrivetrainGearData(GameCarDrive *drive,
         .ratio = GetCarGearLoad(spec, drive->gear),
     };
 
-    if (g_RacePhase < ACTIVE_RACE_PHASE) {
+    if (g_RacePhase < RACE_PHASE_ACTIVE) {
         drive->gearDisp = drive->gear;
         data.ratio = GetCarGearLoad(spec, CAR_FIRST_FORWARD_GEAR);
         data.torqueCurve = g_GearTorqueCurve[0].values;
@@ -242,7 +241,7 @@ void UpdateCarDrivetrain(PlayerCarRuntime *car) {
     }
 
     AlignStoppedCarHeading(car);
-    if (g_RacePhase >= ACTIVE_RACE_PHASE) {
+    if (g_RacePhase >= RACE_PHASE_ACTIVE) {
         DispatchCarMotion(car);
     } else {
         car->speed = 0;

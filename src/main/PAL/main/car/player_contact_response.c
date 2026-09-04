@@ -118,7 +118,7 @@ static void ApplyPlayerSkidResponse(PlayerCarRuntime *car, s32 skid) {
         (int64_t)drive->engineLoad * drivetrainScale / PERCENT_SCALE);
     g_ShiftTargetRpm = WrapSigned32(
         (int64_t)drivetrainScale * g_ShiftTargetRpm) / PERCENT_SCALE;
-    if (g_RacePhase < 3) {
+    if (g_RacePhase < RACE_PHASE_UNOBSERVED) {
         PlayPlayerSkidCue(car, skid, slip);
     }
 }

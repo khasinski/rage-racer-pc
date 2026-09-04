@@ -4,7 +4,6 @@
 #include "game/race.h"
 
 enum {
-    ACTIVE_RACE_PHASE = 2,
     PEDAL_ACTIVE_THRESHOLD = 0x81,
     TILT_BRAKE_MIN_SPEED = 0x51,
     TILT_REST = 8,
@@ -21,7 +20,7 @@ enum {
 void UpdatePlayerTilt(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
 
-    if (g_RacePhase < ACTIVE_RACE_PHASE) {
+    if (g_RacePhase < RACE_PHASE_ACTIVE) {
         car->tiltCounter = TILT_REST;
         return;
     }

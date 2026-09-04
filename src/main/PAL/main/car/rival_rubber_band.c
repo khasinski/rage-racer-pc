@@ -86,7 +86,7 @@ void UpdateRivalRubberBand(void) {
     s32 farDistance;
     s32 rank;
 
-    if (g_RacePhase >= 4) {
+    if (g_RacePhase >= RACE_PHASE_FINISHED) {
         return;
     }
 

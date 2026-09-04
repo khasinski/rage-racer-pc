@@ -13,8 +13,6 @@ enum SteeringDirection {
 };
 
 enum {
-    PLAYER_CONTROL_RACE_PHASE = 2,
-    FINISHED_RACE_PHASE = 4,
     STEERING_FULL_LOCK = 4096,
     DIGITAL_STEERING_STEP = 1536,
     DIGITAL_STEERING_RELEASE_DIVISOR = 3,
@@ -174,9 +172,9 @@ static void UpdateAutomaticSteering(PlayerCarRuntime *car) {
 }
 
 void UpdateCarBodyRoll(PlayerCarRuntime *car) {
-    if (g_RacePhase < PLAYER_CONTROL_RACE_PHASE) {
+    if (g_RacePhase < RACE_PHASE_ACTIVE) {
         CenterSteering(car);
-    } else if (g_RacePhase < FINISHED_RACE_PHASE &&
+    } else if (g_RacePhase < RACE_PHASE_FINISHED &&
                g_PlayerAutoSteer == 0) {
         if (g_PadType == PAD_TYPE_DIGITAL) {
             UpdateDigitalSteering(car);

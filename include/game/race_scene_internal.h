@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "game/camera_types.h"
+#include "game/race.h"
 
 typedef enum RacePauseAction {
     RACE_PAUSE_RESUME,

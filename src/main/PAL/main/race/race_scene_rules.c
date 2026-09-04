@@ -45,9 +45,13 @@ u16 RaceCameraButtonMask(u8 padType, const u16 buttonMapping[16]) {
                : 0;
 }
 
-s32 CanPauseRace(s16 phase) { return phase == 1 || phase == 2; }
+s32 CanPauseRace(s16 phase) {
+    return phase == RACE_PHASE_COUNTDOWN || phase == RACE_PHASE_ACTIVE;
+}
 
-s32 CanToggleRaceCamera(s16 phase) { return phase == 2 || phase == 3; }
+s32 CanToggleRaceCamera(s16 phase) {
+    return phase >= RACE_PHASE_ACTIVE && phase < RACE_PHASE_FINISHED;
+}
 
 s32 LastRacePauseOption(s16 grandPrixMode) {
     return grandPrixMode != 0 ? 1 : 2;
@@ -56,7 +60,7 @@ s32 LastRacePauseOption(s16 grandPrixMode) {
 RacePauseAction DecideRacePauseAction(s16 phase, s16 grandPrixMode,
                                       s16 cursor) {
     if (cursor == LastRacePauseOption(grandPrixMode)) {
-        if (grandPrixMode == 0 || phase < 2) {
+        if (grandPrixMode == 0 || phase < RACE_PHASE_ACTIVE) {
             return RACE_PAUSE_QUIT;
         }
         return RACE_PAUSE_RETIRE;
@@ -112,11 +116,11 @@ RaceEndFrame BuildRaceEndFrame(s16 phase, s16 grandPrixMode,
         .advanceTimer = 0,
     };
 
-    if (phase == 7) {
+    if (phase == RACE_PHASE_QUIT) {
         frame.exitScene = GAME_SCENE_INIT_MENU;
         return frame;
     }
-    if (phase != 5) {
+    if (phase != RACE_PHASE_RETIRED) {
         return frame;
     }
 
@@ -181,7 +185,7 @@ WrongWayUpdate UpdateWrongWayState(s16 timer, s32 facingWrongWay, s16 phase,
         .playCue = 0,
     };
 
-    if (!facingWrongWay || phase >= 4) {
+    if (!facingWrongWay || phase >= RACE_PHASE_FINISHED) {
         return result;
     }
 
@@ -204,14 +208,15 @@ RaceStartUpdate UpdateRaceStartState(s16 phase, u32 sceneTimer) {
         .action = RACE_START_ACTION_NONE,
     };
 
-    if (phase == 0) {
+    if (phase == RACE_PHASE_INTRO) {
         if (sceneTimer < RACE_INTRO_END_FRAME) {
             result.action = RACE_START_ACTION_UPDATE_INTRO_CAMERA;
         } else {
-            result.phase = 1;
+            result.phase = RACE_PHASE_COUNTDOWN;
         }
-    } else if (phase == 1 && sceneTimer >= RACE_START_FRAME) {
-        result.phase = 2;
+    } else if (phase == RACE_PHASE_COUNTDOWN &&
+               sceneTimer >= RACE_START_FRAME) {
+        result.phase = RACE_PHASE_ACTIVE;
         result.action = RACE_START_ACTION_BEGIN;
     }
     return result;
@@ -224,12 +229,12 @@ RaceClockUpdate UpdateRaceClock(s32 remaining, s16 phase,
         .expired = 0,
     };
 
-    if (phase >= 2 && grandPrixMode != 0) {
+    if (phase >= RACE_PHASE_ACTIVE && grandPrixMode != 0) {
         if (result.remaining > INT_MIN) {
             result.remaining--;
         }
     }
-    result.expired = phase < 4 && result.remaining <= 0;
+    result.expired = phase < RACE_PHASE_FINISHED && result.remaining <= 0;
     return result;
 }
 
@@ -245,10 +250,10 @@ RaceViewSelection SelectRaceView(s16 phase, s32 retiring,
         result.cameraView = CAMERA_VIEW_CAR;
     }
 
-    if (phase == 5 && !retiring) {
+    if (phase == RACE_PHASE_RETIRED && !retiring) {
         result.cameraAction = RACE_CAMERA_ACTION_FINISH;
         result.useFinishTextureSection = 1;
-    } else if (phase > 0) {
+    } else if (phase > RACE_PHASE_INTRO) {
         result.cameraAction = RACE_CAMERA_ACTION_FOLLOW_PLAYER;
         if (retiring) {
             result.cameraView = CAMERA_VIEW_CAR;

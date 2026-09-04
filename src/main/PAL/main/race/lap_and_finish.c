@@ -28,8 +28,6 @@ enum {
     LAP_FRAME_COUNT_MAX = 0x10000,
     BEST_LAP_SOUND_CUE = 0x26,
     BEST_LAP_CUE_DELAY = 0x96,
-    FINISHED_RACE_PHASE = 4,
-    RETIRED_RACE_PHASE = 5,
     FINISH_CUE_FLAG = 1 << 3,
     FINISHED_SOUND_CUE = 0x2A,
     FINISH_FOLLOWUP_SOUND_CUE = 0x2B,
@@ -140,12 +138,12 @@ static void FinishRace(PlayerCarRuntime *car, s32 recordMode,
         g_BestSectorTimes[series][course][1] = g_RefSectorTimes.fields.second;
         g_BestSectorTimes[series][course][2] = g_RefSectorTimes.fields.third;
     }
-    g_RacePhase = FINISHED_RACE_PHASE;
+    g_RacePhase = RACE_PHASE_FINISHED;
     StartCdVolumeFade(FINISH_AUDIO_FADE_FRAMES);
-    /* TriggerRaceCues runs later in the frame, but phase 4 skips that whole
-     * block. Guarantee the spoken FINISHED cue at the state transition itself
-     * instead of depending on the car remaining in one authored finish-line
-     * track section. */
+    /* TriggerRaceCues runs later in the frame, but the finished phase skips
+     * that whole block. Guarantee the spoken FINISHED cue at the transition
+     * itself instead of depending on the car remaining in one authored
+     * finish-line track section. */
     g_RaceCueFlags |= FINISH_CUE_FLAG;
     PlaySoundCue(FINISHED_SOUND_CUE);
     QueueFinishFollowupCue(FINISH_FOLLOWUP_SOUND_CUE);
@@ -154,7 +152,7 @@ static void FinishRace(PlayerCarRuntime *car, s32 recordMode,
 /* The race is over and the player did not finish it: no records, just the
  * camera pulling away. */
 static void RetireAtLastLap(void) {
-    g_RacePhase = RETIRED_RACE_PHASE;
+    g_RacePhase = RACE_PHASE_RETIRED;
     SeedFinishCamera(&g_PlayerCar);
     StartCdVolumeFade(RETIRE_AUDIO_FADE_FRAMES);
     if (g_CourseProgress != NULL &&
@@ -234,7 +232,7 @@ static void RetireWrongWay(void) {
     s32 series = RaceSeriesIndex(g_RaceSeries);
     s32 course = SeriesCourseIndex();
 
-    g_RacePhase = RETIRED_RACE_PHASE;
+    g_RacePhase = RACE_PHASE_RETIRED;
     g_BestLapTimes[series][course][0] =
         g_RankingRecords[series][course][0].raceTime;
     StartCdVolumeFade(FINISH_AUDIO_FADE_FRAMES);
@@ -309,7 +307,7 @@ s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
     }
 
     if ((g_LapCount < car->lap) &&
-        (g_RacePhase == FINISHED_RACE_PHASE)) {
+        (g_RacePhase == RACE_PHASE_FINISHED)) {
         returnValue = AdvanceFinishFade(returnValue);
     } else if ((g_GrandPrixMode == 0) &&
                (IsWholeLapBehind(g_TrackLength, car->progressA,

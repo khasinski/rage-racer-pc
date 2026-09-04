@@ -26,7 +26,7 @@ static s16 ReadMappedButtonPressure(s32 mappingSlot) {
 }
 
 void ReadPlayerCarInput(GameCarDrive *drive) {
-    if (g_RacePhase >= 4) {
+    if (g_RacePhase >= RACE_PHASE_FINISHED) {
         drive->acceleratorInput.value = 0;
         drive->brakeInput = 0;
         return;

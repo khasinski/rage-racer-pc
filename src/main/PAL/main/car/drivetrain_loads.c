@@ -36,7 +36,6 @@ enum {
     ROAD_GRADE_SIDE_FORCE_SCALE = 0x708,
     ROAD_GRADE_SIDE_FORCE_DIVISOR = 0xA000,
     UPHILL_SIDE_FORCE_DIVISOR = 10,
-    ACTIVE_RACE_PHASE = 2,
     STANDING_START_SPIN_MASK = 0x1F,
     STANDING_START_RESISTANCE_SCALE = 5,
     DRIVE_BOOST_BASE_RESISTANCE = 0xC8,
@@ -261,7 +260,7 @@ static void UpdateRoadGradeResistance(CarDrivetrainLoads *loads,
 
 static void ApplyTransientDriveLoads(CarDrivetrainLoads *loads,
                                      const GameCarDrive *drive) {
-    if (g_RacePhase == ACTIVE_RACE_PHASE &&
+    if (g_RacePhase == RACE_PHASE_ACTIVE &&
         drive->motionState == CAR_MOTION_STANDING_START) {
         loads->motionResistance = WrapSigned32(
             (int64_t)loads->motionResistance +

@@ -9,7 +9,6 @@ enum {
     DRIVETRAIN_RECONNECT_FRAMES = 3,
     LANDING_SOUND_LEVEL_MASK = 0x3F,
     AIRBORNE_LAUNCH_SPEED_DIVISOR = 0x100000,
-    LAST_ACTIVE_RACE_PHASE = 2,
     LANDING_SOUND_CUE = 0xE,
 };
 
@@ -31,7 +30,7 @@ static void LandPlayerCar(PlayerCarRuntime *car, s32 groundHeight) {
     ApplyCarLandingPose(AsRivalCar(car), groundHeight);
     g_ShiftSoundLevel = 0;
     if (car->verticalMotionTimer >= LONG_LANDING_SOUND_FRAMES &&
-        g_RacePhase <= LAST_ACTIVE_RACE_PHASE) {
+        g_RacePhase <= RACE_PHASE_ACTIVE) {
         PlaySoundCue(LANDING_SOUND_CUE);
     }
     if (drive->motionState == CAR_MOTION_DRIVING &&
