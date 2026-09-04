@@ -38,7 +38,7 @@ void (*g_NativeGameModeHandlers[OPTION_MODE_COUNT])(void) = {
     UpdateNegconMaxTwistScreen,
 };
 
-void (*g_SceneHandlers[40])(void) = {
+void (*g_SceneHandlers[GAME_SCENE_HANDLER_COUNT])(void) = {
     [GAME_SCENE_BOOT_LOGO] = UpdateBootLogoScene,
     [GAME_SCENE_ENTER_FRONTEND] = EnterFrontend,
     [GAME_SCENE_ENTER_TITLE] = EnterTitleScreen,

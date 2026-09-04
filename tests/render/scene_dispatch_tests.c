@@ -1,11 +1,12 @@
 #include "common.h"
 #include "game/boot_internal.h"
+#include "game/scene.h"
 
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
-void (*g_SceneHandlers[40])(void);
+void (*g_SceneHandlers[GAME_SCENE_HANDLER_COUNT])(void);
 s32 g_SceneId;
 s32 g_SceneTimer;
 
@@ -68,7 +69,7 @@ int main(void) {
     CHECK(strcmp(s_traceMessage, "id=-1 timer=4") == 0);
 
     Reset();
-    g_SceneId = 40;
+    g_SceneId = GAME_SCENE_HANDLER_COUNT;
     DispatchCurrentScene();
     CHECK(s_traceCalls == 1);
 

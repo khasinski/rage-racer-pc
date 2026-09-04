@@ -40,4 +40,11 @@ typedef enum GameSceneId {
     GAME_SCENE_ENDING_STILL = 34,
 } GameSceneId;
 
+/* The retail dispatch table reserves a few slots after the last recovered
+ * scene. Keep its storage size distinct from the highest named scene ID. */
+enum { GAME_SCENE_HANDLER_COUNT = 40 };
+
+_Static_assert(GAME_SCENE_ENDING_STILL < GAME_SCENE_HANDLER_COUNT,
+               "scene dispatch table is too small");
+
 #endif

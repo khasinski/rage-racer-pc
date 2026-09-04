@@ -1,9 +1,10 @@
 #ifndef GAME_STATE_H
 #define GAME_STATE_H
 
-extern void (*g_SceneHandlers[40])(void);
-
 #include "common.h"
+#include "game/scene.h"
+
+extern void (*g_SceneHandlers[GAME_SCENE_HANDLER_COUNT])(void);
 
 extern u8 g_PadType;
 #include "game/vector.h"
