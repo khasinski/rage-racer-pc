@@ -3,11 +3,6 @@
 
 #include <string.h>
 
-typedef struct FixedFontCell {
-    u8 textureU;
-    u8 textureV;
-} FixedFontCell;
-
 typedef struct WordFontCell {
     u8 textureU;
     u8 textureV;
@@ -24,8 +19,7 @@ typedef struct CurrencyFontCell {
 
 enum {
     PROP_FONT_FIRST_CHARACTER = 0x20,
-    PROP_FONT_GLYPH_COUNT =
-        sizeof(g_PropFontCells) / sizeof(FixedFontCell),
+    PROP_FONT_GLYPH_COUNT = PROPORTIONAL_FONT_CELL_COUNT,
     WORD_FONT_FIRST_CHARACTER = 'a',
     WORD_FONT_GLYPH_COUNT =
         sizeof(g_WordFontCells) / sizeof(WordFontCell),
@@ -34,13 +28,6 @@ enum {
 
 _Static_assert(sizeof(g_HighFontCell) == sizeof(CurrencyFontCell),
                "currency font data must contain exactly one cell");
-
-static FixedFontCell FixedFontCellAt(u32 index) {
-    FixedFontCell cell;
-
-    memcpy(&cell, g_PropFontCells + index * sizeof(cell), sizeof(cell));
-    return cell;
-}
 
 static WordFontCell WordFontCellAt(u32 index) {
     WordFontCell cell;
@@ -121,8 +108,8 @@ void GameDrawProportionalTextShaded(
         } else if (ch >= PROP_FONT_FIRST_CHARACTER &&
                    ch < PROP_FONT_FIRST_CHARACTER + PROP_FONT_GLYPH_COUNT) {
             if (ch != ' ') {
-                FixedFontCell cell =
-                    FixedFontCellAt(ch - PROP_FONT_FIRST_CHARACTER);
+                ProportionalFontCell cell =
+                    g_PropFontCells[ch - PROP_FONT_FIRST_CHARACTER];
 
                 packet = QueueProportionalGlyph(
                     packet, xPos, y, cell.textureU, cell.textureV, 12,

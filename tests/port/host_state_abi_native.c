@@ -6,6 +6,8 @@ _Static_assert(sizeof(g_SaveTitleSjis) == 212,
                "g_SaveTitleSjis ABI size changed");
 _Static_assert(sizeof(g_SaveNameCharset) == 44,
                "save-name charset ABI size changed");
+_Static_assert(sizeof(g_PropFontCells) == 128,
+               "proportional font table ABI changed");
 _Static_assert(sizeof(g_BodyColorPrimary) == 36,
                "primary body-colour table ABI changed");
 _Static_assert(sizeof(g_BodyColorSecondary) == 36,

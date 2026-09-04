@@ -137,7 +137,8 @@ extern ScreenOffset g_ScreenOffsetY;
 extern s32 g_FrameParity;
 extern u8 g_Font8x8Cells[];
 extern u8 g_DrawModeEnv[];
-extern u8 g_PropFontCells[0x80];
+extern ProportionalFontCell
+    g_PropFontCells[PROPORTIONAL_FONT_CELL_COUNT];
 extern u8 g_WordFontCells[40];
 extern u8 g_HighFontCell[4];
 extern s32 g_MenuOverlayPatternAnimOffset;

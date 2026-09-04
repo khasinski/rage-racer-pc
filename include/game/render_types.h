@@ -49,6 +49,16 @@ enum {
 _Static_assert(sizeof(GameSpriteDesc) == 20,
                "GameSpriteDesc must match the retail data layout");
 
+typedef struct ProportionalFontCell {
+    u8 textureU;
+    u8 textureV;
+} ProportionalFontCell;
+
+enum { PROPORTIONAL_FONT_CELL_COUNT = 64 };
+
+_Static_assert(sizeof(ProportionalFontCell) == 2,
+               "proportional font cell must remain a UV byte pair");
+
 typedef union RenderBufferAddress {
     RaceHudPacketOffset hudPacketOffset;
     s32 value;

@@ -7,7 +7,7 @@
 
 GameRenderState g_RenderState;
 u8 g_DrawModeEnv[8];
-u8 g_PropFontCells[0x80];
+ProportionalFontCell g_PropFontCells[PROPORTIONAL_FONT_CELL_COUNT];
 u8 g_WordFontCells[40];
 u8 g_HighFontCell[4];
 
@@ -43,8 +43,8 @@ static void CheckFontClasses(void) {
 
     ResetTextState();
     packets = g_RenderState.packetCursor;
-    g_PropFontCells[('A' - 0x20) * 2] = 11;
-    g_PropFontCells[('A' - 0x20) * 2 + 1] = 12;
+    g_PropFontCells['A' - 0x20].textureU = 11;
+    g_PropFontCells['A' - 0x20].textureV = 12;
     g_WordFontCells[0] = 21;
     g_WordFontCells[1] = 22;
     g_WordFontCells[2] = 7;
@@ -85,8 +85,8 @@ static void CheckShadedText(void) {
     SPRT *sprite;
 
     ResetTextState();
-    g_PropFontCells[('A' - 0x20) * 2] = 5;
-    g_PropFontCells[('A' - 0x20) * 2 + 1] = 6;
+    g_PropFontCells['A' - 0x20].textureU = 5;
+    g_PropFontCells['A' - 0x20].textureV = 6;
     sprite = (SPRT *)g_RenderState.packetCursor;
 
     GameDrawProportionalTextShaded(1, 2, "A", 3, 0x45);

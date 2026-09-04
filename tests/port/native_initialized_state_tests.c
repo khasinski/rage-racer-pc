@@ -73,6 +73,20 @@ static void CheckInitialCarModelBanks(void) {
           "car model-bank entries");
 }
 
+static void CheckInitialProportionalFont(void) {
+    const ProportionalFontCell *capitalA =
+        &g_PropFontCells['A' - 0x20];
+
+    Check(HashBytes(g_PropFontCells, sizeof(g_PropFontCells)) == 3341930809u,
+          "proportional font cell bytes");
+    Check(capitalA->textureU == 0x78 && capitalA->textureV == 0x78,
+          "proportional capital-A cell");
+    Check(g_PropFontCells[PROPORTIONAL_FONT_CELL_COUNT - 1].textureU == 0x34 &&
+              g_PropFontCells[PROPORTIONAL_FONT_CELL_COUNT - 1].textureV ==
+                  0x90,
+          "proportional final font cell");
+}
+
 static void CheckInitialAtanTable(void) {
     int index;
 
@@ -280,6 +294,7 @@ int main(void) {
     CheckInitialRectangles();
     CheckInitialPaintData();
     CheckInitialCarModelBanks();
+    CheckInitialProportionalFont();
     CheckInitialAtanTable();
     CheckInitialCourseCarModels();
     CheckInitialControllerMappings();
