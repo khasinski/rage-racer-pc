@@ -218,7 +218,7 @@ void EnterCarSelectScreen(void);
 
 /* id 4 -- "CAR SELECT"; the hub that starts a race or opens the shops. */
 /* The yes/no prompt both shops put up before taking the player's money. */
-void DrawShopPromptButtons(void *ot, s32 flash);
+void DrawShopPromptButtons(GameOrderingTableEntry *ot, s32 flash);
 
 /* Rescans the owned-car list either side of the current one, and rechecks
  * what the shop and the engineer will accept. Both live in car_select.c. */

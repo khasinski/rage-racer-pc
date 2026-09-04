@@ -76,7 +76,7 @@ static void UpdateEngineerShopIdle(ShopPrice price) {
 }
 
 /* The tune-up prompt, with its own yes/no cursor. */
-static void UpdateTuneUpPrompt(void *ot, ShopPrice price) {
+static void UpdateTuneUpPrompt(GameOrderingTableEntry *ot, ShopPrice price) {
     MenuDialogAction action;
 
     RunTimedDrawScript(g_EngineerShopModalScript, &g_UiScriptProgress2, 0);
@@ -121,7 +121,8 @@ static void UpdateTuneUpPrompt(void *ot, ShopPrice price) {
  * keeps its new variant and the screen starts on its way out, spinning the
  * turntable a half turn so the rebuilt car comes back round.
  */
-static void UpdateTuneUpCountdown(void *ot, s32 purchaseAvailable) {
+static void UpdateTuneUpCountdown(GameOrderingTableEntry *ot,
+                                  s32 purchaseAvailable) {
     if (g_MenuConfirmTimer > 0) {
         g_MenuConfirmTimer -= 1;
         RunTimedDrawScript(g_EngineerShopModalScript, &g_UiScriptProgress2, 0);
@@ -153,7 +154,8 @@ static void UpdateNoFundsModal(void) {
     }
 }
 
-static void UpdateEngineerShopModal(void *ot, ShopPrice price) {
+static void UpdateEngineerShopModal(GameOrderingTableEntry *ot,
+                                    ShopPrice price) {
     if (GameMenuBusy == ENGINEER_SHOP_TUNE_UP_PROMPT) {
         UpdateTuneUpPrompt(ot, price);
     } else if (GameMenuBusy == ENGINEER_SHOP_TUNE_UP_COUNTDOWN) {
@@ -197,7 +199,7 @@ static void UpdateEngineerShopOutgoing(ShopPrice price) {
 }
 
 void UpdateEngineerShopScreen(void) {
-    void *ot = RENDER_OT_BASE;
+    GameOrderingTableEntry *ot = RENDER_OT_BASE;
     ShopPrice price;
     s32 assetIndex;
 

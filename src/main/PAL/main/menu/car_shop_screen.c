@@ -142,7 +142,7 @@ static void UpdateCarShopIdle(ShopPrice price) {
 
 /* The buy prompt, and the refusal that replaces it when the money is short.
  * Only the prompt itself takes input; the refusal just waits to be dismissed. */
-static void UpdateBuyPrompt(void *ot, ShopPrice price) {
+static void UpdateBuyPrompt(GameOrderingTableEntry *ot, ShopPrice price) {
     MenuDialogAction action;
 
     RunTimedDrawScript(g_CarShopModalScript, &g_UiScriptProgress2, 0);
@@ -183,7 +183,8 @@ static void UpdateBuyPrompt(void *ot, ShopPrice price) {
 
 /* The sale going through: the prompt flashes for a while, then the car is
  * marked owned and the screen starts on its way out. */
-static void UpdateSaleCountdown(void *ot, s32 purchaseAvailable) {
+static void UpdateSaleCountdown(GameOrderingTableEntry *ot,
+                                s32 purchaseAvailable) {
     if (g_MenuConfirmTimer > 0) {
         g_MenuConfirmTimer -= 1;
         RunTimedDrawScript(g_CarShopModalScript, &g_UiScriptProgress2, 0);
@@ -204,7 +205,7 @@ static void UpdateSaleCountdown(void *ot, s32 purchaseAvailable) {
     }
 }
 
-static void UpdateCarShopModal(void *ot, ShopPrice price) {
+static void UpdateCarShopModal(GameOrderingTableEntry *ot, ShopPrice price) {
     if ((GameMenuBusy == CAR_SHOP_BUY_PROMPT) ||
         (GameMenuBusy == CAR_SHOP_NO_FUNDS)) {
         UpdateBuyPrompt(ot, price);
@@ -243,7 +244,7 @@ static void UpdateCarShopOutgoing(ShopPrice price) {
 }
 
 void UpdateCarShopScreen(void) {
-    void *ot = RENDER_OT_BASE;
+    GameOrderingTableEntry *ot = RENDER_OT_BASE;
     ShopPrice price;
     s32 assetIndex;
 
