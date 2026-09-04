@@ -92,7 +92,7 @@ static void Check(s32 condition, const char *label) {
 }
 
 static void TestFmvSelection(void) {
-    s32 i;
+    s32 i, series, classIndex;
 
     for (i = 0; i < 11; i++) g_StreamCdEntries[i].size = (u32)(100 + i);
 
@@ -101,18 +101,24 @@ static void TestFmvSelection(void) {
     Check(g_StreamLoc == &g_StreamCdEntries[0] && g_StreamFrameCount == 100,
           "intro stream selection");
 
-    g_SeriesSelection = 0;
-    g_GrandPrixClass = 2;
-    BeginClassFmv(7);
-    Check(s_beginReturnScene == 7, "class return scene");
-    Check(g_StreamLoc == &g_StreamCdEntries[3] && g_StreamFrameCount == 103,
-          "Grand Prix class stream selection");
+    for (series = 0; series < 2; series++) {
+        for (classIndex = 0; classIndex < FMV_GRAND_PRIX_CLASS_COUNT;
+             classIndex++) {
+            s32 stream = (series == 0 ? FMV_STREAM_GRAND_PRIX_BASE
+                                       : FMV_STREAM_EXTRA_GRAND_PRIX_BASE) +
+                         classIndex;
+            g_SeriesSelection = (s16)series;
+            g_GrandPrixClass = classIndex;
+            BeginClassFmv(7 + series);
+            Check(s_beginReturnScene == 7 + series,
+                  "class FMV preserves its return scene");
+            Check(g_StreamLoc == &g_StreamCdEntries[stream] &&
+                      g_StreamFrameCount == (u32)(100 + stream),
+                  "every class promotion selects its own FMV stream");
+        }
+    }
 
     g_SeriesSelection = 1;
-    BeginClassFmv(8);
-    Check(g_StreamLoc == &g_StreamCdEntries[7] && g_StreamFrameCount == 107,
-          "Extra Grand Prix class stream selection");
-
     g_GrandPrixClass = -4;
     BeginClassFmv(8);
     Check(g_StreamLoc == &g_StreamCdEntries[5],

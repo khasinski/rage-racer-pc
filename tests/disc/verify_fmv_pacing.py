@@ -37,6 +37,7 @@ import re
 import struct
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "support"))
@@ -57,22 +58,25 @@ STREAM_COUNT = 11
 XA_FRAMES_PER_SECTOR = 2016
 XA_SAMPLE_RATE = 37800
 
-# Two movies with different rates. The first is one of the nine class endings,
-# played behind an asset load; the second is the opening movie. How many frames
-# the game shows of each comes off the disc, because the American pressing
-# shows twice as many of both.
-STREAMS = (5, 0)
+# Two movies with different rates keep the strict picture-to-XA pacing check:
+# one class promotion and the opening movie.  The all-audio mode below visits
+# every stream, including the ending's deliberately silent picture tail.
+PACING_STREAMS = (5, 0)
+ALL_STREAMS = tuple(range(STREAM_COUNT))
 
 
-def play(executable: str, source_dir: str, stream: int, frames: int) -> str:
+def play(executable: str, source_dir: str, stream: int, frames: int,
+         pcm: Path) -> tuple[str, bytes]:
     environment = os.environ.copy()
     environment.update(
         SDL_AUDIODRIVER="dummy",
-        # Boot/prologue takes about 300 ticks. Three ticks per shown movie
-        # frame covers the slower 15 fps streams and leaves transition room.
-        RAGE_PORT_SMOKE_FRAMES=str(frames * 3 + 500),
+        # Boot/prologue takes about 300 ticks.  The slower 15 fps movies need
+        # four ticks per frame on a 60 Hz disc; that upper bound also covers
+        # PAL, then leaves transition room after the final movie.
+        RAGE_PORT_SMOKE_FRAMES=str(frames * 4 + 900),
         RAGE_PORT_FMV_TRACE="1",
         RAGE_PORT_SMOKE_AUDIO_METRICS="1",
+        PSYZ_AUDIO_PCM_DUMP=str(pcm),
     )
     result = subprocess.run(
         [
@@ -88,7 +92,9 @@ def play(executable: str, source_dir: str, stream: int, frames: int) -> str:
     if result.returncode != 0:
         print(result.stdout, file=sys.stderr)
         raise AssertionError(f"stream {stream} exited {result.returncode}")
-    return result.stdout
+    if not pcm.exists():
+        raise AssertionError(f"stream {stream} emitted no PCM capture")
+    return result.stdout, pcm.read_bytes()
 
 
 def cue_track_one(cue: Path) -> tuple[Path, int]:
@@ -336,7 +342,7 @@ def check_pacing(output: str, disc: Disc, stream: int, shown: int) -> None:
             f"{first} and {last}")
 
 
-def check_soundtrack(output: str, stream: int) -> None:
+def check_soundtrack(output: str, pcm: bytes, stream: int) -> None:
     """The movie asked the drive for its soundtrack and got one.
 
     This used to compare the mean amplitude of everything the mixer rendered
@@ -360,6 +366,13 @@ def check_soundtrack(output: str, stream: int) -> None:
     frames, energy = int(metrics.group(1)), int(metrics.group(2))
     if frames < 10_000 or energy == 0:
         raise AssertionError(f"stream {stream} rendered no audio at all")
+    expected_pcm_size = frames * 2 * 2  # stereo, signed 16-bit samples
+    if len(pcm) != expected_pcm_size:
+        raise AssertionError(
+            f"stream {stream} emitted {len(pcm)} PCM bytes for {frames} "
+            f"stereo frames, expected {expected_pcm_size}")
+    if not any(pcm):
+        raise AssertionError(f"stream {stream} emitted only silent PCM")
 
 
 def check_soundtrack_tail(output: str, stream: int) -> None:
@@ -368,8 +381,18 @@ def check_soundtrack_tail(output: str, stream: int) -> None:
             f"stream {stream} cut XA audio at its last displayed frame")
 
 
+def check_complete_decode(output: str, stream: int, shown: int) -> None:
+    run = trace_run(output, stream)
+    if run[-1][0] + 1 != shown:
+        raise AssertionError(
+            f"stream {stream} showed {run[-1][0] + 1} frames, expected {shown}")
+
+
 def main() -> int:
     executable, source_dir = sys.argv[1], sys.argv[2]
+    all_audio = len(sys.argv) == 4 and sys.argv[3] == "--all-audio"
+    if len(sys.argv) > 3 and not all_audio:
+        raise AssertionError("usage: verify_fmv_pacing.py EXECUTABLE SOURCE [--all-audio]")
     source = Path(source_dir)
     require_disc(source)
     image = find_disc(source)
@@ -381,13 +404,21 @@ def main() -> int:
     print(f"disc {disc.boot}: "
           + " ".join(f"{offset:04X}/{frames}"
                      for offset, frames in zip(disc.offsets, disc.frames)))
-    for stream in STREAMS:
-        shown = disc.frames[stream]
-        output = play(executable, source_dir, stream, shown)
-        check_pacing(output, disc, stream, shown)
-        check_soundtrack(output, stream)
-        check_soundtrack_tail(output, stream)
-    print("every movie plays for as long as its own soundtrack lasts")
+    with tempfile.TemporaryDirectory(prefix="rage-all-fmv-audio-") as directory:
+        root = Path(directory)
+        for stream in ALL_STREAMS if all_audio else PACING_STREAMS:
+            shown = disc.frames[stream]
+            output, pcm = play(executable, source_dir, stream, shown,
+                               root / f"stream-{stream}.s16le")
+            check_complete_decode(output, stream, shown)
+            check_soundtrack(output, pcm, stream)
+            if not all_audio:
+                check_pacing(output, disc, stream, shown)
+                check_soundtrack_tail(output, stream)
+    if all_audio:
+        print("every retail FMV fully decodes and emits non-silent PCM")
+    else:
+        print("representative movies play for as long as their soundtracks last")
     return 0
 
 

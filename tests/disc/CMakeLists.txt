@@ -104,6 +104,16 @@ set_tests_properties(fmv_without_ffmpeg PROPERTIES LABELS e2e)
 set_tests_properties(fmv_pacing PROPERTIES LABELS e2e)
     set_tests_properties(fmv_pacing PROPERTIES TIMEOUT 600
         SKIP_RETURN_CODE 77)
+    add_test(
+        NAME fmv_all_audio
+        COMMAND python3
+            ${CMAKE_CURRENT_SOURCE_DIR}/verify_fmv_pacing.py
+            $<TARGET_FILE:rage-racer-smoke>
+            ${CMAKE_SOURCE_DIR}
+            --all-audio
+    )
+    set_tests_properties(fmv_all_audio PROPERTIES LABELS e2e TIMEOUT 720
+        SKIP_RETURN_CODE 77)
 
     add_test(
         NAME modern_disc_import_bootstrap
