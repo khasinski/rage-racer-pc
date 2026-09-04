@@ -217,22 +217,6 @@ static inline s32 MenuModelIndexOrFallback(s32 preferred, s32 modelCount) {
     return 0;
 }
 
-static inline int ShowroomCarAtSwapPoint(s32 angle, s32 target,
-                                         s32 pendingCar) {
-    if (pendingCar < 0 || angle == target) {
-        return 0;
-    }
-    return target < angle ? angle <= 299999 : angle > 900000;
-}
-
-static inline int CourseCarouselAtSwapPoint(s32 angle, s32 target,
-                                            s32 pendingCourse) {
-    if (pendingCourse < 0 || angle == target) {
-        return 0;
-    }
-    return target > angle ? angle > 750000 : angle <= 249999;
-}
-
 static inline s32 UpdatedMenuViewSpin(s32 spin, u16 held) {
     s32 delta = 0;
 
@@ -263,7 +247,27 @@ static inline s32 TeamNameCharacterModelIndex(s32 key, s32 modelCount) {
 enum {
     MENU_CAR_VIEW_REBASE_SPAN = 600000,
     MENU_CAR_VIEW_SETTLE_WINDOW = MENU_CAR_VIEW_REBASE_SPAN / 2 - 1,
+    MENU_CAR_VIEW_RIGHT_TARGET = MENU_CAR_VIEW_REBASE_SPAN * 2,
 };
+
+static inline int ShowroomCarAtSwapPoint(s32 angle, s32 target,
+                                         s32 pendingCar) {
+    if (pendingCar < 0 || angle == target) {
+        return 0;
+    }
+    return target < angle
+               ? angle <= MENU_CAR_VIEW_SETTLE_WINDOW
+               : angle >=
+                     MENU_CAR_VIEW_RIGHT_TARGET - MENU_CAR_VIEW_SETTLE_WINDOW;
+}
+
+static inline int CourseCarouselAtSwapPoint(s32 angle, s32 target,
+                                            s32 pendingCourse) {
+    if (pendingCourse < 0 || angle == target) {
+        return 0;
+    }
+    return target > angle ? angle > 750000 : angle <= 249999;
+}
 
 /* The showroom turntable is implementation shared by CAR SELECT and SHOP. */
 int MenuCarViewSettled(void);

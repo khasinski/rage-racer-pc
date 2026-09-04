@@ -121,9 +121,11 @@ int main(void) {
     }
 
     CHECK(!ShowroomCarAtSwapPoint(300000, 0, 2));
-    CHECK(ShowroomCarAtSwapPoint(299999, 0, 2));
+    CHECK(ShowroomCarAtSwapPoint(MENU_CAR_VIEW_SETTLE_WINDOW, 0, 2));
     CHECK(!ShowroomCarAtSwapPoint(900000, 1000000, 2));
-    CHECK(ShowroomCarAtSwapPoint(900001, 1000000, 2));
+    CHECK(ShowroomCarAtSwapPoint(
+        MENU_CAR_VIEW_RIGHT_TARGET - MENU_CAR_VIEW_SETTLE_WINDOW, 1000000,
+        2));
     CHECK(!ShowroomCarAtSwapPoint(299999, 0, -1));
     CHECK(!ShowroomCarAtSwapPoint(100, 100, 2));
 

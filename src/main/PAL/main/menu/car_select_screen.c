@@ -56,7 +56,7 @@ static void EnterCarShop(void) {
     }
     PlaySoundCue(2);
     g_CarListCursor = g_ShopCarIndex;
-    g_MenuViewAngleTarget = 0x124F80;
+    g_MenuViewAngleTarget = MENU_CAR_VIEW_RIGHT_TARGET;
     GameMenuBusy = 3;
     g_MenuOverlayPattern = 1;
     g_CarSwapFromIndex = g_PlayerCarIndex;
@@ -158,7 +158,7 @@ static void UpdateCarSelectInput(void) {
     if ((g_PadHeld & PAD_RIGHT) && (g_NextOwnedCarIndex != -1) &&
         MenuCarViewSettled() && (g_CarSwapToIndex < 0)) {
         MenuSpinToCar(&g_PlayerCarIndex, carBeforeSwap, g_NextOwnedCarIndex,
-                      0x124F80);
+                      MENU_CAR_VIEW_RIGHT_TARGET);
     }
 
     if (!MenuCarViewSettled() || (g_CarSwapToIndex >= 0)) {

@@ -8,7 +8,6 @@
 
 enum {
     MENU_VIEW_FIXED_SCALE = 1000,
-    CAR_VIEW_ANGLE_PERIOD = 600000,
     COURSE_VIEW_ANGLE_PERIOD = 500000,
     SHOWROOM_FLOOR_MODEL = 5,
     SHOWROOM_MODEL_BANK = 14,
@@ -90,7 +89,7 @@ void DrawMenuCarView(void) {
     }
 
     horizontalAngle =
-        MenuWrapAngle(g_MenuViewAngle, CAR_VIEW_ANGLE_PERIOD) /
+        MenuWrapAngle(g_MenuViewAngle, MENU_CAR_VIEW_REBASE_SPAN) /
         MENU_VIEW_FIXED_SCALE;
     carIndex = g_CarSwapFromIndex;
     viewHeight = AdvanceMenuViewOffset();

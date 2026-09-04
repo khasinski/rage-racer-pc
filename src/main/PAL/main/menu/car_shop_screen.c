@@ -15,8 +15,6 @@
 #include "game/menu_internal.h"
 #include "game/menu_scripts_internal.h"
 
-enum { CAR_SHOP_RIGHT_VIEW_TARGET = 0x124F80 };
-
 /* Which of the four buy prompts a car gets. Cars past the table get none. */
 static const TimedDrawCommand *CarShopBuyPrompt(s32 car) {
     switch (car) {
@@ -107,7 +105,7 @@ static void UpdateCarShopInput(s32 purchaseAvailable) {
     if ((g_PadHeld & PAD_RIGHT) && (g_NextOwnedCarIndex != -1) &&
         MenuCarViewSettled() && (g_CarSwapToIndex < 0)) {
         MenuSpinToCar(&g_CarListCursor, carBeforeSwap, g_NextOwnedCarIndex,
-                      CAR_SHOP_RIGHT_VIEW_TARGET);
+                      MENU_CAR_VIEW_RIGHT_TARGET);
     }
 
     /* The upper panel only opens for a car whose gearbox can be changed. */
