@@ -8,6 +8,17 @@ typedef struct RoundBgmChoice {
     s32 shuffleIndex;
 } RoundBgmChoice;
 
+typedef enum RoundScreenFadeStage {
+    ROUND_SCREEN_FADE_TITLE,
+    ROUND_SCREEN_FADE_COURSE,
+    ROUND_SCREEN_FADE_DETAILS,
+    ROUND_SCREEN_FADE_STAGE_COUNT,
+} RoundScreenFadeStage;
+
+enum { ROUND_SCREEN_FADE_DELAY_STORAGE_COUNT = 4 };
+extern s16
+    g_RoundScreenFadeDelays[ROUND_SCREEN_FADE_DELAY_STORAGE_COUNT];
+
 void EnterRoundScreen(void);
 void UpdateRoundScreen(void);
 s32 DetermineGrandPrixRound(const u8 bestPlaces[4], s32 classIndex,

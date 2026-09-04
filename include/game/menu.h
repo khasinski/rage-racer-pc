@@ -585,7 +585,6 @@ extern s16 g_NegconNeutralLSaved;
 extern s16 g_NegconPlayPercent[];
 extern s16 g_NegconSteerNeutralSaved;
 extern GameSceneId g_OptionMenuExitScene;
-extern s16 g_RoundScreenFadeDelays[];
 
 void AdvanceGrandPrixClass(void);
 s32 CountOwnedCars(void);

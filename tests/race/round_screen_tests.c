@@ -46,7 +46,7 @@ u16 g_PadHeld;
 u16 g_PadPressed;
 RagePrizeMoneyStorage g_PrizeMoneyState;
 GameRenderState g_RenderState;
-s16 g_RoundScreenFadeDelays[8];
+s16 g_RoundScreenFadeDelays[ROUND_SCREEN_FADE_DELAY_STORAGE_COUNT];
 s32 g_SceneId;
 s32 g_SceneTimer;
 

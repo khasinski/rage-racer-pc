@@ -51,7 +51,7 @@ void EnterRoundScreen(void) {
         SeriesCourseIndex());
 }
 
-static s32 NextRoundScreenFade(s32 stage) {
+static s32 NextRoundScreenFade(RoundScreenFadeStage stage) {
     s32 value;
 
     if (g_SceneId == GAME_SCENE_ROUND) {
@@ -73,13 +73,13 @@ void DrawRoundScreen(void) {
     s32 y0;
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
 
-    col = NextRoundScreenFade(0);
+    col = NextRoundScreenFade(ROUND_SCREEN_FADE_TITLE);
     DrawSprite(ot, 0x74, 0x14, 0x58, 0x38, 0xa8, 0xa8, col, col, col,
                0x1f, 0, 1, 0x29);
     DrawSprite(ot, 0x44, 0x50, 0xb8, 0x14, 0x48, 0xe8, col, col, col,
                0x80, 0, 1, 0x29);
 
-    col = NextRoundScreenFade(1);
+    col = NextRoundScreenFade(ROUND_SCREEN_FADE_COURSE);
     if (g_GrandPrixMode != 0) {
         snprintf(text, sizeof(text), g_FmtRound, g_GrandPrixRound);
         GameDrawProportionalTextShaded(0x5e, 0x68, text, 0x7812, col);
@@ -90,7 +90,7 @@ void DrawRoundScreen(void) {
     DrawSprite(ot, 0x5e, y0, 0x84, 0xc, 0,
                g_CourseIndex * 12 + 156, col, col, col, 0x12, 0, 1, 0x29);
 
-    col = NextRoundScreenFade(2);
+    col = NextRoundScreenFade(ROUND_SCREEN_FADE_DETAILS);
     if (g_GrandPrixMode != 0) {
         GameDrawProportionalTextShaded(0x80, 0x88, g_CaptionPrizeMoney2,
                                       0x7812, col);
