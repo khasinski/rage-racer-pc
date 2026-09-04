@@ -3,7 +3,11 @@
 #include "game/menu_scripts_internal.h"
 #include "game/race.h"
 #include "game/render_internal.h"
+#include "game/scene.h"
 
+enum {
+    MENU_INITIAL_VIEW_ANGLE = 500000,
+};
 
 /* The menu-mode twin of InitTrackLighting. */
 static void InitMenuLighting(void) {
@@ -16,18 +20,13 @@ static void InitMenuLighting(void) {
     SetFogNear(0x4E20, 0x140);
 }
 
-void InitMenuMode(void) {
-    SetDispMask(0);
-    g_MirrorMode = 0;
-    g_FrameSyncThreshold = 0x80;
+static void LoadMenuSelection(void) {
     g_CourseIndex = g_RaceProgress->course;
     g_PlayerCarIndex = g_RaceProgress->carIndex;
     g_GrandPrixClass = g_RaceProgress->classIndex;
-    InitRenderState(1);
+}
 
-    SetupDisplay480(0, 0, 0);
-    g_SceneId = 8;
-    g_SceneTimer = 0;
+static void LoadMenuSeriesProgress(void) {
     if (g_GrandPrixMode != 0) {
         g_GrandPrixSeries = g_SeriesSelection;
         g_PlayerMoney = g_RaceProgress->money;
@@ -36,8 +35,9 @@ void InitMenuMode(void) {
         g_PlayerMoney = 0;
     }
     g_CourseIndex = (g_GrandPrixSeries << 2) | g_CourseIndex;
-    InitMenuLighting();
+}
 
+static void InitMenuCamera(void) {
     g_RenderState.viewX = 0;
     g_RenderState.viewY = -64;
     g_RenderState.viewZ = -256;
@@ -45,8 +45,10 @@ void InitMenuMode(void) {
     g_RenderState.viewAngleY = 0;
     g_RenderState.viewAngleZ = 0;
     SetCameraRotMatrix();
-    ScaleMatrix((&g_RenderState.matrix), &g_MenuViewScale);
+    ScaleMatrix(&g_RenderState.matrix, &g_MenuViewScale);
+}
 
+static void ResetMenuNavigation(void) {
     g_CourseSelectModalScript = g_UiEmptyScript;
     g_CarSelectPopupScript = g_UiEmptyScript;
     g_CustomizePopupScript = g_UiEmptyScript;
@@ -54,8 +56,8 @@ void InitMenuMode(void) {
     g_LogoSampleSubPanelScript = g_UiEmptyScript;
     g_CarShopModalScript = g_UiEmptyScript;
     g_EngineerShopModalScript = g_UiEmptyScript;
-    g_MenuViewAngle = 500000;
-    g_MenuViewAngleTarget = 500000;
+    g_MenuViewAngle = MENU_INITIAL_VIEW_ANGLE;
+    g_MenuViewAngleTarget = MENU_INITIAL_VIEW_ANGLE;
     g_UiScriptProgress = 0;
     g_UiScriptProgress2 = 0;
     g_MenuHintBarProgress = 0;
@@ -90,7 +92,11 @@ void InitMenuMode(void) {
     g_CarSelectCursor = 0;
     g_CustomizeOption = 0;
     g_DesignModeOption = 0;
+}
 
+/* Screen draw functions own additional animation counters. A zero step is
+ * their shared reset operation and returns before any renderer access. */
+static void ResetMenuWidgets(void) {
     DrawCourseSelectScreen(0);
     DrawRankingScreen(0);
     DrawCarSelectScreen(0);
@@ -105,4 +111,21 @@ void InitMenuMode(void) {
     DrawCarSpecGraph(0, 0); /* step 0 resets and returns before the grade */
     DrawMenuLightBurst(0);
     DrawTimeAttackPlate(0);
+}
+
+void InitMenuMode(void) {
+    SetDispMask(0);
+    g_MirrorMode = 0;
+    g_FrameSyncThreshold = 0x80;
+    LoadMenuSelection();
+    InitRenderState(1);
+
+    SetupDisplay480(0, 0, 0);
+    g_SceneId = GAME_SCENE_MENU;
+    g_SceneTimer = 0;
+    LoadMenuSeriesProgress();
+    InitMenuLighting();
+    InitMenuCamera();
+    ResetMenuNavigation();
+    ResetMenuWidgets();
 }
