@@ -2,6 +2,18 @@
 
 _Static_assert(sizeof(g_SaveFilePath) == 80,
                "g_SaveFilePath ABI size changed");
+_Static_assert(sizeof(g_SaveTitleSjis) == 212,
+               "g_SaveTitleSjis ABI size changed");
+_Static_assert(sizeof(g_BodyColorPrimary) == 36,
+               "primary body-colour table ABI changed");
+_Static_assert(sizeof(g_BodyColorSecondary) == 36,
+               "secondary body-colour table ABI changed");
+_Static_assert(sizeof(g_PaintSlots3StopA) == 20,
+               "primary three-stop paint table ABI changed");
+_Static_assert(sizeof(g_PaintSlots3StopB) == 16,
+               "secondary three-stop paint table ABI changed");
+_Static_assert(sizeof(g_PaintSlots4Stop) == 8,
+               "four-stop paint table ABI changed");
 _Static_assert(sizeof(g_RaceGridSlots) == 48,
                "g_RaceGridSlots ABI size changed");
 _Static_assert(sizeof(g_CarImageRect) == 8,

@@ -40,6 +40,23 @@ static void CheckInitialRectangles(void) {
           "track texture row rectangle");
 }
 
+static void CheckInitialPaintData(void) {
+    Check(g_BodyColorPrimary[0] == 0xbe73 &&
+              g_BodyColorPrimary[17] == 0xa5ab,
+          "primary body colours");
+    Check(g_BodyColorSecondary[0] == 0x9929 &&
+              g_BodyColorSecondary[17] == 0x8ca4,
+          "secondary body colours");
+    Check(g_PaintSlots3StopA[0] == 0x0001 &&
+              g_PaintSlots3StopA[8] == 0x0341 &&
+              g_PaintSlots3StopA[9] == 0,
+          "primary three-stop paint slots and padding");
+    Check(g_PaintSlots3StopB[7] == 0x0341 &&
+              g_PaintSlots4Stop[0] == 0x0141 &&
+              g_PaintSlots4Stop[3] == 0x0401,
+          "secondary paint slots");
+}
+
 static void CheckInitialCountdownData(void) {
     static const u32 expectedPatterns[16] = {
         0x00000000, 0x00000000, 0x3FFF3FFF, 0x3FFF3FFF,
@@ -135,6 +152,7 @@ static void CheckInitialAudioTables(void) {
 
 int main(void) {
     CheckInitialRectangles();
+    CheckInitialPaintData();
     CheckInitialCountdownData();
     CheckInitialStartingGrids();
     CheckMemoryCardLabels();

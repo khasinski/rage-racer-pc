@@ -7,7 +7,7 @@
 
 u16 g_BodyColorPrimary[18];
 u16 g_BodyColorSecondary[18];
-u16 g_PaintSlots3StopA[9];
+u16 g_PaintSlots3StopA[10];
 u16 g_PaintSlots3StopB[8];
 u16 g_PaintSlots4Stop[4];
 CarModelAsset *g_CarModelAsset;

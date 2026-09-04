@@ -742,14 +742,15 @@ extern s16 g_LaunchEnergyThresholds[];
 extern s16 g_RedlineToPeakRpmHalf;
 extern s16 g_PeakToRevLimitRpmHalf;
 extern RaceGridSlot g_AttractGridSlots[RACE_GRID_STORAGE_COUNT];
-extern u16 g_BodyColorPrimary[];
-extern u16 g_BodyColorSecondary[];
+extern u16 g_BodyColorPrimary[18];
+extern u16 g_BodyColorSecondary[18];
 extern s16 g_NegconAnalogI;
 extern s16 g_NegconAnalogII;
 extern s16 g_NegconAnalogL;
-extern u16 g_PaintSlots3StopA[];
-extern u16 g_PaintSlots3StopB[];
-extern u16 g_PaintSlots4Stop[];
+/* The primary table keeps one trailing retail padding word after 9 slots. */
+extern u16 g_PaintSlots3StopA[10];
+extern u16 g_PaintSlots3StopB[8];
+extern u16 g_PaintSlots4Stop[4];
 extern RaceGridSlot g_RaceGridSlots[RACE_GRID_STORAGE_COUNT];
 /*
  * The race-intro camera's offset from the keyframe it is easing away from:
