@@ -28,6 +28,13 @@ static const char *OptionValue(int argc, char **argv, const char *option) {
     return NULL;
 }
 
+static int HasOption(int argc, char **argv, const char *option) {
+    int index;
+    for (index = 1; index < argc; index++)
+        if (strcmp(argv[index], option) == 0) return 1;
+    return 0;
+}
+
 static int ParseDimension(const char *text, int fallback) {
     char *end;
     long value;
@@ -42,7 +49,7 @@ static void Usage(const char *program) {
     fprintf(stderr,
             "usage: %s FRAME.world.bin --assets NATIVE_ASSETS "
             "[--output FRAME.ppm] [--draws FRAME.draws.txt] "
-            "[--camera-scene MARKER.scene.bin] "
+            "[--camera-scene MARKER.scene.bin] [--sky-only] "
             "[--probe X,Y] "
             "[--sky top|middle|horizon|bottom=R,G,B] "
             "[--width 1280] [--height 960]\n",
@@ -214,6 +221,10 @@ int main(int argc, char **argv) {
         goto release_snapshot;
     if (!ApplySkyOverrides(argc, argv, &snapshot.world.camera))
         goto release_snapshot;
+    if (HasOption(argc, argv, "--sky-only")) {
+        snapshot.world.instanceCount = 0;
+        snapshot.world.mirrorActive = 0;
+    }
     /* The ordinary runtime override keeps asset selection identical between
      * the game and the harness without adding a second asset-loader path. */
     if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -248,7 +259,8 @@ int main(int argc, char **argv) {
         goto release_renderer;
     }
     ModernNativeGpuPrepare(&snapshot.world, (float)width / (float)height);
-    if (!ModernNativeGpuHasDraws()) {
+    if (!HasOption(argc, argv, "--sky-only") &&
+        !ModernNativeGpuHasDraws()) {
         fprintf(stderr, "rage-frame-replay: snapshot produced no draws\n");
         goto release_renderer;
     }

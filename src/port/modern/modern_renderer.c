@@ -39,11 +39,22 @@ static int s_initialized;
 static SDL_Scancode s_toggleScancode = SDL_SCANCODE_F10;
 static int s_toggleWasDown;
 static int s_markerCaptureEnabled;
+static int s_skyOnlyDiagnostic;
 static SDL_Window *s_window;
 static SDL_GPUDevice *s_device;
 static PsyzOverlayInitCB_SDL3GPU s_prev_overlay_init;
 static PsyzPresentSourceCB_SDL3GPU s_prev_present_source;
 static RagePortConfig s_config;
+
+static const RageRenderWorld *ModernSkyOnlyWorld(
+    const RageRenderWorld *world) {
+    static RageRenderWorld skyOnly;
+    if (!s_skyOnlyDiagnostic || world == NULL) return world;
+    skyOnly = *world;
+    skyOnly.instanceCount = 0;
+    skyOnly.mirrorActive = 0;
+    return &skyOnly;
+}
 
 /* ---- GPU resources ---- */
 
@@ -1125,15 +1136,17 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
                     "legacy 3D fallback is disabled\n",
                     snapshot->frameCounter);
         }
-        ModernRenderOverlaySelection(cmd, vram, 0,
-                                     1u << MODERN_LAYER_HUD, 0);
-        if (ModernNativeGpuHasMirrorDraws()) {
+        if (!s_skyOnlyDiagnostic)
+            ModernRenderOverlaySelection(cmd, vram, 0,
+                                         1u << MODERN_LAYER_HUD, 0);
+        if (!s_skyOnlyDiagnostic && ModernNativeGpuHasMirrorDraws()) {
             ModernNativeGpuDrawMirror(cmd, s_mirrorTarget, s_mirrorDepth,
                                       s_mirrorTargetH);
             ModernCompositeNativeMirror(cmd);
         }
-        ModernRenderOverlaySelection(cmd, vram, 1,
-                                     1u << MODERN_LAYER_MIRROR_FOREGROUND, 0);
+        if (!s_skyOnlyDiagnostic)
+            ModernRenderOverlaySelection(
+                cmd, vram, 1, 1u << MODERN_LAYER_MIRROR_FOREGROUND, 0);
     }
     {
         SDL_GPUTexture *chain = s_target;
@@ -1355,15 +1368,17 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
                               (double)s_tickIntervalNs;
             t = fraction >= 1.0 ? 1.0f : (float)fraction;
         }
-        ModernNativeGpuPrepare(GameRenderWorldPresentation(t),
-                               (float)s_targetW / (float)s_targetH);
+        ModernNativeGpuPrepare(
+            ModernSkyOnlyWorld(GameRenderWorldPresentation(t)),
+            (float)s_targetW / (float)s_targetH);
         ModernRender(snapshot);
         s_lastPresentationNs = now;
         if (s_haveRenderedFrame) ModernMaybeDump(snapshot);
     } else if (snapshot->frameCounter != s_lastRenderedFrame) {
         const RageRenderWorld *world = GameRenderWorldPrevious();
         if (world == NULL) world = GameRenderWorldCurrent();
-        ModernNativeGpuPrepare(world, (float)s_targetW / (float)s_targetH);
+        ModernNativeGpuPrepare(ModernSkyOnlyWorld(world),
+                               (float)s_targetW / (float)s_targetH);
         ModernRender(snapshot);
         s_lastRenderedFrame = snapshot->frameCounter;
         if (s_haveRenderedFrame) ModernMaybeDump(snapshot);
@@ -1433,6 +1448,7 @@ int ModernInit(const RagePortConfig *config) {
         return 1;
     }
     s_config = *config;
+    s_skyOnlyDiagnostic = RuntimeConfigEnabled("diagnostics.sky_only");
     if (config->renderer == RAGE_RENDERER_MODERN && !ModernAssetsInit()) {
         fprintf(stderr,
                 "rage-port: refusing to start modern renderer without "

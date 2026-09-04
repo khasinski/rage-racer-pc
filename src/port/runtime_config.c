@@ -206,6 +206,7 @@ static const EnvironmentAlias s_environmentAliases[] = {
     {"diagnostics.marker_capture", "RAGE_PORT_MARKER_CAPTURE"},
     {"diagnostics.marker_every", "RAGE_PORT_MARKER_EVERY"},
     {"diagnostics.sky_trace", "RAGE_PORT_SKY_TRACE"},
+    {"diagnostics.sky_only", "RAGE_PORT_SKY_ONLY"},
     {"diagnostics.marker_frame", "RAGE_PORT_MARKER_FRAME"},
     {"diagnostics.modern_asset_trace", "RAGE_PORT_MODERN_ASSET_TRACE"},
     {"diagnostics.input.debug", "RAGE_PORT_INPUT_DEBUG"},
