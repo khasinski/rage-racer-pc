@@ -120,6 +120,25 @@ int main(void) {
         return 1;
     }
 
+    g_RouteSceneryData = NULL;
+    SeedRouteScenery();
+    if (g_RouteSceneryActive != 0 || g_RouteSceneryFrame != 0 ||
+        g_RouteSceneryKeyIndex != 0 || g_RouteSceneryKeyframe != NULL) {
+        puts("FAIL missing route scenery seed was not disabled");
+        return 1;
+    }
+
+    g_RouteSceneryActive = 1;
+    g_RouteSceneryFrame = 12;
+    g_RouteSceneryKeyIndex = 2;
+    g_RouteSceneryKeyframe = fixture.keyframes;
+    UpdateRouteScenery();
+    if (g_RouteSceneryActive != 0 || g_RouteSceneryFrame != 0 ||
+        g_RouteSceneryKeyIndex != 0 || g_RouteSceneryKeyframe != NULL) {
+        puts("FAIL missing route scenery update was not disabled");
+        return 1;
+    }
+
     puts("route scenery keyframe progression preserved");
     return 0;
 }

@@ -3,12 +3,25 @@
 #include "game/render_internal.h"
 #include "game/track_internal.h"
 
+static void DisableRouteScenery(void) {
+    g_RouteSceneryActive = 0;
+    g_RouteSceneryFrame = 0;
+    g_RouteSceneryKeyIndex = 0;
+    g_RouteSceneryKeyframe = NULL;
+}
+
 void SeedRouteScenery(void) {
-    const s32 series = g_RaceSeries != 0;
-    const s16 firstKeyframe =
-        g_RouteSceneryData->firstKeyframe[series][0];
-    const SceneryMotionKeyframe *keyframe =
-        &g_RouteSceneryData->keyframes[firstKeyframe];
+    s32 series;
+    s16 firstKeyframe;
+    const SceneryMotionKeyframe *keyframe;
+
+    if (g_RouteSceneryData == NULL) {
+        DisableRouteScenery();
+        return;
+    }
+    series = g_RaceSeries != 0;
+    firstKeyframe = g_RouteSceneryData->firstKeyframe[series][0];
+    keyframe = &g_RouteSceneryData->keyframes[firstKeyframe];
 
     g_RouteSceneryKeyIndex = 0;
     g_RouteSceneryKeyframe = keyframe;
@@ -29,6 +42,10 @@ void UpdateRouteScenery(void) {
     s32 elapsed;
 
     if (g_RouteSceneryActive <= 0) {
+        return;
+    }
+    if (g_RouteSceneryData == NULL || g_RouteSceneryKeyframe == NULL) {
+        DisableRouteScenery();
         return;
     }
     g_RouteSceneryFrame = WrapSigned32(
