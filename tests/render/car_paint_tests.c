@@ -25,9 +25,9 @@ int main(void) {
     EXPECT_EQ(1, CarPaintApply(pixels, mask, 6, 3, 12));
     EXPECT_EQ(1, pixels[0]);
     EXPECT_EQ(148, pixels[4]);
-    EXPECT_EQ(115, pixels[8]);
+    EXPECT_EQ(140, pixels[8]);
     EXPECT_EQ(107, pixels[12]);
-    EXPECT_EQ(90, pixels[16]);
+    EXPECT_EQ(66, pixels[16]);
     EXPECT_EQ(8, pixels[20]);
     EXPECT_EQ(255, pixels[23]);
     EXPECT_EQ(0, CarPaintApply(pixels, mask, 6, 18, 0));

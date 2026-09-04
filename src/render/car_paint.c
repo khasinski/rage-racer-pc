@@ -29,9 +29,11 @@ static uint8_t PaintShade(uint8_t primary, uint8_t secondary,
     switch (shade) {
     case 0: return primary;
     case 1: return (uint8_t)(primaryHalf + middle / 2u);
-    case 2: return (uint8_t)((primary * 2u + secondary) / 3u);
+    /* Retail builds the four-stop ramp from thirds of the endpoint sum,
+     * rather than using conventional linear interpolation. */
+    case 2: return (uint8_t)((primary + secondary) * 2u / 3u);
     case 3: return middle;
-    case 4: return (uint8_t)((primary + secondary * 2u) / 3u);
+    case 4: return (uint8_t)((primary + secondary) / 3u);
     case 5: return (uint8_t)(middle / 2u + secondaryHalf);
     default: return secondary;
     }
