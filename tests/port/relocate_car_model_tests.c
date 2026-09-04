@@ -71,8 +71,8 @@ static void Check(s32 condition, const char *label) {
 int main(void) {
     enum {
         MODEL_DATA_SIZE = 16,
-        TOTAL_SIZE = SERIALIZED_CAR_MODEL_HEADER_SIZE + MODEL_DATA_SIZE +
-                     sizeof(CarImageData),
+        MODEL_SIZE = SERIALIZED_CAR_MODEL_HEADER_SIZE + MODEL_DATA_SIZE,
+        TOTAL_SIZE = MODEL_SIZE + sizeof(CarImageData),
     };
     union {
         max_align_t alignment;
@@ -100,16 +100,16 @@ int main(void) {
 
     Check(RelocateCarModel() == 1, "valid serialized model is relocated");
 
-    Check(memcmp(destination.bytes, source.bytes, TOTAL_SIZE) == 0,
+    Check(memcmp(destination.bytes, source.bytes, MODEL_SIZE) == 0,
           "serialized model bytes copied");
-    Check(destination.bytes[TOTAL_SIZE] == 0xCC,
-          "copy stops at serialized model size");
-    Check(g_AssetLoadCursor == destination.bytes + TOTAL_SIZE,
-          "asset cursor follows relocated model");
-    Check(s_installedAsset == (CarModelAsset *)(void *)destination.bytes &&
+    Check(destination.bytes[MODEL_SIZE] == 0xCC,
+          "copy stops at the model; the image stays with the source");
+    Check(g_AssetLoadCursor == destination.bytes + MODEL_SIZE,
+          "asset cursor follows the relocated model like retail");
+    Check(s_installedAsset == (CarModelAsset *)(void *)source.bytes &&
               s_installedSize == TOTAL_SIZE && s_installedSlot == 0 &&
               s_selectedSlot == 0,
-          "relocated model occupies slot zero");
+          "slot zero keeps the source and its image");
     Check(s_nativeAsset.modelData.pointer ==
               destination.bytes + SERIALIZED_CAR_MODEL_HEADER_SIZE,
           "native model points at relocated model bank");
@@ -130,8 +130,8 @@ int main(void) {
     s_destinationRoom = sizeof(overlap.bytes);
     Check(RelocateCarModel() == 1,
           "overlapping serialized model is relocated");
-    Check(memcmp(overlap.bytes, overlapExpected, sizeof(overlapExpected)) == 0,
-          "overlapping relocation preserves every serialized byte");
+    Check(memcmp(overlap.bytes, overlapExpected, MODEL_SIZE) == 0,
+          "overlapping relocation preserves every model byte");
     g_AssetBase = destination.bytes;
     s_destinationRoom = sizeof(destination.bytes);
 
@@ -162,7 +162,7 @@ int main(void) {
           "unregistrable relocated bank is not published");
 
     s_registerResult = 1;
-    s_destinationRoom = TOTAL_SIZE - 1;
+    s_destinationRoom = MODEL_SIZE - 1;
     memset(destination.bytes, 0xCC, sizeof(destination.bytes));
     Check(RelocateCarModel() == 0,
           "model exceeding destination storage is rejected");
