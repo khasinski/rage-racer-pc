@@ -200,13 +200,16 @@ static inline s32 NormalizeTeamNameCursor(s32 cursor) {
 }
 
 static inline s32 MenuModelIndexOrFallback(s32 preferred, s32 modelCount) {
+    if (modelCount <= 0) {
+        return -1;
+    }
     if ((u32)preferred < (u32)modelCount) {
         return preferred;
     }
     if (modelCount > 1) {
         return 1;
     }
-    return modelCount == 1 ? 0 : -1;
+    return 0;
 }
 
 static inline int ShowroomCarAtSwapPoint(s32 angle, s32 target,

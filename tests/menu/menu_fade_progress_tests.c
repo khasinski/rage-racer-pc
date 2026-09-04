@@ -104,6 +104,8 @@ int main(void) {
     CHECK(MenuModelIndexOrFallback(-1, 2) == 1);
     CHECK(MenuModelIndexOrFallback(5, 1) == 0);
     CHECK(MenuModelIndexOrFallback(0, 0) == -1);
+    CHECK(MenuModelIndexOrFallback(0, -1) == -1);
+    CHECK(MenuModelIndexOrFallback(0, INT_MIN) == -1);
 
     {
         const s32 prices[] = {0, 1200, -1};
