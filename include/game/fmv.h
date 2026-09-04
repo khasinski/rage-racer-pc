@@ -9,6 +9,17 @@ typedef enum FmvPlaybackState {
     FMV_PLAYBACK_FINISH
 } FmvPlaybackState;
 
+/* Streams selected by the game have fixed slots in RAGE.STR. The disc table
+ * also contains slot 9, which no recovered selection path currently uses. */
+typedef enum FmvStreamId {
+    FMV_STREAM_INTRO = 0,
+    FMV_STREAM_GRAND_PRIX_BASE = 1,
+    FMV_STREAM_EXTRA_GRAND_PRIX_BASE = 5,
+    FMV_STREAM_ENDING = 10,
+    FMV_STREAM_COUNT = 11,
+    FMV_GRAND_PRIX_CLASS_COUNT = 4,
+} FmvStreamId;
+
 extern FmvPlaybackState g_FmvState;
 extern s32 g_FmvStreamEnded;
 

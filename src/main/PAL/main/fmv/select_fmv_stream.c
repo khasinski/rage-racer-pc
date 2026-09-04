@@ -2,20 +2,12 @@
 #include "game/fmv.h"
 #include "game/race.h"
 
-enum {
-    INTRO_FMV_STREAM = 0,
-    GRAND_PRIX_FMV_STREAM_BASE = 1,
-    EXTRA_GRAND_PRIX_FMV_STREAM_BASE = 5,
-    ENDING_FMV_STREAM = 10,
-    GRAND_PRIX_CLASS_COUNT = 4,
-};
-
 static s32 ClampGrandPrixClass(s32 classIndex) {
     if (classIndex < 0) {
         return 0;
     }
-    return classIndex >= GRAND_PRIX_CLASS_COUNT
-               ? GRAND_PRIX_CLASS_COUNT - 1
+    return classIndex >= FMV_GRAND_PRIX_CLASS_COUNT
+               ? FMV_GRAND_PRIX_CLASS_COUNT - 1
                : classIndex;
 }
 
@@ -28,13 +20,12 @@ static void SelectFmvStream(s32 index) {
 
 void BeginIntroFmv(s32 returnScene) {
     BeginFmv(returnScene);
-    SelectFmvStream(INTRO_FMV_STREAM);
+    SelectFmvStream(FMV_STREAM_INTRO);
 }
 
 void BeginClassFmv(s32 returnScene) {
-    s32 base = g_SeriesSelection == 0
-                   ? GRAND_PRIX_FMV_STREAM_BASE
-                   : EXTRA_GRAND_PRIX_FMV_STREAM_BASE;
+    s32 base = g_SeriesSelection == 0 ? FMV_STREAM_GRAND_PRIX_BASE
+                                      : FMV_STREAM_EXTRA_GRAND_PRIX_BASE;
 
     BeginFmv(returnScene);
     SelectFmvStream(base + ClampGrandPrixClass(g_GrandPrixClass));
@@ -42,5 +33,5 @@ void BeginClassFmv(s32 returnScene) {
 
 void BeginEndingFmv(s32 returnScene) {
     BeginFmv(returnScene);
-    SelectFmvStream(ENDING_FMV_STREAM);
+    SelectFmvStream(FMV_STREAM_ENDING);
 }

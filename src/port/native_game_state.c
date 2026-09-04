@@ -493,7 +493,7 @@ PrologueCameraCut g_PrologueCameraCuts[11] = {
  * whichever disc the player owns and the American pressing puts the movies
  * elsewhere, so HostInitDisc fills this in: retail's PAL table from
  * g_RetailPalStreamTable, then the mounted disc's own table over the top. */
-GameCdLoadEntry g_StreamCdEntries[11];
+GameCdLoadEntry g_StreamCdEntries[FMV_STREAM_COUNT];
 /* Retail main.exe @ 0x8007C2F8: (u, v) cells for ASCII 0x20..0x7f. */
 u8 g_Font8x8Cells[0xC0] = {
     0x00,0x00,0x05,0x01,0x06,0x01,0x07,0x01,0x08,0x01,0x09,0x01,

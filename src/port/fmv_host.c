@@ -69,7 +69,7 @@ static int s_wallClock;
 
 /* Movie sectors, held as read off the disc, plus the decoder's scratch. */
 #define RAGE_BS_MAX 0x20000
-#define RAGE_CODES_MAX 0x20000
+#define RAGE_VLC_CODE_COUNT 0x20000
 
 static unsigned char *s_sectors;
 static unsigned int s_sectorCount;
@@ -81,10 +81,6 @@ static u_long s_macroblock[192];
 /* How many sectors of RAGE.STR a movie occupies, which is where the next one
  * begins.  The mounted disc decides it; the movies do not sit in the same
  * places on a PAL disc and an American one. */
-
-/* The rest of the MDEC front end comes from game/render.h and psyq/cd.h;
- * only the VLC stage has no declaration there. */
-int DecDCTvlc(u_long *bs, u_long *buf);
 
 static void ReleaseFmvBuffers(void) {
     free(s_sectors);
@@ -116,7 +112,8 @@ static int HostExtractFmv(unsigned int first, unsigned int count) {
 #endif
     s_sectors = malloc((size_t)count * HOST_FMV_SECTOR_SIZE);
     s_bitstream = malloc(RAGE_BS_MAX);
-    s_codes = malloc((size_t)RAGE_CODES_MAX * 2 + 64);
+    /* DecDCTvlc writes 16-bit run/level codes after a two-halfword header. */
+    s_codes = malloc(((size_t)RAGE_VLC_CODE_COUNT + 2) * sizeof(u_short));
     if (s_sectors == NULL || s_bitstream == NULL || s_codes == NULL) {
         ReleaseFmvBuffers();
         return 0;
@@ -206,8 +203,8 @@ static long ResolveFmvStreamIndex(long streamIndex) {
     const char *forced;
     int chosen;
 
-    if (streamIndex < 0 || streamIndex >= RAGE_DISC_STREAM_COUNT) {
-        streamIndex = 0;
+    if (streamIndex < 0 || streamIndex >= FMV_STREAM_COUNT) {
+        streamIndex = FMV_STREAM_INTRO;
     }
 
     /* Every movie but the opening one sits behind hours of play, so this puts
@@ -217,10 +214,11 @@ static long ResolveFmvStreamIndex(long streamIndex) {
         return streamIndex;
     }
 
-    if (!RuntimeParseInt(forced, 10, 0, RAGE_DISC_STREAM_COUNT - 1,
+    if (!RuntimeParseInt(forced, 10, 0, FMV_STREAM_COUNT - 1,
                          &chosen)) {
-        fprintf(stderr, "rage-port: diagnostics.fmv_stream %s is not 0 to 10\n",
-                forced);
+        fprintf(stderr,
+                "rage-port: diagnostics.fmv_stream %s is not 0 to %d\n",
+                forced, FMV_STREAM_COUNT - 1);
         return streamIndex;
     }
 
@@ -232,14 +230,14 @@ static long ResolveFmvStreamIndex(long streamIndex) {
 void StartFmvPlayback(void) {
     RECT clearRect;
     long streamIndex = HostFmvStreamIndex(
-        g_StreamCdEntries, RAGE_DISC_STREAM_COUNT, g_StreamLoc);
+        g_StreamCdEntries, FMV_STREAM_COUNT, g_StreamLoc);
     unsigned int firstSector;
     unsigned int sectorSpan;
 
     ReleaseFmvPixels();
     streamIndex = ResolveFmvStreamIndex(streamIndex);
     s_width = 320;
-    s_height = streamIndex == RAGE_DISC_STREAM_COUNT - 1 ? 240 : 192;
+    s_height = streamIndex == FMV_STREAM_ENDING ? 240 : 192;
     sectorSpan = HostStreamSectorSpan((int)streamIndex);
     firstSector = g_StreamCdEntries[streamIndex].position.sectorOffset;
     if (!HostExtractFmv(firstSector, sectorSpan)) {

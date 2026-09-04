@@ -14,7 +14,7 @@ u8 *g_AssetLoadCursor;
 s32 g_CourseIndex;
 s32 g_GrandPrixClass;
 s16 g_SeriesSelection;
-GameCdLoadEntry g_StreamCdEntries[11];
+GameCdLoadEntry g_StreamCdEntries[FMV_STREAM_COUNT];
 GameCdLoadEntry *g_StreamLoc;
 u32 g_StreamFrameCount;
 

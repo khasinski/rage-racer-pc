@@ -4,6 +4,7 @@
 #include <stddef.h>
 
 #include "common.h"
+#include "game/fmv.h"
 #include "game/visibility.h"
 #include "psyq/cd_location.h"
 #include "psyq/gpu.h"
@@ -159,9 +160,9 @@ typedef struct GameCdLoadEntry {
  * LoadDiscArchiveIndex and rebased onto its LBA. */
 extern GameCdLoadEntry g_AssetCdEntries[GAME_ASSET_COUNT];
 
-/* The same for the 11 streams in "\RAGE.STR;1"; BeginClassFmv picks
+/* The same for the streams in "\RAGE.STR;1"; BeginClassFmv picks
  * `1 + class` in the Grand Prix and `5 + class` in the Extra GP. */
-extern GameCdLoadEntry g_StreamCdEntries[];
+extern GameCdLoadEntry g_StreamCdEntries[FMV_STREAM_COUNT];
 
 /* The selected stream and number of frames the retail game displays, set by
  * BeginIntroFmv and friends and handed to the FMV streamer. */

@@ -13,6 +13,9 @@
 
 #include "disc_stream_table.h"
 
+_Static_assert(FMV_STREAM_COUNT == RAGE_DISC_STREAM_COUNT,
+               "game and disc FMV stream tables must have the same size");
+
 void DiscStreamTablePublish(const DiscStreamTable *table) {
     int stream;
     for (stream = 0; stream < RAGE_DISC_STREAM_COUNT; stream++) {
