@@ -35,7 +35,7 @@ void DrawCourseIntro(void) {
 static void DrawClassPlaceBanner(void) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     const ResultPlaceBarPosition *bar =
-        &g_ClassPlaceBarSizes[g_ClassResultPlace - 1];
+        &g_ClassPlaceBarSizes.places[g_ClassResultPlace - 1];
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
 
     next = GameQueueSprite(ot, next, 0x14, 0x1C, 0x38, 8,
@@ -59,13 +59,13 @@ static void DrawResultPlace(void) {
     if (!IsValidRaceResultPlace(racePosition)) {
         return;
     }
-    placeSprite = &g_ResultPlaceSprites[racePosition - 1];
+    placeSprite = &g_ResultPlaceSprites.places[racePosition - 1];
     next = GameQueueSprite(ot, RENDER_PRIM_CURSOR_AS(u8),
                            0xB4, 0x60, 0x58, 0x38, 0xA8, 0xA8,
-                           g_ResultPanelCluts[racePosition]);
+                           g_ResultPanelCluts.byPlace[racePosition]);
     g_RenderState.packetCursor = GameQueueSprite(
-        ot, next, placeSprite->x, 0x5C, placeSprite->y, 0x1C,
-        placeSprite->width, 0xCC, g_ResultPlaceCluts[racePosition]);
+        ot, next, placeSprite->x, 0x5C, placeSprite->width, 0x1C,
+        placeSprite->u, 0xCC, g_ResultPlaceCluts[racePosition]);
 }
 
 void DrawGrandPrixIntro(void) {

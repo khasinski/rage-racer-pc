@@ -28,6 +28,7 @@
 #include "game/car_render_rules.h"
 #include "game/menu_types.h"
 #include "game/race_hud_internal.h"
+#include "game/result_screen_types.h"
 #include "game/render_internal.h"
 #include "game/team_logo.h"
 #include "game/visible_cell_scan.h"
@@ -150,10 +151,7 @@ extern unsigned char g_RoundScreenFadeDelays[8];
 extern unsigned char g_TeamNameFontGlyphs
     [TEAM_NAME_FONT_GLYPH_COUNT * TEAM_NAME_FONT_GLYPH_BYTES];
 extern unsigned char g_TeamNameBlankTile[192];
-extern unsigned char g_ResultPlaceSprites[10];
 extern unsigned char g_ResultPlaceCluts[8];
-extern unsigned char g_ResultPanelCluts[10];
-extern unsigned char g_ClassPlaceBarSizes[8];
 extern char g_ChanceDigits[6][2];
 extern OptionHintCaption g_OptionHintCaptions[MENU_OPTION_HINT_COUNT];
 extern DVec g_ClassRecordCellPoints[CLASS_RECORD_COUNT];
@@ -325,10 +323,13 @@ static const HostStateBlob s_blobs[] = {
     {"g_TeamNameFontGlyphs", g_TeamNameFontGlyphs,
      sizeof(g_TeamNameFontGlyphs)},
     {"g_TeamNameBlankTile", g_TeamNameBlankTile, 192},
-    {"g_ResultPlaceSprites", g_ResultPlaceSprites, 10},
+    {"g_ResultPlaceSprites", BYTES(&g_ResultPlaceSprites),
+     sizeof(g_ResultPlaceSprites)},
     {"g_ResultPlaceCluts", g_ResultPlaceCluts, 8},
-    {"g_ResultPanelCluts", g_ResultPanelCluts, 10},
-    {"g_ClassPlaceBarSizes", g_ClassPlaceBarSizes, 8},
+    {"g_ResultPanelCluts", BYTES(&g_ResultPanelCluts),
+     sizeof(g_ResultPanelCluts)},
+    {"g_ClassPlaceBarSizes", BYTES(&g_ClassPlaceBarSizes),
+     sizeof(g_ClassPlaceBarSizes)},
     {"g_ChanceDigits", BYTES(g_ChanceDigits), 12},
     {"g_OptionHintCaptions", (const unsigned char *)g_OptionHintCaptions, 28},
     {"g_ClassRecordCellPoints", (const unsigned char *)g_ClassRecordCellPoints,

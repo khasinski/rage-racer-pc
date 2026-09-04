@@ -336,7 +336,6 @@ typedef enum RecordEntryState {
 
 extern RecordEntryState g_RecordEntryState;
 extern s32 g_RecordPanelSlide;
-extern u16 g_ResultPanelCluts[];
 extern u16 g_ResultPlaceCluts[];
 extern u8 g_TachoFaceB;
 extern u8 g_TachoFaceG;

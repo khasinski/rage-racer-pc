@@ -8,6 +8,12 @@ _Static_assert(sizeof(g_TextNowLoading) == sizeof("NOW LOADING"),
                "loading caption must not absorb the prologue text");
 _Static_assert(sizeof(g_ChanceDigits) == 6 * 2,
                "chance digits must remain six fixed-width strings");
+_Static_assert(sizeof(g_ResultPlaceSprites) == 10,
+               "result place sprites must retain their trailing padding");
+_Static_assert(sizeof(g_ResultPanelCluts) == 10,
+               "result panel CLUTs must retain their trailing padding");
+_Static_assert(sizeof(g_ClassPlaceBarSizes) == 8,
+               "class place bars must retain their trailing padding");
 _Static_assert(sizeof(g_RaceOptionMarquee) == 4 * 40,
                "race option marquee must remain four fixed-width rows");
 _Static_assert(sizeof(g_CountdownGlyphTable) == 256,

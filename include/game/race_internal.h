@@ -4,6 +4,7 @@
 #include "common.h"
 #include "game/menu_types.h"
 #include "game/race.h"
+#include "game/result_screen_types.h"
 
 struct PlayerCarRuntime;
 
@@ -19,16 +20,6 @@ typedef struct PrologueCameraCut {
     s16 carIndex;
 } PrologueCameraCut;
 
-typedef struct ResultPlaceBarPosition {
-    u8 left;
-    u8 right;
-} ResultPlaceBarPosition;
-
-typedef struct ResultPlaceSpriteLayout {
-    u8 x;
-    u8 y;
-    u8 width;
-} ResultPlaceSpriteLayout;
 
 static inline s32 RaceRecordMode(s32 grandPrixMode) {
     return grandPrixMode != 0;
@@ -112,8 +103,6 @@ s32 NextPrologueTimer(s32 sceneTimer);
 s32 AdvancePrologueFade(s32 level, s32 step, s32 maximum);
 s32 PrologueCameraIndex(s32 cameraIndex);
 s32 PrologueCameraCutIndex(s32 cutIndex);
-extern ResultPlaceSpriteLayout g_ResultPlaceSprites[];
-extern ResultPlaceBarPosition g_ClassPlaceBarSizes[];
 
 s32 GrandPrixCourseCount(s32 classIndex);
 s32 GrandPrixClassRecordIndex(s32 series, s32 classIndex);

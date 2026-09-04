@@ -13,6 +13,7 @@
 
 #include "common.h"
 #include "game/race_hud_internal.h"
+#include "game/result_screen_types.h"
 
 char g_TextResult[8] __attribute__((aligned(16))) = "RESULT";
 char g_FmtClassGrandPrix[24] __attribute__((aligned(16))) = "CLASS%d %s GRANDPRIX";
@@ -48,14 +49,26 @@ char g_MsgGame0Ok[12] __attribute__((aligned(16))) = "game0 ok\n";
 s32 g_PromotionBonusTable[5] __attribute__((aligned(16))) = {
     500, 4800, 20000, 100000, 500000
 };
-unsigned char g_ResultPlaceSprites[10] __attribute__((aligned(16))) = {0x24,0x30,0x00,0x1a,0x40,0x30,0x1c,0x38,0x70,0x00};
+ResultPlaceSpriteTable g_ResultPlaceSprites __attribute__((aligned(16))) = {
+    .places = {
+        {0x24, 0x30, 0x00},
+        {0x1a, 0x40, 0x30},
+        {0x1c, 0x38, 0x70},
+    },
+};
 u16 g_ResultPlaceCluts[4] __attribute__((aligned(16))) = {
     0, 30739, 30926, 30925
 };
-u16 g_ResultPanelCluts[5] __attribute__((aligned(16))) = {
-    0, 30803, 30795, 30859, 0
+ResultPanelClutTable g_ResultPanelCluts __attribute__((aligned(16))) = {
+    .byPlace = {0, 30803, 30795, 30859},
 };
-unsigned char g_ClassPlaceBarSizes[8] __attribute__((aligned(16))) = {0xb8,0x18,0xb0,0x1c,0xa8,0x24,0x00,0x00};
+ResultPlaceBarTable g_ClassPlaceBarSizes __attribute__((aligned(16))) = {
+    .places = {
+        {0xb8, 0x18},
+        {0xb0, 0x1c},
+        {0xa8, 0x24},
+    },
+};
 char g_ChanceDigits[6][2] __attribute__((aligned(16))) = {
     {'0', '\0'}, {'1', '\0'}, {'2', '\0'},
     {'3', '\0'}, {'4', '\0'}, {'5', '\0'},
