@@ -2,6 +2,8 @@
 #include "game/race.h"
 #include "game/track.h"
 
+#include <limits.h>
+
 enum {
     TRACK_ZONE_FADE_DISTANCE = 0x100,
     TRACK_ZONE_PHASE_FADE_IN = 1,
@@ -71,7 +73,11 @@ s32 GetTrackZoneBlend(s32 position) {
                 return TRACK_ZONE_FADE_DISTANCE;
             }
         } else if (code < 0) {
-            g_TrackZoneCode = (s16)-code;
+            s32 positiveCode = -(s32)code;
+
+            g_TrackZoneCode = (s16)(positiveCode > INT16_MAX
+                                        ? INT16_MAX
+                                        : positiveCode);
             return TRACK_ZONE_FADE_DISTANCE;
         }
         return blend;

@@ -60,6 +60,9 @@ int main(void) {
     events.zones[0].code = -4;
     if (!Expect("negative zone code", 101, 0x100, 4, 7, 0)) return 1;
 
+    events.zones[0].code = INT16_MIN;
+    if (!Expect("minimum zone code", 101, 0x100, INT16_MAX, 7, 0)) return 1;
+
     events.zones[0] = (TrackZone){INT_MIN, INT_MAX, 1, 7};
     if (!Expect("full-width zone", 0, 0x100, 1, 7, 0)) return 1;
 
