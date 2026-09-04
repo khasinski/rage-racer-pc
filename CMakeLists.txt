@@ -269,6 +269,7 @@ if(RAGE_BUILD_PORT)
         src/port/mod_assets.c
         src/port/texture_patch.c
         src/port/track_asset_identity.c
+        src/port/sky_panorama_layout.c
         src/port/native_asset_importer_stubs.c
         src/port/modern/modern_assets.c
         src/port/modern/modern_native_gpu.c
@@ -281,12 +282,13 @@ if(RAGE_BUILD_PORT)
         src/port/mod_assets.c
         src/port/texture_patch.c
         src/port/track_asset_identity.c
+        src/port/sky_panorama_layout.c
         src/port/native_asset_importer_stubs.c
         src/port/modern/modern_assets.c
         src/port/modern/modern_native_gpu.c
         src/port/modern/modern_texture_dump.c)
     target_include_directories(rage-render-stage PRIVATE
-        src src/port src/port/include)
+        src src/port src/port/include include)
     target_link_libraries(rage-render-stage PRIVATE
         rage-render-world SDL3::SDL3 miniz)
     if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
@@ -294,7 +296,7 @@ if(RAGE_BUILD_PORT)
             ${RAGE_STRICT_WARNING_OPTIONS})
     endif()
     target_include_directories(rage-frame-replay PRIVATE
-        src src/port src/port/include)
+        src src/port src/port/include include)
     target_link_libraries(rage-frame-replay PRIVATE
         rage-render-world SDL3::SDL3 miniz)
     if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")

@@ -274,7 +274,7 @@ int main(int argc, char **argv) {
                 SDL_GetError());
         goto release_renderer;
     }
-    ModernNativeGpuDraw(command, color, depth, 1);
+    ModernNativeGpuDraw(command, color, depth, 1, height);
     if (!SDL_SubmitGPUCommandBuffer(command)) {
         fprintf(stderr, "rage-frame-replay: submit: %s\n", SDL_GetError());
         goto release_renderer;
