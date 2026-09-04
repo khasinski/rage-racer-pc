@@ -1190,13 +1190,20 @@ static void ModernCompositeNativeMirror(SDL_GPUCommandBuffer *cmd) {
 
 static void ModernRender(const RageSceneSnapshot *snapshot) {
     SDL_GPUCommandBuffer *cmd;
-    SDL_GPUTexture *vram = Psyz_VideoGetVramTexture_SDL3GPU();
+    static uint32_t sampledVramFrame = UINT32_MAX;
+    static SDL_GPUTexture *sampledVram;
+    SDL_GPUTexture *vram;
     static Uint64 profileBuildNs, profileSubmitNs;
     static Uint64 profileFaces, profileVertices, profileSpans;
     static unsigned profileFrames;
     static int profile = -1;
     Uint64 profileStart = 0, profileBuilt = 0;
     int i;
+    if (snapshot->frameCounter != sampledVramFrame || sampledVram == NULL) {
+        sampledVram = Psyz_VideoSnapshotVramTexture_SDL3GPU();
+        sampledVramFrame = snapshot->frameCounter;
+    }
+    vram = sampledVram;
     if (vram == NULL) return;
     if (profile < 0)
         profile = RuntimeConfigEnabled("diagnostics.performance");
