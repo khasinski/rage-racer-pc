@@ -98,7 +98,7 @@ static void ClearPendingCardError(void) {
 static void TrackPersistentCardError(void) {
     g_McErrorPending = 1;
     if (g_McCardStatus != MC_MENU_STATE_ERROR) return;
-    if (--g_McErrorCountdown == 0) {
+    if (MemoryCardCountdownElapsed(&g_McErrorCountdown)) {
         g_McMenuState = MC_MENU_STATE_ERROR;
     }
 }

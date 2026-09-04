@@ -116,7 +116,7 @@ static void RunFormatCardActions(s32 fadeBusy) {
         break;
 
     case FORMAT_CARD_ACTION_WAIT_DELAY:
-        if (--g_McActionTimer == 0) {
+        if (MemoryCardCountdownElapsed(&g_McActionTimer)) {
             g_McActionState = FORMAT_CARD_ACTION_RUN;
         }
         break;
@@ -127,7 +127,7 @@ static void RunFormatCardActions(s32 fadeBusy) {
 
     case FORMAT_CARD_ACTION_SHOW_SUCCESS:
         g_McMenuPhase = MC_PROMPT_FORMAT_OK;
-        if (--g_McActionTimer == 0) {
+        if (MemoryCardCountdownElapsed(&g_McActionTimer)) {
             g_McActionBusy = 0;
             g_McActionState = FORMAT_CARD_ACTION_WAIT_TO_EXIT;
         }

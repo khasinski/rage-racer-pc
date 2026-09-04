@@ -3,15 +3,6 @@
 #include "game/menu.h"
 #include "game/audio.h"
 
-/*
- * Several of the card actions sit still for a few frames before they act, so
- * that the message on screen can be read. Answers whether the wait is over.
- */
-static int CardActionTimerElapsed(void) {
-    g_McActionTimer -= 1;
-    return g_McActionTimer == 0;
-}
-
 /* Whether a slot already holds a save. */
 static int CardSlotIsUsed(s32 slot) {
     return ((g_McSlotUsedMask >> slot) & 1) != 0;
@@ -178,7 +169,7 @@ void RunCardSlotActions(void) {
 
     case CARD_SLOT_ACTION_WAIT_SAVE_DELAY:
         g_McActionBusy = 1;
-        if (!CardActionTimerElapsed()) break;
+        if (!MemoryCardCountdownElapsed(&g_McActionTimer)) break;
         g_McActionState = CARD_SLOT_ACTION_WRITE_SAVE;
         break;
 
@@ -200,7 +191,7 @@ void RunCardSlotActions(void) {
         break;
 
     case CARD_SLOT_ACTION_WAIT_SAVE_SETTLE:
-        if (!CardActionTimerElapsed()) break;
+        if (!MemoryCardCountdownElapsed(&g_McActionTimer)) break;
         g_McSettleTicks = 0;
         g_McActionState = CARD_SLOT_ACTION_WAIT_SAVE_CARD;
         break;
@@ -219,7 +210,7 @@ void RunCardSlotActions(void) {
         break;
 
     case CARD_SLOT_ACTION_WAIT_SAVE_RESULT:
-        if (!CardActionTimerElapsed()) break;
+        if (!MemoryCardCountdownElapsed(&g_McActionTimer)) break;
         g_McMenuPage = 0;
         g_McActionState = CARD_SLOT_ACTION_PICK;
         g_McMenuRowCursor = g_McMenuRowCount - 1;
@@ -238,7 +229,7 @@ void RunCardSlotActions(void) {
         break;
 
     case CARD_SLOT_ACTION_WAIT_LOAD_PREP:
-        if (!CardActionTimerElapsed()) break;
+        if (!MemoryCardCountdownElapsed(&g_McActionTimer)) break;
         g_McActionState = CARD_SLOT_ACTION_BEGIN_LOAD_DELAY;
         break;
 
@@ -250,7 +241,7 @@ void RunCardSlotActions(void) {
         break;
 
     case CARD_SLOT_ACTION_WAIT_LOAD_DELAY:
-        if (!CardActionTimerElapsed()) break;
+        if (!MemoryCardCountdownElapsed(&g_McActionTimer)) break;
         g_McActionState = CARD_SLOT_ACTION_READ_SAVE;
         break;
 
@@ -263,7 +254,7 @@ void RunCardSlotActions(void) {
         break;
 
     case CARD_SLOT_ACTION_WAIT_LOAD_SETTLE:
-        if (!CardActionTimerElapsed()) break;
+        if (!MemoryCardCountdownElapsed(&g_McActionTimer)) break;
         g_McSettleTicks = 0;
         g_McActionState = CARD_SLOT_ACTION_WAIT_LOAD_CARD;
         break;
@@ -282,7 +273,7 @@ void RunCardSlotActions(void) {
         break;
 
     case CARD_SLOT_ACTION_WAIT_LOAD_RESULT:
-        if (!CardActionTimerElapsed()) break;
+        if (!MemoryCardCountdownElapsed(&g_McActionTimer)) break;
         g_McMenuPage = 0;
         g_McActionState = CARD_SLOT_ACTION_PICK;
         g_McMenuRowCursor = g_McMenuRowCount - 1;

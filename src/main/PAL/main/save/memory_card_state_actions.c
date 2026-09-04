@@ -60,7 +60,7 @@ void RunCardWorkingActions(s32 fadeBusy) {
         g_McActionState = CARD_WORK_WAIT_STATUS_DELAY;
         break;
     case CARD_WORK_WAIT_STATUS_DELAY:
-        if (--g_McActionTimer != 0) break;
+        if (!MemoryCardCountdownElapsed(&g_McActionTimer)) break;
         g_McActionState = CARD_WORK_REFRESH_STATUS;
         break;
     case CARD_WORK_REFRESH_STATUS:
@@ -72,13 +72,13 @@ void RunCardWorkingActions(s32 fadeBusy) {
         g_McActionState = CARD_WORK_WAIT_SETTLE_DELAY;
         break;
     case CARD_WORK_WAIT_SETTLE_DELAY:
-        if (--g_McActionTimer != 0) break;
+        if (!MemoryCardCountdownElapsed(&g_McActionTimer)) break;
         g_McActionTimer = CARD_WORK_DELAY_FRAMES;
         g_McActionBusy = 0;
         g_McActionState = CARD_WORK_WAIT_FINAL_DELAY;
         break;
     case CARD_WORK_WAIT_FINAL_DELAY:
-        if (--g_McActionTimer != 0) break;
+        if (!MemoryCardCountdownElapsed(&g_McActionTimer)) break;
         g_McActionState = CARD_WORK_RETURN_READY;
         break;
     case CARD_WORK_RETURN_READY:
@@ -160,7 +160,7 @@ void RunNoCardActions(s32 fadeBusy) {
         break;
 
     case NO_CARD_ACTION_WAIT:
-        if (--g_McActionTimer == 0) {
+        if (MemoryCardCountdownElapsed(&g_McActionTimer)) {
             g_McActionState = NO_CARD_ACTION_READY;
         }
         break;

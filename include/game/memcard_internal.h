@@ -15,6 +15,18 @@ typedef enum MemoryCardMenuState {
     MC_MENU_STATE_BUSY = 3,
 } MemoryCardMenuState;
 
+/* Advance a positive frame countdown and report its deadline. Invalid or
+ * already elapsed values finish immediately instead of counting away from
+ * zero or overflowing at INT_MIN. */
+static inline int MemoryCardCountdownElapsed(s32 *frames) {
+    if (*frames > 1) {
+        (*frames)--;
+        return 0;
+    }
+    *frames = 0;
+    return 1;
+}
+
 void ClearSaveHeaderRows(GameSaveHeaderRow *rows);
 s32 WriteMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *header);
 s32 ScanMemoryCardSaveHeaders(GameSaveHeaderRow *headers);

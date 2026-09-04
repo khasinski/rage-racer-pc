@@ -7,6 +7,8 @@
 #include "game/menu.h"
 #include "game/state.h"
 
+#include <limits.h>
+
 s32 g_AssetLoadState;
 static s32 s_assetLoadFailed;
 static u8 s_imageData[16];
@@ -193,6 +195,7 @@ static void TestSaveRows(void) {
 
 static void TestMenuControls(void) {
     s32 value;
+    s32 countdown;
 
     Reset();
     value = 1;
@@ -213,6 +216,14 @@ static void TestMenuControls(void) {
     CHECK(PollMenuConfirmInput() == PAD_START);
     CHECK(PollMenuBackInput() == PAD_TRIANGLE);
     CHECK(s_cues[s_cueCount - 2] == 2 && s_cues[s_cueCount - 1] == 3);
+
+    countdown = 2;
+    CHECK(!MemoryCardCountdownElapsed(&countdown) && countdown == 1);
+    CHECK(MemoryCardCountdownElapsed(&countdown) && countdown == 0);
+    countdown = 0;
+    CHECK(MemoryCardCountdownElapsed(&countdown) && countdown == 0);
+    countdown = INT_MIN;
+    CHECK(MemoryCardCountdownElapsed(&countdown) && countdown == 0);
 }
 
 static void TestMenuLifecycle(void) {
