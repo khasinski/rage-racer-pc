@@ -4,6 +4,8 @@
 #include <string.h>
 #include <time.h>
 
+#include <psyz/gpu.h>
+
 #include "game/asset.h"
 #include "game/audio.h"
 #include "game/audio_internal.h"
@@ -51,6 +53,22 @@ enum {
 };
 
 static RageScenarioState s_scenario;
+
+static void ScenarioHideDirectBootDisplay(void) {
+    SetDispMask(0);
+}
+
+static void ScenarioShowClearedRaceDisplay(void) {
+    RECT framebuffers = {0, 0, 320, 480};
+
+    /* Direct boot keeps the title handler alive while race assets reuse VRAM.
+     * Neither half of the old double buffer is safe to expose after that.
+     * Clear both while output is masked, then let EnterRaceScene replace the
+     * black buffer with its first complete frame. */
+    ClearImage(&framebuffers, 0, 0, 0);
+    DrawSync(0);
+    SetDispMask(1);
+}
 
 static int ScenarioParseTrackPoint(const char *text, int *result) {
     return RuntimeParseInt(text, 0, 0, INT_MAX, result);
@@ -475,6 +493,7 @@ static void ScenarioDirectBoot(void) {
     }
     switch (s_scenario.directStep) {
     case RAGE_DIRECT_PENDING:
+        ScenarioHideDirectBootDisplay();
         ScenarioSelectSeries();
         ShuffleBgmOrder();
         s_scenario.directStep = RAGE_DIRECT_BGM_ASSETS;
@@ -537,6 +556,7 @@ static void ScenarioDirectBoot(void) {
             g_MirrorMode = 0;
             g_FrameSyncThreshold = 0x180;
             g_SceneTimer = 0;
+            ScenarioShowClearedRaceDisplay();
             g_SceneId = 11;
             s_scenario.directStep = RAGE_DIRECT_DONE;
             fprintf(stderr, "rage-port: scenario direct boot entered the race t=%.1fs\n",
