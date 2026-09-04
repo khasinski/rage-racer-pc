@@ -85,7 +85,7 @@ static int CheckCursorMove(s32 from, u16 pressed, s32 expected) {
     UpdateTeamNameScreen();
     CHECK(GameMenuCursor == expected);
     CHECK(GameMenuCursorAnim == expected);
-    CHECK(g_MenuViewAngle == 0x3E8000);
+    CHECK(g_MenuViewAngle == TEAM_NAME_CURSOR_ENTRY_ANGLE);
     CHECK(g_MenuViewAngleTarget == 0);
     CHECK(s_lastCue == 1);
     return 0;

@@ -35,6 +35,27 @@ static s32 AdvanceMenuViewOffset(void) {
     return g_MenuViewOffset / 1000;
 }
 
+static void DrawShowroomFloor(ShowroomPlayerCarState *showroom, Matrix *matrix) {
+    GameOrderingTableEntry *originalOt = RENDER_OT_BASE;
+    s32 modelIndex;
+
+    if (originalOt == NULL) {
+        return;
+    }
+
+    showroom->pose.position[2] = 0;
+    SelectModelBank(SHOWROOM_MODEL_BANK);
+    RENDER_OT_BASE = originalOt + SHOWROOM_OT_DEPTH_BIAS;
+    SetGteObjectMatrix(AsPositionWords(&showroom->pose.position[0]), matrix);
+    g_RenderState.envMode4 = 0;
+    modelIndex = MenuModelIndexOrFallback(SHOWROOM_FLOOR_MODEL,
+                                          g_ModelBankCount);
+    if (modelIndex >= 0) {
+        SubmitModel(&g_RenderState, modelIndex);
+    }
+    RENDER_OT_BASE = originalOt;
+}
+
 void DrawMenuCarView(void) {
     ShowroomPlayerCarState *showroom = ShowroomPlayerCar();
     GameRenderObject *renderObject = ShowroomRenderObject();
@@ -43,7 +64,6 @@ void DrawMenuCarView(void) {
     Vec4 out;
     Vec4 vec;
     s32 carIndex;
-    s32 modelIndex;
     s32 viewHeight;
     s32 currentAngle;
     s32 horizontalAngle;
@@ -118,21 +138,7 @@ void DrawMenuCarView(void) {
     showroom->pose.position[0] =
         (g_MenuAltLayout != 0 ? 23 : 52) - horizontalAngle;
     showroom->pose.position[1] = viewHeight + 30;
-    showroom->pose.position[2] = 0;
-    SelectModelBank(SHOWROOM_MODEL_BANK);
-    /* The render state's ordering-table base. Keep the retail
-     * 120-byte (30-entry) showroom-depth bias, but express it through the
-     * native pointer-sized slot instead of relying on the absolute-address
-     * scalar alias. */
-    RENDER_OT_BASE += SHOWROOM_OT_DEPTH_BIAS;
-    SetGteObjectMatrix(AsPositionWords(&showroom->pose.position[0]), &mtxA);
-    g_RenderState.envMode4 = 0;
-    modelIndex = MenuModelIndexOrFallback(SHOWROOM_FLOOR_MODEL,
-                                          g_ModelBankCount);
-    if (modelIndex >= 0) {
-        SubmitModel(&g_RenderState, modelIndex);
-    }
-    RENDER_OT_BASE -= SHOWROOM_OT_DEPTH_BIAS;
+    DrawShowroomFloor(showroom, &mtxA);
 }
 
 /* The course diorama behind COURSE SELECT and RANKING, with the carousel easing. */
@@ -209,8 +215,9 @@ void DrawTeamNameCharModel(void) {
     nextAngle = AdvanceMenuViewAngleValue(
         g_MenuViewAngle, g_MenuViewAngleTarget, 16);
     g_MenuViewAngle = nextAngle;
-    if (nextAngle <= 3071999 && GameMenuCursorAnim >= 0) {
-        g_MenuViewAngle = (s32)((u32)nextAngle - 2048000u);
+    if (nextAngle < TEAM_NAME_MODEL_SWAP_ANGLE && GameMenuCursorAnim >= 0) {
+        g_MenuViewAngle =
+            (s32)((u32)nextAngle - TEAM_NAME_MODEL_HALF_TURN);
         g_TeamNameCharModel = GameMenuCursorAnim;
         GameMenuCursorAnim = -1;
     }

@@ -2,10 +2,6 @@
 #include "game/menu.h"
 #include "game/menu_internal.h"
 
-enum {
-    TEAM_NAME_CURSOR_ENTRY_ANGLE = 4096000,
-};
-
 enum TeamNameScreenState {
     TEAM_NAME_IDLE = 0,
     TEAM_NAME_EXIT_TO_DESIGN = 1,
