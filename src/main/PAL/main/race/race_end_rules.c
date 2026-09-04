@@ -5,8 +5,6 @@
 enum {
     RACE_END_MAX_BRIGHTNESS = 127,
     RACE_END_SKIP_MIN_TIMER = 261,
-    RACE_END_INITIAL_TIMER = 555,
-    SCREEN_FADE_COMPLETE = 256,
     SCREEN_FADE_STEP = 2,
     LOST_RACE_RETRY_DIGIT_COUNT = 6,
 };
@@ -15,7 +13,7 @@ s32 RaceEndBrightness(s32 level) {
     if (level <= 0) {
         return 0;
     }
-    if (level >= 256) {
+    if (level >= RACE_END_SCREEN_FADE_COMPLETE) {
         return RACE_END_MAX_BRIGHTNESS;
     }
     return level >> 1;
@@ -61,8 +59,8 @@ s32 NextLostRaceFadeTimer(s32 timer) {
     if (timer < 0) {
         return 0;
     }
-    return timer >= SCREEN_FADE_COMPLETE - SCREEN_FADE_STEP
-               ? SCREEN_FADE_COMPLETE
+    return timer >= RACE_END_SCREEN_FADE_COMPLETE - SCREEN_FADE_STEP
+               ? RACE_END_SCREEN_FADE_COMPLETE
                : timer + SCREEN_FADE_STEP;
 }
 
@@ -70,8 +68,8 @@ s32 NextRaceEndScreenTimer(s32 timer) {
     if (timer <= 0) {
         return 0;
     }
-    if (timer > RACE_END_INITIAL_TIMER) {
-        timer = RACE_END_INITIAL_TIMER;
+    if (timer > RACE_END_SCREEN_INITIAL_TIMER) {
+        timer = RACE_END_SCREEN_INITIAL_TIMER;
     }
     return timer - 1;
 }

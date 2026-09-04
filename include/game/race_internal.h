@@ -7,7 +7,11 @@
 
 struct PlayerCarRuntime;
 
-enum { REPLAY_OPAQUE_FADE = 257 };
+enum {
+    REPLAY_OPAQUE_FADE = 257,
+    RACE_END_SCREEN_FADE_COMPLETE = 256,
+    RACE_END_SCREEN_INITIAL_TIMER = 555,
+};
 
 typedef struct PrologueCameraCut {
     s16 timer;

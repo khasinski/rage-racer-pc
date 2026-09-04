@@ -11,8 +11,6 @@
 
 enum {
     LOST_RACE_INPUT_TIMER = -1,
-    SCREEN_FADE_COMPLETE = 256,
-    RACE_END_INITIAL_TIMER = 555,
 };
 
 void DrawLostRaceCaption(s32 level) {
@@ -86,7 +84,7 @@ void UpdateLostRaceScreen(void) {
         timer = NextLostRaceFadeTimer(timer);
         g_SceneTimer = timer;
         DrawFullscreenFadeTile(timer, 0x49);
-        if (g_SceneTimer >= SCREEN_FADE_COMPLETE) {
+        if (g_SceneTimer >= RACE_END_SCREEN_FADE_COMPLETE) {
             g_SceneId = LostRaceExitScene(g_LostRaceChoice);
         }
     }
@@ -104,8 +102,8 @@ void DrawRaceEndBanner(s32 level) {
 void EnterRaceEndScreen(void) {
     g_FrameSyncThreshold = 0x80;
     g_SceneId = GAME_SCENE_RACE_END;
-    g_SceneTimer = RACE_END_INITIAL_TIMER;
-    DrawRaceEndBanner(RACE_END_INITIAL_TIMER);
+    g_SceneTimer = RACE_END_SCREEN_INITIAL_TIMER;
+    DrawRaceEndBanner(RACE_END_SCREEN_INITIAL_TIMER);
 }
 
 void UpdateRaceEndScreen(void) {
