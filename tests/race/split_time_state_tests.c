@@ -4,11 +4,12 @@
 
 #include "game/player_car_internal.h"
 #include "game/race.h"
+#include "game/race_hud_internal.h"
 #include "game/race_internal.h"
 
 s32 g_SectorIndex;
-s32 g_SectorEndDistance[3];
-s32 g_SectorTimes[3];
+s32 g_SectorEndDistance[SPLIT_SECTOR_COUNT];
+s32 g_SectorTimes[SPLIT_SECTOR_COUNT];
 s32 g_LapTimeMs;
 s32 g_RefLapTime;
 SectorReferenceTimes g_RefSectorTimes;
@@ -148,12 +149,12 @@ static void TestUnrepresentableTimeHasNoDelta(void) {
     car.lap = 1;
     car.progressA = 100;
     g_SectorEndDistance[0] = 100;
-    g_LapTimeMs = 599999;
+    g_LapTimeMs = SPLIT_TIME_MAX_MS + 1;
     g_SplitSign = -1;
 
     UpdateSplitTimes(&car, 0, 0);
 
-    assert(g_SectorTimes[0] == 599999);
+    assert(g_SectorTimes[0] == SPLIT_TIME_MAX_MS + 1);
     assert(g_SplitSign == 0 && s_SoundCue == 0);
 }
 

@@ -10,10 +10,7 @@
 #include <stdint.h>
 
 enum {
-    SPLIT_SECTOR_COUNT = 3,
     SPLIT_STATE_WAITING_FOR_LAP = -2,
-    SPLIT_DISPLAY_FRAMES = 60,
-    MAX_COMPARABLE_TIME_MS = 599998,
     SPLIT_AHEAD_CUE = 0x3E,
     SPLIT_BEHIND_CUE = 0x3F,
 };
@@ -46,7 +43,7 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
              (int64_t)car->progressB + car->progressA ||
          lapEvent != 0)) {
         g_SectorTimes[slot] = g_LapTimeMs;
-        if (g_LapTimeMs >= 0 && g_LapTimeMs <= MAX_COMPARABLE_TIME_MS) {
+        if (g_LapTimeMs >= 0 && g_LapTimeMs <= SPLIT_TIME_MAX_MS) {
             delta = lapEvent != 0
                         ? (int64_t)g_RefLapTime - g_LapTimeMs
                         : (int64_t)g_RefSectorTimes.values[slot] -

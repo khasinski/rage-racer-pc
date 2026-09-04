@@ -1,9 +1,6 @@
 #include "game/race_hud_internal.h"
 
 enum {
-    SPLIT_SECTOR_COUNT = 3,
-    SPLIT_DISPLAY_FRAMES = 60,
-    MAX_DISPLAY_TIME_MS = 599998,
     SPLIT_AHEAD_CLUT = 0x7810,
     SPLIT_BEHIND_CLUT = 0x780F,
     SPLIT_TIME_CLUT = 0x78CC,
@@ -26,7 +23,7 @@ s32 SplitDeltaClut(s32 sign) {
 }
 
 s32 SplitTimeClut(s32 timeMs) {
-    return timeMs >= 0 && timeMs <= MAX_DISPLAY_TIME_MS
+    return timeMs >= 0 && timeMs <= SPLIT_TIME_MAX_MS
                ? SPLIT_TIME_CLUT
                : SPLIT_TIME_OVERFLOW_CLUT;
 }
