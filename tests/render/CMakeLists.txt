@@ -1,3 +1,16 @@
+add_executable(modern_vram_snapshot_tests
+    modern_vram_snapshot_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/modern/modern_vram_snapshot.c)
+target_include_directories(modern_vram_snapshot_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port)
+target_link_libraries(modern_vram_snapshot_tests PRIVATE SDL3::SDL3)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(modern_vram_snapshot_tests PRIVATE
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME modern_vram_snapshot COMMAND modern_vram_snapshot_tests)
+set_tests_properties(modern_vram_snapshot PROPERTIES LABELS unit)
+
 add_executable(scenery_object_matrix_tests
     scenery_object_matrix_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/build_scenery_object_matrix.c)

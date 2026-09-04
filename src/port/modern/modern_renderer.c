@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "modern_texture_dump.h"
+#include "modern_vram_snapshot.h"
 #include "../platform_paths.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
@@ -1188,10 +1189,14 @@ static void ModernCompositeNativeMirror(SDL_GPUCommandBuffer *cmd) {
     SDL_BlitGPUTexture(cmd, &blit);
 }
 
+static SDL_GPUTexture *ModernCaptureVramSnapshot(void *context) {
+    (void)context;
+    return Psyz_VideoSnapshotVramTexture_SDL3GPU();
+}
+
 static void ModernRender(const RageSceneSnapshot *snapshot) {
     SDL_GPUCommandBuffer *cmd;
-    static uint32_t sampledVramFrame = UINT32_MAX;
-    static SDL_GPUTexture *sampledVram;
+    static ModernVramSnapshotCache sampledVram;
     SDL_GPUTexture *vram;
     static Uint64 profileBuildNs, profileSubmitNs;
     static Uint64 profileFaces, profileVertices, profileSpans;
@@ -1199,11 +1204,9 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
     static int profile = -1;
     Uint64 profileStart = 0, profileBuilt = 0;
     int i;
-    if (snapshot->frameCounter != sampledVramFrame || sampledVram == NULL) {
-        sampledVram = Psyz_VideoSnapshotVramTexture_SDL3GPU();
-        sampledVramFrame = snapshot->frameCounter;
-    }
-    vram = sampledVram;
+    vram = ModernVramSnapshotForFrame(
+        &sampledVram, snapshot->frameCounter,
+        ModernCaptureVramSnapshot, NULL);
     if (vram == NULL) return;
     if (profile < 0)
         profile = RuntimeConfigEnabled("diagnostics.performance");
