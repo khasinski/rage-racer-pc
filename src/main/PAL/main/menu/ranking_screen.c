@@ -4,7 +4,7 @@
 #include "game/menu_scripts_internal.h"
 #include "game/race.h"
 
-enum RankingScreenState {
+typedef enum RankingScreenState {
     RANKING_ENTER = 0,
     RANKING_EXIT_TO_COURSE_SELECT = 1,
     RANKING_MENU = -1,
@@ -13,7 +13,7 @@ enum RankingScreenState {
     RANKING_TOTAL_TABLE_CLOSING = -4,
     RANKING_LAP_TABLE = -5,
     RANKING_LAP_TABLE_CLOSING = -6
-};
+} RankingScreenState;
 
 enum RankingOption {
     RANKING_OPTION_TOTAL,
@@ -22,10 +22,10 @@ enum RankingOption {
     RANKING_OPTION_COUNT,
 };
 
-enum RankingTable {
+typedef enum RankingTable {
     RANKING_TABLE_TOTAL,
     RANKING_TABLE_LAP,
-};
+} RankingTable;
 
 /* Screen-fade callback used by the host menu renderer. */
 s32 DrawRankingScreen(s32 step) {
@@ -89,7 +89,8 @@ static void CloseRankingMenu(void) {
     }
 }
 
-static void UpdateRankingTable(s32 table, s32 closingState) {
+static void UpdateRankingTable(RankingTable table,
+                               RankingScreenState closingState) {
     if (DrawRankingTable(&g_UiScriptProgress2, 1, table) != 0 &&
         (g_PadPressed & (PAD_CONFIRM | PAD_CANCEL)) != 0) {
         PlaySoundCue(3);
@@ -97,7 +98,7 @@ static void UpdateRankingTable(s32 table, s32 closingState) {
     }
 }
 
-static void CloseRankingTable(s32 table) {
+static void CloseRankingTable(RankingTable table) {
     DrawRankingTable(&g_UiScriptProgress2, -1, table);
     if (g_UiScriptProgress2 <= 0) {
         GameMenuBusy = RANKING_MENU;
@@ -105,14 +106,14 @@ static void CloseRankingTable(s32 table) {
 }
 
 void UpdateRankingScreen(void) {
-    s32 state;
+    RankingScreenState state;
 
     g_MenuAltLayout = 0;
     g_RankingCursor = AddClampedMenuValue(
         g_RankingCursor, 0, 0, RANKING_OPTION_COUNT - 1);
     DrawMenuCourseView();
     DrawMenuLightBurst(-9);
-    state = GameMenuBusy;
+    state = (RankingScreenState)GameMenuBusy;
     if (state == RANKING_ENTER) {
         g_UiScriptProgress2 = 0;
         GameMenuBusy = RANKING_MENU;
