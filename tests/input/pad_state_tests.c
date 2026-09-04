@@ -21,8 +21,16 @@
 
 void UpdatePadState(void);
 
+static char *s_initPadBuffer0;
+static char *s_initPadBuffer1;
+static int s_initPadLength0;
+static int s_initPadLength1;
+
 int InitPAD(char *buf0, int len0, char *buf1, int len1) {
-    (void)buf0; (void)len0; (void)buf1; (void)len1;
+    s_initPadBuffer0 = buf0;
+    s_initPadLength0 = len0;
+    s_initPadBuffer1 = buf1;
+    s_initPadLength1 = len1;
     return 1;
 }
 int DiagnosticsEnabled(int channel) { (void)channel; return 0; }
@@ -453,6 +461,22 @@ static void ButtonMappingTests(void) {
     }
 }
 
+static void PadInitializationTests(void) {
+    s_initPadBuffer0 = NULL;
+    s_initPadBuffer1 = NULL;
+    s_initPadLength0 = 0;
+    s_initPadLength1 = 0;
+
+    GameInitPad();
+
+    Check("first BIOS packet starts at the pad buffer",
+          s_initPadBuffer0 == (char *)g_PadBuffers, 1);
+    Check("second BIOS packet follows the first",
+          s_initPadBuffer1 == (char *)g_PadBuffers + 0x28, 1);
+    Check("first BIOS packet has the retail size", s_initPadLength0, 0x28);
+    Check("second BIOS packet has the retail size", s_initPadLength1, 0x28);
+}
+
 int main(void) {
     DigitalPadSynthesisTests();
     NegconPressureTests();
@@ -462,6 +486,7 @@ int main(void) {
     ErrorHandlingTests();
     PacketValidationTests();
     ButtonMappingTests();
+    PadInitializationTests();
 
     if (s_failures != 0) {
         printf("%d pad state assertion(s) failed\n", s_failures);
