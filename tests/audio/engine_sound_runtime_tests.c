@@ -144,6 +144,13 @@ int main(void) {
     UpdateLoadedAudioVoices(-1, 0);
     CHECK(g_EngineSoundState.position == 0);
 
+    g_EngineSoundState.slotActive[0] = 1;
+    g_EngineSoundState.volumeScale = INT_MAX;
+    s_interpolateCalls = 0;
+    s_toneCalls = 0;
+    UpdateLoadedAudioVoices(0, 0);
+    CHECK(s_toneCalls == 1 && s_toneVolume[0] == 15);
+
     puts("engine sound runtime preserves slot routing, scaling, and updates");
     return 0;
 }

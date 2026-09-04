@@ -6,7 +6,6 @@
 
 enum {
     ENGINE_SOUND_POSITION_RANGE = 10240,
-    ENGINE_SOUND_VOLUME_ONE = 128,
     PARAMETERS_PER_SOUND_SLOT = 2,
 };
 
@@ -55,8 +54,8 @@ static void UpdateActiveSoundSlotOutputs(s32 position, s32 bank) {
             s32 volume = InterpolateAudioParameter(
                 SlotParameterIndex(slot, 1), position, bank);
 
-            volume = volume * g_EngineSoundState.volumeScale /
-                     ENGINE_SOUND_VOLUME_ONE;
+            volume = ScaleClampedVoiceVolume(
+                volume, g_EngineSoundState.volumeScale);
             SetSoundSlotTone(slot, bend, volume, bank,
                              AUDIO_SLOT_ENGINE);
         }
