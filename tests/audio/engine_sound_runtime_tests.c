@@ -115,6 +115,20 @@ int main(void) {
     ForceSoundSlotVoicePlayback(0);
     CHECK(s_slotsEnabled == 0 && s_interpolateCalls == 0 && s_toneCalls == 0);
 
+    g_EngineSoundState.bank = -1;
+    g_EngineSoundState.position = 100;
+    memset(g_EngineSoundState.slotActive, 0,
+           sizeof(g_EngineSoundState.slotActive));
+    g_EngineSoundState.slotActive[0] = 1;
+    s_playCalls = 0;
+    s_interpolateCalls = 0;
+    s_toneCalls = 0;
+    ForceSoundSlotVoicePlayback(1);
+    CHECK(g_EngineSoundState.bank == 0 && s_slotsEnabled == 1);
+    CHECK(s_playCalls == 1 && s_playBank == 0);
+    CHECK(s_interpolateCalls == 2 && s_interpolateBank[0] == 0);
+    CHECK(s_toneCalls == 1);
+
     memset(g_EngineSoundState.slotActive, 0,
            sizeof(g_EngineSoundState.slotActive));
     g_EngineSoundState.maxRpm = 0;

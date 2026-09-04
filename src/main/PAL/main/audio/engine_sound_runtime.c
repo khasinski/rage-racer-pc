@@ -82,12 +82,15 @@ void UpdateLoadedAudioVoices(s32 rpm, s32 bank) {
 }
 
 void ForceSoundSlotVoicePlayback(s32 enabled) {
+    s32 bank;
+
     SetSoundSlotVoicesEnabled(enabled);
     if (enabled == 0) {
         return;
     }
 
-    RestartChangedBankVoices(g_EngineSoundState.bank);
-    UpdateActiveSoundSlotOutputs(g_EngineSoundState.position,
-                                 g_EngineSoundState.bank);
+    bank = ClampEngineSoundBank(g_EngineSoundState.bank);
+    g_EngineSoundState.bank = bank;
+    RestartChangedBankVoices(bank);
+    UpdateActiveSoundSlotOutputs(g_EngineSoundState.position, bank);
 }
