@@ -392,7 +392,13 @@ if(RAGE_BUILD_PORT)
             "${CMAKE_CURRENT_SOURCE_DIR}/packaging/macos/RageRacer.icns")
         set_source_files_properties("${RAGE_MACOS_ICON}" PROPERTIES
             MACOSX_PACKAGE_LOCATION Resources)
-        target_sources(rage-racer PRIVATE "${RAGE_MACOS_ICON}")
+        set(RAGE_MACOS_DEFAULT_CONFIG
+            "${CMAKE_CURRENT_SOURCE_DIR}/rage-port.ini")
+        set_source_files_properties("${RAGE_MACOS_DEFAULT_CONFIG}" PROPERTIES
+            MACOSX_PACKAGE_LOCATION Resources)
+        target_sources(rage-racer PRIVATE
+            "${RAGE_MACOS_ICON}"
+            "${RAGE_MACOS_DEFAULT_CONFIG}")
         set_target_properties(rage-racer PROPERTIES
             OUTPUT_NAME "Rage Racer"
             MACOSX_BUNDLE_BUNDLE_NAME "Rage Racer"
