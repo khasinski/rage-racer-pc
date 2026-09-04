@@ -57,6 +57,18 @@ static void CheckInitialPaintData(void) {
           "secondary paint slots");
 }
 
+static void CheckInitialCarModelBanks(void) {
+    static const s16 expected[CAR_MODEL_BANK_ENTRY_COUNT]
+                             [CAR_MODEL_BANK_FIELDS] = {
+        {0, 0},   {5, 0},   {10, 0}, {15, 0},
+        {20, 0},  {20, 1},  {25, 0}, {25, 1},
+        {30, 0},  {30, 1},  {30, 2},
+    };
+
+    Check(memcmp(g_CarModelBankTable, expected, sizeof(expected)) == 0,
+          "car model-bank entries");
+}
+
 static void CheckInitialCountdownData(void) {
     static const u32 expectedPatterns[16] = {
         0x00000000, 0x00000000, 0x3FFF3FFF, 0x3FFF3FFF,
@@ -153,6 +165,7 @@ static void CheckInitialAudioTables(void) {
 int main(void) {
     CheckInitialRectangles();
     CheckInitialPaintData();
+    CheckInitialCarModelBanks();
     CheckInitialCountdownData();
     CheckInitialStartingGrids();
     CheckMemoryCardLabels();

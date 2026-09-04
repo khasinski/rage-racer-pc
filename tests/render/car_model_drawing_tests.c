@@ -17,7 +17,7 @@ PlayerCarRuntime g_PlayerCar;
 CarEntry *g_CarTable;
 CarModelAsset *g_CarModelAsset;
 const TrackRenderTable *g_TrackRenderTable;
-s16 g_CarModelBankTable[2][2];
+s16 g_CarModelBankTable[CAR_MODEL_BANK_ENTRY_COUNT][CAR_MODEL_BANK_FIELDS];
 u8 g_CarModelByCourse[1][11];
 s32 g_CourseIndex;
 s32 g_ModelBankCount;

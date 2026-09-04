@@ -745,7 +745,6 @@ extern s32 g_IsEnvironmentMode4;
  *                                  combined per object and set with gte_SetLightMatrix
  */
 
-extern s16 g_CarModelBankTable[][2];
 extern Matrix g_MirrorViewMatrix;
 extern u8 g_CarModelByCourse[][11];
 extern s16 g_MirrorViewEnabled;
