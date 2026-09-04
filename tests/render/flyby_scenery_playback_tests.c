@@ -171,6 +171,17 @@ int main(void) {
         return 1;
     }
 
+    g_FlybyScenery.timer = INT_MAX;
+    g_FlybyScenery.keyframeIndex = 0;
+    g_FlybyScenery.keyframeTime = INT_MAX;
+    UpdateFlybyScenery();
+    if (g_FlybyScenery.timer != 0 ||
+        g_FlybyScenery.keyframeIndex != 1 ||
+        g_FlybyScenery.keyframeTime != 0) {
+        puts("FAIL: corrupt flyby clocks were not recovered");
+        return 1;
+    }
+
     g_CourseIndex = 2;
     g_FlybySceneryData = NULL;
     UpdateFlybyScenery();

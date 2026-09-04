@@ -41,18 +41,22 @@ static void StartFlybyIfTriggered(void) {
 
 static const SceneryMotionKeyframe *AdvanceFlybyKeyframe(void) {
     const SceneryMotionKeyframe *keyframe;
+    int64_t nextKeyframeTime;
 
-    g_FlybyScenery.timer++;
-    g_FlybyScenery.keyframeTime++;
-    if (g_FlybyScenery.timer >= FLYBY_LIFETIME_FRAMES) {
+    if ((int64_t)g_FlybyScenery.timer + 1 >= FLYBY_LIFETIME_FRAMES) {
         g_FlybyScenery.timer = 0;
+    } else {
+        g_FlybyScenery.timer++;
     }
 
     keyframe = &g_FlybySceneryKeyframe[g_FlybyScenery.keyframeIndex];
-    if (keyframe->duration == g_FlybyScenery.keyframeTime) {
+    nextKeyframeTime = (int64_t)g_FlybyScenery.keyframeTime + 1;
+    if (nextKeyframeTime >= keyframe->duration) {
         g_FlybyScenery.keyframeIndex++;
         g_FlybyScenery.keyframeTime = 0;
         keyframe++;
+    } else {
+        g_FlybyScenery.keyframeTime = (s32)nextKeyframeTime;
     }
     if (keyframe->duration == SCENERY_MOTION_END) {
         g_FlybyScenery.keyframeIndex = 0;
