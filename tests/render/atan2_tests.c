@@ -6,7 +6,7 @@
 
 GameRenderState g_RenderState;
 Matrix g_MirrorViewMatrix;
-s16 g_AtanTable[1026];
+s16 g_AtanTable[ATAN_TABLE_STORAGE_COUNT];
 
 void GameRenderWorldSetCamera(s32 x, s32 y, s32 z, s32 pitch, s32 yaw,
                               s32 roll) {
@@ -47,7 +47,7 @@ int main(void) {
     s32 column;
     s32 index;
 
-    for (index = 0; index < 1026; index++) {
+    for (index = 0; index < ATAN_TABLE_SAMPLE_COUNT; index++) {
         g_AtanTable[index] = (s16)(index / 2);
     }
 

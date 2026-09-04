@@ -2,6 +2,7 @@
 #define GAME_RENDER_INTERNAL_H
 
 #include "common.h"
+#include "game/angle_internal.h"
 #include "game/camera_types.h"
 #include "game/integer.h"
 #include "game/render_state.h"
@@ -124,7 +125,6 @@ extern VisibleTerrainCell g_MainVisibleCellList[];
 extern u32 *g_VisibleCellMask;
 extern VisibleTerrainCell *g_VisibleCellList;
 extern CameraViewMode g_CameraViewMode;
-extern s16 g_AtanTable[];
 static inline GameOrderingTableEntry *GamePrimaryOrderingTable(s32 depth) {
     return &g_DrawBuffer->layout.orderingTables[0][depth];
 }

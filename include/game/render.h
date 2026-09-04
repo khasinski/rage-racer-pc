@@ -759,7 +759,6 @@ extern s32 g_MenuCursorPulsePhase;
 extern VisibleTerrainCell g_MirrorVisibleCellList[];
 extern u32 g_MirrorVisibleCellMask[];
 extern u8 g_TrackTextureShadowPage[256];
-extern s16 g_AtanTable[];
 extern u8 g_Font8x8Cells[];
 extern u8 g_HighFontCell[4];
 extern s32 g_MirrorPanelY;

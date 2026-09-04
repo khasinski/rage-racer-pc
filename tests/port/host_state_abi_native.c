@@ -18,6 +18,8 @@ _Static_assert(sizeof(g_CarModelBankTable) == 44,
                "car model-bank table ABI changed");
 _Static_assert(sizeof(g_CarModelByCourse) == 44,
                "course car-model table ABI changed");
+_Static_assert(sizeof(g_AtanTable) == 2052,
+               "arctangent table ABI changed");
 _Static_assert(sizeof(g_RaceGridSlots) == 48,
                "g_RaceGridSlots ABI size changed");
 _Static_assert(sizeof(g_CarImageRect) == 8,

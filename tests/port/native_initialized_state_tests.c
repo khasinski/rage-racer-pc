@@ -73,6 +73,22 @@ static void CheckInitialCarModelBanks(void) {
           "car model-bank entries");
 }
 
+static void CheckInitialAtanTable(void) {
+    int index;
+
+    Check(HashBytes(g_AtanTable, sizeof(g_AtanTable)) == 1890884459u,
+          "arctangent table bytes");
+    Check(g_AtanTable[0] == 0 &&
+              g_AtanTable[ATAN_TABLE_SAMPLE_COUNT - 1] == 0x200,
+          "arctangent table endpoints");
+    Check(g_AtanTable[ATAN_TABLE_SAMPLE_COUNT] == 0,
+          "arctangent table retail padding");
+    for (index = 1; index < ATAN_TABLE_SAMPLE_COUNT; index++) {
+        Check(g_AtanTable[index] >= g_AtanTable[index - 1],
+              "arctangent table is monotonic");
+    }
+}
+
 static void CheckInitialCourseCarModels(void) {
     static const u8 expected[CAR_MODEL_COURSE_COUNT][RACE_CAR_SLOT_COUNT] = {
         {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
@@ -258,6 +274,7 @@ int main(void) {
     CheckInitialRectangles();
     CheckInitialPaintData();
     CheckInitialCarModelBanks();
+    CheckInitialAtanTable();
     CheckInitialCourseCarModels();
     CheckInitialControllerMappings();
     CheckInitialCountdownData();
