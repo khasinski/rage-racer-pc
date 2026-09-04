@@ -120,6 +120,25 @@ int main(void) {
         return 1;
     }
 
+    fixture.keyframes[0].speed = 0;
+    SeedRouteScenery();
+    g_RouteSceneryFrame = INT_MAX;
+    UpdateRouteScenery();
+    if (g_RouteSceneryKeyIndex != 1 || g_RouteSceneryFrame != 0 ||
+        g_RouteSceneryRotX != 300) {
+        puts("FAIL oversized route scenery clock was not recovered");
+        return 1;
+    }
+
+    SeedRouteScenery();
+    g_RouteSceneryFrame = -10;
+    UpdateRouteScenery();
+    if (g_RouteSceneryKeyIndex != 0 || g_RouteSceneryFrame != 1 ||
+        g_RouteSceneryRotX != 200) {
+        puts("FAIL negative route scenery clock was not recovered");
+        return 1;
+    }
+
     g_RouteSceneryData = NULL;
     SeedRouteScenery();
     if (g_RouteSceneryActive != 0 || g_RouteSceneryFrame != 0 ||

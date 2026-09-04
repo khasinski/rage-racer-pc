@@ -40,6 +40,7 @@ void UpdateRouteScenery(void) {
     LVec vout;
     const SceneryMotionKeyframe *keyframe;
     s32 elapsed;
+    int64_t nextFrame;
 
     if (g_RouteSceneryActive <= 0) {
         return;
@@ -48,14 +49,16 @@ void UpdateRouteScenery(void) {
         DisableRouteScenery();
         return;
     }
-    g_RouteSceneryFrame = WrapSigned32(
-        (int64_t)g_RouteSceneryFrame + 1);
-
     keyframe = &g_RouteSceneryKeyframe[g_RouteSceneryKeyIndex];
-    if (keyframe->duration == g_RouteSceneryFrame) {
+    nextFrame = g_RouteSceneryFrame < 0
+                    ? 1
+                    : (int64_t)g_RouteSceneryFrame + 1;
+    if (nextFrame >= keyframe->duration) {
         g_RouteSceneryKeyIndex++;
         g_RouteSceneryFrame = 0;
         keyframe++;
+    } else {
+        g_RouteSceneryFrame = (s32)nextFrame;
     }
 
     if (keyframe->duration == SCENERY_MOTION_END) {
