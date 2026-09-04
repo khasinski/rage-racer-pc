@@ -298,7 +298,7 @@ static u8 *DrawTexturedSkyGrid(SkyFrame *work, const SkyBandSetup *band,
         for (s32 column = 0; column < 8; column++) {
             POLY_FT4 *quad = (POLY_FT4 *)packet;
             const SkyTileUV *tileUv = SkyTileAt(
-                (row & 1) + g_SkyRowBase,
+                WrapSigned32((int64_t)(row & 1) + g_SkyRowBase),
                 band->textureColumn + column);
             s32 nextCellX = cellX + band->columnStepX;
             s32 nextCellY = cellY + band->columnStepY;
