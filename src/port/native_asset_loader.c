@@ -73,9 +73,11 @@ void InitAssetSystem(void) {
     LoadDiscArchiveIndex();
     if (g_AssetLoadFailed) return;
     loadedSize = LoadAsset(ASSET_BOOT_LOGO, g_LoadBuffer);
-    if (loadedSize > 0) {
-        UploadImageAsset(GetImageAssetHeaderWords(g_LoadBuffer),
-                         (size_t)loadedSize);
+    if (loadedSize > 0 &&
+        !UploadImageAsset(GetImageAssetHeaderWords(g_LoadBuffer),
+                          (size_t)loadedSize)) {
+        FailAssetLoad();
+        fprintf(stderr, "rage-port: invalid boot logo image asset\n");
     }
 }
 

@@ -9,6 +9,7 @@ s32 g_AssetLoadFailed;
 AssetRequestType g_AssetRequestType;
 GameCdLoadEntry g_AssetCdEntries[GAME_ASSET_COUNT];
 s32 g_LoadBuffer[64];
+u8 *g_AssetBase;
 
 static s32 s_modResult;
 static s32 s_hostResult;
@@ -18,6 +19,7 @@ static size_t s_patchSize;
 static s32 s_archiveLoads;
 static s32 s_archiveResult;
 static s32 s_uploads;
+static s32 s_uploadResult = 1;
 static const GameImageAssetHeaderWord *s_uploadedAsset;
 static s32 s_requestCalls;
 static size_t s_availableRoom;
@@ -26,6 +28,11 @@ static s32 s_failures;
 size_t PortAssetRoomAt(const void *destination) {
     (void)destination;
     return s_availableRoom;
+}
+
+int RuntimeConfigEnabled(const char *name) {
+    (void)name;
+    return 0;
 }
 
 int ModAssetLoad(int index, void *destination, unsigned int originalSize) {
@@ -62,7 +69,7 @@ s32 UploadImageAsset(const GameImageAssetHeaderWord *asset, size_t size) {
     (void)size;
     s_uploads++;
     s_uploadedAsset = asset;
-    return 1;
+    return s_uploadResult;
 }
 
 s32 RequestAssetLoad(AssetRequestType request, s32 firstLoadState,
@@ -90,6 +97,7 @@ static void ResetCalls(void) {
     s_archiveLoads = 0;
     s_archiveResult = 1;
     s_uploads = 0;
+    s_uploadResult = 1;
     s_uploadedAsset = NULL;
     s_requestCalls = 0;
     s_availableRoom = 32;
@@ -165,6 +173,15 @@ int main(void) {
     Check(s_archiveLoads == 1 && s_uploads == 1 &&
               s_uploadedAsset == GetImageAssetHeaderWords(g_LoadBuffer),
           "loaded boot logo is uploaded");
+
+    ResetCalls();
+    g_AssetLoadFailed = 0;
+    g_AssetCdEntries[ASSET_BOOT_LOGO].size = 16;
+    s_hostResult = 16;
+    s_uploadResult = 0;
+    InitAssetSystem();
+    Check(s_uploads == 1 && g_AssetLoadFailed == 1,
+          "invalid boot logo image stops asset initialization");
 
     g_CdLoadPhase = 4;
     g_AssetLoadState = 5;
