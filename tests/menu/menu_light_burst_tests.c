@@ -32,8 +32,8 @@ typedef struct BandRecord {
     s32 shade;
 } BandRecord;
 
-static LineRecord s_lines[33];
-static BandRecord s_bands[33];
+static LineRecord s_lines[MENU_LIGHT_BURST_RAY_COUNT];
+static BandRecord s_bands[MENU_LIGHT_BURST_RAY_COUNT];
 static s32 s_lineCount;
 static s32 s_bandCount;
 static s32 s_clipCount;
@@ -139,6 +139,12 @@ int main(void) {
     g_MenuLightBurstLevel = INT_MIN;
     DrawMenuLightBurst(-1);
     CHECK(g_MenuLightBurstLevel == 0 && s_lineCount == 0);
+
+    RENDER_OT_BASE = NULL;
+    g_MenuLightBurstLevel = 7;
+    DrawMenuLightBurst(7);
+    CHECK(g_MenuLightBurstLevel == 14 && s_lineCount == 0 &&
+          s_bandCount == 0 && s_clipCount == 0);
 
     puts("menu light burst preserves its rays, bands, fade and animation");
     return 0;

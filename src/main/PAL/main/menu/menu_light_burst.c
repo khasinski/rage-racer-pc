@@ -3,7 +3,6 @@
 #include "game/render.h"
 
 enum {
-    LIGHT_BURST_RAY_COUNT = 33,
     LIGHT_BURST_MAX_LEVEL = 0x200,
 };
 
@@ -27,7 +26,7 @@ static void DrawLightBurstRays(void *ot, s32 level) {
     u8 topShade = (u8)((level * 11) / 256);
     u8 bottomShade = (u8)((level * 75) / 256);
 
-    for (i = 0; i < LIGHT_BURST_RAY_COUNT; i++) {
+    for (i = 0; i < MENU_LIGHT_BURST_RAY_COUNT; i++) {
         DrawGradientLine(ot, 0x30 + i * 7, 0xAA, i * 10, 0x1E0,
                          topShade, topShade, topShade, bottomShade,
                          bottomShade, bottomShade, 0x60);
@@ -37,7 +36,7 @@ static void DrawLightBurstRays(void *ot, s32 level) {
 static void DrawLightBurstBands(void *ot, s32 level) {
     s32 i;
 
-    for (i = 0; i < LIGHT_BURST_RAY_COUNT; i++) {
+    for (i = 0; i < MENU_LIGHT_BURST_RAY_COUNT; i++) {
         s32 x = g_MenuLightBurstBandX.values[i];
         s32 y = g_MenuLightBurstBandY.values[i];
         s32 width = (0xA0 - (u16)x) * 2;
@@ -50,7 +49,7 @@ static void DrawLightBurstBands(void *ot, s32 level) {
 }
 
 void DrawMenuLightBurst(s32 step) {
-    void *ot = &RENDER_OT_BASE[0x2BF];
+    GameOrderingTableEntry *ot;
 
     if (step == 0) {
         g_MenuLightBurstLevel = 0;
@@ -63,7 +62,8 @@ void DrawMenuLightBurst(s32 step) {
             g_MenuLightBurstLevel, step, 0, LIGHT_BURST_MAX_LEVEL);
     }
 
-    if (g_MenuLightBurstLevel > 0) {
+    if (g_MenuLightBurstLevel > 0 && RENDER_OT_BASE != NULL) {
+        ot = &RENDER_OT_BASE[0x2BF];
         SetDrawClipRect(ot, 0, 0, 0x140, 0x1E0);
         DrawLightBurstRays(ot, g_MenuLightBurstLevel);
         DrawLightBurstBands(ot, g_MenuLightBurstLevel);

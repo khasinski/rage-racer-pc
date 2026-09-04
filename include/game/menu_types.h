@@ -80,6 +80,8 @@ typedef struct PaintColorTable {
     Rgb colors[18];
 } PaintColorTable;
 
+enum { MENU_LIGHT_BURST_RAY_COUNT = 33 };
+
 typedef s32 TeamLogoCoordinate;
 typedef s32 TeamLogoColorIndex;
 
@@ -94,7 +96,7 @@ typedef struct TeamLogoTexturePos {
 } TeamLogoTexturePos;
 
 typedef struct MenuLightBurstBand {
-    s16 values[33];
+    s16 values[MENU_LIGHT_BURST_RAY_COUNT];
 } MenuLightBurstBand;
 
 enum MenuPalette {
