@@ -20,6 +20,12 @@ static int MusicChannelsOnMode(s32 mode) {
            g_MusicChannels[1].left.value == g_SoundModes[mode].slots[1].left;
 }
 
+static s32 ScaleSoundModeVolume(s32 volume, s32 factor) {
+    int64_t scaled = (int64_t)volume * factor / SOUND_MODE_FACTOR_ONE;
+
+    return ClampCueLevel((s32)scaled);
+}
+
 static void StopStereoSoundCue(s32 cue) {
     s32 groupStart = cue < STEREO_SOUND_GROUP_SIZE
                          ? 0
@@ -72,7 +78,7 @@ void SetStereoSoundCue(s32 cue, s32 left, s32 right) {
         channel->left.value = soundMode->slots[i].left;
         channel->right.value = soundMode->slots[i].right;
         channel->mode = state;
-        channel->volLeft = left * soundMode->factor / SOUND_MODE_FACTOR_ONE;
-        channel->volRight = right * soundMode->factor / SOUND_MODE_FACTOR_ONE;
+        channel->volLeft = ScaleSoundModeVolume(left, soundMode->factor);
+        channel->volRight = ScaleSoundModeVolume(right, soundMode->factor);
     }
 }

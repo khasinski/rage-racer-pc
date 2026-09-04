@@ -2,6 +2,7 @@
 #include "game/audio.h"
 #include "game/sound.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -83,6 +84,18 @@ int main(void) {
     SetStereoSoundCue(0, 64, 64);
     CHECK(g_MusicChannels[0].left.value == 10 &&
           g_MusicChannels[1].left.value == 11);
+
+    Reset();
+    g_SoundModes[0].factor = INT_MAX;
+    SetStereoSoundCue(0, 0x7F, 0x7F);
+    CHECK(g_MusicChannels[0].volLeft == 0x7F &&
+          g_MusicChannels[0].volRight == 0x7F);
+
+    Reset();
+    g_SoundModes[0].factor = INT_MIN;
+    SetStereoSoundCue(0, 0x7F, 0x7F);
+    CHECK(g_MusicChannels[0].volLeft == 0 &&
+          g_MusicChannels[0].volRight == 0);
 
     puts("stereo sound cues preserve routing, reuse, mono mix, and stop groups");
     return 0;
