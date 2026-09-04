@@ -528,6 +528,26 @@ endif()
 add_test(NAME countdown_tiles COMMAND countdown_tiles_tests)
 set_tests_properties(countdown_tiles PROPERTIES LABELS unit)
 
+add_executable(draw_start_countdown_tests
+    draw_start_countdown_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/draw_start_countdown.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/start_countdown_timing.c)
+target_include_directories(draw_start_countdown_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(draw_start_countdown_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(draw_start_countdown_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(draw_start_countdown_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME draw_start_countdown COMMAND draw_start_countdown_tests)
+set_tests_properties(draw_start_countdown PROPERTIES LABELS functional)
+
 add_executable(race_option_animation_tests
     race_option_animation_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/race_option_animation.c)
