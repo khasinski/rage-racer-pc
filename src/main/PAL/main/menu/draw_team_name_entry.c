@@ -95,7 +95,6 @@ void DrawTeamNameEntry(s32 step, s32 cursorIndex) {
     GameOrderingTableEntry *ot;
     s32 nameLength;
     s32 frame;
-    s32 sine;
 
     if (step == 0) {
         g_TeamNameEntrySlide = 0;
@@ -133,18 +132,15 @@ void DrawTeamNameEntry(s32 step, s32 cursorIndex) {
     if (frame >= 0) {
         s32 y = SlideUp(0xFB, frame, 64);
         s32 phase = g_TeamNameCursorPhase & 0xFFF;
+        s32 pulse = rsin(phase) / 64 - 0x41;
 
-        sine = rsin(phase);
-        if (sine < 0) {
-            sine += 0x3F;
-        }
         DrawSolidRect(ot + 1,
                       (cursorIndex % MENU_TEAM_NAME_GRID_COLUMNS) *
                                   TEAM_NAME_CELL_WIDTH +
                               0x54,
                       y + (cursorIndex / MENU_TEAM_NAME_GRID_COLUMNS) *
                               TEAM_NAME_CELL_HEIGHT,
-                      0xB, frame * 2, 0, (sine >> 6) - 0x41, 0, 0xFF);
+                      0xB, frame * 2, 0, pulse, 0, 0xFF);
         g_TeamNameCursorPhase =
             (s32)((u32)g_TeamNameCursorPhase + 0x60u);
     }

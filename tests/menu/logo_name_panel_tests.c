@@ -38,7 +38,10 @@ static s32 s_rectCount;
 static s32 s_outlineCount;
 
 s32 rsin(s32 angle) {
-    return angle == 0 ? 4096 : 0;
+    if (angle == 0) {
+        return 4096;
+    }
+    return angle == 0x800 ? -4096 : 0;
 }
 
 void DrawSprite(GameOrderingTableEntry *ot, s16 x, s16 y, s16 width, u16 height, u16 u,
@@ -147,6 +150,14 @@ int main(void) {
     CHECK(s_sprites[12].x == 0x56 && s_sprites[12].y == 0x101);
     CHECK(s_sprites[48].flags == 0x3B && s_sprites[49].flags == 0x3B);
     CHECK(g_TeamNameCursorPhase == 0x60);
+
+    ResetDraws();
+    g_TeamNameLength = 0;
+    g_TeamNameEntrySlide = 25;
+    g_TeamNameCursorPhase = 0x800;
+    DrawTeamNameEntry(1, 0);
+    CHECK(s_rectCount == 1 && s_rects[0].g == -129);
+    CHECK(g_TeamNameCursorPhase == 0x860);
 
     ResetDraws();
     memset(g_TeamNameChars, 1, sizeof(g_TeamNameChars));
