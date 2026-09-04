@@ -334,7 +334,7 @@ static void UpdateClassChange(void *ot) {
         g_CourseCardSpin = 0;
         g_CourseIndex = CourseSeries(g_CourseIndex) * COURSE_SLOT_COUNT;
         g_MenuCourseModelIndex = g_CourseIndex;
-        g_CourseCardPendingGrade = CourseBestPlace(0);
+        g_CourseCardPendingGrade = CourseBestPlace(g_CourseIndex);
     }
     RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 1);
     DrawClassList(ot, 1);
