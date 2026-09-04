@@ -37,7 +37,7 @@ static u8 s_packets[128];
 static LabelRecord s_labels[6];
 static s32 s_labelCount;
 static s32 s_lastCue;
-static s32 s_lastExitScene;
+static GameSceneId s_lastExitScene;
 static s32 s_cursorCalls;
 static s32 s_controllerConfigCalls;
 static s32 s_trackLoadCalls;
@@ -73,7 +73,7 @@ s32 RequestCourseTextureAssets(void) {
     s_trackLoadCalls++;
     return 0;
 }
-void StartOptionMenuExit(GameSceneId scene) { s_lastExitScene = (s32)scene; }
+void StartOptionMenuExit(GameSceneId scene) { s_lastExitScene = scene; }
 
 #define CHECK(condition)                                                       \
     do {                                                                       \
@@ -99,7 +99,7 @@ static void Reset(void) {
     g_SoundOptionCursor = -1;
     s_labelCount = 0;
     s_lastCue = 0;
-    s_lastExitScene = -1;
+    s_lastExitScene = GAME_SCENE_BOOT_LOGO;
     s_cursorCalls = 0;
     s_controllerConfigCalls = 0;
     s_trackLoadCalls = 0;
@@ -163,12 +163,13 @@ int main(void) {
             CHECK(g_GameMode == OPTION_MODE_SOUND_MENU &&
                   g_SoundOptionCursor == 0);
         } else if (cursor == 3) {
-            CHECK(s_trackLoadCalls == 1 && s_lastExitScene == 0x1B);
+            CHECK(s_trackLoadCalls == 1 &&
+                  s_lastExitScene == GAME_SCENE_ENTER_BGM_SELECT);
         } else if (cursor == 4) {
             CHECK(g_GameMode == OPTION_MODE_SCREEN_ADJUST);
             CHECK(g_ScreenOffsetEditX == 23 && g_ScreenOffsetEditY == -17);
         } else {
-            CHECK(s_lastExitScene == 2);
+            CHECK(s_lastExitScene == GAME_SCENE_ENTER_FRONTEND);
         }
     }
 
@@ -184,9 +185,19 @@ int main(void) {
     CHECK(s_randomIndex == 3);
 
     Reset();
+    g_OptionMenuCursor = 3;
+    s_randomValues[0] = 0x1004;
+    s_randomValues[1] = 0x1003;
+    g_PadPressed = PAD_CONFIRM;
+    UpdateOptionRootMenu();
+    CHECK(g_GrandPrixClass == 4 && g_CourseIndex == COURSE_LONG_SLOT);
+    CHECK(s_randomIndex == 2);
+
+    Reset();
     g_PadPressed = PAD_CANCEL;
     UpdateOptionRootMenu();
-    CHECK(s_lastCue == 3 && s_lastExitScene == 2);
+    CHECK(s_lastCue == 3 &&
+          s_lastExitScene == GAME_SCENE_ENTER_FRONTEND);
 
     puts("option root menu preserves rendering and all navigation paths");
     return 0;
