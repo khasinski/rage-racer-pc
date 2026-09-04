@@ -57,8 +57,8 @@ GameSpriteDesc
 RaceGridSlot g_RaceGridSlots[RACE_GRID_STORAGE_COUNT];
 RaceGridSlot g_AttractGridSlots[RACE_GRID_STORAGE_COUNT];
 RECT g_CarImageRect;
-RenderBufferAddress g_TileStripBuffers[2];
-u8 g_TileStripStorage[2 * 512 * sizeof(TILE)];
+RenderBufferAddress g_TileStripBuffers[START_COUNTDOWN_TILE_BUFFER_COUNT];
+u8 g_TileStripStorage[START_COUNTDOWN_TILE_STORAGE_SIZE];
 StartCountdownPattern g_CountdownDigitPatterns;
 StartCountdownColorBank
     g_CountdownCellColors[START_COUNTDOWN_COLOR_BANK_COUNT];

@@ -337,8 +337,6 @@ extern char g_TextPressStart[];
 extern char g_TextResult[];
 extern char g_TextTimeAttack[];
 extern char g_TextTryAgain[];
-extern RenderBufferAddress g_TileStripBuffers[2];
-extern u8 g_TileStripStorage[];
 extern s32 g_TimeRecordInsertRow;
 extern u8 g_TimeRecordNameCodes[];
 extern char g_TimeTextBuffer[];

@@ -6,9 +6,6 @@
 #include "game/state.h"
 
 enum {
-    COUNTDOWN_TILE_COLUMNS = 32,
-    COUNTDOWN_TILE_ROWS = START_COUNTDOWN_PATTERN_ROW_COUNT,
-    COUNTDOWN_TILE_COUNT = COUNTDOWN_TILE_COLUMNS * COUNTDOWN_TILE_ROWS,
     COUNTDOWN_LAMP_COUNT = 6,
 };
 
@@ -32,15 +29,17 @@ void DrawStartCountdown(s32 sceneTimer) {
     tiles = g_TileStripBuffers[
         CountdownTileBufferIndex(g_FrameParity)].tile;
 
-    for (row = 0; row < COUNTDOWN_TILE_ROWS; row++) {
+    for (row = 0; row < START_COUNTDOWN_PATTERN_ROW_COUNT; row++) {
         StartCountdownRow countdownRow = BuildStartCountdownRow(
             phase, row, timing.wipeHalfStep, g_CountdownGlyphTable,
             g_CountdownDigitPatterns);
         const CVec *colors = g_CountdownCellColors[countdownRow.colorBank];
         u32 pattern = countdownRow.pattern;
 
-        for (column = 0; column < COUNTDOWN_TILE_COLUMNS; column++) {
-            TILE *tile = &tiles[row * COUNTDOWN_TILE_COLUMNS + column];
+        for (column = 0; column < START_COUNTDOWN_TILE_COLUMN_COUNT;
+             column++) {
+            TILE *tile =
+                &tiles[row * START_COUNTDOWN_TILE_COLUMN_COUNT + column];
             CVec color = colors[pattern & 1];
 
             tile->r0 = color.r;
@@ -91,7 +90,8 @@ void DrawStartCountdown(s32 sceneTimer) {
     g_RenderState.packetCursor = packet;
 
     if (phase > 0 && g_RacePaused == 0) {
-        AddPrims(orderingTable, tiles, tiles + COUNTDOWN_TILE_COUNT - 1);
+        AddPrims(orderingTable, tiles,
+                 tiles + START_COUNTDOWN_TILES_PER_BUFFER - 1);
     }
 
     backdrop = (TILE *)packet;

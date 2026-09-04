@@ -10,8 +10,8 @@
 GameRenderState g_RenderState;
 static GameFrameContext s_frame;
 GameFrameContext *g_DrawBuffer = &s_frame;
-RenderBufferAddress g_TileStripBuffers[2];
-u8 g_TileStripStorage[2 * 512 * sizeof(TILE)];
+RenderBufferAddress g_TileStripBuffers[START_COUNTDOWN_TILE_BUFFER_COUNT];
+u8 g_TileStripStorage[START_COUNTDOWN_TILE_STORAGE_SIZE];
 s32 g_CountdownBoardOffset;
 StartCountdownPattern
     g_CountdownGlyphTable[START_COUNTDOWN_GLYPH_PATTERN_COUNT];
@@ -110,7 +110,7 @@ static void ResetCalls(u8 *packets) {
     memset(g_TileStripStorage, 0, sizeof(g_TileStripStorage));
     g_TileStripBuffers[0].bytes = g_TileStripStorage;
     g_TileStripBuffers[1].bytes =
-        g_TileStripStorage + 512 * sizeof(TILE);
+        g_TileStripStorage + START_COUNTDOWN_TILES_PER_BUFFER * sizeof(TILE);
     g_RenderState.packetCursor = packets;
     s_addPrimCalls = 0;
     s_addPrimsCalls = 0;

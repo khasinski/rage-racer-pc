@@ -4,8 +4,10 @@
 
 #include <stdio.h>
 
-RenderBufferAddress g_TileStripBuffers[2];
-u8 g_TileStripStorage[2 * 512 * sizeof(TILE)];
+enum { BUILD_COUNT = 2 };
+
+RenderBufferAddress g_TileStripBuffers[START_COUNTDOWN_TILE_BUFFER_COUNT];
+u8 g_TileStripStorage[START_COUNTDOWN_TILE_STORAGE_SIZE];
 
 static s32 s_drawSyncCalls;
 static s32 s_setTileCalls;
@@ -46,34 +48,45 @@ int main(void) {
     s32 buffer;
     s32 tile;
 
-    BuildTileStrips();
-    BuildTileStrips();
+    for (buffer = 0; buffer < BUILD_COUNT; buffer++) {
+        BuildTileStrips();
+    }
     if (g_TileStripBuffers[0].bytes != g_TileStripStorage ||
-        g_TileStripBuffers[1].bytes != g_TileStripStorage + 512 * sizeof(TILE) ||
-        s_drawSyncCalls != 2 || s_setTileCalls != 2048 ||
-        s_termPrimCalls != 2048 || s_addPrimCalls != 2044 || s_badLink) {
+        g_TileStripBuffers[1].bytes !=
+            g_TileStripStorage + START_COUNTDOWN_TILES_PER_BUFFER * sizeof(TILE) ||
+        s_drawSyncCalls != BUILD_COUNT ||
+        s_setTileCalls !=
+            BUILD_COUNT * START_COUNTDOWN_TILE_STORAGE_SIZE / sizeof(TILE) ||
+        s_termPrimCalls !=
+            BUILD_COUNT * START_COUNTDOWN_TILE_STORAGE_SIZE / sizeof(TILE) ||
+        s_addPrimCalls != BUILD_COUNT * START_COUNTDOWN_TILE_BUFFER_COUNT *
+                              (START_COUNTDOWN_TILES_PER_BUFFER - 1) ||
+        s_badLink) {
         fprintf(stderr, "countdown tile setup or links are invalid\n");
         return 1;
     }
 
-    for (buffer = 0; buffer < 2; buffer++) {
+    for (buffer = 0; buffer < START_COUNTDOWN_TILE_BUFFER_COUNT; buffer++) {
         TILE *tiles = g_TileStripBuffers[buffer].tile;
 
-        for (tile = 0; tile < 511; tile++) {
+        for (tile = 0; tile < START_COUNTDOWN_TILES_PER_BUFFER - 1; tile++) {
             if (tiles[tile].tag !=
                 (u_long)(uintptr_t)&tiles[tile + 1]) {
                 fprintf(stderr, "countdown tile chain is invalid\n");
                 return 1;
             }
         }
-        if (tiles[511].tag != 0xFFFFFF) {
+        if (tiles[START_COUNTDOWN_TILES_PER_BUFFER - 1].tag != 0xFFFFFF) {
             fprintf(stderr, "countdown tile chain is not terminated\n");
             return 1;
         }
         if (!CheckTile(&tiles[0], 0, 0) ||
-            !CheckTile(&tiles[31], 0, 31) ||
-            !CheckTile(&tiles[32], 1, 0) ||
-            !CheckTile(&tiles[511], 15, 31)) {
+            !CheckTile(&tiles[START_COUNTDOWN_TILE_COLUMN_COUNT - 1], 0,
+                       START_COUNTDOWN_TILE_COLUMN_COUNT - 1) ||
+            !CheckTile(&tiles[START_COUNTDOWN_TILE_COLUMN_COUNT], 1, 0) ||
+            !CheckTile(&tiles[START_COUNTDOWN_TILES_PER_BUFFER - 1],
+                       START_COUNTDOWN_PATTERN_ROW_COUNT - 1,
+                       START_COUNTDOWN_TILE_COLUMN_COUNT - 1)) {
             fprintf(stderr, "countdown tile geometry is invalid\n");
             return 1;
         }

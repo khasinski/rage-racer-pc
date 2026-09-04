@@ -3,10 +3,18 @@
 
 #include "common.h"
 
+#include "game/render_types.h"
 #include "game/vector.h"
 
 enum {
     START_COUNTDOWN_PATTERN_ROW_COUNT = 16,
+    START_COUNTDOWN_TILE_COLUMN_COUNT = 32,
+    START_COUNTDOWN_TILE_BUFFER_COUNT = 2,
+    START_COUNTDOWN_TILES_PER_BUFFER =
+        START_COUNTDOWN_TILE_COLUMN_COUNT * START_COUNTDOWN_PATTERN_ROW_COUNT,
+    START_COUNTDOWN_TILE_STORAGE_SIZE =
+        START_COUNTDOWN_TILE_BUFFER_COUNT * START_COUNTDOWN_TILES_PER_BUFFER *
+        sizeof(TILE),
     START_COUNTDOWN_GLYPH_PATTERN_COUNT = 4,
     START_COUNTDOWN_COLOR_BANK_COUNT = 2,
     START_COUNTDOWN_COLORS_PER_BANK = 2,
@@ -20,6 +28,9 @@ extern StartCountdownPattern
 extern StartCountdownPattern g_CountdownDigitPatterns;
 extern StartCountdownColorBank
     g_CountdownCellColors[START_COUNTDOWN_COLOR_BANK_COUNT];
+extern RenderBufferAddress
+    g_TileStripBuffers[START_COUNTDOWN_TILE_BUFFER_COUNT];
+extern u8 g_TileStripStorage[START_COUNTDOWN_TILE_STORAGE_SIZE];
 
 u8 *DrawHudDigit(u8 *packet, s32 x, s32 y, s32 digit, u16 clut);
 void DrawSpeedDigits(s32 x, s32 y, s32 speed);
