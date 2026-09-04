@@ -75,12 +75,15 @@ int main(void) {
 
     g_SeqVolume = -5;
     ApplyDuckedSequenceAudio();
-    CHECK(s_sequenceLeft == -3 && s_sequenceRight == -3);
+    CHECK(s_sequenceLeft == 0 && s_sequenceRight == 0);
 
-    g_SeqVolume = 0x12348056;
+    g_SeqVolume = INT_MAX;
+    ApplyDuckedSequenceAudio();
+    CHECK(s_sequenceLeft == 96 && s_sequenceRight == 96);
+
+    g_SeqVolume = INT_MAX;
     ApplyCurrentSequenceAudio();
-    CHECK(s_sequenceLeft == (s16)0x8056 &&
-          s_sequenceRight == (s16)0x8056);
+    CHECK(s_sequenceLeft == 0x80 && s_sequenceRight == 0x80);
     CHECK(s_reverbLeft == 0x28 && s_reverbRight == 0x28);
 
     g_ReverbDepthL = 2;

@@ -74,7 +74,7 @@ void UpdateSequenceFadeOut(void) {
 }
 
 void ApplyDuckedSequenceAudio(void) {
-    s32 volume = g_SeqVolume * DUCKED_VOLUME_NUMERATOR /
+    s32 volume = ClampVoiceVolume(g_SeqVolume) * DUCKED_VOLUME_NUMERATOR /
                  DUCKED_VOLUME_DENOMINATOR;
 
     SsSeqSetVol(g_SeqHandle.value, volume, volume);
@@ -82,7 +82,7 @@ void ApplyDuckedSequenceAudio(void) {
 }
 
 void ApplyCurrentSequenceAudio(void) {
-    s16 volume = (s16)g_SeqVolume;
+    s16 volume = (s16)ClampVoiceVolume(g_SeqVolume);
 
     SsSeqSetVol(g_SeqHandle.value, volume, volume);
     SetDefaultReverbDepth();

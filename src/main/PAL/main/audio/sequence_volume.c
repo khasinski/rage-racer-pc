@@ -9,6 +9,7 @@ enum {
 };
 
 void SetSequenceVolume(s32 volume) {
+    volume = ClampVoiceVolume(volume);
     g_SeqVolume = volume;
     SsSeqSetVol(g_SeqHandle.value, (s16)volume, (s16)volume);
 }

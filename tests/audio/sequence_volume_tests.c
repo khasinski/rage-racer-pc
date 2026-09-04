@@ -3,6 +3,7 @@
 #include "game/audio_internal.h"
 #include "game/sound.h"
 
+#include <limits.h>
 #include <stdio.h>
 
 s32 g_SeqVolumeSetting;
@@ -55,6 +56,12 @@ int main(void) {
     CheckAppliedVolume(53, "setter applies intermediate sequence volume");
     Check(s_cdVolumeSetting == 7,
           "setter applies intermediate CD volume setting");
+
+    SetSequenceVolume(-1);
+    CheckAppliedVolume(0, "direct sequence volume clamps negative input");
+    SetSequenceVolume(INT_MAX);
+    CheckAppliedVolume(0x80,
+                       "direct sequence volume clamps oversized input");
 
     SetSequenceVolumeSetting(AUDIO_SETTING_MAX);
     Check(g_SeqVolumeSetting == AUDIO_SETTING_MAX,
