@@ -105,12 +105,16 @@ int main(void) {
     s_bodyResult = 8;
     s_sequenceOpenResult = -1;
     s_closedVab = -1;
+    g_SoundScale.vabIds[AUDIO_SLOT_SEQUENCE] = 55;
     Check(OpenSequenceAudioSlot(header, body, sequence) == -1 &&
               s_closedVab == 8,
           "sequence-open failure closes its VAB");
+    Check(g_SoundScale.vabIds[AUDIO_SLOT_SEQUENCE] == 55,
+          "sequence-open failure does not publish a closed VAB");
     Check(g_AudioLoadSlot == 99,
           "failed sequence score does not publish its slot");
     s_sequenceOpenResult = (s16)0x8056;
+    g_SoundScale.vabIds[AUDIO_SLOT_SEQUENCE] = 8;
 
     g_AudioLoadedSlotMask = 0;
     CloseSequenceAudioSlot();

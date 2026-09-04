@@ -22,13 +22,12 @@ s32 OpenSequenceAudioSlot(u8 *header, u8 *body, void *seq) {
         printf("%s", g_MsgSeqVabTransBodyError);
         return -1;
     }
-    g_SoundScale.vabIds[AUDIO_SLOT_SEQUENCE] = vabId;
-
     sequenceHandle = SsSeqOpen(seq, vabId);
     if (sequenceHandle == -1) {
         SsVabClose(vabId);
         return -1;
     }
+    g_SoundScale.vabIds[AUDIO_SLOT_SEQUENCE] = vabId;
     g_SeqHandle.storage = sequenceHandle;
     g_SeqVolumeFadeStep = 0;
     g_AudioLoadSlot = AUDIO_SLOT_SEQUENCE;
