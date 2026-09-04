@@ -32,8 +32,10 @@ void GameRenderWorldEndSkyPackets(void) {}
 
 typedef union PacketStorage {
     max_align_t alignment;
-    u8 bytes[4096];
+    u8 bytes[8192];
 } PacketStorage;
+
+enum { TEST_SKY_COLUMNS = 24, TEST_SKY_LEFT_COLUMNS = 8 };
 
 #define CHECK(condition)                                                       \
     do {                                                                       \
@@ -63,7 +65,7 @@ static void PrepareFrame(PacketStorage *packets,
 static int TestNearGroundCourseSkirt(void) {
     PacketStorage packets;
     GameOrderingTableEntry orderingTable[GAME_FRAME_OT_LENGTH];
-    const size_t gridSize = 32 * sizeof(POLY_FT4);
+    const size_t gridSize = 4 * TEST_SKY_COLUMNS * sizeof(POLY_FT4);
     POLY_G4 *skirt;
 
     PrepareFrame(&packets, orderingTable);
@@ -84,7 +86,7 @@ static int TestNearGroundCourseSkirt(void) {
 static int TestFarGroundCourseSkirt(void) {
     PacketStorage packets;
     GameOrderingTableEntry orderingTable[GAME_FRAME_OT_LENGTH];
-    const size_t gridSize = 32 * sizeof(POLY_FT4);
+    const size_t gridSize = 4 * TEST_SKY_COLUMNS * sizeof(POLY_FT4);
     POLY_G4 *gradient;
     POLY_F4 *fill;
 
@@ -116,9 +118,8 @@ static int TestSkyGradientPaletteSlots(void) {
     PrepareFrame(&packets, orderingTable);
     g_CourseIndex = 2;
     g_SkyRowBase = 0;
-    /* Column zero is fully left of the viewport; column one is the first
-     * emitted tile and samples map column five at yaw zero. */
-    g_SkyTileMap[0][5] = 3;
+    /* The ultrawide reserve starts eight columns before the retail grid. */
+    g_SkyTileMap[0][12] = 3;
     g_SkyTileUV[3].corner[0].bytes.u = 11;
     g_SkyTileUV[3].corner[0].bytes.v = 12;
     g_SkyTileUV[3].corner[3].bytes.u = 31;
@@ -130,7 +131,7 @@ static int TestSkyGradientPaletteSlots(void) {
     DrawSkyBackground();
 
     horizonTile = (POLY_FT4 *)(void *)packets.bytes;
-    CHECK(horizonTile->x0 == -32 && horizonTile->x1 == 32);
+    CHECK(horizonTile->x0 == -608 && horizonTile->x1 == -544);
     CHECK(horizonTile->u0 == 11 && horizonTile->v0 == 12);
     CHECK(horizonTile->u3 == 31 && horizonTile->v3 == 32);
     CHECK(horizonTile->tpage == 0x18 && horizonTile->clut == 0x798E);
@@ -162,7 +163,8 @@ static int TestInvalidSkyMapFallsBackToFirstTile(void) {
     firstTile = (POLY_FT4 *)(void *)packets.bytes;
     CHECK(firstTile->u0 == 17 && firstTile->v0 == 23);
     CHECK(g_RenderState.packetCursor ==
-          packets.bytes + 32 * sizeof(POLY_FT4) + sizeof(POLY_G4));
+          packets.bytes + 4 * TEST_SKY_COLUMNS * sizeof(POLY_FT4) +
+              sizeof(POLY_G4));
 
     PrepareFrame(&packets, orderingTable);
     g_CourseIndex = 2;
@@ -219,25 +221,28 @@ static int TestNativeGridMatchesClassicPackets(void) {
         CHECK(s_publishedMirror == 0);
         CHECK(memcmp(&s_publishedGrid, &grid, sizeof(grid)) == 0);
         tiles = (POLY_FT4 *)(void *)packets.bytes;
-        CHECK(tiles[0].x0 == grid.panelXFixed / 256);
-        CHECK(tiles[0].y0 == grid.panelYFixed / 256);
-        CHECK(tiles[0].x1 ==
+        CHECK(tiles[TEST_SKY_LEFT_COLUMNS].x0 ==
+              grid.panelXFixed / 256);
+        CHECK(tiles[TEST_SKY_LEFT_COLUMNS].y0 ==
+              grid.panelYFixed / 256);
+        CHECK(tiles[TEST_SKY_LEFT_COLUMNS].x1 ==
               (grid.panelXFixed + grid.columnStepX) / 256);
-        CHECK(tiles[0].y2 ==
+        CHECK(tiles[TEST_SKY_LEFT_COLUMNS].y2 ==
               (grid.panelYFixed + grid.rowStepY) / 256);
         /* Emulate the native shader at every classic quad centre. Classic
          * resets each row to the origin and subtracts rowStep, so rows 1..3
          * occupy negative grid coordinates rather than extending down. */
         for (int row = 0; row < 4; row++) {
-            for (int column = 0; column < 8; column++) {
-                POLY_FT4 *tile = &tiles[row * 8 + column];
+            for (int column = 0; column < TEST_SKY_COLUMNS; column++) {
+                POLY_FT4 *tile =
+                    &tiles[row * TEST_SKY_COLUMNS + column];
                 double centerX =
                     (tile->x0 + tile->x1 + tile->x2 + tile->x3) / 4.0;
                 double centerY =
                     (tile->y0 + tile->y1 + tile->y2 + tile->y3) / 4.0;
                 CHECK(fabs(NativeGridCoordinate(
                                &grid, centerX, centerY, 0) -
-                           (column + 0.5)) < 0.03);
+                           (column - TEST_SKY_LEFT_COLUMNS + 0.5)) < 0.03);
                 CHECK(fabs(NativeGridCoordinate(
                                &grid, centerX, centerY, 1) -
                            (0.5 - row)) < 0.03);

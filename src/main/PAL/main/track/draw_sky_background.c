@@ -40,6 +40,10 @@ enum {
     SKY_TEXTURE_PAGE = 0x18,
     SKY_TEXTURE_CLUT = 0x798E,
     SKY_TEXTURE_NEUTRAL_COLOR = 0x80,
+    /* Keep enough correctly indexed source geometry for ultrawide native
+     * viewports. The PS1 draw area clips the surplus in the classic path. */
+    SKY_GRID_COLUMNS = 24,
+    SKY_GRID_LEFT_COLUMNS = 8,
 };
 /*
  * The sky's geometry for this frame: where the bands start on screen, how far
@@ -307,14 +311,16 @@ static u8 *DrawTexturedSkyGrid(SkyFrame *work, const SkyBandSetup *band,
     s32 screenX[4];
 
     for (s32 row = 0; row < 4; row++) {
-        s32 cellX = band->panelXFixed;
-        s32 cellY = band->panelYFixed;
+        s32 cellX = band->panelXFixed -
+                    band->columnStepX * SKY_GRID_LEFT_COLUMNS;
+        s32 cellY = band->panelYFixed -
+                    band->columnStepY * SKY_GRID_LEFT_COLUMNS;
 
-        for (s32 column = 0; column < 8; column++) {
+        for (s32 column = 0; column < SKY_GRID_COLUMNS; column++) {
             POLY_FT4 *quad = (POLY_FT4 *)packet;
             const SkyTileUV *tileUv = SkyTileAt(
                 WrapSigned32((int64_t)(row & 1) + g_SkyRowBase),
-                band->textureColumn + column);
+                band->textureColumn + column - SKY_GRID_LEFT_COLUMNS);
             s32 nextCellX = cellX + band->columnStepX;
             s32 nextCellY = cellY + band->columnStepY;
             s32 leftX = cellX - rowShearX;
@@ -348,24 +354,14 @@ static u8 *DrawTexturedSkyGrid(SkyFrame *work, const SkyBandSetup *band,
     return packet;
 }
 
-static s32 SkyQuadIntersectsScreen(const s32 screenX[4]) {
-    s32 hasPointAtOrRightOfLeftEdge = 0;
-    s32 hasPointLeftOfRightEdge = 0;
-
-    for (s32 corner = 0; corner < 4; corner++) {
-        hasPointAtOrRightOfLeftEdge |= screenX[corner] >= 0;
-        hasPointLeftOfRightEdge |= screenX[corner] < 320;
-    }
-
-    return hasPointAtOrRightOfLeftEdge && hasPointLeftOfRightEdge;
-}
-
 static u8 *DrawHorizonTileStrip(SkyFrame *work, const SkyBandSetup *band,
                                 u8 *packet) {
-    s32 panelX = band->lowerPanelXFixed;
-    s32 panelY = band->lowerPanelYFixed;
+    s32 panelX = band->lowerPanelXFixed -
+                 band->columnStepX * SKY_GRID_LEFT_COLUMNS;
+    s32 panelY = band->lowerPanelYFixed -
+                 band->columnStepY * SKY_GRID_LEFT_COLUMNS;
 
-    for (s32 column = 0; column < 8; column++) {
+    for (s32 column = 0; column < SKY_GRID_COLUMNS; column++) {
         s32 nextPanelX = panelX + band->columnStepX;
         s32 nextPanelY = panelY + band->columnStepY;
         s32 screenX[4] = {
@@ -375,10 +371,13 @@ static u8 *DrawHorizonTileStrip(SkyFrame *work, const SkyBandSetup *band,
             Fixed8ToScreen(nextPanelX + band->rowStepX),
         };
 
-        if (SkyQuadIntersectsScreen(screenX)) {
+        /* Classic clips these against its 320-pixel draw area. Modern keeps
+         * the off-screen reserve for wider presentation targets. */
+        {
             POLY_FT4 *quad = (POLY_FT4 *)packet;
             const SkyTileUV *tileUv =
-                SkyTileAt(0, band->textureColumn + column);
+                SkyTileAt(0, band->textureColumn + column -
+                                 SKY_GRID_LEFT_COLUMNS);
             InitializeTexturedSkyQuad(quad, tileUv);
             quad->x0 = screenX[0];
             quad->x1 = screenX[1];
