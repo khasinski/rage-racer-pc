@@ -2,10 +2,10 @@
 #include "game/menu.h"
 #include "game/menu_internal.h"
 
-enum TeamNameScreenState {
+typedef enum TeamNameScreenState {
     TEAM_NAME_IDLE = 0,
     TEAM_NAME_EXIT_TO_DESIGN = 1,
-};
+} TeamNameScreenState;
 
 s32 DrawTeamNameScreen(s32 step) {
     return AdvanceMenuFade(&g_TeamNameScreenProgress, step);
@@ -122,6 +122,8 @@ static void UpdateTeamNameOutgoing(void) {
 }
 
 void UpdateTeamNameScreen(void) {
+    TeamNameScreenState state = (TeamNameScreenState)GameMenuBusy;
+
     if (g_TeamNameLength > MENU_TEAM_NAME_MAX_LENGTH) {
         g_TeamNameLength = MENU_TEAM_NAME_MAX_LENGTH;
     }
@@ -131,9 +133,9 @@ void UpdateTeamNameScreen(void) {
     }
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawTeamNameCharModel();
-    if (GameMenuBusy == TEAM_NAME_IDLE) {
+    if (state == TEAM_NAME_IDLE) {
         UpdateTeamNameIdle();
-    } else if (GameMenuBusy == TEAM_NAME_EXIT_TO_DESIGN) {
+    } else if (state == TEAM_NAME_EXIT_TO_DESIGN) {
         UpdateTeamNameOutgoing();
     } else {
         GameMenuBusy = TEAM_NAME_IDLE;
