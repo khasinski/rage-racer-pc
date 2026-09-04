@@ -1,5 +1,6 @@
 #include "game/asset.h"
 #include "game/asset_internal.h"
+#include "rage/track_asset_identity.h"
 
 enum {
     TRACK_TEXTURE_PRIMARY_IMAGES = 0,
@@ -110,5 +111,10 @@ s32 InstallTrackTextureAssetPack(u8 *base, size_t size) {
     g_TrackTextureShadow = GetTrackTextureShadowRows(base);
     ResetTrackTextureSwap();
     g_AssetLoadCursor = base + TRACK_TEXTURE_SHADOW_SIZE;
+    /* Texture data and its CLUTs become resident before the matching runtime
+     * pack publishes its asset id.  Give the native renderer a new generation
+     * now so it cannot retain RGBA textures decoded from the preceding scene
+     * (or from an earlier load of this same course). */
+    TrackAssetIdentityInvalidate();
     return 1;
 }

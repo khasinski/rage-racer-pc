@@ -33,5 +33,12 @@ int main(void) {
     TrackAssetIdentitySet(94);
     EXPECT_EQ(revision + 1, TrackAssetIdentityRevision());
 
+    /* Installing a new texture/CLUT pack precedes the runtime asset id.  It
+     * must invalidate decoded GPU textures without discarding the old id. */
+    revision = TrackAssetIdentityRevision();
+    TrackAssetIdentityInvalidate();
+    EXPECT_EQ(94, TrackAssetIdentityResolve(88));
+    EXPECT_EQ(revision + 1, TrackAssetIdentityRevision());
+
     return failures == 0 ? 0 : 1;
 }

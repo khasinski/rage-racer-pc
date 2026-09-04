@@ -780,8 +780,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
     uint32_t mirrorFirstVertex;
     RageRenderVec3 shadowCenter;
     uint64_t trackAssetRevision;
-    if (s_vertices == NULL || s_spans == NULL || world == NULL ||
-        world->frame == s_worldFrame) return;
+    if (s_vertices == NULL || s_spans == NULL || world == NULL) return;
     /* The frame these belong to has been submitted by now. */
     ModernNativeReleasePendingUploads();
     trackAssetRevision = TrackAssetIdentityRevision();
@@ -795,8 +794,14 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
                     (unsigned long long)trackAssetRevision, s_textureCount);
         }
         ModernNativeGpuClearTextures();
+        ModernNativeReleaseSkyTexture();
         s_trackAssetRevision = trackAssetRevision;
+        /* Scene-local frame counters can repeat across attract/race loads.
+         * A generation change must rebuild the prepared world even when its
+         * frame number happens to equal the preceding scene's last frame. */
+        s_worldFrame = UINT64_MAX;
     }
+    if (world->frame == s_worldFrame) return;
     ModernAssetsWarmWorld(world);
     shadowCenter = world->camera.transform.position;
     for (instance = 0; instance < world->instanceCount; instance++) {

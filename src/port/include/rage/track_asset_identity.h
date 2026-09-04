@@ -7,6 +7,7 @@
  * scenes, notably the Grand Prix prologue, change g_CourseIndex after loading
  * their assets. */
 void TrackAssetIdentitySet(int asset);
+void TrackAssetIdentityInvalidate(void);
 uint32_t TrackAssetIdentityResolve(uint32_t fallback);
 uint64_t TrackAssetIdentityRevision(void);
 

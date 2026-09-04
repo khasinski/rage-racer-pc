@@ -8,6 +8,10 @@ void TrackAssetIdentitySet(int asset) {
     s_trackAssetRevision++;
 }
 
+void TrackAssetIdentityInvalidate(void) {
+    s_trackAssetRevision++;
+}
+
 uint32_t TrackAssetIdentityResolve(uint32_t fallback) {
     return s_trackAsset >= 0 ? (uint32_t)s_trackAsset : fallback;
 }

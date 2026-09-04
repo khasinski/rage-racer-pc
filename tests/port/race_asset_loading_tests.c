@@ -60,6 +60,7 @@ static s32 s_validationFailureAt = -1;
 static void *s_teamLogoSource;
 static s32 s_textureResetCalls;
 static s32 s_trackIdentity;
+static s32 s_trackIdentityInvalidations;
 static s32 s_installCount;
 static const void *s_installs[8];
 static s32 s_seriesCamera;
@@ -130,6 +131,7 @@ s32 IsValidImageEntry(const GameImageEntryHeader *entry, size_t size) {
 void StoreTeamLogoImage(void *source) { s_teamLogoSource = source; }
 void ResetTrackTextureSwap(void) { s_textureResetCalls++; }
 void TrackAssetIdentitySet(s32 assetIndex) { s_trackIdentity = assetIndex; }
+void TrackAssetIdentityInvalidate(void) { s_trackIdentityInvalidations++; }
 s32 IsValidModelBankAsset(const ModelBankHeader *base, size_t size) {
     (void)base;
     (void)size;
@@ -742,6 +744,7 @@ static void TestResidentCourseInstallation(void) {
     s_uploadFailureAt = -1;
     s_teamLogoSource = NULL;
     s_textureResetCalls = 0;
+    s_trackIdentityInvalidations = 0;
     Check(InstallTrackTextureAssetPack(g_AssetBase, sizeof(storage)) == 1,
           "resident course texture pack is valid");
     Check(s_uploadCount == 5, "resident course uploads every texture block");
@@ -757,18 +760,22 @@ static void TestResidentCourseInstallation(void) {
     Check(g_AssetLoadCursor == storage + TRACK_TEXTURE_SHADOW_SIZE,
           "resident course publishes runtime pack cursor");
     Check(s_textureResetCalls == 1, "resident course resets texture swapping");
+    Check(s_trackIdentityInvalidations == 1,
+          "resident course invalidates native texture generation");
 
     for (i = 0; i < 5; i++) {
         s_uploadCount = 0;
         s_uploadFailureAt = i;
         s_teamLogoSource = NULL;
         s_textureResetCalls = 0;
+        s_trackIdentityInvalidations = 0;
         g_TrackTextureShadow = NULL;
         g_AssetLoadCursor = NULL;
         Check(InstallTrackTextureAssetPack(g_AssetBase, sizeof(storage)) == 0,
               "failed texture upload rejects the course pack");
         Check(s_uploadCount == i + 1 && s_teamLogoSource == NULL &&
                   s_textureResetCalls == 0 &&
+                  s_trackIdentityInvalidations == 0 &&
                   g_TrackTextureShadow == NULL && g_AssetLoadCursor == NULL,
               "failed texture upload publishes no course texture state");
     }
