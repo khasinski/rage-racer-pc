@@ -205,9 +205,13 @@ s32 DrawCourseSelectScreen(s32 step);
 /* id 2 -- "RANKING": total time / lap time tables, or exit back to id 1. */
 void UpdateRankingScreen(void);
 s32 DrawRankingScreen(s32 step);
-/* The five record rows: place number + suffix + holder + row background, from
- * the ranking table g_RankingRecords or the time table g_TimeRecords. */
-s32 DrawRankingTable(s32 *accumulator, s32 step, s32 table);
+typedef enum RankingTableKind {
+    RANKING_TABLE_TOTAL,
+    RANKING_TABLE_LAP,
+} RankingTableKind;
+/* The five record rows: total race times come from g_TimeRecords; fastest-lap
+ * times come from the legacy-named g_RankingRecords. */
+s32 DrawRankingTable(s32 *accumulator, s32 step, RankingTableKind table);
 
 /* id 3 -- runs for a single frame on the way from id 1 into id 4. */
 void EnterCarSelectScreen(void);

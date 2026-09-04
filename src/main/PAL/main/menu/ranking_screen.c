@@ -22,11 +22,6 @@ enum RankingOption {
     RANKING_OPTION_COUNT,
 };
 
-typedef enum RankingTable {
-    RANKING_TABLE_TOTAL,
-    RANKING_TABLE_LAP,
-} RankingTable;
-
 /* Screen-fade callback used by the host menu renderer. */
 s32 DrawRankingScreen(s32 step) {
     return AdvanceMenuFade(&g_RankingScrollState, step);
@@ -89,7 +84,7 @@ static void CloseRankingMenu(void) {
     }
 }
 
-static void UpdateRankingTable(RankingTable table,
+static void UpdateRankingTable(RankingTableKind table,
                                RankingScreenState closingState) {
     if (DrawRankingTable(&g_UiScriptProgress2, 1, table) != 0 &&
         (g_PadPressed & (PAD_CONFIRM | PAD_CANCEL)) != 0) {
@@ -98,7 +93,7 @@ static void UpdateRankingTable(RankingTable table,
     }
 }
 
-static void CloseRankingTable(RankingTable table) {
+static void CloseRankingTable(RankingTableKind table) {
     DrawRankingTable(&g_UiScriptProgress2, -1, table);
     if (g_UiScriptProgress2 <= 0) {
         GameMenuBusy = RANKING_MENU;

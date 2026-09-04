@@ -80,7 +80,7 @@ static void DrawRankingCourseHeader(GameOrderingTableEntry *ot, s32 slide) {
 }
 
 /* The animated five-row ranking/time-record panel. */
-s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
+s32 DrawRankingTable(s32 *progress, s32 step, RankingTableKind table) {
     char text[16];
     GameOrderingTableEntry *ot = RENDER_OT_BASE;
     const RaceRecord (*records)[RECORD_TABLE_LENGTH];
@@ -111,8 +111,8 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
 
     series = CourseSeries(g_CourseIndex);
     course = SeriesCourseIndex();
-    records = ranking != 0 ? g_RankingRecords[series]
-                           : g_TimeRecords[series];
+    records = table == RANKING_TABLE_LAP ? g_RankingRecords[series]
+                                        : g_TimeRecords[series];
     phase = *progress;
     if (phase >= 0) {
         if (phase > RANKING_TABLE_DRAW_PHASE_MAX) {
@@ -129,7 +129,7 @@ s32 DrawRankingTable(s32 *progress, s32 step, s32 ranking) {
                    0, 0, 0, 0x220, 1, 0, 0x19);
         DrawRankingCourseHeader(ot, slide);
 
-        if (ranking != 0) {
+        if (table == RANKING_TABLE_LAP) {
             rowY = panelY + 0xA;
             DrawSprite(ot, 0x18, rowY, 0x12, 0x10, 0, 0x7C, 0, 0, 0,
                        0x244, 1, 1, 0x3B);

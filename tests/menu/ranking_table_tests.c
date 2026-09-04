@@ -185,7 +185,7 @@ int main(void) {
     strcpy(g_TimeRecords[1][0][0].driverName, "EXTRA");
 
     progress = 8;
-    DrawRankingTable(&progress, 0, 0);
+    DrawRankingTable(&progress, 0, RANKING_TABLE_TOTAL);
     CHECK(progress == 0 && s_spriteCount == 0);
 
     for (batch = 0; batch < 3; batch++) {
@@ -198,7 +198,7 @@ int main(void) {
         }
         ResetDraws();
         progress = 12;
-        CHECK(DrawRankingTable(&progress, 1, 0) == 0);
+        CHECK(DrawRankingTable(&progress, 1, RANKING_TABLE_TOTAL) == 0);
         CHECK(progress == 13);
         CHECK(CheckCarSprites(firstCar, count));
         CHECK(s_buttonY == 0x76 && s_panelRectY == 0xF0);
@@ -209,7 +209,7 @@ int main(void) {
     for (g_CourseIndex = 0; g_CourseIndex < 4; g_CourseIndex++) {
         ResetDraws();
         progress = 12;
-        DrawRankingTable(&progress, 1, 0);
+        DrawRankingTable(&progress, 1, RANKING_TABLE_TOTAL);
         CHECK(s_courseHeader.width == headerWidth[g_CourseIndex]);
         CHECK(s_courseHeader.u == headerU[g_CourseIndex]);
         CHECK(s_courseHeader.v == headerV[g_CourseIndex]);
@@ -219,40 +219,45 @@ int main(void) {
 
     ResetDraws();
     progress = 15;
-    CHECK(DrawRankingTable(&progress, 1, 1) == 1 && progress == 15);
+    CHECK(DrawRankingTable(&progress, 1, RANKING_TABLE_LAP) == 1 &&
+          progress == 15);
     CHECK(s_firstDriverName == g_RankingRecords[0][0][0].driverName);
 
     ResetDraws();
     g_CourseIndex = 4;
     progress = 15;
-    CHECK(DrawRankingTable(&progress, 1, 0) == 1);
+    CHECK(DrawRankingTable(&progress, 1, RANKING_TABLE_TOTAL) == 1);
     CHECK(s_firstDriverName == g_TimeRecords[1][0][0].driverName);
 
     ResetDraws();
     g_CourseIndex = 0;
     progress = 1;
-    DrawRankingTable(&progress, -4, 0);
+    DrawRankingTable(&progress, -4, RANKING_TABLE_TOTAL);
     CHECK(progress == 0 && s_buttonY == 0x21A);
 
     ResetDraws();
     progress = INT_MAX;
-    CHECK(DrawRankingTable(&progress, 1, 0) == 1 && progress == 15);
+    CHECK(DrawRankingTable(&progress, 1, RANKING_TABLE_TOTAL) == 1 &&
+          progress == 15);
 
     ResetDraws();
     progress = INT_MIN;
-    CHECK(DrawRankingTable(&progress, -1, 0) == 0 && progress == 0);
+    CHECK(DrawRankingTable(&progress, -1, RANKING_TABLE_TOTAL) == 0 &&
+          progress == 0);
     CHECK(s_buttonY == 0x21A);
 
     ResetDraws();
     progress = INT_MIN;
-    CHECK(DrawRankingTable(&progress, 1, 0) == 0 && progress == 1);
+    CHECK(DrawRankingTable(&progress, 1, RANKING_TABLE_TOTAL) == 0 &&
+          progress == 1);
     CHECK(s_buttonY == 0x21A);
 
     ResetDraws();
     progress = 1;
-    CHECK(DrawRankingTable(&progress, INT_MAX, 0) == 1 && progress == 15);
+    CHECK(DrawRankingTable(&progress, INT_MAX, RANKING_TABLE_TOTAL) == 1 &&
+          progress == 15);
 
-    CHECK(DrawRankingTable(NULL, 1, 0) == 0);
+    CHECK(DrawRankingTable(NULL, 1, RANKING_TABLE_TOTAL) == 0);
 
     puts("ranking table preserves all car sprites, records and transitions");
     return 0;

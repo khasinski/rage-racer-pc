@@ -36,7 +36,7 @@ s32 RunTimedDrawScript(const TimedDrawCommand *commands, s32 *progress,
     return s_scriptResult;
 }
 
-s32 DrawRankingTable(s32 *progress, s32 step, s32 table) {
+s32 DrawRankingTable(s32 *progress, s32 step, RankingTableKind table) {
     (void)progress;
     (void)step;
     (void)table;
