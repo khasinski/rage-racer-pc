@@ -27,7 +27,8 @@ s32 DrawPaintColorScreen(s32 step) {
 }
 
 static s32 PaintColorCarAvailable(void) {
-    return g_CarTable != NULL && (u32)g_PlayerCarIndex < GAME_CAR_COUNT;
+    return g_CarTable != NULL &&
+           (u32)g_PlayerCarIndex < CUSTOM_PAINT_CAR_COUNT;
 }
 
 static void LeavePaintColorScreen(s32 busyState) {

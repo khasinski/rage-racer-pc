@@ -179,11 +179,17 @@ int main(void) {
     CHECK(GameMenuBusy == 0 && s_lastCue == -1);
 
     Reset();
-    g_PlayerCarIndex = GAME_CAR_COUNT;
+    g_PlayerCarIndex = CUSTOM_PAINT_CAR_COUNT;
     GameMenuBusy = -1;
     g_PadPressed = PAD_CONFIRM;
     UpdatePaintColorScreen();
     CHECK(GameMenuBusy == 0);
+
+    Reset();
+    g_PlayerCarIndex = CUSTOM_PAINT_CAR_COUNT;
+    g_PadPressed = PAD_CONFIRM;
+    UpdatePaintColorScreen();
+    CHECK(GameMenuBusy == 0 && s_lastCue == -1);
 
     Reset();
     GameMenuBusy = INT_MIN;
