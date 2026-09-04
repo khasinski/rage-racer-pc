@@ -38,7 +38,7 @@ static void DrawText8x8Styled(s32 x, s32 y, const char *text, s32 clutIndex,
         x = WrapSigned32((int64_t)x + 8);
     }
 
-    SetDrawMode((DrawPacket *)packet, 0, 1, style.drawMode, g_DrawModeEnv);
+    SetDrawMode((DrawPacket *)packet, 0, 1, style.drawMode, &g_DrawModeEnv);
     AddPrim(ot, packet);
     g_RenderState.packetCursor = (DrawPacket *)packet + 1;
 }

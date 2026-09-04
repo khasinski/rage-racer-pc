@@ -60,7 +60,7 @@ GameFrameContext g_FrameContexts[2];
 GameFrameContext *g_DrawBuffer;
 s32 g_FrameParity;
 GameRenderState g_RenderState;
-u8 g_DrawModeEnv[8];
+Rect g_DrawModeEnv;
 s32 g_GrandPrixClass;
 s16 g_GrandPrixMode;
 s32 g_LapCount;

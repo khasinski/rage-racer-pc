@@ -120,7 +120,7 @@ void GameDrawProportionalTextShaded(
             continue;
         }
     }
-    SetDrawMode((DrawPacket *)packet, 0, 1, 0x29, g_DrawModeEnv);
+    SetDrawMode((DrawPacket *)packet, 0, 1, 0x29, &g_DrawModeEnv);
     AddPrim(GamePrimaryOrderingTable(0), packet);
     g_RenderState.packetCursor = (DrawPacket *)packet + 1;
 }

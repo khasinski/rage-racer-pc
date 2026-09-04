@@ -23,6 +23,8 @@ _Static_assert(sizeof(g_MenuOverlayPatternTable) == 584,
                "menu overlay pattern table ABI changed");
 _Static_assert(sizeof(g_MenuOverlayPatternTable[0]) == 8,
                "menu overlay pattern frame layout changed");
+_Static_assert(sizeof(g_DrawModeEnv) == 8,
+               "draw-mode texture window ABI changed");
 _Static_assert(sizeof(g_SmallFontGlyphs) == 184,
                "small atlas font table ABI changed");
 _Static_assert(sizeof(g_LargeFontGlyphs) == 196,

@@ -132,7 +132,7 @@ extern ScreenOffset g_ScreenOffsetX;
 extern ScreenOffset g_ScreenOffsetY;
 extern s32 g_FrameParity;
 extern Font8x8Cell g_Font8x8Cells[FONT_8X8_CELL_COUNT];
-extern u8 g_DrawModeEnv[];
+extern Rect g_DrawModeEnv;
 extern ProportionalFontCell
     g_PropFontCells[PROPORTIONAL_FONT_CELL_COUNT];
 extern u8 g_WordFontCells[40];

@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-u8 g_DrawModeEnv[8];
+Rect g_DrawModeEnv;
 
 static union {
     max_align_t alignment;

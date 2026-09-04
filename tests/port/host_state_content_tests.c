@@ -122,7 +122,7 @@ extern unsigned char g_MsgTooManyVoices[16];
 extern const char g_MsgSeqVabOpenHeadError[21];
 extern const char g_MsgSeqVabTransBodyError[22];
 extern unsigned char g_SaveDefaults[104];
-extern unsigned char g_DrawModeEnv[8];
+extern Rect g_DrawModeEnv;
 extern unsigned char g_PromotionBonusTable[20];
 extern unsigned char g_NegconSteerRange[8];
 extern unsigned char g_NegconSteerDeadZone[16];
@@ -292,7 +292,8 @@ static const HostStateBlob s_blobs[] = {
     {"g_MsgSeqVabTransBodyError",
      (const unsigned char *)g_MsgSeqVabTransBodyError, 22},
     {"g_SaveDefaults", g_SaveDefaults, 104},
-    {"g_DrawModeEnv", g_DrawModeEnv, 8},
+    {"g_DrawModeEnv", (const unsigned char *)&g_DrawModeEnv,
+     sizeof(g_DrawModeEnv)},
     {"g_TeamLogoClutRect", (const unsigned char *)&g_TeamLogoClutRect, 8},
     {"g_TeamLogoRect", (const unsigned char *)&g_TeamLogoRect, 8},
     {"g_PromotionBonusTable", g_PromotionBonusTable, 20},

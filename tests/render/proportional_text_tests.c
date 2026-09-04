@@ -6,7 +6,7 @@
 #include "game/render_internal.h"
 
 GameRenderState g_RenderState;
-u8 g_DrawModeEnv[8];
+Rect g_DrawModeEnv;
 ProportionalFontCell g_PropFontCells[PROPORTIONAL_FONT_CELL_COUNT];
 u8 g_WordFontCells[40];
 u8 g_HighFontCell[4];

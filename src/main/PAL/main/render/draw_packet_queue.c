@@ -79,7 +79,7 @@ u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *packetCursor,
                       s32 tpage) {
     DrawPacket *packet = (DrawPacket *)packetCursor;
 
-    SetDrawMode(packet, 0, 1, (u16)tpage, g_DrawModeEnv);
+    SetDrawMode(packet, 0, 1, (u16)tpage, &g_DrawModeEnv);
     AddPrim(ot, packet);
     return (u8 *)(packet + 1);
 }

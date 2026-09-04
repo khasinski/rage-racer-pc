@@ -13,7 +13,7 @@ GameRenderState g_RenderState;
 GameFrameContext g_FrameContexts[2];
 GameFrameContext *g_DrawBuffer;
 Font8x8Cell g_Font8x8Cells[FONT_8X8_CELL_COUNT];
-u8 g_DrawModeEnv[8];
+Rect g_DrawModeEnv;
 SpriteFontCell g_SpriteFontCells[SPRITE_FONT_CELL_COUNT];
 u8 g_SpriteFontWidth[SPRITE_FONT_CELL_COUNT];
 

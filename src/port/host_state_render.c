@@ -20,7 +20,12 @@ VisibleTerrainCell g_MirrorVisibleCellList[64];
 u32 g_MirrorVisibleCellMask[32];
 Matrix g_MirrorViewMatrix;
 s32 g_TrackTexturePageWanted;
-unsigned char g_DrawModeEnv[8] __attribute__((aligned(16))) = {0x00,0x00,0x00,0x00,0x00,0x01,0x00,0x01};
+Rect g_DrawModeEnv __attribute__((aligned(16))) = {
+    .x = 0,
+    .y = 0,
+    .w = 256,
+    .h = 256,
+};
 unsigned char g_CarMirrorBadgeStyles[16] __attribute__((aligned(16))) = {0x00,0x00,0x00,0x01,0x02,0x02,0x02,0x03,0x03,0x03,0x00,0x02,0x03,0x00,0x00,0x00};
 /* Retail stores the four mirror-badge styles as interleaved {u,v,width}
  * triples beginning at 0x8007C738.  The three linker symbols point one byte
