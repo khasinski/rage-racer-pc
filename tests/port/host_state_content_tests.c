@@ -205,8 +205,8 @@ extern TeamLogoCoordinate g_TeamLogoCursorX;
 extern TeamLogoCoordinate g_TeamLogoViewX;
 extern TeamLogoColorIndex g_TeamLogoPenColor;
 extern uint16_t g_TeamLogoBlankClut[16];
-extern unsigned char g_SmallFontGlyphs[184];
-extern unsigned char g_LargeFontGlyphs[196];
+extern FontGlyph g_SmallFontGlyphs[SMALL_FONT_GLYPH_COUNT];
+extern FontGlyph g_LargeFontGlyphs[LARGE_FONT_GLYPH_COUNT];
 extern Vec4 g_MenuViewScale;
 extern int32_t g_CarPriceTable[32];
 extern int32_t g_CarTuneUpPriceTable[31];
@@ -390,8 +390,10 @@ static const HostStateBlob s_blobs[] = {
     {"g_TeamLogoViewX", (const unsigned char *)&g_TeamLogoViewX, 4},
     {"g_TeamLogoPenColor", (const unsigned char *)&g_TeamLogoPenColor, 4},
     {"g_TeamLogoBlankClut", (const unsigned char *)g_TeamLogoBlankClut, 32},
-    {"g_SmallFontGlyphs", g_SmallFontGlyphs, 184},
-    {"g_LargeFontGlyphs", g_LargeFontGlyphs, 196},
+    {"g_SmallFontGlyphs", BYTES(g_SmallFontGlyphs),
+     sizeof(g_SmallFontGlyphs)},
+    {"g_LargeFontGlyphs", BYTES(g_LargeFontGlyphs),
+     sizeof(g_LargeFontGlyphs)},
     {"g_MenuViewScale", (const unsigned char *)&g_MenuViewScale, 16},
     {"g_CarPriceTable", (const unsigned char *)g_CarPriceTable, 128},
     {"g_CarTuneUpPriceTable",

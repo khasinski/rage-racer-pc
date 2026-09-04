@@ -2,8 +2,6 @@
 #include "game/render.h"
 #include "game/render_internal.h"
 
-#include <string.h>
-
 enum {
     TEXT_TEXTURE_PAGE_MASK = 0x7f,
     TEXT_TEXTURE_PAGE_BASE = 27,
@@ -62,16 +60,6 @@ static s32 LargeGlyph(u8 character) {
     }
 }
 
-static FontGlyph FontGlyphAt(const u8 *fontData, s32 glyphIndex) {
-    FontGlyph glyph;
-
-    memcpy(&glyph, fontData + glyphIndex * sizeof(glyph), sizeof(glyph));
-    return glyph;
-}
-
-_Static_assert(sizeof(FontGlyph) == FONT_GLYPH_RECORD_SIZE,
-               "font data record must preserve the retail layout");
-
 void DrawSmallText(s32 x, s16 y, const char *text, u8 red, u8 green, u8 blue,
                    u16 clut, s32 flags) {
     const u8 *cursor = (const u8 *)text;
@@ -96,7 +84,7 @@ void DrawSmallText(s32 x, s16 y, const char *text, u8 red, u8 green, u8 blue,
             continue;
         }
 
-        glyph = FontGlyphAt(g_SmallFontGlyphs, glyphIndex);
+        glyph = g_SmallFontGlyphs[glyphIndex];
         glyphWidth = fixedWidth ? 6 : glyph.width;
         textureU = fixedWidth ? (glyphIndex % 42) * 6
                               : glyph.u;
@@ -137,7 +125,7 @@ void DrawLargeText(s32 x, s16 y, const char *text, u8 red, u8 green, u8 blue,
             continue;
         }
 
-        glyph = FontGlyphAt(g_LargeFontGlyphs, glyphIndex);
+        glyph = g_LargeFontGlyphs[glyphIndex];
         glyphWidth = fixedWidth ? 8 : glyph.width;
         textureU = fixedWidth ? (glyphIndex % 32) * 8
                               : glyph.u;

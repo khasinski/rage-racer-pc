@@ -79,6 +79,21 @@ enum { FONT_8X8_CELL_COUNT = 96 };
 _Static_assert(sizeof(Font8x8Cell) == 2,
                "8x8 font cell must remain a column/row byte pair");
 
+typedef struct FontGlyph {
+    u8 u;
+    u8 v;
+    u16 width;
+} FontGlyph;
+
+enum {
+    FONT_GLYPH_RECORD_SIZE = 4,
+    SMALL_FONT_GLYPH_COUNT = 46,
+    LARGE_FONT_GLYPH_COUNT = 49,
+};
+
+_Static_assert(sizeof(FontGlyph) == FONT_GLYPH_RECORD_SIZE,
+               "atlas font glyph must preserve the retail layout");
+
 enum {
     MENU_OVERLAY_PATTERN_ROW_COUNT = 8,
     MENU_OVERLAY_PATTERN_FRAME_COUNT = 73,

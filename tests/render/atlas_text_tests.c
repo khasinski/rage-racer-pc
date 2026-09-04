@@ -6,8 +6,8 @@
 #include <string.h>
 
 GameRenderState g_RenderState;
-u8 g_SmallFontGlyphs[SMALL_FONT_GLYPH_COUNT * FONT_GLYPH_RECORD_SIZE];
-u8 g_LargeFontGlyphs[LARGE_FONT_GLYPH_COUNT * FONT_GLYPH_RECORD_SIZE];
+FontGlyph g_SmallFontGlyphs[SMALL_FONT_GLYPH_COUNT];
+FontGlyph g_LargeFontGlyphs[LARGE_FONT_GLYPH_COUNT];
 
 typedef struct SpriteCall {
     GameOrderingTableEntry *ot;
@@ -72,17 +72,15 @@ static void ResetCalls(void) {
     s_drawMode = -1;
 }
 
-static void InitGlyphs(u8 *fontData, s32 glyphCount) {
+static void InitGlyphs(FontGlyph *fontData, s32 glyphCount) {
     s32 index;
 
     for (index = 0; index < glyphCount; index++) {
-        FontGlyph glyph = {
+        fontData[index] = (FontGlyph){
             .u = (u8)(index + 1),
             .v = (u8)(index + 2),
             .width = (u16)(index % 3 + 3),
         };
-
-        memcpy(fontData + index * sizeof(glyph), &glyph, sizeof(glyph));
     }
 }
 

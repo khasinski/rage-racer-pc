@@ -11,16 +11,7 @@
 #include "psyq/gpu.h"
 #include "psyq/gte.h"
 
-typedef struct FontGlyph {
-    u8 u;
-    u8 v;
-    u16 width;
-} FontGlyph;
-
 enum {
-    FONT_GLYPH_RECORD_SIZE = 4,
-    SMALL_FONT_GLYPH_COUNT = 46,
-    LARGE_FONT_GLYPH_COUNT = 49,
     PRINTABLE_ASCII_FIRST = 0x20,
     PRINTABLE_ASCII_GLYPH_COUNT = 96,
     PRINTABLE_ASCII_FALLBACK_GLYPH = '?' - PRINTABLE_ASCII_FIRST,
@@ -123,8 +114,8 @@ static inline void ApplyTrackTextureSectionRange(void) {
 
 void InitTrackLighting(void);
 
-extern u8 g_SmallFontGlyphs[SMALL_FONT_GLYPH_COUNT * FONT_GLYPH_RECORD_SIZE];
-extern u8 g_LargeFontGlyphs[LARGE_FONT_GLYPH_COUNT * FONT_GLYPH_RECORD_SIZE];
+extern FontGlyph g_SmallFontGlyphs[SMALL_FONT_GLYPH_COUNT];
+extern FontGlyph g_LargeFontGlyphs[LARGE_FONT_GLYPH_COUNT];
 extern u32 g_MainVisibleCellMask[];
 extern VisibleTerrainCell g_MainVisibleCellList[];
 extern u32 *g_VisibleCellMask;

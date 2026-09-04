@@ -23,6 +23,10 @@ _Static_assert(sizeof(g_MenuOverlayPatternTable) == 584,
                "menu overlay pattern table ABI changed");
 _Static_assert(sizeof(g_MenuOverlayPatternTable[0]) == 8,
                "menu overlay pattern frame layout changed");
+_Static_assert(sizeof(g_SmallFontGlyphs) == 184,
+               "small atlas font table ABI changed");
+_Static_assert(sizeof(g_LargeFontGlyphs) == 196,
+               "large atlas font table ABI changed");
 _Static_assert(sizeof(g_CameraMatrixSaved) == sizeof(Matrix),
                "saved camera matrix type changed");
 _Static_assert(sizeof(g_MenuRowFlashLevels) == 5 * sizeof(s32),
