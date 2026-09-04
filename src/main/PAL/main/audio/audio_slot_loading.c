@@ -199,10 +199,15 @@ static void CloseVabOnlyAudioSlot(s32 slot) {
 }
 
 void CloseLoadedAudioSlots(void) {
+    /* Apply commands queued by the last sequencer tick before dismantling its
+     * banks, then apply the key-offs queued by _SsVmInit below immediately.
+     * On hardware the sound interrupt supplied that second flush; without it
+     * the host can replay a short fragment of menu music on the round screen. */
     SpuVmDamperStep();
     CloseSequenceAudioSlot();
     CloseVabOnlyAudioSlot(AUDIO_SLOT_RACE_CUES);
     CloseVabOnlyAudioSlot(AUDIO_SLOT_ENGINE);
+    SpuVmDamperStep();
     g_SoundCueBank =
         (g_AudioLoadedSlotMask & (1 << AUDIO_SLOT_MAIN_CUES)) != 0 ? 1 : 0;
 }

@@ -254,7 +254,7 @@ int main(void) {
     s_reverbCalls = 0;
     s_vmInitCalls = 0;
     CloseLoadedAudioSlots();
-    CHECK(s_damperCalls == 1 && s_closeAudioCalls == 1 &&
+    CHECK(s_damperCalls == 2 && s_closeAudioCalls == 1 &&
           g_AudioLoadedSlotMask == 1 && s_closeVab == 23);
     CHECK(s_reverbCalls == 2 && s_vmInitCalls == 2);
     CHECK(g_SoundCueBank == 1);
