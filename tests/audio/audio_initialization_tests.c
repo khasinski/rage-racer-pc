@@ -15,6 +15,7 @@ s32 g_PanVoiceVolumeL;
 s32 g_IndexedEffectIndexPrev;
 s32 g_IndexedEffectIndex;
 s32 g_IndexedEffectPitch;
+s32 g_IndexedEffectVolume;
 s32 g_PanVoiceActive;
 s32 g_ActiveSpecialCue;
 s32 g_LastSpecialCueRequest;
@@ -84,6 +85,7 @@ static void TestEffectInitialization(void) {
     memset(g_EffectVoices, 0x7F, sizeof(g_EffectVoices));
     g_ActiveSpecialCue = 15;
     g_LastSpecialCueRequest = 15;
+    g_IndexedEffectVolume = 127;
     g_PlayerCarIndex = 2;
     g_CarSoundVolumeScales[3] = 91;
     g_EngineSoundState.bank = 1;
@@ -106,6 +108,8 @@ static void TestEffectInitialization(void) {
     }
     Check(g_ActiveSpecialCue == -1 && g_LastSpecialCueRequest == -1,
           "effect initialization clears special cue deduplication");
+    Check(g_IndexedEffectVolume == 0,
+          "effect initialization clears indexed effect volume");
     Check(s_slotEnableCalls == 2 && s_slotEnable[0] == 0 &&
               s_slotEnable[1] == 1 && g_EngineSoundState.bank == -1,
           "effect initialization rebuilds engine voices and bank state");

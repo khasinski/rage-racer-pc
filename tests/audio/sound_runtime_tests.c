@@ -17,6 +17,7 @@ s32 g_PanVoiceVolumeL;
 s32 g_IndexedEffectIndexPrev;
 s32 g_IndexedEffectIndex;
 s32 g_IndexedEffectPitch;
+s32 g_IndexedEffectVolume;
 s32 g_PanVoiceActive;
 s32 g_ActiveSpecialCue;
 s32 g_LastSpecialCueRequest;
@@ -114,6 +115,7 @@ static void TestSoundStateReset(void) {
     memset(g_EffectVoices, 0x7F, sizeof(g_EffectVoices));
     g_ActiveSpecialCue = 15;
     g_LastSpecialCueRequest = 15;
+    g_IndexedEffectVolume = 127;
     g_AudioLoadSlot = AUDIO_SLOT_ENGINE;
     InitSoundRuntime();
 
@@ -137,8 +139,9 @@ static void TestSoundStateReset(void) {
                   g_EffectVoices[index].volume == 0,
               "reset initializes every effect voice");
     }
-    Check(g_ActiveSpecialCue == -1 && g_LastSpecialCueRequest == -1,
-          "reset clears special cue deduplication");
+    Check(g_ActiveSpecialCue == -1 && g_LastSpecialCueRequest == -1 &&
+              g_IndexedEffectVolume == 0,
+          "reset clears transient effect state");
     Check(g_EngineSoundState.bank == -1 &&
               g_EngineSoundState.volumeScale == 128 &&
               g_SoundScale.scale == 128 && g_AudioLoadedSlotMask == 1 &&
