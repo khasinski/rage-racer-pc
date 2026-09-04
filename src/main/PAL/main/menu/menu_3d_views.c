@@ -19,15 +19,6 @@ static s32 SwapShowroomCarModel(void) {
     return ActivateShowroomCarModel(g_CarModelSlot < 1);
 }
 
-static void UpdateMenuViewSpin(void) {
-    g_MenuViewSpin = UpdatedMenuViewSpin(g_MenuViewSpin, g_PadHeld);
-}
-
-static void UpdateShowroomSteering(void) {
-    g_PlayerCar.steeringAngle =
-        UpdatedShowroomSteering(g_PlayerCar.steeringAngle, g_PadHeld);
-}
-
 static void SetupMenuViewCamera(s32 pitch, s32 yaw) {
     g_RenderState.viewX = 0;
     g_RenderState.viewY = -64;
@@ -99,12 +90,13 @@ void DrawMenuCarView(void) {
     }
     g_PlayerCar.showroomTireCompound = g_CarTable[carIndex].tireCompound;
 
-    UpdateShowroomSteering();
+    g_PlayerCar.steeringAngle =
+        UpdatedShowroomSteering(g_PlayerCar.steeringAngle, g_PadHeld);
     g_PlayerCar.drive.manual = g_CarTable[carIndex].transmission;
     g_PlayerCar.wheelRotation =
         ((u32)g_PlayerCar.wheelRotation + 68u) & 0xFFFu;
 
-    UpdateMenuViewSpin();
+    g_MenuViewSpin = UpdatedMenuViewSpin(g_MenuViewSpin, g_PadHeld);
     showroom->pose.rotation.y =
         (s32)((u32)showroom->pose.rotation.y + (u32)g_MenuViewSpin);
     BuildRotMatrixY(&mtxA, showroom->pose.rotation.y);
@@ -185,7 +177,7 @@ void DrawMenuCourseView(void) {
     showroom->runtime.z = -20;
     showroom->runtime.y = viewHeight + 15;
 
-    UpdateMenuViewSpin();
+    g_MenuViewSpin = UpdatedMenuViewSpin(g_MenuViewSpin, g_PadHeld);
     showroom->runtime.bodyYaw =
         (s32)((u32)showroom->runtime.bodyYaw + (u32)g_MenuViewSpin);
     BuildRotMatrixY(&mtxB, 0x800 - showroom->runtime.bodyYaw);
@@ -229,10 +221,7 @@ void DrawTeamNameCharModel(void) {
     }
 
     viewHeight = AdvanceMenuViewOffset();
-    baseHeight = 40;
-    if (g_MenuAltLayout != 0) {
-        baseHeight = 64;
-    }
+    baseHeight = g_MenuAltLayout != 0 ? 64 : 40;
 
     position.x = 0;
     position.y =
@@ -247,7 +236,7 @@ void DrawTeamNameCharModel(void) {
     BuildRotMatrixY(&mtxB, 0x800 - rotationY);
     BuildRotMatrixZ(&mtxA, rotationZ);
     MulMatrix2(&mtxB, &mtxA);
-    MulMatrix2((&g_RenderState.matrix), &mtxA);
+    MulMatrix2(&g_RenderState.matrix, &mtxA);
     ScaleMatrix(&mtxA, &vcopy);
 
     modelIndex = TeamNameCharacterModelIndex(g_TeamNameCharModel,
