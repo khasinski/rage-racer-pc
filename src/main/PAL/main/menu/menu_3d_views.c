@@ -66,6 +66,7 @@ void DrawMenuCarView(void) {
     s32 currentAngle;
     s32 horizontalAngle;
     s32 offset;
+    ShowroomCarLoadAction loadAction;
 
     vec = g_MenuCarPivotOffset;
     SetupMenuViewCamera(0x100, 0);
@@ -73,7 +74,13 @@ void DrawMenuCarView(void) {
     currentAngle = g_MenuViewAngle;
     if (ShowroomCarAtSwapPoint(currentAngle, g_MenuViewAngleTarget,
                                g_CarSwapToIndex)) {
-        if (!AssetLoadCompletedSuccessfully()) {
+        loadAction = ResolveShowroomCarLoadAction(
+            AssetLoadCompletedSuccessfully(), AssetLoadHasFailed());
+        if (loadAction == SHOWROOM_CAR_LOAD_CANCEL) {
+            g_CarSwapToIndex = -1;
+            return;
+        }
+        if (loadAction == SHOWROOM_CAR_LOAD_WAIT) {
             return;
         }
         if (!ActivateShowroomCarModel(g_CarModelSlot < 1)) {

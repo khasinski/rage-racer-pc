@@ -335,6 +335,23 @@ static inline CourseCarouselAnimation AdvanceCourseCarouselAnimation(
     return result;
 }
 
+typedef enum ShowroomCarLoadAction {
+    SHOWROOM_CAR_LOAD_WAIT,
+    SHOWROOM_CAR_LOAD_ACTIVATE,
+    SHOWROOM_CAR_LOAD_CANCEL,
+} ShowroomCarLoadAction;
+
+static inline ShowroomCarLoadAction ResolveShowroomCarLoadAction(
+    s32 completedSuccessfully, s32 failed) {
+    if (failed != 0) {
+        return SHOWROOM_CAR_LOAD_CANCEL;
+    }
+    if (completedSuccessfully != 0) {
+        return SHOWROOM_CAR_LOAD_ACTIVATE;
+    }
+    return SHOWROOM_CAR_LOAD_WAIT;
+}
+
 /* The showroom turntable is implementation shared by CAR SELECT and SHOP. */
 int MenuCarViewSettled(void);
 void MenuSpinToCar(s32 *shownCar, s32 fromIndex, s32 toIndex, s32 newTarget);

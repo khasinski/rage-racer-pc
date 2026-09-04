@@ -186,6 +186,11 @@ int main(void) {
     CHECK(courseAnimation.displayedCourse == 2 &&
           courseAnimation.pendingCourse == 5);
 
+    CHECK(ResolveShowroomCarLoadAction(0, 0) == SHOWROOM_CAR_LOAD_WAIT);
+    CHECK(ResolveShowroomCarLoadAction(1, 0) == SHOWROOM_CAR_LOAD_ACTIVATE);
+    CHECK(ResolveShowroomCarLoadAction(0, 1) == SHOWROOM_CAR_LOAD_CANCEL);
+    CHECK(ResolveShowroomCarLoadAction(1, 1) == SHOWROOM_CAR_LOAD_CANCEL);
+
     CHECK(UpdatedMenuViewSpin(0, PAD_L1) == 1);
     CHECK(UpdatedMenuViewSpin(0, PAD_R1) == -1);
     CHECK(UpdatedMenuViewSpin(64, PAD_L1) == 64);
