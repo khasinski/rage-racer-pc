@@ -7,17 +7,19 @@ enum {
 };
 
 void TickClassClearFanfare(void) {
-    if (g_ClassClearFanfareTimer >
-        CLASS_CLEAR_FANFARE_DURATION_FRAMES) {
-        g_ClassClearFanfareTimer =
-            CLASS_CLEAR_FANFARE_DURATION_FRAMES;
-    }
-    if (g_ClassClearFanfareTimer > 0) {
-        g_ClassClearFanfareTimer--;
-    } else if (g_ClassClearFanfareTimer < 0) {
+    s32 timer = g_ClassClearFanfareTimer;
+
+    if (timer <= 0) {
         g_ClassClearFanfareTimer = 0;
+        return;
     }
-    if (g_ClassClearFanfareTimer == CLASS_CLEAR_CUE_TIMER) {
+    if (timer > CLASS_CLEAR_FANFARE_DURATION_FRAMES) {
+        timer = CLASS_CLEAR_FANFARE_DURATION_FRAMES;
+    }
+
+    timer--;
+    g_ClassClearFanfareTimer = timer;
+    if (timer == CLASS_CLEAR_CUE_TIMER) {
         PlaySoundCue(SOUND_CUE_CLASS_CLEAR);
     }
 }
