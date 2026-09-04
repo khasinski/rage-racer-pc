@@ -1,8 +1,6 @@
 #include "game/menu_internal.h"
 #include "game/race.h"
 
-enum { COURSE_SELECT_OPTION_COUNT = 3 };
-
 /* Directions are applied before confirm on the main screen, so a combined
  * press chooses the row the cursor has just moved to. */
 CourseSelectInputOutcome DecideCourseSelectInput(u16 pressed, u16 held,
@@ -14,11 +12,15 @@ CourseSelectInputOutcome DecideCourseSelectInput(u16 pressed, u16 held,
                                      COURSE_SELECT_OPTION_COUNT - 1);
     if (pressed & PAD_UP) {
         out.cues[out.cueCount++] = 1;
-        out.option = (out.option > 0) ? out.option - 1 : 2;
+        out.option = (out.option > COURSE_SELECT_OPTION_CAR_SELECT)
+                         ? out.option - 1
+                         : COURSE_SELECT_OPTION_COUNT - 1;
     }
     if (pressed & PAD_DOWN) {
         out.cues[out.cueCount++] = 1;
-        out.option = (out.option < 2) ? out.option + 1 : 0;
+        out.option = (out.option < COURSE_SELECT_OPTION_COUNT - 1)
+                         ? out.option + 1
+                         : COURSE_SELECT_OPTION_CAR_SELECT;
     }
     out.wantsPrev = (held & PAD_LEFT) != 0;
     out.wantsNext = (held & PAD_RIGHT) != 0;

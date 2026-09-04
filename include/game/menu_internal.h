@@ -293,6 +293,13 @@ typedef enum CourseSelectState {
     COURSE_SELECT_CLASS_CHANGE = -5,
 } CourseSelectState;
 
+typedef enum CourseSelectOption {
+    COURSE_SELECT_OPTION_CAR_SELECT,
+    COURSE_SELECT_OPTION_CLASS_OR_RANKING,
+    COURSE_SELECT_OPTION_SAVE_OR_START,
+    COURSE_SELECT_OPTION_COUNT,
+} CourseSelectOption;
+
 /* The save prompt offered when a course is chosen: confirm, cancel, and the
  * two directions that pick between its buttons. */
 MenuPromptOutcome DecideSavePrompt(u16 pressed, s32 busy, s32 confirmTimer,

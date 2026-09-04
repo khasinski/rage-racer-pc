@@ -130,7 +130,7 @@ static void SpinCardAway(void) {
 
 /* Confirm on the row the cursor is on. */
 static void ChooseCourseSelectRow(s32 row) {
-    if (row == 0) {
+    if (row == COURSE_SELECT_OPTION_CAR_SELECT) {
         PlaySoundCue(2);
         GameMenuBusy = COURSE_SELECT_TO_CAR_SELECT;
         g_MenuOverlayPattern = 1;
@@ -138,7 +138,7 @@ static void ChooseCourseSelectRow(s32 row) {
         SpinCardAway();
         return;
     }
-    if (row == 2) {
+    if (row == COURSE_SELECT_OPTION_SAVE_OR_START) {
         if (g_GrandPrixMode != 0) {
             /* Saving is only offered in a Grand Prix; class five is the extra
              * series, which has no round of its own to record. */
