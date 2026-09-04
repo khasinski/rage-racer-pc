@@ -81,6 +81,20 @@ int main(void) {
     SetPitchedSoundCue(0, 0, INT_MAX);
     CHECK(g_EffectVoices[0].volume == 127);
 
+    Reset();
+    g_EffectCueTable[1].voiceCount = 1;
+    g_EffectVoices[3].state = EFFECT_VOICE_IDLE;
+    g_EffectVoices[3].note.value = 99;
+    SetPitchedSoundCue(1, 0x1234, 64);
+    CHECK(g_EffectVoices[2].state == EFFECT_VOICE_START &&
+          g_EffectVoices[3].state == EFFECT_VOICE_IDLE &&
+          g_EffectVoices[3].note.value == 99);
+    SetPitchedSoundCue(1, 0x2345, 64);
+    CHECK(g_EffectVoices[2].state == EFFECT_VOICE_UPDATE);
+    SetPitchedSoundCue(1, 0, 0);
+    CHECK(g_EffectVoices[2].state == EFFECT_VOICE_STOP &&
+          g_EffectVoices[2].note.value == -1);
+
     puts("pitched sound cues preserve bank routing, reuse, and reset");
     return 0;
 }

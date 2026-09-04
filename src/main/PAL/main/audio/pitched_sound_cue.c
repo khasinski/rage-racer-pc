@@ -20,11 +20,21 @@ static s32 CueBankVoiceStart(s32 bank) {
     return bank == 0 ? 0 : EFFECT_CUE_SECONDARY_VOICE;
 }
 
-static s32 VoicePairMatchesBank(s32 voiceStart, s32 bank) {
-    return g_EffectVoices[voiceStart].note.value ==
-               g_EffectCueTable[bank].programs[0].note &&
-           g_EffectVoices[voiceStart + 1].note.value ==
-               g_EffectCueTable[bank].programs[1].note;
+static int CueVoicesMatchBank(s32 voiceStart, s32 bank) {
+    const EffectCueBank *cue = &g_EffectCueTable[bank];
+    s32 voiceCount = CueVoiceCount(cue);
+    s32 voice;
+
+    if (voiceCount == 0) {
+        return 0;
+    }
+    for (voice = 0; voice < voiceCount; voice++) {
+        if (g_EffectVoices[voiceStart + voice].note.value !=
+            cue->programs[voice].note) {
+            return 0;
+        }
+    }
+    return 1;
 }
 
 static void ResetCueVoices(s32 voiceStart, s32 voiceCount) {
@@ -43,7 +53,7 @@ static void ResetCueVoices(s32 voiceStart, s32 voiceCount) {
 
 static void StartCueVoices(s32 voiceStart, s32 bank, s32 pitch, s32 volume) {
     const EffectCueBank *cue = &g_EffectCueTable[bank];
-    EffectVoiceState state = VoicePairMatchesBank(voiceStart, bank)
+    EffectVoiceState state = CueVoicesMatchBank(voiceStart, bank)
                                  ? EFFECT_VOICE_UPDATE
                                  : EFFECT_VOICE_START;
     s32 voice;
@@ -73,7 +83,7 @@ void SetPitchedSoundCue(s32 bank, s32 pitch, s32 volume) {
 
     if (volume > 0) {
         StartCueVoices(voiceStart, bank, pitch, volume);
-    } else if (bank == 0 || VoicePairMatchesBank(voiceStart, bank)) {
+    } else if (bank == 0 || CueVoicesMatchBank(voiceStart, bank)) {
         if (g_EffectVoices[voiceStart].note.value >= 0 ||
             g_EffectVoices[voiceStart + 1].note.value >= 0) {
             ResetCueVoices(voiceStart,
