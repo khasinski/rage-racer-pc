@@ -24,7 +24,8 @@ enum {
 };
 
 static s32 ScaleCueVolume(s32 volume, s32 cueScale) {
-    return volume * cueScale / 128 * g_SoundScale.scale / 128;
+    volume = ScaleClampedVoiceVolume(volume, cueScale);
+    return ScaleClampedVoiceVolume(volume, g_SoundScale.scale);
 }
 
 static s32 StartPooledCueTone(const SoundCueParams *params, s32 tone,
@@ -179,8 +180,8 @@ void SetSoundSlotTone(s32 slot, s32 bend, s32 volume, s32 toneIndex, u16 vabSlot
     }
 
     s16 voice = (s16)(slot + ENGINE_SLOT_VOICE_FIRST);
-    s32 scaledVolume = ClampVoiceVolume(
-        volume * g_SoundScale.scale / 128);
+    s32 scaledVolume =
+        ScaleClampedVoiceVolume(volume, g_SoundScale.scale);
 
     SsUtSetVVol(voice, scaledVolume, scaledVolume);
     SsUtPitchBend(voice, g_SoundScale.vabIds[vabSlot],

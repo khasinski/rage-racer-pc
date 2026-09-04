@@ -3,6 +3,7 @@
 #include "game/audio_internal.h"
 #include "game/sound.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -264,6 +265,10 @@ static int TestInactiveBankAndEngineSlot(void) {
     SetSoundSlotTone(2, 123, 100, ENGINE_SOUND_BANK_COUNT, 3);
     SetSoundSlotTone(2, 123, 100, 1, AUDIO_SLOT_COUNT);
     CHECK(s_volumeVoice == -1);
+
+    g_SoundScale.scale = INT_MAX;
+    SetSoundSlotTone(2, 123, INT_MAX, 1, 3);
+    CHECK(s_volumeLeft == 128 && s_volumeRight == 128);
     return 0;
 }
 

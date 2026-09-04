@@ -3,6 +3,7 @@
 #include "game/audio_internal.h"
 #include "game/sound.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -92,6 +93,15 @@ int main(void) {
     CHECK(g_EffectVoices[0].state == EFFECT_VOICE_IDLE);
     CHECK(g_EffectVoices[1].state == EFFECT_VOICE_IDLE);
     CHECK(g_EffectVoices[2].state == EFFECT_VOICE_IDLE);
+
+    g_EffectVoices[0].state = EFFECT_VOICE_UPDATE;
+    g_EffectVoices[0].volume = INT_MAX;
+    g_SoundScale.scale = INT_MAX;
+    s_volumeCalls = 0;
+    s_pitchCalls = 0;
+    UpdateEffectVoiceStates();
+    CHECK(s_volumeCalls == 1 && s_volumeValue[0] == 128);
+    g_SoundScale.scale = 128;
 
     g_EffectVoices[0].state = (EffectVoiceState)99;
     s_keyOnVoice = -1;

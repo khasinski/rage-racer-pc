@@ -3,6 +3,7 @@
 #include "game/audio_internal.h"
 #include "game/sound.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -156,6 +157,15 @@ static int TestIndexedEffectVoice(void) {
     CHECK(s_volumeCount == 1 && s_volume[0].left == 63);
     CHECK(s_pitchCount == 1 && s_pitch[0].note == (0x2345 >> 7));
     CHECK(s_pitch[0].fine == (0x2345 & 0x7f));
+
+    g_IndexedEffects[2].volume = INT_MAX;
+    g_SoundScale.scale = INT_MAX;
+    SetIndexedEffectVoice(2, 0x2345, INT_MAX);
+    ResetCalls();
+    UpdateIndexedEffectVoice();
+    CHECK(s_volumeCount == 1 && s_volume[0].left == 127);
+    g_IndexedEffects[2].volume = 128;
+    g_SoundScale.scale = 64;
 
     SetIndexedEffectVoice(1, 0x3456, 80);
     ResetCalls();

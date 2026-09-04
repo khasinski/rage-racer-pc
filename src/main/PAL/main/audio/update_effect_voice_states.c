@@ -16,8 +16,8 @@ static void KeyOnEffectVoice(s16 hardwareVoice, const EffectVoice *effect) {
 
 static void WriteEffectVoiceOutput(s16 hardwareVoice,
                                    const EffectVoice *effect) {
-    s32 volume = ClampVoiceVolume(
-        effect->volume * g_SoundScale.scale / 128);
+    s32 volume =
+        ScaleClampedVoiceVolume(effect->volume, g_SoundScale.scale);
 
     SsUtSetVVol(hardwareVoice, volume, volume);
     SsUtChangePitch(

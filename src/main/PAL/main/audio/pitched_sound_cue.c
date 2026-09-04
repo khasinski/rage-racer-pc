@@ -55,7 +55,8 @@ static void StartCueVoices(s32 voiceStart, s32 bank, s32 pitch, s32 volume) {
         effect->note.value = cue->programs[voice].note;
         effect->tone = cue->programs[voice].tone;
         effect->pitch.value = pitch;
-        effect->volume = volume * cue->volumeScale / 128;
+        effect->volume =
+            ScaleClampedVoiceVolume(volume, cue->volumeScale);
     }
 }
 

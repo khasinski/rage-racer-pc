@@ -46,6 +46,10 @@ static inline s32 ClampCueLevel(s32 level) {
     return level >= 0x80 ? 0x7F : level;
 }
 
+static inline s32 ScaleClampedVoiceVolume(s32 volume, s32 scale) {
+    return ClampVoiceVolume(volume) * ClampVoiceVolume(scale) / 0x80;
+}
+
 enum { AUDIO_SETTING_MAX = 15 };
 
 extern s32 g_BgmVolumeSetting;

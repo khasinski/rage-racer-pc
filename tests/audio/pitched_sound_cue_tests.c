@@ -2,6 +2,7 @@
 #include "game/audio.h"
 #include "game/sound.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -74,6 +75,11 @@ int main(void) {
     CHECK(g_EffectVoices[0].note.value == 20 &&
           g_EffectVoices[1].note.value == 21);
     CHECK(g_EffectVoices[2].note.value == 1234);
+
+    Reset();
+    g_EffectCueTable[0].volumeScale = INT_MAX;
+    SetPitchedSoundCue(0, 0, INT_MAX);
+    CHECK(g_EffectVoices[0].volume == 127);
 
     puts("pitched sound cues preserve bank routing, reuse, and reset");
     return 0;

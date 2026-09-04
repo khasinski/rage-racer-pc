@@ -10,7 +10,6 @@ enum {
     PAN_EFFECT_PROGRAM = 15,
     EFFECT_BASE_NOTE = 0x3C,
     AUDIBLE_PAN_VOLUME_MIN = 2,
-    SOUND_SCALE_ONE = 128,
 };
 
 static void StartBasicEffectVoice(s16 voice, const MusicChannel *channel) {
@@ -20,7 +19,7 @@ static void StartBasicEffectVoice(s16 voice, const MusicChannel *channel) {
 }
 
 static s32 ScaleVoiceVolume(s32 volume) {
-    return ClampVoiceVolume(volume * g_SoundScale.scale / SOUND_SCALE_ONE);
+    return ScaleClampedVoiceVolume(volume, g_SoundScale.scale);
 }
 
 static int GetPanVoiceOutputVolume(s32 *left, s32 *right) {
@@ -98,8 +97,8 @@ static void StopIndexedEffectVoice(void) {
 }
 
 static void ApplyIndexedEffectVoiceOutput(s32 index) {
-    s32 volume = g_IndexedEffectVolume * g_IndexedEffects[index].volume /
-                 SOUND_SCALE_ONE;
+    s32 volume = ScaleClampedVoiceVolume(
+        g_IndexedEffectVolume, g_IndexedEffects[index].volume);
 
     volume = ScaleVoiceVolume(volume);
     SsUtSetVVol(INDEXED_EFFECT_VOICE, volume, volume);
