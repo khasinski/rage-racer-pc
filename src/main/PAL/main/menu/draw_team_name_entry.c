@@ -2,9 +2,9 @@
 #include "game/menu_internal.h"
 
 enum {
-    TEAM_NAME_GRID_COLUMNS = 11,
     TEAM_NAME_GRID_ROWS = 4,
-    TEAM_NAME_GRID_CELL_COUNT = TEAM_NAME_GRID_COLUMNS * TEAM_NAME_GRID_ROWS,
+    TEAM_NAME_GRID_CELL_COUNT =
+        MENU_TEAM_NAME_GRID_COLUMNS * TEAM_NAME_GRID_ROWS,
     TEAM_NAME_GRID_X = 0x56,
     TEAM_NAME_GRID_Y = 0xF9,
     TEAM_NAME_CELL_WIDTH = 0xC,
@@ -61,9 +61,9 @@ static void DrawKeyboardGrid(GameOrderingTableEntry *ot, s32 frame, s32 cursorIn
 
     DrawKeyboardCharacter(ot, cursorIndex,
                           TEAM_NAME_GRID_X +
-                              (cursorIndex % TEAM_NAME_GRID_COLUMNS) *
+                              (cursorIndex % MENU_TEAM_NAME_GRID_COLUMNS) *
                                   TEAM_NAME_CELL_WIDTH,
-                          y + (cursorIndex / TEAM_NAME_GRID_COLUMNS) *
+                          y + (cursorIndex / MENU_TEAM_NAME_GRID_COLUMNS) *
                                   TEAM_NAME_CELL_HEIGHT,
                           height, 0x5B);
 
@@ -140,10 +140,10 @@ void DrawTeamNameEntry(s32 step, s32 cursorIndex) {
             sine += 0x3F;
         }
         DrawSolidRect(ot + 1,
-                      (cursorIndex % TEAM_NAME_GRID_COLUMNS) *
+                      (cursorIndex % MENU_TEAM_NAME_GRID_COLUMNS) *
                                   TEAM_NAME_CELL_WIDTH +
                               0x54,
-                      y + (cursorIndex / TEAM_NAME_GRID_COLUMNS) *
+                      y + (cursorIndex / MENU_TEAM_NAME_GRID_COLUMNS) *
                               TEAM_NAME_CELL_HEIGHT,
                       0xB, frame * 2, 0, (sine >> 6) - 0x41, 0, 0xFF);
         g_TeamNameCursorPhase =

@@ -4,7 +4,6 @@
 
 enum {
     TEAM_NAME_GRID_ROWS = 4,
-    TEAM_NAME_EXIT_VIEW_OFFSET = 250000,
     TEAM_NAME_CURSOR_ENTRY_ANGLE = 4096000,
 };
 
@@ -81,7 +80,7 @@ static void ApplyTeamNameInput(void) {
         PlaySoundCue(3);
         GameMenuBusy = TEAM_NAME_EXIT_TO_DESIGN;
         g_MenuOverlayPattern = 2;
-        g_MenuViewOffsetTarget = TEAM_NAME_EXIT_VIEW_OFFSET;
+        g_MenuViewOffsetTarget = MENU_VIEW_OFFSET_MAX;
         return;
     }
 
@@ -116,7 +115,7 @@ static void UpdateTeamNameOutgoing(void) {
     DrawTeamNameEntry(-1, GameMenuCursor);
     RunTimedDrawScript(g_TeamNameScreenScript, &g_UiScriptProgress, -1);
     if (g_UiScriptProgress > 0 ||
-        g_MenuViewOffset < TEAM_NAME_EXIT_VIEW_OFFSET) {
+        g_MenuViewOffset < MENU_VIEW_OFFSET_MAX) {
         return;
     }
 
