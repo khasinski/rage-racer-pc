@@ -14,30 +14,24 @@ static u32 ReverseLogoWord(u32 word) {
 }
 
 void ScrollTeamLogoUp(void) {
-    s32 row;
     u32 firstRow[TEAM_LOGO_WORDS_PER_ROW];
 
     PlaySoundCue(1);
     memcpy(firstRow, g_TeamLogoCanvas.words[0], sizeof(firstRow));
-    for (row = 0; row < TEAM_LOGO_HEIGHT - 1; row++) {
-        memcpy(g_TeamLogoCanvas.words[row], g_TeamLogoCanvas.words[row + 1],
-               sizeof(firstRow));
-    }
+    memmove(g_TeamLogoCanvas.words[0], g_TeamLogoCanvas.words[1],
+            sizeof(g_TeamLogoCanvas.words) - sizeof(firstRow));
     memcpy(g_TeamLogoCanvas.words[TEAM_LOGO_HEIGHT - 1], firstRow,
            sizeof(firstRow));
 }
 
 void ScrollTeamLogoDown(void) {
-    s32 row;
     u32 lastRow[TEAM_LOGO_WORDS_PER_ROW];
 
     PlaySoundCue(1);
     memcpy(lastRow, g_TeamLogoCanvas.words[TEAM_LOGO_HEIGHT - 1],
            sizeof(lastRow));
-    for (row = TEAM_LOGO_HEIGHT - 1; row > 0; row--) {
-        memcpy(g_TeamLogoCanvas.words[row], g_TeamLogoCanvas.words[row - 1],
-               sizeof(lastRow));
-    }
+    memmove(g_TeamLogoCanvas.words[1], g_TeamLogoCanvas.words[0],
+            sizeof(g_TeamLogoCanvas.words) - sizeof(lastRow));
     memcpy(g_TeamLogoCanvas.words[0], lastRow, sizeof(lastRow));
 }
 
