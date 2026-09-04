@@ -131,6 +131,23 @@ static void Reset(void) {
 
 int main(void) {
     Reset();
+    g_PadPressed = PAD_UP;
+    UpdateCustomizeScreen();
+    CHECK(g_CustomizeOption == 3 && s_lastCue == 1);
+
+    Reset();
+    g_CustomizeOption = 3;
+    g_PadPressed = PAD_DOWN;
+    UpdateCustomizeScreen();
+    CHECK(g_CustomizeOption == 0 && s_lastCue == 1);
+
+    Reset();
+    g_GrandPrixMode = 0;
+    g_PadPressed = PAD_UP;
+    UpdateCustomizeScreen();
+    CHECK(g_CustomizeOption == 2);
+
+    Reset();
     g_CarTable = NULL;
     g_PadPressed = PAD_CONFIRM;
     UpdateCustomizeScreen();

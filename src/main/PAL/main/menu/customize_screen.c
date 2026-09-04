@@ -20,7 +20,7 @@ enum CustomizeScreenState {
 
 enum {
     CUSTOMIZE_CONFIRM_FRAMES = 35,
-    TIRE_COMPOUND_MAX = 4,
+    TIRE_COMPOUND_LAST = CAR_TIRE_COMPOUND_COUNT - 1,
 };
 
 enum CustomizeOption {
@@ -53,14 +53,13 @@ static s32 CustomizeTransmissionAvailable(void) {
 static void HandleCustomizeMenuInput(s32 exitOption, s32 carAvailable) {
     if (g_PadPressed & PAD_UP) {
         PlaySoundCue(1);
-        g_CustomizeOption = g_CustomizeOption > 0 ? g_CustomizeOption - 1
-                                                  : exitOption;
+        g_CustomizeOption =
+            WrapMenuIndex(g_CustomizeOption, -1, exitOption + 1);
     }
     if (g_PadPressed & PAD_DOWN) {
         PlaySoundCue(1);
-        g_CustomizeOption = g_CustomizeOption < exitOption
-                                ? g_CustomizeOption + 1
-                                : CUSTOMIZE_OPTION_TIRES;
+        g_CustomizeOption =
+            WrapMenuIndex(g_CustomizeOption, 1, exitOption + 1);
     }
 
     if (g_PadPressed & PAD_CONFIRM) {
@@ -74,7 +73,7 @@ static void HandleCustomizeMenuInput(s32 exitOption, s32 carAvailable) {
             g_UiScriptProgress2 = 0;
             g_MenuSubCursor = (u8)AddClampedMenuValue(
                 g_CarTable[g_PlayerCarIndex].tireCompound, 0, 0,
-                TIRE_COMPOUND_MAX);
+                TIRE_COMPOUND_LAST);
             return;
         }
         if (g_CustomizeOption == CUSTOMIZE_OPTION_TRANSMISSION) {
@@ -120,7 +119,7 @@ static void UpdateTireDialog(void) {
         return;
     }
     g_MenuSubCursor = (u8)AddClampedMenuValue(
-        g_MenuSubCursor, 0, 0, TIRE_COMPOUND_MAX);
+        g_MenuSubCursor, 0, 0, TIRE_COMPOUND_LAST);
     if (RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, 1) ==
         0) {
         return;
@@ -134,7 +133,7 @@ static void UpdateTireDialog(void) {
         PlaySoundCue(3);
         GameMenuBusy = CUSTOMIZE_IDLE;
     } else if (action == MENU_DIALOG_LEFT &&
-               g_MenuSubCursor < TIRE_COMPOUND_MAX) {
+               g_MenuSubCursor < TIRE_COMPOUND_LAST) {
         PlaySoundCue(1);
         g_MenuSubCursor++;
     } else if (action == MENU_DIALOG_RIGHT && g_MenuSubCursor != 0) {
@@ -198,7 +197,7 @@ static void UpdateTireConfirmation(void) {
         return;
     }
     g_MenuSubCursor = (u8)AddClampedMenuValue(
-        g_MenuSubCursor, 0, 0, TIRE_COMPOUND_MAX);
+        g_MenuSubCursor, 0, 0, TIRE_COMPOUND_LAST);
     if (g_MenuConfirmTimer > 0) {
         g_MenuConfirmTimer--;
         RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, 1);
