@@ -146,11 +146,14 @@ static void LoadPlayerCarRaceAssets(void) {
         FailAssetLoad();
         return;
     }
+    if (!UploadImageAsset(GetImageAssetHeaderWords(carImage),
+                          (size_t)(loadedSize - pack->imageOffset))) {
+        FailAssetLoad();
+        return;
+    }
     memcpy(&s_RuntimeCarSpec, sourceSpec, sizeof(s_RuntimeCarSpec));
     GameRenderWorldSetTrackCarAsset(carAsset);
     g_CarSpec = &s_RuntimeCarSpec;
-    UploadImageAsset(GetImageAssetHeaderWords(carImage),
-                     (size_t)(loadedSize - pack->imageOffset));
     g_AssetLoadCursor = audioBody;
     g_AssetLoadState = RACE_WAIT_FOR_ENGINE_AUDIO;
 }

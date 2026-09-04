@@ -51,6 +51,7 @@ static size_t s_audioAuxiliarySize;
 static s32 s_startAudioResult = 1;
 static s32 s_renderCarAsset;
 static s32 s_uploadCount;
+static s32 s_uploadResult = 1;
 static const GameImageAssetHeaderWord *s_uploads[5];
 static size_t s_uploadSizes[5];
 static s32 s_validationCount;
@@ -72,6 +73,11 @@ static s32 s_invalidCarAssetIndex;
 size_t PortAssetRoomAt(const void *at) {
     (void)at;
     return s_assetRoom;
+}
+
+s32 DiagnosticsEnabled(const char *name) {
+    (void)name;
+    return 0;
 }
 
 s32 LoadAsset(s32 assetIndex, void *destination) {
@@ -100,7 +106,7 @@ s32 UploadImageAsset(const GameImageAssetHeaderWord *asset, size_t size) {
     s32 index = s_uploadCount++;
     s_uploads[index] = asset;
     s_uploadSizes[index] = size;
-    return 1;
+    return s_uploadResult;
 }
 s32 UploadImageEntry(const GameImageEntryHeader *entry, size_t size) {
     s32 index = s_uploadCount++;
@@ -370,6 +376,18 @@ static void TestVoiceAndCarPhases(void) {
 
     g_AssetLoadState = 3;
     s_startAudioResult = 1;
+    s_uploadResult = 0;
+    s_renderCarAsset = -1;
+    g_CarSpec = NULL;
+    s_uploadCount = 0;
+    LoadRaceAssets();
+    Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
+              s_renderCarAsset == -1 && g_CarSpec == NULL &&
+              s_uploadCount == 1,
+          "failed car image upload publishes no car pack state");
+
+    g_AssetLoadState = 3;
+    s_uploadResult = 1;
     s_uploadCount = 0;
     memcpy(&sourceSpecSnapshot, destination + specificationOffset,
            sizeof(sourceSpecSnapshot));
