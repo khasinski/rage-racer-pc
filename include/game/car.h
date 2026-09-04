@@ -18,6 +18,7 @@ enum {
     CAR_MODEL_VARIANT_COUNT = 32,
     CAR_MODEL_BANK_ENTRY_COUNT = 11,
     CAR_MODEL_BANK_FIELDS = 2,
+    CAR_MODEL_COURSE_COUNT = 4,
     CAR_TIRE_COMPOUND_COUNT = 5,
     CAR_WHEEL_BLUR_FLAG = 0x1000,
 };
@@ -25,6 +26,7 @@ enum {
 /* Per drawable car model: {base model index, LOD variant}. */
 extern s16 g_CarModelBankTable[CAR_MODEL_BANK_ENTRY_COUNT]
                               [CAR_MODEL_BANK_FIELDS];
+extern u8 g_CarModelByCourse[CAR_MODEL_COURSE_COUNT][RACE_CAR_SLOT_COUNT];
 
 typedef enum CarBodyKickMode {
     CAR_BODY_KICK_INACTIVE = 0,

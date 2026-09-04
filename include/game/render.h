@@ -746,7 +746,6 @@ extern s32 g_IsEnvironmentMode4;
  */
 
 extern Matrix g_MirrorViewMatrix;
-extern u8 g_CarModelByCourse[][11];
 extern s16 g_MirrorViewEnabled;
 extern s32 g_ModelBankCount;
 extern s16 g_NegconSteer;

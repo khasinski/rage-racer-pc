@@ -69,6 +69,18 @@ static void CheckInitialCarModelBanks(void) {
           "car model-bank entries");
 }
 
+static void CheckInitialCourseCarModels(void) {
+    static const u8 expected[CAR_MODEL_COURSE_COUNT][RACE_CAR_SLOT_COUNT] = {
+        {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+        {1, 2, 0, 3, 4, 5, 6, 7, 8, 9, 10},
+        {2, 0, 1, 3, 4, 5, 6, 7, 8, 9, 10},
+        {3, 0, 1, 2, 4, 5, 6, 7, 8, 9, 10},
+    };
+
+    Check(memcmp(g_CarModelByCourse, expected, sizeof(expected)) == 0,
+          "course car-model ordering");
+}
+
 static void CheckInitialCountdownData(void) {
     static const u32 expectedPatterns[16] = {
         0x00000000, 0x00000000, 0x3FFF3FFF, 0x3FFF3FFF,
@@ -166,6 +178,7 @@ int main(void) {
     CheckInitialRectangles();
     CheckInitialPaintData();
     CheckInitialCarModelBanks();
+    CheckInitialCourseCarModels();
     CheckInitialCountdownData();
     CheckInitialStartingGrids();
     CheckMemoryCardLabels();
