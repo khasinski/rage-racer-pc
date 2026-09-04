@@ -1,6 +1,7 @@
 #include "game/memcard.h"
 #include "game/memcard_internal.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -78,6 +79,8 @@ static int TestNoEventAndTimeout(void) {
     g_McPollTicks = 90;
     CHECK(PollMemoryCardHwEvent() == MC_EVENT_ERROR);
     CHECK(g_McPollTicks == 91);
+    CHECK(PollMemoryCardHwEvent() == MC_EVENT_ERROR);
+    CHECK(g_McPollTicks == 91);
     return 0;
 }
 
@@ -121,6 +124,15 @@ static int TestSaveCounter(void) {
     g_FrameSyncThreshold = 0x180;
     AdvanceSaveHeaderCounter();
     CHECK(g_SaveElapsedTicks == 3);
+
+    g_SaveElapsedTicks = INT_MAX;
+    g_FrameSyncThreshold = 0x80;
+    AdvanceSaveHeaderCounter();
+    CHECK(g_SaveElapsedTicks == INT_MIN);
+    g_SaveElapsedTicks = INT_MAX;
+    g_FrameSyncThreshold = 0x180;
+    AdvanceSaveHeaderCounter();
+    CHECK(g_SaveElapsedTicks == INT_MIN + 1);
     return 0;
 }
 

@@ -45,7 +45,9 @@ MemoryCardEvent PollMemoryCardHwEvent(void) {
         }
     }
 
-    g_McPollTicks++;
+    if (g_McPollTicks < MEMORY_CARD_POLL_DEADLINE_TICKS) {
+        g_McPollTicks++;
+    }
     if (result == MC_EVENT_NONE &&
         g_McPollTicks >= MEMORY_CARD_POLL_DEADLINE_TICKS) {
         result = MC_EVENT_ERROR;
@@ -76,9 +78,9 @@ void RestartMemoryCard(void) {
 
 
 void AdvanceSaveHeaderCounter(void) {
-    if (g_FrameSyncThreshold == 0x80) {
-        g_SaveElapsedTicks++;
-    } else {
-        g_SaveElapsedTicks += 2;
-    }
+    u32 increment = g_FrameSyncThreshold == 0x80 ? 1u : 2u;
+
+    /* The on-disc counter is a 32-bit bit pattern. Define its wrap explicitly
+     * instead of relying on signed overflow after a sufficiently long save. */
+    g_SaveElapsedTicks = (s32)((u32)g_SaveElapsedTicks + increment);
 }
