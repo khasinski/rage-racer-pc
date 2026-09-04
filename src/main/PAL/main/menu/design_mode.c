@@ -28,34 +28,27 @@ enum {
 s32 DrawDesignModeScreen(s32 step) {
     const DesignModeCellMask *mask = &g_DesignModeCellMask;
     void *ot;
-    u32 limit;
-    u32 offset;
+    s32 remainingFade;
+    s32 offset = 0;
+    s32 fade;
     s32 intensity;
     s32 y;
     s32 row;
     s32 column;
-    u32 fadeValue;
 
-    if (step == 0) {
-        AdvanceMenuFade(&g_DesignModeScreenFade, step);
-        return 0;
-    }
-    AdvanceMenuFade(&g_DesignModeScreenFade, step);
-    if (RENDER_OT_BASE == NULL) {
-        return g_DesignModeScreenFade;
+    fade = AdvanceMenuFade(&g_DesignModeScreenFade, step);
+    if (step == 0 || RENDER_OT_BASE == NULL) {
+        return fade;
     }
     ot = RENDER_OT_BASE + 1;
 
-    if (step > 0) {
-        offset = 0;
-    } else {
-        limit = MENU_FADE_MAX - g_DesignModeScreenFade;
-        offset = limit * limit / 2048;
+    if (step < 0) {
+        remainingFade = MENU_FADE_MAX - fade;
+        offset = remainingFade * remainingFade / 2048;
     }
 
-    y = 0xB0 - (s16)offset;
-    fadeValue = g_DesignModeScreenFade;
-    intensity = fadeValue / MENU_FADE_INTENSITY_DIVISOR;
+    y = 0xB0 - offset;
+    intensity = fade / MENU_FADE_INTENSITY_DIVISOR;
 
     DrawSprite(ot, 0xB4, y, 0x18, 0xC, 0x94, 0xDC, (u8)intensity,
                (u8)intensity, (u8)intensity, 0x244, 0, 1, 0x3B);
@@ -73,7 +66,7 @@ s32 DrawDesignModeScreen(s32 step) {
             }
 
             DrawSprite(ot, 0xB4 + column * 0x10,
-                       0xC0 + row * 0x20 - (s16)offset, 0xC, 0x18, 0xF4,
+                       0xC0 + row * 0x20 - offset, 0xC, 0x18, 0xF4,
                        0x60, (u8)intensity, (u8)intensity, (u8)intensity,
                        clutX, 0, 1, 0x39);
         }
