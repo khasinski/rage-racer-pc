@@ -44,7 +44,7 @@ static u8 *DrawConfigLabels(GameOrderingTableEntry *ot, u8 *prim,
             spec->textureV,
             0x7F40);
     }
-    for (i = 0; i < 5; i++) {
+    for (i = 0; i < CONTROLLER_CONFIG_ACTION_COUNT; i++) {
         const DVec *slot = &g_PadLabelSlots[labelRow[i]];
 
         prim = AddTilePrim(
@@ -66,7 +66,7 @@ static u8 *DrawConfigCallouts(GameOrderingTableEntry *ot, u8 *prim,
     s32 i;
 
     if (g_ControllerSceneAngleY > -16 && g_ControllerSceneAngleY < 16) {
-        for (i = 0; i < 5; i++) {
+        for (i = 0; i < CONTROLLER_CONFIG_ACTION_COUNT; i++) {
             const DVec *labelPoint = &g_PadCalloutLabelPoints[labelRow[i]];
             const DVec *buttonPoint = &g_PadCalloutButtonPoints[buttonRow[i]];
 
@@ -109,7 +109,8 @@ static u8 *DrawConfigCallouts(GameOrderingTableEntry *ot, u8 *prim,
 static u8 *DrawConfigDiagram(GameOrderingTableEntry *ot, u8 *prim,
                              ControllerMappingIndex mapping,
                              const u8 *labelRows, const u8 *buttonRows) {
-    const s32 row = ClampControllerMappingIndex(mapping) * 5;
+    const s32 row = ClampControllerMappingIndex(mapping) *
+                    CONTROLLER_CONFIG_ACTION_COUNT;
     const u8 *labelRow = &labelRows[row];
     const u8 *buttonRow = &buttonRows[row];
 

@@ -8,6 +8,9 @@ typedef s16 ControllerMappingIndex;
 enum {
     CONTROLLER_MAPPING_COUNT = 8,
     CONTROLLER_MAPPING_BUTTON_COUNT = 8,
+    CONTROLLER_CONFIG_ACTION_COUNT = 5,
+    CONTROLLER_CONFIG_ROW_COUNT =
+        CONTROLLER_MAPPING_COUNT * CONTROLLER_CONFIG_ACTION_COUNT,
     CONTROLLER_MAPPING_FIRST = 0,
     CONTROLLER_MAPPING_LAST = CONTROLLER_MAPPING_COUNT - 1,
 };
@@ -16,6 +19,10 @@ extern u16 g_PadButtonPresets[CONTROLLER_MAPPING_COUNT]
                              [CONTROLLER_MAPPING_BUTTON_COUNT];
 extern u16 g_NegconButtonPresets[CONTROLLER_MAPPING_COUNT]
                                 [CONTROLLER_MAPPING_BUTTON_COUNT];
+extern u8 g_PadConfigLabelRows[CONTROLLER_CONFIG_ROW_COUNT];
+extern u8 g_PadConfigButtonRows[CONTROLLER_CONFIG_ROW_COUNT];
+extern u8 g_NegconConfigLabelRows[CONTROLLER_CONFIG_ROW_COUNT];
+extern u8 g_NegconConfigButtonRows[CONTROLLER_CONFIG_ROW_COUNT];
 
 static inline ControllerMappingIndex ClampControllerMappingIndex(s32 index) {
     if (index < CONTROLLER_MAPPING_FIRST) {

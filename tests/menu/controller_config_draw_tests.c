@@ -17,10 +17,10 @@ s32 g_ControllerSceneAngleY;
 DVec g_PadLabelSlots[8];
 DVec g_PadCalloutLabelPoints[8];
 DVec g_PadCalloutButtonPoints[8];
-u8 g_PadConfigLabelRows[40];
-u8 g_PadConfigButtonRows[40];
-u8 g_NegconConfigLabelRows[40];
-u8 g_NegconConfigButtonRows[40];
+u8 g_PadConfigLabelRows[CONTROLLER_CONFIG_ROW_COUNT];
+u8 g_PadConfigButtonRows[CONTROLLER_CONFIG_ROW_COUNT];
+u8 g_NegconConfigLabelRows[CONTROLLER_CONFIG_ROW_COUNT];
+u8 g_NegconConfigButtonRows[CONTROLLER_CONFIG_ROW_COUNT];
 char g_MsgInsertController[] = "INSERT";
 char g_MsgControllerError[] = "ERROR";
 char g_MsgNegconUntwistedLine1[] = "STILL";
@@ -156,7 +156,7 @@ static void Reset(void) {
         g_PadCalloutLabelPoints[i] = (DVec){i * 10, i * 12};
         g_PadCalloutButtonPoints[i] = (DVec){100 + i, 80 + i};
     }
-    for (i = 0; i < 5; i++) {
+    for (i = 0; i < CONTROLLER_CONFIG_ACTION_COUNT; i++) {
         g_PadConfigLabelRows[10 + i] = i;
         g_PadConfigButtonRows[10 + i] = i;
         g_NegconConfigLabelRows[15 + i] = i;
@@ -239,7 +239,8 @@ static void TestDiagramClampsMappingRows(void) {
 
     Reset();
     g_NegconMappingIndex = 99;
-    g_NegconConfigLabelRows[CONTROLLER_MAPPING_LAST * 5] = 2;
+    g_NegconConfigLabelRows[CONTROLLER_MAPPING_LAST *
+                            CONTROLLER_CONFIG_ACTION_COUNT] = 2;
     DrawNegconConfigDiagram(GameSecondaryOrderingTable(51), s_packets);
     CHECK(s_firstSpriteX == g_PadLabelSlots[2].vx + 4);
 }
