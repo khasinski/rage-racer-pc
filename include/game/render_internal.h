@@ -17,9 +17,9 @@ enum {
     PRINTABLE_ASCII_FALLBACK_GLYPH = '?' - PRINTABLE_ASCII_FIRST,
 };
 
-_Static_assert(PRINTABLE_ASCII_GLYPH_COUNT == SPRITE_FONT_CELL_COUNT,
+_Static_assert((int)PRINTABLE_ASCII_GLYPH_COUNT == SPRITE_FONT_CELL_COUNT,
                "sprite font must cover the printable ASCII lookup");
-_Static_assert(PRINTABLE_ASCII_GLYPH_COUNT == FONT_8X8_CELL_COUNT,
+_Static_assert((int)PRINTABLE_ASCII_GLYPH_COUNT == FONT_8X8_CELL_COUNT,
                "8x8 font must cover the printable ASCII lookup");
 
 static inline s32 PrintableAsciiGlyph(u8 character) {

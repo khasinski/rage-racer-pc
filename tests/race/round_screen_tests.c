@@ -113,7 +113,7 @@ void GameDrawProportionalTextShaded(s32 x, s32 y, const char *text,
     (void)intensity;
 }
 
-void FormatLapTime(char *text, s32 milliseconds) {
+void FormatLapTime(char text[LAP_TIME_TEXT_CAPACITY], s32 milliseconds) {
     snprintf(text, LAP_TIME_TEXT_CAPACITY, "%d", milliseconds);
 }
 

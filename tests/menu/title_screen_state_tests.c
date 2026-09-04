@@ -13,7 +13,7 @@ s32 g_AnimTimer;
 GameFrameContext *g_DrawBuffer;
 s32 g_FrameSyncThreshold;
 u32 g_FrontendIdleTimer;
-s32 g_FrontendState;
+FrontendState g_FrontendState;
 s32 g_MainMenuSlide;
 u16 g_PadPressed;
 GameRenderState g_RenderState;

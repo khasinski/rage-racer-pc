@@ -127,7 +127,7 @@ void SetTrackBoundaryKnockback(GameCarRuntime *car, s32 x, s32 z,
     /* Track contact passes its one-based hull-corner value. The front-left
      * contact uses a speed-scaled response, the next two use fixed strength,
      * and rear-right shares the supplied-vector mode used by car collisions. */
-    if (contact < FIXED_TRACK_KNOCKBACK_FIRST_MODE) {
+    if (contact < (int)FIXED_TRACK_KNOCKBACK_FIRST_MODE) {
         SetKnockbackVector(car, TrackBoundaryPushAngle(car),
                            TrackBoundaryPushStrength(car),
                            TRACK_BOUNDARY_KNOCKBACK_DURATION);

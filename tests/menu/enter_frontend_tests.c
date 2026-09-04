@@ -7,7 +7,7 @@
 
 s32 g_FrameSyncThreshold;
 u32 g_FrontendIdleTimer;
-s32 g_FrontendState;
+FrontendState g_FrontendState;
 s32 g_MainMenuSlide;
 s32 g_SceneId;
 s32 g_SceneTimer;

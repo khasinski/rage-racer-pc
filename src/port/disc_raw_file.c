@@ -11,9 +11,9 @@ int DiscRawFileReadSector(void *context, unsigned int sector,
 
     if (disc == NULL || disc->file == NULL || raw == NULL ||
         disc->trackOffset < 0 ||
-        (unsigned long)sector > (unsigned long)LONG_MAX ||
-        (long)sector >
-            (LONG_MAX - disc->trackOffset) / DISC_RAW_SECTOR_SIZE) {
+        (unsigned long)sector >
+            (unsigned long)(LONG_MAX - disc->trackOffset) /
+                DISC_RAW_SECTOR_SIZE) {
         return 0;
     }
     offset = disc->trackOffset + (long)sector * DISC_RAW_SECTOR_SIZE;

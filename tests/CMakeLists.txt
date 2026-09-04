@@ -23,6 +23,15 @@
 # toolchain used by the port and release jobs.
 find_program(RAGE_RUBY_EXECUTABLE ruby)
 
+# A release build defines NDEBUG, which would turn the assertion-based C
+# tests into no-ops. Keep assertions active in every test target while leaving
+# the release game binaries untouched.
+if(MSVC)
+    add_compile_options(/UNDEBUG)
+else()
+    add_compile_options(-UNDEBUG)
+endif()
+
 # Several test targets link the object libraries the top level compiles with
 # sanitizers, and an object built with them needs the runtime on its link
 # line. The top level adds that only to the two game binaries, so the tests

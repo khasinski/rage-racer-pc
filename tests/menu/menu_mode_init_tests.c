@@ -9,8 +9,6 @@
 #include <string.h>
 
 GameRenderState g_RenderState;
-Matrix g_MenuColorMatrix;
-Matrix g_MenuLightMatrix;
 Matrix g_SceneColorMatrix;
 Matrix g_SceneLightMatrix;
 TimedDrawCommand g_UiEmptyScript[1];

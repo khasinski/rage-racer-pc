@@ -92,7 +92,7 @@ void DrawLargeText(s32 x, s16 y, const char *text, u8 red, u8 green, u8 blue,
     s_drawCount++;
 }
 
-char *FormatSaveElapsedTime(char *text, u32 ticks) {
+char *FormatSaveElapsedTime(char text[SAVE_ELAPSED_TIME_CAPACITY], u32 ticks) {
     (void)ticks;
     strcpy(text, "TIME");
     return text;

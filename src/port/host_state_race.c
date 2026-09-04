@@ -109,10 +109,18 @@ s32 g_RaceOptionPulseAngle;
 s16 g_RaceOptionScroll0 = -240;
 s16 g_RaceOptionScroll1 = 240;
 char g_RaceOptionMarquee[4][40] __attribute__((aligned(16))) = {
-    "  RAGE RACER GE\0\0\0\0\0TS YOU GOING!  \0\0\0\0\0",
-    "  RAGE RACER GE\0\0\0\0\0TS YOU GOING!  \0\0\0\0\0",
-    "   KICK BACK AN\0\0\0\0\0D CHILL OUT!   \0\0\0\0\0",
-    "     SLASH THOS\0\0\0\0\0E RECORDS!     ",
+    {' ', ' ', 'R', 'A', 'G', 'E', ' ', 'R', 'A', 'C', 'E', 'R', ' ', 'G', 'E',
+     0, 0, 0, 0, 0, 'T', 'S', ' ', 'Y', 'O', 'U', ' ', 'G', 'O', 'I', 'N', 'G', '!',
+     ' ', ' ', 0, 0, 0, 0, 0},
+    {' ', ' ', 'R', 'A', 'G', 'E', ' ', 'R', 'A', 'C', 'E', 'R', ' ', 'G', 'E',
+     0, 0, 0, 0, 0, 'T', 'S', ' ', 'Y', 'O', 'U', ' ', 'G', 'O', 'I', 'N', 'G', '!',
+     ' ', ' ', 0, 0, 0, 0, 0},
+    {' ', ' ', ' ', 'K', 'I', 'C', 'K', ' ', 'B', 'A', 'C', 'K', ' ', 'A', 'N',
+     0, 0, 0, 0, 0, 'D', ' ', 'C', 'H', 'I', 'L', 'L', ' ', 'O', 'U', 'T', '!',
+     ' ', ' ', ' ', 0, 0, 0, 0, 0},
+    {' ', ' ', ' ', ' ', ' ', 'S', 'L', 'A', 'S', 'H', ' ', 'T', 'H', 'O', 'S',
+     0, 0, 0, 0, 0, 'E', ' ', 'R', 'E', 'C', 'O', 'R', 'D', 'S', '!', ' ', ' ',
+     ' ', ' ', ' ', 0, 0, 0, 0, 0},
 };
 s32 g_LastSectorTime;
 s32 g_SplitDelta;

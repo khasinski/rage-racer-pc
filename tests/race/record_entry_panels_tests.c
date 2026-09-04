@@ -51,7 +51,7 @@ static TextCall s_calls[16];
 static s32 s_callCount;
 static s32 s_tileCalls;
 
-void FormatLapTime(char *dst, s32 timeMs) {
+void FormatLapTime(char dst[LAP_TIME_TEXT_CAPACITY], s32 timeMs) {
     snprintf(dst, LAP_TIME_TEXT_CAPACITY, "0'%02d\"000", timeMs / 1000);
 }
 

@@ -26,7 +26,7 @@ GameRenderState g_RenderState;
 s32 g_CourseIndex;
 s16 g_ExtraGrandPrixUnlocked;
 u32 g_FrontendIdleTimer;
-s32 g_FrontendState;
+FrontendState g_FrontendState;
 s32 g_GrandPrixClass;
 s32 g_MainMenuSlide;
 s32 g_OptionMenuCursor;

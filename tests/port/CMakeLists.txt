@@ -462,7 +462,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(native_ui_script_tests PRIVATE
         "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
         "-iquote${CMAKE_SOURCE_DIR}/include"
-        -Wall -Wextra -Werror)
+        -fcommon -Wall -Wextra -Werror)
 endif()
 add_test(NAME native_ui_scripts COMMAND native_ui_script_tests)
 set_tests_properties(native_ui_scripts PROPERTIES LABELS functional)
@@ -480,7 +480,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(native_initialized_state_tests PRIVATE
         "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
         "-iquote${CMAKE_SOURCE_DIR}/include"
-        -Wall -Wextra -Werror)
+        -fcommon -Wall -Wextra -Werror)
 endif()
 add_test(NAME native_initialized_state COMMAND native_initialized_state_tests)
 set_tests_properties(native_initialized_state PROPERTIES LABELS functional)

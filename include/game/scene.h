@@ -44,7 +44,7 @@ typedef enum GameSceneId {
  * scene. Keep its storage size distinct from the highest named scene ID. */
 enum { GAME_SCENE_HANDLER_COUNT = 40 };
 
-_Static_assert(GAME_SCENE_ENDING_STILL < GAME_SCENE_HANDLER_COUNT,
+_Static_assert((int)GAME_SCENE_ENDING_STILL < GAME_SCENE_HANDLER_COUNT,
                "scene dispatch table is too small");
 
 #endif
