@@ -113,9 +113,27 @@ int main(void) {
     CHECK(s_keyOnVoice == -1 && s_keyOffVoice == -1);
     CHECK(s_volumeCalls == 0 && s_pitchCalls == 0);
 
+    g_EffectVoices[0].state = EFFECT_VOICE_START;
+    g_EffectVoices[0].note.value = -1;
+    g_EffectVoices[0].tone = 3;
+    UpdateEffectVoiceStates();
+    CHECK(g_EffectVoices[0].state == EFFECT_VOICE_IDLE);
+    CHECK(s_keyOnVoice == -1 && s_keyOffVoice == 10);
+    CHECK(s_volumeCalls == 0 && s_pitchCalls == 0);
+
+    s_keyOffVoice = -1;
+    g_EffectVoices[0].state = EFFECT_VOICE_UPDATE;
+    g_EffectVoices[0].note.value = 22;
+    g_EffectVoices[0].tone = INT_MAX;
+    UpdateEffectVoiceStates();
+    CHECK(g_EffectVoices[0].state == EFFECT_VOICE_IDLE);
+    CHECK(s_keyOffVoice == 10 && s_volumeCalls == 0 && s_pitchCalls == 0);
+
+    g_EffectVoices[0].tone = 3;
     g_EffectVoices[3].state = EFFECT_VOICE_UPDATE;
     g_EffectVoices[2].note.value = -1;
     g_EffectVoices[3].note.value = -1;
+    g_EffectVoices[3].tone = -1;
     s_volumeCalls = 0;
     s_pitchCalls = 0;
     ForcePitchEffectVoicesEnabled(1);

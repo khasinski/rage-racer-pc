@@ -8,6 +8,11 @@ enum {
     EFFECT_BASE_NOTE = 0x3C,
 };
 
+static int HasValidEffectVoiceProgram(const EffectVoice *effect) {
+    return (u32)effect->note.value <= INT16_MAX &&
+           (u32)effect->tone <= INT16_MAX;
+}
+
 static void KeyOnEffectVoice(s16 hardwareVoice, const EffectVoice *effect) {
     SsUtKeyOnV(hardwareVoice, g_SoundScale.vabIds[0],
                effect->note.half.value, (s16)effect->tone,
@@ -38,7 +43,7 @@ void ForcePitchEffectVoicesEnabled(s32 enabled) {
         s16 hardwareVoice = (s16)(EFFECT_HARDWARE_VOICE_FIRST + index);
 
         if (enabled != 0) {
-            if (effect->note.value < 0) {
+            if (!HasValidEffectVoiceProgram(effect)) {
                 continue;
             }
             KeyOnEffectVoice(hardwareVoice, effect);
@@ -58,10 +63,20 @@ void UpdateEffectVoiceStates(void) {
 
         switch (effect->state) {
         case EFFECT_VOICE_START:
+            if (!HasValidEffectVoiceProgram(effect)) {
+                SsUtKeyOffV(hardwareVoice);
+                effect->state = EFFECT_VOICE_IDLE;
+                break;
+            }
             KeyOnEffectVoice(hardwareVoice, effect);
             ConsumeEffectVoiceUpdate(hardwareVoice, effect);
             break;
         case EFFECT_VOICE_UPDATE:
+            if (!HasValidEffectVoiceProgram(effect)) {
+                SsUtKeyOffV(hardwareVoice);
+                effect->state = EFFECT_VOICE_IDLE;
+                break;
+            }
             ConsumeEffectVoiceUpdate(hardwareVoice, effect);
             break;
         case EFFECT_VOICE_STOP:
