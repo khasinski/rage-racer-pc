@@ -3,6 +3,17 @@
 #include "game/audio.h"
 #include "game/state.h"
 
+enum {
+    TEAM_LOGO_FIRST_EDITABLE_COLOR = 1,
+    TEAM_LOGO_EDITABLE_COLOR_COUNT = 15,
+    TEAM_LOGO_LAST_EDITABLE_COLOR =
+        TEAM_LOGO_FIRST_EDITABLE_COLOR + TEAM_LOGO_EDITABLE_COLOR_COUNT - 1,
+    TEAM_LOGO_COLOR_CHANNEL_COUNT = 3,
+    TEAM_LOGO_REPEAT_INITIAL_FRAME = 20,
+    TEAM_LOGO_REPEAT_FRAME = 1,
+    TEAM_LOGO_REPEAT_MAX_TIMER = 23,
+};
+
 static void PaintTeamLogoBrush(u16 colour) {
     s32 row;
     s32 column;
@@ -29,8 +40,8 @@ static void AdjustTeamLogoColour(s32 step) {
 }
 
 static s32 TeamLogoDpadRepeatsNow(void) {
-    return g_TeamLogoDpadRepeatTimer == 0x14 ||
-           g_TeamLogoDpadRepeatTimer == 1;
+    return g_TeamLogoDpadRepeatTimer == TEAM_LOGO_REPEAT_INITIAL_FRAME ||
+           g_TeamLogoDpadRepeatTimer == TEAM_LOGO_REPEAT_FRAME;
 }
 
 static void NormalizeTeamLogoEditorState(void) {
@@ -39,9 +50,10 @@ static void NormalizeTeamLogoEditorState(void) {
         g_TeamLogoBrushSize = 1;
     }
     g_TeamLogoPenColor = AddClampedMenuValue(
-        g_TeamLogoPenColor, 0, 1, 15);
+        g_TeamLogoPenColor, 0, TEAM_LOGO_FIRST_EDITABLE_COLOR,
+        TEAM_LOGO_LAST_EDITABLE_COLOR);
     g_TeamLogoColorChannel = AddClampedMenuValue(
-        g_TeamLogoColorChannel, 0, 0, 2);
+        g_TeamLogoColorChannel, 0, 0, TEAM_LOGO_COLOR_CHANNEL_COUNT - 1);
     g_TeamLogoViewX = AddClampedMenuValue(
         g_TeamLogoViewX, 0, 0, TEAM_LOGO_EDITOR_VIEW_SIZE);
     g_TeamLogoViewY = AddClampedMenuValue(
@@ -53,7 +65,7 @@ static void NormalizeTeamLogoEditorState(void) {
         g_TeamLogoCursorY, 0, 0,
         TEAM_LOGO_EDITOR_VIEW_SIZE - g_TeamLogoBrushSize);
     g_TeamLogoDpadRepeatTimer = AddClampedMenuValue(
-        g_TeamLogoDpadRepeatTimer, 0, 0, 23);
+        g_TeamLogoDpadRepeatTimer, 0, 0, TEAM_LOGO_REPEAT_MAX_TIMER);
     g_TeamLogoDpadRepeatMask &= PAD_UP | PAD_RIGHT | PAD_DOWN | PAD_LEFT;
     g_TeamLogoExpertMode = g_TeamLogoExpertMode != 0;
     g_TeamLogoGuideMode = AddClampedMenuValue(
@@ -85,15 +97,19 @@ static void EditLogoPalette(void) {
     if (TeamLogoDpadRepeatsNow()) {
         if (held & PAD_LEFT) {
             PlaySoundCue(1);
-            g_TeamLogoPenColor = g_TeamLogoPenColor >= 2
-                                     ? g_TeamLogoPenColor - 1
-                                     : 0xF;
+            g_TeamLogoPenColor =
+                WrapMenuIndex(g_TeamLogoPenColor -
+                                  TEAM_LOGO_FIRST_EDITABLE_COLOR,
+                              -1, TEAM_LOGO_EDITABLE_COLOR_COUNT) +
+                TEAM_LOGO_FIRST_EDITABLE_COLOR;
         }
         if (held & PAD_RIGHT) {
             PlaySoundCue(1);
-            g_TeamLogoPenColor = g_TeamLogoPenColor < 0xF
-                                     ? g_TeamLogoPenColor + 1
-                                     : 1;
+            g_TeamLogoPenColor =
+                WrapMenuIndex(g_TeamLogoPenColor -
+                                  TEAM_LOGO_FIRST_EDITABLE_COLOR,
+                              1, TEAM_LOGO_EDITABLE_COLOR_COUNT) +
+                TEAM_LOGO_FIRST_EDITABLE_COLOR;
         }
     }
 
@@ -112,15 +128,13 @@ static void EditLogoPalette(void) {
 
     if (pressed & PAD_UP) {
         PlaySoundCue(1);
-        g_TeamLogoColorChannel = g_TeamLogoColorChannel > 0
-                                     ? g_TeamLogoColorChannel - 1
-                                     : 2;
+        g_TeamLogoColorChannel = WrapMenuIndex(
+            g_TeamLogoColorChannel, -1, TEAM_LOGO_COLOR_CHANNEL_COUNT);
     }
     if (pressed & PAD_DOWN) {
         PlaySoundCue(1);
-        g_TeamLogoColorChannel = g_TeamLogoColorChannel < 2
-                                     ? g_TeamLogoColorChannel + 1
-                                     : 0;
+        g_TeamLogoColorChannel = WrapMenuIndex(
+            g_TeamLogoColorChannel, 1, TEAM_LOGO_COLOR_CHANNEL_COUNT);
     }
 }
 
@@ -270,7 +284,8 @@ void UpdateTeamLogoCanvas(void) {
 
     NormalizeTeamLogoEditorState();
     if (held & g_TeamLogoDpadRepeatMask) {
-        if (g_TeamLogoDpadRepeatTimer < 0x14 + repeatDelay) {
+        if (g_TeamLogoDpadRepeatTimer <
+            TEAM_LOGO_REPEAT_INITIAL_FRAME + repeatDelay) {
             g_TeamLogoDpadRepeatTimer++;
         }
     } else {
