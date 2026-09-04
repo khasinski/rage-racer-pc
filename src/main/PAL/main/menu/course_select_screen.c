@@ -341,18 +341,25 @@ static void UpdateClassChange(void *ot) {
 }
 
 static void UpdateCourseSelectModal(void *ot, s32 state) {
-    if (state == COURSE_SELECT_SAVE_PROMPT) {
+    switch (state) {
+    case COURSE_SELECT_SAVE_PROMPT:
         UpdateSavePrompt(ot);
-    } else if (state == COURSE_SELECT_CLASS_PROMPT) {
+        break;
+    case COURSE_SELECT_CLASS_PROMPT:
         UpdateClassPrompt(ot);
-    } else if (state == COURSE_SELECT_SAVE_COUNTDOWN) {
+        break;
+    case COURSE_SELECT_SAVE_COUNTDOWN:
         UpdateSaveCountdown(ot);
-    } else if (state == COURSE_SELECT_SAVE_DISMISSED) {
+        break;
+    case COURSE_SELECT_SAVE_DISMISSED:
         UpdateSaveDismissed();
-    } else if (state == COURSE_SELECT_CLASS_CHANGE) {
+        break;
+    case COURSE_SELECT_CLASS_CHANGE:
         UpdateClassChange(ot);
-    } else {
+        break;
+    default:
         GameMenuBusy = COURSE_SELECT_IDLE;
+        break;
     }
     DrawCourseArrows(1);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, g_CourseSelectOption);
