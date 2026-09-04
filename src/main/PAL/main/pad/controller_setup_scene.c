@@ -6,7 +6,7 @@
 
 /* Loads the GTE light matrix with g_SceneLightMatrix * `view`, working on a
  * local copy so the caller's view matrix is left alone. */
-static void SetGteLightMatrix(Matrix *view) {
+static void SetGteLightMatrix(const Matrix *view) {
     Matrix m;
 
     m = *view;
@@ -39,7 +39,8 @@ static void BuildControllerPartTransform(Matrix *transform, s32 pitch) {
     SetGteLightMatrix(transform);
 }
 
-static void SubmitControllerPart(LVec *position, Matrix *transform, s32 model) {
+static void SubmitControllerPart(const LVec *position, Matrix *transform,
+                                 s32 model) {
     SetGteObjectMatrix(position, transform);
     g_RenderState.envMode4 = 0;
     SubmitControllerModel(model);
