@@ -18,12 +18,39 @@
 #include "game/random.h"
 #include "game/render_internal.h"
 #include "game/save_internal.h"
+#include "game/scene.h"
 #include "game/screens.h"
 #include "game/track.h"
 
 #include <stdint.h>
 
-enum { LAP_FRAME_COUNT_MAX = 0x10000 };
+enum {
+    LAP_FRAME_COUNT_MAX = 0x10000,
+    BEST_LAP_SOUND_CUE = 0x26,
+    BEST_LAP_CUE_DELAY = 0x96,
+    FINISHED_RACE_PHASE = 4,
+    RETIRED_RACE_PHASE = 5,
+    FINISH_CUE_FLAG = 1 << 3,
+    FINISHED_SOUND_CUE = 0x2A,
+    FINISH_FOLLOWUP_SOUND_CUE = 0x2B,
+    FINISH_AUDIO_FADE_FRAMES = 8,
+    RETIRE_AUDIO_FADE_FRAMES = 0x3C,
+    RETIRE_SOUND_CUE = 0x3D,
+    FINISH_FADE_ACTIVE_LEVEL = 2,
+    FINISH_FADE_AUDIO_FRAME = 0x3F,
+    FINISH_FADE_END_FRAME = 0x83,
+    FINISH_FADE_TPAGE = 0x29,
+    FINISHING_PLACE_LIMIT = 3,
+    LAP_CUE_FLAG_MASK = 0xF,
+    LAP_CUE_ARM_DELAY = 2,
+    TWO_LAPS_OUT_SOUND_CUE = 0x27,
+    ONE_LAP_OUT_SOUND_CUE = 0x28,
+    LAST_LAP_SOUND_CUE = 0x29,
+    SERIES_CLEARED_CD_TRACK = 0x10,
+    GRAND_PRIX_RESULT_CD_TRACK = 0xC,
+    TIME_ATTACK_RESULT_CD_TRACK = 0xD,
+    WRONG_WAY_RETIRE_FRAMES = 60,
+};
 /* A lap's clock counts frames, and the frame count is converted to a time as
  * it goes. Both saturate: 0x10000 frames and just under ten minutes. */
 static void TickRunningLapTime(PlayerCarRuntime *car) {
@@ -73,8 +100,8 @@ static void RecordBestLap(PlayerCarRuntime *car, s32 recordMode) {
     }
     /* Announced only while there are still laps left to run. */
     if (g_LapCount >= lap) {
-        PlaySoundCue(0x26);
-        g_RaceCueDelay = 0x96;
+        PlaySoundCue(BEST_LAP_SOUND_CUE);
+        g_RaceCueDelay = BEST_LAP_CUE_DELAY;
     }
 }
 
@@ -113,26 +140,26 @@ static void FinishRace(PlayerCarRuntime *car, s32 recordMode,
         g_BestSectorTimes[series][course][1] = g_RefSectorTimes.fields.second;
         g_BestSectorTimes[series][course][2] = g_RefSectorTimes.fields.third;
     }
-    g_RacePhase = 4;
-    StartCdVolumeFade(8);
+    g_RacePhase = FINISHED_RACE_PHASE;
+    StartCdVolumeFade(FINISH_AUDIO_FADE_FRAMES);
     /* TriggerRaceCues runs later in the frame, but phase 4 skips that whole
      * block. Guarantee the spoken FINISHED cue at the state transition itself
      * instead of depending on the car remaining in one authored finish-line
      * track section. */
-    g_RaceCueFlags |= 8;
-    PlaySoundCue(0x2A);
-    QueueFinishFollowupCue(0x2B);
+    g_RaceCueFlags |= FINISH_CUE_FLAG;
+    PlaySoundCue(FINISHED_SOUND_CUE);
+    QueueFinishFollowupCue(FINISH_FOLLOWUP_SOUND_CUE);
 }
 
 /* The race is over and the player did not finish it: no records, just the
  * camera pulling away. */
 static void RetireAtLastLap(void) {
-    g_RacePhase = 5;
+    g_RacePhase = RETIRED_RACE_PHASE;
     SeedFinishCamera(&g_PlayerCar);
-    StartCdVolumeFade(0x3C);
+    StartCdVolumeFade(RETIRE_AUDIO_FADE_FRAMES);
     if (g_CourseProgress != NULL &&
         g_CourseProgress->retriesRemaining > 0) {
-        PlaySoundCue(0x3D);
+        PlaySoundCue(RETIRE_SOUND_CUE);
     }
 }
 
@@ -141,16 +168,16 @@ static s32 CrossTheLine(PlayerCarRuntime *car, s32 recordMode) {
     s32 lapsRun;
 
     car->lap += 1;
-    g_RaceCueFlags &= 0xF;
+    g_RaceCueFlags &= LAP_CUE_FLAG_MASK;
     if (g_RaceCueDelay == 0) {
-        g_RaceCueDelay = 2;
+        g_RaceCueDelay = LAP_CUE_ARM_DELAY;
     }
     RecordBestLap(car, recordMode);
 
     lapsRun = g_LapCount;
     if (car->lap == lapsRun + 1) {
         /* Anything below fourth is not a finish; the race is retired. */
-        if (car->drive.racePosition < 4) {
+        if (car->drive.racePosition <= FINISHING_PLACE_LIMIT) {
             FinishRace(car, recordMode, lapsRun);
         } else {
             RetireAtLastLap();
@@ -171,29 +198,31 @@ static s32 AdvanceFinishFade(s32 returnValue) {
 
     if (fadeTimer < 0) {
         fadeTimer = 0;
-    } else if (fadeTimer > 0x83) {
-        fadeTimer = 0x83;
+    } else if (fadeTimer > FINISH_FADE_END_FRAME) {
+        fadeTimer = FINISH_FADE_END_FRAME;
     }
-    DrawFullscreenFadeTile(fadeTimer * 2, 0x29);
-    if (fadeTimer >= 2) {
+    DrawFullscreenFadeTile(fadeTimer * 2, FINISH_FADE_TPAGE);
+    if (fadeTimer >= FINISH_FADE_ACTIVE_LEVEL) {
         returnValue = 2;
     }
-    if (fadeTimer < 0x83) {
+    if (fadeTimer < FINISH_FADE_END_FRAME) {
         fadeTimer++;
     }
     g_RaceFadeTimer = (s16)fadeTimer;
-    if (g_RaceFadeTimer == 0x3F) {
+    if (g_RaceFadeTimer == FINISH_FADE_AUDIO_FRAME) {
         if (g_GrandPrixMode != 0) {
             CommitClassProgress();
-            RequestCdTrack((g_SeriesCleared == 1) ? 0x10 : 0xC);
+            RequestCdTrack(g_SeriesCleared == 1
+                               ? SERIES_CLEARED_CD_TRACK
+                               : GRAND_PRIX_RESULT_CD_TRACK);
         } else {
             g_SeriesCleared = 0;
-            RequestCdTrack(0xD);
+            RequestCdTrack(TIME_ATTACK_RESULT_CD_TRACK);
         }
     }
-    if (g_RaceFadeTimer >= 0x83) {
+    if (g_RaceFadeTimer >= FINISH_FADE_END_FRAME) {
         BeginReplay();
-        ExitRaceScene(0x11);
+        ExitRaceScene(GAME_SCENE_REPLAY);
         StartCdAudio();
     }
     return returnValue;
@@ -205,10 +234,10 @@ static void RetireWrongWay(void) {
     s32 series = RaceSeriesIndex(g_RaceSeries);
     s32 course = SeriesCourseIndex();
 
-    g_RacePhase = 5;
+    g_RacePhase = RETIRED_RACE_PHASE;
     g_BestLapTimes[series][course][0] =
         g_RankingRecords[series][course][0].raceTime;
-    StartCdVolumeFade(8);
+    StartCdVolumeFade(FINISH_AUDIO_FADE_FRAMES);
     ForceAllEffectVoicesEnabled(0);
     g_RaceFadeTimer = 0;
     SeedFinishCamera(&g_PlayerCar);
@@ -216,16 +245,16 @@ static void RetireWrongWay(void) {
 
 /* Two laps out, one lap out and the last lap each get their own call. */
 static void CountDownTheLaps(PlayerCarRuntime *car) {
-    if (g_RaceCueDelay == 2) {
+    if (g_RaceCueDelay == LAP_CUE_ARM_DELAY) {
         switch (g_LapCount - car->lap) {
         case 2:
-            PlaySoundCue(0x27);
+            PlaySoundCue(TWO_LAPS_OUT_SOUND_CUE);
             break;
         case 1:
-            PlaySoundCue(0x28);
+            PlaySoundCue(ONE_LAP_OUT_SOUND_CUE);
             break;
         case 0:
-            PlaySoundCue(0x29);
+            PlaySoundCue(LAST_LAP_SOUND_CUE);
             break;
         }
         g_RaceCueDelay--;
@@ -252,7 +281,7 @@ s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
     s32 course = SeriesCourseIndex();
     s32 recordMode = RaceRecordMode(grandPrixMode);
     s16 lapAtEntry;
-    u16 returnValue;
+    s32 returnValue;
 
     if (car == NULL) {
         return 0;
@@ -274,17 +303,19 @@ s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
         HasCrossedCurrentLapLine(lapAtEntry, g_TrackLength,
                                 car->progressA, car->progressB) &&
         (lapAtEntry <= g_LapCount)) {
-        returnValue = (u16)CrossTheLine(car, recordMode);
+        returnValue = CrossTheLine(car, recordMode);
     } else {
         returnValue = 0;
     }
 
-    if ((g_LapCount < car->lap) && (g_RacePhase == 4)) {
-        returnValue = (u16)AdvanceFinishFade(returnValue);
+    if ((g_LapCount < car->lap) &&
+        (g_RacePhase == FINISHED_RACE_PHASE)) {
+        returnValue = AdvanceFinishFade(returnValue);
     } else if ((g_GrandPrixMode == 0) &&
                (IsWholeLapBehind(g_TrackLength, car->progressA,
                                  car->progressB) ||
-                ((car->lap == 0) && (g_WrongWayTimer >= 0x3C)))) {
+                ((car->lap == 0) &&
+                 (g_WrongWayTimer >= WRONG_WAY_RETIRE_FRAMES)))) {
         RetireWrongWay();
     }
 
