@@ -40,9 +40,10 @@ static void DrawMemoryCardMessageText(s32 message) {
 
 void DrawMemoryCardMessage(s32 message) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(51);
-    u8 *prim = RENDER_PRIM_CURSOR_AS(u8);
+    u8 *prim;
 
     if (IsMemoryCardBanner(message)) {
+        prim = RENDER_PRIM_CURSOR_AS(u8);
         prim = GameQueueSprite(
             ot,
             prim,
@@ -55,7 +56,12 @@ void DrawMemoryCardMessage(s32 message) {
             0x7F81);
         prim = QueueDrawModePrim(ot, prim, 0x3F);
     } else {
+        /* The text advances the packet cursor, so the cursor must be read
+         * after it. Reading it first queued the icon over the text packets
+         * and left the ordering table with a link back into itself, which
+         * hung the modern renderer's capture walk on the memory card menu. */
         DrawMemoryCardMessageText(message);
+        prim = RENDER_PRIM_CURSOR_AS(u8);
         if (message >= MEMORY_CARD_SLOT_MESSAGE_FIRST &&
             message <= MEMORY_CARD_SLOT_MESSAGE_LAST) {
             s32 iconX = (message & 1) != 0 ? 0xAC : 0xDE;

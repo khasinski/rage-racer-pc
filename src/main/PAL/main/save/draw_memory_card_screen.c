@@ -31,6 +31,11 @@ void DrawMemoryCardScreen(s32 showSlotBar, s32 fromLoadMenu,
     DrawOptionHintBar(fromLoadMenu + 5);
     DrawPadTypeHint();
 
+    /* The arrow and the hints queue their own packets, so the cursor has to
+     * be read again. Continuing from the stale pointer wrote the tiles over
+     * those packets and linked the ordering table back into itself, which
+     * hung the modern renderer's capture walk on the memory card menu. */
+    next = RENDER_PRIM_CURSOR_AS(u8);
     base = GamePrimaryOrderingTable(54);
     next = AddTilePrim(base, next, 0x5D, 0x3C, 0xE4, 0x40, 0, 0, 0);
     next = AddTilePrim(base, next, 0x5C, 0x3A, 0xE5, 0x44, 0xFF, 0xFF, 0xFF);
