@@ -1,9 +1,12 @@
 #include "game/asset.h"
+#include "game/car.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
 
 enum {
     CAR_SPEC_BAR_COUNT = 4,
+    CAR_SPEC_MODEL_BAR_COUNT = 3,
+    CAR_SPEC_TIRE_BAR = CAR_SPEC_BAR_COUNT - 1,
     CAR_SPEC_BAR_MAX = 0x60,
     CAR_SPEC_FLOOR_DELAY = 0x10,
     CAR_SPEC_COLOR_DELTA = 0x40
@@ -28,22 +31,20 @@ static void ApproachPerformanceRating(s32 *value, s32 target) {
 static void UpdateCarSpecValues(u32 tireGrade) {
     s32 i;
 
-    if (tireGrade >= 5) {
-        tireGrade = 4;
+    if (tireGrade >= CAR_TIRE_COMPOUND_COUNT) {
+        tireGrade = CAR_TIRE_COMPOUND_COUNT - 1;
     }
-    g_CarSpecBars[3] =
-        AddClampedMenuValue(g_CarSpecBars[3], 0, 0, CAR_SPEC_BAR_MAX);
     if (g_CarModelAsset != NULL) {
-        for (i = 0; i < 3; i++) {
+        for (i = 0; i < CAR_SPEC_MODEL_BAR_COUNT; i++) {
             ApproachPerformanceRating(
                 &g_CarSpecBars[i], g_CarModelAsset->performanceRatings[i]);
         }
     } else {
-        for (i = 0; i < 3; i++) {
+        for (i = 0; i < CAR_SPEC_MODEL_BAR_COUNT; i++) {
             ApproachPerformanceRating(&g_CarSpecBars[i], 0);
         }
     }
-    ApproachPerformanceRating(&g_CarSpecBars[3],
+    ApproachPerformanceRating(&g_CarSpecBars[CAR_SPEC_TIRE_BAR],
                               10 + (s32)tireGrade * 20);
 }
 
