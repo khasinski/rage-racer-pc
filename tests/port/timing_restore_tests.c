@@ -13,6 +13,17 @@ static void Expect(const char *what, int got, int want) {
 }
 
 int main(void) {
+    Expect("PAL disc region", TimingStandardForRegion("PAL"),
+           RAGE_TIMING_PAL);
+    Expect("US disc region", TimingStandardForRegion("NTSC-U"),
+           RAGE_TIMING_NTSC);
+    Expect("Japanese disc region", TimingStandardForRegion("NTSC-J"),
+           RAGE_TIMING_NTSC);
+    Expect("unknown disc region", TimingStandardForRegion("unknown"),
+           RAGE_TIMING_PAL);
+    Expect("missing disc region", TimingStandardForRegion(NULL),
+           RAGE_TIMING_PAL);
+
     /* PAL wants 20000us a frame, NTSC 16683. The platform resets itself to the
      * NTSC figure when it creates its video device, which is what has to be
      * noticed and put back. */

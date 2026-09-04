@@ -177,7 +177,7 @@ Display, content and storage settings:
 | `camera` | `chase_turn_lookahead` | `0` to `1`; `0` is retail | `0` |
 | `modern` | `assets` | Optional prebuilt native-asset cache for renderer development, or `disc` to import from the selected disc even when a cache is present; omitted imports from the disc unless a cache sits beside the executable | omitted |
 | `modern` | `mirror_distance` | `0.25` to `8`, capped at the main view distance | `1` |
-| `timing` | `standard` | `pal`, `ntsc` | `pal` |
+| `timing` | `standard` | `auto`, `pal`, `ntsc` | `auto` |
 | `content` | `car_names` | `international`, `japanese` | `international` |
 | `content` | `prologue` | `international`, `japanese` | `international` |
 | `disc` | `image` | Path to a CUE, Track 01 BIN or CHD | remembered picker choice |

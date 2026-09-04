@@ -77,7 +77,6 @@ int main(int argc, char **argv) {
     PortConfigDefaults(&portConfig);
     PortConfigApplyRuntime(&portConfig);
     PortConfigSetActive(&portConfig);
-    TimingInit();
     fprintf(stderr,
             "rage-port: renderer=%s scale=%.2f aspect=%d fps=%d draw_distance=%.2f post=%d\n",
             portConfig.renderer == RAGE_RENDERER_MODERN ? "modern" : "classic",
@@ -103,6 +102,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "failed to initialize disc image\n");
         return EXIT_FAILURE;
     }
+    TimingInit();
     if (!NativeAssetImporterInit() || !ModernInit(&portConfig))
         return EXIT_FAILURE;
     if (!InitNativeGameData()) {

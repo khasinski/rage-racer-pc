@@ -1,4 +1,13 @@
 #include <math.h>
+#include <string.h>
+
+#include "timing_control.h"
+
+RageTimingStandard TimingStandardForRegion(const char *region) {
+    return region != NULL && strncmp(region, "NTSC", 4) == 0
+               ? RAGE_TIMING_NTSC
+               : RAGE_TIMING_PAL;
+}
 
 /* Whether the platform's frame time has drifted off the standard the game was
  * started in. It resets itself to the NTSC figure when it creates its video

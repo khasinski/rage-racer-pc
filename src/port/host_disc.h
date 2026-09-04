@@ -4,6 +4,7 @@
 #include <stddef.h>
 
 int HostInitDisc(void);
+const char *HostDiscRegion(void);
 int HostDumpArchive(const char *path);
 int HostReadStreamSector(unsigned int sector, unsigned char *raw);
 unsigned int HostStreamSectorSpan(int stream);

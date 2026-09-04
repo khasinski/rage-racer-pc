@@ -46,6 +46,7 @@ typedef struct RageHostDisc {
 } RageHostDisc;
 
 static RageHostDisc g_RageHostDisc;
+static const char *s_DiscRegion = "unknown";
 
 static void HostResetCdBackend(void) {
     ChdClose();
@@ -57,7 +58,10 @@ static void HostCloseDisc(void) {
     if (g_RageHostDisc.file != NULL) fclose(g_RageHostDisc.file);
     HostResetCdBackend();
     memset(&g_RageHostDisc, 0, sizeof(g_RageHostDisc));
+    s_DiscRegion = "unknown";
 }
+
+const char *HostDiscRegion(void) { return s_DiscRegion; }
 
 static int HostMakeDiscConfigPath(char *path, size_t size) {
     int written;
@@ -170,6 +174,7 @@ static void HostAdoptDiscStreamTable(void) {
                         "built-in PAL FMV table\n");
         return;
     }
+    s_DiscRegion = identity.region;
     fprintf(stderr, "rage-port: disc %s region=%s\n",
             identity.boot[0] != '\0' ? identity.boot : "unidentified",
             identity.region);

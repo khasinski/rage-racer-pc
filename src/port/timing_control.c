@@ -4,6 +4,7 @@
 #include <string.h>
 #include <psyz/video.h>
 #include "runtime_config.h"
+#include "host_disc.h"
 
 static RageTimingStandard s_standard = RAGE_TIMING_PAL;
 
@@ -38,9 +39,17 @@ void TimingApply(void) {
 
 void TimingInit(void) {
     const char *value = RuntimeConfigGet("timing.standard");
-    TimingSetStandard(value != NULL && strcmp(value, "ntsc") == 0
-                              ? RAGE_TIMING_NTSC
-                              : RAGE_TIMING_PAL);
+    if (value != NULL && strcmp(value, "pal") == 0) {
+        TimingSetStandard(RAGE_TIMING_PAL);
+    } else if (value != NULL && strcmp(value, "ntsc") == 0) {
+        TimingSetStandard(RAGE_TIMING_NTSC);
+    } else {
+        const char *region = HostDiscRegion();
+        fprintf(stderr,
+                "rage-port: timing standard selected from disc region=%s\n",
+                region != NULL ? region : "unknown");
+        TimingSetStandard(TimingStandardForRegion(region));
+    }
 }
 
 int TimingBaseHz(void) { return s_standard == RAGE_TIMING_NTSC ? 60 : 50; }
