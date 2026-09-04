@@ -4,6 +4,7 @@
 #include "common.h"
 #include "game/menu_types.h"
 #include "game/race.h"
+#include "game/race_time_types.h"
 #include "game/result_screen_types.h"
 
 struct PlayerCarRuntime;
@@ -72,17 +73,7 @@ s32 CycleBgmSelectCameraCar(s32 mask, s32 current);
 s32 FramesToMilliseconds(s32 frames, s32 subframeMillis);
 void CommitClassProgress(void);
 
-typedef union SectorReferenceTimes {
-    s32 values[3];
-    struct {
-        s32 first;
-        s32 second;
-        s32 third;
-    } fields;
-} SectorReferenceTimes;
-
 extern s32 g_RaceTotalTime;
-extern SectorReferenceTimes g_RefSectorTimes;
 
 /* Holds the cue that follows FINISHED until the special voices are free, so a
  * fast host frame cannot make the second cue replace the first. Lives in the

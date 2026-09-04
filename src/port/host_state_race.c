@@ -12,8 +12,11 @@
 #include <stddef.h>
 
 #include "common.h"
+#include "game/menu_types.h"
 #include "game/race_hud_internal.h"
+#include "game/race_time_types.h"
 #include "game/result_screen_types.h"
+#include "game/save_types.h"
 
 char g_TextResult[8] __attribute__((aligned(16))) = "RESULT";
 char g_FmtClassGrandPrix[24] __attribute__((aligned(16))) = "CLASS%d %s GRANDPRIX";
@@ -117,16 +120,14 @@ s32 g_SectorTimes[3] __attribute__((aligned(16))) = {
     0, 0, 0
 };
 s32 g_RefLapTime;
-/* SectorReferenceTimes storage; kept untyped here because this translation
- * unit reproduces the retail state layout without importing subsystem headers. */
-unsigned char g_RefSectorTimes[12] __attribute__((aligned(16)));
+SectorReferenceTimes g_RefSectorTimes __attribute__((aligned(16)));
 s32 g_RaceTimeRemaining;
 s16 g_SplitSector;
 s16 g_SplitTimer;
 s16 g_SplitSign;
 s32 g_SplitTargetTime;
 s32 g_CameraCarIndex;
-unsigned char g_CourseProgress[8] __attribute__((aligned(16)));
+CourseProgressState *g_CourseProgress __attribute__((aligned(16)));
 s32 g_CameraViewMode;
 s32 g_ReplayBufferWrapped;
 s32 g_BestTotalTimes[2][4][2];
@@ -141,7 +142,7 @@ s16 g_MirrorViewEnabled;
 s32 g_RecordPanelSlide;
 s32 g_BestLapIndex;
 s32 g_BgmChangeDelay;
-unsigned char g_ClassRecords[44] __attribute__((aligned(16)));
+ScoreRecord g_ClassRecords[CLASS_RECORD_COUNT] __attribute__((aligned(16)));
 s32 g_ReplayFrameCount;
 s32 g_BgmSelectCdTrack;
 s32 g_TimeRecordInsertRow;

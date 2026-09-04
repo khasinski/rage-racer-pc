@@ -14,6 +14,12 @@ _Static_assert(sizeof(g_ResultPanelCluts) == 10,
                "result panel CLUTs must retain their trailing padding");
 _Static_assert(sizeof(g_ClassPlaceBarSizes) == 8,
                "class place bars must retain their trailing padding");
+_Static_assert(sizeof(g_RefSectorTimes) == 12,
+               "reference sector times must retain their retail size");
+_Static_assert(sizeof(g_CourseProgress) == 8,
+               "course progress selector must remain a host pointer");
+_Static_assert(sizeof(g_ClassRecords) == 44,
+               "class records must retain all eleven retail entries");
 _Static_assert(sizeof(g_RaceOptionMarquee) == 4 * 40,
                "race option marquee must remain four fixed-width rows");
 _Static_assert(sizeof(g_CountdownGlyphTable) == 256,
