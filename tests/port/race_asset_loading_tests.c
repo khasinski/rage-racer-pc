@@ -52,6 +52,7 @@ static s32 s_startAudioResult = 1;
 static s32 s_renderCarAsset;
 static s32 s_uploadCount;
 static s32 s_uploadResult = 1;
+static s32 s_uploadFailureAt = -1;
 static const GameImageAssetHeaderWord *s_uploads[5];
 static size_t s_uploadSizes[5];
 static s32 s_validationCount;
@@ -106,13 +107,13 @@ s32 UploadImageAsset(const GameImageAssetHeaderWord *asset, size_t size) {
     s32 index = s_uploadCount++;
     s_uploads[index] = asset;
     s_uploadSizes[index] = size;
-    return s_uploadResult;
+    return s_uploadResult && index != s_uploadFailureAt;
 }
 s32 UploadImageEntry(const GameImageEntryHeader *entry, size_t size) {
     s32 index = s_uploadCount++;
     s_uploads[index] = (const GameImageAssetHeaderWord *)entry;
     s_uploadSizes[index] = size;
-    return 1;
+    return index != s_uploadFailureAt;
 }
 s32 IsValidImageAsset(const GameImageAssetHeaderWord *asset, size_t size) {
     s32 index = s_validationCount++;
@@ -738,6 +739,7 @@ static void TestResidentCourseInstallation(void) {
     s_uploadCount = 0;
     s_validationCount = 0;
     s_validationFailureAt = -1;
+    s_uploadFailureAt = -1;
     s_teamLogoSource = NULL;
     s_textureResetCalls = 0;
     Check(InstallTrackTextureAssetPack(g_AssetBase, sizeof(storage)) == 1,
@@ -755,6 +757,22 @@ static void TestResidentCourseInstallation(void) {
     Check(g_AssetLoadCursor == storage + TRACK_TEXTURE_SHADOW_SIZE,
           "resident course publishes runtime pack cursor");
     Check(s_textureResetCalls == 1, "resident course resets texture swapping");
+
+    for (i = 0; i < 5; i++) {
+        s_uploadCount = 0;
+        s_uploadFailureAt = i;
+        s_teamLogoSource = NULL;
+        s_textureResetCalls = 0;
+        g_TrackTextureShadow = NULL;
+        g_AssetLoadCursor = NULL;
+        Check(InstallTrackTextureAssetPack(g_AssetBase, sizeof(storage)) == 0,
+              "failed texture upload rejects the course pack");
+        Check(s_uploadCount == i + 1 && s_teamLogoSource == NULL &&
+                  s_textureResetCalls == 0 &&
+                  g_TrackTextureShadow == NULL && g_AssetLoadCursor == NULL,
+              "failed texture upload publishes no course texture state");
+    }
+    s_uploadFailureAt = -1;
 
     pack->offsets[1] = pack->offsets[0];
     s_uploadCount = 0;

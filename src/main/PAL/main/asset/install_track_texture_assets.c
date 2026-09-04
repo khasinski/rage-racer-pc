@@ -83,23 +83,31 @@ s32 InstallTrackTextureAssetPack(u8 *base, size_t size) {
         return 0;
     }
 
-    UploadImageAsset(
-        GetImageAssetHeaderWords(view.blocks[TRACK_TEXTURE_PRIMARY_IMAGES]),
-        view.sizes[TRACK_TEXTURE_PRIMARY_IMAGES]);
-    UploadImageAsset(
-        GetImageAssetHeaderWords(view.blocks[TRACK_TEXTURE_SECONDARY_IMAGES]),
-        view.sizes[TRACK_TEXTURE_SECONDARY_IMAGES]);
-    UploadImageEntry(
-        GetImageEntryHeader(view.blocks[TRACK_TEXTURE_CAR_IMAGE]),
-        view.sizes[TRACK_TEXTURE_CAR_IMAGE]);
-    UploadImageAsset(
-        GetImageAssetHeaderWords(view.blocks[TRACK_TEXTURE_ACTIVE_IMAGES]),
-        view.sizes[TRACK_TEXTURE_ACTIVE_IMAGES]);
+    if (!UploadImageAsset(
+            GetImageAssetHeaderWords(
+                view.blocks[TRACK_TEXTURE_PRIMARY_IMAGES]),
+            view.sizes[TRACK_TEXTURE_PRIMARY_IMAGES]) ||
+        !UploadImageAsset(
+            GetImageAssetHeaderWords(
+                view.blocks[TRACK_TEXTURE_SECONDARY_IMAGES]),
+            view.sizes[TRACK_TEXTURE_SECONDARY_IMAGES]) ||
+        !UploadImageEntry(
+            GetImageEntryHeader(view.blocks[TRACK_TEXTURE_CAR_IMAGE]),
+            view.sizes[TRACK_TEXTURE_CAR_IMAGE]) ||
+        !UploadImageAsset(
+            GetImageAssetHeaderWords(
+                view.blocks[TRACK_TEXTURE_ACTIVE_IMAGES]),
+            view.sizes[TRACK_TEXTURE_ACTIVE_IMAGES]) ||
+        !UploadImageAsset(
+            GetImageAssetHeaderWords(
+                view.blocks[TRACK_TEXTURE_DEFERRED_IMAGES]),
+            view.sizes[TRACK_TEXTURE_DEFERRED_IMAGES])) {
+        ClearTrackTextureAssetPack();
+        return 0;
+    }
+
     StoreTeamLogoImage(base);
     g_TrackTextureShadow = GetTrackTextureShadowRows(base);
-    UploadImageAsset(
-        GetImageAssetHeaderWords(view.blocks[TRACK_TEXTURE_DEFERRED_IMAGES]),
-        view.sizes[TRACK_TEXTURE_DEFERRED_IMAGES]);
     ResetTrackTextureSwap();
     g_AssetLoadCursor = base + TRACK_TEXTURE_SHADOW_SIZE;
     return 1;
