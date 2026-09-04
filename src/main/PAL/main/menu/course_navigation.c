@@ -12,6 +12,11 @@ enum {
     COURSE_UNLOCK_CLASS = 2,
 };
 
+typedef struct CourseSelectionRange {
+    s32 first;
+    s32 last;
+} CourseSelectionRange;
+
 static s32 LastSelectableCourse(s32 extraSeries, s32 maxClassReached) {
     if (extraSeries) {
         return maxClassReached < COURSE_UNLOCK_CLASS
@@ -23,41 +28,35 @@ static s32 LastSelectableCourse(s32 extraSeries, s32 maxClassReached) {
         : STANDARD_SERIES_LAST_COURSE_UNLOCKED;
 }
 
-s32 CanSelectPrevCourse(void) {
-    s32 firstCourse = STANDARD_SERIES_FIRST_COURSE;
-    s32 lastCourse;
-
-    if (g_GrandPrixMode && g_SeriesSelection) {
-        firstCourse = EXTRA_SERIES_FIRST_COURSE;
-    }
-    if (g_GrandPrixMode) {
-        lastCourse = LastSelectableCourse(g_SeriesSelection != 0,
-                                          g_GrandPrixClass);
-    } else {
-        s32 extraSeries = g_ExtraGrandPrixUnlocked != 0;
-
-        lastCourse = LastSelectableCourse(
-            extraSeries, g_MaxClassReached[extraSeries]);
-    }
-    return g_CourseIndex > firstCourse && g_CourseIndex <= lastCourse;
-}
-
-s32 CanSelectNextCourse(void) {
+static CourseSelectionRange CurrentCourseSelectionRange(void) {
+    CourseSelectionRange range;
     s32 extraSeries;
-    s32 firstCourse;
     s32 maxClassReached;
 
     if (g_GrandPrixMode) {
         extraSeries = g_SeriesSelection != 0;
-        firstCourse = extraSeries ? EXTRA_SERIES_FIRST_COURSE
+        range.first = extraSeries ? EXTRA_SERIES_FIRST_COURSE
                                   : STANDARD_SERIES_FIRST_COURSE;
         maxClassReached = g_GrandPrixClass;
     } else {
         extraSeries = g_ExtraGrandPrixUnlocked != 0;
-        firstCourse = STANDARD_SERIES_FIRST_COURSE;
+        range.first = STANDARD_SERIES_FIRST_COURSE;
         maxClassReached = g_MaxClassReached[extraSeries];
     }
+    range.last = LastSelectableCourse(extraSeries, maxClassReached);
+    return range;
+}
 
-    return g_CourseIndex >= firstCourse &&
-           g_CourseIndex < LastSelectableCourse(extraSeries, maxClassReached);
+/* Both arrows must use the same live range: only their edge comparison
+ * differs. */
+s32 CanSelectPrevCourse(void) {
+    const CourseSelectionRange range = CurrentCourseSelectionRange();
+
+    return g_CourseIndex > range.first && g_CourseIndex <= range.last;
+}
+
+s32 CanSelectNextCourse(void) {
+    const CourseSelectionRange range = CurrentCourseSelectionRange();
+
+    return g_CourseIndex >= range.first && g_CourseIndex < range.last;
 }
