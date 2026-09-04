@@ -148,17 +148,22 @@ static void ValidatePadPacket(const u8 *raw, PadState *pad) {
     }
 }
 
+enum {
+    PAD_REPEAT_INITIAL_DELAY = 30,
+    PAD_REPEAT_CYCLE_END = 36,
+};
+
 static void UpdatePadAutoRepeat(PadState *pad) {
     pad->pressedRepeat = pad->held & ~g_PadPrevHeld;
     if (pad->held != 0 && pad->held == g_PadPrevHeld) {
-        if (g_PadRepeatTimer[0] == 0x1E) {
+        if (g_PadRepeatTimer == PAD_REPEAT_INITIAL_DELAY) {
             pad->pressedRepeat |= pad->held;
         }
-        g_PadRepeatTimer[0] = g_PadRepeatTimer[0] < 0x24
-                                  ? g_PadRepeatTimer[0] + 1
-                                  : 0x1E;
+        g_PadRepeatTimer = g_PadRepeatTimer < PAD_REPEAT_CYCLE_END
+                               ? g_PadRepeatTimer + 1
+                               : PAD_REPEAT_INITIAL_DELAY;
     } else {
-        g_PadRepeatTimer[0] = 0;
+        g_PadRepeatTimer = 0;
     }
     g_PadPrevHeld = pad->held;
 }

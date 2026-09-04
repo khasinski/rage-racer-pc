@@ -179,7 +179,7 @@ extern u16 g_PadHeld;
 extern u16 g_PadPressedRepeat;
 extern u16 g_PadPressed;
 
-extern u8 g_PadRepeatTimer[];
+extern u8 g_PadRepeatTimer;
 extern s16 g_NegconAnalogI;
 extern s16 g_NegconAnalogII;
 extern s16 g_NegconAnalogL;

@@ -50,7 +50,7 @@ u16 g_PadPrevHeld;
 u16 g_PadHeld;
 u16 g_PadPressed;
 u16 g_PadPressedRepeat;
-u8 g_PadRepeatTimer[4];
+u8 g_PadRepeatTimer;
 s16 g_NegconAnalogI;
 s16 g_NegconAnalogII;
 s16 g_NegconAnalogL;

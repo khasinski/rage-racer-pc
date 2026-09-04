@@ -36,7 +36,7 @@ u16 g_PadPrevHeld;
 u16 g_PadHeld;
 u16 g_PadPressed;
 u16 g_PadPressedRepeat;
-u8 g_PadRepeatTimer[4];
+u8 g_PadRepeatTimer;
 s16 g_NegconAnalogI;
 s16 g_NegconAnalogII;
 s16 g_NegconAnalogL;
@@ -65,7 +65,7 @@ static void Check(const char *what, int got, int wanted) {
 static void Reset(void) {
     memset(g_PadBuffers, 0, sizeof(g_PadBuffers));
     memset(&g_PadState, 0, sizeof(g_PadState));
-    memset(g_PadRepeatTimer, 0, sizeof(g_PadRepeatTimer));
+    g_PadRepeatTimer = 0;
     g_PadPrevHeld = 0;
     g_PadErrorHoldBits = 0;
     g_PadErrorState = PAD_ERROR_STATE_NONE;
@@ -299,7 +299,22 @@ static void AutoRepeatTests(void) {
     for (frame = 0; frame < 40; frame++) Digital(PAD_DOWN);
     Digital(0);
     Check("releasing clears the repeat", g_PadState.pressedRepeat, 0);
-    Check("releasing clears the timer", g_PadRepeatTimer[0], 0);
+    Check("releasing clears the timer", g_PadRepeatTimer, 0);
+
+    /* Changing direction is a fresh press and starts a fresh delay. */
+    Digital(PAD_RIGHT);
+    Check("a changed button repeats at once", g_PadState.pressedRepeat,
+          PAD_RIGHT);
+    Check("a changed button rearms the delay", g_PadRepeatTimer, 0);
+
+    /* A damaged timer recovers into the regular repeat cycle. */
+    g_PadRepeatTimer = 0xFF;
+    Digital(PAD_RIGHT);
+    Check("a corrupt repeat timer does not fire", g_PadState.pressedRepeat, 0);
+    Check("a corrupt repeat timer recovers", g_PadRepeatTimer, 30);
+    Digital(PAD_RIGHT);
+    Check("the recovered timer repeats next frame", g_PadState.pressedRepeat,
+          PAD_RIGHT);
 }
 
 /*
