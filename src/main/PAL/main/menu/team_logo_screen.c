@@ -3,7 +3,7 @@
 #include "game/menu_internal.h"
 #include "game/team_logo.h"
 
-enum TeamLogoScreenState {
+typedef enum TeamLogoScreenState {
     TEAM_LOGO_IDLE = 0,
     TEAM_LOGO_EXIT_TO_SAMPLES = 1,
     TEAM_LOGO_EXIT_TO_DESIGN = 2,
@@ -11,7 +11,7 @@ enum TeamLogoScreenState {
     TEAM_LOGO_SAVE_COUNTDOWN = -2,
     TEAM_LOGO_PAINTING = -3,
     TEAM_LOGO_PAINT_CLOSING = -4,
-};
+} TeamLogoScreenState;
 
 enum TeamLogoOption {
     TEAM_LOGO_OPTION_SAMPLES,
@@ -26,7 +26,7 @@ s32 DrawTeamLogoScreen(s32 step) {
     return AdvanceMenuFade(&g_TeamLogoScreenFade, step);
 }
 
-static void DrawTeamLogoSaveButtons(void *ot, s32 flash) {
+static void DrawTeamLogoSaveButtons(GameOrderingTableEntry *ot, s32 flash) {
     DrawMenuCursorBox(g_MenuSubCursor != 0 ? 0xB8 : 0xDA, 0x44, 0x20, 0x20,
                       flash);
     DrawSprite(ot, 0xC0, 0x4C, 0x10, 0x10, 0x9D, 0x7C, 0, 0, 0, 0x244, 1, 1,
@@ -96,7 +96,7 @@ static void UpdateTeamLogoIdle(void) {
     }
 }
 
-static void UpdateTeamLogoSavePrompt(void *ot) {
+static void UpdateTeamLogoSavePrompt(GameOrderingTableEntry *ot) {
     MenuDialogAction action;
 
     RunTimedDrawScript(g_TeamLogoScreenScript2, &g_UiScriptProgress2, 0);
@@ -128,7 +128,7 @@ static void UpdateTeamLogoSavePrompt(void *ot) {
     DrawTeamLogoCanvas(1, 0);
 }
 
-static void UpdateTeamLogoSaveCountdown(void *ot) {
+static void UpdateTeamLogoSaveCountdown(GameOrderingTableEntry *ot) {
     if (g_MenuConfirmTimer <= 0) {
         RunTimedDrawScript(g_TeamLogoScreenScript2, &g_UiScriptProgress2, -1);
         RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
@@ -176,7 +176,8 @@ static void UpdateTeamLogoPaintClosing(void) {
     }
 }
 
-static void UpdateActiveTeamLogoModal(void *ot, s32 state) {
+static void UpdateActiveTeamLogoModal(GameOrderingTableEntry *ot,
+                                      TeamLogoScreenState state) {
     switch (state) {
     case TEAM_LOGO_SAVE_PROMPT:
         UpdateTeamLogoSavePrompt(ot);
@@ -190,13 +191,15 @@ static void UpdateActiveTeamLogoModal(void *ot, s32 state) {
     case TEAM_LOGO_PAINT_CLOSING:
         UpdateTeamLogoPaintClosing();
         break;
+    default:
+        break;
     }
     DrawFadingMenuSprites(g_UiScriptProgress, 2, g_TeamLogoOption);
     RunTimedDrawScript(g_TeamLogoScreenScript, &g_UiScriptProgress, 0);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
 }
 
-static void UpdateTeamLogoOutgoing(s32 state) {
+static void UpdateTeamLogoOutgoing(TeamLogoScreenState state) {
     g_MenuHandlerIndex = -1;
     g_MenuOutgoingHandlerIndex = MENU_SCREEN_TEAM_LOGO;
     DrawTeamLogoCanvas(state == TEAM_LOGO_EXIT_TO_DESIGN ? -1 : 1, 0);
@@ -230,7 +233,7 @@ static void UpdateTeamLogoOutgoing(s32 state) {
 }
 
 void UpdateTeamLogoScreen(void) {
-    s32 state = GameMenuBusy;
+    TeamLogoScreenState state = (TeamLogoScreenState)GameMenuBusy;
 
     g_TeamLogoOption = AddClampedMenuValue(
         g_TeamLogoOption, 0, 0, TEAM_LOGO_OPTION_COUNT - 1);
