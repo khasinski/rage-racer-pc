@@ -109,6 +109,10 @@ static void ApplyIndexedEffectVoiceOutput(s32 index) {
                     g_IndexedEffectPitch & 0x7F);
 }
 
+static s32 IsValidIndexedEffectIndex(s32 index) {
+    return (u32)index < AUDIO_INDEXED_EFFECT_COUNT;
+}
+
 void SetIndexedEffectVoice(s32 index, s32 phase, s32 volume) {
     if (index < -1) {
         index = -1;
@@ -134,6 +138,13 @@ void UpdateIndexedEffectVoice(void) {
      * the same condition the rest of the function is already guarded by. */
     previous = g_IndexedEffectIndexPrev;
     index = g_IndexedEffectIndex;
+    if (!IsValidIndexedEffectIndex(previous)) {
+        previous = -1;
+    }
+    if (!IsValidIndexedEffectIndex(index)) {
+        index = -1;
+        g_IndexedEffectIndex = -1;
+    }
     if (previous < 0) {
         if (index >= 0) {
             StartIndexedEffectVoice(g_IndexedEffects[index].tone);
@@ -148,14 +159,14 @@ void UpdateIndexedEffectVoice(void) {
         ApplyIndexedEffectVoiceOutput(index);
     }
 
-    g_IndexedEffectIndexPrev = g_IndexedEffectIndex;
+    g_IndexedEffectIndexPrev = index;
 }
 
 void ForceIndexedEffectVoiceEnabled(s32 enabled) {
     s32 index = g_IndexedEffectIndexPrev;
 
     if (enabled != 0) {
-        if (index < 0) {
+        if (!IsValidIndexedEffectIndex(index)) {
             return;
         }
         StartIndexedEffectVoice(g_IndexedEffects[index].tone);
@@ -189,6 +200,9 @@ void UpdateBasicEffectVoices(void) {
             channel->mode = MUSIC_CHANNEL_IDLE;
             break;
         case MUSIC_CHANNEL_IDLE:
+            break;
+        default:
+            channel->mode = MUSIC_CHANNEL_IDLE;
             break;
         }
     }

@@ -179,6 +179,18 @@ static int TestIndexedEffectVoice(void) {
     ResetCalls();
     ForceIndexedEffectVoiceEnabled(0);
     CHECK(s_keyOffCount == 1 && s_volumeCount == 0 && s_pitchCount == 0);
+
+    g_IndexedEffectIndexPrev = 99;
+    ResetCalls();
+    ForceIndexedEffectVoiceEnabled(1);
+    CHECK(s_keyOnCount == 0 && s_volumeCount == 0 && s_pitchCount == 0);
+
+    g_IndexedEffectIndexPrev = 1;
+    g_IndexedEffectIndex = 99;
+    ResetCalls();
+    UpdateIndexedEffectVoice();
+    CHECK(g_IndexedEffectIndex == -1 && g_IndexedEffectIndexPrev == -1);
+    CHECK(s_keyOffCount == 1 && s_volumeCount == 0 && s_pitchCount == 0);
     return 0;
 }
 
@@ -208,6 +220,12 @@ static int TestBasicEffectVoices(void) {
     ResetCalls();
     UpdateBasicEffectVoices();
     CHECK(s_keyOnCount == 0 && s_keyOffCount == 0 && s_volumeCount == 1);
+
+    g_MusicChannels[0].mode = (MusicChannelState)99;
+    ResetCalls();
+    UpdateBasicEffectVoices();
+    CHECK(g_MusicChannels[0].mode == MUSIC_CHANNEL_IDLE);
+    CHECK(s_keyOnCount == 0 && s_keyOffCount == 0 && s_volumeCount == 0);
 
     g_MusicChannels[1].left.value = -1;
     ResetCalls();
