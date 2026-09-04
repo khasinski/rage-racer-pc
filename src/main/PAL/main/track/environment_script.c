@@ -131,6 +131,16 @@ static s32 NormalizeEnvironmentTime(s32 time, s32 length) {
     return time < 0 ? time + length : time;
 }
 
+static s16 EnvironmentCueFrame(s32 clock, s32 cueTime, s32 loopLength,
+                               s16 duration) {
+    int64_t elapsed = (int64_t)clock - cueTime;
+
+    if (elapsed < 0) {
+        elapsed += loopLength;
+    }
+    return elapsed > duration ? duration : (s16)elapsed;
+}
+
 static void SetCurrentEnvironmentColors(const GameEnvironmentCue *cue) {
     s32 slot;
 
@@ -160,7 +170,6 @@ static void ApplyFogSettings(void) {
 void SeekEnvironmentScript(s32 targetTime) {
     const GameEnvironmentCue *previousCue;
     const GameEnvironmentCue *targetCue;
-    s32 frame;
 
     if (g_EnvScriptLength <= 0 || g_EnvScriptCues == NULL) {
         g_EnvScriptClock = 0;
@@ -175,10 +184,9 @@ void SeekEnvironmentScript(s32 targetTime) {
 
     targetCue = NextEnvironmentCue(previousCue);
     LoadEnvironmentCue(targetCue);
-    frame = (u16)g_EnvScriptClock - (u16)targetCue->time;
-    g_EnvLerpFrame = (s16)frame > g_EnvLerpDuration
-        ? g_EnvLerpDuration
-        : (s16)frame;
+    g_EnvLerpFrame = EnvironmentCueFrame(
+        g_EnvScriptClock, targetCue->time, g_EnvScriptLength,
+        g_EnvLerpDuration);
     g_EnvScriptCursor = NextEnvironmentCue(targetCue);
 
     g_EnvScriptEnabled = 1;

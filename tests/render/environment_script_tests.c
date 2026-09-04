@@ -206,6 +206,14 @@ int main(void) {
         return 1;
     }
 
+    g_EnvScriptLength = 100000;
+    SeekEnvironmentScript(65541);
+    if (g_EnvLerpFrame != 10 || g_EnvScriptClock != 65542) {
+        puts("FAIL: long environment seek uses full-width time");
+        return 1;
+    }
+    g_EnvScriptLength = 30;
+
     cues[1].duration = 0;
     SeekEnvironmentScript(15);
     if (g_EnvLerpDuration != 1 || g_EnvLerpFrame != 1 ||
