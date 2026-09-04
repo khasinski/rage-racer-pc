@@ -84,6 +84,13 @@ static void TestSequenceTicking(void) {
     for (frame = 0; frame < 3; frame++) TickSequenceAudio();
     Check(s_sequenceTicks == 9 && s_fadeUpdates == 5 && s_damperSteps == 9,
           "NTSC frames service one sequence tick without an inactive fade");
+
+    s_frameHz = 0;
+    TickSequenceAudio();
+    s_frameHz = -1;
+    TickSequenceAudio();
+    Check(s_sequenceTicks == 11 && s_damperSteps == 11,
+          "invalid frame rates fall back to the sequence clock");
 }
 
 static void TestReverbDepth(void) {

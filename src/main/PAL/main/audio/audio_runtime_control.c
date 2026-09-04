@@ -32,6 +32,9 @@ void TickSequenceAudio(void) {
     } else {
         s32 frameHz = TimingBaseHz();
 
+        if (frameHz <= 0) {
+            frameHz = SEQUENCE_TICK_HZ;
+        }
         tickCredit += SEQUENCE_TICK_HZ;
         while (tickCredit >= frameHz) {
             tickCredit -= frameHz;
