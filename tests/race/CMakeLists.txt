@@ -704,6 +704,27 @@ endif()
 add_test(NAME round_screen_rules COMMAND round_screen_rules_tests)
 set_tests_properties(round_screen_rules PROPERTIES LABELS unit)
 
+add_executable(round_screen_tests
+    round_screen_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/round_screen.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/round_screen_rules.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/bgm_track.c)
+target_include_directories(round_screen_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(round_screen_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(round_screen_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(round_screen_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME round_screen COMMAND round_screen_tests)
+set_tests_properties(round_screen PROPERTIES LABELS functional)
+
 add_executable(race_end_rules_tests
     race_end_rules_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/race_end_rules.c)
