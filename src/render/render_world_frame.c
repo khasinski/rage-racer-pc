@@ -25,6 +25,14 @@ static void InterpolateVec3(const RageRenderVec3 *previous,
     out->z = previous->z + (current->z - previous->z) * t;
 }
 
+static float InterpolateWrapped(float previous, float current,
+                                float period, float t) {
+    float delta = current - previous;
+    while (delta > period * 0.5f) delta -= period;
+    while (delta < period * -0.5f) delta += period;
+    return previous + delta * t;
+}
+
 float RenderLerpAngleDegrees(float from, float to, float t) {
     float delta;
 
@@ -136,6 +144,13 @@ void RenderInterpolateCamera(const RageRenderCamera *previous,
                         &out->skyGridColumn);
         InterpolateVec3(&previous->skyGridRow, &current->skyGridRow, t,
                         &out->skyGridRow);
+        /* The panorama is eight tiles wide, while the classic layout's
+         * texture column wraps after the 32 half-angle steps.  Treating the
+         * 31 -> 0 boundary as an ordinary scalar sends an interpolated frame
+         * backwards through almost four panoramas, which looks like flashing
+         * and counter-motion during rotating attract cameras. */
+        out->skyGridColumn.z = InterpolateWrapped(
+            previous->skyGridColumn.z, current->skyGridColumn.z, 8.0f, t);
     }
     out->fogNear = previous->fogNear +
         (current->fogNear - previous->fogNear) * t;

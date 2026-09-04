@@ -182,6 +182,21 @@ static void test_camera_is_scene_data_not_backend_state(void) {
     EXPECT_EQ(-64, (int)camera.skyGridOrigin.x);
     EXPECT_EQ(104, (int)camera.skyGridOrigin.y);
     EXPECT_EQ(45, (int)(camera.skyGridColumn.z * 10.0f));
+
+    /* Crossing the yaw wrap must advance 31 -> 32 (equivalent to zero in an
+     * eight-tile panorama), never interpolate backwards through 15.5. */
+    world.previousCamera.skyGridColumn.z = 31.0f;
+    world.camera.skyGridColumn.z = 0.0f;
+    world.previousCamera.skyGridOrigin.x = -317.0f;
+    world.camera.skyGridOrigin.x = -257.0f;
+    RenderInterpolateCamera(&world.previousCamera, &world.camera, 0.5f,
+                            &camera);
+    EXPECT_EQ(315, (int)(camera.skyGridColumn.z * 10.0f));
+    {
+        float texturePhase = camera.skyGridColumn.z +
+            (160.0f - camera.skyGridOrigin.x) / 64.0f;
+        EXPECT_EQ(384, (int)(texturePhase * 10.0f));
+    }
 }
 
 static void test_directional_light_is_scene_data(void) {
