@@ -3,32 +3,6 @@
 #include "game/menu_internal.h"
 #include "game/race.h"
 
-/* Draws the first half of a sliding label and returns its Y for the rest. */
-static s32 DrawSlidingSprite(
-    void *ot,
-    s32 x,
-    s32 baseY,
-    s32 slide,
-    s32 w,
-    s32 h,
-    s32 u,
-    s32 v,
-    s32 r,
-    s32 g,
-    s32 b,
-    s32 clut,
-    s32 shadeTex,
-    s32 semiTrans,
-    s32 flags) {
-    s32 y;
-
-    y = baseY - slide;
-    DrawSprite(
-        ot, x, y, w, h, u, v, r, g, b, clut,
-        shadeTex, semiTrans, flags);
-    return y;
-}
-
 s32 DrawCourseSelectScreen(s32 step) {
     GameOrderingTableEntry *ot;
     u8 fade;
@@ -73,9 +47,9 @@ s32 DrawCourseSelectScreen(s32 step) {
                 0x10, 0xEC, 0x48, fade, fade, fade, 0x244, 0, 1, 0x5B);
         }
 
-        coordinateY = DrawSlidingSprite(
-            ot, 0x50, 0x97, slide, 0x1A, 0x10, 0x60, 0xCC,
-            fade, fade, fade, 0x244, 0, 1, 0x5B);
+        coordinateY = 0x97 - slide;
+        DrawSprite(ot, 0x50, coordinateY, 0x1A, 0x10, 0x60, 0xCC,
+                   fade, fade, fade, 0x244, 0, 1, 0x5B);
         if (CourseSelectClassIndexValid(g_GrandPrixClass)) {
             DrawSprite(
                 ot, 0x6C, coordinateY, 8, 0x10,
@@ -99,24 +73,25 @@ s32 DrawCourseSelectScreen(s32 step) {
             0x60, 0x88, fade, fade, fade, 0x25B, 0, 1, 0x39);
     }
 
-    coordinateY = DrawSlidingSprite(
-        ot, 0x4C, 0xD0, slide, 0x18, 0xC, 0x18, 0xDC,
-        fade, fade, fade, 0x244, 0, 1, 0x3A);
+    coordinateY = 0xD0 - slide;
+    DrawSprite(ot, 0x4C, coordinateY, 0x18, 0xC, 0x18, 0xDC,
+               fade, fade, fade, 0x244, 0, 1, 0x3A);
     DrawSprite(
         ot, 0x68, coordinateY, 0x12, 0xC,
         0x32, 0xDC, fade, fade, fade, 0x244, 0, 1, 0x3A);
 
-    coordinateY = DrawSlidingSprite(
-        ot, 0x4C, 0xF8, slide, 0x18, 0xC, 0x18, 0xDC,
-        fade, fade, fade, 0x244, 0, 1, 0x3A);
+    coordinateY = 0xF8 - slide;
+    DrawSprite(ot, 0x4C, coordinateY, 0x18, 0xC, 0x18, 0xDC,
+               fade, fade, fade, 0x244, 0, 1, 0x3A);
     DrawSprite(
         ot, 0x68, coordinateY, 0x1A, 0xC,
         0x46, 0xDC, fade, fade, fade, 0x244, 0, 1, 0x3A);
 
     if (GetCourseLabelSprites(course, &courseLabel)) {
-        coordinateY = DrawSlidingSprite(
-            ot, 0x4C, 0xE0, slide, 8, 0x10, courseLabel.prefixTextureU, 0x18,
-            fade, fade, fade, 0x244, 0, 1, 0x3B);
+        coordinateY = 0xE0 - slide;
+        DrawSprite(ot, 0x4C, coordinateY, 8, 0x10,
+                   courseLabel.prefixTextureU, 0x18, fade, fade, fade,
+                   0x244, 0, 1, 0x3B);
         DrawSprite(
             ot, 0x54, coordinateY, courseLabel.nameWidth, 0x10,
             courseLabel.nameTextureU, courseLabel.nameTextureV, fade, fade,
