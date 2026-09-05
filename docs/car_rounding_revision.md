@@ -101,3 +101,25 @@ release capture verifies the native material correction in the actual game.
 - [Latest game comparison](../build/car-upgrade-evidence/esperanza-liners-glass-final-comparison.png)
 - [Low view with steering](../build/car-upgrade-evidence/esperanza-well-liners-low-steered.png)
 - [Wheel-well closure inspection](../build/car-upgrade-evidence/esperanza-well-liners-open-inspection.png)
+
+## Fender/liner intersection correction
+
+The top side-panel triangles still fanned from one distant anchor across the
+curved opening. Some triangles consequently crossed the liner, producing the
+raised dark fragment and light pinholes above the front tire. Re-triangulating
+each affected panel in the longitudinal/vertical side projection preserves its
+concave boundary. The same defect was found and corrected in the rear panels.
+All four panels retain their existing boundary positions, UVs, corner colors,
+and normals; the body remains 602 triangles. Hood and wheel geometry are unchanged.
+
+The C asset test now checks panel edges against liner triangles in both
+directions, excluding intentional shared edges and vertices. It passes the new
+body and rejects the previously committed body (`fender-negative-control.log`).
+The four focused tests pass (`fender-topology-tests.log`), and the saved Blender
+body again reproduces the embedded native bytes. Blender checks found no strict
+panel/liner crossings and included close before/after views with 25-degree
+front-wheel steering. The final release view confirms the clean front arch:
+
+- [Game close-up before/after](../build/car-upgrade-evidence/esperanza-fender-fixed-comparison.png)
+- [Blender close-up before](../build/car-upgrade-evidence/fender-close-before.png)
+- [Blender close-up after](../build/car-upgrade-evidence/fender-close-after.png)

@@ -91,6 +91,61 @@ static int ValidateAbeillePanelColorSeam(void) {
     return 0;
 }
 
+static void TestCross(const float a[3], const float b[3], float out[3]) {
+    out[0]=a[1]*b[2]-a[2]*b[1];out[1]=a[2]*b[0]-a[0]*b[2];out[2]=a[0]*b[1]-a[1]*b[0];
+}
+static float TestDot(const float a[3], const float b[3]) {
+    return a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+}
+static int SegmentCrossesTriangle(const float a[3], const float b[3],
+                                 const RageRuntimeVertex tri[3]) {
+    float d[3],e1[3],e2[3],p[3],q[3],s[3],det,u,v,t;
+    unsigned k;
+    for(k=0;k<3;k++) {
+        d[k]=b[k]-a[k];e1[k]=tri[1].position[k]-tri[0].position[k];
+        e2[k]=tri[2].position[k]-tri[0].position[k];s[k]=a[k]-tri[0].position[k];
+    }
+    TestCross(d,e2,p);det=TestDot(e1,p);
+    if(fabsf(det)<.00001f) return 0;
+    u=TestDot(s,p)/det;TestCross(s,e1,q);v=TestDot(d,q)/det;t=TestDot(e2,q)/det;
+    /* Shared edges and vertices are intentional at the arch lip. */
+    return u>.0001f && v>.0001f && u+v<.9999f && t>.0001f && t<.9999f;
+}
+static int ValidateFenderIntersections(const void *bytes, size_t size) {
+    RageRuntimeMesh mesh;
+    uint32_t i,j,k,index;
+    const uint32_t liner=RAGE_RUNTIME_MATERIAL_METADATA | RAGE_RUNTIME_MATERIAL_INDEX_MASK;
+    CHECK(RuntimeMeshOpen(&mesh,bytes,size));
+    for(i=0;i<mesh.indexCount;i+=3) {
+        RageRuntimeVertex panel[3];
+        for(k=0;k<3;k++) {
+            CHECK(RuntimeMeshIndex(&mesh,i+k,&index));CHECK(RuntimeMeshVertex(&mesh,index,&panel[k]));
+        }
+        if(panel[0].material==liner) continue;
+        for(j=0;j<mesh.indexCount;j+=3) {
+            RageRuntimeVertex wall[3];
+            int separate=0;
+            for(k=0;k<3;k++) {
+                CHECK(RuntimeMeshIndex(&mesh,j+k,&index));CHECK(RuntimeMeshVertex(&mesh,index,&wall[k]));
+            }
+            if(wall[0].material!=liner) continue;
+            for(k=0;k<3;k++) {
+                float pmin=fminf(panel[0].position[k],fminf(panel[1].position[k],panel[2].position[k]));
+                float pmax=fmaxf(panel[0].position[k],fmaxf(panel[1].position[k],panel[2].position[k]));
+                float wmin=fminf(wall[0].position[k],fminf(wall[1].position[k],wall[2].position[k]));
+                float wmax=fmaxf(wall[0].position[k],fmaxf(wall[1].position[k],wall[2].position[k]));
+                if(pmax<wmin || wmax<pmin) separate=1;
+            }
+            if(separate) continue;
+            for(k=0;k<3;k++) {
+                CHECK(!SegmentCrossesTriangle(panel[k].position,panel[(k+1)%3].position,wall));
+                CHECK(!SegmentCrossesTriangle(wall[k].position,wall[(k+1)%3].position,panel));
+            }
+        }
+    }
+    return 0;
+}
+
 static int ValidateEsperanzaWellLiners(void) {
     RageRuntimeMesh mesh;
     unsigned hood = 0, liners = 0;
@@ -332,6 +387,7 @@ int main(void) {
     CHECK(ValidateRegistry()==0);
     CHECK(ValidateRoundedEsperanza()==0);
     CHECK(ValidateEsperanzaWellLiners()==0);
+    CHECK(ValidateFenderIntersections(s_esperanza_rounded,sizeof(s_esperanza_rounded))==0);
     CHECK(ValidatePegaseHoodDecal()==0);
     puts("authored car geometry, scale, normals, seams and material registries valid");
     return 0;
