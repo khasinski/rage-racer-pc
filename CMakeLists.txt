@@ -175,6 +175,20 @@ foreach(variant IN LISTS variants)
         VERBATIM)
 endforeach()
 endforeach()
+file(GLOB RAGE_ROUNDED_CAR_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/cars/rounded/*.obj")
+foreach(source IN LISTS RAGE_ROUNDED_CAR_SOURCES)
+    get_filename_component(stem "${source}" NAME_WE)
+    string(REPLACE "-" "_" symbol "rounded_${stem}")
+    list(APPEND RAGE_AUTHORED_OTHER_OUTPUTS "${RAGE_AUTHORED_DIR}/${symbol}.inc")
+    add_custom_command(OUTPUT "${RAGE_AUTHORED_DIR}/${symbol}.inc"
+        COMMAND rage-mesh-obj import "${source}" "${RAGE_AUTHORED_DIR}/${symbol}.rmesh"
+        COMMAND ${CMAKE_COMMAND} "-DINPUT=${RAGE_AUTHORED_DIR}/${symbol}.rmesh"
+            "-DOUTPUT=${RAGE_AUTHORED_DIR}/${symbol}.inc" "-DSYMBOL=s_${symbol}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/tools/scripts/embed_car_mesh.cmake"
+        DEPENDS rage-mesh-obj "${source}" tools/scripts/embed_car_mesh.cmake
+        VERBATIM)
+endforeach()
 add_custom_target(rage-authored-cars DEPENDS "${RAGE_AUTHORED_DIR}/erriso_body.inc"
     "${RAGE_AUTHORED_DIR}/erriso_rival.inc" ${RAGE_AUTHORED_OTHER_OUTPUTS})
 include_directories("${RAGE_AUTHORED_DIR}")

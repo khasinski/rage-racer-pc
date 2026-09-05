@@ -1,9 +1,12 @@
 # Ulepszone samochody — lokalny build
 
-Aktualizacja po ocenie wizualnej: bazowa Esperanza ma teraz okrągłe koła,
-przebudowane nadkola i oddzielne materiały szyb/lakieru/gumy/felg.
-[Zakres mocniejszej poprawki i nowe porównanie](car_rounding_revision.md).
-Pozostałe auta nadal reprezentują opisany poniżej, subtelniejszy pierwszy etap.
+Aktualizacja po ocenie wizualnej: mocniejsza poprawka obejmuje już całą flotę,
+włącznie z tuningiem i rywalami. Wszystkie koła są zaokrąglone, nadkola mają
+wewnętrzne osłony, a szyby, lakier, guma i felgi mają osobne materiały.
+[Aktualny zakres i weryfikacja](car_rounded_fleet.md),
+[galeria przed/po](../build/car-upgrade-evidence/rounded-fleet-gallery.html),
+[nowa aplikacja](../build/fleet/Rage%20Racer.app).
+Poniżej zachowano raport wcześniejszego, subtelniejszego etapu.
 
 Gotowy lokalny build: [Rage Racer.app](../build/package-audit/Rage%20Racer.app).
 Uruchom go dwuklikiem. Samochody są zintegrowane i obejrzane w modern rendererze.

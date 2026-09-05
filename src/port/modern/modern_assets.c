@@ -78,8 +78,9 @@ static const RageRuntimeCachedMesh *ModernAuthoredCar(
         free(owned);
         owned = bytes;
         working.mesh = next;
-        fprintf(stderr, "rage-port: authored %s %s body installed asset=%u (%u triangles)\n",
+        fprintf(stderr, "rage-port: authored %s %s %s installed asset=%u (%u triangles)\n",
                 car->name, car->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ? "player" : "rival",
+                (car->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ? car->submesh == 0 : car->submesh % 5 == 0) ? "body" : "wheel",
                 car->assetKey, body.indexCount/3);
     }
     working.ownedBytes = owned;
@@ -582,6 +583,26 @@ static int ModernAssetsLoadBaseMaterial(const RageRenderMeshInstance *instance,
     return 1;
 }
 
+static uint16_t ModernPlayerMarkingClut(const RageRenderMeshInstance *instance,
+                                      uint32_t slot) {
+    size_t i, j;
+    if (instance->assetSet != RAGE_RENDER_ASSET_MODEL_BANK) return 0;
+    for (i = 0; i < RAGE_AUTHORED_CAR_COUNT; ++i) {
+        const AuthoredCarReplacement *car = &s_authoredCars[i];
+        if (!AuthoredCarMatches(car, instance)) continue;
+        for (j = 0; j < car->materialCount; ++j) {
+            const AuthoredCarMaterial *m = &car->materials[j];
+            int resolved;
+            if (m->page != 10 || (m->clut != 0x3bef && m->clut != 0x7801))
+                continue;
+            resolved = s_importerSource ? NativeAssetImporterMaterialSlot(
+                instance, m->page, m->clut) : m->cacheSlot;
+            if (resolved >= 0 && (uint32_t)resolved == slot) return m->clut;
+        }
+    }
+    return 0;
+}
+
 int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
                              uint32_t material, uint8_t variant,
                              RageRenderMaterial *definition,
@@ -595,12 +616,12 @@ int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
     }
     if (!ModernAssetsLoadBaseMaterial(instance, material, variant, definition, image))
         return 0;
-    if (instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
-        (surface == RAGE_CAR_SURFACE_GLASS || surface == RAGE_CAR_SURFACE_DECAL) &&
-        !NativeAssetImporterApplyPlayerMarkings(
-            surface == RAGE_CAR_SURFACE_GLASS ? 0x3bef : 0x7801, image)) {
-        ModernAssetsFreeMaterialImage(image);
-        return 0;
+    if (surface == RAGE_CAR_SURFACE_GLASS || surface == RAGE_CAR_SURFACE_DECAL) {
+        uint16_t clut = ModernPlayerMarkingClut(instance, material);
+        if (clut && !NativeAssetImporterApplyPlayerMarkings(clut, image)) {
+            ModernAssetsFreeMaterialImage(image);
+            return 0;
+        }
     }
     AuthoredCarSurfaceApply(surface, definition);
     AuthoredCarSurfaceTexture(surface, image->pixels, image->size);

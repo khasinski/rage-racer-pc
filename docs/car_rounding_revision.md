@@ -2,9 +2,10 @@
 
 The first pass was too conservative: it retained the original wheels and only
 slightly beveled the bodies. This revision establishes a more visible baseline
-on **base Esperanza, player bank 28**. Other cars and Esperanza upgrades still
-use the previous pass; their completion in the fleet report does not mean they
-have received this stronger revision.
+on **base Esperanza, player bank 28**, and now extends it to the entire fleet,
+including upgrades and rivals. See [the fleet revision](car_rounded_fleet.md)
+for the final coverage and comparisons. The sections below document the
+Esperanza baseline and its follow-up corrections.
 
 ## Implemented
 
