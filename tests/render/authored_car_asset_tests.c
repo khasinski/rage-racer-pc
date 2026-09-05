@@ -91,6 +91,62 @@ static int ValidateAbeillePanelColorSeam(void) {
     return 0;
 }
 
+static int ValidateEsperanzaWellLiners(void) {
+    RageRuntimeMesh mesh;
+    unsigned hood = 0, liners = 0;
+    int side, axle, sample;
+    uint32_t i;
+    static const float samples[][2] = {{0,0},{30,0},{45,0},{20,30},{20,-30}};
+    CHECK(RuntimeMeshOpen(&mesh, s_esperanza_rounded, sizeof(s_esperanza_rounded)));
+    for (i = 0; i < mesh.vertexCount; i++) {
+        RageRuntimeVertex v;
+        CHECK(RuntimeMeshVertex(&mesh,i,&v));
+        if (v.material == (RAGE_RUNTIME_MATERIAL_METADATA | RAGE_RUNTIME_MATERIAL_INDEX_MASK)) {
+            CHECK(v.color[0] <= 7 && v.color[1] <= 7 && v.color[2] <= 7);
+            liners++;
+        }
+        if (fabsf(v.position[0]-50)<.001f && fabsf(v.position[1]-59)<.001f &&
+            fabsf(v.position[2]-399)<.001f) {
+            CHECK(fabsf(v.normal[0]-.03248f)<.002f);
+            CHECK(fabsf(v.normal[1]-.98228f)<.002f);
+            CHECK(fabsf(v.normal[2]-.18459f)<.002f);
+            hood++;
+        }
+    }
+    CHECK(liners > 300 && hood > 0);
+    /* Rays from each wheel opening must hit the outward-facing inner closure,
+     * rather than passing through the car to the opposite body panel. */
+    for (side = -1; side <= 1; side += 2) for (axle = 0; axle < 2; axle++)
+        for (sample = 0; sample < 5; sample++) {
+            int hit = 0;
+            for (i = 0; i < mesh.indexCount; i += 3) {
+                RageRuntimeVertex v[3];
+                uint32_t j,index;
+                float ay,az,by,bz,py,pz,det,u,w;
+                for (j = 0; j < 3; j++) {
+                    CHECK(RuntimeMeshIndex(&mesh,i+j,&index));
+                    CHECK(RuntimeMeshVertex(&mesh,index,&v[j]));
+                }
+                if (v[0].material != (RAGE_RUNTIME_MATERIAL_METADATA | RAGE_RUNTIME_MATERIAL_INDEX_MASK)) continue;
+                if (fabsf(v[0].position[0]-side*74)>.001f ||
+                    fabsf(v[1].position[0]-side*74)>.001f ||
+                    fabsf(v[2].position[0]-side*74)>.001f) continue;
+                ay=v[1].position[1]-v[0].position[1];
+                az=v[1].position[2]-v[0].position[2];
+                by=v[2].position[1]-v[0].position[1];
+                bz=v[2].position[2]-v[0].position[2];
+                det=ay*bz-az*by;
+                CHECK(det*side > 0 && v[0].normal[0]*side>.99f);
+                py=samples[sample][0]-v[0].position[1];
+                pz=samples[sample][1]+axle*368-v[0].position[2];
+                u=(py*bz-pz*by)/det;w=(ay*pz-az*py)/det;
+                if(u>=-.0001f && w>=-.0001f && u+w<=1.0001f) hit=1;
+            }
+            CHECK(hit);
+        }
+    return 0;
+}
+
 static int ValidateRoundedEsperanza(void) {
     size_t entry;
     unsigned wheels = 0, glass = 0, paint = 0, arc = 0;
@@ -275,6 +331,7 @@ int main(void) {
     CHECK(ValidateAbeillePanelColorSeam()==0);
     CHECK(ValidateRegistry()==0);
     CHECK(ValidateRoundedEsperanza()==0);
+    CHECK(ValidateEsperanzaWellLiners()==0);
     CHECK(ValidatePegaseHoodDecal()==0);
     puts("authored car geometry, scale, normals, seams and material registries valid");
     return 0;

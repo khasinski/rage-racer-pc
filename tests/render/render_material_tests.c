@@ -87,6 +87,17 @@ int main(void) {
         material = original;
         AuthoredCarSurfaceApply(RAGE_CAR_SURFACE_ORIGINAL, &material);
         EXPECT(memcmp(&material, &original, sizeof(material)) == 0);
+        {
+            uint8_t pixels[] = {240,240,240,255, 5,8,12,0};
+            uint8_t saved[sizeof(pixels)];
+            memcpy(saved, pixels, sizeof(pixels));
+            AuthoredCarSurfaceTexture(RAGE_CAR_SURFACE_PAINT, pixels, sizeof(pixels));
+            EXPECT(memcmp(saved, pixels, sizeof(pixels)) == 0);
+            AuthoredCarSurfaceTexture(RAGE_CAR_SURFACE_GLASS, pixels, sizeof(pixels));
+            EXPECT(memcmp(pixels, pixels + 4, 3) == 0);
+            EXPECT(pixels[0] == 18 && pixels[1] == 25 && pixels[2] == 32);
+            EXPECT(pixels[3] == 255 && pixels[7] == 0);
+        }
     }
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

@@ -596,6 +596,7 @@ int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
     if (!ModernAssetsLoadBaseMaterial(instance, material, variant, definition, image))
         return 0;
     AuthoredCarSurfaceApply(surface, definition);
+    AuthoredCarSurfaceTexture(surface, image->pixels, image->size);
     return 1;
 }
 

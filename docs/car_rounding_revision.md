@@ -66,3 +66,38 @@ Evidence is in `build/car-upgrade-evidence`:
 The comparison uses the same scenario, camera, and capture time; original is
 left. The detail image only crops and enlarges those actual game captures.
 The known environment atlas problem in custom track starts is still present.
+
+## Wheel-well interiors, hood, and glass follow-up
+
+Base Esperanza now includes 316 dark liner triangles: the curved inner walls
+and an inboard closure at each of its four wheel openings. The original
+cross-car strips were removed because they intersected the new curved wells.
+The bottom remains open for the tire. The inner closures sit at lateral
+positions ±74, clear of the original wheel assembly and its steering sweep.
+They use a matte untextured material with the native metadata flag and the
+untextured sentinel (`0x2000ffff`); a bare `0x0000ffff` is not a drawable
+untextured material in the native draw builder.
+
+Original panel normals were restored, including the hood. Its positions
+had not changed, but recomputed smooth normals had changed its appearance.
+The original hood silhouette and UVs remain, with the separate paint response.
+
+All glass now uses one tint. The original window atlas painted different
+fixed reflection gradients onto front and side windows; the C material loader
+replaces those RGB values only for explicitly authored glass, preserving alpha.
+The shader supplies view-dependent reflections, so different window angles can
+still reflect different parts of the environment. Paint and other textures
+are unaffected by this glass operation.
+
+Eight focused tests passed again (`well-liners-tests-final.log`). New checks
+cast sample rays through all four openings to require inward closures with
+correct winding, verify their dark vertex colors and native material tag,
+check the restored hood normal, and check uniform glass RGB with unchanged
+alpha. Re-exporting the saved body through C reproduces the embedded mesh.
+Blender inspections include a low camera, 25-degree front steering, the other
+side, and a view with front wheels hidden to expose the closures. A final
+release capture verifies the native material correction in the actual game.
+
+- [Latest game comparison](../build/car-upgrade-evidence/esperanza-liners-glass-final-comparison.png)
+- [Low view with steering](../build/car-upgrade-evidence/esperanza-well-liners-low-steered.png)
+- [Wheel-well closure inspection](../build/car-upgrade-evidence/esperanza-well-liners-open-inspection.png)

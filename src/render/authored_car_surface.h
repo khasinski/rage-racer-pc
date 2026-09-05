@@ -12,4 +12,5 @@ enum {
     RAGE_CAR_SURFACE_RUNTIME_STRIDE = 4096
 };
 void AuthoredCarSurfaceApply(unsigned surface, RageRenderMaterial *material);
+void AuthoredCarSurfaceTexture(unsigned surface, uint8_t *rgba, size_t size);
 #endif

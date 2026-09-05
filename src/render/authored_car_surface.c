@@ -1,5 +1,18 @@
 #include "authored_car_surface.h"
 
+void AuthoredCarSurfaceTexture(unsigned surface, uint8_t *rgba, size_t size) {
+    size_t i;
+    if (surface != RAGE_CAR_SURFACE_GLASS || !rgba || size % 4) return;
+    /* Retail windows paint a different fixed reflection into each UV region.
+     * Use one glass tint; the renderer supplies view-dependent reflections.
+     * Preserve coverage, including any transparent atlas texels. */
+    for (i = 0; i < size; i += 4) {
+        rgba[i] = 18;
+        rgba[i + 1] = 25;
+        rgba[i + 2] = 32;
+    }
+}
+
 void AuthoredCarSurfaceApply(unsigned surface, RageRenderMaterial *m) {
     if (!m) return;
     switch (surface) {
