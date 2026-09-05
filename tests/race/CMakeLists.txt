@@ -1219,6 +1219,18 @@ if(TARGET rage-racer-smoke)
             -DGRID=3,1,0,2,3,1,0,2,3,1,0
             -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
     set_tests_properties(ghepardo_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME vainqure_banks
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_vainqure_banks.cmake")
+    set_tests_properties(vainqure_banks PROPERTIES LABELS e2e TIMEOUT 370 RUN_SERIAL TRUE)
+    add_test(NAME vainqure_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -DCAR=10 -DCLASS=5 -DNAME=Vainqure -DPLAYER_ASSET=68 -DRIVAL_ASSET=128
+            -DGRID=2,0,1,3,2,0,1,3,2,0,1
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
+    set_tests_properties(vainqure_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
     add_test(
         NAME scenario_control
         COMMAND python3

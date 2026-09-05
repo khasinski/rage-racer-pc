@@ -243,3 +243,20 @@ Original wheels 17/18 and far body 19 remain. Rival slots for courses
 0/1/2/3 are 3/3/3/0. The mixed scenario includes Hijack, Pegase, and Esperanza;
 a close front view uses course 1, camera 2, grid 3/0/2/1 repeating, and
 points 119/121.
+
+## Integrated Vainqure sources
+
+Open `assets/cars/vainqure.blend`, scene `Vainqure player`, and export only
+`Vainqure_player_body` to `vainqure-body.obj`. The rival source is
+`vainqure-rival.blend`, scene `Vainqure rival`, object `Vainqure_rival_body`,
+exported to `vainqure-rival.obj`. The same baked export settings apply;
+originals and construction references remain hidden. Both saved sources
+reproduce the native meshes byte for byte.
+
+Player bank 68 and rival body 10 in even banks 128–134 are replaced. All four
+retail rival bodies have identical geometry, UVs, and material ordering.
+The rival retains its original wingless silhouette. Original wheels 12/13
+and far body 14 remain. Player textures use page 11 palettes 0x382f–0x39ef;
+rivals use page 12 palettes 0x7840–0x7844. Rival slots for courses 0/1/2/3
+are 2/1/0/3. Use course 1, camera 2, grid 1/2/0/3 repeating, and rival points
+119/121 for a close front view.

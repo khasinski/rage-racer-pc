@@ -1,7 +1,7 @@
 # Car upgrade work in progress
 
 Goal remains `goal.md`. Base Erriso, Abeille, Pegase, Esperanza, Acceron, Bayonet,
-Hijack, Fatalita, Istante, and Ghepardo player bodies and their rival
+Hijack, Fatalita, Istante, Ghepardo, and Vainqure player bodies and their rival
 representations are integrated. Other player grades and cars retain their
 original geometry; the full set is still in progress.
 
@@ -359,6 +359,40 @@ Late CPU submission samples were 0.19–0.20 ms before versus 0.28–0.29 ms
 after in chase, and 0.60–0.61 versus about 0.71 ms trackside. These are local
 CPU samples, not an isolated GPU/FPS benchmark. Remaining special cars,
 other player grades, and duplicate rival representations still need work.
+
+## Vainqure integration, 2026-09-05
+
+Player bank 68 installs 2284 triangles; rival body 10 installs 2156 triangles
+in even banks 128–134. The four retail rival bodies have identical face data
+and material ordering. The player retains its large wing and the rival its
+original wingless shape. Original wheels 12/13 and far body 14 remain.
+Both saved Blender sources reproduce the embedded meshes byte for byte.
+
+Special-class starters use activeFlag 0; only -1 marks an inactive slot.
+The custom-start scenario incorrectly tested the flag as a boolean, skipping
+these starters and attempting to place inactive slots. Placement and freeze
+now use the retail -1 sentinel. The special-class bank test requires all
+four active starters to be positioned and no inactive slot to be touched.
+
+Full build and nine focused regression tests pass
+(`vainqure-final-build.log`, `vainqure-regression.log`), including starting
+grid and lap progress alongside the asset checks. Inspected Blender comparisons
+are listed below. All four e2e tests pass (`vainqure-e2e.log`): ordinary
+direct grid and repeat-race checks, all four special banks, and a special-class
+repeat race. Cache-mode checks pass for all four special banks
+(`vainqure-cache-tests.log`, `vainqure-cache-bank-*.log`). Blender comparisons
+are `vainqure-blender-comparison.png` and
+`vainqure-rival-blender-comparison.png`, each showing front and rear before/after.
+Accepted release comparisons are `vainqure-fixed-chase-comparison.png` and
+`vainqure-fixed-track-comparison.png`, originals on the left. They preserve
+the cockpit, wing, front fenders, lights, exhausts, and wheels without new
+visible gaps in these views. Earlier images without `fixed` demonstrate the
+rejected scenario placement and do not verify close rival geometry.
+
+Late local CPU submission samples were about 0.23 ms before versus
+0.21–0.26 ms after in chase, and 0.73–0.74 versus 0.75–0.76 ms trackside.
+These fluctuating samples are not an isolated GPU/FPS benchmark. The existing
+environment atlas issue remains; remaining cars and variants still need work.
 
 Keep original data and the unrelated `.claude/` and `imgui.ini` files.
 Commit verified stages locally; do not push or publish.

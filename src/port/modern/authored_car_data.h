@@ -26,6 +26,8 @@
 #include "istante_rival.inc"
 #include "ghepardo_body.inc"
 #include "ghepardo_rival.inc"
+#include "vainqure_body.inc"
+#include "vainqure_rival.inc"
 
 typedef struct AuthoredCarMaterial {
     uint16_t source, page, clut, cacheSlot;
@@ -212,9 +214,24 @@ static const AuthoredCarMaterial s_ghepardoRivalMaterials[] = {
     {18, 12, 0x790a, 18}, {22, 13, 0x7909, 22},
 };
 
+static const AuthoredCarMaterial s_vainqurePlayerMaterials[] = {
+    {1, 11, 0x382f, 1}, {2, 11, 0x386f, 2}, {3, 11, 0x38af, 3},
+    {4, 11, 0x38ef, 4}, {5, 11, 0x392f, 5}, {6, 11, 0x396f, 6},
+    {7, 11, 0x39af, 7}, {8, 11, 0x39ef, 8},
+};
+static const AuthoredCarMaterial s_vainqureRivalMaterials[] = {
+    {3, 12, 0x7840, 3}, {4, 12, 0x7841, 4}, {5, 12, 0x7842, 5},
+    {6, 12, 0x7843, 6}, {7, 12, 0x7844, 7},
+};
+
 #define AUTHORED_CAR(name, key, set, part, data, map) \
     {name, key, set, part, data, sizeof(data), map, sizeof(map)/sizeof(map[0])}
 static const AuthoredCarReplacement s_authoredCars[] = {
+    AUTHORED_CAR("Vainqure", 68, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_vainqure_body, s_vainqurePlayerMaterials),
+    AUTHORED_CAR("Vainqure", 128, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 10, s_vainqure_rival, s_vainqureRivalMaterials),
+    AUTHORED_CAR("Vainqure", 130, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 10, s_vainqure_rival, s_vainqureRivalMaterials),
+    AUTHORED_CAR("Vainqure", 132, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 10, s_vainqure_rival, s_vainqureRivalMaterials),
+    AUTHORED_CAR("Vainqure", 134, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 10, s_vainqure_rival, s_vainqureRivalMaterials),
     AUTHORED_CAR("Ghepardo", 66, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_ghepardo_body, s_ghepardoPlayerMaterials),
     AUTHORED_CAR("Ghepardo", 94, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_ghepardo_rival, s_ghepardoRivalMaterials),
     AUTHORED_CAR("Ghepardo", 120, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_ghepardo_rival, s_ghepardoRivalMaterials),

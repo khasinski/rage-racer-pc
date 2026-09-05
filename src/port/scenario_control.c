@@ -145,16 +145,16 @@ static void ScenarioApplyTrackStarts(void) {
     }
     for (index = 0; index < s_scenario.rivalTrackPointCount; index++) {
         int point = s_scenario.rivalTrackPoints[index];
-        if (point >= 0 && g_Cars[index].activeFlag &&
+        if (point >= 0 && g_Cars[index].activeFlag != -1 &&
             !ScenarioPlaceCar(&g_Cars[index], point)) {
             fprintf(stderr, "rage-port: rival %d track point %d outside 0..%d\n",
                     index, point, g_TrackPointCount - 1);
-        } else if (point >= 0 && g_Cars[index].activeFlag) {
+        } else if (point >= 0 && g_Cars[index].activeFlag != -1) {
             fprintf(stderr,
-                    "rage-port: scenario-start rival=%d point=%d pos=%d,%d progress=%d section=%d model=%d\n",
+                    "rage-port: scenario-start rival=%d point=%d pos=%d,%d progress=%d section=%d model=%d active=%d\n",
                     index, point, g_Cars[index].x, g_Cars[index].z,
                     g_Cars[index].trackProgress, g_Cars[index].trackSection,
-                    g_Cars[index].modelIndex);
+                    g_Cars[index].modelIndex, g_Cars[index].activeFlag);
         }
     }
     if (s_scenario.hasExact) ScenarioPlaceExact();
@@ -209,7 +209,7 @@ static void ScenarioHoldTrackStarts(void) {
     }
     for (index = 0; index < s_scenario.rivalTrackPointCount; index++) {
         int point = s_scenario.rivalTrackPoints[index];
-        if (point >= 0 && g_Cars[index].activeFlag)
+        if (point >= 0 && g_Cars[index].activeFlag != -1)
             ScenarioPlaceCar(&g_Cars[index], point);
     }
 }
