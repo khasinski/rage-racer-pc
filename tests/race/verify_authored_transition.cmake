@@ -6,11 +6,14 @@ if(NOT DEFINED CAR)
     set(RIVAL_ASSET 96)
 endif()
 set(sandbox "${EVIDENCE}/transition-test-${CAR}")
+if(NOT DEFINED GRID)
+    set(GRID 2,2,2,2,2,2,2,2,2,2,2)
+endif()
 file(MAKE_DIRECTORY "${sandbox}/bu00")
 file(COPY "${SMOKE}" DESTINATION "${sandbox}")
 get_filename_component(name "${SMOKE}" NAME)
 execute_process(COMMAND "${sandbox}/${name}" --scenario "${SOURCE}/race-scenario.ini"
-    --set "race.class=${CLASS}" --set "race.car=${CAR}" --set race.grid=2,2,2,2,2,2,2,2,2,2,2
+    --set "race.class=${CLASS}" --set "race.car=${CAR}" --set "race.grid=${GRID}"
     --set race.after_finish=repeat --set run.frames=3500
     --set hooks.finish_frame=1000 --set hooks.auto_confirm_frame=1300
     --set modern.assets=disc --set video.renderer=modern

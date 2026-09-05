@@ -137,22 +137,27 @@ add_custom_command(OUTPUT "${RAGE_AUTHORED_DIR}/erriso_rival.inc"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/tools/scripts/embed_car_mesh.cmake"
     DEPENDS rage-mesh-obj assets/cars/erriso-rival.obj tools/scripts/embed_car_mesh.cmake
     VERBATIM)
-foreach(car abeille pegase)
-foreach(variant body rival)
-    add_custom_command(OUTPUT "${RAGE_AUTHORED_DIR}/${car}_${variant}.inc"
+set(RAGE_AUTHORED_OTHER_OUTPUTS)
+foreach(car abeille pegase esperanza)
+set(variants body rival)
+if(car STREQUAL "esperanza")
+    list(APPEND variants rival-late)
+endif()
+foreach(variant IN LISTS variants)
+    string(REPLACE "-" "_" symbol "${car}_${variant}")
+    list(APPEND RAGE_AUTHORED_OTHER_OUTPUTS "${RAGE_AUTHORED_DIR}/${symbol}.inc")
+    add_custom_command(OUTPUT "${RAGE_AUTHORED_DIR}/${symbol}.inc"
         COMMAND rage-mesh-obj import "${CMAKE_CURRENT_SOURCE_DIR}/assets/cars/${car}-${variant}.obj"
             "${RAGE_AUTHORED_DIR}/${car}-${variant}.rmesh"
         COMMAND ${CMAKE_COMMAND} "-DINPUT=${RAGE_AUTHORED_DIR}/${car}-${variant}.rmesh"
-            "-DOUTPUT=${RAGE_AUTHORED_DIR}/${car}_${variant}.inc" "-DSYMBOL=s_${car}_${variant}"
+            "-DOUTPUT=${RAGE_AUTHORED_DIR}/${symbol}.inc" "-DSYMBOL=s_${symbol}"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/tools/scripts/embed_car_mesh.cmake"
         DEPENDS rage-mesh-obj "assets/cars/${car}-${variant}.obj" tools/scripts/embed_car_mesh.cmake
         VERBATIM)
 endforeach()
 endforeach()
 add_custom_target(rage-authored-cars DEPENDS "${RAGE_AUTHORED_DIR}/erriso_body.inc"
-    "${RAGE_AUTHORED_DIR}/erriso_rival.inc" "${RAGE_AUTHORED_DIR}/abeille_body.inc"
-    "${RAGE_AUTHORED_DIR}/abeille_rival.inc" "${RAGE_AUTHORED_DIR}/pegase_body.inc"
-    "${RAGE_AUTHORED_DIR}/pegase_rival.inc")
+    "${RAGE_AUTHORED_DIR}/erriso_rival.inc" ${RAGE_AUTHORED_OTHER_OUTPUTS})
 include_directories("${RAGE_AUTHORED_DIR}")
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(rage-mesh-obj PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})

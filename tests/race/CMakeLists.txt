@@ -1135,6 +1135,18 @@ if(TARGET rage-racer-smoke)
             -DCAR=2 -DCLASS=3 -DNAME=Pegase -DPLAYER_ASSET=24 -DRIVAL_ASSET=112
             -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
     set_tests_properties(pegase_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME esperanza_banks
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_esperanza_banks.cmake")
+    set_tests_properties(esperanza_banks PROPERTIES LABELS e2e TIMEOUT 1820 RUN_SERIAL TRUE)
+    add_test(NAME esperanza_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -DCAR=3 -DCLASS=1 -DNAME=Esperanza -DPLAYER_ASSET=28 -DRIVAL_ASSET=96
+            -DGRID=0,2,0,2,0,2,0,2,0,2,0
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
+    set_tests_properties(esperanza_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
     add_test(
         NAME scenario_control
         COMMAND python3

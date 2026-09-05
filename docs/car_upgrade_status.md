@@ -1,6 +1,6 @@
 # Car upgrade work in progress
 
-Goal remains `goal.md`. Base Erriso, Abeille, and Pegase player bodies and their rival
+Goal remains `goal.md`. Base Erriso, Abeille, Pegase, and Esperanza player bodies and their rival
 representations are integrated. Other player grades and cars retain their
 original geometry; the full set is still in progress.
 
@@ -159,6 +159,36 @@ Late CPU submission samples were 0.25–0.26 ms before versus about 0.43 ms
 after in chase, and about 0.75 versus 0.92–0.95 ms trackside. These are local
 CPU samples, not an isolated GPU/FPS benchmark. Other player grades and the
 remaining cars still need work; overall acceptance remains open.
+
+## Esperanza integration, 2026-09-05
+
+Player bank 28 uses 1438 triangles. Rival body 0 has two distinct retail
+shapes: the early spoiler uses 1435 triangles in banks 88, 90, 92, 96, 98,
+and 100; the raised rear wing uses 1453 triangles in bank 94 and even banks
+102–126. Original wheel submeshes 2/3 and far body 4 remain. All three
+saved Blender sources re-exported to byte-identical embedded native meshes.
+Five explicit cached material layouts preserve each bank's texture ordering.
+These replacements coexist with the previously authored body 10 in shared
+banks; the bank checks verify both installation messages.
+
+The full build and seven focused asset tests pass (`esperanza-final-build.log`,
+`esperanza-tests.log`). All five e2e tests pass (`esperanza-e2e.log`), covering
+all 20 Esperanza banks and repeat-race transitions for all four integrated
+cars. Additional cache checks pass for banks 88, 96, 94, 104, and 112,
+covering all five material layouts (`esperanza-cache-tests.log` and
+`esperanza-cache-bank-*.log`). Blender comparisons are
+`esperanza{,-rival,-rival-late}-blender-comparison.png`, each showing front
+and rear before/after. Inspected release screenshots are
+`esperanza-{chase,track}-{1,2}-comparison.png`, with original left and authored
+right. They cover both rival variants and the player, preserving liveries,
+wheels, and spoiler shapes without new visible gaps in these views. The
+previously observed custom-start environment atlas issue occurs before and
+after this change.
+
+Late class-2 CPU submission samples were 0.25–0.26 ms before versus
+0.36–0.37 ms after in chase, and 0.73–0.74 versus 0.85–0.86 ms trackside.
+These are local CPU samples, not an isolated GPU/FPS benchmark. Other player
+grades and remaining cars still use original geometry.
 
 Keep original data and the unrelated `.claude/` and `imgui.ini` files.
 Commit verified stages locally; do not push or publish.

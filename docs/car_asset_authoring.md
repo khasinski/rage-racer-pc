@@ -122,3 +122,20 @@ resolves texture-page/palette identities. Original wheels and far body 14
 remain. `authored_pegase.ini` uses class 3, course 0, rival slot 2.
 For a close front rival view, use course 1, rival grid slots all 1, camera 2,
 and `start.rival_track_points=119`.
+
+## Integrated Esperanza sources
+
+Open `esperanza.blend`, scene `Esperanza player`, and export only
+`Esperanza_player_body` to `esperanza-body.obj`. Rival sources are
+`esperanza-rival.blend` / `Esperanza_rival_body` and
+`esperanza-rival-late.blend` / `Esperanza_rival_late_body`; export to their
+matching OBJ filenames. Files are under `assets/cars/`. The same settings,
+baked meshes, hidden construction references, and `RetailFace` transfer apply.
+
+Player bank 28 and rival body 0 in even banks 88–126 are replaced. Early
+banks 88/90/92/96/98/100 retain their distinct spoiler; the other banks use
+the raised-wing source. Far body 4 and wheels 2/3 remain original. Five
+per-bank cached slot layouts are recorded in `authored_car_data.h`.
+`authored_esperanza.ini` alternates Esperanza and Erriso in class 1, course 0.
+Esperanza rival slots for courses 0/1/2/3 are 0/2/1/1. For a close front view,
+use course 1, camera 2, grid slots 2/1 alternating, and rival points 119/121.

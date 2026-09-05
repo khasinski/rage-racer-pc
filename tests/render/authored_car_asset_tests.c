@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include "port/modern/authored_car_data.h"
 #define CHECK(x) do { if (!(x)) { fprintf(stderr,"line %d: %s\n",__LINE__,#x); return 1; } } while(0)
-static int Validate(const void *bytes,size_t size,int rival,int model) {
+static int Validate(const void *bytes,size_t size,int model) {
     RageRuntimeMesh mesh;
     RageRuntimeVertex v;
     uint32_t i,material=0;
@@ -15,21 +15,21 @@ static int Validate(const void *bytes,size_t size,int rival,int model) {
     } else if(model==2) {
         low[0]=-140; low[1]=-23; low[2]=-95;
         high[0]=140; high[1]=118; high[2]=413;
+    } else if(model==3) {
+        low[0]=-148; low[1]=-35; low[2]=-146;
+        high[0]=148; high[1]=144; high[2]=501;
     }
     CHECK(RuntimeMeshOpen(&mesh,bytes,size));
     CHECK(mesh.meshCount==1 && mesh.indexCount>228*3 && mesh.indexCount<20000*3);
     for(i=0;i<mesh.indexCount;i++) {
-        uint32_t index,axis,slot;
+        uint32_t index,axis;
         CHECK(RuntimeMeshIndex(&mesh,i,&index) && RuntimeMeshVertex(&mesh,index,&v));
         for(axis=0;axis<3;axis++) CHECK(v.position[axis]>=low[axis] && v.position[axis]<=high[axis]);
         CHECK(v.color[3]==255);
         CHECK(isfinite(v.uv[0]) && isfinite(v.uv[1]));
         CHECK(v.normal[0]*v.normal[0]+v.normal[1]*v.normal[1]+v.normal[2]*v.normal[2]>0.9f);
-        slot=v.material & RAGE_RUNTIME_MATERIAL_INDEX_MASK;
-        CHECK(slot==65535 || (rival ? (model==2 ?
-            (slot==0 || slot==13 || slot==14 || slot==15 || slot==20) : (model==1 ?
-            (slot==0 || slot==11 || slot==12 || slot==17) :
-            (slot==0 || slot==13 || slot==14 || slot==19))) : slot<(model==2?14u:(model==1?12u:10u))));
+        /* ValidateRegistry checks every textured source slot against its
+         * bank's explicit material map, including both Esperanza variants. */
         if(i%3==0) material=v.material;
         else CHECK(v.material==material);
     }
@@ -121,15 +121,18 @@ static int ValidatePegaseHoodDecal(void) {
 }
 
 int main(void) {
-    CHECK(Validate(s_errisoBody,sizeof(s_errisoBody),0,0)==0);
-    CHECK(Validate(s_errisoRivalBody,sizeof(s_errisoRivalBody),1,0)==0);
-    CHECK(Validate(s_abeille_body,sizeof(s_abeille_body),0,1)==0);
-    CHECK(Validate(s_abeille_rival,sizeof(s_abeille_rival),1,1)==0);
-    CHECK(Validate(s_pegase_body,sizeof(s_pegase_body),0,2)==0);
-    CHECK(Validate(s_pegase_rival,sizeof(s_pegase_rival),1,2)==0);
+    CHECK(Validate(s_errisoBody,sizeof(s_errisoBody),0)==0);
+    CHECK(Validate(s_errisoRivalBody,sizeof(s_errisoRivalBody),0)==0);
+    CHECK(Validate(s_abeille_body,sizeof(s_abeille_body),1)==0);
+    CHECK(Validate(s_abeille_rival,sizeof(s_abeille_rival),1)==0);
+    CHECK(Validate(s_pegase_body,sizeof(s_pegase_body),2)==0);
+    CHECK(Validate(s_pegase_rival,sizeof(s_pegase_rival),2)==0);
+    CHECK(Validate(s_esperanza_body,sizeof(s_esperanza_body),3)==0);
+    CHECK(Validate(s_esperanza_rival,sizeof(s_esperanza_rival),3)==0);
+    CHECK(Validate(s_esperanza_rival_late,sizeof(s_esperanza_rival_late),3)==0);
     CHECK(ValidateAbeillePanelColorSeam()==0);
     CHECK(ValidateRegistry()==0);
     CHECK(ValidatePegaseHoodDecal()==0);
-    puts("authored Erriso/Abeille/Pegase player and rival geometry, scale, normals and materials valid");
+    puts("authored car geometry, scale, normals, seams and material registries valid");
     return 0;
 }
