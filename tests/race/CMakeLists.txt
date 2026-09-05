@@ -1207,6 +1207,18 @@ if(TARGET rage-racer-smoke)
             -DGRID=3,1,0,2,3,1,0,2,3,1,0
             -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
     set_tests_properties(istante_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME ghepardo_banks
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_ghepardo_banks.cmake")
+    set_tests_properties(ghepardo_banks PROPERTIES LABELS e2e TIMEOUT 460 RUN_SERIAL TRUE)
+    add_test(NAME ghepardo_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -DCAR=9 -DCLASS=4 -DNAME=Ghepardo -DPLAYER_ASSET=66 -DRIVAL_ASSET=120
+            -DGRID=3,1,0,2,3,1,0,2,3,1,0
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
+    set_tests_properties(ghepardo_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
     add_test(
         NAME scenario_control
         COMMAND python3

@@ -24,6 +24,8 @@
 #include "fatalita_rival.inc"
 #include "istante_body.inc"
 #include "istante_rival.inc"
+#include "ghepardo_body.inc"
+#include "ghepardo_rival.inc"
 
 typedef struct AuthoredCarMaterial {
     uint16_t source, page, clut, cacheSlot;
@@ -197,9 +199,28 @@ static const AuthoredCarMaterial s_istanteRivalMaterials[] = {
     {17, 12, 0x7908, 17}, {21, 13, 0x7909, 21},
 };
 
+static const AuthoredCarMaterial s_ghepardoPlayerMaterials[] = {
+    {1, 10, 0x3bef, 1}, {2, 10, 0x7801, 2},
+    {3, 11, 0x382f, 3}, {4, 11, 0x386f, 4}, {5, 11, 0x38af, 5},
+    {6, 11, 0x39af, 6}, {7, 11, 0x39ef, 7}, {8, 11, 0x3a2f, 8},
+    {9, 11, 0x3a6f, 9}, {10, 11, 0x3aaf, 10},
+    {11, 11, 0x3aef, 11}, {12, 11, 0x3b2f, 12},
+};
+static const AuthoredCarMaterial s_ghepardoRivalMaterials[] = {
+    {0, 10, 0x7802, 0}, {15, 12, 0x7907, 15},
+    {16, 12, 0x7908, 16}, {17, 12, 0x7909, 17},
+    {18, 12, 0x790a, 18}, {22, 13, 0x7909, 22},
+};
+
 #define AUTHORED_CAR(name, key, set, part, data, map) \
     {name, key, set, part, data, sizeof(data), map, sizeof(map)/sizeof(map[0])}
 static const AuthoredCarReplacement s_authoredCars[] = {
+    AUTHORED_CAR("Ghepardo", 66, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_ghepardo_body, s_ghepardoPlayerMaterials),
+    AUTHORED_CAR("Ghepardo", 94, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_ghepardo_rival, s_ghepardoRivalMaterials),
+    AUTHORED_CAR("Ghepardo", 120, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_ghepardo_rival, s_ghepardoRivalMaterials),
+    AUTHORED_CAR("Ghepardo", 122, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_ghepardo_rival, s_ghepardoRivalMaterials),
+    AUTHORED_CAR("Ghepardo", 124, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_ghepardo_rival, s_ghepardoRivalMaterials),
+    AUTHORED_CAR("Ghepardo", 126, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_ghepardo_rival, s_ghepardoRivalMaterials),
     AUTHORED_CAR("Istante", 62, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_istante_body, s_istantePlayerMaterials),
     AUTHORED_CAR("Istante", 112, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_istante_rival, s_istanteRivalMaterials),
     AUTHORED_CAR("Istante", 114, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_istante_rival, s_istanteRivalMaterials),

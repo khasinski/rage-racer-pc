@@ -224,3 +224,22 @@ Original wheels 17/18 and far body 19 remain. Rival slots for courses
 0/1/2/3 are 3/3/3/0. The mixed grid exercises Istante, Hijack, Pegase, and
 Esperanza together. A close front view uses course 1, camera 2, grid 3/0/2/1
 repeating, and rival points 119/121.
+
+## Integrated Ghepardo sources
+
+Open `assets/cars/ghepardo.blend`, scene `Ghepardo player`, and export only
+`Ghepardo_player_body` to `ghepardo-body.obj`. The rival source is
+`ghepardo-rival.blend`, scene `Ghepardo rival`, object `Ghepardo_rival_body`,
+exported to `ghepardo-rival.obj`. The same baked settings apply; hidden
+originals and construction meshes remain. Saved sources reproduce the
+embedded meshes byte for byte. Their orthographic cameras use scale 780
+to include the whole long body in the comparison renders.
+
+Player bank 66 and rival body 15 in banks 94 and even banks 120–126 are
+replaced. All five retail rival bodies have identical face data and material
+ordering. Player palette slot 5 differs from Esperanza's. Rival materials
+include palette 0x7909 on both pages 12 and 13; retain both identities.
+Original wheels 17/18 and far body 19 remain. Rival slots for courses
+0/1/2/3 are 3/3/3/0. The mixed scenario includes Hijack, Pegase, and Esperanza;
+a close front view uses course 1, camera 2, grid 3/0/2/1 repeating, and
+points 119/121.

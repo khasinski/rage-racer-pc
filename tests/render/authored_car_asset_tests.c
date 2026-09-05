@@ -33,6 +33,9 @@ static int Validate(const void *bytes,size_t size,int model) {
     } else if(model==8) {
         low[0]=-161; low[1]=-42; low[2]=-123;
         high[0]=161; high[1]=109; high[2]=516;
+    } else if(model==9) {
+        low[0]=-162; low[1]=-46; low[2]=-137;
+        high[0]=162; high[1]=103; high[2]=525;
     }
     CHECK(RuntimeMeshOpen(&mesh,bytes,size));
     CHECK(mesh.meshCount==1 && mesh.indexCount>228*3 && mesh.indexCount<20000*3);
@@ -156,6 +159,8 @@ int main(void) {
     CHECK(Validate(s_fatalita_rival,sizeof(s_fatalita_rival),7)==0);
     CHECK(Validate(s_istante_body,sizeof(s_istante_body),8)==0);
     CHECK(Validate(s_istante_rival,sizeof(s_istante_rival),8)==0);
+    CHECK(Validate(s_ghepardo_body,sizeof(s_ghepardo_body),9)==0);
+    CHECK(Validate(s_ghepardo_rival,sizeof(s_ghepardo_rival),9)==0);
     CHECK(ValidateAbeillePanelColorSeam()==0);
     CHECK(ValidateRegistry()==0);
     CHECK(ValidatePegaseHoodDecal()==0);

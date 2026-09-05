@@ -1,7 +1,7 @@
 # Car upgrade work in progress
 
 Goal remains `goal.md`. Base Erriso, Abeille, Pegase, Esperanza, Acceron, Bayonet,
-Hijack, Fatalita, and Istante player bodies and their rival
+Hijack, Fatalita, Istante, and Ghepardo player bodies and their rival
 representations are integrated. Other player grades and cars retain their
 original geometry; the full set is still in progress.
 
@@ -332,6 +332,33 @@ Late CPU submission samples were 0.26–0.27 ms before versus about 0.37 ms
 after in chase, and 0.76–0.77 versus 0.87–0.88 ms trackside. These are local
 CPU samples, not an isolated GPU/FPS benchmark. Other player grades and
 remaining cars still need work.
+
+## Ghepardo integration, 2026-09-05
+
+Player bank 66 uses 1929 triangles; rival body 15 uses 1422 triangles in
+banks 94 and even banks 120–126. All five retail rival bodies have identical
+face data, including UVs and materials. Explicit mappings preserve palette
+0x7909 on both pages 12 and 13. Original wheels 17/18 and far body 19 remain.
+Both saved Blender sources re-exported to byte-identical embedded meshes.
+
+The full build and seven focused asset tests pass (`ghepardo-build.log`,
+`ghepardo-tests.log`). Both e2e tests pass (`ghepardo-e2e.log`), covering all
+five banks and a finish/repeat transition. Cache checks also pass for all
+five banks (`ghepardo-cache-tests.log`, `ghepardo-cache-bank-*.log`). Bank
+checks require Ghepardo, Hijack, Pegase, and Esperanza together.
+Inspected Blender comparisons are
+`ghepardo-blender-comparison.png` and `ghepardo-rival-blender-comparison.png`,
+each containing front and rear before/after with the whole body in frame.
+Release comparisons are `ghepardo-chase-comparison.png` and
+`ghepardo-track-comparison.png`, originals on the left. The long nose,
+cockpit, spoiler, lights, rear outlets, liveries, and wheels remain without
+new visible gaps or culling failures in these views. The existing environment
+atlas issue remains.
+
+Late CPU submission samples were 0.19–0.20 ms before versus 0.28–0.29 ms
+after in chase, and 0.60–0.61 versus about 0.71 ms trackside. These are local
+CPU samples, not an isolated GPU/FPS benchmark. Remaining special cars,
+other player grades, and duplicate rival representations still need work.
 
 Keep original data and the unrelated `.claude/` and `imgui.ini` files.
 Commit verified stages locally; do not push or publish.
