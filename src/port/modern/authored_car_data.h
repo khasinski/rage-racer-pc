@@ -20,6 +20,8 @@
 #include "hijack_body.inc"
 #include "hijack_rival.inc"
 #include "hijack_rival_alternate.inc"
+#include "fatalita_body.inc"
+#include "fatalita_rival.inc"
 
 typedef struct AuthoredCarMaterial {
     uint16_t source, page, clut, cacheSlot;
@@ -176,9 +178,20 @@ static const AuthoredCarMaterial s_hijackRivalAlternateMaterials[] = {
     {10, 12, 0x7888, 10}, {11, 12, 0x788a, 11}, {20, 13, 0x7889, 20},
 };
 
+static const AuthoredCarMaterial s_fatalitaRivalMaterials[] = {
+    {0, 10, 0x7802, 0}, {13, 12, 0x7907, 13},
+    {14, 12, 0x7908, 14}, {18, 13, 0x7909, 18},
+};
+
 #define AUTHORED_CAR(name, key, set, part, data, map) \
     {name, key, set, part, data, sizeof(data), map, sizeof(map)/sizeof(map[0])}
 static const AuthoredCarReplacement s_authoredCars[] = {
+    AUTHORED_CAR("Fatalita", 56, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_fatalita_body, s_esperanzaPlayerMaterials),
+    AUTHORED_CAR("Fatalita", 102, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_fatalita_rival, s_fatalitaRivalMaterials),
+    AUTHORED_CAR("Fatalita", 104, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_fatalita_rival, s_fatalitaRivalMaterials),
+    AUTHORED_CAR("Fatalita", 106, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_fatalita_rival, s_fatalitaRivalMaterials),
+    AUTHORED_CAR("Fatalita", 108, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_fatalita_rival, s_fatalitaRivalMaterials),
+    AUTHORED_CAR("Fatalita", 110, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_fatalita_rival, s_fatalitaRivalMaterials),
     AUTHORED_CAR("Hijack", 52, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_hijack_body, s_esperanzaPlayerMaterials),
     AUTHORED_CAR("Hijack", 94, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_hijack_rival_alternate, s_hijackRivalAlternateMaterials),
     AUTHORED_CAR("Hijack", 112, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_hijack_rival, s_hijackRivalMaterials),

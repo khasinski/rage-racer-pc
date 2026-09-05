@@ -1,9 +1,15 @@
 # Car upgrade work in progress
 
 Goal remains `goal.md`. Base Erriso, Abeille, Pegase, Esperanza, Acceron, Bayonet,
-and Hijack player bodies and their rival
+Hijack, and Fatalita player bodies and their rival
 representations are integrated. Other player grades and cars retain their
 original geometry; the full set is still in progress.
+
+The remaining audit includes duplicate rival representations: body 15 in
+banks 88/90/92/96/98/100 has Esperanza-like geometry (90 faces, bounds
+[-144,-140,-497] to [144,31,138]) and remains original. Inspect its livery
+and role before selecting an authored replacement; body 0 coverage alone
+does not prove the whole fleet is upgraded.
 
 ## Integrated and inspected on 2026-09-05
 
@@ -272,6 +278,34 @@ these views. Existing environment atlas imagery is present before and after.
 Late class-4 CPU submission samples were 0.26–0.27 ms before versus about
 0.37 ms after in chase, and about 0.76 versus 0.89 ms trackside. These are
 local CPU samples, not an isolated GPU/FPS benchmark.
+
+## Fatalita integration, 2026-09-05
+
+Player bank 56 uses 2146 triangles; rival body 15 uses 1622 triangles in
+even banks 102–110. All five retail rival bodies have identical face data,
+including UVs and materials. Original wheels 17/18 and far body 19 remain.
+Both saved Blender sources reproduce the embedded native meshes byte for
+byte. These banks now contain four authored bodies: Fatalita, Bayonet,
+Abeille, and Esperanza.
+
+The full build and seven focused asset tests pass (`fatalita-build.log`,
+`fatalita-tests.log`). Both e2e tests pass (`fatalita-e2e.log`), covering all
+five banks and a finish/repeat transition. Cache-mode checks pass for all
+five banks (`fatalita-cache-tests.log`, `fatalita-cache-bank-*.log`). The bank
+checks require all four authored bodies to be installed together.
+Inspected Blender comparisons are
+`fatalita-blender-comparison.png` and `fatalita-rival-blender-comparison.png`,
+each containing front and rear before/after. Inspected release comparisons
+are `fatalita-chase-comparison.png` and `fatalita-track-comparison.png`,
+originals on the left. They preserve front and rear lighting, bumper,
+spoiler, side intakes, exhausts, and wheels without new visible gaps in
+these views. The existing custom-start environment atlas issue and dark
+rival wheels occur with original and authored bodies.
+
+Late CPU submission samples were 0.26–0.27 ms before versus about 0.37 ms
+after in chase, and about 0.72 versus 0.87 ms trackside. These are local CPU
+samples, not an isolated GPU/FPS benchmark. Other player grades and remaining
+cars still need work.
 
 Keep original data and the unrelated `.claude/` and `imgui.ini` files.
 Commit verified stages locally; do not push or publish.

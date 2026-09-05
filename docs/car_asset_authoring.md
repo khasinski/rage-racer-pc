@@ -191,3 +191,19 @@ material ordering from banks 112–118, requiring separate authored sources.
 Original wheels 7/8 and far body 9 remain. Rival slots for courses 0/1/2/3
 are 1/0/2/2. The scenario uses a mixed Hijack/Pegase/Esperanza grid; a close
 front view uses course 1, camera 2, grid 0/2/1 repeating, and points 119/121.
+
+## Integrated Fatalita sources
+
+Open `assets/cars/fatalita.blend`, scene `Fatalita player`, and export only
+`Fatalita_player_body` to `fatalita-body.obj`. The rival source is
+`fatalita-rival.blend`, scene `Fatalita rival`, object `Fatalita_rival_body`,
+exported to `fatalita-rival.obj`. Both use the same baked export settings
+and retain hidden construction references. Saved-source exports reproduce
+the native meshes byte for byte.
+
+Player bank 56 and rival body 15 in even banks 102–110 are replaced. All
+five retail rival bodies have identical geometry, UVs, and material ordering.
+Original wheels 17/18 and far body 19 remain. Rival slots for courses
+0/1/2/3 are 3/3/3/0. The mixed grid exercises four authored bodies in each
+bank. For a close front view, use course 1, camera 2, grid 3/0/2/1 repeating,
+and rival points 119/121.
