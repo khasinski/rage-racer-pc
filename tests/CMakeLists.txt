@@ -23,6 +23,15 @@
 # toolchain used by the port and release jobs.
 find_program(RAGE_RUBY_EXECUTABLE ruby)
 
+# Release builds must execute the assertions in test sources as well. Besides
+# hiding regressions, NDEBUG makes assertion-only fixtures fail strict builds
+# as unused variables. This applies only to the test directory.
+if(MSVC)
+    add_compile_options(/UNDEBUG)
+else()
+    add_compile_options(-UNDEBUG)
+endif()
+
 # Several test targets link the object libraries the top level compiles with
 # sanitizers, and an object built with them needs the runtime on its link
 # line. The top level adds that only to the two game binaries, so the tests

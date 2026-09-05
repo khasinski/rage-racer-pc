@@ -1101,6 +1101,18 @@ add_test(NAME record_entry_scene COMMAND record_entry_scene_tests)
 set_tests_properties(record_entry_scene PROPERTIES LABELS functional)
 
 if(TARGET rage-racer-smoke)
+    add_test(NAME direct_grid
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}"
+            "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_direct_grid.cmake")
+    set_tests_properties(direct_grid PROPERTIES LABELS e2e TIMEOUT 300 RUN_SERIAL TRUE)
+    add_test(NAME authored_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}"
+            "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
+    set_tests_properties(authored_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
     add_test(
         NAME scenario_control
         COMMAND python3

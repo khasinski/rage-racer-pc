@@ -1,67 +1,73 @@
 # Car upgrade work in progress
 
-Goal remains `goal.md`. Base Erriso's upgraded player body is installed by
-default. No car has passed the complete acceptance scope yet.
+Goal remains `goal.md`. The first author/export/integration/game/inspection
+cycle is verified for base Erriso and its class-2 rival representation.
+Other player grades and cars retain their original geometry.
 
-## Verified on 2026-09-05
+## Integrated and inspected on 2026-09-05
 
-- Branch `re-asset`; Blender MCP connected (Blender 5.2).
-- Erriso is car 0, base asset 10 (`010_CAR_00_1ST`). Its bank has
-  22 submeshes: body 0, obsolete flat shadow 1, wheel variants 2–21.
-- Player submission uses this bank. Rivals use the course's shared track
-  model bank, with a separate far model. Both paths need integration.
-- Original game starts with `modern.assets=disc`, imports asset 10, and
-  captures a modern-renderer frame. Evidence and logs are under
-  `build/car-upgrade-evidence/`.
-- C interchange tool and tests added; `mesh_obj`, `rmesh`, `rmesh_index`,
-  `rmesh_cache`, and `native_asset_loader` pass (5/5). The loader test target
-  needed building before its first invocation.
-- Blender inspection of the original body and a narrow bevel experiment:
-  `erriso-blender-before.png`, `erriso-blender-bevel.png`. Weighted normals
-  corrected the first experiment's faceted shading.
+`assets/cars/erriso.blend` contains the player and rival sources, original
+references, and packed reference textures. A 1.6-unit three-segment bevel,
+weighted normals, color clamp, and 85% transfer of retail panel normals soften
+edges while retaining the silhouette and panel shading. The player body has
+1948 triangles; the rival body has 1694. Original wheels, far rival LOD,
+physics, collision, and classic rendering remain unchanged.
 
-## Integrated player prototype, not a fully accepted car
+The normal CMake build converts the OBJ sources with the C interchange tool
+and embeds their bytes. Modern rendering automatically replaces body 0 in
+player bank 10 and body 10 in rival banks 96, 98, and 100. Disc-imported
+materials are resolved by texture-page/palette identity. Players need no
+Blender installation or separate asset-generation command.
 
-`assets/cars/erriso.blend` and `erriso-body.obj` now use the C-exported native
-source, preserving full material metadata. The body has a 1.6-unit,
-three-segment bevel, weighted normals, a color clamp, and an 85% transfer of
-retail panel normals. It contains 1948 triangles. Reference textures are
-packed in the blend. Original wheel geometry and gameplay data are unchanged.
-CMake converts and embeds this model automatically. The disc importer remaps
-authored material slots to live texture identities. Base player asset 10 is
-replaced; rivals and other grades are still original.
+## Verification
 
-The new body was rendered and inspected in Blender and the release game.
-Comparable current-build chase captures are `erriso-current-before.png` and
-`erriso-after-smooth.png`; Blender's latest view is
-`erriso-native-blender-after-smooth.png`. An earlier bevel version had a sharp
-roof highlight, corrected by the panel-normal transfer. More viewing angles
-and close inspection of panel joins remain required. The current-build
-baseline also shows incorrect environment atlas imagery on the rock wall;
-this occurs with `modern.authored_cars=0` too and is not introduced by the car
-replacement. Investigate it before final acceptance.
+Evidence is in `build/car-upgrade-evidence/` (local build artifacts):
 
-Seven focused checks now cover native parsing/cache/loading, OBJ interchange,
-submesh replacement, and the actual embedded model. Replacement tests verify
-that wheel vertices and indices are preserved and that material remapping
-does not strip face metadata. Latest logs: `integration-tests.log` and
-`asset-tools-build.log` under the evidence directory. At the final frozen
-chase view, logged submission CPU time was approximately 0.27 ms with either
-body; this is a narrow sample, not a complete performance assessment.
+- Full release build passed: `final-rival-build.log`.
+- All 375 non-e2e regression tests passed with assertions enabled in Release:
+  `full-regression.log`. Coverage includes native parsing/cache/loading, OBJ
+  interchange, preservation of wheel data and face metadata, and both
+  embedded bodies. Release tests previously compiled out their assertions;
+  the test directory now explicitly enables them.
+- Real direct-boot tests passed for all three course banks:
+  `direct-grid-0.log`, `direct-grid-1.log`, `direct-grid-2.log`. These also
+  verify the fix for custom grids being applied too late during direct boot.
+- A finish/repeat cycle entered two races with the authored player and rival
+  models: `authored-transition.log`. Classic rendering also completed the
+  scenario: `erriso-classic.png` and `erriso-classic-output.log`.
+- Natural attract mode reached scene 30 and loaded the authored rival bank:
+  `attract-after.log` and `attract-after.png`. Its screenshot follows another
+  car; it demonstrates attract rendering, not a close view of Erriso.
+- Comparable live-game chase views: `erriso-grid-before.png` and
+  `erriso-grid-after.png`; trackside views: `erriso-trackcam-before.png` and
+  `erriso-trackcam-after.png`. They show the cream player and blue Erriso
+  rivals, including original wheels, textures, and visible panel edges.
+- Blender rival views: `erriso-rival-blender-before.png` /
+  `erriso-rival-blender-after.png` and `erriso-rival-blender-front-before.png` /
+  `erriso-rival-blender-front-after.png`. Player wheel assemblies were checked
+  in `erriso-blender-assembly-front.png` and `erriso-blender-assembly-rear.png`.
+  The earlier player chase pair is `erriso-current-before.png` /
+  `erriso-after-smooth.png`.
 
-The first two in-game capture attempts used the bumper camera and do not
-verify the player body. `start.camera` is applied by custom-start handling;
-set `start.player_track_point=120` as well. Use camera 1 for chase, 2 for track.
-The capture writer emits PPM even if given a `.png` suffix; convert with
-ImageMagick for viewing. Do not count these early captures as model validation.
+Late CPU submission samples were about 0.24–0.25 ms before versus 0.38 ms after
+in chase, and 0.41–0.42 versus 0.52–0.53 ms trackside. Build time was about
+0.008 ms. Some captures overlapped other CPU work: these are limited CPU
+samples, not an isolated GPU/FPS benchmark. Far LOD remains original.
 
-## Next required work
+## Known limits and remaining work
 
-Finish Erriso's visual refinement and integrate its rival representation.
-Player body authoring, repeatable export/build integration, and default
-modern loading are implemented for the base grade.
-Inspect before/after views from multiple cameras, wheels, textures, culling,
-shadows, and performance. Verify classic rendering, race transitions,
-attract mode, and clean disc import. Only then proceed to other cars.
-Keep original data and the existing unrelated `.claude/` and `imgui.ini` files.
+The frozen custom start at track point 120 shows incorrect environment atlas
+imagery on a rock wall. This is also present with `modern.authored_cars=0`
+and in the classic capture; it predates the authored replacement. Investigate
+environment issues after the car work. Natural attract tunnel rendering was
+visually intact. Additional cars and player grades still require authoring,
+integration, and the same visual checks; the overall goal is not complete.
+
+Use `tests/scenarios/authored_erriso.ini` for repeatable comparisons. Course
+0/1/2 use rival model slots 2/1/0 respectively. Early `erriso-traffic-*`
+captures preceded the grid fix and do not validate the requested rival grid.
+The capture writer emits PPM regardless of the filename suffix; convert with
+ImageMagick before viewing. See `car_asset_authoring.md` for repeatable export.
+
+Keep original data and the unrelated `.claude/` and `imgui.ini` files.
 Commit verified stages locally; do not push or publish.

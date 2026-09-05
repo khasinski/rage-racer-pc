@@ -55,4 +55,15 @@ wheel bank, textures, paint behavior, and gameplay data. Disc-imported
 material slots are resolved by their texture-page/palette identity; the
 prebuilt cache uses its existing slot numbering. `modern.authored_cars=0`
 is a development-only before/after comparison override. The default is on.
-Rival integration and the remaining Erriso grades are still pending.
+For the rival, select only `Erriso_rival_body` in scene `Erriso rival` and
+export to `assets/cars/erriso-rival.obj` with the same settings and modifier
+stack. Its body replaces submesh 10 in banks 96, 98, and 100; far body 14 and
+wheel submeshes 12/13 remain original. Player preview wheel objects are for
+inspection only and must not be included in the body export. Other player
+grades retain original geometry.
+
+`tests/scenarios/authored_erriso.ini` provides a repeatable live comparison.
+Rival model slots are course-specific: use slot 2 on course 0, slot 1 on
+course 1, and slot 0 on course 2. These are not showroom car IDs. Set
+`modern.authored_cars=0` for the original geometry and use camera 1 (chase)
+or 2 (trackside) with the same custom start for comparable views.

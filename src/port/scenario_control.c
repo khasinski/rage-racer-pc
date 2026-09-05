@@ -151,9 +151,10 @@ static void ScenarioApplyTrackStarts(void) {
                     index, point, g_TrackPointCount - 1);
         } else if (point >= 0 && g_Cars[index].activeFlag) {
             fprintf(stderr,
-                    "rage-port: scenario-start rival=%d point=%d pos=%d,%d progress=%d section=%d\n",
+                    "rage-port: scenario-start rival=%d point=%d pos=%d,%d progress=%d section=%d model=%d\n",
                     index, point, g_Cars[index].x, g_Cars[index].z,
-                    g_Cars[index].trackProgress, g_Cars[index].trackSection);
+                    g_Cars[index].trackProgress, g_Cars[index].trackSection,
+                    g_Cars[index].modelIndex);
         }
     }
     if (s_scenario.hasExact) ScenarioPlaceExact();
@@ -246,6 +247,15 @@ static void ScenarioParseGrid(const char *text) {
     return;
 invalid:
     fprintf(stderr, "rage-port: ignoring invalid race.grid\n");
+}
+
+static void ScenarioApplyGrid(void) {
+    int index;
+    if (!s_scenario.customGrid || s_scenario.gridApplied) return;
+    for (index=0;index<RACE_CAR_SLOT_COUNT;index++)
+        g_RaceGridSlots[index].value=s_scenario.grid[index];
+    s_scenario.gridApplied=1;
+    fprintf(stderr,"rage-port: custom rival grid applied\n");
 }
 
 static void ScenarioInitialize(void) {
@@ -558,6 +568,9 @@ static void ScenarioDirectBoot(void) {
             g_SceneTimer = 0;
             ScenarioShowClearedRaceDisplay();
             g_SceneId = 11;
+            /* The direct path returns before the ordinary scene-11 hook.
+             * Install the requested grid before its handler initializes cars. */
+            ScenarioApplyGrid();
             s_scenario.directStep = RAGE_DIRECT_DONE;
             fprintf(stderr, "rage-port: scenario direct boot entered the race t=%.1fs\n",
                     ScenarioElapsed());
@@ -568,7 +581,7 @@ static void ScenarioDirectBoot(void) {
 }
 
 void PortScenarioBeforeSceneHandler(void) {
-    int changed, index;
+    int changed;
     if (!s_scenario.initialized) ScenarioInitialize();
     if (!s_scenario.enabled) return;
 
@@ -700,13 +713,7 @@ void PortScenarioBeforeSceneHandler(void) {
         ScenarioConfirm();
     }
 
-    if (g_SceneId == 11 && s_scenario.customGrid && !s_scenario.gridApplied) {
-        for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
-            g_RaceGridSlots[index].value = s_scenario.grid[index];
-        }
-        s_scenario.gridApplied = 1;
-        fprintf(stderr, "rage-port: custom rival grid applied\n");
-    }
+    if (g_SceneId == 11) ScenarioApplyGrid();
     if (g_SceneId == 12 && s_scenario.customStart &&
         !s_scenario.startApplied && g_TrackPointCount > 0) {
         ScenarioApplyTrackStarts();

@@ -16,8 +16,11 @@
 #include "render/mod_manifest.h"
 #include "render/rmesh_replace.h"
 #include "erriso_body.inc"
+#include "erriso_rival.inc"
 
-static RageRuntimeCachedMesh s_errisoMesh;
+/* Player bank and the three class-2 course banks containing rival Erriso.
+ * Separate entries keep captured frames valid while another course loads. */
+static RageRuntimeCachedMesh s_errisoMesh[4];
 
 static const RageRuntimeCachedMesh *ModernAuthoredCar(
     const RageRuntimeCachedMesh *base, const RageRenderMeshInstance *instance,
@@ -25,31 +28,47 @@ static const RageRuntimeCachedMesh *ModernAuthoredCar(
     static const uint16_t pages[10]={10,10,10,11,11,11,11,11,11,11};
     static const uint16_t cluts[10]={0x3baf,0x3bef,0x7801,0x382f,0x386f,
                                     0x38af,0x39af,0x39ef,0x3a2f,0x3b2f};
-    uint32_t map[10], i;
+    static const uint16_t rivalSlots[4]={0,13,14,19};
+    static const uint16_t rivalPages[4]={10,12,12,13};
+    static const uint16_t rivalCluts[4]={0x7802,0x78c7,0x78c8,0x78c9};
+    uint32_t map[20], i, part=0, entryIndex=0;
+    RageRuntimeCachedMesh *entry;
     RageRuntimeMesh body;
     void *bytes;
     size_t size;
-    if (!base || instance->assetKey!=10 || instance->assetSet!=RAGE_RENDER_ASSET_MODEL_BANK ||
-        RuntimeConfigInt("modern.authored_cars",1,0,1)==0) return base;
-    if (s_errisoMesh.ownedBytes) return &s_errisoMesh;
-    for (i=0;i<10;i++) {
-        int slot=imported?NativeAssetImporterMaterialSlot(instance,pages[i],cluts[i]):(int)i;
+    if (!base) return NULL;
+    if (instance->assetSet==RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 &&
+        (instance->assetKey==96 || instance->assetKey==98 || instance->assetKey==100)) {
+        entryIndex=1+(instance->assetKey-96)/2;
+        part=10;
+    } else if (instance->assetKey!=10 || instance->assetSet!=RAGE_RENDER_ASSET_MODEL_BANK)
+        return base;
+    if (RuntimeConfigInt("modern.authored_cars",1,0,1)==0) return base;
+    entry=&s_errisoMesh[entryIndex];
+    if (entry->ownedBytes) return entry;
+    for (i=0;i<20;i++) map[i]=UINT32_MAX;
+    for (i=0;i<(part?4u:10u);i++) {
+        uint32_t source=part?rivalSlots[i]:i;
+        int slot=imported?NativeAssetImporterMaterialSlot(instance,
+            part?rivalPages[i]:pages[i],part?rivalCluts[i]:cluts[i]):(int)source;
         if (slot<0) {
-            fprintf(stderr,"rage-port: Erriso material %u unavailable\n",i);
+            fprintf(stderr,"rage-port: Erriso asset %u material %u unavailable\n",instance->assetKey,source);
             return NULL;
         }
-        map[i]=(uint32_t)slot;
+        map[source]=(uint32_t)slot;
     }
-    if (!RuntimeMeshOpen(&body,s_errisoBody,sizeof(s_errisoBody))) return NULL;
-    bytes=RuntimeMeshReplace(&base->mesh,0,&body,map,10,&size);
+    if (!RuntimeMeshOpen(&body,part?s_errisoRivalBody:s_errisoBody,
+        part?sizeof(s_errisoRivalBody):sizeof(s_errisoBody))) return NULL;
+    bytes=RuntimeMeshReplace(&base->mesh,part,&body,map,20,&size);
     if (!bytes) return NULL;
-    s_errisoMesh=*base;
-    if (!RuntimeMeshOpen(&s_errisoMesh.mesh,bytes,size)) {
-        free(bytes); memset(&s_errisoMesh,0,sizeof(s_errisoMesh)); return NULL;
+    *entry=*base;
+    if (!RuntimeMeshOpen(&entry->mesh,bytes,size)) {
+        free(bytes); memset(entry,0,sizeof(*entry)); return NULL;
     }
-    s_errisoMesh.ownedBytes=bytes;
-    fprintf(stderr,"rage-port: authored Erriso body installed (%u triangles)\n",body.indexCount/3);
-    return &s_errisoMesh;
+    entry->ownedBytes=bytes;
+    fprintf(stderr,"rage-port: authored Erriso %s body installed asset=%u (%u triangles)\n",
+        part?"rival":"player",instance->assetKey,body.indexCount/3);
+    return entry;
 }
 
 enum {
@@ -220,7 +239,9 @@ int ModernAssetsInitRoot(const char *root) {
 }
 
 void ModernAssetsShutdown(void) {
-    free((void *)s_errisoMesh.ownedBytes);
+    size_t i;
+    for (i=0;i<sizeof(s_errisoMesh)/sizeof(s_errisoMesh[0]);i++)
+        free((void *)s_errisoMesh[i].ownedBytes);
     memset(&s_errisoMesh,0,sizeof(s_errisoMesh));
     RuntimeMeshCacheRelease(&s_cache);
     NativeAssetImporterShutdown();

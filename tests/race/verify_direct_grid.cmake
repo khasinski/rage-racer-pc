@@ -1,0 +1,29 @@
+# Uses the real scene-11 handler, not a mock of the grid installer.
+file(MAKE_DIRECTORY "${EVIDENCE}")
+foreach(course RANGE 0 2)
+math(EXPR model "2-${course}")
+math(EXPR asset "96+2*${course}")
+string(REPEAT "${model}," 10 grid)
+string(APPEND grid "${model}")
+set(log "${EVIDENCE}/direct-grid-${course}.log")
+execute_process(COMMAND "${GAME}" --scenario "${SOURCE}/tests/scenarios/authored_erriso.ini"
+    --set stop.timer=120 --set "race.course=${course}" --set "race.grid=${grid}"
+    --set "diagnostics.log=${log}"
+    WORKING_DIRECTORY "${SOURCE}" RESULT_VARIABLE status
+    OUTPUT_VARIABLE output ERROR_VARIABLE errors TIMEOUT 90)
+if(NOT status EQUAL 0)
+    message(FATAL_ERROR "Direct-grid race failed: ${status}\n${output}\n${errors}")
+endif()
+file(READ "${log}" trace)
+if(NOT trace MATCHES "custom rival grid applied")
+    message(FATAL_ERROR "Direct boot skipped grid installation")
+endif()
+foreach(index RANGE 0 2)
+    if(NOT trace MATCHES "scenario-start rival=${index} [^\n]*model=${model}")
+        message(FATAL_ERROR "Course ${course} rival ${index} did not initialize with model ${model}")
+    endif()
+endforeach()
+if(NOT trace MATCHES "authored Erriso rival body installed asset=${asset}")
+    message(FATAL_ERROR "Rival bank did not load its embedded authored body")
+endif()
+endforeach()
