@@ -231,6 +231,23 @@ int main(void) {
     ElevationTests();
     AzimuthTests();
     ComposeTests();
+    {
+        RageRenderStage stage;
+        RageRenderPose pose;
+        RageRenderMeshInstance instance;
+        RageRenderWorld world;
+        RenderStageDefaults(&stage);
+        RenderPoseDefaults(&pose);
+        pose.rotationDegrees.x = -720;
+        pose.rotationDegrees.y = 360;
+        pose.rotationDegrees.z = 1080;
+        pose.useQuaternion = 1;
+        RenderStageCompose(&world, &instance, 1, &stage, &pose, 1);
+        Expect("full turns keep X exact", instance.transform.rotation.x, 0, 0);
+        Expect("full turns keep Y exact", instance.transform.rotation.y, 0, 0);
+        Expect("full turns keep Z exact", instance.transform.rotation.z, 0, 0);
+        Expect("full turns keep the quaternion exact", instance.transform.orientation.w, 1, 0);
+    }
 
     if (failures != 0) {
         printf("%d stage assertion(s) failed\n", failures);
