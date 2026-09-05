@@ -13,6 +13,8 @@
 int NativeAssetImporterInit(void);
 void NativeAssetImporterShutdown(void);
 int NativeAssetImporterReady(void);
+int NativeAssetImporterMaterialSlot(const RageRenderMeshInstance *instance,
+    uint16_t tpage, uint16_t clut);
 const RageRuntimeCachedMesh *NativeAssetImporterFind(
     const RageRenderMeshInstance *instance);
 uint32_t NativeAssetImporterMeshCount(void);

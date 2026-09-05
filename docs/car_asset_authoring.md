@@ -37,3 +37,22 @@ non-opaque alpha. Geometry inspection and in-game validation remain necessary.
 The existing assetbrowser glTF exports are useful textured references, but
 they omit native face metadata. Start production geometry from the native
 OBJ export when that metadata must survive.
+
+## Integrated Erriso source
+
+Open `assets/cars/erriso.blend` and select `Erriso_body` in scene `Scene`.
+Export selected objects to `assets/cars/erriso-body.obj` using the options
+above. Keep the modifier stack enabled: bevel, weighted normals, vertex-color
+clamp, and transfer of the original panel normals. The clamp is necessary
+because bevel interpolation can overshoot the legal color range. Reference
+textures are packed in the blend file. The original body and wheel sources
+remain available as hidden objects.
+
+The normal CMake build converts the OBJ to native bytes and embeds them in
+the executable. End users need neither Blender nor an additional asset file.
+Modern rendering replaces base Erriso's body submesh while retaining its
+wheel bank, textures, paint behavior, and gameplay data. Disc-imported
+material slots are resolved by their texture-page/palette identity; the
+prebuilt cache uses its existing slot numbering. `modern.authored_cars=0`
+is a development-only before/after comparison override. The default is on.
+Rival integration and the remaining Erriso grades are still pending.

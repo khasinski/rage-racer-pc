@@ -113,11 +113,24 @@ add_library(rage-rmesh STATIC
     src/render/render_material.c
     src/render/texture_mipmap.c
     src/render/rmesh.c
+    src/render/rmesh_replace.c
     src/render/rmesh_index.c
     src/render/rmesh_cache.c)
 target_include_directories(rage-rmesh PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 add_executable(rage-mesh-obj tools/rage_mesh_obj.c)
 target_link_libraries(rage-mesh-obj PRIVATE rage-rmesh)
+set(RAGE_AUTHORED_DIR "${CMAKE_CURRENT_BINARY_DIR}/authored-cars")
+file(MAKE_DIRECTORY "${RAGE_AUTHORED_DIR}")
+add_custom_command(OUTPUT "${RAGE_AUTHORED_DIR}/erriso_body.inc"
+    COMMAND rage-mesh-obj import "${CMAKE_CURRENT_SOURCE_DIR}/assets/cars/erriso-body.obj"
+        "${RAGE_AUTHORED_DIR}/erriso-body.rmesh"
+    COMMAND ${CMAKE_COMMAND} "-DINPUT=${RAGE_AUTHORED_DIR}/erriso-body.rmesh"
+        "-DOUTPUT=${RAGE_AUTHORED_DIR}/erriso_body.inc"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/tools/scripts/embed_car_mesh.cmake"
+    DEPENDS rage-mesh-obj assets/cars/erriso-body.obj tools/scripts/embed_car_mesh.cmake
+    VERBATIM)
+add_custom_target(rage-authored-cars DEPENDS "${RAGE_AUTHORED_DIR}/erriso_body.inc")
+include_directories("${RAGE_AUTHORED_DIR}")
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(rage-mesh-obj PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
@@ -295,6 +308,8 @@ if(RAGE_BUILD_PORT)
         src/port/modern/modern_texture_dump.c)
     target_include_directories(rage-render-stage PRIVATE
         src src/port src/port/include include)
+    add_dependencies(rage-render-stage rage-authored-cars)
+    add_dependencies(rage-frame-replay rage-authored-cars)
     target_link_libraries(rage-render-stage PRIVATE
         rage-render-world SDL3::SDL3 miniz)
     if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
@@ -335,6 +350,7 @@ if(RAGE_BUILD_PORT)
         target_compile_options(rage-game-full PRIVATE /clang:-fcommon)
     endif()
     foreach(RAGE_PORT_TARGET rage-racer rage-racer-smoke)
+        add_dependencies(${RAGE_PORT_TARGET} rage-authored-cars)
         target_include_directories(${RAGE_PORT_TARGET} PRIVATE
             src/port/include
             include

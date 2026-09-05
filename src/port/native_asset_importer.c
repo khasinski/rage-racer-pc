@@ -87,6 +87,20 @@ typedef struct RageImportedWrite {
 
 static RageImportedMeshEntry s_entries[RAGE_IMPORT_ENTRY_LIMIT];
 static uint32_t s_entryCount;
+int NativeAssetImporterMaterialSlot(const RageRenderMeshInstance *instance,
+    uint16_t tpage, uint16_t clut) {
+    uint32_t i,j;
+    if (!instance) return -1;
+    for (i=0;i<s_entryCount;i++) {
+        const RageImportedMeshEntry *entry=&s_entries[i];
+        if (entry->cached.assetKey!=instance->assetKey ||
+            entry->cached.assetSet!=instance->assetSet) continue;
+        for (j=0;j<entry->materialCount;j++)
+            if (entry->materials[j].tpage==tpage && entry->materials[j].clut==clut &&
+                !entry->materials[j].hasWindow) return (int)j;
+    }
+    return -1;
+}
 static int s_ready;
 
 static uint16_t ImportRead16(const void *pointer) {

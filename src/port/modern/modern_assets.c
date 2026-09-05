@@ -14,6 +14,43 @@
 #include "render/asset_id.h"
 #include "render/car_paint.h"
 #include "render/mod_manifest.h"
+#include "render/rmesh_replace.h"
+#include "erriso_body.inc"
+
+static RageRuntimeCachedMesh s_errisoMesh;
+
+static const RageRuntimeCachedMesh *ModernAuthoredCar(
+    const RageRuntimeCachedMesh *base, const RageRenderMeshInstance *instance,
+    int imported) {
+    static const uint16_t pages[10]={10,10,10,11,11,11,11,11,11,11};
+    static const uint16_t cluts[10]={0x3baf,0x3bef,0x7801,0x382f,0x386f,
+                                    0x38af,0x39af,0x39ef,0x3a2f,0x3b2f};
+    uint32_t map[10], i;
+    RageRuntimeMesh body;
+    void *bytes;
+    size_t size;
+    if (!base || instance->assetKey!=10 || instance->assetSet!=RAGE_RENDER_ASSET_MODEL_BANK ||
+        RuntimeConfigInt("modern.authored_cars",1,0,1)==0) return base;
+    if (s_errisoMesh.ownedBytes) return &s_errisoMesh;
+    for (i=0;i<10;i++) {
+        int slot=imported?NativeAssetImporterMaterialSlot(instance,pages[i],cluts[i]):(int)i;
+        if (slot<0) {
+            fprintf(stderr,"rage-port: Erriso material %u unavailable\n",i);
+            return NULL;
+        }
+        map[i]=(uint32_t)slot;
+    }
+    if (!RuntimeMeshOpen(&body,s_errisoBody,sizeof(s_errisoBody))) return NULL;
+    bytes=RuntimeMeshReplace(&base->mesh,0,&body,map,10,&size);
+    if (!bytes) return NULL;
+    s_errisoMesh=*base;
+    if (!RuntimeMeshOpen(&s_errisoMesh.mesh,bytes,size)) {
+        free(bytes); memset(&s_errisoMesh,0,sizeof(s_errisoMesh)); return NULL;
+    }
+    s_errisoMesh.ownedBytes=bytes;
+    fprintf(stderr,"rage-port: authored Erriso body installed (%u triangles)\n",body.indexCount/3);
+    return &s_errisoMesh;
+}
 
 enum {
     MODERN_ASSET_CACHE_CAPACITY = 4096,
@@ -183,6 +220,8 @@ int ModernAssetsInitRoot(const char *root) {
 }
 
 void ModernAssetsShutdown(void) {
+    free((void *)s_errisoMesh.ownedBytes);
+    memset(&s_errisoMesh,0,sizeof(s_errisoMesh));
     RuntimeMeshCacheRelease(&s_cache);
     NativeAssetImporterShutdown();
     if (s_indexBytes != NULL) SDL_free(s_indexBytes);
@@ -203,9 +242,9 @@ void ModernAssetsShutdown(void) {
 const RageRuntimeCachedMesh *ModernAssetsFind(
     const RageRenderMeshInstance *instance) {
     if (!s_ready || instance == NULL) return NULL;
-    if (s_importerSource) return NativeAssetImporterFind(instance);
-    return RuntimeMeshCacheFind(&s_cache, instance->assetKey,
-                                    instance->assetSet);
+    if (s_importerSource) return ModernAuthoredCar(NativeAssetImporterFind(instance),instance,1);
+    return ModernAuthoredCar(RuntimeMeshCacheFind(&s_cache, instance->assetKey,
+                                    instance->assetSet),instance,0);
 }
 
 int ModernAssetsReady(void) {

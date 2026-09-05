@@ -29,6 +29,12 @@ int NativeAssetImporterReady(void) {
     return 0;
 }
 
+int NativeAssetImporterMaterialSlot(const RageRenderMeshInstance *instance,
+    uint16_t tpage, uint16_t clut) {
+    (void)instance; (void)tpage; (void)clut;
+    return -1;
+}
+
 const RageRuntimeCachedMesh *NativeAssetImporterFind(
     const RageRenderMeshInstance *instance) {
     (void)instance;
