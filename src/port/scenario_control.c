@@ -11,6 +11,7 @@
 #include "game/audio_internal.h"
 #include "game/frontend_internal.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/race.h"
 #include "game/render_internal.h"
 #include "game/round_screen_internal.h"
@@ -535,6 +536,16 @@ static void ScenarioDirectBoot(void) {
              * that image, and the race draws the player's own car from bank 0
              * only in the outside views. Skipping this loses the car there. */
             ActivateShowroomCarModel((s32)g_CarModelSlot);
+            /* Preserve EnterCourseSelectScreen's texture work when bypassing
+             * its UI: both classic and native cars need these live markings. */
+            {
+                int sample = RuntimeConfigInt("race.logo_sample", -1, -1,
+                    TEAM_LOGO_SAMPLE_CHOICE_COUNT - 1);
+                if (sample >= 0) ComposeSampleTeamLogo(sample, 0);
+            }
+            LoadImage(&g_TeamLogoRect.rect, &g_TeamLogoCanvas);
+            UploadTeamLogoClut();
+            UploadTeamNameTexture(g_TeamNameChars, g_TeamNameLength);
             s_scenario.directStep = RAGE_DIRECT_ROUND_REQUEST;
         }
         break;

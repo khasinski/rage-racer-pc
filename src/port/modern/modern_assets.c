@@ -595,6 +595,13 @@ int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
     }
     if (!ModernAssetsLoadBaseMaterial(instance, material, variant, definition, image))
         return 0;
+    if (instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
+        (surface == RAGE_CAR_SURFACE_GLASS || surface == RAGE_CAR_SURFACE_DECAL) &&
+        !NativeAssetImporterApplyPlayerMarkings(
+            surface == RAGE_CAR_SURFACE_GLASS ? 0x3bef : 0x7801, image)) {
+        ModernAssetsFreeMaterialImage(image);
+        return 0;
+    }
     AuthoredCarSurfaceApply(surface, definition);
     AuthoredCarSurfaceTexture(surface, image->pixels, image->size);
     return 1;

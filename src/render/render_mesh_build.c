@@ -1,4 +1,5 @@
 #include "render_mesh_build.h"
+#include "authored_car_surface.h"
 
 #include <math.h>
 #include <string.h>
@@ -228,6 +229,19 @@ static void LiftOverlayTowardCamera(
         triangle[corner].position[0] += nx * 2.0f;
         triangle[corner].position[1] += ny * 2.0f;
         triangle[corner].position[2] += nz * 2.0f;
+    }
+}
+
+static void LiftCarDecal(RageNativeDrawVertex triangle[3]) {
+    int corner, axis;
+    /* A hood marking stays outside the painted panel even when the camera
+     * looks across it at a grazing angle. Its authored normals point out. */
+    for (corner = 0; corner < 3; ++corner) {
+        float *n = triangle[corner].normal;
+        float length = Vec3Length(n[0], n[1], n[2]);
+        if (length <= 0.0f) continue;
+        for (axis = 0; axis < 3; ++axis)
+            triangle[corner].position[axis] += n[axis] * (2.0f / length);
     }
 }
 
@@ -464,6 +478,11 @@ static int BuildVertex(const RageTransformBasis *basis,
             source.material = UINT32_MAX;
     }
     *material = source.material;
+    if ((instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
+         instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1) &&
+        source.material != UINT32_MAX &&
+        source.material / RAGE_CAR_SURFACE_RUNTIME_STRIDE == RAGE_CAR_SURFACE_DECAL)
+        *depthDecal = 1;
     return 1;
 }
 
@@ -528,8 +547,14 @@ static uint32_t RenderBuildNativeDrawsFiltered(
                 /* Explicit screen/art layers are semantic overlays. Give them
                  * real separation from their backing mesh instead of changing
                  * their depth value in the rasterizer. */
-                LiftOverlayTowardCamera(
-                    triangle, world->camera.transform.position);
+                if ((instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
+                     instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1) &&
+                    materials[0] / RAGE_CAR_SURFACE_RUNTIME_STRIDE ==
+                        RAGE_CAR_SURFACE_DECAL)
+                    LiftCarDecal(triangle);
+                else
+                    LiftOverlayTowardCamera(
+                        triangle, world->camera.transform.position);
             } else if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN &&
                 materials[0] != UINT32_MAX &&
                 TriangleIsRoadDecal(triangle)) {

@@ -45,6 +45,30 @@ material as `resolved_slot + 4096 * surface`. Texture and paint loading use
 the original slot. Untextured sentinel faces retain their original behavior.
 Material response is centralized in `src/render/authored_car_surface.c`.
 
+## Team markings
+
+The stronger Esperanza now explicitly tags its hood artwork as surface 5
+(decal). The native draw builder separates that layer along its outward normals,
+including at grazing camera angles, while retaining normal depth testing.
+Its material isolates the 64×64 canvas from the surrounding wheel atlas so
+filtered textures do not leave coloured specks beside the logo.
+
+Glass tinting preserves the name banner at atlas texels (8,55), size 48×8.
+The C importer refreshes both markings from live game state even when the base
+atlas comes from the native asset cache. Direct scenarios perform the same
+logo/name uploads as course selection. A new optional `race.logo_sample` selects
+one of the game's original sample characters with background 0 for reproducible
+marking checks; omission preserves the current editable canvas. A fresh test
+session's default canvas is empty, so an absent drawing alone is not a depth bug.
+
+Four focused compiled tests pass (`fleet-markings-tests-final.log`), covering
+banner preservation, decal atlas isolation, outward separation below the hood
+plane, and the existing asset/replacement regressions. Actual release captures
+verify sample 5 and the NAMCO banner with live import and the disk cache:
+
+- [Final markings](../build/car-upgrade-evidence/fleet-markings-isolated-final-detail.png)
+- [Cache markings](../build/car-upgrade-evidence/fleet-markings-cache-final-detail.png)
+
 ## Verification
 
 - Eight focused C tests passed (`rounded-tests-final.log`), including asset

@@ -98,6 +98,28 @@ int main(void) {
             EXPECT(pixels[0] == 18 && pixels[1] == 25 && pixels[2] == 32);
             EXPECT(pixels[3] == 255 && pixels[7] == 0);
         }
+        {
+            static uint8_t atlas[256 * 256 * 4];
+            unsigned x, y;
+            memset(atlas, 213, sizeof(atlas));
+            AuthoredCarSurfaceTexture(RAGE_CAR_SURFACE_GLASS, atlas, sizeof(atlas));
+            for (y = 0; y < 256; ++y) for (x = 0; x < 256; ++x) {
+                const uint8_t *p = atlas + (y * 256 + x) * 4;
+                int banner = x >= 8 && x < 56 && y >= 55 && y < 63;
+                EXPECT(p[0] == (banner ? 213 : 18));
+                EXPECT(p[1] == (banner ? 213 : 25));
+                EXPECT(p[2] == (banner ? 213 : 32));
+                EXPECT(p[3] == 213);
+            }
+            memset(atlas, 213, sizeof(atlas));
+            AuthoredCarSurfaceTexture(RAGE_CAR_SURFACE_DECAL, atlas, sizeof(atlas));
+            for (y = 0; y < 256; ++y) for (x = 0; x < 256; ++x) {
+                const uint8_t *p = atlas + (y * 256 + x) * 4;
+                int canvas = x >= 64 && x < 128 && y >= 48 && y < 112;
+                EXPECT(p[0] == (canvas ? 213 : 0));
+                EXPECT(p[3] == (canvas ? 213 : 0));
+            }
+        }
     }
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

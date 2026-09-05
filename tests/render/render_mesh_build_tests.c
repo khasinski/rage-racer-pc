@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "render/render_mesh_build.h"
+#include "render/authored_car_surface.h"
 
 static int failures;
 
@@ -743,7 +744,50 @@ static void test_native_draw_builder_keeps_instance_in_frustum_guard_band(void) 
     EXPECT_EQ(1, spanCount);
 }
 
+static void test_car_marking_stays_outside_hood(void) {
+    unsigned char bytes[164] = {0};
+    RageRuntimeMesh mesh;
+    RageRenderMeshInstance storage[1] = {0};
+    RageRenderWorld world;
+    RageNativeDrawVertex vertices[3];
+    RageNativeDrawSpan spans[1];
+    float positions[3][3] = {{-1, 0, 10}, {1, 0, 10}, {0, 0, 12}};
+    float normal[3] = {0, 1, 0};
+    uint32_t spanCount, i;
+    uint32_t material = 2 + RAGE_CAR_SURFACE_DECAL * RAGE_CAR_SURFACE_RUNTIME_STRIDE;
+    memcpy(bytes, "RRMESH1", 7);
+    write_u32(bytes + 8, 1); write_u32(bytes + 12, 1);
+    write_u32(bytes + 16, 3); write_u32(bytes + 20, 3);
+    write_u32(bytes + 28, 3);
+    for (i = 0; i < 3; ++i) {
+        memcpy(bytes + 32 + i * 40, positions[i], sizeof(positions[i]));
+        memcpy(bytes + 44 + i * 40, normal, sizeof(normal));
+        bytes[59 + i * 40] = 255;
+        write_u32(bytes + 68 + i * 40, RAGE_RUNTIME_MATERIAL_METADATA | material);
+        write_u32(bytes + 152 + i * 4, i);
+    }
+    EXPECT_EQ(1, RuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+    RenderWorldInit(&world, storage, 1);
+    world.camera.transform.position.y = -1; /* Below the hood plane. */
+    world.camera.verticalFovDegrees = 90;
+    world.camera.nearPlane = 1; world.camera.farPlane = 100;
+    storage[0].assetSet = RAGE_RENDER_ASSET_MODEL_BANK;
+    storage[0].transform.scale.x = storage[0].transform.scale.y =
+        storage[0].transform.scale.z = 1;
+    world.instanceCount = 1;
+    EXPECT_EQ(3, RenderBuildNativeDraws(&world, 1, test_mesh_lookup,
+        &mesh, vertices, 3, spans, 1, &spanCount));
+    EXPECT_EQ(1, spanCount);
+    EXPECT_EQ(1, spans[0].depthDecal);
+    EXPECT_EQ(material, spans[0].material);
+    for (i = 0; i < 3; ++i) {
+        EXPECT_EQ(2, (int)vertices[i].position[1]);
+        EXPECT_EQ(0, (int)vertices[i].depthBias);
+    }
+}
+
 int main(void) {
+    test_car_marking_stays_outside_hood();
     test_native_draw_builder_uses_render_world_and_imported_mesh();
     test_native_draw_builder_rejects_invalid_inputs();
     test_native_draw_builder_keeps_triangles_for_gpu_frustum_clipping();

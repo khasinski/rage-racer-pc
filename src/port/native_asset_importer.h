@@ -22,5 +22,7 @@ int NativeAssetImporterLoadMaterial(
     const RageRenderMeshInstance *instance, uint32_t material,
     uint8_t variant, RageRenderMaterial *definition, ModernAssetImage *image);
 int NativeAssetImporterLoadSky(uint32_t assetKey, ModernAssetImage *image);
+/* Team artwork is live game state, even when the base atlas came from disk. */
+int NativeAssetImporterApplyPlayerMarkings(uint16_t clut, ModernAssetImage *image);
 
 #endif

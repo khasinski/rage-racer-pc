@@ -690,6 +690,37 @@ static void ImportColor(uint16_t word, uint8_t rgba[4]) {
     rgba[3] = word == 0 ? 0 : 255;
 }
 
+int NativeAssetImporterApplyPlayerMarkings(uint16_t clut, ModernAssetImage *image) {
+    uint32_t packed[512] = {0}, paletteStorage[8] = {0};
+    const uint16_t *words = (const uint16_t *)packed;
+    const uint16_t *palette = (const uint16_t *)paletteStorage;
+    RECT rect, paletteRect;
+    unsigned x, y, atlasX;
+    if (!image || !image->pixels || image->width != 256 || image->height != 256 ||
+        image->size != 256u * 256u * 4u) return 0;
+    if (clut == 0x7801) {
+        rect = (RECT){656, 48, 16, 64};
+        atlasX = 64;
+    } else if (clut == 0x3bef) {
+        rect = (RECT){642, 55, 12, 8};
+        atlasX = 8;
+    } else return 0;
+    paletteRect = (RECT){(clut & 63u) * 16u, clut >> 6, 16, 1};
+    DrawSync(0);
+    StoreImage(&rect, (u_long *)packed);
+    StoreImage(&paletteRect, (u_long *)paletteStorage);
+    DrawSync(0);
+    for (y = 0; y < (unsigned)rect.h; ++y) {
+        for (x = 0; x < (unsigned)rect.w * 4u; ++x) {
+            unsigned index = (words[y * rect.w + x / 4u] >> ((x & 3u) * 4u)) & 15u;
+            uint8_t *rgba = (uint8_t *)image->pixels +
+                (((unsigned)rect.y + y) * 256u + atlasX + x) * 4u;
+            ImportColor(palette[index], rgba);
+        }
+    }
+    return 1;
+}
+
 static uint8_t ImportPaletteIndex(const uint16_t *vram, uint16_t tpage,
                                       uint32_t u, uint32_t v) {
     uint32_t pageX = (tpage & 0xFu) * 64u;
