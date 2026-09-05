@@ -371,6 +371,15 @@ target_link_libraries(sky_background_tests PRIVATE psyz)
 add_test(NAME sky_background COMMAND sky_background_tests)
 set_tests_properties(sky_background PROPERTIES LABELS unit)
 
+add_executable(modern_sky_geometry_tests modern_sky_geometry_tests.c)
+target_include_directories(modern_sky_geometry_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/modern)
+if(NOT MSVC)
+    target_link_libraries(modern_sky_geometry_tests PRIVATE m)
+endif()
+add_test(NAME modern_sky_geometry COMMAND modern_sky_geometry_tests)
+set_tests_properties(modern_sky_geometry PROPERTIES LABELS unit)
+
 add_executable(sky_panorama_layout_tests
     sky_panorama_layout_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/sky_panorama_layout.c)

@@ -1,6 +1,7 @@
 #include "modern_renderer.h"
 #include "modern_assets.h"
 #include "modern_native_gpu.h"
+#include "modern_sky_geometry.h"
 #include "rage/render_world_game.h"
 
 #include <psyz/overlay_sdl3_gpu.h>
@@ -30,10 +31,10 @@
 #include "shaders/post_frag_msl.h"
 #include "shaders/post_vert_msl.h"
 
-/* The modern presentation path combines the native RenderWorld renderer,
- * including its sky, with captured PS1 2D layers that still own the HUD and
- * mirror frame. Captured PS1 3D faces and sky packets are never rendered
- * here. Menus, FMV and 480-line screens present the compat image directly. */
+/* The modern presentation path combines native RenderWorld geometry with
+ * captured 2D sky, HUD and mirror-frame layers. Sky geometry is reprojected
+ * for the interpolated camera. Captured PS1 3D faces are not rendered here.
+ * Menus, FMV and 480-line screens present the compat image directly. */
 
 static int s_enabled;
 static int s_initialized;
@@ -561,7 +562,7 @@ static int ModernBuildSmoothSkyQuad(const RageCapturePacket *packet,
                                     float rawX[4], float rawY[4]) {
     const RageRenderCamera *camera = s_skyPresentationCamera;
     int index, row, column;
-    float originX, originY, cellX, cellY;
+    float originX, originY, cellX, cellY, sourceColumn;
     if (camera == NULL || packet->skyIndex == UINT16_MAX ||
         packet->skyIndex >= 96) return 0;
     index = packet->skyIndex;
@@ -576,9 +577,13 @@ static int ModernBuildSmoothSkyQuad(const RageCapturePacket *packet,
         originY = camera->skyGridOrigin.y;
     }
     column = index % 24 - 8;
-    cellX = originX + column * camera->skyGridColumn.x -
+    sourceColumn = (float)column;
+    if (s_skyPacketCamera != NULL)
+        sourceColumn += ModernSkySourceColumn(
+            s_skyPacketCamera->skyGridColumn.z, camera->skyGridColumn.z);
+    cellX = originX + sourceColumn * camera->skyGridColumn.x -
             row * camera->skyGridRow.x;
-    cellY = originY + column * camera->skyGridColumn.y -
+    cellY = originY + sourceColumn * camera->skyGridColumn.y -
             row * camera->skyGridRow.y;
     rawX[0] = cellX;
     rawY[0] = cellY;
@@ -840,8 +845,12 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
                     if (!smoothSky &&
                         (packet->flags & RAGE_CAPTURE_PACKET_SKY) != 0)
                     ModernTransformSkyPoint(&rawX[vertex], &rawY[vertex]);
-                    ModernOrtho(&corners[vertex], rawX[vertex], rawY[vertex]);
                 }
+                if (!textured && quad &&
+                    (packet->flags & RAGE_CAPTURE_PACKET_SKY) != 0)
+                    ModernSkyExtendBand(rawX, rawY, s_logicalW);
+                for (vertex = 0; vertex < count; vertex++)
+                    ModernOrtho(&corners[vertex], rawX[vertex], rawY[vertex]);
             }
             for (vertex = 0; vertex < count; vertex++) {
                 ModernVertex *out = &corners[vertex];
