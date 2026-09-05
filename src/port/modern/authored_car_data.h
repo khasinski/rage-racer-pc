@@ -15,6 +15,8 @@
 #include "esperanza_rival_late.inc"
 #include "acceron_body.inc"
 #include "acceron_rival.inc"
+#include "bayonet_body.inc"
+#include "bayonet_rival.inc"
 
 typedef struct AuthoredCarMaterial {
     uint16_t source, page, clut, cacheSlot;
@@ -155,9 +157,22 @@ static const AuthoredCarMaterial s_acceronRivalMaterials[] = {
     {18, 13, 0x7889, 18},
 };
 
+static const AuthoredCarMaterial s_bayonetRivalMaterials[] = {
+    {0, 10, 0x7802, 0},
+    {9, 12, 0x7887, 9},
+    {10, 12, 0x7888, 10},
+    {16, 13, 0x7889, 16},
+};
+
 #define AUTHORED_CAR(name, key, set, part, data, map) \
     {name, key, set, part, data, sizeof(data), map, sizeof(map)/sizeof(map[0])}
 static const AuthoredCarReplacement s_authoredCars[] = {
+    AUTHORED_CAR("Bayonet", 46, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_bayonet_body, s_esperanzaPlayerMaterials),
+    AUTHORED_CAR("Bayonet", 102, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_bayonet_rival, s_bayonetRivalMaterials),
+    AUTHORED_CAR("Bayonet", 104, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_bayonet_rival, s_bayonetRivalMaterials),
+    AUTHORED_CAR("Bayonet", 106, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_bayonet_rival, s_bayonetRivalMaterials),
+    AUTHORED_CAR("Bayonet", 108, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_bayonet_rival, s_bayonetRivalMaterials),
+    AUTHORED_CAR("Bayonet", 110, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_bayonet_rival, s_bayonetRivalMaterials),
     AUTHORED_CAR("Acceron", 38, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_acceron_body, s_esperanzaPlayerMaterials),
     AUTHORED_CAR("Acceron", 96, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_acceron_rival, s_acceronRivalMaterials),
     AUTHORED_CAR("Acceron", 98, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_acceron_rival, s_acceronRivalMaterials),

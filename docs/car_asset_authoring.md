@@ -157,3 +157,20 @@ Rival slots for courses 0/1/2 are 1/0/2. The Acceron scenario contains a
 mixed grid to exercise the shared bank's three authored bodies. For a close
 front view, use course 1, camera 2, grid 0/2/1 repeating, and rival points
 119/121.
+
+## Integrated Bayonet sources
+
+Open `assets/cars/bayonet.blend`, scene `Bayonet player`, and export only
+`Bayonet_player_body` to `bayonet-body.obj`. The rival source is
+`bayonet-rival.blend`, scene `Bayonet rival`, object `Bayonet_rival_body`,
+exported to `bayonet-rival.obj`. The same baked OBJ export settings apply;
+hidden originals and construction meshes remain. Both saved sources reproduce
+the embedded native meshes byte for byte.
+
+Player bank 46 and rival body 5 in even banks 102–110 are replaced. All five
+retail rival bodies have identical geometry, UVs, and material ordering.
+Original wheels 7/8 and far body 9 remain. Player texture identities and
+cached slots match Esperanza's, with the images supplied by Bayonet's bank.
+Rival slots for courses 0/1/2/3 are 1/0/2/2. The scenario uses a mixed grid
+with Abeille and Esperanza; a close front view uses course 1, camera 2,
+grid 0/2/1 repeating, and rival points 119/121.

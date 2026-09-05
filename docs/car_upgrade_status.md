@@ -1,6 +1,6 @@
 # Car upgrade work in progress
 
-Goal remains `goal.md`. Base Erriso, Abeille, Pegase, Esperanza, and Acceron player bodies and their rival
+Goal remains `goal.md`. Base Erriso, Abeille, Pegase, Esperanza, Acceron, and Bayonet player bodies and their rival
 representations are integrated. Other player grades and cars retain their
 original geometry; the full set is still in progress.
 
@@ -214,6 +214,33 @@ present with both original and authored cars.
 
 Late CPU submission samples were 0.26–0.27 ms before versus 0.35–0.36 ms
 after in chase, and about 0.75 versus 0.86–0.88 ms trackside. These are local
+CPU samples, not an isolated GPU/FPS benchmark. Other player grades and
+remaining cars continue to use original geometry.
+
+## Bayonet integration, 2026-09-05
+
+Player bank 46 uses 1586 triangles; rival body 5 uses 1543 triangles in
+even banks 102–110. All five original rival bodies have identical face data,
+including UVs and materials. Original wheels 7/8 and far body 9 remain.
+Saved Blender player and rival sources re-exported to byte-identical embedded
+native meshes. Bayonet shares track banks with authored Abeille and Esperanza.
+
+The full build and seven focused asset tests pass (`bayonet-build.log`,
+`bayonet-tests.log`). Both e2e tests pass (`bayonet-e2e.log`), covering all
+five banks and a finish/repeat transition. Cache-mode checks also pass for
+all five banks (`bayonet-cache-tests.log`, `bayonet-cache-bank-*.log`). Each
+bank check requires installation of Bayonet, Abeille, and Esperanza together.
+Inspected Blender comparisons are
+`bayonet-blender-comparison.png` and `bayonet-rival-blender-comparison.png`,
+each with front and rear before/after. Inspected release comparisons are
+`bayonet-chase-comparison.png` and `bayonet-track-comparison.png`, originals
+on the left. They retain the long nose, hood recesses, center stripe, lights,
+engine cover, exhausts, and wheels without new visible gaps or culling
+failures in these views. Existing environment atlas imagery occurs before
+and after the change.
+
+Late CPU submission samples were 0.25–0.26 ms before versus about 0.37 ms
+after in chase, and about 0.74 versus 0.85–0.86 ms trackside. These are local
 CPU samples, not an isolated GPU/FPS benchmark. Other player grades and
 remaining cars continue to use original geometry.
 

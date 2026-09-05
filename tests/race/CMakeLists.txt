@@ -1159,6 +1159,18 @@ if(TARGET rage-racer-smoke)
             -DGRID=1,0,2,1,0,2,1,0,2,1,0
             -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
     set_tests_properties(acceron_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME bayonet_banks
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_bayonet_banks.cmake")
+    set_tests_properties(bayonet_banks PROPERTIES LABELS e2e TIMEOUT 460 RUN_SERIAL TRUE)
+    add_test(NAME bayonet_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -DCAR=5 -DCLASS=2 -DNAME=Bayonet -DPLAYER_ASSET=46 -DRIVAL_ASSET=104
+            -DGRID=1,0,2,1,0,2,1,0,2,1,0
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
+    set_tests_properties(bayonet_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
     add_test(
         NAME scenario_control
         COMMAND python3
