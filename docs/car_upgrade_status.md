@@ -5,11 +5,10 @@ Hijack, Fatalita, Istante, Ghepardo, Vainqure, Bulshade, and Squaldon player bod
 their rival representations are integrated. Other player grades and cars retain their
 original geometry; the full set is still in progress.
 
-The remaining audit includes duplicate rival representations: body 15 in
-banks 88/90/92/96/98/100 has Esperanza-like geometry (90 faces, bounds
-[-144,-140,-497] to [144,31,138]) and remains original. Inspect its livery
-and role before selecting an authored replacement; body 0 coverage alone
-does not prove the whole fleet is upgraded.
+The duplicate rival audit identified three additional Esperanza bodies;
+their integration is documented below. Coverage of the first four rival
+models is tracked separately from the nineteen remaining player upgrades
+and from any extra bank objects beyond those four models.
 
 ## Integrated and inspected on 2026-09-05
 
@@ -469,6 +468,70 @@ The remaining body-15 audit now has an inspected original Blender view:
 it shows a green number-84 touring sedan with a large wing; its identity must
 be compared against the established car sources before authoring or naming it.
 The original is imported in the temporary `Esperanza rival-duplicate` scene.
+
+## Additional Esperanza integration, 2026-09-05
+
+Three additional authored sources preserve the white/blue number-30 body 5,
+red number-25 body 10, and green number-84 reference body 15 with its tall
+wing. Bodies 5/10 install 1421/1453 triangles in banks 88/90/92. Body 15
+installs 1434 triangles in banks 88/90/92/96/98/100. Its latter bank group
+uses different vertex and normal indices, but resolved positions, normals,
+UVs, colors, and texture identities agree. Separate cache maps account for
+different material slot numbers. All original wheel and far-body parts remain.
+
+Full build and seven focused tests pass
+(`esperanza-duplicate-final-build.log`, `esperanza-duplicate-final-tests.log`).
+All three saved Blender sources reproduce the embedded meshes byte for byte.
+Inspected Blender comparisons are
+`esperanza-rival-duplicate-blender-comparison.png`,
+`esperanza-rival-slot1-blender-comparison.png`, and
+`esperanza-rival-slot2-blender-comparison.png`, each showing front/rear
+before and after. They preserve the distinct wings, panel colors, decals,
+and lamps. Runtime race palettes can differ from the reference PNGs.
+
+Inspected release comparisons are `esperanza-duplicate-chase-comparison.png`,
+`esperanza-duplicate-track-comparison.png`,
+`esperanza-duplicate-class0-track-comparison.png`, and the chase/track pairs
+`esperanza-slot1-*-comparison.png` and `esperanza-slot2-*-comparison.png`.
+Originals are on the left. They preserve the distinct wings, lamps, panel
+textures, liveries, and wheel placement without new visible gaps or missing
+surfaces in these views. The body-15 track views cover both first-class
+number 84 and second-class number 92 palettes. Its initial chase pair predates
+the body-5/10 additions; the other first-class pairs show all four authored
+bodies installed together. The environment atlas problem remains.
+
+Late local CPU submission samples for the final four-body bank were about
+0.26 ms before versus 0.35 ms after in chase, and 0.74–0.75 versus
+0.86–0.87 ms trackside. The earlier body-15 pair was 0.26–0.27 versus
+0.31 ms chase and 0.78–0.79 versus 0.86–0.87 ms trackside. Some captures
+overlapped Blender work; these are limited CPU observations, not an isolated
+GPU/FPS benchmark.
+
+A registry audit against parts 0/5/10/15 of every even track bank 88–134
+found no remaining uncovered entries after these additions. This proves
+registration coverage only. Extra bank objects beyond the first four models,
+the nineteen other player variants, and final fleet verification remain open.
+Special bank 128 part 20 is a helicopter, identified visually in
+`special-bank-extra-front-before.png`; special banks have 23 total parts.
+Ordinary banks have 38 parts: three additional car assemblies at 20/25/30,
+then the helicopter at 35. The early bank-88 originals are imported as
+`EarlyExtra20 reference`, `EarlyExtra25 reference`, and `EarlyExtra30 reference`.
+Their inspected `early-extra-{20,25,30}-front-before.png` views show distinct
+compact hatchback rivals (numbers 91/16/44), which still require authoring.
+Later banks have different face counts for the first two of these bodies;
+do not assume all ordinary banks share the early version.
+Resolved face-data hashes (positions, normals, colors, UVs, texture identity)
+split each extra body into three groups: 88/90/92/96/98/100;
+102/104/106/108/110/112/114/116/118; and 94/120/122/124/126.
+Inspect the actual differences before deciding whether separate geometry,
+palette maps, or both are required.
+
+All three e2e tests pass (`esperanza-duplicate-e2e.log`): six banks and
+finish/repeat transitions in both the first and second classes. Transition
+checks explicitly require four and two authored Esperanza rival bodies,
+respectively, alongside the player.
+Cache-mode checks also pass for all six banks
+(`esperanza-duplicate-cache-tests.log`, `esperanza-duplicate-cache-bank-*.log`).
 
 Keep original data and the unrelated `.claude/` and `imgui.ini` files.
 Commit verified stages locally; do not push or publish.

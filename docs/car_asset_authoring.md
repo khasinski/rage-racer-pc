@@ -297,3 +297,25 @@ have identical face data and material ordering. Player slots 1–14 use page
 0x7900–0x7906; slots 19/20 use page 13 palettes 0x7907/0x7908.
 Rival course slots are 3/3/3/0. A close front view uses course 1, camera 2,
 lead slot 3, and rival points 119/121.
+
+## Additional Esperanza rivals
+
+Three separate sources preserve the remaining first-class bodies:
+`esperanza-rival-slot1.blend` / `Esperanza_rival_slot1_body` (white/blue 30),
+`esperanza-rival-slot2.blend` / `Esperanza_rival_slot2_body` (red 25), and
+`esperanza-rival-duplicate.blend` / `Esperanza_rival_duplicate_body` (green
+84 reference with tall wing). Scene names use the corresponding `Esperanza
+rival-slot1`, `Esperanza rival-slot2`, and `Esperanza rival-duplicate` names.
+Export each selected baked object to the matching OBJ basename using the
+established settings. All three saved sources reproduce the embedded meshes
+byte for byte; the retail textures and construction references are packed.
+
+Bodies 5/10 are replaced in banks 88/90/92; body 15 is replaced in
+88/90/92/96/98/100. Each keeps its own original wheels and far body.
+The latter three banks use different vertex/normal indices for body 15,
+but resolved positions, normals, UVs, colors, and texture identities agree.
+Its source material slots 12/13/17 map to cache slots 15/16/20 in banks
+96/98/100, while native disc import resolves by page and palette.
+For course 1 close front captures, bodies 5/10/15 use grid slots 0/1/3.
+Live race palettes can produce liveries different from the reference PNGs;
+compare the same scenario before and after to verify preservation.

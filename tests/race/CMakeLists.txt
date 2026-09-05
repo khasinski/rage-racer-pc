@@ -1255,6 +1255,25 @@ if(TARGET rage-racer-smoke)
             -DGRID=3,0,1,2,3,0,1,2,3,0,1
             -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
     set_tests_properties(squaldon_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME esperanza_duplicate_banks
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_esperanza_duplicate_banks.cmake")
+    set_tests_properties(esperanza_duplicate_banks PROPERTIES LABELS e2e TIMEOUT 550 RUN_SERIAL TRUE)
+    add_test(NAME esperanza_duplicate_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -DCAR=3 -DCLASS=1 -DNAME=Esperanza -DPLAYER_ASSET=28 -DRIVAL_ASSET=96
+            -DGRID=3,0,2,1,3,0,2,1,3,0,2 -DRIVAL_BODY_COUNT=2
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
+    set_tests_properties(esperanza_duplicate_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME esperanza_first_class_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence/esperanza-first-class"
+            -DCAR=3 -DCLASS=0 -DNAME=Esperanza -DPLAYER_ASSET=28 -DRIVAL_ASSET=88
+            -DGRID=3,0,2,1,3,0,2,1,3,0,2 -DRIVAL_BODY_COUNT=4
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
+    set_tests_properties(esperanza_first_class_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
     add_test(
         NAME scenario_control
         COMMAND python3

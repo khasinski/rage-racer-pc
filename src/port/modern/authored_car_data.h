@@ -13,6 +13,9 @@
 #include "esperanza_body.inc"
 #include "esperanza_rival.inc"
 #include "esperanza_rival_late.inc"
+#include "esperanza_rival_duplicate.inc"
+#include "esperanza_rival_slot1.inc"
+#include "esperanza_rival_slot2.inc"
 #include "acceron_body.inc"
 #include "acceron_rival.inc"
 #include "bayonet_body.inc"
@@ -131,6 +134,18 @@ static const AuthoredCarMaterial s_esperanzaPlayerMaterials[] = {
     {10, 11, 0x3aaf, 10},
     {11, 11, 0x3aef, 11},
     {12, 11, 0x3b2f, 12},
+};
+static const AuthoredCarMaterial s_esperanzaDuplicate88Materials[] = {
+    {0,10,0x7802,0}, {12,12,0x7907,12}, {13,12,0x7908,13}, {17,13,0x7909,17},
+};
+static const AuthoredCarMaterial s_esperanzaDuplicate96Materials[] = {
+    {0,10,0x7802,0}, {12,12,0x7907,15}, {13,12,0x7908,16}, {17,13,0x7909,20},
+};
+static const AuthoredCarMaterial s_esperanzaSlot1Materials[] = {
+    {0,10,0x7802,0}, {8,12,0x7887,8}, {9,12,0x7888,9}, {15,13,0x7889,15},
+};
+static const AuthoredCarMaterial s_esperanzaSlot2Materials[] = {
+    {0,10,0x7802,0}, {10,12,0x78c7,10}, {11,12,0x78c8,11}, {16,13,0x78c9,16},
 };
 static const AuthoredCarMaterial s_esperanzaBank88Materials[] = {
     {0, 10, 0x7802, 0},
@@ -277,6 +292,18 @@ static const AuthoredCarMaterial s_squaldonRivalMaterials[] = {
 #define AUTHORED_CAR(name, key, set, part, data, map) \
     {name, key, set, part, data, sizeof(data), map, sizeof(map)/sizeof(map[0])}
 static const AuthoredCarReplacement s_authoredCars[] = {
+    AUTHORED_CAR("Esperanza", 88, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_esperanza_rival_slot1, s_esperanzaSlot1Materials),
+    AUTHORED_CAR("Esperanza", 90, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_esperanza_rival_slot1, s_esperanzaSlot1Materials),
+    AUTHORED_CAR("Esperanza", 92, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_esperanza_rival_slot1, s_esperanzaSlot1Materials),
+    AUTHORED_CAR("Esperanza", 88, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 10, s_esperanza_rival_slot2, s_esperanzaSlot2Materials),
+    AUTHORED_CAR("Esperanza", 90, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 10, s_esperanza_rival_slot2, s_esperanzaSlot2Materials),
+    AUTHORED_CAR("Esperanza", 92, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 10, s_esperanza_rival_slot2, s_esperanzaSlot2Materials),
+    AUTHORED_CAR("Esperanza", 88, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_esperanza_rival_duplicate, s_esperanzaDuplicate88Materials),
+    AUTHORED_CAR("Esperanza", 90, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_esperanza_rival_duplicate, s_esperanzaDuplicate88Materials),
+    AUTHORED_CAR("Esperanza", 92, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_esperanza_rival_duplicate, s_esperanzaDuplicate88Materials),
+    AUTHORED_CAR("Esperanza", 96, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_esperanza_rival_duplicate, s_esperanzaDuplicate96Materials),
+    AUTHORED_CAR("Esperanza", 98, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_esperanza_rival_duplicate, s_esperanzaDuplicate96Materials),
+    AUTHORED_CAR("Esperanza", 100, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_esperanza_rival_duplicate, s_esperanzaDuplicate96Materials),
     AUTHORED_CAR("Squaldon", 72, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_squaldon_body, s_squaldonPlayerMaterials),
     AUTHORED_CAR("Squaldon", 128, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_squaldon_rival, s_squaldonRivalMaterials),
     AUTHORED_CAR("Squaldon", 130, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_squaldon_rival, s_squaldonRivalMaterials),

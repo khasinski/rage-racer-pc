@@ -155,6 +155,9 @@ int main(void) {
     CHECK(Validate(s_pegase_body,sizeof(s_pegase_body),2)==0);
     CHECK(Validate(s_pegase_rival,sizeof(s_pegase_rival),2)==0);
     CHECK(Validate(s_esperanza_body,sizeof(s_esperanza_body),3)==0);
+    CHECK(Validate(s_esperanza_rival_duplicate,sizeof(s_esperanza_rival_duplicate),3)==0);
+    CHECK(Validate(s_esperanza_rival_slot1,sizeof(s_esperanza_rival_slot1),3)==0);
+    CHECK(Validate(s_esperanza_rival_slot2,sizeof(s_esperanza_rival_slot2),3)==0);
     CHECK(Validate(s_esperanza_rival,sizeof(s_esperanza_rival),3)==0);
     CHECK(Validate(s_esperanza_rival_late,sizeof(s_esperanza_rival_late),3)==0);
     CHECK(Validate(s_acceron_body,sizeof(s_acceron_body),4)==0);
