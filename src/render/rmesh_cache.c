@@ -45,21 +45,27 @@ void RuntimeMeshCacheInit(RageRuntimeMeshCache *cache,
     cache->capacity = entries != NULL ? capacity : 0;
 }
 
+const RageRuntimeCachedMesh *RuntimeMeshCachePeek(const RageRuntimeMeshCache *cache,
+    uint32_t assetKey, RageRenderAssetSet assetSet) {
+    if (cache == NULL || cache->entries == NULL || cache->count > cache->capacity) return NULL;
+    for (uint32_t i = 0; i < cache->count; ++i) {
+        const RageRuntimeCachedMesh *entry = &cache->entries[i];
+        if (entry->assetKey == assetKey && entry->assetSet == assetSet && entry->mesh.bytes != NULL)
+            return entry;
+    }
+    return NULL;
+}
+
 const RageRuntimeCachedMesh *RuntimeMeshCacheFind(
     RageRuntimeMeshCache *cache, uint32_t assetKey, RageRenderAssetSet assetSet) {
     RageRuntimeAssetLocation location;
     const void *bytes;
     size_t size;
-    uint32_t i;
 
     if (cache == NULL || cache->entries == NULL ||
         cache->count > cache->capacity) return NULL;
-    for (i = 0; i < cache->count; i++) {
-        RageRuntimeCachedMesh *entry = &cache->entries[i];
-        if (entry->assetKey == assetKey && entry->assetSet == assetSet) {
-            return entry;
-        }
-    }
+    const RageRuntimeCachedMesh *resident = RuntimeMeshCachePeek(cache, assetKey, assetSet);
+    if (resident != NULL) return resident;
     if (cache->count >= cache->capacity || cache->readFile == NULL ||
         !RuntimeIndexFind(cache->indexText, cache->indexSize, assetKey,
                               assetSet, &location) ||

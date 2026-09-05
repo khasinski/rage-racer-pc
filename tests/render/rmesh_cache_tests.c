@@ -86,6 +86,8 @@ int main(void) {
 
     RuntimeMeshCacheInit(&cache, index, sizeof(index) - 1, read_file,
                              free_file, 0, entries, 1);
+    EXPECT(RuntimeMeshCachePeek(&cache, 10, RAGE_RENDER_ASSET_MODEL_BANK) == NULL);
+    EXPECT(readCalls == 0 && cache.count == 0);
     first = RuntimeMeshCacheFind(&cache, 10, RAGE_RENDER_ASSET_MODEL_BANK);
     EXPECT(first != 0 && first->mesh.meshCount == 1);
     EXPECT(first != NULL && first->ownedBounds != NULL &&
@@ -93,11 +95,18 @@ int main(void) {
     EXPECT(RuntimeMeshCacheFind(&cache, 10,
                                     RAGE_RENDER_ASSET_MODEL_BANK) == first);
     EXPECT(reads == 1);
+    int calls = readCalls;
+    EXPECT(RuntimeMeshCachePeek(&cache, 10, RAGE_RENDER_ASSET_MODEL_BANK) == first);
+    EXPECT(RuntimeMeshCachePeek(&cache, 10, RAGE_RENDER_ASSET_TERRAIN) == NULL);
+    EXPECT(RuntimeMeshCachePeek(&cache, 999, RAGE_RENDER_ASSET_MODEL_BANK) == NULL);
+    EXPECT(RuntimeMeshCachePeek(NULL, 10, RAGE_RENDER_ASSET_MODEL_BANK) == NULL);
+    EXPECT(readCalls == calls && cache.count == 1);
     EXPECT(RuntimeMeshCacheFind(&cache, 11,
                                     RAGE_RENDER_ASSET_MODEL_BANK) == 0);
     cache.freeFile = NULL; /* Existing entries retain their original owner. */
     RuntimeMeshCacheRelease(&cache);
     EXPECT(frees == 1 && cache.count == 0);
+    EXPECT(RuntimeMeshCachePeek(&cache, 10, RAGE_RENDER_ASSET_MODEL_BANK) == NULL);
     EXPECT(entries[0].ownedBounds == NULL && entries[0].mesh.bounds == NULL);
     RuntimeMeshCacheRelease(&cache);
     EXPECT(frees == 1);

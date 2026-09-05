@@ -76,6 +76,18 @@ first defining and testing the last consumer's lifetime.
 
 ## Work log
 
+- Separated resident mesh lookup from load/import. RuntimeMeshCachePeek and
+  NativeAssetImporterPeek do not read files or game geometry; native main/mirror
+  draw builders now use ModernAssetsResidentMeshLookup after explicit WarmWorld.
+  The existing loading lookup remains available for callers that deliberately
+  prepare assets. Tests assert misses do not call I/O or change counts, resident
+  identity is preserved, set/key mismatches stay missing, and teardown removes
+  visibility. Linux cache test, file-provider GPU test and real PAL retained
+  history scenario passed; build evidence
+  build/environment-index-Dgm4lr/resident-lookup-build.log. This isolates the
+  draw-builder lookup, not the preceding loading phase or material/VRAM reads.
+  Windows Release game/cache-test build and the cache test also passed
+  (C:\rage-perf-results\mesh-owner-result.txt: build_exit=0, test_exit=0).
 - Diagnostic history now deep-copies the actual prepared render world alongside
   its compatibility scene and retained texture generation. World copies own
   instance arrays, preserve previous state on allocation/input failure, and

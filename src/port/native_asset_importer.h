@@ -22,6 +22,7 @@ RageTrackTextureGeneration *NativeAssetImporterRetainTextures(uint64_t revision)
 const RageRuntimeCachedMesh *NativeAssetImporterFind(
     const RageRenderMeshInstance *instance);
 uint32_t NativeAssetImporterMeshCount(void);
+const RageRuntimeCachedMesh *NativeAssetImporterPeek(uint32_t assetKey, RageRenderAssetSet assetSet);
 int NativeAssetImporterLoadMaterial(
     const RageRenderMeshInstance *instance, uint32_t material,
     uint8_t variant, RageRenderMaterial *definition, ModernAssetImage *image);

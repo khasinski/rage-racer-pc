@@ -21,6 +21,9 @@ int ModernAssetsReady(void);
 uint32_t ModernAssetsCachedMeshCount(void);
 const RageRuntimeMesh *ModernAssetsMeshLookup(
     void *context, const RageRenderMeshInstance *instance);
+/* Build-stage lookup, after WarmWorld. Missing assets stay missing; no import. */
+const RageRuntimeMesh *ModernAssetsResidentMeshLookup(
+    void *context, const RageRenderMeshInstance *instance);
 int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
                              uint32_t material, uint8_t variant,
                              RageRenderMaterial *definition,

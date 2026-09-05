@@ -22,6 +22,12 @@ int NativeAssetImporterInit(void) {
     return 0;
 }
 
+const RageRuntimeCachedMesh *NativeAssetImporterPeek(uint32_t assetKey, RageRenderAssetSet assetSet) {
+    (void)assetKey;
+    (void)assetSet;
+    return NULL;
+}
+
 RageTrackTextureGeneration *NativeAssetImporterRetainTextures(uint64_t revision) {
     (void)revision;
     return NULL;

@@ -56,5 +56,8 @@ void RuntimeMeshCacheInit(RageRuntimeMeshCache *cache,
 const RageRuntimeCachedMesh *RuntimeMeshCacheFind(
     RageRuntimeMeshCache *cache, uint32_t assetKey, RageRenderAssetSet assetSet);
 void RuntimeMeshCacheRelease(RageRuntimeMeshCache *cache);
+/* Resident-only lookup: never performs I/O, imports or changes the cache. */
+const RageRuntimeCachedMesh *RuntimeMeshCachePeek(const RageRuntimeMeshCache *cache,
+    uint32_t assetKey, RageRenderAssetSet assetSet);
 
 #endif

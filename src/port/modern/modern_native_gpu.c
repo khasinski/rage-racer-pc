@@ -822,7 +822,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         RAGE_RENDER_VEHICLE_SHADOW_RESOLUTION,
         &s_shadowMap);
     s_vertexCount = RenderBuildNativePassDraws(
-        world, RAGE_RENDER_PASS_MAIN, aspect, ModernAssetsMeshLookup, NULL,
+        world, RAGE_RENDER_PASS_MAIN, aspect, ModernAssetsResidentMeshLookup, NULL,
         s_vertices,
         MODERN_NATIVE_MAX_VERTICES_PER_VIEW, s_spans, MODERN_NATIVE_MAX_SPANS,
         &s_spanCount);
@@ -835,7 +835,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         mirrorWorld.camera = world->mirrorCamera;
         s_mirrorVertexCount = RenderBuildNativePassDraws(
             &mirrorWorld, RAGE_RENDER_PASS_MAIN, s_mirrorAspect,
-            ModernAssetsMeshLookup, NULL, s_vertices + mirrorFirstVertex,
+            ModernAssetsResidentMeshLookup, NULL, s_vertices + mirrorFirstVertex,
             MODERN_NATIVE_MAX_VERTICES_PER_VIEW, s_mirrorSpans,
             MODERN_NATIVE_MAX_SPANS, &s_mirrorSpanCount);
         for (span = 0; span < s_mirrorSpanCount; span++)

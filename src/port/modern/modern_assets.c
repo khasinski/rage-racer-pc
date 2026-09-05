@@ -327,6 +327,16 @@ const RageRuntimeMesh *ModernAssetsMeshLookup(
     return cached != NULL ? &cached->mesh : NULL;
 }
 
+const RageRuntimeMesh *ModernAssetsResidentMeshLookup(
+    void *context, const RageRenderMeshInstance *instance) {
+    (void)context;
+    if (!s_ready || instance == NULL) return NULL;
+    const RageRuntimeCachedMesh *cached = s_importerSource
+        ? NativeAssetImporterPeek(instance->assetKey, instance->assetSet)
+        : RuntimeMeshCachePeek(&s_cache, instance->assetKey, instance->assetSet);
+    return cached != NULL ? &cached->mesh : NULL;
+}
+
 static const char *ModernAssetsFindModMaterialProperties(
     const RageRenderMeshInstance *instance, uint32_t material,
     uint8_t variant) {
