@@ -1,7 +1,9 @@
 # Ulepszone samochody — lokalny build
 
-Samochody są zintegrowane i obejrzane w modern rendererze. Końcowa kontrola
-uruchomienia pakietu aplikacji jest jeszcze w toku.
+Gotowy lokalny build: [Rage Racer.app](../build/package-audit/Rage%20Racer.app).
+Uruchom go dwuklikiem. Samochody są zintegrowane i obejrzane w modern rendererze.
+Pakiet uruchomiony przez macOS bez sąsiedniego cache automatycznie wygenerował
+zasoby w C z zapamiętanego CUE i przeszedł do attract mode.
 
 ## Zakres
 
@@ -38,10 +40,21 @@ Oryginały są po lewej. Szczegółowe wyniki i wcześniejsze zrzuty opisuje
 [raport etapów](car_upgrade_status.md), a [instrukcja eksportu](car_asset_authoring.md)
 opisuje powtarzalny proces tworzenia assetów.
 
-## Pozostała kontrola i ograniczenia
+## Uruchomienie i ograniczenia
 
-- Końcowa kontrola attract mode i uruchomienia pakietu aplikacji jest w toku.
+- Sprawdzono start pakietu przez macOS, attract mode oraz wyścig z samym
+  Track 01 BIN. Modern załadował ulepszone Erriso grade 3 i rywali; classic
+  przeszedł ten sam scenariusz na oryginalnych danych. Zrzut attract mode:
+  [czysty pakiet](../build/car-upgrade-evidence/fleet-attract-clean.png).
+- Aplikacja ma wyłącznie systemowe zależności macOS. Obraz użytkownika
+  skopiowano lokalnie do `build/launch-disc`, a zapamiętaną ścieżkę CUE
+  ustawiono na tę kopię. Oryginału nie zmieniono. Poprzednia ścieżka jest
+  w `build/car-upgrade-evidence/disc-cue-path-before-app-audit.txt`.
+  Start z Downloads blokowało żądanie dostępu macOS; uprawnień systemowych
+  nie zmieniano. Interaktywny wybór pliku nie został zautomatyzowany.
 - Scenariusze startu w środku trasy ujawniają istniejący problem atlasu tekstur
   otoczenia. Występuje również przy wyłączonych nowych modelach samochodów.
+  Obejrzany naturalny attract mode z czystego importu wyświetlał tunel poprawnie;
+  nie oznacza to sprawdzenia całego otoczenia na wszystkich trasach.
 - Testy uruchomieniowe dotyczą lokalnego macOS; Windows i Linux nie były tu
   uruchamiane. Nie jest to deklaracja gotowego wydania na wszystkie platformy.

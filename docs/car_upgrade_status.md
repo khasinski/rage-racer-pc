@@ -635,7 +635,7 @@ all seven car bodies in each ordinary bank 88–126 and all four in each special
 bank 128–134 are registered exactly once; the remaining submeshes are wheels,
 distance models, and the helicopter.
 
-Player upgrade integration is now in progress in the working tree. All nineteen
+Player upgrade integration is complete in commit `674b71ef8`. All nineteen
 OBJ sources are embedded and mapped to their individual player banks; seven
 focused asset/pipeline tests passed (`player-grades-tests-triangulated.log`).
 The tests caught a bevel overshoot in Esperanza grade 3 (reduced from 1.6 to
@@ -655,5 +655,38 @@ chase samples were 0.247–0.282 ms before and 0.356–0.436 ms after. These com
 all original versus all authored cars in the scene, including rivals, and
 are CPU submission observations rather than isolated GPU/FPS measurements.
 
-Keep original data and the unrelated `.claude/` and `imgui.ini` files.
-Commit verified stages locally; do not push or publish.
+## Final local application audit
+
+The fleet work is complete. The short delivery report is
+[car_upgrade_summary.md](car_upgrade_summary.md). The final release build passed
+(`player-grades-release-build.log`), and the tested clean copy is
+`build/package-audit/Rage Racer.app`. Its executable links only macOS system
+libraries/frameworks; Blender and Python are not runtime dependencies.
+
+LaunchServices (`open -W -n`) started this bundle without an adjacent native
+asset cache, without renderer or asset-source overrides, and using the
+remembered CUE. The log confirms modern rendering and automatic C generation;
+the inspected `fleet-attract-clean.png` shows the natural tunnel attract scene
+with authored rivals. Evidence: `fleet-attract-clean.log`. The same bundle
+also loaded a standalone Track 01 BIN, installed Erriso grade 3 (bank 16) and
+all seven rival bodies in bank 96, and reached scene 12, timer 350.
+The modern capture `fleet-track01-modern.png` was inspected. Classic completed
+the same scenario (`fleet-track01-classic.log`) without authored replacements.
+The release capture hook only supports modern, so the classic run has no
+frame capture; a desktop capture attempt returned black and is not visual
+evidence.
+
+The original remembered CUE was in Downloads, where macOS blocked the app's
+file-open request. The provided image was cloned to the ignored real directory
+`build/launch-disc`, and the remembered CUE setting now points there. Original
+disc files remain unchanged. The old setting is backed up in
+`build/car-upgrade-evidence/disc-cue-path-before-app-audit.txt`. No system privacy
+permissions were changed. Interactive picker selection was not automated;
+these launches validate the remembered-disc path and explicit Track 01 input.
+
+Custom mid-course starts still show the existing environment atlas issue with
+both original and authored cars. The natural clean-import attract view looked
+correct, which does not establish correctness for every course or viewpoint.
+This remains outside the completed car geometry work. Windows and Linux were
+not run on this Mac. Local commits only; no push or publication. Unrelated
+`.claude/` and `imgui.ini` remain untouched.
