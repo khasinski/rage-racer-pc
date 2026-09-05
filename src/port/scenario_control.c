@@ -18,6 +18,7 @@
 #include "game/save_internal.h"
 #include "game/track.h"
 #include "runtime_config.h"
+#include "debug_autopilot.h"
 
 extern int g_SceneId;
 
@@ -569,6 +570,7 @@ static void ScenarioDirectBoot(void) {
 
 void PortScenarioBeforeSceneHandler(void) {
     int changed, index;
+    DebugAutopilotBeforeScene();
     if (!s_scenario.initialized) ScenarioInitialize();
     if (!s_scenario.enabled) return;
 
@@ -577,6 +579,9 @@ void PortScenarioBeforeSceneHandler(void) {
     if (s_scenario.lastScene == 12 && g_SceneId == 17) {
         s_scenario.raceFinished = 1;
         s_scenario.resultSeen = 1;
+        /* Only the initial launch skips menus. Subsequent races must use
+         * the normal reward -> selection -> asset loading path. */
+        s_scenario.directBoot = 0;
         fprintf(stderr, "rage-port: scenario race finished after_finish=%s\n",
                 s_scenario.afterFinish == RAGE_SCENARIO_AFTER_REPEAT ? "repeat" :
                 s_scenario.afterFinish == RAGE_SCENARIO_AFTER_EXIT ? "exit" : "menu");
@@ -651,6 +656,18 @@ void PortScenarioBeforeSceneHandler(void) {
 
     ScenarioTrace();
 
+    if (s_scenario.raceFinished &&
+        s_scenario.afterFinish == RAGE_SCENARIO_AFTER_REPEAT &&
+        (g_SceneId == 17 || g_SceneId == 19) &&
+        s_scenario.stableFrames >= 30 && s_scenario.retryFrames >= 60) {
+        ScenarioConfirm();
+    }
+    if (s_scenario.raceFinished && g_SceneId == 11) {
+        s_scenario.raceFinished = 0;
+        s_scenario.resultSeen = 0;
+        fprintf(stderr, "rage-port: scenario repeat entered next race via menus\n");
+    }
+
     /* Two non-interactive sequences sit between the boot logo and the first
      * race: the ~30 s intro movie (5) and the ~51 s prologue cutscene (32),
      * which UpdateMainMenuExit enters whenever the save is fresh. Both are
@@ -717,5 +734,5 @@ void PortScenarioBeforeSceneHandler(void) {
 }
 
 int PortScenarioShouldExit(void) {
-    return s_scenario.exitRequested;
+    return s_scenario.exitRequested || DebugAutopilotShouldExit();
 }

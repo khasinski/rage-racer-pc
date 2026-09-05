@@ -25,6 +25,8 @@
 /* A retirement is not a finish-line event. Keep following the player's car
  * instead of advancing the autonomous finish camera down the track. */
 static s32 s_RetireCameraActive;
+/* Optional host diagnostic driver; NULL in ordinary gameplay and tests. */
+int (*g_DebugPlayerUpdate)(PlayerCarRuntime *);
 
 /* Retail normally announces FINISHED from the authored finish-line zone and
  * plays cue 0x2B later, when UpdateLapAndFinish advances the race. A fast host
@@ -395,7 +397,8 @@ static void UpdateActiveRaceScene(void) {
     }
 
     if (g_RacePhase > RACE_PHASE_INTRO) {
-        UpdatePlayerCar(&g_PlayerCar);
+        if (!g_DebugPlayerUpdate || !g_DebugPlayerUpdate(&g_PlayerCar))
+            UpdatePlayerCar(&g_PlayerCar);
     } else if (g_RacePhase == RACE_PHASE_INTRO) {
         UpdateLoadedAudioVoices(0, 0);
     }

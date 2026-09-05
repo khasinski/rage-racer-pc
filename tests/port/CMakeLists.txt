@@ -1,3 +1,20 @@
+add_executable(debug_route_tests debug_route_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/debug_route.c)
+target_include_directories(debug_route_tests PRIVATE ${CMAKE_SOURCE_DIR}/src/port)
+add_test(NAME debug_route COMMAND debug_route_tests)
+set_tests_properties(debug_route PROPERTIES LABELS unit)
+add_executable(debug_autopilot_tests debug_autopilot_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/debug_autopilot.c
+    ${CMAKE_SOURCE_DIR}/src/port/debug_route.c)
+target_include_directories(debug_autopilot_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(debug_autopilot_tests PRIVATE __psyz=1)
+foreach(mode disabled drive timeout races)
+    add_test(NAME debug_autopilot_${mode} COMMAND debug_autopilot_tests ${mode})
+    set_tests_properties(debug_autopilot_${mode} PROPERTIES LABELS unit)
+endforeach()
+
 add_executable(disc_iso_tests
     disc_iso_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/disc_iso.c)

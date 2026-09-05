@@ -203,6 +203,9 @@ if(RAGE_BUILD_PORT)
         src/port/texture_patch.c
         src/port/port_config.c
         src/port/scenario_control.c
+        src/port/debug_autopilot.c
+        src/port/debug_route.c
+        src/port/debug_gpu_capture.c
         src/port/classic/native_geometry_diagnostics.c
         src/port/native_asset_importer.c
         src/port/modern/modern_renderer.c

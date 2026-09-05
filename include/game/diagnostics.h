@@ -1,6 +1,11 @@
 #ifndef GAME_DIAGNOSTICS_H
 #define GAME_DIAGNOSTICS_H
 
+struct PlayerCarRuntime;
+/* Optional host-only route driver. Nonzero return means it supplied the
+ * player's update; NULL preserves the normal physics path. */
+extern int (*g_DebugPlayerUpdate)(struct PlayerCarRuntime *car);
+
 /* Diagnostics boundary for recovered game code. Keys are stable engine
  * concepts; the host port owns INI and legacy environment-variable mapping. */
 int DiagnosticsEnabled(const char *key);
