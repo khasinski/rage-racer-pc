@@ -1171,6 +1171,18 @@ if(TARGET rage-racer-smoke)
             -DGRID=1,0,2,1,0,2,1,0,2,1,0
             -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
     set_tests_properties(bayonet_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME hijack_banks
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_hijack_banks.cmake")
+    set_tests_properties(hijack_banks PROPERTIES LABELS e2e TIMEOUT 820 RUN_SERIAL TRUE)
+    add_test(NAME hijack_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -DCAR=6 -DCLASS=3 -DNAME=Hijack -DPLAYER_ASSET=52 -DRIVAL_ASSET=112
+            -DGRID=1,0,2,1,0,2,1,0,2,1,0
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
+    set_tests_properties(hijack_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
     add_test(
         NAME scenario_control
         COMMAND python3

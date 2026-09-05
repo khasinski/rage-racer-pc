@@ -17,6 +17,9 @@
 #include "acceron_rival.inc"
 #include "bayonet_body.inc"
 #include "bayonet_rival.inc"
+#include "hijack_body.inc"
+#include "hijack_rival.inc"
+#include "hijack_rival_alternate.inc"
 
 typedef struct AuthoredCarMaterial {
     uint16_t source, page, clut, cacheSlot;
@@ -164,9 +167,28 @@ static const AuthoredCarMaterial s_bayonetRivalMaterials[] = {
     {16, 13, 0x7889, 16},
 };
 
+static const AuthoredCarMaterial s_hijackRivalMaterials[] = {
+    {0, 10, 0x7802, 0}, {10, 12, 0x7887, 10},
+    {11, 12, 0x7888, 11}, {12, 12, 0x788a, 12}, {19, 13, 0x7889, 19},
+};
+static const AuthoredCarMaterial s_hijackRivalAlternateMaterials[] = {
+    {0, 10, 0x7802, 0}, {9, 12, 0x7887, 9},
+    {10, 12, 0x7888, 10}, {11, 12, 0x788a, 11}, {20, 13, 0x7889, 20},
+};
+
 #define AUTHORED_CAR(name, key, set, part, data, map) \
     {name, key, set, part, data, sizeof(data), map, sizeof(map)/sizeof(map[0])}
 static const AuthoredCarReplacement s_authoredCars[] = {
+    AUTHORED_CAR("Hijack", 52, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_hijack_body, s_esperanzaPlayerMaterials),
+    AUTHORED_CAR("Hijack", 94, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_hijack_rival_alternate, s_hijackRivalAlternateMaterials),
+    AUTHORED_CAR("Hijack", 112, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_hijack_rival, s_hijackRivalMaterials),
+    AUTHORED_CAR("Hijack", 114, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_hijack_rival, s_hijackRivalMaterials),
+    AUTHORED_CAR("Hijack", 116, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_hijack_rival, s_hijackRivalMaterials),
+    AUTHORED_CAR("Hijack", 118, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_hijack_rival, s_hijackRivalMaterials),
+    AUTHORED_CAR("Hijack", 120, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_hijack_rival_alternate, s_hijackRivalAlternateMaterials),
+    AUTHORED_CAR("Hijack", 122, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_hijack_rival_alternate, s_hijackRivalAlternateMaterials),
+    AUTHORED_CAR("Hijack", 124, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_hijack_rival_alternate, s_hijackRivalAlternateMaterials),
+    AUTHORED_CAR("Hijack", 126, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_hijack_rival_alternate, s_hijackRivalAlternateMaterials),
     AUTHORED_CAR("Bayonet", 46, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_bayonet_body, s_esperanzaPlayerMaterials),
     AUTHORED_CAR("Bayonet", 102, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_bayonet_rival, s_bayonetRivalMaterials),
     AUTHORED_CAR("Bayonet", 104, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_bayonet_rival, s_bayonetRivalMaterials),

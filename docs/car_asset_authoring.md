@@ -174,3 +174,20 @@ cached slots match Esperanza's, with the images supplied by Bayonet's bank.
 Rival slots for courses 0/1/2/3 are 1/0/2/2. The scenario uses a mixed grid
 with Abeille and Esperanza; a close front view uses course 1, camera 2,
 grid 0/2/1 repeating, and rival points 119/121.
+
+## Integrated Hijack sources
+
+Open `assets/cars/hijack.blend`, scene `Hijack player`, and export only
+`Hijack_player_body` to `hijack-body.obj`. Rival sources are
+`hijack-rival.blend` / `Hijack_rival_body` and
+`hijack-rival-alternate.blend` / `Hijack_rival_alternate_body`, exported to
+their matching OBJ filenames. The same baked settings apply; originals and
+construction meshes remain hidden. All three saved sources reproduce the
+embedded native meshes byte for byte.
+
+Player bank 52 and rival body 5 in banks 94 and even banks 112–126 are
+replaced. Banks 94 and 120–126 have different front/side UVs and cached
+material ordering from banks 112–118, requiring separate authored sources.
+Original wheels 7/8 and far body 9 remain. Rival slots for courses 0/1/2/3
+are 1/0/2/2. The scenario uses a mixed Hijack/Pegase/Esperanza grid; a close
+front view uses course 1, camera 2, grid 0/2/1 repeating, and points 119/121.

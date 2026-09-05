@@ -1,6 +1,7 @@
 # Car upgrade work in progress
 
-Goal remains `goal.md`. Base Erriso, Abeille, Pegase, Esperanza, Acceron, and Bayonet player bodies and their rival
+Goal remains `goal.md`. Base Erriso, Abeille, Pegase, Esperanza, Acceron, Bayonet,
+and Hijack player bodies and their rival
 representations are integrated. Other player grades and cars retain their
 original geometry; the full set is still in progress.
 
@@ -243,6 +244,34 @@ Late CPU submission samples were 0.25–0.26 ms before versus about 0.37 ms
 after in chase, and about 0.74 versus 0.85–0.86 ms trackside. These are local
 CPU samples, not an isolated GPU/FPS benchmark. Other player grades and
 remaining cars continue to use original geometry.
+
+## Hijack integration, 2026-09-05
+
+Player bank 52 uses 1831 triangles. Rival body 5 uses 1253 triangles in banks
+94 and even banks 112–126. Two authored rival sources preserve the retail
+UV differences between banks 112–118 and banks 94/120–126, including the
+front panel and side liveries. Each uses its own cached material map.
+Original wheels 7/8 and far body 9 remain. All three saved Blender sources
+re-exported to byte-identical embedded meshes.
+
+The full build and seven focused asset tests pass (`hijack-build.log`,
+`hijack-tests.log`). Both e2e tests pass (`hijack-e2e.log`), covering all nine
+banks and a finish/repeat transition. Cache checks pass for banks 94, 112,
+and 120, covering both material layouts (`hijack-cache-tests.log` and
+`hijack-cache-bank-*.log`). Bank checks require installation of Hijack,
+Pegase, and Esperanza together. Inspected Blender comparisons are
+`hijack-blender-comparison.png`, `hijack-rival-blender-comparison.png`, and
+`hijack-rival-alternate-blender-comparison.png`, each containing front and
+rear before/after. Other player grades and remaining cars remain original.
+
+Inspected release comparisons are `hijack-{chase,track}-{3,4}-comparison.png`,
+with originals on the left. These cover both rival UV variants from the
+front and rear and the green player, preserving liveries, bed, braces,
+lights, and wheels. No new visible gaps or culling failures appeared in
+these views. Existing environment atlas imagery is present before and after.
+Late class-4 CPU submission samples were 0.26–0.27 ms before versus about
+0.37 ms after in chase, and about 0.76 versus 0.89 ms trackside. These are
+local CPU samples, not an isolated GPU/FPS benchmark.
 
 Keep original data and the unrelated `.claude/` and `imgui.ini` files.
 Commit verified stages locally; do not push or publish.
