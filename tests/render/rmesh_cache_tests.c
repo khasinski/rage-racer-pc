@@ -8,6 +8,7 @@
 static int failures;
 static int reads, frees;
 static int readCalls;
+static int failNextRead;
 #define EXPECT(value) do { if (!(value)) { failures++; \
     fprintf(stderr, "%s:%d: expectation failed: %s\n", __FILE__, __LINE__, #value); \
 } } while (0)
@@ -21,6 +22,10 @@ static int read_file(void *context, const char *path, size_t pathLength,
                      const void **bytes, size_t *size) {
     static uint8_t mesh[96];
     ++readCalls;
+    if (failNextRead) {
+        failNextRead = 0;
+        return 0;
+    }
     (void)context;
     if (pathLength != strlen("models/a.rmesh") ||
         memcmp(path, "models/a.rmesh", pathLength) != 0) return 0;
@@ -76,6 +81,31 @@ static void test_ownership(void) {
     EXPECT(probe.releases == 1);
     EXPECT(!RuntimeCachedMeshAdopt(NULL, borrowedBytes, size, release_owned, &probe));
     RuntimeCachedMeshRelease(NULL);
+}
+
+static void test_failed_prepare(void) {
+    static const char index[] = "10 model models/a.rmesh models/a.rmat\n";
+    RageRuntimeCachedMesh entries[1];
+    RageRuntimeMeshCache cache;
+    int before = readCalls;
+    RuntimeMeshCacheInit(&cache, index, sizeof(index) - 1, read_file,
+                         free_file, NULL, entries, 1);
+    failNextRead = 1;
+    EXPECT(RuntimeMeshCacheFind(&cache, 10, RAGE_RENDER_ASSET_MODEL_BANK) == NULL);
+    EXPECT(readCalls == before + 1 && cache.count == 0);
+    /* Main, mirror and completeness checks must not retry a failed prepare.
+     * The provider would now succeed, but no geometry was built this frame. */
+    for (int consumer = 0; consumer < 3; ++consumer)
+        EXPECT(RuntimeMeshCachePeek(&cache, 10, RAGE_RENDER_ASSET_MODEL_BANK) == NULL);
+    EXPECT(readCalls == before + 1 && cache.count == 0);
+    /* An explicit subsequent preparation may recover. */
+    const RageRuntimeCachedMesh *mesh = RuntimeMeshCacheFind(
+        &cache, 10, RAGE_RENDER_ASSET_MODEL_BANK);
+    EXPECT(mesh != NULL && readCalls == before + 2 && cache.count == 1);
+    for (int consumer = 0; consumer < 3; ++consumer)
+        EXPECT(RuntimeMeshCachePeek(&cache, 10, RAGE_RENDER_ASSET_MODEL_BANK) == mesh);
+    EXPECT(readCalls == before + 2);
+    RuntimeMeshCacheRelease(&cache);
 }
 
 int main(void) {
@@ -136,6 +166,7 @@ int main(void) {
     EXPECT(frees == 2 && cache.count == 0);
     RuntimeMeshCacheRelease(NULL);
     test_ownership();
+    test_failed_prepare();
     {
         static const char unsafeIndex[] = "10 model ../a.rmesh models/a.rmat\n";
         int before = readCalls;

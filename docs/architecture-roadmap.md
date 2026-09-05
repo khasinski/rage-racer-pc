@@ -76,6 +76,16 @@ first defining and testing the last consumer's lifetime.
 
 ## Work log
 
+- Native world completeness now checks resident meshes, matching the main and
+  mirror builders. It no longer retries a failed preparation after geometry was
+  built and therefore cannot mark a newly loaded, undrawn mesh as complete.
+  Cache fault-injection coverage verifies three resident consumers leave a
+  failed read untouched, and a later explicit preparation can recover. This
+  exercises cache semantics, not an injected live importer failure. Linux
+  cache/provider/history tests passed (3/3), including real PAL history; Windows
+  Release game build and cache test passed. Linux build log:
+  build/resident-completeness-build.log. Material loading and the larger
+  immutable-frame/persistent-GPU migration remain outstanding.
 - Separated resident mesh lookup from load/import. RuntimeMeshCachePeek and
   NativeAssetImporterPeek do not read files or game geometry; native main/mirror
   draw builders now use ModernAssetsResidentMeshLookup after explicit WarmWorld.

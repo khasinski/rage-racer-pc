@@ -850,7 +850,9 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
          * cameras. Missing assets in the deprecated PS1 mirror submission
          * must not disable replacement of that complete main scene. */
         if (world->instances[instance].pass != RAGE_RENDER_PASS_MAIN) continue;
-        if (ModernAssetsFind(&world->instances[instance]) == NULL) {
+        /* Check the same resident set consumed by the builders. Retrying a
+         * failed load here could mark absent geometry as a complete frame. */
+        if (ModernAssetsResidentMeshLookup(NULL, &world->instances[instance]) == NULL) {
             s_completeWorld = 0;
             break;
         }
