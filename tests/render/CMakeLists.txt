@@ -1,3 +1,62 @@
+add_executable(composite_gpu_tests composite_gpu_tests.c)
+target_include_directories(composite_gpu_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/modern/shaders)
+target_link_libraries(composite_gpu_tests PRIVATE SDL3::SDL3)
+if(NOT MSVC)
+    target_link_libraries(composite_gpu_tests PRIVATE m)
+    target_compile_options(composite_gpu_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME composite_gpu COMMAND composite_gpu_tests)
+set_tests_properties(composite_gpu PROPERTIES LABELS gpu SKIP_RETURN_CODE 77 TIMEOUT 30)
+
+add_executable(vram_read_cache_tests vram_read_cache_tests.c)
+target_include_directories(vram_read_cache_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/src/platform)
+if(NOT MSVC)
+    target_compile_options(vram_read_cache_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME vram_read_cache COMMAND vram_read_cache_tests)
+set_tests_properties(vram_read_cache PROPERTIES LABELS unit)
+
+add_executable(triangle_coverage_tests triangle_coverage_tests.c)
+target_include_directories(triangle_coverage_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/src/platform)
+if(NOT MSVC)
+    target_compile_options(triangle_coverage_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME triangle_coverage COMMAND triangle_coverage_tests)
+set_tests_properties(triangle_coverage PROPERTIES LABELS unit)
+
+add_executable(texture_triangle_tests texture_triangle_tests.c)
+target_include_directories(texture_triangle_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/src/platform)
+if(NOT MSVC)
+    target_link_libraries(texture_triangle_tests PRIVATE m)
+    target_compile_options(texture_triangle_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME texture_triangle COMMAND texture_triangle_tests)
+set_tests_properties(texture_triangle PROPERTIES LABELS unit)
+
+add_executable(texture_span_tests texture_span_tests.c)
+target_include_directories(texture_span_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/src/platform)
+if(NOT MSVC)
+    target_link_libraries(texture_span_tests PRIVATE m)
+    target_compile_options(texture_span_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME texture_span COMMAND texture_span_tests)
+set_tests_properties(texture_span PROPERTIES LABELS unit)
+
+add_executable(texture_sample_tests texture_sample_tests.c)
+target_include_directories(texture_sample_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/src/platform)
+if(NOT MSVC)
+    target_link_libraries(texture_sample_tests PRIVATE m)
+    target_compile_options(texture_sample_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME texture_sample COMMAND texture_sample_tests)
+set_tests_properties(texture_sample PROPERTIES LABELS unit)
+
 add_executable(modern_vram_snapshot_tests
     modern_vram_snapshot_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/modern/modern_vram_snapshot.c)
@@ -224,7 +283,9 @@ add_test(NAME render_stage COMMAND render_stage_tests)
 set_tests_properties(render_stage PROPERTIES LABELS functional)
 add_executable(rmesh_tests rmesh_tests.c)
 target_link_libraries(rmesh_tests PRIVATE rage-rmesh)
-if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+if(MSVC)
+    target_compile_options(rmesh_tests PRIVATE /W4 /WX)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(rmesh_tests PRIVATE -Wall -Wextra -Werror)
 endif()
 add_test(NAME rmesh COMMAND rmesh_tests)
@@ -295,7 +356,9 @@ add_test(NAME render_material COMMAND render_material_tests)
 set_tests_properties(render_material PROPERTIES LABELS functional)
 add_executable(rmesh_cache_tests rmesh_cache_tests.c)
 target_link_libraries(rmesh_cache_tests PRIVATE rage-rmesh)
-if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+if(MSVC)
+    target_compile_options(rmesh_cache_tests PRIVATE /W4 /WX)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(rmesh_cache_tests PRIVATE -Wall -Wextra -Werror)
 endif()
 add_test(NAME rmesh_cache COMMAND rmesh_cache_tests)
@@ -370,6 +433,17 @@ endif()
 target_link_libraries(sky_background_tests PRIVATE psyz)
 add_test(NAME sky_background COMMAND sky_background_tests)
 set_tests_properties(sky_background PROPERTIES LABELS unit)
+
+add_executable(modern_frame_pacer_tests modern_frame_pacer_tests.c)
+add_executable(track_material_page_tests track_material_page_tests.c)
+target_include_directories(track_material_page_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port ${CMAKE_SOURCE_DIR}/src)
+add_test(NAME track_material_page COMMAND track_material_page_tests)
+set_tests_properties(track_material_page PROPERTIES LABELS unit)
+target_include_directories(modern_frame_pacer_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/modern)
+add_test(NAME modern_frame_pacer COMMAND modern_frame_pacer_tests)
+set_tests_properties(modern_frame_pacer PROPERTIES LABELS unit)
 
 add_executable(modern_sky_geometry_tests modern_sky_geometry_tests.c)
 target_include_directories(modern_sky_geometry_tests PRIVATE
@@ -819,6 +893,14 @@ add_test(NAME native_sky_projection
     COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/verify_native_sky_projection.py)
 
 set_tests_properties(native_sky_projection PROPERTIES LABELS functional)
+add_executable(render_view_transform_tests render_view_transform_tests.c)
+target_link_libraries(render_view_transform_tests PRIVATE rage-render-world)
+if(NOT MSVC)
+    target_compile_options(render_view_transform_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME render_view_transform COMMAND render_view_transform_tests)
+set_tests_properties(render_view_transform PROPERTIES LABELS unit)
+
 add_executable(render_world_tests render_world_tests.c)
 target_link_libraries(render_world_tests PRIVATE rage-render-world)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")

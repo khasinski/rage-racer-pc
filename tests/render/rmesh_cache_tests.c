@@ -45,6 +45,8 @@ int main(void) {
                              free_file, 0, entries, 1);
     first = RuntimeMeshCacheFind(&cache, 10, RAGE_RENDER_ASSET_MODEL_BANK);
     EXPECT(first != 0 && first->mesh.meshCount == 1);
+    EXPECT(first != NULL && first->ownedBounds != NULL &&
+           first->mesh.bounds == first->ownedBounds && first->ownedBounds[0].valid);
     EXPECT(RuntimeMeshCacheFind(&cache, 10,
                                     RAGE_RENDER_ASSET_MODEL_BANK) == first);
     EXPECT(reads == 1);
@@ -52,6 +54,9 @@ int main(void) {
                                     RAGE_RENDER_ASSET_MODEL_BANK) == 0);
     RuntimeMeshCacheRelease(&cache);
     EXPECT(frees == 1 && cache.count == 0);
+    EXPECT(entries[0].ownedBounds == NULL && entries[0].mesh.bounds == NULL);
+    RuntimeMeshCacheRelease(&cache);
+    EXPECT(frees == 1);
 
     RuntimeMeshCacheInit(NULL, index, sizeof(index) - 1, read_file,
                          free_file, NULL, entries, 1);

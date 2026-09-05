@@ -53,6 +53,23 @@ int main(void) {
     EXPECT((int)vertex.position[0] == 3 && vertex.color[2] == 3);
     EXPECT((int)(vertex.uv[0] * 100.0f) == 50 && vertex.material == 7);
     EXPECT(RuntimeMeshIndex(&mesh, 1, &index) && index == 2);
+    {
+        RageRuntimeMeshBounds bounds[1];
+        float expectedCenter[3], expectedRadius;
+        EXPECT(RuntimeMeshBounds(&mesh, 0, expectedCenter, &expectedRadius));
+        EXPECT(!RuntimeMeshPrepareBounds(&mesh, bounds, 0));
+        EXPECT(mesh.bounds == NULL);
+        EXPECT(RuntimeMeshPrepareBounds(&mesh, bounds, 1));
+        EXPECT(mesh.bounds == bounds);
+        EXPECT(RuntimeMeshBounds(&mesh, 0, center, &radius));
+        EXPECT(memcmp(center, expectedCenter, sizeof(center)) == 0);
+        EXPECT(radius == expectedRadius);
+        EXPECT(!RuntimeMeshBounds(&mesh, 1, center, &radius));
+        EXPECT(center[0] == 0.0f && radius == 0.0f);
+        EXPECT(!RuntimeMeshPrepareBounds(&mesh, NULL, 1));
+        EXPECT(RuntimeMeshOpen(&mesh, blob, sizeof(blob)));
+        EXPECT(mesh.bounds == NULL);
+    }
     blob[0] = 0;
     EXPECT(!RuntimeMeshOpen(&mesh, blob, sizeof(blob)));
     EXPECT(mesh.bytes == NULL && mesh.meshCount == 0);
@@ -116,5 +133,14 @@ int main(void) {
     center[0] = center[1] = center[2] = radius = 123.0f;
     EXPECT(!RuntimeMeshBounds(&mesh, 0, center, &radius));
     EXPECT(center[0] == 0.0f && radius == 0.0f);
+    {
+        RageRuntimeMeshBounds bounds[1];
+        EXPECT(RuntimeMeshPrepareBounds(&mesh, bounds, 1));
+        EXPECT(!bounds[0].valid);
+        EXPECT(!RuntimeMeshBounds(&mesh, 0, center, &radius));
+        EXPECT(center[0] == 0.0f && radius == 0.0f);
+        EXPECT(!RuntimeMeshOpen(&mesh, NULL, 0));
+        EXPECT(mesh.bounds == NULL);
+    }
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

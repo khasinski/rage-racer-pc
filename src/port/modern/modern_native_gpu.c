@@ -1,5 +1,6 @@
 #include "modern_native_gpu.h"
 #include "../runtime_config.h"
+#include "../track_material_page.h"
 
 #include "modern_assets.h"
 #include "render/render_mesh_build.h"
@@ -97,6 +98,7 @@ typedef struct ModernNativeTexture {
 
 
 static SDL_GPUDevice *s_device;
+static uint32_t s_textureWarmCursor;
 static SDL_GPUGraphicsPipeline *s_texturedOpaque;
 static SDL_GPUGraphicsPipeline *s_texturedTransparent;
 static SDL_GPUGraphicsPipeline *s_texturedOpaqueDecal;
@@ -654,6 +656,7 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
 
 static void ModernNativeGpuClearTextures(void) {
     uint32_t index;
+    s_textureWarmCursor = 0;
     if (s_device != NULL) {
         for (index = 0; index < s_textureCount; index++) {
             if (s_textures[index].texture != NULL)
@@ -1172,7 +1175,12 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     size_t byte;
     uint32_t mipLevels;
     SDL_GPUTransferBuffer *upload = NULL;
+    static int trace = -1;
+    Uint64 loadStart = 0, materialDone = 0, mipDone = 0;
+    uint64_t imageHash = UINT64_C(14695981039346656037);
     if (entry != NULL || span->material == UINT32_MAX) return entry;
+    if (trace < 0) trace = RuntimeConfigEnabled("diagnostics.performance_trace");
+    if (trace) loadStart = SDL_GetTicksNS();
     if (s_textureCount == MODERN_NATIVE_MAX_TEXTURES) {
         /* Only a change of track empties the cache, so this is permanent for
          * the rest of the course: every material after it draws nothing at
@@ -1196,6 +1204,17 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     if (!ModernAssetsLoadMaterial(&instance, span->material,
                                   span->materialVariant,
                                   &materialDefinition, &image)) return NULL;
+    if (trace) materialDone = SDL_GetTicksNS();
+    if (trace) {
+        for (size_t i = 0; i < image.size; ++i) {
+            imageHash ^= ((const uint8_t *)image.pixels)[i];
+            imageHash *= UINT64_C(1099511628211);
+        }
+        /* Keep diagnostic checksum cost out of the named decode/mip phases. */
+        Uint64 hashNs = SDL_GetTicksNS() - materialDone;
+        materialDone += hashNs;
+        loadStart += hashNs;
+    }
     mipLevels = TextureMipLevelCount(
         image.width, image.height, RAGE_TEXTURE_ATLAS_MIP_LEVELS);
     mipSize = TextureMipChainSizeRGBA8(
@@ -1205,6 +1224,7 @@ static ModernNativeTexture *ModernNativeLoadTexture(
         !TextureBuildMipChainRGBA8(
             image.pixels, image.width, image.height, mipLevels,
             mipChain, mipSize)) goto fail;
+    if (trace) mipDone = SDL_GetTicksNS();
     entry = &s_textures[s_textureCount];
     {
         SDL_GPUTextureCreateInfo texture = {0};
@@ -1280,6 +1300,17 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     entry->definition = materialDefinition;
     ModernNativeIndexTexture(s_textureCount);
     s_textureCount++;
+    if (trace) {
+        Uint64 done = SDL_GetTicksNS();
+        fprintf(stderr, "modern-texture asset=%u set=%u material=%u variant=%u "
+                "load_ms=%.3f mip_ms=%.3f upload_ms=%.3f bytes=%zu rgba_hash=%016llx\n",
+                span->assetKey, (unsigned)span->assetSet, span->material,
+                (unsigned)span->materialVariant,
+                (materialDone-loadStart)/1000000.0,
+                (mipDone-materialDone)/1000000.0,
+                (done-mipDone)/1000000.0, mipSize,
+                (unsigned long long)imageHash);
+    }
     return entry;
 fail:
     /* The mip chain is allocated before a cache slot is claimed, so failing
@@ -1295,6 +1326,40 @@ fail:
         memset(entry, 0, sizeof(*entry));
     }
     return NULL;
+}
+
+/* Amortize the opposite track bank while the intro/current bank is visible.
+ * Only already requested materials are candidates; no course-wide blocking
+ * preload, live VRAM mutation, or invented car/CLUT variants. */
+static void ModernNativeWarmTrackBank(SDL_GPUCommandBuffer *command) {
+    static int enabled = -1;
+    if (enabled < 0) {
+        const char *value = RuntimeConfigGet("diagnostics.texture_prewarm");
+        enabled = value == NULL || RuntimeConfigEnabled("diagnostics.texture_prewarm");
+    }
+    if (!enabled) return;
+    Uint64 start = SDL_GetTicksNS();
+    unsigned loads = 0, visited = 0;
+    while (s_textureWarmCursor < s_textureCount && loads < 2 && visited++ < 64) {
+        const ModernNativeTexture *entry = &s_textures[s_textureWarmCursor++];
+        int alternate = TrackMaterialAlternateVariant(entry->assetSet,
+                                                      entry->materialVariant);
+        if (alternate >= 0) {
+            RageNativeDrawSpan span = {0};
+            span.assetKey = entry->assetKey;
+            span.assetSet = entry->assetSet;
+            span.material = entry->material;
+            span.materialVariant = (uint8_t)alternate;
+            span.hasCarPaint = entry->hasCarPaint;
+            span.carPaintColor1 = entry->carPaintColor1;
+            span.carPaintColor2 = entry->carPaintColor2;
+            if (ModernNativeFindTexture(&span) == NULL) {
+                (void)ModernNativeLoadTexture(command, &span);
+                ++loads;
+            }
+        }
+        if (SDL_GetTicksNS() - start >= 1500000u) break;
+    }
 }
 
 static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
@@ -1552,6 +1617,7 @@ void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,
                            drawSky,
                            &s_world->camera, s_aspect, s_spans, s_spanCount,
                            s_vertexCount, "main", targetHeight);
+    ModernNativeWarmTrackBank(command);
 }
 
 void ModernNativeGpuDrawMirror(SDL_GPUCommandBuffer *command,

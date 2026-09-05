@@ -1,6 +1,7 @@
 #include "rmesh_cache.h"
 
 #include <string.h>
+#include <stdlib.h>
 
 void RuntimeMeshCacheInit(RageRuntimeMeshCache *cache,
                           const char *indexText, size_t indexSize,
@@ -49,6 +50,10 @@ const RageRuntimeCachedMesh *RuntimeMeshCacheFind(
     cache->entries[cache->count].assetSet = assetSet;
     cache->entries[cache->count].ownedBytes = bytes;
     cache->entries[cache->count].location = location;
+    RageRuntimeCachedMesh *entry = &cache->entries[cache->count];
+    entry->ownedBounds = calloc(entry->mesh.meshCount, sizeof(*entry->ownedBounds));
+    if (entry->ownedBounds != NULL)
+        RuntimeMeshPrepareBounds(&entry->mesh, entry->ownedBounds, entry->mesh.meshCount);
     return &cache->entries[cache->count++];
 }
 
@@ -57,9 +62,12 @@ void RuntimeMeshCacheRelease(RageRuntimeMeshCache *cache) {
     uint32_t i;
     if (cache == NULL) return;
     count = cache->count < cache->capacity ? cache->count : cache->capacity;
-    if (cache->freeFile != NULL && cache->entries != NULL) {
+    if (cache->entries != NULL) {
         for (i = 0; i < count; i++) {
-            cache->freeFile(cache->context, cache->entries[i].ownedBytes);
+            if (cache->freeFile != NULL)
+                cache->freeFile(cache->context, cache->entries[i].ownedBytes);
+            free(cache->entries[i].ownedBounds);
+            memset(&cache->entries[i], 0, sizeof(cache->entries[i]));
         }
     }
     cache->count = 0;

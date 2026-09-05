@@ -232,6 +232,7 @@ static void LiftOverlayTowardCamera(
 }
 
 static int TriangleIsBackFacing(const RageRenderWorld *world,
+                                    const RageRenderViewTransform *viewTransform,
                                     const RageNativeDrawVertex triangle[3]) {
     RageRenderVec3 view[3];
     float screenX[3], screenY[3];
@@ -241,7 +242,7 @@ static int TriangleIsBackFacing(const RageRenderWorld *world,
                                    triangle[corner].position[1],
                                    triangle[corner].position[2]};
         float depth;
-        RenderWorldToView(&world->camera, &position, &view[corner]);
+        RenderWorldToViewPrepared(viewTransform, &position, &view[corner]);
         depth = -view[corner].z;
         /* Let homogeneous clipping handle triangles crossing the camera.
          * Their projected winding is undefined until after the clip. */
@@ -281,14 +282,15 @@ static uint32_t ClipViewTriangleNear(
 }
 
 static int TerrainTriangleFacesCamera(
-    const RageRenderWorld *world, const RageNativeDrawVertex triangle[3]) {
+    const RageRenderWorld *world, const RageRenderViewTransform *viewTransform,
+    const RageNativeDrawVertex triangle[3]) {
     RageRenderVec3 input[3], clipped[4];
     uint32_t corner, count, piece;
     for (corner = 0; corner < 3; corner++) {
         RageRenderVec3 position = {triangle[corner].position[0],
                                    triangle[corner].position[1],
                                    triangle[corner].position[2]};
-        RenderWorldToView(&world->camera, &position, &input[corner]);
+        RenderWorldToViewPrepared(viewTransform, &position, &input[corner]);
     }
     count = ClipViewTriangleNear(
         input, clipped, world->camera.nearPlane);
@@ -312,6 +314,7 @@ static int TerrainTriangleFacesCamera(
 
 static int TerrainQuadIsHidden(
     const RageRenderWorld *world, const RageTransformBasis *basis,
+    const RageRenderViewTransform *viewTransform,
     const RageRuntimeMesh *mesh, uint32_t first) {
     RageNativeDrawVertex triangles[2][3] = {0};
     uint32_t indices[6];
@@ -352,11 +355,12 @@ static int TerrainQuadIsHidden(
      * after their independent source-to-scene import conversion. Evaluate
      * that winding after clipping so a hidden wall crossing the camera does
      * not expand into a screen-sized polygon. */
-    return !TerrainTriangleFacesCamera(world, triangles[0]) &&
-           !TerrainTriangleFacesCamera(world, triangles[1]);
+    return !TerrainTriangleFacesCamera(world, viewTransform, triangles[0]) &&
+           !TerrainTriangleFacesCamera(world, viewTransform, triangles[1]);
 }
 
 static int InstanceOutsideFrustum(const RageRenderWorld *world,
+                                      const RageRenderViewTransform *viewTransform,
                                       const RageRenderTransform *transform,
                                       const RageRuntimeMesh *mesh,
                                       uint32_t meshIndex, float aspect) {
@@ -366,7 +370,7 @@ static int InstanceOutsideFrustum(const RageRenderWorld *world,
     RageTransformBasis basis = BuildTransformBasis(transform);
     if (!RuntimeMeshBounds(mesh, meshIndex, center, &radius)) return 0;
     worldCenter = TransformPoint(&basis, center);
-    RenderWorldToView(&world->camera, &worldCenter, &view);
+    RenderWorldToViewPrepared(viewTransform, &worldCenter, &view);
     depth = -view.z;
     maxScale = fmaxf(fabsf(transform->scale.x),
                      fmaxf(fabsf(transform->scale.y), fabsf(transform->scale.z)));
@@ -392,6 +396,7 @@ static int InstanceOutsideFrustum(const RageRenderWorld *world,
 }
 
 static int BuildVertex(const RageTransformBasis *basis,
+                           const RageRenderViewTransform *viewTransform,
                            const RageRenderWorld *world, int fogged,
                            const RageRenderMeshInstance *instance,
                            const RageRuntimeMesh *mesh, uint32_t index,
@@ -428,7 +433,7 @@ static int BuildVertex(const RageTransformBasis *basis,
     out->fog[1] = world->camera.fogColor.y;
     out->fog[2] = world->camera.fogColor.z;
     out->fog[3] = fogged
-        ? RenderFogFactor(&world->camera, &worldPosition) : 0.0f;
+        ? RenderFogFactorPrepared(viewTransform, &worldPosition) : 0.0f;
     out->lighting = 0.0f;
     if ((instance->flags & RAGE_RENDER_INSTANCE_ENABLE_LIGHTING) != 0) {
         out->lighting = instance->lightInfluence;
@@ -477,11 +482,13 @@ static uint32_t RenderBuildNativeDrawsFiltered(
     RageNativeDrawVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
     uint32_t instanceIndex, vertexCount = 0, spansUsed = 0;
+    RageRenderViewTransform viewTransform;
     if (spanCount != NULL) *spanCount = 0;
     if (world == NULL || lookup == NULL || vertices == NULL || spans == NULL ||
         spanCount == NULL || !isfinite(aspect) || aspect <= 0.0f ||
         world->instanceCount > world->instanceCapacity ||
         (world->instanceCount != 0 && world->instances == NULL)) return 0;
+    viewTransform = RenderPrepareView(&world->camera);
     for (instanceIndex = 0; instanceIndex < world->instanceCount; instanceIndex++) {
         const RageRenderMeshInstance *instance = &world->instances[instanceIndex];
         const RageRuntimeMesh *mesh = lookup(context, instance);
@@ -494,7 +501,7 @@ static uint32_t RenderBuildNativeDrawsFiltered(
             continue;
         }
         if ((instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL) &&
-            InstanceOutsideFrustum(world, &instance->transform, mesh,
+            InstanceOutsideFrustum(world, &viewTransform, &instance->transform, mesh,
                                        instance->mesh, aspect)) continue;
         basis = BuildTransformBasis(&instance->transform);
         for (offset = 0; offset + 2 < count; offset += 3) {
@@ -507,13 +514,13 @@ static uint32_t RenderBuildNativeDrawsFiltered(
             if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
                 if ((offset % 6u) == 0)
                     terrainQuadHidden = TerrainQuadIsHidden(
-                        world, &basis, mesh, first + offset);
+                        world, &basis, &viewTransform, mesh, first + offset);
                 if (terrainQuadHidden) continue;
             }
             for (corner = 0; corner < 3; corner++) {
                 valid = valid && RuntimeMeshIndex(mesh, first + offset + corner,
                                                       &indices[corner]);
-                if (valid) valid = BuildVertex(&basis, world,
+                if (valid) valid = BuildVertex(&basis, &viewTransform, world,
                     (instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FOG) != 0,
                     instance, mesh, indices[corner], aspect,
                     &triangle[corner], &materials[corner],
@@ -542,7 +549,7 @@ static uint32_t RenderBuildNativeDrawsFiltered(
                 depthDecals[0] = depthDecals[1] = depthDecals[2] = 1;
             }
             if ((instance->flags & RAGE_RENDER_INSTANCE_CULL_BACKFACES) != 0 &&
-                TriangleIsBackFacing(world, triangle)) continue;
+                TriangleIsBackFacing(world, &viewTransform, triangle)) continue;
             materialVariant = instance->materialVariant;
             /* Only terrain modes 0/1 select CLUT+1 from environment mode 4.
              * Modes 2..5 already encode their fixed CLUT in the import.

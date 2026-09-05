@@ -3,6 +3,22 @@
 
 #include "render_world.h"
 
+/* Caller-owned snapshot, prepared once per draw build; no global cache shared
+ * between the main view, mirror, or interpolated frames. */
+typedef struct {
+    RageRenderCamera camera;
+    float matrix[3][3];
+    float cosine[3], sine[3];
+    int mode;
+} RageRenderViewTransform;
+
+RageRenderViewTransform RenderPrepareView(const RageRenderCamera *camera);
+void RenderWorldToViewPrepared(const RageRenderViewTransform *transform,
+                              const RageRenderVec3 *world,
+                              RageRenderVec3 *view);
+float RenderFogFactorPrepared(const RageRenderViewTransform *transform,
+                             const RageRenderVec3 *world);
+
 /* Native renderer camera math. The result is conventional view space where
  * positive Z is forward; no PS1 GTE matrix or screen-space quantization is
  * involved. */

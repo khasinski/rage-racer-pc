@@ -18,6 +18,7 @@ typedef struct RageRuntimeCachedMesh {
     RageRuntimeMesh mesh;
     const void *ownedBytes;
     RageRuntimeAssetLocation location;
+    RageRuntimeMeshBounds *ownedBounds;
 } RageRuntimeCachedMesh;
 
 typedef struct RageRuntimeMeshCache {
@@ -42,4 +43,3 @@ const RageRuntimeCachedMesh *RuntimeMeshCacheFind(
 void RuntimeMeshCacheRelease(RageRuntimeMeshCache *cache);
 
 #endif
-

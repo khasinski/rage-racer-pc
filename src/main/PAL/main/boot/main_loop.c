@@ -49,9 +49,13 @@ static void ServiceGameFrame(void) {
     ServiceAssetLoad();
     AdvanceSaveHeaderCounter();
     PortBeforeSceneHandler();
+    PortProfileFramePhase("scene");
     DispatchCurrentScene();
+    PortProfileFramePhase("publish");
     PortAfterSceneHandler();
+    PortProfileFramePhase("draw_sync");
     DrawSync(0);
+    PortProfileFramePhase("texture_swap");
     StepTrackTextureSwap();
 }
 
@@ -82,14 +86,18 @@ void MainLoop(void) {
     InitializeGameLoop();
 
     for (;;) {
+        PortProfileFramePhase("service");
         GameFrameContext *frame = BeginGameFrame();
         s32 elapsed;
 
         ServiceGameFrame();
+        PortProfileFramePhase("wait");
         elapsed = WaitForFrameDeadline();
         g_GameClock = (s32)((u32)g_GameClock + 1U +
                             (u32)(elapsed / 256));
+        PortProfileFramePhase("present_ot");
         PresentGameFrame(frame);
+        PortProfileFramePhase(NULL);
         g_FrameCounter = (s32)((u32)g_FrameCounter + 1U);
         if (PortShouldExit(g_FrameCounter)) {
             return;

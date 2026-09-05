@@ -2,6 +2,7 @@
 #include "modern_assets.h"
 #include "modern_native_gpu.h"
 #include "modern_sky_geometry.h"
+#include "modern_frame_pacer.h"
 #include "rage/render_world_game.h"
 
 #include <psyz/overlay_sdl3_gpu.h>
@@ -29,6 +30,8 @@
 #include "shaders/modern_frag_msl.h"
 #include "shaders/modern_vert_msl.h"
 #include "shaders/post_frag_msl.h"
+#include "shaders/composite_frag_spv.h"
+#include "shaders/composite_frag_msl.h"
 #include "shaders/post_vert_msl.h"
 
 /* The modern presentation path combines native RenderWorld geometry with
@@ -44,6 +47,27 @@ static int s_markerCaptureEnabled;
 static int s_skyOnlyDiagnostic;
 static Uint64 s_profilePrepareNs;
 static int s_profileTiming;
+
+extern int32_t g_FrameCounter;
+/* Opt-in wall-clock phases include work between native-render callbacks.
+ * The timestamps allow exact correlation with modern-frame trace records. */
+void PortProfileFramePhase(const char *phase) {
+    static int enabled = -1;
+    static const char *previous;
+    static Uint64 started;
+    if (enabled < 0)
+        enabled = RuntimeConfigEnabled("diagnostics.performance_trace");
+    if (!enabled) return;
+    Uint64 now = SDL_GetTicksNS();
+    if (previous != NULL)
+        fprintf(stderr, "frame-phase frame=%u phase=%s start_ns=%llu end_ns=%llu ms=%.3f\n",
+                (unsigned)g_FrameCounter, previous,
+                (unsigned long long)started, (unsigned long long)now,
+                (now - started) / 1000000.0);
+    previous = phase;
+    started = now;
+}
+
 static SDL_Window *s_window;
 static SDL_GPUDevice *s_device;
 static PsyzOverlayInitCB_SDL3GPU s_prev_overlay_init;
@@ -219,31 +243,12 @@ static SDL_GPUGraphicsPipeline *ModernCreatePostPipeline(void) {
 }
 
 static SDL_GPUGraphicsPipeline *ModernCreateCompositePipeline(void) {
-    char header[128];
-    size_t headerLen;
-    char *source;
-    size_t sourceSize;
-    SDL_GPUGraphicsPipeline *pipeline;
-    snprintf(header, sizeof(header),
-             "constant int kGrading = %d;\n", s_config.modernGrading);
-    headerLen = strlen(header);
-    sourceSize = MODERN_COMPOSITE_PROLOGUE_MSL_SIZE - 1 + headerLen +
-                 MODERN_COMPOSITE_MSL_SIZE;
-    source = malloc(sourceSize);
-    if (source == NULL) return NULL;
-    memcpy(source, MODERN_COMPOSITE_PROLOGUE_MSL,
-           MODERN_COMPOSITE_PROLOGUE_MSL_SIZE - 1);
-    memcpy(source + MODERN_COMPOSITE_PROLOGUE_MSL_SIZE - 1, header,
-           headerLen);
-    memcpy(source + MODERN_COMPOSITE_PROLOGUE_MSL_SIZE - 1 + headerLen,
-           MODERN_COMPOSITE_MSL, MODERN_COMPOSITE_MSL_SIZE);
-    pipeline = ModernCreateFullscreenPipeline(
-        NULL, 0, MODERN_EFFECTS_MSL, MODERN_EFFECTS_MSL_SIZE, "vs_fx",
-        NULL, 0, source, sourceSize, "fs_composite", 1);
-    free(source);
-    return pipeline;
+    return ModernCreateFullscreenPipeline(
+        post_vert_spv, post_vert_spv_len,
+        (const char *)post_vert_msl, post_vert_msl_len, "vs_post",
+        composite_frag_spv, composite_frag_spv_len,
+        (const char *)composite_frag_msl, composite_frag_msl_len, "fs_composite", 1);
 }
-
 static SDL_GPUGraphicsPipeline *ModernCreateOverlayPipeline(
     SDL_GPUShader *vs, SDL_GPUShader *fs, int subtract) {
     const SDL_GPUVertexBufferDescription buffer = {
@@ -671,7 +676,16 @@ static uint32_t ModernTwinFromE2(uint32_t word) {
 static Uint64 s_tickTimeNs;
 static Uint64 s_tickIntervalNs;
 static uint32_t s_tickFrame = 0xFFFFFFFFu;
-static Uint64 s_lastPresentationNs;
+static ModernFramePacer s_presentPacer;
+
+static Uint64 ModernPresentationInterval(void) {
+    if (s_config.modernFps > 0)
+        return (Uint64)(1000000000.0 / s_config.modernFps);
+    const SDL_DisplayMode *mode = s_window != NULL
+        ? SDL_GetCurrentDisplayMode(SDL_GetDisplayForWindow(s_window)) : NULL;
+    return mode != NULL && mode->refresh_rate > 1.0f
+        ? (Uint64)(1000000000.0 / mode->refresh_rate) : 16666667u;
+}
 
 void ModernLogicFrameReady(uint32_t frame) {
     Uint64 now = SDL_GetTicksNS();
@@ -1218,6 +1232,7 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
     static Uint64 profileFaces, profileVertices, profileSpans;
     static unsigned profileFrames;
     static Uint64 profileWindowStart, profilePrevious, profileIntervals[120];
+    static unsigned long long profilePresented;
     static int profile = -1, profileTrace;
     Uint64 profileStart = 0, profileBuilt = 0;
     int i;
@@ -1331,14 +1346,15 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
             const RageRenderWorld *world = ModernNativeGpuPreparedWorld();
             fprintf(stderr,
                     "modern-frame frame=%u scene=%d point=%d interval_ms=%.3f "
-                    "prepare_ms=%.3f build_ms=%.3f submit_ms=%.3f instances=%u\n",
+                    "prepare_ms=%.3f build_ms=%.3f submit_ms=%.3f instances=%u end_ns=%llu\n",
                     snapshot->frameCounter, snapshot->sceneId,
                     g_PlayerCar.trackPointIndex,
                     profileIntervals[profileFrames] / 1000000.0,
                     s_profilePrepareNs / 1000000.0,
                     (profileBuilt - profileStart) / 1000000.0,
                     (finished - profileBuilt) / 1000000.0,
-                    world != NULL ? (unsigned)world->instanceCount : 0u);
+                    world != NULL ? (unsigned)world->instanceCount : 0u,
+                    (unsigned long long)finished);
         }
         profileBuildNs += profileBuilt - profileStart;
         profileSubmitNs += finished - profileBuilt;
@@ -1347,12 +1363,15 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
         profileSpans += (Uint64)s_spanCount;
         profileFrames++;
         if (profileFrames == 120) {
+            PsyzVideoStats videoStats = {0};
+            Psyz_VideoStats(&videoStats);
             qsort(profileIntervals, 120, sizeof(profileIntervals[0]),
                   ModernCompareProfileInterval);
             fprintf(stderr,
                     "modern-profile frames=%u build_ms=%.3f submit_ms=%.3f "
                     "faces=%.0f vertices=%.0f spans=%.0f "
-                    "render_fps=%.2f interval_p95_ms=%.3f interval_max_ms=%.3f\n",
+                    "render_fps=%.2f interval_p95_ms=%.3f interval_max_ms=%.3f "
+                    "queued_fps=%.2f\n",
                     profileFrames,
                     (double)profileBuildNs / profileFrames / 1000000.0,
                     (double)profileSubmitNs / profileFrames / 1000000.0,
@@ -1361,7 +1380,10 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
                     (double)profileSpans / profileFrames,
                     120.0e9 / (double)(finished - profileWindowStart),
                     profileIntervals[113] / 1000000.0,
-                    profileIntervals[119] / 1000000.0);
+                    profileIntervals[119] / 1000000.0,
+                    (videoStats.presented_frames - profilePresented) * 1.0e9 /
+                        (double)(finished-profileWindowStart));
+            profilePresented = videoStats.presented_frames;
             profileWindowStart = finished;
             profileBuildNs = profileSubmitNs = 0;
             profileFaces = profileVertices = profileSpans = 0;
@@ -1493,6 +1515,7 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
      * do 480-line menu scenes: their double-height buffer follows PS1
      * interlace conventions the compat presenter already handles. */
     if (snapshot->faceCount == 0) {
+        memset(&s_presentPacer, 0, sizeof(s_presentPacer));
         /* Menus and other 2D-only scenes use the compatibility framebuffer,
          * but presentation should still honour the modern texture-filter
          * setting. Filtering the completed framebuffer cannot bleed between
@@ -1504,13 +1527,19 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
         return;
     }
     if (snapshot->displayHeight != 0 && snapshot->displayHeight != 240) {
+        memset(&s_presentPacer, 0, sizeof(s_presentPacer));
         return;
     }
     if (!ModernEnsureResources()) return;
     if (fpsMode) {
         const RageSceneSnapshot *target = CaptureCurrent();
         Uint64 now = SDL_GetTicksNS();
+        Uint64 interval = ModernPresentationInterval();
         float t = 1.0f;
+        if (!ModernFrameDue(&s_presentPacer, now, interval)) {
+            info->skip_present = true;
+            return;
+        }
         /* PortAfterSceneHandler timestamps the completed logic frame.
          * Starting interpolation when it is first presented instead made
          * the first repeated frame consume part of the next tick. */
@@ -1535,7 +1564,7 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
             (float)s_targetW / (float)s_targetH);
         if (s_profileTiming) s_profilePrepareNs = SDL_GetTicksNS() - prepareStart;
         ModernRender(snapshot);
-        s_lastPresentationNs = now;
+        ModernFramePresented(&s_presentPacer, now, interval);
         if (s_haveRenderedFrame) ModernMaybeDump(snapshot);
     } else if (snapshot->frameCounter != s_lastRenderedFrame) {
         const RageRenderWorld *world = GameRenderWorldPrevious();
@@ -1565,45 +1594,14 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
  * BIOS pad refresh, so input edge semantics are untouched. */
 void ModernFrameWaitTick(int frameLimit) {
     if (!s_enabled || s_device == NULL) return;
+    /* A short bounded sleep yields the CPU without tying emulated VBlank
+     * to the monitor. The caller rechecks its original logic deadline. */
+    SDL_DelayNS(100000u);
     if (s_config.modernFps == RAGE_MODERN_FPS_LOGIC) return;
     if (frameLimit < 0x180) return;
     if (CaptureCurrent()->faceCount == 0) return;
-    /* Stop presenting when less than a whole VBlank remains: an
-     * intermediate present here consumes the swapchain image the game's
-     * own VSync(0) present is about to wait for, stretching the logic
-     * tick by a display refresh. */
-    if (Psyz_VideoVSync(1) + 0x100 > frameLimit) return;
-    {
-        /* Explicit targets pace to 1/fps. Vsync mode paces to the actual
-         * display refresh: presenting faster only queues swapchain images
-         * the game's own VSync(0) present then has to wait out, which
-         * stretches the race tick (observed as cars at half speed while
-         * the VBlank-derived clock stayed correct). */
-        static Uint64 displayIntervalNs;
-        Uint64 now = SDL_GetTicksNS();
-        Uint64 interval;
-        if (s_config.modernFps > 0) {
-            interval = (Uint64)(1000000000.0 / s_config.modernFps);
-        } else {
-            if (displayIntervalNs == 0) {
-                const SDL_DisplayMode *mode =
-                    s_window != NULL
-                        ? SDL_GetCurrentDisplayMode(
-                              SDL_GetDisplayForWindow(s_window))
-                        : NULL;
-                displayIntervalNs =
-                    mode != NULL && mode->refresh_rate > 1.0f
-                        ? (Uint64)(1000000000.0 / mode->refresh_rate)
-                        : 16666667u;
-            }
-            interval = displayIntervalNs;
-        }
-        /* Include the normal end-of-tick present in pacing. Tracking only
-         * intermediate presents emitted one immediately after the next
-         * logic update, producing an 8/30 ms cadence that still looked like
-         * the original 25-30 FPS despite interpolation. */
-        if (now - s_lastPresentationNs < interval) return;
-    }
+    if (!ModernFrameDue(&s_presentPacer, SDL_GetTicksNS(),
+                         ModernPresentationInterval())) return;
     Psyz_VideoPresentIntermediate();
 }
 
@@ -1631,7 +1629,8 @@ int ModernInit(const RagePortConfig *config) {
     s_prev_overlay_init = Psyz_OverlayInit_SDL3GPU(ModernOverlayInit);
     s_prev_present_source = Psyz_PresentSource_SDL3GPU(ModernPresentSource);
     s_initialized = 1;
-    s_tickTimeNs = s_tickIntervalNs = s_lastPresentationNs = 0;
+    s_tickTimeNs = s_tickIntervalNs = 0;
+    memset(&s_presentPacer, 0, sizeof(s_presentPacer));
     s_tickFrame = 0xFFFFFFFFu;
     s_markerCaptureEnabled = RuntimeConfigEnabled("diagnostics.marker_capture");
     s_enabled = config->renderer == RAGE_RENDERER_MODERN;

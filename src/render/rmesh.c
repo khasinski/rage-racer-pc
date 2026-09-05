@@ -175,6 +175,13 @@ int RuntimeMeshBounds(const RageRuntimeMesh *mesh, uint32_t meshIndex,
     if (center == NULL || radius == NULL) return 0;
     memset(center, 0, sizeof(resultCenter));
     *radius = 0.0f;
+    if (mesh != NULL && mesh->bounds != NULL && meshIndex < mesh->meshCount) {
+        const RageRuntimeMeshBounds *cached = &mesh->bounds[meshIndex];
+        if (!cached->valid) return 0;
+        memcpy(center, cached->center, sizeof(cached->center));
+        *radius = cached->radius;
+        return 1;
+    }
     if (!RuntimeMeshRange(mesh, meshIndex, &first, &count) || count == 0)
         return 0;
     if (!RuntimeMeshIndex(mesh, first, &index) ||
@@ -203,5 +210,17 @@ int RuntimeMeshBounds(const RageRuntimeMesh *mesh, uint32_t meshIndex,
         return 0;
     memcpy(center, resultCenter, sizeof(resultCenter));
     *radius = (float)sqrt(radiusSquared);
+    return 1;
+}
+
+int RuntimeMeshPrepareBounds(RageRuntimeMesh *mesh,
+                            RageRuntimeMeshBounds *storage, size_t capacity) {
+    uint32_t i;
+    if (mesh == NULL || storage == NULL || capacity < mesh->meshCount) return 0;
+    mesh->bounds = NULL;
+    for (i = 0; i < mesh->meshCount; ++i)
+        storage[i].valid = RuntimeMeshBounds(mesh, i, storage[i].center,
+                                            &storage[i].radius);
+    mesh->bounds = storage;
     return 1;
 }

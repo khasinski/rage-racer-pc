@@ -18,6 +18,7 @@ int PortShouldExit(int frame_number);
 void PortBeforeSceneHandler(void);
 void PortAfterSceneHandler(void);
 void PortDuringFrameWait(int frameLimit);
+void PortProfileFramePhase(const char *phase);
 int PortMirrorFarDepth(int retailFar);
 void PortSampleAnalogPad(void);
 

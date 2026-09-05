@@ -1,5 +1,6 @@
 #include "rage/track_asset_identity.h"
 #include "native_asset_importer.h"
+#include "track_material_page.h"
 #include "sky_panorama_layout.h"
 
 #include <SDL3/SDL.h>
@@ -48,6 +49,7 @@ typedef struct RageImportedMeshEntry {
     RageImportedTextureKey *materials;
     uint32_t materialCount;
     void *bytes;
+    RageRuntimeMeshBounds *bounds;
 } RageImportedMeshEntry;
 
 typedef struct RageImportedFace {
@@ -539,6 +541,10 @@ static RageImportedMeshEntry *ImportBuildMesh(
         memset(entry, 0, sizeof(*entry));
         return NULL;
     }
+    entry->bounds = calloc(entry->cached.mesh.meshCount, sizeof(*entry->bounds));
+    if (entry->bounds != NULL)
+        RuntimeMeshPrepareBounds(&entry->cached.mesh, entry->bounds,
+                                 entry->cached.mesh.meshCount);
     return entry;
 }
 
@@ -804,6 +810,7 @@ void NativeAssetImporterShutdown(void) {
     for (index = 0; index < s_entryCount; index++) {
         free(s_entries[index].bytes);
         free(s_entries[index].materials);
+        free(s_entries[index].bounds);
     }
     memset(s_entries, 0, sizeof(s_entries));
     s_entryCount = 0;
@@ -869,6 +876,13 @@ int NativeAssetImporterLoadMaterial(
     clut = (uint16_t)(texture->clut + clutOffset);
     vram = ImportVramSnapshot(
         instance->assetSet != RAGE_RENDER_ASSET_MODEL_BANK);
+    /* Decode the requested bank, including proactive loads before the game
+     * changes its active bank. Never alter live VRAM or the game's globals. */
+    if (vram != NULL && (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN ||
+                         instance->assetSet == RAGE_RENDER_ASSET_COURSE))
+        ImportOverlayTrackPage(s_vramSnapshot,
+            TrackMaterialPage(instance->assetSet, variant,
+                              g_TrackTexturePageWanted));
     if (vram == NULL ||
         !ImportDecodeTexture(texture, clut, vram, &pixels,
                                  instance->hasCarPaint ? &paint : NULL)) {

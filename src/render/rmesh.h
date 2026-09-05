@@ -8,6 +8,11 @@
  * bounded view into caller-owned bytes: asset I/O and GPU upload stay outside
  * the renderer-neutral asset contract. */
 
+typedef struct RageRuntimeMeshBounds {
+    float center[3], radius;
+    int valid;
+} RageRuntimeMeshBounds;
+
 typedef struct RageRuntimeMesh {
     const uint8_t *bytes;
     size_t size;
@@ -17,6 +22,9 @@ typedef struct RageRuntimeMesh {
     size_t offsetsOffset;
     size_t verticesOffset;
     size_t indicesOffset;
+    /* Optional caller-owned cache; bytes must remain immutable while attached.
+     * RuntimeMeshOpen clears this pointer, including on failure. */
+    const RageRuntimeMeshBounds *bounds;
 } RageRuntimeMesh;
 
 typedef struct RageRuntimeVertex {
@@ -51,5 +59,7 @@ int RuntimeMeshIndex(const RageRuntimeMesh *mesh, uint32_t indexIndex,
  * expanding a mesh into draw vertices. */
 int RuntimeMeshBounds(const RageRuntimeMesh *mesh, uint32_t meshIndex,
                           float center[3], float *radius);
+int RuntimeMeshPrepareBounds(RageRuntimeMesh *mesh,
+                            RageRuntimeMeshBounds *storage, size_t capacity);
 
 #endif

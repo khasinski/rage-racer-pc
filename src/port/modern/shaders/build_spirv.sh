@@ -47,10 +47,16 @@ build_shader() {
     trap - EXIT HUP INT TERM
 }
 
+if [ "${1:-}" = "composite" ]; then
+    build_shader composite.frag composite_frag frag fs_composite
+    exit 0
+fi
+
 build_shader modern.vert modern_vert vert vs_main
 build_shader modern.frag modern_frag frag fs_main
 build_shader post.vert post_vert vert vs_post
 build_shader post.frag post_frag frag fs_post
+build_shader composite.frag composite_frag frag fs_composite
 build_shader native.vert native_vert vert vs_native
 build_shader native_sky.vert native_sky_vert vert vs_native_sky
 build_shader native_sky.frag native_sky_frag frag fs_native_sky
