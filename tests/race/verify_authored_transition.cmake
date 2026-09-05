@@ -29,7 +29,10 @@ list(LENGTH starts count)
 if(count LESS 2)
     message(FATAL_ERROR "Did not enter a second race with the existing model cache")
 endif()
-foreach(required "authored ${NAME} player body installed asset=${PLAYER_ASSET}"
+if(NOT DEFINED PLAYER_NAME)
+    set(PLAYER_NAME "${NAME}")
+endif()
+foreach(required "authored ${PLAYER_NAME} player body installed asset=${PLAYER_ASSET}"
         "authored ${NAME} rival body installed asset=${RIVAL_ASSET}"
         "scenario race finished after_finish=repeat")
     if(NOT trace MATCHES "${required}")

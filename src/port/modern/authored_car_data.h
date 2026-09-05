@@ -36,6 +36,9 @@
 #include "bulshade_rival_alternate.inc"
 #include "squaldon_body.inc"
 #include "squaldon_rival.inc"
+#include "compacta_rival_early.inc"
+#include "compactb_rival_early.inc"
+#include "compactc_rival_early.inc"
 
 typedef struct AuthoredCarMaterial {
     uint16_t source, page, clut, cacheSlot;
@@ -289,9 +292,64 @@ static const AuthoredCarMaterial s_squaldonRivalMaterials[] = {
     {20, 13, 0x7908, 20},
 };
 
+static const AuthoredCarMaterial s_compactaEarly88Materials[] = {
+    {3,10,0x7900,3},
+    {23,14,0x7840,23},
+    {26,14,0x7880,26},
+    {29,14,0x78c0,29},
+};
+static const AuthoredCarMaterial s_compactaEarly96Materials[] = {
+    {3,10,0x7900,5},
+    {23,14,0x7840,26},
+    {26,14,0x7880,29},
+    {29,14,0x78c0,32},
+};
+static const AuthoredCarMaterial s_compactbEarly88Materials[] = {
+    {4,10,0x7902,4},
+    {24,14,0x7842,24},
+    {27,14,0x7882,27},
+    {30,14,0x78c2,30},
+};
+static const AuthoredCarMaterial s_compactbEarly96Materials[] = {
+    {4,10,0x7902,6},
+    {24,14,0x7842,27},
+    {27,14,0x7882,30},
+    {30,14,0x78c2,33},
+};
+static const AuthoredCarMaterial s_compactcEarly88Materials[] = {
+    {3,10,0x7900,3},
+    {25,14,0x7844,25},
+    {28,14,0x7884,28},
+    {31,14,0x78c4,31},
+};
+static const AuthoredCarMaterial s_compactcEarly96Materials[] = {
+    {3,10,0x7900,5},
+    {25,14,0x7844,28},
+    {28,14,0x7884,31},
+    {31,14,0x78c4,34},
+};
+
 #define AUTHORED_CAR(name, key, set, part, data, map) \
     {name, key, set, part, data, sizeof(data), map, sizeof(map)/sizeof(map[0])}
 static const AuthoredCarReplacement s_authoredCars[] = {
+    AUTHORED_CAR("Compact A", 88, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_early, s_compactaEarly88Materials),
+    AUTHORED_CAR("Compact A", 90, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_early, s_compactaEarly88Materials),
+    AUTHORED_CAR("Compact A", 92, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_early, s_compactaEarly88Materials),
+    AUTHORED_CAR("Compact A", 96, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_early, s_compactaEarly96Materials),
+    AUTHORED_CAR("Compact A", 98, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_early, s_compactaEarly96Materials),
+    AUTHORED_CAR("Compact A", 100, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_early, s_compactaEarly96Materials),
+    AUTHORED_CAR("Compact B", 88, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 25, s_compactb_rival_early, s_compactbEarly88Materials),
+    AUTHORED_CAR("Compact B", 90, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 25, s_compactb_rival_early, s_compactbEarly88Materials),
+    AUTHORED_CAR("Compact B", 92, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 25, s_compactb_rival_early, s_compactbEarly88Materials),
+    AUTHORED_CAR("Compact B", 96, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 25, s_compactb_rival_early, s_compactbEarly96Materials),
+    AUTHORED_CAR("Compact B", 98, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 25, s_compactb_rival_early, s_compactbEarly96Materials),
+    AUTHORED_CAR("Compact B", 100, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 25, s_compactb_rival_early, s_compactbEarly96Materials),
+    AUTHORED_CAR("Compact C", 88, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 30, s_compactc_rival_early, s_compactcEarly88Materials),
+    AUTHORED_CAR("Compact C", 90, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 30, s_compactc_rival_early, s_compactcEarly88Materials),
+    AUTHORED_CAR("Compact C", 92, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 30, s_compactc_rival_early, s_compactcEarly88Materials),
+    AUTHORED_CAR("Compact C", 96, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 30, s_compactc_rival_early, s_compactcEarly96Materials),
+    AUTHORED_CAR("Compact C", 98, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 30, s_compactc_rival_early, s_compactcEarly96Materials),
+    AUTHORED_CAR("Compact C", 100, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 30, s_compactc_rival_early, s_compactcEarly96Materials),
     AUTHORED_CAR("Esperanza", 88, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_esperanza_rival_slot1, s_esperanzaSlot1Materials),
     AUTHORED_CAR("Esperanza", 90, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_esperanza_rival_slot1, s_esperanzaSlot1Materials),
     AUTHORED_CAR("Esperanza", 92, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_esperanza_rival_slot1, s_esperanzaSlot1Materials),

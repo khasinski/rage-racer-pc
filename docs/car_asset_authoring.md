@@ -319,3 +319,23 @@ Its source material slots 12/13/17 map to cache slots 15/16/20 in banks
 For course 1 close front captures, bodies 5/10/15 use grid slots 0/1/3.
 Live race palettes can produce liveries different from the reference PNGs;
 compare the same scenario before and after to verify preservation.
+
+## Early compact rivals
+
+The three non-selectable compact bodies use descriptive source names Compact
+A/B/C. Open `compacta-rival-early.blend`, `compactb-rival-early.blend`, or
+`compactc-rival-early.blend`. Scenes are `CompactA rival-early` and likewise
+B/C; export only `CompactA_rival_early_body` (or B/C) to the matching OBJ.
+These sources retain original references and packed textures, use the standard
+1.6-unit bevel, and reproduce the embedded meshes byte for byte.
+
+They replace parts 20/25/30 respectively in banks 88/90/92/96/98/100.
+Original wheel and far-body parts remain. Model slots 4/5 share A with two
+palette variants, 6/7 share B with two, and 8/9/10 share C with three.
+These slots are unchanged by the course permutation. The three texture-page
+14 palette families and page-10 details retain full native material metadata.
+Banks 96/98/100 have separate cache-slot mappings. Use
+`tests/scenarios/authored_compact_early.ini` to exercise all seven variants.
+
+Later compact sources require separate integration because geometry and UVs
+differ. Do not apply the early sources to other banks.

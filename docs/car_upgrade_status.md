@@ -533,5 +533,53 @@ respectively, alongside the player.
 Cache-mode checks also pass for all six banks
 (`esperanza-duplicate-cache-tests.log`, `esperanza-duplicate-cache-bank-*.log`).
 
+## Early compact rival integration, 2026-09-05
+
+Three descriptive compact source names cover the non-selectable early
+hatchbacks: Compact A/B/C replace parts 20/25/30 in banks
+88/90/92/96/98/100 with 1172/1092/1038 triangles. Original wheels and far
+bodies remain. Slots 4/5 share A with two palette variants, 6/7 share B
+with two, and 8/9/10 share C with three. Two cache-map layouts preserve
+the original page-10 details and page-14 palettes across the six banks.
+
+The full build and seven focused asset tests pass (`compact-early-build.log`,
+`compact-early-tests.log`). Saved Blender sources reproduce all three
+embedded meshes byte for byte. Inspected Blender front/rear comparisons
+are `compacta-early-blender-comparison.png`,
+`compactb-early-blender-comparison.png`, and
+`compactc-early-blender-comparison.png`.
+
+Release comparisons cover all seven model slots from the trackside camera:
+`compact-early-model{4,5,6,7,8,9,10}-track-comparison.png`. Additional chase
+pairs are `compact-early-model{4,6,8}-chase-comparison.png`. All ten pairs
+were inspected, originals on the left. They preserve the distinctive fronts,
+rear lamps, spoilers, liveries, and wheel placement without new visible gaps
+or missing surfaces in these views. The environment atlas issue remains.
+
+Late local CPU submission observations were 0.25–0.28 ms before versus
+0.32–0.34 ms after in chase. Trackside samples ranged 0.68–0.78 before
+versus 0.81–0.84 ms after. Captures overlapped some Blender work and these
+are limited CPU observations, not an isolated GPU/FPS benchmark.
+
+The six later compact sources have been authored and inspected in Blender
+only: `compact{a,b,c}-rival-{middle,late}.blend` and matching OBJ/MTL files
+are local drafts. Middle references come from bank 102 (`102_OVAL2_2ND_b3`),
+late from 94. Each A draft reports 1092 triangles, B/C 1106. Their
+`compact{a,b,c}-{middle,late}-blender-comparison.png` views were inspected.
+All six draft OBJs pass the C converter and their saved-source round trips
+produce byte-identical native files (`compact{a,b,c}-{middle,late}-draft.rmesh`
+and matching roundtrip files in the evidence directory).
+They still need native bounds/material validation, integration,
+live-game comparisons, and bank/transition/cache tests. Do not claim these
+later banks are upgraded yet. The nineteen other player variants and final
+fleet audit also remain incomplete.
+
+Both early-compact e2e tests pass (`compact-early-e2e.log`). The bank check
+places all seven palette variants and requires the player, Esperanza rivals,
+and all three compact bodies. The repeat-race check requires all three compact
+bodies and the player to load successfully.
+All six cache-mode bank checks pass (`compact-early-cache-tests.log`,
+`compact-early-cache-bank-*.log`).
+
 Keep original data and the unrelated `.claude/` and `imgui.ini` files.
 Commit verified stages locally; do not push or publish.

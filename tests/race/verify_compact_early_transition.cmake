@@ -1,0 +1,6 @@
+include("${CMAKE_CURRENT_LIST_DIR}/verify_authored_transition.cmake")
+foreach(rival "Compact B" "Compact C")
+    if(NOT trace MATCHES "authored ${rival} rival body installed asset=${RIVAL_ASSET}")
+        message(FATAL_ERROR "Transition missed ${rival}")
+    endif()
+endforeach()

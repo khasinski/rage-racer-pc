@@ -1274,6 +1274,18 @@ if(TARGET rage-racer-smoke)
             -DGRID=3,0,2,1,3,0,2,1,3,0,2 -DRIVAL_BODY_COUNT=4
             -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
     set_tests_properties(esperanza_first_class_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME compact_early_banks
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_compact_early_banks.cmake")
+    set_tests_properties(compact_early_banks PROPERTIES LABELS e2e TIMEOUT 550 RUN_SERIAL TRUE)
+    add_test(NAME compact_early_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence/compact-early"
+            -DCAR=3 -DCLASS=0 "-DNAME=Compact A" -DPLAYER_NAME=Esperanza -DPLAYER_ASSET=28 -DRIVAL_ASSET=88
+            -DGRID=4,5,6,7,8,9,10,4,6,8,0 -DRIVAL_BODY_COUNT=1
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_compact_early_transition.cmake")
+    set_tests_properties(compact_early_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
     add_test(
         NAME scenario_control
         COMMAND python3
