@@ -1,20 +1,20 @@
 #include "render/rmesh.h"
 #include <math.h>
 #include <stdio.h>
-#include "erriso_body.inc"
-#include "erriso_rival.inc"
-#include "abeille_body.inc"
-#include "abeille_rival.inc"
+#include "port/modern/authored_car_data.h"
 #define CHECK(x) do { if (!(x)) { fprintf(stderr,"line %d: %s\n",__LINE__,#x); return 1; } } while(0)
-static int Validate(const void *bytes,size_t size,int rival,int abeille) {
+static int Validate(const void *bytes,size_t size,int rival,int model) {
     RageRuntimeMesh mesh;
     RageRuntimeVertex v;
     uint32_t i,material=0;
     /* Retail body bounds plus four model units for narrow panel bevels. */
     float low[3]={-126,-23,-81}, high[3]={126,143,360};
-    if(abeille) {
+    if(model==1) {
         low[0]=-147; low[1]=-43; low[2]=-73;
         high[0]=147; high[1]=142; high[2]=436;
+    } else if(model==2) {
+        low[0]=-140; low[1]=-23; low[2]=-95;
+        high[0]=140; high[1]=118; high[2]=413;
     }
     CHECK(RuntimeMeshOpen(&mesh,bytes,size));
     CHECK(mesh.meshCount==1 && mesh.indexCount>228*3 && mesh.indexCount<20000*3);
@@ -23,11 +23,13 @@ static int Validate(const void *bytes,size_t size,int rival,int abeille) {
         CHECK(RuntimeMeshIndex(&mesh,i,&index) && RuntimeMeshVertex(&mesh,index,&v));
         for(axis=0;axis<3;axis++) CHECK(v.position[axis]>=low[axis] && v.position[axis]<=high[axis]);
         CHECK(v.color[3]==255);
+        CHECK(isfinite(v.uv[0]) && isfinite(v.uv[1]));
         CHECK(v.normal[0]*v.normal[0]+v.normal[1]*v.normal[1]+v.normal[2]*v.normal[2]>0.9f);
         slot=v.material & RAGE_RUNTIME_MATERIAL_INDEX_MASK;
-        CHECK(slot==65535 || (rival ? (abeille ?
+        CHECK(slot==65535 || (rival ? (model==2 ?
+            (slot==0 || slot==13 || slot==14 || slot==15 || slot==20) : (model==1 ?
             (slot==0 || slot==11 || slot==12 || slot==17) :
-            (slot==0 || slot==13 || slot==14 || slot==19)) : slot<(abeille?12u:10u)));
+            (slot==0 || slot==13 || slot==14 || slot==19))) : slot<(model==2?14u:(model==1?12u:10u))));
         if(i%3==0) material=v.material;
         else CHECK(v.material==material);
     }
@@ -56,12 +58,78 @@ static int ValidateAbeillePanelColorSeam(void) {
     return 0;
 }
 
+static int ValidateRegistry(void) {
+    size_t i,j,k;
+    int standard=0, alternate=0;
+    for(i=0;i<RAGE_AUTHORED_CAR_COUNT;i++) {
+        const AuthoredCarReplacement *car=&s_authoredCars[i];
+        RageRuntimeMesh mesh;
+        CHECK(RuntimeMeshOpen(&mesh,car->bytes,car->byteCount));
+        for(j=0;j<car->materialCount;j++) {
+            const AuthoredCarMaterial *m=&car->materials[j];
+            CHECK(m->source<64 && m->cacheSlot<64);
+            for(k=0;k<j;k++) CHECK(car->materials[k].source!=m->source);
+            if(car->assetKey==112 && m->source==13) {
+                CHECK(m->cacheSlot==13 && m->page==12 && m->clut==0x78c7);
+                standard=1;
+            }
+            if(car->assetKey==94 && m->source==13) {
+                CHECK(m->cacheSlot==12 && m->page==12 && m->clut==0x78c7);
+                alternate=1;
+            }
+        }
+        for(j=0;j<mesh.vertexCount;j++) {
+            RageRuntimeVertex v;
+            uint32_t slot;
+            CHECK(RuntimeMeshVertex(&mesh,(uint32_t)j,&v));
+            slot=v.material & RAGE_RUNTIME_MATERIAL_INDEX_MASK;
+            if(slot==65535) continue;
+            for(k=0;k<car->materialCount;k++) if(car->materials[k].source==slot) break;
+            CHECK(k<car->materialCount);
+        }
+        for(j=0;j<i;j++) CHECK(car->assetKey!=s_authoredCars[j].assetKey ||
+            car->assetSet!=s_authoredCars[j].assetSet || car->submesh!=s_authoredCars[j].submesh);
+    }
+    CHECK(standard && alternate);
+    return 0;
+}
+
+static int ValidatePegaseHoodDecal(void) {
+    RageRuntimeMesh mesh;
+    RageRuntimeVertex v;
+    uint32_t i, count=0, corners=0;
+    CHECK(RuntimeMeshOpen(&mesh,s_pegase_body,sizeof(s_pegase_body)));
+    for(i=0;i<mesh.vertexCount;i++) {
+        CHECK(RuntimeMeshVertex(&mesh,i,&v));
+        if(v.material!=552271874u) continue;
+        count++;
+        CHECK(fabsf(fabsf(v.position[0])-44.0f)<0.001f);
+        if(fabsf(v.position[2]-224.0f)<0.001f) {
+            CHECK(fabsf(v.position[1]-56.0f)<0.001f);
+            CHECK(fabsf(v.uv[0]-(v.position[0]>0?0.494140625f:0.251953125f))<0.00001f);
+            CHECK(fabsf(v.uv[1]-0.189453125f)<0.00001f);
+            corners|=v.position[0]>0?1u:2u;
+        } else {
+            CHECK(fabsf(v.position[2]-309.0f)<0.001f && fabsf(v.position[1]-51.0f)<0.001f);
+            CHECK(fabsf(v.uv[0]-(v.position[0]>0?0.498046875f:0.251953125f))<0.00001f);
+            CHECK(fabsf(v.uv[1]-0.435546875f)<0.00001f);
+            corners|=v.position[0]>0?4u:8u;
+        }
+    }
+    CHECK(count==6 && corners==15);
+    return 0;
+}
+
 int main(void) {
     CHECK(Validate(s_errisoBody,sizeof(s_errisoBody),0,0)==0);
     CHECK(Validate(s_errisoRivalBody,sizeof(s_errisoRivalBody),1,0)==0);
     CHECK(Validate(s_abeille_body,sizeof(s_abeille_body),0,1)==0);
     CHECK(Validate(s_abeille_rival,sizeof(s_abeille_rival),1,1)==0);
+    CHECK(Validate(s_pegase_body,sizeof(s_pegase_body),0,2)==0);
+    CHECK(Validate(s_pegase_rival,sizeof(s_pegase_rival),1,2)==0);
     CHECK(ValidateAbeillePanelColorSeam()==0);
-    puts("authored Erriso/Abeille player and rival geometry, scale, normals and materials valid");
+    CHECK(ValidateRegistry()==0);
+    CHECK(ValidatePegaseHoodDecal()==0);
+    puts("authored Erriso/Abeille/Pegase player and rival geometry, scale, normals and materials valid");
     return 0;
 }

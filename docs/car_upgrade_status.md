@@ -1,6 +1,6 @@
 # Car upgrade work in progress
 
-Goal remains `goal.md`. Base Erriso and Abeille player bodies and their rival
+Goal remains `goal.md`. Base Erriso, Abeille, and Pegase player bodies and their rival
 representations are integrated. Other player grades and cars retain their
 original geometry; the full set is still in progress.
 
@@ -113,6 +113,52 @@ Smoke `capture.path` images read the compatibility framebuffer; they are not
 evidence of modern geometry even when authored-bank loading appears in the
 log. In particular, `abeille-lookbehind-*` and `abeille-course*-probe` images
 only helped locate cameras. Use the release executable for modern screenshots.
+
+## Pegase integration, 2026-09-05
+
+Player bank 24 uses 2559 triangles. Rival body 10 uses 2182 triangles in nine
+banks: 94, 112, 114, 116, 118, 120, 122, 124, and 126. Original rival far body
+14 and wheel submeshes remain. Source files `pegase.blend` and
+`pegase-rival.blend` each re-exported to byte-identical native meshes during
+the saved-source round trip check.
+
+Construction preserves original triangle identity through the bevel using
+the `RetailFace` attribute. UV projection excludes zero-area source triangles
+and stays within the original panel, fixing the first experiment's stretched
+hood logo and non-finite UVs. The original hood decal's positions, UVs, and
+full material word are covered by an embedded-asset test. Blender's coplanar
+decal preview differs from the native renderer's depth treatment.
+
+The renderer now uses an explicit replacement table with texture identities
+and per-bank cache slots. This handles Pegase's two different cached-material
+orderings and permits multiple authored bodies in a shared bank. A sequential
+replacement test confirms adding another body preserves the first one's
+indices and material metadata.
+
+Full build and 7 focused asset tests pass (`pegase-final-build.log`,
+`pegase-tests.log`). All six registered car e2e checks pass after the table
+change (`pegase-e2e.log`), covering all three cars' bank loading and repeat-race
+transitions. This extends the earlier 375-test full regression run.
+Additional cache-mode bank checks pass for 94, 112, and 120
+(`pegase-cache-tests.log` and `pegase-cache-bank-*.log`), covering both cached
+material orderings. `pegase-cache-track-0.png` / `pegase-cache-track-1.png`
+verify the alternate ordering on bank 122 visually, including its blue/yellow
+rival livery. These cached views do not show the atlas imagery seen in the
+earlier frozen live-import views, a useful lead for later environment work.
+
+Inspected Blender references are `pegase-{player,rival}-{front,rear}-before.png`
+and final `pegase-{player,rival}-{front,rear}-refined.png`. The earlier
+`*-after.png` files show the rejected first projection experiment.
+Live release comparisons are `pegase-chase-0.png` / `pegase-chase-1.png` and
+`pegase-track-0.png` / `pegase-track-1.png`. The latter shows a close red rival
+and the yellow player from the front, including the original wheels and
+exposed front fenders. No new visible gaps or culling failures were observed
+in these views. The existing custom-start environment atlas issue remains.
+
+Late CPU submission samples were 0.25–0.26 ms before versus about 0.43 ms
+after in chase, and about 0.75 versus 0.92–0.95 ms trackside. These are local
+CPU samples, not an isolated GPU/FPS benchmark. Other player grades and the
+remaining cars still need work; overall acceptance remains open.
 
 Keep original data and the unrelated `.claude/` and `imgui.ini` files.
 Commit verified stages locally; do not push or publish.

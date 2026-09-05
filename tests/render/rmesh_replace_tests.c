@@ -37,6 +37,23 @@ int main(void) {
         CHECK(RuntimeMeshVertex(&result,3+i,&v) && v.material==0x20ef0007u);
     }
     CHECK(!memcmp(result.bytes+result.verticesOffset,baseBytes+36,120));
+    {
+        uint32_t nextMap[1]={9}, previousIndex;
+        RageRuntimeMesh combined;
+        void *nextBytes=RuntimeMeshReplace(&result,1,&replacement,nextMap,1,&size);
+        CHECK(nextBytes && RuntimeMeshOpen(&combined,nextBytes,size));
+        CHECK(combined.meshCount==2 && combined.indexCount==12);
+        /* Adding another authored car to a shared bank must preserve the
+         * first replacement and its already-resolved material metadata. */
+        for(i=0;i<6;i++) {
+            CHECK(RuntimeMeshIndex(&result,i,&previousIndex));
+            CHECK(RuntimeMeshIndex(&combined,i,&index) && index==previousIndex);
+            CHECK(RuntimeMeshVertex(&combined,index,&v) && v.material==0x20ef0007u);
+            CHECK(RuntimeMeshIndex(&combined,i+6,&index));
+            CHECK(RuntimeMeshVertex(&combined,index,&v) && v.material==0x20ef0009u);
+        }
+        free(nextBytes);
+    }
     free(bytes);
     CHECK(!RuntimeMeshReplace(&base,2,&replacement,map,1,&size) && size==0);
     CHECK(!RuntimeMeshReplace(&base,0,&replacement,map,0,&size));

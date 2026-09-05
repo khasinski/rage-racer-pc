@@ -97,3 +97,28 @@ assuming a different camera number always provides a different angle.
 Use the release executable for modern screenshots. The smoke executable's
 `capture.path` reads the compatibility framebuffer, although its execution
 and asset-loading logs remain useful for regression checks.
+
+## Integrated Pegase source
+
+Open `assets/cars/pegase.blend`, scene `Pegase player`, and export only
+`Pegase_player_body` to `assets/cars/pegase-body.obj`. For the rival, open
+`pegase-rival.blend`, scene `Pegase rival`, and export `Pegase_rival_body` to
+`pegase-rival.obj`. The settings above and the normal CMake build apply.
+The final bodies are baked; original and bevel-source objects remain hidden.
+
+The bevel source retains an integer FACE attribute, `RetailFace`, identifying
+each original triangle. UVs and normals are projected from that triangle,
+excluding zero-area source triangles. Keeping face identity avoids crossing
+an atlas seam even when adjacent triangles use the same material. Vertices
+are split at color seams before exporting POINT colors, as for Abeille.
+The hood decal retains its original two triangles and material metadata;
+its coplanar appearance in Blender does not reproduce the native renderer's
+depth treatment. The embedded-asset test verifies its positions and UVs.
+
+Player bank 24 and rival body 10 in banks 94 and 112–126 (even IDs) are
+replaced. Banks 94 and 120–126 use a different prebuilt material ordering
+from banks 112–118. `authored_car_data.h` records both mappings; live import
+resolves texture-page/palette identities. Original wheels and far body 14
+remain. `authored_pegase.ini` uses class 3, course 0, rival slot 2.
+For a close front rival view, use course 1, rival grid slots all 1, camera 2,
+and `start.rival_track_points=119`.
