@@ -58,6 +58,7 @@ static size_t s_uploadSizes[5];
 static s32 s_validationCount;
 static s32 s_validationFailureAt = -1;
 static void *s_teamLogoSource;
+static s32 s_shadowUploadCount;
 static s32 s_textureResetCalls;
 static s32 s_trackIdentity;
 static s32 s_trackIdentityInvalidations;
@@ -128,7 +129,10 @@ s32 IsValidImageEntry(const GameImageEntryHeader *entry, size_t size) {
     (void)size;
     return index != s_validationFailureAt;
 }
-void StoreTeamLogoImage(void *source) { s_teamLogoSource = source; }
+void StoreTeamLogoImage(void *source) {
+    s_teamLogoSource = source;
+    s_shadowUploadCount = s_uploadCount;
+}
 void ResetTrackTextureSwap(void) { s_textureResetCalls++; }
 void TrackAssetIdentitySet(s32 assetIndex) { s_trackIdentity = assetIndex; }
 void TrackAssetIdentityInvalidate(void) { s_trackIdentityInvalidations++; }
@@ -755,6 +759,8 @@ static void TestResidentCourseInstallation(void) {
                   sizeof(storage) - TRACK_TEXTURE_SHADOW_SIZE,
           "course uploader bounds every image sub-block");
     Check(s_teamLogoSource == storage, "resident course stores team logo");
+    Check(s_shadowUploadCount == 4,
+          "shadow captures the first bank before deferred textures overwrite VRAM");
     Check(g_TrackTextureShadow == (TrackTextureShadowRow *)(void *)storage,
           "resident course installs texture shadow");
     Check(g_AssetLoadCursor == storage + TRACK_TEXTURE_SHADOW_SIZE,
@@ -773,7 +779,8 @@ static void TestResidentCourseInstallation(void) {
         g_AssetLoadCursor = NULL;
         Check(InstallTrackTextureAssetPack(g_AssetBase, sizeof(storage)) == 0,
               "failed texture upload rejects the course pack");
-        Check(s_uploadCount == i + 1 && s_teamLogoSource == NULL &&
+        Check(s_uploadCount == i + 1 &&
+                  s_teamLogoSource == (i == 4 ? storage : NULL) &&
                   s_textureResetCalls == 0 &&
                   s_trackIdentityInvalidations == 0 &&
                   g_TrackTextureShadow == NULL && g_AssetLoadCursor == NULL,

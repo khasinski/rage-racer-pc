@@ -549,6 +549,24 @@ static void test_native_draw_builder_preserves_dynamic_terrain_material_flags(vo
               spans[0].materialFlags);
     EXPECT_EQ(0, spans[0].depthDecal);
     EXPECT_EQ(-4, (int)vertices[0].depthBias);
+    /* Both texture banks must retain their identity across lighting changes.
+     * Only environment-sensitive faces may select the adjacent CLUT. */
+    for (unsigned dynamic = 0; dynamic < 2; dynamic++) {
+        for (i = 0; i < 3; i++)
+            write_u32(bytes + 32 + i * 40 + 36,
+                      RAGE_RUNTIME_MATERIAL_METADATA | 4u |
+                      (dynamic ? RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT : 0));
+        for (unsigned variant = 0; variant < 4; variant++) {
+            storage[0].materialVariant = (uint8_t)variant;
+            EXPECT_EQ(3, RenderBuildNativeDraws(
+                &world, 1.0f, test_mesh_lookup, &mesh,
+                vertices, 3, spans, 1, &spanCount));
+            EXPECT_EQ(1, spanCount);
+            EXPECT_EQ(dynamic ? variant : (variant & 2u),
+                      spans[0].materialVariant);
+            EXPECT_EQ(4, spans[0].material);
+        }
+    }
 }
 
 static void test_native_draw_builder_makes_road_paint_real_geometry(void) {

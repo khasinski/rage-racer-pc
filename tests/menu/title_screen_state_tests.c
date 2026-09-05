@@ -35,6 +35,8 @@ static s32 s_lastSinAngle;
 static s32 s_reverbCalls;
 static s32 s_setupCalls;
 static s32 s_soundCue;
+static s32 s_textureResetCalls;
+static s32 s_textureResetBeforeUpload;
 
 void SetupDisplay240(s32 r, s32 g, s32 b) {
     (void)r;
@@ -46,7 +48,11 @@ void SetDispMask(s32 enabled) {
     (void)enabled;
     s_displayMaskCalls++;
 }
-void UploadLoadBufferImage(void) { s_imageUploadCalls++; }
+void ResetTrackTextureSwap(void) { s_textureResetCalls++; }
+void UploadLoadBufferImage(void) {
+    s_textureResetBeforeUpload = s_textureResetCalls;
+    s_imageUploadCalls++;
+}
 void RefreshClassWinState(void) { s_classRefreshCalls++; }
 void SetDefaultReverbDepth(void) { s_reverbCalls++; }
 void StartCdVolumeFade(s32 frames) {
@@ -110,6 +116,8 @@ static void ResetCalls(void) {
     s_reverbCalls = 0;
     s_setupCalls = 0;
     s_soundCue = 0;
+    s_textureResetCalls = 0;
+    s_textureResetBeforeUpload = 0;
 }
 
 int main(void) {
@@ -118,6 +126,7 @@ int main(void) {
     EnterTitleScreen();
     CHECK(s_setupCalls == 1 && s_displayMaskCalls == 1 &&
           s_imageUploadCalls == 1);
+    CHECK(s_textureResetCalls == 1 && s_textureResetBeforeUpload == 1);
     CHECK(g_TitleFadeLevel == 0 && g_TitleAttractTimer == 0 &&
           g_TitleExitTimer == 30);
     CHECK(g_FrontendState == FRONTEND_STATE_TITLE && g_SceneId == 4 &&
@@ -129,6 +138,7 @@ int main(void) {
     EnterTitleScreen();
     CHECK(s_setupCalls == 1 && s_displayMaskCalls == 0 &&
           s_imageUploadCalls == 0);
+    CHECK(s_textureResetCalls == 1);
     CHECK(g_TitleFadeLevel == 253 && g_TitleAttractTimer == 400 &&
           g_TitleExitTimer == 0);
     CHECK(s_lastFadeBrightness == 255);

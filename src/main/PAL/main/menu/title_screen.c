@@ -17,6 +17,9 @@ enum {
 };
 
 void EnterTitleScreen(void) {
+    /* A demo can leave a partial track-page swap pending. Cancel it before
+     * title textures occupy the same VRAM rows. */
+    ResetTrackTextureSwap();
     SetupDisplay240(0, 0, 0);
     if (g_StreamReturnScene != 0) {
         g_TitleFadeLevel = TITLE_RETURN_FADE;

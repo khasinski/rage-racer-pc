@@ -98,16 +98,22 @@ s32 InstallTrackTextureAssetPack(u8 *base, size_t size) {
         !UploadImageAsset(
             GetImageAssetHeaderWords(
                 view.blocks[TRACK_TEXTURE_ACTIVE_IMAGES]),
-            view.sizes[TRACK_TEXTURE_ACTIVE_IMAGES]) ||
-        !UploadImageAsset(
+            view.sizes[TRACK_TEXTURE_ACTIVE_IMAGES])) {
+        ClearTrackTextureAssetPack();
+        return 0;
+    }
+
+    /* Preserve the first page before the deferred images replace it in
+     * VRAM. The shadow and resident page must contain opposite banks for
+     * the section-driven row swaps to work. */
+    StoreTeamLogoImage(base);
+    if (!UploadImageAsset(
             GetImageAssetHeaderWords(
                 view.blocks[TRACK_TEXTURE_DEFERRED_IMAGES]),
             view.sizes[TRACK_TEXTURE_DEFERRED_IMAGES])) {
         ClearTrackTextureAssetPack();
         return 0;
     }
-
-    StoreTeamLogoImage(base);
     g_TrackTextureShadow = GetTrackTextureShadowRows(base);
     ResetTrackTextureSwap();
     g_AssetLoadCursor = base + TRACK_TEXTURE_SHADOW_SIZE;

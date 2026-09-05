@@ -501,6 +501,7 @@ static uint32_t RenderBuildNativeDrawsFiltered(
             RageNativeDrawVertex triangle[3];
             uint32_t materials[3], materialFlags[3], indices[3];
             uint8_t depthDecals[3];
+            uint8_t materialVariant;
             uint32_t corner;
             int valid = 1;
             if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
@@ -542,6 +543,13 @@ static uint32_t RenderBuildNativeDrawsFiltered(
             }
             if ((instance->flags & RAGE_RENDER_INSTANCE_CULL_BACKFACES) != 0 &&
                 TriangleIsBackFacing(world, triangle)) continue;
+            materialVariant = instance->materialVariant;
+            /* Only terrain modes 0/1 select CLUT+1 from environment mode 4.
+             * Modes 2..5 already encode their fixed CLUT in the import.
+             * Keep the track-page bit while removing that extra CLUT shift. */
+            if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN &&
+                (materialFlags[0] & RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT) == 0)
+                materialVariant &= (uint8_t)~1u;
             if (spansUsed == 0 || spans[spansUsed - 1].material != materials[0] ||
                 spans[spansUsed - 1].materialFlags != materialFlags[0] ||
                 spans[spansUsed - 1].depthDecal != depthDecals[0] ||
@@ -550,7 +558,7 @@ static uint32_t RenderBuildNativeDrawsFiltered(
                 spans[spansUsed - 1].mesh != instance->mesh ||
                 spans[spansUsed - 1].sourceEntity != instance->entity ||
                 spans[spansUsed - 1].instanceFlags != instance->flags ||
-                spans[spansUsed - 1].materialVariant != instance->materialVariant ||
+                spans[spansUsed - 1].materialVariant != materialVariant ||
                 spans[spansUsed - 1].hasCarPaint != instance->hasCarPaint ||
                 spans[spansUsed - 1].carPaintColor1 != instance->carPaintColor1 ||
                 spans[spansUsed - 1].carPaintColor2 != instance->carPaintColor2 ||
@@ -570,7 +578,7 @@ static uint32_t RenderBuildNativeDrawsFiltered(
                 spans[spansUsed].material = materials[0];
                 spans[spansUsed].materialFlags = materialFlags[0];
                 spans[spansUsed].depthDecal = depthDecals[0];
-                spans[spansUsed].materialVariant = instance->materialVariant;
+                spans[spansUsed].materialVariant = materialVariant;
                 spans[spansUsed].hasCarPaint = instance->hasCarPaint;
                 spans[spansUsed].carPaintColor1 = instance->carPaintColor1;
                 spans[spansUsed].carPaintColor2 = instance->carPaintColor2;
