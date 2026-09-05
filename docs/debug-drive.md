@@ -125,3 +125,39 @@ For a manual launch, equivalent opt-in keys are `autopilot.enabled`, `.speed`,
 `.renderdoc_limit`, `.marker_frame`, `.marker_every`, `.marker_limit`. Enable
 `diagnostics.marker_capture` as well. Keep capture/validation runs separate from
 baseline runs when checking whether instrumentation changes a timing-sensitive bug.
+
+### Sampled VRAM evidence
+
+Modern 3D markers are captured after the indicated snapshot's render submission.
+Alongside the existing `marker-N-vram.raw` current 16-bit compatibility readback,
+`marker-N-vram-sampled.rgba` stores the GPU texture actually sampled by the modern
+overlay renderer. It is headerless 1024×512 RGBA8 (2,097,152 bytes), not another
+16-bit raw dump. The info file records `sampledVram frame=... matchesScene=...`.
+A missing or mismatched sampled texture is reported instead of saving it under
+the new scene's frame. Passthrough/menu frames need not have a modern texture.
+
+This distinguishes the sampled resource from subsequent VRAM changes; it does
+not make the world snapshot a standalone replay bundle. Native meshes/materials
+and packet-renderer replay remain separate dependencies. Four-frame M bursts add
+8 MiB of sampled-VRAM data, so keep markers disabled for baseline profiling.
+
+On Linux, build `rage-racer-smoke` and run
+`SDL_VIDEODRIVER=offscreen ctest --test-dir build -R '^sampled_vram_marker' --output-on-failure`
+to exercise marker association with logic, 60 FPS and vsync settings. Supply
+`RAGE_PORT_DISC_CUE` if the PAL image is not at the repository's default path.
+These tests use dummy audio and isolated XDG state directories.
+# Retained importer texture generations
+
+With marker history enabled, each history slot retains the already-captured
+importer texture generation matching the native GPU cache revision. Overwriting
+a slot or destroying history releases its reference. M writes
+`ring-XX-fFRAME-gGEN-bankN.raw`: bank -1 is the unmodified CPU snapshot, banks
+0/1 are reconstructed track pages in complete VRAM images. Each file contains
+1024x512 native-endian uint16 words (1 MiB); a full 16-slot dump adds 48 MiB.
+References share storage within a generation rather than copying it per slot.
+
+These are importer inputs, not the GPU overlay's sampled RGBA texture, decoded
+material images, or a self-contained replay bundle. Missing/mismatched importer
+generations are not replaced by reading current VRAM. File-provider sessions
+do not provide these importer generations. Cross-generation retention is unit
+tested; the history integration test currently captures one PAL race generation.

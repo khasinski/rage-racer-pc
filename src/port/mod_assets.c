@@ -1,10 +1,12 @@
 #include <stdio.h>
+#include <errno.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "archive_index.h"
 #include "mod_assets.h"
+#include "render/mod_manifest.h"
 #include "texture_patch.h"
 #include "runtime_config.h"
 
@@ -21,8 +23,66 @@
  */
 
 static const char *s_directory;
+static char s_directoryStorage[1024];
+static RageModManifest s_manifest;
+static int s_manifestReady;
 static int s_legacyLayout;
 static int s_initialized;
+static int s_announced[RAGE_ARCHIVE_INDEX_ENTRY_COUNT];
+
+void ModAssetsShutdown(void) {
+    s_directory = NULL;
+    memset(s_directoryStorage, 0, sizeof(s_directoryStorage));
+    memset(&s_manifest, 0, sizeof(s_manifest));
+    memset(s_announced, 0, sizeof(s_announced));
+    s_manifestReady = 0;
+    s_legacyLayout = 0;
+    s_initialized = 0;
+}
+
+/* Missing manifests retain legacy-only compatibility. Any other read/parse
+ * failure disables the entire directory, before either provider can use it. */
+static int ModAssetsReadManifest(void) {
+    char path[1100];
+    snprintf(path, sizeof(path), "%s/mod.toml", s_directory);
+    FILE *file = fopen(path, "rb");
+    if (file == NULL) {
+        if (errno == ENOENT) return 1;
+        fprintf(stderr, "rage-port: cannot open mod manifest %s; mod disabled\n", path);
+        return 0;
+    }
+    long size = -1;
+    if (fseek(file, 0, SEEK_END) == 0) size = ftell(file);
+    /* More than the maximum meaningful content in the bounded schema. */
+    if (size < 0 || size > 2 * 1024 * 1024 || fseek(file, 0, SEEK_SET) != 0) {
+        fclose(file);
+        fprintf(stderr, "rage-port: invalid mod manifest size %s; mod disabled\n", path);
+        return 0;
+    }
+    char *bytes = malloc((size_t)size + 1);
+    if (bytes == NULL) {
+        fclose(file);
+        fprintf(stderr, "rage-port: cannot allocate mod manifest %s; mod disabled\n", path);
+        return 0;
+    }
+    size_t readSize = fread(bytes, 1, (size_t)size, file);
+    int readFailed = ferror(file);
+    int closeFailed = fclose(file) != 0;
+    if (readSize != (size_t)size || readFailed || closeFailed) {
+        free(bytes);
+        fprintf(stderr, "rage-port: cannot read mod manifest %s; mod disabled\n", path);
+        return 0;
+    }
+    int valid = ModManifestParse(bytes, (size_t)size, &s_manifest);
+    free(bytes);
+    if (!valid) {
+        fprintf(stderr, "rage-port: mod manifest %s:%zu: %s; mod disabled\n",
+                path, s_manifest.errorLine, ModManifestErrorString(s_manifest.error));
+        return 0;
+    }
+    s_manifestReady = 1;
+    return 1;
+}
 
 static void ModAssetsInit(void) {
     char probe[1024];
@@ -34,6 +94,17 @@ static void ModAssetsInit(void) {
     s_directory = RuntimeConfigGet("mods.directory");
     if (s_directory != NULL && s_directory[0] == '\0') s_directory = NULL;
     if (s_directory == NULL) return;
+    if (strlen(s_directory) >= sizeof(s_directoryStorage)) {
+        fprintf(stderr, "rage-port: mods.directory path is too long\n");
+        s_directory = NULL;
+        return;
+    }
+    strcpy(s_directoryStorage, s_directory);
+    s_directory = s_directoryStorage;
+    if (!ModAssetsReadManifest()) {
+        s_directory = NULL;
+        return;
+    }
     /* Say plainly when the directory is not the shape rage-extract writes,
      * rather than silently playing the disc and leaving a modder to wonder
      * why nothing changed. */
@@ -59,6 +130,11 @@ static void ModAssetsInit(void) {
 const char *ModAssetsDirectory(void) {
     ModAssetsInit();
     return s_directory;
+}
+
+const RageModManifest *ModAssetsManifest(void) {
+    ModAssetsInit();
+    return s_directory != NULL && s_manifestReady ? &s_manifest : NULL;
 }
 
 static FILE *ModOpen(int index, long *size) {
@@ -127,9 +203,8 @@ int ModAssetLoad(int index, void *destination, unsigned int originalSize) {
     memcpy(destination, replacement, (size_t)size);
     free(replacement);
     if ((unsigned int)size != originalSize) {
-        static int announced[RAGE_ARCHIVE_INDEX_ENTRY_COUNT];
-        if (!announced[index]) {
-            announced[index] = 1;
+        if (!s_announced[index]) {
+            s_announced[index] = 1;
             fprintf(stderr, "rage-port: asset %d overridden, %u -> %ld bytes\n",
                     index, originalSize, size);
         }

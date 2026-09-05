@@ -1,4 +1,5 @@
 #include "disc_stream_table.h"
+#include "content/region_profile.h"
 
 #include <limits.h>
 #include <stdlib.h>
@@ -123,16 +124,7 @@ static int ParseBootName(const unsigned char *cnf, unsigned int size,
 }
 
 const char *DiscRegionForBootName(const char *boot) {
-    if (boot == NULL) return "unknown";
-    if (strncasecmp(boot, "SCES", 4) == 0 || strncasecmp(boot, "SLES", 4) == 0 ||
-        strncasecmp(boot, "SCED", 4) == 0)
-        return "PAL";
-    if (strncasecmp(boot, "SCUS", 4) == 0 || strncasecmp(boot, "SLUS", 4) == 0)
-        return "NTSC-U";
-    if (strncasecmp(boot, "SCPS", 4) == 0 || strncasecmp(boot, "SLPS", 4) == 0 ||
-        strncasecmp(boot, "SLPM", 4) == 0 || strncasecmp(boot, "SCPM", 4) == 0)
-        return "NTSC-J";
-    return "unknown";
+    return RageRegionByBootName(boot)->name;
 }
 
 /* Walks RAGE.STR's chunk headers looking for the eleven movies.  The file has

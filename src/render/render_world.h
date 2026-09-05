@@ -9,6 +9,7 @@
  */
 
 #include <stdint.h>
+#include "sky_layout.h"
 
 typedef struct RageRenderVec3 {
     float x, y, z;
@@ -52,6 +53,10 @@ typedef struct RageRenderCamera {
      * from the course's own camera script, so cloud is a property of the
      * course rather than of the renderer. */
     uint32_t skyCloudRow;
+    /* Discrete copied source layout. Zero flag preserves legacy captures that
+     * did not include this state; newly produced game cameras always set it. */
+    RageSkyPanoramaLayout skyLayout;
+    uint8_t hasSkyLayout;
     /* The retail cloud layer is screen-space geometry. These three vectors
      * preserve its measured origin and two tile axes for native backends. */
     RageRenderVec3 skyGridOrigin;

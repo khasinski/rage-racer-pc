@@ -132,8 +132,13 @@ void RenderInterpolateCamera(const RageRenderCamera *previous,
     /* Texture identities and authored sheet rows are discrete scene state;
      * both switch together instead of being numerically interpolated. */
     out->skyCloudRow = current->skyCloudRow;
+    out->skyLayout = current->skyLayout;
+    out->hasSkyLayout = current->hasSkyLayout;
     if (previous->skyCloudRow != current->skyCloudRow ||
-        previous->skyAssetKey != current->skyAssetKey) {
+        previous->skyAssetKey != current->skyAssetKey ||
+        previous->hasSkyLayout != current->hasSkyLayout ||
+        memcmp(&previous->skyLayout, &current->skyLayout,
+               sizeof(current->skyLayout)) != 0) {
         out->skyGridOrigin = current->skyGridOrigin;
         out->skyGridColumn = current->skyGridColumn;
         out->skyGridRow = current->skyGridRow;

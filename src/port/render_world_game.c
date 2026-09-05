@@ -1,6 +1,7 @@
 #include "rage/render_world_game.h"
 
 #include "course_coordinate.h"
+#include "sky_panorama_layout.h"
 
 #include <math.h>
 #include <string.h>
@@ -352,6 +353,8 @@ static RageRenderCamera GameRenderWorldBuildCamera(
     GameRenderWorldEnvironmentColor(ENV_SKY_BOTTOM, &camera.skyBottomColor);
     camera.skyAssetKey = TrackDataAssetKey();
     camera.skyCloudRow = (uint32_t)g_SkyRowBase;
+    RageSkyCapturePanoramaLayout(&camera.skyLayout, g_SkyTileMap, g_SkyRowBase);
+    camera.hasSkyLayout = 1;
     if (s_haveSkyGrid[rearFacing != 0]) {
         skyGrid = s_skyGrid[rearFacing != 0];
     } else {

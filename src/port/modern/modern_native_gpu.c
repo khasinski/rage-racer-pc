@@ -108,8 +108,7 @@ static SDL_GPUGraphicsPipeline *s_colorOpaqueDecal;
 static SDL_GPUGraphicsPipeline *s_sky;
 static SDL_GPUTexture *s_skyTexture;
 static SDL_GPUSampler *s_skySampler;
-static uint32_t s_skyAssetKey = UINT32_MAX;
-static uint32_t s_skyCloudRow = UINT32_MAX;
+static RageSkyTextureIdentity s_skyIdentity;
 static int s_skyHasPanorama;
 static uint32_t s_skyRetryFrames;
 static SDL_GPUGraphicsPipeline *s_shadowDepth;
@@ -677,15 +676,17 @@ static void ModernNativeReleaseSkyTexture(void) {
             SDL_ReleaseGPUTexture(s_device, s_skyTexture);
     }
     s_skyTexture = NULL;
-    s_skyAssetKey = UINT32_MAX;
-    s_skyCloudRow = UINT32_MAX;
+    memset(&s_skyIdentity, 0, sizeof(s_skyIdentity));
     s_skyHasPanorama = 0;
     s_skyRetryFrames = 0;
 }
 
 static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
-                                        uint32_t assetKey,
-                                        uint32_t cloudRow) {
+                                        const RageRenderCamera *camera) {
+    uint32_t assetKey = camera->skyAssetKey, cloudRow = camera->skyCloudRow;
+    const RageSkyTextureIdentity identity = {
+        assetKey, cloudRow, camera->skyLayout, camera->hasSkyLayout
+    };
     static const uint8_t transparent[4] = {0, 0, 0, 0};
     ModernAssetImage image = {0};
     SDL_GPUTextureCreateInfo texture = {0};
@@ -699,8 +700,7 @@ static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
     uint32_t width = 1, height = 1;
     void *mapped;
     int loaded;
-    if (s_skyTexture != NULL && s_skyAssetKey == assetKey &&
-        s_skyCloudRow == cloudRow) {
+    if (s_skyTexture != NULL && RenderSkyTextureIdentityEqual(&s_skyIdentity, &identity)) {
         /* The first native present can occur while the game's sky atlas is
          * still being uploaded to VRAM. Do not retain that blank import for
          * the rest of the course: keep the gradient briefly, then retry. */
@@ -711,7 +711,8 @@ static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
         }
     }
     ModernNativeReleaseSkyTexture();
-    loaded = ModernAssetsLoadSkyImage(assetKey, &image);
+    loaded = ModernAssetsLoadSkyImage(assetKey,
+        camera->hasSkyLayout ? &camera->skyLayout : NULL, &image);
     if (loaded) {
         pixels = image.pixels;
         size = image.size;
@@ -764,8 +765,7 @@ static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
      * has finished with them. The upload staging copy is never used again,
      * so keeping one beside every resident texture only doubles memory use. */
     SDL_ReleaseGPUTransferBuffer(s_device, upload);
-    s_skyAssetKey = assetKey;
-    s_skyCloudRow = cloudRow;
+    s_skyIdentity = identity;
     s_skyHasPanorama = loaded;
     s_skyRetryFrames = loaded ? 0 : 30;
     if (RuntimeConfigEnabled("diagnostics.modern_asset_trace")) {
@@ -876,6 +876,8 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
                 s_mirrorSpanCount, mirrorVehicleSpans);
     }
 }
+
+uint64_t ModernNativeGpuTextureRevision(void) { return s_trackAssetRevision; }
 
 const RageRenderWorld *ModernNativeGpuPreparedWorld(void) {
     return s_world;
@@ -1363,6 +1365,9 @@ static void ModernNativeWarmTrackBank(SDL_GPUCommandBuffer *command) {
 }
 
 static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
+    static int trace = -1;
+    if (trace < 0) trace = RuntimeConfigEnabled("diagnostics.performance_trace");
+    Uint64 started = trace ? SDL_GetTicksNS() : 0;
     void *mapped;
     SDL_GPUCopyPass *copy;
     SDL_GPUTransferBufferLocation source = {
@@ -1379,6 +1384,13 @@ static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
     if (copy == NULL) return 0;
     SDL_UploadToGPUBuffer(copy, &source, &destination, true);
     SDL_EndGPUCopyPass(copy);
+    if (trace) {
+        fprintf(stderr,
+                "native-vertex-upload frame=%llu main=%u mirror=%u bytes=%u cpu_ms=%.3f\n",
+                (unsigned long long)s_worldFrame, s_vertexCount,
+                s_mirrorVertexCount, destination.size,
+                (double)(SDL_GetTicksNS() - started) / 1000000.0);
+    }
     return 1;
 }
 
@@ -1486,8 +1498,7 @@ static void ModernNativeGpuDrawSet(
     for (spanIndex = 0; spanIndex < spanCount; spanIndex++)
         (void)ModernNativeLoadTexture(command, &spans[spanIndex]);
     if (drawSky &&
-        !ModernNativeEnsureSkyTexture(command, renderCamera->skyAssetKey,
-                                      renderCamera->skyCloudRow))
+        !ModernNativeEnsureSkyTexture(command, renderCamera))
         return;
     pass = SDL_BeginGPURenderPass(command, &color, 1, &depth);
     if (pass == NULL) return;

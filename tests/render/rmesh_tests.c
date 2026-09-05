@@ -21,6 +21,25 @@ static void write_u32(uint8_t *p, uint32_t value) {
 }
 
 int main(void) {
+    {
+        RageRuntimeMeshLayout layout;
+        EXPECT(RuntimeMeshLayout(1, 4, 6, &layout));
+        EXPECT(layout.offsetsOffset == 24 && layout.verticesOffset == 32);
+        EXPECT(layout.indicesOffset == 192 && layout.totalSize == 216);
+        EXPECT(RuntimeMeshLayout(0, 0, 0, &layout));
+        EXPECT(layout.verticesOffset == 28 && layout.indicesOffset == 28 && layout.totalSize == 28);
+        EXPECT(!RuntimeMeshLayout(1, 4, 6, NULL));
+        /* No huge allocation: validate the size arithmetic independently. */
+        int large = RuntimeMeshLayout(UINT32_MAX, UINT32_MAX, UINT32_MAX, &layout);
+        if (SIZE_MAX > UINT32_MAX) {
+            EXPECT(large);
+            EXPECT((uint64_t)layout.totalSize == UINT64_C(206158430188));
+        } else {
+            EXPECT(!large);
+            EXPECT(layout.totalSize == 0 && layout.offsetsOffset == 0 &&
+                   layout.verticesOffset == 0 && layout.indicesOffset == 0);
+        }
+    }
     uint8_t blob[216] = {0};
     RageRuntimeMesh mesh;
     RageRuntimeVertex vertex;
@@ -37,6 +56,23 @@ int main(void) {
     write_u32(blob + 12, 1);
     write_u32(blob + 16, 4);
     write_u32(blob + 20, 6);
+    {
+        uint8_t encoded[sizeof(blob)];
+        memset(encoded, 0xA5, sizeof(encoded));
+        EXPECT(!RuntimeMeshEncodeHeader(NULL, sizeof(encoded), 1, 4, 6));
+        EXPECT(!RuntimeMeshEncodeHeader(encoded, sizeof(encoded) - 1, 1, 4, 6));
+        for (size_t i = 0; i < sizeof(encoded); ++i) EXPECT(encoded[i] == 0xA5);
+        EXPECT(RuntimeMeshEncodeHeader(encoded, sizeof(encoded), 1, 4, 6));
+        EXPECT(memcmp(encoded, blob, 24) == 0);
+        for (size_t i = 24; i < sizeof(encoded); ++i) EXPECT(encoded[i] == 0xA5);
+        /* Header success does not bless an uninitialized payload. */
+        RageRuntimeMesh invalid;
+        EXPECT(!RuntimeMeshOpen(&invalid, encoded, sizeof(encoded)));
+        uint8_t empty[28] = {0};
+        EXPECT(RuntimeMeshEncodeHeader(empty, sizeof(empty), 0, 0, 0));
+        EXPECT(RuntimeMeshOpen(&invalid, empty, sizeof(empty)));
+        EXPECT(invalid.meshCount == 0 && invalid.vertexCount == 0 && invalid.indexCount == 0);
+    }
     write_u32(blob + 24, 0);
     write_u32(blob + 28, 6);
     memcpy(blob + 32, position, sizeof(position));
@@ -53,6 +89,55 @@ int main(void) {
     EXPECT((int)vertex.position[0] == 3 && vertex.color[2] == 3);
     EXPECT((int)(vertex.uv[0] * 100.0f) == 50 && vertex.material == 7);
     EXPECT(RuntimeMeshIndex(&mesh, 1, &index) && index == 2);
+    {
+        uint8_t encoded[RAGE_RUNTIME_VERTEX_BYTES + 1];
+        memset(encoded, 0xA5, sizeof(encoded));
+        EXPECT(RuntimeVertexEncode(encoded, sizeof(encoded), &vertex));
+        EXPECT(memcmp(encoded, blob + 32, RAGE_RUNTIME_VERTEX_BYTES) == 0);
+        EXPECT(encoded[RAGE_RUNTIME_VERTEX_BYTES] == 0xA5);
+        /* Independent wire bytes for 3.0f, 0.5f and the material number. */
+        EXPECT(encoded[0] == 0 && encoded[1] == 0 && encoded[2] == 0x40 && encoded[3] == 0x40);
+        EXPECT(encoded[28] == 0 && encoded[29] == 0 && encoded[30] == 0 && encoded[31] == 0x3F);
+        EXPECT(encoded[36] == 7 && encoded[37] == 0 && encoded[38] == 0 && encoded[39] == 0);
+        uint8_t saved[sizeof(encoded)];
+        memcpy(saved, encoded, sizeof(saved));
+        EXPECT(!RuntimeVertexEncode(encoded, RAGE_RUNTIME_VERTEX_BYTES - 1, &vertex));
+        EXPECT(!RuntimeVertexEncode(encoded, sizeof(encoded), NULL));
+        EXPECT(!RuntimeVertexEncode(NULL, sizeof(encoded), &vertex));
+        for (unsigned i = 0; i < 8; ++i) {
+            RageRuntimeVertex invalid = vertex;
+            float *field = i < 3 ? &invalid.position[i] :
+                i < 6 ? &invalid.normal[i - 3] : &invalid.uv[i - 6];
+            *field = i % 2 ? INFINITY : NAN;
+            EXPECT(!RuntimeVertexEncode(encoded, sizeof(encoded), &invalid));
+            EXPECT(memcmp(encoded, saved, sizeof(encoded)) == 0);
+        }
+        vertex.material = UINT32_MAX;
+        EXPECT(RuntimeVertexEncode(encoded, sizeof(encoded), &vertex));
+        EXPECT(encoded[36] == 255 && encoded[37] == 255 && encoded[38] == 255 && encoded[39] == 255);
+        const uint32_t materials[] = {
+            0, UINT32_MAX, RAGE_RUNTIME_MATERIAL_INDEX_MASK,
+            RAGE_RUNTIME_MATERIAL_SCROLL_U | 7,
+            RAGE_RUNTIME_MATERIAL_METADATA | RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY | 9,
+            RAGE_RUNTIME_MATERIAL_METADATA | RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT | 11,
+            RAGE_RUNTIME_MATERIAL_METADATA | (255u << RAGE_RUNTIME_MATERIAL_DEPTH_BIAS_SHIFT) | 13
+        };
+        uint8_t roundTrip[sizeof(blob)];
+        memcpy(roundTrip, blob, sizeof(blob));
+        for (size_t i = 0; i < sizeof(materials) / sizeof(materials[0]); ++i) {
+            RageRuntimeMesh decodedMesh;
+            RageRuntimeVertex decoded;
+            vertex.material = materials[i];
+            EXPECT(RuntimeVertexEncode(roundTrip + 32, RAGE_RUNTIME_VERTEX_BYTES, &vertex));
+            EXPECT(RuntimeMeshOpen(&decodedMesh, roundTrip, sizeof(roundTrip)));
+            EXPECT(RuntimeMeshVertex(&decodedMesh, 0, &decoded));
+            EXPECT(decoded.material == materials[i]);
+            EXPECT(memcmp(decoded.position, vertex.position, sizeof(vertex.position)) == 0);
+            EXPECT(memcmp(decoded.normal, vertex.normal, sizeof(vertex.normal)) == 0);
+            EXPECT(memcmp(decoded.color, vertex.color, sizeof(vertex.color)) == 0);
+            EXPECT(memcmp(decoded.uv, vertex.uv, sizeof(vertex.uv)) == 0);
+        }
+    }
     {
         RageRuntimeMeshBounds bounds[1];
         float expectedCenter[3], expectedRadius;

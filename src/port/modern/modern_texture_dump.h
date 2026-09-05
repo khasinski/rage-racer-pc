@@ -5,5 +5,7 @@
 
 int ModernWriteTexturePpm(SDL_GPUDevice *device, SDL_GPUTexture *texture,
                               int width, int height, const char *path);
+int ModernWriteTextureRgba(SDL_GPUDevice *device, SDL_GPUTexture *texture,
+                          int width, int height, const char *path);
 
 #endif

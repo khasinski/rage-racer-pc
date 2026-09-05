@@ -22,6 +22,11 @@ int NativeAssetImporterInit(void) {
     return 0;
 }
 
+RageTrackTextureGeneration *NativeAssetImporterRetainTextures(uint64_t revision) {
+    (void)revision;
+    return NULL;
+}
+
 void NativeAssetImporterShutdown(void) {
 }
 
@@ -51,7 +56,9 @@ int NativeAssetImporterLoadMaterial(
 }
 
 int NativeAssetImporterLoadSky(uint32_t assetKey,
+                                   const RageSkyPanoramaLayout *layout,
                                    ModernAssetImage *image) {
+    (void)layout;
     (void)assetKey;
     (void)image;
     return 0;

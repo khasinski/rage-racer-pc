@@ -1,6 +1,8 @@
 #include "rage/track_asset_identity.h"
 #include "native_asset_importer.h"
+#include "native_mesh_writer.h"
 #include "track_material_page.h"
+#include "track_texture_snapshot.h"
 #include "sky_panorama_layout.h"
 
 #include <SDL3/SDL.h>
@@ -27,45 +29,12 @@ enum {
     RAGE_IMPORT_ENTRY_LIMIT = 256,
     RAGE_IMPORT_MATERIAL_LIMIT = 2048,
     RAGE_IMPORT_BATCH_GUARD = 65536,
-    RAGE_IMPORT_HEADER_SIZE = 24,
-    RAGE_IMPORT_VERTEX_SIZE = 40,
     RAGE_IMPORT_VRAM_WIDTH = 1024,
     RAGE_IMPORT_VRAM_HEIGHT = 512,
 };
 
-typedef struct RageImportedTextureKey {
-    uint16_t tpage;
-    uint16_t clut;
-    uint16_t windowWidthU;
-    uint16_t windowWidthV;
-    uint16_t windowOffsetU;
-    uint16_t windowOffsetV;
-    uint8_t hasWindow;
-    uint8_t emissive;
-} RageImportedTextureKey;
 
-typedef struct RageImportedMeshEntry {
-    RageRuntimeCachedMesh cached;
-    RageImportedTextureKey *materials;
-    uint32_t materialCount;
-    void *bytes;
-    RageRuntimeMeshBounds *bounds;
-} RageImportedMeshEntry;
 
-typedef struct RageImportedFace {
-    const SVec *vertices;
-    const SVec *normals;
-    uint16_t vertex[4];
-    uint16_t normal[4];
-    uint8_t uv[4][2];
-    uint8_t color[3];
-    RageImportedTextureKey texture;
-    int8_t depthBias;
-    uint8_t prim;
-    uint8_t flags;
-    uint8_t textured;
-    uint8_t hasNormals;
-} RageImportedFace;
 
 typedef int (*RageImportedFaceVisitor)(uint32_t mesh,
                                        const RageImportedFace *face,
@@ -77,15 +46,6 @@ typedef struct RageImportedScan {
     uint64_t faceCount;
 } RageImportedScan;
 
-typedef struct RageImportedWrite {
-    RageImportedMeshEntry *entry;
-    uint8_t *offsets;
-    uint8_t *vertexCursor;
-    uint8_t *indexCursor;
-    uint32_t currentMesh;
-    uint32_t vertexCount;
-    uint32_t indexCount;
-} RageImportedWrite;
 
 static RageImportedMeshEntry s_entries[RAGE_IMPORT_ENTRY_LIMIT];
 static uint32_t s_entryCount;
@@ -102,36 +62,6 @@ static uint32_t ImportRead32(const void *pointer) {
            ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
 }
 
-static void ImportWrite32(void *pointer, uint32_t value) {
-    uint8_t *p = pointer;
-    p[0] = (uint8_t)value;
-    p[1] = (uint8_t)(value >> 8);
-    p[2] = (uint8_t)(value >> 16);
-    p[3] = (uint8_t)(value >> 24);
-}
-
-static int ImportSizeAdd(size_t left, size_t right, size_t *result) {
-    if (right > SIZE_MAX - left) return 0;
-    *result = left + right;
-    return 1;
-}
-
-static int ImportSizeMultiply(size_t left, size_t right, size_t *result) {
-    if (right != 0 && left > SIZE_MAX / right) return 0;
-    *result = left * right;
-    return 1;
-}
-
-static int ImportTextureEqual(const RageImportedTextureKey *left,
-                                  const RageImportedTextureKey *right) {
-    return left->tpage == right->tpage && left->clut == right->clut &&
-           left->hasWindow == right->hasWindow &&
-           (!left->hasWindow ||
-            (left->windowWidthU == right->windowWidthU &&
-             left->windowWidthV == right->windowWidthV &&
-             left->windowOffsetU == right->windowOffsetU &&
-             left->windowOffsetV == right->windowOffsetV));
-}
 
 static void ImportTextureWindow(uint32_t word,
                                     RageImportedTextureKey *texture) {
@@ -382,85 +312,6 @@ static int ImportScanFace(uint32_t mesh, const RageImportedFace *face,
     return 1;
 }
 
-static uint32_t ImportMaterialIndex(const RageImportedMeshEntry *entry,
-                                        const RageImportedFace *face) {
-    uint32_t material;
-    if (!face->textured) return UINT32_MAX;
-    for (material = 0; material < entry->materialCount; material++)
-        if (ImportTextureEqual(&entry->materials[material],
-                                   &face->texture)) return material;
-    return UINT32_MAX;
-}
-
-static void ImportWriteFloat(uint8_t *pointer, float value) {
-    memcpy(pointer, &value, sizeof(value));
-}
-
-static int ImportWriteFace(uint32_t mesh, const RageImportedFace *face,
-                               void *context) {
-    RageImportedWrite *write = context;
-    uint32_t material = ImportMaterialIndex(write->entry, face);
-    uint32_t encodedMaterial = material;
-    uint32_t corner;
-    static const uint32_t order[] = {0, 2, 1, 1, 2, 3};
-    while (write->currentMesh < mesh) {
-        write->currentMesh++;
-        ImportWrite32(write->offsets + write->currentMesh * 4,
-                      write->indexCount);
-    }
-    if (face->depthBias != 0 ||
-        (write->entry->cached.assetSet == RAGE_RENDER_ASSET_TERRAIN &&
-         ((face->flags & 2) != 0 || face->prim < 2))) {
-        uint32_t materialIndex =
-            material == UINT32_MAX ? 0xFFFFu : material;
-        encodedMaterial = materialIndex | RAGE_RUNTIME_MATERIAL_METADATA |
-            ((uint32_t)(uint8_t)face->depthBias <<
-             RAGE_RUNTIME_MATERIAL_DEPTH_BIAS_SHIFT);
-        if (write->entry->cached.assetSet == RAGE_RENDER_ASSET_TERRAIN &&
-            (face->flags & 2) != 0)
-            encodedMaterial |= RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY;
-        if (write->entry->cached.assetSet == RAGE_RENDER_ASSET_TERRAIN &&
-            face->prim < 2)
-            encodedMaterial |= RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT;
-    }
-    if (write->entry->cached.assetSet == RAGE_RENDER_ASSET_COURSE &&
-        face->prim == 3 && material != UINT32_MAX)
-        encodedMaterial |= RAGE_RUNTIME_MATERIAL_SCROLL_U;
-    for (corner = 0; corner < 4; corner++) {
-        const SVec *position = &face->vertices[face->vertex[corner]];
-        const SVec *normal = face->hasNormals
-            ? &face->normals[face->normal[corner]] : NULL;
-        uint8_t *vertex = write->vertexCursor;
-        ImportWriteFloat(vertex + 0, (float)position->vx);
-        ImportWriteFloat(vertex + 4, (float)-position->vy);
-        ImportWriteFloat(vertex + 8, (float)-position->vz);
-        ImportWriteFloat(vertex + 12,
-                             normal != NULL ? (float)normal->vx : 0.0f);
-        ImportWriteFloat(vertex + 16,
-                             normal != NULL ? (float)-normal->vy : 1.0f);
-        ImportWriteFloat(vertex + 20,
-                             normal != NULL ? (float)-normal->vz : 0.0f);
-        vertex[24] = face->color[0];
-        vertex[25] = face->color[1];
-        vertex[26] = face->color[2];
-        vertex[27] = 255;
-        ImportWriteFloat(vertex + 28,
-            face->textured ? ((float)face->uv[corner][0] + 0.5f) / 256.0f
-                           : 0.0f);
-        ImportWriteFloat(vertex + 32,
-            face->textured ? ((float)face->uv[corner][1] + 0.5f) / 256.0f
-                           : 0.0f);
-        ImportWrite32(vertex + 36, encodedMaterial);
-        write->vertexCursor += RAGE_IMPORT_VERTEX_SIZE;
-    }
-    for (corner = 0; corner < 6; corner++)
-        ImportWrite32(write->indexCursor + corner * 4,
-                          write->vertexCount + order[corner]);
-    write->indexCursor += 6 * 4;
-    write->vertexCount += 4;
-    write->indexCount += 6;
-    return 1;
-}
 
 static RageImportedMeshEntry *ImportFindEntry(
     uint32_t assetKey, RageRenderAssetSet assetSet) {
@@ -472,6 +323,11 @@ static RageImportedMeshEntry *ImportFindEntry(
     return NULL;
 }
 
+static void ImportReleaseMeshBytes(void *context, const void *bytes) {
+    (void)context;
+    free((void *)bytes);
+}
+
 static RageImportedMeshEntry *ImportBuildMesh(
     const RageRenderMeshInstance *instance) {
     RageImportedTextureKey *materials;
@@ -479,7 +335,7 @@ static RageImportedMeshEntry *ImportBuildMesh(
     RageImportedWrite write;
     RageImportedMeshEntry *entry;
     uint32_t meshCount;
-    size_t offsetsSize, verticesSize, indicesSize, total, cursor;
+    RageRuntimeMeshLayout layout;
     uint8_t *bytes;
     if (s_entryCount == RAGE_IMPORT_ENTRY_LIMIT) return NULL;
     materials = calloc(RAGE_IMPORT_MATERIAL_LIMIT, sizeof(*materials));
@@ -488,63 +344,51 @@ static RageImportedMeshEntry *ImportBuildMesh(
     scan.materials = materials;
     if (!ImportVisit(instance, ImportScanFace, &scan, &meshCount) ||
         scan.faceCount == 0 || scan.faceCount > UINT32_MAX / 6u ||
-        !ImportSizeMultiply((size_t)meshCount + 1u, 4u, &offsetsSize) ||
-        !ImportSizeMultiply((size_t)scan.faceCount * 4u,
-                                RAGE_IMPORT_VERTEX_SIZE, &verticesSize) ||
-        !ImportSizeMultiply((size_t)scan.faceCount * 6u, 4u,
-                                &indicesSize) ||
-        !ImportSizeAdd(RAGE_IMPORT_HEADER_SIZE, offsetsSize, &cursor) ||
-        !ImportSizeAdd(cursor, verticesSize, &cursor) ||
-        !ImportSizeAdd(cursor, indicesSize, &total)) {
+        !RuntimeMeshLayout(meshCount, (uint32_t)scan.faceCount * 4u,
+                           (uint32_t)scan.faceCount * 6u, &layout)) {
         free(materials);
         return NULL;
     }
-    bytes = calloc(1, total);
+    bytes = calloc(1, layout.totalSize);
     if (bytes == NULL) {
         free(materials);
         return NULL;
     }
-    memcpy(bytes, "RRMESH1\0", 8);
-    ImportWrite32(bytes + 8, 1);
-    ImportWrite32(bytes + 12, meshCount);
-    ImportWrite32(bytes + 16, (uint32_t)scan.faceCount * 4u);
-    ImportWrite32(bytes + 20, (uint32_t)scan.faceCount * 6u);
+    if (!RuntimeMeshEncodeHeader(bytes, layout.totalSize, meshCount,
+                                (uint32_t)scan.faceCount * 4u,
+                                (uint32_t)scan.faceCount * 6u)) {
+        free(bytes);
+        free(materials);
+        return NULL;
+    }
     entry = &s_entries[s_entryCount];
     memset(entry, 0, sizeof(*entry));
     entry->cached.assetKey = instance->assetKey;
     entry->cached.assetSet = instance->assetSet;
     entry->materials = materials;
     entry->materialCount = scan.materialCount;
-    entry->bytes = bytes;
-    entry->cached.ownedBytes = bytes;
     memset(&write, 0, sizeof(write));
     write.entry = entry;
-    write.offsets = bytes + RAGE_IMPORT_HEADER_SIZE;
-    write.vertexCursor = bytes + RAGE_IMPORT_HEADER_SIZE + offsetsSize;
-    write.indexCursor = write.vertexCursor + verticesSize;
+    write.offsets = bytes + layout.offsetsOffset;
+    write.vertexCursor = bytes + layout.verticesOffset;
+    write.indexCursor = bytes + layout.indicesOffset;
+    write.meshLimit = meshCount;
+    write.vertexLimit = (uint32_t)scan.faceCount * 4u;
+    write.indexLimit = (uint32_t)scan.faceCount * 6u;
     if (!ImportVisit(instance, ImportWriteFace, &write, &meshCount) ||
-        write.vertexCount != (uint32_t)scan.faceCount * 4u ||
-        write.indexCount != (uint32_t)scan.faceCount * 6u) {
-        free(entry->bytes);
+        !ImportWriteFinish(&write, meshCount)) {
+        free(bytes);
         free(entry->materials);
         memset(entry, 0, sizeof(*entry));
         return NULL;
     }
-    while (write.currentMesh < meshCount) {
-        write.currentMesh++;
-        ImportWrite32(write.offsets + write.currentMesh * 4,
-                      write.indexCount);
-    }
-    if (!RuntimeMeshOpen(&entry->cached.mesh, entry->bytes, total)) {
-        free(entry->bytes);
+    if (!RuntimeCachedMeshAdopt(&entry->cached, bytes, layout.totalSize,
+                                ImportReleaseMeshBytes, NULL)) {
+        free(bytes);
         free(entry->materials);
         memset(entry, 0, sizeof(*entry));
         return NULL;
     }
-    entry->bounds = calloc(entry->cached.mesh.meshCount, sizeof(*entry->bounds));
-    if (entry->bounds != NULL)
-        RuntimeMeshPrepareBounds(&entry->cached.mesh, entry->bounds,
-                                 entry->cached.mesh.meshCount);
     return entry;
 }
 
@@ -582,94 +426,39 @@ static RageImportedMeshEntry *ImportBuildMesh(
  * change was still moving rows kept half of each page, for good. Leaving the
  * first tunnel on Mythical Coast is a section change.
  */
-enum {
-    RAGE_IMPORT_TRACK_ROW_X = 576,   /* g_TrackTextureRect x */
-    RAGE_IMPORT_TRACK_ROW_Y = 256,   /* and its y */
-    RAGE_IMPORT_TRACK_ROW_W = 448,   /* 0xE0 words, one shadow row */
-    RAGE_IMPORT_TRACK_ROWS = 256,
-    RAGE_IMPORT_TRACK_PAGES = 2
-};
+/* The session owns this snapshot; reconstructed track banks are revision-local.
+ * This adapter is the only part that knows live PS1 VRAM and game globals. */
+static RageTrackTextureSnapshot s_trackImages;
 
-static uint16_t *s_vramSnapshot;
-static uint16_t *s_trackPage[RAGE_IMPORT_TRACK_PAGES];
-static uint64_t s_vramSnapshotRevision;
-static s32 s_overlaidPage = -1;
-static int s_haveVramSnapshot;
-static int s_haveTrackPages;
-
-static uint16_t *ImportTrackRow(uint16_t *page, s32 row) {
-    return page + (size_t)row * RAGE_IMPORT_TRACK_ROW_W;
+RageTrackTextureGeneration *NativeAssetImporterRetainTextures(uint64_t revision) {
+    if (!s_ready || TrackTextureGenerationRevision(s_trackImages.generation) != revision)
+        return NULL;
+    return TrackTextureSnapshotRetain(&s_trackImages);
 }
 
-static uint16_t *ImportVramRow(uint16_t *vram, s32 row) {
-    return vram + (size_t)(RAGE_IMPORT_TRACK_ROW_Y + row) *
-                      RAGE_IMPORT_VRAM_WIDTH + RAGE_IMPORT_TRACK_ROW_X;
-}
-
-/* Read both pages out of the two places their rows are living. */
-static int ImportBuildTrackPages(uint16_t *vram) {
-    const size_t rowBytes =
-        (size_t)RAGE_IMPORT_TRACK_ROW_W * sizeof(uint16_t);
-    s32 page, row;
-    if (g_TrackTextureShadow == NULL) return 0;
-    for (page = 0; page < RAGE_IMPORT_TRACK_PAGES; page++) {
-        if (s_trackPage[page] == NULL) {
-            s_trackPage[page] = malloc(rowBytes * RAGE_IMPORT_TRACK_ROWS);
-            if (s_trackPage[page] == NULL) return 0;
-        }
-    }
-    for (row = 0; row < RAGE_IMPORT_TRACK_ROWS; row++) {
-        s32 shadowPage = g_TrackTextureShadowPage[row] != 0 ? 1 : 0;
-        const uint16_t *shadow = (const uint16_t *)g_TrackTextureShadow[row];
-        memcpy(ImportTrackRow(s_trackPage[shadowPage], row), shadow, rowBytes);
-        memcpy(ImportTrackRow(s_trackPage[1 - shadowPage], row),
-               ImportVramRow(vram, row), rowBytes);
-    }
+static int ImportReadVram(void *context, uint16_t *words, size_t count) {
+    RECT rect = {0, 0, RAGE_IMPORT_VRAM_WIDTH, RAGE_IMPORT_VRAM_HEIGHT};
+    (void)context;
+    if (count != (size_t)RAGE_IMPORT_VRAM_WIDTH * RAGE_IMPORT_VRAM_HEIGHT)
+        return 0;
+    DrawSync(0);
+    StoreImage(&rect, (u_long *)words);
+    DrawSync(0);
     return 1;
 }
 
-/* Put the page a material is asking for into the snapshot it decodes from. */
-static void ImportOverlayTrackPage(uint16_t *vram, s32 page) {
-    const size_t rowBytes =
-        (size_t)RAGE_IMPORT_TRACK_ROW_W * sizeof(uint16_t);
-    s32 row;
-    if (page < 0 || page >= RAGE_IMPORT_TRACK_PAGES ||
-        s_trackPage[page] == NULL || s_overlaidPage == page)
-        return;
-    for (row = 0; row < RAGE_IMPORT_TRACK_ROWS; row++)
-        memcpy(ImportVramRow(vram, row),
-               ImportTrackRow(s_trackPage[page], row), rowBytes);
-    s_overlaidPage = page;
-}
-
 static const uint16_t *ImportVramSnapshot(int requireTrackPages) {
-    RECT rect = {0, 0, RAGE_IMPORT_VRAM_WIDTH, RAGE_IMPORT_VRAM_HEIGHT};
-    uint64_t revision = TrackAssetIdentityRevision();
-    if (s_vramSnapshot == NULL) {
-        s_vramSnapshot = malloc((size_t)RAGE_IMPORT_VRAM_WIDTH *
-                                RAGE_IMPORT_VRAM_HEIGHT *
-                                sizeof(*s_vramSnapshot));
-        if (s_vramSnapshot == NULL) return NULL;
-        s_haveVramSnapshot = 0;
-    }
-    if (!s_haveVramSnapshot || s_vramSnapshotRevision != revision) {
-        DrawSync(0);
-        StoreImage(&rect, (u_long *)s_vramSnapshot);
-        DrawSync(0);
-        s_vramSnapshotRevision = revision;
-        s_haveVramSnapshot = 1;
-        s_haveTrackPages = 0;
-        s_overlaidPage = -1;
-    }
-    if (requireTrackPages && !s_haveTrackPages) {
-        if (!ImportBuildTrackPages(s_vramSnapshot)) return NULL;
-        s_haveTrackPages = 1;
-    }
-    if (requireTrackPages) {
-        ImportOverlayTrackPage(s_vramSnapshot,
-                               g_TrackTexturePageWanted != 0 ? 1 : 0);
-    }
-    return s_vramSnapshot;
+    RageTrackTextureSource source = {
+        .read = ImportReadVram,
+        .shadowRows = g_TrackTextureShadow,
+        .shadowBytes = g_TrackTextureShadow != NULL
+            ? sizeof(*g_TrackTextureShadow) * RAGE_TRACK_IMAGE_HEIGHT : 0,
+        .shadowPages = g_TrackTextureShadowPage,
+        .shadowPageCount = sizeof(g_TrackTextureShadowPage)
+    };
+    return TrackTextureSnapshotAcquire(&s_trackImages,
+        TrackAssetIdentityRevision(), &source,
+        requireTrackPages ? (g_TrackTexturePageWanted != 0) : -1);
 }
 
 static void ImportColor(uint16_t word, uint8_t rgba[4]) {
@@ -808,22 +597,12 @@ int NativeAssetImporterInit(void) {
 void NativeAssetImporterShutdown(void) {
     uint32_t index;
     for (index = 0; index < s_entryCount; index++) {
-        free(s_entries[index].bytes);
+        RuntimeCachedMeshRelease(&s_entries[index].cached);
         free(s_entries[index].materials);
-        free(s_entries[index].bounds);
     }
     memset(s_entries, 0, sizeof(s_entries));
     s_entryCount = 0;
-    free(s_vramSnapshot);
-    s_vramSnapshot = NULL;
-    for (index = 0; index < RAGE_IMPORT_TRACK_PAGES; index++) {
-        free(s_trackPage[index]);
-        s_trackPage[index] = NULL;
-    }
-    s_vramSnapshotRevision = 0;
-    s_haveVramSnapshot = 0;
-    s_haveTrackPages = 0;
-    s_overlaidPage = -1;
+    TrackTextureSnapshotRelease(&s_trackImages);
     s_ready = 0;
 }
 
@@ -880,12 +659,16 @@ int NativeAssetImporterLoadMaterial(
      * changes its active bank. Never alter live VRAM or the game's globals. */
     if (vram != NULL && (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN ||
                          instance->assetSet == RAGE_RENDER_ASSET_COURSE))
-        ImportOverlayTrackPage(s_vramSnapshot,
+        vram = TrackTextureSnapshotSelectPage(&s_trackImages,
             TrackMaterialPage(instance->assetSet, variant,
                               g_TrackTexturePageWanted));
-    if (vram == NULL ||
-        !ImportDecodeTexture(texture, clut, vram, &pixels,
-                                 instance->hasCarPaint ? &paint : NULL)) {
+    RageTrackTextureGeneration *generation = vram != NULL
+        ? TrackTextureSnapshotRetain(&s_trackImages) : NULL;
+    int decoded = generation != NULL &&
+        ImportDecodeTexture(texture, clut, vram, &pixels,
+                            instance->hasCarPaint ? &paint : NULL);
+    TrackTextureGenerationRelease(generation);
+    if (!decoded) {
         SDL_free(pixels);
         SDL_free(paint);
         return 0;
@@ -925,16 +708,23 @@ int NativeAssetImporterLoadMaterial(
 }
 
 int NativeAssetImporterLoadSky(uint32_t assetKey,
+                                   const RageSkyPanoramaLayout *capturedLayout,
                                    ModernAssetImage *image) {
+    RageSkyPanoramaLayout layout;
     RageImportedTextureKey texture;
     const uint16_t *vram;
     uint8_t *page = NULL;
     uint8_t *sky;
-    uint32_t panoramaRow, column, row, pixel;
+    uint32_t pixel;
     uint32_t opaquePixels = 0;
     (void)assetKey;
     if (!s_ready || image == NULL) return 0;
     memset(image, 0, sizeof(*image));
+    if (capturedLayout != NULL) layout = *capturedLayout;
+    else RageSkyCapturePanoramaLayout(&layout, g_SkyTileMap, g_SkyRowBase);
+    for (unsigned r = 0; r < 2; ++r)
+        for (unsigned c = 0; c < 8; ++c)
+            if (layout.tiles[r][c] >= RAGE_SKY_TILE_COUNT) return 0;
     memset(&texture, 0, sizeof(texture));
     texture.tpage = 0x18;
     texture.clut = 0x798E;
@@ -949,19 +739,11 @@ int NativeAssetImporterLoadSky(uint32_t assetKey,
         SDL_free(page);
         return 0;
     }
-    for (panoramaRow = 0; panoramaRow < RAGE_SKY_PANORAMA_ROWS;
-         panoramaRow++) {
-        for (column = 0; column < 8; column++) {
-            uint32_t tile = (uint32_t)RageSkyPanoramaTile(
-                g_SkyTileMap, g_SkyRowBase, (int)panoramaRow, (int)column);
-            uint32_t sourceX = (tile % 4u) * 64u;
-            uint32_t sourceY = (tile / 4u) * 128u;
-            for (row = 0; row < 128; row++)
-                memcpy(sky + (((panoramaRow * 128u + row) * 512u +
-                                column * 64u) * 4u),
-                       page + ((sourceY + row) * 256u + sourceX) * 4u,
-                       64u * 4u);
-        }
+    if (!RageSkyExpandTexturePageLayout(sky, 512u * 256u * 4u,
+                                        page, 256u * 256u * 4u, &layout)) {
+        SDL_free(page);
+        SDL_free(sky);
+        return 0;
     }
     SDL_free(page);
     for (pixel = 0; pixel < 512u * 256u; pixel++) {

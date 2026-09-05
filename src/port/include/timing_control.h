@@ -14,6 +14,7 @@ void TimingApply(void);
 /* Whether a measured frame time has drifted off the standard enough to restore.
  * A frame time of zero means nothing has been measured yet. */
 int TimingNeedsRestore(double currentFrameTimeUs, int baseHz);
+/* Canonical profile name (PAL/NTSC-U/NTSC-J); unknown names default to PAL. */
 RageTimingStandard TimingStandardForRegion(const char *region);
 void TimingSetStandard(RageTimingStandard standard);
 int TimingBaseHz(void);

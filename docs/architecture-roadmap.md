@@ -1,0 +1,894 @@
+# Extensible game architecture: implementation roadmap
+
+Status: active. This is the scope agreed after the performance work, not a
+claim that the migration is complete. Each stage needs production integration
+and regression evidence; extracting an unused interface is not completion.
+
+## Constraints and future consumers
+
+- Preserve automatic disc import and modern startup in a clean release.
+- Keep PAL/NTSC timing, original content, and visual compatibility covered.
+- Implement runtime, tools and replacement tests in C/the compiled toolchain.
+- Preserve user configuration; do not commit local diagnostic preferences.
+- Future launcher: shared configuration/discovery/import APIs must work without
+  a game loop or GPU. Do not introduce a second asset-import implementation.
+  The launcher is owned by another agent. Do not implement its UI or alter its
+  startup flow here; reconcile the integration contract after its code arrives.
+- Future standalone model import/export tool: share formats, validation and
+  semantic identifiers without depending on live race globals.
+- Future graphics effects and ray tracing: explicit material semantics,
+  persistent geometry/instances, and backend capabilities. Keep hardware and
+  effect choices out of simulation/content definitions. Ray tracing itself and
+  the launcher UI are future features, not part of this refactor's deliverables.
+
+## Stages and acceptance gates
+
+1. **Resource ownership and lifecycle** (in progress)
+   - Explicit session, race/content-generation and GPU ownership boundaries.
+   - Idempotent teardown and safe failure/retry; no stale cache across repeated
+     race/reward/menu/race transitions, including the same track loaded again.
+   - Start with the importer's track image snapshot: isolate ownership and
+     generation changes from its game/VRAM adapter and test those transitions.
+   - Gate: lifecycle unit tests plus repeated real-disc race sequences;
+     allocations and borrowed pointers have documented lifetimes.
+2. **Unified assets and mods** (in progress; providers not yet unified)
+   - Common semantic resolution for original data, generated assets and mods.
+   - Versioned manifests, precedence, dependencies/conflict diagnostics and
+     invalidation keyed by source/importer/mod identity.
+   - Gate: override/conflict/failure tests and clean automatic import startup.
+3. **Simulation/presentation boundary** (in progress)
+   - Complete immutable presentation snapshots; isolate remaining legacy-state
+     reads and declare compatibility/VRAM dependencies.
+   - Gate: independent main/mirror views, interpolation and regional timing
+     tests. No speculative threading before ownership is proven.
+4. **Persistent GPU geometry** (pending)
+   - Reuse static mesh buffers; update instance/material state separately.
+   - Preserve animated UVs, terrain visibility, environmental variants and
+     transparent ordering. Expose geometry suitable for future acceleration
+     structures without making ray tracing mandatory.
+   - Gate: image comparisons plus repeatable CPU/GPU/frame-tail measurements.
+5. **Data-driven content** (in progress; built-in regional profiles only)
+   - Versioned validated definitions for vehicles, classes, events/rewards,
+     FMV sequences and regional profiles; retain original defaults.
+   - Gate: retail-equivalent definitions and malformed/extended-content tests.
+     New arbitrary tracks also require collision/AI/race-rule support.
+6. **Unified regression scenarios** (ongoing across all stages)
+   - Repeated races/rewards, all three regions, intro/FMV audio, image probes,
+     memory lifetime and performance gates through compiled runners.
+   - Add input replays: route driving alone does not test physics/input.
+   - Replace existing Python helpers only after equivalent compiled coverage.
+
+## Initial ownership inventory
+
+- `native_asset_importer.c`: session mesh bytes/material keys/bounds; global
+  image snapshot and reconstructed track pages keyed by track revision.
+- `modern_assets.c`: file cache, index buffers and selected mod manifest;
+  currently shuts down the importer too. Ownership is still implicit.
+- `modern_native_gpu.c`: device resources, texture lookup/cache, prepared draw
+  lists and sky. Track revision already resets texture/sky caches; preserve
+  that behavior while replacing hidden ownership, not merely renaming globals.
+- `render_world_frame.*`: existing renderer-neutral interpolation boundary to
+  extend, not replace with another parallel representation.
+
+Meshes are currently retained across track loads because captured/prepared
+frames may still reference them. Do not free them on a scene-ID change without
+first defining and testing the last consumer's lifetime.
+
+## Work log
+
+- Diagnostic history now deep-copies the actual prepared render world alongside
+  its compatibility scene and retained texture generation. World copies own
+  instance arrays, preserve previous state on allocation/input failure, and
+  support alias-safe replacement. Unit tests check independence, self-copy,
+  invalid capacity and teardown; history integration requires world sidecars
+  for every retained frame. Pre-commit full Linux build, all 217 unit/GPU tests,
+  render_world_snapshot and retained_texture_history passed (3.63 seconds for
+  history). Evidence: build/environment-index-Dgm4lr/precommit-*.log.
+  Mesh/material resource bundles and independent complete scene replay remain
+  incomplete; a copied world does not itself own referenced asset IDs. Latest
+  world-history copy changes have not yet had a Windows build/runtime check.
+- Strengthened retained_texture_history beyond file counts: every bank must
+  have a matching captured scene filename and all three banks for that exact
+  frame/generation; SHA-256 must agree for a given generation/bank across history
+  entries. Registered Linux test passed in 3.62 seconds after rebuilding.
+  Windows Release game/replay builds and existing rmesh_index test passed with
+  the history integration (guest environment-index build/result logs). This is
+  Windows compile/link coverage, not a Windows history-capture run. Filename
+  association/hash stability do not prove full scene-resource replay equivalence.
+- Connected retained importer generations to the 16-slot diagnostic frame
+  history. Slots retain only an existing generation matching the prepared GPU
+  cache revision, without initiating a live capture; overwrite/history teardown
+  releases references. M emits base and two bank raw files with frame/generation
+  identity. This supplies retained importer inputs, not complete scene replay.
+  Added retained_texture_history CTest, checking 48 full 1 MiB bank dumps plus
+  the existing four aligned GPU-VRAM markers. Linux actual PAL integration
+  passed at build/sampled-vram-3cb55d1e78ed/. It exercises one generation;
+  cross-generation survival is covered by the ownership unit test, not yet an
+  end-to-end history transition. Offline file providers return no importer
+  generation. Windows build/runtime verification of this integration is pending.
+- Expanded generation ownership regression: retain two references, fail the
+  replacement read, verify old bank pixels through both references, drop one
+  reference, retry successfully, release the owner and verify the final retained
+  bank. Invalid page/null handle checks are included. Linux snapshot test passed
+  in 0.19 seconds. Windows Release game build and expanded snapshot test also
+  passed with the opaque-generation implementation (both statuses explicitly
+  checked in C:/rage-perf-results/snapshot-result.txt). Frame-history integration
+  and threaded ownership remain incomplete; no whole-stage completion claimed.
+- Track snapshots now own an opaque reference-counted generation. Explicit
+  single-threaded Retain/Release handles keep published base/bank pixels alive
+  across owner replacement and teardown; unretained generations can still reuse
+  buffers. The live material decoder retains its input generation around decode.
+  Tests retain an old bank, load a distinct generation, destroy the owner and
+  verify old pixels before releasing the handle. Linux snapshot test and PAL
+  marker scenario passed (0.18/3.06 seconds), build evidence
+  build/environment-index-Dgm4lr/retained-generation-build.log. Frame history
+  and renderer snapshots do not yet retain these handles; this is the ownership
+  mechanism and first consumer, not complete cross-generation frame isolation.
+  Reference counts are not atomic and no threaded access is supported. Windows
+  validation of the opaque-generation change remains pending.
+- Immutable-bank change passed Windows Release game build and the 100-generation
+  track_texture_snapshot test; verified both build_exit=0 and test_exit=0 in
+  C:/rage-perf-results/snapshot-result.txt (helper itself returns build status).
+  NTSC-U/J real-disc short modern scenarios also passed four aligned marker
+  captures each on Linux: build/environment-index-Dgm4lr/immutable-banks-{u,j}.log.
+  Together with prior PAL, these check integrated startup/capture for all three
+  regions, not visual equivalence of bank-dependent track textures or complete
+  repeated races. Cross-generation frame resource retention remains pending.
+- Began immutable texture views within a content generation: track snapshot
+  bank selection now returns one of two complete VRAM images rather than
+  copying bank rows over the shared base image. Existing borrowed bank views
+  remain unchanged across selections/reacquisition of the same generation;
+  the raw snapshot is preserved too. Cost is 3 MiB total versus 1.4375 MiB
+  previously per fully populated owner (+1.5625 MiB), while each bank selection
+  eliminates a 224 KiB row copy. Tests retain both bank pointers, switch banks
+  and check every pixel plus the original base image across 100 generations.
+  Linux unit test and real PAL sampled-marker scenario passed (0.18/3.05 sec),
+  build evidence build/environment-index-Dgm4lr/immutable-banks-build.log.
+  Generation replacement still reuses buffers and invalidates prior borrows;
+  frame-owned cross-generation retention and removal of live importer reads
+  remain necessary. Windows and repeated-race checks of this change are pending.
+- Verified ImportWriteFinish on Windows: Release game build and the expanded
+  native_mesh_writer test passed (guest mesh-writer build/test/result logs).
+  Linux full default build then passed all 217 unit/GPU-labeled tests, including
+  214 unit and three GPU tests, with offscreen Vulkan/dummy audio. Evidence:
+  build/environment-index-Dgm4lr/finalize-full-build.log and
+  finalize-unit-gpu.log. This does not supersede the previously recorded local
+  shipped_config failure or missing full-cache silhouette test, and does not
+  mark any whole architecture stage complete.
+- Moved second-pass completion into ImportWriteFinish, used by the importer
+  before publishing/adopting bytes. Tests now inject increased/decreased mesh
+  counts, incomplete vertex/index counts and an invalid current submesh; all
+  must reject without touching endpoints. Positive coverage checks trailing
+  empty submesh endpoints and repeated finalization, and the existing decoded
+  face fixtures now finalize through production code. Removed the last unused
+  private integer writer from the importer. Linux new test/build and PAL marker
+  scenario passed (3.17 seconds); build evidence in
+  build/environment-index-Dgm4lr/writer-finish-build.log. These are direct writer
+  fault cases, not concurrent mutation of game-owned source arrays. Windows
+  validation of this finalization change remains pending.
+- Added positive face-writer round trips through RuntimeMeshOpen/Vertex/Index:
+  untextured, scrolling course and environment/near-only terrain with negative
+  depth bias. Independent expected values assert PS1-to-native Y/Z signs,
+  supplied/default normals, RGBA, half-texel UVs, triangle winding and encoded
+  material words. Linux native_mesh_writer passed. Windows Release game build
+  and expanded native_mesh_writer test also passed after syncing the extracted
+  module/build wiring: C:/rage-perf-results/mesh-writer-{build.log,test.log,
+  result.txt}. This closes compiled Windows validation of the extraction,
+  not complete source validation, cache export or Windows gameplay coverage.
+- Extracted the production face writer and its private data types into
+  native_mesh_writer.[ch]; the live importer and compiled native_mesh_writer
+  unit test call the same code, without a GPU/game loop in the unit fixture.
+  Eight injected cases check mesh overflow/order, vertex/index capacity and
+  counter overflow, an unseen textured material, and an extra face after an
+  exact-fit write. Rejections must preserve the entire destination and writer
+  cursors/counts. First extraction build exposed a missing direct SVec include;
+  added game/vector.h explicitly. Linux smoke build, new test and actual PAL
+  sampled-marker scenario passed (3.23 seconds for the latter). Evidence build:
+  build/environment-index-Dgm4lr/writer-extract-build.log. This exercises face
+  rejection branches, not source-memory races or the final mesh-count mismatch
+  in the outer two-pass driver. Windows validation of this extraction is pending.
+- Hardened the two-pass live mesh writer: each face checks mesh ordering and
+  vertex/index capacity before touching output, rejects textured faces whose
+  material was absent from the scan, and finalization rejects a changed mesh
+  count before filling trailing offsets. Offset address arithmetic uses size_t.
+  Previously count mismatches were checked only after writing. This bounds the
+  destination; it does not validate every source pointer or make concurrent
+  source mutation supported. Fault injection between scan and write remains
+  missing, so runtime success is not proof of those rejection branches.
+  Linux smoke build and real-disc sampled-marker scenarios passed for PAL/U/J:
+  build/environment-index-Dgm4lr/import-write-bounds-{build,runtime}.log and
+  import-bounds-{u,j}.log. These are short scenarios, not new complete NTSC races.
+- After the shared RMESH header/layout/vertex changes, the rebuilt Linux game
+  completed two actual PAL class-1 Mythical Coast races with the intervening
+  finish/repeat flow, three presentation restarts, automatic PAL timing,
+  matching VRAM cache oracle and checked GPU-before-asset session teardown.
+  Evidence: build/performance-drive/20260905-173257-7e3d69/ (result.txt records
+  executable/config hashes). This used offscreen Vulkan and route autopilot;
+  it is not an input/physics replay, pixel-equivalence test, physical-display
+  performance result or new NTSC/Windows repeated-race run.
+- Added RuntimeMeshEncodeHeader and integrated it into the live importer,
+  sharing version/magic/count encoding with the format implementation. It
+  requires the complete declared buffer capacity, writes only the header, and
+  leaves all bytes unchanged on failure. Payload population remains the
+  caller's responsibility and RuntimeMeshOpen still validates before adoption.
+  Tests assert independent header bytes, exact-capacity rejection, unchanged
+  payload, rejection of uninitialized payload and a valid empty mesh.
+  Linux smoke build, rmesh test and PAL sampled_vram_marker passed
+  (mesh-header-build.log, mesh-header-runtime.log under
+  build/environment-index-Dgm4lr/). Windows game/replay build and rmesh test
+  passed with both layout and header changes; guest vertex-codec build/test
+  logs now contain this newer result. No Windows gameplay rerun is claimed.
+- Shared RuntimeMeshLayout now computes checked offsets and total wire size for
+  both the RMESH reader and live C importer. Removed the importer's duplicate
+  size arithmetic. Layout calculation does not allocate or validate content;
+  the reader still validates ranges, finite vertices and indices. The offset
+  table reader uses size_t rather than a uint32_t loop/multiplication that could
+  wrap for huge representable 64-bit buffers. Tests cover the known 216-byte
+  fixture, empty layout, null output and maximum uint32 counts without huge
+  allocation. Linux smoke build and rmesh test passed in
+  build/environment-index-Dgm4lr/mesh-layout-build.log. The test contains a
+  32-bit overflow expectation, but this run used a 64-bit host; no 32-bit
+  execution is claimed. Complete cache export still remains pending.
+- Export-path audit: rage-extract writes raw assets and decoded images but not
+  a complete runtime mesh/material cache. The live C importer emits RMESH bytes
+  in memory; the old assetbrowser Python pipeline still supplies full cache
+  export. It remains in place pending a compiled equivalent and regression
+  coverage. No launcher startup/export workaround was introduced.
+- Began sharing the native format writer: RuntimeVertexEncode in rage-rmesh
+  emits bounded little-endian 40-byte vertex records, preserves all material
+  metadata and rejects non-finite fields without modifying the destination.
+  The production C importer now uses it instead of its private field writer;
+  the reader also explicitly decodes little-endian float bits. Tests compare
+  known wire bytes and the existing fixture, size guards, all eight non-finite
+  floating fields and UINT32_MAX material. Linux game/smoke builds and rmesh
+  test passed (build/environment-index-Dgm4lr/vertex-codec-build.log).
+  This is an integrated format primitive, not the missing complete cache
+  exporter, model editing tool or persistent GPU geometry implementation.
+- Vertex codec integration also passed the actual PAL sampled_vram_marker
+  scenario (3.23 seconds, vertex-codec-runtime.log in the same evidence root).
+  Added encode/open/decode round trips checking every field and material values
+  for untextured, maximum index, UV scroll, near-only terrain, environment CLUT
+  and negative depth-bias bits. Linux rmesh and rebuilt render_mesh_build tests
+  passed; the latter retains semantic flag handling coverage after decoding.
+  Windows Release game/replay build and expanded rmesh test passed, with guest
+  evidence C:/rage-perf-results/vertex-codec-{build.log,test.log,result.txt}.
+  These checks preserve format/flag semantics, not pixel-equivalent gameplay
+  across every region, a big-endian runtime test or exporter completion.
+- Environment asset indices now share counted parsing and relative-path
+  validation with the native asset boundary. The file provider validates the
+  complete optional index before initializing its mesh cache, rejecting duplicate
+  keys, invalid/overflowing dimensions, embedded NULs and malformed records with
+  a line diagnostic. Sky lookup no longer uses a fixed-size sscanf line buffer.
+  The legacy headerless format and missing optional index remain supported.
+- Optional environment-index absence now requires successful directory
+  enumeration. Existing non-file entries and read failures reject the root,
+  instead of silently producing an asset cache without environment data.
+  SDL paths remain UTF-8; no errno guessing or parsing translated SDL errors.
+  This is startup validation, not an atomic filesystem snapshot or sandbox.
+- Added reusable compiled-toolchain integration script
+  tests/render/verify_environment_index.cmake, parameterized by replay binary,
+  captured world snapshot and output root. Linux offscreen Vulkan passed absent,
+  empty, directory and malformed index cases in
+  build/environment-provider-762b14e3f55a/. Permission-denied reads and concurrent
+  filesystem mutation are not injected by this fixture. It needs a supplied
+  snapshot in its initial version.
+- Removed that local-snapshot dependency: environment_fixture now writes a
+  synthetic camera/world snapshot and 4x4 RGBA texture in C. Registered
+  environment_provider with CTest (GPU label), covering missing, empty,
+  directory, malformed and valid indices. The valid case must report the
+  panorama loaded at 4x4 as well as produce an output image. Linux offscreen
+  Vulkan passed all five cases in 0.45 seconds. This is an asset-provider
+  regression requiring a working GPU backend, not a retail-image comparison;
+  Windows Release build and all five cases also passed through Vulkan/SwiftShader
+  in an interactive limited-user task (3.13 seconds). Evidence on the guest:
+  C:/rage-perf-results/environment-provider-{build.log,test.log,result.txt}.
+  The completed temporary task RageEnvironmentProvider20260905 was removed;
+  unrelated tasks and the running VM were preserved. Software Vulkan is not
+  evidence for vendor-driver performance or visual retail-game equivalence.
+- Broader Linux check initially reported missing unit-test executables because
+  previous builds selected individual targets. A full default build succeeded,
+  followed by all 213 unit-labeled tests passing. Evidence:
+  build/environment-index-Dgm4lr/{full-build.log,unit-suite-built.log}.
+  This is the unit-labeled set, not the full regional/e2e acceptance suite.
+- Linux's three GPU-labeled tests also passed: environment_provider,
+  presentation_device and composite_gpu (gpu-suite.log in the same directory).
+  The functional-labeled sweep was not fully green: 161 passed, two skipped,
+  and shipped_config failed because the user's local rage-port.ini intentionally
+  enables marker_capture. That configuration was preserved; the release-policy
+  assertion was not relaxed or bypassed (functional-suite.log).
+- The skipped stream_table test was rerun with explicit existing disc paths;
+  PAL plus NTSC-U and then NTSC-J passed (stream-pal-u.log, stream-j.log).
+  PAL/U compare known offsets/frame counts; J currently checks table shape and
+  successful derivation, not an independent full Japanese reference table.
+  render_stage_angles still lacks its prebuilt full native asset cache; the
+  synthetic sky fixture is not a replacement for the car/track silhouette sweep.
+- Expanded rmesh_index tests cover 200 descending environment keys (allocation
+  growth/sorting), earliest duplicate row independent of key order, CR/CRLF/LF,
+  UINT32_MAX keys, maximum dimensions and counted input boundaries. Linux CTest
+  and Windows Release tests passed; Windows game/replay builds also passed.
+  Guest evidence: C:/rage-perf-results/environment-index-{result.txt,build.log,
+  test.log}. Running the local helper required a process-local execution-policy
+  override; the VM's persistent policy was not changed.
+- File-provider GPU check in build/environment-index-Dgm4lr/ rendered a valid
+  synthetic 1024x512 environment through rage-frame-replay and rejected duplicate
+  and oversized entries at line 2. This uses a captured VRAM sheet as test pixels,
+  not an authored panorama: it proves provider acceptance/rejection and drawing,
+  not visual equivalence, live-importer coverage or complete asset unification.
+- Extracted `track_texture_snapshot.*` from the live importer. It owns snapshot
+  and bank buffers explicitly, borrows source pointers only during acquisition,
+  reuses allocations across generations, and invalidates old content before a
+  new-generation read. Teardown is idempotent. Game globals/VRAM calls remain
+  confined to the importer adapter; no standalone tool must link them merely
+  to test bank reconstruction.
+- The C lifecycle test passes 100 generations, independently owned snapshots,
+  both banks with mixed resident/shadow rows, undersized source rejection,
+  injected read failure/retry, repeated release and same-revision reinitialization.
+- Linux game build and 15 selected tests passed. This is a first integrated
+  slice, not completion of stage 1: mesh/GPU lifetimes and top-level session/
+  race contexts still need migration. The production PS1 read adapter retains
+  its existing synchronous behavior; the injected read failure tests the new
+  module contract, not newly implemented GPU read-error reporting.
+- Windows Release game build and the same lifecycle unit test also passed
+  (both exit 0): `build/autopilot-check/windows-snapshot-results/`. This is
+  compiled portability coverage, not another Windows full gameplay run.
+- The post-refactor PAL class-1 Mythical Coast scenario completed two actual
+  races in one process, through the intervening result/reward/repeat sequence:
+  `build/performance-drive/20260905-141836-d1f23f/`, exit 0 and
+  `autopilot result=complete races=2`. The VRAM cache oracle reported matches
+  and no mismatches. This validates the integrated repeat-load path, not every
+  visual pixel, audible FMV, other regions or physics/input replay.
+- Unified mesh byte/bounds adoption and release in `RuntimeCachedMeshAdopt` /
+  `RuntimeCachedMeshRelease`, used by both the live importer and file cache.
+  Entries retain the actual provider's release callback/context, rather than
+  relying on whichever provider is configured when teardown happens. Rejected
+  bytes remain caller-owned; occupied entries cannot be replaced under borrowed
+  views. Meshes remain session-resident; no race-time eviction was introduced.
+- Ownership tests cover malformed import, occupied-entry rejection, heap-backed
+  data released exactly once, borrowed bytes, repeated release and provider
+  changes. Linux build and nine selected tests passed. Windows Release game and
+  mesh-cache test passed (exit 0): `build/autopilot-check/windows-mesh-owner-results/`.
+  A post-change PAL class-1 two-lap route completed with the VRAM oracle enabled:
+  `build/performance-drive/20260905-142640-78f23d/`. This is not another complete
+  two-race reward/restart test; that preceding integration run predates this slice.
+- Teardown audit found that the normal game entry point returns after MainLoop
+  without calling ModernAssetsShutdown; the OS currently recovers session mesh
+  allocations at process exit. Therefore the route completion above does NOT
+  validate explicit whole-session teardown. Next: ordered renderer/session
+  shutdown, with GPU consumers retired before releasing borrowed mesh data.
+- Added `ModernShutdown`: explicitly called after the game/smoke loop (after
+  smoke dumps) and registered once with atexit for failure/exit paths. It waits
+  for GPU work, releases modern resources, restores chained hooks, then releases
+  session assets. A shutdown-needed guard makes the explicit + atexit pair
+  idempotent. The existing backend overlay-destroy hook retires only device
+  resources, preserving the content session for device recreation.
+- PSY-Z now submits its pending command buffer and waits before invoking device
+  destroy callbacks. The modern renderer also invalidates its borrowed VRAM
+  snapshot cache when resources are retired; a unit test recaptures the same
+  frame number after reset instead of returning a stale GPU handle.
+- Six targeted Linux tests passed. PAL normal-route exit passed the lifecycle
+  harness gate: `build/performance-drive/20260905-143410-d445c1/`. One resource
+  destruction precedes one successful session shutdown. A separate real-window
+  WM_DELETE_WINDOW request during native gameplay also exited 0 with the same
+  ordered cleanup: `build/autopilot-check/window-close-YBvkUv/`. The local C
+  request utility checked the exact target PID before sending the close event.
+- Windows Release game and VRAM snapshot/reset test passed after correcting
+  that test's existing Unix warning flags for ClangCL (`/W4 /WX`):
+  `build/autopilot-check/windows-shutdown-results/`. Windows interactive closing
+  was not repeated in this slice. Whole-session in-process restart, failure
+  injection around GPU allocation and remaining global state still need tests;
+  this does not mark stage 1 or the overall roadmap complete.
+- Fixed late attachment to an already-created GPU with a non-initializing
+  PSY-Z presentation-device query. Registering an init hook alone would otherwise
+  wait for an event that had already happened. The query borrows device/window
+  handles through the destroy callback and clears output pointers on failure.
+- Split presentation detachment from content-session teardown and added
+  `ModernRestartPresentation`. It retains mesh owners and assets while recreating
+  presentation resources and hooks. It does not reset game/disc state or start
+  a new content session. The opt-in harness `RESTARTS=3` exercises this boundary
+  only after submitted GPU work and before the next swapchain command buffer.
+- PAL route `build/performance-drive/20260905-144349-aa71f2/` completed with
+  three successful presentation restarts, four resource generations, retained
+  mesh pointer identity/count and final ordered session cleanup. VRAM oracle
+  comparisons matched. No pixel-exact image comparison is claimed for restart.
+- Added the compiled `presentation_device` GPU test: initialization, late query,
+  invalid outputs, destroy callback lifetime and two create/destroy cycles in
+  one process. Seven selected Linux tests passed, including this actual GPU
+  test (not skipped). Windows Release build and the device test also passed
+  with process-local SwiftShader: `build/autopilot-check/windows-device-results/`.
+  The temporary Windows scheduled task was removed after completion.
+- Full game-session restart remains unproven: `InitNativeGameData`, scene/input/
+  audio state and their reset contracts still need explicit ownership analysis.
+  Do not describe successful presentation/device restart as proof of full game
+  reset or completion of the architectural migration.
+- Audio teardown audit found a concrete dependency-order bug in PSY-Z:
+  the PCM dump and mixer mutex were released before the running SDL stream.
+  Destroy now quiesces the stream first, then releases callback dependencies;
+  init failures (including resume failure) use the same idempotent cleanup.
+  The SDL implementation was inspected read-only; no SDL sources were edited.
+- SDL_GPU platform shutdown now explicitly destroys the PSY-Z audio owner
+  before SDL_Quit, avoiding dangling stream state on later initialization.
+  This preserves SPU/disc/sequence state; it is not a whole-session reset.
+  Lifecycle calls must be serialized on the main thread, outside AudioLock.
+- Added compiled `audio_lifecycle`: a real missing-backend failure followed by
+  retry with SDL dummy audio, 40 init/pause/resume/running-destroy cycles,
+  repeated destroy, and checks that sample production resumes/stops correctly.
+  `presentation_device` now also checks audio across two actual GPU/platform
+  reset cycles, including idempotent destruction after backend cleanup.
+- Linux game build and seven selected tests passed (audio_lifecycle,
+  presentation_device, fmv_audio, audio_settings, modern_vram_snapshot,
+  rmesh_cache, track_texture_snapshot). Initial test setup needed rebuilding
+  two absent test binaries and reapplying the dummy-driver hint after SDL_Quit.
+  This slice has no Windows rerun, audible-output validation, allocator/mutex/
+  stream-open failure injection or sanitizer evidence. The alternate SDL_GL
+  shutdown path and normal-loop audio shutdown still need lifecycle review.
+- Follow-up: normal game/smoke loop completion now explicitly stops audio
+  (after smoke diagnostics), SDL_GL also releases its audio owner before
+  SDL_Quit, and the SDL audio backend registers one idempotent atexit cleanup
+  for early returns. No launcher UI/startup selection flow was changed.
+- Added `audio_exit_cleanup`: leaves real dummy playback active when main
+  returns, then an earlier-registered atexit observer verifies sample production
+  has stopped after backend cleanup. Five targeted Linux tests passed, including
+  both audio lifecycle tests and the GPU/platform reset fixture.
+- Windows Release game build and both compiled audio lifecycle tests passed
+  (exit 0): `build/autopilot-check/windows-audio-results/`. These use SDL dummy,
+  not audible hardware. SDL_GL remains source-reviewed, not built/tested here.
+- Linux PAL one-lap integration completed with dummy audio actually initialized
+  and VRAM/lifecycle gates enabled:
+  `build/performance-drive/20260905-145753-dfc288/`. This does not validate every
+  FMV, image correctness or full SPU/CD/game-state reset.
+- Started the shared mod contract: `[mod] schema_version = 1`, with missing
+  version preserving existing version-1 manifests. Unsupported versions fail
+  atomically in the semantic parser; duplicate/malformed/overflowing versions,
+  embedded NUL and trailing directory paths are rejected. The renderer reports
+  a specific unsupported-schema diagnostic instead of accepting a partial
+  future manifest. See `docs/mod-manifest.md` for the actual supported subset.
+- Three selected Linux tests passed (mod_manifest, mod_asset_fallback,
+  rmesh_cache), as did the Linux game build. Windows Release game and expanded
+  compiled mod_manifest test passed:
+  `build/autopilot-check/windows-mod-schema-results/`.
+- Inspection identified the next unification boundary: `mod_assets.c` applies
+  raw archive/texture patches independently of the semantic manifest loaded by
+  `modern_assets.c`. Invalid semantic manifests currently do NOT disable raw
+  replacements from the same directory. A common validated mod owner must gate
+  both providers; versioning alone does not complete stage 2. Multi-mod ordering,
+  dependencies/conflicts/cache identity remain pending, as do stage-1 session
+  state boundaries. No new launcher or import/export UI was implemented.
+- Unified the manifest gate in `mod_assets.c`. It owns a copied directory and
+  one parsed manifest without SDL/GPU dependencies. The modern renderer now
+  borrows that manifest instead of loading/parsing a second copy. Invalid,
+  unsupported or unreadable manifests disable raw replacements, legacy PNG
+  patches and semantic overrides together; absent manifests preserve raw-only
+  compatibility. Reads are bounded to 2 MiB, and failures report diagnostics.
+- Linux game build and seven compiled tests passed: parser, legacy fallback,
+  valid combined provider, invalid manifest, future schema, semantic-only pack,
+  and unreadable manifest (directory in place of the file). Tests exercise both
+  first-consumer orders, unchanged destination bytes on rejection, shared view
+  identity and no mid-session manifest mutation after editing the file.
+- This owner is deliberately process-lifetime, matching current configured-mod
+  selection. Renderer teardown only drops its borrow. Explicit session reload,
+  multi-mod selection and asset-file content identity are not yet implemented.
+  New provider integration has not yet been rerun on Windows or through a
+  rendered modded race; preceding Windows schema evidence predates this slice.
+- Ported the compiled provider file fixture to Windows using exclusive temporary
+  directory creation and a direct configuration stub; production path handling
+  is unchanged. After fixing a fixture helper name collision with Win32
+  WriteFile, Windows Release game and all seven manifest/provider tests passed:
+  `build/autopilot-check/windows-mod-provider-results/`. The same seven pass on
+  Linux. This includes rejecting a directory used as mod.toml on both systems.
+- The existing native_render_world integration test was run without editing or
+  replacing its Python runner. Its first attempt timed out after 105 seconds.
+  A retry with an explicit PAL image still waited before gameplay; a debugger
+  stack identifies X11_ShowWindow -> SDL_ShowWindow -> InitPlatform, waiting in
+  XIfEvent. Evidence: `build/autopilot-check/mod-provider-window-wait.txt`.
+  No Xvfb runner is available locally. Rendered-mod integration remains unproven;
+  do not count this as a passing visual test or attribute it to the mod loader.
+- Added explicit, idempotent `ModAssetsShutdown`. Full ModernAssetsShutdown
+  first retires mesh/importer owners and drops the renderer manifest borrow,
+  then clears mod selection, parsed content and per-session diagnostics.
+  Presentation-only restart does not call this path. The next mod access reads
+  configuration/manifest again; this does not undo already-installed game bytes.
+- Extended provider scenarios cover double shutdown, valid-to-unsupported
+  manifest transitions, repair/retry, zero stale texture entries, disabled-mod
+  sessions and configuration re-selection only after shutdown. Linux game build
+  and seven tests passed; Windows Release game and the same seven passed:
+  `build/autopilot-check/windows-mod-session-results/`.
+  Runtime rendering after these changes remains unverified because of the
+  previously diagnosed X11 show-window wait. Full game reset, multi-mod
+  resolution, dependencies/conflicts and source identity remain open gates.
+- Found a usable isolated renderer-validation path without changing SDL or user
+  settings: `SDL_VIDEODRIVER=offscreen`. The existing native_render_world test
+  passed in 3.21 seconds with an explicit local PAL image. Its assertions prove
+  semantic texture override selection, native GPU draw submission and attract
+  shadow draws, not pixel-exact output or X11 on-screen presentation. Evidence:
+  `build/autopilot-check/mod-render-offscreen.log`. No Python runner was added
+  or modified; replacing existing runners with compiled equivalents remains open.
+- Compiled presentation_device and composite_gpu tests also passed offscreen
+  (not skipped). PAL route `build/performance-drive/20260905-151559-3ed184/`
+  completed one lap, three presentation restarts with retained mesh views, VRAM
+  oracle checks and ordered shutdown after resource generation four. Audio used
+  dummy. This is lifecycle/rendering correctness evidence, not scanout FPS.
+- The performance harness now records the requested SDL video driver and
+  presentation restart count in result.txt to distinguish future offscreen
+  evidence from windowed runs. The X11 ShowWindow wait itself is still unresolved.
+- Extracted counted-byte `AssetPathIsRelativeFile` into the compiled shared
+  asset library and use it for both mod manifests and runtime mesh-index paths.
+  Runtime-index matching records now reject path traversal, absolute/drive
+  prefixes, backslashes, control/NUL bytes, empty/dot path components and extra
+  fields before returning a file location. This is lexical validation, not a
+  symlink sandbox or whole-index duplicate/content validation.
+- Linux game build and nine selected tests passed. Index tests cover mesh and
+  material paths, counted non-NUL-terminated input and malformed trailing data;
+  a cache regression confirms rejected traversal never calls the file reader.
+  Windows and rendered-game tests have not yet been rerun for this slice.
+- Follow-up verification: Windows Release game and all nine selected
+  manifest/provider/index/cache tests passed with the shared path validator:
+  `build/autopilot-check/windows-asset-path-results/`. The index fixture now
+  selects MSVC warning flags correctly. Linux smoke, frame-replay, render-stage,
+  extract and pack targets built successfully. Native-render-world integration
+  passed offscreen after rebuilding (3.06 seconds):
+  `build/autopilot-check/asset-path-render-offscreen.log`.
+- The existing mod_tools regression also passed: synthetic archive extraction/
+  packing round trip, edit isolation and invalid-input cases. This does not
+  substitute for a new standalone model import/export implementation, nor for
+  all retail-region tests. Its existing Python runner was not modified.
+- Added `RuntimeIndexValidate` and invoke it before accepting a file-backed
+  modern asset cache. It checks the complete current-version index, all record
+  fields/set names/paths, hidden NULs and duplicate key/set pairs. Temporary
+  identities are sorted once at initialization (not in a render-frame loop),
+  then freed. Errors include a line number; allocation failure reports line 0.
+  Same key in different asset sets remains valid. Referenced file existence,
+  content hashes and the separate environment index are not validated here.
+- Linux game/smoke builds and index/cache unit tests passed, including 200
+  descending keys (scratch-buffer growth), CRLF line numbering, duplicates and
+  malformed records after a valid header. Native-render-world also passed
+  offscreen (3.25 seconds). Windows has not yet rerun this full-index slice.
+- Windows Release and all nine selected tests now pass with complete-index
+  validation: `build/autopilot-check/windows-index-validation-results/`.
+  A subsequent defense-in-depth guard validates relative paths at the common
+  ModernAssetReadFile entry point as well, covering the environment-index route
+  which bypasses the mesh index. It clears failed read outputs. Linux game/smoke
+  build and native-render-world offscreen passed (2.96 seconds) after this guard;
+  that small subsequent guard is not included in the Windows evidence above.
+- Presentation-boundary inventory: most native GPU work consumes neutral
+  camera/instances already, but ModernAssetsLoadSkyImage and the live importer
+  still expand panoramas using live g_SkyTileMap/g_SkyRowBase. The importer also
+  discards sky assetKey and captures live VRAM. A recorded neutral frame alone
+  therefore cannot reconstruct this asset independently. Next stage-3 work must
+  make the sky layout/source generation explicit without changing the corrected
+  screen-space cloud geometry. This is evidence of an open boundary, not proof
+  of a current visual regression or authorization to add rendering threads.
+- Extracted `RageSkyPanoramaLayout`, a 16-byte resolved tile selection with no
+  game-state pointers. Both the live importer and the file-image expansion path
+  now resolve the same copied layout before expanding pixels. The pure expansion
+  entry point rejects invalid tile indices before changing any destination byte.
+  Tests prove changing the source map after capture cannot affect expanded pixels.
+- Linux game/smoke builds, sky_panorama_layout and native-render-world offscreen
+  passed (2.99 seconds for integration). This is preparation for the actual frame
+  boundary, not its completion: capture still happens during asset load. The
+  camera/frame must next carry the layout, sky GPU cache identity must include it,
+  and snapshot version 6 needs an explicit backwards-compatible extension.
+  Live VRAM source ownership remains separate and unproven. No cloud geometry or
+  snapshot serialization was changed in this slice; Windows has not rerun it.
+- Game-produced cameras now own resolved sky tile layouts. Presentation
+  interpolation copies this discrete state and snaps the cloud grid when its
+  layout changes. Native GPU sky cache identity includes layout/validity as well
+  as asset key and cloud row, and passes the frame's layout to both import paths.
+  The neutral layout type is in render/sky_layout.h, not a game-global header.
+- Snapshot version 7 serializes the layout for all four current/previous/main/
+  mirror cameras. Tests round-trip distinct layouts, reject invalid v7 tiles,
+  and reconstruct/read v6 wire data with layout absent. Versions 1-6 retain the
+  explicit legacy fallback to current game layout; they are not claimed to be
+  self-contained. Current captured layouts do not borrow the live tile map.
+- Linux game/smoke/frame-replay/render-stage builds and four selected tests
+  passed, including native-render-world offscreen (3.05 seconds). Updating the
+  importer signature also required the replay tools' importer stub to match.
+  Windows and pixel-exact sky/cache transition tests have not rerun this slice.
+  Live VRAM image ownership still prevents fully independent replay; the layout
+  boundary alone is not completion of stage 3 or the full migration.
+- Windows Release game, frame-replay and render-stage builds now pass with
+  frame-owned sky layouts and snapshot v7. Three compiled tests (layout,
+  render-world interpolation, snapshot v7/v6 compatibility) pass on Windows and
+  Linux. The fixtures now use appropriate MSVC warning flags. Windows evidence:
+  `build/autopilot-check/windows-sky-frame-results/`.
+- Post-change PAL Mythical Coast class-1 integration completed two actual races
+  through the intervening result/repeat path, with three presentation restarts,
+  retained mesh owners, VRAM oracle and final ordered resource/session shutdown:
+  `build/performance-drive/20260905-153417-6f706a/`. The result records offscreen
+  explicitly. Audio was dummy; this is not an audible, pixel-exact, physical
+  Windows GPU or X11 scanout test, nor a PAL/NTSC-wide stability claim.
+- Replaced separate native sky-cache identity globals with a shared semantic
+  `RageSkyTextureIdentity` and a pure comparison used by the actual GPU cache.
+  A compiled fixture changes each of the 16 tiles independently with unchanged
+  asset/row, and verifies invalidation, symmetry, asset/row changes, copied key
+  independence and legacy no-layout behavior. This tests the cache decision,
+  not GPU pixel contents after an upload.
+- Linux game/smoke build, four selected unit/functional tests and the existing
+  native-render-world offscreen integration passed (10.94 seconds). Windows
+  evidence above predates this identity-only refactor. VRAM image generations,
+  full session reset and the other roadmap stages remain unfinished.
+- Extended the actual presentation-device test with an unsupported GPU driver:
+  initialization fails, no presentation handles are published, double reset
+  cleans up, then two valid device/audio cycles succeed. This exposed a real
+  backend bug: destroy callbacks were emitted for failed/uninitialized devices
+  and repeated resets. SDL_GPU now emits them only for a successfully published
+  device lifetime; internal partial resources are still cleaned independently.
+- Regression first failed as expected, then passed after the guard. Linux
+  game/smoke builds, audio lifecycle/exit, GPU failure/retry and native-render-world
+  offscreen tests passed (4/4). Additional repeated reset after each successful
+  device cycle also passed. No SDL library source was edited. This exercises
+  device-selection failure, not every allocation/shader/window failure, and has
+  not yet been rerun on Windows or the alternative SDL_GL backend.
+- Windows verification passed: Release game build, compiled sky-identity test,
+  and the real presentation-device failure/retry fixture in an interactive
+  limited-user VM task with process-local SwiftShader (exit 0, not skipped).
+  Evidence: `build/autopilot-check/windows-device-failure-results/`. The expected
+  unsupported-driver diagnostic precedes two successful Vulkan device lifetimes;
+  it is intentional fault injection, not an unexplained test error. Removed
+  temporary task RageDeviceFailure20260905 after it returned Ready/exit 0.
+- Persistent-geometry inventory: ModernNativeGpuPrepare still expands main and
+  mirror vertices through RenderBuildNativePassDraws into CPU arrays, and
+  ModernNativeUploadVertices copies the combined prepared array into a cycled
+  GPU buffer. Asset mesh byte ownership alone does not make this geometry
+  persistent. Stage 4 must preserve view-dependent culling, UV/material state
+  and shadow/main/mirror consumers while changing this data path.
+- Added opt-in performance-trace vertex-upload records: frame identity, main/
+  mirror vertex counts, bytes and CPU map/copy/command-encoding time. The normal
+  path performs no timestamp/log calls when trace is disabled. These timings
+  do not measure GPU execution or scanout and include transfer-buffer cycling.
+- PAL Mythical Coast class-1 one-lap measurement:
+  `build/performance-drive/20260905-154724-b2fd72/`, offscreen/dummy, trace on,
+  complete. 2,064 uploads, no repeated frame identities, all byte counts equal
+  (main + mirror vertices) * 76. Total 3,916.60 MiB, mean 1,943.12 KiB per upload,
+  max 2,945.74 KiB. Mean CPU upload preparation 0.2351 ms (0.2314 ms excluding
+  first ten), max 9.901 ms. Thus skipping unchanged frame IDs would not optimize
+  this normal interpolated path: GameRenderWorldPresentation increments its
+  serial every presentation. Persistent object-space geometry needs a real data
+  path change, not a redundant-upload flag. This trace alone does not establish
+  that upload is the principal frame-rate bottleneck.
+- Regional post-refactor verification: local NTSC-J (SLPS_006.00) and NTSC-U
+  (SLUS_004.03) both completed class-1 one-lap routes with three presentation
+  restarts, VRAM oracle and ordered cleanup. Both automatically selected NTSC
+  base 60 Hz. Evidence: `build/performance-drive/20260905-155114-563bff/` (J),
+  `build/performance-drive/20260905-155116-25a15a/` (U). Offscreen/dummy, not
+  audible FMV or pixel-perfect regional equivalence tests.
+- The existing J CUE referenced `(v1.1)` filenames absent from its extracted
+  directory; first attempt failed disc initialization. Preserved it and wrote
+  `build/debug-disc-ntsc-j/region-validation.cue` with matching names, retaining
+  track/index layout. U archive BIN/CUE files were extracted into fresh ignored
+  `build/region-us-cF3bs1/`; no source images were changed.
+- Added optional EXPECT_REGION to the compiled-toolchain CMake route harness:
+  validates recognized region, automatic timing-selection log and 50/60 Hz base.
+  Positive J gate passed: `build/performance-drive/20260905-155254-f0af80/`.
+  Intentionally requesting PAL for U completed the route but correctly failed
+  the region gate: `build/performance-drive/20260905-155255-5d5bc7/`. This expected
+  negative test is not a game regression. PAL with the new gate is not yet rerun.
+- PAL now also passes EXPECT_REGION=PAL, automatic 50 Hz base, one class-1 lap,
+  VRAM and lifecycle gates: `build/performance-drive/20260905-155413-bede5c/`.
+- Audited existing FMV coverage: fmv_all_audio/ pacing explicitly force classic,
+  so they do not prove modern-renderer FMV integration. The existing PAL pacing
+  test passed in 57.53 seconds, covering complete decode of stream 5 (promotion)
+  and stream 0 (opening), sector-derived picture/XA pacing, nonzero PCM and the
+  intended audio tail. Evidence: `build/autopilot-check/pal-fmv-pacing.log`.
+  This used offscreen/dummy and the existing Python runner unchanged. It is not
+  an audible verification, an all-11-stream rerun or a modern-renderer pass.
+- A compiled modern FMV runner can reuse DiscIdentify/DiscStreamTable plus the
+  raw-sector reader; keep an independent sector/PCM oracle rather than trusting
+  game trace counts alone. Existing Python coverage must remain until the
+  compiled replacement covers its complete behavior, including malformed data.
+- Added C `rage-pcm-check` and `pcm_metrics` unit coverage: independently reads
+  captured little-endian stereo samples, checks complete frames and overflow,
+  and compares frame count/absolute amplitude sum with the mixer report. Empty
+  or silent capture fails the command-line verifier. Existing Python pacing
+  coverage remains unchanged; this is not its complete replacement.
+- Added `modern_fmv_audio` CTest scenario (CMake orchestration of compiled game
+  and verifier). Checks stream 5's full ordered retail frame sequence (PAL 150,
+  NTSC-U/J 300), XA start/end, explicit modern selection and actual nonzero PCM.
+  It selects FMV directly, not by completing a class, and does not independently
+  derive sector timing or prove audible hardware output/all eleven streams.
+- The first BIN run exposed real missing audio: HostOpenDiscImage mounted game
+  data but left PSY-Z's CD backend empty. CUE produced sound on the same movie.
+  BIN now installs a single data-track sector backend with a separately owned
+  FILE cursor for mixer reads; retirement unregisters it under the audio lock
+  before closing. No synthetic CUE, launcher flow change or extra user input.
+  Track 01 cannot supply separate CD-DA music tracks that are not in that file.
+- Linux offscreen Vulkan + dummy audio promotion tests passed for PAL BIN
+  (`build/modern-fmv-3197626672ad/`), PAL CUE (`build/modern-fmv-bb76439d3e4c/`),
+  NTSC-J BIN (`build/modern-fmv-7413a4797d26/`) and NTSC-U BIN
+  (`build/modern-fmv-e07742efc3b1/`). Initial NTSC runs exposed the scenario's
+  incorrect PAL-only frame expectation; corrected before the passing reruns.
+  Game/smoke/tool builds and five selected tests passed (pcm_metrics,
+  audio_lifecycle, audio_exit_cleanup, disc_raw_file, fmv_audio). The raw-file
+  test binary initially was absent and was built before rerunning all five.
+  Windows portability and broader lifecycle/region/FMVs remain to validate.
+- Expanded the compiled modern FMV scenario into eleven independently runnable
+  CTest cases. Retail opening expectations are PAL 1800 / NTSC 2160 frames;
+  ending is 1500 in each edition. The first complete run is checked because the
+  title screen can start the intro again during remaining smoke ticks. The
+  initial all-PAL run passed ten movies but overcounted the replayed intro;
+  after correcting that test logic its isolated rerun passed in 54.07 seconds.
+  PCM checks permit the ending's intentional silent picture tail; nonzero total
+  capture is not a proof of uninterrupted audio throughout the entire movie.
+- Windows build exposed two existing smoke portability problems: POSIX-only
+  setenv and platform_stubs being built once in the shared legacy object target
+  without RAGE_SMOKE_TARGET. Use _putenv_s on Windows (preserving an existing
+  environment value), and compile platform_stubs separately in each executable
+  so the smoke hook fallback and call order use the correct target definition.
+  Linux game/smoke rebuilt successfully. Windows Release game/smoke/PCM tool
+  builds and pcm_metrics test passed, evidence
+  `build/autopilot-check/windows-fmv-pcm-results/`. No Windows GPU FMV run is
+  claimed by this build/unit-test result. Existing Python tests remain intact.
+- Final Linux PAL all-eleven modern FMV run after the per-executable hook fix
+  passed 11/11 in 106.29 seconds (`build/modern-fmv-jXQowZ/all-pal-final.log`).
+  Uses offscreen Vulkan and dummy audio, verifies complete first decode and
+  captured PCM, not display pixels, wall-clock synchronization, physical audio,
+  class-completion transitions, or the full NTSC movie matrices.
+- Existing scenario_control runner also passed unchanged after the hook fix:
+  both real-menu confirmation and direct race boot reach their synchronized
+  stop. Evidence `build/modern-fmv-jXQowZ/scenario-hooks.log` (exit 0, silent on
+  success). This retained Python regression has not been replaced or extended.
+- Full modern FMV matrices now also passed on Linux using standalone data BIN:
+  NTSC-U 11/11 in 117.70 seconds (`build/modern-fmv-jXQowZ/all-ntsc-u.log`),
+  NTSC-J 11/11 in 119.97 seconds (`build/modern-fmv-jXQowZ/all-ntsc-j.log`).
+  Together with the preceding PAL CUE run, all 33 region/stream combinations
+  passed complete first-run decode and nonzero PCM/mixer agreement. These are
+  still unthrottled offscreen/dummy tests, not complete class/race transitions
+  or independent picture-to-XA timing validation.
+- Windows PAL BIN promotion stream 5 passed the actual modern Vulkan runtime
+  scenario using process-local SwiftShader in a non-elevated interactive task.
+  Verified 150 picture frames, XA start/end and 3,258,368 stereo PCM frames with
+  absolute energy 2,759,471,803, exactly matching the mixer. Evidence copied to
+  `build/autopilot-check/windows-fmv-pcm-results/` (game.log, pcm-check.log,
+  fmv-runtime.log/result). The extra smoke ticks entered attract mode after the
+  movie; PCM totals describe the entire process, not isolated soundtrack length.
+  Removed only our completed RageFmvRuntime20260905 task; preserved the existing
+  unrelated RagePackageValidation task. Full Windows FMV matrix, physical audio
+  output and hardware-GPU performance remain unverified.
+- Added compiled `rage-fmv-pacing-check`: reads BIN/CUE sectors independently
+  of the renderer/decoder, validates ordered STR chunks and retail XA coding,
+  matches every reported frame-end sector, checks region-derived 50/60 Hz and
+  compares elapsed simulation ticks with XA duration and 150 sectors/second
+  (2% tolerance). Trace numbers reject overflow rather than using scanf's
+  unchecked integer conversion. Supports representative streams 0 and 5 only;
+  CHD and full Python-test equivalence remain out of this tool's current scope.
+- Integrated that oracle into modern opening/promotion tests, including a
+  negative trace that delays the last frame without changing sector/frame/PCM
+  counts. All six region/representative-stream combinations passed both real
+  evidence and expected rejection: `build/modern-fmv-jXQowZ/pacing-pal.log`,
+  `pacing-ntsc-u.log`, `pacing-ntsc-j.log`. Windows Release tool build passed and
+  validated the prior Windows PAL promotion log against its BIN (no new GPU
+  playback); `build/autopilot-check/windows-fmv-pcm-results/fmv-pacing-*`.
+  Usage and measurement limits are documented in `docs/fmv-regression-tests.md`.
+  No claim of physical audio latency, wall-clock synchronization, full malformed
+  disc coverage, or overall architecture completion; existing Python retained.
+- Disc ownership audit found stale playback across backend replacement:
+  Psyz_CdSetDiskPath/SetSectorBackend cleared the track table but left playback,
+  prefetched PCM and open CUE track FILE state alive. Added a compiled regression
+  using the actual CD backend and paused dummy audio; before-fix evidence
+  `build/modern-fmv-jXQowZ/cd-backend-before.log` fails on retained playing state
+  and samples appearing before playback is requested on the replacement disc.
+- Both mount entry points now serialize with the mixer, stop/close the old
+  stream and reset disc-owned buffers, decoder history/filter, XA limit and CD
+  counters before replacing metadata, including failed mounts. Mixer volume is
+  retained. Documented borrowed callback/user lifetime through unmount return.
+  This is a disc backend boundary, not full SPU/game-session reset.
+- The C test passes 20 cycles of unmount/idempotent unmount, direct source
+  replacement, failed virtual mount and failed CUE path, with distinct sample
+  identities, callback counters and no pre-playback stale samples. Four Linux
+  lifecycle/audio tests passed (`cd-backend-final.log`); PAL modern promotion
+  plus PCM/sector pacing also passed after the backend change (`cd-backend-fmv.log`).
+  Paths are under `build/modern-fmv-jXQowZ/`. XA-history-specific failure injection,
+  CUE-file-handle release and concurrent active-mixer stress still need dedicated
+  coverage; synchronous CD-DA fixture results do not prove those cases.
+- Windows Release game/smoke build and the same CD backend lifecycle fixture
+  passed: `build/autopilot-check/windows-cd-backend-results/`, both exit 0.
+  No Windows real-disc GPU rerun was performed after this backend change.
+- Extended the compiled backend fixture with real XA decoding of synthetic
+  sectors. Ten replacements use distinct ADPCM data/file IDs after priming the
+  old decoder and setting an exclusive one-sector limit and filter. Each new
+  source must emit no samples before Play, then produce 6000 stereo frames
+  byte-identical to a fresh baseline without inheriting the old filter/limit;
+  old-source callback counters stay unchanged. Unmount during XA stops pulls.
+  Linux expanded fixture and four-test audio/lifecycle suite passed:
+  `build/modern-fmv-jXQowZ/xa-backend-test.log` and `xa-backend-suite.log`.
+  This covers decoder/filter/range state with a paused mixer, not concurrent
+  mounting against an actively pulling SDL callback or CUE file-handle lifetime.
+- Windows Release build and expanded CD-DA/XA lifecycle fixture also passed
+  (`build/autopilot-check/windows-xa-backend-results/`, both exit 0). This is
+  synchronous decoder/backend coverage, not another GPU movie playback run.
+- Added concurrent CD-DA owner retirement coverage to the same compiled fixture:
+  the real SDL dummy stream is unpaused and pulls through the SPU/CD backend.
+  Twenty successive providers deliberately delay sector reads while the main
+  thread requests unmount. Atomic counters prove each provider was read,
+  at least one read was observed in flight before unmount, no callback remains
+  active on return, and retired providers receive no subsequent reads. Owners
+  stay allocated for the whole test so late access reports deterministically.
+  Audio sample production must advance. This does not reset/check already mixed
+  SPU/device PCM, and concurrent XA mode itself is not exercised in this fixture.
+- Linux fixture passed ten consecutive runs (200 concurrent retirements plus
+  the synchronous CD-DA/XA checks):
+  `build/modern-fmv-jXQowZ/concurrent-cd-repeat.log`, 13.29 seconds. Windows Release
+  build and one expanded fixture run also passed:
+  `build/autopilot-check/windows-concurrent-cd-results/`, both exit 0. No sanitizer
+  evidence or exhaustive scheduling guarantee is claimed by this stress test.
+- Started the content boundary with compiled `rage-content` and immutable
+  `RageRegionProfile` values for unknown/PAL/NTSC-U/NTSC-J. Boot-family detection
+  and runtime timing now consume the same profile data, without SDL, GPU or game
+  globals. The serial-family mapping retains the previous nine prefixes and
+  case-insensitive recognition. It classifies regions, not game compatibility.
+  FMV tables are still derived from the mounted image rather than copied into
+  regional defaults. No launcher code or startup selection flow was changed.
+- Canonical names select timing; unknown names retain the defensive PAL default.
+  The former permissive `NTSC*` string check no longer treats an invented name
+  such as `NTSC-invalid` as a recognized 60 Hz profile. Unit tests cover this,
+  all prefixes/lowercase variants/truncated strings, missing values and shared
+  profile identity. Linux game/smoke/tool build and four selected tests passed
+  (`build/modern-fmv-jXQowZ/region-profile-tests.log`). The real-disc test first
+  skipped due to its historical default path; rerun with explicit PAL CUE passed.
+- Modern promotion PCM + sector-pacing regressions passed after profile
+  integration for PAL, NTSC-U and NTSC-J (`region-profile-pal.log`,
+  `region-profile-ntsc.log`, `region-profile-j.log`, same evidence directory).
+  These profiles are built-in defaults, not completion of versioned external
+  content definitions, vehicles/events/rewards, regional asset variants or the
+  whole architecture roadmap. Independent oracle expectations remain explicit.
+- Windows Release game/smoke/pacing-tool builds and region_profile,
+  timing_restore, disc_stream_table tests passed:
+  `build/autopilot-check/windows-region-profile-results/`. Corrected existing
+  Unix warning flags on the two disc-table tests to `/W4 /WX` under ClangCL;
+  otherwise `-Wall` enables unrelated all-warnings diagnostics there. No Windows
+  GPU rerun is claimed for this profile slice.
+- Presentation dependency audit: ModernNativeGpuPrepare still reads live
+  TrackAssetIdentityRevision; NativeAssetImporterLoadSky ignores assetKey when
+  decoding current VRAM. Copying just a revision into a frame would not make its
+  pixel resources immutable and could label current pixels as an old generation.
+  Resource-generation owners must be established before claiming replay isolation.
+- Unified the two sky atlas expansion paths behind one pure copied-layout
+  implementation: exported 512x128 eight-column strip and decoded 256x256
+  four-by-two texture page. The live importer now calls the latter rather than
+  maintaining an untested second expansion loop. Inputs are borrowed only during
+  the call; source pixels still come from live VRAM through the existing adapter.
+- Expanded tests encode local X/Y/tile identity in every RGBA pixel, compare both
+  atlas representations and independently assert every output pixel across all
+  four retail row-base variants. Invalid tile IDs and undersized source/output
+  leave destination unchanged. Linux game build/unit test passed, followed by
+  PAL class-1 Mythical Coast one-lap run with panorama loaded 512x256, VRAM oracle
+  and lifecycle checks: `build/performance-drive/20260905-164851-101b48/`.
+- Windows game/replay/stage builds and three sky/frame/snapshot tests also passed:
+  `build/autopilot-check/windows-sky-atlas-results/`. The first invocation pointed
+  at an absent helper script; after copying it explicitly, the actual build/test
+  result was checked. This is no new Windows GPU run or pixel-exact gameplay
+  comparison, and immutable frame-owned texture data remains incomplete.
+- Marker/replay audit established that normal modern main-view sky is drawn
+  by ModernRenderOverlaySelection from captured packets plus sampled VRAM;
+  ModernNativeGpuDraw is called with drawSky=0. Therefore capturing the standalone
+  native panorama cache would not capture the main-view sky. The attempted sky
+  bundle reported unavailable and was removed, rather than shipped as a replay
+  of resources it did not represent (`build/sky-replay-PkLZFH/` investigation).
+- Added raw RGBA GPU texture capture and marker `*-vram-sampled.rgba`: exact
+  1024x512 RGBA8 texture borrowed from ModernVramSnapshotCache, with a frame-match
+  guard. Existing `*-vram.raw` remains the current compatibility readback. GPU
+  download now checks fence-wait success before reading either PPM or RGBA data.
+- The frame-match guard exposed markers running before the indicated snapshot's
+  render submission. M/automatic marker checks now run after 3D rendering;
+  passthrough scenes retain diagnostic checks without claiming a modern image.
+  Marker info records sampled VRAM frame and whether it matches the scene.
+  Before ordering fix: `build/sampled-vram-jJPQb9/game.log` reports unavailable;
+  after: `aligned-game.log` and markers 4–7 contain full 2 MiB RGBA captures.
+- Added Linux compiled-toolchain `sampled_vram_marker` scenario: isolated state,
+  modern class-1 race, four automatic burst captures, no missing/mismatched
+  sampled-VRAM diagnostics and exact byte lengths. Passed via
+  `build/modern-fmv-jXQowZ/sampled-marker-test.log`. This is no self-contained
+  full-frame replay yet: packet replay, native mesh/material resources and ring
+  history ownership still need integration. No pixel-exact sky replay is claimed.
+- Windows Release game/replay/stage builds and existing three sky/world/snapshot
+  tests passed with the diagnostic changes:
+  `build/autopilot-check/windows-sampled-marker-results/`. The new marker capture
+  integration test currently targets Linux's isolated XDG state layout; no new
+  Windows runtime marker capture or injected GPU-fence failure test was run.
+- Marker integration now explicitly covers logic, fixed 60 and vsync presentation
+  settings instead of inheriting one local INI value. Every capture's info must
+  report modernImage=1, the requested FPS setting and identical scene/sampled-VRAM
+  frame numbers, in addition to the exact RGBA byte length. All three Linux
+  scenarios passed (12 burst captures total):
+  `build/modern-fmv-jXQowZ/marker-modes-tests.log`, 10.75 seconds. This verifies
+  marker association in those settings, not physical display refresh accuracy,
+  interpolated-image pixel equivalence or offline replay of the full scene.

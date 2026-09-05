@@ -4,6 +4,7 @@
 #include <stddef.h>
 
 enum {
+    RAGE_MOD_MANIFEST_SCHEMA_VERSION = 1,
     RAGE_MOD_MANIFEST_MAX_TEXTURES = 512,
     RAGE_MOD_MANIFEST_MAX_MATERIALS = 512,
     RAGE_MOD_MANIFEST_ID_CAPACITY = 96,
@@ -11,6 +12,12 @@ enum {
     RAGE_MOD_MANIFEST_PATH_CAPACITY = 512,
     RAGE_MOD_MANIFEST_PROPERTIES_CAPACITY = 256,
 };
+
+typedef enum RageModManifestError {
+    RAGE_MOD_MANIFEST_OK,
+    RAGE_MOD_MANIFEST_INVALID,
+    RAGE_MOD_MANIFEST_UNSUPPORTED_VERSION,
+} RageModManifestError;
 
 typedef struct RageModTextureOverride {
     char key[RAGE_MOD_MANIFEST_KEY_CAPACITY];
@@ -23,17 +30,22 @@ typedef struct RageModMaterialOverride {
 } RageModMaterialOverride;
 
 typedef struct RageModManifest {
+    unsigned schemaVersion;
     char id[RAGE_MOD_MANIFEST_ID_CAPACITY];
     RageModTextureOverride textures[RAGE_MOD_MANIFEST_MAX_TEXTURES];
     size_t textureCount;
     RageModMaterialOverride materials[RAGE_MOD_MANIFEST_MAX_MATERIALS];
     size_t materialCount;
     size_t errorLine;
+    RageModManifestError error;
 } RageModManifest;
 
-/* Parse the deliberately small TOML surface used by mods: [mod] id and a
- * [textures] table of quoted semantic ids to quoted relative PNG paths. */
+/* Small TOML subset: [mod] id/schema_version, [textures], [materials].
+ * Missing schema_version means legacy schema 1. Unsupported versions fail;
+ * failure clears all content and retains only error/errorLine diagnostics.
+ * Output owns its values; lookup pointers are borrowed until parse/reset. */
 int ModManifestParse(const char *text, size_t size, RageModManifest *out);
+const char *ModManifestErrorString(RageModManifestError error);
 const char *ModManifestFindTexture(const RageModManifest *manifest,
                                       const char *semanticId);
 const char *ModManifestFindMaterialProperties(

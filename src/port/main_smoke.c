@@ -492,7 +492,13 @@ int main(int argc, char **argv) {
 
     Psyz_SetTitle("Rage Racer smoke");
     if (!HostInitStorage()) return EXIT_FAILURE;
-    setenv("RAGE_PORT_TEST_MODE", "1", 0);
+    if (getenv("RAGE_PORT_TEST_MODE") == NULL) {
+#ifdef _WIN32
+        if (_putenv_s("RAGE_PORT_TEST_MODE", "1") != 0) return EXIT_FAILURE;
+#else
+        if (setenv("RAGE_PORT_TEST_MODE", "1", 0) != 0) return EXIT_FAILURE;
+#endif
+    }
     Psyz_VideoSetAspectMode(PSYZ_ASPECT_SQUARE);
     Psyz_VideoSetVsyncMode(PSYZ_VSYNC_LIMITLESS);
     PadInit(0);
@@ -543,5 +549,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
     ReportFinalState();
+    Psyz_AudioDestroy();
+    ModernShutdown();
     return EXIT_SUCCESS;
 }

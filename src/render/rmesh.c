@@ -6,7 +6,7 @@
 
 enum {
     RAGE_RMESH_HEADER_SIZE = 24,
-    RAGE_RMESH_VERTEX_SIZE = 40,
+    RAGE_RMESH_VERTEX_SIZE = RAGE_RUNTIME_VERTEX_BYTES,
 };
 
 static const uint8_t s_magic[8] = {'R', 'R', 'M', 'E', 'S', 'H', '1', 0};
@@ -16,11 +16,45 @@ static uint32_t RageReadU32(const uint8_t *p) {
            ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
 }
 
+static float RageReadFloat(const uint8_t *p) {
+    uint32_t bits = RageReadU32(p);
+    float value;
+    memcpy(&value, &bits, sizeof(value));
+    return value;
+}
+
+static void RageWriteU32(uint8_t *p, uint32_t value) {
+    for (unsigned i = 0; i < 4; ++i) p[i] = (uint8_t)(value >> (8 * i));
+}
+
+static void RageWriteFloat(uint8_t *p, float value) {
+    uint32_t bits;
+    memcpy(&bits, &value, sizeof(bits));
+    RageWriteU32(p, bits);
+}
+
+int RuntimeVertexEncode(void *bytes, size_t size, const RageRuntimeVertex *vertex) {
+    uint8_t encoded[RAGE_RUNTIME_VERTEX_BYTES];
+    if (bytes == NULL || vertex == NULL || size < sizeof(encoded)) return 0;
+    for (unsigned i = 0; i < 3; ++i) {
+        if (!isfinite(vertex->position[i]) || !isfinite(vertex->normal[i])) return 0;
+        RageWriteFloat(encoded + i * 4, vertex->position[i]);
+        RageWriteFloat(encoded + 12 + i * 4, vertex->normal[i]);
+    }
+    for (unsigned i = 0; i < 2; ++i) {
+        if (!isfinite(vertex->uv[i])) return 0;
+        RageWriteFloat(encoded + 28 + i * 4, vertex->uv[i]);
+    }
+    memcpy(encoded + 24, vertex->color, 4);
+    RageWriteU32(encoded + 36, vertex->material);
+    memcpy(bytes, encoded, sizeof(encoded));
+    return 1;
+}
+
 static int RageFloatArrayIsFinite(const uint8_t *bytes, size_t count) {
     size_t index;
     for (index = 0; index < count; index++) {
-        float value;
-        memcpy(&value, bytes + index * sizeof(value), sizeof(value));
+        float value = RageReadFloat(bytes + index * sizeof(float));
         if (!isfinite(value)) return 0;
     }
     return 1;
@@ -50,10 +84,42 @@ static int ElementRange(size_t base, size_t index, size_t elementSize,
            Range(*offset, elementSize, bufferSize);
 }
 
+int RuntimeMeshLayout(uint32_t meshes, uint32_t vertices, uint32_t indices,
+                      RageRuntimeMeshLayout *out) {
+    RageRuntimeMeshLayout layout = {0};
+    size_t count, offsetsBytes, verticesBytes, indicesBytes;
+    if (out == NULL) return 0;
+    memset(out, 0, sizeof(*out));
+    if (!SizeAdd(meshes, 1, &count) ||
+        !SizeMultiply(count, 4, &offsetsBytes) ||
+        !SizeMultiply(vertices, RAGE_RUNTIME_VERTEX_BYTES, &verticesBytes) ||
+        !SizeMultiply(indices, 4, &indicesBytes) ||
+        !SizeAdd(RAGE_RMESH_HEADER_SIZE, offsetsBytes, &layout.verticesOffset) ||
+        !SizeAdd(layout.verticesOffset, verticesBytes, &layout.indicesOffset) ||
+        !SizeAdd(layout.indicesOffset, indicesBytes, &layout.totalSize)) return 0;
+    layout.offsetsOffset = RAGE_RMESH_HEADER_SIZE;
+    *out = layout;
+    return 1;
+}
+
+int RuntimeMeshEncodeHeader(void *bytes, size_t size, uint32_t meshes,
+                            uint32_t vertices, uint32_t indices) {
+    RageRuntimeMeshLayout layout;
+    uint8_t *p = bytes;
+    if (p == NULL || !RuntimeMeshLayout(meshes, vertices, indices, &layout) ||
+        size < layout.totalSize) return 0;
+    memcpy(p, s_magic, sizeof(s_magic));
+    RageWriteU32(p + 8, 1);
+    RageWriteU32(p + 12, meshes);
+    RageWriteU32(p + 16, vertices);
+    RageWriteU32(p + 20, indices);
+    return 1;
+}
+
 int RuntimeMeshOpen(RageRuntimeMesh *mesh, const void *bytes, size_t size) {
     const uint8_t *p = bytes;
     uint32_t version, meshCount, vertexCount, indexCount;
-    size_t offsetCount, offsetsBytes, verticesBytes, indicesBytes;
+    RageRuntimeMeshLayout layout;
     size_t verticesOffset, indicesOffset;
     uint32_t previous;
     uint32_t i;
@@ -66,21 +132,14 @@ int RuntimeMeshOpen(RageRuntimeMesh *mesh, const void *bytes, size_t size) {
     meshCount = RageReadU32(p + 12);
     vertexCount = RageReadU32(p + 16);
     indexCount = RageReadU32(p + 20);
-    if (version != 1 ||
-        !SizeAdd((size_t)meshCount, 1, &offsetCount) ||
-        !SizeMultiply(offsetCount, 4, &offsetsBytes) ||
-        !SizeMultiply((size_t)vertexCount, RAGE_RMESH_VERTEX_SIZE,
-                          &verticesBytes) ||
-        !SizeMultiply((size_t)indexCount, 4, &indicesBytes) ||
-        !SizeAdd(RAGE_RMESH_HEADER_SIZE, offsetsBytes, &verticesOffset) ||
-        !SizeAdd(verticesOffset, verticesBytes, &indicesOffset)) return 0;
-    if (!Range(RAGE_RMESH_HEADER_SIZE, offsetsBytes, size) ||
-        !Range(verticesOffset, verticesBytes, size) ||
-        !Range(indicesOffset, indicesBytes, size)) return 0;
+    if (version != 1 || !RuntimeMeshLayout(meshCount, vertexCount, indexCount, &layout) ||
+        layout.totalSize > size) return 0;
+    verticesOffset = layout.verticesOffset;
+    indicesOffset = layout.indicesOffset;
     previous = RageReadU32(p + RAGE_RMESH_HEADER_SIZE);
     if (previous != 0) return 0;
-    for (i = 1; i <= meshCount; i++) {
-        uint32_t offset = RageReadU32(p + RAGE_RMESH_HEADER_SIZE + i * 4);
+    for (size_t offsetIndex = 1; offsetIndex <= (size_t)meshCount; ++offsetIndex) {
+        uint32_t offset = RageReadU32(p + layout.offsetsOffset + offsetIndex * 4);
         if (offset < previous || offset > indexCount ||
             (offset - previous) % 3u != 0) return 0;
         previous = offset;
@@ -140,10 +199,12 @@ int RuntimeMeshVertex(const RageRuntimeMesh *mesh, uint32_t vertexIndex,
         !ElementRange(mesh->verticesOffset, vertexIndex,
                       RAGE_RMESH_VERTEX_SIZE, mesh->size, &offset)) return 0;
     p = mesh->bytes + offset;
-    memcpy(out->position, p, sizeof(out->position));
-    memcpy(out->normal, p + 12, sizeof(out->normal));
+    for (unsigned i = 0; i < 3; ++i) {
+        out->position[i] = RageReadFloat(p + i * 4);
+        out->normal[i] = RageReadFloat(p + 12 + i * 4);
+    }
     memcpy(out->color, p + 24, sizeof(out->color));
-    memcpy(out->uv, p + 28, sizeof(out->uv));
+    for (unsigned i = 0; i < 2; ++i) out->uv[i] = RageReadFloat(p + 28 + i * 4);
     out->material = RageReadU32(p + 36);
     return 1;
 }

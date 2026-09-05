@@ -15,5 +15,7 @@ typedef struct ModernVramSnapshotCache {
 SDL_GPUTexture *ModernVramSnapshotForFrame(
     ModernVramSnapshotCache *cache, uint32_t frame,
     ModernVramSnapshotCapture capture, void *context);
+/* Forget borrowed GPU handles when their device/resources are retired. */
+void ModernVramSnapshotReset(ModernVramSnapshotCache *cache);
 
 #endif

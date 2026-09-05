@@ -8,6 +8,7 @@
 #include <psyz/overlay_sdl3_gpu.h>
 #include <psyz/present_sdl3_gpu.h>
 #include <psyz/video.h>
+#include <psyz/overlay.h>
 
 #include <math.h>
 #include <stddef.h>
@@ -23,6 +24,7 @@
 #include "game/track_internal.h"
 #include "modern_renderer_diagnostics.h"
 #include "../runtime_config.h"
+#include "../native_asset_importer.h"
 #include "shaders/modern_vert_spv.h"
 #include "shaders/modern_frag_spv.h"
 #include "shaders/post_vert_spv.h"
@@ -41,6 +43,10 @@
 
 static int s_enabled;
 static int s_initialized;
+static int s_shutdownRegistered;
+static int s_shutdownNeeded;
+static ModernVramSnapshotCache s_sampledVram;
+static PsyzOverlayDestroyCB s_prev_overlay_destroy;
 static SDL_Scancode s_toggleScancode = SDL_SCANCODE_F10;
 static int s_toggleWasDown;
 static int s_markerCaptureEnabled;
@@ -111,6 +117,8 @@ static SDL_GPUTexture *s_ring[MODERN_RING];
 static uint32_t s_ringFrame[MODERN_RING];
 static float s_ringT[MODERN_RING];
 static int s_ringNext;
+static RageTrackTextureGeneration *s_ringGenerations[MODERN_RING];
+static RageRenderWorldSnapshot s_ringWorlds[MODERN_RING];
 static RageSceneSnapshot *s_ringScene; /* MODERN_RING copies */
 static int s_ringEnabled;
 static int s_resourcesReady;
@@ -164,6 +172,12 @@ static SDL_GPUGraphicsPipeline *s_pipeComposite;
 
 static void ModernDisableFrameHistory(void) {
     int slot;
+
+    for (slot = 0; slot < MODERN_RING; ++slot) {
+        TrackTextureGenerationRelease(s_ringGenerations[slot]);
+        s_ringGenerations[slot] = NULL;
+        RenderWorldSnapshotRelease(&s_ringWorlds[slot]);
+    }
 
     if (s_device != NULL) {
         for (slot = 0; slot < MODERN_RING; slot++) {
@@ -343,6 +357,7 @@ static void ModernDestroyResources(void) {
     s_haveRenderedFrame = 0;
     s_lastRenderedFrame = 0xFFFFFFFFu;
     s_vertexCount = s_spanCount = 0;
+    ModernVramSnapshotReset(&s_sampledVram);
     if (hadResources && RuntimeConfigEnabled("diagnostics.renderer_lifecycle")) {
         fprintf(stderr, "rage-port: modern resources destroyed generation=%u\n",
                 s_resourceGeneration);
@@ -1226,7 +1241,6 @@ static int ModernCompareProfileInterval(const void *a, const void *b) {
 
 static void ModernRender(const RageSceneSnapshot *snapshot) {
     SDL_GPUCommandBuffer *cmd;
-    static ModernVramSnapshotCache sampledVram;
     SDL_GPUTexture *vram;
     static Uint64 profileBuildNs, profileSubmitNs;
     static Uint64 profileFaces, profileVertices, profileSpans;
@@ -1237,7 +1251,7 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
     Uint64 profileStart = 0, profileBuilt = 0;
     int i;
     vram = ModernVramSnapshotForFrame(
-        &sampledVram, snapshot->frameCounter,
+        &s_sampledVram, snapshot->frameCounter,
         ModernCaptureVramSnapshot, NULL);
     if (vram == NULL) return;
     if (profile < 0) {
@@ -1329,6 +1343,14 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
         };
         SDL_BlitGPUTexture(cmd, &blit);
         s_ringFrame[s_ringNext] = snapshot->frameCounter;
+        if (!RenderWorldSnapshotCopy(&s_ringWorlds[s_ringNext], ModernNativeGpuPreparedWorld())) {
+            RenderWorldSnapshotRelease(&s_ringWorlds[s_ringNext]);
+            fprintf(stderr, "rage-port: cannot retain render world for history frame %u\n",
+                    snapshot->frameCounter);
+        }
+        TrackTextureGenerationRelease(s_ringGenerations[s_ringNext]);
+        s_ringGenerations[s_ringNext] = NativeAssetImporterRetainTextures(
+            ModernNativeGpuTextureRevision());
         s_ringT[s_ringNext] = -1.0f;
         if (s_ringScene != NULL) {
             memcpy(&s_ringScene[s_ringNext], snapshot, sizeof(*snapshot));
@@ -1411,6 +1433,8 @@ static RageModernDiagnosticFrame ModernDiagnosticFrame(void) {
     RageModernDiagnosticFrame frame = {
         .device = s_device,
         .texture = ModernPresentTexture(),
+        .sampledVram = s_sampledVram.valid ? s_sampledVram.texture : NULL,
+        .sampledVramFrame = s_sampledVram.frame,
         .width = s_targetW,
         .height = s_targetH,
         .logicalWidth = s_logicalW,
@@ -1419,6 +1443,8 @@ static RageModernDiagnosticFrame ModernDiagnosticFrame(void) {
         .ringFrames = s_ringFrame,
         .ringInterpolation = s_ringT,
         .ringScenes = s_ringScene,
+        .ringWorlds = s_ringWorlds,
+        .ringGenerations = s_ringGenerations,
         .ringCount = s_ringEnabled ? MODERN_RING : 0,
         .ringNext = s_ringNext,
     };
@@ -1445,9 +1471,22 @@ static void ModernMarkerCheck(const RageSceneSnapshot *snapshot,
 
 /* ---- hooks ---- */
 
+static void ModernReleaseDevice(void) {
+    if (s_device != NULL) SDL_WaitForGPUIdle(s_device);
+    ModernDestroyResources();
+    s_device = NULL;
+    s_window = NULL;
+}
+
+static void ModernOverlayDestroy(void) {
+    ModernReleaseDevice();
+    /* Device destruction/reset is not the end of the content session. */
+    if (s_prev_overlay_destroy) s_prev_overlay_destroy();
+}
+
 static void ModernOverlayInit(SDL_Window *window, SDL_GPUDevice *device) {
     if (s_device != NULL && s_device != device) {
-        ModernDestroyResources();
+        ModernReleaseDevice();
     }
     s_window = window;
     s_device = device;
@@ -1463,6 +1502,38 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
     int toggleDown;
     if (s_prev_present_source) {
         s_prev_present_source(info);
+    }
+    /* Opt-in lifecycle exercise at the host callback boundary, after PSY-Z
+     * has submitted pending work and before it acquires a swapchain command. */
+    {
+        static int restartCount = -1, restarted;
+        static uint32_t restartFrame;
+        if (restartCount < 0) {
+            restartCount = RuntimeConfigInt("diagnostics.renderer_restart_count", 0, 0, 10);
+            restartFrame = (uint32_t)RuntimeConfigInt(
+                "diagnostics.renderer_restart_frame", 500, 1, 1000000);
+        }
+        if (restarted < restartCount && s_haveRenderedFrame &&
+            CaptureCurrent()->frameCounter >= restartFrame) {
+            const RageRenderWorld *world = ModernNativeGpuPreparedWorld();
+            RageRenderMeshInstance probe = {0};
+            const RageRuntimeMesh *before = NULL;
+            if (world != NULL && world->instanceCount != 0) {
+                probe = world->instances[0];
+                before = ModernAssetsMeshLookup(NULL, &probe);
+            }
+            uint32_t meshes = ModernAssetsCachedMeshCount();
+            int ok = ModernRestartPresentation(&s_config);
+            int retained = before != NULL &&
+                ModernAssetsMeshLookup(NULL, &probe) == before &&
+                ModernAssetsCachedMeshCount() == meshes;
+            ok = ok && retained && s_device != NULL;
+            fprintf(stderr,
+                "rage-port: modern presentation restart index=%d result=%s meshes=%u retained=%d device=%d\n",
+                ++restarted, ok ? "ok" : "failed", meshes, retained, s_device != NULL);
+            restartFrame += 60;
+            if (!ok) { info->skip_present = true; return; }
+        }
     }
     keys = SDL_GetKeyboardState(NULL);
     toggleDown = keys != NULL && keys[s_toggleScancode];
@@ -1503,18 +1574,11 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
      * presenting during this tick; fps mode moves its transforms toward
      * the newest frame by the wall-clock fraction of the tick. */
     snapshot = CapturePrevious();
-    {
-        int passthrough =
-            snapshot->faceCount == 0 ||
-            (snapshot->displayHeight != 0 && snapshot->displayHeight != 240);
-        if (s_markerCaptureEnabled)
-            ModernMarkerCheck(snapshot, !passthrough && s_resourcesReady &&
-                                            s_haveRenderedFrame);
-    }
     /* Scenes with no captured 3D pass through to the compat image, and so
      * do 480-line menu scenes: their double-height buffer follows PS1
      * interlace conventions the compat presenter already handles. */
     if (snapshot->faceCount == 0) {
+        if (s_markerCaptureEnabled) ModernMarkerCheck(snapshot, 0);
         memset(&s_presentPacer, 0, sizeof(s_presentPacer));
         /* Menus and other 2D-only scenes use the compatibility framebuffer,
          * but presentation should still honour the modern texture-filter
@@ -1527,6 +1591,7 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
         return;
     }
     if (snapshot->displayHeight != 0 && snapshot->displayHeight != 240) {
+        if (s_markerCaptureEnabled) ModernMarkerCheck(snapshot, 0);
         memset(&s_presentPacer, 0, sizeof(s_presentPacer));
         return;
     }
@@ -1577,6 +1642,10 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
         s_lastRenderedFrame = snapshot->frameCounter;
         if (s_haveRenderedFrame) ModernMaybeDump(snapshot);
     }
+    /* Capture after this snapshot's render submission. Before rendering, the
+     * image, prepared world and sampled VRAM still belonged to the last frame. */
+    if (s_markerCaptureEnabled)
+        ModernMarkerCheck(snapshot, s_resourcesReady && s_haveRenderedFrame);
     if (!s_haveRenderedFrame) return;
     info->texture = ModernPresentTexture();
     info->w = (Uint32)s_targetW;
@@ -1610,6 +1679,12 @@ int ModernInit(const RagePortConfig *config) {
     if (s_initialized) {
         return 1;
     }
+    if (config == NULL) return 0;
+    if (!s_shutdownRegistered) {
+        if (atexit(ModernShutdown) != 0) return 0;
+        s_shutdownRegistered = 1;
+    }
+    s_shutdownNeeded = 1;
     s_config = *config;
     s_profileTiming = RuntimeConfigEnabled("diagnostics.performance");
     s_skyOnlyDiagnostic = RuntimeConfigEnabled("diagnostics.sky_only");
@@ -1628,6 +1703,10 @@ int ModernInit(const RagePortConfig *config) {
     }
     s_prev_overlay_init = Psyz_OverlayInit_SDL3GPU(ModernOverlayInit);
     s_prev_present_source = Psyz_PresentSource_SDL3GPU(ModernPresentSource);
+    s_prev_overlay_destroy = Psyz_OverlayDestroyCB(ModernOverlayDestroy);
+    /* Late attachment must not wait for a device-init event that already
+     * happened, nor reinitialize overlays that were attached before us. */
+    Psyz_VideoGetPresentationDevice_SDL3GPU(&s_window, &s_device);
     s_initialized = 1;
     s_tickTimeNs = s_tickIntervalNs = 0;
     memset(&s_presentPacer, 0, sizeof(s_presentPacer));
@@ -1638,6 +1717,39 @@ int ModernInit(const RagePortConfig *config) {
             SDL_GetScancodeName(s_toggleScancode),
             s_enabled ? "modern" : "classic");
     return 1;
+}
+
+static void ModernDetachPresentation(void) {
+    ModernReleaseDevice();
+    if (s_initialized) {
+        Psyz_OverlayInit_SDL3GPU(s_prev_overlay_init);
+        Psyz_PresentSource_SDL3GPU(s_prev_present_source);
+        Psyz_OverlayDestroyCB(s_prev_overlay_destroy);
+    }
+    s_prev_overlay_init = NULL;
+    s_prev_present_source = NULL;
+    s_prev_overlay_destroy = NULL;
+    s_initialized = s_enabled = s_toggleWasDown = 0;
+    s_tickTimeNs = s_tickIntervalNs = 0;
+    s_tickFrame = 0xFFFFFFFFu;
+    memset(&s_presentPacer, 0, sizeof(s_presentPacer));
+}
+
+int ModernRestartPresentation(const RagePortConfig *config) {
+    if (config == NULL || !s_initialized) return 0;
+    RagePortConfig next = *config;
+    ModernDetachPresentation();
+    return ModernInit(&next);
+}
+
+void ModernShutdown(void) {
+    if (!s_shutdownNeeded) return;
+    s_shutdownNeeded = 0;
+    ModernDetachPresentation();
+    ModernAssetsShutdown();
+    if (RuntimeConfigEnabled("diagnostics.renderer_lifecycle"))
+        fprintf(stderr, "rage-port: modern session shutdown assets_ready=%d meshes=%u\n",
+                ModernAssetsReady(), ModernAssetsCachedMeshCount());
 }
 
 int ModernIsEnabled(void) {

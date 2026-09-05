@@ -1,9 +1,11 @@
 #include "mod_manifest.h"
 
 #include <ctype.h>
+#include <limits.h>
 #include <string.h>
 
 #include "render_material.h"
+#include "asset_path.h"
 
 typedef enum RageModSection {
     RAGE_MOD_SECTION_NONE,
@@ -48,20 +50,7 @@ static int ManifestLineEnd(const char *cursor) {
 }
 
 static int ManifestRelativePath(const char *path) {
-    const char *component = path;
-    if (*path == '\0' || *path == '/' || *path == '\\' ||
-        strchr(path, ':') != NULL || strchr(path, '\\') != NULL) return 0;
-    while (*component != '\0') {
-        const char *end = strchr(component, '/');
-        size_t length = end != NULL ? (size_t)(end - component)
-                                    : strlen(component);
-        if (length == 0 || (length == 1 && component[0] == '.') ||
-            (length == 2 && component[0] == '.' && component[1] == '.'))
-            return 0;
-        if (end == NULL) break;
-        component = end + 1;
-    }
-    return 1;
+    return AssetPathIsRelativeFile(path, strlen(path));
 }
 
 static int ManifestSemanticId(const char *key) {
@@ -89,8 +78,12 @@ static int ManifestAssignment(char *line, char *key, size_t keyCapacity,
 int ModManifestParse(const char *text, size_t size, RageModManifest *out) {
     RageModSection section = RAGE_MOD_SECTION_NONE;
     size_t start = 0, lineNumber = 0, i;
-    if (text == NULL || out == NULL) return 0;
+    int versionSeen = 0;
+    RageModManifestError error = RAGE_MOD_MANIFEST_INVALID;
+    if (out == NULL) return 0;
     memset(out, 0, sizeof(*out));
+    if (text == NULL) goto invalid;
+    out->schemaVersion = RAGE_MOD_MANIFEST_SCHEMA_VERSION;
     for (i = 0; i <= size; i++) {
         if (i == size || text[i] == '\n' || text[i] == '\r') {
             char buffer[1200];
@@ -100,6 +93,7 @@ int ModManifestParse(const char *text, size_t size, RageModManifest *out) {
             while (i + 1 < size && text[i] == '\r' && text[i + 1] == '\n')
                 i++;
             if (length >= sizeof(buffer)) goto invalid;
+            if (memchr(text + start, '\0', length) != NULL) goto invalid;
             memcpy(buffer, text + start, length);
             buffer[length] = '\0';
             line = ManifestTrim(buffer);
@@ -122,6 +116,30 @@ int ModManifestParse(const char *text, size_t size, RageModManifest *out) {
             }
             if (section == RAGE_MOD_SECTION_MOD) {
                 const char *cursor = line;
+                if (strncmp(cursor, "schema_version", 14) == 0 &&
+                    (cursor[14] == '=' ||
+                     isspace((unsigned char)cursor[14]))) {
+                    unsigned version = 0;
+                    if (versionSeen) goto invalid;
+                    versionSeen = 1;
+                    cursor += 14;
+                    while (isspace((unsigned char)*cursor)) cursor++;
+                    if (*cursor++ != '=') goto invalid;
+                    while (isspace((unsigned char)*cursor)) cursor++;
+                    if (*cursor < '0' || *cursor > '9') goto invalid;
+                    do {
+                        unsigned digit = (unsigned)(*cursor++ - '0');
+                        if (version > (UINT_MAX - digit) / 10) goto invalid;
+                        version = version * 10 + digit;
+                    } while (*cursor >= '0' && *cursor <= '9');
+                    if (!ManifestLineEnd(cursor)) goto invalid;
+                    if (version != RAGE_MOD_MANIFEST_SCHEMA_VERSION) {
+                        error = RAGE_MOD_MANIFEST_UNSUPPORTED_VERSION;
+                        goto invalid;
+                    }
+                    out->schemaVersion = version;
+                    goto next;
+                }
                 if (strncmp(cursor, "id", 2) != 0 ||
                     (cursor[2] != '=' &&
                      !isspace((unsigned char)cursor[2]))) goto next;
@@ -166,7 +184,17 @@ next:
 invalid:
     memset(out, 0, sizeof(*out));
     out->errorLine = lineNumber;
+    out->error = error;
     return 0;
+}
+
+const char *ModManifestErrorString(RageModManifestError error) {
+    switch (error) {
+    case RAGE_MOD_MANIFEST_OK: return "no error";
+    case RAGE_MOD_MANIFEST_UNSUPPORTED_VERSION:
+        return "unsupported mod schema_version (supported: 1)";
+    default: return "invalid mod manifest";
+    }
 }
 
 const char *ModManifestFindMaterialProperties(

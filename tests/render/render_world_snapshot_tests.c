@@ -36,6 +36,10 @@ static void FillCamera(RageRenderCamera *camera, float base) {
         (RageRenderVec3){base + 35, base + 36, base + 37};
     camera->skyAssetKey = (uint32_t)(base + 38);
     camera->skyCloudRow = (uint32_t)(base + 39);
+    camera->hasSkyLayout = 1;
+    for (unsigned r = 0; r < 2; ++r)
+        for (unsigned c = 0; c < 8; ++c)
+            camera->skyLayout.tiles[r][c] = (uint8_t)(((unsigned)base + r + c) % 8);
     camera->skyGridOrigin =
         (RageRenderVec3){base + 40, base + 41, base + 42};
     camera->skyGridColumn =
@@ -70,6 +74,8 @@ static int SameCamera(const RageRenderCamera *a, const RageRenderCamera *b) {
                   sizeof(a->skyBottomColor)) == 0 &&
            a->skyAssetKey == b->skyAssetKey &&
            a->skyCloudRow == b->skyCloudRow &&
+           a->hasSkyLayout == b->hasSkyLayout &&
+           memcmp(&a->skyLayout, &b->skyLayout, sizeof(a->skyLayout)) == 0 &&
            memcmp(&a->skyGridOrigin, &b->skyGridOrigin,
                   sizeof(a->skyGridOrigin)) == 0 &&
            memcmp(&a->skyGridColumn, &b->skyGridColumn,
@@ -205,9 +211,83 @@ static void TestRejectsInvalidWorldBounds(void) {
     remove(path);
 }
 
+static void TestSkyLayoutVersionCompatibility(void) {
+    const char *path = "render-world-sky-compat.bin";
+    RageRenderWorld world = {0};
+    RageRenderWorldSnapshot loaded;
+    unsigned char bytes[2048], legacy[2048];
+    size_t size = 0, used = 0;
+    CHECK(RenderWorldSnapshotWrite(path, &world));
+    FILE *file = fopen(path, "rb");
+    CHECK(file != NULL);
+    if (file == NULL) return;
+    size = fread(bytes, 1, sizeof(bytes), file);
+    CHECK(fclose(file) == 0);
+    CHECK(size > 833 && size < sizeof(bytes));
+    if (size <= 833 || size == sizeof(bytes)) { remove(path); return; }
+    /* v6 camera is 177 bytes; v7 adds flag + 16 tiles. The first camera
+     * starts after the 56-byte frame/light prefix. hasCamera separates the
+     * first pair from the mirror pair. These are wire offsets, not sizeof(C). */
+    static const size_t extension[] = {233, 427, 622, 816};
+    CHECK(bytes[8] == 7);
+    for (size_t i = 0; i < size; ++i) {
+        int skip = 0;
+        for (size_t j = 0; j < 4; ++j)
+            if (i >= extension[j] && i < extension[j] + 17) skip = 1;
+        if (!skip) legacy[used++] = bytes[i];
+    }
+    legacy[8] = 6;
+    file = fopen(path, "wb");
+    CHECK(file != NULL);
+    if (file == NULL) return;
+    CHECK(fwrite(legacy, 1, used, file) == used);
+    CHECK(fclose(file) == 0);
+    CHECK(RenderWorldSnapshotRead(path, &loaded));
+    CHECK(loaded.world.camera.hasSkyLayout == 0);
+    CHECK(loaded.world.previousCamera.hasSkyLayout == 0);
+    CHECK(loaded.world.mirrorCamera.hasSkyLayout == 0);
+    CHECK(loaded.world.previousMirrorCamera.hasSkyLayout == 0);
+    RenderWorldSnapshotRelease(&loaded);
+    bytes[233] = 1;
+    bytes[234] = 8; /* Invalid declared tile, rejected while reading v7. */
+    file = fopen(path, "wb");
+    CHECK(file != NULL);
+    if (file == NULL) return;
+    CHECK(fwrite(bytes, 1, size, file) == size);
+    CHECK(fclose(file) == 0);
+    CHECK(!RenderWorldSnapshotRead(path, &loaded));
+    remove(path);
+}
+
 int main(void) {
+    {
+        RageRenderMeshInstance instance = {0};
+        instance.assetKey = 42;
+        RageRenderWorld world = {0};
+        world.instances = &instance;
+        world.instanceCount = world.instanceCapacity = 1;
+        world.frame = 123;
+        FillCamera(&world.camera, 0);
+        RageRenderWorldSnapshot copy = {0};
+        CHECK(RenderWorldSnapshotCopy(&copy, &world));
+        CHECK(copy.instances != &instance && copy.world.instances == copy.instances);
+        CHECK(copy.instances[0].assetKey == 42 && copy.world.frame == 123);
+        CHECK(SameCamera(&copy.world.camera, &world.camera));
+        instance.assetKey = 99;
+        CHECK(copy.instances[0].assetKey == 42);
+        CHECK(RenderWorldSnapshotCopy(&copy, &copy.world));
+        CHECK(copy.instances[0].assetKey == 42);
+        world.instanceCapacity = 0;
+        CHECK(!RenderWorldSnapshotCopy(&copy, &world));
+        CHECK(copy.instances[0].assetKey == 42);
+        CHECK(!RenderWorldSnapshotCopy(&copy, NULL));
+        CHECK(!RenderWorldSnapshotCopy(NULL, &world));
+        RenderWorldSnapshotRelease(&copy);
+        RenderWorldSnapshotRelease(&copy);
+    }
     TestRoundTrip();
     TestRejectsInvalidFile();
     TestRejectsInvalidWorldBounds();
+    TestSkyLayoutVersionCompatibility();
     return failures == 0 ? 0 : 1;
 }

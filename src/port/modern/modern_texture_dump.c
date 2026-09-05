@@ -3,8 +3,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
-int ModernWriteTexturePpm(SDL_GPUDevice *device, SDL_GPUTexture *texture,
-                          int width, int height, const char *path) {
+static int WriteTexture(SDL_GPUDevice *device, SDL_GPUTexture *texture,
+                        int width, int height, const char *path, int rgba) {
     SDL_GPUTransferBufferCreateInfo info = {0};
     SDL_GPUTransferBuffer *transfer;
     SDL_GPUCommandBuffer *commands;
@@ -47,16 +47,22 @@ int ModernWriteTexturePpm(SDL_GPUDevice *device, SDL_GPUTexture *texture,
         fence = SDL_SubmitGPUCommandBufferAndAcquireFence(commands);
         if (fence != NULL) {
             FILE *file;
-            SDL_WaitForGPUFences(device, true, &fence, 1);
+            bool ready = SDL_WaitForGPUFences(device, true, &fence, 1);
             SDL_ReleaseGPUFence(device, fence);
+            if (!ready) {
+                SDL_ReleaseGPUTransferBuffer(device, transfer);
+                return 0;
+            }
             pixels = SDL_MapGPUTransferBuffer(device, transfer, false);
             if (pixels != NULL) {
                 file = fopen(path, "wb");
                 if (file != NULL) {
-                    written = fprintf(file, "P6\n%d %d\n255\n", width,
-                                      height) > 0;
-                    for (pixel = 0; written && pixel < pixelCount; pixel++)
-                        written = fwrite(pixels + pixel * 4u, 1, 3, file) == 3;
+                    if (rgba) written = fwrite(pixels, 4, pixelCount, file) == pixelCount;
+                    else {
+                        written = fprintf(file, "P6\n%d %d\n255\n", width, height) > 0;
+                        for (pixel = 0; written && pixel < pixelCount; pixel++)
+                            written = fwrite(pixels + pixel * 4u, 1, 3, file) == 3;
+                    }
                     if (fclose(file) != 0) written = 0;
                 }
                 SDL_UnmapGPUTransferBuffer(device, transfer);
@@ -65,4 +71,13 @@ int ModernWriteTexturePpm(SDL_GPUDevice *device, SDL_GPUTexture *texture,
     }
     SDL_ReleaseGPUTransferBuffer(device, transfer);
     return written;
+}
+
+int ModernWriteTexturePpm(SDL_GPUDevice *device, SDL_GPUTexture *texture,
+                          int width, int height, const char *path) {
+    return WriteTexture(device, texture, width, height, path, 0);
+}
+int ModernWriteTextureRgba(SDL_GPUDevice *device, SDL_GPUTexture *texture,
+                          int width, int height, const char *path) {
+    return WriteTexture(device, texture, width, height, path, 1);
 }

@@ -175,6 +175,19 @@ static void test_camera_is_scene_data_not_backend_state(void) {
     EXPECT_EQ(150, (int)camera.fogNear);
     EXPECT_EQ(750, (int)camera.fogFar);
 
+    {
+        RageRenderCamera before = world.camera, after = world.camera, result;
+        before.hasSkyLayout = after.hasSkyLayout = 1;
+        before.skyLayout.tiles[1][3] = 0;
+        after.skyLayout.tiles[1][3] = 7;
+        before.skyGridOrigin.x = -100;
+        after.skyGridOrigin.x = 100;
+        RenderInterpolateCamera(&before, &after, 0.5f, &result);
+        EXPECT_EQ(1, result.hasSkyLayout);
+        EXPECT_EQ(7, result.skyLayout.tiles[1][3]);
+        EXPECT_EQ(100, (int)result.skyGridOrigin.x);
+    }
+
     world.previousCamera.skyAssetKey = world.camera.skyAssetKey;
     world.previousCamera.skyCloudRow = world.camera.skyCloudRow;
     RenderInterpolateCamera(&world.previousCamera, &world.camera, 0.5f,

@@ -37,6 +37,8 @@ int main(void) {
     const char *path;
 
     EXPECT(ModManifestParse(valid, sizeof(valid) - 1, &manifest));
+    EXPECT(manifest.schemaVersion == RAGE_MOD_MANIFEST_SCHEMA_VERSION);
+    EXPECT(manifest.error == RAGE_MOD_MANIFEST_OK && manifest.errorLine == 0);
     EXPECT(strcmp(manifest.id, "example-hd") == 0);
     EXPECT(manifest.textureCount == 2);
     path = ModManifestFindTexture(
@@ -59,6 +61,51 @@ int main(void) {
                                  &manifest));
     EXPECT(!ModManifestParse(invalidMaterial,
                                  sizeof(invalidMaterial) - 1, &manifest));
+
+    {
+        static const char versioned[] =
+            "[mod]\r\nschema_version = 1 # format, not mod release\r\n"
+            "id = \"example-hd\"\r\n[textures]\r\n"
+            "\"track.big1.terrain.material.3\" = \"a.png\"";
+        static const char *badVersions[] = {
+            "0", "2", "4294967295", "-1", "+1", "1.0", "\"1\"",
+            "1 garbage", "", "999999999999999999999999999999999999",
+            "1\nschema_version=1"
+        };
+        char input[256];
+        EXPECT(ModManifestParse(versioned, sizeof(versioned) - 1, &manifest));
+        EXPECT(manifest.schemaVersion == 1 && manifest.textureCount == 1);
+        for (size_t i = 0; i < sizeof(badVersions) / sizeof(badVersions[0]); ++i) {
+            snprintf(input, sizeof(input), "[mod]\nid=\"old\"\nschema_version=%s",
+                     badVersions[i]);
+            EXPECT(!ModManifestParse(input, strlen(input), &manifest));
+            EXPECT(manifest.schemaVersion == 0 && manifest.id[0] == '\0');
+            EXPECT(manifest.textureCount == 0 && manifest.materialCount == 0);
+            EXPECT(manifest.errorLine == (i == 10 ? 4u : 3u));
+            EXPECT(manifest.error == (i < 3
+                ? RAGE_MOD_MANIFEST_UNSUPPORTED_VERSION
+                : RAGE_MOD_MANIFEST_INVALID));
+        }
+        /* Reject a version even when it comes after valid asset declarations. */
+        static const char lateVersion[] =
+            "[textures]\n\"track.big1\"=\"a.png\"\n[mod]\nschema_version=2";
+        EXPECT(!ModManifestParse(lateVersion, sizeof(lateVersion) - 1, &manifest));
+        EXPECT(manifest.textureCount == 0 && manifest.errorLine == 4);
+        EXPECT(manifest.error == RAGE_MOD_MANIFEST_UNSUPPORTED_VERSION);
+        static const char embeddedNull[] = "[mod]\nschema_version=1\0garbage";
+        EXPECT(!ModManifestParse(embeddedNull, sizeof(embeddedNull) - 1, &manifest));
+        EXPECT(manifest.error == RAGE_MOD_MANIFEST_INVALID && manifest.errorLine == 2);
+        static const char directory[] = "[textures]\n\"track.big1\"=\"images/\"";
+        EXPECT(!ModManifestParse(directory, sizeof(directory) - 1, &manifest));
+        EXPECT(!ModManifestParse(NULL, 0, &manifest));
+        EXPECT(manifest.schemaVersion == 0 && manifest.textureCount == 0);
+        EXPECT(manifest.error == RAGE_MOD_MANIFEST_INVALID);
+        EXPECT(!ModManifestParse(valid, sizeof(valid) - 1, NULL));
+        EXPECT(ModManifestParse(valid, sizeof(valid) - 1, &manifest));
+        EXPECT(manifest.error == RAGE_MOD_MANIFEST_OK && manifest.schemaVersion == 1);
+        EXPECT(strstr(ModManifestErrorString(RAGE_MOD_MANIFEST_UNSUPPORTED_VERSION),
+                      "unsupported") != NULL);
+    }
 
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

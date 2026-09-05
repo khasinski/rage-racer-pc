@@ -23,6 +23,8 @@ int main(void) {
            RAGE_TIMING_PAL);
     Expect("missing disc region", TimingStandardForRegion(NULL),
            RAGE_TIMING_PAL);
+    Expect("unknown NTSC-like name is not a regional profile",
+           TimingStandardForRegion("NTSC-invalid"), RAGE_TIMING_PAL);
 
     /* PAL wants 20000us a frame, NTSC 16683. The platform resets itself to the
      * NTSC figure when it creates its video device, which is what has to be

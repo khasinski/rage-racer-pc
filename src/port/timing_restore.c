@@ -1,10 +1,10 @@
 #include <math.h>
-#include <string.h>
 
 #include "timing_control.h"
+#include "content/region_profile.h"
 
 RageTimingStandard TimingStandardForRegion(const char *region) {
-    return region != NULL && strncmp(region, "NTSC", 4) == 0
+    return RageRegionByName(region)->baseHz == 60
                ? RAGE_TIMING_NTSC
                : RAGE_TIMING_PAL;
 }

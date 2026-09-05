@@ -7,6 +7,7 @@
 
 static int failures;
 static int reads, frees;
+static int readCalls;
 #define EXPECT(value) do { if (!(value)) { failures++; \
     fprintf(stderr, "%s:%d: expectation failed: %s\n", __FILE__, __LINE__, #value); \
 } } while (0)
@@ -19,6 +20,7 @@ static void write_u32(uint8_t *p, uint32_t value) {
 static int read_file(void *context, const char *path, size_t pathLength,
                      const void **bytes, size_t *size) {
     static uint8_t mesh[96];
+    ++readCalls;
     (void)context;
     if (pathLength != strlen("models/a.rmesh") ||
         memcmp(path, "models/a.rmesh", pathLength) != 0) return 0;
@@ -33,6 +35,47 @@ static int read_file(void *context, const char *path, size_t pathLength,
 
 static void free_file(void *context, const void *bytes) {
     (void)context; (void)bytes; frees++;
+}
+
+typedef struct OwnerProbe { const void *expected; int releases; } OwnerProbe;
+static void release_owned(void *context, const void *bytes) {
+    OwnerProbe *probe = context;
+    EXPECT(probe->expected == bytes);
+    ++probe->releases;
+    free((void *)bytes);
+}
+
+static void test_ownership(void) {
+    RageRuntimeCachedMesh owner = {0};
+    const void *bytes;
+    size_t size;
+    uint8_t invalid[96] = {0};
+    OwnerProbe probe = {0};
+    EXPECT(read_file(NULL, "models/a.rmesh", strlen("models/a.rmesh"), &bytes, &size));
+    const void *borrowedBytes = bytes;
+    void *allocated = malloc(size);
+    EXPECT(allocated != NULL);
+    if (allocated == NULL) return;
+    memcpy(allocated, bytes, size);
+    bytes = allocated;
+    probe.expected = bytes;
+    owner.assetKey = 123;
+    EXPECT(!RuntimeCachedMeshAdopt(&owner, invalid, sizeof(invalid), release_owned, &probe));
+    EXPECT(owner.assetKey == 123 && owner.ownedBytes == NULL && probe.releases == 0);
+    EXPECT(RuntimeCachedMeshAdopt(&owner, bytes, size, release_owned, &probe));
+    EXPECT(owner.mesh.bytes == bytes && owner.mesh.bounds == owner.ownedBounds);
+    const RageRuntimeMeshBounds *borrowedBounds = owner.mesh.bounds;
+    EXPECT(!RuntimeCachedMeshAdopt(&owner, bytes, size, release_owned, &probe));
+    EXPECT(owner.mesh.bounds == borrowedBounds && probe.releases == 0);
+    RuntimeCachedMeshRelease(&owner);
+    EXPECT(probe.releases == 1 && owner.mesh.bytes == NULL && owner.ownedBounds == NULL);
+    RuntimeCachedMeshRelease(&owner);
+    EXPECT(probe.releases == 1);
+    EXPECT(RuntimeCachedMeshAdopt(&owner, borrowedBytes, size, NULL, NULL));
+    RuntimeCachedMeshRelease(&owner);
+    EXPECT(probe.releases == 1);
+    EXPECT(!RuntimeCachedMeshAdopt(NULL, borrowedBytes, size, release_owned, &probe));
+    RuntimeCachedMeshRelease(NULL);
 }
 
 int main(void) {
@@ -52,6 +95,7 @@ int main(void) {
     EXPECT(reads == 1);
     EXPECT(RuntimeMeshCacheFind(&cache, 11,
                                     RAGE_RENDER_ASSET_MODEL_BANK) == 0);
+    cache.freeFile = NULL; /* Existing entries retain their original owner. */
     RuntimeMeshCacheRelease(&cache);
     EXPECT(frees == 1 && cache.count == 0);
     EXPECT(entries[0].ownedBounds == NULL && entries[0].mesh.bounds == NULL);
@@ -68,11 +112,11 @@ int main(void) {
 
     RuntimeMeshCacheInit(&cache, index, sizeof(index) - 1, read_file,
                          free_file, NULL, entries, 1);
+    EXPECT(RuntimeMeshCacheFind(&cache, 10, RAGE_RENDER_ASSET_MODEL_BANK) != NULL);
     cache.count = 2;
     EXPECT(RuntimeMeshCacheFind(&cache, 10,
                                 RAGE_RENDER_ASSET_MODEL_BANK) == NULL);
-    EXPECT(reads == 1);
-    entries[0].ownedBytes = entries;
+    EXPECT(reads == 2);
     RuntimeMeshCacheRelease(&cache);
     EXPECT(frees == 2 && cache.count == 0);
 
@@ -82,5 +126,15 @@ int main(void) {
     RuntimeMeshCacheRelease(&cache);
     EXPECT(frees == 2 && cache.count == 0);
     RuntimeMeshCacheRelease(NULL);
+    test_ownership();
+    {
+        static const char unsafeIndex[] = "10 model ../a.rmesh models/a.rmat\n";
+        int before = readCalls;
+        RuntimeMeshCacheInit(&cache, unsafeIndex, sizeof(unsafeIndex) - 1,
+                             read_file, free_file, NULL, entries, 1);
+        EXPECT(RuntimeMeshCacheFind(&cache, 10, RAGE_RENDER_ASSET_MODEL_BANK) == NULL);
+        EXPECT(readCalls == before && cache.count == 0);
+        RuntimeMeshCacheRelease(&cache);
+    }
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

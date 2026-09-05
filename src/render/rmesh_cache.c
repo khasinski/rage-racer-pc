@@ -3,6 +3,31 @@
 #include <string.h>
 #include <stdlib.h>
 
+int RuntimeCachedMeshAdopt(RageRuntimeCachedMesh *entry, const void *bytes,
+                          size_t size, RageRuntimeFreeFile releaseBytes,
+                          void *releaseContext) {
+    RageRuntimeMesh mesh;
+    RageRuntimeMeshBounds *bounds;
+    if (entry == NULL || entry->ownedBytes != NULL || entry->mesh.bytes != NULL ||
+        !RuntimeMeshOpen(&mesh, bytes, size)) return 0;
+    bounds = calloc(mesh.meshCount, sizeof(*bounds));
+    if (bounds != NULL) RuntimeMeshPrepareBounds(&mesh, bounds, mesh.meshCount);
+    entry->mesh = mesh;
+    entry->ownedBytes = bytes;
+    entry->ownedBounds = bounds;
+    entry->releaseBytes = releaseBytes;
+    entry->releaseContext = releaseContext;
+    return 1;
+}
+
+void RuntimeCachedMeshRelease(RageRuntimeCachedMesh *entry) {
+    if (entry == NULL) return;
+    if (entry->ownedBytes != NULL && entry->releaseBytes != NULL)
+        entry->releaseBytes(entry->releaseContext, entry->ownedBytes);
+    free(entry->ownedBounds);
+    memset(entry, 0, sizeof(*entry));
+}
+
 void RuntimeMeshCacheInit(RageRuntimeMeshCache *cache,
                           const char *indexText, size_t indexSize,
                           RageRuntimeReadFile readFile,
@@ -42,18 +67,16 @@ const RageRuntimeCachedMesh *RuntimeMeshCacheFind(
                          location.meshPathLength, &bytes, &size)) {
         return NULL;
     }
-    if (!RuntimeMeshOpen(&cache->entries[cache->count].mesh, bytes, size)) {
+    RageRuntimeCachedMesh pending = {0};
+    if (!RuntimeCachedMeshAdopt(&pending, bytes, size,
+                                cache->freeFile, cache->context)) {
         if (cache->freeFile != NULL) cache->freeFile(cache->context, bytes);
         return NULL;
     }
-    cache->entries[cache->count].assetKey = assetKey;
-    cache->entries[cache->count].assetSet = assetSet;
-    cache->entries[cache->count].ownedBytes = bytes;
-    cache->entries[cache->count].location = location;
-    RageRuntimeCachedMesh *entry = &cache->entries[cache->count];
-    entry->ownedBounds = calloc(entry->mesh.meshCount, sizeof(*entry->ownedBounds));
-    if (entry->ownedBounds != NULL)
-        RuntimeMeshPrepareBounds(&entry->mesh, entry->ownedBounds, entry->mesh.meshCount);
+    pending.assetKey = assetKey;
+    pending.assetSet = assetSet;
+    pending.location = location;
+    cache->entries[cache->count] = pending;
     return &cache->entries[cache->count++];
 }
 
@@ -64,10 +87,7 @@ void RuntimeMeshCacheRelease(RageRuntimeMeshCache *cache) {
     count = cache->count < cache->capacity ? cache->count : cache->capacity;
     if (cache->entries != NULL) {
         for (i = 0; i < count; i++) {
-            if (cache->freeFile != NULL)
-                cache->freeFile(cache->context, cache->entries[i].ownedBytes);
-            free(cache->entries[i].ownedBounds);
-            memset(&cache->entries[i], 0, sizeof(cache->entries[i]));
+            RuntimeCachedMeshRelease(&cache->entries[i]);
         }
     }
     cache->count = 0;

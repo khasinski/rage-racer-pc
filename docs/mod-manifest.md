@@ -1,0 +1,48 @@
+# Semantic mod manifest
+
+The game reads `mod.toml` from the configured mod directory. The shared C
+parser is `src/render/mod_manifest.*`; tools should use it instead of creating
+a second parser. This is a small TOML subset, not a general TOML implementation.
+
+```toml
+[mod]
+schema_version = 1
+id = "example-hd"
+
+[textures]
+"track.big1.terrain.material.3" = "textures/tunnel.png"
+```
+
+`schema_version` is an integer describing the file contract, not the release
+number of an individual mod. Current support is version 1. Existing manifests
+without the field retain version-1 behavior. Unsupported versions and duplicate
+version declarations are rejected. An invalid or unreadable manifest disables
+all overrides from that directory, including `raw/asset_NNN.bin` and legacy PNG
+patches. The game logs the error and uses original content. An absent manifest
+is allowed for legacy raw-only packs. Manifest input is limited to 2 MiB.
+
+`mod_assets.c` owns the validated manifest and a copy of the configured path.
+Both legacy loading and the modern renderer use that same selection. It is
+initialized once per asset session; changing configuration or files on disk
+does not hot-reload the manifest. Presentation/device restarts borrow the same
+immutable manifest. Full `ModernAssetsShutdown` drops renderer views and then
+calls idempotent `ModAssetsShutdown`; the next access reads a new selection.
+Direct callers must retire every borrowed view before shutdown. This does not
+remove asset bytes already installed into game state and is not a mid-race
+hot-reload mechanism or a complete game-session reset.
+
+Texture keys use lowercase semantic identifiers. Paths must be relative, use
+forward slashes, and contain no empty, `.` or `..` components, drive prefix or
+trailing slash. This is lexical validation, not a sandbox against symlinks.
+Quoted values support escaped quotes and backslashes; paths themselves cannot
+contain backslashes. Material overrides use the existing `[materials]` table
+and validated `RenderMaterialParseProperties` string format.
+
+Version 1 preserves existing behavior: repeated asset keys use the last value,
+and unknown fields/sections are ignored. This is not full TOML duplicate-key
+semantics. Dependencies, multiple active mods, conflict resolution and source
+identity are not implemented by this schema yet.
+
+The parser owns no external resources. Its output stores copies of all values;
+lookup results borrow this output until it is parsed again or reset. Failure
+clears all content and retains only `error` and `errorLine`.

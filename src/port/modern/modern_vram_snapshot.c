@@ -1,5 +1,9 @@
 #include "modern_vram_snapshot.h"
 
+void ModernVramSnapshotReset(ModernVramSnapshotCache *cache) {
+    if (cache != NULL) *cache = (ModernVramSnapshotCache){0};
+}
+
 SDL_GPUTexture *ModernVramSnapshotForFrame(
     ModernVramSnapshotCache *cache, uint32_t frame,
     ModernVramSnapshotCapture capture, void *context) {

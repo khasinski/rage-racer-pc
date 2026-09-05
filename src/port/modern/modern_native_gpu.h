@@ -10,6 +10,7 @@ int ModernNativeGpuInit(SDL_GPUDevice *device);
 void ModernNativeGpuShutdown(void);
 void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect);
 const RageRenderWorld *ModernNativeGpuPreparedWorld(void);
+uint64_t ModernNativeGpuTextureRevision(void);
 int ModernNativeGpuWriteDrawDump(FILE *file);
 int ModernNativeGpuWriteProbe(FILE *file, int x, int y,
                               int width, int height);

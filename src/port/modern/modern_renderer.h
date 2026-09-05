@@ -14,6 +14,16 @@
  * Returns 1 on success (including when the modern renderer is disabled). */
 int ModernInit(const RagePortConfig *config);
 
+/* Release presentation resources before session assets and restore host hooks.
+ * Safe after failed initialization and on repeated calls. Device reset uses
+ * the separate backend destroy hook and does not end the asset session. */
+void ModernShutdown(void);
+
+/* Recreate presentation resources/hooks while retaining the asset session.
+ * Call between presentations on the render thread. This does not reset game
+ * simulation, disc state or a completed asset session. Returns 0 on failure. */
+int ModernRestartPresentation(const RagePortConfig *config);
+
 
 /* 1 when the modern renderer is initialized and selected for presentation.
  * Game logic must never branch on this; it gates presentation-side work

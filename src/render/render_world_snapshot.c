@@ -5,7 +5,7 @@
 #include <string.h>
 
 enum {
-    RAGE_RENDER_WORLD_SNAPSHOT_VERSION = 6,
+    RAGE_RENDER_WORLD_SNAPSHOT_VERSION = 7,
     RAGE_RENDER_WORLD_SNAPSHOT_MAX_INSTANCES = 1000000,
 };
 
@@ -118,7 +118,17 @@ static int ReadTransform(FILE *file, RageRenderTransform *value) {
            ReadU8(file, &value->hasOrientation);
 }
 
+static int SkyLayoutValid(const RageRenderCamera *value) {
+    if (value->hasSkyLayout > 1) return 0;
+    if (!value->hasSkyLayout) return 1;
+    for (unsigned row = 0; row < 2; ++row)
+        for (unsigned column = 0; column < 8; ++column)
+            if (value->skyLayout.tiles[row][column] >= 8) return 0;
+    return 1;
+}
+
 static int WriteCamera(FILE *file, const RageRenderCamera *value) {
+    if (!SkyLayoutValid(value)) return 0;
     return WriteTransform(file, &value->transform) &&
            WriteFloat(file, value->verticalFovDegrees) &&
            WriteFloat(file, value->nearPlane) &&
@@ -134,7 +144,9 @@ static int WriteCamera(FILE *file, const RageRenderCamera *value) {
            WriteVec3(file, &value->skyGridColumn) &&
            WriteVec3(file, &value->skyGridRow) &&
            WriteFloat(file, value->fogNear) &&
-           WriteFloat(file, value->fogFar);
+           WriteFloat(file, value->fogFar) &&
+           WriteU8(file, value->hasSkyLayout) &&
+           WriteBytes(file, value->skyLayout.tiles, sizeof(value->skyLayout.tiles));
 }
 
 static int ReadCamera(FILE *file, RageRenderCamera *value, uint32_t version) {
@@ -155,7 +167,11 @@ static int ReadCamera(FILE *file, RageRenderCamera *value, uint32_t version) {
                  ReadVec3(file, &value->skyGridColumn) &&
                  ReadVec3(file, &value->skyGridRow))) &&
                ReadFloat(file, &value->fogNear) &&
-               ReadFloat(file, &value->fogFar);
+               ReadFloat(file, &value->fogFar) &&
+               (version < 7 ||
+                (ReadU8(file, &value->hasSkyLayout) &&
+                 ReadBytes(file, value->skyLayout.tiles, sizeof(value->skyLayout.tiles)) &&
+                 SkyLayoutValid(value)));
     }
     if (!ReadVec3(file, &value->skyColor)) return 0;
     /* Version 1 recorded one flat backdrop colour. Preserve that exact
@@ -218,6 +234,25 @@ static int ReadInstance(FILE *file, RageRenderMeshInstance *value,
         pass > RAGE_RENDER_PASS_MIRROR) return 0;
     value->assetSet = (RageRenderAssetSet)assetSet;
     value->pass = (RageRenderPass)pass;
+    return 1;
+}
+
+int RenderWorldSnapshotCopy(RageRenderWorldSnapshot *snapshot, const RageRenderWorld *world) {
+    RageRenderWorldSnapshot copy = {0};
+    if (snapshot == NULL || world == NULL || world->instanceCount > world->instanceCapacity ||
+        world->instanceCount > RAGE_RENDER_WORLD_SNAPSHOT_MAX_INSTANCES ||
+        (world->instanceCount != 0 && world->instances == NULL)) return 0;
+    copy.world = *world;
+    if (world->instanceCount != 0) {
+        size_t bytes = (size_t)world->instanceCount * sizeof(*copy.instances);
+        copy.instances = malloc(bytes);
+        if (copy.instances == NULL) return 0;
+        memcpy(copy.instances, world->instances, bytes);
+    }
+    copy.world.instances = copy.instances;
+    copy.world.instanceCapacity = copy.world.instanceCount;
+    RenderWorldSnapshotRelease(snapshot);
+    *snapshot = copy;
     return 1;
 }
 

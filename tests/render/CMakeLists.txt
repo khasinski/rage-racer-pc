@@ -1,3 +1,74 @@
+if(TARGET rage-frame-replay)
+    add_executable(environment_fixture environment_fixture.c)
+    target_link_libraries(environment_fixture PRIVATE rage-render-world)
+    if(MSVC)
+        target_compile_options(environment_fixture PRIVATE /W4 /WX)
+        target_compile_definitions(environment_fixture PRIVATE _CRT_SECURE_NO_WARNINGS)
+    else()
+        target_compile_options(environment_fixture PRIVATE -Wall -Wextra -Werror)
+    endif()
+    add_test(NAME environment_provider COMMAND ${CMAKE_COMMAND}
+        -DREPLAY=$<TARGET_FILE:rage-frame-replay>
+        -DFIXTURE=$<TARGET_FILE:environment_fixture>
+        -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_environment_index.cmake)
+    set_tests_properties(environment_provider PROPERTIES LABELS gpu TIMEOUT 240)
+endif()
+
+if(TARGET rage-racer-smoke AND UNIX AND NOT APPLE)
+    add_test(NAME retained_texture_history COMMAND ${CMAKE_COMMAND}
+        -DGAME=$<TARGET_FILE:rage-racer-smoke> -DSOURCE=${CMAKE_SOURCE_DIR}
+        -DOUTPUT_ROOT=${CMAKE_BINARY_DIR} -DHISTORY=true
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_sampled_vram_marker.cmake)
+    set_tests_properties(retained_texture_history PROPERTIES LABELS e2e TIMEOUT 180
+        SKIP_REGULAR_EXPRESSION "SKIP: no disc")
+    add_test(NAME sampled_vram_marker COMMAND ${CMAKE_COMMAND}
+        -DGAME=$<TARGET_FILE:rage-racer-smoke> -DSOURCE=${CMAKE_SOURCE_DIR}
+        -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_sampled_vram_marker.cmake)
+    set_tests_properties(sampled_vram_marker PROPERTIES LABELS e2e TIMEOUT 135
+        SKIP_REGULAR_EXPRESSION "SKIP: no disc")
+    foreach(fps logic 60)
+        add_test(NAME sampled_vram_marker_${fps} COMMAND ${CMAKE_COMMAND}
+            -DGAME=$<TARGET_FILE:rage-racer-smoke> -DSOURCE=${CMAKE_SOURCE_DIR}
+            -DOUTPUT_ROOT=${CMAKE_BINARY_DIR} -DFPS=${fps}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_sampled_vram_marker.cmake)
+        set_tests_properties(sampled_vram_marker_${fps} PROPERTIES LABELS e2e TIMEOUT 135
+            SKIP_REGULAR_EXPRESSION "SKIP: no disc")
+    endforeach()
+endif()
+
+add_executable(sky_texture_identity_tests sky_texture_identity_tests.c)
+target_include_directories(sky_texture_identity_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+if(MSVC)
+    target_compile_options(sky_texture_identity_tests PRIVATE /W4 /WX)
+else()
+    target_compile_options(sky_texture_identity_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME sky_texture_identity COMMAND sky_texture_identity_tests)
+set_tests_properties(sky_texture_identity PROPERTIES LABELS unit)
+
+add_executable(presentation_device_tests presentation_device_tests.c)
+target_link_libraries(presentation_device_tests PRIVATE psyz SDL3::SDL3)
+if(MSVC)
+    target_compile_options(presentation_device_tests PRIVATE /W4 /WX)
+else()
+    target_compile_options(presentation_device_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME presentation_device COMMAND presentation_device_tests)
+set_tests_properties(presentation_device PROPERTIES LABELS gpu SKIP_RETURN_CODE 77 TIMEOUT 30)
+
+add_executable(track_texture_snapshot_tests track_texture_snapshot_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/track_texture_snapshot.c)
+target_include_directories(track_texture_snapshot_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+if(MSVC)
+    target_compile_options(track_texture_snapshot_tests PRIVATE /W4 /WX)
+else()
+    target_compile_options(track_texture_snapshot_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME track_texture_snapshot COMMAND track_texture_snapshot_tests)
+set_tests_properties(track_texture_snapshot PROPERTIES LABELS unit)
+
 add_executable(composite_gpu_tests composite_gpu_tests.c)
 target_include_directories(composite_gpu_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/modern/shaders)
@@ -63,7 +134,9 @@ add_executable(modern_vram_snapshot_tests
 target_include_directories(modern_vram_snapshot_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port)
 target_link_libraries(modern_vram_snapshot_tests PRIVATE SDL3::SDL3)
-if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+if(MSVC)
+    target_compile_options(modern_vram_snapshot_tests PRIVATE /W4 /WX)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(modern_vram_snapshot_tests PRIVATE
         -Wall -Wextra -Werror)
 endif()
@@ -293,7 +366,9 @@ add_test(NAME rmesh COMMAND rmesh_tests)
 set_tests_properties(rmesh PROPERTIES LABELS functional)
 add_executable(rmesh_index_tests rmesh_index_tests.c)
 target_link_libraries(rmesh_index_tests PRIVATE rage-rmesh)
-if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+if(MSVC)
+    target_compile_options(rmesh_index_tests PRIVATE /W4 /WX)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(rmesh_index_tests PRIVATE -Wall -Wextra -Werror)
 endif()
 add_test(NAME rmesh_index COMMAND rmesh_index_tests)
@@ -459,7 +534,9 @@ add_executable(sky_panorama_layout_tests
     ${CMAKE_SOURCE_DIR}/src/port/sky_panorama_layout.c)
 target_include_directories(sky_panorama_layout_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port)
-if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+if(MSVC)
+    target_compile_options(sky_panorama_layout_tests PRIVATE /W4 /WX)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(sky_panorama_layout_tests PRIVATE
         -Wall -Wextra -Werror)
 endif()
@@ -903,7 +980,9 @@ set_tests_properties(render_view_transform PROPERTIES LABELS unit)
 
 add_executable(render_world_tests render_world_tests.c)
 target_link_libraries(render_world_tests PRIVATE rage-render-world)
-if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+if(MSVC)
+    target_compile_options(render_world_tests PRIVATE /W4 /WX)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(render_world_tests PRIVATE -Wall -Wextra -Werror)
 endif()
 add_test(NAME render_world COMMAND render_world_tests)
@@ -911,7 +990,10 @@ add_test(NAME render_world COMMAND render_world_tests)
 set_tests_properties(render_world PROPERTIES LABELS functional)
 add_executable(render_world_snapshot_tests render_world_snapshot_tests.c)
 target_link_libraries(render_world_snapshot_tests PRIVATE rage-render-world)
-if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+if(MSVC)
+    target_compile_options(render_world_snapshot_tests PRIVATE /W4 /WX)
+    target_compile_definitions(render_world_snapshot_tests PRIVATE _CRT_SECURE_NO_WARNINGS)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(render_world_snapshot_tests PRIVATE
         -Wall -Wextra -Werror)
 endif()

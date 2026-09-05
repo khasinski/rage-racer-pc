@@ -106,10 +106,14 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(rage-sim PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 
+add_library(rage-content STATIC src/content/region_profile.c)
+target_include_directories(rage-content PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
 add_library(rage-rmesh STATIC
     src/render/asset_id.c
     src/render/car_paint.c
     src/render/mod_manifest.c
+    src/render/asset_path.c
     src/render/render_material.c
     src/render/texture_mipmap.c
     src/render/rmesh.c
@@ -174,6 +178,9 @@ if(RAGE_BUILD_PORT)
     target_compile_options(rage-game-full PRIVATE ${RAGE_COMPAT_COMPILE_OPTIONS})
     target_compile_options(rage-host-state PRIVATE ${RAGE_COMPAT_COMPILE_OPTIONS})
     set(RAGE_PORT_COMMON_SOURCES
+        # Compiled per executable: RAGE_SMOKE_TARGET controls its hook fallback
+        # and hook order. A shared object loses that definition on Windows.
+        src/port/platform_stubs.c
         src/port/disc_picker.c
         src/port/host_clock.c
         src/port/disc_stream_publish.c
@@ -208,6 +215,8 @@ if(RAGE_BUILD_PORT)
         src/port/debug_gpu_capture.c
         src/port/classic/native_geometry_diagnostics.c
         src/port/native_asset_importer.c
+        src/port/native_mesh_writer.c
+        src/port/track_texture_snapshot.c
         src/port/modern/modern_renderer.c
         src/port/modern/modern_vram_snapshot.c
         src/port/modern/modern_assets.c
@@ -218,7 +227,6 @@ if(RAGE_BUILD_PORT)
         src/port/modern/scene_capture.c
     )
     set(RAGE_PORT_LEGACY_SOURCES
-        src/port/platform_stubs.c
         src/port/host_disc.c
         src/port/archive_index.c
         src/port/bios_file.c
@@ -261,6 +269,25 @@ if(RAGE_BUILD_PORT)
     )
     target_compile_definitions(rage-racer-smoke PRIVATE RAGE_SMOKE_TARGET=1)
     add_executable(rage-extract tools/rage_extract.c)
+    add_executable(rage-pcm-check tools/rage_pcm_check.c src/port/pcm_metrics.c)
+    add_executable(rage-fmv-pacing-check tools/rage_fmv_pacing_check.c
+        src/port/disc_raw_file.c src/port/disc_cue.c src/port/disc_iso.c
+        src/port/disc_stream_table.c)
+    target_include_directories(rage-fmv-pacing-check PRIVATE src/port)
+    target_link_libraries(rage-fmv-pacing-check PRIVATE rage-content)
+    if(MSVC)
+        target_compile_options(rage-fmv-pacing-check PRIVATE /W4 /WX)
+        target_compile_definitions(rage-fmv-pacing-check PRIVATE _CRT_SECURE_NO_WARNINGS)
+    else()
+        target_compile_options(rage-fmv-pacing-check PRIVATE -Wall -Wextra -Werror)
+    endif()
+    target_include_directories(rage-pcm-check PRIVATE src/port)
+    if(MSVC)
+        target_compile_options(rage-pcm-check PRIVATE /W4 /WX)
+        target_compile_definitions(rage-pcm-check PRIVATE _CRT_SECURE_NO_WARNINGS)
+    else()
+        target_compile_options(rage-pcm-check PRIVATE -Wall -Wextra -Werror)
+    endif()
     add_executable(rage-pack tools/rage_pack.c src/port/texture_patch.c)
     target_include_directories(rage-pack PRIVATE src/port)
     target_link_libraries(rage-pack PRIVATE miniz)
@@ -353,7 +380,7 @@ if(RAGE_BUILD_PORT)
             endif()
         endif()
         target_link_libraries(${RAGE_PORT_TARGET} PRIVATE
-            rage-sim psyz rage-render-world chdr-static miniz)
+            rage-sim psyz rage-render-world rage-content chdr-static miniz)
         if(WIN32)
             target_link_libraries(${RAGE_PORT_TARGET} PRIVATE comdlg32 legacy_stdio_definitions)
         endif()

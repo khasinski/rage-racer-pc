@@ -5,7 +5,7 @@
 static int s_failures;
 static int s_captureCount;
 static int s_failNextCapture;
-static char s_textures[4];
+static char s_textures[5];
 
 #define CHECK(condition) do {                                              \
     if (!(condition)) {                                                    \
@@ -52,6 +52,14 @@ int main(void) {
     CHECK(s_captureCount == 3);
     CHECK(ModernVramSnapshotForFrame(&cache, 102, Capture, NULL) != NULL);
     CHECK(s_captureCount == 4);
+    second = cache.texture;
+    ModernVramSnapshotReset(&cache);
+    CHECK(!cache.valid && cache.texture == NULL);
+    CHECK(ModernVramSnapshotForFrame(&cache, 102, Capture, NULL) != second);
+    CHECK(s_captureCount == 5);
+    ModernVramSnapshotReset(&cache);
+    ModernVramSnapshotReset(&cache);
+    ModernVramSnapshotReset(NULL);
     CHECK(ModernVramSnapshotForFrame(NULL, 103, Capture, NULL) == NULL);
     CHECK(ModernVramSnapshotForFrame(&cache, 103, NULL, NULL) == NULL);
 

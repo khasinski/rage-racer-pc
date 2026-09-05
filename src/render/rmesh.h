@@ -35,6 +35,23 @@ typedef struct RageRuntimeVertex {
     uint32_t material;
 } RageRuntimeVertex;
 
+enum { RAGE_RUNTIME_VERTEX_BYTES = 40 };
+typedef struct RageRuntimeMeshLayout {
+    size_t offsetsOffset, verticesOffset, indicesOffset, totalSize;
+} RageRuntimeMeshLayout;
+/* Checked wire-buffer sizing only; no allocation or content validation.
+ * Failure clears out. Empty meshes are representable. */
+int RuntimeMeshLayout(uint32_t meshes, uint32_t vertices, uint32_t indices,
+                      RageRuntimeMeshLayout *out);
+/* Write only the header into a buffer large enough for the declared complete
+ * mesh. Leaves payload untouched; caller must populate it and validate with
+ * RuntimeMeshOpen before publication. Failure leaves all bytes unchanged. */
+int RuntimeMeshEncodeHeader(void *bytes, size_t size, uint32_t meshes,
+                            uint32_t vertices, uint32_t indices);
+/* Encode one finite vertex in RMESH's little-endian wire format. No allocation
+ * or file I/O. Invalid input/short output leaves destination unchanged. */
+int RuntimeVertexEncode(void *bytes, size_t size, const RageRuntimeVertex *vertex);
+
 enum {
     /* Stored in the otherwise-small material index by rmesh.py. The draw
      * builder removes it before material lookup and applies the instance's

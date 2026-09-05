@@ -1,3 +1,36 @@
+add_executable(region_profile_tests region_profile_tests.c)
+target_link_libraries(region_profile_tests PRIVATE rage-content)
+add_test(NAME region_profile COMMAND region_profile_tests)
+set_tests_properties(region_profile PROPERTIES LABELS unit)
+
+add_executable(cd_backend_lifecycle_tests cd_backend_lifecycle_tests.c)
+target_link_libraries(cd_backend_lifecycle_tests PRIVATE psyz)
+add_test(NAME cd_backend_lifecycle COMMAND cd_backend_lifecycle_tests)
+set_tests_properties(cd_backend_lifecycle PROPERTIES LABELS functional TIMEOUT 30)
+
+add_executable(pcm_metrics_tests pcm_metrics_tests.c ${CMAKE_SOURCE_DIR}/src/port/pcm_metrics.c)
+target_include_directories(pcm_metrics_tests PRIVATE ${CMAKE_SOURCE_DIR}/src/port)
+if(MSVC)
+    target_compile_options(pcm_metrics_tests PRIVATE /W4 /WX)
+    target_compile_definitions(pcm_metrics_tests PRIVATE _CRT_SECURE_NO_WARNINGS)
+else()
+    target_compile_options(pcm_metrics_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME pcm_metrics COMMAND pcm_metrics_tests)
+set_tests_properties(pcm_metrics PROPERTIES LABELS unit)
+
+add_executable(audio_lifecycle_tests audio_lifecycle_tests.c)
+target_link_libraries(audio_lifecycle_tests PRIVATE psyz SDL3::SDL3)
+if(MSVC)
+    target_compile_options(audio_lifecycle_tests PRIVATE /W4 /WX)
+else()
+    target_compile_options(audio_lifecycle_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME audio_lifecycle COMMAND audio_lifecycle_tests)
+add_test(NAME audio_exit_cleanup COMMAND audio_lifecycle_tests exit-active)
+set_tests_properties(audio_lifecycle audio_exit_cleanup PROPERTIES
+    LABELS functional TIMEOUT 30)
+
 add_executable(debug_route_tests debug_route_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/debug_route.c)
 target_include_directories(debug_route_tests PRIVATE ${CMAKE_SOURCE_DIR}/src/port)
@@ -204,6 +237,24 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME image_upload COMMAND image_upload_tests)
 set_tests_properties(image_upload PROPERTIES LABELS unit)
+
+add_executable(native_mesh_writer_tests native_mesh_writer_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/native_mesh_writer.c)
+target_link_libraries(native_mesh_writer_tests PRIVATE rage-rmesh)
+target_include_directories(native_mesh_writer_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(native_mesh_writer_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(native_mesh_writer_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h" /W4 /WX)
+else()
+    target_compile_options(native_mesh_writer_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -Wall -Wextra -Werror)
+endif()
+add_test(NAME native_mesh_writer COMMAND native_mesh_writer_tests)
+set_tests_properties(native_mesh_writer PROPERTIES LABELS unit)
 
 add_executable(native_asset_loader_tests
     native_asset_loader_tests.c
@@ -527,6 +578,7 @@ endif()
 # therefore safe in every release-packaging job. Runtime tests below exercise
 # the real PAL data in local/pre-release validation instead.
 add_executable(timing_restore_tests timing_restore_tests.c ${CMAKE_SOURCE_DIR}/src/port/timing_restore.c)
+target_link_libraries(timing_restore_tests PRIVATE rage-content)
 target_include_directories(timing_restore_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port ${CMAKE_SOURCE_DIR}/src/port/include)
 add_test(NAME timing_restore COMMAND timing_restore_tests)

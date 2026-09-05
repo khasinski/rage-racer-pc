@@ -21,6 +21,7 @@
 #endif
 
 #include <psyz/cd.h>
+#include <psyz/audio.h>
 
 #include "host_disc.h"
 #include "archive_index.h"
@@ -46,12 +47,48 @@ typedef struct RageHostDisc {
 } RageHostDisc;
 
 static RageHostDisc g_RageHostDisc;
+/* Separate cursor: the mixer reads XA while the main thread reads game data.
+ * Installed/retired under the audio lock; only the CD backend borrows it. */
+static DiscRawFile s_BinAudio;
 static const char *s_DiscRegion = "unknown";
 
 static void HostResetCdBackend(void) {
-    ChdClose();
+    Psyz_AudioLock();
     Psyz_CdSetDiskPath(NULL);
+    if (s_BinAudio.file != NULL) fclose(s_BinAudio.file);
+    memset(&s_BinAudio, 0, sizeof(s_BinAudio));
+    ChdClose();
+    Psyz_AudioUnlock();
     g_RageHostDisc.chd = 0;
+}
+
+static int HostReadBinAudio(unsigned int sector, void *buffer, void *user) {
+    return DiscRawFileReadSector(user, sector, buffer)
+               ? DISC_RAW_SECTOR_SIZE : -1;
+}
+
+static int HostMountBinAudio(const char *path) {
+    long bytes;
+    FILE *file = fopen(path, "rb");
+    if (file == NULL) return 0;
+    if (fseek(file, 0, SEEK_END) != 0 || (bytes = ftell(file)) <= 0 ||
+        bytes % DISC_RAW_SECTOR_SIZE != 0 ||
+        bytes / DISC_RAW_SECTOR_SIZE > INT_MAX) {
+        fclose(file);
+        return 0;
+    }
+    PsyzCdTrackInfo track = {0};
+    track.end_sector = (int)(bytes / DISC_RAW_SECTOR_SIZE);
+    Psyz_AudioLock();
+    s_BinAudio.file = file;
+    int ok = Psyz_CdSetSectorBackend(&track, 1, track.end_sector,
+                                     HostReadBinAudio, &s_BinAudio) == 0;
+    if (!ok) {
+        fclose(file);
+        memset(&s_BinAudio, 0, sizeof(s_BinAudio));
+    }
+    Psyz_AudioUnlock();
+    return ok;
 }
 
 static void HostCloseDisc(void) {
@@ -322,7 +359,12 @@ static int HostOpenDiscImage(const char *discPath) {
             return 0;
         }
         g_RageHostDisc.track_offset = 0;
-        return HostOpenDataTrack(dataTrackPath);
+        if (!HostOpenDataTrack(dataTrackPath)) return 0;
+        if (HostMountBinAudio(dataTrackPath)) return 1;
+        fclose(g_RageHostDisc.file);
+        g_RageHostDisc.file = NULL;
+        HostResetCdBackend();
+        return 0;
     }
     if (!DiscPathIsCue(discPath) || Psyz_CdSetDiskPath(discPath) != 0) {
         return 0;

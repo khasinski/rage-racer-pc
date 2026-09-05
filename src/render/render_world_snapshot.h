@@ -15,5 +15,9 @@ int RenderWorldSnapshotWrite(const char *path,
 int RenderWorldSnapshotRead(const char *path,
                                 RageRenderWorldSnapshot *snapshot);
 void RenderWorldSnapshotRelease(RageRenderWorldSnapshot *snapshot);
+/* Deep-copy renderer input into a zero-initialized or owned snapshot. Source
+ * may alias the destination world. Failure preserves the previous snapshot.
+ * Mesh/material resources referenced by IDs are not copied here. */
+int RenderWorldSnapshotCopy(RageRenderWorldSnapshot *snapshot, const RageRenderWorld *world);
 
 #endif

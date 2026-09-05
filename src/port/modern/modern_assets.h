@@ -25,7 +25,10 @@ int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
                              uint32_t material, uint8_t variant,
                              RageRenderMaterial *definition,
                              ModernAssetImage *image);
-int ModernAssetsLoadSkyImage(uint32_t assetKey, ModernAssetImage *image);
+/* layout is copied in the current frame. NULL is the explicit legacy-capture
+ * path (versions 1-6), which still resolves the current game layout. */
+int ModernAssetsLoadSkyImage(uint32_t assetKey,
+    const RageSkyPanoramaLayout *layout, ModernAssetImage *image);
 void ModernAssetsFreeMaterialImage(ModernAssetImage *image);
 void ModernAssetsWarmWorld(const RageRenderWorld *world);
 

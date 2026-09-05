@@ -284,6 +284,24 @@ void ModernDiagnosticsCheckMarker(
             ModernWriteTexturePpm(output->device,
                                       output->ringTextures[slot], output->width,
                                       output->height, path);
+            if (output->ringGenerations != NULL && output->ringGenerations[slot] != NULL) {
+                const RageTrackTextureGeneration *generation = output->ringGenerations[slot];
+                for (int bank = -1; bank < 2; ++bank) {
+                    const uint16_t *pixels = TrackTextureGenerationPixels(generation, bank);
+                    if (pixels == NULL) continue;
+                    snprintf(path, sizeof(path), "%s/ring-%02d-f%u-g%llu-bank%d.raw",
+                             markerDirectory, index, output->ringFrames[slot],
+                             (unsigned long long)TrackTextureGenerationRevision(generation), bank);
+                    file = fopen(path, "wb");
+                    int ok = 0;
+                    if (file != NULL) {
+                        const size_t words = (size_t)RAGE_TRACK_VRAM_WIDTH * RAGE_TRACK_VRAM_HEIGHT;
+                        ok = fwrite(pixels, sizeof(*pixels), words, file) == words;
+                        if (fclose(file) != 0) ok = 0;
+                    }
+                    if (!ok) fprintf(stderr, "rage-port: cannot save retained texture bank %s\n", path);
+                }
+            }
             if (output->ringScenes != NULL) {
                 snprintf(path, sizeof(path), "%s/ring-%02d-f%u-scene.bin",
                          markerDirectory, index,
@@ -293,6 +311,12 @@ void ModernDiagnosticsCheckMarker(
                     fwrite(&output->ringScenes[slot], sizeof(*snapshot), 1, file);
                     fclose(file);
                 }
+            }
+            if (output->ringWorlds != NULL && output->ringWorlds[slot].world.hasCamera) {
+                snprintf(path, sizeof(path), "%s/ring-%02d-f%u-world.bin",
+                         markerDirectory, index, output->ringFrames[slot]);
+                if (!RenderWorldSnapshotWrite(path, &output->ringWorlds[slot].world))
+                    fprintf(stderr, "rage-port: cannot save retained render world %s\n", path);
             }
         }
         fprintf(stderr, "rage-port: ring of %d frames dumped\n",
@@ -329,6 +353,14 @@ void ModernDiagnosticsCheckMarker(
     snprintf(path, sizeof(path), "%s/marker-%d-vram.raw", markerDirectory,
              index);
     WriteVram(path);
+    if (output->sampledVram != NULL && output->sampledVramFrame == snapshot->frameCounter) {
+        snprintf(path, sizeof(path), "%s/marker-%d-vram-sampled.rgba", markerDirectory, index);
+        if (!ModernWriteTextureRgba(output->device, output->sampledVram, 1024, 512, path))
+            fprintf(stderr, "rage-port: marker %d sampled VRAM save failed\n", index);
+    } else {
+        fprintf(stderr, "rage-port: marker %d sampled VRAM unavailable for frame %u\n",
+                index, snapshot->frameCounter);
+    }
     snprintf(path, sizeof(path), "%s/marker-%d-scene.bin", markerDirectory,
              index);
     file = fopen(path, "wb");
@@ -373,6 +405,9 @@ void ModernDiagnosticsCheckMarker(
     file = fopen(path, "w");
     if (file != NULL) {
         WriteSceneInfo(file, snapshot, output, haveModernImage);
+        fprintf(file, "sampledVram frame=%u matchesScene=%d width=1024 height=512 format=rgba8\n",
+                output->sampledVramFrame,
+                output->sampledVram != NULL && output->sampledVramFrame == snapshot->frameCounter);
         fclose(file);
     }
     {

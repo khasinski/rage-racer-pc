@@ -12,6 +12,7 @@
 #include "game/track.h"
 #include "game/track_internal.h"
 #include "render/asset_id.h"
+#include "render/asset_path.h"
 #include "render/car_paint.h"
 #include "render/mod_manifest.h"
 
@@ -31,7 +32,7 @@ static int s_initialized;
 static int s_ready;
 static int s_importerSource;
 static char s_modRoot[1024];
-static RageModManifest s_modManifest;
+static const RageModManifest *s_modManifest;
 static int s_modReady;
 /* Material sidecars are read synchronously on the render thread. Copy the
  * selected relative path out before releasing their transient file buffer. */
@@ -40,30 +41,19 @@ static char s_paintPath[1024];
 
 static void ModernAssetsInitModProvider(void) {
     const char *root = ModAssetsDirectory();
-    char path[sizeof(s_modRoot) + 32];
-    void *bytes;
-    size_t size, rootLength;
+    size_t rootLength;
     if (root == NULL || root[0] == '\0') return;
     rootLength = strlen(root);
-    if (rootLength >= sizeof(s_modRoot) ||
-        rootLength + sizeof("/mod.toml") > sizeof(path)) {
+    if (rootLength >= sizeof(s_modRoot)) {
         fprintf(stderr, "rage-port: semantic mod path is too long\n");
         return;
     }
     memcpy(s_modRoot, root, rootLength + 1);
-    snprintf(path, sizeof(path), "%s/mod.toml", s_modRoot);
-    bytes = SDL_LoadFile(path, &size);
-    if (bytes == NULL) return;
-    if (!ModManifestParse(bytes, size, &s_modManifest)) {
-        fprintf(stderr, "rage-port: invalid semantic mod manifest %s:%zu\n",
-                path, s_modManifest.errorLine);
-        SDL_free(bytes);
-        return;
-    }
-    SDL_free(bytes);
+    s_modManifest = ModAssetsManifest();
+    if (s_modManifest == NULL) return;
     s_modReady = 1;
     fprintf(stderr, "rage-port: semantic asset mod %s from %s\n",
-            s_modManifest.id[0] != '\0' ? s_modManifest.id : "(unnamed)",
+            s_modManifest->id[0] != '\0' ? s_modManifest->id : "(unnamed)",
             s_modRoot);
 }
 
@@ -74,6 +64,10 @@ static int ModernAssetReadFile(void *context, const char *path,
     size_t rootLength = strlen(s_root);
     void *file;
     (void)context;
+    if (bytes == NULL || size == NULL) return 0;
+    *bytes = NULL;
+    *size = 0;
+    if (!AssetPathIsRelativeFile(path, pathLength)) return 0;
     if (rootLength + 1 + pathLength + 1 > sizeof(fullPath)) return 0;
     memcpy(fullPath, s_root, rootLength);
     fullPath[rootLength] = '/';
@@ -88,6 +82,19 @@ static int ModernAssetReadFile(void *context, const char *path,
 static void ModernAssetFreeFile(void *context, const void *bytes) {
     (void)context;
     SDL_free((void *)bytes);
+}
+
+static SDL_EnumerationResult SDLCALL ModernFindEnvironmentIndex(
+    void *context, const char *directory, const char *name) {
+    (void)directory;
+    /* Case-insensitive comparison also covers Windows' default filesystem.
+     * An oddly cased entry on a case-sensitive filesystem is rejected if the
+     * canonical name cannot be opened, rather than treated as absent. */
+    if (SDL_strcasecmp(name, "environment-index.txt") == 0) {
+        *(int *)context = 1;
+        return SDL_ENUM_SUCCESS;
+    }
+    return SDL_ENUM_CONTINUE;
 }
 
 static int ModernAssetsTryRoot(const char *root) {
@@ -115,16 +122,61 @@ static int ModernAssetsTryRoot(const char *root) {
         s_indexSize = 0;
         return 0;
     }
+    size_t errorLine;
+    if (!RuntimeIndexValidate(s_indexBytes, s_indexSize, &errorLine)) {
+        fprintf(stderr, "rage-port: invalid native asset index %s:%zu\n",
+                indexPath, errorLine);
+        SDL_free(s_indexBytes);
+        s_indexBytes = NULL;
+        s_indexSize = 0;
+        return 0;
+    }
+    snprintf(environmentIndexPath, sizeof(environmentIndexPath),
+             "%s/environment-index.txt", s_root);
+    /* SDL_LoadFile/GetPathInfo do not distinguish absence from other errors.
+     * Only a successful directory enumeration proves this optional file is
+     * absent. Any existing but unreadable entry invalidates the asset root. */
+    int environmentExists = 0;
+    if (!SDL_EnumerateDirectory(root, ModernFindEnvironmentIndex, &environmentExists)) {
+        fprintf(stderr, "rage-port: cannot inspect native asset directory %s: %s\n",
+                root, SDL_GetError());
+        goto invalidEnvironment;
+    }
+    if (environmentExists) {
+        SDL_PathInfo info;
+        if (!SDL_GetPathInfo(environmentIndexPath, &info) || info.type != SDL_PATHTYPE_FILE) {
+            fprintf(stderr, "rage-port: environment asset index is not a readable file: %s\n",
+                    environmentIndexPath);
+            goto invalidEnvironment;
+        }
+        s_environmentIndexBytes = SDL_LoadFile(environmentIndexPath, &s_environmentIndexSize);
+        if (s_environmentIndexBytes == NULL) {
+            fprintf(stderr, "rage-port: cannot read environment asset index %s: %s\n",
+                    environmentIndexPath, SDL_GetError());
+            goto invalidEnvironment;
+        }
+    }
+    if (s_environmentIndexBytes != NULL &&
+        !EnvironmentIndexValidate(s_environmentIndexBytes, s_environmentIndexSize,
+                                  MODERN_ASSET_MAX_IMAGE_DIMENSION, &errorLine)) {
+        fprintf(stderr, "rage-port: invalid environment asset index %s:%zu\n",
+                environmentIndexPath, errorLine);
+        goto invalidEnvironment;
+    }
     RuntimeMeshCacheInit(&s_cache, s_indexBytes, s_indexSize,
                              ModernAssetReadFile, ModernAssetFreeFile, NULL,
                              s_entries, MODERN_ASSET_CACHE_CAPACITY);
-    snprintf(environmentIndexPath, sizeof(environmentIndexPath),
-             "%s/environment-index.txt", s_root);
-    s_environmentIndexBytes = SDL_LoadFile(
-        environmentIndexPath, &s_environmentIndexSize);
     s_ready = 1;
     fprintf(stderr, "rage-port: native asset cache %s\n", s_root);
     return 1;
+invalidEnvironment:
+    SDL_free(s_environmentIndexBytes);
+    s_environmentIndexBytes = NULL;
+    s_environmentIndexSize = 0;
+    SDL_free(s_indexBytes);
+    s_indexBytes = NULL;
+    s_indexSize = 0;
+    return 0;
 }
 
 int ModernAssetsInit(void) {
@@ -196,8 +248,11 @@ void ModernAssetsShutdown(void) {
     s_initialized = 0;
     s_root[0] = '\0';
     s_modRoot[0] = '\0';
-    memset(&s_modManifest, 0, sizeof(s_modManifest));
+    s_modManifest = NULL;
     s_modReady = 0;
+    /* Full asset-session shutdown only. Presentation/device restart must keep
+     * the manifest alive together with the meshes that were derived from it. */
+    ModAssetsShutdown();
 }
 
 const RageRuntimeCachedMesh *ModernAssetsFind(
@@ -212,68 +267,50 @@ int ModernAssetsReady(void) {
     return s_ready;
 }
 
-int ModernAssetsLoadSkyImage(uint32_t assetKey, ModernAssetImage *image) {
+int ModernAssetsLoadSkyImage(uint32_t assetKey,
+    const RageSkyPanoramaLayout *capturedLayout, ModernAssetImage *image) {
+    RageSkyPanoramaLayout layout;
     const char *bytes = (const char *)s_environmentIndexBytes;
-    size_t lineStart = 0, cursor;
-    char line[1200];
-    unsigned key, width, height;
-    char path[1024];
+    RageRuntimeEnvironmentLocation location;
     const void *pixels;
     size_t size, expectedSize;
     if (image == NULL) return 0;
     memset(image, 0, sizeof(*image));
+    if (capturedLayout != NULL) layout = *capturedLayout;
+    else RageSkyCapturePanoramaLayout(&layout, g_SkyTileMap, g_SkyRowBase);
     if (s_importerSource)
-        return NativeAssetImporterLoadSky(assetKey, image);
+        return NativeAssetImporterLoadSky(assetKey, &layout, image);
     if (!s_ready || bytes == NULL) return 0;
-    for (cursor = 0; cursor <= s_environmentIndexSize; cursor++) {
-        if (cursor != s_environmentIndexSize && bytes[cursor] != '\n')
-            continue;
-        if (cursor > lineStart && bytes[lineStart] != '#') {
-            size_t length = cursor - lineStart;
-            if (length < sizeof(line)) {
-                memcpy(line, bytes + lineStart, length);
-                line[length] = '\0';
-                if (sscanf(line, "%u %u %u %1023s", &key, &width, &height,
-                           path) == 4 && key == assetKey && width != 0 &&
-                    height != 0 &&
-                    width <= MODERN_ASSET_MAX_IMAGE_DIMENSION &&
-                    height <= MODERN_ASSET_MAX_IMAGE_DIMENSION) {
-                    expectedSize = (size_t)width * (size_t)height * 4u;
-                    if (ModernAssetReadFile(NULL, path, strlen(path), &pixels,
-                                            &size)) {
-                        if (size == expectedSize) {
-                            if (width == 512 && height == 128) {
-                                size_t expandedSize = 512u * 256u * 4u;
-                                uint8_t *expanded = SDL_malloc(expandedSize);
-                                if (expanded == NULL ||
-                                    !RageSkyExpandPanorama(
-                                        expanded, expandedSize, pixels, size,
-                                        g_SkyTileMap, g_SkyRowBase)) {
-                                    SDL_free(expanded);
-                                    ModernAssetFreeFile(NULL, pixels);
-                                    return 0;
-                                }
-                                ModernAssetFreeFile(NULL, pixels);
-                                image->pixels = expanded;
-                                image->size = expandedSize;
-                                image->width = 512;
-                                image->height = 256;
-                            } else {
-                                image->pixels = (void *)pixels;
-                                image->size = size;
-                                image->width = width;
-                                image->height = height;
-                            }
-                            return 1;
-                        }
-                        ModernAssetFreeFile(NULL, pixels);
-                    }
-                }
-            }
-        }
-        lineStart = cursor + 1;
+    if (!EnvironmentIndexFind(bytes, s_environmentIndexSize, assetKey,
+                               MODERN_ASSET_MAX_IMAGE_DIMENSION, &location)) return 0;
+    expectedSize = (size_t)location.width * location.height * 4u;
+    if (!ModernAssetReadFile(NULL, location.path, location.pathLength, &pixels, &size))
+        return 0;
+    if (size != expectedSize) {
+        ModernAssetFreeFile(NULL, pixels);
+        return 0;
     }
-    return 0;
+    if (location.width == 512 && location.height == 128) {
+        size_t expandedSize = 512u * 256u * 4u;
+        uint8_t *expanded = SDL_malloc(expandedSize);
+        if (expanded == NULL || !RageSkyExpandPanoramaLayout(
+                expanded, expandedSize, pixels, size, &layout)) {
+            SDL_free(expanded);
+            ModernAssetFreeFile(NULL, pixels);
+            return 0;
+        }
+        ModernAssetFreeFile(NULL, pixels);
+        image->pixels = expanded;
+        image->size = expandedSize;
+        image->width = 512;
+        image->height = 256;
+    } else {
+        image->pixels = (void *)pixels;
+        image->size = size;
+        image->width = location.width;
+        image->height = location.height;
+    }
+    return 1;
 }
 
 uint32_t ModernAssetsCachedMeshCount(void) {
@@ -300,13 +337,13 @@ static const char *ModernAssetsFindModMaterialProperties(
     if (AssetMaterialVariantId(
             exactId, sizeof(exactId), instance->assetKey,
             instance->assetSet, material, variant)) {
-        properties = ModManifestFindMaterialProperties(&s_modManifest,
+        properties = ModManifestFindMaterialProperties(s_modManifest,
                                                        exactId);
     }
     if (properties == NULL &&
         AssetMaterialId(baseId, sizeof(baseId), instance->assetKey,
                         instance->assetSet, material)) {
-        properties = ModManifestFindMaterialProperties(&s_modManifest,
+        properties = ModManifestFindMaterialProperties(s_modManifest,
                                                        baseId);
     }
     return properties;
@@ -388,9 +425,9 @@ static int ModernAssetsLoadModImage(const RageRenderMeshInstance *instance,
                                     material, variant) ||
         !AssetMaterialId(baseId, sizeof(baseId), instance->assetKey,
                              instance->assetSet, material)) return 0;
-    relativePath = ModManifestFindTexture(&s_modManifest, exactId);
+    relativePath = ModManifestFindTexture(s_modManifest, exactId);
     if (relativePath == NULL)
-        relativePath = ModManifestFindTexture(&s_modManifest, baseId);
+        relativePath = ModManifestFindTexture(s_modManifest, baseId);
     if (relativePath == NULL ||
         snprintf(fullPath, sizeof(fullPath), "%s/%s", s_modRoot,
                  relativePath) >= (int)sizeof(fullPath)) return 0;
@@ -422,7 +459,7 @@ static int ModernAssetsLoadModImage(const RageRenderMeshInstance *instance,
     image->height = (uint32_t)converted->h;
     SDL_DestroySurface(converted);
     fprintf(stderr, "rage-port: native texture override %s <- %s (%ux%u)\n",
-            ModManifestFindTexture(&s_modManifest, exactId) != NULL
+            ModManifestFindTexture(s_modManifest, exactId) != NULL
                 ? exactId : baseId,
             relativePath, image->width, image->height);
     return 1;

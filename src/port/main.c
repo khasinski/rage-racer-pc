@@ -1,5 +1,6 @@
 #include <psyz.h>
 #include <psyz/video.h>
+#include <psyz/audio.h>
 #include <libetc.h>
 
 #include <limits.h>
@@ -111,5 +112,7 @@ int main(int argc, char **argv) {
     }
     ContentOptionsApply();
     MainLoop();
+    Psyz_AudioDestroy();
+    ModernShutdown();
     return EXIT_SUCCESS;
 }

@@ -6,10 +6,14 @@ add_executable(disc_stream_table_tests
 target_include_directories(disc_stream_table_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port
 )
-if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+if(MSVC)
+    target_compile_options(disc_stream_table_tests PRIVATE /W4 /WX)
+    target_compile_definitions(disc_stream_table_tests PRIVATE _CRT_SECURE_NO_WARNINGS)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(disc_stream_table_tests PRIVATE -Wall -Wextra -Werror)
 endif()
 add_test(NAME disc_stream_table COMMAND disc_stream_table_tests)
+target_link_libraries(disc_stream_table_tests PRIVATE rage-content)
 set_tests_properties(disc_stream_table PROPERTIES LABELS functional)
 
 add_executable(stream_table_disc_tests
@@ -21,16 +25,22 @@ add_executable(stream_table_disc_tests
 target_include_directories(stream_table_disc_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port
 )
-if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+if(MSVC)
+    target_compile_options(stream_table_disc_tests PRIVATE /W4 /WX)
+    target_compile_definitions(stream_table_disc_tests PRIVATE _CRT_SECURE_NO_WARNINGS)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(stream_table_disc_tests PRIVATE -Wall -Wextra -Werror)
 endif()
 add_test(NAME stream_table COMMAND stream_table_disc_tests ${CMAKE_SOURCE_DIR})
+target_link_libraries(stream_table_disc_tests PRIVATE rage-content)
 # Skips rather than fails when there is no disc to derive the table from.
 set_tests_properties(stream_table PROPERTIES LABELS functional
     SKIP_RETURN_CODE 77 TIMEOUT 120)
 add_executable(mod_manifest_tests mod_manifest_tests.c)
 target_link_libraries(mod_manifest_tests PRIVATE rage-rmesh)
-if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+if(MSVC)
+    target_compile_options(mod_manifest_tests PRIVATE /W4 /WX)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(mod_manifest_tests PRIVATE -Wall -Wextra -Werror)
 endif()
 add_test(NAME mod_manifest COMMAND mod_manifest_tests)
@@ -39,12 +49,20 @@ set_tests_properties(mod_manifest PROPERTIES LABELS functional)
 add_executable(mod_asset_fallback_tests
     mod_asset_fallback_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/mod_assets.c)
+target_link_libraries(mod_asset_fallback_tests PRIVATE rage-rmesh)
 target_include_directories(mod_asset_fallback_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port)
-if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+if(MSVC)
+    target_compile_options(mod_asset_fallback_tests PRIVATE /W4 /WX)
+    target_compile_definitions(mod_asset_fallback_tests PRIVATE _CRT_SECURE_NO_WARNINGS)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(mod_asset_fallback_tests PRIVATE -Wall -Wextra -Werror)
 endif()
 add_test(NAME mod_asset_fallback COMMAND mod_asset_fallback_tests)
+foreach(mode valid invalid future semantic unreadable)
+    add_test(NAME mod_provider_${mode} COMMAND mod_asset_fallback_tests ${mode})
+    set_tests_properties(mod_provider_${mode} PROPERTIES LABELS functional)
+endforeach()
 
 set_tests_properties(mod_asset_fallback PROPERTIES LABELS functional)
 add_executable(release_package_tests release_package_tests.c)
@@ -72,6 +90,27 @@ if(TARGET rage-extract AND TARGET rage-pack)
 endif()
 
 if(TARGET rage-racer-smoke)
+    if(TARGET rage-pcm-check)
+        add_test(NAME modern_fmv_audio COMMAND ${CMAKE_COMMAND}
+            -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DPCM_CHECK=$<TARGET_FILE:rage-pcm-check>
+            -DPACING_CHECK=$<TARGET_FILE:rage-fmv-pacing-check>
+            -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/modern_fmv_audio.cmake)
+        set_tests_properties(modern_fmv_audio PROPERTIES LABELS e2e
+            TIMEOUT 600 SKIP_REGULAR_EXPRESSION "SKIP: no disc image")
+        foreach(stream 0 1 2 3 4 6 7 8 9 10)
+            add_test(NAME modern_fmv_audio_${stream} COMMAND ${CMAKE_COMMAND}
+                -DGAME=$<TARGET_FILE:rage-racer-smoke>
+                -DPCM_CHECK=$<TARGET_FILE:rage-pcm-check>
+                -DPACING_CHECK=$<TARGET_FILE:rage-fmv-pacing-check>
+                -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+                -DSTREAM=${stream}
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/modern_fmv_audio.cmake)
+            set_tests_properties(modern_fmv_audio_${stream} PROPERTIES LABELS e2e
+                TIMEOUT 600 SKIP_REGULAR_EXPRESSION "SKIP: no disc image")
+        endforeach()
+    endif()
     add_test(
         NAME fmv_frame_layout
         COMMAND python3
