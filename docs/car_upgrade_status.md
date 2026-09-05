@@ -609,17 +609,20 @@ preserves the normal setup and invalid indices produce a diagnostic.
 This enables verification of the nineteen non-base player assets without
 editing saves or silently selecting another car's bank.
 
-All nineteen player upgrade drafts now have OBJ/MTL/Blender sources:
+## Player upgrade variants, 2026-09-05
+
+All nineteen player upgrade variants now have OBJ/MTL/Blender sources:
 `erriso-grade{1,2,3}`, `abeille-grade{1,2}`, `pegase-grade1`,
 `esperanza-grade{1,2,3,4}`, `acceron-grade{1,2,3}`, `bayonet-grade{1,2}`,
 `hijack-grade1`, `fatalita-grade{1,2}`, and `istante-grade1`.
 All original and before/after Blender views were inspected, and every saved
-source re-exports to a byte-identical C-converted native draft mesh. These
-player upgrades still need bounds/material validation, embedding, game
-comparisons, and transition/cache tests; they are not yet replacements.
+source re-exports to a byte-identical C-converted native mesh. These player
+upgrades are embedded, bounds/material validated, and visually checked in
+the actual release executable. All bank, transition, and cache tests passed.
 Fatalita's original wing has coincident opposite-facing faces with different
-UVs; its Blender comparison exposes the top logo after beveling. Verify both
-wing sides and culling in the modern renderer before accepting these drafts.
+UVs; its Blender comparison exposes the top logo after beveling. Both variants'
+modern front/rear comparisons preserve the visible wing surfaces without new
+holes in those views.
 The final fleet audit remains outstanding.
 
 The current later-compact build passed all 375 non-E2E regression tests
@@ -631,6 +634,26 @@ individual `compact-later-cache-bank-*.log` traces). A registry audit confirms
 all seven car bodies in each ordinary bank 88–126 and all four in each special
 bank 128–134 are registered exactly once; the remaining submeshes are wheels,
 distance models, and the helicopter.
+
+Player upgrade integration is now in progress in the working tree. All nineteen
+OBJ sources are embedded and mapped to their individual player banks; seven
+focused asset/pipeline tests passed (`player-grades-tests-triangulated.log`).
+The tests caught a bevel overshoot in Esperanza grade 3 (reduced from 1.6 to
+1.2 units) and undefined Hijack grade 1 corner normals (saved as explicit
+triangles). Both corrected saved sources re-export identically through C.
+All 38 real-game comparison pairs (76 captures) were inspected. Accepted comparison
+filenames use `*-gradeN-{front,chase}-verified-comparison.png`; the front view
+uses course 1, camera 2, player track point 118, timer 350, and distant rivals.
+Earlier timer-120 track views are unsuitable because of the starting lights.
+The player-grade bank and repeat-race E2E tests passed (174.10 and 615.01
+seconds; `player-grades-e2e.log`). All nineteen extracted-cache banks passed
+as well (`player-grades-cache-tests.log` and `player-grade-cache-bank-*.log`).
+
+Across the nineteen variants, the last two CPU submission samples per capture
+were 0.827–0.878 ms before and 0.946–1.015 ms after in the front view;
+chase samples were 0.247–0.282 ms before and 0.356–0.436 ms after. These compare
+all original versus all authored cars in the scene, including rivals, and
+are CPU submission observations rather than isolated GPU/FPS measurements.
 
 Keep original data and the unrelated `.claude/` and `imgui.ini` files.
 Commit verified stages locally; do not push or publish.

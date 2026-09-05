@@ -355,3 +355,17 @@ five banks. B/C differ between middle and late in six faces' UVs; A also
 has different positions and normals. The separate sources preserve these
 differences. Parts 20/25/30 and model palette slots 4–10 follow the same
 assembly convention as the early sources. Original wheels and far parts remain.
+
+## Player upgrade variants
+
+The `*-gradeN.blend` sources retain the corresponding retail upgrade geometry
+and textures. The selected export object is `<Car>_player_gradeN_body`; export
+with the same OBJ options as the base bodies. CMake embeds these OBJ sources
+automatically. Scenario option `race.variant=N` selects the zero-based catalog
+variant before bank loading; `0` is the base model.
+
+Each variant has its own material map and retail bounds in the native asset
+test. Esperanza grade 3 uses a 1.2-unit bevel to stay within the four-unit
+margin. Hijack grade 1 stores explicit triangles to avoid undefined corner
+normals on very narrow polygons; export the saved final body, not its retained
+bevel draft. The converter remains C and Blender is not a runtime dependency.

@@ -3,10 +3,26 @@
 #include <stdio.h>
 #include "port/modern/authored_car_data.h"
 #define CHECK(x) do { if (!(x)) { fprintf(stderr,"line %d: %s\n",__LINE__,#x); return 1; } } while(0)
-static int Validate(const void *bytes,size_t size,int model) {
+static int ValidateInBounds(const void *bytes,size_t size,const float low[3],const float high[3]) {
     RageRuntimeMesh mesh;
     RageRuntimeVertex v;
     uint32_t i,material=0;
+    CHECK(RuntimeMeshOpen(&mesh,bytes,size));
+    CHECK(mesh.meshCount==1 && mesh.indexCount>228*3 && mesh.indexCount<20000*3);
+    for(i=0;i<mesh.indexCount;i++) {
+        uint32_t index,axis;
+        CHECK(RuntimeMeshIndex(&mesh,i,&index) && RuntimeMeshVertex(&mesh,index,&v));
+        for(axis=0;axis<3;axis++) CHECK(v.position[axis]>=low[axis] && v.position[axis]<=high[axis]);
+        CHECK(v.color[3]==255);
+        CHECK(isfinite(v.uv[0]) && isfinite(v.uv[1]));
+        CHECK(v.normal[0]*v.normal[0]+v.normal[1]*v.normal[1]+v.normal[2]*v.normal[2]>0.9f);
+        if(i%3==0) material=v.material;
+        else CHECK(v.material==material);
+    }
+    return 0;
+}
+
+static int Validate(const void *bytes,size_t size,int model) {
     /* Retail body bounds plus four model units for narrow panel bevels. */
     float low[3]={-126,-23,-81}, high[3]={126,143,360};
     if(model==1) {
@@ -49,21 +65,7 @@ static int Validate(const void *bytes,size_t size,int model) {
         low[0]=-126; low[1]=-31; low[2]=-104;
         high[0]=126; high[1]=132; high[2]=478;
     }
-    CHECK(RuntimeMeshOpen(&mesh,bytes,size));
-    CHECK(mesh.meshCount==1 && mesh.indexCount>228*3 && mesh.indexCount<20000*3);
-    for(i=0;i<mesh.indexCount;i++) {
-        uint32_t index,axis;
-        CHECK(RuntimeMeshIndex(&mesh,i,&index) && RuntimeMeshVertex(&mesh,index,&v));
-        for(axis=0;axis<3;axis++) CHECK(v.position[axis]>=low[axis] && v.position[axis]<=high[axis]);
-        CHECK(v.color[3]==255);
-        CHECK(isfinite(v.uv[0]) && isfinite(v.uv[1]));
-        CHECK(v.normal[0]*v.normal[0]+v.normal[1]*v.normal[1]+v.normal[2]*v.normal[2]>0.9f);
-        /* ValidateRegistry checks every textured source slot against its
-         * bank's explicit material map, including both Esperanza variants. */
-        if(i%3==0) material=v.material;
-        else CHECK(v.material==material);
-    }
-    return 0;
+    return ValidateInBounds(bytes,size,low,high);
 }
 
 static int ValidateAbeillePanelColorSeam(void) {
@@ -151,6 +153,44 @@ static int ValidatePegaseHoodDecal(void) {
 }
 
 int main(void) {
+    CHECK(ValidateInBounds(s_erriso_grade1,sizeof(s_erriso_grade1),
+        (const float[3]){-126,-25,-111},(const float[3]){126,143,363})==0);
+    CHECK(ValidateInBounds(s_erriso_grade2,sizeof(s_erriso_grade2),
+        (const float[3]){-139,-23,-118},(const float[3]){139,143,372})==0);
+    CHECK(ValidateInBounds(s_erriso_grade3,sizeof(s_erriso_grade3),
+        (const float[3]){-139,-30,-97},(const float[3]){139,135,388})==0);
+    CHECK(ValidateInBounds(s_abeille_grade1,sizeof(s_abeille_grade1),
+        (const float[3]){-145,-21,-73},(const float[3]){145,156,435})==0);
+    CHECK(ValidateInBounds(s_abeille_grade2,sizeof(s_abeille_grade2),
+        (const float[3]){-145,-27,-73},(const float[3]){145,142,435})==0);
+    CHECK(ValidateInBounds(s_pegase_grade1,sizeof(s_pegase_grade1),
+        (const float[3]){-140,-23,-99},(const float[3]){140,118,413})==0);
+    CHECK(ValidateInBounds(s_esperanza_grade1,sizeof(s_esperanza_grade1),
+        (const float[3]){-148,-35,-146},(const float[3]){148,144,501})==0);
+    CHECK(ValidateInBounds(s_esperanza_grade2,sizeof(s_esperanza_grade2),
+        (const float[3]){-148,-35,-146},(const float[3]){148,144,501})==0);
+    CHECK(ValidateInBounds(s_esperanza_grade3,sizeof(s_esperanza_grade3),
+        (const float[3]){-167,-36,-139},(const float[3]){167,144,512})==0);
+    CHECK(ValidateInBounds(s_esperanza_grade4,sizeof(s_esperanza_grade4),
+        (const float[3]){-166,-41,-152},(const float[3]){166,144,512})==0);
+    CHECK(ValidateInBounds(s_acceron_grade1,sizeof(s_acceron_grade1),
+        (const float[3]){-164,-33,-165},(const float[3]){164,137,529})==0);
+    CHECK(ValidateInBounds(s_acceron_grade2,sizeof(s_acceron_grade2),
+        (const float[3]){-164,-33,-153},(const float[3]){164,137,526})==0);
+    CHECK(ValidateInBounds(s_acceron_grade3,sizeof(s_acceron_grade3),
+        (const float[3]){-168,-52,-172},(const float[3]){168,135,529})==0);
+    CHECK(ValidateInBounds(s_bayonet_grade1,sizeof(s_bayonet_grade1),
+        (const float[3]){-158,-33,-149},(const float[3]){158,121,485})==0);
+    CHECK(ValidateInBounds(s_bayonet_grade2,sizeof(s_bayonet_grade2),
+        (const float[3]){-151,-43,-148},(const float[3]){151,139,485})==0);
+    CHECK(ValidateInBounds(s_hijack_grade1,sizeof(s_hijack_grade1),
+        (const float[3]){-149,-40,-168},(const float[3]){149,161,528})==0);
+    CHECK(ValidateInBounds(s_fatalita_grade1,sizeof(s_fatalita_grade1),
+        (const float[3]){-146,-38,-137},(const float[3]){146,113,469})==0);
+    CHECK(ValidateInBounds(s_fatalita_grade2,sizeof(s_fatalita_grade2),
+        (const float[3]){-156,-41,-137},(const float[3]){156,119,486})==0);
+    CHECK(ValidateInBounds(s_istante_grade1,sizeof(s_istante_grade1),
+        (const float[3]){-174,-42,-123},(const float[3]){174,111,516})==0);
     CHECK(Validate(s_errisoBody,sizeof(s_errisoBody),0)==0);
     CHECK(Validate(s_errisoRivalBody,sizeof(s_errisoRivalBody),0)==0);
     CHECK(Validate(s_abeille_body,sizeof(s_abeille_body),1)==0);

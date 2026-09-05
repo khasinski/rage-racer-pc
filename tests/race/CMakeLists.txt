@@ -1296,6 +1296,16 @@ if(TARGET rage-racer-smoke)
             "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_scenario_variant.cmake")
     set_tests_properties(scenario_variant PROPERTIES LABELS e2e TIMEOUT 640 RUN_SERIAL TRUE)
+    add_test(NAME authored_player_grades
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_player_grades.cmake")
+    set_tests_properties(authored_player_grades PROPERTIES LABELS e2e TIMEOUT 1720 RUN_SERIAL TRUE)
+    add_test(NAME authored_player_grade_transitions
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_player_grade_transitions.cmake")
+    set_tests_properties(authored_player_grade_transitions PROPERTIES LABELS e2e TIMEOUT 3430 RUN_SERIAL TRUE)
     foreach(compact_class 2 4)
         math(EXPR compact_asset "88+${compact_class}*8")
         add_test(NAME compact_class${compact_class}_transition

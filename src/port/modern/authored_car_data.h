@@ -5,6 +5,25 @@
 #include <stdint.h>
 #include "render/render_world.h"
 #include "erriso_body.inc"
+#include "erriso_grade1.inc"
+#include "erriso_grade2.inc"
+#include "erriso_grade3.inc"
+#include "abeille_grade1.inc"
+#include "abeille_grade2.inc"
+#include "pegase_grade1.inc"
+#include "esperanza_grade1.inc"
+#include "esperanza_grade2.inc"
+#include "esperanza_grade3.inc"
+#include "esperanza_grade4.inc"
+#include "acceron_grade1.inc"
+#include "acceron_grade2.inc"
+#include "acceron_grade3.inc"
+#include "bayonet_grade1.inc"
+#include "bayonet_grade2.inc"
+#include "hijack_grade1.inc"
+#include "fatalita_grade1.inc"
+#include "fatalita_grade2.inc"
+#include "istante_grade1.inc"
 #include "erriso_rival.inc"
 #include "abeille_body.inc"
 #include "abeille_rival.inc"
@@ -61,6 +80,291 @@ typedef struct AuthoredCarReplacement {
 
 /* Source slots belong to the authored OBJ; cache slots belong to each
  * extracted bank. Live imports resolve the same texture identity directly. */
+static const AuthoredCarMaterial s_errisoGrade1Materials[] = {
+    {0, 10, 0x3baf, 0},
+    {1, 10, 0x3bef, 1},
+    {2, 10, 0x7801, 2},
+    {3, 11, 0x382f, 3},
+    {4, 11, 0x386f, 4},
+    {5, 11, 0x38af, 5},
+    {6, 11, 0x392f, 6},
+    {7, 11, 0x39af, 7},
+    {8, 11, 0x39ef, 8},
+    {9, 11, 0x3a2f, 9},
+    {10, 11, 0x3aaf, 10},
+    {11, 11, 0x3aef, 11},
+    {12, 11, 0x3b2f, 12},
+};
+static const AuthoredCarMaterial s_errisoGrade2Materials[] = {
+    {0, 10, 0x3baf, 0},
+    {1, 10, 0x3bef, 1},
+    {2, 10, 0x7801, 2},
+    {3, 11, 0x382f, 3},
+    {4, 11, 0x386f, 4},
+    {5, 11, 0x38af, 5},
+    {6, 11, 0x392f, 6},
+    {7, 11, 0x39af, 7},
+    {8, 11, 0x39ef, 8},
+    {9, 11, 0x3a2f, 9},
+    {10, 11, 0x3aef, 10},
+    {11, 11, 0x3b2f, 11},
+};
+static const AuthoredCarMaterial s_errisoGrade3Materials[] = {
+    {0, 10, 0x3baf, 0},
+    {1, 10, 0x3bef, 1},
+    {2, 10, 0x7801, 2},
+    {3, 11, 0x382f, 3},
+    {4, 11, 0x386f, 4},
+    {5, 11, 0x38af, 5},
+    {6, 11, 0x392f, 6},
+    {7, 11, 0x39af, 7},
+    {8, 11, 0x39ef, 8},
+    {9, 11, 0x3a2f, 9},
+    {10, 11, 0x3aef, 10},
+};
+static const AuthoredCarMaterial s_abeilleGrade1Materials[] = {
+    {0, 10, 0x3baf, 0},
+    {1, 10, 0x3bef, 1},
+    {2, 10, 0x7801, 2},
+    {3, 11, 0x382f, 3},
+    {4, 11, 0x386f, 4},
+    {5, 11, 0x38ef, 5},
+    {6, 11, 0x39af, 6},
+    {7, 11, 0x39ef, 7},
+    {8, 11, 0x3a2f, 8},
+    {9, 11, 0x3a6f, 9},
+    {10, 11, 0x3aaf, 10},
+    {11, 11, 0x3b2f, 11},
+    {12, 11, 0x3c2f, 12},
+};
+static const AuthoredCarMaterial s_abeilleGrade2Materials[] = {
+    {0, 10, 0x3baf, 0},
+    {1, 10, 0x3bef, 1},
+    {2, 10, 0x7801, 2},
+    {3, 11, 0x382f, 3},
+    {4, 11, 0x386f, 4},
+    {5, 11, 0x38ef, 5},
+    {6, 11, 0x39af, 6},
+    {7, 11, 0x39ef, 7},
+    {8, 11, 0x3a2f, 8},
+    {9, 11, 0x3a6f, 9},
+    {10, 11, 0x3aaf, 10},
+    {11, 11, 0x3b2f, 11},
+    {12, 11, 0x3c2f, 12},
+};
+static const AuthoredCarMaterial s_pegaseGrade1Materials[] = {
+    {0, 10, 0x3baf, 0},
+    {1, 10, 0x3bef, 1},
+    {2, 10, 0x7801, 2},
+    {3, 11, 0x382f, 3},
+    {4, 11, 0x38ef, 4},
+    {5, 11, 0x396f, 5},
+    {6, 11, 0x39af, 6},
+    {7, 11, 0x39ef, 7},
+    {8, 11, 0x3a2f, 8},
+    {9, 11, 0x3a6f, 9},
+    {10, 11, 0x3aaf, 10},
+    {11, 11, 0x3aef, 11},
+    {12, 11, 0x3b2f, 12},
+    {13, 11, 0x3b6f, 13},
+};
+static const AuthoredCarMaterial s_esperanzaGrade1Materials[] = {
+    {0, 10, 0x3baf, 0},
+    {1, 10, 0x3bef, 1},
+    {2, 10, 0x7801, 2},
+    {3, 11, 0x382f, 3},
+    {4, 11, 0x386f, 4},
+    {5, 11, 0x38ef, 5},
+    {6, 11, 0x39af, 6},
+    {7, 11, 0x39ef, 7},
+    {8, 11, 0x3a2f, 8},
+    {9, 11, 0x3a6f, 9},
+    {10, 11, 0x3aaf, 10},
+    {11, 11, 0x3aef, 11},
+    {12, 11, 0x3b2f, 12},
+};
+static const AuthoredCarMaterial s_esperanzaGrade2Materials[] = {
+    {0, 10, 0x3baf, 0},
+    {1, 10, 0x3bef, 1},
+    {2, 10, 0x7801, 2},
+    {3, 11, 0x382f, 3},
+    {4, 11, 0x386f, 4},
+    {5, 11, 0x38ef, 5},
+    {6, 11, 0x39af, 6},
+    {7, 11, 0x39ef, 7},
+    {8, 11, 0x3a2f, 8},
+    {9, 11, 0x3a6f, 9},
+    {10, 11, 0x3aaf, 10},
+    {11, 11, 0x3aef, 11},
+    {12, 11, 0x3b2f, 12},
+};
+static const AuthoredCarMaterial s_esperanzaGrade3Materials[] = {
+    {0, 10, 0x3baf, 0},
+    {1, 10, 0x3bef, 1},
+    {2, 10, 0x7801, 2},
+    {3, 11, 0x382f, 3},
+    {4, 11, 0x386f, 4},
+    {5, 11, 0x38af, 5},
+    {6, 11, 0x38ef, 6},
+    {7, 11, 0x396f, 7},
+    {8, 11, 0x39af, 8},
+    {9, 11, 0x39ef, 9},
+    {10, 11, 0x3a2f, 10},
+    {11, 11, 0x3a6f, 11},
+    {12, 11, 0x3aaf, 12},
+    {13, 11, 0x3aef, 13},
+    {14, 11, 0x3b2f, 14},
+};
+static const AuthoredCarMaterial s_esperanzaGrade4Materials[] = {
+    {0, 10, 0x3baf, 0},
+    {1, 10, 0x3bef, 1},
+    {2, 10, 0x7801, 2},
+    {3, 11, 0x382f, 3},
+    {4, 11, 0x386f, 4},
+    {5, 11, 0x38ef, 5},
+    {6, 11, 0x39af, 6},
+    {7, 11, 0x39ef, 7},
+    {8, 11, 0x3a2f, 8},
+    {9, 11, 0x3a6f, 9},
+    {10, 11, 0x3aaf, 10},
+    {11, 11, 0x3aef, 11},
+    {12, 11, 0x3b2f, 12},
+};
+static const AuthoredCarMaterial s_acceronGrade1Materials[] = {
+    {0, 10, 0x3baf, 0},
+    {1, 10, 0x3bef, 1},
+    {2, 10, 0x7801, 2},
+    {3, 11, 0x382f, 3},
+    {4, 11, 0x386f, 4},
+    {5, 11, 0x38ef, 5},
+    {6, 11, 0x39af, 6},
+    {7, 11, 0x39ef, 7},
+    {8, 11, 0x3a2f, 8},
+    {9, 11, 0x3a6f, 9},
+    {10, 11, 0x3aaf, 10},
+    {11, 11, 0x3aef, 11},
+    {12, 11, 0x3b2f, 12},
+};
+static const AuthoredCarMaterial s_acceronGrade2Materials[] = {
+    {0, 10, 0x3baf, 0},
+    {1, 10, 0x3bef, 1},
+    {2, 10, 0x7801, 2},
+    {3, 11, 0x382f, 3},
+    {4, 11, 0x386f, 4},
+    {5, 11, 0x38ef, 5},
+    {6, 11, 0x39af, 6},
+    {7, 11, 0x39ef, 7},
+    {8, 11, 0x3a2f, 8},
+    {9, 11, 0x3a6f, 9},
+    {10, 11, 0x3aaf, 10},
+    {11, 11, 0x3aef, 11},
+    {12, 11, 0x3b2f, 12},
+};
+static const AuthoredCarMaterial s_acceronGrade3Materials[] = {
+    {0, 10, 0x3baf, 0},
+    {1, 10, 0x3bef, 1},
+    {2, 10, 0x7801, 2},
+    {3, 11, 0x382f, 3},
+    {4, 11, 0x386f, 4},
+    {5, 11, 0x38af, 5},
+    {6, 11, 0x38ef, 6},
+    {7, 11, 0x39af, 7},
+    {8, 11, 0x39ef, 8},
+    {9, 11, 0x3a2f, 9},
+    {10, 11, 0x3a6f, 10},
+    {11, 11, 0x3aaf, 11},
+    {12, 11, 0x3aef, 12},
+    {13, 11, 0x3b2f, 13},
+};
+static const AuthoredCarMaterial s_bayonetGrade1Materials[] = {
+    {0, 10, 0x3baf, 0},
+    {1, 10, 0x3bef, 1},
+    {2, 10, 0x7801, 2},
+    {3, 11, 0x382f, 3},
+    {4, 11, 0x386f, 4},
+    {5, 11, 0x38ef, 5},
+    {6, 11, 0x396f, 6},
+    {7, 11, 0x39af, 7},
+    {8, 11, 0x39ef, 8},
+    {9, 11, 0x3a2f, 9},
+    {10, 11, 0x3a6f, 10},
+    {11, 11, 0x3aaf, 11},
+    {12, 11, 0x3aef, 12},
+    {13, 11, 0x3b2f, 13},
+};
+static const AuthoredCarMaterial s_bayonetGrade2Materials[] = {
+    {0, 10, 0x3baf, 0},
+    {1, 10, 0x3bef, 1},
+    {2, 10, 0x7801, 2},
+    {3, 11, 0x382f, 3},
+    {4, 11, 0x386f, 4},
+    {5, 11, 0x38ef, 5},
+    {6, 11, 0x392f, 6},
+    {7, 11, 0x39af, 7},
+    {8, 11, 0x39ef, 8},
+    {9, 11, 0x3a2f, 9},
+    {10, 11, 0x3a6f, 10},
+    {11, 11, 0x3aaf, 11},
+    {12, 11, 0x3aef, 12},
+    {13, 11, 0x3b2f, 13},
+};
+static const AuthoredCarMaterial s_hijackGrade1Materials[] = {
+    {0, 10, 0x3baf, 0},
+    {1, 10, 0x3bef, 1},
+    {2, 10, 0x7801, 2},
+    {3, 11, 0x382f, 3},
+    {4, 11, 0x386f, 4},
+    {5, 11, 0x38ef, 5},
+    {6, 11, 0x39af, 6},
+    {7, 11, 0x39ef, 7},
+    {8, 11, 0x3a2f, 8},
+    {9, 11, 0x3a6f, 9},
+    {10, 11, 0x3aef, 10},
+    {11, 11, 0x3b2f, 11},
+};
+static const AuthoredCarMaterial s_fatalitaGrade1Materials[] = {
+    {0, 10, 0x3baf, 0},
+    {1, 10, 0x3bef, 1},
+    {2, 10, 0x7801, 2},
+    {3, 11, 0x382f, 3},
+    {4, 11, 0x386f, 4},
+    {5, 11, 0x38ef, 5},
+    {6, 11, 0x39af, 6},
+    {7, 11, 0x39ef, 7},
+    {8, 11, 0x3a2f, 8},
+    {9, 11, 0x3a6f, 9},
+    {10, 11, 0x3aaf, 10},
+    {11, 11, 0x3aef, 11},
+    {12, 11, 0x3b2f, 12},
+};
+static const AuthoredCarMaterial s_fatalitaGrade2Materials[] = {
+    {0, 10, 0x3baf, 0},
+    {1, 10, 0x3bef, 1},
+    {2, 10, 0x7801, 2},
+    {3, 11, 0x382f, 3},
+    {4, 11, 0x38ef, 4},
+    {5, 11, 0x39af, 5},
+    {6, 11, 0x39ef, 6},
+    {7, 11, 0x3a2f, 7},
+    {8, 11, 0x3a6f, 8},
+    {9, 11, 0x3aaf, 9},
+    {10, 11, 0x3aef, 10},
+    {11, 11, 0x3b2f, 11},
+};
+static const AuthoredCarMaterial s_istanteGrade1Materials[] = {
+    {0, 10, 0x3baf, 0},
+    {1, 10, 0x3bef, 1},
+    {2, 10, 0x7801, 2},
+    {3, 11, 0x382f, 3},
+    {4, 11, 0x386f, 4},
+    {5, 11, 0x39af, 5},
+    {6, 11, 0x39ef, 6},
+    {7, 11, 0x3a2f, 7},
+    {8, 11, 0x3a6f, 8},
+    {9, 11, 0x3aaf, 9},
+    {10, 11, 0x3aef, 10},
+    {11, 11, 0x3b2f, 11},
+};
 static const AuthoredCarMaterial s_errisoPlayerMaterials[] = {
     {0, 10, 0x3baf, 0},
     {1, 10, 0x3bef, 1},
@@ -393,6 +697,25 @@ static const AuthoredCarMaterial s_compactcLate94Materials[] = {
 #define AUTHORED_CAR(name, key, set, part, data, map) \
     {name, key, set, part, data, sizeof(data), map, sizeof(map)/sizeof(map[0])}
 static const AuthoredCarReplacement s_authoredCars[] = {
+    AUTHORED_CAR("Erriso", 12, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_erriso_grade1, s_errisoGrade1Materials),
+    AUTHORED_CAR("Erriso", 14, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_erriso_grade2, s_errisoGrade2Materials),
+    AUTHORED_CAR("Erriso", 16, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_erriso_grade3, s_errisoGrade3Materials),
+    AUTHORED_CAR("Abeille", 20, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_abeille_grade1, s_abeilleGrade1Materials),
+    AUTHORED_CAR("Abeille", 22, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_abeille_grade2, s_abeilleGrade2Materials),
+    AUTHORED_CAR("Pegase", 26, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_pegase_grade1, s_pegaseGrade1Materials),
+    AUTHORED_CAR("Esperanza", 30, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_esperanza_grade1, s_esperanzaGrade1Materials),
+    AUTHORED_CAR("Esperanza", 32, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_esperanza_grade2, s_esperanzaGrade2Materials),
+    AUTHORED_CAR("Esperanza", 34, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_esperanza_grade3, s_esperanzaGrade3Materials),
+    AUTHORED_CAR("Esperanza", 36, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_esperanza_grade4, s_esperanzaGrade4Materials),
+    AUTHORED_CAR("Acceron", 40, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_acceron_grade1, s_acceronGrade1Materials),
+    AUTHORED_CAR("Acceron", 42, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_acceron_grade2, s_acceronGrade2Materials),
+    AUTHORED_CAR("Acceron", 44, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_acceron_grade3, s_acceronGrade3Materials),
+    AUTHORED_CAR("Bayonet", 48, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_bayonet_grade1, s_bayonetGrade1Materials),
+    AUTHORED_CAR("Bayonet", 50, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_bayonet_grade2, s_bayonetGrade2Materials),
+    AUTHORED_CAR("Hijack", 54, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_hijack_grade1, s_hijackGrade1Materials),
+    AUTHORED_CAR("Fatalita", 58, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_fatalita_grade1, s_fatalitaGrade1Materials),
+    AUTHORED_CAR("Fatalita", 60, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_fatalita_grade2, s_fatalitaGrade2Materials),
+    AUTHORED_CAR("Istante", 64, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_istante_grade1, s_istanteGrade1Materials),
     AUTHORED_CAR("Compact A", 102, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_middle, s_compactaMiddle102Materials),
     AUTHORED_CAR("Compact A", 104, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_middle, s_compactaMiddle102Materials),
     AUTHORED_CAR("Compact A", 106, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_middle, s_compactaMiddle102Materials),

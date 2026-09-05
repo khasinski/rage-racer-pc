@@ -236,9 +236,8 @@ int ModernAssetsInit(void) {
         return 1;
     }
     fprintf(stderr,
-            "rage-port: modern renderer requires a native asset cache; "
-            "place it beside the executable as native-assets or set "
-            "modern.assets\n");
+            "rage-port: could not generate modern renderer assets from the "
+            "selected disc image; select a valid Rage Racer CUE or Track 01 BIN\n");
     return 0;
 }
 

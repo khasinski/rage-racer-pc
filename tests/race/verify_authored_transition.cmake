@@ -12,8 +12,13 @@ endif()
 file(MAKE_DIRECTORY "${sandbox}/bu00")
 file(COPY "${SMOKE}" DESTINATION "${sandbox}")
 get_filename_component(name "${SMOKE}" NAME)
+set(variant_args)
+if(DEFINED VARIANT)
+    list(APPEND variant_args --set "race.variant=${VARIANT}")
+endif()
 execute_process(COMMAND "${sandbox}/${name}" --scenario "${SOURCE}/race-scenario.ini"
     --set "race.class=${CLASS}" --set "race.car=${CAR}" --set "race.grid=${GRID}"
+    ${variant_args}
     --set race.after_finish=repeat --set run.frames=3500
     --set hooks.finish_frame=1000 --set hooks.auto_confirm_frame=1300
     --set modern.assets=disc --set video.renderer=modern
