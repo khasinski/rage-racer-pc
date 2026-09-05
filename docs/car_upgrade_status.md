@@ -1,6 +1,6 @@
 # Car upgrade work in progress
 
-Goal remains `goal.md`. Base Erriso, Abeille, Pegase, and Esperanza player bodies and their rival
+Goal remains `goal.md`. Base Erriso, Abeille, Pegase, Esperanza, and Acceron player bodies and their rival
 representations are integrated. Other player grades and cars retain their
 original geometry; the full set is still in progress.
 
@@ -189,6 +189,33 @@ Late class-2 CPU submission samples were 0.25–0.26 ms before versus
 0.36–0.37 ms after in chase, and 0.73–0.74 versus 0.85–0.86 ms trackside.
 These are local CPU samples, not an isolated GPU/FPS benchmark. Other player
 grades and remaining cars still use original geometry.
+
+## Acceron integration, 2026-09-05
+
+Player bank 38 uses 1705 triangles; rival body 5 uses 1337 triangles in
+banks 96, 98, and 100. These retail rival bodies have identical face data,
+including UVs and materials. Original wheels 7/8 and far body 9 remain.
+Both saved Blender sources re-exported to byte-identical embedded meshes.
+The shared bank now installs Acceron, Erriso, and Esperanza together.
+
+The full build and seven focused asset tests pass (`acceron-build.log`,
+`acceron-tests.log`). Both e2e tests pass (`acceron-e2e.log`), covering all
+three banks and a finish/repeat transition. Cache-mode checks also pass for
+all three banks (`acceron-cache-tests.log`, `acceron-cache-bank-*.log`). Each
+bank check requires installation of all three authored rival bodies.
+Inspected Blender comparisons are
+`acceron-blender-comparison.png` and `acceron-rival-blender-comparison.png`,
+each containing front and rear before/after. Release comparisons are
+`acceron-chase-comparison.png` and `acceron-track-comparison.png`, originals
+on the left. The close front rival view retains the paired hood stripes,
+lights, bumper, wheels, and side decals. No new visible gaps or culling
+failures appeared in these views. Existing environment atlas imagery is
+present with both original and authored cars.
+
+Late CPU submission samples were 0.26–0.27 ms before versus 0.35–0.36 ms
+after in chase, and about 0.75 versus 0.86–0.88 ms trackside. These are local
+CPU samples, not an isolated GPU/FPS benchmark. Other player grades and
+remaining cars continue to use original geometry.
 
 Keep original data and the unrelated `.claude/` and `imgui.ini` files.
 Commit verified stages locally; do not push or publish.

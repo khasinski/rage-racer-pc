@@ -13,6 +13,8 @@
 #include "esperanza_body.inc"
 #include "esperanza_rival.inc"
 #include "esperanza_rival_late.inc"
+#include "acceron_body.inc"
+#include "acceron_rival.inc"
 
 typedef struct AuthoredCarMaterial {
     uint16_t source, page, clut, cacheSlot;
@@ -143,9 +145,23 @@ static const AuthoredCarMaterial s_esperanzaBank112Materials[] = {
     {15, 13, 0x7849, 18},
 };
 
+/* Acceron's base player uses the same texture identities and cached slots
+ * as Esperanza; each bank still supplies its own images. */
+static const AuthoredCarMaterial s_acceronRivalMaterials[] = {
+    {0, 10, 0x7802, 0},
+    {10, 12, 0x7887, 10},
+    {11, 12, 0x7888, 11},
+    {12, 12, 0x788a, 12},
+    {18, 13, 0x7889, 18},
+};
+
 #define AUTHORED_CAR(name, key, set, part, data, map) \
     {name, key, set, part, data, sizeof(data), map, sizeof(map)/sizeof(map[0])}
 static const AuthoredCarReplacement s_authoredCars[] = {
+    AUTHORED_CAR("Acceron", 38, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_acceron_body, s_esperanzaPlayerMaterials),
+    AUTHORED_CAR("Acceron", 96, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_acceron_rival, s_acceronRivalMaterials),
+    AUTHORED_CAR("Acceron", 98, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_acceron_rival, s_acceronRivalMaterials),
+    AUTHORED_CAR("Acceron", 100, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_acceron_rival, s_acceronRivalMaterials),
     AUTHORED_CAR("Erriso", 10, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_errisoBody, s_errisoPlayerMaterials),
     AUTHORED_CAR("Erriso", 96, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 10, s_errisoRivalBody, s_errisoRivalMaterials),
     AUTHORED_CAR("Erriso", 98, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 10, s_errisoRivalBody, s_errisoRivalMaterials),

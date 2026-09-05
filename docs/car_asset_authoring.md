@@ -139,3 +139,21 @@ per-bank cached slot layouts are recorded in `authored_car_data.h`.
 `authored_esperanza.ini` alternates Esperanza and Erriso in class 1, course 0.
 Esperanza rival slots for courses 0/1/2/3 are 0/2/1/1. For a close front view,
 use course 1, camera 2, grid slots 2/1 alternating, and rival points 119/121.
+
+## Integrated Acceron sources
+
+Open `assets/cars/acceron.blend`, scene `Acceron player`, and export only
+`Acceron_player_body` to `acceron-body.obj`. The rival source is
+`acceron-rival.blend`, scene `Acceron rival`, object `Acceron_rival_body`,
+exported to `acceron-rival.obj`. Both use the same baked export settings and
+retain hidden originals and bevel construction references. Saved-source
+exports reproduce the embedded native meshes byte for byte.
+
+Player bank 38 and rival body 5 in banks 96/98/100 are replaced. The three
+retail rival bodies have identical geometry, UVs, and material ordering.
+Original wheels 7/8 and far body 9 remain. The player shares Esperanza's
+texture identities and cached slot numbers, with its own bank's images.
+Rival slots for courses 0/1/2 are 1/0/2. The Acceron scenario contains a
+mixed grid to exercise the shared bank's three authored bodies. For a close
+front view, use course 1, camera 2, grid 0/2/1 repeating, and rival points
+119/121.
