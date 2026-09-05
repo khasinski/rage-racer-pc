@@ -42,6 +42,8 @@ static SDL_Scancode s_toggleScancode = SDL_SCANCODE_F10;
 static int s_toggleWasDown;
 static int s_markerCaptureEnabled;
 static int s_skyOnlyDiagnostic;
+static Uint64 s_profilePrepareNs;
+static int s_profileTiming;
 static SDL_Window *s_window;
 static SDL_GPUDevice *s_device;
 static PsyzOverlayInitCB_SDL3GPU s_prev_overlay_init;
@@ -1203,6 +1205,11 @@ static SDL_GPUTexture *ModernCaptureVramSnapshot(void *context) {
     return Psyz_VideoSnapshotVramTexture_SDL3GPU();
 }
 
+static int ModernCompareProfileInterval(const void *a, const void *b) {
+    const Uint64 x = *(const Uint64 *)a, y = *(const Uint64 *)b;
+    return (x > y) - (x < y);
+}
+
 static void ModernRender(const RageSceneSnapshot *snapshot) {
     SDL_GPUCommandBuffer *cmd;
     static ModernVramSnapshotCache sampledVram;
@@ -1210,15 +1217,18 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
     static Uint64 profileBuildNs, profileSubmitNs;
     static Uint64 profileFaces, profileVertices, profileSpans;
     static unsigned profileFrames;
-    static int profile = -1;
+    static Uint64 profileWindowStart, profilePrevious, profileIntervals[120];
+    static int profile = -1, profileTrace;
     Uint64 profileStart = 0, profileBuilt = 0;
     int i;
     vram = ModernVramSnapshotForFrame(
         &sampledVram, snapshot->frameCounter,
         ModernCaptureVramSnapshot, NULL);
     if (vram == NULL) return;
-    if (profile < 0)
+    if (profile < 0) {
         profile = RuntimeConfigEnabled("diagnostics.performance");
+        profileTrace = RuntimeConfigEnabled("diagnostics.performance_trace");
+    }
     if (profile) profileStart = SDL_GetTicksNS();
     ModernBuildOverlayFrame(snapshot);
     if (profile) profileBuilt = SDL_GetTicksNS();
@@ -1313,6 +1323,23 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
     SDL_SubmitGPUCommandBuffer(cmd);
     if (profile) {
         Uint64 finished = SDL_GetTicksNS();
+        if (!profileWindowStart) profileWindowStart = profileStart;
+        profileIntervals[profileFrames] = profilePrevious
+            ? finished - profilePrevious : finished - profileStart;
+        profilePrevious = finished;
+        if (profileTrace) {
+            const RageRenderWorld *world = ModernNativeGpuPreparedWorld();
+            fprintf(stderr,
+                    "modern-frame frame=%u scene=%d point=%d interval_ms=%.3f "
+                    "prepare_ms=%.3f build_ms=%.3f submit_ms=%.3f instances=%u\n",
+                    snapshot->frameCounter, snapshot->sceneId,
+                    g_PlayerCar.trackPointIndex,
+                    profileIntervals[profileFrames] / 1000000.0,
+                    s_profilePrepareNs / 1000000.0,
+                    (profileBuilt - profileStart) / 1000000.0,
+                    (finished - profileBuilt) / 1000000.0,
+                    world != NULL ? (unsigned)world->instanceCount : 0u);
+        }
         profileBuildNs += profileBuilt - profileStart;
         profileSubmitNs += finished - profileBuilt;
         profileFaces += (Uint64)snapshot->faceCount;
@@ -1320,15 +1347,22 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
         profileSpans += (Uint64)s_spanCount;
         profileFrames++;
         if (profileFrames == 120) {
+            qsort(profileIntervals, 120, sizeof(profileIntervals[0]),
+                  ModernCompareProfileInterval);
             fprintf(stderr,
                     "modern-profile frames=%u build_ms=%.3f submit_ms=%.3f "
-                    "faces=%.0f vertices=%.0f spans=%.0f\n",
+                    "faces=%.0f vertices=%.0f spans=%.0f "
+                    "render_fps=%.2f interval_p95_ms=%.3f interval_max_ms=%.3f\n",
                     profileFrames,
                     (double)profileBuildNs / profileFrames / 1000000.0,
                     (double)profileSubmitNs / profileFrames / 1000000.0,
                     (double)profileFaces / profileFrames,
                     (double)profileVertices / profileFrames,
-                    (double)profileSpans / profileFrames);
+                    (double)profileSpans / profileFrames,
+                    120.0e9 / (double)(finished - profileWindowStart),
+                    profileIntervals[113] / 1000000.0,
+                    profileIntervals[119] / 1000000.0);
+            profileWindowStart = finished;
             profileBuildNs = profileSubmitNs = 0;
             profileFaces = profileVertices = profileSpans = 0;
             profileFrames = 0;
@@ -1495,17 +1529,21 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
                               (double)s_tickIntervalNs;
             t = fraction >= 1.0 ? 1.0f : (float)fraction;
         }
+        Uint64 prepareStart = s_profileTiming ? SDL_GetTicksNS() : 0;
         ModernNativeGpuPrepare(
             ModernSkyOnlyWorld(GameRenderWorldPresentation(t)),
             (float)s_targetW / (float)s_targetH);
+        if (s_profileTiming) s_profilePrepareNs = SDL_GetTicksNS() - prepareStart;
         ModernRender(snapshot);
         s_lastPresentationNs = now;
         if (s_haveRenderedFrame) ModernMaybeDump(snapshot);
     } else if (snapshot->frameCounter != s_lastRenderedFrame) {
         const RageRenderWorld *world = GameRenderWorldPrevious();
         if (world == NULL) world = GameRenderWorldCurrent();
+        Uint64 prepareStart = s_profileTiming ? SDL_GetTicksNS() : 0;
         ModernNativeGpuPrepare(ModernSkyOnlyWorld(world),
                                (float)s_targetW / (float)s_targetH);
+        if (s_profileTiming) s_profilePrepareNs = SDL_GetTicksNS() - prepareStart;
         ModernRender(snapshot);
         s_lastRenderedFrame = snapshot->frameCounter;
         if (s_haveRenderedFrame) ModernMaybeDump(snapshot);
@@ -1575,6 +1613,7 @@ int ModernInit(const RagePortConfig *config) {
         return 1;
     }
     s_config = *config;
+    s_profileTiming = RuntimeConfigEnabled("diagnostics.performance");
     s_skyOnlyDiagnostic = RuntimeConfigEnabled("diagnostics.sky_only");
     if (config->renderer == RAGE_RENDERER_MODERN && !ModernAssetsInit()) {
         fprintf(stderr,
