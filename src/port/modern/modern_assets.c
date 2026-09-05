@@ -17,10 +17,11 @@
 #include "render/rmesh_replace.h"
 #include "erriso_body.inc"
 #include "erriso_rival.inc"
+#include "abeille_body.inc"
+#include "abeille_rival.inc"
 
-/* Player bank and the three class-2 course banks containing rival Erriso.
- * Separate entries keep captured frames valid while another course loads. */
-static RageRuntimeCachedMesh s_errisoMesh[4];
+/* Independent player/course entries preserve captured frames across loads. */
+static RageRuntimeCachedMesh s_authoredCarMesh[10];
 
 static const RageRuntimeCachedMesh *ModernAuthoredCar(
     const RageRuntimeCachedMesh *base, const RageRenderMeshInstance *instance,
@@ -31,7 +32,15 @@ static const RageRuntimeCachedMesh *ModernAuthoredCar(
     static const uint16_t rivalSlots[4]={0,13,14,19};
     static const uint16_t rivalPages[4]={10,12,12,13};
     static const uint16_t rivalCluts[4]={0x7802,0x78c7,0x78c8,0x78c9};
+    static const uint16_t abeillePages[12]={10,10,10,11,11,11,11,11,11,11,11,11};
+    static const uint16_t abeilleCluts[12]={0x3baf,0x3bef,0x7801,0x382f,0x386f,
+        0x38ef,0x39af,0x39ef,0x3a2f,0x3a6f,0x3b2f,0x3c2f};
+    static const uint16_t abeilleRivalSlots[4]={0,11,12,17};
     uint32_t map[20], i, part=0, entryIndex=0;
+    int abeille=0;
+    const unsigned char *bodyBytes;
+    size_t bodySize;
+    const char *name;
     RageRuntimeCachedMesh *entry;
     RageRuntimeMesh body;
     void *bytes;
@@ -41,24 +50,36 @@ static const RageRuntimeCachedMesh *ModernAuthoredCar(
         (instance->assetKey==96 || instance->assetKey==98 || instance->assetKey==100)) {
         entryIndex=1+(instance->assetKey-96)/2;
         part=10;
+    } else if (instance->assetSet==RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 &&
+        instance->assetKey>=102 && instance->assetKey<=110 && !(instance->assetKey%2)) {
+        entryIndex=5+(instance->assetKey-102)/2;
+        part=10;
+        abeille=1;
+    } else if (instance->assetKey==18 && instance->assetSet==RAGE_RENDER_ASSET_MODEL_BANK) {
+        entryIndex=4;
+        abeille=1;
     } else if (instance->assetKey!=10 || instance->assetSet!=RAGE_RENDER_ASSET_MODEL_BANK)
         return base;
     if (RuntimeConfigInt("modern.authored_cars",1,0,1)==0) return base;
-    entry=&s_errisoMesh[entryIndex];
+    entry=&s_authoredCarMesh[entryIndex];
     if (entry->ownedBytes) return entry;
+    name=abeille?"Abeille":"Erriso";
     for (i=0;i<20;i++) map[i]=UINT32_MAX;
-    for (i=0;i<(part?4u:10u);i++) {
-        uint32_t source=part?rivalSlots[i]:i;
+    for (i=0;i<(part?4u:(abeille?12u:10u));i++) {
+        uint32_t source=part?(abeille?abeilleRivalSlots[i]:rivalSlots[i]):i;
         int slot=imported?NativeAssetImporterMaterialSlot(instance,
-            part?rivalPages[i]:pages[i],part?rivalCluts[i]:cluts[i]):(int)source;
+            part?rivalPages[i]:(abeille?abeillePages[i]:pages[i]),
+            part?rivalCluts[i]:(abeille?abeilleCluts[i]:cluts[i])):(int)source;
         if (slot<0) {
-            fprintf(stderr,"rage-port: Erriso asset %u material %u unavailable\n",instance->assetKey,source);
+            fprintf(stderr,"rage-port: %s asset %u material %u unavailable\n",name,instance->assetKey,source);
             return NULL;
         }
         map[source]=(uint32_t)slot;
     }
-    if (!RuntimeMeshOpen(&body,part?s_errisoRivalBody:s_errisoBody,
-        part?sizeof(s_errisoRivalBody):sizeof(s_errisoBody))) return NULL;
+    bodyBytes=abeille?(part?s_abeille_rival:s_abeille_body):(part?s_errisoRivalBody:s_errisoBody);
+    bodySize=abeille?(part?sizeof(s_abeille_rival):sizeof(s_abeille_body)):
+        (part?sizeof(s_errisoRivalBody):sizeof(s_errisoBody));
+    if (!RuntimeMeshOpen(&body,bodyBytes,bodySize)) return NULL;
     bytes=RuntimeMeshReplace(&base->mesh,part,&body,map,20,&size);
     if (!bytes) return NULL;
     *entry=*base;
@@ -66,8 +87,8 @@ static const RageRuntimeCachedMesh *ModernAuthoredCar(
         free(bytes); memset(entry,0,sizeof(*entry)); return NULL;
     }
     entry->ownedBytes=bytes;
-    fprintf(stderr,"rage-port: authored Erriso %s body installed asset=%u (%u triangles)\n",
-        part?"rival":"player",instance->assetKey,body.indexCount/3);
+    fprintf(stderr,"rage-port: authored %s %s body installed asset=%u (%u triangles)\n",
+        name,part?"rival":"player",instance->assetKey,body.indexCount/3);
     return entry;
 }
 
@@ -240,9 +261,9 @@ int ModernAssetsInitRoot(const char *root) {
 
 void ModernAssetsShutdown(void) {
     size_t i;
-    for (i=0;i<sizeof(s_errisoMesh)/sizeof(s_errisoMesh[0]);i++)
-        free((void *)s_errisoMesh[i].ownedBytes);
-    memset(&s_errisoMesh,0,sizeof(s_errisoMesh));
+    for (i=0;i<sizeof(s_authoredCarMesh)/sizeof(s_authoredCarMesh[0]);i++)
+        free((void *)s_authoredCarMesh[i].ownedBytes);
+    memset(&s_authoredCarMesh,0,sizeof(s_authoredCarMesh));
     RuntimeMeshCacheRelease(&s_cache);
     NativeAssetImporterShutdown();
     if (s_indexBytes != NULL) SDL_free(s_indexBytes);

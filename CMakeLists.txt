@@ -137,8 +137,19 @@ add_custom_command(OUTPUT "${RAGE_AUTHORED_DIR}/erriso_rival.inc"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/tools/scripts/embed_car_mesh.cmake"
     DEPENDS rage-mesh-obj assets/cars/erriso-rival.obj tools/scripts/embed_car_mesh.cmake
     VERBATIM)
+foreach(variant body rival)
+    add_custom_command(OUTPUT "${RAGE_AUTHORED_DIR}/abeille_${variant}.inc"
+        COMMAND rage-mesh-obj import "${CMAKE_CURRENT_SOURCE_DIR}/assets/cars/abeille-${variant}.obj"
+            "${RAGE_AUTHORED_DIR}/abeille-${variant}.rmesh"
+        COMMAND ${CMAKE_COMMAND} "-DINPUT=${RAGE_AUTHORED_DIR}/abeille-${variant}.rmesh"
+            "-DOUTPUT=${RAGE_AUTHORED_DIR}/abeille_${variant}.inc" "-DSYMBOL=s_abeille_${variant}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/tools/scripts/embed_car_mesh.cmake"
+        DEPENDS rage-mesh-obj "assets/cars/abeille-${variant}.obj" tools/scripts/embed_car_mesh.cmake
+        VERBATIM)
+endforeach()
 add_custom_target(rage-authored-cars DEPENDS "${RAGE_AUTHORED_DIR}/erriso_body.inc"
-    "${RAGE_AUTHORED_DIR}/erriso_rival.inc")
+    "${RAGE_AUTHORED_DIR}/erriso_rival.inc" "${RAGE_AUTHORED_DIR}/abeille_body.inc"
+    "${RAGE_AUTHORED_DIR}/abeille_rival.inc")
 include_directories("${RAGE_AUTHORED_DIR}")
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(rage-mesh-obj PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})

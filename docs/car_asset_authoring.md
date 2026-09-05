@@ -67,3 +67,33 @@ Rival model slots are course-specific: use slot 2 on course 0, slot 1 on
 course 1, and slot 0 on course 2. These are not showroom car IDs. Set
 `modern.authored_cars=0` for the original geometry and use camera 1 (chase)
 or 2 (trackside) with the same custom start for comparable views.
+
+## Integrated Abeille source
+
+Open `assets/cars/abeille.blend`, scene `Abeille player`, and export only
+`Abeille_body` to `assets/cars/abeille-body.obj`. The rival has a separate
+`assets/cars/abeille-rival.blend`, scene `Abeille rival`; export only
+`Abeille_rival_body` to `assets/cars/abeille-rival.obj`. Use the same OBJ
+settings above. CMake embeds both automatically. Player bank 18 and rival
+banks 102, 104, 106, 108, and 110 are covered; other player grades are original.
+
+These export objects contain the final baked mesh. Hidden original and bevel
+source objects retain the construction references. Color attributes were
+converted to the CORNER domain before welding coincident vertices, preserving
+different panel colors at a shared position. After beveling, UVs and original
+corner normals were projected from source triangles with the same material
+and compatible face direction. An unrestricted nearest-face transfer picked
+adjacent panels and visibly distorted the windshield. Export the final body,
+not the hidden bevel experiment or its disabled UV-transfer modifier.
+The final export mesh splits vertices at color discontinuities and converts
+colors back to POINT. This is essential: Blender's OBJ writer otherwise
+averages corner colors into a shared vertex. The embedded-asset test checks
+both dark and white native colors at one bumper/body seam.
+
+`tests/scenarios/authored_abeille.ini` uses class 2 and course 0. Rival model
+slots for courses 0/1/2/3 are 2/1/0/3. Camera 2 uses the retail camera node,
+which can itself select a chase view; check the resulting image rather than
+assuming a different camera number always provides a different angle.
+Use the release executable for modern screenshots. The smoke executable's
+`capture.path` reads the compatibility framebuffer, although its execution
+and asset-loading logs remain useful for regression checks.

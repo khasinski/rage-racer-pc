@@ -6,6 +6,7 @@ math(EXPR asset "96+2*${course}")
 string(REPEAT "${model}," 10 grid)
 string(APPEND grid "${model}")
 set(log "${EVIDENCE}/direct-grid-${course}.log")
+file(REMOVE "${log}")
 execute_process(COMMAND "${GAME}" --scenario "${SOURCE}/tests/scenarios/authored_erriso.ini"
     --set stop.timer=120 --set "race.course=${course}" --set "race.grid=${grid}"
     --set "diagnostics.log=${log}"
