@@ -23,7 +23,7 @@ extern int g_SceneId;
 
 typedef struct RageScenarioState {
     int initialized, enabled;
-    int mode, series, classIndex, course, car, transmission;
+    int mode, series, classIndex, course, car, transmission, variant;
     int afterFinish, raceFinished, resultSeen, exitRequested;
     int grid[RACE_CAR_SLOT_COUNT], customGrid, gridApplied;
     int playerTrackPoint, rivalTrackPoints[RACE_CAR_SLOT_COUNT];
@@ -283,6 +283,14 @@ static void ScenarioInitialize(void) {
     s_scenario.classIndex = ScenarioInt("race.class", 0, 0, 5);
     s_scenario.course = ScenarioInt("race.course", 0, 0, 3);
     s_scenario.car = ScenarioInt("race.car", 3, 0, 12);
+    /* Select an asset variant within this car's catalog range, rather than
+     * allowing an upgrade index to spill into the next car's assets. */
+    {
+        int first = g_CarModelBaseIndex[s_scenario.car];
+        int end = s_scenario.car + 1 < GAME_CAR_COUNT ?
+            g_CarModelBaseIndex[s_scenario.car + 1] : CAR_MODEL_VARIANT_COUNT;
+        s_scenario.variant = ScenarioInt("race.variant", -1, 0, end - first - 1);
+    }
     s_scenario.transmission = -1;
     transmission = RuntimeConfigGet("race.transmission");
     if (transmission != NULL) {
@@ -434,6 +442,8 @@ static void ScenarioSelectSeries(void) {
     if (s_scenario.transmission >= 0)
         g_CarTable[s_scenario.car].transmission =
             (u8)s_scenario.transmission;
+    if (s_scenario.variant >= 0)
+        g_CarTable[s_scenario.car].modelVariant = (u8)s_scenario.variant;
 }
 
 /* DrawMenuCarView normally copies the selected setup into the player object.
@@ -629,6 +639,8 @@ void PortScenarioBeforeSceneHandler(void) {
         if (g_CarTable != NULL && s_scenario.transmission >= 0)
             g_CarTable[s_scenario.car].transmission =
                 (u8)s_scenario.transmission;
+        if (g_CarTable != NULL && s_scenario.variant >= 0)
+            g_CarTable[s_scenario.car].modelVariant = (u8)s_scenario.variant;
         if (g_SceneId < 11) {
             /* The menus index course progress with the series in bit 2, and
              * the retail car-select confirm masks it back to the physical

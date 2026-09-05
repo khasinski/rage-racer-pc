@@ -39,6 +39,12 @@
 #include "compacta_rival_early.inc"
 #include "compactb_rival_early.inc"
 #include "compactc_rival_early.inc"
+#include "compacta_rival_middle.inc"
+#include "compacta_rival_late.inc"
+#include "compactb_rival_middle.inc"
+#include "compactb_rival_late.inc"
+#include "compactc_rival_middle.inc"
+#include "compactc_rival_late.inc"
 
 typedef struct AuthoredCarMaterial {
     uint16_t source, page, clut, cacheSlot;
@@ -329,9 +335,106 @@ static const AuthoredCarMaterial s_compactcEarly96Materials[] = {
     {31,14,0x78c4,34},
 };
 
+static const AuthoredCarMaterial s_compactaMiddle102Materials[] = {
+    {4,10,0x7900,4},
+    {24,14,0x7840,24},
+    {27,14,0x7880,27},
+    {30,14,0x78c0,30},
+};
+static const AuthoredCarMaterial s_compactaMiddle112Materials[] = {
+    {4,10,0x7900,5},
+    {24,14,0x7840,27},
+    {27,14,0x7880,30},
+    {30,14,0x78c0,33},
+};
+static const AuthoredCarMaterial s_compactaLate94Materials[] = {
+    {4,10,0x7900,4},
+    {28,14,0x7840,28},
+    {31,14,0x7880,31},
+    {34,14,0x78c0,34},
+};
+static const AuthoredCarMaterial s_compactbMiddle102Materials[] = {
+    {5,10,0x7902,5},
+    {25,14,0x7842,25},
+    {28,14,0x7882,28},
+    {31,14,0x78c2,31},
+};
+static const AuthoredCarMaterial s_compactbMiddle112Materials[] = {
+    {5,10,0x7902,6},
+    {25,14,0x7842,28},
+    {28,14,0x7882,31},
+    {31,14,0x78c2,34},
+};
+static const AuthoredCarMaterial s_compactbLate94Materials[] = {
+    {5,10,0x7902,5},
+    {29,14,0x7842,29},
+    {32,14,0x7882,32},
+    {35,14,0x78c2,35},
+};
+static const AuthoredCarMaterial s_compactcMiddle102Materials[] = {
+    {4,10,0x7900,4},
+    {26,14,0x7844,26},
+    {29,14,0x7884,29},
+    {32,14,0x78c4,32},
+};
+static const AuthoredCarMaterial s_compactcMiddle112Materials[] = {
+    {4,10,0x7900,5},
+    {26,14,0x7844,29},
+    {29,14,0x7884,32},
+    {32,14,0x78c4,35},
+};
+static const AuthoredCarMaterial s_compactcLate94Materials[] = {
+    {4,10,0x7900,4},
+    {30,14,0x7844,30},
+    {33,14,0x7884,33},
+    {36,14,0x78c4,36},
+};
+
 #define AUTHORED_CAR(name, key, set, part, data, map) \
     {name, key, set, part, data, sizeof(data), map, sizeof(map)/sizeof(map[0])}
 static const AuthoredCarReplacement s_authoredCars[] = {
+    AUTHORED_CAR("Compact A", 102, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_middle, s_compactaMiddle102Materials),
+    AUTHORED_CAR("Compact A", 104, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_middle, s_compactaMiddle102Materials),
+    AUTHORED_CAR("Compact A", 106, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_middle, s_compactaMiddle102Materials),
+    AUTHORED_CAR("Compact A", 108, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_middle, s_compactaMiddle102Materials),
+    AUTHORED_CAR("Compact A", 110, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_middle, s_compactaMiddle102Materials),
+    AUTHORED_CAR("Compact A", 112, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_middle, s_compactaMiddle112Materials),
+    AUTHORED_CAR("Compact A", 114, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_middle, s_compactaMiddle112Materials),
+    AUTHORED_CAR("Compact A", 116, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_middle, s_compactaMiddle112Materials),
+    AUTHORED_CAR("Compact A", 118, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_middle, s_compactaMiddle112Materials),
+    AUTHORED_CAR("Compact A", 94, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_late, s_compactaLate94Materials),
+    AUTHORED_CAR("Compact A", 120, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_late, s_compactaLate94Materials),
+    AUTHORED_CAR("Compact A", 122, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_late, s_compactaLate94Materials),
+    AUTHORED_CAR("Compact A", 124, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_late, s_compactaLate94Materials),
+    AUTHORED_CAR("Compact A", 126, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_late, s_compactaLate94Materials),
+    AUTHORED_CAR("Compact B", 102, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 25, s_compactb_rival_middle, s_compactbMiddle102Materials),
+    AUTHORED_CAR("Compact B", 104, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 25, s_compactb_rival_middle, s_compactbMiddle102Materials),
+    AUTHORED_CAR("Compact B", 106, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 25, s_compactb_rival_middle, s_compactbMiddle102Materials),
+    AUTHORED_CAR("Compact B", 108, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 25, s_compactb_rival_middle, s_compactbMiddle102Materials),
+    AUTHORED_CAR("Compact B", 110, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 25, s_compactb_rival_middle, s_compactbMiddle102Materials),
+    AUTHORED_CAR("Compact B", 112, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 25, s_compactb_rival_middle, s_compactbMiddle112Materials),
+    AUTHORED_CAR("Compact B", 114, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 25, s_compactb_rival_middle, s_compactbMiddle112Materials),
+    AUTHORED_CAR("Compact B", 116, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 25, s_compactb_rival_middle, s_compactbMiddle112Materials),
+    AUTHORED_CAR("Compact B", 118, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 25, s_compactb_rival_middle, s_compactbMiddle112Materials),
+    AUTHORED_CAR("Compact B", 94, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 25, s_compactb_rival_late, s_compactbLate94Materials),
+    AUTHORED_CAR("Compact B", 120, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 25, s_compactb_rival_late, s_compactbLate94Materials),
+    AUTHORED_CAR("Compact B", 122, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 25, s_compactb_rival_late, s_compactbLate94Materials),
+    AUTHORED_CAR("Compact B", 124, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 25, s_compactb_rival_late, s_compactbLate94Materials),
+    AUTHORED_CAR("Compact B", 126, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 25, s_compactb_rival_late, s_compactbLate94Materials),
+    AUTHORED_CAR("Compact C", 102, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 30, s_compactc_rival_middle, s_compactcMiddle102Materials),
+    AUTHORED_CAR("Compact C", 104, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 30, s_compactc_rival_middle, s_compactcMiddle102Materials),
+    AUTHORED_CAR("Compact C", 106, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 30, s_compactc_rival_middle, s_compactcMiddle102Materials),
+    AUTHORED_CAR("Compact C", 108, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 30, s_compactc_rival_middle, s_compactcMiddle102Materials),
+    AUTHORED_CAR("Compact C", 110, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 30, s_compactc_rival_middle, s_compactcMiddle102Materials),
+    AUTHORED_CAR("Compact C", 112, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 30, s_compactc_rival_middle, s_compactcMiddle112Materials),
+    AUTHORED_CAR("Compact C", 114, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 30, s_compactc_rival_middle, s_compactcMiddle112Materials),
+    AUTHORED_CAR("Compact C", 116, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 30, s_compactc_rival_middle, s_compactcMiddle112Materials),
+    AUTHORED_CAR("Compact C", 118, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 30, s_compactc_rival_middle, s_compactcMiddle112Materials),
+    AUTHORED_CAR("Compact C", 94, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 30, s_compactc_rival_late, s_compactcLate94Materials),
+    AUTHORED_CAR("Compact C", 120, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 30, s_compactc_rival_late, s_compactcLate94Materials),
+    AUTHORED_CAR("Compact C", 122, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 30, s_compactc_rival_late, s_compactcLate94Materials),
+    AUTHORED_CAR("Compact C", 124, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 30, s_compactc_rival_late, s_compactcLate94Materials),
+    AUTHORED_CAR("Compact C", 126, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 30, s_compactc_rival_late, s_compactcLate94Materials),
     AUTHORED_CAR("Compact A", 88, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_early, s_compactaEarly88Materials),
     AUTHORED_CAR("Compact A", 90, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_early, s_compactaEarly88Materials),
     AUTHORED_CAR("Compact A", 92, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 20, s_compacta_rival_early, s_compactaEarly88Materials),

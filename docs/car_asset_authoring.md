@@ -339,3 +339,19 @@ Banks 96/98/100 have separate cache-slot mappings. Use
 
 Later compact sources require separate integration because geometry and UVs
 differ. Do not apply the early sources to other banks.
+
+## Middle and late compact rivals
+
+Use `compact{a,b,c}-rival-middle.blend` for banks 102–118 (even), and
+`compact{a,b,c}-rival-late.blend` for 94/120/122/124/126. Scene and object
+names follow the early sources, with `middle` or `late` in place of `early`.
+Export the selected baked body to the matching OBJ basename. All six saved
+sources reproduce the embedded meshes byte for byte. Reference textures and
+original/construction geometry are packed in each source.
+
+Middle sources originate in bank 102; banks 112–118 have a separate cache
+slot map. Late sources originate in 94 and share that mapping across their
+five banks. B/C differ between middle and late in six faces' UVs; A also
+has different positions and normals. The separate sources preserve these
+differences. Parts 20/25/30 and model palette slots 4–10 follow the same
+assembly convention as the early sources. Original wheels and far parts remain.

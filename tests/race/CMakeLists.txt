@@ -1286,6 +1286,27 @@ if(TARGET rage-racer-smoke)
             -DGRID=4,5,6,7,8,9,10,4,6,8,0 -DRIVAL_BODY_COUNT=1
             -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_compact_early_transition.cmake")
     set_tests_properties(compact_early_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME compact_later_banks
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_compact_later_banks.cmake")
+    set_tests_properties(compact_later_banks PROPERTIES LABELS e2e TIMEOUT 1270 RUN_SERIAL TRUE)
+    add_test(NAME scenario_variant
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_scenario_variant.cmake")
+    set_tests_properties(scenario_variant PROPERTIES LABELS e2e TIMEOUT 640 RUN_SERIAL TRUE)
+    foreach(compact_class 2 4)
+        math(EXPR compact_asset "88+${compact_class}*8")
+        add_test(NAME compact_class${compact_class}_transition
+            COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+                "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence/compact-class${compact_class}"
+                -DCAR=3 "-DCLASS=${compact_class}" "-DNAME=Compact A" -DPLAYER_NAME=Esperanza
+                -DPLAYER_ASSET=28 "-DRIVAL_ASSET=${compact_asset}"
+                -DGRID=4,5,6,7,8,9,10,4,6,8,0 -DRIVAL_BODY_COUNT=1
+                -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_compact_early_transition.cmake")
+        set_tests_properties(compact_class${compact_class}_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    endforeach()
     add_test(
         NAME scenario_control
         COMMAND python3

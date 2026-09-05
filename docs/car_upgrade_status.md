@@ -581,5 +581,56 @@ bodies and the player to load successfully.
 All six cache-mode bank checks pass (`compact-early-cache-tests.log`,
 `compact-early-cache-bank-*.log`).
 
+## Later compact integration, 2026-09-05
+
+Six sources preserve the middle and late versions of Compact A/B/C. Each
+group installs 1092/1104/1105 native triangles at parts 20/25/30. Middle
+sources cover even banks 102–118; late sources cover 94/120/122/124/126.
+Three cache layouts preserve material slot differences. Original wheel and
+far-body parts remain. Saved-source round trips match all six embedded meshes.
+The seven focused asset checks passed (`compact-later-tests.log`).
+
+All twenty release comparisons were inspected: for both `middle` and `late`,
+`compact-{group}-model{4,5,6,7,8,9,10}-track-comparison.png` covers all seven
+palettes, and `compact-{group}-model{4,6,8}-chase-comparison.png` covers each
+body from behind. Originals are on the left. The distinct fronts, wings,
+lamps, liveries, and wheel placement remain without new visible gaps or
+missing surfaces in these views. The six Blender comparisons were inspected
+in the preceding stage. The environment atlas issue remains.
+
+Representative late local CPU submission samples for model 4 were about
+0.26 ms before versus 0.32–0.34 ms after in chase; trackside was
+0.75–0.77 versus about 0.84–0.85 ms. Captures overlapped some Blender work;
+these are limited CPU observations, not an isolated GPU/FPS benchmark.
+
+Scenario option `race.variant` now selects a zero-based player asset variant
+before loading. It is bounded by the selected car's catalog range; omission
+preserves the normal setup and invalid indices produce a diagnostic.
+This enables verification of the nineteen non-base player assets without
+editing saves or silently selecting another car's bank.
+
+All nineteen player upgrade drafts now have OBJ/MTL/Blender sources:
+`erriso-grade{1,2,3}`, `abeille-grade{1,2}`, `pegase-grade1`,
+`esperanza-grade{1,2,3,4}`, `acceron-grade{1,2,3}`, `bayonet-grade{1,2}`,
+`hijack-grade1`, `fatalita-grade{1,2}`, and `istante-grade1`.
+All original and before/after Blender views were inspected, and every saved
+source re-exports to a byte-identical C-converted native draft mesh. These
+player upgrades still need bounds/material validation, embedding, game
+comparisons, and transition/cache tests; they are not yet replacements.
+Fatalita's original wing has coincident opposite-facing faces with different
+UVs; its Blender comparison exposes the top logo after beveling. Verify both
+wing sides and culling in the modern renderer before accepting these drafts.
+The final fleet audit remains outstanding.
+
+The current later-compact build passed all 375 non-E2E regression tests
+(`compact-later-regression.log`, 1217.60 seconds). All four E2E tests passed
+(`compact-later-e2e.log`, 274.56 seconds): fourteen live-import banks,
+seven variant-selector cases, and repeat-race transitions in classes 2 and 4.
+The fourteen extracted-cache banks also passed (`compact-later-cache-tests.log`,
+individual `compact-later-cache-bank-*.log` traces). A registry audit confirms
+all seven car bodies in each ordinary bank 88–126 and all four in each special
+bank 128–134 are registered exactly once; the remaining submeshes are wheels,
+distance models, and the helicopter.
+
 Keep original data and the unrelated `.claude/` and `imgui.ini` files.
 Commit verified stages locally; do not push or publish.

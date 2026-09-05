@@ -186,6 +186,12 @@ int main(void) {
     CHECK(Validate(s_compacta_rival_early,sizeof(s_compacta_rival_early),13)==0);
     CHECK(Validate(s_compactb_rival_early,sizeof(s_compactb_rival_early),13)==0);
     CHECK(Validate(s_compactc_rival_early,sizeof(s_compactc_rival_early),13)==0);
+    CHECK(Validate(s_compacta_rival_middle,sizeof(s_compacta_rival_middle),3)==0);
+    CHECK(Validate(s_compacta_rival_late,sizeof(s_compacta_rival_late),3)==0);
+    CHECK(Validate(s_compactb_rival_middle,sizeof(s_compactb_rival_middle),3)==0);
+    CHECK(Validate(s_compactb_rival_late,sizeof(s_compactb_rival_late),3)==0);
+    CHECK(Validate(s_compactc_rival_middle,sizeof(s_compactc_rival_middle),3)==0);
+    CHECK(Validate(s_compactc_rival_late,sizeof(s_compactc_rival_late),3)==0);
     CHECK(ValidateAbeillePanelColorSeam()==0);
     CHECK(ValidateRegistry()==0);
     CHECK(ValidatePegaseHoodDecal()==0);
