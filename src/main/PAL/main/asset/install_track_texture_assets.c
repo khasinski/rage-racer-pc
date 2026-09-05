@@ -98,8 +98,16 @@ s32 InstallTrackTextureAssetPack(u8 *base, size_t size) {
         !UploadImageAsset(
             GetImageAssetHeaderWords(
                 view.blocks[TRACK_TEXTURE_ACTIVE_IMAGES]),
-            view.sizes[TRACK_TEXTURE_ACTIVE_IMAGES]) ||
-        !UploadImageAsset(
+            view.sizes[TRACK_TEXTURE_ACTIVE_IMAGES])) {
+        ClearTrackTextureAssetPack();
+        return 0;
+    }
+
+    /* Preserve page 1 before the deferred upload replaces the same VRAM
+     * rectangle with page 0. Publishing the shadow can wait until both
+     * uploads succeed, but taking its copy cannot. */
+    StoreTeamLogoImage(base);
+    if (!UploadImageAsset(
             GetImageAssetHeaderWords(
                 view.blocks[TRACK_TEXTURE_DEFERRED_IMAGES]),
             view.sizes[TRACK_TEXTURE_DEFERRED_IMAGES])) {
@@ -107,7 +115,6 @@ s32 InstallTrackTextureAssetPack(u8 *base, size_t size) {
         return 0;
     }
 
-    StoreTeamLogoImage(base);
     g_TrackTextureShadow = GetTrackTextureShadowRows(base);
     ResetTrackTextureSwap();
     g_AssetLoadCursor = base + TRACK_TEXTURE_SHADOW_SIZE;

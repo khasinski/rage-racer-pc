@@ -773,7 +773,8 @@ static void TestResidentCourseInstallation(void) {
         g_AssetLoadCursor = NULL;
         Check(InstallTrackTextureAssetPack(g_AssetBase, sizeof(storage)) == 0,
               "failed texture upload rejects the course pack");
-        Check(s_uploadCount == i + 1 && s_teamLogoSource == NULL &&
+        Check(s_uploadCount == i + 1 &&
+                  s_teamLogoSource == (i == 4 ? storage : NULL) &&
                   s_textureResetCalls == 0 &&
                   s_trackIdentityInvalidations == 0 &&
                   g_TrackTextureShadow == NULL && g_AssetLoadCursor == NULL,

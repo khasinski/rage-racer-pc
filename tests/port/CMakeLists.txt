@@ -177,16 +177,43 @@ add_test(NAME content_options COMMAND content_options_tests)
 set_tests_properties(content_options PROPERTIES LABELS functional)
 add_executable(image_upload_tests
     image_upload_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/image_upload.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/image_upload.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/install_track_texture_assets.c)
 target_include_directories(image_upload_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/support/image_upload
-    ${CMAKE_SOURCE_DIR}/include)
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port/include)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(image_upload_tests PRIVATE
         -Wall -Wextra -Werror)
 endif()
 add_test(NAME image_upload COMMAND image_upload_tests)
 set_tests_properties(image_upload PROPERTIES LABELS unit)
+
+add_executable(native_terrain_material_tests native_terrain_material_tests.c)
+target_include_directories(native_terrain_material_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src)
+target_compile_definitions(native_terrain_material_tests PRIVATE __psyz=1)
+target_link_libraries(native_terrain_material_tests PRIVATE SDL3-static)
+if(MSVC)
+    target_compile_options(native_terrain_material_tests PRIVATE /Gy /Gw
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+    target_link_options(native_terrain_material_tests PRIVATE /OPT:REF)
+else()
+    target_compile_options(native_terrain_material_tests PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        -ffunction-sections -fdata-sections)
+    if(APPLE)
+        target_link_options(native_terrain_material_tests PRIVATE -Wl,-dead_strip)
+    else()
+        target_link_options(native_terrain_material_tests PRIVATE -Wl,--gc-sections)
+    endif()
+endif()
+add_test(NAME native_terrain_material COMMAND native_terrain_material_tests)
+set_tests_properties(native_terrain_material PROPERTIES LABELS unit)
 
 add_executable(native_asset_loader_tests
     native_asset_loader_tests.c

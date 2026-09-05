@@ -12,6 +12,8 @@ Rect g_TrackTextureRect;
 s16 g_GrandPrixSeries;
 s32 g_LoadBuffer[64];
 size_t g_LoadBufferImageSize;
+TrackTextureShadowRow *g_TrackTextureShadow;
+u8 *g_AssetLoadCursor;
 
 static Rect s_loadRects[8];
 static void *s_loadData[8];
@@ -25,13 +27,32 @@ static u_long s_moveY;
 static s32 s_moveCount;
 static s32 s_syncCount;
 static s32 s_failures;
+static u16 s_vram[512][1024];
+static s32 s_copyPixels;
+static s32 s_textureResets;
+static s32 s_textureRevisions;
+
+void ResetTrackTextureSwap(void) { s_textureResets++; }
+void TrackAssetIdentityInvalidate(void) { s_textureRevisions++; }
 
 void LoadImage(Rect *rect, void *data) {
+    s32 row;
+    if (s_copyPixels) {
+        for (row = 0; row < rect->h; row++)
+            memcpy(&s_vram[rect->y + row][rect->x],
+                   (u16 *)data + row * rect->w, rect->w * sizeof(u16));
+    }
     s_loadRects[s_loadCount] = *rect;
     s_loadData[s_loadCount] = data;
     s_loadCount++;
 }
 void StoreImage(Rect *rect, void *data) {
+    s32 row;
+    if (s_copyPixels) {
+        for (row = 0; row < rect->h; row++)
+            memcpy((u16 *)data + row * rect->w,
+                   &s_vram[rect->y + row][rect->x], rect->w * sizeof(u16));
+    }
     s_storeRect = rect;
     s_storeData = data;
     s_storeClutAtCall = g_TeamLogoClut[0];
@@ -240,10 +261,68 @@ static void TestTeamLogoStorage(void) {
           "Extra Grand Prix moves the team logo CLUT");
 }
 
+/* Use the real pack installer and image decoder, with an in-memory GPU.
+ * Both pages occupy the same rectangle; the first must survive the second
+ * upload in the shadow. Recording only upload calls missed this regression. */
+static size_t MakeTrackPage(u8 *asset, u16 seed) {
+    const size_t pixels = 448u * 256u;
+    const size_t entrySize = sizeof(GameImageEntryHeader) +
+                            offsetof(GameImageBlock, pixels) + pixels * 2;
+    GameImageEntryHeader *entry = (GameImageEntryHeader *)(void *)(asset + 8);
+    GameImageBlock *block = (GameImageBlock *)(void *)(entry + 1);
+    size_t i;
+    *(u32 *)(void *)asset = 0;
+    *(u32 *)(void *)(asset + 4) = (u32)entrySize;
+    memset(entry, 0, sizeof(*entry));
+    block->size = (u32)(entrySize - sizeof(*entry));
+    block->x = 576; block->y = 256; block->w = 448; block->h = 256;
+    for (i = 0; i < pixels; i++)
+        ((u16 *)(void *)block->pixels)[i] = (u16)(seed + i);
+    *(u32 *)(void *)(asset + 8 + entrySize) = 0;
+    return 12 + entrySize;
+}
+
+static void TestDistinctTrackPages(void) {
+    static u32 storage[120000];
+    u8 *pack = (u8 *)storage;
+    s32 *offsets = (s32 *)storage;
+    size_t size, row, column;
+    int correctShadow = 1, correctResident = 1;
+    memset(storage, 0, sizeof(storage));
+    offsets[0] = 64; offsets[1] = 96; offsets[2] = 128;
+    offsets[3] = 160;
+    /* The first two image lists and the car image are valid empty images. */
+    offsets[4] = offsets[3] + (s32)MakeTrackPage(pack + offsets[3], 0x1234);
+    size = (size_t)offsets[4] + MakeTrackPage(pack + offsets[4], 0x9876);
+    g_GrandPrixSeries = 0;
+    g_TeamLogoClutLoadRect = (Rect){0, 0, 16, 1};
+    g_TrackTextureRect = (Rect){576, 256, 448, 256};
+    s_copyPixels = 1;
+    s_loadCount = 0;
+    s_textureResets = s_textureRevisions = 0;
+    Check(InstallTrackTextureAssetPack(pack, size), "two-page course installs");
+    for (row = 0; row < 256; row++) {
+        const u16 *shadow = (const u16 *)g_TrackTextureShadow[row];
+        for (column = 0; column < 448; column++) {
+            size_t index = row * 448 + column;
+            if (shadow[column] != (u16)(0x1234 + index)) correctShadow = 0;
+            if (s_vram[row + 256][column + 576] != (u16)(0x9876 + index))
+                correctResident = 0;
+        }
+    }
+    Check(correctShadow, "page 1 survives in shadow before page 0 overwrites VRAM");
+    Check(correctResident, "page 0 occupies VRAM after installation");
+    Check(g_AssetLoadCursor == pack + TRACK_TEXTURE_SHADOW_SIZE &&
+              s_textureResets == 1 && s_textureRevisions == 1,
+          "complete two-page pack publishes its cursor and texture generation");
+    s_copyPixels = 0;
+}
+
 int main(void) {
     TestImageEntries();
     TestImageAssetChain();
     TestTeamLogoStorage();
+    TestDistinctTrackPages();
 
     if (s_failures != 0) return 1;
     puts("image assets upload their CLUT, pixels, chain and team logo state");
