@@ -27,6 +27,14 @@ Pegase, Bulshade and the Ghepardo rival also limit the inboard depth to the
 wheel's inner edge plus four units. This removes the gray protrusions without
 raising the hood or leaving the wheel cavity open.
 
+The follow-up well-fit correction uses the actual triangulated liner to cut
+the surrounding paint, including its changing width along the arch. A cone
+with one assumed outer width removed valid paint from Vainqure's fender
+shoulders. Vainqure also limits its inboard wall to the wheel's inner edge;
+Bulshade bends the surrounding rear fender together with the rounded lip.
+The correction covers both player bodies, all their rival variants, and
+the same cutting defect in Pegase and the Ghepardo rival.
+
 Paint, glass, rubber, metal and hood artwork have independent surface classes.
 The special cars' glazing is split inside their shared body atlases, retaining
 painted roof sections and frames. Glass uses a common tint. Player name/logo
@@ -72,6 +80,12 @@ because Blender requires distinct names for separate preview materials.
 - Vertical clearance checks across all 59 new bodies find no well roofs
   exposed above the hood. The compiled asset test also guards the original
   Vainqure failure on both sides of the player and rival bodies.
+- Clearance alone missed holes where the cutter had removed the paint.
+  The expanded compiled coverage test checks 194 positions across Vainqure
+  and Bulshade player/rival bodies, including both fender shoulders and the
+  inboard edge. All 99 objects in the nine revised source scenes round-trip
+  to their expected native bytes. Follow-up evidence and comparisons are in
+  `build/car-well-fit`.
 - The broad regression pass had 374/375 passing tests. Its sole failure
   exposed floating-point drift between 0° and 360° in the inspection stage.
   Normalizing complete turns fixed it; both stage tests subsequently passed.

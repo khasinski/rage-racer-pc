@@ -402,10 +402,15 @@ static int ValidateFlareJoin(const void *bytes,size_t size,const float (*samples
     }
     return 0;
 }
-static int ValidateWellBelowHood(const void *bytes,size_t size) {
-    RageRuntimeMesh mesh; int side; uint32_t i,j,index;
+static int ValidateWellCoverage(const void *bytes,size_t size,
+                               const float (*samples)[2],unsigned count,
+                               float minPaint,float innerLimit) {
+    RageRuntimeMesh mesh; int side; uint32_t i,j,index,sample;
     CHECK(RuntimeMeshOpen(&mesh,bytes,size));
-    for(side=-1;side<=1;side+=2) {
+    /* Check coverage along both shoulders and the inboard edge, not just
+     * the arch crown. An oversized cut left holes despite zero crossings. */
+    for(side=-1;side<=1;side+=2)
+    for(sample=0;sample<count;sample++) {
         float topPaint=-1e30f,topLiner=-1e30f;
         for(i=0;i<mesh.indexCount;i+=3) {
             RageRuntimeVertex v[3];float ax,az,bx,bz,px,pz,det,u,w,height;
@@ -416,20 +421,40 @@ static int ValidateWellBelowHood(const void *bytes,size_t size) {
             ax=v[1].position[0]-v[0].position[0];az=v[1].position[2]-v[0].position[2];
             bx=v[2].position[0]-v[0].position[0];bz=v[2].position[2]-v[0].position[2];
             det=ax*bz-az*bx;if(fabsf(det)<.00001f) continue;
-            px=side*110-v[0].position[0];pz=364-v[0].position[2];
+            px=side*samples[sample][0]-v[0].position[0];
+            pz=samples[sample][1]-v[0].position[2];
             u=(px*bz-pz*bx)/det;w=(ax*pz-az*px)/det;
             if(u<-.0001f || w<-.0001f || u+w>1.0001f) continue;
             height=v[0].position[1]+u*(v[1].position[1]-v[0].position[1])+w*(v[2].position[1]-v[0].position[1]);
             if((v[0].material&RAGE_RUNTIME_MATERIAL_INDEX_MASK)==65535) topLiner=fmaxf(topLiner,height);
             else topPaint=fmaxf(topPaint,height);
         }
-        CHECK(topLiner>0 && topPaint>topLiner);
+        CHECK(topPaint>minPaint && topPaint>topLiner);
+        if(samples[sample][0]<innerLimit) CHECK(topLiner<0);
+        else CHECK(topLiner>0);
     }
     return 0;
+}
+static int ValidateWellBelowHood(const void *bytes,size_t size) {
+    static const float x[]={90,100,110,120,130,140,145};
+    static const float z[]={344,354,364,374,384};
+    float samples[35][2];unsigned i,j,count=0;
+    for(i=0;i<7;i++) for(j=0;j<5;j++) {
+        samples[count][0]=x[i];samples[count++][1]=z[j];
+    }
+    return ValidateWellCoverage(bytes,size,samples,count,30,97);
+}
+static int ValidateBulshadeWellCoverage(const void *bytes,size_t size) {
+    static const float samples[][2]={{115,355},{115,360},{120,350},
+        {140,-30},{140,0},{140,30},{150,-30},{150,0},{150,30}};
+    return ValidateWellCoverage(bytes,size,samples,9,10,0);
 }
 static int ValidateRoundedFleet(void) {
     CHECK(ValidateWellBelowHood(s_rounded_vainqure_body,sizeof(s_rounded_vainqure_body))==0);
     CHECK(ValidateWellBelowHood(s_rounded_vainqure_rival,sizeof(s_rounded_vainqure_rival))==0);
+    CHECK(ValidateBulshadeWellCoverage(s_rounded_bulshade_body,sizeof(s_rounded_bulshade_body))==0);
+    CHECK(ValidateBulshadeWellCoverage(s_rounded_bulshade_rival,sizeof(s_rounded_bulshade_rival))==0);
+    CHECK(ValidateBulshadeWellCoverage(s_rounded_bulshade_rival_alternate,sizeof(s_rounded_bulshade_rival_alternate))==0);
     CHECK(ValidateFlareJoin(s_rounded_esperanza_grade3,sizeof(s_rounded_esperanza_grade3),
         (const float[][3]){{-161.90909f,54.97401f,-1.69056f},{162.09091f,54.89298f,3.42944f},
                            {-156,54.86018f,371.91932f},{156,54.86018f,371.91932f}},4)==0);
