@@ -31,6 +31,8 @@
 #include "bulshade_body.inc"
 #include "bulshade_rival.inc"
 #include "bulshade_rival_alternate.inc"
+#include "squaldon_body.inc"
+#include "squaldon_rival.inc"
 
 typedef struct AuthoredCarMaterial {
     uint16_t source, page, clut, cacheSlot;
@@ -244,9 +246,42 @@ static const AuthoredCarMaterial s_bulshadeRivalAlternateMaterials[] = {
     {41,14,0x78c7,41}, {42,14,0x78c8,42},
 };
 
+static const AuthoredCarMaterial s_squaldonPlayerMaterials[] = {
+    {1, 11, 0x382f, 1},
+    {2, 11, 0x386f, 2},
+    {3, 11, 0x38af, 3},
+    {4, 11, 0x38ef, 4},
+    {5, 11, 0x392f, 5},
+    {6, 11, 0x396f, 6},
+    {7, 11, 0x39af, 7},
+    {8, 11, 0x39ef, 8},
+    {9, 11, 0x3a2f, 9},
+    {10, 11, 0x3a6f, 10},
+    {11, 11, 0x3aaf, 11},
+    {12, 11, 0x3aef, 12},
+    {13, 11, 0x3b2f, 13},
+    {14, 11, 0x3b6f, 14},
+};
+static const AuthoredCarMaterial s_squaldonRivalMaterials[] = {
+    {8, 12, 0x7900, 8},
+    {9, 12, 0x7901, 9},
+    {10, 12, 0x7902, 10},
+    {11, 12, 0x7903, 11},
+    {12, 12, 0x7904, 12},
+    {13, 12, 0x7905, 13},
+    {14, 12, 0x7906, 14},
+    {19, 13, 0x7907, 19},
+    {20, 13, 0x7908, 20},
+};
+
 #define AUTHORED_CAR(name, key, set, part, data, map) \
     {name, key, set, part, data, sizeof(data), map, sizeof(map)/sizeof(map[0])}
 static const AuthoredCarReplacement s_authoredCars[] = {
+    AUTHORED_CAR("Squaldon", 72, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_squaldon_body, s_squaldonPlayerMaterials),
+    AUTHORED_CAR("Squaldon", 128, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_squaldon_rival, s_squaldonRivalMaterials),
+    AUTHORED_CAR("Squaldon", 130, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_squaldon_rival, s_squaldonRivalMaterials),
+    AUTHORED_CAR("Squaldon", 132, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_squaldon_rival, s_squaldonRivalMaterials),
+    AUTHORED_CAR("Squaldon", 134, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 15, s_squaldon_rival, s_squaldonRivalMaterials),
     AUTHORED_CAR("Bulshade", 70, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_bulshade_body, s_bulshadePlayerMaterials),
     AUTHORED_CAR("Bulshade", 128, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 0, s_bulshade_rival, s_bulshadeRivalMaterials),
     AUTHORED_CAR("Bulshade", 128, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_bulshade_rival_alternate, s_bulshadeRivalAlternateMaterials),

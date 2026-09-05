@@ -1,7 +1,7 @@
 # Car upgrade work in progress
 
 Goal remains `goal.md`. Base Erriso, Abeille, Pegase, Esperanza, Acceron, Bayonet,
-Hijack, Fatalita, Istante, Ghepardo, Vainqure, and Bulshade player bodies and
+Hijack, Fatalita, Istante, Ghepardo, Vainqure, Bulshade, and Squaldon player bodies and
 their rival representations are integrated. Other player grades and cars retain their
 original geometry; the full set is still in progress.
 
@@ -428,6 +428,47 @@ Late local CPU submission samples were 0.23–0.24 ms before versus about
 0.29 ms after in chase, and 0.73–0.74 versus 0.79–0.80 ms trackside.
 These are limited CPU samples, not an isolated GPU/FPS benchmark. Squaldon,
 other player grades, and duplicate rival representations still need work.
+
+## Squaldon integration, 2026-09-05
+
+Player bank 72 installs 1340 triangles; rival body 15 installs 1149 triangles
+in even banks 128–134. All four retail rival bodies have identical face data
+and material ordering. Original wheels 17/18 and far body 19 remain.
+Both saved Blender sources reproduce the embedded meshes byte for byte.
+
+Full build and seven focused asset tests pass (`squaldon-build.log`,
+`squaldon-tests.log`). Inspected Blender front/rear before/after comparisons
+are `squaldon-blender-comparison.png` and
+`squaldon-rival-blender-comparison.png`. Release comparisons are
+`squaldon-chase-comparison.png` and `squaldon-track-comparison.png`, originals
+on the left. The long nose, cabin, lamps, rear panel, liveries, and wheels
+remain without new visible gaps or missing surfaces in these views.
+The existing environment atlas issue remains visible before and after.
+
+Late local CPU submission samples were about 0.24 ms before versus
+0.29–0.30 ms after in chase, and about 0.73 versus 0.79 ms trackside.
+These are limited CPU samples, not an isolated GPU/FPS benchmark.
+All thirteen base player cars now have authored bodies; other player grades,
+duplicate rival representations, and the final fleet audit remain incomplete.
+The catalog contains 32 player variants: base indices are
+0,4,7,9,14,18,21,23,26,28,29,30,31. The nineteen non-base variants still need
+inspection and integration; base-car coverage does not establish completion.
+Their retail face records have distinct hashes and often different face counts;
+do not replace them blindly with a base body. Direct-boot scenarios currently
+have no model-variant override, so grade verification also needs a tested way
+to select the intended variant before loading car assets.
+
+Both e2e checks pass (`squaldon-e2e.log`), covering all four banks and a
+finish/repeat cycle. Each bank requires Squaldon, Vainqure, and Bulshade to
+remain installed together.
+Cache-mode checks also pass for all four banks (`squaldon-cache-tests.log`,
+`squaldon-cache-bank-*.log`).
+
+The remaining body-15 audit now has an inspected original Blender view:
+`esperanza-rival-duplicate-front-before.png`. Despite that provisional filename,
+it shows a green number-84 touring sedan with a large wing; its identity must
+be compared against the established car sources before authoring or naming it.
+The original is imported in the temporary `Esperanza rival-duplicate` scene.
 
 Keep original data and the unrelated `.claude/` and `imgui.ini` files.
 Commit verified stages locally; do not push or publish.

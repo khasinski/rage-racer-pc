@@ -1243,6 +1243,18 @@ if(TARGET rage-racer-smoke)
             -DGRID=0,1,2,3,0,1,2,3,0,1,2
             -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
     set_tests_properties(bulshade_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME squaldon_banks
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_squaldon_banks.cmake")
+    set_tests_properties(squaldon_banks PROPERTIES LABELS e2e TIMEOUT 370 RUN_SERIAL TRUE)
+    add_test(NAME squaldon_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -DCAR=12 -DCLASS=5 -DNAME=Squaldon -DPLAYER_ASSET=72 -DRIVAL_ASSET=128
+            -DGRID=3,0,1,2,3,0,1,2,3,0,1
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
+    set_tests_properties(squaldon_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
     add_test(
         NAME scenario_control
         COMMAND python3

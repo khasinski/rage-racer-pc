@@ -280,3 +280,20 @@ The red and green rivals have distinct UVs and material identities; both
 are required in each bank. Original rival wheels 2/3 and 7/8 and far bodies
 4/9 remain. Course slots for red are 0/2/1/1, for green 1/0/2/2. A close
 front view uses course 1, camera 2, lead slot 2 or 0, and rival points 119/121.
+
+## Integrated Squaldon sources
+
+Open `assets/cars/squaldon.blend`, scene `Squaldon player`, and export only
+`Squaldon_player_body` to `squaldon-body.obj`. The rival source is
+`squaldon-rival.blend`, scene `Squaldon rival`, object `Squaldon_rival_body`,
+exported to `squaldon-rival.obj`. Both use the established 1.6-unit bevel
+and baked export settings, retain originals, and pack their reference textures.
+Saved sources reproduce the embedded meshes byte for byte.
+
+Player bank 72 and rival body 15 in even banks 128–134 are replaced.
+Original rival wheels 17/18 and far body 19 remain. All four rival banks
+have identical face data and material ordering. Player slots 1–14 use page
+11 palettes 0x382f–0x3b6f. Rival slots 8–14 use page 12 palettes
+0x7900–0x7906; slots 19/20 use page 13 palettes 0x7907/0x7908.
+Rival course slots are 3/3/3/0. A close front view uses course 1, camera 2,
+lead slot 3, and rival points 119/121.
