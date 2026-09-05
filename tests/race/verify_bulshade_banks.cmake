@@ -1,0 +1,41 @@
+file(MAKE_DIRECTORY "${EVIDENCE}")
+if(NOT DEFINED ASSET_SOURCE)
+    set(ASSET_SOURCE disc)
+endif()
+if(ASSET_SOURCE STREQUAL "disc")
+    set(mode disc)
+else()
+    set(mode cache)
+endif()
+set(firstModels 0 2 1 1)
+set(secondModels 1 0 2 2)
+foreach(asset RANGE 128 134 2)
+    math(EXPR course "(${asset}-128)/2")
+    list(GET firstModels ${course} first)
+    list(GET secondModels ${course} second)
+    set(grid "${first},${second},${first},${second},${first},${second},${first},${second},${first},${second},${first}")
+    set(log "${EVIDENCE}/bulshade-${mode}-bank-${asset}.log")
+    file(REMOVE "${log}")
+    execute_process(COMMAND "${GAME}" --scenario "${SOURCE}/tests/scenarios/authored_bulshade.ini"
+        --set stop.timer=120 --set "race.course=${course}" --set "race.grid=${grid}"
+        --set "diagnostics.log=${log}" --set "modern.assets=${ASSET_SOURCE}"
+        WORKING_DIRECTORY "${SOURCE}" RESULT_VARIABLE status
+        OUTPUT_VARIABLE output ERROR_VARIABLE errors TIMEOUT 90)
+    if(NOT status EQUAL 0)
+        message(FATAL_ERROR "Bulshade bank ${asset} race failed: ${status}\n${output}\n${errors}")
+    endif()
+    file(READ "${log}" trace)
+    foreach(required "scenario-start rival=0 [^\n]*model=${first} active=0"
+            "scenario-start rival=1 [^\n]*model=${second} active=0"
+            "authored Bulshade player body installed asset=70"
+            "authored Vainqure rival body installed asset=${asset}")
+        if(NOT trace MATCHES "${required}")
+            message(FATAL_ERROR "Bulshade bank ${asset} missed ${required}")
+        endif()
+    endforeach()
+    string(REGEX MATCHALL "authored Bulshade rival body installed asset=${asset} " installed "${trace}")
+    list(LENGTH installed count)
+    if(NOT count EQUAL 2)
+        message(FATAL_ERROR "Bulshade bank ${asset} did not install both rival bodies")
+    endif()
+endforeach()

@@ -138,11 +138,11 @@ add_custom_command(OUTPUT "${RAGE_AUTHORED_DIR}/erriso_rival.inc"
     DEPENDS rage-mesh-obj assets/cars/erriso-rival.obj tools/scripts/embed_car_mesh.cmake
     VERBATIM)
 set(RAGE_AUTHORED_OTHER_OUTPUTS)
-foreach(car abeille pegase esperanza acceron bayonet hijack fatalita istante ghepardo vainqure)
+foreach(car abeille pegase esperanza acceron bayonet hijack fatalita istante ghepardo vainqure bulshade)
 set(variants body rival)
 if(car STREQUAL "esperanza")
     list(APPEND variants rival-late)
-elseif(car STREQUAL "hijack")
+elseif(car STREQUAL "hijack" OR car STREQUAL "bulshade")
     list(APPEND variants rival-alternate)
 endif()
 foreach(variant IN LISTS variants)

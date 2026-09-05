@@ -28,6 +28,9 @@
 #include "ghepardo_rival.inc"
 #include "vainqure_body.inc"
 #include "vainqure_rival.inc"
+#include "bulshade_body.inc"
+#include "bulshade_rival.inc"
+#include "bulshade_rival_alternate.inc"
 
 typedef struct AuthoredCarMaterial {
     uint16_t source, page, clut, cacheSlot;
@@ -224,9 +227,35 @@ static const AuthoredCarMaterial s_vainqureRivalMaterials[] = {
     {6, 12, 0x7843, 6}, {7, 12, 0x7844, 7},
 };
 
+static const AuthoredCarMaterial s_bulshadePlayerMaterials[] = {
+    {1,11,0x382f,1}, {2,11,0x386f,2}, {3,11,0x38af,3},
+    {4,11,0x38ef,4}, {5,11,0x392f,5}, {6,11,0x396f,6},
+    {7,11,0x39af,7}, {8,11,0x39ef,8}, {9,11,0x3a2f,9}, {10,11,0x3a6f,10},
+};
+static const AuthoredCarMaterial s_bulshadeRivalMaterials[] = {
+    {26,14,0x7880,26}, {27,14,0x7881,27}, {28,14,0x7882,28},
+    {29,14,0x7883,29}, {30,14,0x7884,30}, {31,14,0x7885,31},
+    {32,14,0x7886,32}, {33,14,0x7888,33}, {34,14,0x7889,34},
+};
+static const AuthoredCarMaterial s_bulshadeRivalAlternateMaterials[] = {
+    {15,13,0x78c2,15}, {16,13,0x78c3,16},
+    {35,14,0x78c0,35}, {36,14,0x78c1,36}, {37,14,0x78c2,37},
+    {38,14,0x78c4,38}, {39,14,0x78c5,39}, {40,14,0x78c6,40},
+    {41,14,0x78c7,41}, {42,14,0x78c8,42},
+};
+
 #define AUTHORED_CAR(name, key, set, part, data, map) \
     {name, key, set, part, data, sizeof(data), map, sizeof(map)/sizeof(map[0])}
 static const AuthoredCarReplacement s_authoredCars[] = {
+    AUTHORED_CAR("Bulshade", 70, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_bulshade_body, s_bulshadePlayerMaterials),
+    AUTHORED_CAR("Bulshade", 128, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 0, s_bulshade_rival, s_bulshadeRivalMaterials),
+    AUTHORED_CAR("Bulshade", 128, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_bulshade_rival_alternate, s_bulshadeRivalAlternateMaterials),
+    AUTHORED_CAR("Bulshade", 130, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 0, s_bulshade_rival, s_bulshadeRivalMaterials),
+    AUTHORED_CAR("Bulshade", 130, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_bulshade_rival_alternate, s_bulshadeRivalAlternateMaterials),
+    AUTHORED_CAR("Bulshade", 132, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 0, s_bulshade_rival, s_bulshadeRivalMaterials),
+    AUTHORED_CAR("Bulshade", 132, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_bulshade_rival_alternate, s_bulshadeRivalAlternateMaterials),
+    AUTHORED_CAR("Bulshade", 134, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 0, s_bulshade_rival, s_bulshadeRivalMaterials),
+    AUTHORED_CAR("Bulshade", 134, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 5, s_bulshade_rival_alternate, s_bulshadeRivalAlternateMaterials),
     AUTHORED_CAR("Vainqure", 68, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_vainqure_body, s_vainqurePlayerMaterials),
     AUTHORED_CAR("Vainqure", 128, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 10, s_vainqure_rival, s_vainqureRivalMaterials),
     AUTHORED_CAR("Vainqure", 130, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 10, s_vainqure_rival, s_vainqureRivalMaterials),

@@ -260,3 +260,23 @@ and far body 14 remain. Player textures use page 11 palettes 0x382f–0x39ef;
 rivals use page 12 palettes 0x7840–0x7844. Rival slots for courses 0/1/2/3
 are 2/1/0/3. Use course 1, camera 2, grid 1/2/0/3 repeating, and rival points
 119/121 for a close front view.
+
+## Integrated Bulshade sources
+
+Open `assets/cars/bulshade.blend`, scene `Bulshade player`, and export only
+`Bulshade_player_body` to `bulshade-body.obj`. Rival sources are
+`bulshade-rival.blend` / `Bulshade_rival_body` and
+`bulshade-rival-alternate.blend` / `Bulshade_rival_alternate_body`, exported
+to matching OBJ filenames. The same baked settings apply. All three saved
+sources reproduce the embedded meshes byte for byte.
+
+These bodies use a narrower 0.6-unit bevel: the 1.6-unit draft produced
+downward spikes at acute lower corners beyond the four-unit bounds margin.
+The narrower model passes the unchanged bounds test and retains hidden
+originals and construction references.
+
+Player bank 70 and rival bodies 0/5 in even banks 128–134 are replaced.
+The red and green rivals have distinct UVs and material identities; both
+are required in each bank. Original rival wheels 2/3 and 7/8 and far bodies
+4/9 remain. Course slots for red are 0/2/1/1, for green 1/0/2/2. A close
+front view uses course 1, camera 2, lead slot 2 or 0, and rival points 119/121.

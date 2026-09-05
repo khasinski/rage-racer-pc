@@ -1,8 +1,8 @@
 # Car upgrade work in progress
 
 Goal remains `goal.md`. Base Erriso, Abeille, Pegase, Esperanza, Acceron, Bayonet,
-Hijack, Fatalita, Istante, Ghepardo, and Vainqure player bodies and their rival
-representations are integrated. Other player grades and cars retain their
+Hijack, Fatalita, Istante, Ghepardo, Vainqure, and Bulshade player bodies and
+their rival representations are integrated. Other player grades and cars retain their
 original geometry; the full set is still in progress.
 
 The remaining audit includes duplicate rival representations: body 15 in
@@ -393,6 +393,41 @@ Late local CPU submission samples were about 0.23 ms before versus
 0.21–0.26 ms after in chase, and 0.73–0.74 versus 0.75–0.76 ms trackside.
 These fluctuating samples are not an isolated GPU/FPS benchmark. The existing
 environment atlas issue remains; remaining cars and variants still need work.
+
+## Bulshade integration, 2026-09-05
+
+Player bank 70 installs 3173 triangles. Red rival body 0 and green rival
+body 5 each install 2665 triangles in even banks 128–134, alongside Vainqure.
+The two rival variants retain separate UVs and palette mappings. Each variant's
+retail face data is identical across the four banks. Original wheels 2/3 and
+7/8, and far bodies 4/9, remain. All three saved Blender sources reproduce
+the embedded meshes byte for byte.
+
+The initial 1.6-unit bevel produced acute fender spikes outside the existing
+four-unit bounds tolerance. It was rejected. A 0.6-unit bevel passes the
+unchanged bounds validation. Full build and seven focused asset tests pass
+(`bulshade-refined-build.log`, `bulshade-refined-tests.log`). Accepted Blender
+front/rear comparisons are `bulshade-blender-refined.png`,
+`bulshade-rival-blender-refined.png`, and
+`bulshade-rival-alternate-blender-refined.png`.
+
+Both e2e tests pass (`bulshade-e2e.log`): all four special banks load both
+rival variants, and a finish/repeat cycle loads the authored cars again.
+Cache-mode checks also pass for all four banks (`bulshade-cache-tests.log`,
+`bulshade-cache-bank-*.log`). Bank tests require Vainqure to remain installed
+alongside both Bulshade bodies.
+
+Inspected release comparisons are `bulshade-red-chase-comparison.png`,
+`bulshade-red-track-comparison.png`, `bulshade-green-chase-comparison.png`,
+and `bulshade-green-track-comparison.png`, originals on the left. They retain
+the cabin, grille, fenders, rear panel, liveries, and wheel placement without
+new visible gaps or missing surfaces in these views. The existing environment
+atlas issue remains visible before and after.
+
+Late local CPU submission samples were 0.23–0.24 ms before versus about
+0.29 ms after in chase, and 0.73–0.74 versus 0.79–0.80 ms trackside.
+These are limited CPU samples, not an isolated GPU/FPS benchmark. Squaldon,
+other player grades, and duplicate rival representations still need work.
 
 Keep original data and the unrelated `.claude/` and `imgui.ini` files.
 Commit verified stages locally; do not push or publish.
