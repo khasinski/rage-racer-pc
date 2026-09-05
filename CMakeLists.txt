@@ -116,6 +116,11 @@ add_library(rage-rmesh STATIC
     src/render/rmesh_index.c
     src/render/rmesh_cache.c)
 target_include_directories(rage-rmesh PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+add_executable(rage-mesh-obj tools/rage_mesh_obj.c)
+target_link_libraries(rage-mesh-obj PRIVATE rage-rmesh)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(rage-mesh-obj PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
 if(NOT MSVC)
     target_link_libraries(rage-rmesh PUBLIC m)
 endif()
