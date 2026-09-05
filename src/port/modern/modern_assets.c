@@ -13,6 +13,7 @@
 #include "game/track_internal.h"
 #include "render/asset_id.h"
 #include "render/car_paint.h"
+#include "render/authored_car_surface.h"
 #include "render/mod_manifest.h"
 #include "render/rmesh_replace.h"
 #include "authored_car_data.h"
@@ -46,7 +47,7 @@ static const RageRuntimeCachedMesh *ModernAuthoredCar(
     for (i = first; i < RAGE_AUTHORED_CAR_COUNT; i++) {
         const AuthoredCarReplacement *car = &s_authoredCars[i];
         RageRuntimeMesh body, next;
-        uint32_t map[64];
+        uint32_t map[RAGE_CAR_SURFACE_SOURCE_STRIDE * RAGE_CAR_SURFACE_COUNT];
         size_t j, size;
         void *bytes;
         if (!AuthoredCarMatches(car, instance)) continue;
@@ -55,12 +56,16 @@ static const RageRuntimeCachedMesh *ModernAuthoredCar(
             const AuthoredCarMaterial *material = &car->materials[j];
             int slot = imported ? NativeAssetImporterMaterialSlot(instance,
                 material->page, material->clut) : material->cacheSlot;
-            if (slot < 0 || material->source >= sizeof(map)/sizeof(map[0])) {
+            if (slot < 0 || slot >= RAGE_CAR_SURFACE_RUNTIME_STRIDE ||
+                material->source >= RAGE_CAR_SURFACE_SOURCE_STRIDE) {
                 fprintf(stderr, "rage-port: %s asset %u material %u unavailable\n",
                         car->name, car->assetKey, material->source);
                 goto failed;
             }
             map[material->source] = (uint32_t)slot;
+            for (unsigned surface = 1; surface < RAGE_CAR_SURFACE_COUNT; surface++)
+                map[material->source + surface * RAGE_CAR_SURFACE_SOURCE_STRIDE] =
+                    (uint32_t)slot + surface * RAGE_CAR_SURFACE_RUNTIME_STRIDE;
         }
         if (!RuntimeMeshOpen(&body, car->bytes, car->byteCount)) goto failed;
         bytes = RuntimeMeshReplace(&working.mesh, car->submesh, &body,
@@ -506,7 +511,7 @@ fail:
     return 0;
 }
 
-int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
+static int ModernAssetsLoadBaseMaterial(const RageRenderMeshInstance *instance,
                              uint32_t material, uint8_t variant,
                              RageRenderMaterial *definition,
                              ModernAssetImage *image) {
@@ -574,6 +579,23 @@ int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
                     (unsigned)instance->carPaintColor1,
                     (unsigned)instance->carPaintColor2, paintPath);
     }
+    return 1;
+}
+
+int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
+                             uint32_t material, uint8_t variant,
+                             RageRenderMaterial *definition,
+                             ModernAssetImage *image) {
+    unsigned surface = 0;
+    if (instance && (instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
+                     instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1)) {
+        surface = material / RAGE_CAR_SURFACE_RUNTIME_STRIDE;
+        if (surface >= RAGE_CAR_SURFACE_COUNT) return 0;
+        material %= RAGE_CAR_SURFACE_RUNTIME_STRIDE;
+    }
+    if (!ModernAssetsLoadBaseMaterial(instance, material, variant, definition, image))
+        return 0;
+    AuthoredCarSurfaceApply(surface, definition);
     return 1;
 }
 

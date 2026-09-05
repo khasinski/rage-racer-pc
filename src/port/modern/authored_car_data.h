@@ -30,6 +30,27 @@
 #include "pegase_body.inc"
 #include "pegase_rival.inc"
 #include "esperanza_body.inc"
+#include "esperanza_rounded.inc"
+#include "esperanza_wheel2.inc"
+#include "esperanza_wheel3.inc"
+#include "esperanza_wheel4.inc"
+#include "esperanza_wheel5.inc"
+#include "esperanza_wheel6.inc"
+#include "esperanza_wheel7.inc"
+#include "esperanza_wheel8.inc"
+#include "esperanza_wheel9.inc"
+#include "esperanza_wheel10.inc"
+#include "esperanza_wheel11.inc"
+#include "esperanza_wheel12.inc"
+#include "esperanza_wheel13.inc"
+#include "esperanza_wheel14.inc"
+#include "esperanza_wheel15.inc"
+#include "esperanza_wheel16.inc"
+#include "esperanza_wheel17.inc"
+#include "esperanza_wheel18.inc"
+#include "esperanza_wheel19.inc"
+#include "esperanza_wheel20.inc"
+#include "esperanza_wheel21.inc"
 #include "esperanza_rival.inc"
 #include "esperanza_rival_late.inc"
 #include "esperanza_rival_duplicate.inc"
@@ -434,6 +455,9 @@ static const AuthoredCarMaterial s_pegaseRivalAlternateMaterials[] = {
     {20, 13, 0x78c9, 21},
 };
 
+static const AuthoredCarMaterial s_esperanzaWheelMaterials[] = {
+    {0, 10, 0x3baf, 0},
+};
 static const AuthoredCarMaterial s_esperanzaPlayerMaterials[] = {
     {1, 10, 0x3bef, 1},
     {2, 10, 0x7801, 2},
@@ -864,7 +888,27 @@ static const AuthoredCarReplacement s_authoredCars[] = {
     AUTHORED_CAR("Pegase", 122, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 10, s_pegase_rival, s_pegaseRivalAlternateMaterials),
     AUTHORED_CAR("Pegase", 124, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 10, s_pegase_rival, s_pegaseRivalAlternateMaterials),
     AUTHORED_CAR("Pegase", 126, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 10, s_pegase_rival, s_pegaseRivalAlternateMaterials),
-    AUTHORED_CAR("Esperanza", 28, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_esperanza_body, s_esperanzaPlayerMaterials),
+    AUTHORED_CAR("Esperanza", 28, RAGE_RENDER_ASSET_MODEL_BANK, 0, s_esperanza_rounded, s_esperanzaPlayerMaterials),
+    AUTHORED_CAR("Esperanza wheel 2", 28, RAGE_RENDER_ASSET_MODEL_BANK, 2, s_esperanza_wheel2, s_esperanzaWheelMaterials),
+    AUTHORED_CAR("Esperanza wheel 3", 28, RAGE_RENDER_ASSET_MODEL_BANK, 3, s_esperanza_wheel3, s_esperanzaWheelMaterials),
+    AUTHORED_CAR("Esperanza wheel 4", 28, RAGE_RENDER_ASSET_MODEL_BANK, 4, s_esperanza_wheel4, s_esperanzaWheelMaterials),
+    AUTHORED_CAR("Esperanza wheel 5", 28, RAGE_RENDER_ASSET_MODEL_BANK, 5, s_esperanza_wheel5, s_esperanzaWheelMaterials),
+    AUTHORED_CAR("Esperanza wheel 6", 28, RAGE_RENDER_ASSET_MODEL_BANK, 6, s_esperanza_wheel6, s_esperanzaWheelMaterials),
+    AUTHORED_CAR("Esperanza wheel 7", 28, RAGE_RENDER_ASSET_MODEL_BANK, 7, s_esperanza_wheel7, s_esperanzaWheelMaterials),
+    AUTHORED_CAR("Esperanza wheel 8", 28, RAGE_RENDER_ASSET_MODEL_BANK, 8, s_esperanza_wheel8, s_esperanzaWheelMaterials),
+    AUTHORED_CAR("Esperanza wheel 9", 28, RAGE_RENDER_ASSET_MODEL_BANK, 9, s_esperanza_wheel9, s_esperanzaWheelMaterials),
+    AUTHORED_CAR("Esperanza wheel 10", 28, RAGE_RENDER_ASSET_MODEL_BANK, 10, s_esperanza_wheel10, s_esperanzaWheelMaterials),
+    AUTHORED_CAR("Esperanza wheel 11", 28, RAGE_RENDER_ASSET_MODEL_BANK, 11, s_esperanza_wheel11, s_esperanzaWheelMaterials),
+    AUTHORED_CAR("Esperanza wheel 12", 28, RAGE_RENDER_ASSET_MODEL_BANK, 12, s_esperanza_wheel12, s_esperanzaWheelMaterials),
+    AUTHORED_CAR("Esperanza wheel 13", 28, RAGE_RENDER_ASSET_MODEL_BANK, 13, s_esperanza_wheel13, s_esperanzaWheelMaterials),
+    AUTHORED_CAR("Esperanza wheel 14", 28, RAGE_RENDER_ASSET_MODEL_BANK, 14, s_esperanza_wheel14, s_esperanzaWheelMaterials),
+    AUTHORED_CAR("Esperanza wheel 15", 28, RAGE_RENDER_ASSET_MODEL_BANK, 15, s_esperanza_wheel15, s_esperanzaWheelMaterials),
+    AUTHORED_CAR("Esperanza wheel 16", 28, RAGE_RENDER_ASSET_MODEL_BANK, 16, s_esperanza_wheel16, s_esperanzaWheelMaterials),
+    AUTHORED_CAR("Esperanza wheel 17", 28, RAGE_RENDER_ASSET_MODEL_BANK, 17, s_esperanza_wheel17, s_esperanzaWheelMaterials),
+    AUTHORED_CAR("Esperanza wheel 18", 28, RAGE_RENDER_ASSET_MODEL_BANK, 18, s_esperanza_wheel18, s_esperanzaWheelMaterials),
+    AUTHORED_CAR("Esperanza wheel 19", 28, RAGE_RENDER_ASSET_MODEL_BANK, 19, s_esperanza_wheel19, s_esperanzaWheelMaterials),
+    AUTHORED_CAR("Esperanza wheel 20", 28, RAGE_RENDER_ASSET_MODEL_BANK, 20, s_esperanza_wheel20, s_esperanzaWheelMaterials),
+    AUTHORED_CAR("Esperanza wheel 21", 28, RAGE_RENDER_ASSET_MODEL_BANK, 21, s_esperanza_wheel21, s_esperanzaWheelMaterials),
     AUTHORED_CAR("Esperanza", 88, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 0, s_esperanza_rival, s_esperanzaBank88Materials),
     AUTHORED_CAR("Esperanza", 90, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 0, s_esperanza_rival, s_esperanzaBank88Materials),
     AUTHORED_CAR("Esperanza", 92, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1, 0, s_esperanza_rival, s_esperanzaBank88Materials),

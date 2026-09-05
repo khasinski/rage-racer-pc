@@ -1,4 +1,5 @@
 #include "render/rmesh.h"
+#include "render/authored_car_surface.h"
 #include <math.h>
 #include <stdio.h>
 #include "port/modern/authored_car_data.h"
@@ -90,6 +91,43 @@ static int ValidateAbeillePanelColorSeam(void) {
     return 0;
 }
 
+static int ValidateRoundedEsperanza(void) {
+    size_t entry;
+    unsigned wheels = 0, glass = 0, paint = 0, arc = 0;
+    CHECK(Validate(s_esperanza_rounded, sizeof(s_esperanza_rounded), 3) == 0);
+    for (entry = 0; entry < RAGE_AUTHORED_CAR_COUNT; entry++) {
+        const AuthoredCarReplacement *car = &s_authoredCars[entry];
+        RageRuntimeMesh mesh;
+        uint32_t i;
+        if (car->assetKey != 28 || car->assetSet != RAGE_RENDER_ASSET_MODEL_BANK) continue;
+        CHECK(RuntimeMeshOpen(&mesh, car->bytes, car->byteCount));
+        if (car->submesh) wheels++;
+        for (i = 0; i < mesh.vertexCount; i++) {
+            RageRuntimeVertex v;
+            unsigned slot, surface;
+            CHECK(RuntimeMeshVertex(&mesh, i, &v));
+            slot = v.material & RAGE_RUNTIME_MATERIAL_INDEX_MASK;
+            surface = slot / RAGE_CAR_SURFACE_SOURCE_STRIDE;
+            if (!car->submesh) {
+                float z = fabsf(v.position[2]) < 55 ? v.position[2] : v.position[2] - 368;
+                if (surface == RAGE_CAR_SURFACE_GLASS) glass++;
+                if (surface == RAGE_CAR_SURFACE_PAINT) paint++;
+                if (fabsf(v.position[0]) > 125 && v.position[1] > 8 &&
+                    fabsf(hypotf(v.position[1], z) - 51) < 0.01f) arc++;
+            } else {
+                float radius = hypotf(v.position[1], v.position[2]);
+                CHECK(radius <= 43.01f);
+                CHECK(fabsf(v.position[0]) <= ((car->submesh & 1) ? 143.01f : 20.01f));
+                CHECK(surface == RAGE_CAR_SURFACE_RUBBER || surface == RAGE_CAR_SURFACE_METAL);
+                CHECK(v.normal[0]*v.normal[0]+v.normal[1]*v.normal[1]+v.normal[2]*v.normal[2] > 0.99f);
+                if (radius > 42.9f) CHECK(v.normal[1]*v.position[1]+v.normal[2]*v.position[2] > 0);
+            }
+        }
+    }
+    CHECK(wheels == 20 && glass > 20 && paint > 100 && arc > 100);
+    return 0;
+}
+
 static int ValidateRegistry(void) {
     size_t i,j,k;
     int standard=0, alternate=0;
@@ -116,6 +154,8 @@ static int ValidateRegistry(void) {
             CHECK(RuntimeMeshVertex(&mesh,(uint32_t)j,&v));
             slot=v.material & RAGE_RUNTIME_MATERIAL_INDEX_MASK;
             if(slot==65535) continue;
+            CHECK(slot < RAGE_CAR_SURFACE_COUNT * RAGE_CAR_SURFACE_SOURCE_STRIDE);
+            slot %= RAGE_CAR_SURFACE_SOURCE_STRIDE;
             for(k=0;k<car->materialCount;k++) if(car->materials[k].source==slot) break;
             CHECK(k<car->materialCount);
         }
@@ -234,6 +274,7 @@ int main(void) {
     CHECK(Validate(s_compactc_rival_late,sizeof(s_compactc_rival_late),3)==0);
     CHECK(ValidateAbeillePanelColorSeam()==0);
     CHECK(ValidateRegistry()==0);
+    CHECK(ValidateRoundedEsperanza()==0);
     CHECK(ValidatePegaseHoodDecal()==0);
     puts("authored car geometry, scale, normals, seams and material registries valid");
     return 0;

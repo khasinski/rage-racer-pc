@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "render/render_material.h"
+#include "render/authored_car_surface.h"
 
 static int failures;
 #define EXPECT(value) do { if (!(value)) { failures++;                      \
@@ -68,5 +69,24 @@ int main(void) {
         "lit invalid 0.1 0.2 1 1 1 1 0 0 0",
         sizeof("lit invalid 0.1 0.2 1 1 1 1 0 0 0") - 1, &material));
     EXPECT(memcmp(&material, &original, sizeof(material)) == 0);
+    {
+        RageRenderMaterial glass, paint, rubber, metal;
+        EXPECT(RenderMaterialParse(v5, sizeof(v5) - 1, 3, 0, &original));
+        glass = paint = rubber = metal = original;
+        AuthoredCarSurfaceApply(RAGE_CAR_SURFACE_GLASS, &glass);
+        AuthoredCarSurfaceApply(RAGE_CAR_SURFACE_PAINT, &paint);
+        AuthoredCarSurfaceApply(RAGE_CAR_SURFACE_RUBBER, &rubber);
+        AuthoredCarSurfaceApply(RAGE_CAR_SURFACE_METAL, &metal);
+        EXPECT(glass.roughness < paint.roughness && paint.roughness < rubber.roughness);
+        EXPECT(glass.metallic == 0 && rubber.metallic == 0);
+        EXPECT(metal.metallic > paint.metallic);
+        EXPECT(PathEquals(glass.baseColorTexture, "car.rgba"));
+        EXPECT(PathEquals(paint.paintMask, "paint.rpaint"));
+        EXPECT(glass.alphaMode == original.alphaMode);
+        EXPECT(glass.baseColorFactor[3] == original.baseColorFactor[3]);
+        material = original;
+        AuthoredCarSurfaceApply(RAGE_CAR_SURFACE_ORIGINAL, &material);
+        EXPECT(memcmp(&material, &original, sizeof(material)) == 0);
+    }
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

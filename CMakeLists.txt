@@ -109,6 +109,7 @@ endif()
 add_library(rage-rmesh STATIC
     src/render/asset_id.c
     src/render/car_paint.c
+    src/render/authored_car_surface.c
     src/render/mod_manifest.c
     src/render/render_material.c
     src/render/texture_mipmap.c
@@ -156,7 +157,10 @@ elseif(car STREQUAL "abeille" OR car STREQUAL "bayonet" OR car STREQUAL "fatalit
 elseif(car STREQUAL "pegase" OR car STREQUAL "hijack" OR car STREQUAL "istante")
     list(APPEND variants grade1)
 elseif(car STREQUAL "esperanza")
-    list(APPEND variants grade1 grade2 grade3 grade4)
+    list(APPEND variants grade1 grade2 grade3 grade4 rounded)
+    foreach(wheel RANGE 2 21)
+        list(APPEND variants wheel${wheel})
+    endforeach()
 endif()
 foreach(variant IN LISTS variants)
     string(REPLACE "-" "_" symbol "${car}_${variant}")

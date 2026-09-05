@@ -3,6 +3,7 @@
 
 #include "modern_assets.h"
 #include "render/render_mesh_build.h"
+#include "render/authored_car_surface.h"
 #include "render/render_shadow.h"
 #include "render/texture_mipmap.h"
 #include "rage/track_asset_identity.h"
@@ -1465,7 +1466,11 @@ static void ModernNativeGpuDrawSet(
             int vehicle = span->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
                           span->assetSet ==
                               RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
-            int allowClearcoat = !vehicle || span->component == 0;
+            /* Authored rim surfaces retain specular lighting even though the
+             * original wheel texture combines matte rubber and metal. */
+            int allowClearcoat = !vehicle || span->component == 0 ||
+                (span->material != UINT32_MAX &&
+                 span->material / RAGE_CAR_SURFACE_RUNTIME_STRIDE == RAGE_CAR_SURFACE_METAL);
             if (span->vertexCount == 0) continue;
             if (span->material == UINT32_MAX) {
                 if (phase != (span->depthDecal ? 1 : (vehicle ? 2 : 0)))
