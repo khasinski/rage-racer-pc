@@ -1,7 +1,7 @@
 # Car upgrade work in progress
 
 Goal remains `goal.md`. Base Erriso, Abeille, Pegase, Esperanza, Acceron, Bayonet,
-Hijack, and Fatalita player bodies and their rival
+Hijack, Fatalita, and Istante player bodies and their rival
 representations are integrated. Other player grades and cars retain their
 original geometry; the full set is still in progress.
 
@@ -306,6 +306,32 @@ Late CPU submission samples were 0.26–0.27 ms before versus about 0.37 ms
 after in chase, and about 0.72 versus 0.87 ms trackside. These are local CPU
 samples, not an isolated GPU/FPS benchmark. Other player grades and remaining
 cars still need work.
+
+## Istante integration, 2026-09-05
+
+Player bank 62 uses 1804 triangles; rival body 15 uses 1500 triangles in
+even banks 112–118. The four retail rival bodies have identical geometry,
+UVs, and materials. The player uses its own palette map. Original wheels
+17/18 and far body 19 remain. Both saved Blender sources re-exported to
+byte-identical embedded meshes.
+
+The full build and seven focused asset tests pass (`istante-build.log`,
+`istante-tests.log`). Both e2e tests pass (`istante-e2e.log`), covering all
+four banks and a finish/repeat transition. Cache-mode checks also pass for
+all four banks (`istante-cache-tests.log`, `istante-cache-bank-*.log`). Each
+bank check requires Istante, Hijack, Pegase, and Esperanza together.
+Inspected Blender comparisons are
+`istante-blender-comparison.png` and `istante-rival-blender-comparison.png`,
+each containing front and rear before/after. Release comparisons are
+`istante-chase-comparison.png` and `istante-track-comparison.png`, originals
+on the left. They retain the wedge silhouette, hood panels, spoiler, lamps,
+rear exhausts, liveries, and wheels without new visible gaps or culling
+failures in these views. The existing environment atlas issue remains.
+
+Late CPU submission samples were 0.26–0.27 ms before versus about 0.37 ms
+after in chase, and 0.76–0.77 versus 0.87–0.88 ms trackside. These are local
+CPU samples, not an isolated GPU/FPS benchmark. Other player grades and
+remaining cars still need work.
 
 Keep original data and the unrelated `.claude/` and `imgui.ini` files.
 Commit verified stages locally; do not push or publish.

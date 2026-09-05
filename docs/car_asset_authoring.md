@@ -207,3 +207,20 @@ Original wheels 17/18 and far body 19 remain. Rival slots for courses
 0/1/2/3 are 3/3/3/0. The mixed grid exercises four authored bodies in each
 bank. For a close front view, use course 1, camera 2, grid 3/0/2/1 repeating,
 and rival points 119/121.
+
+## Integrated Istante sources
+
+Open `assets/cars/istante.blend`, scene `Istante player`, and export only
+`Istante_player_body` to `istante-body.obj`. The rival source is
+`istante-rival.blend`, scene `Istante rival`, object `Istante_rival_body`,
+exported to `istante-rival.obj`. The same baked export settings apply;
+original and construction meshes remain hidden. Both saved sources reproduce
+the embedded native meshes byte for byte.
+
+Player bank 62 and rival body 15 in even banks 112–118 are replaced. All four
+retail rival bodies have identical face data and material ordering. The
+player needs its own palette mapping: slots 5–12 differ from Esperanza.
+Original wheels 17/18 and far body 19 remain. Rival slots for courses
+0/1/2/3 are 3/3/3/0. The mixed grid exercises Istante, Hijack, Pegase, and
+Esperanza together. A close front view uses course 1, camera 2, grid 3/0/2/1
+repeating, and rival points 119/121.
