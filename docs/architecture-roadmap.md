@@ -74,8 +74,40 @@ Meshes are currently retained across track loads because captured/prepared
 frames may still reference them. Do not free them on a scene-ID change without
 first defining and testing the last consumer's lifetime.
 
+## Persistent geometry migration boundary
+
+The current `RageNativeDrawVertex` is expanded, world-space presentation data,
+not a reusable asset vertex. `RenderBuildNativeDrawsFiltered` rebuilds it for
+each camera and `ModernNativeUploadVertices` transfers both lists together.
+Keeping that buffer without separating the following dependencies would be
+incorrect even when the imported RMESH bytes never change:
+
+| Current operation | Required owner in the persistent path |
+| --- | --- |
+| Indexed source positions, UVs, colours, authored material flags | Immutable mesh resource |
+| Transform, environment light, lighting influence, scroll U | Instance state |
+| Material variant, car paint, terrain CLUT selection | Instance/material state |
+| Fog colour and reciprocal-depth factor | View state; factor evaluated at the original position |
+| Explicit overlay lift toward camera | View-dependent displacement; must not change fog's source position |
+| Road-paint lift and terrain boundary snapping | Geometry rules, preserved separately from camera-facing overlays |
+| Frustum/backface and authored terrain-quad visibility | View-specific selection, not asset mutation |
+| Main/mirror span order | Independent draw lists; preserve transparent ordering |
+
+The next implementation boundary is moving view/instance evaluation out of
+stored vertices, then sharing immutable geometry allocations between the two
+draw lists. Do not equate reusing a frame's expanded upload with completing
+stage 4. CPU-reference tests must remain available while introducing the GPU
+path; image comparisons and frame-tail measurements are still required.
+
 ## Work log
 
+- Added a shared-asset/two-view reference test for the geometry migration.
+  It builds main/rear/main using the same RMESH and instance, with distinct
+  cameras, fog colours and aspect ratios. It verifies reciprocal-depth fog,
+  identical scroll UVs, opposite camera-facing overlay displacements, fog
+  computed before that displacement, repeatable main output and unmodified
+  source bytes/instance. Linux render_mesh_build passed. This is CPU-reference
+  coverage, not a GPU image comparison or a performance improvement.
 - Native world completeness now checks resident meshes, matching the main and
   mirror builders. It no longer retries a failed preparation after geometry was
   built and therefore cannot mark a newly loaded, undrawn mesh as complete.

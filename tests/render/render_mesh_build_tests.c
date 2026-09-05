@@ -761,7 +761,85 @@ static void test_native_draw_builder_keeps_instance_in_frustum_guard_band(void) 
     EXPECT_EQ(1, spanCount);
 }
 
+/* Reference behaviour for moving view-dependent work out of mesh buffers.
+ * Both views consume the SAME immutable asset and semantic MAIN instance. */
+static void test_shared_mesh_independent_views(void) {
+    unsigned char bytes[164] = {0}, original[164];
+    RageRuntimeMesh mesh;
+    RageRuntimeVertex source = {0};
+    RageRenderMeshInstance instance = {0}, originalInstance;
+    RageRenderWorld world, rear;
+    RageNativeDrawVertex mainVertices[3], rearVertices[3], repeated[3];
+    RageNativeDrawSpan spans[1];
+    uint32_t spanCount;
+    const float positions[3][3] = {
+        {-1.0f, 0.0f, -10.0f}, {1.0f, 0.0f, -10.0f}, {0.0f, 1.0f, -10.0f}};
+    EXPECT_EQ(1, RuntimeMeshEncodeHeader(bytes, sizeof(bytes), 1, 3, 3));
+    write_u32(bytes + 24, 0);
+    write_u32(bytes + 28, 3);
+    source.normal[2] = 1.0f;
+    source.color[0] = source.color[3] = 255;
+    source.uv[0] = 0.125f;
+    source.material = 4 | RAGE_RUNTIME_MATERIAL_SCROLL_U;
+    for (unsigned i = 0; i < 3; ++i) {
+        memcpy(source.position, positions[i], sizeof(source.position));
+        EXPECT_EQ(1, RuntimeVertexEncode(bytes + 32 + i * 40, 40, &source));
+        write_u32(bytes + 152 + i * 4, i);
+    }
+    memcpy(original, bytes, sizeof(bytes));
+    EXPECT_EQ(1, RuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+    RenderWorldInit(&world, &instance, 1);
+    world.instanceCount = 1;
+    world.camera.verticalFovDegrees = 90.0f;
+    world.camera.nearPlane = 1.0f;
+    world.camera.farPlane = 100.0f;
+    world.camera.fogNear = 5.0f;
+    world.camera.fogFar = 20.0f;
+    world.camera.fogColor.x = 0.25f;
+    instance.pass = RAGE_RENDER_PASS_MAIN;
+    instance.assetSet = RAGE_RENDER_ASSET_COURSE;
+    instance.transform.scale.x = instance.transform.scale.y =
+        instance.transform.scale.z = 1.0f;
+    instance.textureScrollU = 64;
+    rear = world;
+    rear.camera.transform.position.z = -30.0f;
+    rear.camera.transform.rotation.y = 180.0f;
+    rear.camera.fogColor.x = 0.75f;
+    for (int overlay = 0; overlay < 2; ++overlay) {
+        instance.flags = RAGE_RENDER_INSTANCE_ENABLE_FOG |
+            (overlay ? RAGE_RENDER_INSTANCE_DEPTH_DECAL : 0);
+        originalInstance = instance;
+        EXPECT_EQ(3, RenderBuildNativePassDraws(&world, RAGE_RENDER_PASS_MAIN,
+            1.0f, test_mesh_lookup, &mesh, mainVertices, 3, spans, 1, &spanCount));
+        EXPECT_EQ(1, spanCount);
+        EXPECT_EQ(4, spans[0].material);
+        EXPECT_EQ(3, RenderBuildNativePassDraws(&rear, RAGE_RENDER_PASS_MAIN,
+            2.0f, test_mesh_lookup, &mesh, rearVertices, 3, spans, 1, &spanCount));
+        EXPECT_EQ(1, spanCount);
+        EXPECT_EQ(4, spans[0].material);
+        EXPECT_EQ(3, RenderBuildNativePassDraws(&world, RAGE_RENDER_PASS_MAIN,
+            1.0f, test_mesh_lookup, &mesh, repeated, 3, spans, 1, &spanCount));
+        for (unsigned i = 0; i < 3; ++i) {
+            EXPECT_NEAR(overlay ? -8.0f : -10.0f, mainVertices[i].position[2], 0.0001f);
+            EXPECT_NEAR(overlay ? -12.0f : -10.0f, rearVertices[i].position[2], 0.0001f);
+            /* Fog uses the authored position BEFORE decal lifting. */
+            EXPECT_NEAR(2.0f / 3.0f, mainVertices[i].fog[3], 0.0001f);
+            EXPECT_NEAR(1.0f, rearVertices[i].fog[3], 0.0001f);
+            EXPECT_NEAR(0.25f, mainVertices[i].fog[0], 0.0001f);
+            EXPECT_NEAR(0.75f, rearVertices[i].fog[0], 0.0001f);
+            EXPECT_NEAR(0.375f, mainVertices[i].uv[0], 0.0001f);
+            EXPECT_NEAR(0.375f, rearVertices[i].uv[0], 0.0001f);
+            EXPECT_NEAR(mainVertices[i].position[2], repeated[i].position[2], 0.0001f);
+            EXPECT_NEAR(mainVertices[i].fog[3], repeated[i].fog[3], 0.0001f);
+            EXPECT_NEAR(mainVertices[i].uv[0], repeated[i].uv[0], 0.0001f);
+        }
+        EXPECT_EQ(0, memcmp(original, bytes, sizeof(bytes)));
+        EXPECT_EQ(0, memcmp(&originalInstance, &instance, sizeof(instance)));
+    }
+}
+
 int main(void) {
+    test_shared_mesh_independent_views();
     test_native_draw_builder_uses_render_world_and_imported_mesh();
     test_native_draw_builder_rejects_invalid_inputs();
     test_native_draw_builder_keeps_triangles_for_gpu_frustum_clipping();
