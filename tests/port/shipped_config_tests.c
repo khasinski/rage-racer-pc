@@ -14,23 +14,38 @@ static char *Trim(char *value) {
 
 /* Release-policy check only: do not load user profiles or environment
  * overrides. These four settings must be present explicitly in the artifact.
- * Like the previous checker, unrelated INI sections/keys are not validated. */
+ * Resolve section-qualified keys like the runtime; unrelated settings are
+ * not checked against this release policy. */
 static int Validate(FILE *file, int quiet) {
-    static const char *keys[] = {"draw_distance", "chase_turn_lookahead",
-        "steering_linearity", "marker_capture"};
+    static const char *keys[] = {"video.draw_distance", "camera.chase_turn_lookahead",
+        "input.steering_linearity", "diagnostics.marker_capture"};
     unsigned seen = 0;
-    char line[1400];
+    char line[1400], section[64] = "";
     while (fgets(line, sizeof(line), file)) {
         if (!strchr(line, '\n') && !feof(file)) {
             if (!quiet) fprintf(stderr, "Configuration line is too long\n");
             return 0;
         }
         char *key = Trim(line);
-        if (*key == '#' || *key == ';' || *key == '[') continue;
+        if (*key == '#' || *key == ';') continue;
+        if (*key == '[') {
+            char *end = strchr(key + 1, ']');
+            if (!end) return 0;
+            *end = 0;
+            char *name = Trim(key + 1);
+            if (strlen(name) >= sizeof(section)) return 0;
+            strcpy(section, name);
+            continue;
+        }
         char *equals = strchr(key, '=');
         if (!equals) continue;
         *equals = 0;
         key = Trim(key);
+        char qualified[128];
+        int length = *section ? snprintf(qualified, sizeof(qualified), "%s.%s", section, key)
+                              : snprintf(qualified, sizeof(qualified), "%s", key);
+        if (length < 0 || (size_t)length >= sizeof(qualified)) return 0;
+        key = qualified;
         char *value = Trim(equals + 1);
         for (unsigned i = 0; i < 4; ++i) {
             if (strcmp(key, keys[i])) continue;
@@ -65,7 +80,8 @@ static int Fixture(const char *distance, const char *camera, const char *steerin
     FILE *file = tmpfile();
     if (!file) return 0;
     fprintf(file, "# draw_distance=100\n[video]\n draw_distance = %s\r\n"
-        "chase_turn_lookahead=%s\nsteering_linearity=%s\nmarker_capture=%s\n%s",
+        "[camera]\nchase_turn_lookahead=%s\n[input]\nsteering_linearity=%s\n"
+        "[diagnostics]\nmarker_capture=%s\n%s",
         distance, camera, steering, marker, extra);
     rewind(file);
     int result = Validate(file, 1);
@@ -83,14 +99,24 @@ static int SelfTest(void) {
     if (!Fixture("1", "1", "0.5", "false", "", 0) ||
         !Fixture("1", "0", "0.6", "false", "", 0) ||
         !Fixture("1", "0", "0.5", "true", "", 0) ||
-        !Fixture("1", "0", "0.5", "false", "marker_capture=true\n", 0)) return 1;
+        !Fixture("1", "0", "0.5", "false", "marker_capture=true\n", 0) ||
+        !Fixture("1", "0", "0.5", "false", "[unrelated]\nmarker_capture=true\n", 1)) return 1;
     FILE *file = tmpfile();
     if (!file) return 1;
-    fputs("draw_distance=1\nchase_turn_lookahead=0\nsteering_linearity=0.5\n", file);
+    fputs("[video]\ndraw_distance=1\n[camera]\nchase_turn_lookahead=0\n"
+          "[input]\nsteering_linearity=0.5\n[wrong_section]\nmarker_capture=false\n", file);
     rewind(file);
     int missingRejected = !Validate(file, 1);
     fclose(file);
-    return missingRejected ? 0 : 1;
+    if (!missingRejected) return 1;
+    file = tmpfile();
+    if (!file) return 1;
+    fputs("video.draw_distance=1\ncamera.chase_turn_lookahead=0\n"
+          "input.steering_linearity=0.5\ndiagnostics.marker_capture=off\n", file);
+    rewind(file);
+    int dottedAccepted = Validate(file, 1);
+    fclose(file);
+    return dottedAccepted ? 0 : 1;
 }
 
 int main(int argc, char **argv) {
