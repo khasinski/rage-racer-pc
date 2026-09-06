@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Resource resolution now bounds-checks termination of each examined manifest
+key and payload before string comparison or publication. Encountering an
+unterminated texture/material/mesh entry returns an entirely empty resolution,
+including channels selected earlier in the same call. Six injected key/payload
+cases pass Linux ASan/UBSan with leak detection (0.03s). This checks examined
+entries, not an eager revalidation of every unvisited manifest field, and
+retains exact/base precedence and last-assignment behavior.
+
 Manifest dependency ordering now validates fixed-buffer identity termination
 and semantic grammar before handing strings to the general selection graph.
 Publicly constructed manifests therefore cannot bypass parser guarantees with

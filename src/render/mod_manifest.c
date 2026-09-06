@@ -277,6 +277,9 @@ RageModResolution ModManifestResolve(const RageModManifest *manifest,
         manifest->meshCount > RAGE_MOD_MANIFEST_MAX_MESHES) return result;
     for (size_t i = (channels & RAGE_MOD_RESOLVE_TEXTURE) ? manifest->textureCount : 0; i > 0; --i) {
         const RageModTextureOverride *entry = &manifest->textures[i - 1];
+        if (!memchr(entry->key, '\0', sizeof(entry->key)) ||
+            !memchr(entry->path, '\0', sizeof(entry->path)))
+            return (RageModResolution){0};
         if (exactId != NULL && strcmp(entry->key, exactId) == 0) {
             result.texture = entry;
             break;
@@ -286,6 +289,9 @@ RageModResolution ModManifestResolve(const RageModManifest *manifest,
     }
     for (size_t i = (channels & RAGE_MOD_RESOLVE_MATERIAL) ? manifest->materialCount : 0; i > 0; --i) {
         const RageModMaterialOverride *entry = &manifest->materials[i - 1];
+        if (!memchr(entry->key, '\0', sizeof(entry->key)) ||
+            !memchr(entry->properties, '\0', sizeof(entry->properties)))
+            return (RageModResolution){0};
         if (exactId != NULL && strcmp(entry->key, exactId) == 0) {
             result.material = entry;
             break;
@@ -295,6 +301,9 @@ RageModResolution ModManifestResolve(const RageModManifest *manifest,
     }
     for (size_t i = (channels & RAGE_MOD_RESOLVE_MESH) ? manifest->meshCount : 0; i > 0; --i) {
         const RageModTextureOverride *entry = &manifest->meshes[i - 1];
+        if (!memchr(entry->key, '\0', sizeof(entry->key)) ||
+            !memchr(entry->path, '\0', sizeof(entry->path)))
+            return (RageModResolution){0};
         if (exactId != NULL && strcmp(entry->key, exactId) == 0) {
             result.mesh = entry;
             break;

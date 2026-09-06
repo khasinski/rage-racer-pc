@@ -43,6 +43,20 @@ static void test_mesh_resolution(void) {
         EXPECT(!r.mesh && !r.texture && !r.material);
         EXPECT(!ModManifestBuildOrder(selection, 1, &order) && order.count == 0);
     }
+    for (unsigned invalid = 0; invalid < 6; ++invalid) {
+        EXPECT(ModManifestParse(text, sizeof(text) - 1, m));
+        m->materialCount = 1;
+        strcpy(m->materials[0].key, "car.a");
+        strcpy(m->materials[0].properties, "lit opaque");
+        if (invalid == 0) memset(m->textures[0].key, 'a', sizeof(m->textures[0].key));
+        if (invalid == 1) memset(m->textures[0].path, 'a', sizeof(m->textures[0].path));
+        if (invalid == 2) memset(m->materials[0].key, 'a', sizeof(m->materials[0].key));
+        if (invalid == 3) memset(m->materials[0].properties, 'a', sizeof(m->materials[0].properties));
+        if (invalid == 4) memset(m->meshes[2].key, 'a', sizeof(m->meshes[2].key));
+        if (invalid == 5) memset(m->meshes[2].path, 'a', sizeof(m->meshes[2].path));
+        r = ModManifestResolve(m, "car.a", NULL, 7);
+        EXPECT(!r.mesh && !r.texture && !r.material);
+    }
     free(m);
 }
 
