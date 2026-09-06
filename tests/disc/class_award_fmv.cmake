@@ -1,4 +1,14 @@
 # Seed prior courses, finish through lap logic, then use the real prize flow.
+if(NOT DEFINED CLASS)
+    set(CLASS 0)
+endif()
+if(NOT DEFINED SERIES)
+    set(SERIES 0)
+endif()
+if(NOT CLASS MATCHES "^[0-3]$" OR NOT SERIES MATCHES "^[01]$")
+    message(FATAL_ERROR "Promotion fixture requires class 0..3 and series 0..1")
+endif()
+math(EXPR stream "1 + ${SERIES} * 4 + ${CLASS}")
 if(NOT DEFINED EXPECT_REGION)
     set(EXPECT_REGION PAL)
 endif()
@@ -11,7 +21,7 @@ if(disc STREQUAL "" AND EXPECT_REGION STREQUAL "PAL")
 endif()
 if(EXPECT_REGION STREQUAL "PAL")
     set(timing "pal base_hz=50")
-    set(frames 2700)
+    set(frames 4200)
 else()
     set(timing "ntsc base_hz=60")
     set(frames 4200)
@@ -29,7 +39,7 @@ execute_process(COMMAND "${CMAKE_COMMAND}" -E env
     "PSYZ_AUDIO_PCM_DUMP=${out}/audio.s16le"
     "${GAME}" --scenario "${SOURCE}/race-scenario.ini"
     --set "disc.image=${disc}" --set video.renderer=modern
-    --set race.class=0 --set race.course=0 --set race.series=grand-prix
+    --set "race.class=${CLASS}" --set race.course=0 --set "race.series=${SERIES}"
     --set "run.frames=${frames}" --set hooks.finish_frame=500
     --set hooks.auto_confirm_frame=800 --set hooks.prior_course_wins=true
     --set hooks.preserve_fmv=true --set race.after_finish=repeat
@@ -40,7 +50,7 @@ if(NOT result STREQUAL "0")
     message(FATAL_ERROR "Class award run failed: ${out}")
 endif()
 file(READ "${out}/game.log" log)
-foreach(required "prior course wins seeded class=0 course=0" "native GPU pipeline ready"
+foreach(required "prior course wins seeded class=${CLASS} course=0" "native GPU pipeline ready"
                  "region=${EXPECT_REGION}" "timing=${timing}")
     if(NOT log MATCHES "${required}")
         message(FATAL_ERROR "Missing ${required}: ${out}")
@@ -60,7 +70,7 @@ if(NOT award MATCHES "fmv xa mixer energy=([0-9]+)" OR CMAKE_MATCH_1 LESS_EQUAL 
     message(FATAL_ERROR "Award XA made no contribution to the mixer: ${out}")
 endif()
 file(WRITE "${out}/award.log" "timing=${timing}\n${award}")
-execute_process(COMMAND "${PACING_CHECK}" "${disc}" 1 "${out}/award.log"
+execute_process(COMMAND "${PACING_CHECK}" "${disc}" "${stream}" "${out}/award.log"
     RESULT_VARIABLE result OUTPUT_VARIABLE pacing ERROR_VARIABLE error)
 if(NOT result STREQUAL "0")
     message(FATAL_ERROR "Award movie timing/frames failed: ${pacing}${error}; ${out}")

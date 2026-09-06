@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Promotion award matrix: the natural award fixture now covers classes 0..3 in
+both series across PAL/NTSC-U/NTSC-J (24 cases, streams 1..8). All pass with the
+CD fade fix: real post-race selection, complete sector-paced movie, positive
+movie CD mix energy and nonzero session PCM. Runtime was 101.18 seconds with
+four concurrent cases. PAL now also allows 4200 ticks for longer class/prize
+paths. This does not cover final-series endings, stream 9 (no recovered natural
+selection path), physical audio or Windows/macOS. Earlier-course results and
+finish crossings remain explicit smoke fixtures, not physics/input replay.
+
 Class-0 award-entry coverage now runs on all three regions. PAL retains its
 2700-tick scenario; NTSC allows 4200 ticks for its longer promotion movie.
 Each case checks detected region/base timing, the post-race prize/FMVs/return
