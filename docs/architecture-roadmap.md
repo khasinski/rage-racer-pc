@@ -41,7 +41,9 @@ and regression evidence; extracting an unused interface is not completion.
 - Final conflict winner selection now runs in C before package composition;
   stale provider sets invalidate previous choices. The UI summary remains
   advisory, and large requests use bounded stdin rather than argv.
-- Remaining integration work: compiled JSON ingestion and resource-claim
+- Package JSON import validation now uses a C schema module and vendored strict
+  JSON parser, including owned Unicode fields and the existing launcher limits.
+- Remaining integration work: compiled profile mutation/export and resource-claim
   discovery, source fingerprints and atomic source snapshots; separate car
   catalog identity from optional embedded geometry; unify original/generated/
   mod providers. This checkpoint does not complete any roadmap stage.

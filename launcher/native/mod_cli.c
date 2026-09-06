@@ -1,4 +1,5 @@
 #include "render/mod_manifest.h"
+#include "render/mod_package.h"
 #include "render/rmesh.h"
 #include <string.h>
 #include <stdio.h>
@@ -12,6 +13,21 @@ static RageModManifest manifest;
 #include "manifest_edit.h"
 #include "mod_selection_cli.h"
 #include "mod_provider_cli.h"
+static int PackageMetadata(const char *path) {
+    char bytes[RAGE_MOD_PACKAGE_BYTES + 1];
+    RageModPackage package;
+    FILE *file = fopen(path,"rb");
+    if (!file) { perror(path); return 1; }
+    size_t size = fread(bytes,1,sizeof(bytes),file);
+    int ok = !ferror(file);
+    if (fclose(file)) ok = 0;
+    if (!ok || !ModPackageParseJSON(bytes,size,&package)) {
+        fputs("Invalid mod metadata\n",stderr); return 1;
+    }
+    /* Return the validated JSON without losing extension fields or changing
+     * Unicode spelling. The launcher only decodes this IPC response. */
+    return fwrite(bytes,1,size,stdout) == size && !ferror(stdout) ? 0 : 1;
+}
 static int ValidatePng(const char *path) {
     unsigned char header[24];
     FILE *file=fopen(path,"rb");
@@ -37,6 +53,7 @@ static void String(const char *s) {
 }
 int main(int argc,char **argv) {
     FILE *f;long size;char *bytes;size_t i;
+    if(argc==3 && strcmp(argv[1],"--metadata")==0) return PackageMetadata(argv[2]);
     if(argc>1 && strcmp(argv[1],"--check-selection")==0) return SelectionCommand(argc,argv);
     if(argc>1 && strcmp(argv[1],"--resolve-providers")==0) return ProviderCommand(argc,argv);
     if(argc==2 && strcmp(argv[1],"--resolve-providers-stdin")==0) return ProviderStdinCommand();

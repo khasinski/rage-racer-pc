@@ -99,14 +99,8 @@ function installMethods(Service){
    const files=await inventory(source),legacy=await legacyTextures(source,files);
    let metadata=null;
    if(files.includes('rage-mod.json')){
-    const file=path.join(source,'rage-mod.json');if((await fs.stat(file)).size>16384)throw Error('Mod metadata is too large');
-    metadata=JSON.parse(await fs.readFile(file,'utf8'));
-    readDependencies(metadata||{});
-    if(!metadata||metadata.format!==1||typeof metadata.name!=='string'||!metadata.name.trim()||metadata.name.length>200||/[\x00-\x1f\x7f]/.test(metadata.name)||!['PAL','NTSC-U','NTSC-J'].includes(metadata.region))throw Error('Invalid mod metadata');
-    for(const [field,limit] of [['author',120],['version',80],['description',1200]]){
-     const value=metadata[field];
-     if(value!==undefined&&(typeof value!=='string'||value.length>limit||(field==='description'?/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/:/[\x00-\x1f\x7f]/).test(value)))throw Error('Invalid mod metadata: '+field);
-    }
+    const {run}=require('./service.cjs');
+    metadata=JSON.parse(await run(this.tool('rage-mod-cli'),['--metadata',path.join(source,'rage-mod.json')],{signal}));
    }
    let manifest={textures:{},materials:{},meshes:{}};
    if(files.includes('mod.toml')) {

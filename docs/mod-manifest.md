@@ -79,6 +79,26 @@ validates them by rereading installed manifests, not just cached UI metadata.
 
 ## Package selection boundary
 
+### JSON package ingestion
+
+Imports validate `rage-mod.json` through `rage-mod-cli --metadata PATH` and
+`ModPackageParseJSON` before creating an installed mod. The C module owns the
+format-1 policy and decoded fields: name, region, optional identity/details and
+up to 32 requirements. It uses vendored yyjson 0.12.0 in strict JSON/UTF-8 mode;
+its MIT license is included in launcher resources. The command returns the
+original validated JSON; JavaScript only decodes the IPC response during import.
+
+The 16 KiB file limit and UTF-16-unit field limits retain the launcher contract,
+including Unicode and supplementary characters. Unknown root extensions are
+accepted, unknown dependency fields rejected. Duplicate known fields, malformed
+UTF-8 and unpaired surrogate escapes are rejected explicitly. A missing file
+is an error, not an empty metadata object. The C output owns its strings and
+failure clears it. CLI inspection does not modify the file. JSON profile edits
+and export serialization still use launcher code; this is not yet a complete
+migration of persistent profile handling or source snapshot ownership.
+
+### Dependency graph
+
 `ModSelectionBuildOrder` is the common C graph engine. Runtime manifest
 ordering and `rage-mod-cli --check-selection` use it. The launcher calls the
 CLI before enablement, removal, version edits and composition; successful
@@ -102,7 +122,7 @@ path explicitly denotes a raw-only package; a missing nonempty path fails.
 An empty dependency version accepts any version. Output is a JSON array of
 zero-based package indices. No files or runtime state are mutated by validation.
 
-Remaining work includes compiled JSON metadata ingestion and resource-claim
+Remaining work includes compiled profile mutation/export and resource-claim
 discovery, UI display of TOML requirements, source fingerprints and a runtime
 provider stack. Validation and copying are not yet one immutable snapshot of
 the source files; this is not a concurrent-edit/hot-reload contract.

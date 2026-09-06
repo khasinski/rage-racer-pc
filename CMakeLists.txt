@@ -109,6 +109,17 @@ endif()
 add_library(rage-content STATIC src/content/region_profile.c)
 target_include_directories(rage-content PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+add_library(rage-json STATIC external/yyjson/yyjson.c)
+target_include_directories(rage-json PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/yyjson)
+add_library(rage-mod-package STATIC src/render/mod_package.c)
+target_include_directories(rage-mod-package PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(rage-mod-package PRIVATE rage-json)
+if(MSVC)
+    target_compile_options(rage-mod-package PRIVATE /W4 /WX)
+else()
+    target_compile_options(rage-mod-package PRIVATE -Wall -Wextra -Werror)
+endif()
+
 add_library(rage-rmesh STATIC
     src/render/asset_id.c
     src/render/car_paint.c
@@ -391,7 +402,7 @@ if(RAGE_BUILD_PORT)
     target_compile_definitions(rage-mod-cli PRIVATE __psyz=1)
     target_include_directories(rage-mod-cli PRIVATE
         src src/port/include include external/psyz/psyz/include)
-    target_link_libraries(rage-mod-cli PRIVATE rage-render-world SDL3::SDL3)
+    target_link_libraries(rage-mod-cli PRIVATE rage-render-world rage-mod-package SDL3::SDL3)
     add_executable(rage-frame-replay
         tools/rage_frame_replay.c
         src/port/platform_paths.c
