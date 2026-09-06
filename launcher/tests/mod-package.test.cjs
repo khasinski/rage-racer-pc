@@ -14,6 +14,15 @@ test('native package metadata retains Unicode, extensions and launcher length li
   const base={format:1,name:'Żółć 🚗',region:'PAL',packageId:'Author.mod_1',author:'作者',description:'First\nSecond\tline',extension:{future:[1,true,null]}};
   async function check(value){const text=JSON.stringify(value);await fs.writeFile(file,text);return JSON.parse(await run(tool,['--metadata',file]));}
   assert.deepEqual(await check(base),base);
+  const exported=path.join(root,'ż-export.json');
+  const write=input=>run(tool,['--write-metadata-stdin',exported],{input});
+  await assert.rejects(write(Buffer.from('{')),/Invalid mod metadata/);
+  await assert.rejects(fs.access(exported));
+  const exact=Buffer.from(JSON.stringify(base,null,2)+'\n');
+  await write(exact);
+  assert.deepEqual(await fs.readFile(exported),exact);
+  await assert.rejects(write(Buffer.from(JSON.stringify({...base,name:'replacement'}))),/Cannot write mod metadata/);
+  assert.deepEqual(await fs.readFile(exported),exact);
   const streamed=input=>run(tool,['--metadata-stdin'],{input});
   assert.deepEqual(JSON.parse(await streamed(Buffer.from(JSON.stringify(base)))),base);
   await assert.rejects(streamed(Buffer.from('{')),/Invalid mod metadata/);

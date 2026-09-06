@@ -50,6 +50,16 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Launcher export now delegates metadata publication to the compiled
+--write-metadata-stdin command. The existing C package schema validates the
+bounded complete input before ModFileWriteExclusive creates its destination;
+invalid data creates no file and existing files are never replaced. Validated
+bytes retain Unicode spelling, formatting and extension fields. JavaScript
+still serializes the profile overrides for IPC, but no longer writes an
+unvalidated export metadata file and reparses it afterward. Six Linux package,
+snapshot/export and editable-details tests pass, including exact-byte and
+exclusive-creation regressions. Windows command execution remains pending.
+
 Snapshot-copy transactional accounting also passes the updated Windows 11
 ClangCL Release fixture (0.64s), including partial-budget failure and retry.
 Source-catalog inspection confirms an important integration boundary:

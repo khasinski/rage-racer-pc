@@ -18,7 +18,7 @@ static RageModManifest manifest;
 #include "mod_file_policy_cli.h"
 #include "mod_inventory.h"
 #include "legacy_index_cli.h"
-static int PackageMetadata(const char *path) {
+static int PackageMetadata(const char *path, const char *target) {
     char bytes[RAGE_MOD_PACKAGE_BYTES + 1];
     RageModPackage package;
     FILE *file = path ? fopen(path,"rb") : stdin;
@@ -31,6 +31,11 @@ static int PackageMetadata(const char *path) {
     if (path && fclose(file)) ok = 0;
     if (!ok || !ModPackageParseJSON(bytes,size,&package)) {
         fputs("Invalid mod metadata\n",stderr); return 1;
+    }
+    if (target) {
+        if (ModFileWriteExclusive(target, bytes, size)) return 0;
+        fputs("Cannot write mod metadata\n", stderr);
+        return 1;
     }
     /* Return the validated JSON without losing extension fields or changing
      * Unicode spelling. The launcher only decodes this IPC response. */
@@ -69,8 +74,9 @@ int main(int argc,char **argv) {
     if(argc==2 && strcmp(argv[1],"--check-directories-stdin")==0) return FilePolicyCommand(2);
     if(argc==2 && strcmp(argv[1],"--file-dispositions-stdin")==0) return FilePolicyCommand(1);
     if(argc==2 && strcmp(argv[1],"--copy-snapshot-stdin")==0) return SnapshotCommand();
-    if(argc==3 && strcmp(argv[1],"--metadata")==0) return PackageMetadata(argv[2]);
-    if(argc==2 && strcmp(argv[1],"--metadata-stdin")==0) return PackageMetadata(NULL);
+    if(argc==3 && strcmp(argv[1],"--metadata")==0) return PackageMetadata(argv[2],NULL);
+    if(argc==2 && strcmp(argv[1],"--metadata-stdin")==0) return PackageMetadata(NULL,NULL);
+    if(argc==3 && strcmp(argv[1],"--write-metadata-stdin")==0) return PackageMetadata(NULL,argv[2]);
     if(argc>1 && strcmp(argv[1],"--check-selection")==0) return SelectionCommand(argc,argv);
     if(argc==2 && strcmp(argv[1],"--check-selection-stdin")==0) return NativeArgumentStream(SelectionCommand);
     if(argc>1 && strcmp(argv[1],"--resolve-providers")==0) return ProviderCommand(argc,argv);

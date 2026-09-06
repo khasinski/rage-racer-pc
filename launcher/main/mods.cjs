@@ -164,9 +164,9 @@ function installMethods(Service){
     const files=(await inventory(source,this.tool('rage-mod-cli'))).filter(name=>name!=='rage-mod.json');
     await this.snapshotModFiles(source,target,files,signal);
     if(signal.aborted)throw Error('Operation canceled');
-    await fs.writeFile(path.join(target,'rage-mod.json'),packageMetadata(mod),{flag:'wx'});
     const {run}=require('./service.cjs');
-    await run(this.tool('rage-mod-cli'),['--metadata',path.join(target,'rage-mod.json')],{signal});
+    await run(this.tool('rage-mod-cli'),['--write-metadata-stdin',path.join(target,'rage-mod.json')],{
+     signal,input:Buffer.from(packageMetadata(mod))});
     if(signal.aborted)throw Error('Operation canceled');
     return target;
    }catch(e){await fs.rm(target,{recursive:true,force:true});throw e;}
