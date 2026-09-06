@@ -84,6 +84,25 @@ int main(void) {
         EXPECT(PathEquals(paint.paintMask, "paint.rpaint"));
         EXPECT(glass.alphaMode == original.alphaMode);
         EXPECT(glass.baseColorFactor[3] == original.baseColorFactor[3]);
+        {
+            unsigned surface;
+            for (surface = 0; surface < RAGE_CAR_SURFACE_COUNT; surface++) {
+                material = original;
+                EXPECT(AuthoredCarSurfaceResolve(surface,
+                    "lit opaque 0.7 0.6 0.5 0.4 0.3 1 0 0 0", &material));
+                EXPECT(material.roughness == 0.7f);
+                EXPECT(material.metallic == 0.6f);
+                EXPECT(material.baseColorFactor[0] == 0.5f);
+                EXPECT(PathEquals(material.baseColorTexture, "car.rgba"));
+                EXPECT(PathEquals(material.paintMask, "paint.rpaint"));
+                material = original;
+                EXPECT(!AuthoredCarSurfaceResolve(surface, "invalid", &material));
+                EXPECT(memcmp(&material, &original, sizeof(material)) == 0);
+            }
+            material = original;
+            EXPECT(AuthoredCarSurfaceResolve(RAGE_CAR_SURFACE_GLASS, NULL, &material));
+            EXPECT(memcmp(&material, &glass, sizeof(material)) == 0);
+        }
         material = original;
         AuthoredCarSurfaceApply(RAGE_CAR_SURFACE_ORIGINAL, &material);
         EXPECT(memcmp(&material, &original, sizeof(material)) == 0);

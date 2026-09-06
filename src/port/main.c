@@ -14,6 +14,7 @@
 #include "runtime_config.h"
 #include "timing_control.h"
 #include "modern/modern_renderer.h"
+#include "modern/modern_assets.h"
 #include "native_asset_importer.h"
 #include "platform_paths.h"
 
@@ -53,6 +54,12 @@ static ArchiveDumpResult DumpRequestedArchive(void) {
         return ARCHIVE_DUMP_FAILED;
     }
     fprintf(stderr, "rage-port: archive written to %s\n", path);
+    if (RuntimeConfigEnabled("tools.launcher_report")) {
+        /* Machine-readable completion, only after the archive is fully written.
+         * Region is one of the fixed strings supplied by DiscIdentify. */
+        printf("{\"region\":\"%s\"}\n", HostDiscRegion());
+        fflush(stdout);
+    }
     return ARCHIVE_DUMP_COMPLETE;
 }
 
@@ -102,6 +109,12 @@ int main(int argc, char **argv) {
         fprintf(stderr, "failed to initialize disc image\n");
         return EXIT_FAILURE;
     }
+    if (RuntimeConfigEnabled("tools.car_catalog"))
+        return ModernAssetsCarCatalog() ? EXIT_SUCCESS : EXIT_FAILURE;
+    if (RuntimeConfigGet("tools.car_export"))
+        return ModernAssetsExportCar(RuntimeConfigGet("tools.car_export"),
+                                     RuntimeConfigGet("tools.car_output"))
+                   ? EXIT_SUCCESS : EXIT_FAILURE;
     TimingInit();
     if (!NativeAssetImporterInit() || !ModernInit(&portConfig))
         return EXIT_FAILURE;

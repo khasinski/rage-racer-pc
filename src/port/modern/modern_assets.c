@@ -20,7 +20,73 @@
 
 /* One entry per bank's first definition. More than one car may share a bank;
  * all matching replacements are assembled before the result is cached. */
-static RageRuntimeCachedMesh s_authoredCarMesh[RAGE_AUTHORED_CAR_COUNT];
+static RageRuntimeCachedMesh
+    s_authoredCarMesh[RAGE_AUTHORED_CAR_COUNT ? RAGE_AUTHORED_CAR_COUNT : 1];
+static char s_modRoot[1024];
+static RageModManifest s_modManifest;
+static int s_modReady;
+
+static void AuthoredCarKey(const AuthoredCarReplacement *car, char *key, size_t size) {
+    snprintf(key, size, "car.%s.%u.part.%u",
+             car->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ? "player" : "rival",
+             (unsigned)car->assetKey, (unsigned)car->submesh);
+}
+
+int ModernAssetsCarCatalog(void) {
+    size_t i;
+    puts("{\"parts\":[");
+    for (i = 0; i < RAGE_AUTHORED_CAR_COUNT; i++) {
+        const AuthoredCarReplacement *car = &s_authoredCars[i];
+        RageRuntimeMesh mesh;
+        char key[96];
+        const unsigned char *name = (const unsigned char *)car->name;
+        if (!RuntimeMeshOpen(&mesh, car->bytes, car->byteCount)) return 0;
+        AuthoredCarKey(car, key, sizeof(key));
+        printf("%s{\"key\":\"%s\",\"name\":\"", i ? "," : "", key);
+        for (; *name; name++) {
+            if (*name == '"' || *name == '\\') putchar('\\');
+            if (*name < 32 || *name >= 127) printf("\\u%04x", *name);
+            else putchar(*name);
+        }
+        printf("\",\"bank\":%u,\"part\":%u,\"rival\":%s,\"vertices\":%u,\"triangles\":%u}",
+               (unsigned)car->assetKey, (unsigned)car->submesh,
+               car->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ? "false" : "true",
+               mesh.vertexCount, mesh.indexCount / 3);
+    }
+    puts("]}");
+    return !ferror(stdout);
+}
+
+int ModernAssetsExportCar(const char *key, const char *path) {
+    size_t i;
+    if (!key || !path || !*path) return 0;
+    for (i = 0; i < RAGE_AUTHORED_CAR_COUNT; i++) {
+        const AuthoredCarReplacement *car = &s_authoredCars[i];
+        char candidate[96];
+        FILE *file;
+        int ok;
+        AuthoredCarKey(car, candidate, sizeof(candidate));
+        if (strcmp(key, candidate)) continue;
+        file = fopen(path, "wb");
+        if (!file) return 0;
+        ok = fwrite(car->bytes, 1, car->byteCount, file) == car->byteCount;
+        if (fclose(file)) ok = 0;
+        if (!ok) remove(path);
+        if (ok) {
+            size_t m;
+            printf("{\"materials\":[");
+            for (m = 0; m < car->materialCount; m++) {
+                const AuthoredCarMaterial *material = &car->materials[m];
+                printf("%s{\"source\":%u,\"page\":%u,\"clut\":%u}",
+                       m ? "," : "", material->source, material->page, material->clut);
+            }
+            puts("]}");
+        }
+        return ok;
+    }
+    fprintf(stderr, "rage-port: unknown car mesh %s\n", key);
+    return 0;
+}
 
 static int AuthoredCarMatches(const AuthoredCarReplacement *car,
                              const RageRenderMeshInstance *instance) {
@@ -34,13 +100,13 @@ static const RageRuntimeCachedMesh *ModernAuthoredCar(
     RageRuntimeCachedMesh working, *entry;
     void *owned = NULL;
     size_t first, i;
+    int authored = RuntimeConfigInt("modern.authored_cars", 1, 0, 1);
     if (!base) return NULL;
     if (instance->assetSet != RAGE_RENDER_ASSET_MODEL_BANK &&
         instance->assetSet != RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1) return base;
     for (first = 0; first < RAGE_AUTHORED_CAR_COUNT; first++)
         if (AuthoredCarMatches(&s_authoredCars[first], instance)) break;
-    if (first == RAGE_AUTHORED_CAR_COUNT ||
-        RuntimeConfigInt("modern.authored_cars", 1, 0, 1) == 0) return base;
+    if (first == RAGE_AUTHORED_CAR_COUNT) return base;
     entry = &s_authoredCarMesh[first];
     if (entry->ownedBytes) return entry;
     working = *base;
@@ -50,7 +116,13 @@ static const RageRuntimeCachedMesh *ModernAuthoredCar(
         uint32_t map[RAGE_CAR_SURFACE_SOURCE_STRIDE * RAGE_CAR_SURFACE_COUNT];
         size_t j, size;
         void *bytes;
+        void *modBytes = NULL;
+        const char *override;
+        char key[96], fullPath[1600];
         if (!AuthoredCarMatches(car, instance)) continue;
+        AuthoredCarKey(car, key, sizeof(key));
+        override = s_modReady ? ModManifestFindMesh(&s_modManifest, key) : NULL;
+        if (!authored && !override) continue;
         for (j = 0; j < sizeof(map)/sizeof(map[0]); j++) map[j] = UINT32_MAX;
         for (j = 0; j < car->materialCount; j++) {
             const AuthoredCarMaterial *material = &car->materials[j];
@@ -67,9 +139,20 @@ static const RageRuntimeCachedMesh *ModernAuthoredCar(
                 map[material->source + surface * RAGE_CAR_SURFACE_SOURCE_STRIDE] =
                     (uint32_t)slot + surface * RAGE_CAR_SURFACE_RUNTIME_STRIDE;
         }
-        if (!RuntimeMeshOpen(&body, car->bytes, car->byteCount)) goto failed;
+        if (override) {
+            size_t modSize;
+            snprintf(fullPath, sizeof(fullPath), "%s/%s", s_modRoot, override);
+            modBytes = SDL_LoadFile(fullPath, &modSize);
+            if (!modBytes || !RuntimeMeshOpen(&body, modBytes, modSize) ||
+                body.meshCount != 1) {
+                fprintf(stderr, "rage-port: invalid car mesh override %s: %s\n", key, fullPath);
+                SDL_free(modBytes);
+                goto failed;
+            }
+        } else if (!RuntimeMeshOpen(&body, car->bytes, car->byteCount)) goto failed;
         bytes = RuntimeMeshReplace(&working.mesh, car->submesh, &body,
                                    map, sizeof(map)/sizeof(map[0]), &size);
+        SDL_free(modBytes);
         if (!bytes) goto failed;
         if (!RuntimeMeshOpen(&next, bytes, size)) {
             free(bytes);
@@ -78,11 +161,15 @@ static const RageRuntimeCachedMesh *ModernAuthoredCar(
         free(owned);
         owned = bytes;
         working.mesh = next;
+        if (override)
+            fprintf(stderr, "rage-port: car mesh override %s <- %s (%u triangles)\n",
+                    key, fullPath, body.indexCount / 3);
         fprintf(stderr, "rage-port: authored %s %s %s installed asset=%u (%u triangles)\n",
                 car->name, car->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ? "player" : "rival",
                 (car->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ? car->submesh == 0 : car->submesh % 5 == 0) ? "body" : "wheel",
                 car->assetKey, body.indexCount/3);
     }
+    if (!owned) return base;
     working.ownedBytes = owned;
     *entry = working;
     return entry;
@@ -106,9 +193,6 @@ static RageRuntimeMeshCache s_cache;
 static int s_initialized;
 static int s_ready;
 static int s_importerSource;
-static char s_modRoot[1024];
-static RageModManifest s_modManifest;
-static int s_modReady;
 /* Material sidecars are read synchronously on the render thread. Copy the
  * selected relative path out before releasing their transient file buffer. */
 static char s_materialPath[1024];
@@ -433,23 +517,7 @@ static int ModernAssetsFindMaterial(
                 instance->assetKey, (unsigned)instance->assetSet, material,
                 variant, s_materialPath);
     }
-    if (s_modReady) {
-        const char *properties = ModernAssetsFindModMaterialProperties(
-            instance, material, variant);
-        if (properties != NULL && !RenderMaterialParseProperties(
-                properties, strlen(properties), definition)) return 0;
-    }
     return 1;
-}
-
-static int ModernAssetsApplyModMaterialProperties(
-    const RageRenderMeshInstance *instance, uint32_t material,
-    uint8_t variant, RageRenderMaterial *definition) {
-    const char *properties = ModernAssetsFindModMaterialProperties(
-        instance, material, variant);
-
-    return properties == NULL || RenderMaterialParseProperties(
-        properties, strlen(properties), definition);
 }
 
 static int ModernAssetsLoadModImage(const RageRenderMeshInstance *instance,
@@ -530,11 +598,6 @@ static int ModernAssetsLoadBaseMaterial(const RageRenderMeshInstance *instance,
                                      &overrideImage)) {
             ModernAssetsFreeMaterialImage(image);
             *image = overrideImage;
-        }
-        if (!ModernAssetsApplyModMaterialProperties(
-                instance, material, variant, definition)) {
-            ModernAssetsFreeMaterialImage(image);
-            return 0;
         }
         return 1;
     }
@@ -623,7 +686,12 @@ int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
             return 0;
         }
     }
-    AuthoredCarSurfaceApply(surface, definition);
+    if (!AuthoredCarSurfaceResolve(surface,
+            ModernAssetsFindModMaterialProperties(instance, material, variant),
+            definition)) {
+        ModernAssetsFreeMaterialImage(image);
+        return 0;
+    }
     AuthoredCarSurfaceTexture(surface, image->pixels, image->size);
     return 1;
 }

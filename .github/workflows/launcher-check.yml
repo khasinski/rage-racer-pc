@@ -1,0 +1,55 @@
+name: Launcher cross-platform checks
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  launcher:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, macos-14, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: launcher/package-lock.json
+      - name: Install Linux native and windowing dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2-dev libdbus-1-dev libdecor-0-dev libegl1-mesa-dev \
+            libgl1-mesa-dev libglvnd-dev libibus-1.0-dev libpulse-dev \
+            libudev-dev libwayland-dev libx11-dev libxcursor-dev libxext-dev \
+            libxfixes-dev libxi-dev libxkbcommon-dev libxrandr-dev libxss-dev \
+            libxtst-dev libgbm1 libgtk-3-0 libnss3 libvulkan1 mesa-vulkan-drivers xvfb
+      - name: Install launcher dependencies
+        working-directory: launcher
+        run: npm ci
+      - name: Build and stage native tools
+        working-directory: launcher
+        run: npm run build:native
+      - name: Verify launcher and native integration
+        working-directory: launcher
+        run: npm test
+      - name: Build desktop package
+        working-directory: launcher
+        run: npm run package
+      - name: Probe packaged first launch
+        if: runner.os != 'Linux'
+        working-directory: launcher
+        run: node scripts/probe-package.cjs --preview-regression
+      - name: Probe packaged first launch under X11
+        if: runner.os == 'Linux'
+        working-directory: launcher
+        run: xvfb-run -a node scripts/probe-package.cjs --preview-regression --software-rendering

@@ -1,0 +1,379 @@
+[
+  {
+    "group": "video",
+    "key": "video.internal_scale",
+    "label": "Render resolution scale",
+    "help": "Higher values increase image detail and GPU load.",
+    "type": "number",
+    "default": "4",
+    "min": 0.5,
+    "max": 16,
+    "step": 0.5
+  },
+  {
+    "group": "video",
+    "key": "video.aspect",
+    "label": "Aspect ratio",
+    "help": "Menus retain their original layout.",
+    "type": "select",
+    "default": "16:9",
+    "options": [
+      [
+        "auto",
+        "Match window"
+      ],
+      [
+        "4:3",
+        "Classic 4:3"
+      ],
+      [
+        "16:9",
+        "Widescreen 16:9"
+      ]
+    ]
+  },
+  {
+    "group": "video",
+    "key": "video.fps",
+    "label": "Frame rate",
+    "help": "Sync follows your display refresh rate. Original timing disables interpolation.",
+    "type": "select",
+    "default": "vsync",
+    "options": [
+      [
+        "vsync",
+        "Display sync (VSync)"
+      ],
+      [
+        "logic",
+        "Original game timing"
+      ],
+      [
+        "60",
+        "60 fps"
+      ],
+      [
+        "120",
+        "120 fps"
+      ],
+      [
+        "144",
+        "144 fps"
+      ]
+    ]
+  },
+  {
+    "group": "video",
+    "key": "video.texture_filter",
+    "label": "Texture filtering",
+    "help": "Choose crisp pixels or smoother transitions.",
+    "type": "select",
+    "default": "linear",
+    "options": [
+      [
+        "nearest",
+        "Crisp pixels"
+      ],
+      [
+        "linear",
+        "Smooth"
+      ]
+    ]
+  },
+  {
+    "group": "video",
+    "key": "video.post",
+    "label": "Anti-aliasing",
+    "help": "FXAA softens jagged edges.",
+    "type": "select",
+    "default": "fxaa",
+    "options": [
+      [
+        "none",
+        "Off"
+      ],
+      [
+        "fxaa",
+        "FXAA"
+      ]
+    ]
+  },
+  {
+    "group": "video",
+    "key": "video.grading",
+    "label": "Color grading",
+    "help": "A more vibrant palette for the modern renderer.",
+    "type": "select",
+    "default": "vibrant",
+    "options": [
+      [
+        "off",
+        "No grading"
+      ],
+      [
+        "vibrant",
+        "Vibrant"
+      ]
+    ]
+  },
+  {
+    "group": "hud",
+    "key": "hud.anchor",
+    "label": "HUD placement",
+    "help": "Move HUD elements toward the edges in widescreen mode.",
+    "type": "select",
+    "default": "edges",
+    "options": [
+      [
+        "center",
+        "Original positions"
+      ],
+      [
+        "edges",
+        "At screen edges"
+      ]
+    ]
+  },
+  {
+    "group": "hud",
+    "key": "hud.show_lap_times",
+    "label": "Lap times",
+    "help": "Show lap times during races.",
+    "type": "bool",
+    "default": true
+  },
+  {
+    "group": "hud",
+    "key": "hud.show_time_limit",
+    "label": "Time limit",
+    "help": "Show the remaining time during races.",
+    "type": "bool",
+    "default": true
+  },
+  {
+    "group": "hud",
+    "key": "camera.chase_turn_lookahead",
+    "label": "Camera turn lookahead",
+    "help": "0 preserves the original camera; 1 gives the strongest effect.",
+    "type": "number",
+    "default": "0",
+    "min": 0,
+    "max": 1,
+    "step": 0.1
+  },
+  {
+    "group": "hud",
+    "key": "modern.mirror_distance",
+    "label": "Mirror view distance",
+    "help": "Rear-view distance multiplier, capped by the main camera range.",
+    "type": "number",
+    "default": "1",
+    "min": 0.25,
+    "max": 8,
+    "step": 0.25
+  },
+  {
+    "group": "input",
+    "key": "input.analog",
+    "label": "Analog gamepad controls",
+    "help": "Use sticks and triggers for proportional steering, throttle and braking.",
+    "type": "bool",
+    "default": true
+  },
+  {
+    "group": "input",
+    "key": "input.wheel",
+    "label": "Steering wheel support",
+    "help": "Enable wheels that SDL does not recognize as gamepads.",
+    "type": "bool",
+    "default": true
+  },
+  {
+    "group": "input",
+    "key": "input.steering_linearity",
+    "label": "Steering response curve",
+    "help": "0 gives a linear response. Positive values soften the center of the range.",
+    "type": "number",
+    "default": "0.5",
+    "min": -2,
+    "max": 2,
+    "step": 0.1
+  },
+  {
+    "group": "advanced",
+    "key": "video.draw_distance",
+    "label": "Draw distance",
+    "help": "Values above 1 may expose broken track geometry. Default: 1.",
+    "type": "number",
+    "default": "1",
+    "min": 0,
+    "max": 16,
+    "step": 0.25
+  },
+  {
+    "group": "advanced",
+    "key": "timing.standard",
+    "label": "Game timing standard",
+    "help": "Automatic uses the timing standard of the selected disc.",
+    "type": "select",
+    "default": "auto",
+    "options": [
+      [
+        "auto",
+        "Automatic"
+      ],
+      [
+        "pal",
+        "PAL · 50 / 25 Hz"
+      ],
+      [
+        "ntsc",
+        "NTSC · 60 / 30 Hz"
+      ]
+    ]
+  },
+  {
+    "group": "advanced",
+    "key": "diagnostics.performance",
+    "label": "Performance logging",
+    "help": "Write periodic renderer measurements to the log.",
+    "type": "bool",
+    "default": false
+  },
+  {
+    "group": "advanced",
+    "key": "diagnostics.marker_capture",
+    "label": "Diagnostic capture",
+    "help": "Enable the M shortcut to capture a diagnostic bundle with a screenshot.",
+    "type": "bool",
+    "default": false
+  },
+  {
+    "group": "input",
+    "key": "input.up",
+    "label": "UP",
+    "help": "PlayStation button binding",
+    "type": "key",
+    "default": "Up"
+  },
+  {
+    "group": "input",
+    "key": "input.down",
+    "label": "DOWN",
+    "help": "PlayStation button binding",
+    "type": "key",
+    "default": "Down"
+  },
+  {
+    "group": "input",
+    "key": "input.left",
+    "label": "LEFT",
+    "help": "PlayStation button binding",
+    "type": "key",
+    "default": "Left"
+  },
+  {
+    "group": "input",
+    "key": "input.right",
+    "label": "RIGHT",
+    "help": "PlayStation button binding",
+    "type": "key",
+    "default": "Right"
+  },
+  {
+    "group": "input",
+    "key": "input.cross",
+    "label": "CROSS",
+    "help": "PlayStation button binding",
+    "type": "key",
+    "default": "X"
+  },
+  {
+    "group": "input",
+    "key": "input.circle",
+    "label": "CIRCLE",
+    "help": "PlayStation button binding",
+    "type": "key",
+    "default": "D"
+  },
+  {
+    "group": "input",
+    "key": "input.square",
+    "label": "SQUARE",
+    "help": "PlayStation button binding",
+    "type": "key",
+    "default": "Z"
+  },
+  {
+    "group": "input",
+    "key": "input.triangle",
+    "label": "TRIANGLE",
+    "help": "PlayStation button binding",
+    "type": "key",
+    "default": "S"
+  },
+  {
+    "group": "input",
+    "key": "input.l1",
+    "label": "L1",
+    "help": "PlayStation button binding",
+    "type": "key",
+    "default": "Q"
+  },
+  {
+    "group": "input",
+    "key": "input.r1",
+    "label": "R1",
+    "help": "PlayStation button binding",
+    "type": "key",
+    "default": "R"
+  },
+  {
+    "group": "input",
+    "key": "input.l2",
+    "label": "L2",
+    "help": "PlayStation button binding",
+    "type": "key",
+    "default": "W"
+  },
+  {
+    "group": "input",
+    "key": "input.r2",
+    "label": "R2",
+    "help": "PlayStation button binding",
+    "type": "key",
+    "default": "E"
+  },
+  {
+    "group": "input",
+    "key": "input.select",
+    "label": "SELECT",
+    "help": "PlayStation button binding",
+    "type": "key",
+    "default": "Backspace"
+  },
+  {
+    "group": "input",
+    "key": "input.start",
+    "label": "START",
+    "help": "PlayStation button binding",
+    "type": "key",
+    "default": "Return"
+  },
+  {
+    "group": "input",
+    "key": "input.l3",
+    "label": "L3",
+    "help": "PlayStation button binding",
+    "type": "key",
+    "default": "1"
+  },
+  {
+    "group": "input",
+    "key": "input.r3",
+    "label": "R3",
+    "help": "PlayStation button binding",
+    "type": "key",
+    "default": "2"
+  }
+]

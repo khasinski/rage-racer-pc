@@ -1,4 +1,17 @@
 #include "authored_car_surface.h"
+#include <string.h>
+
+int AuthoredCarSurfaceResolve(unsigned surface, const char *properties,
+                             RageRenderMaterial *material) {
+    RageRenderMaterial resolved;
+    if (!material) return 0;
+    resolved = *material;
+    AuthoredCarSurfaceApply(surface, &resolved);
+    if (properties && !RenderMaterialParseProperties(
+            properties, strlen(properties), &resolved)) return 0;
+    *material = resolved;
+    return 1;
+}
 
 void AuthoredCarSurfaceTexture(unsigned surface, uint8_t *rgba, size_t size) {
     size_t i;

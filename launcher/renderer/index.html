@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Rage Mod Manager</title>
+<link rel="stylesheet" href="base.css"><link rel="stylesheet" href="launcher.css"><link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="top"><div class="brand"><b>R /</b>Rage Mod Manager</div><span id="status" class="muted">Starting…</span></header>
+<div class="shell"><aside id="nav"><div class="eyebrow">Your game</div><button disabled data-page="home">▷ &nbsp; Play</button><button disabled data-page="settings">⚙ &nbsp; Settings</button><button disabled data-page="saves">▤ &nbsp; Save editor</button><button disabled data-page="mods">◫ &nbsp; My mods</button><button disabled data-page="source">◉ &nbsp; Game source</button><div class="eyebrow">Workshop</div><button disabled data-page="cars">◇ &nbsp; Car models</button><button disabled data-page="assets">◇ &nbsp; Asset library</button><div class="bottom"><small>Rage Racer PC<br>Local files · Native game tools</small></div></aside><main id="main" class="main" aria-live="polite"></main></div>
+<dialog id="dialog"></dialog><div id="toast" class="toast" role="status" hidden></div>
+<script type="module" src="app.js"></script>
+</body></html>

@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "render/render_world.h"
+#if RAGE_HAS_AUTHORED_CARS
 #include "erriso_body.inc"
 #include "erriso_grade1.inc"
 #include "erriso_grade2.inc"
@@ -85,6 +86,7 @@
 #include "compactb_rival_late.inc"
 #include "compactc_rival_middle.inc"
 #include "compactc_rival_late.inc"
+#endif
 
 typedef struct AuthoredCarMaterial {
     uint16_t source, page, clut, cacheSlot;
@@ -99,6 +101,7 @@ typedef struct AuthoredCarReplacement {
     size_t materialCount;
 } AuthoredCarReplacement;
 
+#if RAGE_HAS_AUTHORED_CARS
 #include "authored_car_rounded.h"
 
 /* Source slots belong to the authored OBJ; cache slots belong to each
@@ -935,5 +938,9 @@ static const AuthoredCarReplacement s_authoredCars[] = {
 };
 #undef AUTHORED_CAR
 #define RAGE_AUTHORED_CAR_COUNT (sizeof(s_authoredCars)/sizeof(s_authoredCars[0]))
+#else
+static const AuthoredCarReplacement s_authoredCars[1] = {{0}};
+#define RAGE_AUTHORED_CAR_COUNT 0
+#endif
 
 #endif

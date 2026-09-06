@@ -13,5 +13,9 @@ enum {
     RAGE_CAR_SURFACE_RUNTIME_STRIDE = 4096
 };
 void AuthoredCarSurfaceApply(unsigned surface, RageRenderMaterial *material);
+/* Surface defaults precede explicit mod properties. Invalid properties leave
+ * the caller's material unchanged. Texture paths are retained. */
+int AuthoredCarSurfaceResolve(unsigned surface, const char *properties,
+                             RageRenderMaterial *material);
 void AuthoredCarSurfaceTexture(unsigned surface, uint8_t *rgba, size_t size);
 #endif

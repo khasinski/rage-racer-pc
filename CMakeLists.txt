@@ -120,6 +120,9 @@ add_library(rage-rmesh STATIC
 target_include_directories(rage-rmesh PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 add_executable(rage-mesh-obj tools/rage_mesh_obj.c)
 target_link_libraries(rage-mesh-obj PRIVATE rage-rmesh)
+set(RAGE_HAS_AUTHORED_CARS 0)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/assets/cars/erriso-body.obj")
+set(RAGE_HAS_AUTHORED_CARS 1)
 set(RAGE_AUTHORED_DIR "${CMAKE_CURRENT_BINARY_DIR}/authored-cars")
 file(MAKE_DIRECTORY "${RAGE_AUTHORED_DIR}")
 add_custom_command(OUTPUT "${RAGE_AUTHORED_DIR}/erriso_body.inc"
@@ -192,6 +195,12 @@ endforeach()
 add_custom_target(rage-authored-cars DEPENDS "${RAGE_AUTHORED_DIR}/erriso_body.inc"
     "${RAGE_AUTHORED_DIR}/erriso_rival.inc" ${RAGE_AUTHORED_OTHER_OUTPUTS})
 include_directories("${RAGE_AUTHORED_DIR}")
+else()
+    # Authored replacement meshes are distributed separately. A public source
+    # checkout still builds and uses the cars imported from the player's disc.
+    add_custom_target(rage-authored-cars)
+endif()
+add_compile_definitions(RAGE_HAS_AUTHORED_CARS=${RAGE_HAS_AUTHORED_CARS})
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(rage-mesh-obj PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
@@ -341,6 +350,16 @@ if(RAGE_BUILD_PORT)
     target_include_directories(rage-pack PRIVATE src/port)
     target_link_libraries(rage-pack PRIVATE miniz)
     add_executable(rage-save-generator tools/rage_save_generator.c)
+    add_executable(rage-save-cli launcher/native/save_cli.c editor/src/rage_save.c)
+    target_compile_definitions(rage-save-cli PRIVATE __psyz=1)
+    target_include_directories(rage-save-cli PRIVATE
+        editor/src src/port/include include external/psyz/psyz/include)
+    target_link_libraries(rage-save-cli PRIVATE SDL3::SDL3)
+    add_executable(rage-mod-cli launcher/native/mod_cli.c)
+    target_compile_definitions(rage-mod-cli PRIVATE __psyz=1)
+    target_include_directories(rage-mod-cli PRIVATE
+        src src/port/include include external/psyz/psyz/include)
+    target_link_libraries(rage-mod-cli PRIVATE rage-render-world SDL3::SDL3)
     add_executable(rage-frame-replay
         tools/rage_frame_replay.c
         src/port/platform_paths.c
@@ -513,6 +532,14 @@ if(RAGE_BUILD_PORT)
     if(WIN32)
         target_sources(rage-racer PRIVATE
             packaging/windows/rage-racer.rc)
+        # Electron passes Unicode paths; native argv and narrow filesystem APIs
+        # must use the same UTF-8 encoding (Windows 10 1903 or newer).
+        if(MSVC)
+            foreach(target rage-racer rage-extract rage-pack rage-save-generator
+                           rage-save-cli rage-mod-cli rage-mesh-obj)
+                target_sources(${target} PRIVATE packaging/windows/utf8.manifest)
+            endforeach()
+        endif()
     endif()
     if(BUILD_TESTING)
         add_executable(rage-gte-replay tools/rage_gte_replay.c)
