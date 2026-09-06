@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "render/render_material.h"
+#include "render/render_material_storage.h"
 #include "render/authored_car_surface.h"
 
 static int failures;
@@ -17,6 +18,33 @@ static int PathEquals(RageRenderMaterialPath path, const char *expected) {
 }
 
 int main(void) {
+    {
+        RageRenderMaterial first,second;
+        RageRenderMaterialStorage firstStorage,secondStorage;
+        char transient[]="first.rgba";
+        RenderMaterialDefault(&first);
+        first.baseColorTexture=(RageRenderMaterialPath){transient,strlen(transient)};
+        first.paintMask=(RageRenderMaterialPath){"paint.mask",10};
+        EXPECT(RenderMaterialStorePaths(&first,&firstStorage));
+        transient[0]='X';second=first;
+        second.baseColorTexture=(RageRenderMaterialPath){"second.rgba",11};
+        EXPECT(RenderMaterialStorePaths(&second,&secondStorage));
+        EXPECT(PathEquals(first.baseColorTexture,"first.rgba"));
+        EXPECT(PathEquals(second.baseColorTexture,"second.rgba"));
+        EXPECT(first.paintMask.text!=second.paintMask.text);
+        EXPECT(RenderMaterialStorePaths(&first,&firstStorage)); /* Safe rebind. */
+        EXPECT(PathEquals(first.paintMask,"paint.mask"));
+        RageRenderMaterial invalid=first;
+        invalid.baseColorTexture.length=1024;
+        EXPECT(!RenderMaterialStorePaths(&invalid,&firstStorage));
+        EXPECT(PathEquals(first.baseColorTexture,"first.rgba"));
+        invalid=first;invalid.paintMask.text=NULL;
+        EXPECT(!RenderMaterialStorePaths(&invalid,&firstStorage));
+        EXPECT(PathEquals(first.paintMask,"paint.mask"));
+        RenderMaterialDefault(&second);
+        EXPECT(RenderMaterialStorePaths(&second,&secondStorage));
+        EXPECT(second.baseColorTexture.text==NULL&&second.paintMask.text==NULL);
+    }
     static const char v4[] =
         "# rage-rmat v4\n0 red.rgba blue.rgba\n";
     static const char v5[] =

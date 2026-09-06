@@ -252,6 +252,17 @@ game stability or the packaged launcher shipping contract.
      semantic PNG replacement and car paint; modern PAL and material parsing
      regressions pass too. These are not pixel-difference or Windows runtime
      results, and material identity/storage still need the unified catalog.
+   - Material lifetime checkpoint: cached sidecar paths no longer point into
+     shared global scratch buffers. The public material-loading API requires
+     caller-owned path storage and copies paths before releasing sidecar bytes;
+     imported material paths acquire the same successful-return lifetime.
+     GPU upload keeps that storage on its stack and strips path references when
+     caching numeric material properties. Tests cover source mutation, two
+     independent materials, rebinding, empty paths and rejected bounds/null
+     inputs without damage to existing storage. This does not make all asset
+     providers thread-safe or finish immutable presentation snapshots.
+     Smoke/replay/stage builds and Linux material, native-world mod/paint and
+     modern PAL tests pass (13.70s parallel total); no Windows rerun this step.
 3. **Simulation/presentation boundary** (in progress)
    - Complete immutable presentation snapshots; isolate remaining legacy-state
      reads and declare compatibility/VRAM dependencies.

@@ -1182,6 +1182,7 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     ModernNativeTexture *entry = ModernNativeFindTexture(span);
     RageRenderMeshInstance instance = {0};
     RageRenderMaterial materialDefinition;
+    RageRenderMaterialStorage materialStorage;
     ModernAssetImage image;
     uint8_t *mipChain = NULL;
     size_t mipSize;
@@ -1216,7 +1217,7 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     instance.carPaintColor2 = span->carPaintColor2;
     if (!ModernAssetsLoadMaterial(&instance, span->material,
                                   span->materialVariant,
-                                  &materialDefinition, &image)) return NULL;
+                                  &materialDefinition, &image, &materialStorage)) return NULL;
     if (trace) materialDone = SDL_GetTicksNS();
     if (trace) {
         for (size_t i = 0; i < image.size; ++i) {

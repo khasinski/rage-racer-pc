@@ -208,8 +208,6 @@ static int s_ready;
 static int s_importerSource;
 /* Material sidecars are read synchronously on the render thread. Copy the
  * selected relative path out before releasing their transient file buffer. */
-static char s_materialPath[1024];
-static char s_paintPath[1024];
 
 static void ModernAssetsInitModProvider(void) {
     const char *root = ModAssetsDirectory();
@@ -555,7 +553,7 @@ static const char *ModernAssetsFindModMaterialProperties(
 
 static int ModernAssetsFindMaterial(
     const RageRenderMeshInstance *instance, uint32_t material,
-    uint8_t variant, RageRenderMaterial *definition) {
+    uint8_t variant, RageRenderMaterial *definition,RageRenderMaterialStorage *storage) {
     const RageRuntimeCachedMesh *cached;
     const void *mapBytes;
     size_t mapSize;
@@ -569,31 +567,15 @@ static int ModernAssetsFindMaterial(
                              &mapBytes, &mapSize)) return 0;
     parsed = RenderMaterialParse(
         mapBytes, mapSize, material, variant, definition);
-    if (parsed && definition->baseColorTexture.length != 0 &&
-        definition->baseColorTexture.length < sizeof(s_materialPath) &&
-        definition->paintMask.length < sizeof(s_paintPath)) {
-        memcpy(s_materialPath, definition->baseColorTexture.text,
-               definition->baseColorTexture.length);
-        s_materialPath[definition->baseColorTexture.length] = '\0';
-        if (definition->paintMask.length != 0) {
-            memcpy(s_paintPath, definition->paintMask.text,
-                   definition->paintMask.length);
-            s_paintPath[definition->paintMask.length] = '\0';
-        }
-    } else {
-        parsed = 0;
-    }
+    parsed=parsed&&definition->baseColorTexture.length!=0&&RenderMaterialStorePaths(definition,storage);
     ModernAssetFreeFile(NULL, mapBytes);
     if (!parsed) return 0;
-    definition->baseColorTexture.text = s_materialPath;
-    definition->paintMask.text = definition->paintMask.length != 0
-        ? s_paintPath : NULL;
     if (RuntimeConfigEnabled("diagnostics.modern_asset_trace")) {
         fprintf(stderr,
                 "rage-port: native material asset=%u set=%u material=%u "
                 "variant=%u path=%s\n",
                 instance->assetKey, (unsigned)instance->assetSet, material,
-                variant, s_materialPath);
+                variant, storage->baseColorTexture);
     }
     return 1;
 }
@@ -711,6 +693,7 @@ typedef struct MaterialProviderRequest {
     uint8_t variant;
     RageRenderMaterial *definition;
     ModernAssetImage *image;
+    RageRenderMaterialStorage *storage;
 } MaterialProviderRequest;
 static RageResourceStatus ResolveImportedMaterial(void *context) {
     MaterialProviderRequest *request=context;
@@ -724,7 +707,7 @@ static RageResourceStatus ResolveCachedMaterial(void *context) {
     if(s_importerSource)return RAGE_RESOURCE_MISSING;
     /* Defer cached pixel I/O until after the mod image has had first choice. */
     return ModernAssetsFindMaterial(request->instance,request->material,
-        request->variant,request->definition)?RAGE_RESOURCE_READY:RAGE_RESOURCE_ERROR;
+        request->variant,request->definition,request->storage)?RAGE_RESOURCE_READY:RAGE_RESOURCE_ERROR;
 }
 static RageResourceStatus ResolveModMaterialImage(void *context) {
     MaterialProviderRequest *request=context;
@@ -743,10 +726,10 @@ static RageResourceStatus ResolveBaseMaterialImage(void *context) {
 }
 static int ModernAssetsLoadBaseMaterial(const RageRenderMeshInstance *instance,
                              uint32_t material,uint8_t variant,
-                             RageRenderMaterial *definition,ModernAssetImage *image) {
-    if(!instance||!definition||!image)return 0;
+                             RageRenderMaterial *definition,ModernAssetImage *image,RageRenderMaterialStorage *storage) {
+    if(!instance||!definition||!image||!storage)return 0;
     memset(image,0,sizeof(*image));
-    MaterialProviderRequest request={instance,material,variant,definition,image};
+    MaterialProviderRequest request={instance,material,variant,definition,image,storage};
     const RageResourceProvider definitions[]={{ResolveImportedMaterial,&request},{ResolveCachedMaterial,&request}};
     if(ResourceProviderResolve(definitions,2,NULL)!=RAGE_RESOURCE_READY)return 0;
     const RageResourceProvider images[]={{ResolveModMaterialImage,&request},{ResolveBaseMaterialImage,&request}};
@@ -776,7 +759,7 @@ static uint16_t ModernPlayerMarkingClut(const RageRenderMeshInstance *instance,
 int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
                              uint32_t material, uint8_t variant,
                              RageRenderMaterial *definition,
-                             ModernAssetImage *image) {
+                             ModernAssetImage *image,RageRenderMaterialStorage *storage) {
     unsigned surface = 0;
     if (instance && (instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
                      instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1)) {
@@ -784,7 +767,7 @@ int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
         if (surface >= RAGE_CAR_SURFACE_COUNT) return 0;
         material %= RAGE_CAR_SURFACE_RUNTIME_STRIDE;
     }
-    if (!ModernAssetsLoadBaseMaterial(instance, material, variant, definition, image))
+    if (!ModernAssetsLoadBaseMaterial(instance, material, variant, definition, image,storage))
         return 0;
     if (surface == RAGE_CAR_SURFACE_GLASS || surface == RAGE_CAR_SURFACE_DECAL) {
         uint16_t clut = ModernPlayerMarkingClut(instance, material);
@@ -800,6 +783,9 @@ int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
         return 0;
     }
     AuthoredCarSurfaceTexture(surface, image->pixels, image->size);
+    if(!RenderMaterialStorePaths(definition,storage)) {
+        ModernAssetsFreeMaterialImage(image);return 0;
+    }
     return 1;
 }
 

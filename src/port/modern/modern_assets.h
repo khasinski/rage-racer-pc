@@ -3,6 +3,7 @@
 
 #include "render/render_world.h"
 #include "render/render_material.h"
+#include "render/render_material_storage.h"
 #include "render/rmesh_cache.h"
 
 typedef struct ModernAssetImage {
@@ -27,10 +28,14 @@ const RageRuntimeMesh *ModernAssetsMeshLookup(
 /* Build-stage lookup, after WarmWorld. Missing assets stay missing; no import. */
 const RageRuntimeMesh *ModernAssetsResidentMeshLookup(
     void *context, const RageRenderMeshInstance *instance);
+/* On success, definition paths refer to caller-owned storage, not shared
+ * scratch bytes. Keep storage at a stable address until done with the view.
+ * Image pixels have separate ownership and must be freed with the API below. */
 int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
                              uint32_t material, uint8_t variant,
                              RageRenderMaterial *definition,
-                             ModernAssetImage *image);
+                             ModernAssetImage *image,
+                             RageRenderMaterialStorage *storage);
 /* layout is copied in the current frame. NULL is the explicit legacy-capture
  * path (versions 1-6), which still resolves the current game layout. */
 int ModernAssetsLoadSkyImage(uint32_t assetKey,
