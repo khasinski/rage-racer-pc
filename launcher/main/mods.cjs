@@ -162,19 +162,18 @@ function installMethods(Service){
   },false);
  };
  Service.prototype.exportMod=async function(id,destination){
-  this.requireReady();const mod=this.state.mods.find(m=>m.id===id);if(!mod)throw Error('Unknown mod');
+  this.requireReady();const selected=this.state.mods.find(m=>m.id===id);if(!selected)throw Error('Unknown mod');
+  const mod=structuredClone(selected);
   return this.operation('Exporting mod',async signal=>{
    const target=path.join(destination,'rage-mod-'+id);await fs.mkdir(target);
    try{
     const source=path.join(this.root,'mods',id);
-    for(const name of await inventory(source,this.tool('rage-mod-cli'))){
-     if(name==='rage-mod.json')continue;
-     if(signal.aborted)throw Error('Operation canceled');
-     await fs.mkdir(path.dirname(path.join(target,name)),{recursive:true});
-     await fs.copyFile(path.join(source,name),path.join(target,name),require('node:fs').constants.COPYFILE_EXCL);
-    }
+    const files=(await inventory(source,this.tool('rage-mod-cli'))).filter(name=>name!=='rage-mod.json');
+    await this.snapshotModFiles(source,target,files,signal);
     if(signal.aborted)throw Error('Operation canceled');
     await fs.writeFile(path.join(target,'rage-mod.json'),JSON.stringify({format:1,name:mod.name,region:mod.region,packageId:mod.packageId||mod.id,requires:mod.requires,author:mod.author,version:mod.version,description:mod.description},null,2)+'\n',{flag:'wx'});
+    const {run}=require('./service.cjs');
+    await run(this.tool('rage-mod-cli'),['--metadata',path.join(target,'rage-mod.json')],{signal});
     if(signal.aborted)throw Error('Operation canceled');
     return target;
    }catch(e){await fs.rm(target,{recursive:true,force:true});throw e;}

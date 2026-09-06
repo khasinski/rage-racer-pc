@@ -72,6 +72,14 @@ and revalidates manifests/claims before dependency and conflict selection; outpu
 uses these same private copies. Compiled resource inventory, source fingerprints
 and a runtime provider stack remain incomplete.
 
+Export now uses that compiled copier too, freezes profile metadata at entry,
+and validates the generated package JSON against the compiled import schema.
+Regression tests cover changed source/profile state, invalid output metadata,
+copy failure cleanup and preservation of pre-existing destinations. It retains
+unclaimed work-in-progress assets; this is not a runtime-readiness validation or
+an atomic filesystem publication protocol. JSON serialization remains in the
+launcher. The complete launcher suite passes with 64 tests after this change.
+
 The package-relative file policy is now shared C code and used before import,
 export and composition. Directory traversal, symlink checks and semantic/legacy
 resource-claim discovery still live in the launcher; classifying a backing file

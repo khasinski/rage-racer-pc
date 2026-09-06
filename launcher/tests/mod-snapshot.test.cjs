@@ -4,6 +4,43 @@ const {run,LauncherService}=require('../main/service.cjs');
 const bin=path.resolve(__dirname,'../resources/bin');
 const tool=path.join(bin,'rage-mod-cli'+(process.platform==='win32'?'.exe':''));
 const copy=pairs=>run(tool,['--copy-snapshot-stdin'],{input:Buffer.from(JSON.stringify(pairs))});
+test('export freezes profile metadata, uses compiled copies and removes invalid exports',async()=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-export-snapshot-'));
+ try{
+  const source=path.join(root,'source');await fs.mkdir(path.join(source,'raw'),{recursive:true});
+  await fs.writeFile(path.join(source,'raw/asset_010.bin'),'original');
+  const service=new LauncherService({root:path.join(root,'profile'),bin,config:path.resolve(__dirname,'../resources/rage-port.ini')});
+  await service.init();service.state.disc={region:'PAL'};
+  const mod=await service.importMod(source);
+  const snapshot=service.snapshotModFiles.bind(service);
+  let copied=false;
+  service.snapshotModFiles=async(...args)=>{
+   await snapshot(...args);copied=true;
+   mod.name='changed during export';
+   await fs.writeFile(path.join(args[0],'raw/asset_010.bin'),'changed');
+  };
+  const exported=await service.exportMod(mod.id,root);
+  assert.equal(copied,true);
+  assert.equal(await fs.readFile(path.join(exported,'raw/asset_010.bin'),'utf8'),'original');
+  assert.equal(JSON.parse(await fs.readFile(path.join(exported,'rage-mod.json'))).name,'source');
+  // A pre-existing destination is never removed or overwritten.
+  await assert.rejects(service.exportMod(mod.id,root),/EEXIST/);
+  assert.equal(await fs.readFile(path.join(exported,'raw/asset_010.bin'),'utf8'),'original');
+  await fs.rm(exported,{recursive:true});
+  mod.name='';
+  await assert.rejects(service.exportMod(mod.id,root),/Invalid mod metadata/);
+  await assert.rejects(fs.access(exported));
+  assert.equal(service.busy,null);
+  mod.name='valid';
+  service.snapshotModFiles=async(...args)=>{
+   await snapshot(...args);throw Error('injected copy failure');
+  };
+  await assert.rejects(service.exportMod(mod.id,root),/injected copy failure/);
+  await assert.rejects(fs.access(exported));
+  assert.equal(await fs.readFile(path.join(service.root,'mods',mod.id,'raw/asset_010.bin'),'utf8'),'changed');
+  assert.equal(service.busy,null);
+ }finally{await fs.rm(root,{recursive:true,force:true});}
+});
 test('compiled snapshot copies exact bytes and refuses overwrite or malformed requests',async()=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-snapshot-'));
  try{
