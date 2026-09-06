@@ -1,3 +1,13 @@
+add_executable(material_transaction_tests material_transaction_tests.c)
+target_link_libraries(material_transaction_tests PRIVATE rage-render-world)
+if(MSVC)
+    target_compile_options(material_transaction_tests PRIVATE /W4 /WX /UNDEBUG)
+else()
+    target_compile_options(material_transaction_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+endif()
+add_test(NAME material_transaction COMMAND material_transaction_tests)
+set_tests_properties(material_transaction PROPERTIES LABELS unit)
+
 add_executable(disc_stream_table_tests
     disc_stream_table_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/disc_iso.c

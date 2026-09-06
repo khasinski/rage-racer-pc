@@ -30,7 +30,9 @@ const RageRuntimeMesh *ModernAssetsResidentMeshLookup(
     void *context, const RageRenderMeshInstance *instance);
 /* On success, definition paths refer to caller-owned storage, not shared
  * scratch bytes. Keep storage at a stable address until done with the view.
- * Image pixels have separate ownership and must be freed with the API below. */
+ * Image pixels have separate ownership and must be freed with the API below.
+ * Failure leaves all caller outputs unchanged and releases intermediate pixels.
+ * Before reusing an output image for a successful load, free its old pixels. */
 int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
                              uint32_t material, uint8_t variant,
                              RageRenderMaterial *definition,

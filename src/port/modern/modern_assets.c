@@ -17,6 +17,7 @@
 #include "render/authored_car_surface.h"
 #include "render/mod_manifest.h"
 #include "render/resource_provider.h"
+#include "modern_material_transaction.h"
 #include "render/rmesh_replace.h"
 #include "authored_car_data.h"
 
@@ -756,7 +757,7 @@ static uint16_t ModernPlayerMarkingClut(const RageRenderMeshInstance *instance,
     return 0;
 }
 
-int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
+static int ModernAssetsBuildMaterial(const RageRenderMeshInstance *instance,
                              uint32_t material, uint8_t variant,
                              RageRenderMaterial *definition,
                              ModernAssetImage *image,RageRenderMaterialStorage *storage) {
@@ -783,10 +784,30 @@ int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
         return 0;
     }
     AuthoredCarSurfaceTexture(surface, image->pixels, image->size);
-    if(!RenderMaterialStorePaths(definition,storage)) {
-        ModernAssetsFreeMaterialImage(image);return 0;
-    }
     return 1;
+}
+
+typedef struct MaterialBuildRequest {
+    const RageRenderMeshInstance *instance;
+    uint32_t material;
+    uint8_t variant;
+} MaterialBuildRequest;
+static int BuildMaterialTransaction(void *context,RageRenderMaterial *definition,
+                                     ModernAssetImage *image,RageRenderMaterialStorage *storage) {
+    MaterialBuildRequest *request=context;
+    return ModernAssetsBuildMaterial(request->instance,request->material,request->variant,
+                                     definition,image,storage);
+}
+int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
+                             uint32_t material,uint8_t variant,
+                             RageRenderMaterial *definition,
+                             ModernAssetImage *image,RageRenderMaterialStorage *storage) {
+    if(!instance)return 0;
+    MaterialBuildRequest request={instance,material,variant};
+    /* Publish only after all providers, surface effects and path copies pass.
+     * A failed build never exposes borrowed sidecar pointers or partial images. */
+    return ModernMaterialTransaction(BuildMaterialTransaction,&request,ModernAssetsFreeMaterialImage,
+                                      definition,image,storage);
 }
 
 void ModernAssetsFreeMaterialImage(ModernAssetImage *image) {

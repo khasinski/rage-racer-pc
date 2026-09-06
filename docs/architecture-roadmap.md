@@ -263,6 +263,15 @@ game stability or the packaged launcher shipping contract.
      providers thread-safe or finish immutable presentation snapshots.
      Smoke/replay/stage builds and Linux material, native-world mod/paint and
      modern PAL tests pass (13.70s parallel total); no Windows rerun this step.
+   - Material publication is transactional: providers and surface effects build
+     a private definition/image, and caller outputs are assigned only after
+     owned path copying succeeds. Failure frees intermediate pixels and leaves
+     the caller's existing definition, image and path storage unchanged.
+     A compiled fault-injection test covers backend failure, path-size failure,
+     successful ownership transfer and release counts. The test also passes as
+     a standalone C build; Linux material/native-world/PAL regressions pass.
+     An ASan/UBSan build could not link because the host sanitizer runtimes are
+     missing, so no sanitizer pass is claimed. No Windows rerun for this step.
 3. **Simulation/presentation boundary** (in progress)
    - Complete immutable presentation snapshots; isolate remaining legacy-state
      reads and declare compatibility/VRAM dependencies.
