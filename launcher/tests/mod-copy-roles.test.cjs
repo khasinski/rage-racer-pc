@@ -1,6 +1,18 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs/promises'),path=require('node:path'),os=require('node:os');
 const {LauncherService,run}=require('../main/service.cjs');
+test('authoritative global conflicts consume compiled file dispositions',()=>{
+ const service=Object.create(LauncherService.prototype);
+ service.state={resolutions:{}};
+ const mods=['first','second'].map(id=>({id,name:id,enabled:true,
+  files:['textures/shared.png'],fileDispositions:[2],
+  manifest:{textures:{},materials:{},meshes:{}}}));
+ // Deliberately disagree with the advisory filename predicate to prove that
+ // authoritative role decisions, rather than path prefixes, drive grouping.
+ assert.deepEqual(service.overlaps(mods),[]);
+ for(const mod of mods)mod.fileDispositions=[1];
+ assert.equal(service.overlaps(mods)[0].key,'textures/shared.png');
+});
 test('runtime composition omits unclaimed meshes and source package identities without losing exports',async()=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-copy-roles-'));
  try{

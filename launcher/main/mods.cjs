@@ -177,7 +177,10 @@ function installMethods(Service){
   for(const mod of mods.filter(m=>m.enabled)){
    const semanticFiles=new Set([...Object.values(mod.manifest.textures),...Object.values(mod.manifest.meshes||{})]);
    const legacy=legacyFiles(mod);
-   const keys=[...(mod.legacyTextures||[]).map(t=>'legacy-textures:asset-'+t.asset),...mod.files.filter(f=>f.startsWith('raw/')||(f.startsWith('textures/')&&!semanticFiles.has(f)&&!legacy.has(f))),...Object.keys(mod.manifest.textures).map(k=>'texture:'+k),...Object.keys(mod.manifest.materials).map(k=>'material:'+k),...Object.keys(mod.manifest.meshes||{}).map(k=>'mesh:'+k)];
+   const globalFiles=mod.fileDispositions
+    ?mod.files.filter((f,i)=>mod.fileDispositions[i]&1)
+    :mod.files.filter(f=>f.startsWith('raw/')||(f.startsWith('textures/')&&!semanticFiles.has(f)&&!legacy.has(f)));
+   const keys=[...(mod.legacyTextures||[]).map(t=>'legacy-textures:asset-'+t.asset),...globalFiles,...Object.keys(mod.manifest.textures).map(k=>'texture:'+k),...Object.keys(mod.manifest.materials).map(k=>'material:'+k),...Object.keys(mod.manifest.meshes||{}).map(k=>'mesh:'+k)];
    for(const key of new Set(keys)){const list=owners.get(key)||[];list.push({id:mod.id,name:mod.name});owners.set(key,list);}
   }
   return [...owners].filter(([,list])=>list.length>1).map(([key,candidates])=>{
@@ -210,6 +213,12 @@ function installMethods(Service){
     await this.snapshotModFiles(source,snapshot,mod.files);
     const inspected=await this.inspectModSnapshot(snapshot,mod.files);
    mod.manifest=inspected.manifest;mod.legacyTextures=inspected.legacy;
+    const semanticFiles=new Set([...Object.values(mod.manifest.textures),...Object.values(mod.manifest.meshes||{})]);
+    const legacy=legacyFiles(mod);
+    // Resolve once against the private snapshot. Conflict discovery and copying
+    // must consume the same compiled file policy, not independent JS predicates.
+    mod.fileDispositions=JSON.parse(await run(this.tool('rage-mod-cli'),['--file-dispositions-stdin'],{
+     input:Buffer.from(JSON.stringify(mod.files.map(name=>[name,(semanticFiles.has(name)?2:0)|(legacy.has(name)?4:0)])))}));
    }
    const needsBase=requested.some(m=>m.legacyTextures.length||m.files.some(f=>f.startsWith('raw/')))
     &&!requested.some(m=>m.files.includes('raw/asset_000.bin'));
@@ -233,10 +242,7 @@ function installMethods(Service){
    const tables={textures:{},materials:{},meshes:{}},legacyIndex=[];
    try {for(const mod of active){
      const source=path.join(staging,mod.id),files=mod.files;
-     const semanticFiles=new Set([...Object.values(mod.manifest.textures),...Object.values(mod.manifest.meshes||{})]);
-     const legacy=legacyFiles(mod);
-     const roles=JSON.parse(await run(this.tool('rage-mod-cli'),['--file-dispositions-stdin'],{
-      input:Buffer.from(JSON.stringify(files.map(name=>[name,(semanticFiles.has(name)?2:0)|(legacy.has(name)?4:0)])))}));
+     const roles=mod.fileDispositions;
      for(const [index,entry]of (mod.legacyTextures||[]).entries())if(selected('legacy-textures:asset-'+entry.asset,mod.id)){
       const stem=`legacy-${mod.id}-${index}`;
       await fs.mkdir(path.join(target,'textures'),{recursive:true});

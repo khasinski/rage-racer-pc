@@ -50,6 +50,13 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Composition now computes compiled file dispositions once from each validated
+private source snapshot, before conflict grouping. Global resource claims and
+copy execution consume that same result; the synchronous UI retains its
+advisory path-based view. Semantic and legacy reference discovery still live
+in the launcher and require migration. All 70 launcher tests pass on Linux,
+including a role-versus-path disagreement regression for conflict grouping.
+
 Snapshot opening hardening is in progress: source handles now reject final
 symlinks/reparse points and non-regular files before creating an output. Unix
 opens are nonblocking so a substituted FIFO cannot wait for a writer. The seven
