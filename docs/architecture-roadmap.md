@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Native geometry selection now filters render passes before consulting the mesh
+provider. Excluded legacy mirror instances no longer cause unused lookups when
+building the main semantic scene for either camera. A counting-provider test
+fails on the preceding implementation and passes for CPU, GPU-fog and compact
+builders after the change; unfiltered building still visits both passes.
+Linux offscreen mesh-build, native-world, mirror-car and environment-provider
+regressions pass (four tests, 9.22s). This removes unnecessary provider work,
+not per-view vertex expansion; persistent GPU geometry remains unfinished.
+
 Resident mesh lookup inspection confirms that ready cache hits avoid index
 parsing/file I/O, but RuntimeMeshCachePeek and importer lookup scan entries.
 A local CPU microbenchmark of production RuntimeMeshCachePeek (two million

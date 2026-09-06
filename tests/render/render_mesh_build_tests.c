@@ -1095,7 +1095,42 @@ static void test_car_marking_stays_outside_hood(void) {
     }
 }
 
+static const RageRuntimeMesh *count_missing_lookup(
+    void *context, const RageRenderMeshInstance *instance) {
+    unsigned *calls = context;
+    ++calls[instance->pass == RAGE_RENDER_PASS_MAIN ? 0 : 1];
+    return NULL;
+}
+
+static void test_pass_filter_precedes_asset_lookup(void) {
+    RageRenderMeshInstance instances[2] = {0};
+    RageRenderWorld world;
+    RageNativeDrawVertex vertices[3];
+    RageNativeGpuVertex compact[3];
+    RageNativeDrawSpan spans[1];
+    uint32_t spanCount;
+    unsigned calls[2] = {0};
+    RenderWorldInit(&world, instances, 2);
+    instances[0].pass = RAGE_RENDER_PASS_MAIN;
+    instances[1].pass = RAGE_RENDER_PASS_MIRROR;
+    world.instanceCount = 2;
+    EXPECT_EQ(0, RenderBuildNativePassDraws(&world, RAGE_RENDER_PASS_MAIN,
+        1, count_missing_lookup, calls, vertices, 3, spans, 1, &spanCount));
+    EXPECT_EQ(1, calls[0]); EXPECT_EQ(0, calls[1]);
+    EXPECT_EQ(0, spanCount);
+    EXPECT_EQ(0, RenderBuildNativeGpuPassDraws(&world, RAGE_RENDER_PASS_MIRROR,
+        1, count_missing_lookup, calls, vertices, 3, spans, 1, &spanCount));
+    EXPECT_EQ(1, calls[0]); EXPECT_EQ(1, calls[1]);
+    EXPECT_EQ(0, RenderBuildNativeCompactPassDraws(&world, RAGE_RENDER_PASS_MAIN,
+        1, 0, count_missing_lookup, calls, compact, 3, spans, 1, &spanCount));
+    EXPECT_EQ(2, calls[0]); EXPECT_EQ(1, calls[1]);
+    EXPECT_EQ(0, RenderBuildNativeDraws(&world, 1, count_missing_lookup,
+        calls, vertices, 3, spans, 1, &spanCount));
+    EXPECT_EQ(3, calls[0]); EXPECT_EQ(2, calls[1]);
+}
+
 int main(void) {
+    test_pass_filter_precedes_asset_lookup();
     test_overlay_orientation_and_degenerate_geometry();
     test_gpu_vertex_payload_excludes_instance_state();
     test_gpu_vertex_reuse_preserves_instance_and_triangle_state();

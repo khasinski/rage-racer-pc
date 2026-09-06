@@ -541,13 +541,16 @@ static uint32_t RenderBuildNativeDrawsFiltered(
     viewTransform = RenderPrepareView(&world->camera);
     for (instanceIndex = 0; instanceIndex < world->instanceCount; instanceIndex++) {
         const RageRenderMeshInstance *instance = &world->instances[instanceIndex];
-        const RageRuntimeMesh *mesh = lookup(context, instance);
+        const RageRuntimeMesh *mesh;
         RageTransformBasis basis;
         RageNativeInstanceState instanceState;
         uint32_t first, count, offset;
         int terrainQuadHidden = 0;
         if (passFilter >= 0 && instance->pass != (RageRenderPass)passFilter)
             continue;
+        /* Excluded passes must not consult (or trigger work in) the asset
+         * provider. Both cameras may consume only the main semantic scene. */
+        mesh = lookup(context, instance);
         if (mesh == NULL || !RuntimeMeshRange(mesh, instance->mesh, &first, &count)) {
             continue;
         }
