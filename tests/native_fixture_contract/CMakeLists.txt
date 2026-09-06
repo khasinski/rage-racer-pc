@@ -1,0 +1,16 @@
+cmake_minimum_required(VERSION 3.20)
+project(RageNativeFixtureContract C)
+enable_testing()
+find_package(SDL3 CONFIG REQUIRED)
+add_executable(native_asset_fixture ../render/native_asset_fixture.c)
+target_link_libraries(native_asset_fixture PRIVATE SDL3::SDL3)
+target_compile_features(native_asset_fixture PRIVATE c_std_11)
+if(MSVC)
+    target_compile_options(native_asset_fixture PRIVATE /W4 /WX)
+    target_compile_definitions(native_asset_fixture PRIVATE _CRT_SECURE_NO_WARNINGS)
+else()
+    target_compile_options(native_asset_fixture PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME native_fixture_files COMMAND ${CMAKE_COMMAND}
+    -DTOOL=$<TARGET_FILE:native_asset_fixture> -DOUTPUT=${CMAKE_CURRENT_BINARY_DIR}
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/verify.cmake)

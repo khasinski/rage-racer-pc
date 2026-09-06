@@ -1,7 +1,12 @@
 #include <stdint.h>
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef _WIN32
+#include <windows.h>
+#include <stdlib.h>
+#endif
 
 static int Word(FILE *file, uint32_t value) {
     unsigned char bytes[4] = {(unsigned char)value, (unsigned char)(value >> 8),
@@ -16,7 +21,19 @@ static int Float(FILE *file, float value) {
 static FILE *Open(const char *root, const char *name) {
     char path[4096];
     if (snprintf(path, sizeof(path), "%s/%s", root, name) >= (int)sizeof(path)) return NULL;
+#ifdef _WIN32
+    int count = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path, -1, NULL, 0);
+    if (count <= 0) return NULL;
+    wchar_t *wide = malloc((size_t)count * sizeof(*wide));
+    if (!wide) return NULL;
+    FILE *file = NULL;
+    if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path, -1, wide, count))
+        file = _wfopen(wide, L"wbx");
+    free(wide);
+    return file;
+#else
     return fopen(path, "wbx");
+#endif
 }
 int main(int argc, char **argv) {
     /* Caller creates an isolated directory and owns cleanup on failure. */

@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Compiled native fixture now has a standalone SDL contract checking generation
+under Unicode/spaced paths, mesh/RGBA/paint sizes, PNG dimensions/signature and
+refusal to replace an existing mesh. Windows initially failed because ordinary
+main received system-encoded argv; SDL_main now supplies UTF-8 and file creation
+uses wide Windows paths. Linux and Windows ClangCL Release contracts pass
+(0.01/0.69s). This verifies fixture portability, not the four GPU integration
+runners on Windows or complete byte/pixel equivalence of every generated file.
+
 Runtime-config integration now uses CMake and the compiled fixture, preserving
 its INI scenario, F9 switch, semantic-capture assertion and removal of every
 RAGE_PORT_* environment override. Old/new tests passed with an intentionally
