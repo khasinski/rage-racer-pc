@@ -180,6 +180,36 @@ static void TestRejectsInvalidFile(void) {
     remove(path);
 }
 
+static void TestPreservesReservedOutput(void) {
+    const char *path = "render-world-reserved.bin";
+    const char *temporary = "render-world-reserved.bin.tmp";
+    const char *paths[] = {path, temporary};
+    RageRenderWorld world = {0};
+    for (size_t i = 0; i < 2; ++i) {
+        FILE *file = fopen(paths[i], "wbx");
+        CHECK(file != NULL);
+        if (!file) return;
+        CHECK(fwrite("keep", 1, 4, file) == 4);
+        CHECK(fclose(file) == 0);
+    }
+    CHECK(!RenderWorldSnapshotWrite(path, &world));
+    for (size_t i = 0; i < 2; ++i) {
+        char bytes[5] = {0};
+        FILE *file = fopen(paths[i], "rb");
+        CHECK(file != NULL);
+        if (!file) return;
+        CHECK(fread(bytes, 1, sizeof(bytes), file) == 4);
+        CHECK(!strcmp(bytes, "keep"));
+        CHECK(fclose(file) == 0);
+        CHECK(remove(paths[i]) == 0);
+    }
+    CHECK(RenderWorldSnapshotWrite(path, &world));
+    RageRenderWorldSnapshot read = {0};
+    CHECK(RenderWorldSnapshotRead(path, &read));
+    RenderWorldSnapshotRelease(&read);
+    CHECK(remove(path) == 0);
+}
+
 static void TestRejectsInvalidWorldBounds(void) {
     const char *path = "render-world-snapshot-invalid-bounds.bin";
     RageRenderMeshInstance instance = {0};
@@ -299,6 +329,7 @@ int main(void) {
     }
     TestRoundTrip();
     TestRejectsInvalidFile();
+    TestPreservesReservedOutput();
     TestRejectsInvalidWorldBounds();
     TestSkyLayoutVersionCompatibility();
     return failures == 0 ? 0 : 1;

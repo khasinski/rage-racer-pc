@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Frame snapshot writing now exclusively reserves path.tmp instead of truncating
+an existing temporary file. A regression preserves sentinel bytes in both the
+reserved temporary and final paths after rejection, then verifies successful
+write/read after reservation removal. The complete snapshot fixture passes as
+a standalone strict C build and under ASan/UBSan/leak detection on Linux. This
+does not add unique concurrent writer names, crash recovery, fsync durability
+or Windows replacement semantics; it prevents destruction of an existing
+staging reservation.
+
 Renderer snapshot read ownership now matches copy ownership: parse into a
 private snapshot, replace/release the old owner only on success, and preserve
 the previous frame on malformed input. Previously Read zeroed an already-owned

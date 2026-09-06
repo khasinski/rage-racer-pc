@@ -9,7 +9,9 @@ typedef struct RageRenderWorldSnapshot {
 } RageRenderWorldSnapshot;
 
 /* A versioned, little-endian copy of the complete renderer-neutral input.
- * The file deliberately contains no pointers and no PS1 ordering-table data. */
+ * The file deliberately contains no pointers and no PS1 ordering-table data.
+ * Writing reserves path.tmp exclusively; a pre-existing reservation is left
+ * untouched and causes failure. Successful staging is renamed to the target. */
 int RenderWorldSnapshotWrite(const char *path,
                                  const RageRenderWorld *world);
 /* Destination must be zero-initialized or own a previous snapshot. Successful

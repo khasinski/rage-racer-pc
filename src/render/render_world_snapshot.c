@@ -273,7 +273,7 @@ int RenderWorldSnapshotWrite(const char *path,
     if (temporaryPath == NULL) return 0;
     memcpy(temporaryPath, path, pathLength);
     memcpy(temporaryPath + pathLength, ".tmp", sizeof(".tmp"));
-    file = fopen(temporaryPath, "wb");
+    file = fopen(temporaryPath, "wbx");
     if (file == NULL) {
         free(temporaryPath);
         return 0;
