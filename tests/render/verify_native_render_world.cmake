@@ -34,6 +34,19 @@ require("native texture override track[.]big1[.]terrain[.]material[.]0 <- textur
 require("native car paint asset=")
 require("native world frame=[0-9]+ camera=[1-9][0-9]* instances=[1-9][0-9]* cached=[1-9][0-9]* textures=[0-9]+ vertices=[1-9][0-9]* spans=[1-9][0-9]*")
 require("native draws frame=[0-9]+ draws=[1-9][0-9]* vertices=[1-9][0-9]*")
+run(benchmark --scenario "${root}/scenario.ini"
+    --set diagnostics.performance_trace=false --set diagnostics.modern_asset_trace=false
+    --set "diagnostics.modern_dump=${root}/benchmark.ppm"
+    --set diagnostics.modern_dump_scene_id=12 --set diagnostics.modern_dump_timer=10
+    --set diagnostics.modern_dump_scene=true
+    --set diagnostics.modern_prepare_repeat=3)
+require("native-live-prepare-benchmark repeats=3 instances=[1-9][0-9]* p50_ms=[0-9]+[.][0-9]+ p95_ms=[0-9]+[.][0-9]+ max_ms=[0-9]+[.][0-9]+")
+require("scene=12 timer=20")
+file(SHA256 "${root}/benchmark.ppm.draws.txt" before_prepare)
+file(SHA256 "${root}/benchmark.ppm.restored.draws.txt" after_prepare)
+if(NOT before_prepare STREQUAL after_prepare)
+    message(FATAL_ERROR "Live benchmark changed prepared draw state: ${root}")
+endif()
 run(attract --set video.renderer=modern --set race.enabled=false --set boot.direct=false
     --set run.frames=2500 --set stop.scene=30 --set stop.timer=200)
 require("scene=30 timer=200")

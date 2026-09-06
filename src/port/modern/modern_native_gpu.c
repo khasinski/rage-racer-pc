@@ -929,6 +929,57 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
 
 uint64_t ModernNativeGpuTextureRevision(void) { return s_trackAssetRevision; }
 
+static int ComparePrepareTicks(const void *a, const void *b) {
+    Uint64 x = *(const Uint64 *)a, y = *(const Uint64 *)b;
+    return (x > y) - (x < y);
+}
+
+int ModernNativeGpuBenchmarkPrepare(FILE *file, unsigned repeats) {
+    RageRenderWorldSnapshot frozen = {0};
+    Uint64 *samples;
+    uint64_t revision;
+    float aspect = s_aspect;
+    unsigned i;
+    int valid = 1;
+    if (!file || repeats < 1 || repeats > 10000 || !s_world ||
+        !ModernNativeGpuHasDraws() || !ModernNativeGpuWorldComplete() ||
+        RuntimeConfigEnabled("diagnostics.performance_trace") ||
+        RuntimeConfigEnabled("diagnostics.modern_asset_trace")) return 0;
+    samples = malloc(repeats * sizeof(*samples));
+    if (!samples) return 0;
+    if (!RenderWorldSnapshotCopy(&frozen, s_world)) {
+        free(samples);
+        return 0;
+    }
+    revision = frozen.world.frame;
+    for (i = 0; i < repeats; ++i) {
+        Uint64 start;
+        ++frozen.world.frame;
+        start = SDL_GetPerformanceCounter();
+        ModernNativeGpuPrepare(&frozen.world, aspect);
+        samples[i] = SDL_GetPerformanceCounter() - start;
+        if (!ModernNativeGpuHasDraws() || !ModernNativeGpuWorldComplete()) {
+            valid = 0;
+            break;
+        }
+    }
+    frozen.world.frame = revision;
+    ModernNativeGpuPrepare(&frozen.world, aspect);
+    valid = valid && ModernNativeGpuHasDraws() && ModernNativeGpuWorldComplete();
+    if (valid) {
+        double ms = 1000.0 / (double)SDL_GetPerformanceFrequency();
+        qsort(samples, repeats, sizeof(*samples), ComparePrepareTicks);
+        fprintf(file, "native-live-prepare-benchmark repeats=%u instances=%u "
+                "p50_ms=%.6f p95_ms=%.6f max_ms=%.6f (CPU preparation only)\n",
+                repeats, frozen.world.instanceCount, samples[repeats / 2] * ms,
+                samples[(repeats * 95 - 1) / 100] * ms,
+                samples[repeats - 1] * ms);
+    }
+    RenderWorldSnapshotRelease(&frozen);
+    free(samples);
+    return valid;
+}
+
 const RageRenderWorld *ModernNativeGpuPreparedWorld(void) {
     return s_world;
 }

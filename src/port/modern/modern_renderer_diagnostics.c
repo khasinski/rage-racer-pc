@@ -94,6 +94,24 @@ void ModernDiagnosticsMaybeDump(
             }
         }
     }
+    {
+        int repeats = RuntimeConfigInt(
+            "diagnostics.modern_prepare_repeat", 0, 0, 10000);
+        if (repeats && !ModernNativeGpuBenchmarkPrepare(stderr, (unsigned)repeats))
+            fprintf(stderr, "rage-port: live preparation benchmark refused "
+                    "(requires complete world and disabled performance/asset traces)\n");
+        if (repeats && RuntimeConfigEnabled("diagnostics.modern_dump_scene")) {
+            char restoredPath[512];
+            FILE *file;
+            snprintf(restoredPath, sizeof(restoredPath),
+                     "%s.restored.draws.txt", path);
+            file = fopen(restoredPath, "w");
+            if (file != NULL) {
+                ModernNativeGpuWriteDrawDump(file);
+                fclose(file);
+            }
+        }
+    }
     done = 1;
 }
 

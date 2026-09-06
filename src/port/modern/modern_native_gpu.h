@@ -23,6 +23,9 @@ void ModernNativeGpuSubmitted(void);
 const RageRenderWorld *ModernNativeGpuPreparedWorld(void);
 uint64_t ModernNativeGpuTextureRevision(void);
 int ModernNativeGpuWriteDrawDump(FILE *file);
+/* Diagnostic CPU-only measurement of the resident world; restores its revision.
+ * Invoke between submitted frames, with performance/asset tracing disabled. */
+int ModernNativeGpuBenchmarkPrepare(FILE *file, unsigned repeats);
 int ModernNativeGpuWriteProbe(FILE *file, int x, int y,
                               int width, int height);
 int ModernNativeGpuHasDraws(void);
