@@ -50,6 +50,13 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Post-migration checker fixture refresh passes on Linux and Windows ClangCL
+Release (Windows 1.05s), including the added area/axis/continuity/wraparound
+negative cases. The existing renderer-contract CI workflow now builds/tests
+the independent image checker on its Linux/Windows/macOS matrix and watches
+its source/fixture/build files. Hosted execution and macOS remain unverified;
+the workflow change is local and requires publication to run remotely.
+
 Stage-angle migration complete for this test only: render_stage_angles now
 uses CMake plus the C checker, and verify_render_stage_angles.py is removed.
 Audit preserves 18x24 quaternion sweeps, strict 1%-60% area, border and 25%/20%

@@ -11,6 +11,9 @@ on:
       - 'tests/render/render_world_tests.c'
       - 'tests/render/render_world_snapshot_tests.c'
       - 'tests/render_snapshot_contract/**'
+      - 'tools/rage_stage_image_check.c'
+      - 'tests/render/stage_image_check_tests.c'
+      - 'tests/stage_image_contract/**'
       - '.github/workflows/render-snapshot-check.yml'
   pull_request:
     paths:
@@ -21,6 +24,9 @@ on:
       - 'tests/render/render_world_tests.c'
       - 'tests/render/render_world_snapshot_tests.c'
       - 'tests/render_snapshot_contract/**'
+      - 'tools/rage_stage_image_check.c'
+      - 'tests/render/stage_image_check_tests.c'
+      - 'tests/stage_image_contract/**'
       - '.github/workflows/render-snapshot-check.yml'
 permissions:
   contents: read
@@ -44,3 +50,13 @@ jobs:
         run: cmake --build build/snapshot-contract --config Release --parallel 4
       - name: Test
         run: ctest --test-dir build/snapshot-contract -C Release --output-on-failure
+      - name: Configure stage image checker (Unix)
+        if: runner.os != 'Windows'
+        run: cmake -S tests/stage_image_contract -B build/stage-image-contract -DCMAKE_BUILD_TYPE=Release
+      - name: Configure stage image checker (Windows)
+        if: runner.os == 'Windows'
+        run: cmake -S tests/stage_image_contract -B build/stage-image-contract -G "Visual Studio 17 2022" -A x64 -T ClangCL
+      - name: Build stage image checker
+        run: cmake --build build/stage-image-contract --config Release --parallel 4
+      - name: Test stage image checker
+        run: ctest --test-dir build/stage-image-contract -C Release --output-on-failure
