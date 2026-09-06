@@ -50,6 +50,16 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Post-retry/GP refactor endurance refresh: current full Linux game passes two
+class-1 Mythical Coast races per process in PAL/U/J, including three successful
+presentation restarts, VRAM oracle agreement, automatic regional timing and
+ordered GPU-before-assets teardown with assets_ready=0/meshes=0. Results:
+build/regional-races/20260906-131459-0efea9 (PAL, 239.29s),
+20260906-131459-0c2fbc (U, 212.32s), 20260906-131459-68e64b (J, 212.37s).
+All processes finished successfully. These parallel offscreen/dummy-audio
+route-driver runs are not performance measurements, visual assertions or
+input/physics replay coverage; no entire roadmap stage is marked complete.
+
 Post-migration checker fixture refresh passes on Linux and Windows ClangCL
 Release (Windows 1.05s), including the added area/axis/continuity/wraparound
 negative cases. The existing renderer-contract CI workflow now builds/tests
