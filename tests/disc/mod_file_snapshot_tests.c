@@ -2,6 +2,18 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#ifndef _WIN32
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
+
+static void RejectSource(const char *source, const char *target) {
+    size_t total = 17;
+    assert(!ModFileSnapshotCopy(source, target, &total));
+    assert(total == 17);
+    FILE *file = fopen(target, "rb");
+    assert(!file);
+}
 
 int main(void) {
     const char *source = "mod_snapshot_source.tmp", *target = "mod_snapshot_target.tmp";
@@ -20,6 +32,19 @@ int main(void) {
     assert(!ModFileSnapshotCopy(source,NULL,&total));
     assert(!ModFileSnapshotCopy(source,target,NULL));
     assert(remove(target) == 0);
+    RejectSource(".", target);
+#ifndef _WIN32
+    const char *link = "mod_snapshot_link.tmp";
+    assert(symlink(source, link) == 0);
+    RejectSource(link, target);
+    assert(unlink(link) == 0);
+    assert(symlink("mod_snapshot_missing.tmp", link) == 0);
+    RejectSource(link, target);
+    assert(unlink(link) == 0);
+    assert(mkfifo(link, 0600) == 0);
+    RejectSource(link, target); /* Must reject without waiting for a writer. */
+    assert(unlink(link) == 0);
+#endif
     total = 1024u*1024u*1024u;
     assert(!ModFileSnapshotCopy(source,target,&total));
     file = fopen(target,"rb"); assert(!file); /* Failed copy removed its own output. */

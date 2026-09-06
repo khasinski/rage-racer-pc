@@ -50,6 +50,19 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Snapshot opening hardening is in progress: source handles now reject final
+symlinks/reparse points and non-regular files before creating an output. Unix
+opens are nonblocking so a substituted FIFO cannot wait for a writer. The seven
+standalone mod contracts pass on Linux, including new regular-link,
+dangling-link, directory and FIFO rejection checks with unchanged byte budget
+and no target creation. Windows uses UTF-16 paths and handle attributes; all
+seven contracts also pass in the Windows 11 ClangCL VM (4.48 seconds). The
+Windows snapshot fixture does not create reparse points or Unicode paths, so
+those branches still lack direct regression evidence. All 69 launcher tests
+pass on Linux after rebuilding and staging the updated CLI. Parent directory
+traversal is not pinned; this is not an atomic multi-file snapshot or full race
+protection.
+
 Native inventory regression now exercises real directories through depth 8
 (accepted) and depth 9 (rejected), plus dangling file symlinks and directory
 cycles on Unix. Linux passes all cases; Windows VM passes the directory-depth
