@@ -52,6 +52,11 @@ if [ "${1:-}" = "fog-probe" ]; then
     exit 0
 fi
 
+if [ "${1:-}" = "shadow-uv-probe" ]; then
+    build_shader shadow_uv_probe.frag shadow_uv_probe_frag frag fs_shadow_uv_probe
+    exit 0
+fi
+
 if [ "${1:-}" = "native-vertex" ]; then
     build_shader native.vert native_vert vert vs_native
     exit 0
@@ -81,3 +86,4 @@ build_shader native_shadow_masked.frag native_shadow_masked_frag frag fs_shadow_
 build_shader native_texture.frag native_texture_frag frag fs_native
 build_shader native_color.frag native_color_frag frag fs_native_color
 build_shader fog_probe.frag fog_probe_frag frag fs_fog_probe
+build_shader shadow_uv_probe.frag shadow_uv_probe_frag frag fs_shadow_uv_probe

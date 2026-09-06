@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+The production shadow vertex shader now has an independent UV readback gate,
+using its actual two-buffer camera/instance layout. Alongside the existing
+native shader gate, 384 cases per shader cover offsets 0/0.25/0.5/0.75 on
+Linux Vulkan (both tests pass, 0.14s). The shadow probe reads interpolated UVs
+without sampling a texture or writing a depth map: it verifies the shader
+binding/offset contract, not the still-open end-to-end masked-shadow image
+comparison. Probe SPIR-V/MSL are generated from one GLSL source.
+
 Compact GPU geometry now keeps authored U coordinates for uniformly scrolling
 triangles; scroll is draw-instance state evaluated by the native and masked
 shadow vertex shaders. The CPU-fog reference keeps expanded UVs. Mixed-corner

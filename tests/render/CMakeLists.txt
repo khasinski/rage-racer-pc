@@ -132,6 +132,8 @@ target_link_libraries(native_fog_gpu_tests PRIVATE SDL3::SDL3 rage-render-world)
 target_compile_options(native_fog_gpu_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 add_test(NAME native_fog_gpu COMMAND native_fog_gpu_tests)
 set_tests_properties(native_fog_gpu PROPERTIES LABELS gpu SKIP_RETURN_CODE 77 TIMEOUT 30)
+add_test(NAME native_shadow_uv_gpu COMMAND native_fog_gpu_tests --shadow)
+set_tests_properties(native_shadow_uv_gpu PROPERTIES LABELS gpu SKIP_RETURN_CODE 77 TIMEOUT 30)
 
 add_executable(vram_read_cache_tests vram_read_cache_tests.c)
 target_include_directories(vram_read_cache_tests PRIVATE

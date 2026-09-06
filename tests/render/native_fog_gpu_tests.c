@@ -9,11 +9,17 @@
 #include "native_vert_msl.h"
 #include "fog_probe_frag_spv.h"
 #include "fog_probe_frag_msl.h"
+#include "native_shadow_vert_spv.h"
+#include "native_shadow_vert_msl.h"
+#include "shadow_uv_probe_frag_spv.h"
+#include "shadow_uv_probe_frag_msl.h"
 
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "line %d: %s: %s\n", \
     __LINE__, #x, SDL_GetError()); return 1; } } while (0)
 
-int main(void) {
+int main(int argc, char **argv) {
+    int shadowProbe = argc == 2 && strcmp(argv[1], "--shadow") == 0;
+    if (argc != 1 && !shadowProbe) return 2;
     if (!SDL_Init(SDL_INIT_VIDEO)) return 77;
     SDL_GPUDevice *device = SDL_CreateGPUDevice(
         SDL_GPU_SHADERFORMAT_SPIRV | SDL_GPU_SHADERFORMAT_MSL, false, NULL);
@@ -26,12 +32,23 @@ int main(void) {
     shader.code_size = spirv ? native_vert_spv_len : native_vert_msl_len;
     shader.entrypoint = spirv ? "main" : "vs_native";
     shader.num_uniform_buffers = 3;
+    if (shadowProbe) {
+        shader.code = spirv ? native_shadow_vert_spv : native_shadow_vert_msl;
+        shader.code_size = spirv ? native_shadow_vert_spv_len : native_shadow_vert_msl_len;
+        shader.entrypoint = spirv ? "main" : "vs_shadow";
+        shader.num_uniform_buffers = 2;
+    }
     SDL_GPUShader *vs = SDL_CreateGPUShader(device, &shader); CHECK(vs);
     shader.stage = SDL_GPU_SHADERSTAGE_FRAGMENT;
     shader.code = spirv ? fog_probe_frag_spv : fog_probe_frag_msl;
     shader.code_size = spirv ? fog_probe_frag_spv_len : fog_probe_frag_msl_len;
     shader.entrypoint = spirv ? "main" : "fs_fog_probe";
     shader.num_uniform_buffers = 0;
+    if (shadowProbe) {
+        shader.code = spirv ? shadow_uv_probe_frag_spv : shadow_uv_probe_frag_msl;
+        shader.code_size = spirv ? shadow_uv_probe_frag_spv_len : shadow_uv_probe_frag_msl_len;
+        shader.entrypoint = spirv ? "main" : "fs_shadow_uv_probe";
+    }
     SDL_GPUShader *fs = SDL_CreateGPUShader(device, &shader); CHECK(fs);
     SDL_GPUVertexBufferDescription description = {0};
     description.pitch = sizeof(RageNativeGpuVertex);
@@ -122,11 +139,16 @@ int main(void) {
         SDL_GPUBufferRegion destination = {.buffer = buffer, .size = sizeof(packed)};
         SDL_UploadToGPUBuffer(copy, &source, &destination, true); SDL_EndGPUCopyPass(copy);
         SDL_PushGPUVertexUniformData(cmd, 0, uniform, sizeof(uniform));
-        SDL_PushGPUVertexUniformData(cmd, 1, shadow, sizeof(shadow));
         const float instance[2][4] = {
             {view ? 0.25f : 0.75f, (float)range * 0.25f, 1, 0},
             {enabled ? 0.5f : 1, (float)(sample % 2), (float)(sample % 4) * 0.25f, 0}};
-        SDL_PushGPUVertexUniformData(cmd, 2, instance, sizeof(instance));
+        if (shadowProbe) {
+            const float offset[4] = {instance[1][2], 0, 0, 0};
+            SDL_PushGPUVertexUniformData(cmd, 1, offset, sizeof(offset));
+        } else {
+            SDL_PushGPUVertexUniformData(cmd, 1, shadow, sizeof(shadow));
+            SDL_PushGPUVertexUniformData(cmd, 2, instance, sizeof(instance));
+        }
         SDL_GPUColorTargetInfo color = {0}; color.texture = target;
         color.load_op = SDL_GPU_LOADOP_CLEAR; color.store_op = SDL_GPU_STOREOP_STORE;
         SDL_GPUColorTargetInfo colors[3] = {color, color, color};
@@ -156,6 +178,7 @@ int main(void) {
                     : channel == 1 ? 0.5f : channel == 2 ? 0.0f : 1.0f;
                 int uvWanted = (int)lroundf(uvValue * 255.0f);
                 CHECK(abs((int)pixels[512 + pixel * 4 + channel] - uvWanted) <= 1);
+                if (shadowProbe) continue;
                 float value = channel == 3 ? expected : uniform[5][channel];
                 int wanted = (int)lroundf(value * 255.0f);
                 if (abs((int)pixels[pixel * 4 + channel] - wanted) > 1) {
@@ -183,6 +206,7 @@ int main(void) {
     SDL_ReleaseGPUGraphicsPipeline(device, pipeline);
     SDL_ReleaseGPUShader(device, vs); SDL_ReleaseGPUShader(device, fs);
     SDL_DestroyGPUDevice(device); SDL_Quit();
-    printf("Native GPU fog, instance state and UV: %u cases match CPU within one UNORM step\n", cases);
+    printf("Native GPU %s: %u cases match CPU within one UNORM step\n",
+        shadowProbe ? "shadow UV" : "fog, instance state and UV", cases);
     return 0;
 }
