@@ -50,6 +50,13 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Packaged Linux Play IPC now also passes for NTSC-U and NTSC-J, including clean
+game and launcher shutdown. The probe asserts the prepared disc region, its
+50/60-Hz timing and absence of a prebuilt-cache selection in the game log.
+Together with the preceding PAL run this covers all three regions through
+packaged Play, but profiles are still pre-prepared and UI/game rendering is
+software/offscreen; native chooser and Windows/macOS package gates remain open.
+
 Packaged IPC Play probe now supports RAGE_LAUNCHER_PROBE_CUE: it prepares an
 isolated profile using packaged tools, opens the real sandboxed app, invokes
 the exposed Play IPC, waits for successful game exit and verifies live C asset
