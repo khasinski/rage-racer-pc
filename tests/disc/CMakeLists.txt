@@ -176,9 +176,19 @@ if(TARGET rage-racer-smoke)
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/class_award_fmv.cmake)
             set_tests_properties(class_ending_fmv_${suffix} PROPERTIES
                 LABELS "e2e;regional" TIMEOUT 150 SKIP_REGULAR_EXPRESSION "SKIP:")
+            add_test(NAME class_ending_fmv_${suffix}_extra COMMAND ${CMAKE_COMMAND}
+                -DGAME=$<TARGET_FILE:rage-racer-smoke>
+                -DPCM_CHECK=$<TARGET_FILE:rage-pcm-check>
+                -DPACING_CHECK=$<TARGET_FILE:rage-fmv-pacing-check>
+                -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+                -DDISC_ENV=RAGE_PORT_${key}_CUE -DEXPECT_REGION=${region}
+                -DCLASS=5 -DSERIES=1
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/class_award_fmv.cmake)
+            set_tests_properties(class_ending_fmv_${suffix}_extra PROPERTIES
+                LABELS "e2e;regional" TIMEOUT 150 SKIP_REGULAR_EXPRESSION "SKIP:")
             foreach(series 0 1)
-                foreach(class 0 1 2 3)
-                    if(series EQUAL 0 AND class EQUAL 0)
+                foreach(class 0 1 2 3 4)
+                    if(series EQUAL 0 AND (class EQUAL 0 OR class EQUAL 4))
                         continue() # Registered above.
                     endif()
                     set(test class_award_fmv_${suffix}_${series}_${class})

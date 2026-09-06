@@ -13,6 +13,7 @@
 #include "game/menu.h"
 #include "game/menu_internal.h"
 #include "game/race.h"
+#include "game/race_internal.h"
 #include "game/render_internal.h"
 #include "game/round_screen_internal.h"
 #include "game/player_car_internal.h"
@@ -649,7 +650,9 @@ void PortScenarioBeforeSceneHandler(void) {
         !(g_SceneId == 4 && g_FrontendState == FRONTEND_STATE_MENU_EXIT)) {
         g_GrandPrixMode = (s16)s_scenario.mode;
         g_SeriesSelection = (s16)s_scenario.series;
-        g_GrandPrixSeries = (s16)s_scenario.series;
+        g_GrandPrixSeries = (s16)(s_scenario.mode
+            ? GrandPrixAssetSeries(s_scenario.series, s_scenario.classIndex)
+            : s_scenario.series);
         g_GrandPrixClass = s_scenario.classIndex;
         g_PlayerCarIndex = (s16)s_scenario.car;
         if (g_CarTable != NULL && s_scenario.transmission >= 0)

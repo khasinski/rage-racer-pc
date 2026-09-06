@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Extra GP finale coverage now follows the shared-class rule used by the actual
+menu: scenario automation preserves Extra selection but uses
+GrandPrixAssetSeries for class-5 assets/records instead of overwriting them
+with series 1 every frame. Added class-4 Extra promotion (reused stream 8) and
+class-5 Extra ending (stream 10) for all three regions. These six award/audio
+cases plus scenario_control and class_progress_rules pass (35.49 seconds).
+Both final branches now have regional seeded-award evidence; no physics or
+Windows/macOS claim follows from those Linux offscreen tests.
+
 Standard Grand Prix ending now has natural award-entry coverage: class 4 is
 finished through the same seeded-progress/finish fixture and production result
 flow selects stream 10. The fixture allows 10000 ticks and requires the ending
