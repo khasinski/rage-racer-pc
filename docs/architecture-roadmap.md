@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Mirror-car migration has a compiled PPM checker and CMake runner alongside
+the old test. It preserves frozen race/grid/capture setup, rear vehicle spans,
+submitted mirror draws, equal image dimensions and HUD thresholds (1200 scene
+pixels, eight bright bodywork pixels). PPM reading additionally bounds image
+dimensions and rejects short/trailing data. New and old Linux offscreen tests
+pass (5.10/5.08s). Negative checker fixtures and final replacement remain next;
+the Python runner is still present, with no Windows GPU claim.
+
 Renderer-toggle regression is migrated to CMake with the compiled native
 fixture. It preserves Unicode/spaced paths, scenario/toggle frames, exact
 modern/classic/modern/classic sequence, live-race check and two create/destroy
