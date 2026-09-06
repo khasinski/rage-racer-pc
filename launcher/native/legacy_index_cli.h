@@ -3,6 +3,13 @@
 #include "render/legacy_texture_index.h"
 #include "render/mod_file_snapshot.h"
 #include "yyjson.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#ifdef _WIN32
+#include <io.h>
+#include <fcntl.h>
+#endif
 static int LegacyIndexWriteCommand(const char *output) {
     enum { LIMIT=2*1024*1024 };
     char *input=malloc(LIMIT+1u),*text=malloc(LIMIT+1u);

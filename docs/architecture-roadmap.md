@@ -50,6 +50,13 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+The legacy index writer now has a compiled standalone regression using its
+real stdin path. Invalid later entries leave no output; order/repeated owners,
+exclusive creation and readback through the shared parser are verified. All
+nine mod contracts pass on Linux and Windows 11 ClangCL (1.70 seconds). The
+standalone CI path filters include both profile/index adapters; hosted execution
+and macOS remain unverified, and this is not a full Windows launcher run.
+
 Legacy index serialization also runs in compiled tooling: a bounded JSON list
 of asset/path pairs is fully checked by LegacyTextureIndexLine before exclusive
 UTF-8 output creation. Composition no longer emits index text in JavaScript.
