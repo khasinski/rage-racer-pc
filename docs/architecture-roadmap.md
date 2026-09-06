@@ -50,6 +50,17 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+First natural award-entry regression: smoke-only `hooks.prior_course_wins`
+seeds earlier course results while leaving the current course incomplete.
+The existing finish hook crosses laps through normal race logic; real results,
+prize and class advancement select the movie. `hooks.preserve_fmv` prevents
+the test's auto-confirm input from skipping it. The CMake/compiled-checker
+`class_award_fmv` fixture passes on PAL class 0: prize scene, FMV, class return,
+150 ordered frames at 150 sectors/s, XA start/end and nonzero session PCM.
+Evidence: `build/class-award-74501e7b1cc9`. Prior results and finish progress are
+synthetic; this is not a physics race. PCM still covers the whole session,
+so isolated award audio, other classes/series and NTSC award entry remain open.
+
 Reward-flow automation follow-up: `boot.skip_sequences` no longer injects Start
 after a completed race. Scene 5 is shared by opening and reward FMVs, so the
 old scene-only condition could skip a class/ending movie during repeat-mode

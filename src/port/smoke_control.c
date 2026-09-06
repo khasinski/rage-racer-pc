@@ -13,6 +13,7 @@
 #include "game/race_internal.h"
 #include "game/render_internal.h"
 #include "game/random.h"
+#include "game/save_internal.h"
 #include "game/track_internal.h"
 #include "runtime_config.h"
 #include "scenario_control.h"
@@ -165,6 +166,7 @@ static RageSmokeInput g_SmokeInputs[RAGE_SMOKE_INPUT_CAPACITY];
 static int g_SmokeInputCount;
 static int g_SmokeFrameLimit;
 static int g_SmokeFinishFrame;
+static int g_SmokePriorCourseWinsSeeded;
 static int g_SmokeAutoConfirmFrame;
 static int g_SmokeStopScene;
 static int g_SmokeStopSceneTimer;
@@ -664,6 +666,21 @@ int PortShouldExit(int frame_number) {
                     frame_number, g_SceneId, g_SceneTimer, input->buttons);
         }
     }
+    /* Fixture for the last race of a class, not a forced class-clear flag.
+     * CommitClassProgress must still record this race and choose the award. */
+    if (!g_SmokePriorCourseWinsSeeded && g_SceneId == 12 &&
+        g_PlayerCar.lap > 0 && g_CourseProgress != NULL &&
+        RuntimeConfigEnabled("hooks.prior_course_wins")) {
+        int count = GrandPrixCourseCount(g_GrandPrixClass);
+        if (g_CourseIndex >= 0 && g_CourseIndex < count) {
+            for (int course = 0; course < 4; ++course)
+                g_CourseProgress->bestPlace[course] = course >= count ? 0xff :
+                    course == g_CourseIndex ? 0 : 1;
+            g_SmokePriorCourseWinsSeeded = 1;
+            fprintf(stderr, "smoke prior course wins seeded class=%d course=%d\n",
+                    g_GrandPrixClass, g_CourseIndex);
+        }
+    }
     if (g_SmokeFinishFrame > 0 && frame_number >= g_SmokeFinishFrame &&
         g_PlayerCar.lap > 0 && g_PlayerCar.lap < 257) {
         /* Cross each remaining finish line through the normal race logic. */
@@ -671,7 +688,8 @@ int PortShouldExit(int frame_number) {
         g_PlayerCar.progressB = 0;
     }
     if (g_SmokeAutoConfirmFrame > 0 &&
-        frame_number >= g_SmokeAutoConfirmFrame) {
+        frame_number >= g_SmokeAutoConfirmFrame &&
+        !(g_SceneId == 5 && RuntimeConfigEnabled("hooks.preserve_fmv"))) {
         g_PadType = 0x41;
         g_PadHeld |= 0x40;
         if ((frame_number - g_SmokeAutoConfirmFrame) % 60 == 0)

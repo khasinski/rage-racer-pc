@@ -1,0 +1,57 @@
+# Seed prior courses, finish through lap logic, then use the real prize flow.
+set(disc "${SOURCE}/disc/PAL/Rage Racer (Europe)/Rage Racer (Europe).cue")
+if(NOT EXISTS "${disc}")
+    message("SKIP: no PAL disc for class award FMV")
+    return()
+endif()
+string(RANDOM LENGTH 12 ALPHABET 0123456789abcdef id)
+set(out "${OUTPUT_ROOT}/class-award-${id}")
+file(MAKE_DIRECTORY "${out}")
+execute_process(COMMAND "${CMAKE_COMMAND}" -E env
+    "SDL_AUDIODRIVER=dummy" "XDG_STATE_HOME=${out}/state"
+    "RAGE_PORT_FMV_TRACE=1" "RAGE_PORT_SMOKE_AUDIO_METRICS=1"
+    "PSYZ_AUDIO_PCM_DUMP=${out}/audio.s16le"
+    "${GAME}" --scenario "${SOURCE}/race-scenario.ini"
+    --set "disc.image=${disc}" --set video.renderer=modern
+    --set race.class=0 --set race.course=0 --set race.series=grand-prix
+    --set run.frames=2700 --set hooks.finish_frame=500
+    --set hooks.auto_confirm_frame=800 --set hooks.prior_course_wins=true
+    --set hooks.preserve_fmv=true --set race.after_finish=repeat
+    --set diagnostics.marker_capture=false --set diagnostics.marker_history=false
+    WORKING_DIRECTORY "${SOURCE}" TIMEOUT 120 RESULT_VARIABLE result
+    OUTPUT_FILE "${out}/game.log" ERROR_FILE "${out}/game.log")
+if(NOT result STREQUAL "0")
+    message(FATAL_ERROR "Class award run failed: ${out}")
+endif()
+file(READ "${out}/game.log" log)
+foreach(required "prior course wins seeded class=0 course=0" "native GPU pipeline ready"
+                 "region=PAL" "timing=pal base_hz=50")
+    if(NOT log MATCHES "${required}")
+        message(FATAL_ERROR "Missing ${required}: ${out}")
+    endif()
+endforeach()
+string(FIND "${log}" "scenario race finished after_finish=repeat" finish)
+if(finish LESS 0)
+    message(FATAL_ERROR "Race did not finish: ${out}")
+endif()
+string(SUBSTRING "${log}" ${finish} -1 award)
+foreach(required "scene=19 " "scene=5 " "scene=7 " "fmv xa start:" "fmv xa end")
+    if(NOT award MATCHES "${required}")
+        message(FATAL_ERROR "Missing award transition ${required}: ${out}")
+    endif()
+endforeach()
+file(WRITE "${out}/award.log" "timing=pal base_hz=50\n${award}")
+execute_process(COMMAND "${PACING_CHECK}" "${disc}" 1 "${out}/award.log"
+    RESULT_VARIABLE result OUTPUT_VARIABLE pacing ERROR_VARIABLE error)
+if(NOT result STREQUAL "0")
+    message(FATAL_ERROR "Award movie timing/frames failed: ${pacing}${error}; ${out}")
+endif()
+if(NOT log MATCHES "audio metrics: frames=([0-9]+) energy=([0-9]+)")
+    message(FATAL_ERROR "Missing session PCM metrics: ${out}")
+endif()
+execute_process(COMMAND "${PCM_CHECK}" "${out}/audio.s16le" "${CMAKE_MATCH_1}" "${CMAKE_MATCH_2}"
+    RESULT_VARIABLE result)
+if(NOT result STREQUAL "0")
+    message(FATAL_ERROR "Session PCM failed: ${out}")
+endif()
+message(STATUS "Class award FMV passed: ${out}; ${pacing}")

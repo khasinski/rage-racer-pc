@@ -142,6 +142,14 @@ endif()
 
 if(TARGET rage-racer-smoke)
     if(TARGET rage-pcm-check)
+        add_test(NAME class_award_fmv COMMAND ${CMAKE_COMMAND}
+            -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DPCM_CHECK=$<TARGET_FILE:rage-pcm-check>
+            -DPACING_CHECK=$<TARGET_FILE:rage-fmv-pacing-check>
+            -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/class_award_fmv.cmake)
+        set_tests_properties(class_award_fmv PROPERTIES LABELS e2e
+            TIMEOUT 150 SKIP_REGULAR_EXPRESSION "SKIP:")
         add_test(NAME modern_fmv_audio COMMAND ${CMAKE_COMMAND}
             -DGAME=$<TARGET_FILE:rage-racer-smoke>
             -DPCM_CHECK=$<TARGET_FILE:rage-pcm-check>
