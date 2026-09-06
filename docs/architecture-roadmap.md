@@ -101,6 +101,17 @@ path; image comparisons and frame-tail measurements are still required.
 
 ## Work log
 
+- The compact renderer completed two class-1 Mythical Coast races in one
+  process on each real PAL/NTSC-U/NTSC-J image, with three presentation
+  restarts, automatic regional timing, VRAM-cache equality and ordered
+  resource/session teardown checks. PAL evidence:
+  build/repeated-compact-pal/20260906-071846-38a2f5; NTSC-U/J evidence:
+  build/regional-races/20260906-071951-{fea402,01ac4d}. These remain offscreen
+  route-driver tests, not physics/input replays or automatic flicker detection.
+  The scenarios are registered as modern_repeat_{pal,ntsc_u,ntsc_j}, labelled
+  endurance. Completion validation requires the exact race count and the
+  intervening menu transitions; four fixture tests cover valid, wrong-count,
+  missing-menu and explicit-failure logs.
 - Triangle shape evaluation is now shared lazily between flat normals, road
   decal classification and displacement. The raw normal/length stay separate
   from the camera-facing sign; the original flat-normal epsilon and overlay

@@ -23,3 +23,15 @@ the recorded scene frame. These are smoke/consistency checks, not pixel
 golden-image comparisons, measured display FPS, FMV-audio validation or long
 race/reward sequences. Audio uses the dummy driver. Other suites cover those
 separate requirements; this test alone does not certify a release.
+
+For the longer resource-lifecycle regression, build `rage-racer` and use the
+same environment variables with `ctest --test-dir build -R '^modern_repeat_'`.
+These scenarios complete two class-1/course-0 races in one process with the
+intervening replay/reward/menu flow, three presentation restarts, automatic
+regional timing, a sampled-VRAM cache oracle and ordered teardown checks.
+The final race exits at the handoff to replay, before its own reward screen.
+The driver follows the route and bypasses player input/drivetrain physics;
+this is not an input replay or FMV audio test. Rendering settings come from a
+read-only configuration; instrumentation overrides disable marker/history
+capture. Allow up to ten minutes per region. The tests carry the `endurance`
+label so they can be selected separately from the short smoke scenarios.
