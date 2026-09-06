@@ -14,6 +14,7 @@ static RageModManifest manifest;
 #include "mod_selection_cli.h"
 #include "mod_provider_cli.h"
 #include "mod_snapshot.h"
+#include "mod_file_policy_cli.h"
 static int PackageMetadata(const char *path) {
     char bytes[RAGE_MOD_PACKAGE_BYTES + 1];
     RageModPackage package;
@@ -54,6 +55,7 @@ static void String(const char *s) {
 }
 int main(int argc,char **argv) {
     FILE *f;long size;char *bytes;size_t i;
+    if(argc==2 && strcmp(argv[1],"--check-files-stdin")==0) return FilePolicyCommand();
     if(argc==2 && strcmp(argv[1],"--copy-snapshot-stdin")==0) return SnapshotCommand();
     if(argc==3 && strcmp(argv[1],"--metadata")==0) return PackageMetadata(argv[2]);
     if(argc>1 && strcmp(argv[1],"--check-selection")==0) return SelectionCommand(argc,argv);

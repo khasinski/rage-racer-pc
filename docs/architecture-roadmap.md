@@ -57,8 +57,13 @@ and revalidates manifests/claims before dependency and conflict selection; outpu
 uses these same private copies. Compiled resource inventory, source fingerprints
 and a runtime provider stack remain incomplete.
 
+The package-relative file policy is now shared C code and used before import,
+export and composition. Directory traversal, symlink checks and semantic/legacy
+resource-claim discovery still live in the launcher; classifying a backing file
+does not make it a global override provider.
+
 The standalone `tests/mod_contract` gate now reuses production sources and
-the same compiled tests without SDL/discs. All six tests passed on Linux and
+the same compiled tests without SDL/discs. All seven tests passed on Linux and
 the local Windows 11/ClangCL VM after the launcher integration. A path-filtered
 Windows/Linux/macOS CI workflow is provided; hosted CI and macOS execution are
 not established by those local results. This covers mod contracts, not whole

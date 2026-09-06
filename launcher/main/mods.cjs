@@ -3,16 +3,17 @@ const fs=require('node:fs/promises');
 const path=require('node:path');
 const {randomUUID}=require('node:crypto');
 // Only data formats understood by the current runtime. No executable hooks.
-function allowed(name){const raw=/^raw\/asset_(\d{3})\.bin$/.exec(name);return (raw!==null&&Number(raw[1])<135)||/^textures\/[A-Za-z0-9_./-]+\.(png|json|txt)$/.test(name)||/^meshes\/[A-Za-z0-9_./-]+\.rmesh$/.test(name)||name==='mod.toml'||name==='manifest.json'||name==='rage-mod.json';}
-async function inventory(root){
+async function inventory(root,tool=path.resolve(__dirname,'../resources/bin/rage-mod-cli'+(process.platform==='win32'?'.exe':''))){
  const result=[];let total=0;
  async function visit(relative){for(const item of await fs.readdir(path.join(root,relative),{withFileTypes:true})){
    if(item.name.startsWith('.'))continue;
    const name=relative?relative+'/'+item.name:item.name;
    if(item.isSymbolicLink())throw Error('Mod folders cannot contain symbolic links');
    if(item.isDirectory()){if(!['raw','textures','meshes'].includes(name.split('/')[0])||name.split('/').length>8)throw Error('Unsupported mod folder: '+name);await visit(name);}
-   else {if(!item.isFile()||!allowed(name))throw Error('Unsupported mod file: '+name);const info=await fs.stat(path.join(root,name));total+=info.size;if(info.size>128*1024*1024||total>1024*1024*1024||result.length>=10000)throw Error('Mod package is too large');result.push(name);}
- }}await visit('');if(!result.length)throw Error('The mod folder is empty');return result.sort();
+   else {if(!item.isFile())throw Error('Unsupported mod file: '+name);const info=await fs.stat(path.join(root,name));total+=info.size;if(info.size>128*1024*1024||total>1024*1024*1024||result.length>=10000)throw Error('Mod package is too large');result.push(name);}
+ }}await visit('');if(!result.length)throw Error('The mod folder is empty');
+ const {run}=require('./service.cjs');await run(tool,['--check-files-stdin'],{input:Buffer.from(JSON.stringify(result))});
+ return result.sort();
 }
 async function legacyTextures(root,files){
  if(!files.includes('textures/index.txt'))return [];
@@ -96,7 +97,7 @@ function installMethods(Service){
   },false);
  };
  Service.prototype.installModFiles=async function(source,signal,name){
-   const files=await inventory(source),sourceName=path.basename(source);
+   const files=await inventory(source,this.tool('rage-mod-cli')),sourceName=path.basename(source);
    const id=randomUUID(),folder=path.join(this.root,'mods',id);await fs.mkdir(folder,{recursive:true});
    try {
    await this.snapshotModFiles(source,folder,files,signal);
@@ -121,12 +122,12 @@ function installMethods(Service){
      // The runtime parser is authoritative for material values and semantic IDs.
      const {run}=require('./service.cjs');
      manifest=JSON.parse(await run(this.tool('rage-mod-cli'),[path.join(source,'mod.toml')],{signal}));
-     for(const relative of Object.values(manifest.textures))if(!allowed(relative)||!relative.startsWith('textures/'))throw Error('Texture must be under textures/');
+     for(const relative of Object.values(manifest.textures))if(!relative.startsWith('textures/'))throw Error('Texture must be under textures/');
    }
    for(const relative of Object.values(manifest.textures))if(!files.includes(relative))throw Error('Missing texture: '+relative);
    for(const [key,relative] of Object.entries(manifest.meshes||{})){
      if(!/^car\.(player|rival)\.\d+\.part\.\d+$/.test(key))throw Error('Unsupported car mesh target: '+key);
-     if(!allowed(relative)||!relative.startsWith('meshes/')||!files.includes(relative))throw Error('Missing or invalid mesh: '+relative);
+     if(!relative.startsWith('meshes/')||!files.includes(relative))throw Error('Missing or invalid mesh: '+relative);
      const {run}=require('./service.cjs');await run(this.tool('rage-mod-cli'),['--mesh',path.join(source,relative)],{signal});
    }
    return {manifest,metadata,legacy};
@@ -164,7 +165,7 @@ function installMethods(Service){
    const target=path.join(destination,'rage-mod-'+id);await fs.mkdir(target);
    try{
     const source=path.join(this.root,'mods',id);
-    for(const name of await inventory(source)){
+    for(const name of await inventory(source,this.tool('rage-mod-cli'))){
      if(name==='rage-mod.json')continue;
      if(signal.aborted)throw Error('Operation canceled');
      await fs.mkdir(path.dirname(path.join(target,name)),{recursive:true});
@@ -211,7 +212,7 @@ function installMethods(Service){
    const {run}=require('./service.cjs');
    for(const mod of requested){
     const source=path.join(this.root,'mods',mod.id),snapshot=path.join(staging,mod.id);
-    mod.files=await inventory(source);
+    mod.files=await inventory(source,this.tool('rage-mod-cli'));
     await this.snapshotModFiles(source,snapshot,mod.files);
     const inspected=await this.inspectModSnapshot(snapshot,mod.files);
    mod.manifest=inspected.manifest;mod.legacyTextures=inspected.legacy;

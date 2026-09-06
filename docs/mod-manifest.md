@@ -61,6 +61,20 @@ clears all content and retains only `error` and `errorLine`.
 
 ## Import staging
 
+`ModFileClassify` owns the package-relative file policy in C: raw archive
+indices 000..134, supported texture/mesh extensions, and the three metadata
+filenames. It rejects absolute paths, traversal/empty components, backslashes,
+controls and unsupported data types. Import, export and composition send their
+inventories to `rage-mod-cli --check-files-stdin` before using them. The command
+accepts a JSON array of paths (8 MiB, 10000 entries), validates the whole list,
+and performs no filesystem writes. JavaScript still traverses directories,
+rejects symlinks and enforces directory depth and package-size limits; the
+compiled classifier is not a directory walker or a filesystem sandbox.
+
+Classifying a file does not imply a global override claim: semantic texture
+and mesh backing files remain provider-local, while metadata is not a runtime
+override. Semantic and legacy claim discovery still needs compiled migration.
+
 Mod import inventories the selected directory, then uses
 `rage-mod-cli --copy-snapshot-stdin` to copy the listed files into a new private
 installation directory. Metadata, TOML, mesh references and legacy texture

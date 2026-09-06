@@ -128,6 +128,7 @@ add_library(rage-rmesh STATIC
     src/render/mod_selection.c
     src/render/mod_provider.c
     src/render/mod_file_snapshot.c
+    src/render/mod_file_policy.c
     src/render/asset_path.c
     src/render/render_material.c
     src/render/texture_mipmap.c

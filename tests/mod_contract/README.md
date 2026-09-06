@@ -32,9 +32,11 @@ Coverage:
 - the real native provider stdin decoder, framing, byte limit and Windows
   binary handling (including Ctrl-Z as data);
 - streaming file snapshots, byte equality, exclusive creation, limits and
-  removal of failed output without overwriting existing files.
+  removal of failed output without overwriting existing files;
+- package-relative file classification, all 1000 three-digit raw indices and
+  rejection of unsupported extensions and unsafe relative paths.
 
-On 2026-09-06, all six tests passed on Linux/GCC Release and a local Windows
+On 2026-09-06, all seven tests passed on Linux/GCC Release and a local Windows
 11 evaluation VM using ClangCL 19.1.5, VS Build Tools 2022 and SDK 10.0.26100.
 The Windows sources were copied to an isolated test directory; this was not
 a full checkout/game build. The GitHub workflow also specifies macOS, but
