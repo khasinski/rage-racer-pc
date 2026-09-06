@@ -187,7 +187,7 @@ int main(int argc, char **argv) {
     const char *outputPath;
     const char *drawPath;
     const char *assetsPath;
-    RageRenderWorldSnapshot snapshot;
+    RageRenderWorldSnapshot snapshot = {0};
     SDL_GPUDevice *device = NULL;
     SDL_GPUTexture *color = NULL;
     SDL_GPUTexture *depth = NULL;

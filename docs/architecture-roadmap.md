@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Renderer snapshot read ownership now matches copy ownership: parse into a
+private snapshot, replace/release the old owner only on success, and preserve
+the previous frame on malformed input. Previously Read zeroed an already-owned
+destination and leaked its instances. Replay and test callers now explicitly
+zero-initialize destinations. Repeated-read/malformed-replacement regression
+passes in CTest and a standalone ASan/UBSan/leak-detection build; snapshot tests
+and frame replay build on Linux. This fixes serialized frame ownership, not
+remaining live legacy reads or resource-ID generation binding in presentation.
+
 All nine standalone mod contracts now pass under ASan/UBSan with leak detection
 and halt-on-UB in the Linux development container (0.17 seconds), including
 the native profile and legacy-index writers. RAGE_MOD_SANITIZERS enables this

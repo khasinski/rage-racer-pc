@@ -94,7 +94,7 @@ static void TestRoundTrip(void) {
     const char *path = "render-world-snapshot-test.bin";
     RageRenderMeshInstance instances[2] = {0};
     RageRenderWorld world = {0};
-    RageRenderWorldSnapshot loaded;
+    RageRenderWorldSnapshot loaded = {0};
     world.frame = UINT64_C(0x123456789abcdef0);
     world.light.direction = (RageRenderVec3){.1f, .2f, .3f};
     world.light.ambientColor = (RageRenderVec3){.4f, .5f, .6f};
@@ -169,7 +169,7 @@ static void TestRoundTrip(void) {
 
 static void TestRejectsInvalidFile(void) {
     const char *path = "render-world-snapshot-invalid.bin";
-    RageRenderWorldSnapshot loaded;
+    RageRenderWorldSnapshot loaded = {0};
     FILE *file = fopen(path, "wb");
     CHECK(file != NULL);
     if (file != NULL) {
@@ -214,7 +214,7 @@ static void TestRejectsInvalidWorldBounds(void) {
 static void TestSkyLayoutVersionCompatibility(void) {
     const char *path = "render-world-sky-compat.bin";
     RageRenderWorld world = {0};
-    RageRenderWorldSnapshot loaded;
+    RageRenderWorldSnapshot loaded = {0};
     unsigned char bytes[2048], legacy[2048];
     size_t size = 0, used = 0;
     CHECK(RenderWorldSnapshotWrite(path, &world));
@@ -282,6 +282,18 @@ int main(void) {
         CHECK(copy.instances[0].assetKey == 42);
         CHECK(!RenderWorldSnapshotCopy(&copy, NULL));
         CHECK(!RenderWorldSnapshotCopy(NULL, &world));
+        const char *path = "render_snapshot_replace.tmp";
+        CHECK(RenderWorldSnapshotWrite(path, &copy.world));
+        CHECK(RenderWorldSnapshotRead(path, &copy));
+        CHECK(copy.instances[0].assetKey == 42);
+        CHECK(RenderWorldSnapshotRead(path, &copy));
+        RageRenderMeshInstance *owned = copy.instances;
+        FILE *broken = fopen(path, "wb");
+        CHECK(broken != NULL);
+        if (broken) { CHECK(fputs("broken", broken) >= 0); CHECK(fclose(broken) == 0); }
+        CHECK(!RenderWorldSnapshotRead(path, &copy));
+        CHECK(copy.instances == owned && copy.instances[0].assetKey == 42);
+        CHECK(remove(path) == 0);
         RenderWorldSnapshotRelease(&copy);
         RenderWorldSnapshotRelease(&copy);
     }

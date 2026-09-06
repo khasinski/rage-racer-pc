@@ -303,7 +303,7 @@ int RenderWorldSnapshotWrite(const char *path,
     return ok;
 }
 
-int RenderWorldSnapshotRead(const char *path,
+static int ReadNewSnapshot(const char *path,
                                 RageRenderWorldSnapshot *snapshot) {
     unsigned char magic[sizeof(RAGE_RENDER_WORLD_SNAPSHOT_MAGIC)];
     uint32_t version, instance, count;
@@ -353,6 +353,14 @@ int RenderWorldSnapshotRead(const char *path,
     snapshot->world.instances = snapshot->instances;
     snapshot->world.instanceCapacity = count;
     snapshot->world.instanceCount = count;
+    return 1;
+}
+
+int RenderWorldSnapshotRead(const char *path, RageRenderWorldSnapshot *snapshot) {
+    RageRenderWorldSnapshot next = {0};
+    if (!path || !snapshot || !ReadNewSnapshot(path, &next)) return 0;
+    RenderWorldSnapshotRelease(snapshot);
+    *snapshot = next;
     return 1;
 }
 

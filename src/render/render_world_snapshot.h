@@ -12,6 +12,8 @@ typedef struct RageRenderWorldSnapshot {
  * The file deliberately contains no pointers and no PS1 ordering-table data. */
 int RenderWorldSnapshotWrite(const char *path,
                                  const RageRenderWorld *world);
+/* Destination must be zero-initialized or own a previous snapshot. Successful
+ * reads replace/release it; failed reads preserve its data and ownership. */
 int RenderWorldSnapshotRead(const char *path,
                                 RageRenderWorldSnapshot *snapshot);
 void RenderWorldSnapshotRelease(RageRenderWorldSnapshot *snapshot);
