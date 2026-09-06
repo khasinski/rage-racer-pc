@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Snapshot-copy transactional accounting also passes the updated Windows 11
+ClangCL Release fixture (0.64s), including partial-budget failure and retry.
+Source-catalog inspection confirms an important integration boundary:
+saveModDetails intentionally stores editable metadata in launcher profile state,
+while composeMods snapshots installed files and reparses their TOML/claims.
+A future source fingerprint must distinguish package bytes from these profile
+overrides; blindly replacing profile metadata with rage-mod.json on composition
+would discard user edits. No content-fingerprint implementation is claimed.
+
 Compiled mod snapshot copying now publishes batch-byte accounting only after
 the copy, second-read verification and file closes succeed. A failed partial
 copy removes its output without consuming the caller's successful-copy budget.
