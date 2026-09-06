@@ -6,11 +6,11 @@ if(TARGET rage-frame-replay)
     endforeach()
     add_test(NAME stage_image_check COMMAND stage_image_check_tests)
     set_tests_properties(stage_image_check PROPERTIES LABELS unit)
-    add_test(NAME render_stage_angles_compiled COMMAND ${CMAKE_COMMAND}
+    add_test(NAME render_stage_angles COMMAND ${CMAKE_COMMAND}
         -DTOOL=$<TARGET_FILE:rage-render-stage> -DCHECK=$<TARGET_FILE:rage-stage-image-check>
         -DSOURCE=${PROJECT_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_stage_angles.cmake)
-    set_tests_properties(render_stage_angles_compiled PROPERTIES LABELS functional
+    set_tests_properties(render_stage_angles PROPERTIES LABELS functional
         TIMEOUT 900 SKIP_REGULAR_EXPRESSION "SKIP: no imported assets")
     add_executable(environment_fixture environment_fixture.c)
     target_link_libraries(environment_fixture PRIVATE rage-render-world)
@@ -357,22 +357,6 @@ endif()
 add_test(NAME hud_config COMMAND hud_config_tests)
 
 set_tests_properties(hud_config PROPERTIES LABELS functional)
-# What the renderer draws for one asset, turned all the way round. Needs a
-# GPU and the imported asset cache, and skips when either is absent; it never
-# needs the game or the disc.
-if(TARGET rage-render-stage)
-    add_test(
-        NAME render_stage_angles
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_render_stage_angles.py
-            $<TARGET_FILE:rage-render-stage>
-            ${CMAKE_SOURCE_DIR})
-    set_tests_properties(render_stage_angles PROPERTIES
-        LABELS functional
-        TIMEOUT 600
-        SKIP_RETURN_CODE 77)
-endif()
-
 # Where a stage puts its camera: pure scene composition, no GPU involved.
 add_executable(render_stage_tests render_stage_tests.c)
 target_link_libraries(render_stage_tests PRIVATE rage-render-world)

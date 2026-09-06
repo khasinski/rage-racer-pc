@@ -50,6 +50,17 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Stage-angle migration complete for this test only: render_stage_angles now
+uses CMake plus the C checker, and verify_render_stage_angles.py is removed.
+Audit preserves 18x24 quaternion sweeps, strict 1%-60% area, border and 25%/20%
+framing limits, 0.6-1.7 continuity, 8% symmetry, five rotation comparisons with
+two-channel-level tolerance, exact full turn/repeatability and four track sets
+with 0.5% area minimum. Added negative tests cover exact excluded car-area
+limits, squashed axes, abrupt area changes and wraparound stuck frames; current
+checker passes ASan/UBSan. The renamed production test and checker pass (4.01s).
+Malformed output/GPU execution errors now fail explicitly; missing assets still
+skip. Other Python helpers and the wider six-stage roadmap remain unfinished.
+
 The stage image checker now has an SDL/GPU-independent CMake contract build.
 Strict Linux and Windows 11 ClangCL Release builds pass its fixture (Windows
 1.20s), including blank/clipped track silhouettes and exact minimum-area
