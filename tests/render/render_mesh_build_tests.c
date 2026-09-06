@@ -7,6 +7,7 @@
 #include "render/render_mesh_build.h"
 #include "render/render_native_vertex.h"
 #include "render/render_instance_transform.h"
+#include "render/render_triangle_geometry.h"
 #include "render/authored_car_surface.h"
 
 static int failures;
@@ -1261,7 +1262,27 @@ static void test_instance_transform_contract(void) {
     EXPECT_NEAR(12, point.x, 0); EXPECT_NEAR(14, point.y, 0); EXPECT_NEAR(30, point.z, 0);
 }
 
+static void test_position_only_triangle_geometry(void) {
+    RageRenderVec3 p[3] = {{0,0,0}, {8,0,0}, {0,0,128}};
+    RageTriangleGeometry g = RenderTriangleGeometry(p);
+    EXPECT_NEAR(-1024, g.ny, 0);
+    EXPECT_NEAR(1024, g.length, 0);
+    EXPECT_EQ(1, RenderTriangleIsRoadDecal(p, &g));
+    /* The same source strip, scaled across its width, is no longer paint. */
+    p[1].x = 32;
+    g.prepared = 0;
+    EXPECT_EQ(0, RenderTriangleIsRoadDecal(p, &g));
+    p[1].x = 8; p[2].z = 0; p[2].y = 128;
+    g.prepared = 0;
+    EXPECT_EQ(0, RenderTriangleIsRoadDecal(p, &g));
+    p[2] = p[1];
+    g = RenderTriangleGeometry(p);
+    EXPECT_NEAR(0, g.length, 0);
+    EXPECT_EQ(0, RenderTriangleIsRoadDecal(p, &g));
+}
+
 int main(void) {
+    test_position_only_triangle_geometry();
     test_instance_transform_contract();
     test_scroll_draw_boundaries_and_mixed_cache_reuse();
     test_pass_filter_precedes_asset_lookup();

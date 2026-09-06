@@ -50,6 +50,16 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Triangle shape and road-paint classification now use position-only helpers in
+render_triangle_geometry.h, consumed by the production mesh builder. The
+classification must run after instance scaling/snapping; source-mesh identity
+alone cannot cache it safely. Tests cover width scaling, vertical surfaces and
+degeneracy; mesh-build, native-world and mirror gates pass (9.53s). All three
+mirror fixture PPMs in build/mirror-cars-32c724914b50 are byte-identical to
+build/mirror-cars-cf7fc992eac5. The live 100-repeat Mythical Coast benchmark
+reports p50 4.534416ms/p95 4.579622ms/max 4.609360ms, close to the prior baseline
+but not a demonstrated speedup. Geometry still expands on CPU each frame.
+
 After rebuilding both normal local game executables for the modern-default
 change, runtime_config, mirror_cars, renderer_toggle_cycles, native_render_world,
 game_logic and release_package all pass (12.41s). This includes the live prepare

@@ -1,6 +1,7 @@
 #include "render_mesh_build.h"
 #include "render_native_vertex.h"
 #include "render_instance_transform.h"
+#include "render_triangle_geometry.h"
 #include "authored_car_surface.h"
 
 #include <math.h>
@@ -46,28 +47,15 @@ static float Vec3Length(float x, float y, float z) {
 /* Triangle shape is independent of the camera. Keep the unnormalised normal
  * and its length so flat shading and displacement share exactly the same
  * geometry calculation, without baking view-facing orientation into it. */
-typedef struct RageTriangleGeometry {
-    float nx, ny, nz, length;
-    int prepared;
-} RageTriangleGeometry;
-
 static void PrepareTriangleGeometry(const RageNativeDrawVertex triangle[3],
                                     RageTriangleGeometry *geometry) {
     if (geometry->prepared) return;
-    float ax = triangle[1].position[0] - triangle[0].position[0];
-    float ay = triangle[1].position[1] - triangle[0].position[1];
-    float az = triangle[1].position[2] - triangle[0].position[2];
-    float bx = triangle[2].position[0] - triangle[0].position[0];
-    float by = triangle[2].position[1] - triangle[0].position[1];
-    float bz = triangle[2].position[2] - triangle[0].position[2];
-    float nx = ay * bz - az * by;
-    float ny = az * bx - ax * bz;
-    float nz = ax * by - ay * bx;
-    geometry->nx = nx;
-    geometry->ny = ny;
-    geometry->nz = nz;
-    geometry->length = Vec3Length(nx, ny, nz);
-    geometry->prepared = 1;
+    RageRenderVec3 positions[3];
+    for (unsigned corner = 0; corner < 3; ++corner) {
+        positions[corner] = (RageRenderVec3){triangle[corner].position[0],
+            triangle[corner].position[1], triangle[corner].position[2]};
+    }
+    *geometry = RenderTriangleGeometry(positions);
 }
 
 static void ApplyFlatTriangleNormal(RageNativeDrawVertex triangle[3],
@@ -92,22 +80,12 @@ static void ApplyFlatTriangleNormal(RageNativeDrawVertex triangle[3],
  * modes or ordering-table hints. */
 static int TriangleIsRoadDecal(const RageNativeDrawVertex triangle[3],
                                RageTriangleGeometry *geometry) {
-    float edge[3];
-    float shortest, longest;
-    int corner;
-    for (corner = 0; corner < 3; corner++) {
-        int next = (corner + 1) % 3;
-        float x = triangle[next].position[0] - triangle[corner].position[0];
-        float y = triangle[next].position[1] - triangle[corner].position[1];
-        float z = triangle[next].position[2] - triangle[corner].position[2];
-        edge[corner] = Vec3Length(x, y, z);
+    RageRenderVec3 positions[3];
+    for (unsigned corner = 0; corner < 3; ++corner) {
+        positions[corner] = (RageRenderVec3){triangle[corner].position[0],
+            triangle[corner].position[1], triangle[corner].position[2]};
     }
-    shortest = fminf(edge[0], fminf(edge[1], edge[2]));
-    longest = fmaxf(edge[0], fmaxf(edge[1], edge[2]));
-    if (shortest > 16.0f || longest < 64.0f || longest < shortest * 8.0f)
-        return 0;
-    PrepareTriangleGeometry(triangle, geometry);
-    return geometry->length > 0.0f && fabsf(geometry->ny) >= geometry->length * 0.85f;
+    return RenderTriangleIsRoadDecal(positions, geometry);
 }
 
 static void LiftRoadDecal(RageNativeDrawVertex triangle[3],
