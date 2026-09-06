@@ -241,17 +241,9 @@ const char *ModManifestErrorString(RageModManifestError error) {
 
 const char *ModManifestFindMesh(const RageModManifest *manifest,
                                const char *semanticId) {
-    size_t index;
-    if (manifest == NULL || semanticId == NULL ||
-        manifest->error != RAGE_MOD_MANIFEST_OK ||
-        manifest->schemaVersion != RAGE_MOD_MANIFEST_SCHEMA_VERSION ||
-        manifest->meshCount > RAGE_MOD_MANIFEST_MAX_MESHES ||
-        manifest->textureCount > RAGE_MOD_MANIFEST_MAX_TEXTURES ||
-        manifest->materialCount > RAGE_MOD_MANIFEST_MAX_MATERIALS) return NULL;
-    for (index = manifest->meshCount; index > 0; index--)
-        if (strcmp(manifest->meshes[index - 1].key, semanticId) == 0)
-            return manifest->meshes[index - 1].path;
-    return NULL;
+    RageModResolution result = ModManifestResolve(manifest, semanticId, NULL,
+                                                 RAGE_MOD_RESOLVE_MESH);
+    return result.mesh != NULL ? result.mesh->path : NULL;
 }
 
 const char *ModManifestFindMaterialProperties(
@@ -273,7 +265,8 @@ RageModResolution ModManifestResolve(const RageModManifest *manifest,
     RageModResolution result = {0};
     if (manifest == NULL || manifest->error != RAGE_MOD_MANIFEST_OK ||
         manifest->schemaVersion != RAGE_MOD_MANIFEST_SCHEMA_VERSION ||
-        (channels & ~(RAGE_MOD_RESOLVE_TEXTURE | RAGE_MOD_RESOLVE_MATERIAL)) != 0 ||
+        (channels & ~(RAGE_MOD_RESOLVE_TEXTURE | RAGE_MOD_RESOLVE_MATERIAL |
+                      RAGE_MOD_RESOLVE_MESH)) != 0 ||
         manifest->textureCount > RAGE_MOD_MANIFEST_MAX_TEXTURES ||
         manifest->materialCount > RAGE_MOD_MANIFEST_MAX_MATERIALS ||
         manifest->meshCount > RAGE_MOD_MANIFEST_MAX_MESHES) return result;
@@ -294,6 +287,15 @@ RageModResolution ModManifestResolve(const RageModManifest *manifest,
         }
         if (result.material == NULL && baseId != NULL && strcmp(entry->key, baseId) == 0)
             result.material = entry;
+    }
+    for (size_t i = (channels & RAGE_MOD_RESOLVE_MESH) ? manifest->meshCount : 0; i > 0; --i) {
+        const RageModTextureOverride *entry = &manifest->meshes[i - 1];
+        if (exactId != NULL && strcmp(entry->key, exactId) == 0) {
+            result.mesh = entry;
+            break;
+        }
+        if (result.mesh == NULL && baseId != NULL && strcmp(entry->key, baseId) == 0)
+            result.mesh = entry;
     }
     return result;
 }

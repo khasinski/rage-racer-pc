@@ -10,6 +10,42 @@ static int failures;
             #value);                                                           \
 } } while (0)
 
+static void test_mesh_resolution(void) {
+    static const char text[] =
+        "[meshes]\n\"car.a.variant.1\"=\"meshes/exact.rmesh\"\n"
+        "\"car.a\"=\"meshes/old.rmesh\"\n\"car.a\"=\"meshes/base.rmesh\"\n"
+        "[textures]\n\"car.a\"=\"textures/base.png\"\n";
+    RageModManifest *m = malloc(sizeof(*m));
+    EXPECT(m != NULL);
+    if (!m) return;
+    EXPECT(ModManifestParse(text, sizeof(text) - 1, m));
+    RageModResolution r = ModManifestResolve(m, "car.a.variant.1", "car.a", 7);
+    EXPECT(r.mesh == &m->meshes[0] && r.texture == &m->textures[0] && !r.material);
+    r = ModManifestResolve(m, "missing", "car.a", RAGE_MOD_RESOLVE_MESH);
+    EXPECT(r.mesh == &m->meshes[2] && !r.texture && !r.material);
+    EXPECT(ModManifestFindMesh(m, "car.a") == m->meshes[2].path);
+    EXPECT(ModManifestFindMesh(m, NULL) == NULL);
+    r = ModManifestResolve(m, "car.a", NULL, 3);
+    EXPECT(!r.mesh && r.texture == &m->textures[0]);
+    r = ModManifestResolve(m, "car.a", NULL, 8);
+    EXPECT(!r.mesh && !r.texture && !r.material);
+    const RageModManifest *selection[] = {m};
+    RageModOrder order;
+    for (unsigned invalid = 0; invalid < 5; ++invalid) {
+        EXPECT(ModManifestParse(text, sizeof(text) - 1, m));
+        if (invalid == 0) m->meshCount = RAGE_MOD_MANIFEST_MAX_MESHES + 1;
+        if (invalid == 1) m->textureCount = RAGE_MOD_MANIFEST_MAX_TEXTURES + 1;
+        if (invalid == 2) m->materialCount = RAGE_MOD_MANIFEST_MAX_MATERIALS + 1;
+        if (invalid == 3) m->schemaVersion = 2;
+        if (invalid == 4) m->error = RAGE_MOD_MANIFEST_INVALID;
+        EXPECT(ModManifestFindMesh(m, "car.a") == NULL);
+        r = ModManifestResolve(m, "car.a", "car.a", 7);
+        EXPECT(!r.mesh && !r.texture && !r.material);
+        EXPECT(!ModManifestBuildOrder(selection, 1, &order) && order.count == 0);
+    }
+    free(m);
+}
+
 static void test_dependency_order(void) {
     RageModManifest *storage = calloc(RAGE_MOD_MAX_SELECTED, sizeof(*storage));
     EXPECT(storage != NULL);
@@ -122,6 +158,7 @@ static void test_resolution(void) {
 }
 
 int main(void) {
+    test_mesh_resolution();
     test_dependency_order();
     test_resolution();
     {

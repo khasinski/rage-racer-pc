@@ -12,14 +12,32 @@ and regression evidence; extracting an unused interface is not completion.
 - Preserve user configuration; do not commit local diagnostic preferences.
 - Future launcher: shared configuration/discovery/import APIs must work without
   a game loop or GPU. Do not introduce a second asset-import implementation.
-  The launcher is owned by another agent. Do not implement its UI or alter its
-  startup flow here; reconcile the integration contract after its code arrives.
+  The `re-asset` launcher is now merged. Continue reconciling its integration
+  contract; its Electron UI is an existing consumer of compiled game/tools,
+  not a reason to duplicate their parsers in the runtime.
 - Future standalone model import/export tool: share formats, validation and
   semantic identifiers without depending on live race globals.
 - Future graphics effects and ray tracing: explicit material semantics,
   persistent geometry/instances, and backend capabilities. Keep hardware and
   effect choices out of simulation/content definitions. Ray tracing itself and
-  the launcher UI are future features, not part of this refactor's deliverables.
+  further launcher UI work are not part of this refactor's deliverables.
+
+## Launcher integration checkpoint (2026-09-06)
+
+- Merged `re-asset` including launcher, C mesh/save tools and terrain palette
+  fixes; retained compact GPU vertices, snapshot ownership and regional tests.
+- Authored/replaced car banks now adopt their own bytes, decoded geometry and
+  bounds through `RuntimeCachedMeshAdopt`, instead of copying a live cache
+  owner. Resident-only renderer lookups return the prepared replacement bank.
+- Mesh overrides join the common C semantic resolver, including exact/base
+  precedence and whole-manifest validation, with regression coverage.
+- Local optional models remain outside Git. The source-only build and local
+  authored-model build both compile. The latter is not a redistributable asset
+  package or evidence that the asset-rights audit is complete.
+- Remaining integration work: reconcile launcher's JSON package dependencies
+  (versions/regions/conflicts) with runtime TOML requirements; separate car
+  catalog identity from optional embedded geometry; unify original/generated/
+  mod providers. This checkpoint does not complete any roadmap stage.
 
 ## Stages and acceptance gates
 

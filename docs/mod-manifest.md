@@ -38,6 +38,20 @@ Quoted values support escaped quotes and backslashes; paths themselves cannot
 contain backslashes. Material overrides use the existing `[materials]` table
 and validated `RenderMaterialParseProperties` string format.
 
+`[meshes]` maps semantic car-part IDs to relative `meshes/*.rmesh` paths.
+Mesh, texture and material lookups all use `ModManifestResolve`: channels are
+independent, exact variant precedes the base key, and the last assignment wins
+within a key. A mesh-only lookup does not select texture/material entries.
+Invalid schema, parser errors and excessive counts in any asset table reject
+the whole resolution, including mesh lookups and dependency planning.
+
+The launcher currently composes enabled packages into one runtime directory,
+after checking its own `rage-mod.json` dependencies and resource conflicts.
+That package-level format (including exact version requirements) is distinct
+from the runtime TOML `requires` below. Unifying these contracts in compiled
+code remains future work; the C ordering API does not yet replace launcher's
+package selection or implement version matching.
+
 Version 1 preserves existing behavior: repeated asset keys use the last value,
 and unknown fields/sections are ignored. This is not full TOML duplicate-key
 semantics. Requirement declarations are validated, but dependency resolution,

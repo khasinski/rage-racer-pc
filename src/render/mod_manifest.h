@@ -46,7 +46,7 @@ typedef struct RageModManifest {
     RageModManifestError error;
 } RageModManifest;
 
-/* Small TOML subset: [mod] id/schema_version/requires, [textures], [materials].
+/* Small TOML subset: [mod] id/schema_version/requires, [textures], [materials], [meshes].
  * requires is a single-line array of unique semantic mod IDs. The parser
  * records requirements; the session loader must satisfy them before use.
  * Missing schema_version means legacy schema 1. Unsupported versions fail;
@@ -64,8 +64,10 @@ const char *ModManifestFindMesh(const RageModManifest *manifest,
 typedef struct RageModResolution {
     const RageModTextureOverride *texture;
     const RageModMaterialOverride *material;
+    const RageModTextureOverride *mesh;
 } RageModResolution;
-enum { RAGE_MOD_RESOLVE_TEXTURE = 1, RAGE_MOD_RESOLVE_MATERIAL = 2 };
+enum { RAGE_MOD_RESOLVE_TEXTURE = 1, RAGE_MOD_RESOLVE_MATERIAL = 2,
+       RAGE_MOD_RESOLVE_MESH = 4 };
 
 /* Resolve each channel independently: exact variant wins over base, and the
  * last assignment wins within a key. Returned entries belong to manifest,
