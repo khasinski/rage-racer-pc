@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Asset lifecycle now has a standalone tests/modern_asset_contract build using
+the actual modern_assets adapter, mesh/provider/cache modules, JSON/miniz and
+offline importer stubs, with authored embedded cars disabled. Linux normal and
+RAGE_ASSET_SANITIZERS=ON builds pass the complete retry/session replacement
+fixture. Unlike the prior ad-hoc sanitizer link, supporting project libraries
+are compiled with instrumentation too; the supplied SDL library remains
+uninstrumented. Windows execution of this new standalone gate remains next.
+
 Packaged Linux Play IPC now also passes for NTSC-U and NTSC-J, including clean
 game and launcher shutdown. The probe asserts the prepared disc region, its
 50/60-Hz timing and absence of a prebuilt-cache selection in the game log.
