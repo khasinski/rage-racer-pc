@@ -34,6 +34,8 @@ static void test_resolution(void) {
     result = ModManifestResolve(manifest, NULL, NULL, 3);
     EXPECT(result.texture == NULL && result.material == NULL);
     manifest->textureCount = RAGE_MOD_MANIFEST_MAX_TEXTURES + 1;
+    EXPECT(ModManifestFindTexture(manifest, "track.a") == NULL);
+    EXPECT(ModManifestFindMaterialProperties(manifest, "track.a") == NULL);
     result = ModManifestResolve(manifest, "track.a", "track.a", 3);
     EXPECT(result.texture == NULL && result.material == NULL);
     result = ModManifestResolve(NULL, "track.a", "track.a", 3);
@@ -46,6 +48,13 @@ static void test_resolution(void) {
     EXPECT(result.texture == NULL && result.material == &manifest->materials[0]);
     result = ModManifestResolve(manifest, "track.a.variant.1", "track.a", 0);
     EXPECT(result.texture == NULL && result.material == NULL);
+    result = ModManifestResolve(manifest, "track.a.variant.1", "track.a", 4);
+    EXPECT(result.texture == NULL && result.material == NULL);
+    manifest->schemaVersion++;
+    EXPECT(ModManifestFindMaterialProperties(manifest, "track.a") == NULL);
+    manifest->schemaVersion = RAGE_MOD_MANIFEST_SCHEMA_VERSION;
+    manifest->materialCount = RAGE_MOD_MANIFEST_MAX_MATERIALS + 1;
+    EXPECT(ModManifestFindMaterialProperties(manifest, "track.a") == NULL);
     free(manifest);
 }
 

@@ -199,30 +199,24 @@ const char *ModManifestErrorString(RageModManifestError error) {
 
 const char *ModManifestFindMaterialProperties(
     const RageModManifest *manifest, const char *semanticId) {
-    size_t index;
-    if (manifest == NULL || semanticId == NULL) return NULL;
-    for (index = manifest->materialCount; index > 0; index--)
-        if (strcmp(manifest->materials[index - 1].key, semanticId) == 0)
-            return manifest->materials[index - 1].properties;
-    return NULL;
+    RageModResolution result = ModManifestResolve(manifest, semanticId, NULL,
+                                                 RAGE_MOD_RESOLVE_MATERIAL);
+    return result.material != NULL ? result.material->properties : NULL;
 }
 
 const char *ModManifestFindTexture(const RageModManifest *manifest,
                                       const char *semanticId) {
-    size_t index;
-    if (manifest == NULL || semanticId == NULL) return NULL;
-    /* Later entries deliberately override earlier ones, matching TOML/config
-     * expectations while keeping lookup allocation-free. */
-    for (index = manifest->textureCount; index > 0; index--)
-        if (strcmp(manifest->textures[index - 1].key, semanticId) == 0)
-            return manifest->textures[index - 1].path;
-    return NULL;
+    RageModResolution result = ModManifestResolve(manifest, semanticId, NULL,
+                                                 RAGE_MOD_RESOLVE_TEXTURE);
+    return result.texture != NULL ? result.texture->path : NULL;
 }
 
 RageModResolution ModManifestResolve(const RageModManifest *manifest,
     const char *exactId, const char *baseId, unsigned channels) {
     RageModResolution result = {0};
     if (manifest == NULL || manifest->error != RAGE_MOD_MANIFEST_OK ||
+        manifest->schemaVersion != RAGE_MOD_MANIFEST_SCHEMA_VERSION ||
+        (channels & ~(RAGE_MOD_RESOLVE_TEXTURE | RAGE_MOD_RESOLVE_MATERIAL)) != 0 ||
         manifest->textureCount > RAGE_MOD_MANIFEST_MAX_TEXTURES ||
         manifest->materialCount > RAGE_MOD_MANIFEST_MAX_MATERIALS) return result;
     for (size_t i = (channels & RAGE_MOD_RESOLVE_TEXTURE) ? manifest->textureCount : 0; i > 0; --i) {
