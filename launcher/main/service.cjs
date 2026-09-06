@@ -13,6 +13,14 @@ async function atomic(file, text) {
 function run(executable, args, {cwd,signal,onLog,input,maxOutput=2*1024*1024}={}) {
   return new Promise((resolve,reject)=>{
     const child=spawn(executable,args,{cwd,signal,windowsHide:true,shell:false});
+    let forceTimer;
+    const forceAfterGrace=()=>{
+      if(forceTimer)return;
+      forceTimer=setTimeout(()=>{
+        if(child.exitCode===null&&child.signalCode===null)child.kill('SIGKILL');
+      },5000);
+      forceTimer.unref();
+    };
     // A rejected native request may close stdin before consuming it. Its exit
     // status/stderr below remains authoritative; do not surface an uncaught EPIPE.
     child.stdin.on('error',()=>{});
@@ -21,7 +29,7 @@ function run(executable, args, {cwd,signal,onLog,input,maxOutput=2*1024*1024}={}
     child.stdout.on('data',d=>{
       if(!overflow){
         bytes+=d.length;
-        if(bytes>maxOutput){overflow=true;chunks.length=0;child.kill();}
+        if(bytes>maxOutput){overflow=true;chunks.length=0;child.kill();forceAfterGrace();}
         else chunks.push(d);
       }
       onLog?.(d.toString());
@@ -29,8 +37,9 @@ function run(executable, args, {cwd,signal,onLog,input,maxOutput=2*1024*1024}={}
     child.stderr.on('data',d=>{err=(err+d).slice(-32000);onLog?.(d.toString());});
     // Abort emits an error before the process has actually stopped. Wait for
     // close before deleting staging files that the child may still be writing.
-    child.once('error',e=>{if(e.name!=='AbortError')reject(e);});
+    child.once('error',e=>{if(e.name==='AbortError')forceAfterGrace();else reject(e);});
     child.once('close',code=>{
+      clearTimeout(forceTimer);
       if(signal?.aborted)reject(Error('Operation canceled'));
       else if(overflow)reject(Error(`Native tool output exceeds the ${maxOutput}-byte limit`));
       else if(code===0)resolve(Buffer.concat(chunks).toString('utf8'));

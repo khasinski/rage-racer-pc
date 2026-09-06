@@ -33,6 +33,18 @@ test('canceling mod import does not install a partial mod or retain the job lock
  }finally{await fs.rm(root,{recursive:true,force:true});}
 });
 
+test('cancellation terminates a child that ignores SIGTERM before settling',
+ {skip:process.platform==='win32',timeout:15000},async()=>{
+ const controller=new AbortController();let ready,pid;
+ const started=new Promise(resolve=>{ready=resolve;});
+ const task=run(process.execPath,['-e',"process.on('SIGTERM',()=>{});process.stdout.write(String(process.pid)+'\\n');setInterval(()=>{},1000);"],
+  {signal:controller.signal,onLog:text=>{pid=Number(text.trim());ready();}});
+ const rejected=assert.rejects(task,/Operation canceled/);
+ await started;assert.ok(Number.isInteger(pid)&&pid>0);
+ controller.abort();await rejected;
+ assert.throws(()=>process.kill(pid,0),{code:'ESRCH'});
+});
+
 test('asset replacement holds one job lock and cancellation leaves no replacement',async()=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-replace-cancel-'));
  try{

@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Launcher native-process cancellation now gives SIGTERM five seconds, then
+SIGKILLs only the still-running child; completion still waits for close before
+staging cleanup. Output-limit termination uses the same escalation. Seven
+Linux cancellation tests pass, including a child that deliberately ignores
+SIGTERM and is verified absent before the promise settles. This bounds the
+cooperative-stop grace period, not arbitrary OS uninterruptible I/O, and does
+not kill unrelated processes or descendant process groups.
+
 Real-disc launcher cancellation coverage now cancels on the observable
 "Preparing the asset library" boundary after archive read and before extractor
 work. PAL/U/J preserve previous state/profile bytes, remove new staging, clear
