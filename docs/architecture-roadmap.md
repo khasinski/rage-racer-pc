@@ -50,6 +50,13 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Scenery dispatch regression now checks 192 combinations: six classes, four
+courses, animation on/off, legacy/presentation and race/replay. Its independent
+retail oracle retains the original threshold rules rather than reading the
+new table, and checks ordered calls plus parameters, including finale freeze
+and course-three legacy behavior. Linux compiled fixture passes. This closes
+the dispatch-matrix coverage gap, not the rendered-image comparison gate.
+
 Class definitions now carry scenery choices: finale animation freeze, Mythical
 Coast high-class landmarks and course-one spinning scenery. Both legacy and
 presentation dispatch consume the shared values; invalid-index landmark
