@@ -106,6 +106,17 @@ add_test(NAME release_package COMMAND release_package_tests ${CMAKE_SOURCE_DIR})
 
 set_tests_properties(release_package PROPERTIES LABELS functional)
 if(TARGET rage-extract AND TARGET rage-pack)
+    add_executable(texture_patch_tests texture_patch_tests.c ${CMAKE_SOURCE_DIR}/src/port/texture_patch.c)
+    target_include_directories(texture_patch_tests PRIVATE ${CMAKE_SOURCE_DIR}/src/port)
+    target_link_libraries(texture_patch_tests PRIVATE miniz)
+    if(MSVC)
+        target_compile_options(texture_patch_tests PRIVATE /W4 /WX /UNDEBUG)
+        target_compile_definitions(texture_patch_tests PRIVATE _CRT_SECURE_NO_WARNINGS)
+    else()
+        target_compile_options(texture_patch_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+    endif()
+    add_test(NAME texture_patch COMMAND texture_patch_tests)
+    set_tests_properties(texture_patch PROPERTIES LABELS functional)
     add_test(
         NAME mod_tools
         COMMAND python3

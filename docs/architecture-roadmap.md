@@ -125,6 +125,15 @@ Linux/Windows C contracts and the existing mod-tools texture roundtrip pass.
 The existing Python roundtrip has not been removed; its compiled replacement
 remains part of the toolchain migration. No new game GPU run was performed.
 
+A compiled `texture_patch` fixture now exercises the production patcher with a
+synthetic, valid PNG: 4/8/16-bit edits, an unaligned palette, unchanged repacking,
+neighbor nibble/row-padding preservation, owner filtering, malformed/NUL index
+entries and out-of-bounds pixel ranges. It compares the entire asset, including
+sentinel bytes. Both this fixture and the existing archive roundtrip pass on
+Linux. The new test does not yet replace archive extraction/repacking, all PNG
+filters or every malformed-sidecar case from the old script, so that script
+remains enabled. This new fixture has not yet run on Windows.
+
 Copy roles now also come from C: referenced backing files stay provider-local,
 while metadata and unused meshes are omitted from runtime composition without
 being removed from the library/export. Reference discovery and resource-key
