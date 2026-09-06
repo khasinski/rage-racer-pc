@@ -16,6 +16,10 @@ void ModernAssetsShutdown(void);
 const RageRuntimeCachedMesh *ModernAssetsFind(
     const RageRenderMeshInstance *instance);
 int ModernAssetsReady(void);
+/* Process-local lifetime token, not a content fingerprint. Changes on successful
+ * session creation and retirement; stable across retries and idempotent calls.
+ * Borrowed meshes remain valid only within their owning live session. */
+uint64_t ModernAssetsGeneration(void);
 uint32_t ModernAssetsCachedMeshCount(void);
 const RageRuntimeMesh *ModernAssetsMeshLookup(
     void *context, const RageRenderMeshInstance *instance);

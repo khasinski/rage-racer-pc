@@ -50,6 +50,16 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Asset sessions now expose a process-local generation token, advanced on
+successful initialization and retirement, not failed retries or idempotent
+initialization/shutdown. GPU preparation invalidates texture/sky caches and
+the prepared frame on either a track revision or asset-generation change.
+This covers session replacement even when track identity/frame counters repeat;
+the token is not a source fingerprint or a concurrent lifetime guarantee.
+The full Linux game builds and both full/standalone asset lifecycle fixtures
+pass generation-transition assertions. GPU session-replacement image/runtime
+coverage and Windows execution of this change remain pending.
+
 Asset lifecycle CTest registrations now launch through cmake -E env with
 RAGE_PORT_MODERN_ASSETS unset, so developer cache overrides cannot replace
 the fixture's RuntimeConfigInit selection. Setting the variable to an empty

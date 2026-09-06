@@ -23,11 +23,13 @@ int main(int argc, char **argv) {
     char setting[4096] = "modern.assets=disc";
     char *configArgs[] = {"asset-retry", "--set", setting};
     if (!RuntimeConfigInit(3, configArgs)) return 14;
+    uint64_t initialGeneration = ModernAssetsGeneration();
     if (argc != 2 || !SDL_CreateDirectory(argv[1])) return 1;
     if (SDL_snprintf(path, sizeof(path), "%s/runtime-index.txt", argv[1]) >= (int)sizeof(path)) return 1;
     /* This fixture owns only its index file, never a user asset directory. */
     if (!SDL_SaveFile(path, "invalid\n", 8)) return 1;
     if (ModernAssetsInitRoot(argv[1]) || ModernAssetsReady()) return 2;
+    if (ModernAssetsGeneration() != initialGeneration) return 31;
     if (!SDL_SaveFile(path, index, sizeof(index) - 1)) return 3;
     if (SDL_snprintf(environmentPath, sizeof(environmentPath),
                      "%s/environment-index.txt", argv[1]) >= (int)sizeof(environmentPath)) return 10;
@@ -36,6 +38,8 @@ int main(int argc, char **argv) {
     if (ModernAssetsInitRoot(argv[1]) || ModernAssetsReady()) return 12;
     if (!SDL_RemovePath(environmentPath)) return 13;
     if (!ModernAssetsInitRoot(argv[1]) || !ModernAssetsReady()) return 4;
+    uint64_t liveGeneration = ModernAssetsGeneration();
+    if (liveGeneration == initialGeneration) return 32;
     if (SDL_snprintf(meshPath, sizeof(meshPath), "%s/mesh.rmesh", argv[1]) >= (int)sizeof(meshPath)) return 21;
     memcpy(meshBytes, "RRMESH1", 7);
     Write32(meshBytes + 8, 1); Write32(meshBytes + 12, 1);
@@ -50,6 +54,7 @@ int main(int argc, char **argv) {
     if (!ownedBytes || memcmp(ownedBytes, meshBytes, sizeof(meshBytes))) return 24;
     /* Successful initialization is idempotent and preserves its source. */
     if (!ModernAssetsInitRoot(NULL) || !ModernAssetsReady()) return 5;
+    if (ModernAssetsGeneration() != liveGeneration) return 33;
     if (ModernAssetsFind(&instance) != resident || resident->mesh.bytes != ownedBytes ||
         memcmp(ownedBytes, meshBytes, sizeof(meshBytes))) return 25;
     unsigned char nextMeshBytes[sizeof(meshBytes)];
@@ -61,11 +66,16 @@ int main(int argc, char **argv) {
         resident->mesh.bytes != ownedBytes ||
         memcmp(ownedBytes, meshBytes, sizeof(meshBytes))) return 28;
     ModernAssetsShutdown();
+    uint64_t retiredGeneration = ModernAssetsGeneration();
+    if (retiredGeneration == liveGeneration) return 34;
     ModernAssetsShutdown();
+    if (ModernAssetsGeneration() != retiredGeneration) return 35;
     if (ModernAssetsReady() || ModernAssetsCachedMeshCount() != 0) return 6;
     /* Offline fixture has no importer: failure must not poison InitRoot. */
     if (ModernAssetsInit() || ModernAssetsReady()) return 8;
+    if (ModernAssetsGeneration() != retiredGeneration) return 36;
     if (!ModernAssetsInitRoot(argv[1]) || !ModernAssetsReady()) return 9;
+    if (ModernAssetsGeneration() == retiredGeneration) return 37;
     /* After full teardown, the same identity/path must resolve new bytes. */
     resident = ModernAssetsFind(&instance);
     if (!resident || memcmp(resident->mesh.bytes, nextMeshBytes, sizeof(nextMeshBytes)) ||

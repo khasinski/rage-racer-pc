@@ -181,6 +181,7 @@ static void ModernNativeRetireUpload(SDL_GPUTransferBuffer *upload) {
 static uint16_t s_textureHash[MODERN_NATIVE_TEXTURE_HASH_SIZE];
 static uint32_t s_textureCount;
 static uint64_t s_trackAssetRevision = UINT64_MAX;
+static uint64_t s_assetGeneration = UINT64_MAX;
 static RageRenderShadowMap s_shadowMap;
 static int s_haveShadowMap;
 
@@ -798,7 +799,8 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
     uint64_t trackAssetRevision;
     if (s_vertices == NULL || s_spans == NULL || world == NULL) return;
     trackAssetRevision = TrackAssetIdentityRevision();
-    if (trackAssetRevision != s_trackAssetRevision) {
+    if (trackAssetRevision != s_trackAssetRevision ||
+        ModernAssetsGeneration() != s_assetGeneration) {
         if (RuntimeConfigEnabled("diagnostics.modern_asset_trace") &&
             s_trackAssetRevision != UINT64_MAX) {
             fprintf(stderr,
@@ -810,6 +812,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         ModernNativeGpuClearTextures();
         ModernNativeReleaseSkyTexture();
         s_trackAssetRevision = trackAssetRevision;
+        s_assetGeneration = ModernAssetsGeneration();
         /* Scene-local frame counters can repeat across attract/race loads.
          * A generation change must rebuild the prepared world even when its
          * frame number happens to equal the preceding scene's last frame. */
@@ -1754,5 +1757,6 @@ void ModernNativeGpuShutdown(void) {
      * different textures, so a material found one that was never its own. */
     memset(s_textureHash, 0, sizeof(s_textureHash));
     s_trackAssetRevision = UINT64_MAX;
+    s_assetGeneration = UINT64_MAX;
     s_haveShadowMap = 0;
 }
