@@ -22,7 +22,7 @@ jobs:
         with:
           submodules: recursive
       - name: Configure
-        run: cmake -S . -B build/release -G "Visual Studio 17 2022" -A x64 -T ClangCL
+        run: cmake -S . -B build/release -G "Visual Studio 17 2022" -A x64 -T ClangCL -DRAGE_EMBED_AUTHORED_CARS=OFF
       - name: Build
         run: cmake --build build/release --config Release --target rage-racer release_package_tests --parallel
       - name: Verify portable tests

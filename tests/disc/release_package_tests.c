@@ -118,6 +118,8 @@ int main(int argc, char **argv) {
             ok &= RequireText(workflows[index], workflow, expected);
         }
         ok &= RequireText(workflows[index], workflow, "README.md");
+        ok &= RequireText(workflows[index], workflow,
+                          "-DRAGE_EMBED_AUTHORED_CARS=OFF");
         ok &= RequireText(workflows[index], workflow, "LICENSE.md");
         ok &= RequireText(workflows[index], workflow, "rage-port.ini");
         ok &= RequireText(workflows[index], workflow, "race-scenario.ini");

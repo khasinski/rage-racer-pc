@@ -22,7 +22,7 @@ jobs:
         with:
           submodules: recursive
       - name: Configure
-        run: cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release -DRAGE_EMBED_AUTHORED_CARS=OFF
       - name: Build
         # An unbounded --parallel runs this runner out of processes: three
         # builds in a row died with "Resource temporarily unavailable" from

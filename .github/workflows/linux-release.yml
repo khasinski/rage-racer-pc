@@ -31,7 +31,7 @@ jobs:
             libxfixes-dev libxi-dev libxkbcommon-dev libxrandr-dev libxss-dev \
             libxtst-dev
       - name: Configure
-        run: cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release -DRAGE_EMBED_AUTHORED_CARS=OFF
       - name: Build
         run: cmake --build build/release --parallel
       - name: Verify portable tests

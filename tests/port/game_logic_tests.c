@@ -240,7 +240,7 @@ static void test_port_config(void) {
     EXPECT_EQ(0, PortConfigApplyRuntime(NULL));
     PortConfigSetActive(NULL);
     PortConfigDefaults(&config);
-    EXPECT_EQ(RAGE_RENDERER_CLASSIC, config.renderer);
+    EXPECT_EQ(RAGE_RENDERER_MODERN, config.renderer);
     EXPECT_EQ(RAGE_MODERN_FPS_LOGIC, config.modernFps);
     fd = mkstemp(path);
     if (fd < 0 || write(fd, contents, sizeof(contents) - 1) != sizeof(contents) - 1) {
@@ -259,6 +259,13 @@ static void test_port_config(void) {
         EXPECT_EQ(35, (s32)(config.modernInternalScale * 10.0f));
         /* invalid value keeps the default */
         EXPECT_EQ(10, (s32)(config.modernDrawDistance * 10.0f));
+        {
+            char *classicArguments[] = {
+                "rage-test", "--config", path, "--set", "video.renderer=classic"};
+            EXPECT_EQ(1, RuntimeConfigInit(5, classicArguments));
+            PortConfigApplyRuntime(&config);
+            EXPECT_EQ(RAGE_RENDERER_CLASSIC, config.renderer);
+        }
         unlink(path);
     }
     {

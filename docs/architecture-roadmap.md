@@ -50,6 +50,81 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+After rebuilding both normal local game executables for the modern-default
+change, runtime_config, mirror_cars, renderer_toggle_cycles, native_render_world,
+game_logic and release_package all pass (12.41s). This includes the live prepare
+benchmark's exact restored draw-state comparison and explicit classic/modern
+switching; it is not a full-platform release certification.
+
+Production startup tests now use an empty renderer configuration. This exposed
+the built-in classic default (PAL regression failed before the fix). Both
+PortConfigDefaults and the initial active config now select modern; explicit
+classic configuration remains supported and has a regression assertion.
+All six source-only production explicit/saved-disc cases pass without forcing
+modern (31.89s including game_logic); the rebuilt explicit-classic assertion
+also passes. Earlier suites predate this default change and are not implicitly
+claimed as rerun against it.
+
+Linux, Windows and macOS release workflows explicitly configure
+RAGE_EMBED_AUTHORED_CARS=OFF. The compiled release_package source-contract test
+requires that flag and passes locally. This makes release configuration
+independent of optional model files on the build machine; hosted workflows
+have not been executed as part of this check.
+
+Linux production_saved_disc_{pal,ntsc_u,ntsc_j} additionally seeds an isolated
+XDG config with the saved disc path and starts without a disc.image argument.
+The source-only binary passes all six explicit/saved-path cases (31.80s),
+including modern import and reaching the race stop. The fixture writes the
+saved-path file directly: it tests consuming a remembered selection, not the
+picker UI or persistence after an actual interactive selection.
+
+The optional RAGE_EMBED_AUTHORED_CARS switch (default ON, preserving existing
+build behavior) permits source-only validation without moving local model files.
+A fresh Release build in build/source-only-release with the switch OFF confirms
+RAGE_HAS_AUTHORED_CARS=0 and successfully builds rage-racer. Its three production
+disc-source tests pass (15.82s) on Linux Vulkan offscreen. This proves the tested
+race startup/import path does not require embedded authored cars. The local SDL
+configuration disables unavailable optional X11 extensions; it is not evidence
+of distribution portability, working audio hardware or the graphical picker.
+
+CTest now also registers production_disc_source_{pal,ntsc_u,ntsc_j} using
+the ordinary rage-racer entry point. The shared source-isolation gate reads
+its explicit diagnostic file as well as stderr and requires reaching race
+scene 12/timer 20. All six smoke/production regional cases pass on Linux
+(19.29s). These runs use the local build, including its optional embedded
+authored geometry, not the source-only release build; package portability and
+the interactive disc picker still require separate verification.
+
+Default-disc-source regional tests now launch the copied smoke executable
+from an unrelated empty working directory and use a colocated scenario copy,
+instead of running from the source tree. All three regions pass on Linux.
+This closes a working-directory dependency gap in the importer gate; the
+explicit config/scenario/disc arguments and smoke executable mean it is still
+not a clean release archive or graphical double-click test. The release_package
+test checks source files/workflow text, not execution of the packaged artifact.
+
+Current-tree verification after the live-prepare diagnostic and latest shader/
+transform changes: all 36 real-disc regional import/award/ending tests pass
+(177.57s, three workers, no skips), all 234 configured unit tests pass (2.86s),
+and the three standalone Linux Vulkan shader tests pass (0.20s, no skips).
+Regional runs explicitly select modern and cover PAL/NTSC-U/NTSC-J, ordered
+award transitions, XA mixer contribution, disc-derived FMV pacing and PCM.
+Logs: /tmp/rage-current-regional-tests.log and /tmp/rage-current-unit-tests.log.
+This refreshes the earlier regional result but does not establish clean-release
+packaging, Windows GPU execution, visual inspection or completion of the six
+architecture stages.
+
+Live diagnostic dumps now accept diagnostics.modern_prepare_repeat=1..10000.
+At the single-dump boundary this deep-copies the prepared world, measures CPU
+preparation with resident assets and advancing presentation revisions, then
+restores the original revision. Incomplete worlds and enabled performance/asset
+traces are rejected. GPU submission and initial asset import are not measured.
+With modern_dump_scene enabled, the restored draw dump is also written; the
+native-world integration gate compares it byte-for-byte with the pre-benchmark
+dump. A real PAL class-1 Mythical Coast start with 252 instances and 100 repeats
+reported p50 4.563062ms, p95 4.587087ms, max 4.643417ms on this Linux host.
+This is a baseline, not a demonstrated speedup or whole-frame FPS result.
+
 Replay supports --prepare-repeat 1..10000 for fixed-input CPU preparation
 timing. Initial asset warmup and GPU submission are outside the measurement;
 only presentation revisions advance between samples. It reports p50/p95/max
@@ -92,8 +167,9 @@ using its actual two-buffer camera/instance layout. Alongside the existing
 native shader gate, 384 cases per shader cover offsets 0/0.25/0.5/0.75 on
 Linux Vulkan (both tests pass, 0.14s). The shadow probe reads interpolated UVs
 without sampling a texture or writing a depth map: it verifies the shader
-binding/offset contract, not the still-open end-to-end masked-shadow image
-comparison. Probe SPIR-V/MSL are generated from one GLSL source.
+binding/offset contract. The separate masked-shadow depth-image test above
+covers alpha discard; full-game shadow placement remains open. Probe
+SPIR-V/MSL are generated from one GLSL source.
 
 Compact GPU geometry now keeps authored U coordinates for uniformly scrolling
 triangles; scroll is draw-instance state evaluated by the native and masked
@@ -106,9 +182,9 @@ checks UV as well as fog/lighting across 384 cases on Linux Vulkan. Builder,
 native-world and mirror integration pass; the stage-angle gate also passed
 before the mixed-corner compatibility addition. SPIR-V/MSL were regenerated
 from GLSL using SPIRV-Cross 83fa691cb8606ca4b3af7f13bfcbedd5668f2a3a.
-Draw diagnostics retain effective UVs. Nonzero-scroll masked-shadow pixel
-comparison and full Windows/Metal rendering remain to verify; passing ordinary
-shadow draws is not claimed as that stronger test. Geometry is still expanded
+Draw diagnostics retain effective UVs. Nonzero-scroll masked-shadow depth
+comparison is covered by the isolated test above; full Windows/Metal rendering
+remains to verify. Geometry is still expanded
 and uploaded each frame: this removes one instance dependency, not stage 4.
 
 Native prepared-frame reuse now includes presentation aspect, not only the

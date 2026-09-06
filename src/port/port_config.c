@@ -18,7 +18,7 @@ static char *Trim(char *text) {
 
 void PortConfigDefaults(RagePortConfig *config) {
     if (config == NULL) return;
-    config->renderer = RAGE_RENDERER_CLASSIC;
+    config->renderer = RAGE_RENDERER_MODERN;
     config->modernInternalScale = 2.0f;
     config->modernAspect = RAGE_MODERN_ASPECT_AUTO;
     config->modernFps = RAGE_MODERN_FPS_LOGIC;
@@ -151,7 +151,7 @@ int PortConfigApplyRuntime(RagePortConfig *config) {
 }
 
 static RagePortConfig active_config = {
-    .renderer = RAGE_RENDERER_CLASSIC,
+    .renderer = RAGE_RENDERER_MODERN,
     .modernInternalScale = 2.0f,
     .modernAspect = RAGE_MODERN_ASPECT_AUTO,
     .modernFps = RAGE_MODERN_FPS_LOGIC,

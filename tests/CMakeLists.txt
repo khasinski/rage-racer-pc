@@ -37,6 +37,33 @@ if(TARGET rage-racer-smoke)
     endforeach()
 endif()
 
+# Exercise the production entry point too: smoke bypasses normal disc startup
+# and uses a different diagnostic-log destination.
+if(TARGET rage-racer)
+    foreach(region PAL NTSC-U NTSC-J)
+        string(REPLACE "-" "_" key "${region}")
+        string(TOLOWER "${key}" suffix)
+        add_test(NAME production_disc_source_${suffix}
+            COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer>
+                -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+                -DDISC_ENV=RAGE_PORT_${key}_CUE -DEXPECT_REGION=${region}
+                -DPRODUCTION_ENTRY=ON
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/render/verify_default_disc_source.cmake)
+        set_tests_properties(production_disc_source_${suffix} PROPERTIES
+            LABELS "e2e;regional" TIMEOUT 120 SKIP_REGULAR_EXPRESSION "SKIP:")
+        if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+            add_test(NAME production_saved_disc_${suffix}
+                COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer>
+                    -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+                    -DDISC_ENV=RAGE_PORT_${key}_CUE -DEXPECT_REGION=${region}
+                    -DPRODUCTION_ENTRY=ON -DSAVED_DISC=ON
+                    -P ${CMAKE_CURRENT_SOURCE_DIR}/render/verify_default_disc_source.cmake)
+            set_tests_properties(production_saved_disc_${suffix} PROPERTIES
+                LABELS "e2e;regional" TIMEOUT 120 SKIP_REGULAR_EXPRESSION "SKIP:")
+        endif()
+    endforeach()
+endif()
+
 # A release build defines NDEBUG, which would turn the assertion-based C
 # tests into no-ops. Keep assertions active in every test target while leaving
 # the release game binaries untouched.
