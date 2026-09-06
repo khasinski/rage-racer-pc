@@ -23,7 +23,9 @@ void RenderInterpolateCamera(const RageRenderCamera *previous,
  * Static world instances retain the normal producer-supplied interpolation,
  * while vehicles keep the previous frame's exact model/visibility set and
  * move toward matching current transforms. Worlds larger than
- * RAGE_RENDER_PRESENTATION_MAX_INSTANCES are rejected. */
+ * RAGE_RENDER_PRESENTATION_MAX_INSTANCES are rejected. Insufficient output
+ * capacity rejects the entire result and leaves output unchanged, rather
+ * than publishing a truncated scene. Zero denotes empty or rejected output. */
 uint32_t RenderWorldBuildSynchronizedPresentation(
     const RageRenderWorld *previous, const RageRenderWorld *current, float t,
     RageRenderMeshInstance *out, uint32_t capacity);

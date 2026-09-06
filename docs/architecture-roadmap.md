@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Synchronized presentation now counts its selected current-static plus
+previous-dynamic instances before writing. Insufficient capacity returns zero
+without changing the output instead of silently truncating the scene. Tests
+cover oversized static output and a mixed previous-vehicle/current-terrain
+union whose sources individually fit but whose result does not. Standalone
+world/snapshot tests and the world ASan/UBSan fixture pass on Linux. The API
+still represents both empty and rejected output as zero; richer error reporting
+and current GPU/performance verification remain outstanding.
+
 Post-numeric-change smoke checkpoint: rebuilt current smoke/world/snapshot
 targets and passed seven Linux tests in 7.85 seconds: default selected-disc
 modern startup for PAL/NTSC-U/NTSC-J, native_render_world, submit recovery,

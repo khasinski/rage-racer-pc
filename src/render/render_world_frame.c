@@ -246,6 +246,12 @@ uint32_t RenderWorldBuildSynchronizedPresentation(
 
     if (!RenderWorldInstancesAreValid(previous) ||
         !RenderWorldInstancesAreValid(current) || out == NULL) return 0;
+    uint32_t required = 0;
+    for (uint32_t i = 0; i < current->instanceCount; ++i)
+        if (!RenderInstanceNeedsSynchronizedMatch(&current->instances[i])) required++;
+    for (uint32_t i = 0; i < previous->instanceCount; ++i)
+        if (RenderInstanceNeedsSynchronizedMatch(&previous->instances[i])) required++;
+    if (required > capacity) return 0;
     memset(matched, 0, sizeof(matched));
 
     /* Complete course and terrain publication is stable across ticks. Keep

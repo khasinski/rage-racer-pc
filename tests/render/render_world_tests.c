@@ -620,6 +620,25 @@ static void test_synchronized_presentation_rejects_invalid_world_bounds(void) {
     current.instanceCount = RAGE_RENDER_PRESENTATION_MAX_INSTANCES + 1;
     EXPECT_EQ(0, RenderWorldBuildSynchronizedPresentation(
                      &previous, &current, 0.5f, &presentation, 1));
+
+    RageRenderMeshInstance sources[2] = {0};
+    sources[0].assetSet = sources[1].assetSet = RAGE_RENDER_ASSET_TERRAIN;
+    RenderWorldInit(&previous, sources, 2);
+    RenderWorldInit(&current, sources, 2);
+    current.instanceCount = 2;
+    memset(&presentation, 0x5a, sizeof(presentation));
+    RageRenderMeshInstance sentinel = presentation;
+    EXPECT_EQ(0, RenderWorldBuildSynchronizedPresentation(
+                     &previous, &current, 0.5f, &presentation, 1));
+    EXPECT_EQ(0, memcmp(&presentation, &sentinel, sizeof(presentation)));
+    sources[1].assetSet = RAGE_RENDER_ASSET_MODEL_BANK;
+    sources[1].entity = 11;
+    previous.instances = &sources[1];
+    previous.instanceCount = previous.instanceCapacity = 1;
+    current.instanceCount = 1;
+    EXPECT_EQ(0, RenderWorldBuildSynchronizedPresentation(
+                     &previous, &current, 0.5f, &presentation, 1));
+    EXPECT_EQ(0, memcmp(&presentation, &sentinel, sizeof(presentation)));
 }
 
 static void test_native_camera_projection_has_no_gte_quantization(void) {
