@@ -2,6 +2,11 @@ add_executable(native_asset_fixture native_asset_fixture.c)
 target_link_libraries(native_asset_fixture PRIVATE SDL3::SDL3)
 target_compile_options(native_asset_fixture PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 if(TARGET rage-racer-smoke)
+    add_test(NAME renderer_toggle_cycles COMMAND ${CMAKE_COMMAND}
+        -DFIXTURE=$<TARGET_FILE:native_asset_fixture> -DGAME=$<TARGET_FILE:rage-racer-smoke>
+        -DSOURCE=${PROJECT_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_renderer_toggle_cycles.cmake)
+    set_tests_properties(renderer_toggle_cycles PROPERTIES LABELS e2e TIMEOUT 195)
     add_test(NAME native_render_world COMMAND ${CMAKE_COMMAND}
         -DFIXTURE=$<TARGET_FILE:native_asset_fixture> -DGAME=$<TARGET_FILE:rage-racer-smoke>
         -DSOURCE=${PROJECT_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
@@ -1610,15 +1615,6 @@ set_tests_properties(boot_frame PROPERTIES LABELS e2e)
     )
 set_tests_properties(title_page_stability PROPERTIES LABELS e2e)
     set_tests_properties(title_page_stability PROPERTIES TIMEOUT 60)
-    add_test(
-        NAME renderer_toggle_cycles
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_renderer_toggle_cycles.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
-    )
-set_tests_properties(renderer_toggle_cycles PROPERTIES LABELS e2e)
-    set_tests_properties(renderer_toggle_cycles PROPERTIES TIMEOUT 195)
     add_test(NAME mirrored_track COMMAND python3
         ${CMAKE_CURRENT_SOURCE_DIR}/verify_mirrored_track.py
         $<TARGET_FILE:rage-racer-smoke> ${CMAKE_SOURCE_DIR})

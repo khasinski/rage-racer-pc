@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Renderer-toggle regression is migrated to CMake with the compiled native
+fixture. It preserves Unicode/spaced paths, scenario/toggle frames, exact
+modern/classic/modern/classic sequence, live-race check and two create/destroy
+resource generations. New and old runners passed side by side (1.61/1.63s),
+then the replacement passed under renderer_toggle_cycles (1.59s) after removing
+the old Python runner. Its helper remains for mirror-car/runtime-config users.
+This verifies Linux offscreen lifecycle transitions, not Windows GPU or visual
+equivalence between renderer backends.
+
 Native-world runner migration is complete for this test: native_render_world
 now invokes CMake and the compiled fixture, and its superseded Python runner
 is removed after both paths passed and assertion/argument coverage was reviewed.
