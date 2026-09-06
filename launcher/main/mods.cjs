@@ -47,11 +47,10 @@ function installMethods(Service){
   if(typeof key!=='string'||!/^[a-z0-9.-]+$/.test(key)||key.length>150||typeof properties!=='string'||properties.length>255||/["\\\r\n]/.test(properties))throw Error('Invalid material');
   return this.operation('Saving material',async signal=>{
   const {run}=require('./service.cjs');
-  const tables={meshes:{...mod.manifest.meshes},textures:{...mod.manifest.textures},materials:{...mod.manifest.materials,[key]:properties}};
-  let text='[mod]\nid = "launcher-mod"\n';for(const group of ['textures','materials','meshes']){text+=`\n[${group}]\n`;for(const[k,v]of Object.entries(tables[group]))text+=`"${k}" = "${v}"\n`;}
   const temp=path.join(this.root,'material-'+randomUUID()+'.toml');
   try{
-   await fs.writeFile(temp,text);
+   const source=mod.files.includes('mod.toml')?path.join(this.root,'mods',id,'mod.toml'):'';
+   await run(this.tool('rage-mod-cli'),['--set-material',source,temp,key,properties],{signal});
    const manifest=JSON.parse(await run(this.tool('rage-mod-cli'),[temp],{signal}));
    if(signal.aborted)throw Error('Operation canceled');this.busy.cancellable=false;await this.update();
    const target=path.join(this.root,'mods',id,'mod.toml'),backup=temp+'.previous';

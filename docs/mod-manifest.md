@@ -61,6 +61,24 @@ The parser owns no external resources. Its output stores copies of all values;
 lookup results borrow this output until it is parsed again or reset. Failure
 clears all content and retains only `error` and `errorLine`.
 
+## Native material editing
+
+The launcher delegates edits to
+`rage-mod-cli --set-material INPUT OUTPUT KEY PROPERTIES`. An empty INPUT
+argument explicitly creates a manifest for a raw-only mod; a missing nonempty
+input is an error. OUTPUT must be a new staging file, never the installed file.
+The C tool validates the source and edited document with the runtime parser,
+preserves the original bytes (including identity, schema, requirements,
+comments and unknown extensions), and appends the overriding material entry.
+Normal manifest size, line and table limits apply; reaching a limit rejects
+the edit without modifying the source. The launcher retains responsibility
+for transactional installation and rollback after persistence failure.
+
+CLI inspection exposes `schemaVersion` and TOML `requires` alongside the
+asset tables. These fields must not be confused with the launcher's JSON
+package metadata. Material editing preserves them; package composition still
+needs a shared dependency contract before it can enforce TOML requirements.
+
 ## Required mods
 
 The optional `[mod]` field `requires = ["base-pack", "shared-textures"]`

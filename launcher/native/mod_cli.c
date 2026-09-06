@@ -9,6 +9,7 @@
 #include "car_spec.h"
 #include "car_materials.h"
 static RageModManifest manifest;
+#include "manifest_edit.h"
 static int ValidatePng(const char *path) {
     unsigned char header[24];
     FILE *file=fopen(path,"rb");
@@ -34,6 +35,8 @@ static void String(const char *s) {
 }
 int main(int argc,char **argv) {
     FILE *f;long size;char *bytes;size_t i;
+    if(argc==6 && strcmp(argv[1],"--set-material")==0)
+        return ManifestEditMaterial(argv[2],argv[3],argv[4],argv[5]);
     if(argc==3 && strcmp(argv[1],"--png")==0)return ValidatePng(argv[2]);
     if(argc>1 && strcmp(argv[1],"--car-transmission")==0)return CarTransmissionCommand(argc,argv);
     if(argc>1 && strcmp(argv[1],"--car-materials")==0)return CarMaterialsCommand(argc,argv);
@@ -88,7 +91,10 @@ int main(int argc,char **argv) {
     bytes=malloc((size_t)size);if(!bytes){fclose(f);return 1;}
     if(fread(bytes,1,(size_t)size,f)!=(size_t)size){free(bytes);fclose(f);return 1;}fclose(f);
     if(!ModManifestParse(bytes,(size_t)size,&manifest)){fprintf(stderr,"Invalid mod manifest at line %zu\n",manifest.errorLine);free(bytes);return 1;}free(bytes);
-    printf("{\"id\":");String(manifest.id);printf(",\"textures\":{");
+    printf("{\"id\":");String(manifest.id);
+    printf(",\"schemaVersion\":%u,\"requires\":[",manifest.schemaVersion);
+    for(i=0;i<manifest.requirementCount;i++){if(i)putchar(',');String(manifest.requirements[i]);}
+    printf("],\"textures\":{");
     for(i=0;i<manifest.textureCount;i++){if(i)putchar(',');String(manifest.textures[i].key);putchar(':');String(manifest.textures[i].path);}
     printf("},\"materials\":{");for(i=0;i<manifest.materialCount;i++){if(i)putchar(',');String(manifest.materials[i].key);putchar(':');String(manifest.materials[i].properties);}
     printf("},\"meshes\":{");for(i=0;i<manifest.meshCount;i++){if(i)putchar(',');String(manifest.meshes[i].key);putchar(':');String(manifest.meshes[i].path);}puts("}}");return 0;
