@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Masked-shadow scroll now has a direct depth-image regression using both
+production shadow shaders and a half-transparent repeating texture. Three
+renders compare unscrolled control, GPU instance offset 0.5, and CPU-expanded
+UVs with zero GPU offset. D32 readback is byte-identical for the latter two;
+each writes exactly 32 of 64 depth pixels and all 64 pixels differ from the
+unscrolled control. Linux Vulkan passes. This verifies actual alpha discard
+and depth writing, beyond the earlier UV probe. It is an isolated shader
+pipeline test, not full-game shadow placement or Windows/Metal validation.
+
 The production shadow vertex shader now has an independent UV readback gate,
 using its actual two-buffer camera/instance layout. Alongside the existing
 native shader gate, 384 cases per shader cover offsets 0/0.25/0.5/0.75 on
