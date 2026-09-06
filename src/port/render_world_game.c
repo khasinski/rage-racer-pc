@@ -810,10 +810,14 @@ const RageRenderWorld *GameRenderWorldPresentation(float t) {
     s_presentationWorld.instances = s_presentationInstances;
     s_presentationWorld.instanceCapacity =
         RAGE_GAME_RENDER_WORLD_MAX_INSTANCES;
-    s_presentationWorld.instanceCount =
-        RenderWorldBuildSynchronizedPresentation(
+    s_presentationWorld.instanceCount = 0;
+    if (!RenderWorldTryBuildSynchronizedPresentation(
         previous, current, t, s_presentationInstances,
-        RAGE_GAME_RENDER_WORLD_MAX_INSTANCES);
+        RAGE_GAME_RENDER_WORLD_MAX_INSTANCES, &s_presentationWorld.instanceCount)) {
+        /* A rejected presentation is not a valid empty scene. Keep the
+         * incomplete-world signal explicit for backend completeness checks. */
+        s_presentationWorld.overflowCount = 1;
+    }
     RenderInterpolateCamera(&current->previousCamera, &current->camera, t,
                                 &s_presentationWorld.camera);
     if (current->hasMirrorCamera) {

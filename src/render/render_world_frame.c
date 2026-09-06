@@ -237,15 +237,15 @@ static float RenderTransformDistanceSquared(
     return x * x + y * y + z * z;
 }
 
-uint32_t RenderWorldBuildSynchronizedPresentation(
+int RenderWorldTryBuildSynchronizedPresentation(
     const RageRenderWorld *previous, const RageRenderWorld *current, float t,
-    RageRenderMeshInstance *out, uint32_t capacity) {
+    RageRenderMeshInstance *out, uint32_t capacity, uint32_t *count) {
     uint32_t outputCount = 0;
     uint32_t currentIndex;
     uint8_t matched[RAGE_RENDER_PRESENTATION_MAX_INSTANCES];
 
     if (!RenderWorldInstancesAreValid(previous) ||
-        !RenderWorldInstancesAreValid(current) || out == NULL) return 0;
+        !RenderWorldInstancesAreValid(current) || out == NULL || count == NULL) return 0;
     uint32_t required = 0;
     for (uint32_t i = 0; i < current->instanceCount; ++i)
         if (!RenderInstanceNeedsSynchronizedMatch(&current->instances[i])) required++;
@@ -309,5 +309,14 @@ uint32_t RenderWorldBuildSynchronizedPresentation(
         }
         outputCount++;
     }
-    return outputCount;
+    *count = outputCount;
+    return 1;
+}
+
+uint32_t RenderWorldBuildSynchronizedPresentation(
+    const RageRenderWorld *previous, const RageRenderWorld *current, float t,
+    RageRenderMeshInstance *out, uint32_t capacity) {
+    uint32_t count = 0;
+    RenderWorldTryBuildSynchronizedPresentation(previous, current, t, out, capacity, &count);
+    return count;
 }

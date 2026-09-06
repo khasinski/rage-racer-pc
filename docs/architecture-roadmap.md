@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Synchronized presentation exposes explicit success/count via TryBuild. Valid
+empty output succeeds with zero count; failure preserves caller output/count.
+The game adapter uses this API and marks rejected presentation incomplete with
+overflowCount instead of treating it as valid empty data. The count-only API
+remains a compatibility wrapper. Standalone world/snapshot and ASan/UBSan world
+tests pass; rebuilt Linux smoke passes native_render_world, submit recovery
+and selected-disc PAL startup (7.87 seconds). Full regional/performance and
+Windows game-adapter reruns remain open.
+
 Synchronized presentation now counts its selected current-static plus
 previous-dynamic instances before writing. Insufficient capacity returns zero
 without changing the output instead of silently truncating the scene. Tests

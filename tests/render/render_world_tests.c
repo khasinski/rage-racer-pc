@@ -631,6 +631,15 @@ static void test_synchronized_presentation_rejects_invalid_world_bounds(void) {
     EXPECT_EQ(0, RenderWorldBuildSynchronizedPresentation(
                      &previous, &current, 0.5f, &presentation, 1));
     EXPECT_EQ(0, memcmp(&presentation, &sentinel, sizeof(presentation)));
+    uint32_t checkedCount = 77;
+    EXPECT_EQ(0, RenderWorldTryBuildSynchronizedPresentation(
+        &previous, &current, 0.5f, &presentation, 1, &checkedCount));
+    EXPECT_EQ(77, checkedCount);
+    RageRenderWorld empty = {0};
+    EXPECT_EQ(1, RenderWorldTryBuildSynchronizedPresentation(
+        &empty, &empty, 0.5f, &presentation, 1, &checkedCount));
+    EXPECT_EQ(0, checkedCount);
+    EXPECT_EQ(0, memcmp(&presentation, &sentinel, sizeof(presentation)));
     sources[1].assetSet = RAGE_RENDER_ASSET_MODEL_BANK;
     sources[1].entity = 11;
     previous.instances = &sources[1];

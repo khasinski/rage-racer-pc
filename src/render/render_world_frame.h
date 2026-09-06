@@ -29,5 +29,10 @@ void RenderInterpolateCamera(const RageRenderCamera *previous,
 uint32_t RenderWorldBuildSynchronizedPresentation(
     const RageRenderWorld *previous, const RageRenderWorld *current, float t,
     RageRenderMeshInstance *out, uint32_t capacity);
+/* Explicit success result, including a valid empty scene. Failure preserves
+ * both output storage and *count; success publishes the complete count. */
+int RenderWorldTryBuildSynchronizedPresentation(
+    const RageRenderWorld *previous, const RageRenderWorld *current, float t,
+    RageRenderMeshInstance *out, uint32_t capacity, uint32_t *count);
 
 #endif
