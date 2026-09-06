@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+After manifest identity/termination hardening, all ten Windows ClangCL Release
+mod contracts pass (6.25s). Rebuilt Linux smoke/replay pass environment_provider
+and native_render_world (3.95s total): the latter checks native GPU pipelines,
+semantic texture replacement, player paint and attract geometry. This is
+offscreen integration evidence, not a pixel/performance comparison. The
+existing native_render_world Python runner was reused unchanged; replacing it
+with equivalent compiled coverage remains open, not waived by this pass.
+
 Resource resolution now bounds-checks termination of each examined manifest
 key and payload before string comparison or publication. Encountering an
 unterminated texture/material/mesh entry returns an entirely empty resolution,
