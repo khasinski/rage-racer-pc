@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+PackageMetadata command handling is now shared in mod_package_cli.h by the
+production CLI and a compiled fixture, without SDL/GPU dependencies. The
+fixture exercises stdin, malformed/oversized rejection before file creation,
+exclusive destination creation and exact bytes. It passes the full Linux build
+and Windows ClangCL Release; all ten Windows standalone mod contracts pass
+(5.09s). Linux production CLI package tests also pass after rebuilding/staging.
+Windows coverage calls the same command handler directly, not the full CLI
+argument dispatcher or packaged launcher. New fixture sanitizer run remains open.
+
 Post-export migration verification: all 30 launcher mod-*.test.cjs cases pass
 against the rebuilt/staged CLI, covering selection, composition, conflicts,
 snapshotting, editable details and exports. All nine standalone C mod contracts
