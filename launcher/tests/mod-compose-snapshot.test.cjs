@@ -3,6 +3,34 @@ const fs=require('node:fs/promises'),path=require('node:path'),os=require('node:
 const {LauncherService,run}=require('../main/service.cjs');
 const bin=path.resolve(__dirname,'../resources/bin');
 const material=(id,color)=>`[mod]\nid="${id}"\n[materials]\n"car.a"="lit opaque 0.5 0 ${color} 1 0 0 0"`;
+test('composition publishes a validated private tree and cleans up failed publication',async()=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-compose-publish-'));
+ const rename=fs.rename;
+ try{
+  const service=new LauncherService({root:path.join(root,'profile'),bin,config:path.resolve(__dirname,'../resources/rage-port.ini')});
+  await service.init();service.state.disc={region:'PAL'};
+  const source=path.join(root,'source');await fs.mkdir(source);
+  await fs.writeFile(path.join(source,'mod.toml'),material('base','1 0 0'));
+  const mod=await service.importMod(source);await service.toggleMod(mod.id,true);
+  let publications=0;
+  fs.rename=async(from,to)=>{
+   if(path.basename(to).startsWith('active-mods-')){
+    publications++;
+    assert.ok(path.basename(path.dirname(from)).startsWith('mod-sources-'));
+    assert.deepEqual((await fs.readdir(service.root)).filter(n=>n.startsWith('active-mods-')),[]);
+    const parsed=JSON.parse(await run(service.tool('rage-mod-cli'),[path.join(from,'mod.toml')]));
+    assert.equal(parsed.materials['car.a'],'lit opaque 0.5 0 1 0 0 1 0 0 0');
+    throw Error('injected publication failure');
+   }
+   return rename(from,to);
+  };
+  await assert.rejects(service.composeMods(),/injected publication failure/);
+  assert.equal(publications,1);
+  assert.deepEqual((await fs.readdir(service.root)).filter(n=>n.startsWith('mod-sources-')||n.startsWith('active-mods-')),[]);
+  fs.rename=rename;
+  assert.ok(path.basename(await service.composeMods()).startsWith('active-mods-'));
+ }finally{fs.rename=rename;await fs.rm(root,{recursive:true,force:true});}
+});
 test('combined manifest overflow cleans failed output, preserves prior profile and allows retry',async()=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-compose-capacity-'));
  try{

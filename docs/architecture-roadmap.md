@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Composed profiles now remain under private mod-sources staging until the final
+manifest passes the compiled parser, then a same-filesystem directory rename
+publishes active-mods. A fault-injection regression checks private placement,
+valid bytes and absence of visible active output at publication, rejects the
+rename, verifies cleanup and retries successfully. All 73 launcher tests pass
+on Linux. This avoids exposing an in-progress tree under the active prefix;
+it does not add fsync durability, orphan recovery or cross-process locking,
+and the publication coordinator still awaits migration to compiled tooling.
+
 Composition publication regression combines two individually valid 300-material
 mods into an invalid 600-entry manifest. The real final parser rejects it; the
 test verifies removal of failed output/source staging, byte preservation of a

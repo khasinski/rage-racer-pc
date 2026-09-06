@@ -241,7 +241,10 @@ function installMethods(Service){
    const winners=new Map(groups.map((group,i)=>[group.key,group.candidates[selectedIndices[i]].id]));
    const selected=(key,id)=>!winners.has(key)||winners.get(key)===id;
    if(needsBase)await this.snapshotModFiles(discData,path.join(staging,'original-base'),['raw/asset_000.bin']);
-   const target=path.join(this.root,'active-mods-'+randomUUID());await fs.mkdir(target,{recursive:true});
+   const outputId=randomUUID();
+   const target=path.join(staging,'output-'+outputId);
+   const published=path.join(this.root,'active-mods-'+outputId);
+   await fs.mkdir(target);
    const tables={textures:{},materials:{},meshes:{}},legacyIndex=[];
    try {for(const mod of active){
      const source=path.join(staging,mod.id),files=mod.files;
@@ -279,7 +282,10 @@ function installMethods(Service){
    let manifest='[mod]\nid = "launcher-profile"\n';for(const group of ['textures','materials','meshes']){manifest+=`\n[${group}]\n`;for(const [key,value]of Object.entries(tables[group]))manifest+=`"${key}" = "${value}"\n`;}
    await fs.writeFile(path.join(target,'mod.toml'),manifest);
    await run(this.tool('rage-mod-cli'),[path.join(target,'mod.toml')]);
-   return target;
+   // Both directories share the profile filesystem. Publish only a fully
+   // validated tree; interrupted work remains inside mod-sources staging.
+   await fs.rename(target,published);
+   return published;
    }catch(e){await fs.rm(target,{recursive:true,force:true});throw e;}
    }finally{await fs.rm(staging,{recursive:true,force:true});}
  };
