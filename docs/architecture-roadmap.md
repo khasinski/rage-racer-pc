@@ -50,6 +50,16 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Native prepared-frame reuse now includes presentation aspect, not only the
+simulation frame counter. A same-frame resize must rebuild CPU frustum
+selection and update the projection used by draws. The stage tool's new
+--prime-aspect option first prepares an alternate aspect without advancing
+the world; the regression then compares the final image against a fresh
+preparation. Priming at 0.5 failed exact image equality before the fix and
+passes after it. Linux offscreen full stage-angle, mirror and renderer-toggle
+gates pass (10.47s). This proves same-frame aspect invalidation, not arbitrary
+same-frame mutation of camera/instance content or Windows resize behavior.
+
 The full local Linux build succeeds after the accumulated changes (338
 incremental build steps), and all 234 unit-labeled tests pass. The functional
 suite reports 164 passes, one skip and one failure out of 166: stream_table

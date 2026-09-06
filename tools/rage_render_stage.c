@@ -49,7 +49,8 @@ static void Usage(const char *program) {
             "  is the form the game uses for cars.\n"
             "  --sweep N turns every pose through a full circle in N steps,\n"
             "  writing stage-000.ppm ... alongside --output.\n"
-            "  --reload-assets tests session replacement with the GPU retained.\n",
+            "  --reload-assets tests session replacement with the GPU retained.\n"
+            "  --prime-aspect R prepares the same frame at R before the final view.\n",
             program);
 }
 
@@ -182,6 +183,7 @@ int main(int argc, char **argv) {
     int haveDistance = 0;
     int sweep = 0;
     int reloadAssets = 0;
+    float primeAspect = 0;
     int step;
     int width = 640;
     int height = 480;
@@ -196,6 +198,13 @@ int main(int argc, char **argv) {
         if (strcmp(option, "--reload-assets") == 0) {
             reloadAssets = 1;
             wantsValue = 0;
+        } else if (strcmp(option, "--prime-aspect") == 0) {
+            char extra;
+            if (value == NULL || sscanf(value, "%f%c", &primeAspect, &extra) != 1 ||
+                !isfinite(primeAspect) || primeAspect <= 0) {
+                fprintf(stderr, "rage-render-stage: bad --prime-aspect\n");
+                return EXIT_FAILURE;
+            }
         } else if (strcmp(option, "--pose") == 0) {
             if (value == NULL || poseCount == MAX_POSES ||
                 !ParsePose(value, &poses[poseCount])) {
@@ -336,6 +345,7 @@ int main(int argc, char **argv) {
                     center.x, center.y, center.z, radius, stage.distance);
         }
     }
+    if (primeAspect > 0) ModernNativeGpuPrepare(&world, primeAspect);
     ModernNativeGpuPrepare(&world, (float)width / (float)height);
     if (!ModernNativeGpuHasDraws()) {
         fprintf(stderr, "rage-render-stage: the stage produced no draws\n");

@@ -821,7 +821,9 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
          * frame number happens to equal the preceding scene's last frame. */
         s_worldFrame = UINT64_MAX;
     }
-    if (world->frame == s_worldFrame) return;
+    /* A resized presentation may reuse the simulation frame, but its
+     * projection and CPU frustum selection belong to the new aspect. */
+    if (world->frame == s_worldFrame && aspect == s_aspect) return;
     if (trace) started = SDL_GetTicksNS();
     if (!RenderWorldSnapshotCopy(&s_ownedWorld, world)) {
         s_world = NULL;
