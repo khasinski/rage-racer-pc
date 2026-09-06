@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+GPU-owned world integration now passes the full PAL same-process two-race
+scenario: modern_repeat_pal completes in 244.63 seconds, with three successful
+presentation restarts, VRAM cache-oracle checks and ordered session teardown.
+Evidence: build/regional-races/20260906-120143-8c67f1/result.txt and game.log,
+including the full-game binary/config hashes. This uses the route autopilot,
+not physics/input replay. Offscreen execution does not establish visual
+equivalence, audible sound or an isolated performance delta; NTSC and other
+platform reruns for the owned-world change remain outstanding.
+
 Reusable snapshot capacity now has explicit grow/shrink/empty/refill and
 overlapping-owned-subrange regression coverage. It checks retained allocation
 identity after shrinking, independent copied values after source mutation and
