@@ -69,6 +69,23 @@ int main(void) {
         assert(TexturePatchAsset(root,0,bytes,521)==0); /* Pixel range exceeds asset. */
         assert(!memcmp(bytes,original,sizeof(bytes)));
     }
+    const char *invalid[]={
+        "{}",
+        "{\"asset\":0,\"pixels_offset\":-1,\"pixel_bytes\":2,\"depth\":16,\"width\":1,\"height\":1}",
+        "{\"asset\":0,\"pixels_offset\":520,\"pixel_bytes\":1,\"depth\":16,\"width\":1,\"height\":1}",
+        "{\"asset\":0,\"pixels_offset\":520,\"pixel_bytes\":2,\"depth\":24,\"width\":1,\"height\":1}",
+        "{\"asset\":0,\"pixels_offset\":520,\"pixel_bytes\":2,\"depth\":8,\"width\":1,\"height\":1}",
+        "{\"asset\":0,\"pixels_offset\":520,\"pixel_bytes\":2,\"depth\":4,\"width\":1,\"height\":1,\"offset\":527,\"colours\":16}",
+        "{\"asset\":0,\"pixels_offset\":520,\"pixel_bytes\":2,\"depth\":4,\"width\":1,\"height\":1,\"offset\":1,\"colours\":17}",
+        "{\"asset\":0,\"pixels_offset\":520,\"pixel_bytes\":2,\"depth\":16,\"width\":0,\"height\":1}",
+        "{\"asset\":0,\"pixels_offset\":520,\"pixel_bytes\":2,\"depth\":16,\"width\":1,\"height\":0}"
+    };
+    for(size_t i=0;i<sizeof(invalid)/sizeof(invalid[0]);++i) {
+        Write("texture_patch_fixture/textures/a.json",invalid[i]);
+        memcpy(bytes,original,sizeof(bytes));
+        assert(TexturePatchAsset(root,0,bytes,sizeof(bytes))==0);
+        assert(!memcmp(bytes,original,sizeof(bytes)));
+    }
     assert(!remove("texture_patch_fixture/textures/index.txt"));
     assert(TexturePatchAsset(root,0,bytes,sizeof(bytes))==-1);
     assert(!remove("texture_patch_fixture/textures/a.json"));

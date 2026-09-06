@@ -134,6 +134,14 @@ Linux. The new test does not yet replace archive extraction/repacking, all PNG
 filters or every malformed-sidecar case from the old script, so that script
 remains enabled. This new fixture has not yet run on Windows.
 
+Follow-up: the expanded fixture now also covers missing metadata, invalid
+depth/dimensions/row storage, missing palettes, excess palette entries and
+out-of-bounds palettes, always asserting that rejected input leaves the entire
+asset unchanged. A standalone `tests/texture_contract` build runs these same
+production sources without SDL or game data. It passed on Linux GCC and in the
+Windows 11 VM with ClangCL Release (0.50 seconds). This supersedes the previous
+fixture-only Windows evidence gap, not the full-game Windows release gate.
+
 Copy roles now also come from C: referenced backing files stay provider-local,
 while metadata and unused meshes are omitted from runtime composition without
 being removed from the library/export. Reference discovery and resource-key

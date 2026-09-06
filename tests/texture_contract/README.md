@@ -1,0 +1,28 @@
+# Compiled texture patch contract
+
+Builds the production texture patcher and the same synthetic C fixture used by
+the main build. No game image, SDL, GPU, Node or Python is needed. The libchdr
+submodule must supply `deps/miniz-3.1.2/miniz.c` and `miniz.h`.
+
+```sh
+cmake -S tests/texture_contract -B build/texture-contract -DCMAKE_BUILD_TYPE=Release
+cmake --build build/texture-contract
+ctest --test-dir build/texture-contract --output-on-failure
+```
+
+For Windows with Visual Studio 2022 Build Tools and ClangCL:
+
+```powershell
+cmake -S tests/texture_contract -B build/texture-contract -G "Visual Studio 17 2022" -A x64 -T ClangCL
+cmake --build build/texture-contract --config Release
+ctest --test-dir build/texture-contract -C Release --output-on-failure
+```
+
+The fixture checks edits and unchanged repacks at 4/8/16 bits, palette alignment,
+neighboring nibbles, row padding, asset ownership, unsafe index lines, missing
+metadata, invalid dimensions/depth/stride, missing or out-of-bounds palettes,
+and asset bounds. Rejected edits must leave every byte intact.
+
+This does not yet replace the archive-level extraction/repacking test or prove
+all PNG filter/color variants. Keep the existing roundtrip enabled until its
+remaining cases have compiled equivalents. It is not a renderer or GUI test.
