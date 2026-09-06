@@ -50,6 +50,16 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+The GPU-owned world checkpoint now also passes same-process two-race NTSC-U
+and NTSC-J scenarios (212.53/212.58 seconds, run concurrently). Both verify
+automatic NTSC 60 Hz base timing, three presentation restarts, VRAM cache
+comparisons and ordered teardown. Evidence directories are
+build/regional-races/20260906-120632-34d2ba (U) and
+build/regional-races/20260906-120632-d62765 (J); both record the same full-game
+hash as the preceding PAL pass. This completes this Linux regional regression
+matrix, not the presentation stage: image/performance comparisons, physics
+replay and Windows/macOS runtime verification remain open.
+
 GPU-owned world integration now passes the full PAL same-process two-race
 scenario: modern_repeat_pal completes in 244.63 seconds, with three successful
 presentation restarts, VRAM cache-oracle checks and ordered session teardown.
