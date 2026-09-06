@@ -77,4 +77,17 @@ foreach(source missing valid)
         message(FATAL_ERROR "Stale sky after ${source} -> ${destination}: ${root}")
     endif()
 endforeach()
+execute_process(COMMAND "${REPLAY}" "${SNAPSHOT}"
+    --assets "${root}/valid" --prepare-repeat 3 --sky-only
+    --width 320 --height 240 --output "${root}/repeated.ppm"
+    RESULT_VARIABLE result TIMEOUT 45
+    OUTPUT_VARIABLE output ERROR_VARIABLE error)
+if(NOT result STREQUAL "0" OR NOT error MATCHES "native-prepare-benchmark repeats=3 ")
+    message(FATAL_ERROR "Repeated preparation failed: ${output}${error}")
+endif()
+file(SHA256 "${root}/repeated.ppm" actual)
+file(SHA256 "${root}/valid/frame.ppm" expected)
+if(NOT actual STREQUAL expected)
+    message(FATAL_ERROR "Repeated preparation changed the fixed world: ${root}")
+endif()
 message(STATUS "Environment provider cases passed: ${root}")

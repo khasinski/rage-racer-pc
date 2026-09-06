@@ -51,10 +51,15 @@ static void Usage(const char *program) {
             "[--output FRAME.ppm] [--draws FRAME.draws.txt] "
             "[--camera-scene MARKER.scene.bin] [--sky-only] "
             "[--reload-assets SECOND_ASSET_ROOT] "
-            "[--probe X,Y] "
+            "[--probe X,Y] [--prepare-repeat N] "
             "[--sky top|middle|horizon|bottom=R,G,B] "
             "[--width 1280] [--height 960]\n",
             program);
+}
+
+static int CompareTicks(const void *a, const void *b) {
+    Uint64 x = *(const Uint64 *)a, y = *(const Uint64 *)b;
+    return (x > y) - (x < y);
 }
 
 static RageRenderQuaternion QuaternionFromMatrix(float matrix[3][3]) {
@@ -194,6 +199,7 @@ int main(int argc, char **argv) {
     SDL_GPUTexture *depth = NULL;
     SDL_GPUCommandBuffer *command;
     int width, height;
+    unsigned prepareRepeat = 0;
     int result = EXIT_FAILURE;
 
     if (argc < 2 || argv[1][0] == '-') {
@@ -204,6 +210,16 @@ int main(int argc, char **argv) {
     outputPath = OptionValue(argc, argv, "--output");
     drawPath = OptionValue(argc, argv, "--draws");
     assetsPath = OptionValue(argc, argv, "--assets");
+    if (HasOption(argc, argv, "--prepare-repeat")) {
+        const char *value = OptionValue(argc, argv, "--prepare-repeat");
+        char *end;
+        long count = value != NULL ? strtol(value, &end, 10) : 0;
+        if (value == NULL || end == value || *end != '\0' || count < 1 || count > 10000) {
+            fprintf(stderr, "rage-frame-replay: --prepare-repeat must be 1..10000\n");
+            return EXIT_FAILURE;
+        }
+        prepareRepeat = (unsigned)count;
+    }
     width = ParseDimension(OptionValue(argc, argv, "--width"), 1280);
     height = ParseDimension(OptionValue(argc, argv, "--height"), 960);
     if (width == 0 || height == 0 || assetsPath == NULL) {
@@ -260,6 +276,27 @@ int main(int argc, char **argv) {
         goto release_renderer;
     }
     ModernNativeGpuPrepare(&snapshot.world, (float)width / (float)height);
+    if (prepareRepeat != 0) {
+        Uint64 *samples = malloc((size_t)prepareRepeat * sizeof(*samples));
+        if (samples == NULL) goto release_renderer;
+        /* Keep all scene data fixed. Only advance the presentation revision
+         * so each iteration rebuilds geometry rather than hitting the cache.
+         * Initial asset warmup above and GPU submission below are excluded. */
+        for (unsigned i = 0; i < prepareRepeat; ++i) {
+            ++snapshot.world.frame;
+            Uint64 started = SDL_GetTicksNS();
+            ModernNativeGpuPrepare(&snapshot.world, (float)width / (float)height);
+            samples[i] = SDL_GetTicksNS() - started;
+        }
+        qsort(samples, prepareRepeat, sizeof(*samples), CompareTicks);
+        fprintf(stderr, "native-prepare-benchmark repeats=%u instances=%u "
+            "p50_ms=%.6f p95_ms=%.6f max_ms=%.6f (CPU preparation only)\n",
+            prepareRepeat, snapshot.world.instanceCount,
+            (double)samples[prepareRepeat / 2] / 1000000.0,
+            (double)samples[(prepareRepeat * 95 - 1) / 100] / 1000000.0,
+            (double)samples[prepareRepeat - 1] / 1000000.0);
+        free(samples);
+    }
     if (!HasOption(argc, argv, "--sky-only") &&
         !ModernNativeGpuHasDraws()) {
         fprintf(stderr, "rage-frame-replay: snapshot produced no draws\n");

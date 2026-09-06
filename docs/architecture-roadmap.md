@@ -50,6 +50,16 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Replay supports --prepare-repeat 1..10000 for fixed-input CPU preparation
+timing. Initial asset warmup and GPU submission are outside the measurement;
+only presentation revisions advance between samples. It reports p50/p95/max
+and does not measure GPU execution or whole-frame FPS. Disable performance
+trace/asset logging when comparing timings. A synthetic sky-world regression
+checks the repeat record and exact final image preservation; it is not a
+representative race benchmark. The preceding short live-start measurements
+(4.218ms versus 4.300ms median) had different presentation counts and therefore
+do not establish a before/after speed change.
+
 Instance transform preparation/evaluation is now a renderer-neutral inline
 contract in render_instance_transform.h, consumed by the production builder
 for positions, normals and visibility bounds. It takes vectors rather than
