@@ -50,6 +50,16 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Broad local checkpoint after default-disc source changes: the complete build
+passes. Of 399 tests excluding e2e/endurance/gpu labels, 397 passed, stream_table
+skipped for missing default-path data and shipped_config rejected the preserved
+local marker_capture=true setting. The committed INI passes the same compiled
+policy validator. Rerunning stream_table with its actual disc environment
+variables passes on PAL, NTSC-U and NTSC-J. All 68 launcher tests pass. This
+build includes the parked local geometry-pack prototype and is not a clean
+release build; these results do not replace current Windows/macOS game,
+endurance, FMV-audio or display-performance gates.
+
 Default source selection now always uses the selected disc's C importer.
 Implicit executable-relative `native-assets` discovery could select a cache
 without checking its disc/importer identity and has been removed (including
