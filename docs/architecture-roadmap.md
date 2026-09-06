@@ -50,6 +50,29 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+An isolated Linux gprof executable linked the production smoke objects with
+only render_mesh_build.c rebuilt using -O3 -pg; the normal build was not
+replaced. Real PAL class-1/course-0 route autopilot completed one lap (frame
+1394). The flat CPU sample profile attributed 5.08s/46.01% to the native
+builder and 2.79s/25.27% to Draw_PushPrim. These are instrumented process CPU
+samples, not GPU time or release frame percentiles. Optimized/inlined local
+function call attribution was ambiguous and is not used as a call-count
+oracle. A second -fno-inline instrumented run also completed the lap, but
+changed presentation/build counts (2956 versus 1668 builder calls), so its
+timings are not a paired speed comparison. It exposed substantial packing,
+road-decal classification and transform work, without establishing their
+relative costs in the normal optimized binary.
+
+This adds a second performance investigation alongside persistent native
+geometry: external/psyz/psyz/src/platform/sdl3_gpu.c Draw_PushPrim still builds
+legacy vertices and fills opaque quad gaps. It also latches texture pages and
+traces primitives, so skipping the function wholesale would lose required
+state/overlay inputs. Separate state/capture from compatibility geometry only
+with modern-complete-world and classic/overlay regression evidence. No such
+skip is enabled by this profiling change. Local evidence remains in
+/tmp/rage-geometry-gprof-run.log, /tmp/rage-geometry-gmon.1316136 and the
+corresponding /tmp/rage-profile-smoke binary; these are temporary artifacts.
+
 Performance trace now separates native preparation CPU time into snapshot,
 asset warmup, shadow setup, main geometry, mirror geometry and completeness
 checks, alongside per-view vertex counts. Cached-frame early returns emit no
