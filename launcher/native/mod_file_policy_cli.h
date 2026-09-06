@@ -21,7 +21,7 @@ static int FilePolicyCommand(int dispositions) {
     yyjson_arr_foreach(root,i,count,value) {
         unsigned references=0;
         yyjson_val *pathValue=value;
-        if (dispositions) {
+        if (dispositions==1) {
             if (!yyjson_is_arr(value) || yyjson_arr_size(value)!=2) goto done;
             yyjson_val *flags=yyjson_arr_get(value,1);
             if (!yyjson_is_uint(flags) || yyjson_get_uint(flags)>6) goto done;
@@ -29,12 +29,13 @@ static int FilePolicyCommand(int dispositions) {
             pathValue=yyjson_arr_get(value,0);
         }
         if (!yyjson_is_str(pathValue) || strlen(yyjson_get_str(pathValue))!=yyjson_get_len(pathValue)) goto done;
-        roles[i]=ModFileDisposition(yyjson_get_str(pathValue),references);
+        roles[i]=dispositions==2 ? (ModDirectoryAllowed(yyjson_get_str(pathValue)) ? 0 : -1)
+            : ModFileDisposition(yyjson_get_str(pathValue),references);
         if (roles[i]<0) {
             fprintf(stderr,"Unsupported mod file: %s\n",yyjson_get_str(pathValue)); goto done;
         }
     }
-    if (dispositions) {
+    if (dispositions==1) {
         putchar('[');
         for(size_t i=0;i<yyjson_arr_size(root);++i)printf("%s%d",i?",":"",roles[i]);
         puts("]");

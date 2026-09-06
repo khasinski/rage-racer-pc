@@ -3,6 +3,13 @@
 #include <stdio.h>
 
 int main(void) {
+    assert(!ModDirectoryAllowed(NULL));
+    const char *badDirs[]={"","other","textures2","textures/..","textures//a",
+        "textures/a/","/textures","textures\\a","meshes/a b","raw/a/b/c/d/e/f/g/h"};
+    for(size_t i=0;i<sizeof(badDirs)/sizeof(badDirs[0]);++i)assert(!ModDirectoryAllowed(badDirs[i]));
+    assert(ModDirectoryAllowed("raw"));assert(ModDirectoryAllowed("textures"));
+    assert(ModDirectoryAllowed("meshes/A_1-2"));
+    assert(ModDirectoryAllowed("textures/a/b/c/d/e/f/g"));
     assert(ModFileClassify(NULL)==RAGE_MOD_FILE_INVALID);
     char raw[32];
     for (unsigned i=0;i<1000;++i) {

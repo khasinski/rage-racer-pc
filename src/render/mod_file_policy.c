@@ -6,6 +6,20 @@ static int Ends(const char *path, size_t size, const char *suffix) {
     size_t n = strlen(suffix);
     return size > n && !memcmp(path+size-n,suffix,n);
 }
+int ModDirectoryAllowed(const char *path) {
+    if (!path || !AssetPathIsRelativeFile(path,strlen(path))) return 0;
+    size_t root=strcspn(path,"/");
+    if (!((root==3 && !memcmp(path,"raw",3)) ||
+          (root==8 && !memcmp(path,"textures",8)) ||
+          (root==6 && !memcmp(path,"meshes",6)))) return 0;
+    unsigned depth=1;
+    for (const unsigned char *p=(const unsigned char *)path;*p;++p) {
+        if (*p=='/') { if (++depth>8) return 0; }
+        else if (!((*p>='A'&&*p<='Z')||(*p>='a'&&*p<='z')||
+                   (*p>='0'&&*p<='9')||*p=='_'||*p=='.'||*p=='-')) return 0;
+    }
+    return 1;
+}
 int ModFileDisposition(const char *path, unsigned references) {
     RageModFileKind kind = ModFileClassify(path);
     if (kind == RAGE_MOD_FILE_INVALID ||

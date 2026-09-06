@@ -7,6 +7,8 @@ typedef enum RageModFileKind {
 /* Classify a package-relative file, not an absolute filesystem path. No I/O.
  * Only retail raw slots and supported data formats are accepted. */
 RageModFileKind ModFileClassify(const char *path);
+/* Package-relative directory, without trailing slash; at most eight levels. */
+int ModDirectoryAllowed(const char *path);
 enum { RAGE_MOD_FILE_GLOBAL = 1, RAGE_MOD_FILE_SEMANTIC = 2,
        RAGE_MOD_FILE_LEGACY = 4 };
 /* Reference flags are SEMANTIC and/or LEGACY. Returns copy-role bits, zero

@@ -102,6 +102,16 @@ export and composition. Directory traversal, symlink checks and semantic/legacy
 resource-claim discovery still live in the launcher; classifying a backing file
 does not make it a global override provider.
 
+Directory acceptance now also belongs to this C policy: raw/textures/meshes
+roots, safe relative ASCII names and at most eight levels. Inventory validates
+even empty directories, which previously could retain unsupported names.
+The launcher bounds traversal to 10000 directories in addition to its existing
+file/byte limits, then submits the collected directory paths for native checking.
+Filesystem traversal and symlink checks remain JavaScript; they have not yet
+been replaced with a compiled inventory implementation. All 67 launcher tests
+and seven standalone C contracts pass on Linux; the same seven C contracts pass
+in the Windows VM. This does not verify the complete Windows launcher.
+
 Copy roles now also come from C: referenced backing files stay provider-local,
 while metadata and unused meshes are omitted from runtime composition without
 being removed from the library/export. Reference discovery and resource-key
