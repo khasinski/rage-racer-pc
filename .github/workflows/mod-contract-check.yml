@@ -1,0 +1,45 @@
+name: Compiled mod contracts
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/render/**'
+      - 'external/yyjson/**'
+      - 'launcher/native/mod_provider_cli.h'
+      - 'tests/disc/mod_*'
+      - 'tests/mod_contract/**'
+      - '.github/workflows/mod-contract-check.yml'
+  pull_request:
+    paths:
+      - 'src/render/**'
+      - 'external/yyjson/**'
+      - 'launcher/native/mod_provider_cli.h'
+      - 'tests/disc/mod_*'
+      - 'tests/mod_contract/**'
+      - '.github/workflows/mod-contract-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, macos-14, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Windows Release contracts (ClangCL)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./tests/mod_contract/run-windows.ps1
+      - name: Unix Release contracts
+        if: runner.os != 'Windows'
+        run: |
+          cmake -S tests/mod_contract -B build/mod-contract -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/mod-contract --parallel 4
+          ctest --test-dir build/mod-contract --output-on-failure

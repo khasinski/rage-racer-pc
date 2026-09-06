@@ -50,6 +50,13 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+The standalone `tests/mod_contract` gate now reuses production sources and
+the same compiled tests without SDL/discs. All five tests passed on Linux and
+the local Windows 11/ClangCL VM after the launcher integration. A path-filtered
+Windows/Linux/macOS CI workflow is provided; hosted CI and macOS execution are
+not established by those local results. This covers mod contracts, not whole
+game stability or the packaged launcher shipping contract.
+
 1. **Resource ownership and lifecycle** (in progress)
    - Explicit session, race/content-generation and GPU ownership boundaries.
    - Idempotent teardown and safe failure/retry; no stale cache across repeated
