@@ -27,9 +27,14 @@ static void InterpolateVec3(const RageRenderVec3 *previous,
 
 static float InterpolateWrapped(float previous, float current,
                                 float period, float t) {
+    if (!isfinite(previous) || !isfinite(current) ||
+        !isfinite(period) || period <= 0.0f)
+        return isfinite(previous) ? previous : 0.0f;
     float delta = current - previous;
-    while (delta > period * 0.5f) delta -= period;
-    while (delta < period * -0.5f) delta += period;
+    delta = isfinite(delta) ? fmodf(delta, period)
+                           : (float)fmod((double)current - previous, period);
+    if (delta > period * 0.5f) delta -= period;
+    if (delta < period * -0.5f) delta += period;
     return previous + delta * t;
 }
 

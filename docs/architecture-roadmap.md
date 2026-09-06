@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Periodic sky phase wrapping now uses bounded remainder/correction too, avoiding
+the same stalled-subtraction loop on extreme phases. A valid previous phase is
+retained for invalid current values. Tests compare 1025 quarter-step phases
+against the former bounded-domain algorithm and exercise both signs of 1e20,
+FLT_MAX plus infinity/NaN from a valid prior camera. Existing yaw-boundary sky
+phase checks still pass. Strict world tests pass; extreme-input checks also
+pass ASan/UBSan. This is not comprehensive validation of arbitrary camera
+vectors and does not establish a retail flicker cause or full-scene pixels.
+
 Angle compatibility regression compares 11521 quarter-degree deltas across
 [-1440,1440] against the former bounded-domain algorithm, including +/-180
 ties. All results match. Opposite FLT_MAX endpoints exposed an additional

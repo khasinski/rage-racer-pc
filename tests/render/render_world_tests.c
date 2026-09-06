@@ -358,6 +358,23 @@ static void test_non_finite_angles_do_not_stall_interpolation(void) {
         RenderWorldSetCamera(&world, &camera);
         EXPECT_EQ(1, world.hasCamera);
     }
+    const float largePhases[] = {1e20f, -1e20f, FLT_MAX, -FLT_MAX, INFINITY, NAN};
+    for (int step = -512; step <= 512; ++step) {
+        RageRenderCamera before = {0}, after = {0}, result;
+        float expected = (float)step * 0.25f;
+        after.skyGridColumn.z = expected;
+        while (expected > 16.0f) expected -= 32.0f;
+        while (expected < -16.0f) expected += 32.0f;
+        RenderInterpolateCamera(&before, &after, 0.5f, &result);
+        EXPECT_EQ(1, result.skyGridColumn.z == expected * 0.5f);
+    }
+    for (unsigned i = 0; i < sizeof(largePhases)/sizeof(largePhases[0]); ++i) {
+        RageRenderCamera before = {0}, after = {0}, result;
+        after.skyGridColumn.z = largePhases[i];
+        RenderInterpolateCamera(&before, &after, 0.5f, &result);
+        EXPECT_EQ(1, isfinite(result.skyGridColumn.z));
+        EXPECT_EQ(1, fabsf(result.skyGridColumn.z) <= 8.0f);
+    }
     previous.rotation.y = 10.0f;
     current.rotation.y = 20.0f;
     RenderInterpolateTransform(&previous, &current, NAN, &presentation);
