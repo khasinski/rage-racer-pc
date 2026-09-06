@@ -793,6 +793,9 @@ static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
 }
 
 void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
+    const int trace = RuntimeConfigEnabled("diagnostics.performance_trace");
+    Uint64 started = 0, copied = 0, warmed = 0, mainStarted = 0;
+    Uint64 mainFinished = 0, mirrorFinished = 0;
     uint32_t instance;
     uint32_t mirrorFirstVertex;
     RageRenderVec3 shadowCenter;
@@ -819,6 +822,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         s_worldFrame = UINT64_MAX;
     }
     if (world->frame == s_worldFrame) return;
+    if (trace) started = SDL_GetTicksNS();
     if (!RenderWorldSnapshotCopy(&s_ownedWorld, world)) {
         s_world = NULL;
         s_worldFrame = UINT64_MAX;
@@ -827,7 +831,9 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         return;
     }
     world = &s_ownedWorld.world;
+    if (trace) copied = SDL_GetTicksNS();
     ModernAssetsWarmWorld(world);
+    if (trace) warmed = SDL_GetTicksNS();
     shadowCenter = world->camera.transform.position;
     for (instance = 0; instance < world->instanceCount; instance++) {
         const RageRenderMeshInstance *candidate = &world->instances[instance];
@@ -843,11 +849,13 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         RAGE_RENDER_VEHICLE_SHADOW_EXTENT,
         RAGE_RENDER_VEHICLE_SHADOW_RESOLUTION,
         &s_shadowMap);
+    if (trace) mainStarted = SDL_GetTicksNS();
     s_vertexCount = RenderBuildNativeCompactPassDraws(
         world, RAGE_RENDER_PASS_MAIN, aspect, s_cpuFogReference, ModernAssetsResidentMeshLookup, NULL,
         s_vertices,
         MODERN_NATIVE_MAX_VERTICES_PER_VIEW, s_spans, MODERN_NATIVE_MAX_SPANS,
         &s_spanCount);
+    if (trace) mainFinished = SDL_GetTicksNS();
     s_mirrorVertexCount = 0;
     s_mirrorSpanCount = 0;
     mirrorFirstVertex = s_vertexCount;
@@ -863,6 +871,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         for (span = 0; span < s_mirrorSpanCount; span++)
             s_mirrorSpans[span].firstVertex += mirrorFirstVertex;
     }
+    if (trace) mirrorFinished = SDL_GetTicksNS();
     s_world = world;
     s_worldFrame = world->frame;
     s_aspect = aspect;
@@ -878,6 +887,21 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
             s_completeWorld = 0;
             break;
         }
+    }
+    if (trace) {
+        fprintf(stderr,
+                "native-geometry-prepare frame=%llu instances=%u "
+                "main_vertices=%u mirror_vertices=%u "
+                "snapshot_ms=%.3f warm_ms=%.3f shadow_setup_ms=%.3f "
+                "main_ms=%.3f mirror_ms=%.3f completeness_ms=%.3f\n",
+                (unsigned long long)world->frame, world->instanceCount,
+                s_vertexCount, s_mirrorVertexCount,
+                (double)(copied - started) / 1000000.0,
+                (double)(warmed - copied) / 1000000.0,
+                (double)(mainStarted - warmed) / 1000000.0,
+                (double)(mainFinished - mainStarted) / 1000000.0,
+                (double)(mirrorFinished - mainFinished) / 1000000.0,
+                (double)(SDL_GetTicksNS() - mirrorFinished) / 1000000.0);
     }
     if (RuntimeConfigEnabled("diagnostics.modern_asset_trace")) {
         uint32_t mirrorVehicleSpans = 0;

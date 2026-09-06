@@ -50,6 +50,19 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Performance trace now separates native preparation CPU time into snapshot,
+asset warmup, shadow setup, main geometry, mirror geometry and completeness
+checks, alongside per-view vertex counts. Cached-frame early returns emit no
+sample; GPU execution/upload is outside these intervals. The native-world
+integration test requires a populated timing record without machine-dependent
+latency thresholds. Linux offscreen native-world and mirror regressions pass.
+A real PAL class-1/course-0 start stopped at scene 12 timer 120 produced 66
+samples. Excluding the first preparation, main geometry p50/p95/max was
+4.218/4.736/5.709 ms, warmup 0.089/0.100/0.155 ms, median 177699 main vertices;
+mirror was inactive. First warmup was 25.985 ms. This short stationary startup
+with trace enabled is not a full-lap benchmark, GPU timing, or an FPS claim.
+It supports prioritizing vertex evaluation over resident lookup indexing.
+
 Native geometry selection now filters render passes before consulting the mesh
 provider. Excluded legacy mirror instances no longer cause unused lookups when
 building the main semantic scene for either camera. A counting-provider test
