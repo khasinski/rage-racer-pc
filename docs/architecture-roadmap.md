@@ -50,6 +50,18 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+The compiled FMV pacing oracle now accepts all 11 retail stream indices, not
+only intro/promotion 0 and 5. Every modern_fmv_audio case checks disc-derived
+picture sector positions and timing, complete ordered frames, XA completion,
+PCM energy, and rejection of a deliberately delayed last picture. Extending
+coverage exposed an invalid oracle assumption: PAL ending XA covers 98.026667
+seconds while pictures span 100.04 seconds at 150.009996 sectors/s. The pacing
+criterion now uses sector distance rather than assumed continuous XA occupancy;
+PCM validation remains separate. All 11 cases pass on each local PAL, NTSC-U
+and NTSC-J image (21.02s/19.81s/17.91s parallel batches). These are Linux
+offscreen direct-stream tests, not natural class-award entry, audible output
+quality, hardware audio latency or Windows/macOS evidence.
+
 Broad local checkpoint after default-disc source changes: the complete build
 passes. Of 399 tests excluding e2e/endurance/gpu labels, 397 passed, stream_table
 skipped for missing default-path data and shipped_config rejected the preserved

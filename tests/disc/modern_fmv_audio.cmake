@@ -1,5 +1,5 @@
 # Compiled smoke + PCM verifier; no Python dependency. This checks direct FMV
-# playback, not sector-derived pacing or the gameplay path that awards a class.
+# playback and sector-derived pacing, not the gameplay path that awards a class.
 if(NOT DEFINED STREAM)
     set(STREAM 5)
 endif()
@@ -101,7 +101,7 @@ file(WRITE "${output}/pcm-check.log" "${metrics}${error}")
 if(NOT result STREQUAL "0")
     message(FATAL_ERROR "PCM verification failed: ${metrics}${error}; ${output}")
 endif()
-if(DEFINED PACING_CHECK AND (STREAM EQUAL 0 OR STREAM EQUAL 5))
+if(DEFINED PACING_CHECK)
     execute_process(COMMAND "${PACING_CHECK}" "${DISC}" "${STREAM}" "${output}/game.log"
         RESULT_VARIABLE result OUTPUT_VARIABLE pacing ERROR_VARIABLE error)
     file(WRITE "${output}/pacing-check.log" "${pacing}${error}")
