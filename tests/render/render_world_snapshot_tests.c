@@ -305,7 +305,9 @@ int main(void) {
         CHECK(SameCamera(&copy.world.camera, &world.camera));
         instance.assetKey = 99;
         CHECK(copy.instances[0].assetKey == 42);
+        RageRenderMeshInstance *reused = copy.instances;
         CHECK(RenderWorldSnapshotCopy(&copy, &copy.world));
+        CHECK(copy.instances == reused);
         CHECK(copy.instances[0].assetKey == 42);
         world.instanceCapacity = 0;
         CHECK(!RenderWorldSnapshotCopy(&copy, &world));

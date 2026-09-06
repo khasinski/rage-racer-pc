@@ -243,6 +243,16 @@ int RenderWorldSnapshotCopy(RageRenderWorldSnapshot *snapshot, const RageRenderW
         world->instanceCount > RAGE_RENDER_WORLD_SNAPSHOT_MAX_INSTANCES ||
         (world->instanceCount != 0 && world->instances == NULL)) return 0;
     copy.world = *world;
+    if (snapshot->instances != NULL &&
+        world->instanceCount <= snapshot->world.instanceCapacity) {
+        if (world->instanceCount != 0)
+            memmove(snapshot->instances, world->instances,
+                    (size_t)world->instanceCount * sizeof(*snapshot->instances));
+        copy.world.instances = snapshot->instances;
+        copy.world.instanceCapacity = snapshot->world.instanceCapacity;
+        snapshot->world = copy.world;
+        return 1;
+    }
     if (world->instanceCount != 0) {
         size_t bytes = (size_t)world->instanceCount * sizeof(*copy.instances);
         copy.instances = malloc(bytes);

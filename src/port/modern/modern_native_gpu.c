@@ -5,6 +5,7 @@
 #include "modern_assets.h"
 #include "modern_upload_queue.h"
 #include "render/render_mesh_build.h"
+#include "render/render_world_snapshot.h"
 #include "render/render_native_vertex.h"
 #include "render/authored_car_surface.h"
 #include "render/render_shadow.h"
@@ -135,6 +136,7 @@ static uint32_t s_mirrorVertexCount;
 static uint32_t s_mirrorSpanCount;
 static uint64_t s_worldFrame = UINT64_MAX;
 static const RageRenderWorld *s_world;
+static RageRenderWorldSnapshot s_ownedWorld;
 static float s_aspect = 4.0f / 3.0f;
 static float s_mirrorAspect = 148.0f / 36.0f;
 static int s_completeWorld;
@@ -814,6 +816,14 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         s_worldFrame = UINT64_MAX;
     }
     if (world->frame == s_worldFrame) return;
+    if (!RenderWorldSnapshotCopy(&s_ownedWorld, world)) {
+        s_world = NULL;
+        s_worldFrame = UINT64_MAX;
+        s_vertexCount = s_spanCount = 0;
+        s_mirrorVertexCount = s_mirrorSpanCount = 0;
+        return;
+    }
+    world = &s_ownedWorld.world;
     ModernAssetsWarmWorld(world);
     shadowCenter = world->camera.transform.position;
     for (instance = 0; instance < world->instanceCount; instance++) {
@@ -1735,6 +1745,7 @@ void ModernNativeGpuShutdown(void) {
     s_worldFrame = UINT64_MAX;
     s_world = NULL;
     s_aspect = 4.0f / 3.0f;
+    RenderWorldSnapshotRelease(&s_ownedWorld);
     s_completeWorld = 0;
     ModernNativeReleasePendingUploads();
     s_textureCount = 0;

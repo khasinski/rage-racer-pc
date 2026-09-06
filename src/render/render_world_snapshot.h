@@ -21,6 +21,7 @@ int RenderWorldSnapshotRead(const char *path,
 void RenderWorldSnapshotRelease(RageRenderWorldSnapshot *snapshot);
 /* Deep-copy renderer input into a zero-initialized or owned snapshot. Source
  * may alias the destination world. Failure preserves the previous snapshot.
+ * Reuses owned instance capacity when sufficient; copies still own all values.
  * Mesh/material resources referenced by IDs are not copied here. */
 int RenderWorldSnapshotCopy(RageRenderWorldSnapshot *snapshot, const RageRenderWorld *world);
 

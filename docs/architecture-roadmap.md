@@ -50,6 +50,17 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Native GPU preparation now deep-copies renderer-neutral world values into its
+own snapshot instead of retaining the producer's world pointer. Cameras/light,
+instances and diagnostic history access therefore share the prepared values;
+shutdown releases the owner. Copy reuses sufficient instance capacity, including
+self-copy, to avoid allocation on steady-size frames. Failed copy invalidates
+draw availability/frame identity. Snapshot regression passes under ASan/UBSan;
+rebuilt Linux smoke passes native_render_world, modern_submit_recovery and
+render_world_snapshot (7.66 seconds). No performance/pixel or Windows gate has
+yet been run for this change. Asset IDs still depend on external generations,
+so immutable presentation/resource ownership is not complete.
+
 Renderer checkpoint after snapshot ownership changes: rebuilt smoke and snapshot
 tests, then passed native_render_world, modern_submit_recovery and
 render_world_snapshot on Linux offscreen/dummy audio (7.64 seconds total).
