@@ -17,6 +17,10 @@ int main(int argc, char **argv) {
     camera.farPlane = 10000;
     camera.skyAssetKey = 96;
     camera.skyColor = (RageRenderVec3){0.2f, 0.4f, 0.6f};
+    /* Nondegenerate screen-space cloud grid: loading a panorama alone must
+     * not satisfy the test if its geometry prevents it from being visible. */
+    camera.skyGridColumn = (RageRenderVec3){64, 0, 0};
+    camera.skyGridRow = (RageRenderVec3){0, 128, 0};
     RenderWorldSetCamera(&world, &camera);
     if (!RenderWorldSnapshotWrite(argv[1], &world)) return 1;
     FILE *file = fopen(argv[2], "wb");

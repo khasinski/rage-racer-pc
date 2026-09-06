@@ -50,6 +50,17 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Synthetic environment-provider GPU regression now replaces asset roots in both
+directions (gradient-only and loaded panorama) after submitting the initial
+draw, without explicitly waiting for GPU idle. Device, frame and sky identity
+remain fixed. Each final PPM must exactly match a fresh destination render,
+and the two controls must differ. This exposed a degenerate synthetic cloud
+grid in the old fixture: its load log passed while the panorama was invisible.
+The fixture now supplies nonzero column/row axes. Linux offscreen GPU gate
+passes (0.45s), with no retail data. Submission precedes retirement but actual
+GPU overlap is scheduler-dependent; this is not a deterministic in-flight
+stress test, nor Windows GPU verification.
+
 The compiled stage-angle gate now reopens the asset session after initial GPU
 preparation while retaining the device, track identity and world frame number.
 The --reload-assets stage option verifies a new generation, an initially empty

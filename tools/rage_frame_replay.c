@@ -50,6 +50,7 @@ static void Usage(const char *program) {
             "usage: %s FRAME.world.bin --assets NATIVE_ASSETS "
             "[--output FRAME.ppm] [--draws FRAME.draws.txt] "
             "[--camera-scene MARKER.scene.bin] [--sky-only] "
+            "[--reload-assets SECOND_ASSET_ROOT] "
             "[--probe X,Y] "
             "[--sky top|middle|horizon|bottom=R,G,B] "
             "[--width 1280] [--height 960]\n",
@@ -278,6 +279,22 @@ int main(int argc, char **argv) {
                         "rage-frame-replay: --probe expects in-bounds X,Y\n");
                 goto release_renderer;
             }
+        }
+    }
+    {
+        const char *reload = OptionValue(argc, argv, "--reload-assets");
+        if (reload != NULL) {
+            /* Submit the old session first, then retire its CPU resources
+             * without an explicit GPU-idle wait. SDL owns submitted resources.
+             * Keep the world/frame/track and device unchanged for the reload. */
+            command = SDL_AcquireGPUCommandBuffer(device);
+            if (command == NULL) goto release_renderer;
+            ModernNativeGpuDraw(command, color, depth, 1, 1, height);
+            if (!SDL_SubmitGPUCommandBuffer(command)) goto release_renderer;
+            ModernNativeGpuSubmitted();
+            ModernAssetsShutdown();
+            if (!ModernAssetsInitRoot(reload)) goto release_renderer;
+            ModernNativeGpuPrepare(&snapshot.world, (float)width / (float)height);
         }
     }
     command = SDL_AcquireGPUCommandBuffer(device);

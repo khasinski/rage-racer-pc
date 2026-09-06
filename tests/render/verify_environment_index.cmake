@@ -48,4 +48,33 @@ foreach(mode missing empty directory malformed valid)
         message(FATAL_ERROR "Malformed index accepted/misdiagnosed: ${result}; ${log}")
     endif()
 endforeach()
+# Same sky identity, different providers, retained device and frame number.
+# Submit the first source before replacement; the result must match a fresh
+# render of the destination, not the old resident sky texture.
+file(SHA256 "${root}/missing/frame.ppm" missing_hash)
+file(SHA256 "${root}/valid/frame.ppm" valid_hash)
+if(missing_hash STREQUAL valid_hash)
+    message(FATAL_ERROR "Synthetic sky controls must differ")
+endif()
+foreach(source missing valid)
+    if(source STREQUAL "missing")
+        set(destination valid)
+    else()
+        set(destination missing)
+    endif()
+    execute_process(COMMAND "${REPLAY}" "${SNAPSHOT}"
+        --assets "${root}/${source}" --reload-assets "${root}/${destination}"
+        --sky-only --width 320 --height 240 --output "${root}/reload-${source}.ppm"
+        RESULT_VARIABLE result TIMEOUT 45
+        OUTPUT_FILE "${root}/reload-${source}.log"
+        ERROR_FILE "${root}/reload-${source}.log")
+    if(NOT result STREQUAL "0")
+        message(FATAL_ERROR "Session replacement failed: ${root}/reload-${source}.log")
+    endif()
+    file(SHA256 "${root}/reload-${source}.ppm" actual)
+    file(SHA256 "${root}/${destination}/frame.ppm" expected)
+    if(NOT actual STREQUAL expected)
+        message(FATAL_ERROR "Stale sky after ${source} -> ${destination}: ${root}")
+    endif()
+endforeach()
 message(STATUS "Environment provider cases passed: ${root}")
