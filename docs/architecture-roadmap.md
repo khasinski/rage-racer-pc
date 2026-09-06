@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Runtime-config integration now uses CMake and the compiled fixture, preserving
+its INI scenario, F9 switch, semantic-capture assertion and removal of every
+RAGE_PORT_* environment override. Old/new tests passed with an intentionally
+invalid parent cache override (1.22/1.23s). With no remaining source references,
+the old runtime runner and shared Python native_asset_fixture helper are removed
+(recoverable in Git). The four migrated integration runners remain distinct;
+this does not remove other Python tests or complete the regression stage.
+
 Mirror-car migration is complete for this regression: the production test name
 now uses CMake/C after side-by-side passes and compiled negative tests. The
 checker exercises empty/short/trailing data, unequal dimensions, exact 1200/8
