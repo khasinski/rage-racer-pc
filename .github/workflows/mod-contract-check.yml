@@ -49,3 +49,12 @@ jobs:
           cmake -S tests/mod_contract -B build/mod-contract -DCMAKE_BUILD_TYPE=Release
           cmake --build build/mod-contract --parallel 4
           ctest --test-dir build/mod-contract --output-on-failure
+      - name: Linux sanitizer contracts
+        if: runner.os == 'Linux'
+        env:
+          ASAN_OPTIONS: detect_leaks=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: |
+          cmake -S tests/mod_contract -B build/mod-contract-sanitized -DCMAKE_BUILD_TYPE=Debug -DRAGE_MOD_SANITIZERS=ON
+          cmake --build build/mod-contract-sanitized --parallel 4
+          ctest --test-dir build/mod-contract-sanitized --output-on-failure --timeout 30

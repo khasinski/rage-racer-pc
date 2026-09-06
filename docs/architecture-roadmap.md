@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+All nine standalone mod contracts now pass under ASan/UBSan with leak detection
+and halt-on-UB in the Linux development container (0.17 seconds), including
+the native profile and legacy-index writers. RAGE_MOD_SANITIZERS enables this
+without ad-hoc compiler flags, and the Linux CI job includes the same variant.
+Hosted CI is pending. This is contract-fixture memory coverage, not full-game
+sanitizer execution, arbitrary input fuzzing or completion of resource lifetime
+gates for the renderer.
+
 Manifest IPC expansion now has an explicit 8 MiB response budget for snapshot
 inspection and material-edit refresh. A valid 2048-mesh native manifest below
 the 2 MiB input ceiling produces more than the generic 2 MiB response limit
