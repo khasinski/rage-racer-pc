@@ -50,6 +50,23 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Shared GP/FMV definition integration now passes the rebuilt Linux smoke's full
+33-case natural award/ending matrix on actual PAL, NTSC-U and NTSC-J CUE/BIN
+images (186.75 seconds, three workers, no skips). Each case checks the post-race
+award/return scenes, disc-derived movie frame count and sector pacing, positive
+XA mixer contribution and session PCM. Smoke SHA-256:
+08bae1b823cd57a3399fc4d81036599bf0481cbdfccdf6ee24b75774df1aae3b.
+Class-definition/rule tests also pass ASan/UBSan. These offscreen/dummy-audio
+results are not an audible playback check, performance benchmark or Windows
+game verification, and do not complete the versioned-content stage.
+
+The in-progress shared GrandPrixClassDefinition now also supplies promotion
+stream selection to BeginClassFmv. Compiled rule and real stream-selection /
+advance-handler tests pass (2/2), enumerating both series, all six definition
+entries, direct negative/out-of-range class clamping, repeated upper-class
+promotion streams and separate ending selection. This is not yet a regional
+disc/audio rerun or an external content schema; those gates remain open.
+
 GP class rules now consume one built-in class-definition table for course
 counts, per-series score-record identity, next class, record unlock and finale
 flags. The shared Extra finale retains its separate selection/record semantics.

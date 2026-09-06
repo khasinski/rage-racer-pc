@@ -1,6 +1,7 @@
 #include "game/asset.h"
 #include "game/fmv.h"
 #include "game/race.h"
+#include "game/grand_prix_content.h"
 
 static s32 ClampGrandPrixClass(s32 classIndex) {
     if (classIndex < 0) {
@@ -24,11 +25,11 @@ void BeginIntroFmv(s32 returnScene) {
 }
 
 void BeginClassFmv(s32 returnScene) {
-    s32 base = g_SeriesSelection == 0 ? FMV_STREAM_GRAND_PRIX_BASE
-                                      : FMV_STREAM_EXTRA_GRAND_PRIX_BASE;
+    const GrandPrixClassDefinition *definition =
+        GrandPrixContentClass(ClampGrandPrixClass(g_GrandPrixClass));
 
     BeginFmv(returnScene);
-    SelectFmvStream(base + ClampGrandPrixClass(g_GrandPrixClass));
+    SelectFmvStream(definition->promotionStream[g_SeriesSelection != 0]);
 }
 
 void BeginEndingFmv(s32 returnScene) {

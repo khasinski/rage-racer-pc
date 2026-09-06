@@ -79,6 +79,21 @@ static void Reset(void) {
 }
 
 int main(void) {
+    static const s32 classInputs[] = {-1, 0, 1, 2, 3, 4, 5, 6};
+    for (s32 series = 0; series < 2; ++series) {
+        for (u32 i = 0; i < sizeof(classInputs) / sizeof(classInputs[0]); ++i) {
+            s32 index = classInputs[i];
+            s32 clamped = index < 0 ? 0 : index > 3 ? 3 : index;
+            s32 stream = 1 + series * 4 + clamped;
+            Reset();
+            g_SeriesSelection = (s16)series;
+            g_GrandPrixClass = index;
+            BeginClassFmv(7);
+            Check("direct class movie preserves retail clamping",
+                  g_StreamLoc == &g_StreamCdEntries[stream], 1);
+            Check("direct class movie frame count", g_StreamFrameCount, 100 + stream);
+        }
+    }
     for (s32 series = 0; series < 2; ++series) {
         for (s32 completed = 0; completed < (series ? 5 : 4); ++completed) {
             Reset();

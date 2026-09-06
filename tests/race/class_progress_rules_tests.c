@@ -1,5 +1,6 @@
 #include "common.h"
 #include "game/prize_money.h"
+#include "game/grand_prix_content.h"
 #include "game/race_internal.h"
 
 #include <stdio.h>
@@ -26,9 +27,16 @@ int main(void) {
     const s32 promotionBonuses[5] = {500, 4800, 20000, 100000, 500000};
     const s32 prizes[3] = {10000, 5000, 2500};
     s32 i;
+    Check("negative content index", GrandPrixContentClass(-1) == NULL, 1);
+    Check("past content table", GrandPrixContentClass(6) == NULL, 1);
+    Check("minimum content index", GrandPrixContentClass(INT32_MIN) == NULL, 1);
+    Check("maximum content index", GrandPrixContentClass(INT32_MAX) == NULL, 1);
     for (s32 series = 0; series < 2; ++series) {
         for (s32 classIndex = 0; classIndex < 6; ++classIndex) {
             s32 finalClass = series ? 5 : 4;
+            Check("all promotion stream definitions",
+                  GrandPrixContentClass(classIndex)->promotionStream[series],
+                  1 + series * 4 + (classIndex < 4 ? classIndex : 3));
             Check("all class course counts", GrandPrixCourseCount(classIndex),
                   classIndex < 2 ? 3 : 4);
             Check("all record identities", GrandPrixClassRecordIndex(series, classIndex),
