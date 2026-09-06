@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Retry sanitizer checkpoint: the Linux development container compiled the retry
+fixture plus modern_assets, platform/config, mod assets, texture patch, track
+identity and offline-importer sources with ASan/UBSan (GNU C11, matching the
+normal build). Invalid runtime/environment indexes, both retry entry points
+and repeated shutdown pass with leak detection enabled and UB halting. Linked
+SDL/render/mesh/JSON/miniz static libraries were reused without instrumentation,
+so this is scoped asset-adapter evidence, not whole-stack sanitizer coverage.
+
 The retry fixture also covers the normal ModernAssetsInit entry point with a
 forced configured root: corrupt index fails, corrected index succeeds without
 shutdown, and repeated successful init stays ready. The fixture sets its own
