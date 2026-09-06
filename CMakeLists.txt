@@ -114,6 +114,7 @@ add_library(rage-rmesh STATIC
     src/render/car_paint.c
     src/render/authored_car_surface.c
     src/render/mod_manifest.c
+    src/render/mod_selection.c
     src/render/asset_path.c
     src/render/render_material.c
     src/render/texture_mipmap.c

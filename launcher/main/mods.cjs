@@ -1,4 +1,4 @@
-const {readDependencies,assertDependencies}=require('./mod-dependencies.cjs');
+const {readDependencies}=require('./mod-dependencies.cjs');
 const fs=require('node:fs/promises');
 const path=require('node:path');
 const {randomUUID}=require('node:crypto');
@@ -29,6 +29,19 @@ async function legacyTextures(root,files){
 }
 function legacyFiles(mod){return new Set((mod.legacyTextures||[]).flatMap(t=>[t.json,t.png]).concat(mod.files.includes('textures/index.txt')?['textures/index.txt']:[]));}
 function installMethods(Service){
+ Service.prototype.validateModSelection=async function(){
+  const active=this.state.mods.filter(m=>m.enabled),args=['--check-selection'];
+  if(!active.length)return active;
+  for(const mod of active){
+   readDependencies(mod);
+   args.push('--mod',mod.packageId||mod.id,mod.version||'',mod.region,
+    mod.files.includes('mod.toml')?path.join(this.root,'mods',mod.id,'mod.toml'):'');
+   for(const dependency of mod.requires||[])args.push('--requires',dependency.packageId,dependency.version||'');
+  }
+  const {run}=require('./service.cjs');
+  const order=JSON.parse(await run(this.tool('rage-mod-cli'),args));
+  return order.map(index=>active[index]);
+ };
  Service.prototype.refreshLegacyTextures=async function(){
   for(const mod of this.state.mods)mod.legacyTextures=await legacyTextures(path.join(this.root,'mods',mod.id),mod.files);
  };
@@ -79,7 +92,7 @@ function installMethods(Service){
   return this.operation('Saving mod details',async()=>{
    const mod=this.state.mods.find(m=>m.id===id);if(!mod)throw Error('Mod not found');
    const previous={...mod};Object.assign(mod,values);
-   try{assertDependencies(this.state.mods);await this.persist();}catch(e){for(const key of Object.keys(values))if(!Object.hasOwn(previous,key))delete mod[key];Object.assign(mod,previous);throw e;}
+   try{await this.validateModSelection();await this.persist();}catch(e){for(const key of Object.keys(values))if(!Object.hasOwn(previous,key))delete mod[key];Object.assign(mod,previous);throw e;}
   },false);
  };
  Service.prototype.installModFiles=async function(source,signal,name){
@@ -123,14 +136,14 @@ function installMethods(Service){
   if(enabled&&mod.region!==this.state.disc.region)throw Error('This mod was imported for a different disc region');
   return this.operation('Updating mod',async()=>{
    const previous=mod.enabled;mod.enabled=enabled;
-   try{assertDependencies(this.state.mods);await this.persist();}catch(e){mod.enabled=previous;throw e;}
+   try{await this.validateModSelection();await this.persist();}catch(e){mod.enabled=previous;throw e;}
   },false);
  };
  Service.prototype.removeMod=async function(id){
   this.requireReady();if(!this.state.mods.some(m=>m.id===id))throw Error('Unknown mod');
   return this.operation('Removing mod',async()=>{
    const previous=this.state.mods;this.state.mods=previous.filter(m=>m.id!==id);
-   try{assertDependencies(this.state.mods);await this.persist();}catch(e){this.state.mods=previous;throw e;}
+   try{await this.validateModSelection();await this.persist();}catch(e){this.state.mods=previous;throw e;}
    await fs.rm(path.join(this.root,'mods',id),{recursive:true,force:true});
   },false);
  };
@@ -179,8 +192,7 @@ function installMethods(Service){
   },false);
  };
  Service.prototype.composeMods=async function(){
-   assertDependencies(this.state.mods);
-   const active=this.state.mods.filter(m=>m.enabled);if(!active.length)return '';
+   const active=await this.validateModSelection();if(!active.length)return '';
    const conflicts=this.conflicts();if(conflicts.length)throw Error('Active mods conflict. Choose an override provider in My mods before playing.');
    const winners=new Map(this.overlaps().map(c=>[c.key,c.winner]));
    const selected=(key,id)=>!winners.has(key)||winners.get(key)===id;

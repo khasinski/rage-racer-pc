@@ -34,8 +34,12 @@ and regression evidence; extracting an unused interface is not completion.
 - Local optional models remain outside Git. The source-only build and local
   authored-model build both compile. The latter is not a redistributable asset
   package or evidence that the asset-rights audit is complete.
-- Remaining integration work: reconcile launcher's JSON package dependencies
-  (versions/regions/conflicts) with runtime TOML requirements; separate car
+- JSON package and TOML dependencies now use the common compiled selection
+  graph, including exact versions, regions and mixed cycles. The launcher
+  rereads installed TOML before composition; runtime ordering uses that same
+  graph through its stricter legacy manifest-selection adapter.
+- Remaining integration work: compiled JSON ingestion and resource-conflict
+  selection, source fingerprints and atomic source snapshots; separate car
   catalog identity from optional embedded geometry; unify original/generated/
   mod providers. This checkpoint does not complete any roadmap stage.
 

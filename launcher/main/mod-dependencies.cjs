@@ -11,13 +11,6 @@ function readDependencies(metadata){
  }
  return {packageId,requires};
 }
-function dependencyIssues(mods){
- const active=mods.filter(m=>m.enabled),issues=[];
- for(const mod of active)for(const dependency of mod.requires||[]){
-  const matches=active.filter(other=>(other.packageId||other.id)===dependency.packageId&&other.region===mod.region&&(dependency.version===undefined||dependency.version===other.version));
-  if(matches.length!==1)issues.push({id:mod.id,message:mod.name+' requires '+dependency.packageId+(dependency.version?' version '+dependency.version:'')+(matches.length?' (multiple enabled copies)':' (enable a matching mod first)')});
- }
- return issues;
-}
-function assertDependencies(mods){const issues=dependencyIssues(mods);if(issues.length)throw Error(issues.map(i=>i.message).join('\n'));}
-module.exports={readDependencies,dependencyIssues,assertDependencies};
+// Shape validation at the JSON boundary; graph policy lives in the compiled
+// ModSelectionBuildOrder implementation shared with runtime TOML selection.
+module.exports={readDependencies};

@@ -1,4 +1,5 @@
 #include "mod_manifest.h"
+#include "mod_selection.h"
 
 #include <ctype.h>
 #include <limits.h>
@@ -300,31 +301,11 @@ RageModResolution ModManifestResolve(const RageModManifest *manifest,
     return result;
 }
 
-static int VisitMod(const RageModManifest *const *manifests, size_t count,
-                    size_t index, unsigned char *state, RageModOrder *order) {
-    if (state[index] == 2) return 1;
-    state[index] = 1;
-    const RageModManifest *manifest = manifests[index];
-    for (size_t r = 0; r < manifest->requirementCount; ++r) {
-        size_t dependency;
-        for (dependency = 0; dependency < count; ++dependency)
-            if (!strcmp(manifest->requirements[r], manifests[dependency]->id)) break;
-        if (dependency == count || state[dependency] == 1) {
-            order->error = dependency == count ? RAGE_MOD_ORDER_MISSING_REQUIREMENT : RAGE_MOD_ORDER_CYCLE;
-            order->modIndex = index;
-            order->requirementIndex = r;
-            return 0;
-        }
-        if (!VisitMod(manifests, count, dependency, state, order)) return 0;
-    }
-    state[index] = 2;
-    order->indices[order->count++] = index;
-    return 1;
-}
-
 int ModManifestBuildOrder(const RageModManifest *const *manifests,
                           size_t count, RageModOrder *out) {
-    unsigned char state[RAGE_MOD_MAX_SELECTED] = {0};
+    RageModSelectionEntry entries[RAGE_MOD_MAX_SELECTED] = {0};
+    RageModDependency dependencies[RAGE_MOD_MAX_SELECTED][RAGE_MOD_MANIFEST_MAX_REQUIREMENTS];
+    RageModSelectionOrder selection;
     if (out == NULL) return 0;
     memset(out, 0, sizeof(*out));
     out->error = RAGE_MOD_ORDER_INVALID;
@@ -348,12 +329,24 @@ int ModManifestBuildOrder(const RageModManifest *const *manifests,
         }
     }
     for (size_t i = 0; i < count; ++i) {
-        if (!VisitMod(manifests, count, i, state, out)) {
-            out->count = 0;
-            memset(out->indices, 0, sizeof(out->indices));
-            return 0;
-        }
+        entries[i].manifestId = manifests[i]->id;
+        entries[i].region = "";
+        entries[i].dependencies = dependencies[i];
+        entries[i].dependencyCount = manifests[i]->requirementCount;
+        for (size_t r = 0; r < manifests[i]->requirementCount; ++r)
+            dependencies[i][r] = (RageModDependency){
+                RAGE_MOD_MANIFEST_ID, manifests[i]->requirements[r], NULL};
     }
+    if (!ModSelectionBuildOrder(entries, count, &selection)) {
+        out->modIndex = selection.modIndex;
+        out->requirementIndex = selection.dependencyIndex;
+        out->error = selection.code == RAGE_MOD_SELECTION_CYCLE ? RAGE_MOD_ORDER_CYCLE
+            : selection.code == RAGE_MOD_SELECTION_MISSING ? RAGE_MOD_ORDER_MISSING_REQUIREMENT
+            : RAGE_MOD_ORDER_INVALID;
+        return 0;
+    }
+    out->count = selection.count;
+    memcpy(out->indices, selection.indices, selection.count * sizeof(out->indices[0]));
     out->error = RAGE_MOD_ORDER_OK;
     out->modIndex = out->requirementIndex = (size_t)-1;
     return 1;

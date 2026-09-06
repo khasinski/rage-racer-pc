@@ -45,12 +45,10 @@ within a key. A mesh-only lookup does not select texture/material entries.
 Invalid schema, parser errors and excessive counts in any asset table reject
 the whole resolution, including mesh lookups and dependency planning.
 
-The launcher currently composes enabled packages into one runtime directory,
-after checking its own `rage-mod.json` dependencies and resource conflicts.
-That package-level format (including exact version requirements) is distinct
-from the runtime TOML `requires` below. Unifying these contracts in compiled
-code remains future work; the C ordering API does not yet replace launcher's
-package selection or implement version matching.
+The launcher composes enabled packages into one runtime directory after the
+compiled selection check below and its existing resource-conflict checks.
+JSON package metadata and TOML retain distinct identity namespaces; they now
+share one dependency graph rather than silently dropping TOML requirements.
 
 Version 1 preserves existing behavior: repeated asset keys use the last value,
 and unknown fields/sections are ignored. This is not full TOML duplicate-key
@@ -76,8 +74,38 @@ for transactional installation and rollback after persistence failure.
 
 CLI inspection exposes `schemaVersion` and TOML `requires` alongside the
 asset tables. These fields must not be confused with the launcher's JSON
-package metadata. Material editing preserves them; package composition still
-needs a shared dependency contract before it can enforce TOML requirements.
+package metadata. Material editing preserves them; package composition
+validates them by rereading installed manifests, not just cached UI metadata.
+
+## Package selection boundary
+
+`ModSelectionBuildOrder` is the common C graph engine. Runtime manifest
+ordering and `rage-mod-cli --check-selection` use it. The launcher calls the
+CLI before enablement, removal, version edits and composition; successful
+composition follows the returned dependency-first indices. Explicit resource
+conflict choices still determine the winning provider, independently of order.
+
+Each package contributes its JSON package ID (or installation ID), version,
+region and JSON requirements, plus the ID and requirements parsed from its
+installed TOML. JSON requirements match package IDs and optional exact versions;
+TOML requirements match TOML IDs. Both require the same region. A string in
+one namespace never implicitly supplies the other. Missing or multiple matching
+providers and cycles (including mixed JSON/TOML cycles) fail before an output
+directory is created. Unrelated legacy packs may share a generic TOML ID;
+referencing that ID is rejected if more than one active provider matches.
+
+The CLI accepts up to 128 packages and 48 combined requirements per package
+(JSON ingress currently allows 32; TOML allows 16). Its argument protocol is
+`--mod PACKAGE VERSION REGION MANIFEST_PATH`, followed by any number of
+`--requires PACKAGE VERSION` arguments for that package. An empty manifest
+path explicitly denotes a raw-only package; a missing nonempty path fails.
+An empty dependency version accepts any version. Output is a JSON array of
+zero-based package indices. No files or runtime state are mutated by validation.
+
+Remaining work includes compiled JSON metadata ingestion and resource-conflict
+selection, UI display of TOML requirements, source fingerprints and a runtime
+provider stack. Validation and copying are not yet one immutable snapshot of
+the source files; this is not a concurrent-edit/hot-reload contract.
 
 ## Required mods
 

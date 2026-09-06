@@ -189,3 +189,12 @@ blocked while dependents are enabled. Launch rechecks the dependency graph.
 Package IDs appear in Details and survive export; exported older mods receive
 their existing installation ID as their initial package ID. Dependencies are
 declared in the package metadata and displayed in My mods.
+
+Active selections are now checked by `rage-mod-cli --check-selection`, using
+the same C graph engine as runtime manifest ordering. Installed TOML `requires`
+also participate, in their own manifest-ID namespace, and mixed dependency
+cycles are rejected before composition. The launcher rereads TOML rather than
+trusting cached dependency information. Exact JSON versions and disc regions
+remain enforced; resource conflict choices remain explicit. The current UI
+still displays JSON dependencies only. See `../docs/mod-manifest.md` for limits
+and the remaining source-snapshot/provider-stack work.
