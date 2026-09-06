@@ -483,12 +483,23 @@ static int BuildVertex(const RageTransformBasis *basis,
     return 1;
 }
 
+typedef struct RagePreparedVertexCacheEntry {
+    uint32_t instanceEpoch, sourceIndex;
+    RageNativeDrawVertex vertex;
+    uint32_t material, materialFlags;
+    uint8_t depthDecal;
+} RagePreparedVertexCacheEntry;
+
 static uint32_t RenderBuildNativeDrawsFiltered(
     const RageRenderWorld *world, int passFilter, float aspect, int gpuFog,
     RageRenderMeshLookup lookup, void *context,
     RageNativeDrawVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
     uint32_t instanceIndex, vertexCount = 0, spansUsed = 0;
+    /* One view/build invocation only. Epochs isolate transforms, colours and
+     * scroll state of different instances sharing the same source mesh.
+     * Cache the base vertex BEFORE per-triangle normals/displacement. */
+    RagePreparedVertexCacheEntry vertexCache[256] = {0};
     RageRenderViewTransform viewTransform;
     if (spanCount != NULL) *spanCount = 0;
     if (world == NULL || lookup == NULL || vertices == NULL || spans == NULL ||
@@ -527,11 +538,32 @@ static uint32_t RenderBuildNativeDrawsFiltered(
             for (corner = 0; corner < 3; corner++) {
                 valid = valid && RuntimeMeshIndex(mesh, first + offset + corner,
                                                       &indices[corner]);
-                if (valid) valid = BuildVertex(&basis, &viewTransform, world,
-                    (instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FOG) != 0,
-                    gpuFog, instance, mesh, indices[corner], aspect,
-                    &triangle[corner], &materials[corner],
-                    &materialFlags[corner], &depthDecals[corner]);
+                if (valid) {
+                    RagePreparedVertexCacheEntry *entry =
+                        &vertexCache[indices[corner] & 255u];
+                    uint32_t epoch = instanceIndex + 1;
+                    if (gpuFog && entry->instanceEpoch == epoch &&
+                        entry->sourceIndex == indices[corner]) {
+                        triangle[corner] = entry->vertex;
+                        materials[corner] = entry->material;
+                        materialFlags[corner] = entry->materialFlags;
+                        depthDecals[corner] = entry->depthDecal;
+                    } else {
+                        valid = BuildVertex(&basis, &viewTransform, world,
+                            (instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FOG) != 0,
+                            gpuFog, instance, mesh, indices[corner], aspect,
+                            &triangle[corner], &materials[corner],
+                            &materialFlags[corner], &depthDecals[corner]);
+                        if (gpuFog && valid) {
+                            entry->instanceEpoch = epoch;
+                            entry->sourceIndex = indices[corner];
+                            entry->vertex = triangle[corner];
+                            entry->material = materials[corner];
+                            entry->materialFlags = materialFlags[corner];
+                            entry->depthDecal = depthDecals[corner];
+                        }
+                    }
+                }
             }
             if (!valid ||
                 materials[0] != materials[1] || materials[0] != materials[2] ||

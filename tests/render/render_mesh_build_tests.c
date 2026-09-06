@@ -857,7 +857,65 @@ static void test_shared_mesh_independent_views(void) {
         EXPECT_NEAR(0.0f, repeated[i].fog[3], 0.0001f);
 }
 
+static void test_gpu_vertex_reuse_preserves_instance_and_triangle_state(void) {
+    unsigned char bytes[10348] = {0};
+    RageRuntimeMesh mesh;
+    RageRuntimeVertex vertex = {0};
+    const uint32_t indices[] = {0, 1, 2, 0, 2, 256, 0, 1, 2};
+    const float positions[4][3] = {{-1, 0, -10}, {1, 0, -10}, {0, 1, -10}, {-1, 1, -9}};
+    RageRenderMeshInstance instances[2] = {0};
+    RageRenderWorld world;
+    RageNativeDrawVertex reference[18], cached[18];
+    RageNativeDrawSpan referenceSpans[2] = {0}, cachedSpans[2] = {0};
+    uint32_t referenceCount, cachedCount;
+    EXPECT_EQ(1, RuntimeMeshEncodeHeader(bytes, sizeof(bytes), 1, 257, 9));
+    write_u32(bytes + 24, 0); write_u32(bytes + 28, 9);
+    vertex.normal[1] = 1;
+    vertex.color[0] = vertex.color[3] = 255;
+    vertex.material = 4u | (uint32_t)RAGE_RUNTIME_MATERIAL_SCROLL_U;
+    for (unsigned i = 0; i < 257; ++i) {
+        memcpy(vertex.position, positions[i == 256 ? 3 : i % 3], sizeof(vertex.position));
+        EXPECT_EQ(1, RuntimeVertexEncode(bytes + 32 + i * 40, 40, &vertex));
+    }
+    for (unsigned i = 0; i < 9; ++i) write_u32(bytes + 10312 + i * 4, indices[i]);
+    EXPECT_EQ(1, RuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+    RenderWorldInit(&world, instances, 2);
+    world.instanceCount = 2;
+    world.camera.verticalFovDegrees = 90;
+    world.camera.nearPlane = 1; world.camera.farPlane = 100;
+    world.camera.fogNear = 5; world.camera.fogFar = 20;
+    for (unsigned i = 0; i < 2; ++i) {
+        instances[i].entity = i + 1;
+        instances[i].pass = RAGE_RENDER_PASS_MAIN;
+        instances[i].transform.scale = (RageRenderVec3){1, 1, 1};
+        instances[i].transform.position.x = (float)i * 10;
+        instances[i].textureScrollU = (uint8_t)(i * 64);
+        instances[i].environmentLight = (RageRenderVec3){0.25f + (float)i * 0.5f, 0.5f, 1};
+        instances[i].flags = RAGE_RENDER_INSTANCE_FLAT_SHADED |
+            RAGE_RENDER_INSTANCE_DEPTH_DECAL | RAGE_RENDER_INSTANCE_ENABLE_FOG;
+    }
+    EXPECT_EQ(18, RenderBuildNativePassDraws(&world, RAGE_RENDER_PASS_MAIN,
+        1, test_mesh_lookup, &mesh, reference, 18, referenceSpans, 2, &referenceCount));
+    EXPECT_EQ(18, RenderBuildNativeGpuPassDraws(&world, RAGE_RENDER_PASS_MAIN,
+        1, test_mesh_lookup, &mesh, cached, 18, cachedSpans, 2, &cachedCount));
+    EXPECT_EQ(2, referenceCount); EXPECT_EQ(referenceCount, cachedCount);
+    EXPECT_EQ(0, memcmp(referenceSpans, cachedSpans, sizeof(referenceSpans)));
+    for (unsigned i = 0; i < 18; ++i) {
+        RageRuntimeVertex original;
+        EXPECT_EQ(1, RuntimeMeshVertex(&mesh, indices[i % 9], &original));
+        EXPECT_NEAR(original.position[0] + (float)(i / 9) * 10, cached[i].fog[0], 0.0001f);
+        EXPECT_NEAR(original.position[1], cached[i].fog[1], 0.0001f);
+        EXPECT_NEAR(original.position[2], cached[i].fog[2], 0.0001f);
+        EXPECT_NEAR(1, cached[i].fog[3], 0.0001f);
+        /* Only the documented CPU/GPU fog encoding differs. Flat normals,
+         * displaced positions, colours, UV scroll and instance light agree. */
+        memcpy(reference[i].fog, cached[i].fog, sizeof(cached[i].fog));
+        EXPECT_EQ(0, memcmp(&reference[i], &cached[i], sizeof(cached[i])));
+    }
+}
+
 int main(void) {
+    test_gpu_vertex_reuse_preserves_instance_and_triangle_state();
     test_shared_mesh_independent_views();
     test_native_draw_builder_uses_render_world_and_imported_mesh();
     test_native_draw_builder_rejects_invalid_inputs();
