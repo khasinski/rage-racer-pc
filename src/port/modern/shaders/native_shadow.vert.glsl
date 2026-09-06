@@ -13,6 +13,10 @@ layout(set = 1, binding = 0, std140) uniform NativeShadowCamera {
     vec4 projection;
 } shadow;
 
+layout(set = 1, binding = 1, std140) uniform NativeShadowInstance {
+    vec4 uvOffset;
+} instance;
+
 void main() {
     vec3 relative = inPosition - shadow.position.xyz;
     float depth = -dot(shadow.viewRow2.xyz, relative);
@@ -21,5 +25,5 @@ void main() {
         dot(shadow.viewRow1.xyz, relative) * shadow.projection.y,
         depth * shadow.projection.z + shadow.projection.w,
         1.0);
-    uv = inUV;
+    uv = inUV + instance.uvOffset.xy;
 }

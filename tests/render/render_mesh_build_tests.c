@@ -473,6 +473,31 @@ static void test_native_draw_builder_applies_authored_course_texture_scroll(void
     EXPECT_EQ(0, spans[0].depthDecal);
     EXPECT_EQ(50, (int)(vertices[0].uv[0] * 100.0f));
     EXPECT_EQ(50, (int)(vertices[0].uv[1] * 100.0f));
+    {
+        RageNativeGpuVertex compact[3], next[3];
+        EXPECT_EQ(3, RenderBuildNativeCompactPassDraws(&world,
+            RAGE_RENDER_PASS_MAIN, 1, 0, test_mesh_lookup, &mesh,
+            compact, 3, spans, 1, &spanCount));
+        EXPECT_NEAR(0.25f, compact[0].uv[0], 0.0f);
+        EXPECT_NEAR(0.25f, spans[0].instanceState.textureScrollU, 0.0f);
+        EXPECT_NEAR(vertices[0].uv[0], compact[0].uv[0] +
+            spans[0].instanceState.textureScrollU, 0.0f);
+        storage[0].textureScrollU = 128;
+        EXPECT_EQ(3, RenderBuildNativeCompactPassDraws(&world,
+            RAGE_RENDER_PASS_MAIN, 1, 0, test_mesh_lookup, &mesh,
+            next, 3, spans, 1, &spanCount));
+        EXPECT_EQ(0, memcmp(compact, next, sizeof(compact)));
+        EXPECT_NEAR(0.5f, spans[0].instanceState.textureScrollU, 0.0f);
+        /* A legal mixed-corner mod keeps its per-vertex behaviour. */
+        write_u32(bytes + 32 + 40 + 36, 4u);
+        EXPECT_EQ(3, RenderBuildNativeCompactPassDraws(&world,
+            RAGE_RENDER_PASS_MAIN, 1, 0, test_mesh_lookup, &mesh,
+            next, 3, spans, 1, &spanCount));
+        EXPECT_NEAR(0.0f, spans[0].instanceState.textureScrollU, 0.0f);
+        EXPECT_NEAR(0.75f, next[0].uv[0], 0.0f);
+        EXPECT_NEAR(0.25f, next[1].uv[0], 0.0f);
+        EXPECT_NEAR(0.75f, next[2].uv[0], 0.0f);
+    }
 }
 
 static void test_native_draw_builder_preserves_terrain_ot_bias(void) {
@@ -955,6 +980,18 @@ static void test_gpu_vertex_reuse_preserves_instance_and_triangle_state(void) {
                     &world, RAGE_RENDER_PASS_MAIN, 1, !gpu, test_mesh_lookup,
                     &mesh, compact, 18, compactSpans, 2, &compactSpanCount));
                 EXPECT_EQ(cachedCount, compactSpanCount);
+                /* Apply deferred instance UV just as both GPU vertex
+                 * shaders do, then compare with the expanded CPU oracle. */
+                for (unsigned s = 0; s < compactSpanCount; ++s) {
+                    RageNativeDrawSpan *span = &compactSpans[s];
+                    EXPECT_NEAR(gpu ? (float)instances[s].textureScrollU / 256.0f : 0,
+                        span->instanceState.textureScrollU, 0.0f);
+                    for (unsigned v = span->firstVertex;
+                         v < span->firstVertex + span->vertexCount; ++v)
+                        compact[v].uv[0] += span->instanceState.textureScrollU;
+                    span->instanceState.textureScrollU = 0;
+                    span->materialFlags &= ~(uint32_t)RAGE_RUNTIME_MATERIAL_SCROLL_U;
+                }
                 EXPECT_EQ(0, memcmp(cachedSpans, compactSpans, sizeof(compactSpans)));
                 for (unsigned i = 0; i < count; ++i) {
                     RageNativeGpuVertex expectedVertex = RenderPackNativeGpuVertex(&cached[i]);

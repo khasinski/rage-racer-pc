@@ -29,6 +29,8 @@ typedef struct RageNativeInstanceState {
     float lighting;
     float environmentLight[3];
     float shadowReception;
+    /* Deferred GPU UV offset; zero for CPU-expanded reference draws. */
+    float textureScrollU;
 } RageNativeInstanceState;
 
 typedef struct RageNativeDrawSpan {

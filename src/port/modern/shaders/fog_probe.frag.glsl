@@ -6,7 +6,10 @@ layout(location = 4) in float lighting;
 layout(location = 5) in vec3 environmentLight;
 layout(location = 7) in float shadowReception;
 layout(location = 1) out vec4 outInstance;
+layout(location = 0) in vec2 uv;
+layout(location = 2) out vec4 outUV;
 void main() {
     outColor = fog;
     outInstance = vec4(environmentLight * lighting, shadowReception);
+    outUV = vec4(uv, 0.0, 1.0);
 }

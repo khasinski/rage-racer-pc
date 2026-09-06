@@ -50,6 +50,22 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Compact GPU geometry now keeps authored U coordinates for uniformly scrolling
+triangles; scroll is draw-instance state evaluated by the native and masked
+shadow vertex shaders. The CPU-fog reference keeps expanded UVs. Mixed-corner
+mod triangles retain per-corner CPU scroll rather than being rejected or
+incorrectly shifted as a whole. Tests prove compact bytes remain identical
+when only scroll changes, reconstruct the expanded reference from instance
+state, and cover mixed corners. The production native shader readback now
+checks UV as well as fog/lighting across 384 cases on Linux Vulkan. Builder,
+native-world and mirror integration pass; the stage-angle gate also passed
+before the mixed-corner compatibility addition. SPIR-V/MSL were regenerated
+from GLSL using SPIRV-Cross 83fa691cb8606ca4b3af7f13bfcbedd5668f2a3a.
+Draw diagnostics retain effective UVs. Nonzero-scroll masked-shadow pixel
+comparison and full Windows/Metal rendering remain to verify; passing ordinary
+shadow draws is not claimed as that stronger test. Geometry is still expanded
+and uploaded each frame: this removes one instance dependency, not stage 4.
+
 Native prepared-frame reuse now includes presentation aspect, not only the
 simulation frame counter. A same-frame resize must rebuild CPU frustum
 selection and update the projection used by draws. The stage tool's new

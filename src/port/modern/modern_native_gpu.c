@@ -537,7 +537,7 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
     shadowVertex = ModernNativeCreateShader(
         native_shadow_vert_spv, native_shadow_vert_spv_len,
         native_shadow_vert_msl, native_shadow_vert_msl_len, "vs_shadow",
-        SDL_GPU_SHADERSTAGE_VERTEX, 0, 1);
+        SDL_GPU_SHADERSTAGE_VERTEX, 0, 2);
     shadowFragment = ModernNativeCreateShader(
         native_shadow_frag_spv, native_shadow_frag_spv_len,
         native_shadow_frag_msl, native_shadow_frag_msl_len, "fs_shadow",
@@ -1007,7 +1007,9 @@ int ModernNativeGpuWriteDrawDump(FILE *file) {
                     "v %u %.9g %.9g %.9g %.9g %.9g %u %u %u %u "
                     "%.9g %.9g %.9g %.9g %.9g\n",
                     vertexIndex, vertex->position[0], vertex->position[1],
-                    vertex->position[2], vertex->uv[0], vertex->uv[1],
+                    vertex->position[2],
+                    vertex->uv[0] + span->instanceState.textureScrollU,
+                    vertex->uv[1],
                     (unsigned)vertex->color[0],
                     (unsigned)vertex->color[1],
                     (unsigned)vertex->color[2],
@@ -1506,6 +1508,8 @@ static void ModernNativeDrawShadowMap(SDL_GPUCommandBuffer *command) {
             SDL_BindGPUFragmentSamplers(pass, 0, &binding, 1);
             boundTexture = texture;
         }
+        const float uvOffset[4] = {span->instanceState.textureScrollU, 0, 0, 0};
+        SDL_PushGPUVertexUniformData(command, 1, uvOffset, sizeof(uvOffset));
         SDL_DrawGPUPrimitives(pass, span->vertexCount, 1,
                               span->firstVertex, 0);
         drawCount++;
@@ -1664,7 +1668,8 @@ static void ModernNativeGpuDrawSet(
                     {span->instanceState.environmentLight[0],
                      span->instanceState.environmentLight[1],
                      span->instanceState.environmentLight[2], 0},
-                    {span->instanceState.lighting, span->instanceState.shadowReception, 0, 0}};
+                    {span->instanceState.lighting, span->instanceState.shadowReception,
+                     span->instanceState.textureScrollU, 0}};
                 SDL_PushGPUVertexUniformData(command, 2, instanceUniform, sizeof(instanceUniform));
                 boundInstance = span->instanceState;
                 hasBoundInstance = 1;

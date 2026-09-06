@@ -27,7 +27,7 @@ layout(set = 1, binding = 1, std140) uniform NativeShadowCamera {
 
 layout(set = 1, binding = 2, std140) uniform NativeInstance {
     vec4 environmentLight;
-    vec4 properties; // lighting influence, shadow reception, reserved, reserved
+    vec4 properties; // lighting influence, shadow reception, scroll U, reserved
 } instance;
 
 layout(location = 0) out vec2 uv;
@@ -52,7 +52,7 @@ void main() {
                        view.y * camera.projection.y,
                        clipDepth,
                        viewDepth);
-    uv = inUV;
+    uv = inUV + vec2(instance.properties.z, 0.0);
     color = vec4(inColor) / 255.0;
     normal = inNormal;
     // Opt-in diagnostic path retains the CPU reference for identical-scene A/B.

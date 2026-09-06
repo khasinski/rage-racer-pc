@@ -433,7 +433,7 @@ static RageNativeInstanceState PrepareInstanceState(
 
 static int BuildVertex(const RageTransformBasis *basis,
                            const RageRenderViewTransform *viewTransform,
-                           const RageRenderWorld *world, int fogged, int gpuFog,
+                           const RageRenderWorld *world, int fogged, int gpuFog, int gpuUV,
                            const RageRenderMeshInstance *instance,
                            const RageNativeInstanceState *instanceState,
                            const RageRuntimeMesh *mesh, uint32_t index,
@@ -458,7 +458,8 @@ static int BuildVertex(const RageTransformBasis *basis,
     out->uv[0] = source.uv[0]; out->uv[1] = source.uv[1];
     if (source.material != UINT32_MAX &&
         (source.material & RAGE_RUNTIME_MATERIAL_SCROLL_U) != 0) {
-        out->uv[0] += (float)instance->textureScrollU * (1.0f / 256.0f);
+        if (gpuUV) *materialFlags |= RAGE_RUNTIME_MATERIAL_SCROLL_U;
+        else out->uv[0] += (float)instance->textureScrollU * (1.0f / 256.0f);
         source.material &= ~RAGE_RUNTIME_MATERIAL_SCROLL_U;
     }
     memcpy(out->color, source.color, sizeof(out->color));
@@ -580,7 +581,8 @@ static uint32_t RenderBuildNativeDrawsFiltered(
                     } else {
                         valid = BuildVertex(&basis, &viewTransform, world,
                             (instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FOG) != 0,
-                            gpuFog, instance, &instanceState, mesh, indices[corner], aspect,
+                            gpuFog, compactVertices != NULL && gpuFog,
+                            instance, &instanceState, mesh, indices[corner], aspect,
                             &triangle[corner], &materials[corner],
                             &materialFlags[corner], &depthDecals[corner]);
                         if (gpuFog && valid) {
@@ -592,6 +594,20 @@ static uint32_t RenderBuildNativeDrawsFiltered(
                             entry->depthDecal = depthDecals[corner];
                         }
                     }
+                }
+            }
+            /* Modded triangles may mix scrolling and fixed corners. Such a
+             * triangle cannot use one draw-wide offset; retain its original
+             * per-corner evaluation instead of dropping valid geometry. */
+            if (valid && compactVertices != NULL && gpuFog &&
+                (((materialFlags[0] ^ materialFlags[1]) |
+                  (materialFlags[0] ^ materialFlags[2])) &
+                 RAGE_RUNTIME_MATERIAL_SCROLL_U) != 0) {
+                for (corner = 0; corner < 3; ++corner) {
+                    if (materialFlags[corner] & RAGE_RUNTIME_MATERIAL_SCROLL_U)
+                        triangle[corner].uv[0] +=
+                            (float)instance->textureScrollU * (1.0f / 256.0f);
+                    materialFlags[corner] &= ~(uint32_t)RAGE_RUNTIME_MATERIAL_SCROLL_U;
                 }
             }
             if (!valid ||
@@ -625,6 +641,9 @@ static uint32_t RenderBuildNativeDrawsFiltered(
             }
             if ((instance->flags & RAGE_RENDER_INSTANCE_CULL_BACKFACES) != 0 &&
                 TriangleIsBackFacing(world, &viewTransform, triangle)) continue;
+            instanceState.textureScrollU =
+                (materialFlags[0] & RAGE_RUNTIME_MATERIAL_SCROLL_U) != 0
+                ? (float)instance->textureScrollU * (1.0f / 256.0f) : 0.0f;
             materialVariant = instance->materialVariant;
             /* Only terrain modes 0/1 select CLUT+1 from environment mode 4.
              * Modes 2..5 already encode their fixed CLUT in the import.

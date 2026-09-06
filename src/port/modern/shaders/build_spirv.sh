@@ -57,6 +57,11 @@ if [ "${1:-}" = "native-vertex" ]; then
     exit 0
 fi
 
+if [ "${1:-}" = "native-shadow-vertex" ]; then
+    build_shader native_shadow.vert native_shadow_vert vert vs_shadow
+    exit 0
+fi
+
 if [ "${1:-}" = "composite" ]; then
     build_shader composite.frag composite_frag frag fs_composite
     exit 0
