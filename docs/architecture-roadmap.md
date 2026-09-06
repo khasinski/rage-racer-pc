@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+The compiled stage-angle gate now reopens the asset session after initial GPU
+preparation while retaining the device, track identity and world frame number.
+The --reload-assets stage option verifies a new generation, an initially empty
+mesh cache and subsequent repopulation by GPU preparation. Its rendered car
+image must exactly match the normal control. Linux offscreen passes the full
+stage-angle gate including this case (3.84s). This covers same-source session
+replacement after preparation, not different-content texture replacement or
+retirement with submitted GPU work still in flight; Windows GPU remains open.
+
 Session-generation follow-up verification: the current standalone lifecycle
 fixture passes Windows 11 ClangCL Release (0.72s) and Linux ASan/UBSan with leak
 detection (0.02s), including a deliberately invalid parent cache override on

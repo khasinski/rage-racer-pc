@@ -48,7 +48,8 @@ static void Usage(const char *program) {
             "  --quat poses through the quaternion the angles describe, which\n"
             "  is the form the game uses for cars.\n"
             "  --sweep N turns every pose through a full circle in N steps,\n"
-            "  writing stage-000.ppm ... alongside --output.\n",
+            "  writing stage-000.ppm ... alongside --output.\n"
+            "  --reload-assets tests session replacement with the GPU retained.\n",
             program);
 }
 
@@ -180,6 +181,7 @@ int main(int argc, char **argv) {
     int haveTarget = 0;
     int haveDistance = 0;
     int sweep = 0;
+    int reloadAssets = 0;
     int step;
     int width = 640;
     int height = 480;
@@ -191,7 +193,10 @@ int main(int argc, char **argv) {
         const char *option = argv[index];
         const char *value = index + 1 < argc ? argv[index + 1] : NULL;
         int wantsValue = 1;
-        if (strcmp(option, "--pose") == 0) {
+        if (strcmp(option, "--reload-assets") == 0) {
+            reloadAssets = 1;
+            wantsValue = 0;
+        } else if (strcmp(option, "--pose") == 0) {
             if (value == NULL || poseCount == MAX_POSES ||
                 !ParsePose(value, &poses[poseCount])) {
                 fprintf(stderr, "rage-render-stage: bad --pose\n");
@@ -335,6 +340,20 @@ int main(int argc, char **argv) {
     if (!ModernNativeGpuHasDraws()) {
         fprintf(stderr, "rage-render-stage: the stage produced no draws\n");
         goto release_renderer;
+    }
+    if (reloadAssets) {
+        /* Keep device, track identity and frame number unchanged. Preparation
+         * must notice the new session rather than reuse the old draw lists. */
+        uint64_t generation = ModernAssetsGeneration();
+        ModernAssetsShutdown();
+        if (!ModernAssetsInitRoot(assetsPath) ||
+            ModernAssetsGeneration() == generation ||
+            ModernAssetsCachedMeshCount() != 0) goto release_renderer;
+        ModernNativeGpuPrepare(&world, (float)width / (float)height);
+        if (!ModernNativeGpuHasDraws() || ModernAssetsCachedMeshCount() == 0) {
+            fprintf(stderr, "rage-render-stage: asset session was not rebuilt\n");
+            goto release_renderer;
+        }
     }
     /* One turn of the subject, or one still. Holding the device open across
      * the whole sweep is what makes an angle sweep affordable as a test:
