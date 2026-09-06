@@ -14,6 +14,11 @@ test('native package metadata retains Unicode, extensions and launcher length li
   const base={format:1,name:'Żółć 🚗',region:'PAL',packageId:'Author.mod_1',author:'作者',description:'First\nSecond\tline',extension:{future:[1,true,null]}};
   async function check(value){const text=JSON.stringify(value);await fs.writeFile(file,text);return JSON.parse(await run(tool,['--metadata',file]));}
   assert.deepEqual(await check(base),base);
+  const streamed=input=>run(tool,['--metadata-stdin'],{input});
+  assert.deepEqual(JSON.parse(await streamed(Buffer.from(JSON.stringify(base)))),base);
+  await assert.rejects(streamed(Buffer.from('{')),/Invalid mod metadata/);
+  await assert.rejects(streamed(Buffer.alloc(16385,32)),/Invalid mod metadata/);
+  await assert.rejects(streamed(Buffer.from('{"format":1,"name":"\\ud800","region":"PAL"}')),/Invalid mod metadata/);
   assert.equal((await check({...base,name:'🚗'.repeat(100)})).name.length,200);
   assert.equal((await check({...base,description:'界'.repeat(1200)})).description.length,1200);
   const requires=Array.from({length:32},(_,i)=>({packageId:'dep'+i,version:'1.0'}));

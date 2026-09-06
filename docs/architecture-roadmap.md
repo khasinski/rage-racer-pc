@@ -80,6 +80,14 @@ unclaimed work-in-progress assets; this is not a runtime-readiness validation or
 an atomic filesystem publication protocol. JSON serialization remains in the
 launcher. The complete launcher suite passes with 64 tests after this change.
 
+Metadata edits now validate the complete proposed package through the same C
+schema before mutating the profile. A bounded `--metadata-stdin` command avoids
+temporary files and preserves the file-based import command. UI field checks
+remain early diagnostics, not authoritative acceptance; tests demonstrate that
+unpaired Unicode surrogates rejected by C leave memory and persisted state
+unchanged. Export and editing share the profile-to-package serialization helper.
+All 64 launcher tests pass locally; this step has no new Windows GUI evidence.
+
 The package-relative file policy is now shared C code and used before import,
 export and composition. Directory traversal, symlink checks and semantic/legacy
 resource-claim discovery still live in the launcher; classifying a backing file

@@ -2,6 +2,10 @@ const {readDependencies}=require('./mod-dependencies.cjs');
 const fs=require('node:fs/promises');
 const path=require('node:path');
 const {randomUUID}=require('node:crypto');
+// Serialize the profile's editable metadata; the compiled schema is authoritative.
+function packageMetadata(mod){
+ return JSON.stringify({format:1,name:mod.name,region:mod.region,packageId:mod.packageId||mod.id,requires:mod.requires,author:mod.author,version:mod.version,description:mod.description},null,2)+'\n';
+}
 // Only data formats understood by the current runtime. No executable hooks.
 async function inventory(root,tool=path.resolve(__dirname,'../resources/bin/rage-mod-cli'+(process.platform==='win32'?'.exe':''))){
  const result=[];let total=0;
@@ -94,6 +98,9 @@ function installMethods(Service){
   const values=require('./mod-details.cjs').validateDetails(details);
   return this.operation('Saving mod details',async()=>{
    const mod=this.state.mods.find(m=>m.id===id);if(!mod)throw Error('Mod not found');
+   const candidate={...mod,...values};
+   const {run}=require('./service.cjs');
+   await run(this.tool('rage-mod-cli'),['--metadata-stdin'],{input:Buffer.from(packageMetadata(candidate))});
    const previous={...mod};Object.assign(mod,values);
    try{await this.validateModSelection();await this.persist();}catch(e){for(const key of Object.keys(values))if(!Object.hasOwn(previous,key))delete mod[key];Object.assign(mod,previous);throw e;}
   },false);
@@ -171,7 +178,7 @@ function installMethods(Service){
     const files=(await inventory(source,this.tool('rage-mod-cli'))).filter(name=>name!=='rage-mod.json');
     await this.snapshotModFiles(source,target,files,signal);
     if(signal.aborted)throw Error('Operation canceled');
-    await fs.writeFile(path.join(target,'rage-mod.json'),JSON.stringify({format:1,name:mod.name,region:mod.region,packageId:mod.packageId||mod.id,requires:mod.requires,author:mod.author,version:mod.version,description:mod.description},null,2)+'\n',{flag:'wx'});
+    await fs.writeFile(path.join(target,'rage-mod.json'),packageMetadata(mod),{flag:'wx'});
     const {run}=require('./service.cjs');
     await run(this.tool('rage-mod-cli'),['--metadata',path.join(target,'rage-mod.json')],{signal});
     if(signal.aborted)throw Error('Operation canceled');

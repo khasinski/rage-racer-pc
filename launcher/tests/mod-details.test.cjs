@@ -12,6 +12,10 @@ test('editing mod identity persists, exports and rolls back without changing com
   const exported=await service.exportMod(mod.id,root);assert.equal(JSON.parse(await fs.readFile(path.join(exported,'rage-mod.json'))).author,'Author');
   await assert.rejects(service.saveModDetails(mod.id,{name:'',author:'a'}),/name/);
   await assert.rejects(service.saveModDetails(mod.id,{name:'Valid',region:'NTSC-U'}),/Unknown/);
+  const persisted=await fs.readFile(path.join(service.root,'launcher.json'),'utf8');
+  await assert.rejects(service.saveModDetails(mod.id,{name:'\ud800'}),/Invalid mod metadata/);
+  assert.equal(mod.name,'My car');
+  assert.equal(await fs.readFile(path.join(service.root,'launcher.json'),'utf8'),persisted);
   service.persist=async()=>{throw Error('disk full');};await assert.rejects(service.saveModDetails(mod.id,{name:'Lost edit'}),/disk full/);assert.equal(mod.name,'My car');assert.equal(service.busy,null);
   service.game={};await assert.rejects(service.saveModDetails(mod.id,{name:'While playing'}),/running/);assert.equal(mod.name,'My car');
  }finally{await fs.rm(root,{recursive:true,force:true});}

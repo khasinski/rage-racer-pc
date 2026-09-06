@@ -18,11 +18,14 @@ static RageModManifest manifest;
 static int PackageMetadata(const char *path) {
     char bytes[RAGE_MOD_PACKAGE_BYTES + 1];
     RageModPackage package;
-    FILE *file = fopen(path,"rb");
+    FILE *file = path ? fopen(path,"rb") : stdin;
     if (!file) { perror(path); return 1; }
+#ifdef _WIN32
+    if (!path && _setmode(_fileno(stdin),_O_BINARY) == -1) return 1;
+#endif
     size_t size = fread(bytes,1,sizeof(bytes),file);
     int ok = !ferror(file);
-    if (fclose(file)) ok = 0;
+    if (path && fclose(file)) ok = 0;
     if (!ok || !ModPackageParseJSON(bytes,size,&package)) {
         fputs("Invalid mod metadata\n",stderr); return 1;
     }
@@ -59,6 +62,7 @@ int main(int argc,char **argv) {
     if(argc==2 && strcmp(argv[1],"--file-dispositions-stdin")==0) return FilePolicyCommand(1);
     if(argc==2 && strcmp(argv[1],"--copy-snapshot-stdin")==0) return SnapshotCommand();
     if(argc==3 && strcmp(argv[1],"--metadata")==0) return PackageMetadata(argv[2]);
+    if(argc==2 && strcmp(argv[1],"--metadata-stdin")==0) return PackageMetadata(NULL);
     if(argc>1 && strcmp(argv[1],"--check-selection")==0) return SelectionCommand(argc,argv);
     if(argc==2 && strcmp(argv[1],"--check-selection-stdin")==0) return NativeArgumentStream(SelectionCommand);
     if(argc>1 && strcmp(argv[1],"--resolve-providers")==0) return ProviderCommand(argc,argv);
