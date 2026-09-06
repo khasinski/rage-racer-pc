@@ -195,6 +195,15 @@ missing Windows `<direct.h>` include in rage-extract. Removed only the replaced
 `texture_patch` are the compiled gates. Other Python migrations and the broader
 architecture/release gates remain incomplete.
 
+The compiled texture/archive contracts now have a standalone CMake driver that
+builds SDL and the tools without configuring the game, plus a path-filtered
+GitHub Actions matrix for Linux/Windows/macOS. Only required pinned submodules
+are fetched. The driver disables X11/Wayland/KMSDRM/audio for these non-graphical
+tests, avoiding display-development package requirements. It passed both tests
+on Linux and built SDL/tools from the existing guest source in Windows 11,
+where both tests passed (2.41s). This verifies the local driver on two systems;
+the new workflow has not been pushed/run on hosted CI and macOS is unverified.
+
 Copy roles now also come from C: referenced backing files stay provider-local,
 while metadata and unused meshes are omitted from runtime composition without
 being removed from the library/export. Reference discovery and resource-key

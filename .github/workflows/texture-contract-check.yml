@@ -1,0 +1,54 @@
+name: Compiled texture and archive contracts
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/port/texture_patch.*'
+      - 'src/render/legacy_texture_index.h'
+      - 'tools/rage_extract.c'
+      - 'tools/rage_pack.c'
+      - 'tests/disc/mod_archive_tests.c'
+      - 'tests/disc/texture_patch_tests.c'
+      - 'tests/texture_contract/**'
+      - 'external/yyjson/**'
+      - 'external/psyz'
+      - 'external/libchdr'
+      - '.gitmodules'
+      - '.github/workflows/texture-contract-check.yml'
+  pull_request:
+    paths:
+      - 'src/port/texture_patch.*'
+      - 'src/render/legacy_texture_index.h'
+      - 'tools/rage_extract.c'
+      - 'tools/rage_pack.c'
+      - 'tests/disc/mod_archive_tests.c'
+      - 'tests/disc/texture_patch_tests.c'
+      - 'tests/texture_contract/**'
+      - 'external/yyjson/**'
+      - 'external/psyz'
+      - 'external/libchdr'
+      - '.gitmodules'
+      - '.github/workflows/texture-contract-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-2022, macos-14]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch only required pinned submodules
+        shell: bash
+        run: |
+          git submodule update --init --depth 1 external/psyz external/libchdr
+          git -C external/psyz submodule update --init --depth 1 external/SDL
+      - name: Build and test compiled contracts
+        run: cmake -P tests/texture_contract/run.cmake

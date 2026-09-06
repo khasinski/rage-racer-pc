@@ -1,7 +1,20 @@
 # Compiled texture patch contract
 
-Builds the production texture patcher and the same synthetic C fixture used by
-the main build. No game image, SDL, GPU, Node or Python is needed. The libchdr
+Run the complete isolated gate (including building the pinned SDL dependency):
+
+```sh
+cmake -P tests/texture_contract/run.cmake
+```
+
+This uses `build/texture-ci` by default; override with
+`-DRAGE_TEXTURE_CONTRACT_BUILD_DIR=/absolute/build/path` before `-P`.
+The `texture-contract-check` workflow runs the same script on Linux, Windows
+and macOS, checking out only libchdr, psyz and its SDL submodule. It needs no
+disc, display, game loop or Python. Windows uses VS2022/ClangCL; Unix needs Ninja.
+
+The smaller standalone project below builds only the production texture patcher
+and the same synthetic C fixture used by the main build. No game image, SDL,
+GPU, Node or Python is needed in this mode. The libchdr
 submodule must supply `deps/miniz-3.1.2/miniz.c` and `miniz.h`. The vendored
 `external/yyjson` parser is built from the same sources as the game.
 
