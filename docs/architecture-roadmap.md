@@ -50,6 +50,13 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Natural award-FMV verification now requires ordered prize -> movie -> return
+scene positions after race completion, rather than accepting their unordered
+presence in the log. Standard class-0 promotion and Extra class-5 ending pass
+again in PAL/NTSC-U/NTSC-J (six cases, 34.96s parallel, offscreen). Existing
+disc-based pacing/frame and XA/PCM checks remain enabled. This strengthens the
+transition gate without claiming that the forced finish tests player physics.
+
 After the shared class consumers/scenery changes, rebuilt Linux smoke passes
 nine regional integration cases (34.65s parallel total, no skips): automatic
 modern disc startup, standard class-0 award FMV and Extra class-5 ending for
