@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Legacy index entries now carry their compiled resourceClaim alongside their
+compiled JSON/PNG paths. Fresh composition uses that key both for conflict
+grouping and winner-controlled copying; only older cached UI entries reconstruct
+it. All 70 launcher tests pass with the rebuilt CLI, including repeated index
+owners, boundary slots and actual legacy winner composition. The launcher
+still assembles backing-file sets and writes composed profiles; source identity,
+atomic snapshots and a unified runtime catalog remain unfinished.
+
 Semantic conflict keys now come from the compiled manifest adapter as
 resourceClaims (texture/material/mesh namespaces). Composition reparses its
 private snapshots and groups these claims; old cached UI manifests retain a

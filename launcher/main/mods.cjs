@@ -183,7 +183,7 @@ function installMethods(Service){
    // Cached UI state from older launchers may lack compiled claims. Composition
    // always reparses the private snapshot before reaching this point.
    const semanticClaims=mod.manifest.resourceClaims??[...Object.keys(mod.manifest.textures).map(k=>'texture:'+k),...Object.keys(mod.manifest.materials).map(k=>'material:'+k),...Object.keys(mod.manifest.meshes||{}).map(k=>'mesh:'+k)];
-   const keys=[...(mod.legacyTextures||[]).map(t=>'legacy-textures:asset-'+t.asset),...globalFiles,...semanticClaims];
+   const keys=[...(mod.legacyTextures||[]).map(t=>t.resourceClaim??'legacy-textures:asset-'+t.asset),...globalFiles,...semanticClaims];
    for(const key of new Set(keys)){const list=owners.get(key)||[];list.push({id:mod.id,name:mod.name});owners.set(key,list);}
   }
   return [...owners].filter(([,list])=>list.length>1).map(([key,candidates])=>{
@@ -246,7 +246,7 @@ function installMethods(Service){
    try {for(const mod of active){
      const source=path.join(staging,mod.id),files=mod.files;
      const roles=mod.fileDispositions;
-     for(const [index,entry]of (mod.legacyTextures||[]).entries())if(selected('legacy-textures:asset-'+entry.asset,mod.id)){
+     for(const [index,entry]of (mod.legacyTextures||[]).entries())if(selected(entry.resourceClaim,mod.id)){
       const stem=`legacy-${mod.id}-${index}`;
       await fs.mkdir(path.join(target,'textures'),{recursive:true});
       await fs.copyFile(path.join(source,entry.json),path.join(target,'textures',stem+'.json'));

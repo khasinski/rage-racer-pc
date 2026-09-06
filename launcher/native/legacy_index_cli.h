@@ -18,8 +18,8 @@ static int LegacyIndexCommand(const char *path) {
         start=i+1;
         if(parsed<0){ok=0;goto done;}
         if(parsed) {
-            printf("%s{\"asset\":%d,\"json\":\"textures/%s\",\"png\":\"textures/%.*s.png\"}",
-                   comma?",":"",owner,stem,(int)strlen(stem)-5,stem);
+            printf("%s{\"asset\":%d,\"json\":\"textures/%s\",\"png\":\"textures/%.*s.png\",\"resourceClaim\":\"legacy-textures:asset-%d\"}",
+                   comma?",":"",owner,stem,(int)strlen(stem)-5,stem,owner);
             comma=1;
         }
     }

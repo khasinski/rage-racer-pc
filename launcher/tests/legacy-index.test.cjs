@@ -8,9 +8,9 @@ test('shared legacy texture parser preserves order and rejects unsafe or oversiz
   const file=path.join(root,'index.txt');
   async function parse(text){await fs.writeFile(file,text);return JSON.parse(await run(tool,['--legacy-index',file]));}
   assert.deepEqual(await parse('# comment\r\n134 nested/a.json\r\n0 b.json\n134 nested/a.json'),[
-   {asset:134,json:'textures/nested/a.json',png:'textures/nested/a.png'},
-   {asset:0,json:'textures/b.json',png:'textures/b.png'},
-   {asset:134,json:'textures/nested/a.json',png:'textures/nested/a.png'}]);
+   {asset:134,json:'textures/nested/a.json',png:'textures/nested/a.png',resourceClaim:'legacy-textures:asset-134'},
+   {asset:0,json:'textures/b.json',png:'textures/b.png',resourceClaim:'legacy-textures:asset-0'},
+   {asset:134,json:'textures/nested/a.json',png:'textures/nested/a.png',resourceClaim:'legacy-textures:asset-134'}]);
   for(const text of ['135 a.json','0 ../a.json','0 a.json extra','0 a.json\0hidden',
    '0 a.json\n'+'x'.repeat(512),' '.repeat(2*1024*1024+1)])
    await assert.rejects(parse(text),/legacy texture index/);
