@@ -10,7 +10,47 @@ static int failures;
             #value);                                                           \
 } } while (0)
 
+static void test_resolution(void) {
+    static const char text[] =
+        "[textures]\n\"track.a.variant.1\"=\"first.png\"\n"
+        "\"track.a.variant.1\"=\"exact.png\"\n\"track.a\"=\"base.png\"\n"
+        "[materials]\n\"track.a\"=\"unlit blend 0.2 0 1 1 1 1 0.4 0.3 0.2\"\n";
+    RageModManifest *manifest = malloc(sizeof(*manifest));
+    EXPECT(manifest != NULL);
+    if (manifest == NULL) return;
+    EXPECT(ModManifestParse(text, sizeof(text) - 1, manifest));
+    char query[] = "track.a.variant.1";
+    RageModResolution result = ModManifestResolve(manifest, query, "track.a", 3);
+    EXPECT(result.texture == &manifest->textures[1]);
+    EXPECT(result.material == &manifest->materials[0]);
+    memset(query, 'x', sizeof(query) - 1);
+    EXPECT(result.texture != NULL && strcmp(result.texture->key, "track.a.variant.1") == 0);
+    result = ModManifestResolve(manifest, "missing", "track.a", 3);
+    EXPECT(result.texture == &manifest->textures[2] && result.material == &manifest->materials[0]);
+    result = ModManifestResolve(manifest, "track.a.variant.1", "track.a", RAGE_MOD_RESOLVE_TEXTURE);
+    EXPECT(result.texture == &manifest->textures[1] && result.material == NULL);
+    result = ModManifestResolve(manifest, "track.a.variant.1", "track.a", RAGE_MOD_RESOLVE_MATERIAL);
+    EXPECT(result.texture == NULL && result.material == &manifest->materials[0]);
+    result = ModManifestResolve(manifest, NULL, NULL, 3);
+    EXPECT(result.texture == NULL && result.material == NULL);
+    manifest->textureCount = RAGE_MOD_MANIFEST_MAX_TEXTURES + 1;
+    result = ModManifestResolve(manifest, "track.a", "track.a", 3);
+    EXPECT(result.texture == NULL && result.material == NULL);
+    result = ModManifestResolve(NULL, "track.a", "track.a", 3);
+    EXPECT(result.texture == NULL && result.material == NULL);
+    static const char materialExact[] =
+        "[materials]\n\"track.a.variant.1\"=\"unlit blend 0.2 0 1 1 1 1 0 0 0\"\n"
+        "\"track.a\"=\"unlit blend 0.5 0 1 1 1 1 0 0 0\"\n";
+    EXPECT(ModManifestParse(materialExact, sizeof(materialExact) - 1, manifest));
+    result = ModManifestResolve(manifest, "track.a.variant.1", "track.a", 3);
+    EXPECT(result.texture == NULL && result.material == &manifest->materials[0]);
+    result = ModManifestResolve(manifest, "track.a.variant.1", "track.a", 0);
+    EXPECT(result.texture == NULL && result.material == NULL);
+    free(manifest);
+}
+
 int main(void) {
+    test_resolution();
     static const char valid[] =
         "# semantic PNG overrides\n"
         "[mod]\n"

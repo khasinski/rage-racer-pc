@@ -341,22 +341,13 @@ static const char *ModernAssetsFindModMaterialProperties(
     const RageRenderMeshInstance *instance, uint32_t material,
     uint8_t variant) {
     char exactId[160], baseId[160];
-    const char *properties = NULL;
-
-    if (!s_modReady) return NULL;
-    if (AssetMaterialVariantId(
+    if (!s_modReady || !AssetMaterialVariantId(
             exactId, sizeof(exactId), instance->assetKey,
-            instance->assetSet, material, variant)) {
-        properties = ModManifestFindMaterialProperties(s_modManifest,
-                                                       exactId);
-    }
-    if (properties == NULL &&
-        AssetMaterialId(baseId, sizeof(baseId), instance->assetKey,
-                        instance->assetSet, material)) {
-        properties = ModManifestFindMaterialProperties(s_modManifest,
-                                                       baseId);
-    }
-    return properties;
+            instance->assetSet, material, variant) ||
+        !AssetMaterialId(baseId, sizeof(baseId), instance->assetKey,
+                        instance->assetSet, material)) return NULL;
+    RageModResolution resolved = ModManifestResolve(s_modManifest, exactId, baseId, RAGE_MOD_RESOLVE_MATERIAL);
+    return resolved.material != NULL ? resolved.material->properties : NULL;
 }
 
 static int ModernAssetsFindMaterial(
@@ -435,9 +426,8 @@ static int ModernAssetsLoadModImage(const RageRenderMeshInstance *instance,
                                     material, variant) ||
         !AssetMaterialId(baseId, sizeof(baseId), instance->assetKey,
                              instance->assetSet, material)) return 0;
-    relativePath = ModManifestFindTexture(s_modManifest, exactId);
-    if (relativePath == NULL)
-        relativePath = ModManifestFindTexture(s_modManifest, baseId);
+    RageModResolution resolved = ModManifestResolve(s_modManifest, exactId, baseId, RAGE_MOD_RESOLVE_TEXTURE);
+    relativePath = resolved.texture != NULL ? resolved.texture->path : NULL;
     if (relativePath == NULL ||
         snprintf(fullPath, sizeof(fullPath), "%s/%s", s_modRoot,
                  relativePath) >= (int)sizeof(fullPath)) return 0;
@@ -469,8 +459,7 @@ static int ModernAssetsLoadModImage(const RageRenderMeshInstance *instance,
     image->height = (uint32_t)converted->h;
     SDL_DestroySurface(converted);
     fprintf(stderr, "rage-port: native texture override %s <- %s (%ux%u)\n",
-            ModManifestFindTexture(s_modManifest, exactId) != NULL
-                ? exactId : baseId,
+            resolved.texture->key,
             relativePath, image->width, image->height);
     return 1;
 fail:

@@ -101,6 +101,14 @@ path; image comparisons and frame-tail measurements are still required.
 
 ## Work log
 
+- Native semantic overrides now use a shared renderer-neutral manifest
+  resolver for exact-variant/base precedence and last-assignment precedence.
+  Texture and material channels resolve independently; callers request only
+  the channel they need, and returned entries retain the manifest owner's
+  lifetime rather than borrowing temporary query strings. Linux/Windows tests
+  cover precedence, fallback, disabled channels and ownership; Linux provider
+  and environment-rendering tests pass. This unifies one selection rule, not
+  multiple-mod ordering, dependency resolution or original/generated providers.
 - The shipped-configuration policy gate is now compiled C, with fixture tests
   for its four release invariants, disabled boolean spellings, missing values,
   malformed/nonfinite numbers and duplicate settings. Linux and Windows builds,

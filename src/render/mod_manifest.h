@@ -51,4 +51,18 @@ const char *ModManifestFindTexture(const RageModManifest *manifest,
 const char *ModManifestFindMaterialProperties(
     const RageModManifest *manifest, const char *semanticId);
 
+typedef struct RageModResolution {
+    const RageModTextureOverride *texture;
+    const RageModMaterialOverride *material;
+} RageModResolution;
+enum { RAGE_MOD_RESOLVE_TEXTURE = 1, RAGE_MOD_RESOLVE_MATERIAL = 2 };
+
+/* Resolve each channel independently: exact variant wins over base, and the
+ * last assignment wins within a key. Returned entries belong to manifest,
+ * not the query strings, and remain valid until its owner retires it.
+ * Resolution performs no I/O: a selected but unreadable texture is not a
+ * request to silently try a lower-priority manifest entry. */
+RageModResolution ModManifestResolve(const RageModManifest *manifest,
+    const char *exactId, const char *baseId, unsigned channels);
+
 #endif

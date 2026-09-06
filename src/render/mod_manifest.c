@@ -218,3 +218,30 @@ const char *ModManifestFindTexture(const RageModManifest *manifest,
             return manifest->textures[index - 1].path;
     return NULL;
 }
+
+RageModResolution ModManifestResolve(const RageModManifest *manifest,
+    const char *exactId, const char *baseId, unsigned channels) {
+    RageModResolution result = {0};
+    if (manifest == NULL || manifest->error != RAGE_MOD_MANIFEST_OK ||
+        manifest->textureCount > RAGE_MOD_MANIFEST_MAX_TEXTURES ||
+        manifest->materialCount > RAGE_MOD_MANIFEST_MAX_MATERIALS) return result;
+    for (size_t i = (channels & RAGE_MOD_RESOLVE_TEXTURE) ? manifest->textureCount : 0; i > 0; --i) {
+        const RageModTextureOverride *entry = &manifest->textures[i - 1];
+        if (exactId != NULL && strcmp(entry->key, exactId) == 0) {
+            result.texture = entry;
+            break;
+        }
+        if (result.texture == NULL && baseId != NULL && strcmp(entry->key, baseId) == 0)
+            result.texture = entry;
+    }
+    for (size_t i = (channels & RAGE_MOD_RESOLVE_MATERIAL) ? manifest->materialCount : 0; i > 0; --i) {
+        const RageModMaterialOverride *entry = &manifest->materials[i - 1];
+        if (exactId != NULL && strcmp(entry->key, exactId) == 0) {
+            result.material = entry;
+            break;
+        }
+        if (result.material == NULL && baseId != NULL && strcmp(entry->key, baseId) == 0)
+            result.material = entry;
+    }
+    return result;
+}
