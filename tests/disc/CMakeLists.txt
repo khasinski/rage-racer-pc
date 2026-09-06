@@ -150,6 +150,19 @@ if(TARGET rage-racer-smoke)
             -P ${CMAKE_CURRENT_SOURCE_DIR}/class_award_fmv.cmake)
         set_tests_properties(class_award_fmv PROPERTIES LABELS e2e
             TIMEOUT 150 SKIP_REGULAR_EXPRESSION "SKIP:")
+        foreach(region NTSC-U NTSC-J)
+            string(REPLACE "-" "_" key "${region}")
+            string(TOLOWER "${key}" suffix)
+            add_test(NAME class_award_fmv_${suffix} COMMAND ${CMAKE_COMMAND}
+                -DGAME=$<TARGET_FILE:rage-racer-smoke>
+                -DPCM_CHECK=$<TARGET_FILE:rage-pcm-check>
+                -DPACING_CHECK=$<TARGET_FILE:rage-fmv-pacing-check>
+                -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+                -DDISC_ENV=RAGE_PORT_${key}_CUE -DEXPECT_REGION=${region}
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/class_award_fmv.cmake)
+            set_tests_properties(class_award_fmv_${suffix} PROPERTIES
+                LABELS "e2e;regional" TIMEOUT 150 SKIP_REGULAR_EXPRESSION "SKIP:")
+        endforeach()
         add_test(NAME modern_fmv_audio COMMAND ${CMAKE_COMMAND}
             -DGAME=$<TARGET_FILE:rage-racer-smoke>
             -DPCM_CHECK=$<TARGET_FILE:rage-pcm-check>

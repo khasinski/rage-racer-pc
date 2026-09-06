@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Class-0 award-entry coverage now runs on all three regions. PAL retains its
+2700-tick scenario; NTSC allows 4200 ticks for its longer promotion movie.
+Each case checks detected region/base timing, the post-race prize/FMVs/return
+path, exact disc-derived stream-1 frames and pacing, positive XA mixer energy
+and session PCM. PAL, NTSC-U and NTSC-J all pass locally (9.17s/13.31s/13.58s;
+13.59s parallel total). This refreshes regional evidence for the CD fade fix,
+not other award classes, final endings, Windows/macOS or physical audio.
+
 Award audio regression found and fixed: tracing now measures the SPU CD mix
 energy delta for each XA playback interval under the audio lock. The natural
 class-award fixture initially failed with zero movie contribution despite

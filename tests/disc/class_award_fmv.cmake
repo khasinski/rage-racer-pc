@@ -1,7 +1,23 @@
 # Seed prior courses, finish through lap logic, then use the real prize flow.
-set(disc "${SOURCE}/disc/PAL/Rage Racer (Europe)/Rage Racer (Europe).cue")
+if(NOT DEFINED EXPECT_REGION)
+    set(EXPECT_REGION PAL)
+endif()
+if(NOT EXPECT_REGION MATCHES "^(PAL|NTSC-U|NTSC-J)$")
+    message(FATAL_ERROR "Unsupported expected region")
+endif()
+set(disc "$ENV{${DISC_ENV}}")
+if(disc STREQUAL "" AND EXPECT_REGION STREQUAL "PAL")
+    set(disc "${SOURCE}/disc/PAL/Rage Racer (Europe)/Rage Racer (Europe).cue")
+endif()
+if(EXPECT_REGION STREQUAL "PAL")
+    set(timing "pal base_hz=50")
+    set(frames 2700)
+else()
+    set(timing "ntsc base_hz=60")
+    set(frames 4200)
+endif()
 if(NOT EXISTS "${disc}")
-    message("SKIP: no PAL disc for class award FMV")
+    message("SKIP: no ${EXPECT_REGION} disc for class award FMV")
     return()
 endif()
 string(RANDOM LENGTH 12 ALPHABET 0123456789abcdef id)
@@ -14,7 +30,7 @@ execute_process(COMMAND "${CMAKE_COMMAND}" -E env
     "${GAME}" --scenario "${SOURCE}/race-scenario.ini"
     --set "disc.image=${disc}" --set video.renderer=modern
     --set race.class=0 --set race.course=0 --set race.series=grand-prix
-    --set run.frames=2700 --set hooks.finish_frame=500
+    --set "run.frames=${frames}" --set hooks.finish_frame=500
     --set hooks.auto_confirm_frame=800 --set hooks.prior_course_wins=true
     --set hooks.preserve_fmv=true --set race.after_finish=repeat
     --set diagnostics.marker_capture=false --set diagnostics.marker_history=false
@@ -25,7 +41,7 @@ if(NOT result STREQUAL "0")
 endif()
 file(READ "${out}/game.log" log)
 foreach(required "prior course wins seeded class=0 course=0" "native GPU pipeline ready"
-                 "region=PAL" "timing=pal base_hz=50")
+                 "region=${EXPECT_REGION}" "timing=${timing}")
     if(NOT log MATCHES "${required}")
         message(FATAL_ERROR "Missing ${required}: ${out}")
     endif()
@@ -43,7 +59,7 @@ endforeach()
 if(NOT award MATCHES "fmv xa mixer energy=([0-9]+)" OR CMAKE_MATCH_1 LESS_EQUAL 0)
     message(FATAL_ERROR "Award XA made no contribution to the mixer: ${out}")
 endif()
-file(WRITE "${out}/award.log" "timing=pal base_hz=50\n${award}")
+file(WRITE "${out}/award.log" "timing=${timing}\n${award}")
 execute_process(COMMAND "${PACING_CHECK}" "${disc}" 1 "${out}/award.log"
     RESULT_VARIABLE result OUTPUT_VARIABLE pacing ERROR_VARIABLE error)
 if(NOT result STREQUAL "0")
