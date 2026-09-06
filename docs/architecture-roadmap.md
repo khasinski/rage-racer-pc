@@ -50,6 +50,16 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Instance transform preparation/evaluation is now a renderer-neutral inline
+contract in render_instance_transform.h, consumed by the production builder
+for positions, normals and visibility bounds. It takes vectors rather than
+RMESH vertices and has no view dependency. Euler operation order, normalized
+quaternion handling and rotation-only normal semantics are retained. Linux
+builder/stage-angle gates pass, and all 459 matching stage PPMs are byte-equal
+between build/stage-angles-ef726f330153 and build/stage-angles-be8ac4671b90.
+The transform still executes on CPU; this is the reference boundary for later
+GPU instance transforms, not persistent GPU geometry or an FPS improvement.
+
 The standalone native shader contract compiles on Windows ClangCL Release
 against the VM's SDL3 build. Execution skips all three tests: SDL reports no
 supported GPU backend. SDL_GPU/SDL_VIDEO/SDL_VULKAN are enabled and the Vulkan

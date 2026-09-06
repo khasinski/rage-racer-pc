@@ -1,5 +1,6 @@
 #include "render_mesh_build.h"
 #include "render_native_vertex.h"
+#include "render_instance_transform.h"
 #include "authored_car_surface.h"
 
 #include <math.h>
@@ -9,92 +10,12 @@ static float Radians(float degrees) {
     return degrees * (3.14159265358979323846f / 180.0f);
 }
 
-typedef struct RageTransformBasis {
-    RageRenderVec3 position;
-    RageRenderVec3 scale;
-    float cx, sx, cy, sy, cz, sz;
-    float matrix[3][3];
-    int useMatrix;
-} RageTransformBasis;
-
-static RageTransformBasis BuildTransformBasis(
-    const RageRenderTransform *transform) {
-    RageTransformBasis basis = {0};
-    float x = Radians(transform->rotation.x);
-    float y = Radians(transform->rotation.y);
-    float z = Radians(transform->rotation.z);
-    basis.position = transform->position;
-    basis.scale = transform->scale;
-    basis.cx = cosf(x); basis.sx = sinf(x);
-    basis.cy = cosf(y); basis.sy = sinf(y);
-    basis.cz = cosf(z); basis.sz = sinf(z);
-    if (transform->hasOrientation) {
-        const RageRenderQuaternion *q = &transform->orientation;
-        double lengthSquared =
-            (double)q->x * q->x + (double)q->y * q->y +
-            (double)q->z * q->z + (double)q->w * q->w;
-        if (isfinite(lengthSquared) && lengthSquared > 0.0) {
-            double inverseLength = 1.0 / sqrt(lengthSquared);
-            float xq = (float)((double)q->x * inverseLength);
-            float yq = (float)((double)q->y * inverseLength);
-            float zq = (float)((double)q->z * inverseLength);
-            float wq = (float)((double)q->w * inverseLength);
-            basis.matrix[0][0] = 1.0f - 2.0f * (yq * yq + zq * zq);
-            basis.matrix[0][1] = 2.0f * (xq * yq - zq * wq);
-            basis.matrix[0][2] = 2.0f * (xq * zq + yq * wq);
-            basis.matrix[1][0] = 2.0f * (xq * yq + zq * wq);
-            basis.matrix[1][1] = 1.0f - 2.0f * (xq * xq + zq * zq);
-            basis.matrix[1][2] = 2.0f * (yq * zq - xq * wq);
-            basis.matrix[2][0] = 2.0f * (xq * zq - yq * wq);
-            basis.matrix[2][1] = 2.0f * (yq * zq + xq * wq);
-            basis.matrix[2][2] = 1.0f - 2.0f * (xq * xq + yq * yq);
-            basis.useMatrix = 1;
-        }
-    }
-    return basis;
-}
-
-static RageRenderVec3 TransformBasisVector(
-    const RageTransformBasis *basis, RageRenderVec3 vector) {
-    float x;
-    if (basis->useMatrix) {
-        RageRenderVec3 rotated;
-        rotated.x = basis->matrix[0][0] * vector.x +
-                    basis->matrix[0][1] * vector.y +
-                    basis->matrix[0][2] * vector.z;
-        rotated.y = basis->matrix[1][0] * vector.x +
-                    basis->matrix[1][1] * vector.y +
-                    basis->matrix[1][2] * vector.z;
-        rotated.z = basis->matrix[2][0] * vector.x +
-                    basis->matrix[2][1] * vector.y +
-                    basis->matrix[2][2] * vector.z;
-        return rotated;
-    }
-    float y = vector.y * basis->cx - vector.z * basis->sx;
-    float z = vector.y * basis->sx + vector.z * basis->cx;
-    vector.y = y;
-    vector.z = z;
-    x = vector.x * basis->cy + vector.z * basis->sy;
-    z = -vector.x * basis->sy + vector.z * basis->cy;
-    vector.x = x;
-    vector.z = z;
-    x = vector.x * basis->cz - vector.y * basis->sz;
-    y = vector.x * basis->sz + vector.y * basis->cz;
-    vector.x = x;
-    vector.y = y;
-    return vector;
-}
+typedef RageRenderInstanceTransform RageTransformBasis;
 
 static RageRenderVec3 TransformPosition(const RageTransformBasis *basis,
                                              const RageRuntimeVertex *vertex) {
-    RageRenderVec3 out = {vertex->position[0] * basis->scale.x,
-                          vertex->position[1] * basis->scale.y,
-                          vertex->position[2] * basis->scale.z};
-    out = TransformBasisVector(basis, out);
-    out.x += basis->position.x;
-    out.y += basis->position.y;
-    out.z += basis->position.z;
-    return out;
+    return RenderTransformInstancePoint(basis,
+        (RageRenderVec3){vertex->position[0], vertex->position[1], vertex->position[2]});
 }
 
 static float SnapTerrainCellBoundary(float value) {
@@ -109,14 +30,13 @@ static float SnapTerrainCellBoundary(float value) {
 static RageRenderVec3 TransformNormal(const RageTransformBasis *basis,
                                           const RageRuntimeVertex *vertex) {
     RageRenderVec3 out = {vertex->normal[0], vertex->normal[1], vertex->normal[2]};
-    return TransformBasisVector(basis, out);
+    return RenderRotateInstanceVector(basis, out);
 }
 
 static RageRenderVec3 TransformPoint(const RageTransformBasis *basis,
                                          const float position[3]) {
-    RageRuntimeVertex vertex = {0};
-    memcpy(vertex.position, position, sizeof(vertex.position));
-    return TransformPosition(basis, &vertex);
+    return RenderTransformInstancePoint(basis,
+        (RageRenderVec3){position[0], position[1], position[2]});
 }
 
 static float Vec3Length(float x, float y, float z) {
@@ -375,7 +295,7 @@ static int InstanceOutsideFrustum(const RageRenderWorld *world,
     float center[3], radius, maxScale, tanY, tanX, depth;
     float horizontalRadius, verticalRadius;
     RageRenderVec3 worldCenter, view;
-    RageTransformBasis basis = BuildTransformBasis(transform);
+    RageTransformBasis basis = RenderPrepareInstanceTransform(transform);
     if (!RuntimeMeshBounds(mesh, meshIndex, center, &radius)) return 0;
     worldCenter = TransformPoint(&basis, center);
     RenderWorldToViewPrepared(viewTransform, &worldCenter, &view);
@@ -550,7 +470,7 @@ static uint32_t RenderBuildNativeDrawsFiltered(
         if ((instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL) &&
             InstanceOutsideFrustum(world, &viewTransform, &instance->transform, mesh,
                                        instance->mesh, aspect)) continue;
-        basis = BuildTransformBasis(&instance->transform);
+        basis = RenderPrepareInstanceTransform(&instance->transform);
         instanceState = PrepareInstanceState(instance);
         for (offset = 0; offset + 2 < count; offset += 3) {
             RageNativeDrawVertex triangle[3];
