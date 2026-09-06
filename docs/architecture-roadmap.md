@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Post-export migration verification: all 30 launcher mod-*.test.cjs cases pass
+against the rebuilt/staged CLI, covering selection, composition, conflicts,
+snapshotting, editable details and exports. All nine standalone C mod contracts
+also pass Linux ASan/UBSan with leak detection (0.14s), including the updated
+partial-copy accounting test. That standalone target does not compile the
+PackageMetadata CLI dispatcher, so these sanitizer results are module-scoped,
+not sanitizer or Windows coverage of --write-metadata-stdin itself.
+
 Launcher export now delegates metadata publication to the compiled
 --write-metadata-stdin command. The existing C package schema validates the
 bounded complete input before ModFileWriteExclusive creates its destination;
