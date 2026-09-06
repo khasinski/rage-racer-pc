@@ -31,6 +31,18 @@ int main(void) {
     Check("past content table", GrandPrixContentClass(6) == NULL, 1);
     Check("minimum content index", GrandPrixContentClass(INT32_MIN) == NULL, 1);
     Check("maximum content index", GrandPrixContentClass(INT32_MAX) == NULL, 1);
+    {
+        s32 series = 42;
+        Check("absent record", GrandPrixContentRecord(-1, &series) == NULL, 1);
+        Check("absent record preserves output", series, 42);
+        Check("out of range record", GrandPrixContentRecord(INT32_MAX, &series) == NULL, 1);
+        for (s32 record = 0; record < CLASS_RECORD_COUNT; ++record) {
+            const GrandPrixClassDefinition *definition = GrandPrixContentRecord(record, &series);
+            Check("record lookup found", definition != NULL, 1);
+            if (definition != NULL) Check("record lookup identity", definition->record[series], record);
+            Check("optional series output", GrandPrixContentRecord(record, NULL) == definition, 1);
+        }
+    }
     for (s32 series = 0; series < 2; ++series) {
         for (s32 classIndex = 0; classIndex < 6; ++classIndex) {
             s32 finalClass = series ? 5 : 4;

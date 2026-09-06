@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Grand Prix unlock lookup now resolves record identity from the content table,
+instead of deriving row/series by division and remainder. Unit checks cover all
+11 retail records, invalid IDs and optional series output; all six real-disc
+standard/Extra ending cases pass across PAL/NTSC-U/NTSC-J (39.30s; log
+/tmp/rage-content-record-endings.log). This removes one layout assumption but
+does not add external content loading. GameSaveBlock still embeds exactly
+CLASS_RECORD_COUNT=11 records: new classes require versioned extension progress
+storage rather than increasing the retail save array and breaking its layout.
+
 Triangle shape and road-paint classification now use position-only helpers in
 render_triangle_geometry.h, consumed by the production mesh builder. The
 classification must run after instance scaling/snapping; source-mesh identity

@@ -31,8 +31,11 @@ s32 NextUnlockedClassRecord(s32 classRecordIndex) {
     if ((u32)classRecordIndex >= CLASS_RECORD_COUNT) {
         return CLASS_RECORD_NO_UNLOCK;
     }
-    return GrandPrixContentClass(classRecordIndex % STANDARD_SERIES_CLASS_COUNT)
-        ->unlockRecord[classRecordIndex / STANDARD_SERIES_CLASS_COUNT];
+    s32 series;
+    const GrandPrixClassDefinition *definition =
+        GrandPrixContentRecord(classRecordIndex, &series);
+    return definition != NULL ? definition->unlockRecord[series]
+                              : CLASS_RECORD_NO_UNLOCK;
 }
 
 s32 IsFinalGrandPrixClass(s32 extraSeries, s32 classIndex) {

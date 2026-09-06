@@ -34,4 +34,21 @@ static inline const GrandPrixClassDefinition *GrandPrixContentClass(s32 index) {
     };
     return (u32)index < GRAND_PRIX_CONTENT_CLASS_COUNT ? &classes[index] : NULL;
 }
+
+/* Record identity belongs to content, not to the row number or series stride.
+ * Shared finales intentionally have no separate Extra record. */
+static inline const GrandPrixClassDefinition *GrandPrixContentRecord(
+    s32 record, s32 *seriesOut) {
+    if (record < 0) return NULL;
+    for (s32 index = 0; index < GRAND_PRIX_CONTENT_CLASS_COUNT; ++index) {
+        const GrandPrixClassDefinition *definition = GrandPrixContentClass(index);
+        for (s32 series = 0; series < 2; ++series) {
+            if (definition->record[series] == record) {
+                if (seriesOut != NULL) *seriesOut = series;
+                return definition;
+            }
+        }
+    }
+    return NULL;
+}
 #endif
