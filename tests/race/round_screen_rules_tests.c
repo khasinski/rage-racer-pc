@@ -17,6 +17,23 @@ static void TestRoundNumber(void) {
     const u8 firstClasses[4] = {1, 2, 0, 0xFF};
     const u8 laterClasses[4] = {1, 0, 3, 0};
 
+    /* Independent retail oracle across every class, completion mask and
+     * selected course, including the unused early-class fourth slot. */
+    for (s32 cls = 0; cls < 6; ++cls) {
+        for (s32 mask = 0; mask < 16; ++mask) {
+            u8 places[4];
+            s32 completed = 0;
+            for (s32 course = 0; course < 4; ++course) {
+                places[course] = (mask & (1 << course)) ? 1 : 0;
+                if (course < (cls < 2 ? 3 : 4) && places[course]) ++completed;
+            }
+            for (s32 course = 0; course < 4; ++course)
+                Check(DetermineGrandPrixRound(places, cls, course) ==
+                          completed + (places[course] == 0),
+                      "shared class content preserves retail round numbering");
+        }
+    }
+
     Check(DetermineGrandPrixRound(firstClasses, 0, 2) == 3,
           "unplayed course is the next early-class round");
     Check(DetermineGrandPrixRound(firstClasses, 1, 1) == 2,

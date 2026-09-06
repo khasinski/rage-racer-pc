@@ -8,7 +8,7 @@
 
 enum {
     ROUND_SCREEN_SERIES_COUNT = 2,
-    ROUND_SCREEN_CLASS_COUNT = 6,
+    ROUND_SCREEN_CLASS_COUNT = GRAND_PRIX_CONTENT_CLASS_COUNT,
     ROUND_SCREEN_TIMER_LIMIT = 10000,
 };
 
@@ -48,16 +48,16 @@ s32 IsRoundScreenAssetLoadComplete(s32 loadState, s32 loadFailed) {
 
 s32 DetermineGrandPrixRound(const u8 bestPlaces[4], s32 classIndex,
                             s32 courseIndex) {
-    s32 courseCount = classIndex < 2 ? 3 : 4;
+    const GrandPrixClassDefinition *definition = GrandPrixContentClass(classIndex);
     s32 round = 0;
     s32 course;
 
-    if (bestPlaces == NULL || (u32)classIndex >= ROUND_SCREEN_CLASS_COUNT ||
+    if (bestPlaces == NULL || definition == NULL ||
         courseIndex < 0 || courseIndex >= 4) {
         return 0;
     }
 
-    for (course = 0; course < courseCount; course++) {
+    for (course = 0; course < definition->courseCount; course++) {
         if (bestPlaces[course] != 0) {
             round++;
         }

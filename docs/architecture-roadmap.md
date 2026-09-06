@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Round-screen numbering now reads course counts from GrandPrixClassDefinition
+instead of duplicating the class<2 rule. Round-screen and progression class
+bounds use the shared content count. A retail oracle covers all six classes,
+16 completion masks and four selected courses (384 comparisons), preserving
+the existing early-class unused-slot behavior. Full Linux game builds; round
+rules, round-screen integration and class progression tests pass (3/3). This
+consolidates a production content consumer but does not provide external class
+definitions or remove the original save-format record mapping constraints.
+
 Metadata command file reads now decode UTF-8 paths explicitly on Windows and
 open them with _wfopen, matching the existing Unicode exclusive-write path.
 The shared command fixture writes, refuses overwrite and reads a filename
