@@ -289,7 +289,48 @@ static void TestSkyLayoutVersionCompatibility(void) {
     remove(path);
 }
 
+static void TestReusableCapacity(void) {
+    RageRenderMeshInstance instances[4] = {0};
+    for (unsigned i = 0; i < 4; ++i) instances[i].assetKey = 10 + i;
+    RageRenderWorld world = {0};
+    world.instances = instances;
+    world.instanceCapacity = 4;
+    world.instanceCount = 1;
+    RageRenderWorldSnapshot snapshot = {0};
+    CHECK(RenderWorldSnapshotCopy(&snapshot, &world));
+    world.instanceCount = 4;
+    CHECK(RenderWorldSnapshotCopy(&snapshot, &world));
+    RageRenderMeshInstance *capacity = snapshot.instances;
+    CHECK(snapshot.world.instanceCapacity == 4);
+    CHECK(snapshot.instances[3].assetKey == 13);
+    world.instanceCount = 2;
+    CHECK(RenderWorldSnapshotCopy(&snapshot, &world));
+    CHECK(snapshot.instances == capacity && snapshot.world.instanceCount == 2);
+    world.instances = NULL;
+    world.instanceCount = world.instanceCapacity = 0;
+    CHECK(RenderWorldSnapshotCopy(&snapshot, &world));
+    CHECK(snapshot.instances == capacity && snapshot.world.instanceCount == 0);
+    CHECK(snapshot.world.instanceCapacity == 4);
+    world.instances = instances;
+    world.instanceCount = world.instanceCapacity = 4;
+    instances[3].assetKey = 99;
+    CHECK(RenderWorldSnapshotCopy(&snapshot, &world));
+    CHECK(snapshot.instances == capacity && snapshot.instances[3].assetKey == 99);
+    instances[3].assetKey = 100;
+    CHECK(snapshot.instances[3].assetKey == 99);
+    /* A subrange may alias owned storage; moving it must preserve ownership. */
+    world = snapshot.world;
+    world.instances++;
+    world.instanceCount = world.instanceCapacity = 3;
+    CHECK(RenderWorldSnapshotCopy(&snapshot, &world));
+    CHECK(snapshot.instances == capacity && snapshot.instances[0].assetKey == 11);
+    CHECK(snapshot.instances[2].assetKey == 99);
+    RenderWorldSnapshotRelease(&snapshot);
+    CHECK(snapshot.instances == NULL && snapshot.world.instances == NULL);
+}
+
 int main(void) {
+    TestReusableCapacity();
     {
         RageRenderMeshInstance instance = {0};
         instance.assetKey = 42;

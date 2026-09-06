@@ -50,6 +50,13 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Reusable snapshot capacity now has explicit grow/shrink/empty/refill and
+overlapping-owned-subrange regression coverage. It checks retained allocation
+identity after shrinking, independent copied values after source mutation and
+clean release. The full snapshot fixture passes strict C and ASan/UBSan/leak
+detection on Linux. This verifies buffer lifecycle, not measured frame-time
+impact or a real race/menu transition with the new GPU-owned snapshot.
+
 Native GPU preparation now deep-copies renderer-neutral world values into its
 own snapshot instead of retaining the producer's world pointer. Cameras/light,
 instances and diagnostic history access therefore share the prepared values;
