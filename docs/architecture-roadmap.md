@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+After the shared class consumers/scenery changes, rebuilt Linux smoke passes
+nine regional integration cases (34.65s parallel total, no skips): automatic
+modern disc startup, standard class-0 award FMV and Extra class-5 ending for
+each PAL/NTSC-U/NTSC-J image. The natural award fixtures check transitions,
+disc-derived FMV frame/pacing expectations, positive XA mixer contribution and
+session PCM metrics. Runs use offscreen video/dummy audio and forced race
+completion hooks, so this is not visual equivalence, audible playback, route
+stability or a performance measurement. Other class FMVs were not rerun here.
+
 Scenery dispatch regression now checks 192 combinations: six classes, four
 courses, animation on/off, legacy/presentation and race/replay. Its independent
 retail oracle retains the original threshold rules rather than reading the
