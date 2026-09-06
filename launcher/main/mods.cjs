@@ -176,7 +176,7 @@ function installMethods(Service){
   }
   return [...owners].filter(([,list])=>list.length>1).map(([key,candidates])=>{
    const choice=this.state.resolutions?.[key];const ids=candidates.map(c=>c.id).sort();
-   const valid=choice&&JSON.stringify(choice.candidates)===JSON.stringify(ids)&&ids.includes(choice.winner);
+   const valid=choice&&JSON.stringify([...choice.candidates].sort())===JSON.stringify(ids)&&ids.includes(choice.winner);
    return {key,candidates,mods:candidates.map(c=>c.name),winner:valid?choice.winner:null};
   });
  };
@@ -193,8 +193,20 @@ function installMethods(Service){
  };
  Service.prototype.composeMods=async function(){
    const active=await this.validateModSelection();if(!active.length)return '';
-   const conflicts=this.conflicts();if(conflicts.length)throw Error('Active mods conflict. Choose an override provider in My mods before playing.');
-   const winners=new Map(this.overlaps().map(c=>[c.key,c.winner]));
+   // The UI's synchronous conflict view is advisory. The compiled resolver
+   // owns final selection and rejects choices made for a different owner set.
+   const groups=this.overlaps(),args=['--resolve-providers'];
+   for(const group of groups){
+    args.push('--resource',group.key);
+    for(const candidate of group.candidates)args.push('--candidate',candidate.id);
+    const choice=this.state.resolutions?.[group.key];
+    if(choice){args.push('--choice',choice.winner);for(const id of choice.candidates)args.push('--previous',id);}
+   }
+   const {run}=require('./service.cjs');
+   if(args.some(token=>typeof token!=='string'||token.includes('\0')))throw Error('Invalid resource conflict input');
+   const request=args.length>1?Buffer.from(args.slice(1).join('\0')+'\0','utf8'):Buffer.alloc(0);
+   const selectedIndices=JSON.parse(await run(this.tool('rage-mod-cli'),['--resolve-providers-stdin'],{input:request}));
+   const winners=new Map(groups.map((group,i)=>[group.key,group.candidates[selectedIndices[i]].id]));
    const selected=(key,id)=>!winners.has(key)||winners.get(key)===id;
    const target=path.join(this.root,'active-mods-'+randomUUID());await fs.mkdir(target,{recursive:true});
    const tables={textures:{},materials:{},meshes:{}},legacyIndex=[];

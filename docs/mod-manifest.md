@@ -102,10 +102,35 @@ path explicitly denotes a raw-only package; a missing nonempty path fails.
 An empty dependency version accepts any version. Output is a JSON array of
 zero-based package indices. No files or runtime state are mutated by validation.
 
-Remaining work includes compiled JSON metadata ingestion and resource-conflict
-selection, UI display of TOML requirements, source fingerprints and a runtime
+Remaining work includes compiled JSON metadata ingestion and resource-claim
+discovery, UI display of TOML requirements, source fingerprints and a runtime
 provider stack. Validation and copying are not yet one immutable snapshot of
 the source files; this is not a concurrent-edit/hot-reload contract.
+
+## Resource provider selection
+
+`ModProviderResolve` is the compiled final-choice policy. A single candidate
+needs no decision. Multiple candidates require an explicit winner and the
+exact provider set recorded when the user chose it. Set ordering is irrelevant;
+added/removed/replaced providers invalidate the decision. Empty or duplicate
+IDs, excessive counts and winners outside the set fail without a fallback.
+The API supports up to 128 candidates and returns an index into that list;
+on failure it returns no index. It performs no I/O.
+
+The launcher still discovers resource claims and renders its synchronous
+conflict summary in JavaScript. That summary is advisory: composition uses
+`rage-mod-cli --resolve-providers-stdin` before creating the output directory,
+then selects the returned winners per resource. Changing the UI summary cannot
+bypass this gate. Unrelated resources from losing packages remain selected.
+
+The transport is a bounded NUL-delimited UTF-8 token stream (8 MiB, 262144
+tokens), avoiding command-line length limits for large packs. Each group is
+`--resource KEY`, repeated `--candidate ID`, optional `--choice ID`, and repeated
+`--previous ID`. The CLI returns a JSON array of candidate indices only on
+successful exit; any nonzero exit rejects the entire batch, including partial
+stdout. `--resolve-providers` also accepts the same tokens as argv for small
+diagnostic requests. Neither mode writes files. This does not yet replace
+JavaScript resource discovery/copying or implement a runtime provider stack.
 
 ## Required mods
 

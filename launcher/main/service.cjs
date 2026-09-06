@@ -10,9 +10,13 @@ async function atomic(file, text) {
   try { await fs.writeFile(temp,text);await fs.rename(temp,file); }
   finally { await fs.rm(temp,{force:true}); }
 }
-function run(executable, args, {cwd,signal,onLog,maxOutput=2*1024*1024}={}) {
+function run(executable, args, {cwd,signal,onLog,input,maxOutput=2*1024*1024}={}) {
   return new Promise((resolve,reject)=>{
     const child=spawn(executable,args,{cwd,signal,windowsHide:true,shell:false});
+    // A rejected native request may close stdin before consuming it. Its exit
+    // status/stderr below remains authoritative; do not surface an uncaught EPIPE.
+    child.stdin.on('error',()=>{});
+    child.stdin.end(input);
     const chunks=[];let bytes=0,overflow=false,err='';
     child.stdout.on('data',d=>{
       if(!overflow){

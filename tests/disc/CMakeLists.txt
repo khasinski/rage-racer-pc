@@ -46,6 +46,15 @@ endif()
 add_test(NAME mod_manifest COMMAND mod_manifest_tests)
 
 set_tests_properties(mod_manifest PROPERTIES LABELS functional)
+add_executable(mod_provider_tests mod_provider_tests.c)
+target_link_libraries(mod_provider_tests PRIVATE rage-rmesh)
+if(MSVC)
+    target_compile_options(mod_provider_tests PRIVATE /W4 /WX)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(mod_provider_tests PRIVATE -Wall -Wextra -Werror)
+endif()
+add_test(NAME mod_provider_selection COMMAND mod_provider_tests)
+set_tests_properties(mod_provider_selection PROPERTIES LABELS unit)
 add_executable(mod_asset_fallback_tests
     mod_asset_fallback_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/mod_assets.c)

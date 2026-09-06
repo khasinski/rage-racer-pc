@@ -38,8 +38,11 @@ and regression evidence; extracting an unused interface is not completion.
   graph, including exact versions, regions and mixed cycles. The launcher
   rereads installed TOML before composition; runtime ordering uses that same
   graph through its stricter legacy manifest-selection adapter.
-- Remaining integration work: compiled JSON ingestion and resource-conflict
-  selection, source fingerprints and atomic source snapshots; separate car
+- Final conflict winner selection now runs in C before package composition;
+  stale provider sets invalidate previous choices. The UI summary remains
+  advisory, and large requests use bounded stdin rather than argv.
+- Remaining integration work: compiled JSON ingestion and resource-claim
+  discovery, source fingerprints and atomic source snapshots; separate car
   catalog identity from optional embedded geometry; unify original/generated/
   mod providers. This checkpoint does not complete any roadmap stage.
 
