@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+The native-world replacement now has SDL-generated 64x32 RGBA PNG input and a
+CMake runner covering all existing race/attract assertions: native pipeline,
+semantic texture dimensions, paint, positive world/draw counts, attract scene
+and masked shadow geometry. Both new native_render_world_compiled (3.55s) and
+unchanged Python native_render_world (3.62s) pass on Linux offscreen. Fixture
+generation is C; CMake handles process execution/log assertions and retains
+isolated artifacts. Old Python remains until final equivalence review; this
+does not migrate other users of native_asset_fixture.py.
+
 Native-world Python migration starts with tests/render/native_asset_fixture.c:
 a standalone strict C11 generator for the synthetic 1024-mesh RMESH bank,
 material/index and RGBA/paint bytes. It uses explicit little-endian encoding

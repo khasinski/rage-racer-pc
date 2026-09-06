@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <SDL3/SDL.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -59,5 +60,17 @@ int main(int argc, char **argv) {
         for (unsigned s = 0; s < 4; ++s)
             ok &= fprintf(file, "%u %s car.rmesh material.rmat\n", key, sets[s]) > 0;
     if (fclose(file) || !ok) return 1;
+    char pngPath[4096];
+    if (snprintf(pngPath, sizeof(pngPath), "%s/terrain.png", argv[1]) >= (int)sizeof(pngPath)) return 1;
+    unsigned char pixels[64 * 32 * 4];
+    for (unsigned i = 0; i < 64 * 32; ++i) {
+        pixels[i*4] = 32; pixels[i*4+1] = 192;
+        pixels[i*4+2] = 255; pixels[i*4+3] = 255;
+    }
+    SDL_Surface *surface = SDL_CreateSurfaceFrom(64, 32, SDL_PIXELFORMAT_RGBA32, pixels, 64 * 4);
+    if (!surface) return 1;
+    ok = SDL_SavePNG(surface, pngPath);
+    SDL_DestroySurface(surface);
+    if (!ok) return 1;
     return 0;
 }

@@ -1,3 +1,13 @@
+add_executable(native_asset_fixture native_asset_fixture.c)
+target_link_libraries(native_asset_fixture PRIVATE SDL3::SDL3)
+target_compile_options(native_asset_fixture PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+if(TARGET rage-racer-smoke)
+    add_test(NAME native_render_world_compiled COMMAND ${CMAKE_COMMAND}
+        -DFIXTURE=$<TARGET_FILE:native_asset_fixture> -DGAME=$<TARGET_FILE:rage-racer-smoke>
+        -DSOURCE=${PROJECT_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_native_render_world.cmake)
+    set_tests_properties(native_render_world_compiled PROPERTIES LABELS e2e TIMEOUT 225)
+endif()
 if(TARGET rage-frame-replay)
     add_executable(rage-stage-image-check ${PROJECT_SOURCE_DIR}/tools/rage_stage_image_check.c)
     add_executable(stage_image_check_tests stage_image_check_tests.c)
