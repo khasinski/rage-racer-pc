@@ -16,6 +16,7 @@ void EnterPrizeScreen(void) {
     s32 courseIndex;
     s32 classIndex;
     const s32 *prizes = noPrizes;
+    const GrandPrixClassDefinition *definition;
 
     g_SceneTimer = PRIZE_SCREEN_INITIAL_TIMER;
     g_FrameSyncThreshold = PRIZE_SCREEN_FRAME_SYNC_THRESHOLD;
@@ -25,9 +26,10 @@ void EnterPrizeScreen(void) {
 
     courseIndex = SeriesCourseIndex();
     classIndex = g_GrandPrixClass;
-    if (g_RaceProgress != NULL &&
-        (u32)classIndex < GRAND_PRIX_PRIZE_CLASS_COUNT) {
-        prizes = g_PrizeMoney.values[courseIndex][classIndex];
+    definition = GrandPrixContentClass(classIndex);
+    if (g_RaceProgress != NULL && definition != NULL &&
+        (u32)definition->prizeClass < GRAND_PRIX_PRIZE_CLASS_COUNT) {
+        prizes = g_PrizeMoney.values[courseIndex][definition->prizeClass];
     }
     g_PrizeScreenState = PRIZE_SCREEN_STATE_INTRO_FADE_IN;
     g_PrizeAmount = PrizeForRacePosition(
@@ -35,7 +37,8 @@ void EnterPrizeScreen(void) {
     g_SceneId = GAME_SCENE_PRIZE;
 
     g_PromotionBonus = PromotionBonusForClass(
-        g_PromotionBonusTable, PROMOTION_BONUS_COUNT, classIndex,
+        g_PromotionBonusTable, PROMOTION_BONUS_COUNT,
+        definition != NULL ? definition->promotionBonusIndex : -1,
         g_ClassPromoted);
     g_PrizeCountStep = PrizeCountStep(
         prizes[PRIZE_PLACE_THIRD], PRIZE_COUNT_FRAMES);

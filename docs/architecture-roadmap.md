@@ -50,6 +50,22 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Reward mapping verification: production prize-entry tests pass ASan/UBSan,
+including distinct amounts for every class. Rebuilt Linux smoke passes six
+actual-disc scenarios: class-0 promotion and Extra finale for PAL/U/J (34.98
+seconds total). These verify the prize-to-FMV flow, movie timing and XA mixer
+contribution; exact reward amounts are asserted by the unit fixture rather
+than these runtime logs. Full regional class matrix and Windows runtime were
+not rerun for this reward-field change.
+
+Prize-screen selection now consumes explicit prizeClass/promotionBonusIndex
+fields in the shared class definition, retaining disc-loaded prize amounts and
+the existing mutable bonus table. The shared finale has prize row 5 but no
+promotion bonus entry. Production prize-entry tests enumerate all six rows
+using distinct fixture amounts; rule, advancement and prize-entry tests pass
+(3/3). This local follow-up still needs runtime regression and does not expose
+external content loading or move the reward amounts out of legacy storage.
+
 Asset-series follow-up verification: the full Linux smoke build exposed a
 missing direct stddef.h include in grand_prix_content.h (unit compatibility
 headers had supplied NULL transitively). Fixed; the header now passes isolated

@@ -45,6 +45,20 @@ static void Reset(void) {
 }
 
 int main(void) {
+    for (s32 classIndex = 0; classIndex < 6; ++classIndex) {
+        Reset();
+        g_GrandPrixClass = classIndex;
+        g_ClassPromoted = 1;
+        g_PlayerCar.drive.racePosition = 1;
+        for (s32 i = 0; i < 6; ++i)
+            g_PrizeMoney.values[0][i][0] = 1000 + i;
+        for (s32 i = 0; i < PROMOTION_BONUS_COUNT; ++i)
+            g_PromotionBonusTable[i] = 2000 + i;
+        EnterPrizeScreen();
+        Check("every class reward mapping", g_PrizeAmount, 1000 + classIndex);
+        Check("every class promotion mapping", g_PromotionBonus,
+              classIndex < 5 ? 2000 + classIndex : 0);
+    }
     Reset();
     g_CourseIndex = 2;
     g_GrandPrixClass = 3;
