@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+GP class rules now consume one built-in class-definition table for course
+counts, per-series score-record identity, next class, record unlock and finale
+flags. The shared Extra finale retains its separate selection/record semantics.
+Tests enumerate every class in both series against retail expectations and
+retain all eleven record-unlock checks; class/prize tests pass ASan/UBSan.
+This is a production data-table consolidation, not yet an external/versioned
+content format: asset-series/FMVs and rewards still need common definitions,
+validation and full regional award-flow reruns after this change.
+
 Content-rule audit found PrizeForRacePosition subtracting one before validating
 the signed position, overflowing on INT32_MIN. It now checks the one-based
 range first. Class-progress tests add both signed extremes and pass under

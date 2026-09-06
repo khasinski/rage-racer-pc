@@ -1,40 +1,44 @@
 #include "game/race_internal.h"
 
 enum {
-    BEGINNER_CLASS_COURSE_COUNT = 3,
-    ADVANCED_CLASS_COURSE_COUNT = 4,
-    COURSE_UNLOCK_CLASS = 2,
-    STANDARD_SERIES_FINAL_CLASS = 4,
-    EXTRA_SERIES_FINAL_CLASS = GRAND_PRIX_FINAL_CLASS_INDEX,
     CLASS_RECORD_NO_UNLOCK = -1,
     CLASS_GRADE_COURSE_COUNT = 4,
     CLASS_GRADE_DISQUALIFIED = 0,
     UNUSED_COURSE_PLACE = 0xFF,
     STANDARD_SERIES_CLASS_COUNT = 6,
-    EXTRA_SERIES_CLASS_COUNT = 5,
+};
+
+typedef struct GrandPrixClassDefinition {
+    s32 courseCount;
+    s32 record[2];
+    s32 nextClass[2];
+    s32 unlockRecord[2];
+    s32 final[2];
+} GrandPrixClassDefinition;
+
+/* Retail defaults. Series selection and score-record ownership are distinct:
+ * Extra class 5 plays the shared finale but has no Extra score-record slot. */
+static const GrandPrixClassDefinition s_classes[STANDARD_SERIES_CLASS_COUNT] = {
+    {3, {0, 6},  {1, 1},   {1, 7},  {0, 0}},
+    {3, {1, 7},  {2, 2},   {2, 8},  {0, 0}},
+    {4, {2, 8},  {3, 3},   {3, 9},  {0, 0}},
+    {4, {3, 9},  {4, 4},   {4, 10}, {0, 0}},
+    {4, {4, 10}, {-1, 5},  {6, 5},  {1, 0}},
+    {4, {5, -1}, {-1, -1}, {-1, -1},{0, 1}},
 };
 
 s32 GrandPrixCourseCount(s32 classIndex) {
     if ((u32)classIndex >= STANDARD_SERIES_CLASS_COUNT) {
         return 0;
     }
-    return classIndex < COURSE_UNLOCK_CLASS
-        ? BEGINNER_CLASS_COURSE_COUNT
-        : ADVANCED_CLASS_COURSE_COUNT;
+    return s_classes[classIndex].courseCount;
 }
 
 s32 GrandPrixClassRecordIndex(s32 series, s32 classIndex) {
-    s32 classCount;
-
-    if ((u32)series >= 2) {
+    if ((u32)series >= 2 || (u32)classIndex >= STANDARD_SERIES_CLASS_COUNT) {
         return CLASS_RECORD_NO_UNLOCK;
     }
-    classCount = series == 0 ? STANDARD_SERIES_CLASS_COUNT
-                             : EXTRA_SERIES_CLASS_COUNT;
-    if ((u32)classIndex >= (u32)classCount) {
-        return CLASS_RECORD_NO_UNLOCK;
-    }
-    return series * STANDARD_SERIES_CLASS_COUNT + classIndex;
+    return s_classes[classIndex].record[series];
 }
 
 s32 NextUnlockedClassRecord(s32 classRecordIndex) {
@@ -44,39 +48,23 @@ s32 NextUnlockedClassRecord(s32 classRecordIndex) {
     if ((u32)classRecordIndex >= CLASS_RECORD_COUNT) {
         return CLASS_RECORD_NO_UNLOCK;
     }
-    if (classRecordIndex == 4) {
-        return 6;
-    }
-    if (classRecordIndex == 5) {
-        return CLASS_RECORD_NO_UNLOCK;
-    }
-    if (classRecordIndex == 10) {
-        return 5;
-    }
-    return classRecordIndex + 1;
+    return s_classes[classRecordIndex % STANDARD_SERIES_CLASS_COUNT]
+        .unlockRecord[classRecordIndex / STANDARD_SERIES_CLASS_COUNT];
 }
 
 s32 IsFinalGrandPrixClass(s32 extraSeries, s32 classIndex) {
     /* Standard class 4 unlocks Extra GP. Completing Extra class 4 advances to
      * the shared class 5 finale, which uses standard-series assets and record
      * slot 5 but retains the Extra series selection until it is cleared. */
-    return classIndex == (extraSeries
-        ? EXTRA_SERIES_FINAL_CLASS
-        : STANDARD_SERIES_FINAL_CLASS);
+    if ((u32)classIndex >= STANDARD_SERIES_CLASS_COUNT) return 0;
+    return s_classes[classIndex].final[extraSeries != 0];
 }
 
 s32 NextGrandPrixClassForSeries(s32 series, s32 classIndex) {
-    s32 finalClass;
-
-    if ((u32)series >= 2) {
+    if ((u32)series >= 2 || (u32)classIndex >= STANDARD_SERIES_CLASS_COUNT) {
         return CLASS_RECORD_NO_UNLOCK;
     }
-    finalClass = series == 0 ? STANDARD_SERIES_FINAL_CLASS
-                             : EXTRA_SERIES_FINAL_CLASS;
-    if (classIndex < 0 || classIndex >= finalClass) {
-        return CLASS_RECORD_NO_UNLOCK;
-    }
-    return classIndex + 1;
+    return s_classes[classIndex].nextClass[series];
 }
 
 s32 PrizeCountStep(s32 amount, s32 frameCount) {

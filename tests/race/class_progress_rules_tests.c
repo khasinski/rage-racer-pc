@@ -26,6 +26,19 @@ int main(void) {
     const s32 promotionBonuses[5] = {500, 4800, 20000, 100000, 500000};
     const s32 prizes[3] = {10000, 5000, 2500};
     s32 i;
+    for (s32 series = 0; series < 2; ++series) {
+        for (s32 classIndex = 0; classIndex < 6; ++classIndex) {
+            s32 finalClass = series ? 5 : 4;
+            Check("all class course counts", GrandPrixCourseCount(classIndex),
+                  classIndex < 2 ? 3 : 4);
+            Check("all record identities", GrandPrixClassRecordIndex(series, classIndex),
+                  series && classIndex == 5 ? -1 : series * 6 + classIndex);
+            Check("all class transitions", NextGrandPrixClassForSeries(series, classIndex),
+                  classIndex < finalClass ? classIndex + 1 : -1);
+            Check("all final flags", IsFinalGrandPrixClass(series, classIndex),
+                  classIndex == finalClass);
+        }
+    }
     Check("minimum signed race position", PrizeForRacePosition(prizes, 3, INT32_MIN), 0);
     Check("maximum signed race position", PrizeForRacePosition(prizes, 3, INT32_MAX), 0);
 
