@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Native output overflow now has an explicit ignored-SIGTERM regression: it
+confirms the child is absent before the size-limit rejection settles. All 83
+launcher tests pass on Linux with current staged mod CLI, build directory set
+explicitly and actual PAL/U/J import fixtures enabled (no skips). The first
+run's two failures were missing save-generator binaries at the default release
+path; pointing RAGE_LAUNCHER_BUILD_DIR at the actual full build resolved them.
+This is service/tool regression, not packaged UI or Windows launcher execution.
+
 Launcher native-process cancellation now gives SIGTERM five seconds, then
 SIGKILLs only the still-running child; completion still waits for close before
 staging cleanup. Output-limit termination uses the same escalation. Seven

@@ -111,3 +111,14 @@ test('native output preserves split UTF-8 and rejects overflow after child termi
  await assert.rejects(run(process.execPath,['-e',"process.stdout.write('123456789');setInterval(()=>{},1000)"],{maxOutput:8}),/output exceeds the 8-byte limit/);
  assert.equal(await run(process.execPath,['-e',"process.stdout.write('12345678')"],{maxOutput:8}),'12345678');
 });
+
+test('output overflow terminates a child that ignores SIGTERM before settling',
+ {skip:process.platform==='win32',timeout:15000},async()=>{
+ let pid;
+ const command="process.on('SIGTERM',()=>{});process.stderr.write('pid='+process.pid+'\\n');process.stdout.write('123456789');setInterval(()=>{},1000);";
+ await assert.rejects(run(process.execPath,['-e',command],{
+  maxOutput:8,onLog:text=>{const match=/pid=(\d+)/.exec(text);if(match)pid=Number(match[1]);}
+ }),/output exceeds the 8-byte limit/);
+ assert.ok(Number.isInteger(pid)&&pid>0);
+ assert.throws(()=>process.kill(pid,0),{code:'ESRCH'});
+});
