@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Profile writing now separates bounded JSON processing from stdin transport and
+owns its parser allocation instead of borrowing the CLI's global manifest.
+Table capacities are checked before TOML serialization. A compiled standalone
+fixture exercises validation, limits, exclusive creation and parser roundtrip;
+all eight mod contracts pass on Linux and Windows 11 ClangCL (5.57 seconds).
+All 75 launcher tests pass after staging the rebuilt CLI. Windows fixture paths
+are ASCII; Unicode profile output still needs implementation/verification.
+
 Final profile TOML serialization now runs in rage-mod-cli --write-profile-stdin:
 bounded strict JSON tables become a private document, validated by the runtime
 manifest parser before exclusive file creation. The launcher no longer emits
