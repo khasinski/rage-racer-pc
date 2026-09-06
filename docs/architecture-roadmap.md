@@ -101,6 +101,13 @@ path; image comparisons and frame-tail measurements are still required.
 
 ## Work log
 
+- Triangle shape evaluation is now shared lazily between flat normals, road
+  decal classification and displacement. The raw normal/length stay separate
+  from the camera-facing sign; the original flat-normal epsilon and overlay
+  zero-length rules are preserved. This is per-triangle CPU preparation, not
+  yet persistent metadata. Linux/Windows tests cover reversed winding, cameras
+  on either side and exactly in the plane, tiny and degenerate faces, and fog
+  at the original position. Four PAL mirror-frame captures remain bit-exact.
 - Native rendering now consumes direct 56-byte geometry plus draw-constant
   lighting/environment/shadow-reception uniforms, rather than repeating those
   parameters in 76-byte vertices. Main, mirror and shadow pipelines share the

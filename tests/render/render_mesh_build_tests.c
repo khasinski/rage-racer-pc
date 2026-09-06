@@ -1000,7 +1000,60 @@ static void test_gpu_vertex_payload_excludes_instance_state(void) {
     EXPECT_EQ(0, memcmp(&packed, &changedInstance, sizeof(packed)));
 }
 
+static void test_overlay_orientation_and_degenerate_geometry(void) {
+    const float scales[] = {1.0f, 0.0001f, 0.0f};
+    const float cameras[] = {0.0f, -20.0f, -10.0f};
+    for (unsigned shape = 0; shape < 3; ++shape)
+    for (unsigned reverse = 0; reverse < 2; ++reverse) {
+        unsigned char bytes[164] = {0};
+        RageRuntimeMesh mesh;
+        RageRuntimeVertex vertex = {0};
+        RageRenderMeshInstance instance = {0};
+        RageRenderWorld world;
+        RageNativeGpuVertex output[3];
+        RageNativeDrawSpan span;
+        uint32_t spanCount;
+        EXPECT_EQ(1, RuntimeMeshEncodeHeader(bytes, sizeof(bytes), 1, 3, 3));
+        write_u32(bytes + 28, 3);
+        vertex.normal[1] = 1;
+        vertex.position[2] = -10;
+        for (unsigned i = 0; i < 3; ++i) {
+            vertex.position[0] = i == 1 ? scales[shape] : 0;
+            vertex.position[1] = i == 2 ? scales[shape] : 0;
+            EXPECT_EQ(1, RuntimeVertexEncode(bytes + 32 + i * 40, 40, &vertex));
+            write_u32(bytes + 152 + i * 4, reverse && i != 0 ? 3 - i : i);
+        }
+        EXPECT_EQ(1, RuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+        RenderWorldInit(&world, &instance, 1);
+        world.instanceCount = 1;
+        world.camera.verticalFovDegrees = 90;
+        world.camera.nearPlane = 1; world.camera.farPlane = 100;
+        instance.pass = RAGE_RENDER_PASS_MAIN;
+        instance.transform.scale = (RageRenderVec3){1, 1, 1};
+        instance.flags = RAGE_RENDER_INSTANCE_FLAT_SHADED |
+            RAGE_RENDER_INSTANCE_DEPTH_DECAL | RAGE_RENDER_INSTANCE_ENABLE_FOG;
+        for (unsigned view = 0; view < 3; ++view) {
+            world.camera.transform.position.z = cameras[view];
+            EXPECT_EQ(3, RenderBuildNativeCompactPassDraws(&world,
+                RAGE_RENDER_PASS_MAIN, 1, 0, test_mesh_lookup, &mesh,
+                output, 3, &span, 1, &spanCount));
+            EXPECT_EQ(1, spanCount);
+            float lift = shape == 2 ? 0 : view == 0 ? 2 : view == 1 ? -2 : reverse ? -2 : 2;
+            for (unsigned i = 0; i < 3; ++i) {
+                EXPECT_NEAR(-10 + lift, output[i].position[2], 0.0001f);
+                EXPECT_NEAR(-10, output[i].fog[2], 0.0001f);
+                /* Flat shading keeps its original epsilon; tiny nonzero
+                 * faces can still lift without replacing authored normals. */
+                EXPECT_NEAR(shape == 0 ? 0 : 1, output[i].normal[1], 0.0001f);
+                EXPECT_NEAR(shape == 0 ? (reverse ? -1 : 1) : 0,
+                            output[i].normal[2], 0.0001f);
+            }
+        }
+    }
+}
+
 int main(void) {
+    test_overlay_orientation_and_degenerate_geometry();
     test_gpu_vertex_payload_excludes_instance_state();
     test_gpu_vertex_reuse_preserves_instance_and_triangle_state();
     test_shared_mesh_independent_views();

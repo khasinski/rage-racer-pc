@@ -122,7 +122,17 @@ static float Vec3Length(float x, float y, float z) {
     return sqrtf(x * x + y * y + z * z);
 }
 
-static void ApplyFlatTriangleNormal(RageNativeDrawVertex triangle[3]) {
+/* Triangle shape is independent of the camera. Keep the unnormalised normal
+ * and its length so flat shading and displacement share exactly the same
+ * geometry calculation, without baking view-facing orientation into it. */
+typedef struct RageTriangleGeometry {
+    float nx, ny, nz, length;
+    int prepared;
+} RageTriangleGeometry;
+
+static void PrepareTriangleGeometry(const RageNativeDrawVertex triangle[3],
+                                    RageTriangleGeometry *geometry) {
+    if (geometry->prepared) return;
     float ax = triangle[1].position[0] - triangle[0].position[0];
     float ay = triangle[1].position[1] - triangle[0].position[1];
     float az = triangle[1].position[2] - triangle[0].position[2];
@@ -132,7 +142,18 @@ static void ApplyFlatTriangleNormal(RageNativeDrawVertex triangle[3]) {
     float nx = ay * bz - az * by;
     float ny = az * bx - ax * bz;
     float nz = ax * by - ay * bx;
-    float length = Vec3Length(nx, ny, nz);
+    geometry->nx = nx;
+    geometry->ny = ny;
+    geometry->nz = nz;
+    geometry->length = Vec3Length(nx, ny, nz);
+    geometry->prepared = 1;
+}
+
+static void ApplyFlatTriangleNormal(RageNativeDrawVertex triangle[3],
+                                    RageTriangleGeometry *geometry) {
+    PrepareTriangleGeometry(triangle, geometry);
+    float nx = geometry->nx, ny = geometry->ny, nz = geometry->nz;
+    float length = geometry->length;
     uint32_t corner;
     if (length <= 0.000001f) return;
     nx /= length;
@@ -148,8 +169,9 @@ static void ApplyFlatTriangleNormal(RageNativeDrawVertex triangle[3]) {
 /* Road paint is ordinary native geometry: a long, narrow strip following the
  * road surface. Identify that semantic shape without consulting PS1 primitive
  * modes or ordering-table hints. */
-static int TriangleIsRoadDecal(const RageNativeDrawVertex triangle[3]) {
-    float edge[3], ax, ay, az, bx, by, bz, nx, ny, nz, normalLength;
+static int TriangleIsRoadDecal(const RageNativeDrawVertex triangle[3],
+                               RageTriangleGeometry *geometry) {
+    float edge[3];
     float shortest, longest;
     int corner;
     for (corner = 0; corner < 3; corner++) {
@@ -163,30 +185,15 @@ static int TriangleIsRoadDecal(const RageNativeDrawVertex triangle[3]) {
     longest = fmaxf(edge[0], fmaxf(edge[1], edge[2]));
     if (shortest > 16.0f || longest < 64.0f || longest < shortest * 8.0f)
         return 0;
-    ax = triangle[1].position[0] - triangle[0].position[0];
-    ay = triangle[1].position[1] - triangle[0].position[1];
-    az = triangle[1].position[2] - triangle[0].position[2];
-    bx = triangle[2].position[0] - triangle[0].position[0];
-    by = triangle[2].position[1] - triangle[0].position[1];
-    bz = triangle[2].position[2] - triangle[0].position[2];
-    nx = ay * bz - az * by;
-    ny = az * bx - ax * bz;
-    nz = ax * by - ay * bx;
-    normalLength = Vec3Length(nx, ny, nz);
-    return normalLength > 0.0f && fabsf(ny) >= normalLength * 0.85f;
+    PrepareTriangleGeometry(triangle, geometry);
+    return geometry->length > 0.0f && fabsf(geometry->ny) >= geometry->length * 0.85f;
 }
 
-static void LiftRoadDecal(RageNativeDrawVertex triangle[3]) {
-    float ax = triangle[1].position[0] - triangle[0].position[0];
-    float ay = triangle[1].position[1] - triangle[0].position[1];
-    float az = triangle[1].position[2] - triangle[0].position[2];
-    float bx = triangle[2].position[0] - triangle[0].position[0];
-    float by = triangle[2].position[1] - triangle[0].position[1];
-    float bz = triangle[2].position[2] - triangle[0].position[2];
-    float nx = ay * bz - az * by;
-    float ny = az * bx - ax * bz;
-    float nz = ax * by - ay * bx;
-    float length = Vec3Length(nx, ny, nz);
+static void LiftRoadDecal(RageNativeDrawVertex triangle[3],
+                          RageTriangleGeometry *geometry) {
+    PrepareTriangleGeometry(triangle, geometry);
+    float nx = geometry->nx, ny = geometry->ny, nz = geometry->nz;
+    float length = geometry->length;
     int corner;
     if (length <= 0.0f) return;
     if (ny < 0.0f) length = -length;
@@ -199,23 +206,17 @@ static void LiftRoadDecal(RageNativeDrawVertex triangle[3]) {
 }
 
 static void LiftOverlayTowardCamera(
-    RageNativeDrawVertex triangle[3], RageRenderVec3 camera) {
-    float ax = triangle[1].position[0] - triangle[0].position[0];
-    float ay = triangle[1].position[1] - triangle[0].position[1];
-    float az = triangle[1].position[2] - triangle[0].position[2];
-    float bx = triangle[2].position[0] - triangle[0].position[0];
-    float by = triangle[2].position[1] - triangle[0].position[1];
-    float bz = triangle[2].position[2] - triangle[0].position[2];
-    float nx = ay * bz - az * by;
-    float ny = az * bx - ax * bz;
-    float nz = ax * by - ay * bx;
+    RageNativeDrawVertex triangle[3], RageRenderVec3 camera,
+    RageTriangleGeometry *geometry) {
+    PrepareTriangleGeometry(triangle, geometry);
+    float nx = geometry->nx, ny = geometry->ny, nz = geometry->nz;
     float cx = (triangle[0].position[0] + triangle[1].position[0] +
                 triangle[2].position[0]) / 3.0f;
     float cy = (triangle[0].position[1] + triangle[1].position[1] +
                 triangle[2].position[1]) / 3.0f;
     float cz = (triangle[0].position[2] + triangle[1].position[2] +
                 triangle[2].position[2]) / 3.0f;
-    float length = Vec3Length(nx, ny, nz);
+    float length = geometry->length;
     float facing;
     int corner;
     if (length <= 0.0f) return;
@@ -587,18 +588,19 @@ static uint32_t RenderBuildNativeDrawsFiltered(
                 depthDecals[0] != depthDecals[2] ||
                 vertexCount > vertexCapacity ||
                 vertexCapacity - vertexCount < 3) continue;
+            RageTriangleGeometry geometry = {0};
             if ((instance->flags & RAGE_RENDER_INSTANCE_FLAT_SHADED) != 0)
-                ApplyFlatTriangleNormal(triangle);
+                ApplyFlatTriangleNormal(triangle, &geometry);
             if (depthDecals[0]) {
                 /* Explicit screen/art layers are semantic overlays. Give them
                  * real separation from their backing mesh instead of changing
                  * their depth value in the rasterizer. */
                 LiftOverlayTowardCamera(
-                    triangle, world->camera.transform.position);
+                    triangle, world->camera.transform.position, &geometry);
             } else if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN &&
                 materials[0] != UINT32_MAX &&
-                TriangleIsRoadDecal(triangle)) {
-                LiftRoadDecal(triangle);
+                TriangleIsRoadDecal(triangle, &geometry)) {
+                LiftRoadDecal(triangle, &geometry);
                 depthDecals[0] = depthDecals[1] = depthDecals[2] = 1;
             }
             if ((instance->flags & RAGE_RENDER_INSTANCE_CULL_BACKFACES) != 0 &&
