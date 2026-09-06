@@ -5,6 +5,7 @@
 
 static int RenderWorldInstancesAreValid(const RageRenderWorld *world) {
     return world != NULL &&
+           world->overflowCount == 0 &&
            world->instanceCount <= world->instanceCapacity &&
            world->instanceCount <= RAGE_RENDER_PRESENTATION_MAX_INSTANCES &&
            (world->instanceCount == 0 || world->instances != NULL);

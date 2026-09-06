@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Presentation source validation now rejects an overflowed previous or current
+world, not just inconsistent instance bounds. Previously previous-frame
+overflow could disappear because the game initialized result metadata from
+the current frame while borrowing previous vehicles. TryBuild failure feeds
+the adapter's explicit incomplete-world signal. Tests cover each source's
+overflow independently with unchanged output/count; standalone contracts and
+ASan/UBSan world tests pass on Linux. GPU integration rerun is still needed
+for this rejection-policy change.
+
 Synchronized presentation exposes explicit success/count via TryBuild. Valid
 empty output succeeds with zero count; failure preserves caller output/count.
 The game adapter uses this API and marks rejected presentation incomplete with
