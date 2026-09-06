@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Resident mesh lookup inspection confirms that ready cache hits avoid index
+parsing/file I/O, but RuntimeMeshCachePeek and importer lookup scan entries.
+A local CPU microbenchmark of production RuntimeMeshCachePeek (two million
+uniform successful lookups per size) measured roughly 2.5/5.2/11.1/20.5/35.5/
+63.5 ns for 8/32/64/128/256/512 entries. This is warm synthetic lookup timing,
+not whole-game profiling, importer timing or a frame-time win. No hash table
+was added from this evidence alone; persistent geometry and per-view vertex
+evaluation remain the larger architectural performance work.
+
 Native fixture byte/pixel contracts now run from the existing compiled texture
 CI entry point, reusing its pinned static SDL build across Linux/Windows/macOS.
 Workflow path filters include fixture sources and their standalone contract.
