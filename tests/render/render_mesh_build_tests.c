@@ -389,6 +389,43 @@ static void test_native_draw_builder_culls_terrain_per_authored_quad(void) {
     EXPECT_EQ(0, spanCount);
 }
 
+static void test_terrain_position_reuse_stops_at_incomplete_quad(void) {
+    unsigned char bytes[228] = {0};
+    const float positions[4][3] = {
+        {1,-1,-10}, {-1,-1,-10}, {1,1,-10}, {-1,1,-10}};
+    const uint32_t indices[9] = {0,2,1, 1,2,3, 3,0,2};
+    RageRuntimeMesh mesh;
+    RageRenderMeshInstance storage[1] = {0};
+    RageRenderWorld world;
+    RageNativeGpuVertex vertices[9];
+    RageNativeDrawSpan spans[1];
+    uint32_t spanCount;
+    memcpy(bytes, "RRMESH1", 7);
+    write_u32(bytes + 8, 1); write_u32(bytes + 12, 1);
+    write_u32(bytes + 16, 4); write_u32(bytes + 20, 9);
+    write_u32(bytes + 24, 0); write_u32(bytes + 28, 9);
+    for (unsigned i = 0; i < 4; ++i) {
+        memcpy(bytes + 32 + i * 40, positions[i], sizeof(positions[i]));
+        bytes[32 + i * 40 + 27] = 255;
+    }
+    for (unsigned i = 0; i < 9; ++i) write_u32(bytes + 192 + i * 4, indices[i]);
+    EXPECT_EQ(1, RuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+    RenderWorldInit(&world, storage, 1);
+    world.camera.verticalFovDegrees = 90;
+    world.camera.nearPlane = 1; world.camera.farPlane = 100;
+    world.instanceCount = 1;
+    storage[0].assetSet = RAGE_RENDER_ASSET_TERRAIN;
+    storage[0].transform.scale = (RageRenderVec3){1,1,1};
+    for (int cpuFog = 0; cpuFog <= 1; ++cpuFog) {
+        EXPECT_EQ(9, RenderBuildNativeCompactPassDraws(&world,
+            RAGE_RENDER_PASS_MAIN, 1, cpuFog, test_mesh_lookup, &mesh,
+            vertices, 9, spans, 1, &spanCount));
+        for (unsigned i = 0; i < 9; ++i)
+            for (unsigned axis = 0; axis < 3; ++axis)
+                EXPECT_NEAR(positions[indices[i]][axis], vertices[i].position[axis], 0);
+    }
+}
+
 static void test_native_draw_builder_welds_terrain_cell_boundaries(void) {
     unsigned char bytes[164] = {0};
     RageRuntimeMesh mesh;
@@ -1282,6 +1319,7 @@ static void test_position_only_triangle_geometry(void) {
 }
 
 int main(void) {
+    test_terrain_position_reuse_stops_at_incomplete_quad();
     test_position_only_triangle_geometry();
     test_instance_transform_contract();
     test_scroll_draw_boundaries_and_mixed_cache_reuse();

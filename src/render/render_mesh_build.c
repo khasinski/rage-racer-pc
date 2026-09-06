@@ -226,7 +226,9 @@ static int TerrainTriangleFacesCamera(
 static int TerrainQuadIsHidden(
     const RageRenderWorld *world, const RageTransformBasis *basis,
     const RageRenderViewTransform *viewTransform,
-    const RageRuntimeMesh *mesh, uint32_t first) {
+    const RageRuntimeMesh *mesh, uint32_t first,
+    RageRenderVec3 positions[6], int *positionsValid) {
+    *positionsValid = 0;
     /* Visibility has no UV, normal, fog or lighting dependency. Keep its
      * temporary geometry independent of the expanded shading payload. */
     RageRenderVec3 triangles[2][3];
@@ -253,6 +255,12 @@ static int TerrainQuadIsHidden(
     }
     triangles[1][0] = triangles[0][2];
     triangles[1][1] = triangles[0][1];
+    /* Reuse snapped world positions for shading this same authored quad.
+     * Invalid/non-quad pairs never publish positions. The caller refreshes
+     * this storage at every six-index boundary and for every instance. */
+    for (corner = 0; corner < 6; ++corner)
+        positions[corner] = triangles[corner / 3][corner % 3];
+    *positionsValid = 1;
     /* A terrain face is one authored quad. Reject it only when neither half
      * faces the camera. Slightly twisted quads otherwise lose valid road
      * geometry when culled per triangle, while drawing both sides exposes
@@ -335,6 +343,7 @@ static int BuildVertex(const RageTransformBasis *basis,
                            const RageRenderMeshInstance *instance,
                            const RageNativeInstanceState *instanceState,
                            const RageRuntimeMesh *mesh, uint32_t index,
+                           const RageRenderVec3 *preparedPosition,
                            float aspect, RageNativeDrawVertex *out,
                            uint32_t *material, uint32_t *materialFlags,
                            uint8_t *depthDecal) {
@@ -345,8 +354,9 @@ static int BuildVertex(const RageTransformBasis *basis,
     *materialFlags = source.material &
         (RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY |
          RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT);
-    worldPosition = TransformPosition(basis, &source);
-    if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
+    worldPosition = preparedPosition != NULL ? *preparedPosition
+                                             : TransformPosition(basis, &source);
+    if (preparedPosition == NULL && instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
         worldPosition.x = SnapTerrainCellBoundary(worldPosition.x);
         worldPosition.z = SnapTerrainCellBoundary(worldPosition.z);
     }
@@ -437,6 +447,8 @@ static uint32_t RenderBuildNativeDrawsFiltered(
         RageNativeInstanceState instanceState;
         uint32_t first, count, offset;
         int terrainQuadHidden = 0;
+        int terrainPositionsValid = 0;
+        RageRenderVec3 terrainPositions[6];
         if (passFilter >= 0 && instance->pass != (RageRenderPass)passFilter)
             continue;
         /* Excluded passes must not consult (or trigger work in) the asset
@@ -460,7 +472,8 @@ static uint32_t RenderBuildNativeDrawsFiltered(
             if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
                 if ((offset % 6u) == 0)
                     terrainQuadHidden = TerrainQuadIsHidden(
-                        world, &basis, &viewTransform, mesh, first + offset);
+                        world, &basis, &viewTransform, mesh, first + offset,
+                        terrainPositions, &terrainPositionsValid);
                 if (terrainQuadHidden) continue;
             }
             for (corner = 0; corner < 3; corner++) {
@@ -480,7 +493,9 @@ static uint32_t RenderBuildNativeDrawsFiltered(
                         valid = BuildVertex(&basis, &viewTransform, world,
                             (instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FOG) != 0,
                             gpuFog, compactVertices != NULL && gpuFog,
-                            instance, &instanceState, mesh, indices[corner], aspect,
+                            instance, &instanceState, mesh, indices[corner],
+                            terrainPositionsValid ? &terrainPositions[offset % 6u + corner] : NULL,
+                            aspect,
                             &triangle[corner], &materials[corner],
                             &materialFlags[corner], &depthDecals[corner]);
                         if (gpuFog && valid) {

@@ -50,6 +50,22 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Terrain shading reuses the snapped world positions already computed for the
+same authored quad's visibility check. The six-position storage is local to an
+instance and refreshed every quad; non-quad/incomplete inputs publish no cached
+positions. Mesh, mirror and native-world gates pass (9.54s). A new trailing
+triangle regression verifies all output positions with both CPU/GPU fog, and
+the rebuilt mesh tests pass ASan/UBSan. An isolated live 300-repeat sample gives
+p50 4.432856ms/p95 4.476172ms/max 5.298446ms; broader paired measurements are
+still needed before claiming a stable performance improvement.
+
+A 1024-entry prepared-vertex cache experiment did not justify quadrupling its
+stack footprint: live Mythical Coast/300-repeat p50/p95 was 4.564764/4.630895ms,
+versus 4.529785/4.640332ms after restoring 256 entries. These separate live
+captures do not prove a speed difference. The experiment was reverted and the
+normal binary rebuilt; retain 256 entries until stronger evidence supports
+another design. Logs: /tmp/rage-live-cache1024.log and /tmp/rage-live-cache256.log.
+
 Current mesh-builder and Grand Prix progression tests also pass GCC ASan/UBSan
 in rage-racer-dev, with leak detection and halt-on-error enabled. Each binary
 compiles its production C sources with instrumentation, rather than linking an
