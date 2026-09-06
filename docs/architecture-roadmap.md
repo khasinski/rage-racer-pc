@@ -50,6 +50,16 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Renderer checkpoint after snapshot ownership changes: rebuilt smoke and snapshot
+tests, then passed native_render_world, modern_submit_recovery and
+render_world_snapshot on Linux offscreen/dummy audio (7.64 seconds total).
+History capture already releases a slot's old world on copy failure, so the
+inspection did not establish stale-frame publication there. GPU preparation
+still borrows s_world; immutable presentation and generation ownership remain
+open. These tests do not establish pixel equivalence, audible sound, performance
+or a Windows/macOS runtime pass; native_render_world still uses its existing
+Python verifier pending an equivalent compiled replacement.
+
 Frame snapshot writing now exclusively reserves path.tmp instead of truncating
 an existing temporary file. A regression preserves sentinel bytes in both the
 reserved temporary and final paths after rejection, then verifies successful
