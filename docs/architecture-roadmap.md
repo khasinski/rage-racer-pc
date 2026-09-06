@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Packaged Linux game startup is now opt-in in the real-disc launcher fixture
+(RAGE_LAUNCHER_GAME_STARTUP=1). Using binaries from the actual package, all
+PAL/U/J imports then start the full game from launcher-generated configuration
+in a fresh profile, without a native-cache override. Logs assert C importer,
+native GPU pipeline and correct 50/60-Hz regional timing; the process exits
+successfully at scenario scene 12/timer 20 (three tests, 17.43s total). This
+uses offscreen Vulkan/dummy audio and direct process invocation, not packaged
+IPC Play/native chooser interaction, visual correctness or audible playback.
+
 The real PAL/U/J launcher import/rollback/cancellation/publication-failure
 fixtures also pass with RAGE_LAUNCHER_BUILD_DIR pointing inside the actual
 Linux package's resources/resources/bin, not the development build. This
