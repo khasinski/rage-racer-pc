@@ -50,6 +50,13 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Mirror-image executable and its negative fixtures now join the standalone
+stage_image_contract target, automatically exercised by the existing
+Linux/Windows/macOS snapshot CI matrix. Workflow path filters include both
+mirror sources. Local Linux passes both checker tests (0.02s), and Windows
+ClangCL Release passes both (11.08s). Hosted workflow/macOS execution remains
+unverified; this is checker portability, not Windows rear-view GPU rendering.
+
 Standalone native fixture validation now decodes PNG through SDL, converts to
 explicit RGBA32 and checks every one of 2048 pixels against (32,192,255,255),
 honoring surface pitch and locking. Raw RGBA supplied as PNG is rejected.

@@ -13,6 +13,7 @@ on:
       - 'tests/render_snapshot_contract/**'
       - 'tools/rage_stage_image_check.c'
       - 'tests/render/stage_image_check_tests.c'
+      - 'tests/render/mirror_image_check*.c'
       - 'tests/stage_image_contract/**'
       - '.github/workflows/render-snapshot-check.yml'
   pull_request:
@@ -26,6 +27,7 @@ on:
       - 'tests/render_snapshot_contract/**'
       - 'tools/rage_stage_image_check.c'
       - 'tests/render/stage_image_check_tests.c'
+      - 'tests/render/mirror_image_check*.c'
       - 'tests/stage_image_contract/**'
       - '.github/workflows/render-snapshot-check.yml'
 permissions:
