@@ -88,6 +88,15 @@ unpaired Unicode surrogates rejected by C leave memory and persisted state
 unchanged. Export and editing share the profile-to-package serialization helper.
 All 64 launcher tests pass locally; this step has no new Windows GUI evidence.
 
+Startup configuration now has a three-region regression: duplicate classic
+renderer entries become modern, the selected disc and composed mod directory
+are used, Japanese/international content follows the region, and profile-owned
+settings plus unknown INI entries survive configuration generation. Generation
+alone does not mutate the source INI. Known launcher settings are taken from
+its profile, not imported from arbitrary existing INI values. All 65 launcher
+tests pass. Source inspection confirms native importer initialization precedes
+modern renderer initialization; this is not a new clean-package startup test.
+
 The package-relative file policy is now shared C code and used before import,
 export and composition. Directory traversal, symlink checks and semantic/legacy
 resource-claim discovery still live in the launcher; classifying a backing file
