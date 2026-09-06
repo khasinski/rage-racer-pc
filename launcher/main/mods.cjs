@@ -254,7 +254,7 @@ function installMethods(Service){
       await fs.mkdir(path.join(target,'textures'),{recursive:true});
       await fs.copyFile(path.join(source,entry.json),path.join(target,'textures',stem+'.json'));
       await fs.copyFile(path.join(source,entry.png),path.join(target,'textures',stem+'.png'));
-      legacyIndex.push(`${entry.asset} ${stem}.json`);
+      legacyIndex.push([entry.asset,stem+'.json']);
      }
      for(const [index,name] of files.entries()){
       // Semantic textures use a provider-specific path. Choosing a material or
@@ -274,7 +274,8 @@ function installMethods(Service){
      for(const[key,value]of Object.entries(mod.manifest.meshes||{}))if(selected('mesh:'+key,mod.id))tables.meshes[key]='meshes/provider-'+mod.id+'/'+value.slice('meshes/'.length);
      for(const[key,value]of Object.entries(mod.manifest.materials))if(selected('material:'+key,mod.id))tables.materials[key]=value;
    }
-   if(legacyIndex.length)await fs.writeFile(path.join(target,'textures/index.txt'),legacyIndex.join('\n')+'\n');
+   if(legacyIndex.length)await run(this.tool('rage-mod-cli'),['--write-legacy-index-stdin',path.join(target,'textures/index.txt')],{
+    input:Buffer.from(JSON.stringify(legacyIndex))});
    // The legacy loader uses asset_000.bin to recognize a raw override directory.
    if(legacyIndex.length||active.some(m=>m.files.some(f=>f.startsWith('raw/')))){
      await fs.mkdir(path.join(target,'raw'),{recursive:true});try{await fs.access(path.join(target,'raw','asset_000.bin'));}catch{await fs.copyFile(path.join(staging,'original-base','raw','asset_000.bin'),path.join(target,'raw','asset_000.bin'));}

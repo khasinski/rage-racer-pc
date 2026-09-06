@@ -62,6 +62,7 @@ static void String(const char *s) {
 int main(int argc,char **argv) {
     FILE *f;long size;char *bytes;size_t i;
     if(argc==3 && strcmp(argv[1],"--write-profile-stdin")==0) return ProfileCommand(argv[2]);
+    if(argc==3 && strcmp(argv[1],"--write-legacy-index-stdin")==0) return LegacyIndexWriteCommand(argv[2]);
     if(argc==3 && strcmp(argv[1],"--legacy-index")==0) return LegacyIndexCommand(argv[2]);
     if(argc==3 && strcmp(argv[1],"--inventory")==0) return InventoryCommand(argv[2]);
     if(argc==2 && strcmp(argv[1],"--check-files-stdin")==0) return FilePolicyCommand(0);

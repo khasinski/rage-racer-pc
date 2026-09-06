@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Legacy index serialization also runs in compiled tooling: a bounded JSON list
+of asset/path pairs is fully checked by LegacyTextureIndexLine before exclusive
+UTF-8 output creation. Composition no longer emits index text in JavaScript.
+Tests cover order/repeated owners, boundary slots, unsafe/control/NUL paths,
+late invalid entries leaving no output and existing-file preservation. All 76
+launcher tests pass on Linux with the rebuilt CLI; this new command has not yet
+run on Windows. Copy planning/publication and profile persistence still require
+compiled migration; no complete roadmap stage is claimed by these adapters.
+
 Profile output now reuses ModFileWriteExclusive and the snapshot module's
 UTF-8/UTF-16 target handling, preserving exclusive creation and failed-write
 cleanup without a second Windows path converter. The compiled profile fixture
