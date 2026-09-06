@@ -50,6 +50,16 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Terrain quad visibility now carries only six positions instead of six expanded
+shading vertices. Camera clipping/winding no longer depends on the native
+vertex payload, while source transform and terrain boundary snapping remain
+unchanged. A twisted-quad regression explicitly retains both halves when only
+one faces the camera, alongside existing front/back and near-plane cases.
+Linux mesh-build, native-world, mirror and environment regressions pass; the
+classic and modern frozen mirror images match the preceding captures exactly
+(new build/mirror-cars-78c06b5bec72). This separates visibility from shading
+representation; it does not move selection or geometry storage onto the GPU.
+
 Split UV/colour span sampling now joins the standalone texture contract and
 its existing Linux/Windows/macOS CI matrix; workflow filters include the test
 source (the PSY-Z submodule pointer was already covered). The production

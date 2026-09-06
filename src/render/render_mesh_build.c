@@ -299,14 +299,11 @@ static uint32_t ClipViewTriangleNear(
 
 static int TerrainTriangleFacesCamera(
     const RageRenderWorld *world, const RageRenderViewTransform *viewTransform,
-    const RageNativeDrawVertex triangle[3]) {
+    const RageRenderVec3 triangle[3]) {
     RageRenderVec3 input[3], clipped[4];
     uint32_t corner, count, piece;
     for (corner = 0; corner < 3; corner++) {
-        RageRenderVec3 position = {triangle[corner].position[0],
-                                   triangle[corner].position[1],
-                                   triangle[corner].position[2]};
-        RenderWorldToViewPrepared(viewTransform, &position, &input[corner]);
+        RenderWorldToViewPrepared(viewTransform, &triangle[corner], &input[corner]);
     }
     count = ClipViewTriangleNear(
         input, clipped, world->camera.nearPlane);
@@ -332,7 +329,9 @@ static int TerrainQuadIsHidden(
     const RageRenderWorld *world, const RageTransformBasis *basis,
     const RageRenderViewTransform *viewTransform,
     const RageRuntimeMesh *mesh, uint32_t first) {
-    RageNativeDrawVertex triangles[2][3] = {0};
+    /* Visibility has no UV, normal, fog or lighting dependency. Keep its
+     * temporary geometry independent of the expanded shading payload. */
+    RageRenderVec3 triangles[2][3];
     uint32_t indices[6];
     static const uint8_t uniqueCorners[4] = {0, 1, 2, 5};
     uint32_t corner;
@@ -351,15 +350,8 @@ static int TerrainQuadIsHidden(
         position = TransformPosition(basis, &source);
         position.x = SnapTerrainCellBoundary(position.x);
         position.z = SnapTerrainCellBoundary(position.z);
-        if (corner < 3) {
-            triangles[0][corner].position[0] = position.x;
-            triangles[0][corner].position[1] = position.y;
-            triangles[0][corner].position[2] = position.z;
-        } else {
-            triangles[1][2].position[0] = position.x;
-            triangles[1][2].position[1] = position.y;
-            triangles[1][2].position[2] = position.z;
-        }
+        if (corner < 3) triangles[0][corner] = position;
+        else triangles[1][2] = position;
     }
     triangles[1][0] = triangles[0][2];
     triangles[1][1] = triangles[0][1];

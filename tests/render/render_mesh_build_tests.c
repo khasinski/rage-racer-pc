@@ -348,6 +348,18 @@ static void test_native_draw_builder_culls_terrain_per_authored_quad(void) {
                                              &spanCount));
     EXPECT_EQ(0, spanCount);
 
+    /* A twisted authored quad stays whole when only its first half faces
+     * the camera. Visibility must not become independent triangle culling. */
+    for (i = 0; i < 4; i++)
+        memcpy(bytes + 32 + i * 40, visible[i], sizeof(visible[i]));
+    {
+        float twisted[3] = {3.0f, -3.0f, -10.0f};
+        memcpy(bytes + 32 + 3 * 40, twisted, sizeof(twisted));
+    }
+    EXPECT_EQ(6, RenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+        &mesh, vertices, 6, spans, 1, &spanCount));
+    EXPECT_EQ(1, spanCount);
+
     /* A quad crossing the near plane reaches the GPU instead of being
      * rejected using pre-clip winding. */
     for (i = 0; i < 4; i++)
