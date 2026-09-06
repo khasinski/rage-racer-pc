@@ -283,6 +283,14 @@ game stability or the packaged launcher shipping contract.
      the world/cache API. The Linux live native-world regression passes after
      that header split. This is still fixture-scoped, not full-game sanitizer
      coverage or proof of concurrent rendering safety.
+   - Provider image results now have an explicit packed-RGBA8 invariant: a
+     non-null pixel pointer, nonzero dimensions and an exact overflow-checked
+     byte count. The material path checks it before applying surface effects;
+     the publication transaction checks it again before exposing the result.
+     Tests inject zero dimensions, a short buffer declaration and overflowing
+     dimensions and verify cleanup plus unchanged outputs. Three ASan/UBSan
+     fixtures pass in the Linux container, all four standalone contracts pass
+     in Windows Release, and Linux native-world/PAL smoke passes (14.06s).
 3. **Simulation/presentation boundary** (in progress)
    - Complete immutable presentation snapshots; isolate remaining legacy-state
      reads and declare compatibility/VRAM dependencies.

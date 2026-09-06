@@ -770,6 +770,9 @@ static int ModernAssetsBuildMaterial(const RageRenderMeshInstance *instance,
     }
     if (!ModernAssetsLoadBaseMaterial(instance, material, variant, definition, image,storage))
         return 0;
+    if(!ModernAssetImageValidRGBA(image)) {
+        ModernAssetsFreeMaterialImage(image);return 0;
+    }
     if (surface == RAGE_CAR_SURFACE_GLASS || surface == RAGE_CAR_SURFACE_DECAL) {
         uint16_t clut = ModernPlayerMarkingClut(instance, material);
         if (clut && !NativeAssetImporterApplyPlayerMarkings(clut, image)) {

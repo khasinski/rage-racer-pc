@@ -8,4 +8,12 @@ typedef struct ModernAssetImage {
     uint32_t width;
     uint32_t height;
 } ModernAssetImage;
+/* Material providers publish tightly packed RGBA8, without row padding. */
+static inline int ModernAssetImageValidRGBA(const ModernAssetImage *image) {
+    if(!image||!image->pixels||!image->width||!image->height)return 0;
+    size_t row=(size_t)image->width*4;
+    if(row/4!=image->width)return 0;
+    if((size_t)image->height>SIZE_MAX/row)return 0;
+    return image->size==row*(size_t)image->height;
+}
 #endif

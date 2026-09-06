@@ -13,6 +13,7 @@ static inline int ModernMaterialTransaction(
     if(!build||!release||!definition||!image||!storage)return 0;
     RenderMaterialDefault(&working);
     if(!build(context,&working,&workingImage,&workingStorage)||
+       !ModernAssetImageValidRGBA(&workingImage)||
        !RenderMaterialStorePaths(&working,storage)) {
         release(&workingImage);return 0;
     }
