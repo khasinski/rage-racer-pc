@@ -29,13 +29,13 @@ async function legacyTextures(root,files){
 }
 function legacyFiles(mod){return new Set((mod.legacyTextures||[]).flatMap(t=>[t.json,t.png]).concat(mod.files.includes('textures/index.txt')?['textures/index.txt']:[]));}
 function installMethods(Service){
- Service.prototype.validateModSelection=async function(){
-  const active=this.state.mods.filter(m=>m.enabled),args=['--check-selection'];
+ Service.prototype.validateModSelection=async function(mods=this.state.mods,directory=path.join(this.root,'mods')){
+  const active=mods.filter(m=>m.enabled),args=['--check-selection'];
   if(!active.length)return active;
   for(const mod of active){
    readDependencies(mod);
    args.push('--mod',mod.packageId||mod.id,mod.version||'',mod.region,
-    mod.files.includes('mod.toml')?path.join(this.root,'mods',mod.id,'mod.toml'):'');
+    mod.files.includes('mod.toml')?path.join(directory,mod.id,'mod.toml'):'');
    for(const dependency of mod.requires||[])args.push('--requires',dependency.packageId,dependency.version||'');
   }
   const {run}=require('./service.cjs');
@@ -101,6 +101,15 @@ function installMethods(Service){
    try {
    await this.snapshotModFiles(source,folder,files,signal);
    source=folder;
+   const {manifest,metadata,legacy}=await this.inspectModSnapshot(source,files,signal);
+    if(signal.aborted)throw Error('Operation canceled');
+    this.busy.cancellable=false;await this.update();
+    const mod={id,name:name||metadata?.name||sourceName,files,manifest,legacyTextures:legacy,enabled:false,region:metadata?.region||this.state.disc.region};
+    for(const field of ['author','version','description','packageId','requires'])if(metadata?.[field]!==undefined)mod[field]=metadata[field];
+    this.state.mods.push(mod);await this.persist();return mod;
+   }catch(e){this.state.mods=this.state.mods.filter(m=>m.id!==id);await fs.rm(folder,{recursive:true,force:true});throw e;}
+ };
+ Service.prototype.inspectModSnapshot=async function(source,files,signal){
    const legacy=await legacyTextures(source,files);
    let metadata=null;
    if(files.includes('rage-mod.json')){
@@ -120,12 +129,7 @@ function installMethods(Service){
      if(!allowed(relative)||!relative.startsWith('meshes/')||!files.includes(relative))throw Error('Missing or invalid mesh: '+relative);
      const {run}=require('./service.cjs');await run(this.tool('rage-mod-cli'),['--mesh',path.join(source,relative)],{signal});
    }
-    if(signal.aborted)throw Error('Operation canceled');
-    this.busy.cancellable=false;await this.update();
-    const mod={id,name:name||metadata?.name||sourceName,files,manifest,legacyTextures:legacy,enabled:false,region:metadata?.region||this.state.disc.region};
-    for(const field of ['author','version','description','packageId','requires'])if(metadata?.[field]!==undefined)mod[field]=metadata[field];
-    this.state.mods.push(mod);await this.persist();return mod;
-   }catch(e){this.state.mods=this.state.mods.filter(m=>m.id!==id);await fs.rm(folder,{recursive:true,force:true});throw e;}
+   return {manifest,metadata,legacy};
  };
  Service.prototype.snapshotModFiles=async function(source,target,files,signal){
    const pairs=[];
@@ -173,9 +177,9 @@ function installMethods(Service){
    }catch(e){await fs.rm(target,{recursive:true,force:true});throw e;}
   });
  };
- Service.prototype.overlaps=function(){
+ Service.prototype.overlaps=function(mods=this.state.mods){
   const owners=new Map();
-  for(const mod of this.state.mods.filter(m=>m.enabled)){
+  for(const mod of mods.filter(m=>m.enabled)){
    const semanticFiles=new Set([...Object.values(mod.manifest.textures),...Object.values(mod.manifest.meshes||{})]);
    const legacy=legacyFiles(mod);
    const keys=[...(mod.legacyTextures||[]).map(t=>'legacy-textures:asset-'+t.asset),...mod.files.filter(f=>f.startsWith('raw/')||(f.startsWith('textures/')&&!semanticFiles.has(f)&&!legacy.has(f))),...Object.keys(mod.manifest.textures).map(k=>'texture:'+k),...Object.keys(mod.manifest.materials).map(k=>'material:'+k),...Object.keys(mod.manifest.meshes||{}).map(k=>'mesh:'+k)];
@@ -199,26 +203,41 @@ function installMethods(Service){
   },false);
  };
  Service.prototype.composeMods=async function(){
-   const active=await this.validateModSelection();if(!active.length)return '';
+   const requested=structuredClone(this.state.mods.filter(m=>m.enabled));if(!requested.length)return '';
+   const decisions=structuredClone(this.state.resolutions||{}),discData=this.state.disc.data;
+   const staging=path.join(this.root,'mod-sources-'+randomUUID());
+   await fs.mkdir(staging);
+   try {
+   const {run}=require('./service.cjs');
+   for(const mod of requested){
+    const source=path.join(this.root,'mods',mod.id),snapshot=path.join(staging,mod.id);
+    mod.files=await inventory(source);
+    await this.snapshotModFiles(source,snapshot,mod.files);
+    const inspected=await this.inspectModSnapshot(snapshot,mod.files);
+   mod.manifest=inspected.manifest;mod.legacyTextures=inspected.legacy;
+   }
+   const needsBase=requested.some(m=>m.legacyTextures.length||m.files.some(f=>f.startsWith('raw/')))
+    &&!requested.some(m=>m.files.includes('raw/asset_000.bin'));
+   const active=await this.validateModSelection(requested,staging);
    // The UI's synchronous conflict view is advisory. The compiled resolver
    // owns final selection and rejects choices made for a different owner set.
-   const groups=this.overlaps(),args=['--resolve-providers'];
+   const groups=this.overlaps(active),args=['--resolve-providers'];
    for(const group of groups){
     args.push('--resource',group.key);
     for(const candidate of group.candidates)args.push('--candidate',candidate.id);
-    const choice=this.state.resolutions?.[group.key];
+    const choice=decisions[group.key];
     if(choice){args.push('--choice',choice.winner);for(const id of choice.candidates)args.push('--previous',id);}
    }
-   const {run}=require('./service.cjs');
    if(args.some(token=>typeof token!=='string'||token.includes('\0')))throw Error('Invalid resource conflict input');
    const request=args.length>1?Buffer.from(args.slice(1).join('\0')+'\0','utf8'):Buffer.alloc(0);
    const selectedIndices=JSON.parse(await run(this.tool('rage-mod-cli'),['--resolve-providers-stdin'],{input:request}));
    const winners=new Map(groups.map((group,i)=>[group.key,group.candidates[selectedIndices[i]].id]));
    const selected=(key,id)=>!winners.has(key)||winners.get(key)===id;
+   if(needsBase)await this.snapshotModFiles(discData,path.join(staging,'original-base'),['raw/asset_000.bin']);
    const target=path.join(this.root,'active-mods-'+randomUUID());await fs.mkdir(target,{recursive:true});
    const tables={textures:{},materials:{},meshes:{}},legacyIndex=[];
    try {for(const mod of active){
-     const source=path.join(this.root,'mods',mod.id);const files=await inventory(source);
+     const source=path.join(staging,mod.id),files=mod.files;
      const semanticFiles=new Set([...Object.values(mod.manifest.textures),...Object.values(mod.manifest.meshes||{})]);
      const legacy=legacyFiles(mod);
      for(const [index,entry]of (mod.legacyTextures||[]).entries())if(selected('legacy-textures:asset-'+entry.asset,mod.id)){
@@ -250,13 +269,14 @@ function installMethods(Service){
    if(legacyIndex.length)await fs.writeFile(path.join(target,'textures/index.txt'),legacyIndex.join('\n')+'\n');
    // The legacy loader uses asset_000.bin to recognize a raw override directory.
    if(legacyIndex.length||active.some(m=>m.files.some(f=>f.startsWith('raw/')))){
-     await fs.mkdir(path.join(target,'raw'),{recursive:true});try{await fs.access(path.join(target,'raw','asset_000.bin'));}catch{await fs.copyFile(path.join(this.state.disc.data,'raw','asset_000.bin'),path.join(target,'raw','asset_000.bin'));}
+     await fs.mkdir(path.join(target,'raw'),{recursive:true});try{await fs.access(path.join(target,'raw','asset_000.bin'));}catch{await fs.copyFile(path.join(staging,'original-base','raw','asset_000.bin'),path.join(target,'raw','asset_000.bin'));}
    }
    let manifest='[mod]\nid = "launcher-profile"\n';for(const group of ['textures','materials','meshes']){manifest+=`\n[${group}]\n`;for(const [key,value]of Object.entries(tables[group]))manifest+=`"${key}" = "${value}"\n`;}
    await fs.writeFile(path.join(target,'mod.toml'),manifest);
    const {run}=require('./service.cjs');await run(this.tool('rage-mod-cli'),[path.join(target,'mod.toml')]);
    return target;
    }catch(e){await fs.rm(target,{recursive:true,force:true});throw e;}
+   }finally{await fs.rm(staging,{recursive:true,force:true});}
  };
 }
 module.exports={inventory,installMethods};

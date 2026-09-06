@@ -78,8 +78,19 @@ The command accepts a bounded JSON array of `[source,target]` pairs over stdin
 This freezes the bytes subsequently validated and installed. It is not an
 adversarial filesystem sandbox or an instantaneous multi-file filesystem
 snapshot: inventory and path/symlink checks still live in the launcher, and
-external writers are not locked out. Package composition from already-installed
-mods remains a separate live-source path and still needs the same staging model.
+external writers are not locked out.
+
+Composition now freezes the selected profile descriptors and provider decisions,
+copies installed packages into a private `mod-sources-*` tree with the same C
+copier, and re-inspects those copies using the import validators. The dependency
+graph, resource claims, conflict decisions and output read these staged files,
+not cached UI manifests or live package directories. The original archive marker
+is also staged when needed. Staging is removed after success or failure; only
+the independently copied `active-mods-*` result survives a successful operation.
+Refreshing descriptors for composition does not mutate the UI/profile cache.
+Externally edited packages may therefore require reimport before their new
+conflicts can be resolved in the UI. Editable JSON profile metadata remains
+authoritative for package names/versions/requirements; TOML is read from staging.
 
 ## Native material editing
 
@@ -146,8 +157,8 @@ zero-based package indices. No files or runtime state are mutated by validation.
 
 Remaining work includes compiled profile mutation/export and resource-claim
 discovery, UI display of TOML requirements, source fingerprints and a runtime
-provider stack. Validation and copying are not yet one immutable snapshot of
-the source files; this is not a concurrent-edit/hot-reload contract.
+provider stack. Staged files isolate validation from subsequent external edits,
+but capture is not a point-in-time filesystem transaction or a hot-reload contract.
 
 ## Resource provider selection
 

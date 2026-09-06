@@ -1,0 +1,71 @@
+const {test}=require('node:test'),assert=require('node:assert/strict');
+const fs=require('node:fs/promises'),path=require('node:path'),os=require('node:os');
+const {LauncherService,run}=require('../main/service.cjs');
+const bin=path.resolve(__dirname,'../resources/bin');
+const material=(id,color)=>`[mod]\nid="${id}"\n[materials]\n"car.a"="lit opaque 0.5 0 ${color} 1 0 0 0"`;
+test('raw overrides and original archive marker are copied from staging',async()=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-compose-raw-'));
+ try{
+  const source=path.join(root,'source'),disc=path.join(root,'disc');
+  await fs.mkdir(path.join(source,'raw'),{recursive:true});await fs.mkdir(path.join(disc,'raw'),{recursive:true});
+  await fs.writeFile(path.join(source,'raw/asset_010.bin'),'original override');
+  await fs.writeFile(path.join(disc,'raw/asset_000.bin'),'original marker');
+  const service=new LauncherService({root:path.join(root,'profile'),bin,config:path.resolve(__dirname,'../resources/rage-port.ini')});
+  await service.init();service.state.disc={region:'PAL',data:disc};
+  const mod=await service.importMod(source);await service.toggleMod(mod.id,true);
+  const snapshot=service.snapshotModFiles.bind(service);
+  service.snapshotModFiles=async(...args)=>{
+   await snapshot(...args);
+   const relative=args[0]===disc?'raw/asset_000.bin':'raw/asset_010.bin';
+   await fs.writeFile(path.join(args[0],relative),'changed after snapshot');
+  };
+  const output=await service.composeMods();
+  assert.equal(await fs.readFile(path.join(output,'raw/asset_010.bin'),'utf8'),'original override');
+  assert.equal(await fs.readFile(path.join(output,'raw/asset_000.bin'),'utf8'),'original marker');
+  assert.equal((await fs.readdir(service.root)).filter(n=>n.startsWith('mod-sources-')).length,0);
+ }finally{await fs.rm(root,{recursive:true,force:true});}
+});
+test('composition freezes source bytes and keeps profile views separate',async()=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-compose-snapshot-'));
+ try{
+  const service=new LauncherService({root:path.join(root,'profile'),bin,config:path.resolve(__dirname,'../resources/rage-port.ini')});
+  await service.init();service.state.disc={region:'PAL'};
+  const source=path.join(root,'source');await fs.mkdir(source);
+  await fs.writeFile(path.join(source,'mod.toml'),material('base','1 0 0'));
+  const mod=await service.importMod(source);await service.toggleMod(mod.id,true);
+  const installed=path.join(service.root,'mods',mod.id,'mod.toml');
+  // Cached UI manifest deliberately differs from the installed source.
+  await fs.writeFile(installed,material('base','0 1 0'));
+  const snapshot=service.snapshotModFiles.bind(service);
+  service.snapshotModFiles=async(...args)=>{
+   await snapshot(...args);await fs.writeFile(installed,'[mod]\nschema_version=999');
+  };
+  const output=await service.composeMods();
+  const result=JSON.parse(await run(service.tool('rage-mod-cli'),[path.join(output,'mod.toml')]));
+  assert.equal(result.materials['car.a'],'lit opaque 0.5 0 0 1 0 1 0 0 0');
+  assert.equal(mod.manifest.materials['car.a'],'lit opaque 0.5 0 1 0 0 1 0 0 0');
+  assert.equal((await fs.readdir(service.root)).filter(n=>n.startsWith('mod-sources-')).length,0);
+ }finally{await fs.rm(root,{recursive:true,force:true});}
+});
+test('fresh snapshot claims cannot bypass conflicts and failed staging is removed',async()=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-compose-claims-'));
+ try{
+  const service=new LauncherService({root:path.join(root,'profile'),bin,config:path.resolve(__dirname,'../resources/rage-port.ini')});
+  await service.init();service.state.disc={region:'PAL'};
+  for(const id of ['a','b']){
+   const folder=path.join(root,id);await fs.mkdir(folder);
+   await fs.writeFile(path.join(folder,'mod.toml'),id==='a'?material(id,'1 0 0'):'[mod]\nid="b"');
+   const mod=await service.importMod(folder);await service.toggleMod(mod.id,true);
+  }
+  assert.equal(service.conflicts().length,0);
+  const installed=path.join(service.root,'mods',service.state.mods[1].id,'mod.toml');
+  await fs.writeFile(installed,material('b','0 1 0'));
+  await assert.rejects(service.composeMods(),/conflict/);
+  assert.equal(service.conflicts().length,0,'composition must not mutate cached UI state');
+  const leftovers=(await fs.readdir(service.root)).filter(n=>n.startsWith('mod-sources-')||n.startsWith('active-mods-'));
+  assert.deepEqual(leftovers,[]);
+  await fs.writeFile(installed,'[textures]\n"car.b"="textures/missing.png"');
+  await assert.rejects(service.composeMods(),/Missing texture/);
+  assert.equal((await fs.readdir(service.root)).filter(n=>n.startsWith('mod-sources-')).length,0);
+ }finally{await fs.rm(root,{recursive:true,force:true});}
+});
