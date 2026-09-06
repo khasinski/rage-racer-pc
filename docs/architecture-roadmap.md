@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Manifest dependency ordering now validates fixed-buffer identity termination
+and semantic grammar before handing strings to the general selection graph.
+Publicly constructed manifests therefore cannot bypass parser guarantees with
+unterminated IDs/requirements or unreferenceable names. Tests inject those
+states and require an empty order with invalid-input diagnostics. Linux
+ASan/UBSan with leak detection passes (0.04s). Parsed legacy unnamed single
+manifests remain supported; this is not a general memory-safety guarantee for
+arbitrary invalid pointers passed into the public C API.
+
 Manifest-declared identities now use the same nonempty ASCII [a-z0-9.-]
 grammar as requires and resource semantic keys; classification is explicitly
 ASCII rather than locale-dependent ctype. Previously an uppercase, spaced or

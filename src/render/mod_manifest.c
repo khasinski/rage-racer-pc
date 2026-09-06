@@ -325,6 +325,15 @@ int ModManifestBuildOrder(const RageModManifest *const *manifests,
             m->meshCount > RAGE_MOD_MANIFEST_MAX_MESHES ||
             m->requirementCount > RAGE_MOD_MANIFEST_MAX_REQUIREMENTS ||
             (count > 1 && m->id[0] == 0)) return 0;
+        if (!memchr(m->id, '\0', sizeof(m->id)) ||
+            (m->id[0] && !ManifestSemanticId(m->id))) return 0;
+        for (size_t r = 0; r < m->requirementCount; ++r) {
+            if (!memchr(m->requirements[r], '\0', sizeof(m->requirements[r])) ||
+                !ManifestSemanticId(m->requirements[r])) {
+                out->requirementIndex = r;
+                return 0;
+            }
+        }
         for (size_t j = 0; j < i; ++j) {
             if (!strcmp(m->id, manifests[j]->id)) {
                 out->error = RAGE_MOD_ORDER_DUPLICATE_ID;

@@ -91,6 +91,21 @@ static void test_dependency_order(void) {
     EXPECT(!ModManifestBuildOrder(NULL, 1, &order));
     EXPECT(!ModManifestBuildOrder(selected, RAGE_MOD_MAX_SELECTED + 1, &order));
     EXPECT(!ModManifestBuildOrder(selected, 1, NULL));
+    /* Public structs can bypass the parser: validate bounded strings before
+     * passing them to the general dependency graph's C-string interface. */
+    memset(storage[0].id, 'a', sizeof(storage[0].id));
+    EXPECT(!ModManifestBuildOrder(selected, 1, &order));
+    EXPECT(order.error == RAGE_MOD_ORDER_INVALID && order.count == 0);
+    strcpy(storage[0].id, "Upper");
+    EXPECT(!ModManifestBuildOrder(selected, 1, &order));
+    strcpy(storage[0].id, "valid");
+    storage[0].requirementCount = 1;
+    memset(storage[0].requirements[0], 'a', sizeof(storage[0].requirements[0]));
+    EXPECT(!ModManifestBuildOrder(selected, 1, &order));
+    EXPECT(order.error == RAGE_MOD_ORDER_INVALID && order.requirementIndex == 0);
+    strcpy(storage[0].requirements[0], "invalid requirement");
+    EXPECT(!ModManifestBuildOrder(selected, 1, &order));
+    EXPECT(order.count == 0);
     for (unsigned i = 0; i < RAGE_MOD_MAX_SELECTED; ++i) {
         char text[96];
         int length = snprintf(text, sizeof(text), "[mod]\nid=\"m%u\"", i);
