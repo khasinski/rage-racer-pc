@@ -50,6 +50,39 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+The stage image checker now has an SDL/GPU-independent CMake contract build.
+Strict Linux and Windows 11 ClangCL Release builds pass its fixture (Windows
+1.20s), including blank/clipped track silhouettes and exact minimum-area
+acceptance versus one-pixel-below rejection. Windows execution covers the CPU
+checker/parser, not the stage GPU rendering scenario. Python remains pending
+the final coverage audit; no platform-wide renderer claim is made.
+
+Stage checker negative coverage now includes empty/truncated/trailing PPM data,
+wrong magic/dimensions/channel maximum, matching rotation images, the allowed
+two-level rounding delta, rejected three-level delta and changed silhouette.
+Production stream parsing and rotation comparison are shared with the fixture;
+strict C11 and full checker ASan/UBSan tests pass with leak detection. The
+Python regression remains until the remaining mode/platform checks are done.
+
+Compiled stage orchestration now renders all eighteen quaternion car sweeps,
+five Euler/quaternion pairs (including compound rotations), exact full-turn
+and repeatability pairs, and four track asset sets. CMake drives the existing
+compiled stage and new C image checker; fresh runs pass both this test (4.12s)
+and the original Python test (5.20s), plus synthetic checker tests. Artifacts
+are retained under build/stage-angles-* for inspection. Missing assets skip;
+render/GPU errors fail rather than being broadly treated as no-GPU skips.
+Parser/comparison negative coverage and platform verification remain before
+removing the Python test.
+
+Stage-angle compiled migration started without deleting the Python regression.
+tools/rage_stage_image_check.c implements fixed-size stage PPM validation,
+24-view silhouette/symmetry/continuity/stuck-sweep checks, exact comparisons,
+rotation pixel tolerance and track framing. Strict standalone C builds pass;
+all 18 saved post-snapshot car sweeps pass, and synthetic valid/disappearing/
+frozen/clipped/asymmetric fixtures behave as expected. Process orchestration,
+CTest registration and complete negative coverage (including parser and other
+comparison modes) remain before replacing the existing end-to-end test.
+
 Functional checkpoint: 166 tests selected; 163 passed, two skipped without
 data overrides, and shipped_config rejected the user's local marker_capture
 setting. The committed HEAD INI passes that same verifier without changing

@@ -1,4 +1,17 @@
 if(TARGET rage-frame-replay)
+    add_executable(rage-stage-image-check ${PROJECT_SOURCE_DIR}/tools/rage_stage_image_check.c)
+    add_executable(stage_image_check_tests stage_image_check_tests.c)
+    foreach(target rage-stage-image-check stage_image_check_tests)
+        target_compile_options(${target} PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+    endforeach()
+    add_test(NAME stage_image_check COMMAND stage_image_check_tests)
+    set_tests_properties(stage_image_check PROPERTIES LABELS unit)
+    add_test(NAME render_stage_angles_compiled COMMAND ${CMAKE_COMMAND}
+        -DTOOL=$<TARGET_FILE:rage-render-stage> -DCHECK=$<TARGET_FILE:rage-stage-image-check>
+        -DSOURCE=${PROJECT_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_stage_angles.cmake)
+    set_tests_properties(render_stage_angles_compiled PROPERTIES LABELS functional
+        TIMEOUT 900 SKIP_REGULAR_EXPRESSION "SKIP: no imported assets")
     add_executable(environment_fixture environment_fixture.c)
     target_link_libraries(environment_fixture PRIVATE rage-render-world)
     if(MSVC)
