@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Compiled-claim lifecycle regression now imports two nonconflicting mods, adds
+a conflicting material through the real editor, requires composition rejection,
+selects the second provider, reloads the persisted launcher profile and checks
+that composition publishes that provider's distinct material value. All 71
+launcher tests pass on Linux. The edit path already reparses the manifest, so
+no runtime fix was needed; this establishes freshness across edit and reload,
+not atomic cross-process profile updates or a packaged Windows launcher run.
+
 Legacy index entries now carry their compiled resourceClaim alongside their
 compiled JSON/PNG paths. Fresh composition uses that key both for conflict
 grouping and winner-controlled copying; only older cached UI entries reconstruct

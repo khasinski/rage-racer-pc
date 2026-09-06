@@ -6,6 +6,34 @@ const bin=path.resolve(__dirname,'../resources/bin');
 const tool=path.join(bin,'rage-mod-cli'+(process.platform==='win32'?'.exe':''));
 const key='car.0.material.0',properties='lit opaque 0.5 0 1 1 1 1 0 0 0';
 
+test('editing a material refreshes compiled conflicts and survives profile reload',async()=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-edited-claims-'));
+ try{
+  const options={root:path.join(root,'profile'),bin,config:path.resolve(__dirname,'../resources/rage-port.ini')};
+  const service=new LauncherService(options);
+  await service.init();service.state.disc={region:'PAL'};
+  const mods=[];
+  for(const index of [0,1]){
+   const source=path.join(root,'source'+index);await fs.mkdir(source);
+   await fs.writeFile(path.join(source,'mod.toml'),`[materials]\n"car.${index}.material.0"="${properties}"\n`);
+   const mod=await service.importMod(source);await service.toggleMod(mod.id,true);mods.push(mod);
+  }
+  assert.deepEqual(service.conflicts(),[]);
+  const edited='unlit opaque 0.2 0 1 1 1 1 0 0 0';
+  await service.saveMaterial(mods[1].id,key,edited);
+  assert.ok(mods[1].manifest.resourceClaims.includes('material:'+key));
+  assert.deepEqual(service.conflicts().map(c=>c.key),['material:'+key]);
+  await assert.rejects(service.composeMods(),/conflict/);
+  await service.resolveConflict('material:'+key,mods[1].id);
+  const reloaded=new LauncherService(options);await reloaded.init();
+  assert.deepEqual(reloaded.conflicts(),[]);
+  assert.equal(reloaded.overlaps()[0].winner,mods[1].id);
+  const output=await reloaded.composeMods();
+  const manifest=JSON.parse(await run(tool,[path.join(output,'mod.toml')]));
+  assert.equal(manifest.materials[key],edited);
+ }finally{await fs.rm(root,{recursive:true,force:true});}
+});
+
 test('compiled material edit preserves the source contract and never overwrites files',async()=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-manifest-edit-'));
  try{
