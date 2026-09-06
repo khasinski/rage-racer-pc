@@ -50,6 +50,17 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+After deferred compatibility shading and position-only terrain visibility,
+the rebuilt Linux modern smoke passes all 36 selected real-disc regressions:
+33 natural class-award/series-ending FMV cases plus three default disc-source
+cases across PAL, NTSC-U and NTSC-J (186.79s, parallel 3, no skips). Awards
+verify ordered prize/movie/return scenes, positive XA mixer contribution,
+disc-derived movie pacing/frame counts and session PCM. Prior-course seeding
+and finish/confirm hooks accelerate setup; these are not input-driven full
+races. Offscreen video and dummy audio do not establish visual quality,
+audibility, Windows GPU behavior or frame-time performance. Default-source
+cases independently verify C import/modern startup despite a colocated cache.
+
 Terrain quad visibility now carries only six positions instead of six expanded
 shading vertices. Camera clipping/winding no longer depends on the native
 vertex payload, while source transform and terrain boundary snapping remain
