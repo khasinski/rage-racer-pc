@@ -3,6 +3,7 @@
 #include "../track_material_page.h"
 
 #include "modern_assets.h"
+#include "modern_upload_queue.h"
 #include "render/render_mesh_build.h"
 #include "render/render_native_vertex.h"
 #include "render/authored_car_surface.h"
@@ -151,25 +152,25 @@ static ModernNativeTexture s_textures[MODERN_NATIVE_MAX_TEXTURES];
 /* Every successful upload creates exactly one cache entry. Keep enough
  * slots for the entire cache, including a cold frame drawing main + mirror.
  * Waiting for GPU idle cannot retire commands not submitted by the caller. */
-enum { MODERN_NATIVE_MAX_PENDING_UPLOADS = MODERN_NATIVE_MAX_TEXTURES };
-static SDL_GPUTransferBuffer
-    *s_pendingUploads[MODERN_NATIVE_MAX_PENDING_UPLOADS];
-static uint32_t s_pendingUploadCount;
+_Static_assert((unsigned)MODERN_UPLOAD_QUEUE_CAPACITY >=
+                   (unsigned)MODERN_NATIVE_MAX_TEXTURES,
+               "Upload queue must hold the complete texture cache");
+static ModernUploadQueue s_pendingUploads;
+
+static void ModernNativeReleaseUpload(void *device, void *upload) {
+    SDL_ReleaseGPUTransferBuffer(device, upload);
+}
 
 static void ModernNativeReleasePendingUploads(void) {
-    uint32_t index;
-    for (index = 0; index < s_pendingUploadCount; index++) {
-        if (s_device != NULL && s_pendingUploads[index] != NULL)
-            SDL_ReleaseGPUTransferBuffer(s_device, s_pendingUploads[index]);
-        s_pendingUploads[index] = NULL;
-    }
-    s_pendingUploadCount = 0;
+    if (s_device != NULL)
+        ModernUploadQueueDrain(&s_pendingUploads, ModernNativeReleaseUpload,
+                               s_device);
 }
 
 /* The caller reserves capacity before recording any copy commands. */
 static void ModernNativeRetireUpload(SDL_GPUTransferBuffer *upload) {
     if (upload == NULL) return;
-    s_pendingUploads[s_pendingUploadCount++] = upload;
+    (void)ModernUploadQueuePush(&s_pendingUploads, upload);
 }
 static uint16_t s_textureHash[MODERN_NATIVE_TEXTURE_HASH_SIZE];
 static uint32_t s_textureCount;
@@ -1189,7 +1190,7 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     if (entry != NULL || span->material == UINT32_MAX) return entry;
     /* Never release unsubmitted uploads to make room. A failed reservation
      * leaves the cache untouched and can be retried after the next prepare. */
-    if (s_pendingUploadCount >= MODERN_NATIVE_MAX_PENDING_UPLOADS) return NULL;
+    if (!ModernUploadQueueHasRoom(&s_pendingUploads)) return NULL;
     if (trace < 0) trace = RuntimeConfigEnabled("diagnostics.performance_trace");
     if (trace) loadStart = SDL_GetTicksNS();
     if (s_textureCount == MODERN_NATIVE_MAX_TEXTURES) {

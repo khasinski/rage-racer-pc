@@ -58,8 +58,16 @@ copies; overflow no longer retires unsubmitted work. Mip chains exceeding SDL's
 32-bit transfer size are rejected before allocation/upload. The smoke target
 build and Linux offscreen `native_render_world`, `modern_submit_recovery` and
 `modern_region_pal` tests pass. These checks do not exercise a greater-than-256
-upload frame or prove pixel correctness; dedicated queue stress coverage and
-the full GPU ownership stage remain open.
+upload frame or prove pixel correctness; the full GPU ownership stage remains
+open.
+
+The runtime now uses the same bounded upload queue exercised by a compiled
+fixture: 2048 retained resources, rejected overflow without retirement,
+exactly-once drain, cleared slots, repeated drain and reuse. Its capacity is
+checked against the texture cache at compile time. The standalone sanitizer
+gate passes all four fixtures on Linux; Windows ClangCL Release passes all
+five contracts including archive tools. This is CPU ownership coverage, not
+a 2048-texture Vulkan stress run or proof of command submission ordering.
 
 Dependency selection and conflict selection share a bounded NUL-delimited
 stdin decoder (8 MiB / 262144 tokens), avoiding Windows command-line limits.
