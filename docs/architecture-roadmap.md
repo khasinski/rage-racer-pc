@@ -50,6 +50,20 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Launcher inventory traversal is now compiled: `rage-mod-cli --inventory ROOT`
+enumerates through SDL and applies the shared file/directory policy before
+descending or accepting files. It bounds depth/directories/files/bytes, rejects
+symlinks and Windows reparse points, preserves hidden-entry exclusion and emits
+sorted accepted paths only after success. Windows root paths use UTF-16 for
+attribute checks. The launcher consumes the result instead of walking with
+Node fs.readdir/stat. All 69 launcher tests pass after staging the current CLI;
+all six standalone SDL/asset contracts pass on Linux and Windows VM, including
+an inventory fixture with a Unicode root. Existing/new tests cover forbidden
+files, links (Linux), invalid empty directories, hidden entries, ordering and
+oversized files. The native scan has an 8 MiB aggregate path budget; it remains
+a read-only inventory, not a filesystem-atomic snapshot or source fingerprint.
+Resource-claim discovery/profile persistence still need further migration.
+
 Extra GP finale coverage now follows the shared-class rule used by the actual
 menu: scenario automation preserves Extra selection but uses
 GrandPrixAssetSeries for class-5 assets/records instead of overwriting them

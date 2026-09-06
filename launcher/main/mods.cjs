@@ -8,22 +8,8 @@ function packageMetadata(mod){
 }
 // Only data formats understood by the current runtime. No executable hooks.
 async function inventory(root,tool=path.resolve(__dirname,'../resources/bin/rage-mod-cli'+(process.platform==='win32'?'.exe':''))){
- const result=[],directories=[];let total=0;
- async function visit(relative){for(const item of await fs.readdir(path.join(root,relative),{withFileTypes:true})){
-   if(item.name.startsWith('.'))continue;
-   const name=relative?relative+'/'+item.name:item.name;
-   if(item.isSymbolicLink())throw Error('Mod folders cannot contain symbolic links');
-   if(item.isDirectory()){
-    // Bound traversal before the compiled policy validates the complete inventory.
-    if(name.split('/').length>8||directories.length>=10000)throw Error('Unsupported mod folder: '+name);
-    directories.push(name);await visit(name);
-   }
-   else {if(!item.isFile())throw Error('Unsupported mod file: '+name);const info=await fs.stat(path.join(root,name));total+=info.size;if(info.size>128*1024*1024||total>1024*1024*1024||result.length>=10000)throw Error('Mod package is too large');result.push(name);}
- }}await visit('');if(!result.length)throw Error('The mod folder is empty');
  const {run}=require('./service.cjs');
- if(directories.length)await run(tool,['--check-directories-stdin'],{input:Buffer.from(JSON.stringify(directories))});
- await run(tool,['--check-files-stdin'],{input:Buffer.from(JSON.stringify(result))});
- return result.sort();
+ return JSON.parse(await run(tool,['--inventory',root],{maxOutput:8*1024*1024}));
 }
 async function legacyTextures(root,files,tool){
  if(!files.includes('textures/index.txt'))return [];

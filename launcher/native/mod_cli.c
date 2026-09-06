@@ -15,6 +15,7 @@ static RageModManifest manifest;
 #include "mod_provider_cli.h"
 #include "mod_snapshot.h"
 #include "mod_file_policy_cli.h"
+#include "mod_inventory.h"
 #include "legacy_index_cli.h"
 static int PackageMetadata(const char *path) {
     char bytes[RAGE_MOD_PACKAGE_BYTES + 1];
@@ -60,6 +61,7 @@ static void String(const char *s) {
 int main(int argc,char **argv) {
     FILE *f;long size;char *bytes;size_t i;
     if(argc==3 && strcmp(argv[1],"--legacy-index")==0) return LegacyIndexCommand(argv[2]);
+    if(argc==3 && strcmp(argv[1],"--inventory")==0) return InventoryCommand(argv[2]);
     if(argc==2 && strcmp(argv[1],"--check-files-stdin")==0) return FilePolicyCommand(0);
     if(argc==2 && strcmp(argv[1],"--check-directories-stdin")==0) return FilePolicyCommand(2);
     if(argc==2 && strcmp(argv[1],"--file-dispositions-stdin")==0) return FilePolicyCommand(1);
