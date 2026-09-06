@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Session-generation follow-up verification: the current standalone lifecycle
+fixture passes Windows 11 ClangCL Release (0.72s) and Linux ASan/UBSan with leak
+detection (0.02s), including a deliberately invalid parent cache override on
+Linux. Rebuilt Linux smoke passes modern_default_disc_source_pal and
+modern_region_pal (14.35s total, offscreen/dummy audio). These verify ordinary
+disc startup and regional marker behavior, not replacing a full asset session
+while retaining the GPU device. Existing repeated-race presentation restarts
+retain assets, so they do not close that distinct integration-test gap.
+
 Asset sessions now expose a process-local generation token, advanced on
 successful initialization and retirement, not failed retries or idempotent
 initialization/shutdown. GPU preparation invalidates texture/sky caches and
