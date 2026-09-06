@@ -62,6 +62,13 @@ This prevents implicit stale-cache selection; source fingerprints and safe
 in-session provider switching remain unfinished. Windows/macOS startup has
 not been rerun for this change.
 
+The colocated-cache regression now runs for PAL, NTSC-U and NTSC-J using the
+same regional disc environment variables as the other integration tests. It
+also requires the detected disc region and automatic 50/60 Hz base timing.
+All three pass on local real images with Linux offscreen rendering (1.19 seconds
+parallel total); missing images are reported as skipped, not successful runs.
+This verifies regional startup/source selection, not full FMV or race coverage.
+
 Pack owner discovery now uses the same bounded legacy texture-index parser as
 the launcher and runtime, replacing its independent sscanf interpretation.
 The entire index is validated before raw assets are opened for edits; invalid

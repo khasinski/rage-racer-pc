@@ -24,12 +24,17 @@
 find_program(RAGE_RUBY_EXECUTABLE ruby)
 
 if(TARGET rage-racer-smoke)
-    add_test(NAME modern_default_disc_source
-        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
-            -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
-            -P ${CMAKE_CURRENT_SOURCE_DIR}/render/verify_default_disc_source.cmake)
-    set_tests_properties(modern_default_disc_source PROPERTIES
-        LABELS e2e TIMEOUT 120 SKIP_REGULAR_EXPRESSION "SKIP:")
+    foreach(region PAL NTSC-U NTSC-J)
+        string(REPLACE "-" "_" key "${region}")
+        string(TOLOWER "${key}" suffix)
+        add_test(NAME modern_default_disc_source_${suffix}
+            COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+                -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+                -DDISC_ENV=RAGE_PORT_${key}_CUE -DEXPECT_REGION=${region}
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/render/verify_default_disc_source.cmake)
+        set_tests_properties(modern_default_disc_source_${suffix} PROPERTIES
+            LABELS "e2e;regional" TIMEOUT 120 SKIP_REGULAR_EXPRESSION "SKIP:")
+    endforeach()
 endif()
 
 # A release build defines NDEBUG, which would turn the assertion-based C
