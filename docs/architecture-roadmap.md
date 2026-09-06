@@ -50,6 +50,13 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Incomplete-presentation policy verification: refreshed Windows ClangCL
+world/snapshot contracts pass (0.84 seconds). Rebuilt Linux smoke passes all
+five GPU/startup checks: native_render_world, submit recovery and selected-disc
+modern startup for PAL/NTSC-U/NTSC-J (7.84 seconds, no skips). This confirms
+ordinary tested paths still render; synthetic overflow rejection is covered
+by the contracts, not an injected live-game overflow or pixel/performance gate.
+
 Presentation source validation now rejects an overflowed previous or current
 world, not just inconsistent instance bounds. Previously previous-frame
 overflow could disappear because the game initialized result metadata from
