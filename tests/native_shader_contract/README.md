@@ -22,3 +22,6 @@ actual depth pixels from the production alpha-discard shader against
 CPU-expanded UVs and an unscrolled control. These are isolated GPU contracts,
 not a full-game rendering or packaging gate. Exit 77 means the SDL video/GPU
 device could not initialize: a skipped test is not a rendering pass.
+
+For a release validation run, configure with `-DRAGE_REQUIRE_GPU=ON`. In that
+mode an unavailable backend fails CTest instead of producing a skipped test.
