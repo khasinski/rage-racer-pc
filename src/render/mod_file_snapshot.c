@@ -78,6 +78,16 @@ static void SnapshotRemoveTarget(const char *path) {
 #endif
 }
 
+int ModFileWriteExclusive(const char *target, const void *bytes, size_t size) {
+    if (!target || (!bytes && size)) return 0;
+    FILE *output = SnapshotOpenTarget(target);
+    if (!output) return 0;
+    int ok = !size || fwrite(bytes, 1, size, output) == size;
+    if (fclose(output)) ok = 0;
+    if (!ok) SnapshotRemoveTarget(target);
+    return ok;
+}
+
 /* Copy through one open source handle, then compare the copied bytes against
  * a second read of that handle. Differing reads reject the copy; writers that
  * restore bytes between reads are not detected. Private staging

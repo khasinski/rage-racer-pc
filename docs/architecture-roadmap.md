@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Profile output now reuses ModFileWriteExclusive and the snapshot module's
+UTF-8/UTF-16 target handling, preserving exclusive creation and failed-write
+cleanup without a second Windows path converter. The compiled profile fixture
+creates and reopens a Polish-character filename and rejects replacement.
+All eight contracts pass on Linux and Windows VM (5.28 seconds), and all 75
+launcher tests pass with the rebuilt CLI. This verifies native writer paths,
+not the full Windows launcher's argument encoding or every other file reader.
+
 Profile writing now separates bounded JSON processing from stdin transport and
 owns its parser allocation instead of borrowing the CLI's global manifest.
 Table capacities are checked before TOML serialization. A compiled standalone

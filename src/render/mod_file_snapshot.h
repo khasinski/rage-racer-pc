@@ -8,4 +8,8 @@
  * are UTF-8. Parent directories are not pinned. This is not an adversarial
  * filesystem sandbox or a multi-file point-in-time transaction. */
 int ModFileSnapshotCopy(const char *source, const char *target, size_t *total);
+/* Exclusively create a UTF-8 destination from caller-owned bytes. Failed
+ * writes remove only their newly created output. No directory creation or
+ * durability guarantee; intended for private staging metadata. */
+int ModFileWriteExclusive(const char *target, const void *bytes, size_t size);
 #endif

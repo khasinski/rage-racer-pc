@@ -2,6 +2,7 @@
 #define RAGE_MOD_PROFILE_CLI_H
 #include "yyjson.h"
 #include "render/mod_manifest.h"
+#include "render/mod_file_snapshot.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -51,11 +52,7 @@ static int ProfileWriteJSON(const char *input, size_t size, const char *output) 
         }
     }
     if(!ModManifestParse(text,used,parsed))goto done;
-    FILE *file=fopen(output,"wbx");
-    if(!file)goto done;
-    ok=fwrite(text,1,used,file)==used;
-    if(fclose(file))ok=0;
-    if(!ok)remove(output);
+    ok=ModFileWriteExclusive(output,text,used);
 done:
     yyjson_doc_free(doc);free(parsed);free(text);
     if(!ok)fputs("Invalid mod manifest or profile output failure\n",stderr);

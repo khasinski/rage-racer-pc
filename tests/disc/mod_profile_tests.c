@@ -23,5 +23,21 @@ int main(void) {
     assert(ModManifestParse(bytes,size,parsed));
     assert(!strcmp(parsed->id,"launcher-profile"));free(parsed);
     assert(remove(output)==0);
+    const char *unicode="mod_profile_\xc4\x85.tmp";
+    assert(ProfileWriteJSON(valid,strlen(valid),unicode)==0);
+    assert(ProfileWriteJSON(valid,strlen(valid),unicode)==1);
+#ifdef _WIN32
+    file=_wfopen(L"mod_profile_\x0105.tmp",L"rb");
+#else
+    file=fopen(unicode,"rb");
+#endif
+    assert(file);
+    assert(fread(bytes,1,sizeof(bytes),file)==size);
+    assert(fclose(file)==0);
+#ifdef _WIN32
+    assert(_wremove(L"mod_profile_\x0105.tmp")==0);
+#else
+    assert(remove(unicode)==0);
+#endif
     return 0;
 }
