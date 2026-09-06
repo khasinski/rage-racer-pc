@@ -88,6 +88,16 @@ data remains ignored under `build/submission-stage-ArqV5X`. This closes the
 missing local stage-image check for explicit upload retirement, not the
 compiled extractor migration, long-session GPU stress or Windows image gates.
 
+Current full-game lifecycle evidence after explicit upload retirement:
+`modern_repeat_pal` passed in 249.10 seconds after rebuilding `rage-racer`.
+Evidence is in `build/regional-races/20260906-102548-11a6f9` with binary/config
+hashes. The compiled route driver completed two class-1 Mythical Coast races
+through the intervening menus, three presentation restarts, automatic PAL
+timing, matching VRAM-cache checks and ordered final GPU/session teardown.
+This is Linux offscreen/dummy-audio evidence, not input/physics validation or
+automatic detection of flickering textures; NTSC repeat runs have not been
+refreshed for this upload-retirement change.
+
 Dependency selection and conflict selection share a bounded NUL-delimited
 stdin decoder (8 MiB / 262144 tokens), avoiding Windows command-line limits.
 The launcher rejects embedded NULs before encoding. Regression coverage includes
