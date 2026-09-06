@@ -8,6 +8,7 @@
 #include "game/state.h"
 
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 
 s32 g_ClassCompleted;
@@ -79,7 +80,7 @@ static void Reset(void) {
 }
 
 int main(void) {
-    static const s32 classInputs[] = {-1, 0, 1, 2, 3, 4, 5, 6};
+    static const s32 classInputs[] = {INT32_MIN, -1, 0, 1, 2, 3, 4, 5, 6, INT32_MAX};
     for (s32 series = 0; series < 2; ++series) {
         for (u32 i = 0; i < sizeof(classInputs) / sizeof(classInputs[0]); ++i) {
             s32 index = classInputs[i];

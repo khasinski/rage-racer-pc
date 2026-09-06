@@ -7,8 +7,8 @@ static s32 ClampGrandPrixClass(s32 classIndex) {
     if (classIndex < 0) {
         return 0;
     }
-    return classIndex >= FMV_GRAND_PRIX_CLASS_COUNT
-               ? FMV_GRAND_PRIX_CLASS_COUNT - 1
+    return classIndex >= GRAND_PRIX_CONTENT_CLASS_COUNT
+               ? GRAND_PRIX_CONTENT_CLASS_COUNT - 1
                : classIndex;
 }
 

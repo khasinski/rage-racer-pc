@@ -50,6 +50,13 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+FMV class lookup now clamps to the content table's six entries, not the old
+four unique promotion movies. Classes 4/5 therefore consume their own explicit
+stream definitions; repeated retail movie selection remains unchanged. Direct
+stream/advancement tests include INT32_MIN/MAX and both series and pass with
+ASan/UBSan; three class/advance/prize fixtures pass. No new game-level run is
+claimed for this lookup-only follow-up.
+
 Reward mapping verification: production prize-entry tests pass ASan/UBSan,
 including distinct amounts for every class. Rebuilt Linux smoke passes six
 actual-disc scenarios: class-0 promotion and Extra finale for PAL/U/J (34.98
