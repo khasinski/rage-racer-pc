@@ -57,8 +57,10 @@ standalone mod contracts pass on Linux, including new regular-link,
 dangling-link, directory and FIFO rejection checks with unchanged byte budget
 and no target creation. Windows uses UTF-16 paths and handle attributes; all
 seven contracts also pass in the Windows 11 ClangCL VM (4.48 seconds). The
-Windows snapshot fixture does not create reparse points or Unicode paths, so
-those branches still lack direct regression evidence. All 69 launcher tests
+Windows snapshot fixture now also copies between UTF-8 paths containing Polish
+characters, verifies bytes and exclusive creation, and checks Unicode target
+cleanup on budget failure. All seven contracts pass again on Linux and Windows
+(0.66 seconds in the VM). Reparse-point creation remains untested. All 69 launcher tests
 pass on Linux after rebuilding and staging the updated CLI. Parent directory
 traversal is not pinned; this is not an atomic multi-file snapshot or full race
 protection.

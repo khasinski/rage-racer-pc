@@ -15,6 +15,48 @@ static void RejectSource(const char *source, const char *target) {
     assert(!file);
 }
 
+static void UnicodePaths(void) {
+    const char *source = "mod_snapshot_\xc4\x85_source.tmp";
+    const char *target = "mod_snapshot_\xc5\xbc_target.tmp";
+#ifdef _WIN32
+    FILE *file = _wfopen(L"mod_snapshot_\x0105_source.tmp", L"wbx");
+#else
+    FILE *file = fopen(source, "wbx");
+#endif
+    assert(file);
+    assert(fputs("unicode snapshot", file) >= 0);
+    assert(fclose(file) == 0);
+    size_t total = 0;
+    assert(ModFileSnapshotCopy(source, target, &total));
+    assert(total == strlen("unicode snapshot"));
+    assert(!ModFileSnapshotCopy(source, target, &total));
+#ifdef _WIN32
+    file = _wfopen(L"mod_snapshot_\x017c_target.tmp", L"rb");
+#else
+    file = fopen(target, "rb");
+#endif
+    assert(file);
+    char bytes[17] = {0};
+    assert(fread(bytes, 1, sizeof(bytes), file) == strlen("unicode snapshot"));
+    assert(!strcmp(bytes, "unicode snapshot"));
+    assert(fclose(file) == 0);
+#ifdef _WIN32
+    assert(_wremove(L"mod_snapshot_\x017c_target.tmp") == 0);
+#else
+    assert(remove(target) == 0);
+#endif
+    total = 1024u * 1024u * 1024u;
+    assert(!ModFileSnapshotCopy(source, target, &total));
+#ifdef _WIN32
+    file = _wfopen(L"mod_snapshot_\x017c_target.tmp", L"rb");
+    assert(_wremove(L"mod_snapshot_\x0105_source.tmp") == 0);
+#else
+    file = fopen(target, "rb");
+    assert(remove(source) == 0);
+#endif
+    assert(!file); /* Failed copy cleans up its Unicode output path too. */
+}
+
 int main(void) {
     const char *source = "mod_snapshot_source.tmp", *target = "mod_snapshot_target.tmp";
     unsigned char bytes[70000], copied[70000];
@@ -49,6 +91,7 @@ int main(void) {
     assert(!ModFileSnapshotCopy(source,target,&total));
     file = fopen(target,"rb"); assert(!file); /* Failed copy removed its own output. */
     assert(remove(source) == 0);
+    UnicodePaths();
     puts("native snapshot byte equality, exclusive creation and cleanup passed");
     return 0;
 }
