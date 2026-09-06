@@ -245,15 +245,15 @@ function installMethods(Service){
    const target=path.join(staging,'output-'+outputId);
    const published=path.join(this.root,'active-mods-'+outputId);
    await fs.mkdir(target);
-   const tables={textures:{},materials:{},meshes:{}},legacyIndex=[];
+   const tables={textures:{},materials:{},meshes:{}},legacyIndex=[],copies=[];
    try {for(const mod of active){
      const source=path.join(staging,mod.id),files=mod.files;
      const roles=mod.fileDispositions;
      for(const [index,entry]of (mod.legacyTextures||[]).entries())if(selected(entry.resourceClaim,mod.id)){
       const stem=`legacy-${mod.id}-${index}`;
       await fs.mkdir(path.join(target,'textures'),{recursive:true});
-      await fs.copyFile(path.join(source,entry.json),path.join(target,'textures',stem+'.json'));
-      await fs.copyFile(path.join(source,entry.png),path.join(target,'textures',stem+'.png'));
+      copies.push([path.join(source,entry.json),path.join(target,'textures',stem+'.json')]);
+      copies.push([path.join(source,entry.png),path.join(target,'textures',stem+'.png')]);
       legacyIndex.push([entry.asset,stem+'.json']);
      }
      for(const [index,name] of files.entries()){
@@ -263,11 +263,11 @@ function installMethods(Service){
       if(roles[index]&2){
        const group=name.split('/')[0];const isolated=group+'/provider-'+mod.id+'/'+name.slice(group.length+1);
        await fs.mkdir(path.dirname(path.join(target,isolated)),{recursive:true});
-       await fs.copyFile(path.join(source,name),path.join(target,isolated));
+       copies.push([path.join(source,name),path.join(target,isolated)]);
       }
       if((roles[index]&1)&&selected(name,mod.id)){
        await fs.mkdir(path.dirname(path.join(target,name)),{recursive:true});
-       await fs.copyFile(path.join(source,name),path.join(target,name));
+       copies.push([path.join(source,name),path.join(target,name)]);
       }
      }
      for(const[key,value]of Object.entries(mod.manifest.textures))if(selected('texture:'+key,mod.id))tables.textures[key]='textures/provider-'+mod.id+'/'+value.slice('textures/'.length);
@@ -278,10 +278,15 @@ function installMethods(Service){
     input:Buffer.from(JSON.stringify(legacyIndex))});
    // The legacy loader uses asset_000.bin to recognize a raw override directory.
    if(legacyIndex.length||active.some(m=>m.files.some(f=>f.startsWith('raw/')))){
-     await fs.mkdir(path.join(target,'raw'),{recursive:true});try{await fs.access(path.join(target,'raw','asset_000.bin'));}catch{await fs.copyFile(path.join(staging,'original-base','raw','asset_000.bin'),path.join(target,'raw','asset_000.bin'));}
+     await fs.mkdir(path.join(target,'raw'),{recursive:true});
+     const marker=path.join(target,'raw','asset_000.bin');
+     if(!copies.some(([,destination])=>destination===marker))copies.push([path.join(staging,'original-base','raw','asset_000.bin'),marker]);
    }
    await run(this.tool('rage-mod-cli'),['--write-profile-stdin',path.join(target,'mod.toml')],{
     input:Buffer.from(JSON.stringify(tables))});
+   // One compiled batch owns copy limits and verification across all providers.
+   if(copies.length)await run(this.tool('rage-mod-cli'),['--copy-snapshot-stdin'],{
+    input:Buffer.from(JSON.stringify(copies))});
    // Both directories share the profile filesystem. Publish only a fully
    // validated tree; interrupted work remains inside mod-sources staging.
    await fs.rename(target,published);

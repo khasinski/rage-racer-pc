@@ -3,6 +3,25 @@ const fs=require('node:fs/promises'),path=require('node:path'),os=require('node:
 const {LauncherService,run}=require('../main/service.cjs');
 const bin=path.resolve(__dirname,'../resources/bin');
 const material=(id,color)=>`[mod]\nid="${id}"\n[materials]\n"car.a"="lit opaque 0.5 0 ${color} 1 0 0 0"`;
+test('composition copy rejects a substituted staged symlink before publication',{skip:process.platform==='win32'},async()=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-compose-copy-link-'));
+ try{
+  const service=new LauncherService({root:path.join(root,'profile'),bin,config:path.resolve(__dirname,'../resources/rage-port.ini')});
+  await service.init();service.state.disc={region:'PAL'};
+  const source=path.join(root,'source');await fs.mkdir(path.join(source,'raw'),{recursive:true});
+  await fs.writeFile(path.join(source,'raw/asset_000.bin'),'private marker');
+  const mod=await service.importMod(source);await service.toggleMod(mod.id,true);
+  const snapshot=service.snapshotModFiles.bind(service);
+  service.snapshotModFiles=async(...args)=>{
+   await snapshot(...args);
+   const staged=path.join(args[1],'raw/asset_000.bin');
+   await fs.unlink(staged);await fs.symlink(path.join(source,'raw/asset_000.bin'),staged);
+  };
+  await assert.rejects(service.composeMods(),/Cannot snapshot mod files/);
+  assert.equal(await fs.readFile(path.join(source,'raw/asset_000.bin'),'utf8'),'private marker');
+  assert.deepEqual((await fs.readdir(service.root)).filter(n=>n.startsWith('mod-sources-')||n.startsWith('active-mods-')),[]);
+ }finally{await fs.rm(root,{recursive:true,force:true});}
+});
 test('composition publishes a validated private tree and cleans up failed publication',async()=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-compose-publish-'));
  const rename=fs.rename;

@@ -50,6 +50,16 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Composition file execution now uses one compiled snapshot-copy batch, including
+provider-local semantic files, legacy pairs, global winners and the original
+archive marker. The launcher retains planning/directories, but no longer calls
+fs.copyFile inside composition. The composed batch now shares the native 10000
+pair/8 MiB request/1 GiB copied-byte limits across providers (rather than per
+package); exceeding them rejects publication. All 77 launcher tests pass on
+Linux, including injection of a staged raw-file symlink and cleanup before
+publication. Existing raw/semantic/legacy roundtrips still pass. This is not
+parent-directory pinning or a complete compiled composition planner.
+
 The legacy index writer now has a compiled standalone regression using its
 real stdin path. Invalid later entries leave no output; order/repeated owners,
 exclusive creation and readback through the shared parser are verified. All
