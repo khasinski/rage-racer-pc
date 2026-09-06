@@ -6,6 +6,7 @@
 
 #include "render/render_mesh_build.h"
 #include "render/render_native_vertex.h"
+#include "render/render_instance_transform.h"
 #include "render/authored_car_surface.h"
 
 static int failures;
@@ -1227,7 +1228,41 @@ static void test_pass_filter_precedes_asset_lookup(void) {
     EXPECT_EQ(3, calls[0]); EXPECT_EQ(2, calls[1]);
 }
 
+static void test_instance_transform_contract(void) {
+    RageRenderTransform transform = {0};
+    transform.scale = (RageRenderVec3){2, -3, 0};
+    transform.position = (RageRenderVec3){10, 20, 30};
+    const RageRenderVec3 source = {1, 2, 3};
+    RageRenderInstanceTransform basis = RenderPrepareInstanceTransform(&transform);
+    RageRenderVec3 point = RenderTransformInstancePoint(&basis, source);
+    RageRenderVec3 normal = RenderRotateInstanceVector(&basis, source);
+    EXPECT_NEAR(12, point.x, 0); EXPECT_NEAR(14, point.y, 0); EXPECT_NEAR(30, point.z, 0);
+    EXPECT_NEAR(1, normal.x, 0); EXPECT_NEAR(2, normal.y, 0); EXPECT_NEAR(3, normal.z, 0);
+    transform.rotation = (RageRenderVec3){17, 83, -24};
+    basis = RenderPrepareInstanceTransform(&transform);
+    point = RenderTransformInstancePoint(&basis, source);
+    normal = RenderRotateInstanceVector(&basis, source);
+    const RageRenderQuaternion invalid[] = {{0,0,0,0}, {NAN,0,0,1}, {0,INFINITY,0,1}};
+    transform.hasOrientation = 1;
+    for (unsigned i = 0; i < sizeof(invalid) / sizeof(*invalid); ++i) {
+        transform.orientation = invalid[i];
+        basis = RenderPrepareInstanceTransform(&transform);
+        RageRenderVec3 p = RenderTransformInstancePoint(&basis, source);
+        RageRenderVec3 n = RenderRotateInstanceVector(&basis, source);
+        EXPECT_EQ(0, basis.useMatrix);
+        EXPECT_EQ(0, memcmp(&p, &point, sizeof(p)));
+        EXPECT_EQ(0, memcmp(&n, &normal, sizeof(n)));
+    }
+    /* Non-unit quaternion must normalize and override the Euler angles. */
+    transform.orientation = (RageRenderQuaternion){0,0,0,7};
+    basis = RenderPrepareInstanceTransform(&transform);
+    EXPECT_EQ(1, basis.useMatrix);
+    point = RenderTransformInstancePoint(&basis, source);
+    EXPECT_NEAR(12, point.x, 0); EXPECT_NEAR(14, point.y, 0); EXPECT_NEAR(30, point.z, 0);
+}
+
 int main(void) {
+    test_instance_transform_contract();
     test_scroll_draw_boundaries_and_mixed_cache_reuse();
     test_pass_filter_precedes_asset_lookup();
     test_overlay_orientation_and_degenerate_geometry();
