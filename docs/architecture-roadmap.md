@@ -50,6 +50,16 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Prepared-world image checkpoint: 432 PPMs (18 retail car keys, 24 quaternion
+angles each, 240x180/elevation 20) are byte-identical between the earlier local
+stage executable and the rebuilt current stage on Linux offscreen. Evidence:
+build/owned-world-image-uqV9G0/{before,after}; baseline executable SHA256
+440be90a0e60618164598e8f41dd344539e29ab704003eab77c2e5049a74f806,
+current 0a4e294e68178986190e5bf7c38d9065e263137c8876a5154adc646b76eab920.
+The baseline is an older local binary, not a clean parent-commit A/B build.
+This establishes unchanged model-stage pixels only, not full-race sky, mirror,
+postprocessing or an isolated performance delta.
+
 The GPU-owned world checkpoint now also passes same-process two-race NTSC-U
 and NTSC-J scenarios (212.53/212.58 seconds, run concurrently). Both verify
 automatic NTSC 60 Hz base timing, three presentation restarts, VRAM cache
