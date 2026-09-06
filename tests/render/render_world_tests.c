@@ -331,8 +331,21 @@ static void test_non_finite_angles_do_not_stall_interpolation(void) {
     RageRenderWorld world;
     RageRenderCamera camera = {0};
 
+    /* Compare against the previous bounded-domain algorithm, including ties.
+     * Quarter-degree steps are exact binary floats, avoiding oracle drift. */
+    for (int step = -5760; step <= 5760; ++step) {
+        float angle = (float)step * 0.25f;
+        float expected = angle;
+        while (expected > 180.0f) expected -= 360.0f;
+        while (expected < -180.0f) expected += 360.0f;
+        float actual = RenderLerpAngleDegrees(0.0f, angle, 0.5f);
+        EXPECT_EQ(1, actual == expected * 0.5f);
+    }
+
     EXPECT_EQ(0, (int)RenderLerpAngleDegrees(0.0f, INFINITY, 0.5f));
     EXPECT_EQ(0, (int)RenderLerpAngleDegrees(NAN, 10.0f, 0.5f));
+    EXPECT_EQ(1, isfinite(RenderLerpAngleDegrees(-FLT_MAX, FLT_MAX, 0.5f)));
+    EXPECT_EQ(1, isfinite(RenderLerpAngleDegrees(FLT_MAX, -FLT_MAX, 0.5f)));
     const float largeAngles[] = {1e20f, -1e20f, FLT_MAX, -FLT_MAX};
     for (unsigned i = 0; i < sizeof(largeAngles)/sizeof(largeAngles[0]); ++i) {
         float interpolated = RenderLerpAngleDegrees(0.0f, largeAngles[i], 0.5f);

@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Angle compatibility regression compares 11521 quarter-degree deltas across
+[-1440,1440] against the former bounded-domain algorithm, including +/-180
+ties. All results match. Opposite FLT_MAX endpoints exposed an additional
+finite-input subtraction overflow; interpolation now uses a double-precision
+remainder only on that overflow path. Both endpoint orders remain finite, and
+the full world fixture passes ASan/UBSan. Periodic sky-coordinate interpolation
+still uses iterative wrapping and needs a separate bounds/finite-input audit.
+
 Renderer angle normalization no longer repeatedly subtracts 360: for very
 large finite floats that subtraction can round back to the same value and
 never terminate. Camera-cut detection and interpolation now use fmodf followed
