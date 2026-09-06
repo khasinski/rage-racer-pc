@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Semantic conflict keys now come from the compiled manifest adapter as
+resourceClaims (texture/material/mesh namespaces). Composition reparses its
+private snapshots and groups these claims; old cached UI manifests retain a
+compatibility reconstruction until refreshed. Tests verify all three namespaces
+and the existing fresh-snapshot conflict cases; all 70 launcher tests pass on
+Linux with the current staged CLI. Legacy claim discovery and complete catalog
+identity/storage unification remain open; this is not Windows runtime evidence.
+
 The compiled manifest adapter now reports backingFiles directly from parsed
 texture/mesh entries. Authoritative composition consumes that list when
 requesting file dispositions instead of reconstructing references from JSON

@@ -31,6 +31,7 @@ test('runtime composition omits unclaimed meshes and source package identities w
   assert.deepEqual(await fs.readdir(output),['mod.toml']);
   const manifest=JSON.parse(await run(service.tool('rage-mod-cli'),[path.join(output,'mod.toml')]));
   assert.deepEqual(Object.keys(manifest.materials).sort(),['car.first','car.second']);
+  assert.deepEqual(manifest.resourceClaims.sort(),['material:car.first','material:car.second']);
   const exported=await service.exportMod(service.state.mods[0].id,root);
   assert.equal(await fs.readFile(path.join(exported,'meshes/unused.rmesh'),'utf8'),'first work in progress');
   assert.equal(JSON.parse(await fs.readFile(path.join(exported,'rage-mod.json'),'utf8')).packageId,'first');

@@ -112,7 +112,7 @@ function installMethods(Service){
     const {run}=require('./service.cjs');
     metadata=JSON.parse(await run(this.tool('rage-mod-cli'),['--metadata',path.join(source,'rage-mod.json')],{signal}));
    }
-   let manifest={textures:{},materials:{},meshes:{},backingFiles:[]};
+   let manifest={textures:{},materials:{},meshes:{},backingFiles:[],resourceClaims:[]};
    if(files.includes('mod.toml')) {
      // The runtime parser is authoritative for material values and semantic IDs.
      const {run}=require('./service.cjs');
@@ -180,7 +180,10 @@ function installMethods(Service){
    const globalFiles=mod.fileDispositions
     ?mod.files.filter((f,i)=>mod.fileDispositions[i]&1)
     :mod.files.filter(f=>f.startsWith('raw/')||(f.startsWith('textures/')&&!semanticFiles.has(f)&&!legacy.has(f)));
-   const keys=[...(mod.legacyTextures||[]).map(t=>'legacy-textures:asset-'+t.asset),...globalFiles,...Object.keys(mod.manifest.textures).map(k=>'texture:'+k),...Object.keys(mod.manifest.materials).map(k=>'material:'+k),...Object.keys(mod.manifest.meshes||{}).map(k=>'mesh:'+k)];
+   // Cached UI state from older launchers may lack compiled claims. Composition
+   // always reparses the private snapshot before reaching this point.
+   const semanticClaims=mod.manifest.resourceClaims??[...Object.keys(mod.manifest.textures).map(k=>'texture:'+k),...Object.keys(mod.manifest.materials).map(k=>'material:'+k),...Object.keys(mod.manifest.meshes||{}).map(k=>'mesh:'+k)];
+   const keys=[...(mod.legacyTextures||[]).map(t=>'legacy-textures:asset-'+t.asset),...globalFiles,...semanticClaims];
    for(const key of new Set(keys)){const list=owners.get(key)||[];list.push({id:mod.id,name:mod.name});owners.set(key,list);}
   }
   return [...owners].filter(([,list])=>list.length>1).map(([key,candidates])=>{

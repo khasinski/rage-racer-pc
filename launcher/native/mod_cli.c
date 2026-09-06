@@ -138,5 +138,23 @@ int main(int argc,char **argv) {
     printf("},\"backingFiles\":[");
     for(i=0;i<manifest.textureCount;i++){if(i)putchar(',');String(manifest.textures[i].path);}
     for(i=0;i<manifest.meshCount;i++){if(i||manifest.textureCount)putchar(',');String(manifest.meshes[i].path);}
+    printf("],\"resourceClaims\":[");
+    char claim[RAGE_MOD_MANIFEST_KEY_CAPACITY + 16];
+    int comma=0;
+    for(i=0;i<manifest.textureCount;i++){
+        if(comma)putchar(',');
+        comma=1;
+        snprintf(claim,sizeof(claim),"texture:%s",manifest.textures[i].key);String(claim);
+    }
+    for(i=0;i<manifest.materialCount;i++){
+        if(comma)putchar(',');
+        comma=1;
+        snprintf(claim,sizeof(claim),"material:%s",manifest.materials[i].key);String(claim);
+    }
+    for(i=0;i<manifest.meshCount;i++){
+        if(comma)putchar(',');
+        comma=1;
+        snprintf(claim,sizeof(claim),"mesh:%s",manifest.meshes[i].key);String(claim);
+    }
     puts("]}");return 0;
 }
