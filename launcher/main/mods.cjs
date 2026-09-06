@@ -112,7 +112,7 @@ function installMethods(Service){
     const {run}=require('./service.cjs');
     metadata=JSON.parse(await run(this.tool('rage-mod-cli'),['--metadata',path.join(source,'rage-mod.json')],{signal}));
    }
-   let manifest={textures:{},materials:{},meshes:{}};
+   let manifest={textures:{},materials:{},meshes:{},backingFiles:[]};
    if(files.includes('mod.toml')) {
      // The runtime parser is authoritative for material values and semantic IDs.
      const {run}=require('./service.cjs');
@@ -213,7 +213,7 @@ function installMethods(Service){
     await this.snapshotModFiles(source,snapshot,mod.files);
     const inspected=await this.inspectModSnapshot(snapshot,mod.files);
    mod.manifest=inspected.manifest;mod.legacyTextures=inspected.legacy;
-    const semanticFiles=new Set([...Object.values(mod.manifest.textures),...Object.values(mod.manifest.meshes||{})]);
+    const semanticFiles=new Set(mod.manifest.backingFiles);
     const legacy=legacyFiles(mod);
     // Resolve once against the private snapshot. Conflict discovery and copying
     // must consume the same compiled file policy, not independent JS predicates.

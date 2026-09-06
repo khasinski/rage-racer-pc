@@ -134,5 +134,9 @@ int main(int argc,char **argv) {
     printf("],\"textures\":{");
     for(i=0;i<manifest.textureCount;i++){if(i)putchar(',');String(manifest.textures[i].key);putchar(':');String(manifest.textures[i].path);}
     printf("},\"materials\":{");for(i=0;i<manifest.materialCount;i++){if(i)putchar(',');String(manifest.materials[i].key);putchar(':');String(manifest.materials[i].properties);}
-    printf("},\"meshes\":{");for(i=0;i<manifest.meshCount;i++){if(i)putchar(',');String(manifest.meshes[i].key);putchar(':');String(manifest.meshes[i].path);}puts("}}");return 0;
+    printf("},\"meshes\":{");for(i=0;i<manifest.meshCount;i++){if(i)putchar(',');String(manifest.meshes[i].key);putchar(':');String(manifest.meshes[i].path);}
+    printf("},\"backingFiles\":[");
+    for(i=0;i<manifest.textureCount;i++){if(i)putchar(',');String(manifest.textures[i].path);}
+    for(i=0;i<manifest.meshCount;i++){if(i||manifest.textureCount)putchar(',');String(manifest.meshes[i].path);}
+    puts("]}");return 0;
 }

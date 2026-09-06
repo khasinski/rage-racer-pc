@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+The compiled manifest adapter now reports backingFiles directly from parsed
+texture/mesh entries. Authoritative composition consumes that list when
+requesting file dispositions instead of reconstructing references from JSON
+tables. Missing manifests explicitly have no semantic backing files. All 70
+launcher tests pass with the rebuilt/staged CLI, including mixed texture/mesh
+reference output. This is an adapter migration, not a unified resource catalog:
+legacy references, semantic conflict keys and the advisory UI remain in JS.
+
 Composition now computes compiled file dispositions once from each validated
 private source snapshot, before conflict grouping. Global resource claims and
 copy execution consume that same result; the synchronous UI retains its

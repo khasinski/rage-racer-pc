@@ -28,6 +28,8 @@ test('the actual runtime manifest parser rejects invalid materials and unsafe pa
  try{
   await fs.writeFile(file,'[mod]\nid = "example"\n[textures]\n"car.0.material.1" = "textures/body.png"\n');
   assert.equal(JSON.parse(await run(tool,[file])).textures['car.0.material.1'],'textures/body.png');
+  await fs.writeFile(file,'[textures]\n"car.0.material.1" = "textures/body.png"\n[meshes]\n"car.player.0.part.0" = "meshes/body.rmesh"\n');
+  assert.deepEqual(JSON.parse(await run(tool,[file])).backingFiles,['textures/body.png','meshes/body.rmesh']);
   for(const text of ['[textures]\n"car.0.material.1" = "textures/../../outside.png"','[materials]\n"car.0.material.1" = "lit opaque 2 0 1 1 1 1 0 0 0"']){
    await fs.writeFile(file,text);await assert.rejects(run(tool,[file]));
   }
