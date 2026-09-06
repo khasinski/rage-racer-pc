@@ -72,6 +72,13 @@ int main(void) {
                 fprintf(stderr,"Span mismatch iteration=%d x=%d\n",iteration,x);
                 return 1;
             }
+            bu = bv = 0; br = bg = bb = 0;
+            TextureSpanSampleUV(&p,x,&bu,&bv);
+            TextureSpanSampleColor(&p,x,&br,&bg,&bb);
+            if (au!=bu || av!=bv || ar!=br || ag!=bg || ab!=bb) {
+                fprintf(stderr,"Split span mismatch iteration=%d x=%d\n",iteration,x);
+                return 1;
+            }
             ++samples;
         }
     }

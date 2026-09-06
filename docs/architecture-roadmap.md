@@ -50,6 +50,18 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Compatibility quad correction now separates UV comparison from RGB sampling:
+only pixels requiring correction interpolate colour, and already covered
+Gouraud endpoints skip sampling entirely. Texture-page state, primitive capture,
+coverage rules and texel comparison are unchanged; legacy rendering is not
+disabled. The shared combined sampler remains available. Compiled tests compare
+both combined and split calls against the original arithmetic for 5,079,264
+samples, passing normal Linux and ASan/UBSan. World, mirror and renderer-toggle
+integration passes (10.08s total). Frozen classic and modern mirror PPMs exactly
+match the preceding captures in build/mirror-cars-4390ecc84c2c; new captures
+are build/mirror-cars-cf7fc992eac5. This is a bounded removal of unused shading
+work, not measured FPS improvement or completion of persistent GPU geometry.
+
 An isolated Linux gprof executable linked the production smoke objects with
 only render_mesh_build.c rebuilt using -O3 -pg; the normal build was not
 replaced. Real PAL class-1/course-0 route autopilot completed one lap (frame
