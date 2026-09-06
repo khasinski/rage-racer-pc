@@ -333,6 +333,18 @@ static void test_non_finite_angles_do_not_stall_interpolation(void) {
 
     EXPECT_EQ(0, (int)RenderLerpAngleDegrees(0.0f, INFINITY, 0.5f));
     EXPECT_EQ(0, (int)RenderLerpAngleDegrees(NAN, 10.0f, 0.5f));
+    const float largeAngles[] = {1e20f, -1e20f, FLT_MAX, -FLT_MAX};
+    for (unsigned i = 0; i < sizeof(largeAngles)/sizeof(largeAngles[0]); ++i) {
+        float interpolated = RenderLerpAngleDegrees(0.0f, largeAngles[i], 0.5f);
+        EXPECT_EQ(1, isfinite(interpolated) && fabsf(interpolated) <= 90.0f);
+        RenderWorldInit(&world, storage, 1);
+        camera.transform.rotation.y = 0.0f;
+        RenderWorldSetCamera(&world, &camera);
+        RenderWorldBeginFrame(&world, 2);
+        camera.transform.rotation.y = largeAngles[i];
+        RenderWorldSetCamera(&world, &camera);
+        EXPECT_EQ(1, world.hasCamera);
+    }
     previous.rotation.y = 10.0f;
     current.rotation.y = 20.0f;
     RenderInterpolateTransform(&previous, &current, NAN, &presentation);

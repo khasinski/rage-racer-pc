@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Renderer angle normalization no longer repeatedly subtracts 360: for very
+large finite floats that subtraction can round back to the same value and
+never terminate. Camera-cut detection and interpolation now use fmodf followed
+by bounded wrap correction, preserving shortest-path +/-180 semantics. Tests
+exercise both signs of 1e20 and FLT_MAX through interpolation and camera updates;
+the full render-world fixture passes strict C and ASan/UBSan under a 15-second
+timeout on Linux. This is malformed/extreme-input hardening, not an explanation
+of previously reported retail track flicker; full GPU/platform reruns are open.
+
 Snapshot ownership/serialization now has tests/render_snapshot_contract, a
 standalone build of the production world/snapshot sources and the same full
 regression fixture, without SDL/game assets. Release passes on Linux and

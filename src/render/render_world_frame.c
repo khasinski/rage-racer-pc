@@ -39,8 +39,9 @@ float RenderLerpAngleDegrees(float from, float to, float t) {
     if (!isfinite(from) || !isfinite(to)) return 0.0f;
     t = Clamp01(t);
     delta = to - from;
-    while (delta > 180.0f) delta -= 360.0f;
-    while (delta < -180.0f) delta += 360.0f;
+    delta = fmodf(delta, 360.0f);
+    if (delta > 180.0f) delta -= 360.0f;
+    if (delta < -180.0f) delta += 360.0f;
     return from + delta * t;
 }
 
