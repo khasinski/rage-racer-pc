@@ -50,6 +50,13 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+The standalone renderer gate now also builds the production interpolation,
+projection and shadow sources with the full render_world_tests fixture.
+Both world and snapshot contracts pass on Linux and Windows 11 ClangCL
+(1.14 seconds), including bounded angle/sky-phase wrapping and overflow cases.
+Workflow filters cover these added sources/tests. Remote CI, macOS and actual
+GPU image/performance verification of the numeric changes remain outstanding.
+
 Periodic sky phase wrapping now uses bounded remainder/correction too, avoiding
 the same stalled-subtraction loop on extreme phases. A valid previous phase is
 retained for invalid current values. Tests compare 1025 quarter-step phases

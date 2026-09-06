@@ -6,6 +6,9 @@ on:
     paths:
       - 'src/render/render_world*'
       - 'src/render/sky_layout.h'
+      - 'src/render/render_projection.*'
+      - 'src/render/render_shadow.*'
+      - 'tests/render/render_world_tests.c'
       - 'tests/render/render_world_snapshot_tests.c'
       - 'tests/render_snapshot_contract/**'
       - '.github/workflows/render-snapshot-check.yml'
@@ -13,6 +16,9 @@ on:
     paths:
       - 'src/render/render_world*'
       - 'src/render/sky_layout.h'
+      - 'src/render/render_projection.*'
+      - 'src/render/render_shadow.*'
+      - 'tests/render/render_world_tests.c'
       - 'tests/render/render_world_snapshot_tests.c'
       - 'tests/render_snapshot_contract/**'
       - '.github/workflows/render-snapshot-check.yml'

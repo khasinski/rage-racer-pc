@@ -18,3 +18,19 @@ else()
 endif()
 add_test(NAME render_world_snapshot COMMAND render_world_snapshot_tests)
 set_tests_properties(render_world_snapshot PROPERTIES TIMEOUT 30)
+
+add_executable(render_world_tests
+    "${RAGE_SOURCE}/tests/render/render_world_tests.c"
+    "${RAGE_SOURCE}/src/render/render_world.c"
+    "${RAGE_SOURCE}/src/render/render_world_frame.c"
+    "${RAGE_SOURCE}/src/render/render_projection.c"
+    "${RAGE_SOURCE}/src/render/render_shadow.c")
+target_include_directories(render_world_tests PRIVATE "${RAGE_SOURCE}/src")
+if(MSVC)
+    target_compile_options(render_world_tests PRIVATE /W4 /WX /UNDEBUG)
+else()
+    target_compile_options(render_world_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+    target_link_libraries(render_world_tests PRIVATE m)
+endif()
+add_test(NAME render_world COMMAND render_world_tests)
+set_tests_properties(render_world PROPERTIES TIMEOUT 30)
