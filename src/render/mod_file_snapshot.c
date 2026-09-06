@@ -102,9 +102,10 @@ int ModFileSnapshotCopy(const char *source, const char *target, size_t *total) {
     output = SnapshotOpenTarget(target);
     if (!output) { fclose(input); return 0; }
     while ((n = fread(buffer,1,sizeof(buffer),input)) != 0) {
-        if (size > 128u*1024u*1024u-n || *total > 1024u*1024u*1024u-n ||
+        if (size > 128u*1024u*1024u-n ||
+            *total > 1024u*1024u*1024u-size-n ||
             fwrite(buffer,1,n,output) != n) goto done;
-        size += n; *total += n;
+        size += n;
     }
     if (ferror(input) || fflush(output) || fseek(input,0,SEEK_SET) || fseek(output,0,SEEK_SET)) goto done;
     for (;;) {
@@ -118,5 +119,6 @@ done:
     if (fclose(input)) ok = 0;
     if (fclose(output)) ok = 0;
     if (!ok) SnapshotRemoveTarget(target);
+    else *total += size;
     return ok;
 }

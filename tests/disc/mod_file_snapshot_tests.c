@@ -74,6 +74,17 @@ int main(void) {
     assert(!ModFileSnapshotCopy(source,NULL,&total));
     assert(!ModFileSnapshotCopy(source,target,NULL));
     assert(remove(target) == 0);
+    /* Fail on the second chunk, after writing the first. Neither partial
+     * output nor budget consumption may survive the failed transaction. */
+    total = 1024u*1024u*1024u - 65536u;
+    size_t before = total;
+    assert(!ModFileSnapshotCopy(source, target, &total));
+    assert(total == before);
+    file = fopen(target, "rb"); assert(!file);
+    total = 0;
+    assert(ModFileSnapshotCopy(source, target, &total));
+    assert(total == sizeof(bytes));
+    assert(remove(target) == 0);
     RejectSource(".", target);
 #ifndef _WIN32
     const char *link = "mod_snapshot_link.tmp";

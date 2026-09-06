@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Compiled mod snapshot copying now publishes batch-byte accounting only after
+the copy, second-read verification and file closes succeed. A failed partial
+copy removes its output without consuming the caller's successful-copy budget.
+The Linux unit regression forces a second-chunk budget failure after 64 KiB,
+checks unchanged accounting and absent output, then retries successfully.
+This improves the staging transaction contract; it does not introduce source
+fingerprints or turn multiple source files into a point-in-time snapshot.
+
 The retained-device environment regression has a verified negative control:
 temporarily removing the asset-generation branch from GPU preparation makes
 environment_provider fail with "Stale sky after missing -> valid" (artifact
