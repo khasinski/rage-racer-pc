@@ -7,6 +7,24 @@ const mod=(id,version='1',region='PAL',manifest='')=>['--mod',id,version,region,
 const requires=(id,version='')=>['--requires',id,version];
 const order=async args=>JSON.parse(await run(tool,['--check-selection',...args]));
 
+test('selection stdin supports large graphs and rejects malformed framing',async()=>{
+ const streamed=input=>run(tool,['--check-selection-stdin'],{input});
+ assert.deepEqual(JSON.parse(await streamed(Buffer.alloc(0))),[]);
+ const args=[];
+ const id=i=>'package-'+i+'x'.repeat(110);
+ for(let i=0;i<128;i++){
+  args.push(...mod(id(i)));
+  if(i<127)args.push(...requires(id(i+1)));
+ }
+ const input=Buffer.from(args.join('\0')+'\0');
+ assert.ok(input.length>32767);
+ assert.deepEqual(JSON.parse(await streamed(input)),Array.from({length:128},(_,i)=>127-i));
+ await assert.rejects(streamed(Buffer.from('--mod')),/Invalid/);
+ await assert.rejects(streamed(Buffer.from('--mod\0')),/Invalid/);
+ await assert.rejects(streamed(Buffer.alloc(8*1024*1024+1)),/Invalid/);
+ await assert.rejects(streamed(Buffer.alloc(262145)),/Invalid/);
+});
+
 test('native selection handles exact versions, regions, ambiguity, cycles and bounds',async()=>{
  assert.deepEqual(await order([]),[]);
  assert.deepEqual(await order([...mod('addon'),...requires('base','1'),...mod('base')]),[1,0]);

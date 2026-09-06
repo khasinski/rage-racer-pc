@@ -40,7 +40,9 @@ function installMethods(Service){
    for(const dependency of mod.requires||[])args.push('--requires',dependency.packageId,dependency.version||'');
   }
   const {run}=require('./service.cjs');
-  const order=JSON.parse(await run(this.tool('rage-mod-cli'),args));
+  if(args.some(token=>typeof token!=='string'||token.includes('\0')))throw Error('Invalid mod selection input');
+  const input=Buffer.from(args.slice(1).join('\0')+'\0','utf8');
+  const order=JSON.parse(await run(this.tool('rage-mod-cli'),['--check-selection-stdin'],{input}));
   return order.map(index=>active[index]);
  };
  Service.prototype.refreshLegacyTextures=async function(){

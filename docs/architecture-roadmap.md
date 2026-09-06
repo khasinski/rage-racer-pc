@@ -50,6 +50,21 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Dependency selection and conflict selection share a bounded NUL-delimited
+stdin decoder (8 MiB / 262144 tokens), avoiding Windows command-line limits.
+The launcher rejects embedded NULs before encoding. Regression coverage includes
+a 128-package dependency chain exceeding 32767 bytes and malformed framing.
+The diagnostic argv selection command remains available.
+
+Latest local integration check: full build succeeded; 63 launcher tests and all
+seven standalone C contracts passed on Linux. The seven standalone contracts
+also passed in the Windows 11 VM (not a full Windows game/Electron run).
+The broad Linux suite recorded 395 passes, two skips and one shipping-config
+failure caused by the preserved local debug-marker setting. Modern PAL,
+NTSC-U and NTSC-J checks passed, as did the PAL two-race/reward/menu lifecycle
+check (239.60 seconds). Offscreen/dummy-audio runs do not establish visual
+correctness, audible playback or real-display performance.
+
 Import now validates a private copy created through a compiled streaming
 copier, then publishes its profile entry; source edits after copying cannot
 replace the bytes validated by import. Composition now stages installed packages

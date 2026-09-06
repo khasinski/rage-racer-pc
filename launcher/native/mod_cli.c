@@ -60,6 +60,7 @@ int main(int argc,char **argv) {
     if(argc==2 && strcmp(argv[1],"--copy-snapshot-stdin")==0) return SnapshotCommand();
     if(argc==3 && strcmp(argv[1],"--metadata")==0) return PackageMetadata(argv[2]);
     if(argc>1 && strcmp(argv[1],"--check-selection")==0) return SelectionCommand(argc,argv);
+    if(argc==2 && strcmp(argv[1],"--check-selection-stdin")==0) return NativeArgumentStream(SelectionCommand);
     if(argc>1 && strcmp(argv[1],"--resolve-providers")==0) return ProviderCommand(argc,argv);
     if(argc==2 && strcmp(argv[1],"--resolve-providers-stdin")==0) return ProviderStdinCommand();
     if(argc==6 && strcmp(argv[1],"--set-material")==0)
