@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Launcher owned-disc integration now has an opt-in Node fixture using the
+existing launcher toolchain, real rage-racer archive extraction and rage-extract
+C binaries. PAL/U/J all pass from empty temporary profiles: recognized region,
+135 unique archive entries and payload lengths, persisted/reloaded disc state,
+ready status and modern configuration. Set RAGE_LAUNCHER_{PAL,NTSC_U,NTSC_J}_CUE
+and optionally RAGE_LAUNCHER_BUILD_DIR. The test removes only its own temporary
+profiles. No Python is used in this path; packaged UI/double-click and actual
+game startup after this preparation are still separate unproven gates.
+
 Post-retry/GP refactor endurance refresh: current full Linux game passes two
 class-1 Mythical Coast races per process in PAL/U/J, including three successful
 presentation restarts, VRAM oracle agreement, automatic regional timing and
