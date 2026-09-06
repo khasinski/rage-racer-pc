@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Save-default course initialization derives unused best-place slots from the
+shared class course count, preserving the retail 0xFF fourth-slot marker for
+classes 0/1. All six valid classes and adjacent invalid indices are covered;
+the historical invalid-index fallback is intentionally retained, not replaced
+by a new save rejection policy. Full Linux game builds and save_defaults plus
+the existing save_state_roundtrip fixture pass (2/2). The fixed save structure
+is unchanged; this does not support arbitrary additional courses or classes.
+
 Attract frontend course selection now consults the shared class course count
 instead of duplicating the early-class fourth-course exclusion. Its retail
 five-class random selection and conditional reroll remain unchanged. The

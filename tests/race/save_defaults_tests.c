@@ -45,6 +45,17 @@ static int TestProgressSlotReset(void) {
 static int TestCourseProgressModes(void) {
     CourseProgressState progress;
 
+    for (s32 cls = -1; cls <= 6; ++cls) {
+        memset(&progress, 0xA5, sizeof(progress));
+        g_CourseProgress = &progress;
+        ResetCourseProgress(cls);
+        CHECK(progress.retriesRemaining == 5);
+        CHECK(progress.unlockPending == 0);
+        for (s32 course = 0; course < 4; ++course)
+            CHECK(progress.bestPlace[course] ==
+                  (course == 3 && cls < 2 ? 0xFF : 0));
+    }
+
     memset(&progress, 0xA5, sizeof(progress));
     g_CourseProgress = &progress;
     ResetCourseProgress(0);

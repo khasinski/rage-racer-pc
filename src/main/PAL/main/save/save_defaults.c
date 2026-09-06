@@ -1,6 +1,7 @@
 #include "game/audio.h"
 #include "game/menu.h"
 #include "game/race.h"
+#include "game/grand_prix_content.h"
 #include "game/save_internal.h"
 
 #include <string.h>
@@ -25,12 +26,16 @@ void ResetProgressSlot(CarEntry *cars, GameRaceProgress *progress) {
 static void ResetCourseProgressState(
     CourseProgressState *progress,
     s32 classIndex) {
+    const GrandPrixClassDefinition *definition = GrandPrixContentClass(classIndex);
+    /* Preserve the legacy invalid-index fallback until save validation owns
+     * rejection; valid classes derive unused slots from the content table. */
+    s32 courseCount = definition ? definition->courseCount : (classIndex < 2 ? 3 : 4);
     progress->retriesRemaining = DEFAULT_RETRIES_REMAINING;
     memset(progress->bestPlace, 0, sizeof(progress->bestPlace));
 
-    if (classIndex < 2) {
-        progress->bestPlace[3] = 0xFF;
-    }
+    for (size_t course = (size_t)courseCount;
+         course < sizeof(progress->bestPlace) / sizeof(progress->bestPlace[0]); ++course)
+        progress->bestPlace[course] = 0xFF;
 
     progress->unlockPending = 0;
 }
