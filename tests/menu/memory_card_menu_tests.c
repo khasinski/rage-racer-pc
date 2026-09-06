@@ -40,7 +40,7 @@ s32 g_McFromLoadMenu;
 s32 g_McLastMenuState;
 s32 g_McLastSlot;
 s32 g_McMenuPage;
-s32 g_McMenuPhase;
+MemoryCardPrompt g_McMenuPhase;
 s32 g_McMenuRowCount;
 s32 g_McMenuRowCursor;
 s32 g_McMenuSelection;

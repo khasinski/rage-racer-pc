@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Broad Linux checkpoint: full local build succeeds; all 231 unit-labeled tests
+pass (2.04 seconds), including the locally parked geometry prototype fixture.
+This is not the full functional/e2e suite or a clean-release build. The build
+exposed a memory-card fixture defining g_McMenuPhase as s32 despite the public
+MemoryCardPrompt declaration; corrected to the production type, rebuilt, and
+memory_card_menu passes (1.02 seconds). A separate traffic-avoidance fixture
+format-truncation warning remains and has not been hidden by warning flags.
+
 The CPU asset-session fixture now changes a mesh file under the same path/key:
 the active session retains the original bytes and pointer, while shutdown and
 reinitialization load the replacement bytes and decoded vertex position. The
