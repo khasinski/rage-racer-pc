@@ -50,6 +50,16 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Final profile TOML serialization now runs in rage-mod-cli --write-profile-stdin:
+bounded strict JSON tables become a private document, validated by the runtime
+manifest parser before exclusive file creation. The launcher no longer emits
+TOML or runs a separate post-write validation process. Tests cover malformed
+tables, unsafe paths, material errors, control/NUL injection, output preservation
+and combined-capacity rejection; all 75 launcher tests pass on Linux with the
+rebuilt CLI. Windows execution/Unicode output handling remain to verify. File
+copy planning and directory publication still belong to the launcher; this is
+not completion of compiled profile composition or the unified catalog.
+
 Launch failure cleanup now independently attempts log closure and removal of
 the owned composed profile, retaining the original spawn/configuration error.
 Previously a rejected log close skipped profile removal and masked that error.

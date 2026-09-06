@@ -279,9 +279,8 @@ function installMethods(Service){
    if(legacyIndex.length||active.some(m=>m.files.some(f=>f.startsWith('raw/')))){
      await fs.mkdir(path.join(target,'raw'),{recursive:true});try{await fs.access(path.join(target,'raw','asset_000.bin'));}catch{await fs.copyFile(path.join(staging,'original-base','raw','asset_000.bin'),path.join(target,'raw','asset_000.bin'));}
    }
-   let manifest='[mod]\nid = "launcher-profile"\n';for(const group of ['textures','materials','meshes']){manifest+=`\n[${group}]\n`;for(const [key,value]of Object.entries(tables[group]))manifest+=`"${key}" = "${value}"\n`;}
-   await fs.writeFile(path.join(target,'mod.toml'),manifest);
-   await run(this.tool('rage-mod-cli'),[path.join(target,'mod.toml')]);
+   await run(this.tool('rage-mod-cli'),['--write-profile-stdin',path.join(target,'mod.toml')],{
+    input:Buffer.from(JSON.stringify(tables))});
    // Both directories share the profile filesystem. Publish only a fully
    // validated tree; interrupted work remains inside mod-sources staging.
    await fs.rename(target,published);
