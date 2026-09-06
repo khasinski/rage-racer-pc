@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Snapshot ownership/serialization now has tests/render_snapshot_contract, a
+standalone build of the production world/snapshot sources and the same full
+regression fixture, without SDL/game assets. Release passes on Linux and
+Windows 11 ClangCL (0.53 seconds), covering reusable buffers, transactional
+replacement, reserved-output preservation and format compatibility. A dedicated
+Linux/Windows/macOS workflow is added but not run remotely; macOS remains
+unverified. This is not a Windows GPU backend or packaged-game test.
+
 Added tools/rage_snapshot_bench.c, a standalone compiled steady-state CPU probe
 for owned-world copies (20000 iterations per size, allocation identity and
 copied values checked). Host Linux GCC -O2 measurements across three runs are

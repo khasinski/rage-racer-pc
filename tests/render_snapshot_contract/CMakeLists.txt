@@ -1,0 +1,20 @@
+cmake_minimum_required(VERSION 3.20)
+project(RageRenderSnapshotContracts LANGUAGES C)
+enable_testing()
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+get_filename_component(RAGE_SOURCE "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
+add_executable(render_world_snapshot_tests
+    "${RAGE_SOURCE}/tests/render/render_world_snapshot_tests.c"
+    "${RAGE_SOURCE}/src/render/render_world_snapshot.c"
+    "${RAGE_SOURCE}/src/render/render_world.c")
+target_include_directories(render_world_snapshot_tests PRIVATE "${RAGE_SOURCE}/src")
+if(MSVC)
+    target_compile_options(render_world_snapshot_tests PRIVATE /W4 /WX /UNDEBUG)
+    target_compile_definitions(render_world_snapshot_tests PRIVATE _CRT_SECURE_NO_WARNINGS)
+else()
+    target_compile_options(render_world_snapshot_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+    target_link_libraries(render_world_snapshot_tests PRIVATE m)
+endif()
+add_test(NAME render_world_snapshot COMMAND render_world_snapshot_tests)
+set_tests_properties(render_world_snapshot PROPERTIES TIMEOUT 30)

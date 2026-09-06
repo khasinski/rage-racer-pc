@@ -1,0 +1,40 @@
+name: Renderer snapshot contracts
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/render/render_world*'
+      - 'src/render/sky_layout.h'
+      - 'tests/render/render_world_snapshot_tests.c'
+      - 'tests/render_snapshot_contract/**'
+      - '.github/workflows/render-snapshot-check.yml'
+  pull_request:
+    paths:
+      - 'src/render/render_world*'
+      - 'src/render/sky_layout.h'
+      - 'tests/render/render_world_snapshot_tests.c'
+      - 'tests/render_snapshot_contract/**'
+      - '.github/workflows/render-snapshot-check.yml'
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-2022, macos-14]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Unix
+        if: runner.os != 'Windows'
+        run: cmake -S tests/render_snapshot_contract -B build/snapshot-contract -DCMAKE_BUILD_TYPE=Release
+      - name: Configure Windows
+        if: runner.os == 'Windows'
+        run: cmake -S tests/render_snapshot_contract -B build/snapshot-contract -G "Visual Studio 17 2022" -A x64 -T ClangCL
+      - name: Build
+        run: cmake --build build/snapshot-contract --config Release --parallel 4
+      - name: Test
+        run: ctest --test-dir build/snapshot-contract -C Release --output-on-failure
