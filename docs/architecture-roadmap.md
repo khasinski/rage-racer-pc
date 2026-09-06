@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Standard Grand Prix ending now has natural award-entry coverage: class 4 is
+finished through the same seeded-progress/finish fixture and production result
+flow selects stream 10. The fixture allows 10000 ticks and requires the ending
+return scene 33, complete disc-derived 1500-frame timing, positive XA mixer
+energy and session PCM. PAL/NTSC-U/NTSC-J all pass (25.39s/20.53s/20.11s).
+This covers standard-series final entry, not the extra-series final branch,
+stream 9, physics completion, physical sound output or non-Linux platforms.
+
 Promotion award matrix: the natural award fixture now covers classes 0..3 in
 both series across PAL/NTSC-U/NTSC-J (24 cases, streams 1..8). All pass with the
 CD fade fix: real post-race selection, complete sector-paced movie, positive
