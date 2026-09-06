@@ -24,6 +24,10 @@ neighboring nibbles, row padding, asset ownership, unsafe index lines, missing
 metadata, invalid dimensions/depth/stride, missing or out-of-bounds palettes,
 and asset bounds. Rejected edits must leave every byte intact.
 
-This does not yet replace the archive-level extraction/repacking test or prove
-all PNG filter/color variants. Keep the existing roundtrip enabled until its
-remaining cases have compiled equivalents. It is not a renderer or GUI test.
+Enable `-DRAGE_TEXTURE_ARCHIVE_TESTS=ON -DSDL3_DIR=<SDL3 CMake package directory>`
+to build the extract/pack tools and compiled archive roundtrip too. This covers
+byte-exact repacks, PNG dimensions, isolated edits, malformed images and their
+diagnostics, compressed-stream expansion bounds and unaligned palette edits.
+These compiled tests replace `verify_mod_tools.py`; both passed on Linux and
+Windows 11 ClangCL Release. They do not prove every PNG filter/color variant and
+are not renderer or GUI tests.

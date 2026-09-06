@@ -128,16 +128,6 @@ if(TARGET rage-extract AND TARGET rage-pack)
     endif()
     add_test(NAME texture_patch COMMAND texture_patch_tests)
     set_tests_properties(texture_patch PROPERTIES LABELS functional)
-    add_test(
-        NAME mod_tools
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_mod_tools.py
-            $<TARGET_FILE:rage-extract>
-            $<TARGET_FILE:rage-pack>
-    )
-    # Labelled functional, not e2e: it builds its own synthetic archive and
-    # needs neither a disc nor a windowing session, so it runs everywhere.
-    set_tests_properties(mod_tools PROPERTIES LABELS functional TIMEOUT 180)
 endif()
 
 if(TARGET rage-racer-smoke)

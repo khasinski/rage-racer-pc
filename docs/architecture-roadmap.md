@@ -182,6 +182,19 @@ result plus untouched neighboring assets. Linux archive/patch/legacy tests pass.
 The old script still provides its oversized compressed-stream regression; it
 has not been removed, and the C process test still needs Windows execution.
 
+Archive-test migration complete: the C fixture now generates a PNG under 16 KiB
+whose stream expands past 1 MiB, rewrites IHDR with valid CRC to the expected
+texture size, and asserts the decompression diagnostic plus unchanged assets.
+All previous script scenarios now have compiled coverage: exported dimensions,
+unchanged repack, isolated edits, wrong-size/corrupt PNG diagnostics, expansion
+bounds and unaligned palette edits. Old and new tests passed together on Linux;
+both compiled fixtures also passed on Windows 11 ClangCL Release (archive 1.88s),
+using the existing guest SDL build. The standalone build exposed and fixed a
+missing Windows `<direct.h>` include in rage-extract. Removed only the replaced
+`verify_mod_tools.py` script and its CTest registration; `mod_archive` and
+`texture_patch` are the compiled gates. Other Python migrations and the broader
+architecture/release gates remain incomplete.
+
 Copy roles now also come from C: referenced backing files stay provider-local,
 while metadata and unused meshes are omitted from runtime composition without
 being removed from the library/export. Reference discovery and resource-key

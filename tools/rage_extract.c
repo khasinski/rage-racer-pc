@@ -20,6 +20,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#ifdef _WIN32
+#include <direct.h>
+#endif
 
 #define ARCHIVE_ENTRIES 135
 #define SECTOR_BYTES 2048u

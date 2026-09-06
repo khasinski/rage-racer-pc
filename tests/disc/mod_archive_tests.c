@@ -5,6 +5,12 @@
 #include <string.h>
 static void Le16(unsigned char *p,unsigned n){p[0]=(unsigned char)n;p[1]=(unsigned char)(n>>8);}
 static void Le32(unsigned char *p,unsigned n){Le16(p,n);Le16(p+2,n>>16);}
+static void Be32(unsigned char *p,uint32_t n){p[0]=(unsigned char)(n>>24);p[1]=(unsigned char)(n>>16);p[2]=(unsigned char)(n>>8);p[3]=(unsigned char)n;}
+static uint32_t Crc(const unsigned char *p,size_t size) {
+    uint32_t crc=UINT32_MAX;
+    for(size_t i=0;i<size;++i){crc^=p[i];for(int bit=0;bit<8;++bit)crc=(crc>>1)^((crc&1)?0xedb88320u:0);}
+    return ~crc;
+}
 static size_t Image(unsigned char *p,unsigned colours,unsigned words,unsigned rows) {
     unsigned palette=12+2*colours,pixels=12+2*words*rows,payload=8+palette+pixels;
     memset(p,0,12+payload);Le32(p+4,payload);Le32(p+12,8);
@@ -82,6 +88,21 @@ int main(int argc,char **argv) {
     snprintf(file,sizeof(file),"%s/raw/asset_001.bin",mod);Check(file,second,b);
     snprintf(file,sizeof(file),"%s/raw/asset_000.bin",mod);Check(file,first,a);
     snprintf(file,sizeof(file),"%s/raw/asset_002.bin",mod);Check(file,opaque,sizeof(opaque));
+    /* Valid compressed data must not expand beyond the patched IHDR bounds. */
+    snprintf(file,sizeof(file),"%s/textures/asset_001_00.png",mod);
+    surface=SDL_CreateSurface(256,1024,SDL_PIXELFORMAT_RGBA32);assert(surface);
+    assert(SDL_ClearSurface(surface,0,0,0,0));
+    assert(SDL_SavePNG(surface,file));SDL_DestroySurface(surface);
+    size_t bombSize;unsigned char *bomb=SDL_LoadFile(file,&bombSize);assert(bomb);
+    assert(bombSize>33&&bombSize<16384); /* Compressed stream expands past 1 MiB. */
+    assert(!memcmp(bomb+12,"IHDR",4));
+    Be32(bomb+16,32);Be32(bomb+20,24);Be32(bomb+29,Crc(bomb+12,17));
+    assert(SDL_RemovePath(file));Save(file,bomb,bombSize);SDL_free(bomb);
+    RunExpect(argv[2],mod,NULL,"cannot be decompressed");
+    snprintf(file,sizeof(file),"%s/raw/asset_001.bin",mod);Check(file,second,b);
+    snprintf(file,sizeof(file),"%s/raw/asset_000.bin",mod);Check(file,first,a);
+    snprintf(file,sizeof(file),"%s/raw/asset_002.bin",mod);Check(file,opaque,sizeof(opaque));
+
     /* Insert one byte before the palette, then edit through the real pack tool. */
     memmove(second+29,second+28,b-28);second[28]=0;++b;
     snprintf(file,sizeof(file),"%s/raw/asset_001.bin",mod);assert(SDL_RemovePath(file));Save(file,second,b);
