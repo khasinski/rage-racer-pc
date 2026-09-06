@@ -174,6 +174,14 @@ The old script remains: its diagnostic assertions, oversized compressed stream
 case and odd-palette archive workflow are not all replaced by this new test.
 There is no Windows execution evidence yet for the new archive-process test.
 
+The C archive test now captures combined process diagnostics and verifies clear
+messages for wrong-sized and corrupt PNGs, as well as byte preservation in both
+cases. It also inserts a byte into the extracted raw asset to make the palette
+unaligned, updates its sidecar, paints another pixel and checks the exact packed
+result plus untouched neighboring assets. Linux archive/patch/legacy tests pass.
+The old script still provides its oversized compressed-stream regression; it
+has not been removed, and the C process test still needs Windows execution.
+
 Copy roles now also come from C: referenced backing files stay provider-local,
 while metadata and unused meshes are omitted from runtime composition without
 being removed from the library/export. Reference discovery and resource-key

@@ -14,11 +14,19 @@ static size_t Image(unsigned char *p,unsigned colours,unsigned words,unsigned ro
     for(unsigned i=0;i<2*words*rows;++i)pix[12+i]=(unsigned char)i;
     return 12+payload;
 }
-static void Run(const char *tool,const char *a,const char *b) {
+static void RunExpect(const char *tool,const char *a,const char *b,const char *message) {
     const char *args[]={tool,a,b,NULL};
-    SDL_Process *process=SDL_CreateProcess(args,false);assert(process);
-    int code=-1;assert(SDL_WaitProcess(process,true,&code));SDL_DestroyProcess(process);assert(code==0);
+    SDL_PropertiesID props=SDL_CreateProperties();assert(props);
+    assert(SDL_SetPointerProperty(props,SDL_PROP_PROCESS_CREATE_ARGS_POINTER,(void *)args));
+    assert(SDL_SetNumberProperty(props,SDL_PROP_PROCESS_CREATE_STDOUT_NUMBER,SDL_PROCESS_STDIO_APP));
+    assert(SDL_SetBooleanProperty(props,SDL_PROP_PROCESS_CREATE_STDERR_TO_STDOUT_BOOLEAN,true));
+    SDL_Process *process=SDL_CreateProcessWithProperties(props);SDL_DestroyProperties(props);assert(process);
+    int code=-1;size_t size;char *output=SDL_ReadProcess(process,&size,&code);
+    SDL_DestroyProcess(process);assert(output&&code==0);
+    if(message)assert(strstr(output,message));
+    SDL_free(output);
 }
+static void Run(const char *tool,const char *a,const char *b){RunExpect(tool,a,b,NULL);}
 static void Save(const char *path,const void *bytes,size_t size) {
     FILE *f=fopen(path,"wbx");assert(f);assert(fwrite(bytes,1,size,f)==size);assert(!fclose(f));
 }
@@ -53,6 +61,7 @@ int main(int argc,char **argv) {
     Uint8 r,g,blue,alpha;assert(SDL_ReadSurfacePixel(surface,1,0,&r,&g,&blue,&alpha));
     assert(alpha==255);assert(SDL_WriteSurfacePixel(surface,0,0,r,g,blue,alpha));
     assert(SDL_SavePNG(surface,file));SDL_DestroySurface(surface);
+    size_t editedPngSize;void *editedPng=SDL_LoadFile(file,&editedPngSize);assert(editedPng);
     Run(argv[2],mod,NULL);
     /* Palette slot 1 is unique; only the first 8-bit texel must change. */
     second[16+12+512+12]=1;
@@ -61,7 +70,29 @@ int main(int argc,char **argv) {
     snprintf(file,sizeof(file),"%s/raw/asset_002.bin",mod);Check(file,opaque,sizeof(opaque));
     /* Corrupt texture input must not disturb the last successfully packed edit. */
     snprintf(file,sizeof(file),"%s/textures/asset_001_00.png",mod);
-    assert(SDL_RemovePath(file));Save(file,"not a PNG",9);Run(argv[2],mod,NULL);
+    surface=SDL_CreateSurface(8,8,SDL_PIXELFORMAT_RGBA32);assert(surface);
+    assert(SDL_ClearSurface(surface,0,0,0,1));
+    assert(SDL_SavePNG(surface,file));SDL_DestroySurface(surface);
+    RunExpect(argv[2],mod,NULL,"the size is fixed");
+    snprintf(file,sizeof(file),"%s/raw/asset_001.bin",mod);Check(file,second,b);
+    snprintf(file,sizeof(file),"%s/raw/asset_000.bin",mod);Check(file,first,a);
+    snprintf(file,sizeof(file),"%s/raw/asset_002.bin",mod);Check(file,opaque,sizeof(opaque));
+    snprintf(file,sizeof(file),"%s/textures/asset_001_00.png",mod);
+    assert(SDL_RemovePath(file));Save(file,"not a PNG",9);RunExpect(argv[2],mod,NULL,"is not a PNG");
+    snprintf(file,sizeof(file),"%s/raw/asset_001.bin",mod);Check(file,second,b);
+    snprintf(file,sizeof(file),"%s/raw/asset_000.bin",mod);Check(file,first,a);
+    snprintf(file,sizeof(file),"%s/raw/asset_002.bin",mod);Check(file,opaque,sizeof(opaque));
+    /* Insert one byte before the palette, then edit through the real pack tool. */
+    memmove(second+29,second+28,b-28);second[28]=0;++b;
+    snprintf(file,sizeof(file),"%s/raw/asset_001.bin",mod);assert(SDL_RemovePath(file));Save(file,second,b);
+    snprintf(file,sizeof(file),"%s/textures/asset_001_00.json",mod);assert(SDL_RemovePath(file));
+    const char oddJson[]="{\"asset\":1,\"pixels_offset\":553,\"pixel_bytes\":768,\"depth\":8,\"width\":32,\"height\":24,\"clut\":{\"offset\":29,\"colours\":256}}";
+    Save(file,oddJson,sizeof(oddJson)-1);
+    snprintf(file,sizeof(file),"%s/textures/asset_001_00.png",mod);assert(SDL_RemovePath(file));Save(file,editedPng,editedPngSize);SDL_free(editedPng);
+    surface=SDL_LoadPNG(file);assert(surface);
+    assert(SDL_ReadSurfacePixel(surface,2,0,&r,&g,&blue,&alpha));assert(alpha==255);
+    assert(SDL_WriteSurfacePixel(surface,0,0,r,g,blue,alpha));assert(SDL_SavePNG(surface,file));SDL_DestroySurface(surface);
+    Run(argv[2],mod,NULL);second[553]=2;
     snprintf(file,sizeof(file),"%s/raw/asset_001.bin",mod);Check(file,second,b);
     snprintf(file,sizeof(file),"%s/raw/asset_000.bin",mod);Check(file,first,a);
     snprintf(file,sizeof(file),"%s/raw/asset_002.bin",mod);Check(file,opaque,sizeof(opaque));
