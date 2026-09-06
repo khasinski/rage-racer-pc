@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+The standalone native shader contract compiles on Windows ClangCL Release
+against the VM's SDL3 build. Execution skips all three tests: SDL reports no
+supported GPU backend. SDL_GPU/SDL_VIDEO/SDL_VULKAN are enabled and the Vulkan
+loader DLL exists, but the VM reports Microsoft Basic Display Adapter; no
+working Vulkan device was demonstrated. The CTest zero-failure summary is
+not a shader pass. Linux Vulkan remains the only executed GPU evidence for
+these changes, and Windows/Metal rendering validation remains open.
+
 Masked-shadow scroll now has a direct depth-image regression using both
 production shadow shaders and a half-transparent repeating texture. Three
 renders compare unscrolled control, GPU instance offset 0.5, and CPU-expanded
