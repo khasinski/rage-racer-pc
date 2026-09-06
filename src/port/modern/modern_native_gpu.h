@@ -8,6 +8,11 @@
 
 int ModernNativeGpuInit(SDL_GPUDevice *device);
 void ModernNativeGpuShutdown(void);
+/* world->frame is a presentation revision, not necessarily a simulation tick.
+ * Callers must advance it when camera/instance/environment contents change.
+ * Preparation may reuse an unchanged revision and aspect within the same
+ * asset generation; aspect changes are detected independently. The game
+ * interpolation adapter issues a fresh revision for each presentation. */
 void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect);
 /* Call after successfully submitting the command buffer used by Draw and
  * DrawMirror. On cancellation/submission failure, shut down this renderer
