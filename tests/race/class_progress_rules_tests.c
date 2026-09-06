@@ -3,6 +3,7 @@
 #include "game/race_internal.h"
 
 #include <stdio.h>
+#include <stdint.h>
 
 static int s_failures;
 
@@ -25,6 +26,8 @@ int main(void) {
     const s32 promotionBonuses[5] = {500, 4800, 20000, 100000, 500000};
     const s32 prizes[3] = {10000, 5000, 2500};
     s32 i;
+    Check("minimum signed race position", PrizeForRacePosition(prizes, 3, INT32_MIN), 0);
+    Check("maximum signed race position", PrizeForRacePosition(prizes, 3, INT32_MAX), 0);
 
     Check("class 0 courses", GrandPrixCourseCount(0), 3);
     Check("class 1 courses", GrandPrixCourseCount(1), 3);

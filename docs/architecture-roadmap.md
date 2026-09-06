@@ -50,6 +50,13 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Content-rule audit found PrizeForRacePosition subtracting one before validating
+the signed position, overflowing on INT32_MIN. It now checks the one-based
+range first. Class-progress tests add both signed extremes and pass under
+ASan/UBSan with production prize/rule sources. This is input-boundary hardening;
+GP course/progression/FMVs still need unified versioned content definitions,
+and no data-driven content stage completion is claimed.
+
 Incomplete-presentation policy verification: refreshed Windows ClangCL
 world/snapshot contracts pass (0.84 seconds). Rebuilt Linux smoke passes all
 five GPU/startup checks: native_render_world, submit recovery and selected-disc

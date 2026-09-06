@@ -100,11 +100,10 @@ s32 PromotionBonusForClass(const s32 *bonuses, s32 bonusCount,
 
 s32 PrizeForRacePosition(const s32 *prizes, s32 prizeCount,
                          s32 racePosition) {
-    s32 prizeIndex = racePosition - 1;
-
-    if (prizes == NULL || prizeIndex < 0 || prizeIndex >= prizeCount) {
+    if (prizes == NULL || racePosition < 1 || racePosition > prizeCount) {
         return 0;
     }
+    s32 prizeIndex = racePosition - 1;
     return prizes[prizeIndex] > 0 ? prizes[prizeIndex] : 0;
 }
 
