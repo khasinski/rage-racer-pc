@@ -69,6 +69,18 @@ int main(int argc,char **argv) {
     assert(alpha==255);assert(SDL_WriteSurfacePixel(surface,0,0,r,g,blue,alpha));
     assert(SDL_SavePNG(surface,file));SDL_DestroySurface(surface);
     size_t editedPngSize;void *editedPng=SDL_LoadFile(file,&editedPngSize);assert(editedPng);
+    /* Validate the entire index before applying even an earlier valid edit. */
+    snprintf(file,sizeof(file),"%s/textures/index.txt",mod);
+    size_t indexSize;void *originalIndex=SDL_LoadFile(file,&indexSize);assert(originalIndex);
+    const char *invalid[]={"1 asset_001_00.json\n135 bad.json\n",
+        "1 asset_001_00.json\n0 ../bad.json\n",
+        "1 asset_001_00.json\n0 asset_000_00.json extra\n"};
+    for(size_t n=0;n<sizeof(invalid)/sizeof(invalid[0]);++n) {
+        assert(SDL_RemovePath(file));Save(file,invalid[n],strlen(invalid[n]));
+        RunCode(argv[2],mod,NULL,"invalid texture index; no assets written",1);
+        char raw[256];snprintf(raw,sizeof(raw),"%s/raw/asset_001.bin",mod);Check(raw,second,b);
+    }
+    assert(SDL_RemovePath(file));Save(file,originalIndex,indexSize);SDL_free(originalIndex);
     /* A competing staging file must survive and the original stay intact. */
     snprintf(file,sizeof(file),"%s/raw/asset_001.bin.rage-pack.tmp",mod);
     Save(file,"reserved",8);

@@ -14,6 +14,7 @@
 #endif
 
 #include "texture_patch.h"
+#include "../src/render/legacy_texture_index.h"
 
 /* Publish only a complete, successfully closed file. An existing staging
  * path is never overwritten or removed: it may belong to another process. */
@@ -42,7 +43,7 @@ int main(int argc, char **argv) {
     const char *directory;
     char indexPath[1024], line[512];
     FILE *index;
-    int seen[512];
+    int seen[135];
     int changed = 0, assets = 0, failed = 0, i;
 
     if (argc != 2) {
@@ -52,7 +53,8 @@ int main(int argc, char **argv) {
     directory = argv[1];
     memset(seen, 0, sizeof(seen));
 
-    snprintf(indexPath, sizeof(indexPath), "%s/textures/index.txt", directory);
+    int pathLength = snprintf(indexPath, sizeof(indexPath), "%s/textures/index.txt", directory);
+    if (pathLength < 0 || (size_t)pathLength >= sizeof(indexPath)) return 1;
     index = fopen(indexPath, "rb");
     if (index == NULL) {
         fprintf(stderr,
@@ -60,12 +62,23 @@ int main(int argc, char **argv) {
                 directory);
         return 1;
     }
-    while (fgets(line, sizeof(line), index)) {
+    size_t total = 0;
+    for (;;) {
         int owner;
         char stem[256];
-        if (sscanf(line, "%d %255s", &owner, stem) != 2) continue;
-        if (owner >= 0 && owner < (int)(sizeof(seen) / sizeof(seen[0])))
-            seen[owner] = 1;
+        size_t length = 0;
+        int c, parsed;
+        while ((c = fgetc(index)) != EOF) {
+            if (++total > 2u * 1024u * 1024u || c == 0) goto invalid_index;
+            if (c == '\n') break;
+            if (length == 510) goto invalid_index;
+            line[length++] = (char)c;
+        }
+        if (ferror(index)) goto invalid_index;
+        parsed = LegacyTextureIndexLine(line, length, &owner, stem);
+        if (parsed < 0) goto invalid_index;
+        if (parsed > 0) seen[owner] = 1;
+        if (c == EOF) break;
     }
     fclose(index);
 
@@ -117,4 +130,9 @@ int main(int argc, char **argv) {
 
     printf("rage-pack: %d textures written across %d assets\n", changed, assets);
     return failed ? 1 : 0;
+
+invalid_index:
+    fprintf(stderr, "rage-pack: invalid texture index; no assets written\n");
+    fclose(index);
+    return 1;
 }

@@ -50,6 +50,16 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Pack owner discovery now uses the same bounded legacy texture-index parser as
+the launcher and runtime, replacing its independent sscanf interpretation.
+The entire index is validated before raw assets are opened for edits; invalid
+owners, traversal, extra tokens, NULs, oversized lines/files and read failures
+abort with a nonzero result. The compiled archive test checks invalid entries
+after a valid pending edit and verifies the original bytes remain unchanged.
+All five standalone contracts pass on Linux and Windows VM. The patcher still
+rereads its input index per asset; this is not protection against concurrent
+source edits or a frozen whole-package transaction.
+
 Packed-asset publication now stages each edited raw file with exclusive create,
 checks the full write and close, then replaces the original with POSIX rename
 or Windows MoveFileEx. Failed staging/publication preserves the original;
