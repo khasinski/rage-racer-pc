@@ -1,0 +1,53 @@
+if(NOT DEFINED CAR)
+    set(CAR 0)
+    set(CLASS 1)
+    set(NAME Erriso)
+    set(PLAYER_ASSET 10)
+    set(RIVAL_ASSET 96)
+endif()
+set(sandbox "${EVIDENCE}/transition-test-${CAR}")
+if(NOT DEFINED GRID)
+    set(GRID 2,2,2,2,2,2,2,2,2,2,2)
+endif()
+file(MAKE_DIRECTORY "${sandbox}/bu00")
+file(COPY "${SMOKE}" DESTINATION "${sandbox}")
+get_filename_component(name "${SMOKE}" NAME)
+set(variant_args)
+if(DEFINED VARIANT)
+    list(APPEND variant_args --set "race.variant=${VARIANT}")
+endif()
+execute_process(COMMAND "${sandbox}/${name}" --scenario "${SOURCE}/race-scenario.ini"
+    --set "race.class=${CLASS}" --set "race.car=${CAR}" --set "race.grid=${GRID}"
+    ${variant_args}
+    --set race.after_finish=repeat --set run.frames=3500
+    --set hooks.finish_frame=1000 --set hooks.auto_confirm_frame=1300
+    --set modern.assets=disc --set video.renderer=modern
+    WORKING_DIRECTORY "${SOURCE}" RESULT_VARIABLE status
+    OUTPUT_VARIABLE output ERROR_VARIABLE errors TIMEOUT 180)
+set(trace "${output}\n${errors}")
+file(WRITE "${EVIDENCE}/authored-transition-${CAR}.log" "${trace}")
+if(NOT status EQUAL 0)
+    message(FATAL_ERROR "Authored car race transition failed: ${status}")
+endif()
+string(REGEX MATCHALL "smoke state frame=[0-9]+ scene=12" starts "${trace}")
+list(LENGTH starts count)
+if(count LESS 2)
+    message(FATAL_ERROR "Did not enter a second race with the existing model cache")
+endif()
+if(NOT DEFINED PLAYER_NAME)
+    set(PLAYER_NAME "${NAME}")
+endif()
+foreach(required "authored ${PLAYER_NAME} player body installed asset=${PLAYER_ASSET}"
+        "authored ${NAME} rival body installed asset=${RIVAL_ASSET}"
+        "scenario race finished after_finish=repeat")
+    if(NOT trace MATCHES "${required}")
+        message(FATAL_ERROR "Transition missed ${required}")
+    endif()
+endforeach()
+if(DEFINED RIVAL_BODY_COUNT)
+    string(REGEX MATCHALL "authored ${NAME} rival body installed asset=${RIVAL_ASSET} " bodies "${trace}")
+    list(LENGTH bodies count)
+    if(NOT count EQUAL RIVAL_BODY_COUNT)
+        message(FATAL_ERROR "Transition did not install all ${RIVAL_BODY_COUNT} ${NAME} rival bodies")
+    endif()
+endif()

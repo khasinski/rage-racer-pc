@@ -1,0 +1,6 @@
+file(READ "${INPUT}" mesh HEX)
+string(REGEX REPLACE "(..)" "0x\\1," mesh "${mesh}")
+if(NOT DEFINED SYMBOL)
+    set(SYMBOL s_errisoBody)
+endif()
+file(WRITE "${OUTPUT}" "/* Generated from the authored OBJ by rage-mesh-obj. */\nstatic const unsigned char ${SYMBOL}[] = {${mesh}};\n")

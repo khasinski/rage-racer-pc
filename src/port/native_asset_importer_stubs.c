@@ -1,5 +1,11 @@
 #include "native_asset_importer.h"
 
+int NativeAssetImporterApplyPlayerMarkings(uint16_t clut, ModernAssetImage *image) {
+    /* Offline replay has no live team editor; retain its captured atlas. */
+    (void)clut;
+    return image != NULL && image->pixels != NULL;
+}
+
 #include <stddef.h>
 
 #include "game/track.h"
@@ -38,6 +44,12 @@ void NativeAssetImporterShutdown(void) {
 
 int NativeAssetImporterReady(void) {
     return 0;
+}
+
+int NativeAssetImporterMaterialSlot(const RageRenderMeshInstance *instance,
+    uint16_t tpage, uint16_t clut) {
+    (void)instance; (void)tpage; (void)clut;
+    return -1;
 }
 
 const RageRuntimeCachedMesh *NativeAssetImporterFind(

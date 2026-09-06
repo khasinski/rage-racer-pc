@@ -13,6 +13,9 @@ typedef struct ModernAssetImage {
 } ModernAssetImage;
 
 int ModernAssetsInit(void);
+/* Headless workshop tools: catalog to stdout, or one authored source mesh. */
+int ModernAssetsCarCatalog(void);
+int ModernAssetsExportCar(const char *key, const char *path);
 int ModernAssetsInitRoot(const char *root);
 void ModernAssetsShutdown(void);
 const RageRuntimeCachedMesh *ModernAssetsFind(

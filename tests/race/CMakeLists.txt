@@ -1101,6 +1101,222 @@ add_test(NAME record_entry_scene COMMAND record_entry_scene_tests)
 set_tests_properties(record_entry_scene PROPERTIES LABELS functional)
 
 if(TARGET rage-racer-smoke)
+    add_test(NAME direct_grid
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}"
+            "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_direct_grid.cmake")
+    set_tests_properties(direct_grid PROPERTIES LABELS e2e TIMEOUT 300 RUN_SERIAL TRUE)
+    add_test(NAME authored_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}"
+            "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
+    set_tests_properties(authored_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME abeille_banks
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_abeille_banks.cmake")
+    set_tests_properties(abeille_banks PROPERTIES LABELS e2e TIMEOUT 460 RUN_SERIAL TRUE)
+    add_test(NAME abeille_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -DCAR=1 -DCLASS=2 -DNAME=Abeille -DPLAYER_ASSET=18 -DRIVAL_ASSET=104
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
+    set_tests_properties(abeille_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME pegase_banks
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_pegase_banks.cmake")
+    set_tests_properties(pegase_banks PROPERTIES LABELS e2e TIMEOUT 820 RUN_SERIAL TRUE)
+    add_test(NAME pegase_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -DCAR=2 -DCLASS=3 -DNAME=Pegase -DPLAYER_ASSET=24 -DRIVAL_ASSET=112
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
+    set_tests_properties(pegase_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME esperanza_banks
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_esperanza_banks.cmake")
+    set_tests_properties(esperanza_banks PROPERTIES LABELS e2e TIMEOUT 1820 RUN_SERIAL TRUE)
+    add_test(NAME esperanza_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -DCAR=3 -DCLASS=1 -DNAME=Esperanza -DPLAYER_ASSET=28 -DRIVAL_ASSET=96
+            -DGRID=0,2,0,2,0,2,0,2,0,2,0
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
+    set_tests_properties(esperanza_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME acceron_banks
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_acceron_banks.cmake")
+    set_tests_properties(acceron_banks PROPERTIES LABELS e2e TIMEOUT 280 RUN_SERIAL TRUE)
+    add_test(NAME acceron_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -DCAR=4 -DCLASS=1 -DNAME=Acceron -DPLAYER_ASSET=38 -DRIVAL_ASSET=96
+            -DGRID=1,0,2,1,0,2,1,0,2,1,0
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
+    set_tests_properties(acceron_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME bayonet_banks
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_bayonet_banks.cmake")
+    set_tests_properties(bayonet_banks PROPERTIES LABELS e2e TIMEOUT 460 RUN_SERIAL TRUE)
+    add_test(NAME bayonet_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -DCAR=5 -DCLASS=2 -DNAME=Bayonet -DPLAYER_ASSET=46 -DRIVAL_ASSET=104
+            -DGRID=1,0,2,1,0,2,1,0,2,1,0
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
+    set_tests_properties(bayonet_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME hijack_banks
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_hijack_banks.cmake")
+    set_tests_properties(hijack_banks PROPERTIES LABELS e2e TIMEOUT 820 RUN_SERIAL TRUE)
+    add_test(NAME hijack_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -DCAR=6 -DCLASS=3 -DNAME=Hijack -DPLAYER_ASSET=52 -DRIVAL_ASSET=112
+            -DGRID=1,0,2,1,0,2,1,0,2,1,0
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
+    set_tests_properties(hijack_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME fatalita_banks
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_fatalita_banks.cmake")
+    set_tests_properties(fatalita_banks PROPERTIES LABELS e2e TIMEOUT 460 RUN_SERIAL TRUE)
+    add_test(NAME fatalita_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -DCAR=7 -DCLASS=2 -DNAME=Fatalita -DPLAYER_ASSET=56 -DRIVAL_ASSET=104
+            -DGRID=3,1,0,2,3,1,0,2,3,1,0
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
+    set_tests_properties(fatalita_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME istante_banks
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_istante_banks.cmake")
+    set_tests_properties(istante_banks PROPERTIES LABELS e2e TIMEOUT 370 RUN_SERIAL TRUE)
+    add_test(NAME istante_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -DCAR=8 -DCLASS=3 -DNAME=Istante -DPLAYER_ASSET=62 -DRIVAL_ASSET=112
+            -DGRID=3,1,0,2,3,1,0,2,3,1,0
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
+    set_tests_properties(istante_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME ghepardo_banks
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_ghepardo_banks.cmake")
+    set_tests_properties(ghepardo_banks PROPERTIES LABELS e2e TIMEOUT 460 RUN_SERIAL TRUE)
+    add_test(NAME ghepardo_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -DCAR=9 -DCLASS=4 -DNAME=Ghepardo -DPLAYER_ASSET=66 -DRIVAL_ASSET=120
+            -DGRID=3,1,0,2,3,1,0,2,3,1,0
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
+    set_tests_properties(ghepardo_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME vainqure_banks
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_vainqure_banks.cmake")
+    set_tests_properties(vainqure_banks PROPERTIES LABELS e2e TIMEOUT 370 RUN_SERIAL TRUE)
+    add_test(NAME vainqure_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -DCAR=10 -DCLASS=5 -DNAME=Vainqure -DPLAYER_ASSET=68 -DRIVAL_ASSET=128
+            -DGRID=2,0,1,3,2,0,1,3,2,0,1
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
+    set_tests_properties(vainqure_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME bulshade_banks
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_bulshade_banks.cmake")
+    set_tests_properties(bulshade_banks PROPERTIES LABELS e2e TIMEOUT 370 RUN_SERIAL TRUE)
+    add_test(NAME bulshade_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -DCAR=11 -DCLASS=5 -DNAME=Bulshade -DPLAYER_ASSET=70 -DRIVAL_ASSET=128
+            -DGRID=0,1,2,3,0,1,2,3,0,1,2
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
+    set_tests_properties(bulshade_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME squaldon_banks
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_squaldon_banks.cmake")
+    set_tests_properties(squaldon_banks PROPERTIES LABELS e2e TIMEOUT 370 RUN_SERIAL TRUE)
+    add_test(NAME squaldon_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -DCAR=12 -DCLASS=5 -DNAME=Squaldon -DPLAYER_ASSET=72 -DRIVAL_ASSET=128
+            -DGRID=3,0,1,2,3,0,1,2,3,0,1
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
+    set_tests_properties(squaldon_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME esperanza_duplicate_banks
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_esperanza_duplicate_banks.cmake")
+    set_tests_properties(esperanza_duplicate_banks PROPERTIES LABELS e2e TIMEOUT 550 RUN_SERIAL TRUE)
+    add_test(NAME esperanza_duplicate_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -DCAR=3 -DCLASS=1 -DNAME=Esperanza -DPLAYER_ASSET=28 -DRIVAL_ASSET=96
+            -DGRID=3,0,2,1,3,0,2,1,3,0,2 -DRIVAL_BODY_COUNT=2
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
+    set_tests_properties(esperanza_duplicate_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME esperanza_first_class_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence/esperanza-first-class"
+            -DCAR=3 -DCLASS=0 -DNAME=Esperanza -DPLAYER_ASSET=28 -DRIVAL_ASSET=88
+            -DGRID=3,0,2,1,3,0,2,1,3,0,2 -DRIVAL_BODY_COUNT=4
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_authored_transition.cmake")
+    set_tests_properties(esperanza_first_class_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME compact_early_banks
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_compact_early_banks.cmake")
+    set_tests_properties(compact_early_banks PROPERTIES LABELS e2e TIMEOUT 550 RUN_SERIAL TRUE)
+    add_test(NAME compact_early_transition
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence/compact-early"
+            -DCAR=3 -DCLASS=0 "-DNAME=Compact A" -DPLAYER_NAME=Esperanza -DPLAYER_ASSET=28 -DRIVAL_ASSET=88
+            -DGRID=4,5,6,7,8,9,10,4,6,8,0 -DRIVAL_BODY_COUNT=1
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_compact_early_transition.cmake")
+    set_tests_properties(compact_early_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    add_test(NAME compact_later_banks
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_compact_later_banks.cmake")
+    set_tests_properties(compact_later_banks PROPERTIES LABELS e2e TIMEOUT 1270 RUN_SERIAL TRUE)
+    add_test(NAME scenario_variant
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_scenario_variant.cmake")
+    set_tests_properties(scenario_variant PROPERTIES LABELS e2e TIMEOUT 640 RUN_SERIAL TRUE)
+    add_test(NAME authored_player_grades
+        COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_player_grades.cmake")
+    set_tests_properties(authored_player_grades PROPERTIES LABELS e2e TIMEOUT 1720 RUN_SERIAL TRUE)
+    add_test(NAME authored_player_grade_transitions
+        COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+            "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_player_grade_transitions.cmake")
+    set_tests_properties(authored_player_grade_transitions PROPERTIES LABELS e2e TIMEOUT 3430 RUN_SERIAL TRUE)
+    foreach(compact_class 2 4)
+        math(EXPR compact_asset "88+${compact_class}*8")
+        add_test(NAME compact_class${compact_class}_transition
+            COMMAND ${CMAKE_COMMAND} "-DSMOKE=$<TARGET_FILE:rage-racer-smoke>"
+                "-DSOURCE=${CMAKE_SOURCE_DIR}" "-DEVIDENCE=${CMAKE_BINARY_DIR}/car-upgrade-evidence/compact-class${compact_class}"
+                -DCAR=3 "-DCLASS=${compact_class}" "-DNAME=Compact A" -DPLAYER_NAME=Esperanza
+                -DPLAYER_ASSET=28 "-DRIVAL_ASSET=${compact_asset}"
+                -DGRID=4,5,6,7,8,9,10,4,6,8,0 -DRIVAL_BODY_COUNT=1
+                -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_compact_early_transition.cmake")
+        set_tests_properties(compact_class${compact_class}_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
+    endforeach()
     add_test(
         NAME scenario_control
         COMMAND python3

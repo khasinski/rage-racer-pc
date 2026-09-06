@@ -14,6 +14,7 @@ typedef struct RageImportedTextureKey {
     uint16_t windowOffsetV;
     uint8_t hasWindow;
     uint8_t emissive;
+    uint8_t terrainEnvironmentClut;
 } RageImportedTextureKey;
 
 typedef struct RageImportedMeshEntry {

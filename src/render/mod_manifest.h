@@ -7,6 +7,7 @@ enum {
     RAGE_MOD_MANIFEST_SCHEMA_VERSION = 1,
     RAGE_MOD_MANIFEST_MAX_TEXTURES = 512,
     RAGE_MOD_MANIFEST_MAX_MATERIALS = 512,
+    RAGE_MOD_MANIFEST_MAX_MESHES = 2048,
     RAGE_MOD_MANIFEST_ID_CAPACITY = 96,
     RAGE_MOD_MANIFEST_KEY_CAPACITY = 160,
     RAGE_MOD_MANIFEST_PATH_CAPACITY = 512,
@@ -39,6 +40,8 @@ typedef struct RageModManifest {
     size_t textureCount;
     RageModMaterialOverride materials[RAGE_MOD_MANIFEST_MAX_MATERIALS];
     size_t materialCount;
+    RageModTextureOverride meshes[RAGE_MOD_MANIFEST_MAX_MESHES];
+    size_t meshCount;
     size_t errorLine;
     RageModManifestError error;
 } RageModManifest;
@@ -55,6 +58,8 @@ const char *ModManifestFindTexture(const RageModManifest *manifest,
                                       const char *semanticId);
 const char *ModManifestFindMaterialProperties(
     const RageModManifest *manifest, const char *semanticId);
+const char *ModManifestFindMesh(const RageModManifest *manifest,
+                               const char *semanticId);
 
 typedef struct RageModResolution {
     const RageModTextureOverride *texture;

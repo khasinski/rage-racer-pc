@@ -19,6 +19,8 @@ int NativeAssetImporterReady(void);
 RageTrackTextureGeneration *NativeAssetImporterRetainTextures(uint64_t revision);
 /* Borrowed until importer shutdown. Meshes are session-resident, not evicted
  * on a track revision: prepared/captured frames may still reference them. */
+int NativeAssetImporterMaterialSlot(const RageRenderMeshInstance *instance,
+    uint16_t tpage, uint16_t clut);
 const RageRuntimeCachedMesh *NativeAssetImporterFind(
     const RageRenderMeshInstance *instance);
 uint32_t NativeAssetImporterMeshCount(void);
@@ -28,5 +30,7 @@ int NativeAssetImporterLoadMaterial(
     uint8_t variant, RageRenderMaterial *definition, ModernAssetImage *image);
 int NativeAssetImporterLoadSky(uint32_t assetKey,
     const RageSkyPanoramaLayout *layout, ModernAssetImage *image);
+/* Team artwork is live game state, even when the base atlas came from disk. */
+int NativeAssetImporterApplyPlayerMarkings(uint16_t clut, ModernAssetImage *image);
 
 #endif

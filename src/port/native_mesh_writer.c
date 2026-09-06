@@ -22,6 +22,7 @@ int ImportWriteFinish(RageImportedWrite *write, uint32_t meshes) {
 int ImportTextureEqual(const RageImportedTextureKey *left,
                                   const RageImportedTextureKey *right) {
     return left->tpage == right->tpage && left->clut == right->clut &&
+           left->terrainEnvironmentClut == right->terrainEnvironmentClut &&
            left->hasWindow == right->hasWindow &&
            (!left->hasWindow ||
             (left->windowWidthU == right->windowWidthU &&

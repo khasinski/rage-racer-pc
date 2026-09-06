@@ -63,6 +63,8 @@ local.mk
 assets/*/RAGE.BIN
 assets/*/fmv/*
 !assets/*/fmv/.gitkeep
+# Optional authored replacement cars are distributed separately from source.
+assets/cars
 
 # Generated reports.
 tools/asm_report.html

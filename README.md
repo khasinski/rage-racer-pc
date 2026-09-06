@@ -42,6 +42,9 @@ without manually navigating the menus:
 optional `grid` contains
 the eleven rival car IDs in retail start-position order; `-1` leaves a slot
 empty. The player retains the normal starting position.
+`--set race.variant=N` selects a zero-based asset variant within the chosen
+car's catalog range before loading its assets. Omitting it preserves the
+normal car setup; out-of-range values are ignored with a diagnostic.
 The launcher passes this file directly to the game as `--scenario`; it no
 longer expands it into a collection of environment variables.
 

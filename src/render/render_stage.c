@@ -144,10 +144,14 @@ uint32_t RenderStageCompose(RageRenderWorld *world,
         instance->flags = pose->flags;
         instance->lightInfluence = pose->lightInfluence;
         instance->transform.position = pose->position;
-        instance->transform.rotation = pose->rotationDegrees;
+        /* Equivalent full turns must produce identical geometry and framing.
+         * Tiny sin(2*pi) errors become visible on finely subdivided car edges. */
+        instance->transform.rotation.x = fmodf(pose->rotationDegrees.x, 360.0f);
+        instance->transform.rotation.y = fmodf(pose->rotationDegrees.y, 360.0f);
+        instance->transform.rotation.z = fmodf(pose->rotationDegrees.z, 360.0f);
         if (pose->useQuaternion) {
             instance->transform.orientation =
-                QuaternionFromEuler(&pose->rotationDegrees);
+                QuaternionFromEuler(&instance->transform.rotation);
             instance->transform.hasOrientation = 1;
         }
         instance->transform.scale.x = 1.0f;

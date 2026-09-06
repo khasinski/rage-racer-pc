@@ -103,9 +103,9 @@ s32 InstallTrackTextureAssetPack(u8 *base, size_t size) {
         return 0;
     }
 
-    /* Preserve the first page before the deferred images replace it in
-     * VRAM. The shadow and resident page must contain opposite banks for
-     * the section-driven row swaps to work. */
+    /* Preserve page 1 before the deferred upload replaces the same VRAM
+     * rectangle with page 0. Publishing the shadow can wait until both
+     * uploads succeed, but taking its copy cannot. */
     StoreTeamLogoImage(base);
     if (!UploadImageAsset(
             GetImageAssetHeaderWords(
@@ -114,6 +114,7 @@ s32 InstallTrackTextureAssetPack(u8 *base, size_t size) {
         ClearTrackTextureAssetPack();
         return 0;
     }
+
     g_TrackTextureShadow = GetTrackTextureShadowRows(base);
     ResetTrackTextureSwap();
     g_AssetLoadCursor = base + TRACK_TEXTURE_SHADOW_SIZE;

@@ -49,6 +49,20 @@ typedef struct RageImportedScan {
 
 static RageImportedMeshEntry s_entries[RAGE_IMPORT_ENTRY_LIMIT];
 static uint32_t s_entryCount;
+int NativeAssetImporterMaterialSlot(const RageRenderMeshInstance *instance,
+    uint16_t tpage, uint16_t clut) {
+    uint32_t i,j;
+    if (!instance) return -1;
+    for (i=0;i<s_entryCount;i++) {
+        const RageImportedMeshEntry *entry=&s_entries[i];
+        if (entry->cached.assetKey!=instance->assetKey ||
+            entry->cached.assetSet!=instance->assetSet) continue;
+        for (j=0;j<entry->materialCount;j++)
+            if (entry->materials[j].tpage==tpage && entry->materials[j].clut==clut &&
+                !entry->materials[j].hasWindow) return (int)j;
+    }
+    return -1;
+}
 static int s_ready;
 
 static uint16_t ImportRead16(const void *pointer) {
@@ -240,6 +254,10 @@ static int ImportVisitTerrainStream(
                 value.uv[corner][1] = stream[offsets[corner] + 1];
             }
             value.texture.clut = ImportRead16(stream + 0x0A);
+            /* Modes 2..5 encode their palette directly. Only 0/1 follow
+             * envMode4, as in the retail terrain dispatch. Keep that choice
+             * in the material key even when the base atlas and CLUT match. */
+            value.texture.terrainEnvironmentClut = prim < 2;
             if (prim >= 2)
                 value.texture.clut = (uint16_t)(value.texture.clut +
                                                  ((prim - 2) & 1));
@@ -471,6 +489,37 @@ static void ImportColor(uint16_t word, uint8_t rgba[4]) {
     rgba[3] = word == 0 ? 0 : 255;
 }
 
+int NativeAssetImporterApplyPlayerMarkings(uint16_t clut, ModernAssetImage *image) {
+    uint32_t packed[512] = {0}, paletteStorage[8] = {0};
+    const uint16_t *words = (const uint16_t *)packed;
+    const uint16_t *palette = (const uint16_t *)paletteStorage;
+    RECT rect, paletteRect;
+    unsigned x, y, atlasX;
+    if (!image || !image->pixels || image->width != 256 || image->height != 256 ||
+        image->size != 256u * 256u * 4u) return 0;
+    if (clut == 0x7801) {
+        rect = (RECT){656, 48, 16, 64};
+        atlasX = 64;
+    } else if (clut == 0x3bef) {
+        rect = (RECT){642, 55, 12, 8};
+        atlasX = 8;
+    } else return 0;
+    paletteRect = (RECT){(clut & 63u) * 16u, clut >> 6, 16, 1};
+    DrawSync(0);
+    StoreImage(&rect, (u_long *)packed);
+    StoreImage(&paletteRect, (u_long *)paletteStorage);
+    DrawSync(0);
+    for (y = 0; y < (unsigned)rect.h; ++y) {
+        for (x = 0; x < (unsigned)rect.w * 4u; ++x) {
+            unsigned index = (words[y * rect.w + x / 4u] >> ((x & 3u) * 4u)) & 15u;
+            uint8_t *rgba = (uint8_t *)image->pixels +
+                (((unsigned)rect.y + y) * 256u + atlasX + x) * 4u;
+            ImportColor(palette[index], rgba);
+        }
+    }
+    return 1;
+}
+
 static uint8_t ImportPaletteIndex(const uint16_t *vram, uint16_t tpage,
                                       uint32_t u, uint32_t v) {
     uint32_t pageX = (tpage & 0xFu) * 64u;
@@ -637,6 +686,20 @@ const RageRuntimeCachedMesh *NativeAssetImporterPeek(uint32_t assetKey, RageRend
     return entry != NULL ? &entry->cached : NULL;
 }
 
+static uint16_t ImportMaterialClut(const RageImportedTextureKey *texture,
+                                   RageRenderAssetSet assetSet,
+                                   uint8_t variant) {
+    uint32_t offset = 0;
+    if (assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1)
+        offset = variant % 3u;
+    else if (assetSet == RAGE_RENDER_ASSET_COURSE)
+        offset = variant % 4u;
+    else if (assetSet == RAGE_RENDER_ASSET_TERRAIN &&
+             texture->terrainEnvironmentClut)
+        offset = variant % 2u;
+    return (uint16_t)(texture->clut + offset);
+}
+
 int NativeAssetImporterLoadMaterial(
     const RageRenderMeshInstance *instance, uint32_t material,
     uint8_t variant, RageRenderMaterial *definition, ModernAssetImage *image) {
@@ -645,7 +708,6 @@ int NativeAssetImporterLoadMaterial(
     const uint16_t *vram;
     uint16_t clut;
     uint8_t *pixels = NULL, *paint = NULL;
-    uint32_t clutOffset = 0;
     if (!s_ready || instance == NULL || definition == NULL || image == NULL)
         return 0;
     memset(image, 0, sizeof(*image));
@@ -656,13 +718,7 @@ int NativeAssetImporterLoadMaterial(
     }
     if (entry == NULL || material >= entry->materialCount) return 0;
     texture = &entry->materials[material];
-    if (instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1)
-        clutOffset = variant % 3u;
-    else if (instance->assetSet == RAGE_RENDER_ASSET_COURSE)
-        clutOffset = variant % 4u;
-    else if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN)
-        clutOffset = variant % 2u;
-    clut = (uint16_t)(texture->clut + clutOffset);
+    clut = ImportMaterialClut(texture, instance->assetSet, variant);
     vram = ImportVramSnapshot(
         instance->assetSet != RAGE_RENDER_ASSET_MODEL_BANK);
     /* Decode the requested bank, including proactive loads before the game

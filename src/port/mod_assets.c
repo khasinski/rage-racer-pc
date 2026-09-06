@@ -224,8 +224,15 @@ int ModAssetLoad(int index, void *destination, unsigned int originalSize) {
 
 /* Apply the mod directory's edited images to an asset already in memory. */
 void ModPatchTextures(int index, void *data, size_t size) {
+    static int announced[RAGE_ARCHIVE_INDEX_ENTRY_COUNT];
+    int patched;
     if ((unsigned)index >= RAGE_ARCHIVE_INDEX_ENTRY_COUNT) return;
     ModAssetsInit();
     if (s_directory == NULL || !s_legacyLayout) return;
-    TexturePatchAsset(s_directory, index, data, size);
+    patched = TexturePatchAsset(s_directory, index, data, size);
+    if (patched > 0 && !announced[index]) {
+        announced[index] = 1;
+        fprintf(stderr, "rage-port: asset %d patched from %d texture images\n",
+                index, patched);
+    }
 }

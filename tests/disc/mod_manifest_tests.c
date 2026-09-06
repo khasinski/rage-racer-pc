@@ -179,7 +179,7 @@ int main(void) {
     static const char invalidMaterial[] =
         "[materials]\n\"track.big1.terrain.material.3\" = "
         "\"glow blend 0.2 0 1 1 1 1 0 0 0\"\n";
-    RageModManifest manifest;
+    static RageModManifest manifest;
     const char *path;
 
     EXPECT(ModManifestParse(valid, sizeof(valid) - 1, &manifest));
@@ -253,5 +253,23 @@ int main(void) {
                       "unsupported") != NULL);
     }
 
+    {
+        const char *meshes = "[meshes]\n\"car.player.10.part.0\" = \"meshes/body.rmesh\"\n"
+                             "\"car.player.10.part.0\" = \"meshes/revised.rmesh\"\n";
+        const char *bad[] = {"../body.rmesh", "meshes/../body.rmesh",
+                             "meshes/body.obj", "/meshes/body.rmesh"};
+        size_t i;
+        EXPECT(ModManifestParse(meshes, strlen(meshes), &manifest));
+        EXPECT(manifest.meshCount == 2);
+        path = ModManifestFindMesh(&manifest, "car.player.10.part.0");
+        EXPECT(path && strcmp(path, "meshes/revised.rmesh") == 0);
+        EXPECT(ModManifestFindMesh(&manifest, "missing") == NULL);
+        for (i = 0; i < sizeof(bad)/sizeof(bad[0]); i++) {
+            char input[256];
+            snprintf(input, sizeof(input), "[meshes]\n\"car.player.10.part.0\" = \"%s\"\n", bad[i]);
+            EXPECT(!ModManifestParse(input, strlen(input), &manifest));
+            EXPECT(manifest.meshCount == 0 && manifest.errorLine == 2);
+        }
+    }
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

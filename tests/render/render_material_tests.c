@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "render/render_material.h"
+#include "render/authored_car_surface.h"
 
 static int failures;
 #define EXPECT(value) do { if (!(value)) { failures++;                      \
@@ -68,5 +69,76 @@ int main(void) {
         "lit invalid 0.1 0.2 1 1 1 1 0 0 0",
         sizeof("lit invalid 0.1 0.2 1 1 1 1 0 0 0") - 1, &material));
     EXPECT(memcmp(&material, &original, sizeof(material)) == 0);
+    {
+        RageRenderMaterial glass, paint, rubber, metal;
+        EXPECT(RenderMaterialParse(v5, sizeof(v5) - 1, 3, 0, &original));
+        glass = paint = rubber = metal = original;
+        AuthoredCarSurfaceApply(RAGE_CAR_SURFACE_GLASS, &glass);
+        AuthoredCarSurfaceApply(RAGE_CAR_SURFACE_PAINT, &paint);
+        AuthoredCarSurfaceApply(RAGE_CAR_SURFACE_RUBBER, &rubber);
+        AuthoredCarSurfaceApply(RAGE_CAR_SURFACE_METAL, &metal);
+        EXPECT(glass.roughness < paint.roughness && paint.roughness < rubber.roughness);
+        EXPECT(glass.metallic == 0 && rubber.metallic == 0);
+        EXPECT(metal.metallic > paint.metallic);
+        EXPECT(PathEquals(glass.baseColorTexture, "car.rgba"));
+        EXPECT(PathEquals(paint.paintMask, "paint.rpaint"));
+        EXPECT(glass.alphaMode == original.alphaMode);
+        EXPECT(glass.baseColorFactor[3] == original.baseColorFactor[3]);
+        {
+            unsigned surface;
+            for (surface = 0; surface < RAGE_CAR_SURFACE_COUNT; surface++) {
+                material = original;
+                EXPECT(AuthoredCarSurfaceResolve(surface,
+                    "lit opaque 0.7 0.6 0.5 0.4 0.3 1 0 0 0", &material));
+                EXPECT(material.roughness == 0.7f);
+                EXPECT(material.metallic == 0.6f);
+                EXPECT(material.baseColorFactor[0] == 0.5f);
+                EXPECT(PathEquals(material.baseColorTexture, "car.rgba"));
+                EXPECT(PathEquals(material.paintMask, "paint.rpaint"));
+                material = original;
+                EXPECT(!AuthoredCarSurfaceResolve(surface, "invalid", &material));
+                EXPECT(memcmp(&material, &original, sizeof(material)) == 0);
+            }
+            material = original;
+            EXPECT(AuthoredCarSurfaceResolve(RAGE_CAR_SURFACE_GLASS, NULL, &material));
+            EXPECT(memcmp(&material, &glass, sizeof(material)) == 0);
+        }
+        material = original;
+        AuthoredCarSurfaceApply(RAGE_CAR_SURFACE_ORIGINAL, &material);
+        EXPECT(memcmp(&material, &original, sizeof(material)) == 0);
+        {
+            uint8_t pixels[] = {240,240,240,255, 5,8,12,0};
+            uint8_t saved[sizeof(pixels)];
+            memcpy(saved, pixels, sizeof(pixels));
+            AuthoredCarSurfaceTexture(RAGE_CAR_SURFACE_PAINT, pixels, sizeof(pixels));
+            EXPECT(memcmp(saved, pixels, sizeof(pixels)) == 0);
+            AuthoredCarSurfaceTexture(RAGE_CAR_SURFACE_GLASS, pixels, sizeof(pixels));
+            EXPECT(memcmp(pixels, pixels + 4, 3) == 0);
+            EXPECT(pixels[0] == 18 && pixels[1] == 25 && pixels[2] == 32);
+            EXPECT(pixels[3] == 255 && pixels[7] == 0);
+        }
+        {
+            static uint8_t atlas[256 * 256 * 4];
+            unsigned x, y;
+            memset(atlas, 213, sizeof(atlas));
+            AuthoredCarSurfaceTexture(RAGE_CAR_SURFACE_GLASS, atlas, sizeof(atlas));
+            for (y = 0; y < 256; ++y) for (x = 0; x < 256; ++x) {
+                const uint8_t *p = atlas + (y * 256 + x) * 4;
+                int banner = x >= 8 && x < 56 && y >= 55 && y < 63;
+                EXPECT(p[0] == (banner ? 213 : 18));
+                EXPECT(p[1] == (banner ? 213 : 25));
+                EXPECT(p[2] == (banner ? 213 : 32));
+                EXPECT(p[3] == 213);
+            }
+            memset(atlas, 213, sizeof(atlas));
+            AuthoredCarSurfaceTexture(RAGE_CAR_SURFACE_DECAL, atlas, sizeof(atlas));
+            for (y = 0; y < 256; ++y) for (x = 0; x < 256; ++x) {
+                const uint8_t *p = atlas + (y * 256 + x) * 4;
+                int canvas = x >= 64 && x < 128 && y >= 48 && y < 112;
+                EXPECT(p[0] == (canvas ? 213 : 0));
+                EXPECT(p[3] == (canvas ? 213 : 0));
+            }
+        }
+    }
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

@@ -11,6 +11,7 @@
 #include "game/audio_internal.h"
 #include "game/frontend_internal.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/race.h"
 #include "game/render_internal.h"
 #include "game/round_screen_internal.h"
@@ -24,7 +25,7 @@ extern int g_SceneId;
 
 typedef struct RageScenarioState {
     int initialized, enabled;
-    int mode, series, classIndex, course, car, transmission;
+    int mode, series, classIndex, course, car, transmission, variant;
     int afterFinish, raceFinished, resultSeen, exitRequested;
     int grid[RACE_CAR_SLOT_COUNT], customGrid, gridApplied;
     int playerTrackPoint, rivalTrackPoints[RACE_CAR_SLOT_COUNT];
@@ -146,15 +147,16 @@ static void ScenarioApplyTrackStarts(void) {
     }
     for (index = 0; index < s_scenario.rivalTrackPointCount; index++) {
         int point = s_scenario.rivalTrackPoints[index];
-        if (point >= 0 && g_Cars[index].activeFlag &&
+        if (point >= 0 && g_Cars[index].activeFlag != -1 &&
             !ScenarioPlaceCar(&g_Cars[index], point)) {
             fprintf(stderr, "rage-port: rival %d track point %d outside 0..%d\n",
                     index, point, g_TrackPointCount - 1);
-        } else if (point >= 0 && g_Cars[index].activeFlag) {
+        } else if (point >= 0 && g_Cars[index].activeFlag != -1) {
             fprintf(stderr,
-                    "rage-port: scenario-start rival=%d point=%d pos=%d,%d progress=%d section=%d\n",
+                    "rage-port: scenario-start rival=%d point=%d pos=%d,%d progress=%d section=%d model=%d active=%d\n",
                     index, point, g_Cars[index].x, g_Cars[index].z,
-                    g_Cars[index].trackProgress, g_Cars[index].trackSection);
+                    g_Cars[index].trackProgress, g_Cars[index].trackSection,
+                    g_Cars[index].modelIndex, g_Cars[index].activeFlag);
         }
     }
     if (s_scenario.hasExact) ScenarioPlaceExact();
@@ -209,7 +211,7 @@ static void ScenarioHoldTrackStarts(void) {
     }
     for (index = 0; index < s_scenario.rivalTrackPointCount; index++) {
         int point = s_scenario.rivalTrackPoints[index];
-        if (point >= 0 && g_Cars[index].activeFlag)
+        if (point >= 0 && g_Cars[index].activeFlag != -1)
             ScenarioPlaceCar(&g_Cars[index], point);
     }
 }
@@ -249,6 +251,15 @@ invalid:
     fprintf(stderr, "rage-port: ignoring invalid race.grid\n");
 }
 
+static void ScenarioApplyGrid(void) {
+    int index;
+    if (!s_scenario.customGrid || s_scenario.gridApplied) return;
+    for (index=0;index<RACE_CAR_SLOT_COUNT;index++)
+        g_RaceGridSlots[index].value=s_scenario.grid[index];
+    s_scenario.gridApplied=1;
+    fprintf(stderr,"rage-port: custom rival grid applied\n");
+}
+
 static void ScenarioInitialize(void) {
     const char *mode, *series, *transmission, *afterFinish;
     s_scenario.initialized = 1;
@@ -274,6 +285,14 @@ static void ScenarioInitialize(void) {
     s_scenario.classIndex = ScenarioInt("race.class", 0, 0, 5);
     s_scenario.course = ScenarioInt("race.course", 0, 0, 3);
     s_scenario.car = ScenarioInt("race.car", 3, 0, 12);
+    /* Select an asset variant within this car's catalog range, rather than
+     * allowing an upgrade index to spill into the next car's assets. */
+    {
+        int first = g_CarModelBaseIndex[s_scenario.car];
+        int end = s_scenario.car + 1 < GAME_CAR_COUNT ?
+            g_CarModelBaseIndex[s_scenario.car + 1] : CAR_MODEL_VARIANT_COUNT;
+        s_scenario.variant = ScenarioInt("race.variant", -1, 0, end - first - 1);
+    }
     s_scenario.transmission = -1;
     transmission = RuntimeConfigGet("race.transmission");
     if (transmission != NULL) {
@@ -425,6 +444,8 @@ static void ScenarioSelectSeries(void) {
     if (s_scenario.transmission >= 0)
         g_CarTable[s_scenario.car].transmission =
             (u8)s_scenario.transmission;
+    if (s_scenario.variant >= 0)
+        g_CarTable[s_scenario.car].modelVariant = (u8)s_scenario.variant;
 }
 
 /* DrawMenuCarView normally copies the selected setup into the player object.
@@ -516,6 +537,16 @@ static void ScenarioDirectBoot(void) {
              * that image, and the race draws the player's own car from bank 0
              * only in the outside views. Skipping this loses the car there. */
             ActivateShowroomCarModel((s32)g_CarModelSlot);
+            /* Preserve EnterCourseSelectScreen's texture work when bypassing
+             * its UI: both classic and native cars need these live markings. */
+            {
+                int sample = RuntimeConfigInt("race.logo_sample", -1, -1,
+                    TEAM_LOGO_SAMPLE_CHOICE_COUNT - 1);
+                if (sample >= 0) ComposeSampleTeamLogo(sample, 0);
+            }
+            LoadImage(&g_TeamLogoRect.rect, &g_TeamLogoCanvas);
+            UploadTeamLogoClut();
+            UploadTeamNameTexture(g_TeamNameChars, g_TeamNameLength);
             s_scenario.directStep = RAGE_DIRECT_ROUND_REQUEST;
         }
         break;
@@ -559,6 +590,9 @@ static void ScenarioDirectBoot(void) {
             g_SceneTimer = 0;
             ScenarioShowClearedRaceDisplay();
             g_SceneId = 11;
+            /* The direct path returns before the ordinary scene-11 hook.
+             * Install the requested grid before its handler initializes cars. */
+            ScenarioApplyGrid();
             s_scenario.directStep = RAGE_DIRECT_DONE;
             fprintf(stderr, "rage-port: scenario direct boot entered the race t=%.1fs\n",
                     ScenarioElapsed());
@@ -569,7 +603,7 @@ static void ScenarioDirectBoot(void) {
 }
 
 void PortScenarioBeforeSceneHandler(void) {
-    int changed, index;
+    int changed;
     DebugAutopilotBeforeScene();
     if (!s_scenario.initialized) ScenarioInitialize();
     if (!s_scenario.enabled) return;
@@ -621,6 +655,8 @@ void PortScenarioBeforeSceneHandler(void) {
         if (g_CarTable != NULL && s_scenario.transmission >= 0)
             g_CarTable[s_scenario.car].transmission =
                 (u8)s_scenario.transmission;
+        if (g_CarTable != NULL && s_scenario.variant >= 0)
+            g_CarTable[s_scenario.car].modelVariant = (u8)s_scenario.variant;
         if (g_SceneId < 11) {
             /* The menus index course progress with the series in bit 2, and
              * the retail car-select confirm masks it back to the physical
@@ -717,13 +753,7 @@ void PortScenarioBeforeSceneHandler(void) {
         ScenarioConfirm();
     }
 
-    if (g_SceneId == 11 && s_scenario.customGrid && !s_scenario.gridApplied) {
-        for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
-            g_RaceGridSlots[index].value = s_scenario.grid[index];
-        }
-        s_scenario.gridApplied = 1;
-        fprintf(stderr, "rage-port: custom rival grid applied\n");
-    }
+    if (g_SceneId == 11) ScenarioApplyGrid();
     if (g_SceneId == 12 && s_scenario.customStart &&
         !s_scenario.startApplied && g_TrackPointCount > 0) {
         ScenarioApplyTrackStarts();
