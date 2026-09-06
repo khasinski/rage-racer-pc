@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Composition publication regression combines two individually valid 300-material
+mods into an invalid 600-entry manifest. The real final parser rejects it; the
+test verifies removal of failed output/source staging, byte preservation of a
+previous successful profile, and successful retry after disabling one mod.
+All 72 launcher tests pass on Linux. Existing cleanup required no code change;
+this tests handled validation failure, not process termination/power loss or
+atomic publication against another concurrently running launcher.
+
 Compiled-claim lifecycle regression now imports two nonconflicting mods, adds
 a conflicting material through the real editor, requires composition rejection,
 selects the second provider, reloads the persisted launcher profile and checks

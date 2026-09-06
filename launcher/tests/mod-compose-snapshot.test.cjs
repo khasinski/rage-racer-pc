@@ -3,6 +3,34 @@ const fs=require('node:fs/promises'),path=require('node:path'),os=require('node:
 const {LauncherService,run}=require('../main/service.cjs');
 const bin=path.resolve(__dirname,'../resources/bin');
 const material=(id,color)=>`[mod]\nid="${id}"\n[materials]\n"car.a"="lit opaque 0.5 0 ${color} 1 0 0 0"`;
+test('combined manifest overflow cleans failed output, preserves prior profile and allows retry',async()=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-compose-capacity-'));
+ try{
+  const service=new LauncherService({root:path.join(root,'profile'),bin,config:path.resolve(__dirname,'../resources/rage-port.ini')});
+  await service.init();service.state.disc={region:'PAL'};
+  const mods=[];
+  for(const id of ['a','b']){
+   const folder=path.join(root,id);await fs.mkdir(folder);
+   let text=`[mod]\nid="${id}"\n[materials]\n`;
+   for(let i=0;i<300;i++)text+=`"car.${id}.${i}"="lit opaque 0.5 0 1 1 1 1 0 0 0"\n`;
+   await fs.writeFile(path.join(folder,'mod.toml'),text);
+   mods.push(await service.importMod(folder));
+  }
+  await service.toggleMod(mods[0].id,true);
+  const previous=await service.composeMods();
+  const previousBytes=await fs.readFile(path.join(previous,'mod.toml'));
+  await service.toggleMod(mods[1].id,true);
+  assert.deepEqual(service.conflicts(),[],'distinct keys exceed capacity without conflicts');
+  await assert.rejects(service.composeMods(),/Invalid mod manifest/);
+  assert.deepEqual(await fs.readFile(path.join(previous,'mod.toml')),previousBytes);
+  assert.deepEqual((await fs.readdir(service.root)).filter(n=>n.startsWith('active-mods-')),[path.basename(previous)]);
+  assert.deepEqual((await fs.readdir(service.root)).filter(n=>n.startsWith('mod-sources-')),[]);
+  await service.toggleMod(mods[1].id,false);
+  const retry=await service.composeMods();
+  assert.notEqual(retry,previous);
+  assert.deepEqual(await fs.readFile(path.join(retry,'mod.toml')),previousBytes);
+ }finally{await fs.rm(root,{recursive:true,force:true});}
+});
 test('raw overrides and original archive marker are copied from staging',async()=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-compose-raw-'));
  try{
