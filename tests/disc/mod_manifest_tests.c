@@ -269,6 +269,17 @@ int main(void) {
                 ? RAGE_MOD_MANIFEST_UNSUPPORTED_VERSION
                 : RAGE_MOD_MANIFEST_INVALID));
         }
+        const char *duplicateIds[] = {
+            "[mod]\nid=\"same\"\nid=\"same\"",
+            "[mod]\nid=\"first\"\n[mod]\nid=\"second\"",
+            "[mod]\nid=\"\"\nid=\"second\"",
+            "[mod]\nid=\"first\"\n[textures]\n\"track.big1\"=\"a.png\"\n[mod]\nid=\"second\""
+        };
+        for (size_t i = 0; i < sizeof(duplicateIds)/sizeof(duplicateIds[0]); ++i) {
+            EXPECT(!ModManifestParse(duplicateIds[i], strlen(duplicateIds[i]), &manifest));
+            EXPECT(manifest.error == RAGE_MOD_MANIFEST_INVALID);
+            EXPECT(manifest.id[0] == '\0' && manifest.textureCount == 0);
+        }
         /* Reject a version even when it comes after valid asset declarations. */
         static const char lateVersion[] =
             "[textures]\n\"track.big1\"=\"a.png\"\n[mod]\nschema_version=2";

@@ -49,7 +49,8 @@ typedef struct RageModManifest {
 /* Small TOML subset: [mod] id/schema_version/requires, [textures], [materials], [meshes].
  * requires is a single-line array of unique semantic mod IDs. The parser
  * records requirements; the session loader must satisfy them before use.
- * Missing schema_version means legacy schema 1. Unsupported versions fail;
+ * Missing schema_version means legacy schema 1. Duplicate id, schema_version
+ * or requires declarations are rejected. Unsupported versions fail;
  * failure clears all content and retains only error/errorLine diagnostics.
  * Output owns its values; lookup pointers are borrowed until parse/reset. */
 int ModManifestParse(const char *text, size_t size, RageModManifest *out);

@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+The existing mod manifest now rejects repeated identity declarations, including
+identical values, an initially empty ID and repetitions across [mod] sections.
+This aligns identity with the existing single-declaration version/dependency
+contract; failure clears earlier resource claims. Linux parser regression and
+launcher selection/composition tests pass. Unknown sections remain extension
+space under schema 1; external class definitions still need an explicit
+versioned schema and integrated provider ownership, not ad-hoc config keys.
+
 Natural award-FMV verification now requires ordered prize -> movie -> return
 scene positions after race completion, rather than accepting their unordered
 presence in the log. Standard class-0 promotion and Extra class-5 ending pass

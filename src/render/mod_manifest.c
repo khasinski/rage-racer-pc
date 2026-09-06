@@ -101,7 +101,7 @@ static int ManifestRequirements(const char *cursor, RageModManifest *out) {
 int ModManifestParse(const char *text, size_t size, RageModManifest *out) {
     RageModSection section = RAGE_MOD_SECTION_NONE;
     size_t start = 0, lineNumber = 0, i;
-    int versionSeen = 0, requirementsSeen = 0;
+    int versionSeen = 0, requirementsSeen = 0, idSeen = 0;
     RageModManifestError error = RAGE_MOD_MANIFEST_INVALID;
     if (out == NULL) return 0;
     memset(out, 0, sizeof(*out));
@@ -176,6 +176,8 @@ int ModManifestParse(const char *text, size_t size, RageModManifest *out) {
                 if (strncmp(cursor, "id", 2) != 0 ||
                     (cursor[2] != '=' &&
                      !isspace((unsigned char)cursor[2]))) goto next;
+                if (idSeen) goto invalid;
+                idSeen = 1;
                 cursor += 2;
                 while (isspace((unsigned char)*cursor)) cursor++;
                 if (*cursor++ != '=') goto invalid;
