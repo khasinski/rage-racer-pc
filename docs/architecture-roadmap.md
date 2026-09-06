@@ -50,6 +50,21 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Asset-series follow-up verification: the full Linux smoke build exposed a
+missing direct stddef.h include in grand_prix_content.h (unit compatibility
+headers had supplied NULL transitively). Fixed; the header now passes isolated
+strict C11 syntax checking and smoke builds. All three real-disc Extra finale
+scenarios pass after rebuilding (PAL/U/J, 20.90 seconds total), including
+modern GPU setup, award/ending transition, movie pacing and XA contribution.
+This covers the special shared-assets finale, not a new full race/perf matrix.
+
+Asset-series selection now reads each built-in class definition as well: both
+menu consumers and scenario setup use the shared adapter, with Extra class 5
+explicitly mapped to standard assets. Tests enumerate all twelve class/series
+combinations and preserve legacy invalid-input adapter behavior; rule and
+advance tests pass, and rules pass ASan/UBSan. This follow-up still needs a
+rebuilt game integration run; the 33-case result below predates this field.
+
 Shared GP/FMV definition integration now passes the rebuilt Linux smoke's full
 33-case natural award/ending matrix on actual PAL, NTSC-U and NTSC-J CUE/BIN
 images (186.75 seconds, three workers, no skips). Each case checks the post-race

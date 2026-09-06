@@ -34,6 +34,8 @@ int main(void) {
     for (s32 series = 0; series < 2; ++series) {
         for (s32 classIndex = 0; classIndex < 6; ++classIndex) {
             s32 finalClass = series ? 5 : 4;
+            Check("all class asset series", GrandPrixAssetSeries(series, classIndex),
+                  classIndex < 5 ? series : 0);
             Check("all promotion stream definitions",
                   GrandPrixContentClass(classIndex)->promotionStream[series],
                   1 + series * 4 + (classIndex < 4 ? classIndex : 3));
@@ -90,6 +92,10 @@ int main(void) {
     Check("standard asset series", GrandPrixAssetSeries(0, 4), 0);
     Check("extra asset series", GrandPrixAssetSeries(1, 4), 1);
     Check("shared finale asset series", GrandPrixAssetSeries(1, 5), 0);
+    Check("negative class asset compatibility", GrandPrixAssetSeries(1, -1), 1);
+    Check("past class asset compatibility", GrandPrixAssetSeries(1, 6), 0);
+    Check("invalid series asset compatibility", GrandPrixAssetSeries(-1, 4), -1);
+    Check("invalid series finale compatibility", GrandPrixAssetSeries(-1, 5), 0);
 
     Check("zero prize", PrizeCountStep(0, 80), 1);
     Check("small prize", PrizeCountStep(79, 80), 1);

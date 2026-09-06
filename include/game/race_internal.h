@@ -4,6 +4,7 @@
 #include "common.h"
 #include "game/menu_types.h"
 #include "game/race.h"
+#include "game/grand_prix_content.h"
 #include "game/race_time_types.h"
 #include "game/result_screen_types.h"
 
@@ -101,6 +102,10 @@ s32 NextUnlockedClassRecord(s32 classRecordIndex);
 s32 IsFinalGrandPrixClass(s32 extraSeries, s32 classIndex);
 s32 NextGrandPrixClassForSeries(s32 series, s32 classIndex);
 static inline s32 GrandPrixAssetSeries(s32 selectedSeries, s32 classIndex) {
+    const GrandPrixClassDefinition *definition = GrandPrixContentClass(classIndex);
+    if (definition != NULL && (u32)selectedSeries < 2)
+        return definition->assetSeries[selectedSeries];
+    /* Preserve the legacy adapter's behavior outside validated content. */
     return classIndex < GRAND_PRIX_FINAL_CLASS_INDEX ? selectedSeries : 0;
 }
 s32 PrizeCountStep(s32 amount, s32 frameCount);
