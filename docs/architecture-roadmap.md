@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Split UV/colour span sampling now joins the standalone texture contract and
+its existing Linux/Windows/macOS CI matrix; workflow filters include the test
+source (the PSY-Z submodule pointer was already covered). The production
+header and 5,079,264-sample regression pass Windows ClangCL Release in the
+local VM (0.51s), as well as Linux. The complete local compiled texture CI
+entry point passes seven texture/archive tests plus native_fixture_files.
+This checks arithmetic portability, not full Windows GPU presentation;
+hosted workflow and macOS execution remain unverified.
+
 Compatibility quad correction now separates UV comparison from RGB sampling:
 only pixels requiring correction interpolate colour, and already covered
 Gouraud endpoints skip sampling entirely. Texture-page state, primitive capture,
