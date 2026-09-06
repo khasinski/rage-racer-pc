@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Reward-flow automation follow-up: `boot.skip_sequences` no longer injects Start
+after a completed race. Scene 5 is shared by opening and reward FMVs, so the
+old scene-only condition could skip a class/ending movie during repeat-mode
+automation. The smoke build and scenario_control/scenario_after_finish tests
+pass (22.66 seconds parallel total). These existing cases verify general
+automation, not a completed-class movie; that specific end-to-end test remains
+open. The existing smoke finish hook crosses laps through normal race logic
+and can be combined with a prior-course progress fixture for that scenario.
+
 Class-award selection coverage now links the real `SelectFmvStream` wrappers
 into `advance_grand_prix_class_tests`, replacing mocked BeginClass/EndingFmv.
 Every advancing class in both series checks its completed-class stream and

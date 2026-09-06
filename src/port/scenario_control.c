@@ -711,7 +711,9 @@ void PortScenarioBeforeSceneHandler(void) {
      * carries PAD_START, which is what the movie player watches for. The
      * prologue ignores the button until its own timer passes 0x79, so holding
      * it costs nothing and takes effect at the first frame that accepts it. */
-    if (s_scenario.skipSequences) {
+    /* Scene 5 is shared by boot and class/ending FMVs. Boot automation must
+     * not press Start through a movie reached by the race reward flow. */
+    if (s_scenario.skipSequences && !s_scenario.raceFinished) {
         if (g_SceneId == 5 || g_SceneId == 32) {
             g_PadType = 0x41;
             g_PadPressed |= PAD_CONFIRM;
