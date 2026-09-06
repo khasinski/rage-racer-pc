@@ -78,6 +78,16 @@ All three targets build and Linux offscreen native-world, submit-recovery and
 PAL tests pass. The stage angle sweep was skipped because its configured native
 asset cache was absent; this is not new stage image or Windows GPU evidence.
 
+Follow-up image evidence: generated a private PAL CAR/BIG1 test cache using the
+existing offline asset-browser extractor (not a new runtime/release dependency),
+then reran `render_stage_angles` with `RAGE_PORT_NATIVE_ASSETS` pointing to it.
+The test passed without skipping in 5.11 seconds on Linux offscreen: 18 car
+rotation sweeps, silhouette checks, rotation-form/full-turn consistency,
+byte-identical repeated rendering and track-piece visibility. Generated game
+data remains ignored under `build/submission-stage-ArqV5X`. This closes the
+missing local stage-image check for explicit upload retirement, not the
+compiled extractor migration, long-session GPU stress or Windows image gates.
+
 Dependency selection and conflict selection share a bounded NUL-delimited
 stdin decoder (8 MiB / 262144 tokens), avoiding Windows command-line limits.
 The launcher rejects embedded NULs before encoding. Regression coverage includes
