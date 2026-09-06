@@ -25,6 +25,12 @@ typedef struct RageNativeDrawVertex {
     float shadowReception;
 } RageNativeDrawVertex;
 
+typedef struct RageNativeInstanceState {
+    float lighting;
+    float environmentLight[3];
+    float shadowReception;
+} RageNativeInstanceState;
+
 typedef struct RageNativeDrawSpan {
     uint32_t firstVertex;
     uint32_t vertexCount;
@@ -51,6 +57,8 @@ typedef struct RageNativeDrawSpan {
      * an entity, not to the shared immutable mesh asset. */
     uint32_t entity;
     RageRenderPass pass;
+    /* Draw-constant state, separate from immutable source geometry. */
+    RageNativeInstanceState instanceState;
 } RageNativeDrawSpan;
 
 typedef const RageRuntimeMesh *(*RageRenderMeshLookup)(

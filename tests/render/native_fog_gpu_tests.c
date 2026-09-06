@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "render/render_mesh_build.h"
+#include "render/render_native_vertex.h"
 #include "native_vert_spv.h"
 #include "native_vert_msl.h"
 #include "fog_probe_frag_spv.h"
@@ -24,7 +25,7 @@ int main(void) {
     shader.code = spirv ? native_vert_spv : native_vert_msl;
     shader.code_size = spirv ? native_vert_spv_len : native_vert_msl_len;
     shader.entrypoint = spirv ? "main" : "vs_native";
-    shader.num_uniform_buffers = 2;
+    shader.num_uniform_buffers = 3;
     SDL_GPUShader *vs = SDL_CreateGPUShader(device, &shader); CHECK(vs);
     shader.stage = SDL_GPU_SHADERSTAGE_FRAGMENT;
     shader.code = spirv ? fog_probe_frag_spv : fog_probe_frag_msl;
@@ -33,16 +34,14 @@ int main(void) {
     shader.num_uniform_buffers = 0;
     SDL_GPUShader *fs = SDL_CreateGPUShader(device, &shader); CHECK(fs);
     SDL_GPUVertexBufferDescription description = {0};
-    description.pitch = sizeof(RageNativeDrawVertex);
+    description.pitch = sizeof(RageNativeGpuVertex);
     description.input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX;
 #define ATTRIBUTE(n, field, type) { .location = n, .buffer_slot = 0, \
-    .format = SDL_GPU_VERTEXELEMENTFORMAT_##type, .offset = offsetof(RageNativeDrawVertex, field) }
+    .format = SDL_GPU_VERTEXELEMENTFORMAT_##type, .offset = offsetof(RageNativeGpuVertex, field) }
     SDL_GPUVertexAttribute attributes[] = {
         ATTRIBUTE(0, position, FLOAT3), ATTRIBUTE(1, uv, FLOAT2),
         ATTRIBUTE(2, color, UBYTE4), ATTRIBUTE(3, normal, FLOAT3),
-        ATTRIBUTE(4, fog, FLOAT4), ATTRIBUTE(5, lighting, FLOAT),
-        ATTRIBUTE(6, depthBias, FLOAT), ATTRIBUTE(7, environmentLight, FLOAT3),
-        ATTRIBUTE(8, shadowReception, FLOAT)};
+        ATTRIBUTE(4, fog, FLOAT4), ATTRIBUTE(6, depthBias, FLOAT)};
     SDL_GPUColorTargetDescription targetDescription = {0};
     targetDescription.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
     SDL_GPUGraphicsPipelineCreateInfo pipelineInfo = {0};
@@ -52,8 +51,9 @@ int main(void) {
     pipelineInfo.vertex_input_state.num_vertex_buffers = 1;
     pipelineInfo.vertex_input_state.vertex_attributes = attributes;
     pipelineInfo.vertex_input_state.num_vertex_attributes = SDL_arraysize(attributes);
-    pipelineInfo.target_info.num_color_targets = 1;
-    pipelineInfo.target_info.color_target_descriptions = &targetDescription;
+    SDL_GPUColorTargetDescription targetDescriptions[2] = {targetDescription, targetDescription};
+    pipelineInfo.target_info.num_color_targets = 2;
+    pipelineInfo.target_info.color_target_descriptions = targetDescriptions;
     SDL_GPUGraphicsPipeline *pipeline = SDL_CreateGPUGraphicsPipeline(device, &pipelineInfo);
     CHECK(pipeline);
     SDL_GPUTextureCreateInfo texture = {0};
@@ -61,15 +61,17 @@ int main(void) {
     texture.width = texture.height = 8; texture.layer_count_or_depth = texture.num_levels = 1;
     texture.usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET;
     SDL_GPUTexture *target = SDL_CreateGPUTexture(device, &texture); CHECK(target);
+    SDL_GPUTexture *instanceTarget = SDL_CreateGPUTexture(device, &texture); CHECK(instanceTarget);
     RageNativeDrawVertex vertices[3] = {0};
+    RageNativeGpuVertex packed[3];
     SDL_GPUBufferCreateInfo bufferInfo = {0};
-    bufferInfo.usage = SDL_GPU_BUFFERUSAGE_VERTEX; bufferInfo.size = sizeof(vertices);
+    bufferInfo.usage = SDL_GPU_BUFFERUSAGE_VERTEX; bufferInfo.size = sizeof(packed);
     SDL_GPUBuffer *buffer = SDL_CreateGPUBuffer(device, &bufferInfo); CHECK(buffer);
     SDL_GPUTransferBufferCreateInfo transferInfo = {0};
     transferInfo.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
-    transferInfo.size = sizeof(vertices);
+    transferInfo.size = sizeof(packed);
     SDL_GPUTransferBuffer *upload = SDL_CreateGPUTransferBuffer(device, &transferInfo); CHECK(upload);
-    transferInfo.usage = SDL_GPU_TRANSFERBUFFERUSAGE_DOWNLOAD; transferInfo.size = 8 * 8 * 4;
+    transferInfo.usage = SDL_GPU_TRANSFERBUFFERUSAGE_DOWNLOAD; transferInfo.size = 2 * 8 * 8 * 4;
     SDL_GPUTransferBuffer *download = SDL_CreateGPUTransferBuffer(device, &transferInfo); CHECK(download);
     const float depths[] = {0, 4, 5, 6, 10, 19, 20, 30};
     unsigned cases = 0;
@@ -109,17 +111,24 @@ int main(void) {
             }
         }
         void *mapped = SDL_MapGPUTransferBuffer(device, upload, true); CHECK(mapped);
-        memcpy(mapped, vertices, sizeof(vertices)); SDL_UnmapGPUTransferBuffer(device, upload);
+        for (unsigned i = 0; i < 3; ++i) packed[i] = RenderPackNativeGpuVertex(&vertices[i]);
+        memcpy(mapped, packed, sizeof(packed)); SDL_UnmapGPUTransferBuffer(device, upload);
         SDL_GPUCommandBuffer *cmd = SDL_AcquireGPUCommandBuffer(device); CHECK(cmd);
         SDL_GPUCopyPass *copy = SDL_BeginGPUCopyPass(cmd); CHECK(copy);
         SDL_GPUTransferBufferLocation source = {.transfer_buffer = upload};
-        SDL_GPUBufferRegion destination = {.buffer = buffer, .size = sizeof(vertices)};
+        SDL_GPUBufferRegion destination = {.buffer = buffer, .size = sizeof(packed)};
         SDL_UploadToGPUBuffer(copy, &source, &destination, true); SDL_EndGPUCopyPass(copy);
         SDL_PushGPUVertexUniformData(cmd, 0, uniform, sizeof(uniform));
         SDL_PushGPUVertexUniformData(cmd, 1, shadow, sizeof(shadow));
+        const float instance[2][4] = {
+            {view ? 0.25f : 0.75f, (float)range * 0.25f, 1, 0},
+            {enabled ? 0.5f : 1, (float)(sample % 2), 0, 0}};
+        SDL_PushGPUVertexUniformData(cmd, 2, instance, sizeof(instance));
         SDL_GPUColorTargetInfo color = {0}; color.texture = target;
         color.load_op = SDL_GPU_LOADOP_CLEAR; color.store_op = SDL_GPU_STOREOP_STORE;
-        SDL_GPURenderPass *pass = SDL_BeginGPURenderPass(cmd, &color, 1, NULL); CHECK(pass);
+        SDL_GPUColorTargetInfo colors[2] = {color, color};
+        colors[1].texture = instanceTarget;
+        SDL_GPURenderPass *pass = SDL_BeginGPURenderPass(cmd, colors, 2, NULL); CHECK(pass);
         SDL_BindGPUGraphicsPipeline(pass, pipeline);
         SDL_GPUBufferBinding binding = {.buffer = buffer};
         SDL_BindGPUVertexBuffers(pass, 0, &binding, 1);
@@ -127,6 +136,9 @@ int main(void) {
         copy = SDL_BeginGPUCopyPass(cmd); CHECK(copy);
         SDL_GPUTextureRegion region = {.texture = target, .w = 8, .h = 8, .d = 1};
         SDL_GPUTextureTransferInfo readback = {.transfer_buffer = download};
+        SDL_DownloadFromGPUTexture(copy, &region, &readback);
+        region.texture = instanceTarget;
+        readback.offset = 8 * 8 * 4;
         SDL_DownloadFromGPUTexture(copy, &region, &readback); SDL_EndGPUCopyPass(copy);
         SDL_GPUFence *fence = SDL_SubmitGPUCommandBufferAndAcquireFence(cmd); CHECK(fence);
         CHECK(SDL_WaitForGPUFences(device, true, &fence, 1));
@@ -140,6 +152,14 @@ int main(void) {
                         view, range, enabled, (double)depths[sample], pixel, channel, wanted, pixels[pixel * 4 + channel]);
                     return 1;
                 }
+                float stateValue = channel == 3 ? instance[1][1]
+                    : instance[0][channel] * instance[1][0];
+                int stateWanted = (int)lroundf(stateValue * 255.0f);
+                if (abs((int)pixels[256 + pixel * 4 + channel] - stateWanted) > 1) {
+                    fprintf(stderr, "instance state mismatch: case=%u channel=%u expected=%d got=%u\n",
+                        cases, channel, stateWanted, pixels[256 + pixel * 4 + channel]);
+                    return 1;
+                }
             }
         }
         SDL_UnmapGPUTransferBuffer(device, download); SDL_ReleaseGPUFence(device, fence);
@@ -147,9 +167,10 @@ int main(void) {
     }
     SDL_ReleaseGPUTransferBuffer(device, upload); SDL_ReleaseGPUTransferBuffer(device, download);
     SDL_ReleaseGPUBuffer(device, buffer); SDL_ReleaseGPUTexture(device, target);
+    SDL_ReleaseGPUTexture(device, instanceTarget);
     SDL_ReleaseGPUGraphicsPipeline(device, pipeline);
     SDL_ReleaseGPUShader(device, vs); SDL_ReleaseGPUShader(device, fs);
     SDL_DestroyGPUDevice(device); SDL_Quit();
-    printf("Native GPU fog: %u cases match CPU within one UNORM step\n", cases);
+    printf("Native GPU fog and instance state: %u cases match CPU within one UNORM step\n", cases);
     return 0;
 }

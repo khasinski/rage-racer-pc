@@ -5,10 +5,7 @@ layout(location = 1) in vec2 inUV;
 layout(location = 2) in uvec4 inColor;
 layout(location = 3) in vec3 inNormal;
 layout(location = 4) in vec4 inFog;
-layout(location = 5) in float inLighting;
 layout(location = 6) in float inDepthBias;
-layout(location = 7) in vec3 inEnvironmentLight;
-layout(location = 8) in float inShadowReception;
 
 layout(set = 1, binding = 0, std140) uniform NativeCamera {
     vec4 position;
@@ -27,6 +24,11 @@ layout(set = 1, binding = 1, std140) uniform NativeShadowCamera {
     vec4 viewRow2;
     vec4 projection;
 } shadow;
+
+layout(set = 1, binding = 2, std140) uniform NativeInstance {
+    vec4 environmentLight;
+    vec4 properties; // lighting influence, shadow reception, reserved, reserved
+} instance;
 
 layout(location = 0) out vec2 uv;
 layout(location = 1) out vec4 color;
@@ -69,8 +71,8 @@ void main() {
         }
         fog = vec4(camera.fogColor.xyz, fogWeight);
     }
-    lighting = inLighting;
-    environmentLight = inEnvironmentLight;
+    lighting = instance.properties.x;
+    environmentLight = instance.environmentLight.xyz;
     vec3 shadowRelative = inPosition - shadow.position.xyz;
     float shadowX = dot(shadow.viewRow0.xyz, shadowRelative) *
                     shadow.projection.x;
@@ -81,6 +83,6 @@ void main() {
                        0.5 - shadowY * 0.5,
                        shadowDepth * shadow.projection.z +
                            shadow.projection.w);
-    shadowReception = inShadowReception;
+    shadowReception = instance.properties.y;
     viewDirection = camera.position.xyz - inPosition;
 }

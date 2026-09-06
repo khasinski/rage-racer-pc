@@ -41,7 +41,7 @@ and regression evidence; extracting an unused interface is not completion.
      reads and declare compatibility/VRAM dependencies.
    - Gate: independent main/mirror views, interpolation and regional timing
      tests. No speculative threading before ownership is proven.
-4. **Persistent GPU geometry** (pending)
+4. **Persistent GPU geometry** (in progress; bounded residency prototype parked)
    - Reuse static mesh buffers; update instance/material state separately.
    - Preserve animated UVs, terrain visibility, environmental variants and
      transparent ordering. Expose geometry suitable for future acceleration
@@ -101,6 +101,103 @@ path; image comparisons and frame-tail measurements are still required.
 
 ## Work log
 
+- Native rendering now consumes direct 56-byte geometry plus draw-constant
+  lighting/environment/shadow-reception uniforms, rather than repeating those
+  parameters in 76-byte vertices. Main, mirror and shadow pipelines share the
+  compact layout. The CPU-reference builders remain available. Span merging
+  compares instance state, and uniforms are updated only on state changes
+  within each view. Marker diagnostics read geometry from the compact buffer
+  and shading from the owning span.
+  The first compact implementation repacked a complete CPU frame during
+  upload; its average upload cost rose to 0.3324 ms. Direct compact output
+  removes that gather pass: a subsequent 998-frame PAL trace measured 0.1126 ms
+  versus 0.1731 ms in the earlier 76-byte trace. These are not interleaved
+  benchmarks or whole-frame FPS claims. Frame 1000 uploads 2,112,432 bytes
+  instead of 2,866,872 bytes.
+  The GPU fixture checks fog and instance outputs in 192 cases on Linux RADV
+  and Windows VM SwiftShader. CPU tests compare compact output with the
+  expanded oracle for both fog contracts, all five asset sets and changing
+  instance state. Four PAL mirror-frame images/world/VRAM captures remain
+  byte-identical. Linux regional smoke gates for PAL/NTSC-U/NTSC-J and
+  failed-submit recovery pass.
+  Windows Release game/smoke builds and the full PAL failed-submit recovery
+  scenario also pass on VM SwiftShader, including four submitted-frame
+  captures and retained texture history (sampled-vram-f8d334d46e63).
+  The slower bounded-residency experiment is separated from the production
+  backend; its local algorithm/tests remain available, with the former backend
+  preserved under build/indexed-prototype-backend.c. It is not a shipped runtime
+  option and does not complete persistent asset-local GPU geometry.
+- The shared cached-mesh owner now retains immutable decoded asset-local
+  vertices and indices, consumed by existing mesh readers in both the live C
+  importer and file-cache path. These arrays contain no instance/view state
+  and are released with the asset. Wire bytes remain available for validation
+  and serialization; optional allocation failure leaves the validated wire
+  reader usable. This adds CPU memory (40 bytes per vertex plus 4 per index),
+  not persistent GPU allocation or a measured FPS improvement. Ownership,
+  repeated release/re-adoption, wire/decoded equivalence and reopen clearing
+  are tested on Linux and Windows. Linux unit/GPU suite: 219 passed; real PAL
+  failed-submit recovery passed; four mirror-frame world/VRAM/modern images
+  are byte-identical to the expanded reference. Import diagnostics report the
+  additional decoded byte count per asset.
+- Instance lighting defaults, environment colour and shadow reception are now
+  prepared once per visible instance rather than resolved per source vertex.
+  Both CPU-reference and GPU builders consume the same explicit instance state;
+  this is a CPU-side boundary extraction, not yet an instance GPU buffer or a
+  claim of persistent asset-local geometry. Regression cases exercise enabled
+  and disabled lighting, negative/zero/fractional/clamped influence, neutral
+  versus partially zero environment colours and all five asset sets across
+  successive builds. Linux and Windows CPU tests pass. Four PAL mirror frames
+  retain byte-identical modern images, world snapshots and sampled VRAM versus
+  the expanded-path reference; 192 GPU fog cases also pass on VM SwiftShader.
+- Historical bounded-residency experiment (now parked): it retained
+  COURSE/TERRAIN vertex identities
+  between frames and appends only newly encountered payloads to the GPU's
+  resident prefix. Model-bank data is a transient tail, replaced every frame;
+  retaining moving opponents had grown the first experiment to 1,681,975
+  vertices by frame 1000 despite a stationary player. The CPU arena has a
+  two-million-vertex budget, resets before a frame whose worst-case reservation
+  exceeds it, and exposes a generation so reset uploads cycle the GPU buffer.
+  CPU growth preserves resident indices. Transient overwrites/new residents
+  upload after the previous resident prefix; failed submission teardown clears
+  all upload counters. Hashing uses complete 32-bit words plus final mixing,
+  while exact byte comparison still resolves collisions.
+  Tests cover growth/rehash with stable indices, repeated hits, bounded resets,
+  and 20 frames of changing transient vertices without resident growth. Linux
+  unit and indexed submission-recovery/history tests passed. PAL frame
+  1000..1003 world/VRAM/PPM files match the expanded reference byte-for-byte
+  (build/geometry-selected-ab/sampled-vram-c5e8142d31d2).
+  At frame 1000 the selected arena has 40,120 resident vertices and 16,404
+  transient vertices; uploads are 1,246,704 vertex bytes + 150,888 index bytes,
+  versus 2,866,872 expanded vertex bytes. Mean prepare_ms over 999 samples:
+  expanded 1.1565, retained 1.7862 (p95 1.190/1.877). Evidence:
+  build/geometry-selected-performance/{expanded,retained}.log. This improves
+  the first indexed prototype but still regresses CPU preparation, so default
+  rendering is unchanged. The next bottleneck is per-frame CPU transformation
+  and payload lookup; true asset-local geometry with separate instance updates,
+  driving/region/image gates and Windows validation remain outstanding.
+- Experimental RAGE_PORT_NATIVE_INDEXED=1 packs main/mirror vertices into a
+  shared GPU vertex buffer with ordered 32-bit indices. Main, mirror and
+  shadow passes use indexed draws; span ordering and CPU diagnostic vertices
+  remain unchanged. Exact 76-byte identity includes all attributes; no
+  position-only welding. The owned pack grows geometrically, clears published
+  counts on failure and is released with presentation resources. Allocation
+  failure retains the existing expanded modern path, never classic rendering.
+  Unit coverage includes ordered reconstruction, each attribute byte, growth,
+  invalid input and release/retry. Real PAL frames 1000..1003 have identical
+  world/scene/VRAM/final-image files against the same binary's expanded path,
+  with an active mirror (build/geometry-pack-reference/sampled-vram-4571dab9d932
+  and build/geometry-pack-final/sampled-vram-fbba2f97d4ca). Indexed-mode canceled
+  submission recovery/history also passed on Linux.
+  Frame 1000: 37,722 expanded vertices become 21,351 unique vertices and
+  37,722 indices, reducing upload from 2,866,872 to 1,773,564 bytes (~38%).
+  However, rebuilding the hash pack each frame is too expensive: one paired
+  offscreen stationary PAL run measured mean prepare_ms 1.2019 expanded vs
+  3.2327 indexed over 999 samples each (p95 1.354/3.358 ms). Logs:
+  build/geometry-pack-performance/{expanded,indexed}.log. Thus the prototype
+  remains opt-in, not a default performance improvement. Next work must retain
+  immutable geometry rather than repack every frame, separating dynamic
+  updates and preserving resource-generation invalidation. Windows validation
+  and driving/image/performance gates remain outstanding for this prototype.
 - Submission ownership prerequisite for geometry reuse: ModernRender previously
   ignored SDL_SubmitGPUCommandBuffer's result, then published success despite
   speculative upload/cache/history state. It now reports failure, destroys

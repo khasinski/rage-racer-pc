@@ -1,4 +1,5 @@
 #include "render_mesh_build.h"
+#include "render_native_vertex.h"
 
 #include <math.h>
 #include <string.h>
@@ -397,15 +398,9 @@ static int InstanceOutsideFrustum(const RageRenderWorld *world,
 
 /* These values belong to an instance, not its immutable source vertices or
  * camera. Resolve compatibility defaults once, before visiting the mesh. */
-typedef struct RagePreparedInstanceState {
-    float lighting;
-    float environmentLight[3];
-    float shadowReception;
-} RagePreparedInstanceState;
-
-static RagePreparedInstanceState PrepareInstanceState(
+static RageNativeInstanceState PrepareInstanceState(
     const RageRenderMeshInstance *instance) {
-    RagePreparedInstanceState state = {0};
+    RageNativeInstanceState state = {0};
     if ((instance->flags & RAGE_RENDER_INSTANCE_ENABLE_LIGHTING) != 0) {
         state.lighting = instance->lightInfluence;
         if (state.lighting <= 0.0f) state.lighting = 1.0f;
@@ -433,7 +428,7 @@ static int BuildVertex(const RageTransformBasis *basis,
                            const RageRenderViewTransform *viewTransform,
                            const RageRenderWorld *world, int fogged, int gpuFog,
                            const RageRenderMeshInstance *instance,
-                           const RagePreparedInstanceState *instanceState,
+                           const RageNativeInstanceState *instanceState,
                            const RageRuntimeMesh *mesh, uint32_t index,
                            float aspect, RageNativeDrawVertex *out,
                            uint32_t *material, uint32_t *materialFlags,
@@ -510,7 +505,7 @@ typedef struct RagePreparedVertexCacheEntry {
 static uint32_t RenderBuildNativeDrawsFiltered(
     const RageRenderWorld *world, int passFilter, float aspect, int gpuFog,
     RageRenderMeshLookup lookup, void *context,
-    RageNativeDrawVertex *vertices, uint32_t vertexCapacity,
+    RageNativeDrawVertex *vertices, RageNativeGpuVertex *compactVertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
     uint32_t instanceIndex, vertexCount = 0, spansUsed = 0;
     /* One view/build invocation only. Epochs isolate transforms, colours and
@@ -519,7 +514,7 @@ static uint32_t RenderBuildNativeDrawsFiltered(
     RagePreparedVertexCacheEntry vertexCache[256] = {0};
     RageRenderViewTransform viewTransform;
     if (spanCount != NULL) *spanCount = 0;
-    if (world == NULL || lookup == NULL || vertices == NULL || spans == NULL ||
+    if (world == NULL || lookup == NULL || (vertices == NULL && compactVertices == NULL) || spans == NULL ||
         spanCount == NULL || !isfinite(aspect) || aspect <= 0.0f ||
         world->instanceCount > world->instanceCapacity ||
         (world->instanceCount != 0 && world->instances == NULL)) return 0;
@@ -528,7 +523,7 @@ static uint32_t RenderBuildNativeDrawsFiltered(
         const RageRenderMeshInstance *instance = &world->instances[instanceIndex];
         const RageRuntimeMesh *mesh = lookup(context, instance);
         RageTransformBasis basis;
-        RagePreparedInstanceState instanceState;
+        RageNativeInstanceState instanceState;
         uint32_t first, count, offset;
         int terrainQuadHidden = 0;
         if (passFilter >= 0 && instance->pass != (RageRenderPass)passFilter)
@@ -623,6 +618,8 @@ static uint32_t RenderBuildNativeDrawsFiltered(
                 spans[spansUsed - 1].mesh != instance->mesh ||
                 spans[spansUsed - 1].sourceEntity != instance->entity ||
                 spans[spansUsed - 1].instanceFlags != instance->flags ||
+                memcmp(&spans[spansUsed - 1].instanceState, &instanceState,
+                       sizeof(instanceState)) != 0 ||
                 spans[spansUsed - 1].materialVariant != materialVariant ||
                 spans[spansUsed - 1].hasCarPaint != instance->hasCarPaint ||
                 spans[spansUsed - 1].carPaintColor1 != instance->carPaintColor1 ||
@@ -655,9 +652,15 @@ static uint32_t RenderBuildNativeDrawsFiltered(
                     instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK
                     ? instance->entity : 0;
                 spans[spansUsed].pass = instance->pass;
+                spans[spansUsed].instanceState = instanceState;
                 spansUsed++;
             }
-            memcpy(&vertices[vertexCount], triangle, sizeof(triangle));
+            if (compactVertices != NULL) {
+                for (corner = 0; corner < 3; ++corner)
+                    compactVertices[vertexCount + corner] = RenderPackNativeGpuVertex(&triangle[corner]);
+            } else {
+                memcpy(&vertices[vertexCount], triangle, sizeof(triangle));
+            }
             vertexCount += 3;
             spans[spansUsed - 1].vertexCount += 3;
         }
@@ -675,7 +678,7 @@ uint32_t RenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
                                     uint32_t spanCapacity,
                                     uint32_t *spanCount) {
     return RenderBuildNativeDrawsFiltered(
-        world, -1, aspect, 0, lookup, context, vertices, vertexCapacity, spans,
+        world, -1, aspect, 0, lookup, context, vertices, NULL, vertexCapacity, spans,
         spanCapacity, spanCount);
 }
 
@@ -685,7 +688,7 @@ uint32_t RenderBuildNativePassDraws(
     RageNativeDrawVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
     return RenderBuildNativeDrawsFiltered(
-        world, (int)pass, aspect, 0, lookup, context, vertices, vertexCapacity,
+        world, (int)pass, aspect, 0, lookup, context, vertices, NULL, vertexCapacity,
         spans, spanCapacity, spanCount);
 }
 
@@ -695,6 +698,15 @@ uint32_t RenderBuildNativeGpuPassDraws(
     RageNativeDrawVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
     return RenderBuildNativeDrawsFiltered(
-        world, (int)pass, aspect, 1, lookup, context, vertices, vertexCapacity,
+        world, (int)pass, aspect, 1, lookup, context, vertices, NULL, vertexCapacity,
         spans, spanCapacity, spanCount);
+}
+
+uint32_t RenderBuildNativeCompactPassDraws(
+    const RageRenderWorld *world, RageRenderPass pass, float aspect, int cpuFog,
+    RageRenderMeshLookup lookup, void *context,
+    RageNativeGpuVertex *vertices, uint32_t vertexCapacity,
+    RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
+    return RenderBuildNativeDrawsFiltered(world, (int)pass, aspect, !cpuFog,
+        lookup, context, NULL, vertices, vertexCapacity, spans, spanCapacity, spanCount);
 }

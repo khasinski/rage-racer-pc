@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "render/render_mesh_build.h"
+#include "render/render_native_vertex.h"
 
 static int failures;
 
@@ -934,7 +935,17 @@ static void test_gpu_vertex_reuse_preserves_instance_and_triangle_state(void) {
                     : RenderBuildNativePassDraws(&world, RAGE_RENDER_PASS_MAIN,
                         1, test_mesh_lookup, &mesh, cached, 18, cachedSpans, 2, &cachedCount);
                 EXPECT_EQ(18, count);
+                RageNativeGpuVertex compact[18];
+                RageNativeDrawSpan compactSpans[2] = {0};
+                uint32_t compactSpanCount = 0;
+                EXPECT_EQ(count, RenderBuildNativeCompactPassDraws(
+                    &world, RAGE_RENDER_PASS_MAIN, 1, !gpu, test_mesh_lookup,
+                    &mesh, compact, 18, compactSpans, 2, &compactSpanCount));
+                EXPECT_EQ(cachedCount, compactSpanCount);
+                EXPECT_EQ(0, memcmp(cachedSpans, compactSpans, sizeof(compactSpans)));
                 for (unsigned i = 0; i < count; ++i) {
+                    RageNativeGpuVertex expectedVertex = RenderPackNativeGpuVertex(&cached[i]);
+                    EXPECT_EQ(0, memcmp(&expectedVertex, &compact[i], sizeof(expectedVertex)));
                     EXPECT_NEAR(i < 9 ? expected[state] : 0, cached[i].lighting, 0.0001f);
                     EXPECT_NEAR(i < 9 ? 1 : 0, cached[i].environmentLight[0], 0.0001f);
                     EXPECT_NEAR(i < 9 ? 1 : 0.5f, cached[i].environmentLight[1], 0.0001f);
@@ -945,9 +956,52 @@ static void test_gpu_vertex_reuse_preserves_instance_and_triangle_state(void) {
             }
         }
     }
+    /* Identical semantic IDs/materials may still carry different instance
+     * lighting. They must not merge into one draw-constant uniform. */
+    instances[0].flags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING;
+    instances[0].lightInfluence = 0.25f;
+    instances[1] = instances[0];
+    instances[1].lightInfluence = 0.75f;
+    EXPECT_EQ(18, RenderBuildNativeGpuPassDraws(&world, RAGE_RENDER_PASS_MAIN,
+        1, test_mesh_lookup, &mesh, cached, 18, cachedSpans, 2, &cachedCount));
+    EXPECT_EQ(2, cachedCount);
+    EXPECT_NEAR(0.25f, cachedSpans[0].instanceState.lighting, 0.0001f);
+    EXPECT_NEAR(0.75f, cachedSpans[1].instanceState.lighting, 0.0001f);
+    EXPECT_EQ(9, cachedSpans[0].vertexCount);
+    EXPECT_EQ(9, cachedSpans[1].firstVertex);
+}
+
+static void test_gpu_vertex_payload_excludes_instance_state(void) {
+    RageNativeDrawVertex source = {0};
+    for (unsigned i = 0; i < 3; ++i) {
+        source.position[i] = (float)i - 1.25f;
+        source.normal[i] = (float)i * 0.25f;
+    }
+    source.uv[0] = -0.5f; source.uv[1] = 2.25f;
+    for (unsigned i = 0; i < 4; ++i) {
+        source.color[i] = (uint8_t)(i * 71);
+        source.fog[i] = (float)i - 8.5f;
+    }
+    source.depthBias = -17.25f;
+    RageNativeGpuVertex packed = RenderPackNativeGpuVertex(&source);
+    EXPECT_EQ(56, sizeof(packed));
+    EXPECT_EQ(0, memcmp(packed.position, source.position, sizeof(source.position)));
+    EXPECT_EQ(0, memcmp(packed.normal, source.normal, sizeof(source.normal)));
+    EXPECT_EQ(0, memcmp(packed.uv, source.uv, sizeof(source.uv)));
+    EXPECT_EQ(0, memcmp(packed.color, source.color, sizeof(source.color)));
+    EXPECT_EQ(0, memcmp(packed.fog, source.fog, sizeof(source.fog)));
+    EXPECT_NEAR(source.depthBias, packed.depthBias, 0.0001f);
+    source.lighting = 0.75f;
+    source.environmentLight[0] = 0.25f;
+    source.environmentLight[1] = 0.5f;
+    source.environmentLight[2] = 1;
+    source.shadowReception = 1;
+    RageNativeGpuVertex changedInstance = RenderPackNativeGpuVertex(&source);
+    EXPECT_EQ(0, memcmp(&packed, &changedInstance, sizeof(packed)));
 }
 
 int main(void) {
+    test_gpu_vertex_payload_excludes_instance_state();
     test_gpu_vertex_reuse_preserves_instance_and_triangle_state();
     test_shared_mesh_independent_views();
     test_native_draw_builder_uses_render_world_and_imported_mesh();

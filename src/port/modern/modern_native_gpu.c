@@ -4,6 +4,7 @@
 
 #include "modern_assets.h"
 #include "render/render_mesh_build.h"
+#include "render/render_native_vertex.h"
 #include "render/render_shadow.h"
 #include "render/texture_mipmap.h"
 #include "rage/track_asset_identity.h"
@@ -123,7 +124,7 @@ static SDL_GPUTransferBuffer *s_vertexTransfer;
 static SDL_GPUSampler *s_sampler;
 static SDL_GPUTexture *s_shadowTexture;
 static SDL_GPUSampler *s_shadowSampler;
-static RageNativeDrawVertex *s_vertices;
+static RageNativeGpuVertex *s_vertices;
 static RageNativeDrawSpan *s_spans;
 static RageNativeDrawSpan *s_mirrorSpans;
 static uint32_t s_vertexCount;
@@ -214,37 +215,28 @@ static SDL_GPUGraphicsPipeline *ModernNativeCreatePipeline(
     SDL_GPUShader *vertex, SDL_GPUShader *fragment, int transparent) {
     const SDL_GPUVertexBufferDescription buffer = {
         .slot = 0,
-        .pitch = sizeof(RageNativeDrawVertex),
+        .pitch = sizeof(RageNativeGpuVertex),
         .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
     };
     const SDL_GPUVertexAttribute attributes[] = {
         {.location = 0, .buffer_slot = 0,
          .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-         .offset = offsetof(RageNativeDrawVertex, position)},
+         .offset = offsetof(RageNativeGpuVertex, position)},
         {.location = 1, .buffer_slot = 0,
          .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
-         .offset = offsetof(RageNativeDrawVertex, uv)},
+         .offset = offsetof(RageNativeGpuVertex, uv)},
         {.location = 2, .buffer_slot = 0,
          .format = SDL_GPU_VERTEXELEMENTFORMAT_UBYTE4,
-         .offset = offsetof(RageNativeDrawVertex, color)},
+         .offset = offsetof(RageNativeGpuVertex, color)},
         {.location = 3, .buffer_slot = 0,
          .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-         .offset = offsetof(RageNativeDrawVertex, normal)},
+         .offset = offsetof(RageNativeGpuVertex, normal)},
         {.location = 4, .buffer_slot = 0,
          .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
-         .offset = offsetof(RageNativeDrawVertex, fog)},
-        {.location = 5, .buffer_slot = 0,
-         .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT,
-         .offset = offsetof(RageNativeDrawVertex, lighting)},
+         .offset = offsetof(RageNativeGpuVertex, fog)},
         {.location = 6, .buffer_slot = 0,
          .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT,
-         .offset = offsetof(RageNativeDrawVertex, depthBias)},
-        {.location = 7, .buffer_slot = 0,
-         .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-         .offset = offsetof(RageNativeDrawVertex, environmentLight)},
-        {.location = 8, .buffer_slot = 0,
-         .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT,
-         .offset = offsetof(RageNativeDrawVertex, shadowReception)},
+         .offset = offsetof(RageNativeGpuVertex, depthBias)},
     };
     SDL_GPUColorTargetDescription color = {
         .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
@@ -293,18 +285,18 @@ static SDL_GPUGraphicsPipeline *ModernNativeCreateShadowPipeline(
     SDL_GPUShader *vertex, SDL_GPUShader *fragment) {
     const SDL_GPUVertexBufferDescription buffer = {
         .slot = 0,
-        .pitch = sizeof(RageNativeDrawVertex),
+        .pitch = sizeof(RageNativeGpuVertex),
         .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
     };
     const SDL_GPUVertexAttribute attributes[] = {
         {.location = 0,
          .buffer_slot = 0,
          .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-         .offset = offsetof(RageNativeDrawVertex, position)},
+         .offset = offsetof(RageNativeGpuVertex, position)},
         {.location = 1,
          .buffer_slot = 0,
          .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
-         .offset = offsetof(RageNativeDrawVertex, uv)},
+         .offset = offsetof(RageNativeGpuVertex, uv)},
     };
     SDL_GPUGraphicsPipelineCreateInfo info = {0};
     info.vertex_shader = vertex;
@@ -530,7 +522,7 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
     vertex = ModernNativeCreateShader(
         native_vert_spv, native_vert_spv_len,
         native_vert_msl, native_vert_msl_len, "vs_native",
-        SDL_GPU_SHADERSTAGE_VERTEX, 0, 2);
+        SDL_GPU_SHADERSTAGE_VERTEX, 0, 3);
     skyVertex = ModernNativeCreateShader(
         native_sky_vert_spv, native_sky_vert_spv_len,
         native_sky_vert_msl, native_sky_vert_msl_len, "vs_native_sky",
@@ -599,7 +591,7 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
      * main camera happened to leave made its contents depend on main-view
      * visibility and instance order. */
     buffer.size =
-        MODERN_NATIVE_MAX_BUFFER_VERTICES * sizeof(RageNativeDrawVertex);
+        MODERN_NATIVE_MAX_BUFFER_VERTICES * sizeof(RageNativeGpuVertex);
     s_vertexBuffer = SDL_CreateGPUBuffer(s_device, &buffer);
     transfer.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
     transfer.size = buffer.size;
@@ -840,8 +832,8 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         RAGE_RENDER_VEHICLE_SHADOW_EXTENT,
         RAGE_RENDER_VEHICLE_SHADOW_RESOLUTION,
         &s_shadowMap);
-    s_vertexCount = (s_cpuFogReference ? RenderBuildNativePassDraws : RenderBuildNativeGpuPassDraws)(
-        world, RAGE_RENDER_PASS_MAIN, aspect, ModernAssetsResidentMeshLookup, NULL,
+    s_vertexCount = RenderBuildNativeCompactPassDraws(
+        world, RAGE_RENDER_PASS_MAIN, aspect, s_cpuFogReference, ModernAssetsResidentMeshLookup, NULL,
         s_vertices,
         MODERN_NATIVE_MAX_VERTICES_PER_VIEW, s_spans, MODERN_NATIVE_MAX_SPANS,
         &s_spanCount);
@@ -852,8 +844,8 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         RageRenderWorld mirrorWorld = *world;
         uint32_t span;
         mirrorWorld.camera = world->mirrorCamera;
-        s_mirrorVertexCount = (s_cpuFogReference ? RenderBuildNativePassDraws : RenderBuildNativeGpuPassDraws)(
-            &mirrorWorld, RAGE_RENDER_PASS_MAIN, s_mirrorAspect,
+        s_mirrorVertexCount = RenderBuildNativeCompactPassDraws(
+            &mirrorWorld, RAGE_RENDER_PASS_MAIN, s_mirrorAspect, s_cpuFogReference,
             ModernAssetsResidentMeshLookup, NULL, s_vertices + mirrorFirstVertex,
             MODERN_NATIVE_MAX_VERTICES_PER_VIEW, s_mirrorSpans,
             MODERN_NATIVE_MAX_SPANS, &s_mirrorSpanCount);
@@ -951,9 +943,6 @@ int ModernNativeGpuWriteDrawDump(FILE *file) {
         float roughness = texture != NULL ? texture->definition.roughness : 1.0f;
         float metallic = texture != NULL ? texture->definition.metallic : 0.0f;
         int shading = texture != NULL ? (int)texture->definition.shading : 0;
-        const RageNativeDrawVertex *firstVertex =
-            span->firstVertex < s_vertexCount
-                ? &s_vertices[span->firstVertex] : NULL;
         uint32_t vertexIndex;
         fprintf(file,
                 "s %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u "
@@ -969,14 +958,14 @@ int ModernNativeGpuWriteDrawDump(FILE *file) {
                 (unsigned)span->carPaintColor2,
                 (unsigned)span->component,
                 roughness, metallic, shading,
-                firstVertex != NULL ? firstVertex->environmentLight[0] : 1.0f,
-                firstVertex != NULL ? firstVertex->environmentLight[1] : 1.0f,
-                firstVertex != NULL ? firstVertex->environmentLight[2] : 1.0f);
+                span->instanceState.environmentLight[0],
+                span->instanceState.environmentLight[1],
+                span->instanceState.environmentLight[2]);
         for (vertexIndex = span->firstVertex;
              vertexIndex < span->firstVertex + span->vertexCount &&
              vertexIndex < s_vertexCount;
              vertexIndex++) {
-            const RageNativeDrawVertex *vertex = &s_vertices[vertexIndex];
+            const RageNativeGpuVertex *vertex = &s_vertices[vertexIndex];
             fprintf(file,
                     "v %u %.9g %.9g %.9g %.9g %.9g %u %u %u %u "
                     "%.9g %.9g %.9g %.9g %.9g\n",
@@ -987,7 +976,7 @@ int ModernNativeGpuWriteDrawDump(FILE *file) {
                     (unsigned)vertex->color[2],
                     (unsigned)vertex->color[3], vertex->depthBias,
                     vertex->normal[0], vertex->normal[1], vertex->normal[2],
-                    vertex->shadowReception);
+                    span->instanceState.shadowReception);
         }
     }
     return ferror(file) == 0;
@@ -1083,7 +1072,7 @@ int ModernNativeGpuWriteProbe(FILE *file, int x, int y,
             ModernNativeProbeVertex input[3], clipped[4];
             uint32_t corner, clippedCount, piece;
             for (corner = 0; corner < 3; corner++) {
-                const RageNativeDrawVertex *vertex = &s_vertices[first + corner];
+                const RageNativeGpuVertex *vertex = &s_vertices[first + corner];
                 RageRenderVec3 position = {
                     vertex->position[0], vertex->position[1],
                     vertex->position[2]};
@@ -1516,6 +1505,8 @@ static void ModernNativeGpuDrawSet(
     uint32_t spanIndex;
     uint32_t drawCount = 0;
     if (renderCamera == NULL) return;
+    RageNativeInstanceState boundInstance = {0};
+    int hasBoundInstance = 0;
     for (spanIndex = 0; spanIndex < spanCount; spanIndex++)
         (void)ModernNativeLoadTexture(command, &spans[spanIndex]);
     if (drawSky &&
@@ -1619,6 +1610,17 @@ static void ModernNativeGpuDrawSet(
                 SDL_BindGPUFragmentSamplers(pass, 0, &binding, 1);
                 boundTexture = texture;
                 boundAllowClearcoat = allowClearcoat;
+            }
+            if (!hasBoundInstance || memcmp(&boundInstance, &span->instanceState,
+                                             sizeof(boundInstance)) != 0) {
+                float instanceUniform[2][4] = {
+                    {span->instanceState.environmentLight[0],
+                     span->instanceState.environmentLight[1],
+                     span->instanceState.environmentLight[2], 0},
+                    {span->instanceState.lighting, span->instanceState.shadowReception, 0, 0}};
+                SDL_PushGPUVertexUniformData(command, 2, instanceUniform, sizeof(instanceUniform));
+                boundInstance = span->instanceState;
+                hasBoundInstance = 1;
             }
             SDL_DrawGPUPrimitives(pass, span->vertexCount, 1,
                                   span->firstVertex, 0);
