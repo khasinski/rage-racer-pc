@@ -1,4 +1,5 @@
 #include "game/race.h"
+#include "game/grand_prix_content.h"
 #include "game/state.h"
 #include "game/track_internal.h"
 
@@ -8,20 +9,21 @@ enum {
 
 static void DrawCourseLandmarks(s32 course, s32 timer, s32 animate,
                                 s32 usePresentationAnimation) {
-    if (g_GrandPrixClass == GRAND_PRIX_FINAL_CLASS_INDEX) {
+    const GrandPrixClassDefinition *definition = GrandPrixContentClass(g_GrandPrixClass);
+    if (definition && definition->freezeScenery) {
         animate = 0;
     }
 
     switch (course) {
     case 0:
         DrawSpinningScenery(timer, animate);
-        if (g_GrandPrixClass >= 4) {
+        if (definition ? definition->coastHighScenery : g_GrandPrixClass >= 4) {
             DrawHighClassScenery();
         }
         DrawStaticScenery(0);
         break;
     case 1:
-        if (g_GrandPrixClass >= 2) {
+        if (definition ? definition->courseOneSpinningScenery : g_GrandPrixClass >= 2) {
             DrawSpinningScenery(timer, animate);
         }
         if (animate != 0) {
@@ -57,8 +59,9 @@ void DrawCourseScenery(s32 course, s32 timer, s32 animate) {
 }
 
 void DrawPresentationCourseScenery(s32 timer, s32 animate) {
+    const GrandPrixClassDefinition *definition = GrandPrixContentClass(g_GrandPrixClass);
     DrawPresentationAnimatedScenery(
         timer, 0, g_SceneId == REPLAY_SCENE_ID,
-        g_GrandPrixClass == GRAND_PRIX_FINAL_CLASS_INDEX ? 0 : animate);
+        definition && definition->freezeScenery ? 0 : animate);
     DrawCourseLandmarks(SeriesCourseIndex(), timer, animate, 1);
 }

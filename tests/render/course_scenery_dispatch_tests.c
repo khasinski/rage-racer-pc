@@ -87,6 +87,17 @@ static int Expect(const char *label, const Event *expected, s32 count) {
 }
 
 int main(void) {
+    for (s32 cls = 0; cls < 6; ++cls) {
+        Event coast[] = {
+            {EVENT_ANIMATED, 9, 0, 0},
+            {EVENT_SPINNING, 9, cls == 5 ? 0 : 1, 0},
+            {cls >= 4 ? EVENT_HIGH_CLASS : EVENT_STATIC, 0, 0, 0},
+            {EVENT_STATIC, 0, 0, 0},
+        };
+        g_GrandPrixClass = cls;
+        DrawCourseScenery(0, 9, 1);
+        if (!Expect("all class coast variants", coast, cls >= 4 ? 4 : 3)) return 1;
+    }
     static const Event course0[] = {
         {EVENT_ANIMATED, 9, 0, 0},
         {EVENT_SPINNING, 9, 1, 0},

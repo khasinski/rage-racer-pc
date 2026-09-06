@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Class definitions now carry scenery choices: finale animation freeze, Mythical
+Coast high-class landmarks and course-one spinning scenery. Both legacy and
+presentation dispatch consume the shared values; invalid-index landmark
+fallbacks retain previous behavior. The dispatcher fixture adds all six Coast
+class variants alongside existing course/finale/presentation cases. Full Linux
+game builds; scenery dispatch and class progression pass (2/2). These are call
+sequence tests, not rendered image equivalence or external scenery definitions.
+
 Save-default course initialization derives unused best-place slots from the
 shared class course count, preserving the retail 0xFF fourth-slot marker for
 classes 0/1. All six valid classes and adjacent invalid indices are covered;
