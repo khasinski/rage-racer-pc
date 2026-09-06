@@ -291,8 +291,10 @@ class LauncherService {
             .then(()=>this.update()).catch(()=>{});
         });
       } catch(e) {
-        if(log)await log.close();
-        if(active)await fs.rm(active,{recursive:true,force:true});
+        // Each owned resource gets a cleanup attempt even if another fails.
+        // Preserve the launch error rather than replacing it with a log error.
+        await Promise.allSettled([log?log.close():Promise.resolve(),
+          active?fs.rm(active,{recursive:true,force:true}):Promise.resolve()]);
         throw e;
       }
     },false);

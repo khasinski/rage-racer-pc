@@ -255,6 +255,32 @@ test('exported mods preserve identity, description and disc compatibility when r
  }finally{await fs.rm(root,{recursive:true,force:true});}
 });
 
+test('failed spawn cleans its profile even when closing the log fails',async()=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-launch-cleanup-'));
+ const open=fs.open;
+ try{
+  const data=path.join(root,'data'),disc=path.join(root,'disc.bin');
+  await fs.mkdir(data);await fs.writeFile(path.join(data,'manifest.json'),'{}');await fs.writeFile(disc,'fixture');
+  const service=new LauncherService({root,bin:root,config:path.resolve(__dirname,'../resources/rage-port.ini')});
+  await service.init();service.state.disc={path:disc,data,region:'PAL'};
+  const active=path.join(root,'active-mods-fixture');await fs.mkdir(active);
+  service.composeMods=async()=>active;
+  let closed=false;
+  fs.open=async(...args)=>{
+   const file=await open(...args);
+   if(path.basename(args[0])==='game-process.log'){
+    const close=file.close.bind(file);
+    file.close=async()=>{await close();closed=true;throw Error('injected log close failure');};
+   }
+   return file;
+  };
+  await assert.rejects(service.launch(),/ENOENT/);
+  assert.equal(closed,true);
+  await assert.rejects(fs.access(active),{code:'ENOENT'});
+  assert.equal(service.game,null);assert.equal(service.busy,null);
+ }finally{fs.open=open;await fs.rm(root,{recursive:true,force:true});}
+});
+
 test('failed game launch releases state and reports process failure on retry',async()=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-launch-failure-'));
  try{

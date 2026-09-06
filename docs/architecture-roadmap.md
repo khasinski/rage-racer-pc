@@ -50,6 +50,13 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Launch failure cleanup now independently attempts log closure and removal of
+the owned composed profile, retaining the original spawn/configuration error.
+Previously a rejected log close skipped profile removal and masked that error.
+An injected close failure after an actual ENOENT spawn verifies profile removal,
+released service state and the original diagnostic. All 74 launcher tests pass
+on Linux; cleanup failures are best-effort, not guaranteed filesystem recovery.
+
 Composed profiles now remain under private mod-sources staging until the final
 manifest passes the compiled parser, then a same-filesystem directory rename
 publishes active-mods. A fault-injection regression checks private placement,
