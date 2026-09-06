@@ -175,6 +175,21 @@ static void Reset(void) {
 }
 
 int main(void) {
+    for (s32 cls = 0; cls < 5; ++cls) {
+        for (s32 course = 0; course < 4; ++course) {
+            Reset();
+            g_SceneTimer = 0x1CC;
+            s_randomValues[1] = cls;
+            s_randomValues[2] = course;
+            s_randomValues[3] = 2;
+            UpdateFrontend();
+            s32 reroll = cls < 2 && course == 3;
+            CHECK(g_GrandPrixClass == cls);
+            CHECK(g_CourseIndex == (reroll ? 2 : course));
+            CHECK(s_randomIndex == (reroll ? 4 : 3));
+            CHECK(s_trackRequests == 1 && g_SceneTimer == 0x1CD);
+        }
+    }
     Reset();
     g_TitlePulse = 0x80;
     g_TitleMenuSelection = 0;

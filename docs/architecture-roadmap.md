@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Attract frontend course selection now consults the shared class course count
+instead of duplicating the early-class fourth-course exclusion. Its retail
+five-class random selection and conditional reroll remain unchanged. The
+frontend integration fixture checks all 20 class/course combinations, selected
+course, RNG call count and load transition. Full Linux game builds and frontend
+passes. This covers deterministic selection logic, not a long visual attract
+run, and does not yet migrate save-default unused-course markers.
+
 Round-screen numbering now reads course counts from GrandPrixClassDefinition
 instead of duplicating the class<2 rule. Round-screen and progression class
 bounds use the shared content count. A retail oracle covers all six classes,

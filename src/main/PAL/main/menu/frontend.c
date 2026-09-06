@@ -6,6 +6,7 @@
 #include "game/menu_internal.h"
 #include "game/frontend_internal.h"
 #include "game/race.h"
+#include "game/grand_prix_content.h"
 #include "game/random.h"
 #include "game/render_internal.h"
 #include "game/screens.h"
@@ -88,6 +89,7 @@ void UpdateTitleAttract(void) {
 
 static void UpdateAttractRaceLoading(void) {
     s32 randomCourse;
+    const GrandPrixClassDefinition *definition;
 
     if (g_FrontendState == FRONTEND_STATE_MENU_EXIT ||
         (g_AttractCycleCount % 2) != 0) {
@@ -98,10 +100,11 @@ static void UpdateAttractRaceLoading(void) {
     case FRONTEND_ATTRACT_LOAD_TRACK:
         g_GrandPrixSeries = 0;
         g_GrandPrixClass = (Random15() & 0xFFF) % 5;
+        definition = GrandPrixContentClass(g_GrandPrixClass);
         randomCourse = (Random15() & 0xFFF) % 4;
         g_CourseIndex = randomCourse;
-        if (g_GrandPrixClass < 2 && randomCourse == 3) {
-            g_CourseIndex = (Random15() & 0xFFF) % 3;
+        if (randomCourse >= definition->courseCount) {
+            g_CourseIndex = (Random15() & 0xFFF) % definition->courseCount;
         }
         RequestCourseTextureAssets();
         g_SceneTimer++;
