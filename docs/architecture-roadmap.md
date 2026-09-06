@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Post-numeric-change smoke checkpoint: rebuilt current smoke/world/snapshot
+targets and passed seven Linux tests in 7.85 seconds: default selected-disc
+modern startup for PAL/NTSC-U/NTSC-J, native_render_world, submit recovery,
+world interpolation and snapshot ownership. Real regional CUE paths were
+provided; no regional cases were skipped. This refreshes GPU/startup evidence
+after angle/phase wrapping changes, not full-race pixel/performance evidence
+or a rerun of the longer repeated-race matrix.
+
 The standalone renderer gate now also builds the production interpolation,
 projection and shadow sources with the full render_world_tests fixture.
 Both world and snapshot contracts pass on Linux and Windows 11 ClangCL
