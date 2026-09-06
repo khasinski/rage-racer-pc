@@ -9,15 +9,41 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 #include "texture_patch.h"
+
+/* Publish only a complete, successfully closed file. An existing staging
+ * path is never overwritten or removed: it may belong to another process. */
+static int WriteAsset(const char *path, const void *data, size_t size) {
+    char staging[1100];
+    int length = snprintf(staging, sizeof(staging), "%s.rage-pack.tmp", path);
+    FILE *file;
+    int ok;
+    if (length < 0 || (size_t)length >= sizeof(staging)) return 0;
+    file = fopen(staging, "wbx");
+    if (file == NULL) return 0;
+    ok = fwrite(data, 1, size, file) == size;
+    if (fclose(file) != 0) ok = 0;
+    if (ok) {
+#ifdef _WIN32
+        ok = MoveFileExA(staging, path, MOVEFILE_REPLACE_EXISTING) != 0;
+#else
+        ok = rename(staging, path) == 0;
+#endif
+    }
+    if (!ok) remove(staging);
+    return ok;
+}
 
 int main(int argc, char **argv) {
     const char *directory;
     char indexPath[1024], line[512];
     FILE *index;
     int seen[512];
-    int changed = 0, assets = 0, i;
+    int changed = 0, assets = 0, failed = 0, i;
 
     if (argc != 2) {
         fprintf(stderr, "usage: rage-pack <mod directory>\n");
@@ -53,15 +79,24 @@ int main(int argc, char **argv) {
         if (!seen[i]) continue;
         snprintf(rawPath, sizeof(rawPath), "%s/raw/asset_%03d.bin", directory, i);
         raw = fopen(rawPath, "rb");
-        if (raw == NULL) continue;
-        fseek(raw, 0, SEEK_END);
+        if (raw == NULL) {
+            fprintf(stderr, "rage-pack: %s cannot be read\n", rawPath);
+            failed = 1;
+            continue;
+        }
+        if (fseek(raw, 0, SEEK_END) != 0) {
+            fclose(raw);
+            failed = 1;
+            continue;
+        }
         size = ftell(raw);
-        fseek(raw, 0, SEEK_SET);
+        if (fseek(raw, 0, SEEK_SET) != 0) size = -1;
         data = size > 0 ? malloc((size_t)size) : NULL;
         if (data == NULL || fread(data, 1, (size_t)size, raw) != (size_t)size) {
             fprintf(stderr, "rage-pack: %s cannot be read\n", rawPath);
             fclose(raw);
             free(data);
+            failed = 1;
             continue;
         }
         fclose(raw);
@@ -69,20 +104,17 @@ int main(int argc, char **argv) {
 
         patched = TexturePatchAsset(directory, i, data, (size_t)size);
         if (patched > 0) {
-            raw = fopen(rawPath, "wb");
-            if (raw == NULL) {
-                fprintf(stderr, "rage-pack: %s cannot be written\n", rawPath);
+            if (!WriteAsset(rawPath, data, (size_t)size)) {
+                fprintf(stderr, "rage-pack: %s cannot be replaced; original preserved\n", rawPath);
                 free(data);
+                failed = 1;
                 continue;
             }
-            if (fwrite(data, 1, (size_t)size, raw) != (size_t)size)
-                fprintf(stderr, "rage-pack: %s was not written in full\n", rawPath);
-            fclose(raw);
             changed += patched;
         }
         free(data);
     }
 
     printf("rage-pack: %d textures written across %d assets\n", changed, assets);
-    return 0;
+    return failed ? 1 : 0;
 }

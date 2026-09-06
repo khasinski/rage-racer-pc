@@ -50,6 +50,17 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Packed-asset publication now stages each edited raw file with exclusive create,
+checks the full write and close, then replaces the original with POSIX rename
+or Windows MoveFileEx. Failed staging/publication preserves the original;
+pre-existing staging files are not overwritten or cleaned up. Raw read/write
+failures return nonzero instead of an apparent successful pack. The compiled
+archive fixture verifies a staging collision, unchanged original/reservation,
+then successful retry and exact patched bytes. All five standalone contracts
+pass on Linux and Windows VM. This is per-file publication, not an all-assets
+transaction, power-loss durability guarantee or strict texture-error reporting
+(the shared patcher's existing skip-invalid-texture policy remains unchanged).
+
 GPU upload ownership follow-up: the native texture transfer queue now holds
 the complete 2048-entry texture cache rather than 256 entries. The old overflow
 path waited for GPU idle and released transfers even though their command

@@ -20,7 +20,7 @@ static size_t Image(unsigned char *p,unsigned colours,unsigned words,unsigned ro
     for(unsigned i=0;i<2*words*rows;++i)pix[12+i]=(unsigned char)i;
     return 12+payload;
 }
-static void RunExpect(const char *tool,const char *a,const char *b,const char *message) {
+static void RunCode(const char *tool,const char *a,const char *b,const char *message,int expected) {
     const char *args[]={tool,a,b,NULL};
     SDL_PropertiesID props=SDL_CreateProperties();assert(props);
     assert(SDL_SetPointerProperty(props,SDL_PROP_PROCESS_CREATE_ARGS_POINTER,(void *)args));
@@ -28,10 +28,11 @@ static void RunExpect(const char *tool,const char *a,const char *b,const char *m
     assert(SDL_SetBooleanProperty(props,SDL_PROP_PROCESS_CREATE_STDERR_TO_STDOUT_BOOLEAN,true));
     SDL_Process *process=SDL_CreateProcessWithProperties(props);SDL_DestroyProperties(props);assert(process);
     int code=-1;size_t size;char *output=SDL_ReadProcess(process,&size,&code);
-    SDL_DestroyProcess(process);assert(output&&code==0);
+    SDL_DestroyProcess(process);assert(output&&code==expected);
     if(message)assert(strstr(output,message));
     SDL_free(output);
 }
+static void RunExpect(const char *tool,const char *a,const char *b,const char *message){RunCode(tool,a,b,message,0);}
 static void Run(const char *tool,const char *a,const char *b){RunExpect(tool,a,b,NULL);}
 static void Save(const char *path,const void *bytes,size_t size) {
     FILE *f=fopen(path,"wbx");assert(f);assert(fwrite(bytes,1,size,f)==size);assert(!fclose(f));
@@ -68,6 +69,12 @@ int main(int argc,char **argv) {
     assert(alpha==255);assert(SDL_WriteSurfacePixel(surface,0,0,r,g,blue,alpha));
     assert(SDL_SavePNG(surface,file));SDL_DestroySurface(surface);
     size_t editedPngSize;void *editedPng=SDL_LoadFile(file,&editedPngSize);assert(editedPng);
+    /* A competing staging file must survive and the original stay intact. */
+    snprintf(file,sizeof(file),"%s/raw/asset_001.bin.rage-pack.tmp",mod);
+    Save(file,"reserved",8);
+    RunCode(argv[2],mod,NULL,"original preserved",1);
+    Check(file,"reserved",8);assert(SDL_RemovePath(file));
+    snprintf(file,sizeof(file),"%s/raw/asset_001.bin",mod);Check(file,second,b);
     Run(argv[2],mod,NULL);
     /* Palette slot 1 is unique; only the first 8-bit texel must change. */
     second[16+12+512+12]=1;
