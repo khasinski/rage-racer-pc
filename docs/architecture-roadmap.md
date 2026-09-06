@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Native fixture contract now pins exact SHA-256 values for RMESH, runtime index,
+material sidecar, RGBA and paint mask. Expected bytes were independently
+reconstructed in memory from the original fixture specification using the
+existing Node toolchain and compared before pinning, not merely hashed from
+unchecked generator output. Both Linux and Windows gates pass (0.01/0.07s).
+PNG compressed bytes are deliberately not pinned across SDL versions; current
+PNG coverage checks signature/dimensions plus live renderer loading, not yet a
+standalone full decoded-pixel oracle.
+
 Compiled native fixture now has a standalone SDL contract checking generation
 under Unicode/spaced paths, mesh/RGBA/paint sizes, PNG dimensions/signature and
 refusal to replace an existing mesh. Windows initially failed because ordinary
