@@ -13,6 +13,8 @@ typedef struct RageRuntimeMeshBounds {
     int valid;
 } RageRuntimeMeshBounds;
 
+typedef struct RageRuntimeVertex RageRuntimeVertex;
+
 typedef struct RageRuntimeMesh {
     const uint8_t *bytes;
     size_t size;
@@ -25,15 +27,20 @@ typedef struct RageRuntimeMesh {
     /* Optional caller-owned cache; bytes must remain immutable while attached.
      * RuntimeMeshOpen clears this pointer, including on failure. */
     const RageRuntimeMeshBounds *bounds;
+    /* Optional immutable, caller-owned asset-local geometry. These contain
+     * no view or instance state and share the mesh view's lifetime. Open
+     * clears both pointers. Wire bytes remain the validation authority. */
+    const RageRuntimeVertex *vertices;
+    const uint32_t *indices;
 } RageRuntimeMesh;
 
-typedef struct RageRuntimeVertex {
+struct RageRuntimeVertex {
     float position[3];
     float normal[3];
     uint8_t color[4];
     float uv[2];
     uint32_t material;
-} RageRuntimeVertex;
+};
 
 enum { RAGE_RUNTIME_VERTEX_BYTES = 40 };
 typedef struct RageRuntimeMeshLayout {

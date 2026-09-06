@@ -198,6 +198,10 @@ int RuntimeMeshVertex(const RageRuntimeMesh *mesh, uint32_t vertexIndex,
         vertexIndex >= mesh->vertexCount ||
         !ElementRange(mesh->verticesOffset, vertexIndex,
                       RAGE_RMESH_VERTEX_SIZE, mesh->size, &offset)) return 0;
+    if (mesh->vertices != NULL) {
+        *out = mesh->vertices[vertexIndex];
+        return 1;
+    }
     p = mesh->bytes + offset;
     for (unsigned i = 0; i < 3; ++i) {
         out->position[i] = RageReadFloat(p + i * 4);
@@ -219,7 +223,8 @@ int RuntimeMeshIndex(const RageRuntimeMesh *mesh, uint32_t indexIndex,
         indexIndex >= mesh->indexCount ||
         !ElementRange(mesh->indicesOffset, indexIndex, sizeof(uint32_t),
                       mesh->size, &offset)) return 0;
-    index = RageReadU32(mesh->bytes + offset);
+    index = mesh->indices != NULL ? mesh->indices[indexIndex]
+                                  : RageReadU32(mesh->bytes + offset);
     if (index >= mesh->vertexCount) return 0;
     *out = index;
     return 1;

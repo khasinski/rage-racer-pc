@@ -619,9 +619,14 @@ const RageRuntimeCachedMesh *NativeAssetImporterFind(
     s_entryCount++;
     fprintf(stderr,
             "rage-port: imported native mesh asset=%u set=%u meshes=%u "
-            "materials=%u\n",
+            "materials=%u vertices=%u indices=%u decoded_bytes=%zu\n",
             instance->assetKey, (unsigned)instance->assetSet,
-            entry->cached.mesh.meshCount, entry->materialCount);
+            entry->cached.mesh.meshCount, entry->materialCount,
+            entry->cached.mesh.vertexCount, entry->cached.mesh.indexCount,
+            (entry->cached.ownedVertices != NULL
+                ? (size_t)entry->cached.mesh.vertexCount * sizeof(RageRuntimeVertex) : 0) +
+            (entry->cached.ownedIndices != NULL
+                ? (size_t)entry->cached.mesh.indexCount * sizeof(uint32_t) : 0));
     return &entry->cached;
 }
 

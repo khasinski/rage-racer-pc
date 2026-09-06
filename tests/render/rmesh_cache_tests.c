@@ -108,6 +108,56 @@ static void test_failed_prepare(void) {
     RuntimeMeshCacheRelease(&cache);
 }
 
+static void test_decoded_geometry_lifetime(void) {
+    uint8_t bytes[164] = {0};
+    RageRuntimeCachedMesh owner = {0};
+    RageRuntimeMesh wire;
+    const uint32_t order[3] = {2, 0, 1};
+    EXPECT(RuntimeMeshEncodeHeader(bytes, sizeof(bytes), 1, 3, 3));
+    write_u32(bytes + 28, 3);
+    for (unsigned i = 0; i < 3; ++i) {
+        RageRuntimeVertex vertex = {0};
+        vertex.position[0] = (float)i - 1.25f;
+        vertex.position[2] = -10.5f;
+        vertex.normal[1] = 1;
+        vertex.uv[0] = (float)i * 0.25f;
+        vertex.uv[1] = -0.5f;
+        vertex.color[0] = (uint8_t)(i * 97);
+        vertex.color[3] = 255;
+        vertex.material = i == 2 ? UINT32_MAX : RAGE_RUNTIME_MATERIAL_SCROLL_U | i;
+        EXPECT(RuntimeVertexEncode(bytes + 32 + i * 40, 40, &vertex));
+        write_u32(bytes + 152 + i * 4, order[i]);
+    }
+    EXPECT(RuntimeMeshOpen(&wire, bytes, sizeof(bytes)));
+    EXPECT(wire.vertices == NULL && wire.indices == NULL);
+    for (unsigned cycle = 0; cycle < 3; ++cycle) {
+        EXPECT(RuntimeCachedMeshAdopt(&owner, bytes, sizeof(bytes), NULL, NULL));
+        EXPECT(owner.mesh.vertices == owner.ownedVertices && owner.ownedVertices != NULL);
+        EXPECT(owner.mesh.indices == owner.ownedIndices && owner.ownedIndices != NULL);
+        for (unsigned i = 0; i < 3; ++i) {
+            RageRuntimeVertex reference, decoded;
+            uint32_t index = UINT32_MAX;
+            EXPECT(RuntimeMeshVertex(&wire, i, &reference));
+            EXPECT(RuntimeMeshVertex(&owner.mesh, i, &decoded));
+            EXPECT(memcmp(&reference, &decoded, sizeof(reference)) == 0);
+            EXPECT(RuntimeMeshIndex(&owner.mesh, i, &index) && index == order[i]);
+        }
+        RageRuntimeVertex invalid;
+        uint32_t invalidIndex = UINT32_MAX;
+        EXPECT(!RuntimeMeshVertex(&owner.mesh, 3, &invalid));
+        EXPECT(!RuntimeMeshIndex(&owner.mesh, 3, &invalidIndex) && invalidIndex == 0);
+        RageRuntimeMesh reopened = owner.mesh;
+        EXPECT(RuntimeMeshOpen(&reopened, bytes, sizeof(bytes)));
+        EXPECT(reopened.vertices == NULL && reopened.indices == NULL);
+        EXPECT(!RuntimeMeshOpen(&reopened, bytes, 1));
+        EXPECT(reopened.vertices == NULL && reopened.indices == NULL);
+        RuntimeCachedMeshRelease(&owner);
+        EXPECT(owner.ownedVertices == NULL && owner.ownedIndices == NULL);
+        EXPECT(owner.mesh.vertices == NULL && owner.mesh.indices == NULL);
+        RuntimeCachedMeshRelease(&owner);
+    }
+}
+
 int main(void) {
     static const char index[] = "10 model models/a.rmesh models/a.rmat\n";
     RageRuntimeCachedMesh entries[1];
@@ -167,6 +217,7 @@ int main(void) {
     RuntimeMeshCacheRelease(NULL);
     test_ownership();
     test_failed_prepare();
+    test_decoded_geometry_lifetime();
     {
         static const char unsafeIndex[] = "10 model ../a.rmesh models/a.rmat\n";
         int before = readCalls;

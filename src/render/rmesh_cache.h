@@ -12,7 +12,8 @@ typedef int (*RageRuntimeReadFile)(void *context, const char *path,
                                    size_t *size);
 typedef void (*RageRuntimeFreeFile)(void *context, const void *bytes);
 
-/* Owns bytes (through the recorded provider) and optional bounds. Do not copy
+/* Owns bytes (through the recorded provider), decoded geometry and optional
+ * bounds. Do not copy
  * a live owner except as an explicit move; consumers borrow its mesh view. */
 typedef struct RageRuntimeCachedMesh {
     uint32_t assetKey;
@@ -21,6 +22,8 @@ typedef struct RageRuntimeCachedMesh {
     const void *ownedBytes;
     RageRuntimeAssetLocation location;
     RageRuntimeMeshBounds *ownedBounds;
+    RageRuntimeVertex *ownedVertices;
+    uint32_t *ownedIndices;
     RageRuntimeFreeFile releaseBytes;
     void *releaseContext;
 } RageRuntimeCachedMesh;
@@ -28,11 +31,13 @@ typedef struct RageRuntimeCachedMesh {
 /* Zero-initialize before adoption. Ownership transfers only on success;
  * failure leaves both the entry and caller's bytes untouched. An occupied
  * entry cannot be replaced: borrowed mesh pointers live until explicit release.
- * A NULL release callback borrows bytes but still owns prepared bounds. */
+ * A NULL release callback borrows bytes but still owns prepared geometry and
+ * bounds. Optional allocation failure keeps the validated wire view usable;
+ * decoded arrays are published together, never partially. */
 int RuntimeCachedMeshAdopt(RageRuntimeCachedMesh *entry, const void *bytes,
                           size_t size, RageRuntimeFreeFile releaseBytes,
                           void *releaseContext);
-/* Idempotent; invalidates all borrowed mesh/bounds views of this entry. */
+/* Idempotent; invalidates all borrowed mesh/geometry/bounds views. */
 void RuntimeCachedMeshRelease(RageRuntimeCachedMesh *entry);
 
 typedef struct RageRuntimeMeshCache {

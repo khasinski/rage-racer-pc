@@ -3,6 +3,36 @@
 #include <string.h>
 #include <stdlib.h>
 
+/* Publish only a complete decoded asset. On allocation failure the validated
+ * wire reader remains usable; this never changes renderer selection. */
+static void PrepareGeometry(RageRuntimeCachedMesh *entry) {
+    RageRuntimeMesh *mesh = &entry->mesh;
+    RageRuntimeVertex *vertices;
+    uint32_t *indices;
+    if (mesh->vertexCount == 0 || mesh->indexCount == 0 ||
+        sizeof(*vertices) > SIZE_MAX / mesh->vertexCount ||
+        sizeof(*indices) > SIZE_MAX / mesh->indexCount) return;
+    vertices = malloc((size_t)mesh->vertexCount * sizeof(*vertices));
+    indices = malloc((size_t)mesh->indexCount * sizeof(*indices));
+    if (vertices == NULL || indices == NULL) {
+        free(vertices);
+        free(indices);
+        return;
+    }
+    for (uint32_t i = 0; i < mesh->vertexCount; ++i)
+        if (!RuntimeMeshVertex(mesh, i, &vertices[i])) goto fail;
+    for (uint32_t i = 0; i < mesh->indexCount; ++i)
+        if (!RuntimeMeshIndex(mesh, i, &indices[i])) goto fail;
+    entry->ownedVertices = vertices;
+    entry->ownedIndices = indices;
+    mesh->vertices = vertices;
+    mesh->indices = indices;
+    return;
+fail:
+    free(vertices);
+    free(indices);
+}
+
 int RuntimeCachedMeshAdopt(RageRuntimeCachedMesh *entry, const void *bytes,
                           size_t size, RageRuntimeFreeFile releaseBytes,
                           void *releaseContext) {
@@ -17,6 +47,7 @@ int RuntimeCachedMeshAdopt(RageRuntimeCachedMesh *entry, const void *bytes,
     entry->ownedBounds = bounds;
     entry->releaseBytes = releaseBytes;
     entry->releaseContext = releaseContext;
+    PrepareGeometry(entry);
     return 1;
 }
 
@@ -25,6 +56,8 @@ void RuntimeCachedMeshRelease(RageRuntimeCachedMesh *entry) {
     if (entry->ownedBytes != NULL && entry->releaseBytes != NULL)
         entry->releaseBytes(entry->releaseContext, entry->ownedBytes);
     free(entry->ownedBounds);
+    free(entry->ownedVertices);
+    free(entry->ownedIndices);
     memset(entry, 0, sizeof(*entry));
 }
 
