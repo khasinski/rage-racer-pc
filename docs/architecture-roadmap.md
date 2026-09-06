@@ -50,6 +50,13 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Real-disc launcher tests now inject ENOSPC at launcher.json rename after native
+extraction succeeds. PAL/U/J each preserve the previous in-memory state and
+exact persisted bytes, remove the failed games staging directory and profile
+temporary file, clear the operation lock, and permit the next valid import.
+This is a scoped publication fault injection, not actual disk exhaustion or
+proof of crash durability between filesystem operations.
+
 Launcher preparation rollback is now exercised with a real native-tool failure:
 after each PAL/U/J import a one-sector invalid BIN is rejected. In-memory and
 persisted state, previous manifest and games-directory entries remain intact;

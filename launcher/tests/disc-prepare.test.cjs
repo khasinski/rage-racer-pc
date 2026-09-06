@@ -5,7 +5,7 @@ const {LauncherService}=require('../main/service.cjs');
 
 // Opt-in owned-data integration: execute the actual game archive reader and C extractor.
 for(const [region,variable] of [['PAL','RAGE_LAUNCHER_PAL_CUE'],['NTSC-U','RAGE_LAUNCHER_NTSC_U_CUE'],['NTSC-J','RAGE_LAUNCHER_NTSC_J_CUE']]) {
- test(`launcher prepares and reloads a real ${region} disc`,{skip:!process.env[variable]},async()=>{
+ test(`launcher prepares and reloads a real ${region} disc`,{skip:!process.env[variable]},async(t)=>{
   const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-disc-prepare-'));
   const source=path.resolve(__dirname,'../..');
   const options={root,bin:process.env.RAGE_LAUNCHER_BUILD_DIR||path.join(source,'build'),config:path.join(source,'rage-port.ini')};
@@ -38,6 +38,21 @@ for(const [region,variable] of [['PAL','RAGE_LAUNCHER_PAL_CUE'],['NTSC-U','RAGE_
    const afterFailure=new LauncherService(options);await afterFailure.init();
    assert.deepEqual(afterFailure.state,previous);
    assert.equal((await afterFailure.snapshot()).ready,true);
+   const profile=path.join(root,'launcher.json');
+   const saved=await fs.readFile(profile);
+   const rename=fs.rename;
+   const renameMock=t.mock.method(fs,'rename',async(from,to)=>{
+    if(to===profile)throw Object.assign(Error('Injected profile publication failure'),{code:'ENOSPC'});
+    return rename(from,to);
+   });
+   try {
+    await assert.rejects(afterFailure.prepare(path.resolve(process.env[variable])),/Injected profile publication failure/);
+   } finally {renameMock.mock.restore();}
+   assert.deepEqual(afterFailure.state,previous);
+   assert.equal(afterFailure.busy,null);
+   assert.deepEqual(await fs.readFile(profile),saved);
+   assert.deepEqual(await fs.readdir(path.join(root,'games')),games);
+   assert.equal((await fs.readdir(root)).some(name=>name.startsWith('launcher.json.')&&name.endsWith('.tmp')),false);
    await afterFailure.prepare(path.resolve(process.env[variable]));
    assert.equal(afterFailure.busy,null);
    assert.equal(afterFailure.state.disc.region,region);
