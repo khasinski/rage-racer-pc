@@ -50,6 +50,19 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Added tools/rage_snapshot_bench.c, a standalone compiled steady-state CPU probe
+for owned-world copies (20000 iterations per size, allocation identity and
+copied values checked). Host Linux GCC -O2 measurements across three runs are
+recorded as a microbenchmark, not a frame-time gate: 256 instances copy 43008
+bytes, 2048 copy 344064 bytes, and 8192 copy 1376256 bytes. First two runs took
+0.738-0.808 us, 5.204-5.248 us and 47.338-48.575 us respectively. Reproduction:
+cc -O2 -DNDEBUG -std=c11 -Isrc tools/rage_snapshot_bench.c
+src/render/render_world_snapshot.c src/render/render_world.c -lm
+-o build/rage-snapshot-bench; then build/rage-snapshot-bench.
+Warm reusable buffers exclude first-allocation/growth cost and do not measure
+cache contention with the game, GPU work or frame-tail latency. Full-game A/B
+performance evidence remains required.
+
 Prepared-world image checkpoint: 432 PPMs (18 retail car keys, 24 quaternion
 angles each, 240x180/elevation 20) are byte-identical between the earlier local
 stage executable and the rebuilt current stage on Linux offscreen. Evidence:
