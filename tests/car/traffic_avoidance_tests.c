@@ -335,21 +335,25 @@ static int CheckRubberBandBranches(void) {
     return 0;
 }
 
-static void Fold(FILE *out, const char *label, const GameCarRuntime *car) {
-    char line[256];
+static void FoldText(FILE *out, const char *text) {
     const char *p;
-
-    snprintf(line, sizeof(line),
-             "%s -> step=%d active=%d target=%d lateral=%d nearby=%u limit=%d\n",
-             label, (int)(u16)car->avoidanceStep, (int)car->avoidanceActive,
-             (int)car->avoidanceTargetOffset, (int)(u16)car->aiLateralOffset,
-             (unsigned)(u16)car->nearbyCarCount,
-             (int)car->accelerationLimit);
-    for (p = line; *p != '\0'; p++) {
+    for (p = text; *p != '\0'; p++) {
         s_digest = (s_digest ^ (unsigned char)*p) * 16777619UL;
         s_digest &= 0xFFFFFFFFUL;
     }
-    if (out != NULL) fputs(line, out);
+    if (out != NULL) fputs(text, out);
+}
+
+static void Fold(FILE *out, const char *label, const GameCarRuntime *car) {
+    char state[256];
+    snprintf(state, sizeof(state),
+             " -> step=%d active=%d target=%d lateral=%d nearby=%u limit=%d\n",
+             (int)(u16)car->avoidanceStep, (int)car->avoidanceActive,
+             (int)car->avoidanceTargetOffset, (int)(u16)car->aiLateralOffset,
+             (unsigned)(u16)car->nearbyCarCount,
+             (int)car->accelerationLimit);
+    FoldText(out, label);
+    FoldText(out, state);
 }
 
 /*

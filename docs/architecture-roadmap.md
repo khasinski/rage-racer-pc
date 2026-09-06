@@ -50,6 +50,16 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Functional checkpoint: 166 tests selected; 163 passed, two skipped without
+data overrides, and shipped_config rejected the user's local marker_capture
+setting. The committed HEAD INI passes that same verifier without changing
+the user's file. Rerunning stream_table with actual PAL/U CUEs and the existing
+render_stage_angles with the local native asset root passes both (5.27 seconds).
+Traffic-avoidance fixture hashing now feeds the label and bounded numeric state
+separately, eliminating possible combined-line truncation without changing the
+expected retail digest; its rebuilt test passes and the warning is gone.
+These are functional tests, not the full GPU/e2e matrix or packaged release.
+
 Broad Linux checkpoint: full local build succeeds; all 231 unit-labeled tests
 pass (2.04 seconds), including the locally parked geometry prototype fixture.
 This is not the full functional/e2e suite or a clean-release build. The build
