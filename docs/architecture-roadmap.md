@@ -163,6 +163,17 @@ the asset unchanged. Linux texture/archive tests and the Windows compiled
 texture fixture pass after this change. No frame-rate improvement is claimed;
 this bounds avoidable work for invalid mod input, not normal race rendering.
 
+The compiled `mod_archive` test now creates a synthetic three-entry retail
+archive, invokes the actual extract/pack executables through SDL process APIs,
+checks exported 4/8-bit dimensions and byte-exact untouched repacking, edits one
+PNG texel and asserts exactly one expected raw byte changes. A subsequent corrupt
+PNG must preserve the last successful edit and unrelated assets. SDL is used
+without a window/GPU; no Python or game data is needed by this new test.
+Linux `mod_archive`, `texture_patch` and the original `mod_tools` tests pass.
+The old script remains: its diagnostic assertions, oversized compressed stream
+case and odd-palette archive workflow are not all replaced by this new test.
+There is no Windows execution evidence yet for the new archive-process test.
+
 Copy roles now also come from C: referenced backing files stay provider-local,
 while metadata and unused meshes are omitted from runtime composition without
 being removed from the library/export. Reference discovery and resource-key
