@@ -50,6 +50,13 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Standalone native fixture validation now decodes PNG through SDL, converts to
+explicit RGBA32 and checks every one of 2048 pixels against (32,192,255,255),
+honoring surface pitch and locking. Raw RGBA supplied as PNG is rejected.
+The full fixture byte/pixel gate passes Linux and Windows ClangCL Release
+(0.01/0.96s), without pinning compressor-specific PNG output. This verifies
+the synthetic input, not rendered game pixel equivalence or GPU performance.
+
 Native fixture contract now pins exact SHA-256 values for RMESH, runtime index,
 material sidecar, RGBA and paint mask. Expected bytes were independently
 reconstructed in memory from the original fixture specification using the
