@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Metadata command file reads now decode UTF-8 paths explicitly on Windows and
+open them with _wfopen, matching the existing Unicode exclusive-write path.
+The shared command fixture writes, refuses overwrite and reads a filename
+containing U+017C, preserving exact JSON bytes. It passes Linux normal and
+ASan/UBSan with leak detection (0.01s), and Windows ClangCL Release (0.61s).
+This closes the sanitizer gap for the shared command handler, not full CLI or
+launcher sanitizer coverage. Other tool file-opening paths still need audit.
+
 PackageMetadata command handling is now shared in mod_package_cli.h by the
 production CLI and a compiled fixture, without SDL/GPU dependencies. The
 fixture exercises stdin, malformed/oversized rejection before file creation,
