@@ -146,8 +146,8 @@ static ModernNativeTexture s_textures[MODERN_NATIVE_MAX_TEXTURES];
  * with the frame. Releasing one before that submission leaves the copy
  * reading memory that has been handed back, which Metal tolerates and Vulkan
  * does not, and which shows up as textures that are corrupt from the moment
- * they are first uploaded. They are released a frame later, by which time the
- * work that reads them has certainly been submitted.
+ * they are first uploaded. The caller explicitly retires these handles after
+ * successful submission; SDL defers physical destruction until safe.
  */
 /* Every successful upload creates exactly one cache entry. Keep enough
  * slots for the entire cache, including a cold frame drawing main + mirror.
@@ -165,6 +165,10 @@ static void ModernNativeReleasePendingUploads(void) {
     if (s_device != NULL)
         ModernUploadQueueDrain(&s_pendingUploads, ModernNativeReleaseUpload,
                                s_device);
+}
+
+void ModernNativeGpuSubmitted(void) {
+    ModernNativeReleasePendingUploads();
 }
 
 /* The caller reserves capacity before recording any copy commands. */
@@ -791,8 +795,6 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
     RageRenderVec3 shadowCenter;
     uint64_t trackAssetRevision;
     if (s_vertices == NULL || s_spans == NULL || world == NULL) return;
-    /* The frame these belong to has been submitted by now. */
-    ModernNativeReleasePendingUploads();
     trackAssetRevision = TrackAssetIdentityRevision();
     if (trackAssetRevision != s_trackAssetRevision) {
         if (RuntimeConfigEnabled("diagnostics.modern_asset_trace") &&

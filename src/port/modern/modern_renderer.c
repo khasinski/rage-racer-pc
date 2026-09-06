@@ -1388,6 +1388,7 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
         ModernDestroyResources();
         return 0;
     }
+    ModernNativeGpuSubmitted();
     if (profile) {
         Uint64 finished = SDL_GetTicksNS();
         if (!profileWindowStart) profileWindowStart = profileStart;

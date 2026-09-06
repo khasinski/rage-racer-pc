@@ -385,6 +385,7 @@ int main(int argc, char **argv) {
             fprintf(stderr, "rage-render-stage: submit: %s\n", SDL_GetError());
             goto release_renderer;
         }
+        ModernNativeGpuSubmitted();
         if (!ModernWriteTexturePpm(device, color, width, height, framePath)) {
             fprintf(stderr, "rage-render-stage: cannot write %s\n", framePath);
             goto release_renderer;

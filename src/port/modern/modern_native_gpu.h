@@ -9,6 +9,10 @@
 int ModernNativeGpuInit(SDL_GPUDevice *device);
 void ModernNativeGpuShutdown(void);
 void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect);
+/* Call after successfully submitting the command buffer used by Draw and
+ * DrawMirror. On cancellation/submission failure, shut down this renderer
+ * before reuse: cached textures may refer to discarded uploads. */
+void ModernNativeGpuSubmitted(void);
 const RageRenderWorld *ModernNativeGpuPreparedWorld(void);
 uint64_t ModernNativeGpuTextureRevision(void);
 int ModernNativeGpuWriteDrawDump(FILE *file);

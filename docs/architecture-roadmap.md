@@ -69,6 +69,15 @@ gate passes all four fixtures on Linux; Windows ClangCL Release passes all
 five contracts including archive tools. This is CPU ownership coverage, not
 a 2048-texture Vulkan stress run or proof of command submission ordering.
 
+Upload retirement is now explicit at the submission boundary: game, render
+stage and frame replay call `ModernNativeGpuSubmitted` only after successful
+SDL submission. Prepare no longer infers that the previous frame was submitted.
+Failed submissions still tear down the speculative renderer cache before reuse;
+SDL owns deferred physical destruction after released handles are submitted.
+All three targets build and Linux offscreen native-world, submit-recovery and
+PAL tests pass. The stage angle sweep was skipped because its configured native
+asset cache was absent; this is not new stage image or Windows GPU evidence.
+
 Dependency selection and conflict selection share a bounded NUL-delimited
 stdin decoder (8 MiB / 262144 tokens), avoiding Windows command-line limits.
 The launcher rejects embedded NULs before encoding. Regression coverage includes

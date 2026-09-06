@@ -291,6 +291,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "rage-frame-replay: submit: %s\n", SDL_GetError());
         goto release_renderer;
     }
+    ModernNativeGpuSubmitted();
     if (!ModernWriteTexturePpm(device, color, width, height, outputPath)) {
         fprintf(stderr, "rage-frame-replay: cannot write %s\n", outputPath);
         goto release_renderer;
