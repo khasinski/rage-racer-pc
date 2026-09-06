@@ -80,6 +80,14 @@ static int ModAssetsReadManifest(void) {
                 path, s_manifest.errorLine, ModManifestErrorString(s_manifest.error));
         return 0;
     }
+    /* This session currently selects one mod directory. Never install half
+     * a declared stack by ignoring dependencies; multi-root resolution must
+     * replace this check before dependent mods can be activated. */
+    if (s_manifest.requirementCount != 0) {
+        fprintf(stderr, "rage-port: mod %s requires %s; no dependency provider is selected; mod disabled\n",
+                s_manifest.id[0] ? s_manifest.id : "(unnamed)", s_manifest.requirements[0]);
+        return 0;
+    }
     s_manifestReady = 1;
     return 1;
 }

@@ -11,6 +11,7 @@ enum {
     RAGE_MOD_MANIFEST_KEY_CAPACITY = 160,
     RAGE_MOD_MANIFEST_PATH_CAPACITY = 512,
     RAGE_MOD_MANIFEST_PROPERTIES_CAPACITY = 256,
+    RAGE_MOD_MANIFEST_MAX_REQUIREMENTS = 16,
 };
 
 typedef enum RageModManifestError {
@@ -32,6 +33,8 @@ typedef struct RageModMaterialOverride {
 typedef struct RageModManifest {
     unsigned schemaVersion;
     char id[RAGE_MOD_MANIFEST_ID_CAPACITY];
+    char requirements[RAGE_MOD_MANIFEST_MAX_REQUIREMENTS][RAGE_MOD_MANIFEST_ID_CAPACITY];
+    size_t requirementCount;
     RageModTextureOverride textures[RAGE_MOD_MANIFEST_MAX_TEXTURES];
     size_t textureCount;
     RageModMaterialOverride materials[RAGE_MOD_MANIFEST_MAX_MATERIALS];
@@ -40,7 +43,9 @@ typedef struct RageModManifest {
     RageModManifestError error;
 } RageModManifest;
 
-/* Small TOML subset: [mod] id/schema_version, [textures], [materials].
+/* Small TOML subset: [mod] id/schema_version/requires, [textures], [materials].
+ * requires is a single-line array of unique semantic mod IDs. The parser
+ * records requirements; the session loader must satisfy them before use.
  * Missing schema_version means legacy schema 1. Unsupported versions fail;
  * failure clears all content and retains only error/errorLine diagnostics.
  * Output owns its values; lookup pointers are borrowed until parse/reset. */

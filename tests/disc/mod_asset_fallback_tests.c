@@ -104,6 +104,7 @@ int main(int argc, char **argv) {
         const char *manifest = "[mod]\nschema_version=1\nid=\"shared\"\n"
                                "[textures]\n\"track.big1\"=\"a.png\"";
         int disabled = strcmp(argv[1], "invalid") == 0 ||
+                       strcmp(argv[1], "requires") == 0 ||
                        strcmp(argv[1], "future") == 0 ||
                        strcmp(argv[1], "unreadable") == 0;
         int unreadable = strcmp(argv[1], "unreadable") == 0;
@@ -112,6 +113,9 @@ int main(int argc, char **argv) {
             manifest = "[textures]\n\"track.big1\"=\"../bad.png\"";
         if (strcmp(argv[1], "future") == 0)
             manifest = "[mod]\nschema_version=2";
+        if (strcmp(argv[1], "requires") == 0)
+            manifest = "[mod]\nid=\"addon\"\nrequires=[\"base-pack\"]\n"
+                       "[textures]\n\"track.big1\"=\"a.png\"";
         if (unreadable) EXPECT(MakeDirectory(manifestPath) == 0);
         else EXPECT(WriteFixtureFile(manifestPath, (const unsigned char *)manifest, strlen(manifest)));
         if (semanticOnly) EXPECT(unlink(asset0) == 0);

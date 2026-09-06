@@ -75,10 +75,31 @@ static int ManifestAssignment(char *line, char *key, size_t keyCapacity,
     return ManifestLineEnd(cursor);
 }
 
+static int ManifestRequirements(const char *cursor, RageModManifest *out) {
+    while (isspace((unsigned char)*cursor)) ++cursor;
+    if (*cursor++ != '=') return 0;
+    while (isspace((unsigned char)*cursor)) ++cursor;
+    if (*cursor++ != '[') return 0;
+    for (;;) {
+        while (isspace((unsigned char)*cursor)) ++cursor;
+        if (*cursor == ']') return ManifestLineEnd(cursor + 1);
+        if (out->requirementCount == RAGE_MOD_MANIFEST_MAX_REQUIREMENTS) return 0;
+        char *id = out->requirements[out->requirementCount];
+        if (!ManifestString(&cursor, id, RAGE_MOD_MANIFEST_ID_CAPACITY) ||
+            !ManifestSemanticId(id)) return 0;
+        for (size_t i = 0; i < out->requirementCount; ++i)
+            if (strcmp(id, out->requirements[i]) == 0) return 0;
+        ++out->requirementCount;
+        while (isspace((unsigned char)*cursor)) ++cursor;
+        if (*cursor == ']') return ManifestLineEnd(cursor + 1);
+        if (*cursor++ != ',') return 0;
+    }
+}
+
 int ModManifestParse(const char *text, size_t size, RageModManifest *out) {
     RageModSection section = RAGE_MOD_SECTION_NONE;
     size_t start = 0, lineNumber = 0, i;
-    int versionSeen = 0;
+    int versionSeen = 0, requirementsSeen = 0;
     RageModManifestError error = RAGE_MOD_MANIFEST_INVALID;
     if (out == NULL) return 0;
     memset(out, 0, sizeof(*out));
@@ -116,6 +137,12 @@ int ModManifestParse(const char *text, size_t size, RageModManifest *out) {
             }
             if (section == RAGE_MOD_SECTION_MOD) {
                 const char *cursor = line;
+                if (strncmp(cursor, "requires", 8) == 0 &&
+                    (cursor[8] == '=' || isspace((unsigned char)cursor[8]))) {
+                    if (requirementsSeen || !ManifestRequirements(cursor + 8, out)) goto invalid;
+                    requirementsSeen = 1;
+                    goto next;
+                }
                 if (strncmp(cursor, "schema_version", 14) == 0 &&
                     (cursor[14] == '=' ||
                      isspace((unsigned char)cursor[14]))) {

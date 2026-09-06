@@ -60,6 +60,39 @@ static void test_resolution(void) {
 
 int main(void) {
     test_resolution();
+    {
+        RageModManifest *requirements = malloc(sizeof(*requirements));
+        EXPECT(requirements != NULL);
+        if (requirements == NULL) return EXIT_FAILURE;
+        const char *validRequirements = "[mod]\nid=\"addon\"\nrequires=[\"base-pack\", \"cars.hd\",] # comment\n";
+        EXPECT(ModManifestParse(validRequirements, strlen(validRequirements), requirements));
+        EXPECT(requirements->requirementCount == 2);
+        EXPECT(strcmp(requirements->requirements[0], "base-pack") == 0);
+        EXPECT(strcmp(requirements->requirements[1], "cars.hd") == 0);
+        const char *invalidRequirements[] = {
+            "[mod]\nrequires=\"base\"", "[mod]\nrequires=[\"base\",\"base\"]",
+            "[mod]\nrequires=[\"base\"", "[mod]\nrequires=[\"../base\"]",
+            "[mod]\nrequires=[]\nrequires=[]", "[mod]\nrequires=[\"\"]",
+            "[mod]\nrequires=[\"a\" \"b\"]"};
+        for (unsigned i = 0; i < sizeof(invalidRequirements) / sizeof(invalidRequirements[0]); ++i) {
+            EXPECT(!ModManifestParse(invalidRequirements[i], strlen(invalidRequirements[i]), requirements));
+            EXPECT(requirements->requirementCount == 0 && requirements->textureCount == 0);
+        }
+        EXPECT(ModManifestParse("[mod]\nrequires=[]", strlen("[mod]\nrequires=[]"), requirements));
+        EXPECT(requirements->requirementCount == 0);
+        for (unsigned count = RAGE_MOD_MANIFEST_MAX_REQUIREMENTS;
+             count <= RAGE_MOD_MANIFEST_MAX_REQUIREMENTS + 1; ++count) {
+            char bounded[512] = "[mod]\nrequires=[";
+            size_t used = strlen(bounded);
+            for (unsigned i = 0; i < count; ++i)
+                used += (size_t)snprintf(bounded + used, sizeof(bounded) - used,
+                                        "%s\"pack%u\"", i ? "," : "", i);
+            bounded[used++] = ']';
+            EXPECT(ModManifestParse(bounded, used, requirements) ==
+                   (count == RAGE_MOD_MANIFEST_MAX_REQUIREMENTS));
+        }
+        free(requirements);
+    }
     static const char valid[] =
         "# semantic PNG overrides\n"
         "[mod]\n"

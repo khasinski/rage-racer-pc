@@ -40,9 +40,21 @@ and validated `RenderMaterialParseProperties` string format.
 
 Version 1 preserves existing behavior: repeated asset keys use the last value,
 and unknown fields/sections are ignored. This is not full TOML duplicate-key
-semantics. Dependencies, multiple active mods, conflict resolution and source
-identity are not implemented by this schema yet.
+semantics. Requirement declarations are validated, but dependency resolution,
+multiple active mods, conflict resolution and source identity remain incomplete.
 
 The parser owns no external resources. Its output stores copies of all values;
 lookup results borrow this output until it is parsed again or reset. Failure
 clears all content and retains only `error` and `errorLine`.
+## Required mods
+
+The optional `[mod]` field `requires = ["base-pack", "shared-textures"]`
+declares up to 16 unique mod IDs. The current parser accepts a single-line
+array of quoted lowercase identifiers (letters, digits, dots and hyphens).
+An omitted field or empty array declares no dependencies.
+
+Currently the game selects only one mod directory. A nonempty requirement
+list therefore disables that mod with an unmet-dependency diagnostic, before
+raw assets or semantic overrides are installed. It does not search the disk,
+download dependencies or partially activate the mod. Multi-directory loading,
+dependency ordering and cycle/conflict diagnostics remain future work.
