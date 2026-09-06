@@ -46,6 +46,7 @@ multiple active mods, conflict resolution and source identity remain incomplete.
 The parser owns no external resources. Its output stores copies of all values;
 lookup results borrow this output until it is parsed again or reset. Failure
 clears all content and retains only `error` and `errorLine`.
+
 ## Required mods
 
 The optional `[mod]` field `requires = ["base-pack", "shared-textures"]`
@@ -56,5 +57,12 @@ An omitted field or empty array declares no dependencies.
 Currently the game selects only one mod directory. A nonempty requirement
 list therefore disables that mod with an unmet-dependency diagnostic, before
 raw assets or semantic overrides are installed. It does not search the disk,
-download dependencies or partially activate the mod. Multi-directory loading,
-dependency ordering and cycle/conflict diagnostics remain future work.
+download dependencies or partially activate the mod. The shared C
+`ModManifestBuildOrder` accepts up to 16 already-parsed manifests and produces
+dependency-first indices using stable depth-first traversal. Independent roots
+are visited in input order; dependencies are visited in declaration order.
+It rejects missing requirements, duplicate IDs and cycles without publishing a
+partial order. Multiple selected manifests need nonempty IDs; a sole unnamed
+legacy manifest remains valid. The loader uses this validator for its current
+single selection. Multi-directory discovery/activation and asset-conflict
+handling are not implemented yet.

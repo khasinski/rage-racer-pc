@@ -72,4 +72,22 @@ enum { RAGE_MOD_RESOLVE_TEXTURE = 1, RAGE_MOD_RESOLVE_MATERIAL = 2 };
 RageModResolution ModManifestResolve(const RageModManifest *manifest,
     const char *exactId, const char *baseId, unsigned channels);
 
+enum { RAGE_MOD_MAX_SELECTED = 16 };
+typedef enum RageModOrderError {
+    RAGE_MOD_ORDER_OK, RAGE_MOD_ORDER_INVALID, RAGE_MOD_ORDER_DUPLICATE_ID,
+    RAGE_MOD_ORDER_MISSING_REQUIREMENT, RAGE_MOD_ORDER_CYCLE
+} RageModOrderError;
+typedef struct RageModOrder {
+    size_t indices[RAGE_MOD_MAX_SELECTED], count;
+    RageModOrderError error;
+    size_t modIndex, requirementIndex;
+} RageModOrder;
+/* Stable depth-first dependency order; input order breaks unrelated ties.
+ * Output contains input indices, never borrowed pointers. Failure publishes
+ * no order, only diagnostics. A sole legacy unnamed manifest is permitted;
+ * selections of two or more manifests require unique nonempty IDs. */
+int ModManifestBuildOrder(const RageModManifest *const *manifests,
+                          size_t count, RageModOrder *out);
+const char *ModManifestOrderErrorString(RageModOrderError error);
+
 #endif

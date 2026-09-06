@@ -10,6 +10,69 @@ static int failures;
             #value);                                                           \
 } } while (0)
 
+static void test_dependency_order(void) {
+    RageModManifest *storage = calloc(RAGE_MOD_MAX_SELECTED, sizeof(*storage));
+    EXPECT(storage != NULL);
+    if (!storage) return;
+    const RageModManifest *selected[RAGE_MOD_MAX_SELECTED];
+    for (unsigned i = 0; i < RAGE_MOD_MAX_SELECTED; ++i) selected[i] = &storage[i];
+    const char *texts[] = {
+        "[mod]\nid=\"addon\"\nrequires=[\"left\",\"right\"]",
+        "[mod]\nid=\"left\"\nrequires=[\"base\"]",
+        "[mod]\nid=\"right\"\nrequires=[\"base\"]",
+        "[mod]\nid=\"base\""};
+    for (unsigned i = 0; i < 4; ++i)
+        EXPECT(ModManifestParse(texts[i], strlen(texts[i]), &storage[i]));
+    RageModOrder order;
+    EXPECT(ModManifestBuildOrder(selected, 4, &order));
+    EXPECT(order.count == 4 && order.indices[0] == 3 && order.indices[1] == 1 &&
+           order.indices[2] == 2 && order.indices[3] == 0);
+    RageModOrder repeated;
+    EXPECT(ModManifestBuildOrder(selected, 4, &repeated));
+    EXPECT(memcmp(&order, &repeated, sizeof(order)) == 0);
+    EXPECT(!ModManifestBuildOrder(selected, 3, &order));
+    EXPECT(order.error == RAGE_MOD_ORDER_MISSING_REQUIREMENT && order.modIndex == 1 &&
+           order.requirementIndex == 0 && order.count == 0);
+    storage[3].requirementCount = 1;
+    strcpy(storage[3].requirements[0], "addon");
+    EXPECT(!ModManifestBuildOrder(selected, 4, &order));
+    EXPECT(order.error == RAGE_MOD_ORDER_CYCLE && order.count == 0);
+    storage[3].requirementCount = 0;
+    strcpy(storage[2].id, "left");
+    EXPECT(!ModManifestBuildOrder(selected, 4, &order));
+    EXPECT(order.error == RAGE_MOD_ORDER_DUPLICATE_ID && order.modIndex == 2);
+    for (unsigned i = 0; i < 4; ++i) {
+        EXPECT(ModManifestParse(texts[i], strlen(texts[i]), &storage[i]));
+        storage[i].requirementCount = 0;
+    }
+    EXPECT(ModManifestBuildOrder(selected, 4, &order));
+    for (unsigned i = 0; i < 4; ++i) EXPECT(order.indices[i] == i);
+    storage[0].id[0] = 0;
+    EXPECT(ModManifestBuildOrder(selected, 1, &order));
+    EXPECT(!ModManifestBuildOrder(selected, 4, &order));
+    EXPECT(order.error == RAGE_MOD_ORDER_INVALID && order.count == 0);
+    EXPECT(ModManifestBuildOrder(NULL, 0, &order) && order.count == 0);
+    EXPECT(!ModManifestBuildOrder(NULL, 1, &order));
+    EXPECT(!ModManifestBuildOrder(selected, RAGE_MOD_MAX_SELECTED + 1, &order));
+    EXPECT(!ModManifestBuildOrder(selected, 1, NULL));
+    for (unsigned i = 0; i < RAGE_MOD_MAX_SELECTED; ++i) {
+        char text[96];
+        int length = snprintf(text, sizeof(text), "[mod]\nid=\"m%u\"", i);
+        EXPECT(ModManifestParse(text, (size_t)length, &storage[i]));
+        if (i + 1 < RAGE_MOD_MAX_SELECTED) {
+            storage[i].requirementCount = 1;
+            snprintf(storage[i].requirements[0], sizeof(storage[i].requirements[0]), "m%u", i + 1);
+        }
+    }
+    EXPECT(ModManifestBuildOrder(selected, RAGE_MOD_MAX_SELECTED, &order));
+    EXPECT(order.count == RAGE_MOD_MAX_SELECTED);
+    for (unsigned i = 0; i < RAGE_MOD_MAX_SELECTED; ++i)
+        EXPECT(order.indices[i] == RAGE_MOD_MAX_SELECTED - 1 - i);
+    strcpy(storage[0].requirements[0], "m0");
+    EXPECT(!ModManifestBuildOrder(selected, 1, &order) && order.error == RAGE_MOD_ORDER_CYCLE);
+    free(storage);
+}
+
 static void test_resolution(void) {
     static const char text[] =
         "[textures]\n\"track.a.variant.1\"=\"first.png\"\n"
@@ -59,6 +122,7 @@ static void test_resolution(void) {
 }
 
 int main(void) {
+    test_dependency_order();
     test_resolution();
     {
         RageModManifest *requirements = malloc(sizeof(*requirements));

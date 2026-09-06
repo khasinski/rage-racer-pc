@@ -266,3 +266,71 @@ RageModResolution ModManifestResolve(const RageModManifest *manifest,
     }
     return result;
 }
+
+static int VisitMod(const RageModManifest *const *manifests, size_t count,
+                    size_t index, unsigned char *state, RageModOrder *order) {
+    if (state[index] == 2) return 1;
+    state[index] = 1;
+    const RageModManifest *manifest = manifests[index];
+    for (size_t r = 0; r < manifest->requirementCount; ++r) {
+        size_t dependency;
+        for (dependency = 0; dependency < count; ++dependency)
+            if (!strcmp(manifest->requirements[r], manifests[dependency]->id)) break;
+        if (dependency == count || state[dependency] == 1) {
+            order->error = dependency == count ? RAGE_MOD_ORDER_MISSING_REQUIREMENT : RAGE_MOD_ORDER_CYCLE;
+            order->modIndex = index;
+            order->requirementIndex = r;
+            return 0;
+        }
+        if (!VisitMod(manifests, count, dependency, state, order)) return 0;
+    }
+    state[index] = 2;
+    order->indices[order->count++] = index;
+    return 1;
+}
+
+int ModManifestBuildOrder(const RageModManifest *const *manifests,
+                          size_t count, RageModOrder *out) {
+    unsigned char state[RAGE_MOD_MAX_SELECTED] = {0};
+    if (out == NULL) return 0;
+    memset(out, 0, sizeof(*out));
+    out->error = RAGE_MOD_ORDER_INVALID;
+    out->modIndex = out->requirementIndex = (size_t)-1;
+    if (count > RAGE_MOD_MAX_SELECTED || (count && manifests == NULL)) return 0;
+    for (size_t i = 0; i < count; ++i) {
+        const RageModManifest *m = manifests[i];
+        out->modIndex = i;
+        if (m == NULL || m->error != RAGE_MOD_MANIFEST_OK ||
+            m->schemaVersion != RAGE_MOD_MANIFEST_SCHEMA_VERSION ||
+            m->textureCount > RAGE_MOD_MANIFEST_MAX_TEXTURES ||
+            m->materialCount > RAGE_MOD_MANIFEST_MAX_MATERIALS ||
+            m->requirementCount > RAGE_MOD_MANIFEST_MAX_REQUIREMENTS ||
+            (count > 1 && m->id[0] == 0)) return 0;
+        for (size_t j = 0; j < i; ++j) {
+            if (!strcmp(m->id, manifests[j]->id)) {
+                out->error = RAGE_MOD_ORDER_DUPLICATE_ID;
+                return 0;
+            }
+        }
+    }
+    for (size_t i = 0; i < count; ++i) {
+        if (!VisitMod(manifests, count, i, state, out)) {
+            out->count = 0;
+            memset(out->indices, 0, sizeof(out->indices));
+            return 0;
+        }
+    }
+    out->error = RAGE_MOD_ORDER_OK;
+    out->modIndex = out->requirementIndex = (size_t)-1;
+    return 1;
+}
+
+const char *ModManifestOrderErrorString(RageModOrderError error) {
+    switch (error) {
+    case RAGE_MOD_ORDER_OK: return "no error";
+    case RAGE_MOD_ORDER_DUPLICATE_ID: return "duplicate mod ID";
+    case RAGE_MOD_ORDER_MISSING_REQUIREMENT: return "missing required mod";
+    case RAGE_MOD_ORDER_CYCLE: return "mod dependency cycle";
+    default: return "invalid mod selection";
+    }
+}
