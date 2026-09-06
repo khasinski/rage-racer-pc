@@ -50,6 +50,19 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+The full local Linux build succeeds after the accumulated changes (338
+incremental build steps), and all 234 unit-labeled tests pass. The functional
+suite reports 164 passes, one skip and one failure out of 166: stream_table
+uses an older default disc layout, and shipped_config rejects the preserved
+local diagnostics.marker_capture=true. Explicit real-disc reruns pass
+stream_table for PAL/NTSC-U and NTSC-J. The same compiled shipped-config checker
+passes HEAD:rage-port.ini through a read-only process pipe; the user's INI was
+not replaced. Thus the raw local suite is not relabeled all-green. Logs:
+/tmp/rage-refactor-unit-suite.log and /tmp/rage-refactor-functional-suite.log.
+This configured build also includes the parked geometry-pack test target;
+its success does not integrate that prototype into rendering or establish
+release packaging, full-platform stability or performance improvement.
+
 After deferred compatibility shading and position-only terrain visibility,
 the rebuilt Linux modern smoke passes all 36 selected real-disc regressions:
 33 natural class-award/series-ending FMV cases plus three default disc-source
