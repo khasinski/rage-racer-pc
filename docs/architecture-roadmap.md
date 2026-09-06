@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Native-world Python migration starts with tests/render/native_asset_fixture.c:
+a standalone strict C11 generator for the synthetic 1024-mesh RMESH bank,
+material/index and RGBA/paint bytes. It uses explicit little-endian encoding
+and exclusive file creation in a caller-owned directory. Linux compilation
+and a stage render using synthetic model key 74 pass. PNG generation, CMake
+registration and complete runner parity are still pending; no Python component
+has been removed or declared replaced by this partial fixture.
+
 After manifest identity/termination hardening, all ten Windows ClangCL Release
 mod contracts pass (6.25s). Rebuilt Linux smoke/replay pass environment_provider
 and native_render_world (3.95s total): the latter checks native GPU pipelines,
