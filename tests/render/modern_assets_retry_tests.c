@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "port/modern/modern_assets.h"
+#include "port/runtime_config.h"
 
 size_t PortAssetRoomAt(const void *at) { (void)at; return 0; }
 
@@ -19,7 +20,9 @@ int main(int argc, char **argv) {
     unsigned char meshBytes[96] = {0};
     RageRenderMeshInstance instance = {0};
     const char index[] = "# rage-rmesh-index v2\n123 model mesh.rmesh mesh.rmat\n";
-    if (SDL_setenv_unsafe("RAGE_PORT_MODERN_ASSETS", "", 1) != 0) return 14;
+    char setting[4096] = "modern.assets=disc";
+    char *configArgs[] = {"asset-retry", "--set", setting};
+    if (!RuntimeConfigInit(3, configArgs)) return 14;
     if (argc != 2 || !SDL_CreateDirectory(argv[1])) return 1;
     if (SDL_snprintf(path, sizeof(path), "%s/runtime-index.txt", argv[1]) >= (int)sizeof(path)) return 1;
     /* This fixture owns only its index file, never a user asset directory. */
@@ -71,7 +74,8 @@ int main(int argc, char **argv) {
     if (!RuntimeMeshVertex(&resident->mesh, 0, &vertex) || vertex.position[0] != 1.0f)
         return 30;
     ModernAssetsShutdown();
-    if (SDL_setenv_unsafe("RAGE_PORT_MODERN_ASSETS", argv[1], 1) != 0) return 15;
+    if (snprintf(setting, sizeof(setting), "modern.assets=%s", argv[1]) >= (int)sizeof(setting) ||
+        !RuntimeConfigInit(3, configArgs)) return 15;
     if (!SDL_SaveFile(path, "invalid\n", 8)) return 16;
     if (ModernAssetsInit() || ModernAssetsReady()) return 17;
     if (!SDL_SaveFile(path, index, sizeof(index) - 1)) return 18;

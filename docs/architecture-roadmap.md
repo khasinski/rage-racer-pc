@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Standalone asset lifecycle passes in Windows 11 ClangCL Release (0.67s) after
+fixing the fixture's configuration setup: SDL_setenv_unsafe was not visible to
+the adapter's C-runtime environment reader in that build. It now selects roots
+through the real RuntimeConfigInit --set parser. Linux rerun also passes.
+Windows covers retry, partial-index cleanup, mesh retention and same-path
+replacement after shutdown with authored cars disabled; this is not full-game
+or live-importer Windows validation. A reusable Windows runner is included.
+
 Asset lifecycle now has a standalone tests/modern_asset_contract build using
 the actual modern_assets adapter, mesh/provider/cache modules, JSON/miniz and
 offline importer stubs, with authored embedded cars disabled. Linux normal and
