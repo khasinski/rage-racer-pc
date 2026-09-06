@@ -59,6 +59,28 @@ The parser owns no external resources. Its output stores copies of all values;
 lookup results borrow this output until it is parsed again or reset. Failure
 clears all content and retains only `error` and `errorLine`.
 
+## Import staging
+
+Mod import inventories the selected directory, then uses
+`rage-mod-cli --copy-snapshot-stdin` to copy the listed files into a new private
+installation directory. Metadata, TOML, mesh references and legacy texture
+indexes are validated against that copy, never against the original directory
+after copying. Only successful validation publishes the profile entry. Failures,
+cancellation and failed persistence remove the uncommitted private directory.
+
+`ModFileSnapshotCopy` is the compiled streaming copier: exclusive destination
+creation, 128 MiB per file, 1 GiB per batch, and byte comparison against a second
+read of the same source handle. It removes its own failed output but never
+overwrites an existing destination. The launcher owns whole-batch rollback.
+The command accepts a bounded JSON array of `[source,target]` pairs over stdin
+(8 MiB request, 10000 files); parent directories must already exist.
+
+This freezes the bytes subsequently validated and installed. It is not an
+adversarial filesystem sandbox or an instantaneous multi-file filesystem
+snapshot: inventory and path/symlink checks still live in the launcher, and
+external writers are not locked out. Package composition from already-installed
+mods remains a separate live-source path and still needs the same staging model.
+
 ## Native material editing
 
 The launcher delegates edits to

@@ -17,6 +17,7 @@ add_library(mod_contract STATIC
     "${RAGE_SOURCE}/src/render/mod_package.c"
     "${RAGE_SOURCE}/src/render/mod_selection.c"
     "${RAGE_SOURCE}/src/render/mod_provider.c"
+    "${RAGE_SOURCE}/src/render/mod_file_snapshot.c"
     "${RAGE_SOURCE}/src/render/mod_manifest.c"
     "${RAGE_SOURCE}/src/render/render_material.c"
     "${RAGE_SOURCE}/src/render/asset_path.c")
@@ -27,7 +28,7 @@ if(MSVC)
 else()
     target_compile_options(mod_contract PRIVATE -Wall -Wextra -Werror)
 endif()
-foreach(name mod_package mod_selection mod_provider mod_manifest mod_provider_stdin)
+foreach(name mod_package mod_selection mod_provider mod_manifest mod_provider_stdin mod_file_snapshot)
     add_executable(${name}_tests "${RAGE_SOURCE}/tests/disc/${name}_tests.c")
     target_link_libraries(${name}_tests PRIVATE mod_contract)
     if(MSVC)

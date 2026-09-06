@@ -50,8 +50,13 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Import now validates a private copy created through a compiled streaming
+copier, then publishes its profile entry; source edits after copying cannot
+replace the bytes validated by import. Composition of installed packages still
+needs equivalent staging and a compiled resource-inventory policy.
+
 The standalone `tests/mod_contract` gate now reuses production sources and
-the same compiled tests without SDL/discs. All five tests passed on Linux and
+the same compiled tests without SDL/discs. All six tests passed on Linux and
 the local Windows 11/ClangCL VM after the launcher integration. A path-filtered
 Windows/Linux/macOS CI workflow is provided; hosted CI and macOS execution are
 not established by those local results. This covers mod contracts, not whole

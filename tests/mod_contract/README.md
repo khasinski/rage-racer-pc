@@ -30,9 +30,11 @@ Coverage:
 - provider choices, stale candidate sets and bounds;
 - runtime TOML parsing, override selection and its stricter graph adapter;
 - the real native provider stdin decoder, framing, byte limit and Windows
-  binary handling (including Ctrl-Z as data).
+  binary handling (including Ctrl-Z as data);
+- streaming file snapshots, byte equality, exclusive creation, limits and
+  removal of failed output without overwriting existing files.
 
-On 2026-09-06, all five tests passed on Linux/GCC Release and a local Windows
+On 2026-09-06, all six tests passed on Linux/GCC Release and a local Windows
 11 evaluation VM using ClangCL 19.1.5, VS Build Tools 2022 and SDK 10.0.26100.
 The Windows sources were copied to an isolated test directory; this was not
 a full checkout/game build. The GitHub workflow also specifies macOS, but

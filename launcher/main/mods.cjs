@@ -96,7 +96,12 @@ function installMethods(Service){
   },false);
  };
  Service.prototype.installModFiles=async function(source,signal,name){
-   const files=await inventory(source),legacy=await legacyTextures(source,files);
+   const files=await inventory(source),sourceName=path.basename(source);
+   const id=randomUUID(),folder=path.join(this.root,'mods',id);await fs.mkdir(folder,{recursive:true});
+   try {
+   await this.snapshotModFiles(source,folder,files,signal);
+   source=folder;
+   const legacy=await legacyTextures(source,files);
    let metadata=null;
    if(files.includes('rage-mod.json')){
     const {run}=require('./service.cjs');
@@ -115,14 +120,22 @@ function installMethods(Service){
      if(!allowed(relative)||!relative.startsWith('meshes/')||!files.includes(relative))throw Error('Missing or invalid mesh: '+relative);
      const {run}=require('./service.cjs');await run(this.tool('rage-mod-cli'),['--mesh',path.join(source,relative)],{signal});
    }
-   const id=randomUUID(),folder=path.join(this.root,'mods',id);await fs.mkdir(folder,{recursive:true});
-   try {for(const name of files){if(signal.aborted)throw Error('Operation canceled');await fs.mkdir(path.dirname(path.join(folder,name)),{recursive:true});await fs.copyFile(path.join(source,name),path.join(folder,name));}
     if(signal.aborted)throw Error('Operation canceled');
     this.busy.cancellable=false;await this.update();
-    const mod={id,name:name||metadata?.name||path.basename(source),files,manifest,legacyTextures:legacy,enabled:false,region:metadata?.region||this.state.disc.region};
+    const mod={id,name:name||metadata?.name||sourceName,files,manifest,legacyTextures:legacy,enabled:false,region:metadata?.region||this.state.disc.region};
     for(const field of ['author','version','description','packageId','requires'])if(metadata?.[field]!==undefined)mod[field]=metadata[field];
     this.state.mods.push(mod);await this.persist();return mod;
    }catch(e){this.state.mods=this.state.mods.filter(m=>m.id!==id);await fs.rm(folder,{recursive:true,force:true});throw e;}
+ };
+ Service.prototype.snapshotModFiles=async function(source,target,files,signal){
+   const pairs=[];
+   for(const name of files){
+    if(signal?.aborted)throw Error('Operation canceled');
+    await fs.mkdir(path.dirname(path.join(target,name)),{recursive:true});
+    pairs.push([path.join(source,name),path.join(target,name)]);
+   }
+   const {run}=require('./service.cjs');
+   await run(this.tool('rage-mod-cli'),['--copy-snapshot-stdin'],{input:Buffer.from(JSON.stringify(pairs)),signal});
  };
  Service.prototype.toggleMod=async function(id,enabled){
   this.requireReady();const mod=this.state.mods.find(m=>m.id===id);
