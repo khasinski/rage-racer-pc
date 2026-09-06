@@ -38,6 +38,7 @@ target_link_libraries(modern_assets_retry_tests PRIVATE asset_support json miniz
 if(NOT MSVC)
     target_link_libraries(modern_assets_retry_tests PRIVATE m)
 endif()
-add_test(NAME modern_assets_retry COMMAND modern_assets_retry_tests
+add_test(NAME modern_assets_retry COMMAND ${CMAKE_COMMAND} -E env
+    --unset=RAGE_PORT_MODERN_ASSETS $<TARGET_FILE:modern_assets_retry_tests>
     "${CMAKE_CURRENT_BINARY_DIR}/fixture")
 set_tests_properties(modern_assets_retry PROPERTIES TIMEOUT 30)

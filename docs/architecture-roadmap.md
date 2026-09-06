@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Asset lifecycle CTest registrations now launch through cmake -E env with
+RAGE_PORT_MODERN_ASSETS unset, so developer cache overrides cannot replace
+the fixture's RuntimeConfigInit selection. Setting the variable to an empty
+string was insufficient: the forced configuration reader still treats it as
+an override. Both standalone and full-build Linux tests pass with the parent
+environment deliberately pointing at /nonexistent/developer-cache. Production
+configuration precedence is unchanged; this step has no Windows rerun.
+
 Standalone asset lifecycle passes in Windows 11 ClangCL Release (0.67s) after
 fixing the fixture's configuration setup: SDL_setenv_unsafe was not visible to
 the adapter's C-runtime environment reader in that build. It now selects roots
