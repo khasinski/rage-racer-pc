@@ -96,6 +96,18 @@ int main(void) {
         assert(TexturePatchAsset(root,0,bytes,sizeof(bytes))==0);
         assert(!memcmp(bytes,original,sizeof(bytes)));
     }
+    Write("texture_patch_fixture/textures/a.json","{\"asset\":0,\"pixels_offset\":520,\"pixel_bytes\":2,\"depth\":16,\"width\":1,\"height\":1}");
+    f=fopen("texture_patch_fixture/textures/a.png","wb");assert(f);
+    assert(fwrite("\x89PNG\r\n\x1a\n",1,8,f)==8);
+    const unsigned char hugeHeader[13]={0x7f,0xff,0xff,0xff,0,0,0,1,8,6,0,0,0};
+    Chunk(f,"IHDR",hugeHeader,sizeof(hugeHeader));Chunk(f,"IDAT",idat,sizeof(idat));
+    Chunk(f,"IEND",ihdr,0);assert(!fclose(f));
+    assert(TexturePatchAsset(root,0,bytes,sizeof(bytes))==0);
+    assert(!memcmp(bytes,original,sizeof(bytes)));
+    f=fopen("texture_patch_fixture/textures/a.png","r+b");assert(f);
+    assert(!fseek(f,32L*1024*1024,SEEK_SET));assert(fputc(0,f)!=EOF);assert(!fclose(f));
+    assert(TexturePatchAsset(root,0,bytes,sizeof(bytes))==0);
+    assert(!memcmp(bytes,original,sizeof(bytes)));
     assert(!remove("texture_patch_fixture/textures/index.txt"));
     assert(TexturePatchAsset(root,0,bytes,sizeof(bytes))==-1);
     assert(!remove("texture_patch_fixture/textures/a.json"));

@@ -154,6 +154,15 @@ targets build with the shared JSON dependency. Linux texture/archive tests and
 modern PAL smoke (13.30 seconds) pass; the expanded production patch fixture
 also passes on Windows ClangCL Release. This is not a full Windows game rerun.
 
+Texture PNG decoding now receives expected dimensions from validated metadata
+and rejects mismatches before pixel allocation/decompression. Asset and palette
+bounds are checked before opening the PNG; encoded PNG files are capped at
+32 MiB, matching the launcher's PNG validator. Regression fixtures include an
+INT_MAX-width image header and an oversized sparse file; rejected inputs leave
+the asset unchanged. Linux texture/archive tests and the Windows compiled
+texture fixture pass after this change. No frame-rate improvement is claimed;
+this bounds avoidable work for invalid mod input, not normal race rendering.
+
 Copy roles now also come from C: referenced backing files stay provider-local,
 while metadata and unused meshes are omitted from runtime composition without
 being removed from the library/export. Reference discovery and resource-key

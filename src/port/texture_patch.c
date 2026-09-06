@@ -30,7 +30,7 @@ static int Paeth(int a, int b, int c) {
 }
 
 /* Reads 8-bit RGB, RGBA and palette PNGs into RGBA. */
-static uint8_t *ReadPng(const char *path, uint32_t *width, uint32_t *height,
+static uint8_t *ReadPng(const char *path, uint32_t expectedWidth, uint32_t expectedHeight,
                         const char **error) {
     FILE *file = fopen(path, "rb");
     uint8_t *file_data, *idat = NULL, *raw = NULL, *rgba = NULL;
@@ -50,6 +50,7 @@ static uint8_t *ReadPng(const char *path, uint32_t *width, uint32_t *height,
         return NULL;
     }
     if (size < 8) { fclose(file); *error = "is not a PNG"; return NULL; }
+    if (size > 32L*1024*1024) { fclose(file); *error = "exceeds the 32 MiB PNG limit"; return NULL; }
     file_data = malloc((size_t)size);
     if (file_data == NULL || fread(file_data, 1, (size_t)size, file) != (size_t)size) {
         fclose(file); free(file_data); *error = "cannot be read"; return NULL;
@@ -96,6 +97,10 @@ static uint8_t *ReadPng(const char *path, uint32_t *width, uint32_t *height,
     }
     free(file_data);
 
+    /* Reject mismatched images before allocating/decompressing their pixels. */
+    if(w!=expectedWidth||h!=expectedHeight) {
+        free(idat);*error="has the wrong dimensions; the size is fixed by the texture";return NULL;
+    }
     if (depth != 8) { free(idat); *error = "is not 8 bits per channel"; return NULL; }
     if (colour != 2 && colour != 6 && colour != 3) {
         free(idat); *error = "is not RGB, RGBA or palette colour"; return NULL;
@@ -174,7 +179,6 @@ static uint8_t *ReadPng(const char *path, uint32_t *width, uint32_t *height,
         }
     }
     free(raw);
-    *width = w; *height = h;
     return rgba;
 }
 
@@ -312,7 +316,6 @@ static int PatchTexture(const char *jsonPath, const char *pngPath,
     Sidecar sidecar;
     uint8_t *rgba;
     const char *error;
-    uint32_t w, h;
     uint8_t *clut = NULL;
     uint8_t *bytes;
     int x, y, inexact = 0, edited = 0;
@@ -347,35 +350,23 @@ static int PatchTexture(const char *jsonPath, const char *pngPath,
                 jsonPath);
         return 0;
     }
-    rgba = ReadPng(pngPath, &w, &h, &error);
+    if ((size_t)sidecar.pixelsOffset > size ||
+        (size_t)sidecar.pixelBytes > size - (size_t)sidecar.pixelsOffset) {
+        fprintf(stderr,"rage-port: %s has pixels outside asset %d\n",jsonPath,assetIndex);
+        return 0;
+    }
+    if (sidecar.hasClut &&
+        (sidecar.clutOffset < 0 || sidecar.clutColours <= 0 ||
+         (size_t)sidecar.clutOffset > size ||
+         (size_t)sidecar.clutColours > (size-(size_t)sidecar.clutOffset)/sizeof(uint16_t))) {
+        fprintf(stderr,"rage-port: %s points at a palette outside asset %d\n",jsonPath,assetIndex);
+        return 0;
+    }
+    rgba = ReadPng(pngPath, (uint32_t)sidecar.width, (uint32_t)sidecar.height, &error);
     if (rgba == NULL) {
         /* Absent is not a problem: a mod only carries what it changes. */
         if (strcmp(error, "cannot be opened") != 0)
             fprintf(stderr, "rage-port: %s %s\n", pngPath, error);
-        return 0;
-    }
-    if ((int)w != sidecar.width || (int)h != sidecar.height) {
-        fprintf(stderr,
-                "rage-port: %s is %ux%u but the texture is %dx%d; the size is fixed by where it lives in video memory\n",
-                pngPath, w, h, sidecar.width, sidecar.height);
-        free(rgba);
-        return 0;
-    }
-    if ((size_t)sidecar.pixelsOffset > size ||
-        (size_t)sidecar.pixelBytes > size - (size_t)sidecar.pixelsOffset) {
-        fprintf(stderr,
-                "rage-port: %s expects pixels at %ld but asset %d is %zu bytes; re-extract it\n",
-                jsonPath, sidecar.pixelsOffset, sidecar.asset, size);
-        free(rgba);
-        return 0;
-    }
-    if (sidecar.hasClut &&
-        ((size_t)sidecar.clutOffset > size ||
-         (size_t)sidecar.clutColours >
-             (size - (size_t)sidecar.clutOffset) / sizeof(uint16_t))) {
-        fprintf(stderr, "rage-port: %s points at a palette outside asset %d\n",
-                jsonPath, sidecar.asset);
-        free(rgba);
         return 0;
     }
 
@@ -388,7 +379,7 @@ static int PatchTexture(const char *jsonPath, const char *pngPath,
         uint8_t *row = bytes + (size_t)y * rowBytes;
 
         for (x = 0; x < sidecar.width; x++) {
-            const uint8_t *pixel = rgba + ((size_t)y * w + x) * 4;
+            const uint8_t *pixel = rgba + ((size_t)y * (size_t)sidecar.width + (size_t)x) * 4;
             uint8_t original[4];
             int exact = 1;
             /* Leave a texel exactly as it was unless the image changed it.
