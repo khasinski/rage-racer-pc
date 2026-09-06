@@ -562,8 +562,14 @@ target_include_directories(load_buffer_bounds_tests PRIVATE
 add_test(NAME load_buffer_bounds COMMAND load_buffer_bounds_tests)
 set_tests_properties(load_buffer_bounds PROPERTIES LABELS unit)
 
-add_test(NAME shipped_config COMMAND python3
-    ${CMAKE_CURRENT_SOURCE_DIR}/verify_shipped_config.py ${CMAKE_SOURCE_DIR})
+add_executable(shipped_config_tests shipped_config_tests.c)
+target_compile_options(shipped_config_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+if(MSVC)
+    target_compile_definitions(shipped_config_tests PRIVATE _CRT_SECURE_NO_WARNINGS)
+endif()
+add_test(NAME shipped_config_policy COMMAND shipped_config_tests --self-test)
+set_tests_properties(shipped_config_policy PROPERTIES LABELS unit)
+add_test(NAME shipped_config COMMAND shipped_config_tests ${CMAKE_SOURCE_DIR}/rage-port.ini)
 
 set_tests_properties(shipped_config PROPERTIES LABELS functional)
 if(APPLE AND TARGET rage-racer)

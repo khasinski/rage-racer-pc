@@ -101,6 +101,13 @@ path; image comparisons and frame-tail measurements are still required.
 
 ## Work log
 
+- The shipped-configuration policy gate is now compiled C, with fixture tests
+  for its four release invariants, disabled boolean spellings, missing values,
+  malformed/nonfinite numbers and duplicate settings. Linux and Windows builds,
+  self-tests and the committed INI pass. Both old and replacement gates reject
+  the preserved local marker_capture=true setting. The obsolete Python checker
+  was removed only after this coverage passed. This removes one test dependency,
+  not the remaining Python asset-tooling migration.
 - The compact renderer completed two class-1 Mythical Coast races in one
   process on each real PAL/NTSC-U/NTSC-J image, with three presentation
   restarts, automatic regional timing, VRAM-cache equality and ordered
