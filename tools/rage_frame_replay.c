@@ -277,6 +277,11 @@ int main(int argc, char **argv) {
     }
     ModernNativeGpuPrepare(&snapshot.world, (float)width / (float)height);
     if (prepareRepeat != 0) {
+        if (!HasOption(argc, argv, "--sky-only") &&
+            (!ModernNativeGpuHasDraws() || !ModernNativeGpuWorldComplete())) {
+            fprintf(stderr, "rage-frame-replay: refusing benchmark of incomplete native world\n");
+            goto release_renderer;
+        }
         Uint64 *samples = malloc((size_t)prepareRepeat * sizeof(*samples));
         if (samples == NULL) goto release_renderer;
         /* Keep all scene data fixed. Only advance the presentation revision

@@ -91,3 +91,11 @@ if(NOT actual STREQUAL expected)
     message(FATAL_ERROR "Repeated preparation changed the fixed world: ${root}")
 endif()
 message(STATUS "Environment provider cases passed: ${root}")
+execute_process(COMMAND "${REPLAY}" "${SNAPSHOT}"
+    --assets "${root}/valid" --prepare-repeat 3
+    RESULT_VARIABLE result TIMEOUT 45 OUTPUT_VARIABLE output ERROR_VARIABLE error)
+if(NOT result STREQUAL "1" OR
+   NOT error MATCHES "refusing benchmark of incomplete native world" OR
+   error MATCHES "native-prepare-benchmark")
+    message(FATAL_ERROR "Incomplete benchmark was reported: ${output}${error}")
+endif()
