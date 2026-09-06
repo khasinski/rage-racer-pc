@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Packaged IPC Play probe now supports RAGE_LAUNCHER_PROBE_CUE: it prepares an
+isolated profile using packaged tools, opens the real sandboxed app, invokes
+the exposed Play IPC, waits for successful game exit and verifies live C asset
+generation/GPU readiness/scene-12 stop from logs before clean launcher shutdown.
+PAL passes on Linux using software-rendered launcher UI and offscreen game.
+The ready-profile probe now accepts the Play button rather than waiting only
+for Choose disc. Native chooser interaction is not covered, and U/J have not
+yet run through this packaged IPC path.
+
 Packaged Linux game startup is now opt-in in the real-disc launcher fixture
 (RAGE_LAUNCHER_GAME_STARTUP=1). Using binaries from the actual package, all
 PAL/U/J imports then start the full game from launcher-generated configuration

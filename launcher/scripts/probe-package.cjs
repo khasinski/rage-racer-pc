@@ -1,5 +1,6 @@
-// Exercise the actual packaged, sandboxed UI with an empty profile. No disc is
-// needed for this probe; disc preparation requires a separate owned-data test.
+// Exercise the packaged sandboxed UI with an isolated profile. Optional
+// RAGE_LAUNCHER_PROBE_CUE prepares it using packaged tools, then tests IPC Play;
+// native file chooser automation is intentionally not bypassed in the app.
 const fs=require('node:fs/promises'),path=require('node:path'),os=require('node:os');
 const {spawn,execFileSync}=require('node:child_process');
 (async()=>{
@@ -8,9 +9,20 @@ const {spawn,execFileSync}=require('node:child_process');
  const executable=platform==='darwin'?path.join(directory,'Rage Mod Manager.app','Contents','MacOS','rage-launcher'):path.join(directory,'rage-launcher'+(platform==='win32'?'.exe':''));
  const profile=await fs.mkdtemp(path.join(os.tmpdir(),'rage-packaged-probe-'));
  const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
+ const disc=process.env.RAGE_LAUNCHER_PROBE_CUE;
  let child,ws,timer;const pending=new Map();let next=0,diagnostics='';
  try{
-  const deadline=new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Packaged startup probe timed out\n'+diagnostics.slice(-4000))),30000);});
+  if(disc){
+   const resources=platform==='darwin'?path.join(directory,'Rage Mod Manager.app','Contents','Resources','resources'):path.join(directory,'resources','resources');
+   const {LauncherService}=require('../main/service.cjs');
+   const service=new LauncherService({root:profile,bin:path.join(resources,'bin'),config:path.join(resources,'rage-port.ini')});
+   await service.init();await service.prepare(path.resolve(disc));
+   env.RAGE_TEST_SCENARIO=path.resolve(root,'../race-scenario.ini');
+   env.RAGE_PORT_SMOKE_STOP_SCENE='12';env.RAGE_PORT_SMOKE_STOP_SCENE_TIMER='20';
+   env.SDL_VIDEODRIVER='offscreen';env.SDL_AUDIODRIVER='dummy';env.XDG_STATE_HOME=path.join(profile,'state');
+   delete env.RAGE_PORT_MODERN_ASSETS;
+  }
+  const deadline=new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Packaged startup probe timed out\n'+diagnostics.slice(-4000))),disc?90000:30000);});
   const work=async()=>{
    const endpoint=await new Promise((resolve,reject)=>{
     const graphics=process.argv.includes('--software-rendering')?['--use-angle=swiftshader','--enable-unsafe-swiftshader']:[];
@@ -27,11 +39,28 @@ const {spawn,execFileSync}=require('node:child_process');
    const call=(method,params)=>new Promise((resolve,reject)=>{const id=++next;pending.set(id,{resolve,reject});ws.send(JSON.stringify({id,method,params}));});
    let result;
    for(let i=0;i<100;i++){
-    const reply=await call('Runtime.evaluate',{expression:`(async()=>{if(!window.launcher||!document.querySelector('[data-action="choose-game"]'))return null;const s=await window.launcher.snapshot();return {snapshot:s,lang:document.documentElement.lang,locked:[...document.querySelectorAll('#nav [data-page]')].filter(b=>!['home','source'].includes(b.dataset.page)).every(b=>b.disabled)};})()`,awaitPromise:true,returnByValue:true});
+    const reply=await call('Runtime.evaluate',{expression:`(async()=>{if(!window.launcher||!document.querySelector('[data-action="choose-game"], [data-action="play"]'))return null;const s=await window.launcher.snapshot();return {snapshot:s,lang:document.documentElement.lang,locked:[...document.querySelectorAll('#nav [data-page]')].filter(b=>!['home','source'].includes(b.dataset.page)).every(b=>b.disabled)};})()`,awaitPromise:true,returnByValue:true});
     if(reply.exceptionDetails)throw Error(JSON.stringify(reply.exceptionDetails));result=reply.result?.value;if(result)break;await new Promise(r=>setTimeout(r,100));
    }
-   if(!result?.snapshot.ok||result.snapshot.value.ready||!result.snapshot.value.toolsReady||!result.locked||result.lang!=='en')throw Error('Invalid packaged first-run state: '+JSON.stringify(result));
+   if(!result?.snapshot.ok||result.snapshot.value.ready!==Boolean(disc)||!result.snapshot.value.toolsReady||(!disc&&!result.locked)||result.lang!=='en')throw Error('Invalid packaged first-run state: '+JSON.stringify(result));
    console.log('Packaged first-run UI passed on '+platform+'/'+process.arch);
+   if(disc){
+    const play=await call('Runtime.evaluate',{expression:'window.launcher.play()',awaitPromise:true,returnByValue:true});
+    if(play.exceptionDetails||!play.result?.value?.ok)throw Error('Packaged Play failed: '+JSON.stringify(play));
+    let finished=false;
+    for(let i=0;i<600;i++){
+     const reply=await call('Runtime.evaluate',{expression:'window.launcher.snapshot()',awaitPromise:true,returnByValue:true});
+     const state=reply.result?.value;
+     if(reply.exceptionDetails||!state?.ok)throw Error('Packaged game state unavailable');
+     if(state.value.error)throw Error(state.value.error);
+     if(!state.value.running&&!state.value.busy){finished=true;break;}
+     await new Promise(r=>setTimeout(r,100));
+    }
+    if(!finished)throw Error('Packaged game did not finish');
+    const log=await fs.readFile(path.join(profile,'game.log'),'utf8');
+    if(!log.includes('native assets generated by C importer')||!log.includes('native GPU pipeline ready')||!log.includes('stopping at scene 12'))throw Error('Packaged Play did not reach modern race scene');
+    console.log('Packaged IPC Play and modern scene startup passed');
+   }
    if(process.argv.includes('--preview-regression')){
     const probe=require('./probe-preview.cjs');
     const reply=await call('Runtime.evaluate',{expression:'('+probe.toString()+')()',awaitPromise:true,returnByValue:true});
