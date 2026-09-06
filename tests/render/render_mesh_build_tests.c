@@ -912,6 +912,39 @@ static void test_gpu_vertex_reuse_preserves_instance_and_triangle_state(void) {
         memcpy(reference[i].fog, cached[i].fog, sizeof(cached[i].fog));
         EXPECT_EQ(0, memcmp(&reference[i], &cached[i], sizeof(cached[i])));
     }
+
+    /* Instance state is resolved anew on each build, including legacy zero
+     * defaults. A partially zero environment colour must NOT become white. */
+    for (unsigned asset = 0; asset <= 4; ++asset) {
+        static const float influence[] = {-0.5f, 0.0f, 0.4f, 2.0f};
+        static const float expected[] = {1.0f, 1.0f, 0.4f, 1.0f};
+        for (unsigned state = 0; state < 4; ++state) {
+            for (unsigned instance = 0; instance < 2; ++instance) {
+                instances[instance].assetSet = (RageRenderAssetSet)asset;
+                instances[instance].flags = instance == 0
+                    ? RAGE_RENDER_INSTANCE_ENABLE_LIGHTING : 0;
+                instances[instance].lightInfluence = influence[state];
+                instances[instance].environmentLight = instance == 0
+                    ? (RageRenderVec3){0, 0, 0} : (RageRenderVec3){0, 0.5f, 0};
+            }
+            for (unsigned gpu = 0; gpu < 2; ++gpu) {
+                uint32_t count = gpu
+                    ? RenderBuildNativeGpuPassDraws(&world, RAGE_RENDER_PASS_MAIN,
+                        1, test_mesh_lookup, &mesh, cached, 18, cachedSpans, 2, &cachedCount)
+                    : RenderBuildNativePassDraws(&world, RAGE_RENDER_PASS_MAIN,
+                        1, test_mesh_lookup, &mesh, cached, 18, cachedSpans, 2, &cachedCount);
+                EXPECT_EQ(18, count);
+                for (unsigned i = 0; i < count; ++i) {
+                    EXPECT_NEAR(i < 9 ? expected[state] : 0, cached[i].lighting, 0.0001f);
+                    EXPECT_NEAR(i < 9 ? 1 : 0, cached[i].environmentLight[0], 0.0001f);
+                    EXPECT_NEAR(i < 9 ? 1 : 0.5f, cached[i].environmentLight[1], 0.0001f);
+                    EXPECT_NEAR(i < 9 ? 1 : 0, cached[i].environmentLight[2], 0.0001f);
+                    EXPECT_NEAR(asset == 0 || asset == 3 ? 0 : 1,
+                                cached[i].shadowReception, 0.0001f);
+                }
+            }
+        }
+    }
 }
 
 int main(void) {

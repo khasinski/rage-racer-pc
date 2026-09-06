@@ -395,10 +395,45 @@ static int InstanceOutsideFrustum(const RageRenderWorld *world,
            fabsf(view.y) > depth * tanY + verticalRadius;
 }
 
+/* These values belong to an instance, not its immutable source vertices or
+ * camera. Resolve compatibility defaults once, before visiting the mesh. */
+typedef struct RagePreparedInstanceState {
+    float lighting;
+    float environmentLight[3];
+    float shadowReception;
+} RagePreparedInstanceState;
+
+static RagePreparedInstanceState PrepareInstanceState(
+    const RageRenderMeshInstance *instance) {
+    RagePreparedInstanceState state = {0};
+    if ((instance->flags & RAGE_RENDER_INSTANCE_ENABLE_LIGHTING) != 0) {
+        state.lighting = instance->lightInfluence;
+        if (state.lighting <= 0.0f) state.lighting = 1.0f;
+        if (state.lighting > 1.0f) state.lighting = 1.0f;
+    }
+    state.environmentLight[0] = instance->environmentLight.x;
+    state.environmentLight[1] = instance->environmentLight.y;
+    state.environmentLight[2] = instance->environmentLight.z;
+    if (state.environmentLight[0] == 0.0f &&
+        state.environmentLight[1] == 0.0f &&
+        state.environmentLight[2] == 0.0f) {
+        /* Zero-initialized legacy callers request neutral light. */
+        state.environmentLight[0] = 1.0f;
+        state.environmentLight[1] = 1.0f;
+        state.environmentLight[2] = 1.0f;
+    }
+    state.shadowReception =
+        instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
+        instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1
+        ? 0.0f : 1.0f;
+    return state;
+}
+
 static int BuildVertex(const RageTransformBasis *basis,
                            const RageRenderViewTransform *viewTransform,
                            const RageRenderWorld *world, int fogged, int gpuFog,
                            const RageRenderMeshInstance *instance,
+                           const RagePreparedInstanceState *instanceState,
                            const RageRuntimeMesh *mesh, uint32_t index,
                            float aspect, RageNativeDrawVertex *out,
                            uint32_t *material, uint32_t *materialFlags,
@@ -441,29 +476,11 @@ static int BuildVertex(const RageTransformBasis *basis,
         out->fog[3] = fogged
             ? RenderFogFactorPrepared(viewTransform, &worldPosition) : 0.0f;
     }
-    out->lighting = 0.0f;
-    if ((instance->flags & RAGE_RENDER_INSTANCE_ENABLE_LIGHTING) != 0) {
-        out->lighting = instance->lightInfluence;
-        if (out->lighting <= 0.0f) out->lighting = 1.0f;
-        if (out->lighting > 1.0f) out->lighting = 1.0f;
-    }
-    out->environmentLight[0] = instance->environmentLight.x;
-    out->environmentLight[1] = instance->environmentLight.y;
-    out->environmentLight[2] = instance->environmentLight.z;
-    if (out->environmentLight[0] == 0.0f &&
-        out->environmentLight[1] == 0.0f &&
-        out->environmentLight[2] == 0.0f) {
-        /* Zero-initialized callers predate environment lighting. Preserve
-         * their neutral light instead of turning them black. */
-        out->environmentLight[0] = 1.0f;
-        out->environmentLight[1] = 1.0f;
-        out->environmentLight[2] = 1.0f;
-    }
+    out->lighting = instanceState->lighting;
+    memcpy(out->environmentLight, instanceState->environmentLight,
+           sizeof(out->environmentLight));
     out->depthBias = 0.0f;
-    out->shadowReception =
-        instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
-        instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1
-        ? 0.0f : 1.0f;
+    out->shadowReception = instanceState->shadowReception;
     *depthDecal =
         (instance->flags & RAGE_RENDER_INSTANCE_DEPTH_DECAL) != 0;
     if ((source.material & RAGE_RUNTIME_MATERIAL_METADATA) != 0) {
@@ -511,6 +528,7 @@ static uint32_t RenderBuildNativeDrawsFiltered(
         const RageRenderMeshInstance *instance = &world->instances[instanceIndex];
         const RageRuntimeMesh *mesh = lookup(context, instance);
         RageTransformBasis basis;
+        RagePreparedInstanceState instanceState;
         uint32_t first, count, offset;
         int terrainQuadHidden = 0;
         if (passFilter >= 0 && instance->pass != (RageRenderPass)passFilter)
@@ -522,6 +540,7 @@ static uint32_t RenderBuildNativeDrawsFiltered(
             InstanceOutsideFrustum(world, &viewTransform, &instance->transform, mesh,
                                        instance->mesh, aspect)) continue;
         basis = BuildTransformBasis(&instance->transform);
+        instanceState = PrepareInstanceState(instance);
         for (offset = 0; offset + 2 < count; offset += 3) {
             RageNativeDrawVertex triangle[3];
             uint32_t materials[3], materialFlags[3], indices[3];
@@ -551,7 +570,7 @@ static uint32_t RenderBuildNativeDrawsFiltered(
                     } else {
                         valid = BuildVertex(&basis, &viewTransform, world,
                             (instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FOG) != 0,
-                            gpuFog, instance, mesh, indices[corner], aspect,
+                            gpuFog, instance, &instanceState, mesh, indices[corner], aspect,
                             &triangle[corner], &materials[corner],
                             &materialFlags[corner], &depthDecals[corner]);
                         if (gpuFog && valid) {
