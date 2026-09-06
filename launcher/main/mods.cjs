@@ -25,17 +25,11 @@ async function inventory(root,tool=path.resolve(__dirname,'../resources/bin/rage
  await run(tool,['--check-files-stdin'],{input:Buffer.from(JSON.stringify(result))});
  return result.sort();
 }
-async function legacyTextures(root,files){
+async function legacyTextures(root,files,tool){
  if(!files.includes('textures/index.txt'))return [];
- const text=await fs.readFile(path.join(root,'textures/index.txt'),'utf8'),entries=[];
- for(const line of text.split(/\r?\n/)){
-  if(!line.trim()||line.trim().startsWith('#'))continue;
-  const match=/^\s*(\d+)\s+([A-Za-z0-9_./-]+\.json)\s*$/.exec(line);
-  if(!match||Number(match[1])>=135||match[2].length>255||match[2].split('/').some(p=>!p||p==='.'||p==='..'))throw Error('Invalid legacy texture index entry');
-  const json='textures/'+match[2],png=json.slice(0,-5)+'.png';
-  if(!files.includes(json)||!files.includes(png))throw Error('Missing legacy texture pair: '+match[2]);
-  entries.push({asset:Number(match[1]),json,png});
- }
+ const {run}=require('./service.cjs');
+ const entries=JSON.parse(await run(tool,['--legacy-index',path.join(root,'textures/index.txt')]));
+ for(const {json,png} of entries)if(!files.includes(json)||!files.includes(png))throw Error('Missing legacy texture pair: '+json);
  return entries;
 }
 function legacyFiles(mod){return new Set((mod.legacyTextures||[]).flatMap(t=>[t.json,t.png]).concat(mod.files.includes('textures/index.txt')?['textures/index.txt']:[]));}
@@ -56,7 +50,7 @@ function installMethods(Service){
   return order.map(index=>active[index]);
  };
  Service.prototype.refreshLegacyTextures=async function(){
-  for(const mod of this.state.mods)mod.legacyTextures=await legacyTextures(path.join(this.root,'mods',mod.id),mod.files);
+  for(const mod of this.state.mods)mod.legacyTextures=await legacyTextures(path.join(this.root,'mods',mod.id),mod.files,this.tool('rage-mod-cli'));
  };
  Service.prototype.replaceAsset=async function(index,file){
   this.requireReady();if(!Number.isInteger(index)||index<0||index>=135)throw Error('Invalid asset');
@@ -126,7 +120,7 @@ function installMethods(Service){
    }catch(e){this.state.mods=this.state.mods.filter(m=>m.id!==id);await fs.rm(folder,{recursive:true,force:true});throw e;}
  };
  Service.prototype.inspectModSnapshot=async function(source,files,signal){
-   const legacy=await legacyTextures(source,files);
+   const legacy=await legacyTextures(source,files,this.tool('rage-mod-cli'));
    let metadata=null;
    if(files.includes('rage-mod.json')){
     const {run}=require('./service.cjs');

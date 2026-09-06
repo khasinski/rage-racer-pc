@@ -1,8 +1,20 @@
 #include "render/mod_file_policy.h"
 #include <assert.h>
 #include <stdio.h>
+#include "render/legacy_texture_index.h"
 
 int main(void) {
+    char stem[256];int owner;
+    const char *entry=" 134 nested/a.json\r\n";
+    assert(LegacyTextureIndexLine(entry,strlen(entry),&owner,stem)==1);
+    assert(owner==134&&!strcmp(stem,"nested/a.json"));
+    assert(LegacyTextureIndexLine(" # comment",10,&owner,stem)==0);
+    const char *badIndex[]={"135 a.json","-1 a.json","1 ../a.json","1 /a.json",
+        "1 a.json extra","1 a.png","1 a//b.json","9999999999999 a.json","1 a\\b.json"};
+    for(size_t i=0;i<sizeof(badIndex)/sizeof(badIndex[0]);++i)
+        assert(LegacyTextureIndexLine(badIndex[i],strlen(badIndex[i]),&owner,stem)==-1);
+    const char nulLine[]="1 a.json\0extra";
+    assert(LegacyTextureIndexLine(nulLine,sizeof(nulLine)-1,&owner,stem)==-1);
     assert(!ModDirectoryAllowed(NULL));
     const char *badDirs[]={"","other","textures2","textures/..","textures//a",
         "textures/a/","/textures","textures\\a","meshes/a b","raw/a/b/c/d/e/f/g/h"};

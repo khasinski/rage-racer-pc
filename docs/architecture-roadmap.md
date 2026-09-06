@@ -112,6 +112,19 @@ been replaced with a compiled inventory implementation. All 67 launcher tests
 and seven standalone C contracts pass on Linux; the same seven C contracts pass
 in the Windows VM. This does not verify the complete Windows launcher.
 
+Legacy texture index lines now share a bounded C parser between the launcher
+CLI and `TexturePatchAsset` (game and rage-pack). The launcher no longer carries
+its own regex parser; pair existence checks remain there. Entries preserve
+order and duplicates, accept ASCII whitespace/CRLF, and reject traversal,
+trailing tokens, NULs, out-of-range owners and lines over 510 bytes. The CLI
+rejects the whole request on malformed input (partial stdout is discarded by
+the process runner); runtime reports and skips malformed lines as before.
+The CLI also caps the complete index at 2 MiB. Unicode-only whitespace is no
+longer accepted as a launcher-specific extension. All 68 launcher tests, seven
+Linux/Windows C contracts and the existing mod-tools texture roundtrip pass.
+The existing Python roundtrip has not been removed; its compiled replacement
+remains part of the toolchain migration. No new game GPU run was performed.
+
 Copy roles now also come from C: referenced backing files stay provider-local,
 while metadata and unused meshes are omitted from runtime composition without
 being removed from the library/export. Reference discovery and resource-key

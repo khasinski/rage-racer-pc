@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <miniz.h>
+#include "../render/legacy_texture_index.h"
 
 /*
  * Putting an edited PNG back into an asset. The game does this in memory as it
@@ -422,11 +423,23 @@ int TexturePatchAsset(const char *directory, int assetIndex,
     if (written < 0 || (size_t)written >= sizeof(indexPath)) return -1;
     index = fopen(indexPath, "rb");
     if (index == NULL) return -1;
-    while (fgets(line, sizeof(line), index)) {
+    for (;;) {
+        size_t lineSize=0;
+        int c,overflow=0;
+        while((c=fgetc(index))!=EOF&&c!='\n') {
+            if(lineSize<sizeof(line))line[lineSize++]=(char)c;
+            else overflow=1;
+        }
+        if(c==EOF&&!lineSize&&!overflow)break;
         char jsonPath[1024], pngPath[1024], stem[256];
         int owner;
         size_t length;
-        if (sscanf(line, "%d %255s", &owner, stem) != 2) continue;
+        if (overflow) {
+            fprintf(stderr,"rage-port: invalid legacy texture index line\n");continue;
+        }
+        int parsed=LegacyTextureIndexLine(line,lineSize,&owner,stem);
+        if(parsed<0)fprintf(stderr,"rage-port: invalid legacy texture index line\n");
+        if(parsed!=1)continue;
         if (owner != assetIndex) continue;
         length = strlen(stem);
         if (length < 6) continue;
