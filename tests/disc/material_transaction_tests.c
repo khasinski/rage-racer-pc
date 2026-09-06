@@ -8,7 +8,7 @@ static int Build(void *context,RageRenderMaterial *material,ModernAssetImage *im
     int mode=*(int *)context;
     image->pixels=malloc(4);assert(image->pixels);image->size=4;image->width=image->height=1;
     memset(image->pixels,7,4);
-    strcpy(storage->baseColorTexture,"owned.rgba");
+    memcpy(storage->baseColorTexture,"owned.rgba",sizeof("owned.rgba"));
     material->baseColorTexture=(RageRenderMaterialPath){storage->baseColorTexture,mode==2?1024:10};
     return mode!=0;
 }

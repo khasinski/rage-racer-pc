@@ -12,8 +12,8 @@ The `texture-contract-check` workflow runs the same script on Linux, Windows
 and macOS, checking out only libchdr, psyz and its SDL submodule. It needs no
 disc, display, game loop or Python. Windows uses VS2022/ClangCL; Unix needs Ninja.
 
-The smaller standalone project below builds only the production texture patcher
-and the same synthetic C fixture used by the main build. No game image, SDL,
+The smaller standalone project below builds the production texture patcher and
+material ownership tests used by the main build. No game image, SDL,
 GPU, Node or Python is needed in this mode. The libchdr
 submodule must supply `deps/miniz-3.1.2/miniz.c` and `miniz.h`. The vendored
 `external/yyjson` parser is built from the same sources as the game.
@@ -23,6 +23,10 @@ cmake -S tests/texture_contract -B build/texture-contract -DCMAKE_BUILD_TYPE=Rel
 cmake --build build/texture-contract
 ctest --test-dir build/texture-contract --output-on-failure
 ```
+
+For ASan/UBSan on Unix GCC/Clang, configure a separate build with
+`-DRAGE_ASSET_SANITIZERS=ON -DCMAKE_BUILD_TYPE=Debug`. The Linux workflow runs
+this variant too. The compiler's sanitizer runtime libraries must be installed.
 
 For Windows with Visual Studio 2022 Build Tools and ClangCL:
 

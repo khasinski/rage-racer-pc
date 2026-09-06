@@ -272,6 +272,17 @@ game stability or the packaged launcher shipping contract.
      a standalone C build; Linux material/native-world/PAL regressions pass.
      An ASan/UBSan build could not link because the host sanitizer runtimes are
      missing, so no sanitizer pass is claimed. No Windows rerun for this step.
+   - Follow-up verification supersedes that sanitizer gap: the existing Linux
+     development container has working runtimes. The standalone material/path,
+     transaction and production texture patch fixtures all pass with ASan/UBSan.
+     `RAGE_ASSET_SANITIZERS` makes this reproducible in tests/texture_contract;
+     the Linux CI matrix now includes that variant (hosted execution pending).
+     Material fixtures also join the normal standalone matrix: all four tests,
+     including archive roundtrip, pass in Windows 11 Release (1.33s). The image
+     value type is split out of modern_assets.h so transactions do not depend on
+     the world/cache API. The Linux live native-world regression passes after
+     that header split. This is still fixture-scoped, not full-game sanitizer
+     coverage or proof of concurrent rendering safety.
 3. **Simulation/presentation boundary** (in progress)
    - Complete immutable presentation snapshots; isolate remaining legacy-state
      reads and declare compatibility/VRAM dependencies.

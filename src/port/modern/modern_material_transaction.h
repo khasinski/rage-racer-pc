@@ -1,6 +1,7 @@
 #ifndef RAGE_MODERN_MATERIAL_TRANSACTION_H
 #define RAGE_MODERN_MATERIAL_TRANSACTION_H
-#include "modern_assets.h"
+#include "modern_asset_image.h"
+#include "render/render_material_storage.h"
 /* One publication boundary for provider-produced material/image pairs. */
 static inline int ModernMaterialTransaction(
     int (*build)(void *,RageRenderMaterial *,ModernAssetImage *,RageRenderMaterialStorage *),

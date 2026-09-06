@@ -5,13 +5,7 @@
 #include "render/render_material.h"
 #include "render/render_material_storage.h"
 #include "render/rmesh_cache.h"
-
-typedef struct ModernAssetImage {
-    void *pixels;
-    size_t size;
-    uint32_t width;
-    uint32_t height;
-} ModernAssetImage;
+#include "modern_asset_image.h"
 
 int ModernAssetsInit(void);
 /* Headless workshop tools: catalog to stdout, or one authored source mesh. */
