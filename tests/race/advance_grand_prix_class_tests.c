@@ -1,4 +1,5 @@
 #include "common.h"
+#include "game/asset.h"
 #include "game/car.h"
 #include "game/fmv.h"
 #include "game/menu.h"
@@ -19,6 +20,9 @@ s16 g_SeriesSelection;
 GameRaceProgress *g_RaceProgress;
 CourseProgressState *g_CourseProgress;
 CarEntry *g_CarTable;
+GameCdLoadEntry g_StreamCdEntries[FMV_STREAM_COUNT];
+GameCdLoadEntry *g_StreamLoc;
+u32 g_StreamFrameCount;
 
 static GameRaceProgress s_progress;
 static CourseProgressState s_courseProgress;
@@ -40,12 +44,9 @@ void ResetCourseProgress(s32 mode) {
     s_resetCourseMode = mode;
 }
 
-void BeginClassFmv(s32 returnScene) {
-    s_classFmvReturnScene = returnScene;
-}
-
-void BeginEndingFmv(s32 returnScene) {
-    s_endingFmvReturnScene = returnScene;
+void BeginFmv(s32 returnScene) {
+    if (returnScene == 7) s_classFmvReturnScene = returnScene;
+    else s_endingFmvReturnScene = returnScene;
 }
 
 static void Check(const char *name, s32 actual, s32 expected) {
@@ -71,9 +72,35 @@ static void Reset(void) {
     s_resetCourseMode = -1;
     s_classFmvReturnScene = -1;
     s_endingFmvReturnScene = -1;
+    g_StreamLoc = NULL;
+    g_StreamFrameCount = 0;
+    for (s32 i = 0; i < FMV_STREAM_COUNT; ++i)
+        g_StreamCdEntries[i].size = (u32)(100 + i);
 }
 
 int main(void) {
+    for (s32 series = 0; series < 2; ++series) {
+        for (s32 completed = 0; completed < (series ? 5 : 4); ++completed) {
+            Reset();
+            g_ClassCompleted = 1;
+            g_SeriesSelection = (s16)series;
+            g_GrandPrixClass = completed;
+            AdvanceGrandPrixClass();
+            s32 stream = (series ? 5 : 1) + (completed < 4 ? completed : 3);
+            Check("completed class selects its own movie",
+                  g_StreamLoc == &g_StreamCdEntries[stream], 1);
+            Check("selected stream frame count", (s32)g_StreamFrameCount, 100 + stream);
+            Check("promotion increments after stream selection", g_GrandPrixClass, completed + 1);
+            Check("promotion returns through class handler", s_classFmvReturnScene, 7);
+        }
+        Reset();
+        g_ClassCompleted = g_SeriesCleared = 1;
+        g_SeriesSelection = (s16)series;
+        g_GrandPrixClass = series ? 5 : 4;
+        AdvanceGrandPrixClass();
+        Check("both series select ending stream", g_StreamLoc == &g_StreamCdEntries[10], 1);
+        Check("ending frame count", (s32)g_StreamFrameCount, 110);
+    }
     Reset();
     AdvanceGrandPrixClass();
     Check("unfinished class returns to course select", g_SceneId, 6);

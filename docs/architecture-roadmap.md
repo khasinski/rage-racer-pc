@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Class-award selection coverage now links the real `SelectFmvStream` wrappers
+into `advance_grand_prix_class_tests`, replacing mocked BeginClass/EndingFmv.
+Every advancing class in both series checks its completed-class stream and
+frame count before the live class increments; both final classes select the
+ending. Existing invalid-state/progress checks remain. The compiled advance
+and FMV request tests pass on Linux. This connects progression to real stream
+selection, but BeginFmv remains mocked: natural prize-screen/audio playback
+still needs an end-to-end scenario and is not claimed by these unit tests.
+
 The compiled FMV pacing oracle now accepts all 11 retail stream indices, not
 only intro/promotion 0 and 5. Every modern_fmv_audio case checks disc-derived
 picture sector positions and timing, complete ordered frames, XA completion,
