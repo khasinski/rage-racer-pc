@@ -50,6 +50,13 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Retry ownership fixture now writes and loads a synthetic mesh through the
+production asset adapter after recovery. Repeated successful InitRoot retains
+the cache-entry pointer, owned byte pointer and contents; double shutdown leaves
+zero cached meshes. The fixture passes normally and under the same scoped
+ASan/UBSan setup with leak detection. It exercises CPU mesh ownership, not GPU
+uploads or resources retained by captured frames across asset generations.
+
 Retry sanitizer checkpoint: the Linux development container compiled the retry
 fixture plus modern_assets, platform/config, mod assets, texture patch, track
 identity and offline-importer sources with ASan/UBSan (GNU C11, matching the

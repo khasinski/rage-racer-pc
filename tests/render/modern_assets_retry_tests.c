@@ -5,10 +5,20 @@
 
 size_t PortAssetRoomAt(const void *at) { (void)at; return 0; }
 
+static void Write32(unsigned char *p, unsigned value) {
+    p[0] = (unsigned char)value;
+    p[1] = (unsigned char)(value >> 8);
+    p[2] = (unsigned char)(value >> 16);
+    p[3] = (unsigned char)(value >> 24);
+}
+
 int main(int argc, char **argv) {
     char path[4096];
     char environmentPath[4096];
-    const char index[] = "# rage-rmesh-index v2\n10 model mesh.rmesh mesh.rmat\n";
+    char meshPath[4096];
+    unsigned char meshBytes[96] = {0};
+    RageRenderMeshInstance instance = {0};
+    const char index[] = "# rage-rmesh-index v2\n123 model mesh.rmesh mesh.rmat\n";
     if (SDL_setenv_unsafe("RAGE_PORT_MODERN_ASSETS", "", 1) != 0) return 14;
     if (argc != 2 || !SDL_CreateDirectory(argv[1])) return 1;
     if (SDL_snprintf(path, sizeof(path), "%s/runtime-index.txt", argv[1]) >= (int)sizeof(path)) return 1;
@@ -23,11 +33,25 @@ int main(int argc, char **argv) {
     if (ModernAssetsInitRoot(argv[1]) || ModernAssetsReady()) return 12;
     if (!SDL_RemovePath(environmentPath)) return 13;
     if (!ModernAssetsInitRoot(argv[1]) || !ModernAssetsReady()) return 4;
+    if (SDL_snprintf(meshPath, sizeof(meshPath), "%s/mesh.rmesh", argv[1]) >= (int)sizeof(meshPath)) return 21;
+    memcpy(meshBytes, "RRMESH1", 7);
+    Write32(meshBytes + 8, 1); Write32(meshBytes + 12, 1);
+    Write32(meshBytes + 16, 1); Write32(meshBytes + 20, 6);
+    Write32(meshBytes + 28, 6);
+    if (!SDL_SaveFile(meshPath, meshBytes, sizeof(meshBytes))) return 22;
+    instance.assetKey = 123;
+    instance.assetSet = RAGE_RENDER_ASSET_MODEL_BANK;
+    const RageRuntimeCachedMesh *resident = ModernAssetsFind(&instance);
+    if (!resident || ModernAssetsCachedMeshCount() != 1) return 23;
+    const void *ownedBytes = resident->mesh.bytes;
+    if (!ownedBytes || memcmp(ownedBytes, meshBytes, sizeof(meshBytes))) return 24;
     /* Successful initialization is idempotent and preserves its source. */
     if (!ModernAssetsInitRoot(NULL) || !ModernAssetsReady()) return 5;
+    if (ModernAssetsFind(&instance) != resident || resident->mesh.bytes != ownedBytes ||
+        memcmp(ownedBytes, meshBytes, sizeof(meshBytes))) return 25;
     ModernAssetsShutdown();
     ModernAssetsShutdown();
-    if (ModernAssetsReady()) return 6;
+    if (ModernAssetsReady() || ModernAssetsCachedMeshCount() != 0) return 6;
     /* Offline fixture has no importer: failure must not poison InitRoot. */
     if (ModernAssetsInit() || ModernAssetsReady()) return 8;
     if (!ModernAssetsInitRoot(argv[1]) || !ModernAssetsReady()) return 9;
@@ -40,5 +64,6 @@ int main(int argc, char **argv) {
     if (!ModernAssetsInit()) return 20;
     ModernAssetsShutdown();
     if (!SDL_RemovePath(path)) return 7;
+    if (!SDL_RemovePath(meshPath)) return 26;
     return 0;
 }
