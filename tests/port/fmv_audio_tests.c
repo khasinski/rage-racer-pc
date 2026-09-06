@@ -23,6 +23,10 @@ static long s_commands[16];
 static int s_commandCount;
 static int s_lastXaEndSector;
 
+void Psyz_AudioLock(void) {}
+void Psyz_AudioUnlock(void) {}
+unsigned long long Psyz_SpuCdMixEnergy(void) { return 0; }
+
 int HostReadStreamSector(unsigned int sector, unsigned char *raw) {
     int relative = (int)sector - 50;
 

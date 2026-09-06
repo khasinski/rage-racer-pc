@@ -51,6 +51,9 @@ foreach(required "active=modern" "fmv xa start:" "fmv xa end")
         message(FATAL_ERROR "Missing ${required}; ${output}/game.log")
     endif()
 endforeach()
+if(NOT log MATCHES "fmv xa mixer energy=([0-9]+)" OR CMAKE_MATCH_1 LESS_EQUAL 0)
+    message(FATAL_ERROR "FMV XA made no contribution to the mixer: ${output}")
+endif()
 string(REGEX MATCHALL "fmv frame=[0-9]+ " trace "${log}")
 # The title screen may replay the intro during the remaining smoke ticks.
 # Require the complete first run, never add a partial replay to its frame count.

@@ -6,6 +6,8 @@
 #include "host_disc.h"
 #include "psyq/cd.h"
 #include <psyz/cd.h>
+#include <psyz/audio.h>
+#include <psyz/spu.h>
 #include "runtime_config.h"
 
 enum {
@@ -27,9 +29,24 @@ enum {
 
 static int s_xaPlaying;
 static int s_xaTailAllowed;
+static unsigned long long s_mixEnergyBegin;
+
+static unsigned long long FmvMixEnergy(void) {
+    unsigned long long energy;
+    Psyz_AudioLock();
+    energy = Psyz_SpuCdMixEnergy();
+    Psyz_AudioUnlock();
+    return energy;
+}
 
 static void FinishXaAudio(void) {
     unsigned char mode = RAGE_CDL_MODE_DA | CdlModeSpeed;
+
+    if (s_xaPlaying && RuntimeConfigEnabled("diagnostics.fmv_trace")) {
+        unsigned long long end = FmvMixEnergy();
+        fprintf(stderr, "fmv xa mixer energy=%llu\n",
+                end >= s_mixEnergyBegin ? end - s_mixEnergyBegin : 0);
+    }
 
     Psyz_CdSetXaEndSector(-1);
     CdControl(RAGE_CDL_SETMODE, &mode, NULL);
@@ -113,6 +130,8 @@ void HostFmvAudioStart(unsigned int firstSector, unsigned int sectorCount) {
     CdControl(RAGE_CDL_SETMODE, &mode, NULL);
     CdControl(RAGE_CDL_SETLOC, (unsigned char *)&location, NULL);
     Psyz_CdSetXaEndSector(absoluteEnd);
+    s_mixEnergyBegin = RuntimeConfigEnabled("diagnostics.fmv_trace")
+        ? FmvMixEnergy() : 0;
     CdControl(RAGE_CDL_READN, NULL, NULL);
     s_xaPlaying = Psyz_CdAudioPlaying();
     if (!s_xaPlaying) {

@@ -50,6 +50,18 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Award audio regression found and fixed: tracing now measures the SPU CD mix
+energy delta for each XA playback interval under the audio lock. The natural
+class-award fixture initially failed with zero movie contribution despite
+nonzero whole-session PCM (`class-award-4f61bf737732`). BeginFmv inherited the
+race/menu fade's zero CD attenuator. It now cancels that fade and reapplies the
+configured CD volume after pausing prior playback, without forcing full volume.
+The class-award test now requires nonzero movie CD mix energy, as do direct
+FMV tests. All 14 PAL audio/scene/award tests pass after the fix (23.88 seconds);
+award evidence is `build/class-award-acdb501f4b85`. This measures the movie's
+post-volume CD contribution, not isolated final PCM or audible device quality.
+NTSC award cases and Windows/macOS verification remain open.
+
 First natural award-entry regression: smoke-only `hooks.prior_course_wins`
 seeds earlier course results while leaving the current course incomplete.
 The existing finish hook crosses laps through normal race logic; real results,

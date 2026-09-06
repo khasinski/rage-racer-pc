@@ -10,6 +10,14 @@
 FmvPlaybackState g_FmvState;
 s32 g_SceneId;
 s32 g_StreamReturnScene;
+u8 g_CdVolume;
+s32 g_CdFadeFrames;
+static s32 s_restoredVolume = -1;
+static s32 s_fadeAtRestore = -1;
+void SetCdVolume(s32 volume) {
+    s_restoredVolume = volume;
+    s_fadeAtRestore = g_CdFadeFrames;
+}
 
 static s32 s_closeCalls;
 static s32 s_resetCalls;
@@ -51,7 +59,11 @@ static void Check(s32 condition, const char *label) {
 }
 
 static void TestBeginFmv(void) {
+    g_CdVolume = 63;
+    g_CdFadeFrames = 20;
     BeginFmv(27);
+    Check(s_restoredVolume == 63 && s_fadeAtRestore == 0,
+          "FMV restores configured CD level after cancelling previous fade");
 
     Check(s_closeCalls == 1 && s_resetCalls == 1,
           "FMV start releases game audio");
