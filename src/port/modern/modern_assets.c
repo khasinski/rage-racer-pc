@@ -656,34 +656,17 @@ fail:
     return 0;
 }
 
-static int ModernAssetsLoadBaseMaterial(const RageRenderMeshInstance *instance,
-                             uint32_t material, uint8_t variant,
+static int ModernAssetsLoadCachedImage(const RageRenderMeshInstance *instance,
+                             uint32_t material,
                              RageRenderMaterial *definition,
                              ModernAssetImage *image) {
     const char *path, *paintPath;
     const void *pixels = NULL;
     size_t pathLength, paintPathLength;
-    if (image == NULL || definition == NULL || instance == NULL) return 0;
-    memset(image, 0, sizeof(*image));
-    if (s_importerSource) {
-        ModernAssetImage overrideImage;
-        if (!NativeAssetImporterLoadMaterial(
-                instance, material, variant, definition, image)) return 0;
-        memset(&overrideImage, 0, sizeof(overrideImage));
-        if (ModernAssetsLoadModImage(instance, material, variant,
-                                     &overrideImage)) {
-            ModernAssetsFreeMaterialImage(image);
-            *image = overrideImage;
-        }
-        return 1;
-    }
-    if (!ModernAssetsFindMaterial(instance, material, variant, definition))
-        return 0;
     path = definition->baseColorTexture.text;
     pathLength = definition->baseColorTexture.length;
     paintPath = definition->paintMask.text;
     paintPathLength = definition->paintMask.length;
-    if (ModernAssetsLoadModImage(instance, material, variant, image)) return 1;
     if (
         !ModernAssetReadFile(NULL, path, pathLength, &pixels, &image->size) ||
         image->size != 256u * 256u * 4u) {
@@ -720,6 +703,54 @@ static int ModernAssetsLoadBaseMaterial(const RageRenderMeshInstance *instance,
                     (unsigned)instance->carPaintColor2, paintPath);
     }
     return 1;
+}
+
+typedef struct MaterialProviderRequest {
+    const RageRenderMeshInstance *instance;
+    uint32_t material;
+    uint8_t variant;
+    RageRenderMaterial *definition;
+    ModernAssetImage *image;
+} MaterialProviderRequest;
+static RageResourceStatus ResolveImportedMaterial(void *context) {
+    MaterialProviderRequest *request=context;
+    if(!s_importerSource)return RAGE_RESOURCE_MISSING;
+    return NativeAssetImporterLoadMaterial(request->instance,request->material,
+        request->variant,request->definition,request->image)
+        ? RAGE_RESOURCE_READY : RAGE_RESOURCE_ERROR;
+}
+static RageResourceStatus ResolveCachedMaterial(void *context) {
+    MaterialProviderRequest *request=context;
+    if(s_importerSource)return RAGE_RESOURCE_MISSING;
+    /* Defer cached pixel I/O until after the mod image has had first choice. */
+    return ModernAssetsFindMaterial(request->instance,request->material,
+        request->variant,request->definition)?RAGE_RESOURCE_READY:RAGE_RESOURCE_ERROR;
+}
+static RageResourceStatus ResolveModMaterialImage(void *context) {
+    MaterialProviderRequest *request=context;
+    ModernAssetImage replacement={0};
+    if(!ModernAssetsLoadModImage(request->instance,request->material,request->variant,&replacement))
+        return RAGE_RESOURCE_MISSING; /* Preserve legacy rejected-image fallback. */
+    ModernAssetsFreeMaterialImage(request->image);
+    *request->image=replacement;
+    return RAGE_RESOURCE_READY;
+}
+static RageResourceStatus ResolveBaseMaterialImage(void *context) {
+    MaterialProviderRequest *request=context;
+    if(s_importerSource)return RAGE_RESOURCE_READY; /* Importer already supplied pixels. */
+    return ModernAssetsLoadCachedImage(request->instance,request->material,
+        request->definition,request->image)?RAGE_RESOURCE_READY:RAGE_RESOURCE_ERROR;
+}
+static int ModernAssetsLoadBaseMaterial(const RageRenderMeshInstance *instance,
+                             uint32_t material,uint8_t variant,
+                             RageRenderMaterial *definition,ModernAssetImage *image) {
+    if(!instance||!definition||!image)return 0;
+    memset(image,0,sizeof(*image));
+    MaterialProviderRequest request={instance,material,variant,definition,image};
+    const RageResourceProvider definitions[]={{ResolveImportedMaterial,&request},{ResolveCachedMaterial,&request}};
+    if(ResourceProviderResolve(definitions,2,NULL)!=RAGE_RESOURCE_READY)return 0;
+    const RageResourceProvider images[]={{ResolveModMaterialImage,&request},{ResolveBaseMaterialImage,&request}};
+    return ResourceProviderResolve(images,2,NULL)==RAGE_RESOURCE_READY;
 }
 
 static uint16_t ModernPlayerMarkingClut(const RageRenderMeshInstance *instance,

@@ -242,6 +242,16 @@ game stability or the packaged launcher shipping contract.
      and modern PAL/NTSC-U/NTSC-J smoke pass on Linux (14.44s parallel total).
      Smoke, replay and stage targets build. This is not a new Windows runtime
      or visual/performance verification.
+   - Material integration: imported/cached definitions and mod/base images now
+     use the same provider-selection mechanism. Mod PNG replacement has one
+     ownership-transfer path that releases an already generated base image;
+     cached pixel I/O remains deferred until a mod image is unavailable.
+     Rejected mod PNGs keep the existing base-image fallback policy. Surface
+     effects and authored material overrides still run after base resolution.
+     Linux tests pass: native_render_world verifies a live GPU draw stream,
+     semantic PNG replacement and car paint; modern PAL and material parsing
+     regressions pass too. These are not pixel-difference or Windows runtime
+     results, and material identity/storage still need the unified catalog.
 3. **Simulation/presentation boundary** (in progress)
    - Complete immutable presentation snapshots; isolate remaining legacy-state
      reads and declare compatibility/VRAM dependencies.
