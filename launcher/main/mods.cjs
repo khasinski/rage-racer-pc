@@ -241,6 +241,8 @@ function installMethods(Service){
      const source=path.join(staging,mod.id),files=mod.files;
      const semanticFiles=new Set([...Object.values(mod.manifest.textures),...Object.values(mod.manifest.meshes||{})]);
      const legacy=legacyFiles(mod);
+     const roles=JSON.parse(await run(this.tool('rage-mod-cli'),['--file-dispositions-stdin'],{
+      input:Buffer.from(JSON.stringify(files.map(name=>[name,(semanticFiles.has(name)?2:0)|(legacy.has(name)?4:0)])))}));
      for(const [index,entry]of (mod.legacyTextures||[]).entries())if(selected('legacy-textures:asset-'+entry.asset,mod.id)){
       const stem=`legacy-${mod.id}-${index}`;
       await fs.mkdir(path.join(target,'textures'),{recursive:true});
@@ -248,17 +250,16 @@ function installMethods(Service){
       await fs.copyFile(path.join(source,entry.png),path.join(target,'textures',stem+'.png'));
       legacyIndex.push(`${entry.asset} ${stem}.json`);
      }
-     for(const name of files){
-      if(name==='mod.toml'||name==='manifest.json')continue;
+     for(const [index,name] of files.entries()){
       // Semantic textures use a provider-specific path. Choosing a material or
       // texture ID cannot accidentally select pixels from another mod that used
       // the same source filename.
-      if(semanticFiles.has(name)){
+      if(roles[index]&2){
        const group=name.split('/')[0];const isolated=group+'/provider-'+mod.id+'/'+name.slice(group.length+1);
        await fs.mkdir(path.dirname(path.join(target,isolated)),{recursive:true});
        await fs.copyFile(path.join(source,name),path.join(target,isolated));
       }
-      if(!semanticFiles.has(name)&&!legacy.has(name)&&selected(name,mod.id)){
+      if((roles[index]&1)&&selected(name,mod.id)){
        await fs.mkdir(path.dirname(path.join(target,name)),{recursive:true});
        await fs.copyFile(path.join(source,name),path.join(target,name));
       }
@@ -274,7 +275,7 @@ function installMethods(Service){
    }
    let manifest='[mod]\nid = "launcher-profile"\n';for(const group of ['textures','materials','meshes']){manifest+=`\n[${group}]\n`;for(const [key,value]of Object.entries(tables[group]))manifest+=`"${key}" = "${value}"\n`;}
    await fs.writeFile(path.join(target,'mod.toml'),manifest);
-   const {run}=require('./service.cjs');await run(this.tool('rage-mod-cli'),[path.join(target,'mod.toml')]);
+   await run(this.tool('rage-mod-cli'),[path.join(target,'mod.toml')]);
    return target;
    }catch(e){await fs.rm(target,{recursive:true,force:true});throw e;}
    }finally{await fs.rm(staging,{recursive:true,force:true});}

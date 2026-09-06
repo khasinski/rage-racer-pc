@@ -62,6 +62,11 @@ export and composition. Directory traversal, symlink checks and semantic/legacy
 resource-claim discovery still live in the launcher; classifying a backing file
 does not make it a global override provider.
 
+Copy roles now also come from C: referenced backing files stay provider-local,
+while metadata and unused meshes are omitted from runtime composition without
+being removed from the library/export. Reference discovery and resource-key
+enumeration remain separate launcher responsibilities to migrate.
+
 The standalone `tests/mod_contract` gate now reuses production sources and
 the same compiled tests without SDL/discs. All seven tests passed on Linux and
 the local Windows 11/ClangCL VM after the launcher integration. A path-filtered

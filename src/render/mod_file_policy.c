@@ -6,6 +6,20 @@ static int Ends(const char *path, size_t size, const char *suffix) {
     size_t n = strlen(suffix);
     return size > n && !memcmp(path+size-n,suffix,n);
 }
+int ModFileDisposition(const char *path, unsigned references) {
+    RageModFileKind kind = ModFileClassify(path);
+    if (kind == RAGE_MOD_FILE_INVALID ||
+        (references & ~(RAGE_MOD_FILE_SEMANTIC | RAGE_MOD_FILE_LEGACY))) return -1;
+    if (references & RAGE_MOD_FILE_LEGACY) {
+        if (kind != RAGE_MOD_FILE_TEXTURE) return -1;
+    }
+    if (references & RAGE_MOD_FILE_SEMANTIC) {
+        if (kind != RAGE_MOD_FILE_TEXTURE && kind != RAGE_MOD_FILE_MESH) return -1;
+    }
+    if (references) return (int)references;
+    if (kind == RAGE_MOD_FILE_RAW || kind == RAGE_MOD_FILE_TEXTURE) return RAGE_MOD_FILE_GLOBAL;
+    return 0;
+}
 RageModFileKind ModFileClassify(const char *path) {
     if (!path) return RAGE_MOD_FILE_INVALID;
     size_t size = strlen(path);

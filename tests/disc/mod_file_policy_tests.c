@@ -23,6 +23,19 @@ int main(void) {
     assert(ModFileClassify("mod.toml")==RAGE_MOD_FILE_METADATA);
     assert(ModFileClassify("manifest.json")==RAGE_MOD_FILE_METADATA);
     assert(ModFileClassify("rage-mod.json")==RAGE_MOD_FILE_METADATA);
+    assert(ModFileDisposition("raw/asset_010.bin",0)==RAGE_MOD_FILE_GLOBAL);
+    assert(ModFileDisposition("textures/a.png",0)==RAGE_MOD_FILE_GLOBAL);
+    assert(ModFileDisposition("textures/a.png",RAGE_MOD_FILE_SEMANTIC)==RAGE_MOD_FILE_SEMANTIC);
+    assert(ModFileDisposition("textures/a.png",RAGE_MOD_FILE_LEGACY)==RAGE_MOD_FILE_LEGACY);
+    assert(ModFileDisposition("textures/a.png",6)==6);
+    assert(ModFileDisposition("meshes/a.rmesh",RAGE_MOD_FILE_SEMANTIC)==RAGE_MOD_FILE_SEMANTIC);
+    assert(ModFileDisposition("meshes/a.rmesh",0)==0);
+    assert(ModFileDisposition("rage-mod.json",0)==0);
+    assert(ModFileDisposition("mod.toml",0)==0);
+    assert(ModFileDisposition("manifest.json",0)==0);
+    assert(ModFileDisposition("raw/asset_000.bin",RAGE_MOD_FILE_SEMANTIC)==-1);
+    assert(ModFileDisposition("meshes/a.rmesh",RAGE_MOD_FILE_LEGACY)==-1);
+    assert(ModFileDisposition("textures/a.png",RAGE_MOD_FILE_GLOBAL)==-1);
     puts("compiled mod path classes, all raw indices and invalid paths passed");
     return 0;
 }

@@ -34,7 +34,8 @@ Coverage:
 - streaming file snapshots, byte equality, exclusive creation, limits and
   removal of failed output without overwriting existing files;
 - package-relative file classification, all 1000 three-digit raw indices and
-  rejection of unsupported extensions and unsafe relative paths.
+  rejection of unsupported extensions and unsafe relative paths, plus global,
+  semantic, legacy and omitted copy roles.
 
 On 2026-09-06, all seven tests passed on Linux/GCC Release and a local Windows
 11 evaluation VM using ClangCL 19.1.5, VS Build Tools 2022 and SDK 10.0.26100.

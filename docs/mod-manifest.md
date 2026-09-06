@@ -71,9 +71,20 @@ and performs no filesystem writes. JavaScript still traverses directories,
 rejects symlinks and enforces directory depth and package-size limits; the
 compiled classifier is not a directory walker or a filesystem sandbox.
 
-Classifying a file does not imply a global override claim: semantic texture
-and mesh backing files remain provider-local, while metadata is not a runtime
-override. Semantic and legacy claim discovery still needs compiled migration.
+`ModFileDisposition` determines copy roles from the compiled file class and
+semantic/legacy reference flags. Unreferenced textures and raw assets are global
+overrides; referenced backing files stay provider-local. Metadata and unreferenced
+meshes have no runtime copy role. A texture may supply both semantic and legacy
+references without becoming a global filename override. Invalid reference kinds
+are rejected. Composition uses these C results, so unrelated package metadata
+or unused meshes cannot overwrite one another in the generated runtime folder.
+Original library files and exports remain intact.
+
+The CLI `--file-dispositions-stdin` accepts `[path,referenceBits]` pairs and
+returns one role bitmask per file: global=1, semantic=2, legacy=4, omitted=0.
+Only semantic/legacy bits are valid inputs; the tool validates the full batch
+before output. Semantic/legacy reference discovery still lives in the launcher
+and needs compiled migration; copy-role selection is not a complete claim graph.
 
 Mod import inventories the selected directory, then uses
 `rage-mod-cli --copy-snapshot-stdin` to copy the listed files into a new private

@@ -55,7 +55,8 @@ static void String(const char *s) {
 }
 int main(int argc,char **argv) {
     FILE *f;long size;char *bytes;size_t i;
-    if(argc==2 && strcmp(argv[1],"--check-files-stdin")==0) return FilePolicyCommand();
+    if(argc==2 && strcmp(argv[1],"--check-files-stdin")==0) return FilePolicyCommand(0);
+    if(argc==2 && strcmp(argv[1],"--file-dispositions-stdin")==0) return FilePolicyCommand(1);
     if(argc==2 && strcmp(argv[1],"--copy-snapshot-stdin")==0) return SnapshotCommand();
     if(argc==3 && strcmp(argv[1],"--metadata")==0) return PackageMetadata(argv[2]);
     if(argc>1 && strcmp(argv[1],"--check-selection")==0) return SelectionCommand(argc,argv);
