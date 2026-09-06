@@ -3,12 +3,16 @@ target_link_libraries(native_asset_fixture PRIVATE SDL3::SDL3)
 target_compile_options(native_asset_fixture PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 if(TARGET rage-racer-smoke)
     add_executable(mirror_image_check mirror_image_check.c)
+    add_executable(mirror_image_check_tests mirror_image_check_tests.c)
+    target_compile_options(mirror_image_check_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+    add_test(NAME mirror_image_check COMMAND mirror_image_check_tests)
+    set_tests_properties(mirror_image_check PROPERTIES LABELS unit)
     target_compile_options(mirror_image_check PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
-    add_test(NAME mirror_cars_compiled COMMAND ${CMAKE_COMMAND}
+    add_test(NAME mirror_cars COMMAND ${CMAKE_COMMAND}
         -DFIXTURE=$<TARGET_FILE:native_asset_fixture> -DGAME=$<TARGET_FILE:rage-racer-smoke>
         -DCHECK=$<TARGET_FILE:mirror_image_check> -DSOURCE=${PROJECT_SOURCE_DIR}
         -DOUTPUT_ROOT=${CMAKE_BINARY_DIR} -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_mirror_cars.cmake)
-    set_tests_properties(mirror_cars_compiled PROPERTIES LABELS e2e TIMEOUT 360)
+    set_tests_properties(mirror_cars PROPERTIES LABELS e2e TIMEOUT 360)
     add_test(NAME renderer_toggle_cycles COMMAND ${CMAKE_COMMAND}
         -DFIXTURE=$<TARGET_FILE:native_asset_fixture> -DGAME=$<TARGET_FILE:rage-racer-smoke>
         -DSOURCE=${PROJECT_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
@@ -1709,11 +1713,6 @@ set_tests_properties(grand_prix_terrain_frame PROPERTIES LABELS e2e)
         )
         set_tests_properties(mirror_entry PROPERTIES LABELS e2e TIMEOUT 150)
     endif()
-    add_test(NAME mirror_cars COMMAND python3
-        ${CMAKE_CURRENT_SOURCE_DIR}/verify_mirror_cars.py
-        $<TARGET_FILE:rage-racer-smoke> ${CMAKE_SOURCE_DIR})
-set_tests_properties(mirror_cars PROPERTIES LABELS e2e)
-    set_tests_properties(mirror_cars PROPERTIES TIMEOUT 360)
 
     add_test(
         NAME waterfall

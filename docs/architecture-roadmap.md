@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Mirror-car migration is complete for this regression: the production test name
+now uses CMake/C after side-by-side passes and compiled negative tests. The
+checker exercises empty/short/trailing data, unequal dimensions, exact 1200/8
+pixel thresholds and one-below failures; Linux ASan/UBSan passes too. After
+removing the old Python runner, mirror_image_check and mirror_cars pass (4.98s).
+The deleted runner remains recoverable in Git. Runtime-config is still a user
+of the Python native fixture helper; no full Python removal is claimed.
+
 Mirror-car migration has a compiled PPM checker and CMake runner alongside
 the old test. It preserves frozen race/grid/capture setup, rear vehicle spans,
 submitted mirror draws, equal image dimensions and HUD thresholds (1200 scene
