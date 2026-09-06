@@ -50,6 +50,17 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+GPU upload ownership follow-up: the native texture transfer queue now holds
+the complete 2048-entry texture cache rather than 256 entries. The old overflow
+path waited for GPU idle and released transfers even though their command
+buffer had not yet been submitted. Capacity is checked before recording new
+copies; overflow no longer retires unsubmitted work. Mip chains exceeding SDL's
+32-bit transfer size are rejected before allocation/upload. The smoke target
+build and Linux offscreen `native_render_world`, `modern_submit_recovery` and
+`modern_region_pal` tests pass. These checks do not exercise a greater-than-256
+upload frame or prove pixel correctness; dedicated queue stress coverage and
+the full GPU ownership stage remain open.
+
 Dependency selection and conflict selection share a bounded NUL-delimited
 stdin decoder (8 MiB / 262144 tokens), avoiding Windows command-line limits.
 The launcher rejects embedded NULs before encoding. Regression coverage includes

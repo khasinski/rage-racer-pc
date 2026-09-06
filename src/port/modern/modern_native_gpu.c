@@ -148,7 +148,10 @@ static ModernNativeTexture s_textures[MODERN_NATIVE_MAX_TEXTURES];
  * they are first uploaded. They are released a frame later, by which time the
  * work that reads them has certainly been submitted.
  */
-enum { MODERN_NATIVE_MAX_PENDING_UPLOADS = 256 };
+/* Every successful upload creates exactly one cache entry. Keep enough
+ * slots for the entire cache, including a cold frame drawing main + mirror.
+ * Waiting for GPU idle cannot retire commands not submitted by the caller. */
+enum { MODERN_NATIVE_MAX_PENDING_UPLOADS = MODERN_NATIVE_MAX_TEXTURES };
 static SDL_GPUTransferBuffer
     *s_pendingUploads[MODERN_NATIVE_MAX_PENDING_UPLOADS];
 static uint32_t s_pendingUploadCount;
@@ -163,19 +166,10 @@ static void ModernNativeReleasePendingUploads(void) {
     s_pendingUploadCount = 0;
 }
 
-/* Hand a transfer buffer over to be released once the frame it belongs to has
- * been submitted. A full list means this frame uploaded more textures than
- * the list holds, so the oldest is waited out rather than leaked. */
+/* The caller reserves capacity before recording any copy commands. */
 static void ModernNativeRetireUpload(SDL_GPUTransferBuffer *upload) {
     if (upload == NULL) return;
-    if (s_pendingUploadCount == MODERN_NATIVE_MAX_PENDING_UPLOADS) {
-        if (s_device != NULL) {
-            SDL_WaitForGPUIdle(s_device);
-            ModernNativeReleasePendingUploads();
-        }
-    }
-    if (s_pendingUploadCount < MODERN_NATIVE_MAX_PENDING_UPLOADS)
-        s_pendingUploads[s_pendingUploadCount++] = upload;
+    s_pendingUploads[s_pendingUploadCount++] = upload;
 }
 static uint16_t s_textureHash[MODERN_NATIVE_TEXTURE_HASH_SIZE];
 static uint32_t s_textureCount;
@@ -1193,6 +1187,9 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     Uint64 loadStart = 0, materialDone = 0, mipDone = 0;
     uint64_t imageHash = UINT64_C(14695981039346656037);
     if (entry != NULL || span->material == UINT32_MAX) return entry;
+    /* Never release unsubmitted uploads to make room. A failed reservation
+     * leaves the cache untouched and can be retried after the next prepare. */
+    if (s_pendingUploadCount >= MODERN_NATIVE_MAX_PENDING_UPLOADS) return NULL;
     if (trace < 0) trace = RuntimeConfigEnabled("diagnostics.performance_trace");
     if (trace) loadStart = SDL_GetTicksNS();
     if (s_textureCount == MODERN_NATIVE_MAX_TEXTURES) {
@@ -1233,6 +1230,8 @@ static ModernNativeTexture *ModernNativeLoadTexture(
         image.width, image.height, RAGE_TEXTURE_ATLAS_MIP_LEVELS);
     mipSize = TextureMipChainSizeRGBA8(
         image.width, image.height, mipLevels);
+    /* SDL transfer sizes and per-level offsets are Uint32. */
+    if (mipSize == 0 || mipSize > UINT32_MAX) goto fail;
     mipChain = malloc(mipSize);
     if (mipChain == NULL ||
         !TextureBuildMipChainRGBA8(
