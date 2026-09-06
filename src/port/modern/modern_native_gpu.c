@@ -56,7 +56,12 @@ typedef struct ModernNativeCameraUniform {
     float viewRow1[4];
     float viewRow2[4];
     float projection[4];
+    float fogColor[4];
+    float fogRange[4];
 } ModernNativeCameraUniform;
+
+/* Diagnostic A/B reference only; normal rendering evaluates fog on the GPU. */
+static int s_cpuFogReference;
 
 typedef struct ModernNativeSkyUniform {
     float top[4];
@@ -395,6 +400,17 @@ static void ModernNativeBuildCamera(const RageRenderCamera *camera,
     out->projection[1] = fovScale;
     RenderPerspectiveDepthTerms(camera, &out->projection[2],
                                     &out->projection[3]);
+    out->fogColor[0] = camera->fogColor.x;
+    out->fogColor[1] = camera->fogColor.y;
+    out->fogColor[2] = camera->fogColor.z;
+    out->fogColor[3] = (float)s_cpuFogReference;
+    if (isfinite(camera->fogNear) && isfinite(camera->fogFar) &&
+        camera->fogNear > 0.0f && camera->fogFar > camera->fogNear) {
+        out->fogRange[0] = camera->fogNear;
+        out->fogRange[1] = camera->fogFar;
+        out->fogRange[2] = 1.0f / camera->fogNear;
+        out->fogRange[3] = out->fogRange[2] - 1.0f / camera->fogFar;
+    }
 }
 
 static void ModernNativeBuildSky(const RageRenderCamera *camera,
@@ -507,6 +523,9 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
     SDL_GPUTransferBufferCreateInfo transfer = {0};
     SDL_GPUSamplerCreateInfo sampler = {0};
     if (!ModernAssetsReady()) return 0;
+    const char *fogReference = SDL_getenv("RAGE_PORT_NATIVE_CPU_FOG");
+    s_cpuFogReference = fogReference != NULL && strcmp(fogReference, "1") == 0;
+    fprintf(stderr, "rage-port: native fog=%s\n", s_cpuFogReference ? "cpu-reference" : "gpu");
     s_device = device;
     vertex = ModernNativeCreateShader(
         native_vert_spv, native_vert_spv_len,
@@ -821,7 +840,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         RAGE_RENDER_VEHICLE_SHADOW_EXTENT,
         RAGE_RENDER_VEHICLE_SHADOW_RESOLUTION,
         &s_shadowMap);
-    s_vertexCount = RenderBuildNativePassDraws(
+    s_vertexCount = (s_cpuFogReference ? RenderBuildNativePassDraws : RenderBuildNativeGpuPassDraws)(
         world, RAGE_RENDER_PASS_MAIN, aspect, ModernAssetsResidentMeshLookup, NULL,
         s_vertices,
         MODERN_NATIVE_MAX_VERTICES_PER_VIEW, s_spans, MODERN_NATIVE_MAX_SPANS,
@@ -833,7 +852,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         RageRenderWorld mirrorWorld = *world;
         uint32_t span;
         mirrorWorld.camera = world->mirrorCamera;
-        s_mirrorVertexCount = RenderBuildNativePassDraws(
+        s_mirrorVertexCount = (s_cpuFogReference ? RenderBuildNativePassDraws : RenderBuildNativeGpuPassDraws)(
             &mirrorWorld, RAGE_RENDER_PASS_MAIN, s_mirrorAspect,
             ModernAssetsResidentMeshLookup, NULL, s_vertices + mirrorFirstVertex,
             MODERN_NATIVE_MAX_VERTICES_PER_VIEW, s_mirrorSpans,

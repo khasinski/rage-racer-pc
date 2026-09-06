@@ -397,7 +397,7 @@ static int InstanceOutsideFrustum(const RageRenderWorld *world,
 
 static int BuildVertex(const RageTransformBasis *basis,
                            const RageRenderViewTransform *viewTransform,
-                           const RageRenderWorld *world, int fogged,
+                           const RageRenderWorld *world, int fogged, int gpuFog,
                            const RageRenderMeshInstance *instance,
                            const RageRuntimeMesh *mesh, uint32_t index,
                            float aspect, RageNativeDrawVertex *out,
@@ -429,11 +429,18 @@ static int BuildVertex(const RageTransformBasis *basis,
     out->normal[0] = normal.x;
     out->normal[1] = normal.y;
     out->normal[2] = normal.z;
-    out->fog[0] = world->camera.fogColor.x;
-    out->fog[1] = world->camera.fogColor.y;
-    out->fog[2] = world->camera.fogColor.z;
-    out->fog[3] = fogged
-        ? RenderFogFactorPrepared(viewTransform, &worldPosition) : 0.0f;
+    if (gpuFog) {
+        out->fog[0] = worldPosition.x;
+        out->fog[1] = worldPosition.y;
+        out->fog[2] = worldPosition.z;
+        out->fog[3] = fogged ? 1.0f : 0.0f;
+    } else {
+        out->fog[0] = world->camera.fogColor.x;
+        out->fog[1] = world->camera.fogColor.y;
+        out->fog[2] = world->camera.fogColor.z;
+        out->fog[3] = fogged
+            ? RenderFogFactorPrepared(viewTransform, &worldPosition) : 0.0f;
+    }
     out->lighting = 0.0f;
     if ((instance->flags & RAGE_RENDER_INSTANCE_ENABLE_LIGHTING) != 0) {
         out->lighting = instance->lightInfluence;
@@ -477,7 +484,7 @@ static int BuildVertex(const RageTransformBasis *basis,
 }
 
 static uint32_t RenderBuildNativeDrawsFiltered(
-    const RageRenderWorld *world, int passFilter, float aspect,
+    const RageRenderWorld *world, int passFilter, float aspect, int gpuFog,
     RageRenderMeshLookup lookup, void *context,
     RageNativeDrawVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
@@ -522,7 +529,7 @@ static uint32_t RenderBuildNativeDrawsFiltered(
                                                       &indices[corner]);
                 if (valid) valid = BuildVertex(&basis, &viewTransform, world,
                     (instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FOG) != 0,
-                    instance, mesh, indices[corner], aspect,
+                    gpuFog, instance, mesh, indices[corner], aspect,
                     &triangle[corner], &materials[corner],
                     &materialFlags[corner], &depthDecals[corner]);
             }
@@ -617,7 +624,7 @@ uint32_t RenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
                                     uint32_t spanCapacity,
                                     uint32_t *spanCount) {
     return RenderBuildNativeDrawsFiltered(
-        world, -1, aspect, lookup, context, vertices, vertexCapacity, spans,
+        world, -1, aspect, 0, lookup, context, vertices, vertexCapacity, spans,
         spanCapacity, spanCount);
 }
 
@@ -627,6 +634,16 @@ uint32_t RenderBuildNativePassDraws(
     RageNativeDrawVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
     return RenderBuildNativeDrawsFiltered(
-        world, (int)pass, aspect, lookup, context, vertices, vertexCapacity,
+        world, (int)pass, aspect, 0, lookup, context, vertices, vertexCapacity,
+        spans, spanCapacity, spanCount);
+}
+
+uint32_t RenderBuildNativeGpuPassDraws(
+    const RageRenderWorld *world, RageRenderPass pass, float aspect,
+    RageRenderMeshLookup lookup, void *context,
+    RageNativeDrawVertex *vertices, uint32_t vertexCapacity,
+    RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
+    return RenderBuildNativeDrawsFiltered(
+        world, (int)pass, aspect, 1, lookup, context, vertices, vertexCapacity,
         spans, spanCapacity, spanCount);
 }

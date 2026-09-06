@@ -16,6 +16,8 @@ layout(set = 1, binding = 0, std140) uniform NativeCamera {
     vec4 viewRow1;
     vec4 viewRow2;
     vec4 projection;
+    vec4 fogColor;
+    vec4 fogRange;
 } camera;
 
 layout(set = 1, binding = 1, std140) uniform NativeShadowCamera {
@@ -51,7 +53,22 @@ void main() {
     uv = inUV;
     color = vec4(inColor) / 255.0;
     normal = inNormal;
-    fog = inFog;
+    // Opt-in diagnostic path retains the CPU reference for identical-scene A/B.
+    if (camera.fogColor.w > 0.0) {
+        fog = inFog;
+    } else {
+        // Keep fog tied to the original position, not camera-facing decal lift.
+        float fogDepth = -dot(camera.viewRow2.xyz, inFog.xyz - camera.position.xyz);
+        float fogWeight = 0.0;
+        if (inFog.w > 0.0 && camera.fogRange.x > 0.0 &&
+            !isnan(fogDepth) && !isinf(fogDepth)) {
+            if (fogDepth >= camera.fogRange.y) fogWeight = 1.0;
+            else if (fogDepth > camera.fogRange.x)
+                fogWeight = clamp((camera.fogRange.z - 1.0 / fogDepth) /
+                                  camera.fogRange.w, 0.0, 1.0);
+        }
+        fog = vec4(camera.fogColor.xyz, fogWeight);
+    }
     lighting = inLighting;
     environmentLight = inEnvironmentLight;
     vec3 shadowRelative = inPosition - shadow.position.xyz;

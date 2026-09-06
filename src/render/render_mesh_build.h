@@ -10,7 +10,8 @@ typedef struct RageNativeDrawVertex {
     float uv[2];
     uint8_t color[4];
     float normal[3];
-    /* RGB environment colour plus the per-vertex perspective fog weight. */
+    /* CPU reference: RGB fog colour and weight. GPU builder: original world
+     * position (before overlay displacement) and fog-enabled flag. */
     float fog[4];
     float lighting;
     float environmentLight[3];
@@ -67,6 +68,15 @@ uint32_t RenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
 /* Builds only one semantic pass. Native mirrors deliberately render the main
  * scene again from another camera instead of consuming PS1 mirror instances. */
 uint32_t RenderBuildNativePassDraws(
+    const RageRenderWorld *world, RageRenderPass pass, float aspect,
+    RageRenderMeshLookup lookup, void *context,
+    RageNativeDrawVertex *vertices, uint32_t vertexCapacity,
+    RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount);
+
+/* GPU contract: fog holds the original world position plus an enable flag,
+ * allowing each view's shader to evaluate fog without baking it into meshes.
+ * The CPU-reference functions above retain their colour/weight contract. */
+uint32_t RenderBuildNativeGpuPassDraws(
     const RageRenderWorld *world, RageRenderPass pass, float aspect,
     RageRenderMeshLookup lookup, void *context,
     RageNativeDrawVertex *vertices, uint32_t vertexCapacity,

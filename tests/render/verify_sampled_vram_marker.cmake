@@ -4,6 +4,13 @@ endif()
 if(NOT DEFINED HISTORY)
     set(HISTORY false)
 endif()
+if(NOT DEFINED MARKER_FRAME)
+    set(MARKER_FRAME 500)
+endif()
+if(NOT MARKER_FRAME MATCHES "^[0-9]+$" OR MARKER_FRAME GREATER 100000)
+    message(FATAL_ERROR "MARKER_FRAME must be an integer in 0..100000")
+endif()
+math(EXPR smoke_frames "${MARKER_FRAME} + 150")
 if(FPS STREQUAL "logic")
     set(expected_fps 0)
 elseif(FPS STREQUAL "vsync")
@@ -27,11 +34,11 @@ file(MAKE_DIRECTORY "${output}")
 execute_process(COMMAND "${CMAKE_COMMAND}" -E env
     "SDL_AUDIODRIVER=dummy" "XDG_CONFIG_HOME=${output}/config"
     "XDG_STATE_HOME=${output}/state" "RAGE_PORT_SCENARIO=1"
-    "RAGE_PORT_SMOKE_FRAMES=650" "${GAME}"
+    "RAGE_PORT_SMOKE_FRAMES=${smoke_frames}" "${GAME}"
     --set "disc.image=${disc}" --set video.renderer=modern
     --set "video.fps=${FPS}"
     --set race.class=1 --set race.course=0 --set diagnostics.marker_capture=true
-    --set "diagnostics.marker_history=${HISTORY}" --set diagnostics.marker_frame=500
+    --set "diagnostics.marker_history=${HISTORY}" --set "diagnostics.marker_frame=${MARKER_FRAME}"
     --set diagnostics.marker_limit=1 --set diagnostics.marker_probe_x=-1
     --set diagnostics.marker_probe_y=-1
     WORKING_DIRECTORY "${SOURCE}" TIMEOUT 120

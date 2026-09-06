@@ -36,7 +36,7 @@ static const RageRuntimeMesh *test_mesh_lookup(
     float actual_value = (float)(actual);                                     \
     if (fabsf(expected_value - actual_value) > (float)(tolerance)) {           \
         fprintf(stderr, "%s:%d: expected %.4f, got %.4f\\n", __FILE__,      \
-                __LINE__, expected_value, actual_value);                      \
+                __LINE__, (double)expected_value, (double)actual_value);       \
         failures++;                                                           \
     }                                                                         \
 } while (0)
@@ -439,7 +439,7 @@ static void test_native_draw_builder_applies_authored_course_texture_scroll(void
         memcpy(bytes + 32 + i * 40 + 28, uv, sizeof(uv));
         bytes[32 + i * 40 + 27] = 255;
         write_u32(bytes + 32 + i * 40 + 36,
-                  RAGE_RUNTIME_MATERIAL_SCROLL_U | 4u);
+                  (uint32_t)RAGE_RUNTIME_MATERIAL_SCROLL_U | 4u);
         write_u32(bytes + 152 + i * 4, i);
     }
     EXPECT_EQ(1, RuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
@@ -780,7 +780,7 @@ static void test_shared_mesh_independent_views(void) {
     source.normal[2] = 1.0f;
     source.color[0] = source.color[3] = 255;
     source.uv[0] = 0.125f;
-    source.material = 4 | RAGE_RUNTIME_MATERIAL_SCROLL_U;
+    source.material = 4u | (uint32_t)RAGE_RUNTIME_MATERIAL_SCROLL_U;
     for (unsigned i = 0; i < 3; ++i) {
         memcpy(source.position, positions[i], sizeof(source.position));
         EXPECT_EQ(1, RuntimeVertexEncode(bytes + 32 + i * 40, 40, &source));
@@ -833,9 +833,28 @@ static void test_shared_mesh_independent_views(void) {
             EXPECT_NEAR(mainVertices[i].fog[3], repeated[i].fog[3], 0.0001f);
             EXPECT_NEAR(mainVertices[i].uv[0], repeated[i].uv[0], 0.0001f);
         }
+        EXPECT_EQ(3, RenderBuildNativeGpuPassDraws(&world, RAGE_RENDER_PASS_MAIN,
+            1.0f, test_mesh_lookup, &mesh, repeated, 3, spans, 1, &spanCount));
+        EXPECT_EQ(3, RenderBuildNativeGpuPassDraws(&rear, RAGE_RENDER_PASS_MAIN,
+            2.0f, test_mesh_lookup, &mesh, rearVertices, 3, spans, 1, &spanCount));
+        for (unsigned i = 0; i < 3; ++i) {
+            for (unsigned axis = 0; axis < 3; ++axis) {
+                EXPECT_NEAR(positions[i][axis], repeated[i].fog[axis], 0.0001f);
+                EXPECT_NEAR(repeated[i].fog[axis], rearVertices[i].fog[axis], 0.0001f);
+                EXPECT_NEAR(mainVertices[i].position[axis], repeated[i].position[axis], 0.0001f);
+            }
+            EXPECT_NEAR(1.0f, repeated[i].fog[3], 0.0001f);
+            EXPECT_NEAR(1.0f, rearVertices[i].fog[3], 0.0001f);
+            EXPECT_NEAR(mainVertices[i].uv[0], repeated[i].uv[0], 0.0001f);
+        }
         EXPECT_EQ(0, memcmp(original, bytes, sizeof(bytes)));
         EXPECT_EQ(0, memcmp(&originalInstance, &instance, sizeof(instance)));
     }
+    instance.flags = 0;
+    EXPECT_EQ(3, RenderBuildNativeGpuPassDraws(&world, RAGE_RENDER_PASS_MAIN,
+        1.0f, test_mesh_lookup, &mesh, repeated, 3, spans, 1, &spanCount));
+    for (unsigned i = 0; i < 3; ++i)
+        EXPECT_NEAR(0.0f, repeated[i].fog[3], 0.0001f);
 }
 
 int main(void) {

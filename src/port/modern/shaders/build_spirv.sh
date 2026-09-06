@@ -47,6 +47,16 @@ build_shader() {
     trap - EXIT HUP INT TERM
 }
 
+if [ "${1:-}" = "fog-probe" ]; then
+    build_shader fog_probe.frag fog_probe_frag frag fs_fog_probe
+    exit 0
+fi
+
+if [ "${1:-}" = "native-vertex" ]; then
+    build_shader native.vert native_vert vert vs_native
+    exit 0
+fi
+
 if [ "${1:-}" = "composite" ]; then
     build_shader composite.frag composite_frag frag fs_composite
     exit 0
@@ -65,3 +75,4 @@ build_shader native_shadow.frag native_shadow_frag frag fs_shadow
 build_shader native_shadow_masked.frag native_shadow_masked_frag frag fs_shadow_masked
 build_shader native_texture.frag native_texture_frag frag fs_native
 build_shader native_color.frag native_color_frag frag fs_native_color
+build_shader fog_probe.frag fog_probe_frag frag fs_fog_probe

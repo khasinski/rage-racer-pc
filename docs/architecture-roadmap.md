@@ -101,6 +101,63 @@ path; image comparisons and frame-tail measurements are still required.
 
 ## Work log
 
+- Fog migration checkpoint: later PAL markers (1000..1003) now also cover an
+  active native mirror. Frame 1000 has 24,660 main vertices/1,060 spans and
+  13,062 mirror vertices/326 spans. CPU/GPU world, scene, sampled VRAM and
+  final PPM files match byte-for-byte for all four frames. Evidence:
+  build/fog-mirror-gpu/sampled-vram-6aaae674250b and
+  build/fog-mirror-cpu/sampled-vram-2b95d2170e3b. The marker harness accepts
+  MARKER_FRAME (default 500) and runs 150 additional frames for capture flush.
+  Latest Windows Release game build and 192-case shader probe passed; this
+  Windows check uses SwiftShader, not hardware GPU performance or Metal.
+  Four Linux offscreen logic-rate runs (GPU/CPU/CPU/GPU, no markers/history)
+  measured prepare_ms over 999 samples in frames 1000..1999 each. Means:
+  1.1598/1.1512/1.1558/1.1652 ms; p95: 1.190/1.181/1.186/1.199 ms.
+  Logs: build/fog-performance-ab/{gpu1,cpu1,cpu2,gpu2}.log. There is no
+  demonstrated speedup: GPU-fog preparation was about 0.009 ms slower on
+  average in this stationary scene. The change removes a view dependency
+  for persistent geometry; it does not implement buffer reuse or prove
+  driving frame-time improvement. Wider regional/track/performance gates
+  remain part of the overall migration.
+- Added opt-in RAGE_PORT_NATIVE_CPU_FOG=1 for whole-frame CPU/GPU fog A/B;
+  unset/default uses GPU fog. The reference selects the existing CPU builder
+  and passes its fog colour/weight through the shader. Both modes are covered
+  by native_fog_gpu (192 cases total on Linux; the earlier 96-case GPU-only
+  version was verified on Windows). With video.fps=logic, two PAL smoke runs
+  produced byte-identical scene snapshots, world snapshots, sampled VRAM and
+  final modern PPMs for all four marker frames 500..503. Prepared frame 500
+  has 24,660 vertices/1,060 spans and is complete, but no active mirror.
+  Evidence: build/fog-ab-final-gpu/sampled-vram-9f60c42302a3 and
+  build/fog-ab-final-cpu/sampled-vram-efd2456a241d. This establishes one real
+  scene's full-frame equivalence, not all tracks/regions, mirror rendering or
+  performance. Latest A/B shader Windows validation is recorded above.
+- Added native_fog_gpu, a compiled GPU readback test using the production
+  native vertex shader and a minimal fog-output probe fragment shader. It
+  checks all 64 pixels against the CPU fog reference in 96 cases: two camera
+  translations/colours, valid/disabled/invalid ranges, fog on/off, and eight
+  depths spanning both boundaries. Raster positions deliberately differ from
+  fog source positions, exercising the displaced-overlay contract. Linux RADV
+  and Windows VM Vulkan/SwiftShader both passed within one RGBA8 UNORM step;
+  Windows Release game build and CPU mesh tests passed too. Windows logs:
+  C:\rage-perf-results\native-fog-gpu-{build,test,result}.log/txt and
+  native-fog-cpu-test.log. CPU mesh tests now use the repository's strict
+  warning flags, avoiding clang-cl's different interpretation of bare -Wall.
+  This proves the isolated shader output, not full-scene image equivalence,
+  varying-depth triangle interpolation, Metal runtime or a frame-time gain.
+- In-progress GPU fog migration: the native GPU builder now stores original
+  world position plus an enable flag in the existing fog attribute; the vertex
+  shader evaluates reciprocal-depth fog using per-view uniforms. No vertex
+  size increase. Camera-facing overlay displacement deliberately leaves that
+  original position unchanged. CPU-reference builders keep their previous
+  colour/weight output. Both SPIR-V and Metal sources were regenerated from
+  GLSL (local SPIRV-Cross 83fa691, container glslangValidator).
+  Linux render_mesh_build, environment_provider and real PAL history passed
+  (3/3); build log build/gpu-fog-build.log. Test additions verify shared fog
+  source coordinates, enable/disable and preserved displaced geometry/UVs.
+  Cross-run marker images are NOT an equivalence proof: their world/scene
+  snapshots differ. Full-scene image comparison and performance measurements
+  remain required before shipping this change; isolated GPU readback and
+  Windows validation are recorded above.
 - Added a shared-asset/two-view reference test for the geometry migration.
   It builds main/rear/main using the same RMESH and instance, with distinct
   cameras, fog colours and aspect ratios. It verifies reciprocal-depth fog,

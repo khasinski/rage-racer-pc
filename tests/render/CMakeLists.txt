@@ -80,6 +80,14 @@ endif()
 add_test(NAME composite_gpu COMMAND composite_gpu_tests)
 set_tests_properties(composite_gpu PROPERTIES LABELS gpu SKIP_RETURN_CODE 77 TIMEOUT 30)
 
+add_executable(native_fog_gpu_tests native_fog_gpu_tests.c)
+target_include_directories(native_fog_gpu_tests PRIVATE
+    "${PROJECT_SOURCE_DIR}/src/port/modern/shaders")
+target_link_libraries(native_fog_gpu_tests PRIVATE SDL3::SDL3 rage-render-world)
+target_compile_options(native_fog_gpu_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+add_test(NAME native_fog_gpu COMMAND native_fog_gpu_tests)
+set_tests_properties(native_fog_gpu PROPERTIES LABELS gpu SKIP_RETURN_CODE 77 TIMEOUT 30)
+
 add_executable(vram_read_cache_tests vram_read_cache_tests.c)
 target_include_directories(vram_read_cache_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/src/platform)
@@ -1052,9 +1060,7 @@ add_test(NAME course_coordinate COMMAND course_coordinate_tests)
 set_tests_properties(course_coordinate PROPERTIES LABELS functional)
 add_executable(render_mesh_build_tests render_mesh_build_tests.c)
 target_link_libraries(render_mesh_build_tests PRIVATE rage-render-world)
-if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
-    target_compile_options(render_mesh_build_tests PRIVATE -Wall -Wextra -Werror)
-endif()
+target_compile_options(render_mesh_build_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 add_test(NAME render_mesh_build COMMAND render_mesh_build_tests)
 
 set_tests_properties(render_mesh_build PROPERTIES LABELS functional)
