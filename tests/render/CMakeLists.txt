@@ -1726,6 +1726,25 @@ set_tests_properties(waterfall PROPERTIES LABELS e2e)
     set_tests_properties(waterfall PROPERTIES TIMEOUT 180)
 endif()
 add_executable(rmesh_replace_tests rmesh_replace_tests.c)
+add_executable(modern_assets_retry_tests
+    modern_assets_retry_tests.c
+    ${PROJECT_SOURCE_DIR}/src/port/platform_paths.c
+    ${PROJECT_SOURCE_DIR}/src/port/runtime_config.c
+    ${PROJECT_SOURCE_DIR}/src/port/runtime_parse.c
+    ${PROJECT_SOURCE_DIR}/src/port/mod_assets.c
+    ${PROJECT_SOURCE_DIR}/src/port/texture_patch.c
+    ${PROJECT_SOURCE_DIR}/src/port/track_asset_identity.c
+    ${PROJECT_SOURCE_DIR}/src/port/sky_panorama_layout.c
+    ${PROJECT_SOURCE_DIR}/src/port/native_asset_importer_stubs.c
+    ${PROJECT_SOURCE_DIR}/src/port/modern/modern_assets.c)
+target_include_directories(modern_assets_retry_tests PRIVATE
+    ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/src/port
+    ${PROJECT_SOURCE_DIR}/src/port/include ${PROJECT_SOURCE_DIR}/include)
+target_link_libraries(modern_assets_retry_tests PRIVATE rage-render-world SDL3::SDL3 miniz rage-json)
+add_dependencies(modern_assets_retry_tests rage-authored-cars)
+add_test(NAME modern_assets_retry COMMAND modern_assets_retry_tests
+    ${CMAKE_CURRENT_BINARY_DIR}/modern-assets-retry-fixture)
+set_tests_properties(modern_assets_retry PROPERTIES LABELS unit TIMEOUT 30)
 if(RAGE_HAS_AUTHORED_CARS)
 add_executable(authored_car_asset_tests authored_car_asset_tests.c)
 target_link_libraries(authored_car_asset_tests PRIVATE rage-rmesh)

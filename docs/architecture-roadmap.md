@@ -50,6 +50,42 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+The retry fixture also covers the normal ModernAssetsInit entry point with a
+forced configured root: corrupt index fails, corrected index succeeds without
+shutdown, and repeated successful init stays ready. The fixture sets its own
+modern-assets environment override to avoid inheriting an unrelated developer
+cache. This additional path passes on Linux; no runtime code changed after
+the preceding six-test smoke checkpoint.
+
+Retry integration verification: rebuilt Linux smoke passes native_render_world,
+GPU submit recovery and default selected-disc startup for PAL/U/J; together
+with the retry contract, 6/6 tests pass (7.92 seconds, no skips). The retry
+fixture additionally rejects a malformed environment index after loading a
+valid runtime index, then succeeds after removing the bad optional index.
+This exercises later partial-initialization cleanup, but is not allocator
+fault injection, sanitizer evidence or Windows execution.
+
+Failed asset initialization now remains retryable: initialized is published
+only after successful source setup, and mod-provider borrowed metadata is
+refreshed on each attempt without shutting down importer resources. A new
+compiled fixture links production modern_assets.c and offline importer stubs:
+invalid index -> corrected index -> retry, successful idempotence, repeated
+shutdown, and unavailable importer -> explicit valid root. The original code
+failed the corrected-index retry; the fix passes. GPU/disc integration and
+Windows execution are still pending for this local change.
+
+Source-identity audit: default ModernAssetsInit uses the live C importer, not
+a persistent cache keyed by disc pathname; only forced modern.assets or the
+explicit InitRoot API chooses prebuilt resources. Importer entries are keyed
+by assetKey/assetSet within a session and released by ModernAssetsShutdown.
+Thus adding a pathname/mtime check here would not implement the missing shared
+source identity. A concrete lifecycle gap to cover next is failed-init retry:
+both asset init entry points set s_initialized before trying their source and
+return the cached failure on subsequent calls until shutdown. The toggle path
+can call init again, but cannot recover from that cached failure by itself.
+Any fix needs a regression with failing source, corrected source, retry, and
+owned-resource cleanup; it must not discard resources retained by live frames.
+
 FMV class lookup now clamps to the content table's six entries, not the old
 four unique promotion movies. Classes 4/5 therefore consume their own explicit
 stream definitions; repeated retail movie selection remains unchanged. Direct
