@@ -50,6 +50,13 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Launcher preparation rollback is now exercised with a real native-tool failure:
+after each PAL/U/J import a one-sector invalid BIN is rejected. In-memory and
+persisted state, previous manifest and games-directory entries remain intact;
+the busy lock clears, and a subsequent valid import succeeds into a new owned
+directory. All three regional fixtures pass. This covers invalid-source rollback
+and retry, not cancellation, disk-full publication faults or packaged launch.
+
 Launcher owned-disc integration now has an opt-in Node fixture using the
 existing launcher toolchain, real rage-racer archive extraction and rage-extract
 C binaries. PAL/U/J all pass from empty temporary profiles: recognized region,

@@ -26,6 +26,23 @@ for(const [region,variable] of [['PAL','RAGE_LAUNCHER_PAL_CUE'],['NTSC-U','RAGE_
    assert.equal((await restored.snapshot()).ready,true);
    const config=await restored.configuration();
    assert.match(config,/renderer\s*=\s*modern/);
+   const previous=structuredClone(restored.state);
+   const games=await fs.readdir(path.join(root,'games'));
+   const invalid=path.join(root,'invalid.bin');
+   await fs.writeFile(invalid,Buffer.alloc(2352));
+   await assert.rejects(restored.prepare(invalid));
+   assert.equal(restored.busy,null);
+   assert.deepEqual(restored.state,previous);
+   assert.deepEqual(await fs.readdir(path.join(root,'games')),games);
+   assert.deepEqual(await restored.assets(),manifest);
+   const afterFailure=new LauncherService(options);await afterFailure.init();
+   assert.deepEqual(afterFailure.state,previous);
+   assert.equal((await afterFailure.snapshot()).ready,true);
+   await afterFailure.prepare(path.resolve(process.env[variable]));
+   assert.equal(afterFailure.busy,null);
+   assert.equal(afterFailure.state.disc.region,region);
+   assert.notEqual(afterFailure.state.disc.data,previous.disc.data);
+   assert.equal((await afterFailure.snapshot()).ready,true);
   } finally {await fs.rm(root,{recursive:true,force:true});}
  });
 }
