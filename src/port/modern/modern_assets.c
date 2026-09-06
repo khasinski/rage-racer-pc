@@ -16,6 +16,7 @@
 #include "render/car_paint.h"
 #include "render/authored_car_surface.h"
 #include "render/mod_manifest.h"
+#include "render/resource_provider.h"
 #include "render/rmesh_replace.h"
 #include "authored_car_data.h"
 
@@ -429,12 +430,37 @@ void ModernAssetsShutdown(void) {
     ModAssetsShutdown();
 }
 
+typedef struct MeshProviderRequest {
+    const RageRenderMeshInstance *instance;
+    const RageRuntimeCachedMesh *mesh;
+    int residentOnly;
+} MeshProviderRequest;
+static RageResourceStatus ResolveImportedMesh(void *context) {
+    MeshProviderRequest *request=context;
+    if(!s_importerSource)return RAGE_RESOURCE_MISSING;
+    request->mesh=request->residentOnly
+        ? NativeAssetImporterPeek(request->instance->assetKey,request->instance->assetSet)
+        : NativeAssetImporterFind(request->instance);
+    return request->mesh?RAGE_RESOURCE_READY:RAGE_RESOURCE_ERROR;
+}
+static RageResourceStatus ResolveCachedMesh(void *context) {
+    MeshProviderRequest *request=context;
+    if(s_importerSource)return RAGE_RESOURCE_MISSING;
+    request->mesh=request->residentOnly
+        ? RuntimeMeshCachePeek(&s_cache,request->instance->assetKey,request->instance->assetSet)
+        : RuntimeMeshCacheFind(&s_cache,request->instance->assetKey,request->instance->assetSet);
+    return request->mesh?RAGE_RESOURCE_READY:RAGE_RESOURCE_ERROR;
+}
+static const RageRuntimeCachedMesh *ResolveBaseMesh(const RageRenderMeshInstance *instance,int residentOnly) {
+    MeshProviderRequest request={instance,NULL,residentOnly};
+    const RageResourceProvider providers[]={{ResolveImportedMesh,&request},{ResolveCachedMesh,&request}};
+    if(ResourceProviderResolve(providers,2,NULL)!=RAGE_RESOURCE_READY)return NULL;
+    return request.mesh;
+}
 const RageRuntimeCachedMesh *ModernAssetsFind(
     const RageRenderMeshInstance *instance) {
     if (!s_ready || instance == NULL) return NULL;
-    if (s_importerSource) return ModernAuthoredCar(NativeAssetImporterFind(instance),instance,1);
-    return ModernAuthoredCar(RuntimeMeshCacheFind(&s_cache, instance->assetKey,
-                                    instance->assetSet),instance,0);
+    return ModernAuthoredCar(ResolveBaseMesh(instance,0),instance,s_importerSource);
 }
 
 int ModernAssetsReady(void) {
@@ -510,9 +536,7 @@ const RageRuntimeMesh *ModernAssetsResidentMeshLookup(
             s_authoredCarMesh[i].ownedBytes != NULL)
             return &s_authoredCarMesh[i].mesh;
     }
-    const RageRuntimeCachedMesh *cached = s_importerSource
-        ? NativeAssetImporterPeek(instance->assetKey, instance->assetSet)
-        : RuntimeMeshCachePeek(&s_cache, instance->assetKey, instance->assetSet);
+    const RageRuntimeCachedMesh *cached = ResolveBaseMesh(instance,1);
     return cached != NULL ? &cached->mesh : NULL;
 }
 

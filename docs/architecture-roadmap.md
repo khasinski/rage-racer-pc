@@ -229,6 +229,19 @@ game stability or the packaged launcher shipping contract.
    - Versioned manifests, precedence, dependencies/conflict diagnostics and
      invalidation keyed by source/importer/mod identity.
    - Gate: override/conflict/failure tests and clean automatic import startup.
+   - Runtime integration checkpoint: a shared allocation-free provider resolver
+     now distinguishes missing/ready/error and explicit precedence. Raw asset
+     loading uses it for mod-to-retail selection; modern mesh loading and
+     resident-only lookup use it for importer/cache selection. Legacy raw
+     rejection remains a permitted retail fallback, while a failure in the
+     selected mesh source is terminal. Authored mesh replacement still follows
+     base resolution. This centralizes selection semantics, not storage or
+     identity: session generations, fingerprints, complete mod mesh/material/
+     texture layering and a unified resource catalog still need integration.
+     Resolver contract tests pass on Linux/Windows; the native loader regression
+     and modern PAL/NTSC-U/NTSC-J smoke pass on Linux (14.44s parallel total).
+     Smoke, replay and stage targets build. This is not a new Windows runtime
+     or visual/performance verification.
 3. **Simulation/presentation boundary** (in progress)
    - Complete immutable presentation snapshots; isolate remaining legacy-state
      reads and declare compatibility/VRAM dependencies.

@@ -1,8 +1,32 @@
 #include "render/mod_provider.h"
 #include <assert.h>
 #include <stdio.h>
+#include "render/resource_provider.h"
+typedef struct Probe { RageResourceStatus status; unsigned calls; } Probe;
+static RageResourceStatus ResolveProbe(void *context) {
+    Probe *probe=context;++probe->calls;return probe->status;
+}
+static void CheckResourceProviders(void) {
+    Probe probes[]={{RAGE_RESOURCE_MISSING,0},{RAGE_RESOURCE_READY,0},{RAGE_RESOURCE_READY,0}};
+    RageResourceProvider providers[]={{ResolveProbe,&probes[0]},{ResolveProbe,&probes[1]},{ResolveProbe,&probes[2]}};
+    size_t selected=99;
+    assert(ResourceProviderResolve(providers,3,&selected)==RAGE_RESOURCE_READY&&selected==1);
+    assert(probes[0].calls==1&&probes[1].calls==1&&probes[2].calls==0);
+    probes[0].status=RAGE_RESOURCE_ERROR;
+    assert(ResourceProviderResolve(providers,3,&selected)==RAGE_RESOURCE_ERROR&&selected==3);
+    assert(probes[1].calls==1&&probes[2].calls==0);
+    probes[0].status=RAGE_RESOURCE_READY;
+    assert(ResourceProviderResolve(providers,3,&selected)==RAGE_RESOURCE_READY&&selected==0);
+    probes[0].status=probes[1].status=probes[2].status=RAGE_RESOURCE_MISSING;
+    assert(ResourceProviderResolve(providers,3,&selected)==RAGE_RESOURCE_MISSING&&selected==3);
+    assert(ResourceProviderResolve(NULL,0,&selected)==RAGE_RESOURCE_MISSING&&selected==0);
+    assert(ResourceProviderResolve(NULL,1,&selected)==RAGE_RESOURCE_ERROR&&selected==1);
+    providers[0].resolve=NULL;
+    assert(ResourceProviderResolve(providers,3,NULL)==RAGE_RESOURCE_ERROR);
+}
 
 int main(void) {
+    CheckResourceProviders();
     const char *ids[] = {"base","addon","third"};
     const char *reverse[] = {"addon","base"};
     const char *duplicate[] = {"base","base"};

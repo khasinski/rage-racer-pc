@@ -8,6 +8,26 @@
 #include "mod_assets.h"
 #include "rage/compat.h"
 #include "runtime_config.h"
+#include "../render/resource_provider.h"
+
+typedef struct RawAssetRequest {
+    int index;
+    void *destination;
+    s32 loaded;
+} RawAssetRequest;
+static RageResourceStatus ResolveModRaw(void *context) {
+    RawAssetRequest *request=context;
+    request->loaded=ModAssetLoad(request->index,request->destination,
+                                g_AssetCdEntries[request->index].size);
+    /* Preserve legacy raw override policy: rejected overrides use retail data. */
+    return request->loaded>0?RAGE_RESOURCE_READY:RAGE_RESOURCE_MISSING;
+}
+static RageResourceStatus ResolveDiscRaw(void *context) {
+    RawAssetRequest *request=context;
+    request->loaded=HostLoadAsset(g_AssetCdEntries[request->index].position.sectorOffset,
+                                 g_AssetCdEntries[request->index].size,request->destination);
+    return request->loaded>0?RAGE_RESOURCE_READY:RAGE_RESOURCE_ERROR;
+}
 
 _Static_assert(sizeof(GameCdLoadEntry) == sizeof(RageArchiveIndexEntry),
                "host and game archive entries must have the same layout");
@@ -43,13 +63,10 @@ s32 LoadAsset(s32 assetIndex, void *dst) {
         }
         return -1;
     }
-    loaded = ModAssetLoad((int)assetIndex, dst,
-                          g_AssetCdEntries[assetIndex].size);
-    if (loaded <= 0) {
-        loaded = HostLoadAsset(
-            g_AssetCdEntries[assetIndex].position.sectorOffset,
-            g_AssetCdEntries[assetIndex].size, dst);
-    }
+    RawAssetRequest request={(int)assetIndex,dst,-1};
+    const RageResourceProvider providers[]={{ResolveModRaw,&request},{ResolveDiscRaw,&request}};
+    if(ResourceProviderResolve(providers,2,NULL)!=RAGE_RESOURCE_READY)return -1;
+    loaded=request.loaded;
     /* Edited images are applied to the asset in memory, so a mod can carry
      * PNGs alone and the directory it lives in is never written to. */
     if (loaded > 0) {
