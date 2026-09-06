@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "launcher/native/mod_inventory.h"
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 
 int main(void) {
     char root[128], path[256], hidden[256];
@@ -23,6 +26,30 @@ int main(void) {
     assert(SDL_CreateDirectory(path));
     assert(InventoryCommand(root) == 1);
     assert(SDL_RemovePath(path));
+    snprintf(path, sizeof(path), "%s/textures", root);
+    for (int depth = 2; depth <= 9; ++depth) {
+        size_t length = strlen(path);
+        assert(length + 2 < sizeof(path));
+        memcpy(path + length, "/a", 3);
+        assert(SDL_CreateDirectory(path));
+        assert(InventoryCommand(root) == (depth <= 8 ? 0 : 1));
+    }
+    for (int depth = 9; depth >= 2; --depth) {
+        assert(SDL_RemovePath(path));
+        char *slash = strrchr(path, '/'); assert(slash); *slash = 0;
+    }
+#ifndef _WIN32
+    /* Dangling links and directory cycles must be rejected before following
+     * them, even when their package-relative spelling would be permitted. */
+    snprintf(path, sizeof(path), "%s/textures/dangling.png", root);
+    assert(symlink("missing.png", path) == 0);
+    assert(InventoryCommand(root) == 1);
+    assert(SDL_RemovePath(path));
+    snprintf(path, sizeof(path), "%s/textures/cycle", root);
+    assert(symlink(".", path) == 0);
+    assert(InventoryCommand(root) == 1);
+    assert(SDL_RemovePath(path));
+#endif
     snprintf(path, sizeof(path), "%s/textures/a.png", root);
     assert(SDL_SaveFile(path, "image", 5));
     assert(InventoryCommand(root) == 0);

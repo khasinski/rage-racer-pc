@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Native inventory regression now exercises real directories through depth 8
+(accepted) and depth 9 (rejected), plus dangling file symlinks and directory
+cycles on Unix. Linux passes all cases; Windows VM passes the directory-depth
+and existing Unicode/file-policy cases (0.78 seconds). The Windows fixture
+does not create reparse points, so their rejection is not newly proven by this
+run. The scan remains susceptible to concurrent filesystem changes between
+metadata checks and later file reads; snapshot work is still required.
+
 Launcher inventory traversal is now compiled: `rage-mod-cli --inventory ROOT`
 enumerates through SDL and applies the shared file/directory policy before
 descending or accepting files. It bounds depth/directories/files/bytes, rejects
