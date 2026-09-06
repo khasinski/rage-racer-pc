@@ -53,6 +53,20 @@ for(const [region,variable] of [['PAL','RAGE_LAUNCHER_PAL_CUE'],['NTSC-U','RAGE_
    assert.deepEqual(await fs.readFile(profile),saved);
    assert.deepEqual(await fs.readdir(path.join(root,'games')),games);
    assert.equal((await fs.readdir(root)).some(name=>name.startsWith('launcher.json.')&&name.endsWith('.tmp')),false);
+   let canceled=false;
+   afterFailure.onChange=snapshot=>{
+    if(snapshot.busy==='Preparing the asset library'&&snapshot.canCancel&&!canceled){
+     canceled=true;afterFailure.cancel();
+    }
+   };
+   try {
+    await assert.rejects(afterFailure.prepare(path.resolve(process.env[variable])),/Operation canceled/);
+   } finally {afterFailure.onChange=()=>{};}
+   assert.equal(canceled,true);
+   assert.equal(afterFailure.busy,null);
+   assert.deepEqual(afterFailure.state,previous);
+   assert.deepEqual(await fs.readFile(profile),saved);
+   assert.deepEqual(await fs.readdir(path.join(root,'games')),games);
    await afterFailure.prepare(path.resolve(process.env[variable]));
    assert.equal(afterFailure.busy,null);
    assert.equal(afterFailure.state.disc.region,region);

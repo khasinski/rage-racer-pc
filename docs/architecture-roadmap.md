@@ -50,6 +50,12 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Real-disc launcher cancellation coverage now cancels on the observable
+"Preparing the asset library" boundary after archive read and before extractor
+work. PAL/U/J preserve previous state/profile bytes, remove new staging, clear
+the job lock and accept the next import. This verifies pre-aborted extractor
+handling, not cancellation mid-write or an OS process that ignores termination.
+
 Real-disc launcher tests now inject ENOSPC at launcher.json rename after native
 extraction succeeds. PAL/U/J each preserve the previous in-memory state and
 exact persisted bytes, remove the failed games staging directory and profile
