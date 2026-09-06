@@ -50,6 +50,13 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+The real PAL/U/J launcher import/rollback/cancellation/publication-failure
+fixtures also pass with RAGE_LAUNCHER_BUILD_DIR pointing inside the actual
+Linux package's resources/resources/bin, not the development build. This
+verifies packaged native tool availability for archive read/extraction. The
+service is still invoked from the test process: native chooser interaction,
+packaged IPC-driven import and subsequent game launch remain separate gates.
+
 Current Linux launcher package verification: installed locked launcher build
 dependencies, staged all six current native tools, and packaged Electron
 44.2.0 into launcher/out/Rage Mod Manager-linux-x64. The existing isolated
