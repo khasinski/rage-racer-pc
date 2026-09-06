@@ -50,6 +50,23 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Current mesh-builder and Grand Prix progression tests also pass GCC ASan/UBSan
+in rage-racer-dev, with leak detection and halt-on-error enabled. Each binary
+compiles its production C sources with instrumentation, rather than linking an
+uninstrumented production archive. This covers the tested CPU geometry/content
+paths only, not the game loop, GPU driver or all asset-import lifetimes.
+
+After record-identity lookup and position-only geometry extraction, the full
+local build succeeds (170 incremental steps). Unit tests pass 234/234 (2.83s).
+The 166 functional cases report 164 passes, one stage-angle skip (fixture not
+selected) and one shipped_config failure on preserved marker_capture=true
+(14.94s). An explicit stage-fixture rerun passes (3.76s), and the compiled
+shipped-config checker passes HEAD:rage-port.ini without replacing the local
+INI. Logs: /tmp/rage-current-full-build.log,
+/tmp/rage-current-functional-tests.log, /tmp/rage-current-unit-final.log.
+The raw functional run is not all-green; this is local evidence, not hosted
+CI or clean-release certification.
+
 Grand Prix unlock lookup now resolves record identity from the content table,
 instead of deriving row/series by division and remainder. Unit checks cover all
 11 retail records, invalid IDs and optional series output; all six real-disc
