@@ -500,6 +500,55 @@ static void test_native_draw_builder_applies_authored_course_texture_scroll(void
     }
 }
 
+static void test_scroll_draw_boundaries_and_mixed_cache_reuse(void) {
+    unsigned char bytes[320] = {0};
+    const uint32_t indices[12] = {0,1,2, 3,4,5, 0,4,2, 0,1,2};
+    RageRuntimeMesh mesh;
+    RageRenderMeshInstance instance = {0};
+    RageRenderWorld world;
+    RageNativeGpuVertex compact[12];
+    RageNativeDrawVertex reference[12];
+    RageNativeDrawSpan spans[4] = {0}, referenceSpans[4] = {0};
+    uint32_t spanCount, referenceCount;
+    EXPECT_EQ(1, RuntimeMeshEncodeHeader(bytes, sizeof(bytes), 1, 6, 12));
+    write_u32(bytes + 24, 0); write_u32(bytes + 28, 12);
+    for (unsigned i = 0; i < 6; ++i) {
+        RageRuntimeVertex vertex = {0};
+        vertex.position[0] = i % 3 == 1 ? 1 : -1;
+        vertex.position[1] = i % 3 == 2 ? 1 : -1;
+        vertex.position[2] = -10;
+        vertex.uv[0] = 0.125f;
+        vertex.material = 4u | (i < 3 ? (uint32_t)RAGE_RUNTIME_MATERIAL_SCROLL_U : 0);
+        EXPECT_EQ(1, RuntimeVertexEncode(bytes + 32 + i * 40, 40, &vertex));
+    }
+    for (unsigned i = 0; i < 12; ++i) write_u32(bytes + 272 + i * 4, indices[i]);
+    EXPECT_EQ(1, RuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+    RenderWorldInit(&world, &instance, 1);
+    world.instanceCount = 1;
+    world.camera.nearPlane = 1; world.camera.farPlane = 100;
+    world.camera.verticalFovDegrees = 90;
+    instance.transform.scale = (RageRenderVec3){1,1,1};
+    instance.textureScrollU = 64;
+    EXPECT_EQ(12, RenderBuildNativePassDraws(&world, RAGE_RENDER_PASS_MAIN,
+        1, test_mesh_lookup, &mesh, reference, 12, referenceSpans, 4, &referenceCount));
+    EXPECT_EQ(12, RenderBuildNativeCompactPassDraws(&world, RAGE_RENDER_PASS_MAIN,
+        1, 0, test_mesh_lookup, &mesh, compact, 12, spans, 4, &spanCount));
+    EXPECT_EQ(3, spanCount);
+    EXPECT_EQ(3, spans[0].vertexCount);
+    EXPECT_EQ(6, spans[1].vertexCount);
+    EXPECT_EQ(3, spans[2].vertexCount);
+    for (unsigned s = 0; s < spanCount; ++s) {
+        EXPECT_EQ(4, spans[s].material);
+        EXPECT_NEAR(s == 1 ? 0 : 0.25f, spans[s].instanceState.textureScrollU, 0);
+        for (unsigned v = spans[s].firstVertex;
+             v < spans[s].firstVertex + spans[s].vertexCount; ++v)
+            EXPECT_NEAR(reference[v].uv[0],
+                compact[v].uv[0] + spans[s].instanceState.textureScrollU, 0);
+    }
+    /* The mixed triangle must not bake offsets into the shared base cache. */
+    EXPECT_EQ(0, memcmp(compact, compact + 9, 3 * sizeof(*compact)));
+}
+
 static void test_native_draw_builder_preserves_terrain_ot_bias(void) {
     unsigned char bytes[164] = {0};
     RageRuntimeMesh mesh;
@@ -1179,6 +1228,7 @@ static void test_pass_filter_precedes_asset_lookup(void) {
 }
 
 int main(void) {
+    test_scroll_draw_boundaries_and_mixed_cache_reuse();
     test_pass_filter_precedes_asset_lookup();
     test_overlay_orientation_and_degenerate_geometry();
     test_gpu_vertex_payload_excludes_instance_state();
