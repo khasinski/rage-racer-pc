@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Native-world runner migration is complete for this test: native_render_world
+now invokes CMake and the compiled fixture, and its superseded Python runner
+is removed after both paths passed and assertion/argument coverage was reviewed.
+The renamed production gate passes again (3.55s Linux offscreen). Per-process
+105-second limits remain; overall CTest timeout is 225 seconds to accommodate
+both runs. Temporary diagnostics are retained rather than automatically erased.
+native_asset_fixture.py remains for renderer-toggle, mirror-car and runtime
+config tests; their migration is still required. No Windows GPU pass is claimed.
+
 The native-world replacement now has SDL-generated 64x32 RGBA PNG input and a
 CMake runner covering all existing race/attract assertions: native pipeline,
 semantic texture dimensions, paint, positive world/draw counts, attract scene

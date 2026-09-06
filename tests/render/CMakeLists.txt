@@ -2,11 +2,11 @@ add_executable(native_asset_fixture native_asset_fixture.c)
 target_link_libraries(native_asset_fixture PRIVATE SDL3::SDL3)
 target_compile_options(native_asset_fixture PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 if(TARGET rage-racer-smoke)
-    add_test(NAME native_render_world_compiled COMMAND ${CMAKE_COMMAND}
+    add_test(NAME native_render_world COMMAND ${CMAKE_COMMAND}
         -DFIXTURE=$<TARGET_FILE:native_asset_fixture> -DGAME=$<TARGET_FILE:rage-racer-smoke>
         -DSOURCE=${PROJECT_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_native_render_world.cmake)
-    set_tests_properties(native_render_world_compiled PROPERTIES LABELS e2e TIMEOUT 225)
+    set_tests_properties(native_render_world PROPERTIES LABELS e2e TIMEOUT 225)
 endif()
 if(TARGET rage-frame-replay)
     add_executable(rage-stage-image-check ${PROJECT_SOURCE_DIR}/tools/rage_stage_image_check.c)
@@ -1685,16 +1685,6 @@ set_tests_properties(pegase_cabin PROPERTIES LABELS e2e)
     )
 set_tests_properties(sky_frames PROPERTIES LABELS e2e)
     set_tests_properties(sky_frames PROPERTIES TIMEOUT 600)
-
-    add_test(
-        NAME native_render_world
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_native_render_world.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
-    )
-set_tests_properties(native_render_world PROPERTIES LABELS e2e)
-    set_tests_properties(native_render_world PROPERTIES TIMEOUT 120)
 
     add_test(
         NAME grand_prix_terrain_frame
