@@ -57,7 +57,7 @@ function installMethods(Service){
   try{
    const source=mod.files.includes('mod.toml')?path.join(this.root,'mods',id,'mod.toml'):'';
    await run(this.tool('rage-mod-cli'),['--set-material',source,temp,key,properties],{signal});
-   const manifest=JSON.parse(await run(this.tool('rage-mod-cli'),[temp],{signal}));
+   const manifest=JSON.parse(await run(this.tool('rage-mod-cli'),[temp],{signal,maxOutput:8*1024*1024}));
    if(signal.aborted)throw Error('Operation canceled');this.busy.cancellable=false;await this.update();
    const target=path.join(this.root,'mods',id,'mod.toml'),backup=temp+'.previous';
    const previousManifest=mod.manifest,previousFiles=mod.files;
@@ -116,7 +116,7 @@ function installMethods(Service){
    if(files.includes('mod.toml')) {
      // The runtime parser is authoritative for material values and semantic IDs.
      const {run}=require('./service.cjs');
-     manifest=JSON.parse(await run(this.tool('rage-mod-cli'),[path.join(source,'mod.toml')],{signal}));
+     manifest=JSON.parse(await run(this.tool('rage-mod-cli'),[path.join(source,'mod.toml')],{signal,maxOutput:8*1024*1024}));
      for(const relative of Object.values(manifest.textures))if(!relative.startsWith('textures/'))throw Error('Texture must be under textures/');
    }
    for(const relative of Object.values(manifest.textures))if(!files.includes(relative))throw Error('Missing texture: '+relative);

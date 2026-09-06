@@ -2,6 +2,23 @@ const {test}=require('node:test');const assert=require('node:assert/strict');
 const fs=require('node:fs/promises'),path=require('node:path'),os=require('node:os');
 const {inventory}=require('../main/mods.cjs');
 const {run}=require('../main/service.cjs');
+test('maximum mesh manifest IPC fits its explicit response budget',async()=>{
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'rage-manifest-ipc-'));
+ try{
+  const file=path.join(dir,'mod.toml');
+  const tool=path.resolve(__dirname,'../resources/bin/rage-mod-cli'+(process.platform==='win32'?'.exe':''));
+  let text='[meshes]\n';
+  for(let i=0;i<2048;i++)text+=`"car.${'a'.repeat(140)}.${i}"="meshes/${'b'.repeat(480)}.rmesh"\n`;
+  assert.ok(Buffer.byteLength(text)<2*1024*1024);
+  await fs.writeFile(file,text);
+  const response=await run(tool,[file],{maxOutput:8*1024*1024});
+  assert.ok(Buffer.byteLength(response)>2*1024*1024,'derived claims and paths exceed the generic IPC budget');
+  const manifest=JSON.parse(response);
+  assert.equal(Object.keys(manifest.meshes).length,2048);
+  assert.equal(manifest.backingFiles.length,2048);
+  assert.equal(manifest.resourceClaims.length,2048);
+ }finally{await fs.rm(dir,{recursive:true,force:true});}
+});
 test('native preview decodes indexed pixels using the requested palette',async()=>{
  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'rage-texture-test-'));
  try{

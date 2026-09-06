@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Manifest IPC expansion now has an explicit 8 MiB response budget for snapshot
+inspection and material-edit refresh. A valid 2048-mesh native manifest below
+the 2 MiB input ceiling produces more than the generic 2 MiB response limit
+after backingFiles/resourceClaims are included; the new regression verifies
+complete tables and derived lists under the explicit budget. All 78 launcher
+tests pass on Linux. This probes the native schema limit, not import of 2048
+actual meshes or support for arbitrary mesh targets in the current launcher.
+
 Composition file execution now uses one compiled snapshot-copy batch, including
 provider-local semantic files, legacy pairs, global winners and the original
 archive marker. The launcher retains planning/directories, but no longer calls
