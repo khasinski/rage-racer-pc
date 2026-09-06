@@ -50,6 +50,13 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+The CPU asset-session fixture now changes a mesh file under the same path/key:
+the active session retains the original bytes and pointer, while shutdown and
+reinitialization load the replacement bytes and decoded vertex position. The
+Linux fixture passes. This establishes explicit session reload behavior, not
+automatic hot reload, source fingerprints or cross-generation GPU retention;
+the sanitizer result below predates these new replacement assertions.
+
 Retry ownership fixture now writes and loads a synthetic mesh through the
 production asset adapter after recovery. Repeated successful InitRoot retains
 the cache-entry pointer, owned byte pointer and contents; double shutdown leaves

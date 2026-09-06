@@ -49,12 +49,27 @@ int main(int argc, char **argv) {
     if (!ModernAssetsInitRoot(NULL) || !ModernAssetsReady()) return 5;
     if (ModernAssetsFind(&instance) != resident || resident->mesh.bytes != ownedBytes ||
         memcmp(ownedBytes, meshBytes, sizeof(meshBytes))) return 25;
+    unsigned char nextMeshBytes[sizeof(meshBytes)];
+    memcpy(nextMeshBytes, meshBytes, sizeof(meshBytes));
+    Write32(nextMeshBytes + 32, 0x3f800000u); /* First vertex x = 1.0f. */
+    if (!SDL_SaveFile(meshPath, nextMeshBytes, sizeof(nextMeshBytes))) return 27;
+    /* A source edit must not mutate an already borrowed session mesh. */
+    if (!ModernAssetsInitRoot(argv[1]) || ModernAssetsFind(&instance) != resident ||
+        resident->mesh.bytes != ownedBytes ||
+        memcmp(ownedBytes, meshBytes, sizeof(meshBytes))) return 28;
     ModernAssetsShutdown();
     ModernAssetsShutdown();
     if (ModernAssetsReady() || ModernAssetsCachedMeshCount() != 0) return 6;
     /* Offline fixture has no importer: failure must not poison InitRoot. */
     if (ModernAssetsInit() || ModernAssetsReady()) return 8;
     if (!ModernAssetsInitRoot(argv[1]) || !ModernAssetsReady()) return 9;
+    /* After full teardown, the same identity/path must resolve new bytes. */
+    resident = ModernAssetsFind(&instance);
+    if (!resident || memcmp(resident->mesh.bytes, nextMeshBytes, sizeof(nextMeshBytes)) ||
+        ModernAssetsCachedMeshCount() != 1) return 29;
+    RageRuntimeVertex vertex;
+    if (!RuntimeMeshVertex(&resident->mesh, 0, &vertex) || vertex.position[0] != 1.0f)
+        return 30;
     ModernAssetsShutdown();
     if (SDL_setenv_unsafe("RAGE_PORT_MODERN_ASSETS", argv[1], 1) != 0) return 15;
     if (!SDL_SaveFile(path, "invalid\n", 8)) return 16;
