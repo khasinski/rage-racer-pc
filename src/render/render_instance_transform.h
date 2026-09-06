@@ -22,14 +22,8 @@ typedef struct RageRenderInstanceTransform {
 static inline RageRenderInstanceTransform RenderPrepareInstanceTransform(
     const RageRenderTransform *transform) {
     RageRenderInstanceTransform basis = {0};
-    float x = RenderInstanceRadians(transform->rotation.x);
-    float y = RenderInstanceRadians(transform->rotation.y);
-    float z = RenderInstanceRadians(transform->rotation.z);
     basis.position = transform->position;
     basis.scale = transform->scale;
-    basis.cx = cosf(x); basis.sx = sinf(x);
-    basis.cy = cosf(y); basis.sy = sinf(y);
-    basis.cz = cosf(z); basis.sz = sinf(z);
     if (transform->hasOrientation) {
         const RageRenderQuaternion *q = &transform->orientation;
         double lengthSquared =
@@ -52,6 +46,14 @@ static inline RageRenderInstanceTransform RenderPrepareInstanceTransform(
             basis.matrix[2][2] = 1.0f - 2.0f * (xq * xq + yq * yq);
             basis.useMatrix = 1;
         }
+    }
+    if (!basis.useMatrix) {
+        float x = RenderInstanceRadians(transform->rotation.x);
+        float y = RenderInstanceRadians(transform->rotation.y);
+        float z = RenderInstanceRadians(transform->rotation.z);
+        basis.cx = cosf(x); basis.sx = sinf(x);
+        basis.cy = cosf(y); basis.sy = sinf(y);
+        basis.cz = cosf(z); basis.sz = sinf(z);
     }
     return basis;
 }
