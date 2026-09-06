@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Native fixture byte/pixel contracts now run from the existing compiled texture
+CI entry point, reusing its pinned static SDL build across Linux/Windows/macOS.
+Workflow path filters include fixture sources and their standalone contract.
+The full cmake -P tests/texture_contract/run.cmake entry point passes locally:
+six texture/archive contracts plus native_fixture_files. Hosted matrix execution
+is still pending; previous standalone Windows results are not relabeled as a
+run of this updated full CI script.
+
 Mirror-image executable and its negative fixtures now join the standalone
 stage_image_contract target, automatically exercised by the existing
 Linux/Windows/macOS snapshot CI matrix. Workflow path filters include both

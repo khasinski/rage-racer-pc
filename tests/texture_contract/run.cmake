@@ -30,3 +30,8 @@ checked("${CMAKE_COMMAND}" -S "${CMAKE_CURRENT_LIST_DIR}" -B "${build}/contracts
 checked("${CMAKE_COMMAND}" --build "${build}/contracts" --config Release --parallel 4)
 get_filename_component(cmake_bin "${CMAKE_COMMAND}" DIRECTORY)
 checked("${cmake_bin}/ctest" --test-dir "${build}/contracts" -C Release --output-on-failure)
+checked("${CMAKE_COMMAND}" -S "${source}/tests/native_fixture_contract"
+    -B "${build}/native-fixtures" ${generator} -DCMAKE_BUILD_TYPE=Release
+    "-DSDL3_DIR=${build}/sdl")
+checked("${CMAKE_COMMAND}" --build "${build}/native-fixtures" --config Release --parallel 4)
+checked("${cmake_bin}/ctest" --test-dir "${build}/native-fixtures" -C Release --output-on-failure)
