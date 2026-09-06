@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Current Linux launcher package verification: installed locked launcher build
+dependencies, staged all six current native tools, and packaged Electron
+44.2.0 into launcher/out/Rage Mod Manager-linux-x64. The existing isolated
+empty-profile probe passes packaged first-run UI/tools-ready/locked-navigation,
+preview comparison plus close/decode regression, and clean shutdown using
+software rendering. It neither selects a disc through the packaged UI nor
+starts the game, and does not establish Windows/macOS packaging, native GPU
+UI behavior, redistribution rights for optional authored assets or signatures.
+
 Native output overflow now has an explicit ignored-SIGTERM regression: it
 confirms the child is absent before the size-limit rejection settles. All 83
 launcher tests pass on Linux with current staged mod CLI, build directory set
