@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+The retained-device environment regression has a verified negative control:
+temporarily removing the asset-generation branch from GPU preparation makes
+environment_provider fail with "Stale sky after missing -> valid" (artifact
+build/environment-provider-381a1d2b2e88). Restoring the production branch and
+rebuilding rage-frame-replay makes the test pass again (0.43s). No mutation
+remains in the source or replay binary. This demonstrates that the pixel gate
+detects the session-invalidation regression, not merely successful process exit.
+
 Synthetic environment-provider GPU regression now replaces asset roots in both
 directions (gradient-only and loaded panorama) after submitting the initial
 draw, without explicitly waiting for GPU idle. Device, frame and sky identity
