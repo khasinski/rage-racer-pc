@@ -16,6 +16,12 @@ if(TARGET rage-frame-replay)
 endif()
 
 if(TARGET rage-racer-smoke AND UNIX AND NOT APPLE)
+    add_test(NAME modern_submit_recovery COMMAND ${CMAKE_COMMAND}
+        -DGAME=$<TARGET_FILE:rage-racer-smoke> -DSOURCE=${CMAKE_SOURCE_DIR}
+        -DOUTPUT_ROOT=${CMAKE_BINARY_DIR} -DHISTORY=true -DFPS=logic -DFAIL_SUBMIT_FRAME=300
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_sampled_vram_marker.cmake)
+    set_tests_properties(modern_submit_recovery PROPERTIES LABELS e2e TIMEOUT 180
+        SKIP_REGULAR_EXPRESSION "SKIP: no disc")
     add_test(NAME retained_texture_history COMMAND ${CMAKE_COMMAND}
         -DGAME=$<TARGET_FILE:rage-racer-smoke> -DSOURCE=${CMAKE_SOURCE_DIR}
         -DOUTPUT_ROOT=${CMAKE_BINARY_DIR} -DHISTORY=true

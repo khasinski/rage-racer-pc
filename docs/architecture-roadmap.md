@@ -101,6 +101,29 @@ path; image comparisons and frame-tail measurements are still required.
 
 ## Work log
 
+- Submission ownership prerequisite for geometry reuse: ModernRender previously
+  ignored SDL_SubmitGPUCommandBuffer's result, then published success despite
+  speculative upload/cache/history state. It now reports failure, destroys
+  the presentation resource generation (including native texture/upload state
+  and retained history), and lets the next frame rebuild. Callers do not
+  advance the rendered-frame/pacer state or publish a stale diagnostic image;
+  skip_present prevents the failed modern draw from displaying compat 3D.
+  RAGE_PORT_MODERN_FAIL_SUBMIT_FRAME injects one canceled command at a selected
+  frame, without claiming real device-loss recovery. modern_submit_recovery
+  injects frame 300 at logic-rate presentation and verifies later sampled VRAM and complete retained
+  history against real PAL data; Linux recovery/history tests passed 2/2.
+  A separate frame-499 injection produced four final PPMs byte-identical to
+  the no-failure baseline (build/submit-recovery/sampled-vram-7540e0b49db0).
+  An initial vsync test could skip the exact injected frame and correctly
+  failed its injection assertion; logic-rate scheduling removes that source
+  of test nondeterminism. Windows Release game/smoke builds and the complete
+  recovery/history scenario also passed on the VM's Vulkan/SwiftShader with
+  the real PAL Track 01 BIN (C:/rage-perf-results/sampled-vram-d307d5b8ad02;
+  submit-recovery-result.txt: test_exit=0). Initial Windows harness failures
+  were path assumptions, not missing captures: Windows state uses APPDATA,
+  not XDG_STATE_HOME. The harness now isolates APPDATA and uses one platform
+  marker root for all checks. This is canceled-command recovery, not actual
+  device removal; persistent buffer reuse remains pending.
 - Fog migration checkpoint: later PAL markers (1000..1003) now also cover an
   active native mirror. Frame 1000 has 24,660 main vertices/1,060 spans and
   13,062 mirror vertices/326 spans. CPU/GPU world, scene, sampled VRAM and

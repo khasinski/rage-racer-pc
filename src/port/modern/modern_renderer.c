@@ -1239,7 +1239,7 @@ static int ModernCompareProfileInterval(const void *a, const void *b) {
     return (x > y) - (x < y);
 }
 
-static void ModernRender(const RageSceneSnapshot *snapshot) {
+static int ModernRender(const RageSceneSnapshot *snapshot) {
     SDL_GPUCommandBuffer *cmd;
     SDL_GPUTexture *vram;
     static Uint64 profileBuildNs, profileSubmitNs;
@@ -1253,7 +1253,7 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
     vram = ModernVramSnapshotForFrame(
         &s_sampledVram, snapshot->frameCounter,
         ModernCaptureVramSnapshot, NULL);
-    if (vram == NULL) return;
+    if (vram == NULL) return 0;
     if (profile < 0) {
         profile = RuntimeConfigEnabled("diagnostics.performance");
         profileTrace = RuntimeConfigEnabled("diagnostics.performance_trace");
@@ -1262,21 +1262,21 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
     ModernBuildOverlayFrame(snapshot);
     if (profile) profileBuilt = SDL_GetTicksNS();
     cmd = SDL_AcquireGPUCommandBuffer(s_device);
-    if (cmd == NULL) return;
+    if (cmd == NULL) return 0;
     if (s_vertexCount > 0) {
         SDL_GPUCopyPass *copy;
         void *mapped = SDL_MapGPUTransferBuffer(s_device, s_vertexTransfer,
                                                 true);
         if (mapped == NULL) {
             SDL_CancelGPUCommandBuffer(cmd);
-            return;
+            return 0;
         }
         memcpy(mapped, s_vertices, s_vertexCount * sizeof(ModernVertex));
         SDL_UnmapGPUTransferBuffer(s_device, s_vertexTransfer);
         copy = SDL_BeginGPUCopyPass(cmd);
         if (copy == NULL) {
             SDL_CancelGPUCommandBuffer(cmd);
-            return;
+            return 0;
         }
         {
             const SDL_GPUTransferBufferLocation source = {
@@ -1357,7 +1357,37 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
         }
         s_ringNext = (s_ringNext + 1) % MODERN_RING;
     }
-    SDL_SubmitGPUCommandBuffer(cmd);
+    /* All uploads/cache identities above are speculative until submission.
+     * Retire the complete presentation resource generation on failure: a
+     * texture-cache hit must never refer to an upload that was discarded. */
+    static int injectedSubmitFailure, failureConfigured, failureRequested;
+    static unsigned long requestedFrame;
+    if (!failureConfigured) {
+        const char *failFrame = SDL_getenv("RAGE_PORT_MODERN_FAIL_SUBMIT_FRAME");
+        char *failEnd = NULL;
+        requestedFrame = failFrame != NULL ? strtoul(failFrame, &failEnd, 10) : 0;
+        failureRequested = failFrame != NULL && failEnd != failFrame &&
+            *failEnd == '\0';
+        failureConfigured = 1;
+    }
+    int inject = !injectedSubmitFailure && failureRequested &&
+                 requestedFrame == snapshot->frameCounter;
+    int submitted;
+    if (inject) {
+        injectedSubmitFailure = 1;
+        SDL_CancelGPUCommandBuffer(cmd);
+        submitted = 0;
+        fprintf(stderr, "rage-port: injected modern submit failure frame=%u\n",
+                snapshot->frameCounter);
+    } else {
+        submitted = SDL_SubmitGPUCommandBuffer(cmd);
+    }
+    if (!submitted) {
+        fprintf(stderr, "rage-port: modern submit failed frame=%u; rebuilding presentation resources\n",
+                snapshot->frameCounter);
+        ModernDestroyResources();
+        return 0;
+    }
     if (profile) {
         Uint64 finished = SDL_GetTicksNS();
         if (!profileWindowStart) profileWindowStart = profileStart;
@@ -1427,6 +1457,7 @@ static void ModernRender(const RageSceneSnapshot *snapshot) {
                 counts[0], verts[0], counts[1], verts[1], counts[2], verts[2],
                 counts[3], verts[3], counts[4], verts[4]);
     }
+    return 1;
 }
 
 static RageModernDiagnosticFrame ModernDiagnosticFrame(void) {
@@ -1628,7 +1659,10 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
             ModernSkyOnlyWorld(GameRenderWorldPresentation(t)),
             (float)s_targetW / (float)s_targetH);
         if (s_profileTiming) s_profilePrepareNs = SDL_GetTicksNS() - prepareStart;
-        ModernRender(snapshot);
+        if (!ModernRender(snapshot)) {
+            info->skip_present = true;
+            return;
+        }
         ModernFramePresented(&s_presentPacer, now, interval);
         if (s_haveRenderedFrame) ModernMaybeDump(snapshot);
     } else if (snapshot->frameCounter != s_lastRenderedFrame) {
@@ -1638,7 +1672,10 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
         ModernNativeGpuPrepare(ModernSkyOnlyWorld(world),
                                (float)s_targetW / (float)s_targetH);
         if (s_profileTiming) s_profilePrepareNs = SDL_GetTicksNS() - prepareStart;
-        ModernRender(snapshot);
+        if (!ModernRender(snapshot)) {
+            info->skip_present = true;
+            return;
+        }
         s_lastRenderedFrame = snapshot->frameCounter;
         if (s_haveRenderedFrame) ModernMaybeDump(snapshot);
     }
