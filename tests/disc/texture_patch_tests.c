@@ -47,12 +47,17 @@ int main(void) {
         memcpy(bytes,original,sizeof(bytes));memcpy(expected,original,sizeof(expected));
         expected[520]=(unsigned char)(depth==16?31:depth==4?0xa1:1);
         char json[256];
-        snprintf(json,sizeof(json),"{\"asset\":0,\"pixels_offset\":520,\"pixel_bytes\":2,\"depth\":%d,\"width\":1,\"height\":1,\"offset\":1,\"colours\":%d}",depth,depth==4?16:256);
+        snprintf(json,sizeof(json),"{\"extension\":{\"width\":99},\"asset\":0,\"pixels_offset\":520,\"pixel_bytes\":2,\"depth\":%d,\"width\":1,\"height\":1,\"clut\":{\"offset\":1,\"colours\":%d}}",depth,depth==4?16:256);
         Write("texture_patch_fixture/textures/a.json",json);
         Write("texture_patch_fixture/textures/index.txt","# comment\r\n0 a.json\r\n");
         assert(TexturePatchAsset(root,0,bytes,sizeof(bytes))==1);
         assert(!memcmp(bytes,expected,sizeof(bytes))); /* Including padding and sentinels. */
         assert(TexturePatchAsset(root,0,bytes,sizeof(bytes))==0); /* Untouched repack. */
+        snprintf(json,sizeof(json),"{\"asset\":0,\"pixels_offset\":520,\"pixel_bytes\":2,\"depth\":%d,\"width\":1,\"height\":1,\"offset\":1,\"colours\":%d}",depth,depth==4?16:256);
+        Write("texture_patch_fixture/textures/a.json",json);
+        memcpy(bytes,original,sizeof(bytes));
+        assert(TexturePatchAsset(root,0,bytes,sizeof(bytes))==1); /* Legacy flat palette. */
+        assert(!memcmp(bytes,expected,sizeof(bytes)));
         memcpy(bytes,original,sizeof(bytes));
         assert(TexturePatchAsset(root,1,bytes,sizeof(bytes))==0);
         assert(!memcmp(bytes,original,sizeof(bytes)));
@@ -70,6 +75,11 @@ int main(void) {
         assert(!memcmp(bytes,original,sizeof(bytes)));
     }
     const char *invalid[]={
+        "{\"asset\":0,\"pixels_offset\":520,\"pixel_bytes\":2,\"depth\":16,\"width\":1,\"height\":1} trailing",
+        "{\"asset\":0,\"pixels_offset\":520,\"pixel_bytes\":2,\"depth\":16,\"width\":1,\"width\":2,\"height\":1}",
+        "{\"asset\":0,\"pixels_offset\":520,\"pixel_bytes\":2,\"depth\":16,\"width\":1.0,\"height\":1}",
+        "{\"nested\":{\"asset\":0},\"pixels_offset\":520,\"pixel_bytes\":2,\"depth\":16,\"width\":1,\"height\":1}",
+        "{\"asset\":0,\"pixels_offset\":520,\"pixel_bytes\":2,\"depth\":4,\"width\":1,\"height\":1,\"clut\":{\"offset\":1,\"offset\":2,\"colours\":16}}",
         "{}",
         "{\"asset\":0,\"pixels_offset\":-1,\"pixel_bytes\":2,\"depth\":16,\"width\":1,\"height\":1}",
         "{\"asset\":0,\"pixels_offset\":520,\"pixel_bytes\":1,\"depth\":16,\"width\":1,\"height\":1}",

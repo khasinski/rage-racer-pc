@@ -2,7 +2,8 @@
 
 Builds the production texture patcher and the same synthetic C fixture used by
 the main build. No game image, SDL, GPU, Node or Python is needed. The libchdr
-submodule must supply `deps/miniz-3.1.2/miniz.c` and `miniz.h`.
+submodule must supply `deps/miniz-3.1.2/miniz.c` and `miniz.h`. The vendored
+`external/yyjson` parser is built from the same sources as the game.
 
 ```sh
 cmake -S tests/texture_contract -B build/texture-contract -DCMAKE_BUILD_TYPE=Release

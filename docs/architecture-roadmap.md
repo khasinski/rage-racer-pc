@@ -142,6 +142,18 @@ production sources without SDL or game data. It passed on Linux GCC and in the
 Windows 11 VM with ClangCL Release (0.50 seconds). This supersedes the previous
 fixture-only Windows evidence gap, not the full-game Windows release gate.
 
+Texture sidecar reading now uses the vendored strict JSON parser instead of
+substring searches. Required fields come from the root object and palette fields
+from `clut` (the historical flat palette form remains supported). Nested
+extension fields cannot shadow texture fields. Duplicate root/palette keys,
+trailing data, invalid number types, malformed UTF-8/JSON and files reaching the
+4096-byte read limit are rejected before patching. The parser owns no retained
+JSON allocations. Regression fixtures cover nested extensions, duplicate keys,
+both palette forms and malformed metadata. Game, smoke, pack, stage and replay
+targets build with the shared JSON dependency. Linux texture/archive tests and
+modern PAL smoke (13.30 seconds) pass; the expanded production patch fixture
+also passes on Windows ClangCL Release. This is not a full Windows game rerun.
+
 Copy roles now also come from C: referenced backing files stay provider-local,
 while metadata and unused meshes are omitted from runtime composition without
 being removed from the library/export. Reference discovery and resource-key

@@ -1,11 +1,10 @@
 #include <stdint.h>
 #include <limits.h>
-#include <errno.h>
-#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <miniz.h>
+#include "yyjson.h"
 #include "../render/legacy_texture_index.h"
 
 /*
@@ -187,51 +186,67 @@ typedef struct Sidecar {
     int hasClut;
 } Sidecar;
 
-static int SidecarNumber(const char *text, const char *key, long *value) {
-    const char *at = strstr(text, key);
-    char *end;
-    long parsed;
-
-    if (at == NULL) return 0;
-    at = strchr(at, ':');
-    if (at == NULL) return 0;
-    errno = 0;
-    parsed = strtol(at + 1, &end, 10);
-    if (end == at + 1 || errno == ERANGE) return 0;
-    while (isspace((unsigned char)*end)) end++;
-    if (*end != ',' && *end != '}' && *end != '\0') return 0;
-    *value = parsed;
+static int SidecarNumber(yyjson_val *object, const char *key, long *value) {
+    yyjson_val *number=yyjson_obj_get(object,key);
+    if(!yyjson_is_int(number))return 0;
+    if(yyjson_is_uint(number)) {
+        uint64_t n=yyjson_get_uint(number);
+        if(n>(uint64_t)LONG_MAX)return 0;
+        *value=(long)n;
+    } else {
+        int64_t n=yyjson_get_sint(number);
+        if(n<LONG_MIN||n>LONG_MAX)return 0;
+        *value=(long)n;
+    }
     return 1;
 }
 
-static int ReadSidecar(const char *path, Sidecar *out) {
-    FILE *file = fopen(path, "rb");
-    char text[4096];
-    size_t length;
+static int UniqueSidecarObject(yyjson_val *object) {
+    if(!yyjson_is_obj(object))return 0;
+    size_t i,count;yyjson_val *key,*value;
+    yyjson_obj_foreach(object,i,count,key,value) {
+        if(yyjson_obj_getn(object,yyjson_get_str(key),yyjson_get_len(key))!=value)return 0;
+    }
+    return 1;
+}
+static int ParseSidecar(yyjson_val *text, Sidecar *out) {
     long value;
-    if (file == NULL) return 0;
-    length = fread(text, 1, sizeof(text) - 1, file);
-    fclose(file);
-    text[length] = '\0';
     memset(out, 0, sizeof(*out));
-    if (!SidecarNumber(text, "\"asset\"", &value)) return 0;
+    if(!UniqueSidecarObject(text))return 0;
+    if (!SidecarNumber(text, "asset", &value)) return 0;
     if (value < INT_MIN || value > INT_MAX) return 0;
     out->asset = (int)value;
-    if (!SidecarNumber(text, "\"pixels_offset\"", &out->pixelsOffset)) return 0;
-    if (!SidecarNumber(text, "\"pixel_bytes\"", &out->pixelBytes)) return 0;
-    if (!SidecarNumber(text, "\"depth\"", &value)) return 0;
+    if (!SidecarNumber(text, "pixels_offset", &out->pixelsOffset)) return 0;
+    if (!SidecarNumber(text, "pixel_bytes", &out->pixelBytes)) return 0;
+    if (!SidecarNumber(text, "depth", &value)) return 0;
     if (value < INT_MIN || value > INT_MAX) return 0;
     out->depth = (int)value;
-    if (!SidecarNumber(text, "\"width\"", &value)) return 0;
+    if (!SidecarNumber(text, "width", &value)) return 0;
     if (value < INT_MIN || value > INT_MAX) return 0;
     out->width = (int)value;
-    if (!SidecarNumber(text, "\"height\"", &value)) return 0;
+    if (!SidecarNumber(text, "height", &value)) return 0;
     if (value < INT_MIN || value > INT_MAX) return 0;
     out->height = (int)value;
-    if (SidecarNumber(text, "\"colours\"", &out->clutColours) &&
-        SidecarNumber(text, "\"offset\"", &out->clutOffset))
+    yyjson_val *clut=yyjson_obj_get(text,"clut");
+    if(clut&&!UniqueSidecarObject(clut))return 0;
+    /* Accept the historical flat palette form as well as the extractor's clut. */
+    if(!clut)clut=text;
+    if (SidecarNumber(clut, "colours", &out->clutColours) &&
+        SidecarNumber(clut, "offset", &out->clutOffset))
         out->hasClut = 1;
     return 1;
+}
+static int ReadSidecar(const char *path, Sidecar *out) {
+    FILE *file=fopen(path,"rb");char bytes[4096];
+    if(!file)return 0;
+    size_t size=fread(bytes,1,sizeof(bytes),file);
+    int ok=!ferror(file)&&size<sizeof(bytes);
+    if(fclose(file))ok=0;
+    if(!ok)return 0;
+    yyjson_doc *doc=yyjson_read(bytes,size,0);
+    if(!doc)return 0;
+    ok=ParseSidecar(yyjson_doc_get_root(doc),out);
+    yyjson_doc_free(doc);return ok;
 }
 
 /* ---- packing ---- */
