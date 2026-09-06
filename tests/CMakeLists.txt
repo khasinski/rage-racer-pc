@@ -23,6 +23,15 @@
 # toolchain used by the port and release jobs.
 find_program(RAGE_RUBY_EXECUTABLE ruby)
 
+if(TARGET rage-racer-smoke)
+    add_test(NAME modern_default_disc_source
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/render/verify_default_disc_source.cmake)
+    set_tests_properties(modern_default_disc_source PROPERTIES
+        LABELS e2e TIMEOUT 120 SKIP_REGULAR_EXPRESSION "SKIP:")
+endif()
+
 # A release build defines NDEBUG, which would turn the assertion-based C
 # tests into no-ops. Keep assertions active in every test target while leaving
 # the release game binaries untouched.

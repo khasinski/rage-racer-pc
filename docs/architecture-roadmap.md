@@ -50,6 +50,18 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Default source selection now always uses the selected disc's C importer.
+Implicit executable-relative `native-assets` discovery could select a cache
+without checking its disc/importer identity and has been removed (including
+the macOS relative search). Explicit developer `modern.assets` overrides and
+tool `ModernAssetsInitRoot` remain supported. A CMake-driven regression copies
+the smoke executable beside an unrelated valid-format cache and requires the
+disc importer plus modern GPU initialization. It passes on Linux, as do PAL
+and native-world tests exercising explicit cache/mod texture replacement.
+This prevents implicit stale-cache selection; source fingerprints and safe
+in-session provider switching remain unfinished. Windows/macOS startup has
+not been rerun for this change.
+
 Pack owner discovery now uses the same bounded legacy texture-index parser as
 the launcher and runtime, replacing its independent sscanf interpretation.
 The entire index is validated before raw assets are opened for edits; invalid

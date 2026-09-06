@@ -352,15 +352,13 @@ invalidEnvironment:
 
 int ModernAssetsInit(void) {
     const char *configured;
-    char directory[1024];
-    char candidate[1024];
     if (s_initialized) return s_ready;
     s_initialized = 1;
     ModernAssetsInitModProvider();
     configured = RuntimeConfigGetForced("modern.assets");
-    /* `disc` asks for the importer by name. Without it the only way to reach
-     * that path is for no prebuilt cache to exist anywhere the search looks,
-     * which makes a test of the importer a test of the tester's directory. */
+    /* Normal startup always follows the selected disc. A prebuilt cache has
+     * no verified disc/importer identity, so it is an explicit developer
+     * override only, never an implicitly discovered source. */
     if (configured != NULL && strcmp(configured, "disc") == 0) {
         configured = NULL;
     } else if (configured != NULL && configured[0] != '\0') {
@@ -368,19 +366,6 @@ int ModernAssetsInit(void) {
         fprintf(stderr, "rage-port: native asset cache unavailable: %s\n",
                 configured);
         return 0;
-    }
-    if (RuntimeConfigGetForced("modern.assets") == NULL &&
-        PlatformExecutableDirectory(NULL, directory, sizeof(directory))) {
-        int written = snprintf(candidate, sizeof(candidate), "%s/native-assets",
-                               directory);
-        if (written > 0 && (size_t)written < sizeof(candidate) &&
-            ModernAssetsTryRoot(candidate)) return 1;
-#ifdef __APPLE__
-        written = snprintf(candidate, sizeof(candidate),
-                           "%s/../../../native-assets", directory);
-        if (written > 0 && (size_t)written < sizeof(candidate) &&
-            ModernAssetsTryRoot(candidate)) return 1;
-#endif
     }
     if (NativeAssetImporterReady()) {
         s_importerSource = 1;
