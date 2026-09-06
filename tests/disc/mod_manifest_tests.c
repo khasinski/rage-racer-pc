@@ -269,6 +269,12 @@ int main(void) {
                 ? RAGE_MOD_MANIFEST_UNSUPPORTED_VERSION
                 : RAGE_MOD_MANIFEST_INVALID));
         }
+        const char *invalidIds[] = {"Upper", "with space", "under_score", "slash/id", "\xc3\xa9"};
+        for (size_t i = 0; i < sizeof(invalidIds)/sizeof(invalidIds[0]); ++i) {
+            snprintf(input, sizeof(input), "[mod]\nid=\"%s\"", invalidIds[i]);
+            EXPECT(!ModManifestParse(input, strlen(input), &manifest));
+            EXPECT(manifest.error == RAGE_MOD_MANIFEST_INVALID && manifest.id[0] == '\0');
+        }
         const char *duplicateIds[] = {
             "[mod]\nid=\"same\"\nid=\"same\"",
             "[mod]\nid=\"first\"\n[mod]\nid=\"second\"",

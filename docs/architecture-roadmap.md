@@ -50,6 +50,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Manifest-declared identities now use the same nonempty ASCII [a-z0-9.-]
+grammar as requires and resource semantic keys; classification is explicitly
+ASCII rather than locale-dependent ctype. Previously an uppercase, spaced or
+underscored manifest ID could parse but could not be named by requires. Such
+IDs now fail parsing; omitted legacy IDs remain accepted. Package JSON IDs
+remain a separate namespace with their existing grammar. Linux parser and all
+30 launcher mod tests pass. This intentionally tightens malformed TOML input
+acceptance and does not silently rename existing IDs.
+
 The existing mod manifest now rejects repeated identity declarations, including
 identical values, an initially empty ID and repetitions across [mod] sections.
 This aligns identity with the existing single-declaration version/dependency

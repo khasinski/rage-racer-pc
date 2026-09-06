@@ -59,7 +59,8 @@ static int ManifestSemanticId(const char *key) {
     const unsigned char *at = (const unsigned char *)key;
     if (*at == '\0') return 0;
     while (*at != '\0') {
-        if (!islower(*at) && !isdigit(*at) && *at != '.' && *at != '-')
+        if (!(*at >= 'a' && *at <= 'z') && !(*at >= '0' && *at <= '9') &&
+            *at != '.' && *at != '-')
             return 0;
         at++;
     }
@@ -183,6 +184,7 @@ int ModManifestParse(const char *text, size_t size, RageModManifest *out) {
                 if (*cursor++ != '=') goto invalid;
                 while (isspace((unsigned char)*cursor)) cursor++;
                 if (!ManifestString(&cursor, out->id, sizeof(out->id)) ||
+                    !ManifestSemanticId(out->id) ||
                     !ManifestLineEnd(cursor)) goto invalid;
             } else if (section == RAGE_MOD_SECTION_TEXTURES ||
                        section == RAGE_MOD_SECTION_MESHES) {
