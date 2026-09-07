@@ -784,3 +784,27 @@ interval across 34 post-startup windows. The original PAL/class-1/course-0
 configuration and 1706x960 target were retained. There is no demonstrated
 whole-frame FPS improvement; prioritize the publication/scheduling boundary
 rather than treating further scalar raster changes as a solution to 120 Hz.
+
+### Captured-packet publication is separate from construction
+
+`scene_capture` now has three snapshot slots: a private building slot and two
+completed frames exposed by `CaptureCurrent`/`CapturePrevious`. Begin-frame
+clears only the building slot; end-frame completes the packet walk/metadata and
+then rotates ownership. Repeated end-frame calls without a new begin do not
+publish another frame. This is a same-thread borrowing contract, not a
+thread-safe publication API. Existing live asset identities retain their prior
+lifetime requirements.
+
+The opt-in `RAGE_VERIFY_CAPTURE_PUBLICATION` oracle hashes all metadata and
+active draw/terrain/packet/face bytes (including live bank identities) before
+construction and verifies both published snapshots before rotation. Native-world
+now enables and requires this oracle. Renderer toggles, native-world, submit
+recovery and retained history pass (4/4). Real PAL frames 384/512/640 verify
+publication stability; the frame-430 image and semantic draw dump exactly match
+the pre-change capture (`/tmp/rage-published-capture.*`). Production/smoke build.
+The extra statically allocated snapshot is 6,621,224 bytes on this toolchain.
+
+This implements the first publication boundary in the actual game/renderer path
+without changing frame pacing or claiming an FPS gain. The world-instance buffers
+and texture-generation relationship still need equivalent publication ownership
+before presentation is allowed during scene construction.

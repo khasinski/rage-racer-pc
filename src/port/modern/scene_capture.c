@@ -3,6 +3,7 @@
 #include <psyz/gte.h>
 
 #include <stdio.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -14,8 +15,14 @@
 #include "modern_renderer.h"
 #include "../runtime_config.h"
 
-static RageSceneSnapshot s_snapshots[2];
-static int s_current;
+/* Keep both completed frames intact while the third slot is constructed.
+ * These are same-thread borrows, not a cross-thread publication primitive. */
+static RageSceneSnapshot s_snapshots[3];
+static int s_building, s_published = 1, s_previous = 2;
+static int s_captureBuilding;
+static int s_verifyPublication = -1;
+static uint64_t s_publishedHash, s_previousHash;
+static uint64_t CapturePublicationHash(const RageSceneSnapshot *snapshot);
 static int s_traceInitialized;
 static FILE *s_trace;
 
@@ -114,8 +121,14 @@ static void CaptureOtBase(uint8_t *table, int32_t *bias) {
 void CaptureFrameBegin(void) {
     RageSceneSnapshot *snapshot;
     if (!CaptureActive()) return;
-    s_current ^= 1;
-    snapshot = &s_snapshots[s_current];
+    if (s_verifyPublication < 0)
+        s_verifyPublication = getenv("RAGE_VERIFY_CAPTURE_PUBLICATION") != NULL;
+    if (s_verifyPublication) {
+        s_publishedHash = CapturePublicationHash(CaptureCurrent());
+        s_previousHash = CapturePublicationHash(CapturePrevious());
+    }
+    s_captureBuilding = 1;
+    snapshot = &s_snapshots[s_building];
     snapshot->drawCount = 0;
     snapshot->terrainCount = 0;
     snapshot->packetCount = 0;
@@ -177,7 +190,7 @@ void CaptureModelBegin(int kind, int index, int fogged) {
     RageSceneSnapshot *snapshot;
     RageCaptureModelDraw *draw;
     if (!CaptureActive()) return;
-    snapshot = &s_snapshots[s_current];
+    snapshot = &s_snapshots[s_building];
     s_scopeStart = RENDER_PRIM_CURSOR_AS(uint8_t);
     s_scopeHasFaceOwner = 0;
     if (snapshot->drawCount >= RAGE_CAPTURE_MAX_DRAWS) {
@@ -206,7 +219,7 @@ void CaptureTerrainBegin(const void *cells, int count) {
     const int32_t *records = (const int32_t *)cells;
     int i;
     if (!CaptureActive()) return;
-    snapshot = &s_snapshots[s_current];
+    snapshot = &s_snapshots[s_building];
     s_scopeStart = RENDER_PRIM_CURSOR_AS(uint8_t);
     s_scopeHasFaceOwner = 0;
     if (snapshot->terrainCount >= RAGE_CAPTURE_MAX_TERRAIN || count < 0 ||
@@ -230,7 +243,7 @@ void CaptureFace3D(const RageCaptureFaceInput *input) {
     RageCaptureFace *face;
     int vertex;
     if (!CaptureActive() || input == NULL) return;
-    snapshot = &s_snapshots[s_current];
+    snapshot = &s_snapshots[s_building];
     if (snapshot->faceCount >= RAGE_CAPTURE_MAX_FACES) {
         snapshot->faceOverflow++;
         return;
@@ -456,8 +469,8 @@ void CaptureFrameEnd(void) {
     RageSceneSnapshot *snapshot;
     GameFrameContext *frame;
     const Matrix *view;
-    if (!CaptureActive()) return;
-    snapshot = &s_snapshots[s_current];
+    if (!CaptureActive() || !s_captureBuilding) return;
+    snapshot = &s_snapshots[s_building];
     snapshot->frameCounter = (uint32_t)g_FrameCounter;
     snapshot->sceneId = g_SceneId;
     snapshot->courseMirror = g_MirrorMode != 0;
@@ -511,14 +524,30 @@ void CaptureFrameEnd(void) {
         }
         fflush(s_trace);
     }
+    if (s_verifyPublication) {
+        if (s_publishedHash != CapturePublicationHash(CaptureCurrent()) ||
+            s_previousHash != CapturePublicationHash(CapturePrevious())) {
+            fprintf(stderr, "capture-publication verify=MISMATCH frame=%u\n",
+                snapshot->frameCounter);
+            abort();
+        }
+        if (snapshot->sceneId == 12 && snapshot->frameCounter % 128 == 0)
+            fprintf(stderr, "capture-publication verify=match frame=%u\n",
+                snapshot->frameCounter);
+    }
+    int retired = s_previous;
+    s_previous = s_published;
+    s_published = s_building;
+    s_building = retired;
+    s_captureBuilding = 0;
 }
 
 const RageSceneSnapshot *CaptureCurrent(void) {
-    return &s_snapshots[s_current];
+    return &s_snapshots[s_published];
 }
 
 const RageSceneSnapshot *CapturePrevious(void) {
-    return &s_snapshots[s_current ^ 1];
+    return &s_snapshots[s_previous];
 }
 
 static uint64_t HashBytes(uint64_t hash, const void *data, size_t size) {
@@ -529,6 +558,17 @@ static uint64_t HashBytes(uint64_t hash, const void *data, size_t size) {
         hash *= 0x100000001B3ull;
     }
     return hash;
+}
+
+/* Same-process mutation oracle: include all metadata and active payload bytes,
+ * including live bank identities omitted by the cross-run scene hash. */
+static uint64_t CapturePublicationHash(const RageSceneSnapshot *s) {
+    uint64_t hash = HashBytes(0xCBF29CE484222325ull, s,
+        offsetof(RageSceneSnapshot, draws));
+    hash = HashBytes(hash, s->draws, s->drawCount * sizeof(s->draws[0]));
+    hash = HashBytes(hash, s->terrain, s->terrainCount * sizeof(s->terrain[0]));
+    hash = HashBytes(hash, s->packets, s->packetCount * sizeof(s->packets[0]));
+    return HashBytes(hash, s->faces, s->faceCount * sizeof(s->faces[0]));
 }
 
 uint64_t CaptureSnapshotHash(const RageSceneSnapshot *snapshot) {

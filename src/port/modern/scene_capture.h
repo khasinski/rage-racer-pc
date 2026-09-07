@@ -4,8 +4,8 @@
 /* Semantic scene capture for the modern renderer (phase R1 of
  * docs/modern_renderer_plan.md). The compat submission path always runs;
  * this module records what it submits, without feeding anything back into
- * game state. Records are written into a double-buffered RageSceneSnapshot
- * so a later phase can interpolate between two logic frames.
+ * game state. Records are written into a separate building snapshot while
+ * the renderer retains the last two completed logic frames.
  *
  * 3D submissions (models, course models, terrain) are recorded semantically
  * at the native_geometry entry points, together with the GTE state in effect.
@@ -170,7 +170,9 @@ void CaptureSubmitEnd(void);
 void CaptureSkyBegin(void);
 void CaptureSkyEnd(void);
 
-/* The snapshot of the frame captured last / the one before it. */
+/* Borrow the last two completed snapshots. Beginning/building the next frame
+ * does not mutate either. A successful CaptureFrameEnd rotates the pair;
+ * callers must reacquire after publication. Same-thread access only. */
 const RageSceneSnapshot *CaptureCurrent(void);
 const RageSceneSnapshot *CapturePrevious(void);
 
