@@ -453,10 +453,14 @@ if(RAGE_BUILD_PORT)
             ${RAGE_STRICT_WARNING_OPTIONS})
     endif()
     target_compile_definitions(rage-save-generator PRIVATE __psyz=1)
-    target_compile_options(rage-save-generator PRIVATE
-        "-iquote${CMAKE_CURRENT_SOURCE_DIR}/src/port/include"
-        "-iquote${CMAKE_CURRENT_SOURCE_DIR}/include"
-    )
+    if(MSVC)
+        target_include_directories(rage-save-generator PRIVATE
+            src/port/include include)
+    else()
+        target_compile_options(rage-save-generator PRIVATE
+            "-iquote${CMAKE_CURRENT_SOURCE_DIR}/src/port/include"
+            "-iquote${CMAKE_CURRENT_SOURCE_DIR}/include")
+    endif()
     target_include_directories(rage-game-full PRIVATE
         src/port/include
         include

@@ -24,16 +24,24 @@ Do not replace the published 0.6.3-alpha tag or packages.
   main-loop ordering, native-world image/VRAM/publication oracles, renderer
   toggles, submission recovery and retained history passed. Real PAL frozen
   image/draw dump matched. See `performance-2026-09-07.md`.
-- Moving stability: multi-race/restart exercise in progress. Longer coverage
-  across tracks, scene transitions and supported disc regions remains required.
+- Moving stability: candidate b574ee682 completed three PAL class 1/course 0
+  races, three presentation restarts and lifecycle verification successfully
+  (`build/stability-064/20260907-183419-ac60d5/result.txt`). This run does not
+  automatically assert visual correctness. Longer coverage across tracks,
+  scene transitions and supported disc regions remains required.
 - Performance: roughly 645 application FPS at numeric 1000 cap demonstrated
   rendering headroom, but stable VSync 120 FPS is still unproven. Validate
   frame intervals and outliers on the fixed candidate, not only mean FPS.
 - Packaging: verify clean CUE and Track 01 BIN flows, automatic native asset
   generation and modern startup in the actual packaged artifact.
-- Platforms: candidate-wide GitHub checks plus Linux, Windows and macOS release
-  builds still required. Earlier green CI for 35715956d does not certify the
-  later changes. Hardware/runtime coverage must be distinguished from builds.
+- Platforms: b574ee682 passed Linux, Windows and macOS release builds, sanitizers,
+  compiled texture/archive and mod contracts, and renderer snapshot contracts.
+  Launcher CI passed on macOS but exposed two build defects: clang-cl ignored
+  save-generator quote include options, and Ubuntu 22.04 required the GNU
+  feature macro for RenderDoc's RTLD_DEFAULT lookup. Both have targeted fixes;
+  rerun launcher CI and release builds on the corrected candidate. Local full
+  build and save-generator, release-package and main-loop regressions passed.
+  Hardware/runtime coverage must be distinguished from builds.
 
 Release only after the relevant evidence is recorded for the exact candidate;
 no tag or public release has been created by this preparation step.
