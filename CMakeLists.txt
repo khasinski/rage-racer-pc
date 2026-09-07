@@ -239,7 +239,8 @@ add_library(rage-render-world STATIC
     src/render/render_projection.c
     src/render/render_stage.c
     src/render/render_shadow.c
-    src/render/render_mesh_build.c)
+    src/render/render_mesh_build.c
+    src/render/render_geometry_pack.c)
 target_include_directories(rage-render-world PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src)
 if(NOT MSVC)
