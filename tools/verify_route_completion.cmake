@@ -1,4 +1,7 @@
 function(rage_verify_route_completion log completion races)
+    if(log MATCHES "incomplete native world")
+        message(FATAL_ERROR "Route completed with incomplete native geometry")
+    endif()
     if(NOT log MATCHES "autopilot result=complete ${completion}[\r\n]" OR
        log MATCHES "autopilot result=failed")
         message(FATAL_ERROR "Missing exact successful route completion: ${completion}")

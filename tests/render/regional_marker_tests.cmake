@@ -1,6 +1,6 @@
 # Real disc images are external fixtures, never bundled with the tests.
 # Dedicated variables prevent one installed disc from satisfying all regions.
-foreach(case valid wrong_count missing_menu failed)
+foreach(case valid wrong_count missing_menu failed incomplete_world)
     add_test(NAME route_completion_${case} COMMAND ${CMAKE_COMMAND}
         -DCASE=${case} -P ${CMAKE_CURRENT_LIST_DIR}/route_completion_tests.cmake)
     set_tests_properties(route_completion_${case} PROPERTIES LABELS unit)

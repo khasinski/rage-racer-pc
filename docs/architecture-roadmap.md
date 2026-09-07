@@ -50,6 +50,17 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+After explicitly relinking production rage-racer (SHA256
+8a4c94c701730d58f871c22788f22e5e1fd7e368014de3ae621d2bfd106700bb),
+all three modern regional race/reward/repeat scenarios and the autopilot unit
+case pass (233.37s). Each real-disc run completes two races, three presentation
+restarts, VRAM comparisons and ordered GPU/asset teardown. The route verifier
+now also rejects incomplete-native-world diagnostics; its five positive/
+negative CMake fixtures pass. Log: /tmp/rage-terrain-repeat-current.log; sessions
+build/regional-races/20260907-050244-{276400,839a88,d5166d}. Offscreen route
+driving does not assert pixel correctness or input/physics behavior. The prior
+243.23s run used an older executable and is not evidence for the terrain fix.
+
 Terrain quad culling now checks the current mesh range before reading six
 indices. A valid two-range RMESH regression failed before the fix: a trailing
 triangle was wrongly hidden using indices from the next range. Both independent
