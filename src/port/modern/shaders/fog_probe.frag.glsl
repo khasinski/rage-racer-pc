@@ -12,4 +12,8 @@ void main() {
     outColor = fog;
     outInstance = vec4(environmentLight * lighting, shadowReception);
     outUV = vec4(uv, 0.0, 1.0);
+    if (lighting < 0.0) {
+        uint bits = floatBitsToUint(gl_FragCoord.z);
+        outColor = vec4(uvec4(bits, bits >> 8, bits >> 16, bits >> 24) & 255u) / 255.0;
+    }
 }

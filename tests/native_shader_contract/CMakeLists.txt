@@ -24,11 +24,12 @@ foreach(target native_fog_gpu_tests native_shadow_mask_tests)
     endif()
 endforeach()
 add_test(NAME native_fog_gpu COMMAND native_fog_gpu_tests)
+add_test(NAME native_depth_bias_gpu COMMAND native_fog_gpu_tests --depth)
 add_test(NAME native_shadow_uv_gpu COMMAND native_fog_gpu_tests --shadow)
 add_test(NAME native_shadow_mask_gpu COMMAND native_shadow_mask_tests)
-set_tests_properties(native_fog_gpu native_shadow_uv_gpu native_shadow_mask_gpu
+set_tests_properties(native_depth_bias_gpu native_fog_gpu native_shadow_uv_gpu native_shadow_mask_gpu
     PROPERTIES LABELS gpu TIMEOUT 30)
 if(NOT RAGE_REQUIRE_GPU)
-    set_tests_properties(native_fog_gpu native_shadow_uv_gpu native_shadow_mask_gpu
+    set_tests_properties(native_depth_bias_gpu native_fog_gpu native_shadow_uv_gpu native_shadow_mask_gpu
         PROPERTIES SKIP_RETURN_CODE 77)
 endif()

@@ -47,7 +47,14 @@ void main() {
                      dot(camera.viewRow2.xyz, relative));
     float viewDepth = -view.z;
     float clipDepth = viewDepth * camera.projection.z + camera.projection.w;
-    clipDepth += (inDepthBias / 1048576.0) * viewDepth;
+    // A constant normalized-depth bias grows quadratically in world units.
+    // Keep the existing near-camera separation, but cap each authored step
+    // at a quarter world unit so distant decals cannot jump behind scenery.
+    float legacyBias = (inDepthBias / 1048576.0) * viewDepth;
+    float worldBias = inDepthBias * 0.25;
+    float boundedBias = -camera.projection.w * worldBias /
+                        max(viewDepth + worldBias, 1.0);
+    clipDepth += sign(legacyBias) * min(abs(legacyBias), abs(boundedBias));
     gl_Position = vec4(view.x * camera.projection.x,
                        view.y * camera.projection.y,
                        clipDepth,

@@ -19,7 +19,8 @@
 
 int main(int argc, char **argv) {
     int shadowProbe = argc == 2 && strcmp(argv[1], "--shadow") == 0;
-    if (argc != 1 && !shadowProbe) return 2;
+    int depthProbe = argc == 2 && strcmp(argv[1], "--depth") == 0;
+    if (argc != 1 && !shadowProbe && !depthProbe) return 2;
     if (!SDL_Init(SDL_INIT_VIDEO)) return 77;
     SDL_GPUDevice *device = SDL_CreateGPUDevice(
         SDL_GPU_SHADERFORMAT_SPIRV | SDL_GPU_SHADERFORMAT_MSL, false, NULL);
@@ -130,6 +131,18 @@ int main(int argc, char **argv) {
                 vertices[i].fog[3] = expected;
             }
         }
+        float probeDepth = 1000.0f + (float)sample * 500.0f;
+        float probeBias = enabled ? 9.0f : -9.0f;
+        if (depthProbe) {
+            uniform[4][2] = 262144.0f / 262143.0f;
+            uniform[4][3] = -uniform[4][2];
+            for (unsigned i = 0; i < 3; ++i) {
+                vertices[i].position[0] *= probeDepth;
+                vertices[i].position[1] *= probeDepth;
+                vertices[i].position[2] = camera.transform.position.z - probeDepth;
+                vertices[i].depthBias = probeBias;
+            }
+        }
         void *mapped = SDL_MapGPUTransferBuffer(device, upload, true); CHECK(mapped);
         for (unsigned i = 0; i < 3; ++i) packed[i] = RenderPackNativeGpuVertex(&vertices[i]);
         memcpy(mapped, packed, sizeof(packed)); SDL_UnmapGPUTransferBuffer(device, upload);
@@ -141,7 +154,7 @@ int main(int argc, char **argv) {
         SDL_PushGPUVertexUniformData(cmd, 0, uniform, sizeof(uniform));
         const float instance[2][4] = {
             {view ? 0.25f : 0.75f, (float)range * 0.25f, 1, 0},
-            {enabled ? 0.5f : 1, (float)(sample % 2), (float)(sample % 4) * 0.25f, 0}};
+            {depthProbe ? -1.0f : enabled ? 0.5f : 1, (float)(sample % 2), (float)(sample % 4) * 0.25f, 0}};
         if (shadowProbe) {
             const float offset[4] = {instance[1][2], 0, 0, 0};
             SDL_PushGPUVertexUniformData(cmd, 1, offset, sizeof(offset));
@@ -173,6 +186,24 @@ int main(int argc, char **argv) {
         CHECK(SDL_WaitForGPUFences(device, true, &fence, 1));
         const unsigned char *pixels = SDL_MapGPUTransferBuffer(device, download, false); CHECK(pixels);
         for (unsigned pixel = 0; pixel < 64; ++pixel) {
+            if (depthProbe) {
+                const unsigned char *p = pixels + pixel * 4;
+                uint32_t bits = (uint32_t)p[0] | ((uint32_t)p[1] << 8) |
+                    ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
+                float actual;
+                memcpy(&actual, &bits, sizeof(actual));
+                float lower = uniform[4][2] + uniform[4][3] / (probeDepth - 4.0f);
+                float upper = uniform[4][2] + uniform[4][3] / (probeDepth + 4.0f);
+                CHECK(isfinite(actual) && actual >= lower && actual <= upper);
+                /* A zero-bias implementation must not pass merely because
+                 * it cannot move a screen behind the roof. At these nearer
+                 * depths the intended offset exceeds readback rounding. */
+                if (probeDepth <= 2500.0f) {
+                    float base = (probeDepth * uniform[4][2] + uniform[4][3]) / probeDepth;
+                    CHECK(probeBias > 0.0f ? actual > base : actual < base);
+                }
+                continue;
+            }
             for (unsigned channel = 0; channel < 4; ++channel) {
                 float uvValue = channel == 0 ? 0.125f + instance[1][2]
                     : channel == 1 ? 0.5f : channel == 2 ? 0.0f : 1.0f;
@@ -206,7 +237,10 @@ int main(int argc, char **argv) {
     SDL_ReleaseGPUGraphicsPipeline(device, pipeline);
     SDL_ReleaseGPUShader(device, vs); SDL_ReleaseGPUShader(device, fs);
     SDL_DestroyGPUDevice(device); SDL_Quit();
-    printf("Native GPU %s: %u cases match CPU within one UNORM step\n",
-        shadowProbe ? "shadow UV" : "fog, instance state and UV", cases);
+    if (depthProbe)
+        printf("Native GPU bounded depth: %u cases within four world units\n", cases);
+    else
+        printf("Native GPU %s: %u cases match CPU within one UNORM step\n",
+            shadowProbe ? "shadow UV" : "fog, instance state and UV", cases);
     return 0;
 }

@@ -1,5 +1,22 @@
 # Start-line animated screen regression (open)
 
+Implemented candidate: retain the old clip-depth adjustment near the camera
+but bound it by the projection of 0.25 world units per authored bias step.
+GLSL and generated SPIR-V/MSL are updated together. Point 288 now shows the
+complete screen with the roof retained. native_depth_bias_gpu reads actual
+gl_FragCoord.z from the production vertex shader: 192 cases at depths
+1000..4500 with bias +/-9 stay within +/-4 world units; at depths <=2500
+the bias must also retain its direction. Both the old shader and a zero-bias
+mutation fail; the candidate passes alongside fog and shadow UV tests.
+
+A production PAL/class-1/course-0 route completed three laps and one race
+(/tmp/rage-bias-drive/game.log). A second bounded route recorded frames
+1130..1248 individually in /tmp/rage-bias-barrier-dense and stopped at scene
+12/timer 1030. Visual inspection of consecutive frames 1176..1183 shows a
+continuous yellow chevron barrier in main and mirror views. This is sampled
+visual evidence, not exhaustive temporal/pixel verification of all barriers;
+Windows/Metal GPU execution and additional regional visual checks remain open.
+
 Cause isolated: zeroing only the terrain depth-bias contribution restores the
 complete screen while retaining the roof (/tmp/rage-telebim-no-bias.ppm).
 The current vertex shader adds bias/1048576 in normalized depth; at this
