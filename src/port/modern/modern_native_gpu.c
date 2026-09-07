@@ -128,6 +128,8 @@ static SDL_GPUSampler *s_sampler;
 static SDL_GPUTexture *s_shadowTexture;
 static SDL_GPUSampler *s_shadowSampler;
 static RageNativeGpuVertex *s_vertices;
+static RageNativeMeshTemplateCache s_meshTemplates;
+static int s_cpuGeometryReference;
 static RageNativeDrawSpan *s_spans;
 static RageNativeDrawSpan *s_mirrorSpans;
 static uint32_t s_vertexCount;
@@ -520,6 +522,7 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
     if (!ModernAssetsReady()) return 0;
     const char *fogReference = SDL_getenv("RAGE_PORT_NATIVE_CPU_FOG");
     s_cpuFogReference = fogReference != NULL && strcmp(fogReference, "1") == 0;
+    s_cpuGeometryReference = RuntimeConfigEnabled("diagnostics.modern_uncached_geometry");
     fprintf(stderr, "rage-port: native fog=%s\n", s_cpuFogReference ? "cpu-reference" : "gpu");
     s_device = device;
     vertex = ModernNativeCreateShader(
@@ -814,6 +817,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         }
         ModernNativeGpuClearTextures();
         ModernNativeReleaseSkyTexture();
+        RenderNativeMeshTemplateCacheRelease(&s_meshTemplates);
         s_trackAssetRevision = trackAssetRevision;
         s_assetGeneration = ModernAssetsGeneration();
         /* Scene-local frame counters can repeat across attract/race loads.
@@ -852,7 +856,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         RAGE_RENDER_VEHICLE_SHADOW_RESOLUTION,
         &s_shadowMap);
     if (trace) mainStarted = SDL_GetTicksNS();
-    s_vertexCount = RenderBuildNativeCompactPassDraws(
+    s_vertexCount = RenderBuildNativeCachedCompactPassDraws(s_cpuGeometryReference ? NULL : &s_meshTemplates,
         world, RAGE_RENDER_PASS_MAIN, aspect, s_cpuFogReference, ModernAssetsResidentMeshLookup, NULL,
         s_vertices,
         MODERN_NATIVE_MAX_VERTICES_PER_VIEW, s_spans, MODERN_NATIVE_MAX_SPANS,
@@ -865,7 +869,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         RageRenderWorld mirrorWorld = *world;
         uint32_t span;
         mirrorWorld.camera = world->mirrorCamera;
-        s_mirrorVertexCount = RenderBuildNativeCompactPassDraws(
+        s_mirrorVertexCount = RenderBuildNativeCachedCompactPassDraws(s_cpuGeometryReference ? NULL : &s_meshTemplates,
             &mirrorWorld, RAGE_RENDER_PASS_MAIN, s_mirrorAspect, s_cpuFogReference,
             ModernAssetsResidentMeshLookup, NULL, s_vertices + mirrorFirstVertex,
             MODERN_NATIVE_MAX_VERTICES_PER_VIEW, s_mirrorSpans,
@@ -1802,6 +1806,7 @@ void ModernNativeGpuShutdown(void) {
             SDL_ReleaseGPUSampler(s_device, s_shadowSampler);
     }
     free(s_vertices);
+    RenderNativeMeshTemplateCacheRelease(&s_meshTemplates);
     free(s_spans);
     free(s_mirrorSpans);
     s_device = NULL;

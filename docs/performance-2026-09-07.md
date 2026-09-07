@@ -32,7 +32,7 @@ both the display request and the independent logic driver-VSync flag.
 ## Measurements
 
 PAL Mythical Coast, class 1, one automated lap, original local INI, prewarm on.
-All four runs completed. FPS below is computed over complete 120-render
+All runs completed. FPS below is computed over complete 120-render
 reporting windows after excluding the first startup window; the mean is
 weighted by their duration. Queue counts measure submitted swapchain images,
 not direct scanout instrumentation.
@@ -43,6 +43,7 @@ not direct scanout instrumentation.
 | perf-120hz-wayland/20260907-143223-72ce97 | 107.17 | 96.13 | Correct refresh; experimental static CPU cache |
 | perf-120hz-wayland-reference/20260907-143335-a56420 | 107.22 | 95.40 | Correct refresh; CPU cache disabled |
 | perf-120hz-vsync/20260907-143626-704125 | 112.47 | 95.38 | Correct refresh and explicit display VSync; CPU cache removed |
+| perf-120hz-vehicle-template/20260907-145229-b8396b | 119.03 | 114.78 | Display VSync and immutable vehicle geometry templates |
 
 These sequential runs establish the former 60 Hz detection problem and current
 performance range, not an isolated speedup percentage from VSync. The first
@@ -77,3 +78,34 @@ including interpolated frames. Keep the CPU reference path and compare the
 same main/mirror views. Validate moving scenes, frame tails and original game
 timing; do not infer completion from frozen-scene benchmarks or average FPS.
 Windows/macOS synchronization and sustained 120 FPS remain unverified.
+
+## Vehicle geometry templates
+
+The main and mirror paths now share bounded (32 MiB) immutable local vehicle
+templates. Index decoding, triangle validation and material grouping happen
+once per mesh/submesh and asset set. Instance transforms, lighting state, paint,
+fog and decal separation are still evaluated each frame. Source generation
+changes and renderer shutdown retire the cache. Unsupported flags, CPU fog,
+texture scrolling and allocation failures retain the reference builder.
+`diagnostics.modern_uncached_geometry=true` selects that builder for comparison.
+This is CPU preparation reuse, not persistent GPU geometry: transformed vertices
+are still copied and uploaded each frame.
+
+In a paired frozen race scene (frame 338, 300 preparation repeats), median
+preparation fell from 4.570 to 1.599 ms; p95 fell from 4.832 to 1.740 ms.
+The PPM image and draw dump were byte-identical. The moving lap above reached
+119.03 mean FPS over 34 reporting windows, with a slowest window of 114.78 FPS.
+Highest window-mean preparation fell from 8.199 to 3.262 ms. Worst window p95
+frame interval remained 15.452 ms, so neither the average nor the window result
+establishes the requested 120 FPS floor.
+
+Compiled regression tests compare cached and reference vertices/spans byte for
+byte across changing transforms, quaternion rotations, nonuniform scales,
+submeshes, paint, fog, decals, invalid triangles, capacity limits, unsupported
+flags, frustum culling and cache retirement. Mesh-builder, mirror, native-world,
+renderer-toggle and environment-provider tests passed (5/5), as did the model
+stage-angle test with imported PAL assets. The mesh suite also passed ASan and
+UBSan, including leak detection. Game, smoke, replay and stage targets rebuilt.
+
+Next performance work should reduce remaining frame spikes and per-frame GPU
+uploads/transforms without lowering visual settings or changing game speed.

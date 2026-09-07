@@ -1377,7 +1377,99 @@ static void test_position_only_triangle_geometry(void) {
     EXPECT_EQ(0, RenderTriangleIsRoadDecal(p, &g));
 }
 
+static void compare_vehicle_template(RageNativeMeshTemplateCache *cache,
+    RageRenderWorld *world, RageRuntimeMesh *mesh, uint32_t capacity, uint32_t spanCapacity, int cpuFog) {
+    RageNativeGpuVertex expected[24] = {0}, actual[24] = {0};
+    RageNativeDrawSpan expectedSpans[12] = {0}, actualSpans[12] = {0};
+    uint32_t expectedCount, actualCount;
+    uint32_t count = RenderBuildNativeCompactPassDraws(world, RAGE_RENDER_PASS_MAIN,
+        1.5f, cpuFog, test_mesh_lookup, mesh, expected, capacity, expectedSpans, spanCapacity, &expectedCount);
+    for (unsigned repeat = 0; repeat < 2; ++repeat) {
+        EXPECT_EQ(count, RenderBuildNativeCachedCompactPassDraws(cache, world,
+            RAGE_RENDER_PASS_MAIN, 1.5f, cpuFog, test_mesh_lookup, mesh, actual, capacity,
+            actualSpans, spanCapacity, &actualCount));
+        EXPECT_EQ(expectedCount, actualCount);
+        EXPECT_EQ(0, memcmp(expected, actual, count * sizeof(*actual)));
+        EXPECT_EQ(0, memcmp(expectedSpans, actualSpans, expectedCount * sizeof(*actualSpans)));
+    }
+}
+
+static void test_vehicle_templates_follow_instance_state_and_capacity(void) {
+    unsigned char bytes[456] = {0};
+    RageRuntimeMesh mesh;
+    RageNativeMeshTemplateCache cache = {0};
+    RageRenderMeshInstance instances[2] = {0};
+    RageRenderWorld world;
+    const uint32_t indices[15] = {0,1,2, 3,4,5, 0,4,2, 6,7,8, 0,1,2};
+    EXPECT_EQ(1, RuntimeMeshEncodeHeader(bytes, sizeof(bytes), 2, 9, 15));
+    write_u32(bytes + 24, 0); write_u32(bytes + 28, 12);
+    write_u32(bytes + 32, 15);
+    for (unsigned v = 0; v < 9; ++v) {
+        RageRuntimeVertex vertex = {0};
+        vertex.position[0] = (float)(v % 3) - 1;
+        vertex.position[1] = (v % 3 == 1) ? 1 : 0;
+        vertex.position[2] = -10 - (float)(v / 3);
+        vertex.normal[0] = 0.3f; vertex.normal[1] = 0.6f; vertex.normal[2] = 0.8f;
+        vertex.uv[0] = (float)v / 16;
+        vertex.color[0] = 173; vertex.color[3] = 255;
+        vertex.material = v < 3 ? 4 : v < 6 ?
+            RAGE_CAR_SURFACE_DECAL * RAGE_CAR_SURFACE_RUNTIME_STRIDE + 4 : UINT32_MAX;
+        EXPECT_EQ(1, RuntimeVertexEncode(bytes + 36 + v * 40, 40, &vertex));
+    }
+    for (unsigned i = 0; i < 15; ++i) write_u32(bytes + 396 + i * 4, indices[i]);
+    EXPECT_EQ(1, RuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+    RenderWorldInit(&world, instances, 2);
+    world.instanceCount = 2;
+    world.camera.verticalFovDegrees = 90;
+    world.camera.nearPlane = 1; world.camera.farPlane = 100;
+    world.camera.fogNear = 2; world.camera.fogFar = 80;
+    for (unsigned frame = 0; frame < 12; ++frame) {
+        for (unsigned i = 0; i < 2; ++i) {
+            instances[i].pass = RAGE_RENDER_PASS_MAIN;
+            instances[i].assetSet = frame & 1 ? RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 : RAGE_RENDER_ASSET_MODEL_BANK;
+            instances[i].assetKey = 10 + i;
+            instances[i].entity = i;
+            instances[i].mesh = frame < 6 ? 0 : 1;
+            instances[i].component = (uint8_t)i;
+            instances[i].transform.scale = (RageRenderVec3){-0.25f, 0.5f, 1};
+            instances[i].transform.position = (RageRenderVec3){(float)frame, (float)i, -3};
+            instances[i].transform.rotation = (RageRenderVec3){10, 37 + (float)frame, 22};
+            instances[i].transform.orientation = (RageRenderQuaternion){0.3f, 0.1f, -0.2f, 0.8f};
+            instances[i].transform.hasOrientation = (uint8_t)(frame & 1);
+            instances[i].flags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING |
+                (frame & 2 ? RAGE_RENDER_INSTANCE_ENABLE_FOG : 0);
+            instances[i].lightInfluence = (float)frame / 8;
+            instances[i].environmentLight = (RageRenderVec3){0.2f, 0.7f, 1};
+            instances[i].hasCarPaint = (uint8_t)i;
+            instances[i].carPaintColor1 = (uint8_t)frame;
+            instances[i].materialVariant = (uint8_t)(frame % 3);
+        }
+        if (frame == 7) instances[1] = instances[0]; /* Merge equal span boundaries. */
+        if (frame == 5) instances[0].flags |= RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL;
+        if (frame == 8) instances[0].flags |= RAGE_RENDER_INSTANCE_CULL_BACKFACES;
+        if (frame == 9) instances[0].flags |= RAGE_RENDER_INSTANCE_FLAT_SHADED;
+        if (frame == 10) instances[0].flags |= RAGE_RENDER_INSTANCE_DEPTH_DECAL;
+        if (frame == 11) instances[0].textureScrollU = 17;
+        const uint32_t capacities[] = {0,1,2,3,4,11,24};
+        for (unsigned c = 0; c < sizeof(capacities) / sizeof(capacities[0]); ++c)
+            for (unsigned s = 0; s < 4; ++s)
+                compare_vehicle_template(&cache, &world, &mesh, capacities[c], s, 0);
+        compare_vehicle_template(&cache, &world, &mesh, 24, 12, 1);
+        world.camera.transform.rotation.y += 30;
+    }
+    EXPECT_EQ(1, cache.state != NULL);
+    RenderNativeMeshTemplateCacheRelease(&cache);
+    RenderNativeMeshTemplateCacheRelease(&cache);
+    /* A new source at the same address is legal only after retirement. */
+    bytes[36 + 24] = 57;
+    EXPECT_EQ(1, RuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+    instances[0].textureScrollU = 0;
+    compare_vehicle_template(&cache, &world, &mesh, 24, 12, 0);
+    RenderNativeMeshTemplateCacheRelease(&cache);
+}
+
 int main(void) {
+    test_vehicle_templates_follow_instance_state_and_capacity();
     test_terrain_culling_respects_mesh_range();
     test_terrain_position_reuse_stops_at_incomplete_quad();
     test_position_only_triangle_geometry();

@@ -5,6 +5,7 @@
 #include "authored_car_surface.h"
 
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
 
 static float Radians(float degrees) {
@@ -358,7 +359,7 @@ static int BuildVertex(const RageTransformBasis *basis,
                            const RageNativeInstanceState *instanceState,
                            const RageRuntimeMesh *mesh, uint32_t index,
                            const RageRenderVec3 *preparedPosition,
-                           float aspect, RageNativeDrawVertex *out,
+                           float aspect, int localSource, RageNativeDrawVertex *out,
                            uint32_t *material, uint32_t *materialFlags,
                            uint8_t *depthDecal) {
     RageRuntimeVertex source;
@@ -368,7 +369,8 @@ static int BuildVertex(const RageTransformBasis *basis,
     *materialFlags = source.material &
         (RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY |
          RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT);
-    worldPosition = preparedPosition != NULL ? *preparedPosition
+    worldPosition = localSource ? (RageRenderVec3){source.position[0], source.position[1], source.position[2]} :
+        preparedPosition != NULL ? *preparedPosition
                                              : TransformPosition(basis, &source);
     if (preparedPosition == NULL && instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
         worldPosition.x = SnapTerrainCellBoundary(worldPosition.x);
@@ -385,7 +387,8 @@ static int BuildVertex(const RageTransformBasis *basis,
         source.material &= ~RAGE_RUNTIME_MATERIAL_SCROLL_U;
     }
     memcpy(out->color, source.color, sizeof(out->color));
-    normal = TransformNormal(basis, &source);
+    normal = localSource ? (RageRenderVec3){source.normal[0], source.normal[1], source.normal[2]} :
+        TransformNormal(basis, &source);
     out->normal[0] = normal.x;
     out->normal[1] = normal.y;
     out->normal[2] = normal.z;
@@ -437,7 +440,102 @@ typedef struct RagePreparedVertexCacheEntry {
     uint8_t depthDecal;
 } RagePreparedVertexCacheEntry;
 
+typedef struct RageNativeMeshTemplate {
+    struct RageNativeMeshTemplate *next;
+    const RageRuntimeMesh *source;
+    uint32_t mesh;
+    RageRenderAssetSet assetSet;
+    RageNativeGpuVertex *vertices;
+    RageNativeDrawSpan *spans;
+    uint32_t vertexCount, spanCount;
+} RageNativeMeshTemplate;
+
+typedef struct RageNativeMeshTemplateState {
+    RageNativeMeshTemplate *first;
+    size_t bytes;
+} RageNativeMeshTemplateState;
+
+static const RageRuntimeMesh *TemplateMeshLookup(void *context,
+    const RageRenderMeshInstance *instance) {
+    (void)instance;
+    return context;
+}
+
+static RageNativeMeshTemplate *FindMeshTemplate(RageNativeMeshTemplateCache *cache,
+    const RageRuntimeMesh *mesh, const RageRenderMeshInstance *instance, uint32_t count);
+
+static int SpanMatches(const RageNativeDrawSpan *span,
+    const RageRenderMeshInstance *instance, const RageNativeInstanceState *state,
+    uint32_t material, uint32_t flags, uint8_t decal, uint8_t variant) {
+    return span->material == material && span->materialFlags == flags &&
+        span->depthDecal == decal && span->assetKey == instance->assetKey &&
+        span->assetSet == instance->assetSet && span->mesh == instance->mesh &&
+        span->sourceEntity == instance->entity && span->instanceFlags == instance->flags &&
+        !memcmp(&span->instanceState, state, sizeof(*state)) &&
+        span->materialVariant == variant && span->hasCarPaint == instance->hasCarPaint &&
+        span->carPaintColor1 == instance->carPaintColor1 &&
+        span->carPaintColor2 == instance->carPaintColor2 && span->component == instance->component &&
+        span->entity == (instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ? instance->entity : 0) &&
+        span->pass == instance->pass;
+}
+
+static int AppendMeshTemplate(const RageNativeMeshTemplate *source,
+    const RageRenderMeshInstance *instance, const RageTransformBasis *basis,
+    const RageNativeInstanceState *state, RageNativeGpuVertex *vertices, uint32_t capacity,
+    RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *vertexCount, uint32_t *spanCount) {
+    for (uint32_t s = 0; s < source->spanCount; ++s) {
+        const RageNativeDrawSpan *input = &source->spans[s];
+        uint32_t count = input->vertexCount;
+        if (count > capacity - *vertexCount) count = (capacity - *vertexCount) / 3 * 3;
+        if (!count) return 1;
+        if (!*spanCount || !SpanMatches(&spans[*spanCount - 1], instance, state,
+                input->material, input->materialFlags, input->depthDecal, instance->materialVariant)) {
+            if (*spanCount == spanCapacity) return 0;
+            RageNativeDrawSpan *output = &spans[(*spanCount)++];
+            *output = *input;
+            output->firstVertex = *vertexCount;
+            output->vertexCount = 0;
+            output->assetKey = instance->assetKey;
+            output->sourceEntity = instance->entity;
+            output->entity = instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ? instance->entity : 0;
+            output->instanceFlags = instance->flags;
+            output->materialVariant = instance->materialVariant;
+            output->hasCarPaint = instance->hasCarPaint;
+            output->carPaintColor1 = instance->carPaintColor1;
+            output->carPaintColor2 = instance->carPaintColor2;
+            output->component = instance->component;
+            output->pass = instance->pass;
+            output->instanceState = *state;
+        }
+        for (uint32_t v = 0; v < count; ++v) {
+            const RageNativeGpuVertex *inputVertex = &source->vertices[input->firstVertex + v];
+            RageNativeGpuVertex *output = &vertices[*vertexCount + v];
+            RageRenderVec3 position = RenderTransformInstancePoint(basis,
+                (RageRenderVec3){inputVertex->position[0], inputVertex->position[1], inputVertex->position[2]});
+            RageRenderVec3 normal = RenderRotateInstanceVector(basis,
+                (RageRenderVec3){inputVertex->normal[0], inputVertex->normal[1], inputVertex->normal[2]});
+            *output = *inputVertex;
+            output->fog[0] = position.x; output->fog[1] = position.y; output->fog[2] = position.z;
+            output->fog[3] = (instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FOG) ? 1.0f : 0.0f;
+            output->normal[0] = normal.x; output->normal[1] = normal.y; output->normal[2] = normal.z;
+            if (input->depthDecal) {
+                float length = Vec3Length(normal.x, normal.y, normal.z);
+                if (length > 0) {
+                    position.x += normal.x * (2.0f / length);
+                    position.y += normal.y * (2.0f / length);
+                    position.z += normal.z * (2.0f / length);
+                }
+            }
+            output->position[0] = position.x; output->position[1] = position.y; output->position[2] = position.z;
+        }
+        *vertexCount += count;
+        spans[*spanCount - 1].vertexCount += count;
+    }
+    return 1;
+}
+
 static uint32_t RenderBuildNativeDrawsFiltered(
+    RageNativeMeshTemplateCache *cache, int localSource,
     const RageRenderWorld *world, int passFilter, float aspect, int gpuFog,
     RageRenderMeshLookup lookup, void *context,
     RageNativeDrawVertex *vertices, RageNativeGpuVertex *compactVertices, uint32_t vertexCapacity,
@@ -478,6 +576,18 @@ static uint32_t RenderBuildNativeDrawsFiltered(
             InstanceOutsideFrustum(world, &viewTransform, &frustum, &basis, mesh,
                                        instance->mesh)) continue;
         instanceState = PrepareInstanceState(instance);
+        if (cache && gpuFog && compactVertices && !instance->textureScrollU &&
+            (instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
+             instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1) &&
+            !(instance->flags & (RAGE_RENDER_INSTANCE_FLAT_SHADED |
+              RAGE_RENDER_INSTANCE_DEPTH_DECAL | RAGE_RENDER_INSTANCE_CULL_BACKFACES))) {
+            RageNativeMeshTemplate *prepared = FindMeshTemplate(cache, mesh, instance, count);
+            if (prepared) {
+                if (!AppendMeshTemplate(prepared, instance, &basis, &instanceState,
+                        compactVertices, vertexCapacity, spans, spanCapacity, &vertexCount, &spansUsed)) goto done;
+                continue;
+            }
+        }
         for (offset = 0; offset + 2 < count; offset += 3) {
             RageNativeDrawVertex triangle[3];
             uint32_t materials[3], materialFlags[3], indices[3];
@@ -517,7 +627,7 @@ static uint32_t RenderBuildNativeDrawsFiltered(
                             gpuFog, compactVertices != NULL && gpuFog,
                             instance, &instanceState, mesh, indices[corner],
                             terrainPositionsValid ? &terrainPositions[offset % 6u + corner] : NULL,
-                            aspect,
+                            aspect, localSource,
                             &triangle[corner], &materials[corner],
                             &materialFlags[corner], &depthDecals[corner]);
                         if (gpuFog && valid) {
@@ -556,7 +666,7 @@ static uint32_t RenderBuildNativeDrawsFiltered(
             RageTriangleGeometry geometry = {0};
             if ((instance->flags & RAGE_RENDER_INSTANCE_FLAT_SHADED) != 0)
                 ApplyFlatTriangleNormal(triangle, &geometry);
-            if (depthDecals[0]) {
+            if (depthDecals[0] && !localSource) {
                 /* Explicit screen/art layers are semantic overlays. Give them
                  * real separation from their backing mesh instead of changing
                  * their depth value in the rasterizer. */
@@ -586,25 +696,8 @@ static uint32_t RenderBuildNativeDrawsFiltered(
             if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN &&
                 (materialFlags[0] & RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT) == 0)
                 materialVariant &= (uint8_t)~1u;
-            if (spansUsed == 0 || spans[spansUsed - 1].material != materials[0] ||
-                spans[spansUsed - 1].materialFlags != materialFlags[0] ||
-                spans[spansUsed - 1].depthDecal != depthDecals[0] ||
-                spans[spansUsed - 1].assetKey != instance->assetKey ||
-                spans[spansUsed - 1].assetSet != instance->assetSet ||
-                spans[spansUsed - 1].mesh != instance->mesh ||
-                spans[spansUsed - 1].sourceEntity != instance->entity ||
-                spans[spansUsed - 1].instanceFlags != instance->flags ||
-                memcmp(&spans[spansUsed - 1].instanceState, &instanceState,
-                       sizeof(instanceState)) != 0 ||
-                spans[spansUsed - 1].materialVariant != materialVariant ||
-                spans[spansUsed - 1].hasCarPaint != instance->hasCarPaint ||
-                spans[spansUsed - 1].carPaintColor1 != instance->carPaintColor1 ||
-                spans[spansUsed - 1].carPaintColor2 != instance->carPaintColor2 ||
-                spans[spansUsed - 1].component != instance->component ||
-                spans[spansUsed - 1].entity !=
-                    (instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK
-                     ? instance->entity : 0) ||
-                spans[spansUsed - 1].pass != instance->pass) {
+            if (spansUsed == 0 || !SpanMatches(&spans[spansUsed - 1], instance,
+                    &instanceState, materials[0], materialFlags[0], depthDecals[0], materialVariant)) {
                 if (spansUsed == spanCapacity) goto done;
                 spans[spansUsed].firstVertex = vertexCount;
                 spans[spansUsed].vertexCount = 0;
@@ -646,6 +739,64 @@ done:
     return vertexCount;
 }
 
+void RenderNativeMeshTemplateCacheRelease(RageNativeMeshTemplateCache *cache) {
+    if (!cache || !cache->state) return;
+    RageNativeMeshTemplateState *state = cache->state;
+    while (state->first) {
+        RageNativeMeshTemplate *entry = state->first;
+        state->first = entry->next;
+        free(entry->vertices); free(entry->spans); free(entry);
+    }
+    free(state);
+    cache->state = NULL;
+}
+
+static RageNativeMeshTemplate *FindMeshTemplate(RageNativeMeshTemplateCache *cache,
+    const RageRuntimeMesh *mesh, const RageRenderMeshInstance *instance, uint32_t count) {
+    enum { MAX_BYTES = 32 * 1024 * 1024 };
+    if (count < 3) return NULL;
+    if (!cache->state) cache->state = calloc(1, sizeof(RageNativeMeshTemplateState));
+    RageNativeMeshTemplateState *state = cache->state;
+    if (!state) return NULL;
+    for (RageNativeMeshTemplate *entry = state->first; entry; entry = entry->next)
+        if (entry->source == mesh && entry->mesh == instance->mesh && entry->assetSet == instance->assetSet)
+            return entry;
+    if (count > MAX_BYTES / (sizeof(RageNativeGpuVertex) + sizeof(RageNativeDrawSpan))) return NULL;
+    size_t bytes = (size_t)count * sizeof(RageNativeGpuVertex) +
+                  (size_t)(count / 3) * sizeof(RageNativeDrawSpan) + sizeof(RageNativeMeshTemplate);
+    if (bytes > MAX_BYTES - state->bytes) return NULL;
+    RageNativeMeshTemplate *entry = calloc(1, sizeof(*entry));
+    if (!entry) return NULL;
+    entry->vertices = malloc((size_t)count * sizeof(*entry->vertices));
+    entry->spans = calloc(count / 3, sizeof(*entry->spans));
+    if (!entry->vertices || !entry->spans) {
+        free(entry->vertices); free(entry->spans); free(entry);
+        return NULL;
+    }
+    RageRenderMeshInstance local = {0};
+    RageRenderWorld world = {0};
+    local.assetKey = instance->assetKey;
+    local.assetSet = instance->assetSet;
+    local.mesh = instance->mesh;
+    local.pass = RAGE_RENDER_PASS_MAIN;
+    local.transform.scale = (RageRenderVec3){1, 1, 1};
+    world.instances = &local;
+    world.instanceCapacity = world.instanceCount = 1;
+    world.camera.verticalFovDegrees = 90;
+    world.camera.nearPlane = 1;
+    world.camera.farPlane = 10000;
+    entry->source = mesh;
+    entry->mesh = instance->mesh;
+    entry->assetSet = instance->assetSet;
+    entry->vertexCount = RenderBuildNativeDrawsFiltered(NULL, 1, &world,
+        RAGE_RENDER_PASS_MAIN, 1, 1, TemplateMeshLookup, (void *)mesh, NULL,
+        entry->vertices, count, entry->spans, count / 3, &entry->spanCount);
+    entry->next = state->first;
+    state->first = entry;
+    state->bytes += bytes;
+    return entry;
+}
+
 uint32_t RenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
                                     RageRenderMeshLookup lookup, void *context,
                                     RageNativeDrawVertex *vertices,
@@ -654,7 +805,7 @@ uint32_t RenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
                                     uint32_t spanCapacity,
                                     uint32_t *spanCount) {
     return RenderBuildNativeDrawsFiltered(
-        world, -1, aspect, 0, lookup, context, vertices, NULL, vertexCapacity, spans,
+        NULL, 0, world, -1, aspect, 0, lookup, context, vertices, NULL, vertexCapacity, spans,
         spanCapacity, spanCount);
 }
 
@@ -664,7 +815,7 @@ uint32_t RenderBuildNativePassDraws(
     RageNativeDrawVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
     return RenderBuildNativeDrawsFiltered(
-        world, (int)pass, aspect, 0, lookup, context, vertices, NULL, vertexCapacity,
+        NULL, 0, world, (int)pass, aspect, 0, lookup, context, vertices, NULL, vertexCapacity,
         spans, spanCapacity, spanCount);
 }
 
@@ -674,7 +825,7 @@ uint32_t RenderBuildNativeGpuPassDraws(
     RageNativeDrawVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
     return RenderBuildNativeDrawsFiltered(
-        world, (int)pass, aspect, 1, lookup, context, vertices, NULL, vertexCapacity,
+        NULL, 0, world, (int)pass, aspect, 1, lookup, context, vertices, NULL, vertexCapacity,
         spans, spanCapacity, spanCount);
 }
 
@@ -683,6 +834,16 @@ uint32_t RenderBuildNativeCompactPassDraws(
     RageRenderMeshLookup lookup, void *context,
     RageNativeGpuVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
-    return RenderBuildNativeDrawsFiltered(world, (int)pass, aspect, !cpuFog,
+    return RenderBuildNativeDrawsFiltered(NULL, 0, world, (int)pass, aspect, !cpuFog,
+        lookup, context, NULL, vertices, vertexCapacity, spans, spanCapacity, spanCount);
+}
+
+uint32_t RenderBuildNativeCachedCompactPassDraws(
+    RageNativeMeshTemplateCache *cache,
+    const RageRenderWorld *world, RageRenderPass pass, float aspect, int cpuFog,
+    RageRenderMeshLookup lookup, void *context,
+    RageNativeGpuVertex *vertices, uint32_t vertexCapacity,
+    RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
+    return RenderBuildNativeDrawsFiltered(cache, 0, world, (int)pass, aspect, !cpuFog,
         lookup, context, NULL, vertices, vertexCapacity, spans, spanCapacity, spanCount);
 }

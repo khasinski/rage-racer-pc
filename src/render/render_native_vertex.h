@@ -24,6 +24,19 @@ uint32_t RenderBuildNativeCompactPassDraws(
     RageNativeGpuVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount);
 
+/* Immutable, material-grouped vehicle geometry shared across instances/views.
+ * Initialize with {0}. The caller must release before replacing source meshes.
+ * Bounded storage; unsupported geometry or allocation failure uses the regular
+ * builder. Transforms and per-instance shading remain evaluated each frame. */
+typedef struct RageNativeMeshTemplateCache { void *state; } RageNativeMeshTemplateCache;
+void RenderNativeMeshTemplateCacheRelease(RageNativeMeshTemplateCache *cache);
+uint32_t RenderBuildNativeCachedCompactPassDraws(
+    RageNativeMeshTemplateCache *cache,
+    const RageRenderWorld *world, RageRenderPass pass, float aspect, int cpuFog,
+    RageRenderMeshLookup lookup, void *context,
+    RageNativeGpuVertex *vertices, uint32_t vertexCapacity,
+    RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount);
+
 static inline RageNativeGpuVertex RenderPackNativeGpuVertex(
     const RageNativeDrawVertex *source) {
     RageNativeGpuVertex vertex;
