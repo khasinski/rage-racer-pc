@@ -34,6 +34,13 @@ Do not replace the published 0.6.3-alpha tag or packages.
   (`build/stability-064-course1/20260907-185726-60eafe/result.txt`). It ran with
   offscreen video/dummy audio; this checks route stability, not monitor pacing,
   audible output or visual correctness.
+  The same package also completed class 1/course 2 and class 5/course 3 races,
+  each with one verified presentation restart and lifecycle teardown. The
+  course 3 race included six route-driver laps. Results:
+  `build/stability-064-course2/20260907-190207-5c756c/result.txt` and
+  `build/stability-064-course3/20260907-190436-9358d4/result.txt`. Combined with
+  course 0 evidence this exercises all four PAL courses, not all car/class
+  combinations or player-controlled physics.
   A freshly rebuilt GCC16 RelWithDebInfo game with ASan/UBSan completed one PAL
   class 1/course 0 lap and lifecycle teardown with leak detection and both
   sanitizers configured to halt on errors. No sanitizer error was emitted;
