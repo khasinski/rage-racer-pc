@@ -55,6 +55,15 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Race-restart orchestration now uses CMake with the same Unicode scenario path,
+2520-frame run, restart hooks at 2300/2400, exact count of two restart messages,
+and last smoke-stop line in scene 12. The Python baseline passed (18.65s)
+before replacement; the replacement passed (18.40s) before script removal.
+All five recently migrated runners then pass together (20.34s): restart,
+initial state, window size, persistent diagnostics and no-external-FFmpeg.
+This is compiled-toolchain orchestration of existing hooks, not input replay
+coverage or completion of the broader Python migration.
+
 The no-external-FFmpeg regression now uses CMake, preserving an empty PATH,
 Unicode/spaced temporary directories, 380 smoke frames, a 75s child deadline,
 observable FMV frames and no temporary leftovers (including hidden files).

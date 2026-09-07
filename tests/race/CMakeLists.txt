@@ -1374,10 +1374,9 @@ set_tests_properties(race_start PROPERTIES LABELS e2e)
     set_tests_properties(race_start PROPERTIES TIMEOUT 150)
     add_test(
         NAME race_restart
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_race_restart.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_race_restart.cmake
     )
 set_tests_properties(race_restart PROPERTIES LABELS e2e)
     set_tests_properties(race_restart PROPERTIES TIMEOUT 195)
