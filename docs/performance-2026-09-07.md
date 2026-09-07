@@ -109,3 +109,22 @@ UBSan, including leak detection. Game, smoke, replay and stage targets rebuilt.
 
 Next performance work should reduce remaining frame spikes and per-frame GPU
 uploads/transforms without lowering visual settings or changing game speed.
+
+### Upload cost after template reuse
+
+The completed traced lap in
+`build/perf-vehicle-upload-analysis/20260907-150024-55415c` uses the same
+settings with per-frame tracing enabled. Across 2,469 mirror-active frames,
+the combined main/mirror vertex upload averages 18,531,390 bytes per frame
+(about 2.22 GB/s at 120 FPS). CPU mapping, copying and recording the upload
+average 0.881 ms, with a 3.102 ms maximum. These timings do not measure GPU
+execution or PCIe transfer completion. Main geometry preparation averages
+1.414 ms, mirror preparation 1.296 ms, and asset warming 0.118 ms.
+
+This identifies duplicate view preparation and expanded vertex uploads as
+material remaining costs. The next structural step is GPU-resident local
+geometry with per-instance transforms shared by main, mirror and shadow draws.
+It must preserve per-camera culling, decal displacement, fog coordinates and
+generation retirement, with the current CPU builder retained as a regression
+oracle. This trace is diagnostic evidence, not a comparable untraced FPS result
+or proof that uploads explain every frame-time spike.
