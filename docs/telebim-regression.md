@@ -1,5 +1,14 @@
 # Start-line animated screen regression (open)
 
+Cause isolated: zeroing only the terrain depth-bias contribution restores the
+complete screen while retaining the roof (/tmp/rage-telebim-no-bias.ppm).
+The current vertex shader adds bias/1048576 in normalized depth; at this
+distance the terrain's positive bias can override real screen/roof separation.
+This is not a missing imported backing. The global zero-bias experiment was
+reverted and smoke rebuilt: removing every terrain bias could revive barrier
+flicker. A bounded depth-separation correction with screen and coplanar-barrier
+regressions remains required before calling the issue fixed.
+
 Latest isolation: omitting only COURSE mesh 57 from native GPU submission at
 point 288 reveals the entire black screen backing and frame, with animation
 still present. Evidence: /tmp/rage-telebim-without57.ppm. The backing therefore
