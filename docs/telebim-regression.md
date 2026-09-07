@@ -52,3 +52,11 @@ justified fix without that evidence. No cause or first-bad commit established.
 The screenshots differ in resolution and aspect; they establish a visible
 candidate, not a pixel-identical oracle. User confirmation of the exact object
 is still useful. No renderer changes have been made for this issue yet.
+
+A temporary material-load probe at point 288 confirms material 2's decoded
+256x256 atlas contains no zero-alpha texels and tens of thousands of opaque
+black texels (counts vary with palette variant). Material 6 contains 3387
+zero-alpha texels. Thus black is not universally decoded as transparent.
+These are whole-atlas counts, not UV-local samples, and do not establish the
+screen backing's identity. Probe log: /tmp/rage-telebim-material-probe.log.
+The temporary instrumentation was removed and smoke rebuilt afterward.
