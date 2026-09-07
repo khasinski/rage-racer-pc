@@ -1,5 +1,13 @@
 # Start-line animated screen regression (open)
 
+Latest isolation: omitting only COURSE mesh 57 from native GPU submission at
+point 288 reveals the entire black screen backing and frame, with animation
+still present. Evidence: /tmp/rage-telebim-without57.ppm. The backing therefore
+exists in the native scene; model 57 is the occluder. This supersedes the
+earlier missing-backing hypothesis below. The omission was reverted and smoke
+rebuilt. Next compare native model-57 geometry/depth with the classic draw,
+including SubmitCourseModel2 ordering semantics; do not ship mesh omission.
+
 Reported symptom: the roof behind the screen obscures it while approaching;
 the screen gradually emerges. Do not treat successful route completion as a
 visual regression gate for this issue.
