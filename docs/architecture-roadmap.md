@@ -55,6 +55,20 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Current Linux checkpoint after c2d414abf: full default build succeeds, including
+relinking the production/smoke/stage/replay targets after the SDL test-event
+fix. The unit/functional selection runs 402 cases: 399 pass, stream_table and
+render_stage_angles skip without explicit data, and shipped_config rejects the
+user's local diagnostics.marker_capture=true. Both skipped tests pass with
+explicit PAL/NTSC disc and stage asset paths (3.81s); the shipped-config checker
+also accepts HEAD:rage-port.ini without altering the user's file. All 236 unit
+cases pass. Six GPU cases pass on offscreen Vulkan (1.13s), and keyboard_input,
+race_restart, mirror_cars, renderer_toggle_cycles and native_render_world pass
+together (30.75s). Logs: /tmp/rage-current-stability-{build,tests,gpu,lifecycle}.log.
+This is the current developer worktree, which still contains the uncommitted
+geometry-pack prototype/registration and local configuration; it is not a clean
+release-package result or Windows/macOS runtime verification.
+
 Keyboard tap coverage now runs through CMake with the original 30-frame run,
 45-second child deadline and both PAD_START mapping/rising-edge assertions.
 The Python baseline first failed on the current Release build: the synthetic
