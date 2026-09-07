@@ -262,21 +262,28 @@ void EnterRaceScene(void) {
  * the mirror pass never animates it. */
 static void DrawRaceWorld(s32 animateScenery) {
     g_RenderState.envMode4 = g_IsEnvironmentMode4;
+    PortProfileFramePhase("scene_terrain");
     DrawTerrainCells();
+    PortProfileFramePhase("scene_course_objects");
     DrawCourseObjects();
+    PortProfileFramePhase("scene_scripted_scenery");
     if (g_GrandPrixMode != 0) {
         if (g_GrandPrixClass != GRAND_PRIX_FINAL_CLASS_INDEX) {
             DrawStartGridScenery(g_SceneTimer);
         }
         SetLightMatrix(&g_SceneLightMatrix);
         DrawScriptedScenery(animateScenery);
+        PortProfileFramePhase("scene_mirror");
         DrawRearViewMirror(g_SceneTimer);
     }
+    PortProfileFramePhase("scene_course_scenery");
     DrawCourseScenery(SeriesCourseIndex(), g_SceneTimer, animateScenery);
+    PortProfileFramePhase("scene_mirror_scenery");
     if (BeginMirrorPass() != 0) {
         DrawCourseScenery(SeriesCourseIndex(), g_SceneTimer, 0);
         EndMirrorPass();
     }
+    PortProfileFramePhase("scene");
 }
 
 static void UpdatePausedRaceScene(void) {
@@ -319,14 +326,18 @@ static void UpdatePausedRaceScene(void) {
     UpdateCamera(g_CameraViewMode,
                  GetCarRenderObject(AsRivalCar(&g_PlayerCar)));
     RequestTrackTexturePage(g_PlayerCar.trackSection);
+    PortProfileFramePhase("scene_cars");
     if (g_GrandPrixMode != 0) {
         DrawCars();
     }
+    PortProfileFramePhase("scene");
     if ((g_PlayerCar.facingBackwards != g_RaceSeries) &&
         WrongWayWarningVisible(g_WrongWayTimer)) {
         DrawWrongWayWarning();
     }
+    PortProfileFramePhase("scene_sky");
     DrawSkyBackground();
+    PortProfileFramePhase("scene");
     DrawRaceWorld(0);
 }
 
@@ -434,11 +445,15 @@ static void UpdateActiveRaceScene(void) {
                          : g_PlayerCar.trackSection;
     RequestTrackTexturePage(textureSection);
 
+    PortProfileFramePhase("scene_cars");
     if (g_GrandPrixMode != 0) {
         DrawCars();
     }
+    PortProfileFramePhase("scene_environment");
     UpdateEnvironment();
+    PortProfileFramePhase("scene_sky");
     DrawSkyBackground();
+    PortProfileFramePhase("scene");
 
     wrongWay = UpdateWrongWayState(
         g_WrongWayTimer,

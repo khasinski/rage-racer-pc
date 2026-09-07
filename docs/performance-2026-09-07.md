@@ -436,3 +436,26 @@ batched and unbatched frozen frames, in addition to residency, bounded rebuild
 and transient fallback paths. Production and smoke builds succeed; mirror cars,
 native-world and submission-recovery regressions pass (3/3). The expanded
 native-world regression passes again with the explicit unbatched comparison.
+
+### Locate the remaining legacy scene cost
+
+Optional frame tracing now splits race scene work into cars, environment,
+sky, terrain, course objects, scripted scenery, mirror and course scenery.
+Both active and paused race paths retain their execution order. With tracing
+disabled the existing profiler returns without reading the clock.
+
+In the real PAL frozen control, frame 649 spent 3.497 ms in UpdateEnvironment.
+The preceding instrumented run measured sky at 0.004 ms, terrain at 0.245 ms
+and mirror at 0.115 ms. This rules out sky geometry as the source of the large
+scene interval in that sample. Environment palette interpolation uploads only
+sixteen colors, but LoadImage enters GPU_DataWrite, which calls
+Psyz_GpuExeque: queued legacy packets are dispatched and flushed there before
+the upload. The interval therefore cannot be attributed to palette arithmetic.
+The SDL GPU backend's Draw_ExequeSync is a no-op; a GPU fence wait has NOT been
+established as the cause. Next profiling should separate queue dispatch from
+the texture upload before changing either contract.
+
+Production and smoke builds pass. Control image and semantic draw dump match
+the previous commit exactly. This instrumentation establishes a more useful
+next target; it is not an optimization or an isolated FPS result. Riftbreaker
+was still running when the measurements were taken.
