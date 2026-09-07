@@ -6,6 +6,17 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Constraints and future consumers
 
+Cache resolution checkpoint (2026-09-07): `RuntimeMeshCacheResolve` now
+distinguishes absent identities from read/decode/capacity errors, clears failed
+outputs, and retains the pointer-only compatibility wrapper. The modern cache
+provider forwards these statuses to the common precedence resolver. Index
+validation remains once per source initialization, not once per mesh lookup.
+Tests cover failed reads, corrupt bytes and ownership, retry, full-cache versus
+missing identity, resident reuse, and rejection of malformed trailing index
+records/duplicate identities before publishing a session. Rebuilt Linux cache,
+session-retry, environment-provider and render-stage-angle tests passed 4/4.
+This is not a complete disc/cache/mod catalog or Windows validation.
+
 - Preserve automatic disc import and modern startup in a clean release.
 - Keep PAL/NTSC timing, original content, and visual compatibility covered.
 - Implement runtime, tools and replacement tests in C/the compiled toolchain.

@@ -58,6 +58,17 @@ void RuntimeMeshCacheInit(RageRuntimeMeshCache *cache,
                               RageRuntimeCachedMesh *entries,
                               uint32_t capacity);
 /* Returned entry and its mesh views remain valid until cache release. */
+typedef enum RageRuntimeMeshStatus {
+    RAGE_RUNTIME_MESH_MISSING,
+    RAGE_RUNTIME_MESH_READY,
+    RAGE_RUNTIME_MESH_ERROR
+} RageRuntimeMeshStatus;
+/* Requires a previously validated, unchanged index (RuntimeIndexValidate).
+ * MISSING means no index entry. An indexed but unreadable/invalid mesh, or
+ * exhausted cache capacity, is ERROR. Output is cleared on every failure. */
+RageRuntimeMeshStatus RuntimeMeshCacheResolve(RageRuntimeMeshCache *cache,
+    uint32_t assetKey, RageRenderAssetSet assetSet,
+    const RageRuntimeCachedMesh **out);
 const RageRuntimeCachedMesh *RuntimeMeshCacheFind(
     RageRuntimeMeshCache *cache, uint32_t assetKey, RageRenderAssetSet assetSet);
 void RuntimeMeshCacheRelease(RageRuntimeMeshCache *cache);

@@ -31,6 +31,19 @@ int main(int argc, char **argv) {
     if (!SDL_SaveFile(path, "invalid\n", 8)) return 1;
     if (ModernAssetsInitRoot(argv[1]) || ModernAssetsReady()) return 2;
     if (ModernAssetsGeneration() != initialGeneration) return 31;
+    /* A valid header/first record must not hide malformed later records or
+     * duplicate identities. Reject the entire source before publishing it. */
+    static const char *invalidIndexes[] = {
+        "# rage-rmesh-index v2\n123 model mesh.rmesh mesh.rmat\n124 model ../bad.rmesh mesh.rmat\n",
+        "# rage-rmesh-index v2\n123 model mesh.rmesh mesh.rmat\n123 model other.rmesh mesh.rmat\n",
+        "# rage-rmesh-index v2\n123 model mesh.rmesh mesh.rmat\ninvalid\n"
+    };
+    for (size_t i = 0; i < sizeof(invalidIndexes) / sizeof(invalidIndexes[0]); ++i) {
+        if (!SDL_SaveFile(path, invalidIndexes[i], strlen(invalidIndexes[i]))) return 48;
+        if (ModernAssetsInitRoot(argv[1]) || ModernAssetsReady() ||
+            ModernAssetsGeneration() != initialGeneration ||
+            ModernAssetsCachedMeshCount() != 0) return 49;
+    }
     if (!SDL_SaveFile(path, index, sizeof(index) - 1)) return 3;
     if (SDL_snprintf(environmentPath, sizeof(environmentPath),
                      "%s/environment-index.txt", argv[1]) >= (int)sizeof(environmentPath)) return 10;

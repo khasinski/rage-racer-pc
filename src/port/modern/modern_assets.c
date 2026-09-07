@@ -458,10 +458,15 @@ static RageResourceStatus ResolveImportedMesh(void *context) {
 static RageResourceStatus ResolveCachedMesh(void *context) {
     MeshProviderRequest *request=context;
     if (s_source == MODERN_ASSET_SOURCE_DISC)return RAGE_RESOURCE_MISSING;
-    request->mesh=request->residentOnly
-        ? RuntimeMeshCachePeek(&s_cache,request->instance->assetKey,request->instance->assetSet)
-        : RuntimeMeshCacheFind(&s_cache,request->instance->assetKey,request->instance->assetSet);
-    return request->mesh?RAGE_RESOURCE_READY:RAGE_RESOURCE_ERROR;
+    if (request->residentOnly) {
+        request->mesh = RuntimeMeshCachePeek(&s_cache,
+            request->instance->assetKey, request->instance->assetSet);
+        return request->mesh ? RAGE_RESOURCE_READY : RAGE_RESOURCE_MISSING;
+    }
+    RageRuntimeMeshStatus status = RuntimeMeshCacheResolve(&s_cache,
+        request->instance->assetKey, request->instance->assetSet, &request->mesh);
+    return status == RAGE_RUNTIME_MESH_READY ? RAGE_RESOURCE_READY :
+        status == RAGE_RUNTIME_MESH_MISSING ? RAGE_RESOURCE_MISSING : RAGE_RESOURCE_ERROR;
 }
 static const RageRuntimeCachedMesh *ResolveBaseMesh(const RageRenderMeshInstance *instance,int residentOnly) {
     MeshProviderRequest request={instance,NULL,residentOnly};

@@ -89,34 +89,45 @@ const RageRuntimeCachedMesh *RuntimeMeshCachePeek(const RageRuntimeMeshCache *ca
     return NULL;
 }
 
-const RageRuntimeCachedMesh *RuntimeMeshCacheFind(
-    RageRuntimeMeshCache *cache, uint32_t assetKey, RageRenderAssetSet assetSet) {
+RageRuntimeMeshStatus RuntimeMeshCacheResolve(
+    RageRuntimeMeshCache *cache, uint32_t assetKey, RageRenderAssetSet assetSet,
+    const RageRuntimeCachedMesh **out) {
     RageRuntimeAssetLocation location;
     const void *bytes;
     size_t size;
 
+    if (out == NULL) return RAGE_RUNTIME_MESH_ERROR;
+    *out = NULL;
     if (cache == NULL || cache->entries == NULL ||
-        cache->count > cache->capacity) return NULL;
+        cache->count > cache->capacity) return RAGE_RUNTIME_MESH_ERROR;
     const RageRuntimeCachedMesh *resident = RuntimeMeshCachePeek(cache, assetKey, assetSet);
-    if (resident != NULL) return resident;
+    if (resident != NULL) { *out = resident; return RAGE_RUNTIME_MESH_READY; }
+    if (!RuntimeIndexFind(cache->indexText, cache->indexSize, assetKey,
+                         assetSet, &location)) return RAGE_RUNTIME_MESH_MISSING;
     if (cache->count >= cache->capacity || cache->readFile == NULL ||
-        !RuntimeIndexFind(cache->indexText, cache->indexSize, assetKey,
-                              assetSet, &location) ||
         !cache->readFile(cache->context, location.meshPath,
                          location.meshPathLength, &bytes, &size)) {
-        return NULL;
+        return RAGE_RUNTIME_MESH_ERROR;
     }
     RageRuntimeCachedMesh pending = {0};
     if (!RuntimeCachedMeshAdopt(&pending, bytes, size,
                                 cache->freeFile, cache->context)) {
         if (cache->freeFile != NULL) cache->freeFile(cache->context, bytes);
-        return NULL;
+        return RAGE_RUNTIME_MESH_ERROR;
     }
     pending.assetKey = assetKey;
     pending.assetSet = assetSet;
     pending.location = location;
     cache->entries[cache->count] = pending;
-    return &cache->entries[cache->count++];
+    *out = &cache->entries[cache->count++];
+    return RAGE_RUNTIME_MESH_READY;
+}
+
+const RageRuntimeCachedMesh *RuntimeMeshCacheFind(
+    RageRuntimeMeshCache *cache, uint32_t assetKey, RageRenderAssetSet assetSet) {
+    const RageRuntimeCachedMesh *result = NULL;
+    RuntimeMeshCacheResolve(cache, assetKey, assetSet, &result);
+    return result;
 }
 
 void RuntimeMeshCacheRelease(RageRuntimeMeshCache *cache) {

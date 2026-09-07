@@ -9,6 +9,7 @@ static int failures;
 static int reads, frees;
 static int readCalls;
 static int failNextRead;
+static int corruptNextRead;
 #define EXPECT(value) do { if (!(value)) { failures++; \
     fprintf(stderr, "%s:%d: expectation failed: %s\n", __FILE__, __LINE__, #value); \
 } } while (0)
@@ -34,6 +35,7 @@ static int read_file(void *context, const char *path, size_t pathLength,
     write_u32(mesh + 8, 1); write_u32(mesh + 12, 1);
     write_u32(mesh + 16, 1); write_u32(mesh + 20, 6);
     write_u32(mesh + 24, 0); write_u32(mesh + 28, 6);
+    if (corruptNextRead) { mesh[0] = 0; corruptNextRead = 0; }
     *bytes = mesh; *size = sizeof(mesh); reads++;
     return 1;
 }
@@ -106,6 +108,55 @@ static void test_failed_prepare(void) {
         EXPECT(RuntimeMeshCachePeek(&cache, 10, RAGE_RENDER_ASSET_MODEL_BANK) == mesh);
     EXPECT(readCalls == before + 2);
     RuntimeMeshCacheRelease(&cache);
+}
+
+static void test_resolve_status(void) {
+    static const char index[] =
+        "# rage-rmesh-index v2\n"
+        "10 model models/a.rmesh models/a.rmat\n"
+        "11 model models/a.rmesh models/a.rmat\n";
+    RageRuntimeCachedMesh entries[1];
+    RageRuntimeMeshCache cache;
+    const RageRuntimeCachedMesh *result = entries;
+    int calls = readCalls, released = frees;
+    EXPECT(RuntimeIndexValidate(index, sizeof(index) - 1, NULL));
+    RuntimeMeshCacheInit(&cache, index, sizeof(index) - 1, read_file,
+                         free_file, NULL, entries, 1);
+    EXPECT(RuntimeMeshCacheResolve(NULL, 10, RAGE_RENDER_ASSET_MODEL_BANK,
+                                   &result) == RAGE_RUNTIME_MESH_ERROR);
+    EXPECT(result == NULL);
+    EXPECT(RuntimeMeshCacheResolve(&cache, 10, RAGE_RENDER_ASSET_MODEL_BANK,
+                                   NULL) == RAGE_RUNTIME_MESH_ERROR);
+    result = entries;
+    EXPECT(RuntimeMeshCacheResolve(&cache, 99, RAGE_RENDER_ASSET_MODEL_BANK,
+                                   &result) == RAGE_RUNTIME_MESH_MISSING);
+    EXPECT(result == NULL && readCalls == calls);
+    failNextRead = 1;
+    result = entries;
+    EXPECT(RuntimeMeshCacheResolve(&cache, 10, RAGE_RENDER_ASSET_MODEL_BANK,
+                                   &result) == RAGE_RUNTIME_MESH_ERROR);
+    EXPECT(result == NULL && cache.count == 0 && frees == released);
+    corruptNextRead = 1;
+    result = entries;
+    EXPECT(RuntimeMeshCacheResolve(&cache, 10, RAGE_RENDER_ASSET_MODEL_BANK,
+                                   &result) == RAGE_RUNTIME_MESH_ERROR);
+    EXPECT(result == NULL && cache.count == 0 && frees == released + 1);
+    EXPECT(RuntimeMeshCacheResolve(&cache, 10, RAGE_RENDER_ASSET_MODEL_BANK,
+                                   &result) == RAGE_RUNTIME_MESH_READY);
+    EXPECT(result == entries && cache.count == 1);
+    calls = readCalls;
+    EXPECT(RuntimeMeshCacheResolve(&cache, 10, RAGE_RENDER_ASSET_MODEL_BANK,
+                                   &result) == RAGE_RUNTIME_MESH_READY);
+    EXPECT(result == entries && readCalls == calls);
+    EXPECT(RuntimeMeshCacheResolve(&cache, 11, RAGE_RENDER_ASSET_MODEL_BANK,
+                                   &result) == RAGE_RUNTIME_MESH_ERROR);
+    EXPECT(result == NULL && cache.count == 1 && readCalls == calls);
+    result = entries;
+    EXPECT(RuntimeMeshCacheResolve(&cache, 99, RAGE_RENDER_ASSET_MODEL_BANK,
+                                   &result) == RAGE_RUNTIME_MESH_MISSING);
+    EXPECT(result == NULL && readCalls == calls);
+    RuntimeMeshCacheRelease(&cache);
+    EXPECT(frees == released + 2);
 }
 
 static void test_decoded_geometry_lifetime(void) {
@@ -217,6 +268,7 @@ int main(void) {
     RuntimeMeshCacheRelease(NULL);
     test_ownership();
     test_failed_prepare();
+    test_resolve_status();
     test_decoded_geometry_lifetime();
     {
         static const char unsafeIndex[] = "10 model ../a.rmesh models/a.rmat\n";
