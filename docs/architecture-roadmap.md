@@ -55,6 +55,12 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+The compiled-mod CI path filter now includes launcher/native/mod_snapshot.h
+for both pushes and PRs. The standalone Release suite passes all 11 tests in
+a fresh Linux build (0.04s) and the updated Windows VM contract workspace
+(5.68s), including the batch mutation test. Hosted CI/macOS execution remains
+unverified; the filter edit itself does not establish those platform results.
+
 The batch snapshot command now has a deterministic compiled regression: a
 test-only wrapper executes both real copies, then changes the first source
 after the second copy. The production JSON/stdin command accepts the unchanged
