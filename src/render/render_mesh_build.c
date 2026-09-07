@@ -470,10 +470,16 @@ static uint32_t RenderBuildNativeDrawsFiltered(
             uint32_t corner;
             int valid = 1;
             if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
-                if ((offset % 6u) == 0)
-                    terrainQuadHidden = TerrainQuadIsHidden(
-                        world, &basis, &viewTransform, mesh, first + offset,
-                        terrainPositions, &terrainPositionsValid);
+                if ((offset % 6u) == 0) {
+                    terrainQuadHidden = 0;
+                    terrainPositionsValid = 0;
+                    /* Global indices can continue into the next mesh range.
+                     * They must not complete this range's trailing triangle. */
+                    if (count - offset >= 6)
+                        terrainQuadHidden = TerrainQuadIsHidden(
+                            world, &basis, &viewTransform, mesh, first + offset,
+                            terrainPositions, &terrainPositionsValid);
+                }
                 if (terrainQuadHidden) continue;
             }
             for (corner = 0; corner < 3; corner++) {

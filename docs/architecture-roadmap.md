@@ -50,6 +50,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Terrain quad culling now checks the current mesh range before reading six
+indices. A valid two-range RMESH regression failed before the fix: a trailing
+triangle was wrongly hidden using indices from the next range. Both independent
+triangles now survive. Mesh, native-world and mirror gates pass, as do ASan/UBSan
+mesh tests. The stage-angle gate was rerun after explicitly relinking
+rage-render-stage against the updated library and passes (3.77s); the earlier
+stage result from its stale executable is not evidence for this fix.
+
 Terrain shading reuses the snapped world positions already computed for the
 same authored quad's visibility check. The six-position storage is local to an
 instance and refreshed every quad; non-quad/incomplete inputs publish no cached

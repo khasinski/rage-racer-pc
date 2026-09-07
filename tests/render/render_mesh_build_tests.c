@@ -389,6 +389,43 @@ static void test_native_draw_builder_culls_terrain_per_authored_quad(void) {
     EXPECT_EQ(0, spanCount);
 }
 
+static void test_terrain_culling_respects_mesh_range(void) {
+    unsigned char bytes[220] = {0};
+    const float positions[4][3] = {
+        {-1,-1,-10}, {1,-1,-10}, {-1,1,-10}, {1,1,-10}};
+    const uint32_t indices[6] = {0,2,1, 1,2,3};
+    RageRuntimeMesh mesh;
+    RageRenderMeshInstance storage[1] = {0};
+    RageRenderWorld world;
+    RageNativeDrawVertex vertices[6];
+    RageNativeDrawSpan spans[1];
+    uint32_t spanCount;
+    memcpy(bytes, "RRMESH1", 7);
+    write_u32(bytes + 8, 1); write_u32(bytes + 12, 2);
+    write_u32(bytes + 16, 4); write_u32(bytes + 20, 6);
+    write_u32(bytes + 24, 0); write_u32(bytes + 28, 3);
+    write_u32(bytes + 32, 6);
+    for (unsigned i = 0; i < 4; ++i) {
+        memcpy(bytes + 36 + i * 40, positions[i], sizeof(positions[i]));
+        bytes[36 + i * 40 + 27] = 255;
+    }
+    for (unsigned i = 0; i < 6; ++i) write_u32(bytes + 196 + i * 4, indices[i]);
+    EXPECT_EQ(1, RuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+    RenderWorldInit(&world, storage, 1);
+    world.camera.verticalFovDegrees = 90;
+    world.camera.nearPlane = 1; world.camera.farPlane = 100;
+    world.instanceCount = 1;
+    storage[0].assetSet = RAGE_RENDER_ASSET_TERRAIN;
+    storage[0].transform.scale = (RageRenderVec3){1,1,1};
+    /* The remaining global indices form a back-facing quad, but lie outside
+     * this mesh range. Its independent triangle must reach GPU clipping. */
+    EXPECT_EQ(3, RenderBuildNativeDraws(&world, 1, test_mesh_lookup, &mesh,
+        vertices, 6, spans, 1, &spanCount));
+    storage[0].mesh = 1;
+    EXPECT_EQ(3, RenderBuildNativeDraws(&world, 1, test_mesh_lookup, &mesh,
+        vertices, 6, spans, 1, &spanCount));
+}
+
 static void test_terrain_position_reuse_stops_at_incomplete_quad(void) {
     unsigned char bytes[228] = {0};
     const float positions[4][3] = {
@@ -1319,6 +1356,7 @@ static void test_position_only_triangle_geometry(void) {
 }
 
 int main(void) {
+    test_terrain_culling_respects_mesh_range();
     test_terrain_position_reuse_stops_at_incomplete_quad();
     test_position_only_triangle_geometry();
     test_instance_transform_contract();
