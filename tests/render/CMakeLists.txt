@@ -1771,3 +1771,9 @@ endif()
 target_link_libraries(rmesh_replace_tests PRIVATE rage-rmesh)
 add_test(NAME rmesh_replace COMMAND rmesh_replace_tests)
 set_tests_properties(rmesh_replace PROPERTIES LABELS unit)
+
+add_executable(vram_sample_mask_tests vram_sample_mask_tests.c)
+target_include_directories(vram_sample_mask_tests PRIVATE
+    ${PROJECT_SOURCE_DIR}/external/psyz/psyz/src/platform)
+add_test(NAME vram_sample_mask COMMAND vram_sample_mask_tests)
+set_tests_properties(vram_sample_mask PROPERTIES LABELS unit)

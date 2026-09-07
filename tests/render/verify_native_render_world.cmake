@@ -12,13 +12,14 @@ function(run name)
     set(correction_env)
     if(name STREQUAL "geometry-512" OR name STREQUAL "correction-reference")
         list(APPEND correction_env RAGE_GPU_GP0_TRACE_SCENE=12 RAGE_GPU_GP0_TRACE_TIMER=430
-            "RAGE_GPU_GP0_TRACE_VRAM=${root}/${name}.vram")
+            "RAGE_GPU_GP0_TRACE_VRAM=${root}/${name}.vram" PSYZ_VRAM_BATCH_TRACE=1)
     endif()
     if(name STREQUAL "correction-reference")
-        list(APPEND correction_env PSYZ_REFERENCE_CORRECTION_PIXELS=1)
+        list(APPEND correction_env PSYZ_REFERENCE_CORRECTION_PIXELS=1
+            PSYZ_REFERENCE_FULL_VRAM_BATCH=1)
     endif()
     execute_process(COMMAND "${CMAKE_COMMAND}" -E env SDL_AUDIODRIVER=dummy
-        --unset=PSYZ_REFERENCE_CORRECTION_PIXELS ${correction_env}
+        --unset=PSYZ_REFERENCE_CORRECTION_PIXELS --unset=PSYZ_REFERENCE_FULL_VRAM_BATCH ${correction_env}
         "RAGE_PORT_MODERN_ASSETS=${root}" RAGE_PORT_MODERN_ASSET_TRACE=1
         "RAGE_PORT_MODS_DIRECTORY=${root}/mod" "${GAME}" ${ARGN}
         WORKING_DIRECTORY "${SOURCE}" TIMEOUT 105 RESULT_VARIABLE result
@@ -69,6 +70,7 @@ foreach(limit 512 0 1)
     require("scene=12 timer=431")
     require("native draws frame=[0-9]+ draws=[1-9][0-9]* vertices=[1-9][0-9]* view=mirror")
     if(limit EQUAL 512)
+        require("vram-batch-sync copy=0 bytes=0")
         require("resident_draws=[1-9][0-9]* local_fallbacks=0")
         string(REGEX MATCHALL "native-world-upload [^\r\n]+" world_uploads "${log}")
         if(NOT world_uploads)

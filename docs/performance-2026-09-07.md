@@ -611,3 +611,69 @@ The final version preserving flush budgets measured 3.763 ms reference versus
 3.990 ms candidate at that frame. This does not confirm a frame-time benefit.
 The verified gain is reduced emitted vertex/index volume for eligible runs;
 the number and ordering of flushes intentionally remain the same.
+
+### Skip batch VRAM copies when sampled pages remain current
+
+The SDL GPU backend now tracks native VRAM writes in an independent 32x32-word
+tile mask. Before a textured batch, it checks every referenced texture page
+and indexed palette against this mask. A clean sampling footprint reuses the
+existing mirror; any overlap still copies the complete 2 MiB VRAM. Dirty tiles
+persist across unrelated batches and readback-cache operations and are cleared
+only by a full mirror copy. Texture windows are covered by conservatively
+checking whole pages. All existing upload, clear, move, framebuffer draw and
+scaled-to-native write observers feed the mask.
+
+This does not restore the old partial dirty-rectangle copy removed in PSY-Z
+579f8eb9. Source pages and CLUTs remain intact in the mirror; a dirty sampling
+dependency triggers the full original copy. Device creation starts fully dirty,
+explicit full snapshots establish coherence, and exposing the mutable live
+VRAM handle disables skipping for that device. The snapshot handle is documented
+as borrowed for sampling only. PSYZ_REFERENCE_FULL_VRAM_BATCH forces the original
+batch-copy behavior; PSYZ_VRAM_BATCH_TRACE reports copied/skipped batch bytes.
+
+The C regression passes 10,660,864 shader-address checks across texture depths,
+pages and CLUTs, plus tile retention, clipping and extreme integer inputs.
+ASan/UBSan passes. Native-world compares optimized VRAM/images against original
+pixel correction and full batch copies and requires actual skipped copies.
+That fixture recorded 7 copied and 14,872 skipped textured batches versus
+14,879 copied and zero skipped reference batches. These counters exclude the
+modern renderer's explicit full-frame snapshots.
+
+Production and smoke builds pass. Renderer toggle, native-world, submission
+recovery, retained texture history, sky identity, track texture snapshot and
+sample-mask regressions pass (7/7, after building two previously absent test
+executables). The real PAL VRAM, modern image and draw dump match exactly.
+Frame 648 measured 2.456 ms reference versus 2.433 ms candidate in environment
+work; this single pair under competing load does not establish a frame-time
+speedup. The proven reduction is in full batch texture-copy commands and bytes.
+
+### Free-GPU moving measurements after the sampling-mask change
+
+The user confirmed the competing game had stopped. Three sequential real-window
+PAL class-1/course-0, one-lap autopilot runs completed with the original local
+INI, prewarm enabled, Wayland, detected 120 Hz, VSync and a 1706x960 modern target.
+The two timing runs disabled per-frame tracing. Metrics below exclude only the
+first startup profile window and aggregate the remaining 34 complete 120-frame
+windows using total frames divided by their summed durations.
+
+| Batch sampling mode | Mean FPS | Slowest 120-frame window FPS | Worst window p95 ms | Maximum interval ms |
+| --- | ---: | ---: | ---: | ---: |
+| Dependency mask | 117.804 | 112.010 | 16.154 | 31.821 |
+| Original full copies | 118.059 | 112.660 | 15.242 | 27.026 |
+
+Artifacts: `build/perf-120hz-vram-sample/20260907-173916-3487d3`
+and `build/perf-120hz-full-copy-reference/20260907-174123-c0dc1f`.
+Both use the same executable; the reference enables
+`PSYZ_REFERENCE_FULL_VRAM_BATCH=1`. These runs do not demonstrate an FPS gain
+from eliminating redundant batch copies. Stable 120 FPS is not achieved.
+Reported intervals measure application presentation timing, not physical scanout.
+
+A separate diagnostic lap at
+`build/perf-120hz-phase-clean/20260907-174020-ad02cc` identifies
+`scene_environment` as the largest measured non-wait game phase: mean 5.226 ms,
+maximum 17.370 ms over 853 calls. Terrain averages 0.433 ms. This phase includes
+`UpdateEnvironment()` and its palette upload, which also executes queued legacy
+GPU commands; the number must not be attributed to palette interpolation alone.
+Tracing adds overhead, so this lap is for attribution, not a headline FPS score.
+The next performance work should target this synchronous legacy dispatch and
+presentation stalls, with unchanged PAL timing and image/VRAM regression oracles.
