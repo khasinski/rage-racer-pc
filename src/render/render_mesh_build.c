@@ -273,12 +273,31 @@ static int TerrainQuadIsHidden(
            !TerrainTriangleFacesCamera(world, viewTransform, triangles[1]);
 }
 
+/* Camera-only values; never retain them in an asset or instance cache. */
+typedef struct RageInstanceFrustum {
+    float tanX, tanY, horizontalScale, verticalScale;
+} RageInstanceFrustum;
+
+static RageInstanceFrustum PrepareInstanceFrustum(
+    const RageRenderWorld *world, float aspect) {
+    RageInstanceFrustum result;
+    float tanY = tanf(Radians(world->camera.verticalFovDegrees) * 0.5f);
+    float tanX = tanY * aspect;
+    /* Preserve the guard band and operation order of the per-instance test. */
+    result.tanX = tanX * 1.08f;
+    result.tanY = tanY * 1.08f;
+    result.horizontalScale = sqrtf(1.0f + result.tanX * result.tanX);
+    result.verticalScale = sqrtf(1.0f + result.tanY * result.tanY);
+    return result;
+}
+
 static int InstanceOutsideFrustum(const RageRenderWorld *world,
                                       const RageRenderViewTransform *viewTransform,
+                                      const RageInstanceFrustum *frustum,
                                       const RageTransformBasis *basis,
                                       const RageRuntimeMesh *mesh,
-                                      uint32_t meshIndex, float aspect) {
-    float center[3], radius, maxScale, tanY, tanX, depth;
+                                      uint32_t meshIndex) {
+    float center[3], radius, maxScale, depth;
     float horizontalRadius, verticalRadius;
     RageRenderVec3 worldCenter, view;
     if (!RuntimeMeshBounds(mesh, meshIndex, center, &radius)) return 0;
@@ -290,22 +309,18 @@ static int InstanceOutsideFrustum(const RageRenderWorld *world,
     radius *= maxScale;
     if (depth + radius < world->camera.nearPlane ||
         depth - radius > world->camera.farPlane) return 1;
-    tanY = tanf(Radians(world->camera.verticalFovDegrees) * 0.5f);
-    tanX = tanY * aspect;
     /* Keep a small guard band around the visible frustum. In a low cockpit
      * camera the road can cross the side plane between logic ticks on a
      * sharp bend; exact-edge culling otherwise exposes a one-cell notch for
      * a frame before the interpolated camera catches up. */
-    tanX *= 1.08f;
-    tanY *= 1.08f;
     /* Test the sphere against the actual side planes. Comparing its
      * axis-aligned radius with the frustum width at the sphere centre is not
      * conservative: a large nearby terrain cell can cross a side plane even
      * when its centre is well outside it. */
-    horizontalRadius = radius * sqrtf(1.0f + tanX * tanX);
-    verticalRadius = radius * sqrtf(1.0f + tanY * tanY);
-    return fabsf(view.x) > depth * tanX + horizontalRadius ||
-           fabsf(view.y) > depth * tanY + verticalRadius;
+    horizontalRadius = radius * frustum->horizontalScale;
+    verticalRadius = radius * frustum->verticalScale;
+    return fabsf(view.x) > depth * frustum->tanX + horizontalRadius ||
+           fabsf(view.y) > depth * frustum->tanY + verticalRadius;
 }
 
 /* These values belong to an instance, not its immutable source vertices or
@@ -433,12 +448,14 @@ static uint32_t RenderBuildNativeDrawsFiltered(
      * Cache the base vertex BEFORE per-triangle normals/displacement. */
     RagePreparedVertexCacheEntry vertexCache[256] = {0};
     RageRenderViewTransform viewTransform;
+    RageInstanceFrustum frustum;
     if (spanCount != NULL) *spanCount = 0;
     if (world == NULL || lookup == NULL || (vertices == NULL && compactVertices == NULL) || spans == NULL ||
         spanCount == NULL || !isfinite(aspect) || aspect <= 0.0f ||
         world->instanceCount > world->instanceCapacity ||
         (world->instanceCount != 0 && world->instances == NULL)) return 0;
     viewTransform = RenderPrepareView(&world->camera);
+    frustum = PrepareInstanceFrustum(world, aspect);
     for (instanceIndex = 0; instanceIndex < world->instanceCount; instanceIndex++) {
         const RageRenderMeshInstance *instance = &world->instances[instanceIndex];
         const RageRuntimeMesh *mesh;
@@ -458,8 +475,8 @@ static uint32_t RenderBuildNativeDrawsFiltered(
         }
         basis = RenderPrepareInstanceTransform(&instance->transform);
         if ((instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL) &&
-            InstanceOutsideFrustum(world, &viewTransform, &basis, mesh,
-                                       instance->mesh, aspect)) continue;
+            InstanceOutsideFrustum(world, &viewTransform, &frustum, &basis, mesh,
+                                       instance->mesh)) continue;
         instanceState = PrepareInstanceState(instance);
         for (offset = 0; offset + 2 < count; offset += 3) {
             RageNativeDrawVertex triangle[3];

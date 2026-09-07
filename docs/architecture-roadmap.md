@@ -55,6 +55,16 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Camera frustum side-plane coefficients are now prepared once per draw-build
+invocation rather than recomputing one tangent and two square roots for each
+instance reaching the side-plane test. The original guard band and floating
+operation order are retained; coefficients are not cached in mesh assets.
+The guard-band regression now rebuilds the same world at narrow/wide aspects
+and checks rejection/visibility. Rebuilt native_render_world, stage-angle and
+mesh tests pass (8.76s); the expanded mesh tests also pass separately and under
+Linux ASan/UBSan. This reduces repeated camera-only work, not CPU vertex
+expansion or GPU upload; no frame-rate benefit has yet been measured.
+
 Instance frustum culling now consumes the same prepared instance transform as
 vertex expansion, removing a second Euler trigonometry/quaternion preparation
 for each surviving cull-enabled instance. The mesh regression also checks a
