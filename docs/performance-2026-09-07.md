@@ -505,6 +505,24 @@ work at 3.331 ms versus the earlier 3.497 ms sample; competing load prevents
 attributing that difference to this change. The 120 FPS target remains open.
 Native-world, renderer-toggle and texture-sample regressions pass (3/3).
 
+### Prepare common correction-pixel attributes before copying vertices
+
+The compatibility pixel emitter now sets UV/color on one local vertex before
+replicating it four times, then sets the four positions. It previously copied
+the source four times and overwrote the shared attributes separately. Buffer
+reservation, topology, ordering and every output attribute are unchanged.
+
+A temporary compiled C harness extracted both emitter implementations and
+compared complete vertex/index bytes for 100,000 varying inputs, including
+untextured pixels and changing offsets. All matched. Alternating ten-million-
+pixel runs at GCC 16.2 -O3 measured baseline 62.393/56.716/56.683 ms and candidate
+51.106/50.645/50.762 ms, with equal checksums. The local harness is
+build/pixel-template-bench.c; this is a CPU emitter measurement, not FPS.
+Production and smoke builds pass, and the PAL image and draw dump match exactly.
+Frame 649 environment time was 3.418 ms, which does not establish improvement
+over the preceding 3.382 ms sample under competing load.
+Renderer-toggle and native-world regressions pass (2/2).
+
 ### Solve triangle coverage once per long scanline
 
 Flat-textured quad correction now intersects the three integer edge inequalities
