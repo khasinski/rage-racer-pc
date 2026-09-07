@@ -108,6 +108,15 @@ int main(int argc, char **argv) {
     if (!SDL_SaveFile(path, index, sizeof(index) - 1)) return 18;
     if (!ModernAssetsInit() || !ModernAssetsReady()) return 19;
     if (!ModernAssetsInit()) return 20;
+    uint64_t configuredGeneration = ModernAssetsGeneration();
+    if (snprintf(setting, sizeof(setting), "modern.assets=%s", secondRoot) >= (int)sizeof(setting) ||
+        !RuntimeConfigInit(3, configArgs)) return 45;
+    if (ModernAssetsInit() || !ModernAssetsReady() ||
+        ModernAssetsGeneration() != configuredGeneration) return 46;
+    strcpy(setting, "modern.assets=disc");
+    if (!RuntimeConfigInit(3, configArgs) || ModernAssetsInit() ||
+        !ModernAssetsReady() || ModernAssetsGeneration() != configuredGeneration)
+        return 47;
     ModernAssetsShutdown();
     /* The valid second source becomes available only after retiring the
      * first session. No cache entry may survive merely because IDs match. */

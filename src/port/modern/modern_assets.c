@@ -360,9 +360,16 @@ invalidEnvironment:
 
 int ModernAssetsInit(void) {
     const char *configured;
-    if (s_source != MODERN_ASSET_SOURCE_NONE) return 1;
-    ModernAssetsInitModProvider();
     configured = RuntimeConfigGetForced("modern.assets");
+    if (s_source != MODERN_ASSET_SOURCE_NONE) {
+        if (configured == NULL || configured[0] == '\0') return 1;
+        if (strcmp(configured, "disc") != 0)
+            return ModernAssetsInitRoot(configured);
+        if (s_source == MODERN_ASSET_SOURCE_DISC) return 1;
+        fprintf(stderr, "rage-port: cannot switch an active native cache session to disc assets\n");
+        return 0;
+    }
+    ModernAssetsInitModProvider();
     /* Normal startup always follows the selected disc. A prebuilt cache has
      * no verified disc/importer identity, so it is an explicit developer
      * override only, never an implicitly discovered source. */
