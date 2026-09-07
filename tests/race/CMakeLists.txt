@@ -1356,10 +1356,9 @@ set_tests_properties(track_start PROPERTIES LABELS e2e)
     set_tests_properties(track_start PROPERTIES TIMEOUT 165)
     add_test(
         NAME initial_state
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_initial_state.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DSOURCE=${CMAKE_SOURCE_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_initial_state.cmake
     )
 set_tests_properties(initial_state PROPERTIES LABELS e2e)
     set_tests_properties(initial_state PROPERTIES TIMEOUT 60)

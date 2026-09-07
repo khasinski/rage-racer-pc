@@ -55,6 +55,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Persistent diagnostic-log and initial-state regressions now run through CMake
+instead of Python. Both original runners passed before replacement; the CMake
+runners retain environment settings, subprocess deadlines, exit-status checks
+and required log strings and pass together (0.31s). Diagnostic artifacts are
+retained under the build directory for inspection. Only the two superseded
+Python scripts were removed after checking for remaining source references;
+other Python migrations and broader platform verification remain open.
+
 The compiled-mod CI path filter now includes launcher/native/mod_snapshot.h
 for both pushes and PRs. The standalone Release suite passes all 11 tests in
 a fresh Linux build (0.04s) and the updated Windows VM contract workspace

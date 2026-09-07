@@ -625,10 +625,10 @@ if(TARGET rage-racer-smoke)
     set_tests_properties(runtime_config PROPERTIES LABELS e2e TIMEOUT 180)
     add_test(
         NAME diagnostic_log
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_diagnostic_log.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND}
+            -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_diagnostic_log.cmake
     )
 set_tests_properties(diagnostic_log PROPERTIES LABELS e2e)
     set_tests_properties(diagnostic_log PROPERTIES TIMEOUT 60)
