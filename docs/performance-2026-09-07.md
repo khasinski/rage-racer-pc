@@ -575,3 +575,39 @@ sample, which is not an isolated performance comparison. Temporary per-quad
 timing was removed. The remaining path still emits individual compatibility
 pixels; this stage removes redundant decisions, not that output volume.
 Native-world, renderer-toggle and texture-sample regressions pass (3/3).
+
+### Emit unit-step correction rows as rectangles
+
+Always-corrected flat-textured rows with a positive unit U step and constant
+V/color now emit one rectangle per run instead of one per pixel. Runs stop at
+triangle ownership boundaries, clipping, UV byte wrap and the original buffer
+flush boundary. Fractional/negative slopes, changing V/color and Gouraud retain
+individual pixels. The existing shader and vertex ABI are unchanged. Setting
+PSYZ_REFERENCE_CORRECTION_PIXELS restores individual correction pixels for A/B
+validation.
+
+Saved vertex/index counts are tracked as a logical buffer budget. A run may
+compress geometry but cannot postpone the original flush, since subsequent
+primitives may sample prior framebuffer writes. Buffer reset clears both real
+and saved counts; a failed flush with no room terminates correction rather
+than creating a zero-length run.
+
+The compiled span test covers all 256 starting U values and lengths 1..512,
+checks generated UV/RGB values and wrap boundaries, and rejects negative or
+fractional U steps and varying V/color. Its existing 5,079,264 reference
+comparisons still pass, as does ASan/UBSan. The native-world regression now
+compares the reference/candidate full VRAM, modern image and semantic draw dump.
+Native-world, renderer-toggle, submit recovery and span tests pass (4/4).
+
+Real PAL captures match at native VRAM resolution. During validation of the
+row geometry, a temporary probe also compared the complete 4x scaled VRAM
+textures: both 33,554,432-byte RGBA files were identical. The probe, temporary
+scale override and all temporary GPU capture code were removed before the
+final build. Metal hardware remains untested; the 4x check used SDL GPU Vulkan.
+An early variant measured 3.256 ms reference versus 2.576 ms candidate in the
+environment interval at frame 648, before preserving logical flush budgets.
+This is an exploratory sample under competing load, not a measured FPS gain.
+The final version preserving flush budgets measured 3.763 ms reference versus
+3.990 ms candidate at that frame. This does not confirm a frame-time benefit.
+The verified gain is reduced emitted vertex/index volume for eligible runs;
+the number and ordering of flushes intentionally remain the same.

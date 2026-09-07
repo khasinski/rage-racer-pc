@@ -49,6 +49,33 @@ static unsigned next_value(void) {
     return state;
 }
 int main(void) {
+    for (int first = 0; first < 256; ++first) {
+        for (int remaining = 1; remaining <= 512; ++remaining) {
+            PreparedTextureSpan p = {.x_start = -13, .fixed_u = first * 65536 + 32767,
+                .fixed_v = 77 * 65536, .fixed_r = 43 * 65536,
+                .fixed_g = 89 * 65536, .fixed_b = 255 * 65536, .step_u = 65536};
+            int run = TextureSpanUnitRun(&p, first, remaining);
+            if (run < 1 || run > remaining) return 1;
+            for (int i = 0; i < run; ++i) {
+                u16 u,v; u8 r,g,b;
+                TextureSpanSample(&p,p.x_start+i,&u,&v,&r,&g,&b);
+                if (u != first+i || v != 77 || r != 43 || g != 89 || b != 255) return 1;
+            }
+            if (run < remaining) {
+                u16 u,v;
+                TextureSpanSampleUV(&p,p.x_start+run,&u,&v);
+                if (u != 0) return 1;
+            }
+            p.step_u = -65536;
+            if (TextureSpanUnitRun(&p, first, remaining) != 1) return 1;
+            p.step_u = 65535;
+            if (TextureSpanUnitRun(&p, first, remaining) != 1) return 1;
+            p.step_u = 65536; p.step_v = 1;
+            if (TextureSpanUnitRun(&p, first, remaining) != 1) return 1;
+            p.step_v = 0; p.step_r = 1;
+            if (TextureSpanUnitRun(&p, first, remaining) != 1) return 1;
+        }
+    }
     unsigned long samples = 0;
     for (int iteration = 0; iteration < 10000; ++iteration) {
         RasterTextureSpan s = {0};

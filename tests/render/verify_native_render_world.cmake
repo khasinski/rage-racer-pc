@@ -9,7 +9,16 @@ file(RENAME "${root}/terrain.png" "${root}/mod/textures/terrain.png")
 file(WRITE "${root}/mod/mod.toml" "[mod]\nid = \"native-world-test\"\n[textures]\n\"track.big1.terrain.material.0\" = \"textures/terrain.png\"\n")
 file(WRITE "${root}/scenario.ini" "[video]\nrenderer=modern\n[race]\nenabled=true\nmode=grand-prix\nclass=0\ncourse=0\ncar=3\n[run]\nframes=900\n[stop]\nscene=12\ntimer=20\n")
 function(run name)
+    set(correction_env)
+    if(name STREQUAL "geometry-512" OR name STREQUAL "correction-reference")
+        list(APPEND correction_env RAGE_GPU_GP0_TRACE_SCENE=12 RAGE_GPU_GP0_TRACE_TIMER=430
+            "RAGE_GPU_GP0_TRACE_VRAM=${root}/${name}.vram")
+    endif()
+    if(name STREQUAL "correction-reference")
+        list(APPEND correction_env PSYZ_REFERENCE_CORRECTION_PIXELS=1)
+    endif()
     execute_process(COMMAND "${CMAKE_COMMAND}" -E env SDL_AUDIODRIVER=dummy
+        --unset=PSYZ_REFERENCE_CORRECTION_PIXELS ${correction_env}
         "RAGE_PORT_MODERN_ASSETS=${root}" RAGE_PORT_MODERN_ASSET_TRACE=1
         "RAGE_PORT_MODS_DIRECTORY=${root}/mod" "${GAME}" ${ARGN}
         WORKING_DIRECTORY "${SOURCE}" TIMEOUT 105 RESULT_VARIABLE result
@@ -83,6 +92,21 @@ foreach(limit 512 0 1)
             message(FATAL_ERROR "Geometry budget ${limit} changed ${suffix}: ${root}")
         endif()
     endforeach()
+endforeach()
+run(correction-reference --scenario "${root}/scenario.ini"
+    --set video.fps=logic --set video.internal_scale=1 --set start.freeze=true
+    --set stop.timer=431 --set run.frames=1400
+    --set diagnostics.modern_cpu_geometry=false --set diagnostics.modern_geometry_limit=512
+    --set "diagnostics.modern_dump=${root}/correction-reference.ppm"
+    --set diagnostics.modern_dump_scene_id=12 --set diagnostics.modern_dump_timer=430
+    --set diagnostics.modern_dump_scene=true)
+require("scene=12 timer=431")
+foreach(suffix .vram .ppm .ppm.draws.txt)
+    file(SHA256 "${root}/correction-reference${suffix}" reference_pixels)
+    file(SHA256 "${root}/geometry-512${suffix}" run_pixels)
+    if(NOT reference_pixels STREQUAL run_pixels)
+        message(FATAL_ERROR "Correction runs changed ${suffix}: ${root}")
+    endif()
 endforeach()
 run(unbatched --scenario "${root}/scenario.ini"
     --set video.fps=logic --set video.internal_scale=1 --set start.freeze=true
