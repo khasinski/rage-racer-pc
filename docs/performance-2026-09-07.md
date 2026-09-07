@@ -504,3 +504,31 @@ is build/sample-round-bench.c. One traced control frame measured environment
 work at 3.331 ms versus the earlier 3.497 ms sample; competing load prevents
 attributing that difference to this change. The 120 FPS target remains open.
 Native-world, renderer-toggle and texture-sample regressions pass (3/3).
+
+### Solve triangle coverage once per long scanline
+
+Flat-textured quad correction now intersects the three integer edge inequalities
+once for each scanline of at least sixteen candidate pixels. Each per-pixel
+coverage test then checks the resulting inclusive interval. Integer floor/ceil
+division preserves negative intersections, exclusive edges and both windings;
+the original predicate removes rejected exact vertices at the endpoints.
+Shorter rows and Gouraud endpoint correction retain the point predicate.
+UV selection, texture-window comparison and correction pixel emission are
+unchanged.
+
+The coverage regression compares the original point algorithm, prepared point
+algorithm and scanline algorithm over 2,165,625 samples. It exercises a local
+range, a single-pixel clip and reversed/empty bounds for each sample, including
+degenerate triangles and exact vertices. ASan/UBSan passes. Production/smoke
+builds and native-world, renderer-toggle and coverage regressions pass (3/3).
+
+A local GCC 16.2 -O3 C benchmark, build/coverage-row-bench.c, processed 200,000
+rows for each width with equal coverage checksums. Point/row milliseconds were
+1.629/2.956 at width 4, 6.842/2.668 at width 16, 22.044/4.021 at width 64 and
+76.834/9.904 at width 256. The short-row regression motivated the sixteen-pixel
+threshold. This measures only coverage; it is not a whole-frame speedup.
+The initial all-row variant recorded 3.473 ms environment work at frame 649,
+which does not demonstrate an improvement over the earlier 3.331 ms sample.
+The final thresholded build measured 3.448 ms in that interval and reproduces
+the PAL control image and semantic draw dump byte for byte. No isolated FPS
+comparison was made; sustained 120 FPS remains unverified.

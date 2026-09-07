@@ -41,7 +41,14 @@ static unsigned random_value(void) {
 static unsigned long count;
 static int check(const RasterPoint p[3],const PreparedTriangleCoverage *c,int x,int y) {
     ++count;
-    if (ModernTriangleContains(p,x,y)==TriangleCoverageContains(c,x,y)) return 0;
+    TriangleCoverageSpan row = TriangleCoverageRow(c, y, x - 8, x + 8);
+    TriangleCoverageSpan pixel = TriangleCoverageRow(c, y, x, x);
+    TriangleCoverageSpan empty = TriangleCoverageRow(c, y, x + 1, x);
+    bool expected = ModernTriangleContains(p,x,y);
+    if (expected == TriangleCoverageContains(c,x,y) &&
+        expected == (x >= row.first && x <= row.last) &&
+        expected == (x >= pixel.first && x <= pixel.last) &&
+        empty.first > empty.last) return 0;
     fprintf(stderr,"Coverage mismatch at %d,%d\n",x,y);
     return 1;
 }
