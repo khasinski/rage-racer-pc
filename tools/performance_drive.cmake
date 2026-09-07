@@ -3,6 +3,22 @@ cmake_minimum_required(VERSION 3.20)
 if(NOT CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
     message(FATAL_ERROR "This profiling harness currently supports Linux")
 endif()
+# A locked Wayland desktop can throttle swapchain acquisition even when the
+# display reports 120 Hz. Do not record those runs as foreground performance.
+if(NOT DEFINED ENV{SDL_VIDEODRIVER} OR "$ENV{SDL_VIDEODRIVER}" MATCHES "^(|wayland|x11)$")
+    find_program(RAGE_PROFILE_QDBUS NAMES qdbus6 qdbus)
+    if(RAGE_PROFILE_QDBUS)
+        execute_process(COMMAND "${RAGE_PROFILE_QDBUS}"
+            org.freedesktop.ScreenSaver /ScreenSaver
+            org.freedesktop.ScreenSaver.GetActive
+            RESULT_VARIABLE lock_query_result OUTPUT_VARIABLE screen_locked
+            OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET TIMEOUT 3)
+        if(lock_query_result EQUAL 0 AND screen_locked STREQUAL "true")
+            message(FATAL_ERROR
+                "Unlock the desktop before profiling: the screen saver is active and may throttle presentation")
+        endif()
+    endif()
+endif()
 get_filename_component(ROOT "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE)
 foreach(required GAME DISC CONFIG)
     if(NOT DEFINED ${required} OR NOT EXISTS "${${required}}")

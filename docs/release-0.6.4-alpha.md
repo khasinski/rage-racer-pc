@@ -32,8 +32,28 @@ Do not replace the published 0.6.3-alpha tag or packages.
 - Performance: roughly 645 application FPS at numeric 1000 cap demonstrated
   rendering headroom, but stable VSync 120 FPS is still unproven. Validate
   frame intervals and outliers on the fixed candidate, not only mean FPS.
+- Follow-up performance blocker: packaged c7b5f7e69 and the local GCC16 binary
+  both fell to about 20 FPS in Wayland/VSync tests later on the same machine.
+  The original profiling harness reproduced it and completed its lap
+  (`build/perf-064-control/20260907-185137-c34596`). A sampled packaged main
+  thread waited in Wayland explicit-sync image acquisition, beneath
+  SDL_AcquireGPUSwapchainTexture. This does not establish a CI compiler defect;
+  the desktop subsequently reported ScreenSaver.GetActive=true. Treat these as
+  locked-desktop samples, not foreground release performance; repeat after
+  unlocking. The profiling harness now rejects a known locked desktop before
+  starting the game. A lock occurring during a run still requires discarding it.
+  The same packaged c7b5f7e69 binary completed a clean-state Track 01 BIN lap at
+  numeric 120 (immediate presentation): 117.828 FPS mean, minimum window 113.630,
+  worst window p95 15.272 ms, maximum interval 51.086 ms, excluding the first
+  startup window (`/tmp/rage-064-package-c7-immediate`). It logged complete
+  lifecycle teardown. This is not validation of foreground VSync pacing.
 - Packaging: verify clean CUE and Track 01 BIN flows, automatic native asset
   generation and modern startup in the actual packaged artifact.
+  Linux artifacts b574ee682/c7b5f7e69 started with isolated empty XDG config/state
+  directories using only explicitly supplied PAL CUE or Track 01 BIN paths.
+  The importer and modern renderer initialized; the BIN scenario reached the
+  race and imported native meshes. These timed probes are not full successful
+  route tests or proof of interactive file-picker/double-click behavior.
 - Platforms: b574ee682 passed Linux, Windows and macOS release builds, sanitizers,
   compiled texture/archive and mod contracts, and renderer snapshot contracts.
   Launcher CI passed on macOS but exposed two build defects: clang-cl ignored
@@ -42,6 +62,11 @@ Do not replace the published 0.6.3-alpha tag or packages.
   rerun launcher CI and release builds on the corrected candidate. Local full
   build and save-generator, release-package and main-loop regressions passed.
   Hardware/runtime coverage must be distinguished from builds.
+  c7b5f7e69 subsequently passed all three release builds and Linux/macOS launcher
+  checks. Windows launcher checks exposed two further portable-tool defects:
+  POSIX mkdir in the save generator (fixed in 2786f1a3a), then legacy Winsock
+  typedef collisions in the mod CLI (fixed in f3d3b5543). Local tool builds and
+  related regression tests passed; the latest launcher matrix is pending.
 
 Release only after the relevant evidence is recorded for the exact candidate;
 no tag or public release has been created by this preparation step.
