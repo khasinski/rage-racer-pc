@@ -448,6 +448,7 @@ typedef struct RageNativeMeshTemplate {
     RageNativeGpuVertex *vertices;
     RageNativeDrawSpan *spans;
     uint32_t vertexCount, spanCount;
+    RageNativeMeshTemplateView view;
 } RageNativeMeshTemplate;
 
 typedef struct RageNativeMeshTemplateState {
@@ -460,9 +461,6 @@ static const RageRuntimeMesh *TemplateMeshLookup(void *context,
     (void)instance;
     return context;
 }
-
-static RageNativeMeshTemplate *FindMeshTemplate(RageNativeMeshTemplateCache *cache,
-    const RageRuntimeMesh *mesh, const RageRenderMeshInstance *instance, uint32_t count);
 
 static int SpanMatches(const RageNativeDrawSpan *span,
     const RageRenderMeshInstance *instance, const RageNativeInstanceState *state,
@@ -479,7 +477,7 @@ static int SpanMatches(const RageNativeDrawSpan *span,
         span->pass == instance->pass;
 }
 
-static int AppendMeshTemplate(const RageNativeMeshTemplate *source,
+static int AppendMeshTemplate(const RageNativeMeshTemplateView *source,
     const RageRenderMeshInstance *instance, const RageTransformBasis *basis,
     const RageNativeInstanceState *state, RageNativeGpuVertex *vertices, uint32_t capacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *vertexCount, uint32_t *spanCount) {
@@ -581,7 +579,8 @@ static uint32_t RenderBuildNativeDrawsFiltered(
              instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1) &&
             !(instance->flags & (RAGE_RENDER_INSTANCE_FLAT_SHADED |
               RAGE_RENDER_INSTANCE_DEPTH_DECAL | RAGE_RENDER_INSTANCE_CULL_BACKFACES))) {
-            RageNativeMeshTemplate *prepared = FindMeshTemplate(cache, mesh, instance, count);
+            const RageNativeMeshTemplateView *prepared = RenderNativeMeshTemplateAcquire(
+                cache, mesh, instance->assetSet, instance->mesh);
             if (prepared) {
                 if (!AppendMeshTemplate(prepared, instance, &basis, &instanceState,
                         compactVertices, vertexCapacity, spans, spanCapacity, &vertexCount, &spansUsed)) goto done;
@@ -751,16 +750,21 @@ void RenderNativeMeshTemplateCacheRelease(RageNativeMeshTemplateCache *cache) {
     cache->state = NULL;
 }
 
-static RageNativeMeshTemplate *FindMeshTemplate(RageNativeMeshTemplateCache *cache,
-    const RageRuntimeMesh *mesh, const RageRenderMeshInstance *instance, uint32_t count) {
+const RageNativeMeshTemplateView *RenderNativeMeshTemplateAcquire(
+    RageNativeMeshTemplateCache *cache, const RageRuntimeMesh *mesh,
+    RageRenderAssetSet assetSet, uint32_t submesh) {
     enum { MAX_BYTES = 32 * 1024 * 1024 };
-    if (count < 3) return NULL;
+    uint32_t first, count;
+    if (!cache || !mesh ||
+        (assetSet != RAGE_RENDER_ASSET_MODEL_BANK &&
+         assetSet != RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1) ||
+        !RuntimeMeshRange(mesh, submesh, &first, &count) || count < 3) return NULL;
     if (!cache->state) cache->state = calloc(1, sizeof(RageNativeMeshTemplateState));
     RageNativeMeshTemplateState *state = cache->state;
     if (!state) return NULL;
     for (RageNativeMeshTemplate *entry = state->first; entry; entry = entry->next)
-        if (entry->source == mesh && entry->mesh == instance->mesh && entry->assetSet == instance->assetSet)
-            return entry;
+        if (entry->source == mesh && entry->mesh == submesh && entry->assetSet == assetSet)
+            return &entry->view;
     if (count > MAX_BYTES / (sizeof(RageNativeGpuVertex) + sizeof(RageNativeDrawSpan))) return NULL;
     size_t bytes = (size_t)count * sizeof(RageNativeGpuVertex) +
                   (size_t)(count / 3) * sizeof(RageNativeDrawSpan) + sizeof(RageNativeMeshTemplate);
@@ -775,9 +779,8 @@ static RageNativeMeshTemplate *FindMeshTemplate(RageNativeMeshTemplateCache *cac
     }
     RageRenderMeshInstance local = {0};
     RageRenderWorld world = {0};
-    local.assetKey = instance->assetKey;
-    local.assetSet = instance->assetSet;
-    local.mesh = instance->mesh;
+    local.assetSet = assetSet;
+    local.mesh = submesh;
     local.pass = RAGE_RENDER_PASS_MAIN;
     local.transform.scale = (RageRenderVec3){1, 1, 1};
     world.instances = &local;
@@ -786,15 +789,17 @@ static RageNativeMeshTemplate *FindMeshTemplate(RageNativeMeshTemplateCache *cac
     world.camera.nearPlane = 1;
     world.camera.farPlane = 10000;
     entry->source = mesh;
-    entry->mesh = instance->mesh;
-    entry->assetSet = instance->assetSet;
+    entry->mesh = submesh;
+    entry->assetSet = assetSet;
     entry->vertexCount = RenderBuildNativeDrawsFiltered(NULL, 1, &world,
         RAGE_RENDER_PASS_MAIN, 1, 1, TemplateMeshLookup, (void *)mesh, NULL,
         entry->vertices, count, entry->spans, count / 3, &entry->spanCount);
     entry->next = state->first;
     state->first = entry;
     state->bytes += bytes;
-    return entry;
+    entry->view = (RageNativeMeshTemplateView){entry->vertices, entry->spans,
+        entry->vertexCount, entry->spanCount};
+    return &entry->view;
 }
 
 uint32_t RenderBuildNativeDraws(const RageRenderWorld *world, float aspect,

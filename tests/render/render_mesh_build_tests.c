@@ -1418,6 +1418,20 @@ static void test_vehicle_templates_follow_instance_state_and_capacity(void) {
     }
     for (unsigned i = 0; i < 15; ++i) write_u32(bytes + 396 + i * 4, indices[i]);
     EXPECT_EQ(1, RuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+    EXPECT_EQ(1, RenderNativeMeshTemplateAcquire(NULL, &mesh, RAGE_RENDER_ASSET_MODEL_BANK, 0) == NULL);
+    EXPECT_EQ(1, RenderNativeMeshTemplateAcquire(&cache, NULL, RAGE_RENDER_ASSET_MODEL_BANK, 0) == NULL);
+    EXPECT_EQ(1, RenderNativeMeshTemplateAcquire(&cache, &mesh, RAGE_RENDER_ASSET_TERRAIN, 0) == NULL);
+    EXPECT_EQ(1, RenderNativeMeshTemplateAcquire(&cache, &mesh, RAGE_RENDER_ASSET_MODEL_BANK, 2) == NULL);
+    EXPECT_EQ(1, cache.state == NULL);
+    const RageNativeMeshTemplateView *view = RenderNativeMeshTemplateAcquire(
+        &cache, &mesh, RAGE_RENDER_ASSET_MODEL_BANK, 0);
+    EXPECT_EQ(1, view != NULL);
+    EXPECT_EQ(9, view->vertexCount);
+    EXPECT_EQ(3, view->spanCount);
+    RageNativeGpuVertex originalVertices[9];
+    RageNativeDrawSpan originalSpans[3];
+    memcpy(originalVertices, view->vertices, sizeof(originalVertices));
+    memcpy(originalSpans, view->spans, sizeof(originalSpans));
     RenderWorldInit(&world, instances, 2);
     world.instanceCount = 2;
     world.camera.verticalFovDegrees = 90;
@@ -1458,6 +1472,10 @@ static void test_vehicle_templates_follow_instance_state_and_capacity(void) {
         world.camera.transform.rotation.y += 30;
     }
     EXPECT_EQ(1, cache.state != NULL);
+    EXPECT_EQ(1, view == RenderNativeMeshTemplateAcquire(
+        &cache, &mesh, RAGE_RENDER_ASSET_MODEL_BANK, 0));
+    EXPECT_EQ(0, memcmp(originalVertices, view->vertices, sizeof(originalVertices)));
+    EXPECT_EQ(0, memcmp(originalSpans, view->spans, sizeof(originalSpans)));
     RenderNativeMeshTemplateCacheRelease(&cache);
     RenderNativeMeshTemplateCacheRelease(&cache);
     /* A new source at the same address is legal only after retirement. */

@@ -128,3 +128,13 @@ It must preserve per-camera culling, decal displacement, fog coordinates and
 generation retirement, with the current CPU builder retained as a regression
 oracle. This trace is diagnostic evidence, not a comparable untraced FPS result
 or proof that uploads explain every frame-time spike.
+
+The local-template cache now exposes a borrowed immutable view with stable
+identity and array addresses until explicit cache retirement. The live CPU
+builder consumes this same interface. Geometry acquisition is independent of
+camera, transform, paint and entity state; source span instance fields are not
+draw state. This establishes the lifetime contract for GPU buffer ownership,
+but does not yet change GPU uploads. Tests verify stable views and unchanged
+payloads across moving instances and cache growth, invalid inputs and existing
+reference equivalence. Mesh tests, mirror/native-world/renderer-toggle tests
+and ASan/UBSan pass after this interface change.

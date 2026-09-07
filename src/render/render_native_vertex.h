@@ -29,6 +29,22 @@ uint32_t RenderBuildNativeCompactPassDraws(
  * Bounded storage; unsupported geometry or allocation failure uses the regular
  * builder. Transforms and per-instance shading remain evaluated each frame. */
 typedef struct RageNativeMeshTemplateCache { void *state; } RageNativeMeshTemplateCache;
+/* Borrowed local geometry. The view and its arrays remain at stable addresses
+ * until cache release, including when other meshes are acquired. The view
+ * address is a cache-lifetime identity suitable for GPU residency lookup.
+ * Positions/normals are local and decals are not displaced. Span material,
+ * flags, depthDecal and ranges are geometry metadata; instance fields must
+ * come from the draw instance, never from these source spans. */
+typedef struct RageNativeMeshTemplateView {
+    const RageNativeGpuVertex *vertices;
+    const RageNativeDrawSpan *spans;
+    uint32_t vertexCount, spanCount;
+} RageNativeMeshTemplateView;
+/* Vehicle asset sets only. NULL means invalid/unsupported input or insufficient
+ * cache memory; existing views remain valid. Does not perform view culling. */
+const RageNativeMeshTemplateView *RenderNativeMeshTemplateAcquire(
+    RageNativeMeshTemplateCache *cache, const RageRuntimeMesh *mesh,
+    RageRenderAssetSet assetSet, uint32_t submesh);
 void RenderNativeMeshTemplateCacheRelease(RageNativeMeshTemplateCache *cache);
 uint32_t RenderBuildNativeCachedCompactPassDraws(
     RageNativeMeshTemplateCache *cache,
