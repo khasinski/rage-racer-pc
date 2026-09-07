@@ -11,6 +11,14 @@ deferred unless necessary for this performance path. See
 [the 120 Hz checkpoint](performance-2026-09-07.md). The six-stage scope below
 remains active; reaching some 120 FPS intervals is not completion of this target.
 
+Free-GPU scheduling checkpoint: the unchanged visual configuration reaches
+644.742 application FPS with a numeric 1000 FPS cap, but only 117.517 with a
+numeric 120 cap and 117.737 with VSync. Prioritize the shared game/presentation
+thread and synchronous legacy GPU dispatch inside scene updates. Preserve
+PAL/NTSC timing and immutable presentation inputs when changing these boundaries.
+The correction-bypass attribution experiment is not a shipping implementation;
+full visual/dependency correctness is required before removing legacy work.
+
 Resident geometry checkpoint (2026-09-07): supported vehicle model banks now
 use generation-owned GPU buffers shared by main, mirror and shadow passes,
 with per-instance GPU transforms and on-demand CPU diagnostic/fallback

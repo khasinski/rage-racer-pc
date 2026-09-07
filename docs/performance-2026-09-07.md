@@ -714,3 +714,42 @@ interval across 33 post-startup complete windows. The same PAL/class-1/course-0,
 VSync 120 Hz and 1706x960 settings were retained. This does not establish an
 end-to-end FPS improvement over the prior 117.804 mean; the 120 FPS stability
 target remains unmet.
+
+### Separating throughput from the game/presentation schedule
+
+With the GPU free, the same production binary and identical graphics settings
+completed two further PAL class-1/course-0 laps. Only `video.fps` differed, in
+temporary copies of the local INI; the user's original configuration was not
+modified. Both used the real Wayland window and retained the 1706x960 target.
+The numeric FPS modes request immediate presentation rather than VSync.
+
+| Mode | Mean FPS | Slowest window FPS | Worst window p95 ms | Maximum interval ms |
+| --- | ---: | ---: | ---: | ---: |
+| Numeric 1000 limit | 644.742 | 407.970 | 7.973 | 26.727 |
+| Numeric 120 limit | 117.517 | 113.310 | 15.284 | 28.255 |
+| VSync 120 Hz (preceding run) | 117.737 | 114.350 | 15.528 | 30.411 |
+
+Artifacts: `build/perf-throughput/20260907-175406-3116cf` (191 complete
+post-startup windows) and `build/perf-120-immediate/20260907-175510-ce2e65`
+(33 windows). FPS is weighted by window duration. This is application
+render/submission throughput, not a claim of 645 unique physical scanouts on a
+120 Hz display, and does not prove absence of individual long frames.
+
+These results change the next optimization priority: bulk rendering throughput
+is already several hundred FPS, while both 120 FPS modes miss presentation
+slots. `ModernFramePresented` drops elapsed slots on a shared game/render
+thread. `ServiceGameFrame` dispatches the scene before entering its presentation
+wait; the environment palette upload executes queued legacy GPU commands inside
+that uninterrupted work. Optimize this scheduling/dependency path while keeping
+PAL/NTSC simulation timing and visual output, rather than reducing graphics
+quality or treating VSync alone as the cause.
+
+A temporary attribution-only bypass of textured-quad correction completed
+`build/perf-correction-attribution/20260907-175731-10d1fe` with the original
+VSync INI: 119.737 mean FPS, 114.970 slowest-window FPS, 14.302 ms worst-window
+p95, 32.696 ms maximum interval (34 post-startup windows). This deliberately
+omitted compatibility rendering work and is not visually validated or a
+shipping solution. It implicates that blocking work in missed presentation
+slots but does not explain every outlier. The bypass was removed immediately
+after measurement and production/smoke binaries rebuilt from the original
+correctness-preserving source.
