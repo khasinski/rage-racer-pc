@@ -87,6 +87,12 @@ int main(int argc, char **argv) {
     printf("frame=%u scene=%d timer=%d draws=%d terrain=%d faces=%d\n",
            s->frameCounter, s->sceneId, s->sceneTimer, s->drawCount,
            s->terrainCount, s->faceCount);
+    for (i = 0; i < s->drawCount && i < RAGE_CAPTURE_MAX_DRAWS; ++i) {
+        const RageCaptureModelDraw *draw = &s->draws[i];
+        printf("draw[%d] kind=%u model=%d mirror=%u mode=%08x bias=%d\n",
+               i, draw->kind, draw->modelIndex, draw->mirror,
+               draw->renderMode, draw->otBaseBias);
+    }
     for (i = 0; i < s->terrainCount; i++) {
         const RageCaptureTerrainBatch *batch = &s->terrain[i];
         int c, minZ = 0x7fffffff, maxZ = -0x7fffffff;

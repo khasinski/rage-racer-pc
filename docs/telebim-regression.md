@@ -60,3 +60,16 @@ zero-alpha texels. Thus black is not universally decoded as transparent.
 These are whole-atlas counts, not UV-local samples, and do not establish the
 screen backing's identity. Probe log: /tmp/rage-telebim-material-probe.log.
 The temporary instrumentation was removed and smoke rebuilt afterward.
+
+Further isolation: disabling depth only for the two animation entities did
+not restore the black backing. Disabling both terrain-quad and course-face
+backface rejection also did not restore it (the roof itself changed). Both
+experiments were reverted and smoke rebuilt.
+
+The marker-face analyzer now prints draw/model identity. In the point-288
+snapshot, logical pixel (140,95) intersects a terrain quad in cell slot 14,
+CLUT 7a4d/page 001e, view Z 17895..17871, and course model 57 (draw 5),
+CLUT 7b80/page 001a, Z 17937..17956. Animated layers are draws 2/3,
+models 35/8; their ordering bucket is 138 versus terrain 148 and model 57
+156. This narrows the candidate backing/roof pair but is not yet a verified
+mapping to native triangles or an explanation of the incorrect final pixel.
