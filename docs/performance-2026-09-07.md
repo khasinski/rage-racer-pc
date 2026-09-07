@@ -418,3 +418,21 @@ An earlier experiment skipping hash lookups for repeated quad corners was
 discarded: three alternating synthetic packing runs regressed from
 0.214218/0.205670/0.210597 ms to 0.230011/0.226626/0.225684 ms. No such shortcut
 remains in the implementation.
+
+### Coalesce adjacent GPU draw ranges
+
+Main and mirror passes now coalesce adjacent spans only when phase, pipeline,
+texture, clearcoat policy, instance uniforms, local transform uniforms, vertex
+buffer and index buffer agree, and the ranges are contiguous. Triangle order
+is preserved, including transparent and decal geometry. No sorting is performed;
+shadow submission is unchanged. The semantic draw dump keeps its original spans.
+`diagnostics.modern_unbatched_draws=true` retains the individual-command reference.
+
+The real PAL control frame emits 1,072 main and 350 mirror geometry commands,
+down from 1,086 and 353. This modest reduction of seventeen commands does not
+establish an FPS improvement. The complete image and semantic draw dump match
+the preceding commit byte for byte. The native-world regression also compares
+batched and unbatched frozen frames, in addition to residency, bounded rebuild
+and transient fallback paths. Production and smoke builds succeed; mirror cars,
+native-world and submission-recovery regressions pass (3/3). The expanded
+native-world regression passes again with the explicit unbatched comparison.

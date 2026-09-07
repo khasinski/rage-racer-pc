@@ -1941,6 +1941,7 @@ static void ModernNativeGpuDrawSet(
     uint32_t spanIndex;
     uint32_t drawCount = 0;
     if (renderCamera == NULL) return;
+    const int batchDraws = !RuntimeConfigEnabled("diagnostics.modern_unbatched_draws");
     RageNativeInstanceState boundInstance = {0};
     int hasBoundInstance = 0;
     ModernGeometryState geometryState = {0};
@@ -2041,7 +2042,29 @@ static void ModernNativeGpuDrawSet(
             const ModernGeometryBinding *geometry = spans == s_mirrorSpans
                 ? &s_mirrorGeometry[spanIndex] : &s_mainGeometry[spanIndex];
             ModernNativeBindGeometry(command, pass, span, geometry, 3, &geometryState);
-            ModernNativeDrawGeometry(pass, geometry, span->vertexCount);
+            /* Adjacent ranges can share one command only when every shader
+             * input and buffer binding agrees. Never reorder transparent or
+             * decal triangles, or cross a gap in the index/vertex stream. */
+            uint32_t vertexCount = span->vertexCount;
+            while (batchDraws && vertexCount % 3 == 0 && spanIndex + 1 < spanCount) {
+                const RageNativeDrawSpan *next = &spans[spanIndex + 1];
+                const ModernNativeDrawMaterial *material = &drawMaterials[spanIndex + 1];
+                const ModernGeometryBinding *binding = spans == s_mirrorSpans
+                    ? &s_mirrorGeometry[spanIndex + 1] : &s_mainGeometry[spanIndex + 1];
+                if (material->phase != phase || material->pipeline != pipeline ||
+                    material->texture != texture || material->allowClearcoat != allowClearcoat ||
+                    binding->buffer != geometry->buffer || binding->indices != geometry->indices ||
+                    binding->local != geometry->local ||
+                    geometry->first > UINT32_MAX - vertexCount ||
+                    binding->first != geometry->first + vertexCount ||
+                    next->vertexCount > UINT32_MAX - vertexCount ||
+                    memcmp(&span->instanceState, &next->instanceState, sizeof(span->instanceState)) ||
+                    !RenderNativeLocalStateEqual(geometry->local ? span : NULL,
+                                                binding->local ? next : NULL)) break;
+                vertexCount += next->vertexCount;
+                ++spanIndex;
+            }
+            ModernNativeDrawGeometry(pass, geometry, vertexCount);
             drawCount++;
         }
     }

@@ -84,6 +84,21 @@ foreach(limit 512 0 1)
         endif()
     endforeach()
 endforeach()
+run(unbatched --scenario "${root}/scenario.ini"
+    --set video.fps=logic --set video.internal_scale=1 --set start.freeze=true
+    --set stop.timer=431 --set run.frames=1400
+    --set diagnostics.modern_cpu_geometry=false --set diagnostics.modern_geometry_limit=512
+    --set diagnostics.modern_unbatched_draws=true
+    --set "diagnostics.modern_dump=${root}/unbatched.ppm"
+    --set diagnostics.modern_dump_scene_id=12 --set diagnostics.modern_dump_timer=430
+    --set diagnostics.modern_dump_scene=true)
+require("scene=12 timer=431")
+foreach(suffix .ppm .ppm.draws.txt)
+    file(SHA256 "${root}/unbatched${suffix}" actual)
+    if(NOT actual STREQUAL "${reference${suffix}}")
+        message(FATAL_ERROR "Draw batching changed ${suffix}: ${root}")
+    endif()
+endforeach()
 foreach(limit 0 1 ${world_reset_limit})
     run(world-${limit} --scenario "${root}/scenario.ini"
         --set video.fps=logic --set video.internal_scale=1 --set start.freeze=true
