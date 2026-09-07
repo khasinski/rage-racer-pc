@@ -55,6 +55,19 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Asset-session source state is now one enum (none/cache/disc), published only
+after successful initialization. Explicit source changes during a live session
+are rejected through both InitRoot and forced configuration; NULL/no explicit
+selection retains ensure-ready behavior. Cache-root identity currently uses
+exact path spelling, not canonical paths or content fingerprints. The compiled
+retry fixture verifies two valid roots containing the same asset ID with
+different geometry: rejection preserves borrowed data/generation, then full
+teardown allows the new source and fresh bytes. Smoke world/repeated-renderer
+gates pass. Rebuilt replay and stage consumers also pass environment_provider,
+render_stage_angles and modern_assets_retry (4.59s); their reload paths already
+retire the previous asset session before reopening. This strengthens stage 1,
+but does not create a unified resource catalog or persistent GPU geometry.
+
 Camera frustum side-plane coefficients are now prepared once per draw-build
 invocation rather than recomputing one tangent and two square roots for each
 instance reaching the side-plane test. The original guard band and floating
