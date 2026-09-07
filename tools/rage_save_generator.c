@@ -5,6 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#ifdef _WIN32
+#include <direct.h>
+#endif
 
 #include "game/save_format.h"
 
@@ -215,7 +218,12 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
     if (!output) {
-        if (mkdir("bu00", 0755) != 0 && errno != EEXIST) {
+#ifdef _WIN32
+        int directory_result = _mkdir("bu00");
+#else
+        int directory_result = mkdir("bu00", 0755);
+#endif
+        if (directory_result != 0 && errno != EEXIST) {
             perror("bu00");
             return EXIT_FAILURE;
         }
