@@ -9,7 +9,7 @@ endif()
 set(scenario "${root}/renderer żółty.ini")
 file(WRITE "${scenario}" "[race]\nenabled=true\nmode=grand-prix\nseries=gp\nclass=0\ncourse=0\ncar=3\n[video]\nrenderer=classic\n[modern]\nassets=${assets}\n[run]\nframes=2450\n[stop]\nscene=12\ntimer=250\n[hooks]\ntoggle_renderer_frames=300,340,380,420\n[diagnostics]\nrenderer_lifecycle=true\n")
 execute_process(COMMAND "${CMAKE_COMMAND}" -E env SDL_AUDIODRIVER=dummy
-    "${GAME}" --scenario "${scenario}" WORKING_DIRECTORY "${SOURCE}"
+    "${GAME}" --scenario "${scenario}" --set video.fps=vsync WORKING_DIRECTORY "${SOURCE}"
     RESULT_VARIABLE result TIMEOUT 165 OUTPUT_VARIABLE output ERROR_VARIABLE error)
 set(log "${output}${error}")
 file(WRITE "${root}/game.log" "${log}")
@@ -31,4 +31,18 @@ foreach(event created destroyed)
         message(FATAL_ERROR "Expected two ${event} resource generations, got ${count}: ${root}")
     endif()
 endforeach()
+# Desktop runs exercise real swapchain policy as well as renderer lifetime.
+# Offscreen CI has no swapchain and retains the geometry/lifecycle checks above.
+if(log MATCHES "modern display pacing driver=(wayland|x11|windows|cocoa)")
+    string(REGEX MATCHALL "presentation mode=vsync host_display_sync=1 logic_driver_vsync=0" synced "${log}")
+    list(LENGTH synced count)
+    if(count LESS 2)
+        message(FATAL_ERROR "Modern VSync did not remain independent of the game clock: ${root}")
+    endif()
+    string(FIND "${log}" "presentation mode=vsync host_display_sync=1" last_sync REVERSE)
+    string(FIND "${log}" "host_display_sync=0 logic_driver_vsync=0" restored REVERSE)
+    if(restored LESS last_sync)
+        message(FATAL_ERROR "Classic mode retained the modern display-sync override: ${root}")
+    endif()
+endif()
 message(STATUS "Renderer cycles passed: ${root}")

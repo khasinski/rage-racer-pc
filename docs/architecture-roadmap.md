@@ -4,6 +4,13 @@ Status: active. This is the scope agreed after the performance work, not a
 claim that the migration is complete. Each stage needs production integration
 and regression evidence; extracting an unused interface is not completion.
 
+User priority update (2026-09-07): focus next work on measured frame performance,
+with a minimum 120 FPS target on the local 120 Hz display and real display VSync,
+preserving game speed and current visual settings. Broader asset cleanup is
+deferred unless necessary for this performance path. See
+[the 120 Hz checkpoint](performance-2026-09-07.md). The six-stage scope below
+remains active; reaching some 120 FPS intervals is not completion of this target.
+
 ## Constraints and future consumers
 
 Material catalog checkpoint (2026-09-07): the shared C material API now opens

@@ -698,8 +698,16 @@ static Uint64 ModernPresentationInterval(void) {
         return (Uint64)(1000000000.0 / s_config.modernFps);
     const SDL_DisplayMode *mode = s_window != NULL
         ? SDL_GetCurrentDisplayMode(SDL_GetDisplayForWindow(s_window)) : NULL;
-    return mode != NULL && mode->refresh_rate > 1.0f
+    Uint64 interval = mode != NULL && mode->refresh_rate > 1.0f
         ? (Uint64)(1000000000.0 / mode->refresh_rate) : 16666667u;
+    static Uint64 reportedInterval;
+    if (interval != reportedInterval) {
+        fprintf(stderr, "rage-port: modern display pacing driver=%s refresh_hz=%.3f source=%s\n",
+            SDL_GetCurrentVideoDriver() ? SDL_GetCurrentVideoDriver() : "unavailable",
+            1000000000.0 / (double)interval, mode ? "display" : "fallback");
+        reportedInterval = interval;
+    }
+    return interval;
 }
 
 void ModernLogicFrameReady(uint32_t frame) {
@@ -1242,7 +1250,7 @@ static int ModernCompareProfileInterval(const void *a, const void *b) {
 static int ModernRender(const RageSceneSnapshot *snapshot) {
     SDL_GPUCommandBuffer *cmd;
     SDL_GPUTexture *vram;
-    static Uint64 profileBuildNs, profileSubmitNs;
+    static Uint64 profileBuildNs, profileSubmitNs, profilePrepareNs;
     static Uint64 profileFaces, profileVertices, profileSpans;
     static unsigned profileFrames;
     static Uint64 profileWindowStart, profilePrevious, profileIntervals[120];
@@ -1391,7 +1399,12 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
     ModernNativeGpuSubmitted();
     if (profile) {
         Uint64 finished = SDL_GetTicksNS();
-        if (!profileWindowStart) profileWindowStart = profileStart;
+        if (!profileWindowStart) {
+            PsyzVideoStats initialStats = {0};
+            Psyz_VideoStats(&initialStats);
+            profileWindowStart = profileStart;
+            profilePresented = initialStats.presented_frames;
+        }
         profileIntervals[profileFrames] = profilePrevious
             ? finished - profilePrevious : finished - profileStart;
         profilePrevious = finished;
@@ -1410,6 +1423,7 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
                     (unsigned long long)finished);
         }
         profileBuildNs += profileBuilt - profileStart;
+        profilePrepareNs += s_profilePrepareNs;
         profileSubmitNs += finished - profileBuilt;
         profileFaces += (Uint64)snapshot->faceCount;
         profileVertices += (Uint64)s_vertexCount;
@@ -1424,7 +1438,7 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
                     "modern-profile frames=%u build_ms=%.3f submit_ms=%.3f "
                     "faces=%.0f vertices=%.0f spans=%.0f "
                     "render_fps=%.2f interval_p95_ms=%.3f interval_max_ms=%.3f "
-                    "queued_fps=%.2f\n",
+                    "queued_fps=%.2f prepare_ms=%.3f\n",
                     profileFrames,
                     (double)profileBuildNs / profileFrames / 1000000.0,
                     (double)profileSubmitNs / profileFrames / 1000000.0,
@@ -1435,10 +1449,11 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
                     profileIntervals[113] / 1000000.0,
                     profileIntervals[119] / 1000000.0,
                     (videoStats.presented_frames - profilePresented) * 1.0e9 /
-                        (double)(finished-profileWindowStart));
+                        (double)(finished-profileWindowStart),
+                    (double)profilePrepareNs / profileFrames / 1000000.0);
             profilePresented = videoStats.presented_frames;
             profileWindowStart = finished;
-            profileBuildNs = profileSubmitNs = 0;
+            profileBuildNs = profileSubmitNs = profilePrepareNs = 0;
             profileFaces = profileVertices = profileSpans = 0;
             profileFrames = 0;
         }
@@ -1601,6 +1616,7 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
         markWasDown = markDown;
     }
     if (!s_enabled || s_device == NULL) return;
+    info->sync_to_display = s_config.modernFps == RAGE_MODERN_FPS_VSYNC;
     fpsMode = s_config.modernFps != RAGE_MODERN_FPS_LOGIC;
     /* Both modes render the PREVIOUS logic frame - the one compat is
      * presenting during this tick; fps mode moves its transforms toward

@@ -15,6 +15,13 @@ cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
 cmake --build build/release --parallel
 ```
 
+Linux desktop builds need SDL's Wayland and/or X11 XRandR development
+dependencies. Check CMake's final SDL summary for `wayland` or `xrandr`;
+the dependency list used by releases is in
+[the Linux workflow](.github/workflows/linux-release.yml). A build missing both
+can report a fallback 60 Hz even on a 120 Hz desktop. The modern renderer logs
+its SDL video driver and selected refresh rate when `video.fps=vsync`.
+
 For local development, provide a legally obtained disc image through the
 runtime disc setting (paths may be relative or absolute):
 
