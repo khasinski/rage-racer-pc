@@ -29,6 +29,7 @@ static void UnicodePaths(void) {
     size_t total = 0;
     assert(ModFileSnapshotCopy(source, target, &total));
     assert(total == strlen("unicode snapshot"));
+    assert(ModFileSnapshotMatches(source, target));
     assert(!ModFileSnapshotCopy(source, target, &total));
 #ifdef _WIN32
     file = _wfopen(L"mod_snapshot_\x017c_target.tmp", L"rb");
@@ -65,6 +66,15 @@ int main(void) {
     FILE *file = fopen(source,"wbx"); assert(file);
     assert(fwrite(bytes,1,sizeof(bytes),file) == sizeof(bytes)); assert(fclose(file) == 0);
     assert(ModFileSnapshotCopy(source,target,&total)); assert(total == sizeof(bytes));
+    assert(ModFileSnapshotMatches(source, target));
+    assert(!ModFileSnapshotMatches(NULL, target));
+    assert(!ModFileSnapshotMatches(source, NULL));
+    file = fopen(source, "r+b"); assert(file);
+    assert(fputc(255, file) == 255); assert(fclose(file) == 0);
+    assert(!ModFileSnapshotMatches(source, target));
+    file = fopen(source, "r+b"); assert(file);
+    assert(fputc(bytes[0], file) == bytes[0]); assert(fclose(file) == 0);
+    assert(ModFileSnapshotMatches(source, target));
     assert(!ModFileSnapshotCopy(source,target,&total)); /* Never overwrite. */
     file = fopen(target,"rb"); assert(file);
     assert(fread(copied,1,sizeof(copied),file) == sizeof(copied)); assert(fclose(file) == 0);

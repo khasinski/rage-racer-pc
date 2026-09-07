@@ -9,6 +9,10 @@
  * are UTF-8. Parent directories are not pinned. This is not an adversarial
  * filesystem sandbox or a multi-file point-in-time transaction. */
 int ModFileSnapshotCopy(const char *source, const char *target, size_t *total);
+/* Bounded byte comparison through validated regular-file handles. Used after
+ * batch copying to reject sources changed since their individual copy. This
+ * detects differing reads, not a multi-file atomic point-in-time snapshot. */
+int ModFileSnapshotMatches(const char *source, const char *snapshot);
 /* Exclusively create a UTF-8 destination from caller-owned bytes. Failed
  * writes remove only their newly created output. No directory creation or
  * durability guarantee; intended for private staging metadata. */

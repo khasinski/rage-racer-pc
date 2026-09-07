@@ -42,6 +42,13 @@ static int SnapshotCommand(void) {
         if (!ModFileSnapshotCopy(yyjson_get_str(yyjson_arr_get(pair,0)),
             yyjson_get_str(yyjson_arr_get(pair,1)),&total)) goto done;
     }
+    /* Earlier files may have changed while later files were being copied.
+     * Do not publish the batch without rechecking every source against its
+     * private copy. Concurrent writers still prevent an atomic guarantee. */
+    yyjson_arr_foreach(root,i,count,pair) {
+        if (!ModFileSnapshotMatches(yyjson_get_str(yyjson_arr_get(pair,0)),
+            yyjson_get_str(yyjson_arr_get(pair,1)))) goto done;
+    }
     ok = 1;
 done:
     yyjson_doc_free(doc); free(bytes);

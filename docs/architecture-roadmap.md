@@ -43,12 +43,27 @@ and regression evidence; extracting an unused interface is not completion.
   advisory, and large requests use bounded stdin rather than argv.
 - Package JSON import validation now uses a C schema module and vendored strict
   JSON parser, including owned Unicode fields and the existing launcher limits.
-- Remaining integration work: compiled profile mutation/export and resource-claim
-  discovery, source fingerprints and atomic source snapshots; separate car
+- Follow-up integration now includes compiled profile operations/export metadata,
+  manifest resource claims and private composition snapshots. The launcher
+  remains the orchestration layer; these are not fully atomic multi-file source
+  transactions. Current provider/inventory/manifest-edit/composition tests pass
+  13/13 with the rebuilt rage-mod-cli, including bypassed UI summaries and
+  changed snapshot claims. Remaining work includes source fingerprints and
+  atomic source snapshots; separate car
   catalog identity from optional embedded geometry; unify original/generated/
   mod providers. This checkpoint does not complete any roadmap stage.
 
 ## Stages and acceptance gates
+
+Compiled snapshot batches now recheck every source against its private copy
+after all files have been copied. ModFileSnapshotMatches uses validated regular
+file handles and a 128MiB comparison bound. Tests cover changed/restored bytes,
+null arguments and Unicode paths; the compiled test passes Linux ASan/UBSan
+and Windows ClangCL Release (1.39s). Nine Linux launcher snapshot/composition
+tests pass. This catches ordinary edits to earlier files during later copies,
+but remains optimistic: concurrent restoration or later edits are possible,
+and no atomic multi-file point-in-time snapshot is claimed. Windows evidence
+covers the file API, not a rerun of the complete launcher batch command.
 
 After explicitly relinking production rage-racer (SHA256
 8a4c94c701730d58f871c22788f22e5e1fd7e368014de3ae621d2bfd106700bb),

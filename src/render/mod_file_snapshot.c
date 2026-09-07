@@ -69,6 +69,29 @@ static FILE *SnapshotOpenTarget(const char *path) {
 #endif
 }
 
+int ModFileSnapshotMatches(const char *source, const char *snapshot) {
+    unsigned char original[65536], copied[65536];
+    FILE *input, *output;
+    size_t total = 0;
+    int ok = 0;
+    if (!source || !snapshot) return 0;
+    input = SnapshotOpenSource(source);
+    if (!input) return 0;
+    output = SnapshotOpenSource(snapshot);
+    if (!output) { fclose(input); return 0; }
+    for (;;) {
+        size_t n = fread(original, 1, sizeof(original), input);
+        size_t m = fread(copied, 1, sizeof(copied), output);
+        if (n != m || n > 128u * 1024u * 1024u - total ||
+            memcmp(original, copied, n)) break;
+        total += n;
+        if (!n) { ok = !ferror(input) && !ferror(output); break; }
+    }
+    if (fclose(input)) ok = 0;
+    if (fclose(output)) ok = 0;
+    return ok;
+}
+
 static void SnapshotRemoveTarget(const char *path) {
 #ifdef _WIN32
     wchar_t *wide = SnapshotWidePath(path);
