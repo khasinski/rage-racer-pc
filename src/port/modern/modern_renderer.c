@@ -1265,6 +1265,7 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
     int i;
     vram = ModernVramSnapshotForFrame(
         &s_sampledVram, snapshot->frameCounter,
+        ModernNativeGpuTextureRevision(), ModernAssetsGeneration(),
         ModernCaptureVramSnapshot, NULL);
     if (vram == NULL) return 0;
     if (profile < 0) {

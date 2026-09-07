@@ -868,3 +868,26 @@ mid-scene presentation, ensure its first sample cannot be taken during a partial
 texture update, and guard/retain the matching native material and asset
 generations. The mutable PSY-Z mirror is no longer sufficient reason to delay
 reuse of an already captured private image.
+
+### VRAM snapshot identity includes native resource generations
+
+The private presentation VRAM cache now matches the captured frame number,
+native track texture revision and modern asset generation. Production rendering
+supplies the revision used by native preparation and the current asset generation.
+A repeated frame id after a generation change therefore captures again instead
+of returning unrelated saved pixels. Failed capture leaves the old cache identity
+intact and allows retry; it does not publish the new generation prematurely.
+
+`ModernVramSnapshotLookup` provides a read-only query with the same identity
+checks and no capture callback. The normal capture path uses this query first;
+a future mid-scene path can use it exclusively to avoid sampling partial live
+VRAM after a cache miss. This alone does not enable mid-scene presentation or
+freeze the first sample at a publication boundary.
+
+The compiled snapshot regression now covers independent revision/generation
+changes with an unchanged frame, stable repeated lookup, failed generation
+capture/retry, UINT64_MAX identities, and misses that perform no capture.
+All six snapshot/GPU/native-world/toggle/recovery/history regressions pass;
+after extracting the read-only query, the two snapshot regressions pass again.
+Production and smoke builds pass. Frame scheduling and simulation timing are
+unchanged; no new FPS claim is made for this ownership checkpoint.

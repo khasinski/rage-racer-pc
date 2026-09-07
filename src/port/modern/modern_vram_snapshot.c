@@ -32,17 +32,30 @@ void ModernVramSnapshotReset(ModernVramSnapshotCache *cache) {
     if (cache != NULL) *cache = (ModernVramSnapshotCache){0};
 }
 
+SDL_GPUTexture *ModernVramSnapshotLookup(
+    const ModernVramSnapshotCache *cache, uint32_t frame,
+    uint64_t trackRevision, uint64_t assetGeneration) {
+    if (cache && cache->valid && cache->frame == frame &&
+        cache->trackRevision == trackRevision &&
+        cache->assetGeneration == assetGeneration)
+        return cache->texture;
+    return NULL;
+}
+
 SDL_GPUTexture *ModernVramSnapshotForFrame(
     ModernVramSnapshotCache *cache, uint32_t frame,
+    uint64_t trackRevision, uint64_t assetGeneration,
     ModernVramSnapshotCapture capture, void *context) {
     SDL_GPUTexture *texture;
 
     if (cache == NULL || capture == NULL) return NULL;
-    if (cache->valid && cache->frame == frame && cache->texture != NULL)
-        return cache->texture;
+    texture = ModernVramSnapshotLookup(cache, frame, trackRevision, assetGeneration);
+    if (texture) return texture;
     texture = capture(context);
     if (texture == NULL) return NULL;
     cache->frame = frame;
+    cache->trackRevision = trackRevision;
+    cache->assetGeneration = assetGeneration;
     cache->texture = texture;
     cache->valid = 1;
     return texture;
