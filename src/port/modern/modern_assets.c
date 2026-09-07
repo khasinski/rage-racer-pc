@@ -391,7 +391,13 @@ int ModernAssetsInit(void) {
 }
 
 int ModernAssetsInitRoot(const char *root) {
-    if (s_source != MODERN_ASSET_SOURCE_NONE) return 1;
+    if (s_source != MODERN_ASSET_SOURCE_NONE) {
+        if (root == NULL ||
+            (s_source == MODERN_ASSET_SOURCE_CACHE && strcmp(root, s_root) == 0))
+            return 1;
+        fprintf(stderr, "rage-port: cannot change native asset source in an active session; shut down the session first\n");
+        return 0;
+    }
     ModernAssetsInitModProvider();
     if (ModernAssetsTryRoot(root)) {
         s_source = MODERN_ASSET_SOURCE_CACHE;

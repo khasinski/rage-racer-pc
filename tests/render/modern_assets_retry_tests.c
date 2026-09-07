@@ -55,6 +55,12 @@ int main(int argc, char **argv) {
     /* Successful initialization is idempotent and preserves its source. */
     if (!ModernAssetsInitRoot(NULL) || !ModernAssetsReady()) return 5;
     if (ModernAssetsGeneration() != liveGeneration) return 33;
+    /* An explicit different source is not an idempotent ensure-ready call.
+     * Reject it without invalidating meshes borrowed by the active frame. */
+    if (ModernAssetsInitRoot(meshPath) || ModernAssetsInitRoot("")) return 38;
+    if (!ModernAssetsReady() || ModernAssetsGeneration() != liveGeneration ||
+        ModernAssetsFind(&instance) != resident || resident->mesh.bytes != ownedBytes)
+        return 39;
     if (ModernAssetsFind(&instance) != resident || resident->mesh.bytes != ownedBytes ||
         memcmp(ownedBytes, meshBytes, sizeof(meshBytes))) return 25;
     unsigned char nextMeshBytes[sizeof(meshBytes)];

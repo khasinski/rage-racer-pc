@@ -11,6 +11,9 @@ int ModernAssetsInit(void);
 /* Headless workshop tools: catalog to stdout, or one authored source mesh. */
 int ModernAssetsCarCatalog(void);
 int ModernAssetsExportCar(const char *key, const char *path);
+/* Active sessions accept NULL (ensure ready) or the exact same cache-root
+ * spelling. A different explicit root fails without changing borrowed assets
+ * or their generation. Switching sources requires full session teardown. */
 int ModernAssetsInitRoot(const char *root);
 void ModernAssetsShutdown(void);
 const RageRuntimeCachedMesh *ModernAssetsFind(
