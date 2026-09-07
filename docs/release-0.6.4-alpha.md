@@ -73,6 +73,17 @@ Do not replace the published 0.6.3-alpha tag or packages.
   The importer and modern renderer initialized; the BIN scenario reached the
   race and imported native meshes. These timed probes are not full successful
   route tests or proof of interactive file-picker/double-click behavior.
+  Follow-up interactive picker test: the c7b5f7e69 Linux package ran in an
+  isolated Xvfb session in the dev container with SDL's Zenity backend and
+  separate empty config/state directories for CUE and Track 01 BIN. Both were
+  selected through the real file dialog, saved to disc-cue-path, imported
+  automatically and reached the race with the native GPU pipeline. Restarting
+  each with no command-line arguments used the saved image without a dialog
+  and initialized the importer again. Probes were terminated after checking
+  startup (exit zero); they were not additional complete races. Evidence:
+  `build/release-064-picker/{cue,bin}-{selected,reopened}.log` and saved paths.
+  This verifies X11/Zenity, not Wayland portal dialogs, platform file-manager
+  double-click behavior, audible output or physical display pacing.
 - Platforms: b574ee682 passed Linux, Windows and macOS release builds, sanitizers,
   compiled texture/archive and mod contracts, and renderer snapshot contracts.
   Launcher CI passed on macOS but exposed two build defects: clang-cl ignored
