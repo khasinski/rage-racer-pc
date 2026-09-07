@@ -96,10 +96,10 @@ endif()
 if(TARGET rage-racer-smoke)
     add_test(
         NAME keyboard_input
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_keyboard_input.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND}
+            -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DSOURCE=${CMAKE_SOURCE_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_keyboard_input.cmake
     )
 set_tests_properties(keyboard_input PROPERTIES LABELS e2e)
     set_tests_properties(keyboard_input PROPERTIES TIMEOUT 60)

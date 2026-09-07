@@ -55,6 +55,16 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Keyboard tap coverage now runs through CMake with the original 30-frame run,
+45-second child deadline and both PAD_START mapping/rising-edge assertions.
+The Python baseline first failed on the current Release build: the synthetic
+SDL event reported an invalid repeat value and lost the pressed latch. Its
+union initializer was replaced with SDL_zero of the entire event, with explicit
+key-down/up state. The unchanged Python baseline then passed, and the CMake
+replacement passed ten consecutive Linux offscreen runs (2.05s total) before
+removing the Python script. This fixes synthetic-event initialization, not a
+demonstrated physical-keyboard bug, and does not provide physics input replay.
+
 Race-restart orchestration now uses CMake with the same Unicode scenario path,
 2520-frame run, restart hooks at 2300/2400, exact count of two restart messages,
 and last smoke-stop line in scene 12. The Python baseline passed (18.65s)
