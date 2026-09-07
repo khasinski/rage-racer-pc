@@ -33,7 +33,10 @@ const RageRuntimeMesh *ModernAssetsResidentMeshLookup(
  * scratch bytes. Keep storage at a stable address until done with the view.
  * Image pixels have separate ownership and must be freed with the API below.
  * Failure leaves all caller outputs unchanged and releases intermediate pixels.
- * Before reusing an output image for a successful load, free its old pixels. */
+ * Before reusing an output image for a successful load, free its old pixels.
+ * Cached sidecar definitions are immutable once validated in this session;
+ * edits become visible after full shutdown/reinitialization. Failed catalog
+ * opens are retryable. Pixel files are read separately, not a source snapshot. */
 int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
                              uint32_t material, uint8_t variant,
                              RageRenderMaterial *definition,

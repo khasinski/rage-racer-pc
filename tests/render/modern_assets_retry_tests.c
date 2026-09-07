@@ -17,8 +17,14 @@ static int TestMaterialRetry(const char *root, const char *sidecar,
     if (SDL_snprintf(path, sizeof(path), "%s/%s", root, sidecar) >= (int)sizeof(path) ||
         SDL_snprintf(pixelsPath, sizeof(pixelsPath), "%s/texture.rgba", root) >= (int)sizeof(pixelsPath)) return 0;
     memset(pixels, 173, sizeof(pixels));
-    if (!SDL_SaveFile(path, material, sizeof(material) - 1) ||
+    /* Failed catalog validation must be retryable, including a valid target
+     * followed by a malformed unrelated record. */
+    static const char invalid[] = "# rage-rmat v4\n0 texture.rgba\ninvalid\n";
+    if (!SDL_SaveFile(path, invalid, sizeof(invalid) - 1) ||
         !SDL_SaveFile(pixelsPath, pixels, sizeof(pixels))) return 0;
+    if (ModernAssetsLoadMaterial(instance, 0, 0, &definition, &image, &storage) ||
+        image.pixels || storage.baseColorTexture[0]) return 0;
+    if (!SDL_SaveFile(path, material, sizeof(material) - 1)) return 0;
     if (!ModernAssetsLoadMaterial(instance, 0, 0, &definition, &image, &storage)) return 0;
     if (image.size != sizeof(pixels) || memcmp(image.pixels, pixels, sizeof(pixels)) ||
         definition.baseColorTexture.text != storage.baseColorTexture ||
@@ -26,16 +32,16 @@ static int TestMaterialRetry(const char *root, const char *sidecar,
     RageRenderMaterial savedDefinition = definition;
     RageRenderMaterialStorage savedStorage = storage;
     ModernAssetImage savedImage = image;
-    for (unsigned failure = 0; failure < 2; ++failure) {
-        if (!SDL_SaveFile(path, failure ? material : "invalid", failure ? sizeof(material) - 1 : 7) ||
-            !SDL_SaveFile(pixelsPath, pixels, failure ? 1 : sizeof(pixels))) return 0;
-        if (ModernAssetsLoadMaterial(instance, 0, 0, &definition, &image, &storage) ||
-            memcmp(&definition, &savedDefinition, sizeof(definition)) ||
-            memcmp(&storage, &savedStorage, sizeof(storage)) ||
-            memcmp(&image, &savedImage, sizeof(image)) ||
-            memcmp(image.pixels, pixels, sizeof(pixels))) return 0;
-    }
+    if (!SDL_SaveFile(path, "invalid", 7) ||
+        !SDL_SaveFile(pixelsPath, pixels, 1)) return 0;
+    if (ModernAssetsLoadMaterial(instance, 0, 0, &definition, &image, &storage) ||
+        memcmp(&definition, &savedDefinition, sizeof(definition)) ||
+        memcmp(&storage, &savedStorage, sizeof(storage)) ||
+        memcmp(&image, &savedImage, sizeof(image)) ||
+        memcmp(image.pixels, pixels, sizeof(pixels))) return 0;
     ModernAssetsFreeMaterialImage(&image);
+    /* Repair only the pixels: the catalog still supplies the validated
+     * definition even though its source file has changed. */
     if (!SDL_SaveFile(pixelsPath, pixels, sizeof(pixels)) ||
         !ModernAssetsLoadMaterial(instance, 0, 0, &definition, &image, &storage)) return 0;
     ModernAssetsFreeMaterialImage(&image);
@@ -47,6 +53,38 @@ static void Write32(unsigned char *p, unsigned value) {
     p[1] = (unsigned char)(value >> 8);
     p[2] = (unsigned char)(value >> 16);
     p[3] = (unsigned char)(value >> 24);
+}
+
+static int TestMaterialRetirement(const char *root,
+                                   const RageRenderMeshInstance *instance) {
+    char sidecar[4096], texture[4096];
+    static unsigned char pixels[256 * 256 * 4];
+    static const char updated[] = "# rage-rmat v6\n"
+        "0 next.rgba | - | unlit opaque 0.25 0 1 1 1 1 0 0 0\n";
+    RageRenderMaterial definition = {0};
+    RageRenderMaterialStorage storage = {0};
+    ModernAssetImage image = {0};
+    if (SDL_snprintf(sidecar, sizeof(sidecar), "%s/-material", root) >= (int)sizeof(sidecar) ||
+        SDL_snprintf(texture, sizeof(texture), "%s/next.rgba", root) >= (int)sizeof(texture)) return 0;
+    memset(pixels, 219, sizeof(pixels));
+    if (!SDL_SaveFile(sidecar, updated, sizeof(updated) - 1) ||
+        !SDL_SaveFile(texture, pixels, sizeof(pixels))) return 0;
+    /* The previous catalog still names texture.rgba, which was removed.
+     * The new definition must not leak into this live session. */
+    if (ModernAssetsLoadMaterial(instance, 0, 0, &definition, &image, &storage)) return 0;
+    uint64_t generation = ModernAssetsGeneration();
+    ModernAssetsShutdown();
+    if (!ModernAssetsInitRoot(root) || ModernAssetsGeneration() == generation ||
+        !ModernAssetsLoadMaterial(instance, 0, 0, &definition, &image, &storage) ||
+        definition.roughness != 0.25f || definition.shading != RAGE_RENDER_MATERIAL_SHADING_UNLIT ||
+        strcmp(storage.baseColorTexture, "next.rgba") ||
+        image.size != sizeof(pixels) || memcmp(image.pixels, pixels, sizeof(pixels))) return 0;
+    /* Public results retain their own paths and pixels after session teardown. */
+    ModernAssetsShutdown();
+    if (strcmp(definition.baseColorTexture.text, "next.rgba") ||
+        memcmp(image.pixels, pixels, sizeof(pixels))) return 0;
+    ModernAssetsFreeMaterialImage(&image);
+    return SDL_RemovePath(sidecar) && SDL_RemovePath(texture);
 }
 
 int main(int argc, char **argv) {
@@ -179,6 +217,7 @@ int main(int argc, char **argv) {
         vertex.position[0] != 2.0f || ModernAssetsCachedMeshCount() != 1)
         return 43;
     if (!TestMaterialRetry(secondRoot, "-material", &instance)) return 51;
+    if (!TestMaterialRetirement(secondRoot, &instance)) return 52;
     ModernAssetsShutdown();
     if (!SDL_RemovePath(secondIndex) || !SDL_RemovePath(secondMesh) ||
         !SDL_RemovePath(secondRoot)) return 44;

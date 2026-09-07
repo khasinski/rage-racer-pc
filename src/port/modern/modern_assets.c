@@ -213,8 +213,16 @@ typedef enum ModernAssetSource {
     MODERN_ASSET_SOURCE_DISC
 } ModernAssetSource;
 static ModernAssetSource s_source;
-/* Material sidecars are read synchronously on the render thread. Copy the
- * selected relative path out before releasing their transient file buffer. */
+typedef struct ModernMaterialCatalog {
+    struct ModernMaterialCatalog *next;
+    RageMaterialCatalog catalog;
+    size_t pathLength;
+    char path[];
+} ModernMaterialCatalog;
+/* Like resident meshes, validated definitions belong to the asset session.
+ * Catalogs share by relative sidecar path, not by a particular mesh/variant.
+ * Pixel buffers remain caller-owned and are loaded separately. */
+static ModernMaterialCatalog *s_materialCatalogs;
 
 static void ModernAssetsInitModProvider(void) {
     const char *root = ModAssetsDirectory();
@@ -425,6 +433,12 @@ void ModernAssetsShutdown(void) {
         RuntimeCachedMeshRelease(&s_authoredCarMesh[i]);
     memset(&s_authoredCarMesh,0,sizeof(s_authoredCarMesh));
     RuntimeMeshCacheRelease(&s_cache);
+    while (s_materialCatalogs) {
+        ModernMaterialCatalog *entry = s_materialCatalogs;
+        s_materialCatalogs = entry->next;
+        RenderMaterialCatalogRelease(&entry->catalog);
+        SDL_free(entry);
+    }
     NativeAssetImporterShutdown();
     if (s_indexBytes != NULL) SDL_free(s_indexBytes);
     if (s_environmentIndexBytes != NULL) SDL_free(s_environmentIndexBytes);
@@ -570,27 +584,44 @@ static const char *ModernAssetsFindModMaterialProperties(
     return resolved.material != NULL ? resolved.material->properties : NULL;
 }
 
+static const RageMaterialCatalog *ModernAssetsMaterialCatalog(
+    const char *path, size_t pathLength) {
+    ModernMaterialCatalog *entry;
+    const void *bytes;
+    size_t size;
+    if (!path || !pathLength || (pathLength == 1 && path[0] == '-')) return NULL;
+    for (entry = s_materialCatalogs; entry; entry = entry->next)
+        if (entry->pathLength == pathLength && !memcmp(entry->path, path, pathLength))
+            return &entry->catalog;
+    if (pathLength > SIZE_MAX - sizeof(*entry) ||
+        !ModernAssetReadFile(NULL, path, pathLength, &bytes, &size)) return NULL;
+    entry = SDL_calloc(1, sizeof(*entry) + pathLength);
+    if (!entry) {
+        ModernAssetFreeFile(NULL, bytes);
+        return NULL;
+    }
+    int valid = RenderMaterialCatalogOpen(&entry->catalog, bytes, size);
+    ModernAssetFreeFile(NULL, bytes);
+    if (!valid) { SDL_free(entry); return NULL; }
+    entry->pathLength = pathLength;
+    memcpy(entry->path, path, pathLength);
+    entry->next = s_materialCatalogs;
+    s_materialCatalogs = entry;
+    return &entry->catalog;
+}
+
 static int ModernAssetsFindMaterial(
     const RageRenderMeshInstance *instance, uint32_t material,
     uint8_t variant, RageRenderMaterial *definition,RageRenderMaterialStorage *storage) {
     const RageRuntimeCachedMesh *cached;
-    const void *mapBytes;
-    size_t mapSize;
-    int parsed;
+    const RageMaterialCatalog *catalog;
     if (definition == NULL || instance == NULL) return 0;
     cached = ModernAssetsFind(instance);
-    if (cached == NULL || cached->location.materialPath == NULL ||
-        cached->location.materialPathLength == 0 ||
-        (cached->location.materialPathLength == 1 &&
-         cached->location.materialPath[0] == '-') ||
-        !ModernAssetReadFile(NULL, cached->location.materialPath,
-                             cached->location.materialPathLength,
-                             &mapBytes, &mapSize)) return 0;
-    parsed = RenderMaterialParse(
-        mapBytes, mapSize, material, variant, definition);
-    parsed=parsed&&definition->baseColorTexture.length!=0&&RenderMaterialStorePaths(definition,storage);
-    ModernAssetFreeFile(NULL, mapBytes);
-    if (!parsed) return 0;
+    if (!cached) return 0;
+    catalog = ModernAssetsMaterialCatalog(cached->location.materialPath,
+                                          cached->location.materialPathLength);
+    if (!catalog || !RenderMaterialCatalogFind(catalog, material, variant, definition) ||
+        !RenderMaterialStorePaths(definition, storage)) return 0;
     if (RuntimeConfigEnabled("diagnostics.modern_asset_trace")) {
         fprintf(stderr,
                 "rage-port: native material asset=%u set=%u material=%u "

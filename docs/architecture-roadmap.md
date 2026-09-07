@@ -15,8 +15,23 @@ A malformed trailing record was accepted by the old parser and is rejected
 now. Independent ownership, source mutation, duplicate IDs, invalid unselected
 variants, failed reopen and UINT32_MAX identity cases pass in the compiled
 material test; rebuilt Linux material and modern_assets_retry pass 2/2.
-Session reuse of these catalogs is the next integration step, not yet provided
-by this checkpoint. This does not complete the disc/cache/mod resource catalog.
+The standalone catalog test also passes GCC ASan/UBSan in rage-racer-dev.
+
+The production cache provider now shares catalogs by sidecar path and retains
+them until full asset-session shutdown. Once validated, definitions cannot
+change underneath resident meshes; invalid opens remain retryable. Pixel files
+are still read separately and public material results still own their paths
+and pixels. The session regression covers malformed trailing input, retry,
+source edits, pixel read failure without output damage, new definitions after
+teardown, and outputs surviving teardown. It fails against the previous
+provider implementation and passes with catalog retention. Rebuilt production,
+smoke, replay and stage targets succeed. Linux material, session retry, native
+world, renderer toggles and environment-provider gates pass 5/5 (7.25s).
+The stage-angle gate passes separately with the real PAL fixture at
+build/submission-stage-ArqV5X (4.17s); the synthetic runtime-config fixture
+does not satisfy its silhouette gate and was not used as image evidence.
+This does not yet unify disc/mod content storage, freeze pixel files or provide
+source fingerprints, and is not Windows/macOS runtime verification.
 
 Cache resolution checkpoint (2026-09-07): `RuntimeMeshCacheResolve` now
 distinguishes absent identities from read/decode/capacity errors, clears failed
