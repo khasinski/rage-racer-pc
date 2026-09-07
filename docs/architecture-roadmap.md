@@ -55,6 +55,13 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+The logical initial-window-size regression also uses CMake now. The original
+Python and replacement both pass on Linux offscreen; the replacement preserves
+the one-frame smoke hook, 60s child deadline, process-status check and literal
+640x480 assertion (0.16s). The superseded script was removed only after checking
+source references. This is logical size coverage, not desktop DPI/fullscreen
+or Windows/macOS window-manager verification.
+
 Persistent diagnostic-log and initial-state regressions now run through CMake
 instead of Python. Both original runners passed before replacement; the CMake
 runners retain environment settings, subprocess deadlines, exit-status checks

@@ -634,10 +634,9 @@ set_tests_properties(diagnostic_log PROPERTIES LABELS e2e)
     set_tests_properties(diagnostic_log PROPERTIES TIMEOUT 60)
     add_test(
         NAME window_size
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_window_size.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DSOURCE=${CMAKE_SOURCE_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_window_size.cmake
     )
 set_tests_properties(window_size PROPERTIES LABELS e2e)
     set_tests_properties(window_size PROPERTIES TIMEOUT 60)
