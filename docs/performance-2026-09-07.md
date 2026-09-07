@@ -482,3 +482,25 @@ and production/smoke binaries were rebuilt with corrections enabled. The raw
 local traces are /tmp/rage-palette-split.log, /tmp/rage-queue-split.log and
 /tmp/rage-queue-no-gaps.log. This intervention identifies a costly code path,
 not an achieved FPS gain; the competing game was still active.
+
+### Reuse sample floors for the instability check
+
+The PSY-Z CPU texture sampler already floors both interpolated UV coordinates
+to select texels. It now checks distance to those integer endpoints and their
+successors instead of independently calling round twice. Interpolation order,
+clamping and the strict 1e-7 compatibility threshold are unchanged.
+
+The compiled reference suite passes 2,014,720 exact sample/flag comparisons.
+An added 30,750 cases exercise both UV axes around integers, half-integers,
+the tolerance threshold and adjacent representable doubles, including negative
+coordinates. The suite also passes ASan/UBSan. The PAL image and semantic dump
+match the previous commit byte for byte; production and smoke builds pass.
+
+A GCC 16.2 -O3 C microbenchmark alternated ten-million-sample runs of the old
+and new header: baseline 92.360/84.760/86.756 ms; candidate
+67.657/68.697/67.435 ms, with identical checksums. This is about 23% less time
+in that synthetic sampling kernel, not in the whole frame. Its local harness
+is build/sample-round-bench.c. One traced control frame measured environment
+work at 3.331 ms versus the earlier 3.497 ms sample; competing load prevents
+attributing that difference to this change. The 120 FPS target remains open.
+Native-world, renderer-toggle and texture-sample regressions pass (3/3).

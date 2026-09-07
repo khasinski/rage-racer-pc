@@ -108,6 +108,29 @@ static int check_unit_sprites(void) {
 }
 
 int main(void) {
+    /* Probe both sides of the strict instability tolerance, including
+     * negative UVs. The other coordinate must not hide a flag mismatch. */
+    for (int integer = -512; integer <= 512; ++integer) {
+        const double offsets[] = {0, -1e-7, 1e-7, -0.5, 0.5};
+        for (unsigned i = 0; i < sizeof(offsets)/sizeof(offsets[0]); ++i) {
+            double center = integer + offsets[i];
+            double values[] = {center, nextafter(center, -INFINITY), nextafter(center, INFINITY)};
+            for (unsigned j = 0; j < 3; ++j) {
+                for (unsigned axis = 0; axis < 2; ++axis) {
+                    TextureSamplePlane plane = {.u = 0.375, .v = 0.375};
+                    if (axis) plane.v = values[j]; else plane.u = values[j];
+                    uint16_t u, v;
+                    bool actual = TextureSampleAt(&plane, 0, 0, &u, &v);
+                    bool expected = fabs(values[j] - round(values[j])) < 1e-7;
+                    if (actual != expected || u != (uint16_t)CLAMP((int)floor(plane.u), 0, 255) ||
+                        v != (uint16_t)CLAMP((int)floor(plane.v), 0, 255)) {
+                        fputs("Texture sampling tolerance boundary mismatch\n", stderr);
+                        return 1;
+                    }
+                }
+            }
+        }
+    }
     if (check_unit_sprites()) {
         fputs("Unit sprite correction differs from general path\n", stderr);
         return 1;
