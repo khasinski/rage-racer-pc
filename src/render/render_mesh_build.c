@@ -224,31 +224,37 @@ static int TerrainTriangleFacesCamera(
     return 0;
 }
 
+typedef struct RagePreparedTerrainQuad {
+    uint32_t indices[6];
+    RageRuntimeVertex source[4];
+    RageRenderVec3 positions[6];
+    int indicesValid, positionsValid;
+} RagePreparedTerrainQuad;
+
 static int TerrainQuadIsHidden(
     const RageRenderWorld *world, const RageTransformBasis *basis,
     const RageRenderViewTransform *viewTransform,
     const RageRuntimeMesh *mesh, uint32_t first,
-    RageRenderVec3 positions[6], int *positionsValid) {
-    *positionsValid = 0;
+    RagePreparedTerrainQuad *quad) {
+    quad->indicesValid = quad->positionsValid = 0;
     /* Visibility has no UV, normal, fog or lighting dependency. Keep its
      * temporary geometry independent of the expanded shading payload. */
     RageRenderVec3 triangles[2][3];
-    uint32_t indices[6];
     static const uint8_t uniqueCorners[4] = {0, 1, 2, 5};
     uint32_t corner;
     for (corner = 0; corner < 6; corner++)
-        if (!RuntimeMeshIndex(mesh, first + corner, &indices[corner]))
+        if (!RuntimeMeshIndex(mesh, first + corner, &quad->indices[corner]))
             return 0;
+    quad->indicesValid = 1;
     /* rmesh terrain faces are authored quads expanded as ABC/CBD. Do not
      * infer quad culling for an independent triangle pair from a mod. */
-    if (indices[3] != indices[2] || indices[4] != indices[1]) return 0;
+    if (quad->indices[3] != quad->indices[2] || quad->indices[4] != quad->indices[1]) return 0;
     for (corner = 0; corner < 4; corner++) {
-        RageRuntimeVertex source;
         RageRenderVec3 position;
         uint32_t target = uniqueCorners[corner];
-        if (!RuntimeMeshVertex(mesh, indices[target], &source))
+        if (!RuntimeMeshVertex(mesh, quad->indices[target], &quad->source[corner]))
             return 0;
-        position = TransformPosition(basis, &source);
+        position = TransformPosition(basis, &quad->source[corner]);
         position.x = SnapTerrainCellBoundary(position.x);
         position.z = SnapTerrainCellBoundary(position.z);
         if (corner < 3) triangles[0][corner] = position;
@@ -260,8 +266,8 @@ static int TerrainQuadIsHidden(
      * Invalid/non-quad pairs never publish positions. The caller refreshes
      * this storage at every six-index boundary and for every instance. */
     for (corner = 0; corner < 6; ++corner)
-        positions[corner] = triangles[corner / 3][corner % 3];
-    *positionsValid = 1;
+        quad->positions[corner] = triangles[corner / 3][corner % 3];
+    quad->positionsValid = 1;
     /* A terrain face is one authored quad. Reject it only when neither half
      * faces the camera. Slightly twisted quads otherwise lose valid road
      * geometry when culled per triangle, while drawing both sides exposes
@@ -358,6 +364,7 @@ static int BuildVertex(const RageTransformBasis *basis,
                            const RageRenderMeshInstance *instance,
                            const RageNativeInstanceState *instanceState,
                            const RageRuntimeMesh *mesh, uint32_t index,
+                           const RageRuntimeVertex *preparedSource,
                            const RageRenderVec3 *preparedPosition,
                            float aspect, int localSource, RageNativeDrawVertex *out,
                            uint32_t *material, uint32_t *materialFlags,
@@ -365,7 +372,8 @@ static int BuildVertex(const RageTransformBasis *basis,
     RageRuntimeVertex source;
     RageRenderVec3 normal;
     RageRenderVec3 worldPosition;
-    if (!RuntimeMeshVertex(mesh, index, &source)) return 0;
+    if (preparedSource) source = *preparedSource;
+    else if (!RuntimeMeshVertex(mesh, index, &source)) return 0;
     *materialFlags = source.material &
         (RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY |
          RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT);
@@ -582,8 +590,8 @@ static uint32_t RenderBuildNativeDrawsFiltered(
         RageNativeInstanceState instanceState;
         uint32_t first, count, offset;
         int terrainQuadHidden = 0;
-        int terrainPositionsValid = 0;
-        RageRenderVec3 terrainPositions[6];
+        RagePreparedTerrainQuad terrainQuad;
+        terrainQuad.indicesValid = terrainQuad.positionsValid = 0;
         if (passFilter >= 0 && instance->pass != (RageRenderPass)passFilter)
             continue;
         /* Excluded passes must not consult (or trigger work in) the asset
@@ -620,19 +628,20 @@ static uint32_t RenderBuildNativeDrawsFiltered(
             if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
                 if ((offset % 6u) == 0) {
                     terrainQuadHidden = 0;
-                    terrainPositionsValid = 0;
+                    terrainQuad.indicesValid = terrainQuad.positionsValid = 0;
                     /* Global indices can continue into the next mesh range.
                      * They must not complete this range's trailing triangle. */
                     if (count - offset >= 6)
                         terrainQuadHidden = TerrainQuadIsHidden(
                             world, &basis, &viewTransform, mesh, first + offset,
-                            terrainPositions, &terrainPositionsValid);
+                            &terrainQuad);
                 }
                 if (terrainQuadHidden) continue;
             }
             for (corner = 0; corner < 3; corner++) {
-                valid = valid && RuntimeMeshIndex(mesh, first + offset + corner,
-                                                      &indices[corner]);
+                if (terrainQuad.indicesValid) indices[corner] = terrainQuad.indices[offset % 6u + corner];
+                else valid = valid && RuntimeMeshIndex(mesh, first + offset + corner,
+                                                       &indices[corner]);
                 if (valid) {
                     RagePreparedVertexCacheEntry *entry =
                         &vertexCache[indices[corner] & 255u];
@@ -644,11 +653,14 @@ static uint32_t RenderBuildNativeDrawsFiltered(
                         materialFlags[corner] = entry->materialFlags;
                         depthDecals[corner] = entry->depthDecal;
                     } else {
+                        static const uint8_t quadSourceCorner[6] = {0, 1, 2, 2, 1, 3};
+                        uint32_t quadCorner = offset % 6u + corner;
                         valid = BuildVertex(&basis, &viewTransform, world,
                             (instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FOG) != 0,
                             gpuFog, compactVertices != NULL && gpuFog,
                             instance, &instanceState, mesh, indices[corner],
-                            terrainPositionsValid ? &terrainPositions[offset % 6u + corner] : NULL,
+                            terrainQuad.positionsValid ? &terrainQuad.source[quadSourceCorner[quadCorner]] : NULL,
+                            terrainQuad.positionsValid ? &terrainQuad.positions[quadCorner] : NULL,
                             aspect, localSource,
                             &triangle[corner], &materials[corner],
                             &materialFlags[corner], &depthDecals[corner]);

@@ -241,3 +241,18 @@ The mesh suite checks relevant transform-state changes and independence from
 material/source identity. Mirror, native-world, renderer-toggle and
 submit-recovery tests pass. No new FPS claim is made while another game is
 using the machine; this checkpoint demonstrates reduced command volume.
+
+### Reuse terrain input during visibility and draw preparation
+
+Authored terrain quads now carry their six validated indices, four decoded
+source vertices and snapped positions from visibility evaluation into vertex
+preparation. Visible halves reuse these inputs instead of decoding them again.
+This storage belongs to one quad/build invocation; no camera-dependent result
+is retained between frames or views. Independent triangle pairs retain their
+original behavior, and incomplete trailing quads reset both validity flags.
+
+The existing range regression now also checks distinct UVs, normals and colors
+at every corner in both CPU/GPU fog modes. The compiled mesh suite, mirror and
+native-world tests pass, as does ASan/UBSan. The frozen frame-649 image and draw
+dump match the preceding implementation byte for byte. This removes repeated
+input reads; it does not make terrain GPU-resident or establish an FPS increase.

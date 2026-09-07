@@ -443,8 +443,14 @@ static void test_terrain_position_reuse_stops_at_incomplete_quad(void) {
     write_u32(bytes + 16, 4); write_u32(bytes + 20, 9);
     write_u32(bytes + 24, 0); write_u32(bytes + 28, 9);
     for (unsigned i = 0; i < 4; ++i) {
-        memcpy(bytes + 32 + i * 40, positions[i], sizeof(positions[i]));
-        bytes[32 + i * 40 + 27] = 255;
+        RageRuntimeVertex source = {0};
+        memcpy(source.position, positions[i], sizeof(source.position));
+        source.uv[0] = (float)i * 0.125f;
+        source.uv[1] = (float)i * 0.25f;
+        source.normal[1] = (float)i * 0.5f;
+        source.color[0] = (uint8_t)(31 + i);
+        source.color[3] = 255;
+        EXPECT_EQ(1, RuntimeVertexEncode(bytes + 32 + i * 40, 40, &source));
     }
     for (unsigned i = 0; i < 9; ++i) write_u32(bytes + 192 + i * 4, indices[i]);
     EXPECT_EQ(1, RuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
@@ -458,9 +464,14 @@ static void test_terrain_position_reuse_stops_at_incomplete_quad(void) {
         EXPECT_EQ(9, RenderBuildNativeCompactPassDraws(&world,
             RAGE_RENDER_PASS_MAIN, 1, cpuFog, test_mesh_lookup, &mesh,
             vertices, 9, spans, 1, &spanCount));
-        for (unsigned i = 0; i < 9; ++i)
+        for (unsigned i = 0; i < 9; ++i) {
             for (unsigned axis = 0; axis < 3; ++axis)
                 EXPECT_NEAR(positions[indices[i]][axis], vertices[i].position[axis], 0);
+            EXPECT_NEAR((float)indices[i] * 0.125f, vertices[i].uv[0], 0);
+            EXPECT_NEAR((float)indices[i] * 0.25f, vertices[i].uv[1], 0);
+            EXPECT_NEAR((float)indices[i] * 0.5f, vertices[i].normal[1], 0);
+            EXPECT_EQ(31 + indices[i], vertices[i].color[0]);
+        }
     }
 }
 
