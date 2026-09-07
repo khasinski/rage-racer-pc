@@ -6,6 +6,7 @@
 
 #include "render/render_mesh_build.h"
 #include "render/render_native_vertex.h"
+#include "render/render_local_geometry.h"
 #include "render/render_instance_transform.h"
 #include "render/render_triangle_geometry.h"
 #include "render/authored_car_surface.h"
@@ -1553,7 +1554,40 @@ static void test_shared_view_ranges_preserve_payload_and_draw_state(void) {
     EXPECT_EQ(6, RenderShareNativeViewVertices(vertices, 6, mainSpans, 2, 0, NULL, 0));
 }
 
+static void test_local_uniform_state_tracks_shader_inputs(void) {
+    RageNativeDrawSpan a = {0}, b = {0};
+    RageNativeMeshTemplateView meshA = {0}, meshB = {0};
+    EXPECT_EQ(1, RenderNativeLocalStateEqual(NULL, &a));
+    a.localGeometry = &meshA;
+    a.localTransform.scale = (RageRenderVec3){1, 1, 1};
+    EXPECT_EQ(0, RenderNativeLocalStateEqual(&a, NULL));
+    EXPECT_EQ(0, RenderNativeLocalStateEqual(NULL, &a));
+    b = a;
+    b.localGeometry = &meshB;
+    b.material = 42; b.localFirstVertex = 7; b.firstVertex = 13;
+    b.instanceFlags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING;
+    b.instanceState.lighting = 0.4f;
+    b.carPaintColor1 = 9;
+    EXPECT_EQ(1, RenderNativeLocalStateEqual(&a, &b));
+    RageNativeLocalUniform ua = RenderNativeLocalUniform(&a), ub = RenderNativeLocalUniform(&b);
+    EXPECT_EQ(0, memcmp(&ua, &ub, sizeof(ua)));
+    b.instanceFlags |= RAGE_RENDER_INSTANCE_ENABLE_FOG;
+    EXPECT_EQ(0, RenderNativeLocalStateEqual(&a, &b));
+    b = a; b.depthDecal = 1;
+    EXPECT_EQ(0, RenderNativeLocalStateEqual(&a, &b));
+    b = a; b.localTransform.position.x = 1;
+    EXPECT_EQ(0, RenderNativeLocalStateEqual(&a, &b));
+    b = a; b.localTransform.scale.y = -1;
+    EXPECT_EQ(0, RenderNativeLocalStateEqual(&a, &b));
+    b = a; b.localTransform.rotation.z = 10;
+    EXPECT_EQ(0, RenderNativeLocalStateEqual(&a, &b));
+    b = a; b.localTransform.hasOrientation = 1;
+    b.localTransform.orientation = (RageRenderQuaternion){0, 0, 1, 1};
+    EXPECT_EQ(0, RenderNativeLocalStateEqual(&a, &b));
+}
+
 int main(void) {
+    test_local_uniform_state_tracks_shader_inputs();
     test_shared_view_ranges_preserve_payload_and_draw_state();
     test_vehicle_templates_follow_instance_state_and_capacity();
     test_terrain_culling_respects_mesh_range();

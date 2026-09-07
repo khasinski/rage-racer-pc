@@ -224,3 +224,20 @@ ASan/UBSan with leak detection. Production, smoke, replay and stage targets buil
 This completes the first live resident-geometry slice, covering supported
 vehicle model banks. Terrain and other unsupported paths still use transient
 geometry. The broader architecture roadmap and the 120 FPS target remain open.
+
+### Avoid redundant geometry state commands
+
+Each render pass now retains its bound geometry buffer and local-transform
+uniform state. Adjacent draws with the same transform, fog flag and decal state
+reuse the uniform even when material, paint or source mesh changes. World-space
+terrain draws share the zero/bypass transform. State resets at each pass, so
+main, mirror and shadow cameras cannot inherit an uninitialized binding.
+
+At the same frame 649, main-view local-uniform updates fell from one per draw
+(1,086) to 45; mirror updates fell from 353 to 45 and shadow updates from 134
+to 44. Geometry buffer binds were 34, 34 and 33 respectively. The image and
+draw dump remain byte-identical to the preceding resident implementation.
+The mesh suite checks relevant transform-state changes and independence from
+material/source identity. Mirror, native-world, renderer-toggle and
+submit-recovery tests pass. No new FPS claim is made while another game is
+using the machine; this checkpoint demonstrates reduced command volume.

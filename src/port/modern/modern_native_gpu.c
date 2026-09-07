@@ -1631,13 +1631,30 @@ static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
     return 1;
 }
 
+typedef struct ModernGeometryState {
+    SDL_GPUBuffer *buffer;
+    const RageNativeDrawSpan *localSpan;
+    int uniformValid;
+    uint32_t bufferBinds, uniformUpdates;
+} ModernGeometryState;
+
 static void ModernNativeBindGeometry(SDL_GPUCommandBuffer *command,
     SDL_GPURenderPass *pass, const RageNativeDrawSpan *span,
-    const ModernGeometryBinding *binding, unsigned uniformSlot) {
-    SDL_GPUBufferBinding vertex = {.buffer = binding->buffer};
-    SDL_BindGPUVertexBuffers(pass, 0, &vertex, 1);
-    RageNativeLocalUniform local = RenderNativeLocalUniform(binding->local ? span : NULL);
-    SDL_PushGPUVertexUniformData(command, uniformSlot, &local, sizeof(local));
+    const ModernGeometryBinding *binding, unsigned uniformSlot, ModernGeometryState *state) {
+    if (state->buffer != binding->buffer) {
+        SDL_GPUBufferBinding vertex = {.buffer = binding->buffer};
+        SDL_BindGPUVertexBuffers(pass, 0, &vertex, 1);
+        state->buffer = binding->buffer;
+        ++state->bufferBinds;
+    }
+    const RageNativeDrawSpan *localSpan = binding->local ? span : NULL;
+    if (!state->uniformValid || !RenderNativeLocalStateEqual(state->localSpan, localSpan)) {
+        RageNativeLocalUniform local = RenderNativeLocalUniform(localSpan);
+        SDL_PushGPUVertexUniformData(command, uniformSlot, &local, sizeof(local));
+        state->localSpan = localSpan;
+        state->uniformValid = 1;
+        ++state->uniformUpdates;
+    }
 }
 
 static int ModernNativeSpanCastsShadow(const RageNativeDrawSpan *span) {
@@ -1654,7 +1671,7 @@ static void ModernNativeDrawShadowMap(SDL_GPUCommandBuffer *command) {
     };
     ModernNativeCameraUniform camera;
     SDL_GPURenderPass *pass;
-    SDL_GPUBufferBinding vertex = {.buffer = s_vertexBuffer, .offset = 0};
+    ModernGeometryState geometryState = {0};
     SDL_GPUGraphicsPipeline *boundPipeline = NULL;
     ModernNativeTexture *boundTexture = NULL;
     uint32_t spanIndex;
@@ -1674,7 +1691,6 @@ static void ModernNativeDrawShadowMap(SDL_GPUCommandBuffer *command) {
     if (pass == NULL) return;
     ModernNativeBuildShadowCamera(&s_shadowMap, &camera);
     SDL_PushGPUVertexUniformData(command, 0, &camera, sizeof(camera));
-    SDL_BindGPUVertexBuffers(pass, 0, &vertex, 1);
     for (spanIndex = 0; spanIndex < s_spanCount; spanIndex++) {
         const RageNativeDrawSpan *span = &s_spans[spanIndex];
         SDL_GPUGraphicsPipeline *pipeline = s_shadowDepth;
@@ -1701,7 +1717,7 @@ static void ModernNativeDrawShadowMap(SDL_GPUCommandBuffer *command) {
         }
         const float uvOffset[4] = {span->instanceState.textureScrollU, 0, 0, 0};
         SDL_PushGPUVertexUniformData(command, 1, uvOffset, sizeof(uvOffset));
-        ModernNativeBindGeometry(command, pass, span, &s_mainGeometry[spanIndex], 2);
+        ModernNativeBindGeometry(command, pass, span, &s_mainGeometry[spanIndex], 2, &geometryState);
         SDL_DrawGPUPrimitives(pass, span->vertexCount, 1,
                               s_mainGeometry[spanIndex].first, 0);
         drawCount++;
@@ -1709,8 +1725,9 @@ static void ModernNativeDrawShadowMap(SDL_GPUCommandBuffer *command) {
     SDL_EndGPURenderPass(pass);
     if (RuntimeConfigEnabled("diagnostics.modern_asset_trace")) {
         fprintf(stderr,
-                "rage-port: native shadow map frame=%llu draws=%u masked=%u\n",
-                (unsigned long long)s_worldFrame, drawCount, maskedDrawCount);
+                "rage-port: native shadow map frame=%llu draws=%u masked=%u geometry_binds=%u local_uniforms=%u\n",
+                (unsigned long long)s_worldFrame, drawCount, maskedDrawCount,
+                geometryState.bufferBinds, geometryState.uniformUpdates);
     }
 }
 
@@ -1746,6 +1763,7 @@ static void ModernNativeGpuDrawSet(
     if (renderCamera == NULL) return;
     RageNativeInstanceState boundInstance = {0};
     int hasBoundInstance = 0;
+    ModernGeometryState geometryState = {0};
     for (spanIndex = 0; spanIndex < spanCount; spanIndex++)
         (void)ModernNativeLoadTexture(command, &spans[spanIndex]);
     if (drawSky &&
@@ -1774,8 +1792,6 @@ static void ModernNativeGpuDrawSet(
     SDL_PushGPUVertexUniformData(
         command, 1, &shadowCamera, sizeof(shadowCamera));
     {
-        SDL_GPUBufferBinding vertex = {.buffer = s_vertexBuffer, .offset = 0};
-        SDL_BindGPUVertexBuffers(pass, 0, &vertex, 1);
     }
     /* Opaque scenery first, its surface overlays second, opaque vehicles
      * third, then transparent materials. Vehicles therefore remain in front
@@ -1868,7 +1884,7 @@ static void ModernNativeGpuDrawSet(
             }
             const ModernGeometryBinding *geometry = spans == s_mirrorSpans
                 ? &s_mirrorGeometry[spanIndex] : &s_mainGeometry[spanIndex];
-            ModernNativeBindGeometry(command, pass, span, geometry, 3);
+            ModernNativeBindGeometry(command, pass, span, geometry, 3, &geometryState);
             SDL_DrawGPUPrimitives(pass, span->vertexCount, 1, geometry->first, 0);
             drawCount++;
         }
@@ -1877,9 +1893,9 @@ static void ModernNativeGpuDrawSet(
     if (drawCount != 0 && RuntimeConfigEnabled("diagnostics.modern_asset_trace")) {
         fprintf(stderr,
                 "rage-port: native draws frame=%llu draws=%u vertices=%u "
-                "view=%s\n",
+                "view=%s geometry_binds=%u local_uniforms=%u\n",
                 (unsigned long long)s_worldFrame, drawCount, drawVertexCount,
-                viewName);
+                viewName, geometryState.bufferBinds, geometryState.uniformUpdates);
     }
 }
 

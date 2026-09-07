@@ -1,5 +1,6 @@
 #ifndef RAGE_RENDER_LOCAL_GEOMETRY_H
 #define RAGE_RENDER_LOCAL_GEOMETRY_H
+#include <string.h>
 
 #include "render_instance_transform.h"
 #include "render_mesh_build.h"
@@ -13,6 +14,20 @@ typedef struct RageNativeLocalUniform {
     float rotation[3][4];
 } RageNativeLocalUniform;
 _Static_assert(sizeof(RageNativeLocalUniform) == 80, "local geometry uniform ABI");
+
+/* Compare only state consumed by the local-transform shader. A missing local
+ * source means the same world-space bypass, regardless of material or buffer.
+ * Conservative transform byte equality may cause extra updates, never stale
+ * uniforms. The source mesh itself is not part of the transform state. */
+static inline int RenderNativeLocalStateEqual(const RageNativeDrawSpan *left,
+    const RageNativeDrawSpan *right) {
+    int a = left && left->localGeometry;
+    int b = right && right->localGeometry;
+    if (!a || !b) return a == b;
+    return !memcmp(&left->localTransform, &right->localTransform, sizeof(left->localTransform)) &&
+        !((left->instanceFlags ^ right->instanceFlags) & RAGE_RENDER_INSTANCE_ENABLE_FOG) &&
+        !!left->depthDecal == !!right->depthDecal;
+}
 
 static inline RageNativeLocalUniform RenderNativeLocalUniform(
     const RageNativeDrawSpan *span) {
