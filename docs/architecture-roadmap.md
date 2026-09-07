@@ -55,6 +55,14 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+The batch snapshot command now has a deterministic compiled regression: a
+test-only wrapper executes both real copies, then changes the first source
+after the second copy. The production JSON/stdin command accepts the unchanged
+batch and rejects the changed one. It passes Linux, Windows ClangCL Release
+(0.72s), and ASan/UBSan with the JSON parser instrumented. No production hooks
+or timing-dependent race are added. This extends the earlier single-file API
+evidence, but does not prove atomicity against arbitrary concurrent writers.
+
 Compiled snapshot batches now recheck every source against its private copy
 after all files have been copied. ModFileSnapshotMatches uses validated regular
 file handles and a 128MiB comparison bound. Tests cover changed/restored bytes,
