@@ -47,6 +47,37 @@ file(SHA256 "${root}/benchmark.ppm.restored.draws.txt" after_prepare)
 if(NOT before_prepare STREQUAL after_prepare)
     message(FATAL_ERROR "Live benchmark changed prepared draw state: ${root}")
 endif()
+foreach(limit 512 0 1)
+    run(geometry-${limit} --scenario "${root}/scenario.ini"
+        --set video.fps=logic --set video.internal_scale=1 --set start.freeze=true
+        --set stop.timer=431 --set run.frames=1400
+        --set diagnostics.modern_cpu_geometry=false
+        --set "diagnostics.modern_geometry_limit=${limit}"
+        --set diagnostics.performance_trace=true
+        --set "diagnostics.modern_dump=${root}/geometry-${limit}.ppm"
+        --set diagnostics.modern_dump_scene_id=12 --set diagnostics.modern_dump_timer=430
+        --set diagnostics.modern_dump_scene=true)
+    require("scene=12 timer=431")
+    require("native draws frame=[0-9]+ draws=[1-9][0-9]* vertices=[1-9][0-9]* view=mirror")
+    if(limit EQUAL 512)
+        require("resident_draws=[1-9][0-9]* local_fallbacks=0")
+    elseif(limit EQUAL 0)
+        require("resident_draws=0 local_fallbacks=[1-9][0-9]*")
+        if(log MATCHES "native-resident-upload")
+            message(FATAL_ERROR "Zero geometry budget created a resident buffer: ${root}")
+        endif()
+    else()
+        require("resident_draws=[1-9][0-9]* local_fallbacks=[1-9][0-9]*")
+    endif()
+    foreach(suffix .ppm .ppm.draws.txt)
+        file(SHA256 "${root}/geometry-${limit}${suffix}" actual)
+        if(limit EQUAL 512)
+            set("reference${suffix}" "${actual}")
+        elseif(NOT actual STREQUAL "${reference${suffix}}")
+            message(FATAL_ERROR "Geometry budget ${limit} changed ${suffix}: ${root}")
+        endif()
+    endforeach()
+endforeach()
 run(attract --set video.renderer=modern --set race.enabled=false --set boot.direct=false
     --set run.frames=2500 --set stop.scene=30 --set stop.timer=200)
 require("scene=30 timer=200")

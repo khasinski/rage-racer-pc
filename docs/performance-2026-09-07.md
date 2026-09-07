@@ -256,3 +256,18 @@ at every corner in both CPU/GPU fog modes. The compiled mesh suite, mirror and
 native-world tests pass, as does ASan/UBSan. The frozen frame-649 image and draw
 dump match the preceding implementation byte for byte. This removes repeated
 input reads; it does not make terrain GPU-resident or establish an FPS increase.
+
+### Resident-budget fallback regression
+
+`diagnostics.modern_geometry_limit` can constrain the resident buffer count
+from zero to the unchanged default/maximum of 512. The native-world regression
+now runs the same frozen race through normal (512), fully transient (0) and
+mixed (1) budgets with residency otherwise enabled. This exercises on-demand
+CPU reconstruction, rather than the separately CPU-expanded diagnostic mode.
+
+At timer 430, with the mirror active, all three images and draw dumps are
+byte-identical. Upload diagnostics prove both the resident and reconstruction
+paths execute in the mixed case and that zero budget creates no resident buffer.
+The extended native-world test passes, and production, smoke, replay and stage
+targets build. This covers budget exhaustion downstream behavior; it does not
+simulate every SDL allocation/map failure inside resource creation.

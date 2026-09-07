@@ -149,6 +149,7 @@ typedef struct ModernGeometryBinding {
 } ModernGeometryBinding;
 static ModernResidentGeometry *s_residentGeometry;
 static uint32_t s_residentGeometryCount;
+static uint32_t s_residentGeometryLimit = 512;
 static ModernGeometryBinding s_mainGeometry[MODERN_NATIVE_MAX_SPANS];
 static ModernGeometryBinding s_mirrorGeometry[MODERN_NATIVE_MAX_SPANS];
 static int s_residentGeometryEnabled;
@@ -555,6 +556,7 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
     s_cpuFogReference = fogReference != NULL && strcmp(fogReference, "1") == 0;
     s_cpuGeometryReference = RuntimeConfigEnabled("diagnostics.modern_uncached_geometry");
     s_residentGeometryEnabled = !RuntimeConfigEnabled("diagnostics.modern_cpu_geometry");
+    s_residentGeometryLimit = (uint32_t)RuntimeConfigInt("diagnostics.modern_geometry_limit", 512, 0, 512);
     fprintf(stderr, "rage-port: native fog=%s\n", s_cpuFogReference ? "cpu-reference" : "gpu");
     s_device = device;
     vertex = ModernNativeCreateShader(
@@ -1524,7 +1526,7 @@ static SDL_GPUBuffer *ModernNativeResidentBuffer(SDL_GPUCommandBuffer *command,
     for (ModernResidentGeometry *entry = s_residentGeometry; entry; entry = entry->next)
         if (entry->source == source) return entry->buffer;
     /* Bound driver object overhead as well as the template payload budget. */
-    if (s_residentGeometryCount >= 512 || !ModernUploadQueueHasRoom(&s_pendingUploads)) return NULL;
+    if (s_residentGeometryCount >= s_residentGeometryLimit || !ModernUploadQueueHasRoom(&s_pendingUploads)) return NULL;
     ModernResidentGeometry *entry = calloc(1, sizeof(*entry));
     if (!entry) return NULL;
     Uint32 size = source->vertexCount * sizeof(*source->vertices);
@@ -1578,6 +1580,7 @@ static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
     mapped = SDL_MapGPUTransferBuffer(s_device, s_vertexTransfer, true);
     if (mapped == NULL) return 0;
     uint32_t dynamicCount = 0;
+    uint32_t residentDraws = 0, localFallbacks = 0;
     for (unsigned view = 0; view < 2; ++view) {
         const RageNativeDrawSpan *spans = view ? s_mirrorSpans : s_spans;
         uint32_t count = view ? s_mirrorSpanCount : s_spanCount;
@@ -1586,7 +1589,7 @@ static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
             const RageNativeDrawSpan *span = &spans[i];
             SDL_GPUBuffer *resident = ModernNativeResidentBuffer(command, span->localGeometry);
             bindings[i] = (ModernGeometryBinding){resident, span->localFirstVertex, resident != NULL};
-            if (resident) continue;
+            if (resident) { ++residentDraws; continue; }
             /* The CPU view-sharing step already proved these ranges equal.
              * Preserve that sharing for geometry outside the resident path. */
             if (view && span->firstVertex < s_vertexCount) {
@@ -1604,10 +1607,12 @@ static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
             }
             bindings[i].buffer = s_vertexBuffer;
             bindings[i].first = dynamicCount;
-            if (s_residentGeometryEnabled && span->localGeometry && !RenderExpandNativeLocalDraw(span,
-                    s_vertices + span->firstVertex, span->vertexCount)) {
-                SDL_UnmapGPUTransferBuffer(s_device, s_vertexTransfer);
-                return 0;
+            if (s_residentGeometryEnabled && span->localGeometry) {
+                ++localFallbacks;
+                if (!RenderExpandNativeLocalDraw(span, s_vertices + span->firstVertex, span->vertexCount)) {
+                    SDL_UnmapGPUTransferBuffer(s_device, s_vertexTransfer);
+                    return 0;
+                }
             }
             memcpy((RageNativeGpuVertex *)mapped + dynamicCount, s_vertices + span->firstVertex,
                 (size_t)span->vertexCount * sizeof(*s_vertices));
@@ -1623,10 +1628,10 @@ static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
     SDL_EndGPUCopyPass(copy);
     if (trace) {
         fprintf(stderr,
-                "native-vertex-upload frame=%llu main=%u mirror=%u bytes=%u cpu_ms=%.3f\n",
+                "native-vertex-upload frame=%llu main=%u mirror=%u bytes=%u cpu_ms=%.3f resident_draws=%u local_fallbacks=%u\n",
                 (unsigned long long)s_worldFrame, s_vertexCount,
                 s_mirrorVertexCount, destination.size,
-                (double)(SDL_GetTicksNS() - started) / 1000000.0);
+                (double)(SDL_GetTicksNS() - started) / 1000000.0, residentDraws, localFallbacks);
     }
     return 1;
 }
