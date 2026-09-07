@@ -369,3 +369,26 @@ The intermediate range implementation recorded 0.518 ms upload preparation
 at frame 649 versus the earlier 0.623 ms sample, but these are not isolated
 performance measurements and the final range-pass skipping change was verified
 for correctness rather than benchmarked. The 120 FPS target remains open.
+
+### Parallelize vertex hash dependency chains
+
+Vertex hashing now mixes the fourteen payload words through four independent
+integer chains before the existing avalanche. Exact full-byte comparison still
+decides identity; vertex insertion and index order are unchanged.
+
+A local C microbenchmark compiled with GCC 16.2 at `-O2` alternated baseline
+and candidate three times. Each run warmed ten frames, then packed 1,500 frames
+of 24,576 terrain-like vertices in 96 retained ranges, with a repeated second
+view. Both versions produced 8,192 resident vertices and reconstructed every
+input vertex exactly. Baseline milliseconds per packing iteration were
+0.507368, 0.499908, 0.505696; candidate times were 0.212953, 0.220500, 0.215341.
+This synthetic CPU workload improved about 57%; it is not a game FPS result.
+The temporary harness is `build/pack-hash-benchmark.c` in this workspace.
+
+The real PAL control image and draw dump remain byte-identical. Frame 649
+still uploads 103,728 bytes. Its complete upload preparation measured 0.533 ms,
+which does not demonstrate an improvement over the earlier 0.518 ms sample.
+Riftbreaker remained active, so no isolated moving FPS comparison was made.
+The pack regression passes ASan/UBSan with leak detection. The production and
+smoke targets build successfully. Native-world residency/fallback/rebuild,
+submission recovery and geometry-pack regressions all pass (3/3).

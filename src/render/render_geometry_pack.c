@@ -12,13 +12,21 @@ void RenderGeometryPackRelease(RageNativeGeometryPack *pack) {
 }
 
 static uint32_t VertexHash(const RageNativeGpuVertex *vertex) {
-    uint32_t hash = 2166136261u;
-    const unsigned char *bytes = (const unsigned char *)vertex;
-    for (size_t byte = 0; byte < sizeof(*vertex); byte += sizeof(uint32_t)) {
-        uint32_t word;
-        memcpy(&word, bytes + byte, sizeof(word));
-        hash = (hash ^ word) * 16777619u;
+    uint32_t words[14];
+    memcpy(words, vertex, sizeof(words));
+    uint32_t a = 2166136261u, b = 0x9e3779b9u, c = 0x85ebca6bu, d = 0xc2b2ae35u;
+    /* Four independent chains avoid serializing all fourteen payload words.
+     * Full byte comparison below remains the equality authority. */
+    for (unsigned i = 0; i < 12; i += 4) {
+        a = (a ^ words[i]) * 16777619u;
+        b = (b ^ words[i + 1]) * 16777619u;
+        c = (c ^ words[i + 2]) * 16777619u;
+        d = (d ^ words[i + 3]) * 16777619u;
     }
+    a = (a ^ words[12]) * 16777619u;
+    b = (b ^ words[13]) * 16777619u;
+    uint32_t hash = a ^ ((b << 7) | (b >> 25)) ^
+        ((c << 13) | (c >> 19)) ^ ((d << 21) | (d >> 11));
     /* Mix high float bits into low table bits (integer-valued coordinates
      * otherwise share long zero mantissa suffixes). */
     hash ^= hash >> 16;
