@@ -92,6 +92,13 @@ int main(void) {
                 next_value() % 256, next_value() % 256, next_value() % 256};
         if (iteration % 3 == 0) v[1].y = v[0].y;
         if (iteration % 7 == 0) v[2].y = v[1].y;
+        if (iteration % 2 == 0) {
+            for (int i = 1; i < 3; ++i) {
+                v[i].r = v[0].r; v[i].g = v[0].g; v[i].b = v[0].b;
+            }
+            /* One differing channel must retain interpolation. */
+            if (iteration % 8 == 0) v[2].g ^= 1;
+        }
         PreparedTextureTriangle p = TextureTrianglePrepare(
             v, draw_offset.x, draw_offset.y);
         for (int y = -130 + draw_offset.y; y <= 130 + draw_offset.y; ++y) {

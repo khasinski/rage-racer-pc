@@ -753,3 +753,34 @@ shipping solution. It implicates that blocking work in missed presentation
 slots but does not explain every outlier. The bypass was removed immediately
 after measurement and production/smoke binaries rebuilt from the original
 correctness-preserving source.
+
+### Constant-color correction rows and publication boundary audit
+
+Prepared texture triangles now classify equal RGB at their three vertices
+once. Constant-color scanlines assign the original RGB endpoints directly;
+varying-color triangles keep the original interpolation and conversion order.
+This removes repeated zero-gradient RGB interpolation from the blocking legacy
+quad-correction path. The frozen independent rasterizer matches 5,220,000 rows,
+including flat colors, one-channel differences, equal-Y vertices, reversed
+edges and draw offsets. ASan/UBSan and native-world VRAM/image/draw comparison
+against the pixel reference pass; production and smoke builds pass.
+
+The game/presentation boundary audit found a prerequisite for cooperative
+presentation during scene updates: `CaptureFrameBegin` flips the capture index
+and immediately clears that buffer, while `CaptureCurrent` exposes it;
+`GameRenderWorldBeginFrame` similarly flips/reset its mutable world and
+`GameRenderWorldPresentation` interpolates from that mutable world. The existing
+wait-loop presentation is after publication and therefore does not justify
+calling it halfway through scene construction. A safe next architectural stage
+needs independently retained previous/current published states plus a separate
+building state, with matching captured packets and texture revisions. Only then
+can additional presentation opportunities be introduced without showing partial
+scenes. Do not add a mid-scene present callback against these current APIs.
+
+The trace-off VSync control lap completed at
+`build/perf-flat-color/20260907-180249-5a170c`: 117.686 mean FPS,
+110.890 slowest-window FPS, 15.371 ms worst-window p95 and 25.476 ms maximum
+interval across 34 post-startup windows. The original PAL/class-1/course-0
+configuration and 1706x960 target were retained. There is no demonstrated
+whole-frame FPS improvement; prioritize the publication/scheduling boundary
+rather than treating further scalar raster changes as a solution to 120 Hz.
