@@ -750,6 +750,67 @@ void RenderNativeMeshTemplateCacheRelease(RageNativeMeshTemplateCache *cache) {
     cache->state = NULL;
 }
 
+static uint32_t ViewRangeHash(const RageNativeGpuVertex *vertex, uint32_t count) {
+    uint32_t hash = count;
+    const unsigned char *bytes = (const unsigned char *)vertex;
+    for (size_t i = 0; i < sizeof(*vertex); ++i) hash = (hash ^ bytes[i]) * 16777619u;
+    return hash ^ (hash >> 16);
+}
+
+uint32_t RenderShareNativeViewVertices(RageNativeGpuVertex *vertices,
+    uint32_t mainCount, const RageNativeDrawSpan *mainSpans, uint32_t mainSpanCount,
+    uint32_t mirrorCount, RageNativeDrawSpan *mirrorSpans, uint32_t mirrorSpanCount) {
+    enum { SLOTS = 4096, PROBES = 8 };
+    uint32_t slots[SLOTS] = {0};
+    if (mirrorCount > UINT32_MAX - mainCount) return UINT32_MAX;
+    const uint32_t total = mainCount + mirrorCount;
+    if (!vertices || !mainSpans || !mirrorSpans || !mainCount || !mirrorCount) return total;
+    for (uint32_t i = 0; i < mainSpanCount; ++i)
+        if (mainSpans[i].firstVertex > mainCount ||
+            mainSpans[i].vertexCount > mainCount - mainSpans[i].firstVertex) return total;
+    uint32_t cursor = mainCount;
+    for (uint32_t i = 0; i < mirrorSpanCount; ++i) {
+        if (mirrorSpans[i].firstVertex != cursor || mirrorSpans[i].vertexCount > total - cursor)
+            return total;
+        cursor += mirrorSpans[i].vertexCount;
+    }
+    if (cursor != total) return total;
+    for (uint32_t i = 0; i < mainSpanCount; ++i) {
+        const RageNativeDrawSpan *span = &mainSpans[i];
+        if (!span->vertexCount) continue;
+        uint32_t slot = ViewRangeHash(vertices + span->firstVertex, span->vertexCount) & (SLOTS - 1);
+        for (unsigned probe = 0; probe < PROBES; ++probe, slot = (slot + 1) & (SLOTS - 1)) {
+            if (!slots[slot]) { slots[slot] = i + 1; break; }
+        }
+    }
+    cursor = mainCount;
+    for (uint32_t i = 0; i < mirrorSpanCount; ++i) {
+        RageNativeDrawSpan *span = &mirrorSpans[i];
+        const RageNativeGpuVertex *source = vertices + span->firstVertex;
+        uint32_t first = cursor;
+        int shared = 0;
+        if (span->vertexCount) {
+            uint32_t slot = ViewRangeHash(source, span->vertexCount) & (SLOTS - 1);
+            for (unsigned probe = 0; probe < PROBES && slots[slot]; ++probe, slot = (slot + 1) & (SLOTS - 1)) {
+                const RageNativeDrawSpan *candidate = &mainSpans[slots[slot] - 1];
+                if (candidate->vertexCount == span->vertexCount &&
+                    !memcmp(vertices + candidate->firstVertex, source,
+                        (size_t)span->vertexCount * sizeof(*vertices))) {
+                    first = candidate->firstVertex;
+                    shared = 1;
+                    break;
+                }
+            }
+        }
+        if (!shared) {
+            memmove(vertices + cursor, source, (size_t)span->vertexCount * sizeof(*vertices));
+            cursor += span->vertexCount;
+        }
+        span->firstVertex = first;
+    }
+    return cursor;
+}
+
 const RageNativeMeshTemplateView *RenderNativeMeshTemplateAcquire(
     RageNativeMeshTemplateCache *cache, const RageRuntimeMesh *mesh,
     RageRenderAssetSet assetSet, uint32_t submesh) {

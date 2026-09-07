@@ -135,6 +135,7 @@ static RageNativeDrawSpan *s_mirrorSpans;
 static uint32_t s_vertexCount;
 static uint32_t s_spanCount;
 static uint32_t s_mirrorVertexCount;
+static uint32_t s_uploadVertexCount;
 static uint32_t s_mirrorSpanCount;
 static uint64_t s_worldFrame = UINT64_MAX;
 static const RageRenderWorld *s_world;
@@ -834,6 +835,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         s_worldFrame = UINT64_MAX;
         s_vertexCount = s_spanCount = 0;
         s_mirrorVertexCount = s_mirrorSpanCount = 0;
+        s_uploadVertexCount = 0;
         return;
     }
     world = &s_ownedWorld.world;
@@ -864,6 +866,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
     if (trace) mainFinished = SDL_GetTicksNS();
     s_mirrorVertexCount = 0;
     s_mirrorSpanCount = 0;
+    s_uploadVertexCount = 0;
     mirrorFirstVertex = s_vertexCount;
     if (world->mirrorActive && world->hasMirrorCamera) {
         RageRenderWorld mirrorWorld = *world;
@@ -877,6 +880,11 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         for (span = 0; span < s_mirrorSpanCount; span++)
             s_mirrorSpans[span].firstVertex += mirrorFirstVertex;
     }
+    s_uploadVertexCount = s_vertexCount + s_mirrorVertexCount;
+    if (!RuntimeConfigEnabled("diagnostics.modern_unshared_views"))
+        s_uploadVertexCount = RenderShareNativeViewVertices(s_vertices,
+            s_vertexCount, s_spans, s_spanCount,
+            s_mirrorVertexCount, s_mirrorSpans, s_mirrorSpanCount);
     if (trace) mirrorFinished = SDL_GetTicksNS();
     s_world = world;
     s_worldFrame = world->frame;
@@ -1484,7 +1492,7 @@ static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
         .transfer_buffer = s_vertexTransfer, .offset = 0};
     SDL_GPUBufferRegion destination = {
         .buffer = s_vertexBuffer, .offset = 0,
-        .size = (s_vertexCount + s_mirrorVertexCount) * sizeof(*s_vertices)};
+        .size = s_uploadVertexCount * sizeof(*s_vertices)};
     if (destination.size == 0) return 0;
     mapped = SDL_MapGPUTransferBuffer(s_device, s_vertexTransfer, true);
     if (mapped == NULL) return 0;
@@ -1833,6 +1841,7 @@ void ModernNativeGpuShutdown(void) {
     s_mirrorVertexCount = 0;
     s_mirrorSpanCount = 0;
     s_worldFrame = UINT64_MAX;
+    s_uploadVertexCount = 0;
     s_world = NULL;
     s_aspect = 4.0f / 3.0f;
     RenderWorldSnapshotRelease(&s_ownedWorld);

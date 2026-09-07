@@ -17,6 +17,15 @@ typedef struct RageNativeGpuVertex {
 
 _Static_assert(sizeof(RageNativeGpuVertex) == 56, "native GPU vertex ABI");
 
+/* Main vertices occupy the prefix; mirror spans must cover the following
+ * mirrorCount vertices in order. Reuse byte-identical main ranges and compact
+ * unmatched mirror ranges in place. Returns the physical combined count;
+ * logical draw counts and all span state except firstVertex are unchanged.
+ * Invalid ranges leave the input unchanged. No cross-frame retention. */
+uint32_t RenderShareNativeViewVertices(RageNativeGpuVertex *vertices,
+    uint32_t mainCount, const RageNativeDrawSpan *mainSpans, uint32_t mainSpanCount,
+    uint32_t mirrorCount, RageNativeDrawSpan *mirrorSpans, uint32_t mirrorSpanCount);
+
 /* Direct compact output; CPU fog encoding remains available for A/B runs. */
 uint32_t RenderBuildNativeCompactPassDraws(
     const RageRenderWorld *world, RageRenderPass pass, float aspect, int cpuFog,

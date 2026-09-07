@@ -1486,7 +1486,49 @@ static void test_vehicle_templates_follow_instance_state_and_capacity(void) {
     RenderNativeMeshTemplateCacheRelease(&cache);
 }
 
+static void test_shared_view_ranges_preserve_payload_and_draw_state(void) {
+    RageNativeGpuVertex vertices[18] = {0}, original[18];
+    RageNativeDrawSpan mainSpans[2] = {{0}}, mirror[4] = {{0}}, saved[4];
+    for (unsigned i = 0; i < 6; ++i) {
+        vertices[i].position[0] = (float)i;
+        vertices[i].normal[1] = 1;
+        vertices[i].color[3] = 255;
+    }
+    for (unsigned i = 0; i < 4; ++i) {
+        mirror[i].firstVertex = 6 + i * 3;
+        mirror[i].vertexCount = 3;
+        mirror[i].assetKey = 100 + i;
+        mirror[i].instanceState.lighting = (float)i;
+        memcpy(vertices + 6 + i * 3, vertices + (i % 2) * 3, 3 * sizeof(*vertices));
+    }
+    vertices[12].uv[0] = 0.25f;
+    vertices[16].fog[3] = 1;
+    mainSpans[0].vertexCount = mainSpans[1].vertexCount = 3;
+    mainSpans[1].firstVertex = 3;
+    memcpy(original, vertices, sizeof(vertices));
+    memcpy(saved, mirror, sizeof(mirror));
+    mirror[3].firstVertex++;
+    EXPECT_EQ(18, RenderShareNativeViewVertices(vertices, 6, mainSpans, 2, 12, mirror, 4));
+    EXPECT_EQ(0, memcmp(vertices, original, sizeof(vertices)));
+    EXPECT_EQ(16, mirror[3].firstVertex);
+    memcpy(mirror, saved, sizeof(mirror));
+    EXPECT_EQ(12, RenderShareNativeViewVertices(vertices, 6, mainSpans, 2, 12, mirror, 4));
+    EXPECT_EQ(0, memcmp(vertices, original, 6 * sizeof(*vertices)));
+    EXPECT_EQ(0, mirror[0].firstVertex);
+    EXPECT_EQ(3, mirror[1].firstVertex);
+    EXPECT_EQ(6, mirror[2].firstVertex);
+    EXPECT_EQ(9, mirror[3].firstVertex);
+    for (unsigned i = 0; i < 4; ++i) {
+        EXPECT_EQ(0, memcmp(vertices + mirror[i].firstVertex,
+            original + saved[i].firstVertex, 3 * sizeof(*vertices)));
+        saved[i].firstVertex = mirror[i].firstVertex;
+        EXPECT_EQ(0, memcmp(&saved[i], &mirror[i], sizeof(mirror[i])));
+    }
+    EXPECT_EQ(6, RenderShareNativeViewVertices(vertices, 6, mainSpans, 2, 0, NULL, 0));
+}
+
 int main(void) {
+    test_shared_view_ranges_preserve_payload_and_draw_state();
     test_vehicle_templates_follow_instance_state_and_capacity();
     test_terrain_culling_respects_mesh_range();
     test_terrain_position_reuse_stops_at_incomplete_quad();

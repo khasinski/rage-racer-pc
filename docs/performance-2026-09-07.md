@@ -138,3 +138,33 @@ but does not yet change GPU uploads. Tests verify stable views and unchanged
 payloads across moving instances and cache growth, invalid inputs and existing
 reference equivalence. Mesh tests, mirror/native-world/renderer-toggle tests
 and ASan/UBSan pass after this interface change.
+
+## Shared main/mirror upload ranges
+
+The live renderer now reuses main-view vertex ranges for byte-identical mirror
+spans. A bounded hash lookup selects candidates; full payload comparison is
+required before sharing, including UV, normal, color, fog and depth attributes.
+Unmatched spans are compacted after the main prefix. Draw state and logical
+vertex counts remain separate from the physical upload count. Hash collisions
+or a full lookup table only reduce sharing. Invalid ranges leave inputs alone.
+`diagnostics.modern_unshared_views=true` retains the former upload layout.
+
+The traced completed lap `perf-shared-views-trace/20260907-150714-1e0598`
+averaged 9,668,808 uploaded bytes in mirror-active frames, versus 18,531,390
+in the earlier trace. This run had severe timing variability (27.24 mean FPS;
+88 seconds wall time), so its CPU timings are not evidence of an isolated
+speedup. Other desktop workloads were active; they were not stopped.
+
+The subsequent untraced lap `perf-shared-views/20260907-150849-e1e7ac`
+completed at 119.21 mean FPS, 114.78 in its slowest 120-frame window, with
+14.688 ms worst window p95 and 3.699 ms highest mean preparation. Compared with
+119.03 previously, this does not establish an FPS improvement or a 120 FPS floor.
+The demonstrated benefit is reduced upload volume, at the cost of comparing
+already expanded CPU geometry. This remains per-frame sharing, not persistent
+GPU residency or GPU instance transformation.
+
+Paired offscreen captures at race frame 649 (timer 430, frozen scene with mirror)
+are byte-identical with sharing enabled/disabled. The compiled range test checks
+payload equality, differing UV/fog data, draw-state preservation, in-place
+compaction and invalid-range rejection. Mesh, mirror, renderer-toggle and
+native-world tests pass, as does the mesh suite under ASan/UBSan.
