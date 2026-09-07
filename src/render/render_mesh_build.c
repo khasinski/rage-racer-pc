@@ -275,19 +275,18 @@ static int TerrainQuadIsHidden(
 
 static int InstanceOutsideFrustum(const RageRenderWorld *world,
                                       const RageRenderViewTransform *viewTransform,
-                                      const RageRenderTransform *transform,
+                                      const RageTransformBasis *basis,
                                       const RageRuntimeMesh *mesh,
                                       uint32_t meshIndex, float aspect) {
     float center[3], radius, maxScale, tanY, tanX, depth;
     float horizontalRadius, verticalRadius;
     RageRenderVec3 worldCenter, view;
-    RageTransformBasis basis = RenderPrepareInstanceTransform(transform);
     if (!RuntimeMeshBounds(mesh, meshIndex, center, &radius)) return 0;
-    worldCenter = TransformPoint(&basis, center);
+    worldCenter = TransformPoint(basis, center);
     RenderWorldToViewPrepared(viewTransform, &worldCenter, &view);
     depth = -view.z;
-    maxScale = fmaxf(fabsf(transform->scale.x),
-                     fmaxf(fabsf(transform->scale.y), fabsf(transform->scale.z)));
+    maxScale = fmaxf(fabsf(basis->scale.x),
+                     fmaxf(fabsf(basis->scale.y), fabsf(basis->scale.z)));
     radius *= maxScale;
     if (depth + radius < world->camera.nearPlane ||
         depth - radius > world->camera.farPlane) return 1;
@@ -457,10 +456,10 @@ static uint32_t RenderBuildNativeDrawsFiltered(
         if (mesh == NULL || !RuntimeMeshRange(mesh, instance->mesh, &first, &count)) {
             continue;
         }
-        if ((instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL) &&
-            InstanceOutsideFrustum(world, &viewTransform, &instance->transform, mesh,
-                                       instance->mesh, aspect)) continue;
         basis = RenderPrepareInstanceTransform(&instance->transform);
+        if ((instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL) &&
+            InstanceOutsideFrustum(world, &viewTransform, &basis, mesh,
+                                       instance->mesh, aspect)) continue;
         instanceState = PrepareInstanceState(instance);
         for (offset = 0; offset + 2 < count; offset += 3) {
             RageNativeDrawVertex triangle[3];

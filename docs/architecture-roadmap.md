@@ -55,6 +55,16 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+Instance frustum culling now consumes the same prepared instance transform as
+vertex expansion, removing a second Euler trigonometry/quaternion preparation
+for each surviving cull-enabled instance. The mesh regression also checks a
+normalized quaternion with reflected/nonuniform scale at the guard band and
+rejection after translation outside the frustum. Rebuilt smoke/stage targets
+pass mirror_cars, native_render_world, render_stage_angles and render_mesh_build
+(13.76s); the expanded mesh regression passes after rebuilding separately.
+This preserves the CPU-expanded path and is not persistent GPU geometry or a
+measured frame-rate improvement.
+
 Current Linux checkpoint after c2d414abf: full default build succeeds, including
 relinking the production/smoke/stage/replay targets after the SDL test-event
 fix. The unit/functional selection runs 402 cases: 399 pass, stream_table and

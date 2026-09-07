@@ -923,6 +923,21 @@ static void test_native_draw_builder_keeps_instance_in_frustum_guard_band(void) 
                                              &mesh, vertices, 3, spans, 1,
                                              &spanCount));
     EXPECT_EQ(1, spanCount);
+    /* Culling and vertex expansion must consume the same prepared transform,
+     * including a normalized quaternion and reflected/nonuniform scale. */
+    storage[0].transform.hasOrientation = 1;
+    storage[0].transform.orientation.w = 2.0f;
+    storage[0].transform.scale.x = -1.0f;
+    storage[0].transform.scale.y = 2.0f;
+    EXPECT_EQ(3, RenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                      &mesh, vertices, 3, spans, 1, &spanCount));
+    EXPECT_EQ(1, spanCount);
+    EXPECT_EQ(1, vertices[0].position[0] == -positions[0][0]);
+    EXPECT_EQ(1, vertices[0].position[1] == positions[0][1] * 2.0f);
+    storage[0].transform.position.x = -1000.0f;
+    EXPECT_EQ(0, RenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                      &mesh, vertices, 3, spans, 1, &spanCount));
+    EXPECT_EQ(0, spanCount);
 }
 
 /* Reference behaviour for moving view-dependent work out of mesh buffers.
