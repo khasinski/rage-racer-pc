@@ -459,3 +459,26 @@ Production and smoke builds pass. Control image and semantic draw dump match
 the previous commit exactly. This instrumentation establishes a more useful
 next target; it is not an optimization or an isolated FPS result. Riftbreaker
 was still running when the measurements were taken.
+
+### Isolate legacy per-pixel compatibility work
+
+Temporary C timing around GPU_DataWrite measured frame/timer 430 at 3.839624 ms
+for queue execution and 0.004338 ms for the sixteen-color upload. Within queue
+execution, dispatch of the same 15,041 GP0 words took 3.821478 ms and its final
+flush took 0.009518 ms. This excludes palette generation/upload as the main
+cause of the environment interval.
+
+A diagnostic run disabled only the opaque quad compatibility correction calls
+inside Draw_PushPrim. Dispatch fell to 0.274891 ms, with a 0.010933 ms final
+flush. Those corrections include PS1-versus-modern texture sampling checks for
+every pixel of flat-textured quads, not merely filling geometric edge gaps.
+Gouraud quads already check only endpoints. The next substantive performance
+target is this CPU sampling/coverage algorithm and its interaction with the
+modern overlay path. Removing it globally would weaken classic-render fidelity
+and is not the proposed fix.
+
+All temporary timing and bypass code was removed; the PSY-Z worktree is clean
+and production/smoke binaries were rebuilt with corrections enabled. The raw
+local traces are /tmp/rage-palette-split.log, /tmp/rage-queue-split.log and
+/tmp/rage-queue-no-gaps.log. This intervention identifies a costly code path,
+not an achieved FPS gain; the competing game was still active.
