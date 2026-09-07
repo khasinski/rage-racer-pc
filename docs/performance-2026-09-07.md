@@ -532,3 +532,28 @@ which does not demonstrate an improvement over the earlier 3.331 ms sample.
 The final thresholded build measured 3.448 ms in that interval and reproduces
 the PAL control image and semantic draw dump byte for byte. No isolated FPS
 comparison was made; sustained 120 FPS remains unverified.
+
+### Recognize quads whose samples always require correction
+
+Temporary per-quad timing identified axis-aligned sky tiles among the expensive
+flat-textured quads (for example a 64x128 destination mapping U by 64 and V by
+127). One UV axis has integral derivatives even though the other is stretched.
+For planes prepared from integer vertices, that axis stays integral at every
+integer pixel, so the existing sample-instability predicate always returns true.
+
+The correction path now recognizes this property once for both triangle planes.
+It retains the same PS1 span ownership, UV/color interpolation and emitted
+correction pixels, but omits coverage and modern-sample comparisons whose result
+cannot change the decision. Gouraud quads and fractional mappings use the
+existing general path. This is not a bypass of compatibility correction.
+
+The reference sampler suite now performs 2,263,552 exact comparisons and checks
+that every positively classified plane really requests correction at each
+reference sample. It includes the observed sky mappings, negative slopes and
+an explicit fractional-axis rejection case; ASan/UBSan passes. Production and
+smoke builds succeed. The PAL control image and semantic dump are byte-identical.
+Frame 649 measured environment work at 3.382 ms versus the earlier 3.448 ms
+sample, which is not an isolated performance comparison. Temporary per-quad
+timing was removed. The remaining path still emits individual compatibility
+pixels; this stage removes redundant decisions, not that output volume.
+Native-world, renderer-toggle and texture-sample regressions pass (3/3).

@@ -59,7 +59,8 @@ static int check(const Vertex vertices[3], int x, int y) {
     uint16_t expected_u, expected_v, actual_u, actual_v;
     bool expected = ReferenceTextureSample(vertices, x, y, &expected_u, &expected_v);
     bool actual = TextureSampleAt(&plane, x, y, &actual_u, &actual_v);
-    if (expected != actual || expected_u != actual_u || expected_v != actual_v) {
+    if (expected != actual || expected_u != actual_u || expected_v != actual_v ||
+        (TextureSampleAlwaysUnstable(&plane) && !expected)) {
         fprintf(stderr, "UV mismatch at %d,%d: expected %u,%u/%d got %u,%u/%d\n",
                 x, y, expected_u, expected_v, expected, actual_u, actual_v, actual);
         return 1;
@@ -142,7 +143,17 @@ int main(void) {
         {{1,1,255,17},{1,1,2,3},{1,1,4,5}},
         {{-10,3,255,0},{211,7,0,255},{2,87,23,111}},
         {{0,0,0,0},{1,1,255,255},{2,2,128,128}},
+        {{24,-9,128,128},{88,-9,192,128},{24,119,128,255}},
+        {{88,-9,192,128},{152,-9,255,128},{88,119,192,255}},
+        {{1,2,127,255},{129,2,0,255},{1,66,127,191}},
     };
+    TextureSamplePlane integral_axis = TextureSamplePrepare(fixtures[5]);
+    TextureSamplePlane fractional_axes = TextureSamplePrepare(fixtures[6]);
+    if (!TextureSampleAlwaysUnstable(&integral_axis) ||
+        TextureSampleAlwaysUnstable(&fractional_axes)) {
+        fputs("Integral-axis classification mismatch\n", stderr);
+        return 1;
+    }
     for (unsigned f = 0; f < sizeof(fixtures)/sizeof(fixtures[0]); ++f)
         for (int y = -16; y < 272; ++y)
             for (int x = -16; x < 272; ++x)
@@ -160,6 +171,6 @@ int main(void) {
         for (int sample = 0; sample < 16; ++sample)
             if (check(vertices, random_value() % 1024, random_value() % 512)) return 1;
     }
-    puts("Cached texture sampling: 2,014,720 exact comparisons passed");
+    puts("Cached texture sampling: 2,263,552 exact comparisons passed");
     return 0;
 }
