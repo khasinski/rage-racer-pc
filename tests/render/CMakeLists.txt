@@ -207,6 +207,15 @@ endif()
 add_test(NAME modern_vram_snapshot COMMAND modern_vram_snapshot_tests)
 set_tests_properties(modern_vram_snapshot PROPERTIES LABELS unit)
 
+add_executable(modern_vram_snapshot_gpu_tests
+    modern_vram_snapshot_gpu_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/modern/modern_vram_snapshot.c)
+target_include_directories(modern_vram_snapshot_gpu_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port)
+target_link_libraries(modern_vram_snapshot_gpu_tests PRIVATE SDL3::SDL3)
+add_test(NAME modern_vram_snapshot_gpu COMMAND modern_vram_snapshot_gpu_tests)
+set_tests_properties(modern_vram_snapshot_gpu PROPERTIES LABELS gpu SKIP_RETURN_CODE 77)
+
 add_executable(scenery_object_matrix_tests
     scenery_object_matrix_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/build_scenery_object_matrix.c)

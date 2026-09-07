@@ -835,3 +835,36 @@ The extra world plus 4096-instance array costs 689,016 bytes on this toolchain.
 Texture/asset generation ownership and frame-to-texture association remain to
 be addressed before allowing presentation inside scene updates. No pacing or
 simulation-speed change is included in this checkpoint.
+
+### The presentation VRAM cache owns its sampled pixels
+
+The frame-keyed VRAM cache previously retained PSY-Z's shared `vram_sample`
+handle. That handle is also the backend's batch sampling mirror, so later
+legacy commands can change its contents without changing the cached frame key.
+The modern renderer now copies the captured RGBA8 VRAM into a private sampling
+texture. Its lifetime follows the presentation resource generation, and writes
+for subsequent frame keys cycle the destination backing storage. The existing
+frame cache still performs capture only once per successfully captured key.
+
+The new compiled GPU regression uploads a known full VRAM pattern, takes an
+owned copy, overwrites the source, and reads back both to verify independence.
+It also verifies rejection of invalid input without changing saved contents,
+refreshing the owned image, and release/recreation. On this machine the GPU test
+passes, alongside snapshot-cache, renderer-toggle, native-world, submission
+recovery and retained-history regressions (6/6). Production/smoke build; the
+real PAL frozen image and draw dump remain identical
+(`/tmp/rage-owned-vram.*` versus `/tmp/rage-published-world.*`).
+
+This adds a 2 MiB destination backing image (driver cycling can retain more than
+one allocation) and one extra 2 MiB GPU copy per newly captured frame key. The
+trace-off original-INI PAL lap completed at
+`build/perf-owned-vram/20260907-181826-59ac1a`: 118.375 mean FPS,
+114.470 slowest-window FPS, 15.155 ms worst-window p95, 35.854 ms maximum interval
+across 34 post-startup windows. This is a correctness/ownership prerequisite,
+not evidence that stable 120 FPS has been achieved.
+
+Capture still occurs on first presentation of a frame key. Before introducing
+mid-scene presentation, ensure its first sample cannot be taken during a partial
+texture update, and guard/retain the matching native material and asset
+generations. The mutable PSY-Z mirror is no longer sufficient reason to delay
+reuse of an already captured private image.

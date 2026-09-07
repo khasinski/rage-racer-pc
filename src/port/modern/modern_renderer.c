@@ -46,6 +46,7 @@ static int s_initialized;
 static int s_shutdownRegistered;
 static int s_shutdownNeeded;
 static ModernVramSnapshotCache s_sampledVram;
+static SDL_GPUTexture *s_ownedSampledVram;
 static PsyzOverlayDestroyCB s_prev_overlay_destroy;
 static SDL_Scancode s_toggleScancode = SDL_SCANCODE_F10;
 static int s_toggleWasDown;
@@ -344,6 +345,7 @@ static void ModernDestroyResources(void) {
         RAGE_RELEASE(GraphicsPipeline, s_pipePost);
         RAGE_RELEASE(Sampler, s_samplerLinear);
         RAGE_RELEASE(Texture, s_finalTarget);
+        RAGE_RELEASE(Texture, s_ownedSampledVram);
         RAGE_RELEASE(GraphicsPipeline, s_pipeComposite);
 #undef RAGE_RELEASE
     }
@@ -1239,7 +1241,10 @@ static void ModernCompositeNativeMirror(SDL_GPUCommandBuffer *cmd) {
 
 static SDL_GPUTexture *ModernCaptureVramSnapshot(void *context) {
     (void)context;
-    return Psyz_VideoSnapshotVramTexture_SDL3GPU();
+    SDL_GPUTexture *source = Psyz_VideoSnapshotVramTexture_SDL3GPU();
+    if (!ModernVramSnapshotCopy(s_device, source, &s_ownedSampledVram))
+        return NULL;
+    return s_ownedSampledVram;
 }
 
 static int ModernCompareProfileInterval(const void *a, const void *b) {
