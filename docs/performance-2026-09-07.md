@@ -348,3 +348,24 @@ production, smoke, stage and replay targets build. No new moving FPS benchmark
 was run under the competing-game workload. Terrain visibility, normals and
 draw preparation still execute on CPU; this stage makes its GPU vertex storage
 persistent, not its entire preparation pipeline.
+
+### Pack world geometry directly from prepared ranges
+
+The packer now accepts borrowed vertex ranges with per-range or per-vertex
+retention policy. It preserves the same concatenated index order and validates
+every range before insertion. The renderer passes its prepared CPU geometry
+directly, removing the intermediate 1,193,472-byte staging copy in the control
+scene and the per-vertex retention-mask buffer. Only the final changed vertex
+data and indices are written to the GPU transfer buffer. Transient fallback
+still gathers the original ranges when packing cannot be used.
+
+Constant retained/transient ranges also skip the irrelevant packing pass.
+Range tests cover exact reconstruction, equivalence to contiguous input,
+changing transient data, empty ranges, count overflow and rejection of an
+invalid later range without partial insertion. The tests pass under ASan/UBSan.
+The control image and draw dump match; native-world budget/rebuild regressions
+and submit recovery pass. Production, smoke, stage and replay targets build.
+The intermediate range implementation recorded 0.518 ms upload preparation
+at frame 649 versus the earlier 0.623 ms sample, but these are not isolated
+performance measurements and the final range-pass skipping change was verified
+for correctness rather than benchmarked. The 120 FPS target remains open.

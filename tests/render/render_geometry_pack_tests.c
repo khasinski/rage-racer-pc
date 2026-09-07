@@ -84,6 +84,39 @@ int main(void) {
         }
     }
     RenderGeometryPackRelease(&pack);
-    puts("Geometry pack: reconstruction, bounded residency and transient replacement passed");
+    RageNativeGeometryPack flat = {0};
+    uint8_t mixed[64];
+    for (unsigned i = 0; i < 64; ++i)
+        mixed[i] = i < 16 ? 1 : i < 48 ? (uint8_t)(i % 2) : 0;
+    for (unsigned frame = 0; frame < 20; ++frame) {
+        for (unsigned i = 0; i < 64; ++i) {
+            source[i].position[0] = (float)(mixed[i] ? i : frame * 100 + i);
+            source[i].uv[0] = (float)i / 64;
+        }
+        const RageNativeGeometryRange ranges[] = {
+            {source, 16, NULL, 1}, {NULL, 0, NULL, 0},
+            {source + 16, 32, mixed + 16, 0}, {source + 48, 16, NULL, 0}};
+        CHECK(RenderGeometryPackAppendRanges(&pack, ranges, 4, 128));
+        CHECK(RenderGeometryPackAppendSelected(&flat, source, 64, mixed, 128));
+        CHECK(pack.vertexCount == flat.vertexCount && pack.residentCount == flat.residentCount);
+        CHECK(pack.generation == flat.generation && pack.indexCount == 64);
+        CHECK(memcmp(pack.indices, flat.indices, 64 * sizeof(*pack.indices)) == 0);
+        CHECK(memcmp(pack.vertices, flat.vertices, pack.vertexCount * sizeof(*pack.vertices)) == 0);
+        for (unsigned i = 0; i < 64; ++i)
+            CHECK(memcmp(&source[i], &pack.vertices[pack.indices[i]], sizeof(source[i])) == 0);
+    }
+    uint32_t resident = pack.residentCount;
+    generation = pack.generation;
+    RageNativeGeometryRange invalid[] = {{source, 16, NULL, 1}, {NULL, 1, NULL, 1}};
+    CHECK(!RenderGeometryPackAppendRanges(&pack, invalid, 2, 128));
+    CHECK(pack.indexCount == 0 && pack.residentCount == resident && pack.generation == generation);
+    invalid[0].count = UINT32_MAX;
+    invalid[1].vertices = source;
+    CHECK(!RenderGeometryPackAppendRanges(&pack, invalid, 2, UINT32_MAX));
+    CHECK(!RenderGeometryPackAppendRanges(&pack, NULL, 1, 128));
+    CHECK(RenderGeometryPackAppendRanges(&pack, NULL, 0, 128));
+    RenderGeometryPackRelease(&pack);
+    RenderGeometryPackRelease(&flat);
+    puts("Geometry pack: reconstruction, bounded residency, ranges and transient replacement passed");
     return 0;
 }

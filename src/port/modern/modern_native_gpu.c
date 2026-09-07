@@ -155,7 +155,7 @@ static uint32_t s_residentGeometryCount;
 static uint32_t s_residentGeometryLimit = 512;
 static RageNativeGeometryPack s_worldGeometry;
 static SDL_GPUBuffer *s_worldIndexBuffer;
-static uint8_t *s_worldRetainMask;
+static RageNativeGeometryRange s_worldRanges[MODERN_NATIVE_MAX_SPANS * 2];
 static uint32_t s_worldVertexLimit;
 static uint32_t s_worldUploadedResident;
 static uint64_t s_worldUploadedGeneration;
@@ -657,13 +657,6 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
         buffer.usage = SDL_GPU_BUFFERUSAGE_INDEX;
         buffer.size = MODERN_NATIVE_MAX_BUFFER_VERTICES * sizeof(uint32_t);
         s_worldIndexBuffer = SDL_CreateGPUBuffer(s_device, &buffer);
-        s_worldRetainMask = malloc(MODERN_NATIVE_MAX_BUFFER_VERTICES);
-        if (!s_worldIndexBuffer || !s_worldRetainMask) {
-            if (s_worldIndexBuffer) SDL_ReleaseGPUBuffer(s_device, s_worldIndexBuffer);
-            free(s_worldRetainMask);
-            s_worldIndexBuffer = NULL;
-            s_worldRetainMask = NULL;
-        }
     }
     sampler.min_filter = SDL_GPU_FILTER_LINEAR;
     sampler.mag_filter = SDL_GPU_FILTER_LINEAR;
@@ -1637,7 +1630,7 @@ static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
     if (destination.size == 0) return 0;
     mapped = SDL_MapGPUTransferBuffer(s_device, s_vertexTransfer, true);
     if (mapped == NULL) return 0;
-    uint32_t dynamicCount = 0, terrainCount = 0;
+    uint32_t dynamicCount = 0, terrainCount = 0, rangeCount = 0;
     uint32_t residentDraws = 0, localFallbacks = 0;
     for (unsigned view = 0; view < 2; ++view) {
         const RageNativeDrawSpan *spans = view ? s_mirrorSpans : s_spans;
@@ -1673,18 +1666,15 @@ static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
                     return 0;
                 }
             }
-            memcpy((RageNativeGpuVertex *)mapped + dynamicCount, s_vertices + span->firstVertex,
-                (size_t)span->vertexCount * sizeof(*s_vertices));
-            if (s_worldRetainMask)
-                memset(s_worldRetainMask + dynamicCount,
-                    span->assetSet == RAGE_RENDER_ASSET_TERRAIN, span->vertexCount);
+            s_worldRanges[rangeCount++] = (RageNativeGeometryRange){
+                s_vertices + span->firstVertex, span->vertexCount, NULL,
+                span->assetSet == RAGE_RENDER_ASSET_TERRAIN};
             if (span->assetSet == RAGE_RENDER_ASSET_TERRAIN) terrainCount += span->vertexCount;
             dynamicCount += span->vertexCount;
         }
     }
-    if (terrainCount && s_worldIndexBuffer && s_worldRetainMask &&
-        RenderGeometryPackAppendSelected(&s_worldGeometry, mapped, dynamicCount,
-            s_worldRetainMask, s_worldVertexLimit)) {
+    if (terrainCount && s_worldIndexBuffer &&
+        RenderGeometryPackAppendRanges(&s_worldGeometry, s_worldRanges, rangeCount, s_worldVertexLimit)) {
         int reset = !s_worldGpuValid || s_worldUploadedGeneration != s_worldGeometry.generation;
         uint32_t first = reset ? 0 : s_worldUploadedResident;
         uint32_t changed = s_worldGeometry.vertexCount - first;
@@ -1726,6 +1716,12 @@ static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
                 (double)(SDL_GetTicksNS() - started) / 1000000.0, residentDraws, localFallbacks);
         }
         return 1;
+    }
+    uint32_t stagingOffset = 0;
+    for (uint32_t r = 0; r < rangeCount; ++r) {
+        memcpy((RageNativeGpuVertex *)mapped + stagingOffset, s_worldRanges[r].vertices,
+            (size_t)s_worldRanges[r].count * sizeof(*s_vertices));
+        stagingOffset += s_worldRanges[r].count;
     }
     SDL_UnmapGPUTransferBuffer(s_device, s_vertexTransfer);
     /* A transient upload cycles the shared vertex buffer. The next successful
@@ -2095,8 +2091,6 @@ void ModernNativeGpuShutdown(void) {
             SDL_ReleaseGPUSampler(s_device, s_shadowSampler);
     }
     free(s_vertices);
-    free(s_worldRetainMask);
-    s_worldRetainMask = NULL;
     s_worldIndexBuffer = NULL;
     RenderNativeMeshTemplateCacheRelease(&s_meshTemplates);
     free(s_spans);

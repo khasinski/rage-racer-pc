@@ -36,15 +36,24 @@ static void ResetPack(RageNativeGeometryPack *pack) {
     ++pack->generation;
 }
 
-int RenderGeometryPackAppendSelected(RageNativeGeometryPack *pack,
-    const RageNativeGpuVertex *source, uint32_t count,
-    const uint8_t *retainMask, uint32_t limit) {
+static int RetainVertex(const RageNativeGeometryRange *range, uint32_t index) {
+    return range->retainMask ? range->retainMask[index] != 0 : range->retain != 0;
+}
+
+int RenderGeometryPackAppendRanges(RageNativeGeometryPack *pack,
+    const RageNativeGeometryRange *ranges, uint32_t rangeCount, uint32_t limit) {
     if (pack == NULL) return 0;
     pack->indexCount = 0;
     pack->vertexCount = pack->residentCount;
+    if (rangeCount && !ranges) return 0;
+    uint32_t count = 0;
+    for (uint32_t r = 0; r < rangeCount; ++r) {
+        if (ranges[r].count > UINT32_MAX - count ||
+            (ranges[r].count && (!ranges[r].vertices || ranges[r].vertices == pack->vertices))) return 0;
+        count += ranges[r].count;
+    }
     if (count == 0) return 1;
-    if (source == NULL || source == pack->vertices || count > limit ||
-        limit > (1u << 24)) return 0;
+    if (count > limit || limit > (1u << 24)) return 0;
     if (pack->vertexCount > limit - count) ResetPack(pack);
     uint32_t needed = pack->vertexCount + count;
     if (pack->capacity < needed) {
@@ -74,28 +83,51 @@ int RenderGeometryPackAppendSelected(RageNativeGeometryPack *pack,
         *pack = next;
     }
     uint32_t mask = pack->capacity * 2 - 1;
-    for (uint32_t i = 0; i < count; ++i) {
-        if (retainMask != NULL && retainMask[i] == 0) continue;
-        uint32_t slot = VertexHash(&source[i]) & mask;
-        while (pack->slots[slot] != 0 &&
-               memcmp(&pack->vertices[pack->slots[slot] - 1], &source[i], sizeof(*source)) != 0)
-            slot = (slot + 1) & mask;
-        if (pack->slots[slot] == 0) {
-            memcpy(&pack->vertices[pack->vertexCount], &source[i], sizeof(*source));
-            pack->slots[slot] = ++pack->vertexCount;
+    uint32_t offset = 0;
+    for (uint32_t r = 0; r < rangeCount; ++r) {
+        if (!ranges[r].retainMask && !ranges[r].retain) {
+            offset += ranges[r].count;
+            continue;
         }
-        pack->indices[i] = pack->slots[slot] - 1;
+        const RageNativeGpuVertex *source = ranges[r].vertices;
+        for (uint32_t i = 0; i < ranges[r].count; ++i) {
+            if (!RetainVertex(&ranges[r], i)) continue;
+            uint32_t slot = VertexHash(&source[i]) & mask;
+            while (pack->slots[slot] != 0 &&
+                   memcmp(&pack->vertices[pack->slots[slot] - 1], &source[i], sizeof(*source)) != 0)
+                slot = (slot + 1) & mask;
+            if (pack->slots[slot] == 0) {
+                memcpy(&pack->vertices[pack->vertexCount], &source[i], sizeof(*source));
+                pack->slots[slot] = ++pack->vertexCount;
+            }
+            pack->indices[offset + i] = pack->slots[slot] - 1;
+        }
+        offset += ranges[r].count;
     }
     pack->residentCount = pack->vertexCount;
-    if (retainMask != NULL) {
-        for (uint32_t i = 0; i < count; ++i) {
-            if (retainMask[i] != 0) continue;
-            memcpy(&pack->vertices[pack->vertexCount], &source[i], sizeof(*source));
-            pack->indices[i] = pack->vertexCount++;
+    offset = 0;
+    for (uint32_t r = 0; r < rangeCount; ++r) {
+        if (!ranges[r].retainMask && ranges[r].retain) {
+            offset += ranges[r].count;
+            continue;
         }
+        const RageNativeGpuVertex *source = ranges[r].vertices;
+        for (uint32_t i = 0; i < ranges[r].count; ++i) {
+            if (RetainVertex(&ranges[r], i)) continue;
+            memcpy(&pack->vertices[pack->vertexCount], &source[i], sizeof(*source));
+            pack->indices[offset + i] = pack->vertexCount++;
+        }
+        offset += ranges[r].count;
     }
     pack->indexCount = count;
     return 1;
+}
+
+int RenderGeometryPackAppendSelected(RageNativeGeometryPack *pack,
+    const RageNativeGpuVertex *source, uint32_t count,
+    const uint8_t *retainMask, uint32_t limit) {
+    const RageNativeGeometryRange range = {source, count, retainMask, 1};
+    return RenderGeometryPackAppendRanges(pack, &range, 1, limit);
 }
 
 int RenderGeometryPackAppend(RageNativeGeometryPack *pack,

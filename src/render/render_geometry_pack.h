@@ -33,4 +33,17 @@ int RenderGeometryPackAppendSelected(RageNativeGeometryPack *pack,
     const uint8_t *retainMask, uint32_t limit);
 void RenderGeometryPackRelease(RageNativeGeometryPack *pack);
 
+/* Borrowed input ranges, concatenated in order without intermediate staging.
+ * A mask overrides retain for individual vertices. Inputs must not alias pack
+ * storage; all ranges are validated before insertion. Same residency and
+ * failure contract as AppendSelected. */
+typedef struct RageNativeGeometryRange {
+    const RageNativeGpuVertex *vertices;
+    uint32_t count;
+    const uint8_t *retainMask;
+    int retain;
+} RageNativeGeometryRange;
+int RenderGeometryPackAppendRanges(RageNativeGeometryPack *pack,
+    const RageNativeGeometryRange *ranges, uint32_t rangeCount, uint32_t limit);
+
 #endif
