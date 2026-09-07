@@ -6,6 +6,42 @@
 
 size_t PortAssetRoomAt(const void *at) { (void)at; return 0; }
 
+static int TestMaterialRetry(const char *root, const char *sidecar,
+                             const RageRenderMeshInstance *instance) {
+    char path[4096], pixelsPath[4096];
+    static const char material[] = "# rage-rmat v4\n0 texture.rgba\n";
+    static unsigned char pixels[256 * 256 * 4];
+    RageRenderMaterial definition = {0};
+    RageRenderMaterialStorage storage = {0};
+    ModernAssetImage image = {0};
+    if (SDL_snprintf(path, sizeof(path), "%s/%s", root, sidecar) >= (int)sizeof(path) ||
+        SDL_snprintf(pixelsPath, sizeof(pixelsPath), "%s/texture.rgba", root) >= (int)sizeof(pixelsPath)) return 0;
+    memset(pixels, 173, sizeof(pixels));
+    if (!SDL_SaveFile(path, material, sizeof(material) - 1) ||
+        !SDL_SaveFile(pixelsPath, pixels, sizeof(pixels))) return 0;
+    if (!ModernAssetsLoadMaterial(instance, 0, 0, &definition, &image, &storage)) return 0;
+    if (image.size != sizeof(pixels) || memcmp(image.pixels, pixels, sizeof(pixels)) ||
+        definition.baseColorTexture.text != storage.baseColorTexture ||
+        strcmp(storage.baseColorTexture, "texture.rgba")) return 0;
+    RageRenderMaterial savedDefinition = definition;
+    RageRenderMaterialStorage savedStorage = storage;
+    ModernAssetImage savedImage = image;
+    for (unsigned failure = 0; failure < 2; ++failure) {
+        if (!SDL_SaveFile(path, failure ? material : "invalid", failure ? sizeof(material) - 1 : 7) ||
+            !SDL_SaveFile(pixelsPath, pixels, failure ? 1 : sizeof(pixels))) return 0;
+        if (ModernAssetsLoadMaterial(instance, 0, 0, &definition, &image, &storage) ||
+            memcmp(&definition, &savedDefinition, sizeof(definition)) ||
+            memcmp(&storage, &savedStorage, sizeof(storage)) ||
+            memcmp(&image, &savedImage, sizeof(image)) ||
+            memcmp(image.pixels, pixels, sizeof(pixels))) return 0;
+    }
+    ModernAssetsFreeMaterialImage(&image);
+    if (!SDL_SaveFile(pixelsPath, pixels, sizeof(pixels)) ||
+        !ModernAssetsLoadMaterial(instance, 0, 0, &definition, &image, &storage)) return 0;
+    ModernAssetsFreeMaterialImage(&image);
+    return SDL_RemovePath(path) && SDL_RemovePath(pixelsPath);
+}
+
 static void Write32(unsigned char *p, unsigned value) {
     p[0] = (unsigned char)value;
     p[1] = (unsigned char)(value >> 8);
@@ -20,7 +56,7 @@ int main(int argc, char **argv) {
     char secondRoot[4096], secondIndex[4096], secondMesh[4096];
     unsigned char meshBytes[96] = {0};
     RageRenderMeshInstance instance = {0};
-    const char index[] = "# rage-rmesh-index v2\n123 model mesh.rmesh mesh.rmat\n";
+    const char index[] = "# rage-rmesh-index v2\n123 model mesh.rmesh m\n";
     char setting[4096] = "modern.assets=disc";
     char *configArgs[] = {"asset-retry", "--set", setting};
     if (!RuntimeConfigInit(3, configArgs)) return 14;
@@ -66,6 +102,7 @@ int main(int argc, char **argv) {
     if (!resident || ModernAssetsCachedMeshCount() != 1) return 23;
     const void *ownedBytes = resident->mesh.bytes;
     if (!ownedBytes || memcmp(ownedBytes, meshBytes, sizeof(meshBytes))) return 24;
+    if (!TestMaterialRetry(argv[1], "m", &instance)) return 50;
     if (SDL_snprintf(secondRoot, sizeof(secondRoot), "%s/second", argv[1]) >= (int)sizeof(secondRoot) ||
         SDL_snprintf(secondIndex, sizeof(secondIndex), "%s/runtime-index.txt", secondRoot) >= (int)sizeof(secondIndex) ||
         SDL_snprintf(secondMesh, sizeof(secondMesh), "%s/mesh.rmesh", secondRoot) >= (int)sizeof(secondMesh) ||
@@ -73,7 +110,8 @@ int main(int argc, char **argv) {
     unsigned char secondBytes[sizeof(meshBytes)];
     memcpy(secondBytes, meshBytes, sizeof(secondBytes));
     Write32(secondBytes + 32, 0x40000000u); /* Same asset identity, x = 2. */
-    if (!SDL_SaveFile(secondIndex, index, sizeof(index) - 1) ||
+    static const char secondIndexText[] = "# rage-rmesh-index v2\n123 model mesh.rmesh -material\n";
+    if (!SDL_SaveFile(secondIndex, secondIndexText, sizeof(secondIndexText) - 1) ||
         !SDL_SaveFile(secondMesh, secondBytes, sizeof(secondBytes))) return 41;
     /* Successful initialization is idempotent and preserves its source. */
     if (!ModernAssetsInitRoot(NULL) || !ModernAssetsReady()) return 5;
@@ -140,6 +178,7 @@ int main(int argc, char **argv) {
     if (!resident || !RuntimeMeshVertex(&resident->mesh, 0, &vertex) ||
         vertex.position[0] != 2.0f || ModernAssetsCachedMeshCount() != 1)
         return 43;
+    if (!TestMaterialRetry(secondRoot, "-material", &instance)) return 51;
     ModernAssetsShutdown();
     if (!SDL_RemovePath(secondIndex) || !SDL_RemovePath(secondMesh) ||
         !SDL_RemovePath(secondRoot)) return 44;

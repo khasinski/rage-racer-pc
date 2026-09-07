@@ -17,6 +17,16 @@ records/duplicate identities before publishing a session. Rebuilt Linux cache,
 session-retry, environment-provider and render-stage-angle tests passed 4/4.
 This is not a complete disc/cache/mod catalog or Windows validation.
 
+Material path/ownership follow-up: cached sidecar lookup now treats only the
+exact `-` sentinel as absent (and safely handles an empty/null location), rather
+than rejecting all one-character or hyphen-prefixed filenames. The public
+material API regression exercises `m` and `-material`, real RGBA file loading,
+invalid sidecar and truncated pixel failures, preservation of an existing
+caller-owned result on failure, and recovery after repair. The one-character
+case failed before the fix. Rebuilt Linux session-retry, environment-provider
+and render-stage-angle tests passed 3/3; this does not change legacy mod-image
+fallback policy or introduce a material content snapshot/cache.
+
 - Preserve automatic disc import and modern startup in a clean release.
 - Keep PAL/NTSC timing, original content, and visual compatibility covered.
 - Implement runtime, tools and replacement tests in C/the compiled toolchain.

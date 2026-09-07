@@ -579,8 +579,10 @@ static int ModernAssetsFindMaterial(
     int parsed;
     if (definition == NULL || instance == NULL) return 0;
     cached = ModernAssetsFind(instance);
-    if (cached == NULL || cached->location.materialPathLength == 1 ||
-        cached->location.materialPath[0] == '-' ||
+    if (cached == NULL || cached->location.materialPath == NULL ||
+        cached->location.materialPathLength == 0 ||
+        (cached->location.materialPathLength == 1 &&
+         cached->location.materialPath[0] == '-') ||
         !ModernAssetReadFile(NULL, cached->location.materialPath,
                              cached->location.materialPathLength,
                              &mapBytes, &mapSize)) return 0;
