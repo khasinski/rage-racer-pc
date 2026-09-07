@@ -17,6 +17,7 @@ int HostLoadAsset(unsigned int byte_offset, unsigned int size,
 int PortShouldExit(int frame_number);
 void PortBeforeSceneHandler(void);
 void PortAfterSceneHandler(void);
+void PortAfterFrameTransfers(void);
 void PortDuringFrameWait(int frameLimit);
 void PortProfileFramePhase(const char *phase);
 int PortMirrorFarDepth(int retailFar);

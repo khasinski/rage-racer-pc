@@ -891,3 +891,34 @@ All six snapshot/GPU/native-world/toggle/recovery/history regressions pass;
 after extracting the read-only query, the two snapshot regressions pass again.
 Production and smoke builds pass. Frame scheduling and simulation timing are
 unchanged; no new FPS claim is made for this ownership checkpoint.
+
+### Capture VRAM at the completed-transfer boundary
+
+The production loop now calls `PortAfterFrameTransfers` after DrawSync and
+StepTrackTextureSwap, before entering the VSync/presentation wait. When modern
+resources and the previous captured 3D frame are ready, it establishes the
+private VRAM snapshot with the completed track/asset identities. Ordinary
+presentation reuses that key; initialization, failed capture and resource
+recovery retain their normal present-time retry. This does not enable
+presentation during scene construction or alter PAL/NTSC timing.
+
+The compiled main-loop regression verifies this checkpoint follows draw sync
+and texture swapping and precedes any VSync/presentation calls. Native-world
+requires actual `presentation-snapshot ... ready=1` trace output, plus existing
+capture/world mutation oracles and image/VRAM references. All five loop,
+toggle, native-world, recovery and history tests pass; the strengthened loop
+and native-world checks pass again. Real PAL frozen output and semantic draws
+match the pre-checkpoint capture exactly (`/tmp/rage-transfer-boundary.*`).
+
+### Release stabilization priority
+
+The user now wants the next release to be the final version before mod-facing
+features and major renderer changes, focused on speed and stability. Stop
+expanding the architecture for that release and validate a fixed candidate.
+The existing 0.6.3-alpha tag/release was published on 2026-08-31; do not replace
+it silently. 0.6.4-alpha is the proposed next name, not an authorized new tag.
+GitHub checks inspected on 2026-09-07 passed for 35715956d; they do not certify
+later local commits. Release readiness still needs candidate-wide CI across
+supported platforms, clean-package CUE/BIN startup and automatic modern assets,
+long moving stability/regional checks, and validation of 120 Hz frame pacing.
+The broader architecture goal remains open beyond this release boundary.

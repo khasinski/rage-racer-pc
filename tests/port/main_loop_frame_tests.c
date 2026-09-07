@@ -26,6 +26,8 @@ static s32 s_padUpdates;
 static s32 s_presentCalls;
 static s32 s_saveTicks;
 static s32 s_textureTicks;
+static s32 s_transferPublication, s_transferOrder;
+static s32 s_drawSyncCalls, s_vsyncCalls;
 static s32 s_bootSceneAtRequest;
 
 long CdInit(void) { return 1; }
@@ -55,11 +57,18 @@ void DispatchCurrentScene(void) { s_dispatchCalls++; }
 void PortAfterSceneHandler(void) {}
 int DrawSync(int mode) {
     (void)mode;
+    s_drawSyncCalls++;
     return 0;
 }
 void StepTrackTextureSwap(void) { s_textureTicks++; }
+void PortAfterFrameTransfers(void) {
+    s_transferPublication++;
+    s_transferOrder = s_textureTicks == 1 && s_drawSyncCalls == 1 &&
+        s_presentCalls == 0 && s_vsyncCalls == 0;
+}
 int VSync(int mode) {
     (void)mode;
+    s_vsyncCalls++;
     return 128;
 }
 void PortDuringFrameWait(int frameLimit) { (void)frameLimit; }
@@ -102,6 +111,7 @@ OT_TYPE *ClearOTagR(OT_TYPE *ot, int count) {
 
 int main(void) {
     MainLoop();
+    CHECK(s_transferPublication == 1 && s_transferOrder);
 
     CHECK(g_DrawBuffer == &g_FrameContexts[0] && g_FrameParity == 0);
     CHECK(g_RenderState.packetCursor ==

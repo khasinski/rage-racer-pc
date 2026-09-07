@@ -57,6 +57,8 @@ static void ServiceGameFrame(void) {
     DrawSync(0);
     PortProfileFramePhase("texture_swap");
     StepTrackTextureSwap();
+    PortProfileFramePhase("presentation_snapshot");
+    PortAfterFrameTransfers();
 }
 
 static s32 WaitForFrameDeadline(void) {

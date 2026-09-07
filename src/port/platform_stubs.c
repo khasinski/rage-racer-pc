@@ -63,6 +63,10 @@ void PortDuringFrameWait(int frameLimit) {
     ModernFrameWaitTick(frameLimit);
 }
 
+void PortAfterFrameTransfers(void) {
+    ModernFrameTexturesReady();
+}
+
 long SpuTransferStatus(void *address, long mode) {
     (void)address;
     (void)mode;

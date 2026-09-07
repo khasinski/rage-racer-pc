@@ -4,6 +4,7 @@
 #include "modern_sky_geometry.h"
 #include "modern_frame_pacer.h"
 #include "rage/render_world_game.h"
+#include "rage/track_asset_identity.h"
 
 #include <psyz/overlay_sdl3_gpu.h>
 #include <psyz/present_sdl3_gpu.h>
@@ -1250,6 +1251,24 @@ static SDL_GPUTexture *ModernCaptureVramSnapshot(void *context) {
 static int ModernCompareProfileInterval(const void *a, const void *b) {
     const Uint64 x = *(const Uint64 *)a, y = *(const Uint64 *)b;
     return (x > y) - (x < y);
+}
+
+void ModernFrameTexturesReady(void) {
+    if (!s_enabled || !s_device || !s_resourcesReady) return;
+    const RageSceneSnapshot *snapshot = CapturePrevious();
+    if (!snapshot->faceCount ||
+        (snapshot->displayHeight && snapshot->displayHeight != 240)) return;
+    /* Match the existing previous-frame presentation convention. All game
+     * transfers have completed here; a subsequent presentation can reuse this
+     * private image without sampling a partially updated live VRAM. Resource
+     * initialization/recovery can still capture at the normal present hook. */
+    SDL_GPUTexture *captured = ModernVramSnapshotForFrame(
+        &s_sampledVram, snapshot->frameCounter,
+        TrackAssetIdentityRevision(), ModernAssetsGeneration(),
+        ModernCaptureVramSnapshot, NULL);
+    if (RuntimeConfigEnabled("diagnostics.performance_trace"))
+        fprintf(stderr, "presentation-snapshot frame=%u ready=%d\n",
+            snapshot->frameCounter, captured != NULL);
 }
 
 static int ModernRender(const RageSceneSnapshot *snapshot) {

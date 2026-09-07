@@ -38,5 +38,8 @@ void ModernToggle(void);
  * when an FPS mode is configured. No-op otherwise. */
 void ModernFrameWaitTick(int frameLimit);
 void ModernLogicFrameReady(uint32_t frame);
+/* Called after DrawSync and the complete track texture swap, before waiting
+ * for presentation. Never capture a new frame from inside scene construction. */
+void ModernFrameTexturesReady(void);
 
 #endif
