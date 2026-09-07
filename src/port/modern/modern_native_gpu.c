@@ -181,6 +181,33 @@ static uint32_t s_mirrorSpanCount;
 static uint64_t s_worldFrame = UINT64_MAX;
 static const RageRenderWorld *s_world;
 static RageRenderWorldSnapshot s_ownedWorld;
+static const RageRuntimeMesh **s_preparedMeshes;
+static uint32_t s_preparedMeshCapacity;
+
+/* Borrow only for this preparation. Both cameras use the same owned instance
+ * array; resolve after warming finishes so a later successful retry is visible
+ * to every instance that references the asset. */
+static const RageRuntimeMesh *ModernNativePreparedMeshLookup(
+    void *context, const RageRenderMeshInstance *instance) {
+    const RageRenderWorld *world = context;
+    if (!world) return ModernAssetsResidentMeshLookup(NULL, instance);
+    return s_preparedMeshes[instance - world->instances];
+}
+
+static void *ModernNativePrepareMeshLookup(const RageRenderWorld *world) {
+    if (world->instanceCount > s_preparedMeshCapacity) {
+        size_t bytes;
+        if (!SDL_size_mul_check_overflow(world->instanceCount, sizeof(*s_preparedMeshes), &bytes)) return NULL;
+        const RageRuntimeMesh **meshes = SDL_realloc(s_preparedMeshes, bytes);
+        if (!meshes) return NULL;
+        s_preparedMeshes = meshes;
+        s_preparedMeshCapacity = world->instanceCount;
+    }
+    for (uint32_t i = 0; i < world->instanceCount; ++i)
+        s_preparedMeshes[i] = world->instances[i].pass == RAGE_RENDER_PASS_MAIN
+            ? ModernAssetsResidentMeshLookup(NULL, &world->instances[i]) : NULL;
+    return (void *)world;
+}
 static float s_aspect = 4.0f / 3.0f;
 static float s_mirrorAspect = 148.0f / 36.0f;
 static int s_completeWorld;
@@ -897,6 +924,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
     world = &s_ownedWorld.world;
     if (trace) copied = SDL_GetTicksNS();
     ModernAssetsWarmWorld(world);
+    void *meshLookupContext = ModernNativePrepareMeshLookup(world);
     if (trace) warmed = SDL_GetTicksNS();
     shadowCenter = world->camera.transform.position;
     for (instance = 0; instance < world->instanceCount; instance++) {
@@ -915,7 +943,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         &s_shadowMap);
     if (trace) mainStarted = SDL_GetTicksNS();
     s_vertexCount = RenderBuildNativeLocalCompactPassDraws(s_cpuGeometryReference ? NULL : &s_meshTemplates,
-        world, RAGE_RENDER_PASS_MAIN, aspect, s_cpuFogReference, !s_residentGeometryEnabled, ModernAssetsResidentMeshLookup, NULL,
+        world, RAGE_RENDER_PASS_MAIN, aspect, s_cpuFogReference, !s_residentGeometryEnabled, ModernNativePreparedMeshLookup, meshLookupContext,
         s_vertices,
         MODERN_NATIVE_MAX_VERTICES_PER_VIEW, s_spans, MODERN_NATIVE_MAX_SPANS,
         &s_spanCount);
@@ -930,7 +958,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         mirrorWorld.camera = world->mirrorCamera;
         s_mirrorVertexCount = RenderBuildNativeLocalCompactPassDraws(s_cpuGeometryReference ? NULL : &s_meshTemplates,
             &mirrorWorld, RAGE_RENDER_PASS_MAIN, s_mirrorAspect, s_cpuFogReference, !s_residentGeometryEnabled,
-            ModernAssetsResidentMeshLookup, NULL, s_vertices + mirrorFirstVertex,
+            ModernNativePreparedMeshLookup, meshLookupContext, s_vertices + mirrorFirstVertex,
             MODERN_NATIVE_MAX_VERTICES_PER_VIEW, s_mirrorSpans,
             MODERN_NATIVE_MAX_SPANS, &s_mirrorSpanCount);
         for (span = 0; span < s_mirrorSpanCount; span++)
@@ -953,7 +981,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         if (world->instances[instance].pass != RAGE_RENDER_PASS_MAIN) continue;
         /* Check the same resident set consumed by the builders. Retrying a
          * failed load here could mark absent geometry as a complete frame. */
-        if (ModernAssetsResidentMeshLookup(NULL, &world->instances[instance]) == NULL) {
+        if (ModernNativePreparedMeshLookup(meshLookupContext, &world->instances[instance]) == NULL) {
             s_completeWorld = 0;
             break;
         }
@@ -2123,6 +2151,9 @@ void ModernNativeGpuShutdown(void) {
     s_world = NULL;
     s_aspect = 4.0f / 3.0f;
     RenderWorldSnapshotRelease(&s_ownedWorld);
+    SDL_free(s_preparedMeshes);
+    s_preparedMeshes = NULL;
+    s_preparedMeshCapacity = 0;
     s_completeWorld = 0;
     ModernNativeReleasePendingUploads();
     s_textureCount = 0;

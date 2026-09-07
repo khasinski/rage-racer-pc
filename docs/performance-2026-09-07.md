@@ -392,3 +392,29 @@ Riftbreaker remained active, so no isolated moving FPS comparison was made.
 The pack regression passes ASan/UBSan with leak detection. The production and
 smoke targets build successfully. Native-world residency/fallback/rebuild,
 submission recovery and geometry-pack regressions all pass (3/3).
+
+### Resolve frame meshes once for both cameras
+
+The renderer now resolves resident mesh pointers once per main-scene instance
+after world warming has finished. Main-view construction, mirror construction
+and completeness checks share that frame-local table. This replaces up to
+three provider/cache searches per instance with one, while preserving successful
+late retries during warming. The table is rebuilt on every preparation, including
+asset-generation changes and resizes. It borrows meshes, reuses its allocation,
+is freed at renderer shutdown, and falls back to direct lookup on allocation
+failure. Excluded passes do not request resident meshes.
+
+The PAL control image and draw dump match the preceding commit exactly.
+At frame 649, traced warm/main/mirror/completeness times changed from
+0.111/0.781/0.279/0.065 ms to 0.183/0.669/0.213/0.000 ms. Resolution now falls
+inside the warm interval; these individual samples under competing load are
+not an isolated performance comparison or proof of 120 FPS.
+
+Production and smoke builds pass with warnings treated as errors. Mirror cars,
+renderer toggle cycles, native-world residency/rebuild/fallback and submission
+recovery regressions pass (4/4).
+
+An earlier experiment skipping hash lookups for repeated quad corners was
+discarded: three alternating synthetic packing runs regressed from
+0.214218/0.205670/0.210597 ms to 0.230011/0.226626/0.225684 ms. No such shortcut
+remains in the implementation.
