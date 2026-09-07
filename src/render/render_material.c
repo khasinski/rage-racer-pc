@@ -1,4 +1,5 @@
 #include "render_material.h"
+#include "asset_path.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -116,70 +117,147 @@ void RenderMaterialDefault(RageRenderMaterial *material) {
     material->roughness = 1.0f;
 }
 
-int RenderMaterialParse(const void *bytes, size_t size,
-                            uint32_t materialIndex, uint32_t variant,
-                            RageRenderMaterial *material) {
-    static const char v4[] = "# rage-rmat v4\n";
-    static const char v5[] = "# rage-rmat v5\n";
-    static const char v6[] = "# rage-rmat v6\n";
-    const char *text = (const char *)bytes;
-    RageRenderMaterial parsed;
-    size_t lineStart = 0, cursor;
-    int version;
-    if (bytes == NULL || material == NULL) return 0;
-    RenderMaterialDefault(&parsed);
-    if (size >= sizeof(v6) - 1 && memcmp(text, v6, sizeof(v6) - 1) == 0)
-        version = 6;
-    else if (size >= sizeof(v5) - 1 &&
-             memcmp(text, v5, sizeof(v5) - 1) == 0)
-        version = 5;
-    else if (size >= sizeof(v4) - 1 &&
-             memcmp(text, v4, sizeof(v4) - 1) == 0)
-        version = 4;
-    else
-        return 0;
-    for (cursor = 0; cursor <= size; cursor++) {
-        const char *line;
-        size_t length, at = 0;
-        uint32_t index = 0, pathIndex = 0;
-        RageMaterialToken token;
-        if (cursor != size && text[cursor] != '\n') continue;
-        line = text + lineStart;
-        length = cursor - lineStart;
-        lineStart = cursor + 1;
-        if (length == 0 || line[0] == '#') continue;
-        if (!MaterialIndex(line, length, &at, &index) ||
-            at == length || line[at++] != ' ' ||
-            index != materialIndex) continue;
-        while (MaterialNextToken(line, length, &at, &token)) {
-            if (MaterialTokenEquals(token, "|")) break;
-            if (pathIndex++ == variant) {
-                parsed.baseColorTexture.text = token.text;
-                parsed.baseColorTexture.length = token.length;
-            }
+/* The catalog owns one immutable text snapshot and a sorted record table.
+ * Variant path spans stay in that snapshot; numeric properties are decoded
+ * once. Neither lookup nor another catalog can invalidate returned paths. */
+struct RageMaterialCatalogEntry {
+    uint32_t index;
+    RageRenderMaterial definition;
+    RageRenderMaterialPath variants;
+};
+
+static int MaterialVersion(const char *text, size_t size) {
+    static const char prefix[] = "# rage-rmat v";
+    const size_t n = sizeof(prefix) - 1;
+    if (!text || size < n + 2 || memcmp(text, prefix, n) ||
+        text[n + 1] != '\n' || text[n] < '4' || text[n] > '6') return 0;
+    return text[n] - '0';
+}
+
+static int MaterialRecord(const char *line, size_t length, int version,
+                           RageMaterialCatalogEntry *entry) {
+    size_t at = 0, pathStart;
+    RageMaterialToken token;
+    int separator = 0;
+    RenderMaterialDefault(&entry->definition);
+    if (!MaterialIndex(line, length, &at, &entry->index) ||
+        at == length || line[at++] != ' ') return 0;
+    pathStart = at;
+    entry->variants.text = line + at;
+    entry->variants.length = 0;
+    while (MaterialNextToken(line, length, &at, &token)) {
+        if (MaterialTokenEquals(token, "|")) { separator = 1; break; }
+        if (!AssetPathIsRelativeFile(token.text, token.length)) return 0;
+        entry->variants.length = at - pathStart;
+    }
+    if (!entry->variants.length) return 0;
+    if (version == 4) return !separator;
+    if (!separator || !MaterialNextToken(line, length, &at, &token)) return 0;
+    if (!MaterialTokenEquals(token, "-")) {
+        if (!AssetPathIsRelativeFile(token.text, token.length)) return 0;
+        entry->definition.paintMask = (RageRenderMaterialPath){token.text, token.length};
+    }
+    if (version == 5) {
+        while (at < length && line[at] == ' ') ++at;
+        return at == length;
+    }
+    if (!MaterialNextToken(line, length, &at, &token) ||
+        !MaterialTokenEquals(token, "|")) return 0;
+    return MaterialProperties(line, length, at, &entry->definition);
+}
+
+static int MaterialEntryCompare(const void *left, const void *right) {
+    const RageMaterialCatalogEntry *a = left, *b = right;
+    return (a->index > b->index) - (a->index < b->index);
+}
+
+void RenderMaterialCatalogRelease(RageMaterialCatalog *catalog) {
+    if (!catalog) return;
+    free(catalog->entries);
+    free(catalog->bytes);
+    memset(catalog, 0, sizeof(*catalog));
+}
+
+int RenderMaterialCatalogOpen(RageMaterialCatalog *catalog,
+                              const void *bytes, size_t size) {
+    RageMaterialCatalog next = {0};
+    size_t capacity = 0, start = 0;
+    int version = MaterialVersion(bytes, size);
+    if (!catalog || !version) return 0;
+    next.bytes = malloc(size);
+    if (!next.bytes) return 0;
+    memcpy(next.bytes, bytes, size);
+    for (size_t end = 0; end <= size; ++end) {
+        RageMaterialCatalogEntry entry;
+        if (end != size && next.bytes[end] != '\n') continue;
+        const char *line = next.bytes + start;
+        size_t length = end - start;
+        start = end + 1;
+        if (!length || line[0] == '#') continue;
+        if (!MaterialRecord(line, length, version, &entry)) goto failed;
+        if (next.count == capacity) {
+            size_t grown = capacity ? capacity * 2 : 16;
+            if (grown < capacity || grown > SIZE_MAX / sizeof(*next.entries)) goto failed;
+            void *entries = realloc(next.entries, grown * sizeof(*next.entries));
+            if (!entries) goto failed;
+            next.entries = entries;
+            capacity = grown;
         }
-        if (parsed.baseColorTexture.length == 0) return 0;
-        if (version == 4) {
-            if (at != length) return 0;
-            *material = parsed;
-            return 1;
-        }
-        if (!MaterialNextToken(line, length, &at, &token)) return 0;
-        if (!MaterialTokenEquals(token, "-")) {
-            parsed.paintMask.text = token.text;
-            parsed.paintMask.length = token.length;
-        }
-        if (version == 5) {
-            while (at < length && line[at] == ' ') at++;
-            if (at != length) return 0;
-            *material = parsed;
-            return 1;
-        }
-        if (!MaterialNextToken(line, length, &at, &token) ||
-            !MaterialTokenEquals(token, "|")) return 0;
-        if (!MaterialProperties(line, length, at, &parsed)) return 0;
-        *material = parsed;
+        next.entries[next.count++] = entry;
+    }
+    if (next.count > 1) {
+        qsort(next.entries, next.count, sizeof(*next.entries), MaterialEntryCompare);
+        for (size_t i = 1; i < next.count; ++i)
+            if (next.entries[i - 1].index == next.entries[i].index) goto failed;
+    }
+    RenderMaterialCatalogRelease(catalog);
+    *catalog = next;
+    return 1;
+failed:
+    RenderMaterialCatalogRelease(&next);
+    return 0;
+}
+
+int RenderMaterialCatalogFind(const RageMaterialCatalog *catalog,
+                              uint32_t materialIndex, uint32_t variant,
+                              RageRenderMaterial *material) {
+    size_t low = 0, high;
+    if (!catalog || !material) return 0;
+    high = catalog->count;
+    while (low < high) {
+        size_t mid = low + (high - low) / 2;
+        if (catalog->entries[mid].index < materialIndex) low = mid + 1;
+        else high = mid;
+    }
+    if (low == catalog->count || catalog->entries[low].index != materialIndex) return 0;
+    const RageMaterialCatalogEntry *entry = &catalog->entries[low];
+    size_t at = 0;
+    RageMaterialToken token;
+    while (MaterialNextToken(entry->variants.text, entry->variants.length, &at, &token)) {
+        if (variant) { --variant; continue; }
+        RageRenderMaterial result = entry->definition;
+        result.baseColorTexture = (RageRenderMaterialPath){token.text, token.length};
+        *material = result;
         return 1;
     }
     return 0;
+}
+
+int RenderMaterialParse(const void *bytes, size_t size,
+                         uint32_t materialIndex, uint32_t variant,
+                         RageRenderMaterial *material) {
+    RageMaterialCatalog catalog = {0};
+    RageRenderMaterial parsed;
+    if (!material || !RenderMaterialCatalogOpen(&catalog, bytes, size)) return 0;
+    int found = RenderMaterialCatalogFind(&catalog, materialIndex, variant, &parsed);
+    if (found) {
+        parsed.baseColorTexture.text = (const char *)bytes +
+            (parsed.baseColorTexture.text - catalog.bytes);
+        if (parsed.paintMask.text)
+            parsed.paintMask.text = (const char *)bytes +
+                (parsed.paintMask.text - catalog.bytes);
+        *material = parsed;
+    }
+    RenderMaterialCatalogRelease(&catalog);
+    return found;
 }

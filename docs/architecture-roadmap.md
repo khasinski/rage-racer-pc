@@ -6,6 +6,18 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Constraints and future consumers
 
+Material catalog checkpoint (2026-09-07): the shared C material API now opens
+an owned, validated v4-v6 snapshot with sorted unique IDs and allocation-free
+lookups. It validates every record, variant path and mask path before exposing
+any definition; failed reopen preserves the previous catalog. The compatibility
+parser uses the same validation and retains its borrowed-input path contract.
+A malformed trailing record was accepted by the old parser and is rejected
+now. Independent ownership, source mutation, duplicate IDs, invalid unselected
+variants, failed reopen and UINT32_MAX identity cases pass in the compiled
+material test; rebuilt Linux material and modern_assets_retry pass 2/2.
+Session reuse of these catalogs is the next integration step, not yet provided
+by this checkpoint. This does not complete the disc/cache/mod resource catalog.
+
 Cache resolution checkpoint (2026-09-07): `RuntimeMeshCacheResolve` now
 distinguishes absent identities from read/decode/capacity errors, clears failed
 outputs, and retains the pointer-only compatibility wrapper. The modern cache

@@ -17,7 +17,62 @@ static int PathEquals(RageRenderMaterialPath path, const char *expected) {
            memcmp(path.text, expected, path.length) == 0;
 }
 
+static void CatalogContracts(void) {
+    char source[] = "# rage-rmat v5\n9 m -texture | -mask\n2 a/b c/d | -\n";
+    RageMaterialCatalog catalog = {0}, independent = {0};
+    RageRenderMaterial material = {0}, saved;
+    EXPECT(RenderMaterialCatalogOpen(&catalog, source, sizeof(source) - 1));
+    EXPECT(catalog.count == 2);
+    EXPECT(RenderMaterialCatalogFind(&catalog, 9, 1, &material));
+    EXPECT(PathEquals(material.baseColorTexture, "-texture"));
+    EXPECT(PathEquals(material.paintMask, "-mask"));
+    saved = material;
+    memset(source, 'x', sizeof(source));
+    EXPECT(PathEquals(saved.baseColorTexture, "-texture"));
+    EXPECT(RenderMaterialCatalogFind(&catalog, 2, 1, &material));
+    EXPECT(PathEquals(material.baseColorTexture, "c/d"));
+    material = saved;
+    EXPECT(!RenderMaterialCatalogFind(&catalog, 2, 2, &material));
+    EXPECT(!RenderMaterialCatalogFind(&catalog, 8, 0, &material));
+    EXPECT(memcmp(&material, &saved, sizeof(saved)) == 0);
+    static const char *bad[] = {
+        "# rage-rmat v4\n9 good\nbad\n",
+        "# rage-rmat v4\n9 good\n2 ok\n2 other\n",
+        "# rage-rmat v4\n9 good ../outside\n",
+        "# rage-rmat v4\n9 good\n2 /absolute\n",
+        "# rage-rmat v4\n9 good\n4294967296 wrapped\n",
+        "# rage-rmat v4\n9 good |\n",
+        "# rage-rmat v5\n9 good | ../mask\n",
+        "# rage-rmat v5\n9 good\n",
+        "# rage-rmat v6\n9 good | - | lit opaque 2 0 1 1 1 1 0 0 0\n",
+        "# rage-rmat v4\n9 good\n2 a\\b\n",
+        "# rage-rmat v4\n9 good\n2 a//b\n",
+        "# rage-rmat v4\n9 good\n2 C:drive\n",
+    };
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
+        EXPECT(!RenderMaterialCatalogOpen(&catalog, bad[i], strlen(bad[i])));
+        EXPECT(RenderMaterialCatalogFind(&catalog, 9, 1, &material));
+        EXPECT(PathEquals(material.baseColorTexture, "-texture"));
+        EXPECT(material.baseColorTexture.text == saved.baseColorTexture.text);
+        EXPECT(!RenderMaterialParse(bad[i], strlen(bad[i]), 9, 0, &material));
+        EXPECT(memcmp(&material, &saved, sizeof(saved)) == 0);
+    }
+    static const char other[] = "# rage-rmat v4\n9 different\n4294967295 last\n";
+    EXPECT(RenderMaterialCatalogOpen(&independent, other, sizeof(other) - 1));
+    EXPECT(RenderMaterialCatalogFind(&independent, UINT32_MAX, 0, &material));
+    EXPECT(PathEquals(material.baseColorTexture, "last"));
+    RenderMaterialCatalogRelease(&independent);
+    EXPECT(PathEquals(saved.baseColorTexture, "-texture"));
+    EXPECT(RenderMaterialCatalogOpen(&catalog, other, sizeof(other) - 1));
+    EXPECT(RenderMaterialCatalogFind(&catalog, 9, 0, &material));
+    EXPECT(PathEquals(material.baseColorTexture, "different"));
+    RenderMaterialCatalogRelease(&catalog);
+    RenderMaterialCatalogRelease(&catalog);
+    EXPECT(!catalog.count && !catalog.entries && !catalog.bytes);
+}
+
 int main(void) {
+    CatalogContracts();
     {
         RageRenderMaterial first,second;
         RageRenderMaterialStorage firstStorage,secondStorage;
