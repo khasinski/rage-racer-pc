@@ -4,6 +4,9 @@
 #include "render/mod_file_snapshot.h"
 #include <stdio.h>
 #ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #include <stdlib.h>
 #include <io.h>
