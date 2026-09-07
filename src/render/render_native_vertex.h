@@ -55,6 +55,18 @@ const RageNativeMeshTemplateView *RenderNativeMeshTemplateAcquire(
     RageNativeMeshTemplateCache *cache, const RageRuntimeMesh *mesh,
     RageRenderAssetSet assetSet, uint32_t submesh);
 void RenderNativeMeshTemplateCacheRelease(RageNativeMeshTemplateCache *cache);
+/* Also retain local source/transform metadata for resident GPU draws. Spans
+ * are separated at instance/template boundaries. With expandWorldVertices=0,
+ * local spans reserve ranges without writing them; use ExpandNativeLocalDraw
+ * only when diagnostics or a GPU allocation failure require world vertices. */
+uint32_t RenderBuildNativeLocalCompactPassDraws(
+    RageNativeMeshTemplateCache *cache,
+    const RageRenderWorld *world, RageRenderPass pass, float aspect, int cpuFog, int expandWorldVertices,
+    RageRenderMeshLookup lookup, void *context,
+    RageNativeGpuVertex *vertices, uint32_t vertexCapacity,
+    RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount);
+int RenderExpandNativeLocalDraw(const RageNativeDrawSpan *span,
+    RageNativeGpuVertex *vertices, uint32_t capacity);
 uint32_t RenderBuildNativeCachedCompactPassDraws(
     RageNativeMeshTemplateCache *cache,
     const RageRenderWorld *world, RageRenderPass pass, float aspect, int cpuFog,

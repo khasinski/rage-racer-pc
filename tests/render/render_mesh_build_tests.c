@@ -1392,6 +1392,32 @@ static void compare_vehicle_template(RageNativeMeshTemplateCache *cache,
         EXPECT_EQ(0, memcmp(expected, actual, count * sizeof(*actual)));
         EXPECT_EQ(0, memcmp(expectedSpans, actualSpans, expectedCount * sizeof(*actualSpans)));
     }
+    if (capacity == 24 && spanCapacity == 12) {
+        EXPECT_EQ(count, RenderBuildNativeLocalCompactPassDraws(cache, world,
+            RAGE_RENDER_PASS_MAIN, 1.5f, cpuFog, 1, test_mesh_lookup, mesh, actual, capacity,
+            actualSpans, spanCapacity, &actualCount));
+        EXPECT_EQ(0, memcmp(expected, actual, count * sizeof(*actual)));
+        for (uint32_t i = 0; i < actualCount; ++i) {
+            const RageNativeDrawSpan *span = &actualSpans[i];
+            if (!span->localGeometry) continue;
+            EXPECT_EQ(0, cpuFog);
+            EXPECT_EQ(1, span->localFirstVertex + span->vertexCount <= span->localGeometry->vertexCount);
+            EXPECT_EQ(1, span->localGeometry == RenderNativeMeshTemplateAcquire(cache, mesh, span->assetSet, span->mesh));
+        }
+        memset(actual, 0xcd, sizeof(actual));
+        EXPECT_EQ(count, RenderBuildNativeLocalCompactPassDraws(cache, world,
+            RAGE_RENDER_PASS_MAIN, 1.5f, cpuFog, 0, test_mesh_lookup, mesh, actual, capacity,
+            actualSpans, spanCapacity, &actualCount));
+        for (uint32_t i = 0; i < actualCount; ++i) {
+            const RageNativeDrawSpan *span = &actualSpans[i];
+            if (!span->localGeometry) continue;
+            const unsigned char *untouched = (const unsigned char *)(actual + span->firstVertex);
+            for (size_t b = 0; b < span->vertexCount * sizeof(*actual); ++b) EXPECT_EQ(0xcd, untouched[b]);
+            EXPECT_EQ(0, RenderExpandNativeLocalDraw(span, actual + span->firstVertex, span->vertexCount - 1));
+            EXPECT_EQ(1, RenderExpandNativeLocalDraw(span, actual + span->firstVertex, span->vertexCount));
+        }
+        EXPECT_EQ(0, memcmp(expected, actual, count * sizeof(*actual)));
+    }
 }
 
 static void test_vehicle_templates_follow_instance_state_and_capacity(void) {

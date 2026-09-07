@@ -5,6 +5,7 @@
 #include <string.h>
 #include "render/render_mesh_build.h"
 #include "render/render_native_vertex.h"
+#include "render/render_local_geometry.h"
 #include "native_vert_spv.h"
 #include "native_vert_msl.h"
 #include "fog_probe_frag_spv.h"
@@ -32,12 +33,12 @@ int main(int argc, char **argv) {
     shader.code = spirv ? native_vert_spv : native_vert_msl;
     shader.code_size = spirv ? native_vert_spv_len : native_vert_msl_len;
     shader.entrypoint = spirv ? "main" : "vs_native";
-    shader.num_uniform_buffers = 3;
+    shader.num_uniform_buffers = 4;
     if (shadowProbe) {
         shader.code = spirv ? native_shadow_vert_spv : native_shadow_vert_msl;
         shader.code_size = spirv ? native_shadow_vert_spv_len : native_shadow_vert_msl_len;
         shader.entrypoint = spirv ? "main" : "vs_shadow";
-        shader.num_uniform_buffers = 2;
+        shader.num_uniform_buffers = 3;
     }
     SDL_GPUShader *vs = SDL_CreateGPUShader(device, &shader); CHECK(vs);
     shader.stage = SDL_GPU_SHADERSTAGE_FRAGMENT;
@@ -94,6 +95,7 @@ int main(int argc, char **argv) {
     SDL_GPUTransferBuffer *download = SDL_CreateGPUTransferBuffer(device, &transferInfo); CHECK(download);
     const float depths[] = {0, 4, 5, 6, 10, 19, 20, 30};
     unsigned cases = 0;
+    for (unsigned localMode = 0; localMode < (shadowProbe || depthProbe ? 3u : 1u); ++localMode)
     for (unsigned reference = 0; reference < 2; ++reference)
     for (unsigned view = 0; view < 2; ++view)
     for (unsigned range = 0; range < 3; ++range)
@@ -143,6 +145,36 @@ int main(int argc, char **argv) {
                 vertices[i].depthBias = probeBias;
             }
         }
+        RageNativeLocalUniform local = {0};
+        if (localMode) {
+            RageNativeMeshTemplateView sourceView = {0};
+            RageNativeDrawSpan span = {0};
+            span.localGeometry = &sourceView;
+            span.localTransform.position = (RageRenderVec3){4, -3, 7};
+            span.localTransform.scale = (RageRenderVec3){-2, 0.5f, 1.5f};
+            span.localTransform.rotation.z = 90;
+            span.localTransform.orientation = (RageRenderQuaternion){0, 0, 1, 1};
+            span.localTransform.hasOrientation = localMode == 2;
+            span.depthDecal = 1;
+            local = RenderNativeLocalUniform(&span);
+            RageRenderInstanceTransform basis = RenderPrepareInstanceTransform(&span.localTransform);
+            /* Invert the CPU transform of the desired world triangle. The GPU
+             * must recover its depth/coverage, including the two-unit decal
+             * lift and a negative nonuniform scale, for both rotation modes. */
+            RageRenderVec3 axes[3] = {
+                RenderRotateInstanceVector(&basis, (RageRenderVec3){1, 0, 0}),
+                RenderRotateInstanceVector(&basis, (RageRenderVec3){0, 1, 0}),
+                RenderRotateInstanceVector(&basis, (RageRenderVec3){0, 0, 1})};
+            for (unsigned i = 0; i < 3; ++i) {
+                float x = vertices[i].position[0] - 4;
+                float y = vertices[i].position[1] + 3;
+                float z = vertices[i].position[2] - 7 - 2;
+                for (unsigned axis = 0; axis < 3; ++axis)
+                    vertices[i].position[axis] = (x * axes[axis].x + y * axes[axis].y + z * axes[axis].z)
+                        / local.scaleFog[axis];
+                vertices[i].normal[2] = 2;
+            }
+        }
         void *mapped = SDL_MapGPUTransferBuffer(device, upload, true); CHECK(mapped);
         for (unsigned i = 0; i < 3; ++i) packed[i] = RenderPackNativeGpuVertex(&vertices[i]);
         memcpy(mapped, packed, sizeof(packed)); SDL_UnmapGPUTransferBuffer(device, upload);
@@ -152,6 +184,7 @@ int main(int argc, char **argv) {
         SDL_GPUBufferRegion destination = {.buffer = buffer, .size = sizeof(packed)};
         SDL_UploadToGPUBuffer(copy, &source, &destination, true); SDL_EndGPUCopyPass(copy);
         SDL_PushGPUVertexUniformData(cmd, 0, uniform, sizeof(uniform));
+        SDL_PushGPUVertexUniformData(cmd, shadowProbe ? 2 : 3, &local, sizeof(local));
         const float instance[2][4] = {
             {view ? 0.25f : 0.75f, (float)range * 0.25f, 1, 0},
             {depthProbe ? -1.0f : enabled ? 0.5f : 1, (float)(sample % 2), (float)(sample % 4) * 0.25f, 0}};

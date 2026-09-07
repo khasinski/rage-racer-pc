@@ -16,7 +16,7 @@ void ModernNativeGpuShutdown(void);
 void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect);
 /* Call after successfully submitting the command buffer used by Draw and
  * DrawMirror. On cancellation/submission failure, shut down this renderer
- * before reuse: cached textures may refer to discarded uploads. */
+ * before reuse: cached textures and geometry may refer to discarded uploads. */
 void ModernNativeGpuSubmitted(void);
 /* Backend-owned immutable values, borrowed until the next preparation or
  * shutdown. Mesh/material IDs still refer to external asset generations. */

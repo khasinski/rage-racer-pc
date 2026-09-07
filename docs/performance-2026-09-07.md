@@ -168,3 +168,59 @@ are byte-identical with sharing enabled/disabled. The compiled range test checks
 payload equality, differing UV/fog data, draw-state preservation, in-place
 compaction and invalid-range rejection. Mesh, mirror, renderer-toggle and
 native-world tests pass, as does the mesh suite under ASan/UBSan.
+
+## Resident vehicle geometry and GPU instance transforms
+
+The default renderer now uploads immutable local vehicle templates once per
+asset generation and draws those same GPU buffers in the main, mirror and
+shadow passes. Per-draw uniforms carry translation, scale, Euler/quaternion
+rotation, fog enablement and decal displacement. Euler operations retain their
+original order; normals use rotation only and decal separation remains two
+world units along the normalized transformed normal. GLSL is shared by the
+main and shadow shaders; SPIR-V and MSL were regenerated with the existing
+compiled shader toolchain. Metal execution remains unverified locally.
+
+Local spans reserve diagnostic world-vertex ranges without expanding them on
+the CPU. Expansion happens on demand for draw dumps/probes or when a resident
+GPU buffer cannot be allocated/uploaded. The existing CPU path still handles
+unsupported geometry and CPU fog. `diagnostics.modern_cpu_geometry=true`
+disables residency and restores CPU-expanded draws for comparison. Full source
+payloads stay within the bounded template cache, with at most 512 resident GPU
+buffers to bound driver object overhead; GPU buffers are retired before
+those templates on generation change/shutdown. Pending transfer buffers follow
+the existing submission lifetime contract, including complete renderer teardown
+after a cancelled/failed submission.
+
+In paired frame-649 captures with the mirror active, both the image and main
+draw dump are byte-identical between CPU and resident paths. The resident run
+recorded 24 initial geometry uploads, reused on subsequent frames. At frame 649
+dynamic upload size was 1,193,472 bytes versus 10,054,296 with CPU geometry and
+view sharing. Main/mirror preparation in that traced resident frame was
+0.829/0.298 ms; dynamic upload recording took 0.144 ms. This is an observed
+scene, not a whole-game performance guarantee.
+
+Three completed moving-lap measurements were contaminated by another running
+game (`riftbreaker_win`, started at 15:15:25). They cannot establish the speedup
+or regression of this implementation:
+
+| Session under build/ | Mean FPS | Slowest window | Notes |
+| --- | ---: | ---: | --- |
+| perf-resident-vehicles/20260907-151959-5392a4 | 114.80 | 104.57 | Intermediate residency with redundant CPU expansion |
+| perf-resident-cpu-reference/20260907-152156-4dedc5 | 117.49 | 108.13 | Residency disabled in the same intermediate build |
+| perf-resident-lazy/20260907-152630-f3d5d5 | 113.88 | 107.84 | Final on-demand CPU expansion |
+
+Final run worst window p95 was 19.107 ms and highest window-mean preparation
+2.358 ms. No more moving performance runs were launched after identifying the
+competing game. Sustained 120 FPS still needs measurement without that load.
+
+The compiled mesh suite checks deferred ranges remain unwritten and reconstruct
+byte-identically to the reference, as well as source identity and capacity
+failure. GPU depth and shadow-UV tests now exercise both rotation modes with
+negative nonuniform scale, translation and nonunit decal normals. Mesh,
+fog/depth/shadow-UV/shadow-mask, mirror, native-world, renderer-toggle,
+submit-recovery and stage-angle tests pass. The deferred mesh suite also passes
+ASan/UBSan with leak detection. Production, smoke, replay and stage targets build.
+
+This completes the first live resident-geometry slice, covering supported
+vehicle model banks. Terrain and other unsupported paths still use transient
+geometry. The broader architecture roadmap and the 120 FPS target remain open.

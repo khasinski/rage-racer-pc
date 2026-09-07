@@ -61,6 +61,11 @@ typedef struct RageNativeDrawSpan {
     RageRenderPass pass;
     /* Draw-constant state, separate from immutable source geometry. */
     RageNativeInstanceState instanceState;
+    /* Optional local source for a resident GPU draw. CPU reference builders
+     * leave these zero; firstVertex still addresses diagnostic world vertices. */
+    const struct RageNativeMeshTemplateView *localGeometry;
+    uint32_t localFirstVertex;
+    RageRenderTransform localTransform;
 } RageNativeDrawSpan;
 
 typedef const RageRuntimeMesh *(*RageRenderMeshLookup)(

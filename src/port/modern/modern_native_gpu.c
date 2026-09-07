@@ -7,6 +7,7 @@
 #include "render/render_mesh_build.h"
 #include "render/render_world_snapshot.h"
 #include "render/render_native_vertex.h"
+#include "render/render_local_geometry.h"
 #include "render/authored_car_surface.h"
 #include "render/render_shadow.h"
 #include "render/texture_mipmap.h"
@@ -136,6 +137,31 @@ static uint32_t s_vertexCount;
 static uint32_t s_spanCount;
 static uint32_t s_mirrorVertexCount;
 static uint32_t s_uploadVertexCount;
+typedef struct ModernResidentGeometry {
+    struct ModernResidentGeometry *next;
+    const RageNativeMeshTemplateView *source;
+    SDL_GPUBuffer *buffer;
+} ModernResidentGeometry;
+typedef struct ModernGeometryBinding {
+    SDL_GPUBuffer *buffer;
+    uint32_t first;
+    int local;
+} ModernGeometryBinding;
+static ModernResidentGeometry *s_residentGeometry;
+static uint32_t s_residentGeometryCount;
+static ModernGeometryBinding s_mainGeometry[MODERN_NATIVE_MAX_SPANS];
+static ModernGeometryBinding s_mirrorGeometry[MODERN_NATIVE_MAX_SPANS];
+static int s_residentGeometryEnabled;
+
+static void ModernNativeReleaseGeometry(void) {
+    while (s_residentGeometry) {
+        ModernResidentGeometry *entry = s_residentGeometry;
+        s_residentGeometry = entry->next;
+        SDL_ReleaseGPUBuffer(s_device, entry->buffer);
+        free(entry);
+    }
+    s_residentGeometryCount = 0;
+}
 static uint32_t s_mirrorSpanCount;
 static uint64_t s_worldFrame = UINT64_MAX;
 static const RageRenderWorld *s_world;
@@ -146,7 +172,7 @@ static int s_completeWorld;
 static ModernNativeTexture s_textures[MODERN_NATIVE_MAX_TEXTURES];
 
 /*
- * Transfer buffers a texture upload has been recorded from, but whose command
+ * Transfer buffers a texture/geometry upload has been recorded from, but whose command
  * buffer this module does not submit: the caller does, after it has finished
  * with the frame. Releasing one before that submission leaves the copy
  * reading memory that has been handed back, which Metal tolerates and Vulkan
@@ -303,6 +329,10 @@ static SDL_GPUGraphicsPipeline *ModernNativeCreateShadowPipeline(
          .buffer_slot = 0,
          .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
          .offset = offsetof(RageNativeGpuVertex, uv)},
+        {.location = 3,
+         .buffer_slot = 0,
+         .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+         .offset = offsetof(RageNativeGpuVertex, normal)},
     };
     SDL_GPUGraphicsPipelineCreateInfo info = {0};
     info.vertex_shader = vertex;
@@ -524,12 +554,13 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
     const char *fogReference = SDL_getenv("RAGE_PORT_NATIVE_CPU_FOG");
     s_cpuFogReference = fogReference != NULL && strcmp(fogReference, "1") == 0;
     s_cpuGeometryReference = RuntimeConfigEnabled("diagnostics.modern_uncached_geometry");
+    s_residentGeometryEnabled = !RuntimeConfigEnabled("diagnostics.modern_cpu_geometry");
     fprintf(stderr, "rage-port: native fog=%s\n", s_cpuFogReference ? "cpu-reference" : "gpu");
     s_device = device;
     vertex = ModernNativeCreateShader(
         native_vert_spv, native_vert_spv_len,
         native_vert_msl, native_vert_msl_len, "vs_native",
-        SDL_GPU_SHADERSTAGE_VERTEX, 0, 3);
+        SDL_GPU_SHADERSTAGE_VERTEX, 0, 4);
     skyVertex = ModernNativeCreateShader(
         native_sky_vert_spv, native_sky_vert_spv_len,
         native_sky_vert_msl, native_sky_vert_msl_len, "vs_native_sky",
@@ -541,7 +572,7 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
     shadowVertex = ModernNativeCreateShader(
         native_shadow_vert_spv, native_shadow_vert_spv_len,
         native_shadow_vert_msl, native_shadow_vert_msl_len, "vs_shadow",
-        SDL_GPU_SHADERSTAGE_VERTEX, 0, 2);
+        SDL_GPU_SHADERSTAGE_VERTEX, 0, 3);
     shadowFragment = ModernNativeCreateShader(
         native_shadow_frag_spv, native_shadow_frag_spv_len,
         native_shadow_frag_msl, native_shadow_frag_msl_len, "fs_shadow",
@@ -752,6 +783,7 @@ static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
         ModernAssetsFreeMaterialImage(&image);
         if (upload != NULL) SDL_ReleaseGPUTransferBuffer(s_device, upload);
         ModernNativeReleaseSkyTexture();
+        ModernNativeReleaseGeometry();
         return 0;
     }
     mapped = SDL_MapGPUTransferBuffer(s_device, upload, true);
@@ -858,8 +890,8 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         RAGE_RENDER_VEHICLE_SHADOW_RESOLUTION,
         &s_shadowMap);
     if (trace) mainStarted = SDL_GetTicksNS();
-    s_vertexCount = RenderBuildNativeCachedCompactPassDraws(s_cpuGeometryReference ? NULL : &s_meshTemplates,
-        world, RAGE_RENDER_PASS_MAIN, aspect, s_cpuFogReference, ModernAssetsResidentMeshLookup, NULL,
+    s_vertexCount = RenderBuildNativeLocalCompactPassDraws(s_cpuGeometryReference ? NULL : &s_meshTemplates,
+        world, RAGE_RENDER_PASS_MAIN, aspect, s_cpuFogReference, !s_residentGeometryEnabled, ModernAssetsResidentMeshLookup, NULL,
         s_vertices,
         MODERN_NATIVE_MAX_VERTICES_PER_VIEW, s_spans, MODERN_NATIVE_MAX_SPANS,
         &s_spanCount);
@@ -872,8 +904,8 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         RageRenderWorld mirrorWorld = *world;
         uint32_t span;
         mirrorWorld.camera = world->mirrorCamera;
-        s_mirrorVertexCount = RenderBuildNativeCachedCompactPassDraws(s_cpuGeometryReference ? NULL : &s_meshTemplates,
-            &mirrorWorld, RAGE_RENDER_PASS_MAIN, s_mirrorAspect, s_cpuFogReference,
+        s_mirrorVertexCount = RenderBuildNativeLocalCompactPassDraws(s_cpuGeometryReference ? NULL : &s_meshTemplates,
+            &mirrorWorld, RAGE_RENDER_PASS_MAIN, s_mirrorAspect, s_cpuFogReference, !s_residentGeometryEnabled,
             ModernAssetsResidentMeshLookup, NULL, s_vertices + mirrorFirstVertex,
             MODERN_NATIVE_MAX_VERTICES_PER_VIEW, s_mirrorSpans,
             MODERN_NATIVE_MAX_SPANS, &s_mirrorSpanCount);
@@ -881,7 +913,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
             s_mirrorSpans[span].firstVertex += mirrorFirstVertex;
     }
     s_uploadVertexCount = s_vertexCount + s_mirrorVertexCount;
-    if (!RuntimeConfigEnabled("diagnostics.modern_unshared_views"))
+    if (!s_residentGeometryEnabled && !RuntimeConfigEnabled("diagnostics.modern_unshared_views"))
         s_uploadVertexCount = RenderShareNativeViewVertices(s_vertices,
             s_vertexCount, s_spans, s_spanCount,
             s_mirrorVertexCount, s_mirrorSpans, s_mirrorSpanCount);
@@ -1040,6 +1072,8 @@ int ModernNativeGpuWriteDrawDump(FILE *file) {
     for (spanIndex = 0; spanIndex < s_spanCount; spanIndex++) {
         const RageNativeDrawSpan *span = &s_spans[spanIndex];
         const ModernNativeTexture *texture = ModernNativeFindTexture(span);
+        if (span->localGeometry && !RenderExpandNativeLocalDraw(span,
+                s_vertices + span->firstVertex, span->vertexCount)) return 0;
         float roughness = texture != NULL ? texture->definition.roughness : 1.0f;
         float metallic = texture != NULL ? texture->definition.metallic : 0.0f;
         int shading = texture != NULL ? (int)texture->definition.shading : 0;
@@ -1167,6 +1201,8 @@ int ModernNativeGpuWriteProbe(FILE *file, int x, int y,
     for (spanIndex = 0; spanIndex < s_spanCount; spanIndex++) {
         const RageNativeDrawSpan *span = &s_spans[spanIndex];
         uint32_t first;
+        if (span->localGeometry && !RenderExpandNativeLocalDraw(span,
+                s_vertices + span->firstVertex, span->vertexCount)) return 0;
         for (first = span->firstVertex;
              first + 2 < span->firstVertex + span->vertexCount &&
              first + 2 < s_vertexCount;
@@ -1482,6 +1518,51 @@ static void ModernNativeWarmTrackBank(SDL_GPUCommandBuffer *command) {
     }
 }
 
+static SDL_GPUBuffer *ModernNativeResidentBuffer(SDL_GPUCommandBuffer *command,
+    const RageNativeMeshTemplateView *source) {
+    if (!s_residentGeometryEnabled || !source || !source->vertexCount) return NULL;
+    for (ModernResidentGeometry *entry = s_residentGeometry; entry; entry = entry->next)
+        if (entry->source == source) return entry->buffer;
+    /* Bound driver object overhead as well as the template payload budget. */
+    if (s_residentGeometryCount >= 512 || !ModernUploadQueueHasRoom(&s_pendingUploads)) return NULL;
+    ModernResidentGeometry *entry = calloc(1, sizeof(*entry));
+    if (!entry) return NULL;
+    Uint32 size = source->vertexCount * sizeof(*source->vertices);
+    SDL_GPUBufferCreateInfo info = {.usage = SDL_GPU_BUFFERUSAGE_VERTEX, .size = size};
+    SDL_GPUTransferBufferCreateInfo transferInfo = {.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD, .size = size};
+    SDL_GPUTransferBuffer *transfer = SDL_CreateGPUTransferBuffer(s_device, &transferInfo);
+    entry->buffer = SDL_CreateGPUBuffer(s_device, &info);
+    void *mapped = transfer ? SDL_MapGPUTransferBuffer(s_device, transfer, false) : NULL;
+    if (!mapped || !entry->buffer) {
+        if (mapped) SDL_UnmapGPUTransferBuffer(s_device, transfer);
+        if (transfer) SDL_ReleaseGPUTransferBuffer(s_device, transfer);
+        if (entry->buffer) SDL_ReleaseGPUBuffer(s_device, entry->buffer);
+        free(entry);
+        return NULL;
+    }
+    memcpy(mapped, source->vertices, size);
+    SDL_UnmapGPUTransferBuffer(s_device, transfer);
+    SDL_GPUCopyPass *copy = SDL_BeginGPUCopyPass(command);
+    if (!copy) {
+        SDL_ReleaseGPUTransferBuffer(s_device, transfer);
+        SDL_ReleaseGPUBuffer(s_device, entry->buffer);
+        free(entry);
+        return NULL;
+    }
+    SDL_GPUTransferBufferLocation from = {.transfer_buffer = transfer};
+    SDL_GPUBufferRegion to = {.buffer = entry->buffer, .size = size};
+    SDL_UploadToGPUBuffer(copy, &from, &to, false);
+    SDL_EndGPUCopyPass(copy);
+    ModernNativeRetireUpload(transfer);
+    entry->source = source;
+    entry->next = s_residentGeometry;
+    s_residentGeometry = entry;
+    ++s_residentGeometryCount;
+    if (RuntimeConfigEnabled("diagnostics.performance_trace"))
+        fprintf(stderr, "native-resident-upload vertices=%u bytes=%u\n", source->vertexCount, size);
+    return entry->buffer;
+}
+
 static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
     static int trace = -1;
     if (trace < 0) trace = RuntimeConfigEnabled("diagnostics.performance_trace");
@@ -1496,8 +1577,46 @@ static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
     if (destination.size == 0) return 0;
     mapped = SDL_MapGPUTransferBuffer(s_device, s_vertexTransfer, true);
     if (mapped == NULL) return 0;
-    memcpy(mapped, s_vertices, destination.size);
+    uint32_t dynamicCount = 0;
+    for (unsigned view = 0; view < 2; ++view) {
+        const RageNativeDrawSpan *spans = view ? s_mirrorSpans : s_spans;
+        uint32_t count = view ? s_mirrorSpanCount : s_spanCount;
+        ModernGeometryBinding *bindings = view ? s_mirrorGeometry : s_mainGeometry;
+        for (uint32_t i = 0; i < count; ++i) {
+            const RageNativeDrawSpan *span = &spans[i];
+            SDL_GPUBuffer *resident = ModernNativeResidentBuffer(command, span->localGeometry);
+            bindings[i] = (ModernGeometryBinding){resident, span->localFirstVertex, resident != NULL};
+            if (resident) continue;
+            /* The CPU view-sharing step already proved these ranges equal.
+             * Preserve that sharing for geometry outside the resident path. */
+            if (view && span->firstVertex < s_vertexCount) {
+                uint32_t lo = 0, hi = s_spanCount;
+                while (lo < hi) {
+                    uint32_t mid = lo + (hi - lo) / 2;
+                    if (s_spans[mid].firstVertex < span->firstVertex) lo = mid + 1;
+                    else hi = mid;
+                }
+                if (lo < s_spanCount && s_spans[lo].firstVertex == span->firstVertex &&
+                    s_spans[lo].vertexCount == span->vertexCount && !s_mainGeometry[lo].local) {
+                    bindings[i] = s_mainGeometry[lo];
+                    continue;
+                }
+            }
+            bindings[i].buffer = s_vertexBuffer;
+            bindings[i].first = dynamicCount;
+            if (s_residentGeometryEnabled && span->localGeometry && !RenderExpandNativeLocalDraw(span,
+                    s_vertices + span->firstVertex, span->vertexCount)) {
+                SDL_UnmapGPUTransferBuffer(s_device, s_vertexTransfer);
+                return 0;
+            }
+            memcpy((RageNativeGpuVertex *)mapped + dynamicCount, s_vertices + span->firstVertex,
+                (size_t)span->vertexCount * sizeof(*s_vertices));
+            dynamicCount += span->vertexCount;
+        }
+    }
     SDL_UnmapGPUTransferBuffer(s_device, s_vertexTransfer);
+    destination.size = dynamicCount * sizeof(*s_vertices);
+    if (!destination.size) return 1;
     copy = SDL_BeginGPUCopyPass(command);
     if (copy == NULL) return 0;
     SDL_UploadToGPUBuffer(copy, &source, &destination, true);
@@ -1510,6 +1629,15 @@ static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
                 (double)(SDL_GetTicksNS() - started) / 1000000.0);
     }
     return 1;
+}
+
+static void ModernNativeBindGeometry(SDL_GPUCommandBuffer *command,
+    SDL_GPURenderPass *pass, const RageNativeDrawSpan *span,
+    const ModernGeometryBinding *binding, unsigned uniformSlot) {
+    SDL_GPUBufferBinding vertex = {.buffer = binding->buffer};
+    SDL_BindGPUVertexBuffers(pass, 0, &vertex, 1);
+    RageNativeLocalUniform local = RenderNativeLocalUniform(binding->local ? span : NULL);
+    SDL_PushGPUVertexUniformData(command, uniformSlot, &local, sizeof(local));
 }
 
 static int ModernNativeSpanCastsShadow(const RageNativeDrawSpan *span) {
@@ -1573,8 +1701,9 @@ static void ModernNativeDrawShadowMap(SDL_GPUCommandBuffer *command) {
         }
         const float uvOffset[4] = {span->instanceState.textureScrollU, 0, 0, 0};
         SDL_PushGPUVertexUniformData(command, 1, uvOffset, sizeof(uvOffset));
+        ModernNativeBindGeometry(command, pass, span, &s_mainGeometry[spanIndex], 2);
         SDL_DrawGPUPrimitives(pass, span->vertexCount, 1,
-                              span->firstVertex, 0);
+                              s_mainGeometry[spanIndex].first, 0);
         drawCount++;
     }
     SDL_EndGPURenderPass(pass);
@@ -1737,8 +1866,10 @@ static void ModernNativeGpuDrawSet(
                 boundInstance = span->instanceState;
                 hasBoundInstance = 1;
             }
-            SDL_DrawGPUPrimitives(pass, span->vertexCount, 1,
-                                  span->firstVertex, 0);
+            const ModernGeometryBinding *geometry = spans == s_mirrorSpans
+                ? &s_mirrorGeometry[spanIndex] : &s_mainGeometry[spanIndex];
+            ModernNativeBindGeometry(command, pass, span, geometry, 3);
+            SDL_DrawGPUPrimitives(pass, span->vertexCount, 1, geometry->first, 0);
             drawCount++;
         }
     }
@@ -1782,6 +1913,7 @@ void ModernNativeGpuDrawMirror(SDL_GPUCommandBuffer *command,
 void ModernNativeGpuShutdown(void) {
     ModernNativeGpuClearTextures();
     ModernNativeReleaseSkyTexture();
+    ModernNativeReleaseGeometry();
     if (s_device != NULL) {
         if (s_texturedOpaque != NULL)
             SDL_ReleaseGPUGraphicsPipeline(s_device, s_texturedOpaque);

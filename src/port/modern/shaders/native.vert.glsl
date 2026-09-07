@@ -1,4 +1,7 @@
 #version 450
+#extension GL_GOOGLE_include_directive : require
+#define LOCAL_BINDING 3
+#include "native_local.glsl"
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec2 inUV;
@@ -41,7 +44,11 @@ layout(location = 7) out float shadowReception;
 layout(location = 8) out vec3 viewDirection;
 
 void main() {
-    vec3 relative = inPosition - camera.position.xyz;
+    vec3 worldPosition = inPosition;
+    vec3 worldNormal = inNormal;
+    vec4 worldFog = inFog;
+    transformLocal(worldPosition, worldNormal, worldFog);
+    vec3 relative = worldPosition - camera.position.xyz;
     vec3 view = vec3(dot(camera.viewRow0.xyz, relative),
                      dot(camera.viewRow1.xyz, relative),
                      dot(camera.viewRow2.xyz, relative));
@@ -61,15 +68,15 @@ void main() {
                        viewDepth);
     uv = inUV + vec2(instance.properties.z, 0.0);
     color = vec4(inColor) / 255.0;
-    normal = inNormal;
+    normal = worldNormal;
     // Opt-in diagnostic path retains the CPU reference for identical-scene A/B.
     if (camera.fogColor.w > 0.0) {
-        fog = inFog;
+        fog = worldFog;
     } else {
         // Keep fog tied to the original position, not camera-facing decal lift.
-        float fogDepth = -dot(camera.viewRow2.xyz, inFog.xyz - camera.position.xyz);
+        float fogDepth = -dot(camera.viewRow2.xyz, worldFog.xyz - camera.position.xyz);
         float fogWeight = 0.0;
-        if (inFog.w > 0.0 && camera.fogRange.x > 0.0 &&
+        if (worldFog.w > 0.0 && camera.fogRange.x > 0.0 &&
             !isnan(fogDepth) && !isinf(fogDepth)) {
             if (fogDepth >= camera.fogRange.y) fogWeight = 1.0;
             else if (fogDepth > camera.fogRange.x)
@@ -80,7 +87,7 @@ void main() {
     }
     lighting = instance.properties.x;
     environmentLight = instance.environmentLight.xyz;
-    vec3 shadowRelative = inPosition - shadow.position.xyz;
+    vec3 shadowRelative = worldPosition - shadow.position.xyz;
     float shadowX = dot(shadow.viewRow0.xyz, shadowRelative) *
                     shadow.projection.x;
     float shadowY = dot(shadow.viewRow1.xyz, shadowRelative) *
@@ -91,5 +98,5 @@ void main() {
                        shadowDepth * shadow.projection.z +
                            shadow.projection.w);
     shadowReception = instance.properties.y;
-    viewDirection = camera.position.xyz - inPosition;
+    viewDirection = camera.position.xyz - worldPosition;
 }

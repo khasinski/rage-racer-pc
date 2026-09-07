@@ -22,7 +22,7 @@ int main(void) {
     shader.code = spirv ? native_shadow_vert_spv : native_shadow_vert_msl;
     shader.code_size = spirv ? native_shadow_vert_spv_len : native_shadow_vert_msl_len;
     shader.entrypoint = spirv ? "main" : "vs_shadow";
-    shader.num_uniform_buffers = 2;
+    shader.num_uniform_buffers = 3;
     SDL_GPUShader *vs = SDL_CreateGPUShader(device, &shader); CHECK(vs);
     shader.stage = SDL_GPU_SHADERSTAGE_FRAGMENT;
     shader.code = spirv ? native_shadow_masked_frag_spv : native_shadow_masked_frag_msl;
@@ -36,13 +36,15 @@ int main(void) {
         {.location=0, .format=SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
          .offset=offsetof(RageNativeGpuVertex, position)},
         {.location=1, .format=SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
-         .offset=offsetof(RageNativeGpuVertex, uv)}};
+         .offset=offsetof(RageNativeGpuVertex, uv)},
+        {.location=3, .format=SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+         .offset=offsetof(RageNativeGpuVertex, normal)}};
     SDL_GPUGraphicsPipelineCreateInfo pipelineInfo = {0};
     pipelineInfo.vertex_shader = vs; pipelineInfo.fragment_shader = fs;
     pipelineInfo.vertex_input_state.vertex_buffer_descriptions = &description;
     pipelineInfo.vertex_input_state.num_vertex_buffers = 1;
     pipelineInfo.vertex_input_state.vertex_attributes = attributes;
-    pipelineInfo.vertex_input_state.num_vertex_attributes = 2;
+    pipelineInfo.vertex_input_state.num_vertex_attributes = 3;
     pipelineInfo.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
     pipelineInfo.target_info.has_depth_stencil_target = true;
     pipelineInfo.target_info.depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
@@ -103,6 +105,8 @@ int main(void) {
         const float offset[4] = {mode == 1 ? 0.5f : 0, 0, 0, 0};
         SDL_PushGPUVertexUniformData(cmd, 0, camera, sizeof(camera));
         SDL_PushGPUVertexUniformData(cmd, 1, offset, sizeof(offset));
+        const float local[5][4] = {{0}};
+        SDL_PushGPUVertexUniformData(cmd, 2, local, sizeof(local));
         SDL_GPUDepthStencilTargetInfo target = {0};
         target.texture = depth; target.clear_depth = 1;
         target.load_op = SDL_GPU_LOADOP_CLEAR; target.store_op = SDL_GPU_STOREOP_STORE;

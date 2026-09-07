@@ -11,6 +11,14 @@ deferred unless necessary for this performance path. See
 [the 120 Hz checkpoint](performance-2026-09-07.md). The six-stage scope below
 remains active; reaching some 120 FPS intervals is not completion of this target.
 
+Resident geometry checkpoint (2026-09-07): supported vehicle model banks now
+use generation-owned GPU buffers shared by main, mirror and shadow passes,
+with per-instance GPU transforms and on-demand CPU diagnostic/fallback
+expansion. Regression images and draw dumps match the CPU reference. Terrain
+and unsupported instance flags remain transient. See the performance checkpoint
+for measured upload reduction, verification and the competing-game limitation
+on recent FPS results. Stage 4 and the overall six-stage scope remain active.
+
 ## Constraints and future consumers
 
 Material catalog checkpoint (2026-09-07): the shared C material API now opens
