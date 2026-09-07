@@ -247,14 +247,13 @@ set_tests_properties(fmv_frame_layout PROPERTIES LABELS e2e)
         SKIP_RETURN_CODE 77)
     add_test(
         NAME fmv_without_ffmpeg
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_fmv_without_ffmpeg.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_fmv_without_ffmpeg.cmake
     )
 set_tests_properties(fmv_without_ffmpeg PROPERTIES LABELS e2e)
     set_tests_properties(fmv_without_ffmpeg PROPERTIES TIMEOUT 90
-        SKIP_RETURN_CODE 77)
+        SKIP_REGULAR_EXPRESSION "SKIP: no disc image")
     add_test(
         NAME fmv_pacing
         COMMAND python3

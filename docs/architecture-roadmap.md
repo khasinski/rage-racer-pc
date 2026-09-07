@@ -55,6 +55,16 @@ and regression evidence; extracting an unused interface is not completion.
 
 ## Stages and acceptance gates
 
+The no-external-FFmpeg regression now uses CMake, preserving an empty PATH,
+Unicode/spaced temporary directories, 380 smoke frames, a 75s child deadline,
+observable FMV frames and no temporary leftovers (including hidden files).
+The Python baseline passed before migration; the replacement passes with PAL,
+NTSC-U and NTSC-J images (0.38–0.40s), and a missing explicit image skips.
+It passes the selected disc explicitly to the game; an existing but unreadable
+image fails playback rather than silently counting as a successful test.
+Only the superseded Python runner was removed. This is an in-process decoder
+smoke check, not complete movie/audio synchronization coverage.
+
 The logical initial-window-size regression also uses CMake now. The original
 Python and replacement both pass on Linux offscreen; the replacement preserves
 the one-frame smoke hook, 60s child deadline, process-status check and literal
