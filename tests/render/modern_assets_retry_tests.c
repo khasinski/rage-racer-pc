@@ -17,6 +17,7 @@ int main(int argc, char **argv) {
     char path[4096];
     char environmentPath[4096];
     char meshPath[4096];
+    char secondRoot[4096], secondIndex[4096], secondMesh[4096];
     unsigned char meshBytes[96] = {0};
     RageRenderMeshInstance instance = {0};
     const char index[] = "# rage-rmesh-index v2\n123 model mesh.rmesh mesh.rmat\n";
@@ -52,12 +53,22 @@ int main(int argc, char **argv) {
     if (!resident || ModernAssetsCachedMeshCount() != 1) return 23;
     const void *ownedBytes = resident->mesh.bytes;
     if (!ownedBytes || memcmp(ownedBytes, meshBytes, sizeof(meshBytes))) return 24;
+    if (SDL_snprintf(secondRoot, sizeof(secondRoot), "%s/second", argv[1]) >= (int)sizeof(secondRoot) ||
+        SDL_snprintf(secondIndex, sizeof(secondIndex), "%s/runtime-index.txt", secondRoot) >= (int)sizeof(secondIndex) ||
+        SDL_snprintf(secondMesh, sizeof(secondMesh), "%s/mesh.rmesh", secondRoot) >= (int)sizeof(secondMesh) ||
+        !SDL_CreateDirectory(secondRoot)) return 40;
+    unsigned char secondBytes[sizeof(meshBytes)];
+    memcpy(secondBytes, meshBytes, sizeof(secondBytes));
+    Write32(secondBytes + 32, 0x40000000u); /* Same asset identity, x = 2. */
+    if (!SDL_SaveFile(secondIndex, index, sizeof(index) - 1) ||
+        !SDL_SaveFile(secondMesh, secondBytes, sizeof(secondBytes))) return 41;
     /* Successful initialization is idempotent and preserves its source. */
     if (!ModernAssetsInitRoot(NULL) || !ModernAssetsReady()) return 5;
     if (ModernAssetsGeneration() != liveGeneration) return 33;
     /* An explicit different source is not an idempotent ensure-ready call.
      * Reject it without invalidating meshes borrowed by the active frame. */
-    if (ModernAssetsInitRoot(meshPath) || ModernAssetsInitRoot("")) return 38;
+    if (ModernAssetsInitRoot(meshPath) || ModernAssetsInitRoot("") ||
+        ModernAssetsInitRoot(secondRoot)) return 38;
     if (!ModernAssetsReady() || ModernAssetsGeneration() != liveGeneration ||
         ModernAssetsFind(&instance) != resident || resident->mesh.bytes != ownedBytes)
         return 39;
@@ -98,6 +109,18 @@ int main(int argc, char **argv) {
     if (!ModernAssetsInit() || !ModernAssetsReady()) return 19;
     if (!ModernAssetsInit()) return 20;
     ModernAssetsShutdown();
+    /* The valid second source becomes available only after retiring the
+     * first session. No cache entry may survive merely because IDs match. */
+    uint64_t beforeSwitch = ModernAssetsGeneration();
+    if (!ModernAssetsInitRoot(secondRoot) || !ModernAssetsReady() ||
+        ModernAssetsGeneration() == beforeSwitch) return 42;
+    resident = ModernAssetsFind(&instance);
+    if (!resident || !RuntimeMeshVertex(&resident->mesh, 0, &vertex) ||
+        vertex.position[0] != 2.0f || ModernAssetsCachedMeshCount() != 1)
+        return 43;
+    ModernAssetsShutdown();
+    if (!SDL_RemovePath(secondIndex) || !SDL_RemovePath(secondMesh) ||
+        !SDL_RemovePath(secondRoot)) return 44;
     if (!SDL_RemovePath(path)) return 7;
     if (!SDL_RemovePath(meshPath)) return 26;
     return 0;
