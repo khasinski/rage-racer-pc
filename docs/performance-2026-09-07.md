@@ -185,8 +185,8 @@ the CPU. Expansion happens on demand for draw dumps/probes or when a resident
 GPU buffer cannot be allocated/uploaded. The existing CPU path still handles
 unsupported geometry and CPU fog. `diagnostics.modern_cpu_geometry=true`
 disables residency and restores CPU-expanded draws for comparison. Full source
-payloads stay within the bounded template cache, with at most 512 resident GPU
-buffers to bound driver object overhead; GPU buffers are retired before
+payloads stay within the bounded template cache, with at most 512 resident mesh
+entries to bound driver object overhead; GPU buffers are retired before
 those templates on generation change/shutdown. Pending transfer buffers follow
 the existing submission lifetime contract, including complete renderer teardown
 after a cancelled/failed submission.
@@ -259,7 +259,7 @@ input reads; it does not make terrain GPU-resident or establish an FPS increase.
 
 ### Resident-budget fallback regression
 
-`diagnostics.modern_geometry_limit` can constrain the resident buffer count
+`diagnostics.modern_geometry_limit` can constrain the resident mesh count
 from zero to the unchanged default/maximum of 512. The native-world regression
 now runs the same frozen race through normal (512), fully transient (0) and
 mixed (1) budgets with residency otherwise enabled. This exercises on-demand
@@ -271,3 +271,28 @@ paths execute in the mixed case and that zero budget creates no resident buffer.
 The extended native-world test passes, and production, smoke, replay and stage
 targets build. This covers budget exhaustion downstream behavior; it does not
 simulate every SDL allocation/map failure inside resource creation.
+
+### Indexed resident geometry
+
+Integrated the existing exact geometry-pack prototype without rewriting its
+payload identity or reconstruction contract. Resident meshes are packed once
+at upload: only byte-identical complete vertex payloads share an index, and
+the index stream preserves original triangle order and draw ranges. Packing
+is used only when vertex plus index bytes are smaller than the expanded source;
+packing allocation failure or no size benefit retains an unindexed resident mesh.
+Both forms share the same main/mirror/shadow draw path and CPU reconstruction.
+
+For the 24 meshes loaded in the frozen scene, 90,399 expanded vertices became
+41,818 unique vertices plus 90,399 indices. GPU storage fell from 5,062,344 to
+2,703,404 bytes (about 47%). The frame-649 image and draw dump match the prior
+unindexed implementation byte for byte. The compiled pack suite checks exact
+reconstruction and every payload byte; it also passes ASan/UBSan. Native-world
+tests cover normal, zero and mixed residency budgets with the indexed path.
+Mirror, renderer-toggle and submit-recovery regressions pass.
+
+Index buffers follow the same generation and submission lifetime as their
+vertex buffers. The residency limit now counts mesh entries, each using one
+vertex buffer and optionally one index buffer (at most 1,024 buffer objects
+for 512 entries). Trace logs distinguish index-buffer binds from vertex binds.
+This establishes storage reduction and indexed rendering, not an isolated FPS
+increase under the concurrent-game workload.
