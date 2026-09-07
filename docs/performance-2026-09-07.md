@@ -296,3 +296,19 @@ vertex buffer and optionally one index buffer (at most 1,024 buffer objects
 for 512 entries). Trace logs distinguish index-buffer binds from vertex binds.
 This establishes storage reduction and indexed rendering, not an isolated FPS
 increase under the concurrent-game workload.
+
+### Resolve draw materials once per view
+
+DrawSet now classifies each span's material, pipeline, phase and clearcoat
+policy once, after all texture upload attempts. Resolving after that complete
+upload pass preserves successful retries of a shared material whose earlier
+attempt failed. The four ordered rendering phases consume bounded scratch
+records instead of repeating texture lookups and classification.
+
+The frame-649 dump contains 1,075 textured main-view spans, so phase-selection
+lookups decrease from 4,300 to 1,075; upload/cache checks are additional and
+unchanged. No triangle order or material phase changes. Image and draw dump
+are byte-identical. Mirror, native-world (including residency budgets),
+renderer-toggle and submit-recovery tests pass; production, smoke, stage and
+replay targets build. The count reduction is derived from the executed draw
+dump and code path; it is not a measured FPS improvement.

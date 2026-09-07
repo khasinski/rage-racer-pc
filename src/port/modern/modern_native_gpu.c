@@ -1784,6 +1784,32 @@ static void ModernNativeDrawShadowMap(SDL_GPUCommandBuffer *command) {
     }
 }
 
+typedef struct ModernNativeDrawMaterial {
+    ModernNativeTexture *texture;
+    SDL_GPUGraphicsPipeline *pipeline;
+    int phase, allowClearcoat;
+} ModernNativeDrawMaterial;
+
+static ModernNativeDrawMaterial ModernNativeResolveDrawMaterial(
+    const RageNativeDrawSpan *span, ModernNativeTexture *texture) {
+    ModernNativeDrawMaterial result = {.phase = -1};
+    if (!span->vertexCount || (span->material != UINT32_MAX && !texture)) return result;
+    int vehicle = span->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
+                  span->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
+    result.allowClearcoat = !vehicle || span->component == 0 ||
+        (span->material != UINT32_MAX &&
+         span->material / RAGE_CAR_SURFACE_RUNTIME_STRIDE == RAGE_CAR_SURFACE_METAL);
+    result.texture = texture;
+    result.phase = texture && texture->transparent ? 3 : span->depthDecal ? 1 : vehicle ? 2 : 0;
+    if (!texture)
+        result.pipeline = span->depthDecal ? s_colorOpaqueDecal : s_colorOpaque;
+    else if (span->depthDecal)
+        result.pipeline = texture->transparent ? s_texturedTransparentDecal : s_texturedOpaqueDecal;
+    else
+        result.pipeline = texture->transparent ? s_texturedTransparent : s_texturedOpaque;
+    return result;
+}
+
 static void ModernNativeGpuDrawSet(
     SDL_GPUCommandBuffer *command,
     SDL_GPUTexture *colorTarget, SDL_GPUTexture *depthTarget, int clearColor,
@@ -1817,8 +1843,18 @@ static void ModernNativeGpuDrawSet(
     RageNativeInstanceState boundInstance = {0};
     int hasBoundInstance = 0;
     ModernGeometryState geometryState = {0};
+    /* DrawSet calls are sequential. Keep bounded scratch storage outside the
+     * stack; only recorded GPU handles/uniform values outlive this call. */
+    static ModernNativeDrawMaterial drawMaterials[MODERN_NATIVE_MAX_SPANS];
+    /* A later span may successfully retry a material whose earlier upload
+     * failed. Resolve after all uploads so every span sees that same result. */
     for (spanIndex = 0; spanIndex < spanCount; spanIndex++)
         (void)ModernNativeLoadTexture(command, &spans[spanIndex]);
+    for (spanIndex = 0; spanIndex < spanCount; spanIndex++) {
+        ModernNativeTexture *texture = spans[spanIndex].material == UINT32_MAX
+            ? NULL : ModernNativeFindTexture(&spans[spanIndex]);
+        drawMaterials[spanIndex] = ModernNativeResolveDrawMaterial(&spans[spanIndex], texture);
+    }
     if (drawSky &&
         !ModernNativeEnsureSkyTexture(command, renderCamera))
         return;
@@ -1844,8 +1880,6 @@ static void ModernNativeGpuDrawSet(
     ModernNativeBuildShadowCamera(&s_shadowMap, &shadowCamera);
     SDL_PushGPUVertexUniformData(
         command, 1, &shadowCamera, sizeof(shadowCamera));
-    {
-    }
     /* Opaque scenery first, its surface overlays second, opaque vehicles
      * third, then transparent materials. Vehicles therefore remain in front
      * even when a road marking or animated sign needs a meaningful offset
@@ -1856,43 +1890,11 @@ static void ModernNativeGpuDrawSet(
         int boundAllowClearcoat = -1;
         for (spanIndex = 0; spanIndex < spanCount; spanIndex++) {
             const RageNativeDrawSpan *span = &spans[spanIndex];
-            ModernNativeTexture *texture;
-            SDL_GPUGraphicsPipeline *pipeline;
-            int vehicle = span->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
-                          span->assetSet ==
-                              RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
-            /* Authored rim surfaces retain specular lighting even though the
-             * original wheel texture combines matte rubber and metal. */
-            int allowClearcoat = !vehicle || span->component == 0 ||
-                (span->material != UINT32_MAX &&
-                 span->material / RAGE_CAR_SURFACE_RUNTIME_STRIDE == RAGE_CAR_SURFACE_METAL);
-            if (span->vertexCount == 0) continue;
-            if (span->material == UINT32_MAX) {
-                if (phase != (span->depthDecal ? 1 : (vehicle ? 2 : 0)))
-                    continue;
-                pipeline = span->depthDecal
-                    ? s_colorOpaqueDecal : s_colorOpaque;
-                texture = NULL;
-            } else {
-                texture = ModernNativeFindTexture(span);
-                if (texture == NULL) continue;
-                if (texture->transparent) {
-                    if (phase != 3) continue;
-                } else if (span->depthDecal) {
-                    if (phase != 1) continue;
-                } else if (phase != (vehicle ? 2 : 0)) {
-                    continue;
-                }
-                if (span->depthDecal) {
-                    pipeline = texture->transparent
-                        ? s_texturedTransparentDecal
-                        : s_texturedOpaqueDecal;
-                } else {
-                    pipeline = texture->transparent
-                        ? s_texturedTransparent
-                        : s_texturedOpaque;
-                }
-            }
+            const ModernNativeDrawMaterial *drawMaterial = &drawMaterials[spanIndex];
+            if (drawMaterial->phase != phase) continue;
+            ModernNativeTexture *texture = drawMaterial->texture;
+            SDL_GPUGraphicsPipeline *pipeline = drawMaterial->pipeline;
+            int allowClearcoat = drawMaterial->allowClearcoat;
             if (pipeline != boundPipeline) {
                 SDL_GPUTextureSamplerBinding shadowBinding = {
                     .texture = s_shadowTexture,
