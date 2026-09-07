@@ -49,6 +49,34 @@ static unsigned next_value(void) {
     return state;
 }
 int main(void) {
+    for (int iteration = 0; iteration < 1000000; ++iteration) {
+        PreparedTextureSpan p = {.x_start = -17,
+            .fixed_u = (int)(next_value() % 67108864) - 33554432,
+            .step_u = iteration % 2 ? 65536 + (int)(next_value() % 4097) - 2048 :
+                (int)(next_value() % 262145) - 131072};
+        int x = p.x_start + next_value() % 129;
+        int remaining = 1 + next_value() % 512;
+        u16 first, v;
+        TextureSpanSampleUV(&p, x, &first, &v);
+        int expected = 1;
+        while (expected < remaining && first + expected < 256) {
+            u16 u;
+            TextureSpanSampleUV(&p, x + expected, &u, &v);
+            if (u != first + expected) break;
+            expected++;
+        }
+        int actual = TextureSpanConsecutiveRun(&p, x, first, remaining);
+        if (actual != expected) {
+            fprintf(stderr, "Consecutive run mismatch iteration=%d expected=%d actual=%d\n",
+                iteration, expected, actual);
+            return 1;
+        }
+        p.step_v = 1;
+        if (TextureSpanConsecutiveRun(&p, x, first, remaining) != 1) return 1;
+        p.step_v = 0; p.step_b = 1;
+        if (TextureSpanConsecutiveRun(&p, x, first, remaining) != 1) return 1;
+    }
+    puts("Consecutive spans: 1000000 independent texel-walk comparisons passed");
     for (int first = 0; first < 256; ++first) {
         for (int remaining = 1; remaining <= 512; ++remaining) {
             PreparedTextureSpan p = {.x_start = -13, .fixed_u = first * 65536 + 32767,

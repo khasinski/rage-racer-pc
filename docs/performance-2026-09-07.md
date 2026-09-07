@@ -677,3 +677,40 @@ GPU commands; the number must not be attributed to palette interpolation alone.
 Tracing adds overhead, so this lap is for attribution, not a headline FPS score.
 The next performance work should target this synchronous legacy dispatch and
 presentation stalls, with unchanged PAL timing and image/VRAM regression oracles.
+
+### Dispatch attribution and consecutive fixed-point texel runs
+
+An opt-in `PSYZ_GPU_DISPATCH_TRACE` diagnostic now reports textured-quad
+correction time/calls (including a Gouraud subset), buffer-flush time/calls and
+an SDL nanosecond timestamp at dispatch completion. Correction time includes
+flushes nested inside correction, so the two timings must not be added.
+With the diagnostic disabled no timestamp calls or trace output are issued.
+
+The completed moving diagnostic lap at
+`build/perf-dispatch-clean/20260907-174540-b19fa4` recorded 846 dispatches with
+more than 500 corrected quads: mean correction time 5.137 ms, mean flush time
+0.848 ms and mean 1192 quad calls. This narrows the expensive environment phase
+to legacy textured-quad correction; it is not a measurement of palette math.
+
+The correction emitter now also combines fractional fixed-point U steps when
+they select exactly consecutive texels. A carry/borrow bound determines the
+first pixel where this stops being true. Constant V/color, UV byte wrap,
+triangle ownership, clipping and the original logical buffer-flush boundaries
+remain required. The exact-unit-step fast path remains in place. The existing
+pixel-reference override still disables all combined runs.
+
+One million independent pixel-walk comparisons validate maximal run lengths,
+including fractional steps around unity, negative steps/coordinates, clipped
+starts, UV wraps and changing V/color rejection. The existing 5,090,587 UV/RGB
+comparisons and ASan/UBSan pass. Native-world verifies VRAM, image and semantic
+draws against pixel correction/full batch copying. A separate frozen real-PAL
+image and draw dump match the pre-change executable exactly
+(`/tmp/rage-eager-span.*` and `/tmp/rage-consecutive-span.*`).
+
+The subsequent trace-off real-window lap completed at
+`build/perf-consecutive-span/20260907-175146-6721c2`: 117.737 mean FPS,
+114.350 slowest-window FPS, 15.528 ms worst-window p95 and 30.411 ms maximum
+interval across 33 post-startup complete windows. The same PAL/class-1/course-0,
+VSync 120 Hz and 1706x960 settings were retained. This does not establish an
+end-to-end FPS improvement over the prior 117.804 mean; the 120 FPS stability
+target remains unmet.
