@@ -55,6 +55,7 @@ void PortAfterSceneHandler(void) {
         GameRenderWorldDiscardLegacyMirror();
     }
     CaptureFrameEnd();
+    GameRenderWorldEndFrame();
     ModernLogicFrameReady((uint32_t)g_FrameCounter);
 }
 

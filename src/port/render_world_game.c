@@ -4,6 +4,8 @@
 #include "sky_panorama_layout.h"
 
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "game/asset.h"
@@ -21,8 +23,8 @@
 
 enum { RAGE_GAME_RENDER_WORLD_MAX_INSTANCES = 4096 };
 
-static RageRenderMeshInstance s_instances[2][RAGE_GAME_RENDER_WORLD_MAX_INSTANCES];
-static RageRenderWorld s_worlds[2];
+static RageRenderMeshInstance s_instances[3][RAGE_GAME_RENDER_WORLD_MAX_INSTANCES];
+static RageRenderWorld s_worlds[3];
 static RageRenderMeshInstance
     s_presentationInstances[RAGE_GAME_RENDER_WORLD_MAX_INSTANCES];
 static RageRenderWorld s_presentationWorld;
@@ -38,8 +40,22 @@ static uint8_t
     s_havePreviousCars[RAGE_CAR_ENTITY_COUNT][RAGE_CAR_RENDER_PART_COUNT];
 static int s_trackCarAsset = -1;
 static int s_initialized;
-static int s_currentWorld;
-static int s_haveCompletedFrame;
+static int s_buildingIndex;
+static int s_publishedWorld = 1, s_previousWorld = 2;
+static int s_publishedCount, s_buildingWorld;
+static int s_verifyPublication = -1;
+static uint64_t s_publishedHash, s_previousHash;
+
+static uint64_t WorldPublicationHash(const RageRenderWorld *world) {
+    uint64_t hash = UINT64_C(0xcbf29ce484222325);
+    const unsigned char *bytes = (const unsigned char *)world;
+    for (size_t i = 0; i < sizeof(*world); ++i)
+        hash = (hash ^ bytes[i]) * UINT64_C(1099511628211);
+    bytes = (const unsigned char *)world->instances;
+    for (size_t i = 0; i < world->instanceCount * sizeof(*world->instances); ++i)
+        hash = (hash ^ bytes[i]) * UINT64_C(1099511628211);
+    return hash;
+}
 static GameSkyGridLayout s_skyGrid[2];
 static int s_haveSkyGrid[2];
 
@@ -48,7 +64,7 @@ static int GameSceneUsesRaceWorld(void) {
 }
 
 static RageRenderWorld *GameRenderWorldMutable(void) {
-    return &s_worlds[s_currentWorld];
+    return &s_worlds[s_buildingIndex];
 }
 
 static float AngleToDegrees(s32 angle) {
@@ -268,33 +284,45 @@ void GameRenderWorldBeginFrame(uint64_t frame) {
     s_haveSkyGrid[0] = 0;
     s_haveSkyGrid[1] = 0;
     if (!s_initialized) {
-        RenderWorldInit(&s_worlds[0], s_instances[0],
-                            RAGE_GAME_RENDER_WORLD_MAX_INSTANCES);
-        RenderWorldInit(&s_worlds[1], s_instances[1],
-                            RAGE_GAME_RENDER_WORLD_MAX_INSTANCES);
+        for (int i = 0; i < 3; ++i)
+            RenderWorldInit(&s_worlds[i], s_instances[i],
+                RAGE_GAME_RENDER_WORLD_MAX_INSTANCES);
         s_initialized = 1;
-    } else {
-        const RageRenderWorld *completed = GameRenderWorldMutable();
-        s_currentWorld ^= 1;
-        s_haveCompletedFrame = 1;
-        RenderWorldBeginFrame(GameRenderWorldMutable(), frame);
-        /* The back buffer may be two logic ticks old.  Its camera history
-         * must come from the frame we just completed, not from whatever it
-         * happened to contain when last reused. */
-        if (completed->hasCamera) {
-            GameRenderWorldMutable()->previousCamera = completed->camera;
-            GameRenderWorldMutable()->hasCamera = 1;
-        }
-        if (completed->hasMirrorCamera) {
-            GameRenderWorldMutable()->previousMirrorCamera =
-                completed->mirrorCamera;
-            GameRenderWorldMutable()->previousMirrorPanelY =
-                completed->mirrorPanelY;
-            GameRenderWorldMutable()->hasMirrorCamera = 1;
-        }
-        return;
+    }
+    if (s_verifyPublication < 0)
+        s_verifyPublication = getenv("RAGE_VERIFY_WORLD_PUBLICATION") != NULL;
+    if (s_verifyPublication) {
+        s_publishedHash = WorldPublicationHash(&s_worlds[s_publishedWorld]);
+        s_previousHash = WorldPublicationHash(&s_worlds[s_previousWorld]);
+    }
+    if (s_publishedCount) {
+        /* Copy completed metadata, not the contents from a reused older slot.
+         * Instance storage remains private to the building world. */
+        *GameRenderWorldMutable() = s_worlds[s_publishedWorld];
+        GameRenderWorldMutable()->instances = s_instances[s_buildingIndex];
     }
     RenderWorldBeginFrame(GameRenderWorldMutable(), frame);
+    s_buildingWorld = 1;
+}
+
+void GameRenderWorldEndFrame(void) {
+    if (!s_initialized || !s_buildingWorld) return;
+    if (s_verifyPublication) {
+        if (s_publishedHash != WorldPublicationHash(&s_worlds[s_publishedWorld]) ||
+            s_previousHash != WorldPublicationHash(&s_worlds[s_previousWorld])) {
+            fprintf(stderr, "world-publication verify=MISMATCH\n");
+            abort();
+        }
+        if (g_SceneId == 12 && GameRenderWorldMutable()->frame % 128 == 0)
+            fprintf(stderr, "world-publication verify=match frame=%llu\n",
+                (unsigned long long)GameRenderWorldMutable()->frame);
+    }
+    int retired = s_previousWorld;
+    s_previousWorld = s_publishedWorld;
+    s_publishedWorld = s_buildingIndex;
+    s_buildingIndex = retired;
+    if (s_publishedCount < 2) ++s_publishedCount;
+    s_buildingWorld = 0;
 }
 
 static RageRenderCamera GameRenderWorldBuildCamera(
@@ -791,21 +819,20 @@ void GameRenderWorldDiscardLegacyMirror(void) {
 }
 
 const RageRenderWorld *GameRenderWorldCurrent(void) {
-    return s_initialized ? GameRenderWorldMutable() : NULL;
+    return s_publishedCount ? &s_worlds[s_publishedWorld] : NULL;
 }
 
 const RageRenderWorld *GameRenderWorldPrevious(void) {
-    if (!s_initialized || !s_haveCompletedFrame) return NULL;
-    return &s_worlds[s_currentWorld ^ 1];
+    return s_publishedCount >= 2 ? &s_worlds[s_previousWorld] : NULL;
 }
 
 const RageRenderWorld *GameRenderWorldPresentation(float t) {
     RageRenderWorld *current;
     const RageRenderWorld *previous;
-    if (!s_initialized) return NULL;
-    current = GameRenderWorldMutable();
-    if (!s_haveCompletedFrame) return current;
-    previous = &s_worlds[s_currentWorld ^ 1];
+    if (!s_publishedCount) return NULL;
+    current = &s_worlds[s_publishedWorld];
+    if (s_publishedCount < 2) return current;
+    previous = &s_worlds[s_previousWorld];
     s_presentationWorld = *current;
     s_presentationWorld.instances = s_presentationInstances;
     s_presentationWorld.instanceCapacity =

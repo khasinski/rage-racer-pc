@@ -808,3 +808,30 @@ This implements the first publication boundary in the actual game/renderer path
 without changing frame pacing or claiming an FPS gain. The world-instance buffers
 and texture-generation relationship still need equivalent publication ownership
 before presentation is allowed during scene construction.
+
+### World publication retains two completed instance buffers
+
+The production world adapter now has separate building/current/previous slots.
+`GameRenderWorldEndFrame` publishes after all scene submissions and capture end
+in `PortAfterSceneHandler`; current/previous accessors and synchronized
+presentation read only completed worlds. Before the first/second publication,
+the corresponding accessor returns NULL. Repeated end calls without begin do
+not rotate ownership. Starting construction copies the latest completed metadata
+into the private building slot and retains that slot's own instance array, so
+camera history never comes from an older recycled slot. This remains a
+same-thread borrowing API; it does not introduce background rendering.
+
+`RAGE_VERIFY_WORLD_PUBLICATION` checks the full metadata and active instance
+bytes of both published worlds across scene construction. Native-world requires
+both the capture and world oracles. Renderer toggles, native-world, submission
+recovery and retained history pass (4/4), and the frozen real-PAL image/draw dump
+match the prior capture-publication stage exactly (`/tmp/rage-published-world.*`).
+The production PAL class-1/course-0 lap also completed with both mutation oracles,
+original VSync configuration and automatic PAL timing at
+`build/verify-published-world-drive/20260907-181156-6674bc`. Its hashing overhead
+means this is a lifecycle/route check, not an FPS comparison.
+
+The extra world plus 4096-instance array costs 689,016 bytes on this toolchain.
+Texture/asset generation ownership and frame-to-texture association remain to
+be addressed before allowing presentation inside scene updates. No pacing or
+simulation-speed change is included in this checkpoint.

@@ -15,6 +15,10 @@ typedef enum RageGameCarRenderDetail {
 /* Game-state producer for Render World.  It receives a GameRenderObject
  * before the classic GTE path mutates or projects it. */
 void GameRenderWorldBeginFrame(uint64_t frame);
+/* Publish completed world metadata/instances after all scene submissions.
+ * Current/Previous remain unchanged during construction. Same-thread borrows;
+ * reacquire after EndFrame. Presentation scratch lasts until its next call. */
+void GameRenderWorldEndFrame(void);
 void GameRenderWorldSetCamera(int32_t x, int32_t y, int32_t z,
                                   int32_t pitch, int32_t yaw, int32_t roll);
 void GameRenderWorldPublishCurrentCamera(void);
@@ -59,6 +63,8 @@ void GameRenderWorldSubmitCar(const struct GameRenderObject *object,
  * the course-specific opponent lookup used by GameRenderWorldSubmitCar. */
 void GameRenderWorldSubmitPlayerCar(const struct GameRenderObject *object,
                                         int mirror_pass);
+/* Completed worlds, NULL until one/two frames have been published. These
+ * borrowed metadata and instance arrays remain intact during construction. */
 const struct RageRenderWorld *GameRenderWorldCurrent(void);
 const struct RageRenderWorld *GameRenderWorldPrevious(void);
 /* Build the previous->current presentation state used by unlocked rendering.
