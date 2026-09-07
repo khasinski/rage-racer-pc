@@ -312,3 +312,39 @@ are byte-identical. Mirror, native-world (including residency budgets),
 renderer-toggle and submit-recovery tests pass; production, smoke, stage and
 replay targets build. The count reduction is derived from the executed draw
 dump and code path; it is not a measured FPS improvement.
+
+## Resident terrain vertex prefix
+
+The world-geometry path now retains exact terrain vertex payloads between
+frames in the existing GPU vertex buffer. Per-view visibility still determines
+an ordered index stream each frame; neither culling nor triangle order changed.
+Non-terrain data, including camera-facing overlays and vehicle CPU fallbacks,
+occupies a transient tail. Uploads include only newly retained vertices, that
+tail and the current index stream. Stable terrain vertices are not recopied
+to GPU after their initial upload.
+
+`diagnostics.modern_world_vertex_limit` controls the bounded world pack, from
+zero to the default/maximum of 1,000,000 live vertices. CPU-fog and CPU-geometry
+reference modes retain transient uploads. Budget overflow resets the pack and
+publishes the entire new prefix; allocation failure or an oversized frame
+uses the former transient path. A transient upload invalidates GPU prefix
+tracking so the next packed frame republishes it. Asset generation retirement
+and renderer shutdown clear this state; failed submission uses the established
+complete resource teardown contract.
+
+At frame 649 the pack held 25,917 resident vertices and a 330-vertex transient
+tail. Its 21,312 indices plus the changed tail required 103,728 upload bytes,
+versus 1,193,472 before terrain residency. The image and draw dump are
+byte-identical. That traced frame spent 0.623 ms in upload preparation, including
+CPU hashing/packing; the earlier sample took 0.144 ms. Reduced transfer volume
+therefore is not evidence of a net frame-time improvement. Avoiding repeated
+CPU staging and hashing remains relevant performance work.
+
+The native-world regression now compares full residency, disabled world
+residency, a one-vertex budget forcing transient fallback, and a budget forcing
+at least ten full prefix rebuilds. All images/draw dumps match with the mirror
+active. Mirror, renderer-toggle, submit-recovery and compiled pack tests pass;
+production, smoke, stage and replay targets build. No new moving FPS benchmark
+was run under the competing-game workload. Terrain visibility, normals and
+draw preparation still execute on CPU; this stage makes its GPU vertex storage
+persistent, not its entire preparation pipeline.

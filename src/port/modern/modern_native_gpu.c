@@ -153,11 +153,21 @@ typedef struct ModernGeometryBinding {
 static ModernResidentGeometry *s_residentGeometry;
 static uint32_t s_residentGeometryCount;
 static uint32_t s_residentGeometryLimit = 512;
+static RageNativeGeometryPack s_worldGeometry;
+static SDL_GPUBuffer *s_worldIndexBuffer;
+static uint8_t *s_worldRetainMask;
+static uint32_t s_worldVertexLimit;
+static uint32_t s_worldUploadedResident;
+static uint64_t s_worldUploadedGeneration;
+static int s_worldGpuValid;
 static ModernGeometryBinding s_mainGeometry[MODERN_NATIVE_MAX_SPANS];
 static ModernGeometryBinding s_mirrorGeometry[MODERN_NATIVE_MAX_SPANS];
 static int s_residentGeometryEnabled;
 
 static void ModernNativeReleaseGeometry(void) {
+    RenderGeometryPackRelease(&s_worldGeometry);
+    s_worldGpuValid = 0;
+    s_worldUploadedResident = 0;
     while (s_residentGeometry) {
         ModernResidentGeometry *entry = s_residentGeometry;
         s_residentGeometry = entry->next;
@@ -561,6 +571,9 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
     s_cpuGeometryReference = RuntimeConfigEnabled("diagnostics.modern_uncached_geometry");
     s_residentGeometryEnabled = !RuntimeConfigEnabled("diagnostics.modern_cpu_geometry");
     s_residentGeometryLimit = (uint32_t)RuntimeConfigInt("diagnostics.modern_geometry_limit", 512, 0, 512);
+    s_worldVertexLimit = s_residentGeometryEnabled && !s_cpuFogReference
+        ? (uint32_t)RuntimeConfigInt("diagnostics.modern_world_vertex_limit",
+            MODERN_NATIVE_MAX_VERTICES_PER_VIEW, 0, MODERN_NATIVE_MAX_VERTICES_PER_VIEW) : 0;
     fprintf(stderr, "rage-port: native fog=%s\n", s_cpuFogReference ? "cpu-reference" : "gpu");
     s_device = device;
     vertex = ModernNativeCreateShader(
@@ -640,6 +653,18 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
     transfer.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
     transfer.size = buffer.size;
     s_vertexTransfer = SDL_CreateGPUTransferBuffer(s_device, &transfer);
+    if (s_worldVertexLimit) {
+        buffer.usage = SDL_GPU_BUFFERUSAGE_INDEX;
+        buffer.size = MODERN_NATIVE_MAX_BUFFER_VERTICES * sizeof(uint32_t);
+        s_worldIndexBuffer = SDL_CreateGPUBuffer(s_device, &buffer);
+        s_worldRetainMask = malloc(MODERN_NATIVE_MAX_BUFFER_VERTICES);
+        if (!s_worldIndexBuffer || !s_worldRetainMask) {
+            if (s_worldIndexBuffer) SDL_ReleaseGPUBuffer(s_device, s_worldIndexBuffer);
+            free(s_worldRetainMask);
+            s_worldIndexBuffer = NULL;
+            s_worldRetainMask = NULL;
+        }
+    }
     sampler.min_filter = SDL_GPU_FILTER_LINEAR;
     sampler.mag_filter = SDL_GPU_FILTER_LINEAR;
     /* The CPU supplies a deliberately bounded atlas-safe mip chain. Blend
@@ -1612,7 +1637,7 @@ static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
     if (destination.size == 0) return 0;
     mapped = SDL_MapGPUTransferBuffer(s_device, s_vertexTransfer, true);
     if (mapped == NULL) return 0;
-    uint32_t dynamicCount = 0;
+    uint32_t dynamicCount = 0, terrainCount = 0;
     uint32_t residentDraws = 0, localFallbacks = 0;
     for (unsigned view = 0; view < 2; ++view) {
         const RageNativeDrawSpan *spans = view ? s_mirrorSpans : s_spans;
@@ -1650,12 +1675,64 @@ static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
             }
             memcpy((RageNativeGpuVertex *)mapped + dynamicCount, s_vertices + span->firstVertex,
                 (size_t)span->vertexCount * sizeof(*s_vertices));
+            if (s_worldRetainMask)
+                memset(s_worldRetainMask + dynamicCount,
+                    span->assetSet == RAGE_RENDER_ASSET_TERRAIN, span->vertexCount);
+            if (span->assetSet == RAGE_RENDER_ASSET_TERRAIN) terrainCount += span->vertexCount;
             dynamicCount += span->vertexCount;
         }
     }
+    if (terrainCount && s_worldIndexBuffer && s_worldRetainMask &&
+        RenderGeometryPackAppendSelected(&s_worldGeometry, mapped, dynamicCount,
+            s_worldRetainMask, s_worldVertexLimit)) {
+        int reset = !s_worldGpuValid || s_worldUploadedGeneration != s_worldGeometry.generation;
+        uint32_t first = reset ? 0 : s_worldUploadedResident;
+        uint32_t changed = s_worldGeometry.vertexCount - first;
+        uint32_t vertexBytes = changed * sizeof(*s_vertices);
+        uint32_t indexBytes = dynamicCount * sizeof(uint32_t);
+        /* The pack limit is one view, while this transfer reserves two:
+         * changed vertices plus their index stream always fit that budget. */
+        memcpy(mapped, s_worldGeometry.vertices + first, vertexBytes);
+        memcpy((uint8_t *)mapped + vertexBytes, s_worldGeometry.indices, indexBytes);
+        SDL_UnmapGPUTransferBuffer(s_device, s_vertexTransfer);
+        copy = SDL_BeginGPUCopyPass(command);
+        if (!copy) { s_worldGpuValid = 0; return 0; }
+        if (vertexBytes) {
+            destination.offset = first * sizeof(*s_vertices);
+            destination.size = vertexBytes;
+            SDL_UploadToGPUBuffer(copy, &source, &destination, reset);
+        }
+        source.offset = vertexBytes;
+        destination.buffer = s_worldIndexBuffer;
+        destination.offset = 0;
+        destination.size = indexBytes;
+        SDL_UploadToGPUBuffer(copy, &source, &destination, true);
+        SDL_EndGPUCopyPass(copy);
+        s_worldUploadedResident = s_worldGeometry.residentCount;
+        s_worldUploadedGeneration = s_worldGeometry.generation;
+        s_worldGpuValid = 1;
+        for (unsigned view = 0; view < 2; ++view) {
+            ModernGeometryBinding *bindings = view ? s_mirrorGeometry : s_mainGeometry;
+            uint32_t count = view ? s_mirrorSpanCount : s_spanCount;
+            for (uint32_t i = 0; i < count; ++i)
+                if (bindings[i].buffer == s_vertexBuffer) bindings[i].indices = s_worldIndexBuffer;
+        }
+        if (trace) {
+            fprintf(stderr, "native-world-upload frame=%llu vertices=%u indices=%u resident=%u new_vertices=%u reset=%d bytes=%u\n",
+                (unsigned long long)s_worldFrame, s_worldGeometry.vertexCount, dynamicCount,
+                s_worldGeometry.residentCount, changed, reset, vertexBytes + indexBytes);
+            fprintf(stderr, "native-vertex-upload frame=%llu main=%u mirror=%u bytes=%u cpu_ms=%.3f resident_draws=%u local_fallbacks=%u\n",
+                (unsigned long long)s_worldFrame, s_vertexCount, s_mirrorVertexCount, vertexBytes + indexBytes,
+                (double)(SDL_GetTicksNS() - started) / 1000000.0, residentDraws, localFallbacks);
+        }
+        return 1;
+    }
     SDL_UnmapGPUTransferBuffer(s_device, s_vertexTransfer);
+    /* A transient upload cycles the shared vertex buffer. The next successful
+     * packed frame must republish its complete resident prefix. */
     destination.size = dynamicCount * sizeof(*s_vertices);
     if (!destination.size) return 1;
+    s_worldGpuValid = 0;
     copy = SDL_BeginGPUCopyPass(command);
     if (copy == NULL) return 0;
     SDL_UploadToGPUBuffer(copy, &source, &destination, true);
@@ -2006,6 +2083,7 @@ void ModernNativeGpuShutdown(void) {
         if (s_shadowMasked != NULL)
             SDL_ReleaseGPUGraphicsPipeline(s_device, s_shadowMasked);
         if (s_vertexBuffer != NULL) SDL_ReleaseGPUBuffer(s_device, s_vertexBuffer);
+        if (s_worldIndexBuffer != NULL) SDL_ReleaseGPUBuffer(s_device, s_worldIndexBuffer);
         if (s_vertexTransfer != NULL)
             SDL_ReleaseGPUTransferBuffer(s_device, s_vertexTransfer);
         if (s_sampler != NULL) SDL_ReleaseGPUSampler(s_device, s_sampler);
@@ -2017,6 +2095,9 @@ void ModernNativeGpuShutdown(void) {
             SDL_ReleaseGPUSampler(s_device, s_shadowSampler);
     }
     free(s_vertices);
+    free(s_worldRetainMask);
+    s_worldRetainMask = NULL;
+    s_worldIndexBuffer = NULL;
     RenderNativeMeshTemplateCacheRelease(&s_meshTemplates);
     free(s_spans);
     free(s_mirrorSpans);
