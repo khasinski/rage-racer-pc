@@ -17,6 +17,7 @@ static s32 g_WorldSubmissions;
 static s32 g_ClassicModel;
 static s32 g_WorldModel;
 static u32 g_WorldEntity;
+static s32 g_GteSets;
 
 int TrackCellVisible(s32 x, s32 z) {
     (void)x;
@@ -43,6 +44,7 @@ MATRIX *MulMatrix2(MATRIX *left, MATRIX *right) {
 void SetGteObjectMatrix(const LVec *position, Matrix *rotation) {
     (void)position;
     (void)rotation;
+    g_GteSets++;
 }
 
 void SubmitCourseModel(void *renderState, s32 model) {
@@ -65,15 +67,19 @@ void GameRenderWorldSubmitDynamicCourseObject(
     g_WorldModel = model;
 }
 
-static int ExpectDraw(const char *label, s32 instance, s32 submissions,
+static int ExpectDraw(const char *label, s32 instance, s32 submissions, s32 worldSubmissions,
                       s32 model) {
     g_ClassicSubmissions = 0;
     g_WorldSubmissions = 0;
+    g_GteSets = 0;
+    g_RenderState.envMode4 = 0x20000;
     DrawShuttleScenery(instance);
     if (g_ClassicSubmissions != submissions ||
-        g_WorldSubmissions != submissions ||
-        (submissions != 0 &&
-         (g_ClassicModel != model || g_WorldModel != model ||
+        g_WorldSubmissions != worldSubmissions || g_GteSets != submissions ||
+        (!submissions && g_RenderState.envMode4 != 0x20000) ||
+        (submissions != 0 && g_ClassicModel != model) ||
+        (worldSubmissions != 0 &&
+         (g_WorldModel != model ||
           g_WorldEntity != (u32)(0x110 + instance)))) {
         printf("FAIL %s: classic=%d/%d world=%d/%d entity=%u\n",
                label, g_ClassicSubmissions, g_ClassicModel,
@@ -89,25 +95,25 @@ int main(void) {
 
     g_CourseIndex = 0;
     g_Visible = 0;
-    if (!ExpectDraw("culled", 0, 0, 0)) return 1;
+    if (!ExpectDraw("outside classic scan", 0, 0, 1, 0x3F)) return 1;
 
     g_Visible = 1;
-    if (!ExpectDraw("course zero model", 1, 1, 0x3F)) return 1;
+    if (!ExpectDraw("course zero model", 1, 1, 1, 0x3F)) return 1;
 
     g_CourseModelCount = 63;
-    if (!ExpectDraw("missing model fallback", 0, 1, 1)) return 1;
+    if (!ExpectDraw("missing model fallback", 0, 1, 1, 1)) return 1;
 
     g_CourseIndex = 2;
     g_CourseModelCount = 61;
     g_Visible = 0;
-    if (!ExpectDraw("course two culling bypass", 1, 1, 0x3C)) return 1;
+    if (!ExpectDraw("course two culling bypass", 1, 1, 1, 0x3C)) return 1;
 
     g_CourseIndex = 6;
-    if (!ExpectDraw("other series still culled", 0, 0, 0)) return 1;
+    if (!ExpectDraw("other series classic still culled", 0, 0, 1, 0x3C)) return 1;
 
     g_Visible = 1;
-    if (!ExpectDraw("negative instance", -1, 0, 0) ||
-        !ExpectDraw("past-last instance", SHUTTLE_INSTANCE_COUNT, 0, 0)) {
+    if (!ExpectDraw("negative instance", -1, 0, 0, 0) ||
+        !ExpectDraw("past-last instance", SHUTTLE_INSTANCE_COUNT, 0, 0, 0)) {
         return 1;
     }
 

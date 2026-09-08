@@ -24,36 +24,12 @@ jobs:
       - name: Configure
         run: cmake -S . -B build/release -G "Visual Studio 17 2022" -A x64 -T ClangCL -DRAGE_EMBED_AUTHORED_CARS=OFF
       - name: Build
-        run: cmake --build build/release --config Release --target rage-racer release_package_tests --parallel
-      - name: Verify portable tests
-        run: ctest --test-dir build/release -C Release --output-on-failure -R '^release_package$'
-      - name: Build the save editor
-        shell: pwsh
-        run: |
-          # A failing compiler does not stop a PowerShell script on its own.
-          $ErrorActionPreference = "Stop"
-          function Invoke-Checked { & $args[0] @($args[1..($args.Count-1)]); if ($LASTEXITCODE -ne 0) { throw "$($args[0]) failed" } }
-          # The same toolset as the game: the port's include directory holds a
-          # stdint.h that forwards with include_next, which MSVC does not have.
-          Invoke-Checked cmake -S editor -B build/editor -G "Visual Studio 17 2022" -A x64 -T ClangCL
-          Invoke-Checked cmake --build build/editor --config Release --parallel
-          Invoke-Checked ctest --test-dir build/editor -C Release --output-on-failure
-      - name: Package the save editor
-        shell: pwsh
-        env:
-          VERSION: ${{ inputs.version || github.ref_name }}
-        run: |
-          $package = "Rage-Racer-Save-Editor-$env:VERSION-windows-x86_64"
-          $root = "dist/$package"
-          New-Item -ItemType Directory -Force -Path $root | Out-Null
-          $exe = Get-ChildItem build/editor -Recurse -Filter rage-save-editor.exe |
-                 Select-Object -First 1
-          if (!$exe) { throw "the save editor was not built" }
-          Copy-Item $exe.FullName $root
-          Copy-Item editor/README.md "$root/README.md"
-          Copy-Item LICENSE.md $root
-          Compress-Archive -Path $root -DestinationPath "dist/$package.zip" -Force
-
+        run: >-
+          cmake --build build/release --config Release --parallel
+      - name: Verify unit and functional tests
+        run: >-
+          ctest --test-dir build/release -C Release --output-on-failure
+          -L '^(unit|functional)$' --parallel 4
       - name: Package
         shell: pwsh
         env:
@@ -64,6 +40,8 @@ jobs:
           New-Item -ItemType Directory -Force $root | Out-Null
           Copy-Item build/release/Release/rage-racer.exe "$root/Rage-Racer.exe"
           Copy-Item README.md, LICENSE.md, rage-port.ini, race-scenario.ini $root
+          New-Item -ItemType Directory -Force "$root/docs" | Out-Null
+          Copy-Item docs/*.md "$root/docs/"
           Compress-Archive -Path $root -DestinationPath "dist/$package.zip" -Force
           if (!(Test-Path "$root/Rage-Racer.exe") -or
               !(Test-Path "$root/rage-port.ini")) {

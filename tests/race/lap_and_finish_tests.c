@@ -53,6 +53,8 @@ static unsigned long s_digest = 2166136261UL;
 static FILE *s_out;
 static int s_calls;
 static s32 s_lastSoundCue;
+static s32 s_followupCue;
+static int s_followupCount;
 
 static void Fold(unsigned char byte) {
     s_digest = ((s_digest ^ byte) * 16777619UL) & 0xFFFFFFFFUL;
@@ -104,7 +106,11 @@ void PlaySoundCue(s32 cue) {
     s_lastSoundCue = cue;
     RECORD("cue", cue);
 }
-void QueueFinishFollowupCue(s32 cue) { RECORD("followup", cue); }
+void QueueFinishFollowupCue(s32 cue) {
+    s_followupCue = cue;
+    s_followupCount++;
+    RECORD("followup", cue);
+}
 void SeedFinishCamera(PlayerCarRuntime *car) {
     RECORD("finishcamera", car == &g_PlayerCar);
 }
@@ -128,8 +134,9 @@ int main(int argc, char **argv) {
      * file name to write the sweep out and diff two runs.
      */
     /* Digest produced with the real PAL 25 Hz frame-to-millisecond
-     * conversion, not the former 20 ms test double. */
-    static const unsigned long expected = 3859405365UL;
+     * conversion. Issue #22 removes only the duplicate cue 42 at finish;
+     * all remaining sweep records match the preceding baseline. */
+    static const unsigned long expected = 4204828437UL;
     static const s32 laps[] = {0, 1, 2, 3};
     static const s32 lapCounts[] = {2, 3};
     /* Where the car is against the distance the current lap needs: short of
@@ -246,7 +253,7 @@ int main(int argc, char **argv) {
         memset(&g_RefSectorTimes, 0, sizeof(g_RefSectorTimes));
         s_course.retriesRemaining = (s16)retries;
 
-        sprintf(label,
+        snprintf(label, sizeof(label),
                 "== lap%d/count%d/progress%d/gp%d/pos%d/phase%d/fade%d/cue%d/"
                 "best%d/retries%d/cleared%d/gpglobal%d/wrong%d/sat%d",
                 laps[li], lapCounts[lc], progressCases[pc], gp, pos, phase,
@@ -322,7 +329,7 @@ int main(int argc, char **argv) {
             /* Short of the next lap, so only the timing half runs. */
             g_PlayerCar.progressA = -1;
 
-            sprintf(label, "== frames %d jitter %d", frameCounts[fi],
+            snprintf(label, sizeof(label), "== frames %d jitter %d", frameCounts[fi],
                     jitters[ji]);
             Record(label, NULL, 0);
             UpdateLapAndFinish(&g_PlayerCar, 0);
@@ -336,11 +343,40 @@ int main(int argc, char **argv) {
 
     if (s_out != NULL) {
         fclose(s_out);
+        s_out = NULL;
     }
     if (s_digest != expected) {
         printf("FAIL laps and finishing behave differently: %d states making "
                "%d calls digest to %lu, expected %lu\n", steps, s_calls,
                s_digest, expected);
+        return 1;
+    }
+
+    /* A final-stretch cue already heard on track must not be repeated at
+     * the line. The finish announcement is queued exactly once. */
+    memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
+    g_PlayerCar.lap = 1;
+    g_PlayerCar.progressA = 0x10000;
+    g_PlayerCar.drive.racePosition = 1;
+    g_LapCount = 1;
+    g_TrackLength = 0x10000;
+    g_RacePhase = 0;
+    g_RaceFadeTimer = 0;
+    g_RaceCueFlags = 8;
+    g_RaceCueDelay = 0;
+    g_BestLapThisRace = 0x7FFFFFFF;
+    s_lastSoundCue = -1;
+    s_followupCue = -1;
+    s_followupCount = 0;
+    UpdateLapAndFinish(&g_PlayerCar, 0);
+    if (s_lastSoundCue != -1 || s_followupCue != 0x2B ||
+        s_followupCount != 1) {
+        puts("FAIL finish repeated encouragement or omitted Finish!");
+        return 1;
+    }
+    UpdateLapAndFinish(&g_PlayerCar, 0);
+    if (s_followupCount != 1) {
+        puts("FAIL finish announcement queued twice");
         return 1;
     }
 

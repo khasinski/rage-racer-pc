@@ -18,6 +18,7 @@
 #include "render/mod_manifest.h"
 #include "render/resource_provider.h"
 #include "modern_material_transaction.h"
+#include "modern_png.h"
 #include "render/rmesh_replace.h"
 #include "authored_car_data.h"
 
@@ -652,7 +653,8 @@ static int ModernAssetsLoadModImage(const RageRenderMeshInstance *instance,
     if (relativePath == NULL ||
         snprintf(fullPath, sizeof(fullPath), "%s/%s", s_modRoot,
                  relativePath) >= (int)sizeof(fullPath)) return 0;
-    source = SDL_LoadPNG(fullPath);
+    source = ModernLoadPNG(SDL_IOFromFile(fullPath, "rb"),
+                           MODERN_ASSET_MAX_IMAGE_DIMENSION);
     if (source == NULL) {
         fprintf(stderr, "rage-port: cannot load texture override %s: %s\n",
                 fullPath, SDL_GetError());

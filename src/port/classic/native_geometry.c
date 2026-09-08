@@ -203,13 +203,14 @@ static int ProjectQuad(
     g_RageProjectionReject = 0;
     if (fog != NULL) *fog = p;
     if (rawDepth != NULL) *rawDepth = (int)otz;
-    /* A widened modern view accepts faces the 4:3 screen rect would cull;
+    /* A widened presentation accepts faces the 4:3 screen rect would cull;
      * the compat image is unchanged because the PS1 drawing area still clips
      * them. Never widen the mirror's deliberate bounds. */
     if (ScreenQuadOutsideBounds(
             sxy, g_RenderState.x0, g_RenderState.x1, g_RenderState.y0,
             g_RenderState.y1,
-            g_RenderState.orderingFlag ? 0 : ModernCullMarginX())) {
+            g_RenderState.mode == GAME_RENDER_PASS_MIRROR
+                ? 0 : ModernCullMarginX())) {
         g_RageProjectionReject = 1;
         return 0;
     }
@@ -307,7 +308,8 @@ static int ProjectCourseFace(
     if (ScreenQuadOutsideBounds(
             sxy, g_RenderState.x0, g_RenderState.x1, g_RenderState.y0,
             g_RenderState.y1,
-            g_RenderState.orderingFlag ? 0 : ModernCullMarginX())) {
+            g_RenderState.mode == GAME_RENDER_PASS_MIRROR
+                ? 0 : ModernCullMarginX())) {
         g_RageProjectionReject = 1;
         return 0;
     }
@@ -588,6 +590,7 @@ static void RageSubmitModelFaces(
             cursor += sizeof(*poly);
             {
                 RageCaptureFaceInput capture = {0};
+                capture.primitiveBegin = poly;
                 capture.kind = RAGE_CAPTURE_KIND_MODEL;
                 capture.klass = 0;
                 capture.bias = (int8_t)faces[strides[type] - 3];
@@ -620,6 +623,7 @@ static void RageSubmitModelFaces(
                 uint8_t uv[8] = {poly->u0, poly->v0, poly->u1, poly->v1,
                                  poly->u2, poly->v2, poly->u3, poly->v3};
                 RageCaptureFaceInput capture = {0};
+                capture.primitiveBegin = poly;
                 capture.kind = RAGE_CAPTURE_KIND_MODEL;
                 capture.klass = 1;
                 capture.raw = 1; /* forced command byte 0x2D */
@@ -675,6 +679,7 @@ static void RageSubmitModelFaces(
             AddPrim(&ot[depth], poly); cursor += sizeof(*poly);
             {
                 RageCaptureFaceInput capture = {0};
+                capture.primitiveBegin = poly;
                 capture.kind = RAGE_CAPTURE_KIND_MODEL;
                 capture.klass = 2;
                 capture.bias = (int8_t)faces[strides[type] - 3];
@@ -743,6 +748,7 @@ static void RageSubmitModelFaces(
                 uint8_t uv[8] = {poly->u0, poly->v0, poly->u1, poly->v1,
                                  poly->u2, poly->v2, poly->u3, poly->v3};
                 RageCaptureFaceInput capture = {0};
+                capture.primitiveBegin = poly;
                 capture.kind = RAGE_CAPTURE_KIND_MODEL;
                 capture.klass = 3;
                 capture.bias = (int8_t)faces[strides[type] - 3];
@@ -883,6 +889,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
             depth += bias;
             {
                 RageCaptureFaceInput capture = {0};
+                capture.primitiveBegin = cursor;
                 uint8_t flat[4] = {color[0], color[1], color[2], 0};
                 capture.kind = RAGE_CAPTURE_KIND_COURSE;
                 capture.klass = type == 0 ? 0 : 1;
@@ -986,6 +993,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
                 vSteps = 1 << vLevel;
                 {
                     RageCaptureFaceInput capture = {0};
+                    capture.primitiveBegin = cursor;
                     uint8_t flat[4] = {color[0], color[1], color[2], 0};
                     capture.kind = RAGE_CAPTURE_KIND_COURSE;
                     capture.klass = 1;
@@ -1264,6 +1272,7 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
                      * it: zero colour promotes to 0x80 and odd dispatches
                      * select the adjacent CLUT row. */
                     RageCaptureFaceInput capture = {0};
+                    capture.primitiveBegin = cursor;
                     uint8_t flat[4] = {color[0], color[1], color[2], 0};
                     if ((flat[0] | flat[1] | flat[2]) == 0)
                         flat[0] = flat[1] = flat[2] = 0x80;

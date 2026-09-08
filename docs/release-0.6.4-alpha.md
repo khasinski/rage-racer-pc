@@ -1,104 +1,127 @@
-# 0.6.4-alpha stabilization
+# Rage Racer 0.6.4-alpha
 
-Status: candidate preparation, not ready to tag or publish.
+Standalone game release. No launcher is required or bundled. Modern remains
+the default renderer; optional authored replacement cars are disabled in the
+release build. No copyrighted game data is included.
 
-Scope agreed with the user: fast, stable release before new mod-facing features
-and major rendering changes. Keep existing visual quality and PAL/NTSC speed.
-The broader architecture roadmap remains open after this stabilization boundary.
-Do not replace the published 0.6.3-alpha tag or packages.
+Publication approved after manual testing on 2026-09-08. Remaining platform
+and performance limitations are documented below.
 
-## Evidence and remaining gates
+## Player-visible changes since 0.6.3-alpha
 
-- Version: CMake and all three release workflow defaults now select 0.6.4-alpha.
-- Linux compiled build: full GCC16 build passed in `rage-racer-dev`, including
-  previously unbuilt tests (`/tmp/rage-064-full-build.log`).
-- Portable suite: 403 unit/functional tests ran. Initially 400 passed, two skipped
-  for missing explicit data paths, and shipped_config rejected the developer's
-  local INI with marker capture enabled. The tracked release INI passed the
-  same validator separately, without modifying the user's configuration.
-  Both skipped tests passed when supplied the legal PAL image and imported
-  render-stage assets. Logs: `/tmp/rage-064-portable-tests.log` and
-  `/tmp/rage-064-data-tests.log`; tested tracked INI: `/tmp/rage-064-shipped.ini`.
-  This is not yet proof of clean-package startup.
-- Renderer regression evidence for the preceding transfer-boundary commit:
-  main-loop ordering, native-world image/VRAM/publication oracles, renderer
-  toggles, submission recovery and retained history passed. Real PAL frozen
-  image/draw dump matched. See `performance-2026-09-07.md`.
-- Moving stability: candidate b574ee682 completed three PAL class 1/course 0
-  races, three presentation restarts and lifecycle verification successfully
-  (`build/stability-064/20260907-183419-ac60d5/result.txt`). This run does not
-  automatically assert visual correctness. Longer coverage across tracks,
-  scene transitions and supported disc regions remains required.
-  The actual Linux c7b5f7e69 package additionally completed a PAL class 1/course 1
-  race with one renderer restart, retained meshes and ordered lifecycle teardown
-  (`build/stability-064-course1/20260907-185726-60eafe/result.txt`). It ran with
-  offscreen video/dummy audio; this checks route stability, not monitor pacing,
-  audible output or visual correctness.
-  The same package also completed class 1/course 2 and class 5/course 3 races,
-  each with one verified presentation restart and lifecycle teardown. The
-  course 3 race included six route-driver laps. Results:
-  `build/stability-064-course2/20260907-190207-5c756c/result.txt` and
-  `build/stability-064-course3/20260907-190436-9358d4/result.txt`. Combined with
-  course 0 evidence this exercises all four PAL courses, not all car/class
-  combinations or player-controlled physics.
-  A freshly rebuilt GCC16 RelWithDebInfo game with ASan/UBSan completed one PAL
-  class 1/course 0 lap and lifecycle teardown with leak detection and both
-  sanitizers configured to halt on errors. No sanitizer error was emitted;
-  exit status was zero (`build/stability-064-sanitized/20260907-190033-69a74f`).
-  Runtime libraries were copied from the build container into the ignored
-  build directory for this test; release packages do not require them. This
-  instruments the configured game/host targets, not every third-party library.
-- Performance: roughly 645 application FPS at numeric 1000 cap demonstrated
-  rendering headroom, but stable VSync 120 FPS is still unproven. Validate
-  frame intervals and outliers on the fixed candidate, not only mean FPS.
-- Follow-up performance blocker: packaged c7b5f7e69 and the local GCC16 binary
-  both fell to about 20 FPS in Wayland/VSync tests later on the same machine.
-  The original profiling harness reproduced it and completed its lap
-  (`build/perf-064-control/20260907-185137-c34596`). A sampled packaged main
-  thread waited in Wayland explicit-sync image acquisition, beneath
-  SDL_AcquireGPUSwapchainTexture. This does not establish a CI compiler defect;
-  the desktop subsequently reported ScreenSaver.GetActive=true. Treat these as
-  locked-desktop samples, not foreground release performance; repeat after
-  unlocking. The profiling harness now rejects a known locked desktop before
-  starting the game. A lock occurring during a run still requires discarding it.
-  The same packaged c7b5f7e69 binary completed a clean-state Track 01 BIN lap at
-  numeric 120 (immediate presentation): 117.828 FPS mean, minimum window 113.630,
-  worst window p95 15.272 ms, maximum interval 51.086 ms, excluding the first
-  startup window (`/tmp/rage-064-package-c7-immediate`). It logged complete
-  lifecycle teardown. This is not validation of foreground VSync pacing.
-- Packaging: verify clean CUE and Track 01 BIN flows, automatic native asset
-  generation and modern startup in the actual packaged artifact.
-  Linux artifacts b574ee682/c7b5f7e69 started with isolated empty XDG config/state
-  directories using only explicitly supplied PAL CUE or Track 01 BIN paths.
-  The importer and modern renderer initialized; the BIN scenario reached the
-  race and imported native meshes. These timed probes are not full successful
-  route tests or proof of interactive file-picker/double-click behavior.
-  Follow-up interactive picker test: the c7b5f7e69 Linux package ran in an
-  isolated Xvfb session in the dev container with SDL's Zenity backend and
-  separate empty config/state directories for CUE and Track 01 BIN. Both were
-  selected through the real file dialog, saved to disc-cue-path, imported
-  automatically and reached the race with the native GPU pipeline. Restarting
-  each with no command-line arguments used the saved image without a dialog
-  and initialized the importer again. Probes were terminated after checking
-  startup (exit zero); they were not additional complete races. Evidence:
-  `build/release-064-picker/{cue,bin}-{selected,reopened}.log` and saved paths.
-  This verifies X11/Zenity, not Wayland portal dialogs, platform file-manager
-  double-click behavior, audible output or physical display pacing.
-- Platforms: b574ee682 passed Linux, Windows and macOS release builds, sanitizers,
-  compiled texture/archive and mod contracts, and renderer snapshot contracts.
-  Launcher CI passed on macOS but exposed two build defects: clang-cl ignored
-  save-generator quote include options, and Ubuntu 22.04 required the GNU
-  feature macro for RenderDoc's RTLD_DEFAULT lookup. Both have targeted fixes;
-  rerun launcher CI and release builds on the corrected candidate. Local full
-  build and save-generator, release-package and main-loop regressions passed.
-  Hardware/runtime coverage must be distinguished from builds.
-  c7b5f7e69 subsequently passed all three release builds and Linux/macOS launcher
-  checks. Windows launcher checks exposed two further portable-tool defects:
-  POSIX mkdir in the save generator (fixed in 2786f1a3a), then legacy Winsock
-  typedef collisions in the mod CLI (fixed in f3d3b5543). Local tool builds and
-  related regression tests passed. Launcher matrix 34168199514 passed on all
-  three platforms at f3d3b5543, including packaged first-launch probes and native
-  integration. This launcher probe does not include a legally supplied game disc.
+- Enhanced classic rendering: higher internal resolution, true 16:9 horizontal
+  coverage and interpolated presentation at the selected FPS target. F10
+  switches renderers. PAL/NTSC game logic and physics retain their original
+  cadence. See [classic settings and limitations](classic-renderer.md).
+- Modern race visibility combines the track's authored visibility regions with
+  bounded depth clipping. Static landmarks and moving scenery are published
+  independently of the classic renderer's origin-cell gate, reducing whole
+  landmark pop-in without exposing all distant geometry.
+- Original sky primitives supply the modern sky, with corrected texture-bank,
+  palette, horizon and interpolated camera behavior.
+- The finish line queues “Finish!” without repeating the final-stretch
+  encouragement (GitHub #22).
+- Asset, car catalog, upgrade price, default record and render-projection
+  validation has been tightened. The engineer shop tests all 19 permitted
+  NTSC-U upgrade transactions, including insufficient funds and double-charge
+  prevention.
+- Race and movie audio lifecycle handling preserves the selected audio routes
+  and restores movie audio after race fades.
+- Interrupting attract mode before Grand Prix no longer leaves stale resident
+  car geometry attached to newly loaded models, textures and wheels.
+- Enhanced classic interpolation keeps connected road polygons coherent when
+  topology changes, preventing alternating frames with holes in the road.
+- NTSC-U speed displays use mph. PAL/NTSC-J retain km/h; rival simulation speeds
+  are unchanged and covered by a 300-tick regional invariance regression.
+- Save/load no longer waits indefinitely after successfully reading a memory
+  card. Pending status probes preserve progress toward completion. Regression
+  tests exercise both save and load with the actual asynchronous status machine.
 
-Release only after the relevant evidence is recorded for the exact candidate;
-no tag or public release has been created by this preparation step.
+## Performance and stability work
+
+Completed capture frames and their VRAM snapshots are owned independently of
+frames under construction. Asset generations and renderer restarts invalidate
+retained resources together. Native cars and terrain reuse resident GPU
+geometry, geometry preparation avoids repeated work, and compatible draws are
+coalesced without changing their order.
+
+Native vertex transfer staging grows with the actual upload instead of cycling
+a fixed 112 MB allocation. Offscreen presentation explicitly retires GPU fences;
+this fixes the Vulkan buffer accumulation and out-of-memory failure reproduced
+on Linux during capture tests. Occluded windows skip unnecessary rendering.
+PNG dimensions and projection inputs are checked before allocating or projecting.
+
+These changes do not yet establish that all reported race crashes or frame-time
+spikes are fixed. A focused macOS classic reverse Overpass lap averaged 119.78
+FPS at a 120 FPS target but still contained an 82 ms interval. Earlier modern
+foreground evidence contained a 226 ms interval. Neither is an acceptable basis
+for claiming consistently smooth 120 FPS.
+
+## Configuration and compatibility
+
+Use a legally obtained CUE and its BIN tracks, or Track 01 BIN. CHD is also
+supported. The game imports native assets automatically after image selection;
+no extractor, Python installation or launcher is required. A Track 01-only
+image cannot supply audio tracks absent from that image.
+
+Existing configuration names remain valid. `[video] internal_scale`, `aspect`
+and `fps` now also apply to enhanced classic. Set `classic_enhancements=false`
+for the original classic framebuffer path. Marker capture/history and performance
+logging remain disabled in the shipped INI.
+
+Multiple-controller selection, raw wheel axis/button mapping, optional chase
+camera lookahead and texture filter values are documented in the
+[README](../README.md). Manual-only cars retain their retail transmission
+restrictions; GitHub #12 is still a mod/enhancement request.
+
+## Development and packaging
+
+The source also contains asset/mod tooling, a save editor, launcher development
+and optional authored cars. These are separate from this standalone game release.
+Substantial internal cleanup replaces untyped state and unchecked arithmetic
+with typed, bounded interfaces. New runtime fixes and regression checks use C
+and CMake; the finish-transition Python test was removed only after its CMake
+replacement passed. Four additional source contracts now run in C instead of
+Python. The full ClangCL test build has been repaired, and all three release
+workflows run the complete unit/functional selection. Existing unmigrated
+developer tests remain available.
+
+Release archives must contain the game, default INI, scenario example, license,
+README and these release notes. Builds keep the pinned dependency revisions.
+Local macOS packages are ad-hoc signed; downloaded Gatekeeper acceptance and
+notarization require separate release-signing validation.
+
+## Acceptance evidence
+
+See the [GitHub issue audit](release-0.6.4-issues.md) for every open report and its
+remaining evidence. Historical runs are preserved in the
+[preparation history](release-0.6.4-preparation-history.md) and
+[rendering audit](release-0.6.4-audit.md). Earlier binaries are not evidence for
+an unchanged final candidate.
+
+The current macOS Release full build and all 414 unit/functional tests pass.
+Targeted ASan/UBSan tests pass. The live finish/menu transition, PAL menu music
+tempo, race CD audio, Pegase cabin and clean production PAL startup checks pass.
+A three-lap modern reverse Overpass route completes with clean teardown.
+
+Darwine Linux passes 411 of 413 unit/functional checks, with two data-dependent
+skips (disc stream table and prebuilt render-stage assets). Its three-lap modern
+route and clean Track 01 BIN startup pass. The distributable candidate is rebuilt
+in an Ubuntu 24.04 container, matching CI, and passes all nine release regressions;
+its maximum required glibc symbol version is 2.38. That binary also passes three modern Overpass laps and clean BIN startup. The host-native glibc 2.43
+executable is test evidence only and must not be distributed as the release.
+
+Darwine Windows 11 builds all targets with ClangCL. Its full unit/functional
+selection passes 406 of 407 tests with the PAL and NTSC-U images supplied; the
+prebuilt render-stage-assets test skips. See [Windows test repair](windows-tests-2026-09-08.md)
+and [save/load regression](save-load-settle-2026-09-08.md).
+The controlled modern image has the same gray sky as macOS and Linux. Windows
+uses Edge SwiftShader software Vulkan in this VM; accelerated Windows rendering,
+physical wheel/controller behavior and downloaded application acceptance remain
+unverified. A three-lap modern Overpass run at 426x240 completes with clean teardown. The 720p software run was stopped after one lap because rasterization was slow; it is not a successful three-lap result.
+
+Default-driver check: Darwin’s Windows VM reports `No supported SDL_GPU backend found` without the process-only SwiftShader overrides. Test archives keep the normal default config and do not bundle that workaround. Manual Windows acceptance therefore needs a supported GPU backend; the VM’s default launch is a known failed environment check.
+
+CHD is supported, but a complete fresh-package CHD first-run matrix has not
+been run. The release workflows rebuild and test the final source without
+requiring a player's disc in CI.

@@ -9,10 +9,10 @@
  *
  * 3D submissions (models, course models, terrain) are recorded semantically
  * at the native_geometry entry points, together with the GTE state in effect.
- * Everything else linked into the frame ordering tables (sky, HUD, text,
- * menus) is captured packet-by-packet at end of frame by walking the same
- * chains DrawOTag consumes, skipping the byte ranges the 3D submissions
- * emitted. */
+ * The frame ordering tables also contain sky, HUD, text and
+ * menus. The end-of-frame walk follows DrawOTag order. Modern captures those
+ * 2D packets only; enhanced classic also retains the emitted 3D packets,
+ * including subdivisions and their original ordering. */
 
 #include <stdint.h>
 
@@ -66,6 +66,7 @@ typedef struct RageCaptureTerrainBatch {
 
 enum {
     RAGE_CAPTURE_PACKET_SKY = 1u << 0,
+    RAGE_CAPTURE_PACKET_3D = 1u << 1,
 };
 
 typedef struct RageCapturePacket {
@@ -77,6 +78,14 @@ typedef struct RageCapturePacket {
     uint16_t skyIndex; /* allocation-order primitive within the sky range */
     uint32_t words[RAGE_CAPTURE_PACKET_WORDS];
 } RageCapturePacket;
+
+/* Mirror sky is also tagged SKY, but must keep the mirror's drawing area
+ * and projection. Only the main sky may extend to the widescreen margins. */
+static inline int CapturePacketIsMainSky(const RageCapturePacket *packet) {
+    return packet != 0 && packet->table == 0 &&
+           (packet->flags & RAGE_CAPTURE_PACKET_SKY) != 0;
+}
+
 
 /* One 3D face in model-local space, captured at the compat emission point
  * with its final texture state and (lit, pre-fog for terrain) colours. The
@@ -103,6 +112,7 @@ typedef struct RageCaptureFace {
 #define RAGE_CAPTURE_KIND_TERRAIN 2
 
 typedef struct RageCaptureFaceInput {
+    const void *primitiveBegin; /* first emitted GP0 packet for this face */
     int kind, klass;
     int semi, raw, fogged;
     int bias;
@@ -126,8 +136,8 @@ void CaptureFace3D(const RageCaptureFaceInput *input);
 #define RAGE_CAPTURE_MAX_FACES 49152
 
 /* Extra horizontal screen-rect margin (pixels) the compat cull should
- * accept when the modern renderer presents a widened field of view.
- * Implemented by the modern renderer; 0 whenever it is off or 4:3. */
+ * accept when either renderer presents a widened field of view.
+ * Implemented by the presenter; 0 for unenhanced classic and 4:3. */
 int ModernCullMarginX(void);
 
 /* Write what the modern renderer is presenting to a PPM. */
@@ -155,7 +165,7 @@ typedef struct RageSceneSnapshot {
     RageCaptureFace faces[RAGE_CAPTURE_MAX_FACES];
 } RageSceneSnapshot;
 
-/* Capture follows the renderer dynamically, so classic -> modern switching
+/* Capture follows the presenter dynamically, so renderer switching
  * starts recording on the same frame. A scene trace keeps capture active. */
 int CaptureActive(void);
 
@@ -175,6 +185,17 @@ void CaptureSkyEnd(void);
  * callers must reacquire after publication. Same-thread access only. */
 const RageSceneSnapshot *CaptureCurrent(void);
 const RageSceneSnapshot *CapturePrevious(void);
+
+/* Separate metadata keeps existing diagnostic snapshot files ABI-compatible.
+ * A face can emit multiple subdivided GP0 packets. Byte offsets identify the
+ * children only while the complete subdivision layout remains unchanged. */
+typedef struct RageClassicPacketSource {
+    int32_t faceIndex;
+    uint32_t offset, bytes;
+} RageClassicPacketSource;
+const RageClassicPacketSource *CaptureClassicSources(
+    const RageSceneSnapshot *snapshot);
+
 
 uint64_t CaptureSnapshotHash(const RageSceneSnapshot *snapshot);
 

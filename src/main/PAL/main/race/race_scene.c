@@ -28,11 +28,9 @@ static s32 s_RetireCameraActive;
 /* Optional host diagnostic driver; NULL in ordinary gameplay and tests. */
 int (*g_DebugPlayerUpdate)(PlayerCarRuntime *);
 
-/* Retail normally announces FINISHED from the authored finish-line zone and
- * plays cue 0x2B later, when UpdateLapAndFinish advances the race. A fast host
- * frame can cross both conditions together. Starting both special cues on
- * voices 22/23 in one frame makes 0x2B replace FINISHED before it is audible,
- * so retain the retail ordering by waiting for those voices to become idle. */
+/* The authored final-stretch encouragement (0x2A) may still be playing when
+ * the car finishes. Wait for its shared voices before announcing Finish!
+ * (0x2B), without replaying the encouragement at the finish line. */
 static s32 s_FinishFollowupCue = -1;
 static s32 s_FinishFollowupWaitFrames;
 
@@ -45,7 +43,7 @@ enum {
     INITIAL_RACE_TIME = 15000,
     INITIAL_RIVAL_CUE_FLAGS = 0x1FE,
     RACE_FRAME_SYNC_THRESHOLD = 0x180,
-    /* FINISHED has enough time to be heard before its next cue may reclaim
+    /* Active speech has enough time to be heard before Finish! may reclaim
      * the shared special voices.  Do not leave that next cue stranded when a
      * host audio backend reports those voices active through the scene exit. */
     FINISH_FOLLOWUP_MAX_WAIT_FRAMES = 60,

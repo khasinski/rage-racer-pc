@@ -179,6 +179,26 @@ int RenderProject(const RageRenderCamera *camera, const RageRenderVec3 *view,
     return 1;
 }
 
+int RenderPerspectiveScales(const RageRenderCamera *camera, float aspect,
+                            float *horizontal, float *vertical) {
+    float tangent, scale;
+    if (!horizontal || !vertical) return 0;
+    *horizontal = *vertical = 0.0f;
+    if (!camera || !isfinite(aspect) || aspect <= 0.0f ||
+        !isfinite(camera->verticalFovDegrees) ||
+        camera->verticalFovDegrees <= 0.0f ||
+        camera->verticalFovDegrees >= 180.0f) return 0;
+    tangent = tanf(camera->verticalFovDegrees * 0.008726646259971648f);
+    if (!isfinite(tangent) || tangent <= 0.0f ||
+        1.0 / (double)tangent > FLT_MAX) return 0;
+    scale = 1.0f / tangent;
+    if ((double)scale / aspect > FLT_MAX ||
+        (double)scale / aspect < FLT_TRUE_MIN) return 0;
+    *horizontal = scale / aspect;
+    *vertical = scale;
+    return 1;
+}
+
 int RenderPerspectiveDepthTerms(const RageRenderCamera *camera,
                                 float *scale, float *offset) {
     double range;

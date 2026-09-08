@@ -32,6 +32,8 @@ static u16 s_digitClut;
 static s32 s_speedX;
 static s32 s_speedY;
 static s32 s_speed;
+static const char *s_region = "PAL";
+const char *HostDiscRegion(void) { return s_region; }
 
 s32 DiagnosticsEnabled(const char *name) {
     (void)name;
@@ -209,6 +211,24 @@ int main(void) {
     shiftLight = (TILE *)(packets + sizeof(POLY_F4) + sizeof(SPRT_8));
     CHECK(shiftLight->x0 == 119 && shiftLight->y0 == 29);
 
+    /* US artwork says mph. The numeric value must use the retail US
+     * conversion, without changing the simulation speed it is reading. */
+    const char *regions[] = {"PAL", "NTSC-U", "NTSC-J", "unknown", NULL};
+    const int speeds[] = {INT_MIN, -1, 0, 1, 14, 1168, 1175, 7300, INT_MAX};
+    const int metric[] = {0, 0, 0, 0, 1, 160, 160, 999, 999};
+    const int imperial[] = {0, 0, 0, 0, 0, 100, 100, 625, 999};
+    for (unsigned r = 0; r < sizeof(regions)/sizeof(regions[0]); ++r) {
+        s_region = regions[r];
+        for (unsigned v = 0; v < sizeof(speeds)/sizeof(speeds[0]); ++v) {
+            memset(packets, 0, sizeof(packets));
+            ResetState(packets);
+            g_PlayerCar.speed = speeds[v];
+            PlayerCarRuntime before = g_PlayerCar;
+            DrawTachometer(0, 0, TACHOMETER_LIGHTING_NORMAL, 0);
+            CHECK(s_speed == (r == 1 ? imperial[v] : metric[v]));
+            CHECK(memcmp(&before, &g_PlayerCar, sizeof(before)) == 0);
+        }
+    }
     puts("tachometer tests passed");
     return 0;
 }

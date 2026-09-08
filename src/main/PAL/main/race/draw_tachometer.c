@@ -9,15 +9,13 @@
 #include <stdio.h>
 
 #include "rage/hud_config.h"
+#include "rage/speed_display.h"
 
 enum {
     TACHOMETER_BLEND_FRAMES = 96,
     TACHOMETER_DARK_LEVEL = 32,
     TACHOMETER_NORMAL_LEVEL = 128,
     TACHOMETER_MAX_RPM = 10000,
-    SPEED_SCALE_NUMERATOR = 160,
-    SPEED_SCALE_DENOMINATOR = 1168,
-    SPEED_DISPLAY_MAX = 999,
 };
 
 static s32 ClampTachometerRpm(s32 rpm) {
@@ -25,17 +23,6 @@ static s32 ClampTachometerRpm(s32 rpm) {
         return 0;
     }
     return rpm < TACHOMETER_MAX_RPM ? rpm : TACHOMETER_MAX_RPM;
-}
-
-static s32 TachometerSpeedValue(s32 speed) {
-    int64_t value;
-
-    if (speed <= 0) {
-        return 0;
-    }
-    value = (int64_t)speed * SPEED_SCALE_NUMERATOR /
-            SPEED_SCALE_DENOMINATOR;
-    return value < SPEED_DISPLAY_MAX ? (s32)value : SPEED_DISPLAY_MAX;
 }
 
 static s32 ClampTachometerBlend(s32 amount) {
@@ -152,7 +139,7 @@ void DrawTachometer(s32 rpm, s32 shiftLightOn, TachometerLightingMode lighting,
         centerY + spec->gearDigitDY, g_PlayerCar.drive.gear, g_HudGlyphClut);
     g_RenderState.packetCursor = next;
     DrawSpeedDigits(centerX, centerY,
-                    TachometerSpeedValue(g_PlayerCar.speed));
+                    SpeedDisplayValue(g_PlayerCar.speed));
 
     frame->layout.raceHud.tachometerFace.r0 = g_TachoFaceR;
     frame->layout.raceHud.tachometerFace.g0 = g_TachoFaceG;

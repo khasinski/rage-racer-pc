@@ -1,5 +1,6 @@
 #include <math.h>
 #include <float.h>
+#include <fenv.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -434,6 +435,44 @@ static void test_projection_rejects_non_finite_camera_data(void) {
     EXPECT_EQ(0, (int)RenderFogFactor(&camera, &view));
 }
 
+static void test_gpu_projection_scales_are_bounded(void) {
+    RageRenderCamera camera = {0};
+    float horizontal, vertical;
+    const float fovs[] = {20.0f, 30.0f, 41.112f, 60.0f, 90.0f, 179.0f};
+    const float aspects[] = {1.0f, 4.0f / 3.0f, 16.0f / 9.0f, 148.0f / 36.0f};
+    for (size_t i = 0; i < sizeof(fovs) / sizeof(fovs[0]); i++) {
+        camera.verticalFovDegrees = fovs[i];
+        for (size_t j = 0; j < sizeof(aspects) / sizeof(aspects[0]); j++) {
+            float oldVertical = 1.0f / tanf(fovs[i] * 0.008726646259971648f);
+            float oldHorizontal = oldVertical / aspects[j];
+            EXPECT_EQ(1, RenderPerspectiveScales(&camera, aspects[j],
+                                                  &horizontal, &vertical));
+            EXPECT_EQ(0, memcmp(&oldVertical, &vertical, sizeof(float)));
+            EXPECT_EQ(0, memcmp(&oldHorizontal, &horizontal, sizeof(float)));
+        }
+    }
+    const float invalid[] = {0.0f, -1.0f, NAN, INFINITY, -INFINITY,
+                             FLT_TRUE_MIN, 180.0f, FLT_MAX};
+    for (size_t i = 0; i < sizeof(invalid) / sizeof(invalid[0]); i++) {
+        camera.verticalFovDegrees = invalid[i];
+        horizontal = vertical = 1.0f;
+        feclearexcept(FE_ALL_EXCEPT);
+        EXPECT_EQ(0, RenderPerspectiveScales(&camera, 1, &horizontal, &vertical));
+        EXPECT_EQ(0, fetestexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW));
+        EXPECT_EQ(1, horizontal == 0.0f && vertical == 0.0f);
+    }
+    camera.verticalFovDegrees = 60.0f;
+    for (size_t i = 0; i < 6; i++) {
+        feclearexcept(FE_ALL_EXCEPT);
+        EXPECT_EQ(0, RenderPerspectiveScales(&camera, invalid[i],
+                                              &horizontal, &vertical));
+        EXPECT_EQ(0, fetestexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW));
+    }
+    EXPECT_EQ(0, RenderPerspectiveScales(NULL, 1, &horizontal, &vertical));
+    EXPECT_EQ(0, RenderPerspectiveScales(&camera, 1, NULL, &vertical));
+    EXPECT_EQ(0, RenderPerspectiveScales(&camera, 1, &horizontal, NULL));
+}
+
 static void test_terrain_grid_places_adjacent_cells_without_overlap(void) {
     RageRenderTransform left;
     RageRenderTransform right;
@@ -805,6 +844,7 @@ int main(void) {
     test_non_finite_angles_do_not_stall_interpolation();
     test_perspective_fog_uses_authored_near_and_far_depths();
     test_projection_rejects_non_finite_camera_data();
+    test_gpu_projection_scales_are_bounded();
     test_terrain_grid_places_adjacent_cells_without_overlap();
     test_synchronized_presentation_keeps_previous_vehicle_models();
     test_synchronized_presentation_moves_matching_vehicle();

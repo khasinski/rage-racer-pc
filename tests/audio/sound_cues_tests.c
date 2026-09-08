@@ -42,7 +42,7 @@ static s32 s_fixedFailureCall;
 static s32 s_dynamicFailureCall;
 static s32 s_voiceErrorMessages;
 
-int printf(const char *format, ...) {
+int RageTestPrintf(const char *format, ...) {
     (void)format;
     s_voiceErrorMessages++;
     return 0;

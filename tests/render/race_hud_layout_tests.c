@@ -17,6 +17,8 @@
 #include "game/render.h"
 #include "game/render_internal.h"
 #include "port_config.h"
+#include "modern/modern_renderer.h"
+#include "runtime_config.h"
 #include "rage/hud_config.h"
 
 #include <stdio.h>
@@ -31,6 +33,7 @@ static int s_failures;
 
 const RagePortConfig *PortActiveConfig(void) { return &s_config; }
 int ModernIsEnabled(void) { return s_modernEnabled; }
+int ModernPresentationActive(void) { return ModernIsEnabled(); }
 const char *RuntimeConfigGet(const char *key) {
     if (!strcmp(key, "hud.anchor")) return s_anchor;
     return NULL;

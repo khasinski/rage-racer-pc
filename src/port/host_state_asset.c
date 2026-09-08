@@ -21,12 +21,6 @@ typedef struct GameCdLoadEntry GameCdLoadEntry;
 
 s16 g_CdLoadPhase;
 s32 g_AssetLoadState;
-u8 g_CarModelBaseIndex[GAME_CAR_COUNT] __attribute__((aligned(16))) = {
-    0, 4, 7, 9, 14, 18, 21, 23, 26, 28, 29, 30, 31
-};
-u8 g_CarModelUnlockBase[GAME_CAR_COUNT] __attribute__((aligned(16))) = {
-    1, 2, 3, 0, 1, 2, 3, 2, 3, 4, 5, 5, 5
-};
 s32 g_AssetRequestType;
 Rect g_TrackTextureRect __attribute__((aligned(16))) = {576, 256, 448, 256};
 Rect g_TeamLogoClutLoadRect __attribute__((aligned(16))) = {80, 485, 16, 1};

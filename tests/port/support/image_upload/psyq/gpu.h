@@ -2,6 +2,7 @@
 #define TEST_IMAGE_UPLOAD_PSYQ_GPU_H
 
 #include "common.h"
+#include <psyz/types.h>
 
 typedef struct Rect {
     s16 x;
@@ -11,7 +12,6 @@ typedef struct Rect {
 } Rect;
 
 typedef Rect RECT;
-typedef unsigned long u_long;
 
 typedef struct DrawPacket DrawPacket;
 typedef struct SPRT SPRT;
@@ -35,7 +35,7 @@ typedef struct GpuRectPacked {
 
 void LoadImage(Rect *rect, void *data);
 void StoreImage(Rect *rect, void *data);
-long MoveImage(GpuRectPacked *rect, unsigned long x, unsigned long y);
+long MoveImage(GpuRectPacked *rect, u_long x, u_long y);
 void DrawSync(long mode);
 
 #endif

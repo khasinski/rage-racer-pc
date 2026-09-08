@@ -5,7 +5,13 @@ _Static_assert(sizeof(g_SkyRowBase) == sizeof(s32),
 
 _Static_assert(sizeof(g_ShuttlePathPoints) == 96,
                "g_ShuttlePathPoints ABI size changed");
+/* Microsoft packing keeps the 110-byte payload; other ABIs round the
+ * enclosing u32 union to 112. Slot offsets are asserted in environment.h. */
+#ifdef _MSC_VER
+_Static_assert(sizeof(g_EnvironmentColors) == 110,
+#else
 _Static_assert(sizeof(g_EnvironmentColors) == 112,
+#endif
                "g_EnvironmentColors ABI size changed");
 _Static_assert(sizeof(g_CamPathOffsetDelta) == 12,
                "g_CamPathOffsetDelta ABI size changed");

@@ -73,14 +73,40 @@ else()
     add_compile_options(-UNDEBUG)
 endif()
 
-# Several test targets link the object libraries the top level compiles with
-# sanitizers, and an object built with them needs the runtime on its link
-# line. The top level adds that only to the two game binaries, so the tests
-# ask for it here rather than each target remembering.
+# Instrument test translation units as well as linking the sanitizer runtime.
+# Many tests compile production sources directly; runtime-only linking leaves
+# those paths unchecked even in a sanitizer build.
 if(RAGE_ENABLE_SANITIZERS AND
    CMAKE_C_COMPILER_ID MATCHES "Clang|GNU" AND NOT WIN32)
+    add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
     add_link_options(-fsanitize=address,undefined)
 endif()
+
+# Source contracts run as C binaries on release hosts without Python. Let
+# CMake track additions to the same source trees the original checks scanned.
+file(GLOB neutral_files CONFIGURE_DEPENDS RELATIVE "${CMAKE_SOURCE_DIR}"
+    "${CMAKE_SOURCE_DIR}/src/render/*.c" "${CMAKE_SOURCE_DIR}/src/render/*.h")
+foreach(path IN LISTS RAGE_SIM_SOURCES)
+    file(RELATIVE_PATH relative "${CMAKE_SOURCE_DIR}" "${path}")
+    list(APPEND neutral_files "${relative}")
+endforeach()
+file(GLOB modern_files CONFIGURE_DEPENDS RELATIVE "${CMAKE_SOURCE_DIR}"
+    "${CMAKE_SOURCE_DIR}/src/port/modern/*.c" "${CMAKE_SOURCE_DIR}/src/port/modern/*.h")
+file(GLOB_RECURSE retail_files CONFIGURE_DEPENDS RELATIVE "${CMAKE_SOURCE_DIR}"
+    "${CMAKE_SOURCE_DIR}/src/main/PAL/main/*.c")
+set(contract_header "/* Generated source inventory; paths relative to the checkout. */\n")
+foreach(group neutral_files modern_files retail_files)
+    string(APPEND contract_header "static const char *${group}[] = {\n")
+    foreach(path IN LISTS ${group})
+        string(APPEND contract_header "    \"${path}\",\n")
+    endforeach()
+    string(APPEND contract_header "    NULL\n};\n")
+endforeach()
+file(CONFIGURE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/source_contract_files.h"
+    CONTENT "${contract_header}" @ONLY)
+add_executable(source_contract_tests support/source_contract_tests.c)
+target_include_directories(source_contract_tests PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+target_compile_options(source_contract_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 
 add_subdirectory(audio)
 add_subdirectory(car)

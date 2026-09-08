@@ -2,7 +2,34 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#ifdef _WIN32
+#include <direct.h>
+#include <io.h>
+#include <fcntl.h>
+#define close _close
+#define write _write
+#define unlink _unlink
+#define rmdir _rmdir
+#define mkdir(path, mode) _mkdir(path)
+#define strdup _strdup
+#define TEST_TEMP_PREFIX ""
+#define TEST_SEPARATOR "\\"
+static int mkstemp(char *path) {
+    if (_mktemp_s(path, strlen(path) + 1) != 0) return -1;
+    return _open(path, _O_CREAT | _O_EXCL | _O_RDWR | _O_BINARY,
+                 _S_IREAD | _S_IWRITE);
+}
+static char *mkdtemp(char *path) {
+    if (_mktemp_s(path, strlen(path) + 1) != 0 || _mkdir(path) != 0) return NULL;
+    return path;
+}
+#else
 #include <unistd.h>
+#define TEST_TEMP_PREFIX "/tmp/"
+#define TEST_SEPARATOR "/"
+#endif
+
 #include <sys/stat.h>
 
 #include "common.h"
@@ -173,7 +200,7 @@ static void test_track_point_interpolation(void) {
 
 static void test_input_config(void) {
     RageInputConfig config;
-    char path[] = "/tmp/rage-input-test-XXXXXX";
+    char path[] = TEST_TEMP_PREFIX "rage-input-test-XXXXXX";
     const char contents[] = "# custom controls\nUP = I\nCROSS=Space\nUNKNOWN=K\nLEFT=\n";
     int fd;
 
@@ -199,7 +226,7 @@ static void test_input_config(void) {
         unlink(path);
     }
     {
-        char longPath[] = "/tmp/rage-input-long-test-XXXXXX";
+        char longPath[] = TEST_TEMP_PREFIX "rage-input-long-test-XXXXXX";
         char contents[261];
         int longFd = mkstemp(longPath);
 
@@ -220,7 +247,7 @@ static void test_input_config(void) {
 
 static void test_port_config(void) {
     RagePortConfig config;
-    char path[] = "/tmp/rage-port-test-XXXXXX";
+    char path[] = TEST_TEMP_PREFIX "rage-port-test-XXXXXX";
     const char contents[] =
         "# video settings\n"
         "[video]\n"
@@ -274,7 +301,7 @@ static void test_port_config(void) {
          * rage-port.ini it can find near the binary, and the one shipped in
          * the repository sets every video key. Point these cases at an empty
          * file so they measure their own --set rather than the environment. */
-        char emptyPath[] = "/tmp/rage-empty-XXXXXX";
+        char emptyPath[] = TEST_TEMP_PREFIX "rage-empty-XXXXXX";
         int emptyFd = mkstemp(emptyPath);
         char *zeroArguments[] = {
             "rage-test", "--config", emptyPath, "--set", "video.draw_distance=0"};
@@ -369,9 +396,11 @@ static void test_diagnostic_integer_values(void) {
 }
 
 static void test_platform_config_path(void) {
-    char root[] = "/tmp/rage-path-test-XXXXXX";
+    char root[] = TEST_TEMP_PREFIX "rage-path-test-XXXXXX";
     char directory[256], filePath[320], found[320];
-#ifdef __APPLE__
+#ifdef _WIN32
+    const char *previous = getenv("APPDATA");
+#elif defined(__APPLE__)
     const char *previous = getenv("HOME");
 #else
     const char *previous = getenv("XDG_CONFIG_HOME");
@@ -382,7 +411,10 @@ static void test_platform_config_path(void) {
         failures++;
         return;
     }
-#ifdef __APPLE__
+#ifdef _WIN32
+    snprintf(directory, sizeof(directory), "%s\\Rage Racer", root);
+    _putenv_s("APPDATA", root);
+#elif defined(__APPLE__)
     snprintf(directory, sizeof(directory), "%s/Library", root);
     mkdir(directory, 0700);
     snprintf(directory, sizeof(directory), "%s/Library/Application Support",
@@ -395,7 +427,7 @@ static void test_platform_config_path(void) {
     snprintf(directory, sizeof(directory), "%s/rage-racer", root);
     setenv("XDG_CONFIG_HOME", root, 1);
 #endif
-    snprintf(filePath, sizeof(filePath), "%s/rage-port.ini", directory);
+    snprintf(filePath, sizeof(filePath), "%s" TEST_SEPARATOR "rage-port.ini", directory);
     if (mkdir(directory, 0700) != 0 || (file = fopen(filePath, "wb")) == NULL) {
         failures++;
     } else {
@@ -428,20 +460,24 @@ static void test_platform_config_path(void) {
     }
     EXPECT_EQ(0, PlatformEnsureDirectory(NULL));
     if (saved != NULL) {
-#ifdef __APPLE__
+#ifdef _WIN32
+        _putenv_s("APPDATA", saved);
+#elif defined(__APPLE__)
         setenv("HOME", saved, 1);
 #else
         setenv("XDG_CONFIG_HOME", saved, 1);
 #endif
         free(saved);
     } else {
-#ifdef __APPLE__
+#ifdef _WIN32
+        _putenv_s("APPDATA", "");
+#elif defined(__APPLE__)
         unsetenv("HOME");
 #else
         unsetenv("XDG_CONFIG_HOME");
 #endif
     }
-    snprintf(filePath, sizeof(filePath), "%s/rage-port.ini", directory);
+    snprintf(filePath, sizeof(filePath), "%s" TEST_SEPARATOR "rage-port.ini", directory);
     unlink(filePath);
     rmdir(directory);
 #ifdef __APPLE__
@@ -455,7 +491,7 @@ static void test_platform_config_path(void) {
 }
 
 static void test_portable_state_path(void) {
-    char root[] = "/tmp/rage-portable-state-test-XXXXXX";
+    char root[] = TEST_TEMP_PREFIX "rage-portable-state-test-XXXXXX";
     char executable[320], bundleExecutable[320], card[326], found[320];
 
     if (mkdtemp(root) == NULL) {
@@ -492,7 +528,7 @@ static void test_portable_state_path(void) {
 }
 
 static void test_ensure_directory(void) {
-    char root[] = "/tmp/rage-directory-test-XXXXXX";
+    char root[] = TEST_TEMP_PREFIX "rage-directory-test-XXXXXX";
     char filePath[320];
     char nestedPath[320];
     FILE *file;

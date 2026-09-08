@@ -17,6 +17,7 @@
 #include "game/render_state.h"
 
 #include <limits.h>
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -152,6 +153,75 @@ void PlaySoundCue(s32 cue) { RECORD("cue", cue); }
 
 static CarEntry s_cars[16];
 
+static void TestRetailUpgradeTransactions(void) {
+    /* Catalog and production table bytes have separate exhaustive tests.
+     * Here those verified NTSC-U inputs exercise the complete money/grade
+     * transition. Model loading and animation remain fixture boundaries. */
+    static const s32 prices[32] = {
+        2600, 11300, 70500, 361500, 14500, 69400, 329300, 143300,
+        583700, 0, 1600, 13200, 61900, 310000, 4000, 10600,
+        69900, 362500, 15200, 62400, 331400, 136700, 577000, 20000,
+        77500, 405700, 151600, 559700, 695900, 2143500, 2836800, 6666666
+    };
+    static const int bases[14] = {0, 4, 7, 9, 14, 18, 21, 23, 26, 28, 29, 30, 31, 32};
+    GameOrderingTableEntry ot[64] = {0};
+    int transactions = 0;
+    RENDER_OT_BASE = ot;
+    g_CarTable = s_cars;
+    s_scriptResult = 1;
+    for (int i = 0; i < CAR_TUNE_UP_PRICE_COUNT; ++i)
+        g_CarTuneUpPriceTable[i] = prices[i + 1];
+    for (int model = 0; model < GAME_CAR_COUNT; ++model) {
+        for (int grade = 0; grade + 1 < bases[model + 1] - bases[model]; ++grade) {
+            const s32 price = prices[bases[model] + grade + 1];
+            memset(s_cars, 0, sizeof(s_cars));
+            memset(g_TimeAttackCars, 0, sizeof(g_TimeAttackCars));
+            g_PlayerCarIndex = model;
+            s_assetIndexOverride = bases[model] + grade;
+            s_cars[model].modelVariant = (u8)grade;
+            g_TimeAttackCars[model].modelVariant = (u8)grade;
+            g_UiScriptProgress = g_UiScriptProgress2 = 0;
+            g_EngineerShopOption = 0;
+            g_PadPressed = PAD_CONFIRM;
+            s_upgradedModelRequests = 0;
+            g_PlayerMoney = price - 1;
+            GameMenuBusy = ENGINEER_SHOP_IDLE;
+            UpdateEngineerShopScreen();
+            assert(GameMenuBusy == ENGINEER_SHOP_NO_FUNDS);
+            assert(g_PlayerMoney == price - 1 && s_upgradedModelRequests == 0);
+
+            g_PlayerMoney = price;
+            GameMenuBusy = ENGINEER_SHOP_IDLE;
+            UpdateEngineerShopScreen();
+            assert(GameMenuBusy == ENGINEER_SHOP_TUNE_UP_PROMPT);
+            g_MenuSubCursor = 1;
+            s_upgradedModelRequestResult = 0;
+            UpdateEngineerShopScreen();
+            assert(GameMenuBusy == ENGINEER_SHOP_TUNE_UP_PROMPT);
+            assert(g_PlayerMoney == price && s_cars[model].modelVariant == grade);
+            s_upgradedModelRequestResult = 1;
+            UpdateEngineerShopScreen();
+            assert(GameMenuBusy == ENGINEER_SHOP_TUNE_UP_COUNTDOWN);
+            assert(g_PlayerMoney == price && s_cars[model].modelVariant == grade);
+            g_PadPressed = 0;
+            for (int frame = 0; frame < 36; ++frame)
+                UpdateEngineerShopScreen();
+            assert(GameMenuBusy == ENGINEER_SHOP_LEAVE_AFTER_TUNE_UP);
+            assert(g_PlayerMoney == price && s_cars[model].modelVariant == grade);
+            UpdateEngineerShopScreen();
+            assert(g_PlayerMoney == 0 && s_cars[model].modelVariant == grade + 1);
+            assert(g_TimeAttackCars[model].modelVariant == grade + 1);
+            assert(GameMenuBusy == ENGINEER_SHOP_IDLE);
+            /* A subsequent frame must neither charge nor upgrade twice. */
+            UpdateEngineerShopScreen();
+            assert(g_PlayerMoney == 0 && s_cars[model].modelVariant == grade + 1);
+            ++transactions;
+        }
+    }
+    assert(transactions == 19);
+    puts("all 19 retail upgrade money/grade transitions passed");
+}
+
 int main(int argc, char **argv) {
     /*
      * What the shop did before it was taken apart. Run the test with a file
@@ -262,6 +332,7 @@ int main(int argc, char **argv) {
 
     if (s_out != NULL) {
         fclose(s_out);
+        s_out = NULL;
     }
     if (s_digest != expected) {
         printf("FAIL the engineer's shop behaves differently: %d states making "
@@ -384,5 +455,6 @@ int main(int argc, char **argv) {
     }
     printf("the engineer's shop takes the same %d states it always did\n",
            steps);
+    TestRetailUpgradeTransactions();
     return 0;
 }

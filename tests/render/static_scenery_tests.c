@@ -25,6 +25,7 @@ typedef struct Submission {
 static Submission s_submission;
 static s32 s_submissionCount;
 static s32 s_visible = 1;
+static s32 s_gteSetCount;
 
 int TrackCellVisible(s32 x, s32 z) {
     (void)x;
@@ -46,6 +47,7 @@ MATRIX *MulMatrix2(MATRIX *left, MATRIX *right) {
 void SetGteObjectMatrix(const LVec *position, Matrix *rotation) {
     (void)position;
     (void)rotation;
+    s_gteSetCount++;
 }
 
 void GameRenderWorldSubmitDynamicCourseObject(
@@ -74,6 +76,7 @@ void SubmitCourseModel2(void *renderState, s32 model) {
 static void Reset(void) {
     memset(&s_submission, 0, sizeof(s_submission));
     s_submissionCount = 0;
+    s_gteSetCount = 0;
 }
 
 static int Expect(const char *label, Submission expected) {
@@ -107,10 +110,13 @@ int main(void) {
     }
 
     s_visible = 0;
+    g_RenderState.envMode4 = 0x20000;
     Reset();
     DrawStaticScenery(0);
-    if (s_submissionCount != 0) {
-        puts("FAIL invisible standard landmark was submitted");
+    if (!Expect("native landmark outside classic scan",
+                (Submission){0, 0x39, 100, 200, 300, 1, 0, 0}) ||
+        s_gteSetCount != 0 || g_RenderState.envMode4 != 0x20000) {
+        puts("FAIL hidden classic landmark changed legacy rendering state");
         return 1;
     }
     s_visible = 1;

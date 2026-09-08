@@ -41,7 +41,13 @@ Keep marker scheduling/budgets large enough to reach the second race; `RUNS=2`
 alone launches two fresh processes and does not exercise this transition.
 
 The car follows interpolated track centerline points with the correct series
-direction. Movement uses track units/second and the detected PAL/NTSC logic rate.
+direction. For physical inspection independently of series selection,
+`autopilot.direction=-1` forces forward and `autopilot.direction=1` forces
+reverse; the default `0` follows the race. This does not change race assets,
+opponent direction or record tables. It is useful for the shared finale course,
+where both Grand Prix selections use forward assets. The start log records the
+actual direction, and each completed tour reports cumulative track units.
+Movement uses track units/second and the detected PAL/NTSC logic rate.
 Active race updates use 25 Hz for PAL and 30 Hz for NTSC, independent of presentation
 FPS. Track contact, lap progress, scenery, camera and texture updates still run. Player
 drivetrain/input/collision physics are bypassed; the speedometer is not a speed
@@ -79,6 +85,32 @@ was inserted, and fails on validation errors/hazards. A clean report is not proo
 that the image is correct, nor that all possible synchronization errors are absent.
 
 ## Evidence and limits
+
+For lightweight repeated modern screenshots, use
+`diagnostics.modern_dump=/absolute/path/frame` with
+`diagnostics.modern_dump_every=12`. Adding `diagnostics.modern_dump_info=true`
+writes a matching `.info.txt` with camera position/matrix, texture state and
+draw information for each successful capture. The interval is in logic frames,
+not metres; calibrate it against route speed before claiming physical spacing.
+For reproducible geometry comparisons, select `video.fps=logic` to disable
+wall-clock camera interpolation. The metadata also records `nativeCamera`,
+the actual prepared GPU camera, separately from the captured game camera.
+With `diagnostics.modern_dump_offscreen=true`, an explicit modern dump renders
+and saves frames without presenting them to the window. This avoids swapchain
+waits in unattended captures; it is not a normal-play FPS benchmark.
+
+For visibility diagnosis, `diagnostics.native_far_plane` overrides the native
+camera's far plane in world units (1024–262144; default 16384 for races,
+262144 elsewhere). It applies to both main and mirror views. The default race
+scene also follows authored visibility regions as the camera moves. For A/B
+diagnosis only, `diagnostics.native_region_visibility=false` disables that
+region filter; it can expose unrelated road sections above the scenery.
+
+For paired renderer timing, `diagnostics.performance=true` plus
+`diagnostics.frame_timing=true` records each submitted modern frame's monotonic
+timestamp, logic frame and track point. This has much less logging than the
+full `performance_trace`. Compare warmed-up runs with identical explicit timing
+standard and an unobscured window; covered Metal windows may stall presentation.
 
 Per run:
 

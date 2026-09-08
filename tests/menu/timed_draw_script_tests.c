@@ -326,6 +326,7 @@ static void BuildScript(s32 limit) {
 }
 
 int main(void) {
+    static GameOrderingTableEntry orderingTable[0x2BF];
     /* Two with a step of one is the rewind landing exactly on one, which is
      * the boundary the floor at zero is written around. */
     static const s32 progresses[] = {-4, 0, 1, 2, 4, 8, 16, 24, 31, 32, 40};
@@ -334,6 +335,8 @@ int main(void) {
     static const unsigned long expected = 1344526518UL;
     int pi, si, li, alt;
     int states = 0;
+
+    g_RenderState.primData = orderingTable;
 
     s_out = getenv("RAGE_SCRIPT_TRACE") != NULL
                 ? fopen(getenv("RAGE_SCRIPT_TRACE"), "w")

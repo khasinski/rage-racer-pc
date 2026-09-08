@@ -5,7 +5,7 @@ target_include_directories(input_device_select_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(input_device_select_tests PRIVATE
-        -Wall -Wextra -Werror)
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME input_device_select COMMAND input_device_select_tests)
 
@@ -13,7 +13,7 @@ set_tests_properties(input_device_select PROPERTIES LABELS functional)
 add_executable(axis_curve_tests axis_curve_tests.c ${CMAKE_SOURCE_DIR}/src/port/axis_curve.c)
 target_include_directories(axis_curve_tests PRIVATE ${CMAKE_SOURCE_DIR}/src/port)
 if(NOT MSVC)
-    target_compile_options(axis_curve_tests PRIVATE -Wall -Wextra)
+    target_compile_options(axis_curve_tests PRIVATE ${RAGE_WARNING_OPTIONS})
     target_link_libraries(axis_curve_tests PRIVATE m)
 endif()
 add_test(NAME axis_curve COMMAND axis_curve_tests)
@@ -32,8 +32,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(controller_config_begin_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME controller_config_begin COMMAND controller_config_begin_tests)
 set_tests_properties(controller_config_begin PROPERTIES LABELS unit)
@@ -51,10 +51,10 @@ if(TARGET rage-host-state)
         ${CMAKE_SOURCE_DIR}/include
         ${CMAKE_SOURCE_DIR}/src/port
         ${CMAKE_SOURCE_DIR}/src/port/include)
-    if(NOT WIN32)
+    if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         target_compile_options(pad_state_tests PRIVATE
-            "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
-            "-iquote${CMAKE_SOURCE_DIR}/include")
+            "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include"
+            "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/include")
     endif()
     target_link_libraries(pad_state_tests PRIVATE psyz)
     if(RAGE_ENABLE_SANITIZERS AND
@@ -78,10 +78,10 @@ if(TARGET rage-host-state)
         ${CMAKE_SOURCE_DIR}/include
         ${CMAKE_SOURCE_DIR}/src/port
         ${CMAKE_SOURCE_DIR}/src/port/include)
-    if(NOT WIN32)
+    if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         target_compile_options(negcon_calibration_tests PRIVATE
-            "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
-            "-iquote${CMAKE_SOURCE_DIR}/include")
+            "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include"
+            "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/include")
     endif()
     target_link_libraries(negcon_calibration_tests PRIVATE psyz)
     if(RAGE_ENABLE_SANITIZERS AND

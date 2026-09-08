@@ -161,6 +161,7 @@ int main(void) {
     progress = 12;
     CHECK(DrawPaintColorPalette(&progress, 0, -1) == 0);
     CHECK(s_solidRects[0].r == 0 && s_solidRects[0].g == 1);
+    ResetDraws();
     progress = INT_MAX;
     CHECK(DrawPaintColorPalette(&progress, INT_MAX, 0) == 1);
     CHECK(progress == 25);

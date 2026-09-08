@@ -10,31 +10,37 @@ void DrawShuttleScenery(s32 instance) {
     Matrix objectMatrix;
     Matrix worldMatrix;
     s32 modelId;
+    s32 classicVisible;
+    s32 previousEnvironmentMode;
 
     if (instance < 0 || instance >= SHUTTLE_INSTANCE_COUNT) {
         return;
     }
     state = &g_ShuttleScenery[instance];
 
-    if (!TrackCellVisible(state->position.x, state->position.z) &&
-        g_CourseIndex != 2) {
-        return;
-    }
+    classicVisible = TrackCellVisible(state->position.x, state->position.z) ||
+                     g_CourseIndex == 2;
 
     BuildRotMatrixY(&yaw, state->angleY);
     BuildRotMatrixZ(&objectMatrix, state->angleZ);
     MulMatrix2(&yaw, &objectMatrix);
     worldMatrix = objectMatrix;
-    MulMatrix2(&g_RenderState.matrix, &objectMatrix);
 
     modelId = SeriesCourseIndex() >= 2 ? 0x3C : 0x3F;
     modelId = ModelOrFallback(modelId, g_CourseModelCount);
 
-    SetGteObjectMatrix(AsPosition(&state->position),
-                       &objectMatrix);
+    previousEnvironmentMode = g_RenderState.envMode4;
     g_RenderState.envMode4 = 0;
+    /* Publish the moving model independently of the classic origin-cell
+     * scan. Native mesh bounds decide whether either camera can see it. */
     GameRenderWorldSubmitDynamicCourseObject(
         0x110 + instance, modelId, state->position.x, state->position.y,
         state->position.z, worldMatrix.m, 0, 0);
+    if (!classicVisible) {
+        g_RenderState.envMode4 = previousEnvironmentMode;
+        return;
+    }
+    MulMatrix2(&g_RenderState.matrix, &objectMatrix);
+    SetGteObjectMatrix(AsPosition(&state->position), &objectMatrix);
     SubmitCourseModel(&g_RenderState, modelId);
 }

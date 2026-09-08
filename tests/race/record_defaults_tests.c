@@ -12,10 +12,12 @@
 
 #define CHECK(condition) do { if (!(condition)) abort(); } while (0)
 
-s32 g_DefaultLapTimes[8] = {
+/* Verified against SLUS_004.03 offsets 0x6d954/0x6d974. Link the real
+ * initialized globals, so an accidental production-data edit fails here. */
+static const s32 expectedLapTimes[8] = {
     100765, 146765, 145765, 35765, 97765, 135765, 128765, 35765,
 };
-s32 g_DefaultTotalTimes[8] = {
+static const s32 expectedTotalTimes[8] = {
     310765, 448765, 445765, 220765, 301765, 415765, 394765, 220765,
 };
 s32 g_BestLapTimes[RECORD_SERIES_COUNT][RECORD_COURSE_COUNT]
@@ -42,6 +44,9 @@ int main(void) {
     s32 series;
     s32 course;
     s32 slot;
+
+    CHECK(memcmp(g_DefaultLapTimes, expectedLapTimes, sizeof(expectedLapTimes)) == 0);
+    CHECK(memcmp(g_DefaultTotalTimes, expectedTotalTimes, sizeof(expectedTotalTimes)) == 0);
 
     {
         const s32 threeLaps[] = {91000, 89999, 90000};

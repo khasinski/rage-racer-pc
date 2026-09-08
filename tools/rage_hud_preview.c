@@ -30,6 +30,7 @@
 #include "game/render_state.h"
 
 #include "port_config.h"
+#include "modern/modern_renderer.h"
 #include "rage/hud_config.h"
 
 void BuildRaceHudPrims(s32 mode);
@@ -59,6 +60,7 @@ static const char *s_anchor = "edges";
 
 const RagePortConfig *PortActiveConfig(void) { return &s_config; }
 int ModernIsEnabled(void) { return s_modernEnabled; }
+int ModernPresentationActive(void) { return s_modernEnabled; }
 const char *RuntimeConfigGet(const char *key) {
     if (strcmp(key, "hud.anchor") == 0) return s_anchor;
     return NULL;
@@ -73,8 +75,6 @@ int RuntimeConfigEnabled(const char *key) {
  * shares a translation unit with reach the attract demo and the music menu.
  * None of that runs here, so answer it rather than link half the game in.
  */
-GameRenderState g_RenderState;
-CarTrackWork g_CarTrackWork;
 
 int DiagnosticsEnabled(const char *key) { (void)key; return 0; }
 const char *DiagnosticsValue(const char *key) { (void)key; return NULL; }

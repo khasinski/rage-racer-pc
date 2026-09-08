@@ -72,6 +72,7 @@ static int ReadReleaseVersion(const char *cmake, char *out, size_t size) {
 int main(int argc, char **argv) {
     static const char *const required[] = {
         "README.md", "LICENSE.md", "rage-port.ini", "race-scenario.ini",
+        "docs/release-0.6.4-alpha.md", "docs/classic-renderer.md",
         "packaging/icon/rage-racer.png", "packaging/macos/RageRacer.icns",
         "packaging/windows/RageRacer.ico",
         "packaging/windows/rage-racer.rc",
@@ -123,11 +124,13 @@ int main(int argc, char **argv) {
         ok &= RequireText(workflows[index], workflow, "LICENSE.md");
         ok &= RequireText(workflows[index], workflow, "rage-port.ini");
         ok &= RequireText(workflows[index], workflow, "race-scenario.ini");
+        ok &= RequireText(workflows[index], workflow, "docs/*.md");
         ok &= RequireText(workflows[index], workflow, "*.zip");
         if (strstr(workflow, "tools/rage-launcher.py") != NULL ||
             strstr(workflow, "tools/assetbrowser") != NULL ||
-            strstr(workflow, "run: python") != NULL) {
-            fprintf(stderr, "%s packages or executes Python\n",
+            strstr(workflow, "run: python") != NULL ||
+            strstr(workflow, "Rage-Racer-Save-Editor-") != NULL) {
+            fprintf(stderr, "%s includes a non-game release payload\n",
                     workflows[index]);
             ok = 0;
         }

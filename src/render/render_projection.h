@@ -29,6 +29,11 @@ int RenderProject(const RageRenderCamera *camera, const RageRenderVec3 *view,
                       float aspect, RageRenderVec3 *clip);
 /* Homogeneous depth terms for a 0..1 depth buffer:
  * clip_z = view_depth * scale + offset, clip_w = view_depth. */
+/* GPU projection scales, preserving float operation order for valid cameras.
+ * Rejects invalid or unrepresentable projection before division/upload. */
+int RenderPerspectiveScales(const RageRenderCamera *camera, float aspect,
+                            float *horizontal, float *vertical);
+
 int RenderPerspectiveDepthTerms(const RageRenderCamera *camera,
                                     float *scale, float *offset);
 /* Perspective-correct fog weight for a world-space point. */

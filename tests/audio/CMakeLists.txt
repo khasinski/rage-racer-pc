@@ -21,7 +21,7 @@ target_include_directories(cd_audio_policy_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/include)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(cd_audio_policy_tests PRIVATE
-        -Wall -Wextra -Werror)
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME cd_audio_policy COMMAND cd_audio_policy_tests)
 set_tests_properties(cd_audio_policy PROPERTIES LABELS functional)
@@ -39,8 +39,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(cd_pause_request_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(cd_pause_request_tests PRIVATE psyz)
 add_test(NAME cd_pause_request COMMAND cd_pause_request_tests)
@@ -59,8 +59,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(cd_audio_control_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME cd_audio_control COMMAND cd_audio_control_tests)
 set_tests_properties(cd_audio_control PROPERTIES LABELS unit)
@@ -78,8 +78,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(cd_track_requests_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(cd_track_requests_tests PRIVATE psyz)
 add_test(NAME cd_track_requests COMMAND cd_track_requests_tests)
@@ -98,8 +98,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(cd_play_request_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(cd_play_request_tests PRIVATE psyz)
 add_test(NAME cd_play_request COMMAND cd_play_request_tests)
@@ -119,8 +119,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(cd_audio_runtime_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(cd_audio_runtime_tests PRIVATE psyz)
 add_test(NAME cd_audio_runtime COMMAND cd_audio_runtime_tests)
@@ -139,8 +139,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(cd_track_table_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME cd_track_table COMMAND cd_track_table_tests)
 set_tests_properties(cd_track_table PROPERTIES LABELS unit)
@@ -158,8 +158,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(cd_volume_fade_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME cd_volume_fade COMMAND cd_volume_fade_tests)
 set_tests_properties(cd_volume_fade PROPERTIES LABELS unit)
@@ -177,8 +177,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(cd_volume_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME cd_volume COMMAND cd_volume_tests)
 set_tests_properties(cd_volume PROPERTIES LABELS unit)
@@ -196,8 +196,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(audio_parameter_table_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(audio_parameter_table_tests PRIVATE psyz)
 add_test(NAME audio_parameter_table COMMAND audio_parameter_table_tests)
@@ -216,8 +216,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(interpolate_audio_parameter_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(interpolate_audio_parameter_tests PRIVATE psyz)
 add_test(NAME interpolate_audio_parameter COMMAND interpolate_audio_parameter_tests)
@@ -236,8 +236,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(sequence_playback_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(sequence_playback_tests PRIVATE psyz)
 add_test(NAME sequence_playback COMMAND sequence_playback_tests)
@@ -256,8 +256,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(audio_runtime_control_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME audio_runtime_control COMMAND audio_runtime_control_tests)
 set_tests_properties(audio_runtime_control PROPERTIES LABELS unit)
@@ -275,8 +275,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(sequence_volume_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME sequence_volume COMMAND sequence_volume_tests)
 set_tests_properties(sequence_volume PROPERTIES LABELS unit)
@@ -295,8 +295,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(sound_runtime_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME sound_runtime COMMAND sound_runtime_tests)
 set_tests_properties(sound_runtime PROPERTIES LABELS unit)
@@ -315,8 +315,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(audio_initialization_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME audio_initialization COMMAND audio_initialization_tests)
 set_tests_properties(audio_initialization PROPERTIES LABELS unit)
@@ -334,8 +334,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(vab_sequence_slots_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME vab_sequence_slots COMMAND vab_sequence_slots_tests)
 set_tests_properties(vab_sequence_slots PROPERTIES LABELS unit)
@@ -353,8 +353,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(pitched_sound_cue_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(pitched_sound_cue_tests PRIVATE psyz)
 add_test(NAME pitched_sound_cue COMMAND pitched_sound_cue_tests)
@@ -373,8 +373,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(stereo_sound_cue_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(stereo_sound_cue_tests PRIVATE psyz)
 add_test(NAME stereo_sound_cue COMMAND stereo_sound_cue_tests)
@@ -393,8 +393,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(engine_sound_runtime_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(engine_sound_runtime_tests PRIVATE psyz)
 add_test(NAME engine_sound_runtime COMMAND engine_sound_runtime_tests)
@@ -413,8 +413,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(audio_slot_loading_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(audio_slot_loading_tests PRIVATE psyz)
 add_test(NAME audio_slot_loading COMMAND audio_slot_loading_tests)
@@ -433,8 +433,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(update_effect_voice_states_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(update_effect_voice_states_tests PRIVATE psyz)
 add_test(NAME update_effect_voice_states COMMAND update_effect_voice_states_tests)
@@ -453,8 +453,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(effect_voice_runtime_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(effect_voice_runtime_tests PRIVATE psyz)
 add_test(NAME effect_voice_runtime COMMAND effect_voice_runtime_tests)
@@ -473,8 +473,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(forced_voice_playback_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(forced_voice_playback_tests PRIVATE psyz)
 add_test(NAME forced_voice_playback COMMAND forced_voice_playback_tests)
@@ -482,7 +482,7 @@ set_tests_properties(forced_voice_playback PROPERTIES LABELS unit)
 
 add_executable(sound_cues_tests
     sound_cues_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/sound_cues.c)
+    sound_cues_fixture.c)
 target_include_directories(sound_cues_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
@@ -493,8 +493,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(sound_cues_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(sound_cues_tests PRIVATE psyz)
 add_test(NAME sound_cues COMMAND sound_cues_tests)

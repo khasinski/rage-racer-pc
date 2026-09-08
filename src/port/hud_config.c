@@ -1,6 +1,7 @@
 
 #include <string.h>
 
+#include "rage/hud_config.h"
 #include "modern/modern_renderer.h"
 #include "runtime_config.h"
 
@@ -25,7 +26,7 @@ static void HudConfigInit(void) {
 
 static int HudEdgeOffset(void) {
     HudConfigInit();
-    if (!s_anchorEdges || !ModernIsEnabled() ||
+    if (!s_anchorEdges || !ModernPresentationActive() ||
         PortActiveConfig()->modernAspect != RAGE_MODERN_ASPECT_16_9)
         return 0;
     return RAGE_HUD_WIDESCREEN_MARGIN;

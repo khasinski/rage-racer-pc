@@ -54,7 +54,6 @@ static const GameImageAssetHeaderWord *s_uploadedImage;
 static s32 s_installCarModelSlotCalls;
 static s32 s_serializedModelValid = 1;
 static s32 s_registerModelBankResult = 1;
-static s32 s_forceInvalidAssetIndex;
 static size_t s_validatedModelSize;
 static size_t s_assetRoom = SIZE_MAX;
 
@@ -65,9 +64,6 @@ size_t PortAssetRoomAt(const void *at) {
 
 void ResetCdAudioState(void) {}
 
-s32 GetCarAssetIndex(s32 model, s32 grade) {
-    return s_forceInvalidAssetIndex ? -1 : model * 10 + grade;
-}
 s32 LoadAsset(s32 assetId, void *destination) {
     s_loadAssetId = assetId;
     s_loadDestination = destination;
@@ -193,10 +189,9 @@ static void TestModelVariantLoads(void) {
 
     memset(cars, 0, sizeof(cars));
     memset(buffers, 0, sizeof(buffers));
-    cars[2].modelVariant = 3;
+    cars[2].modelVariant = 0;
     cars[2].paintColor1 = 4;
     cars[2].paintColor2 = 5;
-    cars[10].modelVariant = 1;
     upper->imageData.carImage = &upperImage;
     lower->imageData.carImage = &lowerImage;
     g_CarTable = cars;
@@ -208,7 +203,7 @@ static void TestModelVariantLoads(void) {
     g_AssetLoadState = 1;
     s_loadResult = 0;
     LoadPendingCarModelAsset();
-    Check(s_loadAssetId == 0xA + (23 << 1) &&
+    Check(s_loadAssetId == 0xA + (7 << 1) &&
               s_loadDestination == buffers + CAR_MODEL_SLOT_SIZE,
           "normal model asset and inactive slot");
     Check(g_AssetLoadState == 1, "pending normal model holds loader");
@@ -234,12 +229,12 @@ static void TestModelVariantLoads(void) {
 
     g_CarModelSlot = 1;
     g_AssetRequestType = ASSET_REQUEST_UPGRADED_CAR_MODEL;
-    g_PendingCarModelIndex = 10;
+    g_PendingCarModelIndex = 2;
     g_AssetLoadState = 1;
     s_color1Calls = 0;
     s_color2Calls = 0;
     LoadPendingCarModelAsset();
-    Check(s_loadAssetId == 0xA + (102 << 1) &&
+    Check(s_loadAssetId == 0xA + (8 << 1) &&
               s_loadDestination == buffers,
           "upgraded model asset and inactive slot");
     Check(g_CarModelSlots[0] == lower &&
@@ -248,8 +243,8 @@ static void TestModelVariantLoads(void) {
                                       SERIALIZED_CAR_MODEL_HEADER_SIZE) &&
               s_registeredSlot == 0 && g_CarImageSlots[0] == &lowerImage,
           "upgraded model installs inactive slots");
-    Check(s_color1Calls == 0 && s_color2Calls == 0,
-          "non-player car entry skips custom paint");
+    Check(s_color1Calls == 1 && s_color2Calls == 1,
+          "upgraded player model receives custom paint");
     Check(g_AssetLoadState == 0, "upgraded model completes loader");
 
     g_AssetLoadState = 1;
@@ -290,12 +285,12 @@ static void TestModelVariantLoads(void) {
     g_CarModelSlot = 0;
     g_AssetLoadState = 1;
     g_AssetLoadFailed = 0;
-    s_forceInvalidAssetIndex = 1;
+    cars[2].modelVariant = UINT8_MAX;
     LoadPendingCarModelAsset();
     Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
               s_loadAssetId == -123,
           "invalid variant index is rejected before asset lookup");
-    s_forceInvalidAssetIndex = 0;
+    cars[2].modelVariant = 0;
 
     g_CarModelSlot = 0;
     g_PendingCarModelIndex = 2;
@@ -536,7 +531,7 @@ static void TestCarSelectAssetPhases(void) {
     s_color1Calls = 0;
     s_color2Calls = 0;
     LoadCarSelectAssets();
-    Check(s_loadAssetId == 0xA + (12 << 1),
+    Check(s_loadAssetId == 0xA + (6 << 1),
           "initial showroom car asset index");
     Check(g_CarModelAsset == model && g_CarModelSlot == 0,
           "initial showroom model selected");
@@ -582,12 +577,12 @@ static void TestCarSelectAssetPhases(void) {
     g_CarModelBuffer = storage + IMAGE_OFFSET;
     g_AssetLoadState = 4;
     g_AssetLoadFailed = 0;
-    s_forceInvalidAssetIndex = 1;
+    cars[1].modelVariant = UINT8_MAX;
     LoadCarSelectAssets();
     Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
               s_loadAssetId == -123,
           "invalid showroom variant is rejected before asset lookup");
-    s_forceInvalidAssetIndex = 0;
+    cars[1].modelVariant = 2;
 
     g_AssetLoadState = 4;
     g_PlayerCarIndex = 1;
@@ -613,6 +608,62 @@ static void TestCarSelectAssetPhases(void) {
           "idle car-select loader is a no-op");
 }
 
+static void TestEveryRetailVariantLoad(void) {
+    /* Byte +0x0a in each of the 32 original car model headers. The final
+     * grade of every retail model disables upgrades before the next model. */
+    static const u8 upgrades[CAR_MODEL_VARIANT_COUNT] = {
+        1,1,1,0, 1,1,0, 1,0, 1,1,1,1,0, 1,1,1,0,
+        1,1,0, 1,0, 1,1,0, 1,0, 0,0,0,0
+    };
+    static u8 buffers[CAR_MODEL_BUFFER_SIZE];
+    CarEntry cars[GAME_CAR_COUNT] = {0};
+    static CarImageData image;
+    int normalCount = 0, upgradeCount = 0;
+    memset(buffers, 0, sizeof(buffers));
+    ((CarModelAsset *)(void *)(buffers + CAR_MODEL_SLOT_SIZE))->imageData.carImage = &image;
+    g_CarTable = cars;
+    g_CarModelBuffer = buffers;
+    g_CarModelSlot = 0;
+    s_loadResult = SERIALIZED_CAR_MODEL_HEADER_SIZE;
+    s_serializedModelValid = s_registerModelBankResult = s_startAudioResult = 1;
+    for (int model = 0; model < GAME_CAR_COUNT; ++model) {
+        int first = g_CarModelBaseIndex[model];
+        int end = model + 1 < GAME_CAR_COUNT
+            ? g_CarModelBaseIndex[model + 1] : CAR_MODEL_VARIANT_COUNT;
+        for (int variant = first; variant < end; ++variant) {
+            cars[model].modelVariant = (u8)(variant - first);
+            g_AssetLoadState = 0;
+            s_color1Calls = s_color2Calls = 0;
+            Check(GetOwnedCarAssetIndex(model) == variant,
+                  "retail shop index and model loader agree");
+            Check(RequestCarModel(model), "retail model request accepted");
+            LoadPendingCarModelAsset();
+            Check(g_AssetLoadState == 0 && !AssetLoadHasFailed() &&
+                      s_loadAssetId == 10 + variant * 2 &&
+                      s_loadDestination == buffers + CAR_MODEL_SLOT_SIZE,
+                  "every retail variant selects its original asset");
+            Check(s_color1Calls == (model < CUSTOM_PAINT_CAR_COUNT) &&
+                      s_color2Calls == (model < CUSTOM_PAINT_CAR_COUNT),
+                  "retail variants respect custom paint eligibility");
+            ++normalCount;
+            Check(upgrades[variant] == (variant + 1 < end),
+                  "original upgrade flags end at each model boundary");
+            if (upgrades[variant]) {
+                Check(RequestUpgradedCarModel(model), "retail upgrade request accepted");
+                LoadPendingCarModelAsset();
+                Check(g_AssetLoadState == 0 && !AssetLoadHasFailed() &&
+                          s_loadAssetId == 10 + (variant + 1) * 2 &&
+                          cars[model].modelVariant == variant - first,
+                      "upgrade previews the next original asset without committing the save");
+                ++upgradeCount;
+            }
+        }
+    }
+    Check(normalCount == 32 && upgradeCount == 19,
+          "all retail variants and permitted upgrade transitions exercised");
+    g_CarTable = NULL;
+}
+
 int main(void) {
     TestRequests();
     TestModelVariantLoads();
@@ -621,6 +672,7 @@ int main(void) {
     TestInvalidSerializedModelSkipsInstallation();
     TestInvalidModelBankPreservesSlot();
     TestCarSelectAssetPhases();
+    TestEveryRetailVariantLoad();
 
     if (s_failures != 0) return 1;
     puts("car model requests load the selected grade into the inactive slot");

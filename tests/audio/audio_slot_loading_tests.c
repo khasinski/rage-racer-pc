@@ -33,7 +33,7 @@ static s32 s_vmInitCalls;
 static s32 s_damperCalls;
 static s32 s_closeAudioCalls;
 
-short SsVabOpenHeadSticky(u8 *header, short vabId, unsigned long address) {
+short SsVabOpenHeadSticky(u8 *header, short vabId, u_long address) {
     (void)vabId;
     s_openHeader = header;
     s_openAddress = (s32)address;

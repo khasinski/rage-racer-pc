@@ -346,7 +346,7 @@ extern const unsigned char g_UiScriptData[RAGE_UI_SCRIPT_DATA_SIZE];
 static void *ResolveUiDataAddress(u32 address, size_t size) {
     size_t offset;
 
-    if (address < RAGE_UI_SCRIPT_DATA_ADDRESS) return NULL;
+    if (address < (u32)RAGE_UI_SCRIPT_DATA_ADDRESS) return NULL;
     offset = (size_t)(address - RAGE_UI_SCRIPT_DATA_ADDRESS);
     if (offset > RAGE_UI_SCRIPT_DATA_SIZE ||
         size > RAGE_UI_SCRIPT_DATA_SIZE - offset) {

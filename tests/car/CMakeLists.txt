@@ -1,11 +1,11 @@
-add_test(NAME native_car_names COMMAND python3
-    ${CMAKE_CURRENT_SOURCE_DIR}/verify_native_car_names.py
-    ${CMAKE_SOURCE_DIR})
+add_test(NAME native_car_names
+    COMMAND source_contract_tests native_car_names ${CMAKE_SOURCE_DIR})
 
 set_tests_properties(native_car_names PROPERTIES LABELS functional)
 
 add_executable(car_catalog_tests
     car_catalog_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/host_state_car_catalog.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_catalog.c)
 target_include_directories(car_catalog_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
@@ -17,11 +17,33 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(car_catalog_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME car_catalog COMMAND car_catalog_tests)
 set_tests_properties(car_catalog PROPERTIES LABELS unit)
+
+add_executable(regional_speed_units_tests
+    regional_speed_units_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/speed_display.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/rival_ai_setup.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/rival_target_speed.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/rival_acceleration.c)
+target_include_directories(regional_speed_units_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(regional_speed_units_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(regional_speed_units_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(regional_speed_units_tests PRIVATE
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
+add_test(NAME regional_speed_units COMMAND regional_speed_units_tests)
+set_tests_properties(regional_speed_units PROPERTIES LABELS unit)
 
 add_executable(chase_camera_tests
     chase_camera_tests.c
@@ -30,7 +52,7 @@ target_include_directories(chase_camera_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port
     ${CMAKE_SOURCE_DIR}/src/port/include)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
-    target_compile_options(chase_camera_tests PRIVATE -Wall -Wextra -Werror)
+    target_compile_options(chase_camera_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME chase_camera COMMAND chase_camera_tests)
 add_test(NAME chase_camera_invalid COMMAND chase_camera_tests)
@@ -53,8 +75,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(player_tachometer_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME player_tachometer COMMAND player_tachometer_tests)
 set_tests_properties(player_tachometer PROPERTIES LABELS unit)
@@ -72,8 +94,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(player_input_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME player_input COMMAND player_input_tests)
 set_tests_properties(player_input PROPERTIES LABELS unit)
@@ -93,8 +115,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(player_jump_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME player_jump COMMAND player_jump_tests)
 set_tests_properties(player_jump PROPERTIES LABELS unit)
@@ -112,8 +134,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(player_engine_presentation_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME player_engine_presentation
     COMMAND player_engine_presentation_tests)
@@ -133,8 +155,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(player_track_limits_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME player_track_limits COMMAND player_track_limits_tests)
 set_tests_properties(player_track_limits PROPERTIES LABELS unit)
@@ -152,8 +174,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(player_contact_response_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME player_contact_response COMMAND player_contact_response_tests)
 set_tests_properties(player_contact_response PROPERTIES LABELS unit)
@@ -172,8 +194,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(player_controls_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME player_controls COMMAND player_controls_tests)
 set_tests_properties(player_controls PROPERTIES LABELS unit)
@@ -195,8 +217,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(player_body_offset_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME player_body_offset COMMAND player_body_offset_tests)
 set_tests_properties(player_body_offset PROPERTIES LABELS unit)
@@ -214,8 +236,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(player_track_contact_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME player_track_contact COMMAND player_track_contact_tests)
 set_tests_properties(player_track_contact PROPERTIES LABELS unit)
@@ -233,8 +255,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(update_player_car_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME update_player_car COMMAND update_player_car_tests)
 set_tests_properties(update_player_car PROPERTIES LABELS functional)
@@ -252,8 +274,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(player_car_init_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME player_car_init COMMAND player_car_init_tests)
 set_tests_properties(player_car_init PROPERTIES LABELS functional)
@@ -272,8 +294,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(select_track_camera_table_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME select_track_camera_table COMMAND select_track_camera_table_tests)
 set_tests_properties(select_track_camera_table PROPERTIES LABELS unit)
@@ -298,11 +320,11 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(track_camera_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 endif()
 target_link_libraries(track_camera_tests PRIVATE psyz)
 if(NOT MSVC)
-    target_compile_options(track_camera_tests PRIVATE -Wall -Wextra -Wno-error)
+    target_compile_options(track_camera_tests PRIVATE ${RAGE_NONFATAL_WARNING_OPTIONS})
 endif()
 add_test(NAME track_camera COMMAND track_camera_tests)
 set_tests_properties(track_camera PROPERTIES LABELS functional)
@@ -321,8 +343,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(finish_camera_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME finish_camera COMMAND finish_camera_tests)
 set_tests_properties(finish_camera PROPERTIES LABELS functional)
@@ -345,8 +367,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(car_ai_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
-    target_compile_options(car_ai_tests PRIVATE -Wall -Wextra -Wno-error)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+    target_compile_options(car_ai_tests PRIVATE ${RAGE_NONFATAL_WARNING_OPTIONS})
 endif()
 target_link_libraries(car_ai_tests PRIVATE psyz)
 add_test(NAME car_ai COMMAND car_ai_tests)
@@ -367,8 +389,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(car_motion_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
-    target_compile_options(car_motion_tests PRIVATE -Wall -Wextra -Wno-error)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+    target_compile_options(car_motion_tests PRIVATE ${RAGE_NONFATAL_WARNING_OPTIONS})
 endif()
 target_link_libraries(car_motion_tests PRIVATE psyz)
 add_test(NAME car_motion COMMAND car_motion_tests)
@@ -389,8 +411,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(car_body_roll_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Wno-error)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_NONFATAL_WARNING_OPTIONS})
 endif()
 target_link_libraries(car_body_roll_tests PRIVATE psyz)
 add_test(NAME car_body_roll COMMAND car_body_roll_tests)
@@ -410,8 +432,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(car_knockback_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(car_knockback_tests PRIVATE psyz)
 add_test(NAME car_knockback COMMAND car_knockback_tests)
@@ -430,8 +452,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(car_lateral_offset_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(car_lateral_offset_tests PRIVATE psyz)
 add_test(NAME car_lateral_offset COMMAND car_lateral_offset_tests)
@@ -450,8 +472,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(paint_color_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(paint_color_tests PRIVATE psyz)
 add_test(NAME paint_color COMMAND paint_color_tests)
@@ -471,8 +493,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(car_spatial_queries_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Wno-error)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_NONFATAL_WARNING_OPTIONS})
 endif()
 target_link_libraries(car_spatial_queries_tests PRIVATE psyz)
 add_test(NAME car_spatial_queries COMMAND car_spatial_queries_tests)
@@ -492,8 +514,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(car_performance_setup_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Wno-error)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_NONFATAL_WARNING_OPTIONS})
 endif()
 target_link_libraries(car_performance_setup_tests PRIVATE psyz)
 add_test(NAME car_performance_setup COMMAND car_performance_setup_tests)
@@ -511,10 +533,10 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(rival_ai_setup_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 endif()
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
-    target_compile_options(rival_ai_setup_tests PRIVATE -Wall -Wextra -Werror)
+    target_compile_options(rival_ai_setup_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME rival_ai_setup COMMAND rival_ai_setup_tests)
 set_tests_properties(rival_ai_setup PROPERTIES LABELS functional)
@@ -533,8 +555,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(rival_runtime_init_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME rival_runtime_init COMMAND rival_runtime_init_tests)
 set_tests_properties(rival_runtime_init PROPERTIES LABELS unit)
@@ -556,8 +578,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(drivetrain_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
-    target_compile_options(drivetrain_tests PRIVATE -Wall -Wextra -Wno-error)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+    target_compile_options(drivetrain_tests PRIVATE ${RAGE_NONFATAL_WARNING_OPTIONS})
 endif()
 target_link_libraries(drivetrain_tests PRIVATE psyz)
 add_test(NAME drivetrain COMMAND drivetrain_tests)
@@ -579,8 +601,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(drivetrain_sweep_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
-    target_compile_options(drivetrain_sweep_tests PRIVATE -Wall -Wextra -Wno-error)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+    target_compile_options(drivetrain_sweep_tests PRIVATE ${RAGE_NONFATAL_WARNING_OPTIONS})
 endif()
 target_link_libraries(drivetrain_sweep_tests PRIVATE psyz)
 add_test(NAME drivetrain_sweep COMMAND drivetrain_sweep_tests)
@@ -604,8 +626,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(car_travel_velocity_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Wno-error)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_NONFATAL_WARNING_OPTIONS})
 endif()
 target_link_libraries(car_travel_velocity_tests PRIVATE psyz)
 add_test(NAME car_travel_velocity COMMAND car_travel_velocity_tests)
@@ -628,10 +650,10 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(steer_to_track_line_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
-        "-iquote${CMAKE_SOURCE_DIR}/include"
-        -Wall -Wextra -Wno-error)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include"
+        "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/include"
+        ${RAGE_NONFATAL_WARNING_OPTIONS})
 endif()
 target_link_libraries(steer_to_track_line_tests PRIVATE psyz)
 add_test(NAME steer_to_track_line COMMAND steer_to_track_line_tests)
@@ -659,10 +681,10 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(car_motion_handlers_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
-        "-iquote${CMAKE_SOURCE_DIR}/include"
-        -Wall -Wextra -Wno-error)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include"
+        "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/include"
+        ${RAGE_NONFATAL_WARNING_OPTIONS})
 endif()
 target_link_libraries(car_motion_handlers_tests PRIVATE psyz)
 add_test(NAME car_motion_handlers COMMAND car_motion_handlers_tests)
@@ -681,10 +703,10 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(find_track_segment_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
-        "-iquote${CMAKE_SOURCE_DIR}/include"
-        -Wall -Wextra -Wno-error)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include"
+        "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/include"
+        ${RAGE_NONFATAL_WARNING_OPTIONS})
 endif()
 target_link_libraries(find_track_segment_tests PRIVATE psyz)
 add_test(NAME find_track_segment COMMAND find_track_segment_tests)
@@ -704,8 +726,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(arc_measure_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(arc_measure_tests PRIVATE psyz)
 add_test(NAME arc_measure COMMAND arc_measure_tests)
@@ -724,8 +746,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(car_track_math_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME car_track_math COMMAND car_track_math_tests)
 set_tests_properties(car_track_math PROPERTIES LABELS unit)
@@ -743,8 +765,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(find_nearest_track_camera_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME find_nearest_track_camera COMMAND find_nearest_track_camera_tests)
 set_tests_properties(find_nearest_track_camera PROPERTIES LABELS unit)
@@ -768,9 +790,9 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(car_track_state_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
     target_compile_options(car_track_state_tests PRIVATE
-        -Wall -Wextra -Wno-error)
+        ${RAGE_NONFATAL_WARNING_OPTIONS})
 endif()
 target_link_libraries(car_track_state_tests PRIVATE psyz)
 add_test(NAME car_track_state COMMAND car_track_state_tests)
@@ -795,8 +817,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(replay_track_reconstruction_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Wno-error)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_NONFATAL_WARNING_OPTIONS})
 endif()
 target_link_libraries(replay_track_reconstruction_tests PRIVATE psyz)
 add_test(NAME replay_track_reconstruction
@@ -816,8 +838,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(collision_quads_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(collision_quads_tests PRIVATE psyz)
 add_test(NAME collision_quads COMMAND collision_quads_tests)
@@ -836,8 +858,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(starting_grid_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME starting_grid COMMAND starting_grid_tests)
 set_tests_properties(starting_grid PROPERTIES LABELS functional)
@@ -855,8 +877,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(player_tilt_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME player_tilt COMMAND player_tilt_tests)
 set_tests_properties(player_tilt PROPERTIES LABELS unit)
@@ -874,8 +896,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(draw_cars_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME draw_cars COMMAND draw_cars_tests)
 set_tests_properties(draw_cars PROPERTIES LABELS unit)
@@ -894,8 +916,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(car_body_kick_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME car_body_kick COMMAND car_body_kick_tests)
 set_tests_properties(car_body_kick PROPERTIES LABELS unit)
@@ -913,8 +935,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(car_driving_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME car_driving COMMAND car_driving_tests)
 set_tests_properties(car_driving PROPERTIES LABELS unit)
@@ -933,8 +955,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(gear_shift_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
-    target_compile_options(gear_shift_tests PRIVATE -Wall -Wextra -Wno-error)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+    target_compile_options(gear_shift_tests PRIVATE ${RAGE_NONFATAL_WARNING_OPTIONS})
 endif()
 target_link_libraries(gear_shift_tests PRIVATE psyz)
 add_test(NAME gear_shift COMMAND gear_shift_tests)
@@ -954,9 +976,9 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(rival_collision_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
     target_compile_options(rival_collision_tests PRIVATE
-        -Wall -Wextra -Wno-error)
+        ${RAGE_NONFATAL_WARNING_OPTIONS})
 endif()
 target_link_libraries(rival_collision_tests PRIVATE psyz)
 add_test(NAME rival_collision COMMAND rival_collision_tests)
@@ -980,8 +1002,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(player_car_collision_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Wno-error)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_NONFATAL_WARNING_OPTIONS})
 endif()
 target_link_libraries(player_car_collision_tests PRIVATE psyz)
 add_test(NAME player_car_collision COMMAND player_car_collision_tests)
@@ -1020,10 +1042,10 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(traffic_avoidance_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
-        "-iquote${CMAKE_SOURCE_DIR}/include"
-        -Wall -Wextra -Wno-error)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include"
+        "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/include"
+        ${RAGE_NONFATAL_WARNING_OPTIONS})
 endif()
 target_link_libraries(traffic_avoidance_tests PRIVATE psyz)
 add_test(NAME traffic_avoidance COMMAND traffic_avoidance_tests)
@@ -1042,8 +1064,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(lap_progress_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(lap_progress_tests PRIVATE psyz)
 add_test(NAME lap_progress COMMAND lap_progress_tests)
@@ -1064,8 +1086,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(standing_start_setup_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(standing_start_setup_tests PRIVATE psyz)
 add_test(NAME standing_start_setup COMMAND standing_start_setup_tests)
@@ -1084,8 +1106,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(seed_finish_camera_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(seed_finish_camera_tests PRIVATE psyz)
 add_test(NAME seed_finish_camera COMMAND seed_finish_camera_tests)
@@ -1104,8 +1126,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(race_intro_camera_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(race_intro_camera_tests PRIVATE psyz)
 add_test(NAME race_intro_camera COMMAND race_intro_camera_tests)
@@ -1126,8 +1148,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(steer_car_along_route_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(steer_car_along_route_tests PRIVATE psyz)
 add_test(NAME steer_car_along_route COMMAND steer_car_along_route_tests)
@@ -1148,8 +1170,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(rival_body_motion_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(rival_body_motion_tests PRIVATE psyz)
 add_test(NAME rival_body_motion COMMAND rival_body_motion_tests)
@@ -1171,8 +1193,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(rival_car_movement_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(rival_car_movement_tests PRIVATE psyz)
 add_test(NAME rival_car_movement COMMAND rival_car_movement_tests)
@@ -1191,10 +1213,10 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(race_car_update_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        "-iquote${CMAKE_SOURCE_DIR}/src/port/include"
-        "-iquote${CMAKE_SOURCE_DIR}/include"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include"
+        "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/include"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME race_car_update COMMAND race_car_update_tests)
 set_tests_properties(race_car_update PROPERTIES LABELS unit)
@@ -1212,8 +1234,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(rival_acceleration_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(rival_acceleration_tests PRIVATE psyz)
 add_test(NAME rival_acceleration COMMAND rival_acceleration_tests)
@@ -1232,8 +1254,8 @@ if(MSVC)
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
     target_compile_options(rival_track_placement_tests PRIVATE
-        "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        -Wall -Wextra -Werror)
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 target_link_libraries(rival_track_placement_tests PRIVATE psyz)
 add_test(NAME rival_track_placement COMMAND rival_track_placement_tests)

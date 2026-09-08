@@ -18,6 +18,10 @@ extern int32_t g_TrackTextureCursorRow;
 extern int32_t g_TrackTextureTargetRow;
 extern int32_t g_IsEnvironmentMode4;
 
+static void WriteSceneInfo(FILE *file, const RageSceneSnapshot *snapshot,
+                           const RageModernDiagnosticFrame *output,
+                           int haveModernImage);
+
 static int WriteModern(const RageModernDiagnosticFrame *frame,
                        const char *path) {
     return frame != NULL && path != NULL && frame->texture != NULL &&
@@ -61,8 +65,22 @@ void ModernDiagnosticsMaybeDump(
         }
         snprintf(numbered, sizeof(numbered), "%s-%06u.ppm", path,
                  snapshot->frameCounter);
-        if (WriteModern(output, numbered))
+        if (WriteModern(output, numbered)) {
             lastDumped = snapshot->frameCounter;
+            if (RuntimeConfigEnabled("diagnostics.modern_dump_info")) {
+                FILE *file;
+                snprintf(numbered, sizeof(numbered), "%s-%06u.info.txt", path,
+                         snapshot->frameCounter);
+                file = fopen(numbered, "w");
+                if (file != NULL) {
+                    WriteSceneInfo(file, snapshot, output, 1);
+                    fclose(file);
+                } else {
+                    fprintf(stderr, "rage-port: cannot save dump info: %s\n",
+                            numbered);
+                }
+            }
+        }
         return;
     }
     if (WriteModern(output, path))
@@ -195,7 +213,9 @@ static void WriteSceneInfo(FILE *file, const RageSceneSnapshot *snapshot,
         }
     }
     {
-        const RageRenderWorld *world = GameRenderWorldCurrent();
+        /* Describe the world prepared for this image, not a newer logic frame
+         * already published while presentation is interpolating. */
+        const RageRenderWorld *world = ModernNativeGpuPreparedWorld();
         uint32_t dynamicCount = 0;
         if (world != NULL) {
             for (uint32_t worldIndex = 0;
@@ -218,6 +238,16 @@ static void WriteSceneInfo(FILE *file, const RageSceneSnapshot *snapshot,
             fprintf(file, "nativeWorld frame=%llu instances=%u dynamic=%u\n",
                     (unsigned long long)world->frame, world->instanceCount,
                     dynamicCount);
+            if (world->hasCamera) {
+                const RageRenderCamera *camera = &world->camera;
+                fprintf(file, "nativeCamera pos=%.9g,%.9g,%.9g "
+                        "orientation=%.9g,%.9g,%.9g,%.9g near=%.9g far=%.9g fov=%.9g\n",
+                        camera->transform.position.x, camera->transform.position.y,
+                        camera->transform.position.z, camera->transform.orientation.x,
+                        camera->transform.orientation.y, camera->transform.orientation.z,
+                        camera->transform.orientation.w, camera->nearPlane,
+                        camera->farPlane, camera->verticalFovDegrees);
+            }
         } else {
             fprintf(file, "nativeWorld unavailable\n");
         }

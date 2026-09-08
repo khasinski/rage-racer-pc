@@ -120,6 +120,7 @@ int main(void) {
 
     g_SpinningSceneryAngle[1] = INT16_MAX;
     g_SpinningSceneryRate[1] = 64;
+    ResetSubmissions();
     DrawSpinningScenery(2, 1);
     if (g_SpinningSceneryAngle[1] != 63) {
         puts("FAIL: spinner angle did not wrap as a 16-bit PS1 value");
@@ -129,6 +130,7 @@ int main(void) {
     g_RandomValues[0] = 0x7F;
     g_RandomValues[1] = 0xAA;
     g_RandomIndex = 0;
+    ResetSubmissions();
     DrawSpinningScenery(512, 1);
     if (g_RandomIndex != 2 || g_SpinningSceneryRate[0] != 0x1F ||
         g_SpinningSceneryRate[1] != 0x2A) {

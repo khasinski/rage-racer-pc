@@ -63,12 +63,16 @@ s32 GameMenuLoadPhase;
  * writes.
  */
 static s32 s_cardStatusAnswer;
+static int s_useRealCardDriver;
+s32 FixturePollMemoryCardStatus(s32 port, s32 slot);
+void FixtureResetMemoryCardStatus(void);
 static s32 s_formatAnswer;
 static s32 s_loadAnswer;
 static s32 s_writeAnswer;
 static int s_calls;
 
 s32 PollMemoryCardStatus(s32 a, s32 b) {
+    if (s_useRealCardDriver) return FixturePollMemoryCardStatus(a, b);
     (void)a;
     (void)b;
     s_calls++;
@@ -323,6 +327,24 @@ static int TestCardSettleRequiresConsecutiveReadyPolls(void) {
     return 1;
 }
 
+static int TestRealCardDriverSettlesSaveAndLoad(void) {
+    static const s32 actions[] = {0x13, 0x25};
+    for (unsigned i = 0; i < 2; ++i) {
+        FixtureResetMemoryCardStatus();
+        s_useRealCardDriver = 1;
+        g_McActionState = actions[i];
+        g_McSettleTicks = 0;
+        for (int frame = 0; frame < 60 && g_McActionState == actions[i]; ++frame)
+            RunCardSlotActions();
+        s_useRealCardDriver = 0;
+        if (g_McActionState != actions[i] + 1) {
+            printf("FAIL real card driver stuck settling action %x\n", actions[i]);
+            return 0;
+        }
+    }
+    return 1;
+}
+
 int main(int argc, char **argv) {
     static const s32 states[] = {3, 1, 2, -1, -2, -3, 7};
     static const s32 actions[] = {0, 1, 2, 3, 5, 6, 7, 8, 9, 0xA, 0xB, 0xC,
@@ -347,7 +369,8 @@ int main(int argc, char **argv) {
 
     if (!TestFailedLoadReportsError() || !TestOverwritePromptResetsChoice() ||
         !TestFormatOperationReportsItsResult() ||
-        !TestCardSettleRequiresConsecutiveReadyPolls()) {
+        !TestCardSettleRequiresConsecutiveReadyPolls() ||
+        !TestRealCardDriverSettlesSaveAndLoad()) {
         return 1;
     }
 

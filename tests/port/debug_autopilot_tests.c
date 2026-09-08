@@ -14,11 +14,12 @@ static const GameTrackPoint points[4] = {
 };
 const GameTrackPoint *g_TrackPoints = points;
 int (*g_DebugPlayerUpdate)(PlayerCarRuntime *);
-static int enabled, timeoutMode, racesMode, updates;
+static int enabled, timeoutMode, racesMode, reverseMode, updates;
 int RuntimeConfigEnabled(const char *key) { (void)key; return enabled; }
 int RuntimeConfigInt(const char *key, int fallback, int low, int high) {
     (void)low; (void)high;
     if (!strcmp(key,"autopilot.speed")) return 100;
+    if (!strcmp(key,"autopilot.direction")) return reverseMode ? 1 : 0;
     if (!strcmp(key,"autopilot.laps")) return 2;
     if (!strcmp(key,"autopilot.races")) return racesMode ? 2 : 0;
     if (!strcmp(key,"autopilot.max_frames")) return timeoutMode ? 2 : 1000;
@@ -35,6 +36,7 @@ int main(int argc, char **argv) {
     enabled = argc > 1 && strcmp(argv[1], "disabled");
     timeoutMode = argc > 1 && !strcmp(argv[1], "timeout");
     racesMode = argc > 1 && !strcmp(argv[1], "races");
+    reverseMode = argc > 1 && !strcmp(argv[1], "reverse");
     DebugAutopilotBeforeScene();
     if (!enabled) {
         assert(g_DebugPlayerUpdate == NULL && !DebugAutopilotShouldExit());
@@ -54,6 +56,11 @@ int main(int argc, char **argv) {
     for (int i = 0; i < 200; i++) {
         assert(!DebugAutopilotShouldExit());
         assert(g_DebugPlayerUpdate(&car) == 1);
+        if (i == 0) {
+            assert(car.x == (reverseMode ? 4 : 0));
+            assert(car.z == (reverseMode ? 0 : 4));
+            assert(g_RaceSeries == 0); /* Inspection must not rewrite race data. */
+        }
         DebugAutopilotBeforeScene();
     }
     assert(updates == 200);

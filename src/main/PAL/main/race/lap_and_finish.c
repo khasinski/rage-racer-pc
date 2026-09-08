@@ -29,7 +29,6 @@ enum {
     BEST_LAP_SOUND_CUE = 0x26,
     BEST_LAP_CUE_DELAY = 0x96,
     FINISH_CUE_FLAG = 1 << 3,
-    FINISHED_SOUND_CUE = 0x2A,
     FINISH_FOLLOWUP_SOUND_CUE = 0x2B,
     FINISH_AUDIO_FADE_FRAMES = 8,
     RETIRE_AUDIO_FADE_FRAMES = 0x3C,
@@ -140,12 +139,9 @@ static void FinishRace(PlayerCarRuntime *car, s32 recordMode,
     }
     g_RacePhase = RACE_PHASE_FINISHED;
     StartCdVolumeFade(FINISH_AUDIO_FADE_FRAMES);
-    /* TriggerRaceCues runs later in the frame, but the finished phase skips
-     * that whole block. Guarantee the spoken FINISHED cue at the transition
-     * itself instead of depending on the car remaining in one authored
-     * finish-line track section. */
+    /* Cue 0x2A is the final-stretch encouragement, owned by the authored
+     * track zone. Queue only "Finish!" here, waiting for any active speech. */
     g_RaceCueFlags |= FINISH_CUE_FLAG;
-    PlaySoundCue(FINISHED_SOUND_CUE);
     QueueFinishFollowupCue(FINISH_FOLLOWUP_SOUND_CUE);
 }
 

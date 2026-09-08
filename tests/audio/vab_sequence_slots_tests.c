@@ -23,7 +23,7 @@ static s16 s_sequenceOpenResult = (s16)0x8056;
 static u8 *s_openHeader;
 static u8 *s_transferBody;
 static unsigned long s_openAddress;
-static unsigned long *s_sequenceData;
+static u_long *s_sequenceData;
 static short s_sequenceVab;
 static s32 s_reverbCalls;
 static s32 s_vmInitCalls;
@@ -31,7 +31,7 @@ static s32 s_closedSequence;
 static s32 s_closedVab;
 static s32 s_failures;
 
-short SsVabOpenHeadSticky(u8 *header, short vabId, unsigned long address) {
+short SsVabOpenHeadSticky(u8 *header, short vabId, u_long address) {
     if (vabId != -1) abort();
     s_openHeader = header;
     s_openAddress = address;
@@ -42,7 +42,7 @@ short SsVabTransBody(u8 *body, short vabId) {
     s_transferBody = body;
     return s_bodyResult;
 }
-short SsSeqOpen(unsigned long *sequence, short vabId) {
+short SsSeqOpen(u_long *sequence, short vabId) {
     s_sequenceData = sequence;
     s_sequenceVab = vabId;
     return s_sequenceOpenResult;
@@ -84,7 +84,7 @@ int main(void) {
               s_openHeader == header && s_transferBody == body &&
               s_openAddress == 0x24000,
           "sequence slot opens and transfers its VAB");
-    Check(s_sequenceData == (unsigned long *)(void *)sequence &&
+    Check(s_sequenceData == (u_long *)(void *)sequence &&
               s_sequenceVab == 8 &&
               g_SeqHandle.storage == (s16)0x8056 &&
               g_SeqVolumeFadeStep == 0,

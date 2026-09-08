@@ -13,6 +13,7 @@ set(CMAKE_C_EXTENSIONS ON)
 # object file in retail and they still describe one program's state, so every
 # target that needs retail state takes the whole list.
 set(RAGE_HOST_STATE_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_car_catalog.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_asset.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/port/host_state_audio.c
@@ -38,13 +39,26 @@ if(MSVC AND CMAKE_C_COMPILER_ID STREQUAL "Clang")
     set(RAGE_COMPAT_COMPILE_OPTIONS
         /clang:-fno-strict-aliasing
         /clang:-fwrapv)
+    set(RAGE_WARNING_OPTIONS /clang:-Wall /clang:-Wextra)
+    set(RAGE_NONFATAL_WARNING_OPTIONS /clang:-Wall /clang:-Wextra /clang:-Wno-error)
     set(RAGE_STRICT_WARNING_OPTIONS
         /clang:-Wall
         /clang:-Wextra
         /clang:-Werror)
 elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     set(RAGE_COMPAT_COMPILE_OPTIONS -fno-strict-aliasing -fwrapv)
+    set(RAGE_WARNING_OPTIONS -Wall -Wextra)
+    set(RAGE_NONFATAL_WARNING_OPTIONS -Wall -Wextra -Wno-error)
     set(RAGE_STRICT_WARNING_OPTIONS -Wall -Wextra -Werror)
+endif()
+
+# Test fixtures use quote-only shim headers and forced compatibility headers.
+if(MSVC)
+    set(RAGE_QUOTE_INCLUDE_OPTION /clang:-iquote)
+    set(RAGE_FORCE_INCLUDE_OPTION /FI)
+else()
+    set(RAGE_QUOTE_INCLUDE_OPTION -iquote)
+    set(RAGE_FORCE_INCLUDE_OPTION -include)
 endif()
 
 # Link the Visual C++ runtime statically. Windows does not ship it, and an
@@ -312,12 +326,14 @@ if(RAGE_BUILD_PORT)
         src/port/chd_track_layout.c
         src/port/disc_stream_table.c
         src/port/hud_config.c
+        src/port/speed_display.c
         src/port/mod_assets.c
         src/port/texture_patch.c
         src/port/port_config.c
         src/port/scenario_control.c
         src/port/debug_autopilot.c
         src/port/debug_route.c
+        src/port/native_visibility.c
         src/port/debug_gpu_capture.c
         src/port/classic/native_geometry_diagnostics.c
         src/port/native_asset_importer.c
@@ -326,11 +342,13 @@ if(RAGE_BUILD_PORT)
         src/port/modern/modern_renderer.c
         src/port/modern/modern_vram_snapshot.c
         src/port/modern/modern_assets.c
+        src/port/modern/modern_png.c
         src/port/modern/modern_native_gpu.c
         src/port/modern/modern_shader_sources.c
         src/port/modern/modern_texture_dump.c
         src/port/modern/modern_renderer_diagnostics.c
         src/port/modern/scene_capture.c
+        src/port/classic_motion.c
     )
     set(RAGE_PORT_LEGACY_SOURCES
         src/port/host_disc.c
@@ -419,6 +437,7 @@ if(RAGE_BUILD_PORT)
         src/port/sky_panorama_layout.c
         src/port/native_asset_importer_stubs.c
         src/port/modern/modern_assets.c
+        src/port/modern/modern_png.c
         src/port/modern/modern_native_gpu.c
         src/port/modern/modern_texture_dump.c)
     add_executable(rage-render-stage
@@ -432,6 +451,7 @@ if(RAGE_BUILD_PORT)
         src/port/sky_panorama_layout.c
         src/port/native_asset_importer_stubs.c
         src/port/modern/modern_assets.c
+        src/port/modern/modern_png.c
         src/port/modern/modern_native_gpu.c
         src/port/modern/modern_texture_dump.c)
     target_include_directories(rage-render-stage PRIVATE
@@ -511,9 +531,17 @@ if(RAGE_BUILD_PORT)
     if(RAGE_ENABLE_SANITIZERS AND
        CMAKE_C_COMPILER_ID MATCHES "Clang|GNU" AND NOT WIN32)
         foreach(RAGE_SANITIZER_TARGET rage-game-full rage-host-state rage-port-legacy
-                                      rage-racer rage-racer-smoke)
+                                      rage-racer rage-racer-smoke rage-sim rage-content
+                                      rage-mod-package rage-rmesh rage-render-world)
             target_compile_options(${RAGE_SANITIZER_TARGET} PRIVATE
                 -fsanitize=address,undefined -fno-omit-frame-pointer)
+        endforeach()
+        # Instrument the native renderer/asset libraries too. Their tools and
+        # tests need the runtime even when they do not link a game executable.
+        foreach(RAGE_SANITIZER_TARGET rage-sim rage-content rage-mod-package
+                                      rage-rmesh rage-render-world)
+            target_link_options(${RAGE_SANITIZER_TARGET} INTERFACE
+                -fsanitize=address,undefined)
         endforeach()
         foreach(RAGE_SANITIZER_TARGET rage-racer rage-racer-smoke)
             target_link_options(${RAGE_SANITIZER_TARGET} PRIVATE
@@ -636,6 +664,9 @@ if(RAGE_BUILD_PORT)
         endif()
         target_compile_options(rage-hud-preview PRIVATE
             ${RAGE_COMPAT_COMPILE_OPTIONS})
+        if(MSVC AND CMAKE_C_COMPILER_ID STREQUAL "Clang")
+            target_compile_options(rage-hud-preview PRIVATE /clang:-fcommon)
+        endif()
         if(NOT WIN32 AND CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
             target_compile_options(rage-hud-preview PRIVATE -fcommon)
         endif()

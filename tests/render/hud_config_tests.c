@@ -3,6 +3,8 @@
 #include <string.h>
 
 #include "port_config.h"
+#include "modern/modern_renderer.h"
+#include "runtime_config.h"
 #include "rage/hud_config.h"
 
 static RagePortConfig config;
@@ -16,6 +18,7 @@ static int failures;
 
 const RagePortConfig *PortActiveConfig(void) { return &config; }
 int ModernIsEnabled(void) { return modernEnabled; }
+int ModernPresentationActive(void) { return ModernIsEnabled(); }
 
 const char *RuntimeConfigGet(const char *key) {
     if (!strcmp(key, "hud.anchor")) return "edges";
@@ -36,6 +39,10 @@ int main(void) {
     EXPECT_EQ(0, HudShowLapTimes());
     EXPECT_EQ(1, HudShowTimeLimit());
 
+    config.renderer = RAGE_RENDERER_CLASSIC;
+    EXPECT_EQ(-45, HudLeftX(8));
+    EXPECT_EQ(303, HudRightX(250));
+    /* Unenhanced classic retains the original layout. */
     modernEnabled = 0;
     EXPECT_EQ(8, HudLeftX(8));
     EXPECT_EQ(250, HudRightX(250));

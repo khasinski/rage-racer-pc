@@ -2,13 +2,14 @@
 #include "game/car.h"
 
 #include <stdio.h>
+#include <string.h>
 
 static CarEntry s_cars[GAME_CAR_COUNT];
 CarEntry *g_CarTable = s_cars;
-u8 g_CarModelBaseIndex[GAME_CAR_COUNT] = {
+static const u8 expectedBaseIndex[GAME_CAR_COUNT] = {
     0, 4, 7, 9, 14, 18, 21, 23, 26, 28, 29, 30, 31,
 };
-u8 g_CarModelUnlockBase[GAME_CAR_COUNT] = {
+static const u8 expectedUnlockBase[GAME_CAR_COUNT] = {
     1, 2, 3, 0, 1, 2, 3, 2, 3, 4, 5, 5, 5,
 };
 
@@ -23,6 +24,9 @@ u8 g_CarModelUnlockBase[GAME_CAR_COUNT] = {
 
 int main(void) {
     s32 model;
+
+    CHECK(memcmp(g_CarModelBaseIndex, expectedBaseIndex, sizeof(expectedBaseIndex)) == 0);
+    CHECK(memcmp(g_CarModelUnlockBase, expectedUnlockBase, sizeof(expectedUnlockBase)) == 0);
 
     for (model = 0; model < 9; model++) {
         s32 variantCount = g_CarModelBaseIndex[model + 1] -

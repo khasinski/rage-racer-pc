@@ -20,6 +20,13 @@
 static RageSceneSnapshot s_snapshots[3];
 static int s_building, s_published = 1, s_previous = 2;
 static int s_captureBuilding;
+static int s_captureClassic;
+static int s_classicValid[3];
+static RageClassicPacketSource s_classicSources[3][RAGE_CAPTURE_MAX_PACKETS];
+static uintptr_t s_faceBegin[RAGE_CAPTURE_MAX_FACES];
+static uintptr_t s_faceEnd[RAGE_CAPTURE_MAX_FACES];
+static int s_pendingFace = -1;
+
 static int s_verifyPublication = -1;
 static uint64_t s_publishedHash, s_previousHash;
 static uint64_t CapturePublicationHash(const RageSceneSnapshot *snapshot);
@@ -57,7 +64,7 @@ int CaptureActive(void) {
             s_trace = stderr;
         }
     }
-    return ModernIsEnabled() || s_trace != NULL;
+    return ModernPresentationActive() || s_trace != NULL;
 }
 
 static void CaptureMatrixFromRegs(RageCaptureMatrix *out, unsigned base) {
@@ -128,6 +135,9 @@ void CaptureFrameBegin(void) {
         s_previousHash = CapturePublicationHash(CapturePrevious());
     }
     s_captureBuilding = 1;
+    s_captureClassic = ModernPresentationActive() && !ModernIsEnabled();
+    s_classicValid[s_building] = s_captureClassic;
+    s_pendingFace = -1;
     snapshot = &s_snapshots[s_building];
     snapshot->drawCount = 0;
     snapshot->terrainCount = 0;
@@ -278,6 +288,13 @@ void CaptureFace3D(const RageCaptureFaceInput *input) {
             return;
         }
     }
+    if (s_captureClassic) {
+        uintptr_t begin = (uintptr_t)input->primitiveBegin;
+        if (s_pendingFace >= 0) s_faceEnd[s_pendingFace] = begin;
+        s_pendingFace = snapshot->faceCount;
+        s_faceBegin[s_pendingFace] = begin;
+        s_faceEnd[s_pendingFace] = begin;
+    }
     face = &snapshot->faces[snapshot->faceCount++];
     memset(face, 0, sizeof(*face));
     face->kind = (uint8_t)input->kind;
@@ -317,6 +334,10 @@ void CaptureSubmitEnd(void) {
     const uint8_t *end;
     if (!CaptureActive() || s_scopeStart == NULL) return;
     end = RENDER_PRIM_CURSOR_AS(uint8_t);
+    if (s_pendingFace >= 0) {
+        s_faceEnd[s_pendingFace] = (uintptr_t)end;
+        s_pendingFace = -1;
+    }
     if (end > s_scopeStart) {
         if (s_rangeCount < RAGE_CAPTURE_MAX_RANGES) {
             s_ranges[s_rangeCount].begin = s_scopeStart;
@@ -409,6 +430,26 @@ static int CapturePacketWords(const DR_ENV *packet, uint32_t *out, int cap) {
     return length;
 }
 
+static void CaptureClassicSource(const RageSceneSnapshot *snapshot,
+                                 uintptr_t address, int packetIndex) {
+    RageClassicPacketSource *source = &s_classicSources[s_building][packetIndex];
+    source->faceIndex = -1;
+    source->offset = source->bytes = 0;
+    /* Faces follow allocation order, whereas the OT walks depth order. */
+    int lo = 0, hi = snapshot->faceCount;
+    while (lo < hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (s_faceBegin[mid] <= address) lo = mid + 1;
+        else hi = mid;
+    }
+    int face = lo - 1;
+    if (face >= 0 && address >= s_faceBegin[face] && address < s_faceEnd[face]) {
+        source->faceIndex = face;
+        source->offset = (uint32_t)(address - s_faceBegin[face]);
+        source->bytes = (uint32_t)(s_faceEnd[face] - s_faceBegin[face]);
+    }
+}
+
 static void CaptureWalkTable(RageSceneSnapshot *snapshot, int tableIndex,
                              GameOrderingTableEntry *table) {
     const DR_ENV *node = (const DR_ENV *)&table[GAME_FRAME_OT_LENGTH - 1];
@@ -431,7 +472,7 @@ static void CaptureWalkTable(RageSceneSnapshot *snapshot, int tableIndex,
             addressValue < (uintptr_t)tableEnd) {
             bucket = (int)((addressValue - (uintptr_t)tableBegin) /
                            sizeof(*table));
-        } else if (CaptureIs3DPacket(address)) {
+        } else if (!s_captureClassic && CaptureIs3DPacket(address)) {
             snapshot->skipped3DPackets++;
         } else {
             int length = getlen(node);
@@ -449,6 +490,17 @@ static void CaptureWalkTable(RageSceneSnapshot *snapshot, int tableIndex,
                         &snapshot->packets[snapshot->packetCount++];
                     memset(out, 0, sizeof(*out));
                     out->skyIndex = UINT16_MAX;
+                    if (s_captureClassic) {
+                        RageClassicPacketSource *source =
+                            &s_classicSources[s_building][snapshot->packetCount - 1];
+                        source->faceIndex = -1;
+                        source->offset = source->bytes = 0;
+                        if (CaptureIs3DPacket(address)) {
+                            out->flags |= RAGE_CAPTURE_PACKET_3D;
+                            CaptureClassicSource(snapshot, addressValue,
+                                                 snapshot->packetCount - 1);
+                        }
+                    }
                     out->bucket = (uint16_t)bucket;
                     out->table = (uint8_t)tableIndex;
                     if (CaptureIsSkyPacket(address)) {
@@ -548,6 +600,14 @@ const RageSceneSnapshot *CaptureCurrent(void) {
 
 const RageSceneSnapshot *CapturePrevious(void) {
     return &s_snapshots[s_previous];
+}
+
+const RageClassicPacketSource *CaptureClassicSources(
+    const RageSceneSnapshot *snapshot) {
+    for (int i = 0; i < 3; ++i)
+        if (snapshot == &s_snapshots[i] && s_classicValid[i])
+            return s_classicSources[i];
+    return NULL;
 }
 
 static uint64_t HashBytes(uint64_t hash, const void *data, size_t size) {

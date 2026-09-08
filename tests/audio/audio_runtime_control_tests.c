@@ -2,6 +2,7 @@
 #include "game/audio.h"
 #include "game/audio_internal.h"
 #include "game/sound.h"
+#include "psyq/snd.h"
 
 #include <stdio.h>
 
@@ -32,7 +33,7 @@ int TimingBaseHz(void) { return s_frameHz; }
 void SsSeqCalledTbyT(void) { s_sequenceTicks++; }
 void SpuVmDamperStep(void) { s_damperSteps++; }
 void UpdateSequenceFadeOut(void) { s_fadeUpdates++; }
-void SsUtSetReverbDepth(long left, long right) {
+void SsUtSetReverbDepth(short left, short right) {
     s_reverbLeft = (s32)left;
     s_reverbRight = (s32)right;
 }
@@ -42,8 +43,8 @@ short SsUtSetReverbType(short type) {
 }
 void SsUtReverbOn(void) { s_reverbOnCalls++; }
 void SsUtReverbOff(void) { s_reverbOffCalls++; }
-long SsUtKeyOnV(long voice, long vabId, long program, long tone, long note,
-                long fine, long volLeft, long volRight) {
+short SsUtKeyOnV(short voice, short vabId, short program, short tone, short note,
+                short fine, short volLeft, short volRight) {
     (void)tone;
     (void)fine;
     (void)volLeft;

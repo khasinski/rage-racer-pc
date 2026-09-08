@@ -126,6 +126,7 @@ static SDL_GPUGraphicsPipeline *s_shadowDepth;
 static SDL_GPUGraphicsPipeline *s_shadowMasked;
 static SDL_GPUBuffer *s_vertexBuffer;
 static SDL_GPUTransferBuffer *s_vertexTransfer;
+static uint32_t s_vertexTransferBytes;
 static SDL_GPUSampler *s_sampler;
 static SDL_GPUTexture *s_shadowTexture;
 static SDL_GPUSampler *s_shadowSampler;
@@ -339,6 +340,10 @@ static SDL_GPUGraphicsPipeline *ModernNativeCreatePipeline(
      * including thin sign supports, so native culling would remove geometry
      * that the original GPU draws. */
     info.rasterizer_state.cull_mode = SDL_GPU_CULLMODE_NONE;
+    /* A zero-initialized SDL rasterizer clamps depth instead of clipping.
+     * Reject geometry outside the camera volume, including partially visible
+     * terrain cells whose bounds alone cannot enforce the far plane. */
+    info.rasterizer_state.enable_depth_clip = true;
     /* Semantic decals are already real, slightly lifted world geometry. They
      * use the same depth test as every other opaque surface. */
     info.depth_stencil_state.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL;
@@ -448,15 +453,17 @@ static void ModernNativeRotate(float out[3], const float in[3],
     out[0] = x; out[1] = y; out[2] = z;
 }
 
-static void ModernNativeBuildCamera(const RageRenderCamera *camera,
+static int ModernNativeBuildCamera(const RageRenderCamera *camera, float aspect,
                                     ModernNativeCameraUniform *out) {
     static const float axes[3][3] = {
         {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}};
     float columns[3][3];
-    float fovScale = 1.0f / tanf(camera->verticalFovDegrees *
-                                 0.008726646259971648f);
     int axis;
     memset(out, 0, sizeof(*out));
+    if (!RenderPerspectiveScales(camera, aspect, &out->projection[0],
+                                  &out->projection[1]) ||
+        !RenderPerspectiveDepthTerms(camera, &out->projection[2],
+                                      &out->projection[3])) return 0;
     out->position[0] = camera->transform.position.x;
     out->position[1] = camera->transform.position.y;
     out->position[2] = camera->transform.position.z;
@@ -466,10 +473,6 @@ static void ModernNativeBuildCamera(const RageRenderCamera *camera,
         out->viewRow1[axis] = columns[axis][1];
         out->viewRow2[axis] = columns[axis][2];
     }
-    out->projection[0] = fovScale;
-    out->projection[1] = fovScale;
-    RenderPerspectiveDepthTerms(camera, &out->projection[2],
-                                    &out->projection[3]);
     out->fogColor[0] = camera->fogColor.x;
     out->fogColor[1] = camera->fogColor.y;
     out->fogColor[2] = camera->fogColor.z;
@@ -481,6 +484,7 @@ static void ModernNativeBuildCamera(const RageRenderCamera *camera,
         out->fogRange[2] = 1.0f / camera->fogNear;
         out->fogRange[3] = out->fogRange[2] - 1.0f / camera->fogFar;
     }
+    return 1;
 }
 
 static void ModernNativeBuildSky(const RageRenderCamera *camera,
@@ -678,8 +682,9 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
         MODERN_NATIVE_MAX_BUFFER_VERTICES * sizeof(RageNativeGpuVertex);
     s_vertexBuffer = SDL_CreateGPUBuffer(s_device, &buffer);
     transfer.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
-    transfer.size = buffer.size;
+    transfer.size = 65536;
     s_vertexTransfer = SDL_CreateGPUTransferBuffer(s_device, &transfer);
+    s_vertexTransferBytes = s_vertexTransfer ? transfer.size : 0;
     if (s_worldVertexLimit) {
         buffer.usage = SDL_GPU_BUFFERUSAGE_INDEX;
         buffer.size = MODERN_NATIVE_MAX_BUFFER_VERTICES * sizeof(uint32_t);
@@ -901,6 +906,10 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         }
         ModernNativeGpuClearTextures();
         ModernNativeReleaseSkyTexture();
+        /* Resident buffers are keyed by template address. Retire them before
+         * freeing templates: the next scene can reuse those addresses for
+         * different cars, otherwise binding an attract-mode body in GP. */
+        ModernNativeReleaseGeometry();
         RenderNativeMeshTemplateCacheRelease(&s_meshTemplates);
         s_trackAssetRevision = trackAssetRevision;
         s_assetGeneration = ModernAssetsGeneration();
@@ -1239,14 +1248,14 @@ static int ModernNativeProbeTriangle(
 
 int ModernNativeGpuWriteProbe(FILE *file, int x, int y,
                               int width, int height) {
-    float aspect, fovScale, depthScale, depthOffset;
+    float aspect, fovScale, horizontalScale, depthScale, depthOffset;
     uint32_t spanIndex;
     int hits = 0;
     if (file == NULL || s_world == NULL || width <= 0 || height <= 0 ||
         x < 0 || x >= width || y < 0 || y >= height) return 0;
     aspect = (float)width / (float)height;
-    fovScale = 1.0f / tanf(s_world->camera.verticalFovDegrees *
-                           0.008726646259971648f);
+    if (!RenderPerspectiveScales(&s_world->camera, aspect, &horizontalScale,
+                                  &fovScale)) return 0;
     if (!RenderPerspectiveDepthTerms(&s_world->camera, &depthScale,
                                          &depthOffset)) return 0;
     fprintf(file, "probe %d %d target %d %d\n", x, y, width, height);
@@ -1644,6 +1653,30 @@ static ModernResidentGeometry *ModernNativeResidentBuffer(SDL_GPUCommandBuffer *
     return entry;
 }
 
+/* Cycling a transfer may allocate another backing store. Size it for the
+ * actual upload, not the maximum geometry budget of both cameras. Releasing
+ * the old transfer is deferred by SDL until its queued copies finish. */
+static void *ModernNativeMapVertexUpload(uint32_t bytes) {
+    const uint32_t maximum = MODERN_NATIVE_MAX_BUFFER_VERTICES * sizeof(*s_vertices);
+    if (!bytes || bytes > maximum) return NULL;
+    if (bytes > s_vertexTransferBytes) {
+        uint32_t capacity = s_vertexTransferBytes ? s_vertexTransferBytes : 65536;
+        while (capacity < bytes)
+            capacity = capacity > maximum / 2 ? maximum : capacity * 2;
+        SDL_GPUTransferBufferCreateInfo info = {
+            .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD, .size = capacity};
+        SDL_GPUTransferBuffer *replacement = SDL_CreateGPUTransferBuffer(s_device, &info);
+        if (!replacement) return NULL;
+        if (s_vertexTransfer) SDL_ReleaseGPUTransferBuffer(s_device, s_vertexTransfer);
+        s_vertexTransfer = replacement;
+        s_vertexTransferBytes = capacity;
+        if (RuntimeConfigEnabled("diagnostics.performance_trace"))
+            fprintf(stderr, "native-transfer-grow required=%u capacity=%u maximum=%u\n",
+                bytes, capacity, maximum);
+    }
+    return SDL_MapGPUTransferBuffer(s_device, s_vertexTransfer, true);
+}
+
 static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
     static int trace = -1;
     if (trace < 0) trace = RuntimeConfigEnabled("diagnostics.performance_trace");
@@ -1656,8 +1689,6 @@ static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
         .buffer = s_vertexBuffer, .offset = 0,
         .size = s_uploadVertexCount * sizeof(*s_vertices)};
     if (destination.size == 0) return 0;
-    mapped = SDL_MapGPUTransferBuffer(s_device, s_vertexTransfer, true);
-    if (mapped == NULL) return 0;
     uint32_t dynamicCount = 0, terrainCount = 0, rangeCount = 0;
     uint32_t residentDraws = 0, localFallbacks = 0;
     for (unsigned view = 0; view < 2; ++view) {
@@ -1690,7 +1721,6 @@ static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
             if (s_residentGeometryEnabled && span->localGeometry) {
                 ++localFallbacks;
                 if (!RenderExpandNativeLocalDraw(span, s_vertices + span->firstVertex, span->vertexCount)) {
-                    SDL_UnmapGPUTransferBuffer(s_device, s_vertexTransfer);
                     return 0;
                 }
             }
@@ -1708,8 +1738,11 @@ static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
         uint32_t changed = s_worldGeometry.vertexCount - first;
         uint32_t vertexBytes = changed * sizeof(*s_vertices);
         uint32_t indexBytes = dynamicCount * sizeof(uint32_t);
-        /* The pack limit is one view, while this transfer reserves two:
-         * changed vertices plus their index stream always fit that budget. */
+        mapped = ModernNativeMapVertexUpload(vertexBytes + indexBytes);
+        if (!mapped) { s_worldGpuValid = 0; return 0; }
+        source.transfer_buffer = s_vertexTransfer;
+        /* The pack limit is one view, while the transfer ceiling permits two:
+         * changed vertices plus their index stream fit within that ceiling. */
         memcpy(mapped, s_worldGeometry.vertices + first, vertexBytes);
         memcpy((uint8_t *)mapped + vertexBytes, s_worldGeometry.indices, indexBytes);
         SDL_UnmapGPUTransferBuffer(s_device, s_vertexTransfer);
@@ -1745,6 +1778,11 @@ static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
         }
         return 1;
     }
+    destination.size = dynamicCount * sizeof(*s_vertices);
+    if (!destination.size) return 1;
+    mapped = ModernNativeMapVertexUpload(destination.size);
+    if (!mapped) return 0;
+    source.transfer_buffer = s_vertexTransfer;
     uint32_t stagingOffset = 0;
     for (uint32_t r = 0; r < rangeCount; ++r) {
         memcpy((RageNativeGpuVertex *)mapped + stagingOffset, s_worldRanges[r].vertices,
@@ -1754,8 +1792,6 @@ static int ModernNativeUploadVertices(SDL_GPUCommandBuffer *command) {
     SDL_UnmapGPUTransferBuffer(s_device, s_vertexTransfer);
     /* A transient upload cycles the shared vertex buffer. The next successful
      * packed frame must republish its complete resident prefix. */
-    destination.size = dynamicCount * sizeof(*s_vertices);
-    if (!destination.size) return 1;
     s_worldGpuValid = 0;
     copy = SDL_BeginGPUCopyPass(command);
     if (copy == NULL) return 0;
@@ -1940,7 +1976,7 @@ static void ModernNativeGpuDrawSet(
     SDL_GPURenderPass *pass;
     uint32_t spanIndex;
     uint32_t drawCount = 0;
-    if (renderCamera == NULL) return;
+    if (!ModernNativeBuildCamera(renderCamera, aspect, &camera)) return;
     const int batchDraws = !RuntimeConfigEnabled("diagnostics.modern_unbatched_draws");
     RageNativeInstanceState boundInstance = {0};
     int hasBoundInstance = 0;
@@ -1962,8 +1998,6 @@ static void ModernNativeGpuDrawSet(
         return;
     pass = SDL_BeginGPURenderPass(command, &color, 1, &depth);
     if (pass == NULL) return;
-    ModernNativeBuildCamera(renderCamera, &camera);
-    camera.projection[0] /= aspect;
     SDL_PushGPUVertexUniformData(command, 0, &camera, sizeof(camera));
     if (drawSky) {
         ModernNativeBuildSky(renderCamera, aspect, targetHeight, &sky);
@@ -2158,6 +2192,7 @@ void ModernNativeGpuShutdown(void) {
     s_shadowMasked = NULL;
     s_vertexBuffer = NULL;
     s_vertexTransfer = NULL;
+    s_vertexTransferBytes = 0;
     s_sampler = NULL;
     s_skySampler = NULL;
     s_shadowTexture = NULL;

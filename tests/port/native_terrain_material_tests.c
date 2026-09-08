@@ -1,6 +1,6 @@
-/* Exercise the real stream parser and material-key resolution together.
- * Unused importer entry points are discarded by the test link. */
-#include "../../src/port/native_asset_importer.c"
+/* Exercise the production stream parser and material-key resolution together. */
+#include <stdio.h>
+#include "../../src/port/native_import_stream.h"
 
 static RageImportedTextureKey s_keys[6];
 

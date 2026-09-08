@@ -63,9 +63,9 @@ MATRIX *MulMatrix0(MATRIX *m0, MATRIX *m1, MATRIX *m2) {
 }
 
 s32 Random15(void) {
-    static s32 state;
-    state = (state * 1103515245 + 12345) & 0x7FFF;
-    return state;
+    static u32 state;
+    state = (state * 1103515245u + 12345u) & 0x7FFFu;
+    return (s32)state;
 }
 
 static unsigned long s_digest = 2166136261UL;

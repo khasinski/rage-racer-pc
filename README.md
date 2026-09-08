@@ -4,6 +4,18 @@ Native Windows, Linux and macOS port of *Rage Racer* (PAL / Europe,
 `SCES-006.50`). It contains the complete game, platform packaging and runtime
 compatibility layer.
 
+## Running a release
+
+Extract the whole archive, then open **Rage Racer.app** on macOS,
+**Rage-Racer.exe** on Windows, or **rage-racer** on Linux. Select your legally
+obtained Rage Racer CUE (with its BIN tracks alongside it), Track 01 BIN, or
+CHD when prompted. Native assets are imported automatically and the game starts
+with the modern renderer. No separate launcher or extractor is required.
+
+Press **F10** to switch to enhanced classic rendering. Video settings are in
+`rage-port.ini`; see the [classic renderer guide](docs/classic-renderer.md) for
+resolution, widescreen and FPS examples. No game data is supplied in the archive.
+
 ## Build from source
 
 The project uses CMake and its pinned PSY-Z compatibility layer:
@@ -185,7 +197,7 @@ Display, content and storage settings:
 | `hud` | `show_lap_times` | `true`, `false` | `true` |
 | `hud` | `show_time_limit` | `true`, `false` | `true` |
 | `camera` | `chase_turn_lookahead` | `0` to `1`; `0` is retail | `0` |
-| `modern` | `assets` | Optional prebuilt native-asset cache for renderer development, or `disc` to import from the selected disc even when a cache is present; omitted imports from the disc unless a cache sits beside the executable | omitted |
+| `modern` | `assets` | Optional explicit prebuilt native-asset cache for renderer development, or `disc`; omitted always imports from the selected disc | omitted |
 | `modern` | `mirror_distance` | `0.25` to `8`, capped at the main view distance | `1` |
 | `timing` | `standard` | `auto`, `pal`, `ntsc` | `auto` |
 | `content` | `car_names` | `international`, `japanese` | `international` |
@@ -236,7 +248,7 @@ The legacy `disc.cue` name, `video.bloom` no-op and documented
 setups, but new configuration should use the keys above.
 
 `nearest` retains the hard texel edges of the source artwork. `linear` smooths
-texture sampling in the modern 3D scene and in the final 2D presentation. The
+texture sampling in the enhanced 3D renderers and in the final 2D presentation. The
 checked-in `rage-port.ini` documents the remaining sections and their ranges.
 
 Raw racing wheels are supported even when SDL does not classify them as a
@@ -245,7 +257,7 @@ gamepad. They use the game's NeGcon analog path; `wheel_steering_axis`,
 button indexes can be adjusted under `[input]`. The defaults follow common
 Logitech layouts, while keyboard input remains available for menus.
 
-In modern 16:9, `[hud] anchor = edges` moves the corner HUD into the added
+In modern or enhanced classic 16:9, `[hud] anchor = edges` moves the corner HUD into the added
 widescreen area; use `center` for the retail 4:3 positions. Set
 `show_lap_times` or `show_time_limit` to `false` to hide those race displays.
 
@@ -572,6 +584,11 @@ The worktrees and builds are kept between runs, since they are the expensive
 part; `--clean` removes them.
 
 ## Known limitations
+
+For the 0.6.4-alpha candidate, see the [release notes](docs/release-0.6.4-alpha.md)
+and [enhanced classic renderer settings](docs/classic-renderer.md). Outstanding
+crash and frame-time verification is tracked in the
+[issue audit](docs/release-0.6.4-issues.md).
 
 - Controller configuration currently retains the original preset-oriented
   UI. Full per-action controller remapping is still to come.

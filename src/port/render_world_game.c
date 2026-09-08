@@ -2,6 +2,8 @@
 
 #include "course_coordinate.h"
 #include "sky_panorama_layout.h"
+#include "runtime_config.h"
+#include "native_visibility.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -363,7 +365,11 @@ static RageRenderCamera GameRenderWorldBuildCamera(
     camera.transform.scale.z = 1.0f;
     camera.verticalFovDegrees = verticalFovDegrees;
     camera.nearPlane = 1.0f;
-    camera.farPlane = 262144.0f;
+    /* Race geometry uses the verified scene-depth limit together with the
+     * authored region masks. Non-race presentation retains its stage range. */
+    camera.farPlane = (float)RuntimeConfigInt(
+        "diagnostics.native_far_plane",
+        GameSceneUsesRaceWorld() ? 16384 : 262144, 1024, 262144);
     GameRenderWorldEnvironmentColor(ENV_FOG, &camera.fogColor);
     /* Convert the authored environment palette into semantic sky bands. The
      * native backend owns their projection; it never replays DrawSkyBackground
@@ -595,19 +601,61 @@ void GameRenderWorldSubmitTerrainCell(uint32_t grid_x, uint32_t grid_z,
     RenderWorldSubmitMesh(GameRenderWorldMutable(), &instance);
 }
 
+/* The original per-region masks change with camera position and retain the
+ * long straight without exposing unrelated sections above nearby scenery.
+ * Main and mirror share a camera region; heading does not affect these masks. */
+static int NativeRegionAllowsCell(int32_t cellX, int32_t cellZ) {
+    _Static_assert(TERRAIN_CELL_GRID_SIZE == 32 &&
+                   TERRAIN_CELL_REGION_SHIFT == 10,
+                   "native visibility must match the original table layout");
+    static int enabled = -1;
+    const RageRenderWorld *world = GameRenderWorldMutable();
+    if (enabled < 0)
+        enabled = RuntimeConfigGet("diagnostics.native_region_visibility") == NULL ||
+                  RuntimeConfigEnabled("diagnostics.native_region_visibility");
+    if (!enabled || !GameSceneUsesRaceWorld() || !world->hasCamera) return 1;
+    return NativeVisibilityAllowsCell(g_TerrainCellGrid, g_CellVisibilityTable,
+        world->camera.transform.position.x, -world->camera.transform.position.z,
+        cellX, cellZ);
+}
+
 void GameRenderWorldPublishTerrainGrid(void) {
     uint32_t grid_z;
+    static int trace = -1;
+    static uint32_t previousCells[32];
+    uint32_t cells[32] = {0};
 
     if (!s_initialized || g_TerrainCellGrid == NULL) return;
+    if (trace < 0)
+        trace = RuntimeConfigEnabled("diagnostics.native_visibility_trace");
     for (grid_z = 0; grid_z < 32; grid_z++) {
         uint32_t grid_x;
         for (grid_x = 0; grid_x < 32; grid_x++) {
             int32_t mesh = g_TerrainCellGrid[((31u - grid_z) << 5) + grid_x]
                          & 0x3FF;
-            if (mesh != 0x3FF) {
+            int allowed = (trace || mesh != 0x3FF) &&
+                          NativeRegionAllowsCell(grid_x, grid_z);
+            if (trace && allowed) cells[grid_z] |= UINT32_C(1) << grid_x;
+            if (mesh != 0x3FF && allowed) {
                 GameRenderWorldSubmitTerrainCell(grid_x, grid_z, mesh, 0);
             }
         }
+    }
+    if (trace && memcmp(cells, previousCells, sizeof(cells))) {
+        const RageRenderWorld *world = GameRenderWorldMutable();
+        fprintf(stderr, "rage-port: visibility-change frame=%llu course=%d "
+                "camera=%.0f,%.0f far=%.0f\n",
+                (unsigned long long)world->frame, g_CourseIndex,
+                world->camera.transform.position.x,
+                -world->camera.transform.position.z, world->camera.farPlane);
+        for (grid_z = 0; grid_z < 32; ++grid_z) {
+            uint32_t added = cells[grid_z] & ~previousCells[grid_z];
+            uint32_t removed = previousCells[grid_z] & ~cells[grid_z];
+            if (added || removed)
+                fprintf(stderr, "rage-port: visibility-row z=%u added=%08x removed=%08x\n",
+                        grid_z, added, removed);
+        }
+        memcpy(previousCells, cells, sizeof(cells));
     }
 }
 
@@ -617,6 +665,8 @@ void GameRenderWorldPublishCourseObjects(void) {
     for (i = 0; i < g_CourseObjectCount; i++) {
         const CourseObject *object = &g_CourseObjects[i];
         if (object->modelId < 0) continue;
+        if (!NativeRegionAllowsCell(object->x / 2048, object->z / 2048))
+            continue;
         /* This is intentionally not gated by the 32x32 classic scan list:
          * it exists for the classic OT/GTE emitter.  The native path
          * keeps semantic scene data complete and applies normal frustum/depth

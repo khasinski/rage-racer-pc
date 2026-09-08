@@ -3,6 +3,7 @@
 #include "modern_native_gpu.h"
 #include "modern_sky_geometry.h"
 #include "modern_frame_pacer.h"
+#include "../classic_motion.h"
 #include "rage/render_world_game.h"
 #include "rage/track_asset_identity.h"
 
@@ -40,9 +41,16 @@
 /* The modern presentation path combines native RenderWorld geometry with
  * captured 2D sky, HUD and mirror-frame layers. Sky geometry is reprojected
  * for the interpolated camera. Captured PS1 3D faces are not rendered here.
+ * Enhanced classic uses the same affine GPU pipeline to replay the full GP0
+ * stream in its original painter order, with optional screen interpolation.
  * Menus, FMV and 480-line screens present the compat image directly. */
 
 static int s_enabled;
+static int s_classicEnhancements = 1;
+static float s_classicFraction;
+static int s_classicPacketIndex = -1;
+static const RageRenderWorld *s_classicSkyWorld;
+static int s_presentOffscreen;
 static int s_initialized;
 static int s_shutdownRegistered;
 static int s_shutdownNeeded;
@@ -361,6 +369,7 @@ static void ModernDestroyResources(void) {
     s_lastRenderedFrame = 0xFFFFFFFFu;
     s_vertexCount = s_spanCount = 0;
     ModernVramSnapshotReset(&s_sampledVram);
+    ClassicMotionReset();
     if (hadResources && RuntimeConfigEnabled("diagnostics.renderer_lifecycle")) {
         fprintf(stderr, "rage-port: modern resources destroyed generation=%u\n",
                 s_resourceGeneration);
@@ -386,7 +395,7 @@ static int ModernEnsureResources(void) {
     s_mirrorTargetW = (int)(148.0f * scale + 0.5f) & ~1;
     s_mirrorTargetH = (int)(36.0f * scale + 0.5f) & ~1;
 
-    s_ringEnabled = s_markerCaptureEnabled && RuntimeConfigEnabled("diagnostics.marker_history");
+    s_ringEnabled = s_enabled && s_markerCaptureEnabled && RuntimeConfigEnabled("diagnostics.marker_history");
     {
         SDL_GPUTextureCreateInfo info = {0};
         info.type = SDL_GPU_TEXTURETYPE_2D;
@@ -445,7 +454,7 @@ static int ModernEnsureResources(void) {
     }
     s_vertices = malloc(MODERN_MAX_VERTICES * sizeof(ModernVertex));
     s_spans = malloc(MODERN_MAX_SPANS * sizeof(ModernSpan));
-    if (!ModernNativeGpuInit(s_device)) {
+    if (s_enabled && !ModernNativeGpuInit(s_device)) {
         ModernDestroyResources();
         return 0;
     }
@@ -531,7 +540,8 @@ static int ModernEnsureResources(void) {
     }
     s_resourcesReady = 1;
     s_resourceGeneration++;
-    fprintf(stderr, "rage-port: modern renderer target %dx%d\n", s_targetW,
+    fprintf(stderr, "rage-port: %s renderer target %dx%d\n",
+            s_enabled ? "modern" : "classic", s_targetW,
             s_targetH);
     if (RuntimeConfigEnabled("diagnostics.renderer_lifecycle"))
         fprintf(stderr,
@@ -818,7 +828,7 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
         int semi = (command & 0x02u) != 0;
         int raw = (command & 0x01u) != 0;
         Modern2DState spanState = *state;
-        if ((packet->flags & RAGE_CAPTURE_PACKET_SKY) != 0) {
+        if (CapturePacketIsMainSky(packet)) {
             /* The PS1 drawing area is 320 pixels wide. The extended authored
              * grid is intentionally allowed into the native ultrawide area;
              * the render target remains its final clip boundary. */
@@ -826,6 +836,14 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
         }
         /* The overlay renders at 320x240 logical coordinates; scale the
          * scissor to the target. */
+        /* Widen only the main full-width drawing area. Mirror and animated
+         * partial clipping rectangles keep their original boundaries. */
+        if (!s_enabled && spanState.hasScissor && packet->table == 0 &&
+            spanState.scissor.x == 0 && spanState.scissor.w >= 320) {
+            int margin = (int)ceilf(s_overscanX);
+            spanState.scissor.x -= margin;
+            spanState.scissor.w += 2 * margin;
+        }
         if (spanState.hasScissor) {
             ModernScissorToPixels(&spanState.scissor);
             if (spanState.scissor.w <= 0 || spanState.scissor.h <= 0) return;
@@ -869,9 +887,11 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
                     if (vertex == 1) prim_tpage = (uvWord >> 16) & 0x1FFu;
                 }
             }
+            if (textured) state->tpage = prim_tpage;
             /* Full-screen overlays (fades, night filters) stretch across a
              * widened view; otherwise they mask only the 4:3 centre. */
-            if (s_overscanX > 0.0f && minX <= 0 && minY <= 0 && maxX >= 320 &&
+            if (packet->table == 0 && !(packet->flags & RAGE_CAPTURE_PACKET_3D) &&
+                s_overscanX > 0.0f && minX <= 0 && minY <= 0 && maxX >= 320 &&
                 maxY >= 240) {
                 for (vertex = 0; vertex < count; vertex++) {
                     if (rawX[vertex] <= 0.0f) rawX[vertex] = -s_overscanX;
@@ -880,16 +900,19 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
                 }
             }
             {
+                if (!s_enabled && (packet->flags & RAGE_CAPTURE_PACKET_3D))
+                    ClassicMotionCoordinates(s_classicPacketIndex,
+                                             s_classicFraction, rawX, rawY);
                 int smoothSky = textured && quad &&
-                    (packet->flags & RAGE_CAPTURE_PACKET_SKY) != 0 &&
+                    CapturePacketIsMainSky(packet) &&
                     ModernBuildSmoothSkyQuad(packet, rawX, rawY);
                 for (vertex = 0; vertex < count; vertex++) {
                     if (!smoothSky &&
-                        (packet->flags & RAGE_CAPTURE_PACKET_SKY) != 0)
+                        CapturePacketIsMainSky(packet))
                     ModernTransformSkyPoint(&rawX[vertex], &rawY[vertex]);
                 }
                 if (!textured && quad &&
-                    (packet->flags & RAGE_CAPTURE_PACKET_SKY) != 0)
+                    CapturePacketIsMainSky(packet))
                     ModernSkyExtendBand(rawX, rawY, s_logicalW);
                 for (vertex = 0; vertex < count; vertex++)
                     ModernOrtho(&corners[vertex], rawX[vertex], rawY[vertex]);
@@ -942,7 +965,7 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
             }
             px += state->offsetX;
             py += state->offsetY;
-            if (s_overscanX > 0.0f && !textured && px <= 0 && py <= 0 &&
+            if (packet->table == 0 && s_overscanX > 0.0f && !textured && px <= 0 && py <= 0 &&
                 px + w >= 320 && py + h >= 240) {
                 /* Full-screen fade/filter tiles cover the widened view. */
                 px = (int)(-s_overscanX - 1.0f);
@@ -1045,7 +1068,49 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
 
 /* ---- captured PS1 2D -> overlay vertex/span lists ---- */
 
+static void ClassicBuildFrame(const RageSceneSnapshot *snapshot) {
+    Modern2DState state = {0};
+    state.twin = 0x0000FFFFu;
+    s_vertexCount = s_spanCount = 0;
+    s_areaPageY = snapshot->displayPageY;
+    s_currentPass = 0;
+    s_currentLayer = MODERN_LAYER_HUD;
+    s_skyPacketCamera = s_skyPresentationCamera = NULL;
+    const RageRenderWorld *current = GameRenderWorldCurrent();
+    if (s_classicSkyWorld && current &&
+        current->previousCamera.skyAssetKey == s_classicSkyWorld->camera.skyAssetKey &&
+        current->previousCamera.skyCloudRow == s_classicSkyWorld->camera.skyCloudRow) {
+        s_skyPacketCamera = &current->previousCamera;
+        s_skyPresentationCamera = &s_classicSkyWorld->camera;
+    }
+    if (s_config.modernFps != RAGE_MODERN_FPS_LOGIC)
+        ClassicMotionPrepare(snapshot, CaptureClassicSources(snapshot),
+                             CaptureCurrent(), CaptureClassicSources(CaptureCurrent()));
+    else ClassicMotionReset();
+    /* Capture walked table 0 then table 1 exactly as DrawOTag consumes them.
+     * Keep every state packet, background, subdivision and translucent face
+     * in that order. The overlay pipeline is affine and never writes depth. */
+    for (int i = 0; i < snapshot->packetCount; ++i) {
+        s_classicPacketIndex = i;
+        ModernReplay2DPacket(&snapshot->packets[i], &state);
+    }
+    s_classicPacketIndex = -1;
+    if (RuntimeConfigEnabled("diagnostics.classic_trace")) {
+        uint64_t hash = UINT64_C(14695981039346656037);
+        for (int i = 0; i < s_vertexCount; ++i) {
+            const unsigned char *xy = (const unsigned char *)&s_vertices[i].x;
+            for (size_t byte = 0; byte < 2 * sizeof(float); ++byte)
+                hash = (hash ^ xy[byte]) * UINT64_C(1099511628211);
+        }
+        fprintf(stderr, "classic-frame frame=%u t=%.4f packets=%d matched=%d vertices=%d spans=%d xy_hash=%016llx\n",
+                snapshot->frameCounter, s_classicFraction, snapshot->packetCount,
+                ClassicMotionMatchCount(), s_vertexCount, s_spanCount,
+                (unsigned long long)hash);
+    }
+}
+
 static void ModernBuildOverlayFrame(const RageSceneSnapshot *snapshot) {
+
     Modern2DState state2d;
     int i;
 
@@ -1090,6 +1155,7 @@ static void ModernBuildOverlayFrame(const RageSceneSnapshot *snapshot) {
      * required because far terrain shares the same OT buckets. */
     for (i = 0; i < snapshot->packetCount; i++) {
         const RageCapturePacket *packet = &snapshot->packets[i];
+        if (packet->flags & RAGE_CAPTURE_PACKET_3D) continue;
         uint32_t command = packet->words[0] >> 24;
         if (packet->table != 0) continue;
         if ((packet->flags & RAGE_CAPTURE_PACKET_SKY) != 0) {
@@ -1111,6 +1177,7 @@ static void ModernBuildOverlayFrame(const RageSceneSnapshot *snapshot) {
     s_currentLayer = MODERN_LAYER_MIRROR_FOREGROUND;
     for (i = 0; i < snapshot->packetCount; i++) {
         const RageCapturePacket *packet = &snapshot->packets[i];
+        if (packet->flags & RAGE_CAPTURE_PACKET_3D) continue;
         uint32_t command = packet->words[0] >> 24;
         if (packet->table != 1) continue;
         if (command < 0xE0u &&
@@ -1254,7 +1321,7 @@ static int ModernCompareProfileInterval(const void *a, const void *b) {
 }
 
 void ModernFrameTexturesReady(void) {
-    if (!s_enabled || !s_device || !s_resourcesReady) return;
+    if (!ModernPresentationActive() || !s_device || !s_resourcesReady) return;
     const RageSceneSnapshot *snapshot = CapturePrevious();
     if (!snapshot->faceCount ||
         (snapshot->displayHeight && snapshot->displayHeight != 240)) return;
@@ -1284,7 +1351,7 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
     int i;
     vram = ModernVramSnapshotForFrame(
         &s_sampledVram, snapshot->frameCounter,
-        ModernNativeGpuTextureRevision(), ModernAssetsGeneration(),
+        s_enabled ? ModernNativeGpuTextureRevision() : TrackAssetIdentityRevision(), ModernAssetsGeneration(),
         ModernCaptureVramSnapshot, NULL);
     if (vram == NULL) return 0;
     if (profile < 0) {
@@ -1292,7 +1359,8 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
         profileTrace = RuntimeConfigEnabled("diagnostics.performance_trace");
     }
     if (profile) profileStart = SDL_GetTicksNS();
-    ModernBuildOverlayFrame(snapshot);
+    if (s_enabled) ModernBuildOverlayFrame(snapshot);
+    else ClassicBuildFrame(snapshot);
     if (profile) profileBuilt = SDL_GetTicksNS();
     cmd = SDL_AcquireGPUCommandBuffer(s_device);
     if (cmd == NULL) return 0;
@@ -1322,7 +1390,7 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
         }
         SDL_EndGPUCopyPass(copy);
     }
-    {
+    if (s_enabled) {
         static uint64_t reportedIncompleteFrame = UINT64_MAX;
         ModernRenderOverlaySelection(cmd, vram, 0,
                                      1u << MODERN_LAYER_SKY, 1);
@@ -1347,8 +1415,11 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
             ModernRenderOverlaySelection(
                 cmd, vram, 1, 1u << MODERN_LAYER_MIRROR_FOREGROUND, 0);
     }
+    if (!s_enabled)
+        ModernRenderOverlaySelection(cmd, vram, 0, 1u << MODERN_LAYER_HUD, 1);
     {
         SDL_GPUTexture *chain = s_target;
+
         if (s_config.modernPost != RAGE_MODERN_POST_NONE &&
             s_pipePost != NULL && s_postTarget != NULL) {
             SDL_GPUTexture *sources[1];
@@ -1412,6 +1483,17 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
         submitted = 0;
         fprintf(stderr, "rage-port: injected modern submit failure frame=%u\n",
                 snapshot->frameCounter);
+    } else if (s_presentOffscreen) {
+        /* SDL Vulkan normally retires completed command buffers during a
+         * swapchain submission. With a claimed window but no swapchain work
+         * (offline captures), that cleanup never runs. Explicitly retire the
+         * fence so cycled vertex/VRAM allocations cannot grow every frame. */
+        SDL_GPUFence *fence = SDL_SubmitGPUCommandBufferAndAcquireFence(cmd);
+        submitted = fence != NULL;
+        if (fence != NULL) {
+            submitted = SDL_WaitForGPUFences(s_device, true, &fence, 1);
+            SDL_ReleaseGPUFence(s_device, fence);
+        }
     } else {
         submitted = SDL_SubmitGPUCommandBuffer(cmd);
     }
@@ -1421,9 +1503,17 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
         ModernDestroyResources();
         return 0;
     }
-    ModernNativeGpuSubmitted();
+    if (s_enabled) ModernNativeGpuSubmitted();
     if (profile) {
         Uint64 finished = SDL_GetTicksNS();
+        static int frameTiming = -1;
+        if (frameTiming < 0)
+            frameTiming = RuntimeConfigEnabled("diagnostics.frame_timing");
+        if (frameTiming)
+            fprintf(stderr, "benchmark-frame frame=%u scene=%d point=%d end_ns=%llu window_flags=%llx\n",
+                    snapshot->frameCounter, snapshot->sceneId,
+                    g_PlayerCar.trackPointIndex, (unsigned long long)finished,
+                    (unsigned long long)(s_window ? SDL_GetWindowFlags(s_window) : 0));
         if (!profileWindowStart) {
             PsyzVideoStats initialStats = {0};
             Psyz_VideoStats(&initialStats);
@@ -1460,11 +1550,11 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
             qsort(profileIntervals, 120, sizeof(profileIntervals[0]),
                   ModernCompareProfileInterval);
             fprintf(stderr,
-                    "modern-profile frames=%u build_ms=%.3f submit_ms=%.3f "
+                    "%s-profile frames=%u build_ms=%.3f submit_ms=%.3f "
                     "faces=%.0f vertices=%.0f spans=%.0f "
                     "render_fps=%.2f interval_p95_ms=%.3f interval_max_ms=%.3f "
                     "queued_fps=%.2f prepare_ms=%.3f\n",
-                    profileFrames,
+                    s_enabled ? "modern" : "classic", profileFrames,
                     (double)profileBuildNs / profileFrames / 1000000.0,
                     (double)profileSubmitNs / profileFrames / 1000000.0,
                     (double)profileFaces / profileFrames,
@@ -1527,6 +1617,9 @@ static RageModernDiagnosticFrame ModernDiagnosticFrame(void) {
  * RAGE_PORT_MODERN_DUMP names a path and RAGE_PORT_MODERN_DUMP_FRAME (if
  * set) matches the captured frame counter. */
 static void ModernMaybeDump(const RageSceneSnapshot *snapshot) {
+    if (!s_enabled && s_config.modernFps != RAGE_MODERN_FPS_LOGIC &&
+        s_classicFraction < 0.5f &&
+        RuntimeConfigEnabled("diagnostics.classic_dump_midpoint")) return;
     RageModernDiagnosticFrame frame = ModernDiagnosticFrame();
     ModernDiagnosticsMaybeDump(snapshot, &frame);
 }
@@ -1565,6 +1658,11 @@ static void ModernOverlayInit(SDL_Window *window, SDL_GPUDevice *device) {
     if (s_prev_overlay_init) {
         s_prev_overlay_init(window, device);
     }
+}
+
+static int ModernWindowOccluded(void) {
+    return s_window && (SDL_GetWindowFlags(s_window) &
+        (SDL_WINDOW_OCCLUDED | SDL_WINDOW_MINIMIZED)) != 0;
 }
 
 static void ModernPresentSource(PsyzPresentSourceInfo *info) {
@@ -1640,8 +1738,34 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
         }
         markWasDown = markDown;
     }
-    if (!s_enabled || s_device == NULL) return;
+    if (!ModernPresentationActive() || s_device == NULL) return;
     info->sync_to_display = s_config.modernFps == RAGE_MODERN_FPS_VSYNC;
+    int occluded = ModernWindowOccluded();
+    if (s_profileTiming) {
+        static int previousOccluded = -1;
+        if (occluded != previousOccluded) {
+            fprintf(stderr, "presentation-window frame=%u occluded=%d\n",
+                    CaptureCurrent()->frameCounter, occluded);
+            previousOccluded = occluded;
+        }
+    }
+    /* Metal's nominally nonblocking swapchain acquire can still wait in
+     * nextDrawable for an occluded window. Keep simulation/input ticking;
+     * no display work is useful until the window is visible again. Explicit
+     * offline screenshot diagnostics may still render, but never swap. */
+    s_presentOffscreen = occluded ||
+        (RuntimeConfigGet("diagnostics.modern_dump") != NULL &&
+         RuntimeConfigEnabled("diagnostics.modern_dump_offscreen"));
+    if (s_presentOffscreen)
+        info->skip_present = true;
+    /* Skipping swaps also removes the compatibility renderer's queue
+     * backpressure. Bound its work even in title/480-line scenes, which
+     * return below before the native offscreen submission fence is used. */
+    if (s_presentOffscreen) SDL_WaitForGPUIdle(s_device);
+    if (occluded && RuntimeConfigGet("diagnostics.modern_dump") == NULL) {
+        /* The compat GPU still submits each logic frame while hidden. */
+        return;
+    }
     fpsMode = s_config.modernFps != RAGE_MODERN_FPS_LOGIC;
     /* Both modes render the PREVIOUS logic frame - the one compat is
      * presenting during this tick; fps mode moves its transforms toward
@@ -1668,7 +1792,11 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
         memset(&s_presentPacer, 0, sizeof(s_presentPacer));
         return;
     }
-    if (!ModernEnsureResources()) return;
+    /* A renderer toggle can expose the last modern-only capture. Wait for a
+     * complete classic stream instead of displaying its HUD without geometry. */
+    if (!s_enabled && CaptureClassicSources(snapshot) == NULL) return;
+    if (!ModernEnsureResources()) { info->skip_present = true; return; }
+
     if (fpsMode) {
         const RageSceneSnapshot *target = CaptureCurrent();
         Uint64 now = SDL_GetTicksNS();
@@ -1697,9 +1825,14 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
             t = fraction >= 1.0 ? 1.0f : (float)fraction;
         }
         Uint64 prepareStart = s_profileTiming ? SDL_GetTicksNS() : 0;
-        ModernNativeGpuPrepare(
-            ModernSkyOnlyWorld(GameRenderWorldPresentation(t)),
-            (float)s_targetW / (float)s_targetH);
+        if (s_enabled) {
+            ModernNativeGpuPrepare(
+                ModernSkyOnlyWorld(GameRenderWorldPresentation(t)),
+                (float)s_targetW / (float)s_targetH);
+        } else {
+            s_classicFraction = t;
+            s_classicSkyWorld = GameRenderWorldPresentation(t);
+        }
         if (s_profileTiming) s_profilePrepareNs = SDL_GetTicksNS() - prepareStart;
         if (!ModernRender(snapshot)) {
             info->skip_present = true;
@@ -1711,8 +1844,13 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
         const RageRenderWorld *world = GameRenderWorldPrevious();
         if (world == NULL) world = GameRenderWorldCurrent();
         Uint64 prepareStart = s_profileTiming ? SDL_GetTicksNS() : 0;
-        ModernNativeGpuPrepare(ModernSkyOnlyWorld(world),
-                               (float)s_targetW / (float)s_targetH);
+        if (s_enabled)
+            ModernNativeGpuPrepare(ModernSkyOnlyWorld(world),
+                                   (float)s_targetW / (float)s_targetH);
+        else {
+            s_classicFraction = 0.0f;
+            s_classicSkyWorld = NULL;
+        }
         if (s_profileTiming) s_profilePrepareNs = SDL_GetTicksNS() - prepareStart;
         if (!ModernRender(snapshot)) {
             info->skip_present = true;
@@ -1741,16 +1879,36 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
  * present every VBlank. Calling the platform present directly skips the
  * BIOS pad refresh, so input edge semantics are untouched. */
 void ModernFrameWaitTick(int frameLimit) {
-    if (!s_enabled || s_device == NULL) return;
+    if (!ModernPresentationActive() || s_device == NULL) return;
     /* A short bounded sleep yields the CPU without tying emulated VBlank
      * to the monitor. The caller rechecks its original logic deadline. */
     SDL_DelayNS(100000u);
     if (s_config.modernFps == RAGE_MODERN_FPS_LOGIC) return;
+    if (ModernWindowOccluded() &&
+        RuntimeConfigGet("diagnostics.modern_dump") == NULL) return;
     if (frameLimit < 0x180) return;
     if (CaptureCurrent()->faceCount == 0) return;
     if (!ModernFrameDue(&s_presentPacer, SDL_GetTicksNS(),
                          ModernPresentationInterval())) return;
+    Uint64 presentStart = s_profileTiming ? SDL_GetTicksNS() : 0;
+    SDL_WindowFlags flagsBefore = s_profileTiming && s_window
+        ? SDL_GetWindowFlags(s_window) : 0;
     Psyz_VideoPresentIntermediate();
+    if (s_profileTiming) {
+        Uint64 elapsed = SDL_GetTicksNS() - presentStart;
+        if (elapsed > 20000000u) {
+            PsyzVideoStats stats = {0};
+            Psyz_VideoStats(&stats);
+            fprintf(stderr, "presentation-stall frame=%u point=%d total_ms=%.3f "
+                    "platform_frame_ms=%.3f platform_draw_ms=%.3f "
+                    "window_before=%llx window_after=%llx\n",
+                    CaptureCurrent()->frameCounter, g_PlayerCar.trackPointIndex,
+                    elapsed / 1000000.0, stats.last_frame_time_us / 1000.0,
+                    stats.last_draw_time_us / 1000.0,
+                    (unsigned long long)flagsBefore,
+                    (unsigned long long)(s_window ? SDL_GetWindowFlags(s_window) : 0));
+        }
+    }
 }
 
 int ModernInit(const RagePortConfig *config) {
@@ -1765,6 +1923,8 @@ int ModernInit(const RagePortConfig *config) {
     }
     s_shutdownNeeded = 1;
     s_config = *config;
+    const char *classic = RuntimeConfigGet("video.classic_enhancements");
+    s_classicEnhancements = classic == NULL || RuntimeConfigEnabled("video.classic_enhancements");
     s_profileTiming = RuntimeConfigEnabled("diagnostics.performance");
     s_skyOnlyDiagnostic = RuntimeConfigEnabled("diagnostics.sky_only");
     if (config->renderer == RAGE_RENDERER_MODERN && !ModernAssetsInit()) {
@@ -1831,6 +1991,10 @@ void ModernShutdown(void) {
                 ModernAssetsReady(), ModernAssetsCachedMeshCount());
 }
 
+int ModernPresentationActive(void) {
+    return s_initialized && (s_enabled || s_classicEnhancements);
+}
+
 int ModernIsEnabled(void) {
     return s_enabled;
 }
@@ -1844,7 +2008,9 @@ void ModernToggle(void) {
         return;
     }
     s_enabled = !s_enabled;
-    if (!s_enabled) {
+    s_config.renderer = s_enabled ? RAGE_RENDERER_MODERN : RAGE_RENDERER_CLASSIC;
+    PortConfigSetActive(&s_config);
+    {
         /* The outgoing texture may still be queued for presentation.  Vulkan
          * drivers are less forgiving than the software backends about
          * releasing it here, which showed up as a corrupted transition frame. */
@@ -1852,6 +2018,7 @@ void ModernToggle(void) {
         ModernDestroyResources();
     }
     s_lastRenderedFrame = 0xFFFFFFFFu;
+    memset(&s_presentPacer, 0, sizeof(s_presentPacer));
     fprintf(stderr, "rage-port: renderer switched to %s\n",
             s_enabled ? "modern" : "classic");
 }
@@ -1862,7 +2029,7 @@ void ModernToggle(void) {
  * cannot be looked at, which is the only way to tell whether the geometry it
  * draws is right. */
 int ModernCaptureFrame(const char *path) {
-    if (!s_enabled || !s_resourcesReady || s_device == NULL || path == NULL ||
+    if (!ModernPresentationActive() || !s_resourcesReady || s_device == NULL || path == NULL ||
         path[0] == '\0') {
         return 0;
     }
@@ -1871,7 +2038,7 @@ int ModernCaptureFrame(const char *path) {
 }
 
 int ModernCullMarginX(void) {
-    if (!s_enabled || s_config.modernAspect != RAGE_MODERN_ASPECT_16_9) {
+    if (!ModernPresentationActive() || s_config.modernAspect != RAGE_MODERN_ASPECT_16_9) {
         return 0;
     }
     /* Half the widened logical width, rounded up: 320*(16/9)/(4/3) adds

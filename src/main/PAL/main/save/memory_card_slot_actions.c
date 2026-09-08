@@ -17,7 +17,12 @@ enum {
 };
 
 static int CardStatusSettledAfterIo(void) {
-    if (PollMemoryCardStatus(0, 0) != MC_MENU_STATE_READY) {
+    s32 status = PollMemoryCardStatus(0, 0);
+    /* The asynchronous driver reports pending between completed probes.
+     * Pending is not evidence that the card disappeared: resetting here
+     * prevents four successful probes from ever accumulating. */
+    if (status == MC_CARD_RESULT_PENDING) return 0;
+    if (status != MC_MENU_STATE_READY) {
         g_McSettleTicks = 0;
         return 0;
     }
