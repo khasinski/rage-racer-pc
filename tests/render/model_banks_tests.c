@@ -9,6 +9,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* This target exercises the retail model-bank layout. */
+int CarCatalogUnlockClass(int modelIndex, int grade, int fallback) {
+    (void)modelIndex;
+    (void)grade;
+    return fallback;
+}
+
 GameRenderState g_RenderState;
 NativeModelBank g_ModelBanks[GAME_MODEL_BANK_LIMIT];
 NativeCourseModel g_NativeCourseModels[GAME_COURSE_MODEL_LIMIT];

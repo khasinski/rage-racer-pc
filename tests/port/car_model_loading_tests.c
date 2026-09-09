@@ -29,6 +29,21 @@ CarImageData *g_CarImageSlots[CAR_ASSET_SLOT_COUNT];
 CarModelAsset *g_CarModelAsset;
 const TeamLogoSample *g_TeamLogoSampleData;
 
+/* Catalog overrides are covered by port_car_catalog_tests.  Keep this loader
+ * test focused on the retail model-bank path. */
+void CarCatalogApplyModelAvailability(int modelIndex, int grade,
+                                      CarModelAsset *asset) {
+    (void)modelIndex;
+    (void)grade;
+    (void)asset;
+}
+
+int CarCatalogUnlockClass(int modelIndex, int grade, int fallback) {
+    (void)modelIndex;
+    (void)grade;
+    return fallback;
+}
+
 static s32 s_loadResult;
 static s32 s_loadAssetId;
 static void *s_loadDestination;

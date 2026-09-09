@@ -463,6 +463,7 @@ add_executable(model_banks_tests
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/init_render_state.c)
 target_include_directories(model_banks_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/src/port
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
     ${CMAKE_SOURCE_DIR}/include)
 target_compile_definitions(model_banks_tests PRIVATE __psyz=1)
