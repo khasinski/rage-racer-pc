@@ -214,7 +214,11 @@ int CarCatalogParse(const char *text, RageCarCatalog *catalog,
         equals = strchr(line, '=');
         if (entry == NULL || equals == NULL) { free(copy); return Fail(error,errorSize,"invalid catalog line"); }
         *equals = '\0'; key = Trim(line); value = Trim(equals + 1);
-        if (!SetEntryValue(entry, key, value)) { free(copy); return Fail(error,errorSize,"invalid value for %s", key); }
+        if (!SetEntryValue(entry, key, value)) {
+            Fail(error, errorSize, "invalid value for %s", key);
+            free(copy);
+            return 0;
+        }
     }
     free(copy);
     return CarCatalogValidate(catalog, error, errorSize);
