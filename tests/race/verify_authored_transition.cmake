@@ -6,6 +6,17 @@ if(NOT DEFINED CAR)
     set(RIVAL_ASSET 96)
 endif()
 set(sandbox "${EVIDENCE}/transition-test-${CAR}")
+set(disc "$ENV{RAGE_PORT_DISC_IMAGE}")
+if(disc STREQUAL "")
+    set(disc "$ENV{RAGE_PORT_DISC_CUE}")
+endif()
+if(disc STREQUAL "")
+    set(disc "${SOURCE}/disc/PAL/Rage Racer (Europe)/Rage Racer (Europe).cue")
+endif()
+if(NOT EXISTS "${disc}" OR IS_DIRECTORY "${disc}")
+    message("SKIP: no disc image for authored transition")
+    return()
+endif()
 if(NOT DEFINED GRID)
     set(GRID 2,2,2,2,2,2,2,2,2,2,2)
 endif()
@@ -17,6 +28,7 @@ if(DEFINED VARIANT)
     list(APPEND variant_args --set "race.variant=${VARIANT}")
 endif()
 execute_process(COMMAND "${sandbox}/${name}" --scenario "${SOURCE}/race-scenario.ini"
+    --set "disc.image=${disc}"
     --set "race.class=${CLASS}" --set "race.car=${CAR}" --set "race.grid=${GRID}"
     ${variant_args}
     --set race.after_finish=repeat --set run.frames=3500
