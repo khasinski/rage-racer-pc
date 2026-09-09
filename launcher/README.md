@@ -65,21 +65,25 @@ The workflow must run successfully before claiming verification on those hosts.
   the disc and exports RAGE.BIN; the compiled extractor prepares the asset
   library. Completion checks every extracted entry against the manifest. Failed
   or canceled imports cannot replace the previous working selection.
-- Settings, save editing, mods and assets remain locked without a prepared,
+- Settings, mods and assets remain locked without a prepared,
   available game image. Paths and settings are persisted in Electron user data.
+- The [integrated save editor](SAVE_EDITOR.md) works without a game image. It
+  also creates fresh saves for all three regions. Its C library and regression
+  tests belong to the root CMake project; the separate SDL/ImGui app is retired.
 - A compact Play screen launches the actual game with the modern renderer.
   Native meshes/textures are generated automatically by the existing runtime C
   importer. There is no classic fallback and no separate player conversion step.
 - Settings use the real INI names/ranges behind readable labels. The managed
   configuration preserves other keys/comments. Car names and prologue are
   forced from the detected disc region and are not user-selectable.
-- Save discovery, individual files and raw/DexDrive cards use the existing save
-  editor library. The integrated form edits team names, progression, garages,
+- Save discovery, individual files and raw/DexDrive cards use the shared C save
+  library. The integrated form edits team names, progression, garages,
   times, controller and audio fields. It writes a separate copy and refreshes
   checksums. Segmented time fields also accept a full `01:40.765` paste into any
   segment; invalid full times leave all segments unchanged. Unknown data is
   retained. Record driver names and cars are editable;
-  garage labels and car choices follow the loaded disc region. Transmission and
+  garage labels and car choices follow the save region, with the loaded disc as
+  a fallback for an unknown filename. Transmission and
   ownership use named choices, retaining unknown existing values until edited.
   Team logos have a 64×64 pixel editor, 16-color palette, transparency flag,
   eyedropper, stroke undo and keyboard painting. The C library owns pixel packing

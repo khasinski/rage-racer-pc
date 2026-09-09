@@ -9,6 +9,8 @@
 
 #include "input_config.h"
 #include "content_options.h"
+#include "car_catalog.h"
+#include "car_catalog_profile.h"
 #include "diagnostic_log.h"
 #include "host_storage.h"
 #include "host_disc.h"
@@ -70,6 +72,8 @@ int main(int argc, char **argv) {
     ArchiveDumpResult archiveDumpResult;
     int inputIndex;
     char logPath[PATH_MAX];
+    char carCatalogPath[PATH_MAX];
+    char carCatalogError[256];
 
     if (!RuntimeConfigInit(argc, argv)) return EXIT_FAILURE;
     if (!DiagnosticLogOpen(logPath, sizeof(logPath))) {
@@ -124,6 +128,16 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
     ContentOptionsApply();
+    if (!CarCatalogPrepareProfile(argc > 0 ? argv[0] : NULL,
+                                  HostDiscRegion(), carCatalogPath,
+                                  sizeof(carCatalogPath)) ||
+        !CarCatalogLoadFile(carCatalogPath, carCatalogError,
+                            sizeof(carCatalogError))) {
+        fprintf(stderr, "rage-port: invalid car catalog: %s\n",
+                carCatalogError[0] != '\0' ? carCatalogError : "cannot copy profile");
+        return EXIT_FAILURE;
+    }
+    CarCatalogApplyMetadata();
     MainLoop();
     Psyz_AudioDestroy();
     ModernShutdown();

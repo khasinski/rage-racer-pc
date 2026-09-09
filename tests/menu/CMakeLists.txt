@@ -340,16 +340,12 @@ if(TARGET rage-host-state)
     set_tests_properties(car_prices PROPERTIES LABELS functional)
 endif()
 
-if(RAGE_RUBY_EXECUTABLE)
 add_test(
     NAME native_ui_script_layout
-    COMMAND ruby
-        ${CMAKE_CURRENT_SOURCE_DIR}/verify_native_ui_script_layout.rb
-        ${CMAKE_SOURCE_DIR}
+    COMMAND source_contract_tests native_ui_script_layout ${CMAKE_SOURCE_DIR}
 )
 
 set_tests_properties(native_ui_script_layout PROPERTIES LABELS functional)
-endif()
 
 if(TARGET rage-host-state)
     add_executable(menu_mode_init_tests
@@ -1624,20 +1620,19 @@ endif()
 if(TARGET rage-racer-smoke)
     add_test(
         NAME menu_sweep
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_menu_sweep.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DSOURCE=${CMAKE_SOURCE_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_menu_sweep.cmake
     )
 set_tests_properties(menu_sweep PROPERTIES LABELS e2e)
     set_tests_properties(menu_sweep PROPERTIES TIMEOUT 225)
 
     add_test(
         NAME trophy_view
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_trophy_view.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DCHECK=$<TARGET_FILE:ppm_capture_check> -DSOURCE=${CMAKE_SOURCE_DIR}
+            -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_trophy_view.cmake
     )
 set_tests_properties(trophy_view PROPERTIES LABELS e2e)
     set_tests_properties(trophy_view PROPERTIES TIMEOUT 165)

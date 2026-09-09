@@ -1,6 +1,7 @@
 #include "game/asset.h"
 #include "game/asset_internal.h"
 #include "game/car.h"
+#include "car_catalog.h"
 #include "game/audio.h"
 
 enum {
@@ -129,6 +130,9 @@ static void LoadInitialCarSelectModel(void) {
 
     loadedSize = LoadAsset(assetIndex, g_CarModelBuffer);
     if (AssetLoadDidNotComplete(loadedSize)) return;
+
+    CarCatalogApplyModelAvailability(carIndex, g_CarTable[carIndex].modelVariant,
+        GetCarModelAsset(g_CarModelBuffer));
 
     if (!InstallCarModelAsset(GetCarModelAsset(g_CarModelBuffer),
                               (size_t)loadedSize, 0, carIndex)) {

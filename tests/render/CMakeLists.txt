@@ -606,9 +606,99 @@ target_include_directories(modern_frame_pacer_tests PRIVATE
 add_test(NAME modern_frame_pacer COMMAND modern_frame_pacer_tests)
 set_tests_properties(modern_frame_pacer PROPERTIES LABELS unit)
 
-add_executable(modern_sky_geometry_tests modern_sky_geometry_tests.c)
-target_include_directories(modern_sky_geometry_tests PRIVATE
+add_executable(modern_presentation_clock_tests
+    modern_presentation_clock_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/modern/modern_presentation_clock.c)
+target_include_directories(modern_presentation_clock_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/modern)
+if(MSVC)
+    target_compile_options(modern_presentation_clock_tests PRIVATE /W4 /WX)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(modern_presentation_clock_tests PRIVATE
+        ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
+add_test(NAME modern_presentation_clock COMMAND modern_presentation_clock_tests)
+set_tests_properties(modern_presentation_clock PROPERTIES LABELS unit)
+
+add_executable(modern_prepared_materials_tests
+    modern_prepared_materials_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/modern/modern_prepared_materials.c)
+target_include_directories(modern_prepared_materials_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/port/modern)
+target_link_libraries(modern_prepared_materials_tests PRIVATE SDL3::SDL3)
+if(MSVC)
+    target_compile_options(modern_prepared_materials_tests PRIVATE /W4 /WX)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(modern_prepared_materials_tests PRIVATE
+        ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
+add_test(NAME modern_prepared_materials COMMAND modern_prepared_materials_tests)
+set_tests_properties(modern_prepared_materials PROPERTIES LABELS unit)
+
+add_executable(modern_prepared_meshes_tests
+    modern_prepared_meshes_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/modern/modern_prepared_meshes.c)
+target_include_directories(modern_prepared_meshes_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/port/modern)
+target_link_libraries(modern_prepared_meshes_tests PRIVATE SDL3::SDL3)
+if(MSVC)
+    target_compile_options(modern_prepared_meshes_tests PRIVATE /W4 /WX)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(modern_prepared_meshes_tests PRIVATE
+        ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
+add_test(NAME modern_prepared_meshes COMMAND modern_prepared_meshes_tests)
+set_tests_properties(modern_prepared_meshes PROPERTIES LABELS unit)
+
+add_executable(modern_texture_index_tests
+    modern_texture_index_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/modern/modern_texture_index.c)
+target_include_directories(modern_texture_index_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/port/modern)
+if(MSVC)
+    target_compile_options(modern_texture_index_tests PRIVATE /W4 /WX)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(modern_texture_index_tests PRIVATE
+        ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
+add_test(NAME modern_texture_index COMMAND modern_texture_index_tests)
+set_tests_properties(modern_texture_index PROPERTIES LABELS unit)
+
+add_executable(modern_overlay_state_tests
+    modern_overlay_state_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/modern/modern_overlay_state.c)
+target_include_directories(modern_overlay_state_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/modern)
+target_link_libraries(modern_overlay_state_tests PRIVATE SDL3::SDL3)
+if(MSVC)
+    target_compile_options(modern_overlay_state_tests PRIVATE /W4 /WX)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(modern_overlay_state_tests PRIVATE
+        ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
+add_test(NAME modern_overlay_state COMMAND modern_overlay_state_tests)
+set_tests_properties(modern_overlay_state PROPERTIES LABELS unit)
+
+add_executable(modern_overlay_batches_tests
+    modern_overlay_batches_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/modern/modern_overlay_state.c
+    ${CMAKE_SOURCE_DIR}/src/port/modern/modern_overlay_batches.c)
+target_include_directories(modern_overlay_batches_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/modern)
+target_link_libraries(modern_overlay_batches_tests PRIVATE SDL3::SDL3)
+if(MSVC)
+    target_compile_options(modern_overlay_batches_tests PRIVATE /W4 /WX)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(modern_overlay_batches_tests PRIVATE
+        ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
+add_test(NAME modern_overlay_batches COMMAND modern_overlay_batches_tests)
+set_tests_properties(modern_overlay_batches PROPERTIES LABELS unit)
+
+add_executable(modern_sky_geometry_tests modern_sky_geometry_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/modern/modern_sky_reprojection.c)
+target_include_directories(modern_sky_geometry_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/port/modern)
 if(NOT MSVC)
     target_link_libraries(modern_sky_geometry_tests PRIVATE m)
 endif()
@@ -1056,6 +1146,10 @@ add_test(NAME native_sky_projection
     COMMAND source_contract_tests native_sky_projection ${CMAKE_SOURCE_DIR})
 
 set_tests_properties(native_sky_projection PROPERTIES LABELS functional)
+
+add_test(NAME asset_preparation
+    COMMAND source_contract_tests asset_preparation ${CMAKE_SOURCE_DIR})
+set_tests_properties(asset_preparation PROPERTIES LABELS unit)
 add_executable(render_view_transform_tests render_view_transform_tests.c)
 target_link_libraries(render_view_transform_tests PRIVATE rage-render-world)
 if(NOT MSVC)
@@ -1196,35 +1290,21 @@ endif()
 add_test(NAME gte_matrix COMMAND gte_matrix_tests)
 set_tests_properties(gte_matrix PROPERTIES LABELS unit)
 
-if(RAGE_RUBY_EXECUTABLE)
 add_test(
     NAME native_frame_offsets
-    COMMAND ruby
-        ${CMAKE_CURRENT_SOURCE_DIR}/verify_native_frame_offsets.rb
-        ${CMAKE_SOURCE_DIR}
+    COMMAND source_contract_tests native_frame_offsets ${CMAKE_SOURCE_DIR}
 )
-
 set_tests_properties(native_frame_offsets PROPERTIES LABELS functional)
 add_test(
     NAME frame_environment_aliases
-    COMMAND ruby
-        ${CMAKE_CURRENT_SOURCE_DIR}/verify_frame_environment_aliases.rb
-        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/display_setup.c
-        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/mirror_pass.c
-        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/tachometer_needle.c
-        ${RAGE_HOST_STATE_SOURCES}
+    COMMAND source_contract_tests frame_environment_aliases ${CMAKE_SOURCE_DIR}
 )
-
 set_tests_properties(frame_environment_aliases PROPERTIES LABELS functional)
 add_test(
     NAME capture_sync
-    COMMAND ruby
-        ${CMAKE_CURRENT_SOURCE_DIR}/verify_capture_sync.rb
-        ${CMAKE_SOURCE_DIR}/src/port/main_smoke.c
+    COMMAND source_contract_tests capture_sync ${CMAKE_SOURCE_DIR}
 )
-
 set_tests_properties(capture_sync PROPERTIES LABELS functional)
-endif()
 
 add_executable(display_setup_tests
     display_setup_tests.c
@@ -1665,72 +1745,72 @@ set_tests_properties(proportional_text PROPERTIES LABELS unit)
 if(TARGET rage-racer-smoke)
     add_test(
         NAME boot_frame
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_boot_frame.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND}
+            -DGAME=$<TARGET_FILE:rage-racer-smoke> -DCHECK=$<TARGET_FILE:ppm_capture_check>
+            -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_boot_frame.cmake
     )
 set_tests_properties(boot_frame PROPERTIES LABELS e2e)
     set_tests_properties(boot_frame PROPERTIES TIMEOUT 60)
     add_test(
         NAME title_page_stability
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_title_page_stability.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND}
+            -DGAME=$<TARGET_FILE:rage-racer-smoke> -DCHECK=$<TARGET_FILE:ppm_capture_check>
+            -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_title_page_stability.cmake
     )
 set_tests_properties(title_page_stability PROPERTIES LABELS e2e)
     set_tests_properties(title_page_stability PROPERTIES TIMEOUT 60)
-    add_test(NAME mirrored_track COMMAND python3
-        ${CMAKE_CURRENT_SOURCE_DIR}/verify_mirrored_track.py
-        $<TARGET_FILE:rage-racer-smoke> ${CMAKE_SOURCE_DIR})
+    add_test(NAME mirrored_track COMMAND ${CMAKE_COMMAND}
+        -DGAME=$<TARGET_FILE:rage-racer-smoke> -DSOURCE=${CMAKE_SOURCE_DIR}
+        -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_mirrored_track.cmake)
 set_tests_properties(mirrored_track PROPERTIES LABELS e2e)
     set_tests_properties(mirrored_track PROPERTIES TIMEOUT 360)
     add_test(
         NAME prologue_frame
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_prologue_frame.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DCHECK=$<TARGET_FILE:ppm_capture_check> -DSOURCE=${CMAKE_SOURCE_DIR}
+            -DOUTPUT_ROOT=${CMAKE_BINARY_DIR} -DSTYLE=international
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_prologue_frame.cmake
     )
 set_tests_properties(prologue_frame PROPERTIES LABELS e2e)
     set_tests_properties(prologue_frame PROPERTIES TIMEOUT 90)
     add_test(
         NAME japanese_prologue_frame
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_prologue_frame.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
-            japanese
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DCHECK=$<TARGET_FILE:ppm_capture_check> -DSOURCE=${CMAKE_SOURCE_DIR}
+            -DOUTPUT_ROOT=${CMAKE_BINARY_DIR} -DSTYLE=japanese
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_prologue_frame.cmake
     )
 set_tests_properties(japanese_prologue_frame PROPERTIES LABELS e2e)
     set_tests_properties(japanese_prologue_frame PROPERTIES TIMEOUT 90)
 
     add_test(
         NAME scene_capture
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_scene_capture.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DCHECK=$<TARGET_FILE:scene_capture_check> -DSOURCE=${CMAKE_SOURCE_DIR}
+            -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_scene_capture.cmake
     )
 set_tests_properties(scene_capture PROPERTIES LABELS e2e)
     set_tests_properties(scene_capture PROPERTIES TIMEOUT 360)
     add_test(
         NAME modern_feature_frames
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_modern_feature_frames.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DCHECK=$<TARGET_FILE:ppm_capture_check> -DSOURCE=${CMAKE_SOURCE_DIR}
+            -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_modern_feature_frames.cmake
     )
 set_tests_properties(modern_feature_frames PROPERTIES LABELS e2e)
     set_tests_properties(modern_feature_frames PROPERTIES TIMEOUT 360)
 
     add_test(
         NAME pegase_cabin
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_pegase_cabin.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND}
+            -DGAME=$<TARGET_FILE:rage-racer-smoke> -DCHECK=$<TARGET_FILE:ppm_capture_check>
+            -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_pegase_cabin.cmake
     )
 set_tests_properties(pegase_cabin PROPERTIES LABELS e2e)
     set_tests_properties(pegase_cabin PROPERTIES TIMEOUT 180)
@@ -1740,46 +1820,75 @@ set_tests_properties(pegase_cabin PROPERTIES LABELS e2e)
     # drawn at all.
     add_test(
         NAME sky_frames
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_sky_frames.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DCHECK=$<TARGET_FILE:ppm_capture_check> -DSOURCE=${CMAKE_SOURCE_DIR}
+            -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_sky_frames.cmake
     )
 set_tests_properties(sky_frames PROPERTIES LABELS e2e)
     set_tests_properties(sky_frames PROPERTIES TIMEOUT 600)
 
     add_test(
         NAME grand_prix_terrain_frame
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_grand_prix_terrain_frame.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DCHECK=$<TARGET_FILE:ppm_capture_check> -DSOURCE=${CMAKE_SOURCE_DIR}
+            -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_grand_prix_terrain_frame.cmake
     )
 set_tests_properties(grand_prix_terrain_frame PROPERTIES LABELS e2e)
     set_tests_properties(grand_prix_terrain_frame PROPERTIES TIMEOUT 120)
 
-    if(RAGE_RUBY_EXECUTABLE)
-        add_test(
-            NAME mirror_entry
-            COMMAND ${RAGE_RUBY_EXECUTABLE}
-                ${CMAKE_CURRENT_SOURCE_DIR}/verify_mirror_entry.rb
-                $<TARGET_FILE:rage-racer-smoke>
-                ${CMAKE_SOURCE_DIR}
-        )
-        set_tests_properties(mirror_entry PROPERTIES LABELS e2e TIMEOUT 150)
-    endif()
+    add_test(NAME mirror_entry COMMAND ${CMAKE_COMMAND}
+        -DGAME=$<TARGET_FILE:rage-racer-smoke> -DCHECK=$<TARGET_FILE:mirror_entry_check>
+        -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_mirror_entry.cmake)
+    set_tests_properties(mirror_entry PROPERTIES LABELS e2e TIMEOUT 150)
 
     add_test(
         NAME waterfall
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_waterfall.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND}
+            -DGAME=$<TARGET_FILE:rage-racer-smoke> -DCHECK=$<TARGET_FILE:ppm_capture_check>
+            -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_waterfall.cmake
     )
 set_tests_properties(waterfall PROPERTIES LABELS e2e)
     set_tests_properties(waterfall PROPERTIES TIMEOUT 180)
 endif()
 add_executable(rmesh_replace_tests rmesh_replace_tests.c)
+add_executable(ppm_capture_check ppm_capture_check.c)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(ppm_capture_check PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
+add_executable(scene_capture_check scene_capture_check.c)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(scene_capture_check PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
+add_executable(modern_depth_probe_tests
+    modern_depth_probe_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/modern/modern_depth_probe.c)
+target_include_directories(modern_depth_probe_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/port)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(modern_depth_probe_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
+add_test(NAME modern_depth_probe COMMAND modern_depth_probe_tests)
+set_tests_properties(modern_depth_probe PROPERTIES LABELS unit)
+add_executable(modern_material_uniform_tests
+    modern_material_uniform_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/modern/modern_material_uniform.c)
+target_include_directories(modern_material_uniform_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/port)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(modern_material_uniform_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
+add_test(NAME modern_material_uniform COMMAND modern_material_uniform_tests)
+set_tests_properties(modern_material_uniform PROPERTIES LABELS unit)
+add_executable(mirror_entry_check mirror_entry_check.c)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(mirror_entry_check PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
 add_executable(modern_png_tests modern_png_tests.c
     ${PROJECT_SOURCE_DIR}/src/port/modern/modern_png.c)
 target_include_directories(modern_png_tests PRIVATE ${PROJECT_SOURCE_DIR}/src)
@@ -1797,6 +1906,7 @@ add_executable(modern_assets_retry_tests
     ${PROJECT_SOURCE_DIR}/src/port/sky_panorama_layout.c
     ${PROJECT_SOURCE_DIR}/src/port/native_asset_importer_stubs.c
     ${PROJECT_SOURCE_DIR}/src/port/modern/modern_assets.c
+    ${PROJECT_SOURCE_DIR}/src/port/modern/modern_prepared_materials.c
     ${PROJECT_SOURCE_DIR}/src/port/modern/modern_png.c)
 target_include_directories(modern_assets_retry_tests PRIVATE
     ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/src/port

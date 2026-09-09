@@ -186,7 +186,10 @@ int main(int argc, char **argv) {
      * What the screen did before it was taken apart. Run the test with a file
      * name to write the sweep out and diff two runs.
      */
-    static const unsigned long expected = 4235743045UL;
+    /* Direction reversal now rebases by a full revolution. A differential
+     * sweep with angles reduced modulo 600000 retains the old call/state
+     * digest; only the unwrapped animation angle changes. */
+    static const unsigned long expected = 2587280085UL;
     static const s32 busyStates[] = {0, -1, 1, 2, 3, 4, 5};
     static const u16 buttons[] = {0, PAD_UP, PAD_DOWN, PAD_CONFIRM, PAD_CANCEL};
     /* Both directions at once is unreachable on a d-pad but not in the

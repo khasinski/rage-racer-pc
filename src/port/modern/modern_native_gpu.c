@@ -3,6 +3,10 @@
 #include "../track_material_page.h"
 
 #include "modern_assets.h"
+#include "modern_depth_probe.h"
+#include "modern_material_uniform.h"
+#include "modern_prepared_meshes.h"
+#include "modern_texture_index.h"
 #include "modern_upload_queue.h"
 #include "render/render_mesh_build.h"
 #include "render/render_world_snapshot.h"
@@ -52,8 +56,6 @@ enum {
     MODERN_NATIVE_MAX_BUFFER_VERTICES =
         MODERN_NATIVE_MAX_VERTICES_PER_VIEW * 2,
     MODERN_NATIVE_MAX_SPANS = 32768,
-    MODERN_NATIVE_MAX_TEXTURES = 2048,
-    MODERN_NATIVE_TEXTURE_HASH_SIZE = 4096,
 };
 
 typedef struct ModernNativeCameraUniform {
@@ -88,11 +90,6 @@ typedef struct ModernNativeLightUniform {
     float skyBottom[4];
 } ModernNativeLightUniform;
 
-typedef struct ModernNativeMaterialUniform {
-    float baseColor[4];
-    float emissiveAndShading[4];
-    float surface[4];
-} ModernNativeMaterialUniform;
 
 typedef struct ModernNativeTexture {
     uint32_t assetKey;
@@ -182,37 +179,26 @@ static uint32_t s_mirrorSpanCount;
 static uint64_t s_worldFrame = UINT64_MAX;
 static const RageRenderWorld *s_world;
 static RageRenderWorldSnapshot s_ownedWorld;
-static const RageRuntimeMesh **s_preparedMeshes;
-static uint32_t s_preparedMeshCapacity;
+static ModernPreparedMeshes s_preparedMeshes;
 
 /* Borrow only for this preparation. Both cameras use the same owned instance
  * array; resolve after warming finishes so a later successful retry is visible
  * to every instance that references the asset. */
 static const RageRuntimeMesh *ModernNativePreparedMeshLookup(
     void *context, const RageRenderMeshInstance *instance) {
-    const RageRenderWorld *world = context;
-    if (!world) return ModernAssetsResidentMeshLookup(NULL, instance);
-    return s_preparedMeshes[instance - world->instances];
+    if (!context) return ModernAssetsResidentMeshLookup(NULL, instance);
+    return ModernPreparedMeshesLookup(context, instance);
 }
 
 static void *ModernNativePrepareMeshLookup(const RageRenderWorld *world) {
-    if (world->instanceCount > s_preparedMeshCapacity) {
-        size_t bytes;
-        if (!SDL_size_mul_check_overflow(world->instanceCount, sizeof(*s_preparedMeshes), &bytes)) return NULL;
-        const RageRuntimeMesh **meshes = SDL_realloc(s_preparedMeshes, bytes);
-        if (!meshes) return NULL;
-        s_preparedMeshes = meshes;
-        s_preparedMeshCapacity = world->instanceCount;
-    }
-    for (uint32_t i = 0; i < world->instanceCount; ++i)
-        s_preparedMeshes[i] = world->instances[i].pass == RAGE_RENDER_PASS_MAIN
-            ? ModernAssetsResidentMeshLookup(NULL, &world->instances[i]) : NULL;
-    return (void *)world;
+    return ModernPreparedMeshesPrepare(&s_preparedMeshes, world,
+        ModernAssetsResidentMeshLookup, NULL)
+        ? &s_preparedMeshes : NULL;
 }
 static float s_aspect = 4.0f / 3.0f;
 static float s_mirrorAspect = 148.0f / 36.0f;
 static int s_completeWorld;
-static ModernNativeTexture s_textures[MODERN_NATIVE_MAX_TEXTURES];
+static ModernNativeTexture s_textures[MODERN_TEXTURE_INDEX_CAPACITY];
 
 /*
  * Transfer buffers a texture/geometry upload has been recorded from, but whose command
@@ -227,7 +213,7 @@ static ModernNativeTexture s_textures[MODERN_NATIVE_MAX_TEXTURES];
  * slots for the entire cache, including a cold frame drawing main + mirror.
  * Waiting for GPU idle cannot retire commands not submitted by the caller. */
 _Static_assert((unsigned)MODERN_UPLOAD_QUEUE_CAPACITY >=
-                   (unsigned)MODERN_NATIVE_MAX_TEXTURES,
+                   (unsigned)MODERN_TEXTURE_INDEX_CAPACITY,
                "Upload queue must hold the complete texture cache");
 static ModernUploadQueue s_pendingUploads;
 
@@ -250,8 +236,7 @@ static void ModernNativeRetireUpload(SDL_GPUTransferBuffer *upload) {
     if (upload == NULL) return;
     (void)ModernUploadQueuePush(&s_pendingUploads, upload);
 }
-static uint16_t s_textureHash[MODERN_NATIVE_TEXTURE_HASH_SIZE];
-static uint32_t s_textureCount;
+static ModernTextureIndex s_textureIndex;
 static uint64_t s_trackAssetRevision = UINT64_MAX;
 static uint64_t s_assetGeneration = UINT64_MAX;
 static RageRenderShadowMap s_shadowMap;
@@ -548,24 +533,6 @@ static void ModernNativeBuildLight(const RageRenderDirectionalLight *light,
     out->skyBottom[2] = camera->skyBottomColor.z;
 }
 
-static void ModernNativeBuildMaterial(const RageRenderMaterial *material,
-                                      int allowClearcoat,
-                                      ModernNativeMaterialUniform *out) {
-    memset(out, 0, sizeof(*out));
-    memcpy(out->baseColor, material->baseColorFactor,
-           sizeof(out->baseColor));
-    memcpy(out->emissiveAndShading, material->emissiveFactor,
-           sizeof(material->emissiveFactor));
-    out->emissiveAndShading[3] = -1.0f;
-    if (material->shading == RAGE_RENDER_MATERIAL_SHADING_LIT)
-        out->emissiveAndShading[3] = 1.0f;
-    else if (material->shading == RAGE_RENDER_MATERIAL_SHADING_UNLIT)
-        out->emissiveAndShading[3] = 0.0f;
-    out->surface[0] = material->roughness;
-    out->surface[1] = material->metallic;
-    out->surface[2] = (float)material->alphaMode;
-    out->surface[3] = allowClearcoat ? 1.0f : 0.0f;
-}
 
 static void ModernNativeBuildShadowCamera(
     const RageRenderShadowMap *shadow, ModernNativeCameraUniform *out) {
@@ -762,7 +729,7 @@ static void ModernNativeGpuClearTextures(void) {
     uint32_t index;
     s_textureWarmCursor = 0;
     if (s_device != NULL) {
-        for (index = 0; index < s_textureCount; index++) {
+        for (index = 0; index < s_textureIndex.count; index++) {
             if (s_textures[index].texture != NULL)
                 SDL_ReleaseGPUTexture(s_device, s_textures[index].texture);
         }
@@ -771,8 +738,7 @@ static void ModernNativeGpuClearTextures(void) {
     if (s_device != NULL) SDL_WaitForGPUIdle(s_device);
     ModernNativeReleasePendingUploads();
     memset(s_textures, 0, sizeof(s_textures));
-    memset(s_textureHash, 0, sizeof(s_textureHash));
-    s_textureCount = 0;
+    ModernTextureIndexClear(&s_textureIndex);
 }
 
 static void ModernNativeReleaseSkyTexture(void) {
@@ -886,7 +852,7 @@ static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
 
 void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
     const int trace = RuntimeConfigEnabled("diagnostics.performance_trace");
-    Uint64 started = 0, copied = 0, warmed = 0, mainStarted = 0;
+    Uint64 started = 0, copied = 0, lookupFinished = 0, mainStarted = 0;
     Uint64 mainFinished = 0, mirrorFinished = 0;
     uint32_t instance;
     uint32_t mirrorFirstVertex;
@@ -902,7 +868,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
                     "rage-port: native texture cache reset old=%llu new=%llu "
                     "textures=%u\n",
                     (unsigned long long)s_trackAssetRevision,
-                    (unsigned long long)trackAssetRevision, s_textureCount);
+                    (unsigned long long)trackAssetRevision, s_textureIndex.count);
         }
         ModernNativeGpuClearTextures();
         ModernNativeReleaseSkyTexture();
@@ -932,9 +898,8 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
     }
     world = &s_ownedWorld.world;
     if (trace) copied = SDL_GetTicksNS();
-    ModernAssetsWarmWorld(world);
     void *meshLookupContext = ModernNativePrepareMeshLookup(world);
-    if (trace) warmed = SDL_GetTicksNS();
+    if (trace) lookupFinished = SDL_GetTicksNS();
     shadowCenter = world->camera.transform.position;
     for (instance = 0; instance < world->instanceCount; instance++) {
         const RageRenderMeshInstance *candidate = &world->instances[instance];
@@ -999,13 +964,13 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
         fprintf(stderr,
                 "native-geometry-prepare frame=%llu instances=%u "
                 "main_vertices=%u mirror_vertices=%u "
-                "snapshot_ms=%.3f warm_ms=%.3f shadow_setup_ms=%.3f "
+                "snapshot_ms=%.3f resident_lookup_ms=%.3f shadow_setup_ms=%.3f "
                 "main_ms=%.3f mirror_ms=%.3f completeness_ms=%.3f\n",
                 (unsigned long long)world->frame, world->instanceCount,
                 s_vertexCount, s_mirrorVertexCount,
                 (double)(copied - started) / 1000000.0,
-                (double)(warmed - copied) / 1000000.0,
-                (double)(mainStarted - warmed) / 1000000.0,
+                (double)(lookupFinished - copied) / 1000000.0,
+                (double)(mainStarted - lookupFinished) / 1000000.0,
                 (double)(mainFinished - mainStarted) / 1000000.0,
                 (double)(mirrorFinished - mainFinished) / 1000000.0,
                 (double)(SDL_GetTicksNS() - mirrorFinished) / 1000000.0);
@@ -1026,7 +991,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
                 "mirror_spans=%u mirror_vehicle_spans=%u\n",
                 (unsigned long long)world->frame, (unsigned)world->hasCamera,
                 world->instanceCount, ModernAssetsCachedMeshCount(),
-                s_textureCount,
+                s_textureIndex.count,
                 s_vertexCount, s_spanCount, s_mirrorVertexCount,
                 s_mirrorSpanCount, mirrorVehicleSpans);
     }
@@ -1179,73 +1144,6 @@ int ModernNativeGpuWriteDrawDump(FILE *file) {
     return ferror(file) == 0;
 }
 
-typedef struct ModernNativeProbeVertex {
-    RageRenderVec3 view;
-    float depthBias;
-} ModernNativeProbeVertex;
-
-static uint32_t ModernNativeClipNear(
-    const ModernNativeProbeVertex input[3], ModernNativeProbeVertex output[4],
-    float nearPlane) {
-    uint32_t inputIndex, count = 0;
-    ModernNativeProbeVertex previous = input[2];
-    int previousInside = -previous.view.z >= nearPlane;
-    for (inputIndex = 0; inputIndex < 3; inputIndex++) {
-        ModernNativeProbeVertex current = input[inputIndex];
-        int currentInside = -current.view.z >= nearPlane;
-        if (currentInside != previousInside) {
-            float boundaryZ = -nearPlane;
-            float t = (boundaryZ - previous.view.z) /
-                      (current.view.z - previous.view.z);
-            ModernNativeProbeVertex clipped;
-            clipped.view.x = previous.view.x +
-                             (current.view.x - previous.view.x) * t;
-            clipped.view.y = previous.view.y +
-                             (current.view.y - previous.view.y) * t;
-            clipped.view.z = boundaryZ;
-            clipped.depthBias = previous.depthBias +
-                                (current.depthBias - previous.depthBias) * t;
-            output[count++] = clipped;
-        }
-        if (currentInside) output[count++] = current;
-        previous = current;
-        previousInside = currentInside;
-    }
-    return count;
-}
-
-static int ModernNativeProbeTriangle(
-    const ModernNativeProbeVertex triangle[3], float probeX, float probeY,
-    int width, int height, float aspect, float fovScale,
-    float depthScale, float depthOffset, float *depthOut) {
-    float screenX[3], screenY[3], screenDepth[3];
-    float denominator, a, b, c;
-    int corner;
-    for (corner = 0; corner < 3; corner++) {
-        float depth = -triangle[corner].view.z;
-        float ndcX = triangle[corner].view.x * fovScale / (depth * aspect);
-        float ndcY = triangle[corner].view.y * fovScale / depth;
-        screenX[corner] = (ndcX + 1.0f) * 0.5f * (float)width;
-        screenY[corner] = (1.0f - ndcY) * 0.5f * (float)height;
-        screenDepth[corner] = depthScale + depthOffset / depth +
-                              triangle[corner].depthBias / 1048576.0f;
-    }
-    denominator = (screenY[1] - screenY[2]) *
-                      (screenX[0] - screenX[2]) +
-                  (screenX[2] - screenX[1]) *
-                      (screenY[0] - screenY[2]);
-    if (fabsf(denominator) < 0.000001f) return 0;
-    a = ((screenY[1] - screenY[2]) * (probeX - screenX[2]) +
-         (screenX[2] - screenX[1]) * (probeY - screenY[2])) / denominator;
-    b = ((screenY[2] - screenY[0]) * (probeX - screenX[2]) +
-         (screenX[0] - screenX[2]) * (probeY - screenY[2])) / denominator;
-    c = 1.0f - a - b;
-    if (a < -0.00001f || b < -0.00001f || c < -0.00001f) return 0;
-    *depthOut = a * screenDepth[0] + b * screenDepth[1] +
-                c * screenDepth[2];
-    return 1;
-}
-
 int ModernNativeGpuWriteProbe(FILE *file, int x, int y,
                               int width, int height) {
     float aspect, fovScale, horizontalScale, depthScale, depthOffset;
@@ -1268,7 +1166,7 @@ int ModernNativeGpuWriteProbe(FILE *file, int x, int y,
              first + 2 < span->firstVertex + span->vertexCount &&
              first + 2 < s_vertexCount;
              first += 3) {
-            ModernNativeProbeVertex input[3], clipped[4];
+            ModernDepthProbeVertex input[3], clipped[4];
             uint32_t corner, clippedCount, piece;
             for (corner = 0; corner < 3; corner++) {
                 const RageNativeGpuVertex *vertex = &s_vertices[first + corner];
@@ -1279,13 +1177,13 @@ int ModernNativeGpuWriteProbe(FILE *file, int x, int y,
                                       &input[corner].view);
                 input[corner].depthBias = vertex->depthBias;
             }
-            clippedCount = ModernNativeClipNear(
+            clippedCount = ModernDepthProbeClipNear(
                 input, clipped, s_world->camera.nearPlane);
             for (piece = 1; piece + 1 < clippedCount; piece++) {
-                ModernNativeProbeVertex triangle[3] = {
+                ModernDepthProbeVertex triangle[3] = {
                     clipped[0], clipped[piece], clipped[piece + 1]};
                 float depth;
-                if (!ModernNativeProbeTriangle(
+                if (!ModernDepthProbeTriangle(
                         triangle, (float)x + 0.5f, (float)y + 0.5f,
                         width, height, aspect, fovScale,
                         depthScale, depthOffset, &depth)) continue;
@@ -1326,53 +1224,22 @@ float ModernNativeGpuMirrorPanelY(void) {
 
 static ModernNativeTexture *ModernNativeFindTexture(
     const RageNativeDrawSpan *span) {
-    uint32_t hash = span->assetKey * 0x9E3779B1u;
-    uint32_t probe;
-    hash ^= (uint32_t)span->assetSet * 0x85EBCA77u;
-    hash ^= span->material * 0xC2B2AE3Du;
-    hash ^= (uint32_t)span->materialVariant << 24;
-    hash ^= (uint32_t)span->hasCarPaint << 23;
-    hash ^= (uint32_t)span->carPaintColor1 << 8;
-    hash ^= (uint32_t)span->carPaintColor2 << 16;
-    hash ^= hash >> 16;
-    for (probe = 0; probe < MODERN_NATIVE_TEXTURE_HASH_SIZE; probe++) {
-        uint16_t stored =
-            s_textureHash[(hash + probe) &
-                          (MODERN_NATIVE_TEXTURE_HASH_SIZE - 1u)];
-        ModernNativeTexture *entry;
-        if (stored == 0) return NULL;
-        entry = &s_textures[stored - 1u];
-        if (entry->assetKey == span->assetKey &&
-            entry->assetSet == span->assetSet &&
-            entry->material == span->material &&
-            entry->materialVariant == span->materialVariant &&
-            entry->hasCarPaint == span->hasCarPaint &&
-            entry->carPaintColor1 == span->carPaintColor1 &&
-            entry->carPaintColor2 == span->carPaintColor2)
-            return entry;
-    }
-    return NULL;
+    ModernTextureKey key = ModernTextureKeyFromSpan(span);
+    int index = ModernTextureIndexFind(&s_textureIndex, &key);
+    return index >= 0 ? &s_textures[index] : NULL;
 }
 
-static void ModernNativeIndexTexture(uint32_t index) {
-    const ModernNativeTexture *entry = &s_textures[index];
-    uint32_t hash = entry->assetKey * 0x9E3779B1u;
-    uint32_t probe;
-    hash ^= (uint32_t)entry->assetSet * 0x85EBCA77u;
-    hash ^= entry->material * 0xC2B2AE3Du;
-    hash ^= (uint32_t)entry->materialVariant << 24;
-    hash ^= (uint32_t)entry->hasCarPaint << 23;
-    hash ^= (uint32_t)entry->carPaintColor1 << 8;
-    hash ^= (uint32_t)entry->carPaintColor2 << 16;
-    hash ^= hash >> 16;
-    for (probe = 0; probe < MODERN_NATIVE_TEXTURE_HASH_SIZE; probe++) {
-        uint32_t slot =
-            (hash + probe) & (MODERN_NATIVE_TEXTURE_HASH_SIZE - 1u);
-        if (s_textureHash[slot] == 0) {
-            s_textureHash[slot] = (uint16_t)(index + 1u);
-            return;
-        }
-    }
+static void ModernNativeIndexTexture(const ModernNativeTexture *entry) {
+    ModernTextureKey key = {
+        .assetKey = entry->assetKey,
+        .assetSet = entry->assetSet,
+        .material = entry->material,
+        .variant = entry->materialVariant,
+        .hasCarPaint = entry->hasCarPaint,
+        .carPaintColor1 = entry->carPaintColor1,
+        .carPaintColor2 = entry->carPaintColor2,
+    };
+    (void)ModernTextureIndexInsert(&s_textureIndex, &key);
 }
 
 static ModernNativeTexture *ModernNativeLoadTexture(
@@ -1396,7 +1263,7 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     if (!ModernUploadQueueHasRoom(&s_pendingUploads)) return NULL;
     if (trace < 0) trace = RuntimeConfigEnabled("diagnostics.performance_trace");
     if (trace) loadStart = SDL_GetTicksNS();
-    if (s_textureCount == MODERN_NATIVE_MAX_TEXTURES) {
+    if (s_textureIndex.count == MODERN_TEXTURE_INDEX_CAPACITY) {
         /* Only a change of track empties the cache, so this is permanent for
          * the rest of the course: every material after it draws nothing at
          * all. Say so once, because the symptom is missing scenery rather
@@ -1407,7 +1274,7 @@ static ModernNativeTexture *ModernNativeLoadTexture(
             fprintf(stderr,
                     "rage-port: native texture cache full at %u; further "
                     "materials will not be drawn\n",
-                    s_textureCount);
+                    s_textureIndex.count);
         }
         return NULL;
     }
@@ -1442,7 +1309,7 @@ static ModernNativeTexture *ModernNativeLoadTexture(
             image.pixels, image.width, image.height, mipLevels,
             mipChain, mipSize)) goto fail;
     if (trace) mipDone = SDL_GetTicksNS();
-    entry = &s_textures[s_textureCount];
+    entry = &s_textures[s_textureIndex.count];
     {
         SDL_GPUTextureCreateInfo texture = {0};
         SDL_GPUTransferBufferCreateInfo transfer = {0};
@@ -1515,8 +1382,7 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     materialDefinition.baseColorTexture = (RageRenderMaterialPath){0};
     materialDefinition.paintMask = (RageRenderMaterialPath){0};
     entry->definition = materialDefinition;
-    ModernNativeIndexTexture(s_textureCount);
-    s_textureCount++;
+    ModernNativeIndexTexture(entry);
     if (trace) {
         Uint64 done = SDL_GetTicksNS();
         fprintf(stderr, "modern-texture asset=%u set=%u material=%u variant=%u "
@@ -1557,7 +1423,7 @@ static void ModernNativeWarmTrackBank(SDL_GPUCommandBuffer *command) {
     if (!enabled) return;
     Uint64 start = SDL_GetTicksNS();
     unsigned loads = 0, visited = 0;
-    while (s_textureWarmCursor < s_textureCount && loads < 2 && visited++ < 64) {
+    while (s_textureWarmCursor < s_textureIndex.count && loads < 2 && visited++ < 64) {
         const ModernNativeTexture *entry = &s_textures[s_textureWarmCursor++];
         int alternate = TrackMaterialAlternateVariant(entry->assetSet,
                                                       entry->materialVariant);
@@ -2052,8 +1918,8 @@ static void ModernNativeGpuDrawSet(
                 SDL_GPUTextureSamplerBinding binding = {
                     .texture = texture->texture,
                     .sampler = s_sampler};
-                ModernNativeMaterialUniform material;
-                ModernNativeBuildMaterial(
+                ModernMaterialUniform material;
+                ModernMaterialUniformBuild(
                     &texture->definition, allowClearcoat, &material);
                 SDL_PushGPUFragmentUniformData(
                     command, 1, &material, sizeof(material));
@@ -2209,16 +2075,13 @@ void ModernNativeGpuShutdown(void) {
     s_world = NULL;
     s_aspect = 4.0f / 3.0f;
     RenderWorldSnapshotRelease(&s_ownedWorld);
-    SDL_free(s_preparedMeshes);
-    s_preparedMeshes = NULL;
-    s_preparedMeshCapacity = 0;
+    ModernPreparedMeshesRelease(&s_preparedMeshes);
     s_completeWorld = 0;
     ModernNativeReleasePendingUploads();
-    s_textureCount = 0;
     /* The lookup index has to go with the textures it points into. Leaving it
      * behind left entries naming slots that the next run filled with
      * different textures, so a material found one that was never its own. */
-    memset(s_textureHash, 0, sizeof(s_textureHash));
+    ModernTextureIndexClear(&s_textureIndex);
     s_trackAssetRevision = UINT64_MAX;
     s_assetGeneration = UINT64_MAX;
     s_haveShadowMap = 0;

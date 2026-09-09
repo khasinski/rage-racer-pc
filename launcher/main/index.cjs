@@ -29,6 +29,14 @@ handle('cancel',()=>service.cancel());
 handle('settings',values=>service.saveSettings(values));
 handle('play',()=>service.launch());
 handle('saves',async()=>{const list=await service.saves();savePaths=new Map(list.map((s,i)=>[String(i),s.path]));return list.map((s,i)=>({id:String(i),team:s.team,money:s.money}));});
+handle('new-save',async region=>{
+  const prefixes={'PAL':'BESCES-00650','NTSC-U':'BASLUS-00403','NTSC-J':'BISLPS-00600'};
+  if(!Object.hasOwn(prefixes,region))throw Error('Invalid save region');
+  const file=await output({title:'Create a new save',defaultPath:prefixes[region]+' RAGE000'});
+  if(!file)return null;
+  const data=await service.newSave(file,region);currentSave={file};
+  return{name:path.basename(file),...data};
+});
 handle('open-save',async id=>{
   let file;if(id!==undefined){file=savePaths.get(id);if(!file)throw Error('Unknown save');}
   else file=await open({title:'Open a save or memory card',properties:['openFile']});

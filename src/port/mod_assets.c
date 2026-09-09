@@ -29,12 +29,14 @@ static int s_manifestReady;
 static int s_legacyLayout;
 static int s_initialized;
 static int s_announced[RAGE_ARCHIVE_INDEX_ENTRY_COUNT];
+static int s_patchedAnnounced[RAGE_ARCHIVE_INDEX_ENTRY_COUNT];
 
 void ModAssetsShutdown(void) {
     s_directory = NULL;
     memset(s_directoryStorage, 0, sizeof(s_directoryStorage));
     memset(&s_manifest, 0, sizeof(s_manifest));
     memset(s_announced, 0, sizeof(s_announced));
+    memset(s_patchedAnnounced, 0, sizeof(s_patchedAnnounced));
     s_manifestReady = 0;
     s_legacyLayout = 0;
     s_initialized = 0;
@@ -224,14 +226,13 @@ int ModAssetLoad(int index, void *destination, unsigned int originalSize) {
 
 /* Apply the mod directory's edited images to an asset already in memory. */
 void ModPatchTextures(int index, void *data, size_t size) {
-    static int announced[RAGE_ARCHIVE_INDEX_ENTRY_COUNT];
     int patched;
     if ((unsigned)index >= RAGE_ARCHIVE_INDEX_ENTRY_COUNT) return;
     ModAssetsInit();
     if (s_directory == NULL || !s_legacyLayout) return;
     patched = TexturePatchAsset(s_directory, index, data, size);
-    if (patched > 0 && !announced[index]) {
-        announced[index] = 1;
+    if (patched > 0 && !s_patchedAnnounced[index]) {
+        s_patchedAnnounced[index] = 1;
         fprintf(stderr, "rage-port: asset %d patched from %d texture images\n",
                 index, patched);
     }

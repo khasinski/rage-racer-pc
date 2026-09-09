@@ -20,8 +20,7 @@ int MenuCarViewSettled(void) {
 
 /*
  * Swings round to another car. The screen says which of its own indices is
- * the one on show, and which car it was showing before, because a frame that
- * holds both directions at once swings twice from the same starting car.
+ * the one on show and which car it was showing before.
  */
 void MenuSpinToCar(s32 *shownCar, s32 fromIndex, s32 toIndex, s32 newTarget) {
     s32 previousTarget;
@@ -41,6 +40,16 @@ void MenuSpinToCar(s32 *shownCar, s32 fromIndex, s32 toIndex, s32 newTarget) {
     g_CarSwapToIndex = *shownCar;
     g_MenuViewAngle = RebaseCarouselValue(
         g_MenuViewAngle, previousTarget, MENU_CAR_VIEW_REBASE_SPAN);
+    /* Reversing shortly after the model swap must not put the next swap
+     * directly ahead of us. Otherwise a brief held direction completes one
+     * swap immediately and starts a second on the following frame. Move by
+     * a whole revolution to preserve the visible orientation while retaining
+     * a full browsing animation in the newly requested direction. */
+    if (newTarget == MENU_CAR_VIEW_RIGHT_TARGET &&
+        g_MenuViewAngle > MENU_CAR_VIEW_REBASE_SPAN)
+        g_MenuViewAngle -= MENU_CAR_VIEW_REBASE_SPAN;
+    else if (newTarget == 0 && g_MenuViewAngle < MENU_CAR_VIEW_REBASE_SPAN)
+        g_MenuViewAngle += MENU_CAR_VIEW_REBASE_SPAN;
 }
 
 /*

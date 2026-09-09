@@ -3,7 +3,8 @@
 # directory; ctest -L functional/e2e/tooling still answers how a test runs.
 #
 # Shared fixtures live in support/: common.h and the include/ tree the C tests
-# compile against, and the Python helpers the end-to-end scripts import.
+# compile against. The Asset Browser is isolated development tooling and keeps
+# its own Python fixtures under tools/assetbrowser/.
 
 # Test timeouts are wall-clock, and most of these run the game at its own pace
 # rather than as fast as the machine can. race_cdda waits out an audio track and
@@ -19,8 +20,8 @@
 # ctest was still waiting patiently.
 
 # Visual-comparison helpers remain optional developer tools. Do not register
-# them as failing tests on hosts that intentionally ship only the C/Python
-# toolchain used by the port and release jobs.
+# them as failing tests on hosts that intentionally do not install the optional
+# Ruby tooling used by visual-comparison helpers.
 find_program(RAGE_RUBY_EXECUTABLE ruby)
 
 if(TARGET rage-racer-smoke)
@@ -94,8 +95,10 @@ file(GLOB modern_files CONFIGURE_DEPENDS RELATIVE "${CMAKE_SOURCE_DIR}"
     "${CMAKE_SOURCE_DIR}/src/port/modern/*.c" "${CMAKE_SOURCE_DIR}/src/port/modern/*.h")
 file(GLOB_RECURSE retail_files CONFIGURE_DEPENDS RELATIVE "${CMAKE_SOURCE_DIR}"
     "${CMAKE_SOURCE_DIR}/src/main/PAL/main/*.c")
+file(GLOB host_state_files CONFIGURE_DEPENDS RELATIVE "${CMAKE_SOURCE_DIR}"
+    "${CMAKE_SOURCE_DIR}/src/port/host_state*.c")
 set(contract_header "/* Generated source inventory; paths relative to the checkout. */\n")
-foreach(group neutral_files modern_files retail_files)
+foreach(group neutral_files modern_files retail_files host_state_files)
     string(APPEND contract_header "static const char *${group}[] = {\n")
     foreach(path IN LISTS ${group})
         string(APPEND contract_header "    \"${path}\",\n")

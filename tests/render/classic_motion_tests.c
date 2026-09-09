@@ -14,6 +14,7 @@ static void Quad(RageSceneSnapshot *s, RageClassicPacketSource *sources,
     f->pos[0][0] = (int16_t)(packet * 10);
     f->pos[1][0] = f->pos[0][0] + 8;
     f->pos[2][1] = f->pos[3][1] = 8;
+    f->pos[3][0] = f->pos[1][0];
     sources[packet] = (RageClassicPacketSource){packet, 0, 28};
     RageCapturePacket *p = &s->packets[packet];
     p->flags = RAGE_CAPTURE_PACKET_3D;
@@ -38,6 +39,16 @@ static void Reset(void) {
 }
 static void Prepare(void) { ClassicMotionPrepare(&a,sa,&b,sb); }
 
+static void PacketQuad(RageSceneSnapshot *s, int packet, int x, int y) {
+    for (int vertex = 0; vertex < 4; ++vertex) {
+        s->packets[packet].words[vertex + 1] =
+            (uint16_t)(x + (vertex & 1) * 8) |
+            ((uint32_t)(y + (vertex >> 1) * 8) << 16);
+        s->faces[packet].screen[vertex][0] = (int16_t)(x + (vertex & 1) * 8);
+        s->faces[packet].screen[vertex][1] = (int16_t)(y + (vertex >> 1) * 8);
+    }
+}
+
 int main(void) {
     float x[4]={10,18,10,18}, y[4]={20,20,28,28};
     RageCapturePacket sky = {.flags = RAGE_CAPTURE_PACKET_SKY};
@@ -48,12 +59,29 @@ int main(void) {
     CHECK(!CapturePacketIsMainSky(NULL));
     Reset(); Prepare();
     CHECK(ClassicMotionMatchCount()==1);
+    ClassicMotionStats stats = ClassicMotionGetStats();
+    CHECK(stats.polygons == 1 && stats.candidates == 1 && stats.moving == 1);
+    CHECK(stats.coursePolygons == 0 && stats.courseMoving == 0);
     CHECK(ClassicMotionCoordinates(0,0.5f,x,y));
     CHECK(x[0]==20 && x[1]==28 && y[0]==20);
     CHECK(a.packets[0].words[1] == (10u | (20u<<16))); /* source immutable */
     CHECK(!ClassicMotionCoordinates(0,NAN,x,y));
     CHECK(!ClassicMotionCoordinates(-1,0.5f,x,y));
     CHECK(!ClassicMotionCoordinates(1,0.5f,x,y));
+
+    /* A changed child allocation has no packet match, but its parent face
+     * still has a stable identity and projection. The fallback moves the old
+     * child as one continuous piece until the next logic frame replaces it. */
+    Reset();
+    PacketQuad(&a, 0, 0, 0); PacketQuad(&b, 0, 10, 0);
+    sb[0].bytes *= 2;
+    Prepare(); CHECK(ClassicMotionMatchCount()==0);
+    stats = ClassicMotionGetStats();
+    CHECK(stats.faceParents == 1 && stats.moving == 1);
+    x[0]=0; x[1]=8; x[2]=0; x[3]=8;
+    y[0]=0; y[1]=0; y[2]=8; y[3]=8;
+    CHECK(ClassicMotionCoordinates(0,0.5f,x,y));
+    CHECK(x[0] == 5 && x[1] == 13 && x[2] == 5 && x[3] == 13);
 
     Reset(); b.sceneId++; Prepare(); CHECK(ClassicMotionMatchCount()==0);
     Reset(); b.sceneTimer=a.sceneTimer; Prepare(); CHECK(ClassicMotionMatchCount()==0);
@@ -101,6 +129,10 @@ int main(void) {
     sb[1].bytes *= 2;
     Prepare(); CHECK(ClassicMotionMatchCount()==0);
 
+    stats = ClassicMotionGetStats();
+    CHECK(stats.polygons == 2 && stats.candidates == 1 && stats.moving == 0);
+    CHECK(stats.coursePolygons == 0 && stats.courseMoving == 0);
+
     /* A changed projection on a common vertex cannot split a welded edge,
      * even when both individual packet identities match successfully. */
     Reset(); Quad(&a,sa,1,0,18); Quad(&b,sb,1,0,39);
@@ -122,6 +154,8 @@ int main(void) {
     a.faces[1].kind=b.faces[1].kind=RAGE_CAPTURE_KIND_COURSE;
     sb[1].bytes *= 2;
     Prepare(); CHECK(ClassicMotionMatchCount()==0);
+    stats = ClassicMotionGetStats();
+    CHECK(stats.coursePolygons == 2 && stats.courseMoving == 0);
 
     /* Overlapping independent cars must not hold each other. */
     Reset(); a.drawCount=b.drawCount=2;
@@ -132,5 +166,9 @@ int main(void) {
 
     Reset(); ClassicMotionPrepare(&a,NULL,&b,sb); CHECK(ClassicMotionMatchCount()==0);
     ClassicMotionReset();CHECK(!ClassicMotionCoordinates(0,0.5f,x,y));
+    stats = ClassicMotionGetStats();
+    CHECK(stats.polygons == 0 && stats.candidates == 0 && stats.moving == 0 &&
+          stats.faceParents == 0);
+    CHECK(stats.coursePolygons == 0 && stats.courseMoving == 0);
     return 0;
 }

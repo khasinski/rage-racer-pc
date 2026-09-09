@@ -5,17 +5,8 @@
 #include "game/state.h"
 #include "game/work_buffer.h"
 #include "psyq/snd.h"
-#include "timing_control.h"
 
-/* libsnd counts musical time in ticks of a sixtieth of a second, which is what
- * retail asked for: SsSetTickMode(SS_TICK60) left VBLANK_MINUS at sixty and
- * drove SsSeqCalledTbyT from a counter interrupt at sixty hertz on a PAL
- * console as well, so the music kept its tempo while the picture ran at fifty.
- * The host has no such interrupt and services the sequencer from the game
- * loop, so it has to pay the same sixty ticks a second out of frames that
- * arrive at fifty. */
 enum {
-    SEQUENCE_TICK_HZ = 60,
     DEFAULT_REVERB_DEPTH = 0x28,
     FIRST_REVERB_PRESET = 1,
     LAST_REVERB_PRESET = 9,
@@ -24,22 +15,13 @@ enum {
 };
 
 void TickSequenceAudio(void) {
-    /* Ticks the sequencer is owed, in units of one game frame. */
-    static s32 tickCredit;
-
     if (g_SceneId == GAME_SCENE_RACE) {
         SpuVmDamperStep();
     } else {
-        s32 frameHz = TimingBaseHz();
-
-        if (frameHz <= 0) {
-            frameHz = SEQUENCE_TICK_HZ;
-        }
-        tickCredit += SEQUENCE_TICK_HZ;
-        while (tickCredit >= frameHz) {
-            tickCredit -= frameHz;
-            SsSeqCalledTbyT();
-        }
+        /* Menu SEQ data advances with the game frame. Advancing it at a
+         * synthetic 60 Hz on PAL accelerated the note stream by 20% while
+         * leaving each VAG sample's pitch unchanged. */
+        SsSeqCalledTbyT();
         if (g_SeqVolumeFadeStep != 0) {
             UpdateSequenceFadeOut();
         }

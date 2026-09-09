@@ -908,16 +908,11 @@ add_test(NAME course_index COMMAND course_index_tests)
 
 set_tests_properties(course_index PROPERTIES LABELS functional)
 
-if(RAGE_RUBY_EXECUTABLE)
 add_test(
     NAME race_progress_layout
-    COMMAND ruby
-        ${CMAKE_CURRENT_SOURCE_DIR}/verify_race_progress_layout.rb
-        ${CMAKE_SOURCE_DIR}
+    COMMAND source_contract_tests race_progress ${CMAKE_SOURCE_DIR}
 )
-
 set_tests_properties(race_progress_layout PROPERTIES LABELS functional)
-endif()
 
 if(TARGET rage-host-state)
 add_executable(lap_and_finish_tests
@@ -1324,10 +1319,9 @@ if(TARGET rage-racer-smoke)
     endforeach()
     add_test(
         NAME scenario_control
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_scenario_control.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DSOURCE=${CMAKE_SOURCE_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_scenario_control.cmake
     )
 set_tests_properties(scenario_control PROPERTIES LABELS e2e)
     set_tests_properties(scenario_control PROPERTIES TIMEOUT 150)
@@ -1342,20 +1336,16 @@ set_tests_properties(scenario_after_finish PROPERTIES LABELS e2e)
     set_tests_properties(scenario_after_finish PROPERTIES TIMEOUT 210)
     add_test(
         NAME course_matrix
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_course_matrix.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_course_matrix.cmake
     )
 set_tests_properties(course_matrix PROPERTIES LABELS e2e)
     set_tests_properties(course_matrix PROPERTIES TIMEOUT 1080)
-    add_test(
-        NAME track_start
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_track_start.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
-    )
+    add_test(NAME track_start COMMAND ${CMAKE_COMMAND}
+        -DGAME=$<TARGET_FILE:rage-racer-smoke>
+        -DSOURCE=${CMAKE_SOURCE_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_track_start.cmake)
 set_tests_properties(track_start PROPERTIES LABELS e2e)
     set_tests_properties(track_start PROPERTIES TIMEOUT 165)
     add_test(
@@ -1369,10 +1359,10 @@ set_tests_properties(initial_state PROPERTIES LABELS e2e)
 
     add_test(
         NAME race_start
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_race_start.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+            -DPPM_CHECK=$<TARGET_FILE:ppm_capture_check>
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_race_start.cmake
     )
 set_tests_properties(race_start PROPERTIES LABELS e2e)
     set_tests_properties(race_start PROPERTIES TIMEOUT 150)
@@ -1387,43 +1377,33 @@ set_tests_properties(race_restart PROPERTIES LABELS e2e)
 
     add_test(
         NAME grand_prix_results
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_grand_prix_results.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DSOURCE=${CMAKE_SOURCE_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_grand_prix_results.cmake
     )
 set_tests_properties(grand_prix_results PROPERTIES LABELS e2e)
     set_tests_properties(grand_prix_results PROPERTIES TIMEOUT 225
-        SKIP_RETURN_CODE 77)
+        SKIP_REGULAR_EXPRESSION "SKIP: no disc image")
 
-    if(RAGE_RUBY_EXECUTABLE)
-        add_test(
-            NAME grand_prix_exit
-            COMMAND ${RAGE_RUBY_EXECUTABLE}
-                ${CMAKE_CURRENT_SOURCE_DIR}/verify_grand_prix_exit.rb
-                $<TARGET_FILE:rage-racer-smoke>
-                ${CMAKE_SOURCE_DIR}
-        )
-        set_tests_properties(grand_prix_exit PROPERTIES LABELS e2e TIMEOUT 225)
-    endif()
+    add_test(NAME grand_prix_exit COMMAND ${CMAKE_COMMAND}
+        -DGAME=$<TARGET_FILE:rage-racer-smoke>
+        -DSOURCE=${CMAKE_SOURCE_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_grand_prix_exit.cmake)
+    set_tests_properties(grand_prix_exit PROPERTIES LABELS e2e TIMEOUT 225)
 
-    add_test(
-        NAME time_attack_records
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_time_attack_records.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
-    )
+    add_test(NAME time_attack_records COMMAND ${CMAKE_COMMAND}
+        -DGAME=$<TARGET_FILE:rage-racer-smoke>
+        -DSOURCE=${CMAKE_SOURCE_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_time_attack_records.cmake)
 set_tests_properties(time_attack_records PROPERTIES LABELS e2e)
     set_tests_properties(time_attack_records PROPERTIES TIMEOUT 225)
 
     add_test(
         NAME save_roundtrip
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_save_roundtrip.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
-            $<TARGET_FILE:rage-save-generator>
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DGENERATOR=$<TARGET_FILE:rage-save-generator>
+            -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_save_roundtrip.cmake
     )
 set_tests_properties(save_roundtrip PROPERTIES LABELS e2e)
     set_tests_properties(save_roundtrip PROPERTIES TIMEOUT 270)

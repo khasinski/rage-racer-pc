@@ -268,7 +268,7 @@ static void test_port_config(void) {
     PortConfigSetActive(NULL);
     PortConfigDefaults(&config);
     EXPECT_EQ(RAGE_RENDERER_MODERN, config.renderer);
-    EXPECT_EQ(RAGE_MODERN_FPS_LOGIC, config.modernFps);
+    EXPECT_EQ(RAGE_MODERN_FPS_VSYNC, config.modernFps);
     fd = mkstemp(path);
     if (fd < 0 || write(fd, contents, sizeof(contents) - 1) != sizeof(contents) - 1) {
         failures++;
@@ -330,7 +330,7 @@ static void test_port_config(void) {
         PortConfigDefaults(&invalidFloat);
         EXPECT_EQ(1, RuntimeConfigInit(5, arguments));
         EXPECT_EQ(0, PortConfigApplyRuntime(&invalidFloat));
-        EXPECT_EQ(20, (s32)(invalidFloat.modernInternalScale * 10.0f));
+        EXPECT_EQ(40, (s32)(invalidFloat.modernInternalScale * 10.0f));
         EXPECT_EQ(10, (s32)(invalidFloat.modernDrawDistance * 10.0f));
     }
     EXPECT_EQ(0x14000, PortMirrorFarDepth(INT_MAX));

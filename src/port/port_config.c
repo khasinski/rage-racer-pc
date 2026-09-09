@@ -19,13 +19,16 @@ static char *Trim(char *text) {
 void PortConfigDefaults(RagePortConfig *config) {
     if (config == NULL) return;
     config->renderer = RAGE_RENDERER_MODERN;
-    config->modernInternalScale = 2.0f;
-    config->modernAspect = RAGE_MODERN_ASPECT_AUTO;
-    config->modernFps = RAGE_MODERN_FPS_LOGIC;
+    /* Keep these values equal to the shipped rage-port.ini and launcher
+     * schema. A direct executable launch without a nearby INI is still a
+     * supported first-run path, so it must not create a third preset. */
+    config->modernInternalScale = 4.0f;
+    config->modernAspect = RAGE_MODERN_ASPECT_16_9;
+    config->modernFps = RAGE_MODERN_FPS_VSYNC;
     config->modernDrawDistance = 1.0f;
-    config->modernTextureFilterLinear = 0;
-    config->modernPost = RAGE_MODERN_POST_NONE;
-    config->modernGrading = 0;
+    config->modernTextureFilterLinear = 1;
+    config->modernPost = RAGE_MODERN_POST_FXAA;
+    config->modernGrading = 1;
 }
 
 static int ParseFloat(const char *value, float *out, float min, float max) {
@@ -150,23 +153,20 @@ int PortConfigApplyRuntime(RagePortConfig *config) {
     return applied;
 }
 
-static RagePortConfig active_config = {
-    .renderer = RAGE_RENDERER_MODERN,
-    .modernInternalScale = 2.0f,
-    .modernAspect = RAGE_MODERN_ASPECT_AUTO,
-    .modernFps = RAGE_MODERN_FPS_LOGIC,
-    .modernDrawDistance = 1.0f,
-    .modernTextureFilterLinear = 0,
-    .modernPost = RAGE_MODERN_POST_NONE,
-    .modernGrading = 0,
-};
+static RagePortConfig active_config;
+static int active_config_ready;
 
 void PortConfigSetActive(const RagePortConfig *config) {
     if (config == NULL) return;
     active_config = *config;
+    active_config_ready = 1;
 }
 
 const RagePortConfig *PortActiveConfig(void) {
+    if (!active_config_ready) {
+        PortConfigDefaults(&active_config);
+        active_config_ready = 1;
+    }
     return &active_config;
 }
 

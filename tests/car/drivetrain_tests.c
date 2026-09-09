@@ -463,6 +463,51 @@ static void TorqueBandTests(void) {
 
 }
 
+/*
+ * The retail car packs use both 985/990 and the small values 3/6 at +0x102.
+ * This pins what the current PC implementation actually does with them.  It
+ * is deliberately a behavioural test, not evidence that +0x102's recovered
+ * unit is correct.  Retail stores 3 and 6 in several manual-only packs, so
+ * they must remain literal per-thousand values should a mod enable automatic
+ * for one of those cars.
+ */
+static s32 DriveWithAutomaticScale(s16 scale, s16 manual) {
+    BuildSpec();
+    PlaceCar();
+    s_car.speed = 8000;
+    s_car.drive.engineRpm = 5000;
+    s_car.drive.drivetrainTorque = -200000;
+    s_car.drive.manual = manual;
+    s_spec.automaticAccelerationScale = scale;
+    UpdateCarDrivetrain(&s_car);
+    return s_car.acceleration;
+}
+
+static void AutomaticScaleRetailValueTests(void) {
+    s32 manual = DriveWithAutomaticScale(1000, 1);
+    s32 scale990 = DriveWithAutomaticScale(990, 0);
+    s32 scale985 = DriveWithAutomaticScale(985, 0);
+    s32 retail6 = DriveWithAutomaticScale(6, 0);
+    s32 retail3 = DriveWithAutomaticScale(3, 0);
+
+    Check(manual > 0, "manual reference acceleration is positive", manual, 1);
+    Check(scale990 > 0 && scale985 > 0,
+          "ordinary automatic retail scales retain acceleration", scale990,
+          1);
+    Check(retail6 == manual * 6 / 1000,
+          "retail value 6 follows the current per-thousand path", retail6,
+          manual * 6 / 1000);
+    Check(retail3 == manual * 3 / 1000,
+          "retail value 3 follows the current per-thousand path", retail3,
+          manual * 3 / 1000);
+    if (!(retail6 <= scale985 / 50 && retail3 <= scale985 / 50)) {
+        printf("FAIL small retail scales unexpectedly retain pull: "
+               "manual=%d 990=%d 985=%d 6=%d 3=%d\n", manual, scale990,
+               scale985, retail6, retail3);
+        s_failures++;
+    }
+}
+
 static void GearBoundsTests(void) {
     BuildSpec();
     PlaceCar();
@@ -686,6 +731,7 @@ int main(void) {
     ShiftInterpolationTests();
     GradePenaltyTests();
     TorqueBandTests();
+    AutomaticScaleRetailValueTests();
     GearBoundsTests();
     MissingTrackTests();
     ExtremeLoadArithmeticTests();

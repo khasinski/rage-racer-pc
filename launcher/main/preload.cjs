@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('launcher',Object.freeze({
   cancel:()=>ipcRenderer.invoke('launcher:cancel'),
   settings:values=>ipcRenderer.invoke('launcher:settings',values),
   play:()=>ipcRenderer.invoke('launcher:play'),
+  newSave:region=>ipcRenderer.invoke('launcher:new-save',region),
   saves:()=>ipcRenderer.invoke('launcher:saves'),
   openSave:id=>ipcRenderer.invoke('launcher:open-save',id),
   cardEntry:index=>ipcRenderer.invoke('launcher:card-entry',index),

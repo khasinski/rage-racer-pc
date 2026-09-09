@@ -67,6 +67,15 @@ normal car setup; out-of-range values are ignored with a diagnostic.
 The launcher passes this file directly to the game as `--scenario`; it no
 longer expands it into a collection of environment variables.
 
+For repeatable local runs, the native `rage-scenario` tool provides checked
+short options for the common race values and forwards them to that same public
+interface. It does not create a second scenario format:
+
+```sh
+./build/rage-scenario race-scenario.ini --binary ./build/release/rage-racer \
+  --class 3 --course 2 --car 9 --dry-run
+```
+
 After the race, `after_finish = menu` (the default) leaves the replay and
 result screens to the retail flow but stops scenario automation, returning
 control to the player. Use `repeat` to launch the configured race again or
@@ -513,7 +522,8 @@ answers without starting the game: the unit tests, the sweeps, and the checks
 that read the source for a property the code has to keep. `ctest -L e2e` drives
 the game itself, and wants real PAL data staged, because it is not in the
 repository. `ctest -L tooling` covers the scripts under `tools/` rather than
-the game, and is the slowest of the three by a distance:
+the game, and is the slowest of the three by a distance. The tooling runners
+use CMake and compiled tools:
 
 ```sh
 "Rage Racer" --set tools.dump_archive=assets/PAL/RAGE.BIN
@@ -527,6 +537,11 @@ nothing.
 
 Nothing in the suite shares state between tests, so it parallelises: `ctest -j 6`
 runs it in well under half the time one job takes.
+
+For the complete native unit gate, use `cmake --build build --target check-unit`.
+It builds every registered test executable before invoking `ctest -L unit`, so a
+fresh build directory cannot turn missing binaries into misleading `Not Run`
+results.
 
 The two halves are worth knowing apart while working. A change to the code is
 usually answered by the functional half in seconds, and the end-to-end half is
@@ -556,6 +571,15 @@ git. A cue elsewhere works too:
 
 ```sh
 RAGE_PORT_DISC_CUE="/path/to/Rage Racer.cue" ctest --test-dir build
+```
+
+To stage a legally obtained disc for local development without Python or `7z`,
+run the native tool from the build tree. It validates the retail executable
+before writing `assets/<region>/main.exe` and `SYSTEM.CNF`, and links the cue
+and its tracks under `disc/<region>/`:
+
+```sh
+build/rage-stage-discs --pal-cue "/path/to/Rage Racer (Europe).cue"
 ```
 
 Without either, those five report themselves skipped rather than failed, and

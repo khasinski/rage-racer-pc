@@ -14,7 +14,6 @@ s32 g_SceneId;
 SoundScale g_SoundScale;
 s16 g_SoundSlotTone[ENGINE_SOUND_SLOT_COUNT][ENGINE_SOUND_BANK_COUNT];
 
-static s32 s_frameHz = 50;
 static s32 s_sequenceTicks;
 static s32 s_damperSteps;
 static s32 s_fadeUpdates;
@@ -29,7 +28,6 @@ static long s_program;
 static long s_note;
 static s32 s_failures;
 
-int TimingBaseHz(void) { return s_frameHz; }
 void SsSeqCalledTbyT(void) { s_sequenceTicks++; }
 void SpuVmDamperStep(void) { s_damperSteps++; }
 void UpdateSequenceFadeOut(void) { s_fadeUpdates++; }
@@ -69,29 +67,26 @@ static void TestSequenceTicking(void) {
     g_SceneId = 0;
     g_SeqVolumeFadeStep = -4;
     for (frame = 0; frame < 5; frame++) TickSequenceAudio();
-    Check(s_sequenceTicks == 6,
-          "PAL frames service the sixty-hertz sequence clock");
+    Check(s_sequenceTicks == 5,
+          "PAL frames service one sequence tick per game frame");
     Check(s_damperSteps == 5 && s_fadeUpdates == 5,
           "normal audio frames flush voices and advance fades");
 
     g_SceneId = 0xC;
     TickSequenceAudio();
-    Check(s_sequenceTicks == 6 && s_fadeUpdates == 5 && s_damperSteps == 6,
+    Check(s_sequenceTicks == 5 && s_fadeUpdates == 5 && s_damperSteps == 6,
           "sound-mode scene only services the voice damper");
 
     g_SceneId = 0;
     g_SeqVolumeFadeStep = 0;
-    s_frameHz = 60;
     for (frame = 0; frame < 3; frame++) TickSequenceAudio();
-    Check(s_sequenceTicks == 9 && s_fadeUpdates == 5 && s_damperSteps == 9,
+    Check(s_sequenceTicks == 8 && s_fadeUpdates == 5 && s_damperSteps == 9,
           "NTSC frames service one sequence tick without an inactive fade");
 
-    s_frameHz = 0;
     TickSequenceAudio();
-    s_frameHz = -1;
     TickSequenceAudio();
-    Check(s_sequenceTicks == 11 && s_damperSteps == 11,
-          "invalid frame rates fall back to the sequence clock");
+    Check(s_sequenceTicks == 10 && s_damperSteps == 11,
+          "sequence clock remains independent from host timing configuration");
 }
 
 static void TestReverbDepth(void) {

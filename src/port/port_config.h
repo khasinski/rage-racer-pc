@@ -31,7 +31,7 @@ typedef enum RageModernPost {
 
 typedef struct RagePortConfig {
     RageRendererKind renderer;
-    float modernInternalScale;  /* multiplier of 320x240, default 2 */
+    float modernInternalScale;  /* multiplier of 320x240, default 4 */
     RageModernAspect modernAspect;
     int modernFps;
     float modernDrawDistance;   /* multiplier, default 1 */

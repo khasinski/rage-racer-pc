@@ -591,6 +591,7 @@ static void RageSubmitModelFaces(
             {
                 RageCaptureFaceInput capture = {0};
                 capture.primitiveBegin = poly;
+                capture.sxy = sxy;
                 capture.kind = RAGE_CAPTURE_KIND_MODEL;
                 capture.klass = 0;
                 capture.bias = (int8_t)faces[strides[type] - 3];
@@ -624,6 +625,7 @@ static void RageSubmitModelFaces(
                                  poly->u2, poly->v2, poly->u3, poly->v3};
                 RageCaptureFaceInput capture = {0};
                 capture.primitiveBegin = poly;
+                capture.sxy = sxy;
                 capture.kind = RAGE_CAPTURE_KIND_MODEL;
                 capture.klass = 1;
                 capture.raw = 1; /* forced command byte 0x2D */
@@ -680,6 +682,7 @@ static void RageSubmitModelFaces(
             {
                 RageCaptureFaceInput capture = {0};
                 capture.primitiveBegin = poly;
+                capture.sxy = sxy;
                 capture.kind = RAGE_CAPTURE_KIND_MODEL;
                 capture.klass = 2;
                 capture.bias = (int8_t)faces[strides[type] - 3];
@@ -749,6 +752,7 @@ static void RageSubmitModelFaces(
                                  poly->u2, poly->v2, poly->u3, poly->v3};
                 RageCaptureFaceInput capture = {0};
                 capture.primitiveBegin = poly;
+                capture.sxy = sxy;
                 capture.kind = RAGE_CAPTURE_KIND_MODEL;
                 capture.klass = 3;
                 capture.bias = (int8_t)faces[strides[type] - 3];
@@ -890,6 +894,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
             {
                 RageCaptureFaceInput capture = {0};
                 capture.primitiveBegin = cursor;
+                capture.sxy = sxy;
                 uint8_t flat[4] = {color[0], color[1], color[2], 0};
                 capture.kind = RAGE_CAPTURE_KIND_COURSE;
                 capture.klass = type == 0 ? 0 : 1;
@@ -994,6 +999,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
                 {
                     RageCaptureFaceInput capture = {0};
                     capture.primitiveBegin = cursor;
+                    capture.sxy = sxy;
                     uint8_t flat[4] = {color[0], color[1], color[2], 0};
                     capture.kind = RAGE_CAPTURE_KIND_COURSE;
                     capture.klass = 1;
@@ -1273,6 +1279,7 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
                      * select the adjacent CLUT row. */
                     RageCaptureFaceInput capture = {0};
                     capture.primitiveBegin = cursor;
+                    capture.sxy = sxy;
                     uint8_t flat[4] = {color[0], color[1], color[2], 0};
                     if ((flat[0] | flat[1] | flat[2]) == 0)
                         flat[0] = flat[1] = flat[2] = 0x80;

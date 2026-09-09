@@ -47,6 +47,9 @@ int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
 int ModernAssetsLoadSkyImage(uint32_t assetKey,
     const RageSkyPanoramaLayout *layout, ModernAssetImage *image);
 void ModernAssetsFreeMaterialImage(ModernAssetImage *image);
-void ModernAssetsWarmWorld(const RageRenderWorld *world);
+/* Import meshes after a completed logic frame, before presentation begins.
+ * This may decode source data and must never run from the GPU prepare/draw
+ * path, which is also entered for high-FPS repeat presentations. */
+void ModernAssetsPrepareWorld(const RageRenderWorld *world);
 
 #endif

@@ -30,7 +30,7 @@ static int Number(const char **cursor, const char *prefix, unsigned *value) {
     *value = (unsigned)parsed;
     return 1;
 }
-static int Check(DiscRawFile *raw, FILE *log, unsigned stream) {
+static int Check(DiscRawFile *raw, FILE *log, unsigned stream, int strictAudio) {
     DiscIdentity identity;
     DiscIsoReader iso;
     DiscIsoFile str;
@@ -103,18 +103,26 @@ static int Check(DiscRawFile *raw, FILE *log, unsigned stream) {
     double sectorsPerSecond = (double)(ends[shown - 1] - ends[0]) / elapsed;
     printf("%s stream=%u frames=%u ticks_seconds=%.6f xa_seconds=%.6f sectors_per_second=%.6f\n",
            identity.boot, stream, shown, elapsed, soundtrack, sectorsPerSecond);
-    /* XA coverage is not the movie duration: the PAL ending has fewer audio
-     * sectors than a continuously filled soundtrack would require. Derive
-     * picture timing from sector positions, not assumed audio occupancy.
-     * PCM output/energy is checked independently by rage-pcm-check. */
+    /* XA coverage is not always the movie duration: the PAL ending has fewer
+     * audio sectors than a continuously filled soundtrack would require.
+     * Representative movies opt into the stricter timing assertion below. */
+    if (strictAudio) {
+        double ratio = elapsed / soundtrack;
+        if (ratio < 0.98 || ratio > 1.02) {
+            fprintf(stderr, "FMV picture/XA duration mismatch: picture=%.6f xa=%.6f\n",
+                    elapsed, soundtrack);
+            return 0;
+        }
+    }
     return sectorsPerSecond >= 147.0 && sectorsPerSecond <= 153.0;
 }
 int main(int argc, char **argv) {
     unsigned stream = 0;
-    if (argc != 4 ||
+    int strictAudio = argc == 5 && strcmp(argv[4], "--strict-audio") == 0;
+    if ((argc != 4 && !strictAudio) ||
         !((strlen(argv[2]) == 1 && argv[2][0] >= '0' && argv[2][0] <= '9') ||
           strcmp(argv[2], "10") == 0)) {
-        fprintf(stderr, "usage: rage-fmv-pacing-check BIN_OR_CUE STREAM_0_TO_10 GAME_LOG\n");
+        fprintf(stderr, "usage: rage-fmv-pacing-check BIN_OR_CUE STREAM_0_TO_10 GAME_LOG [--strict-audio]\n");
         return 2;
     }
     stream = strcmp(argv[2], "10") == 0 ? 10u : (unsigned)(argv[2][0] - '0');
@@ -133,7 +141,7 @@ int main(int argc, char **argv) {
     raw.file = fopen(path, "rb");
     FILE *log = fopen(argv[3], "r");
     int ok = raw.file != NULL && log != NULL &&
-             Check(&raw, log, stream);
+             Check(&raw, log, stream, strictAudio);
     if (raw.file != NULL && fclose(raw.file) != 0) ok = 0;
     if (log != NULL && fclose(log) != 0) ok = 0;
     if (!ok) fprintf(stderr, "FMV sector/XA pacing verification failed\n");

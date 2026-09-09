@@ -235,16 +235,17 @@ if(TARGET rage-racer-smoke)
     endif()
     add_test(
         NAME fmv_frame_layout
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_fmv_frame.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DPCM_CHECK=$<TARGET_FILE:rage-pcm-check>
+            -DPPM_CHECK=$<TARGET_FILE:ppm_capture_check>
+            -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_fmv_frame.cmake
     )
 set_tests_properties(fmv_frame_layout PROPERTIES LABELS e2e)
     # Skips rather than fails when there is no disc to read the movies
-    # or the music from; see tests/support/disc_image.py.
+    # or the music from; the CMake runner resolves the configured CUE/BIN.
     set_tests_properties(fmv_frame_layout PROPERTIES TIMEOUT 75
-        SKIP_RETURN_CODE 77)
+        SKIP_REGULAR_EXPRESSION "SKIP: no disc image")
     add_test(
         NAME fmv_without_ffmpeg
         COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
@@ -256,24 +257,25 @@ set_tests_properties(fmv_without_ffmpeg PROPERTIES LABELS e2e)
         SKIP_REGULAR_EXPRESSION "SKIP: no disc image")
     add_test(
         NAME fmv_pacing
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_fmv_pacing.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DPCM_CHECK=$<TARGET_FILE:rage-pcm-check>
+            -DPACING_CHECK=$<TARGET_FILE:rage-fmv-pacing-check>
+            -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_fmv_pacing.cmake
     )
 set_tests_properties(fmv_pacing PROPERTIES LABELS e2e)
     set_tests_properties(fmv_pacing PROPERTIES TIMEOUT 600
-        SKIP_RETURN_CODE 77)
+        SKIP_REGULAR_EXPRESSION "SKIP: FMV pacing")
     add_test(
         NAME fmv_all_audio
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_fmv_pacing.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
-            --all-audio
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DPCM_CHECK=$<TARGET_FILE:rage-pcm-check>
+            -DPACING_CHECK=$<TARGET_FILE:rage-fmv-pacing-check>
+            -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+            -DALL_AUDIO=ON -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_fmv_pacing.cmake
     )
     set_tests_properties(fmv_all_audio PROPERTIES LABELS e2e TIMEOUT 720
-        SKIP_RETURN_CODE 77)
+        SKIP_REGULAR_EXPRESSION "SKIP: FMV pacing")
 
     add_test(
         NAME modern_disc_import_bootstrap

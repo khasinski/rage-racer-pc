@@ -31,13 +31,15 @@ static int TestMaterialRetry(const char *root, const char *sidecar,
         strcmp(storage.baseColorTexture, "texture.rgba")) return 0;
     RageRenderMaterial savedDefinition = definition;
     RageRenderMaterialStorage savedStorage = storage;
-    ModernAssetImage savedImage = image;
+    ModernAssetsFreeMaterialImage(&image);
     if (!SDL_SaveFile(path, "invalid", 7) ||
         !SDL_SaveFile(pixelsPath, pixels, 1)) return 0;
-    if (ModernAssetsLoadMaterial(instance, 0, 0, &definition, &image, &storage) ||
+    /* A prepared material is immutable for this asset session. Broken files
+     * after the first successful read must not cause a first-draw hitch or
+     * replace the material under a live renderer. */
+    if (!ModernAssetsLoadMaterial(instance, 0, 0, &definition, &image, &storage) ||
         memcmp(&definition, &savedDefinition, sizeof(definition)) ||
         memcmp(&storage, &savedStorage, sizeof(storage)) ||
-        memcmp(&image, &savedImage, sizeof(image)) ||
         memcmp(image.pixels, pixels, sizeof(pixels))) return 0;
     ModernAssetsFreeMaterialImage(&image);
     /* Repair only the pixels: the catalog still supplies the validated
@@ -69,9 +71,12 @@ static int TestMaterialRetirement(const char *root,
     memset(pixels, 219, sizeof(pixels));
     if (!SDL_SaveFile(sidecar, updated, sizeof(updated) - 1) ||
         !SDL_SaveFile(texture, pixels, sizeof(pixels))) return 0;
-    /* The previous catalog still names texture.rgba, which was removed.
-     * The new definition must not leak into this live session. */
-    if (ModernAssetsLoadMaterial(instance, 0, 0, &definition, &image, &storage)) return 0;
+    /* The old material was prepared by the active session. The new sidecar
+     * must not leak in until the session retires, even though its source
+     * texture was removed by the preceding retry test. */
+    if (!ModernAssetsLoadMaterial(instance, 0, 0, &definition, &image, &storage) ||
+        strcmp(storage.baseColorTexture, "texture.rgba")) return 0;
+    ModernAssetsFreeMaterialImage(&image);
     uint64_t generation = ModernAssetsGeneration();
     ModernAssetsShutdown();
     if (!ModernAssetsInitRoot(root) || ModernAssetsGeneration() == generation ||

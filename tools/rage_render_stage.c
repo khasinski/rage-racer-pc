@@ -320,7 +320,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "rage-render-stage: target: %s\n", SDL_GetError());
         goto release_renderer;
     }
-    ModernAssetsWarmWorld(&world);
+    ModernAssetsPrepareWorld(&world);
     {
         RageRenderVec3 center;
         float radius = 0.0f;

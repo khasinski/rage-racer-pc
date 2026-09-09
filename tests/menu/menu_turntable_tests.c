@@ -45,8 +45,51 @@ static void ResetCalls(void) {
     s_soundCount = 0;
 }
 
+/* Advance the production showroom angle/swap predicates with an immediately
+ * available model. Fast asset loading must not turn a short opposite press
+ * into two car requests. */
+static void AdvanceCarousel(void) {
+    if (ShowroomCarAtSwapPoint(g_MenuViewAngle, g_MenuViewAngleTarget,
+                              g_CarSwapToIndex)) {
+        g_CarSwapFromIndex = g_CarSwapToIndex;
+        g_CarSwapToIndex = -1;
+    } else {
+        g_MenuViewAngle = AdvanceMenuViewAngleValue(
+            g_MenuViewAngle, g_MenuViewAngleTarget, 24);
+    }
+}
+
+static int TestQuickDirectionChange(void) {
+    for (int direction = -1; direction <= 1; direction += 2) {
+        s32 shown = 5;
+        s32 firstTarget = direction < 0 ? 0 : MENU_CAR_VIEW_RIGHT_TARGET;
+        s32 secondTarget = direction < 0 ? MENU_CAR_VIEW_RIGHT_TARGET : 0;
+        ResetCalls();
+        g_MenuViewAngle = g_MenuViewAngleTarget = firstTarget;
+        MenuSpinToCar(&shown, shown, shown + direction, firstTarget);
+        for (int frame = 0; frame < 120 && g_CarSwapToIndex >= 0; ++frame)
+            AdvanceCarousel();
+        CHECK(g_CarSwapToIndex == -1 && MenuCarViewSettled());
+        CHECK(shown == 5 + direction);
+
+        ResetCalls();
+        for (int frame = 0; frame < 6; ++frame) {
+            AdvanceCarousel();
+            if (MenuCarViewSettled() && g_CarSwapToIndex < 0)
+                MenuSpinToCar(&shown, shown, shown - direction, secondTarget);
+        }
+        CHECK(s_requestCount == 1 && shown == 5);
+        for (int frame = 0; frame < 120 && g_CarSwapToIndex >= 0; ++frame)
+            AdvanceCarousel();
+        CHECK(g_CarSwapToIndex == -1 && g_CarSwapFromIndex == 5);
+    }
+    return 0;
+}
+
 int main(void) {
     s32 shownCar = 2;
+
+    if (TestQuickDirectionChange()) return 1;
 
     g_MenuViewAngleTarget = 500000;
     g_MenuViewAngle = 500000 + MENU_CAR_VIEW_SETTLE_WINDOW;
@@ -64,7 +107,7 @@ int main(void) {
     CHECK(s_soundCount == 1);
     CHECK(g_CarSwapFromIndex == 2 && g_CarSwapToIndex == 6);
     CHECK(g_MenuViewAngleTarget == 1200000);
-    CHECK(g_MenuViewAngle == 800000);
+    CHECK(g_MenuViewAngle == 200000);
     CHECK(g_MenuLowerAltPanelStep == -1);
 
     ResetCalls();

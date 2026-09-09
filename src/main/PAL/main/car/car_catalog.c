@@ -1,4 +1,5 @@
 #include "game/car.h"
+#include "car_catalog.h"
 
 enum {
     LIMITED_VARIANT_MODEL = 8,
@@ -24,7 +25,8 @@ s32 GetCarUnlockLevel(s32 model) {
     if ((u32)model >= GAME_CAR_COUNT || g_CarTable == NULL) {
         return -1;
     }
-    return g_CarTable[model].modelVariant + g_CarModelUnlockBase[model];
+    return CarCatalogUnlockClass(model, g_CarTable[model].modelVariant,
+        g_CarTable[model].modelVariant + g_CarModelUnlockBase[model]);
 }
 
 s32 GetOwnedCarAssetIndex(s32 model) {

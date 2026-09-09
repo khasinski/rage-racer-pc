@@ -40,11 +40,17 @@ const {spawn,execFileSync}=require('node:child_process');
    const call=(method,params)=>new Promise((resolve,reject)=>{const id=++next;pending.set(id,{resolve,reject});ws.send(JSON.stringify({id,method,params}));});
    let result;
    for(let i=0;i<100;i++){
-    const reply=await call('Runtime.evaluate',{expression:`(async()=>{if(!window.launcher||!document.querySelector('[data-action="choose-game"], [data-action="play"]'))return null;const s=await window.launcher.snapshot();return {snapshot:s,lang:document.documentElement.lang,locked:[...document.querySelectorAll('#nav [data-page]')].filter(b=>!['home','source'].includes(b.dataset.page)).every(b=>b.disabled)};})()`,awaitPromise:true,returnByValue:true});
+    const reply=await call('Runtime.evaluate',{expression:`(async()=>{if(!window.launcher||!document.querySelector('[data-action="choose-game"], [data-action="play"]'))return null;const s=await window.launcher.snapshot();return {snapshot:s,lang:document.documentElement.lang,locked:[...document.querySelectorAll('#nav [data-page]')].filter(b=>!['home','source','saves'].includes(b.dataset.page)).every(b=>b.disabled)};})()`,awaitPromise:true,returnByValue:true});
     if(reply.exceptionDetails)throw Error(JSON.stringify(reply.exceptionDetails));result=reply.result?.value;if(result)break;await new Promise(r=>setTimeout(r,100));
    }
    if(!result?.snapshot.ok||result.snapshot.value.ready!==Boolean(disc)||!result.snapshot.value.toolsReady||(!disc&&!result.locked)||result.lang!=='en')throw Error('Invalid packaged first-run state: '+JSON.stringify(result));
    console.log('Packaged first-run UI passed on '+platform+'/'+process.arch);
+   if(!disc){
+    const opened=await call('Runtime.evaluate',{expression:`(async()=>{const button=document.querySelector('#nav [data-page="saves"]');if(!button||button.disabled)return false;button.click();for(let i=0;i<100;i++){if(document.querySelector('[data-action="new-save"]'))return Boolean(document.querySelector('[data-action="open-save"]')&&document.querySelector('#new-save-region'));await new Promise(r=>setTimeout(r,50));}return false;})()`,awaitPromise:true,returnByValue:true});
+    if(opened.exceptionDetails||opened.result?.value!==true)throw Error('Save editor unavailable without a disc: '+JSON.stringify(opened));
+    console.log('Packaged save editor opens without a disc');
+   }
+
    if(disc){
     const play=await call('Runtime.evaluate',{expression:'window.launcher.play()',awaitPromise:true,returnByValue:true});
     if(play.exceptionDetails||!play.result?.value?.ok)throw Error('Packaged Play failed: '+JSON.stringify(play));

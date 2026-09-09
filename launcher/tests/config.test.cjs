@@ -1,5 +1,21 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');
 const {defaults,validate,patchIni}=require('../main/config.cjs');
+function iniValues(text){
+ let section='',values={};
+ for(const line of text.split(/\r?\n/)){
+  const heading=line.match(/^\s*\[([^\]]+)]/);if(heading){section=heading[1].trim();continue;}
+  const entry=line.match(/^\s*([^#;=\s][^=]*?)\s*=\s*(.*?)\s*$/);if(entry)values[(section?section+'.':'')+entry[1].trim()]=entry[2];
+ }
+ return values;
+}
+test('launcher schema and both first-run templates have one set of defaults',async()=>{
+ const fs=require('node:fs/promises'),path=require('node:path');
+ const templates=[path.resolve(__dirname,'../../rage-port.ini'),path.resolve(__dirname,'../resources/rage-port.ini')];
+ for(const template of templates){
+  const values=iniValues(await fs.readFile(template,'utf8'));
+  for(const [key,value] of Object.entries(defaults))assert.equal(String(values[key]),String(value),`${path.basename(template)}: ${key}`);
+ }
+});
 test('launch configuration forces modern and selected regional content while preserving user settings',async()=>{
  const fs=require('node:fs/promises'),path=require('node:path'),os=require('node:os');
  const {LauncherService}=require('../main/service.cjs');

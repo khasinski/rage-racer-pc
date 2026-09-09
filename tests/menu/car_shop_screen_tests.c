@@ -183,7 +183,9 @@ int main(int argc, char **argv) {
      * What the shop did before it was taken apart. Run the test with a file
      * name to write the sweep out and diff two runs.
      */
-    static const unsigned long expected = 880859133UL;
+    /* Shared turntable reversal fix: the differential sweep is unchanged
+     * when the animation angle is reduced modulo one full revolution. */
+    static const unsigned long expected = 3007458141UL;
     static const s32 busyStates[] = {0, -1, -2, -3, 1, 2};
     static const u16 buttons[] = {0, PAD_UP, PAD_DOWN, PAD_CONFIRM, PAD_CANCEL,
                                   0x8000, 0x0080, 0x0010};

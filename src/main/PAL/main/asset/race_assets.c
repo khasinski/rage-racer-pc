@@ -5,6 +5,7 @@
 #include "game/race.h"
 #include "game/cd.h"
 #include "rage/render_world_game.h"
+#include "car_catalog.h"
 
 #include <string.h>
 
@@ -152,6 +153,8 @@ static void LoadPlayerCarRaceAssets(void) {
         return;
     }
     memcpy(&s_RuntimeCarSpec, sourceSpec, sizeof(s_RuntimeCarSpec));
+    CarCatalogApplySpecification(carIndex, g_CarTable[carIndex].modelVariant,
+                                 &s_RuntimeCarSpec);
     GameRenderWorldSetTrackCarAsset(carAsset);
     g_CarSpec = &s_RuntimeCarSpec;
     g_AssetLoadCursor = audioBody;

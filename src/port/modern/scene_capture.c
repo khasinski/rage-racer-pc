@@ -283,7 +283,7 @@ void CaptureFace3D(const RageCaptureFaceInput *input) {
         }
     }
     for (vertex = 0; vertex < 4; vertex++) {
-        if (input->v[vertex] == NULL) {
+        if (input->v[vertex] == NULL || input->sxy == NULL) {
             snapshot->faceOverflow++;
             return;
         }
@@ -320,6 +320,8 @@ void CaptureFace3D(const RageCaptureFaceInput *input) {
         face->pos[vertex][0] = v->vx;
         face->pos[vertex][1] = v->vy;
         face->pos[vertex][2] = v->vz;
+        face->screen[vertex][0] = (int16_t)input->sxy[vertex];
+        face->screen[vertex][1] = (int16_t)((uint32_t)input->sxy[vertex] >> 16);
         if (input->uv != NULL) {
             face->uv[vertex][0] = input->uv[vertex * 2];
             face->uv[vertex][1] = input->uv[vertex * 2 + 1];

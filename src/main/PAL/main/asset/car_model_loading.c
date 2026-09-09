@@ -1,6 +1,7 @@
 #include "game/asset.h"
 #include "game/asset_internal.h"
 #include "game/car.h"
+#include "car_catalog.h"
 
 enum { CAR_MODEL_LOAD_ASSET = 1 };
 
@@ -87,6 +88,8 @@ void LoadPendingCarModelAsset(void) {
     if (AssetLoadDidNotComplete(loadedSize)) return;
 
     asset = GetCarModelAsset(destination);
+    CarCatalogApplyModelAvailability(carIndex,
+        g_CarTable[carIndex].modelVariant + gradeOffset, asset);
     if (!InstallCarModelAsset(asset, (size_t)loadedSize, targetSlot,
                               carIndex)) {
         FailAssetLoad();

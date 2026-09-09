@@ -19,6 +19,7 @@
 #include "render/resource_provider.h"
 #include "modern_material_transaction.h"
 #include "modern_png.h"
+#include "modern_prepared_materials.h"
 #include "render/rmesh_replace.h"
 #include "authored_car_data.h"
 
@@ -26,6 +27,10 @@
  * all matching replacements are assembled before the result is cached. */
 static RageRuntimeCachedMesh
     s_authoredCarMesh[RAGE_AUTHORED_CAR_COUNT ? RAGE_AUTHORED_CAR_COUNT : 1];
+/* CPU copies move source-image work to the completed logic frame. GPU upload
+ * still needs a command buffer, but a first draw never has to reopen a disc
+ * file, decode an override, apply paint, or rebuild the material definition. */
+static ModernPreparedMaterials s_preparedMaterials;
 static char s_modRoot[1024];
 static const RageModManifest *s_modManifest;
 static int s_modReady;
@@ -430,6 +435,7 @@ uint64_t ModernAssetsGeneration(void) { return s_generation; }
 void ModernAssetsShutdown(void) {
     size_t i;
     if (s_source != MODERN_ASSET_SOURCE_NONE) ++s_generation;
+    ModernPreparedMaterialsClear(&s_preparedMaterials);
     for (i=0;i<sizeof(s_authoredCarMesh)/sizeof(s_authoredCarMesh[0]);i++)
         RuntimeCachedMeshRelease(&s_authoredCarMesh[i]);
     memset(&s_authoredCarMesh,0,sizeof(s_authoredCarMesh));
@@ -859,11 +865,17 @@ int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
                              RageRenderMaterial *definition,
                              ModernAssetImage *image,RageRenderMaterialStorage *storage) {
     if(!instance)return 0;
+    if (ModernPreparedMaterialsCopy(&s_preparedMaterials, instance, material,
+                                    variant, definition, image, storage))
+        return 1;
     MaterialBuildRequest request={instance,material,variant};
     /* Publish only after all providers, surface effects and path copies pass.
      * A failed build never exposes borrowed sidecar pointers or partial images. */
-    return ModernMaterialTransaction(BuildMaterialTransaction,&request,ModernAssetsFreeMaterialImage,
-                                      definition,image,storage);
+    if (!ModernMaterialTransaction(BuildMaterialTransaction, &request,
+            ModernAssetsFreeMaterialImage, definition, image, storage)) return 0;
+    return ModernPreparedMaterialsStore(&s_preparedMaterials, instance,
+                                        material, variant, definition, image,
+                                        storage);
 }
 
 void ModernAssetsFreeMaterialImage(ModernAssetImage *image) {
@@ -872,10 +884,56 @@ void ModernAssetsFreeMaterialImage(ModernAssetImage *image) {
     if (image != NULL) memset(image, 0, sizeof(*image));
 }
 
-void ModernAssetsWarmWorld(const RageRenderWorld *world) {
-    uint32_t i;
+static void ModernAssetsPrepareInstance(const RageRenderMeshInstance *instance) {
+    const RageRuntimeCachedMesh *cached = ModernAssetsFind(instance);
+    uint32_t first, count;
+    if (cached == NULL || instance->pass != RAGE_RENDER_PASS_MAIN ||
+        !RuntimeMeshRange(&cached->mesh, instance->mesh, &first, &count)) return;
+    /* Geometry must become resident even after the texture-preparation budget
+     * fills. Otherwise a long course can starve cars submitted later in the
+     * same frame, which leaves every vehicle invisible in the native renderer. */
+    if (ModernPreparedMaterialsBudgetReached(&s_preparedMaterials)) return;
+    for (uint32_t offset = 0; offset < count; ++offset) {
+            RageRuntimeVertex vertex;
+            uint32_t index, material;
+            uint8_t variant = instance->materialVariant;
+            RageRenderMaterial definition;
+            RageRenderMaterialStorage storage;
+            ModernAssetImage image = {0};
+            if (!RuntimeMeshIndex(&cached->mesh, first + offset, &index) ||
+                !RuntimeMeshVertex(&cached->mesh, index, &vertex)) continue;
+            material = vertex.material;
+            if (material == UINT32_MAX) continue;
+            material &= ~RAGE_RUNTIME_MATERIAL_SCROLL_U;
+            if ((material & RAGE_RUNTIME_MATERIAL_METADATA) != 0) {
+                material &= RAGE_RUNTIME_MATERIAL_INDEX_MASK;
+                if (material == RAGE_RUNTIME_MATERIAL_INDEX_MASK) continue;
+            }
+            if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN &&
+                (vertex.material & RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT) == 0)
+                variant &= (uint8_t)~1u;
+            if (ModernPreparedMaterialsContains(&s_preparedMaterials, instance,
+                                                material, variant))
+                continue;
+            if (ModernAssetsLoadMaterial(instance, material, variant,
+                    &definition, &image, &storage))
+                ModernAssetsFreeMaterialImage(&image);
+    }
+}
+
+void ModernAssetsPrepareWorld(const RageRenderWorld *world) {
+    uint32_t i, pass;
     if (s_source == MODERN_ASSET_SOURCE_NONE || world == NULL) return;
-    for (i = 0; i < world->instanceCount; i++) {
-        (void)ModernAssetsFind(&world->instances[i]);
+    /* Vehicles have a small, bounded material set. Prepare them before the
+     * dense course world consumes the shared cache, then prepare all remaining
+     * geometry. */
+    for (pass = 0; pass < 2; ++pass) {
+        for (i = 0; i < world->instanceCount; ++i) {
+            const RageRenderMeshInstance *instance = &world->instances[i];
+            int vehicle = instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
+                instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
+            if ((pass == 0) != vehicle) continue;
+            ModernAssetsPrepareInstance(instance);
+        }
     }
 }

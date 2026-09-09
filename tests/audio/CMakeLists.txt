@@ -1,20 +1,9 @@
-if(RAGE_RUBY_EXECUTABLE)
 add_test(
     NAME audio_state_layout
-    COMMAND ruby
-        ${CMAKE_CURRENT_SOURCE_DIR}/verify_audio_state_layout.rb
-        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/sound_runtime.c
-        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/audio_initialization.c
-        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/reset_audio_voice_state.c
-        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/cd/cd_audio.c
-        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/cd/cd_pause_request.c
-        ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/records.c
-        ${CMAKE_SOURCE_DIR}/include/game/track.h
-        ${RAGE_HOST_STATE_SOURCES}
+    COMMAND source_contract_tests audio_state_layout ${CMAKE_SOURCE_DIR}
 )
 
 set_tests_properties(audio_state_layout PROPERTIES LABELS functional)
-endif()
 
 add_executable(cd_audio_policy_tests cd_audio_policy_tests.c)
 target_include_directories(cd_audio_policy_tests PRIVATE
@@ -503,40 +492,36 @@ set_tests_properties(sound_cues PROPERTIES LABELS unit)
 if(TARGET rage-racer-smoke)
     add_test(
         NAME audio_output
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_audio_output.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_audio_output.cmake
     )
 set_tests_properties(audio_output PROPERTIES LABELS e2e)
     set_tests_properties(audio_output PROPERTIES TIMEOUT 90)
 
     add_test(
         NAME menu_music_tempo
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_menu_music_tempo.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DSOURCE=${CMAKE_SOURCE_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_menu_music_tempo.cmake
     )
 set_tests_properties(menu_music_tempo PROPERTIES LABELS e2e)
     set_tests_properties(menu_music_tempo PROPERTIES TIMEOUT 180)
 
     add_test(
         NAME race_cdda
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_race_cdda.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DSOURCE=${CMAKE_SOURCE_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_race_cdda.cmake
     )
 set_tests_properties(race_cdda PROPERTIES LABELS e2e)
     set_tests_properties(race_cdda PROPERTIES TIMEOUT 135
-        SKIP_RETURN_CODE 77)
+        SKIP_REGULAR_EXPRESSION "SKIP: no disc image")
     add_test(
         NAME engine_audio
-        COMMAND python3
-            ${CMAKE_CURRENT_SOURCE_DIR}/verify_engine_audio.py
-            $<TARGET_FILE:rage-racer-smoke>
-            ${CMAKE_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DSOURCE=${CMAKE_SOURCE_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_engine_audio.cmake
     )
 set_tests_properties(engine_audio PROPERTIES LABELS e2e)
     set_tests_properties(engine_audio PROPERTIES TIMEOUT 210)

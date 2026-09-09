@@ -3,6 +3,44 @@ target_link_libraries(region_profile_tests PRIVATE rage-content)
 add_test(NAME region_profile COMMAND region_profile_tests)
 set_tests_properties(region_profile PROPERTIES LABELS unit)
 
+add_executable(car_catalog_profile_tests
+    car_catalog_profile_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/car_catalog_profile.c
+    ${CMAKE_SOURCE_DIR}/src/port/platform_paths.c)
+target_include_directories(car_catalog_profile_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port)
+if(MSVC)
+    target_compile_options(car_catalog_profile_tests PRIVATE /W4 /WX)
+else()
+    target_compile_options(car_catalog_profile_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
+add_test(NAME car_catalog_profile COMMAND car_catalog_profile_tests)
+set_tests_properties(car_catalog_profile PROPERTIES LABELS unit)
+
+add_executable(port_car_catalog_tests
+    car_catalog_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/car_catalog.c)
+target_include_directories(port_car_catalog_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include ${CMAKE_SOURCE_DIR}/src/port ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include)
+target_compile_definitions(port_car_catalog_tests PRIVATE __psyz=1)
+target_compile_definitions(port_car_catalog_tests PRIVATE
+    RAGE_SOURCE_DIRECTORY="${CMAKE_SOURCE_DIR}")
+if(MSVC)
+    target_compile_options(port_car_catalog_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(port_car_catalog_tests PRIVATE
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+endif()
+if(MSVC)
+    target_compile_options(port_car_catalog_tests PRIVATE /W4 /WX)
+else()
+    target_compile_options(port_car_catalog_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
+add_test(NAME port_car_catalog COMMAND port_car_catalog_tests)
+set_tests_properties(port_car_catalog PROPERTIES LABELS unit)
+
 add_executable(cd_backend_lifecycle_tests cd_backend_lifecycle_tests.c)
 target_link_libraries(cd_backend_lifecycle_tests PRIVATE psyz)
 add_test(NAME cd_backend_lifecycle COMMAND cd_backend_lifecycle_tests)
@@ -584,6 +622,19 @@ target_include_directories(load_buffer_bounds_tests PRIVATE
 add_test(NAME load_buffer_bounds COMMAND load_buffer_bounds_tests)
 set_tests_properties(load_buffer_bounds PROPERTIES LABELS unit)
 
+add_executable(disc_stage_validation_tests disc_stage_validation_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/disc_stage_validation.c)
+target_include_directories(disc_stage_validation_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port)
+if(MSVC)
+    target_compile_options(disc_stage_validation_tests PRIVATE /W4 /WX)
+else()
+    target_compile_options(disc_stage_validation_tests PRIVATE
+        ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
+add_test(NAME disc_stage_validation COMMAND disc_stage_validation_tests)
+set_tests_properties(disc_stage_validation PROPERTIES LABELS unit)
+
 add_executable(shipped_config_tests shipped_config_tests.c)
 target_compile_options(shipped_config_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 if(MSVC)
@@ -595,10 +646,10 @@ add_test(NAME shipped_config COMMAND shipped_config_tests ${CMAKE_SOURCE_DIR}/ra
 
 set_tests_properties(shipped_config PROPERTIES LABELS functional)
 if(APPLE AND TARGET rage-racer)
-    add_test(NAME macos_build_launcher COMMAND python3
-        ${CMAKE_CURRENT_SOURCE_DIR}/verify_macos_build_launcher.py
-        ${CMAKE_BINARY_DIR}/rage-racer
-        $<TARGET_FILE:rage-racer>)
+    add_test(NAME macos_build_launcher COMMAND ${CMAKE_COMMAND}
+        -DLAUNCHER=${CMAKE_BINARY_DIR}/rage-racer
+        -DEXECUTABLE=$<TARGET_FILE:rage-racer>
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_macos_build_launcher.cmake)
     set_tests_properties(macos_build_launcher PROPERTIES LABELS functional)
 endif()
 
@@ -637,10 +688,15 @@ set_tests_properties(window_size PROPERTIES LABELS e2e)
     set_tests_properties(window_size PROPERTIES TIMEOUT 60)
     find_program(RAGE_XDOTOOL xdotool)
     if(RAGE_XDOTOOL)
+        add_executable(window_lifecycle_tests window_lifecycle_tests.c)
+        if(MSVC)
+            target_compile_options(window_lifecycle_tests PRIVATE /W4 /WX)
+        else()
+            target_compile_options(window_lifecycle_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+        endif()
         add_test(
             NAME window_lifecycle
-            COMMAND python3
-                ${CMAKE_CURRENT_SOURCE_DIR}/verify_window_lifecycle.py
+            COMMAND window_lifecycle_tests
                 $<TARGET_FILE:rage-racer-smoke>
                 ${CMAKE_SOURCE_DIR}
         )

@@ -112,3 +112,30 @@ test('save-copy rejects aliases of the original before invoking native editing',
   assert.deepEqual(await fs.readdir(sourceDir),['original.save']);
  }finally{await fs.rm(root,{recursive:true,force:true});}
 });
+
+test('integrated editor creates and edits all regions without a game image',async()=>{
+ const {LauncherService}=require('../main/service.cjs');
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-save-integrated-'));
+ try{
+  const service=new LauncherService({root,bin:path.resolve(__dirname,'../resources/bin')});
+  assert.equal(service.state.disc,null);
+  for(const [region,prefix]of [['PAL','BESCES-00650'],['NTSC-U','BASLUS-00403'],['NTSC-J','BISLPS-00600']]){
+   const file=path.join(root,prefix+' RAGE000'),copy=path.join(root,prefix+' RAGE001');
+   const created=await service.newSave(file,region);
+   assert.equal(created.region,region);assert.equal(created.checksumsValid,true);
+   const original=await fs.readFile(file),opened=await service.readSave(file);
+   assert.equal(opened.region,region);
+   const values=Object.fromEntries(opened.fields.map(f=>[f.key,f.value]));
+   assert.equal(values['Grand Prix / Car 03 / Owned'],1);
+   assert.equal(values['Grand Prix / Highest class'],-1);
+   const edits={'Advanced / Save counter':'42','Advanced / Reserved byte 00':'173',team:'MERGED'};
+   const changed=await service.writeSave(file,copy,undefined,edits);
+   assert.equal(changed.checksumsValid,true);assert.equal(changed.team,'MERGED');
+   for(const key of Object.keys(edits).filter(k=>k!=='team'))assert.equal(String(changed.fields.find(f=>f.key===key).value),edits[key]);
+   assert.deepEqual(await fs.readFile(file),original);
+   assert.equal((await service.readSave(copy)).checksumsValid,true);
+  }
+  await assert.rejects(service.newSave(path.join(root,'invalid'),'OTHER'),/Invalid save region/);
+  service.game={};await assert.rejects(service.newSave(path.join(root,'running'),'PAL'),/Close the game/);
+ }finally{await fs.rm(root,{recursive:true,force:true});}
+});

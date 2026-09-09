@@ -308,10 +308,23 @@ class LauncherService {
       }
     },false);
   }
-  async saves() {this.requireReady();return JSON.parse(await run(this.tool('rage-save-cli'),['discover']));}
-  async readSave(file,cardIndex) {this.requireReady();const args=['read',file];if(cardIndex!==undefined)args.push('--card',String(cardIndex));return JSON.parse(await run(this.tool('rage-save-cli'),args));}
+  async newSave(destination,region) {
+    if(this.game)throw Error('Close the game before editing its saves');
+    if(!['PAL','NTSC-U','NTSC-J'].includes(region))throw Error('Invalid save region');
+    return this.operation('Creating a save',async()=>{
+      const temp=destination+'.'+randomUUID()+'.tmp';
+      try {
+        const result=JSON.parse(await run(this.tool('rage-save-cli'),['new',temp,region]));
+        await fs.rename(temp,destination);
+        return {...result,region};
+      }finally{await fs.rm(temp,{force:true});}
+    },false);
+  }
+  async saves() {return JSON.parse(await run(this.tool('rage-save-cli'),['discover']));}
+  async readSave(file,cardIndex) {const args=['read',file];if(cardIndex!==undefined)args.push('--card',String(cardIndex));return JSON.parse(await run(this.tool('rage-save-cli'),args));}
   async writeSave(file,destination,cardIndex,edits) {
-    this.requireReady();if(this.game)throw Error('Close the game before editing its saves');
+    if(this.busy)throw Error('Wait for the current operation to finish');
+    if(this.game)throw Error('Close the game before editing its saves');
     if(path.resolve(file)===path.resolve(destination))throw Error('Choose a separate output file to preserve the original');
     const args=['write',file],temp=destination+'.'+randomUUID()+'.tmp';args.push(temp);
     if(cardIndex!==undefined)args.push('--card',String(cardIndex));

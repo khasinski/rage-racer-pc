@@ -15,5 +15,13 @@ void ClassicMotionPrepare(const RageSceneSnapshot *previous,
 int ClassicMotionCoordinates(int packetIndex, float fraction,
                              float x[4], float y[4]);
 int ClassicMotionMatchCount(void);
+/* Diagnostic counts exclude sky/HUD packets. Candidates are counted before
+ * the shared-surface guard; moving packets are counted after it. */
+typedef struct ClassicMotionStats {
+    int polygons, candidates, moving;
+    int coursePolygons, courseMoving;
+    int faceParents;
+} ClassicMotionStats;
+ClassicMotionStats ClassicMotionGetStats(void);
 
 #endif

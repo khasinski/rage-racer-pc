@@ -102,6 +102,7 @@ typedef struct RageCaptureFace {
     uint16_t clut, tpage;
     uint32_t textureWindow;
     int16_t pos[4][4]; /* local SVECTOR x,y,z (word 3 unused) */
+    int16_t screen[4][2]; /* exact emitted parent SXY, before subdivision */
     uint8_t uv[4][2];
     uint8_t color[4][4];
 } RageCaptureFace;
@@ -120,6 +121,7 @@ typedef struct RageCaptureFaceInput {
     int fog;
     int cellSlot;
     const void *v[4];       /* SVECTOR* */
+    const int *sxy;         /* four packed PS1 SXY values for the parent */
     const uint8_t *uv;      /* 8 bytes u0v0..u3v3, or NULL */
     uint8_t uvStorage[8];   /* scratch space call sites may point uv at */
     uint16_t clut, tpage;

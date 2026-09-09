@@ -86,16 +86,18 @@ set(RAGE_RUNTIME_DISC "" CACHE FILEPATH
 if(RAGE_ENABLE_LINT)
     if(CMAKE_GENERATOR MATCHES "Ninja|Makefiles")
         set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-        find_package(Python3 COMPONENTS Interpreter QUIET)
-        if(Python3_Interpreter_FOUND)
+        find_program(RAGE_CLANG_TIDY_EXECUTABLE clang-tidy)
+        find_program(RAGE_CPPCHECK_EXECUTABLE cppcheck)
+        if(RAGE_CLANG_TIDY_EXECUTABLE AND RAGE_CPPCHECK_EXECUTABLE)
             add_custom_target(lint
-                COMMAND ${Python3_EXECUTABLE}
-                    ${CMAKE_CURRENT_SOURCE_DIR}/tools/run_lint.py
-                    --build-dir ${CMAKE_BINARY_DIR}
+                COMMAND ${CMAKE_COMMAND}
+                    -DBUILD_DIR=${CMAKE_BINARY_DIR}
+                    -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+                    -P ${CMAKE_CURRENT_SOURCE_DIR}/tools/run_lint.cmake
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                 COMMENT "Linting native port and renderer code")
         else()
-            message(STATUS "Lint target disabled: Python 3 interpreter not found")
+            message(STATUS "Lint target disabled: clang-tidy and cppcheck are required")
         endif()
     else()
         message(STATUS "Lint target disabled: generator has no compilation database")
@@ -322,6 +324,8 @@ if(RAGE_BUILD_PORT)
         src/port/timing_restore.c
         src/port/chase_camera.c
         src/port/content_options.c
+        src/port/car_catalog_profile.c
+        src/port/car_catalog.c
         src/port/chd_disc.c
         src/port/chd_track_layout.c
         src/port/disc_stream_table.c
@@ -340,8 +344,17 @@ if(RAGE_BUILD_PORT)
         src/port/native_mesh_writer.c
         src/port/track_texture_snapshot.c
         src/port/modern/modern_renderer.c
+        src/port/modern/modern_presentation_clock.c
+        src/port/modern/modern_sky_reprojection.c
+        src/port/modern/modern_overlay_state.c
+        src/port/modern/modern_overlay_batches.c
         src/port/modern/modern_vram_snapshot.c
         src/port/modern/modern_assets.c
+        src/port/modern/modern_prepared_materials.c
+        src/port/modern/modern_prepared_meshes.c
+        src/port/modern/modern_texture_index.c
+        src/port/modern/modern_depth_probe.c
+        src/port/modern/modern_material_uniform.c
         src/port/modern/modern_png.c
         src/port/modern/modern_native_gpu.c
         src/port/modern/modern_shader_sources.c
@@ -393,6 +406,19 @@ if(RAGE_BUILD_PORT)
     )
     target_compile_definitions(rage-racer-smoke PRIVATE RAGE_SMOKE_TARGET=1)
     add_executable(rage-extract tools/rage_extract.c)
+    add_executable(rage-stage-discs tools/rage_stage_discs.c
+        src/port/disc_stage_validation.c
+        src/port/disc_cue.c
+        src/port/disc_iso.c)
+    target_include_directories(rage-stage-discs PRIVATE src/port)
+    target_compile_definitions(rage-stage-discs PRIVATE
+        RAGE_STAGE_SOURCE_ROOT="${CMAKE_SOURCE_DIR}")
+    if(MSVC)
+        target_compile_options(rage-stage-discs PRIVATE /W4 /WX)
+        target_compile_definitions(rage-stage-discs PRIVATE _CRT_SECURE_NO_WARNINGS)
+    else()
+        target_compile_options(rage-stage-discs PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+    endif()
     add_executable(rage-pcm-check tools/rage_pcm_check.c src/port/pcm_metrics.c)
     add_executable(rage-fmv-pacing-check tools/rage_fmv_pacing_check.c
         src/port/disc_raw_file.c src/port/disc_cue.c src/port/disc_iso.c
@@ -416,10 +442,19 @@ if(RAGE_BUILD_PORT)
     target_include_directories(rage-pack PRIVATE src/port)
     target_link_libraries(rage-pack PRIVATE miniz rage-json)
     add_executable(rage-save-generator tools/rage_save_generator.c)
-    add_executable(rage-save-cli launcher/native/save_cli.c editor/src/rage_save.c)
-    target_compile_definitions(rage-save-cli PRIVATE __psyz=1)
-    target_include_directories(rage-save-cli PRIVATE
-        editor/src src/port/include include external/psyz/psyz/include)
+    add_executable(rage-scenario tools/rage_scenario.c)
+    target_link_libraries(rage-scenario PRIVATE SDL3::SDL3)
+    if(MSVC)
+        target_compile_options(rage-scenario PRIVATE /W4 /WX)
+    else()
+        target_compile_options(rage-scenario PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+    endif()
+    add_library(rage-save-format STATIC launcher/native/save/rage_save.c)
+    target_compile_definitions(rage-save-format PUBLIC __psyz=1)
+    target_include_directories(rage-save-format PUBLIC
+        launcher/native/save src/port/include include external/psyz/psyz/include)
+    add_executable(rage-save-cli launcher/native/save_cli.c)
+    target_link_libraries(rage-save-cli PRIVATE rage-save-format)
     target_link_libraries(rage-save-cli PRIVATE SDL3::SDL3)
     add_executable(rage-mod-cli launcher/native/mod_cli.c)
     target_compile_definitions(rage-mod-cli PRIVATE __psyz=1)
@@ -437,6 +472,11 @@ if(RAGE_BUILD_PORT)
         src/port/sky_panorama_layout.c
         src/port/native_asset_importer_stubs.c
         src/port/modern/modern_assets.c
+        src/port/modern/modern_prepared_materials.c
+        src/port/modern/modern_prepared_meshes.c
+        src/port/modern/modern_texture_index.c
+        src/port/modern/modern_depth_probe.c
+        src/port/modern/modern_material_uniform.c
         src/port/modern/modern_png.c
         src/port/modern/modern_native_gpu.c
         src/port/modern/modern_texture_dump.c)
@@ -451,6 +491,11 @@ if(RAGE_BUILD_PORT)
         src/port/sky_panorama_layout.c
         src/port/native_asset_importer_stubs.c
         src/port/modern/modern_assets.c
+        src/port/modern/modern_prepared_materials.c
+        src/port/modern/modern_prepared_meshes.c
+        src/port/modern/modern_texture_index.c
+        src/port/modern/modern_depth_probe.c
+        src/port/modern/modern_material_uniform.c
         src/port/modern/modern_png.c
         src/port/modern/modern_native_gpu.c
         src/port/modern/modern_texture_dump.c)
@@ -482,6 +527,7 @@ if(RAGE_BUILD_PORT)
             "-iquote${CMAKE_CURRENT_SOURCE_DIR}/include")
     endif()
     target_include_directories(rage-game-full PRIVATE
+        src/port
         src/port/include
         include
     )
@@ -581,9 +627,15 @@ if(RAGE_BUILD_PORT)
             "${CMAKE_CURRENT_SOURCE_DIR}/rage-port.ini")
         set_source_files_properties("${RAGE_MACOS_DEFAULT_CONFIG}" PROPERTIES
             MACOSX_PACKAGE_LOCATION Resources)
+        set(RAGE_MACOS_CAR_CATALOG
+            "${CMAKE_CURRENT_SOURCE_DIR}/cars.toml"
+            "${CMAKE_CURRENT_SOURCE_DIR}/cars.ntscj.toml")
+        set_source_files_properties(${RAGE_MACOS_CAR_CATALOG} PROPERTIES
+            MACOSX_PACKAGE_LOCATION Resources)
         target_sources(rage-racer PRIVATE
             "${RAGE_MACOS_ICON}"
-            "${RAGE_MACOS_DEFAULT_CONFIG}")
+            "${RAGE_MACOS_DEFAULT_CONFIG}"
+            ${RAGE_MACOS_CAR_CATALOG})
         set_target_properties(rage-racer PROPERTIES
             OUTPUT_NAME "Rage Racer"
             MACOSX_BUNDLE_BUNDLE_NAME "Rage Racer"
@@ -622,6 +674,33 @@ if(RAGE_BUILD_PORT)
         endif()
     endif()
     if(BUILD_TESTING)
+        add_test(NAME rage_stage_discs_cli COMMAND rage-stage-discs)
+        set_tests_properties(rage_stage_discs_cli PROPERTIES LABELS tooling
+            WILL_FAIL TRUE)
+        add_test(NAME rage_scenario_cli
+            COMMAND rage-scenario ${CMAKE_SOURCE_DIR}/race-scenario.ini
+                --binary $<TARGET_FILE:rage-racer> --class 4 --course 3 --car 12
+                --grid 0,1,2,3,4,5,6,7,8,9,10 --start-point 42
+                --rival-points 1,-,3 --dry-run)
+        set_tests_properties(rage_scenario_cli PROPERTIES LABELS tooling
+            PASS_REGULAR_EXPRESSION "class=4 course=3 car=12")
+        add_test(NAME rage_scenario_rejects_bad_grid
+            COMMAND rage-scenario ${CMAKE_SOURCE_DIR}/race-scenario.ini
+                --binary $<TARGET_FILE:rage-racer> --grid 0,1 --dry-run)
+        set_tests_properties(rage_scenario_rejects_bad_grid PROPERTIES
+            LABELS tooling WILL_FAIL TRUE)
+        add_executable(rage-save-format-tests launcher/tests/rage_save_tests.c
+            src/main/PAL/main/save/save_checksum.c)
+        target_link_libraries(rage-save-format-tests PRIVATE rage-save-format SDL3::SDL3)
+        if(MSVC)
+            target_compile_options(rage-save-format-tests PRIVATE
+                "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+        else()
+            target_compile_options(rage-save-format-tests PRIVATE
+                "-include${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+        endif()
+        add_test(NAME save_format COMMAND rage-save-format-tests)
+        set_tests_properties(save_format PROPERTIES LABELS tooling)
         add_executable(rage-gte-replay tools/rage_gte_replay.c)
         target_link_libraries(rage-gte-replay PRIVATE psyz)
         add_executable(rage-gp0-replay tools/rage_gp0_replay.c)
@@ -695,4 +774,14 @@ endif()
 
 if(BUILD_TESTING)
     add_subdirectory(tests)
+    # CTest registers all unit executables during configuration. Building only
+    # the game leaves those registrations intact but reports their missing
+    # binaries as Not Run. Keep the complete build coupled to this convenient
+    # unit gate so local and CI results mean the same thing.
+    add_custom_target(check-unit
+        COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target all
+        COMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}
+            -L unit --output-on-failure
+        USES_TERMINAL
+        COMMENT "Building all targets and running unit tests")
 endif()

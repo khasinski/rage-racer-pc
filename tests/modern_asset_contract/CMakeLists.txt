@@ -28,7 +28,8 @@ target_include_directories(miniz PUBLIC "${MINIZ}")
 target_compile_definitions(miniz PUBLIC MINIZ_NO_ARCHIVE_APIS MINIZ_NO_DEFLATE_APIS MINIZ_NO_STDIO MINIZ_NO_TIME)
 add_executable(modern_assets_retry_tests "${ROOT}/tests/render/modern_assets_retry_tests.c")
 foreach(name platform_paths runtime_config runtime_parse mod_assets texture_patch
-        track_asset_identity sky_panorama_layout native_asset_importer_stubs modern/modern_assets)
+        track_asset_identity sky_panorama_layout native_asset_importer_stubs modern/modern_assets
+        modern/modern_prepared_materials modern/modern_png)
     target_sources(modern_assets_retry_tests PRIVATE "${ROOT}/src/port/${name}.c")
 endforeach()
 target_include_directories(modern_assets_retry_tests PRIVATE

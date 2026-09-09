@@ -52,8 +52,12 @@ share one dependency graph rather than silently dropping TOML requirements.
 
 Version 1 preserves existing behavior: repeated asset keys use the last value,
 and unknown fields/sections are ignored. This is not full TOML duplicate-key
-semantics. Requirement declarations are validated, but dependency resolution,
-multiple active mods, conflict resolution and source identity remain incomplete.
+semantics. The launcher validates TOML requirements with the package graph,
+orders multiple enabled packages deterministically and composes their chosen
+providers into the one runtime directory read by the game. Package JSON IDs and
+TOML IDs remain distinct namespaces; a requirement never crosses between them
+implicitly. Resource conflicts still require an explicit provider choice, and
+source files are frozen into the launch staging directory before composition.
 
 The parser owns no external resources. Its output stores copies of all values;
 lookup results borrow this output until it is parsed again or reset. Failure
@@ -152,8 +156,13 @@ accepted, unknown dependency fields rejected. Duplicate known fields, malformed
 UTF-8 and unpaired surrogate escapes are rejected explicitly. A missing file
 is an error, not an empty metadata object. The C output owns its strings and
 failure clears it. CLI inspection does not modify the file. JSON profile edits
-and export serialization still use launcher code; this is not yet a complete
-migration of persistent profile handling or source snapshot ownership.
+and composition serialize their semantic tables through
+`rage-mod-cli --write-profile-stdin`; the C writer validates the complete TOML
+document and creates its output exclusively. Import and export copies likewise
+use `--copy-snapshot-stdin`, which verifies the copied bytes before publication.
+Launcher JSON remains the UI's persistent metadata (names, enabled state and
+explicitly chosen providers), not a second manifest serializer or source-file
+owner.
 
 ### Dependency graph
 
@@ -180,10 +189,10 @@ path explicitly denotes a raw-only package; a missing nonempty path fails.
 An empty dependency version accepts any version. Output is a JSON array of
 zero-based package indices. No files or runtime state are mutated by validation.
 
-Remaining work includes compiled profile mutation/export and resource-claim
-discovery, UI display of TOML requirements, source fingerprints and a runtime
-provider stack. Staged files isolate validation from subsequent external edits,
-but capture is not a point-in-time filesystem transaction or a hot-reload contract.
+Remaining work includes UI display of TOML requirements, source fingerprints
+and a runtime provider stack. Staged files isolate validation from subsequent
+external edits, but capture is not a point-in-time filesystem transaction or a
+hot-reload contract.
 
 ## Resource provider selection
 

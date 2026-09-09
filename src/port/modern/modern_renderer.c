@@ -2,7 +2,10 @@
 #include "modern_assets.h"
 #include "modern_native_gpu.h"
 #include "modern_sky_geometry.h"
-#include "modern_frame_pacer.h"
+#include "modern_sky_reprojection.h"
+#include "modern_overlay_state.h"
+#include "modern_overlay_batches.h"
+#include "modern_presentation_clock.h"
 #include "../classic_motion.h"
 #include "rage/render_world_game.h"
 #include "rage/track_asset_identity.h"
@@ -136,36 +139,14 @@ static unsigned int s_resourceGeneration;
 static uint32_t s_lastRenderedFrame = 0xFFFFFFFFu;
 static int s_haveRenderedFrame;
 
-typedef struct ModernVertex {
-    float x, y, z, w; /* clip space */
-    float u, v;       /* texture-page texel coordinates */
-    uint8_t color[4]; /* rgb + semi flag in alpha (0 semi, 255 opaque) */
-    uint32_t attr;    /* tpage | 0x8000 when untextured */
-    uint32_t twin;    /* texture window {andX, andY, orX, orY} bytes */
-    uint32_t clut;
-} ModernVertex;
-
 enum {
     MODERN_PIPE_2D,
     MODERN_PIPE_2D_SUB,
 };
 
-typedef struct ModernSpan {
-    uint8_t pipeline;
-    uint8_t hasScissor;
-    uint8_t pass; /* 0 = main scene, 1 = mirror overlay (depth recleared) */
-    uint8_t layer;
-    SDL_Rect scissor;
-    int32_t start, count;
-} ModernSpan;
-
 #define MODERN_MAX_VERTICES 400000
 #define MODERN_MAX_SPANS 16384
-
-static ModernVertex *s_vertices;
-static int s_vertexCount;
-static ModernSpan *s_spans;
-static int s_spanCount;
+static ModernOverlayBatches s_overlay;
 
 /* The far bucket boundary: captured 2D packets at or beyond this ordering
  * table index draw behind the 3D scene (sky layers); everything nearer
@@ -359,15 +340,11 @@ static void ModernDestroyResources(void) {
 #undef RAGE_RELEASE
     }
     ModernDisableFrameHistory();
-    free(s_vertices);
-    free(s_spans);
+    ModernOverlayBatchesRelease(&s_overlay);
     ModernNativeGpuShutdown();
-    s_vertices = NULL;
-    s_spans = NULL;
     s_resourcesReady = 0;
     s_haveRenderedFrame = 0;
     s_lastRenderedFrame = 0xFFFFFFFFu;
-    s_vertexCount = s_spanCount = 0;
     ModernVramSnapshotReset(&s_sampledVram);
     ClassicMotionReset();
     if (hadResources && RuntimeConfigEnabled("diagnostics.renderer_lifecycle")) {
@@ -452,8 +429,11 @@ static int ModernEnsureResources(void) {
         info.size = MODERN_MAX_VERTICES * sizeof(ModernVertex);
         s_vertexTransfer = SDL_CreateGPUTransferBuffer(s_device, &info);
     }
-    s_vertices = malloc(MODERN_MAX_VERTICES * sizeof(ModernVertex));
-    s_spans = malloc(MODERN_MAX_SPANS * sizeof(ModernSpan));
+    if (!ModernOverlayBatchesAllocate(&s_overlay, MODERN_MAX_VERTICES,
+                                      MODERN_MAX_SPANS)) {
+        ModernDestroyResources();
+        return 0;
+    }
     if (s_enabled && !ModernNativeGpuInit(s_device)) {
         ModernDestroyResources();
         return 0;
@@ -532,7 +512,8 @@ static int ModernEnsureResources(void) {
 
     if (!s_target || !s_depth || !s_mirrorTarget || !s_mirrorDepth ||
         !s_sampler || !s_pipe2d || !s_pipe2dSub ||
-        !s_vertexBuffer || !s_vertexTransfer || !s_vertices || !s_spans) {
+        !s_vertexBuffer || !s_vertexTransfer || !s_overlay.vertices ||
+        !s_overlay.spans) {
         fprintf(stderr, "rage-port: modern renderer resource setup failed: %s\n",
                 SDL_GetError());
         ModernDestroyResources();
@@ -552,159 +533,17 @@ static int ModernEnsureResources(void) {
 
 /* ---- frame building ---- */
 
-typedef struct Modern2DState {
-    uint32_t tpage;    /* from GP0(E1) for sprites */
-    uint32_t twin;     /* current texture window bytes */
-    SDL_Rect scissor;  /* current draw area, overlay pixels */
-    int areaTopVram;   /* raw GP0(E3) row, VRAM-absolute */
-    int hasScissor;
-    int areaEmpty;
-    int offsetX, offsetY; /* GP0(E5) relative offset */
-} Modern2DState;
-
-static uint8_t s_currentPass;
 enum {
     MODERN_LAYER_SKY,
     MODERN_LAYER_HUD,
     MODERN_LAYER_MIRROR_FOREGROUND,
 };
-static uint8_t s_currentLayer;
 static const RageRenderCamera *s_skyPacketCamera;
 static const RageRenderCamera *s_skyPresentationCamera;
 
-static void ModernTransformSkyPoint(float *x, float *y) {
-    const RageRenderCamera *from = s_skyPacketCamera;
-    const RageRenderCamera *to = s_skyPresentationCamera;
-    float determinant;
-    float dx, dy, column, row;
-    if (from == NULL || to == NULL) return;
-    determinant = from->skyGridColumn.x * from->skyGridRow.y -
-                  from->skyGridColumn.y * from->skyGridRow.x;
-    if (fabsf(determinant) < 0.0001f) return;
-    dx = *x - from->skyGridOrigin.x;
-    dy = *y - from->skyGridOrigin.y;
-    column = (dx * from->skyGridRow.y -
-              dy * from->skyGridRow.x) / determinant;
-    row = (from->skyGridColumn.x * dy -
-           from->skyGridColumn.y * dx) / determinant;
-    *x = to->skyGridOrigin.x + column * to->skyGridColumn.x +
-         row * to->skyGridRow.x;
-    *y = to->skyGridOrigin.y + column * to->skyGridColumn.y +
-         row * to->skyGridRow.y;
-}
-
-static int ModernBuildSmoothSkyQuad(const RageCapturePacket *packet,
-                                    float rawX[4], float rawY[4]) {
-    const RageRenderCamera *camera = s_skyPresentationCamera;
-    int index, row, column;
-    float originX, originY, cellX, cellY, sourceColumn;
-    if (camera == NULL || packet->skyIndex == UINT16_MAX ||
-        packet->skyIndex >= 96) return 0;
-    index = packet->skyIndex;
-    if (camera->skyCloudRow == 0) {
-        if (index >= 24) return 0;
-        row = 0;
-        originX = camera->skyGridOrigin.z;
-        originY = camera->skyGridRow.z;
-    } else {
-        row = index / 24;
-        originX = camera->skyGridOrigin.x;
-        originY = camera->skyGridOrigin.y;
-    }
-    column = index % 24 - 8;
-    sourceColumn = (float)column;
-    if (s_skyPacketCamera != NULL)
-        sourceColumn += ModernSkySourceColumn(
-            s_skyPacketCamera->skyGridColumn.z, camera->skyGridColumn.z);
-    cellX = originX + sourceColumn * camera->skyGridColumn.x -
-            row * camera->skyGridRow.x;
-    cellY = originY + sourceColumn * camera->skyGridColumn.y -
-            row * camera->skyGridRow.y;
-    rawX[0] = cellX;
-    rawY[0] = cellY;
-    rawX[1] = cellX + camera->skyGridColumn.x;
-    rawY[1] = cellY + camera->skyGridColumn.y;
-    rawX[2] = cellX + camera->skyGridRow.x;
-    rawY[2] = cellY + camera->skyGridRow.y;
-    rawX[3] = rawX[1] + camera->skyGridRow.x;
-    rawY[3] = rawY[1] + camera->skyGridRow.y;
-    return 1;
-}
-
-static ModernSpan *ModernBeginSpan(int pipeline, const Modern2DState *state) {
-    ModernSpan *span;
-    if (s_spanCount > 0) {
-        span = &s_spans[s_spanCount - 1];
-        if (span->pipeline == pipeline && span->pass == s_currentPass &&
-            span->layer == s_currentLayer &&
-            ((state == NULL && !span->hasScissor) ||
-             (state != NULL && state->hasScissor == span->hasScissor &&
-              (!state->hasScissor ||
-               (state->scissor.x == span->scissor.x &&
-                state->scissor.y == span->scissor.y &&
-                state->scissor.w == span->scissor.w &&
-                state->scissor.h == span->scissor.h))))) {
-            return span;
-        }
-    }
-    if (s_spanCount >= MODERN_MAX_SPANS) return NULL;
-    span = &s_spans[s_spanCount++];
-    span->pipeline = (uint8_t)pipeline;
-    span->pass = s_currentPass;
-    span->layer = s_currentLayer;
-    span->hasScissor = state != NULL && state->hasScissor;
-    if (span->hasScissor) span->scissor = state->scissor;
-    span->start = s_vertexCount;
-    span->count = 0;
-    return span;
-}
-
-static int ModernPushVertices(ModernSpan *span, const ModernVertex *v,
-                              int count) {
-    if (span == NULL || v == NULL || count <= 0) return 0;
-    if (s_vertexCount < 0 || s_vertexCount > MODERN_MAX_VERTICES - count) {
-        return 0;
-    }
-    memcpy(&s_vertices[s_vertexCount], v, count * sizeof(*v));
-    s_vertexCount += count;
-    span->count += count;
-    return 1;
-}
-
-/* Quad corners arrive in PS1 order (0,1,2,3 = top-left, top-right,
- * bottom-left, bottom-right); triangles are {0,1,2} and {1,3,2}. */
-static void ModernEmitQuad(ModernSpan *span, const ModernVertex corners[4]) {
-    ModernVertex tri[6];
-    tri[0] = corners[0];
-    tri[1] = corners[1];
-    tri[2] = corners[2];
-    tri[3] = corners[1];
-    tri[4] = corners[3];
-    tri[5] = corners[2];
-    ModernPushVertices(span, tri, 6);
-}
-
-static void ModernEmitTriangle(ModernSpan *span,
-                               const ModernVertex corners[3]) {
-    ModernPushVertices(span, corners, 3);
-}
-
-static uint32_t ModernTwinFromE2(uint32_t word) {
-    uint32_t maskX = word & 0x1Fu;
-    uint32_t maskY = (word >> 5) & 0x1Fu;
-    uint32_t offX = (word >> 10) & 0x1Fu;
-    uint32_t offY = (word >> 15) & 0x1Fu;
-    if (maskX == 0 && maskY == 0) return 0x0000FFFFu;
-    return ((~(maskX * 8) & 0xFFu)) | ((~(maskY * 8) & 0xFFu) << 8) |
-           (((offX & maskX) * 8) << 16) | (((offY & maskY) * 8) << 24);
-}
-
 /* ---- arbitrary-FPS presentation timing ---- */
 
-static Uint64 s_tickTimeNs;
-static Uint64 s_tickIntervalNs;
-static uint32_t s_tickFrame = 0xFFFFFFFFu;
-static ModernFramePacer s_presentPacer;
+static ModernPresentationClock s_presentationClock;
 
 static Uint64 ModernPresentationInterval(void) {
     if (s_config.modernFps > 0)
@@ -724,13 +563,17 @@ static Uint64 ModernPresentationInterval(void) {
 }
 
 void ModernLogicFrameReady(uint32_t frame) {
-    Uint64 now = SDL_GetTicksNS();
-    if (s_tickTimeNs != 0) {
-        Uint64 delta = now - s_tickTimeNs;
-        if (delta > 1000000 && delta < 200000000) s_tickIntervalNs = delta;
+    ModernPresentationClockObserveFrame(&s_presentationClock, frame,
+                                        SDL_GetTicksNS());
+    /* The game has published an immutable semantic world at this point.
+     * The logic-rate presenter may still consume the preceding publication,
+     * while high-FPS uses an interpolation of both. Prepare both immutable
+     * snapshots once per tick so neither presentation can turn a cache miss
+     * into a render hitch at a scene or camera transition. */
+    if (s_enabled) {
+        ModernAssetsPrepareWorld(GameRenderWorldPrevious());
+        ModernAssetsPrepareWorld(GameRenderWorldCurrent());
     }
-    s_tickFrame = frame;
-    s_tickTimeNs = now;
 }
 
 /* ---- 2D packet replay ---- */
@@ -746,64 +589,6 @@ static void ModernOrtho(ModernVertex *out, float px, float py) {
     out->w = 1.0f;
 }
 
-static void ModernScissorToPixels(SDL_Rect *rect) {
-    float scale = (float)s_targetW / s_logicalW;
-    rect->x = (int)(((float)rect->x + s_overscanX) * scale);
-    rect->y = rect->y * s_targetH / 240;
-    rect->w = (int)((float)rect->w * scale);
-    rect->h = rect->h * s_targetH / 240;
-}
-
-/* Drawing-area rows are VRAM-absolute; the PS1 draws a pixel only when it
- * lies inside the area AND the current page. Model that literally: keep the
- * raw E3 row and intersect [top..bottom] with the frame's page on E4. The
- * sliding mirror leans on this - a slide of zero rows arrives as
- * (top=pageY, bottom=pageY-1), and any folding heuristic that "repairs"
- * such rows turns a deliberately empty area into a full-height band (the
- * navy flash captured at ring frame 3103: (86,240)-(233,239) became
- * y=0,h=241). */
-static int s_areaPageY;
-
-static void ModernApply2DStateWord(uint32_t word, Modern2DState *state) {
-    switch (word >> 24) {
-    case 0xE1:
-        state->tpage = word & 0x1FFu;
-        break;
-    case 0xE2:
-        state->twin = ModernTwinFromE2(word);
-        break;
-    case 0xE3: {
-        int x = (int)(word & 0x3FFu);
-        int y = (int)((word >> 10) & 0x1FFu);
-        state->scissor.x = x;
-        state->areaTopVram = y;
-        state->hasScissor = 1;
-        break;
-    }
-    case 0xE4: {
-        int x = (int)(word & 0x3FFu);
-        int y = (int)((word >> 10) & 0x1FFu);
-        int top = state->areaTopVram > s_areaPageY ? state->areaTopVram
-                                                   : s_areaPageY;
-        int bottom = y < s_areaPageY + 239 ? y : s_areaPageY + 239;
-        state->scissor.w = x - state->scissor.x + 1;
-        state->scissor.y = top - s_areaPageY;
-        state->scissor.h = bottom - top + 1;
-        state->areaEmpty = state->scissor.w <= 0 || state->scissor.h <= 0;
-        break;
-    }
-    case 0xE5: {
-        int x = (int)(word & 0x7FFu);
-        int y = (int)((word >> 11) & 0x7FFu);
-        state->offsetX = (x ^ 1024) - 1024;
-        state->offsetY = (y ^ 1024) - 1024;
-        break;
-    }
-    default:
-        break;
-    }
-}
-
 static void ModernReplay2DPacket(const RageCapturePacket *packet,
                                  Modern2DState *state) {
     const uint32_t *words = packet->words;
@@ -813,7 +598,7 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
          * E-command per word; apply them all. */
         int word;
         for (word = 0; word < packet->size; word++) {
-            ModernApply2DStateWord(words[word], state);
+            ModernOverlayStateApplyWord(state, words[word]);
         }
         return;
     }
@@ -845,7 +630,8 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
             spanState.scissor.w += 2 * margin;
         }
         if (spanState.hasScissor) {
-            ModernScissorToPixels(&spanState.scissor);
+            ModernOverlayStateScaleScissor(&spanState.scissor, s_logicalW,
+                                           s_overscanX, s_targetW, s_targetH);
             if (spanState.scissor.w <= 0 || spanState.scissor.h <= 0) return;
         }
         if (isPoly) {
@@ -905,11 +691,14 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
                                              s_classicFraction, rawX, rawY);
                 int smoothSky = textured && quad &&
                     CapturePacketIsMainSky(packet) &&
-                    ModernBuildSmoothSkyQuad(packet, rawX, rawY);
+                    ModernSkyBuildSmoothQuad(packet, s_skyPacketCamera,
+                                             s_skyPresentationCamera, rawX, rawY);
                 for (vertex = 0; vertex < count; vertex++) {
                     if (!smoothSky &&
                         CapturePacketIsMainSky(packet))
-                    ModernTransformSkyPoint(&rawX[vertex], &rawY[vertex]);
+                    ModernSkyReprojectPoint(s_skyPacketCamera,
+                                            s_skyPresentationCamera,
+                                            &rawX[vertex], &rawY[vertex]);
                 }
                 if (!textured && quad &&
                     CapturePacketIsMainSky(packet))
@@ -932,9 +721,10 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
                 uint32_t abr = (prim_tpage >> 5) & 3u;
                 int pipeline = (semi && abr == 2u) ? MODERN_PIPE_2D_SUB
                                                    : MODERN_PIPE_2D;
-                ModernSpan *span = ModernBeginSpan(pipeline, &spanState);
-                if (quad) ModernEmitQuad(span, corners);
-                else ModernEmitTriangle(span, corners);
+                ModernSpan *span = ModernOverlayBatchesBegin(&s_overlay,
+                                                              pipeline, &spanState);
+                if (quad) ModernOverlayBatchesEmitQuad(&s_overlay, span, corners);
+                else ModernOverlayBatchesEmitTriangle(&s_overlay, span, corners);
             }
         } else if (isRect) {
             ModernVertex corners[4];
@@ -1000,8 +790,9 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
                 uint32_t abr = (state->tpage >> 5) & 3u;
                 int pipeline = (semi && abr == 2u) ? MODERN_PIPE_2D_SUB
                                                    : MODERN_PIPE_2D;
-                ModernSpan *span = ModernBeginSpan(pipeline, &spanState);
-                ModernEmitQuad(span, corners);
+                ModernSpan *span = ModernOverlayBatchesBegin(&s_overlay,
+                                                              pipeline, &spanState);
+                ModernOverlayBatchesEmitQuad(&s_overlay, span, corners);
             }
         } else if (isLine) {
             /* Fixed two/three-point lines; expand each segment to a thin
@@ -1058,8 +849,9 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
                 }
                 {
                     ModernSpan *span =
-                        ModernBeginSpan(MODERN_PIPE_2D, &spanState);
-                    ModernEmitQuad(span, corners);
+                        ModernOverlayBatchesBegin(&s_overlay, MODERN_PIPE_2D,
+                                                  &spanState);
+                    ModernOverlayBatchesEmitQuad(&s_overlay, span, corners);
                 }
             }
         }
@@ -1069,19 +861,22 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
 /* ---- captured PS1 2D -> overlay vertex/span lists ---- */
 
 static void ClassicBuildFrame(const RageSceneSnapshot *snapshot) {
-    Modern2DState state = {0};
-    state.twin = 0x0000FFFFu;
-    s_vertexCount = s_spanCount = 0;
-    s_areaPageY = snapshot->displayPageY;
-    s_currentPass = 0;
-    s_currentLayer = MODERN_LAYER_HUD;
+    Modern2DState state;
+    ModernOverlayBatchesReset(&s_overlay, 0, MODERN_LAYER_HUD);
+    ModernOverlayStateInit(&state, snapshot->displayPageY);
     s_skyPacketCamera = s_skyPresentationCamera = NULL;
-    const RageRenderWorld *current = GameRenderWorldCurrent();
-    if (s_classicSkyWorld && current &&
-        current->previousCamera.skyAssetKey == s_classicSkyWorld->camera.skyAssetKey &&
-        current->previousCamera.skyCloudRow == s_classicSkyWorld->camera.skyCloudRow) {
-        s_skyPacketCamera = &current->previousCamera;
+    /* `snapshot` is CapturePrevious(). Its sky packets were produced by the
+     * previous published render world, not by current->previousCamera: a hard
+     * camera cut deliberately snaps that history to the new shot. Reusing the
+     * snapped camera here interpreted old packets in the new grid and left a
+     * stale/misaligned sky for one presentation. */
+    const RageRenderWorld *previous = GameRenderWorldPrevious();
+    if (s_classicSkyWorld) {
         s_skyPresentationCamera = &s_classicSkyWorld->camera;
+        if (previous &&
+            previous->camera.skyAssetKey == s_classicSkyWorld->camera.skyAssetKey &&
+            previous->camera.skyCloudRow == s_classicSkyWorld->camera.skyCloudRow)
+            s_skyPacketCamera = &previous->camera;
     }
     if (s_config.modernFps != RAGE_MODERN_FPS_LOGIC)
         ClassicMotionPrepare(snapshot, CaptureClassicSources(snapshot),
@@ -1096,15 +891,24 @@ static void ClassicBuildFrame(const RageSceneSnapshot *snapshot) {
     }
     s_classicPacketIndex = -1;
     if (RuntimeConfigEnabled("diagnostics.classic_trace")) {
+        ClassicMotionStats motion = ClassicMotionGetStats();
+        static uint32_t motionFrame = UINT32_MAX;
+        if (motionFrame != snapshot->frameCounter) {
+            motionFrame = snapshot->frameCounter;
+            fprintf(stderr, "classic-motion frame=%u scene=%d polygons=%d candidates=%d face_parents=%d moving=%d course_polygons=%d course_moving=%d\n",
+                    snapshot->frameCounter, snapshot->sceneId, motion.polygons,
+                    motion.candidates, motion.faceParents, motion.moving, motion.coursePolygons,
+                    motion.courseMoving);
+        }
         uint64_t hash = UINT64_C(14695981039346656037);
-        for (int i = 0; i < s_vertexCount; ++i) {
-            const unsigned char *xy = (const unsigned char *)&s_vertices[i].x;
+        for (int i = 0; i < s_overlay.vertexCount; ++i) {
+            const unsigned char *xy = (const unsigned char *)&s_overlay.vertices[i].x;
             for (size_t byte = 0; byte < 2 * sizeof(float); ++byte)
                 hash = (hash ^ xy[byte]) * UINT64_C(1099511628211);
         }
         fprintf(stderr, "classic-frame frame=%u t=%.4f packets=%d matched=%d vertices=%d spans=%d xy_hash=%016llx\n",
                 snapshot->frameCounter, s_classicFraction, snapshot->packetCount,
-                ClassicMotionMatchCount(), s_vertexCount, s_spanCount,
+                ClassicMotionMatchCount(), s_overlay.vertexCount, s_overlay.spanCount,
                 (unsigned long long)hash);
     }
 }
@@ -1114,23 +918,18 @@ static void ModernBuildOverlayFrame(const RageSceneSnapshot *snapshot) {
     Modern2DState state2d;
     int i;
 
-    s_vertexCount = 0;
-    s_spanCount = 0;
-    s_areaPageY = snapshot->displayPageY;
-    s_currentPass = 0;
-    s_currentLayer = MODERN_LAYER_HUD;
+    ModernOverlayBatchesReset(&s_overlay, 0, MODERN_LAYER_HUD);
     s_skyPacketCamera = NULL;
     s_skyPresentationCamera = NULL;
     if (s_config.modernFps != RAGE_MODERN_FPS_LOGIC) {
-        const RageRenderWorld *current = GameRenderWorldCurrent();
+        const RageRenderWorld *previous = GameRenderWorldPrevious();
         const RageRenderWorld *presentation = ModernNativeGpuPreparedWorld();
-        if (current != NULL && presentation != NULL &&
-            current->previousCamera.skyAssetKey ==
-                presentation->camera.skyAssetKey &&
-            current->previousCamera.skyCloudRow ==
-                presentation->camera.skyCloudRow) {
-            s_skyPacketCamera = &current->previousCamera;
+        if (presentation != NULL) {
             s_skyPresentationCamera = &presentation->camera;
+            if (previous != NULL &&
+                previous->camera.skyAssetKey == presentation->camera.skyAssetKey &&
+                previous->camera.skyCloudRow == presentation->camera.skyCloudRow)
+                s_skyPacketCamera = &previous->camera;
         }
     }
     if (RuntimeConfigEnabled("diagnostics.sky_trace") &&
@@ -1147,8 +946,7 @@ static void ModernBuildOverlayFrame(const RageSceneSnapshot *snapshot) {
                 s_skyPresentationCamera->skyGridColumn.z);
     }
 
-    memset(&state2d, 0, sizeof(state2d));
-    state2d.twin = 0x0000FFFFu;
+    ModernOverlayStateInit(&state2d, snapshot->displayPageY);
 
     /* DrawSkyBackground's exact screen-space primitives are part of the
      * modern render, not a classic framebuffer fallback. Their source tag is
@@ -1159,22 +957,22 @@ static void ModernBuildOverlayFrame(const RageSceneSnapshot *snapshot) {
         uint32_t command = packet->words[0] >> 24;
         if (packet->table != 0) continue;
         if ((packet->flags & RAGE_CAPTURE_PACKET_SKY) != 0) {
-            s_currentLayer = MODERN_LAYER_SKY;
+            s_overlay.currentLayer = MODERN_LAYER_SKY;
             ModernReplay2DPacket(packet, &state2d);
             continue;
         }
         if (packet->bucket >= MODERN_BACKGROUND_BUCKET && command < 0xE0u) {
             continue;
         }
-        s_currentLayer = MODERN_LAYER_HUD;
+        s_overlay.currentLayer = MODERN_LAYER_HUD;
         ModernReplay2DPacket(packet, &state2d);
     }
 
     /* The native mirror supplies its own world and backdrop. Retain only
      * captured 2D framing/text, seeded with the main table's final GPU state
      * so the original slide-in clipping still applies. */
-    s_currentPass = 1;
-    s_currentLayer = MODERN_LAYER_MIRROR_FOREGROUND;
+    s_overlay.currentPass = 1;
+    s_overlay.currentLayer = MODERN_LAYER_MIRROR_FOREGROUND;
     for (i = 0; i < snapshot->packetCount; i++) {
         const RageCapturePacket *packet = &snapshot->packets[i];
         if (packet->flags & RAGE_CAPTURE_PACKET_3D) continue;
@@ -1187,8 +985,8 @@ static void ModernBuildOverlayFrame(const RageSceneSnapshot *snapshot) {
         }
         ModernReplay2DPacket(packet, &state2d);
     }
-    s_currentPass = 0;
-    s_currentLayer = MODERN_LAYER_HUD;
+    s_overlay.currentPass = 0;
+    s_overlay.currentLayer = MODERN_LAYER_HUD;
 }
 
 /* ---- rendering ---- */
@@ -1253,8 +1051,8 @@ static void ModernRenderOverlaySelection(SDL_GPUCommandBuffer *cmd,
     if (pass == NULL) return;
     SDL_BindGPUVertexBuffers(pass, 0, &vertex, 1);
     SDL_BindGPUFragmentSamplers(pass, 0, &texture, 1);
-    for (spanIndex = 0; spanIndex < s_spanCount; spanIndex++) {
-        const ModernSpan *span = &s_spans[spanIndex];
+    for (spanIndex = 0; spanIndex < s_overlay.spanCount; spanIndex++) {
+        const ModernSpan *span = &s_overlay.spans[spanIndex];
         SDL_Rect scissor = {0, 0, s_targetW, s_targetH};
         if (span->pass != passNumber || span->count == 0 ||
             (layerMask & (1u << span->layer)) == 0) continue;
@@ -1364,7 +1162,7 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
     if (profile) profileBuilt = SDL_GetTicksNS();
     cmd = SDL_AcquireGPUCommandBuffer(s_device);
     if (cmd == NULL) return 0;
-    if (s_vertexCount > 0) {
+    if (s_overlay.vertexCount > 0) {
         SDL_GPUCopyPass *copy;
         void *mapped = SDL_MapGPUTransferBuffer(s_device, s_vertexTransfer,
                                                 true);
@@ -1372,7 +1170,8 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
             SDL_CancelGPUCommandBuffer(cmd);
             return 0;
         }
-        memcpy(mapped, s_vertices, s_vertexCount * sizeof(ModernVertex));
+        memcpy(mapped, s_overlay.vertices,
+               s_overlay.vertexCount * sizeof(ModernVertex));
         SDL_UnmapGPUTransferBuffer(s_device, s_vertexTransfer);
         copy = SDL_BeginGPUCopyPass(cmd);
         if (copy == NULL) {
@@ -1385,7 +1184,7 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
             const SDL_GPUBufferRegion destination = {
                 .buffer = s_vertexBuffer,
                 .offset = 0,
-                .size = (Uint32)(s_vertexCount * sizeof(ModernVertex))};
+                .size = (Uint32)(s_overlay.vertexCount * sizeof(ModernVertex))};
             SDL_UploadToGPUBuffer(copy, &source, &destination, true);
         }
         SDL_EndGPUCopyPass(copy);
@@ -1541,8 +1340,8 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
         profilePrepareNs += s_profilePrepareNs;
         profileSubmitNs += finished - profileBuilt;
         profileFaces += (Uint64)snapshot->faceCount;
-        profileVertices += (Uint64)s_vertexCount;
-        profileSpans += (Uint64)s_spanCount;
+        profileVertices += (Uint64)s_overlay.vertexCount;
+        profileSpans += (Uint64)s_overlay.spanCount;
         profileFrames++;
         if (profileFrames == 120) {
             PsyzVideoStats videoStats = {0};
@@ -1577,14 +1376,14 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
     if (RuntimeConfigEnabled("diagnostics.modern_span_trace")) {
         int counts[5] = {0};
         int verts[5] = {0};
-        for (i = 0; i < s_spanCount; i++) {
-            counts[s_spans[i].pipeline]++;
-            verts[s_spans[i].pipeline] += s_spans[i].count;
+        for (i = 0; i < s_overlay.spanCount; i++) {
+            counts[s_overlay.spans[i].pipeline]++;
+            verts[s_overlay.spans[i].pipeline] += s_overlay.spans[i].count;
         }
         fprintf(stderr,
                 "modern-spans frame=%u spans=%d verts=%d "
                 "opaque=%d/%d blend=%d/%d sub=%d/%d 2d=%d/%d 2dsub=%d/%d\n",
-                snapshot->frameCounter, s_spanCount, s_vertexCount,
+                snapshot->frameCounter, s_overlay.spanCount, s_overlay.vertexCount,
                 counts[0], verts[0], counts[1], verts[1], counts[2], verts[2],
                 counts[3], verts[3], counts[4], verts[4]);
     }
@@ -1776,7 +1575,7 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
      * interlace conventions the compat presenter already handles. */
     if (snapshot->faceCount == 0) {
         if (s_markerCaptureEnabled) ModernMarkerCheck(snapshot, 0);
-        memset(&s_presentPacer, 0, sizeof(s_presentPacer));
+        ModernPresentationClockReset(&s_presentationClock);
         /* Menus and other 2D-only scenes use the compatibility framebuffer,
          * but presentation should still honour the modern texture-filter
          * setting. Filtering the completed framebuffer cannot bleed between
@@ -1789,7 +1588,7 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
     }
     if (snapshot->displayHeight != 0 && snapshot->displayHeight != 240) {
         if (s_markerCaptureEnabled) ModernMarkerCheck(snapshot, 0);
-        memset(&s_presentPacer, 0, sizeof(s_presentPacer));
+        ModernPresentationClockReset(&s_presentationClock);
         return;
     }
     /* A renderer toggle can expose the last modern-only capture. Wait for a
@@ -1802,28 +1601,16 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
         Uint64 now = SDL_GetTicksNS();
         Uint64 interval = ModernPresentationInterval();
         float t = 1.0f;
-        if (!ModernFrameDue(&s_presentPacer, now, interval)) {
+        if (!ModernPresentationClockDue(&s_presentationClock, now, interval)) {
             info->skip_present = true;
             return;
         }
         /* PortAfterSceneHandler timestamps the completed logic frame.
          * Starting interpolation when it is first presented instead made
          * the first repeated frame consume part of the next tick. */
-        if (target->frameCounter != s_tickFrame) {
-            if (s_tickTimeNs != 0) {
-                Uint64 delta = now - s_tickTimeNs;
-                if (delta > 1000000 && delta < 200000000) {
-                    s_tickIntervalNs = delta;
-                }
-            }
-            s_tickFrame = target->frameCounter;
-            s_tickTimeNs = now;
-        }
-        if (s_tickIntervalNs > 0) {
-            double fraction = (double)(now - s_tickTimeNs) /
-                              (double)s_tickIntervalNs;
-            t = fraction >= 1.0 ? 1.0f : (float)fraction;
-        }
+        ModernPresentationClockObserveFrame(&s_presentationClock,
+                                            target->frameCounter, now);
+        t = ModernPresentationClockFraction(&s_presentationClock, now);
         Uint64 prepareStart = s_profileTiming ? SDL_GetTicksNS() : 0;
         if (s_enabled) {
             ModernNativeGpuPrepare(
@@ -1838,7 +1625,7 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
             info->skip_present = true;
             return;
         }
-        ModernFramePresented(&s_presentPacer, now, interval);
+        ModernPresentationClockPresented(&s_presentationClock, now, interval);
         if (s_haveRenderedFrame) ModernMaybeDump(snapshot);
     } else if (snapshot->frameCounter != s_lastRenderedFrame) {
         const RageRenderWorld *world = GameRenderWorldPrevious();
@@ -1888,8 +1675,8 @@ void ModernFrameWaitTick(int frameLimit) {
         RuntimeConfigGet("diagnostics.modern_dump") == NULL) return;
     if (frameLimit < 0x180) return;
     if (CaptureCurrent()->faceCount == 0) return;
-    if (!ModernFrameDue(&s_presentPacer, SDL_GetTicksNS(),
-                         ModernPresentationInterval())) return;
+    if (!ModernPresentationClockDue(&s_presentationClock, SDL_GetTicksNS(),
+                                    ModernPresentationInterval())) return;
     Uint64 presentStart = s_profileTiming ? SDL_GetTicksNS() : 0;
     SDL_WindowFlags flagsBefore = s_profileTiming && s_window
         ? SDL_GetWindowFlags(s_window) : 0;
@@ -1947,9 +1734,7 @@ int ModernInit(const RagePortConfig *config) {
      * happened, nor reinitialize overlays that were attached before us. */
     Psyz_VideoGetPresentationDevice_SDL3GPU(&s_window, &s_device);
     s_initialized = 1;
-    s_tickTimeNs = s_tickIntervalNs = 0;
-    memset(&s_presentPacer, 0, sizeof(s_presentPacer));
-    s_tickFrame = 0xFFFFFFFFu;
+    ModernPresentationClockReset(&s_presentationClock);
     s_markerCaptureEnabled = RuntimeConfigEnabled("diagnostics.marker_capture");
     s_enabled = config->renderer == RAGE_RENDERER_MODERN;
     fprintf(stderr, "rage-port: renderer toggle=%s; active=%s\n",
@@ -1969,9 +1754,7 @@ static void ModernDetachPresentation(void) {
     s_prev_present_source = NULL;
     s_prev_overlay_destroy = NULL;
     s_initialized = s_enabled = s_toggleWasDown = 0;
-    s_tickTimeNs = s_tickIntervalNs = 0;
-    s_tickFrame = 0xFFFFFFFFu;
-    memset(&s_presentPacer, 0, sizeof(s_presentPacer));
+    ModernPresentationClockReset(&s_presentationClock);
 }
 
 int ModernRestartPresentation(const RagePortConfig *config) {
@@ -2018,7 +1801,7 @@ void ModernToggle(void) {
         ModernDestroyResources();
     }
     s_lastRenderedFrame = 0xFFFFFFFFu;
-    memset(&s_presentPacer, 0, sizeof(s_presentPacer));
+    ModernPresentationClockReset(&s_presentationClock);
     fprintf(stderr, "rage-port: renderer switched to %s\n",
             s_enabled ? "modern" : "classic");
 }

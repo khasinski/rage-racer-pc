@@ -45,6 +45,12 @@ static void Describe(RageSaveFile *save) {
     SavedRaceProgress *progress[] = {&b->grandPrixProgress, &b->extraGrandPrixProgress,
                                      &b->timeAttackProgress};
     count = 0;
+    Add("Advanced / Save counter", &save->header.fields.saveCounter,
+        sizeof(save->header.fields.saveCounter), 0, 0);
+    for (a = 0; a < (int)sizeof(b->reserved); ++a) {
+        snprintf(key, sizeof(key), "Advanced / Reserved byte %02d", a);
+        Add(key, &b->reserved[a], 1, 0, 0);
+    }
     FIELD(b,padMappingIndex,0); FIELD(b,negconMappingIndex,0);
     FIELD(b,negconSteerNeutral,0); FIELD(b,negconSteerPlay,0);
     FIELD(b,negconNeutralI,0); FIELD(b,negconNeutralII,0); FIELD(b,negconNeutralL,0);
@@ -164,6 +170,16 @@ int main(int argc, char **argv) {
     RageSaveFile save; RageSaveReport report;
     RageCard card={0}; int cardIndex=-1, i, start=3, writing;
     char team[8]; const char *out=NULL;
+    if(argc==4 && !strcmp(argv[1],"new")) {
+        RageRegion region = !strcmp(argv[3],"PAL") ? RAGE_REGION_PAL :
+            !strcmp(argv[3],"NTSC-U") ? RAGE_REGION_NTSC_U :
+            !strcmp(argv[3],"NTSC-J") ? RAGE_REGION_NTSC_J : RAGE_REGION_UNKNOWN;
+        if(region==RAGE_REGION_UNKNOWN) { fprintf(stderr,"Invalid save region.\n");return 1; }
+        RageSaveInit(&save,region,0);
+        if(!RageSaveStore(argv[2],&save,&report)) goto fail;
+        /* Use the same JSON representation as opening an existing save. */
+        argc=3;argv[1]="read";
+    }
     if(argc==2 && !strcmp(argv[1],"car-names")) {
         printf("{\"international\":[");
         for(i=0;i<GAME_CAR_COUNT;i++){if(i)putchar(',');Json(RageCarName(i,RAGE_REGION_NTSC_U));}
@@ -180,7 +196,7 @@ int main(int argc, char **argv) {
         puts("]"); return 0;
     }
     if(argc<3 || (strcmp(argv[1],"read") && strcmp(argv[1],"write"))) {
-        fprintf(stderr,"usage: rage-save-cli discover | read FILE [--card INDEX] | write FILE OUTPUT [--card INDEX] [KEY VALUE ...]\n");return 1;
+        fprintf(stderr,"usage: rage-save-cli discover | new FILE PAL|NTSC-U|NTSC-J | read FILE [--card INDEX] | write FILE OUTPUT [--card INDEX] [KEY VALUE ...]\n");return 1;
     }
     writing=!strcmp(argv[1],"write");
     if(writing) { if(argc<4) return 1; out=argv[3];start=4;
@@ -218,7 +234,11 @@ int main(int argc, char **argv) {
         } else if(!RageSaveStore(out,&save,&report)) goto fail;
     }
     RageSaveReadTeamName(&save.header,team,sizeof(team));
-    printf("{\"team\":");Json(team);printf(",\"charset\":");Json(kRageNameCharset);
+    printf("{\"region\":");
+    RageRegion region=RageRegionFromPath(card.bytes?card.entries[cardIndex].name:argv[2]);
+    const RageRegionInfo *regionInfo=RageRegionFind(region);
+    Json(regionInfo?regionInfo->name:"Unknown");
+    printf(",\"team\":");Json(team);printf(",\"charset\":");Json(kRageNameCharset);
     printf(",\"carNames\":{\"international\":[");
     for(i=0;i<GAME_CAR_COUNT;i++){if(i)putchar(',');Json(RageCarName(i,RAGE_REGION_NTSC_U));}
     printf("],\"japanese\":[");

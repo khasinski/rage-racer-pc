@@ -1,0 +1,18 @@
+if(NOT DEFINED LAUNCHER OR NOT DEFINED EXECUTABLE)
+    message(FATAL_ERROR "LAUNCHER and EXECUTABLE are required")
+endif()
+
+if(NOT IS_SYMLINK "${LAUNCHER}")
+    message(FATAL_ERROR "${LAUNCHER} must be a symlink, not a stale standalone executable")
+endif()
+file(REAL_PATH "${LAUNCHER}" launcher_real)
+file(REAL_PATH "${EXECUTABLE}" executable_real)
+if(NOT launcher_real STREQUAL executable_real)
+    message(FATAL_ERROR
+        "${LAUNCHER} resolves to ${launcher_real}, expected ${executable_real}")
+endif()
+execute_process(COMMAND test -x "${EXECUTABLE}" RESULT_VARIABLE executable_result)
+if(NOT executable_result EQUAL 0)
+    message(FATAL_ERROR "current bundle executable is not runnable: ${EXECUTABLE}")
+endif()
+message(STATUS "macOS build launcher resolves to current bundle: ${EXECUTABLE}")

@@ -15,6 +15,8 @@
 
 #include "input_config.h"
 #include "content_options.h"
+#include "car_catalog.h"
+#include "car_catalog_profile.h"
 #include "diagnostic_log.h"
 #include "runtime_config.h"
 #include "timing_control.h"
@@ -37,6 +39,17 @@
 
 void MainLoop(void);
 int InitNativeGameData(void);
+
+static int LoadCarCatalogForSmoke(void) {
+    char path[4096], error[256];
+    if (!CarCatalogPrepareProfile(NULL, HostDiscRegion(), path, sizeof(path)) ||
+        !CarCatalogLoadFile(path, error, sizeof(error))) {
+        fprintf(stderr, "rage-port: invalid car catalog: %s\n", error);
+        return 0;
+    }
+    CarCatalogApplyMetadata();
+    return 1;
+}
 extern int g_SceneId;
 extern int g_FrameCounter;
 extern int g_FrontendState;
@@ -521,6 +534,7 @@ int main(int argc, char **argv) {
     }
     if (!InitNativeGameData()) return EXIT_FAILURE;
     ContentOptionsApply();
+    if (!LoadCarCatalogForSmoke()) return EXIT_FAILURE;
     PortConfigDefaults(&portConfig);
     PortConfigApplyRuntime(&portConfig);
     if (RuntimeConfigEnabled("video.modern"))
