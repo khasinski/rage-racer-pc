@@ -9,6 +9,8 @@
 #include <direct.h>
 #define Mkdir(path) _mkdir(path)
 #elif defined(__APPLE__)
+#include <CoreFoundation/CoreFoundation.h>
+#include <dlfcn.h>
 #include <mach-o/dyld.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -74,6 +76,39 @@ static int JoinPath(char *out, size_t outSize, const char *directory,
     return 1;
 }
 
+#ifdef __APPLE__
+/* Finder runs quarantined bundles from an App Translocation mount.  Resolve
+ * that temporary executable back to the bundle the player extracted, so a
+ * catalog beside the app remains editable.  The Security entry point is
+ * available on supported macOS versions but is not declared by its headers. */
+typedef CFURLRef (*TranslocationOriginalPathFn)(CFURLRef, CFErrorRef *);
+
+static int ResolveTranslocatedPath(char *path, size_t pathSize) {
+    void *security;
+    TranslocationOriginalPathFn originalPath;
+    CFURLRef url, original;
+    int ok = 0;
+
+    if (path == NULL || pathSize == 0 || path[0] == '\0') return 0;
+    security = dlopen("/System/Library/Frameworks/Security.framework/Security",
+                      RTLD_LAZY | RTLD_LOCAL);
+    if (security == NULL) return 0;
+    originalPath = (TranslocationOriginalPathFn)dlsym(
+        security, "SecTranslocateCreateOriginalPathForURL");
+    if (originalPath == NULL) { dlclose(security); return 0; }
+    url = CFURLCreateFromFileSystemRepresentation(
+        kCFAllocatorDefault, (const UInt8 *)path, (CFIndex)strlen(path), 0);
+    if (url == NULL) { dlclose(security); return 0; }
+    original = originalPath(url, NULL);
+    if (original != NULL && CFURLGetFileSystemRepresentation(
+            original, true, (UInt8 *)path, (CFIndex)pathSize)) ok = 1;
+    if (original != NULL) CFRelease(original);
+    CFRelease(url);
+    dlclose(security);
+    return ok;
+}
+#endif
+
 static int ExecutableDirectory(const char *argv0, char *out,
                                    size_t outSize) {
     char executable[4096];
@@ -89,6 +124,8 @@ static int ExecutableDirectory(const char *argv0, char *out,
 #elif defined(__APPLE__)
     uint32_t size = sizeof(executable);
     if (_NSGetExecutablePath(executable, &size) != 0) return 0;
+    length = strlen(executable);
+    ResolveTranslocatedPath(executable, sizeof(executable));
     length = strlen(executable);
 #else
     ssize_t result = readlink("/proc/self/exe", executable,

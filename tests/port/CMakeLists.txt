@@ -9,6 +9,9 @@ add_executable(car_catalog_profile_tests
     ${CMAKE_SOURCE_DIR}/src/port/platform_paths.c)
 target_include_directories(car_catalog_profile_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port)
+if(APPLE)
+    target_link_libraries(car_catalog_profile_tests PRIVATE "-framework CoreFoundation")
+endif()
 if(MSVC)
     target_compile_options(car_catalog_profile_tests PRIVATE /W4 /WX)
 else()

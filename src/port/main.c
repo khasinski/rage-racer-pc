@@ -139,6 +139,8 @@ int main(int argc, char **argv) {
         fprintf(stderr, "rage-port: ignoring car catalog override: %s\n",
                 carCatalogError[0] != '\0' ? carCatalogError : "cannot copy profile");
         CarCatalogClearOverrides();
+    } else {
+        fprintf(stderr, "rage-port: car catalog=%s\n", carCatalogPath);
     }
     CarCatalogApplyMetadata();
     MainLoop();

@@ -636,6 +636,7 @@ if(RAGE_BUILD_PORT)
             "${RAGE_MACOS_ICON}"
             "${RAGE_MACOS_DEFAULT_CONFIG}"
             ${RAGE_MACOS_CAR_CATALOG})
+        target_link_libraries(rage-racer PRIVATE "-framework CoreFoundation")
         set_target_properties(rage-racer PROPERTIES
             OUTPUT_NAME "Rage Racer"
             MACOSX_BUNDLE_BUNDLE_NAME "Rage Racer"
