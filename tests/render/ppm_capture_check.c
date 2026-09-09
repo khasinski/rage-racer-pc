@@ -130,8 +130,10 @@ static int GrandPrix(const unsigned char *pixels, unsigned width, unsigned heigh
     for (unsigned y = 0; y < height; ++y) for (unsigned x = 0; x < width; ++x) {
         const unsigned char *p = pixels + ((size_t)y * width + x) * 3u;
         unsigned min = p[0], max = p[0], average = ((unsigned)p[0] + p[1] + p[2]) / 3u;
-        if (p[1] < min) min = p[1]; if (p[2] < min) min = p[2];
-        if (p[1] > max) max = p[1]; if (p[2] > max) max = p[2];
+        if (p[1] < min) min = p[1];
+        if (p[2] < min) min = p[2];
+        if (p[1] > max) max = p[1];
+        if (p[2] > max) max = p[2];
         bright += min > 180;
         if (y >= 120) { nearWhite += min > 220; road += average > 20 && average < 180 && max - min < 20; lowerSum += p[0] + p[1] + p[2]; }
         if (y >= 80 && y < 205 && x >= 35 && x < 240) darkCar += max < 70;
