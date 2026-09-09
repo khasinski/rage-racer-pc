@@ -415,7 +415,7 @@ static void NativeUiScriptLayout(void) {
     }
     for (size_t i = 0; i < count; ++i) {
         char array[192];
-        char alias[256];
+        char alias[384];
         char pointer[256];
         const char *shortName = names[i] + 2;
         snprintf(array, sizeof(array), "TimedDrawCommand %s[", names[i]);
