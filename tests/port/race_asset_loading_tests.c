@@ -37,6 +37,14 @@ const EnvironmentPalette *g_EnvPaletteTable;
 const CourseObject *g_CourseObjects;
 s32 g_CourseObjectCount;
 
+/* Catalog override behavior is exercised by port_car_catalog_tests. */
+void CarCatalogApplySpecification(int modelIndex, int grade,
+                                  GameCarSpec *specification) {
+    (void)modelIndex;
+    (void)grade;
+    (void)specification;
+}
+
 static s32 s_loadResult;
 static s32 s_loadAssetIndex;
 static void *s_loadDestination;
