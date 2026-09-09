@@ -35,7 +35,7 @@ jobs:
       - name: Build
         run: cmake --build build/release --target rage-racer --parallel
       - name: Verify unit and functional tests
-        run: echo "Historical 0.6.5 restoration: product binary only."
+        run: echo "Historical 0.6.5 restoration product binary only."
       - name: Package
         env:
           VERSION: ${{ inputs.version || github.ref_name }}
