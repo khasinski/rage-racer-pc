@@ -42,10 +42,11 @@ int InitNativeGameData(void);
 
 static int LoadCarCatalogForSmoke(void) {
     char path[4096], error[256];
+    CarCatalogClearOverrides();
     if (!CarCatalogPrepareProfile(NULL, HostDiscRegion(), path, sizeof(path)) ||
         !CarCatalogLoadFile(path, error, sizeof(error))) {
-        fprintf(stderr, "rage-port: invalid car catalog: %s\n", error);
-        return 0;
+        fprintf(stderr, "rage-port: ignoring car catalog override: %s\n", error);
+        CarCatalogClearOverrides();
     }
     CarCatalogApplyMetadata();
     return 1;

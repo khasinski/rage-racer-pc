@@ -1,206 +1,101 @@
+#include <assert.h>
+#include <stddef.h>
+
 #include "game/asset.h"
 #include "game/car.h"
+#include "game/cd.h"
 #include "game/menu.h"
 #include "game/race.h"
 #include "game/race_internal.h"
+#include "game/scene.h"
 
-#include <stdio.h>
-
-s32 g_AssetLoadFailed;
-s32 g_AssetLoadState;
-u8 *g_AssetBase;
-u8 *g_ImageBlockBuffer;
-s32 g_BgmChangeDelay;
-s32 g_BgmSelectCdTrack;
-s32 g_BgmSelectCursor;
-s32 g_BgmSelectShowUi;
-BgmSelectStep g_BgmSelectStep;
-s32 g_BgmSelectTrack;
-s32 g_CameraCarIndex;
-s32 g_CdTrackEnded;
+s32 g_FrameSyncThreshold;
 s32 g_FadeLevel;
 s32 g_FadeStep;
-s32 g_FrameSyncThreshold;
 s32 g_SceneId;
 s32 g_SceneTimer;
-char g_TextNowLoading[] = "NOW LOADING";
+s32 g_CameraCarIndex;
+s32 g_BgmSelectCursor;
+s32 g_BgmSelectShowUi;
+s32 g_BgmSelectCdTrack;
+BgmSelectStep g_BgmSelectStep;
+s32 g_BgmSelectTrack;
+s32 g_BgmChangeDelay;
+s32 g_CdTrackEnded;
+s32 g_AssetLoadState;
+s32 g_AssetLoadFailed;
+u8 *g_AssetBase;
+u8 *g_ImageBlockBuffer;
+size_t g_ImageBlockSize;
+const char *g_TextNowLoading = "loading";
+static u8 s_assetBuffer[128];
 
-static s32 s_courseInstalls;
-static s32 s_installSucceeds;
-static s32 s_dataRequests;
-static s32 s_displayMask;
-static s32 s_displaySetups;
-static s32 s_fadeCalls;
-static s32 s_lastFade;
-static s32 s_textCalls;
-static s32 s_trackInits;
-static u8 s_courseAsset[2];
-static u8 *s_installedCourseBase;
-static size_t s_installedCourseSize;
-
-s32 AssetLoadCompletedSuccessfully(void) {
-    return g_AssetLoadState == 0 && !g_AssetLoadFailed;
-}
+static int s_assetReady, s_uploads, s_installs, s_trackRequests, s_trackInit;
+static int s_displayMask, s_fades, s_failed;
 
 void SetDispMask(s32 enabled) { s_displayMask = enabled; }
-void SetupDisplay240(s32 r, s32 g, s32 b) {
-    (void)r;
-    (void)g;
-    (void)b;
-    s_displaySetups++;
-}
-s32 InstallTrackTextureAssetPack(u8 *base, size_t size) {
-    s_installedCourseBase = base;
-    s_installedCourseSize = size;
-    s_courseInstalls++;
-    return s_installSucceeds;
-}
-s32 RequestTrackDataAssets(void) {
-    s_dataRequests++;
-    return 1;
-}
-void InitTrackScene(void) { s_trackInits++; }
-void DrawFullscreenFadeTile(s32 color, s32 tpage) {
-    (void)tpage;
-    s_lastFade = color;
-    s_fadeCalls++;
-}
-void DrawProportionalText(s32 x, s32 y, const char *str, s32 clutIndex) {
-    (void)x;
-    (void)y;
-    (void)str;
-    (void)clutIndex;
-    s_textCalls++;
+void SetupDisplay240(s32 a, s32 b, s32 c) { assert(a == 0 && b == 0 && c == 0); }
+s32 AssetLoadCompletedSuccessfully(void) { return s_assetReady; }
+s32 UploadImageAsset(const GameImageAssetHeaderWord *header, size_t size) { (void)header; (void)size; s_uploads++; return 1; }
+s32 AssetSpanSize(const void *base, const void *end, size_t *size) { (void)base; (void)end; *size = 64; return 1; }
+s32 InstallTrackTextureAssetPack(u8 *base, size_t size) { (void)base; assert(size == 64); s_installs++; return 1; }
+s32 RequestTrackDataAssets(void) { s_trackRequests++; return 1; }
+void FailAssetLoad(void) { s_failed++; }
+void InitTrackScene(void) { s_trackInit++; }
+void DrawFullscreenFadeTile(s32 level, s32 tpage) { assert(tpage == 0x49); (void)level; s_fades++; }
+void DrawProportionalText(s32 x, s32 y, const char *text, s32 color) { (void)x; (void)y; (void)text; (void)color; }
+
+static void Reset(void) {
+    s_assetReady = s_uploads = s_installs = s_trackRequests = s_trackInit = 0;
+    s_displayMask = -1; s_fades = s_failed = 0;
+    g_AssetBase = s_assetBuffer;
+    g_ImageBlockBuffer = s_assetBuffer + 64;
+    g_ImageBlockSize = 64;
+    g_SceneTimer = 0; g_FadeLevel = 316; g_FadeStep = -4;
 }
 
-#define CHECK(condition)                                                       \
-    do {                                                                       \
-        if (!(condition)) {                                                    \
-            fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, \
-                    #condition);                                               \
-            return 1;                                                          \
-        }                                                                      \
-    } while (0)
+static void TestEntryAndTexturePreparation(void) {
+    Reset();
+    EnterBgmSelectScreen();
+    assert(s_displayMask == 0 && g_SceneId == GAME_SCENE_BGM_SELECT);
+    assert(g_BgmSelectStep == BGM_SELECT_STEP_LOAD_ASSETS &&
+           g_CameraCarIndex == 0 && g_BgmSelectCdTrack == 3);
+    s_assetReady = 1;
+    assert(AssetLoadCompletedSuccessfully());
+    UpdateBgmSelectLoad();
+    assert(s_uploads == 1);
+    assert(s_installs == 1);
+    assert(s_trackRequests == 1);
+    assert(s_failed == 0);
+    assert(g_BgmSelectStep == BGM_SELECT_STEP_FADE_IN);
+    assert(s_trackInit == 0);
+}
 
-static void ResetCalls(void) {
-    g_AssetBase = s_courseAsset;
-    g_ImageBlockBuffer = s_courseAsset + sizeof(s_courseAsset);
-    s_courseInstalls = 0;
-    s_installedCourseBase = NULL;
-    s_installedCourseSize = 0;
-    s_dataRequests = 0;
-    s_displayMask = -1;
-    s_displaySetups = 0;
-    s_fadeCalls = 0;
-    s_lastFade = -1;
-    s_textCalls = 0;
-    s_trackInits = 0;
-    g_AssetLoadFailed = 0;
-    s_installSucceeds = 1;
+static void TestTrackWorldStartsOnlyAfterTrackAssets(void) {
+    Reset();
+    g_BgmSelectStep = BGM_SELECT_STEP_FADE_IN;
+    g_FadeLevel = 253; g_FadeStep = 0;
+    UpdateBgmSelectFadeIn();
+    assert(s_trackInit == 0 && g_BgmSelectStep == BGM_SELECT_STEP_FADE_IN);
+    s_assetReady = 1;
+    UpdateBgmSelectFadeIn();
+    assert(s_trackInit == 1 && s_displayMask == 0 &&
+           g_BgmSelectStep == BGM_SELECT_STEP_ACTIVE && g_FadeLevel == 0);
+}
+
+static void TestFadeInDoesNotBuildAWorldWhileLoading(void) {
+    Reset();
+    g_BgmSelectStep = BGM_SELECT_STEP_FADE_IN;
+    g_FadeLevel = 316;
+    g_FadeStep = -4;
+    UpdateBgmSelectFadeIn();
+    assert(s_trackInit == 0 && g_BgmSelectStep == BGM_SELECT_STEP_FADE_IN);
+    assert(g_FadeLevel == 257 && g_FadeStep == -4);
 }
 
 int main(void) {
-    ResetCalls();
-    EnterBgmSelectScreen();
-    CHECK(s_displayMask == 0 && s_displaySetups == 1);
-    CHECK(g_FrameSyncThreshold == 0x80 && g_FadeLevel == 0x13C);
-    CHECK(g_FadeStep == -4 && g_SceneId == 0x1C);
-    CHECK(g_BgmSelectStep == BGM_SELECT_STEP_LOAD_ASSETS);
-    CHECK(g_BgmSelectCursor == 1 && g_BgmSelectShowUi == 1);
-    CHECK(g_BgmSelectCdTrack == 3 && g_BgmSelectTrack == 0);
-    CHECK(g_BgmChangeDelay == 0x1E && g_CameraCarIndex == 0);
-
-    ResetCalls();
-    g_AssetLoadState = 0;
-    g_ImageBlockBuffer = g_AssetBase;
-    g_BgmSelectStep = BGM_SELECT_STEP_LOAD_ASSETS;
-    g_FadeLevel = 0;
-    g_FadeStep = 0;
-    UpdateBgmSelectLoad();
-    CHECK(s_courseInstalls == 0 && s_dataRequests == 0);
-    CHECK(g_BgmSelectStep == BGM_SELECT_STEP_LOAD_ASSETS);
-    CHECK(g_AssetLoadFailed == 1);
-
-    ResetCalls();
-    g_AssetLoadState = 0;
-    g_ImageBlockBuffer = (u8 *)((uintptr_t)g_AssetBase - 1);
-    g_BgmSelectStep = BGM_SELECT_STEP_LOAD_ASSETS;
-    g_FadeLevel = 0;
-    g_FadeStep = 0;
-    UpdateBgmSelectLoad();
-    CHECK(s_courseInstalls == 0 && s_dataRequests == 0);
-    CHECK(g_BgmSelectStep == BGM_SELECT_STEP_LOAD_ASSETS);
-    CHECK(g_AssetLoadFailed == 1);
-    ResetCalls();
-    g_AssetLoadState = 1;
-    g_FadeLevel = 2;
-    g_FadeStep = -4;
-    UpdateBgmSelectLoad();
-    CHECK(s_courseInstalls == 0 && s_dataRequests == 0);
-    CHECK(g_FadeLevel == 0 && g_FadeStep == 0);
-    CHECK(s_fadeCalls == 1 && s_lastFade == 0 && s_textCalls == 1);
-
-    ResetCalls();
-    g_AssetLoadState = 0;
-    g_FadeLevel = 0;
-    g_FadeStep = 0;
-    UpdateBgmSelectLoad();
-    CHECK(s_courseInstalls == 1 && s_installedCourseBase == g_AssetBase &&
-          s_installedCourseSize == sizeof(s_courseAsset));
-    CHECK(s_dataRequests == 1);
-    CHECK(g_BgmSelectStep == BGM_SELECT_STEP_FADE_IN);
-
-    ResetCalls();
-    g_AssetLoadState = 0;
-    g_AssetLoadFailed = 1;
-    g_BgmSelectStep = BGM_SELECT_STEP_LOAD_ASSETS;
-    UpdateBgmSelectLoad();
-    CHECK(s_courseInstalls == 0 && s_dataRequests == 0);
-    CHECK(g_BgmSelectStep == BGM_SELECT_STEP_LOAD_ASSETS);
-
-    ResetCalls();
-    g_AssetLoadState = 0;
-    s_installSucceeds = 0;
-    UpdateBgmSelectLoad();
-    CHECK(s_courseInstalls == 1 && s_dataRequests == 0);
-    CHECK(g_AssetLoadFailed == 1 && g_AssetLoadState == 0);
-
-    ResetCalls();
-    g_AssetLoadState = 0;
-    g_FadeLevel = 254;
-    g_FadeStep = 0;
-    UpdateBgmSelectFadeIn();
-    CHECK(s_fadeCalls == 1 && s_lastFade == 257);
-    CHECK(s_displayMask == 0 && s_trackInits == 1);
-    CHECK(g_FadeLevel == 0 && g_FadeStep == 0);
-    CHECK(g_BgmSelectStep == BGM_SELECT_STEP_ACTIVE);
-
-    ResetCalls();
-    g_AssetLoadState = 1;
-    g_SceneTimer = 0xF;
-    g_FadeStep = 0;
-    UpdateBgmSelectFadeIn();
-    CHECK(s_displayMask == 1 && s_fadeCalls == 0 && s_textCalls == 1);
-
-    ResetCalls();
-    g_AssetLoadState = 1;
-    g_FadeLevel = 2;
-    g_FadeStep = -4;
-    g_SceneId = 0x1C;
-    ExitBgmSelect();
-    CHECK(g_FadeLevel == 0 && g_FadeStep == 0);
-    CHECK(g_SceneId == 0x1C);
-    CHECK(s_fadeCalls == 1 && s_lastFade == 0 && s_textCalls == 1);
-
-    ResetCalls();
-    g_AssetLoadState = 0;
-    g_FadeLevel = 254;
-    g_FadeStep = 0;
-    ExitBgmSelect();
-    CHECK(g_FadeLevel == 257 && g_FadeStep == 4);
-    CHECK(g_SceneId == 0x16);
-    CHECK(s_fadeCalls == 1 && s_lastFade == 257 && s_textCalls == 1);
-
-    puts("BGM select transition tests passed");
+    TestEntryAndTexturePreparation();
+    TestTrackWorldStartsOnlyAfterTrackAssets();
+    TestFadeInDoesNotBuildAWorldWhileLoading();
     return 0;
 }

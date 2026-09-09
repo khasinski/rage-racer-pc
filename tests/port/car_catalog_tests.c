@@ -98,7 +98,7 @@ int main(void) {
     CarModelAsset asset;
     if (valid == NULL || shortCatalog == NULL || bad == NULL ||
         !CarCatalogParse(valid, &catalog, error, sizeof(error)) ||
-        CarCatalogParse(shortCatalog, &catalog, error, sizeof(error)) ||
+        !CarCatalogParse(shortCatalog, &catalog, error, sizeof(error)) ||
         CarCatalogParse(bad, &catalog, error, sizeof(error))) {
         fprintf(stderr, "catalog parse/validation failed: %s\n", error); return 1;
     }
@@ -118,6 +118,42 @@ int main(void) {
     g_CarTable[2].transmission = 0;
     CarCatalogApplyModelAvailability(2, 0, &asset);
     if (asset.transmissionAvailable != 0 || g_CarTable[2].transmission != 1) return 1;
+    /* A sparse catalog overlays the retail spec decoded from rage.bin. */
+    { const char *sparse =
+          "[[cars]]\n"
+          "id = \"test\"\nmodel = 2\ngrade = 0\n"
+          "price = 777\nmanual_only = false\n"
+          "automatic_acceleration_scale = 985\n"
+          "shift_points = [520, 694, 682, 910, 918, 1224, 1143, 1525, 1408, 1878, 1899, 2532]\n";
+      FILE *file = fopen("car_catalog_test.toml", "wb");
+      GameCarSpec retail, applied;
+      if (file == NULL || fwrite(sparse, 1, strlen(sparse), file) != strlen(sparse) ||
+          fclose(file) != 0 || !CarCatalogLoadFile("car_catalog_test.toml", error, sizeof(error))) return 1;
+      memset(&retail, 0x5a, sizeof(retail)); retail.revLimit = 8123;
+      retail.automaticAccelerationScale = 1000; retail.gearRatio[1] = 321;
+      applied = retail;
+      CarCatalogApplySpecification(2, 0, &applied);
+      CarCatalogApplyMetadata();
+      memset(&asset, 0, sizeof(asset)); asset.transmissionAvailable = 0;
+      CarCatalogApplyModelAvailability(2, 0, &asset);
+      if (g_CarPriceTable[7] != 777 || applied.revLimit != 8123 ||
+          applied.gearRatio[1] != 321 || applied.automaticAccelerationScale != 985 ||
+          applied.shiftPoints[0].upshiftSpeed != 694 || asset.transmissionAvailable != 1) return 1;
+      remove("car_catalog_test.toml");
+    }
+    /* A malformed override is rejected atomically. Clearing it leaves the
+     * rage.bin defaults untouched, which is the path main() takes at boot. */
+    { const char *broken = "[[cars]]\nid = \"bad\"\nmodel = 2\ngrade = 0\nprice = nope\n";
+      FILE *file = fopen("car_catalog_test.toml", "wb"); GameCarSpec retail;
+      if (file == NULL || fwrite(broken, 1, strlen(broken), file) != strlen(broken) ||
+          fclose(file) != 0) return 1;
+      CarCatalogClearOverrides();
+      if (CarCatalogLoadFile("car_catalog_test.toml", error, sizeof(error))) return 1;
+      memset(&retail, 0, sizeof(retail)); retail.revLimit = 7654;
+      CarCatalogApplySpecification(2, 0, &retail);
+      if (retail.revLimit != 7654) return 1;
+      remove("car_catalog_test.toml");
+    }
     if (!VerifyShippedManualOnlyVariants(RAGE_SOURCE_DIRECTORY "/cars.toml", error) ||
         !VerifyShippedManualOnlyVariants(RAGE_SOURCE_DIRECTORY "/cars.ntscj.toml", error) ||
         !VerifySqualdonAutomaticProfile(RAGE_SOURCE_DIRECTORY "/cars.toml", error) ||

@@ -29,8 +29,8 @@ int CarCatalogValidate(const RageCarCatalog *catalog, char *error,
                        size_t errorSize) {
     unsigned char seen[RAGE_CAR_CATALOG_ENTRY_COUNT] = {0};
     size_t index;
-    if (catalog == NULL || catalog->count != RAGE_CAR_CATALOG_ENTRY_COUNT)
-        return Fail(error, errorSize, "catalog must contain 32 variants");
+    if (catalog == NULL || catalog->count == 0)
+        return Fail(error, errorSize, "catalog must contain at least one variant");
     for (index = 0; index < catalog->count; index++) {
         const RageCarCatalogEntry *entry = &catalog->entries[index];
         int first, end, variant;
@@ -43,18 +43,24 @@ int CarCatalogValidate(const RageCarCatalog *catalog, char *error,
         variant = first + entry->grade;
         if (entry->grade < 0 || variant >= end || seen[variant])
             return Fail(error, errorSize, "entry %zu has invalid or duplicate grade", index);
-        if (!entry->id[0] || !entry->name[0] || !entry->manufacturer[0] ||
-            !entry->className[0] || entry->price < 0 || entry->upgradePrice < 0 ||
-            entry->unlockClass < 0 || entry->manualOnly < 0 || entry->manualOnly > 1 ||
-            entry->specification.revLimit <= 0 ||
-            entry->specification.automaticAccelerationScale <= 0 ||
-            entry->specification.topGear < 1 || entry->specification.topGear > 6 ||
-            entry->specification.gearRatio[1] <= 0)
-            return Fail(error, errorSize, "entry %zu has incomplete metadata", index);
+        if ((entry->fields & (RAGE_CAR_FIELD_ID | RAGE_CAR_FIELD_MODEL |
+                              RAGE_CAR_FIELD_GRADE)) !=
+            (RAGE_CAR_FIELD_ID | RAGE_CAR_FIELD_MODEL | RAGE_CAR_FIELD_GRADE) ||
+            !entry->id[0] ||
+            ((entry->fields & RAGE_CAR_FIELD_PRICE) && entry->price < 0) ||
+            ((entry->fields & RAGE_CAR_FIELD_UPGRADE_PRICE) && entry->upgradePrice < 0) ||
+            ((entry->fields & RAGE_CAR_FIELD_UNLOCK_CLASS) && entry->unlockClass < 0) ||
+            ((entry->fields & RAGE_CAR_FIELD_MANUAL_ONLY) &&
+             (entry->manualOnly < 0 || entry->manualOnly > 1)) ||
+            ((entry->fields & RAGE_CAR_FIELD_REV_LIMIT) &&
+             entry->specification.revLimit <= 0) ||
+            ((entry->fields & RAGE_CAR_FIELD_AUTOMATIC_ACCELERATION_SCALE) &&
+             entry->specification.automaticAccelerationScale <= 0) ||
+            ((entry->fields & RAGE_CAR_FIELD_TOP_GEAR) &&
+             (entry->specification.topGear < 1 || entry->specification.topGear > 6)))
+            return Fail(error, errorSize, "entry %zu has invalid override metadata", index);
         seen[variant] = 1;
     }
-    for (index = 0; index < sizeof(seen); index++)
-        if (!seen[index]) return Fail(error, errorSize, "variant %zu is missing", index);
     if (error != NULL && errorSize != 0) error[0] = '\0';
     return 1;
 }
@@ -147,36 +153,42 @@ static int ParseTorqueScale(const char *value, s16 *out) {
 static int SetEntryValue(RageCarCatalogEntry *entry, const char *key,
                          const char *value) {
     int integer;
-    if (strcmp(key, "id") == 0) return CopyString(entry->id, sizeof(entry->id), value);
-    if (strcmp(key, "name") == 0) return CopyString(entry->name, sizeof(entry->name), value);
-    if (strcmp(key, "manufacturer") == 0) return CopyString(entry->manufacturer, sizeof(entry->manufacturer), value);
-    if (strcmp(key, "class") == 0) return CopyString(entry->className, sizeof(entry->className), value);
-    if (strcmp(key, "model") == 0) { if (!ParseInt(value, &integer)) return 0; entry->modelIndex = integer; return 1; }
-    if (strcmp(key, "grade") == 0) { if (!ParseInt(value, &integer)) return 0; entry->grade = integer; return 1; }
-    if (strcmp(key, "price") == 0) { if (!ParseInt(value, &integer)) return 0; entry->price = integer; return 1; }
-    if (strcmp(key, "upgrade_price") == 0) { if (!ParseInt(value, &integer)) return 0; entry->upgradePrice = integer; return 1; }
-    if (strcmp(key, "unlock_class") == 0) { if (!ParseInt(value, &integer)) return 0; entry->unlockClass = integer; return 1; }
-    if (strcmp(key, "manual_only") == 0) return ParseBool(value, &entry->manualOnly);
-    if (strcmp(key, "torque_curve") == 0) return ParseIntArray(value, entry->specification.torqueCurve, 16);
-    if (strcmp(key, "torque_band") == 0) return ParseIntArray(value, entry->specification.torqueBand.values, 16);
-    if (strcmp(key, "torque_loss_value") == 0) return ParseIntArray(value, entry->specification.torqueLossValue, 10);
-    if (strcmp(key, "torque_loss_rpm") == 0) return ParseIntArray(value, entry->specification.torqueLossRpm, 9);
-    if (strcmp(key, "gear_load") == 0) return ParseIntArray(value, entry->specification.gearLoad, 6);
-    if (strcmp(key, "gear_ratio") == 0) return ParseIntArray(value, entry->specification.gearRatio, 7);
-    if (strcmp(key, "torque_scale") == 0) return ParseTorqueScale(value, entry->specification.torqueScale);
-    if (strcmp(key, "shift_points") == 0) return ParseShiftPoints(value, entry->specification.shiftPoints);
-#define CAR_SCALAR(field, name) if (strcmp(key, name) == 0) { if (!ParseInt(value, &integer) || integer < -32768 || integer > 32767) return 0; entry->specification.field = (s16)integer; return 1; }
-    CAR_SCALAR(revLimit, "rev_limit")
-    CAR_SCALAR(automaticAccelerationScale, "automatic_acceleration_scale")
-    CAR_SCALAR(topGear, "top_gear")
-    CAR_SCALAR(redline, "redline")
-    CAR_SCALAR(steeringGripResponse, "steering_grip_response")
-    CAR_SCALAR(referenceTurnRadius, "reference_turn_radius")
-    CAR_SCALAR(negconSteeringAssistScale, "negcon_steering_assist_scale")
-    CAR_SCALAR(speedDragDivisor, "speed_drag_divisor")
-    CAR_SCALAR(baseSteeringGrip, "base_steering_grip")
-#undef CAR_SCALAR
-    if (strcmp(key, "steer_response") == 0) { if (!ParseInt(value, &integer) || integer < 0 || integer > 65535) return 0; entry->specification.steerResponse = (u16)integer; return 1; }
+#define SET_STRING(name, member, bit) if (strcmp(key, name) == 0) { if ((entry->fields & bit) || !CopyString(member, sizeof(member), value)) return 0; entry->fields |= bit; return 1; }
+    SET_STRING("id", entry->id, RAGE_CAR_FIELD_ID)
+    SET_STRING("name", entry->name, RAGE_CAR_FIELD_NAME)
+    SET_STRING("manufacturer", entry->manufacturer, RAGE_CAR_FIELD_MANUFACTURER)
+    SET_STRING("class", entry->className, RAGE_CAR_FIELD_CLASS)
+#undef SET_STRING
+#define SET_INT(name, member, bit) if (strcmp(key, name) == 0) { if ((entry->fields & bit) || !ParseInt(value, &integer)) return 0; entry->member = integer; entry->fields |= bit; return 1; }
+    SET_INT("model", modelIndex, RAGE_CAR_FIELD_MODEL)
+    SET_INT("grade", grade, RAGE_CAR_FIELD_GRADE)
+    SET_INT("price", price, RAGE_CAR_FIELD_PRICE)
+    SET_INT("upgrade_price", upgradePrice, RAGE_CAR_FIELD_UPGRADE_PRICE)
+    SET_INT("unlock_class", unlockClass, RAGE_CAR_FIELD_UNLOCK_CLASS)
+#undef SET_INT
+#define SET_VALUE(name, bit, expression) if (strcmp(key, name) == 0) { if ((entry->fields & bit) || !(expression)) return 0; entry->fields |= bit; return 1; }
+    SET_VALUE("manual_only", RAGE_CAR_FIELD_MANUAL_ONLY, ParseBool(value, &entry->manualOnly))
+    SET_VALUE("torque_curve", RAGE_CAR_FIELD_TORQUE_CURVE, ParseIntArray(value, entry->specification.torqueCurve, 16))
+    SET_VALUE("torque_band", RAGE_CAR_FIELD_TORQUE_BAND, ParseIntArray(value, entry->specification.torqueBand.values, 16))
+    SET_VALUE("torque_loss_value", RAGE_CAR_FIELD_TORQUE_LOSS_VALUE, ParseIntArray(value, entry->specification.torqueLossValue, 10))
+    SET_VALUE("torque_loss_rpm", RAGE_CAR_FIELD_TORQUE_LOSS_RPM, ParseIntArray(value, entry->specification.torqueLossRpm, 9))
+    SET_VALUE("gear_load", RAGE_CAR_FIELD_GEAR_LOAD, ParseIntArray(value, entry->specification.gearLoad, 6))
+    SET_VALUE("gear_ratio", RAGE_CAR_FIELD_GEAR_RATIO, ParseIntArray(value, entry->specification.gearRatio, 7))
+    SET_VALUE("torque_scale", RAGE_CAR_FIELD_TORQUE_SCALE, ParseTorqueScale(value, entry->specification.torqueScale))
+    SET_VALUE("shift_points", RAGE_CAR_FIELD_SHIFT_POINTS, ParseShiftPoints(value, entry->specification.shiftPoints))
+#define SET_SCALAR(name, member, bit) if (strcmp(key, name) == 0) { if ((entry->fields & bit) || !ParseInt(value, &integer) || integer < -32768 || integer > 32767) return 0; entry->specification.member = (s16)integer; entry->fields |= bit; return 1; }
+    SET_SCALAR("rev_limit", revLimit, RAGE_CAR_FIELD_REV_LIMIT)
+    SET_SCALAR("automatic_acceleration_scale", automaticAccelerationScale, RAGE_CAR_FIELD_AUTOMATIC_ACCELERATION_SCALE)
+    SET_SCALAR("top_gear", topGear, RAGE_CAR_FIELD_TOP_GEAR)
+    SET_SCALAR("redline", redline, RAGE_CAR_FIELD_REDLINE)
+    SET_SCALAR("steering_grip_response", steeringGripResponse, RAGE_CAR_FIELD_STEERING_GRIP_RESPONSE)
+    SET_SCALAR("reference_turn_radius", referenceTurnRadius, RAGE_CAR_FIELD_REFERENCE_TURN_RADIUS)
+    SET_SCALAR("negcon_steering_assist_scale", negconSteeringAssistScale, RAGE_CAR_FIELD_NEGCON_STEERING_ASSIST_SCALE)
+    SET_SCALAR("speed_drag_divisor", speedDragDivisor, RAGE_CAR_FIELD_SPEED_DRAG_DIVISOR)
+    SET_SCALAR("base_steering_grip", baseSteeringGrip, RAGE_CAR_FIELD_BASE_STEERING_GRIP)
+#undef SET_SCALAR
+    if (strcmp(key, "steer_response") == 0) { if ((entry->fields & RAGE_CAR_FIELD_STEER_RESPONSE) || !ParseInt(value, &integer) || integer < 0 || integer > 65535) return 0; entry->specification.steerResponse = (u16)integer; entry->fields |= RAGE_CAR_FIELD_STEER_RESPONSE; return 1; }
+#undef SET_VALUE
     return 0;
 }
 
@@ -227,6 +239,11 @@ int CarCatalogLoadFile(const char *path, char *error, size_t errorSize) {
     s_Catalog = ordered; s_CatalogLoaded = 1; return 1;
 }
 
+void CarCatalogClearOverrides(void) {
+    memset(&s_Catalog, 0, sizeof(s_Catalog));
+    s_CatalogLoaded = 0;
+}
+
 static RageCarCatalogEntry *FindEntry(int modelIndex, int grade) {
     int variant;
     if (!s_CatalogLoaded || modelIndex < 0 || modelIndex >= GAME_CAR_COUNT || grade < 0) return NULL;
@@ -238,26 +255,50 @@ static RageCarCatalogEntry *FindEntry(int modelIndex, int grade) {
 void CarCatalogApplyMetadata(void) {
     size_t index;
     if (!s_CatalogLoaded) return;
-    for (index = 0; index < s_Catalog.count; index++) {
+    for (index = 0; index < CAR_MODEL_VARIANT_COUNT; index++) {
         RageCarCatalogEntry *entry = &s_Catalog.entries[index];
-        g_CarPriceTable[index] = entry->price;
-        if (index < CAR_MODEL_VARIANT_COUNT - 1) g_CarTuneUpPriceTable[index] = entry->upgradePrice;
-        if (entry->grade == 0) { g_NativeCarNames[entry->modelIndex] = entry->name; g_NativeCarManufacturerNames[entry->modelIndex] = entry->manufacturer; g_NativeCarClassNames[entry->modelIndex] = entry->className; }
+        if (entry->fields & RAGE_CAR_FIELD_PRICE) g_CarPriceTable[index] = entry->price;
+        if ((entry->fields & RAGE_CAR_FIELD_UPGRADE_PRICE) &&
+            index < CAR_MODEL_VARIANT_COUNT - 1) g_CarTuneUpPriceTable[index] = entry->upgradePrice;
+        if (entry->grade == 0) {
+            if (entry->fields & RAGE_CAR_FIELD_NAME) g_NativeCarNames[entry->modelIndex] = entry->name;
+            if (entry->fields & RAGE_CAR_FIELD_MANUFACTURER) g_NativeCarManufacturerNames[entry->modelIndex] = entry->manufacturer;
+            if (entry->fields & RAGE_CAR_FIELD_CLASS) g_NativeCarClassNames[entry->modelIndex] = entry->className;
+        }
     }
 }
 
 void CarCatalogApplySpecification(int modelIndex, int grade, GameCarSpec *specification) {
     RageCarCatalogEntry *entry = FindEntry(modelIndex, grade);
-    CarTachometerSpec tachometer;
     if (entry == NULL || specification == NULL) return;
-    tachometer = specification->tachometer;
-    *specification = entry->specification;
-    specification->tachometer = tachometer;
+#define COPY_ARRAY(bit, member) if (entry->fields & bit) memcpy(specification->member, entry->specification.member, sizeof(specification->member))
+    COPY_ARRAY(RAGE_CAR_FIELD_TORQUE_CURVE, torqueCurve);
+    COPY_ARRAY(RAGE_CAR_FIELD_TORQUE_BAND, torqueBand.values);
+    COPY_ARRAY(RAGE_CAR_FIELD_TORQUE_LOSS_VALUE, torqueLossValue);
+    COPY_ARRAY(RAGE_CAR_FIELD_TORQUE_LOSS_RPM, torqueLossRpm);
+    COPY_ARRAY(RAGE_CAR_FIELD_GEAR_LOAD, gearLoad);
+    COPY_ARRAY(RAGE_CAR_FIELD_GEAR_RATIO, gearRatio);
+    COPY_ARRAY(RAGE_CAR_FIELD_TORQUE_SCALE, torqueScale);
+    COPY_ARRAY(RAGE_CAR_FIELD_SHIFT_POINTS, shiftPoints);
+#undef COPY_ARRAY
+#define COPY_SCALAR(bit, member) if (entry->fields & bit) specification->member = entry->specification.member
+    COPY_SCALAR(RAGE_CAR_FIELD_REV_LIMIT, revLimit);
+    COPY_SCALAR(RAGE_CAR_FIELD_AUTOMATIC_ACCELERATION_SCALE, automaticAccelerationScale);
+    COPY_SCALAR(RAGE_CAR_FIELD_TOP_GEAR, topGear);
+    COPY_SCALAR(RAGE_CAR_FIELD_REDLINE, redline);
+    COPY_SCALAR(RAGE_CAR_FIELD_STEERING_GRIP_RESPONSE, steeringGripResponse);
+    COPY_SCALAR(RAGE_CAR_FIELD_STEER_RESPONSE, steerResponse);
+    COPY_SCALAR(RAGE_CAR_FIELD_REFERENCE_TURN_RADIUS, referenceTurnRadius);
+    COPY_SCALAR(RAGE_CAR_FIELD_NEGCON_STEERING_ASSIST_SCALE, negconSteeringAssistScale);
+    COPY_SCALAR(RAGE_CAR_FIELD_SPEED_DRAG_DIVISOR, speedDragDivisor);
+    COPY_SCALAR(RAGE_CAR_FIELD_BASE_STEERING_GRIP, baseSteeringGrip);
+#undef COPY_SCALAR
 }
 
 void CarCatalogApplyModelAvailability(int modelIndex, int grade, struct CarModelAsset *asset) {
     RageCarCatalogEntry *entry = FindEntry(modelIndex, grade);
     if (entry == NULL) return;
+    if (!(entry->fields & RAGE_CAR_FIELD_MANUAL_ONLY)) return;
     if (asset != NULL) asset->transmissionAvailable = (u8)!entry->manualOnly;
     /* A pre-existing modded save can request automatic even though the menu
      * correctly hides that row.  Keep the runtime state consistent with the
@@ -270,5 +311,6 @@ void CarCatalogApplyModelAvailability(int modelIndex, int grade, struct CarModel
 
 int CarCatalogUnlockClass(int modelIndex, int grade, int fallback) {
     RageCarCatalogEntry *entry = FindEntry(modelIndex, grade);
-    return entry != NULL ? entry->unlockClass : fallback;
+    return entry != NULL && (entry->fields & RAGE_CAR_FIELD_UNLOCK_CLASS)
+               ? entry->unlockClass : fallback;
 }

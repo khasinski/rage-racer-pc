@@ -52,7 +52,11 @@ static s32 AdvanceBgmSelectFade(void) {
         g_FadeStep = 0;
     }
     DrawFullscreenFadeTile(g_FadeLevel, BGM_SELECT_FADE_TPAGE);
-    return g_FadeLevel >= BGM_SELECT_OPAQUE_FADE;
+    /* A fade-in starts above the PSX opaque range and moves down. It must
+     * never complete the transition: the track data requested by the loader
+     * is still in flight. Only the subsequent positive fade reaches the
+     * point where InitTrackScene may build the presentation world. */
+    return g_FadeStep > 0 && g_FadeLevel >= BGM_SELECT_OPAQUE_FADE;
 }
 
 static void UpdateBgmSelectTransition(void) {
@@ -75,7 +79,13 @@ void UpdateBgmSelectLoad(void) {
     size_t texturePackSize;
 
     if (AssetLoadCompletedSuccessfully()) {
-        if (!AssetSpanSize(g_AssetBase, g_ImageBlockBuffer,
+        /* The option screen leaves the selected track's texture pack in the
+         * loader buffers. Upload its TIM first, as attract mode does, before
+         * installing pages and constructing the presentation world. Without
+         * this the music player can inherit stale sky/camera textures. */
+        if (!UploadImageAsset(GetImageAssetHeaderWords(g_ImageBlockBuffer),
+                              g_ImageBlockSize) ||
+            !AssetSpanSize(g_AssetBase, g_ImageBlockBuffer,
                            &texturePackSize) ||
             !InstallTrackTextureAssetPack(g_AssetBase, texturePackSize)) {
             FailAssetLoad();

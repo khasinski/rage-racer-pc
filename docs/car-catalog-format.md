@@ -1,13 +1,14 @@
 # Car catalog profiles
 
 `cars.toml` is the default catalog for PAL and NTSC-U. `cars.ntscj.toml` is
-the catalog for both Japanese retail revisions. Each file is complete: a
-profile never inherits individual values from the other profile.
+the catalog for both Japanese retail revisions. Each file is a complete,
+editable template. At runtime it is an overlay: every key that is absent from
+a record keeps the retail value decoded from the selected disc's `rage.bin`.
 
 Every `[[cars]]` record describes one retail model and grade. `id` is a stable,
 ASCII identifier; display names are ordinary catalog data and may differ by
-profile. A record contains its price, next-grade price, unlock class, maker,
-class, transmission policy, and the complete driving specification.
+profile. A record may override its price, next-grade price, unlock class,
+maker, class, transmission policy, and any driving-specification field.
 
 `manual_only = true` prevents the automatic transmission from being selected
 and forces an existing save entry back to manual. The automatic fields remain
@@ -28,5 +29,5 @@ automatic for those cars, so the profile replaces them with the reconstructed
 The runtime copies both shipped templates into the user configuration directory
 after the first successful disc import. It selects the Japanese file only for
 a disc identified as `NTSC-J`; PAL, NTSC-U, and an unrecognised disc select the
-default file. A malformed selected catalog prevents startup before the first
-menu, rather than leaving a partly applied set of car data.
+default file. A malformed selected catalog is logged and ignored before the
+first menu; the game then uses its untouched retail data.

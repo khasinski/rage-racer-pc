@@ -128,14 +128,17 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
     ContentOptionsApply();
+    CarCatalogClearOverrides();
     if (!CarCatalogPrepareProfile(argc > 0 ? argv[0] : NULL,
                                   HostDiscRegion(), carCatalogPath,
                                   sizeof(carCatalogPath)) ||
         !CarCatalogLoadFile(carCatalogPath, carCatalogError,
                             sizeof(carCatalogError))) {
-        fprintf(stderr, "rage-port: invalid car catalog: %s\n",
+        /* The retail tables loaded from rage.bin are the baseline. A typo in
+         * an optional mod file must never prevent the player reaching the menu. */
+        fprintf(stderr, "rage-port: ignoring car catalog override: %s\n",
                 carCatalogError[0] != '\0' ? carCatalogError : "cannot copy profile");
-        return EXIT_FAILURE;
+        CarCatalogClearOverrides();
     }
     CarCatalogApplyMetadata();
     MainLoop();
