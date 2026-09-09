@@ -53,10 +53,14 @@ int CarCatalogPrepareProfile(const char *argv0, const char *region,
     if (path == NULL || pathSize == 0) return 0;
     path[0] = '\0';
     if (!CopyIfMissing(argv0, kDefaultProfile) ||
-        !CopyIfMissing(argv0, kJapaneseProfile) ||
-        !PlatformUserConfigPath(selected, path, pathSize)) {
+        !CopyIfMissing(argv0, kJapaneseProfile)) {
         path[0] = '\0';
         return 0;
     }
-    return 1;
+    /* A file beside the installed application is the editable release
+     * catalog.  The per-user copy remains a fallback for older installs. */
+    if (PlatformFindBundledConfigFile(argv0, selected, path, pathSize)) return 1;
+    if (PlatformUserConfigPath(selected, path, pathSize)) return 1;
+    path[0] = '\0';
+    return 0;
 }
