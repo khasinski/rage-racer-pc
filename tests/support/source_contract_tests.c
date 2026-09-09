@@ -418,9 +418,14 @@ static void NativeUiScriptLayout(void) {
         char alias[256];
         char pointer[256];
         const char *shortName = names[i] + 2;
-        snprintf(array, sizeof(array), "TimedDrawCommand %s[", names[i]);
-        snprintf(alias, sizeof(alias), "#define %s g_Native%s", names[i], shortName);
-        snprintf(pointer, sizeof(pointer), "extern const TimedDrawCommand *%s;", names[i]);
+        /* These tokens originate in the bounded names[][128] parser above.
+         * State the bounds in the format too, so fortified GCC can verify
+         * this source-contract test under -Werror=format-truncation. */
+        snprintf(array, sizeof(array), "TimedDrawCommand %.127s[", names[i]);
+        snprintf(alias, sizeof(alias), "#define %.127s g_Native%.125s",
+                 names[i], shortName);
+        snprintf(pointer, sizeof(pointer),
+                 "extern const TimedDrawCommand *%.127s;", names[i]);
         Require(strstr(native, array) != NULL || strstr(menu, alias) != NULL ||
                 strstr(declarations, pointer) != NULL,
                 "serialized PS1 UI script is used as a native command");
