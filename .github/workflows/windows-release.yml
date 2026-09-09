@@ -6,7 +6,7 @@ on:
       version:
         description: Release version used in the archive name
         required: true
-        default: 0.6.4-alpha
+        default: 0.6.6-alpha
   push:
     tags:
       - "*"
@@ -39,13 +39,16 @@ jobs:
           $root = "dist/$package"
           New-Item -ItemType Directory -Force $root | Out-Null
           Copy-Item build/release/Release/rage-racer.exe "$root/Rage-Racer.exe"
-          Copy-Item README.md, LICENSE.md, rage-port.ini, race-scenario.ini $root
+          Copy-Item README.md, LICENSE.md, rage-port.ini, race-scenario.ini, cars.toml, cars.ntscj.toml $root
           New-Item -ItemType Directory -Force "$root/docs" | Out-Null
           Copy-Item docs/*.md "$root/docs/"
           Compress-Archive -Path $root -DestinationPath "dist/$package.zip" -Force
           if (!(Test-Path "$root/Rage-Racer.exe") -or
               !(Test-Path "$root/rage-port.ini")) {
             throw "release package is incomplete"
+          }
+          if (!(Test-Path "$root/cars.toml") -or !(Test-Path "$root/cars.ntscj.toml")) {
+            throw "release package is missing car catalog templates"
           }
           if (Get-ChildItem $root -Recurse -Filter *.py) {
             throw "Python file found in release archive"

@@ -6,7 +6,7 @@ on:
       version:
         description: Release version used in the archive name
         required: true
-        default: 0.6.4-alpha
+        default: 0.6.6-alpha
   push:
     tags:
       - "*"
@@ -45,13 +45,14 @@ jobs:
           package="Rage-Racer-${VERSION}-linux-x86_64"
           mkdir -p "dist/${package}"
           cp build/release/rage-racer "dist/${package}/rage-racer"
-          cp README.md LICENSE.md rage-port.ini race-scenario.ini "dist/${package}/"
+          cp README.md LICENSE.md rage-port.ini race-scenario.ini cars.toml cars.ntscj.toml "dist/${package}/"
           mkdir -p "dist/${package}/docs"
           cp docs/*.md "dist/${package}/docs/"
           cp packaging/icon/rage-racer.png "dist/${package}/"
           (cd dist && zip -qr "${package}.zip" "${package}")
           test -x "dist/${package}/rage-racer"
           unzip -l "dist/${package}.zip" | grep -q "/rage-port.ini$"
+          unzip -l "dist/${package}.zip" | grep -q "/cars.toml$"
           unzip -l "dist/${package}.zip" | grep -q "/rage-racer.png$"
           if unzip -l "dist/${package}.zip" | grep -E '\.py$'; then
             echo "Python file found in release archive" >&2

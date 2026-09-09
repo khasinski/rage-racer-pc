@@ -6,7 +6,7 @@ on:
       version:
         description: Release version used in the archive name
         required: true
-        default: 0.6.4-alpha
+        default: 0.6.6-alpha
   push:
     tags:
       - "*"
@@ -36,7 +36,7 @@ jobs:
         run: |
           resources="build/release/Rage Racer.app/Contents/Resources"
           mkdir -p "$resources" dist
-          cp README.md LICENSE.md rage-port.ini race-scenario.ini "$resources/"
+          cp README.md LICENSE.md rage-port.ini race-scenario.ini cars.toml cars.ntscj.toml "$resources/"
           mkdir -p "$resources/docs"
           cp docs/*.md "$resources/docs/"
       - name: Sign and notarize
@@ -99,13 +99,15 @@ jobs:
           # app, the way the Linux archive does.
           mkdir -p "dist/${package}"
           ditto "build/release/Rage Racer.app" "dist/${package}/Rage Racer.app"
-          cp README.md LICENSE.md rage-port.ini race-scenario.ini \
+          cp README.md LICENSE.md rage-port.ini race-scenario.ini cars.toml cars.ntscj.toml \
             "dist/${package}/"
           mkdir -p "dist/${package}/docs"
           cp docs/*.md "dist/${package}/docs/"
           ditto -c -k --sequesterRsrc --keepParent \
             "dist/${package}" "dist/${package}.zip"
           unzip -l "dist/${package}.zip" | grep -q "${package}/rage-port.ini$"
+          unzip -l "dist/${package}.zip" | grep -q "${package}/cars.toml$"
+          unzip -l "dist/${package}.zip" | grep -q "Contents/Resources/cars.toml$"
           unzip -l "dist/${package}.zip" | grep -q "Contents/Resources/rage-port.ini$"
           if unzip -l "dist/${package}.zip" | grep -E '\.py$'; then
             echo "Python file found in release archive" >&2

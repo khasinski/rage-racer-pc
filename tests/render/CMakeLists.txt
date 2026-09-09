@@ -1808,6 +1808,7 @@ set_tests_properties(modern_feature_frames PROPERTIES LABELS e2e)
     add_test(
         NAME pegase_cabin
         COMMAND ${CMAKE_COMMAND}
+            -DFIXTURE=$<TARGET_FILE:native_asset_fixture>
             -DGAME=$<TARGET_FILE:rage-racer-smoke> -DCHECK=$<TARGET_FILE:ppm_capture_check>
             -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
             -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_pegase_cabin.cmake

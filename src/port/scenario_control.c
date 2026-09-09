@@ -442,6 +442,12 @@ static void ScenarioSelectSeries(void) {
         g_RaceProgress = &g_GrandPrixSave;
         g_CourseProgress = &g_GrandPrixCourseProgress;
     }
+    /* Direct boot requests car-select assets before the normal menu loop has
+     * a chance to publish the selected player index.  Set it here, before
+     * RequestCarSelectAssets, or slot zero is loaded while the race later
+     * submits the requested car's model-bank asset.  That leaves no matching
+     * native vehicle mesh and makes cars disappear in smoke races. */
+    g_PlayerCarIndex = (s16)s_scenario.car;
     if (s_scenario.transmission >= 0)
         g_CarTable[s_scenario.car].transmission =
             (u8)s_scenario.transmission;
