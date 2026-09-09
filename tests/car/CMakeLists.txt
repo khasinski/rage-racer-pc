@@ -9,6 +9,7 @@ add_executable(car_catalog_tests
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_catalog.c)
 target_include_directories(car_catalog_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/src/port
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
     ${CMAKE_SOURCE_DIR}/include)
 target_compile_definitions(car_catalog_tests PRIVATE __psyz=1)
