@@ -362,6 +362,7 @@ add_executable(car_model_loading_tests
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/car_assets.c)
 target_include_directories(car_model_loading_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/src/port
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
     ${CMAKE_SOURCE_DIR}/include)
 target_compile_definitions(car_model_loading_tests PRIVATE __psyz=1)
