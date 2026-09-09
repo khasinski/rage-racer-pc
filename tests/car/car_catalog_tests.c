@@ -6,6 +6,16 @@
 
 static CarEntry s_cars[GAME_CAR_COUNT];
 CarEntry *g_CarTable = s_cars;
+
+/* This target checks the retail lookup tables in isolation.  The port-level
+ * catalog tests cover configured unlock-class overrides; preserve the retail
+ * fallback here without linking the port configuration subsystem. */
+int CarCatalogUnlockClass(int modelIndex, int grade, int fallback) {
+    (void)modelIndex;
+    (void)grade;
+    return fallback;
+}
+
 static const u8 expectedBaseIndex[GAME_CAR_COUNT] = {
     0, 4, 7, 9, 14, 18, 21, 23, 26, 28, 29, 30, 31,
 };
