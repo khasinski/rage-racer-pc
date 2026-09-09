@@ -266,8 +266,8 @@ int PlatformEnsureDirectory(const char *path) {
            (errno == EEXIST && DirectoryExists(buffer));
 }
 
-int PlatformFindConfigFile(const char *argv0, const char *name,
-                               char *path, size_t pathSize) {
+int PlatformFindBundledConfigFile(const char *argv0, const char *name,
+                                  char *path, size_t pathSize) {
     char directory[4096];
     int written;
 
@@ -276,9 +276,6 @@ int PlatformFindConfigFile(const char *argv0, const char *name,
     }
     path[0] = '\0';
     if (name == NULL || name[0] == '\0') return 0;
-    if (PlatformUserConfigDirectory(directory, sizeof(directory)) &&
-        JoinPath(path, pathSize, directory, name) && FileExists(path))
-        return 1;
     if (ExecutableDirectory(argv0, directory, sizeof(directory))) {
         if (JoinPath(path, pathSize, directory, name) &&
             FileExists(path)) return 1;
@@ -307,4 +304,14 @@ int PlatformFindConfigFile(const char *argv0, const char *name,
     }
     path[0] = '\0';
     return 0;
+}
+
+int PlatformFindConfigFile(const char *argv0, const char *name,
+                            char *path, size_t pathSize) {
+    char directory[4096];
+    if (path == NULL || pathSize == 0 || name == NULL || name[0] == '\0') return 0;
+    path[0] = '\0';
+    if (PlatformUserConfigDirectory(directory, sizeof(directory)) &&
+        JoinPath(path, pathSize, directory, name) && FileExists(path)) return 1;
+    return PlatformFindBundledConfigFile(argv0, name, path, pathSize);
 }

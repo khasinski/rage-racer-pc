@@ -29,7 +29,10 @@ static int CopyIfMissing(const char *argv0, const char *name) {
 
     if (!PlatformUserConfigPath(name, destination, sizeof(destination))) return 0;
     if (Exists(destination)) return 1;
-    if (!PlatformFindConfigFile(argv0, name, source, sizeof(source))) return 0;
+    /* The release-folder catalog is intentionally editable and takes
+     * precedence over a profile copied by an earlier release. */
+    if (!PlatformFindBundledConfigFile(argv0, name, source, sizeof(source)) &&
+        !PlatformFindConfigFile(argv0, name, source, sizeof(source))) return 0;
     if (!PlatformUserConfigDirectory(destination, sizeof(destination)) ||
         !PlatformEnsureDirectory(destination) ||
         !PlatformUserConfigPath(name, destination, sizeof(destination))) return 0;
