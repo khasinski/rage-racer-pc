@@ -415,7 +415,7 @@ static void NativeUiScriptLayout(void) {
     }
     for (size_t i = 0; i < count; ++i) {
         char array[192];
-        char alias[256];
+        char alias[384];
         char pointer[256];
         const char *shortName = names[i] + 2;
         /* These tokens originate in the bounded names[][128] parser above.
