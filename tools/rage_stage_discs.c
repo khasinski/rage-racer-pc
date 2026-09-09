@@ -15,6 +15,7 @@
 #include <windows.h>
 #define mkdir(path, mode) _mkdir(path)
 #define strcasecmp _stricmp
+#define strncasecmp _strnicmp
 #else
 #include <strings.h>
 #include <sys/stat.h>
@@ -177,7 +178,7 @@ static int ReadRawSector(void *context, unsigned int sector, unsigned char *raw)
            fread(raw, 1, RAW_SECTOR_BYTES, source->file) == RAW_SECTOR_BYTES;
 }
 
-static int WriteFile(const char *path, const unsigned char *bytes, size_t size) {
+static int WriteOutputFile(const char *path, const unsigned char *bytes, size_t size) {
     FILE *file = fopen(path, "wb");
     int ok;
     if (!file) return 0;
@@ -213,8 +214,8 @@ static int ExtractFiles(const StageVersion *version, const char *cue,
     config = DiscIsoReadWholeFile(&iso, &configFile);
     if (!exe || !config || !RageDiscStageValidatePsxExe(exe, exeFile.size,
                                                           version->sha1) ||
-        !WriteFile(mainPath, exe, exeFile.size) ||
-        !WriteFile(configPath, config, configFile.size)) goto done;
+        !WriteOutputFile(mainPath, exe, exeFile.size) ||
+        !WriteOutputFile(configPath, config, configFile.size)) goto done;
     printf("%s: %s staged, SHA-1 %s, entry=0x%08X text=0x%08X/0x%X\n",
            version->name, version->serial, version->sha1, ReadLe32(exe + 0x10),
            ReadLe32(exe + 0x18), ReadLe32(exe + 0x1c));
