@@ -323,15 +323,20 @@ static void test_port_config(void) {
     }
     {
         RagePortConfig invalidFloat;
+        char emptyPath[] = TEST_TEMP_PREFIX "rage-empty-XXXXXX";
+        int emptyFd = mkstemp(emptyPath);
         char *arguments[] = {
-            "rage-test", "--set", "video.internal_scale=nan",
+            "rage-test", "--config", emptyPath,
+            "--set", "video.internal_scale=nan",
             "--set", "video.draw_distance=inf"};
 
         PortConfigDefaults(&invalidFloat);
-        EXPECT_EQ(1, RuntimeConfigInit(5, arguments));
+        if (emptyFd >= 0) close(emptyFd);
+        EXPECT_EQ(1, RuntimeConfigInit(7, arguments));
         EXPECT_EQ(0, PortConfigApplyRuntime(&invalidFloat));
         EXPECT_EQ(40, (s32)(invalidFloat.modernInternalScale * 10.0f));
         EXPECT_EQ(10, (s32)(invalidFloat.modernDrawDistance * 10.0f));
+        unlink(emptyPath);
     }
     EXPECT_EQ(0x14000, PortMirrorFarDepth(INT_MAX));
     EXPECT_EQ(0x1000, PortMirrorFarDepth(INT_MIN));
