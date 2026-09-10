@@ -94,6 +94,8 @@ int main(void) {
     g_SceneTimer = 42;
     SceneRuntimeRequestScene(GAME_SCENE_FMV);
     CHECK(g_SceneId == GAME_SCENE_FMV && g_SceneTimer == 0);
+    SceneRuntimeRequestSceneWithTimer(GAME_SCENE_RACE_END, 555);
+    CHECK(g_SceneId == GAME_SCENE_RACE_END && g_SceneTimer == 555);
 
     puts("scene runtime scopes transition state and asset results to one scene");
     return 0;

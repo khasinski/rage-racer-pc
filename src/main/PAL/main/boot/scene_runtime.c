@@ -61,8 +61,12 @@ const SceneRuntime *SceneRuntimeCurrent(void) {
 }
 
 void SceneRuntimeRequestScene(s32 scene) {
+    SceneRuntimeRequestSceneWithTimer(scene, 0);
+}
+
+void SceneRuntimeRequestSceneWithTimer(s32 scene, s32 timer) {
     g_SceneId = scene;
-    g_SceneTimer = 0;
+    g_SceneTimer = timer;
 }
 
 s32 SceneRuntimeHasPendingTransition(void) {

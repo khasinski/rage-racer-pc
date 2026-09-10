@@ -8,6 +8,7 @@
 #include "game/save_internal.h"
 #include "game/screens.h"
 #include "game/scene.h"
+#include "game/scene_runtime.h"
 
 enum {
     LOST_RACE_INPUT_TIMER = -1,
@@ -21,9 +22,9 @@ void DrawLostRaceCaption(s32 level) {
 void EnterLostRaceScreen(void) {
     g_FrameSyncThreshold = 0x80;
     SetReverbDepth(0x28, 0x28);
-    g_SceneId = GAME_SCENE_LOST_RACE;
+    SceneRuntimeRequestSceneWithTimer(GAME_SCENE_LOST_RACE,
+                                      LOST_RACE_INPUT_TIMER);
     g_LostRaceChoice = 0;
-    g_SceneTimer = LOST_RACE_INPUT_TIMER;
     DrawLostRaceCaption(0xFF);
 }
 
@@ -85,7 +86,8 @@ void UpdateLostRaceScreen(void) {
         g_SceneTimer = timer;
         DrawFullscreenFadeTile(timer, 0x49);
         if (g_SceneTimer >= RACE_END_SCREEN_FADE_COMPLETE) {
-            g_SceneId = LostRaceExitScene(g_LostRaceChoice);
+            SceneRuntimeRequestSceneWithTimer(
+                LostRaceExitScene(g_LostRaceChoice), g_SceneTimer);
         }
     }
 
@@ -101,8 +103,8 @@ void DrawRaceEndBanner(s32 level) {
 
 void EnterRaceEndScreen(void) {
     g_FrameSyncThreshold = 0x80;
-    g_SceneId = GAME_SCENE_RACE_END;
-    g_SceneTimer = RACE_END_SCREEN_INITIAL_TIMER;
+    SceneRuntimeRequestSceneWithTimer(GAME_SCENE_RACE_END,
+                                      RACE_END_SCREEN_INITIAL_TIMER);
     DrawRaceEndBanner(RACE_END_SCREEN_INITIAL_TIMER);
 }
 
@@ -117,7 +119,7 @@ void UpdateRaceEndScreen(void) {
     if (g_SceneTimer == 0) {
         RequestSelectBgmAssets();
         ResetCourseProgress(g_GrandPrixClass);
-        g_SceneId = GAME_SCENE_INIT_MENU;
+        SceneRuntimeRequestScene(GAME_SCENE_INIT_MENU);
     }
     DrawRaceEndBanner(g_SceneTimer);
 }

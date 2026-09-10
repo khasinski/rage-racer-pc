@@ -7,6 +7,7 @@
 #include "game/render_internal.h"
 #include "game/save_internal.h"
 #include "game/screens.h"
+#include "game/scene_runtime.h"
 #include "game/state.h"
 
 GameRenderState g_RenderState;
@@ -52,6 +53,14 @@ void StartCdVolumeFade(s32 frames) { s_AudioFadeFrames = frames; }
 void ResetCourseProgress(s32 classIndex) {
     s_ResetProgressCalls++;
     s_ResetProgressClass = classIndex;
+}
+void SceneRuntimeRequestScene(s32 scene) {
+    g_SceneId = scene;
+    g_SceneTimer = 0;
+}
+void SceneRuntimeRequestSceneWithTimer(s32 scene, s32 timer) {
+    g_SceneId = scene;
+    g_SceneTimer = timer;
 }
 void GameDrawProportionalTextShaded(s32 x, s32 y, const char *str,
                                     s32 clutIndex, s32 intensity) {
