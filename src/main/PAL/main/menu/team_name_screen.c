@@ -105,8 +105,7 @@ static void UpdateTeamNameIdle(void) {
 }
 
 static void UpdateTeamNameOutgoing(void) {
-    g_MenuHandlerIndex = -1;
-    g_MenuOutgoingHandlerIndex = MENU_SCREEN_TEAM_NAME;
+    MenuBeginExit(MENU_SCREEN_TEAM_NAME);
     DrawTeamNameEntry(-1, GameMenuCursor);
     RunTimedDrawScript(g_TeamNameScreenScript, &g_UiScriptProgress, -1);
     if (g_UiScriptProgress > 0 ||
@@ -114,8 +113,7 @@ static void UpdateTeamNameOutgoing(void) {
         return;
     }
 
-    g_MenuScreen = MENU_SCREEN_DESIGN_MODE;
-    g_MenuHandlerIndex = MENU_SCREEN_DESIGN_MODE;
+    MenuActivateScreen(MENU_SCREEN_DESIGN_MODE);
     UploadTeamNameTexture(g_TeamNameChars, g_TeamNameLength);
     g_UiScriptProgress = 0;
     GameMenuBusy = 0;

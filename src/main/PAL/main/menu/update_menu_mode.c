@@ -9,20 +9,54 @@ enum {
     MENU_DEFAULT_OT_SHIFT = 5,
 };
 
+static MenuRuntime s_menuRuntime = {
+    .activeScreen = MENU_SCREEN_BOOTSTRAP,
+    .activeDrawScreen = -1,
+    .outgoingDrawScreen = -1,
+};
+
+void MenuRuntimeReset(void) {
+    s_menuRuntime = (MenuRuntime){
+        .activeScreen = MENU_SCREEN_BOOTSTRAP,
+        .activeDrawScreen = -1,
+        .outgoingDrawScreen = -1,
+    };
+    g_MenuScreen = MENU_SCREEN_BOOTSTRAP;
+    g_MenuHandlerIndex = -1;
+    g_MenuOutgoingHandlerIndex = -1;
+}
+
+const MenuRuntime *MenuRuntimeCurrent(void) { return &s_menuRuntime; }
+
 void MenuActivateScreen(s32 screen) {
     if (screen <= MENU_SCREEN_BOOTSTRAP || screen >= MENU_SCREEN_COUNT) return;
+    s_menuRuntime.activeScreen = screen;
+    s_menuRuntime.activeDrawScreen = screen;
     g_MenuScreen = screen;
     g_MenuHandlerIndex = screen;
 }
 
+void MenuActivateEnteringScreen(s32 screen, s32 drawScreen) {
+    if (screen <= MENU_SCREEN_BOOTSTRAP || screen >= MENU_SCREEN_COUNT ||
+        drawScreen <= MENU_SCREEN_BOOTSTRAP || drawScreen >= MENU_SCREEN_COUNT) {
+        return;
+    }
+    s_menuRuntime.activeScreen = screen;
+    s_menuRuntime.activeDrawScreen = drawScreen;
+    g_MenuScreen = screen;
+    g_MenuHandlerIndex = drawScreen;
+}
+
 void MenuBeginExit(s32 screen) {
     if (screen <= MENU_SCREEN_BOOTSTRAP || screen >= MENU_SCREEN_COUNT) return;
+    s_menuRuntime.activeDrawScreen = -1;
+    s_menuRuntime.outgoingDrawScreen = screen;
     g_MenuHandlerIndex = -1;
     g_MenuOutgoingHandlerIndex = screen;
 }
 
 static u32 CurrentMenuCarTireCompound(void) {
-    s32 carIndex = g_MenuScreen == MENU_SCREEN_CAR_SHOP
+    s32 carIndex = s_menuRuntime.activeScreen == MENU_SCREEN_CAR_SHOP
                        ? g_CarListCursor
                        : g_PlayerCarIndex;
 
@@ -33,14 +67,14 @@ static u32 CurrentMenuCarTireCompound(void) {
 }
 
 static void DrawMenuTransitions(void) {
-    if (g_MenuHandlerIndex > MENU_SCREEN_BOOTSTRAP &&
-        g_MenuHandlerIndex < MENU_SCREEN_COUNT) {
-        g_MenuScreenDraw[g_MenuHandlerIndex](MENU_ACTIVE_SCREEN_FADE_STEP);
+    if (s_menuRuntime.activeDrawScreen > MENU_SCREEN_BOOTSTRAP &&
+        s_menuRuntime.activeDrawScreen < MENU_SCREEN_COUNT) {
+        g_MenuScreenDraw[s_menuRuntime.activeDrawScreen](MENU_ACTIVE_SCREEN_FADE_STEP);
     }
-    if (g_MenuOutgoingHandlerIndex > MENU_SCREEN_BOOTSTRAP &&
-        g_MenuOutgoingHandlerIndex < MENU_SCREEN_COUNT) {
+    if (s_menuRuntime.outgoingDrawScreen > MENU_SCREEN_BOOTSTRAP &&
+        s_menuRuntime.outgoingDrawScreen < MENU_SCREEN_COUNT) {
         g_MenuOutgoingScreenProgress =
-            g_MenuScreenDraw[g_MenuOutgoingHandlerIndex](
+            g_MenuScreenDraw[s_menuRuntime.outgoingDrawScreen](
                 MENU_OUTGOING_SCREEN_FADE_STEP);
     }
 }
@@ -76,18 +110,18 @@ void UpdateMenuMode(void) {
         DrawSolidRect(ot, 0, 0, 0x140, 2, 0, 0, 0, 0xFF);
     }
 
-    if ((u32)g_MenuScreen >= MENU_SCREEN_COUNT) {
-        g_MenuScreen = MENU_SCREEN_BOOTSTRAP;
+    if ((u32)s_menuRuntime.activeScreen >= MENU_SCREEN_COUNT) {
+        MenuRuntimeReset();
     }
-    if (g_MenuScreen == MENU_SCREEN_COURSE_SELECT ||
-        g_MenuScreen == MENU_SCREEN_RANKING) {
+    if (s_menuRuntime.activeScreen == MENU_SCREEN_COURSE_SELECT ||
+        s_menuRuntime.activeScreen == MENU_SCREEN_RANKING) {
         g_RenderState.otShift = MENU_NEAR_OT_SHIFT;
     } else {
         g_RenderState.otShift = MENU_DEFAULT_OT_SHIFT;
     }
 
     DrawMenuTransitions();
-    g_MenuScreenUpdate[g_MenuScreen]();
+    g_MenuScreenUpdate[s_menuRuntime.activeScreen]();
     DrawCarSpecGraph(g_CarSpecGraphStep, CurrentMenuCarTireCompound());
     DrawMenuHints(ot);
 }

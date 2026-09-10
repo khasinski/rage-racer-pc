@@ -9,6 +9,11 @@
 #include <stdio.h>
 #include <string.h>
 
+void MenuActivateScreen(s32 screen) {
+    g_MenuScreen = screen;
+    g_MenuHandlerIndex = screen;
+}
+
 s32 g_CourseCardPendingGrade;
 s32 g_CourseCardSpin;
 s32 g_CourseCardSpinTarget;

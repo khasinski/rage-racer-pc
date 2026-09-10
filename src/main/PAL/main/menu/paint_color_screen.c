@@ -136,14 +136,12 @@ static void UpdateSelectedPaintColor(PaintColorScreenState state) {
 }
 
 static void UpdatePaintColorOutgoing(void) {
-    g_MenuHandlerIndex = -1;
-    g_MenuOutgoingHandlerIndex = MENU_SCREEN_PAINT_COLOR;
+    MenuBeginExit(MENU_SCREEN_PAINT_COLOR);
     RunTimedDrawScript(g_PaintColorScreenScript, &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, g_PaintColorCursor);
     if (g_UiScriptProgress <= 0) {
-        g_MenuScreen = MENU_SCREEN_DESIGN_MODE;
-        g_MenuHandlerIndex = MENU_SCREEN_DESIGN_MODE;
+        MenuActivateScreen(MENU_SCREEN_DESIGN_MODE);
         g_PaintColorCursor = 0;
         g_UiScriptProgress = 0;
         GameMenuBusy = 0;

@@ -291,8 +291,7 @@ void UpdateCustomizeScreen(void) {
         return;
     }
 
-    g_MenuHandlerIndex = -1;
-    g_MenuOutgoingHandlerIndex = MENU_SCREEN_CUSTOMIZE;
+    MenuBeginExit(MENU_SCREEN_CUSTOMIZE);
     RunTimedDrawScript(cmdList, &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
     DrawFadingMenuSprites(g_UiScriptProgress, exitOption, g_CustomizeOption);
@@ -302,12 +301,10 @@ void UpdateCustomizeScreen(void) {
             if (g_MenuViewOffset < MENU_VIEW_OFFSET_MAX) {
                 return;
             }
-            g_MenuScreen = MENU_SCREEN_DESIGN_MODE;
-            g_MenuHandlerIndex = MENU_SCREEN_DESIGN_MODE;
+            MenuActivateScreen(MENU_SCREEN_DESIGN_MODE);
             break;
         case CUSTOMIZE_EXIT_TO_CAR_SELECT:
-            g_MenuScreen = MENU_SCREEN_CAR_SELECT;
-            g_MenuHandlerIndex = MENU_SCREEN_CAR_SELECT;
+            MenuActivateScreen(MENU_SCREEN_CAR_SELECT);
             g_CustomizeOption = CUSTOMIZE_OPTION_TIRES;
             break;
         }

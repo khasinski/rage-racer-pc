@@ -200,8 +200,7 @@ static void UpdateActiveTeamLogoModal(GameOrderingTableEntry *ot,
 }
 
 static void UpdateTeamLogoOutgoing(TeamLogoScreenState state) {
-    g_MenuHandlerIndex = -1;
-    g_MenuOutgoingHandlerIndex = MENU_SCREEN_TEAM_LOGO;
+    MenuBeginExit(MENU_SCREEN_TEAM_LOGO);
     DrawTeamLogoCanvas(state == TEAM_LOGO_EXIT_TO_DESIGN ? -1 : 1, 0);
     RunTimedDrawScript(g_TeamLogoScreenScript, &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
@@ -212,14 +211,12 @@ static void UpdateTeamLogoOutgoing(TeamLogoScreenState state) {
 
     switch (state) {
     case TEAM_LOGO_EXIT_TO_SAMPLES:
-        g_MenuScreen = MENU_SCREEN_LOGO_SAMPLE;
-        g_MenuHandlerIndex = MENU_SCREEN_LOGO_SAMPLE;
+        MenuActivateScreen(MENU_SCREEN_LOGO_SAMPLE);
         DrawLogoSamplePanel(0, 0);
         break;
 
     case TEAM_LOGO_EXIT_TO_DESIGN:
-        g_MenuScreen = MENU_SCREEN_DESIGN_MODE;
-        g_MenuHandlerIndex = MENU_SCREEN_DESIGN_MODE;
+        MenuActivateScreen(MENU_SCREEN_DESIGN_MODE);
         g_TeamLogoOption = 0;
         g_TeamLogoClut[0] = 0;
         UploadTeamLogoClut();

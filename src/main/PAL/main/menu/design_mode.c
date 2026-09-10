@@ -155,13 +155,11 @@ static void UpdateDesignModeDenied(void) {
 static void FinishDesignModeExit(void) {
     switch (GameMenuBusy) {
     case DESIGN_MODE_EXIT_TO_LOGO:
-        g_MenuScreen = MENU_SCREEN_TEAM_LOGO;
-        g_MenuHandlerIndex = MENU_SCREEN_TEAM_LOGO;
+        MenuActivateScreen(MENU_SCREEN_TEAM_LOGO);
         DrawTeamLogoCanvas(0, 0);
         break;
     case DESIGN_MODE_EXIT_TO_NAME:
-        g_MenuScreen = MENU_SCREEN_TEAM_NAME;
-        g_MenuHandlerIndex = MENU_SCREEN_TEAM_NAME;
+        MenuActivateScreen(MENU_SCREEN_TEAM_NAME);
         DrawTeamNameEntry(0, 0);
         g_MenuViewOffset = MENU_VIEW_OFFSET_MAX;
         g_MenuViewOffsetTarget = 0;
@@ -173,15 +171,13 @@ static void FinishDesignModeExit(void) {
         g_TeamNameCharModel = GameMenuCursor;
         break;
     case DESIGN_MODE_EXIT_TO_PAINT:
-        g_MenuScreen = MENU_SCREEN_PAINT_COLOR;
-        g_MenuHandlerIndex = MENU_SCREEN_PAINT_COLOR;
+        MenuActivateScreen(MENU_SCREEN_PAINT_COLOR);
         g_UiScriptProgress2 = 0;
         g_MenuViewOffset = MENU_VIEW_OFFSET_MAX;
         g_MenuViewOffsetTarget = 0;
         break;
     case DESIGN_MODE_EXIT_TO_CUSTOMIZE:
-        g_MenuScreen = MENU_SCREEN_CUSTOMIZE;
-        g_MenuHandlerIndex = MENU_SCREEN_CUSTOMIZE;
+        MenuActivateScreen(MENU_SCREEN_CUSTOMIZE);
         g_DesignModeOption = DESIGN_MODE_OPTION_LOGO;
         g_MenuViewOffset = MENU_VIEW_OFFSET_MAX;
         g_MenuViewOffsetTarget = 0;
@@ -192,8 +188,7 @@ static void FinishDesignModeExit(void) {
 }
 
 static void UpdateDesignModeExit(void) {
-    g_MenuHandlerIndex = -1;
-    g_MenuOutgoingHandlerIndex = MENU_SCREEN_DESIGN_MODE;
+    MenuBeginExit(MENU_SCREEN_DESIGN_MODE);
     RunTimedDrawScript(g_DesignModeScript, &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
     DrawFadingMenuSprites(g_UiScriptProgress, DESIGN_MODE_OPTION_COUNT - 1,

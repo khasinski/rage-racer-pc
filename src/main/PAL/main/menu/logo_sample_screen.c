@@ -114,15 +114,13 @@ static void UpdateLogoSampleModal(s32 state) {
 }
 
 static void UpdateLogoSampleOutgoing(void) {
-    g_MenuHandlerIndex = -1;
-    g_MenuOutgoingHandlerIndex = MENU_SCREEN_LOGO_SAMPLE;
+    MenuBeginExit(MENU_SCREEN_LOGO_SAMPLE);
     DrawLogoSamplePanel(-1, 0);
     RunTimedDrawScript(g_LogoSampleScreenScript, &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, g_LogoSampleCursor);
     if (g_UiScriptProgress <= 0) {
-        g_MenuScreen = MENU_SCREEN_TEAM_LOGO;
-        g_MenuHandlerIndex = MENU_SCREEN_TEAM_LOGO;
+        MenuActivateScreen(MENU_SCREEN_TEAM_LOGO);
         g_LogoSampleCursor = 0;
         g_UiScriptProgress = 0;
         GameMenuBusy = 0;

@@ -19,6 +19,12 @@ static s32 s_drawResetCalls;
 static s32 s_initRenderMode;
 static s32 s_cameraCalls;
 
+void MenuRuntimeReset(void) {
+    g_MenuScreen = MENU_SCREEN_BOOTSTRAP;
+    g_MenuHandlerIndex = -1;
+    g_MenuOutgoingHandlerIndex = -1;
+}
+
 void SetDispMask(s32 enabled) { s_displayMask = enabled; }
 void InitRenderState(s32 mode) { s_initRenderMode = mode; }
 void SetupDisplay480(s32 r, s32 g, s32 b) {

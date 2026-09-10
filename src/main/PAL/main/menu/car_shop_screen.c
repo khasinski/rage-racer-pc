@@ -220,8 +220,7 @@ static void UpdateCarShopModal(GameOrderingTableEntry *ot, ShopPrice price) {
 /* On the way out, back to the car select screen. A sale is paid for here, so
  * the money only leaves once the screen has actually finished. */
 static void UpdateCarShopOutgoing(ShopPrice price) {
-    g_MenuHandlerIndex = -1;
-    g_MenuOutgoingHandlerIndex = MENU_SCREEN_CAR_SHOP;
+    MenuBeginExit(MENU_SCREEN_CAR_SHOP);
     DrawBrowseArrows(-1, 0, g_PrevOwnedCarIndex != -1,
                      g_NextOwnedCarIndex != -1);
     DrawCarShopPricePanel(-1, g_PlayerMoney, price.amount);
@@ -234,8 +233,7 @@ static void UpdateCarShopOutgoing(ShopPrice price) {
     if (GameMenuBusy == CAR_SHOP_LEAVE_AFTER_SALE && price.available) {
         g_PlayerMoney -= price.amount;
     }
-    g_MenuScreen = MENU_SCREEN_CAR_SELECT;
-    g_MenuHandlerIndex = MENU_SCREEN_CAR_SELECT;
+    MenuActivateScreen(MENU_SCREEN_CAR_SELECT);
     g_UiScriptProgress = 0;
     GameMenuBusy = CAR_SHOP_IDLE;
     g_CarShopOption = 0;

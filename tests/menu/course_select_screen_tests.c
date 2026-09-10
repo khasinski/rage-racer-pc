@@ -58,6 +58,10 @@ void MenuActivateScreen(s32 screen) {
     g_MenuScreen = screen;
     g_MenuHandlerIndex = screen;
 }
+void MenuActivateEnteringScreen(s32 screen, s32 drawScreen) {
+    g_MenuScreen = screen;
+    g_MenuHandlerIndex = drawScreen;
+}
 void MenuBeginExit(s32 screen) {
     g_MenuHandlerIndex = -1;
     g_MenuOutgoingHandlerIndex = screen;

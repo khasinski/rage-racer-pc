@@ -10,6 +10,7 @@
  */
 
 #include "common.h"
+
 #include "game/asset.h"
 #include "game/car.h"
 #include "game/menu.h"
@@ -20,6 +21,15 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+
+void MenuActivateScreen(s32 screen) {
+    g_MenuScreen = screen;
+    g_MenuHandlerIndex = screen;
+}
+void MenuBeginExit(s32 screen) {
+    g_MenuHandlerIndex = -1;
+    g_MenuOutgoingHandlerIndex = screen;
+}
 
 s32 GameMenuBusy;
 s32 g_CarNamePlateStep;

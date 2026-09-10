@@ -6,6 +6,15 @@
 #include <stdio.h>
 #include <string.h>
 
+void MenuActivateScreen(s32 screen) {
+    g_MenuScreen = screen;
+    g_MenuHandlerIndex = screen;
+}
+void MenuBeginExit(s32 screen) {
+    g_MenuHandlerIndex = -1;
+    g_MenuOutgoingHandlerIndex = screen;
+}
+
 s32 GameMenuBusy;
 static CarEntry s_cars[13];
 CarEntry *g_CarTable = s_cars;

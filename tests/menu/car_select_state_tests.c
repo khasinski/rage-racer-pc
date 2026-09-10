@@ -6,6 +6,10 @@
 #include <stdio.h>
 #include <string.h>
 
+void MenuActivateScreen(s32 screen) {
+    g_MenuScreen = screen;
+}
+
 static CarEntry s_cars[GAME_CAR_COUNT];
 CarEntry *g_CarTable = s_cars;
 u32 g_CarModelSlot;

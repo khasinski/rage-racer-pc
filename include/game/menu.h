@@ -53,9 +53,19 @@ extern s32 g_MenuOutgoingHandlerIndex;
  * g_MenuScreenUpdate. */
 extern s32 g_MenuScreen;
 
+typedef struct MenuRuntime {
+    s32 activeScreen;
+    s32 activeDrawScreen;
+    s32 outgoingDrawScreen;
+} MenuRuntime;
+
+void MenuRuntimeReset(void);
+const MenuRuntime *MenuRuntimeCurrent(void);
+
 /* The only entry point for changing the active menu screen. It keeps the
  * update and fade dispatchers in sync during a completed screen transition. */
 void MenuActivateScreen(s32 screen);
+void MenuActivateEnteringScreen(s32 screen, s32 drawScreen);
 /* Start fading `screen` out. The destination is activated after that screen's
  * state machine has completed its own exit animation. */
 void MenuBeginExit(s32 screen);

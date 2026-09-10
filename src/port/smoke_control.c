@@ -607,9 +607,8 @@ int PortShouldExit(int frame_number) {
         int screen = 1 + (g_SceneTimer - 200) / 100;
         if (screen <= MENU_SCREEN_ENGINEER_SHOP &&
             lastSweepScreen != screen) {
-            g_MenuScreen = screen;
-            g_MenuHandlerIndex = screen;
-            g_MenuOutgoingHandlerIndex = -1;
+            MenuRuntimeReset();
+            MenuActivateScreen(screen);
             GameMenuBusy = 0;
             g_UiScriptProgress = 0;
             g_UiScriptProgress2 = 0;

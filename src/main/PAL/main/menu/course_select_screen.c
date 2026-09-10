@@ -390,8 +390,8 @@ static void EnterChosenScreen(void) {
         if (g_MenuViewOffset < MENU_VIEW_OFFSET_MAX) {
             return;
         }
-        MenuActivateScreen(MENU_SCREEN_CAR_SELECT);
-        g_MenuScreen = MENU_SCREEN_ENTER_CAR_SELECT;
+        MenuActivateEnteringScreen(MENU_SCREEN_ENTER_CAR_SELECT,
+                                   MENU_SCREEN_CAR_SELECT);
         DrawOwnedCarCounter(0, 0);
         DrawBrowseArrows(0, 0, 0, 0);
         g_CarSwapToIndex = -1;

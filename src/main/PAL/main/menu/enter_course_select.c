@@ -58,8 +58,7 @@ void EnterCourseSelectScreen(void) {
     }
 
     PlaySequence();
-    g_MenuHandlerIndex = MENU_SCREEN_COURSE_SELECT;
-    g_MenuScreen = MENU_SCREEN_COURSE_SELECT;
+    MenuActivateScreen(MENU_SCREEN_COURSE_SELECT);
     DrawBrowseArrows(0, 0, 0, 0);
     ResetCourseSelectShowroom();
     LoadImage(&g_TeamLogoRect.rect, &g_TeamLogoCanvas);

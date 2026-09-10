@@ -123,9 +123,8 @@ static void Reset(void) {
     RENDER_OT_BASE = s_orderingTable;
     g_AnimTimer = 10;
     g_SceneTimer = 0;
-    g_MenuScreen = MENU_SCREEN_COURSE_SELECT;
-    g_MenuHandlerIndex = -1;
-    g_MenuOutgoingHandlerIndex = -1;
+    MenuRuntimeReset();
+    MenuActivateScreen(MENU_SCREEN_COURSE_SELECT);
     g_MenuOutgoingScreenProgress = -1;
     g_CarSpecGraphStep = 7;
     g_PlayerCarIndex = 1;
@@ -151,18 +150,18 @@ static void Reset(void) {
 static int TestDispatchAndLayers(void) {
     Reset();
     g_SceneTimer = 1;
-    g_MenuHandlerIndex = MENU_SCREEN_RANKING;
-    g_MenuOutgoingHandlerIndex = MENU_SCREEN_CUSTOMIZE;
+    MenuActivateScreen(MENU_SCREEN_RANKING);
+    MenuBeginExit(MENU_SCREEN_CUSTOMIZE);
     UpdateMenuMode();
     CHECK(g_AnimTimer == 11 && g_SceneTimer == 2 && s_displayMask == 1);
     CHECK(g_RenderState.otShift == 1 && s_updateCalls == 1);
     CHECK(s_solidRectCalls == 1);
-    CHECK(s_drawCalls == 2 && s_drawSteps[0] == 0x14);
-    CHECK(s_drawSteps[1] == -10 && g_MenuOutgoingScreenProgress == 123);
+    CHECK(s_drawCalls == 1 && s_drawSteps[0] == -10);
+    CHECK(g_MenuOutgoingScreenProgress == 123);
     CHECK(s_specCarTire == 4 && s_overlayCalls == 0);
 
     Reset();
-    g_MenuScreen = MENU_SCREEN_CAR_SHOP;
+    MenuActivateScreen(MENU_SCREEN_CAR_SHOP);
     g_MenuHintBarStep = 1;
     g_MenuHintButtonsVisible = 1;
     s_hintResult = 1;
@@ -183,13 +182,12 @@ static int TestDispatchAndLayers(void) {
 
 static int TestInvalidIndices(void) {
     Reset();
-    g_MenuScreen = -1;
-    g_MenuHandlerIndex = MENU_SCREEN_COUNT;
-    g_MenuOutgoingHandlerIndex = MENU_SCREEN_COUNT + 20;
+    MenuActivateEnteringScreen(MENU_SCREEN_CAR_SHOP, MENU_SCREEN_COUNT);
     UpdateMenuMode();
-    CHECK(g_MenuScreen == MENU_SCREEN_BOOTSTRAP);
-    CHECK(s_updateCalls == 1 && s_drawCalls == 0);
-    CHECK(g_RenderState.otShift == 5);
+    CHECK(g_MenuScreen == MENU_SCREEN_COURSE_SELECT);
+    CHECK(MenuRuntimeCurrent()->activeScreen == MENU_SCREEN_COURSE_SELECT);
+    CHECK(s_updateCalls == 1 && s_drawCalls == 1 && s_drawSteps[0] == 0x14);
+    CHECK(g_RenderState.otShift == 1);
 
     Reset();
     g_PlayerCarIndex = -1;
@@ -197,7 +195,7 @@ static int TestInvalidIndices(void) {
     CHECK(s_specCarTire == 0);
 
     Reset();
-    g_MenuScreen = MENU_SCREEN_CAR_SHOP;
+    MenuActivateScreen(MENU_SCREEN_CAR_SHOP);
     g_CarListCursor = GAME_CAR_COUNT;
     UpdateMenuMode();
     CHECK(s_specCarTire == 0);

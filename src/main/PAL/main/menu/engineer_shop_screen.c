@@ -172,8 +172,7 @@ static void UpdateEngineerShopModal(GameOrderingTableEntry *ot,
 /* On the way out, back to the car select screen. The tune-up is paid for and
  * recorded here, so it only counts once the screen has actually finished. */
 static void UpdateEngineerShopOutgoing(ShopPrice price) {
-    g_MenuHandlerIndex = -1;
-    g_MenuOutgoingHandlerIndex = MENU_SCREEN_ENGINEER_SHOP;
+    MenuBeginExit(MENU_SCREEN_ENGINEER_SHOP);
     DrawEngineerShopPricePanel(-1, g_PlayerMoney, price.amount);
     RunTimedDrawScript(g_EngineerShopScreenScript, &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
@@ -191,8 +190,7 @@ static void UpdateEngineerShopOutgoing(ShopPrice price) {
         }
         g_PlayerMoney -= price.amount;
     }
-    g_MenuScreen = MENU_SCREEN_CAR_SELECT;
-    g_MenuHandlerIndex = MENU_SCREEN_CAR_SELECT;
+    MenuActivateScreen(MENU_SCREEN_CAR_SELECT);
     g_UiScriptProgress = 0;
     GameMenuBusy = ENGINEER_SHOP_IDLE;
     g_EngineerShopOption = 0;
