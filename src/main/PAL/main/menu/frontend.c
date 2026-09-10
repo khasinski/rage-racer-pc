@@ -9,6 +9,7 @@
 #include "game/grand_prix_content.h"
 #include "game/random.h"
 #include "game/render_internal.h"
+#include "game/scene_runtime.h"
 #include "game/screens.h"
 #include "psyq/cd.h"
 
@@ -31,21 +32,21 @@ void UpdateMainMenuExit(void) {
             g_GrandPrixMode = 1;
             if (g_RaceProgress->maxClassReached == -1) {
                 g_RaceProgress->maxClassReached = 0;
-                g_SceneId = 0x1F;
+                SceneRuntimeRequestScene(GAME_SCENE_ENTER_PROLOGUE);
                 g_GrandPrixSeries = 0;
             } else {
-                g_SceneId = 6;
+                SceneRuntimeRequestScene(GAME_SCENE_INIT_MENU);
             }
             break;
         case TITLE_MENU_TIME_ATTACK:
             g_GrandPrixMode = 0;
-            g_SceneId = 6;
+            SceneRuntimeRequestScene(GAME_SCENE_INIT_MENU);
             break;
         case TITLE_MENU_LOAD_SAVE:
-            g_SceneId = 0x19;
+            SceneRuntimeRequestScene(GAME_SCENE_ENTER_MEMORY_CARD_LOAD);
             break;
         case TITLE_MENU_OPTIONS:
-            g_SceneId = 0x16;
+            SceneRuntimeRequestScene(GAME_SCENE_ENTER_ATTRACT);
             break;
         }
     }
@@ -134,7 +135,7 @@ static void UpdateFrontendIdleAttract(void) {
         g_AttractCycleCount++;
     } else if (g_SceneTimer == FRONTEND_ATTRACT_READY) {
         g_GrandPrixMode = 1;
-        g_SceneId = 0x1D;
+        SceneRuntimeRequestScene(GAME_SCENE_ENTER_ATTRACT_DEMO);
         g_AttractCycleCount++;
     }
 }

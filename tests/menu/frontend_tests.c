@@ -5,6 +5,7 @@
 #include "game/race.h"
 #include "game/render_internal.h"
 #include "game/render_state.h"
+#include "game/scene_runtime.h"
 #include "game/screens.h"
 #include "game/state.h"
 
@@ -93,6 +94,10 @@ s32 CdControl(u_char command, u_char *parameter, u_char *result) {
 }
 void SetDispMask(s32 enabled) {
     (void)enabled;
+}
+void SceneRuntimeRequestScene(s32 scene) {
+    g_SceneId = scene;
+    g_SceneTimer = 0;
 }
 
 u8 *GameQueueShadedSprite(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y, s32 width,
