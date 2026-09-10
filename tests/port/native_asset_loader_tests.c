@@ -22,6 +22,7 @@ static s32 s_uploads;
 static s32 s_uploadResult = 1;
 static const GameImageAssetHeaderWord *s_uploadedAsset;
 static s32 s_requestCalls;
+static s32 s_transactionResetCalls;
 static size_t s_availableRoom;
 static s32 s_failures;
 
@@ -81,6 +82,8 @@ s32 RequestAssetLoad(AssetRequestType request, s32 firstLoadState,
     return 7;
 }
 
+void ResetAssetLoadTransaction(void) { s_transactionResetCalls++; }
+
 static void Check(s32 condition, const char *label) {
     if (!condition) {
         printf("FAIL %s\n", label);
@@ -100,6 +103,7 @@ static void ResetCalls(void) {
     s_uploadResult = 1;
     s_uploadedAsset = NULL;
     s_requestCalls = 0;
+    s_transactionResetCalls = 0;
     s_availableRoom = 32;
 }
 
@@ -190,6 +194,8 @@ int main(void) {
     Check(g_CdLoadPhase == 0 && g_AssetLoadState == 0 &&
               g_AssetRequestType == ASSET_REQUEST_IDLE,
           "asset reset clears every loader state");
+    Check(s_transactionResetCalls == 1,
+          "asset reset invalidates the scene transaction snapshot");
     Check(EnableCdAudioMode() == 1, "native CD audio mode is synchronous");
     Check(RequestBootAssets() == 7 && s_requestCalls == 1,
           "boot request uses the shared request handshake");

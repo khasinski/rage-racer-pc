@@ -80,6 +80,15 @@ u32 AssetLoadTransactionGeneration(void) {
     return s_transaction.generation;
 }
 
+void ResetAssetLoadTransaction(void) {
+    u32 generation = s_transaction.generation + 1;
+
+    if (generation == 0) generation = 1;
+    memset(&s_transaction, 0, sizeof(s_transaction));
+    s_transaction.request = ASSET_REQUEST_IDLE;
+    s_transaction.generation = generation;
+}
+
 s32 AssetLoadHasFailed(void) {
     return g_AssetLoadFailed != 0;
 }
@@ -95,12 +104,8 @@ static s32 StartAssetLoad(AssetRequestType request, s32 firstLoadState,
     if (resetCdAudio) {
         ResetCdAudioState();
     }
-    u32 generation = s_transaction.generation + 1;
-
-    if (generation == 0) generation = 1;
-    memset(&s_transaction, 0, sizeof(s_transaction));
+    ResetAssetLoadTransaction();
     s_transaction.request = request;
-    s_transaction.generation = generation;
     g_AssetRequestType = request;
     g_AssetLoadFailed = 0;
     g_AssetLoadState = firstLoadState;

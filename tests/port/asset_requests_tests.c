@@ -356,6 +356,12 @@ static void TestTransactionSnapshotsAreGenerationScoped(void) {
     Check(AssetLoadTransactionGeneration() != generation &&
               AssetLoadTransactionResult(ASSET_REQUEST_SELECT_BGM, generation) == NULL,
           "new transaction invalidates previous scene output");
+
+    generation = AssetLoadTransactionGeneration();
+    ResetAssetLoadTransaction();
+    Check(AssetLoadTransactionGeneration() != generation &&
+              AssetLoadTransactionCurrentResult(generation) == NULL,
+          "cancelling a load invalidates its transaction snapshot");
 }
 
 static void TestRoundRequestsAlwaysStartNewTransactions(void) {

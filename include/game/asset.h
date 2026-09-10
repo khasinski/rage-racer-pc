@@ -108,6 +108,10 @@ const AssetLoadTransaction *AssetLoadTransactionResult(
     AssetRequestType request, u32 generation);
 const AssetLoadTransaction *AssetLoadTransactionCurrentResult(u32 generation);
 u32 AssetLoadTransactionGeneration(void);
+/* Invalidate the active snapshot when a scene cancels or replaces a load.
+ * This advances the generation, so a retained result can never be reused by
+ * a later scene. */
+void ResetAssetLoadTransaction(void);
 
 /* Asset-load state machine phase (0 finished; positive values drive loads).
  * State 0 alone does not imply success: use the predicates below. */
@@ -440,8 +444,8 @@ extern size_t g_AssetSubBlockSize;
  * with the constants near the top of this header.
  */
 void ServiceAssetLoad(void);
-/* Cancel an in-flight load: aborts a running CdRead and clears its request,
- * phase and failure state. */
+/* Cancel an in-flight load: aborts a running CdRead, clears its request,
+ * phase and failure state, and invalidates its completed snapshot. */
 void ResetAssetLoader(void);
 /* Boot: read the "\RAGE.BIN;1" first sector into g_AssetCdEntries (135 entries)
  * and rebase the 11 "\RAGE.STR;1" stream entries. Prints "Now Searching [%s]". */

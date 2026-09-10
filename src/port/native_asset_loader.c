@@ -36,6 +36,7 @@ _Static_assert(offsetof(GameCdLoadEntry, size) ==
                "host and game archive sizes must share an offset");
 
 void ResetAssetLoader(void) {
+    ResetAssetLoadTransaction();
     g_CdLoadPhase = 0;
     g_AssetLoadState = 0;
     g_AssetLoadFailed = 0;
