@@ -27,6 +27,10 @@ cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
 cmake --build build/release --parallel
 ```
 
+The native game, importer, tools and in-tree tests require a C17 compiler;
+vendored dependencies retain the language standard selected by their upstream
+build files.
+
 Linux desktop builds need SDL's Wayland and/or X11 XRandR development
 dependencies. Check CMake's final SDL summary for `wayland` or `xrandr`;
 the dependency list used by releases is in

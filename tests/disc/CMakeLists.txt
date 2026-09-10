@@ -142,7 +142,10 @@ if(TARGET rage-extract AND TARGET rage-pack)
         target_compile_options(texture_patch_tests PRIVATE /W4 /WX /UNDEBUG)
         target_compile_definitions(texture_patch_tests PRIVATE _CRT_SECURE_NO_WARNINGS)
     else()
-        target_compile_options(texture_patch_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS} -UNDEBUG)
+        # miniz is a vendored single header whose unused zlib-compatible
+        # helpers trigger this diagnostic in the fixture as well as importer.
+        target_compile_options(texture_patch_tests PRIVATE
+            ${RAGE_STRICT_WARNING_OPTIONS} -Wno-unused-function -UNDEBUG)
     endif()
     add_test(NAME texture_patch COMMAND texture_patch_tests)
     set_tests_properties(texture_patch PROPERTIES LABELS functional)

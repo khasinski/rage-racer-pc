@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 project(RageRenderSnapshotContracts LANGUAGES C)
 enable_testing()
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS OFF)
 get_filename_component(RAGE_SOURCE "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 add_executable(render_world_snapshot_tests
     "${RAGE_SOURCE}/tests/render/render_world_snapshot_tests.c"

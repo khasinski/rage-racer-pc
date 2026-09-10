@@ -83,7 +83,7 @@ void SetupDisplay240(s32 red, s32 green, s32 blue) {
     s_setupDisplayCalls++;
 }
 
-void PlaySoundCue(s32 cue) { s_soundCue = cue; }
+void PlayMainSoundCue(s32 cue) { s_soundCue = cue; }
 
 void DrawSprite(GameOrderingTableEntry *ot, s16 x, s16 y, s16 width,
                 u16 height, u16 u, u16 v, u8 red, u8 green, u8 blue,

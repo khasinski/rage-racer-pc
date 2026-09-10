@@ -3,7 +3,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+/*
+ * libchdr's bundled miniz exposes unused static compatibility helpers. Keep
+ * -Werror active for this importer while isolating that third-party header.
+ */
+#if defined(__clang__) || defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+#endif
 #include <miniz.h>
+#if defined(__clang__) || defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 #include "yyjson.h"
 #include "../render/legacy_texture_index.h"
 

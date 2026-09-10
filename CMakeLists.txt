@@ -4,9 +4,11 @@ project(rage_racer_port VERSION 0.6.6 LANGUAGES C)
 
 set(RAGE_RACER_RELEASE_VERSION "0.6.6-alpha")
 
-set(CMAKE_C_STANDARD 11)
+# Native game, runtime, tools, and tests use the same portable C17 dialect.
+# Vendored projects select their own lower standard where required.
+set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_C_EXTENSIONS ON)
+set(CMAKE_C_EXTENSIONS OFF)
 
 # The retail data segment, split so each subsystem's state sits with the code
 # that reads it. Nothing links one of these without the rest: they were one
@@ -610,6 +612,7 @@ if(RAGE_BUILD_PORT)
         DEFAULT_FRONT_H=480
     )
     if(MSVC)
+        # PsyZ is vendored third-party code; keep its published C11 contract.
         set_property(TARGET psyz PROPERTY C_STANDARD 11)
         set_property(TARGET psyz PROPERTY C_STANDARD_REQUIRED ON)
         target_compile_options(psyz PRIVATE "$<$<COMPILE_LANGUAGE:C>:/std:c11>")
