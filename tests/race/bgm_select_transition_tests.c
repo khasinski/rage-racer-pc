@@ -54,7 +54,7 @@ static void Reset(void) {
     g_SceneTimer = 0; g_FadeLevel = 316; g_FadeStep = -4;
 }
 
-static void TestEntryAndTexturePreparation(void) {
+static void TestEntryKeepsOptionTextureBoundaryWithoutUploadingSelectBin(void) {
     Reset();
     EnterBgmSelectScreen();
     assert(s_displayMask == 0 && g_SceneId == GAME_SCENE_BGM_SELECT);
@@ -63,7 +63,10 @@ static void TestEntryAndTexturePreparation(void) {
     s_assetReady = 1;
     assert(AssetLoadCompletedSuccessfully());
     UpdateBgmSelectLoad();
-    assert(s_uploads == 1);
+    /* SELECT.BIN is an audio pack.  It reuses OPTION.BIN's image boundary but
+     * does not contain a TIM at that address, so uploading it leaves the
+     * player permanently on NOW LOADING on strict GPU backends. */
+    assert(s_uploads == 0);
     assert(s_installs == 1);
     assert(s_trackRequests == 1);
     assert(s_failed == 0);
@@ -94,7 +97,7 @@ static void TestFadeInDoesNotBuildAWorldWhileLoading(void) {
 }
 
 int main(void) {
-    TestEntryAndTexturePreparation();
+    TestEntryKeepsOptionTextureBoundaryWithoutUploadingSelectBin();
     TestTrackWorldStartsOnlyAfterTrackAssets();
     TestFadeInDoesNotBuildAWorldWhileLoading();
     return 0;

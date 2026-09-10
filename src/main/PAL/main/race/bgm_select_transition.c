@@ -79,13 +79,10 @@ void UpdateBgmSelectLoad(void) {
     size_t texturePackSize;
 
     if (AssetLoadCompletedSuccessfully()) {
-        /* The option screen leaves the selected track's texture pack in the
-         * loader buffers. Upload its TIM first, as attract mode does, before
-         * installing pages and constructing the presentation world. Without
-         * this the music player can inherit stale sky/camera textures. */
-        if (!UploadImageAsset(GetImageAssetHeaderWords(g_ImageBlockBuffer),
-                              g_ImageBlockSize) ||
-            !AssetSpanSize(g_AssetBase, g_ImageBlockBuffer,
+        /* SELECT.BIN supplies audio only.  g_ImageBlockBuffer still marks the
+         * texture-pack boundary inherited from OPTION.BIN, but it is not an
+         * image in SELECT.BIN and must never be uploaded as one. */
+        if (!AssetSpanSize(g_AssetBase, g_ImageBlockBuffer,
                            &texturePackSize) ||
             !InstallTrackTextureAssetPack(g_AssetBase, texturePackSize)) {
             FailAssetLoad();
