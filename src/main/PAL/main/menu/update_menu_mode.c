@@ -9,6 +9,18 @@ enum {
     MENU_DEFAULT_OT_SHIFT = 5,
 };
 
+void MenuActivateScreen(s32 screen) {
+    if (screen <= MENU_SCREEN_BOOTSTRAP || screen >= MENU_SCREEN_COUNT) return;
+    g_MenuScreen = screen;
+    g_MenuHandlerIndex = screen;
+}
+
+void MenuBeginExit(s32 screen) {
+    if (screen <= MENU_SCREEN_BOOTSTRAP || screen >= MENU_SCREEN_COUNT) return;
+    g_MenuHandlerIndex = -1;
+    g_MenuOutgoingHandlerIndex = screen;
+}
+
 static u32 CurrentMenuCarTireCompound(void) {
     s32 carIndex = g_MenuScreen == MENU_SCREEN_CAR_SHOP
                        ? g_CarListCursor

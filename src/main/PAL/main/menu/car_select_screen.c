@@ -253,12 +253,10 @@ static void EnterChosenScreen(void) {
         }
         break;
     case 2:
-        g_MenuScreen = MENU_SCREEN_CUSTOMIZE;
-        g_MenuHandlerIndex = MENU_SCREEN_CUSTOMIZE;
+        MenuActivateScreen(MENU_SCREEN_CUSTOMIZE);
         break;
     case 3:
-        g_MenuScreen = MENU_SCREEN_CAR_SHOP;
-        g_MenuHandlerIndex = MENU_SCREEN_CAR_SHOP;
+        MenuActivateScreen(MENU_SCREEN_CAR_SHOP);
         DrawCarShopPricePanel(0, 0, 0);
         DrawBrowseArrows(0, 0, 0, 0);
         DrawMenuAltPanel(0, 0);
@@ -268,8 +266,7 @@ static void EnterChosenScreen(void) {
         RestoreTeamLogoClut();
         break;
     case 4:
-        g_MenuScreen = MENU_SCREEN_ENGINEER_SHOP;
-        g_MenuHandlerIndex = MENU_SCREEN_ENGINEER_SHOP;
+        MenuActivateScreen(MENU_SCREEN_ENGINEER_SHOP);
         DrawEngineerShopPricePanel(0, 0, 0);
         break;
     case 5:
@@ -278,8 +275,7 @@ static void EnterChosenScreen(void) {
         }
         g_MenuViewAngle = 0x7A120;
         g_MenuViewAngleTarget = 0x7A120;
-        g_MenuScreen = MENU_SCREEN_COURSE_SELECT;
-        g_MenuHandlerIndex = MENU_SCREEN_COURSE_SELECT;
+        MenuActivateScreen(MENU_SCREEN_COURSE_SELECT);
         g_CarSelectCursor = 0;
         g_MenuPendingCourseIndex = -1;
         g_MenuViewOffset = 0x3D090;
@@ -299,8 +295,7 @@ static void EnterChosenScreen(void) {
 }
 
 static void UpdateCarSelectOutgoing(void) {
-    g_MenuHandlerIndex = -1;
-    g_MenuOutgoingHandlerIndex = MENU_SCREEN_CAR_SELECT;
+    MenuBeginExit(MENU_SCREEN_CAR_SELECT);
     DrawBrowseArrows(-1, 0, g_PrevOwnedCarIndex != -1,
                      g_NextOwnedCarIndex != -1);
     if (g_GrandPrixMode == 0) {

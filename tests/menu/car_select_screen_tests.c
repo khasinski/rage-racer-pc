@@ -50,6 +50,15 @@ s32 g_MenuLowerAltPanelStep;
 s32 g_MenuCourseModelIndex;
 s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
+
+void MenuActivateScreen(s32 screen) {
+    g_MenuScreen = screen;
+    g_MenuHandlerIndex = screen;
+}
+void MenuBeginExit(s32 screen) {
+    g_MenuHandlerIndex = -1;
+    g_MenuOutgoingHandlerIndex = screen;
+}
 s32 g_MenuHintBarStep;
 s32 g_MenuOutgoingScreenProgress;
 s32 g_MenuOverlayPattern;

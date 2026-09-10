@@ -53,6 +53,13 @@ extern s32 g_MenuOutgoingHandlerIndex;
  * g_MenuScreenUpdate. */
 extern s32 g_MenuScreen;
 
+/* The only entry point for changing the active menu screen. It keeps the
+ * update and fade dispatchers in sync during a completed screen transition. */
+void MenuActivateScreen(s32 screen);
+/* Start fading `screen` out. The destination is activated after that screen's
+ * state machine has completed its own exit animation. */
+void MenuBeginExit(s32 screen);
+
 /*
  * The two parallel screen tables UpdateMenuMode dispatches through, both indexed
  * by the same screen id: g_MenuScreenUpdate holds the per-frame state machines
