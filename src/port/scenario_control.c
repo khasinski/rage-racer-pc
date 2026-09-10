@@ -1,23 +1,17 @@
 #include <limits.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
-#include <psyz/gpu.h>
-
-#include "game/asset.h"
-#include "game/audio.h"
-#include "game/audio_internal.h"
 #include "game/frontend_internal.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
 #include "game/race.h"
 #include "game/race_internal.h"
 #include "game/render_internal.h"
-#include "game/round_screen_internal.h"
 #include "game/player_car_internal.h"
 #include "game/save_internal.h"
+#include "game/scene.h"
 #include "game/track.h"
 #include "runtime_config.h"
 #include "debug_autopilot.h"
@@ -395,7 +389,7 @@ static void ScenarioTrace(void) {
         fprintf(stderr,
                 "rage-port: scenario state t=%.1fs scene=%d phase=%d screen=%d\n",
                 ScenarioElapsed(), g_SceneId, g_FrontendState, g_MenuScreen);
-    } else if (++held == 600 && g_SceneId < 11) {
+    } else if (++held == 600 && g_SceneId < GAME_SCENE_ENTER_RACE) {
         fprintf(stderr,
                 "rage-port: scenario stalled t=%.1fs scene=%d phase=%d screen=%d\n",
                 ScenarioElapsed(), g_SceneId, g_FrontendState, g_MenuScreen);
@@ -439,7 +433,8 @@ void PortScenarioBeforeSceneHandler(void) {
 
     /* A completed circuit race always hands off from the live race (12) to
      * replay (17). Restarts and pause-menu exits use other destinations. */
-    if (s_scenario.lastScene == 12 && g_SceneId == 17) {
+    if (s_scenario.lastScene == GAME_SCENE_RACE &&
+        g_SceneId == GAME_SCENE_REPLAY) {
         s_scenario.raceFinished = 1;
         s_scenario.resultSeen = 1;
         fprintf(stderr, "rage-port: scenario race finished after_finish=%s\n",
@@ -453,7 +448,8 @@ void PortScenarioBeforeSceneHandler(void) {
     }
     if (s_scenario.raceFinished &&
         s_scenario.afterFinish == RAGE_SCENARIO_AFTER_EXIT) {
-        if (g_SceneId >= 17 && g_SceneId <= 21) {
+        if (g_SceneId >= GAME_SCENE_REPLAY &&
+            g_SceneId <= GAME_SCENE_RECORD_ENTRY) {
             s_scenario.resultSeen = 1;
         } else if (s_scenario.resultSeen) {
             s_scenario.exitRequested = 1;
@@ -463,23 +459,28 @@ void PortScenarioBeforeSceneHandler(void) {
         return;
     }
 
-    if (g_SceneId == 4 && !s_scenario.titleSelectionApplied) {
+    if (g_SceneId == GAME_SCENE_FRONTEND &&
+        !s_scenario.titleSelectionApplied) {
         g_TitleMenuSelection = s_scenario.launch.mode
             ? s_scenario.launch.series : 2;
         s_scenario.titleSelectionApplied = 1;
     }
-    if (g_SceneId == 8) ScenarioApplyLaunchSelection();
+    if (g_SceneId == GAME_SCENE_MENU) ScenarioApplyLaunchSelection();
 
     changed = g_SceneId != s_scenario.lastScene ||
-              (g_SceneId == 4 && g_FrontendState != s_scenario.lastFrontend) ||
-              (g_SceneId == 8 && g_MenuScreen != s_scenario.lastMenuScreen);
+              (g_SceneId == GAME_SCENE_FRONTEND &&
+               g_FrontendState != s_scenario.lastFrontend) ||
+              (g_SceneId == GAME_SCENE_MENU &&
+               g_MenuScreen != s_scenario.lastMenuScreen);
     if (changed) {
-        if (s_scenario.lastScene == 12 && g_SceneId != 12) {
+        if (s_scenario.lastScene == GAME_SCENE_RACE &&
+            g_SceneId != GAME_SCENE_RACE) {
             s_scenario.startApplied = 0;
             s_scenario.gridApplied = 0;
             s_scenario.launchApplied = 0;
         }
-        if (g_SceneId != 4) s_scenario.titleSelectionApplied = 0;
+        if (g_SceneId != GAME_SCENE_FRONTEND)
+            s_scenario.titleSelectionApplied = 0;
         s_scenario.lastScene = g_SceneId;
         s_scenario.lastFrontend = g_FrontendState;
         s_scenario.lastMenuScreen = g_MenuScreen;
@@ -493,11 +494,11 @@ void PortScenarioBeforeSceneHandler(void) {
 
     if (s_scenario.raceFinished &&
         s_scenario.afterFinish == RAGE_SCENARIO_AFTER_REPEAT &&
-        (g_SceneId == 17 || g_SceneId == 19) &&
+        (g_SceneId == GAME_SCENE_REPLAY || g_SceneId == GAME_SCENE_PRIZE) &&
         s_scenario.stableFrames >= 30 && s_scenario.retryFrames >= 60) {
         ScenarioConfirm();
     }
-    if (s_scenario.raceFinished && g_SceneId == 11) {
+    if (s_scenario.raceFinished && g_SceneId == GAME_SCENE_ENTER_RACE) {
         s_scenario.raceFinished = 0;
         s_scenario.resultSeen = 0;
         fprintf(stderr, "rage-port: scenario repeat entered next race via menus\n");
@@ -513,10 +514,10 @@ void PortScenarioBeforeSceneHandler(void) {
     /* Scene 5 is shared by boot and class/ending FMVs. Boot automation must
      * not press Start through a movie reached by the race reward flow. */
     if (s_scenario.skipSequences && !s_scenario.raceFinished) {
-        if (g_SceneId == 5 || g_SceneId == 32) {
+        if (g_SceneId == GAME_SCENE_FMV || g_SceneId == GAME_SCENE_PROLOGUE) {
             g_PadType = 0x41;
             g_PadPressed |= PAD_CONFIRM;
-        } else if (g_SceneId == 1) {
+        } else if (g_SceneId == GAME_SCENE_BOOT_LOGO) {
             /* The boot logo drops its remaining hold as soon as a button is
              * down and the assets behind it have finished loading. What is
              * left after that is the load itself, which nothing can skip. */
@@ -525,22 +526,24 @@ void PortScenarioBeforeSceneHandler(void) {
         }
     }
 
-    if (g_SceneId == 4 && g_FrontendState == FRONTEND_STATE_TITLE &&
+    if (g_SceneId == GAME_SCENE_FRONTEND &&
+        g_FrontendState == FRONTEND_STATE_TITLE &&
         s_scenario.stableFrames >= 20 && s_scenario.retryFrames >= 60) {
         ScenarioConfirm();
-    } else if (g_SceneId == 4 && g_FrontendState == FRONTEND_STATE_MENU_INPUT &&
+    } else if (g_SceneId == GAME_SCENE_FRONTEND &&
+               g_FrontendState == FRONTEND_STATE_MENU_INPUT &&
                s_scenario.stableFrames >= 10 && s_scenario.retryFrames >= 30) {
         ScenarioConfirm();
-    } else if (g_SceneId == 8 && s_scenario.stableFrames >= 20 &&
+    } else if (g_SceneId == GAME_SCENE_MENU && s_scenario.stableFrames >= 20 &&
                s_scenario.retryFrames >= 60) {
         ScenarioConfirm();
     }
 
-    if (g_SceneId == 11) ScenarioApplyGrid();
-    if (g_SceneId == 12 && s_scenario.customStart &&
+    if (g_SceneId == GAME_SCENE_ENTER_RACE) ScenarioApplyGrid();
+    if (g_SceneId == GAME_SCENE_RACE && s_scenario.customStart &&
         !s_scenario.startApplied && g_TrackPointCount > 0) {
         ScenarioApplyTrackStarts();
-    } else if (g_SceneId == 12 && s_scenario.startApplied &&
+    } else if (g_SceneId == GAME_SCENE_RACE && s_scenario.startApplied &&
                s_scenario.freezeStarts && g_TrackPointCount > 0) {
         ScenarioHoldTrackStarts();
     }
