@@ -1,5 +1,6 @@
 #include "game/boot_internal.h"
 #include "game/diagnostics.h"
+#include "game/scene_runtime.h"
 #include "game/state.h"
 
 void DispatchCurrentScene(void) {
@@ -13,5 +14,7 @@ void DispatchCurrentScene(void) {
         return;
     }
 
+    SceneRuntimeBeforeDispatch(sceneId);
     g_SceneHandlers[sceneId]();
+    SceneRuntimeAfterDispatch(sceneId);
 }

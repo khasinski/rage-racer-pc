@@ -45,6 +45,69 @@ typedef enum AssetRequestType {
 
 extern AssetRequestType g_AssetRequestType;
 
+/*
+ * The retail loader exposes its working memory through globals because every
+ * recovered state machine shares its address space.  New transition code must
+ * consume a completed request through this immutable snapshot instead.  A
+ * subsequent request invalidates the previous snapshot and receives a new
+ * generation, so a scene cannot accidentally consume another scene's load.
+ */
+typedef struct AssetLoadSpan {
+    u8 *data;
+    size_t size;
+} AssetLoadSpan;
+
+typedef struct AssetSelectBgmAssets {
+    AssetLoadSpan texturePack;
+    AssetLoadSpan audioHeader;
+    AssetLoadSpan sequence;
+    AssetLoadSpan audioBody;
+} AssetSelectBgmAssets;
+
+typedef struct AssetScreenAssets {
+    AssetLoadSpan image;
+} AssetScreenAssets;
+
+typedef struct AssetRaceAssets {
+    AssetLoadSpan texturePack;
+    AssetLoadSpan runtime;
+    AssetLoadSpan audio;
+} AssetRaceAssets;
+
+typedef struct AssetRoundAssets {
+    AssetLoadSpan image;
+    AssetLoadSpan voiceHeader;
+    AssetLoadSpan voiceBody;
+} AssetRoundAssets;
+
+typedef union AssetLoadPayload {
+    AssetSelectBgmAssets selectBgm;
+    AssetScreenAssets screen;
+    AssetRaceAssets race;
+    AssetRoundAssets round;
+} AssetLoadPayload;
+
+typedef struct AssetLoadTransaction {
+    AssetRequestType request;
+    u32 generation;
+    s32 complete;
+    s32 failed;
+    AssetLoadPayload payload;
+    /* Compatibility snapshot for recovered loaders that have not yet been
+     * migrated to a request-specific member of payload. */
+    AssetLoadSpan primary;
+    AssetLoadSpan image;
+    AssetLoadSpan block;
+    AssetLoadSpan block2;
+    AssetLoadSpan auxiliary;
+} AssetLoadTransaction;
+
+/* Returns the active request snapshot, or NULL until that request completes.
+ * `request` and `generation` must both match the request the caller started. */
+const AssetLoadTransaction *AssetLoadTransactionResult(
+    AssetRequestType request, u32 generation);
+u32 AssetLoadTransactionGeneration(void);
+
 /* Asset-load state machine phase (0 finished; positive values drive loads).
  * State 0 alone does not imply success: use the predicates below. */
 extern s32 g_AssetLoadState;

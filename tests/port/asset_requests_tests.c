@@ -318,6 +318,46 @@ static void TestSelectBgmRequests(void) {
           "keep-slots request skips slot close phase but resets CD state");
 }
 
+static void TestTransactionSnapshotsAreGenerationScoped(void) {
+    u8 bytes[96] = {0};
+    const AssetLoadTransaction *result;
+    u32 generation;
+
+    g_AssetLoadState = 0;
+    g_AssetLoadFailed = 0;
+    g_AssetRequestType = ASSET_REQUEST_IDLE;
+    g_AssetBase = bytes;
+    g_ImageBlockBuffer = bytes + 48;
+    g_ImageBlockSize = 16;
+    g_AssetBlockPtr = bytes + 4;
+    g_AssetBlockSize = 12;
+    g_AssetBlockPtr2 = bytes + 16;
+    g_AssetBlock2Size = 20;
+    g_AssetSubBlockPtr = bytes + 36;
+    g_AssetSubBlockSize = 12;
+
+    Check(RequestSelectBgmAssets() == 1,
+          "transaction test starts SELECT.BIN request");
+    generation = AssetLoadTransactionGeneration();
+    g_AssetLoadState = 0;
+    Check(AssetLoadCompletedSuccessfully(),
+          "completed request publishes a transaction result");
+    result = AssetLoadTransactionResult(ASSET_REQUEST_SELECT_BGM, generation);
+    Check(result != NULL &&
+              result->payload.selectBgm.texturePack.data == bytes &&
+              result->payload.selectBgm.texturePack.size == 48 &&
+              result->payload.selectBgm.audioHeader.data == bytes + 4 &&
+              result->payload.selectBgm.sequence.data == bytes + 16 &&
+              result->payload.selectBgm.audioBody.data == bytes + 36,
+          "transaction snapshots typed asset spans");
+
+    Check(RequestOptionScreenAssets() == 1,
+          "a later request begins a new transaction generation");
+    Check(AssetLoadTransactionGeneration() != generation &&
+              AssetLoadTransactionResult(ASSET_REQUEST_SELECT_BGM, generation) == NULL,
+          "new transaction invalidates previous scene output");
+}
+
 int main(void) {
     union {
         max_align_t alignment;
@@ -330,6 +370,7 @@ int main(void) {
     TestBootAssetPhases();
     TestSaveScreenAssets(pack.bytes);
     TestSelectBgmRequests();
+    TestTransactionSnapshotsAreGenerationScoped();
 
     memset(&pack, 0, sizeof(pack));
     header->offsets[0] = 16;

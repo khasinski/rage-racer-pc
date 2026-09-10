@@ -8,6 +8,7 @@
 #include "game/race.h"
 #include "game/race_internal.h"
 #include "game/scene.h"
+#include "game/scene_runtime.h"
 
 s32 g_FrameSyncThreshold;
 s32 g_FadeLevel;
@@ -32,10 +33,17 @@ static u8 s_assetBuffer[128];
 
 static int s_assetReady, s_uploads, s_installs, s_trackRequests, s_trackInit;
 static int s_displayMask, s_fades, s_failed;
+static AssetLoadTransaction s_assets;
 
 void SetDispMask(s32 enabled) { s_displayMask = enabled; }
 void SetupDisplay240(s32 a, s32 b, s32 c) { assert(a == 0 && b == 0 && c == 0); }
 s32 AssetLoadCompletedSuccessfully(void) { return s_assetReady; }
+const AssetLoadTransaction *SceneRuntimeAssetResult(AssetRequestType request) {
+    return request == ASSET_REQUEST_SELECT_BGM &&
+                   s_assets.request == request
+               ? &s_assets
+               : NULL;
+}
 s32 UploadImageAsset(const GameImageAssetHeaderWord *header, size_t size) { (void)header; (void)size; s_uploads++; return 1; }
 s32 AssetSpanSize(const void *base, const void *end, size_t *size) { (void)base; (void)end; *size = 64; return 1; }
 s32 InstallTrackTextureAssetPack(u8 *base, size_t size) { (void)base; assert(size == 64); s_installs++; return 1; }
@@ -51,6 +59,13 @@ static void Reset(void) {
     g_AssetBase = s_assetBuffer;
     g_ImageBlockBuffer = s_assetBuffer + 64;
     g_ImageBlockSize = 64;
+    s_assets = (AssetLoadTransaction){
+        .request = ASSET_REQUEST_SELECT_BGM,
+        .generation = 1,
+        .complete = 1,
+        .payload.selectBgm.texturePack = {s_assetBuffer, 64},
+        .image = {s_assetBuffer + 64, 64},
+    };
     g_SceneTimer = 0; g_FadeLevel = 316; g_FadeStep = -4;
 }
 
@@ -72,6 +87,15 @@ static void TestEntryKeepsOptionTextureBoundaryWithoutUploadingSelectBin(void) {
     assert(s_failed == 0);
     assert(g_BgmSelectStep == BGM_SELECT_STEP_FADE_IN);
     assert(s_trackInit == 0);
+}
+
+static void TestRejectsAnAssetResultFromAnotherScene(void) {
+    Reset();
+    EnterBgmSelectScreen();
+    s_assetReady = 1;
+    s_assets.request = ASSET_REQUEST_OPTION_SCREEN;
+    UpdateBgmSelectLoad();
+    assert(g_AssetLoadFailed == 1 && s_trackRequests == 0);
 }
 
 static void TestTrackWorldStartsOnlyAfterTrackAssets(void) {
@@ -98,6 +122,7 @@ static void TestFadeInDoesNotBuildAWorldWhileLoading(void) {
 
 int main(void) {
     TestEntryKeepsOptionTextureBoundaryWithoutUploadingSelectBin();
+    TestRejectsAnAssetResultFromAnotherScene();
     TestTrackWorldStartsOnlyAfterTrackAssets();
     TestFadeInDoesNotBuildAWorldWhileLoading();
     return 0;

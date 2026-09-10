@@ -9,6 +9,7 @@
 #include "game/render_internal.h"
 #include "game/state.h"
 #include "game/scene.h"
+#include "game/scene_runtime.h"
 
 enum {
     BGM_SELECT_FADE_TPAGE = 0x49,
@@ -76,15 +77,19 @@ static void UpdateBgmSelectTransition(void) {
 }
 
 void UpdateBgmSelectLoad(void) {
-    size_t texturePackSize;
+    const AssetLoadTransaction *assets;
 
     if (AssetLoadCompletedSuccessfully()) {
+        assets = SceneRuntimeAssetResult(ASSET_REQUEST_SELECT_BGM);
         /* SELECT.BIN supplies audio only.  g_ImageBlockBuffer still marks the
          * texture-pack boundary inherited from OPTION.BIN, but it is not an
          * image in SELECT.BIN and must never be uploaded as one. */
-        if (!AssetSpanSize(g_AssetBase, g_ImageBlockBuffer,
-                           &texturePackSize) ||
-            !InstallTrackTextureAssetPack(g_AssetBase, texturePackSize)) {
+        if (assets == NULL ||
+            assets->payload.selectBgm.texturePack.data == NULL ||
+            assets->payload.selectBgm.texturePack.size == 0 ||
+            !InstallTrackTextureAssetPack(
+                assets->payload.selectBgm.texturePack.data,
+                assets->payload.selectBgm.texturePack.size)) {
             FailAssetLoad();
         } else {
             RequestTrackDataAssets();
