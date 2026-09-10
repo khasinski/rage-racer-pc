@@ -358,6 +358,26 @@ static void TestTransactionSnapshotsAreGenerationScoped(void) {
           "new transaction invalidates previous scene output");
 }
 
+static void TestRoundRequestsAlwaysStartNewTransactions(void) {
+    u32 firstGeneration;
+
+    g_AssetLoadState = 0;
+    g_AssetLoadFailed = 0;
+    g_AssetRequestType = ASSET_REQUEST_IDLE;
+    g_GrandPrixMode = 1;
+    g_GrandPrixSeries = 0;
+    g_GrandPrixClass = 0;
+
+    Check(RequestRoundAssets() == 1,
+          "first round request starts a transaction");
+    firstGeneration = AssetLoadTransactionGeneration();
+    g_AssetLoadState = 0;
+    Check(RequestRoundAssets() == 1,
+          "later round request restarts the same request type");
+    Check(AssetLoadTransactionGeneration() != firstGeneration,
+          "later round request receives a new transaction generation");
+}
+
 int main(void) {
     union {
         max_align_t alignment;
@@ -371,6 +391,7 @@ int main(void) {
     TestSaveScreenAssets(pack.bytes);
     TestSelectBgmRequests();
     TestTransactionSnapshotsAreGenerationScoped();
+    TestRoundRequestsAlwaysStartNewTransactions();
 
     memset(&pack, 0, sizeof(pack));
     header->offsets[0] = 16;

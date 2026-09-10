@@ -48,15 +48,10 @@ s32 RequestRoundAssets(void) {
         }
     }
 
-    if (g_AssetRequestType == ASSET_REQUEST_ROUND_SCREEN) {
-        g_AssetRequestType = ASSET_REQUEST_IDLE;
-        return g_AssetLoadFailed != 0 ? -1 : 0;
-    }
-
-    g_AssetRequestType = ASSET_REQUEST_ROUND_SCREEN;
-    g_AssetLoadFailed = 0;
-    g_AssetLoadState = ROUND_LOAD_SCREEN;
-    return 1;
+    /* Round used to duplicate the request protocol and therefore bypassed
+     * the transaction generation that protects scene hand-offs. Each round
+     * selects mutable class and series state, so it must always be a reload. */
+    return RestartAssetLoad(ASSET_REQUEST_ROUND_SCREEN, ROUND_LOAD_SCREEN, 0);
 }
 
 static s32 RoundScreenAssetId(void) {

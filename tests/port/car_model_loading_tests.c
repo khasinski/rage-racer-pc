@@ -11,6 +11,7 @@ AssetRequestType g_AssetRequestType;
 s32 g_AssetLoadState;
 s32 g_AssetLoadFailed;
 s32 g_PendingCarModelIndex;
+u8 *g_AssetBase;
 u8 *g_AssetBlockPtr;
 size_t g_AssetBlockSize;
 u8 *g_AssetBlockPtr2;
@@ -164,6 +165,8 @@ static void Check(s32 condition, const char *label) {
 }
 
 static void TestRequests(void) {
+    u32 carGeneration;
+
     g_AssetLoadState = 0;
     g_AssetLoadFailed = 1;
     g_AssetRequestType = ASSET_REQUEST_IDLE;
@@ -172,6 +175,7 @@ static void TestRequests(void) {
               g_PendingCarModelIndex == 4 && g_AssetLoadState == 1 &&
               !AssetLoadHasFailed(),
           "car model request");
+    carGeneration = AssetLoadTransactionGeneration();
 
     Check(!RequestUpgradedCarModel(7), "busy model request is rejected");
     Check(g_AssetRequestType == ASSET_REQUEST_CAR_MODEL &&
@@ -183,6 +187,8 @@ static void TestRequests(void) {
     Check(g_AssetRequestType == ASSET_REQUEST_UPGRADED_CAR_MODEL &&
               g_PendingCarModelIndex == 7 && g_AssetLoadState == 1,
           "upgraded car model request");
+    Check(AssetLoadTransactionGeneration() != carGeneration,
+          "each car-model request owns a new asset transaction");
 
     g_AssetLoadState = 0;
     g_AssetRequestType = ASSET_REQUEST_IDLE;

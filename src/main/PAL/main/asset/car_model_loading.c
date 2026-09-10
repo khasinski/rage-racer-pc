@@ -10,11 +10,8 @@ static s32 RequestPendingCarModel(AssetRequestType request, s32 carIndex) {
         return 0;
     }
 
-    g_AssetRequestType = request;
-    g_AssetLoadFailed = 0;
     g_PendingCarModelIndex = carIndex;
-    g_AssetLoadState = CAR_MODEL_LOAD_ASSET;
-    return 1;
+    return RestartAssetLoad(request, CAR_MODEL_LOAD_ASSET, 0);
 }
 
 s32 InstallCarModelAsset(CarModelAsset *asset, size_t size, s32 slot,
