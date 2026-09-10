@@ -1,4 +1,5 @@
 #include "rage/render_world_game.h"
+#include "rage/render_world_scene.h"
 
 #include "course_coordinate.h"
 #include "sky_panorama_layout.h"
@@ -62,11 +63,25 @@ static GameSkyGridLayout s_skyGrid[2];
 static int s_haveSkyGrid[2];
 
 static int GameSceneUsesRaceWorld(void) {
-    return g_SceneId == 12 || g_SceneId == 0x1E;
+    return GameRenderWorldSceneHas3d((GameSceneId)g_SceneId);
 }
 
 static RageRenderWorld *GameRenderWorldMutable(void) {
     return &s_worlds[s_buildingIndex];
+}
+
+/* Menus and race-result screens are captured 2D scenes.  They must not
+ * inherit the last race camera: doing so made the modern path keep drawing a
+ * moving sky and track behind the Lost Race prompt after the game had stopped
+ * producing race-world packets. */
+static void GameRenderWorldClearInactiveScene(void) {
+    RageRenderWorld *world = GameRenderWorldMutable();
+
+    world->hasCamera = 0;
+    world->hasMirrorCamera = 0;
+    world->mirrorActive = 0;
+    world->instanceCount = 0;
+    world->overflowCount = 0;
 }
 
 static float AngleToDegrees(s32 angle) {
@@ -304,6 +319,9 @@ void GameRenderWorldBeginFrame(uint64_t frame) {
         GameRenderWorldMutable()->instances = s_instances[s_buildingIndex];
     }
     RenderWorldBeginFrame(GameRenderWorldMutable(), frame);
+    if (!GameSceneUsesRaceWorld()) {
+        GameRenderWorldClearInactiveScene();
+    }
     s_buildingWorld = 1;
 }
 
@@ -439,6 +457,13 @@ void GameRenderWorldPublishCurrentCamera(void) {
     RageRenderCamera mirrorCamera;
     int mirrorActive;
 
+    /* A scene transition can happen during dispatch, after BeginFrame saw the
+     * race scene. Clear the publication again here so the transition frame
+     * cannot present its stale 3D world. */
+    if (!GameSceneUsesRaceWorld()) {
+        GameRenderWorldClearInactiveScene();
+        return;
+    }
     GameRenderWorldSetCamera(g_RenderState.viewX, g_RenderState.viewY,
                                  g_RenderState.viewZ, g_RenderState.viewAngleX,
                                  g_RenderState.viewAngleY,

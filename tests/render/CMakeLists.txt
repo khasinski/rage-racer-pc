@@ -1,6 +1,16 @@
 add_executable(native_asset_fixture native_asset_fixture.c)
 target_link_libraries(native_asset_fixture PRIVATE SDL3::SDL3)
 target_compile_options(native_asset_fixture PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+
+add_executable(render_world_scene_tests render_world_scene_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/render_world_scene.c)
+target_include_directories(render_world_scene_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_options(render_world_scene_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+add_test(NAME render_world_scene COMMAND render_world_scene_tests)
+set_tests_properties(render_world_scene PROPERTIES LABELS unit)
+
 if(TARGET rage-racer-smoke)
     add_test(NAME attract_geometry COMMAND ${CMAKE_COMMAND}
         -DGAME=$<TARGET_FILE:rage-racer-smoke> -DSOURCE=${PROJECT_SOURCE_DIR}
