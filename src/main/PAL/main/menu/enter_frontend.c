@@ -3,7 +3,6 @@
 #include "game/frontend_internal.h"
 #include "game/menu.h"
 #include "game/race.h"
-#include "game/scene_runtime.h"
 
 /* Scene 2: reset title/menu state, then hand over to UpdateFrontend. */
 void EnterFrontend(void) {
@@ -13,7 +12,8 @@ void EnterFrontend(void) {
     UploadLoadBufferImage();
 
     g_FrameSyncThreshold = 0x80;
-    SceneRuntimeRequestScene(GAME_SCENE_FRONTEND);
+    g_SceneId = 4;
+    g_SceneTimer = 0;
     g_FrontendIdleTimer = 0;
     g_TitleFadeLevel = 0;
     g_MainMenuSlide = 0;

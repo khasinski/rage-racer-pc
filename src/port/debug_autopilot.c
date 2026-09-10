@@ -9,16 +9,14 @@
 #include "game/diagnostics.h"
 #include "game/race.h"
 #include "game/player_car_internal.h"
-#include "game/scene.h"
-#include "game/scene_runtime.h"
-#include "game/state.h"
 #include "game/track.h"
 
+extern int g_SceneId;
 static DebugRoute s_route;
 static int s_enabled, s_initialized, s_placed, s_exit, s_laps;
 static int s_speed, s_target, s_frames, s_limit;
 static int s_direction;
-static int s_targetRaces, s_races;
+static int s_targetRaces, s_races, s_lastScene;
 
 static DebugRoutePoint ReadPoint(void *context, int index) {
     const GameTrackPoint *p = TrackPoint(index);
@@ -73,8 +71,6 @@ static int Drive(PlayerCarRuntime *player) {
 }
 
 void DebugAutopilotBeforeScene(void) {
-    const SceneRuntime *sceneRuntime;
-
     if (!s_initialized) {
         s_initialized = 1;
         s_enabled = RuntimeConfigEnabled("autopilot.enabled");
@@ -92,9 +88,7 @@ void DebugAutopilotBeforeScene(void) {
     }
     if (!s_enabled) return;
     g_DebugPlayerUpdate = Drive;
-    sceneRuntime = SceneRuntimeCurrent();
-    if (sceneRuntime->scene == GAME_SCENE_RACE &&
-        sceneRuntime->nextScene == GAME_SCENE_REPLAY) {
+    if (s_lastScene == 12 && g_SceneId == 17) {
         ++s_races;
         fprintf(stderr, "rage-port: autopilot race finished=%d target=%d\n",
                 s_races, s_targetRaces);
@@ -103,7 +97,8 @@ void DebugAutopilotBeforeScene(void) {
             s_exit = 1;
         }
     }
-    if (g_SceneId != GAME_SCENE_RACE) s_placed = 0;
+    s_lastScene = g_SceneId;
+    if (g_SceneId != 12) s_placed = 0;
     if (!s_exit && ++s_frames >= s_limit) {
         fprintf(stderr, "rage-port: autopilot result=failed frame limit laps=%d\n", s_laps);
         s_exit = 1;

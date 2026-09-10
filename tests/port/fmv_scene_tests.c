@@ -3,14 +3,12 @@
 #include "game/cd.h"
 #include "game/fmv.h"
 #include "game/scene.h"
-#include "game/scene_runtime.h"
 #include "game/state.h"
 
 #include <stdio.h>
 
 FmvPlaybackState g_FmvState;
 s32 g_SceneId;
-s32 g_SceneTimer;
 s32 g_StreamReturnScene;
 u8 g_CdVolume;
 s32 g_CdFadeFrames;
@@ -52,10 +50,6 @@ void StartFmvPlayback(void) {
 }
 void DecodeFmvFrame(void) { s_decodeCalls++; }
 void EndFmv(void) { s_endCalls++; }
-void SceneRuntimeRequestScene(s32 scene) {
-    g_SceneId = scene;
-    g_SceneTimer = 0;
-}
 
 static void Check(s32 condition, const char *label) {
     if (!condition) {
@@ -67,7 +61,6 @@ static void Check(s32 condition, const char *label) {
 static void TestBeginFmv(void) {
     g_CdVolume = 63;
     g_CdFadeFrames = 20;
-    g_SceneTimer = 99;
     BeginFmv(27);
     Check(s_restoredVolume == 63 && s_fadeAtRestore == 0,
           "FMV restores configured CD level after cancelling previous fade");
@@ -75,7 +68,7 @@ static void TestBeginFmv(void) {
     Check(s_closeCalls == 1 && s_resetCalls == 1,
           "FMV start releases game audio");
     Check(g_FmvState == FMV_PLAYBACK_START && g_StreamReturnScene == 27 &&
-              g_SceneId == GAME_SCENE_FMV && g_SceneTimer == 0,
+              g_SceneId == GAME_SCENE_FMV,
           "FMV start records playback and return states");
     Check(s_cdSyncCalls == 1 && s_cdSyncMode == CD_SYNC_WAIT &&
               s_cdCommand == CD_DRIVE_PAUSE,

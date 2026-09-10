@@ -4,7 +4,6 @@
 #include "game/menu_scripts_internal.h"
 #include "game/race.h"
 #include "game/render_internal.h"
-#include "game/scene_runtime.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -45,10 +44,6 @@ void SetFogNear(long nearValue, long projectionDistance) {
     (void)projectionDistance;
 }
 void SetCameraRotMatrix(void) { s_cameraCalls++; }
-void SceneRuntimeRequestScene(s32 scene) {
-    g_SceneId = scene;
-    g_SceneTimer = 0;
-}
 
 #undef ScaleMatrix
 MATRIX *ScaleMatrix(MATRIX *matrix, VECTOR *scale) {

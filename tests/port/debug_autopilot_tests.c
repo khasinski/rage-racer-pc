@@ -3,8 +3,6 @@
 #include "debug_autopilot.h"
 #include "game/car.h"
 #include "game/race.h"
-#include "game/scene.h"
-#include "game/scene_runtime.h"
 #include "game/track.h"
 
 int g_SceneId = 12, g_CourseIndex, g_RaceSeries;
@@ -17,12 +15,6 @@ static const GameTrackPoint points[4] = {
 const GameTrackPoint *g_TrackPoints = points;
 int (*g_DebugPlayerUpdate)(PlayerCarRuntime *);
 static int enabled, timeoutMode, racesMode, reverseMode, updates;
-static SceneRuntime s_sceneRuntime = {
-    .scene = GAME_SCENE_RACE,
-    .previousScene = -1,
-    .nextScene = -1,
-};
-const SceneRuntime *SceneRuntimeCurrent(void) { return &s_sceneRuntime; }
 int RuntimeConfigEnabled(const char *key) { (void)key; return enabled; }
 int RuntimeConfigInt(const char *key, int fallback, int low, int high) {
     (void)low; (void)high;
@@ -75,25 +67,16 @@ int main(int argc, char **argv) {
     if (racesMode) {
         assert(!DebugAutopilotShouldExit()); /* Tour target must not end a race. */
         g_SceneId = 17;
-        s_sceneRuntime.scene = GAME_SCENE_RACE;
-        s_sceneRuntime.nextScene = GAME_SCENE_REPLAY;
         DebugAutopilotBeforeScene();
-        s_sceneRuntime.scene = GAME_SCENE_REPLAY;
-        s_sceneRuntime.nextScene = -1;
         DebugAutopilotBeforeScene(); /* No double-counting the replay. */
         assert(!DebugAutopilotShouldExit());
         g_SceneId = 19;
-        s_sceneRuntime.nextScene = GAME_SCENE_PRIZE;
         DebugAutopilotBeforeScene();
         g_SceneId = 12;
-        s_sceneRuntime.scene = GAME_SCENE_PRIZE;
-        s_sceneRuntime.nextScene = GAME_SCENE_RACE;
         DebugAutopilotBeforeScene();
         assert(g_DebugPlayerUpdate(&car) == 1);
         assert(!DebugAutopilotShouldExit());
         g_SceneId = 17;
-        s_sceneRuntime.scene = GAME_SCENE_RACE;
-        s_sceneRuntime.nextScene = GAME_SCENE_REPLAY;
         DebugAutopilotBeforeScene();
     }
     assert(DebugAutopilotShouldExit());

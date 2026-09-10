@@ -6,7 +6,6 @@
 #include "game/menu.h"
 #include "game/race.h"
 #include "game/render_internal.h"
-#include "game/scene_runtime.h"
 #include "game/fmv_internal.h"
 #include "game/screens.h"
 
@@ -34,7 +33,8 @@ void EnterTitleScreen(void) {
         g_TitleExitTimer = TITLE_INITIAL_EXIT_FRAMES;
     }
     g_FrameSyncThreshold = 0x80;
-    SceneRuntimeRequestScene(GAME_SCENE_FRONTEND);
+    g_SceneTimer = 0;
+    g_SceneId = GAME_SCENE_FRONTEND;
     g_FrontendIdleTimer = 0;
     g_MainMenuSlide = 0;
     g_FrontendState = FRONTEND_STATE_TITLE;

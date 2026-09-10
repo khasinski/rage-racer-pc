@@ -7,8 +7,7 @@
 
 #include <string.h>
 
-static SceneRuntime s_runtime = {.scene = -1, .previousScene = -1,
-                                 .nextScene = -1};
+static SceneRuntime s_runtime = {.scene = -1};
 
 static void ResetLegacyTransitionState(void) {
     /* These fields are scratch state for a single top-level scene.  Retail
@@ -22,7 +21,17 @@ static void ResetLegacyTransitionState(void) {
     g_CdTrackEnded = 0;
 }
 
-static void CaptureLegacyTransitionState(void) {
+void SceneRuntimeBeforeDispatch(s32 scene) {
+    if (s_runtime.scene != scene) {
+        u32 generation = s_runtime.generation + 1;
+
+        if (generation == 0) generation = 1;
+        memset(&s_runtime, 0, sizeof(s_runtime));
+        s_runtime.scene = scene;
+        s_runtime.generation = generation;
+        s_runtime.assetGeneration = AssetLoadTransactionGeneration();
+        ResetLegacyTransitionState();
+    }
     s_runtime.transition.timer = g_SceneTimer;
     s_runtime.transition.fadeLevel = g_FadeLevel;
     s_runtime.transition.fadeStep = g_FadeStep;
@@ -30,47 +39,17 @@ static void CaptureLegacyTransitionState(void) {
     s_runtime.transition.cameraCarIndex = g_CameraCarIndex;
 }
 
-void SceneRuntimeBeforeDispatch(s32 scene) {
-    if (s_runtime.scene != scene) {
-        s32 previousScene = s_runtime.scene;
-        u32 generation = s_runtime.generation + 1;
-
-        if (generation == 0) generation = 1;
-        memset(&s_runtime, 0, sizeof(s_runtime));
-        s_runtime.scene = scene;
-        s_runtime.previousScene = previousScene;
-        s_runtime.nextScene = -1;
-        s_runtime.generation = generation;
-        s_runtime.assetGeneration = AssetLoadTransactionGeneration();
-        ResetLegacyTransitionState();
-    }
-    CaptureLegacyTransitionState();
-}
-
 void SceneRuntimeAfterDispatch(s32 scene) {
-    if (s_runtime.scene != scene) return;
-    CaptureLegacyTransitionState();
-    /* A handler commonly assigns g_SceneId as its last action. Preserve the
-     * destination before the next dispatch resets its transition scratch
-     * state. */
-    s_runtime.nextScene = g_SceneId == scene ? -1 : g_SceneId;
+    if (s_runtime.scene != scene || g_SceneId != scene) return;
+    s_runtime.transition.timer = g_SceneTimer;
+    s_runtime.transition.fadeLevel = g_FadeLevel;
+    s_runtime.transition.fadeStep = g_FadeStep;
+    s_runtime.transition.frameSyncThreshold = g_FrameSyncThreshold;
+    s_runtime.transition.cameraCarIndex = g_CameraCarIndex;
 }
 
 const SceneRuntime *SceneRuntimeCurrent(void) {
     return &s_runtime;
-}
-
-void SceneRuntimeRequestScene(s32 scene) {
-    SceneRuntimeRequestSceneWithTimer(scene, 0);
-}
-
-void SceneRuntimeRequestSceneWithTimer(s32 scene, s32 timer) {
-    g_SceneId = scene;
-    g_SceneTimer = timer;
-}
-
-s32 SceneRuntimeHasPendingTransition(void) {
-    return s_runtime.nextScene != -1;
 }
 
 const AssetLoadTransaction *SceneRuntimeAssetResult(AssetRequestType request) {

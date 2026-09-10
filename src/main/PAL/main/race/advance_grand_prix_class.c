@@ -4,7 +4,6 @@
 #include "game/race.h"
 #include "game/race_internal.h"
 #include "game/scene.h"
-#include "game/scene_runtime.h"
 #include "game/save_internal.h"
 #include "game/state.h"
 
@@ -14,13 +13,13 @@ void AdvanceGrandPrixClass(void) {
     s32 *seriesMaxClass;
 
     if (!g_ClassCompleted) {
-        SceneRuntimeRequestScene(GAME_SCENE_INIT_MENU);
+        g_SceneId = GAME_SCENE_INIT_MENU;
         return;
     }
 
     if (g_RaceProgress == NULL || g_CourseProgress == NULL ||
         (u32)g_SeriesSelection >= 2) {
-        SceneRuntimeRequestScene(GAME_SCENE_INIT_MENU);
+        g_SceneId = GAME_SCENE_INIT_MENU;
         return;
     }
 
@@ -28,7 +27,7 @@ void AdvanceGrandPrixClass(void) {
         if (g_CarTable == NULL ||
             !IsFinalGrandPrixClass(g_SeriesSelection == 1,
                                    g_GrandPrixClass)) {
-            SceneRuntimeRequestScene(GAME_SCENE_INIT_MENU);
+            g_SceneId = GAME_SCENE_INIT_MENU;
             return;
         }
         maxClassReached = g_RaceProgress->maxClassReached;
@@ -43,7 +42,7 @@ void AdvanceGrandPrixClass(void) {
     nextClass = NextGrandPrixClassForSeries(
         g_SeriesSelection, g_GrandPrixClass);
     if (nextClass < 0) {
-        SceneRuntimeRequestScene(GAME_SCENE_INIT_MENU);
+        g_SceneId = GAME_SCENE_INIT_MENU;
         return;
     }
 

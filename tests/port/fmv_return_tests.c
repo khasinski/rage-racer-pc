@@ -2,7 +2,6 @@
 #include "game/cd.h"
 #include "game/fmv.h"
 #include "game/scene.h"
-#include "game/scene_runtime.h"
 #include "game/state.h"
 #include "psyq/cd.h"
 
@@ -39,10 +38,7 @@ long CdControl(long command, void *parameter, u8 *result) {
     return 1;
 }
 
-s32 RequestSelectBgmAssets(void) {
-    s_assetRequests++;
-    return 1;
-}
+void RequestSelectBgmAssets(void) { s_assetRequests++; }
 void SetDispMask(s32 enabled) { s_displayMask = enabled; }
 
 void SetupDisplay240(s32 red, s32 green, s32 blue) {
@@ -50,10 +46,6 @@ void SetupDisplay240(s32 red, s32 green, s32 blue) {
     s_displayRed = red;
     s_displayGreen = green;
     s_displayBlue = blue;
-}
-void SceneRuntimeRequestScene(s32 scene) {
-    g_SceneId = scene;
-    g_SceneTimer = 0;
 }
 
 static void Check(s32 condition, const char *label) {

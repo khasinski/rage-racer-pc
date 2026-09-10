@@ -5,7 +5,6 @@
 #include "game/race.h"
 #include "game/render_internal.h"
 #include "game/scene.h"
-#include "game/scene_runtime.h"
 
 /* The menu-mode twin of InitTrackLighting. */
 static void InitMenuLighting(void) {
@@ -119,7 +118,8 @@ void InitMenuMode(void) {
     InitRenderState(1);
 
     SetupDisplay480(0, 0, 0);
-    SceneRuntimeRequestScene(GAME_SCENE_MENU);
+    g_SceneId = GAME_SCENE_MENU;
+    g_SceneTimer = 0;
     LoadMenuSeriesProgress();
     InitMenuLighting();
     InitMenuCamera();

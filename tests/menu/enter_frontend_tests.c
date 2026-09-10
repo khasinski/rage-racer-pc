@@ -1,7 +1,6 @@
 #include "common.h"
 #include "game/frontend_internal.h"
 #include "game/menu.h"
-#include "game/scene_runtime.h"
 #include "game/screens.h"
 
 #include <stdio.h>
@@ -29,14 +28,7 @@ void RefreshClassWinState(void) { s_classRefreshCalls++; }
 void ResetTrackTextureSwap(void) { s_textureResetCalls++; }
 void SetDefaultReverbDepth(void) { s_reverbCalls++; }
 void SetDispMask(s32 enabled) { s_displayMask = enabled; }
-s32 UploadLoadBufferImage(void) {
-    s_imageUploadCalls++;
-    return 1;
-}
-void SceneRuntimeRequestScene(s32 scene) {
-    g_SceneId = scene;
-    g_SceneTimer = 0;
-}
+void UploadLoadBufferImage(void) { s_imageUploadCalls++; }
 
 #define CHECK(condition)                                                       \
     do {                                                                       \
