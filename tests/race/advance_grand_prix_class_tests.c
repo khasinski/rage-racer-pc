@@ -4,6 +4,7 @@
 #include "game/fmv.h"
 #include "game/menu.h"
 #include "game/race.h"
+#include "game/scene_runtime.h"
 #include "game/save_internal.h"
 #include "game/state.h"
 
@@ -16,6 +17,7 @@ s32 g_ClassPromoted;
 s32 g_GrandPrixClass;
 s32 g_MaxClassReached[2];
 s32 g_SceneId;
+s32 g_SceneTimer;
 s32 g_SeriesCleared;
 s16 g_SeriesSelection;
 GameRaceProgress *g_RaceProgress;
@@ -50,6 +52,11 @@ void BeginFmv(s32 returnScene) {
     else s_endingFmvReturnScene = returnScene;
 }
 
+void SceneRuntimeRequestScene(s32 scene) {
+    g_SceneId = scene;
+    g_SceneTimer = 0;
+}
+
 static void Check(const char *name, s32 actual, s32 expected) {
     if (actual != expected) {
         printf("FAIL %s: got %d, expected %d\n", name, actual, expected);
@@ -69,6 +76,7 @@ static void Reset(void) {
     g_SeriesCleared = 0;
     g_SeriesSelection = 0;
     g_SceneId = -1;
+    g_SceneTimer = 99;
     s_resetProgressCalls = 0;
     s_resetCourseMode = -1;
     s_classFmvReturnScene = -1;
@@ -120,6 +128,7 @@ int main(void) {
     Reset();
     AdvanceGrandPrixClass();
     Check("unfinished class returns to course select", g_SceneId, 6);
+    Check("unfinished class starts its destination timer", g_SceneTimer, 0);
     Check("unfinished class does not reset progress", s_resetProgressCalls, 0);
 
     Reset();
