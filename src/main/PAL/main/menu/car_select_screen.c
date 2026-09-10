@@ -4,7 +4,7 @@
  * here they start the race, look at the ranking, go to the shop or to the
  * engineer, or back out to the course.
  *
- * The screen has three states, told apart by GameMenuBusy: idle and taking
+ * The screen has three states: idle and taking
  * input, showing a modal that says a shop is closed, or on its way out to
  * whichever screen was chosen.
  */
@@ -22,6 +22,14 @@
  * rows above it: two in time attack, four in a Grand Prix. */
 static s32 CarSelectLastRow(void) { return g_GrandPrixMode != 0 ? 4 : 2; }
 
+static s32 CarSelectState(void) {
+    return MenuRuntimeScreenState(MENU_SCREEN_CAR_SELECT);
+}
+
+static void SetCarSelectState(s32 state) {
+    MenuRuntimeSetScreenState(MENU_SCREEN_CAR_SELECT, state);
+}
+
 static const TimedDrawCommand *CarSelectMenuScript(void) {
     if (g_GrandPrixMode != 0) {
         return g_CarSelectMenuScriptGp;
@@ -33,7 +41,7 @@ static const TimedDrawCommand *CarSelectMenuScript(void) {
  * the player chose the last row or pressed cancel. */
 static void LeaveCarSelectScreen(void) {
     PlaySoundCue(3);
-    GameMenuBusy = 5;
+    SetCarSelectState(5);
     g_MenuOverlayPattern = 2;
     g_CarNamePlateStep = -10;
     g_CarSpecGraphStep = -3;
@@ -44,7 +52,7 @@ static void LeaveCarSelectScreen(void) {
 static void RefuseWithModal(const TimedDrawCommand *script, s32 busyState) {
     PlaySoundCue(5);
     g_CarSelectPopupScript = script;
-    GameMenuBusy = busyState;
+    SetCarSelectState(busyState);
     g_UiScriptProgress2 = 0;
 }
 
@@ -57,7 +65,7 @@ static void EnterCarShop(void) {
     PlaySoundCue(2);
     g_CarListCursor = g_ShopCarIndex;
     g_MenuViewAngleTarget = MENU_CAR_VIEW_RIGHT_TARGET;
-    GameMenuBusy = 3;
+    SetCarSelectState(3);
     g_MenuOverlayPattern = 1;
     g_CarSwapFromIndex = g_PlayerCarIndex;
     g_CarSwapToIndex = g_CarListCursor;
@@ -93,7 +101,7 @@ static void ChooseCarSelectRow(s32 row) {
             g_GrandPrixSeries = g_CourseIndex >> 2;
         }
         RequestRoundAssets();
-        GameMenuBusy = 1;
+        SetCarSelectState(1);
         g_MenuHintBarStep = -1;
         g_CarNamePlateStep = -10;
         g_MenuOverlayPattern = 0;
@@ -103,7 +111,7 @@ static void ChooseCarSelectRow(s32 row) {
     }
     if (row == 1) {
         PlaySoundCue(2);
-        GameMenuBusy = 2;
+        SetCarSelectState(2);
         g_MenuOverlayPattern = 1;
         g_CarNamePlateStep = -10;
         return;
@@ -122,7 +130,7 @@ static void ChooseCarSelectRow(s32 row) {
     }
     if (row == 3) {
         if (PlayerCarCanBeUpgraded()) {
-            GameMenuBusy = 4;
+            SetCarSelectState(4);
             g_MenuOverlayPattern = 1;
             PlaySoundCue(2);
             return;
@@ -199,7 +207,7 @@ static void UpdateCarSelectModal(void) {
     RunTimedDrawScript(g_CarSelectPopupScript, &g_UiScriptProgress2, 0);
     if (RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
         if (g_PadPressed & (PAD_CONFIRM | PAD_CANCEL)) {
-            GameMenuBusy = 0;
+            SetCarSelectState(0);
         }
     }
     DrawBrowseArrows(1, 0, g_PrevOwnedCarIndex != -1,
@@ -242,7 +250,7 @@ static s32 HandOverToRace(void) {
  * still travelling, so the next frame tries again.
  */
 static void EnterChosenScreen(void) {
-    switch (GameMenuBusy) {
+    switch (CarSelectState()) {
     case 1:
         if ((g_MenuOutgoingScreenProgress > 0) &&
             (g_MenuViewOffset <= 0x3D08F)) {
@@ -291,7 +299,7 @@ static void EnterChosenScreen(void) {
         break;
     }
     g_UiScriptProgress = 0;
-    GameMenuBusy = 0;
+    SetCarSelectState(0);
 }
 
 static void UpdateCarSelectOutgoing(void) {
@@ -316,9 +324,9 @@ void UpdateCarSelectScreen(void) {
     DrawMenuCarView();
     DrawMenuLightBurst(-9);
 
-    if (GameMenuBusy == 0) {
+    if (CarSelectState() == 0) {
         UpdateCarSelectIdle();
-    } else if (GameMenuBusy < 0) {
+    } else if (CarSelectState() < 0) {
         UpdateCarSelectModal();
     } else {
         UpdateCarSelectOutgoing();

@@ -21,7 +21,6 @@
 #include <stdio.h>
 #include <string.h>
 
-s32 GameMenuBusy;
 s32 g_CarListCursor;
 CarModelAsset *g_CarModelAsset;
 s32 g_CarNamePlateStep;
@@ -55,6 +54,8 @@ extern s32 g_MenuHandlerIndex;
 extern s32 g_MenuOutgoingHandlerIndex;
 extern s32 g_MenuScreen;
 
+static s32 s_menuScreenState[MENU_SCREEN_COUNT];
+
 void MenuActivateScreen(s32 screen) {
     g_MenuScreen = screen;
     g_MenuHandlerIndex = screen;
@@ -62,6 +63,10 @@ void MenuActivateScreen(s32 screen) {
 void MenuBeginExit(s32 screen) {
     g_MenuHandlerIndex = -1;
     g_MenuOutgoingHandlerIndex = screen;
+}
+s32 MenuRuntimeScreenState(s32 screen) { return s_menuScreenState[screen]; }
+void MenuRuntimeSetScreenState(s32 screen, s32 state) {
+    s_menuScreenState[screen] = state;
 }
 s32 g_MenuHintBarStep;
 s32 g_MenuOutgoingScreenProgress;
@@ -259,7 +264,7 @@ int main(int argc, char **argv) {
         s_model.upgradesAvailable = (u8)upgrade;
         s_progress.maxClassReached = upgrade ? 4 : 1;
 
-        GameMenuBusy = busyStates[bi];
+        MenuRuntimeSetScreenState(MENU_SCREEN_CAR_SELECT, busyStates[bi]);
         s_scriptResult = sr;
         g_UiScriptProgress2 = p2;
         g_UiScriptProgress = prog;
@@ -317,7 +322,7 @@ int main(int argc, char **argv) {
 
         {
             s32 after[22];
-            after[0] = GameMenuBusy;
+            after[0] = MenuRuntimeScreenState(MENU_SCREEN_CAR_SELECT);
             after[1] = g_CarSelectCursor;
             after[2] = g_PlayerCarIndex;
             after[3] = g_CarListCursor;
@@ -356,7 +361,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    GameMenuBusy = 0;
+    MenuRuntimeSetScreenState(MENU_SCREEN_CAR_SELECT, 0);
     s_scriptResult = 1;
     g_UiScriptProgress2 = 0;
     g_GrandPrixMode = 1;
@@ -371,13 +376,13 @@ int main(int argc, char **argv) {
     g_RaceProgress = NULL;
     g_CarSelectPopupScript = NULL;
     UpdateCarSelectScreen();
-    if (GameMenuBusy != -2 ||
+    if (MenuRuntimeScreenState(MENU_SCREEN_CAR_SELECT) != -2 ||
         g_CarSelectPopupScript != g_EngineerShopUnavailableScript) {
         puts("FAIL missing car state opened the engineer shop");
         return 1;
     }
 
-    GameMenuBusy = 1;
+    MenuRuntimeSetScreenState(MENU_SCREEN_CAR_SELECT, 1);
     g_UiScriptProgress = 0;
     g_MenuOutgoingScreenProgress = 0;
     g_MenuViewOffset = 0x3D090;
@@ -386,18 +391,19 @@ int main(int argc, char **argv) {
     g_SceneId = -1;
     g_RaceProgress = NULL;
     UpdateCarSelectScreen();
-    if (GameMenuBusy != 1 || g_SceneId != -1) {
+    if (MenuRuntimeScreenState(MENU_SCREEN_CAR_SELECT) != 1 ||
+        g_SceneId != -1) {
         puts("FAIL missing race progress completed the race transition");
         return 1;
     }
 
-    GameMenuBusy = 5;
+    MenuRuntimeSetScreenState(MENU_SCREEN_CAR_SELECT, 5);
     g_CourseProgress = NULL;
     g_CourseIndex = 4;
     g_MenuViewOffset = 0x3D090;
     g_CourseCardPendingGrade = -1;
     UpdateCarSelectScreen();
-    if (GameMenuBusy != 0 ||
+    if (MenuRuntimeScreenState(MENU_SCREEN_CAR_SELECT) != 0 ||
         g_MenuScreen != MENU_SCREEN_COURSE_SELECT ||
         g_CourseCardPendingGrade != 0) {
         puts("FAIL missing course progress prevented a safe menu return");

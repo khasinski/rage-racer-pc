@@ -25,6 +25,16 @@ void MenuRuntimeReset(void) {
 
 const MenuRuntime *MenuRuntimeCurrent(void) { return &s_menuRuntime; }
 
+s32 MenuRuntimeScreenState(s32 screen) {
+    if ((u32)screen >= MENU_SCREEN_COUNT) return 0;
+    return s_menuRuntime.screenState[screen];
+}
+
+void MenuRuntimeSetScreenState(s32 screen, s32 state) {
+    if ((u32)screen >= MENU_SCREEN_COUNT) return;
+    s_menuRuntime.screenState[screen] = state;
+}
+
 void MenuActivateScreen(s32 screen) {
     if (screen <= MENU_SCREEN_BOOTSTRAP || screen >= MENU_SCREEN_COUNT) return;
     s_menuRuntime.activeScreen = screen;

@@ -225,10 +225,24 @@ static int TestTimerWrap(void) {
     return 0;
 }
 
+static int TestScreenStateIsolation(void) {
+    MenuRuntimeReset();
+    MenuRuntimeSetScreenState(MENU_SCREEN_CAR_SELECT, 5);
+    MenuRuntimeSetScreenState(MENU_SCREEN_COURSE_SELECT, -2);
+    CHECK(MenuRuntimeScreenState(MENU_SCREEN_CAR_SELECT) == 5);
+    CHECK(MenuRuntimeScreenState(MENU_SCREEN_COURSE_SELECT) == -2);
+
+    MenuRuntimeReset();
+    CHECK(MenuRuntimeScreenState(MENU_SCREEN_CAR_SELECT) == 0);
+    CHECK(MenuRuntimeScreenState(MENU_SCREEN_COURSE_SELECT) == 0);
+    return 0;
+}
+
 int main(void) {
     CHECK(TestDispatchAndLayers() == 0);
     CHECK(TestInvalidIndices() == 0);
     CHECK(TestTimerWrap() == 0);
+    CHECK(TestScreenStateIsolation() == 0);
     puts("menu mode dispatcher tests passed");
     return 0;
 }

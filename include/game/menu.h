@@ -48,10 +48,14 @@ typedef struct MenuRuntime {
     s32 activeDrawScreen;
     /* Screen fading out, or -1 when no outgoing screen remains. */
     s32 outgoingDrawScreen;
+    /* Each screen owns a separate state-machine value. */
+    s32 screenState[MENU_SCREEN_COUNT];
 } MenuRuntime;
 
 void MenuRuntimeReset(void);
 const MenuRuntime *MenuRuntimeCurrent(void);
+s32 MenuRuntimeScreenState(s32 screen);
+void MenuRuntimeSetScreenState(s32 screen, s32 state);
 
 /* The only entry point for changing the active menu screen. It keeps the
  * update and fade dispatchers in sync during a completed screen transition. */
