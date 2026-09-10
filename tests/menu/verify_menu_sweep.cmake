@@ -40,8 +40,8 @@ function(run_sweep variable pattern expected input_script)
 endfunction()
 
 # CMake sorts strings lexically, so 10–12 follow 1 in the expected lists.
-run_sweep(RAGE_PORT_SMOKE_MENU_SWEEP "menu sweep .*screen=[0-9]+"
+run_sweep(RAGE_PORT_SMOKE_MENU_SWEEP "menu sweep [^\n]*screen=[0-9]+"
     "1;10;11;12;2;3;4;5;6;7;8;9" "400:START,500:DOWN,520:CROSS")
-run_sweep(RAGE_PORT_SMOKE_OPTION_SWEEP "option sweep .*mode=[0-9]+"
+run_sweep(RAGE_PORT_SMOKE_OPTION_SWEEP "option sweep [^\n]*mode=[0-9]+"
     "1;10;11;2;3;4;5;6;7;8;9" "400:START,500:UP,520:CROSS")
 message(STATUS "Rendered all 12 frontend screens and all 11 OPTION modes")
