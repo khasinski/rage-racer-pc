@@ -41,21 +41,12 @@ extern s32 GameMenuCursor;
 extern s32 GameMenuBusy;
 /* Cursor animation gate: input is only accepted while this is negative. */
 extern s32 GameMenuCursorAnim;
-/* Which g_MenuScreenDraw entry to run this frame, -1 for none; UpdateMenuMode
- * calls it with a step of 0x14. */
-extern s32 g_MenuHandlerIndex;
-
-/* Screen being faded out during a transition. UpdateMenuMode draws it with a
- * step of -10 and stores the result in g_MenuOutgoingScreenProgress. */
-extern s32 g_MenuOutgoingHandlerIndex;
-
-/* Which menu-mode screen is running; the id dispatched through
- * g_MenuScreenUpdate. */
-extern s32 g_MenuScreen;
-
 typedef struct MenuRuntime {
+    /* State-machine screen updated this frame. */
     s32 activeScreen;
+    /* Screen fading in, or -1 when no incoming screen is being drawn. */
     s32 activeDrawScreen;
+    /* Screen fading out, or -1 when no outgoing screen remains. */
     s32 outgoingDrawScreen;
 } MenuRuntime;
 
@@ -73,9 +64,9 @@ void MenuBeginExit(s32 screen);
 /*
  * The two parallel screen tables UpdateMenuMode dispatches through, both indexed
  * by the same screen id: g_MenuScreenUpdate holds the per-frame state machines
- * (selected by g_MenuScreen) and g_MenuScreenDraw the matching fade/transition
- * overlays (selected by g_MenuHandlerIndex / g_MenuOutgoingHandlerIndex). See the
- * screen-table block at the bottom of this header for the entries.
+ * and g_MenuScreenDraw the matching fade/transition overlays. MenuRuntime
+ * selects the active entries. See the screen-table block at the bottom of this
+ * header for the entries.
  */
 extern void (*g_MenuScreenUpdate[MENU_SCREEN_COUNT])(void);
 extern s32 (*g_MenuScreenDraw[MENU_SCREEN_COUNT])(s32 step);
@@ -203,8 +194,7 @@ void UpdateMenuMode(void);
 /*
  * The menu-mode screen table pair: everything the front end shows once
  * g_GameMode == 3 is one of fourteen screens, dispatched from UpdateMenuMode
- * through g_MenuScreenUpdate[g_MenuScreen] (state machine) and
- * g_MenuScreenDraw[g_MenuHandlerIndex] (fade overlay). Each Draw entry owns a
+ * through the active MenuRuntime screen and its fade overlay. Each Draw entry owns a
  * private accumulator in 0x8009B2C4..0x8009B2EC, clamped to [0, 0x1FC]; a
  * `step` of 0 resets it, positive fades in, negative fades out.
  */

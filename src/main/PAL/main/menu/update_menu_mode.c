@@ -21,9 +21,6 @@ void MenuRuntimeReset(void) {
         .activeDrawScreen = -1,
         .outgoingDrawScreen = -1,
     };
-    g_MenuScreen = MENU_SCREEN_BOOTSTRAP;
-    g_MenuHandlerIndex = -1;
-    g_MenuOutgoingHandlerIndex = -1;
 }
 
 const MenuRuntime *MenuRuntimeCurrent(void) { return &s_menuRuntime; }
@@ -32,8 +29,6 @@ void MenuActivateScreen(s32 screen) {
     if (screen <= MENU_SCREEN_BOOTSTRAP || screen >= MENU_SCREEN_COUNT) return;
     s_menuRuntime.activeScreen = screen;
     s_menuRuntime.activeDrawScreen = screen;
-    g_MenuScreen = screen;
-    g_MenuHandlerIndex = screen;
 }
 
 void MenuActivateEnteringScreen(s32 screen, s32 drawScreen) {
@@ -43,16 +38,12 @@ void MenuActivateEnteringScreen(s32 screen, s32 drawScreen) {
     }
     s_menuRuntime.activeScreen = screen;
     s_menuRuntime.activeDrawScreen = drawScreen;
-    g_MenuScreen = screen;
-    g_MenuHandlerIndex = drawScreen;
 }
 
 void MenuBeginExit(s32 screen) {
     if (screen <= MENU_SCREEN_BOOTSTRAP || screen >= MENU_SCREEN_COUNT) return;
     s_menuRuntime.activeDrawScreen = -1;
     s_menuRuntime.outgoingDrawScreen = screen;
-    g_MenuHandlerIndex = -1;
-    g_MenuOutgoingHandlerIndex = screen;
 }
 
 static u32 CurrentMenuCarTireCompound(void) {

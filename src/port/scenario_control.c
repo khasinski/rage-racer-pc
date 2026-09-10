@@ -352,7 +352,7 @@ static void ScenarioConfirm(void) {
     g_PadPressed |= PAD_CONFIRM;
     s_scenario.retryFrames = 0;
     fprintf(stderr, "rage-port: scenario confirm scene=%d phase=%d screen=%d\n",
-            g_SceneId, g_FrontendState, g_MenuScreen);
+            g_SceneId, g_FrontendState, MenuRuntimeCurrent()->activeScreen);
 }
 
 /* This is the sole adapter from a scenario request into the recovered game
@@ -430,7 +430,7 @@ void PortScenarioBeforeSceneHandler(void) {
               (g_SceneId == GAME_SCENE_FRONTEND &&
                g_FrontendState != s_scenario.lastFrontend) ||
               (g_SceneId == GAME_SCENE_MENU &&
-               g_MenuScreen != s_scenario.lastMenuScreen);
+               MenuRuntimeCurrent()->activeScreen != s_scenario.lastMenuScreen);
     if (changed) {
         if (s_scenario.lastScene == GAME_SCENE_RACE &&
             g_SceneId != GAME_SCENE_RACE) {
@@ -442,7 +442,7 @@ void PortScenarioBeforeSceneHandler(void) {
             s_scenario.titleSelectionApplied = 0;
         s_scenario.lastScene = g_SceneId;
         s_scenario.lastFrontend = g_FrontendState;
-        s_scenario.lastMenuScreen = g_MenuScreen;
+        s_scenario.lastMenuScreen = MenuRuntimeCurrent()->activeScreen;
         s_scenario.stableFrames = s_scenario.retryFrames = 0;
     } else {
         s_scenario.stableFrames++;

@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <string.h>
 
+extern s32 g_MenuScreen;
+
 void MenuActivateScreen(s32 screen) {
     g_MenuScreen = screen;
 }

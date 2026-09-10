@@ -25,6 +25,7 @@
 #include "modern/scene_capture.h"
 #include "game/player_car_internal.h"
 #include "game/input_internal.h"
+#include "game/menu.h"
 #include "game/state.h"
 #include "game/race.h"
 #include "game/cd.h"
@@ -55,7 +56,6 @@ extern int g_SceneId;
 extern int g_FrameCounter;
 extern int g_FrontendState;
 extern int GameMenuBusy;
-extern int g_MenuScreen;
 extern int g_MenuViewAngle;
 extern int g_MenuViewAngleTarget;
 extern int g_MenuViewOffset;
@@ -355,7 +355,7 @@ static void ReportCameraState(void) {
            g_MirrorViewMatrix.m[2][0], g_MirrorViewMatrix.m[2][1],
            g_MirrorViewMatrix.m[2][2]);
     printf(" menu=%d busy=%d view=%d/%d offset=%d spin=%d yaw=%d/%d",
-           g_MenuScreen, GameMenuBusy, g_MenuViewAngle, g_MenuViewAngleTarget,
+           MenuRuntimeCurrent()->activeScreen, GameMenuBusy, g_MenuViewAngle, g_MenuViewAngleTarget,
            g_MenuViewOffset, g_MenuViewSpin, g_PlayerCar.bodyYaw,
            g_PlayerCar.modelYaw);
     printf(" scene_timer=%d fade=%d sync=%x",

@@ -184,7 +184,6 @@ static int TestInvalidIndices(void) {
     Reset();
     MenuActivateEnteringScreen(MENU_SCREEN_CAR_SHOP, MENU_SCREEN_COUNT);
     UpdateMenuMode();
-    CHECK(g_MenuScreen == MENU_SCREEN_COURSE_SELECT);
     CHECK(MenuRuntimeCurrent()->activeScreen == MENU_SCREEN_COURSE_SELECT);
     CHECK(s_updateCalls == 1 && s_drawCalls == 1 && s_drawSteps[0] == 0x14);
     CHECK(g_RenderState.otShift == 1);

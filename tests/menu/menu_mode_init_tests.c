@@ -19,6 +19,10 @@ static s32 s_drawResetCalls;
 static s32 s_initRenderMode;
 static s32 s_cameraCalls;
 
+s32 g_MenuHandlerIndex;
+s32 g_MenuOutgoingHandlerIndex;
+s32 g_MenuScreen;
+
 void MenuRuntimeReset(void) {
     g_MenuScreen = MENU_SCREEN_BOOTSTRAP;
     g_MenuHandlerIndex = -1;

@@ -51,6 +51,10 @@ s32 g_MenuCourseModelIndex;
 s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
 
+extern s32 g_MenuHandlerIndex;
+extern s32 g_MenuOutgoingHandlerIndex;
+extern s32 g_MenuScreen;
+
 void MenuActivateScreen(s32 screen) {
     g_MenuScreen = screen;
     g_MenuHandlerIndex = screen;

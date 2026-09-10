@@ -650,7 +650,8 @@ int PortShouldExit(int frame_number) {
         RageSmokeStateInput *input = &g_SmokeStateInputs[index];
         int phaseMatches = !input->hasPhase ||
             (input->scene == 4 && g_FrontendState == input->phase) ||
-            (input->scene == 8 && g_MenuScreen == input->phase) ||
+            (input->scene == 8 &&
+             MenuRuntimeCurrent()->activeScreen == input->phase) ||
             (input->scene == 32 && g_PrologueStep == input->phase);
         if (!input->fired && g_SceneId == input->scene && phaseMatches &&
             g_SceneTimer <= input->timer) {
@@ -716,10 +717,12 @@ int PortShouldExit(int frame_number) {
         lastScene = g_SceneId;
         lastFrontend = g_FrontendState;
     }
-    if (g_SceneId == 8 && g_MenuScreen != lastMenuScreen) {
+    if (g_SceneId == 8 &&
+        MenuRuntimeCurrent()->activeScreen != lastMenuScreen) {
         fprintf(stderr, "smoke menu frame=%d timer=%d screen=%d\n",
-                frame_number, g_SceneTimer, g_MenuScreen);
-        lastMenuScreen = g_MenuScreen;
+                frame_number, g_SceneTimer,
+                MenuRuntimeCurrent()->activeScreen);
+        lastMenuScreen = MenuRuntimeCurrent()->activeScreen;
     }
     if (g_SceneId == 23 && g_GameMode != lastGameMode) {
         fprintf(stderr, "smoke option frame=%d timer=%d mode=%d\n",
