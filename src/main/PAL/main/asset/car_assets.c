@@ -12,6 +12,22 @@ enum {
     CAR_SELECT_SCENE_MODEL_BANK = 14,
 };
 
+/* The car-select load begins immediately after SELBGM.  Keep its three audio
+ * ranges together while the next request reuses the legacy asset globals. */
+static AssetSelectBgmAssets s_carSelectAudioAssets;
+static s32 s_haveCarSelectAudioAssets;
+
+static void CaptureCarSelectAudioAssets(void) {
+    const AssetLoadTransaction *assets = AssetLoadTransactionCurrentResult(
+        AssetLoadTransactionGeneration());
+
+    s_haveCarSelectAudioAssets = 0;
+    if (assets != NULL && assets->request == ASSET_REQUEST_SELECT_BGM) {
+        s_carSelectAudioAssets = assets->payload.selectBgm;
+        s_haveCarSelectAudioAssets = 1;
+    }
+}
+
 typedef struct CarSelectAssetHeader {
     s32 teamLogoSamplesOffset;
     s32 courseModelsOffset;
@@ -23,23 +39,49 @@ _Static_assert(offsetof(CarSelectAssetHeader, sceneModelBank) == 0xC,
                "car-select model bank must remain at +0xC");
 
 s32 RequestCarSelectAssets(void) {
+    /* Do not re-capture on the polling calls made while this request is busy:
+     * the active transaction then belongs to CAR_SELECT, not SELBGM. */
+    if (g_AssetLoadState == 0 &&
+        g_AssetRequestType != ASSET_REQUEST_CAR_SELECT) {
+        CaptureCarSelectAudioAssets();
+    }
     return RequestAssetLoad(ASSET_REQUEST_CAR_SELECT,
                             CAR_SELECT_BEGIN_AUDIO, 0);
 }
 
 static void BeginCarSelectAudioLoad(void) {
-    AudioSlotAsset asset = {
-        .vabHeader = g_AssetBlockPtr,
-        .vabHeaderSize = g_AssetBlockSize,
-        .vabBody = g_AssetSubBlockPtr,
-        .vabBodySize = g_AssetSubBlockSize,
-        .auxiliaryData = g_AssetBlockPtr2,
-        .auxiliarySize = g_AssetBlock2Size,
-    };
+    AudioSlotAsset asset;
+
+    if (s_haveCarSelectAudioAssets) {
+        asset = (AudioSlotAsset){
+            .vabHeader = s_carSelectAudioAssets.audioHeader.data,
+            .vabHeaderSize = s_carSelectAudioAssets.audioHeader.size,
+            .vabBody = s_carSelectAudioAssets.audioBody.data,
+            .vabBodySize = s_carSelectAudioAssets.audioBody.size,
+            .auxiliaryData = s_carSelectAudioAssets.sequence.data,
+            .auxiliarySize = s_carSelectAudioAssets.sequence.size,
+        };
+    } else {
+        /* Direct boot and isolated loaders retain the retail hand-off. */
+        asset = (AudioSlotAsset){
+            .vabHeader = g_AssetBlockPtr,
+            .vabHeaderSize = g_AssetBlockSize,
+            .vabBody = g_AssetSubBlockPtr,
+            .vabBodySize = g_AssetSubBlockSize,
+            .auxiliaryData = g_AssetBlockPtr2,
+            .auxiliarySize = g_AssetBlock2Size,
+        };
+    }
 
     if (StartAudioSlotLoad(AUDIO_SLOT_SEQUENCE, &asset) < 0) {
         FailAssetLoad();
         return;
+    }
+    /* g_AssetLoadCursor is derived from the same audio pack after the SPU
+     * transfer completes, so retain the exact body range used above. */
+    if (s_haveCarSelectAudioAssets) {
+        g_AssetSubBlockPtr = s_carSelectAudioAssets.audioBody.data;
+        g_AssetSubBlockSize = s_carSelectAudioAssets.audioBody.size;
     }
     g_AssetLoadState = CAR_SELECT_WAIT_FOR_AUDIO;
 }

@@ -633,6 +633,45 @@ static void TestCarSelectAssetPhases(void) {
           "idle car-select loader is a no-op");
 }
 
+static void TestCarSelectPreservesSelectBgmSequence(void) {
+    static u8 storage[128];
+
+    g_AssetLoadState = 0;
+    g_AssetLoadFailed = 0;
+    g_AssetRequestType = ASSET_REQUEST_IDLE;
+    g_AssetBase = storage;
+    g_ImageBlockBuffer = storage + 96;
+    g_ImageBlockSize = 0;
+    g_AssetBlockPtr = storage + 16;
+    g_AssetBlockSize = 16;
+    g_AssetBlockPtr2 = storage + 40;
+    g_AssetBlock2Size = 24;
+    g_AssetSubBlockPtr = storage + 72;
+    g_AssetSubBlockSize = 24;
+    Check(RequestAssetLoad(ASSET_REQUEST_SELECT_BGM, 1, 0) == 1,
+          "SELECT.BIN request starts before car-select hand-off");
+    g_AssetLoadState = 0;
+    Check(AssetLoadCompletedSuccessfully(),
+          "SELECT.BIN request publishes typed audio spans");
+
+    Check(RequestCarSelectAssets() == 1,
+          "car-select request captures SELECT.BIN audio spans");
+    /* Model the next loader reusing the legacy scratch globals. */
+    g_AssetBlockPtr = storage + 1;
+    g_AssetBlockSize = 1;
+    g_AssetBlockPtr2 = storage + 2;
+    g_AssetBlock2Size = 1;
+    g_AssetSubBlockPtr = storage + 3;
+    g_AssetSubBlockSize = 1;
+    s_startAudioResult = 1;
+    LoadCarSelectAssets();
+    Check(s_audioHeader == storage + 16 && s_audioHeaderSize == 16 &&
+              s_audioTable == (u16 *)(void *)(storage + 40) &&
+              s_audioAuxiliarySize == 24 && s_audioBody == storage + 72 &&
+              s_audioBodySize == 24,
+          "car-select sequence uses the captured SELECT.BIN payload");
+}
+
 static void TestEveryRetailVariantLoad(void) {
     /* Byte +0x0a in each of the 32 original car model headers. The final
      * grade of every retail model disables upgrades before the next model. */
@@ -731,6 +770,7 @@ int main(void) {
     TestInvalidSerializedModelSkipsInstallation();
     TestInvalidModelBankPreservesSlot();
     TestCarSelectAssetPhases();
+    TestCarSelectPreservesSelectBgmSequence();
     TestEveryRetailVariantLoad();
     TestBulshadeAutomaticCatalogModelLoad();
 
