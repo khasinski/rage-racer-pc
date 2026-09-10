@@ -33,6 +33,9 @@ typedef struct SceneRuntime {
 
 void SceneRuntimeBeforeDispatch(s32 scene);
 void SceneRuntimeAfterDispatch(s32 scene);
+/* Request a new top-level scene through one consistent legacy adapter. The
+ * next dispatch records the transition and resets scene-local scratch state. */
+void SceneRuntimeRequestScene(s32 scene);
 const SceneRuntime *SceneRuntimeCurrent(void);
 /* True after a handler requested a different scene, until that destination
  * begins its first dispatch. */

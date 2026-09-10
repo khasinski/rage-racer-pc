@@ -3,6 +3,7 @@
 #include "game/fmv.h"
 #include "game/fmv_internal.h"
 #include "game/scene.h"
+#include "game/scene_runtime.h"
 #include "game/state.h"
 
 void BeginFmv(s32 returnScene) {
@@ -10,7 +11,7 @@ void BeginFmv(s32 returnScene) {
     ResetCdAudioState();
     g_FmvState = FMV_PLAYBACK_START;
     g_StreamReturnScene = returnScene;
-    g_SceneId = GAME_SCENE_FMV;
+    SceneRuntimeRequestScene(GAME_SCENE_FMV);
     StopFmvDiscPlayback();
     /* Race/menu transitions fade the live CD attenuator to zero. XA uses
      * that same mixer, so start the movie with the configured level rather

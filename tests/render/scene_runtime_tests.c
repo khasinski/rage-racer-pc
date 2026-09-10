@@ -91,6 +91,10 @@ int main(void) {
           runtime->transition.fadeLevel == 0 &&
           SceneRuntimeAssetResult(ASSET_REQUEST_SELECT_BGM) == NULL);
 
+    g_SceneTimer = 42;
+    SceneRuntimeRequestScene(GAME_SCENE_FMV);
+    CHECK(g_SceneId == GAME_SCENE_FMV && g_SceneTimer == 0);
+
     puts("scene runtime scopes transition state and asset results to one scene");
     return 0;
 }

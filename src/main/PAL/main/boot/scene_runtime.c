@@ -22,6 +22,14 @@ static void ResetLegacyTransitionState(void) {
     g_CdTrackEnded = 0;
 }
 
+static void CaptureLegacyTransitionState(void) {
+    s_runtime.transition.timer = g_SceneTimer;
+    s_runtime.transition.fadeLevel = g_FadeLevel;
+    s_runtime.transition.fadeStep = g_FadeStep;
+    s_runtime.transition.frameSyncThreshold = g_FrameSyncThreshold;
+    s_runtime.transition.cameraCarIndex = g_CameraCarIndex;
+}
+
 void SceneRuntimeBeforeDispatch(s32 scene) {
     if (s_runtime.scene != scene) {
         s32 previousScene = s_runtime.scene;
@@ -36,20 +44,12 @@ void SceneRuntimeBeforeDispatch(s32 scene) {
         s_runtime.assetGeneration = AssetLoadTransactionGeneration();
         ResetLegacyTransitionState();
     }
-    s_runtime.transition.timer = g_SceneTimer;
-    s_runtime.transition.fadeLevel = g_FadeLevel;
-    s_runtime.transition.fadeStep = g_FadeStep;
-    s_runtime.transition.frameSyncThreshold = g_FrameSyncThreshold;
-    s_runtime.transition.cameraCarIndex = g_CameraCarIndex;
+    CaptureLegacyTransitionState();
 }
 
 void SceneRuntimeAfterDispatch(s32 scene) {
     if (s_runtime.scene != scene) return;
-    s_runtime.transition.timer = g_SceneTimer;
-    s_runtime.transition.fadeLevel = g_FadeLevel;
-    s_runtime.transition.fadeStep = g_FadeStep;
-    s_runtime.transition.frameSyncThreshold = g_FrameSyncThreshold;
-    s_runtime.transition.cameraCarIndex = g_CameraCarIndex;
+    CaptureLegacyTransitionState();
     /* A handler commonly assigns g_SceneId as its last action. Preserve the
      * destination before the next dispatch resets its transition scratch
      * state. */
@@ -58,6 +58,11 @@ void SceneRuntimeAfterDispatch(s32 scene) {
 
 const SceneRuntime *SceneRuntimeCurrent(void) {
     return &s_runtime;
+}
+
+void SceneRuntimeRequestScene(s32 scene) {
+    g_SceneId = scene;
+    g_SceneTimer = 0;
 }
 
 s32 SceneRuntimeHasPendingTransition(void) {
