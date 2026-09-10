@@ -3,7 +3,7 @@
 
 #include "game/scene.h"
 
-/* Only live races and attract playback produce semantic 3D worlds. */
+/* Race, replay and attract playback produce semantic 3D worlds. */
 int GameRenderWorldSceneHas3d(GameSceneId scene);
 
 #endif
