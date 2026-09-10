@@ -55,29 +55,15 @@ measurement for this mode. `laps` counts complete point-ring tours from the debu
 start, not necessarily the HUD's finish-line lap count. This is not a substitute
 for natural Grand Prix completion or FMV tests.
 
-## RenderDoc and synchronization validation
+## Vulkan synchronization validation
 
-With RenderDoc and the Khronos validation layer installed:
+To run the drive with the Khronos validation layer installed:
 
 ```sh
 cmake -DGAME="$PWD/build/rage-racer" \
   -DDISC="/absolute/path/to/Rage Racer (Europe).cue" \
-  -DRENDERDOC="/absolute/path/to/renderdoccmd" -DVALIDATION=ON \
-  -DRUNS=2 -DLAPS=3 -P tools/debug_drive.cmake
+  -DVALIDATION=ON -DRUNS=2 -DLAPS=3 -P tools/debug_drive.cmake
 ```
-
-The local test machine also has extracted Fedora x86-64 RenderDoc and validation
-packages under `build/debug-tools/root`, without system installation. On this
-machine replace `-DRENDERDOC=...` with `-DTOOLS_ROOT="$PWD/build/debug-tools/root"`.
-The harness creates a session-local RenderDoc layer manifest with the correct
-library path and supplies layer/library search paths only to the child process.
-These tools are not shipped with the game. `TOOLS_ROOT` expects the Fedora package
-layout (`usr/bin/renderdoccmd`, `usr/lib64/renderdoc/librenderdoc.so`).
-
-RenderDoc must be injected **before** Vulkan initialization. The game only looks
-up the already-loaded API; it never silently loads it late. The vendored MIT
-application API header is from RenderDoc tag `v1.35`:
-https://github.com/baldurk/renderdoc/blob/v1.35/renderdoc/api/app/renderdoc_app.h
 
 Validation is explicitly enabled, including synchronization validation. The
 launcher retains loader diagnostics, requires evidence that the Khronos layer
@@ -114,12 +100,10 @@ standard and an unobscured window; covered Metal windows may stall presentation.
 
 Per run:
 
-- `game.log`: scene transitions, route tours, marker frame IDs, queued/completed
-  RenderDoc captures, and Vulkan messages.
+- `game.log`: scene transitions, route tours, marker frame IDs and Vulkan messages.
 - `settings.txt`, `launcher*.log`, `result.txt`: settings and outcome.
 - `state/rage-racer/markers/`: the existing M-key bundle (screenshots, VRAM,
   scene/world snapshots, draw and palette information).
-- `state/rage-racer/gpu-*-after-logic-*_frame*.rdc`: GPU captures.
 
 Defaults: first marker at logic frame 900, then every 900, at most four automatic
 requests. Each marker request saves four marker frames and requests **two future
@@ -148,13 +132,12 @@ Useful launcher overrides:
 Use the same image/course/series/speed/capture schedule to compare good and bad
 passes. The launcher fails on timeout, an incomplete drive, unavailable GPU,
 missing requested evidence or detected validation errors. **A successful drive
-does not automatically classify flicker or corrupted textures.** Open the RDCs
-and compare the bound texture/CLUT, draw order and depth at the affected pixels.
-The original M markers remain essential for relating GPU resources to game state.
+does not automatically classify flicker or corrupted textures.** The original M
+markers remain essential for relating renderer output to game state.
 
 For a manual launch, equivalent opt-in keys are `autopilot.enabled`, `.speed`,
-`.laps`, `.max_frames`, `diagnostics.renderdoc`, `.renderdoc_burst`,
-`.renderdoc_limit`, `.marker_frame`, `.marker_every`, `.marker_limit`. Enable
+`.laps`, `.max_frames`, `diagnostics.marker_frame`, `.marker_every`,
+`.marker_limit`. Enable
 `diagnostics.marker_capture` as well. Keep capture/validation runs separate from
 baseline runs when checking whether instrumentation changes a timing-sensitive bug.
 

@@ -93,7 +93,7 @@ execute_process(COMMAND "${CMAKE_COMMAND}" -E env
     --set "diagnostics.renderer_restart_count=${RESTARTS}"
     --set "diagnostics.texture_prewarm=${prewarm}"
     --set diagnostics.marker_capture=false --set diagnostics.marker_history=false
-    --set diagnostics.renderdoc=false --set "diagnostics.log=${session}/game.log"
+    --set "diagnostics.log=${session}/game.log"
     WORKING_DIRECTORY "${ROOT}" TIMEOUT ${TIMEOUT} RESULT_VARIABLE result
     OUTPUT_FILE "${session}/launcher.log" ERROR_FILE "${session}/launcher-errors.log")
 if(NOT EXISTS "${session}/game.log")

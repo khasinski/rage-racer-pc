@@ -2,7 +2,6 @@
 #include <string.h>
 #include "debug_autopilot.h"
 #include "debug_route.h"
-#include "debug_gpu_capture.h"
 #include "runtime_config.h"
 #include "timing_control.h"
 #include "game/car.h"
@@ -74,7 +73,6 @@ void DebugAutopilotBeforeScene(void) {
     if (!s_initialized) {
         s_initialized = 1;
         s_enabled = RuntimeConfigEnabled("autopilot.enabled");
-        DebugGpuCaptureInit();
         if (!s_enabled) return;
         /* Active races update once per two VBlanks (25/30 Hz), independently
          * of interpolated presentation rate. */

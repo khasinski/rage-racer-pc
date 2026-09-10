@@ -8,7 +8,6 @@
 #include "modern_texture_dump.h"
 #include "modern_native_gpu.h"
 #include "../runtime_config.h"
-#include "../debug_gpu_capture.h"
 #include "../platform_paths.h"
 #include "../include/rage/render_world_game.h"
 #include "render/render_world_snapshot.h"
@@ -269,7 +268,6 @@ void ModernDiagnosticsCheckMarker(
     int probeX;
     int probeY;
     if (snapshot == NULL || output == NULL) return;
-    DebugGpuCapturePoll();
     keys = SDL_GetKeyboardState(NULL);
     down = keys != NULL && keys[SDL_SCANCODE_M];
     pressed = down && !wasDown;
@@ -307,7 +305,6 @@ void ModernDiagnosticsCheckMarker(
     wasDown = down;
     if (pressed) {
         burstLeft = 4;
-        DebugGpuCaptureRequest(snapshot->frameCounter);
     }
     if (pressed && !markerDirectoryReady) {
         char stateDirectory[4096];

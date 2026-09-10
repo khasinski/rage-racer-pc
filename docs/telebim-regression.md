@@ -51,7 +51,7 @@ Common arguments to build/rage-racer-smoke:
 ```
 --scenario race-scenario.ini --set race.class=1 --set race.course=0
 --set start.player_track_point=288 --set start.freeze=true
---set diagnostics.marker_capture=false --set diagnostics.renderdoc=false
+--set diagnostics.marker_capture=false
 --set stop.scene=12 --set stop.timer=435 --set run.frames=1500
 ```
 

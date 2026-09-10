@@ -26,7 +26,6 @@ int RuntimeConfigInt(const char *key, int fallback, int low, int high) {
     return fallback;
 }
 int TimingBaseHz(void) { return 50; }
-void DebugGpuCaptureInit(void) {}
 void AccumulateLapProgress(GameCarRuntime *car) { (void)car; updates++; }
 s32 UpdateCarTrackState(GameCarRuntime *car, s32 point, const CarTrackLimits *limits) {
     (void)car; (void)point; (void)limits; return 0;
