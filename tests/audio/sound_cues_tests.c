@@ -267,6 +267,18 @@ static int TestBankTwo(void) {
     return 0;
 }
 
+static int TestExplicitMainBank(void) {
+    Reset();
+    /* The race voice bank may become current while ROUND still needs its
+     * fixed menu cue.  It must not reinterpret cue 25 as a race voice. */
+    g_SoundCueBank = 2;
+    PlayMainSoundCue(25);
+    CHECK(s_fixedCount == 2 && s_dynamicCount == 0);
+    CHECK(s_fixed[0].vab == 7 && s_fixed[0].program == 125);
+    CHECK(s_fixed[0].tone == 35 && s_fixed[1].tone == 65);
+    return 0;
+}
+
 static int TestInactiveBankAndEngineSlot(void) {
     Reset();
     g_SoundCueBank = 0;
@@ -296,6 +308,7 @@ static int TestInactiveBankAndEngineSlot(void) {
 int main(void) {
     CHECK(TestBankOne() == 0);
     CHECK(TestBankTwo() == 0);
+    CHECK(TestExplicitMainBank() == 0);
     CHECK(TestInactiveBankAndEngineSlot() == 0);
     puts("sound cues preserve bank routing, deduplication, and engine pitch");
     return 0;

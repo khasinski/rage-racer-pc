@@ -52,8 +52,8 @@ static s32 StartPooledCueTone(const SoundCueParams *params, s32 tone,
     return -1;
 }
 
-static void StartPairedSoundCue(s32 cue, s32 volL, s32 volR) {
-    const SoundCueParams *params = g_SoundCueBank == 1
+static void StartPairedSoundCue(s32 bank, s32 cue, s32 volL, s32 volR) {
+    const SoundCueParams *params = bank == 1
                                        ? &g_SoundCueParams[cue]
                                        : &g_SoundCueParams2[cue];
     s32 busy[POOLED_VOICE_COUNT];
@@ -68,7 +68,7 @@ static void StartPairedSoundCue(s32 cue, s32 volL, s32 volR) {
     volL = ScaleCueVolume(volL, params->volume);
     volR = ScaleCueVolume(volR, params->volume);
 
-    if (g_SoundCueBank == 1) {
+    if (bank == 1) {
         for (i = 0; i < POOLED_VOICE_COUNT; i++) {
             busy[i] = SpuGetKeyStatus(g_SpecialVoiceBits[i]);
         }
@@ -148,12 +148,13 @@ static int IsRepeatedSpecialCue(s32 cue) {
            cue <= REPEATED_SPECIAL_CUE_LAST;
 }
 
-void PlaySoundCue(s32 cue) {
+static void PlaySoundCueFromBank(s32 bank, s32 cue) {
     if (DiagnosticsEnabled("sound_cue_trace")) {
-        fprintf(stderr, "rage-port: sound cue=0x%02x\n", (unsigned)cue);
+        fprintf(stderr, "rage-port: sound bank=%d cue=0x%02x\n", bank,
+                (unsigned)cue);
     }
 
-    if (g_SoundCueBank == 1) {
+    if (bank == 1) {
         cue = ClampCueIndex(cue, MAIN_SOUND_CUE_COUNT);
         if (IsRepeatedSpecialCue(cue)) {
             if (cue != g_LastSpecialCueRequest) {
@@ -163,11 +164,11 @@ void PlaySoundCue(s32 cue) {
             }
             return;
         }
-        StartPairedSoundCue(cue, CUE_VOLUME_FULL, CUE_VOLUME_FULL);
+        StartPairedSoundCue(bank, cue, CUE_VOLUME_FULL, CUE_VOLUME_FULL);
         return;
     }
 
-    if (g_SoundCueBank == 2) {
+    if (bank == 2) {
         cue = ClampCueIndex(cue, RACE_SOUND_CUE_COUNT);
         if (IsRepeatedSpecialCue(cue)) {
             if (cue != g_LastSpecialCueRequest) {
@@ -178,11 +179,20 @@ void PlaySoundCue(s32 cue) {
             return;
         }
         if (cue < BANK_TWO_FIXED_VOICE_FIRST_CUE) {
-            StartPairedSoundCue(cue, CUE_VOLUME_FULL, CUE_VOLUME_FULL);
+            StartPairedSoundCue(bank, cue, CUE_VOLUME_FULL,
+                                CUE_VOLUME_FULL);
             return;
         }
         StartSpecialCueVoice(cue, CUE_VOLUME_FULL, CUE_VOLUME_FULL);
     }
+}
+
+void PlaySoundCue(s32 cue) {
+    PlaySoundCueFromBank(g_SoundCueBank, cue);
+}
+
+void PlayMainSoundCue(s32 cue) {
+    PlaySoundCueFromBank(1, cue);
 }
 
 /* Sets one engine-sound slot: scales `volume` by the global effect scale,

@@ -179,7 +179,9 @@ void UpdateRoundScreen(void) {
     }
     DrawRoundScreen();
     if (g_SceneTimer == ROUND_SCREEN_CUE_FRAME) {
-        PlaySoundCue(ROUND_SCREEN_CUE);
+        /* Race assets can finish early on a host.  This cue belongs to the
+         * ROUND UI bank, not to whichever bank just completed loading. */
+        PlayMainSoundCue(ROUND_SCREEN_CUE);
     }
     if (g_FadeLevel == 0) {
         if (RequestRaceAssets() == 0) {

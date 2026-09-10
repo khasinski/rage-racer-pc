@@ -116,6 +116,8 @@ void SetIndexedEffectVoice(s32 index, s32 phase, s32 volume);
 void SetPitchedSoundCue(s32 cue, s32 pitch, s32 volume);
 void SetStereoSoundCue(s32 cue, s32 volLeft, s32 volRight);
 void PlaySoundCue(s32 cue);
+/* Play a UI cue from the menu bank even while another bank is loading. */
+void PlayMainSoundCue(s32 cue);
 void UpdateLoadedAudioVoices(s32 position, s32 bank);
 void InitEffectVoiceRuntime(void);
 void ForceAllEffectVoicesEnabled(s32 enabled);
