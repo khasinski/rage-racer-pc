@@ -1,7 +1,6 @@
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
 
 #include "game/frontend_internal.h"
 #include "game/menu.h"
@@ -356,46 +355,6 @@ static void ScenarioConfirm(void) {
             g_SceneId, g_FrontendState, g_MenuScreen);
 }
 
-/* Seconds since the first traced frame. The automation is judged by how long
- * it takes to reach a race, so the trace carries wall time rather than frames:
- * scene handlers tick at different rates. */
-static double ScenarioElapsed(void) {
-    struct timespec now;
-    static struct timespec start;
-    static int started;
-    if (timespec_get(&now, TIME_UTC) != TIME_UTC) return 0.0;
-    if (!started) {
-        started = 1;
-        start = now;
-    }
-    return (double)(now.tv_sec - start.tv_sec) +
-           (double)(now.tv_nsec - start.tv_nsec) / 1e9;
-}
-
-/* One line per state change, plus one when a screen the automation is still
- * navigating outlasts every timeout the confirm ladder uses. A scenario that
- * never reaches a race then names the screen it died on instead of just going
- * quiet. Scene 11 and up hold their state for as long as the race and the
- * result screens last, so they are never reported. */
-static void ScenarioTrace(void) {
-    static int lastScene = -1, lastFrontend = -1, lastScreen = -1;
-    static int held;
-    if (g_SceneId != lastScene || g_FrontendState != lastFrontend ||
-        g_MenuScreen != lastScreen) {
-        lastScene = g_SceneId;
-        lastFrontend = g_FrontendState;
-        lastScreen = g_MenuScreen;
-        held = 0;
-        fprintf(stderr,
-                "rage-port: scenario state t=%.1fs scene=%d phase=%d screen=%d\n",
-                ScenarioElapsed(), g_SceneId, g_FrontendState, g_MenuScreen);
-    } else if (++held == 600 && g_SceneId < GAME_SCENE_ENTER_RACE) {
-        fprintf(stderr,
-                "rage-port: scenario stalled t=%.1fs scene=%d phase=%d screen=%d\n",
-                ScenarioElapsed(), g_SceneId, g_FrontendState, g_MenuScreen);
-    }
-}
-
 /* This is the sole adapter from a scenario request into the recovered game
  * state. It runs once when the normal menu is ready to consume the selection;
  * the menu and round screen then own every later asset and VRAM transition. */
@@ -489,8 +448,6 @@ void PortScenarioBeforeSceneHandler(void) {
         s_scenario.stableFrames++;
         s_scenario.retryFrames++;
     }
-
-    ScenarioTrace();
 
     if (s_scenario.raceFinished &&
         s_scenario.afterFinish == RAGE_SCENARIO_AFTER_REPEAT &&
