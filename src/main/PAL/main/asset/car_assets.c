@@ -131,14 +131,17 @@ static void LoadInitialCarSelectModel(void) {
     loadedSize = LoadAsset(assetIndex, g_CarModelBuffer);
     if (AssetLoadDidNotComplete(loadedSize)) return;
 
+    /* Round-screen relocation copies this serialized metadata verbatim. */
     CarCatalogApplyModelAvailability(carIndex, g_CarTable[carIndex].modelVariant,
         GetCarModelAsset(g_CarModelBuffer));
-
     if (!InstallCarModelAsset(GetCarModelAsset(g_CarModelBuffer),
                               (size_t)loadedSize, 0, carIndex)) {
         FailAssetLoad();
         return;
     }
+    /* The catalog governs the active, native copy consumed by the menu. */
+    CarCatalogApplyModelAvailability(carIndex, g_CarTable[carIndex].modelVariant,
+        g_CarModelSlots[0]);
     SelectCarModelSlot(0);
     g_CarModelSlot = 0;
     g_AssetLoadState = 0;

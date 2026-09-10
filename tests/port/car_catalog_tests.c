@@ -61,6 +61,46 @@ static int VerifySqualdonAutomaticProfile(const char *path, char *error) {
         specification.shiftPoints[4].upshiftSpeed == 1878;
 }
 
+/* This is the concrete modding path: make the normally manual-only Bulshade
+ * purchasable in class one and expose its reconstructed automatic setup. */
+static int VerifyEarlyAutomaticBulshade(char *error) {
+    static const char catalog[] =
+        "[[cars]]\n"
+        "id = \"car_11_g0\"\nmodel = 11\ngrade = 0\n"
+        "price = 0\nupgrade_price = 0\nunlock_class = 0\n"
+        "manual_only = false\n"
+        "automatic_acceleration_scale = 985\n"
+        "shift_points = [540, 720, 672, 896, 840, 1121, 1063, 1418, 1280, 1707, 1516, 2022]\n";
+    GameCarSpec retail, applied;
+    CarModelAsset asset;
+    FILE *file = fopen("car_catalog_test.toml", "wb");
+
+    if (file == NULL || fwrite(catalog, 1, sizeof(catalog) - 1, file) !=
+                            sizeof(catalog) - 1 ||
+        fclose(file) != 0 ||
+        !CarCatalogLoadFile("car_catalog_test.toml", error, 256)) {
+        return 0;
+    }
+    memset(&retail, 0x5a, sizeof(retail));
+    retail.revLimit = 7500;
+    applied = retail;
+    CarCatalogApplySpecification(11, 0, &applied);
+    CarCatalogApplyMetadata();
+    memset(&asset, 0, sizeof(asset));
+    asset.transmissionAvailable = 0;
+    g_CarTable[11].transmission = 1;
+    CarCatalogApplyModelAvailability(11, 0, &asset);
+    remove("car_catalog_test.toml");
+    return g_CarPriceTable[30] == 0 &&
+        CarCatalogUnlockClass(11, 0, -1) == 0 &&
+        asset.transmissionAvailable == 1 &&
+        g_CarTable[11].transmission == 1 &&
+        applied.revLimit == 7500 &&
+        applied.automaticAccelerationScale == 985 &&
+        applied.shiftPoints[0].downshiftSpeed == 540 &&
+        applied.shiftPoints[0].upshiftSpeed == 720;
+}
+
 static char *MakeCatalog(int rows, int badSpec) {
     size_t capacity = 65536, used = 0;
     char *text = malloc(capacity);
@@ -157,7 +197,8 @@ int main(void) {
     if (!VerifyShippedManualOnlyVariants(RAGE_SOURCE_DIRECTORY "/cars.toml", error) ||
         !VerifyShippedManualOnlyVariants(RAGE_SOURCE_DIRECTORY "/cars.ntscj.toml", error) ||
         !VerifySqualdonAutomaticProfile(RAGE_SOURCE_DIRECTORY "/cars.toml", error) ||
-        !VerifySqualdonAutomaticProfile(RAGE_SOURCE_DIRECTORY "/cars.ntscj.toml", error)) {
+        !VerifySqualdonAutomaticProfile(RAGE_SOURCE_DIRECTORY "/cars.ntscj.toml", error) ||
+        !VerifyEarlyAutomaticBulshade(error)) {
         fprintf(stderr, "shipped catalog did not parse: %s\n", error);
         return 1;
     }

@@ -88,12 +88,20 @@ void LoadPendingCarModelAsset(void) {
     if (AssetLoadDidNotComplete(loadedSize)) return;
 
     asset = GetCarModelAsset(destination);
-    CarCatalogApplyModelAvailability(carIndex,
-        g_CarTable[carIndex].modelVariant + gradeOffset, asset);
+    /* Round-screen relocation later copies this serialized metadata into the
+     * race slot, so apply the catalog before publishing the native copy. */
+    CarCatalogApplyModelAvailability(
+        carIndex, g_CarTable[carIndex].modelVariant + gradeOffset, asset);
     if (!InstallCarModelAsset(asset, (size_t)loadedSize, targetSlot,
                               carIndex)) {
         FailAssetLoad();
         return;
     }
+    /* InstallCarModelAsset publishes a native metadata copy. Apply catalog
+     * availability to that copy: the customize screen reads the active native
+     * slot, not the serialized source buffer. */
+    CarCatalogApplyModelAvailability(
+        carIndex, g_CarTable[carIndex].modelVariant + gradeOffset,
+        g_CarModelSlots[targetSlot]);
     g_AssetLoadState = 0;
 }

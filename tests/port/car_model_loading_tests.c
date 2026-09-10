@@ -29,13 +29,17 @@ CarImageData *g_CarImageSlots[CAR_ASSET_SLOT_COUNT];
 CarModelAsset *g_CarModelAsset;
 const TeamLogoSample *g_TeamLogoSampleData;
 
-/* Catalog overrides are covered by port_car_catalog_tests.  Keep this loader
- * test focused on the retail model-bank path. */
+/* The catalog parser is covered separately. This loader stub models the one
+ * override that must reach the native slot used by the frontend. */
+static s32 s_bulshadeAutomaticOverride;
+static s32 s_catalogAvailabilityCalls;
 void CarCatalogApplyModelAvailability(int modelIndex, int grade,
                                       CarModelAsset *asset) {
-    (void)modelIndex;
-    (void)grade;
-    (void)asset;
+    s_catalogAvailabilityCalls++;
+    if (s_bulshadeAutomaticOverride && modelIndex == 11 && grade == 0 &&
+        asset != NULL) {
+        asset->transmissionAvailable = 1;
+    }
 }
 
 int CarCatalogUnlockClass(int modelIndex, int grade, int fallback) {
@@ -679,6 +683,40 @@ static void TestEveryRetailVariantLoad(void) {
     g_CarTable = NULL;
 }
 
+static void TestBulshadeAutomaticCatalogModelLoad(void) {
+    static u8 buffers[CAR_MODEL_BUFFER_SIZE];
+    static CarImageData image;
+    CarEntry cars[GAME_CAR_COUNT] = {0};
+    CarModelAsset *loaded =
+        (CarModelAsset *)(void *)(buffers + CAR_MODEL_SLOT_SIZE);
+
+    memset(buffers, 0, sizeof(buffers));
+    loaded->imageData.carImage = &image;
+    loaded->transmissionAvailable = 0;
+    g_CarTable = cars;
+    g_CarModelBuffer = buffers;
+    g_CarModelSlot = 0;
+    g_AssetRequestType = ASSET_REQUEST_CAR_MODEL;
+    g_PendingCarModelIndex = 11;
+    g_AssetLoadState = 1;
+    s_loadResult = SERIALIZED_CAR_MODEL_HEADER_SIZE;
+    s_serializedModelValid = s_registerModelBankResult = s_startAudioResult = 1;
+    s_bulshadeAutomaticOverride = 1;
+    s_catalogAvailabilityCalls = 0;
+
+    LoadPendingCarModelAsset();
+
+    Check(s_loadAssetId == 10 + 30 * 2,
+          "class-one Bulshade loads its own model asset");
+    Check(g_CarModelSlots[1] == loaded &&
+              g_CarModelSlots[1]->transmissionAvailable == 1,
+          "Bulshade automatic override reaches the native model slot");
+    Check(s_catalogAvailabilityCalls == 2 && g_AssetLoadState == 0,
+          "Bulshade model load preserves catalog metadata through relocation");
+    s_bulshadeAutomaticOverride = 0;
+    g_CarTable = NULL;
+}
+
 int main(void) {
     TestRequests();
     TestModelVariantLoads();
@@ -688,6 +726,7 @@ int main(void) {
     TestInvalidModelBankPreservesSlot();
     TestCarSelectAssetPhases();
     TestEveryRetailVariantLoad();
+    TestBulshadeAutomaticCatalogModelLoad();
 
     if (s_failures != 0) return 1;
     puts("car model requests load the selected grade into the inactive slot");
