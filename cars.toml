@@ -817,8 +817,8 @@ negcon_steering_assist_scale = 301
 speed_drag_divisor = 3300
 base_steering_grip = 370
 torque_scale = [74, 87, 100, 100, 100, 100]
-# Reconstructed by rage-port from the peak-torque RPM and gear ratios; values are internal speed thresholds.
-shift_points = [450, 600, 592, 790, 774, 1033, 993, 1324, 1189, 1586, 1590, 2120]
+# Shift points contributed by @SeanArchibald; values are internal speed thresholds.
+shift_points = [0, 475, 369, 730, 627, 1030, 911, 1340, 1245, 1635, 1514, 2120]
 
 [[cars]]
 id = "car_08_g1"
@@ -849,8 +849,8 @@ negcon_steering_assist_scale = 301
 speed_drag_divisor = 3520
 base_steering_grip = 380
 torque_scale = [74, 87, 100, 100, 100, 100]
-# Reconstructed by rage-port from the peak-torque RPM and gear ratios; values are internal speed thresholds.
-shift_points = [472, 630, 619, 826, 833, 1111, 1038, 1384, 1278, 1705, 1724, 2299]
+# Shift points contributed by @SeanArchibald; values are internal speed thresholds.
+shift_points = [0, 518, 440, 767, 673, 1088, 992, 1391, 1258, 1785, 1669, 2299]
 
 [[cars]]
 id = "car_09_g0"
@@ -881,8 +881,8 @@ negcon_steering_assist_scale = 300
 speed_drag_divisor = 3000
 base_steering_grip = 380
 torque_scale = [74, 87, 100, 100, 100, 100]
-# Reconstructed by rage-port from the peak-torque RPM and gear ratios; values are internal speed thresholds.
-shift_points = [476, 635, 628, 838, 810, 1080, 1065, 1420, 1281, 1708, 1649, 2199]
+# Shift points contributed by @SeanArchibald; values are internal speed thresholds.
+shift_points = [0, 525, 446, 803, 704, 1050, 957, 1450, 1312, 1770, 1655, 2199]
 
 [[cars]]
 id = "car_10_g0"
@@ -975,5 +975,5 @@ negcon_steering_assist_scale = 210
 speed_drag_divisor = 4530
 base_steering_grip = 400
 torque_scale = [74, 87, 100, 100, 100, 100]
-# Reconstructed by rage-port from the peak-torque RPM and gear ratios; values are internal speed thresholds.
-shift_points = [520, 694, 682, 910, 918, 1224, 1143, 1525, 1408, 1878, 1899, 2532]
+# Shift points contributed by @SeanArchibald; values are internal speed thresholds.
+shift_points = [0, 511, 434, 840, 737, 1168, 1065, 1510, 1366, 1920, 1795, 2532]
