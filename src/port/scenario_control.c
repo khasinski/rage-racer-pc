@@ -24,30 +24,26 @@
 
 extern int g_SceneId;
 
+/* Immutable scenario input. It is deliberately separate from the mutable
+ * game state so a scenario can request one race without owning menu, asset,
+ * or renderer state. */
+typedef struct RageRaceLaunchSelection {
+    int mode, series, classIndex, course, car, transmission, variant;
+} RageRaceLaunchSelection;
+
 typedef struct RageScenarioState {
     int initialized, enabled;
-    int mode, series, classIndex, course, car, transmission, variant;
+    RageRaceLaunchSelection launch;
+    int launchApplied, titleSelectionApplied;
     int afterFinish, raceFinished, resultSeen, exitRequested;
     int grid[RACE_CAR_SLOT_COUNT], customGrid, gridApplied;
     int playerTrackPoint, rivalTrackPoints[RACE_CAR_SLOT_COUNT];
     int rivalTrackPointCount;
     int customStart, startApplied, freezeStarts;
     int exactX, exactZ, exactHeading, hasExact;
-    int directBoot, directStep, skipSequences;
+    int skipSequences;
     int lastScene, lastFrontend, lastMenuScreen, stableFrames, retryFrames;
 } RageScenarioState;
-
-/* Steps of the direct-boot loader, in the order the frontend would trigger
- * their asset requests. */
-enum {
-    RAGE_DIRECT_PENDING,
-    RAGE_DIRECT_BGM_ASSETS,
-    RAGE_DIRECT_CAR_ASSETS,
-    RAGE_DIRECT_ROUND_REQUEST,
-    RAGE_DIRECT_ROUND_WAIT,
-    RAGE_DIRECT_RACE_ASSETS,
-    RAGE_DIRECT_DONE
-};
 
 enum {
     RAGE_SCENARIO_AFTER_MENU,
@@ -56,22 +52,6 @@ enum {
 };
 
 static RageScenarioState s_scenario;
-
-static void ScenarioHideDirectBootDisplay(void) {
-    SetDispMask(0);
-}
-
-static void ScenarioShowClearedRaceDisplay(void) {
-    RECT framebuffers = {0, 0, 320, 480};
-
-    /* Direct boot keeps the title handler alive while race assets reuse VRAM.
-     * Neither half of the old double buffer is safe to expose after that.
-     * Clear both while output is masked, then let EnterRaceScene replace the
-     * black buffer with its first complete frame. */
-    ClearImage(&framebuffers, 0, 0, 0);
-    DrawSync(0);
-    SetDispMask(1);
-}
 
 static int ScenarioParseTrackPoint(const char *text, int *result) {
     return RuntimeParseInt(text, 0, 0, INT_MAX, result);
@@ -275,32 +255,32 @@ static void ScenarioInitialize(void) {
     series = RuntimeConfigGet("race.series");
     if (mode != NULL &&
         (!strcmp(mode, "grand-prix") || !strcmp(mode, "time-attack")))
-        s_scenario.mode = strcmp(mode, "time-attack") != 0;
+        s_scenario.launch.mode = strcmp(mode, "time-attack") != 0;
     else
-        s_scenario.mode = ScenarioInt("race.mode", 1, 0, 1);
+        s_scenario.launch.mode = ScenarioInt("race.mode", 1, 0, 1);
     if (series != NULL &&
         (!strcmp(series, "grand-prix") || !strcmp(series, "extra-gp")))
-        s_scenario.series = strcmp(series, "extra-gp") == 0;
+        s_scenario.launch.series = strcmp(series, "extra-gp") == 0;
     else
-        s_scenario.series = ScenarioInt("race.series", 0, 0, 1);
-    s_scenario.classIndex = ScenarioInt("race.class", 0, 0, 5);
-    s_scenario.course = ScenarioInt("race.course", 0, 0, 3);
-    s_scenario.car = ScenarioInt("race.car", 3, 0, 12);
+        s_scenario.launch.series = ScenarioInt("race.series", 0, 0, 1);
+    s_scenario.launch.classIndex = ScenarioInt("race.class", 0, 0, 5);
+    s_scenario.launch.course = ScenarioInt("race.course", 0, 0, 3);
+    s_scenario.launch.car = ScenarioInt("race.car", 3, 0, 12);
     /* Select an asset variant within this car's catalog range, rather than
      * allowing an upgrade index to spill into the next car's assets. */
     {
-        int first = g_CarModelBaseIndex[s_scenario.car];
-        int end = s_scenario.car + 1 < GAME_CAR_COUNT ?
-            g_CarModelBaseIndex[s_scenario.car + 1] : CAR_MODEL_VARIANT_COUNT;
-        s_scenario.variant = ScenarioInt("race.variant", -1, 0, end - first - 1);
+        int first = g_CarModelBaseIndex[s_scenario.launch.car];
+        int end = s_scenario.launch.car + 1 < GAME_CAR_COUNT ?
+            g_CarModelBaseIndex[s_scenario.launch.car + 1] : CAR_MODEL_VARIANT_COUNT;
+        s_scenario.launch.variant = ScenarioInt("race.variant", -1, 0, end - first - 1);
     }
-    s_scenario.transmission = -1;
+    s_scenario.launch.transmission = -1;
     transmission = RuntimeConfigGet("race.transmission");
     if (transmission != NULL) {
         if (!strcmp(transmission, "automatic") || !strcmp(transmission, "auto"))
-            s_scenario.transmission = 0;
+            s_scenario.launch.transmission = 0;
         else if (!strcmp(transmission, "manual"))
-            s_scenario.transmission = 1;
+            s_scenario.launch.transmission = 1;
         else if (strcmp(transmission, "default"))
             fprintf(stderr,
                     "rage-port: invalid race.transmission=%s (expected default, automatic, or manual)\n",
@@ -316,9 +296,9 @@ static void ScenarioInitialize(void) {
         fprintf(stderr,
                 "rage-port: invalid race.after_finish=%s (expected menu, repeat, or exit); using menu\n",
                 afterFinish);
-    if (!s_scenario.mode && s_scenario.series) {
+    if (!s_scenario.launch.mode && s_scenario.launch.series) {
         fprintf(stderr, "rage-port: Extra GP is unavailable in time attack; using Grand Prix\n");
-        s_scenario.series = 0;
+        s_scenario.launch.series = 0;
     }
     ScenarioParseGrid(RuntimeConfigGet("race.grid"));
     ScenarioParseTrackStarts();
@@ -358,23 +338,19 @@ static void ScenarioInitialize(void) {
     s_scenario.skipSequences = RuntimeConfigGet("boot.skip_sequences") == NULL
                                    ? 1
                                    : RuntimeConfigEnabled("boot.skip_sequences");
-    s_scenario.directBoot = RuntimeConfigGet("boot.direct") == NULL
-                                ? 1
-                                : RuntimeConfigEnabled("boot.direct");
-    if (s_scenario.directBoot && !s_scenario.mode) {
+    if (RuntimeConfigEnabled("boot.direct")) {
         fprintf(stderr,
-                "rage-port: direct boot covers Grand Prix only; time attack uses the menus\n");
-        s_scenario.directBoot = 0;
+                "rage-port: boot.direct is ignored; scenarios use the normal race launch path\n");
     }
     fprintf(stderr, "rage-port: scenario mode=%s series=%s class=%d course=%d car=%d grid=%s after_finish=%s\n",
-            s_scenario.mode ? "grand-prix" : "time-attack",
-            s_scenario.series ? "extra-gp" : "grand-prix",
-            s_scenario.classIndex, s_scenario.course, s_scenario.car,
+            s_scenario.launch.mode ? "grand-prix" : "time-attack",
+            s_scenario.launch.series ? "extra-gp" : "grand-prix",
+            s_scenario.launch.classIndex, s_scenario.launch.course,
+            s_scenario.launch.car,
             s_scenario.customGrid ? "custom" : "default",
             s_scenario.afterFinish == RAGE_SCENARIO_AFTER_REPEAT ? "repeat" :
             s_scenario.afterFinish == RAGE_SCENARIO_AFTER_EXIT ? "exit" : "menu");
-    fprintf(stderr, "rage-port: scenario boot=%s skip=%s\n",
-            s_scenario.directBoot ? "direct" : "menus",
+    fprintf(stderr, "rage-port: scenario boot=menus skip=%s\n",
             s_scenario.skipSequences ? "on" : "off");
 }
 
@@ -426,187 +402,33 @@ static void ScenarioTrace(void) {
     }
 }
 
-/* Every title-screen series confirm repoints the same three tables
- * (title_screen.c cases 0 and 1), and everything downstream reads the race
- * through them. Direct boot never shows that screen, so it repoints them
- * itself. Time attack is not covered: its confirm leaves g_CourseProgress
- * pointing wherever a previous Grand Prix selection left it, which is nothing
- * at all on a cold boot. */
-static void ScenarioSelectSeries(void) {
-    if (s_scenario.series) {
-        g_CarTable = g_ExtraGrandPrixCars;
-        g_RaceProgress = &g_ExtraGrandPrixSave;
-        g_CourseProgress = &g_ExtraGrandPrixCourseProgress;
-    } else {
-        g_CarTable = g_GrandPrixCars;
-        g_RaceProgress = &g_GrandPrixSave;
-        g_CourseProgress = &g_GrandPrixCourseProgress;
-    }
-    /* Direct boot requests car-select assets before the normal menu loop has
-     * a chance to publish the selected player index.  Set it here, before
-     * RequestCarSelectAssets, or slot zero is loaded while the race later
-     * submits the requested car's model-bank asset.  That leaves no matching
-     * native vehicle mesh and makes cars disappear in smoke races. */
-    g_PlayerCarIndex = (s16)s_scenario.car;
-    if (s_scenario.transmission >= 0)
-        g_CarTable[s_scenario.car].transmission =
-            (u8)s_scenario.transmission;
-    if (s_scenario.variant >= 0)
-        g_CarTable[s_scenario.car].modelVariant = (u8)s_scenario.variant;
-}
+/* This is the sole adapter from a scenario request into the recovered game
+ * state. It runs once when the normal menu is ready to consume the selection;
+ * the menu and round screen then own every later asset and VRAM transition. */
+static void ScenarioApplyLaunchSelection(void) {
+    const RageRaceLaunchSelection *selection = &s_scenario.launch;
 
-/* DrawMenuCarView normally copies the selected setup into the player object.
- * Direct boot deliberately skips that screen, so do the same non-UI work
- * immediately before the race initializes the car. */
-static void ScenarioApplyCarSetup(void) {
-    CarEntry *entry = &g_CarTable[s_scenario.car];
-    if (entry->transmission == 0 && g_CarModelAsset != NULL &&
-        g_CarModelAsset->transmissionAvailable == 0) {
-        fprintf(stderr,
-                "rage-port: car %d does not offer automatic transmission; "
-                "using manual\n",
-                s_scenario.car);
-        entry->transmission = 1;
-    }
-    g_PlayerCar.showroomTireCompound = entry->tireCompound;
-    g_PlayerCar.drive.manual = entry->transmission;
+    if (s_scenario.launchApplied) return;
+    g_GrandPrixMode = (s16)selection->mode;
+    g_SeriesSelection = (s16)selection->series;
+    g_GrandPrixSeries = (s16)(selection->mode
+        ? GrandPrixAssetSeries(selection->series, selection->classIndex)
+        : selection->series);
+    g_GrandPrixClass = selection->classIndex;
+    g_PlayerCarIndex = (s16)selection->car;
+    /* Menu course indices retain the series in bit 2 until car select starts
+     * the round; car_select.c then converts it to the physical course index. */
+    g_CourseIndex = selection->course + selection->series * 4;
+    if (g_CarTable != NULL && selection->transmission >= 0)
+        g_CarTable[selection->car].transmission =
+            (u8)selection->transmission;
+    if (g_CarTable != NULL && selection->variant >= 0)
+        g_CarTable[selection->car].modelVariant = (u8)selection->variant;
+    s_scenario.launchApplied = 1;
     fprintf(stderr,
-            "rage-port: direct boot car setup tires=%d transmission=%s\n",
-            entry->tireCompound,
-            entry->transmission != 0 ? "manual" : "automatic");
-}
-
-
-/* Load a race without the frontend. Of the retail route to scene 11, the
- * screens are what costs the time and the asset requests behind them are what
- * a race actually needs, so issue those in the order the menus do and skip
- * the rest. Car-select assets carry the player's car model, the round-screen
- * request leaves behind the block pointers LoadRaceAssets reads out of, and
- * the race request loads the course, the track data and the car audio.
- *
- * The two request styles differ and cannot be polled the same way.
- * RequestCarSelectAssets and RequestRaceAssets return 1 while busy, 0 after
- * success and -1 after failure, on the call after the load lands.
- * RequestRoundAssets has no busy guard: it
- * resets the loader whenever it is called mid-load, so it is issued once and
- * waited on through g_AssetLoadState. */
-static int ScenarioAssetRequestSucceeded(s32 result, const char *stage) {
-    /* The loader clears its state when it fails, so remember the last state
-     * it was seen in: that names the step that rejected the asset. */
-    static s32 lastLoadState;
-
-    if (g_AssetLoadState != 0) {
-        lastLoadState = g_AssetLoadState;
-    }
-    if (result < 0) {
-        fprintf(stderr,
-                "rage-port: direct boot %s asset load failed in state %d\n",
-                stage, lastLoadState);
-        s_scenario.enabled = 0;
-        return 0;
-    }
-    return result == 0;
-}
-
-static void ScenarioDirectBoot(void) {
-    static const char *const stepNames[] = {
-        "setup", "bgm-assets", "car-assets", "round-request", "round-wait",
-        "race-assets", "done"
-    };
-    static int lastStep = -1;
-
-    if (s_scenario.directStep != lastStep) {
-        lastStep = s_scenario.directStep;
-        fprintf(stderr, "rage-port: direct boot %s t=%.1fs\n",
-                stepNames[s_scenario.directStep], ScenarioElapsed());
-    }
-    switch (s_scenario.directStep) {
-    case RAGE_DIRECT_PENDING:
-        ScenarioHideDirectBootDisplay();
-        ScenarioSelectSeries();
-        ShuffleBgmOrder();
-        s_scenario.directStep = RAGE_DIRECT_BGM_ASSETS;
-        break;
-    case RAGE_DIRECT_BGM_ASSETS:
-        /* Asset 7 carries the sequence bank, and leaves behind the three block
-         * pointers LoadCarSelectAssets opens its own first state with. */
-        if (ScenarioAssetRequestSucceeded(RequestSelectBgmAssets(),
-                                          "BGM")) {
-            s_scenario.directStep = RAGE_DIRECT_CAR_ASSETS;
-        }
-        break;
-    case RAGE_DIRECT_CAR_ASSETS:
-        if (ScenarioAssetRequestSucceeded(RequestCarSelectAssets(),
-                                          "car-select")) {
-            /* EnterCarSelectScreen's one piece of non-UI work. The load above
-             * leaves the player's model in slot 0 but its texture still out of
-             * VRAM; RelocateCarModel below moves the model without uploading
-             * that image, and the race draws the player's own car from bank 0
-             * only in the outside views. Skipping this loses the car there. */
-            ActivateShowroomCarModel((s32)g_CarModelSlot);
-            /* Preserve EnterCourseSelectScreen's texture work when bypassing
-             * its UI: both classic and native cars need these live markings. */
-            {
-                int sample = RuntimeConfigInt("race.logo_sample", -1, -1,
-                    TEAM_LOGO_SAMPLE_CHOICE_COUNT - 1);
-                if (sample >= 0) ComposeSampleTeamLogo(sample, 0);
-            }
-            LoadImage(&g_TeamLogoRect.rect, &g_TeamLogoCanvas);
-            UploadTeamLogoClut();
-            UploadTeamNameTexture(g_TeamNameChars, g_TeamNameLength);
-            s_scenario.directStep = RAGE_DIRECT_ROUND_REQUEST;
-        }
-        break;
-    case RAGE_DIRECT_ROUND_REQUEST:
-        RequestRoundAssets();
-        s_scenario.directStep = RAGE_DIRECT_ROUND_WAIT;
-        break;
-    case RAGE_DIRECT_ROUND_WAIT:
-        if (AssetLoadHasFailed()) {
-            fprintf(stderr,
-                    "rage-port: direct boot round asset load failed\n");
-            s_scenario.enabled = 0;
-        } else if (g_AssetLoadState == 0) {
-            /* EnterRoundScreen's own work, minus the screen it draws. */
-            CloseLoadedAudioSlots();
-            UploadImageAsset(GetImageAssetHeaderWords(g_ImageBlockBuffer),
-                             g_ImageBlockSize);
-            if (!RelocateCarModel()) {
-                fprintf(stderr,
-                        "rage-port: direct boot car relocation failed\n");
-                s_scenario.enabled = 0;
-                break;
-            }
-            g_GrandPrixRound = DetermineGrandPrixRound(
-                g_CourseProgress->bestPlace, g_GrandPrixClass,
-                SeriesCourseIndex());
-            s_scenario.directStep = RAGE_DIRECT_RACE_ASSETS;
-        }
-        break;
-    case RAGE_DIRECT_RACE_ASSETS: {
-        if (ScenarioAssetRequestSucceeded(RequestRaceAssets(), "race")) {
-            RoundBgmChoice bgm = ChooseRoundBgm(
-                g_BgmSelection, g_BgmShuffleOrder, g_BgmTrackCount,
-                g_BgmShuffleIndex);
-
-            g_BgmTrack = bgm.track;
-            g_BgmShuffleIndex = bgm.shuffleIndex;
-            ScenarioApplyCarSetup();
-            g_MirrorMode = 0;
-            g_FrameSyncThreshold = 0x180;
-            g_SceneTimer = 0;
-            ScenarioShowClearedRaceDisplay();
-            g_SceneId = 11;
-            /* The direct path returns before the ordinary scene-11 hook.
-             * Install the requested grid before its handler initializes cars. */
-            ScenarioApplyGrid();
-            s_scenario.directStep = RAGE_DIRECT_DONE;
-            fprintf(stderr, "rage-port: scenario direct boot entered the race t=%.1fs\n",
-                    ScenarioElapsed());
-        }
-        break;
-    }
-    }
+            "rage-port: scenario launch selection applied mode=%d series=%d class=%d course=%d car=%d\n",
+            selection->mode, selection->series, selection->classIndex,
+            selection->course, selection->car);
 }
 
 void PortScenarioBeforeSceneHandler(void) {
@@ -620,9 +442,6 @@ void PortScenarioBeforeSceneHandler(void) {
     if (s_scenario.lastScene == 12 && g_SceneId == 17) {
         s_scenario.raceFinished = 1;
         s_scenario.resultSeen = 1;
-        /* Only the initial launch skips menus. Subsequent races must use
-         * the normal reward -> selection -> asset loading path. */
-        s_scenario.directBoot = 0;
         fprintf(stderr, "rage-port: scenario race finished after_finish=%s\n",
                 s_scenario.afterFinish == RAGE_SCENARIO_AFTER_REPEAT ? "repeat" :
                 s_scenario.afterFinish == RAGE_SCENARIO_AFTER_EXIT ? "exit" : "menu");
@@ -644,43 +463,12 @@ void PortScenarioBeforeSceneHandler(void) {
         return;
     }
 
-    /* The scenario steers the frontend by holding its race selection in the
-     * globals the menus read, but only the scenes that actually choose a race
-     * may be steered. Two others read the same globals for their own purpose
-     * and load assets from them: the Grand Prix prologue runs at its own class
-     * and course, and the result flow reports the race just finished. Holding
-     * the scenario's class across those made them fetch another class's
-     * assets. The title screen's hand-off phase is excluded for the same
-     * reason - it is where UpdateMainMenuExit picks the prologue's class. */
-    if (g_SceneId >= 2 && g_SceneId <= 12 &&
-        !(g_SceneId == 4 && g_FrontendState == FRONTEND_STATE_MENU_EXIT)) {
-        g_GrandPrixMode = (s16)s_scenario.mode;
-        g_SeriesSelection = (s16)s_scenario.series;
-        g_GrandPrixSeries = (s16)(s_scenario.mode
-            ? GrandPrixAssetSeries(s_scenario.series, s_scenario.classIndex)
-            : s_scenario.series);
-        g_GrandPrixClass = s_scenario.classIndex;
-        g_PlayerCarIndex = (s16)s_scenario.car;
-        if (g_CarTable != NULL && s_scenario.transmission >= 0)
-            g_CarTable[s_scenario.car].transmission =
-                (u8)s_scenario.transmission;
-        if (g_CarTable != NULL && s_scenario.variant >= 0)
-            g_CarTable[s_scenario.car].modelVariant = (u8)s_scenario.variant;
-        if (g_SceneId < 11) {
-            /* The menus index course progress with the series in bit 2, and
-             * the retail car-select confirm masks it back to the physical
-             * course before the race loads (car_select.c). Asset slots run
-             * class * 8 + course * 2 with four courses to a class, so an
-             * unmasked index reads the next class's data: that is where the
-             * reverse grid went, leaving every rival at the origin with no
-             * track segment, which deactivates them. Direct boot shows none
-             * of those menus, so it uses the physical course throughout. */
-            int menuIndexed = !s_scenario.directBoot && g_SceneId <= 8;
-            g_CourseIndex =
-                s_scenario.course + (menuIndexed ? s_scenario.series * 4 : 0);
-        }
+    if (g_SceneId == 4 && !s_scenario.titleSelectionApplied) {
+        g_TitleMenuSelection = s_scenario.launch.mode
+            ? s_scenario.launch.series : 2;
+        s_scenario.titleSelectionApplied = 1;
     }
-    if (g_SceneId == 4) g_TitleMenuSelection = s_scenario.mode ? s_scenario.series : 2;
+    if (g_SceneId == 8) ScenarioApplyLaunchSelection();
 
     changed = g_SceneId != s_scenario.lastScene ||
               (g_SceneId == 4 && g_FrontendState != s_scenario.lastFrontend) ||
@@ -689,7 +477,9 @@ void PortScenarioBeforeSceneHandler(void) {
         if (s_scenario.lastScene == 12 && g_SceneId != 12) {
             s_scenario.startApplied = 0;
             s_scenario.gridApplied = 0;
+            s_scenario.launchApplied = 0;
         }
+        if (g_SceneId != 4) s_scenario.titleSelectionApplied = 0;
         s_scenario.lastScene = g_SceneId;
         s_scenario.lastFrontend = g_FrontendState;
         s_scenario.lastMenuScreen = g_MenuScreen;
@@ -733,24 +523,6 @@ void PortScenarioBeforeSceneHandler(void) {
             g_PadType = 0x41;
             g_PadHeld |= PAD_CONFIRM;
         }
-    }
-
-    /* Direct boot takes over the moment the title screen appears, which is the
-     * first point where the boot assets are in and the game is otherwise idle.
-     * The scene stays on 4 so its handler keeps drawing a still title, but its
-     * timers are held short of the two attract triggers: UpdateFrontend starts
-     * loading an attract demo at g_SceneTimer 0x1cc and cuts to one at
-     * g_FrontendIdleTimer 900, and both would fight the loader for the asset
-     * pipeline. They are clamped rather than pinned because the title screen
-     * turns the display on at its own g_SceneTimer 0xf, and a timer held at
-     * zero never gets there - which leaves the race that follows drawing into
-     * a masked display. */
-    if (s_scenario.directBoot && g_SceneId == 4 &&
-        s_scenario.directStep != RAGE_DIRECT_DONE) {
-        if (g_SceneTimer > 0x1C0) g_SceneTimer = 0x1C0;
-        if (g_FrontendIdleTimer > 800) g_FrontendIdleTimer = 800;
-        ScenarioDirectBoot();
-        return;
     }
 
     if (g_SceneId == 4 && g_FrontendState == FRONTEND_STATE_TITLE &&

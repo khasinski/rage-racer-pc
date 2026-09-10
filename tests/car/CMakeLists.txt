@@ -1012,12 +1012,12 @@ set_tests_properties(player_car_collision PROPERTIES LABELS functional)
 endif()
 
 if(TARGET rage-racer-smoke)
-    add_test(NAME direct_boot_car_setup COMMAND ${CMAKE_COMMAND}
+add_test(NAME scenario_car_setup COMMAND ${CMAKE_COMMAND}
         -DGAME=$<TARGET_FILE:rage-racer-smoke>
         -DSOURCE=${CMAKE_SOURCE_DIR}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_direct_boot_car_setup.cmake)
-set_tests_properties(direct_boot_car_setup PROPERTIES LABELS e2e)
-    set_tests_properties(direct_boot_car_setup PROPERTIES TIMEOUT 105)
+set_tests_properties(scenario_car_setup PROPERTIES LABELS e2e)
+    set_tests_properties(scenario_car_setup PROPERTIES TIMEOUT 105)
     add_test(NAME retire_camera COMMAND ${CMAKE_COMMAND}
         -DGAME=$<TARGET_FILE:rage-racer-smoke>
         -DSOURCE=${CMAKE_SOURCE_DIR}
