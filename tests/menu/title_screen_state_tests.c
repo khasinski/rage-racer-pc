@@ -4,6 +4,7 @@
 #include "game/menu.h"
 #include "game/prim.h"
 #include "game/render_internal.h"
+#include "game/scene_runtime.h"
 #include "game/screens.h"
 
 #include <limits.h>
@@ -49,9 +50,10 @@ void SetDispMask(s32 enabled) {
     s_displayMaskCalls++;
 }
 void ResetTrackTextureSwap(void) { s_textureResetCalls++; }
-void UploadLoadBufferImage(void) {
+s32 UploadLoadBufferImage(void) {
     s_textureResetBeforeUpload = s_textureResetCalls;
     s_imageUploadCalls++;
+    return 1;
 }
 void RefreshClassWinState(void) { s_classRefreshCalls++; }
 void SetDefaultReverbDepth(void) { s_reverbCalls++; }
@@ -60,6 +62,10 @@ void StartCdVolumeFade(s32 frames) {
     s_audioFadeCalls++;
 }
 void PlaySoundCue(s32 cue) { s_soundCue = cue; }
+void SceneRuntimeRequestScene(s32 scene) {
+    g_SceneId = scene;
+    g_SceneTimer = 0;
+}
 s32 rsin(s32 angle) {
     s_lastSinAngle = angle;
     return 0;
