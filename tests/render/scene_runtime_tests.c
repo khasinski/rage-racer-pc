@@ -59,7 +59,9 @@ int main(void) {
     g_CameraCarIndex = 3;
     SceneRuntimeAfterDispatch(g_SceneId);
     runtime = SceneRuntimeCurrent();
-    CHECK(runtime->scene == GAME_SCENE_BGM_SELECT && runtime->generation == 1 &&
+    CHECK(runtime->scene == GAME_SCENE_BGM_SELECT && runtime->previousScene == -1 &&
+          runtime->nextScene == -1 && !SceneRuntimeHasPendingTransition() &&
+          runtime->generation == 1 &&
           runtime->assetGeneration == 7 && runtime->transition.timer == 11 &&
           runtime->transition.fadeLevel == 12 && runtime->transition.fadeStep == -4 &&
           runtime->transition.frameSyncThreshold == 128 &&
@@ -74,10 +76,17 @@ int main(void) {
     CHECK(SceneRuntimeActiveAssetResult() == &s_assets);
 
     g_SceneId = GAME_SCENE_MENU;
+    SceneRuntimeAfterDispatch(GAME_SCENE_BGM_SELECT);
+    runtime = SceneRuntimeCurrent();
+    CHECK(runtime->nextScene == GAME_SCENE_MENU &&
+          SceneRuntimeHasPendingTransition());
     s_assetGeneration = 8;
     SceneRuntimeBeforeDispatch(g_SceneId);
     runtime = SceneRuntimeCurrent();
-    CHECK(runtime->scene == GAME_SCENE_MENU && runtime->generation == 2 &&
+    CHECK(runtime->scene == GAME_SCENE_MENU &&
+          runtime->previousScene == GAME_SCENE_BGM_SELECT &&
+          runtime->nextScene == -1 && !SceneRuntimeHasPendingTransition() &&
+          runtime->generation == 2 &&
           runtime->assetGeneration == 8 && runtime->transition.timer == 0 &&
           runtime->transition.fadeLevel == 0 &&
           SceneRuntimeAssetResult(ASSET_REQUEST_SELECT_BGM) == NULL);
