@@ -106,6 +106,7 @@ typedef struct AssetLoadTransaction {
  * `request` and `generation` must both match the request the caller started. */
 const AssetLoadTransaction *AssetLoadTransactionResult(
     AssetRequestType request, u32 generation);
+const AssetLoadTransaction *AssetLoadTransactionCurrentResult(u32 generation);
 u32 AssetLoadTransactionGeneration(void);
 
 /* Asset-load state machine phase (0 finished; positive values drive loads).

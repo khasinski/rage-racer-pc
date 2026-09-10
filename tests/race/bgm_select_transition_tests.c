@@ -44,6 +44,9 @@ const AssetLoadTransaction *SceneRuntimeAssetResult(AssetRequestType request) {
                ? &s_assets
                : NULL;
 }
+const AssetLoadTransaction *SceneRuntimeActiveAssetResult(void) {
+    return s_assets.complete ? &s_assets : NULL;
+}
 s32 UploadImageAsset(const GameImageAssetHeaderWord *header, size_t size) { (void)header; (void)size; s_uploads++; return 1; }
 s32 AssetSpanSize(const void *base, const void *end, size_t *size) { (void)base; (void)end; *size = 64; return 1; }
 s32 InstallTrackTextureAssetPack(u8 *base, size_t size) { (void)base; assert(size == 64); s_installs++; return 1; }
@@ -98,6 +101,17 @@ static void TestRejectsAnAssetResultFromAnotherScene(void) {
     assert(g_AssetLoadFailed == 1 && s_trackRequests == 0);
 }
 
+static void TestAcceptsCourseTextureTransitionFromOptions(void) {
+    Reset();
+    EnterBgmSelectScreen();
+    s_assetReady = 1;
+    s_assets.request = ASSET_REQUEST_COURSE_TEXTURES;
+    s_assets.payload.race.texturePack = (AssetLoadSpan){s_assetBuffer, 64};
+    UpdateBgmSelectLoad();
+    assert(s_failed == 0 && s_trackRequests == 1 &&
+           g_BgmSelectStep == BGM_SELECT_STEP_FADE_IN);
+}
+
 static void TestTrackWorldStartsOnlyAfterTrackAssets(void) {
     Reset();
     g_BgmSelectStep = BGM_SELECT_STEP_FADE_IN;
@@ -123,6 +137,7 @@ static void TestFadeInDoesNotBuildAWorldWhileLoading(void) {
 int main(void) {
     TestEntryKeepsOptionTextureBoundaryWithoutUploadingSelectBin();
     TestRejectsAnAssetResultFromAnotherScene();
+    TestAcceptsCourseTextureTransitionFromOptions();
     TestTrackWorldStartsOnlyAfterTrackAssets();
     TestFadeInDoesNotBuildAWorldWhileLoading();
     return 0;

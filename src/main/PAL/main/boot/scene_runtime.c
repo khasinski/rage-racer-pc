@@ -55,3 +55,7 @@ const SceneRuntime *SceneRuntimeCurrent(void) {
 const AssetLoadTransaction *SceneRuntimeAssetResult(AssetRequestType request) {
     return AssetLoadTransactionResult(request, s_runtime.assetGeneration);
 }
+
+const AssetLoadTransaction *SceneRuntimeActiveAssetResult(void) {
+    return AssetLoadTransactionCurrentResult(s_runtime.assetGeneration);
+}

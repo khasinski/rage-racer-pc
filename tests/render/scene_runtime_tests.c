@@ -22,6 +22,11 @@ const AssetLoadTransaction *AssetLoadTransactionResult(
                ? &s_assets
                : NULL;
 }
+const AssetLoadTransaction *AssetLoadTransactionCurrentResult(u32 generation) {
+    return generation == s_assets.generation && s_assets.complete
+               ? &s_assets
+               : NULL;
+}
 
 #define CHECK(condition)                                                       \
     do {                                                                       \
@@ -66,6 +71,7 @@ int main(void) {
         .complete = 1,
     };
     CHECK(SceneRuntimeAssetResult(ASSET_REQUEST_SELECT_BGM) == &s_assets);
+    CHECK(SceneRuntimeActiveAssetResult() == &s_assets);
 
     g_SceneId = GAME_SCENE_MENU;
     s_assetGeneration = 8;

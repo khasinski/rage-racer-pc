@@ -78,18 +78,26 @@ static void UpdateBgmSelectTransition(void) {
 
 void UpdateBgmSelectLoad(void) {
     const AssetLoadTransaction *assets;
+    const AssetLoadSpan *texturePack = NULL;
 
     if (AssetLoadCompletedSuccessfully()) {
-        assets = SceneRuntimeAssetResult(ASSET_REQUEST_SELECT_BGM);
+        assets = SceneRuntimeActiveAssetResult();
         /* SELECT.BIN supplies audio only.  g_ImageBlockBuffer still marks the
          * texture-pack boundary inherited from OPTION.BIN, but it is not an
-         * image in SELECT.BIN and must never be uploaded as one. */
-        if (assets == NULL ||
-            assets->payload.selectBgm.texturePack.data == NULL ||
-            assets->payload.selectBgm.texturePack.size == 0 ||
+         * image in SELECT.BIN and must never be uploaded as one.  Entering
+         * through Options instead supplies the named COURSE_TEXTURES result.
+         */
+        if (assets != NULL) {
+            if (assets->request == ASSET_REQUEST_SELECT_BGM) {
+                texturePack = &assets->payload.selectBgm.texturePack;
+            } else if (assets->request == ASSET_REQUEST_COURSE_TEXTURES) {
+                texturePack = &assets->payload.race.texturePack;
+            }
+        }
+        if (texturePack == NULL || texturePack->data == NULL ||
+            texturePack->size == 0 ||
             !InstallTrackTextureAssetPack(
-                assets->payload.selectBgm.texturePack.data,
-                assets->payload.selectBgm.texturePack.size)) {
+                texturePack->data, texturePack->size)) {
             FailAssetLoad();
         } else {
             RequestTrackDataAssets();

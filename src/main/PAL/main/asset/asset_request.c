@@ -68,6 +68,14 @@ const AssetLoadTransaction *AssetLoadTransactionResult(
     return &s_transaction;
 }
 
+const AssetLoadTransaction *AssetLoadTransactionCurrentResult(u32 generation) {
+    if (s_transaction.generation != generation || !s_transaction.complete ||
+        s_transaction.failed) {
+        return NULL;
+    }
+    return &s_transaction;
+}
+
 u32 AssetLoadTransactionGeneration(void) {
     return s_transaction.generation;
 }

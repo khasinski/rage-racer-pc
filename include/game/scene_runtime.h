@@ -30,5 +30,6 @@ const SceneRuntime *SceneRuntimeCurrent(void);
 /* A result belongs to a scene only when it was the active transaction at the
  * point that scene began. */
 const AssetLoadTransaction *SceneRuntimeAssetResult(AssetRequestType request);
+const AssetLoadTransaction *SceneRuntimeActiveAssetResult(void);
 
 #endif
