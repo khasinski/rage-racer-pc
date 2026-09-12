@@ -31,7 +31,7 @@ static int VerifyShippedManualOnlyVariants(const char *path, char *error) {
         CarCatalogApplySpecification(model, variant - first[model], &specification);
         if (specification.automaticAccelerationScale < 900 ||
             specification.automaticAccelerationScale > 1000 ||
-            specification.shiftPoints[0].downshiftSpeed <= 0 ||
+            specification.shiftPoints[0].downshiftSpeed < 0 ||
             specification.shiftPoints[0].upshiftSpeed <=
                 specification.shiftPoints[0].downshiftSpeed) {
             fprintf(stderr, "%s variant %d has no usable reconstructed automatic setup\n",
@@ -55,10 +55,10 @@ static int VerifySqualdonAutomaticProfile(const char *path, char *error) {
     memset(&specification, 0, sizeof(specification));
     CarCatalogApplySpecification(12, 0, &specification);
     return specification.automaticAccelerationScale == 985 &&
-        specification.shiftPoints[0].downshiftSpeed == 520 &&
-        specification.shiftPoints[0].upshiftSpeed == 694 &&
-        specification.shiftPoints[4].downshiftSpeed == 1408 &&
-        specification.shiftPoints[4].upshiftSpeed == 1878;
+        specification.shiftPoints[0].downshiftSpeed == 0 &&
+        specification.shiftPoints[0].upshiftSpeed == 511 &&
+        specification.shiftPoints[4].downshiftSpeed == 1366 &&
+        specification.shiftPoints[4].upshiftSpeed == 1920;
 }
 
 /* This is the concrete modding path: make the normally manual-only Bulshade

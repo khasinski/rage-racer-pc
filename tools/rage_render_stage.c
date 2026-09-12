@@ -359,6 +359,10 @@ int main(int argc, char **argv) {
         if (!ModernAssetsInitRoot(assetsPath) ||
             ModernAssetsGeneration() == generation ||
             ModernAssetsCachedMeshCount() != 0) goto release_renderer;
+        /* A new asset session starts with an empty CPU cache. Warm it just as
+         * the normal frame path does before asking the GPU backend to rebuild
+         * its prepared world. */
+        ModernAssetsPrepareWorld(&world);
         ModernNativeGpuPrepare(&world, (float)width / (float)height);
         if (!ModernNativeGpuHasDraws() || ModernAssetsCachedMeshCount() == 0) {
             fprintf(stderr, "rage-render-stage: asset session was not rebuilt\n");
