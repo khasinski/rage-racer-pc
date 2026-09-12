@@ -10,7 +10,6 @@
 
 struct PlayerCarRuntime;
 struct GameCarRuntime;
-struct GameRenderSourcePoint;
 struct CarEntry;
 
 enum {

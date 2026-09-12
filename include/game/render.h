@@ -249,32 +249,6 @@ typedef struct GameRenderObject {
 
 void DrawCar(GameRenderObject *object);
 
-typedef struct GameRenderSourcePoint {
-    u16 x;
-    u8 pad2[2];
-    u16 y;
-    u8 pad6[2];
-    u16 z;
-    u8 padA[0x16];
-    u16 bodyPitch;
-    u8 pad22[2];
-    u16 bodyYaw;
-    u8 pad26[2];
-    u16 bodyRoll;
-    u8 pad2A[6];
-    u32 trackPointIndex;
-    u8 pad34[0x10];
-    u16 steeringAngle;
-    u8 pad46[2];
-    u16 wheelRotation;
-    u8 pad4A[0x16];
-    u16 modelY;
-    u8 pad62[0x2A];
-    s16 tiltCounter;
-    u8 pad8E[0x20];
-    s16 modelIndex;
-} GameRenderSourcePoint;
-
 /*
  * Rotation-matrix builders. Each fills only the 3x3 part of `mtx` with a
  * rotation about one axis by a 12-bit angle (0x1000 = one turn), leaving the
