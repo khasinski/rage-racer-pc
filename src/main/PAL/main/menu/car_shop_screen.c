@@ -52,12 +52,12 @@ static void DrawCarShopChrome(s32 price, s32 chromeStep) {
 }
 
 /* Leaving the shop, either by choosing to or by backing out. */
-static void LeaveCarShop(s32 busyState) {
+static void LeaveCarShop(void) {
     if (g_PlayerCarIndex != g_CarListCursor) {
         MenuSpinBackToPlayerCar();
     }
     PlaySoundCue(3);
-    GameMenuBusy = busyState;
+    GameMenuBusy = CAR_SHOP_LEAVE;
     g_MenuOverlayPattern = 2;
     g_MenuUpperAltPanelStep = -1;
     g_MenuLowerAltPanelStep = -1;
@@ -120,12 +120,12 @@ static void UpdateCarShopInput(s32 purchaseAvailable) {
     }
     if (g_PadPressed & PAD_CONFIRM) {
         if (g_CarShopOption == 1) {
-            LeaveCarShop(CAR_SHOP_LEAVE);
+            LeaveCarShop();
         } else if (g_CarShopOption == 0) {
             OfferToBuyCar(purchaseAvailable);
         }
     } else if (g_PadPressed & PAD_CANCEL) {
-        LeaveCarShop(CAR_SHOP_LEAVE);
+        LeaveCarShop();
     }
 }
 
