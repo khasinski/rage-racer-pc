@@ -1,8 +1,8 @@
 #include "game/asset.h"
 #include "game/course_index.h"
-#include "game/showroom_internal.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
+#include "game/player_car_internal.h"
 #include "game/render_internal.h"
 #include "game/track.h"
 
@@ -33,7 +33,7 @@ static s32 AdvanceMenuViewOffset(void) {
     return g_MenuViewOffset / 1000;
 }
 
-static void DrawShowroomFloor(ShowroomPlayerCarState *showroom, Matrix *matrix) {
+static void DrawShowroomFloor(PlayerCarRuntime *car, Matrix *matrix) {
     GameOrderingTableEntry *originalOt = RENDER_OT_BASE;
     s32 modelIndex;
 
@@ -41,10 +41,10 @@ static void DrawShowroomFloor(ShowroomPlayerCarState *showroom, Matrix *matrix) 
         return;
     }
 
-    showroom->pose.position[2] = 0;
+    car->z = 0;
     SelectModelBank(SHOWROOM_MODEL_BANK);
     RENDER_OT_BASE = originalOt + SHOWROOM_OT_DEPTH_BIAS;
-    SetGteObjectMatrix(AsPositionWords(&showroom->pose.position[0]), matrix);
+    SetGteObjectMatrix(AsPositionWords(&car->x), matrix);
     g_RenderState.geometry.envMode4 = 0;
     modelIndex = MenuModelIndexOrFallback(SHOWROOM_FLOOR_MODEL,
                                           g_ModelBankCount);
@@ -55,8 +55,8 @@ static void DrawShowroomFloor(ShowroomPlayerCarState *showroom, Matrix *matrix) 
 }
 
 void DrawMenuCarView(void) {
-    ShowroomPlayerCarState *showroom = ShowroomPlayerCar();
-    GameCarRuntime *renderObject = ShowroomRenderObject();
+    PlayerCarRuntime *car = &g_PlayerCar;
+    GameCarRuntime *renderObject = AsRivalCar(car);
     Matrix mtxA;
     Matrix mtxB;
     Vec4 out;
@@ -103,9 +103,9 @@ void DrawMenuCarView(void) {
         g_CarModelAsset == NULL) {
         return;
     }
-    showroom->runtime.modelIndex =
+    car->modelIndex =
         GetCarAssetIndex(carIndex, g_CarTable[carIndex].modelVariant);
-    if (showroom->runtime.modelIndex < 0) {
+    if (car->modelIndex < 0) {
         return;
     }
     g_PlayerCar.showroomTireCompound = g_CarTable[carIndex].tireCompound;
@@ -117,13 +117,13 @@ void DrawMenuCarView(void) {
         ((u32)g_PlayerCar.wheelRotation + 68u) & 0xFFFu;
 
     g_MenuViewSpin = UpdatedMenuViewSpin(g_MenuViewSpin, g_PadHeld);
-    showroom->pose.rotation.y =
-        (s32)((u32)showroom->pose.rotation.y + (u32)g_MenuViewSpin);
-    BuildRotMatrixY(&mtxA, showroom->pose.rotation.y);
+    car->bodyRotation.y =
+        (s32)((u32)car->bodyRotation.y + (u32)g_MenuViewSpin);
+    BuildRotMatrixY(&mtxA, car->bodyRotation.y);
     vec.z = (s16)(-((s16)g_CarModelAsset->modelOffsetZ / 2));
     ApplyMatrixLV(&mtxA, AsWords(&vec), AsWords(&out));
-    BuildRotMatrixY(&mtxB, 0x800 - showroom->pose.rotation.y);
-    BuildRotMatrixX(&mtxA, showroom->pose.rotation.x);
+    BuildRotMatrixY(&mtxB, 0x800 - car->bodyRotation.y);
+    BuildRotMatrixX(&mtxA, car->bodyRotation.x);
     MulMatrix2(&mtxB, &mtxA);
     MulMatrix2(&g_RenderState.geometry.matrix, &mtxA);
 
@@ -132,24 +132,24 @@ void DrawMenuCarView(void) {
     } else {
         offset = horizontalAngle - 52;
     }
-    showroom->pose.position[0] = out.x - offset;
-    showroom->pose.position[1] = viewHeight + 30;
-    showroom->pose.position[2] = -out.z;
-    g_PlayerCar.modelRotation = showroom->pose.rotation;
-    g_PlayerCar.modelY = showroom->pose.position[1];
+    car->x = out.x - offset;
+    car->y = viewHeight + 30;
+    car->z = -out.z;
+    car->modelRotation = car->bodyRotation;
+    car->modelY = car->y;
     SelectModelBank(g_CarModelSlot);
     DrawPlayerCarModel(renderObject);
 
-    showroom->pose.position[0] =
+    car->x =
         (g_MenuAltLayout != 0 ? 23 : 52) - horizontalAngle;
-    showroom->pose.position[1] = viewHeight + 30;
-    DrawShowroomFloor(showroom, &mtxA);
+    car->y = viewHeight + 30;
+    DrawShowroomFloor(car, &mtxA);
 }
 
 /* The course diorama behind COURSE SELECT and RANKING, with the carousel easing. */
 void DrawMenuCourseView(void) {
-    ShowroomPlayerCarState *showroom = ShowroomPlayerCar();
-    GameCarRuntime *renderObject = ShowroomRenderObject();
+    PlayerCarRuntime *car = &g_PlayerCar;
+    GameCarRuntime *renderObject = AsRivalCar(car);
     Matrix mtxA;
     Matrix mtxB;
     s32 horizontalAngle;
@@ -173,15 +173,14 @@ void DrawMenuCourseView(void) {
     courseModelIndex = g_MenuCourseModelIndex;
     viewHeight = AdvanceMenuViewOffset();
 
-    showroom->courseViewX = 23 - horizontalAngle;
-    showroom->runtime.z = -20;
-    showroom->runtime.y = viewHeight + 15;
+    car->x = 23 - horizontalAngle;
+    car->z = -20;
+    car->y = viewHeight + 15;
 
     g_MenuViewSpin = UpdatedMenuViewSpin(g_MenuViewSpin, g_PadHeld);
-    showroom->runtime.bodyYaw =
-        (s32)((u32)showroom->runtime.bodyYaw + (u32)g_MenuViewSpin);
-    BuildRotMatrixY(&mtxB, 0x800 - showroom->runtime.bodyYaw);
-    BuildRotMatrixX(&mtxA, showroom->runtime.bodyPitch);
+    car->bodyYaw = (s32)((u32)car->bodyYaw + (u32)g_MenuViewSpin);
+    BuildRotMatrixY(&mtxB, 0x800 - car->bodyYaw);
+    BuildRotMatrixX(&mtxA, car->bodyPitch);
     MulMatrix2(&mtxB, &mtxA);
     MulMatrix2(&g_RenderState.geometry.matrix, &mtxA);
     SelectModelBank(SHOWROOM_MODEL_BANK);

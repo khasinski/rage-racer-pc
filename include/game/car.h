@@ -103,10 +103,15 @@ typedef struct GameCarRuntime {
     s32 motionY;
     s32 motionZ;
     s32 reserved1C;
-    s32 bodyPitch;
-    s32 bodyYaw;
-    s32 bodyRoll;
-    s32 bodyRotationW;
+    union {
+        struct {
+            s32 bodyPitch;
+            s32 bodyYaw;
+            s32 bodyRoll;
+            s32 bodyRotationW;
+        };
+        Vec4 bodyRotation;
+    };
     s32 trackPointIndex;
     s32 trackLateralOffset;
     s32 segmentFraction;
@@ -542,10 +547,15 @@ typedef struct PlayerCarRuntime {
     s32 motionY;
     s32 motionZ;
     s32 reserved1C;
-    s32 bodyPitch;
-    s32 bodyYaw;
-    s32 bodyRoll;
-    s32 bodyRotationW;
+    union {
+        struct {
+            s32 bodyPitch;
+            s32 bodyYaw;
+            s32 bodyRoll;
+            s32 bodyRotationW;
+        };
+        Vec4 bodyRotation;
+    };
     s32 trackPointIndex;
     s32 trackLateralOffset;
     s32 segmentFraction;
@@ -621,6 +631,8 @@ _Static_assert(__builtin_offsetof(PlayerCarRuntime, steeringAngle) == 0x44,
                "player steering must retain its retail alias offset");
 _Static_assert(__builtin_offsetof(PlayerCarRuntime, wheelRotation) == 0x48,
                "player wheel angle must retain its retail alias offset");
+_Static_assert(__builtin_offsetof(PlayerCarRuntime, bodyRotation) == 0x20,
+               "player body rotation view must retain the retail offset");
 _Static_assert(__builtin_offsetof(PlayerCarRuntime, modelPitch) == 0x50,
                "player render rotation must retain its retail alias offset");
 _Static_assert(__builtin_offsetof(PlayerCarRuntime, modelRotation) == 0x50,
