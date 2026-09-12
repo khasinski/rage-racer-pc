@@ -299,7 +299,6 @@ extern PrologueLine g_PrologueLines[PROLOGUE_LINE_CAPACITY];
 extern s32 g_PrologueLineCount;
 enum { PROMOTION_BONUS_COUNT = 5 };
 extern s32 g_PromotionBonusTable[PROMOTION_BONUS_COUNT];
-extern char g_RaceOptionMarquee[4][40];
 extern s32 g_RaceOptionPulseAngle;
 extern s16 g_RaceOptionScroll0;
 extern s16 g_RaceOptionScroll1;

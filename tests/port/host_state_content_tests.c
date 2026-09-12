@@ -119,7 +119,6 @@ extern ContentLaunchSpeedThreshold g_LaunchSpeedThresholds[5];
 extern unsigned char g_LaunchEnergyThresholds[12];
 extern GameSpriteDesc g_TachoNeedleSprite;
 extern char g_ClockTextCells[8];
-extern char g_RaceOptionMarquee[4][40];
 extern ContentCarPoint g_CarCollisionCorners[4];
 typedef struct StartGridSceneryStep {
     int16_t x;
@@ -263,7 +262,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_CountdownGlyphTable", BYTES(g_CountdownGlyphTable),
      sizeof(g_CountdownGlyphTable)},
     {"g_ClockTextCells", BYTES(g_ClockTextCells), 8},
-    {"g_RaceOptionMarquee", BYTES(g_RaceOptionMarquee), 160},
     {"g_CarCollisionCorners", (const unsigned char *)g_CarCollisionCorners,
      sizeof(g_CarCollisionCorners)},
     {"g_StartGridSceneryStep",
@@ -315,7 +313,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the canonical host constants alone. */
-    const unsigned long expected = 3155940340UL;
+    const unsigned long expected = 432160074UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

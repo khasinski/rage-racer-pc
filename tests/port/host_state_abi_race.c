@@ -16,8 +16,6 @@ _Static_assert(sizeof(g_CourseProgress) == 8,
                "course progress selector must remain a host pointer");
 _Static_assert(sizeof(g_ClassRecords) == 44,
                "class records must retain all eleven retail entries");
-_Static_assert(sizeof(g_RaceOptionMarquee) == 4 * 40,
-               "race option marquee must remain four fixed-width rows");
 _Static_assert(sizeof(g_CountdownGlyphTable) == 256,
                "countdown glyph table ABI size changed");
 _Static_assert(sizeof(g_CountdownGlyphTable[0]) ==

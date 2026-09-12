@@ -13,6 +13,18 @@ enum {
     RACE_OPTION_RETRY_DIGIT_COUNT = 6,
 };
 
+typedef struct RaceOptionMarqueeText {
+    const char *first;
+    const char *second;
+} RaceOptionMarqueeText;
+
+static const RaceOptionMarqueeText s_MarqueeText[] = {
+    {"  RAGE RACER GE", "TS YOU GOING!  "},
+    {"  RAGE RACER GE", "TS YOU GOING!  "},
+    {"   KICK BACK AN", "D CHILL OUT!   "},
+    {"     SLASH THOS", "E RECORDS!     "},
+};
+
 static s32 ClampRaceOptionCursor(s32 cursor, s32 grandPrixMode) {
     s32 lastOption = grandPrixMode != 0 ? 1 : 2;
 
@@ -71,9 +83,9 @@ void DrawRaceOptionMenu(s32 cursorRow) {
                              0, 0, 0x140, 0xF0);
     g_RenderState.draw.packetCursor = next;
     DrawText8x8((g_RaceOptionScroll0 >> 2) + 0xA0, 0x8A,
-                &g_RaceOptionMarquee[marqueeState.textFrame][0], 0x7811);
+                s_MarqueeText[marqueeState.textFrame].first, 0x7811);
     DrawText8x8((g_RaceOptionScroll1 >> 2) + 0xA0, 0x8A,
-                &g_RaceOptionMarquee[marqueeState.textFrame][20], 0x7811);
+                s_MarqueeText[marqueeState.textFrame].second, 0x7811);
 
     next = QueueDrawAreaPrim(ot, RENDER_PRIM_CURSOR_AS(DrawPacket),
                              0x72, 0x8A, 0x5C, 0xC);

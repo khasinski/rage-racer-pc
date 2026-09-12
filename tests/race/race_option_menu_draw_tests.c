@@ -17,7 +17,6 @@ s32 g_RaceOptionPulseAngle;
 s16 g_RaceOptionScroll0;
 s16 g_RaceOptionScroll1;
 s32 g_SceneTimer;
-char g_RaceOptionMarquee[4][40];
 
 static s32 s_spriteCount;
 static s32 s_tileCount;
@@ -28,6 +27,7 @@ static s32 s_drawModeCount;
 static s32 s_selectionY[4];
 static s32 s_retryDigitU;
 static u8 *s_drawModePacket;
+static const char *s_text[2];
 
 s32 rcos(s32 angle) {
     (void)angle;
@@ -48,8 +48,8 @@ u8 *QueueDrawAreaPrim(GameOrderingTableEntry *ot, DrawPacket *packet,
 void DrawText8x8(s32 x, s32 y, const char *text, s32 clut) {
     (void)x;
     (void)y;
-    (void)text;
     (void)clut;
+    if (s_textCount < 2) s_text[s_textCount] = text;
     s_textCount++;
     g_RenderState.draw.packetCursor =
         (DrawPacket *)g_RenderState.draw.packetCursor + 1;
@@ -125,6 +125,8 @@ static void Reset(void) {
     s_drawModeCount = 0;
     s_drawModePacket = NULL;
     s_retryDigitU = -1;
+    s_text[0] = NULL;
+    s_text[1] = NULL;
     g_RenderState.draw.packetCursor = s_frame.layout.primitiveBuffer;
     g_RaceOptionScroll0 = 0;
     g_RaceOptionScroll1 = 0;
@@ -145,6 +147,8 @@ static int CheckLayout(s32 grandPrix, s32 expectedSprites) {
     CHECK(s_spriteCount == expectedSprites);
     CHECK(s_tileCount == 4 && s_translucentTileCount == 2);
     CHECK(s_drawAreaCount == 2 && s_textCount == 2 && s_drawModeCount == 1);
+    CHECK(strcmp(s_text[0], "  RAGE RACER GE") == 0);
+    CHECK(strcmp(s_text[1], "TS YOU GOING!  ") == 0);
     CHECK(s_selectionY[0] == expectedSelectionY);
     CHECK(s_selectionY[1] == expectedSelectionY + 0xB);
     CHECK(s_selectionY[2] == expectedSelectionY);
