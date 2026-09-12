@@ -1,7 +1,4 @@
-/*
- * Asking the desktop for a disc image. See disc_picker.h for why this is not
- * part of the platform layer that calls it.
- */
+/* Desktop disc-image selection; validation and mounting belong to host_disc. */
 
 #include "disc_picker.h"
 

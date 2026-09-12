@@ -6,14 +6,9 @@
 /*
  * Ask the desktop for a disc image.
  *
- * This is deliberately its own translation unit. It talks to SDL, and the
- * platform layer that wants it is compiled with the PS1 compatibility header
- * forced in ahead of everything else; on Windows the two meet inside the
- * toolchain's own intrinsics header and the build comes apart there rather
- * than in any code of ours.
- *
- * It answers with a path and nothing more. Whether that path is a disc this
- * build can read is the caller's question, not the picker's.
+ * The picker owns the asynchronous SDL dialog and answers with a path. Disc
+ * validation and mounting remain in the caller, so this module has no disc
+ * format or game-state policy.
  */
 int HostShowDiscPicker(char *path, size_t size);
 
