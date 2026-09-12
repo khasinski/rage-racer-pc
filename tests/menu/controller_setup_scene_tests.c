@@ -21,8 +21,8 @@ s32 g_ModelBankCount;
 s16 g_NegconSteer;
 NegconCalibrationValue g_NegconSteerPlay;
 NegconCalibrationValue g_NegconMaxTwist;
-s16 g_NegconSteerRange[NEGCON_STEER_RANGE_COUNT];
-s32 g_NegconPlayScale[NEGCON_CALIBRATION_COUNT];
+const s16 g_NegconSteerRange[NEGCON_STEER_RANGE_COUNT] = {8};
+const s32 g_NegconPlayScale[NEGCON_CALIBRATION_COUNT] = {5, 0, 3, 0};
 
 static GameFrameContext s_frame;
 static GameOrderingTableEntry s_originalOt[4];
@@ -106,8 +106,6 @@ static void Reset(void) {
     g_NegconSteer = 4;
     g_NegconSteerPlay = 2;
     g_NegconMaxTwist = 0;
-    g_NegconSteerRange[0] = 8;
-    g_NegconPlayScale[2] = 3;
     s_cameraCalls = 0;
     s_pitchCount = 0;
     s_modelCount = 0;
@@ -168,7 +166,6 @@ static void TestInvalidPlayUsesFirstPreset(void) {
     g_PadType = PAD_TYPE_NEGCON;
     g_GameMode = OPTION_MODE_NEGCON_STEER_PLAY;
     g_NegconSteerPlay = 99;
-    g_NegconPlayScale[0] = 5;
     DrawControllerSetupScene(0);
     CHECK(s_pitchAngles[0] == 41 && s_pitchAngles[1] == 31);
 }

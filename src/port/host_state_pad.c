@@ -14,14 +14,14 @@
 #include "game/input_internal.h"
 #include "game/state.h"
 
-s16 g_NegconSteerRange[4] = {
+const s16 g_NegconSteerRange[4] = {
     25, 38, 75, 113
 };
-u16 g_NegconSteerDeadZone[NEGCON_CALIBRATION_COUNT]
-                         [NEGCON_DEAD_ZONE_VALUE_COUNT] = {
+const u16 g_NegconSteerDeadZone[NEGCON_CALIBRATION_COUNT]
+                               [NEGCON_DEAD_ZONE_VALUE_COUNT] = {
     {0, 0}, {6, 0}, {10, 0}, {14, 0},
 };
-s32 g_NegconPlayScale[NEGCON_CALIBRATION_COUNT] = {
+const s32 g_NegconPlayScale[NEGCON_CALIBRATION_COUNT] = {
     0, 3, 5, 7
 };
 DVec g_PadLabelSlots[CONTROLLER_CONFIG_LABEL_SLOT_COUNT] = {
