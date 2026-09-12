@@ -6,9 +6,8 @@
 #include <limits.h>
 #include <stdio.h>
 
-s32 g_SeqVolumeSetting;
-s32 g_SeqHandle;
-s32 g_SeqVolume;
+
+Audio g_Audio;
 
 static s32 s_appliedVolume;
 static s32 s_outputLeft;
@@ -31,27 +30,27 @@ static void Check(s32 condition, const char *label) {
 }
 
 static void CheckAppliedVolume(s32 expected, const char *label) {
-    s_appliedVolume = g_SeqVolume;
+    s_appliedVolume = g_Audio.seq.volume;
     Check(s_appliedVolume == expected && s_outputLeft == expected &&
               s_outputRight == expected,
           label);
 }
 
 int main(void) {
-    g_SeqVolumeSetting = 5;
+    g_Audio.seq.setting = 5;
     RefreshSequenceVolumeScale();
-    Check(g_SeqVolumeSetting == 5,
+    Check(g_Audio.seq.setting == 5,
           "refresh preserves the stored sequence setting");
     CheckAppliedVolume(38, "refresh applies volume to state and sequence");
 
-    g_SeqVolumeSetting = AUDIO_SETTING_MAX + 20;
+    g_Audio.seq.setting = AUDIO_SETTING_MAX + 20;
     RefreshSequenceVolumeScale();
-    Check(g_SeqVolumeSetting == AUDIO_SETTING_MAX + 20,
+    Check(g_Audio.seq.setting == AUDIO_SETTING_MAX + 20,
           "refresh does not rewrite the stored setting");
     CheckAppliedVolume(114, "refresh clamps an invalid stored setting");
 
     SetSequenceVolumeSetting(7);
-    Check(g_SeqVolumeSetting == 7,
+    Check(g_Audio.seq.setting == 7,
           "setter stores an intermediate sequence setting");
     CheckAppliedVolume(53, "setter applies intermediate sequence volume");
     Check(s_cdVolumeSetting == 7,
@@ -64,7 +63,7 @@ int main(void) {
                        "direct sequence volume clamps oversized input");
 
     SetSequenceVolumeSetting(AUDIO_SETTING_MAX);
-    Check(g_SeqVolumeSetting == AUDIO_SETTING_MAX,
+    Check(g_Audio.seq.setting == AUDIO_SETTING_MAX,
           "setter stores the maximum sequence setting");
     CheckAppliedVolume(114, "maximum setting maps to sequence volume maximum");
 

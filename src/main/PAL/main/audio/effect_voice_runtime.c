@@ -25,10 +25,10 @@ static s32 ScaleVoiceVolume(s32 volume) {
 static int GetPanVoiceOutputVolume(s32 *left, s32 *right) {
     int audible;
 
-    *left = g_PanVoiceVolumeL < AUDIBLE_PAN_VOLUME_MIN ? 0
-                                                       : g_PanVoiceVolumeL;
-    *right = g_PanVoiceVolumeR < AUDIBLE_PAN_VOLUME_MIN ? 0
-                                                        : g_PanVoiceVolumeR;
+    *left = g_Audio.pan.left < AUDIBLE_PAN_VOLUME_MIN ? 0
+                                                       : g_Audio.pan.left;
+    *right = g_Audio.pan.right < AUDIBLE_PAN_VOLUME_MIN ? 0
+                                                        : g_Audio.pan.right;
     audible = *left != 0 || *right != 0;
     *left = ScaleVoiceVolume(*left);
     *right = ScaleVoiceVolume(*right);
@@ -40,13 +40,13 @@ void SetPanVoiceTargetVolume(s32 left, s32 right) {
     right = ClampVoiceVolume(right);
 
     if (g_StereoOutput != 0) {
-        g_PanVoiceVolumeL = left;
-        g_PanVoiceVolumeR = right;
+        g_Audio.pan.left = left;
+        g_Audio.pan.right = right;
     } else {
         s32 temp = (left + right) / 2;
 
-        g_PanVoiceVolumeL = temp;
-        g_PanVoiceVolumeR = temp;
+        g_Audio.pan.left = temp;
+        g_Audio.pan.right = temp;
     }
 }
 
@@ -59,15 +59,15 @@ void ApplyPanVoiceVolume(void) {
 
     if (audible != 0) {
         SsUtSetVVol(PAN_EFFECT_VOICE, left, right);
-        if (g_PanVoiceActive == 0) {
+        if (g_Audio.pan.active == 0) {
             SsUtKeyOnV(PAN_EFFECT_VOICE, g_SoundScale.vabIds[0],
                        PAN_EFFECT_PROGRAM, 0, EFFECT_BASE_NOTE, 0, 0, 0);
         }
-    } else if (g_PanVoiceActive != 0) {
+    } else if (g_Audio.pan.active != 0) {
         SsUtKeyOffV(PAN_EFFECT_VOICE);
     }
 
-    g_PanVoiceActive = audible;
+    g_Audio.pan.active = audible;
 }
 
 void ForcePanVoiceEnabled(s32 enabled) {
@@ -75,7 +75,7 @@ void ForcePanVoiceEnabled(s32 enabled) {
         s32 left;
         s32 right;
 
-        if (g_PanVoiceActive == 0) {
+        if (g_Audio.pan.active == 0) {
             return;
         }
         GetPanVoiceOutputVolume(&left, &right);
@@ -98,14 +98,14 @@ static void StopIndexedEffectVoice(void) {
 
 static void ApplyIndexedEffectVoiceOutput(s32 index) {
     s32 volume = ScaleClampedVoiceVolume(
-        g_IndexedEffectVolume, g_IndexedEffects[index].volume);
+        g_Audio.indexed.volume, g_IndexedEffects[index].volume);
 
     volume = ScaleVoiceVolume(volume);
     SsUtSetVVol(INDEXED_EFFECT_VOICE, volume, volume);
     SsUtChangePitch(INDEXED_EFFECT_VOICE, 0,
                     (s16)g_IndexedEffects[index].tone, EFFECT_BASE_NOTE, 0,
-                    (s16)(g_IndexedEffectPitch >> 7),
-                    g_IndexedEffectPitch & 0x7F);
+                    (s16)(g_Audio.indexed.pitch >> 7),
+                    g_Audio.indexed.pitch & 0x7F);
 }
 
 static s32 IsValidIndexedEffectIndex(s32 index) {
@@ -121,10 +121,10 @@ void SetIndexedEffectVoice(s32 index, s32 phase, s32 volume) {
 
     volume = ClampCueLevel(volume);
 
-    g_IndexedEffectIndex = index;
+    g_Audio.indexed.index = index;
     if (index >= 0) {
-        g_IndexedEffectVolume = volume;
-        g_IndexedEffectPitch = phase;
+        g_Audio.indexed.volume = volume;
+        g_Audio.indexed.pitch = phase;
     }
 }
 
@@ -135,14 +135,14 @@ void UpdateIndexedEffectVoice(void) {
     /* Start on the way in, stop on the way out, restart on a change. The
      * early exit retail had for "nothing playing and nothing asked for" is
      * the same condition the rest of the function is already guarded by. */
-    previous = g_IndexedEffectIndexPrev;
-    index = g_IndexedEffectIndex;
+    previous = g_Audio.indexed.previous;
+    index = g_Audio.indexed.index;
     if (!IsValidIndexedEffectIndex(previous)) {
         previous = -1;
     }
     if (!IsValidIndexedEffectIndex(index)) {
         index = -1;
-        g_IndexedEffectIndex = -1;
+        g_Audio.indexed.index = -1;
     }
     if (previous < 0) {
         if (index >= 0) {
@@ -158,11 +158,11 @@ void UpdateIndexedEffectVoice(void) {
         ApplyIndexedEffectVoiceOutput(index);
     }
 
-    g_IndexedEffectIndexPrev = index;
+    g_Audio.indexed.previous = index;
 }
 
 void ForceIndexedEffectVoiceEnabled(s32 enabled) {
-    s32 index = g_IndexedEffectIndexPrev;
+    s32 index = g_Audio.indexed.previous;
 
     if (enabled != 0) {
         if (!IsValidIndexedEffectIndex(index)) {

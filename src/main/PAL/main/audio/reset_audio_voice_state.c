@@ -25,13 +25,12 @@ void ResetAudioVoiceState(void) {
         g_EffectVoices[i].volume = 0;
     }
 
-    g_PanVoiceVolumeR = -1;
-    g_PanVoiceVolumeL = -1;
-    g_IndexedEffectIndexPrev = -1;
-    g_IndexedEffectIndex = -1;
-    g_PanVoiceActive = 0;
-    g_IndexedEffectPitch = DEFAULT_EFFECT_PITCH;
-    g_IndexedEffectVolume = 0;
+    g_Audio.pan = (PanVoice){.left = -1, .right = -1};
+    g_Audio.indexed = (IndexedVoice){
+        .index = -1,
+        .previous = -1,
+        .pitch = DEFAULT_EFFECT_PITCH,
+    };
     g_ActiveSpecialCue = -1;
     g_LastSpecialCueRequest = -1;
 }

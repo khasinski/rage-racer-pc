@@ -6,15 +6,13 @@
 
 #include <stdio.h>
 
+Audio g_Audio;
 EngineSoundState g_EngineSoundState;
 SoundScale g_SoundScale;
 s32 g_StereoOutput;
 s32 g_BgmVolumeSetting;
 s32 g_SfxVolumeSetting;
 s32 g_MonoOutput;
-s32 g_SeqVolumeSetting;
-s32 g_SeqVolume;
-s32 g_SeqHandle;
 
 static s32 s_cdVolumeSetting;
 static s32 s_sequenceVolume;
@@ -50,11 +48,11 @@ static void TestAudioSettingClamp(void) {
 
 static void TestVolumeSettings(void) {
     SetSequenceVolumeSetting(-4);
-    Check(s_cdVolumeSetting == 0 && g_SeqVolumeSetting == 0 &&
+    Check(s_cdVolumeSetting == 0 && g_Audio.seq.setting == 0 &&
               s_sequenceVolume == 0,
           "sequence setting shares its clamped zero");
     SetSequenceVolumeSetting(99);
-    Check(s_cdVolumeSetting == 15 && g_SeqVolumeSetting == 15 &&
+    Check(s_cdVolumeSetting == 15 && g_Audio.seq.setting == 15 &&
               s_sequenceVolume == 114,
           "sequence setting shares its clamped maximum");
 
@@ -91,7 +89,7 @@ static void TestApplyingSavedSettings(void) {
     g_SfxVolumeSetting = 9;
     g_MonoOutput = 0;
     ApplyAudioSettings();
-    Check(s_cdVolumeSetting == 6 && g_SeqVolumeSetting == 6 &&
+    Check(s_cdVolumeSetting == 6 && g_Audio.seq.setting == 6 &&
               s_sequenceVolume == 45,
           "saved BGM setting reaches CD and sequence output");
     Check(g_SoundScale.scale == 76 && g_StereoOutput == 1,

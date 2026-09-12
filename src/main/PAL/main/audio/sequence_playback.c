@@ -14,12 +14,12 @@ enum {
 };
 
 void PlaySequence(void) {
-    SsSeqPlay((s16)g_SeqHandle, SEQUENCE_PLAY_MODE, SEQUENCE_LOOP_COUNT);
+    SsSeqPlay((s16)g_Audio.seq.handle, SEQUENCE_PLAY_MODE, SEQUENCE_LOOP_COUNT);
 }
 
 void StartSequenceFadeOut(void) {
-    g_SeqVolumeFadeStep = SEQUENCE_VOLUME_FADE_STEP;
-    g_ReverbFadeStep = REVERB_VOLUME_FADE_STEP;
+    g_Audio.seq.fade = SEQUENCE_VOLUME_FADE_STEP;
+    g_Audio.reverb.fade = REVERB_VOLUME_FADE_STEP;
 }
 
 static s32 ApplyFadeOutStep(s32 value, s32 step) {
@@ -29,61 +29,61 @@ static s32 ApplyFadeOutStep(s32 value, s32 step) {
 }
 
 static void UpdateReverbFade(void) {
-    s32 delta = g_ReverbFadeStep;
+    s32 delta = g_Audio.reverb.fade;
 
     if (delta >= 0) {
-        g_ReverbFadeStep = 0;
+        g_Audio.reverb.fade = 0;
         return;
     }
-    g_ReverbDepthL = ApplyFadeOutStep(g_ReverbDepthL, delta);
-    g_ReverbDepthR = ApplyFadeOutStep(g_ReverbDepthR, delta);
+    g_Audio.reverb.left = ApplyFadeOutStep(g_Audio.reverb.left, delta);
+    g_Audio.reverb.right = ApplyFadeOutStep(g_Audio.reverb.right, delta);
 
-    if (g_ReverbDepthL == 0 && g_ReverbDepthR == 0) {
-        g_ReverbFadeStep = 0;
+    if (g_Audio.reverb.left == 0 && g_Audio.reverb.right == 0) {
+        g_Audio.reverb.fade = 0;
     }
 }
 
 static void FinishSequenceFadeOut(void) {
-    g_SeqVolume = 0;
-    g_SeqVolumeFadeStep = 0;
-    SsSeqStop((s16)g_SeqHandle);
+    g_Audio.seq.volume = 0;
+    g_Audio.seq.fade = 0;
+    SsSeqStop((s16)g_Audio.seq.handle);
     CloseSequenceAudioSlot();
     SetDefaultReverbDepth();
 }
 
 void UpdateSequenceFadeOut(void) {
-    if (g_SeqVolumeFadeStep > 0) {
-        g_SeqVolumeFadeStep = 0;
+    if (g_Audio.seq.fade > 0) {
+        g_Audio.seq.fade = 0;
     }
     UpdateReverbFade();
 
-    SetReverbDepth(g_ReverbDepthL, g_ReverbDepthR);
+    SetReverbDepth(g_Audio.reverb.left, g_Audio.reverb.right);
 
-    if (g_SeqVolumeFadeStep == 0) {
-        SetSequenceVolume(g_SeqVolume);
+    if (g_Audio.seq.fade == 0) {
+        SetSequenceVolume(g_Audio.seq.volume);
         return;
     }
 
-    g_SeqVolume = ApplyFadeOutStep(g_SeqVolume, g_SeqVolumeFadeStep);
-    if (g_SeqVolume <= 0) {
+    g_Audio.seq.volume = ApplyFadeOutStep(g_Audio.seq.volume, g_Audio.seq.fade);
+    if (g_Audio.seq.volume <= 0) {
         FinishSequenceFadeOut();
         return;
     }
 
-    SetSequenceVolume(g_SeqVolume);
+    SetSequenceVolume(g_Audio.seq.volume);
 }
 
 void ApplyDuckedSequenceAudio(void) {
-    s32 volume = ClampVoiceVolume(g_SeqVolume) * DUCKED_VOLUME_NUMERATOR /
+    s32 volume = ClampVoiceVolume(g_Audio.seq.volume) * DUCKED_VOLUME_NUMERATOR /
                  DUCKED_VOLUME_DENOMINATOR;
 
-    SsSeqSetVol((s16)g_SeqHandle, volume, volume);
+    SsSeqSetVol((s16)g_Audio.seq.handle, volume, volume);
     SetReverbDepth(DUCKED_REVERB_DEPTH, DUCKED_REVERB_DEPTH);
 }
 
 void ApplyCurrentSequenceAudio(void) {
-    s16 volume = (s16)ClampVoiceVolume(g_SeqVolume);
+    s16 volume = (s16)ClampVoiceVolume(g_Audio.seq.volume);
 
-    SsSeqSetVol((s16)g_SeqHandle, volume, volume);
+    SsSeqSetVol((s16)g_Audio.seq.handle, volume, volume);
     SetDefaultReverbDepth();
 }

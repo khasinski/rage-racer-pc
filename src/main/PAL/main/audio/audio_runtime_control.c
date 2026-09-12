@@ -22,7 +22,7 @@ void TickSequenceAudio(void) {
          * synthetic 60 Hz on PAL accelerated the note stream by 20% while
          * leaving each VAG sample's pitch unchanged. */
         SsSeqCalledTbyT();
-        if (g_SeqVolumeFadeStep != 0) {
+        if (g_Audio.seq.fade != 0) {
             UpdateSequenceFadeOut();
         }
         /* libsnd batches voice register writes. On PS1 its sound interrupt
@@ -35,8 +35,8 @@ void SetReverbDepth(s32 left, s32 right) {
     left = ClampCueLevel(left);
     right = ClampCueLevel(right);
 
-    g_ReverbDepthL = left;
-    g_ReverbDepthR = right;
+    g_Audio.reverb.left = left;
+    g_Audio.reverb.right = right;
     SsUtSetReverbDepth((s16)left, (s16)right);
 }
 
@@ -52,8 +52,8 @@ void SetReverbPreset(s32 type, s32 left, s32 right) {
     SsUtReverbOff();
 
     if (!IsValidReverbPreset(type)) {
-        g_ReverbDepthR = 0;
-        g_ReverbDepthL = 0;
+        g_Audio.reverb.right = 0;
+        g_Audio.reverb.left = 0;
         return;
     }
 

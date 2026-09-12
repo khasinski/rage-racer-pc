@@ -168,14 +168,7 @@ extern s32 g_AudioLoadSlot;
 extern s32 g_AudioLoadedSlotMask;
 extern s32 g_CarSoundVolumeScales[CAR_SOUND_VOLUME_SCALE_COUNT];
 extern EffectCueBank g_EffectCueTable[EFFECT_CUE_BANK_COUNT];
-extern s32 g_IndexedEffectIndex;
-extern s32 g_IndexedEffectIndexPrev;
-extern s32 g_IndexedEffectPitch;
-extern s32 g_IndexedEffectVolume;
 extern s32 g_LastSpecialCueRequest;
-extern s32 g_PanVoiceActive;
-extern s32 g_PanVoiceVolumeL;
-extern s32 g_PanVoiceVolumeR;
 extern s32 g_SoundCueBank;
 typedef struct SoundCueParams {
     s32 volume;

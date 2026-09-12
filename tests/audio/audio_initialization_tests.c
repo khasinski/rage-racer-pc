@@ -9,17 +9,10 @@
 
 MusicChannel g_MusicChannels[AUDIO_MUSIC_CHANNEL_COUNT];
 EffectVoice g_EffectVoices[AUDIO_EFFECT_VOICE_COUNT];
+Audio g_Audio;
 EngineSoundState g_EngineSoundState;
-s32 g_PanVoiceVolumeR;
-s32 g_PanVoiceVolumeL;
-s32 g_IndexedEffectIndexPrev;
-s32 g_IndexedEffectIndex;
-s32 g_IndexedEffectPitch;
-s32 g_IndexedEffectVolume;
-s32 g_PanVoiceActive;
 s32 g_ActiveSpecialCue;
 s32 g_LastSpecialCueRequest;
-s32 g_ReverbFadeStep;
 s32 g_CarSoundVolumeScales[CAR_SOUND_VOLUME_SCALE_COUNT];
 s32 g_PlayerCarIndex;
 
@@ -68,13 +61,13 @@ static void Check(s32 condition, const char *label) {
 }
 
 static void TestSequenceInitialization(void) {
-    g_ReverbFadeStep = -3;
+    g_Audio.reverb.fade = -3;
     s_vmInitCalls = 0;
     InitSequenceAudio();
     Check(s_vmInitCalls == 1 && s_voiceCount == 18,
           "sequence initialization resets libsnd with eighteen voices");
     Check(s_reverbLeft == 40 && s_reverbRight == 40 &&
-              g_ReverbFadeStep == 0 && s_refreshCalls == 1,
+              g_Audio.reverb.fade == 0 && s_refreshCalls == 1,
           "sequence initialization restores reverb and saved volume");
 }
 
@@ -85,7 +78,7 @@ static void TestEffectInitialization(void) {
     memset(g_EffectVoices, 0x7F, sizeof(g_EffectVoices));
     g_ActiveSpecialCue = 15;
     g_LastSpecialCueRequest = 15;
-    g_IndexedEffectVolume = 127;
+    g_Audio.indexed.volume = 127;
     g_PlayerCarIndex = 2;
     g_CarSoundVolumeScales[3] = 91;
     g_EngineSoundState.bank = 1;
@@ -108,7 +101,7 @@ static void TestEffectInitialization(void) {
     }
     Check(g_ActiveSpecialCue == -1 && g_LastSpecialCueRequest == -1,
           "effect initialization clears special cue deduplication");
-    Check(g_IndexedEffectVolume == 0,
+    Check(g_Audio.indexed.volume == 0,
           "effect initialization clears indexed effect volume");
     Check(s_slotEnableCalls == 2 && s_slotEnable[0] == 0 &&
               s_slotEnable[1] == 1 && g_EngineSoundState.bank == -1,

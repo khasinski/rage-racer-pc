@@ -6,12 +6,7 @@
 #include <limits.h>
 #include <stdio.h>
 
-s32 g_ReverbDepthL;
-s32 g_ReverbDepthR;
-s32 g_ReverbFadeStep;
-s32 g_SeqHandle;
-s32 g_SeqVolume;
-s32 g_SeqVolumeFadeStep;
+Audio g_Audio;
 
 static s32 s_closeCalls;
 static s32 s_reverbLeft;
@@ -61,71 +56,71 @@ void CloseSequenceAudioSlot(void) {
 } while (0)
 
 int main(void) {
-    g_SeqHandle = 7;
+    g_Audio.seq.handle = 7;
     PlaySequence();
     CHECK(s_sequencePlays == 1 && s_playMode == 1 && s_loopCount == 0);
 
     StartSequenceFadeOut();
-    CHECK(g_SeqVolumeFadeStep == -4 && g_ReverbFadeStep == -3);
+    CHECK(g_Audio.seq.fade == -4 && g_Audio.reverb.fade == -3);
 
-    g_SeqVolume = 100;
+    g_Audio.seq.volume = 100;
     ApplyDuckedSequenceAudio();
     CHECK(s_sequenceLeft == 75 && s_sequenceRight == 75);
     CHECK(s_reverbLeft == 0x3C && s_reverbRight == 0x3C);
 
-    g_SeqVolume = -5;
+    g_Audio.seq.volume = -5;
     ApplyDuckedSequenceAudio();
     CHECK(s_sequenceLeft == 0 && s_sequenceRight == 0);
 
-    g_SeqVolume = INT_MAX;
+    g_Audio.seq.volume = INT_MAX;
     ApplyDuckedSequenceAudio();
     CHECK(s_sequenceLeft == 96 && s_sequenceRight == 96);
 
-    g_SeqVolume = INT_MAX;
+    g_Audio.seq.volume = INT_MAX;
     ApplyCurrentSequenceAudio();
     CHECK(s_sequenceLeft == 0x80 && s_sequenceRight == 0x80);
     CHECK(s_reverbLeft == 0x28 && s_reverbRight == 0x28);
 
-    g_ReverbDepthL = 2;
-    g_ReverbDepthR = 4;
-    g_ReverbFadeStep = -3;
-    g_SeqVolume = 3;
-    g_SeqVolumeFadeStep = -4;
+    g_Audio.reverb.left = 2;
+    g_Audio.reverb.right = 4;
+    g_Audio.reverb.fade = -3;
+    g_Audio.seq.volume = 3;
+    g_Audio.seq.fade = -4;
     s_closeCalls = 0;
     s_setVolumeCalls = 0;
     UpdateSequenceFadeOut();
-    CHECK(g_ReverbDepthL == 0 && g_ReverbDepthR == 1);
-    CHECK(g_ReverbFadeStep == -3);
-    CHECK(g_SeqVolume == 0 && g_SeqVolumeFadeStep == 0);
+    CHECK(g_Audio.reverb.left == 0 && g_Audio.reverb.right == 1);
+    CHECK(g_Audio.reverb.fade == -3);
+    CHECK(g_Audio.seq.volume == 0 && g_Audio.seq.fade == 0);
     CHECK(s_sequenceStops == 1 && s_closeCalls == 1);
     CHECK(s_reverbLeft == 0x28 && s_reverbRight == 0x28);
     CHECK(s_setVolumeCalls == 0);
 
-    g_SeqVolume = 10;
-    g_SeqVolumeFadeStep = 0;
+    g_Audio.seq.volume = 10;
+    g_Audio.seq.fade = 0;
     UpdateSequenceFadeOut();
-    CHECK(g_ReverbDepthR == 0 && g_ReverbFadeStep == 0);
+    CHECK(g_Audio.reverb.right == 0 && g_Audio.reverb.fade == 0);
     CHECK(s_setVolumeCalls == 1 && s_setVolume == 10);
 
-    g_ReverbDepthL = INT_MAX;
-    g_ReverbDepthR = 1;
-    g_ReverbFadeStep = INT_MIN;
-    g_SeqVolume = INT_MAX;
-    g_SeqVolumeFadeStep = INT_MIN;
+    g_Audio.reverb.left = INT_MAX;
+    g_Audio.reverb.right = 1;
+    g_Audio.reverb.fade = INT_MIN;
+    g_Audio.seq.volume = INT_MAX;
+    g_Audio.seq.fade = INT_MIN;
     UpdateSequenceFadeOut();
-    CHECK(g_ReverbDepthL == 0 && g_ReverbDepthR == 0);
-    CHECK(g_SeqVolume == 0 && g_SeqVolumeFadeStep == 0);
+    CHECK(g_Audio.reverb.left == 0 && g_Audio.reverb.right == 0);
+    CHECK(g_Audio.seq.volume == 0 && g_Audio.seq.fade == 0);
     CHECK(s_sequenceStops == 2 && s_closeCalls == 2);
 
-    g_ReverbDepthL = 10;
-    g_ReverbDepthR = 20;
-    g_ReverbFadeStep = 3;
-    g_SeqVolume = 30;
-    g_SeqVolumeFadeStep = 4;
+    g_Audio.reverb.left = 10;
+    g_Audio.reverb.right = 20;
+    g_Audio.reverb.fade = 3;
+    g_Audio.seq.volume = 30;
+    g_Audio.seq.fade = 4;
     UpdateSequenceFadeOut();
-    CHECK(g_ReverbDepthL == 10 && g_ReverbDepthR == 20 &&
-          g_ReverbFadeStep == 0);
-    CHECK(g_SeqVolume == 30 && g_SeqVolumeFadeStep == 0);
+    CHECK(g_Audio.reverb.left == 10 && g_Audio.reverb.right == 20 &&
+          g_Audio.reverb.fade == 0);
+    CHECK(g_Audio.seq.volume == 30 && g_Audio.seq.fade == 0);
     CHECK(s_setVolume == 30);
 
     puts("sequence playback preserves ducking and fade completion");

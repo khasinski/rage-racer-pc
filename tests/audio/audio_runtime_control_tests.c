@@ -6,10 +6,7 @@
 
 #include <stdio.h>
 
-s32 g_ReverbDepthL;
-s32 g_ReverbDepthR;
-s32 g_ReverbFadeStep;
-s32 g_SeqVolumeFadeStep;
+Audio g_Audio;
 s32 g_SceneId;
 SoundScale g_SoundScale;
 s16 g_SoundSlotTone[ENGINE_SOUND_SLOT_COUNT][ENGINE_SOUND_BANK_COUNT];
@@ -65,7 +62,7 @@ static void TestSequenceTicking(void) {
     s32 frame;
 
     g_SceneId = 0;
-    g_SeqVolumeFadeStep = -4;
+    g_Audio.seq.fade = -4;
     for (frame = 0; frame < 5; frame++) TickSequenceAudio();
     Check(s_sequenceTicks == 5,
           "PAL frames service one sequence tick per game frame");
@@ -78,7 +75,7 @@ static void TestSequenceTicking(void) {
           "sound-mode scene only services the voice damper");
 
     g_SceneId = 0;
-    g_SeqVolumeFadeStep = 0;
+    g_Audio.seq.fade = 0;
     for (frame = 0; frame < 3; frame++) TickSequenceAudio();
     Check(s_sequenceTicks == 8 && s_fadeUpdates == 5 && s_damperSteps == 9,
           "NTSC frames service one sequence tick without an inactive fade");
@@ -91,12 +88,12 @@ static void TestSequenceTicking(void) {
 
 static void TestReverbDepth(void) {
     SetReverbDepth(-1, 128);
-    Check(g_ReverbDepthL == 0 && g_ReverbDepthR == 127 &&
+    Check(g_Audio.reverb.left == 0 && g_Audio.reverb.right == 127 &&
               s_reverbLeft == 0 && s_reverbRight == 127,
           "reverb depth clamps game and SPU values");
 
     SetDefaultReverbDepth();
-    Check(g_ReverbDepthL == 40 && g_ReverbDepthR == 40,
+    Check(g_Audio.reverb.left == 40 && g_Audio.reverb.right == 40,
           "default reverb depth uses the game preset");
 }
 
@@ -107,13 +104,13 @@ static void TestReverbPresets(void) {
     Check(s_reverbOffCalls == 1 && s_reverbOnCalls == 1 &&
               s_reverbType == 9,
           "valid reverb preset restarts the SPU effect");
-    Check(g_ReverbDepthL == 0 && g_ReverbDepthR == 127,
+    Check(g_Audio.reverb.left == 0 && g_Audio.reverb.right == 127,
           "reverb preset applies clamped depths");
 
     SetReverbPreset(0, 50, 60);
     Check(s_reverbOffCalls == 2 && s_reverbOnCalls == 1 &&
-              g_ReverbDepthL == 0 &&
-              g_ReverbDepthR == 0,
+              g_Audio.reverb.left == 0 &&
+              g_Audio.reverb.right == 0,
           "zero preset disables reverb");
     SetReverbPreset(10, 50, 60);
     Check(s_reverbOffCalls == 3 && s_reverbOnCalls == 1,

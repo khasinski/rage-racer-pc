@@ -7,17 +7,11 @@
 #include <stdio.h>
 #include <string.h>
 
+Audio g_Audio;
 SoundScale g_SoundScale;
 MusicChannel g_MusicChannels[AUDIO_MUSIC_CHANNEL_COUNT];
 IndexedEffect g_IndexedEffects[AUDIO_INDEXED_EFFECT_COUNT];
 s32 g_StereoOutput;
-s32 g_PanVoiceActive;
-s32 g_PanVoiceVolumeL;
-s32 g_PanVoiceVolumeR;
-s32 g_IndexedEffectIndex;
-s32 g_IndexedEffectIndexPrev;
-s32 g_IndexedEffectPitch;
-s32 g_IndexedEffectVolume;
 
 typedef struct VoiceCall {
     s16 voice;
@@ -99,16 +93,16 @@ static void ResetCalls(void) {
 static int TestPanVoice(void) {
     g_StereoOutput = 1;
     SetPanVoiceTargetVolume(-4, 200);
-    CHECK(g_PanVoiceVolumeL == 0 && g_PanVoiceVolumeR == 128);
+    CHECK(g_Audio.pan.left == 0 && g_Audio.pan.right == 128);
 
     g_StereoOutput = 0;
     SetPanVoiceTargetVolume(20, 100);
-    CHECK(g_PanVoiceVolumeL == 60 && g_PanVoiceVolumeR == 60);
+    CHECK(g_Audio.pan.left == 60 && g_Audio.pan.right == 60);
 
     ResetCalls();
     g_SoundScale.scale = 64;
     g_SoundScale.vabIds[0] = 7;
-    g_PanVoiceActive = 0;
+    g_Audio.pan.active = 0;
     ApplyPanVoiceVolume();
     CHECK(s_keyOnCount == 1 && s_keyOn[0].voice == 21);
     CHECK(s_keyOn[0].program == 15 && s_volumeCount == 1);
@@ -116,18 +110,18 @@ static int TestPanVoice(void) {
 
     ApplyPanVoiceVolume();
     CHECK(s_keyOnCount == 1 && s_volumeCount == 2);
-    g_PanVoiceVolumeL = 1;
-    g_PanVoiceVolumeR = 0;
+    g_Audio.pan.left = 1;
+    g_Audio.pan.right = 0;
     ApplyPanVoiceVolume();
     CHECK(s_keyOffCount == 1 && s_keyOff[0].voice == 21);
-    CHECK(g_PanVoiceActive == 0);
+    CHECK(g_Audio.pan.active == 0);
 
     ResetCalls();
     ForcePanVoiceEnabled(1);
     CHECK(s_keyOnCount == 0 && s_volumeCount == 0);
-    g_PanVoiceActive = 1;
-    g_PanVoiceVolumeL = 20;
-    g_PanVoiceVolumeR = 40;
+    g_Audio.pan.active = 1;
+    g_Audio.pan.left = 20;
+    g_Audio.pan.right = 40;
     ForcePanVoiceEnabled(1);
     CHECK(s_keyOnCount == 1 && s_volumeCount == 1);
     CHECK(s_volume[0].left == 10 && s_volume[0].right == 20);
@@ -145,11 +139,11 @@ static int TestIndexedEffectVoice(void) {
     g_IndexedEffects[2].volume = 128;
     g_SoundScale.scale = 64;
     g_SoundScale.vabIds[0] = 9;
-    g_IndexedEffectIndexPrev = -1;
+    g_Audio.indexed.previous = -1;
 
     SetIndexedEffectVoice(9, 0x2345, 200);
-    CHECK(g_IndexedEffectIndex == 2);
-    CHECK(g_IndexedEffectPitch == 0x2345 && g_IndexedEffectVolume == 127);
+    CHECK(g_Audio.indexed.index == 2);
+    CHECK(g_Audio.indexed.pitch == 0x2345 && g_Audio.indexed.volume == 127);
     ResetCalls();
     UpdateIndexedEffectVoice();
     CHECK(s_keyOnCount == 1 && s_keyOn[0].voice == 20);
@@ -182,7 +176,7 @@ static int TestIndexedEffectVoice(void) {
     ResetCalls();
     ForceIndexedEffectVoiceEnabled(1);
     CHECK(s_keyOnCount == 0 && s_volumeCount == 0);
-    g_IndexedEffectIndexPrev = 1;
+    g_Audio.indexed.previous = 1;
     ForceIndexedEffectVoiceEnabled(1);
     CHECK(s_keyOnCount == 1 && s_keyOn[0].program == 31);
     CHECK(s_volumeCount == 1 && s_pitchCount == 1);
@@ -190,16 +184,16 @@ static int TestIndexedEffectVoice(void) {
     ForceIndexedEffectVoiceEnabled(0);
     CHECK(s_keyOffCount == 1 && s_volumeCount == 0 && s_pitchCount == 0);
 
-    g_IndexedEffectIndexPrev = 99;
+    g_Audio.indexed.previous = 99;
     ResetCalls();
     ForceIndexedEffectVoiceEnabled(1);
     CHECK(s_keyOnCount == 0 && s_volumeCount == 0 && s_pitchCount == 0);
 
-    g_IndexedEffectIndexPrev = 1;
-    g_IndexedEffectIndex = 99;
+    g_Audio.indexed.previous = 1;
+    g_Audio.indexed.index = 99;
     ResetCalls();
     UpdateIndexedEffectVoice();
-    CHECK(g_IndexedEffectIndex == -1 && g_IndexedEffectIndexPrev == -1);
+    CHECK(g_Audio.indexed.index == -1 && g_Audio.indexed.previous == -1);
     CHECK(s_keyOffCount == 1 && s_volumeCount == 0 && s_pitchCount == 0);
     return 0;
 }

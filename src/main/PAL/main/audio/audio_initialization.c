@@ -16,7 +16,7 @@ void InitSequenceAudio(void) {
     _SsVmInit(LIBSND_RESET);
     SsSetReservedVoice(SEQUENCE_VOICE_COUNT);
     SetDefaultReverbDepth();
-    g_ReverbFadeStep = 0;
+    g_Audio.reverb.fade = 0;
     RefreshSequenceVolumeScale();
 }
 

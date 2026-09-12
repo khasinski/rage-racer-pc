@@ -11,14 +11,8 @@
 EngineSoundState g_EngineSoundState;
 MusicChannel g_MusicChannels[AUDIO_MUSIC_CHANNEL_COUNT];
 EffectVoice g_EffectVoices[AUDIO_EFFECT_VOICE_COUNT];
+Audio g_Audio;
 SoundScale g_SoundScale;
-s32 g_PanVoiceVolumeR;
-s32 g_PanVoiceVolumeL;
-s32 g_IndexedEffectIndexPrev;
-s32 g_IndexedEffectIndex;
-s32 g_IndexedEffectPitch;
-s32 g_IndexedEffectVolume;
-s32 g_PanVoiceActive;
 s32 g_ActiveSpecialCue;
 s32 g_LastSpecialCueRequest;
 s32 g_AudioLoadSlot;
@@ -113,7 +107,7 @@ static void TestSoundStateReset(void) {
     memset(g_EffectVoices, 0x7F, sizeof(g_EffectVoices));
     g_ActiveSpecialCue = 15;
     g_LastSpecialCueRequest = 15;
-    g_IndexedEffectVolume = 127;
+    g_Audio.indexed.volume = 127;
     g_AudioLoadSlot = AUDIO_SLOT_ENGINE;
     InitSoundRuntime();
 
@@ -138,7 +132,7 @@ static void TestSoundStateReset(void) {
               "reset initializes every effect voice");
     }
     Check(g_ActiveSpecialCue == -1 && g_LastSpecialCueRequest == -1 &&
-              g_IndexedEffectVolume == 0,
+              g_Audio.indexed.volume == 0,
           "reset clears transient effect state");
     Check(g_EngineSoundState.bank == -1 &&
               g_EngineSoundState.volumeScale == 128 &&

@@ -275,7 +275,7 @@ static void ReportAudioMetrics(void) {
            g_EngineSoundState.slotActive[3],
            g_EngineSoundState.slotActive[4],
            g_EngineSoundState.slotActive[5], g_SoundScale.scale,
-           g_SeqVolumeFadeStep, g_SeqVolume, g_Cd.currentTrack,
+           g_Audio.seq.fade, g_Audio.seq.volume, g_Cd.currentTrack,
            g_Cd.pendingTrack, g_Cd.fade);
     Psyz_AudioUnlock();
 }

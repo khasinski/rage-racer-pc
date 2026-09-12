@@ -10,8 +10,8 @@ enum {
 
 void SetSequenceVolume(s32 volume) {
     volume = ClampVoiceVolume(volume);
-    g_SeqVolume = volume;
-    SsSeqSetVol((s16)g_SeqHandle, (s16)volume, (s16)volume);
+    g_Audio.seq.volume = volume;
+    SsSeqSetVol((s16)g_Audio.seq.handle, (s16)volume, (s16)volume);
 }
 
 static s32 SequenceVolumeForSetting(s32 setting) {
@@ -20,12 +20,12 @@ static s32 SequenceVolumeForSetting(s32 setting) {
 }
 
 void RefreshSequenceVolumeScale(void) {
-    SetSequenceVolume(SequenceVolumeForSetting(g_SeqVolumeSetting));
+    SetSequenceVolume(SequenceVolumeForSetting(g_Audio.seq.setting));
 }
 
 void SetSequenceVolumeSetting(s32 setting) {
     setting = ClampAudioSetting(setting);
-    g_SeqVolumeSetting = setting;
+    g_Audio.seq.setting = setting;
     SetCdVolumeSetting(setting);
     SetSequenceVolume(SequenceVolumeForSetting(setting));
 }

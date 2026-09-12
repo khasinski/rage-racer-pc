@@ -91,17 +91,40 @@ _Static_assert(sizeof(EffectVoice) == 0x14,
 
 extern EffectVoice g_EffectVoices[AUDIO_EFFECT_VOICE_COUNT];
 
-/* Runtime reverb and sequence controls shared by the audio update paths. */
-extern s32 g_ReverbDepthL; /* reverb depth left  */
-extern s32 g_ReverbDepthR; /* reverb depth right */
-/* Per-frame step added to g_ReverbDepthL/R by UpdateSequenceFadeOut; -3
- * while a BGM fade-out runs, 0 when it has finished. */
-extern s32 g_ReverbFadeStep;
-extern s32 g_SeqHandle;
-extern s32 g_SeqVolume; /* current SEQ volume, also read as s16 */
-extern s32 g_SeqVolumeSetting; /* 0..15 OPTIONS level; volume = n * 114 / 15 */
-/* Step added to g_SeqVolume each frame; -4 while fading out. */
-extern s32 g_SeqVolumeFadeStep;
+typedef struct Seq {
+    s32 handle;
+    s32 volume;
+    s32 setting;
+    s32 fade;
+} Seq;
+
+typedef struct Reverb {
+    s32 left;
+    s32 right;
+    s32 fade;
+} Reverb;
+
+typedef struct PanVoice {
+    s32 left;
+    s32 right;
+    s32 active;
+} PanVoice;
+
+typedef struct IndexedVoice {
+    s32 index;
+    s32 previous;
+    s32 pitch;
+    s32 volume;
+} IndexedVoice;
+
+typedef struct Audio {
+    Seq seq;
+    Reverb reverb;
+    PanVoice pan;
+    IndexedVoice indexed;
+} Audio;
+
+extern Audio g_Audio;
 /*
  * Indexed effect table in rodata at g_IndexedEffects: three entries, twelve bytes
  * each, selected by SetIndexedEffectVoice (index clamped to 0..2). The old

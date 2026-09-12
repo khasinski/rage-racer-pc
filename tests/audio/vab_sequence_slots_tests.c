@@ -7,9 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+Audio g_Audio;
 SoundScale g_SoundScale;
-s32 g_SeqHandle;
-s32 g_SeqVolumeFadeStep;
 s32 g_AudioLoadSlot;
 s32 g_AudioLoadedSlotMask;
 s32 g_VabSpuAddress[AUDIO_SLOT_COUNT];
@@ -75,7 +74,7 @@ int main(void) {
     u8 sequence[4];
 
     g_VabSpuAddress[1] = 0x24000;
-    g_SeqVolumeFadeStep = -4;
+    g_Audio.seq.fade = -4;
     Check(OpenSequenceAudioSlot(header, body, sequence) == 1,
           "sequence slot returns asynchronous transfer state");
     Check(g_AudioLoadSlot == 1 && g_SoundScale.vabIds[1] == 8 &&
@@ -84,8 +83,8 @@ int main(void) {
           "sequence slot opens and transfers its VAB");
     Check(s_sequenceData == (u_long *)(void *)sequence &&
               s_sequenceVab == 8 &&
-              g_SeqHandle == (s16)0x8056 &&
-              g_SeqVolumeFadeStep == 0,
+              g_Audio.seq.handle == (s16)0x8056 &&
+              g_Audio.seq.fade == 0,
           "sequence slot opens score and clears fade state");
 
     g_AudioLoadSlot = 99;
