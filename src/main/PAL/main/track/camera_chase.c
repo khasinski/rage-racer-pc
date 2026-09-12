@@ -114,10 +114,10 @@ void CameraViewFromChaseCamera(GameCarRuntime *car, GameViewWork *view) {
     s32 chaseDistance;
     s32 chaseTargetYaw;
     s32 chaseYawLag;
-    s32 eyeOffset[3];
-    s32 eyeWorld[3];
-    s32 focusOffset[3];
-    s32 focusWorld[3];
+    Vec4 eyeOffset = {0};
+    Vec4 eyeWorld = {0};
+    Vec4 focusOffset = {0};
+    Vec4 focusWorld = {0};
     Matrix inverseObjectRotation;
     Matrix matrixWork;
     s32 pitchOffset;
@@ -162,45 +162,43 @@ void CameraViewFromChaseCamera(GameCarRuntime *car, GameViewWork *view) {
     TransposeMatrix(&objectRotation, &inverseObjectRotation);
     MulMatrix2(&cameraRotation, &objectRotation);
     TransposeMatrix(&objectRotation, &matrixWork);
-    focusOffset[0] = 0;
-    focusOffset[1] = -0x3C;
-    focusOffset[2] = 0x32;
-    ApplyMatrixLV(&inverseObjectRotation, &focusOffset[0],
-                  &focusWorld[0]);
-    view->x = CameraAddWord(view->x, focusWorld[0]);
-    view->y = CameraAddWord(view->y, focusWorld[1]);
-    view->z = CameraAddWord(view->z, focusWorld[2]);
+    focusOffset.y = -0x3C;
+    focusOffset.z = 0x32;
+    ApplyMatrixLV(&inverseObjectRotation, AsWords(&focusOffset),
+                  AsWords(&focusWorld));
+    view->x = CameraAddWord(view->x, focusWorld.x);
+    view->y = CameraAddWord(view->y, focusWorld.y);
+    view->z = CameraAddWord(view->z, focusWorld.z);
     /* Retail kept both offsets in the same stack slot, so a preset
      * outside 0..2 leaves the eye sitting on the look-at offset. The
      * switch has no default and the eye starts on that offset so it
      * still behaves that way. */
-    eyeOffset[0] = 0;
-    eyeOffset[1] = focusOffset[1];
-    eyeOffset[2] = focusOffset[2];
+    eyeOffset.y = focusOffset.y;
+    eyeOffset.z = focusOffset.z;
     switch (g_ChaseCameraPreset) {
     case 0:
-        eyeOffset[1] = 0x3A;
-        eyeOffset[2] = 0x118;
+        eyeOffset.y = 0x3A;
+        eyeOffset.z = 0x118;
         break;
     case 1:
-        eyeOffset[1] = 0x59;
-        eyeOffset[2] = 0x140;
+        eyeOffset.y = 0x59;
+        eyeOffset.z = 0x140;
         break;
     case 2:
-        eyeOffset[1] = 0x97;
-        eyeOffset[2] = 0x190;
+        eyeOffset.y = 0x97;
+        eyeOffset.z = 0x190;
         break;
     }
-    ApplyMatrixLV(&matrixWork, &eyeOffset[0], &eyeWorld[0]);
-    view->x = CameraSubtractWord(view->x, eyeWorld[0]);
-    view->y = CameraSubtractWord(view->y, eyeWorld[1]);
-    view->z = CameraSubtractWord(view->z, eyeWorld[2]);
+    ApplyMatrixLV(&matrixWork, AsWords(&eyeOffset), AsWords(&eyeWorld));
+    view->x = CameraSubtractWord(view->x, eyeWorld.x);
+    view->y = CameraSubtractWord(view->y, eyeWorld.y);
+    view->z = CameraSubtractWord(view->z, eyeWorld.z);
     chaseDistance = SquareRoot0(CameraAddWord(
-        CameraMultiplyWord(eyeWorld[0], eyeWorld[0]),
-        CameraMultiplyWord(eyeWorld[2], eyeWorld[2])));
+        CameraMultiplyWord(eyeWorld.x, eyeWorld.x),
+        CameraMultiplyWord(eyeWorld.z, eyeWorld.z)));
     view->angleX = 0x400 -
-        (Atan2(CameraAddWord(eyeWorld[1], 0x28), chaseDistance) & 0xFFF);
-    view->angleY = 0x400 - (Atan2(eyeWorld[0], eyeWorld[2]) & 0xFFF);
+        (Atan2(CameraAddWord(eyeWorld.y, 0x28), chaseDistance) & 0xFFF);
+    view->angleY = 0x400 - (Atan2(eyeWorld.x, eyeWorld.z) & 0xFFF);
     view->angleY += ChaseCameraYawOffset(car->steeringAngle);
     view->angleZ = CameraSubtractWord(car->bodyRoll,
                                       car->bodyRollVelocity);

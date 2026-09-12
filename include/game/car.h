@@ -221,20 +221,6 @@ typedef struct GameCarRuntime {
     u8 pad16A[0x32];
 } GameCarRuntime;
 
-typedef struct CarSurfaceSampleView {
-    u16 x;
-    u16 reserved02;
-    s32 surfaceY;
-    u16 z;
-    u16 reserved0A;
-    u8 reserved0C[0x24];
-    s32 trackPointIndex;
-    u8 reserved34[0x2C];
-    s32 modelY;
-    u8 reserved64[0x34];
-    s16 verticalMotionState;
-} CarSurfaceSampleView;
-
 typedef struct CarCollisionPoint {
     s16 x;
     s16 z;
