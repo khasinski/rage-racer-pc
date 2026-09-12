@@ -214,7 +214,6 @@ static const EnvironmentAlias s_environmentAliases[] = {
     {"diagnostics.modern_dump_frame", "RAGE_PORT_MODERN_DUMP_FRAME"},
     {"diagnostics.modern_dump_scene", "RAGE_PORT_MODERN_DUMP_SCENE"},
     {"diagnostics.modern_span_trace", "RAGE_PORT_MODERN_SPAN_TRACE"},
-    {"diagnostics.random.trace", "RAGE_PORT_RANDOM_TRACE"},
     {"diagnostics.render.car_draw_trace", "RAGE_PORT_CAR_DRAW_TRACE"},
     {"diagnostics.render.car_draw_trace_timer", "RAGE_PORT_CAR_DRAW_TRACE_TIMER"},
     {"diagnostics.render.tachometer_trace", "RAGE_PORT_TACHO_TRACE"},
