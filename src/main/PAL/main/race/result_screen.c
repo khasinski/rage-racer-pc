@@ -68,7 +68,7 @@ static void DrawResultPlace(void) {
         placeSprite->u, 0xCC, g_ResultPlaceCluts[racePosition]);
 }
 
-void DrawGrandPrixIntro(void) {
+void DrawGrandPrixIntro(s32 drawClassBanner) {
     char text[RESULT_INTRO_TEXT_CAPACITY];
     s32 classIndex = g_GrandPrixClass;
     s32 nameIndex = GrandPrixNameIndex(g_GrandPrixSeries, classIndex);
@@ -82,7 +82,7 @@ void DrawGrandPrixIntro(void) {
         grandPrixName = "";
     }
 
-    if (ShouldDrawClassPlaceBanner(g_ClassResultPlace, g_PrizeScreenState)) {
+    if (drawClassBanner && IsValidRaceResultPlace(g_ClassResultPlace)) {
         DrawClassPlaceBanner();
     }
 

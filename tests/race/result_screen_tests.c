@@ -16,7 +16,6 @@ s16 g_GrandPrixSeries;
 s32 g_GrandPrixClass;
 s32 g_GrandPrixRound;
 s32 g_ClassResultPlace;
-PrizeScreenState g_PrizeScreenState;
 char *g_CourseNames[COURSE_SLOT_COUNT] = {
     "COURSE 0", "COURSE 1", "COURSE 2", "COURSE 3",
 };
@@ -94,7 +93,6 @@ int main(void) {
     g_GrandPrixClass = 0;
     g_GrandPrixRound = 1;
     g_ClassResultPlace = 0;
-    g_PrizeScreenState = PRIZE_SCREEN_STATE_INVALID;
     g_GrandPrixNames[0] = "GP";
     g_PlayerCar.drive.racePosition = 2;
     g_ResultPlaceSprites.places[1] =
@@ -102,7 +100,7 @@ int main(void) {
     g_ResultPanelCluts.byPlace[2] = 0x1234;
     g_ResultPlaceCluts[2] = 0x5678;
     s_spriteCount = 0;
-    DrawGrandPrixIntro();
+    DrawGrandPrixIntro(0);
     if (s_spriteCount != 2 || s_spriteClut[0] != 0x1234 ||
         s_spriteX[1] != 26 || s_spriteWidth[1] != 64 ||
         s_spriteU[1] != 48 || s_spriteClut[1] != 0x5678) {

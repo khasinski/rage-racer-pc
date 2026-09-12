@@ -18,7 +18,7 @@ void EnterRaceEndScreen(void);
 void UpdateRaceEndScreen(void);
 
 void DrawCourseIntro(void);          /* "COURSE IN" / "TIME ATTACK" */
-void DrawGrandPrixIntro(void);       /* "CLASS%d %s GRANDPRIX" */
+void DrawGrandPrixIntro(s32 drawClassBanner); /* "CLASS%d %s GRANDPRIX" */
 /*
  * Title screen and main menu. UpdateFrontend runs one of the
  * four handlers below each frame via the jump table at g_FrontendDrawHandlers, indexed by

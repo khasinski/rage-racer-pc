@@ -19,11 +19,6 @@ s32 IsValidRaceResultPlace(s32 racePosition) {
         racePosition <= RESULT_PLACE_LAST;
 }
 
-s32 ShouldDrawClassPlaceBanner(s32 classPlace, s32 prizeScreenState) {
-    return IsValidRaceResultPlace(classPlace) &&
-        prizeScreenState >= PRIZE_SCREEN_STATE_WAIT_FOR_BONUS_CONFIRM;
-}
-
 s32 GrandPrixNameIndex(s32 extraSeries, s32 classIndex) {
     s32 classCount = extraSeries != 0
         ? EXTRA_GRAND_PRIX_CLASS_COUNT

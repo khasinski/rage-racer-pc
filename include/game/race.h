@@ -242,7 +242,6 @@ typedef enum PrizeScreenState {
     PRIZE_SCREEN_STATE_FADE_OUT
 } PrizeScreenState;
 
-extern PrizeScreenState g_PrizeScreenState;
 extern s32 g_PromotionBonus;
 extern s32 g_RacePaused;
 extern s16 g_ReverbZoneDepth;

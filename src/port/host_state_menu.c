@@ -231,7 +231,6 @@ s16 g_NegconMappingIndex;
 s32 g_MenuAltLayout;
 s32 g_GameMode;
 s32 g_TitleAttractTimer;
-s32 g_PrizeScreenState;
 s32 g_RankingCursor;
 s16 g_PadMappingIndex;
 s32 g_PromotionBonus;

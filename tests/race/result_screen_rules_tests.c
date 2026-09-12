@@ -22,16 +22,6 @@ int main(void) {
     Check("third race place", IsValidRaceResultPlace(3), 1);
     Check("fourth race place", IsValidRaceResultPlace(4), 0);
 
-    Check("banner waits for bonus",
-          ShouldDrawClassPlaceBanner(
-              1, PRIZE_SCREEN_STATE_WAIT_FOR_BONUS_CONFIRM - 1), 0);
-    Check("valid class banner",
-          ShouldDrawClassPlaceBanner(
-              3, PRIZE_SCREEN_STATE_WAIT_FOR_BONUS_CONFIRM), 1);
-    Check("invalid class banner",
-          ShouldDrawClassPlaceBanner(
-              4, PRIZE_SCREEN_STATE_WAIT_FOR_BONUS_CONFIRM), 0);
-
     Check("standard first name", GrandPrixNameIndex(0, 0), 0);
     Check("standard sixth name", GrandPrixNameIndex(0, 5), 5);
     Check("standard class overflow", GrandPrixNameIndex(0, 6), -1);

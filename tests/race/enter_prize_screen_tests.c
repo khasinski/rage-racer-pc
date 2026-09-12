@@ -21,7 +21,6 @@ s32 g_PromotionBonusTable[PROMOTION_BONUS_COUNT];
 s32 g_SceneId;
 s32 g_SceneTimer;
 s32 g_SeriesCleared;
-PrizeScreenState g_PrizeScreenState;
 GameRaceProgress *g_RaceProgress;
 PlayerCarRuntime g_PlayerCar;
 RagePrizeMoneyStorage g_PrizeMoneyState;
@@ -32,6 +31,7 @@ static GameRaceProgress s_progress;
 static s32 s_failures;
 static s32 s_fanfareStarts;
 
+
 void StartClassClearFanfare(void) {
     s_fanfareStarts++;
 }
@@ -39,7 +39,7 @@ void StartClassClearFanfare(void) {
 s32 TickClassClearFanfare(void) { return 0; }
 void AdvanceGrandPrixClass(void) {}
 void DrawFullscreenFadeTile(s32 step, s32 clut) { (void)step; (void)clut; }
-void DrawGrandPrixIntro(void) {}
+void DrawGrandPrixIntro(s32 drawClassBanner) { (void)drawClassBanner; }
 void DrawPrizeMoneyPanel(s32 step) { (void)step; }
 void DrawRaceTimePanel(s32 step) { (void)step; }
 void PlaySoundCue(s32 cue) { (void)cue; }
@@ -95,8 +95,6 @@ int main(void) {
     Check("prize screen scene", g_SceneId, 0x13);
     Check("initial fade timer", g_SceneTimer, 0x100);
     Check("frame sync threshold", g_FrameSyncThreshold, 0x80);
-    Check("initial prize screen state", g_PrizeScreenState,
-          PRIZE_SCREEN_STATE_INTRO_FADE_IN);
     Check("second-place prize", g_PrizeAmount, 16000);
     Check("promotion bonus", g_PromotionBonus, 100000);
     Check("prize count step", g_PrizeCountStep, 100);
