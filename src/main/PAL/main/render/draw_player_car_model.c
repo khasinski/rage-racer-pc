@@ -70,8 +70,8 @@ static s32 DrawCloseCarAssembly(GameCarRuntime *object,
     Matrix lightMatrix;
     Matrix wheelMatrices[CAR_SIDE_COUNT];
     Matrix axleMatrix;
-    s16 wheelOffset[4];
-    s32 wheelPosition[4];
+    SVec wheelOffset = {0};
+    Vec4 wheelPosition = {0};
     LVec modelPosition;
     s32 clipHandle = 0;
     s32 passIndex;
@@ -142,17 +142,17 @@ static s32 DrawCloseCarAssembly(GameCarRuntime *object,
             ? assembly->wheelOffsetX
             : -(int64_t)assembly->wheelOffsetX;
 
-        wheelOffset[0] = WrapSigned16(lateralOffset);
-        wheelOffset[1] = assembly->wheelOffsetY;
-        wheelOffset[2] = assembly->wheelOffsetZ;
-        ApplyMatrix(&bodyLocalMatrix, wheelOffset, wheelPosition);
-        wheelPosition[0] = WrapSigned32(
-            (int64_t)wheelPosition[0] + object->x);
-        wheelPosition[1] = WrapSigned32(
-            (int64_t)wheelPosition[1] + object->y);
-        wheelPosition[2] = WrapSigned32(
-            (int64_t)wheelPosition[2] + object->z);
-        SubmitCarPart(AsPositionWords(wheelPosition),
+        wheelOffset.vx = WrapSigned16(lateralOffset);
+        wheelOffset.vy = assembly->wheelOffsetY;
+        wheelOffset.vz = assembly->wheelOffsetZ;
+        ApplyMatrix(&bodyLocalMatrix, &wheelOffset, &wheelPosition);
+        wheelPosition.x = WrapSigned32(
+            (int64_t)wheelPosition.x + object->x);
+        wheelPosition.y = WrapSigned32(
+            (int64_t)wheelPosition.y + object->y);
+        wheelPosition.z = WrapSigned32(
+            (int64_t)wheelPosition.z + object->z);
+        SubmitCarPart(AsPosition(&wheelPosition),
                       &wheelMatrices[sideIndex], 0,
                       assembly->wheelBank);
         SetLightMatrix(&lightMatrix);
@@ -208,8 +208,8 @@ void DrawCar(GameCarRuntime *object) {
     Matrix scratchMatrix;
     Matrix bodyLocalMatrix;
     Matrix lightMatrix;
-    s32 cameraOffset[4];
-    s32 viewPosition[4];
+    Vec4 cameraOffset = {0};
+    Vec4 viewPosition = {0};
     s32 clipHandle = 0;
     s32 renderDistance;
     s32 model;
@@ -220,15 +220,15 @@ void DrawCar(GameCarRuntime *object) {
     model = g_CarModelByCourse[SeriesCourseIndex()][object->modelIndex];
     lod = g_CarModelBankTable[model];
 
-    cameraOffset[0] = WrapSigned32(
+    cameraOffset.x = WrapSigned32(
         (int64_t)object->x - g_RenderState.camera.x);
-    cameraOffset[1] = 0;
-    cameraOffset[2] = WrapSigned32(
+    cameraOffset.z = WrapSigned32(
         (int64_t)object->z - g_RenderState.camera.z);
-    ApplyMatrixLV(&g_RenderState.geometry.matrix, cameraOffset, viewPosition);
+    ApplyMatrixLV(&g_RenderState.geometry.matrix, AsWords(&cameraOffset),
+                  AsWords(&viewPosition));
     renderDistance = CarRenderManhattanDistance(
         object->x, object->z, g_RenderState.camera.x, g_RenderState.camera.z);
-    renderRange = ClassifyCarRenderRange(viewPosition[2], renderDistance);
+    renderRange = ClassifyCarRenderRange(viewPosition.z, renderDistance);
     if (DiagnosticsEnabled("render.car_draw_trace")) {
         if (g_SceneTimer == DiagnosticsIntValue(
                 "render.car_draw_trace_timer", g_SceneTimer)) {
@@ -241,7 +241,7 @@ void DrawCar(GameCarRuntime *object) {
                    g_SceneTimer, g_RenderState.pass.orderingFlag != 0,
                    FindRenderedCarSlot(object),
                    object->modelIndex, model, lod[0], lod[1], renderDistance,
-                   viewPosition[2], rangeNames[renderRange], g_PlayerCarIndex,
+                   viewPosition.z, rangeNames[renderRange], g_PlayerCarIndex,
                    g_CarTable[g_PlayerCarIndex].modelVariant,
                    GetCarAssetIndex(g_PlayerCarIndex,
                        g_CarTable[g_PlayerCarIndex].modelVariant));

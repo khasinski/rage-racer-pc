@@ -14,7 +14,7 @@ static s32 FinishCameraTargetPoint(const GameCarRuntime *target) {
 void UpdateFinishCamera(PlayerCarRuntime *car) {
     GameCarRuntime *obj = AsRivalCar(car);
     GameViewWork viewWork;
-    s32 delta[3];
+    LVec delta;
     s32 target[3];
     CarTrackLimits trackLimits = {0};
     s32 targetPoint;
@@ -52,12 +52,12 @@ void UpdateFinishCamera(PlayerCarRuntime *car) {
     viewWork.z = g_CameraCar.z;
     viewWork.parameter = g_CameraCar.positionW;
 
-    delta[0] = WrapSigned32((int64_t)obj->x - viewWork.x);
-    delta[1] = WrapSigned32((int64_t)obj->y - viewWork.y);
-    delta[2] = WrapSigned32((int64_t)obj->z - viewWork.z);
-    viewWork.angleY = ANGLE_QUARTER_TURN - Atan2(delta[0], delta[2]);
-    distance = DistanceXZ(delta[0], delta[2]);
-    viewWork.angleX = ANGLE_QUARTER_TURN - Atan2(delta[1], distance >> 6);
+    delta.x = WrapSigned32((int64_t)obj->x - viewWork.x);
+    delta.y = WrapSigned32((int64_t)obj->y - viewWork.y);
+    delta.z = WrapSigned32((int64_t)obj->z - viewWork.z);
+    viewWork.angleY = ANGLE_QUARTER_TURN - Atan2(delta.x, delta.z);
+    distance = DistanceXZ(delta.x, delta.z);
+    viewWork.angleX = ANGLE_QUARTER_TURN - Atan2(delta.y, distance >> 6);
     viewWork.angleZ = 0;
 
     StoreViewWork(&g_RenderState.camera, &viewWork);
