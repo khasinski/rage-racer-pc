@@ -12,7 +12,8 @@ foreach(case IN LISTS cases)
     list(GET fields 4 direct)
     set(log "${EVIDENCE}/scenario-variant-${car}-${variant}.log")
     file(REMOVE "${log}")
-    execute_process(COMMAND "${GAME}" --scenario "${SOURCE}/tests/scenarios/authored_compact_later.ini"
+    execute_process(COMMAND "${CMAKE_COMMAND}" -E env SDL_AUDIODRIVER=dummy
+        "${GAME}" --scenario "${SOURCE}/tests/scenarios/authored_compact_variants.ini"
         --set stop.timer=120 --set "race.car=${car}" --set "race.variant=${variant}"
         --set "boot.direct=${direct}"
         --set "diagnostics.log=${log}"

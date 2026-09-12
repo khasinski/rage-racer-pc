@@ -35,7 +35,8 @@ foreach(case IN LISTS cases)
     list(GET fields 3 name)
     set(log "${EVIDENCE}/player-grade-${mode}-bank-${asset}.log")
     file(REMOVE "${log}")
-    execute_process(COMMAND "${GAME}" --scenario "${SOURCE}/tests/scenarios/authored_compact_later.ini"
+    execute_process(COMMAND "${CMAKE_COMMAND}" -E env SDL_AUDIODRIVER=dummy
+        "${GAME}" --scenario "${SOURCE}/tests/scenarios/authored_compact_later.ini"
         --set stop.timer=120 --set "race.car=${car}" --set "race.variant=${variant}"
         --set "modern.assets=${ASSET_SOURCE}" --set "diagnostics.log=${log}"
         WORKING_DIRECTORY "${SOURCE}" RESULT_VARIABLE status

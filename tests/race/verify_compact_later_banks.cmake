@@ -12,7 +12,8 @@ foreach(asset 94 102 104 106 108 110 112 114 116 118 120 122 124 126)
     math(EXPR course "(${asset}-88-${class}*8)/2")
     set(log "${EVIDENCE}/compact-later-${mode}-bank-${asset}.log")
     file(REMOVE "${log}")
-    execute_process(COMMAND "${GAME}" --scenario "${SOURCE}/tests/scenarios/authored_compact_later.ini"
+    execute_process(COMMAND "${CMAKE_COMMAND}" -E env SDL_AUDIODRIVER=dummy
+        "${GAME}" --scenario "${SOURCE}/tests/scenarios/authored_compact_later.ini"
         --set stop.timer=120 --set "race.class=${class}" --set "race.course=${course}"
         --set "diagnostics.log=${log}" --set "modern.assets=${ASSET_SOURCE}"
         WORKING_DIRECTORY "${SOURCE}" RESULT_VARIABLE status
