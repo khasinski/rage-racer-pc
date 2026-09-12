@@ -34,7 +34,7 @@ void AdvanceGrandPrixClass(void) {
         ResetProgressSlot(g_CarTable, g_RaceProgress);
         g_RaceProgress->money = RACE_MAX_PRIZE_MONEY;
         g_RaceProgress->maxClassReached = maxClassReached;
-        ResetCourseProgress(0);
+        ResetCourseProgressState(g_CourseProgress, 0);
         BeginEndingFmv(GAME_SCENE_RETURN_FROM_ENDING_FMV);
         return;
     }
@@ -59,5 +59,5 @@ void AdvanceGrandPrixClass(void) {
         }
     }
 
-    ResetCourseProgress(nextClass);
+    ResetCourseProgressState(g_CourseProgress, nextClass);
 }

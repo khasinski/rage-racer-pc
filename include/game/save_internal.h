@@ -16,6 +16,9 @@ extern s32 g_ClassWinCount;
 extern CourseProgressState g_GrandPrixCourseProgress;
 extern CourseProgressState g_ExtraGrandPrixCourseProgress;
 extern CourseProgressState *g_CourseProgress;
+
+/* Reset one course-progress block (class < 2 marks slot 3 unused). */
+void ResetCourseProgressState(CourseProgressState *progress, s32 classIndex);
 extern s32 g_BgmSelection;
 extern TeamLogoCanvas g_TeamLogoCanvas;
 extern s32 g_BestLapTimes[RECORD_SERIES_COUNT][RECORD_COURSE_COUNT]

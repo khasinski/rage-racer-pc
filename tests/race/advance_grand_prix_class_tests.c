@@ -41,7 +41,8 @@ void ResetProgressSlot(CarEntry *cars, GameRaceProgress *progress) {
     progress->maxClassReached = -1;
 }
 
-void ResetCourseProgress(s32 mode) {
+void ResetCourseProgressState(CourseProgressState *progress, s32 mode) {
+    (void)progress;
     s_resetCourseMode = mode;
 }
 

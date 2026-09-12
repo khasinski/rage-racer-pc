@@ -143,9 +143,6 @@ extern s32 g_AnimTimer;
  * once, from InitSubsystems.
  */
 void InitSaveDefaults(void);
-/* Reset the current g_CourseProgress block (class < 2 marks slot 3 unused). */
-void ResetCourseProgress(s32 classIndex);
-
 extern s32 g_PadErrorHoldBits;
 extern s32 g_PadValidateCountdown;
 extern s32 g_FrameSyncThreshold;

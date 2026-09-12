@@ -194,7 +194,8 @@ s32 DrawClassChangeCurtain(s32 step) {
     RECORD("curtain", step);
     return s_curtain;
 }
-void ResetCourseProgress(s32 mode) {
+void ResetCourseProgressState(CourseProgressState *progress, s32 mode) {
+    (void)progress;
     s_progressResets++;
     RECORD("resetprogress", mode);
 }

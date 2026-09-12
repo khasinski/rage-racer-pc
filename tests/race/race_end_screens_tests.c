@@ -44,7 +44,8 @@ void DrawFullscreenFadeTile(s32 color, s32 tpage) {
     if (tpage == 0x49) s_FadeLevel = color;
 }
 void StartCdVolumeFade(s32 frames) { s_AudioFadeFrames = frames; }
-void ResetCourseProgress(s32 classIndex) {
+void ResetCourseProgressState(CourseProgressState *progress, s32 classIndex) {
+    (void)progress;
     s_ResetProgressCalls++;
     s_ResetProgressClass = classIndex;
 }

@@ -47,8 +47,7 @@ static int TestCourseProgressModes(void) {
 
     for (s32 cls = -1; cls <= 6; ++cls) {
         memset(&progress, 0xA5, sizeof(progress));
-        g_CourseProgress = &progress;
-        ResetCourseProgress(cls);
+        ResetCourseProgressState(&progress, cls);
         CHECK(progress.retriesRemaining == 5);
         CHECK(progress.unlockPending == 0);
         for (s32 course = 0; course < 4; ++course)
@@ -57,15 +56,14 @@ static int TestCourseProgressModes(void) {
     }
 
     memset(&progress, 0xA5, sizeof(progress));
-    g_CourseProgress = &progress;
-    ResetCourseProgress(0);
+    ResetCourseProgressState(&progress, 0);
     CHECK(progress.retriesRemaining == 5);
     CHECK(progress.unlockPending == 0);
     CHECK(progress.bestPlace[0] == 0 && progress.bestPlace[1] == 0);
     CHECK(progress.bestPlace[2] == 0 && progress.bestPlace[3] == 0xFF);
 
     memset(&progress, 0xA5, sizeof(progress));
-    ResetCourseProgress(2);
+    ResetCourseProgressState(&progress, 2);
     CHECK(progress.bestPlace[0] == 0 && progress.bestPlace[1] == 0);
     CHECK(progress.bestPlace[2] == 0 && progress.bestPlace[3] == 0);
     return 0;

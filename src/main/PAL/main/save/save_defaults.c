@@ -23,7 +23,7 @@ void ResetProgressSlot(CarEntry *cars, GameRaceProgress *progress) {
     progress->money = 0;
 }
 
-static void ResetCourseProgressState(
+void ResetCourseProgressState(
     CourseProgressState *progress,
     s32 classIndex) {
     const GrandPrixClassDefinition *definition = GrandPrixContentClass(classIndex);
@@ -38,10 +38,6 @@ static void ResetCourseProgressState(
         progress->bestPlace[course] = 0xFF;
 
     progress->unlockPending = 0;
-}
-
-void ResetCourseProgress(s32 classIndex) {
-    ResetCourseProgressState(g_CourseProgress, classIndex);
 }
 
 void InitSaveDefaults(void) {

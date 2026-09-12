@@ -321,7 +321,7 @@ static void UpdateClassChange(GameOrderingTableEntry *ot) {
     if (DrawClassChangeCurtain(1) >= COURSE_CLASS_CURTAIN_CLOSED) {
         g_ClassChangeApplied = 1;
         g_GrandPrixClass = g_MenuSubCursor;
-        ResetCourseProgress(g_MenuSubCursor);
+        ResetCourseProgressState(g_CourseProgress, g_MenuSubCursor);
         g_MenuViewAngle = MENU_COURSE_VIEW_REBASE_SPAN;
         g_MenuViewAngleTarget = MENU_COURSE_VIEW_REBASE_SPAN;
         g_CourseSelectOption = 0;
