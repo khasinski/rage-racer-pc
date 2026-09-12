@@ -131,24 +131,6 @@ void ApplyZoneLighting(s32 blend, Matrix *lightMatrix) {
     s_zoneLightCalls++;
 }
 void RestoreColorMatrix(void) { s_restoreCalls++; }
-s32 GetCarAssetIndex(s32 model, s32 grade) {
-    (void)model;
-    (void)grade;
-    return 0;
-}
-s32 DiagnosticsEnabled(const char *name) {
-    (void)name;
-    return 0;
-}
-s32 DiagnosticsIntValue(const char *name, s32 fallback) {
-    (void)name;
-    return fallback;
-}
-void Trace(const char *category, const char *format, ...) {
-    (void)category;
-    (void)format;
-}
-
 static void ResetCounters(void) {
     s_modernCarCalls = 0;
     s_modernPlayerCalls = 0;

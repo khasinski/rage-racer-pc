@@ -1,6 +1,4 @@
-#include "game/diagnostics.h"
 #include "game/render.h"
-#include "game/state.h"
 
 #include <limits.h>
 
@@ -31,20 +29,4 @@ void SetGteObjectMatrix(const LVec *position, Matrix *rotation) {
     SetRotMatrix(rotation);
     SetTransMatrix(&translation);
 
-    if (DiagnosticsEnabled("render.car_draw_trace") &&
-        g_RenderState.pass.mode == GAME_RENDER_PASS_MIRROR) {
-        if (g_SceneTimer == DiagnosticsIntValue(
-                "render.car_draw_trace_timer", g_SceneTimer)) {
-            Trace("object-matrix", "timer=%d position=%d,%d,%d relative=%d,%d,%d "
-                  "view=%d,%d,%d rotation=%d,%d,%d,%d,%d,%d,%d,%d,%d "
-                  "translation=%d,%d,%d", g_SceneTimer,
-                  position->x, position->y, position->z, relative.vx,
-                  relative.vy, relative.vz, view.x, view.y, view.z,
-                  rotation->m[0][0],
-                  rotation->m[0][1], rotation->m[0][2], rotation->m[1][0],
-                  rotation->m[1][1], rotation->m[1][2], rotation->m[2][0],
-                  rotation->m[2][1], rotation->m[2][2], translation.t[0],
-                  translation.t[1], translation.t[2]);
-        }
-    }
 }

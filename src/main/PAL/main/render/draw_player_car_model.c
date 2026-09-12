@@ -1,4 +1,3 @@
-#include "game/diagnostics.h"
 #include "game/angle.h"
 #include "game/asset.h"
 #include "game/car.h"
@@ -15,20 +14,6 @@ enum {
     CAR_SHELL_PASS_COUNT = 2,
     CAR_SIDE_COUNT = 2,
 };
-
-static s32 FindRenderedCarSlot(const GameCarRuntime *object) {
-    s32 slot;
-
-    if (object == AsRivalCar(&g_PlayerCar)) {
-        return -1;
-    }
-    for (slot = 0; slot < RACE_CAR_SLOT_COUNT; slot++) {
-        if (object == &g_Cars[slot]) {
-            return slot;
-        }
-    }
-    return -2;
-}
 
 static void SubmitCarPart(const LVec *position, Matrix *transform,
                           s32 materialMode, s32 modelBank) {
@@ -229,24 +214,6 @@ void DrawCar(GameCarRuntime *object) {
     renderDistance = CarRenderManhattanDistance(
         object->x, object->z, g_RenderState.camera.x, g_RenderState.camera.z);
     renderRange = ClassifyCarRenderRange(viewPosition.z, renderDistance);
-    if (DiagnosticsEnabled("render.car_draw_trace")) {
-        if (g_SceneTimer == DiagnosticsIntValue(
-                "render.car_draw_trace_timer", g_SceneTimer)) {
-            static const char *const rangeNames[] = {
-                "behind", "close", "far", "culled"
-            };
-            Trace("car-draw", "timer=%d mirror=%d slot=%d source=%d "
-                   "car=%d lod=%d palette=%d depth=%d view-z=%d detail=%s "
-                   "player=%d grade=%d asset=%d",
-                   g_SceneTimer, g_RenderState.pass.orderingFlag != 0,
-                   FindRenderedCarSlot(object),
-                   object->modelIndex, model, lod[0], lod[1], renderDistance,
-                   viewPosition.z, rangeNames[renderRange], g_PlayerCarIndex,
-                   g_CarTable[g_PlayerCarIndex].modelVariant,
-                   GetCarAssetIndex(g_PlayerCarIndex,
-                       g_CarTable[g_PlayerCarIndex].modelVariant));
-        }
-    }
     if (renderRange == CAR_RENDER_CLOSE || renderRange == CAR_RENDER_FAR) {
         GameRenderWorldSubmitCar(
             object, g_RenderState.pass.orderingFlag != 0,

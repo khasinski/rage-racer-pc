@@ -1,34 +1,11 @@
 #include "game/render.h"
-#include "game/state.h"
 #include "psyz/gte.h"
 
 #include <limits.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
 GameRenderState g_RenderState;
-s32 g_SceneTimer;
-
-int DiagnosticsEnabled(const char *key) {
-    (void)key;
-    return 0;
-}
-
-const char *DiagnosticsValue(const char *key) {
-    (void)key;
-    return NULL;
-}
-
-int DiagnosticsIntValue(const char *key, int fallback) {
-    (void)key;
-    return fallback;
-}
-
-void Trace(const char *topic, const char *format, ...) {
-    (void)topic;
-    (void)format;
-}
 
 #define CHECK_EQ(actual, expected)                                             \
     do {                                                                       \
