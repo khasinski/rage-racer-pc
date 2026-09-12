@@ -37,8 +37,8 @@ static void DrawLightBurstBands(GameOrderingTableEntry *ot, s32 level) {
     s32 i;
 
     for (i = 0; i < MENU_LIGHT_BURST_RAY_COUNT; i++) {
-        s32 x = g_MenuLightBurstBandX.values[i];
-        s32 y = g_MenuLightBurstBandY.values[i];
+        s32 x = g_MenuLightBurstBandX[i];
+        s32 y = g_MenuLightBurstBandY[i];
         s32 width = (0xA0 - (u16)x) * 2;
         u8 shade = (u8)((((((u16)y - 0xAA) << 7) / 309 + 0x16) *
                           level) /

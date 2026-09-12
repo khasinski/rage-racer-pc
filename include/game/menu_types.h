@@ -73,10 +73,6 @@ enum { MENU_LIGHT_BURST_RAY_COUNT = 33 };
 typedef s32 TeamLogoCoordinate;
 typedef s32 TeamLogoColorIndex;
 
-typedef struct MenuLightBurstBand {
-    s16 values[MENU_LIGHT_BURST_RAY_COUNT];
-} MenuLightBurstBand;
-
 enum MenuPalette {
     MENU_PAINT_COLOR_COUNT = 18
 };

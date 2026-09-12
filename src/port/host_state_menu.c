@@ -42,15 +42,15 @@ char g_FmtPrize2nd[12] __attribute__((aligned(16))) = "2ND/%7dv";
 char g_FmtPrize3rd[12] __attribute__((aligned(16))) = "3RD/%7dv";
 char g_CaptionBestTotalTime[8] __attribute__((aligned(16))) = "hedi";
 char g_CaptionBestLapTime[] __attribute__((aligned(16))) = "hfdi";
-const MenuLightBurstBand g_MenuLightBurstBandX __attribute__((aligned(16))) = {
-    {48, 48, 48, 48, 48, 47, 47, 46, 46, 45, 44, 43, 42, 41, 39, 38,
-     37, 35, 33, 32, 30, 28, 26, 24, 22, 19, 17, 14, 12, 9, 6, 4, 0}
-};
-const MenuLightBurstBand g_MenuLightBurstBandY __attribute__((aligned(16))) = {
-    {170, 170, 171, 172, 174, 177, 180, 184, 189, 194, 200, 206, 213,
-     221, 229, 238, 247, 257, 268, 279, 291, 303, 316, 330, 344, 359,
-     374, 390, 407, 424, 442, 460, 479}
-};
+const s16 g_MenuLightBurstBandX[MENU_LIGHT_BURST_RAY_COUNT]
+    __attribute__((aligned(16))) = {
+        48, 48, 48, 48, 48, 47, 47, 46, 46, 45, 44, 43, 42, 41, 39, 38,
+        37, 35, 33, 32, 30, 28, 26, 24, 22, 19, 17, 14, 12, 9, 6, 4, 0};
+const s16 g_MenuLightBurstBandY[MENU_LIGHT_BURST_RAY_COUNT]
+    __attribute__((aligned(16))) = {
+        170, 170, 171, 172, 174, 177, 180, 184, 189, 194, 200, 206, 213,
+        221, 229, 238, 247, 257, 268, 279, 291, 303, 316, 330, 344, 359,
+        374, 390, 407, 424, 442, 460, 479};
 const char g_MsgOrdinalSt[4] __attribute__((aligned(16))) = "ST";
 const char g_MsgOrdinalNd[4] __attribute__((aligned(16))) = "ND";
 const char g_MsgOrdinalRd[4] __attribute__((aligned(16))) = "RD";

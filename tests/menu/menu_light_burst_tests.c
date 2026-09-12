@@ -8,14 +8,14 @@
 #include <string.h>
 
 s32 g_MenuLightBurstLevel;
-const MenuLightBurstBand g_MenuLightBurstBandX = {
-    {20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-     31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
-     42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52}};
-const MenuLightBurstBand g_MenuLightBurstBandY = {
-    {170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180,
-     181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191,
-     192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202}};
+const s16 g_MenuLightBurstBandX[MENU_LIGHT_BURST_RAY_COUNT] = {
+    20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+    31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
+    42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52};
+const s16 g_MenuLightBurstBandY[MENU_LIGHT_BURST_RAY_COUNT] = {
+    170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180,
+    181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191,
+    192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202};
 GameRenderState g_RenderState;
 
 typedef struct LineRecord {
