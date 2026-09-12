@@ -1,5 +1,4 @@
 #include "game/car.h"
-#include "game/diagnostics.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/render.h"
@@ -34,11 +33,6 @@ static s32 s_speedY;
 static s32 s_speed;
 static const char *s_region = "PAL";
 const char *HostDiscRegion(void) { return s_region; }
-
-s32 DiagnosticsEnabled(const char *name) {
-    (void)name;
-    return 0;
-}
 
 int HudRightX(int x) {
     return x + 100;

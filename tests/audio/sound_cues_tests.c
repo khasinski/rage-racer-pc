@@ -48,11 +48,6 @@ int RageTestPrintf(const char *format, ...) {
     return 0;
 }
 
-int DiagnosticsEnabled(const char *key) {
-    (void)key;
-    return 0;
-}
-
 long SpuGetKeyStatus(unsigned long voiceBit) {
     s32 index;
 

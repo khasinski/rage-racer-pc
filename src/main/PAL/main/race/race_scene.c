@@ -4,7 +4,6 @@
 #include "game/audio.h"
 #include "game/car.h"
 #include "game/cd.h"
-#include "game/diagnostics.h"
 #include "game/input_internal.h"
 #include "game/menu.h"
 #include "game/player_car_internal.h"
@@ -52,10 +51,6 @@ enum {
 void QueueFinishFollowupCue(s32 cue) {
     s_FinishFollowupCue = cue;
     s_FinishFollowupWaitFrames = 0;
-    if (DiagnosticsEnabled("sound_cue_trace")) {
-        fprintf(stderr, "rage-port: finish follow-up queued cue=0x%02x\n",
-                (unsigned)cue);
-    }
 }
 
 static void UpdateFinishFollowupCue(void) {
@@ -76,10 +71,6 @@ static void UpdateFinishFollowupCue(void) {
         &s_FinishFollowupCue, 0);
     if (cue < 0) {
         return;
-    }
-    if (DiagnosticsEnabled("sound_cue_trace")) {
-        fprintf(stderr, "rage-port: finish follow-up released cue=0x%02x\n",
-                (unsigned)cue);
     }
     PlaySoundCue(cue);
 }

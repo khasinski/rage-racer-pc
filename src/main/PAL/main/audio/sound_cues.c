@@ -1,4 +1,3 @@
-#include "game/diagnostics.h"
 #include "game/audio.h"
 #include "game/audio_internal.h"
 #include "psyq/snd.h"
@@ -149,11 +148,6 @@ static int IsRepeatedSpecialCue(s32 cue) {
 }
 
 static void PlaySoundCueFromBank(s32 bank, s32 cue) {
-    if (DiagnosticsEnabled("sound_cue_trace")) {
-        fprintf(stderr, "rage-port: sound bank=%d cue=0x%02x\n", bank,
-                (unsigned)cue);
-    }
-
     if (bank == 1) {
         cue = ClampCueIndex(cue, MAIN_SOUND_CUE_COUNT);
         if (IsRepeatedSpecialCue(cue)) {

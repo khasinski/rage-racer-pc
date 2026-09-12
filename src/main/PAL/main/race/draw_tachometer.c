@@ -1,12 +1,9 @@
-#include "game/diagnostics.h"
 #include "game/prim.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/race_hud_internal.h"
 #include "game/render.h"
 #include "game/render_internal.h"
-
-#include <stdio.h>
 
 #include "rage/hud_config.h"
 #include "rage/speed_display.h"
@@ -121,18 +118,6 @@ void DrawTachometer(s32 rpm, s32 shiftLightOn, TachometerLightingMode lighting,
 
     SetTachometerNeedleColor(needle, spec, lighting, amount, frame);
 
-    if (DiagnosticsEnabled("render.tachometer_trace")) {
-        printf("tacho rpm=%d angle=%d color=%02x%02x%02x "
-               "quad=%d,%d/%d,%d/%d,%d/%d,%d "
-               "v=%d,%d/%d,%d/%d,%d/%d,%d\n",
-               rpm, angle, needle->r0, needle->g0, needle->b0,
-               g_TachoNeedleQuad[0][0], g_TachoNeedleQuad[0][1],
-               g_TachoNeedleQuad[1][0], g_TachoNeedleQuad[1][1],
-               g_TachoNeedleQuad[2][0], g_TachoNeedleQuad[2][1],
-               g_TachoNeedleQuad[3][0], g_TachoNeedleQuad[3][1], needle->x0,
-               needle->y0, needle->x1, needle->y1, needle->x2, needle->y2,
-               needle->x3, needle->y3);
-    }
     AddPrim(ot, needle);
     next = DrawHudDigit(
         (u8 *)(needle + 1), centerX + spec->gearDigitDX,
