@@ -116,9 +116,9 @@ void UpdateMenuMode(void) {
     }
     if (s_menuRuntime.activeScreen == MENU_SCREEN_COURSE_SELECT ||
         s_menuRuntime.activeScreen == MENU_SCREEN_RANKING) {
-        g_RenderState.otShift = MENU_NEAR_OT_SHIFT;
+        g_RenderState.pass.otShift = MENU_NEAR_OT_SHIFT;
     } else {
-        g_RenderState.otShift = MENU_DEFAULT_OT_SHIFT;
+        g_RenderState.pass.otShift = MENU_DEFAULT_OT_SHIFT;
     }
 
     DrawMenuTransitions();

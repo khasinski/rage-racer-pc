@@ -410,7 +410,7 @@ static RageRenderCamera GameRenderWorldBuildCamera(
     if (s_haveSkyGrid[rearFacing != 0]) {
         skyGrid = s_skyGrid[rearFacing != 0];
     } else {
-        MeasureSkyGridLayout(y, pitch, yaw, roll, g_RenderState.orderingFlag,
+        MeasureSkyGridLayout(y, pitch, yaw, roll, g_RenderState.pass.orderingFlag,
                              g_MirrorMode, &skyGrid);
     }
     camera.skyGridOrigin.x = skyGrid.panelXFixed * (1.0f / 256.0f);
@@ -574,7 +574,7 @@ static void GameRenderWorldSubmitDynamicCourseObjectInternal(
     GameRenderWorldSubmitCourseTransform(
         semanticEntity, mesh, x, y, z, matrix, fogged, mirror_pass,
         depthOverlay ? 0 : 1,
-        depthOverlay, (uint8_t)((g_RenderState.envMode4 >> 16) & 3));
+        depthOverlay, (uint8_t)((g_RenderState.geometry.envMode4 >> 16) & 3));
 }
 
 void GameRenderWorldSubmitDynamicCourseObject(

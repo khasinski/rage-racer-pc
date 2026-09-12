@@ -55,7 +55,7 @@ void UpdateReplayScene(void) {
     }
     UpdateCamera(CAMERA_VIEW_TRACK,
                  GetCarRenderObject(AsRivalCar(&g_PlayerCar)));
-    g_RenderState.envMode4 = g_IsEnvironmentMode4;
+    g_RenderState.geometry.envMode4 = g_IsEnvironmentMode4;
     DrawTerrainCellsWide();
     if (g_GrandPrixMode != 0) {
         DrawReplayRivalCar();

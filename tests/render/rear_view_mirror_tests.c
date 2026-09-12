@@ -138,7 +138,7 @@ int main(void) {
         s_beginCalls != 1 || s_skyCalls != 1 || s_terrainCalls != 1 ||
         s_objectCalls != 1 || s_carCalls != 1 || s_endCalls != 1 ||
         s_terrainNear != -0x3000 || s_terrainFar != 0x3000 ||
-        g_RenderState.envMode4 != 1 || s_endOrder != 4) {
+        g_RenderState.geometry.envMode4 != 1 || s_endOrder != 4) {
         puts("FAIL: mirror did not draw and restore its complete world pass");
         return 1;
     }

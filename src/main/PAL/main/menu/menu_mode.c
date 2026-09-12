@@ -42,7 +42,7 @@ static void InitMenuCamera(void) {
     g_RenderState.camera.angleY = 0;
     g_RenderState.camera.angleZ = 0;
     SetCameraRotMatrix();
-    ScaleMatrix(&g_RenderState.matrix, &g_MenuViewScale);
+    ScaleMatrix(&g_RenderState.geometry.matrix, &g_MenuViewScale);
 }
 
 static void ResetMenuNavigation(void) {

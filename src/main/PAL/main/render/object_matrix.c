@@ -24,7 +24,7 @@ void SetGteObjectMatrix(const LVec *position, Matrix *rotation) {
         position->y, RENDER_VIEW_STATE->position.vector.y);
     relative.vz = SubtractPositionComponent(
         position->z, RENDER_VIEW_STATE->position.vector.z);
-    ApplyMatrix(&g_RenderState.matrix, &relative, &view);
+    ApplyMatrix(&g_RenderState.geometry.matrix, &relative, &view);
     translation.t[0] = view.x * 4;
     translation.t[1] = view.y * 4;
     translation.t[2] = view.z * 4;
@@ -32,7 +32,7 @@ void SetGteObjectMatrix(const LVec *position, Matrix *rotation) {
     SetTransMatrix(&translation);
 
     if (DiagnosticsEnabled("render.car_draw_trace") &&
-        g_RenderState.mode == GAME_RENDER_PASS_MIRROR) {
+        g_RenderState.pass.mode == GAME_RENDER_PASS_MIRROR) {
         if (g_SceneTimer == DiagnosticsIntValue(
                 "render.car_draw_trace_timer", g_SceneTimer)) {
             Trace("object-matrix", "timer=%d position=%d,%d,%d relative=%d,%d,%d "

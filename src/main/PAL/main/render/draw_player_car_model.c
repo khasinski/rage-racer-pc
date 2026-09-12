@@ -33,7 +33,7 @@ static s32 FindRenderedCarSlot(const GameRenderObject *object) {
 static void SubmitCarPart(const LVec *position, Matrix *transform,
                           s32 materialMode, s32 modelBank) {
     SetGteObjectMatrix(position, transform);
-    g_RenderState.envMode4 = materialMode;
+    g_RenderState.geometry.envMode4 = materialMode;
     SubmitModel(&g_RenderState, modelBank);
 }
 
@@ -94,14 +94,14 @@ static s32 DrawCloseCarAssembly(GameRenderObject *object,
     FlipMatrixXZColumns(&lightMatrix, &lightMatrix);
 
     bodyLocalMatrix = bodyViewMatrix;
-    MulMatrix2(&g_RenderState.matrix, &bodyViewMatrix);
+    MulMatrix2(&g_RenderState.geometry.matrix, &bodyViewMatrix);
 
     BuildRotMatrixY(
         &scratchMatrix,
         WrapSigned32((int64_t)ANGLE_HALF_TURN - object->modelYaw));
     BuildRotMatrixX(&partMatrix, object->modelPitch);
     MulMatrix2(&scratchMatrix, &partMatrix);
-    MulMatrix2(&g_RenderState.matrix, &partMatrix);
+    MulMatrix2(&g_RenderState.geometry.matrix, &partMatrix);
     BuildRotMatrixZ(&scratchMatrix, object->modelRoll);
     MulMatrix2(&partMatrix, &scratchMatrix);
 
@@ -175,7 +175,7 @@ void DrawPlayerCarModel(GameRenderObject *object) {
         (int64_t)object->renderDepth * 2);
     s32 clipHandle;
 
-    GameRenderWorldSubmitPlayerCar(object, g_RenderState.orderingFlag != 0);
+    GameRenderWorldSubmitPlayerCar(object, g_RenderState.pass.orderingFlag != 0);
 
     if (object->wheelRotation & CAR_WHEEL_BLUR_FLAG) {
         modelBankBase = WrapSigned32((int64_t)modelBankBase + 10);
@@ -225,7 +225,7 @@ void DrawCar(GameRenderObject *object) {
     cameraOffset[1] = 0;
     cameraOffset[2] = WrapSigned32(
         (int64_t)object->z - g_RenderState.camera.z);
-    ApplyMatrixLV(&g_RenderState.matrix, cameraOffset, viewPosition);
+    ApplyMatrixLV(&g_RenderState.geometry.matrix, cameraOffset, viewPosition);
     renderDistance = CarRenderManhattanDistance(
         object->x, object->z, g_RenderState.camera.x, g_RenderState.camera.z);
     renderRange = ClassifyCarRenderRange(viewPosition[2], renderDistance);
@@ -238,7 +238,7 @@ void DrawCar(GameRenderObject *object) {
             Trace("car-draw", "timer=%d mirror=%d slot=%d source=%d "
                    "car=%d lod=%d palette=%d depth=%d view-z=%d detail=%s "
                    "player=%d grade=%d asset=%d",
-                   g_SceneTimer, g_RenderState.orderingFlag != 0,
+                   g_SceneTimer, g_RenderState.pass.orderingFlag != 0,
                    FindRenderedCarSlot(object),
                    object->modelIndex, model, lod[0], lod[1], renderDistance,
                    viewPosition[2], rangeNames[renderRange], g_PlayerCarIndex,
@@ -249,7 +249,7 @@ void DrawCar(GameRenderObject *object) {
     }
     if (renderRange == CAR_RENDER_CLOSE || renderRange == CAR_RENDER_FAR) {
         GameRenderWorldSubmitCar(
-            object, g_RenderState.orderingFlag != 0,
+            object, g_RenderState.pass.orderingFlag != 0,
             renderRange == CAR_RENDER_CLOSE ? RAGE_GAME_CAR_RENDER_CLOSE
                                             : RAGE_GAME_CAR_RENDER_FAR);
     } else {
@@ -296,7 +296,7 @@ void DrawCar(GameRenderObject *object) {
 
         BuildRotMatrixZ(&scratchMatrix, object->bodyRoll);
         MulMatrix2(&bodyLocalMatrix, &scratchMatrix);
-        MulMatrix2(&g_RenderState.matrix, &scratchMatrix);
+        MulMatrix2(&g_RenderState.geometry.matrix, &scratchMatrix);
         SubmitCarPart(AsPositionWords(&object->x), &scratchMatrix,
                       CarMaterialMode(lod[1]),
                       ResolveCarModelBank(lod[0], 4, g_ModelBankCount));

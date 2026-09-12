@@ -95,7 +95,7 @@ static void TraceTerrainDecision(
                 "sxy=%d,%d/%d,%d/%d,%d/%d,%d bounds=%d,%d,%d,%d "
                 "raw=%d depth=%d result=%s\n",
                 g_SceneTimer, g_RageTerrainDecisionTraceCount, cell, face,
-                g_RenderState.orderingFlag, clut, tpage & 0x9ff,
+                g_RenderState.pass.orderingFlag, clut, tpage & 0x9ff,
                 vertexIndices[0], vertexIndices[1], vertexIndices[2],
                 vertexIndices[3], translation->vx, translation->vy,
                 translation->vz, clip0, clip1,
@@ -115,7 +115,7 @@ static void TraceTerrainDecision(
                 "raw=na depth=na result=reject "
                 "reason=%s\n",
                 g_SceneTimer, g_RageTerrainDecisionTraceCount, cell, face,
-                g_RenderState.orderingFlag, clut, tpage & 0x9ff,
+                g_RenderState.pass.orderingFlag, clut, tpage & 0x9ff,
                 vertexIndices[0], vertexIndices[1], vertexIndices[2],
                 vertexIndices[3], translation->vx, translation->vy,
                 translation->vz, clip0, clip1,
@@ -209,7 +209,7 @@ static int ProjectQuad(
     if (ScreenQuadOutsideBounds(
             sxy, g_RenderState.draw.clipX0, g_RenderState.draw.clipX1, g_RenderState.draw.clipY0,
             g_RenderState.draw.clipY1,
-            g_RenderState.mode == GAME_RENDER_PASS_MIRROR
+            g_RenderState.pass.mode == GAME_RENDER_PASS_MIRROR
                 ? 0 : ModernCullMarginX())) {
         g_RageProjectionReject = 1;
         return 0;
@@ -235,8 +235,8 @@ static int ProjectQuad(
          * triangle faces the camera.  Applying the model rule to terrain
          * drops whole quads whenever only their first half is degenerate. */
         if (terrainQuad &&
-            ((!g_RenderState.orderingFlag && clip0 <= 0 && clip1 < 0) ||
-             (g_RenderState.orderingFlag && clip0 >= 0 && clip1 > 0))) {
+            ((!g_RenderState.pass.orderingFlag && clip0 <= 0 && clip1 < 0) ||
+             (g_RenderState.pass.orderingFlag && clip0 >= 0 && clip1 > 0))) {
             if (terrainQuad == 2)
                 g_RageTerrainChildSecondTriangleVisible++;
             else
@@ -249,11 +249,11 @@ static int ProjectQuad(
          * Do not feed the duplicated clip0 into
          * the terrain two-half expression: that reduces both rejection
          * tests to clip0 == 0 and submits every back-facing model face. */
-        *depth = ((int)otz >> g_RenderState.otShift);
-        if ((!terrainQuad && !ModelFaceVisible(g_RenderState.orderingFlag, clip0)) ||
+        *depth = ((int)otz >> g_RenderState.pass.otShift);
+        if ((!terrainQuad && !ModelFaceVisible(g_RenderState.pass.orderingFlag, clip0)) ||
             (terrainQuad &&
-             ((!g_RenderState.orderingFlag && clip0 <= 0 && clip1 >= 0) ||
-              (g_RenderState.orderingFlag && clip0 >= 0 && clip1 <= 0)))) {
+             ((!g_RenderState.pass.orderingFlag && clip0 <= 0 && clip1 >= 0) ||
+              (g_RenderState.pass.orderingFlag && clip0 >= 0 && clip1 <= 0)))) {
             g_RageProjectionReject = 2;
             if (!terrainQuad) g_RageModelRejectBackface++;
             if (terrainQuad == 2) g_RageTerrainChildRejectBackface++;
@@ -301,14 +301,14 @@ static int ProjectCourseFace(
                         (vertexDepth[3] >> 3)) >> 3;
     int clip = NormalClip(sxy[0], sxy[1], sxy[2]);
     g_RageProjectionReject = 0;
-    if ((!g_RenderState.orderingFlag && clip <= 0) || (g_RenderState.orderingFlag && clip >= 0)) {
+    if ((!g_RenderState.pass.orderingFlag && clip <= 0) || (g_RenderState.pass.orderingFlag && clip >= 0)) {
         g_RageProjectionReject = 2;
         return 0;
     }
     if (ScreenQuadOutsideBounds(
             sxy, g_RenderState.draw.clipX0, g_RenderState.draw.clipX1, g_RenderState.draw.clipY0,
             g_RenderState.draw.clipY1,
-            g_RenderState.mode == GAME_RENDER_PASS_MIRROR
+            g_RenderState.pass.mode == GAME_RENDER_PASS_MIRROR
                 ? 0 : ModernCullMarginX())) {
         g_RageProjectionReject = 1;
         return 0;
@@ -330,7 +330,7 @@ static int CourseScreenQuadVisible(const int sxy[4]) {
      * winding from v0/v1/v2.  Reject only when both halves are back-facing.
      * The old comparisons did the inverse and discarded every front-facing
      * child as soon as a course quad entered its near subdivision path. */
-    if (!CourseQuadVisible(g_RenderState.orderingFlag, clip0, clip1))
+    if (!CourseQuadVisible(g_RenderState.pass.orderingFlag, clip0, clip1))
         return 0;
     return !ScreenQuadOutsideBounds(
         sxy, g_RenderState.draw.clipX0, g_RenderState.draw.clipX1,
@@ -565,7 +565,7 @@ static void RageSubmitModelFaces(
                     "sxy=%d,%d/%d,%d/%d,%d/%d,%d\n",
                     g_SceneTimer, g_RageSubmittedModelIndex, type, i, depth,
                     (int8_t)faces[strides[type] - 3],
-                    (void *)cursor, (unsigned)g_RenderState.envMode4,
+                    (void *)cursor, (unsigned)g_RenderState.geometry.envMode4,
                     (const void *)faces, recordBytes,
                     RageReadU16(faces), RageReadU16(faces + 2),
                     RageReadU16(faces + 4), RageReadU16(faces + 6),
@@ -613,7 +613,7 @@ static void RageSubmitModelFaces(
             SetShadeTex(poly, 1);
             poly->r0 = poly->g0 = poly->b0 = 0x80;
             CopyFt4UvWithMode(poly, faces + 8,
-                                  (uint32_t)g_RenderState.envMode4);
+                                  (uint32_t)g_RenderState.geometry.envMode4);
             StoreSxy(&poly->x0, &poly->y0, sxy[0]);
             StoreSxy(&poly->x1, &poly->y1, sxy[1]);
             StoreSxy(&poly->x2, &poly->y2, sxy[2]);
@@ -700,12 +700,12 @@ static void RageSubmitModelFaces(
         } else {
             if (!PrimitiveSpaceAvailable(cursor, sizeof(POLY_GT4))) break;
             POLY_GT4 *poly = (POLY_GT4 *)cursor;
-            CVECTOR base = {g_RenderState.gt4Color[0], g_RenderState.gt4Color[1], g_RenderState.gt4Color[2],
-                            g_RenderState.gt4Color[3]};
+            CVECTOR base = {g_RenderState.geometry.gt4Color[0], g_RenderState.geometry.gt4Color[1], g_RenderState.geometry.gt4Color[2],
+                            g_RenderState.geometry.gt4Color[3]};
             CVECTOR colors[4];
             SetPolyGT4(poly);
             CopyGt4UvWithMode(poly, faces + 16,
-                                  (uint32_t)g_RenderState.envMode4);
+                                  (uint32_t)g_RenderState.geometry.envMode4);
             NormalColor3(
                 (SVECTOR *)&normals[RageReadU16(faces + 8)],
                 (SVECTOR *)&normals[RageReadU16(faces + 10)],
@@ -778,7 +778,7 @@ static void RageSubmitModelFaces(
 void SubmitModel(void *ctx, int index) {
     const uint8_t *stream;
     uint32_t opcode;
-    const void *const *models = g_RenderState.modelModels;
+    const void *const *models = g_RenderState.geometry.modelModels;
     (void)ctx;
     if (models == NULL || index < 0 || index >= g_ModelBankCount ||
         index >= GAME_MODEL_PER_BANK_LIMIT || models[index] == NULL) {
@@ -797,8 +797,8 @@ void SubmitModel(void *ctx, int index) {
         int count = (int)(opcode >> 16);
         stream += 4;
         RageSubmitModelFaces(type, count, stream,
-                             (const SVECTOR *)g_RenderState.modelTable1,
-                             (const SVECTOR *)g_RenderState.modelNormals);
+                             (const SVECTOR *)g_RenderState.geometry.modelTable1,
+                             (const SVECTOR *)g_RenderState.geometry.modelNormals);
         if ((unsigned)type >= 4) break;
         stream += count * ModelPrimitiveStride(type);
     }
@@ -809,7 +809,7 @@ void SubmitModel(void *ctx, int index) {
  * non-rendering bodies here makes the remaining fidelity gap visible and
  * avoids hiding it among generic platform adapters. */
 static void RageSubmitCourseModel(int index, int fogged) {
-    const NativeCourseModel *models = g_RenderState.courseBank;
+    const NativeCourseModel *models = g_RenderState.geometry.courseBank;
     const uint8_t *stream;
     uint8_t *cursor = RENDER_PRIM_CURSOR_AS(uint8_t);
     /* The course dispatcher applies the same fixed +0x200-byte OT base. */
@@ -855,7 +855,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
                         "uv=%u,%u/%u,%u/%u,%u/%u,%u\n",
                         g_SceneTimer, index, type, i, fogged, projected,
                         projected ? 0 : g_RageProjectionReject,
-                        g_RenderState.orderingFlag, RageReadU16(stream + 0),
+                        g_RenderState.pass.orderingFlag, RageReadU16(stream + 0),
                         RageReadU16(stream + 2), RageReadU16(stream + 4),
                         RageReadU16(stream + 6), RageReadU16(stream + 14),
                         RageReadU16(stream + 18) & 0x9ff,
@@ -911,7 +911,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
                 capture.colorCount = 1;
                 if (type == 1) {
                     uint32_t uv0 = RageReadU32(stream + 12) +
-                                   (uint32_t)g_RenderState.envMode4;
+                                   (uint32_t)g_RenderState.geometry.envMode4;
                     uint8_t uv[8] = {
                         (uint8_t)uv0, (uint8_t)(uv0 >> 8),
                         stream[16], stream[17],
@@ -941,7 +941,7 @@ static void RageSubmitCourseModel(int index, int fogged) {
                     stream[20], stream[21], stream[22], stream[23]
                 };
                 uint32_t uv0 = RageReadU32(stream + 12) +
-                               (uint32_t)g_RenderState.envMode4;
+                               (uint32_t)g_RenderState.geometry.envMode4;
                 memcpy(&uv[0], &uv0, 2);
                 uint8_t *next = EmitCourseFt4(
                     cursor, ot, depth, sxy, uv, (uint16_t)(uv0 >> 16),
@@ -955,15 +955,15 @@ static void RageSubmitCourseModel(int index, int fogged) {
                 uint16_t tpage;
                 uint32_t textureWindow = RageReadU32(stream + 28);
                 int uLevel = stream[26] -
-                    (rawDepth >> g_RenderState.faceOtShift);
+                    (rawDepth >> g_RenderState.pass.faceOtShift);
                 int vLevel = stream[27] -
-                    (rawDepth >> g_RenderState.faceOtShift);
+                    (rawDepth >> g_RenderState.pass.faceOtShift);
                 int uSteps, vSteps;
                 int sy, sx;
                 memcpy(uvRecord, stream + 12, sizeof(uvRecord));
                 {
                     uint32_t uv0 = RageReadU32(uvRecord) +
-                                   (uint32_t)g_RenderState.envMode4;
+                                   (uint32_t)g_RenderState.geometry.envMode4;
                     memcpy(uvRecord, &uv0, sizeof(uv0));
                 }
                 if (type == 3) {
@@ -1076,8 +1076,8 @@ void SubmitCourseModel2(void *ctx, int index) {
     RageSubmitCourseModel(index, 1);
 }
 void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
-    const void *const *cellTable = g_RenderState.cellTable;
-    const SVECTOR *vertices = g_RenderState.cellFaces;
+    const void *const *cellTable = g_RenderState.geometry.cellTable;
+    const SVECTOR *vertices = g_RenderState.geometry.cellFaces;
     uint8_t *cursor = RENDER_PRIM_CURSOR_AS(uint8_t);
     /* func_80028E9C seeds its terrain OT register from the ordering-table base + 0x200. */
     GameOrderingTableEntry *ot = RENDER_OT_BASE + 128;
@@ -1096,11 +1096,11 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
      * with only the GTE register updated, DrawCar composed rival cars with
      * the un-reflected matrix and the mirror showed them moving opposite to
      * the track.  EndMirrorPass restores the saved camera matrix. */
-    if (g_RenderState.orderingFlag) {
-        (&g_RenderState.matrix)->m[0][0] = -(&g_RenderState.matrix)->m[0][0];
-        (&g_RenderState.matrix)->m[0][1] = -(&g_RenderState.matrix)->m[0][1];
-        (&g_RenderState.matrix)->m[0][2] = -(&g_RenderState.matrix)->m[0][2];
-        SetRotMatrix((&g_RenderState.matrix));
+    if (g_RenderState.pass.orderingFlag) {
+        (&g_RenderState.geometry.matrix)->m[0][0] = -(&g_RenderState.geometry.matrix)->m[0][0];
+        (&g_RenderState.geometry.matrix)->m[0][1] = -(&g_RenderState.geometry.matrix)->m[0][1];
+        (&g_RenderState.geometry.matrix)->m[0][2] = -(&g_RenderState.geometry.matrix)->m[0][2];
+        SetRotMatrix((&g_RenderState.geometry.matrix));
     }
     /* Capture after the mirror matrix install so the batch GTE state is the
      * one the cells are actually projected with. */
@@ -1117,7 +1117,7 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
         /* The rear-view dispatcher reflects both RT1 and the already
          * transformed cell-center X.  Reflecting only the rotation row moves
          * otherwise correct terrain quads tens of pixels to the right. */
-        translation.vx = g_RenderState.orderingFlag ? -cells->x : cells->x;
+        translation.vx = g_RenderState.pass.orderingFlag ? -cells->x : cells->x;
         translation.vy = cells->y;
         translation.vz = cells->z;
         translation.pad = 0;
@@ -1132,7 +1132,7 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
             int faceIndex;
             stream += 4;
             if ((unsigned)mode >= 6 || faceCount <= 0) break;
-            dispatch = mode < 2 ? mode * 2 + (g_RenderState.envMode4 != 0)
+            dispatch = mode < 2 ? mode * 2 + (g_RenderState.geometry.envMode4 != 0)
                                 : mode - 2;
             stride = TerrainPrimitiveStride(mode);
             decodedFaces += faceCount;
@@ -1186,10 +1186,10 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
                                 "sxy=%d,%d/%d,%d/%d,%d/%d,%d\n",
                                 g_SceneTimer, cellIndex, faceIndex, (void *)cursor,
                                 dispatch,
-                                g_RenderState.orderingFlag,
+                                g_RenderState.pass.orderingFlag,
                                 projected ? 0 : g_RageProjectionReject, depth,
                                 rawDepth, fog, (int8_t)stream[21], stream[22], stream[23],
-                                g_RenderState.faceOtShift,
+                                g_RenderState.pass.faceOtShift,
                                 color[0], color[1], color[2],
                                 clut, tpage, textureWindow & 0xfffff,
                                 RageReadU16(stream + 0), RageReadU16(stream + 2),
@@ -1249,8 +1249,8 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
                     }
                 }
                 bias = (int8_t)stream[21];
-                uLevel = stream[22] - (rawDepth >> g_RenderState.faceOtShift);
-                vLevel = stream[23] - (rawDepth >> g_RenderState.faceOtShift);
+                uLevel = stream[22] - (rawDepth >> g_RenderState.pass.faceOtShift);
+                vLevel = stream[23] - (rawDepth >> g_RenderState.pass.faceOtShift);
                 if (uLevel < 0) uLevel = 0;
                 if (vLevel < 0) vLevel = 0;
                 if (g_RageTerrainTraceEnabled &&
@@ -1264,8 +1264,8 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
                             "terrain-lod timer=%d cell=%d face=%d mirror=%d "
                             "raw=%d shift=%d source=%u,%u level=%d,%d "
                             "steps=%u,%u\n",
-                            g_SceneTimer, cellIndex, faceIndex, g_RenderState.orderingFlag,
-                            rawDepth, g_RenderState.faceOtShift, stream[22],
+                            g_SceneTimer, cellIndex, faceIndex, g_RenderState.pass.orderingFlag,
+                            rawDepth, g_RenderState.pass.faceOtShift, stream[22],
                             stream[23], uLevel, vLevel,
                             uLevel < 31 ? 1u << uLevel : 0,
                             vLevel < 31 ? 1u << vLevel : 0);
@@ -1393,7 +1393,7 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
                                             "clip=%d,%d visible=%d reject=%d\n",
                                             g_SceneTimer, cellIndex, faceIndex,
                                             sy, sx, uSteps, vSteps,
-                                            g_RenderState.orderingFlag, g_RageTerrainClip0,
+                                            g_RenderState.pass.orderingFlag, g_RageTerrainClip0,
                                             g_RageTerrainClip1, childVisible,
                                             childVisible ? 0 : g_RageProjectionReject);
                                 }
@@ -1450,7 +1450,7 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
                                             "uv=%u,%u/%u,%u/%u,%u/%u,%u\n",
                                             g_SceneTimer, cellIndex, faceIndex,
                                             sy, sx, uSteps, vSteps, (void *)cursor, 1,
-                                            g_RenderState.orderingFlag, depth, bias,
+                                            g_RenderState.pass.orderingFlag, depth, bias,
                                             subDepth + 128,
                                             color[0], color[1], color[2],
                                             child[0].vx, child[0].vy,

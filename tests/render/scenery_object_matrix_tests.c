@@ -47,7 +47,7 @@ MATRIX *MulMatrix2(MATRIX *left, MATRIX *right) {
 int main(void) {
     Matrix result = {0};
 
-    g_RenderState.matrix.m[0][0] = 3;
+    g_RenderState.geometry.matrix.m[0][0] = 3;
     BuildSceneryObjectMatrix(&result, 0x123, 0x234, 0x345);
 
     CHECK(s_xAngle == 0x123);

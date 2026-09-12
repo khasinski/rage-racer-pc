@@ -20,10 +20,10 @@ static void SubmitStaticScenery(const LVec *sourcePosition, s32 yaw,
     Matrix worldMatrix;
     LVec position = *sourcePosition;
     s32 useEnvironmentModel = g_IsEnvironmentMode4 != 0;
-    s32 previousEnvironmentMode = g_RenderState.envMode4;
+    s32 previousEnvironmentMode = g_RenderState.geometry.envMode4;
 
     BuildRotMatrixY(&worldMatrix, yaw);
-    g_RenderState.envMode4 = useEnvironmentModel ? environmentMode : 0;
+    g_RenderState.geometry.envMode4 = useEnvironmentModel ? environmentMode : 0;
     /* Large landmarks cross many cells. The classic scan of their origin
      * must not make the complete native model pop into existence; the GPU
      * tests its mesh bounds and clips it against the camera instead. */
@@ -31,11 +31,11 @@ static void SubmitStaticScenery(const LVec *sourcePosition, s32 yaw,
         worldObjectId, modelId, position.x, position.y, position.z,
         worldMatrix.m, !useEnvironmentModel, 0);
     if (!classicVisible) {
-        g_RenderState.envMode4 = previousEnvironmentMode;
+        g_RenderState.geometry.envMode4 = previousEnvironmentMode;
         return;
     }
     objectMatrix = worldMatrix;
-    MulMatrix2(&g_RenderState.matrix, &objectMatrix);
+    MulMatrix2(&g_RenderState.geometry.matrix, &objectMatrix);
     SetGteObjectMatrix(&position, &objectMatrix);
 
     if (useEnvironmentModel) {

@@ -69,7 +69,7 @@ static void Reset(void) {
     g_AnimTimer = 123;
     g_CameraViewMode = CAMERA_VIEW_CHASE;
     g_IsEnvironmentMode4 = 7;
-    g_RenderState.envMode4 = 0;
+    g_RenderState.geometry.envMode4 = 0;
 }
 
 static void TestWorldUpdateOrder(void) {
@@ -87,7 +87,7 @@ static void TestWorldUpdateOrder(void) {
     }
     assert(s_textureSection == 45);
     assert(s_cameraObject == GetCarRenderObject(&g_Cars[2]));
-    assert(g_RenderState.envMode4 == 7);
+    assert(g_RenderState.geometry.envMode4 == 7);
     assert(s_sceneryTimer == 123 && s_sceneryAnimate == 1);
 }
 

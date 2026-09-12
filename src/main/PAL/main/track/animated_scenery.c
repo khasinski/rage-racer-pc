@@ -34,7 +34,7 @@ static void BuildAnimatedSceneryTransform(AnimatedSceneryTransform *transform,
     BuildRotMatrixX(&pitchMatrix, g_AnimSceneryPitch[instance]);
     MulMatrix(&transform->objectMatrix, &pitchMatrix);
     transform->worldMatrix = transform->objectMatrix;
-    MulMatrix2(&g_RenderState.matrix, &transform->objectMatrix);
+    MulMatrix2(&g_RenderState.geometry.matrix, &transform->objectMatrix);
 }
 
 static void SubmitAnimatedSceneryLayer(AnimatedSceneryTransform *transform,
@@ -44,7 +44,7 @@ static void SubmitAnimatedSceneryLayer(AnimatedSceneryTransform *transform,
     modelId = ModelOrFallback(modelId, g_CourseModelCount);
     SetGteObjectMatrix(AsPosition(position),
                        &transform->objectMatrix);
-    g_RenderState.envMode4 = tint;
+    g_RenderState.geometry.envMode4 = tint;
     GameRenderWorldSubmitDynamicCourseOverlay(
         entity, modelId, position->x, position->y, position->z,
         transform->worldMatrix.m, 0, 0);

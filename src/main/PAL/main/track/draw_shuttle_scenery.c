@@ -29,18 +29,18 @@ void DrawShuttleScenery(s32 instance) {
     modelId = SeriesCourseIndex() >= 2 ? 0x3C : 0x3F;
     modelId = ModelOrFallback(modelId, g_CourseModelCount);
 
-    previousEnvironmentMode = g_RenderState.envMode4;
-    g_RenderState.envMode4 = 0;
+    previousEnvironmentMode = g_RenderState.geometry.envMode4;
+    g_RenderState.geometry.envMode4 = 0;
     /* Publish the moving model independently of the classic origin-cell
      * scan. Native mesh bounds decide whether either camera can see it. */
     GameRenderWorldSubmitDynamicCourseObject(
         0x110 + instance, modelId, state->position.x, state->position.y,
         state->position.z, worldMatrix.m, 0, 0);
     if (!classicVisible) {
-        g_RenderState.envMode4 = previousEnvironmentMode;
+        g_RenderState.geometry.envMode4 = previousEnvironmentMode;
         return;
     }
-    MulMatrix2(&g_RenderState.matrix, &objectMatrix);
+    MulMatrix2(&g_RenderState.geometry.matrix, &objectMatrix);
     SetGteObjectMatrix(AsPosition(&state->position), &objectMatrix);
     SubmitCourseModel(&g_RenderState, modelId);
 }

@@ -56,7 +56,7 @@ void SubmitCourseModel(void *state, s32 model) {
 
     submission->modelId = model;
     submission->alternate = 0;
-    submission->environmentMode4 = renderState->envMode4;
+    submission->environmentMode4 = renderState->geometry.envMode4;
 }
 
 void SubmitCourseModel2(void *state, s32 model) {
@@ -65,7 +65,7 @@ void SubmitCourseModel2(void *state, s32 model) {
 
     submission->modelId = model;
     submission->alternate = 1;
-    submission->environmentMode4 = renderState->envMode4;
+    submission->environmentMode4 = renderState->geometry.envMode4;
 }
 
 void GetVisibleCellScanOffset(s32 direction, s32 cellIndex, s32 rearView,

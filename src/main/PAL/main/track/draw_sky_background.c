@@ -265,7 +265,7 @@ static void InitializeSkyFrame(SkyFrame *work) {
     work->pitch = g_RenderState.camera.angleX;
     work->yaw = g_RenderState.camera.angleY;
     work->roll = g_RenderState.camera.angleZ;
-    work->mirrorFlag = g_RenderState.orderingFlag;
+    work->mirrorFlag = g_RenderState.pass.orderingFlag;
 }
 
 static void SetSkyQuadUV(POLY_FT4 *quad, const SkyTileUV *tile) {

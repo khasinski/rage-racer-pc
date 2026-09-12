@@ -103,10 +103,10 @@ void SelectModelBank(s32 index) {
 
     if ((u32)index >= GAME_MODEL_BANK_LIMIT) return;
     bank = &g_ModelBanks[index];
-    g_RenderState.modelTable1 = bank->table;
-    g_RenderState.modelNormals = bank->normals;
+    g_RenderState.geometry.modelTable1 = bank->table;
+    g_RenderState.geometry.modelNormals = bank->normals;
     g_ModelBankCount = bank->modelCount;
-    g_RenderState.modelModels = bank->models;
+    g_RenderState.geometry.modelModels = bank->models;
 }
 
 s32 IsValidCourseModelAsset(const CourseModelAssetHeader *base, size_t size) {
@@ -152,7 +152,7 @@ s32 RegisterCourseModels(const CourseModelAssetHeader *base, size_t size) {
     if (!IsValidCourseModelAsset(base, size)) return 0;
 
     count = base->modelCount;
-    g_RenderState.courseBank = g_NativeCourseModels;
+    g_RenderState.geometry.courseBank = g_NativeCourseModels;
     g_CourseModelCount = count;
     for (i = 0; i < count; i++) {
         const CourseModelAssetEntry *entry = &base->models[i];

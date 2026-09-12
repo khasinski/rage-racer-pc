@@ -34,6 +34,26 @@ typedef struct GameDrawContext {
     s16 clipY1;
 } GameDrawContext;
 
+typedef struct GameGeometryContext {
+    Matrix matrix;
+    const void *courseBank;
+    const void *const *modelModels;
+    const void *modelTable1;
+    const void *modelNormals;
+    const void *const *cellTable;
+    const void *cellFaces;
+    u8 ft4Color[4];
+    u8 gt4Color[4];
+    s32 envMode4;
+} GameGeometryContext;
+
+typedef struct GameRenderPassState {
+    s32 otShift;
+    s32 orderingFlag;
+    s32 faceOtShift;
+    GameRenderPassMode mode;
+} GameRenderPassState;
+
 /*
  * The working state the renderer and the car code keep between calls.
  *
@@ -47,20 +67,8 @@ typedef struct GameDrawContext {
 typedef struct GameRenderState {
     GameDrawContext draw;
     GameCameraState camera;
-    Matrix matrix;
-    const void *courseBank;
-    const void *const *modelModels;
-    const void *modelTable1;
-    const void *modelNormals;
-    const void *const *cellTable;
-    const void *cellFaces;
-    s32 otShift;
-    s32 orderingFlag;
-    s32 faceOtShift;
-    GameRenderPassMode mode;
-    u8 ft4Color[4];
-    u8 gt4Color[4];
-    s32 envMode4;
+    GameGeometryContext geometry;
+    GameRenderPassState pass;
 } GameRenderState;
 
 extern GameRenderState g_RenderState;

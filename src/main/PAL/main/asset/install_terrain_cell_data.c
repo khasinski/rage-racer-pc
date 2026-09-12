@@ -93,9 +93,9 @@ s32 InstallTerrainCellData(const void *data, size_t size) {
     g_CellVisibilityTable =
         (const CellVisibilityRow *)((const u8 *)data +
                                     TERRAIN_CELL_GRID_BYTES);
-    g_RenderState.cellTable = g_NativeTerrainCells;
+    g_RenderState.geometry.cellTable = g_NativeTerrainCells;
     g_TerrainCellCount = count;
-    g_RenderState.cellFaces = cursor + header->facesOffset;
+    g_RenderState.geometry.cellFaces = cursor + header->facesOffset;
     for (i = 0; i < count; i++) {
         g_NativeTerrainCells[i] = cursor + header->cellOffsets[i];
     }

@@ -21,7 +21,7 @@ void UpdateAndDrawAttractWorld(void) {
     DrawCars();
     UpdateEnvironment();
     DrawSkyBackground();
-    g_RenderState.envMode4 = g_IsEnvironmentMode4;
+    g_RenderState.geometry.envMode4 = g_IsEnvironmentMode4;
     DrawTerrainCellsWide();
     DrawCourseObjects();
     DrawPresentationCourseScenery(g_AnimTimer, 1);

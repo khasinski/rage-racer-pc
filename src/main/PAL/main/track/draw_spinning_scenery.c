@@ -46,13 +46,13 @@ void DrawSpinningScenery(s32 timer, s32 animate) {
         BuildRotMatrixY(&yawMatrix, placement->yaw);
         BuildRotMatrixZ(&worldMatrix, (s32)angle);
         MulMatrix2(&yawMatrix, &worldMatrix);
-        MulMatrix2(&g_RenderState.matrix, &yawMatrix);
+        MulMatrix2(&g_RenderState.geometry.matrix, &yawMatrix);
         BuildRotMatrixZ(&objectMatrix, (s32)angle);
         MulMatrix2(&yawMatrix, &objectMatrix);
         SetGteObjectMatrix(&placement->position,
                            &objectMatrix);
 
-        g_RenderState.envMode4 = 0;
+        g_RenderState.geometry.envMode4 = 0;
         GameRenderWorldSubmitDynamicCourseObject(
             SPINNER_ENTITY_BASE + spinner, modelId, placement->position.x,
             placement->position.y, placement->position.z,

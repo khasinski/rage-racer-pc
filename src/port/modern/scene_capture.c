@@ -211,14 +211,14 @@ void CaptureModelBegin(int kind, int index, int fogged) {
     s_scopeHasFaceOwner = 1;
     memset(draw, 0, sizeof(*draw));
     draw->kind = (uint8_t)kind;
-    draw->mirror = g_RenderState.orderingFlag != 0;
+    draw->mirror = g_RenderState.pass.orderingFlag != 0;
     draw->fogged = (uint8_t)fogged;
-    draw->otShift = (uint8_t)g_RenderState.otShift;
+    draw->otShift = (uint8_t)g_RenderState.pass.otShift;
     draw->modelIndex = index;
-    draw->renderMode = (uint32_t)g_RenderState.envMode4;
+    draw->renderMode = (uint32_t)g_RenderState.geometry.envMode4;
     draw->bankId = (uint64_t)(uintptr_t)(kind == RAGE_CAPTURE_KIND_MODEL
-                                             ? g_RenderState.modelModels
-                                             : g_RenderState.courseBank);
+                                             ? g_RenderState.geometry.modelModels
+                                             : g_RenderState.geometry.courseBank);
     CaptureOtBase(&draw->table, &draw->otBaseBias);
     CaptureGte(&draw->gte);
 }
@@ -237,9 +237,9 @@ void CaptureTerrainBegin(const void *cells, int count) {
     batch = &snapshot->terrain[snapshot->terrainCount++];
     s_scopeHasFaceOwner = 1;
     memset(batch, 0, sizeof(*batch));
-    batch->mirror = g_RenderState.orderingFlag != 0;
-    batch->envMode4 = g_RenderState.envMode4 != 0;
-    batch->otShift = (uint8_t)g_RenderState.otShift;
+    batch->mirror = g_RenderState.pass.orderingFlag != 0;
+    batch->envMode4 = g_RenderState.geometry.envMode4 != 0;
+    batch->otShift = (uint8_t)g_RenderState.pass.otShift;
     if (count > RAGE_CAPTURE_MAX_CELLS) count = RAGE_CAPTURE_MAX_CELLS;
     batch->cellCount = (int16_t)count;
     for (i = 0; i < count * 4; i++) {
@@ -529,7 +529,7 @@ void CaptureFrameEnd(void) {
     snapshot->sceneId = g_SceneId;
     snapshot->courseMirror = g_MirrorMode != 0;
     snapshot->sceneTimer = g_SceneTimer;
-    view = (&g_RenderState.matrix);
+    view = (&g_RenderState.geometry.matrix);
     memcpy(snapshot->viewMatrix.m, view->m, sizeof(snapshot->viewMatrix.m));
     snapshot->viewMatrix.t[0] = view->t[0];
     snapshot->viewMatrix.t[1] = view->t[1];

@@ -91,20 +91,20 @@ static int TestModelBank(void) {
     data.modelOffsets[2] = 60;
 
     SelectModelBank(2);
-    CHECK(g_RenderState.modelTable1 == g_ModelBanks[2].table);
-    CHECK(g_RenderState.modelNormals == g_ModelBanks[2].normals);
-    CHECK(g_RenderState.modelModels == g_ModelBanks[2].models);
+    CHECK(g_RenderState.geometry.modelTable1 == g_ModelBanks[2].table);
+    CHECK(g_RenderState.geometry.modelNormals == g_ModelBanks[2].normals);
+    CHECK(g_RenderState.geometry.modelModels == g_ModelBanks[2].models);
     CHECK(g_ModelBankCount == 3);
 
     SelectModelBank(-1);
-    CHECK(g_RenderState.modelTable1 == g_ModelBanks[2].table);
-    CHECK(g_RenderState.modelNormals == g_ModelBanks[2].normals);
-    CHECK(g_RenderState.modelModels == g_ModelBanks[2].models);
+    CHECK(g_RenderState.geometry.modelTable1 == g_ModelBanks[2].table);
+    CHECK(g_RenderState.geometry.modelNormals == g_ModelBanks[2].normals);
+    CHECK(g_RenderState.geometry.modelModels == g_ModelBanks[2].models);
     CHECK(g_ModelBankCount == 3);
     SelectModelBank(GAME_MODEL_BANK_LIMIT);
-    CHECK(g_RenderState.modelTable1 == g_ModelBanks[2].table);
-    CHECK(g_RenderState.modelNormals == g_ModelBanks[2].normals);
-    CHECK(g_RenderState.modelModels == g_ModelBanks[2].models);
+    CHECK(g_RenderState.geometry.modelTable1 == g_ModelBanks[2].table);
+    CHECK(g_RenderState.geometry.modelNormals == g_ModelBanks[2].normals);
+    CHECK(g_RenderState.geometry.modelModels == g_ModelBanks[2].models);
     CHECK(g_ModelBankCount == 3);
 
     g_ModelBanks[0].modelCount = 77;
@@ -163,7 +163,7 @@ static int TestCourseModels(void) {
     data.models[2].modelOffset = 72;
     CHECK(RegisterCourseModels(header, sizeof(data)) == 1);
     CHECK(g_CourseModelCount == 3);
-    CHECK(g_RenderState.courseBank == g_NativeCourseModels);
+    CHECK(g_RenderState.geometry.courseBank == g_NativeCourseModels);
     CHECK(g_NativeCourseModels[1].geometry == (u8 *)&data + 52);
     CHECK(g_NativeCourseModels[1].vertexCount == 34);
     CHECK(g_NativeCourseModels[1].model == (u8 *)&data + 60);
@@ -240,8 +240,8 @@ static int TestTerrainCells(void) {
     CHECK(g_CellVisibilityTable ==
           (const CellVisibilityRow *)&data[TERRAIN_CELL_GRID_BYTES]);
     CHECK(g_TerrainCellCount == 3);
-    CHECK(g_RenderState.cellTable == g_NativeTerrainCells);
-    CHECK(g_RenderState.cellFaces == &data[HEADER_OFFSET + 32]);
+    CHECK(g_RenderState.geometry.cellTable == g_NativeTerrainCells);
+    CHECK(g_RenderState.geometry.cellFaces == &data[HEADER_OFFSET + 32]);
     CHECK(g_NativeTerrainCells[2] == &data[HEADER_OFFSET + 52]);
 
     ((u16 *)&data[HEADER_OFFSET + 52])[1] = 1;
@@ -293,18 +293,18 @@ static int TestTerrainCells(void) {
 
 static int TestRenderStateAndCarIndexes(void) {
     g_MirrorMode = 7;
-    g_RenderState.mode = GAME_RENDER_PASS_MIRROR;
+    g_RenderState.pass.mode = GAME_RENDER_PASS_MIRROR;
     InitRenderState(5);
-    CHECK(g_RenderState.faceOtShift == 0xA);
-    CHECK(g_RenderState.mode == GAME_RENDER_PASS_MAIN);
-    CHECK(g_RenderState.ft4Color[0] == 0x80);
-    CHECK(g_RenderState.ft4Color[3] == POLY_FT4_CODE);
-    CHECK(g_RenderState.gt4Color[0] == 0xFF);
-    CHECK(g_RenderState.gt4Color[3] == POLY_GT4_CODE);
+    CHECK(g_RenderState.pass.faceOtShift == 0xA);
+    CHECK(g_RenderState.pass.mode == GAME_RENDER_PASS_MAIN);
+    CHECK(g_RenderState.geometry.ft4Color[0] == 0x80);
+    CHECK(g_RenderState.geometry.ft4Color[3] == POLY_FT4_CODE);
+    CHECK(g_RenderState.geometry.gt4Color[0] == 0xFF);
+    CHECK(g_RenderState.geometry.gt4Color[3] == POLY_GT4_CODE);
     CHECK(g_RenderState.draw.clipX0 == 0 && g_RenderState.draw.clipY0 == 0);
     CHECK(g_RenderState.draw.clipX1 == SCREEN_WIDTH &&
           g_RenderState.draw.clipY1 == SCREEN_HEIGHT);
-    CHECK(g_RenderState.otShift == 5 && g_RenderState.orderingFlag == 7);
+    CHECK(g_RenderState.pass.otShift == 5 && g_RenderState.pass.orderingFlag == 7);
     CHECK(g_VisibleCellMask == g_MainVisibleCellMask);
     CHECK(g_VisibleCellList == g_MainVisibleCellList);
 

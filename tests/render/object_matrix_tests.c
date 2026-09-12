@@ -48,9 +48,9 @@ static int TestObjectTranslation(void) {
     RENDER_VIEW_STATE->position.vector.x = 100;
     RENDER_VIEW_STATE->position.vector.y = 200;
     RENDER_VIEW_STATE->position.vector.z = 300;
-    g_RenderState.matrix.m[0][0] = 4096;
-    g_RenderState.matrix.m[1][1] = 4096;
-    g_RenderState.matrix.m[2][2] = 4096;
+    g_RenderState.geometry.matrix.m[0][0] = 4096;
+    g_RenderState.geometry.matrix.m[1][1] = 4096;
+    g_RenderState.geometry.matrix.m[2][2] = 4096;
     rotation.m[0][0] = 4096;
     rotation.m[1][1] = 4096;
     rotation.m[2][2] = 4096;
@@ -70,9 +70,9 @@ static int TestPositionSubtractionWrapsLikeThePs1(void) {
 
     memset(&g_RenderState, 0, sizeof(g_RenderState));
     memset(&rotation, 0, sizeof(rotation));
-    g_RenderState.matrix.m[0][0] = 4096;
-    g_RenderState.matrix.m[1][1] = 4096;
-    g_RenderState.matrix.m[2][2] = 4096;
+    g_RenderState.geometry.matrix.m[0][0] = 4096;
+    g_RenderState.geometry.matrix.m[1][1] = 4096;
+    g_RenderState.geometry.matrix.m[2][2] = 4096;
     RENDER_VIEW_STATE->position.vector.x = INT_MAX;
     RENDER_VIEW_STATE->position.vector.y = INT_MIN;
 

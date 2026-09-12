@@ -49,22 +49,22 @@ s32 BeginMirrorPass(void) {
     }
 
     state = &g_RenderState;
-    g_CameraMatrixSaved = state->matrix;
-    state->matrix = g_MirrorViewMatrix;
+    g_CameraMatrixSaved = state->geometry.matrix;
+    state->geometry.matrix = g_MirrorViewMatrix;
 
     SetGeomOffset(SCREEN_WIDTH / 2, MIRROR_HEIGHT);
     SetGeomScreen(MIRROR_PROJECTION_DISTANCE);
 
-    state->mode = GAME_RENDER_PASS_MIRROR;
+    state->pass.mode = GAME_RENDER_PASS_MIRROR;
     /* Retail state+0x6c was shared by the mirror mode and terrain LOD shift. */
-    state->faceOtShift = GAME_RENDER_PASS_MIRROR;
+    state->pass.faceOtShift = GAME_RENDER_PASS_MIRROR;
     state->draw.clipX0 = MIRROR_X;
     state->draw.clipY0 = (s16)g_MirrorPanelY;
     state->draw.clipX1 = MIRROR_X + MIRROR_WIDTH;
     state->draw.clipY1 = (s16)(g_MirrorPanelY + MIRROR_HEIGHT);
     state->draw.orderingTable =
         &g_DrawBuffer->layout.orderingTables[1][0];
-    state->orderingFlag ^= 1;
+    state->pass.orderingFlag ^= 1;
 
     SetMirrorClip(g_MirrorPanelY);
     g_VisibleCellMask = g_MirrorVisibleCellMask;
@@ -79,8 +79,8 @@ void EndMirrorPass(void) {
     SetGeomOffset(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
     SetGeomScreen(SCREEN_WIDTH);
 
-    state->mode = GAME_RENDER_PASS_MAIN;
-    state->faceOtShift = GAME_RENDER_PASS_MAIN;
+    state->pass.mode = GAME_RENDER_PASS_MAIN;
+    state->pass.faceOtShift = GAME_RENDER_PASS_MAIN;
     state->draw.clipX0 = 0;
     state->draw.clipY0 = 0;
     state->draw.clipX1 = SCREEN_WIDTH;
@@ -88,8 +88,8 @@ void EndMirrorPass(void) {
     state->draw.orderingTable =
         &g_DrawBuffer->layout.orderingTables[0][0];
     state->camera.depth -= MIRROR_DEPTH_BIAS;
-    state->orderingFlag ^= 1;
-    state->matrix = g_CameraMatrixSaved;
+    state->pass.orderingFlag ^= 1;
+    state->geometry.matrix = g_CameraMatrixSaved;
     g_VisibleCellMask = g_MainVisibleCellMask;
     g_VisibleCellList = g_MainVisibleCellList;
 }

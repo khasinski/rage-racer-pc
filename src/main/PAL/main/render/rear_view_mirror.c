@@ -68,7 +68,7 @@ void DrawRearViewMirror(s32 sceneTimer) {
     AddPrim(&g_DrawBuffer->layout.orderingTables[1][GAME_FRAME_OT_LENGTH - 1],
             packet);
     g_RenderState.draw.packetCursor = packet + 1;
-    g_RenderState.envMode4 = g_IsEnvironmentMode4;
+    g_RenderState.geometry.envMode4 = g_IsEnvironmentMode4;
     DrawTerrainCellsInRange(-0x3000, PortMirrorFarDepth(0x6000));
 
     packet = g_RenderState.draw.packetCursor;

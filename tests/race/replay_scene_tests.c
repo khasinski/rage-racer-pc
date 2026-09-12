@@ -138,7 +138,7 @@ static void TestFirstTimeAttackFrame(void) {
     assert(s_RivalCarDraws == 0);
     assert(s_ObjectDraws == 1 && s_SceneryDraws == 1);
     assert(s_EnvironmentUpdates == 1 && s_SkyDraws == 1);
-    assert(g_RenderState.envMode4 == 3);
+    assert(g_RenderState.geometry.envMode4 == 3);
     assert(s_TextureSets == 1 && s_TextureSection == 12);
     assert(s_SpriteDraws == 0 && s_DrawModeDraws == 0);
 }

@@ -72,11 +72,11 @@ static int ExpectDraw(const char *label, s32 instance, s32 submissions, s32 worl
     g_ClassicSubmissions = 0;
     g_WorldSubmissions = 0;
     g_GteSets = 0;
-    g_RenderState.envMode4 = 0x20000;
+    g_RenderState.geometry.envMode4 = 0x20000;
     DrawShuttleScenery(instance);
     if (g_ClassicSubmissions != submissions ||
         g_WorldSubmissions != worldSubmissions || g_GteSets != submissions ||
-        (!submissions && g_RenderState.envMode4 != 0x20000) ||
+        (!submissions && g_RenderState.geometry.envMode4 != 0x20000) ||
         (submissions != 0 && g_ClassicModel != model) ||
         (worldSubmissions != 0 &&
          (g_WorldModel != model ||

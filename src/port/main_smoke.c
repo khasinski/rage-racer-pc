@@ -346,7 +346,7 @@ static void ReportCameraState(void) {
            "sky_row=%d key=%p",
            g_RenderState.camera.x, g_RenderState.camera.y, g_RenderState.camera.z,
            g_RenderState.camera.angleX, g_RenderState.camera.angleY,
-           g_RenderState.camera.angleZ, g_RenderState.orderingFlag, g_SkyRowBase,
+           g_RenderState.camera.angleZ, g_RenderState.pass.orderingFlag, g_SkyRowBase,
            (void *)g_RaceIntroCameraCursor);
     printf(" mirror_mtx=%d,%d,%d;%d,%d,%d;%d,%d,%d",
            g_MirrorViewMatrix.m[0][0], g_MirrorViewMatrix.m[0][1],

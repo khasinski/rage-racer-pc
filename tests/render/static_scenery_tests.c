@@ -56,7 +56,7 @@ void GameRenderWorldSubmitDynamicCourseObject(
     (void)rotation;
     (void)mirrorPass;
     s_submission = (Submission){
-        entity, model, x, y, z, fogged, g_RenderState.envMode4, 0
+        entity, model, x, y, z, fogged, g_RenderState.geometry.envMode4, 0
     };
     s_submissionCount++;
 }
@@ -110,12 +110,12 @@ int main(void) {
     }
 
     s_visible = 0;
-    g_RenderState.envMode4 = 0x20000;
+    g_RenderState.geometry.envMode4 = 0x20000;
     Reset();
     DrawStaticScenery(0);
     if (!Expect("native landmark outside classic scan",
                 (Submission){0, 0x39, 100, 200, 300, 1, 0, 0}) ||
-        s_gteSetCount != 0 || g_RenderState.envMode4 != 0x20000) {
+        s_gteSetCount != 0 || g_RenderState.geometry.envMode4 != 0x20000) {
         puts("FAIL hidden classic landmark changed legacy rendering state");
         return 1;
     }

@@ -21,7 +21,7 @@ static void SetupMenuViewCamera(s32 pitch, s32 yaw) {
     g_RenderState.camera.angleY = yaw;
     g_RenderState.camera.angleZ = 0;
     SetCameraRotMatrix();
-    ScaleMatrix(&g_RenderState.matrix, &g_MenuViewScale);
+    ScaleMatrix(&g_RenderState.geometry.matrix, &g_MenuViewScale);
 
     g_MenuViewOffset = PrepareMenuViewOffset(
         g_MenuViewOffset, g_MenuViewOffsetTarget);
@@ -45,7 +45,7 @@ static void DrawShowroomFloor(ShowroomPlayerCarState *showroom, Matrix *matrix) 
     SelectModelBank(SHOWROOM_MODEL_BANK);
     RENDER_OT_BASE = originalOt + SHOWROOM_OT_DEPTH_BIAS;
     SetGteObjectMatrix(AsPositionWords(&showroom->pose.position[0]), matrix);
-    g_RenderState.envMode4 = 0;
+    g_RenderState.geometry.envMode4 = 0;
     modelIndex = MenuModelIndexOrFallback(SHOWROOM_FLOOR_MODEL,
                                           g_ModelBankCount);
     if (modelIndex >= 0) {
@@ -125,7 +125,7 @@ void DrawMenuCarView(void) {
     BuildRotMatrixY(&mtxB, 0x800 - showroom->pose.rotation.y);
     BuildRotMatrixX(&mtxA, showroom->pose.rotation.x);
     MulMatrix2(&mtxB, &mtxA);
-    MulMatrix2(&g_RenderState.matrix, &mtxA);
+    MulMatrix2(&g_RenderState.geometry.matrix, &mtxA);
 
     if (g_MenuAltLayout != 0) {
         offset = horizontalAngle - 23;
@@ -183,10 +183,10 @@ void DrawMenuCourseView(void) {
     BuildRotMatrixY(&mtxB, 0x800 - showroom->runtime.bodyYaw);
     BuildRotMatrixX(&mtxA, showroom->runtime.bodyPitch);
     MulMatrix2(&mtxB, &mtxA);
-    MulMatrix2(&g_RenderState.matrix, &mtxA);
+    MulMatrix2(&g_RenderState.geometry.matrix, &mtxA);
     SelectModelBank(SHOWROOM_MODEL_BANK);
     SetGteObjectMatrix(AsPositionWords(&renderObject->x), &mtxA);
-    g_RenderState.envMode4 = 0;
+    g_RenderState.geometry.envMode4 = 0;
     courseModelIndex = MenuModelIndexOrFallback(
         CourseSlot(courseModelIndex), g_ModelBankCount);
     if (courseModelIndex >= 0) {
@@ -234,14 +234,14 @@ void DrawTeamNameCharModel(void) {
     BuildRotMatrixY(&mtxB, 0x800 - rotationY);
     BuildRotMatrixZ(&mtxA, rotationZ);
     MulMatrix2(&mtxB, &mtxA);
-    MulMatrix2(&g_RenderState.matrix, &mtxA);
+    MulMatrix2(&g_RenderState.geometry.matrix, &mtxA);
     ScaleMatrix(&mtxA, &vcopy);
 
     modelIndex = TeamNameCharacterModelIndex(g_TeamNameCharModel,
                                              g_CourseModelCount);
     if (modelIndex >= 0) {
         SetGteObjectMatrix(AsPositionWords(&position.x), &mtxA);
-        g_RenderState.envMode4 = 0;
+        g_RenderState.geometry.envMode4 = 0;
         SubmitCourseModel(&g_RenderState, modelIndex);
     }
 }

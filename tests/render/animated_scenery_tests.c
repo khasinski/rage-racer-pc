@@ -85,7 +85,7 @@ void GameRenderWorldSubmitDynamicCourseOverlay(
     (void)rotation;
     (void)fogged;
     (void)mirrorPass;
-    *submission = (Submission){entity, model, x, z, g_RenderState.envMode4};
+    *submission = (Submission){entity, model, x, z, g_RenderState.geometry.envMode4};
 }
 
 static void Reset(void) {

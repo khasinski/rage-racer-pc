@@ -72,7 +72,7 @@ void SubmitModel(void *renderState, s32 model) {
 static void ResetSubmissions(void) {
     memset(s_submissions, 0, sizeof(s_submissions));
     s_submissionCount = 0;
-    g_RenderState.envMode4 = 99;
+    g_RenderState.geometry.envMode4 = 99;
 }
 
 int main(void) {
@@ -92,7 +92,7 @@ int main(void) {
     CHECK(s_submissionCount == 1 && s_submissions[0].bank == 2 &&
           s_submissions[0].model == 0 && s_submissions[0].position.x == 10 &&
           s_matrixAngles[0] == 1 && s_matrixAngles[1] == 2 &&
-          s_matrixAngles[2] == 3 && g_RenderState.envMode4 == 0);
+          s_matrixAngles[2] == 3 && g_RenderState.geometry.envMode4 == 0);
 
     g_RouteSceneryPosition = (Vec4){100, 200, 300, 400};
     g_RouteSceneryRotX = 4;
@@ -104,7 +104,7 @@ int main(void) {
           s_submissions[0].model == 0x25 &&
           s_submissions[0].position.z == 300 && s_matrixAngles[0] == 4 &&
           s_matrixAngles[1] == 5 && s_matrixAngles[2] == 6 &&
-          g_RenderState.envMode4 == 0);
+          g_RenderState.geometry.envMode4 == 0);
 
     g_PathSceneryTransform.position = (Block16){{1000, 2000, 3000, 4000}};
     g_PathSceneryTransform.rotation = (SVec){7, 8, 9, 10};
@@ -119,7 +119,7 @@ int main(void) {
     CHECK(s_matrixAngles[0] == 7 && s_matrixAngles[1] == 8 &&
           s_matrixAngles[2] == 9);
     CHECK(s_spinAngle == ((13 * 331) & 0xFFF));
-    CHECK(g_RenderState.envMode4 == 0);
+    CHECK(g_RenderState.geometry.envMode4 == 0);
 
     g_ModelBankCount = 1;
     ResetSubmissions();

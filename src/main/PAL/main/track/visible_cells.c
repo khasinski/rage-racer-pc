@@ -78,7 +78,7 @@ void BuildVisibleCells(s32 near, s32 far) {
         s32 projected[3];
 
         GetVisibleCellScanOffset(direction, index,
-                                 g_RenderState.orderingFlag, offset);
+                                 g_RenderState.pass.orderingFlag, offset);
         cellX = cameraCellX + offset[0];
         cellZ = cameraCellZ + offset[1];
         if ((u32)cellX >= TERRAIN_CELL_GRID_SIZE ||
@@ -110,7 +110,7 @@ void BuildVisibleCells(s32 near, s32 far) {
             (cellZ * TERRAIN_CELL_SIZE -
              (view->position.components.z.value - TERRAIN_CELL_HALF_SIZE)) *
             4;
-        ApplyMatrixLV(&g_RenderState.matrix, worldOffset, projected);
+        ApplyMatrixLV(&g_RenderState.geometry.matrix, worldOffset, projected);
         if (projected[2] < near || projected[2] > far) {
             continue;
         }

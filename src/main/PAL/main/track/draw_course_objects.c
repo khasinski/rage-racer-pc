@@ -30,18 +30,18 @@ void DrawCourseObjects(void) {
         }
 
         BuildRotMatrixY(&objectMatrix, object->rotationY);
-        MulMatrix2(&g_RenderState.matrix, &objectMatrix);
+        MulMatrix2(&g_RenderState.geometry.matrix, &objectMatrix);
         SetGteObjectMatrix(AsPositionWords(&object->x), &objectMatrix);
 
         flags = object->flags;
         if (flags & COURSE_OBJECT_BLINK_ENVIRONMENT_4) {
-            g_RenderState.envMode4 = (g_AnimTimer & 0x10) == 0
+            g_RenderState.geometry.envMode4 = (g_AnimTimer & 0x10) == 0
                 ? COURSE_OBJECT_ENVIRONMENT_MATERIAL
                 : 0;
         } else if (flags & COURSE_OBJECT_ENVIRONMENT_4) {
-            g_RenderState.envMode4 = COURSE_OBJECT_ENVIRONMENT_MATERIAL;
+            g_RenderState.geometry.envMode4 = COURSE_OBJECT_ENVIRONMENT_MATERIAL;
         } else {
-            g_RenderState.envMode4 = 0;
+            g_RenderState.geometry.envMode4 = 0;
         }
 
         if (g_IsEnvironmentMode4

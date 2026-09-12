@@ -154,7 +154,7 @@ static int TestDispatchAndLayers(void) {
     MenuBeginExit(MENU_SCREEN_CUSTOMIZE);
     UpdateMenuMode();
     CHECK(g_AnimTimer == 11 && g_SceneTimer == 2 && s_displayMask == 1);
-    CHECK(g_RenderState.otShift == 1 && s_updateCalls == 1);
+    CHECK(g_RenderState.pass.otShift == 1 && s_updateCalls == 1);
     CHECK(s_solidRectCalls == 1);
     CHECK(s_drawCalls == 1 && s_drawSteps[0] == -10);
     CHECK(g_MenuOutgoingScreenProgress == 123);
@@ -166,7 +166,7 @@ static int TestDispatchAndLayers(void) {
     g_MenuHintButtonsVisible = 1;
     s_hintResult = 1;
     UpdateMenuMode();
-    CHECK(g_RenderState.otShift == 5 && s_specCarTire == 8);
+    CHECK(g_RenderState.pass.otShift == 5 && s_specCarTire == 8);
     CHECK(g_MenuHintBarProgress == 1 && s_overlayCalls == 1);
     CHECK(s_spriteCount == 2 && s_spriteTextureV == 0xE8);
 
@@ -186,7 +186,7 @@ static int TestInvalidIndices(void) {
     UpdateMenuMode();
     CHECK(MenuRuntimeCurrent()->activeScreen == MENU_SCREEN_COURSE_SELECT);
     CHECK(s_updateCalls == 1 && s_drawCalls == 1 && s_drawSteps[0] == 0x14);
-    CHECK(g_RenderState.otShift == 1);
+    CHECK(g_RenderState.pass.otShift == 1);
 
     Reset();
     g_PlayerCarIndex = -1;

@@ -33,7 +33,7 @@ static void BuildControllerPartTransform(Matrix *transform, s32 pitch) {
     BuildRotMatrixX(transform, pitch);
     BuildRotMatrixY(&yawRotation, g_ControllerSceneAngleY + 0x400);
     MulMatrix2(&yawRotation, transform);
-    MulMatrix2(&g_RenderState.matrix, transform);
+    MulMatrix2(&g_RenderState.geometry.matrix, transform);
     ScaleMatrix(&yawRotation, scale);
     MulMatrix2(&yawRotation, transform);
     SetGteLightMatrix(transform);
@@ -42,7 +42,7 @@ static void BuildControllerPartTransform(Matrix *transform, s32 pitch) {
 static void SubmitControllerPart(const LVec *position, Matrix *transform,
                                  s32 model) {
     SetGteObjectMatrix(position, transform);
-    g_RenderState.envMode4 = 0;
+    g_RenderState.geometry.envMode4 = 0;
     SubmitControllerModel(model);
 }
 

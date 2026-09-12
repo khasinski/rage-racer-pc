@@ -721,7 +721,7 @@ extern u16 g_EnvironmentClut[16];
  * and the `flags & 2` prop set over `flags & 1`; also forwarded to the render state
  * 0x1F800084 by every car/track renderer. */
 extern s32 g_IsEnvironmentMode4;
-/* That forwarding slot is g_RenderState.envMode4 in game/render_state.h. */
+/* That forwarding slot is g_RenderState.geometry.envMode4 in game/render_state.h. */
 
 /*
  * Per-view cell culling, rebuilt every frame by BuildVisibleCells and swapped in

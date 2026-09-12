@@ -19,7 +19,7 @@ void BuildVisibleCells(s32 nearDepth, s32 farDepth) {
     s_farDepth = farDepth;
 }
 void SetRotMatrix(MATRIX *matrix) {
-    if (matrix == &g_RenderState.matrix) s_rotMatrixCalls++;
+    if (matrix == &g_RenderState.geometry.matrix) s_rotMatrixCalls++;
 }
 void SubmitTerrainCells(void *state, const VisibleTerrainCell *cells,
                         s32 count) {

@@ -102,7 +102,7 @@ void SubmitModel(void *ctx, s32 bank) {
     GameRenderState *state = ctx;
     if (s_submitCount < 8) {
         s_submittedBanks[s_submitCount] = bank;
-        s_materialModes[s_submitCount] = state->envMode4;
+        s_materialModes[s_submitCount] = state->geometry.envMode4;
         memcpy(s_submittedPositions[s_submitCount], s_currentPosition,
                sizeof(s_currentPosition));
     }

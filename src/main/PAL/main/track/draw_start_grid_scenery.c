@@ -31,7 +31,7 @@ void DrawStartGridScenery(s32 timer) {
     series = g_RaceSeries != 0;
     BuildRotMatrixY(&objectMatrix, g_StartGridSceneryAngle[series]);
     worldMatrix = objectMatrix;
-    MulMatrix2(&g_RenderState.matrix, &objectMatrix);
+    MulMatrix2(&g_RenderState.geometry.matrix, &objectMatrix);
 
     position = g_StartGridSceneryPos[series];
     if (timer > START_GRID_MOTION_FRAME) {
@@ -55,7 +55,7 @@ void DrawStartGridScenery(s32 timer) {
                               g_CourseModelCount);
     SetGteObjectMatrix(AsPosition(&position),
                        &objectMatrix);
-    g_RenderState.envMode4 = 0;
+    g_RenderState.geometry.envMode4 = 0;
     GameRenderWorldSubmitDynamicCourseObject(
         START_GRID_ENTITY_ID, modelId, position.x, position.y, position.z,
         worldMatrix.m, 0, 0);

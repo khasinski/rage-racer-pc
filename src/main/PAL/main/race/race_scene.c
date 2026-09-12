@@ -259,7 +259,7 @@ void EnterRaceScene(void) {
  * for the rear-view mirror. The scenery only animates while the race runs;
  * the mirror pass never animates it. */
 static void DrawRaceWorld(s32 animateScenery) {
-    g_RenderState.envMode4 = g_IsEnvironmentMode4;
+    g_RenderState.geometry.envMode4 = g_IsEnvironmentMode4;
     PortProfileFramePhase("scene_terrain");
     DrawTerrainCells();
     PortProfileFramePhase("scene_course_objects");

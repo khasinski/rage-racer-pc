@@ -59,7 +59,7 @@ void BuildRotMatrixX(Matrix *mtx, s32 angle) {
 
 void SetCameraRotMatrix(void) {
     Matrix mtx;
-    Matrix *viewMatrix = (&g_RenderState.matrix);
+    Matrix *viewMatrix = (&g_RenderState.geometry.matrix);
 
     GameRenderWorldSetCamera(g_RenderState.camera.x, g_RenderState.camera.y, g_RenderState.camera.z,
                                  g_RenderState.camera.angleX, g_RenderState.camera.angleY,

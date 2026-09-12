@@ -181,7 +181,7 @@ static int ImportVisitCourseStream(
 static int ImportVisitCourseBank(RageImportedFaceVisitor visitor,
                                      void *context, uint32_t *meshCount) {
     uint32_t mesh;
-    if (g_CourseModelCount <= 0 || g_RenderState.courseBank == NULL) return 0;
+    if (g_CourseModelCount <= 0 || g_RenderState.geometry.courseBank == NULL) return 0;
     *meshCount = (uint32_t)g_CourseModelCount;
     for (mesh = 0; mesh < *meshCount; mesh++) {
         const NativeCourseModel *model = &g_NativeCourseModels[mesh];
@@ -194,10 +194,10 @@ static int ImportVisitCourseBank(RageImportedFaceVisitor visitor,
 
 static int ImportVisitTerrainBank(RageImportedFaceVisitor visitor,
                                       void *context, uint32_t *meshCount) {
-    const SVec *vertices = g_RenderState.cellFaces;
+    const SVec *vertices = g_RenderState.geometry.cellFaces;
     uint32_t mesh;
     if (g_TerrainCellCount <= 0 || vertices == NULL ||
-        g_RenderState.cellTable == NULL) return 0;
+        g_RenderState.geometry.cellTable == NULL) return 0;
     *meshCount = (uint32_t)g_TerrainCellCount;
     for (mesh = 0; mesh < *meshCount; mesh++) {
         if (g_NativeTerrainCells[mesh] == NULL ||

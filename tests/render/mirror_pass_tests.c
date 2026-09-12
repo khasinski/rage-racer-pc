@@ -49,7 +49,7 @@ static void SetAvailable(s32 panelY) {
     g_RacePhase = 2;
     g_MirrorPanelY = panelY;
     g_RenderState.camera.depth = 100;
-    g_RenderState.orderingFlag = 1;
+    g_RenderState.pass.orderingFlag = 1;
 }
 
 static int TestAvailability(void) {
@@ -81,12 +81,12 @@ static int TestAvailability(void) {
 static int TestHiddenPanelClip(void) {
     SetAvailable(-20);
     if (BeginMirrorPass() != 1) return 0;
-    return g_RenderState.mode == GAME_RENDER_PASS_MIRROR &&
-           g_RenderState.faceOtShift == GAME_RENDER_PASS_MIRROR &&
+    return g_RenderState.pass.mode == GAME_RENDER_PASS_MIRROR &&
+           g_RenderState.pass.faceOtShift == GAME_RENDER_PASS_MIRROR &&
            g_RenderState.draw.clipX0 == 0x56 && g_RenderState.draw.clipY0 == -20 &&
            g_RenderState.draw.clipX1 == 0xEA && g_RenderState.draw.clipY1 == 16 &&
            g_RenderState.camera.depth == 100 + 0x800 &&
-           g_RenderState.orderingFlag == 0 &&
+           g_RenderState.pass.orderingFlag == 0 &&
            g_FrameContexts[0].environment.mirrorDraw.clip.y == 0 &&
            g_FrameContexts[1].environment.mirrorDraw.clip.y == 0xF0 &&
            g_FrameContexts[0].environment.mirrorDraw.clip.h == 16 &&
@@ -100,8 +100,8 @@ static int TestVisiblePanelAndRestore(void) {
     Matrix original;
 
     SetAvailable(10);
-    memset(&g_RenderState.matrix, 0x72, sizeof(g_RenderState.matrix));
-    original = g_RenderState.matrix;
+    memset(&g_RenderState.geometry.matrix, 0x72, sizeof(g_RenderState.geometry.matrix));
+    original = g_RenderState.geometry.matrix;
     if (BeginMirrorPass() != 1 ||
         g_FrameContexts[0].environment.mirrorDraw.clip.y != 10 ||
         g_FrameContexts[1].environment.mirrorDraw.clip.y != 250 ||
@@ -109,12 +109,12 @@ static int TestVisiblePanelAndRestore(void) {
         return 0;
     }
     EndMirrorPass();
-    return g_RenderState.mode == GAME_RENDER_PASS_MAIN &&
-           g_RenderState.faceOtShift == GAME_RENDER_PASS_MAIN &&
+    return g_RenderState.pass.mode == GAME_RENDER_PASS_MAIN &&
+           g_RenderState.pass.faceOtShift == GAME_RENDER_PASS_MAIN &&
            g_RenderState.draw.clipX0 == 0 && g_RenderState.draw.clipY0 == 0 &&
            g_RenderState.draw.clipX1 == 0x140 && g_RenderState.draw.clipY1 == 0xF0 &&
-           g_RenderState.camera.depth == 100 && g_RenderState.orderingFlag == 1 &&
-           memcmp(&g_RenderState.matrix, &original, sizeof(original)) == 0 &&
+           g_RenderState.camera.depth == 100 && g_RenderState.pass.orderingFlag == 1 &&
+           memcmp(&g_RenderState.geometry.matrix, &original, sizeof(original)) == 0 &&
            g_VisibleCellMask == g_MainVisibleCellMask &&
            g_VisibleCellList == g_MainVisibleCellList &&
            s_geomX == 0xA0 && s_geomY == 0x78 && s_geomScreen == 0x140;

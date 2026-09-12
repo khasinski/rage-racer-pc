@@ -18,7 +18,7 @@ void DrawPathScenery(void) {
     SelectModelBank(1);
     SetGteObjectMatrix(AsPositionWords(g_PathSceneryTransform.position.w),
                        &objectMatrix);
-    g_RenderState.envMode4 = 0;
+    g_RenderState.geometry.envMode4 = 0;
     SubmitModel(&g_RenderState, ModelOrFallback(0x23, g_ModelBankCount));
 
     spinAngle = (s32)((u32)g_SceneTimer * 331u) & 0xFFF;
@@ -27,6 +27,6 @@ void DrawPathScenery(void) {
     MulMatrix2(&objectMatrix, &spinningPartMatrix);
     SetGteObjectMatrix(AsPositionWords(g_PathSceneryTransform.position.w),
                        &spinningPartMatrix);
-    g_RenderState.envMode4 = 0;
+    g_RenderState.geometry.envMode4 = 0;
     SubmitModel(&g_RenderState, ModelOrFallback(0x24, g_ModelBankCount));
 }

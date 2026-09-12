@@ -11,7 +11,7 @@ enum {
 
 void DrawTerrainCellsInRange(s32 nearDepth, s32 farDepth) {
     BuildVisibleCells(nearDepth, farDepth);
-    SetRotMatrix(&g_RenderState.matrix);
+    SetRotMatrix(&g_RenderState.geometry.matrix);
     SubmitTerrainCells(&g_RenderState, g_VisibleCellList,
                        VISIBLE_CELL_COUNT);
 }
