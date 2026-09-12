@@ -15,14 +15,14 @@ s32 FindNearestTrackCamera(GameCarRuntime *car) {
     s32 index;
 
     if (car == NULL || g_TrackCameras == NULL || trackLength <= 0 ||
-        g_TrackCameras[0].trackSection.value == -1) {
+        g_TrackCameras[0].trackSection == -1) {
         return -1;
     }
     target = WrapTrackSection(car->trackSection, trackLength);
 
-    for (index = 0; g_TrackCameras[index].trackSection.value != -1; index++) {
+    for (index = 0; g_TrackCameras[index].trackSection != -1; index++) {
         s32 cameraSection = WrapTrackSection(
-            g_TrackCameras[index].trackSection.value, trackLength);
+            g_TrackCameras[index].trackSection, trackLength);
         s32 distance = cameraSection - target;
 
         if (distance < 0) distance = -distance;

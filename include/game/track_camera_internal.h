@@ -19,14 +19,9 @@ typedef union GameTrackCameraData {
         s32 roll;
         s32 distance;
     } orientation;
-    s32 value[4];
-    Block16 block;
 } GameTrackCameraData;
 
-typedef union TrackCameraSection {
-    s16 value;
-    u16 raw;
-} TrackCameraSection;
+typedef s16 TrackCameraSection;
 
 typedef enum TrackCameraNodeMode {
     TRACK_CAMERA_CAR = 0,

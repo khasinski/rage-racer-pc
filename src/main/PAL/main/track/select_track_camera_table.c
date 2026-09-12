@@ -21,7 +21,7 @@ static const GameTrackCameraNode *FindValidCameraList(
     first = (const GameTrackCameraNode *)((const u8 *)table + offset);
     node = first;
     while (remaining >= sizeof(*node)) {
-        if (node->trackSection.value == -1) return first;
+        if (node->trackSection == -1) return first;
         if ((u16)node->mode > TRACK_CAMERA_ORBIT) return NULL;
         node++;
         remaining -= sizeof(*node);

@@ -20,11 +20,12 @@ static void AdvancePositionKeyframe(void) {
     int axis;
 
     if (g_PathSceneryClock.posFrame != g_PathSceneryCursors.posSpan) {
-        g_PathSceneryCursors.posPhase.value++;
+        g_PathSceneryCursors.posPhase = WrapSigned16(
+            (int64_t)g_PathSceneryCursors.posPhase + 1);
         return;
     }
 
-    g_PathSceneryCursors.posPhase.value = 0;
+    g_PathSceneryCursors.posPhase = 0;
     index = (s16)((u16)g_PathSceneryCursors.posIndex + 1u);
     keyframe = &g_PathSceneryPosKeys[index];
     if (keyframe->fields.span == -1) {
@@ -36,7 +37,7 @@ static void AdvancePositionKeyframe(void) {
     }
 
     g_PathSceneryCursors.posIndex = index;
-    g_PathSceneryCursors.posRate.value =
+    g_PathSceneryCursors.posRate =
         NormalizePathSceneryRate(keyframe->fields.rate);
     g_PathSceneryCursors.posSpan = keyframe->fields.span;
     for (axis = 0; axis < 3; axis++) {
@@ -51,11 +52,12 @@ static void AdvanceRotationKeyframe(void) {
     s16 index;
 
     if (g_PathSceneryClock.rotFrame != g_PathSceneryCursors.rotSpan) {
-        g_PathSceneryCursors.rotPhase.value++;
+        g_PathSceneryCursors.rotPhase = WrapSigned16(
+            (int64_t)g_PathSceneryCursors.rotPhase + 1);
         return;
     }
 
-    g_PathSceneryCursors.rotPhase.value = 0;
+    g_PathSceneryCursors.rotPhase = 0;
     index = (s16)((u16)g_PathSceneryCursors.rotIndex + 1u);
     keyframe = &g_PathSceneryRotKeys[index];
     if (keyframe->fields.span == -1) {
@@ -67,7 +69,7 @@ static void AdvanceRotationKeyframe(void) {
     }
 
     g_PathSceneryCursors.rotIndex = index;
-    g_PathSceneryCursors.rotRate.value =
+    g_PathSceneryCursors.rotRate =
         NormalizePathSceneryRate(keyframe->fields.rate);
     g_PathSceneryCursors.rotSpan = keyframe->fields.span;
     g_PathSceneryRotHalfDelta[0] =
@@ -100,8 +102,8 @@ static s32 EasePathValue(s32 start, s32 end, s32 halfDelta,
 static void UpdatePathPosition(void) {
     const PathSceneryPositionKey *keyframe =
         &g_PathSceneryPosKeys[g_PathSceneryCursors.posIndex];
-    const s16 phase = g_PathSceneryCursors.posPhase.signedValue;
-    const s16 rate = g_PathSceneryCursors.posRate.signedValue;
+    const s16 phase = g_PathSceneryCursors.posPhase;
+    const s16 rate = g_PathSceneryCursors.posRate;
     g_PathSceneryTransform.position.x = EasePathValue(
         keyframe[0].fields.x, keyframe[1].fields.x,
         g_PathSceneryHalfDelta[0], phase, rate);
@@ -124,8 +126,8 @@ static void UpdatePathPosition(void) {
 static void UpdatePathRotation(void) {
     const PathSceneryRotationKey *keyframe =
         &g_PathSceneryRotKeys[g_PathSceneryCursors.rotIndex];
-    const s16 phase = g_PathSceneryCursors.rotPhase.signedValue;
-    const s16 rate = g_PathSceneryCursors.rotRate.signedValue;
+    const s16 phase = g_PathSceneryCursors.rotPhase;
+    const s16 rate = g_PathSceneryCursors.rotRate;
 
     g_PathSceneryTransform.rotation.vx = WrapSigned16(
         EasePathValue(keyframe[0].fields.x, keyframe[1].fields.x,

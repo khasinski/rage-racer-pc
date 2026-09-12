@@ -69,12 +69,12 @@ static int RunCase(s16 positionRate, s16 rotationRate,
         g_PathSceneryRotKeys != &rotations.keys[1] ||
         g_PathSceneryClock.posFrame != 0 ||
         g_PathSceneryClock.rotFrame != 0 ||
-        g_PathSceneryCursors.posPhase.value != 0 ||
-        g_PathSceneryCursors.rotPhase.value != 0 ||
+        g_PathSceneryCursors.posPhase != 0 ||
+        g_PathSceneryCursors.rotPhase != 0 ||
         g_PathSceneryCursors.posSpan != 12 ||
         g_PathSceneryCursors.rotSpan != 9 ||
-        g_PathSceneryCursors.posRate.value != expectedPositionRate ||
-        g_PathSceneryCursors.rotRate.value != expectedRotationRate ||
+        g_PathSceneryCursors.posRate != expectedPositionRate ||
+        g_PathSceneryCursors.rotRate != expectedRotationRate ||
         g_PathSceneryCursors.posIndex != 0 ||
         g_PathSceneryCursors.rotIndex != 0 ||
         g_PathSceneryVolume != 0) {

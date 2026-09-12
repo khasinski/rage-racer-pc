@@ -31,9 +31,9 @@ int main(void) {
         offsetof(CameraTableFixture, firstSeriesCamera);
     fixture.table.seriesOffset[1] =
         offsetof(CameraTableFixture, secondSeriesCamera);
-    fixture.defaultCamera.trackSection.value = -1;
-    fixture.firstSeriesCamera.trackSection.value = -1;
-    fixture.secondSeriesCamera.trackSection.value = -1;
+    fixture.defaultCamera.trackSection = -1;
+    fixture.firstSeriesCamera.trackSection = -1;
+    fixture.secondSeriesCamera.trackSection = -1;
 
     g_GrandPrixSeries = 1;
     CHECK(SelectTrackCameraTable(&fixture.table, sizeof(fixture), 0) == 1);
@@ -65,7 +65,7 @@ int main(void) {
     CHECK(g_TrackCameras == NULL);
 
     fixture.table.defaultOffset = offsetof(CameraTableFixture, defaultCamera);
-    fixture.defaultCamera.trackSection.value = 0;
+    fixture.defaultCamera.trackSection = 0;
     fixture.defaultCamera.mode = TRACK_CAMERA_ORBIT + 1;
     CHECK(SelectTrackCameraTable(&fixture.table, sizeof(fixture), 0) == 0);
     CHECK(g_TrackCameras == NULL);

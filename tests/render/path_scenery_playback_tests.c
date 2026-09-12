@@ -94,7 +94,7 @@ int main(void) {
         g_RacePhase = frame < 10 ? 2 : 3;
         UpdatePathScenery();
         if (frame == 3 &&
-            (g_PathSceneryCursors.rotRate.signedValue != 2 ||
+            (g_PathSceneryCursors.rotRate != 2 ||
              g_PathSceneryTransform.rotation.vx != 200 ||
              g_PathSceneryTransform.rotation.vy != -100 ||
              g_PathSceneryTransform.rotation.vz != 300)) {
@@ -105,8 +105,8 @@ int main(void) {
         digest = FoldWord(digest, g_PathSceneryClock.rotFrame);
         digest = FoldWord(digest, g_PathSceneryCursors.posIndex);
         digest = FoldWord(digest, g_PathSceneryCursors.rotIndex);
-        digest = FoldWord(digest, g_PathSceneryCursors.posPhase.signedValue);
-        digest = FoldWord(digest, g_PathSceneryCursors.rotPhase.signedValue);
+        digest = FoldWord(digest, g_PathSceneryCursors.posPhase);
+        digest = FoldWord(digest, g_PathSceneryCursors.rotPhase);
         digest = FoldWord(digest, g_PathSceneryTransform.position.x);
         digest = FoldWord(digest, g_PathSceneryTransform.position.y);
         digest = FoldWord(digest, g_PathSceneryTransform.position.z);

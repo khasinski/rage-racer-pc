@@ -484,23 +484,13 @@ typedef struct PathSceneryRotationData {
 } PathSceneryRotationData;
 
 extern const PathSceneryPositionKey *g_PathSceneryPosKeys;
-typedef union PathSceneryRate {
-    u16 value;
-    s16 signedValue;
-} PathSceneryRate;
-
-typedef union PathSceneryPhase {
-    u16 value;
-    s16 signedValue;
-} PathSceneryPhase;
-
 typedef struct PathSceneryCursors {
-    PathSceneryPhase posPhase;
-    PathSceneryPhase rotPhase;
+    s16 posPhase;
+    s16 rotPhase;
     s16 posSpan;
     s16 rotSpan;
-    PathSceneryRate posRate;
-    PathSceneryRate rotRate;
+    s16 posRate;
+    s16 rotRate;
     s16 posIndex;
     s16 rotIndex;
 } PathSceneryCursors;

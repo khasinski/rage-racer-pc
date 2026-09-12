@@ -38,13 +38,13 @@ void InitPathScenery(void) {
     };
     g_PathSceneryTransform.rotation = rotationKeys[0].rotation;
 
-    g_PathSceneryCursors.posPhase.value = 0;
-    g_PathSceneryCursors.rotPhase.value = 0;
+    g_PathSceneryCursors.posPhase = 0;
+    g_PathSceneryCursors.rotPhase = 0;
     g_PathSceneryCursors.posSpan = positionKeys[0].fields.span;
     g_PathSceneryCursors.rotSpan = rotationKeys[0].fields.span;
-    g_PathSceneryCursors.posRate.value =
+    g_PathSceneryCursors.posRate =
         NormalizePathSceneryRate(positionKeys[0].fields.rate);
-    g_PathSceneryCursors.rotRate.value =
+    g_PathSceneryCursors.rotRate =
         NormalizePathSceneryRate(rotationKeys[0].fields.rate);
     g_PathSceneryCursors.posIndex = 0;
     g_PathSceneryCursors.rotIndex = 0;
