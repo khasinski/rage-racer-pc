@@ -82,7 +82,7 @@ static void ResetState(u8 *packets) {
     memset(&s_frame, 0, sizeof(s_frame));
     memset(&g_RenderState, 0, sizeof(g_RenderState));
     memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
-    g_RenderState.packetCursor = packets;
+    g_RenderState.draw.packetCursor = packets;
     s_digitPacket = NULL;
     s_speed = -1;
 }
@@ -145,7 +145,7 @@ int main(void) {
     CHECK(shiftLight->w == 16 && shiftLight->h == 16);
     CHECK(shiftLight->r0 == (u8)255 && shiftLight->g0 == 32 &&
           shiftLight->b0 == 32);
-    CHECK(g_RenderState.packetCursor == (u8 *)(shiftLight + 1));
+    CHECK(g_RenderState.draw.packetCursor == (u8 *)(shiftLight + 1));
 
     memset(packets, 0, sizeof(packets));
     ResetState(packets);

@@ -165,7 +165,7 @@ static void Reset(void) {
         g_NegconConfigButtonRows[15 + i] = i;
     }
     g_DrawBuffer = &s_frame;
-    g_RenderState.packetCursor = s_packets;
+    g_RenderState.draw.packetCursor = s_packets;
     g_PadErrorState = PAD_ERROR_STATE_NONE;
     g_PadType = PAD_TYPE_DIGITAL;
     g_PadMappingIndex = 2;
@@ -192,7 +192,7 @@ static void TestPadAndNegconScreens(void) {
     CHECK(s_selectorCount == 1 && s_selectorSelection == 2);
     CHECK(s_spriteCount == 6 && s_tileCount == 10 && s_lineCount == 15);
     CHECK(s_modeCount == 1);
-    CHECK(g_RenderState.packetCursor == s_packets + 35);
+    CHECK(g_RenderState.draw.packetCursor == s_packets + 35);
 
     Reset();
     g_PadType = PAD_TYPE_NEGCON;
@@ -202,7 +202,7 @@ static void TestPadAndNegconScreens(void) {
     CHECK(s_selectorSelection == 7);
     CHECK(s_spriteCount == 7 && s_tileCount == 10 && s_lineCount == 15);
     CHECK(s_modeCount == 2);
-    CHECK(g_RenderState.packetCursor == s_packets + 37);
+    CHECK(g_RenderState.draw.packetCursor == s_packets + 37);
 }
 
 static void TestErrorScreens(void) {
@@ -210,7 +210,7 @@ static void TestErrorScreens(void) {
     g_PadErrorState = PAD_ERROR_STATE_DISCONNECTED;
     DrawControllerConfigScreen();
     CHECK(s_proportionalX == 0x3A && s_proportionalText == g_MsgInsertController);
-    CHECK(s_selectorCount == 0 && g_RenderState.packetCursor == s_packets);
+    CHECK(s_selectorCount == 0 && g_RenderState.draw.packetCursor == s_packets);
 
     Reset();
     g_PadErrorState = PAD_ERROR_STATE_INVALID_INPUT;
@@ -229,7 +229,7 @@ static void TestCalloutVisibilityAndNeutralPanel(void) {
     Reset();
     DrawNegconNeutralScreen();
     CHECK(s_textCount == 2 && s_tileCount == 2);
-    CHECK(g_RenderState.packetCursor == s_packets + 2);
+    CHECK(g_RenderState.draw.packetCursor == s_packets + 2);
 }
 
 static void TestDiagramClampsMappingRows(void) {

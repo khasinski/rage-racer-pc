@@ -58,11 +58,11 @@ s32 BeginMirrorPass(void) {
     state->mode = GAME_RENDER_PASS_MIRROR;
     /* Retail state+0x6c was shared by the mirror mode and terrain LOD shift. */
     state->faceOtShift = GAME_RENDER_PASS_MIRROR;
-    state->x0 = MIRROR_X;
-    state->y0 = (s16)g_MirrorPanelY;
-    state->x1 = MIRROR_X + MIRROR_WIDTH;
-    state->y1 = (s16)(g_MirrorPanelY + MIRROR_HEIGHT);
-    state->primData =
+    state->draw.clipX0 = MIRROR_X;
+    state->draw.clipY0 = (s16)g_MirrorPanelY;
+    state->draw.clipX1 = MIRROR_X + MIRROR_WIDTH;
+    state->draw.clipY1 = (s16)(g_MirrorPanelY + MIRROR_HEIGHT);
+    state->draw.orderingTable =
         &g_DrawBuffer->layout.orderingTables[1][0];
     state->orderingFlag ^= 1;
 
@@ -81,11 +81,11 @@ void EndMirrorPass(void) {
 
     state->mode = GAME_RENDER_PASS_MAIN;
     state->faceOtShift = GAME_RENDER_PASS_MAIN;
-    state->x0 = 0;
-    state->y0 = 0;
-    state->x1 = SCREEN_WIDTH;
-    state->y1 = SCREEN_HEIGHT;
-    state->primData =
+    state->draw.clipX0 = 0;
+    state->draw.clipY0 = 0;
+    state->draw.clipX1 = SCREEN_WIDTH;
+    state->draw.clipY1 = SCREEN_HEIGHT;
+    state->draw.orderingTable =
         &g_DrawBuffer->layout.orderingTables[0][0];
     state->camera.depth -= MIRROR_DEPTH_BIAS;
     state->orderingFlag ^= 1;

@@ -63,7 +63,7 @@ void DrawNegconSteerPlayScreen(void) {
     lowerY = NEGCON_GAUGE_CENTER_Y + halfSpan;
     prim = QueueDoubleGaugeLine(ot, prim, upperY, 0x20, 0x40, 0xFF);
     prim = QueueDoubleGaugeLine(ot, prim, lowerY, 0x20, 0x40, 0xFF);
-    g_RenderState.packetCursor =
+    g_RenderState.draw.packetCursor =
         QueueDoubleGaugeLine(ot, prim, NEGCON_GAUGE_CENTER_Y, 0, 0, 0);
 }
 
@@ -97,5 +97,5 @@ void DrawNegconMaxTwistScreen(void) {
         0x7F81);
     prim = GameQueueSpriteTrans(ot, prim, 0xAC, 0x30, 4, 0x18, 0x78, 0x30,
                                 0x7F81);
-    g_RenderState.packetCursor = QueueCalibrationPanel(ot, prim);
+    g_RenderState.draw.packetCursor = QueueCalibrationPanel(ot, prim);
 }

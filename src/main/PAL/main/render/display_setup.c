@@ -52,7 +52,7 @@ void SetupDisplay240(s32 red, s32 green, s32 blue) {
     SetDefDrawEnv(&g_FrameContexts[1].environment.mirrorDraw, 0x56, 0x102,
                   0x94, 0x24);
     ConfigureFrameColors(red, green, blue);
-    g_RenderState.y1 = DISPLAY_240_HEIGHT;
+    g_RenderState.draw.clipY1 = DISPLAY_240_HEIGHT;
 }
 
 void SetupDisplay480(s32 red, s32 green, s32 blue) {
@@ -69,5 +69,5 @@ void SetupDisplay480(s32 red, s32 green, s32 blue) {
                   DISPLAY_WIDTH, DISPLAY_480_HEIGHT);
 
     ConfigureFrameColors(red, green, blue);
-    g_RenderState.y1 = DISPLAY_480_HEIGHT;
+    g_RenderState.draw.clipY1 = DISPLAY_480_HEIGHT;
 }

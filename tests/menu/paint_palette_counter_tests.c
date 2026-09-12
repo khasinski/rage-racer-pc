@@ -127,7 +127,7 @@ int main(void) {
     s32 progress = 10;
     s32 i;
 
-    g_RenderState.primData = orderingTable;
+    g_RenderState.draw.orderingTable = orderingTable;
     for (i = 0; i < MENU_PAINT_COLOR_COUNT; i++) {
         g_PaintColorTable.colors[i] = (Rgb){i, i + 1, i + 2};
     }
@@ -170,11 +170,11 @@ int main(void) {
     CHECK(progress == 0);
 
     ResetDraws();
-    g_RenderState.primData = NULL;
+    g_RenderState.draw.orderingTable = NULL;
     progress = 12;
     CHECK(DrawPaintColorPalette(&progress, 1, 0) == 0);
     CHECK(progress == 13 && s_solidCount == 0 && s_outlineCount == 0);
-    g_RenderState.primData = orderingTable;
+    g_RenderState.draw.orderingTable = orderingTable;
 
     ResetDraws();
     g_MenuAltLayout = 0;
@@ -217,7 +217,7 @@ int main(void) {
     CHECK(s_firstNumber == GAME_CAR_COUNT);
 
     ResetDraws();
-    g_RenderState.primData = NULL;
+    g_RenderState.draw.orderingTable = NULL;
     g_OwnedCarCounterSlide = 11;
     DrawOwnedCarCounter(1, 9);
     CHECK(g_OwnedCarCounterSlide == 12);

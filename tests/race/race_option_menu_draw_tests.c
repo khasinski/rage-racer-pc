@@ -51,8 +51,8 @@ void DrawText8x8(s32 x, s32 y, const char *text, s32 clut) {
     (void)text;
     (void)clut;
     s_textCount++;
-    g_RenderState.packetCursor =
-        (DrawPacket *)g_RenderState.packetCursor + 1;
+    g_RenderState.draw.packetCursor =
+        (DrawPacket *)g_RenderState.draw.packetCursor + 1;
 }
 
 u8 *GameQueueSprite(GameOrderingTableEntry *ot, u8 *packet, s32 x, s32 y,
@@ -125,7 +125,7 @@ static void Reset(void) {
     s_drawModeCount = 0;
     s_drawModePacket = NULL;
     s_retryDigitU = -1;
-    g_RenderState.packetCursor = s_frame.layout.primitiveBuffer;
+    g_RenderState.draw.packetCursor = s_frame.layout.primitiveBuffer;
     g_RaceOptionScroll0 = 0;
     g_RaceOptionScroll1 = 0;
     g_RaceOptionPulseAngle = -32;
@@ -156,7 +156,7 @@ static int CheckLayout(s32 grandPrix, s32 expectedSprites) {
     CHECK(pulse->x0 == 0x74 && pulse->x1 == 0xCC);
     CHECK(pulse->y0 == 0x58 && pulse->y2 == 0x90);
     CHECK(pulse->clut == 0x784B && pulse->tpage == 9);
-    CHECK(g_RenderState.packetCursor == (DrawPacket *)s_drawModePacket + 1);
+    CHECK(g_RenderState.draw.packetCursor == (DrawPacket *)s_drawModePacket + 1);
     return 0;
 }
 

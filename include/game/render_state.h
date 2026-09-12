@@ -23,6 +23,17 @@ typedef struct GameCameraState {
     s32 depth;
 } GameCameraState;
 
+typedef struct GameDrawContext {
+    void *packetCursor;
+    GameOrderingTableEntry *orderingTable;
+    /* Screen clip rectangle every emitter rejects primitives against.
+     * menu/frontend.c raises clipY1 to 0x1E0 for the 480-line modes. */
+    s16 clipX0;
+    s16 clipY0;
+    s16 clipX1;
+    s16 clipY1;
+} GameDrawContext;
+
 /*
  * The working state the renderer and the car code keep between calls.
  *
@@ -34,8 +45,7 @@ typedef struct GameCameraState {
  * struct of named fields.
  */
 typedef struct GameRenderState {
-    void *packetCursor;
-    GameOrderingTableEntry *primData;
+    GameDrawContext draw;
     GameCameraState camera;
     Matrix matrix;
     const void *courseBank;
@@ -50,12 +60,6 @@ typedef struct GameRenderState {
     GameRenderPassMode mode;
     u8 ft4Color[4];
     u8 gt4Color[4];
-    /* Screen clip rectangle every emitter rejects primitives against.
-     * menu/frontend.c raises y1 to 0x1E0 for the 480-line modes. */
-    s16 x0;
-    s16 y0;
-    s16 x1;
-    s16 y1;
     s32 envMode4;
 } GameRenderState;
 
@@ -162,11 +166,11 @@ extern CarTrackWork g_CarTrackWork;
  * as an integer in this slot; reading it back that way would take half of a
  * pointer here, so that spelling is gone.
  */
-#define RENDER_PRIM_CURSOR_AS(type) ((type *)g_RenderState.packetCursor)
-#define RENDER_PRIM_CURSOR          g_RenderState.packetCursor
+#define RENDER_PRIM_CURSOR_AS(type) ((type *)g_RenderState.draw.packetCursor)
+#define RENDER_PRIM_CURSOR          g_RenderState.draw.packetCursor
 
 /* Ordering table the emitters link finished packets into. */
-#define RENDER_OT_BASE g_RenderState.primData
+#define RENDER_OT_BASE g_RenderState.draw.orderingTable
 
 /* View transform consumed by the model render path. SetCameraRotMatrix builds
  * the matrix at 0x28 from the three angles; the position words are the camera

@@ -117,7 +117,7 @@ void DrawNameEntryCursor(s32 charIndex, s32 row) {
         return;
     }
 
-    g_RenderState.packetCursor = AddTilePrim(
+    g_RenderState.draw.packetCursor = AddTilePrim(
         GamePrimaryOrderingTable(0), RENDER_PRIM_CURSOR_AS(u8),
         charIndex * NAME_CURSOR_CELL_WIDTH + NAME_CURSOR_FIRST_X,
         row * NAME_CURSOR_ROW_HEIGHT + NAME_CURSOR_FIRST_Y,

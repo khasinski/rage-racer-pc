@@ -85,7 +85,7 @@ u8 *AddTilePrim(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
 static void Reset(void) {
     memset(&s_frame, 0, sizeof(s_frame));
     g_DrawBuffer = &s_frame;
-    g_RenderState.packetCursor = s_packets;
+    g_RenderState.draw.packetCursor = s_packets;
     s_segmentCount = 0;
     s_capCount = 0;
     s_drawModeCount = 0;
@@ -99,14 +99,14 @@ int main(void) {
     CHECK(s_drawModeCount == 2 && s_drawModes[0] == 0x3A &&
           s_drawModes[1] == 0x39);
     CHECK(s_tileCount == 2 && s_lastTileX == 0x46 && s_lastTileY == 100);
-    CHECK(g_RenderState.packetCursor == s_packets + 6);
+    CHECK(g_RenderState.draw.packetCursor == s_packets + 6);
 
     Reset();
     DrawVolumeBar(7, 0xD0);
     CHECK(s_segmentCount == 8);
     CHECK(s_segments[0].x == 0x62 && s_segments[0].y == 0xD4);
     CHECK(s_segments[7].x == 0x9A && s_segments[7].y == 0xD4);
-    CHECK(g_RenderState.packetCursor == s_packets + 14);
+    CHECK(g_RenderState.draw.packetCursor == s_packets + 14);
 
     Reset();
     DrawVolumeBar(99, 0);

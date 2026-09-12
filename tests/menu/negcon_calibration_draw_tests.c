@@ -116,7 +116,7 @@ static void Reset(void) {
     memset(s_sprites, 0, sizeof(s_sprites));
     memset(s_lineY, 0, sizeof(s_lineY));
     g_DrawBuffer = &s_frame;
-    g_RenderState.packetCursor = s_packets;
+    g_RenderState.draw.packetCursor = s_packets;
     s_spriteCount = 0;
     s_lineCount = 0;
     s_tileCount = 0;
@@ -137,7 +137,7 @@ static int TestSteerPlayGauge(void) {
     CHECK(s_lineY[0] == 218 && s_lineY[1] == 219);
     CHECK(s_lineY[2] == 242 && s_lineY[3] == 243);
     CHECK(s_lineY[4] == 230 && s_lineY[5] == 231);
-    CHECK(g_RenderState.packetCursor == s_packets + 14);
+    CHECK(g_RenderState.draw.packetCursor == s_packets + 14);
 
     Reset();
     g_NegconSteerPlay = 1;
@@ -155,7 +155,7 @@ static int TestMaxTwistGauge(void) {
     CHECK(s_leftEnabled == 0 && s_rightEnabled == 1);
     CHECK(s_sprites[0].x == 0x94 && s_sprites[0].width == 0x18);
     CHECK(s_sprites[0].u == 0);
-    CHECK(g_RenderState.packetCursor == s_packets + 7);
+    CHECK(g_RenderState.draw.packetCursor == s_packets + 7);
 
     Reset();
     g_NegconMaxTwist = NEGCON_CALIBRATION_LAST;

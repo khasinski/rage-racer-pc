@@ -88,7 +88,7 @@ static void Reset(void) {
     memset(&s_frame, 0, sizeof(s_frame));
     memset(g_ClassRecords, 0, sizeof(g_ClassRecords));
     g_DrawBuffer = &s_frame;
-    g_RenderState.packetCursor = s_packets;
+    g_RenderState.draw.packetCursor = s_packets;
     g_GameMode = OPTION_MODE_CLASS_MENU;
     g_ClassRecordMenuCursor = 0;
     g_ScreenOffsetEditX = 0;

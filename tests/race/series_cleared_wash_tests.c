@@ -44,7 +44,7 @@ u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *prim, s32 tpage) {
 
 static void DrawAndCheck(s32 progress, s32 fade, s32 red, s32 green,
                          s32 blue) {
-    g_RenderState.packetCursor = s_packets;
+    g_RenderState.draw.packetCursor = s_packets;
     DrawSeriesClearedWash(progress, fade);
     if (s_tile.red != red || s_tile.green != green || s_tile.blue != blue) {
         fprintf(stderr, "colors: got %d,%d,%d expected %d,%d,%d\n",
@@ -60,7 +60,7 @@ int main(void) {
     CHECK(s_tile.ot == GamePrimaryOrderingTable(0));
     CHECK(s_tile.width == 0x140 && s_tile.height == 0xF0);
     CHECK(s_drawModeOt == s_tile.ot && s_tpage == 0x49);
-    CHECK(g_RenderState.packetCursor == s_packets + 2);
+    CHECK(g_RenderState.draw.packetCursor == s_packets + 2);
 
     DrawAndCheck(2048, 300, 0xFF, 0xFF, 0xFF);
     CHECK(s_tile.red == 0xFF && s_tile.green == 0xFF &&

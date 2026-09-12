@@ -54,7 +54,7 @@ s32 GameDrawNumber(s32 x, s16 y, s32 flags, u32 value, u8 red, u8 green,
         x = WrapSigned32((int64_t)x + digitWidth);
     }
 
-    g_RenderState.packetCursor = QueueDrawModePrim(
+    g_RenderState.draw.packetCursor = QueueDrawModePrim(
         ot, RENDER_PRIM_CURSOR_AS(void),
         texturePageOffset + NUMBER_TEXTURE_PAGE_BASE);
     return NUMBER_DIGIT_COUNT - firstDigit;

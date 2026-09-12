@@ -47,7 +47,7 @@ static void ResetCalls(void) {
     s_callCount = 0;
     s_drawModeOt = NULL;
     s_drawMode = 0;
-    g_RenderState.packetCursor = s_packets;
+    g_RenderState.draw.packetCursor = s_packets;
 }
 
 int main(void) {
@@ -65,7 +65,7 @@ int main(void) {
     CHECK(s_calls[0].width == 0xC && s_calls[0].height == 0x18);
     CHECK(s_calls[0].u == 0xE0 && s_calls[0].v == 0x48);
     CHECK(s_calls[0].clut == 0x7F40 && s_drawMode == 0x3F);
-    CHECK(s_drawModeOt == ot51 && g_RenderState.packetCursor == s_packets + 2);
+    CHECK(s_drawModeOt == ot51 && g_RenderState.draw.packetCursor == s_packets + 2);
 
     g_OptionHintCaptions[2] = (OptionHintCaption){0x20, 0x30, 0x40, 0x44};
     ResetCalls();
@@ -75,7 +75,7 @@ int main(void) {
     CHECK(s_calls[1].x == 0x80 && s_calls[1].width == 0x40);
     CHECK(s_calls[1].u == 0x20 && s_calls[1].v == 0x30);
     CHECK(s_calls[2].x == 0xC4 && s_calls[2].u == 0xEC);
-    CHECK(g_RenderState.packetCursor == s_packets + 4);
+    CHECK(g_RenderState.draw.packetCursor == s_packets + 4);
 
     g_OptionHintCaptions[4] = (OptionHintCaption){4, 5, 6, 8};
     ResetCalls();
@@ -105,13 +105,13 @@ int main(void) {
     CHECK(g_LastValidPadType == PAD_TYPE_DIGITAL);
     CHECK(s_calls[0].u == 0x90 && s_calls[1].u == 0x98);
     CHECK(s_drawModeOt == ot0 && s_drawMode == 0x3F);
-    CHECK(g_RenderState.packetCursor == s_packets + 4);
+    CHECK(g_RenderState.draw.packetCursor == s_packets + 4);
 
     ResetCalls();
     DrawOptionHintBar(-1);
     DrawOptionHintBar(MENU_OPTION_HINT_COUNT);
     DrawOptionHintBar(INT_MAX);
-    CHECK(s_callCount == 0 && g_RenderState.packetCursor == s_packets);
+    CHECK(s_callCount == 0 && g_RenderState.draw.packetCursor == s_packets);
 
     ResetCalls();
     g_PadType = 0;
@@ -125,14 +125,14 @@ int main(void) {
     DrawMenuCursorArrow(12, 34);
     DrawOptionHintBar(2);
     DrawPadTypeHint();
-    CHECK(s_callCount == 0 && g_RenderState.packetCursor == s_packets);
+    CHECK(s_callCount == 0 && g_RenderState.draw.packetCursor == s_packets);
 
     g_DrawBuffer = &s_frame;
-    g_RenderState.packetCursor = NULL;
+    g_RenderState.draw.packetCursor = NULL;
     DrawMenuCursorArrow(12, 34);
     DrawOptionHintBar(2);
     DrawPadTypeHint();
-    CHECK(s_callCount == 0 && g_RenderState.packetCursor == NULL);
+    CHECK(s_callCount == 0 && g_RenderState.draw.packetCursor == NULL);
 
     puts("menu hint tests passed");
     return 0;

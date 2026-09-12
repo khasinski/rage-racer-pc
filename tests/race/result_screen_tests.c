@@ -86,7 +86,7 @@ u8 *GameQueueSprite(GameOrderingTableEntry *ot, u8 *packet, s32 x, s32 y,
 int main(void) {
     u8 packets[sizeof(TILE) * 2 + sizeof(SPRT) * 2];
 
-    g_RenderState.packetCursor = packets;
+    g_RenderState.draw.packetCursor = packets;
     g_CourseIndex = 5;
     DrawCourseIntro();
     if (s_courseNameDrawn != g_CourseNames[1]) {
@@ -94,7 +94,7 @@ int main(void) {
         return 1;
     }
 
-    g_RenderState.packetCursor = packets;
+    g_RenderState.draw.packetCursor = packets;
     g_GrandPrixMode = 1;
     g_GrandPrixSeries = 0;
     g_GrandPrixClass = 0;

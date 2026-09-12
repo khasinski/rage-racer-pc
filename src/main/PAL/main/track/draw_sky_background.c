@@ -505,6 +505,6 @@ void DrawSkyBackground(void) {
     }
 
     packet = DrawCourseSkirt(&work, &geometry, packet);
-    g_RenderState.packetCursor = packet;
+    g_RenderState.draw.packetCursor = packet;
     GameRenderWorldEndSkyPackets();
 }

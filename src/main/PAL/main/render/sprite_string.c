@@ -34,7 +34,7 @@ void DrawSpriteString(s32 x, s32 y, const char *str, s32 clutIndex) {
 
     SetDrawMode((DrawPacket *)packet, 0, 1, 0x1D, &g_DrawModeEnv);
     AddPrim(ot, packet);
-    g_RenderState.packetCursor = (DrawPacket *)packet + 1;
+    g_RenderState.draw.packetCursor = (DrawPacket *)packet + 1;
 }
 
 u8 *DrawShadowedTile(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y) {

@@ -43,7 +43,7 @@ void DrawSpeedDigits(s32 x, s32 y, s32 value) {
         prim,
         WrapSigned32((int64_t)screenX + SPEED_DIGIT_SPACING * 2),
         screenY, ones, color);
-    g_RenderState.packetCursor =
+    g_RenderState.draw.packetCursor =
         QueueDrawModePrim(GamePrimaryOrderingTable(0), prim,
                           SPEED_DIGIT_TEXTURE_PAGE);
 }

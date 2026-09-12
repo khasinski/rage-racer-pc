@@ -68,7 +68,7 @@ static void ResetCalls(void) {
 }
 
 int main(void) {
-    g_RenderState.primData = (GameOrderingTableEntry *)0x1234;
+    g_RenderState.draw.orderingTable = (GameOrderingTableEntry *)0x1234;
 
     g_MenuUpperAltPanelProgress = 7;
     g_MenuLowerAltPanelProgress = 8;
@@ -118,7 +118,7 @@ int main(void) {
     CHECK(g_MenuUpperAltPanelProgress == 0 && g_MenuLowerAltPanelProgress == 0);
     CHECK(s_callCount == 0);
 
-    g_RenderState.primData = NULL;
+    g_RenderState.draw.orderingTable = NULL;
     DrawMenuAltPanel(1, 1);
     DrawMenuAltPanel(1, 1);
     CHECK(g_MenuUpperAltPanelProgress == 2);

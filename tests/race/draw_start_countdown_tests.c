@@ -111,7 +111,7 @@ static void ResetCalls(u8 *packets) {
     g_TileStripBuffers[0].bytes = g_TileStripStorage;
     g_TileStripBuffers[1].bytes =
         g_TileStripStorage + START_COUNTDOWN_TILES_PER_BUFFER * sizeof(TILE);
-    g_RenderState.packetCursor = packets;
+    g_RenderState.draw.packetCursor = packets;
     s_addPrimCalls = 0;
     s_addPrimsCalls = 0;
     s_drawModeCalls = 0;
@@ -133,7 +133,7 @@ int main(void) {
 
     ResetCalls(packets);
     DrawStartCountdown(104);
-    CHECK(g_RenderState.packetCursor == packets);
+    CHECK(g_RenderState.draw.packetCursor == packets);
     CHECK(s_drawModeCalls == 0 && s_spriteCalls == 0 && s_addPrimCalls == 0);
 
     ResetCalls(packets);
@@ -149,7 +149,7 @@ int main(void) {
     CHECK(s_addPrimCalls == 7 && s_addPrimsCalls == 1);
     CHECK(s_firstTile == tiles && s_lastTile == tiles + 511);
     CHECK(s_lastOrderingTable == GamePrimaryOrderingTable(1));
-    CHECK((u8 *)g_RenderState.packetCursor > packets);
+    CHECK((u8 *)g_RenderState.draw.packetCursor > packets);
 
     ResetCalls(packets);
     g_FrameParity = 0;

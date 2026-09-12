@@ -51,7 +51,7 @@ static void DrawTitleFadeOverlay(s32 brightness) {
     color = (u8)brightness;
     next = GameQueueTileTrans(ot, RENDER_PRIM_CURSOR_AS(u8), 0, 0x18,
                               0x140, 0xC0, color, color, color);
-    g_RenderState.packetCursor = QueueDrawModePrim(ot, next, 0x29);
+    g_RenderState.draw.packetCursor = QueueDrawModePrim(ot, next, 0x29);
 }
 
 
@@ -73,7 +73,7 @@ void DrawPressStartPrompt(void) {
 
     next = GameQueueShadedSprite(ot, RENDER_PRIM_CURSOR_AS(u8), 0x68, 0xC8,
                                  0x70, 0x10, 0x70, 0xA0, 0x7E84, frame);
-    g_RenderState.packetCursor = QueueDrawModePrim(ot, next, 0x39);
+    g_RenderState.draw.packetCursor = QueueDrawModePrim(ot, next, 0x39);
 }
 
 

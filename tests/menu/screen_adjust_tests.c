@@ -53,7 +53,7 @@ void PlaySoundCue(s32 cue) { s_lastCue = cue; }
 
 static void Reset(void) {
     g_DrawBuffer = &s_frame;
-    g_RenderState.packetCursor = s_packets;
+    g_RenderState.draw.packetCursor = s_packets;
     g_GameMode = OPTION_MODE_SCREEN_ADJUST;
     g_ScreenOffsetEditX = 0;
     g_ScreenOffsetEditY = 0;
@@ -73,7 +73,7 @@ int main(void) {
     CHECK(s_calls[0].ot == GamePrimaryOrderingTable(51));
     CHECK(s_calls[0].x == 0x9A && s_calls[0].y == 0x88);
     CHECK(s_calls[0].u == 0xC8 && s_calls[3].u == 0xEC);
-    CHECK(g_RenderState.packetCursor == s_packets + 4);
+    CHECK(g_RenderState.draw.packetCursor == s_packets + 4);
 
     Reset();
     g_PadPressedRepeat = PAD_UP | PAD_LEFT;

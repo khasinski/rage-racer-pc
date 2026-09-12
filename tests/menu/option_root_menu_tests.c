@@ -87,7 +87,7 @@ void StartOptionMenuExit(GameSceneId scene) { s_lastExitScene = scene; }
 static void Reset(void) {
     memset(&s_frame, 0, sizeof(s_frame));
     g_DrawBuffer = &s_frame;
-    g_RenderState.packetCursor = s_packets;
+    g_RenderState.draw.packetCursor = s_packets;
     g_GameMode = OPTION_MODE_ROOT;
     g_OptionMenuCursor = 0;
     g_PadPressed = 0;

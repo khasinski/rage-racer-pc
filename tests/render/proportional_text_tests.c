@@ -31,7 +31,7 @@ static void ResetTextState(void) {
     memset(g_PropFontCells, 0, sizeof(g_PropFontCells));
     memset(g_WordFontCells, 0, sizeof(g_WordFontCells));
     memset(g_HighFontCell, 0, sizeof(g_HighFontCell));
-    g_RenderState.packetCursor = s_frame.layout.primitiveBuffer;
+    g_RenderState.draw.packetCursor = s_frame.layout.primitiveBuffer;
 }
 
 static void CheckFontClasses(void) {
@@ -42,7 +42,7 @@ static void CheckFontClasses(void) {
     SPRT *afterCurrency;
 
     ResetTextState();
-    packets = g_RenderState.packetCursor;
+    packets = g_RenderState.draw.packetCursor;
     g_PropFontCells['A' - 0x20].textureU = 11;
     g_PropFontCells['A' - 0x20].textureV = 12;
     g_WordFontCells[0] = 21;
@@ -75,7 +75,7 @@ static void CheckFontClasses(void) {
     CHECK_EQ(afterCurrency->x0, 50,
              "currency marker uses the retail word-cell advance");
     CHECK_EQ(afterCurrency->u0, 11, "fixed glyph after currency");
-    CHECK_EQ(g_RenderState.packetCursor ==
+    CHECK_EQ(g_RenderState.draw.packetCursor ==
                  packets + 4 * sizeof(SPRT) + sizeof(DrawPacket),
              1,
              "packet cursor");
@@ -87,7 +87,7 @@ static void CheckShadedText(void) {
     ResetTextState();
     g_PropFontCells['A' - 0x20].textureU = 5;
     g_PropFontCells['A' - 0x20].textureV = 6;
-    sprite = (SPRT *)g_RenderState.packetCursor;
+    sprite = (SPRT *)g_RenderState.draw.packetCursor;
 
     GameDrawProportionalTextShaded(1, 2, "A", 3, 0x45);
     CHECK_EQ(sprite->r0, 0x45, "shade red");
@@ -101,10 +101,10 @@ static void CheckInvalidFontCodesAreSkipped(void) {
     u8 *packets;
 
     ResetTextState();
-    packets = g_RenderState.packetCursor;
+    packets = g_RenderState.draw.packetCursor;
     DrawProportionalText(10, 20, invalid, 3);
 
-    CHECK_EQ(g_RenderState.packetCursor == packets + sizeof(DrawPacket), 1,
+    CHECK_EQ(g_RenderState.draw.packetCursor == packets + sizeof(DrawPacket), 1,
              "invalid font codes only queue draw mode");
 }
 

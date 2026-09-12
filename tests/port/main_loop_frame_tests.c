@@ -114,7 +114,7 @@ int main(void) {
     CHECK(s_transferPublication == 1 && s_transferOrder);
 
     CHECK(g_DrawBuffer == &g_FrameContexts[0] && g_FrameParity == 0);
-    CHECK(g_RenderState.packetCursor ==
+    CHECK(g_RenderState.draw.packetCursor ==
           g_FrameContexts[0].layout.primitiveBuffer);
     CHECK(s_clearCalls == 2);
     CHECK(s_audioTicks == 2 && s_assetServices == 1 && s_saveTicks == 1);

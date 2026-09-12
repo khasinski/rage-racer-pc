@@ -13,10 +13,10 @@ void InitRenderState(s32 otShift) {
     g_RenderState.gt4Color[1] = 0xFF;
     g_RenderState.gt4Color[2] = 0xFF;
     g_RenderState.gt4Color[3] = POLY_GT4_CODE;
-    g_RenderState.x0 = 0;
-    g_RenderState.y0 = 0;
-    g_RenderState.x1 = SCREEN_WIDTH;
-    g_RenderState.y1 = SCREEN_HEIGHT;
+    g_RenderState.draw.clipX0 = 0;
+    g_RenderState.draw.clipY0 = 0;
+    g_RenderState.draw.clipX1 = SCREEN_WIDTH;
+    g_RenderState.draw.clipY1 = SCREEN_HEIGHT;
     g_RenderState.otShift = otShift;
     g_RenderState.orderingFlag = g_MirrorMode;
     g_VisibleCellMask = g_MainVisibleCellMask;

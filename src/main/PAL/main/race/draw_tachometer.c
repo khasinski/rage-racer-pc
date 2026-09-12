@@ -137,7 +137,7 @@ void DrawTachometer(s32 rpm, s32 shiftLightOn, TachometerLightingMode lighting,
     next = DrawHudDigit(
         (u8 *)(needle + 1), centerX + spec->gearDigitDX,
         centerY + spec->gearDigitDY, g_PlayerCar.drive.gear, g_HudGlyphClut);
-    g_RenderState.packetCursor = next;
+    g_RenderState.draw.packetCursor = next;
     DrawSpeedDigits(centerX, centerY,
                     SpeedDisplayValue(g_PlayerCar.speed));
 
@@ -162,5 +162,5 @@ void DrawTachometer(s32 rpm, s32 shiftLightOn, TachometerLightingMode lighting,
     shiftLight->g0 = 0x20;
     shiftLight->b0 = 0x20;
     AddPrim(ot, shiftLight);
-    g_RenderState.packetCursor = (u8 *)(shiftLight + 1);
+    g_RenderState.draw.packetCursor = (u8 *)(shiftLight + 1);
 }

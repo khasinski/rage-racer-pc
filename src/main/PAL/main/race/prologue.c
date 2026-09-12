@@ -129,7 +129,7 @@ static void DrawPrologueText(void) {
     blue = g_FadeLevel * 3 / 4 + 0x40;
     next = GameQueueTileTrans(ot, RENDER_PRIM_CURSOR_AS(u8), 0, 0, 0x140,
                               0xF0, g_FadeLevel, green, blue);
-    g_RenderState.packetCursor =
+    g_RenderState.draw.packetCursor =
         QueueDrawModePrim(ot, next, PROLOGUE_FADE_TPAGE);
 }
 

@@ -70,7 +70,7 @@ static void DrawClassRecordDetail(void) {
     next = AddTilePrim(detailOt, next, panelX, panelY, 0x7C, 0x1E, 0, 0, 0);
     next = AddTilePrim(detailOt, next, panelX, panelY + 32,
                        0x7C, 0x1E, 0, 0, 0);
-    g_RenderState.packetCursor = AddTilePrim(
+    g_RenderState.draw.packetCursor = AddTilePrim(
         detailOt, next, panelX - 1, panelY - 2,
         0x7E, 0x42, 0xFF, 0xFF, 0xFF);
 }
@@ -91,7 +91,7 @@ static void DrawClassRecordGrid(void) {
     next = RENDER_PRIM_CURSOR_AS(u8);
     next = GameQueueSpriteTrans(labelBase, next, 0x24, 0x38, 0x24, 0x18, 0x38, 0x90, 0x7F40);
     next = GameQueueSpriteTrans(labelBase, next, 0x24, 0x58, 0x1C, 0x18, 0xD0, 0x60, 0x7F40);
-    g_RenderState.packetCursor = QueueDrawModePrim(labelBase, next, 0x3F);
+    g_RenderState.draw.packetCursor = QueueDrawModePrim(labelBase, next, 0x3F);
     DrawMenuCursorArrow(0x14, (g_ClassRecordMenuCursor * 32) + 56);
     next = RENDER_PRIM_CURSOR_AS(u8);
 
@@ -124,7 +124,7 @@ static void DrawClassRecordGrid(void) {
 
     next = QueueDrawModePrim(base, next, 0x3E);
     next = QueueDrawModePrim(base + 1, next, 0x3C);
-    g_RenderState.packetCursor = next;
+    g_RenderState.draw.packetCursor = next;
     DrawOptionHintBar(MENU_OPTION_HINT_CLASS_RECORDS);
 }
 

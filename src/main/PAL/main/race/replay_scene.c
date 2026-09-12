@@ -26,7 +26,7 @@ static void DrawReplayBadge(void) {
     base = GamePrimaryOrderingTable(0);
     next = GameQueueSprite(base, RENDER_PRIM_CURSOR_AS(u8), 0x10, 0x10, 0x48,
                            0x10, 0, 0x68, 0x780D);
-    g_RenderState.packetCursor = QueueDrawModePrim(base, next, 9);
+    g_RenderState.draw.packetCursor = QueueDrawModePrim(base, next, 9);
 }
 
 void UpdateReplayScene(void) {

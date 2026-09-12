@@ -109,7 +109,7 @@ static void Reset(void) {
     memset(&g_RenderState, 0, sizeof(g_RenderState));
     memset(s_packets, 0, sizeof(s_packets));
     g_DrawBuffer = &g_FrameContexts[0];
-    g_RenderState.packetCursor = s_packets;
+    g_RenderState.draw.packetCursor = s_packets;
     g_MirrorPanelY = -44;
     g_MirrorUnlocked = 0;
     g_MirrorViewEnabled = 1;

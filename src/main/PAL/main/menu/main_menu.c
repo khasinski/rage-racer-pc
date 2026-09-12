@@ -42,7 +42,7 @@ void DrawMainMenuRows(void) {
         row++;
     }
 
-    g_RenderState.packetCursor = packet;
+    g_RenderState.draw.packetCursor = packet;
 }
 
 void UpdateMainMenuOpen(void) {

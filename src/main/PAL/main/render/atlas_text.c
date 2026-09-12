@@ -96,7 +96,7 @@ void DrawSmallText(s32 x, s16 y, const char *text, u8 red, u8 green, u8 blue,
         x = WrapSigned32((int64_t)x + glyphWidth);
     }
 
-    g_RenderState.packetCursor = QueueDrawModePrim(
+    g_RenderState.draw.packetCursor = QueueDrawModePrim(
         ot + 1, RENDER_PRIM_CURSOR_AS(void),
         (flags & TEXT_TEXTURE_PAGE_MASK) + TEXT_TEXTURE_PAGE_BASE);
 }
@@ -137,7 +137,7 @@ void DrawLargeText(s32 x, s16 y, const char *text, u8 red, u8 green, u8 blue,
         x = WrapSigned32((int64_t)x + glyphWidth);
     }
 
-    g_RenderState.packetCursor = QueueDrawModePrim(
+    g_RenderState.draw.packetCursor = QueueDrawModePrim(
         ot + 1, RENDER_PRIM_CURSOR_AS(void),
         (flags & TEXT_TEXTURE_PAGE_MASK) + TEXT_TEXTURE_PAGE_BASE);
 }

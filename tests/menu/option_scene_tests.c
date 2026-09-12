@@ -87,7 +87,7 @@ static void Reset(OptionMode mode) {
     memset(&s_frame, 0, sizeof(s_frame));
     memset(s_handlerCalls, 0, sizeof(s_handlerCalls));
     g_DrawBuffer = &s_frame;
-    g_RenderState.packetCursor = s_packets;
+    g_RenderState.draw.packetCursor = s_packets;
     g_AnimTimer = 10;
     g_GameMode = mode;
     g_OptionLetterboxHeight = 0;

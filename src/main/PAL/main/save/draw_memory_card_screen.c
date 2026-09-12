@@ -11,7 +11,7 @@ void DrawMemoryCardScreen(s32 showSlotBar, s32 fromLoadMenu,
     s32 i;
     s32 y;
 
-    if (g_DrawBuffer == NULL || g_RenderState.packetCursor == NULL) return;
+    if (g_DrawBuffer == NULL || g_RenderState.draw.packetCursor == NULL) return;
     base = GamePrimaryOrderingTable(51);
     next = RENDER_PRIM_CURSOR_AS(u8);
 
@@ -30,7 +30,7 @@ void DrawMemoryCardScreen(s32 showSlotBar, s32 fromLoadMenu,
         base, next, 0x68, 0xB8, 0x34, 0x10, 0x10, 0xC8, 0x7F40);
     next = GameQueueSpriteTrans(
         base, next, 0xB0, 0xB8, 0x14, 0x10, 0x44, 0xC8, 0x7F40);
-    g_RenderState.packetCursor = next;
+    g_RenderState.draw.packetCursor = next;
     DrawMenuCursorArrow(0x14, selectedRow * 32 + 0x38);
     DrawOptionHintBar(fromLoadMenu ? MENU_OPTION_HINT_MEMORY_CARD_LOAD
                                    : MENU_OPTION_HINT_MEMORY_CARD_SAVE);
@@ -53,5 +53,5 @@ void DrawMemoryCardScreen(s32 showSlotBar, s32 fromLoadMenu,
                            0xC8, 0x28, 0x89, 0xFF, 0x76);
     }
     next = AddTilePrim(base, next, 0, 0, 0x140, 0xF0, 0x85, 0x15, 0xE);
-    g_RenderState.packetCursor = next;
+    g_RenderState.draw.packetCursor = next;
 }

@@ -103,8 +103,8 @@ static void TraceTerrainDecision(
                 (int16_t)sxy[1], (int16_t)(sxy[1] >> 16),
                 (int16_t)sxy[2], (int16_t)(sxy[2] >> 16),
                 (int16_t)sxy[3], (int16_t)(sxy[3] >> 16),
-                g_RenderState.x0, g_RenderState.x1,
-                g_RenderState.y0, g_RenderState.y1,
+                g_RenderState.draw.clipX0, g_RenderState.draw.clipX1,
+                g_RenderState.draw.clipY0, g_RenderState.draw.clipY1,
                 rawDepth, depth, "submit");
     else
         fprintf(stderr,
@@ -123,8 +123,8 @@ static void TraceTerrainDecision(
                 (int16_t)sxy[1], (int16_t)(sxy[1] >> 16),
                 (int16_t)sxy[2], (int16_t)(sxy[2] >> 16),
                 (int16_t)sxy[3], (int16_t)(sxy[3] >> 16),
-                g_RenderState.x0, g_RenderState.x1,
-                g_RenderState.y0, g_RenderState.y1, reason);
+                g_RenderState.draw.clipX0, g_RenderState.draw.clipX1,
+                g_RenderState.draw.clipY0, g_RenderState.draw.clipY1, reason);
     g_RageTerrainDecisionTraceCount++;
 }
 
@@ -207,8 +207,8 @@ static int ProjectQuad(
      * the compat image is unchanged because the PS1 drawing area still clips
      * them. Never widen the mirror's deliberate bounds. */
     if (ScreenQuadOutsideBounds(
-            sxy, g_RenderState.x0, g_RenderState.x1, g_RenderState.y0,
-            g_RenderState.y1,
+            sxy, g_RenderState.draw.clipX0, g_RenderState.draw.clipX1, g_RenderState.draw.clipY0,
+            g_RenderState.draw.clipY1,
             g_RenderState.mode == GAME_RENDER_PASS_MIRROR
                 ? 0 : ModernCullMarginX())) {
         g_RageProjectionReject = 1;
@@ -306,8 +306,8 @@ static int ProjectCourseFace(
         return 0;
     }
     if (ScreenQuadOutsideBounds(
-            sxy, g_RenderState.x0, g_RenderState.x1, g_RenderState.y0,
-            g_RenderState.y1,
+            sxy, g_RenderState.draw.clipX0, g_RenderState.draw.clipX1, g_RenderState.draw.clipY0,
+            g_RenderState.draw.clipY1,
             g_RenderState.mode == GAME_RENDER_PASS_MIRROR
                 ? 0 : ModernCullMarginX())) {
         g_RageProjectionReject = 1;
@@ -333,8 +333,8 @@ static int CourseScreenQuadVisible(const int sxy[4]) {
     if (!CourseQuadVisible(g_RenderState.orderingFlag, clip0, clip1))
         return 0;
     return !ScreenQuadOutsideBounds(
-        sxy, g_RenderState.x0, g_RenderState.x1,
-        g_RenderState.y0, g_RenderState.y1, 0);
+        sxy, g_RenderState.draw.clipX0, g_RenderState.draw.clipX1,
+        g_RenderState.draw.clipY0, g_RenderState.draw.clipY1, 0);
 }
 
 static uint8_t *EmitTerrainFt4(
@@ -772,7 +772,7 @@ static void RageSubmitModelFaces(
             }
         }
     }
-    g_RenderState.packetCursor = cursor;
+    g_RenderState.draw.packetCursor = cursor;
 }
 
 void SubmitModel(void *ctx, int index) {
@@ -1058,12 +1058,12 @@ static void RageSubmitCourseModel(int index, int fogged) {
             }
         }
     }
-    g_RenderState.packetCursor = cursor;
+    g_RenderState.draw.packetCursor = cursor;
     CaptureSubmitEnd();
     return;
 course_buffer_full:
     fprintf(stderr, "rage course: primitive buffer exhausted\n");
-    g_RenderState.packetCursor = cursor;
+    g_RenderState.draw.packetCursor = cursor;
     CaptureSubmitEnd();
 }
 
@@ -1486,12 +1486,12 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
             }
         }
     }
-    g_RenderState.packetCursor = cursor;
+    g_RenderState.draw.packetCursor = cursor;
     CaptureSubmitEnd();
     return;
 terrain_buffer_full:
     fprintf(stderr, "rage terrain: primitive buffer exhausted decoded=%d emitted=%d\n",
             decodedFaces, emittedFaces);
-    g_RenderState.packetCursor = cursor;
+    g_RenderState.draw.packetCursor = cursor;
     CaptureSubmitEnd();
 }

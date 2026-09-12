@@ -107,7 +107,7 @@ u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *prim, s32 tpage) {
 
 static void ResetCalls(void) {
     g_DrawBuffer = &s_frame;
-    g_RenderState.packetCursor = s_frame.layout.primitiveBuffer;
+    g_RenderState.draw.packetCursor = s_frame.layout.primitiveBuffer;
     s_audioFadeCalls = 0;
     s_classRefreshCalls = 0;
     s_displayMaskCalls = 0;

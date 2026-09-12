@@ -90,7 +90,7 @@ int main(void) {
     };
     s32 model;
 
-    g_RenderState.primData = orderingTable;
+    g_RenderState.draw.orderingTable = orderingTable;
     g_CarNamePlateFade = 99;
     s_drawCount = 0;
     DrawCarNamePlate(0, 0, 0);
@@ -120,10 +120,10 @@ int main(void) {
     DrawCarNamePlate(1, 0, -1);
     CHECK(g_CarNamePlateFade == 101 && s_drawCount == 0);
 
-    g_RenderState.primData = NULL;
+    g_RenderState.draw.orderingTable = NULL;
     DrawCarNamePlate(10, 0, 0);
     CHECK(g_CarNamePlateFade == 111 && s_drawCount == 0);
-    g_RenderState.primData = orderingTable;
+    g_RenderState.draw.orderingTable = orderingTable;
 
     g_CarNamePlateFade = 1;
     DrawCarNamePlate(INT_MIN, 0, INT_MAX);

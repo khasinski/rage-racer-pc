@@ -336,7 +336,7 @@ int main(void) {
     int pi, si, li, alt;
     int states = 0;
 
-    g_RenderState.primData = orderingTable;
+    g_RenderState.draw.orderingTable = orderingTable;
 
     s_out = getenv("RAGE_SCRIPT_TRACE") != NULL
                 ? fopen(getenv("RAGE_SCRIPT_TRACE"), "w")

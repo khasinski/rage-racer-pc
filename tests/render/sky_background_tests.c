@@ -54,8 +54,8 @@ static void PrepareFrame(PacketStorage *packets,
     memset(&g_RenderState, 0, sizeof(g_RenderState));
     memset(g_SkyTileMap, 0, sizeof(g_SkyTileMap));
     memset(g_SkyTileUV, 0, sizeof(g_SkyTileUV));
-    g_RenderState.packetCursor = packets->bytes;
-    g_RenderState.primData = orderingTable;
+    g_RenderState.draw.packetCursor = packets->bytes;
+    g_RenderState.draw.orderingTable = orderingTable;
     g_SkyRowBase = 1;
     g_MirrorMode = 0;
     memset(&s_publishedGrid, 0, sizeof(s_publishedGrid));
@@ -75,7 +75,7 @@ static int TestNearGroundCourseSkirt(void) {
 
     DrawSkyBackground();
 
-    CHECK(g_RenderState.packetCursor ==
+    CHECK(g_RenderState.draw.packetCursor ==
           packets.bytes + gridSize + sizeof(POLY_G4));
     skirt = (POLY_G4 *)(void *)(packets.bytes + gridSize);
     CHECK(skirt->r0 == 11 && skirt->r1 == 11);
@@ -98,7 +98,7 @@ static int TestFarGroundCourseSkirt(void) {
 
     DrawSkyBackground();
 
-    CHECK(g_RenderState.packetCursor ==
+    CHECK(g_RenderState.draw.packetCursor ==
           packets.bytes + gridSize + sizeof(POLY_G4) + sizeof(POLY_F4));
     gradient = (POLY_G4 *)(void *)(packets.bytes + gridSize);
     fill = (POLY_F4 *)(void *)(gradient + 1);
@@ -137,7 +137,7 @@ static int TestSkyGradientPaletteSlots(void) {
     CHECK(horizonTile->tpage == 0x18 && horizonTile->clut == 0x798E);
     CHECK(horizonTile->r0 == 0x80 && horizonTile->g0 == 0x80 &&
           horizonTile->b0 == 0x80);
-    packetEnd = g_RenderState.packetCursor;
+    packetEnd = g_RenderState.draw.packetCursor;
     gradient = (POLY_G4 *)(void *)(packetEnd - 4 * sizeof(POLY_G4));
     CHECK(gradient[0].r0 == 10 && gradient[0].r2 == 20);
     CHECK(gradient[1].r0 == 10 && gradient[1].r2 == 30);
@@ -162,7 +162,7 @@ static int TestInvalidSkyMapFallsBackToFirstTile(void) {
 
     firstTile = (POLY_FT4 *)(void *)packets.bytes;
     CHECK(firstTile->u0 == 17 && firstTile->v0 == 23);
-    CHECK(g_RenderState.packetCursor ==
+    CHECK(g_RenderState.draw.packetCursor ==
           packets.bytes + 4 * TEST_SKY_COLUMNS * sizeof(POLY_FT4) +
               sizeof(POLY_G4));
 

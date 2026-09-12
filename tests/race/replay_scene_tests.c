@@ -106,7 +106,7 @@ static void ResetState(void) {
     g_IsEnvironmentMode4 = 3;
     g_PlayerCar.trackSection = 12;
     g_PlayerCar.drive.racePosition = 1;
-    g_RenderState.packetCursor = s_FrameContext.layout.primitiveBuffer;
+    g_RenderState.draw.packetCursor = s_FrameContext.layout.primitiveBuffer;
     s_AppliedCursor = -1;
     s_FadeUpdates = 0;
     s_FadeExited = 0;

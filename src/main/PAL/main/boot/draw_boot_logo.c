@@ -14,7 +14,7 @@ void DrawBootLogo(void) {
     u8 *next;
     const s32 fade = BootLogoFade();
 
-    if (g_DrawBuffer == NULL || g_RenderState.packetCursor == NULL) return;
+    if (g_DrawBuffer == NULL || g_RenderState.draw.packetCursor == NULL) return;
 
     ot = GamePrimaryOrderingTable(0);
     next = RENDER_PRIM_CURSOR_AS(u8);
@@ -24,5 +24,5 @@ void DrawBootLogo(void) {
                                  0x3FD7, fade);
     next = GameQueueShadedSprite(ot, next, 0x64, 0xC4, 0x78, 0x20, 0, 0,
                                  0x3FD7, fade);
-    g_RenderState.packetCursor = QueueDrawModePrim(ot, next, 5);
+    g_RenderState.draw.packetCursor = QueueDrawModePrim(ot, next, 5);
 }

@@ -49,7 +49,7 @@ int main(void) {
     g_ScreenOffsetX = 7;
     g_ScreenOffsetY = 11;
 
-    g_RenderState.y1 = -1;
+    g_RenderState.draw.clipY1 = -1;
     SetupDisplay240(10, 20, 30);
     CHECK(g_FrameContexts[0].environment.draw.clip.y == 0);
     CHECK(g_FrameContexts[1].environment.draw.clip.y == 240);
@@ -63,7 +63,7 @@ int main(void) {
     CHECK(g_FrameContexts[0].environment.mirrorDraw.clip.w == 0x94);
     CHECK(g_FrameContexts[0].environment.mirrorDraw.clip.h == 0x24);
     CHECK(CheckColors(10, 20, 30));
-    CHECK(g_RenderState.y1 == 240);
+    CHECK(g_RenderState.draw.clipY1 == 240);
 
     /* 480-line setup intentionally keeps the mirror rectangles established
      * by the 240-line setup; only their flags and clear colours change. */
@@ -75,10 +75,10 @@ int main(void) {
     CHECK(g_FrameContexts[0].environment.mirrorDraw.clip.y == 0x12);
     CHECK(g_FrameContexts[1].environment.mirrorDraw.clip.y == 0x102);
     CHECK(CheckColors(40, 50, 60));
-    CHECK(g_RenderState.y1 == 480);
+    CHECK(g_RenderState.draw.clipY1 == 480);
 
     SetupDisplay240(70, 80, 90);
-    CHECK(g_RenderState.y1 == 240);
+    CHECK(g_RenderState.draw.clipY1 == 240);
 
     g_ScreenOffsetX = -7;
     g_ScreenOffsetY = -11;

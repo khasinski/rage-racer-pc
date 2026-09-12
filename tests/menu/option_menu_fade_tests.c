@@ -39,7 +39,7 @@ void DrawOptionRootMenu(void) { s_rootDraws++; }
 static void Reset(void) {
     memset(&s_frame, 0, sizeof(s_frame));
     g_DrawBuffer = &s_frame;
-    g_RenderState.packetCursor = s_packets;
+    g_RenderState.draw.packetCursor = s_packets;
     g_FadeLevel = 0;
     g_FadeStep = 0;
     g_GameMode = OPTION_MODE_ROOT;
@@ -58,7 +58,7 @@ static int TestFadeTileClamping(void) {
     CHECK(tile->r0 == 0 && tile->g0 == 0 && tile->b0 == 0);
     CHECK(tile->w == 320 && tile->h == 480 && s_drawMode == 0x49);
     CHECK(tile->code == 0x62);
-    CHECK(g_RenderState.packetCursor == (u8 *)(tile + 1) + 1);
+    CHECK(g_RenderState.draw.packetCursor == (u8 *)(tile + 1) + 1);
 
     Reset();
     DrawFullscreenFadeTile480(0x100, 3);

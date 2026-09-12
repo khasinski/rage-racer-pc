@@ -97,7 +97,7 @@ int main(void) {
     memset(orderingTable, 0, sizeof(orderingTable));
     memset(packets, 0, sizeof(packets));
     RENDER_OT_BASE = orderingTable;
-    g_RenderState.packetCursor = packets;
+    g_RenderState.draw.packetCursor = packets;
 
     g_MenuLightBurstLevel = 99;
     DrawMenuLightBurst(0);
@@ -119,7 +119,7 @@ int main(void) {
     CHECK(quad->x2 == 0 && quad->y2 == 0x1DF);
     CHECK(quad->x3 == 0x13F && quad->y3 == 0x1DF);
     CHECK(quad->r0 == 0 && quad->r2 == 1 && quad->r3 == 1);
-    CHECK(g_RenderState.packetCursor == packets + sizeof(POLY_G4));
+    CHECK(g_RenderState.draw.packetCursor == packets + sizeof(POLY_G4));
 
     ResetDraws();
     g_MenuLightBurstLevel = 5;
@@ -131,7 +131,7 @@ int main(void) {
     CHECK(g_MenuLightBurstLevel == 512);
 
     ResetDraws();
-    g_RenderState.packetCursor = packets;
+    g_RenderState.draw.packetCursor = packets;
     g_MenuLightBurstLevel = INT_MAX;
     DrawMenuLightBurst(INT_MAX);
     CHECK(g_MenuLightBurstLevel == 512 && s_lineCount == 33);

@@ -42,5 +42,5 @@ void DrawWrongWayWarning(void) {
 
     ret = GameQueueTileTrans(ot, (u8 *)(sprites + WRONG_WAY_SPRITE_COUNT),
                              0x64, 0x70, 0x78, 0x20, 8, 8, 8);
-    g_RenderState.packetCursor = QueueDrawModePrim(ot, ret, 9);
+    g_RenderState.draw.packetCursor = QueueDrawModePrim(ot, ret, 9);
 }

@@ -21,7 +21,7 @@ void GameDrawTexturedQuad(
     (void)u0; (void)v0; (void)u1; (void)v1; (void)u2; (void)v2;
     (void)u3; (void)v3; (void)r; (void)g; (void)b; (void)clut;
     (void)shadeTex; (void)semiTrans; (void)tpage;
-    if (ot == g_RenderState.primData) {
+    if (ot == g_RenderState.draw.orderingTable) {
         s_drawCount++;
         s_top = y0;
         s_bottom = (s16)y2;
@@ -33,7 +33,7 @@ int main(void) {
     GameOrderingTableEntry orderingTable;
 
     memset(&g_RenderState, 0, sizeof(g_RenderState));
-    g_RenderState.primData = &orderingTable;
+    g_RenderState.draw.orderingTable = &orderingTable;
     g_TimeAttackPlateProgress = 8;
     DrawTimeAttackPlate(0);
     if (g_TimeAttackPlateProgress != 0 || s_drawCount != 0) return 1;
@@ -55,7 +55,7 @@ int main(void) {
     DrawTimeAttackPlate(-1);
     if (g_TimeAttackPlateProgress != 0 || s_drawCount != 3) return 1;
 
-    g_RenderState.primData = NULL;
+    g_RenderState.draw.orderingTable = NULL;
     g_TimeAttackPlateProgress = 5;
     DrawTimeAttackPlate(1);
     if (g_TimeAttackPlateProgress != 6 || s_drawCount != 3) return 1;

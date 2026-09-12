@@ -170,7 +170,7 @@ static void ResetHud(void) {
      * context and in what the drawing passes were asked to draw. Clearing a
      * table for real needs the GPU brought up, which would cost this test
      * the machines it can run on. */
-    g_RenderState.packetCursor = g_FrameContexts[0].layout.primitiveBuffer;
+    g_RenderState.draw.packetCursor = g_FrameContexts[0].layout.primitiveBuffer;
 }
 
 static int CountPrimaryOtPrims(void) {

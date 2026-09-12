@@ -214,7 +214,7 @@ int main(void) {
     g_PrologueCutIndex = INT_MAX;
     g_CameraCarIndex = INT_MAX;
     g_PrologueLineCount = INT_MAX;
-    g_RenderState.packetCursor = s_frame.layout.primitiveBuffer;
+    g_RenderState.draw.packetCursor = s_frame.layout.primitiveBuffer;
     TickPrologueStep();
     CHECK(g_SceneTimer == 101);
     CHECK(g_PrologueCutIndex == PROLOGUE_CAMERA_CUT_COUNT - 1);

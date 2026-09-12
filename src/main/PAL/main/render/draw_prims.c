@@ -107,7 +107,7 @@ void SetDrawClipRect(GameOrderingTableEntry *ot, s32 x, s32 y, s32 w, s32 h) {
     packet = RENDER_PRIM_CURSOR_AS(DrawPacket);
     SetDrawArea(packet, &rect);
     AddPrim(ot, packet);
-    g_RenderState.packetCursor = packet + 1;
+    g_RenderState.draw.packetCursor = packet + 1;
 }
 
 void DrawSprite(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 u0, u16 v0,
@@ -117,7 +117,7 @@ void DrawSprite(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 
         ot, RENDER_PRIM_CURSOR_AS(u8), x0, y0, x1, y1, u0, v0,
         LinearClutToVram(clutX), r, g, b, shadeTex, semiTrans);
 
-    g_RenderState.packetCursor = QueuePrimitiveDrawMode(ot, next, flags);
+    g_RenderState.draw.packetCursor = QueuePrimitiveDrawMode(ot, next, flags);
 }
 
 void DrawFlatTriangle(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2,
@@ -138,7 +138,7 @@ void DrawFlatTriangle(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1
     prim->b0 = b;
     AddPrim(ot, prim);
 
-    g_RenderState.packetCursor =
+    g_RenderState.draw.packetCursor =
         QueuePrimitiveDrawMode(ot, (u8 *)(prim + 1), flags);
 }
 
@@ -161,7 +161,7 @@ void DrawFlatQuad(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u1
     prim->b0 = b;
     AddPrim(ot, prim);
 
-    g_RenderState.packetCursor =
+    g_RenderState.draw.packetCursor =
         QueuePrimitiveDrawMode(ot, (u8 *)(prim + 1), flags);
 }
 
@@ -202,7 +202,7 @@ void GameDrawTexturedQuad(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u1
     prim->tpage = tpage;
     prim->clut = LinearClutToVram(clutIndex);
     AddPrim(ot, prim);
-    g_RenderState.packetCursor = prim + 1;
+    g_RenderState.draw.packetCursor = prim + 1;
 }
 
 void DrawSolidRect(GameOrderingTableEntry *ot, s32 x0, s32 y0, s32 x1,
@@ -226,7 +226,7 @@ void DrawSolidRect(GameOrderingTableEntry *ot, s32 x0, s32 y0, s32 x1,
     if (drawModeValue != DRAW_MODE_NONE) {
         next = QueueDrawModePrim(ot, next, drawModeValue);
     }
-    g_RenderState.packetCursor = next;
+    g_RenderState.draw.packetCursor = next;
 }
 
 void DrawLine(GameOrderingTableEntry *ot, s32 x0, s32 y0, s32 x1, s32 y1,
@@ -250,7 +250,7 @@ void DrawLine(GameOrderingTableEntry *ot, s32 x0, s32 y0, s32 x1, s32 y1,
     if (drawModeValue != DRAW_MODE_NONE) {
         next = QueueDrawModePrim(ot, next, drawModeValue);
     }
-    g_RenderState.packetCursor = next;
+    g_RenderState.draw.packetCursor = next;
 }
 
 void DrawPolyLine3(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, s16 y1, s16 x2, s16 y2,
@@ -276,7 +276,7 @@ void DrawPolyLine3(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, s16 y1, s
     if (drawMode != DRAW_MODE_NONE) {
         next = QueueDrawModePrim(ot, next, drawMode);
     }
-    g_RenderState.packetCursor = next;
+    g_RenderState.draw.packetCursor = next;
 }
 
 void DrawGradientLine(GameOrderingTableEntry *ot, s32 x0, s32 y0, s32 x1,
@@ -303,7 +303,7 @@ void DrawGradientLine(GameOrderingTableEntry *ot, s32 x0, s32 y0, s32 x1,
     if (drawMode != DRAW_MODE_NONE) {
         next = QueueDrawModePrim(ot, next, drawMode);
     }
-    g_RenderState.packetCursor = next;
+    g_RenderState.draw.packetCursor = next;
 }
 
 void DrawRectOutline(GameOrderingTableEntry *ot, s32 xa, s32 ya, s32 w,

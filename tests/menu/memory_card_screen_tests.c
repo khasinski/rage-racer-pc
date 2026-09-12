@@ -65,7 +65,7 @@ u8 *DrawShadowedTile(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y) {
  * shared cursor. The stubs move it so a drawer that keeps using a stale
  * pointer across them shows up as a short packet count. */
 static void QueueOwnPacket(void) {
-    g_RenderState.packetCursor = (void *)(RENDER_PRIM_CURSOR_AS(u8) + 1);
+    g_RenderState.draw.packetCursor = (void *)(RENDER_PRIM_CURSOR_AS(u8) + 1);
 }
 
 void DrawMenuCursorArrow(s32 x, s32 y) {
@@ -116,7 +116,7 @@ static void Reset(void) {
     memset(s_sprites, 0, sizeof(s_sprites));
     memset(s_tiles, 0, sizeof(s_tiles));
     g_DrawBuffer = &s_frame;
-    g_RenderState.packetCursor = s_packets;
+    g_RenderState.draw.packetCursor = s_packets;
     s_spriteCount = 0;
     s_tileCount = 0;
     s_shadowCount = 0;
@@ -150,7 +150,7 @@ int main(void) {
     CHECK(s_arrowX == 0x14 && s_arrowY == 0x78);
     CHECK(s_hint == 5 && s_padHints == 1);
     /* Five sprites, three hint packets, three tiles, three shadows. */
-    CHECK(g_RenderState.packetCursor == s_packets + 14);
+    CHECK(g_RenderState.draw.packetCursor == s_packets + 14);
 
     Reset();
     DrawMemoryCardScreen(1, 1, 1, 2);
@@ -159,7 +159,7 @@ int main(void) {
     CHECK(s_tileCount == 4);
     CHECK(s_tiles[2].x == 0x3C && s_tiles[2].y == 0x12C);
     CHECK(s_arrowY == 0x58 && s_hint == 6 && s_padHints == 1);
-    CHECK(g_RenderState.packetCursor == s_packets + 16);
+    CHECK(g_RenderState.draw.packetCursor == s_packets + 16);
 
     g_McMessageColumnX[2] = 42;
     for (s32 message = 6; message <= 13; message++) {
@@ -173,7 +173,7 @@ int main(void) {
         CHECK(s_messageSprite.x == ((message & 1) != 0 ? 0xAC : 0xDE));
         CHECK(s_drawModeCount == 1 && s_drawMode == 0x3D);
         /* The icon and the draw mode follow the two text packets. */
-        CHECK(g_RenderState.packetCursor == s_packets + 4);
+        CHECK(g_RenderState.draw.packetCursor == s_packets + 4);
     }
 
     g_McMessageRows[5] = textRows;
@@ -194,7 +194,7 @@ int main(void) {
         CHECK(s_messageSpriteCount == 1);
         CHECK(s_messageSpriteV == (message - 0x10) * 0x18);
         CHECK(s_drawModeCount == 1 && s_drawMode == 0x3F);
-        CHECK(g_RenderState.packetCursor == s_packets + 2);
+        CHECK(g_RenderState.draw.packetCursor == s_packets + 2);
     }
 
     g_McMessageRows[MC_PROMPT_NO_FILE - 1] = textRows;

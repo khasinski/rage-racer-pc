@@ -156,7 +156,7 @@ static void DrawBgmSelector(void) {
     p = AddTilePrim(ot, p, 0x6c, 0xcc, 0x1f, 0xc, 0x40, 0x40, 0x40);
     p = AddTilePrim(ot, p, 0x8c, 0xcc, 0xa4, 0xc, 0, 0, 0);
     p = AddTilePrim(ot, p, 0xf, 0xcb, 0x122, 0xe, 0xff, 0xff, 0xff);
-    g_RenderState.packetCursor = p;
+    g_RenderState.draw.packetCursor = p;
 
     snprintf(text, sizeof(text), g_FmtBgmNumber, g_BgmSelection);
     x = (g_BgmSelection == 0xa) ? 0x74 : 0x78;

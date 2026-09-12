@@ -301,9 +301,9 @@ static int TestRenderStateAndCarIndexes(void) {
     CHECK(g_RenderState.ft4Color[3] == POLY_FT4_CODE);
     CHECK(g_RenderState.gt4Color[0] == 0xFF);
     CHECK(g_RenderState.gt4Color[3] == POLY_GT4_CODE);
-    CHECK(g_RenderState.x0 == 0 && g_RenderState.y0 == 0);
-    CHECK(g_RenderState.x1 == SCREEN_WIDTH &&
-          g_RenderState.y1 == SCREEN_HEIGHT);
+    CHECK(g_RenderState.draw.clipX0 == 0 && g_RenderState.draw.clipY0 == 0);
+    CHECK(g_RenderState.draw.clipX1 == SCREEN_WIDTH &&
+          g_RenderState.draw.clipY1 == SCREEN_HEIGHT);
     CHECK(g_RenderState.otShift == 5 && g_RenderState.orderingFlag == 7);
     CHECK(g_VisibleCellMask == g_MainVisibleCellMask);
     CHECK(g_VisibleCellList == g_MainVisibleCellList);

@@ -40,7 +40,7 @@ static void DrawScreenAdjustScreen(void) {
                                 0xD4, 0x48, 0x7F40);
     next = GameQueueSpriteTrans(ot, next, 0xA6, 0xA0, 0xC, 0x18,
                                 0xE0, 0x48, 0x7F40);
-    g_RenderState.packetCursor = GameQueueSpriteTrans(
+    g_RenderState.draw.packetCursor = GameQueueSpriteTrans(
         ot, next, 0x8E, 0xA0, 0xC, 0x18, 0xEC, 0x48, 0x7F40);
     DrawOptionHintBar(MENU_OPTION_HINT_SCREEN_ADJUST);
 }

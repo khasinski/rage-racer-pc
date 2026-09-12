@@ -178,7 +178,7 @@ static void ResetState(void) {
     g_CourseProgress = &progress;
     g_ImageBlockBuffer = image;
     g_ImageBlockSize = sizeof(image);
-    g_RenderState.packetCursor = packets;
+    g_RenderState.draw.packetCursor = packets;
     g_AssetLoadFailed = 0;
     g_AssetLoadState = 0;
     g_CourseIndex = 0;

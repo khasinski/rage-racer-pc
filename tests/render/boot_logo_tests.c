@@ -59,7 +59,7 @@ u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *packet, s32 tpage) {
 
 static void DrawAtFade(s32 timer, u8 *packets) {
     memset(&g_RenderState, 0, sizeof(g_RenderState));
-    g_RenderState.packetCursor = packets;
+    g_RenderState.draw.packetCursor = packets;
     g_SceneTimer = timer;
     s_callCount = 0;
     s_drawMode = -1;
@@ -79,23 +79,23 @@ int main(void) {
     CHECK(s_calls[1].x == 0xDC && s_calls[1].width == 8);
     CHECK(s_calls[2].x == 0x64 && s_calls[2].width == 0x78);
     CHECK(s_calls[1].clut == 0x3FD7 && s_calls[2].clut == 0x3FD7);
-    CHECK(g_RenderState.packetCursor == packets + 28);
+    CHECK(g_RenderState.draw.packetCursor == packets + 28);
 
     DrawAtFade(-1, packets);
     CHECK(s_calls[0].intensity == 0 && s_calls[2].intensity == 0);
     DrawAtFade(256, packets);
     CHECK(s_calls[0].intensity == 255 && s_calls[2].intensity == 255);
 
-    g_RenderState.packetCursor = packets;
+    g_RenderState.draw.packetCursor = packets;
     g_DrawBuffer = NULL;
     s_callCount = 0;
     DrawBootLogo();
-    CHECK(s_callCount == 0 && g_RenderState.packetCursor == packets);
+    CHECK(s_callCount == 0 && g_RenderState.draw.packetCursor == packets);
 
     g_DrawBuffer = &s_frame;
-    g_RenderState.packetCursor = NULL;
+    g_RenderState.draw.packetCursor = NULL;
     DrawBootLogo();
-    CHECK(s_callCount == 0 && g_RenderState.packetCursor == NULL);
+    CHECK(s_callCount == 0 && g_RenderState.draw.packetCursor == NULL);
 
     puts("boot logo tests passed");
     return 0;

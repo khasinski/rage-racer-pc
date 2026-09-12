@@ -62,7 +62,7 @@ static int CheckPanel(s32 index, s32 y) {
 }
 
 int main(void) {
-    g_RenderState.primData = (GameOrderingTableEntry *)0x1234;
+    g_RenderState.draw.orderingTable = (GameOrderingTableEntry *)0x1234;
 
     g_ClassChangeCurtainSlide = 9;
     CHECK(DrawClassChangeCurtain(0) == 0);
@@ -101,7 +101,7 @@ int main(void) {
     CHECK(s_rectCount == 0);
 
     g_MenuAltLayout = 0;
-    g_RenderState.primData = NULL;
+    g_RenderState.draw.orderingTable = NULL;
     CHECK(DrawClassChangeCurtain(3) == 6);
     CHECK(s_rectCount == 0);
 

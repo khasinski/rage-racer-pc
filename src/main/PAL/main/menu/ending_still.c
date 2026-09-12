@@ -73,7 +73,7 @@ void DrawEndingStill(void) {
     GameOrderingTableEntry *ot;
     u8 *next;
 
-    if (g_DrawBuffer == NULL || g_RenderState.packetCursor == NULL) return;
+    if (g_DrawBuffer == NULL || g_RenderState.draw.packetCursor == NULL) return;
 
     ot = GamePrimaryOrderingTable(0);
     next = RENDER_PRIM_CURSOR_AS(u8);
@@ -82,5 +82,5 @@ void DrawEndingStill(void) {
     next = QueueDrawModePrim(ot, next, 6);
     next =
         GameQueueSprite(ot, next, 0x100, 0, 0x40, 0xF0, 0, 0, 0x3FDB);
-    g_RenderState.packetCursor = QueueDrawModePrim(ot, next, 7);
+    g_RenderState.draw.packetCursor = QueueDrawModePrim(ot, next, 7);
 }

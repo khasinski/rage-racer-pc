@@ -53,7 +53,7 @@ u8 *GameQueueTileTrans(GameOrderingTableEntry *ot, u8 *packet, s32 x, s32 y, s32
 static void ResetPackets(void *packet) {
     memset(&s_frame, 0, sizeof(s_frame));
     memset(&g_RenderState, 0, sizeof(g_RenderState));
-    g_RenderState.packetCursor = packet;
+    g_RenderState.draw.packetCursor = packet;
     s_queueOt = NULL;
     s_queuePacket = NULL;
     s_queueTpage = -1;
@@ -104,7 +104,7 @@ int main(void) {
     CHECK(fade->code == 0x62);
     CHECK(s_queueOt == ot && s_queuePacket == (u8 *)(fade + 1));
     CHECK(s_queueTpage == 0x49);
-    CHECK(g_RenderState.packetCursor == s_queuePacket + 4);
+    CHECK(g_RenderState.draw.packetCursor == s_queuePacket + 4);
 
     memset(packets, 0, sizeof(packets));
     ResetPackets(packets);
@@ -127,7 +127,7 @@ int main(void) {
     CHECK(s_tileArgs[2] == 0x78 && s_tileArgs[3] == 0x20);
     CHECK(s_tileArgs[4] == 8 && s_tileArgs[5] == 8 && s_tileArgs[6] == 8);
     CHECK(s_queueTpage == 9);
-    CHECK(g_RenderState.packetCursor == s_queuePacket + 4);
+    CHECK(g_RenderState.draw.packetCursor == s_queuePacket + 4);
 
     puts("HUD packet emitter tests passed");
     return 0;

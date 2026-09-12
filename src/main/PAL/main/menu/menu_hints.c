@@ -3,7 +3,7 @@
 #include "game/render_internal.h"
 
 static int CanDrawMenuHint(void) {
-    return g_DrawBuffer != NULL && g_RenderState.packetCursor != NULL;
+    return g_DrawBuffer != NULL && g_RenderState.draw.packetCursor != NULL;
 }
 
 /* The 0xC x 0x18 selection arrow every setup-menu list draws beside its rows. */
@@ -17,7 +17,7 @@ void DrawMenuCursorArrow(s32 x, s32 y) {
     next = GameQueueSpriteTrans(ot, RENDER_PRIM_CURSOR_AS(u8), x, y,
                                 0xC, 0x18, 0xE0, 0x48, 0x7F40);
 
-    g_RenderState.packetCursor = QueueDrawModePrim(ot, next, 0x3F);
+    g_RenderState.draw.packetCursor = QueueDrawModePrim(ot, next, 0x3F);
 }
 
 /* The bottom hint bar: a left arrow, the caption `variant` selects, and a
@@ -57,7 +57,7 @@ void DrawOptionHintBar(s32 variant) {
 
     next = GameQueueSpriteTrans(ot, next, x, 0x180, 0xC, 0x18,
                                 0xEC, 0x78, 0x7F40);
-    g_RenderState.packetCursor = QueueDrawModePrim(ot, next, 0x3F);
+    g_RenderState.draw.packetCursor = QueueDrawModePrim(ot, next, 0x3F);
 }
 
 /* Two glyphs plus a label naming the connected pad; caches the last valid g_PadType. */
@@ -86,5 +86,5 @@ void DrawPadTypeHint(void) {
                                 textureU + 8, 0xB8, 0x7F40);
     next = GameQueueSpriteTrans(ot, next, 0x58, 0x1A0, 0x90, 0x10,
                                 0, 0xB8, 0x7F40);
-    g_RenderState.packetCursor = QueueDrawModePrim(ot, next, 0x3F);
+    g_RenderState.draw.packetCursor = QueueDrawModePrim(ot, next, 0x3F);
 }

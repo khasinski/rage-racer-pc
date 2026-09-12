@@ -99,14 +99,14 @@ int main(void) {
 
     memset(&s_frame, 0, sizeof(s_frame));
     memset(&g_RenderState, 0, sizeof(g_RenderState));
-    g_RenderState.packetCursor = packets;
+    g_RenderState.draw.packetCursor = packets;
     s_spriteCount = 0;
     DrawEndingStill();
     CHECK(s_spriteCount == 2);
     CHECK(s_spriteX[0] == 0 && s_spriteWidth[0] == 0x100);
     CHECK(s_spriteX[1] == 0x100 && s_spriteWidth[1] == 0x40);
     CHECK(s_drawModes[0] == 6 && s_drawModes[1] == 7);
-    CHECK(g_RenderState.packetCursor == packets + 24);
+    CHECK(g_RenderState.draw.packetCursor == packets + 24);
 
     g_SceneTimer = INT_MAX;
     g_FadeLevel = INT_MAX;
@@ -122,16 +122,16 @@ int main(void) {
     UpdateEndingStill();
     CHECK(g_FadeLevel == 0 && g_SceneId == 2);
 
-    g_RenderState.packetCursor = packets;
+    g_RenderState.draw.packetCursor = packets;
     g_DrawBuffer = NULL;
     s_spriteCount = 0;
     DrawEndingStill();
-    CHECK(s_spriteCount == 0 && g_RenderState.packetCursor == packets);
+    CHECK(s_spriteCount == 0 && g_RenderState.draw.packetCursor == packets);
 
     g_DrawBuffer = &s_frame;
-    g_RenderState.packetCursor = NULL;
+    g_RenderState.draw.packetCursor = NULL;
     DrawEndingStill();
-    CHECK(s_spriteCount == 0 && g_RenderState.packetCursor == NULL);
+    CHECK(s_spriteCount == 0 && g_RenderState.draw.packetCursor == NULL);
 
     puts("ending still tests passed");
     return 0;

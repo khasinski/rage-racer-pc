@@ -18,7 +18,7 @@ static void DrawLightBurstFadeQuad(GameOrderingTableEntry *ot, s32 level) {
     setRGB2(quad, shade, shade, shade);
     setRGB3(quad, shade, shade, shade);
     AddPrim(ot, quad);
-    g_RenderState.packetCursor = quad + 1;
+    g_RenderState.draw.packetCursor = quad + 1;
 }
 
 static void DrawLightBurstRays(GameOrderingTableEntry *ot, s32 level) {

@@ -90,8 +90,8 @@ int main(void) {
     static const char truncatedSmallText[] = {'1', (char)0x81, '\0'};
 
     memset(&g_RenderState, 0, sizeof(g_RenderState));
-    g_RenderState.primData = s_ot;
-    g_RenderState.packetCursor = s_packet;
+    g_RenderState.draw.orderingTable = s_ot;
+    g_RenderState.draw.packetCursor = s_packet;
     InitGlyphs(g_SmallFontGlyphs, SMALL_FONT_GLYPH_COUNT);
     InitGlyphs(g_LargeFontGlyphs, LARGE_FONT_GLYPH_COUNT);
 

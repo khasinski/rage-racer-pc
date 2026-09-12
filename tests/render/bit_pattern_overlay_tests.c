@@ -48,8 +48,8 @@ u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *prim, s32 tpage) {
 
 int main(void) {
     memset(&g_RenderState, 0, sizeof(g_RenderState));
-    g_RenderState.primData = s_ot;
-    g_RenderState.packetCursor = s_packet;
+    g_RenderState.draw.orderingTable = s_ot;
+    g_RenderState.draw.packetCursor = s_packet;
     g_MenuOverlayPatternTable[0].rows[0] = 0x80;
     g_MenuOverlayPatternTable[0].rows[1] = 0x01;
 

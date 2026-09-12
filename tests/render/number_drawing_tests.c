@@ -71,8 +71,8 @@ static void ResetCalls(void) {
 
 int main(void) {
     memset(&g_RenderState, 0, sizeof(g_RenderState));
-    g_RenderState.primData = s_ot;
-    g_RenderState.packetCursor = s_packet;
+    g_RenderState.draw.orderingTable = s_ot;
+    g_RenderState.draw.packetCursor = s_packet;
 
     CHECK(GameDrawNumber(10, 20, 0, 407, 1, 2, 3, 4, 5) == 3);
     CHECK(s_callCount == 3);
@@ -85,7 +85,7 @@ int main(void) {
     CHECK(s_calls[2].red == 1 && s_calls[2].green == 2 && s_calls[2].blue == 3);
     CHECK(s_calls[2].clut == 4);
     CHECK(s_drawModeOt == s_ot && s_drawMode == 32);
-    CHECK(g_RenderState.packetCursor == s_packet);
+    CHECK(g_RenderState.draw.packetCursor == s_packet);
 
     ResetCalls();
     CHECK(GameDrawNumber(4, 5,

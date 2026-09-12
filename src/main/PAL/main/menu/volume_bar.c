@@ -34,6 +34,6 @@ void DrawVolumeBar(s32 level, s32 y) {
     next = QueueDrawModePrim(ot, next, 0x39);
     next = AddTilePrim(ot, next, VOLUME_BAR_X + 1, y + 2, 0xB2, 0x1C, 0, 0,
                        0);
-    g_RenderState.packetCursor =
+    g_RenderState.draw.packetCursor =
         AddTilePrim(ot, next, VOLUME_BAR_X, y, 0xB4, 0x20, 0xFF, 0xFF, 0xFF);
 }

@@ -87,7 +87,7 @@ void DrawStartCountdown(s32 sceneTimer) {
     }
 
     packet = QueueDrawModePrim(orderingTable, packet, 0xC);
-    g_RenderState.packetCursor = packet;
+    g_RenderState.draw.packetCursor = packet;
 
     if (phase > 0 && g_RacePaused == 0) {
         AddPrims(orderingTable, tiles,
@@ -104,5 +104,5 @@ void DrawStartCountdown(s32 sceneTimer) {
     backdrop->b0 = 5;
     backdrop->y0 = g_CountdownBoardOffset + 88;
     AddPrim(orderingTable, backdrop);
-    g_RenderState.packetCursor = backdrop + 1;
+    g_RenderState.draw.packetCursor = backdrop + 1;
 }

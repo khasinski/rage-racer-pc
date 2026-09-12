@@ -29,7 +29,7 @@ static void DrawFullscreenFadeTileHeight(s32 color, s32 tpage, s32 height) {
     tile->b0 = color;
 
     AddPrim(ot, tile);
-    g_RenderState.packetCursor =
+    g_RenderState.draw.packetCursor =
         QueueDrawModePrim(ot, (u8 *)(tile + 1), tpage);
 }
 

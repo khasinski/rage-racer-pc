@@ -47,7 +47,7 @@ void DrawMemoryCardMessage(s32 message) {
     u8 *prim;
 
     if ((u32)message >= MEMORY_CARD_MESSAGE_COUNT || g_DrawBuffer == NULL ||
-        g_RenderState.packetCursor == NULL) {
+        g_RenderState.draw.packetCursor == NULL) {
         return;
     }
     ot = GamePrimaryOrderingTable(51);
@@ -84,5 +84,5 @@ void DrawMemoryCardMessage(s32 message) {
         }
         prim = QueueDrawModePrim(ot, prim, 0x3D);
     }
-    g_RenderState.packetCursor = prim;
+    g_RenderState.draw.packetCursor = prim;
 }

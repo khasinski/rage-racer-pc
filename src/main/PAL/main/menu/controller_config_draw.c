@@ -38,7 +38,7 @@ void DrawControllerConfigScreen(void) {
         prim = DrawPadConfigSelector(ot, prim, 0xF0, 0x28, selection);
         prim = DrawPadConfigDiagram(ot, prim);
     }
-    g_RenderState.packetCursor = prim;
+    g_RenderState.draw.packetCursor = prim;
 }
 
 void DrawNegconNeutralScreen(void) {
@@ -50,6 +50,6 @@ void DrawNegconNeutralScreen(void) {
     ot = GamePrimaryOrderingTable(52);
     prim = RENDER_PRIM_CURSOR_AS(u8);
     prim = AddTilePrim(ot, prim, 0, 0x28, 0x124, 0x40, 0, 0, 0);
-    g_RenderState.packetCursor =
+    g_RenderState.draw.packetCursor =
         AddTilePrim(ot, prim, 0, 0x26, 0x125, 0x44, 0xFF, 0xFF, 0xFF);
 }

@@ -49,7 +49,7 @@ static void CheckSpeed(s32 value, s32 hundreds, s32 tens, s32 ones) {
     s_DigitCount = 0;
     s_DrawModeOt = NULL;
     s_DrawModeTpage = -1;
-    g_RenderState.packetCursor = packets;
+    g_RenderState.draw.packetCursor = packets;
 
     DrawSpeedDigits(10, 20, value);
 
@@ -68,7 +68,7 @@ static void CheckSpeed(s32 value, s32 hundreds, s32 tens, s32 ones) {
            s_Digits[2].clut == 0x456);
     assert(s_DrawModeOt == GamePrimaryOrderingTable(0));
     assert(s_DrawModeTpage == 9);
-    assert(g_RenderState.packetCursor == packets + 28);
+    assert(g_RenderState.draw.packetCursor == packets + 28);
 }
 
 int main(void) {
@@ -89,7 +89,7 @@ int main(void) {
 
     memset(packets, 0, sizeof(packets));
     s_DigitCount = 0;
-    g_RenderState.packetCursor = packets;
+    g_RenderState.draw.packetCursor = packets;
     s_CarSpec.tachometer.digitsX = 1;
     s_CarSpec.tachometer.digitsY = 1;
     DrawSpeedDigits(INT_MAX, INT_MAX, 0);

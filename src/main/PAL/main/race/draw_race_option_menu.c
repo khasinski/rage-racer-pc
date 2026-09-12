@@ -69,7 +69,7 @@ void DrawRaceOptionMenu(s32 cursorRow) {
 
     next = QueueDrawAreaPrim(ot, (DrawPacket *)(marquee + 1),
                              0, 0, 0x140, 0xF0);
-    g_RenderState.packetCursor = next;
+    g_RenderState.draw.packetCursor = next;
     DrawText8x8((g_RaceOptionScroll0 >> 2) + 0xA0, 0x8A,
                 &g_RaceOptionMarquee[marqueeState.textFrame][0], 0x7811);
     DrawText8x8((g_RaceOptionScroll1 >> 2) + 0xA0, 0x8A,
@@ -144,5 +144,5 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     quad->tpage = 9;
     AddPrim(ot, quad);
 
-    g_RenderState.packetCursor = QueueDrawModePrim(ot, (u8 *)(quad + 1), 9);
+    g_RenderState.draw.packetCursor = QueueDrawModePrim(ot, (u8 *)(quad + 1), 9);
 }

@@ -93,7 +93,7 @@ u8 *GameQueueTexturedRect(GameOrderingTableEntry *ot, u8 *packet, s32 x,
 
 static void ResetState(s32 selection) {
     g_DrawBuffer = &s_frame;
-    g_RenderState.packetCursor = s_frame.layout.primitiveBuffer;
+    g_RenderState.draw.packetCursor = s_frame.layout.primitiveBuffer;
     g_TitleMenuSelection = selection;
     g_PadPressed = PAD_CONFIRM;
     g_FrontendState = FRONTEND_STATE_MENU_INPUT;

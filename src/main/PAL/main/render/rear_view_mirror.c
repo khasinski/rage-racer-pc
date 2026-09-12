@@ -63,18 +63,18 @@ void DrawRearViewMirror(s32 sceneTimer) {
     }
 
     DrawSkyBackground();
-    packet = (DrawPacket *)QueueMirrorFrame(g_RenderState.packetCursor);
+    packet = (DrawPacket *)QueueMirrorFrame(g_RenderState.draw.packetCursor);
     SetDrawArea(packet, &g_DrawBuffer->environment.mirrorDraw.clip);
     AddPrim(&g_DrawBuffer->layout.orderingTables[1][GAME_FRAME_OT_LENGTH - 1],
             packet);
-    g_RenderState.packetCursor = packet + 1;
+    g_RenderState.draw.packetCursor = packet + 1;
     g_RenderState.envMode4 = g_IsEnvironmentMode4;
     DrawTerrainCellsInRange(-0x3000, PortMirrorFarDepth(0x6000));
 
-    packet = g_RenderState.packetCursor;
+    packet = g_RenderState.draw.packetCursor;
     SetDrawArea(packet, &g_DrawBuffer->environment.draw.clip);
     AddPrim(&g_DrawBuffer->layout.orderingTables[1][1], packet);
-    g_RenderState.packetCursor = packet + 1;
+    g_RenderState.draw.packetCursor = packet + 1;
     DrawCourseObjects();
     DrawCars();
     EndMirrorPass();

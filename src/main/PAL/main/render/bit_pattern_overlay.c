@@ -66,6 +66,6 @@ void DrawBitPatternOverlay(s32 pattern) {
                    0, 0, 0x244, 1, 1, 0x80);
     }
 
-    g_RenderState.packetCursor =
+    g_RenderState.draw.packetCursor =
         QueueDrawModePrim(ot, RENDER_PRIM_CURSOR_AS(void), 0x39);
 }

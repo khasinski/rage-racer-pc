@@ -50,7 +50,7 @@ static void Reset(void) {
     memset(&s_packets, 0, sizeof(s_packets));
     memset(&g_FrameContexts[0].layout.orderingTables[0][0], 0,
            sizeof(GameOrderingTableEntry));
-    g_RenderState.packetCursor = s_packets.bytes;
+    g_RenderState.draw.packetCursor = s_packets.bytes;
     g_DrawBuffer = &g_FrameContexts[0];
 }
 
@@ -69,7 +69,7 @@ static void TestText8x8(void) {
     Check(sprite->v0, 40, "8x8 v");
     Check(sprite->clut, 0x123, "8x8 clut");
     Check(sprite->code & 3, 1, "8x8 raw opaque flags");
-    Check((u8 *)g_RenderState.packetCursor - s_packets.bytes,
+    Check((u8 *)g_RenderState.draw.packetCursor - s_packets.bytes,
           (s32)(sizeof(SPRT_8) + sizeof(DrawPacket)), "8x8 cursor");
 
     Reset();
@@ -87,7 +87,7 @@ static void TestText8x8(void) {
 
     Reset();
     DrawText8x8(0, 0, "", 0);
-    Check((u8 *)g_RenderState.packetCursor - s_packets.bytes,
+    Check((u8 *)g_RenderState.draw.packetCursor - s_packets.bytes,
           (s32)sizeof(DrawPacket), "empty text draw-mode packet");
 }
 
@@ -110,7 +110,7 @@ static void TestSpriteString(void) {
     Check(sprite->h, 0x18, "sprite string height");
     Check(sprite->clut, 0x234, "sprite string clut");
     Check(sprite->code & 3, 1, "sprite string flags");
-    Check((u8 *)g_RenderState.packetCursor - s_packets.bytes,
+    Check((u8 *)g_RenderState.draw.packetCursor - s_packets.bytes,
           (s32)(sizeof(SPRT) + sizeof(DrawPacket)), "sprite string cursor");
 }
 

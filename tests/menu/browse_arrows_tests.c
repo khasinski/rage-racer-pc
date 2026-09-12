@@ -73,7 +73,7 @@ static void ResetDraws(void) {
 int main(void) {
     GameOrderingTableEntry orderingTable[1] = {0};
 
-    g_RenderState.primData = orderingTable;
+    g_RenderState.draw.orderingTable = orderingTable;
     g_BrowseArrowsFade = 9;
     DrawBrowseArrows(0, 0, 1, 1);
     CHECK(g_BrowseArrowsFade == 0 && s_spriteCount == 0);
@@ -125,7 +125,7 @@ int main(void) {
     CHECK(s_sineAngle == 0xFFF);
 
     ResetDraws();
-    g_RenderState.primData = NULL;
+    g_RenderState.draw.orderingTable = NULL;
     g_BrowseArrowsFade = 11;
     g_BrowseArrowsPulsePhase = 123;
     DrawBrowseArrows(1, 0, 1, 1);
