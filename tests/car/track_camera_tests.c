@@ -134,13 +134,18 @@ static s32 ChaseAdvance(s32 yawError, s32 speed) {
     memset(&g_Camera, 0, sizeof(g_Camera));
     g_Camera.node = 0;
     g_Camera.previousMode = 1;
-    g_ChaseYawPrev = startYaw;
-    g_ChaseYawRampPos = 0;
-    g_ChaseYawRampNeg = 0;
-    g_ChaseYawLag = 0;
+    g_Camera.chase.previousYaw = startYaw;
+    g_Camera.chase.rampPos = 0;
+    g_Camera.chase.rampNeg = 0;
+    g_Camera.chase.yawLag = 0;
+    g_Camera.path.angleDelta[CAMPATH_YAW] = 0x345;
     g_Camera.chasePreset = 0;
     UpdateCamera(&g_Camera, 1, &car);
-    return ((g_ChaseYaw - startYaw) + 0x800) % 0x1000 - 0x800;
+    if (g_Camera.path.angleDelta[CAMPATH_YAW] != 0x345) {
+        printf("FAIL chase camera changed path yaw state\n");
+        s_failures++;
+    }
+    return ((g_Camera.chase.yaw - startYaw) + 0x800) % 0x1000 - 0x800;
 }
 
 int main(void) {
@@ -269,15 +274,15 @@ int main(void) {
         static const s32 wanted[6] = {16468, 5204, 38693, -113, -2054, 23};
         s_nodes[0].mode = 3;
         s_nodes[0].duration = 60;
-        g_CamPathFrame = 30;
-        g_CamPathNode = 0;
-        g_CamPathOffsetStart[0] = 0x10;
-        g_CamPathOffsetStart[1] = 0x20;
-        g_CamPathOffsetStart[2] = 0x30;
-        g_CamPathOffsetDelta[0] = 0x40;
-        g_CamPathOffsetDelta[1] = 0x50;
-        g_CamPathOffsetDelta[2] = 0x60;
-        g_CamPathAngle[3] = 0x200;
+        g_Camera.path.frame = 30;
+        g_Camera.path.node = 0;
+        g_Camera.path.offsetStart[0] = 0x10;
+        g_Camera.path.offsetStart[1] = 0x20;
+        g_Camera.path.offsetStart[2] = 0x30;
+        g_Camera.path.offsetDelta[0] = 0x40;
+        g_Camera.path.offsetDelta[1] = 0x50;
+        g_Camera.path.offsetDelta[2] = 0x60;
+        g_Camera.path.angle[3] = 0x200;
         Run(2, view);
         Check("mode 3, cam path", view, wanted);
     }
@@ -292,7 +297,7 @@ int main(void) {
         s_nodes[0].offset[1] = 0x800;
         s_nodes[0].offset[2] = 0x4000;
         s_nodes[0].data.orientation.distance = 0x180;
-        g_CamPathFrame = 30;
+        g_Camera.path.frame = 30;
         Run(2, view);
         Check("mode 4, sliding node", view, wanted);
         if (g_Camera.view.parameter !=
@@ -381,18 +386,18 @@ int main(void) {
         memset(&s_nodes[0], 0, sizeof(s_nodes[0]));
         s_nodes[0].duration = 2;
         g_Camera.previousMode = TRACK_CAMERA_PATH;
-        g_CamPathNode = 0;
-        g_CamPathFrame = 0;
-        memset(g_CamPathOffsetStart, 0, sizeof(g_CamPathOffsetStart));
-        memset(g_CamPathOffsetDelta, 0, sizeof(g_CamPathOffsetDelta));
-        memset(g_CamPathAngleStart, 0, sizeof(g_CamPathAngleStart));
-        memset(g_CamPathAngleDelta, 0, sizeof(g_CamPathAngleDelta));
-        g_CamPathOffsetStart[0] = INT_MAX;
-        g_CamPathOffsetDelta[0] = INT_MAX;
+        g_Camera.path.node = 0;
+        g_Camera.path.frame = 0;
+        memset(g_Camera.path.offsetStart, 0, sizeof(g_Camera.path.offsetStart));
+        memset(g_Camera.path.offsetDelta, 0, sizeof(g_Camera.path.offsetDelta));
+        memset(g_Camera.path.angleStart, 0, sizeof(g_Camera.path.angleStart));
+        memset(g_Camera.path.angleDelta, 0, sizeof(g_Camera.path.angleDelta));
+        g_Camera.path.offsetStart[0] = INT_MAX;
+        g_Camera.path.offsetDelta[0] = INT_MAX;
         CameraViewFromCamPath(&g_Camera, &car, &extremeView, 0, 0);
-        if (g_CamPathOffset[0] != INT_MAX) {
+        if (g_Camera.path.offset[0] != INT_MAX) {
             printf("FAIL wrapped path interpolation: %d\n",
-                   g_CamPathOffset[0]);
+                   g_Camera.path.offset[0]);
             s_failures++;
         }
 
@@ -453,9 +458,9 @@ int main(void) {
         }
 
         ChaseAdvance(0x40, INT_MIN);
-        if (g_ChaseYawDamping <= 0) {
+        if (g_Camera.chase.damping <= 0) {
             printf("FAIL chase damping at extreme reverse speed: %d\n",
-                   g_ChaseYawDamping);
+                   g_Camera.chase.damping);
             s_failures++;
         }
     }
@@ -476,9 +481,9 @@ int main(void) {
         size_t i;
         for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
             ChaseAdvance(0x40, cases[i].speed);
-            if (g_ChaseYawDamping != cases[i].damping) {
+            if (g_Camera.chase.damping != cases[i].damping) {
                 printf("FAIL chase damping at speed %d: got %d, wanted %d\n",
-                       cases[i].speed, g_ChaseYawDamping, cases[i].damping);
+                       cases[i].speed, g_Camera.chase.damping, cases[i].damping);
                 s_failures++;
             }
         }

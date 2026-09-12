@@ -139,86 +139,86 @@ void CameraViewFromCamPath(Camera *camera, GameCarRuntime *car, GameViewWork *vi
 
     CameraLoadViewPositionFromCar(view, car);
     if (nodeChanged || camera->previousMode != TRACK_CAMERA_PATH) {
-        g_CamPathNode = cameraNodeIndex;
-        g_CamPathFrame = 0;
+        camera->path.node = cameraNodeIndex;
+        camera->path.frame = 0;
         if (camera->previousMode == TRACK_CAMERA_PATH) {
-            g_CamPathOffsetStart[0] = g_CamPathOffset[0];
-            g_CamPathOffsetStart[1] = g_CamPathOffset[1];
-            g_CamPathOffsetStart[2] = g_CamPathOffset[2];
-            g_CamPathAngleStart[CAMPATH_PITCH] = g_CamPathAngle[CAMPATH_PITCH];
-            g_CamPathAngleStart[CAMPATH_YAW] = g_CamPathAngle[CAMPATH_YAW];
-            g_CamPathAngleStart[CAMPATH_ROLL] = g_CamPathAngle[CAMPATH_ROLL];
-            g_CamPathAngleStart[CAMPATH_DIST] = g_CamPathAngle[CAMPATH_DIST];
+            camera->path.offsetStart[0] = camera->path.offset[0];
+            camera->path.offsetStart[1] = camera->path.offset[1];
+            camera->path.offsetStart[2] = camera->path.offset[2];
+            camera->path.angleStart[CAMPATH_PITCH] = camera->path.angle[CAMPATH_PITCH];
+            camera->path.angleStart[CAMPATH_YAW] = camera->path.angle[CAMPATH_YAW];
+            camera->path.angleStart[CAMPATH_ROLL] = camera->path.angle[CAMPATH_ROLL];
+            camera->path.angleStart[CAMPATH_DIST] = camera->path.angle[CAMPATH_DIST];
         } else {
             prevNode = &g_TrackCameras[cameraNodeIndex];
-            g_CamPathOffsetStart[0] = prevNode->offset[0];
-            g_CamPathOffsetStart[1] = prevNode->offset[1];
-            g_CamPathOffsetStart[2] = prevNode->offset[2];
-            g_CamPathAngleStart[CAMPATH_PITCH] = prevNode->data.orientation.pitch;
-            g_CamPathAngleStart[CAMPATH_YAW] = prevNode->data.orientation.yaw;
-            g_CamPathAngleStart[CAMPATH_ROLL] = prevNode->data.orientation.roll;
-            g_CamPathAngleStart[CAMPATH_DIST] = prevNode->data.orientation.distance;
+            camera->path.offsetStart[0] = prevNode->offset[0];
+            camera->path.offsetStart[1] = prevNode->offset[1];
+            camera->path.offsetStart[2] = prevNode->offset[2];
+            camera->path.angleStart[CAMPATH_PITCH] = prevNode->data.orientation.pitch;
+            camera->path.angleStart[CAMPATH_YAW] = prevNode->data.orientation.yaw;
+            camera->path.angleStart[CAMPATH_ROLL] = prevNode->data.orientation.roll;
+            camera->path.angleStart[CAMPATH_DIST] = prevNode->data.orientation.distance;
         }
-        pathNode = &g_TrackCameras[g_CamPathNode];
-        g_CamPathOffsetDelta[0] = CameraSubtractWord(
-            pathNode->offset[0], g_CamPathOffsetStart[0]);
-        g_CamPathOffsetDelta[1] = CameraSubtractWord(
-            pathNode->offset[1], g_CamPathOffsetStart[1]);
-        g_CamPathOffsetDelta[2] = CameraSubtractWord(
-            pathNode->offset[2], g_CamPathOffsetStart[2]);
+        pathNode = &g_TrackCameras[camera->path.node];
+        camera->path.offsetDelta[0] = CameraSubtractWord(
+            pathNode->offset[0], camera->path.offsetStart[0]);
+        camera->path.offsetDelta[1] = CameraSubtractWord(
+            pathNode->offset[1], camera->path.offsetStart[1]);
+        camera->path.offsetDelta[2] = CameraSubtractWord(
+            pathNode->offset[2], camera->path.offsetStart[2]);
         pitchDelta = CameraSubtractWord(
             pathNode->data.orientation.pitch,
-            g_CamPathAngleStart[CAMPATH_PITCH]);
-        g_CamPathAngleDelta[CAMPATH_PITCH] =
+            camera->path.angleStart[CAMPATH_PITCH]);
+        camera->path.angleDelta[CAMPATH_PITCH] =
             ShortestAngleDelta(pitchDelta);
-        g_CamPathAngleDelta[CAMPATH_YAW] = CameraSubtractWord(
+        camera->path.angleDelta[CAMPATH_YAW] = CameraSubtractWord(
             pathNode->data.orientation.yaw,
-            g_CamPathAngleStart[CAMPATH_YAW]);
-        g_CamPathAngleDelta[CAMPATH_ROLL] = CameraSubtractWord(
+            camera->path.angleStart[CAMPATH_YAW]);
+        camera->path.angleDelta[CAMPATH_ROLL] = CameraSubtractWord(
             pathNode->data.orientation.roll,
-            g_CamPathAngleStart[CAMPATH_ROLL]);
-        g_CamPathAngleDelta[CAMPATH_DIST] = CameraSubtractWord(
+            camera->path.angleStart[CAMPATH_ROLL]);
+        camera->path.angleDelta[CAMPATH_DIST] = CameraSubtractWord(
             pathNode->data.orientation.distance,
-            g_CamPathAngleStart[CAMPATH_DIST]);
-        g_CamPathAngleDelta[CAMPATH_YAW] = ShortestAngleDelta(
-            g_CamPathAngleDelta[CAMPATH_YAW]);
-        g_CamPathAngleDelta[CAMPATH_ROLL] = ShortestAngleDelta(
-            g_CamPathAngleDelta[CAMPATH_ROLL]);
-    } else if (g_CamPathFrame <
-               CameraNodeDuration(&g_TrackCameras[g_CamPathNode])) {
-        g_CamPathFrame += 1;
+            camera->path.angleStart[CAMPATH_DIST]);
+        camera->path.angleDelta[CAMPATH_YAW] = ShortestAngleDelta(
+            camera->path.angleDelta[CAMPATH_YAW]);
+        camera->path.angleDelta[CAMPATH_ROLL] = ShortestAngleDelta(
+            camera->path.angleDelta[CAMPATH_ROLL]);
+    } else if (camera->path.frame <
+               CameraNodeDuration(&g_TrackCameras[camera->path.node])) {
+        camera->path.frame += 1;
     }
-    duration = CameraNodeDuration(&g_TrackCameras[g_CamPathNode]);
+    duration = CameraNodeDuration(&g_TrackCameras[camera->path.node]);
     pathBlend = 0x1000 - rcos((s32)(
-        (int64_t)g_CamPathFrame * 0x800 / duration));
+        (int64_t)camera->path.frame * 0x800 / duration));
     camPathOffset = InterpolateCameraValue(
-        g_CamPathOffsetStart[0], g_CamPathOffsetDelta[0], pathBlend);
+        camera->path.offsetStart[0], camera->path.offsetDelta[0], pathBlend);
     focusOffset.x = camPathOffset;
     pathOffsetY = InterpolateCameraValue(
-        g_CamPathOffsetStart[1], g_CamPathOffsetDelta[1], pathBlend);
+        camera->path.offsetStart[1], camera->path.offsetDelta[1], pathBlend);
     focusOffset.y = pathOffsetY;
     pathOffsetZ = InterpolateCameraValue(
-        g_CamPathOffsetStart[2], g_CamPathOffsetDelta[2], pathBlend);
+        camera->path.offsetStart[2], camera->path.offsetDelta[2], pathBlend);
     focusOffset.z = pathOffsetZ;
-    pathPitch = InterpolateCameraValue(g_CamPathAngleStart[CAMPATH_PITCH],
-                                       g_CamPathAngleDelta[CAMPATH_PITCH],
+    pathPitch = InterpolateCameraValue(camera->path.angleStart[CAMPATH_PITCH],
+                                       camera->path.angleDelta[CAMPATH_PITCH],
                                        pathBlend);
-    pathYaw = InterpolateCameraValue(g_CamPathAngleStart[CAMPATH_YAW],
-                                     g_CamPathAngleDelta[CAMPATH_YAW],
+    pathYaw = InterpolateCameraValue(camera->path.angleStart[CAMPATH_YAW],
+                                     camera->path.angleDelta[CAMPATH_YAW],
                                      pathBlend);
-    pathRoll = InterpolateCameraValue(g_CamPathAngleStart[CAMPATH_ROLL],
-                                      g_CamPathAngleDelta[CAMPATH_ROLL],
+    pathRoll = InterpolateCameraValue(camera->path.angleStart[CAMPATH_ROLL],
+                                      camera->path.angleDelta[CAMPATH_ROLL],
                                       pathBlend);
-    g_CamPathAngle[CAMPATH_PITCH] = pathPitch & ANGLE_MASK;
-    g_CamPathAngle[CAMPATH_YAW] = pathYaw & ANGLE_MASK;
-    g_CamPathAngle[CAMPATH_ROLL] = pathRoll & ANGLE_MASK;
-    g_CamPathOffset[0] = camPathOffset;
-    g_CamPathOffset[1] = pathOffsetY;
-    g_CamPathOffset[2] = pathOffsetZ;
+    camera->path.angle[CAMPATH_PITCH] = pathPitch & ANGLE_MASK;
+    camera->path.angle[CAMPATH_YAW] = pathYaw & ANGLE_MASK;
+    camera->path.angle[CAMPATH_ROLL] = pathRoll & ANGLE_MASK;
+    camera->path.offset[0] = camPathOffset;
+    camera->path.offset[1] = pathOffsetY;
+    camera->path.offset[2] = pathOffsetZ;
     camPathAngle = InterpolateCameraValue(
-        g_CamPathAngleStart[CAMPATH_DIST],
-        g_CamPathAngleDelta[CAMPATH_DIST], pathBlend);
-    g_CamPathAngle[CAMPATH_DIST] = camPathAngle;
+        camera->path.angleStart[CAMPATH_DIST],
+        camera->path.angleDelta[CAMPATH_DIST], pathBlend);
+    camera->path.angle[CAMPATH_DIST] = camPathAngle;
     pathYawRelative = CameraSubtractWord(pathYaw, car->bodyYaw);
     BuildRotMatrixY(&cameraRotation, pathYawRelative);
     BuildRotMatrixX(&matrixWork, pathPitch);
@@ -237,7 +237,7 @@ void CameraViewFromCamPath(Camera *camera, GameCarRuntime *car, GameViewWork *vi
     focusZ = CameraAddWord(view->z, focusWorld.z);
     /* Sit the path's distance behind the focus point, then look back at
      * it. */
-    eyeOffset.z = g_CamPathAngle[CAMPATH_DIST];
+    eyeOffset.z = camera->path.angle[CAMPATH_DIST];
     ApplyMatrixLV(&matrixWork, AsWords(&eyeOffset), AsWords(&eyeWorld));
     view->x = CameraSubtractWord(focusX, eyeWorld.x);
     view->y = CameraSubtractWord(focusY, eyeWorld.y);
@@ -274,10 +274,10 @@ void CameraViewFromSlidingNode(Camera *camera, GameCarRuntime *car, GameViewWork
     view->z = orbitNode->data.world.z;
     view->parameter = orbitNode->data.orientation.distance;
     if (nodeChanged || camera->previousMode != TRACK_CAMERA_SLIDING_NODE) {
-        g_CamPathFrame = 0;
-    } else if (g_CamPathFrame <
+        camera->path.frame = 0;
+    } else if (camera->path.frame <
                CameraNodeDuration(&g_TrackCameras[cameraNodeIndex])) {
-        g_CamPathFrame += 1;
+        camera->path.frame += 1;
     }
     CameraBuildCarRotation(&objectRotation, car);
     TransposeMatrix(&objectRotation, &inverseObjectRotation);
@@ -289,11 +289,11 @@ void CameraViewFromSlidingNode(Camera *camera, GameCarRuntime *car, GameViewWork
     /* Slide the camera from where it starts to the node's own position
      * across the node's duration, then aim back at the car. */
     view->x = MoveCameraCoordinate(
-        view->x, orbitNode->offset[0], g_CamPathFrame, duration);
+        view->x, orbitNode->offset[0], camera->path.frame, duration);
     view->y = MoveCameraCoordinate(
-        view->y, orbitNode->offset[1], g_CamPathFrame, duration);
+        view->y, orbitNode->offset[1], camera->path.frame, duration);
     view->z = MoveCameraCoordinate(
-        view->z, orbitNode->offset[2], g_CamPathFrame, duration);
+        view->z, orbitNode->offset[2], camera->path.frame, duration);
     AimCameraAt(view, CameraAddWord(car->x, nodeWorld.x),
                 CameraAddWord(car->y, nodeWorld.y),
                 CameraAddWord(car->z, nodeWorld.z));

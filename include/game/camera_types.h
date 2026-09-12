@@ -21,6 +21,30 @@ typedef struct GameCameraState {
     s32 depth;
 } GameCameraState;
 
+typedef struct CameraChase {
+    s32 targetYaw;
+    s32 yaw;
+    s32 previousYaw;
+    s32 yawLag;
+    s32 rampNeg;
+    s32 rampPos;
+    s32 stepLimit;
+    s32 step;
+    s32 damping;
+    s32 carSpeed;
+} CameraChase;
+
+typedef struct CameraPath {
+    s32 offset[3];
+    s32 offsetDelta[3];
+    s32 offsetStart[3];
+    s32 angle[4];
+    s32 angleDelta[4];
+    s32 angleStart[4];
+    s32 frame;
+    s32 node;
+} CameraPath;
+
 typedef struct Camera {
     GameCameraState view;
     CameraViewMode mode;
@@ -29,6 +53,8 @@ typedef struct Camera {
     s32 chasePreset;
     s32 orbitYaw;
     s32 orbitDistance;
+    CameraChase chase;
+    CameraPath path;
 } Camera;
 
 extern Camera g_Camera;

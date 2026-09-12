@@ -368,24 +368,6 @@ extern s16 g_AnimSceneryVariant;
 #define CAMPATH_YAW 1
 #define CAMPATH_ROLL 2
 #define CAMPATH_DIST 3
-extern s32 g_CamPathAngle[4];
-extern s32 g_CamPathAngleDelta[4];
-#define g_ChaseYawPrev g_CamPathAngleDelta[CAMPATH_YAW]
-extern s32 g_CamPathAngleStart[4];
-extern s32 g_CamPathFrame;
-extern s32 g_CamPathNode;
-extern s32 g_CamPathOffset[3];
-extern s32 g_CamPathOffsetDelta[3];
-extern s32 g_CamPathOffsetStart[3];
-extern s32 g_ChaseCarSpeed;
-extern s32 g_ChaseTargetYaw;
-extern s32 g_ChaseYaw;
-extern s32 g_ChaseYawDamping;
-extern s32 g_ChaseYawLag;
-extern s32 g_ChaseYawRampNeg;
-extern s32 g_ChaseYawRampPos;
-extern s32 g_ChaseYawStep;
-extern s32 g_ChaseYawStepLimit;
 extern s16 g_EnvLerpFrame;
 extern u8 g_EnvScriptEnabled;
 typedef struct SceneryMotionKeyframe {

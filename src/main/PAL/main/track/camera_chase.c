@@ -13,25 +13,26 @@ enum ChaseYawDirection {
  * long way across the wrap. `stepLimit` is how far the camera may swing this
  * frame; `acceleratedStep` is how far its acceleration ramp wants to swing.
  */
-static void SettleChaseYaw(s32 stepLimit, s32 acceleratedStep,
+static void SettleChaseYaw(CameraChase *chase, s32 stepLimit,
+                           s32 acceleratedStep,
                            enum ChaseYawDirection direction) {
     int negative = direction == CHASE_YAW_NEGATIVE;
 
     if (stepLimit < acceleratedStep) {
-        g_ChaseYawLag = negative ? -stepLimit : stepLimit;
+        chase->yawLag = negative ? -stepLimit : stepLimit;
         if (negative) {
-            g_ChaseYawRampNeg = SquareRoot0(
-                CameraMultiplyWord(stepLimit, g_ChaseYawDamping));
+            chase->rampNeg = SquareRoot0(
+                CameraMultiplyWord(stepLimit, chase->damping));
         } else {
-            g_ChaseYawRampPos = SquareRoot0(
-                CameraMultiplyWord(stepLimit, g_ChaseYawDamping));
+            chase->rampPos = SquareRoot0(
+                CameraMultiplyWord(stepLimit, chase->damping));
         }
     } else {
-        g_ChaseYawLag = negative ? -acceleratedStep : acceleratedStep;
+        chase->yawLag = negative ? -acceleratedStep : acceleratedStep;
     }
 }
 
-static void AdvanceChaseYawRamp(s32 stepLimit,
+static void AdvanceChaseYawRamp(CameraChase *chase, s32 stepLimit,
                                 enum ChaseYawDirection direction) {
     s32 acceleratedStep;
     s32 ramp;
@@ -40,20 +41,20 @@ static void AdvanceChaseYawRamp(s32 stepLimit,
     if (stepLimit > 0x40) {
         stepLimit = 0x40;
     }
-    g_ChaseYawStepLimit = stepLimit;
-    ramp = negative ? g_ChaseYawRampNeg : g_ChaseYawRampPos;
+    chase->stepLimit = stepLimit;
+    ramp = negative ? chase->rampNeg : chase->rampPos;
     ramp = CameraAddWord(ramp, 8);
     acceleratedStep = CameraMultiplyWord(ramp, ramp) /
-                      g_ChaseYawDamping;
+                      chase->damping;
     if (negative) {
-        g_ChaseYawRampPos = 0;
-        g_ChaseYawRampNeg = CameraAddWord(g_ChaseYawRampNeg, 8);
+        chase->rampPos = 0;
+        chase->rampNeg = CameraAddWord(chase->rampNeg, 8);
     } else {
-        g_ChaseYawRampNeg = 0;
-        g_ChaseYawRampPos = CameraAddWord(g_ChaseYawRampPos, 8);
+        chase->rampNeg = 0;
+        chase->rampPos = CameraAddWord(chase->rampPos, 8);
     }
-    g_ChaseYawStep = acceleratedStep;
-    SettleChaseYaw(stepLimit, acceleratedStep, direction);
+    chase->step = acceleratedStep;
+    SettleChaseYaw(chase, stepLimit, acceleratedStep, direction);
 }
 
 static s32 CalculateChaseYawDamping(s32 carSpeed) {
@@ -74,7 +75,8 @@ static s32 CalculateChaseYawDamping(s32 carSpeed) {
     return damping > 0 ? damping : 1;
 }
 
-static void UpdateChaseYawStep(s32 targetYaw, s32 previousYaw) {
+static void UpdateChaseYawStep(CameraChase *chase, s32 targetYaw,
+                               s32 previousYaw) {
     s32 rawError = CameraSubtractWord(targetYaw, previousYaw);
     s32 stepLimit;
     enum ChaseYawDirection direction;
@@ -97,12 +99,12 @@ static void UpdateChaseYawStep(s32 targetYaw, s32 previousYaw) {
             direction = CHASE_YAW_NEGATIVE;
         }
     } else {
-        g_ChaseYawLag = 0;
-        g_ChaseYawRampNeg = 0;
-        g_ChaseYawRampPos = 0;
+        chase->yawLag = 0;
+        chase->rampNeg = 0;
+        chase->rampPos = 0;
         return;
     }
-    AdvanceChaseYawRamp(stepLimit, direction);
+    AdvanceChaseYawRamp(chase, stepLimit, direction);
 }
 
 /*
@@ -127,21 +129,22 @@ void CameraViewFromChaseCamera(Camera *camera, GameCarRuntime *car, GameViewWork
 
     CameraLoadViewPositionFromCar(view, car);
     chaseTargetYaw = car->bodyYaw & ANGLE_MASK;
-    g_ChaseCarSpeed = car->speed;
-    g_ChaseTargetYaw = chaseTargetYaw;
+    camera->chase.carSpeed = car->speed;
+    camera->chase.targetYaw = chaseTargetYaw;
     if (camera->previousMode == TRACK_CAMERA_CHASE) {
-        g_ChaseYawPrev &= ANGLE_MASK;
-        g_ChaseYawRampNeg &= ANGLE_MASK;
-        g_ChaseYawRampPos &= ANGLE_MASK;
+        camera->chase.previousYaw &= ANGLE_MASK;
+        camera->chase.rampNeg &= ANGLE_MASK;
+        camera->chase.rampPos &= ANGLE_MASK;
     } else {
-        g_ChaseYawPrev = chaseTargetYaw;
-        g_ChaseYawRampNeg = 0;
-        g_ChaseYawRampPos = 0;
+        camera->chase.previousYaw = chaseTargetYaw;
+        camera->chase.rampNeg = 0;
+        camera->chase.rampPos = 0;
     }
-    g_ChaseYawDamping = CalculateChaseYawDamping(g_ChaseCarSpeed);
-    UpdateChaseYawStep(g_ChaseTargetYaw, g_ChaseYawPrev);
-    settledYaw = CameraAddWord(g_ChaseYawPrev, g_ChaseYawLag) & ANGLE_MASK;
-    g_ChaseYaw = settledYaw;
+    camera->chase.damping = CalculateChaseYawDamping(camera->chase.carSpeed);
+    UpdateChaseYawStep(&camera->chase, camera->chase.targetYaw,
+                       camera->chase.previousYaw);
+    settledYaw = CameraAddWord(camera->chase.previousYaw, camera->chase.yawLag) & ANGLE_MASK;
+    camera->chase.yaw = settledYaw;
     /* How far the chase yaw still has to travel, taken the short way
      * round the circle. Which way that is depends on which side of the
      * target it started. */
@@ -153,12 +156,12 @@ void CameraViewFromChaseCamera(Camera *camera, GameCarRuntime *car, GameViewWork
     } else if (chaseYawLag >= 0x800) {
         chaseYawLag = CameraSubtractWord(chaseYawLag, 0x1000);
     }
-    g_ChaseYawLag = chaseYawLag;
+    camera->chase.yawLag = chaseYawLag;
     BuildRotMatrixY(&cameraRotation,
-                    CameraSubtractWord(0, g_ChaseYawLag));
+                    CameraSubtractWord(0, camera->chase.yawLag));
     BuildRotMatrixX(&matrixWork, -0x80);
     MulMatrix2(&matrixWork, &cameraRotation);
-    g_ChaseYawPrev = g_ChaseYaw;
+    camera->chase.previousYaw = camera->chase.yaw;
     CameraBuildCarRotation(&objectRotation, car);
     TransposeMatrix(&objectRotation, &inverseObjectRotation);
     MulMatrix2(&cameraRotation, &objectRotation);

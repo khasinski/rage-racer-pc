@@ -359,8 +359,9 @@ static void AudioStateLayout(void) {
     Require(strstr(pause, "CdControl(CD_DRIVE_GET_LOCATION, 0, g_Cd.result)") != NULL &&
             strstr(pause, "g_Cd.result[2]") != NULL && strstr(pause, "g_Cd.result[3]") != NULL,
             "pause request does not use the complete GetlocP response");
-    Require(strstr(track, "#define g_ChaseYawPrev g_CamPathAngleDelta[CAMPATH_YAW]") != NULL,
-            "chase yaw is detached from its retail camera-path alias");
+    Require(strstr(track, "g_ChaseYaw") == NULL &&
+            strstr(track, "g_CamPath") == NULL,
+            "camera mode state escaped from Camera");
     Require(strstr(records, "g_BestSectorTimes[series][course][slot]") != NULL &&
             strstr(records, "series * RECORD_COURSE_COUNT + course") != NULL &&
             strstr(records, "defaultLapTimes[index]") != NULL,
