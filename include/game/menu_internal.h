@@ -495,6 +495,6 @@ extern RaceRecord g_TimeRecords[2][4][5];
 extern ClassRecordSprite g_ClassRecordCellSprites[];
 extern ScoreRecord g_ClassRecords[CLASS_RECORD_COUNT];
 extern s32 g_ClassWinCount;
-extern DesignModeCellMask g_DesignModeCellMask;
+extern u8 g_DesignModeCellMask[6][6];
 
 #endif

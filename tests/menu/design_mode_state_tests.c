@@ -20,7 +20,7 @@ void MenuBeginExit(s32 screen) {
     g_MenuOutgoingHandlerIndex = screen;
 }
 
-DesignModeCellMask g_DesignModeCellMask;
+u8 g_DesignModeCellMask[6][6];
 s32 g_DesignModeOption;
 s32 g_DesignModeScreenFade;
 s32 g_MenuAltLayout;
@@ -163,7 +163,7 @@ int main(void) {
     memset(&g_DesignModeCellMask, 0, sizeof(g_DesignModeCellMask));
     memset(ot, 0, sizeof(ot));
     RENDER_OT_BASE = ot;
-    g_DesignModeCellMask.cells[2][3] = 1;
+    g_DesignModeCellMask[2][3] = 1;
     g_DesignModeScreenFade = 123;
     CHECK(DrawDesignModeScreen(0) == 0 && s_spriteCalls == 0);
     CHECK(DrawDesignModeScreen(MENU_FADE_MAX) == MENU_FADE_MAX);

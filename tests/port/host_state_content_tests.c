@@ -114,7 +114,7 @@ extern SVec g_CourseCardVerts[4];
 extern Vec4 g_MenuCarPivotOffset;
 extern const Vec4 g_TeamNameCharScale;
 extern const char g_FormatDecimal[4];
-extern DesignModeCellMask g_DesignModeCellMask;
+extern u8 g_DesignModeCellMask[6][6];
 extern unsigned char g_CarSoundVolumeScales[128];
 extern const char g_MsgVabOpenHeadError[21];
 extern const char g_MsgVabTransBodyError[22];

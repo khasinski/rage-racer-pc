@@ -70,15 +70,13 @@ SVec g_CourseCardVerts[4] __attribute__((aligned(16))) = {
 Vec4 g_MenuCarPivotOffset __attribute__((aligned(16))) = {0, 0, 42, 0};
 const Vec4 g_TeamNameCharScale __attribute__((aligned(16))) = {384, 384, 384, 0};
 const char g_FormatDecimal[4] __attribute__((aligned(16))) = "%d";
-DesignModeCellMask g_DesignModeCellMask __attribute__((aligned(16))) = {
-    .cells = {
+u8 g_DesignModeCellMask[6][6] __attribute__((aligned(16))) = {
         {0, 0, 0, 0, 1, 0},
         {0, 0, 1, 0, 0, 0},
         {0, 0, 1, 0, 0, 0},
         {1, 1, 1, 0, 0, 0},
         {1, 0, 1, 0, 0, 0},
         {1, 1, 1, 0, 0, 0}
-    }
 };
 Rect g_TeamLogoClutRect __attribute__((aligned(16))) = {16, 480, 16, 1};
 Rect g_TeamLogoRect __attribute__((aligned(16))) = {656, 48, 16, 64};

@@ -92,11 +92,6 @@ typedef struct OptionHintCaption {
     u8 advance;
 } OptionHintCaption;
 
-/* 6x6 mask selecting the DESIGN MODE script cells to draw. */
-typedef struct DesignModeCellMask {
-    u8 cells[6][6];
-} DesignModeCellMask;
-
 typedef struct ClassRecordSprite {
     u8 u1;
     u8 v1;

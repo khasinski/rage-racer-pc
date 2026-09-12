@@ -25,7 +25,6 @@ enum {
 };
 
 s32 DrawDesignModeScreen(s32 step) {
-    const DesignModeCellMask *mask = &g_DesignModeCellMask;
     GameOrderingTableEntry *ot;
     s32 remainingFade;
     s32 offset = 0;
@@ -58,7 +57,7 @@ s32 DrawDesignModeScreen(s32 step) {
         for (column = 0; column < DESIGN_MODE_GRID_SIZE; column++) {
             s32 clutX;
 
-            if (mask->cells[row][column] != 0) {
+            if (g_DesignModeCellMask[row][column] != 0) {
                 clutX = 0x26F;
             } else {
                 clutX = 0x244;
