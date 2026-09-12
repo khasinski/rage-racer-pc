@@ -9,6 +9,8 @@ enum {
     COUNTDOWN_LAMP_COUNT = 6,
 };
 
+static s32 s_BoardOffset;
+
 void DrawStartCountdown(s32 sceneTimer) {
     s32 phase;
     s32 row;
@@ -50,17 +52,16 @@ void DrawStartCountdown(s32 sceneTimer) {
         }
     }
 
-    g_CountdownBoardOffset =
-        AdvanceStartCountdownBoard(phase, g_CountdownBoardOffset);
+    s_BoardOffset = AdvanceStartCountdownBoard(phase, s_BoardOffset);
 
     packet = QueueDrawModePrim(
         orderingTable, RENDER_PRIM_CURSOR_AS(u8), 9);
     packet = GameQueueTexturePacketWide(
-        orderingTable, packet, 0x70, g_CountdownBoardOffset + 66,
+        orderingTable, packet, 0x70, s_BoardOffset + 66,
         0x60, 0x18, 0xA0, 0xE8, 0x60, 0x18, 0x784E, 9,
         GAME_TEXTURE_PACKET_SPRT);
     packet = GameQueueTexturePacketWide(
-        orderingTable, packet, 0x70, g_CountdownBoardOffset + 122,
+        orderingTable, packet, 0x70, s_BoardOffset + 122,
         0x60, 0x18, 0xA0, 0xE8, 0x60, 0x18, 0x784E, 9,
         GAME_TEXTURE_PACKET_SPRT);
 
@@ -76,7 +77,7 @@ void DrawStartCountdown(s32 sceneTimer) {
         sprite->v0 = 0xD0;
         sprite->x0 = (row % 3) * 32 + 112;
         sprite->y0 =
-            (row / 3) * 56 + g_CountdownBoardOffset + 66;
+            (row / 3) * 56 + s_BoardOffset + 66;
 
         sprite->clut = lamp.clut;
         sprite->r0 = lamp.intensity;
@@ -102,7 +103,7 @@ void DrawStartCountdown(s32 sceneTimer) {
     backdrop->r0 = 5;
     backdrop->g0 = 5;
     backdrop->b0 = 5;
-    backdrop->y0 = g_CountdownBoardOffset + 88;
+    backdrop->y0 = s_BoardOffset + 88;
     AddPrim(orderingTable, backdrop);
     g_RenderState.draw.packetCursor = backdrop + 1;
 }

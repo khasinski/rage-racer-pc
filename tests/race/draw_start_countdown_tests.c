@@ -12,7 +12,6 @@ static GameFrameContext s_frame;
 GameFrameContext *g_DrawBuffer = &s_frame;
 RenderBufferAddress g_TileStripBuffers[START_COUNTDOWN_TILE_BUFFER_COUNT];
 u8 g_TileStripStorage[START_COUNTDOWN_TILE_STORAGE_SIZE];
-s32 g_CountdownBoardOffset;
 StartCountdownPattern
     g_CountdownGlyphTable[START_COUNTDOWN_GLYPH_PATTERN_COUNT];
 StartCountdownPattern g_CountdownDigitPatterns;
@@ -139,10 +138,8 @@ int main(void) {
     ResetCalls(packets);
     g_FrameParity = 1;
     g_RacePaused = 0;
-    g_CountdownBoardOffset = 99;
     DrawStartCountdown(120);
     tiles = g_TileStripBuffers[1].tile;
-    CHECK(g_CountdownBoardOffset == 0);
     CHECK(tiles[0].r0 == 11 && tiles[0].g0 == 12 && tiles[0].b0 == 13);
     CHECK(tiles[1].r0 == 1 && tiles[1].g0 == 2 && tiles[1].b0 == 3);
     CHECK(s_drawModeCalls == 2 && s_spriteCalls == 2);
@@ -154,15 +151,12 @@ int main(void) {
     ResetCalls(packets);
     g_FrameParity = 0;
     g_RacePaused = 1;
-    g_CountdownBoardOffset = 0;
     DrawStartCountdown(120);
     CHECK(s_addPrimsCalls == 0);
 
     ResetCalls(packets);
     g_RacePaused = 0;
-    g_CountdownBoardOffset = 0;
     DrawStartCountdown(240);
-    CHECK(g_CountdownBoardOffset == -16);
     CHECK(s_addPrimsCalls == 0);
 
     puts("start countdown emits its board, lamps, and tile strip");

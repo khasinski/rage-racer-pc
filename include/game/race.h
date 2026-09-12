@@ -277,7 +277,6 @@ extern const char *g_NativeCarNames[];
 extern char g_ChanceDigits[6][2];
 extern s32 g_ClassPromoted;
 extern char g_ClockTextCells[8];
-extern s32 g_CountdownBoardOffset;
 extern char *g_CourseNames[COURSE_SLOT_COUNT];
 extern s32 g_EndingWashLevel;
 extern s32 g_LostRaceChoice;

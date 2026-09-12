@@ -79,7 +79,6 @@ StartCountdownPattern
 u8 g_TachoFaceR = 128;
 u8 g_TachoFaceG = 128;
 u8 g_TachoFaceB = 128;
-s32 g_CountdownBoardOffset;
 s32 g_LastSectorTime;
 s32 g_SplitDelta;
 s32 g_SectorTimes[3] = {
