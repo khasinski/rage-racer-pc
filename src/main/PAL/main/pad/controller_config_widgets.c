@@ -1,3 +1,4 @@
+#include "game/angle.h"
 #include "game/prim.h"
 #include "game/render.h"
 #include "game/input_internal.h"

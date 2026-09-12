@@ -61,6 +61,10 @@ s32 Random15(void) {
     return s_randomValues[index < 4 ? index : 3];
 }
 
+s32 RandomIndex(s32 count) {
+    return count > 0 ? (Random15() & 0xFFF) % count : 0;
+}
+
 void DrawFullscreenFadeTile(s32 color, s32 tpage) {
     (void)tpage;
     s_fadeColor = color;

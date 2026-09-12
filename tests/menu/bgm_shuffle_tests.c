@@ -15,6 +15,10 @@ s32 Random15(void) {
     return (s32)((s_randomState >> 16) & 0x7FFF);
 }
 
+s32 RandomIndex(s32 count) {
+    return count > 0 ? (Random15() & 0xFFF) % count : 0;
+}
+
 static int IsPermutation(s32 count) {
     u8 seen[BGM_SHUFFLE_CAPACITY] = {0};
     s32 slot;

@@ -4,7 +4,6 @@
 
 enum {
     EMPTY_BGM_SHUFFLE_SLOT = 0xFF,
-    BGM_RANDOM_VALUE_MASK = 0xFFF,
     FIRST_EMPTY_SLOT_ORDINAL = 1,
 };
 
@@ -23,9 +22,7 @@ void ShuffleBgmOrder(void) {
 
     for (track = 0; track < g_BgmTrackCount; track++) {
         emptyCount = g_BgmTrackCount - track;
-        selectedEmpty =
-            ((Random15() & BGM_RANDOM_VALUE_MASK) % emptyCount) +
-            FIRST_EMPTY_SLOT_ORDINAL;
+        selectedEmpty = RandomIndex(emptyCount) + FIRST_EMPTY_SLOT_ORDINAL;
         for (slot = 0; selectedEmpty != 0; slot++) {
             if (g_BgmShuffleOrder[slot] == EMPTY_BGM_SHUFFLE_SLOT) {
                 selectedEmpty--;

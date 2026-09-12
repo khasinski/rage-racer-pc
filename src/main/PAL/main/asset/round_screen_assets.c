@@ -14,10 +14,7 @@ enum {
 };
 
 static s32 RandomClassInRange(s32 minimum, s32 maximum) {
-    if (maximum < minimum) {
-        return minimum;
-    }
-    return minimum + (Random15() & 0xFFF) % (maximum - minimum + 1);
+    return RandomRange(minimum, maximum);
 }
 
 static s32 MaximumUnlockedRoundClass(void) {

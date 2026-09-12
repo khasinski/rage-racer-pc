@@ -1,3 +1,4 @@
+#include "game/angle.h"
 #include "camera_internal.h"
 #include "rage/chase_camera.h"
 
@@ -80,19 +81,19 @@ static void UpdateChaseYawStep(s32 targetYaw, s32 previousYaw) {
 
     if (rawError >= 5) {
         if (rawError >= 0x800) {
-            stepLimit = (((0x1000 - rawError) / 17) * 2) & 0xFFF;
+            stepLimit = (((0x1000 - rawError) / 17) * 2) & ANGLE_MASK;
             direction = CHASE_YAW_NEGATIVE;
         } else {
-            stepLimit = ((rawError / 17) * 2) & 0xFFF;
+            stepLimit = ((rawError / 17) * 2) & ANGLE_MASK;
             direction = CHASE_YAW_POSITIVE;
         }
     } else if (rawError < -4) {
         if (rawError < -0x7FF) {
-            stepLimit = (((0x1000 + rawError) / 17) * 2) & 0xFFF;
+            stepLimit = (((0x1000 + rawError) / 17) * 2) & ANGLE_MASK;
             direction = CHASE_YAW_POSITIVE;
         } else {
             stepLimit = ((CameraSubtractWord(0, rawError) / 17) * 2) &
-                        0xFFF;
+                        ANGLE_MASK;
             direction = CHASE_YAW_NEGATIVE;
         }
     } else {
@@ -125,13 +126,13 @@ void CameraViewFromChaseCamera(GameCarRuntime *car, GameViewWork *view) {
     s32 settledYaw;
 
     CameraLoadViewPositionFromCar(view, car);
-    chaseTargetYaw = car->bodyYaw & 0xFFF;
+    chaseTargetYaw = car->bodyYaw & ANGLE_MASK;
     g_ChaseCarSpeed = car->speed;
     g_ChaseTargetYaw = chaseTargetYaw;
     if (g_CameraModePrev == TRACK_CAMERA_CHASE) {
-        g_ChaseYawPrev &= 0xFFF;
-        g_ChaseYawRampNeg &= 0xFFF;
-        g_ChaseYawRampPos &= 0xFFF;
+        g_ChaseYawPrev &= ANGLE_MASK;
+        g_ChaseYawRampNeg &= ANGLE_MASK;
+        g_ChaseYawRampPos &= ANGLE_MASK;
     } else {
         g_ChaseYawPrev = chaseTargetYaw;
         g_ChaseYawRampNeg = 0;
@@ -139,7 +140,7 @@ void CameraViewFromChaseCamera(GameCarRuntime *car, GameViewWork *view) {
     }
     g_ChaseYawDamping = CalculateChaseYawDamping(g_ChaseCarSpeed);
     UpdateChaseYawStep(g_ChaseTargetYaw, g_ChaseYawPrev);
-    settledYaw = CameraAddWord(g_ChaseYawPrev, g_ChaseYawLag) & 0xFFF;
+    settledYaw = CameraAddWord(g_ChaseYawPrev, g_ChaseYawLag) & ANGLE_MASK;
     g_ChaseYaw = settledYaw;
     /* How far the chase yaw still has to travel, taken the short way
      * round the circle. Which way that is depends on which side of the
@@ -197,8 +198,8 @@ void CameraViewFromChaseCamera(GameCarRuntime *car, GameViewWork *view) {
         CameraMultiplyWord(eyeWorld.x, eyeWorld.x),
         CameraMultiplyWord(eyeWorld.z, eyeWorld.z)));
     view->angleX = 0x400 -
-        (Atan2(CameraAddWord(eyeWorld.y, 0x28), chaseDistance) & 0xFFF);
-    view->angleY = 0x400 - (Atan2(eyeWorld.x, eyeWorld.z) & 0xFFF);
+        (Atan2(CameraAddWord(eyeWorld.y, 0x28), chaseDistance) & ANGLE_MASK);
+    view->angleY = 0x400 - (Atan2(eyeWorld.x, eyeWorld.z) & ANGLE_MASK);
     view->angleY += ChaseCameraYawOffset(car->steeringAngle);
     view->angleZ = CameraSubtractWord(car->bodyRoll,
                                       car->bodyRollVelocity);

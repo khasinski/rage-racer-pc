@@ -122,6 +122,14 @@ s32 Random15(void) {
     return s_randomValues[index];
 }
 
+s32 RandomRange(s32 minimum, s32 maximum) {
+    int64_t count;
+
+    if (maximum < minimum) return minimum;
+    count = (int64_t)maximum - minimum + 1;
+    return minimum + (s32)((Random15() & 0xFFF) % count);
+}
+
 static void Check(s32 condition, const char *label) {
     if (!condition) {
         printf("FAIL %s\n", label);

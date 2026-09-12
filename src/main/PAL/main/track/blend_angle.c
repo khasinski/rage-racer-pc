@@ -1,14 +1,15 @@
+#include "game/angle.h"
 #include "common.h"
 
 /*
- * Wrap-aware angle blend in the 12-bit (0..0xFFF) angle space: blends angleA
+ * Wrap-aware angle blend in the 12-bit (0..ANGLE_MASK) angle space: blends angleA
  * toward angleB by `weight` (0..0x400) taking the shorter way around the
  * 0x1000 circle (the 0x801 test unwraps one operand by +0x1000). Returns the
  * blended angle masked to 12 bits.
  */
 s32 BlendAngle(s32 angleA, s32 angleB, s32 weight) {
-    s32 lhs = angleA & 0xFFF;
-    s32 rhs = angleB & 0xFFF;
+    s32 lhs = angleA & ANGLE_MASK;
+    s32 rhs = angleB & ANGLE_MASK;
     s32 inv = (s32)(0x400u - (u32)weight);
     s32 sum;
 
@@ -28,5 +29,5 @@ s32 BlendAngle(s32 angleA, s32 angleB, s32 weight) {
         sum += 0x3FF;
     }
 
-    return (sum >> 10) & 0xFFF;
+    return (sum >> 10) & ANGLE_MASK;
 }

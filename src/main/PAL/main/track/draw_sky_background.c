@@ -1,3 +1,4 @@
+#include "game/angle.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
@@ -205,7 +206,7 @@ typedef struct SkyBandSetup {
  * camera angles, so none of the drawing below needs them again.
  */
 static s32 SignedAngle12(s32 angle) {
-    angle &= 0xFFF;
+    angle &= ANGLE_MASK;
     return angle >= 0x800 ? angle - 0x1000 : angle;
 }
 
@@ -216,7 +217,7 @@ void MeasureSkyGridLayout(s32 cameraY, s32 sourcePitch, s32 sourceYaw,
     s32 cameraPitch = SignedAngle12(pitch) + 2 +
                       DivideBy32TowardZero(cameraY - 6000);
     s32 yaw = orderingFlag != 0 ? -sourceYaw : sourceYaw;
-    s32 yawAngle = (yaw + 0x200) & 0xFFF;
+    s32 yawAngle = (yaw + 0x200) & ANGLE_MASK;
     s32 nearVerticalFixed = (-0x80 - cameraPitch / 2) * 256;
     s32 farVerticalFixed = (-0x80 - (cameraPitch / 2 + 0x50)) * 256;
     s32 horizontalFixed = (-0x100 - ((yawAngle >> 1) & 0x3F)) * 256;

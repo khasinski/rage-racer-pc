@@ -99,12 +99,12 @@ static void UpdateAttractRaceLoading(void) {
     switch (g_SceneTimer) {
     case FRONTEND_ATTRACT_LOAD_TRACK:
         g_GrandPrixSeries = 0;
-        g_GrandPrixClass = (Random15() & 0xFFF) % 5;
+        g_GrandPrixClass = RandomIndex(5);
         definition = GrandPrixContentClass(g_GrandPrixClass);
-        randomCourse = (Random15() & 0xFFF) % 4;
+        randomCourse = RandomIndex(4);
         g_CourseIndex = randomCourse;
         if (randomCourse >= definition->courseCount) {
-            g_CourseIndex = (Random15() & 0xFFF) % definition->courseCount;
+            g_CourseIndex = RandomIndex(definition->courseCount);
         }
         RequestCourseTextureAssets();
         g_SceneTimer++;

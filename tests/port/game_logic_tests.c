@@ -34,6 +34,7 @@ static char *mkdtemp(char *path) {
 
 #include "common.h"
 #include "game/diagnostics.h"
+#include "game/random.h"
 #include "game/track.h"
 #include "input_config.h"
 #include "port_config.h"
@@ -47,7 +48,6 @@ int g_SceneId;
 int g_SceneTimer;
 
 s32 FramesToMilliseconds(s32 frames, s32 millis);
-s32 Random15(void);
 s32 GetAngleDistance(s32 from, s32 to);
 s32 GetAngleDelta(s32 from, s32 to);
 
@@ -93,6 +93,34 @@ static void test_random15(void) {
     g_RandomSeed = 0;
     EXPECT_EQ(0, Random15());
     EXPECT_EQ(0x3039, g_RandomSeed);
+}
+
+static void test_random_selection(void) {
+    u32 seed;
+
+    g_RandomSeed = 1;
+    EXPECT_EQ(54, RandomIndex(100));
+    EXPECT_EQ((s32)0x41C67EA6, (s32)g_RandomSeed);
+
+    seed = g_RandomSeed;
+    EXPECT_EQ(0, RandomIndex(0));
+    EXPECT_EQ(0, RandomIndex(-1));
+    EXPECT_EQ((s32)seed, (s32)g_RandomSeed);
+
+    g_RandomSeed = 1;
+    EXPECT_EQ(6, RandomRange(3, 13));
+    EXPECT_EQ((s32)0x41C67EA6, (s32)g_RandomSeed);
+
+    g_RandomSeed = 1;
+    EXPECT_EQ(7, RandomRange(7, 7));
+    EXPECT_EQ((s32)0x41C67EA6, (s32)g_RandomSeed);
+
+    seed = g_RandomSeed;
+    EXPECT_EQ(9, RandomRange(9, 4));
+    EXPECT_EQ((s32)seed, (s32)g_RandomSeed);
+
+    g_RandomSeed = 1;
+    EXPECT_EQ(INT_MIN + 454, RandomRange(INT_MIN, INT_MAX));
 }
 
 static void test_angle_math(void) {
@@ -563,6 +591,7 @@ static void test_ensure_directory(void) {
 int main(void) {
     test_time_conversion();
     test_random15();
+    test_random_selection();
     test_angle_math();
     test_angle_blending();
     test_track_angle_interpolation();

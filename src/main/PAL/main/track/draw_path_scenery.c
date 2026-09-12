@@ -1,3 +1,4 @@
+#include "game/angle.h"
 #include "game/race.h"
 #include "game/render.h"
 #include "game/render_internal.h"
@@ -21,7 +22,7 @@ void DrawPathScenery(void) {
     g_RenderState.geometry.envMode4 = 0;
     SubmitModel(&g_RenderState, ModelOrFallback(0x23, g_ModelBankCount));
 
-    spinAngle = (s32)((u32)g_SceneTimer * 331u) & 0xFFF;
+    spinAngle = (s32)((u32)g_SceneTimer * 331u) & ANGLE_MASK;
     BuildRotMatrixY(&spinningPartMatrix, spinAngle);
 
     MulMatrix2(&objectMatrix, &spinningPartMatrix);

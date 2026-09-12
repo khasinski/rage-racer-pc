@@ -1,3 +1,4 @@
+#include "game/angle.h"
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
@@ -93,7 +94,7 @@ static int ScenarioPlaceCar(GameCarRuntime *car, int point) {
     car->y = 0;
     car->bodyPitch = car->bodyRoll = 0;
     car->bodyYaw = (0xC00 - (g_RaceSeries << 11) -
-                    TrackPoint(point)->angle) & 0xFFF;
+                    TrackPoint(point)->angle) & ANGLE_MASK;
     car->headingAngle = car->bodyYaw;
     car->trackPointIndex = FindTrackSegment(car, point);
     SeedCarLapProgress(car, 0);
@@ -164,7 +165,7 @@ static void ScenarioPlaceExact(void) {
     car->x = s_scenario.exactX;
     car->z = s_scenario.exactZ;
     if (s_scenario.exactHeading >= 0) {
-        car->bodyYaw = (s16)(s_scenario.exactHeading & 0xFFF);
+        car->bodyYaw = (s16)(s_scenario.exactHeading & ANGLE_MASK);
         car->headingAngle = car->bodyYaw;
     }
     car->trackPointIndex = FindTrackSegment(rivalView, car->trackPointIndex);

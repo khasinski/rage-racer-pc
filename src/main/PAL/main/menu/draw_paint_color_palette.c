@@ -1,3 +1,4 @@
+#include "game/angle.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
 #include "game/render.h"
@@ -46,7 +47,7 @@ s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index) {
         y = 0x20B - frame * 15;
 
         highlight =
-            rsin((g_PaintPalettePulsePhase * 2) & 0xFFF) / 64 - 0x41;
+            rsin((g_PaintPalettePulsePhase * 2) & ANGLE_MASK) / 64 - 0x41;
 
         g_PaintPalettePulsePhase =
             (s32)((u32)g_PaintPalettePulsePhase + 0x20u);

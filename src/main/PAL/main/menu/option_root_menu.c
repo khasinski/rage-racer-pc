@@ -19,7 +19,6 @@ typedef enum OptionRootItem {
 } OptionRootItem;
 
 enum {
-    OPTION_RACE_RANDOM_MASK = 0xFFF,
     OPTION_RACE_CLASS_COUNT = GRAND_PRIX_FINAL_CLASS_INDEX,
     OPTION_RACE_OVAL_MINIMUM_CLASS = 2,
 };
@@ -56,18 +55,14 @@ void DrawOptionRootMenu(void) {
     }
 }
 
-static s32 RandomOptionRaceIndex(s32 count) {
-    return (Random15() & OPTION_RACE_RANDOM_MASK) % count;
-}
-
 static void StartRandomOptionRace(void) {
     g_GrandPrixMode = 0;
     g_GrandPrixSeries = 0;
-    g_GrandPrixClass = RandomOptionRaceIndex(OPTION_RACE_CLASS_COUNT);
-    g_CourseIndex = RandomOptionRaceIndex(COURSE_SLOT_COUNT);
+    g_GrandPrixClass = RandomIndex(OPTION_RACE_CLASS_COUNT);
+    g_CourseIndex = RandomIndex(COURSE_SLOT_COUNT);
     if (g_GrandPrixClass < OPTION_RACE_OVAL_MINIMUM_CLASS &&
         g_CourseIndex == COURSE_LONG_SLOT) {
-        g_CourseIndex = RandomOptionRaceIndex(COURSE_SLOT_COUNT - 1);
+        g_CourseIndex = RandomIndex(COURSE_SLOT_COUNT - 1);
     }
     RequestCourseTextureAssets();
     StartOptionMenuExit(GAME_SCENE_ENTER_BGM_SELECT);

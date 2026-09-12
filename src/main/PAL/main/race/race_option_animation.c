@@ -1,3 +1,4 @@
+#include "game/angle.h"
 #include "game/race_hud_internal.h"
 #include "psyq/gte.h"
 
@@ -23,7 +24,7 @@ RaceOptionMarqueeState AdvanceRaceOptionMarquee(s32 firstScroll,
 RaceOptionPulseState AdvanceRaceOptionPulse(s32 angle) {
     RaceOptionPulseState state;
 
-    state.angle = (s32)(((u32)angle + 0x20) & 0xFFF);
+    state.angle = (s32)(((u32)angle + 0x20) & ANGLE_MASK);
     state.halfWidth = rcos(state.angle) * 0x2C / 4096;
     return state;
 }

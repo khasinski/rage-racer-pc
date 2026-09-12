@@ -1,3 +1,4 @@
+#include "game/angle.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
 
@@ -131,7 +132,7 @@ void DrawTeamNameEntry(s32 step, s32 cursorIndex) {
     frame = ClampAnimationFrame(g_TeamNameEntrySlide - 0xE, 0xB);
     if (frame >= 0) {
         s32 y = SlideUp(0xFB, frame, 64);
-        s32 phase = g_TeamNameCursorPhase & 0xFFF;
+        s32 phase = g_TeamNameCursorPhase & ANGLE_MASK;
         s32 pulse = rsin(phase) / 64 - 0x41;
 
         DrawSolidRect(ot + 1,

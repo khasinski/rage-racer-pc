@@ -1,3 +1,4 @@
+#include "game/angle.h"
 #include "camera_internal.h"
 
 /* Mode-3 nodes store orientation in the first four data words where modes
@@ -52,10 +53,10 @@ static void AimCameraAt(GameViewWork *view, s32 targetX, s32 targetY, s32 target
 
     view->angleX = 0x400 -
         (Atan2(CameraSubtractWord(0, dy),
-               SquareRoot0(horizontalDistanceSquared)) & 0xFFF);
+               SquareRoot0(horizontalDistanceSquared)) & ANGLE_MASK);
     view->angleY = 0x400 -
         (Atan2(CameraSubtractWord(0, dx),
-               CameraSubtractWord(0, dz)) & 0xFFF);
+               CameraSubtractWord(0, dz)) & ANGLE_MASK);
     view->angleZ = 0;
 }
 
@@ -208,9 +209,9 @@ void CameraViewFromCamPath(GameCarRuntime *car, GameViewWork *view,
     pathRoll = InterpolateCameraValue(g_CamPathAngleStart[CAMPATH_ROLL],
                                       g_CamPathAngleDelta[CAMPATH_ROLL],
                                       pathBlend);
-    g_CamPathAngle[CAMPATH_PITCH] = pathPitch & 0xFFF;
-    g_CamPathAngle[CAMPATH_YAW] = pathYaw & 0xFFF;
-    g_CamPathAngle[CAMPATH_ROLL] = pathRoll & 0xFFF;
+    g_CamPathAngle[CAMPATH_PITCH] = pathPitch & ANGLE_MASK;
+    g_CamPathAngle[CAMPATH_YAW] = pathYaw & ANGLE_MASK;
+    g_CamPathAngle[CAMPATH_ROLL] = pathRoll & ANGLE_MASK;
     g_CamPathOffset[0] = camPathOffset;
     g_CamPathOffset[1] = pathOffsetY;
     g_CamPathOffset[2] = pathOffsetZ;
@@ -250,7 +251,7 @@ void CameraViewFromCamPath(GameCarRuntime *car, GameViewWork *view,
     ApplyMatrixLV(&cameraRotation, AsWords(&rollProbe), AsWords(&rollWork));
     TransposeMatrix(&matrixWork, &cameraRotation);
     ApplyMatrixLV(&cameraRotation, AsWords(&rollWork), AsWords(&rollProbe));
-    view->angleZ = 0x400 - (Atan2(rollProbe.y, rollProbe.x) & 0xFFF);
+    view->angleZ = 0x400 - (Atan2(rollProbe.y, rollProbe.x) & ANGLE_MASK);
     g_CameraModePrev = TRACK_CAMERA_PATH;
 }
 

@@ -1,3 +1,4 @@
+#include "game/angle.h"
 #include "camera_internal.h"
 #include "game/player_car_internal.h"
 
@@ -52,8 +53,8 @@ static void CameraViewFromOrbitPosition(GameCarRuntime *car,
     /* Pitch uses the orbit distance rather than the flattened eye vector,
      * so a pitched camera tilts a shade less than a true look-at would.
      * Retail's, and the view players know. */
-    view->angleX = 0x400 - (Atan2(eyeWorld.y, distance) & 0xFFF);
-    view->angleY = 0x400 - (Atan2(eyeWorld.x, eyeWorld.z) & 0xFFF);
+    view->angleX = 0x400 - (Atan2(eyeWorld.y, distance) & ANGLE_MASK);
+    view->angleY = 0x400 - (Atan2(eyeWorld.x, eyeWorld.z) & ANGLE_MASK);
     view->angleZ = car->bodyRoll;
     g_CameraModePrev = TRACK_CAMERA_ORBIT;
     view->x = CameraSubtractWord(view->x, eyeWorld.x);

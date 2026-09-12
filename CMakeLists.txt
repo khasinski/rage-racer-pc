@@ -111,7 +111,7 @@ endif()
 # simulation boundary instead of compiling selected game files ad hoc.
 set(RAGE_SIM_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/race/time_conversion.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/random/random15.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/random/random.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/angle_math.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/track/blend_angle.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/track/interpolate_track_angle.c

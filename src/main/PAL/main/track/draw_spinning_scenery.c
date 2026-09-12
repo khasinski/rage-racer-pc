@@ -1,3 +1,4 @@
+#include "game/angle.h"
 #include "game/race.h"
 #include "game/random.h"
 #include "game/render.h"
@@ -40,7 +41,7 @@ void DrawSpinningScenery(s32 timer, s32 animate) {
         if (animate != 0) {
             angle += g_SpinningSceneryRate[range->rateIndex];
         }
-        angle &= 0xFFF;
+        angle &= ANGLE_MASK;
         g_SpinningSceneryAngle[spinner] = (s16)angle;
 
         BuildRotMatrixY(&yawMatrix, placement->yaw);

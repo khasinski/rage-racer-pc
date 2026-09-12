@@ -1,3 +1,4 @@
+#include "game/angle.h"
 #include "rage/render_world_game.h"
 #include "rage/render_world_scene.h"
 
@@ -85,7 +86,7 @@ static void GameRenderWorldClearInactiveScene(void) {
 }
 
 static float AngleToDegrees(s32 angle) {
-    return (float)(angle & 0xFFF) * (360.0f / 4096.0f);
+    return (float)(angle & ANGLE_MASK) * (360.0f / 4096.0f);
 }
 
 /*
