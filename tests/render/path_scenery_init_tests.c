@@ -40,14 +40,14 @@ static int RunCase(s16 positionRate, s16 rotationRate,
     memset(&g_PathSceneryCursors, 0x7F, sizeof(g_PathSceneryCursors));
 
     positions.firstKey[1] = 1;
-    positions.keys[1].fields.x = 10;
-    positions.keys[1].fields.y = -20;
-    positions.keys[1].fields.z = 31;
-    positions.keys[1].fields.span = 12;
-    positions.keys[1].fields.rate = positionRate;
-    positions.keys[2].fields.x = 15;
-    positions.keys[2].fields.y = -29;
-    positions.keys[2].fields.z = 40;
+    positions.keys[1].position.x = 10;
+    positions.keys[1].position.y = -20;
+    positions.keys[1].position.z = 31;
+    positions.keys[1].span = 12;
+    positions.keys[1].rate = positionRate;
+    positions.keys[2].position.x = 15;
+    positions.keys[2].position.y = -29;
+    positions.keys[2].position.z = 40;
 
     rotations.firstKey[1] = 1;
     rotations.keys[1].fields.x = 100;

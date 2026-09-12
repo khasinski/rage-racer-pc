@@ -31,30 +31,31 @@ void InitPathScenery(void) {
     g_PathSceneryClock.posFrame = 0;
     g_PathSceneryClock.rotFrame = 0;
     g_PathSceneryTransform.position = (Vec4){
-        positionKeys[0].fields.x,
-        positionKeys[0].fields.y,
-        positionKeys[0].fields.z,
+        positionKeys[0].position.x,
+        positionKeys[0].position.y,
+        positionKeys[0].position.z,
         0,
     };
     g_PathSceneryTransform.rotation = rotationKeys[0].rotation;
 
     g_PathSceneryCursors.posPhase = 0;
     g_PathSceneryCursors.rotPhase = 0;
-    g_PathSceneryCursors.posSpan = positionKeys[0].fields.span;
+    g_PathSceneryCursors.posSpan = positionKeys[0].span;
     g_PathSceneryCursors.rotSpan = rotationKeys[0].fields.span;
     g_PathSceneryCursors.posRate =
-        NormalizePathSceneryRate(positionKeys[0].fields.rate);
+        NormalizePathSceneryRate(positionKeys[0].rate);
     g_PathSceneryCursors.rotRate =
         NormalizePathSceneryRate(rotationKeys[0].fields.rate);
     g_PathSceneryCursors.posIndex = 0;
     g_PathSceneryCursors.rotIndex = 0;
     g_PathSceneryVolume = 0;
 
-    for (axis = 0; axis < 3; axis++) {
-        g_PathSceneryHalfDelta[axis] =
-            PathSceneryHalfDelta(positionKeys[0].position.w[axis],
-                                 positionKeys[1].position.w[axis]);
-    }
+    g_PathSceneryHalfDelta[0] = PathSceneryHalfDelta(
+        positionKeys[0].position.x, positionKeys[1].position.x);
+    g_PathSceneryHalfDelta[1] = PathSceneryHalfDelta(
+        positionKeys[0].position.y, positionKeys[1].position.y);
+    g_PathSceneryHalfDelta[2] = PathSceneryHalfDelta(
+        positionKeys[0].position.z, positionKeys[1].position.z);
     g_PathSceneryRotHalfDelta[0] =
         (s16)((rotationKeys[1].fields.x - rotationKeys[0].fields.x) / 2);
     g_PathSceneryRotHalfDelta[1] =

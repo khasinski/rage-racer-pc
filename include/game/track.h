@@ -448,17 +448,12 @@ extern StaticSceneryState g_StaticSceneryState;
 extern s32 g_OrbitCameraDistance;
 extern s32 g_OrbitCameraYaw;
 extern s16 g_PathSceneryHalfDelta[3];
-typedef union PathSceneryPositionKey {
-    struct {
-        s32 x;
-        s32 y;
-        s32 z;
-        u16 loopIndex;
-        u16 reserved;
-        s16 span;
-        s16 rate;
-    } fields;
-    Block16 position;
+typedef struct PathSceneryPositionKey {
+    LVec position;
+    u16 loopIndex;
+    u16 reserved;
+    s16 span;
+    s16 rate;
 } PathSceneryPositionKey;
 
 typedef union PathSceneryRotationKey {

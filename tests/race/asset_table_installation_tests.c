@@ -44,9 +44,9 @@ static void SeedValidTrackEventTables(TrackEventData *data) {
     route->keyframes[1].duration = SCENERY_MOTION_END;
     camera->keys[0].mode = 1;
     camera->keys[0].duration = 0;
-    position->keys[0].fields.span = 0;
-    position->keys[1].fields.span = -1;
-    position->keys[1].fields.loopIndex = 0;
+    position->keys[0].span = 0;
+    position->keys[1].span = -1;
+    position->keys[1].loopIndex = 0;
     rotation->keys[0].fields.span = 0;
     rotation->keys[1].fields.span = -1;
     rotation->keys[1].fields.loopIndex = 0;
@@ -96,24 +96,24 @@ static void TestTrackEventData(void) {
         ->firstKeyframe[0][0] = 0;
 
     ((PathSceneryPositionData *)(offsetBase +
-        data.offsets.pathSceneryPosition))->keys[1].fields.span = 1;
+        data.offsets.pathSceneryPosition))->keys[1].span = 1;
     Check(InstallTrackEventData(&data, sizeof(data)) == 0,
           "unterminated path table rejected");
     ((PathSceneryPositionData *)(offsetBase +
-        data.offsets.pathSceneryPosition))->keys[1].fields.span = -1;
+        data.offsets.pathSceneryPosition))->keys[1].span = -1;
 
     ((PathSceneryPositionData *)(offsetBase +
-        data.offsets.pathSceneryPosition))->keys[0].fields.span = 2;
+        data.offsets.pathSceneryPosition))->keys[0].span = 2;
     ((PathSceneryPositionData *)(offsetBase +
-        data.offsets.pathSceneryPosition))->keys[1].fields.span = 1;
+        data.offsets.pathSceneryPosition))->keys[1].span = 1;
     ((PathSceneryPositionData *)(offsetBase +
-        data.offsets.pathSceneryPosition))->keys[2].fields.span = -1;
+        data.offsets.pathSceneryPosition))->keys[2].span = -1;
     Check(InstallTrackEventData(&data, sizeof(data)) == 0,
           "decreasing path position timeline rejected");
     ((PathSceneryPositionData *)(offsetBase +
-        data.offsets.pathSceneryPosition))->keys[0].fields.span = 0;
+        data.offsets.pathSceneryPosition))->keys[0].span = 0;
     ((PathSceneryPositionData *)(offsetBase +
-        data.offsets.pathSceneryPosition))->keys[1].fields.span = -1;
+        data.offsets.pathSceneryPosition))->keys[1].span = -1;
 
     ((PathSceneryRotationData *)(offsetBase +
         data.offsets.pathSceneryRotation))->keys[0].fields.span = 2;

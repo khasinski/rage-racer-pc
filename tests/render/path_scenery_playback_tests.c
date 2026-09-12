@@ -63,15 +63,15 @@ int main(void) {
     memset(&rotations, 0, sizeof(rotations));
     memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
 
-    positions.keys[0].fields.span = 3;
-    positions.keys[0].fields.rate = 2;
-    positions.keys[1].fields.x = 100;
-    positions.keys[1].fields.y = 50;
-    positions.keys[1].fields.z = -100;
-    positions.keys[1].fields.span = 2;
-    positions.keys[1].fields.rate = -2;
-    positions.keys[2].fields.span = -1;
-    positions.keys[2].fields.loopIndex = 0;
+    positions.keys[0].span = 3;
+    positions.keys[0].rate = 2;
+    positions.keys[1].position.x = 100;
+    positions.keys[1].position.y = 50;
+    positions.keys[1].position.z = -100;
+    positions.keys[1].span = 2;
+    positions.keys[1].rate = -2;
+    positions.keys[2].span = -1;
+    positions.keys[2].loopIndex = 0;
 
     rotations.keys[0].fields.span = 3;
     rotations.keys[0].fields.rate = 2;
@@ -125,12 +125,12 @@ int main(void) {
         return 1;
     }
 
-    positions.keys[0].fields.x = INT_MIN;
-    positions.keys[0].fields.y = INT_MIN;
-    positions.keys[0].fields.z = INT_MIN;
-    positions.keys[1].fields.x = INT_MAX;
-    positions.keys[1].fields.y = INT_MAX;
-    positions.keys[1].fields.z = INT_MAX;
+    positions.keys[0].position.x = INT_MIN;
+    positions.keys[0].position.y = INT_MIN;
+    positions.keys[0].position.z = INT_MIN;
+    positions.keys[1].position.x = INT_MAX;
+    positions.keys[1].position.y = INT_MAX;
+    positions.keys[1].position.z = INT_MAX;
     g_PlayerCar.x = INT_MAX;
     g_PlayerCar.y = INT_MAX;
     g_PlayerCar.z = INT_MAX;

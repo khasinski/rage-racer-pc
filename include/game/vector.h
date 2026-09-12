@@ -127,9 +127,4 @@ static inline LVec *AsPosition(Vec4 *vector) {
     return view.three;
 }
 
-/* Sixteen bytes moved as a unit; also indexed a word at a time. */
-typedef struct Block16 {
-    s32 w[4];
-} Block16;
-
 #endif

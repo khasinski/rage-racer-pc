@@ -105,10 +105,10 @@ static s32 PathPositionSequenceIsValid(
     s16 previousSpan = -1;
 
     for (i = first; i < keyCount; i++) {
-        s16 span = keys[i].fields.span;
+        s16 span = keys[i].span;
 
         if (span == -1) {
-            size_t loop = keys[i].fields.loopIndex;
+            size_t loop = keys[i].loopIndex;
             return i > first && loop < i - first;
         }
         if (span <= previousSpan || i + 1 >= keyCount) return 0;

@@ -17,7 +17,6 @@ enum {
 static void AdvancePositionKeyframe(void) {
     const PathSceneryPositionKey *keyframe;
     s16 index;
-    int axis;
 
     if (g_PathSceneryClock.posFrame != g_PathSceneryCursors.posSpan) {
         g_PathSceneryCursors.posPhase = WrapSigned16(
@@ -28,23 +27,24 @@ static void AdvancePositionKeyframe(void) {
     g_PathSceneryCursors.posPhase = 0;
     index = (s16)((u16)g_PathSceneryCursors.posIndex + 1u);
     keyframe = &g_PathSceneryPosKeys[index];
-    if (keyframe->fields.span == -1) {
-        index = (s16)keyframe->fields.loopIndex;
+    if (keyframe->span == -1) {
+        index = (s16)keyframe->loopIndex;
         g_PathSceneryClock.posFrame = index > 0
-            ? g_PathSceneryPosKeys[index - 1].fields.span
+            ? g_PathSceneryPosKeys[index - 1].span
             : 0;
         keyframe = &g_PathSceneryPosKeys[index];
     }
 
     g_PathSceneryCursors.posIndex = index;
     g_PathSceneryCursors.posRate =
-        NormalizePathSceneryRate(keyframe->fields.rate);
-    g_PathSceneryCursors.posSpan = keyframe->fields.span;
-    for (axis = 0; axis < 3; axis++) {
-        g_PathSceneryHalfDelta[axis] =
-            PathSceneryHalfDelta(keyframe[0].position.w[axis],
-                                 keyframe[1].position.w[axis]);
-    }
+        NormalizePathSceneryRate(keyframe->rate);
+    g_PathSceneryCursors.posSpan = keyframe->span;
+    g_PathSceneryHalfDelta[0] = PathSceneryHalfDelta(
+        keyframe[0].position.x, keyframe[1].position.x);
+    g_PathSceneryHalfDelta[1] = PathSceneryHalfDelta(
+        keyframe[0].position.y, keyframe[1].position.y);
+    g_PathSceneryHalfDelta[2] = PathSceneryHalfDelta(
+        keyframe[0].position.z, keyframe[1].position.z);
 }
 
 static void AdvanceRotationKeyframe(void) {
@@ -105,19 +105,19 @@ static void UpdatePathPosition(void) {
     const s16 phase = g_PathSceneryCursors.posPhase;
     const s16 rate = g_PathSceneryCursors.posRate;
     g_PathSceneryTransform.position.x = EasePathValue(
-        keyframe[0].fields.x, keyframe[1].fields.x,
+        keyframe[0].position.x, keyframe[1].position.x,
         g_PathSceneryHalfDelta[0], phase, rate);
     g_PathSceneryTransform.position.y = EasePathValue(
-        keyframe[0].fields.y, keyframe[1].fields.y,
+        keyframe[0].position.y, keyframe[1].position.y,
         g_PathSceneryHalfDelta[1], phase, rate);
     g_PathSceneryTransform.position.z = EasePathValue(
-        keyframe[0].fields.z, keyframe[1].fields.z,
+        keyframe[0].position.z, keyframe[1].position.z,
         g_PathSceneryHalfDelta[2], phase, rate);
     if (phase > rate) {
         g_PathSceneryTransform.position = (Vec4){
-            keyframe[1].fields.x,
-            keyframe[1].fields.y,
-            keyframe[1].fields.z,
+            keyframe[1].position.x,
+            keyframe[1].position.y,
+            keyframe[1].position.z,
             0,
         };
     }
