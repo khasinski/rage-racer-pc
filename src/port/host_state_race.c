@@ -49,10 +49,6 @@ ResultPlaceBarTable g_ClassPlaceBarSizes = {
         {0xa8, 0x24},
     },
 };
-char g_ChanceDigits[6][2] = {
-    {'0', '\0'}, {'1', '\0'}, {'2', '\0'},
-    {'3', '\0'}, {'4', '\0'}, {'5', '\0'},
-};
 s32 g_BgmRandomLabelTimer;
 s32 g_BgmRandomPlay;
 s16 g_AttractTitleDelays[4] = {

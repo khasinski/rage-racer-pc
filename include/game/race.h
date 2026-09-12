@@ -268,7 +268,6 @@ extern const char *g_NativeCarClassNames[];
 extern const char *g_NativeCarNames[];
 #define g_CarClassNames g_NativeCarClassNames
 #define g_CarNames g_NativeCarNames
-extern char g_ChanceDigits[6][2];
 extern s32 g_ClassPromoted;
 extern char g_ClockTextCells[8];
 extern char *g_CourseNames[COURSE_SLOT_COUNT];

@@ -106,7 +106,6 @@ extern unsigned char g_TeamNameFontGlyphs
     [TEAM_NAME_FONT_GLYPH_COUNT * TEAM_NAME_FONT_GLYPH_BYTES];
 extern unsigned char g_TeamNameBlankTile[192];
 extern unsigned char g_ResultPlaceCluts[8];
-extern char g_ChanceDigits[6][2];
 extern OptionHintCaption g_OptionHintCaptions[MENU_OPTION_HINT_COUNT];
 extern DVec g_ClassRecordCellPoints[CLASS_RECORD_COUNT];
 extern ClassRecordSprite g_ClassRecordCellSprites[CLASS_RECORD_COUNT];
@@ -231,7 +230,6 @@ static const HostStateBlob s_blobs[] = {
      sizeof(g_ResultPanelCluts)},
     {"g_ClassPlaceBarSizes", BYTES(&g_ClassPlaceBarSizes),
      sizeof(g_ClassPlaceBarSizes)},
-    {"g_ChanceDigits", BYTES(g_ChanceDigits), 12},
     {"g_OptionHintCaptions", (const unsigned char *)g_OptionHintCaptions, 24},
     {"g_ClassRecordCellPoints", (const unsigned char *)g_ClassRecordCellPoints,
      44},
@@ -313,7 +311,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the canonical host constants alone. */
-    const unsigned long expected = 56180094UL;
+    const unsigned long expected = 706040995UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

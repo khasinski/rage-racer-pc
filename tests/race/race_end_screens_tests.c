@@ -21,8 +21,6 @@ u16 g_PadPressed;
 static CourseProgressState s_CourseProgress;
 CourseProgressState *g_CourseProgress = &s_CourseProgress;
 
-char g_ChanceDigits[6][2] = {"0", "1", "2", "3", "4", "5"};
-
 static s32 s_ReverbCalls;
 static s32 s_LastSoundCue;
 static s32 s_AssetRequests;
@@ -31,6 +29,7 @@ static s32 s_AudioFadeFrames;
 static s32 s_ResetProgressCalls;
 static s32 s_ResetProgressClass;
 static s32 s_BannerDraws;
+static s32 s_ChanceDigit;
 
 void SetReverbDepth(s32 left, s32 right) {
     if (left == 0x28 && right == 0x28) s_ReverbCalls++;
@@ -58,10 +57,9 @@ void GameDrawProportionalTextShaded(s32 x, s32 y, const char *str,
     (void)intensity;
 }
 void DrawProportionalText(s32 x, s32 y, const char *str, s32 clutIndex) {
-    (void)x;
     (void)y;
-    (void)str;
     (void)clutIndex;
+    if (x == 0xBE) s_ChanceDigit = str[0];
 }
 void DrawText8x8(s32 x, s32 y, const char *str, s32 clutIndex) {
     (void)x;
@@ -114,6 +112,7 @@ static void ResetState(void) {
     s_ResetProgressCalls = 0;
     s_ResetProgressClass = -1;
     s_BannerDraws = 0;
+    s_ChanceDigit = -1;
 }
 
 static int TestLostRaceRetry(void) {
@@ -127,6 +126,7 @@ static int TestLostRaceRetry(void) {
     UpdateLostRaceScreen();
     CHECK(s_LastSoundCue == 2 && g_SceneTimer == 0);
     CHECK(s_CourseProgress.retriesRemaining == 2 && s_AssetRequests == 0);
+    CHECK(s_ChanceDigit == '2');
 
     g_PadPressed = 0;
     g_SceneTimer = 254;

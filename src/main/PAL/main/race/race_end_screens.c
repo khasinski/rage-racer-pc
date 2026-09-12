@@ -28,6 +28,7 @@ void EnterLostRaceScreen(void) {
 }
 
 static void DrawRaceEndPrompt(void) {
+    char chance[2];
     s32 color = 0x7812;
     s32 drawColor;
     s32 index;
@@ -52,7 +53,9 @@ static void DrawRaceEndPrompt(void) {
 
     index = LostRaceRetryDigitIndex(
         g_CourseProgress != NULL ? g_CourseProgress->retriesRemaining : 0);
-    DrawProportionalText(0xBE, 0xB8, g_ChanceDigits[index], 0x7812);
+    chance[0] = (char)('0' + index);
+    chance[1] = '\0';
+    DrawProportionalText(0xBE, 0xB8, chance, 0x7812);
 
     DrawText8x8(0x58, 0xD0, "PRESS START BUTTON", 0x78CC);
     DrawLostRaceCaption(0xFF);
