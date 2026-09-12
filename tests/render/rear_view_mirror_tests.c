@@ -15,7 +15,6 @@ MirrorBadgeStyle g_CarMirrorBadgeStyles[MIRROR_BADGE_STYLE_STORAGE_COUNT];
 MirrorBadgeSprite g_MirrorBadgeSprites[MIRROR_BADGE_STYLE_COUNT];
 s32 g_MirrorPanelY;
 s32 g_MirrorUnlocked;
-s16 g_MirrorViewEnabled;
 s32 g_IsEnvironmentMode4;
 
 static u8 s_packets[512];
@@ -117,7 +116,7 @@ static void Reset(void) {
     g_RenderState.draw.packetCursor = s_packets;
     g_MirrorPanelY = -44;
     g_MirrorUnlocked = 0;
-    g_MirrorViewEnabled = 1;
+    g_RenderState.mirror.enabled = 1;
     g_IsEnvironmentMode4 = 1;
     s_beginResult = 1;
     s_beginCalls = 0;

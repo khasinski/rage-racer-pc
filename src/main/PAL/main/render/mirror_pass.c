@@ -11,14 +11,14 @@ enum {
 };
 
 void ResetMirrorState(void) {
-    g_MirrorViewEnabled = 1;
+    g_RenderState.mirror.enabled = 1;
     g_MirrorPanelY = -44;
     g_MirrorUnlocked = 0;
 }
 
 static s32 MirrorPassIsAvailable(void) {
     return g_MirrorUnlocked != 0 &&
-           g_MirrorViewEnabled != 0 &&
+           g_RenderState.mirror.enabled != 0 &&
            g_Camera.mode == CAMERA_VIEW_CAR &&
            g_GrandPrixMode != 0 &&
            g_RacePhase == RACE_PHASE_ACTIVE;
@@ -49,8 +49,8 @@ s32 BeginMirrorPass(void) {
     }
 
     state = &g_RenderState;
-    g_CameraMatrixSaved = state->geometry.matrix;
-    state->geometry.matrix = g_MirrorViewMatrix;
+    state->mirror.savedMatrix = state->geometry.matrix;
+    state->geometry.matrix = state->mirror.viewMatrix;
 
     SetGeomOffset(SCREEN_WIDTH / 2, MIRROR_HEIGHT);
     SetGeomScreen(MIRROR_PROJECTION_DISTANCE);
@@ -89,7 +89,7 @@ void EndMirrorPass(void) {
         &g_DrawBuffer->layout.orderingTables[0][0];
     g_Camera.view.depth -= MIRROR_DEPTH_BIAS;
     state->pass.orderingFlag ^= 1;
-    state->geometry.matrix = g_CameraMatrixSaved;
+    state->geometry.matrix = state->mirror.savedMatrix;
     g_VisibleCellMask = g_MainVisibleCellMask;
     g_VisibleCellList = g_MainVisibleCellList;
 }

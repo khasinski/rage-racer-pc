@@ -57,7 +57,7 @@ void DrawRearViewMirror(const GameCameraState *camera, s32 sceneTimer) {
     }
 
     g_MirrorPanelY = AdvanceMirrorPanelY(g_MirrorPanelY,
-                                         g_MirrorViewEnabled != 0);
+                                         g_RenderState.mirror.enabled != 0);
     if (BeginMirrorPass() == 0) {
         return;
     }

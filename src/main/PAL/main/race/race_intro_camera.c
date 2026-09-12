@@ -99,7 +99,7 @@ void RunRaceIntroCamera(Camera *camera, PlayerCarRuntime *car, s32 mode) {
                                 DistanceXZ(delta.x, delta.z) >> 6);
         viewWork.angleZ = 0;
         StoreViewWork(&camera->view, &viewWork);
-        SetCameraRotMatrix(&camera->view);
+        SetCameraRotMatrix(&g_RenderState, &camera->view);
         SelectModelBank(0);
         DrawPlayerCarModel(AsRivalCar(car));
     } else {
@@ -114,6 +114,6 @@ void RunRaceIntroCamera(Camera *camera, PlayerCarRuntime *car, s32 mode) {
         viewWork.angleZ = car->bodyRoll;
         viewWork.depth = car->bodyRotationW;
         StoreViewWork(&camera->view, &viewWork);
-        SetCameraRotMatrix(&camera->view);
+        SetCameraRotMatrix(&g_RenderState, &camera->view);
     }
 }

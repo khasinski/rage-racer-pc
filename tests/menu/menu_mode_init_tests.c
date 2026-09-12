@@ -54,7 +54,7 @@ void SetFogNear(long nearValue, long projectionDistance) {
     (void)nearValue;
     (void)projectionDistance;
 }
-void SetCameraRotMatrix(const GameCameraState *camera) { (void)camera; s_cameraCalls++; }
+void SetCameraRotMatrix(GameRenderState *state, const GameCameraState *camera) { (void)state; (void)camera; s_cameraCalls++; }
 
 #undef ScaleMatrix
 MATRIX *ScaleMatrix(MATRIX *matrix, VECTOR *scale) {

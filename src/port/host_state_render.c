@@ -19,7 +19,6 @@ typedef struct TrackRenderTable TrackRenderTable;
 
 VisibleTerrainCell g_MirrorVisibleCellList[64];
 u32 g_MirrorVisibleCellMask[32];
-Matrix g_MirrorViewMatrix;
 s32 g_TrackTexturePageWanted;
 Rect g_DrawModeEnv = {
     .x = 0,
@@ -247,7 +246,6 @@ FontGlyph g_LargeFontGlyphs[LARGE_FONT_GLYPH_COUNT] = {
     {.u = 0x80, .v = 0x28, .width = 8},
 };
 s32 g_MenuOverlayPatternAnimFrame = 2;
-Matrix g_CameraMatrixSaved;
 s32 g_MenuRowFlashLevels[5];
 s32 g_MenuCursorPulsePhase;
 /* Eight consecutive s16 coordinates.  The seven D_* labels in the symbol

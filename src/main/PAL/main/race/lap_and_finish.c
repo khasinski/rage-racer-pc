@@ -178,7 +178,7 @@ static s32 CrossTheLine(PlayerCarRuntime *car, s32 recordMode) {
         }
         ForceAllEffectVoicesEnabled(0);
         g_RaceFadeTimer = 0;
-        g_MirrorViewEnabled = 0;
+        g_RenderState.mirror.enabled = 0;
     }
     return 1;
 }

@@ -86,7 +86,7 @@ void InitRenderState(s32 otShift) {
     RecordCall(INIT_RENDER_STATE);
 }
 void InitSaveDefaults(void) { RecordCall(INIT_SAVE_DEFAULTS); }
-void SetCameraRotMatrix(const GameCameraState *camera) { (void)camera; RecordCall(SET_CAMERA_MATRIX); }
+void SetCameraRotMatrix(GameRenderState *state, const GameCameraState *camera) { (void)state; (void)camera; RecordCall(SET_CAMERA_MATRIX); }
 
 #define CHECK(condition)                                                       \
     do {                                                                       \

@@ -55,7 +55,7 @@ void SetupDisplay480(s32 r, s32 g, s32 b) {
     assert(r == 0 && g == 0 && b == 0);
     s_DisplaySetups++;
 }
-void SetCameraRotMatrix(const GameCameraState *camera) { (void)camera; s_CameraMatrixUpdates++; }
+void SetCameraRotMatrix(GameRenderState *state, const GameCameraState *camera) { (void)state; (void)camera; s_CameraMatrixUpdates++; }
 void SetColorMatrix(MATRIX *matrix) { s_ColorMatrix = matrix; }
 void SetLightMatrix(MATRIX *matrix) { s_LightMatrix = matrix; }
 void SetBackColor(long r, long g, long b) {

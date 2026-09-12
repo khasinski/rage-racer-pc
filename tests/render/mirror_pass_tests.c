@@ -7,8 +7,6 @@
 
 GameRenderState g_RenderState;
 GameFrameContext g_FrameContexts[2];
-Matrix g_CameraMatrixSaved;
-Matrix g_MirrorViewMatrix;
 u32 g_MainVisibleCellMask[1];
 VisibleTerrainCell g_MainVisibleCellList[1];
 u32 g_MirrorVisibleCellMask[1];
@@ -19,7 +17,6 @@ Camera g_Camera;
 GameFrameContext *g_DrawBuffer;
 s16 g_GrandPrixMode;
 s16 g_RacePhase;
-s16 g_MirrorViewEnabled;
 s32 g_MirrorPanelY;
 s32 g_MirrorUnlocked;
 
@@ -40,11 +37,11 @@ static void SetAvailable(s32 panelY) {
     memset(&g_RenderState, 0, sizeof(g_RenderState));
     memset(&g_Camera, 0, sizeof(g_Camera));
     memset(g_FrameContexts, 0, sizeof(g_FrameContexts));
-    memset(&g_CameraMatrixSaved, 0, sizeof(g_CameraMatrixSaved));
-    memset(&g_MirrorViewMatrix, 0x35, sizeof(g_MirrorViewMatrix));
+    memset(&g_RenderState.mirror.savedMatrix, 0, sizeof(g_RenderState.mirror.savedMatrix));
+    memset(&g_RenderState.mirror.viewMatrix, 0x35, sizeof(g_RenderState.mirror.viewMatrix));
     g_DrawBuffer = &g_FrameContexts[0];
     g_MirrorUnlocked = 1;
-    g_MirrorViewEnabled = 1;
+    g_RenderState.mirror.enabled = 1;
     g_Camera.mode = CAMERA_VIEW_CAR;
     g_GrandPrixMode = 1;
     g_RacePhase = 2;
@@ -57,24 +54,28 @@ static int TestAvailability(void) {
     GameRenderState original;
 
     SetAvailable(0);
-    original = g_RenderState;
     g_MirrorUnlocked = 0;
+    original = g_RenderState;
     if (BeginMirrorPass() != 0 ||
         memcmp(&g_RenderState, &original, sizeof(original)) != 0) return 0;
     g_MirrorUnlocked = 1;
-    g_MirrorViewEnabled = 0;
+    g_RenderState.mirror.enabled = 0;
+    original = g_RenderState;
     if (BeginMirrorPass() != 0 ||
         memcmp(&g_RenderState, &original, sizeof(original)) != 0) return 0;
-    g_MirrorViewEnabled = 1;
+    g_RenderState.mirror.enabled = 1;
     g_Camera.mode = CAMERA_VIEW_CHASE;
+    original = g_RenderState;
     if (BeginMirrorPass() != 0 ||
         memcmp(&g_RenderState, &original, sizeof(original)) != 0) return 0;
     g_Camera.mode = CAMERA_VIEW_CAR;
     g_GrandPrixMode = 0;
+    original = g_RenderState;
     if (BeginMirrorPass() != 0 ||
         memcmp(&g_RenderState, &original, sizeof(original)) != 0) return 0;
     g_GrandPrixMode = 1;
     g_RacePhase = 1;
+    original = g_RenderState;
     return BeginMirrorPass() == 0 &&
            memcmp(&g_RenderState, &original, sizeof(original)) == 0;
 }
@@ -140,7 +141,7 @@ static int TestPanelClipLimits(void) {
 
 int main(void) {
     ResetMirrorState();
-    if (g_MirrorViewEnabled != 1 || g_MirrorPanelY != -0x2C ||
+    if (g_RenderState.mirror.enabled != 1 || g_MirrorPanelY != -0x2C ||
         g_MirrorUnlocked != 0 || !TestAvailability() ||
         !TestHiddenPanelClip() || !TestVisiblePanelAndRestore() ||
         !TestPanelClipLimits()) {

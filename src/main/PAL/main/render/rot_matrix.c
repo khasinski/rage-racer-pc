@@ -57,9 +57,10 @@ void BuildRotMatrixX(Matrix *mtx, s32 angle) {
 }
 
 
-void SetCameraRotMatrix(const GameCameraState *camera) {
+void SetCameraRotMatrix(GameRenderState *state,
+                        const GameCameraState *camera) {
     Matrix mtx;
-    Matrix *viewMatrix = (&g_RenderState.geometry.matrix);
+    Matrix *viewMatrix = &state->geometry.matrix;
 
     GameRenderWorldSetCamera(camera->x, camera->y, camera->z,
                              camera->angleX, camera->angleY,
@@ -70,7 +71,7 @@ void SetCameraRotMatrix(const GameCameraState *camera) {
     BuildRotMatrixZ(&mtx, camera->angleZ);
     MulMatrix2(&mtx, viewMatrix);
     BuildRotMatrixY(&mtx, 0x800);
-    MulMatrix0(&mtx, viewMatrix, &g_MirrorViewMatrix);
+    MulMatrix0(&mtx, viewMatrix, &state->mirror.viewMatrix);
     SetRotMatrix(viewMatrix);
 }
 

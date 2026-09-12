@@ -46,7 +46,7 @@ static void FinalizeBootCamera(void) {
     g_Camera.view.angleX = 0x100;
     g_Camera.view.angleY = 0;
     g_Camera.view.angleZ = 0;
-    SetCameraRotMatrix(&g_Camera.view);
+    SetCameraRotMatrix(&g_RenderState, &g_Camera.view);
 }
 
 void InitSubsystems(void) {

@@ -44,7 +44,7 @@ static s32 s_failures;
         }                                                                                 \
     } while (0)
 
-void SetCameraRotMatrix(const GameCameraState *camera) { (void)camera;
+void SetCameraRotMatrix(GameRenderState *state, const GameCameraState *camera) { (void)state; (void)camera;
     s_cameraCalls++;
 }
 

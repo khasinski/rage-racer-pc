@@ -482,7 +482,7 @@ void GameRenderWorldPublishCurrentCamera(void) {
      * PS1 mirror visibility list. */
     mirrorCamera.fogNear *= 2.0f;
     mirrorCamera.fogFar *= 2.0f;
-    mirrorActive = g_MirrorUnlocked != 0 && g_MirrorViewEnabled != 0 &&
+    mirrorActive = g_MirrorUnlocked != 0 && g_RenderState.mirror.enabled != 0 &&
                    g_Camera.mode == CAMERA_VIEW_CAR &&
                    g_GrandPrixMode != 0 &&
                    g_RacePhase == RACE_PHASE_ACTIVE;

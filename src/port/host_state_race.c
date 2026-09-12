@@ -91,7 +91,6 @@ s32 g_CdTrackEnded;
 s32 g_ClassResultPlace;
 s32 g_SeriesCleared;
 s32 g_NameEntryCursor;
-s16 g_MirrorViewEnabled;
 s32 g_RecordPanelSlide;
 s32 g_BestLapIndex;
 s32 g_BgmChangeDelay;

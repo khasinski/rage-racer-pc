@@ -349,11 +349,11 @@ static void ReportCameraState(void) {
            g_Camera.view.angleZ, g_RenderState.pass.orderingFlag, g_SkyRowBase,
            (void *)g_Camera.intro.key);
     printf(" mirror_mtx=%d,%d,%d;%d,%d,%d;%d,%d,%d",
-           g_MirrorViewMatrix.m[0][0], g_MirrorViewMatrix.m[0][1],
-           g_MirrorViewMatrix.m[0][2], g_MirrorViewMatrix.m[1][0],
-           g_MirrorViewMatrix.m[1][1], g_MirrorViewMatrix.m[1][2],
-           g_MirrorViewMatrix.m[2][0], g_MirrorViewMatrix.m[2][1],
-           g_MirrorViewMatrix.m[2][2]);
+           g_RenderState.mirror.viewMatrix.m[0][0], g_RenderState.mirror.viewMatrix.m[0][1],
+           g_RenderState.mirror.viewMatrix.m[0][2], g_RenderState.mirror.viewMatrix.m[1][0],
+           g_RenderState.mirror.viewMatrix.m[1][1], g_RenderState.mirror.viewMatrix.m[1][2],
+           g_RenderState.mirror.viewMatrix.m[2][0], g_RenderState.mirror.viewMatrix.m[2][1],
+           g_RenderState.mirror.viewMatrix.m[2][2]);
     printf(" menu=%d busy=%d view=%d/%d offset=%d spin=%d yaw=%d/%d",
            MenuRuntimeCurrent()->activeScreen, GameMenuBusy, g_MenuViewAngle, g_MenuViewAngleTarget,
            g_MenuViewOffset, g_MenuViewSpin, g_PlayerCar.bodyYaw,

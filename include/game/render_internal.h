@@ -84,7 +84,6 @@ static inline void GameDrawOrderingTable(GameOrderingTableEntry *lastEntry) {
     DrawOTag((void *)lastEntry);
 }
 
-extern Matrix g_MirrorViewMatrix;
 extern Matrix g_SceneLightMatrix;
 extern Matrix g_SceneColorMatrix;
 extern Matrix g_TrackColorMatrix;

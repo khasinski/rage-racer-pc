@@ -20,7 +20,7 @@ static void SetupMenuViewCamera(s32 pitch, s32 yaw) {
     g_Camera.view.angleX = pitch;
     g_Camera.view.angleY = yaw;
     g_Camera.view.angleZ = 0;
-    SetCameraRotMatrix(&g_Camera.view);
+    SetCameraRotMatrix(&g_RenderState, &g_Camera.view);
     ScaleMatrix(&g_RenderState.geometry.matrix, &g_MenuViewScale);
 
     g_MenuViewOffset = PrepareMenuViewOffset(

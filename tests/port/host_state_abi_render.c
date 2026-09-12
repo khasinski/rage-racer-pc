@@ -7,7 +7,7 @@ _Static_assert(sizeof(g_MirrorVisibleCellList) ==
                "mirror visible-cell list shape changed");
 _Static_assert(sizeof(g_MirrorVisibleCellMask) == 32 * sizeof(u32),
                "mirror visible-cell mask shape changed");
-_Static_assert(sizeof(g_MirrorViewMatrix) == sizeof(Matrix),
+_Static_assert(sizeof(((MirrorRenderState *)0)->viewMatrix) == sizeof(Matrix),
                "mirror view matrix type changed");
 _Static_assert(sizeof(g_TrackTexturePageWanted) == sizeof(s32),
                "requested track texture page must be a scalar");
@@ -33,7 +33,7 @@ _Static_assert(sizeof(g_SmallFontGlyphs) == 184,
                "small atlas font table ABI changed");
 _Static_assert(sizeof(g_LargeFontGlyphs) == 196,
                "large atlas font table ABI changed");
-_Static_assert(sizeof(g_CameraMatrixSaved) == sizeof(Matrix),
+_Static_assert(sizeof(((MirrorRenderState *)0)->savedMatrix) == sizeof(Matrix),
                "saved camera matrix type changed");
 _Static_assert(sizeof(g_MenuRowFlashLevels) == 5 * sizeof(s32),
                "menu-row flash table shape changed");

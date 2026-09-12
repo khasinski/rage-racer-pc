@@ -33,7 +33,6 @@ s32 g_CourseIndex;
 s16 g_GrandPrixMode;
 s32 g_LapCount;
 s32 g_LapTimeMs;
-s16 g_MirrorViewEnabled;
 PlayerCarRuntime g_PlayerCar;
 FinishCamera g_FinishCamera;
 s32 g_RaceSeries;
@@ -248,7 +247,7 @@ int main(int argc, char **argv) {
         g_BestLapThisRace = best ? 0x7FFFFFFF : 100;
         g_RaceTotalTime = 150000;
         g_LapTimeMs = 0;
-        g_MirrorViewEnabled = 1;
+        g_RenderState.mirror.enabled = 1;
         g_RivalCueEnabled = 0;
         g_SeriesCleared = cleared;
         g_GrandPrixMode = (s16)gpGlobal;
@@ -278,7 +277,7 @@ int main(int argc, char **argv) {
             after[7] = g_RaceTotalTime;
             after[8] = g_BestLapThisRace;
             after[9] = g_LapTimeMs;
-            after[10] = g_MirrorViewEnabled;
+            after[10] = g_RenderState.mirror.enabled;
             after[11] = g_RivalCueEnabled;
             after[12] = g_SeriesCleared;
             after[13] = g_SectorTimes[0];

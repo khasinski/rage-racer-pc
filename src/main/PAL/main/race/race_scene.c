@@ -108,7 +108,7 @@ static s32 UpdateRaceEndState(void) {
     if (!frame.advanceTimer) {
         return 0;
     }
-    g_MirrorViewEnabled = 0;
+    g_RenderState.mirror.enabled = 0;
     g_RaceFadeTimer = NextRaceFadeTimer(g_RaceFadeTimer);
     return 0;
 }
@@ -307,9 +307,9 @@ static void UpdatePausedRaceScene(void) {
         g_Camera.mode == CAMERA_VIEW_CAR &&
         g_RacePhase == RACE_PHASE_ACTIVE) {
         if (g_PadPressed & PAD_R1) {
-            g_MirrorViewEnabled = 1;
+            g_RenderState.mirror.enabled = 1;
         } else if (g_PadPressed & PAD_L1) {
-            g_MirrorViewEnabled = 0;
+            g_RenderState.mirror.enabled = 0;
         }
     }
 

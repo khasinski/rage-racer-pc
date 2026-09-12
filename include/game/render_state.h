@@ -44,6 +44,12 @@ typedef struct GameRenderPassState {
     GameRenderPassMode mode;
 } GameRenderPassState;
 
+typedef struct MirrorRenderState {
+    Matrix viewMatrix;
+    Matrix savedMatrix;
+    s16 enabled;
+} MirrorRenderState;
+
 /*
  * The working state the renderer and the car code keep between calls.
  *
@@ -58,6 +64,7 @@ typedef struct GameRenderState {
     GameDrawContext draw;
     GameGeometryContext geometry;
     GameRenderPassState pass;
+    MirrorRenderState mirror;
 } GameRenderState;
 
 extern GameRenderState g_RenderState;

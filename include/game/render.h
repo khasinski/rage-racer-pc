@@ -169,9 +169,10 @@ void BuildRotMatrixX(void *mtx, s32 angle);
 /*
  * Composes Y*X*Z from the supplied camera angles into the render matrix and
  * installs it with SetRotMatrix;
- * g_MirrorViewMatrix gets the same matrix pre-multiplied by a 180-degree Y turn.
+ * The mirror matrix gets the same matrix pre-multiplied by a 180-degree Y turn.
  */
-void SetCameraRotMatrix(const GameCameraState *camera);
+void SetCameraRotMatrix(GameRenderState *state,
+                        const GameCameraState *camera);
 /*
  * Integer atan2 in 12-bit angle units
  * (0x400 = 90 degrees). Argument order is (x, y), the reverse of C's atan2:
@@ -615,8 +616,6 @@ extern s32 g_IsEnvironmentMode4;
  *                                  combined per object and set with gte_SetLightMatrix
  */
 
-extern Matrix g_MirrorViewMatrix;
-extern s16 g_MirrorViewEnabled;
 extern s32 g_ModelBankCount;
 extern s16 g_NegconSteer;
 extern s32 g_SetupArrowPulse;
@@ -637,7 +636,6 @@ extern MirrorBadgeSprite g_MirrorBadgeSprites[MIRROR_BADGE_STYLE_COUNT];
 extern GameSpriteDesc g_RaceHudSpriteDescsGp[GRAND_PRIX_HUD_SPRITE_COUNT];
 extern GameSpriteDesc
     g_RaceHudSpriteDescsTimeTrial[TIME_ATTACK_HUD_SPRITE_COUNT];
-extern Matrix g_CameraMatrixSaved;
 extern s32 g_MenuRowFlashLevels[];
 extern s32 g_MenuCursorPulsePhase;
 extern VisibleTerrainCell g_MirrorVisibleCellList[];

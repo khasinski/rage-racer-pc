@@ -6,7 +6,6 @@
 
 GameRenderState g_RenderState;
 Camera g_Camera;
-Matrix g_MirrorViewMatrix;
 
 void GameRenderWorldSetCamera(s32 x, s32 y, s32 z, s32 pitch, s32 yaw,
                               s32 roll) {
