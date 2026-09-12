@@ -2,8 +2,8 @@
 #include "game/cd_internal.h"
 
 static void QueueCdCommand(CdCommandType command, s32 firstStep) {
-    g_CdCommandPending = command;
-    g_CdCommandStep = firstStep;
+    g_Cd.pendingCommand = command;
+    g_Cd.commandStep = firstStep;
 }
 
 void QueueCdTrackRestart(s32 track) {
@@ -11,17 +11,17 @@ void QueueCdTrackRestart(s32 track) {
         return;
     }
 
-    g_CdTrackStep = CD_TRACK_RESTART_WAIT_FOR_DRIVE;
+    g_Cd.trackStep = CD_TRACK_RESTART_WAIT_FOR_DRIVE;
     QueueCdCommand(CD_COMMAND_PLAY, CD_PLAY_WAIT_FOR_DRIVE);
-    g_CdTrackPending = track;
+    g_Cd.pendingTrack = track;
 }
 
 void RequestCdTrack(s32 track) {
     if (!CdTrackIndexValid(track)) {
         return;
     }
-    g_CdTrackPending = track;
-    g_CdTrackStep = CD_TRACK_WAIT_FOR_DRIVE;
+    g_Cd.pendingTrack = track;
+    g_Cd.trackStep = CD_TRACK_WAIT_FOR_DRIVE;
     QueueCdCommand(CD_COMMAND_NONE, CD_PLAY_WAIT_FOR_DRIVE);
 }
 
@@ -34,20 +34,20 @@ void PauseCdAudio(void) {
 }
 
 void ResumeCdAudio(void) {
-    s32 restartTrack = g_CdRestartOnResume != 0 &&
-                       CdTrackIndexValid(g_CdCurrentTrack);
+    s32 restartTrack = g_Cd.restart != 0 &&
+                       CdTrackIndexValid(g_Cd.currentTrack);
 
-    g_CdRestartOnResume = 0;
+    g_Cd.restart = 0;
     if (restartTrack) {
-        QueueCdTrackRestart(g_CdCurrentTrack);
+        QueueCdTrackRestart(g_Cd.currentTrack);
     } else {
         QueueCdCommand(CD_COMMAND_RESUME, CD_PLAY_WAIT_FOR_DRIVE);
     }
 }
 
 void ResetCdAudioState(void) {
-    g_CdTrackPending = -1;
-    g_CdTrackStep = CD_TRACK_WAIT_FOR_DRIVE;
+    g_Cd.pendingTrack = -1;
+    g_Cd.trackStep = CD_TRACK_WAIT_FOR_DRIVE;
     QueueCdCommand(CD_COMMAND_NONE, CD_PLAY_WAIT_FOR_DRIVE);
-    g_CdCurrentTrack = CD_INITIAL_TRACK;
+    g_Cd.currentTrack = CD_INITIAL_TRACK;
 }

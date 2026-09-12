@@ -5,8 +5,7 @@
 
 #include <stdio.h>
 
-CdCommandType g_CdCommandPending;
-s32 g_CdCommandStep;
+Cd g_Cd;
 
 static long s_syncResult;
 static long s_syncMode;
@@ -38,39 +37,39 @@ long CdControl(long command, void *param, u_char *result) {
     } while (0)
 
 int main(void) {
-    g_CdCommandPending = CD_COMMAND_PLAY;
-    g_CdCommandStep = 99;
+    g_Cd.pendingCommand = CD_COMMAND_PLAY;
+    g_Cd.commandStep = 99;
     StepCdPlayRequest();
-    CHECK(g_CdCommandPending == CD_COMMAND_NONE &&
-          g_CdCommandStep == CD_PLAY_WAIT_FOR_DRIVE);
+    CHECK(g_Cd.pendingCommand == CD_COMMAND_NONE &&
+          g_Cd.commandStep == CD_PLAY_WAIT_FOR_DRIVE);
 
-    g_CdCommandPending = CD_COMMAND_PLAY;
-    g_CdCommandStep = CD_PLAY_WAIT_FOR_DRIVE;
+    g_Cd.pendingCommand = CD_COMMAND_PLAY;
+    g_Cd.commandStep = CD_PLAY_WAIT_FOR_DRIVE;
     s_syncResult = CD_SYNC_COMPLETE;
     s_controlResult = 1;
 
     StepCdPlayRequest();
-    CHECK(g_CdCommandStep == CD_PLAY_WAIT_FOR_COMMAND);
+    CHECK(g_Cd.commandStep == CD_PLAY_WAIT_FOR_COMMAND);
     CHECK(s_syncMode == CD_SYNC_POLL);
     CHECK(s_controlCalls == 1 && s_lastCommand == CD_DRIVE_PLAY);
 
     s_syncResult = CD_SYNC_DISK_ERROR;
     StepCdPlayRequest();
-    CHECK(g_CdCommandStep == CD_PLAY_SEND_COMMAND);
+    CHECK(g_Cd.commandStep == CD_PLAY_SEND_COMMAND);
 
     s_controlResult = 0;
     StepCdPlayRequest();
-    CHECK(g_CdCommandStep == CD_PLAY_SEND_COMMAND);
+    CHECK(g_Cd.commandStep == CD_PLAY_SEND_COMMAND);
     s_controlResult = 1;
     StepCdPlayRequest();
-    CHECK(g_CdCommandStep == CD_PLAY_WAIT_FOR_COMMAND);
+    CHECK(g_Cd.commandStep == CD_PLAY_WAIT_FOR_COMMAND);
 
     s_syncResult = CD_SYNC_COMPLETE;
     StepCdPlayRequest();
-    CHECK(g_CdCommandStep == CD_PLAY_FINISH);
+    CHECK(g_Cd.commandStep == CD_PLAY_FINISH);
     StepCdPlayRequest();
-    CHECK(g_CdCommandPending == CD_COMMAND_NONE);
-    CHECK(g_CdCommandStep == CD_PLAY_WAIT_FOR_DRIVE);
+    CHECK(g_Cd.pendingCommand == CD_COMMAND_NONE);
+    CHECK(g_Cd.commandStep == CD_PLAY_WAIT_FOR_DRIVE);
 
     puts("CD play request preserves command retry and completion");
     return 0;

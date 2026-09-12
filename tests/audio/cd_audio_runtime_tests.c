@@ -6,16 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-CdCommandType g_CdCommandPending;
-s32 g_CdCommandStep;
-u8 g_CdCurrentTrack;
-s32 g_CdFadeFrames;
-s32 g_CdMixPreset;
-s32 g_CdRestartOnResume;
-s32 g_CdTrackPending;
-s32 g_CdTrackStep;
-u8 g_CdVolume;
-u8 g_CdModeParam;
+Cd g_Cd;
 s32 g_CdTrackEnded;
 s32 g_SceneId;
 CdlLOC g_CdTrackLoopPoint[18];
@@ -65,11 +56,11 @@ int CdPosToInt(CdlLOC *location) {
 
 static void Reset(void) {
     memset(g_CdTrackLoopPoint, 0, sizeof(g_CdTrackLoopPoint));
-    g_CdTrackPending = -1;
-    g_CdCommandPending = CD_COMMAND_NONE;
-    g_CdCurrentTrack = 3;
-    g_CdTrackStep = CD_TRACK_WAIT_FOR_DRIVE;
-    g_CdCommandStep = CD_PLAY_WAIT_FOR_DRIVE;
+    g_Cd.pendingTrack = -1;
+    g_Cd.pendingCommand = CD_COMMAND_NONE;
+    g_Cd.currentTrack = 3;
+    g_Cd.trackStep = CD_TRACK_WAIT_FOR_DRIVE;
+    g_Cd.commandStep = CD_PLAY_WAIT_FOR_DRIVE;
     g_CdTrackEnded = 0;
     g_SceneId = 0;
     s_trackSteps = 0;
@@ -87,38 +78,38 @@ static int TestInitialization(void) {
     InitCdAudio();
     CHECK(s_serialVolumeCalls == 1);
     CHECK(s_cdCommand == CD_DRIVE_SET_MODE &&
-          g_CdModeParam ==
+          g_Cd.mode ==
               (CD_MODE_CDDA | CD_MODE_AUTO_PAUSE | CD_MODE_REPORT));
     CHECK(s_buildCalls == 1 && s_setVolume == 127);
-    CHECK(g_CdTrackPending == -1 && g_CdCommandPending == CD_COMMAND_NONE);
-    CHECK(g_CdCurrentTrack == 2 && g_CdVolume == 127);
+    CHECK(g_Cd.pendingTrack == -1 && g_Cd.pendingCommand == CD_COMMAND_NONE);
+    CHECK(g_Cd.currentTrack == 2 && g_Cd.volume == 127);
     return 0;
 }
 
 static int TestRequestDispatch(void) {
     Reset();
-    g_CdCommandPending = (CdCommandType)99;
-    g_CdCommandStep = 99;
+    g_Cd.pendingCommand = (CdCommandType)99;
+    g_Cd.commandStep = 99;
     TickCdAudio();
-    CHECK(g_CdCommandPending == CD_COMMAND_NONE &&
-          g_CdCommandStep == CD_PLAY_WAIT_FOR_DRIVE);
+    CHECK(g_Cd.pendingCommand == CD_COMMAND_NONE &&
+          g_Cd.commandStep == CD_PLAY_WAIT_FOR_DRIVE);
     CHECK(s_trackSteps == 0 && s_playSteps == 0 && s_pauseSteps == 0 &&
           s_fadeSteps == 1);
 
     Reset();
-    g_CdTrackPending = 4;
-    g_CdCommandPending = CD_COMMAND_PAUSE;
+    g_Cd.pendingTrack = 4;
+    g_Cd.pendingCommand = CD_COMMAND_PAUSE;
     TickCdAudio();
     CHECK(s_trackSteps == 1 && s_pauseSteps == 0 && s_fadeSteps == 1);
 
     Reset();
-    g_CdCommandPending = CD_COMMAND_PLAY;
+    g_Cd.pendingCommand = CD_COMMAND_PLAY;
     TickCdAudio();
     CHECK(s_playSteps == 1 && s_fadeSteps == 1);
-    g_CdCommandPending = CD_COMMAND_RESUME;
+    g_Cd.pendingCommand = CD_COMMAND_RESUME;
     TickCdAudio();
     CHECK(s_playSteps == 2);
-    g_CdCommandPending = CD_COMMAND_PAUSE;
+    g_Cd.pendingCommand = CD_COMMAND_PAUSE;
     TickCdAudio();
     CHECK(s_pauseSteps == 1);
     return 0;
@@ -129,28 +120,28 @@ static int TestEndOfTrackPolicy(void) {
     s_hostEnded = 1;
     g_SceneId = 0x1c;
     TickCdAudio();
-    CHECK(g_CdTrackEnded == 1 && g_CdTrackPending == -1);
+    CHECK(g_CdTrackEnded == 1 && g_Cd.pendingTrack == -1);
 
     Reset();
     s_hostEnded = 1;
     g_CdTrackLoopPoint[0].second = 1;
     g_CdTrackLoopPoint[3].second = 2;
     TickCdAudio();
-    CHECK(g_CdTrackPending == 3);
-    CHECK(g_CdTrackStep == CD_TRACK_RESTART_WAIT_FOR_DRIVE);
-    CHECK(g_CdCommandPending == CD_COMMAND_PLAY);
-    CHECK(g_CdCommandStep == CD_PLAY_WAIT_FOR_DRIVE);
+    CHECK(g_Cd.pendingTrack == 3);
+    CHECK(g_Cd.trackStep == CD_TRACK_RESTART_WAIT_FOR_DRIVE);
+    CHECK(g_Cd.pendingCommand == CD_COMMAND_PLAY);
+    CHECK(g_Cd.commandStep == CD_PLAY_WAIT_FOR_DRIVE);
 
     s_trackSteps = 0;
     TickCdAudio();
     CHECK(s_trackSteps == 1);
-    CHECK(g_CdTrackStep == CD_TRACK_RESTART_WAIT_FOR_DRIVE);
+    CHECK(g_Cd.trackStep == CD_TRACK_RESTART_WAIT_FOR_DRIVE);
 
     Reset();
     s_hostEnded = 1;
-    g_CdCurrentTrack = 0xFF;
+    g_Cd.currentTrack = 0xFF;
     TickCdAudio();
-    CHECK(g_CdTrackPending == -1 && g_CdCommandPending == CD_COMMAND_NONE);
+    CHECK(g_Cd.pendingTrack == -1 && g_Cd.pendingCommand == CD_COMMAND_NONE);
     CHECK(g_CdTrackEnded == 0);
 
     Reset();
@@ -158,7 +149,7 @@ static int TestEndOfTrackPolicy(void) {
     g_CdTrackLoopPoint[0].second = 2;
     g_CdTrackLoopPoint[3].second = 1;
     TickCdAudio();
-    CHECK(g_CdTrackPending == -1 && g_CdCommandPending == CD_COMMAND_NONE);
+    CHECK(g_Cd.pendingTrack == -1 && g_Cd.pendingCommand == CD_COMMAND_NONE);
     return 0;
 }
 

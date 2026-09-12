@@ -8,7 +8,7 @@
 CdlLOC g_CdTrackLocs[CD_TRACK_LOCATION_COUNT];
 static CdlLOC s_bgmTracks[CD_FILE_TRACK_COUNT];
 CdlLOC *g_CdBgmTrackLocs = s_bgmTracks;
-CdlFILE g_CdSearchFile;
+Cd g_Cd;
 char *g_CdAudioFileNames[CD_FILE_TRACK_COUNT];
 
 static s32 s_searchCount;

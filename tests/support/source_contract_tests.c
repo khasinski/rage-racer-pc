@@ -341,8 +341,8 @@ static void AudioStateLayout(void) {
     const char *typedState[] = {"s32 g_BestSectorTimes[2][4][3]",
         "s32 g_SectorEndDistance[3]", "s32 g_CarSpecBars[4]",
         "u16 g_TeamLogoClut[16]"};
-    Require(strstr(host, "unsigned char g_CdLocResult[8]") != NULL,
-            "CdlGetlocP response must remain one eight-byte backing object");
+    Require(strstr(host, "Cd g_Cd") != NULL,
+            "CD runtime must remain one typed state object");
     Require(strstr(host, "unsigned char g_CdLocMinute") == NULL &&
             strstr(host, "unsigned char g_CdLocSecond") == NULL,
             "CdlGetlocP response detaches an MSF byte");
@@ -356,8 +356,8 @@ static void AudioStateLayout(void) {
         Require(strstr(host, declaration) != NULL,
                 "race car state is not one complete typed table");
     }
-    Require(strstr(pause, "CdControl(CD_DRIVE_GET_LOCATION, 0, g_CdLocResult)") != NULL &&
-            strstr(pause, "g_CdLocResult[2]") != NULL && strstr(pause, "g_CdLocResult[3]") != NULL,
+    Require(strstr(pause, "CdControl(CD_DRIVE_GET_LOCATION, 0, g_Cd.result)") != NULL &&
+            strstr(pause, "g_Cd.result[2]") != NULL && strstr(pause, "g_Cd.result[3]") != NULL,
             "pause request does not use the complete GetlocP response");
     Require(strstr(track, "#define g_ChaseYawPrev g_CamPathAngleDelta[CAMPATH_YAW]") != NULL,
             "chase yaw is detached from its retail camera-path alias");

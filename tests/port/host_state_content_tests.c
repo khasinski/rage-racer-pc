@@ -26,6 +26,7 @@
 #include <stdlib.h>
 
 #include "game/car_render_rules.h"
+#include "game/cd.h"
 #include "game/menu_types.h"
 #include "game/race_hud_internal.h"
 #include "game/result_screen_types.h"
@@ -149,7 +150,7 @@ extern unsigned char g_TeamNameChars[16];
 extern int16_t g_SkyTileMap[5][16];
 extern unsigned char g_SkyTileUV[64];
 extern unsigned char g_CdMixPresets[8];
-extern int32_t g_CdCommandPending;
+extern Cd g_Cd;
 extern MenuOverlayPatternFrame
     g_MenuOverlayPatternTable[MENU_OVERLAY_PATTERN_FRAME_COUNT];
 extern s32 g_TeamLogoCursorX;
@@ -166,7 +167,6 @@ extern unsigned char g_McSlotCursor[4];
 extern unsigned char g_CameraMatrixSaved[32];
 extern unsigned char g_SectorTimes[12];
 extern ContentSVec g_RaceIntroCameraDelta;
-extern unsigned char g_CdTrackElapsedLoc[4];
 
 typedef struct HostStateBlob {
     const char *name;
@@ -285,8 +285,8 @@ static const HostStateBlob s_blobs[] = {
     {"g_SkyTileMap", (const unsigned char *)g_SkyTileMap, 160},
     {"g_SkyTileUV", g_SkyTileUV, 64},
     {"g_CdMixPresets", g_CdMixPresets, 8},
-    {"g_CdCommandPending", (const unsigned char *)&g_CdCommandPending,
-     sizeof(g_CdCommandPending)},
+    {"g_Cd.pendingCommand", (const unsigned char *)&g_Cd.pendingCommand,
+     sizeof(g_Cd.pendingCommand)},
     {"g_MenuOverlayPatternTable", BYTES(g_MenuOverlayPatternTable),
      sizeof(g_MenuOverlayPatternTable)},
     {"g_TeamLogoCursorX", (const unsigned char *)&g_TeamLogoCursorX, 4},
@@ -308,7 +308,7 @@ static const HostStateBlob s_blobs[] = {
     {"g_RaceIntroCameraDelta",
      (const unsigned char *)&g_RaceIntroCameraDelta,
      sizeof(g_RaceIntroCameraDelta)},
-    {"g_CdTrackElapsedLoc", g_CdTrackElapsedLoc, 4},
+    {"g_Cd.elapsed", (const unsigned char *)&g_Cd.elapsed, 4},
 };
 
 int main(void) {

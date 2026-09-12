@@ -52,15 +52,6 @@ static inline int CdTrackIndexValid(s32 track) {
 extern CdlLOC g_CdTrackLocs[CD_TRACK_LOCATION_COUNT];
 extern CdlLOC *g_CdBgmTrackLocs;
 extern CdlLOC g_CdTrackLoopPoint[CD_TRACK_LOCATION_COUNT];
-extern u32 g_CdMixLL;
-extern u32 g_CdMixLR;
-extern u32 g_CdMixRR;
-extern u32 g_CdMixRL;
-extern u32 g_CdMixFullLL;
-extern u32 g_CdMixFullLR;
-extern u32 g_CdMixFullRR;
-extern u32 g_CdMixFullRL;
-
 /* Internal stages pumped by TickCdAudio and InitCdAudio. */
 void BuildCdTrackTable(void);
 void StepCdTrackRequest(void);

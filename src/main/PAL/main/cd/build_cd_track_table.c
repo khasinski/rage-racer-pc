@@ -29,10 +29,10 @@ static void FindFileBackedTrackLocations(void) {
     memset(g_CdBgmTrackLocs, 0,
            sizeof(*g_CdBgmTrackLocs) * CD_FILE_TRACK_COUNT);
     for (index = 0; index < CD_FILE_TRACK_COUNT; index++) {
-        if (DsSearchFile(&g_CdSearchFile, g_CdAudioFileNames[index]) == NULL) {
+        if (DsSearchFile(&g_Cd.search, g_CdAudioFileNames[index]) == NULL) {
             break;
         }
-        g_CdBgmTrackLocs[index] = g_CdSearchFile.pos;
+        g_CdBgmTrackLocs[index] = g_Cd.search.pos;
     }
 }
 

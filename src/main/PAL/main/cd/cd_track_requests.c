@@ -4,8 +4,8 @@
 
 static void SendTrackSeek(CdTrackRequestStep waitStep) {
     if (CdControl(CD_DRIVE_SEEK_PLAY,
-                  &g_CdTrackLocs[g_CdTrackPending], 0) != 0) {
-        g_CdTrackStep = waitStep;
+                  &g_CdTrackLocs[g_Cd.pendingTrack], 0) != 0) {
+        g_Cd.trackStep = waitStep;
     }
 }
 
@@ -14,29 +14,29 @@ static void WaitForTrackSeek(CdTrackRequestStep retryStep,
     s32 syncResult = CdSync(CD_SYNC_POLL, 0);
 
     if (syncResult == CD_SYNC_COMPLETE) {
-        g_CdTrackStep = finishStep;
+        g_Cd.trackStep = finishStep;
     } else if (syncResult == CD_SYNC_DISK_ERROR) {
-        g_CdTrackStep = retryStep;
+        g_Cd.trackStep = retryStep;
     }
 }
 
 static void FinishTrackRequest(int restoreVolume) {
-    g_CdCurrentTrack = (u8)g_CdTrackPending;
-    g_CdTrackPending = -1;
-    g_CdTrackStep = CD_TRACK_WAIT_FOR_DRIVE;
+    g_Cd.currentTrack = (u8)g_Cd.pendingTrack;
+    g_Cd.pendingTrack = -1;
+    g_Cd.trackStep = CD_TRACK_WAIT_FOR_DRIVE;
     if (restoreVolume) {
-        SetCdVolume(g_CdVolume);
+        SetCdVolume(g_Cd.volume);
     }
 }
 
 void StepCdTrackRequest(void) {
-    if (!CdTrackIndexValid(g_CdTrackPending)) {
-        g_CdTrackPending = -1;
-        g_CdTrackStep = CD_TRACK_WAIT_FOR_DRIVE;
+    if (!CdTrackIndexValid(g_Cd.pendingTrack)) {
+        g_Cd.pendingTrack = -1;
+        g_Cd.trackStep = CD_TRACK_WAIT_FOR_DRIVE;
         return;
     }
 
-    switch (g_CdTrackStep) {
+    switch (g_Cd.trackStep) {
     case CD_TRACK_WAIT_FOR_DRIVE:
         if (CdSync(CD_SYNC_POLL, 0) == CD_SYNC_PENDING) {
             break;
@@ -48,14 +48,14 @@ void StepCdTrackRequest(void) {
         if (CdControl(CD_DRIVE_PAUSE, 0, 0) == 0) {
             break;
         }
-        g_CdTrackStep = CD_TRACK_WAIT_FOR_PAUSE;
+        g_Cd.trackStep = CD_TRACK_WAIT_FOR_PAUSE;
         break;
     case CD_TRACK_WAIT_FOR_PAUSE:
         if (CdSync(CD_SYNC_POLL, 0) == CD_SYNC_PENDING) {
             break;
         }
-        g_CdFadeFrames = 0;
-        g_CdTrackStep = CD_TRACK_SEND_SEEK;
+        g_Cd.fade = 0;
+        g_Cd.trackStep = CD_TRACK_SEND_SEEK;
         RAGE_FALLTHROUGH;
     case CD_TRACK_SEND_SEEK:
         SendTrackSeek(CD_TRACK_WAIT_FOR_SEEK);
@@ -70,7 +70,7 @@ void StepCdTrackRequest(void) {
         if (CdSync(CD_SYNC_POLL, 0) == CD_SYNC_PENDING) {
             break;
         }
-        g_CdTrackStep = CD_TRACK_RESTART_SEND_SEEK;
+        g_Cd.trackStep = CD_TRACK_RESTART_SEND_SEEK;
         RAGE_FALLTHROUGH;
     case CD_TRACK_RESTART_SEND_SEEK:
         SendTrackSeek(CD_TRACK_RESTART_WAIT_FOR_SEEK);
@@ -83,8 +83,8 @@ void StepCdTrackRequest(void) {
         FinishTrackRequest(0);
         break;
     default:
-        g_CdTrackPending = -1;
-        g_CdTrackStep = CD_TRACK_WAIT_FOR_DRIVE;
+        g_Cd.pendingTrack = -1;
+        g_Cd.trackStep = CD_TRACK_WAIT_FOR_DRIVE;
         break;
     }
 }

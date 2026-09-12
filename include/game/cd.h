@@ -2,9 +2,7 @@
 #define GAME_CD_H
 
 #include "common.h"
-
-struct CdlLOC;
-struct CdlFILE;
+#include "psyq/cd_types.h"
 
 typedef enum CdCommandType {
     CD_COMMAND_NONE = -1,
@@ -38,6 +36,33 @@ typedef enum CdSyncMode {
     CD_SYNC_POLL = 1,
 } CdSyncMode;
 
+typedef struct CdLevels {
+    u32 ll;
+    u32 lr;
+    u32 rr;
+    u32 rl;
+} CdLevels;
+
+typedef struct Cd {
+    s32 restart;
+    s32 preset;
+    s32 pendingTrack;
+    CdCommandType pendingCommand;
+    s32 trackStep;
+    s32 commandStep;
+    CdlLOC elapsed;
+    u8 mode;
+    u8 result[8];
+    CdLevels mix;
+    CdLevels fullMix;
+    u8 volume;
+    CdlFILE search;
+    u8 currentTrack;
+    s32 fade;
+} Cd;
+
+extern Cd g_Cd;
+
 /* An asserted host EOF may be consumed only once the previous request has
  * finished. The backend keeps EOF asserted until the following Play. */
 static inline int CdAudioRequestsIdle(
@@ -55,12 +80,11 @@ static inline int CdPlaybackPassedLoopPoint(
            elapsed >= loopPoint;
 }
 
-extern u8 g_CdVolume;
 extern s32 g_CdTrackEnded;
 /*
  * CD-DA (music) front end. Nothing here talks to the drive directly: each call
- * only posts a request into g_CdTrackPending..g_CdCommandStep, which TickCdAudio pumps
- * one CdControl at a time (CdlPlay 0x03, CdlPause 0x09, CdlGetlocP 0x11).
+ * only posts a request into g_Cd, which TickCdAudio pumps one CdControl at a
+ * time (CdlPlay 0x03, CdlPause 0x09, CdlGetlocP 0x11).
  */
 /* Queue track `track` from the g_CdTrackLocs CdlLOC table. */
 void RequestCdTrack(s32 track);
@@ -82,7 +106,6 @@ void ResetCdAudioState(void);
  */
 void SetCdVolume(s32 volume);
 void StartCdVolumeFade(s32 frames);
-/* Re-push the current g_CdVolume (used after a mode change). */
 /* Map the 0..15 option-screen level onto the 0..0x7F attenuator. */
 void SetCdVolumeSetting(s32 level);
 /* Select which 4-byte row of the g_CdMixPresets mix table SetCdVolume scales. */
@@ -91,8 +114,8 @@ void SetCdMixPreset(s32 preset);
 /*
  * The CD-DA pump. TickCdAudio runs once per frame from MainLoop and
  * issues at most one CdControl: a pending track goes to StepCdTrackRequest,
- * otherwise g_CdCommandPending selects play, pause, or resume. Each step
- * function is a small state machine over g_CdTrackStep / g_CdCommandStep that
+ * otherwise g_Cd.pendingCommand selects play, pause, or resume. Each step
+ * function is a small state machine over g_Cd.trackStep / g_Cd.commandStep that
  * clears the pending value when it finishes.
  */
 void TickCdAudio(void);
@@ -100,24 +123,11 @@ void TickCdAudio(void);
  * every pending/step word cleared and the volume set to full. */
 void InitCdAudio(void);
 
-extern CdCommandType g_CdCommandPending;
-extern s32 g_CdCommandStep;
-extern u8 g_CdCurrentTrack;
-extern s32 g_CdFadeFrames;
-extern s32 g_CdMixPreset;
-extern s32 g_CdRestartOnResume;
-extern s32 g_CdTrackPending;
-extern s32 g_CdTrackStep;
-
 extern char *g_CdAudioFileNames[];
 /* Eight-byte CdlGetlocP response. Retail also names bytes 2 and 3 as
  * g_CdLocMinute/g_CdLocSecond; indexing the shared buffer preserves that
  * overlap on hosts where separately declared globals cannot alias safely. */
-extern u8 g_CdLocResult[8];
 extern u8 g_CdMixPresets[];
-extern u8 g_CdModeParam;
-extern struct CdlFILE g_CdSearchFile;
-extern struct CdlLOC g_CdTrackElapsedLoc;
 
 void CdMix(u8* vol);
 

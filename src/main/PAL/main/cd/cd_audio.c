@@ -14,21 +14,21 @@ enum {
 
 void InitCdAudio(void) {
     SsSetSerialVol(0, 0x7FFF, 0x7FFF);
-    g_CdModeParam = CD_AUDIO_MODE;
-    CdControl(CD_DRIVE_SET_MODE, &g_CdModeParam, 0);
+    g_Cd.mode = CD_AUDIO_MODE;
+    CdControl(CD_DRIVE_SET_MODE, &g_Cd.mode, 0);
     BuildCdTrackTable();
 
     ResetCdAudioState();
-    g_CdMixPreset = 0;
-    g_CdRestartOnResume = 0;
-    g_CdVolume = CD_VOLUME_MAX;
-    g_CdFadeFrames = 0;
+    g_Cd.preset = 0;
+    g_Cd.restart = 0;
+    g_Cd.volume = CD_VOLUME_MAX;
+    g_Cd.fade = 0;
     SetCdVolume(CD_VOLUME_MAX);
 }
 
 void TickCdAudio(void) {
-    if (g_CdTrackPending < 0) {
-        switch (g_CdCommandPending) {
+    if (g_Cd.pendingTrack < 0) {
+        switch (g_Cd.pendingCommand) {
         case CD_COMMAND_NONE:
             break;
         /* Resuming and starting are the same command sequence: both issue
@@ -43,8 +43,8 @@ void TickCdAudio(void) {
             StepCdPauseRequest();
             break;
         default:
-            g_CdCommandPending = CD_COMMAND_NONE;
-            g_CdCommandStep = CD_PLAY_WAIT_FOR_DRIVE;
+            g_Cd.pendingCommand = CD_COMMAND_NONE;
+            g_Cd.commandStep = CD_PLAY_WAIT_FOR_DRIVE;
             break;
         }
     } else {
@@ -54,18 +54,18 @@ void TickCdAudio(void) {
     /* The host EOF flag stays asserted until CdlPlay opens the track again.
      * Do not let repeated ticks rewind an in-flight restart back to its first
      * seek step, or playback can never reach the command that clears EOF. */
-    if (CdAudioRequestsIdle(g_CdTrackPending, g_CdCommandPending) &&
-        Psyz_CdAudioEnded() && CdTrackIndexValid(g_CdCurrentTrack)) {
+    if (CdAudioRequestsIdle(g_Cd.pendingTrack, g_Cd.pendingCommand) &&
+        Psyz_CdAudioEnded() && CdTrackIndexValid(g_Cd.currentTrack)) {
         if (g_SceneId == GAME_SCENE_BGM_SELECT) {
             g_CdTrackEnded = 1;
         } else {
             const s32 loopPoint =
-                CdPosToInt(&g_CdTrackLoopPoint[g_CdCurrentTrack]);
+                CdPosToInt(&g_CdTrackLoopPoint[g_Cd.currentTrack]);
             const s32 firstLoopPoint =
                 CdPosToInt(&g_CdTrackLoopPoint[0]);
 
             if (CdTrackHasLoopPoint(firstLoopPoint, loopPoint)) {
-                QueueCdTrackRestart(g_CdCurrentTrack);
+                QueueCdTrackRestart(g_Cd.currentTrack);
             }
         }
     }

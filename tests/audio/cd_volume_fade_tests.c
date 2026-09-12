@@ -4,15 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
-s32 g_CdFadeFrames;
-u32 g_CdMixLL;
-u32 g_CdMixLR;
-u32 g_CdMixRR;
-u32 g_CdMixRL;
-u32 g_CdMixFullLL;
-u32 g_CdMixFullLR;
-u32 g_CdMixFullRR;
-u32 g_CdMixFullRL;
+Cd g_Cd;
 
 static u8 s_lastMix[4];
 static s32 s_mixCalls;
@@ -33,56 +25,56 @@ void CdMix(u8 *mix) {
 
 int main(void) {
     StartCdVolumeFade(5000);
-    CHECK(g_CdFadeFrames == 0xFFF);
+    CHECK(g_Cd.fade == 0xFFF);
     StartCdVolumeFade(-5000);
-    CHECK(g_CdFadeFrames == -0xFFF);
+    CHECK(g_Cd.fade == -0xFFF);
 
-    g_CdMixLL = 0x40000;
-    g_CdMixLR = 0x30000;
-    g_CdMixRR = 0x20000;
-    g_CdMixRL = 0x10000;
+    g_Cd.mix.ll = 0x40000;
+    g_Cd.mix.lr = 0x30000;
+    g_Cd.mix.rr = 0x20000;
+    g_Cd.mix.rl = 0x10000;
     StartCdVolumeFade(4);
     StepCdVolumeFade();
-    CHECK(g_CdFadeFrames == 3);
-    CHECK(g_CdMixLL == 0x30000 && g_CdMixLR == 0x24000);
-    CHECK(g_CdMixRR == 0x18000 && g_CdMixRL == 0xC000);
+    CHECK(g_Cd.fade == 3);
+    CHECK(g_Cd.mix.ll == 0x30000 && g_Cd.mix.lr == 0x24000);
+    CHECK(g_Cd.mix.rr == 0x18000 && g_Cd.mix.rl == 0xC000);
     CHECK(s_lastMix[0] == 0x30 && s_lastMix[1] == 0x24);
     CHECK(s_lastMix[2] == 0x18 && s_lastMix[3] == 0xC);
     StepCdVolumeFade();
     StepCdVolumeFade();
     StepCdVolumeFade();
-    CHECK(g_CdFadeFrames == 0);
-    CHECK(g_CdMixLL == 0 && g_CdMixLR == 0 && g_CdMixRR == 0 &&
-          g_CdMixRL == 0);
+    CHECK(g_Cd.fade == 0);
+    CHECK(g_Cd.mix.ll == 0 && g_Cd.mix.lr == 0 && g_Cd.mix.rr == 0 &&
+          g_Cd.mix.rl == 0);
 
-    g_CdMixFullLL = 0x40000;
-    g_CdMixFullLR = 0x30000;
-    g_CdMixFullRR = 0x20000;
-    g_CdMixFullRL = 0x10000;
+    g_Cd.fullMix.ll = 0x40000;
+    g_Cd.fullMix.lr = 0x30000;
+    g_Cd.fullMix.rr = 0x20000;
+    g_Cd.fullMix.rl = 0x10000;
     StartCdVolumeFade(-4);
     StepCdVolumeFade();
-    CHECK(g_CdFadeFrames == -3);
-    CHECK(g_CdMixLL == 0x10000 && g_CdMixLR == 0xC000);
-    CHECK(g_CdMixRR == 0x8000 && g_CdMixRL == 0x4000);
+    CHECK(g_Cd.fade == -3);
+    CHECK(g_Cd.mix.ll == 0x10000 && g_Cd.mix.lr == 0xC000);
+    CHECK(g_Cd.mix.rr == 0x8000 && g_Cd.mix.rl == 0x4000);
     StepCdVolumeFade();
     StepCdVolumeFade();
     StepCdVolumeFade();
-    CHECK(g_CdFadeFrames == 0);
-    CHECK(g_CdMixLL == g_CdMixFullLL && g_CdMixLR == g_CdMixFullLR);
-    CHECK(g_CdMixRR == g_CdMixFullRR && g_CdMixRL == g_CdMixFullRL);
+    CHECK(g_Cd.fade == 0);
+    CHECK(g_Cd.mix.ll == g_Cd.fullMix.ll && g_Cd.mix.lr == g_Cd.fullMix.lr);
+    CHECK(g_Cd.mix.rr == g_Cd.fullMix.rr && g_Cd.mix.rl == g_Cd.fullMix.rl);
     CHECK(s_mixCalls == 8);
 
-    g_CdMixLL = 0x40000;
-    g_CdMixFullLL = 0x20000;
+    g_Cd.mix.ll = 0x40000;
+    g_Cd.fullMix.ll = 0x20000;
     StartCdVolumeFade(-2);
     StepCdVolumeFade();
-    CHECK(g_CdMixLL == 0x30000 && g_CdFadeFrames == -1);
+    CHECK(g_Cd.mix.ll == 0x30000 && g_Cd.fade == -1);
     StepCdVolumeFade();
-    CHECK(g_CdMixLL == 0x20000 && g_CdFadeFrames == 0);
+    CHECK(g_Cd.mix.ll == 0x20000 && g_Cd.fade == 0);
 
     StepCdVolumeFade();
     CHECK(s_mixCalls == 11);
-    CHECK(g_CdFadeFrames == 0);
+    CHECK(g_Cd.fade == 0);
 
     puts("CD volume fade tests passed");
     return 0;

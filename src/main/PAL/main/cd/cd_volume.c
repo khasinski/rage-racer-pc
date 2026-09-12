@@ -36,17 +36,17 @@ void SetCdVolume(s32 volume) {
     s32 presetOffset;
 
     volume = ClampCdVolume(volume);
-    g_CdMixPreset = ClampCdMixPreset(g_CdMixPreset);
-    presetOffset = g_CdMixPreset * CD_MIX_CHANNEL_COUNT;
+    g_Cd.preset = ClampCdMixPreset(g_Cd.preset);
+    presetOffset = g_Cd.preset * CD_MIX_CHANNEL_COUNT;
 
-    g_CdVolume = volume;
-    g_CdMixLL = g_CdMixFullLL =
+    g_Cd.volume = volume;
+    g_Cd.mix.ll = g_Cd.fullMix.ll =
         ScaleCdMixLevel(g_CdMixPresets[presetOffset], volume);
-    g_CdMixLR = g_CdMixFullLR =
+    g_Cd.mix.lr = g_Cd.fullMix.lr =
         ScaleCdMixLevel(g_CdMixPresets[presetOffset + 1], volume);
-    g_CdMixRR = g_CdMixFullRR =
+    g_Cd.mix.rr = g_Cd.fullMix.rr =
         ScaleCdMixLevel(g_CdMixPresets[presetOffset + 2], volume);
-    g_CdMixRL = g_CdMixFullRL =
+    g_Cd.mix.rl = g_Cd.fullMix.rl =
         ScaleCdMixLevel(g_CdMixPresets[presetOffset + 3], volume);
 
     StepCdVolumeFade();
@@ -58,6 +58,6 @@ void SetCdVolumeSetting(s32 level) {
 }
 
 void SetCdMixPreset(s32 preset) {
-    g_CdMixPreset = ClampCdMixPreset(preset);
-    SetCdVolume(g_CdVolume);
+    g_Cd.preset = ClampCdMixPreset(preset);
+    SetCdVolume(g_Cd.volume);
 }
