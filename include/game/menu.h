@@ -416,26 +416,7 @@ void DrawTimeAttackPlate(s32 stepArg);
  * model access and rendering. */
 s32 ActivateShowroomCarModel(s32 slot);
 
-extern char g_MsgInsertController[];
-extern char g_MsgControllerError[];
-extern char g_MsgNegconUntwistedLine1[];
-extern char g_MsgNegconUntwistedLine2[];
-extern char g_MsgNegconSteerPlay[];
-extern char g_MsgNegconMaxTwist[];
-extern char g_FmtRound[];
-extern char g_CaptionPrizeMoney2[];
-extern char g_FmtPrize1st[];
-extern char g_FmtPrize2nd[];
-extern char g_FmtPrize3rd[];
-extern char g_CaptionBestTotalTime[];
-extern char g_CaptionBestLapTime[];
 extern char g_FmtBgmNumber[];
-extern const char g_MsgOrdinalSt[4];
-extern const char g_MsgOrdinalNd[4];
-extern const char g_MsgOrdinalRd[4];
-extern const char g_MsgOrdinalTh[8];
-/* "%d": the only format string the menu code passes to sprintf. */
-extern const char g_FormatDecimal[4];
 extern s32 g_AttractCycleCount;
 extern u8 g_TeamNameFontGlyphs
     [TEAM_NAME_FONT_GLYPH_COUNT * TEAM_NAME_FONT_GLYPH_BYTES];

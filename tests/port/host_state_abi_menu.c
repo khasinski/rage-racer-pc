@@ -2,10 +2,6 @@
 
 _Static_assert(sizeof(g_FrontendState) == sizeof(s32),
                "frontend state must be a scalar");
-_Static_assert(sizeof(g_MsgNegconMaxTwist) == sizeof("Maximum twist."),
-               "NeGcon caption must not absorb adjacent retail data");
-_Static_assert(sizeof(g_CaptionBestLapTime) == sizeof("hfdi"),
-               "lap-time caption must not absorb the BGM name table");
 _Static_assert(sizeof(g_CarPriceTable) == 128,
                "g_CarPriceTable ABI size changed");
 _Static_assert(sizeof(g_CarTuneUpPriceTable) == 124,
@@ -37,8 +33,6 @@ _Static_assert(sizeof(g_TeamNameFontGlyphs) ==
                "team-name glyph atlas ABI changed");
 _Static_assert(sizeof(g_TeamNameBlankTile) == 12 * 8 * sizeof(u16),
                "blank team-name texture ABI changed");
-_Static_assert(sizeof(g_FormatDecimal) == 4,
-               "decimal format size changed");
 _Static_assert(sizeof(g_TimeAttackPlateProgress) == sizeof(s32),
                "time-attack plate progress ABI changed");
 _Static_assert(sizeof(g_TeamLogoClutRect) == 8,

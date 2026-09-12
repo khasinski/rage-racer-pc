@@ -15,9 +15,9 @@ void DrawControllerConfigScreen(void) {
     selection = ClampControllerMappingIndex(selection);
     if (g_PadErrorState != PAD_ERROR_STATE_NONE) {
         if (g_PadErrorState == PAD_ERROR_STATE_DISCONNECTED) {
-            DrawProportionalText(0x3A, 0xEA, g_MsgInsertController, 0x7812);
+            DrawProportionalText(0x3A, 0xEA, "INSERT CONTROLLER", 0x7812);
         } else {
-            DrawProportionalText(0x40, 0xEA, g_MsgControllerError, 0x7812);
+            DrawProportionalText(0x40, 0xEA, "CONTROLLER ERROR", 0x7812);
         }
         return;
     }
@@ -45,8 +45,8 @@ void DrawNegconNeutralScreen(void) {
     GameOrderingTableEntry *ot;
     u8 *prim;
 
-    DrawSpriteString(0x18, 0x30, g_MsgNegconUntwistedLine1, 0x7F81);
-    DrawSpriteString(0x18, 0x48, g_MsgNegconUntwistedLine2, 0x7F81);
+    DrawSpriteString(0x18, 0x30, "Hold the \"NeGcon\" in an untwisted", 0x7F81);
+    DrawSpriteString(0x18, 0x48, "position and press start button.", 0x7F81);
     ot = GamePrimaryOrderingTable(52);
     prim = RENDER_PRIM_CURSOR_AS(u8);
     prim = AddTilePrim(ot, prim, 0, 0x28, 0x124, 0x40, 0, 0, 0);

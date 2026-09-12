@@ -21,10 +21,6 @@ u8 g_PadConfigLabelRows[CONTROLLER_CONFIG_ROW_COUNT];
 u8 g_PadConfigButtonRows[CONTROLLER_CONFIG_ROW_COUNT];
 u8 g_NegconConfigLabelRows[CONTROLLER_CONFIG_ROW_COUNT];
 u8 g_NegconConfigButtonRows[CONTROLLER_CONFIG_ROW_COUNT];
-char g_MsgInsertController[] = "INSERT";
-char g_MsgControllerError[] = "ERROR";
-char g_MsgNegconUntwistedLine1[] = "STILL";
-char g_MsgNegconUntwistedLine2[] = "PRESS START";
 
 static GameFrameContext s_frame;
 static u8 s_packets[128];
@@ -209,13 +205,15 @@ static void TestErrorScreens(void) {
     Reset();
     g_PadErrorState = PAD_ERROR_STATE_DISCONNECTED;
     DrawControllerConfigScreen();
-    CHECK(s_proportionalX == 0x3A && s_proportionalText == g_MsgInsertController);
+    CHECK(s_proportionalX == 0x3A &&
+          strcmp(s_proportionalText, "INSERT CONTROLLER") == 0);
     CHECK(s_selectorCount == 0 && g_RenderState.draw.packetCursor == s_packets);
 
     Reset();
     g_PadErrorState = PAD_ERROR_STATE_INVALID_INPUT;
     DrawControllerConfigScreen();
-    CHECK(s_proportionalX == 0x40 && s_proportionalText == g_MsgControllerError);
+    CHECK(s_proportionalX == 0x40 &&
+          strcmp(s_proportionalText, "CONTROLLER ERROR") == 0);
     CHECK(s_selectorCount == 0);
 }
 

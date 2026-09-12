@@ -64,19 +64,6 @@ typedef struct StaticSceneryState {
     SceneryPlacement highClass;
 } StaticSceneryState;
 
-extern char g_MsgInsertController[20];
-extern char g_MsgControllerError[20];
-extern char g_MsgNegconUntwistedLine1[36];
-extern char g_MsgNegconUntwistedLine2[36];
-extern char g_MsgNegconSteerPlay[12];
-extern char g_MsgNegconMaxTwist[];
-extern char g_FmtRound[16];
-extern char g_CaptionPrizeMoney2[8];
-extern char g_FmtPrize1st[12];
-extern char g_FmtPrize2nd[12];
-extern char g_FmtPrize3rd[12];
-extern char g_CaptionBestTotalTime[8];
-extern char g_CaptionBestLapTime[];
 extern char g_TextResult[8];
 extern char g_FmtClassGrandPrix[24];
 extern char g_FmtRoundIn[12];
@@ -105,15 +92,10 @@ extern char g_TextNowLoading[];
 extern unsigned char g_MsgGame0Ok[12];
 extern const s16 g_MenuLightBurstBandX[MENU_LIGHT_BURST_RAY_COUNT];
 extern const s16 g_MenuLightBurstBandY[MENU_LIGHT_BURST_RAY_COUNT];
-extern const char g_MsgOrdinalSt[4];
-extern const char g_MsgOrdinalNd[4];
-extern const char g_MsgOrdinalRd[4];
-extern const char g_MsgOrdinalTh[8];
 extern Rgb g_PaintColorTable[MENU_PAINT_COLOR_COUNT];
 extern SVec g_CourseCardVerts[4];
 extern Vec4 g_MenuCarPivotOffset;
 extern const Vec4 g_TeamNameCharScale;
-extern const char g_FormatDecimal[4];
 extern u8 g_DesignModeCellMask[6][6];
 extern unsigned char g_CarSoundVolumeScales[128];
 extern const char g_MsgVabOpenHeadError[21];
@@ -225,19 +207,6 @@ typedef struct HostStateBlob {
 #define BYTES(value) ((const unsigned char *)(value))
 
 static const HostStateBlob s_blobs[] = {
-    {"g_MsgInsertController", BYTES(g_MsgInsertController), 20},
-    {"g_MsgControllerError", BYTES(g_MsgControllerError), 20},
-    {"g_MsgNegconUntwistedLine1", BYTES(g_MsgNegconUntwistedLine1), 36},
-    {"g_MsgNegconUntwistedLine2", BYTES(g_MsgNegconUntwistedLine2), 36},
-    {"g_MsgNegconSteerPlay", BYTES(g_MsgNegconSteerPlay), 12},
-    {"g_MsgNegconMaxTwist", BYTES(g_MsgNegconMaxTwist), 15},
-    {"g_FmtRound", BYTES(g_FmtRound), 16},
-    {"g_CaptionPrizeMoney2", BYTES(g_CaptionPrizeMoney2), 8},
-    {"g_FmtPrize1st", BYTES(g_FmtPrize1st), 12},
-    {"g_FmtPrize2nd", BYTES(g_FmtPrize2nd), 12},
-    {"g_FmtPrize3rd", BYTES(g_FmtPrize3rd), 12},
-    {"g_CaptionBestTotalTime", BYTES(g_CaptionBestTotalTime), 8},
-    {"g_CaptionBestLapTime", BYTES(g_CaptionBestLapTime), 5},
     {"g_TextResult", BYTES(g_TextResult), 8},
     {"g_FmtClassGrandPrix", BYTES(g_FmtClassGrandPrix), 24},
     {"g_FmtRoundIn", BYTES(g_FmtRoundIn), 12},
@@ -268,15 +237,10 @@ static const HostStateBlob s_blobs[] = {
      (const unsigned char *)&g_MenuLightBurstBandX, 66},
     {"g_MenuLightBurstBandY",
      (const unsigned char *)&g_MenuLightBurstBandY, 66},
-    {"g_MsgOrdinalSt", (const unsigned char *)g_MsgOrdinalSt, 4},
-    {"g_MsgOrdinalNd", (const unsigned char *)g_MsgOrdinalNd, 4},
-    {"g_MsgOrdinalRd", (const unsigned char *)g_MsgOrdinalRd, 4},
-    {"g_MsgOrdinalTh", (const unsigned char *)g_MsgOrdinalTh, 8},
     {"g_PaintColorTable", (const unsigned char *)&g_PaintColorTable, 54},
     {"g_CourseCardVerts", (const unsigned char *)g_CourseCardVerts, 32},
     {"g_MenuCarPivotOffset", (const unsigned char *)&g_MenuCarPivotOffset, 16},
     {"g_TeamNameCharScale", (const unsigned char *)&g_TeamNameCharScale, 16},
-    {"g_FormatDecimal", (const unsigned char *)g_FormatDecimal, 4},
     {"g_DesignModeCellMask", (const unsigned char *)&g_DesignModeCellMask, 36},
     {"g_CarSoundVolumeScales", g_CarSoundVolumeScales, 128},
     {"g_MsgVabOpenHeadError",

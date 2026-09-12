@@ -81,7 +81,7 @@ void DrawRoundScreen(void) {
 
     col = NextRoundScreenFade(ROUND_SCREEN_FADE_COURSE);
     if (g_GrandPrixMode != 0) {
-        snprintf(text, sizeof(text), g_FmtRound, g_GrandPrixRound);
+        snprintf(text, sizeof(text), "R O U N D %d", g_GrandPrixRound);
         GameDrawProportionalTextShaded(0x5e, 0x68, text, 0x7812, col);
         y0 = 0x78;
     } else {
@@ -92,7 +92,7 @@ void DrawRoundScreen(void) {
 
     col = NextRoundScreenFade(ROUND_SCREEN_FADE_DETAILS);
     if (g_GrandPrixMode != 0) {
-        GameDrawProportionalTextShaded(0x80, 0x88, g_CaptionPrizeMoney2,
+        GameDrawProportionalTextShaded(0x80, 0x88, "hci",
                                       0x7812, col);
         const s32 *prizes;
 
@@ -103,20 +103,20 @@ void DrawRoundScreen(void) {
         }
         prizes = g_PrizeMoney.values[SeriesCourseIndex()][g_GrandPrixClass];
 
-        snprintf(text, sizeof(text), g_FmtPrize1st,
+        snprintf(text, sizeof(text), "1ST/%7dv",
                  prizes[PRIZE_PLACE_FIRST]);
         GameDrawProportionalTextShaded(0x56, 0x98, text, 0x7812, col);
-        snprintf(text, sizeof(text), g_FmtPrize2nd,
+        snprintf(text, sizeof(text), "2ND/%7dv",
                  prizes[PRIZE_PLACE_SECOND]);
         GameDrawProportionalTextShaded(0x56, 0xa4, text, 0x7812, col);
-        snprintf(text, sizeof(text), g_FmtPrize3rd,
+        snprintf(text, sizeof(text), "3RD/%7dv",
                  prizes[PRIZE_PLACE_THIRD]);
         GameDrawProportionalTextShaded(0x56, 0xb0, text, 0x7812, col);
     } else {
         s32 course = SeriesCourseIndex();
         s32 recordMode = RaceRecordMode(g_GrandPrixMode);
 
-        GameDrawProportionalTextShaded(0x62, 0x7c, g_CaptionBestTotalTime,
+        GameDrawProportionalTextShaded(0x62, 0x7c, "hedi",
                                       0x7812, col);
         if (!RoundScreenTableIndicesValid(g_GrandPrixSeries,
                                           g_GrandPrixClass,
@@ -127,7 +127,7 @@ void DrawRoundScreen(void) {
             text,
             g_BestTotalTimes[g_GrandPrixSeries][course][recordMode]);
         GameDrawProportionalTextShaded(0x6a, 0x8c, text, 0x7812, col);
-        GameDrawProportionalTextShaded(0x6a, 0x9c, g_CaptionBestLapTime,
+        GameDrawProportionalTextShaded(0x6a, 0x9c, "hfdi",
                                       0x7812, col);
         FormatLapTime(
             text, g_BestLapTimes[g_GrandPrixSeries][course][recordMode]);

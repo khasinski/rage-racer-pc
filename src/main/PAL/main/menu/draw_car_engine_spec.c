@@ -23,8 +23,7 @@ static s16 EngineSpecY(s32 base, s32 slide) {
 
 static s32 DrawEngineSpecNumber(s32 x, s16 y, char *text, s32 value,
                                 u8 brightness) {
-    s32 length = snprintf(text, ENGINE_SPEC_TEXT_CAPACITY, g_FormatDecimal,
-                          value);
+    s32 length = snprintf(text, ENGINE_SPEC_TEXT_CAPACITY, "%d", value);
 
     DrawSmallText(x, y, text, brightness, brightness, brightness, 0x244, 0x20);
     return x + length * SMALL_TEXT_ADVANCE;

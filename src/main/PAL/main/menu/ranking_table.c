@@ -169,15 +169,15 @@ s32 DrawRankingTable(s32 *progress, s32 step, RankingTableKind table) {
             DrawRankingCarSprites(ot, panelY + rowYStep, record->carIndex);
         }
 
-        DrawLargeText(0x1E, panelY + 0x82, g_MsgOrdinalSt, 0x7F,
+        DrawLargeText(0x1E, panelY + 0x82, "ST", 0x7F,
                       0x7F, 0x7F, 0x244, 0x20);
-        DrawLargeText(0x1E, panelY + 0xA2, g_MsgOrdinalNd, 0x7F,
+        DrawLargeText(0x1E, panelY + 0xA2, "ND", 0x7F,
                       0x7F, 0x7F, 0x244, 0x20);
-        DrawLargeText(0x1F, panelY + 0xC2, g_MsgOrdinalRd, 0x7F,
+        DrawLargeText(0x1F, panelY + 0xC2, "RD", 0x7F,
                       0x7F, 0x7F, 0x244, 0x20);
-        DrawLargeText(0x1E, panelY + 0xE2, g_MsgOrdinalTh, 0x7F,
+        DrawLargeText(0x1E, panelY + 0xE2, "TH", 0x7F,
                       0x7F, 0x7F, 0x244, 0x20);
-        DrawLargeText(0x1E, panelY + 0x102, g_MsgOrdinalTh, 0x7F,
+        DrawLargeText(0x1E, panelY + 0x102, "TH", 0x7F,
                       0x7F, 0x7F, 0x244, 0x20);
 
         DrawRectOutline(ot + 1, 0, panelY + 0x7A, 0x124, 0xA0, 0xB4,

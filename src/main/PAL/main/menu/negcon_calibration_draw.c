@@ -46,7 +46,7 @@ void DrawNegconSteerPlayScreen(void) {
     s32 lowerY;
     s32 play = NegconCalibrationIndex(g_NegconSteerPlay);
 
-    DrawSpriteString(0x18, 0x30, g_MsgNegconSteerPlay, 0x7F81);
+    DrawSpriteString(0x18, 0x30, "Steer play.", 0x7F81);
     ot = GamePrimaryOrderingTable(51);
     prim = RENDER_PRIM_CURSOR_AS(u8);
     prim = QueueCalibrationArrows(ot, prim, play);
@@ -74,7 +74,7 @@ void DrawNegconMaxTwistScreen(void) {
     s32 gaugeWidth;
     s32 maxTwist = NegconCalibrationIndex(g_NegconMaxTwist);
 
-    DrawSpriteString(0x18, 0x30, g_MsgNegconMaxTwist, 0x7F81);
+    DrawSpriteString(0x18, 0x30, "Maximum twist.", 0x7F81);
     ot = GamePrimaryOrderingTable(51);
     prim = RENDER_PRIM_CURSOR_AS(u8);
     prim = QueueCalibrationArrows(ot, prim, maxTwist);

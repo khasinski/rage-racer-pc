@@ -8,7 +8,6 @@
 #include <string.h>
 
 s32 g_MenuAltLayout;
-const char g_FormatDecimal[4] = "%d";
 static CarModelAsset s_model;
 CarModelAsset *g_CarModelAsset = &s_model;
 GameRenderState g_RenderState;

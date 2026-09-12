@@ -10,10 +10,6 @@
 s32 g_CourseIndex;
 RaceRecord g_RankingRecords[2][4][5];
 RaceRecord g_TimeRecords[2][4][5];
-const char g_MsgOrdinalSt[4] = "ST";
-const char g_MsgOrdinalNd[4] = "ND";
-const char g_MsgOrdinalRd[4] = "RD";
-const char g_MsgOrdinalTh[8] = "TH";
 GameRenderState g_RenderState;
 
 typedef struct CarSpriteRecord {

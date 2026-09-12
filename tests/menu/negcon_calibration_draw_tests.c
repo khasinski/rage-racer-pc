@@ -11,8 +11,6 @@ GameRenderState g_RenderState;
 NegconCalibrationValue g_NegconMaxTwist;
 NegconCalibrationValue g_NegconSteerPlay;
 s16 g_NegconPlayPercent[NEGCON_CALIBRATION_COUNT] = {0, 3, 5, 7};
-char g_MsgNegconMaxTwist[] = "MAX";
-char g_MsgNegconSteerPlay[] = "PLAY";
 
 typedef struct SpriteCall {
     s32 x;
@@ -130,7 +128,7 @@ static int TestSteerPlayGauge(void) {
     Reset();
     g_NegconSteerPlay = 2;
     DrawNegconSteerPlayScreen();
-    CHECK(s_text == g_MsgNegconSteerPlay);
+    CHECK(strcmp(s_text, "Steer play.") == 0);
     CHECK(s_leftEnabled == 1 && s_rightEnabled == 1);
     CHECK(s_spriteCount == 3 && s_modeCount == 1 && s_tileCount == 2);
     CHECK(s_lineCount == 6);
@@ -151,7 +149,7 @@ static int TestMaxTwistGauge(void) {
     Reset();
     g_NegconMaxTwist = NEGCON_CALIBRATION_FIRST;
     DrawNegconMaxTwistScreen();
-    CHECK(s_text == g_MsgNegconMaxTwist);
+    CHECK(strcmp(s_text, "Maximum twist.") == 0);
     CHECK(s_leftEnabled == 0 && s_rightEnabled == 1);
     CHECK(s_sprites[0].x == 0x94 && s_sprites[0].width == 0x18);
     CHECK(s_sprites[0].u == 0);
