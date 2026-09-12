@@ -53,7 +53,7 @@ static void ResetCar(GameCarRuntime *car) {
     car->headingAngle = 500;
     car->bodyYaw = 600;
     car->targetYaw = 700;
-    car->trackHeading.value = 100;
+    car->trackHeading = 100;
     s_coords.x = 1000;
     s_coords.y = 0;
     s_coords.z = 2000;
@@ -81,7 +81,7 @@ int main(void) {
     car.x = 900;
     car.z = 1900;
     SteerCarAlongRoute(&car);
-    trackFacing = ANGLE_THREE_QUARTER_TURN - car.trackHeading.value;
+    trackFacing = ANGLE_THREE_QUARTER_TURN - car.trackHeading;
     CHECK_EQ(s_sampledIndex, 3);
     CHECK_EQ(s_atanX, 100);
     CHECK_EQ(s_atanZ, 140);

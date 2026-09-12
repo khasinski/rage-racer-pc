@@ -96,7 +96,7 @@ int main(void) {
         Fold(car.modelPitch);
         Fold(car.modelYaw);
         Fold(car.modelRoll);
-        Fold(car.trackHeading.value);
+        Fold(car.trackHeading);
         Fold(car.previousTrackProgress);
         Fold(car.trackProgress);
         Fold(car.trackSection);

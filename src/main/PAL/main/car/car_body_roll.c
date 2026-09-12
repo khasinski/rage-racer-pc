@@ -141,7 +141,7 @@ static void UpdateAutomaticSteering(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
     s32 wantedHeading = WrapSigned32(
         (int64_t)car->facingBackwards * ANGLE_HALF_TURN +
-        ANGLE_THREE_QUARTER_TURN - car->trackHeading.value);
+        ANGLE_THREE_QUARTER_TURN - car->trackHeading);
     s32 headingCorrection = GetAngleDelta(car->bodyYaw, wantedHeading) *
                             AUTO_STEER_HEADING_RESPONSE;
     s32 lateralCorrection = STEERING_FULL_LOCK - rcos(WrapSigned32(

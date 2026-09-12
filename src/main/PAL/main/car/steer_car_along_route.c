@@ -49,7 +49,7 @@ void SteerCarAlongRoute(GameCarRuntime *car) {
         index, car->segmentFraction, car->x, car->z, lateral);
     trackFacing = WrapSigned32(
         (int64_t)raceSeries * ANGLE_HALF_TURN +
-        ANGLE_THREE_QUARTER_TURN - car->trackHeading.value);
+        ANGLE_THREE_QUARTER_TURN - car->trackHeading);
     car->steeringAngle = WrapSigned32(
         (int64_t)WrapSigned32(
             -(int64_t)GetAngleDelta(trackFacing, targetAngle)) *

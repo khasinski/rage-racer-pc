@@ -233,7 +233,7 @@ static void UpdateCarTrackProgress(GameCarRuntime *car, CarTrackWork *work,
     car->progressB = g_RaceSeries != 0
         ? (u32)alongSegment
         : (u32)((s16)work->segmentLength - alongSegment);
-    car->trackHeading.value = work->heading;
+    car->trackHeading = work->heading;
     UpdateCarLapProgressState(car);
 }
 

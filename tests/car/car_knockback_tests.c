@@ -61,7 +61,7 @@ static void SweepTrackBoundaryKnockback(void) {
         GameCarRuntime car;
 
         memset(&car, 0, sizeof(car));
-        car.trackHeading.half.low = headings[hi];
+        car.trackHeading = headings[hi];
         car.trackLateralOffset = laterals[li];
         car.speed = speeds[si];
         car.bodyYaw = yaws[yi];

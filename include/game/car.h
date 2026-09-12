@@ -62,14 +62,6 @@ typedef struct CarEntry {
 _Static_assert(sizeof(CarEntry) * GAME_CAR_COUNT == 104,
                "saved car table ABI changed");
 
-typedef union CarTrackHeading {
-    s32 value;
-    struct {
-        u16 low;
-        u16 high;
-    } half;
-} CarTrackHeading;
-
 typedef struct CarTrackLimits {
     s16 rightInset;
     s16 leftInset;
@@ -143,7 +135,7 @@ typedef struct GameCarRuntime {
     s16 activeFlag;
     s16 modelIndex;
     s32 initializedFlag;
-    CarTrackHeading trackHeading;
+    s32 trackHeading;
     /* +0xB8 0 = travelling with the course, 1 = against it. Seeded to
      * g_RaceSeries for every car by BuildStartingGrid and recomputed each
      * frame for the player from IsCarFacingBackwards; `!= g_RaceSeries`
@@ -592,7 +584,7 @@ typedef struct PlayerCarRuntime {
     s16 activeFlag;
     s16 modelIndex;
     s32 initializedFlag;
-    CarTrackHeading trackHeading;
+    s32 trackHeading;
     s16 facingBackwards;
     u8 padBA[2];
     /* The showroom reuses +0xE4 for its tire selection. It is a retail view

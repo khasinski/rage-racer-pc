@@ -1,11 +1,7 @@
 #include "game/angle.h"
 #include "game/car_motion_internal.h"
-#include "game/diagnostics.h"
 #include "game/integer.h"
-#include "game/player_car_internal.h"
-#include "game/race.h"
-#include "game/state.h"
-#include "game/render.h"
+#include "psyq/gte.h"
 
 enum {
     LOW_SPEED_KNOCKBACK_THRESHOLD = 0x321,
@@ -25,7 +21,7 @@ enum {
 
 static s32 TrackOutwardAngle(const GameCarRuntime *car) {
     return WrapSigned16(
-        ANGLE_THREE_QUARTER_TURN - car->trackHeading.half.low);
+        ANGLE_THREE_QUARTER_TURN - (u16)car->trackHeading);
 }
 
 /* The road-edge response points a quarter turn into the course from the
@@ -74,34 +70,6 @@ static void SetSuppliedKnockbackVector(GameCarRuntime *car, s32 x, s32 z) {
     car->velocityZ = WrapSigned16(z / SUPPLIED_VECTOR_DIVISOR);
 }
 
-static void TraceCarKnockback(GameCarRuntime *car, s32 inputX, s32 inputZ,
-                              s32 mode) {
-    static int enabled = -1;
-    static int exactTimer = -1;
-    static int firstTimer = -1;
-    static int lastTimer = -1;
-
-    if (enabled < 0) {
-        enabled = DiagnosticsEnabled("car.knockback_trace");
-        exactTimer = DiagnosticsIntValue("car.knockback_trace_timer", -1);
-        firstTimer = DiagnosticsIntValue(
-            "car.knockback_trace_timer_min", -1);
-        lastTimer = DiagnosticsIntValue(
-            "car.knockback_trace_timer_max", -1);
-    }
-
-    if (enabled &&
-        (exactTimer < 0 || g_SceneTimer == exactTimer) &&
-        (firstTimer < 0 || g_SceneTimer >= firstTimer) &&
-        (lastTimer < 0 || g_SceneTimer <= lastTimer)) {
-        Trace("car-knockback", "timer=%d player=%d input=%d,%d mode=%d "
-              "output=%d,%d duration=%d heading=%d lateral=%d", g_SceneTimer,
-              car == AsRivalCar(&g_PlayerCar), inputX, inputZ, mode,
-              car->velocityX, car->velocityZ, car->motionTimer,
-              car->trackHeading.half.low, car->trackLateralOffset);
-    }
-}
-
 void ApplyCarKnockback(GameCarRuntime *car) {
     if (!car->motionActive) {
         return;
@@ -138,11 +106,8 @@ void SetTrackBoundaryKnockback(GameCarRuntime *car, s32 x, s32 z,
     } else {
         SetSuppliedKnockbackVector(car, x, z);
     }
-
-    TraceCarKnockback(car, x, z, contact);
 }
 
 void SetCarCollisionKnockback(GameCarRuntime *car, s32 x, s32 z) {
     SetSuppliedKnockbackVector(car, x, z);
-    TraceCarKnockback(car, x, z, CAR_TRACK_CONTACT_REAR_RIGHT);
 }

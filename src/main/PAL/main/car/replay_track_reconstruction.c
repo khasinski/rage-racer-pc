@@ -108,7 +108,7 @@ static void UpdateReplayTrackOrientation(GameCarRuntime *car,
         CarTrackFixed12ToInteger(-work->headingCos * work->camberAngle) +
         CarTrackFixed12ToInteger(work->surfacePitch * work->headingSin));
     car->modelYaw = car->bodyYaw;
-    car->trackHeading.value = work->heading;
+    car->trackHeading = work->heading;
     UpdateCarLapProgressState(car);
 }
 

@@ -100,7 +100,7 @@ int main(void) {
         car.speed = speeds[speed];
         car.trackLateralOffset = offsets[offset];
         car.bodyYaw = 0x280;
-        car.trackHeading.value = 0x140;
+        car.trackHeading = 0x140;
         car.drive.steerPos = steerPositions[steer];
         car.steeringAngle = steeringAngles[angle];
         car.bodyRollVelocity = rollVelocities[velocity];
