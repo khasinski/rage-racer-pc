@@ -236,7 +236,7 @@ s32 CountMemoryCardFiles(s32 port, s32 slot) {
     s32 count;
     s32 pathLength;
 
-    pathLength = snprintf(path, sizeof(path), g_FmtCardWildcard, port, slot);
+    pathLength = snprintf(path, sizeof(path), "bu%1d%1d:*", port, slot);
     if (pathLength < 0 || (size_t)pathLength >= sizeof(path)) {
         return 0;
     }

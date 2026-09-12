@@ -22,7 +22,7 @@ static void DrawUsedSaveRow(char *text, s32 slotNumber, s32 y,
                             const GameSaveHeaderRow *row) {
     s32 i;
 
-    DrawSaveRowSlotNumber(text, g_FmtSaveRow, slotNumber, y);
+    DrawSaveRowSlotNumber(text, "%1d /", slotNumber, y);
     for (i = 0; i < SAVE_ROW_VISIBLE_NAME_LENGTH; i++) {
         text[i] = i < row->fields.nameLength
                       ? DecodeSaveNameCharacter(row->fields.name[i])
@@ -31,7 +31,7 @@ static void DrawUsedSaveRow(char *text, s32 slotNumber, s32 y,
     snprintf(text + SAVE_ROW_VISIBLE_NAME_LENGTH,
              SAVE_ROW_TEXT_SIZE - SAVE_ROW_VISIBLE_NAME_LENGTH,
              "%s",
-             g_FmtSaveRowTail);
+             " /");
     DrawLargeText(0x68, y, text, 0x7F, 0x7F, 0x7F, 0x244, 0xA0);
     DrawLargeText(
         0xB0,
@@ -57,22 +57,21 @@ void DrawMemoryCardSaveRows(s32 flags, GameSaveHeaderRow *rows) {
         if (used) {
             DrawUsedSaveRow(text, slotNumber, y, &rows[rowIndex]);
         } else if (error) {
-            DrawSaveRowSlotNumber(text, g_FmtSaveRow, slotNumber, y);
+            DrawSaveRowSlotNumber(text, "%1d /", slotNumber, y);
             DrawLargeText(
-                0x88, y, g_McSlotLabelError, 0x7F, 0x7F, 0x7F, 0x244, 0xA0);
+                0x88, y, "FILE ERROR", 0x7F, 0x7F, 0x7F, 0x244, 0xA0);
         } else if (g_McFreeBlocks == 0 && g_McMenuPage != 0 &&
                    g_McMenuRowCursor != 0) {
-            DrawSaveRowSlotNumber(text, g_FmtSaveRow, slotNumber, y);
+            DrawSaveRowSlotNumber(text, "%1d /", slotNumber, y);
             DrawLargeText(
-                0x90, y, g_McSlotLabelNoFile, 0x7F, 0x7F, 0x7F, 0x244, 0xA0);
+                0x90, y, "NO FILE", 0x7F, 0x7F, 0x7F, 0x244, 0xA0);
         } else if (g_McFreeBlocks == 0 || g_McMenuPage == 0) {
-            DrawSaveRowSlotNumber(text, g_FmtSaveRowEmpty, slotNumber, y);
+            DrawSaveRowSlotNumber(text, "%1d /        /", slotNumber, y);
         } else {
-            const char *slotLabel = g_McMenuRowCursor == 0
-                                        ? g_McSlotLabels
-                                        : g_McSlotLabelNoFile;
+            const char *slotLabel =
+                g_McMenuRowCursor == 0 ? "NEW FILE" : "NO FILE";
 
-            DrawSaveRowSlotNumber(text, g_FmtSaveRow, slotNumber, y);
+            DrawSaveRowSlotNumber(text, "%1d /", slotNumber, y);
             DrawLargeText(
                 0x90, y, slotLabel, 0x7F, 0x7F, 0x7F, 0x244, 0xA0);
         }

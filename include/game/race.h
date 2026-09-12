@@ -269,7 +269,6 @@ extern const char *g_NativeCarNames[];
 #define g_CarClassNames g_NativeCarClassNames
 #define g_CarNames g_NativeCarNames
 extern s32 g_ClassPromoted;
-extern char g_ClockTextCells[8];
 extern char *g_CourseNames[COURSE_SLOT_COUNT];
 extern s32 g_EndingWashLevel;
 extern s32 g_LostRaceChoice;
@@ -312,7 +311,6 @@ extern u8 g_TachoFaceG;
 extern u8 g_TachoFaceR;
 extern s32 g_TimeRecordInsertRow;
 extern u8 g_TimeRecordNameCodes[];
-extern char g_TimeTextBuffer[];
 
 s32 BeginMirrorPass(void);
 void BuildRaceHudPrims(s32 grandPrixMode);

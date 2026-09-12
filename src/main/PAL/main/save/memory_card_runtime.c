@@ -116,7 +116,7 @@ s32 FormatMemoryCard(s32 port, s32 slot) {
     char device[8];
     s32 status;
 
-    snprintf(device, sizeof(device), g_FmtCardDevice, port, slot);
+    snprintf(device, sizeof(device), "bu%1d%1d:", port, slot);
     ClearMemoryCardSwEvents();
     BiosFormatDevice(device);
     status = WaitMemoryCardSwEvent();

@@ -16,7 +16,6 @@ s32 g_McSwEventIoe;
 s32 g_McSwEventError;
 s32 g_McSwEventTimeout;
 s32 g_McSwEventNew;
-char g_FmtCardDevice[] = "bu%d%d:";
 
 static MemoryCardEvent s_hwEvent;
 static MemoryCardEvent s_swEvent;

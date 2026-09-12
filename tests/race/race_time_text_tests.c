@@ -5,8 +5,6 @@
 #include <limits.h>
 #include <string.h>
 
-char g_ClockTextCells[8] = "00'00\"";
-char g_TimeTextBuffer[12] = "0'00\"000";
 
 static s32 s_x;
 static s32 s_y;

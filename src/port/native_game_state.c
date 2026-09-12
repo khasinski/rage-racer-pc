@@ -63,7 +63,6 @@ u8 g_TileStripStorage[START_COUNTDOWN_TILE_STORAGE_SIZE];
 StartCountdownPattern g_CountdownDigitPatterns;
 StartCountdownColorBank
     g_CountdownCellColors[START_COUNTDOWN_COLOR_BANK_COUNT];
-char g_TimeTextBuffer[12];
 GameWorkBuffer g_ReplayFrameBuffer;
 RaceRecord g_RankingRecords[2][4][5];
 RaceRecord g_TimeRecords[2][4][5];
@@ -243,12 +242,6 @@ const char *g_NativeCarManufacturerNames[GAME_CAR_COUNT] = {
 };
 char g_SaveTitleSjis[MEMORY_CARD_SAVE_TITLE_STORAGE_SIZE];
 char g_SaveFilePath[MEMORY_CARD_SAVE_PATH_STORAGE_SIZE];
-char g_FmtCardDevice[12];
-char g_FmtCardWildcard[12];
-char g_FmtPlayTime[14];
-char g_FmtSaveRow[6];
-char g_FmtSaveRowTail[3];
-char g_FmtSaveRowEmpty[15];
 char g_SaveNameCharset[SAVE_NAME_CHARSET_STORAGE_SIZE];
 static char g_McMessage00[] = "Select file to save.";
 static char g_McMessage01[] = "Select file to load.";
@@ -295,9 +288,6 @@ MemoryCardMessageRow *g_McMessageRows[MEMORY_CARD_MESSAGE_COUNT] = {
     &g_RageMcMessageRowStorage[21], &g_RageMcMessageRowStorage[22]
 };
 s16 g_McMessageColumnX[MEMORY_CARD_MESSAGE_COLUMN_COUNT];
-char g_McSlotLabels[9];
-char g_McSlotLabelNoFile[8];
-char g_McSlotLabelError[11];
 static char g_CdAudioName00[] = "\\CDDA\\DA02PRO.DA;1";
 static char g_CdAudioName01[] = "\\CDDA\\DA03TECH.DA;1";
 static char g_CdAudioName02[] = "\\CDDA\\DA04HC.DA;1";

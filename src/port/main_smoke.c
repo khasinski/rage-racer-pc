@@ -378,9 +378,9 @@ static void ReportCameraState(void) {
                g_BodyColorPrimary[entry->paintColor2]);
     }
     ReportFirstModelStream();
-    printf(" ref_lap=%d time_text=%s gt4=%llu max=%u z=%d..%d "
+    printf(" ref_lap=%d gt4=%llu max=%u z=%d..%d "
            "clip=%llu/%llu reject=%llu/%llu/%llu",
-           g_BestLapThisRace, g_TimeTextBuffer, g_RageGt4FacesEmitted,
+           g_BestLapThisRace, g_RageGt4FacesEmitted,
            g_RageGt4ColorMaximum, g_RageGt4DepthMinimum,
            g_RageGt4DepthMaximum, g_RageGt4ClipPositive,
            g_RageGt4ClipNegative, g_RageGt4RejectOffscreen,

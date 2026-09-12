@@ -37,13 +37,7 @@ s32 g_SceneId;
 s32 g_SceneTimer;
 u16 g_PadPressed;
 u16 g_PadPressedRepeat;
-char g_FmtSaveRow[] = "%d/";
-char g_FmtSaveRowEmpty[] = "%d/EMPTY";
-char g_FmtSaveRowTail[] = "/";
 char g_SaveNameCharset[SAVE_NAME_CHARSET_STORAGE_SIZE];
-char g_McSlotLabelError[] = "ERROR";
-char g_McSlotLabelNoFile[] = "NO FILE";
-char g_McSlotLabels[] = "NEW FILE";
 
 typedef struct TextDraw {
     s32 x;
@@ -161,12 +155,13 @@ static void TestSaveRows(void) {
     rows[0].fields.name[5] = 5;
     DrawMemoryCardSaveRows(1 | (0x10000 << 1), rows);
     CHECK(s_drawCount == 7);
-    CHECK(strcmp(s_draws[0].text, "1/") == 0);
-    CHECK(strcmp(s_draws[1].text, "ABCDEF/") == 0);
+    CHECK(strcmp(s_draws[0].text, "1 /") == 0);
+    CHECK(strcmp(s_draws[1].text, "ABCDEF /") == 0);
     CHECK(strcmp(s_draws[2].text, "TIME") == 0);
-    CHECK(s_draws[3].x == 0x48 && strcmp(s_draws[3].text, "2/") == 0);
-    CHECK(s_draws[4].x == 0x88 && strcmp(s_draws[4].text, "ERROR") == 0);
-    CHECK(strcmp(s_draws[5].text, "3/") == 0);
+    CHECK(s_draws[3].x == 0x48 && strcmp(s_draws[3].text, "2 /") == 0);
+    CHECK(s_draws[4].x == 0x88 &&
+          strcmp(s_draws[4].text, "FILE ERROR") == 0);
+    CHECK(strcmp(s_draws[5].text, "3 /") == 0);
     CHECK(strcmp(s_draws[6].text, "NEW FILE") == 0);
 
     Reset();
@@ -182,7 +177,7 @@ static void TestSaveRows(void) {
     rows[0].fields.nameLength = 1;
     rows[0].fields.name[0] = 0xFF;
     DrawMemoryCardSaveRows(1, rows);
-    CHECK(strcmp(s_draws[1].text, "?     /") == 0);
+    CHECK(strcmp(s_draws[1].text, "?      /") == 0);
 
     Reset();
     memset(rows, 0, sizeof(rows));
@@ -190,7 +185,7 @@ static void TestSaveRows(void) {
     rows[0].fields.name[0] = SAVE_NAME_CHARACTER_COUNT;
     rows[0].fields.name[1] = SAVE_NAME_CHARSET_STORAGE_SIZE - 1;
     DrawMemoryCardSaveRows(1, rows);
-    CHECK(strcmp(s_draws[1].text, "??    /") == 0);
+    CHECK(strcmp(s_draws[1].text, "??     /") == 0);
 }
 
 static void TestMenuControls(void) {

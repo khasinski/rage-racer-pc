@@ -75,18 +75,9 @@ char g_SaveFilePath[MEMORY_CARD_SAVE_PATH_STORAGE_SIZE] =
         "bu00:BESCES-00650 RAGE000\0"
         "bu00:BESCES-00650 RAGE001\0"
         "bu00:BESCES-00650 RAGE002";
-char g_FmtCardDevice[12] = {0x62,0x75,0x25,0x31,0x64,0x25,0x31,0x64,0x3a,0x00,0x00,0x00};
-char g_FmtCardWildcard[12] = {0x62,0x75,0x25,0x31,0x64,0x25,0x31,0x64,0x3a,0x2a,0x00,0x00};
-char g_FmtPlayTime[] = "%5d:%02d:%02d";
-char g_FmtSaveRow[] = "%1d /";
-char g_FmtSaveRowTail[] = " /";
-char g_FmtSaveRowEmpty[] = "%1d /        /";
 char g_SaveNameCharset[SAVE_NAME_CHARSET_STORAGE_SIZE] =
     "0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ.-!?@";
 s16 g_McMessageColumnX[5] = {0, 0, 0x60, 0x78, 0xB4};
-char g_McSlotLabels[] = "NEW FILE";
-char g_McSlotLabelNoFile[] = "NO FILE";
-char g_McSlotLabelError[] = "FILE ERROR";
 SoundCueParams g_SoundCueParams[MAIN_SOUND_CUE_COUNT] = {
     {128, 0, 0, 0, 0, 60},
     {86, 0, 1, 0, 1, 60},
@@ -291,7 +282,6 @@ StartCountdownColorBank
     {{0xFF, 0x20, 0x00, 0x60}, {0x40, 0x10, 0x00, 0x60}},
     {{0x00, 0x40, 0xFF, 0x60}, {0x00, 0x10, 0x40, 0x60}},
 };
-char g_TimeTextBuffer[12] = {0x30,0x27,0x30,0x30,0x22,0x30,0x30,0x30,0x00,0x00,0x00,0x00};
 Rect g_TrackTextureRowRect = {576, 0, 448, 1};
 u16 g_PadButtonPresets[CONTROLLER_MAPPING_COUNT]
                             [CONTROLLER_MAPPING_BUTTON_COUNT] = {

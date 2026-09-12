@@ -11,14 +11,12 @@ enum { MOCK_FILE_SIZE = 0x1400, MOCK_FILE_COUNT = 3 };
 s32 GameMenuLoadPhase;
 char g_SaveFilePath[MEMORY_CARD_SAVE_PATH_STORAGE_SIZE];
 char g_SaveTitleSjis[MEMORY_CARD_SAVE_TITLE_STORAGE_SIZE];
-char g_FmtCardWildcard[] = "bu%d%d:*";
 u8 g_TeamNameChars[16];
 u8 g_TeamNameLength;
 s32 g_SaveElapsedTicks;
 DirEntry g_McDirEntries[MEMORY_CARD_MAX_FILES];
 s32 g_McCardFileCount;
 s32 g_McFreeBlocks;
-char g_FmtPlayTime[] = "%5d:%02d:%02d";
 
 static u8 s_files[MOCK_FILE_COUNT][MOCK_FILE_SIZE];
 static long s_positions[MOCK_FILE_COUNT];

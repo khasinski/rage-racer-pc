@@ -279,12 +279,6 @@ static void CheckMemoryCardLabels(void) {
               g_McMessageColumnX[3] == 0x78 &&
               g_McMessageColumnX[4] == 0xB4,
           "memory-card message columns");
-    Check(strcmp(g_McSlotLabels, "NEW FILE") == 0,
-          "new-file label");
-    Check(strcmp(g_McSlotLabelNoFile, "NO FILE") == 0,
-          "no-file label");
-    Check(strcmp(g_McSlotLabelError, "FILE ERROR") == 0,
-          "file-error label");
 }
 
 static void CheckInitialAudioTables(void) {

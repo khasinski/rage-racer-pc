@@ -12,7 +12,6 @@ s32 g_McPollTicks;
 s32 g_McStatusResult;
 s32 g_McPollStatus;
 s32 g_McLastCardStatus;
-char g_FmtCardDevice[] = "bu%d%d:";
 
 MemoryCardEvent PollMemoryCardHwEvent(void) { return MC_EVENT_IO_COMPLETE; }
 MemoryCardEvent WaitMemoryCardSwEvent(void) { return MC_EVENT_IO_COMPLETE; }
