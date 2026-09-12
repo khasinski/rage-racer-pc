@@ -75,40 +75,6 @@ void SetCameraRotMatrix(void) {
 }
 
 
-static s32 FirstQuadrantAngle(uint64_t x, uint64_t y) {
-    uint64_t tableIndex;
-
-    if (x < y) {
-        tableIndex = (x << 10) / y;
-        return 0x400 - g_AtanTable[tableIndex];
-    }
-    tableIndex = (y << 10) / x;
-    return g_AtanTable[tableIndex];
-}
-
-s32 Atan2(s32 x, s32 y) {
-    uint64_t magnitudeX;
-    uint64_t magnitudeY;
-    s32 angle;
-
-    if (x == 0) {
-        if (y == 0) {
-            return 0;
-        }
-        if (y > 0) {
-            return 0x400;
-        }
-        return -0x400;
-    }
-
-    magnitudeX = x < 0 ? (uint64_t)-(int64_t)x : (uint64_t)x;
-    magnitudeY = y < 0 ? (uint64_t)-(int64_t)y : (uint64_t)y;
-    angle = FirstQuadrantAngle(magnitudeX, magnitudeY);
-
-    if (x > 0) return y >= 0 ? angle : -angle;
-    return y >= 0 ? 0x800 - angle : 0x800 + angle;
-}
-
 /*
  * Rotate a full-width vector by a matrix. The GTE's own vector op is
  * 16-bit, so the game keeps this one for the camera, whose offsets and

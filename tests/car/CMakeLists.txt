@@ -205,6 +205,7 @@ add_executable(player_body_offset_tests
     player_body_offset_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/player_body_offset.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/math/angle.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c
     $<TARGET_OBJECTS:rage-host-state>)
 target_include_directories(player_body_offset_tests PRIVATE
@@ -308,6 +309,7 @@ add_executable(track_camera_tests
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/track_camera_modes.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/track/update_camera.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/math/angle.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c
     $<TARGET_OBJECTS:rage-host-state>)
 target_include_directories(track_camera_tests PRIVATE
@@ -615,6 +617,7 @@ add_executable(car_travel_velocity_tests
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/update_car_travel_velocity.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/angle_math.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/math/angle.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c
     $<TARGET_OBJECTS:rage-host-state>)
 target_include_directories(car_travel_velocity_tests PRIVATE
@@ -640,6 +643,7 @@ add_executable(steer_to_track_line_tests
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/steer_car_to_track_line.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/angle_math.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/math/angle.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c
     $<TARGET_OBJECTS:rage-host-state>)
 target_include_directories(steer_to_track_line_tests PRIVATE
@@ -671,6 +675,7 @@ add_executable(car_motion_handlers_tests
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/update_car_travel_velocity.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/angle_math.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/math/angle.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c
     $<TARGET_OBJECTS:rage-host-state>)
 target_include_directories(car_motion_handlers_tests PRIVATE
@@ -779,6 +784,7 @@ add_executable(car_track_state_tests
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/arc_measure.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/angle_math.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/math/angle.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c
     $<TARGET_OBJECTS:rage-host-state>)
 target_include_directories(car_track_state_tests PRIVATE
@@ -806,6 +812,7 @@ add_executable(replay_track_reconstruction_tests
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/arc_measure.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/angle_math.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/math/angle.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c
     $<TARGET_OBJECTS:rage-host-state>)
 target_include_directories(replay_track_reconstruction_tests PRIVATE
@@ -991,6 +998,7 @@ add_executable(player_car_collision_tests
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/collision_quads.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_facing_direction.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/math/angle.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c
     $<TARGET_OBJECTS:rage-host-state>)
 target_include_directories(player_car_collision_tests PRIVATE
@@ -1180,6 +1188,7 @@ add_executable(rival_car_movement_tests
     rival_car_movement_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/rival_car_movement.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/math/angle.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/gte_matrix.c
     $<TARGET_OBJECTS:rage-host-state>)
 target_include_directories(rival_car_movement_tests PRIVATE

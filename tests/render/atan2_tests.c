@@ -6,7 +6,6 @@
 
 GameRenderState g_RenderState;
 Matrix g_MirrorViewMatrix;
-s16 g_AtanTable[ATAN_TABLE_STORAGE_COUNT];
 
 void GameRenderWorldSetCamera(s32 x, s32 y, s32 z, s32 pitch, s32 yaw,
                               s32 roll) {
@@ -45,28 +44,22 @@ int main(void) {
     s32 output[3];
     s32 row;
     s32 column;
-    s32 index;
-
-    for (index = 0; index < ATAN_TABLE_SAMPLE_COUNT; index++) {
-        g_AtanTable[index] = (s16)(index / 2);
-    }
-
     CHECK_EQ(Atan2(0, 0), 0);
     CHECK_EQ(Atan2(4, 0), 0);
     CHECK_EQ(Atan2(0, 4), 0x400);
     CHECK_EQ(Atan2(0, -4), -0x400);
 
-    CHECK_EQ(Atan2(8, 4), 0x100);
-    CHECK_EQ(Atan2(4, 8), 0x300);
-    CHECK_EQ(Atan2(8, -4), -0x100);
-    CHECK_EQ(Atan2(4, -8), -0x300);
-    CHECK_EQ(Atan2(-8, 4), 0x700);
-    CHECK_EQ(Atan2(-4, 8), 0x500);
-    CHECK_EQ(Atan2(-8, -4), 0x900);
-    CHECK_EQ(Atan2(-4, -8), 0xB00);
+    CHECK_EQ(Atan2(8, 4), 0x12E);
+    CHECK_EQ(Atan2(4, 8), 0x2D2);
+    CHECK_EQ(Atan2(8, -4), -0x12E);
+    CHECK_EQ(Atan2(4, -8), -0x2D2);
+    CHECK_EQ(Atan2(-8, 4), 0x6D2);
+    CHECK_EQ(Atan2(-4, 8), 0x52E);
+    CHECK_EQ(Atan2(-8, -4), 0x92E);
+    CHECK_EQ(Atan2(-4, -8), 0xAD2);
 
-    CHECK_EQ(Atan2(INT_MAX, INT_MIN), -0x201);
-    CHECK_EQ(Atan2(INT_MIN, INT_MAX), 0x601);
+    CHECK_EQ(Atan2(INT_MAX, INT_MIN), -0x200);
+    CHECK_EQ(Atan2(INT_MIN, INT_MAX), 0x600);
     CHECK_EQ(Atan2(INT_MIN, INT_MIN), 0xA00);
 
     matrix.m[0][0] = 0x1000;

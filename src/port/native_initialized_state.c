@@ -2,7 +2,6 @@
 
 #include "common.h"
 #include "game/audio.h"
-#include "game/angle_internal.h"
 #include "game/car_runtime_state.h"
 #include "game/car.h"
 #include "game/cd_internal.h"
@@ -205,10 +204,6 @@ u8 g_CarModelByCourse[CAR_MODEL_COURSE_COUNT][RACE_CAR_SLOT_COUNT] = {
     {1, 2, 0, 3, 4, 5, 6, 7, 8, 9, 10},
     {2, 0, 1, 3, 4, 5, 6, 7, 8, 9, 10},
     {3, 0, 1, 2, 4, 5, 6, 7, 8, 9, 10},
-};
-s16 g_AtanTable[ATAN_TABLE_STORAGE_COUNT] = {
-#include "native_atan_table.inc"
-    [ATAN_TABLE_SAMPLE_COUNT] = 0,
 };
 Matrix g_TrackColorMatrix = {
     {{819, 0, 192}, {819, 0, 192}, {819, 0, 192}},

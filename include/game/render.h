@@ -173,7 +173,7 @@ void BuildRotMatrixX(void *mtx, s32 angle);
  */
 void SetCameraRotMatrix(void);
 /*
- * atan2 over the arctangent table g_AtanTable, in 12-bit angle units
+ * Integer atan2 in 12-bit angle units
  * (0x400 = 90 degrees). Argument order is (x, y), the reverse of C's atan2:
  * Atan2(0, +y) is 0x400.
  */

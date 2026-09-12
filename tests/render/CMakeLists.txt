@@ -1454,7 +1454,8 @@ set_tests_properties(car_render_rules PROPERTIES LABELS unit)
 
 add_executable(atan2_tests
     atan2_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/rot_matrix.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/math/angle.c)
 target_include_directories(atan2_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

@@ -2,7 +2,6 @@
 #define GAME_RENDER_INTERNAL_H
 
 #include "common.h"
-#include "game/angle_internal.h"
 #include "game/camera_types.h"
 #include "game/integer.h"
 #include "game/render_state.h"

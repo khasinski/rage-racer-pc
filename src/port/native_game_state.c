@@ -3,7 +3,6 @@
 #include <sys/types.h>
 
 #include "psyq/snd_types.h"
-#include "game/angle_internal.h"
 #include "game/render.h"
 #include "game/render_internal.h"
 #include "game/asset.h"
@@ -310,7 +309,6 @@ char *g_CdAudioFileNames[16] = {
 };
 s32 g_DefaultLapTimes[8];
 s32 g_DefaultTotalTimes[8];
-s16 g_AtanTable[ATAN_TABLE_STORAGE_COUNT];
 
 typedef struct RageSerializedTimedDrawCommand {
     s16 time;
