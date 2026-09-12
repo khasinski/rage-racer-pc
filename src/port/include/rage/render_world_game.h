@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-struct GameRenderObject;
+struct GameCarRuntime;
 struct GameSkyGridLayout;
 struct RageRenderWorld;
 
@@ -12,7 +12,7 @@ typedef enum RageGameCarRenderDetail {
     RAGE_GAME_CAR_RENDER_FAR = 1,
 } RageGameCarRenderDetail;
 
-/* Game-state producer for Render World.  It receives a GameRenderObject
+/* Game-state producer for Render World.  It receives a GameCarRuntime
  * before the classic GTE path mutates or projects it. */
 void GameRenderWorldBeginFrame(uint64_t frame);
 /* Publish completed world metadata/instances after all scene submissions.
@@ -56,12 +56,12 @@ void GameRenderWorldDiscardLegacyMirror(void);
  * may change while an intro frame is being assembled, so rendering must not
  * infer this identity again from g_PlayerCarIndex. */
 void GameRenderWorldSetTrackCarAsset(int asset);
-void GameRenderWorldSubmitCar(const struct GameRenderObject *object,
+void GameRenderWorldSubmitCar(const struct GameCarRuntime *object,
                                   int mirror_pass,
                                   RageGameCarRenderDetail detail);
 /* The player's selected model is a separately loaded bank.  It does not use
  * the course-specific opponent lookup used by GameRenderWorldSubmitCar. */
-void GameRenderWorldSubmitPlayerCar(const struct GameRenderObject *object,
+void GameRenderWorldSubmitPlayerCar(const struct GameCarRuntime *object,
                                         int mirror_pass);
 /* Completed worlds, NULL until one/two frames have been published. These
  * borrowed metadata and instance arrays remain intact during construction. */

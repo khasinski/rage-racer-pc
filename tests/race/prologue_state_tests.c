@@ -129,7 +129,7 @@ void SetupDisplay240(s32 r, s32 g, s32 b) {
 }
 void StartCdAudio(void) { s_startAudioCalls++; }
 void UpdateAttractCars(void) {}
-void UpdateCamera(CameraViewMode mode, GameRenderObject *car) {
+void UpdateCamera(CameraViewMode mode, GameCarRuntime *car) {
     (void)mode;
     (void)car;
 }

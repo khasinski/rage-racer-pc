@@ -5,7 +5,7 @@
  * Mode 0: the camera sits where the car's own block says, lifted a fixed
  * amount along the car's up axis.
  */
-void CameraViewFromCarBlock(GameRenderObject *car, GameViewWork *view) {
+void CameraViewFromCarBlock(GameCarRuntime *car, GameViewWork *view) {
     SVec cameraLift = {0, -0x1C0, 0, 0};
     LVec cameraLiftWorld;
     Matrix matrixWork;
@@ -22,7 +22,7 @@ void CameraViewFromCarBlock(GameRenderObject *car, GameViewWork *view) {
     g_CameraModePrev = TRACK_CAMERA_CAR;
 }
 
-static void CameraViewFromOrbitPosition(GameRenderObject *car,
+static void CameraViewFromOrbitPosition(GameCarRuntime *car,
                                         GameViewWork *view, s32 yaw,
                                         s32 distance, s32 height) {
     Matrix cameraRotation;
@@ -62,12 +62,12 @@ static void CameraViewFromOrbitPosition(GameRenderObject *car,
     view->z = CameraSubtractWord(view->z, eyeWorld.z);
 }
 
-void CameraViewFromOrbit(GameRenderObject *car, GameViewWork *view) {
+void CameraViewFromOrbit(GameCarRuntime *car, GameViewWork *view) {
     CameraViewFromOrbitPosition(car, view, g_OrbitCameraYaw,
                                 g_OrbitCameraDistance, 0);
 }
 
-void CameraViewFromLookBehind(GameRenderObject *car, GameViewWork *view) {
+void CameraViewFromLookBehind(GameCarRuntime *car, GameViewWork *view) {
     enum {
         LOOK_BEHIND_YAW = 0x800,
         LOOK_BEHIND_DISTANCE = 0xE0,
@@ -77,7 +77,7 @@ void CameraViewFromLookBehind(GameRenderObject *car, GameViewWork *view) {
                                 LOOK_BEHIND_DISTANCE, LOOK_BEHIND_HEIGHT);
 }
 
-void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
+void UpdateCamera(CameraViewMode cameraModeSel, GameCarRuntime *car) {
     GameViewWork viewWork;
     GameViewWork *view;
     s32 cameraMode;
@@ -122,13 +122,13 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
     StoreViewWork(&g_RenderState.camera, &viewWork);
     SetCameraRotMatrix();
     if (cameraModeSel > 0 &&
-        car == GetCarRenderObject(AsRivalCar(&g_PlayerCar))) {
+        car == AsRivalCar(&g_PlayerCar)) {
         SelectModelBank(0);
         DrawPlayerCarModel(car);
     }
 }
 
-void UpdateLookBehindCamera(GameRenderObject *car) {
+void UpdateLookBehindCamera(GameCarRuntime *car) {
     GameViewWork viewWork;
 
     LoadViewWork(&viewWork, &g_RenderState.camera);

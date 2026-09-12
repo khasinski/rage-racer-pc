@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
-void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car);
+void UpdateCamera(CameraViewMode cameraModeSel, GameCarRuntime *car);
 
 /*
  * The globals the camera reads are the game's own, out of host_state.c, so a
@@ -41,12 +41,12 @@ static GameTrackCameraNode s_nodes[2];
 static s32 s_nearestCamera;
 
 /* The camera asks the track which node is nearest; the test says which. */
-s32 FindNearestTrackCamera(GameRenderObject *car) {
+s32 FindNearestTrackCamera(GameCarRuntime *car) {
     (void)car;
     return s_nearestCamera;
 }
 
-void DrawPlayerCarModel(GameRenderObject *obj) { (void)obj; }
+void DrawPlayerCarModel(GameCarRuntime *obj) { (void)obj; }
 void SelectModelBank(s32 bank) { (void)bank; }
 int ChaseCameraYawOffset(int steeringAngle) {
     (void)steeringAngle;
@@ -86,7 +86,7 @@ static void Check(const char *what, const s32 *got, const s32 *wanted) {
  * a rotation or mixes up two offsets moves the camera rather than landing on
  * the same answer by symmetry.
  */
-static void PlaceCar(GameRenderObject *car) {
+static void PlaceCar(GameCarRuntime *car) {
     memset(car, 0, sizeof(*car));
     car->x = 0x4000;
     car->y = 0x1000;
@@ -98,7 +98,7 @@ static void PlaceCar(GameRenderObject *car) {
 
 /* Drive one branch and read the view back out of the render state. */
 static void Run(CameraViewMode selector, s32 *view) {
-    GameRenderObject car;
+    GameCarRuntime car;
 
     PlaceCar(&car);
     g_CameraNodeIndex = 0;
@@ -122,7 +122,7 @@ static void Run(CameraViewMode selector, s32 *view) {
  * the error that is left.
  */
 static s32 ChaseAdvance(s32 yawError, s32 speed) {
-    GameRenderObject car;
+    GameCarRuntime car;
     s32 startYaw = (0x800 - yawError) & 0xFFF;
 
     PlaceCar(&car);
@@ -167,7 +167,7 @@ int main(void) {
     /* A missing authored camera falls back to the car-block view. */
     {
         static const s32 wanted[6] = {16384, 4068, 32772, 64, 768, 96};
-        GameRenderObject car;
+        GameCarRuntime car;
 
         PlaceCar(&car);
         s_nearestCamera = -1;
@@ -315,7 +315,7 @@ int main(void) {
      * and points it back at the car.  It is a separate transient camera, so
      * none of the chase camera's smoothing state is repurposed. */
     {
-        GameRenderObject car;
+        GameCarRuntime car;
         GameViewWork look = {0};
 
         PlaceCar(&car);
@@ -335,7 +335,7 @@ int main(void) {
     /* Camera assets and host state are full-width words. Preserve the PS1's
      * wrap at their extremes instead of invoking signed-overflow UB. */
     {
-        GameRenderObject car;
+        GameCarRuntime car;
         GameViewWork extremeView = {0};
 
         memset(&car, 0, sizeof(car));

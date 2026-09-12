@@ -30,7 +30,7 @@ GameRenderState g_RenderState;
 static s32 s_steps[STEP_COUNT];
 static s32 s_stepCount;
 static s32 s_textureSection;
-static GameRenderObject *s_cameraObject;
+static GameCarRuntime *s_cameraObject;
 static s32 s_sceneryTimer;
 static s32 s_sceneryAnimate;
 
@@ -44,7 +44,7 @@ void RequestTrackTexturePage(s32 trackSection) {
     s_textureSection = trackSection;
     RecordStep(STEP_TEXTURE);
 }
-void UpdateCamera(CameraViewMode cameraMode, GameRenderObject *car) {
+void UpdateCamera(CameraViewMode cameraMode, GameCarRuntime *car) {
     assert(cameraMode == g_CameraViewMode);
     s_cameraObject = car;
     RecordStep(STEP_CAMERA);
@@ -86,7 +86,7 @@ static void TestWorldUpdateOrder(void) {
         assert(s_steps[step] == step);
     }
     assert(s_textureSection == 45);
-    assert(s_cameraObject == GetCarRenderObject(&g_Cars[2]));
+    assert(s_cameraObject == &g_Cars[2]);
     assert(g_RenderState.geometry.envMode4 == 7);
     assert(s_sceneryTimer == 123 && s_sceneryAnimate == 1);
 }
@@ -100,7 +100,7 @@ static void TestInvalidCameraCarFallsBackToFirst(void) {
 
     assert(g_CameraCarIndex == 0);
     assert(s_textureSection == 11);
-    assert(s_cameraObject == GetCarRenderObject(&g_Cars[0]));
+    assert(s_cameraObject == &g_Cars[0]);
 
     Reset();
     g_CameraCarIndex = INT_MAX;

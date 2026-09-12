@@ -56,7 +56,7 @@ static void DrawShowroomFloor(ShowroomPlayerCarState *showroom, Matrix *matrix) 
 
 void DrawMenuCarView(void) {
     ShowroomPlayerCarState *showroom = ShowroomPlayerCar();
-    GameRenderObject *renderObject = ShowroomRenderObject();
+    GameCarRuntime *renderObject = ShowroomRenderObject();
     Matrix mtxA;
     Matrix mtxB;
     Vec4 out;
@@ -149,7 +149,7 @@ void DrawMenuCarView(void) {
 /* The course diorama behind COURSE SELECT and RANKING, with the carousel easing. */
 void DrawMenuCourseView(void) {
     ShowroomPlayerCarState *showroom = ShowroomPlayerCar();
-    GameRenderObject *renderObject = ShowroomRenderObject();
+    GameCarRuntime *renderObject = ShowroomRenderObject();
     Matrix mtxA;
     Matrix mtxB;
     s32 horizontalAngle;

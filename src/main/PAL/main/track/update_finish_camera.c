@@ -4,7 +4,7 @@
 #include "game/race_internal.h"
 #include "game/track.h"
 
-static s32 FinishCameraTargetPoint(const GameRenderObject *target) {
+static s32 FinishCameraTargetPoint(const GameCarRuntime *target) {
     s32 offset = target->facingBackwards != 0 ? 2 : -2;
     return WrapTrackPointIndex(WrapSigned32(
         (int64_t)g_CameraCarTrackPoint + offset));
@@ -12,7 +12,7 @@ static s32 FinishCameraTargetPoint(const GameRenderObject *target) {
 
 /* Follow the centre line while keeping the finished car in view. */
 void UpdateFinishCamera(PlayerCarRuntime *car) {
-    GameRenderObject *obj = GetCarRenderObject(AsRivalCar(car));
+    GameCarRuntime *obj = AsRivalCar(car);
     GameViewWork viewWork;
     s32 delta[3];
     s32 target[3];

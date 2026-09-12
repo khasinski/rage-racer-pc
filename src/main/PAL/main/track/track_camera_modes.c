@@ -63,7 +63,7 @@ static void AimCameraAt(GameViewWork *view, s32 targetX, s32 targetY, s32 target
  * Mode 2: a camera watching the car from a fixed spot beside the track,
  * dragged towards it by the node's own blend.
  */
-void CameraViewFromBlendedNode(GameRenderObject *car, GameViewWork *view,
+void CameraViewFromBlendedNode(GameCarRuntime *car, GameViewWork *view,
                                 s32 cameraNodeIndex) {
     s32 blend;
     const GameTrackCameraNode *chaseNode;
@@ -107,7 +107,7 @@ void CameraViewFromBlendedNode(GameRenderObject *car, GameViewWork *view,
  * from one node to the next across the node's duration, and the roll comes
  * off the finished view rather than off the car.
  */
-void CameraViewFromCamPath(GameRenderObject *car, GameViewWork *view,
+void CameraViewFromCamPath(GameCarRuntime *car, GameViewWork *view,
                             s32 cameraNodeIndex, int nodeChanged) {
     s32 camPathAngle;
     s32 camPathOffset;
@@ -262,7 +262,7 @@ void CameraViewFromCamPath(GameRenderObject *car, GameViewWork *view,
  * Mode 4: a node that slides to its own position across its duration, then
  * looks back at the car.
  */
-void CameraViewFromSlidingNode(GameRenderObject *car, GameViewWork *view,
+void CameraViewFromSlidingNode(GameCarRuntime *car, GameViewWork *view,
                                 s32 cameraNodeIndex, int nodeChanged) {
     Matrix inverseObjectRotation;
     s32 nodeOffset[3];

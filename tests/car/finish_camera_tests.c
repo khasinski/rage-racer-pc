@@ -53,7 +53,7 @@ void SetCameraRotMatrix(void) {}
 void SelectModelBank(s32 bank) {
     if (bank != 0) puts("FAIL: finish camera selected wrong model bank");
 }
-void DrawPlayerCarModel(GameRenderObject *obj) {
+void DrawPlayerCarModel(GameCarRuntime *obj) {
     (void)obj;
     s_drawCalls++;
 }

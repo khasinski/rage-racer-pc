@@ -16,7 +16,7 @@ void UpdateAndDrawAttractWorld(void) {
     UpdateAttractCars();
     cameraCar = &g_Cars[cameraCarIndex];
     RequestTrackTexturePage(cameraCar->trackSection);
-    UpdateCamera(g_CameraViewMode, GetCarRenderObject(cameraCar));
+    UpdateCamera(g_CameraViewMode, cameraCar);
 
     DrawCars();
     UpdateEnvironment();

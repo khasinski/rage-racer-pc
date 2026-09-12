@@ -13,12 +13,12 @@ void DrawCars(void) {
         GameCarRuntime *car = &g_Cars[index];
 
         if (car->activeFlag != -1 && car->aiEnabled == 1) {
-            DrawCar(GetCarRenderObject(car));
+            DrawCar(car);
         }
     }
 }
 
 void DrawReplayRivalCar(void) {
     SelectModelBank(CAR_MODEL_BANK);
-    DrawCar(GetCarRenderObject(g_Cars));
+    DrawCar(g_Cars);
 }

@@ -57,9 +57,9 @@ void ApplyReplayFrame(s32 subframe, GameCarRuntime *player,
     s_AppliedCursor = subframe;
 }
 void UpdateReplayCars(void) { s_CarUpdates++; }
-void UpdateCamera(CameraViewMode mode, GameRenderObject *car) {
+void UpdateCamera(CameraViewMode mode, GameCarRuntime *car) {
     assert(mode == CAMERA_VIEW_TRACK);
-    assert(car == GetCarRenderObject(AsRivalCar(&g_PlayerCar)));
+    assert(car == AsRivalCar(&g_PlayerCar));
     s_CameraUpdates++;
 }
 void DrawTerrainCellsWide(void) { s_TerrainDraws++; }

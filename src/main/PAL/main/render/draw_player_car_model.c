@@ -16,14 +16,14 @@ enum {
     CAR_SIDE_COUNT = 2,
 };
 
-static s32 FindRenderedCarSlot(const GameRenderObject *object) {
+static s32 FindRenderedCarSlot(const GameCarRuntime *object) {
     s32 slot;
 
-    if (object == GetCarRenderObject(AsRivalCar(&g_PlayerCar))) {
+    if (object == AsRivalCar(&g_PlayerCar)) {
         return -1;
     }
     for (slot = 0; slot < RACE_CAR_SLOT_COUNT; slot++) {
-        if (object == GetCarRenderObject(&g_Cars[slot])) {
+        if (object == &g_Cars[slot]) {
             return slot;
         }
     }
@@ -37,7 +37,7 @@ static void SubmitCarPart(const LVec *position, Matrix *transform,
     SubmitModel(&g_RenderState, modelBank);
 }
 
-static void OffsetCarHorizon(GameRenderObject *object, s32 offset) {
+static void OffsetCarHorizon(GameCarRuntime *object, s32 offset) {
     object->y = WrapSigned32((int64_t)object->y + offset);
     object->modelY = WrapSigned32((int64_t)object->modelY + offset);
 }
@@ -61,7 +61,7 @@ typedef struct CloseCarAssembly {
 
 /* Player and close rival cars use the same six-part matrix stack. Their model
  * banks, wheel geometry and steering scale come from different asset formats. */
-static s32 DrawCloseCarAssembly(GameRenderObject *object,
+static s32 DrawCloseCarAssembly(GameCarRuntime *object,
                                 const CloseCarAssembly *assembly) {
     Matrix scratchMatrix;
     Matrix bodyViewMatrix;
@@ -162,14 +162,14 @@ static s32 DrawCloseCarAssembly(GameRenderObject *object,
 }
 
 /*
- * GameRenderObject -> GPU-primitive submitter. Applies the model asset's
+ * GameCarRuntime -> GPU-primitive submitter. Applies the model asset's
  * horizon offset, builds a stack of rotation matrices from the
  * object's angle sets, loads each transform into the GTE and dispatches the
  * primitive builder SubmitModel at increasing depth buckets. X/Z column flips
  * build the opposite-side transforms; clipHandle is the optional lighting
  * volume from GetTrackZoneBlend.
  */
-void DrawPlayerCarModel(GameRenderObject *object) {
+void DrawPlayerCarModel(GameCarRuntime *object) {
     const CarModelAsset *modelAsset = g_CarModelAsset;
     s32 modelBankBase = WrapSigned32(
         (int64_t)object->renderDepth * 2);
@@ -204,7 +204,7 @@ void DrawPlayerCarModel(GameRenderObject *object) {
     }
 }
 
-void DrawCar(GameRenderObject *object) {
+void DrawCar(GameCarRuntime *object) {
     Matrix scratchMatrix;
     Matrix bodyLocalMatrix;
     Matrix lightMatrix;

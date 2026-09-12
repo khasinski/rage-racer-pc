@@ -17,7 +17,7 @@ u16 g_TrackSectionCount;
 
 int main(void) {
     GameTrackCameraNode nodes[5] = {0};
-    GameRenderObject car = {0};
+    GameCarRuntime car = {0};
 
     g_TrackCameras = nodes;
     g_TrackSectionCount = 100;

@@ -6,7 +6,6 @@
 #include "game/vector.h"
 
 struct PlayerCarRuntime;
-struct GameRenderObject;
 
 enum {
     GAME_CAR_COUNT = 13,
@@ -221,17 +220,6 @@ typedef struct GameCarRuntime {
     s16 reserved168;
     u8 pad16A[0x32];
 } GameCarRuntime;
-
-static inline struct GameRenderObject *GetCarRenderObject(
-    GameCarRuntime *car) {
-    union {
-        GameCarRuntime *runtime;
-        struct GameRenderObject *renderObject;
-    } view;
-
-    view.runtime = car;
-    return view.renderObject;
-}
 
 typedef struct CarSurfaceSampleView {
     u16 x;

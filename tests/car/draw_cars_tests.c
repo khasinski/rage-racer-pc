@@ -14,7 +14,7 @@ void SelectModelBank(s32 index) {
     s_selectedBank = index;
 }
 
-void DrawCar(GameRenderObject *object) {
+void DrawCar(GameCarRuntime *object) {
     s_drawn[s_drawCount++] = (GameCarRuntime *)(void *)object;
 }
 

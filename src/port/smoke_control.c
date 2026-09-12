@@ -104,8 +104,8 @@ static uint32_t SmokeHashOneCarRenderState(const GameCarRuntime *car) {
 }
 
 static uint32_t SmokeHashPlayerRenderState(const PlayerCarRuntime *car) {
-    const GameRenderObject *renderObject =
-        (const GameRenderObject *)(const void *)car;
+    const GameCarRuntime *renderObject =
+        (const GameCarRuntime *)(const void *)car;
     const u32 values[] = {
         (u32)car->x, (u32)car->y, (u32)car->z,
         (u32)car->bodyPitch, (u32)car->bodyYaw, (u32)car->bodyRoll,

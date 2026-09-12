@@ -10,7 +10,7 @@
 #include "game/visible_cell_scan.h"
 
 union GameEnvColor;
-struct GameRenderObject;
+struct GameCarRuntime;
 struct PathSceneryRotationData;
 typedef struct GameEnvironmentCue GameEnvironmentCue;
 
@@ -541,7 +541,7 @@ extern SpinningSceneryPlacement g_SpinningSceneryPlacements[4];
 extern s32 g_StartGridSceneryAngle[];
 
 s32 BlendAngle(s32 angleA, s32 angleB, s32 weight);
-extern s32 FindNearestTrackCamera(struct GameRenderObject *car);
+extern s32 FindNearestTrackCamera(struct GameCarRuntime *car);
 void UpdateTrackEventSound(s16 trackSection);
 
 extern Vec4 g_AnimSceneryPos[];

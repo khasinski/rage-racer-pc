@@ -17,19 +17,19 @@ static inline s32 CameraMultiplyWord(s32 left, s32 right) {
 }
 
 void CameraLoadViewPositionFromCar(GameViewWork *view,
-                                   const GameRenderObject *car);
+                                   const GameCarRuntime *car);
 void CameraLoadViewPoseFromCar(GameViewWork *view,
-                               const GameRenderObject *car);
-void CameraBuildCarRotation(Matrix *rotation, const GameRenderObject *car);
-void CameraViewFromCarBlock(GameRenderObject *car, GameViewWork *view);
-void CameraViewFromChaseCamera(GameRenderObject *car, GameViewWork *view);
-void CameraViewFromBlendedNode(GameRenderObject *car, GameViewWork *view,
+                               const GameCarRuntime *car);
+void CameraBuildCarRotation(Matrix *rotation, const GameCarRuntime *car);
+void CameraViewFromCarBlock(GameCarRuntime *car, GameViewWork *view);
+void CameraViewFromChaseCamera(GameCarRuntime *car, GameViewWork *view);
+void CameraViewFromBlendedNode(GameCarRuntime *car, GameViewWork *view,
                                s32 cameraNodeIndex);
-void CameraViewFromCamPath(GameRenderObject *car, GameViewWork *view,
+void CameraViewFromCamPath(GameCarRuntime *car, GameViewWork *view,
                            s32 cameraNodeIndex, int nodeChanged);
-void CameraViewFromSlidingNode(GameRenderObject *car, GameViewWork *view,
+void CameraViewFromSlidingNode(GameCarRuntime *car, GameViewWork *view,
                                s32 cameraNodeIndex, int nodeChanged);
-void CameraViewFromOrbit(GameRenderObject *car, GameViewWork *view);
-void CameraViewFromLookBehind(GameRenderObject *car, GameViewWork *view);
+void CameraViewFromOrbit(GameCarRuntime *car, GameViewWork *view);
+void CameraViewFromLookBehind(GameCarRuntime *car, GameViewWork *view);
 
 #endif

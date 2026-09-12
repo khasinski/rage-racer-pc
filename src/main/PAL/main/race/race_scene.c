@@ -322,7 +322,7 @@ static void UpdatePausedRaceScene(void) {
     }
 
     UpdateCamera(g_CameraViewMode,
-                 GetCarRenderObject(AsRivalCar(&g_PlayerCar)));
+                 AsRivalCar(&g_PlayerCar));
     RequestTrackTexturePage(g_PlayerCar.trackSection);
     PortProfileFramePhase("scene_cars");
     if (g_GrandPrixMode != 0) {
@@ -428,8 +428,8 @@ static void UpdateActiveRaceScene(void) {
     if (raceView.cameraAction == RACE_CAMERA_ACTION_FINISH) {
         UpdateFinishCamera(&g_PlayerCar);
     } else if (raceView.cameraAction == RACE_CAMERA_ACTION_FOLLOW_PLAYER) {
-        GameRenderObject *player =
-            GetCarRenderObject(AsRivalCar(&g_PlayerCar));
+        GameCarRuntime *player =
+            AsRivalCar(&g_PlayerCar);
         if (RaceLookBehindActive(g_PadHeld, g_RacePhase,
                                  raceView.cameraView)) {
             UpdateLookBehindCamera(player);

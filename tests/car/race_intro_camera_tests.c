@@ -34,7 +34,7 @@ void SetCameraRotMatrix(void) { s_matrixCalls++; }
 
 void SelectModelBank(s32 index) { s_selectedBank = index; }
 
-void DrawPlayerCarModel(GameRenderObject *car) {
+void DrawPlayerCarModel(GameCarRuntime *car) {
     (void)car;
     s_drawCalls++;
 }
@@ -45,7 +45,7 @@ void DrawFullscreenFadeTile(s32 color, s32 tpage) {
     s_fadeColor = color;
 }
 
-void UpdateCamera(CameraViewMode mode, GameRenderObject *car) {
+void UpdateCamera(CameraViewMode mode, GameCarRuntime *car) {
     (void)car;
     if (mode == CAMERA_VIEW_CAR) {
         s_updateCameraCalls++;

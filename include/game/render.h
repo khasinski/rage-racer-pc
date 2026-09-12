@@ -4,6 +4,7 @@
 #include "common.h"
 #include "game/angle.h"
 #include "game/camera_types.h"
+#include "game/car.h"
 #include "game/car_render_rules.h"
 #include "game/environment.h"
 #include "game/render_types.h"
@@ -156,11 +157,6 @@ extern TimedDrawCommand g_MenuRowScript[];
 #define SCREEN_WIDTH   0x140
 #define SCREEN_HEIGHT  0xF0
 
-/*
- * Prefix used by the renderer for car-like objects. The full camera-car
- * storage is declared as GameCarRuntime in game/car.h; every field below has
- * the same offset in that canonical type.
- */
 typedef union CameraLookAt {
     struct {
         s32 eyeX;
@@ -174,80 +170,7 @@ typedef union CameraLookAt {
     s32 words[8];
 } CameraLookAt;
 
-typedef struct GameRenderObject {
-    s32 x;          /* 0x00 */
-    s32 y;          /* 0x04 */
-    s32 z;          /* 0x08 */
-    s32 positionW;
-    s32 motionX;
-    s32 motionY;
-    s32 motionZ;
-    s32 reserved1C;
-    s32 bodyPitch; /* 0x20 */
-    s32 bodyYaw;   /* 0x24 */
-    s32 bodyRoll;  /* 0x28 */
-    s32 bodyRotationW;
-    s32 trackPointIndex;
-    s32 trackLateralOffset;
-    s32 segmentFraction;
-    s32 normalizedLateralOffset;
-    s32 reserved40;
-    s32 steeringAngle; /* 0x44 */
-    s32 wheelRotation; /* 0x48, 12-bit phase plus high-speed bit 0x1000 */
-    s32 reserved4C;
-    s32 modelPitch; /* 0x50 */
-    s32 modelYaw;   /* 0x54 */
-    s32 modelRoll;  /* 0x58 */
-    s32 modelRotationW;
-    s32 modelY;     /* 0x60 secondary model origin, normally copied from y */
-    s32 bodyRollVelocity; /* 0x64, damped and accumulated into bodyRoll */
-    s32 progressA;
-    s32 progressB;
-    s32 trackProgress;   /* 0x70 */
-    s32 previousTrackProgress;
-    s16 trackSection;
-    s16 reserved7A;
-    s16 velocityX;
-    s16 velocityZ;
-    s16 motionActive;
-    u16 motionTimer;
-    s16 motionMode;
-    s16 motionModeTimer;
-    s16 motionValue;
-    s16 collisionFlag;
-    s16 tiltCounter;
-    s16 reserved8E;
-    s16 verticalPitch;
-    s16 bodyKickOffset;
-    s16 verticalRoll;
-    s16 reserved96;
-    s16 verticalMotionState;
-    u16 verticalMotionTimer;
-    s16 verticalMotionRate;
-    s16 verticalTargetY;
-    s32 headingAngle;
-    s32 speed;
-    s32 acceleration;
-    s16 activeFlag;
-    s16 modelIndex;
-    s32 initializedFlag;
-    s32 trackHeadingPacked;
-    s16 facingBackwards;
-    u8 padBA[2];
-    s32 aiEnabled;
-    s32 reservedC0;
-    s32 reservedC4;
-    s32 worldVelocityX;
-    s32 reservedCC;
-    s32 worldVelocityZ;
-    s32 reservedD4;
-    s32 reservedD8;
-    s32 reservedDC;
-    s32 reservedE0;
-    s32 renderDepth;   /* 0xE4 */
-} GameRenderObject;
-
-void DrawCar(GameRenderObject *object);
+void DrawCar(GameCarRuntime *object);
 
 /*
  * Rotation-matrix builders. Each fills only the 3x3 part of `mtx` with a
@@ -286,9 +209,9 @@ void DrawFullscreenFadeTile(s32 color, s32 tpage);
 void DrawFullscreenFadeTile480(s32 color, s32 tpage);
 void RequestTrackTexturePage(s32 trackSection);
 s32 TrackTexturePageForSection(s32 trackSection);
-void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car);
-void UpdateLookBehindCamera(GameRenderObject *car);
-void DrawPlayerCarModel(GameRenderObject *object);
+void UpdateCamera(CameraViewMode cameraModeSel, GameCarRuntime *car);
+void UpdateLookBehindCamera(GameCarRuntime *car);
+void DrawPlayerCarModel(GameCarRuntime *object);
 void DrawTimeValue(s32 x, s32 y, s32 value, s32 color, s32 divisor);
 
 /*

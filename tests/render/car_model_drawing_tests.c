@@ -108,14 +108,14 @@ void SubmitModel(void *ctx, s32 bank) {
     }
     s_submitCount++;
 }
-void GameRenderWorldSubmitCar(const GameRenderObject *object, int mirror,
+void GameRenderWorldSubmitCar(const GameCarRuntime *object, int mirror,
                               RageGameCarRenderDetail detail) {
     (void)object;
     (void)mirror;
     s_modernCarCalls++;
     s_detail = detail;
 }
-void GameRenderWorldSubmitPlayerCar(const GameRenderObject *object,
+void GameRenderWorldSubmitPlayerCar(const GameCarRuntime *object,
                                     int mirror) {
     (void)object;
     (void)mirror;
@@ -178,7 +178,7 @@ int main(void) {
         TrackRenderTable header;
     } track = {0};
     CarModelAsset playerAsset = {0};
-    GameRenderObject object = {0};
+    GameCarRuntime object = {0};
     const s32 originalY = 200;
     const s32 originalModelY = 220;
 

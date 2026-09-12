@@ -119,7 +119,7 @@ static uint32_t TrackDataAssetKey(void) {
     return TrackAssetIdentityResolve(current);
 }
 
-static uint32_t CarEntity(const GameRenderObject *object) {
+static uint32_t CarEntity(const GameCarRuntime *object) {
     uintptr_t address = (uintptr_t)object;
     uintptr_t first = (uintptr_t)&g_Cars[0];
     uintptr_t pastLast = (uintptr_t)&g_Cars[RACE_CAR_SLOT_COUNT];
@@ -706,7 +706,7 @@ void GameRenderWorldPublishCourseObjects(void) {
     }
 }
 
-static void GameRenderWorldSubmitCarAssembly(const GameRenderObject *object,
+static void GameRenderWorldSubmitCarAssembly(const GameCarRuntime *object,
                                                  uint32_t entity, uint32_t asset,
                                                  RageRenderAssetSet assetSet,
                                                  uint32_t bodyMesh,
@@ -768,7 +768,7 @@ static void GameRenderWorldSubmitCarAssembly(const GameRenderObject *object,
                                      mirror_pass);
 }
 
-static RageRenderVec3 GameTrackLightForCar(const GameRenderObject *object) {
+static RageRenderVec3 GameTrackLightForCar(const GameCarRuntime *object) {
     RageRenderVec3 result = {1.0f, 1.0f, 1.0f};
     float light[3];
     int blend;
@@ -783,7 +783,7 @@ static RageRenderVec3 GameTrackLightForCar(const GameRenderObject *object) {
     return result;
 }
 
-void GameRenderWorldSubmitCar(const GameRenderObject *object,
+void GameRenderWorldSubmitCar(const GameCarRuntime *object,
                                   int mirror_pass,
                                   RageGameCarRenderDetail detail) {
     uint32_t entity;
@@ -825,7 +825,7 @@ void GameRenderWorldSubmitCar(const GameRenderObject *object,
         object->steeringAngle * 2, environmentLight, mirror_pass);
 }
 
-void GameRenderWorldSubmitPlayerCar(const GameRenderObject *object,
+void GameRenderWorldSubmitPlayerCar(const GameCarRuntime *object,
                                         int mirror_pass) {
     uint32_t asset;
     uint32_t wheelBase;
@@ -877,7 +877,7 @@ void GameRenderWorldPublishRaceCars(void) {
     for (car = 0; car < RACE_CAR_SLOT_COUNT; car++) {
         if (g_Cars[car].activeFlag != -1 && g_Cars[car].aiEnabled == 1) {
             GameRenderWorldSubmitCar(
-                GetCarRenderObject(&g_Cars[car]), 0,
+                &g_Cars[car], 0,
                 RAGE_GAME_CAR_RENDER_CLOSE);
         }
     }
