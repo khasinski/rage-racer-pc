@@ -127,6 +127,7 @@ static s32 UpdateRacePause(void) {
     g_PauseDebounce = PAUSE_TOGGLE_DEBOUNCE;
     g_RacePaused = toggle.paused;
     if (toggle.paused) {
+        ResetRaceOptionMenuAnimation();
         PauseCdAudio();
         ForceAllEffectVoicesEnabled(0);
         g_RaceOptionCursor = 0;

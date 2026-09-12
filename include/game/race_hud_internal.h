@@ -44,6 +44,7 @@ void BuildTileStrips(void);
 /* Draws the in-race option overlay. The "RAGE RACER GE" text is one half of
  * its scrolling marquee, not a title-screen label. */
 void DrawRaceOptionMenu(s32 cursorRow);
+void ResetRaceOptionMenuAnimation(void);
 s32 SplitCurrentTimeVisible(s32 timer, s32 sectorIndex);
 s32 SplitDeltaVisible(s32 timer, s32 sectorIndex, s32 sign,
                       s32 lapCount, s32 playerLap);

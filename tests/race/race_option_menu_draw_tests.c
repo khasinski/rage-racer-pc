@@ -13,9 +13,6 @@ static GameFrameContext s_frame;
 GameFrameContext *g_DrawBuffer = &s_frame;
 CourseProgressState *g_CourseProgress;
 s16 g_GrandPrixMode;
-s32 g_RaceOptionPulseAngle;
-s16 g_RaceOptionScroll0;
-s16 g_RaceOptionScroll1;
 s32 g_SceneTimer;
 
 static s32 s_spriteCount;
@@ -28,6 +25,7 @@ static s32 s_selectionY[4];
 static s32 s_retryDigitU;
 static u8 *s_drawModePacket;
 static const char *s_text[2];
+static s32 s_textX[2];
 
 s32 rcos(s32 angle) {
     (void)angle;
@@ -49,7 +47,10 @@ void DrawText8x8(s32 x, s32 y, const char *text, s32 clut) {
     (void)x;
     (void)y;
     (void)clut;
-    if (s_textCount < 2) s_text[s_textCount] = text;
+    if (s_textCount < 2) {
+        s_text[s_textCount] = text;
+        s_textX[s_textCount] = x;
+    }
     s_textCount++;
     g_RenderState.draw.packetCursor =
         (DrawPacket *)g_RenderState.draw.packetCursor + 1;
@@ -128,9 +129,7 @@ static void Reset(void) {
     s_text[0] = NULL;
     s_text[1] = NULL;
     g_RenderState.draw.packetCursor = s_frame.layout.primitiveBuffer;
-    g_RaceOptionScroll0 = 0;
-    g_RaceOptionScroll1 = 0;
-    g_RaceOptionPulseAngle = -32;
+    ResetRaceOptionMenuAnimation();
 }
 
 static int CheckLayout(s32 grandPrix, s32 expectedSprites) {
@@ -153,8 +152,7 @@ static int CheckLayout(s32 grandPrix, s32 expectedSprites) {
     CHECK(s_selectionY[1] == expectedSelectionY + 0xB);
     CHECK(s_selectionY[2] == expectedSelectionY);
     CHECK(s_selectionY[3] == expectedSelectionY);
-    CHECK(g_RaceOptionScroll0 == -4 && g_RaceOptionScroll1 == -4);
-    CHECK(g_RaceOptionPulseAngle == 0);
+    CHECK(s_textX[0] == 99 && s_textX[1] == 219);
 
     pulse = (POLY_FT4 *)s_drawModePacket - 1;
     CHECK(pulse->x0 == 0x74 && pulse->x1 == 0xCC);

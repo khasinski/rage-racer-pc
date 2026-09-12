@@ -18,12 +18,24 @@ typedef struct RaceOptionMarqueeText {
     const char *second;
 } RaceOptionMarqueeText;
 
+typedef struct RaceOptionAnimation {
+    s32 pulseAngle;
+    s16 firstScroll;
+    s16 secondScroll;
+} RaceOptionAnimation;
+
+static RaceOptionAnimation s_Animation;
+
 static const RaceOptionMarqueeText s_MarqueeText[] = {
     {"  RAGE RACER GE", "TS YOU GOING!  "},
     {"  RAGE RACER GE", "TS YOU GOING!  "},
     {"   KICK BACK AN", "D CHILL OUT!   "},
     {"     SLASH THOS", "E RECORDS!     "},
 };
+
+void ResetRaceOptionMenuAnimation(void) {
+    s_Animation = (RaceOptionAnimation){0, -240, 240};
+}
 
 static s32 ClampRaceOptionCursor(s32 cursor, s32 grandPrixMode) {
     s32 lastOption = grandPrixMode != 0 ? 1 : 2;
@@ -70,21 +82,21 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     marquee->v0 = 0x38;
     marquee->clut = 0x7893;
     marqueeState = AdvanceRaceOptionMarquee(
-        g_RaceOptionScroll0, g_RaceOptionScroll1, g_SceneTimer);
+        s_Animation.firstScroll, s_Animation.secondScroll, g_SceneTimer);
     marquee->r0 = marqueeState.brightness;
     marquee->g0 = marqueeState.brightness;
     marquee->b0 = marqueeState.brightness;
     AddPrim(ot, marquee);
 
-    g_RaceOptionScroll0 = marqueeState.firstScroll;
-    g_RaceOptionScroll1 = marqueeState.secondScroll;
+    s_Animation.firstScroll = marqueeState.firstScroll;
+    s_Animation.secondScroll = marqueeState.secondScroll;
 
     next = QueueDrawAreaPrim(ot, (DrawPacket *)(marquee + 1),
                              0, 0, 0x140, 0xF0);
     g_RenderState.draw.packetCursor = next;
-    DrawText8x8((g_RaceOptionScroll0 >> 2) + 0xA0, 0x8A,
+    DrawText8x8((s_Animation.firstScroll >> 2) + 0xA0, 0x8A,
                 s_MarqueeText[marqueeState.textFrame].first, 0x7811);
-    DrawText8x8((g_RaceOptionScroll1 >> 2) + 0xA0, 0x8A,
+    DrawText8x8((s_Animation.secondScroll >> 2) + 0xA0, 0x8A,
                 s_MarqueeText[marqueeState.textFrame].second, 0x7811);
 
     next = QueueDrawAreaPrim(ot, RENDER_PRIM_CURSOR_AS(DrawPacket),
@@ -129,8 +141,8 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     }
     quad = (POLY_FT4 *)packet;
 
-    pulseState = AdvanceRaceOptionPulse(g_RaceOptionPulseAngle);
-    g_RaceOptionPulseAngle = pulseState.angle;
+    pulseState = AdvanceRaceOptionPulse(s_Animation.pulseAngle);
+    s_Animation.pulseAngle = pulseState.angle;
 
     SetPolyFT4(quad);
     quad->r0 = 0x60;

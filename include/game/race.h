@@ -299,9 +299,6 @@ extern PrologueLine g_PrologueLines[PROLOGUE_LINE_CAPACITY];
 extern s32 g_PrologueLineCount;
 enum { PROMOTION_BONUS_COUNT = 5 };
 extern s32 g_PromotionBonusTable[PROMOTION_BONUS_COUNT];
-extern s32 g_RaceOptionPulseAngle;
-extern s16 g_RaceOptionScroll0;
-extern s16 g_RaceOptionScroll1;
 extern s32 g_RankingInsertRow;
 extern u8 g_RankingNameCodes[];
 typedef enum RecordEntryState {
