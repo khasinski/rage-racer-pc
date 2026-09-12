@@ -109,8 +109,8 @@ static int ResolveTranslocatedPath(char *path, size_t pathSize) {
 }
 #endif
 
-static int ExecutableDirectory(const char *argv0, char *out,
-                                   size_t outSize) {
+int PlatformExecutableDirectory(const char *argv0, char *out,
+                                size_t outSize) {
     char executable[4096];
     size_t length = 0;
     char *slash;
@@ -152,11 +152,6 @@ static int ExecutableDirectory(const char *argv0, char *out,
     if (strlen(executable) + 1 > outSize) return 0;
     strcpy(out, executable);
     return 1;
-}
-
-int PlatformExecutableDirectory(const char *argv0, char *out,
-                                    size_t outSize) {
-    return ExecutableDirectory(argv0, out, outSize);
 }
 
 int PlatformExistingPortableStateDirectory(
@@ -311,7 +306,7 @@ int PlatformFindBundledConfigFile(const char *argv0, const char *name,
     if (path == NULL || pathSize == 0) return 0;
     path[0] = '\0';
     if (name == NULL || name[0] == '\0') return 0;
-    if (ExecutableDirectory(argv0, directory, sizeof(directory))) {
+    if (PlatformExecutableDirectory(argv0, directory, sizeof(directory))) {
         if (JoinPath(path, pathSize, directory, name) &&
             FileExists(path)) return 1;
 #ifdef __APPLE__
