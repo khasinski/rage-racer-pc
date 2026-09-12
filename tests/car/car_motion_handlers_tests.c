@@ -24,12 +24,12 @@
 #include <string.h>
 
 /* A ring of points, so an index maps to a position without a course. */
-void InterpolateTrackPoint(s32 pointIndex, s32 *out, s32 weight) {
+void InterpolateTrackPoint(s32 pointIndex, LVec *out, s32 weight) {
     s32 angle = (pointIndex * 4096) / (g_TrackPointCount > 0 ? g_TrackPointCount : 1);
     angle = (angle + weight / 16) & 0xFFF;
-    out[0] = (rsin(angle) * 1000) >> 12;
-    out[1] = 0;
-    out[2] = (rcos(angle) * 1000) >> 12;
+    out->x = (rsin(angle) * 1000) >> 12;
+    out->y = 0;
+    out->z = (rcos(angle) * 1000) >> 12;
 }
 
 s32 SmoothTrackAngle(s32 pointIndex, s32 weight) {

@@ -13,17 +13,17 @@ const GameTrackPoint *g_TrackPoints;
 s32 g_TrackPointCount;
 s32 g_RaceSeries;
 
-static s32 s_coords[3];
+static LVec s_coords;
 static s32 s_smoothAngle;
 static s32 s_atanResult;
 static s32 s_sampledIndex;
 static s32 s_atanX;
 static s32 s_atanZ;
 
-void InterpolateTrackPoint(s32 index, s32 *out, s32 weight) {
+void InterpolateTrackPoint(s32 index, LVec *out, s32 weight) {
     (void)weight;
     s_sampledIndex = index;
-    memcpy(out, s_coords, sizeof(s_coords));
+    *out = s_coords;
 }
 
 s32 SmoothTrackAngle(s32 index, s32 weight) {
@@ -54,9 +54,9 @@ static void ResetCar(GameCarRuntime *car) {
     car->bodyYaw = 600;
     car->targetYaw = 700;
     car->trackHeading.value = 100;
-    s_coords[0] = 1000;
-    s_coords[1] = 0;
-    s_coords[2] = 2000;
+    s_coords.x = 1000;
+    s_coords.y = 0;
+    s_coords.z = 2000;
     s_smoothAngle = 0;
     s_atanResult = 300;
     s_sampledIndex = -1;
@@ -115,8 +115,8 @@ int main(void) {
     SteerCarAlongRoute(NULL);
     CHECK_EQ(s_sampledIndex, -1);
 
-    s_coords[0] = INT_MAX;
-    s_coords[2] = INT_MIN;
+    s_coords.x = INT_MAX;
+    s_coords.z = INT_MIN;
     s_smoothAngle = 0;
     s_atanResult = INT_MIN;
     CHECK_EQ(CalculateTrackOffsetHeading(0, 0, INT_MIN, INT_MAX, 0),

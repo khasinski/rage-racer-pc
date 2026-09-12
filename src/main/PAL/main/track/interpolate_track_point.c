@@ -2,10 +2,10 @@
 
 /*
  * Linearly interpolates the centre-line XYZ between GameTrackPoint[pointIndex]
- * and its successor by `weight` (0..0x400), writing the result to out[0..2].
+ * and its successor by `weight` (0..0x400), writing the result to out.
  * The +0x3FF/+0x7FF bias before the >>10 / >>11 shifts rounds toward zero.
  */
-void InterpolateTrackPoint(s32 pointIndex, s32 *out, s32 weight) {
+void InterpolateTrackPoint(s32 pointIndex, LVec *out, s32 weight) {
     s32 next;
     s32 inv = (s32)(0x400u - (u32)weight);
     const GameTrackPoint *cur;
@@ -16,9 +16,7 @@ void InterpolateTrackPoint(s32 pointIndex, s32 *out, s32 weight) {
         return;
     }
     if (g_TrackPoints == NULL || g_TrackPointCount <= 0) {
-        out[0] = 0;
-        out[1] = 0;
-        out[2] = 0;
+        *out = (LVec){0};
         return;
     }
 
@@ -30,19 +28,19 @@ void InterpolateTrackPoint(s32 pointIndex, s32 *out, s32 weight) {
     if (sum < 0) {
         sum += 0x3FF;
     }
-    out[0] = sum >> 10;
+    out->x = sum >> 10;
 
     sum = (s32)((u32)inv * (u32)cur->y +
                 (u32)weight * (u32)nxt->y);
     if (sum < 0) {
         sum += 0x7FF;
     }
-    out[1] = sum >> 11;
+    out->y = sum >> 11;
 
     sum = (s32)((u32)cur->z * (u32)inv +
                 (u32)nxt->z * (u32)weight);
     if (sum < 0) {
         sum += 0x3FF;
     }
-    out[2] = sum >> 10;
+    out->z = sum >> 10;
 }

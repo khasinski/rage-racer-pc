@@ -15,7 +15,7 @@ void UpdateFinishCamera(PlayerCarRuntime *car) {
     GameCarRuntime *obj = AsRivalCar(car);
     GameViewWork viewWork;
     LVec delta;
-    s32 target[3];
+    LVec target;
     CarTrackLimits trackLimits = {0};
     s32 targetPoint;
     s32 targetHeading;
@@ -27,10 +27,10 @@ void UpdateFinishCamera(PlayerCarRuntime *car) {
 
     LoadViewWork(&viewWork, &g_RenderState.camera);
     targetPoint = FinishCameraTargetPoint(obj);
-    InterpolateTrackPoint(targetPoint, target, g_CameraCar.segmentFraction);
+    InterpolateTrackPoint(targetPoint, &target, g_CameraCar.segmentFraction);
     targetHeading = ANGLE_QUARTER_TURN - Atan2(
-        WrapSigned32((int64_t)target[0] - g_CameraCar.x),
-        WrapSigned32((int64_t)target[2] - g_CameraCarZ));
+        WrapSigned32((int64_t)target.x - g_CameraCar.x),
+        WrapSigned32((int64_t)target.z - g_CameraCarZ));
     g_CameraCarHeading = WrapSigned32(
         (int64_t)g_CameraCarHeading +
         GetAngleDelta(g_CameraCarHeading, targetHeading));

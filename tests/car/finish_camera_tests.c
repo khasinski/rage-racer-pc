@@ -19,12 +19,12 @@ static s32 s_drawCalls;
 static CarTrackLimits s_trackLimits;
 static GameTrackPoint s_trackPoint;
 
-void InterpolateTrackPoint(s32 pointIndex, s32 *out, s32 weight) {
+void InterpolateTrackPoint(s32 pointIndex, LVec *out, s32 weight) {
     (void)weight;
     s_interpolatedPoint = pointIndex;
-    out[0] = pointIndex * 100;
-    out[1] = 0;
-    out[2] = pointIndex * 200;
+    out->x = pointIndex * 100;
+    out->y = 0;
+    out->z = pointIndex * 200;
 }
 
 s32 Atan2(s32 x, s32 y) {

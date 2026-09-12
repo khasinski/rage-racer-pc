@@ -152,7 +152,7 @@ static void test_track_angle_interpolation(void) {
 
 static void test_track_point_interpolation(void) {
     GameTrackPoint points[2] = {0};
-    s32 out[3] = {99, 99, 99};
+    LVec out = {99, 99, 99};
 
     points[0].x = 10;
     points[0].y = 20;
@@ -163,38 +163,38 @@ static void test_track_point_interpolation(void) {
     g_TrackPoints = points;
     g_TrackPointCount = 2;
 
-    InterpolateTrackPoint(0, out, 0x200);
-    EXPECT_EQ(0, out[0]);
-    EXPECT_EQ(0, out[1]);
-    EXPECT_EQ(0, out[2]);
+    InterpolateTrackPoint(0, &out, 0x200);
+    EXPECT_EQ(0, out.x);
+    EXPECT_EQ(0, out.y);
+    EXPECT_EQ(0, out.z);
 
-    InterpolateTrackPoint(1, out, 0x100);
-    EXPECT_EQ(-5, out[0]);
-    EXPECT_EQ(-5, out[1]);
-    EXPECT_EQ(-15, out[2]);
+    InterpolateTrackPoint(1, &out, 0x100);
+    EXPECT_EQ(-5, out.x);
+    EXPECT_EQ(-5, out.y);
+    EXPECT_EQ(-15, out.z);
 
     points[0].x = INT_MAX;
     points[0].y = SHRT_MIN;
     points[0].z = INT_MAX;
     points[1] = points[0];
-    InterpolateTrackPoint(INT_MAX, out, INT_MAX);
-    EXPECT_EQ(-1, out[0]);
-    EXPECT_EQ(-16384, out[1]);
-    EXPECT_EQ(-1, out[2]);
+    InterpolateTrackPoint(INT_MAX, &out, INT_MAX);
+    EXPECT_EQ(-1, out.x);
+    EXPECT_EQ(-16384, out.y);
+    EXPECT_EQ(-1, out.z);
 
     points[0].x = points[1].x = 10;
     points[0].y = points[1].y = 20;
     points[0].z = points[1].z = 30;
-    InterpolateTrackPoint(0, out, INT_MIN);
-    EXPECT_EQ(10, out[0]);
-    EXPECT_EQ(10, out[1]);
-    EXPECT_EQ(30, out[2]);
+    InterpolateTrackPoint(0, &out, INT_MIN);
+    EXPECT_EQ(10, out.x);
+    EXPECT_EQ(10, out.y);
+    EXPECT_EQ(30, out.z);
 
     g_TrackPoints = NULL;
-    InterpolateTrackPoint(0, out, 0x200);
-    EXPECT_EQ(0, out[0]);
-    EXPECT_EQ(0, out[1]);
-    EXPECT_EQ(0, out[2]);
+    InterpolateTrackPoint(0, &out, 0x200);
+    EXPECT_EQ(0, out.x);
+    EXPECT_EQ(0, out.y);
+    EXPECT_EQ(0, out.z);
     InterpolateTrackPoint(0, NULL, 0x200);
 }
 

@@ -7,24 +7,24 @@
 
 s32 CalculateTrackOffsetHeading(s32 pointIndex, s32 segmentFraction,
                                 s32 carX, s32 carZ, s32 lateralOffset) {
-    s32 target[3];
+    LVec target;
     s32 trackAngle;
     s32 lateralStep;
     s32 dx;
     s32 dz;
 
-    InterpolateTrackPoint(pointIndex, target, segmentFraction);
+    InterpolateTrackPoint(pointIndex, &target, segmentFraction);
     trackAngle = WrapSigned32(
         (int64_t)ANGLE_FULL_TURN -
         SmoothTrackAngle(pointIndex, segmentFraction));
     lateralStep = WrapSigned32((int64_t)rsin(trackAngle) * lateralOffset) /
                   ANGLE_FULL_TURN;
-    target[0] = WrapSigned32((int64_t)target[0] + lateralStep);
+    target.x = WrapSigned32((int64_t)target.x + lateralStep);
     lateralStep = WrapSigned32((int64_t)rcos(trackAngle) * lateralOffset) /
                   ANGLE_FULL_TURN;
-    target[2] = WrapSigned32((int64_t)target[2] + lateralStep);
-    dx = WrapSigned32((int64_t)target[0] - carX);
-    dz = WrapSigned32((int64_t)target[2] - carZ);
+    target.z = WrapSigned32((int64_t)target.z + lateralStep);
+    dx = WrapSigned32((int64_t)target.x - carX);
+    dz = WrapSigned32((int64_t)target.z - carZ);
 
     return WrapSigned32((int64_t)ANGLE_QUARTER_TURN - Atan2(dx, dz));
 }

@@ -8,7 +8,7 @@ enum { INTRO_CAR_VIEW_HEIGHT = 28 };
 
 void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
     GameViewWork viewWork;
-    s32 delta[3];
+    LVec delta;
 
     if (mode >= 90) {
         UpdateCamera(CAMERA_VIEW_CAR,
@@ -89,16 +89,16 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
             (int64_t)g_RaceIntroCameraCursor->z.word +
             g_RaceIntroCameraDelta.vz * interpolation / 4096);
 
-        delta[0] = WrapSigned32(
+        delta.x = WrapSigned32(
             (int64_t)rsin(car->bodyYaw) / 128 + car->x - viewWork.x);
-        delta[1] = WrapSigned32(
+        delta.y = WrapSigned32(
             (int64_t)car->y - INTRO_CAR_VIEW_HEIGHT - viewWork.y);
-        delta[2] = WrapSigned32(
+        delta.z = WrapSigned32(
             (int64_t)rcos(car->bodyYaw) / 128 + car->z - viewWork.z);
-        viewWork.angleY = ANGLE_QUARTER_TURN - Atan2(delta[0], delta[2]);
+        viewWork.angleY = ANGLE_QUARTER_TURN - Atan2(delta.x, delta.z);
         viewWork.angleX = ANGLE_QUARTER_TURN -
-                          Atan2(delta[1],
-                                DistanceXZ(delta[0], delta[2]) >> 6);
+                          Atan2(delta.y,
+                                DistanceXZ(delta.x, delta.z) >> 6);
         viewWork.angleZ = 0;
         StoreViewWork(&g_RenderState.camera, &viewWork);
         SetCameraRotMatrix();

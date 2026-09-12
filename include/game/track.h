@@ -355,7 +355,7 @@ extern Vec4 g_RouteSceneryPosition;
 
 extern s16 g_ShuttlePathDwellMax[];
 
-void InterpolateTrackPoint(s32 pointIndex, s32* out, s32 weight);
+void InterpolateTrackPoint(s32 pointIndex, LVec *out, s32 weight);
 
 extern s16 g_PresentationSceneryFrame;
 extern s32 g_PresentationSceneryTint;

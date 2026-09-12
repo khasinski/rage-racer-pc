@@ -3,6 +3,12 @@
 
 #include "common.h"
 
+typedef struct LVec {
+    s32 x;
+    s32 y;
+    s32 z;
+} LVec;
+
 typedef struct GameTrackPoint {
     s32 x;
     s32 z;
@@ -21,6 +27,6 @@ extern s32 g_TrackPointCount;
 s32 BlendAngle(s32 angleA, s32 angleB, s32 weight);
 s32 InterpolateTrackAngle(s32 pointIndex, s32 weight);
 s32 SmoothTrackAngle(s32 pointIndex, s32 weight);
-void InterpolateTrackPoint(s32 pointIndex, s32 *out, s32 weight);
+void InterpolateTrackPoint(s32 pointIndex, LVec *out, s32 weight);
 
 #endif
