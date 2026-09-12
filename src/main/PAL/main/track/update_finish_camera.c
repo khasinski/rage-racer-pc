@@ -4,14 +4,16 @@
 #include "game/race_internal.h"
 #include "game/track.h"
 
-static s32 FinishCameraTargetPoint(const GameCarRuntime *target) {
+static s32 FinishCameraTargetPoint(const FinishCamera *finish,
+                                   const GameCarRuntime *target) {
     s32 offset = target->facingBackwards != 0 ? 2 : -2;
     return WrapTrackPointIndex(WrapSigned32(
-        (int64_t)g_CameraCarTrackPoint + offset));
+        (int64_t)finish->point + offset));
 }
 
 /* Follow the centre line while keeping the finished car in view. */
-void UpdateFinishCamera(Camera *camera, PlayerCarRuntime *car) {
+void UpdateFinishCamera(Camera *camera, FinishCamera *finish,
+                        PlayerCarRuntime *car) {
     GameCarRuntime *obj = AsRivalCar(car);
     GameViewWork viewWork;
     LVec delta;
@@ -20,37 +22,39 @@ void UpdateFinishCamera(Camera *camera, PlayerCarRuntime *car) {
     s32 targetPoint;
     s32 targetHeading;
     s32 distance;
+    s32 stepX;
+    s32 stepZ;
 
     if (g_TrackPoints == NULL || g_TrackPointCount <= 0) {
         return;
     }
 
     LoadViewWork(&viewWork, &camera->view);
-    targetPoint = FinishCameraTargetPoint(obj);
-    InterpolateTrackPoint(targetPoint, &target, g_CameraCar.segmentFraction);
+    targetPoint = FinishCameraTargetPoint(finish, obj);
+    InterpolateTrackPoint(targetPoint, &target, finish->car.segmentFraction);
     targetHeading = ANGLE_QUARTER_TURN - Atan2(
-        WrapSigned32((int64_t)target.x - g_CameraCar.x),
-        WrapSigned32((int64_t)target.z - g_CameraCarZ));
-    g_CameraCarHeading = WrapSigned32(
-        (int64_t)g_CameraCarHeading +
-        GetAngleDelta(g_CameraCarHeading, targetHeading));
+        WrapSigned32((int64_t)target.x - finish->car.x),
+        WrapSigned32((int64_t)target.z - finish->car.z));
+    finish->heading = WrapSigned32(
+        (int64_t)finish->heading +
+        GetAngleDelta(finish->heading, targetHeading));
 
-    g_CameraCarStepX = WrapSigned32(
-        (int64_t)rsin(g_CameraCarHeading) * g_CameraCarSpeed) / 256;
-    g_CameraCarStepZ = WrapSigned32(
-        (int64_t)rcos(g_CameraCarHeading) * g_CameraCarSpeed) / 256;
-    g_CameraCar.x = WrapSigned32(
-        (int64_t)g_CameraCar.x + g_CameraCarStepX / 256);
-    g_CameraCarZ = WrapSigned32(
-        (int64_t)g_CameraCarZ + g_CameraCarStepZ / 256);
+    stepX = WrapSigned32(
+        (int64_t)rsin(finish->heading) * finish->car.speed) / 256;
+    stepZ = WrapSigned32(
+        (int64_t)rcos(finish->heading) * finish->car.speed) / 256;
+    finish->car.x = WrapSigned32(
+        (int64_t)finish->car.x + stepX / 256);
+    finish->car.z = WrapSigned32(
+        (int64_t)finish->car.z + stepZ / 256);
 
-    AccumulateLapProgress(&g_CameraCar);
-    UpdateCarTrackState(&g_CameraCar, g_CameraCarTrackPoint, &trackLimits);
+    AccumulateLapProgress(&finish->car);
+    UpdateCarTrackState(&finish->car, finish->point, &trackLimits);
 
-    viewWork.x = g_CameraCar.x;
-    viewWork.y = WrapSigned32((int64_t)g_CameraCar.y - 64);
-    viewWork.z = g_CameraCar.z;
-    viewWork.parameter = g_CameraCar.positionW;
+    viewWork.x = finish->car.x;
+    viewWork.y = WrapSigned32((int64_t)finish->car.y - 64);
+    viewWork.z = finish->car.z;
+    viewWork.parameter = finish->car.positionW;
 
     delta.x = WrapSigned32((int64_t)obj->x - viewWork.x);
     delta.y = WrapSigned32((int64_t)obj->y - viewWork.y);

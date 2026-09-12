@@ -10,6 +10,7 @@
 #include "game/result_screen_types.h"
 
 struct PlayerCarRuntime;
+typedef struct FinishCamera FinishCamera;
 
 enum {
     REPLAY_OPAQUE_FADE = 257,
@@ -45,8 +46,9 @@ void PlayCountdownCues(s32 timer);
 void UpdateRivalCueGate(void);
 void UpdateSplitTimes(struct PlayerCarRuntime *car, s32 grandPrixMode,
                       s32 lapEvent);
-void SeedFinishCamera(struct PlayerCarRuntime *car);
-void UpdateFinishCamera(Camera *camera, struct PlayerCarRuntime *car);
+void SeedFinishCamera(FinishCamera *finish, struct PlayerCarRuntime *car);
+void UpdateFinishCamera(Camera *camera, FinishCamera *finish,
+                        struct PlayerCarRuntime *car);
 void UpdateRacePosition(void);
 s32 AttractTitleFadeLevel(s32 step, s32 timer, s32 fadeLevel, s32 delay);
 s32 BgmCdTrack(s32 selectedTrack);

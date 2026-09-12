@@ -4,7 +4,7 @@
 #include "game/race_internal.h"
 #include "game/track.h"
 
-void SeedFinishCamera(PlayerCarRuntime *car) {
+void SeedFinishCamera(FinishCamera *finish, PlayerCarRuntime *car) {
     const GameTrackPoint *point;
     s32 heading;
 
@@ -13,15 +13,18 @@ void SeedFinishCamera(PlayerCarRuntime *car) {
     }
 
     point = TrackPoint(car->trackPointIndex);
-    g_CameraCar = *AsRivalCar(car);
-    g_CameraCar.x = point->x;
-    g_CameraCar.z = point->z;
-    g_CameraCar.y = point->y - 0x40;
-    g_CameraCar.speed = WrapSigned32((int64_t)g_CameraCar.speed + 0x40);
+    finish->car = *AsRivalCar(car);
+    finish->car.x = point->x;
+    finish->car.z = point->z;
+    finish->car.y = point->y - 0x40;
+    finish->car.speed = WrapSigned32((int64_t)finish->car.speed + 0x40);
 
     heading = (car->facingBackwards != 0 ? ANGLE_HALF_TURN : 0) +
               ANGLE_THREE_QUARTER_TURN - point->angle;
-    g_CameraCar.headingAngle = heading;
-    g_CameraCarSeedYaw = heading;
-    g_CameraCar.bodyYaw = heading;
+    finish->car.headingAngle = heading;
+    finish->seedYaw = heading;
+    finish->car.bodyYaw = heading;
+    finish->point = car->trackPointIndex;
+    finish->heading = heading;
+    finish->section = car->trackSection;
 }

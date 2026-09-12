@@ -145,7 +145,7 @@ static s32 UpdateRacePause(void) {
             g_BestLapTimes[series][course][0] =
                 g_RankingRecords[series][course][0].raceTime;
         }
-        SeedFinishCamera(&g_PlayerCar);
+        SeedFinishCamera(&g_FinishCamera, &g_PlayerCar);
         StartCdVolumeFade(8);
     } else if (toggle.action == RACE_PAUSE_RETIRE) {
         g_RaceFadeTimer = 0;
@@ -382,7 +382,7 @@ static void UpdateActiveRaceScene(void) {
             ForceAllEffectVoicesEnabled(0);
             g_RacePhase = RACE_PHASE_RETIRED;
             g_RaceFadeTimer = 0;
-            SeedFinishCamera(&g_PlayerCar);
+            SeedFinishCamera(&g_FinishCamera, &g_PlayerCar);
             StartCdVolumeFade(8);
         }
     }
@@ -418,7 +418,7 @@ static void UpdateActiveRaceScene(void) {
                               g_Camera.mode);
     g_Camera.mode = raceView.cameraView;
     if (raceView.cameraAction == RACE_CAMERA_ACTION_FINISH) {
-        UpdateFinishCamera(&g_Camera, &g_PlayerCar);
+        UpdateFinishCamera(&g_Camera, &g_FinishCamera, &g_PlayerCar);
     } else if (raceView.cameraAction == RACE_CAMERA_ACTION_FOLLOW_PLAYER) {
         GameCarRuntime *player =
             AsRivalCar(&g_PlayerCar);
@@ -431,7 +431,7 @@ static void UpdateActiveRaceScene(void) {
     }
 
     textureSection = raceView.useFinishTextureSection
-                         ? g_CameraCarTrackSection
+                         ? g_FinishCamera.section
                          : g_PlayerCar.trackSection;
     RequestTrackTexturePage(textureSection);
 

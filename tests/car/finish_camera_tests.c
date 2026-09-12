@@ -61,9 +61,10 @@ void DrawPlayerCarModel(GameCarRuntime *obj) {
 static int RunCase(s32 cameraPoint, s32 backwards, s32 expectedPoint) {
     PlayerCarRuntime target;
     Camera camera;
+    FinishCamera finish;
 
     memset(&target, 0, sizeof(target));
-    memset(&g_CameraCar, 0, sizeof(g_CameraCar));
+    memset(&finish, 0, sizeof(finish));
     memset(&g_RenderState, 0, sizeof(g_RenderState));
     memset(&camera, 0, sizeof(camera));
     memset(&s_trackLimits, 0x7F, sizeof(s_trackLimits));
@@ -73,27 +74,24 @@ static int RunCase(s32 cameraPoint, s32 backwards, s32 expectedPoint) {
     target.z = 3000;
     g_TrackPointCount = 10;
     g_TrackPoints = &s_trackPoint;
-    g_CameraCarTrackPoint = cameraPoint;
-    g_CameraCar.x = 100;
-    g_CameraCar.y = 200;
-    g_CameraCar.z = 300;
-    g_CameraCar.positionW = 400;
-    g_CameraCar.segmentFraction = 2048;
-    g_CameraCarZ = 300;
-    g_CameraCarSpeed = 256;
-    g_CameraCarHeading = 0;
+    finish.point = cameraPoint;
+    finish.car.x = 100;
+    finish.car.y = 200;
+    finish.car.z = 300;
+    finish.car.positionW = 400;
+    finish.car.segmentFraction = 2048;
+    finish.car.speed = 256;
     s_atanCall = 0;
     s_trackStateCalls = 0;
     s_drawCalls = 0;
 
-    UpdateFinishCamera(&camera, &target);
+    UpdateFinishCamera(&camera, &finish, &target);
 
     if (s_interpolatedPoint != expectedPoint ||
-        g_CameraCarHeading != 0x300 ||
-        g_CameraCarStepX != 256 || g_CameraCarStepZ != 512 ||
-        g_CameraCar.x != 101 || g_CameraCarZ != 302 ||
+        finish.heading != 0x300 ||
+        finish.car.x != 101 || finish.car.z != 302 ||
         camera.view.x != 101 || camera.view.y != 136 ||
-        camera.view.z != 300 || camera.view.parameter != 400 ||
+        camera.view.z != 302 || camera.view.parameter != 400 ||
         camera.view.angleX != 0x100 ||
         camera.view.angleY != 0x200 ||
         camera.view.angleZ != 0 ||
@@ -110,16 +108,17 @@ static int RunCase(s32 cameraPoint, s32 backwards, s32 expectedPoint) {
 int main(void) {
     PlayerCarRuntime target = {0};
     Camera camera = {0};
+    FinishCamera finish = {0};
 
     if (RunCase(1, 0, 9) || RunCase(9, 1, 1)) return 1;
 
     target.x = 1000;
     target.y = 2000;
     target.z = 3000;
-    g_CameraCarSpeed = INT_MIN;
+    finish.car.speed = INT_MIN;
     s_atanCall = 0;
-    UpdateFinishCamera(&camera, &target);
-    if (g_CameraCarStepX != 0 || g_CameraCarStepZ != 0) {
+    UpdateFinishCamera(&camera, &finish, &target);
+    if (finish.car.x != 0 || finish.car.z != 0) {
         puts("FAIL: finish camera velocity did not wrap as a PS1 word");
         return 1;
     }
@@ -128,7 +127,7 @@ int main(void) {
     g_TrackPointCount = 0;
     s_trackStateCalls = 0;
     s_drawCalls = 0;
-    UpdateFinishCamera(&camera, &(PlayerCarRuntime){0});
+    UpdateFinishCamera(&camera, &finish, &(PlayerCarRuntime){0});
     if (s_trackStateCalls != 0 || s_drawCalls != 0) {
         puts("FAIL: finish camera ran without a loaded track");
         return 1;

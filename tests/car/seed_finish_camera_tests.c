@@ -8,10 +8,8 @@
 #include <stdio.h>
 #include <string.h>
 
-GameCarRuntime g_CameraCar;
 const GameTrackPoint *g_TrackPoints;
 s32 g_TrackPointCount;
-s32 g_CameraCarSeedYaw;
 
 #define CHECK_EQ(actual, expected) do {                                        \
     if ((actual) != (expected)) {                                               \
@@ -24,8 +22,10 @@ s32 g_CameraCarSeedYaw;
 int main(void) {
     static GameTrackPoint points[3];
     PlayerCarRuntime car;
+    FinishCamera finish;
 
     memset(&car, 0, sizeof(car));
+    memset(&finish, 0, sizeof(finish));
     memset(points, 0, sizeof(points));
     g_TrackPoints = points;
     g_TrackPointCount = 3;
@@ -37,40 +37,43 @@ int main(void) {
     car.speed = 500;
     car.facingBackwards = 0;
 
-    SeedFinishCamera(&car);
-    CHECK_EQ(g_CameraCar.x, 100);
-    CHECK_EQ(g_CameraCar.y, 136);
-    CHECK_EQ(g_CameraCar.z, 300);
-    CHECK_EQ(g_CameraCar.speed, 564);
-    CHECK_EQ(g_CameraCar.headingAngle, 0xAE0);
-    CHECK_EQ(g_CameraCar.bodyYaw, 0xAE0);
-    CHECK_EQ(g_CameraCarSeedYaw, 0xAE0);
+    SeedFinishCamera(&finish, &car);
+    CHECK_EQ(finish.car.x, 100);
+    CHECK_EQ(finish.car.y, 136);
+    CHECK_EQ(finish.car.z, 300);
+    CHECK_EQ(finish.car.speed, 564);
+    CHECK_EQ(finish.car.headingAngle, 0xAE0);
+    CHECK_EQ(finish.car.bodyYaw, 0xAE0);
+    CHECK_EQ(finish.seedYaw, 0xAE0);
+    CHECK_EQ(finish.point, 4);
+    CHECK_EQ(finish.heading, 0xAE0);
+    CHECK_EQ(finish.section, 0);
 
     car.facingBackwards = 1;
-    SeedFinishCamera(&car);
-    CHECK_EQ(g_CameraCar.headingAngle, 0x12E0);
+    SeedFinishCamera(&finish, &car);
+    CHECK_EQ(finish.car.headingAngle, 0x12E0);
 
     car.speed = INT_MAX;
-    SeedFinishCamera(&car);
-    CHECK_EQ(g_CameraCar.speed, INT_MIN + 63);
+    SeedFinishCamera(&finish, &car);
+    CHECK_EQ(finish.car.speed, INT_MIN + 63);
 
-    g_CameraCar.x = 777;
+    finish.car.x = 777;
     g_TrackPointCount = 0;
-    SeedFinishCamera(&car);
-    CHECK_EQ(g_CameraCar.x, 777);
+    SeedFinishCamera(&finish, &car);
+    CHECK_EQ(finish.car.x, 777);
 
     g_TrackPointCount = 3;
     g_TrackPoints = NULL;
-    SeedFinishCamera(&car);
-    CHECK_EQ(g_CameraCar.x, 777);
+    SeedFinishCamera(&finish, &car);
+    CHECK_EQ(finish.car.x, 777);
 
     g_TrackPoints = points;
-    SeedFinishCamera(NULL);
-    CHECK_EQ(g_CameraCar.x, 777);
+    SeedFinishCamera(&finish, NULL);
+    CHECK_EQ(finish.car.x, 777);
 
     car.facingBackwards = SHRT_MAX;
-    SeedFinishCamera(&car);
-    CHECK_EQ(g_CameraCar.headingAngle, 0x12E0);
+    SeedFinishCamera(&finish, &car);
+    CHECK_EQ(finish.car.headingAngle, 0x12E0);
 
     puts("finish camera seeds from a wrapped track point");
     return 0;

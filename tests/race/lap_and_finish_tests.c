@@ -35,6 +35,7 @@ s32 g_LapCount;
 s32 g_LapTimeMs;
 s16 g_MirrorViewEnabled;
 PlayerCarRuntime g_PlayerCar;
+FinishCamera g_FinishCamera;
 s32 g_RaceSeries;
 s16 g_RaceCueDelay;
 s32 g_RaceCueFlags;
@@ -111,7 +112,8 @@ void QueueFinishFollowupCue(s32 cue) {
     s_followupCount++;
     RECORD("followup", cue);
 }
-void SeedFinishCamera(PlayerCarRuntime *car) {
+void SeedFinishCamera(FinishCamera *finish, PlayerCarRuntime *car) {
+    (void)finish;
     RECORD("finishcamera", car == &g_PlayerCar);
 }
 void StartCdVolumeFade(s32 frames) { RECORD("cdfade", frames); }

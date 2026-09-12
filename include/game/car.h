@@ -272,7 +272,16 @@ extern CarCollisionPoint g_CarCollisionCorners[CAR_HULL_CORNER_COUNT];
 /* Per-car runtime state, player in slot 0. Individual slots and single fields
  * also have their own split symbols. */
 extern GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
-extern GameCarRuntime g_CameraCar;
+
+typedef struct FinishCamera {
+    GameCarRuntime car;
+    s32 seedYaw;
+    s32 point;
+    s32 heading;
+    s16 section;
+} FinishCamera;
+
+extern FinishCamera g_FinishCamera;
 
 /* The four contenders ordered by race progress (`progressA + progressB`), best
  * first; re-sorted every frame by RankContenders to rubber-band the AI. */

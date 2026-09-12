@@ -334,12 +334,6 @@ extern s32 g_TrackLength;
  * and the per-series marker rows at + g_RaceSeries * 576 + 0x474. */
 extern const TrackEventData *g_TrackEventData;
 
-extern s32 g_CameraCarSeedYaw;
-extern s32 g_CameraCarHeading;
-extern s32 g_CameraCarSpeed;
-extern s32 g_CameraCarStepX;
-extern s32 g_CameraCarStepZ;
-extern s32 g_CameraCarZ;
 extern s32 g_CourseModelCount;
 extern s16 g_EnvLerpDuration;
 extern const GameEnvironmentCue *g_EnvScriptCues;
@@ -383,7 +377,6 @@ extern s32 g_CamPathNode;
 extern s32 g_CamPathOffset[3];
 extern s32 g_CamPathOffsetDelta[3];
 extern s32 g_CamPathOffsetStart[3];
-extern s32 g_CameraCarTrackPoint;
 extern s32 g_ChaseCarSpeed;
 extern s32 g_ChaseTargetYaw;
 extern s32 g_ChaseYaw;

@@ -34,10 +34,6 @@ _Static_assert(sizeof(g_MainVisibleCellList) ==
                "g_MainVisibleCellList ABI size changed");
 _Static_assert(sizeof(g_MainVisibleCellMask) == sizeof(u32) * 32,
                "g_MainVisibleCellMask ABI size changed");
-_Static_assert(sizeof(g_CameraCarZ) == sizeof(s32),
-               "g_CameraCarZ must be one coordinate");
-_Static_assert(sizeof(g_CameraCarStepZ) == sizeof(s32),
-               "g_CameraCarStepZ must be one coordinate step");
 _Static_assert(sizeof(g_EnvScriptCursor) == sizeof(void *),
                "g_EnvScriptCursor must be one pointer");
 _Static_assert(sizeof(g_PathSceneryPosKeys) == sizeof(void *),

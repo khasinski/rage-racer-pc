@@ -264,7 +264,6 @@ extern s16 g_AttractTitleDelays[];
 extern s32 g_BestLapIndex;
 extern s32 g_BgmRandomLabelTimer;
 extern s32 g_BgmRandomPlay;
-extern s16 g_CameraCarTrackSection;
 extern const char *g_NativeCarClassNames[];
 extern const char *g_NativeCarNames[];
 #define g_CarClassNames g_NativeCarClassNames

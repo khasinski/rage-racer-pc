@@ -149,7 +149,7 @@ static void FinishRace(PlayerCarRuntime *car, s32 recordMode,
  * camera pulling away. */
 static void RetireAtLastLap(void) {
     g_RacePhase = RACE_PHASE_RETIRED;
-    SeedFinishCamera(&g_PlayerCar);
+    SeedFinishCamera(&g_FinishCamera, &g_PlayerCar);
     StartCdVolumeFade(RETIRE_AUDIO_FADE_FRAMES);
     if (g_CourseProgress != NULL &&
         g_CourseProgress->retriesRemaining > 0) {
@@ -234,7 +234,7 @@ static void RetireWrongWay(void) {
     StartCdVolumeFade(FINISH_AUDIO_FADE_FRAMES);
     ForceAllEffectVoicesEnabled(0);
     g_RaceFadeTimer = 0;
-    SeedFinishCamera(&g_PlayerCar);
+    SeedFinishCamera(&g_FinishCamera, &g_PlayerCar);
 }
 
 /* Two laps out, one lap out and the last lap each get their own call. */

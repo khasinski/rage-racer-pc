@@ -11,10 +11,10 @@ _Static_assert(sizeof(g_TrackPoints) == sizeof(void *),
                "g_TrackPoints must be one pointer");
 _Static_assert(sizeof(g_RaceIntroCameraScript) == sizeof(void *),
                "g_RaceIntroCameraScript must be one pointer");
-_Static_assert(sizeof(g_CameraCar) == sizeof(GameCarRuntime),
-               "g_CameraCar ABI size changed");
-_Static_assert(sizeof(g_CameraCarSeedYaw) == sizeof(s32),
-               "g_CameraCarSeedYaw must be one angle");
+_Static_assert(sizeof(g_FinishCamera.car) == sizeof(GameCarRuntime),
+               "finish camera car size changed");
+_Static_assert(sizeof(g_FinishCamera.seedYaw) == sizeof(s32),
+               "finish camera seed yaw must be one angle");
 _Static_assert(sizeof(g_RaceIntroCameraCursor) == sizeof(void *),
                "g_RaceIntroCameraCursor must be one pointer");
 _Static_assert(sizeof(g_RankedCars) == sizeof(GameCarRuntime *) * 4,

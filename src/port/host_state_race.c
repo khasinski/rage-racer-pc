@@ -100,7 +100,6 @@ s32 g_BgmSelectCdTrack;
 s32 g_TimeRecordInsertRow;
 s16 g_TrackZoneCode;
 s32 g_LostRaceChoice;
-s16 g_CameraCarTrackSection;
 s32 g_BgmTrackCount;
 s32 g_BgmSelectShowUi;
 s32 g_SectorIndex;
