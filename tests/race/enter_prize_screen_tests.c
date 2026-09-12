@@ -13,11 +13,8 @@ s32 g_ClassCompleted;
 s32 g_CourseIndex;
 s32 g_FrameSyncThreshold;
 s32 g_GrandPrixClass;
-s32 g_PrizeAmount;
-s32 g_PromotionBonus;
 s32 g_PromotionBonusTable[PROMOTION_BONUS_COUNT];
 s32 g_SceneId;
-s32 g_SceneTimer;
 s32 g_SeriesCleared;
 GameRaceProgress *g_RaceProgress;
 PlayerCarRuntime g_PlayerCar;
@@ -39,7 +36,9 @@ s32 TickClassClearFanfare(void) { return 0; }
 void AdvanceGrandPrixClass(void) {}
 void DrawFullscreenFadeTile(s32 step, s32 clut) { (void)step; (void)clut; }
 void DrawGrandPrixIntro(s32 drawClassBanner) { (void)drawClassBanner; }
-void DrawPrizeMoneyPanel(s32 step) { (void)step; }
+void DrawPrizeMoneyPanel(s32 step, s32 prize, s32 bonus) {
+    (void)step; (void)prize; (void)bonus;
+}
 void DrawRaceTimePanel(s32 step) { (void)step; }
 void PlaySoundCue(s32 cue) { (void)cue; }
 s32 RequestSelectBgmAssets(void) { return 0; }
@@ -75,8 +74,8 @@ int main(void) {
         for (s32 i = 0; i < PROMOTION_BONUS_COUNT; ++i)
             g_PromotionBonusTable[i] = 2000 + i;
         EnterPrizeScreenState(&s_screen);
-        Check("every class reward mapping", g_PrizeAmount, 1000 + classIndex);
-        Check("every class promotion mapping", g_PromotionBonus,
+        Check("every class reward mapping", s_screen.prize, 1000 + classIndex);
+        Check("every class promotion mapping", s_screen.bonus,
               classIndex < 5 ? 2000 + classIndex : 0);
     }
     Reset();
@@ -92,10 +91,10 @@ int main(void) {
 
     EnterPrizeScreenState(&s_screen);
     Check("prize screen scene", g_SceneId, 0x13);
-    Check("initial fade timer", g_SceneTimer, 0x100);
+    Check("initial fade timer", s_screen.timer, 0x100);
     Check("frame sync threshold", g_FrameSyncThreshold, 0x80);
-    Check("second-place prize", g_PrizeAmount, 16000);
-    Check("promotion bonus", g_PromotionBonus, 100000);
+    Check("second-place prize", s_screen.prize, 16000);
+    Check("promotion bonus", s_screen.bonus, 100000);
     Check("prize count step", s_screen.prizeStep, 100);
     Check("bonus count step", s_screen.bonusStep, 400);
     Check("loaded money is clamped", s_progress.money,
@@ -114,7 +113,7 @@ int main(void) {
     g_PrizeMoney.values[1][4][PRIZE_PLACE_FIRST] = 54321;
     g_PrizeMoney.values[1][4][PRIZE_PLACE_THIRD] = 160;
     EnterPrizeScreenState(&s_screen);
-    Check("Extra GP uses course within series", g_PrizeAmount, 54321);
+    Check("Extra GP uses course within series", s_screen.prize, 54321);
     Check("Extra GP count step", s_screen.prizeStep, 2);
 
     Reset();
@@ -122,8 +121,8 @@ int main(void) {
     g_ClassPromoted = 1;
     g_PlayerCar.drive.racePosition = 4;
     EnterPrizeScreenState(&s_screen);
-    Check("place outside prize table earns zero", g_PrizeAmount, 0);
-    Check("shared finale has no promotion bonus", g_PromotionBonus, 0);
+    Check("place outside prize table earns zero", s_screen.prize, 0);
+    Check("shared finale has no promotion bonus", s_screen.bonus, 0);
     Check("zero bonus still has a progressing step", s_screen.bonusStep, 1);
 
     Reset();
@@ -131,14 +130,14 @@ int main(void) {
     g_ClassPromoted = 1;
     g_PlayerCar.drive.racePosition = 1;
     EnterPrizeScreenState(&s_screen);
-    Check("negative class earns no prize", g_PrizeAmount, 0);
-    Check("negative class earns no promotion bonus", g_PromotionBonus, 0);
+    Check("negative class earns no prize", s_screen.prize, 0);
+    Check("negative class earns no promotion bonus", s_screen.bonus, 0);
 
     Reset();
     g_GrandPrixClass = GRAND_PRIX_PRIZE_CLASS_COUNT;
     g_PlayerCar.drive.racePosition = 1;
     EnterPrizeScreenState(&s_screen);
-    Check("class past prize table earns no prize", g_PrizeAmount, 0);
+    Check("class past prize table earns no prize", s_screen.prize, 0);
 
     Reset();
     g_RaceProgress = NULL;
@@ -146,7 +145,7 @@ int main(void) {
     g_PrizeMoney.values[0][0][PRIZE_PLACE_FIRST] = 1234;
     EnterPrizeScreenState(&s_screen);
     Check("missing progress still prepares the scene", g_SceneId, 0x13);
-    Check("missing progress cannot start a payout", g_PrizeAmount, 0);
+    Check("missing progress cannot start a payout", s_screen.prize, 0);
 
     return s_failures != 0;
 }

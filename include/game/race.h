@@ -226,7 +226,6 @@ extern s32 g_ClassCompleted;
 extern s32 g_ClassResultPlace;
 extern s32 g_LapCount;
 extern s16 g_PauseDebounce;
-extern s32 g_PrizeAmount;
 typedef enum PrizeScreenState {
     PRIZE_SCREEN_STATE_INVALID = -1,
     PRIZE_SCREEN_STATE_INTRO_FADE_IN,
@@ -240,7 +239,6 @@ typedef enum PrizeScreenState {
     PRIZE_SCREEN_STATE_FADE_OUT
 } PrizeScreenState;
 
-extern s32 g_PromotionBonus;
 extern s32 g_RacePaused;
 extern s16 g_ReverbZoneDepth;
 extern s32 g_RivalCueFlags;

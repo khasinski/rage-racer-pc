@@ -131,6 +131,9 @@ s32 ResultCourseNameY(s32 grandPrixMode);
 s32 IsValidRaceResultPlace(s32 racePosition);
 typedef struct PrizeScreen {
     PrizeScreenState state;
+    s32 timer;
+    s32 prize;
+    s32 bonus;
     s32 prizeStep;
     s32 bonusStep;
 } PrizeScreen;

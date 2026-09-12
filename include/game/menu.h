@@ -593,7 +593,7 @@ extern Matrix g_MenuColorMatrix;
 extern Matrix g_MenuLightMatrix;
 extern Vec4 g_MenuViewScale;
 
-void DrawPrizeMoneyPanel(s32 y);
+void DrawPrizeMoneyPanel(s32 y, s32 prize, s32 bonus);
 extern void (*g_FrontendDrawHandlers[FRONTEND_STATE_COUNT])(void);
 
 #endif

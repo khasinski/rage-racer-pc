@@ -14,8 +14,6 @@ typedef struct TextRecord {
 } TextRecord;
 
 s32 g_ClassPromoted;
-s32 g_PrizeAmount;
-s32 g_PromotionBonus;
 GameRaceProgress *g_RaceProgress;
 
 static GameRaceProgress s_progress;
@@ -42,11 +40,10 @@ void DrawProportionalText(s32 x, s32 y, const char *text, s32 clut) {
 
 int main(void) {
     g_RaceProgress = &s_progress;
-    g_PrizeAmount = 12345;
     s_progress.money = 67890;
     g_ClassPromoted = 0;
 
-    DrawPrizeMoneyPanel(20);
+    DrawPrizeMoneyPanel(20, 12345, 0);
     CHECK(s_recordCount == 4);
     CHECK(s_records[0].x == 0x10 && s_records[0].y == 148 &&
           strcmp(s_records[0].text, "hci") == 0);
@@ -58,8 +55,7 @@ int main(void) {
 
     s_recordCount = 0;
     g_ClassPromoted = 1;
-    g_PromotionBonus = 500000;
-    DrawPrizeMoneyPanel(0);
+    DrawPrizeMoneyPanel(0, 0, 500000);
     CHECK(s_recordCount == 6);
     CHECK(s_records[4].y == 192 && strcmp(s_records[4].text, "hji") == 0);
     CHECK(s_records[5].y == 204 && strcmp(s_records[5].text, "500000v") == 0);
@@ -67,7 +63,7 @@ int main(void) {
     s_recordCount = 0;
     g_RaceProgress = NULL;
     g_ClassPromoted = 0;
-    DrawPrizeMoneyPanel(0);
+    DrawPrizeMoneyPanel(0, 0, 0);
     CHECK(s_recordCount == 4);
     CHECK(strcmp(s_records[3].text, "0v") == 0);
 

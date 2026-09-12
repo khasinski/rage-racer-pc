@@ -23,8 +23,6 @@
 static PrizeScreen s_screen;
 
 /* The screen's own state. */
-s32 g_PrizeAmount;
-s32 g_PromotionBonus;
 s32 g_ClassCompleted;
 s32 g_ClassPromoted;
 s32 g_ClassResultPlace;
@@ -33,7 +31,6 @@ s32 g_FrameSyncThreshold;
 s32 g_GrandPrixClass;
 s32 g_SeriesCleared;
 s32 g_SceneId;
-s32 g_SceneTimer;
 GameRaceProgress *g_RaceProgress;
 PlayerCarRuntime g_PlayerCar;
 RagePrizeMoneyStorage g_PrizeMoneyState;
@@ -50,7 +47,9 @@ static int s_fanfareFrames;
 
 void DrawFullscreenFadeTile(s32 step, s32 clut) { (void)step; (void)clut; }
 void DrawGrandPrixIntro(s32 drawClassBanner) { (void)drawClassBanner; }
-void DrawPrizeMoneyPanel(s32 step) { (void)step; }
+void DrawPrizeMoneyPanel(s32 step, s32 prize, s32 bonus) {
+    (void)step; (void)prize; (void)bonus;
+}
 void DrawRaceTimePanel(s32 step) { (void)step; }
 void PlaySoundCue(s32 cue) { (void)cue; }
 s32 RequestSelectBgmAssets(void) {
@@ -80,13 +79,13 @@ static void Reset(s32 prize, s32 bonus) {
     memset(&s_progress, 0, sizeof(s_progress));
     g_RaceProgress = &s_progress;
     s_screen.state = PRIZE_SCREEN_STATE_INTRO_FADE_IN;
-    g_PrizeAmount = prize;
-    g_PromotionBonus = bonus;
+    s_screen.prize = prize;
+    s_screen.bonus = bonus;
     s_screen.prizeStep = 100;
     s_screen.bonusStep = 50;
     g_ClassCompleted = 0;
     g_SeriesCleared = 0;
-    g_SceneTimer = 0x100;
+    s_screen.timer = 0x100;
     g_PadPressed = 0;
     g_PadHeld = 0;
     s_bgmRequested = 0;
@@ -166,10 +165,10 @@ int main(void) {
     RunToEnd(0, 4000);
     Check(s_progress.money == 1400, "prize and bonus both paid",
           s_progress.money, 1400);
-    Check(g_PrizeAmount == 0, "nothing left owed on the prize", g_PrizeAmount,
+    Check(s_screen.prize == 0, "nothing left owed on the prize", s_screen.prize,
           0);
-    Check(g_PromotionBonus == 0, "nothing left owed on the bonus",
-          g_PromotionBonus, 0);
+    Check(s_screen.bonus == 0, "nothing left owed on the bonus",
+          s_screen.bonus, 0);
     Check(s_screen.state == PRIZE_SCREEN_STATE_FADE_OUT,
           "screen finishes on the fade", s_screen.state,
           PRIZE_SCREEN_STATE_FADE_OUT);
@@ -181,8 +180,8 @@ int main(void) {
     Check(s_progress.money == RACE_MAX_PRIZE_MONEY,
           "prize money saturates at the save limit", s_progress.money,
           RACE_MAX_PRIZE_MONEY);
-    Check(g_PrizeAmount == 0 && g_PromotionBonus == 0,
-          "capped money still finishes both counters", g_PrizeAmount,
+    Check(s_screen.prize == 0 && s_screen.bonus == 0,
+          "capped money still finishes both counters", s_screen.prize,
           0);
 
     /* The counter waits out the panel before it starts, and the wait is
@@ -192,7 +191,7 @@ int main(void) {
 
         Reset(1000, 0);
         s_screen.state = PRIZE_SCREEN_STATE_COUNT_PRIZE;
-        g_SceneTimer = 0;
+        s_screen.timer = 0;
         for (i = 0; i < 120; i++) {
             UpdatePrizeMoneyScreenState(&s_screen);
         }
@@ -287,7 +286,7 @@ int main(void) {
 
         Reset(0, 0);
         s_screen.state = PRIZE_SCREEN_STATE_FADE_OUT;
-        g_SceneTimer = 0;
+        s_screen.timer = 0;
         for (i = 0; i < 300; i++) {
             UpdatePrizeMoneyScreenState(&s_screen);
         }
@@ -297,7 +296,7 @@ int main(void) {
         Reset(0, 0);
         s_screen.state = PRIZE_SCREEN_STATE_FADE_OUT;
         g_SeriesCleared = 1;
-        g_SceneTimer = 0;
+        s_screen.timer = 0;
         for (i = 0; i < 128; i++) {
             UpdatePrizeMoneyScreenState(&s_screen);
         }
@@ -309,36 +308,36 @@ int main(void) {
      * endless payout. */
     Reset(100, 0);
     s_screen.state = PRIZE_SCREEN_STATE_INTRO_FADE_IN;
-    g_SceneTimer = INT_MIN;
+    s_screen.timer = INT_MIN;
     UpdatePrizeMoneyScreenState(&s_screen);
-    Check(g_SceneTimer == 0 &&
+    Check(s_screen.timer == 0 &&
               s_screen.state == PRIZE_SCREEN_STATE_WAIT_FOR_INTRO_CONFIRM,
-          "invalid intro timer recovers", g_SceneTimer, 0);
+          "invalid intro timer recovers", s_screen.timer, 0);
 
     Reset(100, 0);
     s_screen.state = PRIZE_SCREEN_STATE_COUNT_PRIZE;
-    g_SceneTimer = INT_MAX;
+    s_screen.timer = INT_MAX;
     s_screen.prizeStep = INT_MAX;
     g_PadHeld = PAD_CONFIRM;
     UpdatePrizeMoneyScreenState(&s_screen);
-    Check(g_PrizeAmount == 0 && s_progress.money == 100,
-          "fast count saturates its step", g_PrizeAmount, 0);
+    Check(s_screen.prize == 0 && s_progress.money == 100,
+          "fast count saturates its step", s_screen.prize, 0);
 
     Reset(100, 0);
     s_screen.state = PRIZE_SCREEN_STATE_COUNT_PRIZE;
-    g_SceneTimer = 120;
+    s_screen.timer = 120;
     g_RaceProgress = NULL;
     UpdatePrizeMoneyScreenState(&s_screen);
-    Check(g_PrizeAmount == 0 &&
+    Check(s_screen.prize == 0 &&
               s_screen.state == PRIZE_SCREEN_STATE_WAIT_TO_FINISH,
-          "missing progress cancels an unsafe payout", g_PrizeAmount, 0);
+          "missing progress cancels an unsafe payout", s_screen.prize, 0);
 
     Reset(0, 0);
     s_screen.state = PRIZE_SCREEN_STATE_FADE_OUT;
-    g_SceneTimer = INT_MAX;
+    s_screen.timer = INT_MAX;
     UpdatePrizeMoneyScreenState(&s_screen);
-    Check(g_SceneTimer == 0x100 && s_classAdvanced == 1,
-          "invalid fade timer saturates before advancing", g_SceneTimer,
+    Check(s_screen.timer == 0x100 && s_classAdvanced == 1,
+          "invalid fade timer saturates before advancing", s_screen.timer,
           0x100);
 
     if (s_failures != 0) {
