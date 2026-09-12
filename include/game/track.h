@@ -2,6 +2,7 @@
 #define GAME_TRACK_H
 
 #include "common.h"
+#include "game/camera_types.h"
 
 #include "game/integer.h"
 #include "game/vector.h"
@@ -283,10 +284,10 @@ static inline const GameTrackPoint *TrackPoint(s32 index) {
  * animation state. `animate` == 0 draws a frozen frame. */
 void DrawCourseScenery(s32 course, s32 timer, s32 animate);
 void DrawPresentationCourseScenery(s32 timer, s32 animate);
-void BuildVisibleCells(s32 near, s32 far);
+void BuildVisibleCells(const GameCameraState *camera, s32 near, s32 far);
 void DrawCourseObjects(void);
-void DrawTerrainCells(void);
-void DrawTerrainCellsWide(void);
+void DrawTerrainCells(const GameCameraState *camera);
+void DrawTerrainCellsWide(const GameCameraState *camera);
 
 /* Update (when animate != 0) and draw the route/flyby/path prop layers enabled
  * by the current Grand Prix class. Class 5 wraps to the class-0 route layer. */

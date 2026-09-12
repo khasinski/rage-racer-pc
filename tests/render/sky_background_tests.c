@@ -75,7 +75,7 @@ static int TestNearGroundCourseSkirt(void) {
     g_EnvironmentColors.fields.slots[ENV_GROUND_NEAR_TOP].cur.bytes.r = 11;
     g_EnvironmentColors.fields.slots[ENV_GROUND_NEAR_BOTTOM].cur.bytes.r = 22;
 
-    DrawSkyBackground();
+    DrawSkyBackground(&g_Camera.view);
 
     CHECK(g_RenderState.draw.packetCursor ==
           packets.bytes + gridSize + sizeof(POLY_G4));
@@ -98,7 +98,7 @@ static int TestFarGroundCourseSkirt(void) {
     g_EnvironmentColors.fields.slots[ENV_GROUND_FAR_BOTTOM].cur.bytes.g = 44;
     g_EnvironmentColors.fields.slots[ENV_SKY_BOTTOM].cur.bytes.b = 55;
 
-    DrawSkyBackground();
+    DrawSkyBackground(&g_Camera.view);
 
     CHECK(g_RenderState.draw.packetCursor ==
           packets.bytes + gridSize + sizeof(POLY_G4) + sizeof(POLY_F4));
@@ -130,7 +130,7 @@ static int TestSkyGradientPaletteSlots(void) {
     g_EnvironmentColors.fields.slots[ENV_SKY_HORIZON].cur.bytes.r = 20;
     g_EnvironmentColors.fields.slots[ENV_SKY_TOP].cur.bytes.r = 30;
 
-    DrawSkyBackground();
+    DrawSkyBackground(&g_Camera.view);
 
     horizonTile = (POLY_FT4 *)(void *)packets.bytes;
     CHECK(horizonTile->x0 == -608 && horizonTile->x1 == -544);
@@ -160,7 +160,7 @@ static int TestInvalidSkyMapFallsBackToFirstTile(void) {
     g_SkyTileUV[0].corner[0].bytes.u = 17;
     g_SkyTileUV[0].corner[0].bytes.v = 23;
 
-    DrawSkyBackground();
+    DrawSkyBackground(&g_Camera.view);
 
     firstTile = (POLY_FT4 *)(void *)packets.bytes;
     CHECK(firstTile->u0 == 17 && firstTile->v0 == 23);
@@ -172,7 +172,7 @@ static int TestInvalidSkyMapFallsBackToFirstTile(void) {
     g_CourseIndex = 2;
     g_SkyTileMap[1][4] = -1;
     g_SkyTileUV[0].corner[0].bytes.u = 29;
-    DrawSkyBackground();
+    DrawSkyBackground(&g_Camera.view);
     firstTile = (POLY_FT4 *)(void *)packets.bytes;
     CHECK(firstTile->u0 == 29);
     return 0;
@@ -219,7 +219,7 @@ static int TestNativeGridMatchesClassicPackets(void) {
         MeasureSkyGridLayout(cameras[index].y, cameras[index].pitch,
                              cameras[index].yaw, cameras[index].roll, 0, 0,
                              &grid);
-        DrawSkyBackground();
+        DrawSkyBackground(&g_Camera.view);
         CHECK(s_publishedMirror == 0);
         CHECK(memcmp(&s_publishedGrid, &grid, sizeof(grid)) == 0);
         tiles = (POLY_FT4 *)(void *)packets.bytes;

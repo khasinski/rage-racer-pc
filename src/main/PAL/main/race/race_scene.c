@@ -253,7 +253,7 @@ void EnterRaceScene(void) {
 static void DrawRaceWorld(s32 animateScenery) {
     g_RenderState.geometry.envMode4 = g_IsEnvironmentMode4;
     PortProfileFramePhase("scene_terrain");
-    DrawTerrainCells();
+    DrawTerrainCells(&g_Camera.view);
     PortProfileFramePhase("scene_course_objects");
     DrawCourseObjects();
     PortProfileFramePhase("scene_scripted_scenery");
@@ -264,7 +264,7 @@ static void DrawRaceWorld(s32 animateScenery) {
         SetLightMatrix(&g_SceneLightMatrix);
         DrawScriptedScenery(animateScenery);
         PortProfileFramePhase("scene_mirror");
-        DrawRearViewMirror(g_SceneTimer);
+        DrawRearViewMirror(&g_Camera.view, g_SceneTimer);
     }
     PortProfileFramePhase("scene_course_scenery");
     DrawCourseScenery(SeriesCourseIndex(), g_SceneTimer, animateScenery);
@@ -326,7 +326,7 @@ static void UpdatePausedRaceScene(void) {
         DrawWrongWayWarning();
     }
     PortProfileFramePhase("scene_sky");
-    DrawSkyBackground();
+    DrawSkyBackground(&g_Camera.view);
     PortProfileFramePhase("scene");
     DrawRaceWorld(0);
 }
@@ -348,7 +348,7 @@ static void UpdateActiveRaceScene(void) {
     raceStart = UpdateRaceStartState(g_RacePhase, g_SceneTimer);
     g_RacePhase = raceStart.phase;
     if (raceStart.action == RACE_START_ACTION_UPDATE_INTRO_CAMERA) {
-        RunRaceIntroCamera(&g_PlayerCar, g_SceneTimer);
+        RunRaceIntroCamera(&g_Camera, &g_PlayerCar, g_SceneTimer);
     } else if (raceStart.action == RACE_START_ACTION_BEGIN) {
         BeginCarStandingStart(&g_PlayerCar);
         StartCdAudio();
@@ -418,7 +418,7 @@ static void UpdateActiveRaceScene(void) {
                               g_Camera.mode);
     g_Camera.mode = raceView.cameraView;
     if (raceView.cameraAction == RACE_CAMERA_ACTION_FINISH) {
-        UpdateFinishCamera(&g_PlayerCar);
+        UpdateFinishCamera(&g_Camera, &g_PlayerCar);
     } else if (raceView.cameraAction == RACE_CAMERA_ACTION_FOLLOW_PLAYER) {
         GameCarRuntime *player =
             AsRivalCar(&g_PlayerCar);
@@ -442,7 +442,7 @@ static void UpdateActiveRaceScene(void) {
     PortProfileFramePhase("scene_environment");
     UpdateEnvironment();
     PortProfileFramePhase("scene_sky");
-    DrawSkyBackground();
+    DrawSkyBackground(&g_Camera.view);
     PortProfileFramePhase("scene");
 
     wrongWay = UpdateWrongWayState(

@@ -2,6 +2,7 @@
 #define GAME_TERRAIN_INTERNAL_H
 
 #include "common.h"
+#include "game/camera_types.h"
 #include "game/environment.h"
 
 typedef union SkyUV {
@@ -36,6 +37,7 @@ static inline s32 TerrainPrimitiveStride(s32 primitive) {
     }
 }
 
-void DrawTerrainCellsInRange(s32 nearDepth, s32 farDepth);
+void DrawTerrainCellsInRange(const GameCameraState *camera, s32 nearDepth,
+                             s32 farDepth);
 
 #endif

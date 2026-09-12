@@ -52,8 +52,14 @@ void UpdateCamera(Camera *camera, CameraViewMode cameraMode, GameCarRuntime *car
 }
 void DrawCars(void) { RecordStep(STEP_DRAW_CARS); }
 void UpdateEnvironment(void) { RecordStep(STEP_ENVIRONMENT); }
-void DrawSkyBackground(void) { RecordStep(STEP_SKY); }
-void DrawTerrainCellsWide(void) { RecordStep(STEP_TERRAIN); }
+void DrawSkyBackground(const GameCameraState *camera) {
+    (void)camera;
+    RecordStep(STEP_SKY);
+}
+void DrawTerrainCellsWide(const GameCameraState *camera) {
+    (void)camera;
+    RecordStep(STEP_TERRAIN);
+}
 void DrawCourseObjects(void) { RecordStep(STEP_OBJECTS); }
 void DrawPresentationCourseScenery(s32 timer, s32 animate) {
     s_sceneryTimer = timer;

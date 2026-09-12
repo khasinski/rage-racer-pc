@@ -72,8 +72,8 @@ void DrawProportionalText(s32 x, s32 y, const char *text, s32 clut) {
     (void)text;
     (void)clut;
 }
-void DrawSkyBackground(void) {}
-void DrawTerrainCellsWide(void) {}
+void DrawSkyBackground(const GameCameraState *camera) { (void)camera; }
+void DrawTerrainCellsWide(const GameCameraState *camera) { (void)camera; }
 void GameDrawText8x8Shaded(s32 x, s32 y, const char *text, s32 clut,
                            u8 intensity) {
     (void)x;

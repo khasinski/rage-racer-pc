@@ -11,7 +11,7 @@ static s32 FinishCameraTargetPoint(const GameCarRuntime *target) {
 }
 
 /* Follow the centre line while keeping the finished car in view. */
-void UpdateFinishCamera(PlayerCarRuntime *car) {
+void UpdateFinishCamera(Camera *camera, PlayerCarRuntime *car) {
     GameCarRuntime *obj = AsRivalCar(car);
     GameViewWork viewWork;
     LVec delta;
@@ -25,7 +25,7 @@ void UpdateFinishCamera(PlayerCarRuntime *car) {
         return;
     }
 
-    LoadViewWork(&viewWork, &g_Camera.view);
+    LoadViewWork(&viewWork, &camera->view);
     targetPoint = FinishCameraTargetPoint(obj);
     InterpolateTrackPoint(targetPoint, &target, g_CameraCar.segmentFraction);
     targetHeading = ANGLE_QUARTER_TURN - Atan2(
@@ -60,8 +60,8 @@ void UpdateFinishCamera(PlayerCarRuntime *car) {
     viewWork.angleX = ANGLE_QUARTER_TURN - Atan2(delta.y, distance >> 6);
     viewWork.angleZ = 0;
 
-    StoreViewWork(&g_Camera.view, &viewWork);
-    SetCameraRotMatrix(&g_Camera.view);
+    StoreViewWork(&camera->view, &viewWork);
+    SetCameraRotMatrix(&camera->view);
     SelectModelBank(0);
     DrawPlayerCarModel(obj);
 }

@@ -9,17 +9,20 @@ enum {
     WIDE_TERRAIN_NEAR_DEPTH = -0xA000,
 };
 
-void DrawTerrainCellsInRange(s32 nearDepth, s32 farDepth) {
-    BuildVisibleCells(nearDepth, farDepth);
+void DrawTerrainCellsInRange(const GameCameraState *camera, s32 nearDepth,
+                             s32 farDepth) {
+    BuildVisibleCells(camera, nearDepth, farDepth);
     SetRotMatrix(&g_RenderState.geometry.matrix);
     SubmitTerrainCells(&g_RenderState, g_VisibleCellList,
                        VISIBLE_CELL_COUNT);
 }
 
-void DrawTerrainCells(void) {
-    DrawTerrainCellsInRange(RACE_TERRAIN_NEAR_DEPTH, TERRAIN_FAR_DEPTH);
+void DrawTerrainCells(const GameCameraState *camera) {
+    DrawTerrainCellsInRange(camera, RACE_TERRAIN_NEAR_DEPTH,
+                            TERRAIN_FAR_DEPTH);
 }
 
-void DrawTerrainCellsWide(void) {
-    DrawTerrainCellsInRange(WIDE_TERRAIN_NEAR_DEPTH, TERRAIN_FAR_DEPTH);
+void DrawTerrainCellsWide(const GameCameraState *camera) {
+    DrawTerrainCellsInRange(camera, WIDE_TERRAIN_NEAR_DEPTH,
+                            TERRAIN_FAR_DEPTH);
 }

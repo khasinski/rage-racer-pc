@@ -10,7 +10,6 @@
 #include <string.h>
 
 GameRenderState g_RenderState;
-Camera g_Camera;
 const RaceIntroCameraScript *g_RaceIntroCameraScript;
 const RaceIntroCameraKey *g_RaceIntroCameraCursor;
 SVec g_RaceIntroCameraDelta;
@@ -69,12 +68,13 @@ int main(void) {
         RaceIntroCameraKey keys[3];
     } script;
     PlayerCarRuntime car;
+    Camera camera;
     s32 interpolation;
 
     memset(&script, 0, sizeof(script));
     memset(&car, 0, sizeof(car));
     memset(&g_RenderState, 0, sizeof(g_RenderState));
-    memset(&g_Camera, 0, sizeof(g_Camera));
+    memset(&camera, 0, sizeof(camera));
     g_RaceIntroCameraScript = (RaceIntroCameraScript *)(void *)&script;
     script.firstKeyIndex[0] = 0;
     script.firstKeyIndex[1] = 1;
@@ -92,51 +92,51 @@ int main(void) {
     car.y = 1100;
     car.z = 1200;
 
-    RunRaceIntroCamera(&car, 0);
+    RunRaceIntroCamera(&camera, &car, 0);
     interpolation = rcos(3 << 8);
     CHECK_EQ(g_RaceIntroCameraCursor, &script.keys[0]);
     CHECK_EQ(g_RaceIntroCameraTimer, 3);
-    CHECK_EQ(g_Camera.view.x, 100 + 400 * interpolation / 4096);
-    CHECK_EQ(g_Camera.view.y, 200 + 400 * interpolation / 4096);
-    CHECK_EQ(g_Camera.view.z, 300 + 400 * interpolation / 4096);
-    CHECK_EQ(g_Camera.view.angleY, ANGLE_QUARTER_TURN - 100);
-    CHECK_EQ(g_Camera.view.angleX, ANGLE_QUARTER_TURN - 200);
+    CHECK_EQ(camera.view.x, 100 + 400 * interpolation / 4096);
+    CHECK_EQ(camera.view.y, 200 + 400 * interpolation / 4096);
+    CHECK_EQ(camera.view.z, 300 + 400 * interpolation / 4096);
+    CHECK_EQ(camera.view.angleY, ANGLE_QUARTER_TURN - 100);
+    CHECK_EQ(camera.view.angleX, ANGLE_QUARTER_TURN - 200);
     CHECK_EQ(s_drawCalls, 1);
     CHECK_EQ(s_selectedBank, 0);
 
-    RunRaceIntroCamera(&car, 2);
+    RunRaceIntroCamera(&camera, &car, 2);
     CHECK_EQ(g_RaceIntroCameraCursor, &script.keys[1]);
     CHECK_EQ(g_RaceIntroCameraTimer, 2);
     CHECK_EQ(g_RaceIntroCameraDelta.vx, 500);
     CHECK_EQ(g_RaceIntroCameraDelta.vy, 472);
     CHECK_EQ(g_RaceIntroCameraDelta.vz, 500);
-    CHECK_EQ(g_Camera.view.x, car.x);
-    CHECK_EQ(g_Camera.view.y, car.y - 28);
-    CHECK_EQ(g_Camera.view.z, car.z);
+    CHECK_EQ(camera.view.x, car.x);
+    CHECK_EQ(camera.view.y, car.y - 28);
+    CHECK_EQ(camera.view.z, car.z);
     CHECK_EQ(s_fadeCalls, 1);
     CHECK_EQ(s_fadeColor, 52);
     CHECK_EQ(s_matrixCalls, 2);
 
-    RunRaceIntroCamera(&car, 90);
+    RunRaceIntroCamera(&camera, &car, 90);
     CHECK_EQ(s_updateCameraCalls, 1);
     CHECK_EQ(g_RaceIntroCameraTimer, 2);
 
     g_RaceIntroCameraScript = NULL;
-    RunRaceIntroCamera(&car, 0);
+    RunRaceIntroCamera(&camera, &car, 0);
     CHECK_EQ(s_updateCameraCalls, 2);
     g_RaceIntroCameraScript = (RaceIntroCameraScript *)(void *)&script;
 
     script.keys[0].duration = 0;
     script.keys[0].mode = 0;
-    RunRaceIntroCamera(&car, 0);
+    RunRaceIntroCamera(&camera, &car, 0);
     CHECK_EQ(g_RaceIntroCameraTimer, 0);
-    CHECK_EQ(g_Camera.view.x, script.keys[1].x.word);
+    CHECK_EQ(camera.view.x, script.keys[1].x.word);
 
     script.keys[0].x.word = INT_MAX;
     script.keys[1].x.half.value = 0xFFFF;
     script.keys[0].x.half.value = 0;
     script.keys[0].duration = 1;
-    RunRaceIntroCamera(&car, 0);
+    RunRaceIntroCamera(&camera, &car, 0);
     CHECK_EQ(g_RaceIntroCameraDelta.vx, -1);
 
     puts("race intro camera preserves script, fade, and handoff modes");

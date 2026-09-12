@@ -2,6 +2,7 @@
 #define GAME_RACE_INTERNAL_H
 
 #include "common.h"
+#include "game/camera_types.h"
 #include "game/menu_types.h"
 #include "game/race.h"
 #include "game/grand_prix_content.h"
@@ -45,7 +46,7 @@ void UpdateRivalCueGate(void);
 void UpdateSplitTimes(struct PlayerCarRuntime *car, s32 grandPrixMode,
                       s32 lapEvent);
 void SeedFinishCamera(struct PlayerCarRuntime *car);
-void UpdateFinishCamera(struct PlayerCarRuntime *car);
+void UpdateFinishCamera(Camera *camera, struct PlayerCarRuntime *car);
 void UpdateRacePosition(void);
 s32 AttractTitleFadeLevel(s32 step, s32 timer, s32 fadeLevel, s32 delay);
 s32 BgmCdTrack(s32 selectedTrack);

@@ -2,6 +2,7 @@
 #define GAME_CAR_H
 
 #include "common.h"
+#include "game/camera_types.h"
 #include "game/car_runtime_state.h"
 #include "game/vector.h"
 
@@ -756,7 +757,7 @@ void DrawTachometer(s32 rpm, s32 shiftLightOn, TachometerLightingMode lighting,
                     s32 blendAmount);
 void DrawPlayerTachometer(void);
 void BeginCarStandingStart(PlayerCarRuntime *car);
-void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode);
+void RunRaceIntroCamera(Camera *camera, PlayerCarRuntime *car, s32 mode);
 void UpdatePlayerCar(PlayerCarRuntime *car);
 
 #endif

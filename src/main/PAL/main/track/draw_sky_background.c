@@ -259,13 +259,14 @@ static void MeasureSkyBand(const SkyFrame *frame, SkyBandSetup *band) {
     band->cosRoll = layout.rowStepY / 8;
 }
 
-static void InitializeSkyFrame(SkyFrame *work) {
+static void InitializeSkyFrame(SkyFrame *work,
+                               const GameCameraState *camera) {
     work->packet = RENDER_PRIM_CURSOR_AS(u8);
     work->orderingTable = RENDER_OT_BASE;
-    work->cameraY = g_Camera.view.y;
-    work->pitch = g_Camera.view.angleX;
-    work->yaw = g_Camera.view.angleY;
-    work->roll = g_Camera.view.angleZ;
+    work->cameraY = camera->y;
+    work->pitch = camera->angleX;
+    work->yaw = camera->angleY;
+    work->roll = camera->angleZ;
     work->mirrorFlag = g_RenderState.pass.orderingFlag;
 }
 
@@ -468,13 +469,13 @@ static u8 *DrawSkyGradientBands(SkyFrame *work, const SkyBandSetup *band,
     return packet;
 }
 
-void DrawSkyBackground(void) {
+void DrawSkyBackground(const GameCameraState *camera) {
     SkyFrame work;
     SkyBandSetup setup;
     SkyBandGeometry geometry;
     u8 *packet;
 
-    InitializeSkyFrame(&work);
+    InitializeSkyFrame(&work, camera);
     MeasureSkyBand(&work, &setup);
     {
         GameSkyGridLayout exact = {

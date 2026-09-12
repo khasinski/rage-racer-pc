@@ -2,6 +2,7 @@
 #define GAME_RACE_H
 
 #include "common.h"
+#include "game/camera_types.h"
 #include "game/prize_money.h"
 #include "game/course_index.h"
 #include "game/vector.h"
@@ -318,7 +319,7 @@ void DrawLapTimes(void);
 void DrawRaceHudLabels(s32 grandPrixMode);
 void DrawRacePosition(void);
 void DrawRaceTimePanel(s32 slideY);
-void DrawRearViewMirror(s32 sceneTimer);
+void DrawRearViewMirror(const GameCameraState *camera, s32 sceneTimer);
 void DrawTimeRemaining(s32 ticks);
 void ResetMirrorState(void);
 s32 UpdateLapAndFinish(struct PlayerCarRuntime *car, s32 grandPrixMode);

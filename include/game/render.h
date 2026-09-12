@@ -581,7 +581,7 @@ void SetGteObjectMatrix(const LVec *position, Matrix *rotation);
 void SeekEnvironmentScript(s32 targetTime);
 /* The backdrop: half a 16-segment panorama cylinder over gradient bands shaded
  * between successive colour slots. */
-void DrawSkyBackground(void);
+void DrawSkyBackground(const GameCameraState *camera);
 
 /* Environment mode of the loaded course variant, from variant data +0x2C. Also
  * the index of the target 48-byte (16 x RGB) sky palette in g_EnvPaletteTable;

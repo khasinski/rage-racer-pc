@@ -109,7 +109,7 @@ static int TestVisibleCellOutputBounds(void) {
 
     /* A frame always starts by clearing both outputs. */
     g_Camera.view.x = -2048;
-    BuildVisibleCells(0, 1);
+    BuildVisibleCells(&g_Camera.view, 0, 1);
 
     CHECK(mask.before == 0xA5A5A5A5u && mask.after == 0xA5A5A5A5u);
     for (index = 0; index < TERRAIN_CELL_GRID_SIZE; index++) {
@@ -131,7 +131,7 @@ static int TestVisibleCellOutputBounds(void) {
     g_Camera.view.z = 0;
     g_TerrainCellGrid = NULL;
     g_CellVisibilityTable = NULL;
-    BuildVisibleCells(0, 1);
+    BuildVisibleCells(&g_Camera.view, 0, 1);
     for (index = 0; index < TERRAIN_CELL_GRID_SIZE; index++) {
         CHECK(mask.values[index] == 0);
     }
@@ -162,7 +162,7 @@ static int TestNegativeCameraCoordinateSelectsWrappedCell(void) {
     memset(&g_Camera, 0, sizeof(g_Camera));
     g_Camera.view.z = cameraZ;
 
-    BuildVisibleCells(INT_MIN, INT_MAX);
+    BuildVisibleCells(&g_Camera.view, INT_MIN, INT_MAX);
 
     CHECK(visibilityMask[cellZ] == 1);
     CHECK(visibleCells[0].z ==
@@ -174,7 +174,7 @@ static int TestNegativeCameraCoordinateSelectsWrappedCell(void) {
 static int TestMissingVisibleCellOutput(void) {
     g_VisibleCellMask = NULL;
     g_VisibleCellList = NULL;
-    BuildVisibleCells(0, 1);
+    BuildVisibleCells(&g_Camera.view, 0, 1);
     return 0;
 }
 
@@ -195,7 +195,7 @@ static int TestCameraHeightWrapsLikeThePs1(void) {
     memset(&g_Camera, 0, sizeof(g_Camera));
     g_Camera.view.y = INT_MAX;
 
-    BuildVisibleCells(INT_MIN, INT_MAX);
+    BuildVisibleCells(&g_Camera.view, INT_MIN, INT_MAX);
 
     CHECK(visibleCells[0].y == 4);
     CHECK(visibleCells[0].cellIndex == 5);

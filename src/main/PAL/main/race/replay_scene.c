@@ -56,14 +56,14 @@ void UpdateReplayScene(void) {
     UpdateCamera(&g_Camera, CAMERA_VIEW_TRACK,
                  AsRivalCar(&g_PlayerCar));
     g_RenderState.geometry.envMode4 = g_IsEnvironmentMode4;
-    DrawTerrainCellsWide();
+    DrawTerrainCellsWide(&g_Camera.view);
     if (g_GrandPrixMode != 0) {
         DrawReplayRivalCar();
     }
     DrawCourseObjects();
     DrawPresentationCourseScenery(g_SceneTimer, 1);
     UpdateEnvironment();
-    DrawSkyBackground();
+    DrawSkyBackground(&g_Camera.view);
     DrawReplayBadge();
     if (g_SceneTimer == REPLAY_FIRST_FRAME) {
         SetTrackTexturePageNow(g_PlayerCar.trackSection);

@@ -45,7 +45,7 @@ static u8 *QueueMirrorFrame(u8 *packet) {
     return QueueDrawModePrim(contentOt, next, 9);
 }
 
-void DrawRearViewMirror(s32 sceneTimer) {
+void DrawRearViewMirror(const GameCameraState *camera, s32 sceneTimer) {
     DrawPacket *packet;
 
     if (sceneTimer >= MIRROR_UNLOCK_FRAME) {
@@ -62,14 +62,15 @@ void DrawRearViewMirror(s32 sceneTimer) {
         return;
     }
 
-    DrawSkyBackground();
+    DrawSkyBackground(camera);
     packet = (DrawPacket *)QueueMirrorFrame(g_RenderState.draw.packetCursor);
     SetDrawArea(packet, &g_DrawBuffer->environment.mirrorDraw.clip);
     AddPrim(&g_DrawBuffer->layout.orderingTables[1][GAME_FRAME_OT_LENGTH - 1],
             packet);
     g_RenderState.draw.packetCursor = packet + 1;
     g_RenderState.geometry.envMode4 = g_IsEnvironmentMode4;
-    DrawTerrainCellsInRange(-0x3000, PortMirrorFarDepth(0x6000));
+    DrawTerrainCellsInRange(camera, -0x3000,
+                            PortMirrorFarDepth(0x6000));
 
     packet = g_RenderState.draw.packetCursor;
     SetDrawArea(packet, &g_DrawBuffer->environment.draw.clip);

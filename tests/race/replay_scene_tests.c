@@ -63,7 +63,10 @@ void UpdateCamera(Camera *camera, CameraViewMode mode, GameCarRuntime *car) {
     assert(car == AsRivalCar(&g_PlayerCar));
     s_CameraUpdates++;
 }
-void DrawTerrainCellsWide(void) { s_TerrainDraws++; }
+void DrawTerrainCellsWide(const GameCameraState *camera) {
+    (void)camera;
+    s_TerrainDraws++;
+}
 void DrawReplayRivalCar(void) { s_RivalCarDraws++; }
 void DrawCourseObjects(void) { s_ObjectDraws++; }
 void DrawPresentationCourseScenery(s32 timer, s32 animate) {
@@ -72,7 +75,10 @@ void DrawPresentationCourseScenery(s32 timer, s32 animate) {
     s_SceneryDraws++;
 }
 void UpdateEnvironment(void) { s_EnvironmentUpdates++; }
-void DrawSkyBackground(void) { s_SkyDraws++; }
+void DrawSkyBackground(const GameCameraState *camera) {
+    (void)camera;
+    s_SkyDraws++;
+}
 void SetTrackTexturePageNow(s32 trackSection) {
     s_TextureSets++;
     s_TextureSection = trackSection;

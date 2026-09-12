@@ -46,11 +46,11 @@ static s32 NegatedTimesFour(s32 value) {
         : -(s32)(UINT32_MAX - bits) - 1;
 }
 
-void BuildVisibleCells(s32 near, s32 far) {
-    const s32 cameraX = (u16)g_Camera.view.x;
-    const s32 cameraZ = (u16)g_Camera.view.z;
+void BuildVisibleCells(const GameCameraState *camera, s32 near, s32 far) {
+    const s32 cameraX = (u16)camera->x;
+    const s32 cameraZ = (u16)camera->z;
     const s32 direction =
-        (g_Camera.view.angleY / VIEW_ANGLE_PER_SCAN_DIRECTION) & 0x1F;
+        (camera->angleY / VIEW_ANGLE_PER_SCAN_DIRECTION) & 0x1F;
     const s32 cameraCellX = cameraX / TERRAIN_CELL_SIZE;
     const s32 cameraCellZ = cameraZ / TERRAIN_CELL_SIZE;
     u32 cameraRegion;
@@ -99,7 +99,7 @@ void BuildVisibleCells(s32 near, s32 far) {
             (cellX * TERRAIN_CELL_SIZE -
              (cameraX - TERRAIN_CELL_HALF_SIZE)) *
             4;
-        worldOffset.y = NegatedTimesFour(g_Camera.view.y);
+        worldOffset.y = NegatedTimesFour(camera->y);
         worldOffset.z =
             (cellZ * TERRAIN_CELL_SIZE -
              (cameraZ - TERRAIN_CELL_HALF_SIZE)) *

@@ -53,9 +53,14 @@ void EndMirrorPass(void) {
     s_endOrder = ++s_lastWorldCall;
 }
 
-void DrawSkyBackground(void) { s_skyCalls++; }
+void DrawSkyBackground(const GameCameraState *camera) {
+    (void)camera;
+    s_skyCalls++;
+}
 
-void DrawTerrainCellsInRange(s32 nearDepth, s32 farDepth) {
+void DrawTerrainCellsInRange(const GameCameraState *camera, s32 nearDepth,
+                             s32 farDepth) {
+    (void)camera;
     s_terrainCalls++;
     s_terrainNear = nearDepth;
     s_terrainFar = farDepth;
@@ -126,14 +131,15 @@ static void Reset(void) {
 }
 
 int main(void) {
+    GameCameraState camera = {0};
     Reset();
-    DrawRearViewMirror(360);
+    DrawRearViewMirror(&camera, 360);
     if (s_beginCalls != 0 || g_MirrorPanelY != -44) {
         puts("FAIL: locked mirror started rendering");
         return 1;
     }
 
-    DrawRearViewMirror(361);
+    DrawRearViewMirror(&camera, 361);
     if (g_MirrorUnlocked != 1 || g_MirrorPanelY != -42 ||
         s_beginCalls != 1 || s_skyCalls != 1 || s_terrainCalls != 1 ||
         s_objectCalls != 1 || s_carCalls != 1 || s_endCalls != 1 ||
@@ -146,7 +152,7 @@ int main(void) {
     Reset();
     g_MirrorUnlocked = 1;
     s_beginResult = 0;
-    DrawRearViewMirror(0);
+    DrawRearViewMirror(&camera, 0);
     if (s_beginCalls != 1 || s_skyCalls != 0 || s_terrainCalls != 0 ||
         s_endCalls != 0) {
         puts("FAIL: unavailable mirror pass emitted world geometry");

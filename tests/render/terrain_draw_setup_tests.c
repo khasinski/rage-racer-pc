@@ -7,6 +7,7 @@
 
 GameRenderState g_RenderState;
 VisibleTerrainCell *g_VisibleCellList;
+static GameCameraState s_camera;
 
 static s32 s_farDepth;
 static s32 s_nearDepth;
@@ -14,7 +15,9 @@ static s32 s_rotMatrixCalls;
 static s32 s_submitCount;
 static const void *s_submittedCells;
 
-void BuildVisibleCells(s32 nearDepth, s32 farDepth) {
+void BuildVisibleCells(const GameCameraState *camera, s32 nearDepth,
+                       s32 farDepth) {
+    if (camera != &s_camera) puts("FAIL: wrong terrain camera");
     s_nearDepth = nearDepth;
     s_farDepth = farDepth;
 }
@@ -49,13 +52,13 @@ int main(void) {
     VisibleTerrainCell visibleCells[1];
 
     g_VisibleCellList = visibleCells;
-    DrawTerrainCells();
+    DrawTerrainCells(&s_camera);
     if (CheckRange(-0x3000, 0x14000)) return 1;
 
-    DrawTerrainCellsWide();
+    DrawTerrainCellsWide(&s_camera);
     if (CheckRange(-0xA000, 0x14000)) return 1;
 
-    DrawTerrainCellsInRange(-7, 1234);
+    DrawTerrainCellsInRange(&s_camera, -7, 1234);
     if (CheckRange(-7, 1234)) return 1;
 
     puts("terrain draw setup tests passed");
