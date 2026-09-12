@@ -105,8 +105,8 @@ int main(void) {
 
     events.pointAmbienceZones[0].sourceX = INT_MAX;
     events.pointAmbienceZones[0].sourceZ = INT_MAX;
-    g_RenderState.viewX = INT_MIN;
-    g_RenderState.viewZ = INT_MIN;
+    g_RenderState.camera.x = INT_MIN;
+    g_RenderState.camera.z = INT_MIN;
     if (!ExpectAmbience(850, 2, 80, 80)) {
         return 1;
     }
@@ -119,8 +119,8 @@ int main(void) {
     g_RaceSeries = 0;
     g_MirrorMode = 0;
     g_Sine = 4096;
-    g_RenderState.viewX = 0;
-    g_RenderState.viewZ = 0;
+    g_RenderState.camera.x = 0;
+    g_RenderState.camera.z = 0;
     events.pointAmbienceZones[0] = (TrackPointAmbienceZone){
         INT_MAX - 10, INT_MAX, 20, 20, 0, 0, -1};
     if (!ExpectAmbience(INT_MAX - 5, 2, 32, 56)) {

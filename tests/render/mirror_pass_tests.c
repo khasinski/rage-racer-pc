@@ -48,7 +48,7 @@ static void SetAvailable(s32 panelY) {
     g_GrandPrixMode = 1;
     g_RacePhase = 2;
     g_MirrorPanelY = panelY;
-    g_RenderState.depth = 100;
+    g_RenderState.camera.depth = 100;
     g_RenderState.orderingFlag = 1;
 }
 
@@ -85,7 +85,7 @@ static int TestHiddenPanelClip(void) {
            g_RenderState.faceOtShift == GAME_RENDER_PASS_MIRROR &&
            g_RenderState.x0 == 0x56 && g_RenderState.y0 == -20 &&
            g_RenderState.x1 == 0xEA && g_RenderState.y1 == 16 &&
-           g_RenderState.depth == 100 + 0x800 &&
+           g_RenderState.camera.depth == 100 + 0x800 &&
            g_RenderState.orderingFlag == 0 &&
            g_FrameContexts[0].environment.mirrorDraw.clip.y == 0 &&
            g_FrameContexts[1].environment.mirrorDraw.clip.y == 0xF0 &&
@@ -113,7 +113,7 @@ static int TestVisiblePanelAndRestore(void) {
            g_RenderState.faceOtShift == GAME_RENDER_PASS_MAIN &&
            g_RenderState.x0 == 0 && g_RenderState.y0 == 0 &&
            g_RenderState.x1 == 0x140 && g_RenderState.y1 == 0xF0 &&
-           g_RenderState.depth == 100 && g_RenderState.orderingFlag == 1 &&
+           g_RenderState.camera.depth == 100 && g_RenderState.orderingFlag == 1 &&
            memcmp(&g_RenderState.matrix, &original, sizeof(original)) == 0 &&
            g_VisibleCellMask == g_MainVisibleCellMask &&
            g_VisibleCellList == g_MainVisibleCellList &&

@@ -261,10 +261,10 @@ static void MeasureSkyBand(const SkyFrame *frame, SkyBandSetup *band) {
 static void InitializeSkyFrame(SkyFrame *work) {
     work->packet = RENDER_PRIM_CURSOR_AS(u8);
     work->orderingTable = RENDER_OT_BASE;
-    work->cameraY = g_RenderState.viewY;
-    work->pitch = g_RenderState.viewAngleX;
-    work->yaw = g_RenderState.viewAngleY;
-    work->roll = g_RenderState.viewAngleZ;
+    work->cameraY = g_RenderState.camera.y;
+    work->pitch = g_RenderState.camera.angleX;
+    work->yaw = g_RenderState.camera.angleY;
+    work->roll = g_RenderState.camera.angleZ;
     work->mirrorFlag = g_RenderState.orderingFlag;
 }
 

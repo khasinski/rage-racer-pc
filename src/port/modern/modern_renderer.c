@@ -1528,8 +1528,8 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
                     marks, g_SceneId, g_SceneTimer, g_CourseIndex, g_MirrorMode,
                     g_SkyRowBase,
                     g_PlayerCar.trackPointIndex, g_PlayerCar.x, g_PlayerCar.z,
-                    g_PlayerCar.headingAngle, g_RenderState.viewX, g_RenderState.viewY,
-                    g_RenderState.viewZ, g_RenderState.viewAngleY, g_CameraViewMode);
+                    g_PlayerCar.headingAngle, g_RenderState.camera.x, g_RenderState.camera.y,
+                    g_RenderState.camera.z, g_RenderState.camera.angleY, g_CameraViewMode);
             if (ModernCaptureFrame(path))
                 fprintf(stderr, "rage-port: mark %d written to %s\n", marks, path);
             else

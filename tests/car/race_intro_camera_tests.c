@@ -93,11 +93,11 @@ int main(void) {
     interpolation = rcos(3 << 8);
     CHECK_EQ(g_RaceIntroCameraCursor, &script.keys[0]);
     CHECK_EQ(g_RaceIntroCameraTimer, 3);
-    CHECK_EQ(g_RenderState.viewX, 100 + 400 * interpolation / 4096);
-    CHECK_EQ(g_RenderState.viewY, 200 + 400 * interpolation / 4096);
-    CHECK_EQ(g_RenderState.viewZ, 300 + 400 * interpolation / 4096);
-    CHECK_EQ(g_RenderState.viewAngleY, ANGLE_QUARTER_TURN - 100);
-    CHECK_EQ(g_RenderState.viewAngleX, ANGLE_QUARTER_TURN - 200);
+    CHECK_EQ(g_RenderState.camera.x, 100 + 400 * interpolation / 4096);
+    CHECK_EQ(g_RenderState.camera.y, 200 + 400 * interpolation / 4096);
+    CHECK_EQ(g_RenderState.camera.z, 300 + 400 * interpolation / 4096);
+    CHECK_EQ(g_RenderState.camera.angleY, ANGLE_QUARTER_TURN - 100);
+    CHECK_EQ(g_RenderState.camera.angleX, ANGLE_QUARTER_TURN - 200);
     CHECK_EQ(s_drawCalls, 1);
     CHECK_EQ(s_selectedBank, 0);
 
@@ -107,9 +107,9 @@ int main(void) {
     CHECK_EQ(g_RaceIntroCameraDelta.vx, 500);
     CHECK_EQ(g_RaceIntroCameraDelta.vy, 472);
     CHECK_EQ(g_RaceIntroCameraDelta.vz, 500);
-    CHECK_EQ(g_RenderState.viewX, car.x);
-    CHECK_EQ(g_RenderState.viewY, car.y - 28);
-    CHECK_EQ(g_RenderState.viewZ, car.z);
+    CHECK_EQ(g_RenderState.camera.x, car.x);
+    CHECK_EQ(g_RenderState.camera.y, car.y - 28);
+    CHECK_EQ(g_RenderState.camera.z, car.z);
     CHECK_EQ(s_fadeCalls, 1);
     CHECK_EQ(s_fadeColor, 52);
     CHECK_EQ(s_matrixCalls, 2);
@@ -127,7 +127,7 @@ int main(void) {
     script.keys[0].mode = 0;
     RunRaceIntroCamera(&car, 0);
     CHECK_EQ(g_RaceIntroCameraTimer, 0);
-    CHECK_EQ(g_RenderState.viewX, script.keys[1].x.word);
+    CHECK_EQ(g_RenderState.camera.x, script.keys[1].x.word);
 
     script.keys[0].x.word = INT_MAX;
     script.keys[1].x.half.value = 0xFFFF;

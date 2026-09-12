@@ -135,11 +135,11 @@ static void TestInitializesAttractScene(void) {
            s_BackColor[2] == 0x20);
     assert(s_FarColor[0] == 0 && s_FarColor[1] == 0 && s_FarColor[2] == 0);
     assert(s_Fog[0] == 0x4E20 && s_Fog[1] == 0x140);
-    assert(g_RenderState.viewX == 0 && g_RenderState.viewY == 0 &&
-           g_RenderState.viewZ == -3520);
-    assert(g_RenderState.viewAngleX == 0 &&
-           g_RenderState.viewAngleY == 0 &&
-           g_RenderState.viewAngleZ == 0);
+    assert(g_RenderState.camera.x == 0 && g_RenderState.camera.y == 0 &&
+           g_RenderState.camera.z == -3520);
+    assert(g_RenderState.camera.angleX == 0 &&
+           g_RenderState.camera.angleY == 0 &&
+           g_RenderState.camera.angleZ == 0);
     assert(s_CameraMatrixUpdates == 1);
     assert(g_OptionLetterboxHeight == 240);
     assert(g_FadeLevel == 256 && g_FadeStep == -8);

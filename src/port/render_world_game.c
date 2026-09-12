@@ -464,17 +464,17 @@ void GameRenderWorldPublishCurrentCamera(void) {
         GameRenderWorldClearInactiveScene();
         return;
     }
-    GameRenderWorldSetCamera(g_RenderState.viewX, g_RenderState.viewY,
-                                 g_RenderState.viewZ, g_RenderState.viewAngleX,
-                                 g_RenderState.viewAngleY,
-                                 g_RenderState.viewAngleZ);
+    GameRenderWorldSetCamera(g_RenderState.camera.x, g_RenderState.camera.y,
+                                 g_RenderState.camera.z, g_RenderState.camera.angleX,
+                                 g_RenderState.camera.angleY,
+                                 g_RenderState.camera.angleZ);
     /* A car mirror is a second scene camera, not a recreation of the PS1
      * mirror pass. A 20 degree vertical FOV on the wide mirror target gives
      * a useful rearward field of view without the old projection distortion. */
     mirrorCamera = GameRenderWorldBuildCamera(
-        g_RenderState.viewX, g_RenderState.viewY, g_RenderState.viewZ,
-        g_RenderState.viewAngleX, g_RenderState.viewAngleY,
-        g_RenderState.viewAngleZ, 20.0f, 1);
+        g_RenderState.camera.x, g_RenderState.camera.y, g_RenderState.camera.z,
+        g_RenderState.camera.angleX, g_RenderState.camera.angleY,
+        g_RenderState.camera.angleZ, 20.0f, 1);
     /* The tiny, wide mirror loses useful silhouettes when it reaches the
      * main view's full fog distance. It already consumes the complete native
      * scene, so extend only its semantic fog range rather than reviving the
@@ -508,11 +508,11 @@ static void GameRenderWorldSubmitCourseTransform(
     instance.textureScrollU = (uint8_t)(g_AnimTimer & 0x7F);
     instance.pass = mirror_pass ? RAGE_RENDER_PASS_MIRROR : RAGE_RENDER_PASS_MAIN;
     instance.transform.position.x =
-        (float)CourseCoordinateNearReference(x, g_RenderState.viewX);
+        (float)CourseCoordinateNearReference(x, g_RenderState.camera.x);
     instance.transform.position.y =
-        -(float)CourseCoordinateNearReference(y, g_RenderState.viewY);
+        -(float)CourseCoordinateNearReference(y, g_RenderState.camera.y);
     instance.transform.position.z =
-        -(float)CourseCoordinateNearReference(z, g_RenderState.viewZ);
+        -(float)CourseCoordinateNearReference(z, g_RenderState.camera.z);
     instance.transform.orientation = SceneQuaternionFromPsx(rotation);
     instance.transform.hasOrientation = 1;
     instance.transform.scale.x = 0.25f;

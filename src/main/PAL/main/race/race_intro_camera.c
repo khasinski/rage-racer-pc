@@ -31,10 +31,10 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
         const RaceIntroCameraKey *key = &script->keys[keyIndex];
 
         g_RaceIntroCameraCursor = key;
-        g_RenderState.viewX = key->x.word;
-        g_RenderState.viewY = key->y.word;
-        g_RenderState.viewZ = key->z.word;
-        g_RenderState.viewParameter = key->mode;
+        g_RenderState.camera.x = key->x.word;
+        g_RenderState.camera.y = key->y.word;
+        g_RenderState.camera.z = key->z.word;
+        g_RenderState.camera.parameter = key->mode;
         g_RaceIntroCameraDelta.vx = WrapSigned16(
             (int64_t)key[1].x.half.value - key[0].x.half.value);
         g_RaceIntroCameraDelta.vy = WrapSigned16(

@@ -69,7 +69,7 @@ s32 BeginMirrorPass(void) {
     SetMirrorClip(g_MirrorPanelY);
     g_VisibleCellMask = g_MirrorVisibleCellMask;
     g_VisibleCellList = g_MirrorVisibleCellList;
-    state->depth += MIRROR_DEPTH_BIAS;
+    state->camera.depth += MIRROR_DEPTH_BIAS;
     return 1;
 }
 
@@ -87,7 +87,7 @@ void EndMirrorPass(void) {
     state->y1 = SCREEN_HEIGHT;
     state->primData =
         &g_DrawBuffer->layout.orderingTables[0][0];
-    state->depth -= MIRROR_DEPTH_BIAS;
+    state->camera.depth -= MIRROR_DEPTH_BIAS;
     state->orderingFlag ^= 1;
     state->matrix = g_CameraMatrixSaved;
     g_VisibleCellMask = g_MainVisibleCellMask;

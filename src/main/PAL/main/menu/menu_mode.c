@@ -35,12 +35,12 @@ static void LoadMenuSeriesProgress(void) {
 }
 
 static void InitMenuCamera(void) {
-    g_RenderState.viewX = 0;
-    g_RenderState.viewY = -64;
-    g_RenderState.viewZ = -256;
-    g_RenderState.viewAngleX = 0x100;
-    g_RenderState.viewAngleY = 0;
-    g_RenderState.viewAngleZ = 0;
+    g_RenderState.camera.x = 0;
+    g_RenderState.camera.y = -64;
+    g_RenderState.camera.z = -256;
+    g_RenderState.camera.angleX = 0x100;
+    g_RenderState.camera.angleY = 0;
+    g_RenderState.camera.angleZ = 0;
     SetCameraRotMatrix();
     ScaleMatrix(&g_RenderState.matrix, &g_MenuViewScale);
 }

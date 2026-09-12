@@ -12,6 +12,17 @@ typedef enum GameRenderPassMode {
     GAME_RENDER_PASS_MAIN = 10,
 } GameRenderPassMode;
 
+typedef struct GameCameraState {
+    s32 x;
+    s32 y;
+    s32 z;
+    s32 parameter;
+    s32 angleX;
+    s32 angleY;
+    s32 angleZ;
+    s32 depth;
+} GameCameraState;
+
 /*
  * The working state the renderer and the car code keep between calls.
  *
@@ -25,14 +36,7 @@ typedef enum GameRenderPassMode {
 typedef struct GameRenderState {
     void *packetCursor;
     GameOrderingTableEntry *primData;
-    s32 viewX;
-    s32 viewY;
-    s32 viewZ;
-    s32 viewParameter;
-    s32 viewAngleX;
-    s32 viewAngleY;
-    s32 viewAngleZ;
-    s32 depth;
+    GameCameraState camera;
     Matrix matrix;
     const void *courseBank;
     const void *const *modelModels;
@@ -95,16 +99,7 @@ typedef struct GameViewState {
  * The position and the angles are each taken as a three-word block as well as
  * one word at a time, so they have to stay adjacent.
  */
-typedef struct GameViewWork {
-    s32 x;
-    s32 y;
-    s32 z;
-    s32 parameter;
-    s32 angleX;
-    s32 angleY;
-    s32 angleZ;
-    s32 depth;
-} GameViewWork;
+typedef GameCameraState GameViewWork;
 
 _Static_assert(offsetof(GameViewWork, z) == offsetof(GameViewWork, x) + 8,
                "the camera position must stay one block");
@@ -180,36 +175,20 @@ extern CarTrackWork g_CarTrackWork;
  * The camera words are also read as one block, so the two spellings have to
  * agree on where each word sits. They are checked rather than trusted.
  */
-#define RENDER_VIEW_STATE   ((GameViewState *)&g_RenderState.viewX)
+#define RENDER_VIEW_STATE   ((GameViewState *)&g_RenderState.camera.x)
 _Static_assert(sizeof(GameViewState) ==
-                   offsetof(GameRenderState, depth) -
-                       offsetof(GameRenderState, viewX),
+                   offsetof(GameCameraState, depth),
                "the camera block and the camera fields have drifted apart");
 _Static_assert(offsetof(GameViewState, angleX) ==
-                   offsetof(GameRenderState, viewAngleX) -
-                       offsetof(GameRenderState, viewX),
+                   offsetof(GameCameraState, angleX),
                "the camera block puts the angles somewhere else");
 
 static inline void LoadViewWork(GameViewWork *view) {
-    view->x = g_RenderState.viewX;
-    view->y = g_RenderState.viewY;
-    view->z = g_RenderState.viewZ;
-    view->parameter = g_RenderState.viewParameter;
-    view->angleX = g_RenderState.viewAngleX;
-    view->angleY = g_RenderState.viewAngleY;
-    view->angleZ = g_RenderState.viewAngleZ;
-    view->depth = g_RenderState.depth;
+    *view = g_RenderState.camera;
 }
 
 static inline void StoreViewWork(const GameViewWork *view) {
-    g_RenderState.viewX = view->x;
-    g_RenderState.viewY = view->y;
-    g_RenderState.viewZ = view->z;
-    g_RenderState.viewParameter = view->parameter;
-    g_RenderState.viewAngleX = view->angleX;
-    g_RenderState.viewAngleY = view->angleY;
-    g_RenderState.viewAngleZ = view->angleZ;
-    g_RenderState.depth = view->depth;
+    g_RenderState.camera = *view;
 }
 
 /* Course object bank. SubmitCourseModel / SubmitCourseModel2 (0x800296BC,

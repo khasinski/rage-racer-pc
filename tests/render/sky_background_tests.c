@@ -210,10 +210,10 @@ static int TestNativeGridMatchesClassicPackets(void) {
         POLY_FT4 *tiles;
         PrepareFrame(&packets, orderingTable);
         g_CourseIndex = 2;
-        g_RenderState.viewY = cameras[index].y;
-        g_RenderState.viewAngleX = cameras[index].pitch;
-        g_RenderState.viewAngleY = cameras[index].yaw;
-        g_RenderState.viewAngleZ = cameras[index].roll;
+        g_RenderState.camera.y = cameras[index].y;
+        g_RenderState.camera.angleX = cameras[index].pitch;
+        g_RenderState.camera.angleY = cameras[index].yaw;
+        g_RenderState.camera.angleZ = cameras[index].roll;
         MeasureSkyGridLayout(cameras[index].y, cameras[index].pitch,
                              cameras[index].yaw, cameras[index].roll, 0, 0,
                              &grid);

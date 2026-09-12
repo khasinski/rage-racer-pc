@@ -221,13 +221,13 @@ void DrawCar(GameRenderObject *object) {
     lod = g_CarModelBankTable[model];
 
     cameraOffset[0] = WrapSigned32(
-        (int64_t)object->x - g_RenderState.viewX);
+        (int64_t)object->x - g_RenderState.camera.x);
     cameraOffset[1] = 0;
     cameraOffset[2] = WrapSigned32(
-        (int64_t)object->z - g_RenderState.viewZ);
+        (int64_t)object->z - g_RenderState.camera.z);
     ApplyMatrixLV(&g_RenderState.matrix, cameraOffset, viewPosition);
     renderDistance = CarRenderManhattanDistance(
-        object->x, object->z, g_RenderState.viewX, g_RenderState.viewZ);
+        object->x, object->z, g_RenderState.camera.x, g_RenderState.camera.z);
     renderRange = ClassifyCarRenderRange(viewPosition[2], renderDistance);
     if (DiagnosticsEnabled("render.car_draw_trace")) {
         if (g_SceneTimer == DiagnosticsIntValue(

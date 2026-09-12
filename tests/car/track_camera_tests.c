@@ -106,12 +106,12 @@ static void Run(CameraViewMode selector, s32 *view) {
     g_CameraModePrev = 0;
     memset(&g_RenderState, 0, sizeof(g_RenderState));
     UpdateCamera(selector, &car);
-    view[0] = g_RenderState.viewX;
-    view[1] = g_RenderState.viewY;
-    view[2] = g_RenderState.viewZ;
-    view[3] = g_RenderState.viewAngleX;
-    view[4] = g_RenderState.viewAngleY;
-    view[5] = g_RenderState.viewAngleZ;
+    view[0] = g_RenderState.camera.x;
+    view[1] = g_RenderState.camera.y;
+    view[2] = g_RenderState.camera.z;
+    view[3] = g_RenderState.camera.angleX;
+    view[4] = g_RenderState.camera.angleY;
+    view[5] = g_RenderState.camera.angleZ;
 }
 
 /*
@@ -173,12 +173,12 @@ int main(void) {
         s_nearestCamera = -1;
         memset(&g_RenderState, 0, sizeof(g_RenderState));
         UpdateCamera(2, &car);
-        view[0] = g_RenderState.viewX;
-        view[1] = g_RenderState.viewY;
-        view[2] = g_RenderState.viewZ;
-        view[3] = g_RenderState.viewAngleX;
-        view[4] = g_RenderState.viewAngleY;
-        view[5] = g_RenderState.viewAngleZ;
+        view[0] = g_RenderState.camera.x;
+        view[1] = g_RenderState.camera.y;
+        view[2] = g_RenderState.camera.z;
+        view[3] = g_RenderState.camera.angleX;
+        view[4] = g_RenderState.camera.angleY;
+        view[5] = g_RenderState.camera.angleZ;
         Check("missing track camera", view, wanted);
         s_nearestCamera = 0;
     }
@@ -227,9 +227,9 @@ int main(void) {
         s_nodes[0].offset[2] = 0x60;
         Run(2, view);
         Check("mode 2, blended node", view, wanted);
-        if (g_RenderState.viewParameter != s_nodes[0].data.world.blend) {
+        if (g_RenderState.camera.parameter != s_nodes[0].data.world.blend) {
             printf("FAIL mode 2 node metadata: got %d, expected %d\n",
-                   g_RenderState.viewParameter, s_nodes[0].data.world.blend);
+                   g_RenderState.camera.parameter, s_nodes[0].data.world.blend);
             s_failures++;
         }
     }
@@ -268,10 +268,10 @@ int main(void) {
         g_CamPathFrame = 30;
         Run(2, view);
         Check("mode 4, sliding node", view, wanted);
-        if (g_RenderState.viewParameter !=
+        if (g_RenderState.camera.parameter !=
             s_nodes[0].data.orientation.distance) {
             printf("FAIL mode 4 node metadata: got %d, expected %d\n",
-                   g_RenderState.viewParameter,
+                   g_RenderState.camera.parameter,
                    s_nodes[0].data.orientation.distance);
             s_failures++;
         }

@@ -151,10 +151,10 @@ int main(void) {
     CHECK(g_NegconAnalogI == 0 && g_NegconAnalogII == 0 &&
           g_NegconAnalogL == 0 && g_NegconSteer == 0);
     CHECK(g_MirrorMode == 0 && g_ExtraGrandPrixUnlocked == 0);
-    CHECK(g_RenderState.viewX == 0 && g_RenderState.viewY == -64);
-    CHECK(g_RenderState.viewZ == -256);
-    CHECK(g_RenderState.viewAngleX == 0x100);
-    CHECK(g_RenderState.viewAngleY == 0 && g_RenderState.viewAngleZ == 0);
+    CHECK(g_RenderState.camera.x == 0 && g_RenderState.camera.y == -64);
+    CHECK(g_RenderState.camera.z == -256);
+    CHECK(g_RenderState.camera.angleX == 0x100);
+    CHECK(g_RenderState.camera.angleY == 0 && g_RenderState.camera.angleZ == 0);
 
     puts("subsystem initialization tests passed");
     return 0;

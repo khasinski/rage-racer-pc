@@ -40,12 +40,12 @@ void EnterAttractScene(void) {
     g_SceneId = GAME_SCENE_OPTION;
     g_SceneTimer = 0;
     InitAttractLighting();
-    g_RenderState.viewX = 0;
-    g_RenderState.viewY = 0;
-    g_RenderState.viewZ = ATTRACT_VIEW_Z;
-    g_RenderState.viewAngleX = 0;
-    g_RenderState.viewAngleY = 0;
-    g_RenderState.viewAngleZ = 0;
+    g_RenderState.camera.x = 0;
+    g_RenderState.camera.y = 0;
+    g_RenderState.camera.z = ATTRACT_VIEW_Z;
+    g_RenderState.camera.angleX = 0;
+    g_RenderState.camera.angleY = 0;
+    g_RenderState.camera.angleZ = 0;
     SetCameraRotMatrix();
     g_OptionLetterboxHeight = ATTRACT_LETTERBOX_HEIGHT;
     g_FadeLevel = ATTRACT_INITIAL_FADE;
