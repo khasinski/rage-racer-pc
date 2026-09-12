@@ -21,7 +21,7 @@ void EnterTitleScreen(void) {
      * title textures occupy the same VRAM rows. */
     ResetTrackTextureSwap();
     SetupDisplay240(0, 0, 0);
-    if (g_FmvRuntime.returnScene != 0) {
+    if (g_Fmv.returnScene != 0) {
         g_TitleFadeLevel = TITLE_RETURN_FADE;
         g_TitleAttractTimer = TITLE_RETURN_ATTRACT_FRAMES;
         g_TitleExitTimer = 0;

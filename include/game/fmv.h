@@ -9,11 +9,11 @@ typedef enum FmvPlaybackState {
     FMV_PLAYBACK_FINISH
 } FmvPlaybackState;
 
-typedef struct FmvRuntimeState {
+typedef struct Fmv {
     s32 streamEnded;
     FmvPlaybackState playback;
     s32 returnScene;
-} FmvRuntimeState;
+} Fmv;
 
 /* Streams selected by the game have fixed slots in RAGE.STR. The disc table
  * also contains slot 9, which no recovered selection path currently uses. */
@@ -26,7 +26,7 @@ typedef enum FmvStreamId {
     FMV_GRAND_PRIX_CLASS_COUNT = 4,
 } FmvStreamId;
 
-extern FmvRuntimeState g_FmvRuntime;
+extern Fmv g_Fmv;
 
 /* Select a stream and enter the FMV scene. */
 void BeginIntroFmv(s32 returnScene);

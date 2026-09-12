@@ -188,7 +188,7 @@ static int HostDecodeFmvFrame(void) {
     /* Every movie has a few trailing frames the game never shows; the stream
      * table names the last one it does. */
     if (g_StreamFrameCount != 0 && s_frame >= g_StreamFrameCount) {
-        g_FmvRuntime.streamEnded = 1;
+        g_Fmv.streamEnded = 1;
         HostFmvAudioAllowTail();
     }
     return 1;
@@ -243,7 +243,7 @@ void StartFmvPlayback(void) {
     if (!HostExtractFmv(firstSector, sectorSpan)) {
         fprintf(stderr, "rage-port: could not extract FMV %ld from RAGE.STR\n",
                 streamIndex);
-        g_FmvRuntime.playback = FMV_PLAYBACK_FINISH;
+        g_Fmv.playback = FMV_PLAYBACK_FINISH;
         return;
     }
     s_pixels = calloc((size_t)s_width * (size_t)s_height, 3);
@@ -251,7 +251,7 @@ void StartFmvPlayback(void) {
         fprintf(stderr, "rage-port: could not allocate FMV %ld frame\n",
                 streamIndex);
         ReleaseFmvBuffers();
-        g_FmvRuntime.playback = FMV_PLAYBACK_FINISH;
+        g_Fmv.playback = FMV_PLAYBACK_FINISH;
         return;
     }
     clearRect.x = 0;
@@ -265,8 +265,8 @@ void StartFmvPlayback(void) {
      * paced off the vblank count instead of the clock on the wall. */
     s_wallClock = getenv("RAGE_PORT_TEST_MODE") == NULL;
     g_SceneTimer = 0;
-    g_FmvRuntime.streamEnded = 0;
-    g_FmvRuntime.playback = FMV_PLAYBACK_DECODE;
+    g_Fmv.streamEnded = 0;
+    g_Fmv.playback = FMV_PLAYBACK_DECODE;
     g_FrameContexts[0].environment.draw.isbg = 0;
     g_FrameContexts[1].environment.draw.isbg = 0;
     SetDispMask(1);
@@ -276,7 +276,7 @@ void StartFmvPlayback(void) {
     HostFmvAudioStart(firstSector, sectorSpan);
     if (!HostDecodeFmvFrame() || !HostUploadFmvFrame()) {
         fprintf(stderr, "rage-port: could not decode FMV %ld\n", streamIndex);
-        g_FmvRuntime.playback = FMV_PLAYBACK_FINISH;
+        g_Fmv.playback = FMV_PLAYBACK_FINISH;
     }
     s_startNs = SDL_GetTicksNS();
 }
@@ -307,16 +307,16 @@ void DecodeFmvFrame(void) {
     int decoded = 0;
 
     g_SceneTimer++;
-    if (g_FmvRuntime.streamEnded || (g_PadPressed & PAD_START)) {
+    if (g_Fmv.streamEnded || (g_PadPressed & PAD_START)) {
         if (g_PadPressed & PAD_START) StartCdVolumeFade(1);
-        g_FmvRuntime.playback = FMV_PLAYBACK_FINISH;
+        g_Fmv.playback = FMV_PLAYBACK_FINISH;
         return;
     }
     arrived = FmvArrivedSectors();
-    while (s_sectorCursor < arrived && !g_FmvRuntime.streamEnded) {
+    while (s_sectorCursor < arrived && !g_Fmv.streamEnded) {
         if (!HostDecodeFmvFrame()) {
-            g_FmvRuntime.streamEnded = 1;
-            g_FmvRuntime.playback = FMV_PLAYBACK_FINISH;
+            g_Fmv.streamEnded = 1;
+            g_Fmv.playback = FMV_PLAYBACK_FINISH;
             break;
         }
         decoded = 1;
@@ -327,8 +327,8 @@ void DecodeFmvFrame(void) {
      * later CPU writes overwrite data that earlier copies have not consumed
      * yet on some Vulkan drivers. */
     if (decoded && !HostUploadFmvFrame()) {
-        g_FmvRuntime.streamEnded = 1;
-        g_FmvRuntime.playback = FMV_PLAYBACK_FINISH;
+        g_Fmv.streamEnded = 1;
+        g_Fmv.playback = FMV_PLAYBACK_FINISH;
     }
 }
 
@@ -336,6 +336,6 @@ void EndFmv(void) {
     HostFmvAudioEnd();
     ReleaseFmvBuffers();
     ReleaseFmvPixels();
-    g_SceneId = g_FmvRuntime.returnScene;
-    g_FmvRuntime.returnScene = g_FmvRuntime.streamEnded;
+    g_SceneId = g_Fmv.returnScene;
+    g_Fmv.returnScene = g_Fmv.streamEnded;
 }

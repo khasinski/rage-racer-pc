@@ -3,4 +3,4 @@
 #include "game/fmv.h"
 #include "game/fmv_internal.h"
 
-FmvRuntimeState g_FmvRuntime;
+Fmv g_Fmv;

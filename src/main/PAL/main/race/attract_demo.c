@@ -98,7 +98,7 @@ static void UpdateAttractDemoStart(void) {
 
 static void ReturnToTitleScene(void) {
     g_SceneId = GAME_SCENE_ENTER_TITLE;
-    g_FmvRuntime.returnScene = 0;
+    g_Fmv.returnScene = 0;
     ResetCdAudioState();
 }
 
@@ -149,7 +149,7 @@ void UpdateAttractDemoScene(void) {
         if (!AssetLoadCompletedSuccessfully()) {
             ResetAssetLoader();
             g_SceneId = GAME_SCENE_ENTER_TITLE;
-            g_FmvRuntime.returnScene = 0;
+            g_Fmv.returnScene = 0;
         } else {
             ReturnToTitleScene();
         }

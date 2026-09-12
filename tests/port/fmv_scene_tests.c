@@ -7,7 +7,7 @@
 
 #include <stdio.h>
 
-FmvRuntimeState g_FmvRuntime;
+Fmv g_Fmv;
 s32 g_SceneId;
 u8 g_CdVolume;
 s32 g_CdFadeFrames;
@@ -66,7 +66,7 @@ static void TestBeginFmv(void) {
 
     Check(s_closeCalls == 1 && s_resetCalls == 1,
           "FMV start releases game audio");
-    Check(g_FmvRuntime.playback == FMV_PLAYBACK_START && g_FmvRuntime.returnScene == 27 &&
+    Check(g_Fmv.playback == FMV_PLAYBACK_START && g_Fmv.returnScene == 27 &&
               g_SceneId == GAME_SCENE_FMV,
           "FMV start records playback and return states");
     Check(s_cdSyncCalls == 1 && s_cdSyncMode == CD_SYNC_WAIT &&
@@ -75,28 +75,28 @@ static void TestBeginFmv(void) {
 }
 
 static void TestUpdateFmv(void) {
-    g_FmvRuntime.playback = FMV_PLAYBACK_INVALID;
+    g_Fmv.playback = FMV_PLAYBACK_INVALID;
     UpdateFmv();
     Check(s_startCalls == 0 && s_decodeCalls == 0 && s_endCalls == 0,
           "invalid FMV state does nothing");
 
-    g_FmvRuntime.playback = FMV_PLAYBACK_START;
+    g_Fmv.playback = FMV_PLAYBACK_START;
     UpdateFmv();
     Check(s_startCalls == 1 && s_decodeCalls == 1,
           "FMV start initializes and decodes in the same frame");
 
-    g_FmvRuntime.playback = FMV_PLAYBACK_DECODE;
+    g_Fmv.playback = FMV_PLAYBACK_DECODE;
     UpdateFmv();
     Check(s_startCalls == 1 && s_decodeCalls == 2,
           "FMV decode state advances one frame");
 
-    g_FmvRuntime.playback = FMV_PLAYBACK_FINISH;
+    g_Fmv.playback = FMV_PLAYBACK_FINISH;
     UpdateFmv();
     Check(s_endCalls == 1, "FMV finish state ends playback");
 
-    g_FmvRuntime.playback = (FmvPlaybackState)99;
+    g_Fmv.playback = (FmvPlaybackState)99;
     UpdateFmv();
-    Check(g_FmvRuntime.playback == FMV_PLAYBACK_FINISH && s_endCalls == 2,
+    Check(g_Fmv.playback == FMV_PLAYBACK_FINISH && s_endCalls == 2,
           "corrupt FMV state exits through normal cleanup");
 }
 
