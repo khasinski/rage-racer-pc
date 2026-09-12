@@ -306,7 +306,6 @@ if(RAGE_BUILD_PORT)
         # and hook order. A shared object loses that definition on Windows.
         src/port/platform_stubs.c
         src/port/disc_picker.c
-        src/port/host_clock.c
         src/port/disc_stream_publish.c
         src/port/input_config.c
         src/port/input_device_select.c

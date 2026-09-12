@@ -1,6 +1,7 @@
 #include <psyz/video.h>
 #include <psyz/cd.h>
 #include <libgpu.h>
+#include <SDL3/SDL_timer.h>
 
 #include <limits.h>
 #include <stdio.h>
@@ -11,7 +12,6 @@
 #include "host_disc.h"
 #include "fmv_str.h"
 #include "fmv_stream_index.h"
-#include "host_clock.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -278,7 +278,7 @@ void StartFmvPlayback(void) {
         fprintf(stderr, "rage-port: could not decode FMV %ld\n", streamIndex);
         g_FmvState = FMV_PLAYBACK_FINISH;
     }
-    s_startNs = HostNanoseconds();
+    s_startNs = SDL_GetTicksNS();
 }
 
 /* How much of the stream the drive would have delivered by now. */
@@ -286,7 +286,7 @@ static unsigned int FmvArrivedSectors(void) {
     uint64_t arrived;
 
     if (s_wallClock) {
-        uint64_t elapsed = HostNanoseconds() - s_startNs;
+        uint64_t elapsed = SDL_GetTicksNS() - s_startNs;
         uint64_t seconds = elapsed / 1000000000u;
         uint64_t nanoseconds = elapsed % 1000000000u;
 
