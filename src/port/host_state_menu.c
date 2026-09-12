@@ -83,9 +83,7 @@ DesignModeCellMask g_DesignModeCellMask __attribute__((aligned(16))) = {
     }
 };
 Rect g_TeamLogoClutRect __attribute__((aligned(16))) = {16, 480, 16, 1};
-TeamLogoRect g_TeamLogoRect __attribute__((aligned(16))) = {
-    .rect = {656, 48, 16, 64}
-};
+Rect g_TeamLogoRect __attribute__((aligned(16))) = {656, 48, 16, 64};
 s16 g_NegconPlayPercent[4] __attribute__((aligned(16))) = {
     0, 3, 5, 7
 };

@@ -30,7 +30,7 @@ TeamLogoCanvas g_TeamLogoCanvas;
 u16 g_TeamLogoClut[16];
 u16 g_TeamLogoFadedClut[16];
 u16 g_TeamLogoSwatches[15];
-TeamLogoRect g_TeamLogoRect;
+Rect g_TeamLogoRect;
 Rect g_TeamLogoClutRect;
 u16 g_TeamLogoFadedClutRect;
 TeamLogoColorIndex g_TeamLogoPenColor;
@@ -187,10 +187,10 @@ int main(int argc, char **argv) {
         }
     }
 
-    g_TeamLogoRect.rect.x = 0x290;
-    g_TeamLogoRect.rect.y = 0x30;
-    g_TeamLogoRect.rect.w = 64;
-    g_TeamLogoRect.rect.h = 16;
+    g_TeamLogoRect.x = 0x290;
+    g_TeamLogoRect.y = 0x30;
+    g_TeamLogoRect.w = 64;
+    g_TeamLogoRect.h = 16;
     g_TeamLogoClutRect.x = 16;
     g_TeamLogoClutRect.y = 480;
     g_TeamLogoClutRect.w = 16;

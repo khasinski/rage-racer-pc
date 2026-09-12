@@ -35,7 +35,7 @@ s32 g_CourseIndex;
 s32 g_MaxClassReached[2];
 u16 g_TeamLogoClut[16];
 TeamLogoCanvas g_TeamLogoCanvas;
-TeamLogoRect g_TeamLogoRect;
+Rect g_TeamLogoRect;
 Rect g_TeamLogoClutRect;
 static s32 s_loadResult;
 static s32 s_resetCalls;

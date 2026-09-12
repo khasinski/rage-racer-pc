@@ -93,7 +93,7 @@ static void LoadBootCarScreen(void) {
         return;
     }
     StoreImage(&g_TeamLogoClutRect, g_TeamLogoClut);
-    StoreImage(&g_TeamLogoRect.rect, &g_TeamLogoCanvas);
+    StoreImage(&g_TeamLogoRect, &g_TeamLogoCanvas);
     DrawSync(0);
     g_TeamLogoClut[0] = 0;
     g_AssetBase = assetBase;

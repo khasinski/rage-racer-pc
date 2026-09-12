@@ -61,7 +61,7 @@ void EnterCourseSelectScreen(void) {
     MenuActivateScreen(MENU_SCREEN_COURSE_SELECT);
     DrawBrowseArrows(0, 0, 0, 0);
     ResetCourseSelectShowroom();
-    LoadImage(&g_TeamLogoRect.rect, &g_TeamLogoCanvas);
+    LoadImage(&g_TeamLogoRect, &g_TeamLogoCanvas);
     UploadTeamLogoClut();
     UploadTeamNameTexture(g_TeamNameChars, g_TeamNameLength);
 }

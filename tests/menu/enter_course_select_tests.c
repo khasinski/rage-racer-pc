@@ -35,7 +35,7 @@ s32 g_SceneTimer;
 TeamLogoCanvas g_TeamLogoCanvas;
 u16 g_TeamLogoClut[16];
 Rect g_TeamLogoClutRect;
-TeamLogoRect g_TeamLogoRect;
+Rect g_TeamLogoRect;
 u8 g_TeamNameChars[16];
 u8 g_TeamNameLength;
 s32 g_TimeAttackPlateStep;

@@ -9,8 +9,8 @@ static u8 LogoPulseShade(void) {
 }
 
 static u8 TeamLogoTexturePage(void) {
-    return (u8)(((g_TeamLogoRect.coordinate.y.value >> 4) & 0x10) |
-                ((g_TeamLogoRect.coordinate.x.value & 0x3FF) >> 6));
+    return (u8)(((g_TeamLogoRect.y >> 4) & 0x10) |
+                ((g_TeamLogoRect.x & 0x3FF) >> 6));
 }
 
 static u8 LogoColorRed(u16 color) { return (u8)((color & 0x1F) << 3); }
@@ -77,8 +77,8 @@ static void DrawCanvasPanel(GameOrderingTableEntry *ot, s32 slide) {
      * far the zoom has closed in. */
     zoomShortfall = 0x220 - g_TeamLogoZoomSpan;
     texLeft =
-        ((g_TeamLogoRect.coordinate.x.value * 4) - 1) + ((zoomShortfall * g_TeamLogoViewX) / 272);
-    texTop = (g_TeamLogoRect.coordinate.y.byte.low - 1) + ((zoomShortfall * g_TeamLogoViewY) / 272);
+        ((g_TeamLogoRect.x * 4) - 1) + ((zoomShortfall * g_TeamLogoViewX) / 272);
+    texTop = ((u8)g_TeamLogoRect.y - 1) + ((zoomShortfall * g_TeamLogoViewY) / 272);
     texRight = texLeft + (g_TeamLogoZoomSpan / 8);
     texBottom = texTop + (g_TeamLogoZoomSpan / 8);
 
@@ -160,8 +160,8 @@ static void DrawPreviewPanel(GameOrderingTableEntry *ot, s32 slide) {
     }
 
     /* The logo unzoomed, all 64 by 64 of it. */
-    texLeft = (g_TeamLogoRect.coordinate.x.value * 4) - 1;
-    texTop = g_TeamLogoRect.coordinate.y.byte.low - 1;
+    texLeft = (g_TeamLogoRect.x * 4) - 1;
+    texTop = (u8)g_TeamLogoRect.y - 1;
     clutIndex = GetClut(g_TeamLogoClutRect.x, g_TeamLogoClutRect.y);
     SetDrawClipRect(&g_RenderState.draw, ot, (s16)0, (s16)0, (s16)0x140, (s16)0x1E0);
     GameDrawTexturedQuad(ot, (s16)0x2F, (s16)panelTop, (s16)0x70, (s16)panelTop, (s16)0x2F,
@@ -365,7 +365,7 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep) {
     }
 
     AnimateLogoClut();
-    LoadImage(&g_TeamLogoRect.rect, &g_TeamLogoCanvas);
+    LoadImage(&g_TeamLogoRect, &g_TeamLogoCanvas);
     LoadImage(&g_TeamLogoClutRect, g_TeamLogoClut);
     LoadImage(&g_TeamLogoFadedClutRect, g_TeamLogoFadedClut);
     g_TeamLogoPanelStep =
