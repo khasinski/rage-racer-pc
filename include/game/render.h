@@ -157,19 +157,6 @@ extern TimedDrawCommand g_MenuRowScript[];
 #define SCREEN_WIDTH   0x140
 #define SCREEN_HEIGHT  0xF0
 
-typedef union CameraLookAt {
-    struct {
-        s32 eyeX;
-        s32 eyeY;
-        s32 eyeZ;
-        s32 targetX;
-        s32 targetY;
-        s32 targetZ;
-        s32 reserved[2];
-    } fields;
-    s32 words[8];
-} CameraLookAt;
-
 void DrawCar(GameCarRuntime *object);
 
 /*
