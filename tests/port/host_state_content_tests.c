@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "game/camera_types.h"
 #include "game/car_render_rules.h"
 #include "game/cd.h"
 #include "game/menu_types.h"
@@ -162,7 +163,6 @@ extern unsigned char g_SoundSlotTone[24];
 extern unsigned char g_McSlotCursor[4];
 extern unsigned char g_CameraMatrixSaved[32];
 extern unsigned char g_SectorTimes[12];
-extern ContentSVec g_RaceIntroCameraDelta;
 
 typedef struct HostStateBlob {
     const char *name;
@@ -298,8 +298,8 @@ static const HostStateBlob s_blobs[] = {
     {"g_CameraMatrixSaved", g_CameraMatrixSaved, 32},
     {"g_SectorTimes", g_SectorTimes, 12},
     {"g_RaceIntroCameraDelta",
-     (const unsigned char *)&g_RaceIntroCameraDelta,
-     sizeof(g_RaceIntroCameraDelta)},
+     (const unsigned char *)&g_Camera.intro.delta,
+     sizeof(g_Camera.intro.delta)},
     {"g_Cd.elapsed", (const unsigned char *)&g_Cd.elapsed, 4},
 };
 

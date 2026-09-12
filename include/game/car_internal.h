@@ -40,7 +40,6 @@ static inline s16 ClampCarGear(s32 gear, s32 topGear) {
     return (s16)(gear > topGear ? topGear : gear);
 }
 
-extern const RaceIntroCameraKey *g_RaceIntroCameraCursor;
 extern LaunchSpeedThreshold
     g_LaunchSpeedThresholds[CAR_LAUNCH_THRESHOLD_COUNT];
 extern s16 g_TorqueBandEnd[CAR_TORQUE_BAND_COUNT];

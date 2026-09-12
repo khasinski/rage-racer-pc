@@ -15,7 +15,7 @@ void RunRaceIntroCamera(Camera *camera, PlayerCarRuntime *car, s32 mode) {
         return;
     }
     if (g_RaceIntroCameraScript == NULL ||
-        (mode >= 2 && g_RaceIntroCameraCursor == NULL)) {
+        (mode >= 2 && camera->intro.key == NULL)) {
         UpdateCamera(camera, CAMERA_VIEW_CAR, AsRivalCar(car));
         return;
     }
@@ -28,64 +28,64 @@ void RunRaceIntroCamera(Camera *camera, PlayerCarRuntime *car, s32 mode) {
         s16 keyIndex = script->firstKeyIndex[series];
         const RaceIntroCameraKey *key = &script->keys[keyIndex];
 
-        g_RaceIntroCameraCursor = key;
+        camera->intro.key = key;
         camera->view.x = key->x.word;
         camera->view.y = key->y.word;
         camera->view.z = key->z.word;
         camera->view.parameter = key->mode;
-        g_RaceIntroCameraDelta.vx = WrapSigned16(
+        camera->intro.delta.vx = WrapSigned16(
             (int64_t)key[1].x.half.value - key[0].x.half.value);
-        g_RaceIntroCameraDelta.vy = WrapSigned16(
+        camera->intro.delta.vy = WrapSigned16(
             (int64_t)key[1].y.half.value - key[0].y.half.value);
-        g_RaceIntroCameraDelta.vz = WrapSigned16(
+        camera->intro.delta.vz = WrapSigned16(
             (int64_t)key[1].z.half.value - key[0].z.half.value);
-        g_RaceIntroCameraTimer = key[0].duration;
+        camera->intro.timer = key[0].duration;
     } else {
-        const RaceIntroCameraKey *key = g_RaceIntroCameraCursor;
+        const RaceIntroCameraKey *key = camera->intro.key;
 
         if (mode == key->startFrame) {
-            g_RaceIntroCameraCursor = &key[1];
-            g_RaceIntroCameraTimer = key[1].duration;
+            camera->intro.key = &key[1];
+            camera->intro.timer = key[1].duration;
             if (key[1].mode == 1) {
-                g_RaceIntroCameraDelta.vx = WrapSigned16(
+                camera->intro.delta.vx = WrapSigned16(
                     (int64_t)(u16)car->x - key[1].x.half.value);
-                g_RaceIntroCameraDelta.vy = WrapSigned16(
+                camera->intro.delta.vy = WrapSigned16(
                     (int64_t)(u16)car->y - INTRO_CAR_VIEW_HEIGHT -
                     key[1].y.half.value);
-                g_RaceIntroCameraDelta.vz = WrapSigned16(
+                camera->intro.delta.vz = WrapSigned16(
                     (int64_t)(u16)car->z - key[1].z.half.value);
             } else {
-                g_RaceIntroCameraDelta.vx = WrapSigned16(
+                camera->intro.delta.vx = WrapSigned16(
                     (int64_t)key[2].x.half.value - key[1].x.half.value);
-                g_RaceIntroCameraDelta.vy = WrapSigned16(
+                camera->intro.delta.vy = WrapSigned16(
                     (int64_t)key[2].y.half.value - key[1].y.half.value);
-                g_RaceIntroCameraDelta.vz = WrapSigned16(
+                camera->intro.delta.vz = WrapSigned16(
                     (int64_t)key[2].z.half.value - key[1].z.half.value);
             }
         }
     }
 
-    g_RaceIntroCameraTimer--;
-    if (g_RaceIntroCameraTimer <= 0) {
-        g_RaceIntroCameraTimer = 0;
+    camera->intro.timer--;
+    if (camera->intro.timer <= 0) {
+        camera->intro.timer = 0;
     }
 
-    if (g_RaceIntroCameraCursor->mode == 0) {
-        s32 duration = g_RaceIntroCameraCursor->duration;
+    if (camera->intro.key->mode == 0) {
+        s32 duration = camera->intro.key->duration;
         s32 interpolationAngle = duration > 0
-                                     ? (g_RaceIntroCameraTimer << 10) / duration
+                                     ? (camera->intro.timer << 10) / duration
                                      : 0;
         s32 interpolation = rcos(interpolationAngle);
 
         viewWork.x = WrapSigned32(
-            (int64_t)g_RaceIntroCameraCursor->x.word +
-            g_RaceIntroCameraDelta.vx * interpolation / 4096);
+            (int64_t)camera->intro.key->x.word +
+            camera->intro.delta.vx * interpolation / 4096);
         viewWork.y = WrapSigned32(
-            (int64_t)g_RaceIntroCameraCursor->y.word +
-            g_RaceIntroCameraDelta.vy * interpolation / 4096);
+            (int64_t)camera->intro.key->y.word +
+            camera->intro.delta.vy * interpolation / 4096);
         viewWork.z = WrapSigned32(
-            (int64_t)g_RaceIntroCameraCursor->z.word +
-            g_RaceIntroCameraDelta.vz * interpolation / 4096);
+            (int64_t)camera->intro.key->z.word +
+            camera->intro.delta.vz * interpolation / 4096);
 
         delta.x = WrapSigned32(
             (int64_t)rsin(car->bodyYaw) / 128 + car->x - viewWork.x);
@@ -103,7 +103,7 @@ void RunRaceIntroCamera(Camera *camera, PlayerCarRuntime *car, s32 mode) {
         SelectModelBank(0);
         DrawPlayerCarModel(AsRivalCar(car));
     } else {
-        DrawFullscreenFadeTile(g_RaceIntroCameraTimer * 26, 0x29);
+        DrawFullscreenFadeTile(camera->intro.timer * 26, 0x29);
         viewWork.x = car->x;
         viewWork.y = WrapSigned32(
             (int64_t)car->y - INTRO_CAR_VIEW_HEIGHT);

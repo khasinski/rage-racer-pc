@@ -347,7 +347,7 @@ static void ReportCameraState(void) {
            g_Camera.view.x, g_Camera.view.y, g_Camera.view.z,
            g_Camera.view.angleX, g_Camera.view.angleY,
            g_Camera.view.angleZ, g_RenderState.pass.orderingFlag, g_SkyRowBase,
-           (void *)g_RaceIntroCameraCursor);
+           (void *)g_Camera.intro.key);
     printf(" mirror_mtx=%d,%d,%d;%d,%d,%d;%d,%d,%d",
            g_MirrorViewMatrix.m[0][0], g_MirrorViewMatrix.m[0][1],
            g_MirrorViewMatrix.m[0][2], g_MirrorViewMatrix.m[1][0],
@@ -360,14 +360,14 @@ static void ReportCameraState(void) {
            g_PlayerCar.modelYaw);
     printf(" scene_timer=%d fade=%d sync=%x",
            g_SceneTimer, g_FadeLevel, g_FrameSyncThreshold);
-    if (g_RaceIntroCameraCursor != NULL) {
+    if (g_Camera.intro.key != NULL) {
         printf(" mode=%d start=%d duration=%d key_pos=(%d,%d,%d)",
-               g_RaceIntroCameraCursor->mode,
-               g_RaceIntroCameraCursor->startFrame,
-               g_RaceIntroCameraCursor->duration,
-               g_RaceIntroCameraCursor->x.word,
-               g_RaceIntroCameraCursor->y.word,
-               g_RaceIntroCameraCursor->z.word);
+               g_Camera.intro.key->mode,
+               g_Camera.intro.key->startFrame,
+               g_Camera.intro.key->duration,
+               g_Camera.intro.key->x.word,
+               g_Camera.intro.key->y.word,
+               g_Camera.intro.key->z.word);
     }
     if (g_CarTable != NULL && g_PlayerCarIndex >= 0 &&
         g_PlayerCarIndex < GAME_CAR_COUNT) {

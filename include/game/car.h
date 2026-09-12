@@ -743,8 +743,6 @@ extern RaceGridSlot g_RaceGridSlots[RACE_GRID_STORAGE_COUNT];
  * here -- no component is touched twice in a block -- so this is a layout
  * claim, not a proof.
  */
-extern SVec g_RaceIntroCameraDelta;
-extern s32 g_RaceIntroCameraTimer;
 extern s32 g_ShiftTargetSpeed;
 extern s32 g_TachoShiftLightOn;
 

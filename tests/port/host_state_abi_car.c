@@ -5,8 +5,6 @@ _Static_assert(sizeof(g_RoadGrade) == sizeof(s32),
 _Static_assert(sizeof(g_LaunchSpeedThresholds) ==
                    sizeof(LaunchSpeedThreshold) * CAR_LAUNCH_THRESHOLD_COUNT,
                "g_LaunchSpeedThresholds ABI size changed");
-_Static_assert(sizeof(g_RaceIntroCameraDelta) == sizeof(SVec),
-               "g_RaceIntroCameraDelta ABI size changed");
 _Static_assert(sizeof(g_TrackPoints) == sizeof(void *),
                "g_TrackPoints must be one pointer");
 _Static_assert(sizeof(g_RaceIntroCameraScript) == sizeof(void *),
@@ -15,8 +13,6 @@ _Static_assert(sizeof(g_FinishCamera.car) == sizeof(GameCarRuntime),
                "finish camera car size changed");
 _Static_assert(sizeof(g_FinishCamera.seedYaw) == sizeof(s32),
                "finish camera seed yaw must be one angle");
-_Static_assert(sizeof(g_RaceIntroCameraCursor) == sizeof(void *),
-               "g_RaceIntroCameraCursor must be one pointer");
 _Static_assert(sizeof(g_RankedCars) == sizeof(GameCarRuntime *) * 4,
                "g_RankedCars ABI size changed");
 _Static_assert(sizeof(g_TorqueBandEnd) == sizeof(s16) * CAR_TORQUE_BAND_COUNT,

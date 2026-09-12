@@ -2,6 +2,9 @@
 #define GAME_CAMERA_TYPES_H
 
 #include "common.h"
+#include "game/vector.h"
+
+struct RaceIntroCameraKey;
 
 typedef enum CameraViewMode {
     CAMERA_VIEW_INVALID = -1,
@@ -45,6 +48,12 @@ typedef struct CameraPath {
     s32 node;
 } CameraPath;
 
+typedef struct CameraIntro {
+    const struct RaceIntroCameraKey *key;
+    SVec delta;
+    s32 timer;
+} CameraIntro;
+
 typedef struct Camera {
     GameCameraState view;
     CameraViewMode mode;
@@ -55,6 +64,7 @@ typedef struct Camera {
     s32 orbitDistance;
     CameraChase chase;
     CameraPath path;
+    CameraIntro intro;
 } Camera;
 
 extern Camera g_Camera;

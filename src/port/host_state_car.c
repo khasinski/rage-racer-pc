@@ -34,8 +34,6 @@ s16 g_LaunchEnergyThresholds[6] = {
 CarCollisionPoint g_CarCollisionCorners[4] = {
     {-96, 512}, {96, 512}, {-96, -128}, {96, -128}
 };
-s32 g_RaceIntroCameraTimer;
-SVec g_RaceIntroCameraDelta;
 const GameTrackPoint *g_TrackPoints;
 s16 g_RivalCueEnabled;
 s32 g_TrackPointCount;
@@ -47,7 +45,6 @@ s16 g_TrackZoneDark;
 s32 g_EngineRpm;
 const RaceIntroCameraScript *g_RaceIntroCameraScript;
 FinishCamera g_FinishCamera;
-const RaceIntroCameraKey *g_RaceIntroCameraCursor;
 s32 g_RaceSeries;
 s32 g_TachoShiftLightOn;
 GameCarRuntime *g_RankedCars[RIVAL_CONTENDER_COUNT];
