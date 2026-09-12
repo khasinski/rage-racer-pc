@@ -29,7 +29,7 @@ size_t g_ImageBlockSize;
 u16 g_PadPressed;
 s32 g_SceneId;
 s32 g_SceneTimer;
-s32 g_StreamReturnScene;
+FmvRuntimeState g_FmvRuntime;
 s16 g_AttractTitleDelays[4];
 
 static GameFrameContext s_frame;
@@ -102,7 +102,7 @@ static void Reset(void) {
     g_PadPressed = 0;
     g_SceneId = 0x1E;
     g_SceneTimer = 100;
-    g_StreamReturnScene = 7;
+    g_FmvRuntime.returnScene = 7;
     s_audioResets = 0;
     s_cameraCycles = 0;
     s_installSucceeds = 1;
@@ -158,7 +158,7 @@ static void TestReturnFrameStopsRaceUpdate(void) {
     UpdateAttractDemoScene();
 
     assert(g_SceneTimer == 0x708);
-    assert(g_SceneId == 3 && g_StreamReturnScene == 0);
+    assert(g_SceneId == 3 && g_FmvRuntime.returnScene == 0);
     assert(s_audioResets == 1);
     assert(g_AnimTimer == 10 && g_CameraCarIndex == 2);
     assert(s_cameraCycles == 0 && s_worldUpdates == 0);

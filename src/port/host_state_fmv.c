@@ -3,6 +3,4 @@
 #include "game/fmv.h"
 #include "game/fmv_internal.h"
 
-s32 g_FmvStreamEnded;
-FmvPlaybackState g_FmvState;
-s32 g_StreamReturnScene;
+FmvRuntimeState g_FmvRuntime;

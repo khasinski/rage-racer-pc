@@ -8,8 +8,8 @@
 void BeginFmv(s32 returnScene) {
     CloseLoadedAudioSlots();
     ResetCdAudioState();
-    g_FmvState = FMV_PLAYBACK_START;
-    g_StreamReturnScene = returnScene;
+    g_FmvRuntime.playback = FMV_PLAYBACK_START;
+    g_FmvRuntime.returnScene = returnScene;
     g_SceneId = GAME_SCENE_FMV;
     StopFmvDiscPlayback();
     /* Race/menu transitions fade the live CD attenuator to zero. XA uses
@@ -20,7 +20,7 @@ void BeginFmv(s32 returnScene) {
 }
 
 void UpdateFmv(void) {
-    switch (g_FmvState) {
+    switch (g_FmvRuntime.playback) {
     case FMV_PLAYBACK_INVALID:
         break;
     case FMV_PLAYBACK_START:
@@ -33,7 +33,7 @@ void UpdateFmv(void) {
         EndFmv();
         break;
     default:
-        g_FmvState = FMV_PLAYBACK_FINISH;
+        g_FmvRuntime.playback = FMV_PLAYBACK_FINISH;
         EndFmv();
         break;
     }

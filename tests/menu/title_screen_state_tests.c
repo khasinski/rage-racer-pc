@@ -19,7 +19,7 @@ u16 g_PadPressed;
 GameRenderState g_RenderState;
 s32 g_SceneId;
 s32 g_SceneTimer;
-s32 g_StreamReturnScene;
+FmvRuntimeState g_FmvRuntime;
 s32 g_TitleAttractTimer;
 s32 g_TitleExitTimer;
 s32 g_TitleFadeLevel;
@@ -122,7 +122,7 @@ static void ResetCalls(void) {
 
 int main(void) {
     ResetCalls();
-    g_StreamReturnScene = 0;
+    g_FmvRuntime.returnScene = 0;
     EnterTitleScreen();
     CHECK(s_setupCalls == 1 && s_displayMaskCalls == 1 &&
           s_imageUploadCalls == 1);
@@ -134,7 +134,7 @@ int main(void) {
     CHECK(s_classRefreshCalls == 1 && s_reverbCalls == 1);
 
     ResetCalls();
-    g_StreamReturnScene = 1;
+    g_FmvRuntime.returnScene = 1;
     EnterTitleScreen();
     CHECK(s_setupCalls == 1 && s_displayMaskCalls == 0 &&
           s_imageUploadCalls == 0);
