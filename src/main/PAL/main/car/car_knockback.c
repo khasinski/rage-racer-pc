@@ -63,7 +63,7 @@ static void SetKnockbackVector(GameCarRuntime *car, s32 angle, s32 strength,
         (rcos(angle) * strength) / FIXED_TRIG_SCALE);
 }
 
-static void SetSuppliedKnockbackVector(GameCarRuntime *car, s32 x, s32 z) {
+void SetCarCollisionKnockback(GameCarRuntime *car, s32 x, s32 z) {
     car->motionActive = 1;
     car->motionTimer = CAR_COLLISION_KNOCKBACK_DURATION;
     car->velocityX = WrapSigned16(x / SUPPLIED_VECTOR_DIVISOR);
@@ -104,10 +104,6 @@ void SetTrackBoundaryKnockback(GameCarRuntime *car, s32 x, s32 z,
                            FIXED_TRACK_KNOCKBACK_STRENGTH,
                            CAR_COLLISION_KNOCKBACK_DURATION);
     } else {
-        SetSuppliedKnockbackVector(car, x, z);
+        SetCarCollisionKnockback(car, x, z);
     }
-}
-
-void SetCarCollisionKnockback(GameCarRuntime *car, s32 x, s32 z) {
-    SetSuppliedKnockbackVector(car, x, z);
 }
