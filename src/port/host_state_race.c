@@ -18,10 +18,6 @@
 #include "game/result_screen_types.h"
 #include "game/save_types.h"
 
-char g_TextResult[8] __attribute__((aligned(16))) = "RESULT";
-char g_FmtClassGrandPrix[24] __attribute__((aligned(16))) = "CLASS%d %s GRANDPRIX";
-char g_FmtRoundIn[12] __attribute__((aligned(16))) = "ROUND%d IN";
-char g_CaptionRanking[8] __attribute__((aligned(16))) = "hai";
 char g_CaptionTotalTime[8] __attribute__((aligned(16))) = "hegi";
 char g_CaptionLapTime[8] __attribute__((aligned(16))) = "hfgi";
 char g_CaptionPrizeMoney[8] __attribute__((aligned(16))) = "hci";
@@ -34,8 +30,6 @@ char g_TextEndRace[12] __attribute__((aligned(16))) = "END RACE";
 char g_TextChance[8] __attribute__((aligned(16))) = "CHANCE";
 char g_TextPressStart[20] __attribute__((aligned(16))) = "PRESS START BUTTON";
 char g_FmtLapTime[16] __attribute__((aligned(16))) = "%1d'%02d\"%03d";
-char g_TextTimeAttack[12] __attribute__((aligned(16))) = "TIME ATTACK";
-char g_TextCourseIn[] __attribute__((aligned(16))) = "COURSE IN";
 char g_CaptionLapTime2[8] __attribute__((aligned(16))) = "hfgi";
 char g_CaptionRanking2[8] __attribute__((aligned(16))) = "hai";
 char g_FmtRecordName[8] __attribute__((aligned(16))) = "/%s/%s";

@@ -64,10 +64,6 @@ typedef struct StaticSceneryState {
     SceneryPlacement highClass;
 } StaticSceneryState;
 
-extern char g_TextResult[8];
-extern char g_FmtClassGrandPrix[24];
-extern char g_FmtRoundIn[12];
-extern char g_CaptionRanking[8];
 extern char g_CaptionTotalTime[8];
 extern char g_CaptionLapTime[8];
 extern char g_CaptionPrizeMoney[8];
@@ -80,8 +76,6 @@ extern char g_TextEndRace[12];
 extern char g_TextChance[8];
 extern char g_TextPressStart[20];
 extern char g_FmtLapTime[16];
-extern char g_TextTimeAttack[12];
-extern char g_TextCourseIn[];
 extern char g_CaptionLapTime2[8];
 extern char g_CaptionRanking2[8];
 extern char g_FmtRecordName[8];
@@ -207,10 +201,6 @@ typedef struct HostStateBlob {
 #define BYTES(value) ((const unsigned char *)(value))
 
 static const HostStateBlob s_blobs[] = {
-    {"g_TextResult", BYTES(g_TextResult), 8},
-    {"g_FmtClassGrandPrix", BYTES(g_FmtClassGrandPrix), 24},
-    {"g_FmtRoundIn", BYTES(g_FmtRoundIn), 12},
-    {"g_CaptionRanking", BYTES(g_CaptionRanking), 8},
     {"g_CaptionTotalTime", BYTES(g_CaptionTotalTime), 8},
     {"g_CaptionLapTime", BYTES(g_CaptionLapTime), 8},
     {"g_CaptionPrizeMoney", BYTES(g_CaptionPrizeMoney), 8},
@@ -223,8 +213,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_TextChance", BYTES(g_TextChance), 8},
     {"g_TextPressStart", BYTES(g_TextPressStart), 20},
     {"g_FmtLapTime", BYTES(g_FmtLapTime), 16},
-    {"g_TextTimeAttack", BYTES(g_TextTimeAttack), 12},
-    {"g_TextCourseIn", BYTES(g_TextCourseIn), 10},
     {"g_CaptionLapTime2", BYTES(g_CaptionLapTime2), 8},
     {"g_CaptionRanking2", BYTES(g_CaptionRanking2), 8},
     {"g_FmtRecordName", BYTES(g_FmtRecordName), 8},
@@ -377,7 +365,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the canonical host constants alone. */
-    const unsigned long expected = 279453387UL;
+    const unsigned long expected = 1443859520UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

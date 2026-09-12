@@ -21,12 +21,6 @@ char *g_CourseNames[COURSE_SLOT_COUNT] = {
     "COURSE 0", "COURSE 1", "COURSE 2", "COURSE 3",
 };
 char *g_GrandPrixNames[11];
-char g_TextResult[] = "RESULT";
-char g_TextTimeAttack[] = "TIME ATTACK";
-char g_TextCourseIn[] = "COURSE IN";
-char g_CaptionRanking[] = "RANKING";
-char g_FmtClassGrandPrix[] = "CLASS%d %s GRANDPRIX";
-char g_FmtRoundIn[] = "ROUND%d IN";
 ResultPlaceBarTable g_ClassPlaceBarSizes;
 ResultPlaceSpriteTable g_ResultPlaceSprites;
 ResultPanelClutTable g_ResultPanelCluts;

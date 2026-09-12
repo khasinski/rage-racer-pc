@@ -16,7 +16,7 @@ static void DrawResultBackdrop(void) {
     s32 courseNameY = ResultCourseNameY(g_GrandPrixMode);
     u8 *next;
 
-    DrawProportionalText(0xDC, 0x1C, g_TextResult, 0x7812);
+    DrawProportionalText(0xDC, 0x1C, "RESULT", 0x7812);
     DrawText8x8Trans(0x60, courseNameY, g_CourseNames[SeriesCourseIndex()],
                      0x78CC);
 
@@ -27,8 +27,8 @@ static void DrawResultBackdrop(void) {
 }
 
 void DrawCourseIntro(void) {
-    DrawProportionalText(0x10, 0x1C, g_TextTimeAttack, 0x7812);
-    DrawText8x8Trans(0x10, 0x39, g_TextCourseIn, 0x78CC);
+    DrawProportionalText(0x10, 0x1C, "TIME ATTACK", 0x7812);
+    DrawText8x8Trans(0x10, 0x39, "COURSE IN", 0x78CC);
     DrawResultBackdrop();
 }
 
@@ -86,13 +86,13 @@ void DrawGrandPrixIntro(void) {
         DrawClassPlaceBanner();
     }
 
-    snprintf(text, sizeof(text), g_FmtClassGrandPrix, classNumber,
+    snprintf(text, sizeof(text), "CLASS%d %s GRANDPRIX", classNumber,
              grandPrixName);
     DrawText8x8Trans(0x10, 0x34, text, 0x78CC);
 
-    snprintf(text, sizeof(text), g_FmtRoundIn, g_GrandPrixRound);
+    snprintf(text, sizeof(text), "ROUND%d IN", g_GrandPrixRound);
     DrawText8x8Trans(0x10, 0x3C, text, 0x78CC);
 
     DrawResultPlace();
-    DrawProportionalText(0x10, 0x50, g_CaptionRanking, 0x7812);
+    DrawProportionalText(0x10, 0x50, "hai", 0x7812);
 }
