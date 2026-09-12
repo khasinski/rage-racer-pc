@@ -309,7 +309,7 @@ int main(void) {
 
     /* Invalid persisted state recovers without arithmetic overflow or an
      * endless payout. */
-    Reset(100, -1);
+    Reset(100, 0);
     g_PrizeScreenState = PRIZE_SCREEN_STATE_INTRO_FADE_IN;
     g_SceneTimer = INT_MIN;
     UpdatePrizeMoneyScreen();

@@ -117,13 +117,6 @@ void UpdatePrizeMoneyScreen(void) {
     s32 prizeStep = ScaledCountStep(g_PrizeCountStep, multiplier);
     s32 bonusStep = ScaledCountStep(g_BonusCountStep, multiplier);
 
-    if (g_PrizeAmount < 0) {
-        g_PrizeAmount = 0;
-    }
-    if (g_PromotionBonus < 0) {
-        g_PromotionBonus = 0;
-    }
-
     switch (g_PrizeScreenState) {
     case PRIZE_SCREEN_STATE_INTRO_FADE_IN:
         g_SceneTimer = AddClampedScreenValue(
