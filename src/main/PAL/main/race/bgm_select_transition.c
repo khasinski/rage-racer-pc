@@ -73,7 +73,6 @@ static void UpdateBgmSelectTransition(void) {
         g_BgmSelectStep = BGM_SELECT_STEP_ACTIVE;
     }
 
-    DrawProportionalText(0x5E, 0x72, g_TextNowLoading, 0x7812);
 }
 
 void UpdateBgmSelectLoad(void) {
@@ -123,5 +122,4 @@ void ExitBgmSelect(void) {
         g_SceneId = GAME_SCENE_ENTER_ATTRACT;
     }
 
-    DrawProportionalText(0x5E, 0x72, g_TextNowLoading, 0x7812);
 }

@@ -45,7 +45,6 @@ static s32 s_assetRequestResult;
 static s32 s_arrowCalls;
 static s32 s_imageLoads;
 static s32 s_sequenceCalls;
-static s32 s_textCalls;
 static s32 s_teamNameUploads;
 static s32 s_teamLogoClutUploads;
 
@@ -57,13 +56,6 @@ void DrawBrowseArrows(s32 step, s32 wide, s32 left, s32 right) {
     (void)left;
     (void)right;
     s_arrowCalls++;
-}
-void DrawText8x8(s32 x, s32 y, const char *text, s32 clut) {
-    (void)x;
-    (void)y;
-    (void)text;
-    (void)clut;
-    s_textCalls++;
 }
 #undef LoadImage
 int LoadImage(RECT *rect, u_long *data) {
@@ -136,10 +128,8 @@ int main(void) {
     g_CourseProgress = &progress;
     PoisonState();
     g_SceneTimer = 8;
-    s_textCalls = 0;
     s_assetRequestResult = 1;
     EnterCourseSelectScreen();
-    CHECK(s_textCalls == 1);
     CHECK(g_MenuHandlerIndex == -7 && g_MenuScreen == -8);
     CHECK(s_sequenceCalls == 0 && s_arrowCalls == 0 && s_imageLoads == 0 &&
           s_teamLogoClutUploads == 0 && s_teamNameUploads == 0);
@@ -149,7 +139,6 @@ int main(void) {
     g_SceneTimer = 0;
     s_assetRequestResult = 0;
     EnterCourseSelectScreen();
-    CHECK(s_textCalls == 1);
     if (CheckShowroomReset(2, -1)) return 1;
 
     PoisonState();

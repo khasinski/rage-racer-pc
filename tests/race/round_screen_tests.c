@@ -26,7 +26,6 @@ char *g_BgmTrackNames[11];
 s32 g_CourseIndex;
 CourseProgressState *g_CourseProgress;
 s32 g_FadeLevel;
-char g_FmtBgmNumber[] = "%d";
 s32 g_FrameSyncThreshold;
 s32 g_GrandPrixClass;
 s16 g_GrandPrixMode;

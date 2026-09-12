@@ -69,7 +69,6 @@ static void UpdatePrologueLoad(void) {
         }
     }
 
-    DrawProportionalText(0x5E, 0x72, g_TextNowLoading, 0x7812);
 }
 
 static void UpdatePrologueTextureLoad(void) {

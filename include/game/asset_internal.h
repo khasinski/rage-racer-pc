@@ -6,7 +6,6 @@
 #include "game/menu_types.h"
 
 extern const TeamLogoSample *g_TeamLogoSampleData;
-extern char g_TextNowLoading[];
 extern s32 g_AssetLoadFailed;
 
 static inline s32 AssetPayloadOffsetIsValid(s32 offset,

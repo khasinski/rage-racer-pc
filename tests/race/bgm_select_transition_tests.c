@@ -28,7 +28,6 @@ s32 g_AssetLoadFailed;
 u8 *g_AssetBase;
 u8 *g_ImageBlockBuffer;
 size_t g_ImageBlockSize;
-const char *g_TextNowLoading = "loading";
 static u8 s_assetBuffer[128];
 
 static int s_assetReady, s_uploads, s_installs, s_trackRequests, s_trackInit;
@@ -83,7 +82,7 @@ static void TestEntryKeepsOptionTextureBoundaryWithoutUploadingSelectBin(void) {
     UpdateBgmSelectLoad();
     /* SELECT.BIN is an audio pack.  It reuses OPTION.BIN's image boundary but
      * does not contain a TIM at that address, so uploading it leaves the
-     * player permanently on NOW LOADING on strict GPU backends. */
+     * player permanently in the loading transition on strict GPU backends. */
     assert(s_uploads == 0);
     assert(s_installs == 1);
     assert(s_trackRequests == 1);

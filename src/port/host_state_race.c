@@ -25,7 +25,6 @@ u8 g_NameEntryCharset[42] = {
     'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
     'Y', 'Z', '.', '-', '!', '?', '@',
 };
-char g_TextNowLoading[] = "NOW LOADING";
 s32 g_PromotionBonusTable[5] = {
     500, 4800, 20000, 100000, 500000
 };

@@ -158,7 +158,7 @@ static void DrawBgmSelector(void) {
     p = AddTilePrim(ot, p, 0xf, 0xcb, 0x122, 0xe, 0xff, 0xff, 0xff);
     g_RenderState.draw.packetCursor = p;
 
-    snprintf(text, sizeof(text), g_FmtBgmNumber, g_BgmSelection);
+    snprintf(text, sizeof(text), "%d", g_BgmSelection);
     x = (g_BgmSelection == 0xa) ? 0x74 : 0x78;
     DrawText8x8(x, 0xce, text, 0x78cc);
     DrawText8x8(0x90, 0xce, g_BgmTrackNames[g_BgmSelection], 0x78cc);

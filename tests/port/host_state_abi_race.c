@@ -1,7 +1,5 @@
 #include "../../src/port/host_state_race.c"
 
-_Static_assert(sizeof(g_TextNowLoading) == sizeof("NOW LOADING"),
-               "loading caption must not absorb the prologue text");
 _Static_assert(sizeof(g_ResultPlaceSprites) == 10,
                "result place sprites must retain their trailing padding");
 _Static_assert(sizeof(g_ResultPanelCluts) == 10,

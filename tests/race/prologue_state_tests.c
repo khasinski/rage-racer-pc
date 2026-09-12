@@ -36,7 +36,6 @@ s32 g_PrologueStep;
 GameRenderState g_RenderState;
 s32 g_SceneId;
 s32 g_SceneTimer;
-char g_TextNowLoading[] = "NOW LOADING";
 
 static s32 s_assetReady;
 static s32 s_cdRequests;

@@ -145,7 +145,6 @@ RAGE_DEFINE_NATIVE_UI_SCRIPT(CarShopBuyPromptScript3, 7);
 RAGE_DEFINE_NATIVE_UI_SCRIPT(CarShopBuyPromptScript4, 7);
 RAGE_DEFINE_NATIVE_UI_SCRIPT(EngineerShopTuneUpPromptScript, 5);
 #undef RAGE_DEFINE_NATIVE_UI_SCRIPT
-char g_FmtBgmNumber[] = "%d";
 static char g_BgmName00[] = "\"RANDOM PLAY\"";
 static char g_BgmName01[] = "\"RAGE RACER\"";
 static char g_BgmName02[] = "\"MATHEMABEAT\"";

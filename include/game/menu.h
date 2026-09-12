@@ -411,7 +411,6 @@ void DrawTimeAttackPlate(s32 stepArg);
  * model access and rendering. */
 s32 ActivateShowroomCarModel(s32 slot);
 
-extern char g_FmtBgmNumber[];
 extern s32 g_AttractCycleCount;
 extern u8 g_TeamNameFontGlyphs
     [TEAM_NAME_FONT_GLYPH_COUNT * TEAM_NAME_FONT_GLYPH_BYTES];

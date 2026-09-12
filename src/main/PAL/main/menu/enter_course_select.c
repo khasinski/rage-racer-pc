@@ -12,14 +12,6 @@ enum {
     COURSE_SELECT_INITIAL_CARD_SPIN = 2048000,
 };
 
-static const char s_nowLoadingText[] = "NOW LOADING";
-
-static void DrawNowLoadingText(void) {
-    if (g_SceneTimer & 8) {
-        DrawText8x8(0x74, 0xEC, s_nowLoadingText, 0x78CC);
-    }
-}
-
 static void ResetCourseSelectShowroom(void) {
     s32 course = AddClampedMenuValue(
         g_CourseIndex, 0, 0, PHYSICAL_COURSE_COUNT - 1);
@@ -52,7 +44,6 @@ static void ResetCourseSelectShowroom(void) {
 /* g_MenuScreenUpdate[MENU_SCREEN_BOOTSTRAP]: wait for the shared car-select
  * assets before exposing the first interactive menu screen. */
 void EnterCourseSelectScreen(void) {
-    DrawNowLoadingText();
     if (RequestCarSelectAssets() != 0) {
         return;
     }
