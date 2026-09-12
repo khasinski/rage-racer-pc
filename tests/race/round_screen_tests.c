@@ -52,6 +52,7 @@ static s32 s_requestAssetsResult;
 static s32 s_setupDisplayCalls;
 static s32 s_soundCue;
 static s32 s_uploadResult;
+static s32 s_firstPrizeIntensity;
 
 void SetDispMask(int enabled) {
     s_displayMask = enabled;
@@ -100,9 +101,10 @@ void GameDrawProportionalTextShaded(s32 x, s32 y, const char *text,
                                     s32 clut, s32 intensity) {
     (void)x;
     (void)y;
-    (void)text;
     (void)clut;
-    (void)intensity;
+    if (strncmp(text, "1ST/", 4) == 0) {
+        s_firstPrizeIntensity = intensity;
+    }
 }
 
 void FormatLapTime(char text[LAP_TIME_TEXT_CAPACITY], s32 milliseconds) {
@@ -192,9 +194,18 @@ static void ResetState(void) {
     s_setupDisplayCalls = 0;
     s_soundCue = -1;
     s_uploadResult = 1;
+    s_firstPrizeIntensity = -1;
 }
 
 int main(void) {
+    ResetState();
+    g_RoundScreenFadeDelays[ROUND_SCREEN_FADE_TITLE] = 15;
+    g_RoundScreenFadeDelays[ROUND_SCREEN_FADE_COURSE] = 256;
+    g_SceneId = GAME_SCENE_ROUND;
+    g_SceneTimer = 15;
+    DrawRoundScreen();
+    CHECK(s_firstPrizeIntensity > 0);
+
     ResetState();
     g_AssetLoadState = 1;
     g_SceneId = GAME_SCENE_ENTER_ROUND;

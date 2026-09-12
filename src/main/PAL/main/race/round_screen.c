@@ -90,7 +90,10 @@ void DrawRoundScreen(void) {
     DrawSprite(ot, 0x5e, y0, 0x84, 0xc, 0,
                g_CourseIndex * 12 + 156, col, col, col, 0x12, 0, 1, 0x29);
 
-    col = NextRoundScreenFade(ROUND_SCREEN_FADE_DETAILS);
+    /* Prize values are part of the BGM choice, so make them readable as soon
+     * as the selector is shown.  The authored details delay is 512 quarter
+     * frames, beyond this screen's frame-121 exit. */
+    col = NextRoundScreenFade(ROUND_SCREEN_FADE_TITLE);
     if (g_GrandPrixMode != 0) {
         GameDrawProportionalTextShaded(0x80, 0x88, "hci",
                                       0x7812, col);

@@ -11,7 +11,6 @@ typedef struct RoundBgmChoice {
 typedef enum RoundScreenFadeStage {
     ROUND_SCREEN_FADE_TITLE,
     ROUND_SCREEN_FADE_COURSE,
-    ROUND_SCREEN_FADE_DETAILS,
     ROUND_SCREEN_FADE_STAGE_COUNT,
 } RoundScreenFadeStage;
 
