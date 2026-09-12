@@ -9,8 +9,6 @@
 
 Audio g_Audio;
 SoundScale g_SoundScale;
-s32 g_AudioLoadSlot;
-s32 g_AudioLoadedSlotMask;
 s32 g_VabSpuAddress[AUDIO_SLOT_COUNT];
 
 static s16 s_openResult = 7;
@@ -77,7 +75,7 @@ int main(void) {
     g_Audio.seq.fade = -4;
     Check(OpenSequenceAudioSlot(header, body, sequence) == 1,
           "sequence slot returns asynchronous transfer state");
-    Check(g_AudioLoadSlot == 1 && g_SoundScale.vabIds[1] == 8 &&
+    Check(g_Audio.slots.loading == 1 && g_SoundScale.vabIds[1] == 8 &&
               s_openHeader == header && s_transferBody == body &&
               s_openAddress == 0x24000,
           "sequence slot opens and transfers its VAB");
@@ -87,11 +85,11 @@ int main(void) {
               g_Audio.seq.fade == 0,
           "sequence slot opens score and clears fade state");
 
-    g_AudioLoadSlot = 99;
+    g_Audio.slots.loading = 99;
     s_openResult = -1;
     Check(OpenSequenceAudioSlot(header, body, sequence) == -1,
           "sequence VAB header failure is reported");
-    Check(g_AudioLoadSlot == 99,
+    Check(g_Audio.slots.loading == 99,
           "failed sequence open does not publish its slot");
     s_openResult = 7;
     s_bodyResult = -1;
@@ -108,19 +106,19 @@ int main(void) {
           "sequence-open failure closes its VAB");
     Check(g_SoundScale.vabIds[AUDIO_SLOT_SEQUENCE] == 55,
           "sequence-open failure does not publish a closed VAB");
-    Check(g_AudioLoadSlot == 99,
+    Check(g_Audio.slots.loading == 99,
           "failed sequence score does not publish its slot");
     s_sequenceOpenResult = (s16)0x8056;
     g_SoundScale.vabIds[AUDIO_SLOT_SEQUENCE] = 8;
 
-    g_AudioLoadedSlotMask = 0;
+    g_Audio.slots.loaded = 0;
     CloseSequenceAudioSlot();
     Check(s_reverbCalls == 0,
           "absent sequence slot is not closed");
 
-    g_AudioLoadedSlotMask = (1 << 1) | (1 << 3);
+    g_Audio.slots.loaded = (1 << 1) | (1 << 3);
     CloseSequenceAudioSlot();
-    Check(g_AudioLoadedSlotMask == (1 << 3) && s_reverbCalls == 1 &&
+    Check(g_Audio.slots.loaded == (1 << 3) && s_reverbCalls == 1 &&
               s_vmInitCalls == 1 &&
               s_closedSequence == (s16)0x8056 && s_closedVab == 8,
           "sequence close clears only its bit and releases SEQ and VAB");

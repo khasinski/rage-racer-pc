@@ -266,7 +266,7 @@ static void ReportAudioMetrics(void) {
            Psyz_CdAudioFramesPulled(), Psyz_CdAudioEnergy(),
            Psyz_SpuCdMixEnergy(), Psyz_SpuReverbInputEnergy(),
            Psyz_SpuReverbOutputEnergy(), Psyz_SpuReverbTailFrames(),
-           g_AudioLoadedSlotMask, g_SoundCueBank,
+           g_Audio.slots.loaded, g_Audio.slots.cueBank,
            g_SoundScale.vabIds[0], g_SoundScale.vabIds[1],
            g_SoundScale.vabIds[2], g_SoundScale.vabIds[3],
            g_EngineSoundState.slotActive[0],

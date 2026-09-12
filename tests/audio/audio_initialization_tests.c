@@ -11,8 +11,6 @@ MusicChannel g_MusicChannels[AUDIO_MUSIC_CHANNEL_COUNT];
 EffectVoice g_EffectVoices[AUDIO_EFFECT_VOICE_COUNT];
 Audio g_Audio;
 EngineSoundState g_EngineSoundState;
-s32 g_ActiveSpecialCue;
-s32 g_LastSpecialCueRequest;
 s32 g_CarSoundVolumeScales[CAR_SOUND_VOLUME_SCALE_COUNT];
 s32 g_PlayerCarIndex;
 
@@ -76,8 +74,8 @@ static void TestEffectInitialization(void) {
 
     memset(g_MusicChannels, 0x7F, sizeof(g_MusicChannels));
     memset(g_EffectVoices, 0x7F, sizeof(g_EffectVoices));
-    g_ActiveSpecialCue = 15;
-    g_LastSpecialCueRequest = 15;
+    g_Audio.cue.active = 15;
+    g_Audio.cue.previous = 15;
     g_Audio.indexed.volume = 127;
     g_PlayerCarIndex = 2;
     g_CarSoundVolumeScales[3] = 91;
@@ -99,7 +97,7 @@ static void TestEffectInitialization(void) {
                   g_EffectVoices[index].pitch.value == 0x1E00,
               "effect initialization resets effect voice state");
     }
-    Check(g_ActiveSpecialCue == -1 && g_LastSpecialCueRequest == -1,
+    Check(g_Audio.cue.active == -1 && g_Audio.cue.previous == -1,
           "effect initialization clears special cue deduplication");
     Check(g_Audio.indexed.volume == 0,
           "effect initialization clears indexed effect volume");

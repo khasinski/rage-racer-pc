@@ -31,6 +31,5 @@ void ResetAudioVoiceState(void) {
         .previous = -1,
         .pitch = DEFAULT_EFFECT_PITCH,
     };
-    g_ActiveSpecialCue = -1;
-    g_LastSpecialCueRequest = -1;
+    g_Audio.cue = (SpecialCue){.active = -1, .previous = -1};
 }

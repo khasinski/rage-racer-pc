@@ -7,14 +7,12 @@
 #include <stdio.h>
 #include <string.h>
 
+Audio g_Audio;
 SoundScale g_SoundScale;
 SoundCueParams g_SoundCueParams[MAIN_SOUND_CUE_COUNT];
 SoundCueParams g_SoundCueParams2[RACE_SOUND_CUE_COUNT];
 s32 g_SpecialVoiceBits[SPECIAL_VOICE_BIT_COUNT];
 s16 g_SoundSlotTone[ENGINE_SOUND_SLOT_COUNT][ENGINE_SOUND_BANK_COUNT];
-s32 g_SoundCueBank;
-s32 g_ActiveSpecialCue;
-s32 g_LastSpecialCueRequest;
 
 typedef struct KeyCall {
     s32 voice;
@@ -138,8 +136,8 @@ static void Reset(void) {
     g_SoundScale.scale = 64;
     g_SoundScale.vabIds[1] = 7;
     g_SoundScale.vabIds[2] = 8;
-    g_ActiveSpecialCue = -1;
-    g_LastSpecialCueRequest = -1;
+    g_Audio.cue.active = -1;
+    g_Audio.cue.previous = -1;
     s_fixedCount = 0;
     s_dynamicCount = 0;
     s_volumeVoice = -1;
@@ -151,7 +149,7 @@ static void Reset(void) {
 
 static int TestBankOne(void) {
     Reset();
-    g_SoundCueBank = 1;
+    g_Audio.slots.cueBank = 1;
     PlaySoundCue(-4);
     CHECK(s_fixedCount == 2);
     CHECK(s_fixed[0].voice == 18 && s_fixed[1].voice == 19);
@@ -160,20 +158,20 @@ static int TestBankOne(void) {
     CHECK(s_fixed[0].left == 32 && s_fixed[0].right == 32);
 
     Reset();
-    g_SoundCueBank = 1;
+    g_Audio.slots.cueBank = 1;
     PlaySoundCue(99);
     CHECK(s_fixed[0].program == 129);
 
     Reset();
-    g_SoundCueBank = 1;
+    g_Audio.slots.cueBank = 1;
     PlaySoundCue(15);
     CHECK(s_fixedCount == 1 && s_fixed[0].voice == 19);
-    CHECK(g_ActiveSpecialCue == 15 && g_LastSpecialCueRequest == 15);
+    CHECK(g_Audio.cue.active == 15 && g_Audio.cue.previous == 15);
     PlaySoundCue(15);
     CHECK(s_fixedCount == 1);
 
     Reset();
-    g_SoundCueBank = 1;
+    g_Audio.slots.cueBank = 1;
     s_keyStatus[0] = 1;
     s_keyStatus[1] = 1;
     s_keyStatus[2] = 1;
@@ -183,33 +181,33 @@ static int TestBankOne(void) {
     CHECK(s_fixedCount == 1 && s_fixed[0].voice == 23);
 
     Reset();
-    g_SoundCueBank = 1;
+    g_Audio.slots.cueBank = 1;
     s_fixedFailureCall = 0;
     PlaySoundCue(0);
     CHECK(s_voiceErrorMessages == 1);
 
     Reset();
-    g_SoundCueBank = 1;
+    g_Audio.slots.cueBank = 1;
     s_fixedFailureCall = 1;
     PlaySoundCue(0);
     CHECK(s_voiceErrorMessages == 1);
 
     Reset();
-    g_SoundCueBank = 1;
+    g_Audio.slots.cueBank = 1;
     g_SoundCueParams[0].vab = -1;
     PlaySoundCue(0);
     CHECK(s_fixedCount == 0);
 
     g_SoundCueParams[15].vab = AUDIO_SLOT_COUNT;
     PlaySoundCue(15);
-    CHECK(s_fixedCount == 0 && g_ActiveSpecialCue == -1 &&
-          g_LastSpecialCueRequest == -1);
+    CHECK(s_fixedCount == 0 && g_Audio.cue.active == -1 &&
+          g_Audio.cue.previous == -1);
     return 0;
 }
 
 static int TestBankTwo(void) {
     Reset();
-    g_SoundCueBank = 2;
+    g_Audio.slots.cueBank = 2;
     PlaySoundCue(20);
     CHECK(s_dynamicCount == 2);
     CHECK(s_dynamic[0].vab == 8 && s_dynamic[0].program == 220);
@@ -217,13 +215,13 @@ static int TestBankTwo(void) {
     CHECK(s_dynamic[0].left == 48 && s_dynamic[0].right == 48);
 
     Reset();
-    g_SoundCueBank = 2;
+    g_Audio.slots.cueBank = 2;
     PlaySoundCue(99);
     CHECK(s_fixedCount == 2 && s_fixed[0].voice == 22);
     CHECK(s_fixed[1].voice == 23 && s_fixed[0].program == 269);
 
     Reset();
-    g_SoundCueBank = 2;
+    g_Audio.slots.cueBank = 2;
     s_keyStatus[4] = 1;
     PlaySoundCue(26);
     CHECK(s_fixedCount == 0);
@@ -231,26 +229,26 @@ static int TestBankTwo(void) {
     CHECK(s_fixedCount == 2);
 
     Reset();
-    g_SoundCueBank = 2;
+    g_Audio.slots.cueBank = 2;
     PlaySoundCue(16);
     CHECK(s_fixedCount == 1 && s_fixed[0].voice == 19);
     CHECK(s_fixed[0].vab == 7 && s_fixed[0].program == 116);
     CHECK(s_fixed[0].tone == 26 && s_fixed[0].left == 32);
 
     Reset();
-    g_SoundCueBank = 2;
+    g_Audio.slots.cueBank = 2;
     s_dynamicFailureCall = 0;
     PlaySoundCue(20);
     CHECK(s_voiceErrorMessages == 1);
 
     Reset();
-    g_SoundCueBank = 2;
+    g_Audio.slots.cueBank = 2;
     s_dynamicFailureCall = 1;
     PlaySoundCue(20);
     CHECK(s_voiceErrorMessages == 1);
 
     Reset();
-    g_SoundCueBank = 2;
+    g_Audio.slots.cueBank = 2;
     g_SoundCueParams2[20].vab = AUDIO_SLOT_COUNT;
     PlaySoundCue(20);
     CHECK(s_dynamicCount == 0);
@@ -265,7 +263,7 @@ static int TestExplicitMainBank(void) {
     Reset();
     /* The race voice bank may become current while ROUND still needs its
      * fixed menu cue.  It must not reinterpret cue 25 as a race voice. */
-    g_SoundCueBank = 2;
+    g_Audio.slots.cueBank = 2;
     PlayMainSoundCue(25);
     CHECK(s_fixedCount == 2 && s_dynamicCount == 0);
     CHECK(s_fixed[0].vab == 7 && s_fixed[0].program == 125);
@@ -275,7 +273,7 @@ static int TestExplicitMainBank(void) {
 
 static int TestInactiveBankAndEngineSlot(void) {
     Reset();
-    g_SoundCueBank = 0;
+    g_Audio.slots.cueBank = 0;
     PlaySoundCue(3);
     CHECK(s_fixedCount == 0 && s_dynamicCount == 0);
 

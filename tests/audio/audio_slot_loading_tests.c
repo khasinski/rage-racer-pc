@@ -8,11 +8,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+Audio g_Audio;
 SoundScale g_SoundScale;
 EngineSoundState g_EngineSoundState;
-s32 g_AudioLoadSlot;
-s32 g_AudioLoadedSlotMask;
-s32 g_SoundCueBank;
 s32 g_VabSpuAddress[AUDIO_SLOT_COUNT];
 
 static s16 s_openResult = 7;
@@ -143,20 +141,20 @@ int main(void) {
     g_VabSpuAddress[0] = 0x12000;
 
     CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &asset) == 1);
-    CHECK(g_AudioLoadSlot == AUDIO_SLOT_MAIN_CUES &&
+    CHECK(g_Audio.slots.loading == AUDIO_SLOT_MAIN_CUES &&
           g_SoundScale.vabIds[AUDIO_SLOT_MAIN_CUES] == 8);
     CHECK(s_openHeader == header && s_body == body);
     CHECK(s_openAddress == 0x12000);
 
-    g_AudioLoadedSlotMask = 0;
-    g_SoundCueBank = 0;
+    g_Audio.slots.loaded = 0;
+    g_Audio.slots.cueBank = 0;
     CHECK(PollAudioSlotLoad() == 1);
-    CHECK(g_AudioLoadedSlotMask == 1 && g_SoundCueBank == 1 &&
-          g_AudioLoadSlot == -1);
-    g_AudioLoadedSlotMask = 0;
-    g_SoundCueBank = -1;
+    CHECK(g_Audio.slots.loaded == 1 && g_Audio.slots.cueBank == 1 &&
+          g_Audio.slots.loading == -1);
+    g_Audio.slots.loaded = 0;
+    g_Audio.slots.cueBank = -1;
     CHECK(PollAudioSlotLoad() == 1);
-    CHECK(g_AudioLoadedSlotMask == 0 && g_SoundCueBank == -1);
+    CHECK(g_Audio.slots.loaded == 0 && g_Audio.slots.cueBank == -1);
 
     asset.auxiliaryData = sequence;
     asset.auxiliarySize = sizeof(sequence);
@@ -200,16 +198,16 @@ int main(void) {
     CHECK(StartAudioSlotLoad(-1, &asset) == -1);
     CHECK(s_sequenceCalls == 1);
 
-    g_AudioLoadSlot = 99;
+    g_Audio.slots.loading = 99;
     s_openResult = -1;
     CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &asset) == -1);
-    CHECK(g_AudioLoadSlot == 99);
+    CHECK(g_Audio.slots.loading == 99);
     s_openResult = 7;
     s_bodyResult = -1;
     s_closeVab = -1;
     CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &asset) == -1 &&
           s_closeVab == 7);
-    CHECK(g_AudioLoadSlot == 99);
+    CHECK(g_Audio.slots.loading == 99);
     s_bodyResult = 8;
 
     g_VabSpuAddress[3] = 0x34000;
@@ -219,32 +217,32 @@ int main(void) {
     invalid.auxiliarySize--;
     CHECK(StartAudioSlotLoad(AUDIO_SLOT_ENGINE, &invalid) == -1);
     CHECK(StartAudioSlotLoad(AUDIO_SLOT_ENGINE, &asset) == 1);
-    CHECK(g_AudioLoadSlot == AUDIO_SLOT_ENGINE && s_openAddress == 0x34000);
+    CHECK(g_Audio.slots.loading == AUDIO_SLOT_ENGINE && s_openAddress == 0x34000);
     CHECK(s_tableCalls == 1 && s_tableData == table &&
           s_tableSize == sizeof(table));
 
     s_completed = 0;
-    g_AudioLoadedSlotMask = 0;
-    g_SoundCueBank = -1;
+    g_Audio.slots.loaded = 0;
+    g_Audio.slots.cueBank = -1;
     CHECK(PollAudioSlotLoad() == 0);
-    CHECK(g_AudioLoadedSlotMask == 0 && g_SoundCueBank == -1);
+    CHECK(g_Audio.slots.loaded == 0 && g_Audio.slots.cueBank == -1);
 
     s_completed = 1;
-    g_AudioLoadSlot = -1;
-    g_AudioLoadedSlotMask = 0;
-    g_SoundCueBank = -1;
+    g_Audio.slots.loading = -1;
+    g_Audio.slots.loaded = 0;
+    g_Audio.slots.cueBank = -1;
     CHECK(PollAudioSlotLoad() == 1);
-    CHECK(g_AudioLoadedSlotMask == 0 && g_SoundCueBank == -1);
+    CHECK(g_Audio.slots.loaded == 0 && g_Audio.slots.cueBank == -1);
 
-    g_AudioLoadSlot = 1;
-    CHECK(PollAudioSlotLoad() == 1 && g_SoundCueBank == 1);
-    g_AudioLoadSlot = 2;
-    CHECK(PollAudioSlotLoad() == 1 && g_SoundCueBank == 2);
-    g_AudioLoadSlot = 3;
-    CHECK(PollAudioSlotLoad() == 1 && g_SoundCueBank == 2);
+    g_Audio.slots.loading = 1;
+    CHECK(PollAudioSlotLoad() == 1 && g_Audio.slots.cueBank == 1);
+    g_Audio.slots.loading = 2;
+    CHECK(PollAudioSlotLoad() == 1 && g_Audio.slots.cueBank == 2);
+    g_Audio.slots.loading = 3;
+    CHECK(PollAudioSlotLoad() == 1 && g_Audio.slots.cueBank == 2);
 
-    g_AudioLoadedSlotMask = (1 << 0) | (1 << 2) | (1 << 3);
-    g_SoundCueBank = 2;
+    g_Audio.slots.loaded = (1 << 0) | (1 << 2) | (1 << 3);
+    g_Audio.slots.cueBank = 2;
     g_SoundScale.vabIds[2] = 22;
     g_SoundScale.vabIds[3] = 23;
     s_closeAudioCalls = 0;
@@ -253,15 +251,15 @@ int main(void) {
     s_vmInitCalls = 0;
     CloseLoadedAudioSlots();
     CHECK(s_damperCalls == 2 && s_closeAudioCalls == 1 &&
-          g_AudioLoadedSlotMask == 1 && s_closeVab == 23);
+          g_Audio.slots.loaded == 1 && s_closeVab == 23);
     CHECK(s_reverbCalls == 2 && s_vmInitCalls == 2);
-    CHECK(g_SoundCueBank == 1);
+    CHECK(g_Audio.slots.cueBank == 1);
 
-    g_AudioLoadedSlotMask = 1 << 3;
-    g_SoundCueBank = 2;
+    g_Audio.slots.loaded = 1 << 3;
+    g_Audio.slots.cueBank = 2;
     CloseLoadedAudioSlots();
-    CHECK(g_AudioLoadedSlotMask == 0 && s_closeVab == 23 &&
-          g_SoundCueBank == 0);
+    CHECK(g_Audio.slots.loaded == 0 && s_closeVab == 23 &&
+          g_Audio.slots.cueBank == 0);
 
     puts("audio slot loading preserves VAB routing, polling, and close state");
     return 0;

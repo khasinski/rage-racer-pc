@@ -124,7 +124,7 @@ static s32 StartEngineAudioSlotLoad(const AudioSlotAsset *asset) {
                                 asset->auxiliarySize);
     }
 
-    g_AudioLoadSlot = AUDIO_SLOT_ENGINE;
+    g_Audio.slots.loading = AUDIO_SLOT_ENGINE;
     return SsVabTransCompleted(0);
 }
 
@@ -149,7 +149,7 @@ s32 StartAudioSlotLoad(s32 slot, const AudioSlotAsset *asset) {
         return -1;
     }
 
-    g_AudioLoadSlot = slot;
+    g_Audio.slots.loading = slot;
     return SsVabTransCompleted(0);
 }
 
@@ -159,20 +159,20 @@ s32 PollAudioSlotLoad(void) {
 
     completed = SsVabTransCompleted(0);
     if (completed != 0) {
-        slot = g_AudioLoadSlot;
-        g_AudioLoadSlot = -1;
+        slot = g_Audio.slots.loading;
+        g_Audio.slots.loading = -1;
         if ((u32)slot >= AUDIO_SLOT_COUNT) {
             return completed;
         }
-        g_AudioLoadedSlotMask |= 1 << slot;
+        g_Audio.slots.loaded |= 1 << slot;
 
         if (slot == AUDIO_SLOT_MAIN_CUES) {
-            g_SoundCueBank = 1;
+            g_Audio.slots.cueBank = 1;
         } else if (slot == AUDIO_SLOT_SEQUENCE) {
-            g_SoundCueBank = slot;
+            g_Audio.slots.cueBank = slot;
         } else if (slot == AUDIO_SLOT_RACE_CUES ||
                    slot == AUDIO_SLOT_ENGINE) {
-            g_SoundCueBank = 2;
+            g_Audio.slots.cueBank = 2;
         }
     }
 
@@ -188,11 +188,11 @@ static void CloseVabOnlyAudioSlot(s32 slot) {
 
     bit = 1 << slot;
 
-    if ((bit & g_AudioLoadedSlotMask) == 0) {
+    if ((bit & g_Audio.slots.loaded) == 0) {
         return;
     }
 
-    g_AudioLoadedSlotMask &= ~bit;
+    g_Audio.slots.loaded &= ~bit;
     SsUtSetReverbDepth(0, 0);
     _SsVmInit(0);
     SsVabClose(g_SoundScale.vabIds[slot]);
@@ -208,6 +208,6 @@ void CloseLoadedAudioSlots(void) {
     CloseVabOnlyAudioSlot(AUDIO_SLOT_RACE_CUES);
     CloseVabOnlyAudioSlot(AUDIO_SLOT_ENGINE);
     SpuVmDamperStep();
-    g_SoundCueBank =
-        (g_AudioLoadedSlotMask & (1 << AUDIO_SLOT_MAIN_CUES)) != 0 ? 1 : 0;
+    g_Audio.slots.cueBank =
+        (g_Audio.slots.loaded & (1 << AUDIO_SLOT_MAIN_CUES)) != 0 ? 1 : 0;
 }

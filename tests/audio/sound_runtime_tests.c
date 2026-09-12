@@ -13,10 +13,6 @@ MusicChannel g_MusicChannels[AUDIO_MUSIC_CHANNEL_COUNT];
 EffectVoice g_EffectVoices[AUDIO_EFFECT_VOICE_COUNT];
 Audio g_Audio;
 SoundScale g_SoundScale;
-s32 g_ActiveSpecialCue;
-s32 g_LastSpecialCueRequest;
-s32 g_AudioLoadSlot;
-s32 g_AudioLoadedSlotMask;
 
 static u8 s_tableArea[16];
 static s32 s_playCalls[6];
@@ -105,10 +101,10 @@ static void TestSoundStateReset(void) {
     memset(&g_EngineSoundState, 0x7F, sizeof(g_EngineSoundState));
     memset(g_MusicChannels, 0x7F, sizeof(g_MusicChannels));
     memset(g_EffectVoices, 0x7F, sizeof(g_EffectVoices));
-    g_ActiveSpecialCue = 15;
-    g_LastSpecialCueRequest = 15;
+    g_Audio.cue.active = 15;
+    g_Audio.cue.previous = 15;
     g_Audio.indexed.volume = 127;
-    g_AudioLoadSlot = AUDIO_SLOT_ENGINE;
+    g_Audio.slots.loading = AUDIO_SLOT_ENGINE;
     InitSoundRuntime();
 
     for (index = 0; index < 6; index++) {
@@ -131,13 +127,13 @@ static void TestSoundStateReset(void) {
                   g_EffectVoices[index].volume == 0,
               "reset initializes every effect voice");
     }
-    Check(g_ActiveSpecialCue == -1 && g_LastSpecialCueRequest == -1 &&
+    Check(g_Audio.cue.active == -1 && g_Audio.cue.previous == -1 &&
               g_Audio.indexed.volume == 0,
           "reset clears transient effect state");
     Check(g_EngineSoundState.bank == -1 &&
               g_EngineSoundState.volumeScale == 128 &&
-              g_SoundScale.scale == 128 && g_AudioLoadedSlotMask == 1 &&
-              g_AudioLoadSlot == -1,
+              g_SoundScale.scale == 128 && g_Audio.slots.loaded == 1 &&
+              g_Audio.slots.loading == -1,
           "reset restores sound runtime defaults");
 }
 

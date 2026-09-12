@@ -117,11 +117,24 @@ typedef struct IndexedVoice {
     s32 volume;
 } IndexedVoice;
 
+typedef struct AudioSlots {
+    s32 loading;
+    s32 loaded;
+    s32 cueBank;
+} AudioSlots;
+
+typedef struct SpecialCue {
+    s32 active;
+    s32 previous;
+} SpecialCue;
+
 typedef struct Audio {
     Seq seq;
     Reverb reverb;
     PanVoice pan;
     IndexedVoice indexed;
+    AudioSlots slots;
+    SpecialCue cue;
 } Audio;
 
 extern Audio g_Audio;

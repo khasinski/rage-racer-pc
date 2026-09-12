@@ -100,7 +100,7 @@ static int StartSharedSingleCue(s32 cue, s32 volume) {
     if (!HasValidVabSlot(params)) {
         return 0;
     }
-    if (g_ActiveSpecialCue != cue) {
+    if (g_Audio.cue.active != cue) {
         voiceVolume = ScaleCueVolume(volume, params->volume);
         SsUtKeyOnV(
             SINGLE_SPECIAL_VOICE, g_SoundScale.vabIds[params->vab],
@@ -108,7 +108,7 @@ static int StartSharedSingleCue(s32 cue, s32 volume) {
             voiceVolume, voiceVolume);
     }
 
-    g_ActiveSpecialCue = cue;
+    g_Audio.cue.active = cue;
     return 1;
 }
 
@@ -151,9 +151,9 @@ static void PlaySoundCueFromBank(s32 bank, s32 cue) {
     if (bank == 1) {
         cue = ClampCueIndex(cue, MAIN_SOUND_CUE_COUNT);
         if (IsRepeatedSpecialCue(cue)) {
-            if (cue != g_LastSpecialCueRequest) {
+            if (cue != g_Audio.cue.previous) {
                 if (StartSharedSingleCue(cue, CUE_VOLUME_FULL)) {
-                    g_LastSpecialCueRequest = cue;
+                    g_Audio.cue.previous = cue;
                 }
             }
             return;
@@ -165,9 +165,9 @@ static void PlaySoundCueFromBank(s32 bank, s32 cue) {
     if (bank == 2) {
         cue = ClampCueIndex(cue, RACE_SOUND_CUE_COUNT);
         if (IsRepeatedSpecialCue(cue)) {
-            if (cue != g_LastSpecialCueRequest) {
+            if (cue != g_Audio.cue.previous) {
                 if (StartSharedSingleCue(cue, CUE_VOLUME_FULL)) {
-                    g_LastSpecialCueRequest = cue;
+                    g_Audio.cue.previous = cue;
                 }
             }
             return;
@@ -182,7 +182,7 @@ static void PlaySoundCueFromBank(s32 bank, s32 cue) {
 }
 
 void PlaySoundCue(s32 cue) {
-    PlaySoundCueFromBank(g_SoundCueBank, cue);
+    PlaySoundCueFromBank(g_Audio.slots.cueBank, cue);
 }
 
 void PlayMainSoundCue(s32 cue) {
