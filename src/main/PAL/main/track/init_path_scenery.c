@@ -30,7 +30,12 @@ void InitPathScenery(void) {
     g_PathSceneryRotKeys = rotationKeys;
     g_PathSceneryClock.posFrame = 0;
     g_PathSceneryClock.rotFrame = 0;
-    g_PathSceneryTransform.position = positionKeys[0].position;
+    g_PathSceneryTransform.position = (Vec4){
+        positionKeys[0].fields.x,
+        positionKeys[0].fields.y,
+        positionKeys[0].fields.z,
+        0,
+    };
     g_PathSceneryTransform.rotation = rotationKeys[0].rotation;
 
     g_PathSceneryCursors.posPhase.value = 0;

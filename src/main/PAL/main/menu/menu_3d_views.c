@@ -239,7 +239,7 @@ void DrawTeamNameCharModel(void) {
     modelIndex = TeamNameCharacterModelIndex(g_TeamNameCharModel,
                                              g_CourseModelCount);
     if (modelIndex >= 0) {
-        SetGteObjectMatrix(AsPositionWords(&position.x), &mtxA);
+        SetGteObjectMatrix(AsPosition(&position), &mtxA);
         g_RenderState.geometry.envMode4 = 0;
         SubmitCourseModel(&g_RenderState, modelIndex);
     }

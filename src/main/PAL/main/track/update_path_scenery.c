@@ -102,16 +102,22 @@ static void UpdatePathPosition(void) {
         &g_PathSceneryPosKeys[g_PathSceneryCursors.posIndex];
     const s16 phase = g_PathSceneryCursors.posPhase.signedValue;
     const s16 rate = g_PathSceneryCursors.posRate.signedValue;
-    int axis;
-
-    for (axis = 0; axis < 3; axis++) {
-        g_PathSceneryTransform.position.w[axis] =
-            EasePathValue(keyframe[0].position.w[axis],
-                          keyframe[1].position.w[axis],
-                          g_PathSceneryHalfDelta[axis], phase, rate);
-    }
+    g_PathSceneryTransform.position.x = EasePathValue(
+        keyframe[0].fields.x, keyframe[1].fields.x,
+        g_PathSceneryHalfDelta[0], phase, rate);
+    g_PathSceneryTransform.position.y = EasePathValue(
+        keyframe[0].fields.y, keyframe[1].fields.y,
+        g_PathSceneryHalfDelta[1], phase, rate);
+    g_PathSceneryTransform.position.z = EasePathValue(
+        keyframe[0].fields.z, keyframe[1].fields.z,
+        g_PathSceneryHalfDelta[2], phase, rate);
     if (phase > rate) {
-        g_PathSceneryTransform.position = keyframe[1].position;
+        g_PathSceneryTransform.position = (Vec4){
+            keyframe[1].fields.x,
+            keyframe[1].fields.y,
+            keyframe[1].fields.z,
+            0,
+        };
     }
 }
 
@@ -156,11 +162,11 @@ static s32 PathSceneryDistance(int64_t dx, int64_t dy, int64_t dz) {
 
 static void UpdatePathSceneryAudio(void) {
     const int64_t dx =
-        (int64_t)g_PlayerCar.x - g_PathSceneryTransform.position.w[0];
+        (int64_t)g_PlayerCar.x - g_PathSceneryTransform.position.x;
     const int64_t dy =
-        (int64_t)g_PlayerCar.y - g_PathSceneryTransform.position.w[1];
+        (int64_t)g_PlayerCar.y - g_PathSceneryTransform.position.y;
     const int64_t dz =
-        (int64_t)g_PlayerCar.z - g_PathSceneryTransform.position.w[2];
+        (int64_t)g_PlayerCar.z - g_PathSceneryTransform.position.z;
     s32 pitch = 0;
     s32 volume = 0;
 

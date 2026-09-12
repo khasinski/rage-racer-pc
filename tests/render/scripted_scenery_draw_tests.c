@@ -106,7 +106,7 @@ int main(void) {
           s_matrixAngles[1] == 5 && s_matrixAngles[2] == 6 &&
           g_RenderState.geometry.envMode4 == 0);
 
-    g_PathSceneryTransform.position = (Block16){{1000, 2000, 3000, 4000}};
+    g_PathSceneryTransform.position = (Vec4){1000, 2000, 3000, 0};
     g_PathSceneryTransform.rotation = (SVec){7, 8, 9, 10};
     g_SceneTimer = 13;
     ResetSubmissions();

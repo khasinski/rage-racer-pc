@@ -107,9 +107,9 @@ int main(void) {
         digest = FoldWord(digest, g_PathSceneryCursors.rotIndex);
         digest = FoldWord(digest, g_PathSceneryCursors.posPhase.signedValue);
         digest = FoldWord(digest, g_PathSceneryCursors.rotPhase.signedValue);
-        digest = FoldWord(digest, g_PathSceneryTransform.position.w[0]);
-        digest = FoldWord(digest, g_PathSceneryTransform.position.w[1]);
-        digest = FoldWord(digest, g_PathSceneryTransform.position.w[2]);
+        digest = FoldWord(digest, g_PathSceneryTransform.position.x);
+        digest = FoldWord(digest, g_PathSceneryTransform.position.y);
+        digest = FoldWord(digest, g_PathSceneryTransform.position.z);
         digest = FoldWord(digest, g_PathSceneryTransform.rotation.vx);
         digest = FoldWord(digest, g_PathSceneryTransform.rotation.vy);
         digest = FoldWord(digest, g_PathSceneryTransform.rotation.vz);

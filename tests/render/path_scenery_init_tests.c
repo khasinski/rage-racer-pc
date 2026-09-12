@@ -82,9 +82,9 @@ static int RunCase(s16 positionRate, s16 rotationRate,
         return 0;
     }
 
-    if (g_PathSceneryTransform.position.w[0] != 10 ||
-        g_PathSceneryTransform.position.w[1] != -20 ||
-        g_PathSceneryTransform.position.w[2] != 31 ||
+    if (g_PathSceneryTransform.position.x != 10 ||
+        g_PathSceneryTransform.position.y != -20 ||
+        g_PathSceneryTransform.position.z != 31 ||
         g_PathSceneryTransform.rotation.vx != 100 ||
         g_PathSceneryTransform.rotation.vy != -200 ||
         g_PathSceneryTransform.rotation.vz != 301) {
@@ -120,7 +120,7 @@ int main(void) {
     if (g_PathSceneryPosKeys != NULL || g_PathSceneryRotKeys != NULL ||
         g_PathSceneryClock.posFrame != 0 ||
         g_PathSceneryClock.rotFrame != 0 ||
-        g_PathSceneryTransform.position.w[0] != 0 ||
+        g_PathSceneryTransform.position.x != 0 ||
         g_PathSceneryCursors.posSpan != 0 || g_PathSceneryVolume != 0) {
         puts("FAIL: missing path scenery data was not cleared");
         return 1;

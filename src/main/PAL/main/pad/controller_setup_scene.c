@@ -28,13 +28,13 @@ static void SubmitControllerModel(s32 model) {
 
 static void BuildControllerPartTransform(Matrix *transform, s32 pitch) {
     Matrix yawRotation;
-    s32 scale[3] = {0x1000, 0x2000, 0x1000};
+    Vec4 scale = {0x1000, 0x2000, 0x1000, 0};
 
     BuildRotMatrixX(transform, pitch);
     BuildRotMatrixY(&yawRotation, g_ControllerSceneAngleY + 0x400);
     MulMatrix2(&yawRotation, transform);
     MulMatrix2(&g_RenderState.geometry.matrix, transform);
-    ScaleMatrix(&yawRotation, scale);
+    ScaleMatrix(&yawRotation, &scale);
     MulMatrix2(&yawRotation, transform);
     SetGteLightMatrix(transform);
 }

@@ -77,7 +77,7 @@ static inline s32 InterpolateSceneryMotionValue(s16 current, s16 next,
 }
 
 typedef struct PathSceneryTransform {
-    Block16 position;
+    Vec4 position;
     SVec rotation;
 } PathSceneryTransform;
 
