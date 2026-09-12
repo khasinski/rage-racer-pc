@@ -7,7 +7,6 @@
 #include <limits.h>
 #include <stdio.h>
 
-s32 g_CarSelectFadeAccum;
 s32 g_PlayerCarIndex;
 static CarEntry s_cars[GAME_CAR_COUNT];
 CarEntry *g_CarTable = s_cars;
@@ -69,15 +68,15 @@ void DrawSprite(GameOrderingTableEntry *ot, s16 x, s16 y, s16 width, u16 height,
 
 int main(void) {
     static GameOrderingTableEntry orderingTable[2];
+    s32 progress = 100;
 
     RENDER_OT_BASE = orderingTable;
-    g_CarSelectFadeAccum = 100;
-    CHECK(DrawCarSelectScreen(0) == 0);
+    CHECK(DrawCarSelectScreen(&progress, 0) == 0);
     CHECK(s_outlineCount == 0 && s_spriteCount == 0);
 
     s_cars[0].transmission = 1;
     s_model.gearCount = 5;
-    CHECK(DrawCarSelectScreen(600) == MENU_FADE_MAX);
+    CHECK(DrawCarSelectScreen(&progress, 600) == MENU_FADE_MAX);
     CHECK(s_outlineCount == 1 && s_outlineBrightness == MENU_FADE_MAX / 4);
     CHECK(s_spriteCount == 2);
     CHECK(s_sprites[0].x == 0xAD && s_sprites[0].textureU == 0x6C);
@@ -86,7 +85,7 @@ int main(void) {
     s_spriteCount = 0;
     s_cars[0].transmission = 0;
     s_model.gearCount = 6;
-    CHECK(DrawCarSelectScreen(-MENU_FADE_MAX) == 0);
+    CHECK(DrawCarSelectScreen(&progress, -MENU_FADE_MAX) == 0);
     CHECK(s_sprites[0].x == 0xAE && s_sprites[0].textureU == 0x60);
     CHECK(s_sprites[1].x == 0xA6 && s_sprites[1].textureU == 0x30);
     CHECK(s_sprites[1].brightness == 0);
@@ -94,25 +93,25 @@ int main(void) {
     s_outlineCount = 0;
     s_spriteCount = 0;
     s_model.gearCount = 3;
-    DrawCarSelectScreen(1);
+    DrawCarSelectScreen(&progress, 1);
     CHECK(s_outlineCount == 0 && s_spriteCount == 0);
 
     s_outlineCount = 0;
     s_spriteCount = 0;
     g_PlayerCarIndex = INT_MIN;
-    CHECK(DrawCarSelectScreen(1) == 2);
+    CHECK(DrawCarSelectScreen(&progress, 1) == 2);
     CHECK(s_outlineCount == 0 && s_spriteCount == 0);
     g_PlayerCarIndex = 0;
     g_CarModelAsset = NULL;
-    DrawCarSelectScreen(1);
+    DrawCarSelectScreen(&progress, 1);
     CHECK(s_outlineCount == 0 && s_spriteCount == 0);
     g_CarModelAsset = &s_model;
     g_CarTable = NULL;
-    DrawCarSelectScreen(1);
+    DrawCarSelectScreen(&progress, 1);
     CHECK(s_outlineCount == 0 && s_spriteCount == 0);
     g_CarTable = s_cars;
     RENDER_OT_BASE = NULL;
-    DrawCarSelectScreen(1);
+    DrawCarSelectScreen(&progress, 1);
     CHECK(s_outlineCount == 0 && s_spriteCount == 0);
 
     puts("car select menu tests passed");

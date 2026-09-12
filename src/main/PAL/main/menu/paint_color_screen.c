@@ -18,10 +18,6 @@ enum PaintColorOption {
     PAINT_COLOR_OPTION_COUNT,
 };
 
-s32 DrawPaintColorScreen(s32 step) {
-    return AdvanceMenuFade(&g_PaintColorScreenProgress, step);
-}
-
 static s32 PaintColorCarAvailable(void) {
     return g_CarTable != NULL &&
            (u32)g_PlayerCarIndex < CUSTOM_PAINT_CAR_COUNT;

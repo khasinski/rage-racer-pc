@@ -1,9 +1,8 @@
 #include "common.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 
 #include <stdio.h>
-
-s32 g_EngineSpecStep;
 
 static s32 s_engineStep;
 static s32 s_enginePhase;
@@ -23,17 +22,20 @@ void DrawCarEngineSpec(s32 step, s32 phase) {
     } while (0)
 
 int main(void) {
-    g_EngineSpecStep = 100;
-    CHECK(DrawEngineerShopScreen(0) == 0);
+    s32 progress = 100;
 
-    CHECK(DrawEngineerShopScreen(600) == MENU_FADE_MAX);
+    CHECK(AdvanceCarSpecPanel(&progress, 0) == 0);
+
+    CHECK(AdvanceCarSpecPanel(&progress, 600) == MENU_FADE_MAX);
     CHECK(s_engineStep == 0);
     CHECK(s_enginePhase == MENU_FADE_MAX / 4);
 
-    CHECK(DrawEngineerShopScreen(-MENU_FADE_MAX) == 0);
+    CHECK(AdvanceCarSpecPanel(&progress, -MENU_FADE_MAX) == 0);
     CHECK(s_engineStep == MENU_FADE_MAX * MENU_FADE_MAX / 2048);
     CHECK(s_enginePhase == 0);
 
-    puts("engineer shop menu tests passed");
+    CHECK(AdvanceCarSpecPanel(NULL, 1) == 0);
+
+    puts("car spec panel animation tests passed");
     return 0;
 }

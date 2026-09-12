@@ -89,20 +89,8 @@ static void ResetMenuNavigation(void) {
     g_DesignModeOption = 0;
 }
 
-/* Screen draw functions own additional animation counters. A zero step is
- * their shared reset operation and returns before any renderer access. */
+/* Shared widgets outside the screen transition table own these counters. */
 static void ResetMenuWidgets(void) {
-    DrawCourseSelectScreen(0);
-    DrawRankingScreen(0);
-    DrawCarSelectScreen(0);
-    DrawCustomizeScreen(0);
-    DrawDesignModeScreen(0);
-    DrawTeamLogoScreen(0);
-    DrawLogoSampleScreen(0);
-    DrawTeamNameScreen(0);
-    DrawPaintColorScreen(0);
-    DrawCarShopScreen(0);
-    DrawEngineerShopScreen(0);
     DrawCarSpecGraph(0, 0); /* step 0 resets and returns before the grade */
     DrawMenuLightBurst(0);
     DrawTimeAttackPlate(0);

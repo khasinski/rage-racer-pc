@@ -22,7 +22,6 @@ void MenuBeginExit(s32 screen) {
 
 u8 g_DesignModeCellMask[6][6];
 s32 g_DesignModeOption;
-s32 g_DesignModeScreenFade;
 s32 g_MenuAltLayout;
 s32 g_MenuAltLayoutSetting;
 s32 g_MenuHandlerIndex;
@@ -159,19 +158,19 @@ static int CheckExit(s32 busy, s32 expectedScreen) {
 
 int main(void) {
     GameOrderingTableEntry ot[4];
+    s32 progress = 123;
 
     memset(&g_DesignModeCellMask, 0, sizeof(g_DesignModeCellMask));
     memset(ot, 0, sizeof(ot));
     RENDER_OT_BASE = ot;
     g_DesignModeCellMask[2][3] = 1;
-    g_DesignModeScreenFade = 123;
-    CHECK(DrawDesignModeScreen(0) == 0 && s_spriteCalls == 0);
-    CHECK(DrawDesignModeScreen(MENU_FADE_MAX) == MENU_FADE_MAX);
+    CHECK(DrawDesignModeScreen(&progress, 0) == 0 && s_spriteCalls == 0);
+    CHECK(DrawDesignModeScreen(&progress, MENU_FADE_MAX) == MENU_FADE_MAX);
     CHECK(s_spriteCalls == 38 && s_selectedCellSprites == 1);
 
     s_spriteCalls = 0;
     RENDER_OT_BASE = NULL;
-    CHECK(DrawDesignModeScreen(-1) == MENU_FADE_MAX - 1);
+    CHECK(DrawDesignModeScreen(&progress, -1) == MENU_FADE_MAX - 1);
     CHECK(s_spriteCalls == 0);
     RENDER_OT_BASE = ot;
 

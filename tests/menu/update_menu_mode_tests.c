@@ -38,13 +38,14 @@ static u16 s_spriteTextureV;
 static s32 s_updateCalls;
 
 static void CountUpdate(void) { s_updateCalls++; }
-static s32 CountDraw(s32 step) {
+static s32 CountDraw(s32 *progress, s32 step) {
+    *progress += step;
     s_drawSteps[s_drawCalls++] = step;
     return 123;
 }
 
 void (*g_MenuScreenUpdate[MENU_SCREEN_COUNT])(void);
-s32 (*g_MenuScreenDraw[MENU_SCREEN_COUNT])(s32 step);
+s32 (*g_MenuScreenDraw[MENU_SCREEN_COUNT])(s32 *progress, s32 step);
 
 void SetDispMask(s32 enabled) { s_displayMask = enabled; }
 
@@ -157,6 +158,7 @@ static int TestDispatchAndLayers(void) {
     CHECK(g_RenderState.pass.otShift == 1 && s_updateCalls == 1);
     CHECK(s_solidRectCalls == 1);
     CHECK(s_drawCalls == 1 && s_drawSteps[0] == -10);
+    CHECK(MenuRuntimeCurrent()->drawProgress[MENU_SCREEN_CUSTOMIZE] == -10);
     CHECK(g_MenuOutgoingScreenProgress == 123);
     CHECK(s_specCarTire == 4 && s_overlayCalls == 0);
 
@@ -186,6 +188,8 @@ static int TestInvalidIndices(void) {
     UpdateMenuMode();
     CHECK(MenuRuntimeCurrent()->activeScreen == MENU_SCREEN_COURSE_SELECT);
     CHECK(s_updateCalls == 1 && s_drawCalls == 1 && s_drawSteps[0] == 0x14);
+    CHECK(MenuRuntimeCurrent()->drawProgress[MENU_SCREEN_COURSE_SELECT] ==
+          0x14);
     CHECK(g_RenderState.pass.otShift == 1);
 
     Reset();
@@ -235,6 +239,8 @@ static int TestScreenStateIsolation(void) {
     MenuRuntimeReset();
     CHECK(MenuRuntimeScreenState(MENU_SCREEN_CAR_SELECT) == 0);
     CHECK(MenuRuntimeScreenState(MENU_SCREEN_COURSE_SELECT) == 0);
+    CHECK(MenuRuntimeCurrent()->drawProgress[MENU_SCREEN_CAR_SELECT] == 0);
+    CHECK(MenuRuntimeCurrent()->drawProgress[MENU_SCREEN_COURSE_SELECT] == 0);
     return 0;
 }
 

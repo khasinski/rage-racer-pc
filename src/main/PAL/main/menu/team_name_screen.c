@@ -7,10 +7,6 @@ typedef enum TeamNameScreenState {
     TEAM_NAME_EXIT_TO_DESIGN = 1,
 } TeamNameScreenState;
 
-s32 DrawTeamNameScreen(s32 step) {
-    return AdvanceMenuFade(&g_TeamNameScreenProgress, step);
-}
-
 static s32 MoveTeamNameGridCursor(s32 cursor, u16 pressed) {
     s32 row = cursor / MENU_TEAM_NAME_GRID_COLUMNS;
     s32 column = cursor % MENU_TEAM_NAME_GRID_COLUMNS;

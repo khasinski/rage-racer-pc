@@ -61,24 +61,6 @@ MATRIX *ScaleMatrix(MATRIX *matrix, VECTOR *scale) {
     return matrix;
 }
 
-#define DRAW_RESET_STUB(name)                                                  \
-    s32 name(s32 step) {                                                       \
-        if (step == 0) s_drawResetCalls++;                                     \
-        return 0;                                                              \
-    }
-
-DRAW_RESET_STUB(DrawCourseSelectScreen)
-DRAW_RESET_STUB(DrawRankingScreen)
-DRAW_RESET_STUB(DrawCarSelectScreen)
-DRAW_RESET_STUB(DrawCustomizeScreen)
-DRAW_RESET_STUB(DrawDesignModeScreen)
-DRAW_RESET_STUB(DrawTeamLogoScreen)
-DRAW_RESET_STUB(DrawLogoSampleScreen)
-DRAW_RESET_STUB(DrawTeamNameScreen)
-DRAW_RESET_STUB(DrawPaintColorScreen)
-DRAW_RESET_STUB(DrawCarShopScreen)
-DRAW_RESET_STUB(DrawEngineerShopScreen)
-
 void DrawCarSpecGraph(s32 step, u32 tireGrade) {
     if (step == 0 && tireGrade == 0) s_drawResetCalls++;
 }
@@ -187,7 +169,7 @@ static int CheckCommonEntryState(const GameRaceProgress *progress) {
     CHECK(g_MenuScreen == MENU_SCREEN_BOOTSTRAP);
     CHECK(g_CourseSelectOption == 0 && g_CarSelectCursor == 0);
     CHECK(g_CustomizeOption == 0 && g_DesignModeOption == 0);
-    CHECK(s_drawResetCalls == 14);
+    CHECK(s_drawResetCalls == 3);
     return 0;
 }
 

@@ -50,6 +50,8 @@ typedef struct MenuRuntime {
     s32 outgoingDrawScreen;
     /* Each screen owns a separate state-machine value. */
     s32 screenState[MENU_SCREEN_COUNT];
+    /* Fade/slide accumulator passed explicitly to each screen renderer. */
+    s32 drawProgress[MENU_SCREEN_COUNT];
 } MenuRuntime;
 
 void MenuRuntimeReset(void);
@@ -73,7 +75,7 @@ void MenuBeginExit(s32 screen);
  * header for the entries.
  */
 extern void (*g_MenuScreenUpdate[MENU_SCREEN_COUNT])(void);
-extern s32 (*g_MenuScreenDraw[MENU_SCREEN_COUNT])(s32 step);
+extern s32 (*g_MenuScreenDraw[MENU_SCREEN_COUNT])(s32 *progress, s32 step);
 
 /*
  * Title-menu cursor, 0..4 (UpdateMainMenuInput wraps it with `(sel + 5) % 5` on the
@@ -198,9 +200,9 @@ void UpdateMenuMode(void);
 /*
  * The menu-mode screen table pair: everything the front end shows once
  * g_GameMode == 3 is one of fourteen screens, dispatched from UpdateMenuMode
- * through the active MenuRuntime screen and its fade overlay. Each Draw entry owns a
- * private accumulator in 0x8009B2C4..0x8009B2EC, clamped to [0, 0x1FC]; a
- * `step` of 0 resets it, positive fades in, negative fades out.
+ * through the active MenuRuntime screen and its fade overlay. MenuRuntime owns
+ * one draw accumulator per screen; positive steps fade in and negative steps
+ * fade out.
  */
 
 /* id 1 -- course + class picker; left/right change course, up/down the rows. */
@@ -211,11 +213,10 @@ void EnterCourseSelectScreen(void);
 s32 CanSelectPrevCourse(void);
 s32 CanSelectNextCourse(void);
 void UpdateCourseSelectScreen(void);
-s32 DrawCourseSelectScreen(s32 step);
+s32 DrawCourseSelectScreen(s32 *progress, s32 step);
 
 /* id 2 -- "RANKING": total time / lap time tables, or exit back to id 1. */
 void UpdateRankingScreen(void);
-s32 DrawRankingScreen(s32 step);
 typedef enum RankingTableKind {
     RANKING_TABLE_TOTAL,
     RANKING_TABLE_LAP,
@@ -236,23 +237,20 @@ void DrawShopPromptButtons(GameOrderingTableEntry *ot, s32 flash);
 void UpdateOwnedCarNeighbours(void);
 void RefreshCarUnlockState(void);
 void UpdateCarSelectScreen(void);
-s32 DrawCarSelectScreen(s32 step);
+s32 DrawCarSelectScreen(s32 *progress, s32 step);
 
 /* id 5 -- "CUSTOMIZE": tire compound (5 settings) and transmission (AT/MT). */
 void UpdateCustomizeScreen(void);
-s32 DrawCustomizeScreen(s32 step);
 
 /* id 6 -- "DESIGN MODE": livery hub, branches to team logo / name / colour. */
 void UpdateDesignModeScreen(void);
-s32 DrawDesignModeScreen(s32 step);
+s32 DrawDesignModeScreen(s32 *progress, s32 step);
 
 /* id 7 -- "TEAM LOGO": pick a sample logo (id 8) or hand-paint one. */
 void UpdateTeamLogoScreen(void);
-s32 DrawTeamLogoScreen(s32 step);
 
 /* id 8 -- "TEAM LOGO" sample picker: character and background, 20 each. */
 void UpdateLogoSampleScreen(void);
-s32 DrawLogoSampleScreen(s32 step);
 
 /*
  * id 9 -- "TEAM NAME": the 4x11 character grid driven by GameMenuCursor, with
@@ -260,19 +258,15 @@ s32 DrawLogoSampleScreen(s32 step);
  * g_TeamNameChars[g_TeamNameLength].
  */
 void UpdateTeamNameScreen(void);
-s32 DrawTeamNameScreen(s32 step);
 
 /* id 10 -- "PAINT COLOR": body colour 1 and 2, 18 choices each. */
 void UpdatePaintColorScreen(void);
-s32 DrawPaintColorScreen(s32 step);
 
 /* id 11 -- "SHOP" (car shop): browse every car and buy the selected one. */
 void UpdateCarShopScreen(void);
-s32 DrawCarShopScreen(s32 step);
 
 /* id 12 -- "SHOP" (engineer shop): pay the tune-up fee to grade the car up. */
 void UpdateEngineerShopScreen(void);
-s32 DrawEngineerShopScreen(s32 step);
 
 /*
  * Menu widgets shared across those screens. Each keeps its own accumulator and
@@ -487,17 +481,7 @@ extern s32 g_PaintPalettePulsePhase;
 extern s32 g_TeamLogoFadeLevel;
 extern s32 g_TeamLogoZoomLevel;
 extern u16 g_TeamLogoFadedClut[16];
-extern s32 g_RankingScrollState;
 extern s32 g_RankingPendingState;
-extern s32 g_CarSelectFadeAccum;
-extern s32 g_CustomizeFadeAccum;
-extern s32 g_DesignModeScreenFade;
-extern s32 g_TeamLogoScreenFade;
-extern s32 g_LogoSampleScreenFade;
-extern s32 g_TeamNameScreenProgress;
-extern s32 g_PaintColorScreenProgress;
-extern s32 g_CarShopScreenProgress;
-extern s32 g_EngineSpecStep;
 extern s32 g_LogoSampleCursor;
 extern s32 g_ShopCarIndex;
 extern s32 g_RankingCursor;

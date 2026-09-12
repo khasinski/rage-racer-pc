@@ -35,7 +35,6 @@ u16 g_PadPressed;
 u16 g_PadPressedRepeat;
 u8 g_TeamNameChars[16];
 u8 g_TeamNameLength;
-s32 g_TeamNameScreenProgress;
 s32 g_UiScriptProgress;
 TimedDrawCommand g_NativeTeamNameScreenScript[61];
 
@@ -105,11 +104,6 @@ static int CheckCursorMove(s32 from, u16 pressed, s32 expected) {
 }
 
 int main(void) {
-    g_TeamNameScreenProgress = 100;
-    CHECK(DrawTeamNameScreen(0) == 0);
-    CHECK(DrawTeamNameScreen(600) == MENU_FADE_MAX);
-    CHECK(DrawTeamNameScreen(-600) == 0);
-
     if (CheckCursorMove(0, PAD_UP, 33) ||
         CheckCursorMove(33, PAD_DOWN, 0) ||
         CheckCursorMove(0, PAD_LEFT, 10) ||

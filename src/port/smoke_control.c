@@ -612,7 +612,6 @@ int PortShouldExit(int frame_number) {
             GameMenuBusy = 0;
             g_UiScriptProgress = 0;
             g_UiScriptProgress2 = 0;
-            g_MenuScreenDraw[screen](0);
             fprintf(stderr, "smoke menu sweep frame=%d timer=%d screen=%d\n",
                     frame_number, g_SceneTimer, screen);
             lastSweepScreen = screen;

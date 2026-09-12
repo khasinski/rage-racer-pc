@@ -19,14 +19,11 @@ void MenuBeginExit(s32 screen) {
     g_MenuOutgoingHandlerIndex = screen;
 }
 
-s32 g_TeamLogoScreenFade;
-
 s32 GameMenuBusy;
 s32 g_LogoSampleBackIndex;
 s32 g_LogoSampleCharIndex;
 s32 g_LogoSampleCursor;
 s32 g_LogoSampleSavedIndex;
-s32 g_LogoSampleScreenFade;
 s32 g_MenuAltLayout;
 s32 g_MenuConfirmTimer;
 s32 g_MenuHandlerIndex;
@@ -156,7 +153,6 @@ static void Reset(void) {
     g_LogoSampleCharIndex = 0;
     g_LogoSampleCursor = 0;
     g_LogoSampleSavedIndex = 0;
-    g_LogoSampleScreenFade = 0;
     g_LogoSampleSubPanelScript = g_EmptyScript;
     g_UiScriptProgress = 0;
     g_UiScriptProgress2 = 0;
@@ -330,12 +326,6 @@ int main(void) {
     UpdateLogoSampleScreen();
     CHECK(GameMenuBusy == 0);
     CHECK(g_LogoSampleCharIndex == 6 && g_LogoSampleBackIndex == 7);
-
-    g_LogoSampleScreenFade = 100;
-    CHECK(DrawLogoSampleScreen(25) == 125);
-    CHECK(DrawLogoSampleScreen(-200) == 0);
-    CHECK(DrawLogoSampleScreen(600) == MENU_FADE_MAX);
-    CHECK(DrawLogoSampleScreen(0) == 0);
 
     puts("logo screen state tests passed");
     return 0;

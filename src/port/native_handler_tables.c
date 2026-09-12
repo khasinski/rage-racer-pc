@@ -1,5 +1,6 @@
 #include "game/fmv.h"
 #include "game/menu.h"
+#include "game/menu_internal.h"
 #include "game/records_internal.h"
 #include "game/replay_internal.h"
 #include "game/round_screen_internal.h"
@@ -82,7 +83,8 @@ void (*g_FrontendDrawHandlers[])(void) = {
     UpdateMainMenuExit,
 };
 
-static s32 DrawMenuScreenNoOp(s32 step) {
+static s32 DrawMenuScreenNoOp(s32 *progress, s32 step) {
+    (void)progress;
     (void)step;
     return 0;
 }
@@ -108,19 +110,19 @@ void (*g_MenuScreenUpdate[MENU_SCREEN_COUNT])(void) = {
     [MENU_SCREEN_UNUSED] = UpdateMenuScreenNoOp,
 };
 
-s32 (*g_MenuScreenDraw[MENU_SCREEN_COUNT])(s32) = {
+s32 (*g_MenuScreenDraw[MENU_SCREEN_COUNT])(s32 *, s32) = {
     [MENU_SCREEN_BOOTSTRAP] = DrawMenuScreenNoOp,
     [MENU_SCREEN_COURSE_SELECT] = DrawCourseSelectScreen,
-    [MENU_SCREEN_RANKING] = DrawRankingScreen,
+    [MENU_SCREEN_RANKING] = AdvanceMenuFade,
     [MENU_SCREEN_ENTER_CAR_SELECT] = DrawMenuScreenNoOp,
     [MENU_SCREEN_CAR_SELECT] = DrawCarSelectScreen,
-    [MENU_SCREEN_CUSTOMIZE] = DrawCustomizeScreen,
+    [MENU_SCREEN_CUSTOMIZE] = AdvanceCarSpecPanel,
     [MENU_SCREEN_DESIGN_MODE] = DrawDesignModeScreen,
-    [MENU_SCREEN_TEAM_LOGO] = DrawTeamLogoScreen,
-    [MENU_SCREEN_LOGO_SAMPLE] = DrawLogoSampleScreen,
-    [MENU_SCREEN_TEAM_NAME] = DrawTeamNameScreen,
-    [MENU_SCREEN_PAINT_COLOR] = DrawPaintColorScreen,
-    [MENU_SCREEN_CAR_SHOP] = DrawCarShopScreen,
-    [MENU_SCREEN_ENGINEER_SHOP] = DrawEngineerShopScreen,
+    [MENU_SCREEN_TEAM_LOGO] = AdvanceMenuFade,
+    [MENU_SCREEN_LOGO_SAMPLE] = AdvanceMenuFade,
+    [MENU_SCREEN_TEAM_NAME] = AdvanceMenuFade,
+    [MENU_SCREEN_PAINT_COLOR] = AdvanceMenuFade,
+    [MENU_SCREEN_CAR_SHOP] = AdvanceCarSpecPanel,
+    [MENU_SCREEN_ENGINEER_SHOP] = AdvanceCarSpecPanel,
     [MENU_SCREEN_UNUSED] = DrawMenuScreenNoOp,
 };

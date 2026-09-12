@@ -153,7 +153,3 @@ void UpdateLogoSampleScreen(void) {
         GameMenuBusy = LOGO_SAMPLE_IDLE;
     }
 }
-
-s32 DrawLogoSampleScreen(s32 step) {
-    return AdvanceMenuFade(&g_LogoSampleScreenFade, step);
-}

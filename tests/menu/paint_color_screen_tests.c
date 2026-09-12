@@ -34,7 +34,6 @@ u16 g_PadPressed;
 u16 g_PadPressedRepeat;
 s32 g_PaintColorCursor;
 s32 g_PaintColorIndex;
-s32 g_PaintColorScreenProgress;
 s32 g_PlayerCarIndex;
 s32 g_UiScriptProgress;
 s32 g_UiScriptProgress2;
@@ -104,11 +103,6 @@ static void Reset(void) {
     } while (0)
 
 int main(void) {
-    g_PaintColorScreenProgress = 100;
-    CHECK(DrawPaintColorScreen(0) == 0);
-    CHECK(DrawPaintColorScreen(600) == MENU_FADE_MAX);
-    CHECK(DrawPaintColorScreen(-600) == 0);
-
     Reset();
     s_cars[3].paintColor1 = 6;
     g_PadPressed = PAD_CONFIRM;

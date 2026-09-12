@@ -3,7 +3,7 @@
 #include "game/menu_internal.h"
 #include "game/race.h"
 
-s32 DrawCourseSelectScreen(s32 step) {
+s32 DrawCourseSelectScreen(s32 *progress, s32 step) {
     GameOrderingTableEntry *ot;
     u8 fade;
     s32 slide;
@@ -16,24 +16,27 @@ s32 DrawCourseSelectScreen(s32 step) {
     s32 course;
     CourseLabelSprites courseLabel;
     CourseSelectScrollFrame scroll;
+    if (progress == NULL) {
+        return 0;
+    }
     if (step == 0) {
-        g_CourseSelectScrollProgress = 0;
+        *progress = 0;
         return 0;
     }
 
-    scroll = AdvanceCourseSelectScroll(g_CourseSelectScrollProgress, step);
-    g_CourseSelectScrollProgress = scroll.progress;
+    scroll = AdvanceCourseSelectScroll(*progress, step);
+    *progress = scroll.progress;
     slide = scroll.slide;
 
     if (g_MenuAltLayout != 0) {
-        return g_CourseSelectScrollProgress;
+        return *progress;
     }
 
     /* The reset and alternate-layout paths do not draw.  Resolve the
      * ordering-table layer only once we know this frame needs it, so those
      * paths remain valid before the renderer has installed an OT. */
     ot = RENDER_OT_BASE + 1;
-    fade = (u8)(g_CourseSelectScrollProgress / 4);
+    fade = (u8)(*progress / 4);
     course = SeriesCourseIndex();
 
     if (g_GrandPrixMode != 0) {
@@ -130,5 +133,5 @@ s32 DrawCourseSelectScreen(s32 step) {
         }
     }
 
-    return g_CourseSelectScrollProgress;
+    return *progress;
 }

@@ -11,7 +11,6 @@
 static CarEntry s_cars[GAME_CAR_COUNT];
 CarEntry *g_CarTable = s_cars;
 s32 g_CarListCursor;
-s32 g_CarShopScreenProgress;
 s32 g_CarShopUnlockAll;
 s16 g_NextOwnedCarIndex;
 s16 g_PrevOwnedCarIndex;
@@ -19,14 +18,7 @@ s32 g_ShopCarIndex;
 static GameRaceProgress s_progress;
 GameRaceProgress *g_RaceProgress = &s_progress;
 
-static s32 s_engineStep;
-static s32 s_enginePhase;
 static s32 s_unlockLevelOverride = INT_MIN;
-
-void DrawCarEngineSpec(s32 step, s32 phase) {
-    s_engineStep = step;
-    s_enginePhase = phase;
-}
 
 s32 GetCarUnlockLevel(s32 carIndex) {
     return s_unlockLevelOverride != INT_MIN ? s_unlockLevelOverride : carIndex;
@@ -42,23 +34,6 @@ s32 GetCarUnlockLevel(s32 carIndex) {
     } while (0)
 
 int main(void) {
-    g_CarShopScreenProgress = 100;
-    CHECK(DrawCarShopScreen(0) == 0);
-    CHECK(DrawCarShopScreen(600) == MENU_FADE_MAX);
-    CHECK(s_engineStep == 0);
-    CHECK(s_enginePhase == MENU_FADE_MAX / 4);
-    CHECK(DrawCarShopScreen(-MENU_FADE_MAX) == 0);
-    CHECK(s_engineStep == MENU_FADE_MAX * MENU_FADE_MAX / 2048);
-    CHECK(s_enginePhase == 0);
-
-    g_CarShopScreenProgress = INT_MAX;
-    CHECK(DrawCarShopScreen(-1) == MENU_FADE_MAX);
-    CHECK(s_engineStep == 0 && s_enginePhase == MENU_FADE_MAX / 4);
-    g_CarShopScreenProgress = INT_MIN;
-    CHECK(DrawCarShopScreen(1) == 0);
-    CHECK(s_enginePhase == 0);
-    CHECK(AdvanceCarSpecPanel(NULL, 1) == 0);
-
     memset(s_cars, 0, sizeof(s_cars));
     s_cars[2].enabled = 1;
     s_cars[5].enabled = 1;

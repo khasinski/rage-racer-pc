@@ -70,13 +70,18 @@ static u32 CurrentMenuCarTireCompound(void) {
 static void DrawMenuTransitions(void) {
     if (s_menuRuntime.activeDrawScreen > MENU_SCREEN_BOOTSTRAP &&
         s_menuRuntime.activeDrawScreen < MENU_SCREEN_COUNT) {
-        g_MenuScreenDraw[s_menuRuntime.activeDrawScreen](MENU_ACTIVE_SCREEN_FADE_STEP);
+        s32 screen = s_menuRuntime.activeDrawScreen;
+
+        g_MenuScreenDraw[screen](&s_menuRuntime.drawProgress[screen],
+                                 MENU_ACTIVE_SCREEN_FADE_STEP);
     }
     if (s_menuRuntime.outgoingDrawScreen > MENU_SCREEN_BOOTSTRAP &&
         s_menuRuntime.outgoingDrawScreen < MENU_SCREEN_COUNT) {
+        s32 screen = s_menuRuntime.outgoingDrawScreen;
+
         g_MenuOutgoingScreenProgress =
-            g_MenuScreenDraw[s_menuRuntime.outgoingDrawScreen](
-                MENU_OUTGOING_SCREEN_FADE_STEP);
+            g_MenuScreenDraw[screen](&s_menuRuntime.drawProgress[screen],
+                                     MENU_OUTGOING_SCREEN_FADE_STEP);
     }
 }
 

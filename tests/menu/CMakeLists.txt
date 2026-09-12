@@ -604,8 +604,7 @@ set_tests_properties(paint_color_screen PROPERTIES LABELS functional)
 
 add_executable(car_shop_menu_tests
     car_shop_menu_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/car_shop_menu.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/car_spec_panel_animation.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/car_shop_menu.c)
 target_include_directories(car_shop_menu_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
@@ -622,27 +621,6 @@ endif()
 target_link_libraries(car_shop_menu_tests PRIVATE psyz)
 add_test(NAME car_shop_menu COMMAND car_shop_menu_tests)
 set_tests_properties(car_shop_menu PROPERTIES LABELS functional)
-
-add_executable(engineer_shop_menu_tests
-    engineer_shop_menu_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/engineer_shop_menu.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/car_spec_panel_animation.c)
-target_include_directories(engineer_shop_menu_tests PRIVATE
-    ${CMAKE_SOURCE_DIR}/src/port/include
-    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
-    ${CMAKE_SOURCE_DIR}/include)
-target_compile_definitions(engineer_shop_menu_tests PRIVATE __psyz=1)
-if(MSVC)
-    target_compile_options(engineer_shop_menu_tests PRIVATE
-        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
-else()
-    target_compile_options(engineer_shop_menu_tests PRIVATE
-        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
-        ${RAGE_NONFATAL_WARNING_OPTIONS})
-endif()
-target_link_libraries(engineer_shop_menu_tests PRIVATE psyz)
-add_test(NAME engineer_shop_menu COMMAND engineer_shop_menu_tests)
-set_tests_properties(engineer_shop_menu PROPERTIES LABELS functional)
 
 add_executable(shop_price_panel_tests
     shop_price_panel_tests.c
@@ -684,26 +662,25 @@ target_link_libraries(car_engine_spec_tests PRIVATE psyz)
 add_test(NAME car_engine_spec COMMAND car_engine_spec_tests)
 set_tests_properties(car_engine_spec PROPERTIES LABELS unit)
 
-add_executable(customize_menu_tests
-    customize_menu_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/customize_menu.c
+add_executable(car_spec_panel_animation_tests
+    car_spec_panel_animation_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/car_spec_panel_animation.c)
-target_include_directories(customize_menu_tests PRIVATE
+target_include_directories(car_spec_panel_animation_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
     ${CMAKE_SOURCE_DIR}/include)
-target_compile_definitions(customize_menu_tests PRIVATE __psyz=1)
+target_compile_definitions(car_spec_panel_animation_tests PRIVATE __psyz=1)
 if(MSVC)
-    target_compile_options(customize_menu_tests PRIVATE
+    target_compile_options(car_spec_panel_animation_tests PRIVATE
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
 else()
-    target_compile_options(customize_menu_tests PRIVATE
+    target_compile_options(car_spec_panel_animation_tests PRIVATE
         "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
         ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
-target_link_libraries(customize_menu_tests PRIVATE psyz)
-add_test(NAME customize_menu COMMAND customize_menu_tests)
-set_tests_properties(customize_menu PROPERTIES LABELS functional)
+target_link_libraries(car_spec_panel_animation_tests PRIVATE psyz)
+add_test(NAME car_spec_panel_animation COMMAND car_spec_panel_animation_tests)
+set_tests_properties(car_spec_panel_animation PROPERTIES LABELS unit)
 
 add_executable(car_select_menu_tests
     car_select_menu_tests.c

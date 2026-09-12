@@ -3,9 +3,6 @@
 #include "game/menu_internal.h"
 #include "game/race.h"
 
-s32 DrawCarShopScreen(s32 step) {
-    return AdvanceCarSpecPanel(&g_CarShopScreenProgress, step);
-}
 /* Below the last class, the shop previews cars from the class coming next. */
 static s32 IsCarOnOffer(s32 index) {
     s32 progress;

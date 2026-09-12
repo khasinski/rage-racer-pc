@@ -24,7 +24,7 @@ enum {
     DESIGN_MODE_GRID_SIZE = 6,
 };
 
-s32 DrawDesignModeScreen(s32 step) {
+s32 DrawDesignModeScreen(s32 *progress, s32 step) {
     GameOrderingTableEntry *ot;
     s32 remainingFade;
     s32 offset = 0;
@@ -34,7 +34,10 @@ s32 DrawDesignModeScreen(s32 step) {
     s32 row;
     s32 column;
 
-    fade = AdvanceMenuFade(&g_DesignModeScreenFade, step);
+    if (progress == NULL) {
+        return 0;
+    }
+    fade = AdvanceMenuFade(progress, step);
     if (step == 0 || RENDER_OT_BASE == NULL) {
         return fade;
     }
@@ -70,7 +73,7 @@ s32 DrawDesignModeScreen(s32 step) {
         }
     }
 
-    return g_DesignModeScreenFade;
+    return *progress;
 }
 
 static void ExitDesignMode(void) {

@@ -22,11 +22,6 @@ enum RankingOption {
     RANKING_OPTION_COUNT,
 };
 
-/* Screen-fade callback used by the host menu renderer. */
-s32 DrawRankingScreen(s32 step) {
-    return AdvanceMenuFade(&g_RankingScrollState, step);
-}
-
 static void DrawRankingScreenChrome(void) {
     RunTimedDrawScript(g_RankingPanelScript, &g_UiScriptProgress, 0);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);

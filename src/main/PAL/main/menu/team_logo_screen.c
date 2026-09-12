@@ -22,10 +22,6 @@ enum TeamLogoOption {
 
 enum { TEAM_LOGO_SAVE_CONFIRM_FRAMES = 35 };
 
-s32 DrawTeamLogoScreen(s32 step) {
-    return AdvanceMenuFade(&g_TeamLogoScreenFade, step);
-}
-
 static void DrawTeamLogoSaveButtons(GameOrderingTableEntry *ot, s32 flash) {
     DrawMenuCursorBox(g_MenuSubCursor != 0 ? 0xB8 : 0xDA, 0x44, 0x20, 0x20,
                       flash);

@@ -4,8 +4,6 @@
 #include "common.h"
 #include "game/prize_money.h"
 
-extern s32 g_CourseSelectScrollProgress;
-
 enum {
     COURSE_SELECT_SCROLL_MAX = 0x1FC,
     COURSE_SELECT_REST_SLIDE = -0x28,
