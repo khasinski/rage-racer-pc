@@ -27,10 +27,9 @@ s32 DrawRankingScreen(s32 step) {
     return AdvanceMenuFade(&g_RankingScrollState, step);
 }
 
-static void DrawRankingScreenChrome(s32 panelStep) {
-    RunTimedDrawScript(g_RankingPanelScript, &g_UiScriptProgress, panelStep);
-    RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress,
-                       panelStep >= 0);
+static void DrawRankingScreenChrome(void) {
+    RunTimedDrawScript(g_RankingPanelScript, &g_UiScriptProgress, 0);
+    RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
 }
 
 static void UpdateRankingMenu(void) {
@@ -121,7 +120,7 @@ void UpdateRankingScreen(void) {
          * straight back to the course select: the ranking could not be
          * entered at all.
          */
-        DrawRankingScreenChrome(0);
+        DrawRankingScreenChrome();
         return;
     }
     if (state < 0) {
@@ -149,12 +148,12 @@ void UpdateRankingScreen(void) {
             GameMenuBusy = RANKING_MENU;
             break;
         }
-        DrawRankingScreenChrome(0);
+        DrawRankingScreenChrome();
         return;
     }
     if (state != RANKING_EXIT_TO_COURSE_SELECT) {
         GameMenuBusy = RANKING_MENU;
-        DrawRankingScreenChrome(0);
+        DrawRankingScreenChrome();
         return;
     }
     MenuBeginExit(MENU_SCREEN_RANKING);
