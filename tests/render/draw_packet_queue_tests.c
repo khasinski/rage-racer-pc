@@ -7,6 +7,7 @@
 #include <string.h>
 
 Rect g_DrawModeEnv;
+GameRenderState g_RenderState;
 
 static union {
     max_align_t alignment;

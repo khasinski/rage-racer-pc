@@ -1402,7 +1402,7 @@ set_tests_properties(draw_prims PROPERTIES LABELS functional)
 
 add_executable(draw_packet_queue_tests
     draw_packet_queue_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/draw_packet_queue.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/draw_prims.c)
 target_include_directories(draw_packet_queue_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

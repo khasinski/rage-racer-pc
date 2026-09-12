@@ -7,15 +7,13 @@
 #include <string.h>
 
 GameRenderState g_RenderState;
+Rect g_DrawModeEnv;
 
 static union {
     max_align_t alignment;
     u8 bytes[2048];
 } s_packets;
 static GameOrderingTableEntry s_ot;
-static s32 s_queuePages[16];
-static u8 *s_queuePackets[16];
-static s32 s_queueCount;
 static int s_failures;
 
 #define CHECK_EQ(actual, expected, label) do { \
@@ -28,22 +26,21 @@ static int s_failures;
     } \
 } while (0)
 
-u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *packet, s32 tpage) {
-    (void)ot;
-    s_queuePackets[s_queueCount] = packet;
-    s_queuePages[s_queueCount] = tpage;
-    s_queueCount++;
-    return packet + sizeof(DrawPacket);
-}
-
 static void ResetPackets(void) {
     memset(&g_RenderState, 0, sizeof(g_RenderState));
     memset(&s_packets, 0, sizeof(s_packets));
     memset(&s_ot, 0, sizeof(s_ot));
-    memset(s_queuePages, 0, sizeof(s_queuePages));
-    memset(s_queuePackets, 0, sizeof(s_queuePackets));
-    s_queueCount = 0;
     g_RenderState.packetCursor = s_packets.bytes;
+}
+
+static void CheckDrawModePacket(u8 *bytes, s32 tpage, const char *label) {
+    DrawPacket expected;
+    DrawPacket *actual = (DrawPacket *)bytes;
+
+    memset(&expected, 0, sizeof(expected));
+    SetDrawMode(&expected, 0, 1, (u16)tpage, &g_DrawModeEnv);
+    CHECK_EQ(actual->code[0], expected.code[0], label);
+    CHECK_EQ(actual->code[1], expected.code[1], label);
 }
 
 static void CheckFlatQuad(void) {
@@ -59,18 +56,14 @@ static void CheckFlatQuad(void) {
     CHECK_EQ(quad->g0, 50, "quad green");
     CHECK_EQ(quad->b0, 60, "quad blue");
     CHECK_EQ((quad->code & 2) != 0, 1, "quad semitransparency");
-    CHECK_EQ(s_queueCount, 1, "quad draw mode count");
-    CHECK_EQ(s_queuePages[0], 0x1234, "quad draw mode");
-    CHECK_EQ(s_queuePackets[0] == (u8 *)(quad + 1), 1,
-             "quad draw mode position");
+    CheckDrawModePacket((u8 *)(quad + 1), 0x1234, "quad draw mode");
     CHECK_EQ(g_RenderState.packetCursor ==
-                 s_queuePackets[0] + sizeof(DrawPacket),
+                 (u8 *)(quad + 1) + sizeof(DrawPacket),
              1, "quad cursor");
 
     ResetPackets();
     DrawFlatQuad(&s_ot, 0, 0, 1, 1, 2, 2, 3, 3,
                  4, 5, 6, 0, 0x80);
-    CHECK_EQ(s_queueCount, 0, "quad embedded draw mode");
     CHECK_EQ(g_RenderState.packetCursor ==
                  s_packets.bytes + sizeof(POLY_F4),
              1, "quad cursor without draw mode");
@@ -91,7 +84,7 @@ static void CheckSpriteAndPolygons(void) {
     CHECK_EQ(sprite->u0, 5, "sprite u");
     CHECK_EQ(sprite->clut, ((0x1E0 + 1) << 6) + 1, "sprite clut");
     CHECK_EQ((sprite->code & 3), 3, "sprite texture flags");
-    CHECK_EQ(s_queuePages[0], 0x34, "sprite draw mode");
+    CheckDrawModePacket((u8 *)(sprite + 1), 0x34, "sprite draw mode");
 
     ResetPackets();
     DrawFlatTriangle(&s_ot, 1, 2, 3, 4, 5, 6,
@@ -100,7 +93,8 @@ static void CheckSpriteAndPolygons(void) {
     CHECK_EQ(triangle->x2, 5, "triangle x2");
     CHECK_EQ(triangle->b0, 9, "triangle blue");
     CHECK_EQ((triangle->code & 2) != 0, 1, "triangle semitransparency");
-    CHECK_EQ(s_queueCount, 0, "triangle embedded draw mode");
+    CHECK_EQ(g_RenderState.packetCursor == (u8 *)(triangle + 1), 1,
+             "triangle embedded draw mode");
 
     ResetPackets();
     GameDrawTexturedQuad(&s_ot, 1, 2, 3, 4, 5, 6, 7, 8,
@@ -123,7 +117,7 @@ static void CheckSpriteAndPolygons(void) {
     CHECK_EQ(line->x2, 5, "polyline x2");
     CHECK_EQ(line->b0, 9, "polyline blue");
     CHECK_EQ((line->code & 2) != 0, 1, "polyline semitransparency");
-    CHECK_EQ(s_queuePages[0], 0x22, "polyline draw mode");
+    CheckDrawModePacket((u8 *)(line + 1), 0x22, "polyline draw mode");
 }
 
 static void CheckSolidAndLines(void) {
@@ -139,7 +133,7 @@ static void CheckSolidAndLines(void) {
     CHECK_EQ(tile->g0, 0x45, "tile green truncation");
     CHECK_EQ(tile->b0, 0x67, "tile blue truncation");
     CHECK_EQ((tile->code & 2) != 0, 1, "tile semitransparency");
-    CHECK_EQ(s_queuePages[0], 0x22, "tile draw mode");
+    CheckDrawModePacket((u8 *)(tile + 1), 0x22, "tile draw mode");
 
     ResetPackets();
     DrawGradientLine(&s_ot, -1, -2, 30, 40,
@@ -150,7 +144,8 @@ static void CheckSolidAndLines(void) {
     CHECK_EQ(gradient->r0, 1, "gradient first red");
     CHECK_EQ(gradient->b1, 6, "gradient second blue");
     CHECK_EQ((gradient->code & 2) != 0, 0, "opaque gradient");
-    CHECK_EQ(s_queueCount, 0, "opaque gradient draw mode");
+    CHECK_EQ(g_RenderState.packetCursor == (u8 *)(gradient + 1), 1,
+             "opaque gradient draw mode");
 }
 
 static void CheckRectOutline(void) {
@@ -168,7 +163,6 @@ static void CheckRectOutline(void) {
     CHECK_EQ(lines[3].x0, 39, "outline right side");
     CHECK_EQ(lines[4].y0, 59, "outline bottom");
     CHECK_EQ(lines[5].y0, 58, "outline penultimate row");
-    CHECK_EQ(s_queueCount, 0, "opaque outline draw modes");
     CHECK_EQ(g_RenderState.packetCursor ==
                  s_packets.bytes + sizeof(LINE_F2) * 6,
              1, "outline cursor");
