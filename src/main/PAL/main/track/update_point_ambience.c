@@ -77,7 +77,7 @@ static s32 PointAmbienceAttenuation(s32 level, int64_t dx, int64_t dz) {
  * it is, then pan that between the two channels by where the source sits
  * relative to where the camera is looking.
  */
-void UpdatePointAmbience(s32 trackPosition) {
+void UpdatePointAmbience(const GameCameraState *camera, s32 trackPosition) {
     const TrackPointAmbienceZone *zone;
     s32 level;
     s32 authoredCue;
@@ -97,9 +97,9 @@ void UpdatePointAmbience(s32 trackPosition) {
 
     if (level != 0 && zone != NULL) {
         const int64_t sourceX =
-            (int64_t)zone->sourceX - g_Camera.view.x;
+            (int64_t)zone->sourceX - camera->x;
         const int64_t sourceZ =
-            (int64_t)zone->sourceZ - g_Camera.view.z;
+            (int64_t)zone->sourceZ - camera->z;
         const s32 attenuated =
             PointAmbienceAttenuation(level, sourceX, sourceZ);
         s32 sine = 0;
@@ -107,7 +107,7 @@ void UpdatePointAmbience(s32 trackPosition) {
         if (attenuated != 0) {
             const s32 bearing = Atan2((s32)sourceX, (s32)sourceZ);
             const s32 pan = (s32)(
-                ((u32)g_Camera.view.angleY - 0xC00u + (u32)bearing) &
+                ((u32)camera->angleY - 0xC00u + (u32)bearing) &
                 0xFFFu);
             sine = rsin(pan);
         }

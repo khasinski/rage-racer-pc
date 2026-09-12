@@ -9,7 +9,6 @@
 
 const TrackEventData *g_TrackEventData;
 GameRenderState g_RenderState;
-Camera g_Camera;
 s32 g_RaceSeries;
 s32 g_TrackLength;
 s32 g_MirrorMode;
@@ -18,6 +17,7 @@ static s32 g_Cue;
 static s32 g_LeftVolume;
 static s32 g_RightVolume;
 static s32 g_Sine = 4096;
+static GameCameraState s_camera;
 
 long SquareRoot12(long value) {
     (void)value;
@@ -45,7 +45,7 @@ static int ExpectAmbience(s32 position, s32 cue, s32 left, s32 right) {
     g_Cue = -1;
     g_LeftVolume = -1;
     g_RightVolume = -1;
-    UpdatePointAmbience(position);
+    UpdatePointAmbience(&s_camera, position);
     if (g_Cue != cue || g_LeftVolume != left || g_RightVolume != right) {
         printf("FAIL: position %d produced cue %d (%d, %d), expected %d (%d, %d)\n",
                position, g_Cue, g_LeftVolume, g_RightVolume,
@@ -60,7 +60,7 @@ int main(void) {
 
     memset(&events, 0, sizeof(events));
     memset(&g_RenderState, 0, sizeof(g_RenderState));
-    memset(&g_Camera, 0, sizeof(g_Camera));
+    memset(&s_camera, 0, sizeof(s_camera));
     events.pointAmbienceZones[0] =
         (TrackPointAmbienceZone){100, 200, 20, 20, 10, 20, -1};
     events.pointAmbienceZones[1] =
@@ -107,8 +107,8 @@ int main(void) {
 
     events.pointAmbienceZones[0].sourceX = INT_MAX;
     events.pointAmbienceZones[0].sourceZ = INT_MAX;
-    g_Camera.view.x = INT_MIN;
-    g_Camera.view.z = INT_MIN;
+    s_camera.x = INT_MIN;
+    s_camera.z = INT_MIN;
     if (!ExpectAmbience(850, 2, 80, 80)) {
         return 1;
     }
@@ -121,8 +121,8 @@ int main(void) {
     g_RaceSeries = 0;
     g_MirrorMode = 0;
     g_Sine = 4096;
-    g_Camera.view.x = 0;
-    g_Camera.view.z = 0;
+    s_camera.x = 0;
+    s_camera.z = 0;
     events.pointAmbienceZones[0] = (TrackPointAmbienceZone){
         INT_MAX - 10, INT_MAX, 20, 20, 0, 0, -1};
     if (!ExpectAmbience(INT_MAX - 5, 2, 32, 56)) {

@@ -10,7 +10,6 @@
 
 PlayerCarRuntime g_PlayerCar;
 GameRenderState g_RenderState;
-Camera g_Camera;
 const TrackEventData *g_TrackEventData;
 const GameTrackPoint *g_TrackPoints;
 s32 g_TrackPointCount;
@@ -18,6 +17,7 @@ s32 g_MirrorMode;
 
 static s32 g_LeftVolume;
 static s32 g_RightVolume;
+static GameCameraState s_camera;
 
 void SetPanVoiceTargetVolume(s32 left, s32 right) {
     g_LeftVolume = left;
@@ -27,7 +27,7 @@ void SetPanVoiceTargetVolume(s32 left, s32 right) {
 static int ExpectVolumes(s16 section, s32 left, s32 right) {
     g_LeftVolume = -1;
     g_RightVolume = -1;
-    UpdateTrackEventSound(section);
+    UpdateTrackEventSound(&s_camera, section);
     if (g_LeftVolume != left || g_RightVolume != right) {
         printf("FAIL: section %d produced (%d, %d), expected (%d, %d)\n",
                section, g_LeftVolume, g_RightVolume, left, right);
@@ -43,7 +43,7 @@ int main(void) {
     memset(&events, 0, sizeof(events));
     memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
     memset(&g_RenderState, 0, sizeof(g_RenderState));
-    memset(&g_Camera, 0, sizeof(g_Camera));
+    memset(&s_camera, 0, sizeof(s_camera));
     memset(&trackPoint, 0, sizeof(trackPoint));
 
     events.eventSoundZones[0] = (TrackEventSoundZone){10, 20, 1, 0};
@@ -54,7 +54,7 @@ int main(void) {
     g_TrackPointCount = 1;
     g_PlayerCar.trackPointIndex = 0;
     g_PlayerCar.speed = 12775;
-    g_Camera.view.angleY = 0xC00;
+    s_camera.angleY = 0xC00;
 
     g_PlayerCar.normalizedLateralOffset = 0x200;
     if (!ExpectVolumes(10, 0, 0x200) ||
@@ -102,7 +102,7 @@ int main(void) {
     g_TrackPointCount = 1;
     g_PlayerCar.normalizedLateralOffset = INT_MIN;
     g_PlayerCar.speed = INT_MAX;
-    g_Camera.view.angleY = INT_MIN;
+    s_camera.angleY = INT_MIN;
     if (!ExpectVolumes(30, 990279935, 990279935)) {
         return 1;
     }

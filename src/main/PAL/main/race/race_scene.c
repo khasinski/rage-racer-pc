@@ -471,8 +471,8 @@ static void UpdateActiveRaceScene(void) {
 
     if (g_RacePhase < RACE_PHASE_FINISHED) {
         UpdateZoneAmbience(g_PlayerCar.trackProgress);
-        UpdatePointAmbience(g_PlayerCar.trackProgress);
-        UpdateTrackEventSound(g_PlayerCar.trackSection);
+        UpdatePointAmbience(&g_Camera.view, g_PlayerCar.trackProgress);
+        UpdateTrackEventSound(&g_Camera.view, g_PlayerCar.trackSection);
         TriggerRaceCues();
     } else {
         SetPanVoiceTargetVolume(0, 0);

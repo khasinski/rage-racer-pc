@@ -295,7 +295,7 @@ void DrawScriptedScenery(s32 animate);
 void DrawStartGridScenery(s32 timer);
 void InitTrackScene(void);
 void TriggerRaceCues(void);
-void UpdatePointAmbience(s32 trackPosition);
+void UpdatePointAmbience(const GameCameraState *camera, s32 trackPosition);
 
 /* The static landmark at g_StaticSceneryPos (40594, 6002, 11940), on all four courses;
  * pass 1 for THE EXTREME OVAL's +0x5000 z shift. Model 0x3A or 0x3B depending
@@ -510,7 +510,7 @@ extern s32 g_StartGridSceneryAngle[];
 
 s32 BlendAngle(s32 angleA, s32 angleB, s32 weight);
 extern s32 FindNearestTrackCamera(struct GameCarRuntime *car);
-void UpdateTrackEventSound(s16 trackSection);
+void UpdateTrackEventSound(const GameCameraState *camera, s16 trackSection);
 
 extern Vec4 g_AnimSceneryPos[];
 extern SVec g_ShuttlePathAngles[];

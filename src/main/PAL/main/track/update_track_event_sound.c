@@ -46,7 +46,8 @@ static s32 MultiplyCosine(s32 value, s32 angle) {
         (int64_t)value * rcos(angle) / 4096);
 }
 
-static void CalculateEventSoundVolumes(s32 flags, s32 *left, s32 *right) {
+static void CalculateEventSoundVolumes(const GameCameraState *camera,
+                                       s32 flags, s32 *left, s32 *right) {
     s32 lean;
     s32 angle;
 
@@ -69,7 +70,7 @@ static void CalculateEventSoundVolumes(s32 flags, s32 *left, s32 *right) {
     lean = WrapSigned32(
         (int64_t)lean * g_PlayerCar.speed / EVENT_SOUND_SPEED_SCALE);
     angle = (s32)(
-        ((u32)g_Camera.view.angleY - ANGLE_THREE_QUARTER_TURN +
+        ((u32)camera->angleY - ANGLE_THREE_QUARTER_TURN +
          (u32)TrackPoint(g_PlayerCar.trackPointIndex)->angle) & ANGLE_MASK);
 
     if (lean < 0 && (flags & EVENT_SOUND_LEFT_SIDE) != 0) {
@@ -83,13 +84,14 @@ static void CalculateEventSoundVolumes(s32 flags, s32 *left, s32 *right) {
     }
 }
 
-void UpdateTrackEventSound(s16 trackSection) {
+void UpdateTrackEventSound(const GameCameraState *camera, s16 trackSection) {
     s32 left;
     s32 right;
     s32 outputLeft;
     s32 outputRight;
 
-    CalculateEventSoundVolumes(FindEventSoundFlags(trackSection), &left, &right);
+    CalculateEventSoundVolumes(camera, FindEventSoundFlags(trackSection),
+                               &left, &right);
     outputLeft = g_MirrorMode != 0 ? right : left;
     outputRight = g_MirrorMode != 0 ? left : right;
     SetPanVoiceTargetVolume(outputLeft, outputRight);
