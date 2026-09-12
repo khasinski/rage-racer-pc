@@ -241,7 +241,6 @@ const char *g_NativeCarManufacturerNames[GAME_CAR_COUNT] = {
 };
 char g_SaveTitleSjis[MEMORY_CARD_SAVE_TITLE_STORAGE_SIZE];
 char g_SaveFilePath[MEMORY_CARD_SAVE_PATH_STORAGE_SIZE];
-char g_SaveNameCharset[SAVE_NAME_CHARSET_STORAGE_SIZE];
 static char g_McMessage00[] = "Select file to save.";
 static char g_McMessage01[] = "Select file to load.";
 static char g_McMessage02[] = "No Memory card.";

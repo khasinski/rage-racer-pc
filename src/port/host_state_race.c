@@ -19,12 +19,6 @@
 #include "game/result_screen_types.h"
 #include "game/save_types.h"
 
-u8 g_NameEntryCharset[42] = {
-    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ' ',
-    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
-    'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
-    'Y', 'Z', '.', '-', '!', '?', '@',
-};
 s32 g_PromotionBonusTable[5] = {
     500, 4800, 20000, 100000, 500000
 };

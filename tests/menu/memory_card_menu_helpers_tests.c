@@ -37,7 +37,6 @@ s32 g_SceneId;
 s32 g_SceneTimer;
 u16 g_PadPressed;
 u16 g_PadPressedRepeat;
-char g_SaveNameCharset[SAVE_NAME_CHARSET_STORAGE_SIZE];
 
 typedef struct TextDraw {
     s32 x;
@@ -120,12 +119,7 @@ s32 UploadImageAsset(const GameImageAssetHeaderWord *asset, size_t size) {
 }
 
 static void Reset(void) {
-    s32 i;
-
     memset(s_draws, 0, sizeof(s_draws));
-    for (i = 0; i < SAVE_NAME_CHARACTER_COUNT; i++) {
-        g_SaveNameCharset[i] = (char)('A' + i % 26);
-    }
     s_drawCount = 0;
     s_cueCount = 0;
     s_startEvents = 0;
@@ -156,7 +150,7 @@ static void TestSaveRows(void) {
     DrawMemoryCardSaveRows(1 | (0x10000 << 1), rows);
     CHECK(s_drawCount == 7);
     CHECK(strcmp(s_draws[0].text, "1 /") == 0);
-    CHECK(strcmp(s_draws[1].text, "ABCDEF /") == 0);
+    CHECK(strcmp(s_draws[1].text, "012345 /") == 0);
     CHECK(strcmp(s_draws[2].text, "TIME") == 0);
     CHECK(s_draws[3].x == 0x48 && strcmp(s_draws[3].text, "2 /") == 0);
     CHECK(s_draws[4].x == 0x88 &&

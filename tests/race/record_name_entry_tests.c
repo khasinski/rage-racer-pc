@@ -8,7 +8,6 @@
 
 s32 g_NameEntryChar;
 s32 g_NameEntryCursor;
-u8 g_NameEntryCharset[42];
 u16 g_PadPressed;
 u16 g_PadPressedRepeat;
 
@@ -31,9 +30,6 @@ void PlaySoundCue(s32 cue) {
 static void Reset(u8 *nameCodes) {
     s32 i;
 
-    for (i = 0; i < 42; i++) {
-        g_NameEntryCharset[i] = (u8)('A' + i % 26);
-    }
     for (i = 0; i < 6; i++) {
         nameCodes[i] = i + 1;
     }
@@ -100,11 +96,11 @@ static void TestWritesDriverName(void) {
 
     memset(&record, 0xCC, sizeof(record));
     WriteRecordDriverName(&record, nameCodes);
-    CHECK(memcmp(record.driverName, "ABCDEF\0\0", 8) == 0);
+    CHECK(memcmp(record.driverName, "012345\0\0", 8) == 0);
 
     nameCodes[2] = 0xFF;
     WriteRecordDriverName(&record, nameCodes);
-    CHECK(record.driverName[2] == g_NameEntryCharset[0xB]);
+    CHECK(record.driverName[2] == 'A');
     WriteRecordDriverName(NULL, nameCodes);
     WriteRecordDriverName(&record, NULL);
 }

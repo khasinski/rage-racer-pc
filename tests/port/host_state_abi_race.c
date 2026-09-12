@@ -17,8 +17,6 @@ _Static_assert(sizeof(g_CountdownGlyphTable) == 256,
 _Static_assert(sizeof(g_CountdownGlyphTable[0]) ==
                    START_COUNTDOWN_PATTERN_ROW_COUNT * sizeof(u32),
                "countdown glyph rows changed");
-_Static_assert(sizeof(g_NameEntryCharset) == 42,
-               "record-name charset must not absorb handler addresses");
 _Static_assert(sizeof(g_BestSectorTimes) == 96,
                "g_BestSectorTimes ABI size changed");
 _Static_assert(sizeof(g_BestLapTimes) == 64,

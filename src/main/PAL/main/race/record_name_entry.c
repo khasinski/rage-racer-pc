@@ -11,6 +11,13 @@ enum {
     NAME_ENTRY_DEFAULT_CHARACTER = 0xB,
 };
 
+static const u8 s_nameCharacters[NAME_ENTRY_CHARACTER_COUNT] = {
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ' ',
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
+    'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
+    'Y', 'Z', '.', '-', '!', '?', '@',
+};
+
 static s32 WrapNameEntryCharacter(s32 character, s32 step) {
     int64_t wrapped = ((int64_t)character + step) % NAME_ENTRY_CHARACTER_COUNT;
 
@@ -32,8 +39,7 @@ void WriteRecordDriverName(RaceRecord *record, const u8 *nameCodes) {
         if (code >= NAME_ENTRY_CHARACTER_COUNT) {
             code = NAME_ENTRY_DEFAULT_CHARACTER;
         }
-        record->driverName[character] =
-            g_NameEntryCharset[code];
+        record->driverName[character] = s_nameCharacters[code];
     }
     for (; character < (s32)sizeof(record->driverName); character++) {
         record->driverName[character] = '\0';

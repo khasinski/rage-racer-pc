@@ -65,7 +65,6 @@ typedef struct StaticSceneryState {
     SceneryPlacement highClass;
 } StaticSceneryState;
 
-extern unsigned char g_NameEntryCharset[42];
 extern const s16 g_MenuLightBurstBandX[MENU_LIGHT_BURST_RAY_COUNT];
 extern const s16 g_MenuLightBurstBandY[MENU_LIGHT_BURST_RAY_COUNT];
 extern Rgb g_PaintColorTable[MENU_PAINT_COLOR_COUNT];
@@ -174,7 +173,6 @@ typedef struct HostStateBlob {
 #define BYTES(value) ((const unsigned char *)(value))
 
 static const HostStateBlob s_blobs[] = {
-    {"g_NameEntryCharset", g_NameEntryCharset, 42},
     {"g_MenuLightBurstBandX",
      (const unsigned char *)&g_MenuLightBurstBandX, 66},
     {"g_MenuLightBurstBandY",
@@ -307,7 +305,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the canonical host constants alone. */
-    const unsigned long expected = 1489785190UL;
+    const unsigned long expected = 2975447951UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

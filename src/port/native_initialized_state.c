@@ -75,8 +75,6 @@ char g_SaveFilePath[MEMORY_CARD_SAVE_PATH_STORAGE_SIZE] =
         "bu00:BESCES-00650 RAGE000\0"
         "bu00:BESCES-00650 RAGE001\0"
         "bu00:BESCES-00650 RAGE002";
-char g_SaveNameCharset[SAVE_NAME_CHARSET_STORAGE_SIZE] =
-    "0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ.-!?@";
 s16 g_McMessageColumnX[5] = {0, 0, 0x60, 0x78, 0xB4};
 SoundCueParams g_SoundCueParams[MAIN_SOUND_CUE_COUNT] = {
     {128, 0, 0, 0, 0, 60},

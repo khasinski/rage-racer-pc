@@ -114,7 +114,6 @@ enum {
     SAVE_NAME_CHARACTER_COUNT = 42,
     SAVE_NAME_CHARSET_STORAGE_SIZE = 44,
 };
-extern char g_SaveNameCharset[SAVE_NAME_CHARSET_STORAGE_SIZE];
 extern char g_SaveTitleSjis[MEMORY_CARD_SAVE_TITLE_STORAGE_SIZE];
 
 #endif

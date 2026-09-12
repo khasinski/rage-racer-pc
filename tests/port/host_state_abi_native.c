@@ -8,8 +8,6 @@ _Static_assert(sizeof(g_SaveFilePath) == MEMORY_CARD_SAVE_PATH_STORAGE_SIZE,
                "g_SaveFilePath ABI size changed");
 _Static_assert(sizeof(g_SaveTitleSjis) == MEMORY_CARD_SAVE_TITLE_STORAGE_SIZE,
                "g_SaveTitleSjis ABI size changed");
-_Static_assert(sizeof(g_SaveNameCharset) == 44,
-               "save-name charset ABI size changed");
 _Static_assert(sizeof(g_PropFontCells) == 128,
                "proportional font table ABI changed");
 _Static_assert(sizeof(g_BodyColorPrimary) == 36,

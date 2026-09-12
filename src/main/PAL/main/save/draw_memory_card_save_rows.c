@@ -7,9 +7,12 @@ enum {
     SAVE_ROW_VISIBLE_NAME_LENGTH = 6,
 };
 
+static const char s_saveNameCharacters[] =
+    "0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ.-!?@";
+
 static char DecodeSaveNameCharacter(u8 characterIndex) {
     if (characterIndex >= SAVE_NAME_CHARACTER_COUNT) return '?';
-    return g_SaveNameCharset[characterIndex];
+    return s_saveNameCharacters[characterIndex];
 }
 
 static void DrawSaveRowSlotNumber(char *text, const char *format,
