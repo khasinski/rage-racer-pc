@@ -51,7 +51,6 @@ void AdjustMenuSelectionVertical(s32 *value, s32 min, s32 max);
 void SetMenuBinaryChoiceHorizontal(s32 *value);
 u16 PollMenuConfirmInput(void);
 u16 PollMenuBackInput(void);
-void DrawMenuFadeOverlay(s32 brightness);
 void StartMenuExitFade(void);
 s32 UpdateMemoryCardFade(void);
 s32 AdvanceMemoryCardMenuStartup(void);

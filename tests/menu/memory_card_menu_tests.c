@@ -108,7 +108,11 @@ void ClearSaveHeaderRows(GameSaveHeaderRow *rows) {
 void PlaySoundCue(s32 cue) { s_calls += 100 + cue; }
 void StartMenuExitFade(void) { s_calls += 1000; }
 void SetDispMask(s32 mask) { (void)mask; s_calls++; }
-void DrawMenuFadeOverlay(s32 brightness) { (void)brightness; s_calls++; }
+void DrawFullscreenFadeTile480(s32 brightness, s32 tpage) {
+    (void)brightness;
+    (void)tpage;
+    s_calls++;
+}
 void DrawMemoryCardScreen(s32 page, s32 fromLoad, s32 row, s32 slot) {
     (void)page; (void)fromLoad; (void)row; (void)slot;
     s_calls++;

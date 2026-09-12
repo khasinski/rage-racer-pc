@@ -3,10 +3,6 @@
 #include "game/memcard_internal.h"
 #include "game/menu.h"
 
-void DrawMenuFadeOverlay(s32 level) {
-    DrawFullscreenFadeTile480(level, 0x40);
-}
-
 void StartMenuExitFade(void) {
     StopMemoryCardEvents();
     g_McFadeStep = 8;

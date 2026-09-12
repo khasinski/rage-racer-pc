@@ -8,7 +8,7 @@ s32 UpdateMemoryCardFade(void) {
 
     if (g_SceneTimer == 2) SetDispMask(1);
     if ((u32)g_SceneTimer < 6) {
-        DrawMenuFadeOverlay(g_McFadeLevel);
+        DrawFullscreenFadeTile480(g_McFadeLevel, 0x40);
         return 0;
     }
     step = g_McFadeStep;
@@ -30,7 +30,7 @@ s32 UpdateMemoryCardFade(void) {
             g_SceneId = 2;
         }
     }
-    DrawMenuFadeOverlay(g_McFadeLevel);
+    DrawFullscreenFadeTile480(g_McFadeLevel, 0x40);
     return busy;
 }
 

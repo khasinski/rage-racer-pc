@@ -59,8 +59,6 @@ static s32 s_startEvents;
 static s32 s_stopEvents;
 static s32 s_displayMask;
 static s32 s_displaySetup;
-static s32 s_fadeColor;
-static s32 s_fadeTpage;
 static s32 s_imageUploads;
 static s32 s_failures;
 
@@ -119,10 +117,6 @@ void SetupDisplay480(s32 r, s32 g, s32 b) {
     s_displaySetup++;
 }
 
-void DrawFullscreenFadeTile480(s32 color, s32 tpage) {
-    s_fadeColor = color;
-    s_fadeTpage = tpage;
-}
 
 s32 UploadImageAsset(const GameImageAssetHeaderWord *asset, size_t size) {
     CHECK(asset == GetImageAssetHeaderWords(g_ImageBlockBuffer));
@@ -144,8 +138,6 @@ static void Reset(void) {
     s_stopEvents = 0;
     s_displayMask = -1;
     s_displaySetup = 0;
-    s_fadeColor = -1;
-    s_fadeTpage = -1;
     s_imageUploads = 0;
     g_AssetLoadState = 0;
     g_McFreeBlocks = 1;
@@ -263,9 +255,6 @@ static void TestMenuLifecycle(void) {
 
     StartMenuExitFade();
     CHECK(s_stopEvents == 1 && g_McFadeStep == 8);
-    DrawMenuFadeOverlay(123);
-    CHECK(s_fadeColor == 123 && s_fadeTpage == 0x40);
-
     Reset();
     g_AssetLoadState = 1;
     g_McMenuState = 99;
