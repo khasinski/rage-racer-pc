@@ -18,48 +18,47 @@
 #include "game/result_screen_types.h"
 #include "game/save_types.h"
 
-u8 g_NameEntryCharset[42] __attribute__((aligned(16))) = {
+u8 g_NameEntryCharset[42] = {
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ' ',
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
     'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
     'Y', 'Z', '.', '-', '!', '?', '@',
 };
-char g_TextNowLoading[] __attribute__((aligned(16))) = "NOW LOADING";
-s32 g_PromotionBonusTable[5] __attribute__((aligned(16))) = {
+char g_TextNowLoading[] = "NOW LOADING";
+s32 g_PromotionBonusTable[5] = {
     500, 4800, 20000, 100000, 500000
 };
-ResultPlaceSpriteTable g_ResultPlaceSprites __attribute__((aligned(16))) = {
+ResultPlaceSpriteTable g_ResultPlaceSprites = {
     .places = {
         {0x24, 0x30, 0x00},
         {0x1a, 0x40, 0x30},
         {0x1c, 0x38, 0x70},
     },
 };
-u16 g_ResultPlaceCluts[4] __attribute__((aligned(16))) = {
+u16 g_ResultPlaceCluts[4] = {
     0, 30739, 30926, 30925
 };
-ResultPanelClutTable g_ResultPanelCluts __attribute__((aligned(16))) = {
+ResultPanelClutTable g_ResultPanelCluts = {
     .byPlace = {0, 30803, 30795, 30859},
 };
-ResultPlaceBarTable g_ClassPlaceBarSizes __attribute__((aligned(16))) = {
+ResultPlaceBarTable g_ClassPlaceBarSizes = {
     .places = {
         {0xb8, 0x18},
         {0xb0, 0x1c},
         {0xa8, 0x24},
     },
 };
-char g_ChanceDigits[6][2] __attribute__((aligned(16))) = {
+char g_ChanceDigits[6][2] = {
     {'0', '\0'}, {'1', '\0'}, {'2', '\0'},
     {'3', '\0'}, {'4', '\0'}, {'5', '\0'},
 };
 s32 g_BgmRandomLabelTimer;
 s32 g_BgmRandomPlay;
-s16 g_AttractTitleDelays[4] __attribute__((aligned(16))) = {
+s16 g_AttractTitleDelays[4] = {
     15, 256, 0, 0
 };
 StartCountdownPattern
-    g_CountdownGlyphTable[START_COUNTDOWN_GLYPH_PATTERN_COUNT]
-                         __attribute__((aligned(16))) = {
+    g_CountdownGlyphTable[START_COUNTDOWN_GLYPH_PATTERN_COUNT] = {
     {268435456, 403570816, 406790336, 1004937344,
      805316856, 872820732, 1728013888, 3424632896,
      2550677568, 805847104, 2013806784, 1208772800,
@@ -84,7 +83,7 @@ s32 g_CountdownBoardOffset;
 s32 g_RaceOptionPulseAngle;
 s16 g_RaceOptionScroll0 = -240;
 s16 g_RaceOptionScroll1 = 240;
-char g_RaceOptionMarquee[4][40] __attribute__((aligned(16))) = {
+char g_RaceOptionMarquee[4][40] = {
     {' ', ' ', 'R', 'A', 'G', 'E', ' ', 'R', 'A', 'C', 'E', 'R', ' ', 'G', 'E',
      0, 0, 0, 0, 0, 'T', 'S', ' ', 'Y', 'O', 'U', ' ', 'G', 'O', 'I', 'N', 'G', '!',
      ' ', ' ', 0, 0, 0, 0, 0},
@@ -100,18 +99,18 @@ char g_RaceOptionMarquee[4][40] __attribute__((aligned(16))) = {
 };
 s32 g_LastSectorTime;
 s32 g_SplitDelta;
-s32 g_SectorTimes[3] __attribute__((aligned(16))) = {
+s32 g_SectorTimes[3] = {
     0, 0, 0
 };
 s32 g_RefLapTime;
-SectorReferenceTimes g_RefSectorTimes __attribute__((aligned(16)));
+SectorReferenceTimes g_RefSectorTimes;
 s32 g_RaceTimeRemaining;
 s16 g_SplitSector;
 s16 g_SplitTimer;
 s16 g_SplitSign;
 s32 g_SplitTargetTime;
 s32 g_CameraCarIndex;
-CourseProgressState *g_CourseProgress __attribute__((aligned(16)));
+CourseProgressState *g_CourseProgress;
 s32 g_CameraViewMode;
 s32 g_ReplayBufferWrapped;
 s32 g_BestTotalTimes[2][4][2];
@@ -126,7 +125,7 @@ s16 g_MirrorViewEnabled;
 s32 g_RecordPanelSlide;
 s32 g_BestLapIndex;
 s32 g_BgmChangeDelay;
-ScoreRecord g_ClassRecords[CLASS_RECORD_COUNT] __attribute__((aligned(16)));
+ScoreRecord g_ClassRecords[CLASS_RECORD_COUNT];
 s32 g_ReplayFrameCount;
 s32 g_BgmSelectCdTrack;
 s32 g_TimeRecordInsertRow;
@@ -138,7 +137,7 @@ s32 g_BgmSelectShowUi;
 s32 g_SectorIndex;
 s16 g_RaceOptionCursor;
 s32 g_PrologueStep;
-unsigned char g_RankingNameCodes[8] __attribute__((aligned(16)));
+unsigned char g_RankingNameCodes[8];
 s32 g_ClassPromoted;
 /* [series][course][sector], 2 * 4 * 3 signed 32-bit times.  The following
  * retail labels are interior aliases, not the bounds of this object. */
@@ -173,8 +172,8 @@ s32 g_PrizeCountStep;
 s16 g_RacePhase;
 s32 g_EndingWashLevel;
 s16 g_RivalCueCooldowns[4];
-unsigned char g_BgmShuffleOrder[12] __attribute__((aligned(16)));
+unsigned char g_BgmShuffleOrder[12];
 s32 g_RankingInsertRow;
 s16 g_WrongWayTimer;
 s32 g_ReplayReadCursor;
-unsigned char g_TimeRecordNameCodes[8] __attribute__((aligned(16)));
+unsigned char g_TimeRecordNameCodes[8];

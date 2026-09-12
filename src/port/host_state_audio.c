@@ -13,26 +13,22 @@
 #include "game/audio.h"
 #include "game/sound.h"
 
-s32 g_CarSoundVolumeScales[CAR_SOUND_VOLUME_SCALE_COUNT]
-    __attribute__((aligned(16))) = {
+s32 g_CarSoundVolumeScales[CAR_SOUND_VOLUME_SCALE_COUNT] = {
     20, 21, 22, 23, 21, 22, 23, 22, 23, 26, 27, 28, 29, 30, 50, 52, 54, 50,
     52, 54, 52, 42, 44, 28, 28, 29, 30, 31, 30, 26, 46, 80
 };
-IndexedEffect g_IndexedEffects[AUDIO_INDEXED_EFFECT_COUNT]
-    __attribute__((aligned(16))) = {
+IndexedEffect g_IndexedEffects[AUDIO_INDEXED_EFFECT_COUNT] = {
     {14, 0, 64},
     {14, 0, 64},
     {16, 0, 90},
 };
-SoundModeEntry g_SoundModes[AUDIO_SOUND_MODE_COUNT]
-    __attribute__((aligned(16))) = {
+SoundModeEntry g_SoundModes[AUDIO_SOUND_MODE_COUNT] = {
     {2, 40, {{18, 0}, {18, 1}}},
     {2, 80, {{19, 0}, {19, 1}}},
     {2, 55, {{20, 0}, {20, 0}}},
     {2, 55, {{21, 0}, {21, 0}}},
 };
-s16 g_SoundSlotTone[ENGINE_SOUND_SLOT_COUNT][ENGINE_SOUND_BANK_COUNT]
-    __attribute__((aligned(16))) = {
+s16 g_SoundSlotTone[ENGINE_SOUND_SLOT_COUNT][ENGINE_SOUND_BANK_COUNT] = {
     {1, 1}, {2, 2}, {3, 3}, {5, 4}, {7, 6}, {8, 8},
 };
 s32 g_StereoOutput = 1;
