@@ -62,14 +62,6 @@ typedef struct CarEntry {
 _Static_assert(sizeof(CarEntry) * GAME_CAR_COUNT == 104,
                "saved car table ABI changed");
 
-typedef union CarSlideInput {
-    s32 value;
-    struct {
-        s16 low;
-        s16 high;
-    } halves;
-} CarSlideInput;
-
 typedef union CarTrackHeading {
     s32 value;
     struct {
@@ -84,11 +76,6 @@ typedef struct CarTrackLimits {
     s16 rightContact;
     s16 leftContact;
 } CarTrackLimits;
-
-typedef union CarMotionValue {
-    s16 value;
-    u16 unsignedValue;
-} CarMotionValue;
 
 typedef struct GameCarRuntime {
     s32 x;
@@ -138,7 +125,7 @@ typedef struct GameCarRuntime {
     u16 motionTimer;
     s16 motionMode;
     s16 motionModeTimer;
-    CarMotionValue motionValue;
+    s16 motionValue;
     s16 collisionFlag;
     s16 tiltCounter;
     s16 reserved8E;
@@ -177,7 +164,7 @@ typedef struct GameCarRuntime {
     s16 reservedE8;
     s16 reservedEA;
     s32 targetYaw;
-    CarSlideInput slideInput;
+    s32 slideInput;
     s32 yawRate;
     s32 reservedF8;
     s32 initialLateralOffset;
@@ -587,7 +574,7 @@ typedef struct PlayerCarRuntime {
     u16 motionTimer;
     s16 motionMode;
     s16 motionModeTimer;
-    CarMotionValue motionValue;
+    s16 motionValue;
     s16 collisionFlag;
     s16 tiltCounter;
     s16 reserved8E;

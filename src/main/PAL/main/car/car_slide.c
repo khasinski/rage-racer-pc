@@ -27,14 +27,14 @@ void UpdateCarSlideAngle(GameCarRuntime *car, s32 slideScale) {
     s32 input;
     s32 rate;
 
-    if (car->slideInput.value == 0) {
+    if (car->slideInput == 0) {
         if (car->yawRate == 0 && slideScale != 0) {
             if (car->speed < SLIDE_START_SPEED) {
                 return;
             }
             input = WrapSigned32((int64_t)slideScale * car->speed) /
                     SLIDE_INPUT_SPEED_SCALE;
-            car->slideInput.value = g_RaceSeries != 0
+            car->slideInput = g_RaceSeries != 0
                                         ? WrapSigned32(-(int64_t)input)
                                         : input;
             car->yawRate = 0;
@@ -44,8 +44,8 @@ void UpdateCarSlideAngle(GameCarRuntime *car, s32 slideScale) {
         return;
     }
 
-    input = WrapSigned32((int64_t)car->slideInput.value * 31) / 32;
-    car->slideInput.value = input;
+    input = WrapSigned32((int64_t)car->slideInput * 31) / 32;
+    car->slideInput = input;
     rate = WrapSigned32((int64_t)car->yawRate - input / 2);
     if (rate > MAX_SLIDE_YAW_RATE) {
         rate = MAX_SLIDE_YAW_RATE;

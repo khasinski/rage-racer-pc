@@ -18,7 +18,7 @@ void TraceCarMotion(const char *phase, PlayerCarRuntime *car) {
            "knockback=%d,%d,%d,%d point=%d progress=%d lateral=%d speed=%d",
            phase, g_SceneTimer, car->x, car->z, car->bodyYaw, car->bodyPitch,
            car->bodyRoll, car->bodyRollVelocity, car->motionMode,
-           car->motionModeTimer, car->motionValue.value, car->bodyKickOffset,
+           car->motionModeTimer, car->motionValue, car->bodyKickOffset,
            car->motionX, car->motionZ,
            car->motionActive, car->motionTimer, car->velocityX, car->velocityZ,
            car->trackPointIndex, car->trackProgress, car->trackLateralOffset,

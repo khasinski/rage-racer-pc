@@ -95,7 +95,7 @@ static void RecordCar(const char *label, GameCarRuntime *car) {
 
     state[0] = car->motionMode;
     state[1] = car->motionModeTimer;
-    state[2] = car->motionValue.value;
+    state[2] = car->motionValue;
     state[3] = car->bodyKickOffset;
     state[4] = car->verticalPitch;
     state[5] = car->verticalRoll;
@@ -106,7 +106,7 @@ static void RecordCar(const char *label, GameCarRuntime *car) {
     state[10] = car->verticalMotionTimer;
     state[11] = car->verticalTargetY;
     state[12] = car->y;
-    state[13] = car->slideInput.value;
+    state[13] = car->slideInput;
     state[14] = car->yawRate;
     Record(label, state, 15);
 }
@@ -168,7 +168,7 @@ int main(int argc, char **argv) {
         memset(&s_car, 0, sizeof(s_car));
         s_car.motionMode = (s16)modes[mi];
         s_car.motionModeTimer = (s16)timers[ti];
-        s_car.motionValue.value = amounts[ai_];
+        s_car.motionValue = amounts[ai_];
         s_car.bodyKickOffset = 0x40;
         sprintf(label, "kick mode%d timer%d amount%d", modes[mi], timers[ti],
                 amounts[ai_]);
@@ -220,7 +220,7 @@ int main(int argc, char **argv) {
         char label[112];
 
         memset(&s_car, 0, sizeof(s_car));
-        s_car.slideInput.value = slides[sl];
+        s_car.slideInput = slides[sl];
         s_car.yawRate = (s16)rates[ri];
         s_car.speed = speeds[si];
         g_RaceSeries = series;
@@ -277,7 +277,7 @@ int main(int argc, char **argv) {
     memset(&s_car, 0, sizeof(s_car));
     s_car.motionMode = CAR_BODY_KICK_LANDING;
     s_car.motionModeTimer = INT16_MAX;
-    s_car.motionValue.value = INT16_MAX;
+    s_car.motionValue = INT16_MAX;
     UpdateCarBodyKick(&s_car);
     if (s_car.motionModeTimer != INT16_MAX - 1) {
         puts("FAIL extreme body kick did not advance one frame");
@@ -320,19 +320,19 @@ int main(int argc, char **argv) {
     }
 
     memset(&s_car, 0, sizeof(s_car));
-    s_car.slideInput.value = INT32_MAX;
+    s_car.slideInput = INT32_MAX;
     s_car.yawRate = INT32_MIN;
     UpdateCarSlideAngle(&s_car, 0);
-    if (s_car.slideInput.value != 67108863 || s_car.yawRate != 0x2BC) {
+    if (s_car.slideInput != 67108863 || s_car.yawRate != 0x2BC) {
         puts("FAIL extreme positive slide did not wrap before clamping");
         return 1;
     }
 
     memset(&s_car, 0, sizeof(s_car));
-    s_car.slideInput.value = INT32_MIN;
+    s_car.slideInput = INT32_MIN;
     s_car.yawRate = INT32_MAX;
     UpdateCarSlideAngle(&s_car, 0);
-    if (s_car.slideInput.value != -67108864 || s_car.yawRate != -0x2BC) {
+    if (s_car.slideInput != -67108864 || s_car.yawRate != -0x2BC) {
         puts("FAIL extreme negative slide did not wrap before clamping");
         return 1;
     }
@@ -340,7 +340,7 @@ int main(int argc, char **argv) {
     memset(&s_car, 0, sizeof(s_car));
     s_car.speed = INT32_MAX;
     UpdateCarSlideAngle(&s_car, INT32_MAX);
-    if (s_car.slideInput.value != 0 || s_car.yawRate != 0) {
+    if (s_car.slideInput != 0 || s_car.yawRate != 0) {
         puts("FAIL extreme slide start did not use the wrapped product");
         return 1;
     }

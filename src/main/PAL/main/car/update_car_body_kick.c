@@ -40,7 +40,7 @@ void UpdateCarBodyKick(GameCarRuntime *car) {
 
     car->motionModeTimer--;
     timer = car->motionModeTimer;
-    amplitude = timer * car->motionValue.value / BODY_KICK_AMPLITUDE_SCALE;
+    amplitude = timer * car->motionValue / BODY_KICK_AMPLITUDE_SCALE;
     wave = WrapSigned32(
         (int64_t)rsin(((timer * BODY_KICK_WAVE_CYCLES) <<
                        BODY_KICK_WAVE_ANGLE_SHIFT) /
