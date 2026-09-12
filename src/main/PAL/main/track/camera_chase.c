@@ -110,7 +110,7 @@ static void UpdateChaseYawStep(s32 targetYaw, s32 previousYaw) {
  * distances, settling its yaw towards where the car is pointing rather than
  * snapping to it.
  */
-void CameraViewFromChaseCamera(GameCarRuntime *car, GameViewWork *view) {
+void CameraViewFromChaseCamera(Camera *camera, GameCarRuntime *car, GameViewWork *view) {
     Matrix cameraRotation;
     s32 chaseDistance;
     s32 chaseTargetYaw;
@@ -129,7 +129,7 @@ void CameraViewFromChaseCamera(GameCarRuntime *car, GameViewWork *view) {
     chaseTargetYaw = car->bodyYaw & ANGLE_MASK;
     g_ChaseCarSpeed = car->speed;
     g_ChaseTargetYaw = chaseTargetYaw;
-    if (g_Camera.previousMode == TRACK_CAMERA_CHASE) {
+    if (camera->previousMode == TRACK_CAMERA_CHASE) {
         g_ChaseYawPrev &= ANGLE_MASK;
         g_ChaseYawRampNeg &= ANGLE_MASK;
         g_ChaseYawRampPos &= ANGLE_MASK;
@@ -176,7 +176,7 @@ void CameraViewFromChaseCamera(GameCarRuntime *car, GameViewWork *view) {
      * still behaves that way. */
     eyeOffset.y = focusOffset.y;
     eyeOffset.z = focusOffset.z;
-    switch (g_Camera.chasePreset) {
+    switch (camera->chasePreset) {
     case 0:
         eyeOffset.y = 0x3A;
         eyeOffset.z = 0x118;
@@ -203,11 +203,11 @@ void CameraViewFromChaseCamera(GameCarRuntime *car, GameViewWork *view) {
     view->angleY += ChaseCameraYawOffset(car->steeringAngle);
     view->angleZ = CameraSubtractWord(car->bodyRoll,
                                       car->bodyRollVelocity);
-    if (g_Camera.chasePreset == 0) {
+    if (camera->chasePreset == 0) {
         pitchOffset = view->angleX - 0x90;
     } else {
         pitchOffset = view->angleX - 0x60;
     }
     view->angleX = pitchOffset;
-    g_Camera.previousMode = TRACK_CAMERA_CHASE;
+    camera->previousMode = TRACK_CAMERA_CHASE;
 }

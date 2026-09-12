@@ -77,7 +77,7 @@ void DrawControllerSetupScene(s32 showButtonOverlays) {
     } else {
         g_Camera.view.y = -0x40;
     }
-    SetCameraRotMatrix();
+    SetCameraRotMatrix(&g_Camera.view);
 
     if (g_PadType == PAD_TYPE_DIGITAL) {
         BuildControllerPartTransform(&partTransform, -0xD0);

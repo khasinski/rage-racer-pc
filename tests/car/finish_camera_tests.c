@@ -50,7 +50,7 @@ s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
     return 0;
 }
 
-void SetCameraRotMatrix(void) {}
+void SetCameraRotMatrix(const GameCameraState *camera) { (void)camera;}
 void SelectModelBank(s32 bank) {
     if (bank != 0) puts("FAIL: finish camera selected wrong model bank");
 }

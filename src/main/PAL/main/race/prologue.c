@@ -191,7 +191,7 @@ static void UpdatePrologue(void) {
 
         RequestTrackTexturePage(g_Cars[g_CameraCarIndex].trackSection);
 
-        UpdateCamera(g_Camera.mode,
+        UpdateCamera(&g_Camera, g_Camera.mode,
                      &g_Cars[g_CameraCarIndex]);
         UpdateEnvironment();
     }

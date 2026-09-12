@@ -167,11 +167,11 @@ void BuildRotMatrixZ(void *mtx, s32 angle);
 void BuildRotMatrixY(void *mtx, s32 angle);
 void BuildRotMatrixX(void *mtx, s32 angle);
 /*
- * Composes Y*X*Z from the render state's camera angles into its matrix and
+ * Composes Y*X*Z from the supplied camera angles into the render matrix and
  * installs it with SetRotMatrix;
  * g_MirrorViewMatrix gets the same matrix pre-multiplied by a 180-degree Y turn.
  */
-void SetCameraRotMatrix(void);
+void SetCameraRotMatrix(const GameCameraState *camera);
 /*
  * Integer atan2 in 12-bit angle units
  * (0x400 = 90 degrees). Argument order is (x, y), the reverse of C's atan2:
@@ -194,8 +194,8 @@ void DrawFullscreenFadeTile(s32 color, s32 tpage);
 void DrawFullscreenFadeTile480(s32 color, s32 tpage);
 void RequestTrackTexturePage(s32 trackSection);
 s32 TrackTexturePageForSection(s32 trackSection);
-void UpdateCamera(CameraViewMode cameraModeSel, GameCarRuntime *car);
-void UpdateLookBehindCamera(GameCarRuntime *car);
+void UpdateCamera(Camera *camera, CameraViewMode mode, GameCarRuntime *car);
+void UpdateLookBehindCamera(Camera *camera, GameCarRuntime *car);
 void DrawPlayerCarModel(GameCarRuntime *object);
 void DrawTimeValue(s32 x, s32 y, s32 value, s32 color, s32 divisor);
 

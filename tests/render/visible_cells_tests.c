@@ -107,7 +107,7 @@ static int TestVisibleCellOutputBounds(void) {
     g_VisibleCellMask = mask.values;
     g_VisibleCellList = list.values;
 
-    /* An out-of-grid camera returns immediately after clearing both outputs. */
+    /* A frame always starts by clearing both outputs. */
     g_Camera.view.x = -2048;
     BuildVisibleCells(0, 1);
 
@@ -139,6 +139,35 @@ static int TestVisibleCellOutputBounds(void) {
         CHECK(list.values[index].cellIndex == -1);
     }
 
+    return 0;
+}
+
+static int TestNegativeCameraCoordinateSelectsWrappedCell(void) {
+    u32 visibilityMask[TERRAIN_CELL_GRID_SIZE] = {0};
+    VisibleTerrainCell visibleCells[VISIBLE_CELL_COUNT];
+    u16 terrainGrid[TERRAIN_CELL_GRID_SIZE * TERRAIN_CELL_GRID_SIZE] = {0};
+    CellVisibilityRow cellVisibility[TERRAIN_CELL_GRID_SIZE] = {{0}};
+    const s32 cameraZ = -12266;
+    const s32 cellZ = (u16)cameraZ / 2048;
+
+    memset(visibleCells, 0, sizeof(visibleCells));
+    terrainGrid[(TERRAIN_CELL_GRID_SIZE - 1 - cellZ) *
+                    TERRAIN_CELL_GRID_SIZE] = 7;
+    cellVisibility[cellZ][0] = 1;
+    g_VisibleCellMask = visibilityMask;
+    g_VisibleCellList = visibleCells;
+    g_TerrainCellGrid = terrainGrid;
+    g_CellVisibilityTable = cellVisibility;
+    memset(&g_RenderState, 0, sizeof(g_RenderState));
+    memset(&g_Camera, 0, sizeof(g_Camera));
+    g_Camera.view.z = cameraZ;
+
+    BuildVisibleCells(INT_MIN, INT_MAX);
+
+    CHECK(visibilityMask[cellZ] == 1);
+    CHECK(visibleCells[0].z ==
+          (cellZ * 2048 - ((u16)cameraZ - 1024)) * 4);
+    CHECK(visibleCells[0].cellIndex == 7);
     return 0;
 }
 
@@ -244,6 +273,7 @@ static int TestMissingCourseObjects(void) {
 int main(void) {
     if (TestVisibleCellOutputBounds() != 0 ||
         TestMissingVisibleCellOutput() != 0 ||
+        TestNegativeCameraCoordinateSelectsWrappedCell() != 0 ||
         TestCameraHeightWrapsLikeThePs1() != 0 ||
         TestCourseObjectFlags() != 0 || TestMissingCourseObjects() != 0) {
         return 1;

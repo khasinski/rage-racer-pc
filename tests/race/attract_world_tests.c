@@ -44,7 +44,8 @@ void RequestTrackTexturePage(s32 trackSection) {
     s_textureSection = trackSection;
     RecordStep(STEP_TEXTURE);
 }
-void UpdateCamera(CameraViewMode cameraMode, GameCarRuntime *car) {
+void UpdateCamera(Camera *camera, CameraViewMode cameraMode, GameCarRuntime *car) {
+    assert(camera == &g_Camera);
     assert(cameraMode == g_Camera.mode);
     s_cameraObject = car;
     RecordStep(STEP_CAMERA);

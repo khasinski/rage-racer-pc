@@ -41,7 +41,7 @@ static void InitMenuCamera(void) {
     g_Camera.view.angleX = 0x100;
     g_Camera.view.angleY = 0;
     g_Camera.view.angleZ = 0;
-    SetCameraRotMatrix();
+    SetCameraRotMatrix(&g_Camera.view);
     ScaleMatrix(&g_RenderState.geometry.matrix, &g_MenuViewScale);
 }
 

@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
-void UpdateCamera(CameraViewMode cameraModeSel, GameCarRuntime *car);
+void UpdateCamera(Camera *camera, CameraViewMode mode, GameCarRuntime *car);
 
 /*
  * The globals the camera reads are the game's own, out of host_state.c, so a
@@ -107,7 +107,7 @@ static void Run(CameraViewMode selector, s32 *view) {
     g_Camera.previousMode = 0;
     memset(&g_RenderState, 0, sizeof(g_RenderState));
     memset(&g_Camera.view, 0, sizeof(g_Camera.view));
-    UpdateCamera(selector, &car);
+    UpdateCamera(&g_Camera, selector, &car);
     view[0] = g_Camera.view.x;
     view[1] = g_Camera.view.y;
     view[2] = g_Camera.view.z;
@@ -139,7 +139,7 @@ static s32 ChaseAdvance(s32 yawError, s32 speed) {
     g_ChaseYawRampNeg = 0;
     g_ChaseYawLag = 0;
     g_Camera.chasePreset = 0;
-    UpdateCamera(1, &car);
+    UpdateCamera(&g_Camera, 1, &car);
     return ((g_ChaseYaw - startYaw) + 0x800) % 0x1000 - 0x800;
 }
 
@@ -155,6 +155,29 @@ int main(void) {
         static const s32 wanted[6] = {16384, 4068, 32772, 64, 768, 96};
         Run(0, view);
         Check("mode 0, car block", view, wanted);
+    }
+
+    /* Camera updates write only the instance supplied by the scene. */
+    {
+        static const s32 wanted[6] = {16384, 4068, 32772, 64, 768, 96};
+        Camera camera = {0};
+        GameCarRuntime car;
+
+        PlaceCar(&car);
+        s_nearestCamera = 0;
+        g_Camera.view.x = 12345;
+        UpdateCamera(&camera, CAMERA_VIEW_CAR, &car);
+        view[0] = camera.view.x;
+        view[1] = camera.view.y;
+        view[2] = camera.view.z;
+        view[3] = camera.view.angleX;
+        view[4] = camera.view.angleY;
+        view[5] = camera.view.angleZ;
+        Check("independent camera instance", view, wanted);
+        if (g_Camera.view.x != 12345) {
+            puts("FAIL independent camera changed the game camera");
+            s_failures++;
+        }
     }
 
     /* Unknown authored modes use the same stable fallback as a missing
@@ -176,7 +199,7 @@ int main(void) {
         s_nearestCamera = -1;
         memset(&g_RenderState, 0, sizeof(g_RenderState));
     memset(&g_Camera, 0, sizeof(g_Camera));
-        UpdateCamera(2, &car);
+        UpdateCamera(&g_Camera, 2, &car);
         view[0] = g_Camera.view.x;
         view[1] = g_Camera.view.y;
         view[2] = g_Camera.view.z;
@@ -323,7 +346,7 @@ int main(void) {
         GameViewWork look = {0};
 
         PlaceCar(&car);
-        CameraViewFromLookBehind(&car, &look);
+        CameraViewFromLookBehind(&g_Camera, &car, &look);
         if (look.x == car.x && look.z == car.z) {
             puts("FAIL look-behind eye did not move ahead of the car");
             s_failures++;
@@ -347,7 +370,7 @@ int main(void) {
         memset(&s_nodes[0], 0, sizeof(s_nodes[0]));
         s_nodes[0].data.world.x = INT_MAX;
         s_nodes[0].offset[2] = -0x32;
-        CameraViewFromBlendedNode(&car, &extremeView, 0);
+        CameraViewFromBlendedNode(&g_Camera, &car, &extremeView, 0);
         if (extremeView.x != INT_MAX || extremeView.angleX != 0 ||
             extremeView.angleY != 0x400) {
             printf("FAIL wrapped node aim: x=%d angles=(%d,%d)\n",
@@ -366,7 +389,7 @@ int main(void) {
         memset(g_CamPathAngleDelta, 0, sizeof(g_CamPathAngleDelta));
         g_CamPathOffsetStart[0] = INT_MAX;
         g_CamPathOffsetDelta[0] = INT_MAX;
-        CameraViewFromCamPath(&car, &extremeView, 0, 0);
+        CameraViewFromCamPath(&g_Camera, &car, &extremeView, 0, 0);
         if (g_CamPathOffset[0] != INT_MAX) {
             printf("FAIL wrapped path interpolation: %d\n",
                    g_CamPathOffset[0]);
@@ -379,7 +402,7 @@ int main(void) {
         car.z = INT_MAX;
         car.bodyPitch = INT_MAX;
         car.tiltCounter = 1;
-        CameraViewFromCarBlock(&car, &extremeView);
+        CameraViewFromCarBlock(&g_Camera, &car, &extremeView);
         if (extremeView.angleX != INT_MIN) {
             printf("FAIL wrapped car camera pitch: %d\n",
                    extremeView.angleX);
@@ -388,7 +411,7 @@ int main(void) {
 
         g_Camera.orbitYaw = INT_MIN;
         g_Camera.orbitDistance = INT_MAX;
-        CameraViewFromOrbit(&car, &extremeView);
+        CameraViewFromOrbit(&g_Camera, &car, &extremeView);
         if (g_Camera.previousMode != TRACK_CAMERA_ORBIT) {
             puts("FAIL extreme orbit camera did not complete");
             s_failures++;

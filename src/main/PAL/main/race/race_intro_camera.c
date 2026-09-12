@@ -11,13 +11,13 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
     LVec delta;
 
     if (mode >= 90) {
-        UpdateCamera(CAMERA_VIEW_CAR,
+        UpdateCamera(&g_Camera, CAMERA_VIEW_CAR,
                      AsRivalCar(car));
         return;
     }
     if (g_RaceIntroCameraScript == NULL ||
         (mode >= 2 && g_RaceIntroCameraCursor == NULL)) {
-        UpdateCamera(CAMERA_VIEW_CAR,
+        UpdateCamera(&g_Camera, CAMERA_VIEW_CAR,
                      AsRivalCar(car));
         return;
     }
@@ -101,7 +101,7 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
                                 DistanceXZ(delta.x, delta.z) >> 6);
         viewWork.angleZ = 0;
         StoreViewWork(&g_Camera.view, &viewWork);
-        SetCameraRotMatrix();
+        SetCameraRotMatrix(&g_Camera.view);
         SelectModelBank(0);
         DrawPlayerCarModel(AsRivalCar(car));
     } else {
@@ -116,6 +116,6 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
         viewWork.angleZ = car->bodyRoll;
         viewWork.depth = car->bodyRotationW;
         StoreViewWork(&g_Camera.view, &viewWork);
-        SetCameraRotMatrix();
+        SetCameraRotMatrix(&g_Camera.view);
     }
 }

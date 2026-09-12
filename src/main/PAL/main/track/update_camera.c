@@ -6,7 +6,7 @@
  * Mode 0: the camera sits where the car's own block says, lifted a fixed
  * amount along the car's up axis.
  */
-void CameraViewFromCarBlock(GameCarRuntime *car, GameViewWork *view) {
+void CameraViewFromCarBlock(Camera *camera, GameCarRuntime *car, GameViewWork *view) {
     SVec cameraLift = {0, -0x1C0, 0, 0};
     LVec cameraLiftWorld;
     Matrix matrixWork;
@@ -20,10 +20,10 @@ void CameraViewFromCarBlock(GameCarRuntime *car, GameViewWork *view) {
     view->y = CameraAddWord(view->y, cameraLiftWorld.y >> 4);
     view->z = CameraAddWord(view->z, cameraLiftWorld.z >> 4);
     view->angleX = CameraAddWord(view->angleX, car->tiltCounter);
-    g_Camera.previousMode = TRACK_CAMERA_CAR;
+    camera->previousMode = TRACK_CAMERA_CAR;
 }
 
-static void CameraViewFromOrbitPosition(GameCarRuntime *car,
+static void CameraViewFromOrbitPosition(Camera *camera, GameCarRuntime *car,
                                         GameViewWork *view, s32 yaw,
                                         s32 distance, s32 height) {
     Matrix cameraRotation;
@@ -56,29 +56,29 @@ static void CameraViewFromOrbitPosition(GameCarRuntime *car,
     view->angleX = 0x400 - (Atan2(eyeWorld.y, distance) & ANGLE_MASK);
     view->angleY = 0x400 - (Atan2(eyeWorld.x, eyeWorld.z) & ANGLE_MASK);
     view->angleZ = car->bodyRoll;
-    g_Camera.previousMode = TRACK_CAMERA_ORBIT;
+    camera->previousMode = TRACK_CAMERA_ORBIT;
     view->x = CameraSubtractWord(view->x, eyeWorld.x);
     view->y = CameraSubtractWord(
         CameraSubtractWord(view->y, 0x28), eyeWorld.y);
     view->z = CameraSubtractWord(view->z, eyeWorld.z);
 }
 
-void CameraViewFromOrbit(GameCarRuntime *car, GameViewWork *view) {
-    CameraViewFromOrbitPosition(car, view, g_Camera.orbitYaw,
-                                g_Camera.orbitDistance, 0);
+void CameraViewFromOrbit(Camera *camera, GameCarRuntime *car, GameViewWork *view) {
+    CameraViewFromOrbitPosition(camera, car, view, camera->orbitYaw,
+                                camera->orbitDistance, 0);
 }
 
-void CameraViewFromLookBehind(GameCarRuntime *car, GameViewWork *view) {
+void CameraViewFromLookBehind(Camera *camera, GameCarRuntime *car, GameViewWork *view) {
     enum {
         LOOK_BEHIND_YAW = 0x800,
         LOOK_BEHIND_DISTANCE = 0xE0,
         LOOK_BEHIND_HEIGHT = 0x50,
     };
-    CameraViewFromOrbitPosition(car, view, LOOK_BEHIND_YAW,
+    CameraViewFromOrbitPosition(camera, car, view, LOOK_BEHIND_YAW,
                                 LOOK_BEHIND_DISTANCE, LOOK_BEHIND_HEIGHT);
 }
 
-void UpdateCamera(CameraViewMode cameraModeSel, GameCarRuntime *car) {
+void UpdateCamera(Camera *camera, CameraViewMode cameraModeSel, GameCarRuntime *car) {
     GameViewWork viewWork;
     GameViewWork *view;
     s32 cameraMode;
@@ -87,10 +87,10 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameCarRuntime *car) {
     u8 nodeChanged;
 
     cameraNodeIndex = FindNearestTrackCamera(car);
-    LoadViewWork(&viewWork, &g_Camera.view);
+    LoadViewWork(&viewWork, &camera->view);
     view = &viewWork;
-    previousNodeIndex = g_Camera.node;
-    g_Camera.node = cameraNodeIndex;
+    previousNodeIndex = camera->node;
+    camera->node = cameraNodeIndex;
     nodeChanged = cameraNodeIndex != previousNodeIndex;
     if (cameraModeSel < CAMERA_VIEW_TRACK) {
         cameraMode = cameraModeSel;
@@ -102,26 +102,26 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameCarRuntime *car) {
     switch (cameraMode) {
     default:
     case TRACK_CAMERA_CAR:
-        CameraViewFromCarBlock(car, view);
+        CameraViewFromCarBlock(camera, car, view);
         break;
     case TRACK_CAMERA_CHASE:
-        CameraViewFromChaseCamera(car, view);
+        CameraViewFromChaseCamera(camera, car, view);
         break;
     case TRACK_CAMERA_BLENDED_NODE:
-        CameraViewFromBlendedNode(car, view, cameraNodeIndex);
+        CameraViewFromBlendedNode(camera, car, view, cameraNodeIndex);
         break;
     case TRACK_CAMERA_PATH:
-        CameraViewFromCamPath(car, view, cameraNodeIndex, nodeChanged);
+        CameraViewFromCamPath(camera, car, view, cameraNodeIndex, nodeChanged);
         break;
     case TRACK_CAMERA_SLIDING_NODE:
-        CameraViewFromSlidingNode(car, view, cameraNodeIndex, nodeChanged);
+        CameraViewFromSlidingNode(camera, car, view, cameraNodeIndex, nodeChanged);
         break;
     case TRACK_CAMERA_ORBIT:
-        CameraViewFromOrbit(car, view);
+        CameraViewFromOrbit(camera, car, view);
         break;
     }
-    StoreViewWork(&g_Camera.view, &viewWork);
-    SetCameraRotMatrix();
+    StoreViewWork(&camera->view, &viewWork);
+    SetCameraRotMatrix(&camera->view);
     if (cameraModeSel > 0 &&
         car == AsRivalCar(&g_PlayerCar)) {
         SelectModelBank(0);
@@ -129,13 +129,13 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameCarRuntime *car) {
     }
 }
 
-void UpdateLookBehindCamera(GameCarRuntime *car) {
+void UpdateLookBehindCamera(Camera *camera, GameCarRuntime *car) {
     GameViewWork viewWork;
 
-    LoadViewWork(&viewWork, &g_Camera.view);
-    CameraViewFromLookBehind(car, &viewWork);
-    StoreViewWork(&g_Camera.view, &viewWork);
-    SetCameraRotMatrix();
+    LoadViewWork(&viewWork, &camera->view);
+    CameraViewFromLookBehind(camera, car, &viewWork);
+    StoreViewWork(&camera->view, &viewWork);
+    SetCameraRotMatrix(&camera->view);
     SelectModelBank(0);
     DrawPlayerCarModel(car);
 }

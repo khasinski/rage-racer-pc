@@ -14,6 +14,7 @@ PlayerCarRuntime g_PlayerCar;
 GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
 Replay g_Replay;
 GameRenderState g_RenderState;
+Camera g_Camera;
 static GameFrameContext s_FrameContext;
 GameFrameContext *g_DrawBuffer = &s_FrameContext;
 
@@ -56,7 +57,8 @@ void ApplyReplayFrame(s32 subframe, GameCarRuntime *player,
     s_AppliedCursor = subframe;
 }
 void UpdateReplayCars(void) { s_CarUpdates++; }
-void UpdateCamera(CameraViewMode mode, GameCarRuntime *car) {
+void UpdateCamera(Camera *camera, CameraViewMode mode, GameCarRuntime *car) {
+    assert(camera == &g_Camera);
     assert(mode == CAMERA_VIEW_TRACK);
     assert(car == AsRivalCar(&g_PlayerCar));
     s_CameraUpdates++;

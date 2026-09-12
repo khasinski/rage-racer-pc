@@ -53,7 +53,7 @@ void UpdateReplayScene(void) {
             g_Replay.read, g_Replay.count);
         UpdateReplayCars();
     }
-    UpdateCamera(CAMERA_VIEW_TRACK,
+    UpdateCamera(&g_Camera, CAMERA_VIEW_TRACK,
                  AsRivalCar(&g_PlayerCar));
     g_RenderState.geometry.envMode4 = g_IsEnvironmentMode4;
     DrawTerrainCellsWide();

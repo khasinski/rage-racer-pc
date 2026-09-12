@@ -313,7 +313,7 @@ static void UpdatePausedRaceScene(void) {
         }
     }
 
-    UpdateCamera(g_Camera.mode,
+    UpdateCamera(&g_Camera, g_Camera.mode,
                  AsRivalCar(&g_PlayerCar));
     RequestTrackTexturePage(g_PlayerCar.trackSection);
     PortProfileFramePhase("scene_cars");
@@ -424,9 +424,9 @@ static void UpdateActiveRaceScene(void) {
             AsRivalCar(&g_PlayerCar);
         if (RaceLookBehindActive(g_PadHeld, g_RacePhase,
                                  raceView.cameraView)) {
-            UpdateLookBehindCamera(player);
+            UpdateLookBehindCamera(&g_Camera, player);
         } else {
-            UpdateCamera(raceView.cameraView, player);
+            UpdateCamera(&g_Camera, raceView.cameraView, player);
         }
     }
 

@@ -64,7 +64,7 @@ static void AimCameraAt(GameViewWork *view, s32 targetX, s32 targetY, s32 target
  * Mode 2: a camera watching the car from a fixed spot beside the track,
  * dragged towards it by the node's own blend.
  */
-void CameraViewFromBlendedNode(GameCarRuntime *car, GameViewWork *view,
+void CameraViewFromBlendedNode(Camera *camera, GameCarRuntime *car, GameViewWork *view,
                                 s32 cameraNodeIndex) {
     s32 blend;
     const GameTrackCameraNode *chaseNode;
@@ -100,7 +100,7 @@ void CameraViewFromBlendedNode(GameCarRuntime *car, GameViewWork *view,
     view->y = BlendCameraCoordinate(view->y, focusY, blend, 10000);
     view->z = BlendCameraCoordinate(view->z, focusZ, blend, 10000);
     AimCameraAt(view, focusX, focusY, focusZ);
-    g_Camera.previousMode = TRACK_CAMERA_BLENDED_NODE;
+    camera->previousMode = TRACK_CAMERA_BLENDED_NODE;
 }
 
 /*
@@ -108,7 +108,7 @@ void CameraViewFromBlendedNode(GameCarRuntime *car, GameViewWork *view,
  * from one node to the next across the node's duration, and the roll comes
  * off the finished view rather than off the car.
  */
-void CameraViewFromCamPath(GameCarRuntime *car, GameViewWork *view,
+void CameraViewFromCamPath(Camera *camera, GameCarRuntime *car, GameViewWork *view,
                             s32 cameraNodeIndex, int nodeChanged) {
     s32 camPathAngle;
     s32 camPathOffset;
@@ -138,10 +138,10 @@ void CameraViewFromCamPath(GameCarRuntime *car, GameViewWork *view,
     Vec4 rollWork = {0};
 
     CameraLoadViewPositionFromCar(view, car);
-    if (nodeChanged || g_Camera.previousMode != TRACK_CAMERA_PATH) {
+    if (nodeChanged || camera->previousMode != TRACK_CAMERA_PATH) {
         g_CamPathNode = cameraNodeIndex;
         g_CamPathFrame = 0;
-        if (g_Camera.previousMode == TRACK_CAMERA_PATH) {
+        if (camera->previousMode == TRACK_CAMERA_PATH) {
             g_CamPathOffsetStart[0] = g_CamPathOffset[0];
             g_CamPathOffsetStart[1] = g_CamPathOffset[1];
             g_CamPathOffsetStart[2] = g_CamPathOffset[2];
@@ -252,14 +252,14 @@ void CameraViewFromCamPath(GameCarRuntime *car, GameViewWork *view,
     TransposeMatrix(&matrixWork, &cameraRotation);
     ApplyMatrixLV(&cameraRotation, AsWords(&rollWork), AsWords(&rollProbe));
     view->angleZ = 0x400 - (Atan2(rollProbe.y, rollProbe.x) & ANGLE_MASK);
-    g_Camera.previousMode = TRACK_CAMERA_PATH;
+    camera->previousMode = TRACK_CAMERA_PATH;
 }
 
 /*
  * Mode 4: a node that slides to its own position across its duration, then
  * looks back at the car.
  */
-void CameraViewFromSlidingNode(GameCarRuntime *car, GameViewWork *view,
+void CameraViewFromSlidingNode(Camera *camera, GameCarRuntime *car, GameViewWork *view,
                                 s32 cameraNodeIndex, int nodeChanged) {
     Matrix inverseObjectRotation;
     Vec4 nodeOffset = {0};
@@ -273,7 +273,7 @@ void CameraViewFromSlidingNode(GameCarRuntime *car, GameViewWork *view,
     view->y = orbitNode->data.world.y;
     view->z = orbitNode->data.world.z;
     view->parameter = orbitNode->data.orientation.distance;
-    if (nodeChanged || g_Camera.previousMode != TRACK_CAMERA_SLIDING_NODE) {
+    if (nodeChanged || camera->previousMode != TRACK_CAMERA_SLIDING_NODE) {
         g_CamPathFrame = 0;
     } else if (g_CamPathFrame <
                CameraNodeDuration(&g_TrackCameras[cameraNodeIndex])) {
@@ -297,5 +297,5 @@ void CameraViewFromSlidingNode(GameCarRuntime *car, GameViewWork *view,
     AimCameraAt(view, CameraAddWord(car->x, nodeWorld.x),
                 CameraAddWord(car->y, nodeWorld.y),
                 CameraAddWord(car->z, nodeWorld.z));
-    g_Camera.previousMode = TRACK_CAMERA_SLIDING_NODE;
+    camera->previousMode = TRACK_CAMERA_SLIDING_NODE;
 }

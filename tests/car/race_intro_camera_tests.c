@@ -31,7 +31,7 @@ s32 Atan2(s32 x, s32 y) {
     return ++s_atanCalls * 100;
 }
 
-void SetCameraRotMatrix(void) { s_matrixCalls++; }
+void SetCameraRotMatrix(const GameCameraState *camera) { (void)camera; s_matrixCalls++; }
 
 void SelectModelBank(s32 index) { s_selectedBank = index; }
 
@@ -46,7 +46,8 @@ void DrawFullscreenFadeTile(s32 color, s32 tpage) {
     s_fadeColor = color;
 }
 
-void UpdateCamera(CameraViewMode mode, GameCarRuntime *car) {
+void UpdateCamera(Camera *camera, CameraViewMode mode, GameCarRuntime *car) {
+    (void)camera;
     (void)car;
     if (mode == CAMERA_VIEW_CAR) {
         s_updateCameraCalls++;

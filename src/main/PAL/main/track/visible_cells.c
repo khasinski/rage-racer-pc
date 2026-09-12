@@ -47,22 +47,18 @@ static s32 NegatedTimesFour(s32 value) {
 }
 
 void BuildVisibleCells(s32 near, s32 far) {
+    const s32 cameraX = (u16)g_Camera.view.x;
+    const s32 cameraZ = (u16)g_Camera.view.z;
     const s32 direction =
         (g_Camera.view.angleY / VIEW_ANGLE_PER_SCAN_DIRECTION) & 0x1F;
-    const s32 cameraCellX =
-        g_Camera.view.x / TERRAIN_CELL_SIZE;
-    const s32 cameraCellZ =
-        g_Camera.view.z / TERRAIN_CELL_SIZE;
+    const s32 cameraCellX = cameraX / TERRAIN_CELL_SIZE;
+    const s32 cameraCellZ = cameraZ / TERRAIN_CELL_SIZE;
     u32 cameraRegion;
     s32 index;
 
     ClearVisibleCellOutput();
     if (g_VisibleCellMask == NULL || g_VisibleCellList == NULL ||
         g_TerrainCellGrid == NULL || g_CellVisibilityTable == NULL) {
-        return;
-    }
-    if ((u32)cameraCellX >= TERRAIN_CELL_GRID_SIZE ||
-        (u32)cameraCellZ >= TERRAIN_CELL_GRID_SIZE) {
         return;
     }
     cameraRegion = GetCellRegion(cameraCellX, cameraCellZ);
@@ -101,12 +97,12 @@ void BuildVisibleCells(s32 near, s32 far) {
          * left-shift-of-negative behaviour. */
         worldOffset.x =
             (cellX * TERRAIN_CELL_SIZE -
-             (g_Camera.view.x - TERRAIN_CELL_HALF_SIZE)) *
+             (cameraX - TERRAIN_CELL_HALF_SIZE)) *
             4;
         worldOffset.y = NegatedTimesFour(g_Camera.view.y);
         worldOffset.z =
             (cellZ * TERRAIN_CELL_SIZE -
-             (g_Camera.view.z - TERRAIN_CELL_HALF_SIZE)) *
+             (cameraZ - TERRAIN_CELL_HALF_SIZE)) *
             4;
         ApplyMatrixLV(&g_RenderState.geometry.matrix, AsWords(&worldOffset),
                       AsWords(&projected));
