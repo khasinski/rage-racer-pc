@@ -73,35 +73,6 @@ typedef struct GameRenderState {
 
 extern GameRenderState g_RenderState;
 
-typedef union GameViewCoordinate {
-    s32 value;
-    struct {
-        u16 low;
-        u16 high;
-    } half;
-} GameViewCoordinate;
-
-typedef struct GameViewCoordinates {
-    GameViewCoordinate x;
-    GameViewCoordinate y;
-    GameViewCoordinate z;
-} GameViewCoordinates;
-
-typedef union GameViewPosition {
-    GameViewCoordinates components;
-    LVec vector;
-} GameViewPosition;
-
-typedef struct GameViewState {
-    GameViewPosition position;
-    /* Fourth camera-source word. Its meaning belongs to the active source:
-     * car position W, node blend/distance, or an intro key mode. */
-    s32 parameter;
-    s32 angleX;
-    s32 angleY;
-    s32 angleZ;
-} GameViewState;
-
 /*
  * A copy of the camera the camera code works in before storing it back. It
  * exists because the routines that build a view read the current one while
@@ -179,21 +150,6 @@ extern CarTrackWork g_CarTrackWork;
 
 /* Ordering table the emitters link finished packets into. */
 #define RENDER_OT_BASE g_RenderState.draw.orderingTable
-
-/* View transform consumed by the model render path. SetCameraRotMatrix builds
- * the matrix at 0x28 from the three angles; the position words are the camera
- * translation passed to SetGteObjectMatrix. */
-/*
- * The camera words are also read as one block, so the two spellings have to
- * agree on where each word sits. They are checked rather than trusted.
- */
-#define RENDER_VIEW_STATE   ((GameViewState *)&g_RenderState.camera.x)
-_Static_assert(sizeof(GameViewState) ==
-                   offsetof(GameCameraState, depth),
-               "the camera block and the camera fields have drifted apart");
-_Static_assert(offsetof(GameViewState, angleX) ==
-                   offsetof(GameCameraState, angleX),
-               "the camera block puts the angles somewhere else");
 
 static inline void LoadViewWork(GameViewWork *view,
                                 const GameCameraState *camera) {

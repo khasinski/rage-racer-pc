@@ -45,9 +45,9 @@ static int TestObjectTranslation(void) {
 
     memset(&g_RenderState, 0, sizeof(g_RenderState));
     memset(&rotation, 0, sizeof(rotation));
-    RENDER_VIEW_STATE->position.vector.x = 100;
-    RENDER_VIEW_STATE->position.vector.y = 200;
-    RENDER_VIEW_STATE->position.vector.z = 300;
+    g_RenderState.camera.x = 100;
+    g_RenderState.camera.y = 200;
+    g_RenderState.camera.z = 300;
     g_RenderState.geometry.matrix.m[0][0] = 4096;
     g_RenderState.geometry.matrix.m[1][1] = 4096;
     g_RenderState.geometry.matrix.m[2][2] = 4096;
@@ -73,8 +73,8 @@ static int TestPositionSubtractionWrapsLikeThePs1(void) {
     g_RenderState.geometry.matrix.m[0][0] = 4096;
     g_RenderState.geometry.matrix.m[1][1] = 4096;
     g_RenderState.geometry.matrix.m[2][2] = 4096;
-    RENDER_VIEW_STATE->position.vector.x = INT_MAX;
-    RENDER_VIEW_STATE->position.vector.y = INT_MIN;
+    g_RenderState.camera.x = INT_MAX;
+    g_RenderState.camera.y = INT_MIN;
 
     SetGteObjectMatrix(&position, &rotation);
 

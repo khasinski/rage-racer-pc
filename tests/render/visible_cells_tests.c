@@ -106,7 +106,7 @@ static int TestVisibleCellOutputBounds(void) {
     g_VisibleCellList = list.values;
 
     /* An out-of-grid camera returns immediately after clearing both outputs. */
-    RENDER_VIEW_STATE->position.components.x.value = -2048;
+    g_RenderState.camera.x = -2048;
     BuildVisibleCells(0, 1);
 
     CHECK(mask.before == 0xA5A5A5A5u && mask.after == 0xA5A5A5A5u);
@@ -125,8 +125,8 @@ static int TestVisibleCellOutputBounds(void) {
      * camera instead of dereferencing an uninstalled asset. */
     memset(mask.values, 0xA5, sizeof(mask.values));
     memset(list.values, 0x5A, sizeof(list.values));
-    RENDER_VIEW_STATE->position.components.x.value = 0;
-    RENDER_VIEW_STATE->position.components.z.value = 0;
+    g_RenderState.camera.x = 0;
+    g_RenderState.camera.z = 0;
     g_TerrainCellGrid = NULL;
     g_CellVisibilityTable = NULL;
     BuildVisibleCells(0, 1);
@@ -161,7 +161,7 @@ static int TestCameraHeightWrapsLikeThePs1(void) {
     g_TerrainCellGrid = terrainGrid;
     g_CellVisibilityTable = cellVisibility;
     memset(&g_RenderState, 0, sizeof(g_RenderState));
-    RENDER_VIEW_STATE->position.components.y.value = INT_MAX;
+    g_RenderState.camera.y = INT_MAX;
 
     BuildVisibleCells(INT_MIN, INT_MAX);
 

@@ -47,13 +47,12 @@ static s32 NegatedTimesFour(s32 value) {
 }
 
 void BuildVisibleCells(s32 near, s32 far) {
-    GameViewState *view = RENDER_VIEW_STATE;
     const s32 direction =
-        (view->angleY / VIEW_ANGLE_PER_SCAN_DIRECTION) & 0x1F;
+        (g_RenderState.camera.angleY / VIEW_ANGLE_PER_SCAN_DIRECTION) & 0x1F;
     const s32 cameraCellX =
-        view->position.components.x.value / TERRAIN_CELL_SIZE;
+        g_RenderState.camera.x / TERRAIN_CELL_SIZE;
     const s32 cameraCellZ =
-        view->position.components.z.value / TERRAIN_CELL_SIZE;
+        g_RenderState.camera.z / TERRAIN_CELL_SIZE;
     u32 cameraRegion;
     s32 index;
 
@@ -74,8 +73,8 @@ void BuildVisibleCells(s32 near, s32 far) {
         s32 cellX;
         s32 cellZ;
         s32 cellIndex;
-        s32 worldOffset[3];
-        s32 projected[3];
+        Vec4 worldOffset = {0};
+        Vec4 projected = {0};
 
         GetVisibleCellScanOffset(direction, index,
                                  g_RenderState.pass.orderingFlag, offset);
@@ -100,24 +99,24 @@ void BuildVisibleCells(s32 near, s32 far) {
         /* Retail uses signed MIPS shifts here. Multiplication has the same
          * result for this bounded cell/camera range without C's undefined
          * left-shift-of-negative behaviour. */
-        worldOffset[0] =
+        worldOffset.x =
             (cellX * TERRAIN_CELL_SIZE -
-             (view->position.components.x.value - TERRAIN_CELL_HALF_SIZE)) *
+             (g_RenderState.camera.x - TERRAIN_CELL_HALF_SIZE)) *
             4;
-        worldOffset[1] = NegatedTimesFour(
-            view->position.components.y.value);
-        worldOffset[2] =
+        worldOffset.y = NegatedTimesFour(g_RenderState.camera.y);
+        worldOffset.z =
             (cellZ * TERRAIN_CELL_SIZE -
-             (view->position.components.z.value - TERRAIN_CELL_HALF_SIZE)) *
+             (g_RenderState.camera.z - TERRAIN_CELL_HALF_SIZE)) *
             4;
-        ApplyMatrixLV(&g_RenderState.geometry.matrix, worldOffset, projected);
-        if (projected[2] < near || projected[2] > far) {
+        ApplyMatrixLV(&g_RenderState.geometry.matrix, AsWords(&worldOffset),
+                      AsWords(&projected));
+        if (projected.z < near || projected.z > far) {
             continue;
         }
 
-        out->x = projected[0];
-        out->y = projected[1];
-        out->z = projected[2];
+        out->x = projected.x;
+        out->y = projected.y;
+        out->z = projected.z;
         out->cellIndex = cellIndex;
     }
 }

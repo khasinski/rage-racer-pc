@@ -19,11 +19,11 @@ void SetGteObjectMatrix(const LVec *position, Matrix *rotation) {
     Matrix translation;
 
     relative.vx = SubtractPositionComponent(
-        position->x, RENDER_VIEW_STATE->position.vector.x);
+        position->x, g_RenderState.camera.x);
     relative.vy = SubtractPositionComponent(
-        position->y, RENDER_VIEW_STATE->position.vector.y);
+        position->y, g_RenderState.camera.y);
     relative.vz = SubtractPositionComponent(
-        position->z, RENDER_VIEW_STATE->position.vector.z);
+        position->z, g_RenderState.camera.z);
     ApplyMatrix(&g_RenderState.geometry.matrix, &relative, &view);
     translation.t[0] = view.x * 4;
     translation.t[1] = view.y * 4;

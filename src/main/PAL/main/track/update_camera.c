@@ -6,21 +6,18 @@
  * amount along the car's up axis.
  */
 void CameraViewFromCarBlock(GameRenderObject *car, GameViewWork *view) {
-    s16 cameraLift[4];
-    s32 cameraLiftWorld[4];
+    SVec cameraLift = {0, -0x1C0, 0, 0};
+    LVec cameraLiftWorld;
     Matrix matrixWork;
     Matrix objectRotation;
 
     CameraLoadViewPoseFromCar(view, car);
     CameraBuildCarRotation(&objectRotation, car);
-    cameraLift[0] = 0;
-    cameraLift[1] = -0x1C0;
-    cameraLift[2] = 0;
     TransposeMatrix(&objectRotation, &matrixWork);
-    ApplyMatrix(&matrixWork, &cameraLift[0], &cameraLiftWorld[0]);
-    view->x = CameraAddWord(view->x, cameraLiftWorld[0] >> 4);
-    view->y = CameraAddWord(view->y, cameraLiftWorld[1] >> 4);
-    view->z = CameraAddWord(view->z, cameraLiftWorld[2] >> 4);
+    ApplyMatrix(&matrixWork, &cameraLift, &cameraLiftWorld);
+    view->x = CameraAddWord(view->x, cameraLiftWorld.x >> 4);
+    view->y = CameraAddWord(view->y, cameraLiftWorld.y >> 4);
+    view->z = CameraAddWord(view->z, cameraLiftWorld.z >> 4);
     view->angleX = CameraAddWord(view->angleX, car->tiltCounter);
     g_CameraModePrev = TRACK_CAMERA_CAR;
 }
@@ -29,10 +26,10 @@ static void CameraViewFromOrbitPosition(GameRenderObject *car,
                                         GameViewWork *view, s32 yaw,
                                         s32 distance, s32 height) {
     Matrix cameraRotation;
-    s32 eyeOffset[3];
-    s32 eyeWorld[3];
-    s32 focusOffset[3];
-    s32 focusWorld[3];
+    Vec4 eyeOffset = {0};
+    Vec4 eyeWorld = {0};
+    Vec4 focusOffset = {0};
+    Vec4 focusWorld = {0};
     Matrix inverseObjectRotation;
     Matrix cameraToWorld;
     Matrix objectRotation;
@@ -43,29 +40,26 @@ static void CameraViewFromOrbitPosition(GameRenderObject *car,
     TransposeMatrix(&objectRotation, &inverseObjectRotation);
     MulMatrix2(&cameraRotation, &objectRotation);
     TransposeMatrix(&objectRotation, &cameraToWorld);
-    focusOffset[0] = 0;
-    focusOffset[1] = 0;
-    focusOffset[2] = 0x32;
-    ApplyMatrixLV(&inverseObjectRotation, &focusOffset[0],
-                  &focusWorld[0]);
-    view->x = CameraAddWord(view->x, focusWorld[0]);
-    view->y = CameraAddWord(view->y, focusWorld[1]);
-    view->z = CameraAddWord(view->z, focusWorld[2]);
-    eyeOffset[0] = 0;
-    eyeOffset[1] = height;
-    eyeOffset[2] = distance;
-    ApplyMatrixLV(&cameraToWorld, &eyeOffset[0], &eyeWorld[0]);
+    focusOffset.z = 0x32;
+    ApplyMatrixLV(&inverseObjectRotation, AsWords(&focusOffset),
+                  AsWords(&focusWorld));
+    view->x = CameraAddWord(view->x, focusWorld.x);
+    view->y = CameraAddWord(view->y, focusWorld.y);
+    view->z = CameraAddWord(view->z, focusWorld.z);
+    eyeOffset.y = height;
+    eyeOffset.z = distance;
+    ApplyMatrixLV(&cameraToWorld, AsWords(&eyeOffset), AsWords(&eyeWorld));
     /* Pitch uses the orbit distance rather than the flattened eye vector,
      * so a pitched camera tilts a shade less than a true look-at would.
      * Retail's, and the view players know. */
-    view->angleX = 0x400 - (Atan2(eyeWorld[1], distance) & 0xFFF);
-    view->angleY = 0x400 - (Atan2(eyeWorld[0], eyeWorld[2]) & 0xFFF);
+    view->angleX = 0x400 - (Atan2(eyeWorld.y, distance) & 0xFFF);
+    view->angleY = 0x400 - (Atan2(eyeWorld.x, eyeWorld.z) & 0xFFF);
     view->angleZ = car->bodyRoll;
     g_CameraModePrev = TRACK_CAMERA_ORBIT;
-    view->x = CameraSubtractWord(view->x, eyeWorld[0]);
+    view->x = CameraSubtractWord(view->x, eyeWorld.x);
     view->y = CameraSubtractWord(
-        CameraSubtractWord(view->y, 0x28), eyeWorld[1]);
-    view->z = CameraSubtractWord(view->z, eyeWorld[2]);
+        CameraSubtractWord(view->y, 0x28), eyeWorld.y);
+    view->z = CameraSubtractWord(view->z, eyeWorld.z);
 }
 
 void CameraViewFromOrbit(GameRenderObject *car, GameViewWork *view) {
