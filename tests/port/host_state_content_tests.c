@@ -70,11 +70,6 @@ extern char g_CaptionPrizeMoney[8];
 extern char g_FmtMoney[8];
 extern char g_CaptionTotalMoney[8];
 extern char g_CaptionPromotionBonus[];
-extern char g_CaptionLostRace[24];
-extern char g_TextTryAgain[12];
-extern char g_TextEndRace[12];
-extern char g_TextChance[8];
-extern char g_TextPressStart[20];
 extern char g_FmtLapTime[16];
 extern char g_CaptionLapTime2[8];
 extern char g_CaptionRanking2[8];
@@ -207,11 +202,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_FmtMoney", BYTES(g_FmtMoney), 8},
     {"g_CaptionTotalMoney", BYTES(g_CaptionTotalMoney), 8},
     {"g_CaptionPromotionBonus", BYTES(g_CaptionPromotionBonus), 4},
-    {"g_CaptionLostRace", BYTES(g_CaptionLostRace), 24},
-    {"g_TextTryAgain", BYTES(g_TextTryAgain), 12},
-    {"g_TextEndRace", BYTES(g_TextEndRace), 12},
-    {"g_TextChance", BYTES(g_TextChance), 8},
-    {"g_TextPressStart", BYTES(g_TextPressStart), 20},
     {"g_FmtLapTime", BYTES(g_FmtLapTime), 16},
     {"g_CaptionLapTime2", BYTES(g_CaptionLapTime2), 8},
     {"g_CaptionRanking2", BYTES(g_CaptionRanking2), 8},
@@ -365,7 +355,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the canonical host constants alone. */
-    const unsigned long expected = 1443859520UL;
+    const unsigned long expected = 923808908UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

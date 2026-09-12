@@ -21,11 +21,6 @@ u16 g_PadPressed;
 static CourseProgressState s_CourseProgress;
 CourseProgressState *g_CourseProgress = &s_CourseProgress;
 
-char g_CaptionLostRace[] = "LOST";
-char g_TextTryAgain[] = "TRY";
-char g_TextEndRace[] = "END";
-char g_TextChance[] = "CHANCE";
-char g_TextPressStart[] = "START";
 char g_ChanceDigits[6][2] = {"0", "1", "2", "3", "4", "5"};
 
 static s32 s_ReverbCalls;

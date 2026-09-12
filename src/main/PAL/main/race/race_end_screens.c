@@ -14,7 +14,7 @@ enum {
 };
 
 void DrawLostRaceCaption(s32 level) {
-    GameDrawProportionalTextShaded(0x28, 0x40, g_CaptionLostRace, 0x7812,
+    GameDrawProportionalTextShaded(0x28, 0x40, "h L O S T  R A C E i", 0x7812,
                                   RaceEndBrightness(level));
 }
 
@@ -40,21 +40,21 @@ static void DrawRaceEndPrompt(void) {
     if (g_LostRaceChoice == 0) {
         drawColor = color;
     }
-    DrawProportionalText(0x6A, 0x68, g_TextTryAgain, drawColor);
+    DrawProportionalText(0x6A, 0x68, "TRY AGAIN", drawColor);
 
     drawColor = 0x7812;
     if (g_LostRaceChoice != 0) {
         drawColor = color;
     }
-    DrawProportionalText(0x70, 0x78, g_TextEndRace, drawColor);
+    DrawProportionalText(0x70, 0x78, "END RACE", drawColor);
 
-    DrawProportionalText(0x76, 0xB8, g_TextChance, 0x7812);
+    DrawProportionalText(0x76, 0xB8, "CHANCE", 0x7812);
 
     index = LostRaceRetryDigitIndex(
         g_CourseProgress != NULL ? g_CourseProgress->retriesRemaining : 0);
     DrawProportionalText(0xBE, 0xB8, g_ChanceDigits[index], 0x7812);
 
-    DrawText8x8(0x58, 0xD0, g_TextPressStart, 0x78CC);
+    DrawText8x8(0x58, 0xD0, "PRESS START BUTTON", 0x78CC);
     DrawLostRaceCaption(0xFF);
 }
 
