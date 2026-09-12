@@ -22,14 +22,14 @@ typedef struct GameCdLoadEntry GameCdLoadEntry;
 s16 g_CdLoadPhase;
 s32 g_AssetLoadState;
 s32 g_AssetRequestType;
-Rect g_TrackTextureRect __attribute__((aligned(16))) = {576, 256, 448, 256};
-Rect g_TeamLogoClutLoadRect __attribute__((aligned(16))) = {80, 485, 16, 1};
-GpuRectPacked g_TeamLogoClutMoveRect __attribute__((aligned(16))) = {
+Rect g_TrackTextureRect = {576, 256, 448, 256};
+Rect g_TeamLogoClutLoadRect = {80, 485, 16, 1};
+GpuRectPacked g_TeamLogoClutMoveRect = {
     0x00EC03F0, 16, 1
 };
 s32 g_PendingCarModelIndex;
 u32 g_CarModelSlot;
-s32 g_LoadBuffer[1037896 / sizeof(s32)] __attribute__((aligned(16)));
+s32 g_LoadBuffer[1037896 / sizeof(s32)];
 static u8 s_AssetMemory[64 * 1024 * 1024];
 u8 *g_AssetBase = s_AssetMemory;
 

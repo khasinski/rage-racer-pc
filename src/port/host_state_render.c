@@ -21,14 +21,13 @@ VisibleTerrainCell g_MirrorVisibleCellList[64];
 u32 g_MirrorVisibleCellMask[32];
 Matrix g_MirrorViewMatrix;
 s32 g_TrackTexturePageWanted;
-Rect g_DrawModeEnv __attribute__((aligned(16))) = {
+Rect g_DrawModeEnv = {
     .x = 0,
     .y = 0,
     .w = 256,
     .h = 256,
 };
-MirrorBadgeStyle g_CarMirrorBadgeStyles[MIRROR_BADGE_STYLE_STORAGE_COUNT]
-    __attribute__((aligned(16))) = {
+MirrorBadgeStyle g_CarMirrorBadgeStyles[MIRROR_BADGE_STYLE_STORAGE_COUNT] = {
     MIRROR_BADGE_STYLE_NARROW, MIRROR_BADGE_STYLE_NARROW,
     MIRROR_BADGE_STYLE_NARROW, MIRROR_BADGE_STYLE_WIDE,
     MIRROR_BADGE_STYLE_MEDIUM, MIRROR_BADGE_STYLE_MEDIUM,
@@ -38,8 +37,7 @@ MirrorBadgeStyle g_CarMirrorBadgeStyles[MIRROR_BADGE_STYLE_STORAGE_COUNT]
     MIRROR_BADGE_STYLE_LARGE,  MIRROR_BADGE_STYLE_NARROW,
     MIRROR_BADGE_STYLE_NARROW, MIRROR_BADGE_STYLE_NARROW,
 };
-MirrorBadgeSprite g_MirrorBadgeSprites[MIRROR_BADGE_STYLE_COUNT]
-    __attribute__((aligned(16))) = {
+MirrorBadgeSprite g_MirrorBadgeSprites[MIRROR_BADGE_STYLE_COUNT] = {
     [MIRROR_BADGE_STYLE_NARROW] = {
         .textureU = 0xe8, .textureV = 0x30, .width = 0x10},
     [MIRROR_BADGE_STYLE_WIDE] = {
@@ -49,8 +47,7 @@ MirrorBadgeSprite g_MirrorBadgeSprites[MIRROR_BADGE_STYLE_COUNT]
     [MIRROR_BADGE_STYLE_LARGE] = {
         .textureU = 0xa0, .textureV = 0x10, .width = 0x30},
 };
-u8 g_SpriteFontWidth[SPRITE_FONT_CELL_COUNT]
-                    __attribute__((aligned(16))) = {
+u8 g_SpriteFontWidth[SPRITE_FONT_CELL_COUNT] = {
     0x04, 0x0c, 0x06, 0x0c, 0x0c, 0x0c, 0x0c, 0x0c,
     0x0c, 0x0c, 0x0c, 0x0c, 0x0c, 0x0c, 0x0c, 0x0c,
     0x0c, 0x0c, 0x0c, 0x0c, 0x0c, 0x0c, 0x0c, 0x0c,
@@ -64,7 +61,7 @@ u8 g_SpriteFontWidth[SPRITE_FONT_CELL_COUNT]
     0x09, 0x08, 0x06, 0x08, 0x07, 0x08, 0x08, 0x0a,
     0x09, 0x08, 0x08, 0x0c, 0x0c, 0x0c, 0x0c, 0x0c,
 };
-GameSpriteDesc g_TachoNeedleSprite __attribute__((aligned(16))) = {
+GameSpriteDesc g_TachoNeedleSprite = {
     .x = 0xe0,
     .y = 0x9a,
     .w = 0x60,
@@ -75,8 +72,7 @@ GameSpriteDesc g_TachoNeedleSprite __attribute__((aligned(16))) = {
     .semiTrans = 0,
 };
 MenuOverlayPatternFrame
-    g_MenuOverlayPatternTable[MENU_OVERLAY_PATTERN_FRAME_COUNT]
-                             __attribute__((aligned(16))) = {
+    g_MenuOverlayPatternTable[MENU_OVERLAY_PATTERN_FRAME_COUNT] = {
     {.rows = {0x04, 0xfe, 0xff, 0xff, 0xfe, 0x04, 0x00, 0x00}},
     {.rows = {0x20, 0x7f, 0xff, 0xff, 0x7f, 0x20, 0x00, 0x00}},
     {.rows = {0xf1, 0xdb, 0xdb, 0xf3, 0xd3, 0xcb, 0x00, 0x00}},
@@ -151,8 +147,7 @@ MenuOverlayPatternFrame
     {.rows = {0x78, 0x6d, 0x6d, 0x79, 0x69, 0x65, 0x00, 0x00}},
     {.rows = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}},
 };
-FontGlyph g_SmallFontGlyphs[SMALL_FONT_GLYPH_COUNT]
-    __attribute__((aligned(16))) = {
+FontGlyph g_SmallFontGlyphs[SMALL_FONT_GLYPH_COUNT] = {
     {.u = 0x00, .v = 0x00, .width = 6},
     {.u = 0x06, .v = 0x00, .width = 6},
     {.u = 0x0c, .v = 0x00, .width = 6},
@@ -200,8 +195,7 @@ FontGlyph g_SmallFontGlyphs[SMALL_FONT_GLYPH_COUNT]
     {.u = 0x0c, .v = 0x0c, .width = 6},
     {.u = 0x12, .v = 0x0c, .width = 6},
 };
-FontGlyph g_LargeFontGlyphs[LARGE_FONT_GLYPH_COUNT]
-    __attribute__((aligned(16))) = {
+FontGlyph g_LargeFontGlyphs[LARGE_FONT_GLYPH_COUNT] = {
     {.u = 0x00, .v = 0x18, .width = 8},
     {.u = 0x08, .v = 0x18, .width = 8},
     {.u = 0x10, .v = 0x18, .width = 8},
@@ -260,7 +254,7 @@ s32 g_MenuCursorPulsePhase;
  * map are interior halfwords of this array, not independent globals. */
 s16 g_TachoNeedleQuad[4][2];
 union GameFrameContext;
-union GameFrameContext *g_DrawBuffer __attribute__((aligned(16)));
+union GameFrameContext *g_DrawBuffer;
 const TrackRenderTable *g_TrackRenderTable;
 s32 g_TrackTextureCursorRow;
 s32 g_ModelBankCount;

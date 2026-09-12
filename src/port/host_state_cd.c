@@ -13,7 +13,7 @@
 #include "psyq/cd_location.h"
 #include "psyq/cd_types.h"
 
-unsigned char g_CdMixPresets[8] __attribute__((aligned(16))) = {0x7f,0x00,0x7f,0x00,0x3f,0x3f,0x3f,0x3f};
+unsigned char g_CdMixPresets[8] = {0x7f,0x00,0x7f,0x00,0x3f,0x3f,0x3f,0x3f};
 s32 g_CdRestartOnResume;
 s32 g_CdMixPreset;
 s32 g_CdTrackPending = -1;
@@ -22,7 +22,7 @@ s32 g_CdTrackStep;
 s32 g_CdCommandStep;
 CdlLOC g_CdTrackElapsedLoc;
 u8 g_CdModeParam;
-unsigned char g_CdLocResult[8] __attribute__((aligned(16)));
+unsigned char g_CdLocResult[8];
 u32 g_CdMixLL;
 u32 g_CdMixLR;
 u32 g_CdMixRR;

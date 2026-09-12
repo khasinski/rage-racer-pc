@@ -16,27 +16,26 @@
 
 s32 g_ShiftTargetSpeed;
 s32 g_RoadGrade;
-CarHullPoint g_PlayerHullPoints[6] __attribute__((aligned(16))) = {
+CarHullPoint g_PlayerHullPoints[6] = {
     {-32, 64}, {32, 64}, {-24, -72}, {24, -72}, {-32, 16}, {32, 16}
 };
-CarHullPoint g_OpponentHullCorners[4] __attribute__((aligned(16))) = {
+CarHullPoint g_OpponentHullCorners[4] = {
     {-26, 96}, {26, 96}, {-26, -16}, {26, -16}
 };
-CarHullPoint g_CarCornerOffsets[4] __attribute__((aligned(16))) = {
+CarHullPoint g_CarCornerOffsets[4] = {
     {-15, 20}, {15, 20}, {-8, -10}, {8, -10}
 };
-LaunchSpeedThreshold g_LaunchSpeedThresholds[CAR_LAUNCH_THRESHOLD_COUNT]
-    __attribute__((aligned(16))) = {
+LaunchSpeedThreshold g_LaunchSpeedThresholds[CAR_LAUNCH_THRESHOLD_COUNT] = {
         {960, 320}, {960, 320}, {960, 320}, {960, 320}, {960, 320}
     };
-s16 g_LaunchEnergyThresholds[6] __attribute__((aligned(16))) = {
+s16 g_LaunchEnergyThresholds[6] = {
     450, 900, 1000, 1300, 1550, 0
 };
-CarCollisionPoint g_CarCollisionCorners[4] __attribute__((aligned(16))) = {
+CarCollisionPoint g_CarCollisionCorners[4] = {
     {-96, 512}, {96, 512}, {-96, -128}, {96, -128}
 };
 s32 g_RaceIntroCameraTimer;
-SVec g_RaceIntroCameraDelta __attribute__((aligned(16)));
+SVec g_RaceIntroCameraDelta;
 const GameTrackPoint *g_TrackPoints;
 s16 g_RivalCueEnabled;
 s32 g_TrackPointCount;
@@ -47,19 +46,17 @@ s32 g_StandingStartSpin;
 s16 g_TrackZoneDark;
 s32 g_EngineRpm;
 const RaceIntroCameraScript *g_RaceIntroCameraScript;
-GameCarRuntime g_CameraCar __attribute__((aligned(16)));
+GameCarRuntime g_CameraCar;
 s32 g_CameraCarSeedYaw;
 const RaceIntroCameraKey *g_RaceIntroCameraCursor;
 s32 g_RaceSeries;
 s32 g_TachoShiftLightOn;
-GameCarRuntime *g_RankedCars[RIVAL_CONTENDER_COUNT]
-    __attribute__((aligned(16)));
+GameCarRuntime *g_RankedCars[RIVAL_CONTENDER_COUNT];
 s32 g_TrackLength;
-s16 g_TorqueBandEnd[CAR_TORQUE_BAND_COUNT] __attribute__((aligned(16)));
+s16 g_TorqueBandEnd[CAR_TORQUE_BAND_COUNT];
 u16 g_HudGlyphClut;
 const TrackEventData *g_TrackEventData;
-s16 g_TorqueLossBandEnd[CAR_TORQUE_BAND_COUNT]
-    __attribute__((aligned(16)));
+s16 g_TorqueLossBandEnd[CAR_TORQUE_BAND_COUNT];
 s32 g_EngineRpmJitter;
 s32 g_EngineRpmSnapshot;
 GameCarSpec *g_CarSpec;
@@ -71,7 +68,7 @@ s16 g_DragScale;
 s16 g_RedlineToPeakRpmHalf;
 s16 g_PeakToRevLimitRpmHalf;
 s32 g_ClosestRivalRank;
-GearCurveRow g_GearTorqueCurve[7] __attribute__((aligned(16)));
+GearCurveRow g_GearTorqueCurve[7];
 s32 g_ShiftSoundLevel;
 s16 g_SteerHoldFrames;
 s32 g_AutoShiftCooldown;
