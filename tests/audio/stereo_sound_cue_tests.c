@@ -8,7 +8,6 @@
 
 MusicChannel g_MusicChannels[AUDIO_MUSIC_CHANNEL_COUNT];
 SoundModeEntry g_SoundModes[AUDIO_SOUND_MODE_COUNT];
-s32 g_StereoOutput;
 
 #define CHECK(condition) do {                                                   \
     if (!(condition)) {                                                         \
@@ -33,7 +32,6 @@ static void Reset(void) {
     }
     g_MusicChannels[0].left.value = -1;
     g_MusicChannels[1].left.value = -1;
-    g_StereoOutput = 1;
 }
 
 int main(void) {
@@ -49,12 +47,6 @@ int main(void) {
     SetStereoSoundCue(1, 32, 16);
     CHECK(g_MusicChannels[0].mode == MUSIC_CHANNEL_UPDATE &&
           g_MusicChannels[1].mode == MUSIC_CHANNEL_UPDATE);
-
-    Reset();
-    g_StereoOutput = 0;
-    SetStereoSoundCue(2, 100, 20);
-    CHECK(g_MusicChannels[0].volLeft == 45);
-    CHECK(g_MusicChannels[0].volRight == 45);
 
     Reset();
     SetStereoSoundCue(-5, 200, 200);
@@ -97,6 +89,6 @@ int main(void) {
     CHECK(g_MusicChannels[0].volLeft == 0 &&
           g_MusicChannels[0].volRight == 0);
 
-    puts("stereo sound cues preserve routing, reuse, mono mix, and stop groups");
+    puts("stereo sound cues preserve routing, reuse, and stop groups");
     return 0;
 }

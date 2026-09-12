@@ -73,6 +73,5 @@ void InitSaveDefaults(void) {
     ShuffleBgmOrder();
     g_BgmVolumeSetting = DEFAULT_AUDIO_SETTING;
     g_SfxVolumeSetting = DEFAULT_AUDIO_SETTING;
-    g_MonoOutput = 0;
     ApplyAudioSettings();
 }

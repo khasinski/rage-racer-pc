@@ -87,7 +87,7 @@ void StoreSaveStateBlock(GameSaveBlock *block) {
 
     block->bgmVolume = g_BgmVolumeSetting;
     block->sfxVolume = g_SfxVolumeSetting;
-    block->monoOutput = g_MonoOutput;
+    block->monoOutput = 0;
     memcpy(block->grandPrixCourseProgress, &g_GrandPrixCourseProgress,
            sizeof(g_GrandPrixCourseProgress));
     memcpy(block->extraGrandPrixCourseProgress,

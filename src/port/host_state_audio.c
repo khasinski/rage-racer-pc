@@ -31,10 +31,8 @@ SoundModeEntry g_SoundModes[AUDIO_SOUND_MODE_COUNT] = {
 s16 g_SoundSlotTone[ENGINE_SOUND_SLOT_COUNT][ENGINE_SOUND_BANK_COUNT] = {
     {1, 1}, {2, 2}, {3, 3}, {5, 4}, {7, 6}, {8, 8},
 };
-s32 g_StereoOutput = 1;
 EngineSoundCurveRow
     g_EngineSoundCurves[ENGINE_SOUND_BANK_COUNT][ENGINE_SOUND_PARAMETER_COUNT];
-s32 g_MonoOutput;
 EngineSoundState g_EngineSoundState;
 Audio g_Audio = {
     .cue.previous = 17,

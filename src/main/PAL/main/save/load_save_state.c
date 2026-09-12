@@ -173,7 +173,6 @@ s32 LoadSaveStateBlock(const GameSaveBlock *block) {
 
     g_BgmVolumeSetting = ClampAudioSetting(block->bgmVolume);
     g_SfxVolumeSetting = ClampAudioSetting(block->sfxVolume);
-    g_MonoOutput = block->monoOutput != 0;
 
     /* These fields are byte arrays in the on-disc format and typed at runtime. */
     memcpy(&g_GrandPrixCourseProgress, block->grandPrixCourseProgress,

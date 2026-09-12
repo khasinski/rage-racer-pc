@@ -39,15 +39,8 @@ void SetPanVoiceTargetVolume(s32 left, s32 right) {
     left = ClampVoiceVolume(left);
     right = ClampVoiceVolume(right);
 
-    if (g_StereoOutput != 0) {
-        g_Audio.pan.left = left;
-        g_Audio.pan.right = right;
-    } else {
-        s32 temp = (left + right) / 2;
-
-        g_Audio.pan.left = temp;
-        g_Audio.pan.right = temp;
-    }
+    g_Audio.pan.left = left;
+    g_Audio.pan.right = right;
 }
 
 void ApplyPanVoiceVolume(void) {

@@ -99,7 +99,6 @@ static void SetRepresentativeState(void) {
     g_BgmSelection = 7;
     g_BgmVolumeSetting = 13;
     g_SfxVolumeSetting = 9;
-    g_MonoOutput = 1;
     g_GrandPrixCourseProgress.bestPlace[2] = 3;
     g_ExtraGrandPrixCourseProgress.retriesRemaining = 4;
 }
@@ -170,7 +169,6 @@ static void ClearSerializedRuntimeState(void) {
     memset(g_BestSectorTimes, 0, sizeof(g_BestSectorTimes));
     g_BgmVolumeSetting = 0;
     g_SfxVolumeSetting = 0;
-    g_MonoOutput = 0;
     memset(&g_GrandPrixCourseProgress, 0,
            sizeof(g_GrandPrixCourseProgress));
     memset(&g_ExtraGrandPrixCourseProgress, 0,

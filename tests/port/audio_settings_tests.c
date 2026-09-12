@@ -9,16 +9,13 @@
 Audio g_Audio;
 EngineSoundState g_EngineSoundState;
 SoundScale g_SoundScale;
-s32 g_StereoOutput;
 s32 g_BgmVolumeSetting;
 s32 g_SfxVolumeSetting;
-s32 g_MonoOutput;
 
 static s32 s_cdVolumeSetting;
 static s32 s_sequenceVolume;
 static s32 s_cdMixPreset;
 static s32 s_stereoCalls;
-static s32 s_monoCalls;
 static s32 s_failures;
 
 void SetCdVolumeSetting(s32 level) { s_cdVolumeSetting = level; }
@@ -29,7 +26,6 @@ void SsSeqSetVol(short sequence, short left, short right) {
 }
 void SetCdMixPreset(s32 preset) { s_cdMixPreset = preset; }
 void SsSetStereo(void) { s_stereoCalls++; }
-void SsSetMono(void) { s_monoCalls++; }
 
 static void Check(s32 condition, const char *label) {
     if (!condition) {
@@ -74,35 +70,28 @@ static void TestVolumeSettings(void) {
 }
 
 static void TestOutputMode(void) {
-    g_MonoOutput = 0;
     ApplyAudioSettings();
-    Check(g_StereoOutput == 1 && s_cdMixPreset == 0 && s_stereoCalls == 1,
-          "stereo mode updates game, CD, and SPU state");
-    g_MonoOutput = 1;
-    ApplyAudioSettings();
-    Check(g_StereoOutput == 0 && s_cdMixPreset == 1 && s_monoCalls == 1,
-          "mono mode updates game, CD, and SPU state");
+    Check(s_cdMixPreset == 0 && s_stereoCalls == 1,
+          "audio settings select stereo for CD and SPU output");
 }
 
 static void TestApplyingSavedSettings(void) {
     g_BgmVolumeSetting = 6;
     g_SfxVolumeSetting = 9;
-    g_MonoOutput = 0;
     ApplyAudioSettings();
     Check(s_cdVolumeSetting == 6 && g_Audio.seq.setting == 6 &&
               s_sequenceVolume == 45,
           "saved BGM setting reaches CD and sequence output");
-    Check(g_SoundScale.scale == 76 && g_StereoOutput == 1,
-          "saved SFX and stereo settings reach the runtime");
+    Check(g_SoundScale.scale == 76,
+          "saved SFX setting reaches the runtime");
 
     g_BgmVolumeSetting = 99;
     g_SfxVolumeSetting = -1;
-    g_MonoOutput = 1;
     ApplyAudioSettings();
     Check(s_cdVolumeSetting == 15 && g_SoundScale.scale == 0,
           "saved volume settings are clamped while applying");
-    Check(g_StereoOutput == 0,
-          "saved mono setting reaches the runtime");
+    Check(s_cdMixPreset == 0 && s_stereoCalls == 3,
+          "audio output remains stereo while applying settings");
 }
 
 int main(void) {

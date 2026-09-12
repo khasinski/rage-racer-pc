@@ -63,11 +63,6 @@ void SetStereoSoundCue(s32 cue, s32 left, s32 right) {
         StopStereoSoundCue(cue);
         return;
     }
-    if (g_StereoOutput == 0) {
-        left = (left + right) / 2;
-        right = left;
-    }
-
     soundMode = &g_SoundModes[cue];
     state = MusicChannelsOnMode(cue) ? MUSIC_CHANNEL_UPDATE
                                      : MUSIC_CHANNEL_START;

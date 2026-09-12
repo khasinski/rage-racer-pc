@@ -107,7 +107,6 @@ static int TestAllDefaults(void) {
     CHECK(g_ExtraGrandPrixSave.maxClassReached == -1);
     CHECK(g_BgmTrackCount == 9 && g_BgmSelection == 0);
     CHECK(g_BgmVolumeSetting == 0xF && g_SfxVolumeSetting == 0xF);
-    CHECK(g_MonoOutput == 0);
     CHECK(s_shuffleCalls == 1 && s_audioApplyCalls == 1);
     return 0;
 }

@@ -188,7 +188,7 @@ test bypassed only HTML's minimum constraint to provoke native rejection of a
 zero rev limit, verified the draft survived, then saved 8500 successfully.
 Screenshot: `build/launcher-evidence/electron-form-error-preserved.png`.
 Save controls now label the controller/neGcon/audio fields in English and use
-named choices for Stereo/Mono and the Extra Grand Prix unlock state. Unknown
+named choices for the Extra Grand Prix unlock state. Unknown
 stored enum values retain the existing preservation option. All 17 tests pass.
 
 Legacy texture composition uses the native loader's index format (asset number

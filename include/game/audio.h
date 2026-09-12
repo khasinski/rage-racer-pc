@@ -54,7 +54,6 @@ enum { AUDIO_SETTING_MAX = 15 };
 
 extern s32 g_BgmVolumeSetting;
 extern s32 g_SfxVolumeSetting;
-extern s32 g_MonoOutput;
 
 static inline s32 ClampAudioSetting(s32 setting) {
     if (setting < 0) {
@@ -82,8 +81,7 @@ void SetSequenceVolumeSetting(s32 setting);
 /* The effect-side twin of SetSequenceVolumeSetting: clamps the 0..15
  * option-screen level and scales it onto g_SoundScale.scale's 0..0x80 range. */
 void SetEffectVolumeSetting(s32 setting);
-/* Push all three saved audio settings (BGM level, SFX level, mono/stereo) into
- * the sound runtime; run at boot and again after a memory-card load. */
+/* Push saved BGM and SFX levels into the stereo sound runtime. */
 void ApplyAudioSettings(void);
 typedef struct AudioSlotAsset {
     u8 *vabHeader;
@@ -177,7 +175,6 @@ typedef struct SoundCueParams {
 extern SoundCueParams g_SoundCueParams[MAIN_SOUND_CUE_COUNT];
 extern SoundCueParams g_SoundCueParams2[RACE_SOUND_CUE_COUNT];
 extern s32 g_SpecialVoiceBits[SPECIAL_VOICE_BIT_COUNT];
-extern s32 g_StereoOutput;
 /*
  * SPU addresses for the four VAB slots.  Slots 0..2 are loaded with
  * g_SoundScale.vabIds[slot] and g_VabSpuAddress[slot]; slot 3 is the engine

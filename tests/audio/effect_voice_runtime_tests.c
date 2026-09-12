@@ -11,7 +11,6 @@ Audio g_Audio;
 SoundScale g_SoundScale;
 MusicChannel g_MusicChannels[AUDIO_MUSIC_CHANNEL_COUNT];
 IndexedEffect g_IndexedEffects[AUDIO_INDEXED_EFFECT_COUNT];
-s32 g_StereoOutput;
 
 typedef struct VoiceCall {
     s16 voice;
@@ -91,13 +90,11 @@ static void ResetCalls(void) {
 }
 
 static int TestPanVoice(void) {
-    g_StereoOutput = 1;
     SetPanVoiceTargetVolume(-4, 200);
     CHECK(g_Audio.pan.left == 0 && g_Audio.pan.right == 128);
 
-    g_StereoOutput = 0;
     SetPanVoiceTargetVolume(20, 100);
-    CHECK(g_Audio.pan.left == 60 && g_Audio.pan.right == 60);
+    CHECK(g_Audio.pan.left == 20 && g_Audio.pan.right == 100);
 
     ResetCalls();
     g_SoundScale.scale = 64;
@@ -106,7 +103,7 @@ static int TestPanVoice(void) {
     ApplyPanVoiceVolume();
     CHECK(s_keyOnCount == 1 && s_keyOn[0].voice == 21);
     CHECK(s_keyOn[0].program == 15 && s_volumeCount == 1);
-    CHECK(s_volume[0].left == 30 && s_volume[0].right == 30);
+    CHECK(s_volume[0].left == 10 && s_volume[0].right == 50);
 
     ApplyPanVoiceVolume();
     CHECK(s_keyOnCount == 1 && s_volumeCount == 2);

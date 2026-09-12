@@ -56,7 +56,7 @@ static void Describe(RageSaveFile *save) {
     FIELD(b,negconNeutralI,0); FIELD(b,negconNeutralII,0); FIELD(b,negconNeutralL,0);
     FIELD(b,negconMaxTwist,0); FIELD(b,bgmSelection,1);
     FIELD(b,extraGrandPrixUnlocked,0); FIELD(b,bgmVolume,1);
-    FIELD(b,sfxVolume,1); FIELD(b,monoOutput,1);
+    FIELD(b,sfxVolume,1);
     for (a = 0; a < 3; a++) {
         const char *names[] = {"Course", "Car", "Class", "Highest class", "Credits"};
         for (d = 0; d < 5; d++) {
