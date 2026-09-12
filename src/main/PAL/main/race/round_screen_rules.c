@@ -76,12 +76,8 @@ s32 RoundScreenTableIndicesValid(s32 series, s32 classIndex,
     return grandPrixMode == 0 || (u32)classIndex < ROUND_SCREEN_CLASS_COUNT;
 }
 
-s32 ClampRoundBgmTrackCount(s32 trackCount) {
-    return ClampBgmTrackCount(trackCount);
-}
-
 s32 WrapRoundBgmSelection(s32 selection, s32 trackCount) {
-    s32 optionCount = ClampRoundBgmTrackCount(trackCount) + 1;
+    s32 optionCount = ClampBgmTrackCount(trackCount) + 1;
 
     selection %= optionCount;
     return selection < 0 ? selection + optionCount : selection;
@@ -94,7 +90,7 @@ RoundBgmChoice ChooseRoundBgm(s32 selection, const u8 *shuffleOrder,
         .shuffleIndex = 0,
     };
 
-    trackCount = ClampRoundBgmTrackCount(trackCount);
+    trackCount = ClampBgmTrackCount(trackCount);
     selection = WrapRoundBgmSelection(selection, trackCount);
 
     if (selection == 0 && shuffleOrder != NULL && trackCount > 0) {

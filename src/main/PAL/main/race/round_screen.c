@@ -144,7 +144,7 @@ static void DrawBgmSelector(void) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(1);
 
     g_BgmSelection = WrapRoundBgmSelection(
-        g_BgmSelection, ClampRoundBgmTrackCount(g_BgmTrackCount));
+        g_BgmSelection, ClampBgmTrackCount(g_BgmTrackCount));
     p = RENDER_PRIM_CURSOR_AS(u8);
     p = GameQueueSprite(ot, p, 0x14, 0xce, 0x58, 8, 0xa8, 0xe0, 0x7812);
     x = (g_BgmSelection == 0xa) ? 0x6c : 0x70;
@@ -168,7 +168,7 @@ static void DrawBgmSelector(void) {
 /* Scene 10: draws the ROUND screen, takes the BGM choice and starts the race at frame 121. */
 void UpdateRoundScreen(void) {
     RoundBgmChoice bgm;
-    const s32 trackCount = ClampRoundBgmTrackCount(g_BgmTrackCount);
+    const s32 trackCount = ClampBgmTrackCount(g_BgmTrackCount);
 
     g_SceneTimer = NextRoundScreenTimer(g_SceneTimer);
     if (g_SceneTimer == ROUND_SCREEN_DISPLAY_FRAME) {

@@ -25,7 +25,6 @@ s32 DetermineGrandPrixRound(const u8 bestPlaces[4], s32 classIndex,
                             s32 courseIndex);
 s32 RoundScreenTableIndicesValid(s32 series, s32 classIndex,
                                  s32 grandPrixMode);
-s32 ClampRoundBgmTrackCount(s32 trackCount);
 s32 WrapRoundBgmSelection(s32 selection, s32 trackCount);
 RoundBgmChoice ChooseRoundBgm(s32 selection, const u8 *shuffleOrder,
                               s32 trackCount, s32 shuffleIndex);

@@ -1,3 +1,4 @@
+#include "game/audio_internal.h"
 #include "game/round_screen_internal.h"
 #include "game/state.h"
 
@@ -57,9 +58,9 @@ static void TestSelectionWrap(void) {
           "right wraps from the last track to shuffle");
     Check(WrapRoundBgmSelection(4, 0) == 0,
           "empty track list only exposes shuffle");
-    Check(ClampRoundBgmTrackCount(-1) == 0 &&
-              ClampRoundBgmTrackCount(8) == 8 &&
-              ClampRoundBgmTrackCount(100) == 10,
+    Check(ClampBgmTrackCount(-1) == 0 &&
+              ClampBgmTrackCount(8) == 8 &&
+              ClampBgmTrackCount(100) == 10,
           "track count stays within the displayed name table");
     Check(WrapRoundBgmSelection(11, 100) == 0,
           "oversized track count cannot expose missing names");
