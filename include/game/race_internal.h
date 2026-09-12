@@ -129,7 +129,14 @@ s32 NextLostRaceFadeTimer(s32 timer);
 s32 NextRaceEndScreenTimer(s32 timer);
 s32 ResultCourseNameY(s32 grandPrixMode);
 s32 IsValidRaceResultPlace(s32 racePosition);
-void UpdatePrizeMoneyScreenState(PrizeScreenState *state);
+typedef struct PrizeScreen {
+    PrizeScreenState state;
+    s32 prizeStep;
+    s32 bonusStep;
+} PrizeScreen;
+
+void EnterPrizeScreenState(PrizeScreen *screen);
+void UpdatePrizeMoneyScreenState(PrizeScreen *screen);
 s32 GrandPrixNameIndex(s32 extraSeries, s32 classIndex);
 s32 GrandPrixClassDisplayNumber(s32 extraSeries, s32 classIndex);
 

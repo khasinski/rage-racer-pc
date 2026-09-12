@@ -28,9 +28,9 @@ enum {
     BONUS_COUNT_FRAMES = 250,
 };
 
-static PrizeScreenState s_state;
+static PrizeScreen s_screen;
 
-void EnterPrizeScreen(void) {
+void EnterPrizeScreenState(PrizeScreen *screen) {
     static const s32 noPrizes[PRIZE_PLACE_COUNT] = {0};
     s32 courseIndex = SeriesCourseIndex();
     const GrandPrixClassDefinition *definition =
@@ -47,20 +47,24 @@ void EnterPrizeScreen(void) {
         prizes = g_PrizeMoney.values[courseIndex][definition->prizeClass];
     }
 
-    s_state = PRIZE_SCREEN_STATE_INTRO_FADE_IN;
+    screen->state = PRIZE_SCREEN_STATE_INTRO_FADE_IN;
     g_PrizeAmount = PrizeForRacePosition(
         prizes, PRIZE_PLACE_COUNT, g_PlayerCar.drive.racePosition);
     g_PromotionBonus = PromotionBonusForClass(
         g_PromotionBonusTable, PROMOTION_BONUS_COUNT,
         definition != NULL ? definition->promotionBonusIndex : -1,
         g_ClassPromoted);
-    g_PrizeCountStep = PrizeCountStep(
+    screen->prizeStep = PrizeCountStep(
         prizes[PRIZE_PLACE_THIRD], PRIZE_COUNT_FRAMES);
-    g_BonusCountStep = PrizeCountStep(g_PromotionBonus, BONUS_COUNT_FRAMES);
+    screen->bonusStep = PrizeCountStep(g_PromotionBonus, BONUS_COUNT_FRAMES);
     if (g_ClassResultPlace != 0) {
         StartClassClearFanfare();
     }
     g_SceneId = GAME_SCENE_PRIZE;
+}
+
+void EnterPrizeScreen(void) {
+    EnterPrizeScreenState(&s_screen);
 }
 
 static s32 AddClampedScreenValue(s32 value, s32 delta, s32 maximum) {
@@ -112,20 +116,20 @@ static void CountTowardsMoney(s32 *owed, s32 step) {
 }
 
 /* Scene 19: counts the prize money and then the class-clear bonus into the save block. */
-void UpdatePrizeMoneyScreenState(PrizeScreenState *state) {
+void UpdatePrizeMoneyScreenState(PrizeScreen *screen) {
     s32 multiplier = (g_PadHeld & PAD_CONFIRM)
         ? FAST_COUNT_MULTIPLIER
         : 1;
-    s32 prizeStep = ScaledCountStep(g_PrizeCountStep, multiplier);
-    s32 bonusStep = ScaledCountStep(g_BonusCountStep, multiplier);
+    s32 prizeStep = ScaledCountStep(screen->prizeStep, multiplier);
+    s32 bonusStep = ScaledCountStep(screen->bonusStep, multiplier);
 
-    switch (*state) {
+    switch (screen->state) {
     case PRIZE_SCREEN_STATE_INTRO_FADE_IN:
         g_SceneTimer = AddClampedScreenValue(
             g_SceneTimer, -PANEL_SLIDE_STEP, PRIZE_SCREEN_FADE_LIMIT);
         DrawFullscreenFadeTile(g_SceneTimer, PRIZE_SCREEN_FADE_CLUT);
         if (g_SceneTimer == 0) {
-            *state = PRIZE_SCREEN_STATE_WAIT_FOR_INTRO_CONFIRM;
+            screen->state = PRIZE_SCREEN_STATE_WAIT_FOR_INTRO_CONFIRM;
         }
         DrawRaceTimePanel(0);
         DrawGrandPrixIntro(0);
@@ -133,7 +137,7 @@ void UpdatePrizeMoneyScreenState(PrizeScreenState *state) {
     case PRIZE_SCREEN_STATE_WAIT_FOR_INTRO_CONFIRM:
         DrawRaceTimePanel(0);
         if (g_PadPressed & PAD_CONFIRM) {
-            *state = PRIZE_SCREEN_STATE_HIDE_RACE_TIME;
+            screen->state = PRIZE_SCREEN_STATE_HIDE_RACE_TIME;
             g_SceneTimer = 0;
         }
         DrawGrandPrixIntro(0);
@@ -144,7 +148,7 @@ void UpdatePrizeMoneyScreenState(PrizeScreenState *state) {
             PANEL_OFFSCREEN_OFFSET + PANEL_SLIDE_STEP);
         DrawRaceTimePanel(g_SceneTimer);
         if (g_SceneTimer > PANEL_OFFSCREEN_OFFSET) {
-            *state = PRIZE_SCREEN_STATE_SHOW_PRIZE_PANEL;
+            screen->state = PRIZE_SCREEN_STATE_SHOW_PRIZE_PANEL;
         }
         DrawGrandPrixIntro(0);
         return;
@@ -154,7 +158,7 @@ void UpdatePrizeMoneyScreenState(PrizeScreenState *state) {
             PANEL_OFFSCREEN_OFFSET + PANEL_SLIDE_STEP);
         DrawPrizeMoneyPanel(g_SceneTimer);
         if (g_SceneTimer == 0) {
-            *state = PRIZE_SCREEN_STATE_COUNT_PRIZE;
+            screen->state = PRIZE_SCREEN_STATE_COUNT_PRIZE;
         }
         DrawGrandPrixIntro(0);
         return;
@@ -172,14 +176,14 @@ void UpdatePrizeMoneyScreenState(PrizeScreenState *state) {
             break;
         }
         g_SceneTimer = 0;
-        *state = g_PromotionBonus == 0
+        screen->state = g_PromotionBonus == 0
                                  ? PRIZE_SCREEN_STATE_WAIT_TO_FINISH
                                  : PRIZE_SCREEN_STATE_WAIT_FOR_BONUS_CONFIRM;
         break;
     case PRIZE_SCREEN_STATE_WAIT_FOR_BONUS_CONFIRM:
         PlaySoundCue(SOUND_CUE_CONFIRM);
         if (g_PadPressed & PAD_CONFIRM) {
-            *state = PRIZE_SCREEN_STATE_COUNT_BONUS;
+            screen->state = PRIZE_SCREEN_STATE_COUNT_BONUS;
         }
         break;
     case PRIZE_SCREEN_STATE_COUNT_BONUS:
@@ -193,7 +197,7 @@ void UpdatePrizeMoneyScreenState(PrizeScreenState *state) {
                 break;
             }
         }
-        *state = PRIZE_SCREEN_STATE_WAIT_TO_FINISH;
+        screen->state = PRIZE_SCREEN_STATE_WAIT_TO_FINISH;
         break;
     case PRIZE_SCREEN_STATE_WAIT_TO_FINISH:
         PlaySoundCue(SOUND_CUE_CONFIRM);
@@ -203,7 +207,7 @@ void UpdatePrizeMoneyScreenState(PrizeScreenState *state) {
         if (g_ClassCompleted == 0) {
             RequestSelectBgmAssets();
         }
-        *state = PRIZE_SCREEN_STATE_FADE_OUT;
+        screen->state = PRIZE_SCREEN_STATE_FADE_OUT;
         break;
     case PRIZE_SCREEN_STATE_FADE_OUT:
         g_SceneTimer = AddClampedScreenValue(
@@ -220,9 +224,9 @@ void UpdatePrizeMoneyScreenState(PrizeScreenState *state) {
     }
     DrawPrizeMoneyPanel(0);
     DrawGrandPrixIntro(
-        *state >= PRIZE_SCREEN_STATE_WAIT_FOR_BONUS_CONFIRM);
+        screen->state >= PRIZE_SCREEN_STATE_WAIT_FOR_BONUS_CONFIRM);
 }
 
 void UpdatePrizeMoneyScreen(void) {
-    UpdatePrizeMoneyScreenState(&s_state);
+    UpdatePrizeMoneyScreenState(&s_screen);
 }

@@ -220,7 +220,6 @@ void EnterAttractDemo(void);
 void UpdateAttractDemoScene(void);
 extern s32 g_BestLapThisRace;
 extern s32 g_BgmTrack;
-extern s32 g_BonusCountStep;
 void StartClassClearFanfare(void);
 s32 TickClassClearFanfare(void);
 extern s32 g_ClassCompleted;
@@ -228,7 +227,6 @@ extern s32 g_ClassResultPlace;
 extern s32 g_LapCount;
 extern s16 g_PauseDebounce;
 extern s32 g_PrizeAmount;
-extern s32 g_PrizeCountStep;
 typedef enum PrizeScreenState {
     PRIZE_SCREEN_STATE_INVALID = -1,
     PRIZE_SCREEN_STATE_INTRO_FADE_IN,
