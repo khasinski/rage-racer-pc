@@ -9,7 +9,7 @@
 
 GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
 s32 g_CameraCarIndex;
-CameraViewMode g_CameraViewMode;
+Camera g_Camera;
 s32 g_AnimTimer;
 s32 g_SceneTimer;
 s32 g_FrameSyncThreshold;
@@ -66,7 +66,7 @@ int main(void) {
         s_shuttleOrder != 6 || s_renderShift != 5 ||
         g_TrackTextureSectionLo != 12 || g_TrackTextureSectionHi != 34 ||
         s_textureSection != 89 || s_environmentOffset != 567 ||
-        g_CameraViewMode != CAMERA_VIEW_TRACK || g_AnimTimer != 0 ||
+        g_Camera.mode != CAMERA_VIEW_TRACK || g_AnimTimer != 0 ||
         g_SceneTimer != 0 || g_FrameSyncThreshold != 0x180) {
         puts("FAIL: track scene initialization contract changed");
         return 1;

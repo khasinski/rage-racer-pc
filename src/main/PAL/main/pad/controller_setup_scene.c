@@ -63,19 +63,19 @@ void DrawControllerSetupScene(s32 showButtonOverlays) {
     s32 isCalibrationGauge;
     s32 play;
 
-    g_RenderState.camera.z = -0x1080;
-    g_RenderState.camera.y = 0;
-    g_RenderState.camera.x = 0;
-    g_RenderState.camera.angleZ = 0;
-    g_RenderState.camera.angleY = 0;
-    g_RenderState.camera.angleX = 0;
+    g_Camera.view.z = -0x1080;
+    g_Camera.view.y = 0;
+    g_Camera.view.x = 0;
+    g_Camera.view.angleZ = 0;
+    g_Camera.view.angleY = 0;
+    g_Camera.view.angleX = 0;
     isCalibrationGauge =
         g_GameMode == OPTION_MODE_NEGCON_STEER_PLAY ||
         g_GameMode == OPTION_MODE_NEGCON_MAX_TWIST;
     if (isCalibrationGauge) {
-        g_RenderState.camera.z = -0xC80;
+        g_Camera.view.z = -0xC80;
     } else {
-        g_RenderState.camera.y = -0x40;
+        g_Camera.view.y = -0x40;
     }
     SetCameraRotMatrix();
 

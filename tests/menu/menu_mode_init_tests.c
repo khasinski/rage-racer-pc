@@ -9,6 +9,7 @@
 #include <string.h>
 
 GameRenderState g_RenderState;
+Camera g_Camera;
 Matrix g_SceneColorMatrix;
 Matrix g_SceneLightMatrix;
 TimedDrawCommand g_UiEmptyScript[1];
@@ -141,8 +142,8 @@ static int CheckCommonEntryState(const GameRaceProgress *progress) {
     CHECK(g_SceneId == 8 && g_SceneTimer == 0);
     CHECK(g_PlayerCarIndex == progress->carIndex);
     CHECK(g_GrandPrixClass == progress->classIndex);
-    CHECK(g_RenderState.camera.x == 0 && g_RenderState.camera.y == -64);
-    CHECK(g_RenderState.camera.z == -256 && g_RenderState.camera.angleX == 0x100);
+    CHECK(g_Camera.view.x == 0 && g_Camera.view.y == -64);
+    CHECK(g_Camera.view.z == -256 && g_Camera.view.angleX == 0x100);
     CHECK(g_CourseSelectModalScript == g_UiEmptyScript);
     CHECK(g_CarSelectPopupScript == g_UiEmptyScript);
     CHECK(g_CustomizePopupScript == g_UiEmptyScript);

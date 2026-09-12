@@ -61,13 +61,13 @@ void SetCameraRotMatrix(void) {
     Matrix mtx;
     Matrix *viewMatrix = (&g_RenderState.geometry.matrix);
 
-    GameRenderWorldSetCamera(g_RenderState.camera.x, g_RenderState.camera.y, g_RenderState.camera.z,
-                                 g_RenderState.camera.angleX, g_RenderState.camera.angleY,
-                                 g_RenderState.camera.angleZ);
-    BuildRotMatrixY(viewMatrix, g_RenderState.camera.angleY);
-    BuildRotMatrixX(&mtx, g_RenderState.camera.angleX);
+    GameRenderWorldSetCamera(g_Camera.view.x, g_Camera.view.y, g_Camera.view.z,
+                                 g_Camera.view.angleX, g_Camera.view.angleY,
+                                 g_Camera.view.angleZ);
+    BuildRotMatrixY(viewMatrix, g_Camera.view.angleY);
+    BuildRotMatrixX(&mtx, g_Camera.view.angleX);
     MulMatrix2(&mtx, viewMatrix);
-    BuildRotMatrixZ(&mtx, g_RenderState.camera.angleZ);
+    BuildRotMatrixZ(&mtx, g_Camera.view.angleZ);
     MulMatrix2(&mtx, viewMatrix);
     BuildRotMatrixY(&mtx, 0x800);
     MulMatrix0(&mtx, viewMatrix, &g_MirrorViewMatrix);

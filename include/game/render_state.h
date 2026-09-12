@@ -2,6 +2,7 @@
 #define GAME_RENDER_STATE_H
 
 #include "common.h"
+#include "game/camera_types.h"
 
 #include <stddef.h>
 #include "game/render_types.h"
@@ -11,17 +12,6 @@ typedef enum GameRenderPassMode {
     GAME_RENDER_PASS_MIRROR = 9,
     GAME_RENDER_PASS_MAIN = 10,
 } GameRenderPassMode;
-
-typedef struct GameCameraState {
-    s32 x;
-    s32 y;
-    s32 z;
-    s32 parameter;
-    s32 angleX;
-    s32 angleY;
-    s32 angleZ;
-    s32 depth;
-} GameCameraState;
 
 typedef struct GameDrawContext {
     void *packetCursor;
@@ -66,7 +56,6 @@ typedef struct GameRenderPassState {
  */
 typedef struct GameRenderState {
     GameDrawContext draw;
-    GameCameraState camera;
     GameGeometryContext geometry;
     GameRenderPassState pass;
 } GameRenderState;

@@ -83,7 +83,6 @@ s16 g_SplitSign;
 s32 g_SplitTargetTime;
 s32 g_CameraCarIndex;
 CourseProgressState *g_CourseProgress;
-s32 g_CameraViewMode;
 s32 g_BestTotalTimes[2][4][2];
 s16 g_PauseDebounce;
 s32 g_FrameSyncThreshold;

@@ -534,9 +534,9 @@ void CaptureFrameEnd(void) {
     snapshot->viewMatrix.t[0] = view->t[0];
     snapshot->viewMatrix.t[1] = view->t[1];
     snapshot->viewMatrix.t[2] = view->t[2];
-    snapshot->viewPosition[0] = g_RenderState.camera.x;
-    snapshot->viewPosition[1] = g_RenderState.camera.y;
-    snapshot->viewPosition[2] = g_RenderState.camera.z;
+    snapshot->viewPosition[0] = g_Camera.view.x;
+    snapshot->viewPosition[1] = g_Camera.view.y;
+    snapshot->viewPosition[2] = g_Camera.view.z;
     frame = CaptureFrameContext();
     if (frame != NULL) {
         snapshot->displayHeight = frame->layout.environment.draw.clip.h;

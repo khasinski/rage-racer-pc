@@ -18,7 +18,7 @@ s32 g_AssetLoadFailed;
 s32 g_AssetLoadState;
 s32 g_AnimTimer;
 s32 g_CameraCarIndex;
-CameraViewMode g_CameraViewMode;
+Camera g_Camera;
 GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
 s32 g_CourseIndex;
 static GameFrameContext s_frame;

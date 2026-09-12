@@ -23,7 +23,7 @@ enum {
 GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
 s32 g_AnimTimer;
 s32 g_CameraCarIndex;
-CameraViewMode g_CameraViewMode;
+Camera g_Camera;
 s32 g_IsEnvironmentMode4;
 GameRenderState g_RenderState;
 
@@ -45,7 +45,7 @@ void RequestTrackTexturePage(s32 trackSection) {
     RecordStep(STEP_TEXTURE);
 }
 void UpdateCamera(CameraViewMode cameraMode, GameCarRuntime *car) {
-    assert(cameraMode == g_CameraViewMode);
+    assert(cameraMode == g_Camera.mode);
     s_cameraObject = car;
     RecordStep(STEP_CAMERA);
 }
@@ -67,7 +67,7 @@ static void Reset(void) {
     s_sceneryTimer = -1;
     s_sceneryAnimate = -1;
     g_AnimTimer = 123;
-    g_CameraViewMode = CAMERA_VIEW_CHASE;
+    g_Camera.mode = CAMERA_VIEW_CHASE;
     g_IsEnvironmentMode4 = 7;
     g_RenderState.geometry.envMode4 = 0;
 }

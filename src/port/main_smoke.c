@@ -344,9 +344,9 @@ static void ReportCameraState(void) {
     ReportCameraVramSamples();
     printf("camera: pos=(%d,%d,%d) angle=(%d,%d,%d) mirror=%d "
            "sky_row=%d key=%p",
-           g_RenderState.camera.x, g_RenderState.camera.y, g_RenderState.camera.z,
-           g_RenderState.camera.angleX, g_RenderState.camera.angleY,
-           g_RenderState.camera.angleZ, g_RenderState.pass.orderingFlag, g_SkyRowBase,
+           g_Camera.view.x, g_Camera.view.y, g_Camera.view.z,
+           g_Camera.view.angleX, g_Camera.view.angleY,
+           g_Camera.view.angleZ, g_RenderState.pass.orderingFlag, g_SkyRowBase,
            (void *)g_RaceIntroCameraCursor);
     printf(" mirror_mtx=%d,%d,%d;%d,%d,%d;%d,%d,%d",
            g_MirrorViewMatrix.m[0][0], g_MirrorViewMatrix.m[0][1],

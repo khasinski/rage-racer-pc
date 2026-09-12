@@ -35,6 +35,7 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameCarRuntime *car);
 /* The two the camera writes through, which the port allocates alongside the
  * renderer rather than in host state. */
 GameRenderState g_RenderState;
+Camera g_Camera;
 PlayerCarRuntime g_PlayerCar;
 
 static GameTrackCameraNode s_nodes[2];
@@ -101,22 +102,23 @@ static void Run(CameraViewMode selector, s32 *view) {
     GameCarRuntime car;
 
     PlaceCar(&car);
-    g_CameraNodeIndex = 0;
+    g_Camera.node = 0;
     s_nearestCamera = 0;
-    g_CameraModePrev = 0;
+    g_Camera.previousMode = 0;
     memset(&g_RenderState, 0, sizeof(g_RenderState));
+    memset(&g_Camera.view, 0, sizeof(g_Camera.view));
     UpdateCamera(selector, &car);
-    view[0] = g_RenderState.camera.x;
-    view[1] = g_RenderState.camera.y;
-    view[2] = g_RenderState.camera.z;
-    view[3] = g_RenderState.camera.angleX;
-    view[4] = g_RenderState.camera.angleY;
-    view[5] = g_RenderState.camera.angleZ;
+    view[0] = g_Camera.view.x;
+    view[1] = g_Camera.view.y;
+    view[2] = g_Camera.view.z;
+    view[3] = g_Camera.view.angleX;
+    view[4] = g_Camera.view.angleY;
+    view[5] = g_Camera.view.angleZ;
 }
 
 /*
  * Drive the chase camera one frame with the yaw already lagging behind the car
- * by `yawError`, and report how far it advanced. g_CameraModePrev has to say 1
+ * by `yawError`, and report how far it advanced. g_Camera.previousMode has to say 1
  * or the branch snaps the yaw to the target instead of chasing it. The lag
  * itself is no good to read back: the branch overwrites it further down with
  * the error that is left.
@@ -129,13 +131,14 @@ static s32 ChaseAdvance(s32 yawError, s32 speed) {
     car.bodyYaw = 0x800;
     car.speed = speed;
     memset(&g_RenderState, 0, sizeof(g_RenderState));
-    g_CameraNodeIndex = 0;
-    g_CameraModePrev = 1;
+    memset(&g_Camera, 0, sizeof(g_Camera));
+    g_Camera.node = 0;
+    g_Camera.previousMode = 1;
     g_ChaseYawPrev = startYaw;
     g_ChaseYawRampPos = 0;
     g_ChaseYawRampNeg = 0;
     g_ChaseYawLag = 0;
-    g_ChaseCameraPreset = 0;
+    g_Camera.chasePreset = 0;
     UpdateCamera(1, &car);
     return ((g_ChaseYaw - startYaw) + 0x800) % 0x1000 - 0x800;
 }
@@ -172,13 +175,14 @@ int main(void) {
         PlaceCar(&car);
         s_nearestCamera = -1;
         memset(&g_RenderState, 0, sizeof(g_RenderState));
+    memset(&g_Camera, 0, sizeof(g_Camera));
         UpdateCamera(2, &car);
-        view[0] = g_RenderState.camera.x;
-        view[1] = g_RenderState.camera.y;
-        view[2] = g_RenderState.camera.z;
-        view[3] = g_RenderState.camera.angleX;
-        view[4] = g_RenderState.camera.angleY;
-        view[5] = g_RenderState.camera.angleZ;
+        view[0] = g_Camera.view.x;
+        view[1] = g_Camera.view.y;
+        view[2] = g_Camera.view.z;
+        view[3] = g_Camera.view.angleX;
+        view[4] = g_Camera.view.angleY;
+        view[5] = g_Camera.view.angleZ;
         Check("missing track camera", view, wanted);
         s_nearestCamera = 0;
     }
@@ -186,7 +190,7 @@ int main(void) {
     /* Mode 1 is the chase camera. Preset 2 is the furthest of the three. */
     {
         static const s32 wanted[6] = {16046, 3931, 32649, 131, 785, 96};
-        g_ChaseCameraPreset = 2;
+        g_Camera.chasePreset = 2;
         Run(1, view);
         Check("mode 1, chase preset 2", view, wanted);
     }
@@ -200,17 +204,17 @@ int main(void) {
     {
         s32 fallback[6];
         s32 explicitEye[6];
-        g_ChaseCameraPreset = 99;
+        g_Camera.chasePreset = 99;
         Run(1, fallback);
         /* The same camera, with the fallback offset asked for by name. */
-        g_ChaseCameraPreset = 0;
+        g_Camera.chasePreset = 0;
         s_nodes[0].mode = 0;
         Run(1, explicitEye);
         if (memcmp(fallback, explicitEye, sizeof(fallback)) == 0) {
             printf("FAIL unknown preset: fell through to preset 0\n");
             s_failures++;
         }
-        g_ChaseCameraPreset = 2;
+        g_Camera.chasePreset = 2;
     }
 
     /* Mode 2 is a node that watches the car from a fixed spot and is dragged
@@ -227,9 +231,9 @@ int main(void) {
         s_nodes[0].offset[2] = 0x60;
         Run(2, view);
         Check("mode 2, blended node", view, wanted);
-        if (g_RenderState.camera.parameter != s_nodes[0].data.world.blend) {
+        if (g_Camera.view.parameter != s_nodes[0].data.world.blend) {
             printf("FAIL mode 2 node metadata: got %d, expected %d\n",
-                   g_RenderState.camera.parameter, s_nodes[0].data.world.blend);
+                   g_Camera.view.parameter, s_nodes[0].data.world.blend);
             s_failures++;
         }
     }
@@ -268,10 +272,10 @@ int main(void) {
         g_CamPathFrame = 30;
         Run(2, view);
         Check("mode 4, sliding node", view, wanted);
-        if (g_RenderState.camera.parameter !=
+        if (g_Camera.view.parameter !=
             s_nodes[0].data.orientation.distance) {
             printf("FAIL mode 4 node metadata: got %d, expected %d\n",
-                   g_RenderState.camera.parameter,
+                   g_Camera.view.parameter,
                    s_nodes[0].data.orientation.distance);
             s_failures++;
         }
@@ -305,8 +309,8 @@ int main(void) {
     {
         static const s32 wanted[6] = {16161, 4004, 32519, 94, 512, 96};
         s_nodes[0].mode = 5;
-        g_OrbitCameraDistance = 0x180;
-        g_OrbitCameraYaw = 0x100;
+        g_Camera.orbitDistance = 0x180;
+        g_Camera.orbitYaw = 0x100;
         Run(2, view);
         Check("mode 5, orbit behind", view, wanted);
     }
@@ -353,7 +357,7 @@ int main(void) {
 
         memset(&s_nodes[0], 0, sizeof(s_nodes[0]));
         s_nodes[0].duration = 2;
-        g_CameraModePrev = TRACK_CAMERA_PATH;
+        g_Camera.previousMode = TRACK_CAMERA_PATH;
         g_CamPathNode = 0;
         g_CamPathFrame = 0;
         memset(g_CamPathOffsetStart, 0, sizeof(g_CamPathOffsetStart));
@@ -382,10 +386,10 @@ int main(void) {
             s_failures++;
         }
 
-        g_OrbitCameraYaw = INT_MIN;
-        g_OrbitCameraDistance = INT_MAX;
+        g_Camera.orbitYaw = INT_MIN;
+        g_Camera.orbitDistance = INT_MAX;
         CameraViewFromOrbit(&car, &extremeView);
-        if (g_CameraModePrev != TRACK_CAMERA_ORBIT) {
+        if (g_Camera.previousMode != TRACK_CAMERA_ORBIT) {
             puts("FAIL extreme orbit camera did not complete");
             s_failures++;
         }

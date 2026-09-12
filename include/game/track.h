@@ -383,9 +383,6 @@ extern s32 g_CamPathOffset[3];
 extern s32 g_CamPathOffsetDelta[3];
 extern s32 g_CamPathOffsetStart[3];
 extern s32 g_CameraCarTrackPoint;
-extern u8 g_CameraModePrev;
-extern s32 g_CameraNodeIndex;
-extern s32 g_ChaseCameraPreset;
 extern s32 g_ChaseCarSpeed;
 extern s32 g_ChaseTargetYaw;
 extern s32 g_ChaseYaw;
@@ -445,8 +442,6 @@ typedef struct StaticSceneryState {
 } StaticSceneryState;
 
 extern StaticSceneryState g_StaticSceneryState;
-extern s32 g_OrbitCameraDistance;
-extern s32 g_OrbitCameraYaw;
 extern s16 g_PathSceneryHalfDelta[3];
 typedef struct PathSceneryPositionKey {
     LVec position;

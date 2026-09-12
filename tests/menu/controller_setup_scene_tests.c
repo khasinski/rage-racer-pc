@@ -11,6 +11,7 @@
 
 GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
+Camera g_Camera;
 Matrix g_SceneLightMatrix;
 u8 g_PadType;
 s32 g_GameMode;
@@ -92,6 +93,7 @@ int rsin(int angle) {
 static void Reset(void) {
     memset(&s_frame, 0, sizeof(s_frame));
     memset(&g_RenderState, 0, sizeof(g_RenderState));
+    memset(&g_Camera, 0, sizeof(g_Camera));
     memset(s_pitchAngles, 0, sizeof(s_pitchAngles));
     memset(s_models, 0, sizeof(s_models));
     g_DrawBuffer = &s_frame;
@@ -119,8 +121,8 @@ static void TestDigitalPadModels(void) {
     g_ModelBankCount = 0;
     DrawControllerSetupScene(0);
     CHECK(s_cameraCalls == 1);
-    CHECK(g_RenderState.camera.x == 0 && g_RenderState.camera.y == -0x40);
-    CHECK(g_RenderState.camera.z == -0x1080);
+    CHECK(g_Camera.view.x == 0 && g_Camera.view.y == -0x40);
+    CHECK(g_Camera.view.z == -0x1080);
     CHECK(s_pitchCount == 1 && s_pitchAngles[0] == -0xD0);
     CHECK(s_modelCount == 1 && s_models[0] == 1);
     CHECK(s_objectMatrixCount == 1 && s_lightMatrixCount == 1);
@@ -137,7 +139,7 @@ static void TestNegconPartsAndOverlays(void) {
     g_PadType = PAD_TYPE_NEGCON;
     g_GameMode = OPTION_MODE_NEGCON_STEER_PLAY;
     DrawControllerSetupScene(1);
-    CHECK(g_RenderState.camera.y == 0 && g_RenderState.camera.z == -0xC80);
+    CHECK(g_Camera.view.y == 0 && g_Camera.view.z == -0xC80);
     CHECK(s_pitchCount == 2);
     CHECK(s_pitchAngles[0] == 39 && s_pitchAngles[1] == 33);
     CHECK(s_modelCount == 4);

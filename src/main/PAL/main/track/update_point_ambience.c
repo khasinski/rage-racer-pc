@@ -97,9 +97,9 @@ void UpdatePointAmbience(s32 trackPosition) {
 
     if (level != 0 && zone != NULL) {
         const int64_t sourceX =
-            (int64_t)zone->sourceX - g_RenderState.camera.x;
+            (int64_t)zone->sourceX - g_Camera.view.x;
         const int64_t sourceZ =
-            (int64_t)zone->sourceZ - g_RenderState.camera.z;
+            (int64_t)zone->sourceZ - g_Camera.view.z;
         const s32 attenuated =
             PointAmbienceAttenuation(level, sourceX, sourceZ);
         s32 sine = 0;
@@ -107,7 +107,7 @@ void UpdatePointAmbience(s32 trackPosition) {
         if (attenuated != 0) {
             const s32 bearing = Atan2((s32)sourceX, (s32)sourceZ);
             const s32 pan = (s32)(
-                ((u32)g_RenderState.camera.angleY - 0xC00u + (u32)bearing) &
+                ((u32)g_Camera.view.angleY - 0xC00u + (u32)bearing) &
                 0xFFFu);
             sine = rsin(pan);
         }

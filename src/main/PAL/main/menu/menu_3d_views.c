@@ -14,12 +14,12 @@ enum {
 };
 
 static void SetupMenuViewCamera(s32 pitch, s32 yaw) {
-    g_RenderState.camera.x = 0;
-    g_RenderState.camera.y = -64;
-    g_RenderState.camera.z = -256;
-    g_RenderState.camera.angleX = pitch;
-    g_RenderState.camera.angleY = yaw;
-    g_RenderState.camera.angleZ = 0;
+    g_Camera.view.x = 0;
+    g_Camera.view.y = -64;
+    g_Camera.view.z = -256;
+    g_Camera.view.angleX = pitch;
+    g_Camera.view.angleY = yaw;
+    g_Camera.view.angleZ = 0;
     SetCameraRotMatrix();
     ScaleMatrix(&g_RenderState.geometry.matrix, &g_MenuViewScale);
 

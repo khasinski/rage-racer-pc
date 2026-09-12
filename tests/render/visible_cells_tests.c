@@ -7,6 +7,7 @@
 #include <string.h>
 
 GameRenderState g_RenderState;
+Camera g_Camera;
 u32 *g_VisibleCellMask;
 VisibleTerrainCell *g_VisibleCellList;
 const u16 *g_TerrainCellGrid;
@@ -100,13 +101,14 @@ static int TestVisibleCellOutputBounds(void) {
     s32 index;
 
     memset(&g_RenderState, 0, sizeof(g_RenderState));
+    memset(&g_Camera, 0, sizeof(g_Camera));
     memset(&mask, 0xA5, sizeof(mask));
     memset(&list, 0x5A, sizeof(list));
     g_VisibleCellMask = mask.values;
     g_VisibleCellList = list.values;
 
     /* An out-of-grid camera returns immediately after clearing both outputs. */
-    g_RenderState.camera.x = -2048;
+    g_Camera.view.x = -2048;
     BuildVisibleCells(0, 1);
 
     CHECK(mask.before == 0xA5A5A5A5u && mask.after == 0xA5A5A5A5u);
@@ -125,8 +127,8 @@ static int TestVisibleCellOutputBounds(void) {
      * camera instead of dereferencing an uninstalled asset. */
     memset(mask.values, 0xA5, sizeof(mask.values));
     memset(list.values, 0x5A, sizeof(list.values));
-    g_RenderState.camera.x = 0;
-    g_RenderState.camera.z = 0;
+    g_Camera.view.x = 0;
+    g_Camera.view.z = 0;
     g_TerrainCellGrid = NULL;
     g_CellVisibilityTable = NULL;
     BuildVisibleCells(0, 1);
@@ -161,7 +163,8 @@ static int TestCameraHeightWrapsLikeThePs1(void) {
     g_TerrainCellGrid = terrainGrid;
     g_CellVisibilityTable = cellVisibility;
     memset(&g_RenderState, 0, sizeof(g_RenderState));
-    g_RenderState.camera.y = INT_MAX;
+    memset(&g_Camera, 0, sizeof(g_Camera));
+    g_Camera.view.y = INT_MAX;
 
     BuildVisibleCells(INT_MIN, INT_MAX);
 
@@ -186,6 +189,7 @@ static int TestCourseObjectFlags(void) {
 
     memcpy(originalObjects, objects, sizeof(objects));
     memset(&g_RenderState, 0, sizeof(g_RenderState));
+    memset(&g_Camera, 0, sizeof(g_Camera));
     memset(s_submissions, 0, sizeof(s_submissions));
     s_objectMatrixCount = 0;
     g_CourseObjects = objects;

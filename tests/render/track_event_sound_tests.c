@@ -10,6 +10,7 @@
 
 PlayerCarRuntime g_PlayerCar;
 GameRenderState g_RenderState;
+Camera g_Camera;
 const TrackEventData *g_TrackEventData;
 const GameTrackPoint *g_TrackPoints;
 s32 g_TrackPointCount;
@@ -42,6 +43,7 @@ int main(void) {
     memset(&events, 0, sizeof(events));
     memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
     memset(&g_RenderState, 0, sizeof(g_RenderState));
+    memset(&g_Camera, 0, sizeof(g_Camera));
     memset(&trackPoint, 0, sizeof(trackPoint));
 
     events.eventSoundZones[0] = (TrackEventSoundZone){10, 20, 1, 0};
@@ -52,7 +54,7 @@ int main(void) {
     g_TrackPointCount = 1;
     g_PlayerCar.trackPointIndex = 0;
     g_PlayerCar.speed = 12775;
-    g_RenderState.camera.angleY = 0xC00;
+    g_Camera.view.angleY = 0xC00;
 
     g_PlayerCar.normalizedLateralOffset = 0x200;
     if (!ExpectVolumes(10, 0, 0x200) ||
@@ -100,7 +102,7 @@ int main(void) {
     g_TrackPointCount = 1;
     g_PlayerCar.normalizedLateralOffset = INT_MIN;
     g_PlayerCar.speed = INT_MAX;
-    g_RenderState.camera.angleY = INT_MIN;
+    g_Camera.view.angleY = INT_MIN;
     if (!ExpectVolumes(30, 990279935, 990279935)) {
         return 1;
     }

@@ -19,7 +19,7 @@ void ResetMirrorState(void) {
 static s32 MirrorPassIsAvailable(void) {
     return g_MirrorUnlocked != 0 &&
            g_MirrorViewEnabled != 0 &&
-           g_CameraViewMode == CAMERA_VIEW_CAR &&
+           g_Camera.mode == CAMERA_VIEW_CAR &&
            g_GrandPrixMode != 0 &&
            g_RacePhase == RACE_PHASE_ACTIVE;
 }
@@ -69,7 +69,7 @@ s32 BeginMirrorPass(void) {
     SetMirrorClip(g_MirrorPanelY);
     g_VisibleCellMask = g_MirrorVisibleCellMask;
     g_VisibleCellList = g_MirrorVisibleCellList;
-    state->camera.depth += MIRROR_DEPTH_BIAS;
+    g_Camera.view.depth += MIRROR_DEPTH_BIAS;
     return 1;
 }
 
@@ -87,7 +87,7 @@ void EndMirrorPass(void) {
     state->draw.clipY1 = SCREEN_HEIGHT;
     state->draw.orderingTable =
         &g_DrawBuffer->layout.orderingTables[0][0];
-    state->camera.depth -= MIRROR_DEPTH_BIAS;
+    g_Camera.view.depth -= MIRROR_DEPTH_BIAS;
     state->pass.orderingFlag ^= 1;
     state->geometry.matrix = g_CameraMatrixSaved;
     g_VisibleCellMask = g_MainVisibleCellMask;

@@ -48,11 +48,11 @@ static s32 NegatedTimesFour(s32 value) {
 
 void BuildVisibleCells(s32 near, s32 far) {
     const s32 direction =
-        (g_RenderState.camera.angleY / VIEW_ANGLE_PER_SCAN_DIRECTION) & 0x1F;
+        (g_Camera.view.angleY / VIEW_ANGLE_PER_SCAN_DIRECTION) & 0x1F;
     const s32 cameraCellX =
-        g_RenderState.camera.x / TERRAIN_CELL_SIZE;
+        g_Camera.view.x / TERRAIN_CELL_SIZE;
     const s32 cameraCellZ =
-        g_RenderState.camera.z / TERRAIN_CELL_SIZE;
+        g_Camera.view.z / TERRAIN_CELL_SIZE;
     u32 cameraRegion;
     s32 index;
 
@@ -101,12 +101,12 @@ void BuildVisibleCells(s32 near, s32 far) {
          * left-shift-of-negative behaviour. */
         worldOffset.x =
             (cellX * TERRAIN_CELL_SIZE -
-             (g_RenderState.camera.x - TERRAIN_CELL_HALF_SIZE)) *
+             (g_Camera.view.x - TERRAIN_CELL_HALF_SIZE)) *
             4;
-        worldOffset.y = NegatedTimesFour(g_RenderState.camera.y);
+        worldOffset.y = NegatedTimesFour(g_Camera.view.y);
         worldOffset.z =
             (cellZ * TERRAIN_CELL_SIZE -
-             (g_RenderState.camera.z - TERRAIN_CELL_HALF_SIZE)) *
+             (g_Camera.view.z - TERRAIN_CELL_HALF_SIZE)) *
             4;
         ApplyMatrixLV(&g_RenderState.geometry.matrix, AsWords(&worldOffset),
                       AsWords(&projected));

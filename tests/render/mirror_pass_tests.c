@@ -15,7 +15,7 @@ u32 g_MirrorVisibleCellMask[1];
 VisibleTerrainCell g_MirrorVisibleCellList[1];
 u32 *g_VisibleCellMask;
 VisibleTerrainCell *g_VisibleCellList;
-CameraViewMode g_CameraViewMode;
+Camera g_Camera;
 GameFrameContext *g_DrawBuffer;
 s16 g_GrandPrixMode;
 s16 g_RacePhase;
@@ -38,17 +38,18 @@ void SetGeomScreen(long distance) {
 
 static void SetAvailable(s32 panelY) {
     memset(&g_RenderState, 0, sizeof(g_RenderState));
+    memset(&g_Camera, 0, sizeof(g_Camera));
     memset(g_FrameContexts, 0, sizeof(g_FrameContexts));
     memset(&g_CameraMatrixSaved, 0, sizeof(g_CameraMatrixSaved));
     memset(&g_MirrorViewMatrix, 0x35, sizeof(g_MirrorViewMatrix));
     g_DrawBuffer = &g_FrameContexts[0];
     g_MirrorUnlocked = 1;
     g_MirrorViewEnabled = 1;
-    g_CameraViewMode = CAMERA_VIEW_CAR;
+    g_Camera.mode = CAMERA_VIEW_CAR;
     g_GrandPrixMode = 1;
     g_RacePhase = 2;
     g_MirrorPanelY = panelY;
-    g_RenderState.camera.depth = 100;
+    g_Camera.view.depth = 100;
     g_RenderState.pass.orderingFlag = 1;
 }
 
@@ -65,10 +66,10 @@ static int TestAvailability(void) {
     if (BeginMirrorPass() != 0 ||
         memcmp(&g_RenderState, &original, sizeof(original)) != 0) return 0;
     g_MirrorViewEnabled = 1;
-    g_CameraViewMode = CAMERA_VIEW_CHASE;
+    g_Camera.mode = CAMERA_VIEW_CHASE;
     if (BeginMirrorPass() != 0 ||
         memcmp(&g_RenderState, &original, sizeof(original)) != 0) return 0;
-    g_CameraViewMode = CAMERA_VIEW_CAR;
+    g_Camera.mode = CAMERA_VIEW_CAR;
     g_GrandPrixMode = 0;
     if (BeginMirrorPass() != 0 ||
         memcmp(&g_RenderState, &original, sizeof(original)) != 0) return 0;
@@ -85,7 +86,7 @@ static int TestHiddenPanelClip(void) {
            g_RenderState.pass.faceOtShift == GAME_RENDER_PASS_MIRROR &&
            g_RenderState.draw.clipX0 == 0x56 && g_RenderState.draw.clipY0 == -20 &&
            g_RenderState.draw.clipX1 == 0xEA && g_RenderState.draw.clipY1 == 16 &&
-           g_RenderState.camera.depth == 100 + 0x800 &&
+           g_Camera.view.depth == 100 + 0x800 &&
            g_RenderState.pass.orderingFlag == 0 &&
            g_FrameContexts[0].environment.mirrorDraw.clip.y == 0 &&
            g_FrameContexts[1].environment.mirrorDraw.clip.y == 0xF0 &&
@@ -113,7 +114,7 @@ static int TestVisiblePanelAndRestore(void) {
            g_RenderState.pass.faceOtShift == GAME_RENDER_PASS_MAIN &&
            g_RenderState.draw.clipX0 == 0 && g_RenderState.draw.clipY0 == 0 &&
            g_RenderState.draw.clipX1 == 0x140 && g_RenderState.draw.clipY1 == 0xF0 &&
-           g_RenderState.camera.depth == 100 && g_RenderState.pass.orderingFlag == 1 &&
+           g_Camera.view.depth == 100 && g_RenderState.pass.orderingFlag == 1 &&
            memcmp(&g_RenderState.geometry.matrix, &original, sizeof(original)) == 0 &&
            g_VisibleCellMask == g_MainVisibleCellMask &&
            g_VisibleCellList == g_MainVisibleCellList &&

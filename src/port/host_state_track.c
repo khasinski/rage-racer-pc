@@ -12,6 +12,7 @@
  */
 
 #include "game/vector.h"
+#include "game/camera_types.h"
 #include "game/environment.h"
 #include "game/render_types.h"
 #include "game/shuttle_scenery.h"
@@ -114,9 +115,7 @@ SkyTileUV g_SkyTileUV[SKY_TILE_COUNT] = {
 };
 _Static_assert(sizeof(g_SkyTileUV) == 64,
                "sky UV records must contain exactly eight tiles");
-s32 g_ChaseCameraPreset;
-s32 g_OrbitCameraYaw;
-s32 g_OrbitCameraDistance = 330;
+Camera g_Camera = {.orbitDistance = 330};
 s16 g_AnimSceneryVariant;
 s32 g_CamPathOffsetDelta[3];
 s32 g_CamPathOffsetStart[3];
@@ -124,7 +123,6 @@ s32 g_CamPathOffset[3];
 s32 g_CamPathAngleDelta[4];
 s32 g_CamPathAngleStart[4];
 s32 g_CamPathAngle[4];
-u8 g_CameraModePrev;
 s32 g_ChaseTargetYaw;
 s32 g_ChaseYaw;
 s32 g_ChaseYawLag;
@@ -134,7 +132,6 @@ s32 g_ChaseYawStepLimit;
 s32 g_ChaseYawStep;
 s32 g_ChaseYawDamping;
 s32 g_ChaseCarSpeed;
-s32 g_CameraNodeIndex;
 s32 g_CamPathFrame;
 s32 g_CamPathNode;
 s32 g_FogNear;

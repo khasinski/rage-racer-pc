@@ -220,7 +220,7 @@ void EnterRaceScene(void) {
     BuildRaceHudPrims(g_GrandPrixMode);
     g_AnimTimer = 0;
     g_SceneTimer = 0;
-    g_CameraViewMode = CAMERA_VIEW_CAR;
+    g_Camera.mode = CAMERA_VIEW_CAR;
     g_RacePhase = RACE_PHASE_INTRO;
     s_RetireCameraActive = 0;
     s_FinishFollowupCue = -1;
@@ -304,7 +304,7 @@ static void UpdatePausedRaceScene(void) {
 
     if ((g_PadHeld &
          RaceCameraButtonMask(g_PadType, g_PadButtonMapping)) &&
-        g_CameraViewMode == CAMERA_VIEW_CAR &&
+        g_Camera.mode == CAMERA_VIEW_CAR &&
         g_RacePhase == RACE_PHASE_ACTIVE) {
         if (g_PadPressed & PAD_R1) {
             g_MirrorViewEnabled = 1;
@@ -313,7 +313,7 @@ static void UpdatePausedRaceScene(void) {
         }
     }
 
-    UpdateCamera(g_CameraViewMode,
+    UpdateCamera(g_Camera.mode,
                  AsRivalCar(&g_PlayerCar));
     RequestTrackTexturePage(g_PlayerCar.trackSection);
     PortProfileFramePhase("scene_cars");
@@ -411,12 +411,12 @@ static void UpdateActiveRaceScene(void) {
     if ((g_PadPressed &
          RaceCameraButtonMask(g_PadType, g_PadButtonMapping)) &&
         CanToggleRaceCamera(g_RacePhase)) {
-        g_CameraViewMode ^= 1;
+        g_Camera.mode ^= 1;
     }
 
     raceView = SelectRaceView(g_RacePhase, s_RetireCameraActive,
-                              g_CameraViewMode);
-    g_CameraViewMode = raceView.cameraView;
+                              g_Camera.mode);
+    g_Camera.mode = raceView.cameraView;
     if (raceView.cameraAction == RACE_CAMERA_ACTION_FINISH) {
         UpdateFinishCamera(&g_PlayerCar);
     } else if (raceView.cameraAction == RACE_CAMERA_ACTION_FOLLOW_PLAYER) {

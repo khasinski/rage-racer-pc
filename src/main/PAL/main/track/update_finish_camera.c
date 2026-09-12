@@ -25,7 +25,7 @@ void UpdateFinishCamera(PlayerCarRuntime *car) {
         return;
     }
 
-    LoadViewWork(&viewWork, &g_RenderState.camera);
+    LoadViewWork(&viewWork, &g_Camera.view);
     targetPoint = FinishCameraTargetPoint(obj);
     InterpolateTrackPoint(targetPoint, &target, g_CameraCar.segmentFraction);
     targetHeading = ANGLE_QUARTER_TURN - Atan2(
@@ -60,7 +60,7 @@ void UpdateFinishCamera(PlayerCarRuntime *car) {
     viewWork.angleX = ANGLE_QUARTER_TURN - Atan2(delta.y, distance >> 6);
     viewWork.angleZ = 0;
 
-    StoreViewWork(&g_RenderState.camera, &viewWork);
+    StoreViewWork(&g_Camera.view, &viewWork);
     SetCameraRotMatrix();
     SelectModelBank(0);
     DrawPlayerCarModel(obj);

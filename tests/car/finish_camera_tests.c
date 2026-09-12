@@ -11,6 +11,7 @@
 #include <string.h>
 
 GameRenderState g_RenderState;
+Camera g_Camera;
 
 static s32 s_interpolatedPoint;
 static s32 s_atanCall;
@@ -64,6 +65,7 @@ static int RunCase(s32 cameraPoint, s32 backwards, s32 expectedPoint) {
     memset(&target, 0, sizeof(target));
     memset(&g_CameraCar, 0, sizeof(g_CameraCar));
     memset(&g_RenderState, 0, sizeof(g_RenderState));
+    memset(&g_Camera, 0, sizeof(g_Camera));
     memset(&s_trackLimits, 0x7F, sizeof(s_trackLimits));
     target.facingBackwards = backwards;
     target.x = 1000;
@@ -90,11 +92,11 @@ static int RunCase(s32 cameraPoint, s32 backwards, s32 expectedPoint) {
         g_CameraCarHeading != 0x300 ||
         g_CameraCarStepX != 256 || g_CameraCarStepZ != 512 ||
         g_CameraCar.x != 101 || g_CameraCarZ != 302 ||
-        g_RenderState.camera.x != 101 || g_RenderState.camera.y != 136 ||
-        g_RenderState.camera.z != 300 || g_RenderState.camera.parameter != 400 ||
-        g_RenderState.camera.angleX != 0x100 ||
-        g_RenderState.camera.angleY != 0x200 ||
-        g_RenderState.camera.angleZ != 0 ||
+        g_Camera.view.x != 101 || g_Camera.view.y != 136 ||
+        g_Camera.view.z != 300 || g_Camera.view.parameter != 400 ||
+        g_Camera.view.angleX != 0x100 ||
+        g_Camera.view.angleY != 0x200 ||
+        g_Camera.view.angleZ != 0 ||
         s_trackStateCalls != 1 || s_drawCalls != 1 ||
         memcmp(&s_trackLimits, &(CarTrackLimits){0},
                sizeof(s_trackLimits)) != 0) {

@@ -100,7 +100,7 @@ void CameraViewFromBlendedNode(GameCarRuntime *car, GameViewWork *view,
     view->y = BlendCameraCoordinate(view->y, focusY, blend, 10000);
     view->z = BlendCameraCoordinate(view->z, focusZ, blend, 10000);
     AimCameraAt(view, focusX, focusY, focusZ);
-    g_CameraModePrev = TRACK_CAMERA_BLENDED_NODE;
+    g_Camera.previousMode = TRACK_CAMERA_BLENDED_NODE;
 }
 
 /*
@@ -138,10 +138,10 @@ void CameraViewFromCamPath(GameCarRuntime *car, GameViewWork *view,
     Vec4 rollWork = {0};
 
     CameraLoadViewPositionFromCar(view, car);
-    if (nodeChanged || g_CameraModePrev != TRACK_CAMERA_PATH) {
+    if (nodeChanged || g_Camera.previousMode != TRACK_CAMERA_PATH) {
         g_CamPathNode = cameraNodeIndex;
         g_CamPathFrame = 0;
-        if (g_CameraModePrev == TRACK_CAMERA_PATH) {
+        if (g_Camera.previousMode == TRACK_CAMERA_PATH) {
             g_CamPathOffsetStart[0] = g_CamPathOffset[0];
             g_CamPathOffsetStart[1] = g_CamPathOffset[1];
             g_CamPathOffsetStart[2] = g_CamPathOffset[2];
@@ -252,7 +252,7 @@ void CameraViewFromCamPath(GameCarRuntime *car, GameViewWork *view,
     TransposeMatrix(&matrixWork, &cameraRotation);
     ApplyMatrixLV(&cameraRotation, AsWords(&rollWork), AsWords(&rollProbe));
     view->angleZ = 0x400 - (Atan2(rollProbe.y, rollProbe.x) & ANGLE_MASK);
-    g_CameraModePrev = TRACK_CAMERA_PATH;
+    g_Camera.previousMode = TRACK_CAMERA_PATH;
 }
 
 /*
@@ -273,7 +273,7 @@ void CameraViewFromSlidingNode(GameCarRuntime *car, GameViewWork *view,
     view->y = orbitNode->data.world.y;
     view->z = orbitNode->data.world.z;
     view->parameter = orbitNode->data.orientation.distance;
-    if (nodeChanged || g_CameraModePrev != TRACK_CAMERA_SLIDING_NODE) {
+    if (nodeChanged || g_Camera.previousMode != TRACK_CAMERA_SLIDING_NODE) {
         g_CamPathFrame = 0;
     } else if (g_CamPathFrame <
                CameraNodeDuration(&g_TrackCameras[cameraNodeIndex])) {
@@ -297,5 +297,5 @@ void CameraViewFromSlidingNode(GameCarRuntime *car, GameViewWork *view,
     AimCameraAt(view, CameraAddWord(car->x, nodeWorld.x),
                 CameraAddWord(car->y, nodeWorld.y),
                 CameraAddWord(car->z, nodeWorld.z));
-    g_CameraModePrev = TRACK_CAMERA_SLIDING_NODE;
+    g_Camera.previousMode = TRACK_CAMERA_SLIDING_NODE;
 }

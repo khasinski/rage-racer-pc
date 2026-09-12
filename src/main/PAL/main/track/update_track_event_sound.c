@@ -69,7 +69,7 @@ static void CalculateEventSoundVolumes(s32 flags, s32 *left, s32 *right) {
     lean = WrapSigned32(
         (int64_t)lean * g_PlayerCar.speed / EVENT_SOUND_SPEED_SCALE);
     angle = (s32)(
-        ((u32)g_RenderState.camera.angleY - ANGLE_THREE_QUARTER_TURN +
+        ((u32)g_Camera.view.angleY - ANGLE_THREE_QUARTER_TURN +
          (u32)TrackPoint(g_PlayerCar.trackPointIndex)->angle) & ANGLE_MASK);
 
     if (lean < 0 && (flags & EVENT_SOUND_LEFT_SIDE) != 0) {

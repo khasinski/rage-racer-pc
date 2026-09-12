@@ -6,6 +6,7 @@
 #include <string.h>
 
 GameRenderState g_RenderState;
+Camera g_Camera;
 
 #define CHECK_EQ(actual, expected)                                             \
     do {                                                                       \
@@ -21,10 +22,11 @@ static int TestObjectTranslation(void) {
     Matrix rotation;
 
     memset(&g_RenderState, 0, sizeof(g_RenderState));
+    memset(&g_Camera, 0, sizeof(g_Camera));
     memset(&rotation, 0, sizeof(rotation));
-    g_RenderState.camera.x = 100;
-    g_RenderState.camera.y = 200;
-    g_RenderState.camera.z = 300;
+    g_Camera.view.x = 100;
+    g_Camera.view.y = 200;
+    g_Camera.view.z = 300;
     g_RenderState.geometry.matrix.m[0][0] = 4096;
     g_RenderState.geometry.matrix.m[1][1] = 4096;
     g_RenderState.geometry.matrix.m[2][2] = 4096;
@@ -46,12 +48,13 @@ static int TestPositionSubtractionWrapsLikeThePs1(void) {
     Matrix rotation;
 
     memset(&g_RenderState, 0, sizeof(g_RenderState));
+    memset(&g_Camera, 0, sizeof(g_Camera));
     memset(&rotation, 0, sizeof(rotation));
     g_RenderState.geometry.matrix.m[0][0] = 4096;
     g_RenderState.geometry.matrix.m[1][1] = 4096;
     g_RenderState.geometry.matrix.m[2][2] = 4096;
-    g_RenderState.camera.x = INT_MAX;
-    g_RenderState.camera.y = INT_MIN;
+    g_Camera.view.x = INT_MAX;
+    g_Camera.view.y = INT_MIN;
 
     SetGteObjectMatrix(&position, &rotation);
 

@@ -106,7 +106,6 @@ extern u32 g_MainVisibleCellMask[];
 extern VisibleTerrainCell g_MainVisibleCellList[];
 extern u32 *g_VisibleCellMask;
 extern VisibleTerrainCell *g_VisibleCellList;
-extern CameraViewMode g_CameraViewMode;
 static inline GameOrderingTableEntry *GamePrimaryOrderingTable(s32 depth) {
     return &g_DrawBuffer->layout.orderingTables[0][depth];
 }

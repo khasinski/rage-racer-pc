@@ -12,6 +12,7 @@
 #include <string.h>
 
 GameRenderState g_RenderState;
+Camera g_Camera;
 GameEnvironmentColors g_EnvironmentColors;
 s16 g_SkyTileMap[SKY_TILE_MAP_ROWS][SKY_TILE_MAP_COLUMNS];
 SkyTileUV g_SkyTileUV[SKY_TILE_COUNT];
@@ -52,6 +53,7 @@ static void PrepareFrame(PacketStorage *packets,
     memset(orderingTable, 0,
            sizeof(*orderingTable) * GAME_FRAME_OT_LENGTH);
     memset(&g_RenderState, 0, sizeof(g_RenderState));
+    memset(&g_Camera, 0, sizeof(g_Camera));
     memset(g_SkyTileMap, 0, sizeof(g_SkyTileMap));
     memset(g_SkyTileUV, 0, sizeof(g_SkyTileUV));
     g_RenderState.draw.packetCursor = packets->bytes;
@@ -210,10 +212,10 @@ static int TestNativeGridMatchesClassicPackets(void) {
         POLY_FT4 *tiles;
         PrepareFrame(&packets, orderingTable);
         g_CourseIndex = 2;
-        g_RenderState.camera.y = cameras[index].y;
-        g_RenderState.camera.angleX = cameras[index].pitch;
-        g_RenderState.camera.angleY = cameras[index].yaw;
-        g_RenderState.camera.angleZ = cameras[index].roll;
+        g_Camera.view.y = cameras[index].y;
+        g_Camera.view.angleX = cameras[index].pitch;
+        g_Camera.view.angleY = cameras[index].yaw;
+        g_Camera.view.angleZ = cameras[index].roll;
         MeasureSkyGridLayout(cameras[index].y, cameras[index].pitch,
                              cameras[index].yaw, cameras[index].roll, 0, 0,
                              &grid);

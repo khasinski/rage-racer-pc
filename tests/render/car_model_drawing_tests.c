@@ -11,6 +11,7 @@
 #include <string.h>
 
 GameRenderState g_RenderState;
+Camera g_Camera;
 Matrix g_SceneLightMatrix;
 GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
 PlayerCarRuntime g_PlayerCar;

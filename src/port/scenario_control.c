@@ -142,7 +142,7 @@ static void ScenarioApplyTrackStarts(void) {
         if (view != NULL &&
             RuntimeParseInt(view, 0, CAMERA_VIEW_CAR, CAMERA_VIEW_TRACK,
                             &parsedView)) {
-            g_CameraViewMode = (CameraViewMode)parsedView;
+            g_Camera.mode = (CameraViewMode)parsedView;
         } else if (view != NULL) {
             fprintf(stderr, "rage-port: invalid start.camera=%s\n", view);
         }

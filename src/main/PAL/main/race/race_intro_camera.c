@@ -22,7 +22,7 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
         return;
     }
 
-    LoadViewWork(&viewWork, &g_RenderState.camera);
+    LoadViewWork(&viewWork, &g_Camera.view);
 
     if (mode < 2) {
         const RaceIntroCameraScript *script = g_RaceIntroCameraScript;
@@ -31,10 +31,10 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
         const RaceIntroCameraKey *key = &script->keys[keyIndex];
 
         g_RaceIntroCameraCursor = key;
-        g_RenderState.camera.x = key->x.word;
-        g_RenderState.camera.y = key->y.word;
-        g_RenderState.camera.z = key->z.word;
-        g_RenderState.camera.parameter = key->mode;
+        g_Camera.view.x = key->x.word;
+        g_Camera.view.y = key->y.word;
+        g_Camera.view.z = key->z.word;
+        g_Camera.view.parameter = key->mode;
         g_RaceIntroCameraDelta.vx = WrapSigned16(
             (int64_t)key[1].x.half.value - key[0].x.half.value);
         g_RaceIntroCameraDelta.vy = WrapSigned16(
@@ -100,7 +100,7 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
                           Atan2(delta.y,
                                 DistanceXZ(delta.x, delta.z) >> 6);
         viewWork.angleZ = 0;
-        StoreViewWork(&g_RenderState.camera, &viewWork);
+        StoreViewWork(&g_Camera.view, &viewWork);
         SetCameraRotMatrix();
         SelectModelBank(0);
         DrawPlayerCarModel(AsRivalCar(car));
@@ -115,7 +115,7 @@ void RunRaceIntroCamera(PlayerCarRuntime *car, s32 mode) {
         viewWork.angleY = car->bodyYaw;
         viewWork.angleZ = car->bodyRoll;
         viewWork.depth = car->bodyRotationW;
-        StoreViewWork(&g_RenderState.camera, &viewWork);
+        StoreViewWork(&g_Camera.view, &viewWork);
         SetCameraRotMatrix();
     }
 }

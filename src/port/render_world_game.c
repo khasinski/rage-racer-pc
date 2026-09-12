@@ -465,17 +465,17 @@ void GameRenderWorldPublishCurrentCamera(void) {
         GameRenderWorldClearInactiveScene();
         return;
     }
-    GameRenderWorldSetCamera(g_RenderState.camera.x, g_RenderState.camera.y,
-                                 g_RenderState.camera.z, g_RenderState.camera.angleX,
-                                 g_RenderState.camera.angleY,
-                                 g_RenderState.camera.angleZ);
+    GameRenderWorldSetCamera(g_Camera.view.x, g_Camera.view.y,
+                                 g_Camera.view.z, g_Camera.view.angleX,
+                                 g_Camera.view.angleY,
+                                 g_Camera.view.angleZ);
     /* A car mirror is a second scene camera, not a recreation of the PS1
      * mirror pass. A 20 degree vertical FOV on the wide mirror target gives
      * a useful rearward field of view without the old projection distortion. */
     mirrorCamera = GameRenderWorldBuildCamera(
-        g_RenderState.camera.x, g_RenderState.camera.y, g_RenderState.camera.z,
-        g_RenderState.camera.angleX, g_RenderState.camera.angleY,
-        g_RenderState.camera.angleZ, 20.0f, 1);
+        g_Camera.view.x, g_Camera.view.y, g_Camera.view.z,
+        g_Camera.view.angleX, g_Camera.view.angleY,
+        g_Camera.view.angleZ, 20.0f, 1);
     /* The tiny, wide mirror loses useful silhouettes when it reaches the
      * main view's full fog distance. It already consumes the complete native
      * scene, so extend only its semantic fog range rather than reviving the
@@ -483,7 +483,7 @@ void GameRenderWorldPublishCurrentCamera(void) {
     mirrorCamera.fogNear *= 2.0f;
     mirrorCamera.fogFar *= 2.0f;
     mirrorActive = g_MirrorUnlocked != 0 && g_MirrorViewEnabled != 0 &&
-                   g_CameraViewMode == CAMERA_VIEW_CAR &&
+                   g_Camera.mode == CAMERA_VIEW_CAR &&
                    g_GrandPrixMode != 0 &&
                    g_RacePhase == RACE_PHASE_ACTIVE;
     RenderWorldSetMirrorCamera(GameRenderWorldMutable(), &mirrorCamera,
@@ -509,11 +509,11 @@ static void GameRenderWorldSubmitCourseTransform(
     instance.textureScrollU = (uint8_t)(g_AnimTimer & 0x7F);
     instance.pass = mirror_pass ? RAGE_RENDER_PASS_MIRROR : RAGE_RENDER_PASS_MAIN;
     instance.transform.position.x =
-        (float)CourseCoordinateNearReference(x, g_RenderState.camera.x);
+        (float)CourseCoordinateNearReference(x, g_Camera.view.x);
     instance.transform.position.y =
-        -(float)CourseCoordinateNearReference(y, g_RenderState.camera.y);
+        -(float)CourseCoordinateNearReference(y, g_Camera.view.y);
     instance.transform.position.z =
-        -(float)CourseCoordinateNearReference(z, g_RenderState.camera.z);
+        -(float)CourseCoordinateNearReference(z, g_Camera.view.z);
     instance.transform.orientation = SceneQuaternionFromPsx(rotation);
     instance.transform.hasOrientation = 1;
     instance.transform.scale.x = 0.25f;
