@@ -1,4 +1,3 @@
-#include "game/diagnostics.h"
 #include "game/car.h"
 #include "game/car_collision_internal.h"
 #include "game/car_motion_internal.h"
@@ -130,11 +129,7 @@ static CarCollisionHit FindPlayerCollisionRegion(
 
 typedef struct PlayerCollisionHit {
     GameCarRuntime *opponent;
-    s32 opponentIndex;
     s32 region;
-    s32 sampleIndex;
-    s32 quadIndex;
-    s32 progressDistance;
     s32 lateralDistance;
 } PlayerCollisionHit;
 
@@ -204,34 +199,12 @@ static PlayerCollisionHit FindPlayerCollision(
         quadHit = FindPlayerCollisionRegion(playerGrid, corners, samples);
         if (quadHit.region > 0) {
             hit.opponent = opponent;
-            hit.opponentIndex = index;
             hit.region = quadHit.region;
-            hit.sampleIndex = quadHit.sampleIndex;
-            hit.quadIndex = quadHit.quadIndex;
-            hit.progressDistance = progressDistance;
             hit.lateralDistance = lateralDistance;
             return hit;
         }
     }
     return hit;
-}
-
-static void TracePlayerCollision(const PlayerCarRuntime *player,
-                                 const PlayerCollisionHit *hit) {
-    if (!DiagnosticsEnabled("car.collision_trace")) {
-        return;
-    }
-    if (g_SceneTimer != DiagnosticsIntValue(
-            "car.collision_trace_timer", g_SceneTimer)) {
-        return;
-    }
-    Trace("car-collision", "timer=%d opponent=%d region=%d sample=%d quad=%d "
-          "player=%d,%d,%d,%d opponent_state=%d,%d,%d,%d delta=%d,%d",
-          g_SceneTimer, hit->opponentIndex, hit->region, hit->sampleIndex,
-          hit->quadIndex, player->x, player->z, player->trackProgress,
-          player->trackLateralOffset, hit->opponent->x, hit->opponent->z,
-          hit->opponent->trackProgress, hit->opponent->trackLateralOffset,
-          hit->progressDistance, hit->lateralDistance);
 }
 
 static void PlayPlayerCollisionSound(const PlayerCarRuntime *player,
@@ -347,7 +320,6 @@ s32 CollidePlayerWithCars(PlayerCarRuntime *car) {
         return hit.region;
     }
 
-    TracePlayerCollision(car, &hit);
     PlayPlayerCollisionSound(car, &hit);
     g_GripLossTimer = 0;
     if (hit.region <= LAST_FRONT_COLLISION_REGION) {

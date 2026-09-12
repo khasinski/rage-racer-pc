@@ -184,8 +184,6 @@ static const EnvironmentAlias s_environmentAliases[] = {
     {"capture.visible_cells", "RAGE_PORT_SMOKE_VISIBLE_CELLS"},
     {"checks.complete_save_load", "RAGE_PORT_SMOKE_COMPLETE_SAVE_LOAD"},
     {"checks.save_roundtrip", "RAGE_PORT_SMOKE_SAVE_ROUNDTRIP"},
-    {"diagnostics.car.collision_trace", "RAGE_PORT_CAR_COLLISION_TRACE"},
-    {"diagnostics.car.collision_trace_timer", "RAGE_PORT_CAR_COLLISION_TRACE_TIMER"},
     {"diagnostics.car.motion_trace", "RAGE_PORT_CAR_MOTION_TRACE"},
     {"diagnostics.car.motion_trace_timer", "RAGE_PORT_CAR_MOTION_TRACE_TIMER"},
     {"diagnostics.car.state_trace", "RAGE_PORT_CAR_STATE_TRACE"},

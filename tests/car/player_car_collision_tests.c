@@ -49,26 +49,6 @@ void SetCarCollisionKnockback(GameCarRuntime *car, s32 x, s32 z) {
     s_knockbackCount++;
 }
 
-int DiagnosticsEnabled(const char *channel) {
-    (void)channel;
-    return 0;
-}
-
-const char *DiagnosticsValue(const char *key) {
-    (void)key;
-    return NULL;
-}
-
-int DiagnosticsIntValue(const char *key, int fallback) {
-    (void)key;
-    return fallback;
-}
-
-void Trace(const char *channel, const char *format, ...) {
-    (void)channel;
-    (void)format;
-}
-
 MATRIX *MulMatrix0(MATRIX *a, MATRIX *b, MATRIX *out) {
     (void)a;
     (void)b;
