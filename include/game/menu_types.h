@@ -105,17 +105,6 @@ typedef struct DesignModeCellMask {
     u8 cells[6][6];
 } DesignModeCellMask;
 
-/* Screen-space output produced while flipping the course card. */
-typedef union MenuProjectedVertex {
-    struct {
-        s16 x;
-        s16 y;
-        s16 z;
-        s16 pad;
-    } position;
-    s16 components[4];
-} MenuProjectedVertex;
-
 typedef struct ClassRecordSprite {
     u8 u1;
     u8 v1;

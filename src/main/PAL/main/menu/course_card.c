@@ -38,7 +38,7 @@ static s32 AdvanceCourseCardSpin(void) {
 }
 
 void UpdateAndDrawCourseCard(void) {
-    MenuProjectedVertex projected[4];
+    SVec projected[4];
     Matrix rotation;
     s32 angle;
     s32 depth;
@@ -64,19 +64,19 @@ void UpdateAndDrawCourseCard(void) {
     BuildRotMatrixY(&rotation, angle);
     for (i = 0; i < 4; i++) {
         ApplyMatrixSV(&rotation, &g_CourseCardVerts[i],
-                      projected[i].components);
+                      &projected[i].vx);
     }
 
     GameDrawTexturedQuad(
         RENDER_OT_BASE + 1,
-        projected[0].position.x + COURSE_CARD_CENTER_X,
-        projected[0].position.y + COURSE_CARD_CENTER_Y,
-        projected[1].position.x + COURSE_CARD_CENTER_X,
-        projected[1].position.y + COURSE_CARD_CENTER_Y,
-        projected[2].position.x + COURSE_CARD_CENTER_X,
-        projected[2].position.y + COURSE_CARD_CENTER_Y,
-        projected[3].position.x + COURSE_CARD_CENTER_X,
-        projected[3].position.y + COURSE_CARD_CENTER_Y,
+        projected[0].vx + COURSE_CARD_CENTER_X,
+        projected[0].vy + COURSE_CARD_CENTER_Y,
+        projected[1].vx + COURSE_CARD_CENTER_X,
+        projected[1].vy + COURSE_CARD_CENTER_Y,
+        projected[2].vx + COURSE_CARD_CENTER_X,
+        projected[2].vy + COURSE_CARD_CENTER_Y,
+        projected[3].vx + COURSE_CARD_CENTER_X,
+        projected[3].vy + COURSE_CARD_CENTER_Y,
         0xA0, 0x70, 0xDF, 0x70, 0xA0, 0xBF, 0xDF, 0xBF,
         0x7F, 0x7F, 0x7F, (u16)depth, 0, 0, 0x1C);
 }
