@@ -18,10 +18,6 @@ s32 g_CarSoundVolumeScales[CAR_SOUND_VOLUME_SCALE_COUNT]
     20, 21, 22, 23, 21, 22, 23, 22, 23, 26, 27, 28, 29, 30, 50, 52, 54, 50,
     52, 54, 52, 42, 44, 28, 28, 29, 30, 31, 30, 26, 46, 80
 };
-const char g_MsgVabOpenHeadError[] __attribute__((aligned(16))) =
-    "SsVabOpenHead Error\n";
-const char g_MsgVabTransBodyError[] __attribute__((aligned(16))) =
-    "SsVabTransBody Error\n";
 IndexedEffect g_IndexedEffects[AUDIO_INDEXED_EFFECT_COUNT]
     __attribute__((aligned(16))) = {
     {14, 0, 64},
@@ -35,11 +31,6 @@ SoundModeEntry g_SoundModes[AUDIO_SOUND_MODE_COUNT]
     {2, 55, {{20, 0}, {20, 0}}},
     {2, 55, {{21, 0}, {21, 0}}},
 };
-const char g_MsgTooManyVoices[16] __attribute__((aligned(16))) = "Too many voice\n";
-const char g_MsgSeqVabOpenHeadError[] __attribute__((aligned(16))) =
-    "SsVabOpenHead Error\n";
-const char g_MsgSeqVabTransBodyError[] __attribute__((aligned(16))) =
-    "SsVabTransBody Error\n";
 s16 g_SoundSlotTone[ENGINE_SOUND_SLOT_COUNT][ENGINE_SOUND_BANK_COUNT]
     __attribute__((aligned(16))) = {
     {1, 1}, {2, 2}, {3, 3}, {5, 4}, {7, 6}, {8, 8},

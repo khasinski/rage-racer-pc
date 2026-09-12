@@ -93,14 +93,14 @@ static s32 TransferVabToSlot(s32 slot, u8 *header, u8 *body,
     s16 vabId;
 
     if (openedVabId == -1) {
-        printf("%s", g_MsgVabOpenHeadError);
+        printf("SsVabOpenHead Error\n");
         return 0;
     }
 
     vabId = SsVabTransBody(body, openedVabId);
     if (vabId == -1) {
         SsVabClose(openedVabId);
-        printf("%s", g_MsgVabTransBodyError);
+        printf("SsVabTransBody Error\n");
         return 0;
     }
 

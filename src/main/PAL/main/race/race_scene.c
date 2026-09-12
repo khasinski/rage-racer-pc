@@ -243,7 +243,7 @@ void EnterRaceScene(void) {
     g_SceneId = GAME_SCENE_RACE;
     g_FrameSyncThreshold = RACE_FRAME_SYNC_THRESHOLD;
     DrawRoundScreen();
-    printf("%s", g_MsgGame0Ok);
+    printf("game0 ok\n");
 }
 
 /* The track, its objects, and the scenery, then the same scenery again

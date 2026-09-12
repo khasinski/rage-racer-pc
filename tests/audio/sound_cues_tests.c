@@ -15,7 +15,6 @@ s16 g_SoundSlotTone[ENGINE_SOUND_SLOT_COUNT][ENGINE_SOUND_BANK_COUNT];
 s32 g_SoundCueBank;
 s32 g_ActiveSpecialCue;
 s32 g_LastSpecialCueRequest;
-const char g_MsgTooManyVoices[] = "too many voices\n";
 
 typedef struct KeyCall {
     s32 voice;

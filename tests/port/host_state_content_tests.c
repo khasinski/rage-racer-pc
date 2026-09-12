@@ -66,7 +66,6 @@ typedef struct StaticSceneryState {
 
 extern unsigned char g_NameEntryCharset[42];
 extern char g_TextNowLoading[];
-extern unsigned char g_MsgGame0Ok[12];
 extern const s16 g_MenuLightBurstBandX[MENU_LIGHT_BURST_RAY_COUNT];
 extern const s16 g_MenuLightBurstBandY[MENU_LIGHT_BURST_RAY_COUNT];
 extern Rgb g_PaintColorTable[MENU_PAINT_COLOR_COUNT];
@@ -75,13 +74,8 @@ extern Vec4 g_MenuCarPivotOffset;
 extern const Vec4 g_TeamNameCharScale;
 extern u8 g_DesignModeCellMask[6][6];
 extern unsigned char g_CarSoundVolumeScales[128];
-extern const char g_MsgVabOpenHeadError[21];
-extern const char g_MsgVabTransBodyError[22];
 extern unsigned char g_IndexedEffects[36];
 extern unsigned char g_SoundModes[96];
-extern unsigned char g_MsgTooManyVoices[16];
-extern const char g_MsgSeqVabOpenHeadError[21];
-extern const char g_MsgSeqVabTransBodyError[22];
 extern unsigned char g_SaveDefaults[104];
 extern Rect g_DrawModeEnv;
 extern unsigned char g_PromotionBonusTable[20];
@@ -186,7 +180,6 @@ typedef struct HostStateBlob {
 static const HostStateBlob s_blobs[] = {
     {"g_NameEntryCharset", g_NameEntryCharset, 42},
     {"g_TextNowLoading", BYTES(g_TextNowLoading), 12},
-    {"g_MsgGame0Ok", g_MsgGame0Ok, 12},
     {"g_MenuLightBurstBandX",
      (const unsigned char *)&g_MenuLightBurstBandX, 66},
     {"g_MenuLightBurstBandY",
@@ -197,17 +190,8 @@ static const HostStateBlob s_blobs[] = {
     {"g_TeamNameCharScale", (const unsigned char *)&g_TeamNameCharScale, 16},
     {"g_DesignModeCellMask", (const unsigned char *)&g_DesignModeCellMask, 36},
     {"g_CarSoundVolumeScales", g_CarSoundVolumeScales, 128},
-    {"g_MsgVabOpenHeadError",
-     (const unsigned char *)g_MsgVabOpenHeadError, 21},
-    {"g_MsgVabTransBodyError",
-     (const unsigned char *)g_MsgVabTransBodyError, 22},
     {"g_IndexedEffects", g_IndexedEffects, 36},
     {"g_SoundModes", g_SoundModes, 96},
-    {"g_MsgTooManyVoices", g_MsgTooManyVoices, 16},
-    {"g_MsgSeqVabOpenHeadError",
-     (const unsigned char *)g_MsgSeqVabOpenHeadError, 21},
-    {"g_MsgSeqVabTransBodyError",
-     (const unsigned char *)g_MsgSeqVabTransBodyError, 22},
     {"g_SaveDefaults", g_SaveDefaults, 104},
     {"g_DrawModeEnv", (const unsigned char *)&g_DrawModeEnv,
      sizeof(g_DrawModeEnv)},
@@ -331,7 +315,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the canonical host constants alone. */
-    const unsigned long expected = 992015905UL;
+    const unsigned long expected = 3155940340UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

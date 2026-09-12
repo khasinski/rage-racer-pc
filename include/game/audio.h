@@ -163,7 +163,6 @@ extern EngineSoundCurveRow
     g_EngineSoundCurves[ENGINE_SOUND_BANK_COUNT][ENGINE_SOUND_PARAMETER_COUNT];
 extern EngineSoundState g_EngineSoundState;
 
-extern const char g_MsgTooManyVoices[];
 extern s32 g_ActiveSpecialCue;
 extern s32 g_AudioLoadSlot;
 extern s32 g_AudioLoadedSlotMask;
@@ -174,10 +173,6 @@ extern s32 g_IndexedEffectIndexPrev;
 extern s32 g_IndexedEffectPitch;
 extern s32 g_IndexedEffectVolume;
 extern s32 g_LastSpecialCueRequest;
-extern const char g_MsgSeqVabOpenHeadError[];
-extern const char g_MsgSeqVabTransBodyError[];
-extern const char g_MsgVabOpenHeadError[];
-extern const char g_MsgVabTransBodyError[];
 extern s32 g_PanVoiceActive;
 extern s32 g_PanVoiceVolumeL;
 extern s32 g_PanVoiceVolumeR;

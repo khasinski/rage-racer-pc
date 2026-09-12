@@ -87,7 +87,7 @@ static void StartPairedSoundCue(s32 bank, s32 cue, s32 volL, s32 volR) {
     failed = voiceA < 0 || voiceB < 0;
 
     if (failed) {
-        printf("%s", g_MsgTooManyVoices);
+        printf("Too many voice\n");
     }
 }
 

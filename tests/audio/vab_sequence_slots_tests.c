@@ -13,8 +13,6 @@ s32 g_SeqVolumeFadeStep;
 s32 g_AudioLoadSlot;
 s32 g_AudioLoadedSlotMask;
 s32 g_VabSpuAddress[AUDIO_SLOT_COUNT];
-const char g_MsgSeqVabOpenHeadError[] = "open";
-const char g_MsgSeqVabTransBodyError[] = "body";
 
 static s16 s_openResult = 7;
 static s16 s_bodyResult = 8;

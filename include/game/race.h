@@ -281,7 +281,6 @@ extern s32 g_CountdownBoardOffset;
 extern char *g_CourseNames[COURSE_SLOT_COUNT];
 extern s32 g_EndingWashLevel;
 extern s32 g_LostRaceChoice;
-extern char g_MsgGame0Ok[];
 extern s32 g_NameEntryChar;
 extern u8 g_NameEntryCharset[];
 extern s32 g_NameEntryCursor;

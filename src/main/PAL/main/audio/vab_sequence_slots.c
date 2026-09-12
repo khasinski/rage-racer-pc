@@ -12,14 +12,14 @@ s32 OpenSequenceAudioSlot(u8 *header, u8 *body, void *seq) {
     openedVabId = SsVabOpenHeadSticky(
         header, -1, g_VabSpuAddress[AUDIO_SLOT_SEQUENCE]);
     if (openedVabId == -1) {
-        printf("%s", g_MsgSeqVabOpenHeadError);
+        printf("SsVabOpenHead Error\n");
         return -1;
     }
 
     vabId = SsVabTransBody(body, openedVabId);
     if (vabId == -1) {
         SsVabClose(openedVabId);
-        printf("%s", g_MsgSeqVabTransBodyError);
+        printf("SsVabTransBody Error\n");
         return -1;
     }
     sequenceHandle = SsSeqOpen(seq, vabId);
