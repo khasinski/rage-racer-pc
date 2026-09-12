@@ -148,7 +148,7 @@ int main(void) {
     CHECK(s_shadowY[0] == 0xD0 && s_shadowY[1] == 0x100 &&
           s_shadowY[2] == 0x130);
     CHECK(s_arrowX == 0x14 && s_arrowY == 0x78);
-    CHECK(s_hint == 5 && s_padHints == 1);
+    CHECK(s_hint == MENU_OPTION_HINT_MEMORY_CARD_SAVE && s_padHints == 1);
     /* Five sprites, three hint packets, three tiles, three shadows. */
     CHECK(g_RenderState.draw.packetCursor == s_packets + 14);
 
@@ -158,7 +158,8 @@ int main(void) {
     CHECK(s_sprites[1].y == 0x58 && s_sprites[2].y == 0x78);
     CHECK(s_tileCount == 4);
     CHECK(s_tiles[2].x == 0x3C && s_tiles[2].y == 0x12C);
-    CHECK(s_arrowY == 0x58 && s_hint == 6 && s_padHints == 1);
+    CHECK(s_arrowY == 0x58 && s_hint == MENU_OPTION_HINT_MEMORY_CARD_LOAD &&
+          s_padHints == 1);
     CHECK(g_RenderState.draw.packetCursor == s_packets + 16);
 
     g_McMessageColumnX[2] = 42;

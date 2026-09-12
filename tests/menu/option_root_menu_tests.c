@@ -18,10 +18,8 @@ s16 g_GrandPrixSeries;
 s32 g_OptionMenuCursor;
 u16 g_PadPressed;
 GameRenderState g_RenderState;
-s32 g_ScreenOffsetEditX;
-s32 g_ScreenOffsetEditY;
-ScreenOffset g_ScreenOffsetX;
-ScreenOffset g_ScreenOffsetY;
+s32 g_ClassRecordColumn;
+s32 g_ClassRecordRow;
 
 typedef struct LabelRecord {
     s32 x;
@@ -33,7 +31,7 @@ typedef struct LabelRecord {
 
 static GameFrameContext s_frame;
 static u8 s_packets[128];
-static LabelRecord s_labels[6];
+static LabelRecord s_labels[5];
 static s32 s_labelCount;
 static s32 s_lastCue;
 static GameSceneId s_lastExitScene;
@@ -96,10 +94,8 @@ static void Reset(void) {
     g_OptionMenuCursor = 0;
     g_PadPressed = 0;
     g_ClassRecordMenuCursor = -1;
-    g_ScreenOffsetEditX = -1;
-    g_ScreenOffsetEditY = -1;
-    g_ScreenOffsetX = 23;
-    g_ScreenOffsetY = -17;
+    g_ClassRecordColumn = -1;
+    g_ClassRecordRow = -1;
     s_labelCount = 0;
     s_lastCue = 0;
     s_lastExitScene = GAME_SCENE_BOOT_LOGO;
@@ -112,19 +108,18 @@ static void Reset(void) {
 }
 
 int main(void) {
-    static const LabelRecord expected[6] = {
+    static const LabelRecord expected[5] = {
         {0x24, 0x94, 0x3C, 0x00, 0x48},
         {0x24, 0xB4, 0x88, 0x40, 0x48},
         {0x24, 0xD4, 0x74, 0x00, 0x60},
         {0x24, 0xF4, 0x5C, 0x74, 0x60},
-        {0x24, 0x114, 0x64, 0x00, 0x78},
-        {0x24, 0x134, 0x1C, 0xD0, 0x60},
+        {0x24, 0x114, 0x1C, 0xD0, 0x60},
     };
     s32 cursor;
 
     Reset();
     DrawOptionRootMenu();
-    CHECK(s_labelCount == 6);
+    CHECK(s_labelCount == 5);
     CHECK(memcmp(s_labels, expected, sizeof(expected)) == 0);
     CHECK(s_drawMode == 0x3F && s_cursorCalls == 1);
 
@@ -136,13 +131,13 @@ int main(void) {
     Reset();
     g_OptionMenuCursor = INT_MAX;
     DrawOptionRootMenu();
-    CHECK(g_OptionMenuCursor == 5 && s_cursorCalls == 1);
+    CHECK(g_OptionMenuCursor == 4 && s_cursorCalls == 1);
 
     Reset();
     g_OptionMenuCursor = 0;
     g_PadPressed = PAD_UP;
     UpdateOptionRootMenu();
-    CHECK(g_OptionMenuCursor == 5 && s_lastCue == 1);
+    CHECK(g_OptionMenuCursor == 4 && s_lastCue == 1);
 
     Reset();
     g_OptionMenuCursor = INT_MAX;
@@ -150,7 +145,7 @@ int main(void) {
     UpdateOptionRootMenu();
     CHECK(g_OptionMenuCursor == 0 && s_lastCue == 1);
 
-    for (cursor = 0; cursor < 6; cursor++) {
+    for (cursor = 0; cursor < 5; cursor++) {
         Reset();
         g_OptionMenuCursor = cursor;
         g_PadPressed = PAD_CONFIRM;
@@ -159,7 +154,7 @@ int main(void) {
         if (cursor == 0) {
             CHECK(g_GameMode == OPTION_MODE_CLASS_MENU &&
                   g_ClassRecordMenuCursor == 0);
-            CHECK(g_ScreenOffsetEditX == 0 && g_ScreenOffsetEditY == 0);
+            CHECK(g_ClassRecordColumn == 0 && g_ClassRecordRow == 0);
         } else if (cursor == 1) {
             CHECK(g_GameMode == OPTION_MODE_CONTROLLER_CONFIG &&
                   s_controllerConfigCalls == 1);
@@ -169,9 +164,6 @@ int main(void) {
         } else if (cursor == 3) {
             CHECK(s_trackLoadCalls == 1 &&
                   s_lastExitScene == GAME_SCENE_ENTER_BGM_SELECT);
-        } else if (cursor == 4) {
-            CHECK(g_GameMode == OPTION_MODE_SCREEN_ADJUST);
-            CHECK(g_ScreenOffsetEditX == 23 && g_ScreenOffsetEditY == -17);
         } else {
             CHECK(s_lastExitScene == GAME_SCENE_ENTER_FRONTEND);
         }

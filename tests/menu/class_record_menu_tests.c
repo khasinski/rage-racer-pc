@@ -16,8 +16,8 @@ GameFrameContext *g_DrawBuffer;
 s32 g_GameMode;
 u16 g_PadPressed;
 GameRenderState g_RenderState;
-s32 g_ScreenOffsetEditX;
-s32 g_ScreenOffsetEditY;
+s32 g_ClassRecordColumn;
+s32 g_ClassRecordRow;
 
 static GameFrameContext s_frame;
 static u8 s_packets[512];
@@ -91,8 +91,8 @@ static void Reset(void) {
     g_RenderState.draw.packetCursor = s_packets;
     g_GameMode = OPTION_MODE_CLASS_MENU;
     g_ClassRecordMenuCursor = 0;
-    g_ScreenOffsetEditX = 0;
-    g_ScreenOffsetEditY = 0;
+    g_ClassRecordColumn = 0;
+    g_ClassRecordRow = 0;
     g_PadPressed = 0;
     s_lastCue = 0;
     s_soundCalls = 0;
@@ -135,12 +135,12 @@ static int CheckBrowseMove(s32 x, s32 y, u16 buttons, s32 expectedX,
                            s32 expectedY, s32 expectedSoundCalls) {
     Reset();
     g_GameMode = OPTION_MODE_CLASS_BROWSE;
-    g_ScreenOffsetEditX = x;
-    g_ScreenOffsetEditY = y;
+    g_ClassRecordColumn = x;
+    g_ClassRecordRow = y;
     g_PadPressed = buttons;
     UpdateClassRecordBrowse();
-    CHECK(g_ScreenOffsetEditX == expectedX);
-    CHECK(g_ScreenOffsetEditY == expectedY);
+    CHECK(g_ClassRecordColumn == expectedX);
+    CHECK(g_ClassRecordRow == expectedY);
     CHECK(s_soundCalls == expectedSoundCalls);
     return 0;
 }

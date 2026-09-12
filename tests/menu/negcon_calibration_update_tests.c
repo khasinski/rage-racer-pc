@@ -2,6 +2,7 @@
 #include <limits.h>
 
 #include "game/input_internal.h"
+#include "game/menu_types.h"
 #include "game/state.h"
 
 u8 g_PadType;
@@ -75,7 +76,7 @@ static void CheckSharedFrame(s32 expectedSteerDraws, s32 expectedTwistDraws) {
     CHECK(g_ControllerSceneAngleX == -896);
     CHECK(s_steerDrawCount == expectedSteerDraws);
     CHECK(s_twistDrawCount == expectedTwistDraws);
-    CHECK(s_hintVariant == 4);
+    CHECK(s_hintVariant == MENU_OPTION_HINT_NEGCON_CALIBRATION);
     CHECK(s_sceneVariant == 1);
 }
 

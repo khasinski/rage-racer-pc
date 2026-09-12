@@ -57,8 +57,6 @@ void InitSubsystems(void) {
     ResetGraph(0);
     SetGraphDebug(0);
     SetDispMask(0);
-    g_ScreenOffsetY = 0;
-    g_ScreenOffsetX = 0;
     InitGeom();
 
     GameInitPad();

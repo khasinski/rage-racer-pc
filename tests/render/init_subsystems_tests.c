@@ -30,8 +30,6 @@ s16 g_NegconAnalogL;
 s16 g_NegconSteer;
 s32 g_MirrorMode;
 s16 g_ExtraGrandPrixUnlocked;
-ScreenOffset g_ScreenOffsetX;
-ScreenOffset g_ScreenOffsetY;
 GameRenderState g_RenderState;
 
 enum InitCall {
@@ -108,8 +106,6 @@ int main(void) {
     const PadState clearedPad = {0};
 
     memset(&g_RenderState, 0x7F, sizeof(g_RenderState));
-    g_ScreenOffsetX = 12;
-    g_ScreenOffsetY = -8;
     g_PadMappingIndex = 7;
     g_NegconMappingIndex = 7;
     g_NegconMaxTwist = 7;
@@ -140,7 +136,6 @@ int main(void) {
     CHECK(s_callCount == (s32)(sizeof(expectedCalls) / sizeof(expectedCalls[0])));
     CHECK(memcmp(s_calls, expectedCalls, sizeof(expectedCalls)) == 0);
     CHECK(s_resetGraphMode == 0 && s_renderOtShift == 5);
-    CHECK(g_ScreenOffsetX == 0 && g_ScreenOffsetY == 0);
     CHECK(g_PadMappingIndex == 0 && g_NegconMappingIndex == 0);
     CHECK(g_NegconSteerPlay == 1);
     CHECK(g_NegconSteerNeutral == 0 && g_NegconMaxTwist == 0);

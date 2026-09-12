@@ -14,8 +14,8 @@ enum {
 };
 
 static s32 SelectedClassRecordIndex(void) {
-    return g_ScreenOffsetEditY * CLASS_RECORD_GRID_COLUMN_COUNT +
-           g_ScreenOffsetEditX;
+    return g_ClassRecordRow * CLASS_RECORD_GRID_COLUMN_COUNT +
+           g_ClassRecordColumn;
 }
 
 static void DrawClassRecordDetail(void) {
@@ -36,7 +36,7 @@ static void DrawClassRecordDetail(void) {
     next = GameQueueSpriteTrans(detailOt, next, 0xBC, 0x40, 0x18, 0x10,
                                 0, 0x6C, 0x7F40);
     next = GameQueueSpriteTrans(detailOt, next, 0xD8, 0x40, 8, 0x10,
-                                g_ScreenOffsetEditX * 8 + 8, 0x18, 0x7F40);
+                                g_ClassRecordColumn * 8 + 8, 0x18, 0x7F40);
 
     if (g_ClassRecords[recordIndex].place == -1) {
         for (i = 0; i < 8; i++) {
@@ -173,36 +173,36 @@ void UpdateClassRecordBrowse(void) {
     s32 oldRow;
     u16 buttons;
 
-    g_ScreenOffsetEditX = AddClampedMenuValue(
-        g_ScreenOffsetEditX, 0, 0, CLASS_RECORD_GRID_LAST_TOP_COLUMN);
-    g_ScreenOffsetEditY = AddClampedMenuValue(
-        g_ScreenOffsetEditY, 0, 0, CLASS_RECORD_GRID_BOTTOM_ROW);
-    if (g_ScreenOffsetEditX == CLASS_RECORD_GRID_LAST_TOP_COLUMN) {
-        g_ScreenOffsetEditY = 0;
+    g_ClassRecordColumn = AddClampedMenuValue(
+        g_ClassRecordColumn, 0, 0, CLASS_RECORD_GRID_LAST_TOP_COLUMN);
+    g_ClassRecordRow = AddClampedMenuValue(
+        g_ClassRecordRow, 0, 0, CLASS_RECORD_GRID_BOTTOM_ROW);
+    if (g_ClassRecordColumn == CLASS_RECORD_GRID_LAST_TOP_COLUMN) {
+        g_ClassRecordRow = 0;
     }
     DrawClassRecordGrid();
-    oldColumn = g_ScreenOffsetEditX;
-    oldRow = g_ScreenOffsetEditY;
+    oldColumn = g_ClassRecordColumn;
+    oldRow = g_ClassRecordRow;
     buttons = g_PadPressed;
 
     if ((buttons & PAD_UP) && oldRow == CLASS_RECORD_GRID_BOTTOM_ROW) {
-        g_ScreenOffsetEditY = 0;
+        g_ClassRecordRow = 0;
     }
-    if ((buttons & PAD_DOWN) && g_ScreenOffsetEditY == 0) {
-        g_ScreenOffsetEditY = CLASS_RECORD_GRID_BOTTOM_ROW;
+    if ((buttons & PAD_DOWN) && g_ClassRecordRow == 0) {
+        g_ClassRecordRow = CLASS_RECORD_GRID_BOTTOM_ROW;
     }
     if (buttons & PAD_LEFT) {
-        g_ScreenOffsetEditX = WrapMenuIndex(
-            g_ScreenOffsetEditX, -1, CLASS_RECORD_GRID_COLUMN_COUNT);
+        g_ClassRecordColumn = WrapMenuIndex(
+            g_ClassRecordColumn, -1, CLASS_RECORD_GRID_COLUMN_COUNT);
     }
     if (buttons & PAD_RIGHT) {
-        g_ScreenOffsetEditX = WrapMenuIndex(
-            g_ScreenOffsetEditX, 1, CLASS_RECORD_GRID_COLUMN_COUNT);
+        g_ClassRecordColumn = WrapMenuIndex(
+            g_ClassRecordColumn, 1, CLASS_RECORD_GRID_COLUMN_COUNT);
     }
-    if (g_ScreenOffsetEditX == CLASS_RECORD_GRID_LAST_TOP_COLUMN) {
-        g_ScreenOffsetEditY = 0;
+    if (g_ClassRecordColumn == CLASS_RECORD_GRID_LAST_TOP_COLUMN) {
+        g_ClassRecordRow = 0;
     }
-    if (oldColumn != g_ScreenOffsetEditX || oldRow != g_ScreenOffsetEditY) {
+    if (oldColumn != g_ClassRecordColumn || oldRow != g_ClassRecordRow) {
         PlaySoundCue(1);
     }
     if (buttons & (PAD_CONFIRM | PAD_CANCEL)) {

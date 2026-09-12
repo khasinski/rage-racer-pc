@@ -37,7 +37,7 @@ _Static_assert(sizeof(g_TeamLogoClutRect) == 8,
                "team-logo CLUT rectangle ABI changed");
 _Static_assert(sizeof(g_TeamLogoRect) == 8,
                "team-logo rectangle ABI changed");
-_Static_assert(sizeof(g_OptionHintCaptions) == 28,
+_Static_assert(sizeof(g_OptionHintCaptions) == 24,
                "option hint caption ABI changed");
 _Static_assert(sizeof(g_ClassRecordCellPoints) == 44,
                "class record point ABI changed");

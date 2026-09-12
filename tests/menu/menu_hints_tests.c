@@ -77,9 +77,10 @@ int main(void) {
     CHECK(s_calls[2].x == 0xC4 && s_calls[2].u == 0xEC);
     CHECK(g_RenderState.draw.packetCursor == s_packets + 4);
 
-    g_OptionHintCaptions[4] = (OptionHintCaption){4, 5, 6, 8};
+    g_OptionHintCaptions[MENU_OPTION_HINT_NEGCON_CALIBRATION] =
+        (OptionHintCaption){4, 5, 6, 8};
     ResetCalls();
-    DrawOptionHintBar(4);
+    DrawOptionHintBar(MENU_OPTION_HINT_NEGCON_CALIBRATION);
     CHECK(s_callCount == 4);
     CHECK(s_calls[0].x == 0x5A && s_calls[1].x == 0x6A);
     CHECK(s_calls[2].x == 0x72 && s_calls[2].width == 0x30);

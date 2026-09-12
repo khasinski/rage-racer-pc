@@ -85,8 +85,6 @@ static inline void GameDrawOrderingTable(GameOrderingTableEntry *lastEntry) {
     DrawOTag((void *)lastEntry);
 }
 
-typedef s32 ScreenOffset;
-
 extern Matrix g_MirrorViewMatrix;
 extern Matrix g_SceneLightMatrix;
 extern Matrix g_SceneColorMatrix;
@@ -117,8 +115,6 @@ static inline GameOrderingTableEntry *GameSecondaryOrderingTable(s32 depth) {
     return &g_DrawBuffer->layout.orderingTables[1][depth];
 }
 extern GameFrameContext g_FrameContexts[2];
-extern ScreenOffset g_ScreenOffsetX;
-extern ScreenOffset g_ScreenOffsetY;
 extern s32 g_FrameParity;
 extern Font8x8Cell g_Font8x8Cells[FONT_8X8_CELL_COUNT];
 extern Rect g_DrawModeEnv;

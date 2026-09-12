@@ -232,7 +232,7 @@ static const HostStateBlob s_blobs[] = {
     {"g_ClassPlaceBarSizes", BYTES(&g_ClassPlaceBarSizes),
      sizeof(g_ClassPlaceBarSizes)},
     {"g_ChanceDigits", BYTES(g_ChanceDigits), 12},
-    {"g_OptionHintCaptions", (const unsigned char *)g_OptionHintCaptions, 28},
+    {"g_OptionHintCaptions", (const unsigned char *)g_OptionHintCaptions, 24},
     {"g_ClassRecordCellPoints", (const unsigned char *)g_ClassRecordCellPoints,
      44},
     {"g_ClassRecordCellSprites",
@@ -313,7 +313,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the canonical host constants alone. */
-    const unsigned long expected = 432160074UL;
+    const unsigned long expected = 56180094UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

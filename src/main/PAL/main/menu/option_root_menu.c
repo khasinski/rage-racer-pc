@@ -13,7 +13,6 @@ typedef enum OptionRootItem {
     OPTION_ROOT_CONTROLLER,
     OPTION_ROOT_SOUND,
     OPTION_ROOT_RANDOM_RACE,
-    OPTION_ROOT_SCREEN,
     OPTION_ROOT_EXIT,
     OPTION_ROOT_ITEM_COUNT,
 } OptionRootItem;
@@ -31,7 +30,7 @@ typedef struct OptionRootLabel {
 
 static const OptionRootLabel s_optionRootLabels[OPTION_ROOT_ITEM_COUNT] = {
     {0x3C, 0x00, 0x48}, {0x88, 0x40, 0x48}, {0x74, 0x00, 0x60},
-    {0x5C, 0x74, 0x60}, {0x64, 0x00, 0x78}, {0x1C, 0xD0, 0x60},
+    {0x5C, 0x74, 0x60}, {0x1C, 0xD0, 0x60},
 };
 
 void DrawOptionRootMenu(void) {
@@ -68,7 +67,7 @@ static void StartRandomOptionRace(void) {
     StartOptionMenuExit(GAME_SCENE_ENTER_BGM_SELECT);
 }
 
-/* OPTION_MODE_ROOT: the six-row root menu and where each row goes. */
+/* OPTION_MODE_ROOT: the root menu and where each row goes. */
 void UpdateOptionRootMenu(void) {
     s32 oldCursor;
 
@@ -91,8 +90,8 @@ void UpdateOptionRootMenu(void) {
         case OPTION_ROOT_TROPHIES:
             g_GameMode = OPTION_MODE_CLASS_MENU;
             g_ClassRecordMenuCursor = 0;
-            g_ScreenOffsetEditX = 0;
-            g_ScreenOffsetEditY = 0;
+            g_ClassRecordColumn = 0;
+            g_ClassRecordRow = 0;
             break;
         case OPTION_ROOT_CONTROLLER:
             BeginControllerConfig();
@@ -104,11 +103,6 @@ void UpdateOptionRootMenu(void) {
             break;
         case OPTION_ROOT_RANDOM_RACE:
             StartRandomOptionRace();
-            break;
-        case OPTION_ROOT_SCREEN:
-            g_GameMode = OPTION_MODE_SCREEN_ADJUST;
-            g_ScreenOffsetEditX = g_ScreenOffsetX;
-            g_ScreenOffsetEditY = g_ScreenOffsetY;
             break;
         case OPTION_ROOT_EXIT:
             StartOptionMenuExit(GAME_SCENE_ENTER_FRONTEND);

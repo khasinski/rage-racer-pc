@@ -31,7 +31,6 @@ void (*g_NativeGameModeHandlers[OPTION_MODE_COUNT])(void) = {
     UpdateClassRecordBrowse,
     UpdateSoundOptionMenu,
     UpdateSoundSettingAdjust,
-    UpdateScreenAdjustScreen,
     UpdateControllerConfigScreen,
     BeginNegconCalibration,
     UpdateNegconNeutralScreen,

@@ -6,7 +6,6 @@
 enum {
     OPTION_LETTERBOX_STEP = 4,
     OPTION_LETTERBOX_MENU_HEIGHT = 240,
-    OPTION_LETTERBOX_FULL_HEIGHT = 480,
 };
 
 static s32 ApproachLetterboxHeight(s32 height, s32 target) {
@@ -25,9 +24,6 @@ static s32 ApproachLetterboxHeight(s32 height, s32 target) {
 
 static void DrawOptionSceneOverlay(void) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(54);
-    s32 targetHeight = g_GameMode == OPTION_MODE_SCREEN_ADJUST
-                           ? OPTION_LETTERBOX_FULL_HEIGHT
-                           : OPTION_LETTERBOX_MENU_HEIGHT;
     u8 *next;
 
     if (g_GameMode != OPTION_MODE_NEGCON_NEUTRAL) {
@@ -35,22 +31,12 @@ static void DrawOptionSceneOverlay(void) {
     }
 
     g_OptionLetterboxHeight = AddClampedMenuValue(
-        g_OptionLetterboxHeight, 0, 0, OPTION_LETTERBOX_FULL_HEIGHT);
+        g_OptionLetterboxHeight, 0, 0, OPTION_LETTERBOX_MENU_HEIGHT);
     g_OptionLetterboxHeight =
-        ApproachLetterboxHeight(g_OptionLetterboxHeight, targetHeight);
+        ApproachLetterboxHeight(g_OptionLetterboxHeight,
+                                OPTION_LETTERBOX_MENU_HEIGHT);
 
     next = RENDER_PRIM_CURSOR_AS(u8);
-    if (g_GameMode == OPTION_MODE_SCREEN_ADJUST) {
-        next = AddTilePrim(ot, next, 0x10, 0x20, 0x120, 2,
-                           0xFF, 0xFF, 0xFF);
-        next = AddTilePrim(ot, next, 0x10, 0x1C0, 0x120, 2,
-                           0xFF, 0xFF, 0xFF);
-        next = GameQueueLine(ot, next, 0x10, 0x20, 0x10, 0x1C0,
-                             0xFF, 0xFF, 0xFF);
-        next = GameQueueLine(ot, next, 0x130, 0x20, 0x130, 0x1C0,
-                             0xFF, 0xFF, 0xFF);
-    }
-
     g_RenderState.draw.packetCursor = AddTilePrim(
         ot, next, 0, 0, 0x140, g_OptionLetterboxHeight, 0x85, 0x15, 0xE);
 }

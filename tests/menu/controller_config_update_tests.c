@@ -201,7 +201,9 @@ static void TestNeutralCaptureAndDisconnect(void) {
     CHECK(g_NegconNeutralI == 21 && g_NegconNeutralII == 31);
     CHECK(g_NegconNeutralL == 41);
     CHECK(s_cueCount == 1 && s_cues[0] == 2);
-    CHECK(s_neutralDraws == 1 && s_hintVariant == 4 && s_sceneVariant == 0);
+    CHECK(s_neutralDraws == 1 &&
+          s_hintVariant == MENU_OPTION_HINT_NEGCON_CALIBRATION &&
+          s_sceneVariant == 0);
 
     ResetState();
     SetCalibrationValues();
