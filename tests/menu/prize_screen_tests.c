@@ -43,9 +43,12 @@ static int s_bgmRequested;
 static int s_classAdvanced;
 static int s_fanfareTicks;
 static int s_fanfareFrames;
+static int s_drawClassBanner;
 
 void DrawFullscreenFadeTile(s32 step, s32 clut) { (void)step; (void)clut; }
-void DrawGrandPrixIntro(s32 drawClassBanner) { (void)drawClassBanner; }
+void DrawGrandPrixIntro(s32 drawClassBanner) {
+    s_drawClassBanner = drawClassBanner;
+}
 void DrawPrizeMoneyPanel(s32 step, s32 prize, s32 bonus) {
     (void)step; (void)prize; (void)bonus;
 }
@@ -91,6 +94,7 @@ static void Reset(s32 prize, s32 bonus) {
     s_classAdvanced = 0;
     s_fanfareTicks = 0;
     s_fanfareFrames = 0;
+    s_drawClassBanner = -1;
 }
 
 /*
@@ -157,6 +161,8 @@ int main(void) {
         Check(s_screen.state == PRIZE_SCREEN_STATE_COUNT_PRIZE,
               "prize panel reaches the counting state", s_screen.state,
               PRIZE_SCREEN_STATE_COUNT_PRIZE);
+        Check(s_drawClassBanner == 0, "intro hides the class banner",
+              s_drawClassBanner, 0);
     }
 
     /* Everything owed reaches the player, prize first and then the bonus. */
@@ -168,6 +174,8 @@ int main(void) {
           0);
     Check(s_screen.bonus == 0, "nothing left owed on the bonus",
           s_screen.bonus, 0);
+    Check(s_drawClassBanner == 1, "bonus phase shows the class banner",
+          s_drawClassBanner, 1);
     Check(s_screen.state == PRIZE_SCREEN_STATE_FADE_OUT,
           "screen finishes on the fade", s_screen.state,
           PRIZE_SCREEN_STATE_FADE_OUT);
@@ -286,21 +294,27 @@ int main(void) {
         Reset(0, 0);
         s_screen.state = PRIZE_SCREEN_STATE_FADE_OUT;
         s_screen.timer = 0;
-        for (i = 0; i < 300; i++) {
+        for (i = 0; i < 127; i++) {
             UpdatePrizeMoneyScreenState(&s_screen);
         }
-        Check(s_classAdvanced > 0, "the fade hands over to the next class",
+        Check(s_classAdvanced == 0, "normal fade waits 128 frames",
+              s_classAdvanced, 0);
+        UpdatePrizeMoneyScreenState(&s_screen);
+        Check(s_classAdvanced == 1, "normal fade advances on frame 128",
               s_classAdvanced, 1);
 
         Reset(0, 0);
         s_screen.state = PRIZE_SCREEN_STATE_FADE_OUT;
         g_SeriesCleared = 1;
         s_screen.timer = 0;
-        for (i = 0; i < 128; i++) {
+        for (i = 0; i < 255; i++) {
             UpdatePrizeMoneyScreenState(&s_screen);
         }
-        Check(s_classAdvanced == 0, "a cleared series fades at half the speed",
+        Check(s_classAdvanced == 0, "series fade waits 256 frames",
               s_classAdvanced, 0);
+        UpdatePrizeMoneyScreenState(&s_screen);
+        Check(s_classAdvanced == 1, "series fade advances on frame 256",
+              s_classAdvanced, 1);
     }
 
     if (s_failures != 0) {

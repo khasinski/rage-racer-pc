@@ -91,6 +91,8 @@ int main(void) {
 
     EnterPrizeScreenState(&s_screen);
     Check("prize screen scene", g_SceneId, 0x13);
+    Check("initial prize screen state", s_screen.state,
+          PRIZE_SCREEN_STATE_INTRO_FADE_IN);
     Check("initial fade timer", s_screen.timer, 0x100);
     Check("frame sync threshold", g_FrameSyncThreshold, 0x80);
     Check("second-place prize", s_screen.prize, 16000);
