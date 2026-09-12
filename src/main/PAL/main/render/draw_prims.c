@@ -82,7 +82,8 @@ u8 *GameQueueSpriteTrans(GameOrderingTableEntry *ot, u8 *packetCursor, s32 x,
                              textureV, clutIndex, 0, 0, 0, 1, 1);
 }
 
-void SetDrawClipRect(GameOrderingTableEntry *ot, s32 x, s32 y, s32 w, s32 h) {
+void SetDrawClipRect(GameDrawContext *draw, GameOrderingTableEntry *ot,
+                     s32 x, s32 y, s32 w, s32 h) {
     int64_t right = (int64_t)x + w;
     int64_t bottom = (int64_t)y + h;
     s32 left;
@@ -104,10 +105,10 @@ void SetDrawClipRect(GameOrderingTableEntry *ot, s32 x, s32 y, s32 w, s32 h) {
     rect.y = top;
     rect.w = right - left;
     rect.h = bottom - top;
-    packet = RENDER_PRIM_CURSOR_AS(DrawPacket);
+    packet = (DrawPacket *)draw->packetCursor;
     SetDrawArea(packet, &rect);
     AddPrim(ot, packet);
-    g_RenderState.draw.packetCursor = packet + 1;
+    draw->packetCursor = packet + 1;
 }
 
 void DrawSprite(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 u0, u16 v0,

@@ -82,13 +82,13 @@ static void DrawCanvasPanel(GameOrderingTableEntry *ot, s32 slide) {
     texRight = texLeft + (g_TeamLogoZoomSpan / 8);
     texBottom = texTop + (g_TeamLogoZoomSpan / 8);
 
-    SetDrawClipRect(ot, (s16)0, (s16)0, (s16)0x140, (s16)0x1E0);
+    SetDrawClipRect(&g_RenderState.draw, ot, (s16)0, (s16)0, (s16)0x140, (s16)0x1E0);
     GameDrawTexturedQuad(ot, (s16)quadLeft, (s16)quadTop, (s16)quadRight, (s16)quadTop,
                          (s16)quadLeft, (s16)quadBottom, (s16)quadRight, (s16)quadBottom,
                          (u8)texLeft, (u8)texTop, (u8)texRight, (u8)texTop, (u8)texLeft,
                          (u8)texBottom, (u8)texRight, (u8)texBottom, (u8)0x7F, (u8)0x7F, (u8)0x7F,
                          0x27F, 1, 0, TeamLogoTexturePage());
-    SetDrawClipRect(ot, (s16)(frameX + 1), (s16)(panelTop + 2), (s16)0x80, (s16)0x100);
+    SetDrawClipRect(&g_RenderState.draw, ot, (s16)(frameX + 1), (s16)(panelTop + 2), (s16)0x80, (s16)0x100);
 }
 /*
  * The small unzoomed preview, with the guide lines that mark the brush and
@@ -163,13 +163,13 @@ static void DrawPreviewPanel(GameOrderingTableEntry *ot, s32 slide) {
     texLeft = (g_TeamLogoRect.coordinate.x.value * 4) - 1;
     texTop = g_TeamLogoRect.coordinate.y.byte.low - 1;
     clutIndex = GetClut(g_TeamLogoClutRect.x, g_TeamLogoClutRect.y);
-    SetDrawClipRect(ot, (s16)0, (s16)0, (s16)0x140, (s16)0x1E0);
+    SetDrawClipRect(&g_RenderState.draw, ot, (s16)0, (s16)0, (s16)0x140, (s16)0x1E0);
     GameDrawTexturedQuad(ot, (s16)0x2F, (s16)panelTop, (s16)0x70, (s16)panelTop, (s16)0x2F,
                          (s16)(panelTop + 0x83), (s16)0x70, (s16)(panelTop + 0x83), (u8)texLeft,
                          (u8)texTop, (u8)(texLeft + 0x41), (u8)texTop, (u8)texLeft,
                          (u8)(texTop + 0x41), (u8)(texLeft + 0x41), (u8)(texTop + 0x41), (u8)0x7F,
                          (u8)0x7F, (u8)0x7F, clutIndex & 0xFFFF, 1, 0, TeamLogoTexturePage());
-    SetDrawClipRect(ot, (s16)0x30, (s16)(panelTop + 2), (s16)0x40, (s16)0x80);
+    SetDrawClipRect(&g_RenderState.draw, ot, (s16)0x30, (s16)(panelTop + 2), (s16)0x40, (s16)0x80);
 }
 
 /*

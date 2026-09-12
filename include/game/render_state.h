@@ -195,12 +195,14 @@ _Static_assert(offsetof(GameViewState, angleX) ==
                    offsetof(GameCameraState, angleX),
                "the camera block puts the angles somewhere else");
 
-static inline void LoadViewWork(GameViewWork *view) {
-    *view = g_RenderState.camera;
+static inline void LoadViewWork(GameViewWork *view,
+                                const GameCameraState *camera) {
+    *view = *camera;
 }
 
-static inline void StoreViewWork(const GameViewWork *view) {
-    g_RenderState.camera = *view;
+static inline void StoreViewWork(GameCameraState *camera,
+                                 const GameViewWork *view) {
+    *camera = *view;
 }
 
 /* Course object bank. SubmitCourseModel / SubmitCourseModel2 (0x800296BC,

@@ -92,7 +92,7 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
     u8 nodeChanged;
 
     cameraNodeIndex = FindNearestTrackCamera(car);
-    LoadViewWork(&viewWork);
+    LoadViewWork(&viewWork, &g_RenderState.camera);
     view = &viewWork;
     previousNodeIndex = g_CameraNodeIndex;
     g_CameraNodeIndex = cameraNodeIndex;
@@ -125,7 +125,7 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
         CameraViewFromOrbit(car, view);
         break;
     }
-    StoreViewWork(&viewWork);
+    StoreViewWork(&g_RenderState.camera, &viewWork);
     SetCameraRotMatrix();
     if (cameraModeSel > 0 &&
         car == GetCarRenderObject(AsRivalCar(&g_PlayerCar))) {
@@ -137,9 +137,9 @@ void UpdateCamera(CameraViewMode cameraModeSel, GameRenderObject *car) {
 void UpdateLookBehindCamera(GameRenderObject *car) {
     GameViewWork viewWork;
 
-    LoadViewWork(&viewWork);
+    LoadViewWork(&viewWork, &g_RenderState.camera);
     CameraViewFromLookBehind(car, &viewWork);
-    StoreViewWork(&viewWork);
+    StoreViewWork(&g_RenderState.camera, &viewWork);
     SetCameraRotMatrix();
     SelectModelBank(0);
     DrawPlayerCarModel(car);

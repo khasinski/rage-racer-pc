@@ -410,6 +410,7 @@ void DrawRectOutline(GameOrderingTableEntry *ot, s32 xa, s32 ya, s32 w,
                      s32 h, u8 r, u8 g, u8 b, u8 code);
 /* Clips (x, y, w, h) to the 320x480 frame and queues a SetDrawArea packet. */
 void SetDrawClipRect(
+    GameDrawContext *draw,
     GameOrderingTableEntry *ot,
     s32 x,
     s32 y,

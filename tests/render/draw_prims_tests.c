@@ -185,7 +185,7 @@ static void CheckClipRect(void) {
     ResetPackets();
     memset(&expected, 0, sizeof(expected));
     SetDrawArea(&expected, &rect);
-    SetDrawClipRect(&s_ot, -5, -7, 400, 500);
+    SetDrawClipRect(&g_RenderState.draw, &s_ot, -5, -7, 400, 500);
     actual = (DrawPacket *)s_packets.bytes;
     CHECK_EQ(actual->code[0], expected.code[0], "clip top-left code");
     CHECK_EQ(actual->code[1], expected.code[1], "clip bottom-right code");
@@ -194,33 +194,33 @@ static void CheckClipRect(void) {
              1, "clip cursor");
 
     ResetPackets();
-    SetDrawClipRect(&s_ot, -20, 10, 10, 20);
+    SetDrawClipRect(&g_RenderState.draw, &s_ot, -20, 10, 10, 20);
     CHECK_EQ(g_RenderState.draw.packetCursor == s_packets.bytes, 1,
              "clip rejects left rectangle");
-    SetDrawClipRect(&s_ot, 320, 10, 1, 20);
+    SetDrawClipRect(&g_RenderState.draw, &s_ot, 320, 10, 1, 20);
     CHECK_EQ(g_RenderState.draw.packetCursor == s_packets.bytes, 1,
              "clip rejects right rectangle");
-    SetDrawClipRect(&s_ot, 10, -20, 20, 10);
+    SetDrawClipRect(&g_RenderState.draw, &s_ot, 10, -20, 20, 10);
     CHECK_EQ(g_RenderState.draw.packetCursor == s_packets.bytes, 1,
              "clip rejects top rectangle");
-    SetDrawClipRect(&s_ot, 10, 480, 20, 1);
+    SetDrawClipRect(&g_RenderState.draw, &s_ot, 10, 480, 20, 1);
     CHECK_EQ(g_RenderState.draw.packetCursor == s_packets.bytes, 1,
              "clip rejects bottom rectangle");
 
-    SetDrawClipRect(&s_ot, 10, 10, 0, 20);
-    SetDrawClipRect(&s_ot, 10, 10, -1, 20);
-    SetDrawClipRect(&s_ot, 10, 10, 20, 0);
-    SetDrawClipRect(&s_ot, 10, 10, 20, -1);
+    SetDrawClipRect(&g_RenderState.draw, &s_ot, 10, 10, 0, 20);
+    SetDrawClipRect(&g_RenderState.draw, &s_ot, 10, 10, -1, 20);
+    SetDrawClipRect(&g_RenderState.draw, &s_ot, 10, 10, 20, 0);
+    SetDrawClipRect(&g_RenderState.draw, &s_ot, 10, 10, 20, -1);
     CHECK_EQ(g_RenderState.draw.packetCursor == s_packets.bytes, 1,
              "clip rejects non-positive dimensions");
 
-    SetDrawClipRect(&s_ot, INT32_MAX, 10, 20, 20);
-    SetDrawClipRect(&s_ot, 10, INT32_MAX, 20, 20);
+    SetDrawClipRect(&g_RenderState.draw, &s_ot, INT32_MAX, 10, 20, 20);
+    SetDrawClipRect(&g_RenderState.draw, &s_ot, 10, INT32_MAX, 20, 20);
     CHECK_EQ(g_RenderState.draw.packetCursor == s_packets.bytes, 1,
              "clip rejects overflowing off-screen coordinates");
 
-    SetDrawClipRect(&s_ot, INT32_MIN, 10, INT32_MAX, 20);
-    SetDrawClipRect(&s_ot, 10, INT32_MIN, 20, INT32_MAX);
+    SetDrawClipRect(&g_RenderState.draw, &s_ot, INT32_MIN, 10, INT32_MAX, 20);
+    SetDrawClipRect(&g_RenderState.draw, &s_ot, 10, INT32_MIN, 20, INT32_MAX);
     CHECK_EQ(g_RenderState.draw.packetCursor == s_packets.bytes, 1,
              "clip rejects extreme rectangles before the screen");
 }

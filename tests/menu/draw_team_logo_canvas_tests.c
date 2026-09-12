@@ -125,7 +125,8 @@ s32 GameDrawNumber(s32 x, s16 y, s32 flags, u32 value, u8 r, u8 g, u8 b,
     return 0;
 }
 
-void SetDrawClipRect(GameOrderingTableEntry *ot, s32 x, s32 y, s32 w, s32 h) {
+void SetDrawClipRect(GameDrawContext *draw, GameOrderingTableEntry *ot, s32 x, s32 y, s32 w, s32 h) {
+    (void)draw;
     (void)ot;
     RECORD("clip", x, y, w, h);
 }

@@ -64,11 +64,11 @@ void DrawMenuLightBurst(s32 step) {
 
     if (g_MenuLightBurstLevel > 0 && RENDER_OT_BASE != NULL) {
         ot = &RENDER_OT_BASE[0x2BF];
-        SetDrawClipRect(ot, 0, 0, 0x140, 0x1E0);
+        SetDrawClipRect(&g_RenderState.draw, ot, 0, 0, 0x140, 0x1E0);
         DrawLightBurstRays(ot, g_MenuLightBurstLevel);
         DrawLightBurstBands(ot, g_MenuLightBurstLevel);
         DrawLightBurstFadeQuad(ot, g_MenuLightBurstLevel);
-        SetDrawClipRect(ot, 0x48, 0, 0x140, 0x1E0);
+        SetDrawClipRect(&g_RenderState.draw, ot, 0x48, 0, 0x140, 0x1E0);
     }
 
     if (step > 0) {

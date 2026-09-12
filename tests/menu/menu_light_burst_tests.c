@@ -63,7 +63,8 @@ void DrawSolidRect(GameOrderingTableEntry *ot, s32 x, s32 y, s32 width, s32 heig
     s_bands[s_bandCount++] = (BandRecord){x, y, width, r};
 }
 
-void SetDrawClipRect(GameOrderingTableEntry *ot, s32 x, s32 y, s32 width, s32 height) {
+void SetDrawClipRect(GameDrawContext *draw, GameOrderingTableEntry *ot, s32 x, s32 y, s32 width, s32 height) {
+    (void)draw;
     (void)ot;
     (void)y;
     (void)width;
