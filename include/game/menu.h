@@ -473,7 +473,6 @@ extern s32 g_PaintColorCursor;
 extern s32 g_TeamLogoOption;
 extern char *g_BgmTrackNames[];
 extern s32 g_BrowseArrowsFade;
-extern s32 g_CarNamePlateFade;
 extern s32 g_CarPriceTable[CAR_PRICE_COUNT];
 extern s32 g_CarSpecBars[4];
 extern s32 g_CarSpecGraphProgress;

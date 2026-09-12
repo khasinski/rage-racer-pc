@@ -5,7 +5,6 @@
 #include <limits.h>
 #include <stdio.h>
 
-s32 g_CarNamePlateFade;
 GameRenderState g_RenderState;
 
 typedef struct DrawnSprite {
@@ -91,19 +90,18 @@ int main(void) {
     s32 model;
 
     g_RenderState.draw.orderingTable = orderingTable;
-    g_CarNamePlateFade = 99;
     s_drawCount = 0;
     DrawCarNamePlate(0, 0);
-    CHECK(g_CarNamePlateFade == 0 && s_drawCount == 0);
+    CHECK(s_drawCount == 0);
+    DrawCarNamePlate(INT_MAX, -1);
 
     for (model = 0; model < GAME_CAR_COUNT; model++) {
         const DrawnSprite *manufacturer = &expectedManufacturers[model];
         const DrawnSprite *name = &expectedNames[model];
 
-        g_CarNamePlateFade = 508;
         s_drawCount = 0;
         DrawCarNamePlate(1, model);
-        CHECK(s_drawCount == 4 && g_CarNamePlateFade == 508);
+        CHECK(s_drawCount == 4);
         if (CheckSprite(&s_draws[2], manufacturer->x, 0x178,
                         manufacturer->width, manufacturer->textureU,
                         manufacturer->textureV, 0x3B)) return 1;
@@ -111,22 +109,25 @@ int main(void) {
                         name->textureU, name->textureV, 0x3E)) return 1;
     }
 
-    g_CarNamePlateFade = 8;
+    DrawCarNamePlate(0, 0);
+    DrawCarNamePlate(8, -1);
     s_drawCount = 0;
     DrawCarNamePlate(-20, -1);
-    CHECK(g_CarNamePlateFade == 0 && s_drawCount == 0);
+    CHECK(s_drawCount == 0);
 
-    g_CarNamePlateFade = 101;
+    DrawCarNamePlate(0, 0);
     g_RenderState.draw.orderingTable = NULL;
-    DrawCarNamePlate(10, 0);
-    CHECK(g_CarNamePlateFade == 111 && s_drawCount == 0);
+    DrawCarNamePlate(101, 0);
+    CHECK(s_drawCount == 0);
     g_RenderState.draw.orderingTable = orderingTable;
+    DrawCarNamePlate(1, 0);
+    CHECK(s_draws[0].shade == 25);
 
-    g_CarNamePlateFade = 1;
+    DrawCarNamePlate(0, 0);
+    DrawCarNamePlate(INT_MAX, -1);
+    s_drawCount = 0;
     DrawCarNamePlate(INT_MIN, 0);
-    CHECK(g_CarNamePlateFade == 0);
-    DrawCarNamePlate(INT_MAX, 0);
-    CHECK(g_CarNamePlateFade == 508);
+    CHECK(s_drawCount == 4 && s_draws[0].shade == 0);
 
     puts("car name plate tests passed");
     return 0;

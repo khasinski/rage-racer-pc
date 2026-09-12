@@ -20,6 +20,8 @@ enum {
     CAR_NAME_PLATE_SHADE_DIVISOR = 4,
 };
 
+static s32 s_Fade;
+
 static const CarNamePlateSprite s_manufacturerSprites[] = {
     [CAR_MANUFACTURER_AGE] = {0x112, 0x14, 0x50, 0xBC},
     [CAR_MANUFACTURER_LIZARD] = {0x105, 0x20, 0x00, 0xBC},
@@ -55,11 +57,11 @@ static void DrawNamePlateSprite(GameOrderingTableEntry *ot,
 }
 
 static void AdvanceCarNamePlateFade(s32 step) {
-    int64_t fade = (int64_t)g_CarNamePlateFade + step;
+    int64_t fade = (int64_t)s_Fade + step;
 
     if (fade < 0) fade = 0;
     if (fade > CAR_NAME_PLATE_FADE_MAX) fade = CAR_NAME_PLATE_FADE_MAX;
-    g_CarNamePlateFade = (s32)fade;
+    s_Fade = (s32)fade;
 }
 
 /* The bottom-right plate: grade digit, manufacturer sprite and model-name sprite. */
@@ -70,7 +72,7 @@ void DrawCarNamePlate(s32 step, s32 model) {
     u32 shade;
 
     if (step == 0) {
-        g_CarNamePlateFade = 0;
+        s_Fade = 0;
         return;
     }
     if (step < 0) {
@@ -88,7 +90,7 @@ void DrawCarNamePlate(s32 step, s32 model) {
     }
 
     ot = RENDER_OT_BASE + 1;
-    shade = g_CarNamePlateFade / CAR_NAME_PLATE_SHADE_DIVISOR;
+    shade = s_Fade / CAR_NAME_PLATE_SHADE_DIVISOR;
     DrawSprite(ot, 0x100, 0x168, 0x20, 0x10, 0x7C, 0x7C, (u8)shade,
                   (u8)shade, (u8)shade, 0x244, 0, 1, 0x3B);
 
