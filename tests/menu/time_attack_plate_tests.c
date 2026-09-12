@@ -3,11 +3,9 @@
 #include "game/render_state.h"
 
 #include <stdio.h>
-#include <limits.h>
 #include <string.h>
 
 GameRenderState g_RenderState;
-s32 g_TimeAttackPlateProgress;
 
 static s32 s_drawCount;
 static s16 s_top;
@@ -34,31 +32,30 @@ int main(void) {
 
     memset(&g_RenderState, 0, sizeof(g_RenderState));
     g_RenderState.draw.orderingTable = &orderingTable;
-    g_TimeAttackPlateProgress = 8;
     DrawTimeAttackPlate(0);
-    if (g_TimeAttackPlateProgress != 0 || s_drawCount != 0) return 1;
+    if (s_drawCount != 0) return 1;
 
     DrawTimeAttackPlate(5);
-    if (g_TimeAttackPlateProgress != 5 || s_drawCount != 0) return 1;
+    if (s_drawCount != 0) return 1;
     DrawTimeAttackPlate(3);
-    if (g_TimeAttackPlateProgress != 8 || s_drawCount != 1 ||
+    if (s_drawCount != 1 ||
         s_top != 0xD2 || s_bottom != 0xDD) return 1;
     DrawTimeAttackPlate(20);
-    if (g_TimeAttackPlateProgress != 0xC || s_drawCount != 2) return 1;
+    if (s_drawCount != 2) return 1;
     DrawTimeAttackPlate(-20);
-    if (g_TimeAttackPlateProgress != 0 || s_drawCount != 2) return 1;
+    if (s_drawCount != 2) return 1;
 
-    g_TimeAttackPlateProgress = INT_MAX;
-    DrawTimeAttackPlate(INT_MAX);
-    if (g_TimeAttackPlateProgress != 0xC || s_drawCount != 3) return 1;
-    g_TimeAttackPlateProgress = INT_MIN;
-    DrawTimeAttackPlate(-1);
-    if (g_TimeAttackPlateProgress != 0 || s_drawCount != 3) return 1;
+    DrawTimeAttackPlate(0);
+    DrawTimeAttackPlate(100);
+    DrawTimeAttackPlate(1);
+    if (s_drawCount != 3 || s_top != 0xCB || s_bottom != 0xE4) return 1;
+    DrawTimeAttackPlate(-100);
+    if (s_drawCount != 3) return 1;
 
     g_RenderState.draw.orderingTable = NULL;
-    g_TimeAttackPlateProgress = 5;
+    DrawTimeAttackPlate(5);
     DrawTimeAttackPlate(1);
-    if (g_TimeAttackPlateProgress != 6 || s_drawCount != 3) return 1;
+    if (s_drawCount != 3) return 1;
 
     puts("time attack plate animation preserved");
     return 0;

@@ -5,24 +5,26 @@
 
 enum { TIME_ATTACK_PLATE_PROGRESS_MAX = 12 };
 
+static s32 s_Progress;
+
 void DrawTimeAttackPlate(s32 step) {
     s32 progress;
 
     if (step == 0) {
-        g_TimeAttackPlateProgress = 0;
+        s_Progress = 0;
         return;
     }
 
-    g_TimeAttackPlateProgress = AddClampedMenuValue(
-        g_TimeAttackPlateProgress, 0, 0, TIME_ATTACK_PLATE_PROGRESS_MAX);
+    s_Progress = AddClampedMenuValue(
+        s_Progress, 0, 0, TIME_ATTACK_PLATE_PROGRESS_MAX);
 
     if (step < 0) {
-        g_TimeAttackPlateProgress = AddClampedMenuValue(
-            g_TimeAttackPlateProgress, step, 0,
+        s_Progress = AddClampedMenuValue(
+            s_Progress, step, 0,
             TIME_ATTACK_PLATE_PROGRESS_MAX);
     }
 
-    progress = g_TimeAttackPlateProgress;
+    progress = s_Progress;
     if (progress != 0 && RENDER_OT_BASE != NULL) {
         s16 top = (s16)(0xD7 - progress);
         s16 bottom = (s16)(0xD8 + progress);
@@ -34,8 +36,8 @@ void DrawTimeAttackPlate(s32 step) {
     }
 
     if (step > 0) {
-        g_TimeAttackPlateProgress = AddClampedMenuValue(
-            g_TimeAttackPlateProgress, step, 0,
+        s_Progress = AddClampedMenuValue(
+            s_Progress, step, 0,
             TIME_ATTACK_PLATE_PROGRESS_MAX);
     }
 }

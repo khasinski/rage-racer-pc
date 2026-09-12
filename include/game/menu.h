@@ -434,7 +434,6 @@ extern s32 g_ClassChangeCurtainSlide;
 extern s32 g_MenuUpperAltPanelProgress;
 extern s32 g_MenuLowerAltPanelProgress;
 extern s32 g_CourseCardFace;
-extern s32 g_TimeAttackPlateProgress;
 extern TimedDrawCommand g_CourseSelectGpScript[];
 extern TimedDrawCommand g_CourseSelectTimeAttackScript[];
 extern TimedDrawCommand g_CarSelectMenuScriptGp[];

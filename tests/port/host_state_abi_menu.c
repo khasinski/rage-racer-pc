@@ -33,8 +33,6 @@ _Static_assert(sizeof(g_TeamNameFontGlyphs) ==
                "team-name glyph atlas ABI changed");
 _Static_assert(sizeof(g_TeamNameBlankTile) == 12 * 8 * sizeof(u16),
                "blank team-name texture ABI changed");
-_Static_assert(sizeof(g_TimeAttackPlateProgress) == sizeof(s32),
-               "time-attack plate progress ABI changed");
 _Static_assert(sizeof(g_TeamLogoClutRect) == 8,
                "team-logo CLUT rectangle ABI changed");
 _Static_assert(sizeof(g_TeamLogoRect) == 8,

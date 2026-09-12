@@ -128,7 +128,6 @@ s32 g_ClassChangeCurtainSlide;
 s32 g_MenuUpperAltPanelProgress;
 s32 g_MenuLowerAltPanelProgress;
 s32 g_CourseCardFace;
-s32 g_TimeAttackPlateProgress;
 Vec4 g_MenuViewScale = {4096, 8192, 4096, 0};
 /* Retail stores these as one run, with tune-up prices starting at the second
  * element. Keep the public tables typed and make that relationship explicit. */
