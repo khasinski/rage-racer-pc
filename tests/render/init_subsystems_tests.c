@@ -42,7 +42,7 @@ enum InitCall {
     INIT_GEOMETRY,
     INIT_PAD,
     INIT_MEMORY_CARD,
-    APPLY_PAD_MAPPING,
+    LOAD_PAD_MAPPING,
     INIT_RECORDS,
     INIT_RENDER_STATE,
     INIT_SAVE_DEFAULTS,
@@ -76,7 +76,11 @@ void SetDispMask(int enabled) {
 void InitGeom(void) { RecordCall(INIT_GEOMETRY); }
 void GameInitPad(void) { RecordCall(INIT_PAD); }
 void RestartMemoryCard(void) { RecordCall(INIT_MEMORY_CARD); }
-void ApplyPadButtonMapping(void) { RecordCall(APPLY_PAD_MAPPING); }
+void LoadPadButtonMapping(s32 padMapping, s32 negconMapping) {
+    (void)padMapping;
+    (void)negconMapping;
+    RecordCall(LOAD_PAD_MAPPING);
+}
 void InitRecordTables(void) { RecordCall(INIT_RECORDS); }
 void InitRenderState(s32 otShift) {
     s_renderOtShift = otShift;
@@ -97,7 +101,7 @@ void SetCameraRotMatrix(void) { RecordCall(SET_CAMERA_MATRIX); }
 int main(void) {
     static const enum InitCall expectedCalls[] = {
         INIT_SOUND_RUNTIME, RESET_GRAPH, SET_GRAPH_DEBUG, HIDE_DISPLAY,
-        INIT_GEOMETRY, INIT_PAD, INIT_MEMORY_CARD, APPLY_PAD_MAPPING,
+        INIT_GEOMETRY, INIT_PAD, INIT_MEMORY_CARD, LOAD_PAD_MAPPING,
         INIT_RECORDS, INIT_RENDER_STATE,
         INIT_SAVE_DEFAULTS, SET_CAMERA_MATRIX,
     };

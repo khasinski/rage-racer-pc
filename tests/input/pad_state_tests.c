@@ -453,16 +453,6 @@ static void ButtonMappingTests(void) {
               0x200 + CONTROLLER_MAPPING_LAST * 8 + i);
     }
 
-    /* The saved selections are what ApplyPadButtonMapping reinstates. */
-    g_PadMappingIndex = 1;
-    g_NegconMappingIndex = 3;
-    memset(g_PadButtonMapping, 0xFF, sizeof(g_PadButtonMapping));
-    ApplyPadButtonMapping();
-    for (i = 0; i < 8; i++) {
-        Check("reinstated pad row", g_PadButtonMapping[i], 0x100 + 1 * 8 + i);
-        Check("reinstated negcon row", g_PadButtonMapping[8 + i],
-              0x200 + 3 * 8 + i);
-    }
 }
 
 static void PadInitializationTests(void) {

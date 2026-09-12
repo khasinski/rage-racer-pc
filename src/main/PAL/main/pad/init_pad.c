@@ -34,12 +34,6 @@ void LoadPadButtonMapping(s32 mapping0, s32 mapping1) {
     }
 }
 
-
-/* Re-applies the button mapping from the two saved selections. */
-void ApplyPadButtonMapping(void) {
-    LoadPadButtonMapping(g_PadMappingIndex, g_NegconMappingIndex);
-}
-
 static s16 ClampNegconPressure(s32 pressure) {
     if (pressure < 0) return 0;
     if (pressure > 0x6A) return 0x6A;

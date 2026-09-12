@@ -66,7 +66,7 @@ void InitSubsystems(void) {
     ResetInputDefaults();
 
     g_MirrorMode = 0;
-    ApplyPadButtonMapping();
+    LoadPadButtonMapping(g_PadMappingIndex, g_NegconMappingIndex);
     InitRecordTables();
     InitRenderState(DEFAULT_RENDER_OT_SHIFT);
     InitSaveDefaults();

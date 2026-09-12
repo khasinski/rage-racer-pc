@@ -107,7 +107,6 @@ void InitSubsystems(void);
 void GameInitPad(void);
 void UpdatePadState(void);
 void LoadPadButtonMapping(s32 mapping0, s32 mapping1);
-void ApplyPadButtonMapping(void);
 extern PadState g_PadState;
 
 /* Controller-config and NeGcon calibration screens: g_GameModeHandlers entries
