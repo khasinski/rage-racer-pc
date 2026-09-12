@@ -450,7 +450,7 @@ void UpdateCourseSelectScreen(void) {
     } else {
         DrawTimeAttackPlate(g_TimeAttackPlateStep);
     }
-    DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex, 0);
+    DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex);
     DrawMenuCourseView();
 
     if (state == COURSE_SELECT_IDLE) {

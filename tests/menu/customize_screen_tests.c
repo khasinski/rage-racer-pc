@@ -64,10 +64,9 @@ s32 RunTimedDrawScript(const TimedDrawCommand *commands, s32 *progress,
     return 1;
 }
 void PlaySoundCue(s32 cue) { s_lastCue = cue; }
-void DrawCarNamePlate(s32 step, s32 model, s32 grade) {
+void DrawCarNamePlate(s32 step, s32 model) {
     (void)step;
     (void)model;
-    (void)grade;
 }
 void DrawMenuCarView(void) {}
 void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {

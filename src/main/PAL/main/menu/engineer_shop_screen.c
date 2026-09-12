@@ -202,7 +202,7 @@ void UpdateEngineerShopScreen(void) {
     s32 assetIndex;
 
     g_MenuAltLayout = g_MenuAltLayoutSetting;
-    DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex, 0);
+    DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex);
     DrawMenuCarView();
     g_MenuPlateCarIndex = g_PlayerCarIndex;
     if ((u32)g_PlayerCarIndex >= GAME_CAR_COUNT || g_CarTable == NULL) {

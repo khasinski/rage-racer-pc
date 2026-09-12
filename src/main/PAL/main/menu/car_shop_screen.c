@@ -248,7 +248,7 @@ void UpdateCarShopScreen(void) {
 
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawMenuAltPanel(g_MenuUpperAltPanelStep, g_MenuLowerAltPanelStep);
-    DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex, 0);
+    DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex);
     DrawMenuCarView();
     if ((u32)g_CarListCursor >= GAME_CAR_COUNT || g_CarTable == NULL) {
         price = (ShopPrice){0, 0};

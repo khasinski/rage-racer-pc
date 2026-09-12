@@ -63,10 +63,10 @@ static void AdvanceCarNamePlateFade(s32 step) {
 }
 
 /* The bottom-right plate: grade digit, manufacturer sprite and model-name sprite. */
-void DrawCarNamePlate(s32 step, s32 model, s32 grade) {
+void DrawCarNamePlate(s32 step, s32 model) {
     GameOrderingTableEntry *ot;
     s32 unlockLevel;
-    int64_t displayedGrade;
+    s32 displayedGrade;
     u32 shade;
 
     if (step == 0) {
@@ -78,8 +78,8 @@ void DrawCarNamePlate(s32 step, s32 model, s32 grade) {
     }
 
     unlockLevel = GetCarUnlockLevel(model);
-    displayedGrade = (int64_t)unlockLevel + grade;
-    if ((u32)model >= GAME_CAR_COUNT || unlockLevel < 0 || grade < 0 ||
+    displayedGrade = unlockLevel;
+    if ((u32)model >= GAME_CAR_COUNT || unlockLevel < 0 ||
         RENDER_OT_BASE == NULL) {
         if (step > 0) {
             AdvanceCarNamePlateFade(step);

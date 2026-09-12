@@ -406,7 +406,7 @@ extern TimedDrawCommand g_UiChromeScript[];
 extern TimedDrawCommand g_UiChromeScript2[];
 
 void ClearTeamNameTexture(void);
-void DrawCarNamePlate(s32 step, s32 model, s32 grade);
+void DrawCarNamePlate(s32 step, s32 model);
 void DrawMenuAltPanel(s32 stepA, s32 stepB);
 void DrawMenuCourseView(void);
 void DrawOptionRootMenu(void);

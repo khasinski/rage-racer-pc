@@ -320,7 +320,7 @@ static void UpdateCarSelectOutgoing(void) {
 
 void UpdateCarSelectScreen(void) {
     g_MenuAltLayout = g_MenuAltLayoutSetting;
-    DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex, 0);
+    DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex);
     DrawMenuCarView();
     DrawMenuLightBurst(-9);
 

@@ -148,8 +148,8 @@ s32 RunTimedDrawScript(const TimedDrawCommand *commands, s32 *progress, s32 step
     return s_scriptResult;
 }
 
-void DrawCarNamePlate(s32 step, s32 model, s32 grade) {
-    RECORD("nameplate", step, model, grade);
+void DrawCarNamePlate(s32 step, s32 model) {
+    RECORD("nameplate", step, model, 0);
 }
 void DrawMenuCarView(void) { RECORD("carview", 0); }
 void DrawMenuAltPanel(s32 stepA, s32 stepB) { RECORD("altpanel", stepA, stepB); }

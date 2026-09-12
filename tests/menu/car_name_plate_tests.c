@@ -93,7 +93,7 @@ int main(void) {
     g_RenderState.draw.orderingTable = orderingTable;
     g_CarNamePlateFade = 99;
     s_drawCount = 0;
-    DrawCarNamePlate(0, 0, 0);
+    DrawCarNamePlate(0, 0);
     CHECK(g_CarNamePlateFade == 0 && s_drawCount == 0);
 
     for (model = 0; model < GAME_CAR_COUNT; model++) {
@@ -102,7 +102,7 @@ int main(void) {
 
         g_CarNamePlateFade = 508;
         s_drawCount = 0;
-        DrawCarNamePlate(1, model, 0);
+        DrawCarNamePlate(1, model);
         CHECK(s_drawCount == 4 && g_CarNamePlateFade == 508);
         if (CheckSprite(&s_draws[2], manufacturer->x, 0x178,
                         manufacturer->width, manufacturer->textureU,
@@ -113,22 +113,19 @@ int main(void) {
 
     g_CarNamePlateFade = 8;
     s_drawCount = 0;
-    DrawCarNamePlate(-20, -1, 0);
+    DrawCarNamePlate(-20, -1);
     CHECK(g_CarNamePlateFade == 0 && s_drawCount == 0);
 
-    g_CarNamePlateFade = 100;
-    DrawCarNamePlate(1, 0, -1);
-    CHECK(g_CarNamePlateFade == 101 && s_drawCount == 0);
-
+    g_CarNamePlateFade = 101;
     g_RenderState.draw.orderingTable = NULL;
-    DrawCarNamePlate(10, 0, 0);
+    DrawCarNamePlate(10, 0);
     CHECK(g_CarNamePlateFade == 111 && s_drawCount == 0);
     g_RenderState.draw.orderingTable = orderingTable;
 
     g_CarNamePlateFade = 1;
-    DrawCarNamePlate(INT_MIN, 0, INT_MAX);
+    DrawCarNamePlate(INT_MIN, 0);
     CHECK(g_CarNamePlateFade == 0);
-    DrawCarNamePlate(INT_MAX, 0, INT_MAX);
+    DrawCarNamePlate(INT_MAX, 0);
     CHECK(g_CarNamePlateFade == 508);
 
     puts("car name plate tests passed");

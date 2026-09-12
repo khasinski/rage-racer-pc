@@ -35,10 +35,9 @@ s32 ActivateShowroomCarModel(s32 slot) {
     s_installCalls++;
     return 1;
 }
-void DrawCarNamePlate(s32 step, s32 model, s32 grade) {
+void DrawCarNamePlate(s32 step, s32 model) {
     (void)step;
     (void)model;
-    (void)grade;
     s_namePlateCalls++;
 }
 void DrawMenuCarView(void) { s_carViewCalls++; }

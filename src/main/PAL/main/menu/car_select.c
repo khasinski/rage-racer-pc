@@ -28,7 +28,7 @@ void EnterCarSelectScreen(void) {
     MenuActivateScreen(MENU_SCREEN_CAR_SELECT);
     g_UiScriptProgress = 0;
     UpdateOwnedCarNeighbours();
-    DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex, 0);
+    DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex);
     DrawMenuCarView();
     DrawMenuLightBurst(-9);
 }
