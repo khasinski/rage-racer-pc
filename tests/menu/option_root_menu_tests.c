@@ -22,7 +22,6 @@ s32 g_ScreenOffsetEditX;
 s32 g_ScreenOffsetEditY;
 ScreenOffset g_ScreenOffsetX;
 ScreenOffset g_ScreenOffsetY;
-s32 g_SoundOptionCursor;
 
 typedef struct LabelRecord {
     s32 x;
@@ -40,6 +39,7 @@ static s32 s_lastCue;
 static GameSceneId s_lastExitScene;
 static s32 s_cursorCalls;
 static s32 s_controllerConfigCalls;
+static s32 s_soundMenuStarts;
 static s32 s_trackLoadCalls;
 static s32 s_randomValues[3];
 static s32 s_randomIndex;
@@ -68,6 +68,7 @@ void DrawMenuCursorArrow(s32 x, s32 y) {
 
 void PlaySoundCue(s32 cue) { s_lastCue = cue; }
 void BeginControllerConfig(void) { s_controllerConfigCalls++; }
+void EnterSoundOptionMenu(void) { s_soundMenuStarts++; }
 s32 Random15(void) { return s_randomValues[s_randomIndex++]; }
 s32 RandomIndex(s32 count) {
     return count > 0 ? (Random15() & 0xFFF) % count : 0;
@@ -99,12 +100,12 @@ static void Reset(void) {
     g_ScreenOffsetEditY = -1;
     g_ScreenOffsetX = 23;
     g_ScreenOffsetY = -17;
-    g_SoundOptionCursor = -1;
     s_labelCount = 0;
     s_lastCue = 0;
     s_lastExitScene = GAME_SCENE_BOOT_LOGO;
     s_cursorCalls = 0;
     s_controllerConfigCalls = 0;
+    s_soundMenuStarts = 0;
     s_trackLoadCalls = 0;
     s_randomIndex = 0;
     s_drawMode = -1;
@@ -164,7 +165,7 @@ int main(void) {
                   s_controllerConfigCalls == 1);
         } else if (cursor == 2) {
             CHECK(g_GameMode == OPTION_MODE_SOUND_MENU &&
-                  g_SoundOptionCursor == 0);
+                  s_soundMenuStarts == 1);
         } else if (cursor == 3) {
             CHECK(s_trackLoadCalls == 1 &&
                   s_lastExitScene == GAME_SCENE_ENTER_BGM_SELECT);

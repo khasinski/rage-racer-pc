@@ -386,7 +386,6 @@ extern s16 g_PrevOwnedCarIndex;
 extern s32 g_CustomizeOption;
 extern s32 g_ScreenOffsetEditX;
 extern s32 g_ScreenOffsetEditY;
-extern s32 g_SoundOptionCursor;
 extern u16 g_TeamLogoSwatches[15];
 extern s32 g_TeamNameCharModel;
 extern s32 g_TimeAttackPlateStep;

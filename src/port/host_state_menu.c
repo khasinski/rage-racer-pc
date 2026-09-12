@@ -211,7 +211,6 @@ s32 g_OptionMenuCursor;
 s32 g_ShopCarIndex;
 s32 g_CustomizeOption;
 CarEntry *g_CarTable;
-s32 g_SoundOptionCursor;
 s32 g_PlayerMoney;
 s32 g_ClassRecordMenuCursor;
 s32 g_BgmSelectStep;

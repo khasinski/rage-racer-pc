@@ -452,6 +452,16 @@ typedef struct CourseSelectInputOutcome {
     int choosesRow;
 } CourseSelectInputOutcome;
 
+typedef struct SoundOption {
+    s32 cursor;
+    s32 savedValue;
+} SoundOption;
+
+void EnterSoundOptionMenu(void);
+void EnterSoundOptionMenuState(SoundOption *screen);
+void UpdateSoundOptionMenuState(SoundOption *screen);
+void UpdateSoundSettingAdjustState(SoundOption *screen);
+
 CourseSelectInputOutcome DecideCourseSelectInput(u16 pressed, u16 held,
                                                  s32 option);
 

@@ -99,8 +99,8 @@ void UpdateOptionRootMenu(void) {
             g_GameMode = OPTION_MODE_CONTROLLER_CONFIG;
             break;
         case OPTION_ROOT_SOUND:
+            EnterSoundOptionMenu();
             g_GameMode = OPTION_MODE_SOUND_MENU;
-            g_SoundOptionCursor = 0;
             break;
         case OPTION_ROOT_RANDOM_RACE:
             StartRandomOptionRace();

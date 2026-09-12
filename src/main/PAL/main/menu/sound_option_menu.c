@@ -12,9 +12,20 @@ enum {
     SOUND_OPTION_EXIT = 3,
 };
 
-static s32 *SelectedSoundSetting(s32 *maximum) {
+static SoundOption s_screen;
+
+void EnterSoundOptionMenuState(SoundOption *screen) {
+    screen->cursor = SOUND_OPTION_BGM;
+    screen->savedValue = 0;
+}
+
+void EnterSoundOptionMenu(void) {
+    EnterSoundOptionMenuState(&s_screen);
+}
+
+static s32 *SelectedSoundSetting(const SoundOption *screen, s32 *maximum) {
     *maximum = AUDIO_SETTING_MAX;
-    switch (g_SoundOptionCursor) {
+    switch (screen->cursor) {
     case SOUND_OPTION_BGM:
         return &g_BgmVolumeSetting;
     case SOUND_OPTION_SFX:
@@ -49,11 +60,11 @@ static void DrawOutputModeChoice(GameOrderingTableEntry *ot, u8 **next, s32 sele
                         intensity * 2, intensity * 2);
 }
 
-static void DrawSoundOptionScreen(void) {
+static void DrawSoundOptionScreen(const SoundOption *screen) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
 
-    DrawMenuCursorArrow(0x14, g_SoundOptionCursor * 32 + 56);
+    DrawMenuCursorArrow(0x14, screen->cursor * 32 + 56);
     next = GameQueueSpriteTrans(ot, next, 0x24, 0x38, 0x2C, 0x18, 0x9C,
                                 0x78, 0x7F40);
     next = GameQueueSpriteTrans(ot, next, 0x24, 0x58, 0x18, 0x18, 0xC8,
@@ -80,7 +91,7 @@ static void DrawSoundOptionScreen(void) {
     }
 
     next = RENDER_PRIM_CURSOR_AS(u8);
-    switch (g_SoundOptionCursor) {
+    switch (screen->cursor) {
     case SOUND_OPTION_BGM:
         next = AddTilePrim(ot, next, 0x44, 0xCC, 0xB8, 0x28, 0x89, 0xFF,
                            0x76);
@@ -98,38 +109,37 @@ static void DrawSoundOptionScreen(void) {
 }
 
 /* OPTION_MODE_SOUND_MENU: choose a setting, then enter edit mode. */
-void UpdateSoundOptionMenu(void) {
+void UpdateSoundOptionMenuState(SoundOption *screen) {
     s32 oldCursor;
 
     NormalizeSoundSettings();
-    g_SoundOptionCursor = AddClampedMenuValue(
-        g_SoundOptionCursor, 0, 0, SOUND_OPTION_COUNT - 1);
-    DrawSoundOptionScreen();
-    oldCursor = g_SoundOptionCursor;
+    screen->cursor = AddClampedMenuValue(
+        screen->cursor, 0, 0, SOUND_OPTION_COUNT - 1);
+    DrawSoundOptionScreen(screen);
+    oldCursor = screen->cursor;
     if (g_PadPressed & PAD_UP) {
-        g_SoundOptionCursor--;
+        screen->cursor--;
     }
     if (g_PadPressed & PAD_DOWN) {
-        g_SoundOptionCursor++;
+        screen->cursor++;
     }
-    g_SoundOptionCursor =
-        WrapMenuIndex(g_SoundOptionCursor, 0, SOUND_OPTION_COUNT);
-    if (oldCursor != g_SoundOptionCursor) {
+    screen->cursor = WrapMenuIndex(screen->cursor, 0, SOUND_OPTION_COUNT);
+    if (oldCursor != screen->cursor) {
         PlaySoundCue(1);
     }
 
     if (g_PadPressed & PAD_CONFIRM) {
         PlaySoundCue(2);
         g_GameMode = OPTION_MODE_SOUND_EDIT;
-        switch (g_SoundOptionCursor) {
+        switch (screen->cursor) {
         case SOUND_OPTION_BGM:
-            g_ScreenOffsetEditX = g_BgmVolumeSetting;
+            screen->savedValue = g_BgmVolumeSetting;
             break;
         case SOUND_OPTION_SFX:
-            g_ScreenOffsetEditX = g_SfxVolumeSetting;
+            screen->savedValue = g_SfxVolumeSetting;
             break;
         case SOUND_OPTION_OUTPUT:
-            g_ScreenOffsetEditX = g_MonoOutput;
+            screen->savedValue = g_MonoOutput;
             break;
         case SOUND_OPTION_EXIT:
             g_GameMode = OPTION_MODE_ROOT;
@@ -141,16 +151,19 @@ void UpdateSoundOptionMenu(void) {
     }
 }
 
-/* OPTION_MODE_SOUND_EDIT: edits the setting selected by UpdateSoundOptionMenu.
- * The original value is kept in g_ScreenOffsetEditX until confirm or cancel. */
-void UpdateSoundSettingAdjust(void) {
+void UpdateSoundOptionMenu(void) {
+    UpdateSoundOptionMenuState(&s_screen);
+}
+
+/* OPTION_MODE_SOUND_EDIT: edits the selected setting until confirm or cancel. */
+void UpdateSoundSettingAdjustState(SoundOption *screen) {
     s32 maximum;
     s32 *setting;
     s32 previous;
 
     NormalizeSoundSettings();
-    DrawSoundOptionScreen();
-    setting = SelectedSoundSetting(&maximum);
+    DrawSoundOptionScreen(screen);
+    setting = SelectedSoundSetting(screen, &maximum);
 
     if (setting == NULL) {
         g_GameMode = OPTION_MODE_SOUND_MENU;
@@ -160,7 +173,7 @@ void UpdateSoundSettingAdjust(void) {
     } else if (g_PadPressed & PAD_CANCEL) {
         g_GameMode = OPTION_MODE_SOUND_MENU;
         *setting = AddClampedMenuValue(
-            g_ScreenOffsetEditX, 0, 0, maximum);
+            screen->savedValue, 0, 0, maximum);
         PlaySoundCue(3);
     } else {
         previous = *setting;
@@ -176,4 +189,8 @@ void UpdateSoundSettingAdjust(void) {
     }
 
     ApplyAudioSettings();
+}
+
+void UpdateSoundSettingAdjust(void) {
+    UpdateSoundSettingAdjustState(&s_screen);
 }
