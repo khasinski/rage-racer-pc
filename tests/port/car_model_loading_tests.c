@@ -532,8 +532,8 @@ static void TestCarSelectAssetPhases(void) {
               (ModelBankHeader *)(void *)(storage + 0xC) &&
               s_registeredSlot == 14,
           "showroom scene model bank follows its three offsets");
-    Check(g_TeamLogoSampleData ==
-              GetTeamLogoSample(storage + TEAM_LOGO_SAMPLES_OFFSET),
+    Check(g_TeamLogoSampleData == (const TeamLogoSample *)(
+              storage + TEAM_LOGO_SAMPLES_OFFSET),
           "team logo samples installed");
     Check(s_courseModels == (CourseModelAssetHeader *)(void *)(
                                 storage + COURSE_MODELS_OFFSET),

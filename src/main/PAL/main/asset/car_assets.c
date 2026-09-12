@@ -143,8 +143,8 @@ static void LoadCarSelectSharedAssets(void) {
         FailAssetLoad();
         return;
     }
-    g_TeamLogoSampleData = GetTeamLogoSample(
-        ResolveConstAssetAddress(header, header->teamLogoSamplesOffset));
+    g_TeamLogoSampleData =
+        ResolveConstAssetAddress(header, header->teamLogoSamplesOffset);
     g_CarModelBuffer = image;
     g_ImageBlockBuffer = image + CAR_MODEL_BUFFER_SIZE;
     g_ImageBlockSize = 0;

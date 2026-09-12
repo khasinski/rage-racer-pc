@@ -39,18 +39,6 @@ typedef struct TeamLogoSample {
     u16 canvas[TEAM_LOGO_HEIGHT][TEAM_LOGO_HALFWORDS_PER_ROW];
 } TeamLogoSample;
 
-typedef union TeamLogoSampleAddress {
-    const void *data;
-    const TeamLogoSample *sample;
-} TeamLogoSampleAddress;
-
-static inline const TeamLogoSample *GetTeamLogoSample(const void *data) {
-    TeamLogoSampleAddress address;
-
-    address.data = data;
-    return address.sample;
-}
-
 typedef union TeamLogoCanvas {
     u8 bytes[TEAM_LOGO_WIDTH * TEAM_LOGO_HEIGHT / 2];
     u16 halfwords[TEAM_LOGO_WIDTH * TEAM_LOGO_HEIGHT / 4];
