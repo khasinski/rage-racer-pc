@@ -9,8 +9,7 @@ u8 g_PadType;
 u16 g_PadPressed;
 s32 g_GameMode;
 s32 g_AnimTimer;
-s32 g_SetupArrowPulse;
-s32 g_ControllerSceneAngleX;
+ControllerSetup g_ControllerSetup;
 NegconCalibrationValue g_NegconSteerPlay;
 NegconCalibrationValue g_NegconMaxTwist;
 
@@ -60,8 +59,8 @@ static void ResetState(void) {
     g_PadPressed = 0;
     g_GameMode = -1;
     g_AnimTimer = 10;
-    g_SetupArrowPulse = 20;
-    g_ControllerSceneAngleX = 0;
+    g_ControllerSetup.arrowPhase = 20;
+    g_ControllerSetup.angleX = 0;
     g_NegconSteerPlay = 2;
     g_NegconMaxTwist = 2;
     s_soundCueCount = 0;
@@ -73,7 +72,7 @@ static void ResetState(void) {
 }
 
 static void CheckSharedFrame(s32 expectedSteerDraws, s32 expectedTwistDraws) {
-    CHECK(g_ControllerSceneAngleX == -896);
+    CHECK(g_ControllerSetup.angleX == -896);
     CHECK(s_steerDrawCount == expectedSteerDraws);
     CHECK(s_twistDrawCount == expectedTwistDraws);
     CHECK(s_hintVariant == MENU_OPTION_HINT_NEGCON_CALIBRATION);
@@ -86,7 +85,7 @@ static void TestSteerNavigation(void) {
     UpdateNegconSteerPlayScreen();
     CHECK(g_GameMode == OPTION_MODE_NEGCON_MAX_TWIST);
     CHECK(g_AnimTimer == 11);
-    CHECK(g_SetupArrowPulse == 116);
+    CHECK(g_ControllerSetup.arrowPhase == 116);
     CHECK(s_soundCueCount == 1 && s_soundCues[0] == 2);
     CHECK(s_restoreCount == 0);
     CheckSharedFrame(1, 0);
@@ -100,10 +99,10 @@ static void TestSteerNavigation(void) {
 
     ResetState();
     g_AnimTimer = INT_MAX;
-    g_SetupArrowPulse = INT_MAX;
+    g_ControllerSetup.arrowPhase = INT_MAX;
     UpdateNegconSteerPlayScreen();
     CHECK(g_AnimTimer == INT_MIN);
-    CHECK(g_SetupArrowPulse == (s32)((u32)INT_MAX + 96u));
+    CHECK(g_ControllerSetup.arrowPhase == (s32)((u32)INT_MAX + 96u));
 }
 
 static void TestTwistNavigation(void) {
@@ -112,7 +111,7 @@ static void TestTwistNavigation(void) {
     UpdateNegconMaxTwistScreen();
     CHECK(g_GameMode == OPTION_MODE_ROOT);
     CHECK(g_AnimTimer == 11);
-    CHECK(g_SetupArrowPulse == 20);
+    CHECK(g_ControllerSetup.arrowPhase == 20);
     CHECK(s_soundCueCount == 1 && s_soundCues[0] == 2);
     CHECK(s_restoreCount == 0);
     CheckSharedFrame(0, 1);

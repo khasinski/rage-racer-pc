@@ -65,7 +65,7 @@ static u8 *DrawConfigCallouts(GameOrderingTableEntry *ot, u8 *prim,
                               const u8 *labelRow, const u8 *buttonRow) {
     s32 i;
 
-    if (g_ControllerSceneAngleY > -16 && g_ControllerSceneAngleY < 16) {
+    if (g_ControllerSetup.angleY > -16 && g_ControllerSetup.angleY < 16) {
         for (i = 0; i < CONTROLLER_CONFIG_ACTION_COUNT; i++) {
             const DVec *labelPoint = &g_PadCalloutLabelPoints[labelRow[i]];
             const DVec *buttonPoint = &g_PadCalloutButtonPoints[buttonRow[i]];

@@ -17,14 +17,14 @@ static void UpdateControllerMappingSelection(u16 pressed) {
     if ((pressed & PAD_LEFT) && *selection > CONTROLLER_MAPPING_FIRST) {
         PlaySoundCue(8);
         (*selection)--;
-        g_ControllerSceneAngleY =
-            (s32)((u32)g_ControllerSceneAngleY + CONTROLLER_HALF_TURN);
+        g_ControllerSetup.angleY =
+            (s32)((u32)g_ControllerSetup.angleY + CONTROLLER_HALF_TURN);
     }
     if ((pressed & PAD_RIGHT) && *selection < CONTROLLER_MAPPING_LAST) {
         PlaySoundCue(8);
         (*selection)++;
-        g_ControllerSceneAngleY =
-            (s32)((u32)g_ControllerSceneAngleY - CONTROLLER_HALF_TURN);
+        g_ControllerSetup.angleY =
+            (s32)((u32)g_ControllerSetup.angleY - CONTROLLER_HALF_TURN);
     }
 }
 
@@ -32,12 +32,12 @@ void UpdateControllerConfigScreen(void) {
     u16 pressed = g_PadPressed;
 
     g_AnimTimer = (s32)((u32)g_AnimTimer + 1u);
-    g_SetupArrowPulse = (s32)((u32)g_SetupArrowPulse + 96u);
+    g_ControllerSetup.arrowPhase = (s32)((u32)g_ControllerSetup.arrowPhase + 96u);
     if (pressed & PAD_CANCEL) {
         PlaySoundCue(3);
         g_GameMode = OPTION_MODE_ROOT;
-        g_PadMappingIndex = g_PadMappingIndexSaved;
-        g_NegconMappingIndex = g_NegconMappingIndexSaved;
+        g_PadMappingIndex = g_ControllerSetup.savedPadMapping;
+        g_NegconMappingIndex = g_ControllerSetup.savedNegconMapping;
     } else if (pressed & PAD_CONFIRM) {
         PlaySoundCue(2);
         LoadPadButtonMapping(g_PadMappingIndex, g_NegconMappingIndex);
@@ -49,8 +49,8 @@ void UpdateControllerConfigScreen(void) {
     } else {
         UpdateControllerMappingSelection(pressed);
     }
-    g_ControllerSceneAngleY =
-        (s32)(((int64_t)g_ControllerSceneAngleY * 15) / 16);
+    g_ControllerSetup.angleY =
+        (s32)(((int64_t)g_ControllerSetup.angleY * 15) / 16);
     DrawControllerConfigScreen();
     DrawOptionHintBar(MENU_OPTION_HINT_CONTROLLER);
     DrawControllerSetupScene(0);

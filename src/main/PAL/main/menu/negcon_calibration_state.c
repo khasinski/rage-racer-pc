@@ -15,8 +15,8 @@ void BeginNegconCalibration(void) {
     g_NegconNeutralI = 0;
     g_NegconNeutralII = 0;
     g_NegconNeutralL = 0;
-    g_ControllerSceneAngleY = 0;
-    g_ControllerSceneAngleX = 0;
+    g_ControllerSetup.angleY = 0;
+    g_ControllerSetup.angleX = 0;
     g_GameMode = OPTION_MODE_NEGCON_NEUTRAL;
 }
 

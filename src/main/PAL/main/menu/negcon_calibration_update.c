@@ -21,7 +21,7 @@ static void AdjustCalibrationValue(NegconCalibrationValue *value) {
 }
 
 static void FinishCalibrationFrame(void (*drawScreen)(void)) {
-    g_ControllerSceneAngleX = CONTROLLER_SCENE_ANGLE_X;
+    g_ControllerSetup.angleX = CONTROLLER_SCENE_ANGLE_X;
     drawScreen();
     DrawOptionHintBar(MENU_OPTION_HINT_NEGCON_CALIBRATION);
     DrawControllerSetupScene(1);
@@ -38,7 +38,7 @@ static int LeaveIfNegconDisconnected(void) {
 
 void UpdateNegconSteerPlayScreen(void) {
     g_AnimTimer = (s32)((u32)g_AnimTimer + 1u);
-    g_SetupArrowPulse = (s32)((u32)g_SetupArrowPulse + 96u);
+    g_ControllerSetup.arrowPhase = (s32)((u32)g_ControllerSetup.arrowPhase + 96u);
     if (!LeaveIfNegconDisconnected()) {
         if (g_PadPressed & PAD_CANCEL) {
             PlaySoundCue(3);

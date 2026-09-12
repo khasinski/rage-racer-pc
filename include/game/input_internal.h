@@ -43,10 +43,15 @@ static inline ControllerMappingIndex ClampControllerMappingIndex(s32 index) {
 
 extern ControllerMappingIndex g_PadMappingIndex;
 extern ControllerMappingIndex g_NegconMappingIndex;
-extern u16 g_PadMappingIndexSaved;
-extern u16 g_NegconMappingIndexSaved;
-extern s32 g_ControllerSceneAngleX;
-extern s32 g_ControllerSceneAngleY;
+typedef struct ControllerSetup {
+    u16 savedPadMapping;
+    u16 savedNegconMapping;
+    s32 angleX;
+    s32 angleY;
+    s32 arrowPhase;
+} ControllerSetup;
+
+extern ControllerSetup g_ControllerSetup;
 typedef s16 NegconCalibrationValue;
 extern NegconCalibrationValue g_NegconMaxTwist;
 extern NegconCalibrationValue g_NegconSteerPlay;

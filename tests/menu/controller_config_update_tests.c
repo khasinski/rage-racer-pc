@@ -10,13 +10,9 @@ u8 g_PadType;
 u16 g_PadPressed;
 s32 g_GameMode;
 s32 g_AnimTimer;
-s32 g_SetupArrowPulse;
 ControllerMappingIndex g_PadMappingIndex;
 ControllerMappingIndex g_NegconMappingIndex;
-u16 g_PadMappingIndexSaved;
-u16 g_NegconMappingIndexSaved;
-s32 g_ControllerSceneAngleX;
-s32 g_ControllerSceneAngleY;
+ControllerSetup g_ControllerSetup;
 NegconCalibrationValue g_NegconMaxTwist;
 NegconCalibrationValue g_NegconSteerPlay;
 NegconCalibrationValue g_NegconSteerNeutral;
@@ -84,13 +80,13 @@ static void ResetState(void) {
     g_PadPressed = 0;
     g_GameMode = -1;
     g_AnimTimer = 10;
-    g_SetupArrowPulse = 20;
+    g_ControllerSetup.arrowPhase = 20;
     g_PadMappingIndex = 3;
     g_NegconMappingIndex = 4;
-    g_PadMappingIndexSaved = 1;
-    g_NegconMappingIndexSaved = 2;
-    g_ControllerSceneAngleX = 100;
-    g_ControllerSceneAngleY = 0;
+    g_ControllerSetup.savedPadMapping = 1;
+    g_ControllerSetup.savedNegconMapping = 2;
+    g_ControllerSetup.angleX = 100;
+    g_ControllerSetup.angleY = 0;
     s_cueCount = 0;
     s_loadCount = 0;
     s_configDraws = 0;
@@ -104,7 +100,7 @@ static void TestMappingSelection(void) {
     g_PadPressed = PAD_LEFT;
     UpdateControllerConfigScreen();
     CHECK(g_PadMappingIndex == 2 && g_NegconMappingIndex == 4);
-    CHECK(g_ControllerSceneAngleY == 1920);
+    CHECK(g_ControllerSetup.angleY == 1920);
     CHECK(s_cueCount == 1 && s_cues[0] == 8);
 
     ResetState();
@@ -112,22 +108,22 @@ static void TestMappingSelection(void) {
     g_PadPressed = PAD_RIGHT;
     UpdateControllerConfigScreen();
     CHECK(g_PadMappingIndex == 3 && g_NegconMappingIndex == 5);
-    CHECK(g_ControllerSceneAngleY == -1920);
-    CHECK(g_AnimTimer == 11 && g_SetupArrowPulse == 116);
+    CHECK(g_ControllerSetup.angleY == -1920);
+    CHECK(g_AnimTimer == 11 && g_ControllerSetup.arrowPhase == 116);
     CHECK(s_configDraws == 1 && s_hintVariant == 1 && s_sceneVariant == 0);
 
     ResetState();
     g_AnimTimer = INT_MAX;
-    g_SetupArrowPulse = INT_MAX;
+    g_ControllerSetup.arrowPhase = INT_MAX;
     UpdateControllerConfigScreen();
     CHECK(g_AnimTimer == INT_MIN);
-    CHECK(g_SetupArrowPulse == (s32)((u32)INT_MAX + 96u));
+    CHECK(g_ControllerSetup.arrowPhase == (s32)((u32)INT_MAX + 96u));
 
     ResetState();
-    g_ControllerSceneAngleY = INT_MAX;
+    g_ControllerSetup.angleY = INT_MAX;
     g_PadPressed = PAD_LEFT;
     UpdateControllerConfigScreen();
-    CHECK(g_ControllerSceneAngleY ==
+    CHECK(g_ControllerSetup.angleY ==
           (s32)(((int64_t)(s32)((u32)INT_MAX + 2048u) * 15) / 16));
 }
 
@@ -155,8 +151,8 @@ static void TestMappingNavigation(void) {
     g_PadPressed = PAD_CANCEL | PAD_CONFIRM | PAD_LEFT;
     UpdateControllerConfigScreen();
     CHECK(g_GameMode == OPTION_MODE_ROOT);
-    CHECK(g_PadMappingIndex == g_PadMappingIndexSaved);
-    CHECK(g_NegconMappingIndex == g_NegconMappingIndexSaved);
+    CHECK(g_PadMappingIndex == g_ControllerSetup.savedPadMapping);
+    CHECK(g_NegconMappingIndex == g_ControllerSetup.savedNegconMapping);
     CHECK(s_loadCount == 0 && s_cueCount == 1 && s_cues[0] == 3);
 }
 
@@ -178,7 +174,7 @@ static void TestCalibrationSnapshot(void) {
     CHECK(g_NegconSteerPlaySaved == 2 && g_NegconMaxTwistSaved == 3);
     CHECK(g_NegconSteerNeutral == 0 && g_NegconNeutralI == 0);
     CHECK(g_NegconNeutralII == 0 && g_NegconNeutralL == 0);
-    CHECK(g_ControllerSceneAngleX == 0 && g_ControllerSceneAngleY == 0);
+    CHECK(g_ControllerSetup.angleX == 0 && g_ControllerSetup.angleY == 0);
     CHECK(g_GameMode == OPTION_MODE_NEGCON_NEUTRAL);
 
     RestoreNegconCalibrationSettings();

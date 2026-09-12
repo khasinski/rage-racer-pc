@@ -5,7 +5,7 @@
 #include "game/render.h"
 #include "game/input_internal.h"
 
-s32 g_SetupArrowPulse;
+ControllerSetup g_ControllerSetup;
 
 static s32 s_spriteU[4];
 static s32 s_spriteCount;
@@ -122,7 +122,7 @@ static void TestArrows(void) {
     CHECK(s_tileCount == 0);
 
     Reset();
-    g_SetupArrowPulse = 0x1123;
+    g_ControllerSetup.arrowPhase = 0x1123;
     s_expectedSineAngle = 0x123;
     s_sineValue = 4096;
     CHECK(DrawRightArrow(&ot, packets, 30, 40, 1) == packets + 3);
@@ -130,7 +130,7 @@ static void TestArrows(void) {
     CHECK(s_tileCount == 1 && s_tileGreen == 0xFF);
 
     Reset();
-    g_SetupArrowPulse = -1;
+    g_ControllerSetup.arrowPhase = -1;
     s_expectedSineAngle = 0xFFF;
     s_sineValue = -4096;
     DrawLeftArrow(&ot, packets, 10, 20, 1);

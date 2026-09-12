@@ -14,7 +14,7 @@ static u8 *DrawConfigArrow(GameOrderingTableEntry *ot, u8 *prim, s32 x,
         ot, prim, x, y, 0x10, 0x20, textureU, 0xB8, 0x7F82);
     prim = QueueDrawModePrim(ot, prim, 0x39);
     if (pulse != 0) {
-        s32 phase = (s32)((u32)g_SetupArrowPulse & ANGLE_MASK);
+        s32 phase = (s32)((u32)g_ControllerSetup.arrowPhase & ANGLE_MASK);
         u8 glow = (u8)(ARROW_GLOW_CENTER +
                        rsin(phase) / ARROW_GLOW_SINE_DIVISOR);
 

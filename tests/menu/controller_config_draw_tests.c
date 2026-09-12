@@ -13,7 +13,7 @@ u8 g_PadType;
 PadValidation g_PadValidation;
 ControllerMappingIndex g_PadMappingIndex;
 ControllerMappingIndex g_NegconMappingIndex;
-s32 g_ControllerSceneAngleY;
+ControllerSetup g_ControllerSetup;
 DVec g_PadLabelSlots[CONTROLLER_CONFIG_LABEL_SLOT_COUNT];
 DVec g_PadCalloutLabelPoints[CONTROLLER_CONFIG_LABEL_SLOT_COUNT];
 DVec g_PadCalloutButtonPoints[CONTROLLER_CONFIG_BUTTON_POINT_COUNT];
@@ -166,7 +166,7 @@ static void Reset(void) {
     g_PadType = PAD_TYPE_DIGITAL;
     g_PadMappingIndex = 2;
     g_NegconMappingIndex = 3;
-    g_ControllerSceneAngleY = 0;
+    g_ControllerSetup.angleY = 0;
     s_spriteCount = 0;
     s_firstSpriteX = -1;
     s_tileCount = 0;
@@ -219,7 +219,7 @@ static void TestErrorScreens(void) {
 
 static void TestCalloutVisibilityAndNeutralPanel(void) {
     Reset();
-    g_ControllerSceneAngleY = 16;
+    g_ControllerSetup.angleY = 16;
     DrawPadConfigDiagram(GameSecondaryOrderingTable(51), s_packets);
     CHECK(s_lineCount == 0);
     CHECK(s_spriteCount == 6 && s_tileCount == 10 && s_modeCount == 1);

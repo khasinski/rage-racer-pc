@@ -31,7 +31,7 @@ static void BuildControllerPartTransform(Matrix *transform, s32 pitch) {
     Vec4 scale = {0x1000, 0x2000, 0x1000, 0};
 
     BuildRotMatrixX(transform, pitch);
-    BuildRotMatrixY(&yawRotation, g_ControllerSceneAngleY + 0x400);
+    BuildRotMatrixY(&yawRotation, g_ControllerSetup.angleY + 0x400);
     MulMatrix2(&yawRotation, transform);
     MulMatrix2(&g_RenderState.geometry.matrix, transform);
     ScaleMatrix(&yawRotation, &scale);
@@ -99,7 +99,7 @@ void DrawControllerSetupScene(s32 showButtonOverlays) {
         steer = g_NegconSteer * 8;
     }
 
-    baseAngle = g_ControllerSceneAngleX - 0x40;
+    baseAngle = g_ControllerSetup.angleX - 0x40;
     BuildControllerPartTransform(&partTransform, baseAngle + steer);
     SubmitControllerPart(&position, &partTransform, 1);
     if (showButtonOverlays) {
