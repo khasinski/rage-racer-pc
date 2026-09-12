@@ -64,10 +64,6 @@ static inline void SetTeamLogoCanvasPixel(TeamLogoCanvas *canvas, s32 x,
     *word = (*word & ~mask) | ((color & 0xF) << shift);
 }
 
-typedef struct PaintColorTable {
-    Rgb colors[18];
-} PaintColorTable;
-
 enum { MENU_LIGHT_BURST_RAY_COUNT = 33 };
 
 typedef s32 TeamLogoCoordinate;

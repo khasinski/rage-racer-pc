@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <limits.h>
 
-PaintColorTable g_PaintColorTable;
+Rgb g_PaintColorTable[MENU_PAINT_COLOR_COUNT];
 s32 g_PaintPalettePulsePhase;
 s32 g_MenuAltLayout;
 s32 g_OwnedCarCounterSlide;
@@ -129,7 +129,7 @@ int main(void) {
 
     g_RenderState.draw.orderingTable = orderingTable;
     for (i = 0; i < MENU_PAINT_COLOR_COUNT; i++) {
-        g_PaintColorTable.colors[i] = (Rgb){i, i + 1, i + 2};
+        g_PaintColorTable[i] = (Rgb){i, i + 1, i + 2};
     }
 
     CHECK(DrawPaintColorPalette(&progress, 1, 3) == 0);

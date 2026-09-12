@@ -54,15 +54,15 @@ s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index) {
         DrawRectOutline(ot, x + index * PAINT_SWATCH_WIDTH - 2, y, 0xD,
                         0x1A, 0, (u8)highlight, 0, 0xFF);
         DrawSolidRect(ot, x + index * PAINT_SWATCH_WIDTH - 1, y + 2, 0xB,
-                      0x16, g_PaintColorTable.colors[index].r,
-                      g_PaintColorTable.colors[index].g,
-                      g_PaintColorTable.colors[index].b, 0xFF);
+                      0x16, g_PaintColorTable[index].r,
+                      g_PaintColorTable[index].g,
+                      g_PaintColorTable[index].b, 0xFF);
         DrawRectOutline(ot, x, y + 3, 0x92, 0x14, 0xB4, 0xB4, 0xB4,
                         0xFF);
 
         for (colorIndex = 0; colorIndex < MENU_PAINT_COLOR_COUNT;
              colorIndex++) {
-            const Rgb *color = &g_PaintColorTable.colors[colorIndex];
+            const Rgb *color = &g_PaintColorTable[colorIndex];
 
             DrawSolidRect(ot, x + 1 + colorIndex * PAINT_SWATCH_WIDTH, y + 5,
                           PAINT_SWATCH_WIDTH, 0x10, color->r, color->g,

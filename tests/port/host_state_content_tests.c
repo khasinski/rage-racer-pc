@@ -109,7 +109,7 @@ extern const char g_MsgOrdinalSt[4];
 extern const char g_MsgOrdinalNd[4];
 extern const char g_MsgOrdinalRd[4];
 extern const char g_MsgOrdinalTh[8];
-extern PaintColorTable g_PaintColorTable;
+extern Rgb g_PaintColorTable[MENU_PAINT_COLOR_COUNT];
 extern SVec g_CourseCardVerts[4];
 extern Vec4 g_MenuCarPivotOffset;
 extern const Vec4 g_TeamNameCharScale;
