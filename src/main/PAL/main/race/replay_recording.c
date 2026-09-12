@@ -14,29 +14,29 @@ void RecordReplayFrame(void) {
     const GameCarRuntime *player = AsRivalCar(&g_PlayerCar);
     const s32 capacity = ReplayFrameCapacity(g_GrandPrixMode);
 
-    if (g_ReplayFrameCount <= 0 || g_ReplayFrameCount > capacity ||
-        g_ReplayWriteCursor < 0 ||
-        g_ReplayWriteCursor >= g_ReplayFrameCount) {
+    if (g_Replay.count <= 0 || g_Replay.count > capacity ||
+        g_Replay.write < 0 ||
+        g_Replay.write >= g_Replay.count) {
         return;
     }
 
     if (g_GrandPrixMode != 0) {
-        StoreGrandPrixReplaySample(g_ReplayWriteCursor, player, &g_Cars[0]);
+        StoreGrandPrixReplaySample(g_Replay.write, player, &g_Cars[0]);
     } else {
-        StoreTimeAttackReplaySample(g_ReplayWriteCursor, player);
+        StoreTimeAttackReplaySample(g_Replay.write, player);
     }
 
-    g_ReplayWriteCursor++;
-    if (g_ReplayWriteCursor == g_ReplayFrameCount) {
-        g_ReplayWriteCursor = 0;
-        g_ReplayBufferWrapped = 1;
+    g_Replay.write++;
+    if (g_Replay.write == g_Replay.count) {
+        g_Replay.write = 0;
+        g_Replay.wrapped = 1;
     }
 }
 
 void ResetReplayWriteCursor(void) {
-    g_ReplayWriteCursor = 0;
-    g_ReplayFrameCount = ReplayFrameCapacity(g_GrandPrixMode);
-    g_ReplayBufferWrapped = 0;
+    g_Replay.write = 0;
+    g_Replay.count = ReplayFrameCapacity(g_GrandPrixMode);
+    g_Replay.wrapped = 0;
 }
 
 static void StoreGrandPrixReplaySample(s32 subframe,
@@ -44,8 +44,8 @@ static void StoreGrandPrixReplaySample(s32 subframe,
                                        const GameCarRuntime *rival) {
     ReplayGrandPrixFrame *dst;
 
-    g_ReplayPlayerModelIndex = player->modelIndex;
-    g_ReplayRivalModelIndex = rival->modelIndex;
+    g_Replay.playerModel = player->modelIndex;
+    g_Replay.rivalModel = rival->modelIndex;
     if ((subframe & 1) != 0) {
         return;
     }
@@ -78,7 +78,7 @@ static void StoreTimeAttackReplaySample(s32 subframe,
                                         const GameCarRuntime *player) {
     ReplayTimeAttackFrame *dst;
 
-    g_ReplayPlayerModelIndex = player->modelIndex;
+    g_Replay.playerModel = player->modelIndex;
     if ((subframe & 1) != 0) {
         return;
     }

@@ -8,9 +8,8 @@
 #include "game/work_buffer.h"
 
 GameWorkBuffer g_ReplayFrameBuffer;
+Replay g_Replay;
 s16 g_GrandPrixMode;
-s16 g_ReplayPlayerModelIndex;
-s16 g_ReplayRivalModelIndex;
 
 static void TestGrandPrixFrames(void) {
     GameCarRuntime player = {0};
@@ -19,8 +18,8 @@ static void TestGrandPrixFrames(void) {
     ReplayGrandPrixFrame *second = &g_ReplayFrameBuffer.grandPrixReplay[1];
 
     g_GrandPrixMode = 1;
-    g_ReplayPlayerModelIndex = 12;
-    g_ReplayRivalModelIndex = 34;
+    g_Replay.playerModel = 12;
+    g_Replay.rivalModel = 34;
     first->x0 = 100;
     first->y0 = -20;
     first->z0 = 300;
@@ -139,7 +138,7 @@ static void TestTimeAttackFrames(void) {
 
     memset(&rival, 0x5A, sizeof(rival));
     g_GrandPrixMode = 0;
-    g_ReplayPlayerModelIndex = 7;
+    g_Replay.playerModel = 7;
     first->x = 80;
     first->y = -30;
     first->z = 160;

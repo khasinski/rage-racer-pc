@@ -49,17 +49,17 @@ void BeginReplay(void) {
     g_SceneTimer = 0;
     g_FadeStep = REPLAY_FADE_IN_STEP;
 
-    if (g_ReplayBufferWrapped != 0) {
-        g_ReplayFrameCount = ClampReplayFrameCount(
-            g_ReplayFrameCount, g_GrandPrixMode);
-        g_ReplayReadCursor = WrappedReplayStartCursor(
-            g_ReplayWriteCursor, g_ReplayFrameCount);
+    if (g_Replay.wrapped != 0) {
+        g_Replay.count = ClampReplayFrameCount(
+            g_Replay.count, g_GrandPrixMode);
+        g_Replay.read = WrappedReplayStartCursor(
+            g_Replay.write, g_Replay.count);
     } else {
-        g_ReplayReadCursor = 0;
+        g_Replay.read = 0;
         /* The last sample straddles the transition out of the live race. */
-        g_ReplayFrameCount = ClampReplayFrameCount(
-            g_ReplayWriteCursor > REPLAY_SUBFRAMES_PER_SAMPLE
-                ? g_ReplayWriteCursor - REPLAY_SUBFRAMES_PER_SAMPLE
+        g_Replay.count = ClampReplayFrameCount(
+            g_Replay.write > REPLAY_SUBFRAMES_PER_SAMPLE
+                ? g_Replay.write - REPLAY_SUBFRAMES_PER_SAMPLE
                 : 0,
             g_GrandPrixMode);
     }

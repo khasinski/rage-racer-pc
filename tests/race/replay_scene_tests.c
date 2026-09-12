@@ -12,6 +12,7 @@
 
 PlayerCarRuntime g_PlayerCar;
 GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
+Replay g_Replay;
 GameRenderState g_RenderState;
 static GameFrameContext s_FrameContext;
 GameFrameContext *g_DrawBuffer = &s_FrameContext;
@@ -20,8 +21,6 @@ s32 g_AnimTimer;
 s32 g_SceneTimer;
 s32 g_SeriesCleared;
 s16 g_GrandPrixMode;
-s32 g_ReplayReadCursor;
-s32 g_ReplayFrameCount;
 s32 g_IsEnvironmentMode4;
 
 static s32 s_AppliedCursor;
@@ -101,8 +100,8 @@ static void ResetState(void) {
     g_SceneTimer = 0;
     g_SeriesCleared = 0;
     g_GrandPrixMode = 0;
-    g_ReplayReadCursor = 7;
-    g_ReplayFrameCount = 20;
+    g_Replay.read = 7;
+    g_Replay.count = 20;
     g_IsEnvironmentMode4 = 3;
     g_PlayerCar.trackSection = 12;
     g_PlayerCar.drive.racePosition = 1;
@@ -132,7 +131,7 @@ static void TestFirstTimeAttackFrame(void) {
     UpdateReplayScene();
 
     assert(g_AnimTimer == 1 && g_SceneTimer == 1);
-    assert(s_AppliedCursor == 7 && g_ReplayReadCursor == 8);
+    assert(s_AppliedCursor == 7 && g_Replay.read == 8);
     assert(s_FadeUpdates == 1 && s_CarUpdates == 1);
     assert(s_CameraUpdates == 1 && s_TerrainDraws == 1);
     assert(s_RivalCarDraws == 0);
@@ -146,7 +145,7 @@ static void TestFirstTimeAttackFrame(void) {
 static void TestGrandPrixResultCueAndCar(void) {
     ResetState();
     g_GrandPrixMode = 1;
-    g_ReplayFrameCount = 100;
+    g_Replay.count = 100;
     g_SceneTimer = 59;
 
     UpdateReplayScene();
@@ -180,7 +179,7 @@ static void TestSceneCountersStayUsable(void) {
 
     UpdateReplayScene();
 
-    assert(g_AnimTimer == INT_MIN && g_SceneTimer == g_ReplayFrameCount);
+    assert(g_AnimTimer == INT_MIN && g_SceneTimer == g_Replay.count);
 }
 
 static void TestFadeExitStopsReplayFrame(void) {
@@ -196,12 +195,12 @@ static void TestFadeExitStopsReplayFrame(void) {
 
 static void TestEmptyReplayKeepsCurrentCarState(void) {
     ResetState();
-    g_ReplayFrameCount = 0;
+    g_Replay.count = 0;
 
     UpdateReplayScene();
 
     assert(g_SceneTimer == 0 && s_AppliedCursor == -1);
-    assert(g_ReplayReadCursor == 7 && s_CarUpdates == 0);
+    assert(g_Replay.read == 7 && s_CarUpdates == 0);
     assert(s_CameraUpdates == 1 && s_TerrainDraws == 1);
 }
 

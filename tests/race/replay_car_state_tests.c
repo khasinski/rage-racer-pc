@@ -25,9 +25,8 @@ static s32 s_CallCount;
 
 PlayerCarRuntime g_PlayerCar;
 GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
+Replay g_Replay;
 s16 g_GrandPrixMode;
-s32 g_ReplayFrameCount;
-s32 g_ReplayReadCursor;
 
 static void RecordCall(ReplayCarCall call, const GameCarRuntime *car,
                        s32 value) {
@@ -85,8 +84,8 @@ static void TestSeedTimeAttackCar(void) {
 
     s_CallCount = 0;
     g_GrandPrixMode = 0;
-    g_ReplayFrameCount = 100;
-    g_ReplayReadCursor = 42;
+    g_Replay.count = 100;
+    g_Replay.read = 42;
     player->trackPointIndex = 7;
 
     SeedReplayCars();
@@ -107,8 +106,8 @@ static void TestSeedGrandPrixCarsForAnyNonzeroMode(void) {
 
     s_CallCount = 0;
     g_GrandPrixMode = 2;
-    g_ReplayFrameCount = 100;
-    g_ReplayReadCursor = 9;
+    g_Replay.count = 100;
+    g_Replay.read = 9;
     player->trackPointIndex = 3;
     rival->trackPointIndex = 5;
 
@@ -126,7 +125,7 @@ static void TestSeedGrandPrixCarsForAnyNonzeroMode(void) {
 
 static void TestSeedWithoutRecordedFrames(void) {
     s_CallCount = 0;
-    g_ReplayFrameCount = 0;
+    g_Replay.count = 0;
 
     SeedReplayCars();
 

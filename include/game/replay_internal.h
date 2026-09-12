@@ -6,11 +6,16 @@
 
 struct GameCarRuntime;
 
-extern s32 g_ReplayWriteCursor;
-extern s32 g_ReplayFrameCount;
-extern s32 g_ReplayBufferWrapped;
-extern s16 g_ReplayPlayerModelIndex;
-extern s16 g_ReplayRivalModelIndex;
+typedef struct Replay {
+    s32 read;
+    s32 write;
+    s32 count;
+    s32 wrapped;
+    s16 playerModel;
+    s16 rivalModel;
+} Replay;
+
+extern Replay g_Replay;
 
 static inline s32 ReplayFrameCapacity(s32 grandPrixMode) {
     return grandPrixMode != 0 ? GRAND_PRIX_REPLAY_SUBFRAME_COUNT

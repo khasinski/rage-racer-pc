@@ -8,13 +8,10 @@
 #include "game/state.h"
 #include "game/track_internal.h"
 
+Replay g_Replay;
 s32 g_FadeLevel;
 s32 g_FadeStep;
 s32 g_SceneTimer;
-s32 g_ReplayBufferWrapped;
-s32 g_ReplayWriteCursor;
-s32 g_ReplayReadCursor;
-s32 g_ReplayFrameCount;
 s32 g_GrandPrixClass;
 s16 g_GrandPrixMode;
 s32 g_EnvScriptClock;
@@ -29,10 +26,10 @@ static void ResetState(void) {
     g_FadeLevel = 0;
     g_FadeStep = 0;
     g_SceneTimer = 99;
-    g_ReplayBufferWrapped = 0;
-    g_ReplayWriteCursor = 0;
-    g_ReplayReadCursor = -1;
-    g_ReplayFrameCount = 0;
+    g_Replay.wrapped = 0;
+    g_Replay.write = 0;
+    g_Replay.read = -1;
+    g_Replay.count = 0;
     g_GrandPrixClass = 0;
     g_GrandPrixMode = 0;
     g_EnvScriptClock = 5000;
@@ -42,45 +39,45 @@ static void ResetState(void) {
 
 static void TestLinearTimeAttackReplay(void) {
     ResetState();
-    g_ReplayWriteCursor = 102;
+    g_Replay.write = 102;
 
     BeginReplay();
 
     assert(g_FadeLevel == 255 && g_FadeStep == -4 && g_SceneTimer == 0);
-    assert(g_ReplayReadCursor == 0);
-    assert(g_ReplayFrameCount == 100);
+    assert(g_Replay.read == 0);
+    assert(g_Replay.count == 100);
     assert(s_EnvironmentSeek == 2000);
     assert(s_SeedCalls == 1);
 }
 
 static void TestWrappedGrandPrixReplay(void) {
     ResetState();
-    g_ReplayBufferWrapped = 1;
-    g_ReplayWriteCursor = 101;
-    g_ReplayFrameCount = 200;
+    g_Replay.wrapped = 1;
+    g_Replay.write = 101;
+    g_Replay.count = 200;
     g_GrandPrixMode = 2;
 
     BeginReplay();
 
-    assert(g_ReplayReadCursor == 102);
-    assert(g_ReplayFrameCount == 200);
+    assert(g_Replay.read == 102);
+    assert(g_Replay.count == 200);
     assert(s_EnvironmentSeek == 3200);
 }
 
 static void TestWrappedCursorAtEndRestartsFromZero(void) {
     ResetState();
-    g_ReplayBufferWrapped = 1;
-    g_ReplayWriteCursor = 199;
-    g_ReplayFrameCount = 200;
+    g_Replay.wrapped = 1;
+    g_Replay.write = 199;
+    g_Replay.count = 200;
 
     BeginReplay();
 
-    assert(g_ReplayReadCursor == 0);
+    assert(g_Replay.read == 0);
 }
 
 static void TestFinalClassKeepsEnvironmentPosition(void) {
     ResetState();
-    g_ReplayWriteCursor = 20;
+    g_Replay.write = 20;
     g_GrandPrixClass = GRAND_PRIX_FINAL_CLASS_INDEX;
 
     BeginReplay();
@@ -97,31 +94,31 @@ static void TestInvalidAndShortReplayBounds(void) {
            GRAND_PRIX_REPLAY_SUBFRAME_COUNT);
 
     ResetState();
-    g_ReplayWriteCursor = 1;
+    g_Replay.write = 1;
 
     BeginReplay();
 
-    assert(g_ReplayReadCursor == 0 && g_ReplayFrameCount == 0);
+    assert(g_Replay.read == 0 && g_Replay.count == 0);
 
     ResetState();
-    g_ReplayBufferWrapped = 1;
-    g_ReplayWriteCursor = -1;
-    g_ReplayFrameCount = 200;
+    g_Replay.wrapped = 1;
+    g_Replay.write = -1;
+    g_Replay.count = 200;
     BeginReplay();
-    assert(g_ReplayReadCursor == 0);
+    assert(g_Replay.read == 0);
 
-    g_ReplayWriteCursor = INT_MAX;
+    g_Replay.write = INT_MAX;
     BeginReplay();
-    assert(g_ReplayReadCursor == 0);
-    assert(g_ReplayFrameCount == 200);
+    assert(g_Replay.read == 0);
+    assert(g_Replay.count == 200);
 
     ResetState();
-    g_ReplayBufferWrapped = 1;
-    g_ReplayWriteCursor = TIME_ATTACK_REPLAY_SUBFRAME_COUNT;
-    g_ReplayFrameCount = INT_MAX;
+    g_Replay.wrapped = 1;
+    g_Replay.write = TIME_ATTACK_REPLAY_SUBFRAME_COUNT;
+    g_Replay.count = INT_MAX;
     BeginReplay();
-    assert(g_ReplayReadCursor == 0);
-    assert(g_ReplayFrameCount == TIME_ATTACK_REPLAY_SUBFRAME_COUNT);
+    assert(g_Replay.read == 0);
+    assert(g_Replay.count == TIME_ATTACK_REPLAY_SUBFRAME_COUNT);
 }
 
 static void TestEnvironmentRewindBounds(void) {

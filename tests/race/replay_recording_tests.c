@@ -9,11 +9,7 @@
 #include "game/work_buffer.h"
 
 GameWorkBuffer g_ReplayFrameBuffer;
-s32 g_ReplayWriteCursor;
-s32 g_ReplayFrameCount;
-s32 g_ReplayBufferWrapped;
-s16 g_ReplayPlayerModelIndex;
-s16 g_ReplayRivalModelIndex;
+Replay g_Replay;
 s16 g_GrandPrixMode;
 PlayerCarRuntime g_PlayerCar;
 GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
@@ -38,16 +34,16 @@ static GameCarRuntime MakeCar(s32 base, s16 modelIndex) {
 
 static void TestReplayBufferReset(void) {
     g_GrandPrixMode = 1;
-    g_ReplayWriteCursor = 99;
-    g_ReplayBufferWrapped = 1;
+    g_Replay.write = 99;
+    g_Replay.wrapped = 1;
     ResetReplayWriteCursor();
-    assert(g_ReplayWriteCursor == 0);
-    assert(g_ReplayFrameCount == GRAND_PRIX_REPLAY_SUBFRAME_COUNT);
-    assert(g_ReplayBufferWrapped == 0);
+    assert(g_Replay.write == 0);
+    assert(g_Replay.count == GRAND_PRIX_REPLAY_SUBFRAME_COUNT);
+    assert(g_Replay.wrapped == 0);
 
     g_GrandPrixMode = 0;
     ResetReplayWriteCursor();
-    assert(g_ReplayFrameCount == TIME_ATTACK_REPLAY_SUBFRAME_COUNT);
+    assert(g_Replay.count == TIME_ATTACK_REPLAY_SUBFRAME_COUNT);
 }
 
 static void TestGrandPrixRecording(void) {
@@ -64,15 +60,15 @@ static void TestGrandPrixRecording(void) {
     *AsRivalCar(&g_PlayerCar) = player;
     g_Cars[0] = rival;
     g_GrandPrixMode = 1;
-    g_ReplayWriteCursor = 1;
-    g_ReplayFrameCount = GRAND_PRIX_REPLAY_SUBFRAME_COUNT;
+    g_Replay.write = 1;
+    g_Replay.count = GRAND_PRIX_REPLAY_SUBFRAME_COUNT;
     RecordReplayFrame();
     assert(memcmp(&g_ReplayFrameBuffer.grandPrixReplay[0], &untouched,
                   sizeof(untouched)) == 0);
-    assert(g_ReplayPlayerModelIndex == 3);
-    assert(g_ReplayRivalModelIndex == 4);
+    assert(g_Replay.playerModel == 3);
+    assert(g_Replay.rivalModel == 4);
 
-    assert(g_ReplayWriteCursor == 2);
+    assert(g_Replay.write == 2);
     RecordReplayFrame();
     frame = &g_ReplayFrameBuffer.grandPrixReplay[1];
     assert(frame->x0 == 101);
@@ -110,14 +106,14 @@ static void TestTimeAttackRecording(void) {
     g_ReplayFrameBuffer.timeAttackReplay[0] = untouched;
     *AsRivalCar(&g_PlayerCar) = player;
     g_GrandPrixMode = 0;
-    g_ReplayWriteCursor = 1;
-    g_ReplayFrameCount = TIME_ATTACK_REPLAY_SUBFRAME_COUNT;
+    g_Replay.write = 1;
+    g_Replay.count = TIME_ATTACK_REPLAY_SUBFRAME_COUNT;
     RecordReplayFrame();
     assert(memcmp(&g_ReplayFrameBuffer.timeAttackReplay[0], &untouched,
                   sizeof(untouched)) == 0);
-    assert(g_ReplayPlayerModelIndex == 5);
+    assert(g_Replay.playerModel == 5);
 
-    assert(g_ReplayWriteCursor == 2);
+    assert(g_Replay.write == 2);
     RecordReplayFrame();
     frame = &g_ReplayFrameBuffer.timeAttackReplay[1];
     assert(frame->x == 301);
@@ -137,13 +133,13 @@ static void TestRecordingCursorWrap(void) {
     memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
     memset(g_Cars, 0, sizeof(g_Cars));
     g_GrandPrixMode = 1;
-    g_ReplayWriteCursor = 1;
-    g_ReplayFrameCount = 2;
-    g_ReplayBufferWrapped = 0;
+    g_Replay.write = 1;
+    g_Replay.count = 2;
+    g_Replay.wrapped = 0;
 
     RecordReplayFrame();
-    assert(g_ReplayWriteCursor == 0);
-    assert(g_ReplayBufferWrapped == 1);
+    assert(g_Replay.write == 0);
+    assert(g_Replay.wrapped == 1);
 }
 
 static void TestInvalidRecordingBoundsAreIgnored(void) {
@@ -152,22 +148,22 @@ static void TestInvalidRecordingBoundsAreIgnored(void) {
     memset(&g_ReplayFrameBuffer, 0x6C, sizeof(g_ReplayFrameBuffer));
     untouched = g_ReplayFrameBuffer;
     g_GrandPrixMode = 1;
-    g_ReplayBufferWrapped = 0;
+    g_Replay.wrapped = 0;
 
-    g_ReplayFrameCount = 0;
-    g_ReplayWriteCursor = 0;
+    g_Replay.count = 0;
+    g_Replay.write = 0;
     RecordReplayFrame();
     assert(memcmp(&g_ReplayFrameBuffer, &untouched, sizeof(untouched)) == 0);
-    assert(g_ReplayWriteCursor == 0 && g_ReplayBufferWrapped == 0);
+    assert(g_Replay.write == 0 && g_Replay.wrapped == 0);
 
-    g_ReplayFrameCount = GRAND_PRIX_REPLAY_SUBFRAME_COUNT;
-    g_ReplayWriteCursor = -1;
+    g_Replay.count = GRAND_PRIX_REPLAY_SUBFRAME_COUNT;
+    g_Replay.write = -1;
     RecordReplayFrame();
     assert(memcmp(&g_ReplayFrameBuffer, &untouched, sizeof(untouched)) == 0);
-    assert(g_ReplayWriteCursor == -1);
+    assert(g_Replay.write == -1);
 
-    g_ReplayFrameCount = GRAND_PRIX_REPLAY_SUBFRAME_COUNT + 1;
-    g_ReplayWriteCursor = 0;
+    g_Replay.count = GRAND_PRIX_REPLAY_SUBFRAME_COUNT + 1;
+    g_Replay.write = 0;
     RecordReplayFrame();
     assert(memcmp(&g_ReplayFrameBuffer, &untouched, sizeof(untouched)) == 0);
 }

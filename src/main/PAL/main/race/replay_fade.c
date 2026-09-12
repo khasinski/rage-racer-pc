@@ -37,18 +37,18 @@ s32 UpdateReplayFade(void) {
 
     endingWashActive = g_SeriesCleared != 0 &&
                        ReplayEndingWashActive(g_SceneTimer,
-                                              g_ReplayFrameCount);
+                                              g_Replay.count);
     if (endingWashActive) {
         g_EndingWashLevel = ReplayEndingWashLevel(
-            g_SceneTimer, g_ReplayFrameCount);
+            g_SceneTimer, g_Replay.count);
     }
 
     if (g_FadeStep == 0) {
         if (g_PadPressed & PAD_CONFIRM) {
             StartReplayExitFade(1);
         } else if (ShouldStartReplayExitFade(
-                       g_SceneTimer, g_ReplayFrameCount)) {
-            StartReplayExitFade(g_ReplayBufferWrapped == 0);
+                       g_SceneTimer, g_Replay.count)) {
+            StartReplayExitFade(g_Replay.wrapped == 0);
         }
     } else {
         g_FadeLevel = AdvanceReplayFadeLevel(g_FadeLevel, g_FadeStep);

@@ -15,6 +15,7 @@
 #include "game/menu_types.h"
 #include "game/race_hud_internal.h"
 #include "game/race_time_types.h"
+#include "game/replay_internal.h"
 #include "game/result_screen_types.h"
 #include "game/save_types.h"
 
@@ -94,7 +95,6 @@ s32 g_SplitTargetTime;
 s32 g_CameraCarIndex;
 CourseProgressState *g_CourseProgress;
 s32 g_CameraViewMode;
-s32 g_ReplayBufferWrapped;
 s32 g_BestTotalTimes[2][4][2];
 s16 g_PauseDebounce;
 s32 g_FrameSyncThreshold;
@@ -108,7 +108,6 @@ s32 g_RecordPanelSlide;
 s32 g_BestLapIndex;
 s32 g_BgmChangeDelay;
 ScoreRecord g_ClassRecords[CLASS_RECORD_COUNT];
-s32 g_ReplayFrameCount;
 s32 g_BgmSelectCdTrack;
 s32 g_TimeRecordInsertRow;
 s16 g_TrackZoneCode;
@@ -135,12 +134,9 @@ s32 g_BgmSelectCursor;
 s32 g_ClassCompleted;
 s32 g_RaceTotalTime;
 s32 g_RacePaused;
-s32 g_ReplayWriteCursor;
-s16 g_ReplayRivalModelIndex;
 s32 g_BestLapThisRace;
 s32 g_ClassClearFanfareTimer;
 s32 g_LapTimeMs;
-s16 g_ReplayPlayerModelIndex;
 s32 g_SectorEndDistance[3];
 s32 g_ClassWinCount;
 s16 g_GrandPrixMode;
@@ -157,5 +153,5 @@ s16 g_RivalCueCooldowns[4];
 unsigned char g_BgmShuffleOrder[12];
 s32 g_RankingInsertRow;
 s16 g_WrongWayTimer;
-s32 g_ReplayReadCursor;
+Replay g_Replay;
 unsigned char g_TimeRecordNameCodes[8];

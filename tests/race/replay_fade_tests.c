@@ -6,13 +6,12 @@
 #include "game/replay_internal.h"
 #include "game/state.h"
 
+Replay g_Replay;
 s32 g_FadeLevel;
 s32 g_FadeStep;
 s32 g_EndingWashLevel;
 s32 g_SeriesCleared;
 s32 g_SceneTimer;
-s32 g_ReplayFrameCount;
-s32 g_ReplayBufferWrapped;
 u16 g_PadPressed;
 s32 g_MirrorMode;
 s32 g_SceneId;
@@ -44,8 +43,8 @@ static void ResetState(void) {
     g_EndingWashLevel = 99;
     g_SeriesCleared = 0;
     g_SceneTimer = 0;
-    g_ReplayFrameCount = 1000;
-    g_ReplayBufferWrapped = 0;
+    g_Replay.count = 1000;
+    g_Replay.wrapped = 0;
     g_PadPressed = 0;
     g_MirrorMode = 1;
     g_SceneId = 99;
@@ -90,7 +89,7 @@ static void TestConfirmStartsAudioFade(void) {
     assert(s_AudioFade == 60);
 
     ResetState();
-    g_ReplayBufferWrapped = 1;
+    g_Replay.wrapped = 1;
     g_PadPressed = PAD_CONFIRM;
 
     assert(!UpdateReplayFade());
@@ -102,7 +101,7 @@ static void TestConfirmStartsAudioFade(void) {
 static void TestWrappedReplayAutoFadeKeepsAudio(void) {
     ResetState();
     g_SceneTimer = 932;
-    g_ReplayBufferWrapped = 1;
+    g_Replay.wrapped = 1;
 
     assert(!UpdateReplayFade());
 
