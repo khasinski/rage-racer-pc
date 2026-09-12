@@ -33,9 +33,9 @@ u16 g_TeamLogoSwatches[15];
 Rect g_TeamLogoRect;
 Rect g_TeamLogoClutRect;
 u16 g_TeamLogoFadedClutRect;
-TeamLogoColorIndex g_TeamLogoPenColor;
-TeamLogoCoordinate g_TeamLogoCursorX;
-TeamLogoCoordinate g_TeamLogoViewX;
+s32 g_TeamLogoPenColor;
+s32 g_TeamLogoCursorX;
+s32 g_TeamLogoViewX;
 s32 g_TeamLogoBrushSize;
 s32 g_TeamLogoColorChannel;
 s32 g_TeamLogoColorCycleAngle;
@@ -232,10 +232,10 @@ int main(int argc, char **argv) {
         g_TeamLogoColorCycleAngle = 0x321;
         g_TeamLogoFadeLevel = 0xC0;
         g_TeamLogoZoomSpan = 0x210;
-        g_TeamLogoPenColor = (TeamLogoColorIndex)3;
-        g_TeamLogoCursorX = (TeamLogoCoordinate)20;
+        g_TeamLogoPenColor = 3;
+        g_TeamLogoCursorX = 20;
         g_TeamLogoCursorY = 30;
-        g_TeamLogoViewX = (TeamLogoCoordinate)4;
+        g_TeamLogoViewX = 4;
         g_TeamLogoViewY = 6;
 
         sprintf(label, "== p%d/e%d/z%d/m%d/g%d/b%d/c%d/pad%02x/arg%d",

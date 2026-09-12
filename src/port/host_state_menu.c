@@ -127,14 +127,14 @@ Rgb g_ClassRecordNameSprites[CLASS_RECORD_COUNT + 1]
 u8 g_TeamNameLength = 5;
 unsigned char g_TeamNameChars[16] __attribute__((aligned(16))) = {0x18,0x0b,0x17,0x0d,0x19,0x0a,0x0a,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
 u8 g_TeamLogoExpertMode;
-TeamLogoCoordinate g_TeamLogoCursorX __attribute__((aligned(16)));
+s32 g_TeamLogoCursorX __attribute__((aligned(16)));
 s32 g_TeamLogoCursorY;
-TeamLogoCoordinate g_TeamLogoViewX __attribute__((aligned(16)));
+s32 g_TeamLogoViewX __attribute__((aligned(16)));
 s32 g_TeamLogoViewY;
 s32 g_TeamLogoGuideMode = 1;
 s32 g_TeamLogoZoomSpan = 544;
 s32 g_TeamLogoBrushSize = 1;
-TeamLogoColorIndex g_TeamLogoPenColor __attribute__((aligned(16))) = 1;
+s32 g_TeamLogoPenColor __attribute__((aligned(16))) = 1;
 s32 g_TeamLogoPaletteMode;
 s32 g_TeamLogoColorChannel;
 u16 g_TeamLogoFadedClutRect = 304;

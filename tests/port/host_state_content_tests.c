@@ -200,9 +200,9 @@ extern unsigned char g_CdMixPresets[8];
 extern int32_t g_CdCommandPending;
 extern MenuOverlayPatternFrame
     g_MenuOverlayPatternTable[MENU_OVERLAY_PATTERN_FRAME_COUNT];
-extern TeamLogoCoordinate g_TeamLogoCursorX;
-extern TeamLogoCoordinate g_TeamLogoViewX;
-extern TeamLogoColorIndex g_TeamLogoPenColor;
+extern s32 g_TeamLogoCursorX;
+extern s32 g_TeamLogoViewX;
+extern s32 g_TeamLogoPenColor;
 extern uint16_t g_TeamLogoBlankClut[16];
 extern FontGlyph g_SmallFontGlyphs[SMALL_FONT_GLYPH_COUNT];
 extern FontGlyph g_LargeFontGlyphs[LARGE_FONT_GLYPH_COUNT];

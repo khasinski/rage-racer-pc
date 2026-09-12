@@ -66,9 +66,6 @@ static inline void SetTeamLogoCanvasPixel(TeamLogoCanvas *canvas, s32 x,
 
 enum { MENU_LIGHT_BURST_RAY_COUNT = 33 };
 
-typedef s32 TeamLogoCoordinate;
-typedef s32 TeamLogoColorIndex;
-
 enum MenuPalette {
     MENU_PAINT_COLOR_COUNT = 18
 };

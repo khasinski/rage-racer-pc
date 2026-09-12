@@ -20,10 +20,10 @@
 /* The editor's own state. */
 TeamLogoCanvas g_TeamLogoCanvas;
 u16 g_TeamLogoClut[16];
-TeamLogoColorIndex g_TeamLogoPenColor;
+s32 g_TeamLogoPenColor;
 s32 g_TeamLogoBrushSize;
 s32 g_TeamLogoColorChannel;
-TeamLogoCoordinate g_TeamLogoCursorX;
+s32 g_TeamLogoCursorX;
 s32 g_TeamLogoCursorY;
 s32 g_TeamLogoDpadRepeatTimer;
 s32 g_TeamLogoDpadRepeatMask;
@@ -32,7 +32,7 @@ s32 g_TeamLogoGuideMode;
 s32 g_TeamLogoGuideModePrev;
 s32 g_TeamLogoPaintArmed;
 s32 g_TeamLogoPaletteMode;
-TeamLogoCoordinate g_TeamLogoViewX;
+s32 g_TeamLogoViewX;
 s32 g_TeamLogoViewY;
 u16 g_PadHeld;
 u16 g_PadPressed;
@@ -220,12 +220,12 @@ int main(int argc, char **argv) {
                                 for (i = 0; i < 16; i++) {
                                     g_TeamLogoClut[i] = (u16)(0x0421 * i);
                                 }
-                                g_TeamLogoPenColor = (TeamLogoColorIndex)3;
+                                g_TeamLogoPenColor = 3;
                                 g_TeamLogoColorChannel = channel;
                                 g_TeamLogoBrushSize = brushSizes[brush];
-                                g_TeamLogoCursorX = (TeamLogoCoordinate)20;
+                                g_TeamLogoCursorX = 20;
                                 g_TeamLogoCursorY = 30;
-                                g_TeamLogoViewX = (TeamLogoCoordinate)4;
+                                g_TeamLogoViewX = 4;
                                 g_TeamLogoViewY = 6;
                                 g_TeamLogoDpadRepeatTimer = repeats[repeat];
                                 g_TeamLogoDpadRepeatMask =
