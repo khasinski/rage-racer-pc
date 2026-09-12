@@ -16,7 +16,7 @@ s32 TrackTexturePageForSection(s32 section) {
                : 0;
 }
 
-static void SelectTrackTexturePage(s32 trackSection) {
+void RequestTrackTexturePage(s32 trackSection) {
     g_TrackTextureTargetRow = TrackTexturePageForSection(trackSection);
     g_TrackTexturePageWanted = g_TrackTextureTargetRow != 0;
 }
@@ -44,7 +44,7 @@ static void SwapAllTrackTextureRows(void) {
 }
 
 void SetTrackTexturePageNow(s32 trackSection) {
-    SelectTrackTexturePage(trackSection);
+    RequestTrackTexturePage(trackSection);
     g_TrackTextureCursorRow = g_TrackTextureTargetRow;
     SwapAllTrackTextureRows();
 }
@@ -59,10 +59,6 @@ void ResetTrackTextureSwap(void) {
     g_TrackTexturePageWanted = 0;
     g_TrackTextureTargetRow = 0;
     g_TrackTextureCursorRow = 0;
-}
-
-void RequestTrackTexturePage(s32 trackSection) {
-    SelectTrackTexturePage(trackSection);
 }
 
 void StepTrackTextureSwap(void) {
