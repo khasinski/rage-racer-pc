@@ -99,7 +99,7 @@ set_tests_properties(advance_grand_prix_class PROPERTIES LABELS unit)
 
 add_executable(enter_prize_screen_tests
     enter_prize_screen_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/enter_prize_screen.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/prize_money_screen.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/class_progress_rules.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/prize_money.c)
 target_include_directories(enter_prize_screen_tests PRIVATE

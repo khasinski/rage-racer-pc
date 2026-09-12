@@ -9,6 +9,7 @@
  */
 
 #include "common.h"
+#include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/menu.h"
 #include "game/sound.h"
@@ -27,9 +28,18 @@ s32 g_PromotionBonus;
 s32 g_PrizeCountStep;
 s32 g_BonusCountStep;
 s32 g_ClassCompleted;
+s32 g_ClassPromoted;
+s32 g_ClassResultPlace;
+s32 g_CourseIndex;
+s32 g_FrameSyncThreshold;
+s32 g_GrandPrixClass;
 s32 g_SeriesCleared;
+s32 g_SceneId;
 s32 g_SceneTimer;
 GameRaceProgress *g_RaceProgress;
+PlayerCarRuntime g_PlayerCar;
+RagePrizeMoneyStorage g_PrizeMoneyState;
+s32 g_PromotionBonusTable[PROMOTION_BONUS_COUNT];
 u16 g_PadPressed;
 u16 g_PadHeld;
 
@@ -57,6 +67,7 @@ s32 TickClassClearFanfare(void) {
     }
     return s_fanfareFrames;
 }
+void StartClassClearFanfare(void) {}
 
 static GameRaceProgress s_progress;
 static int s_failures;

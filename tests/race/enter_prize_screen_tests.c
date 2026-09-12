@@ -10,6 +10,7 @@
 s32 g_BonusCountStep;
 s32 g_ClassPromoted;
 s32 g_ClassResultPlace;
+s32 g_ClassCompleted;
 s32 g_CourseIndex;
 s32 g_FrameSyncThreshold;
 s32 g_GrandPrixClass;
@@ -19,10 +20,13 @@ s32 g_PromotionBonus;
 s32 g_PromotionBonusTable[PROMOTION_BONUS_COUNT];
 s32 g_SceneId;
 s32 g_SceneTimer;
+s32 g_SeriesCleared;
 PrizeScreenState g_PrizeScreenState;
 GameRaceProgress *g_RaceProgress;
 PlayerCarRuntime g_PlayerCar;
 RagePrizeMoneyStorage g_PrizeMoneyState;
+u16 g_PadHeld;
+u16 g_PadPressed;
 
 static GameRaceProgress s_progress;
 static s32 s_failures;
@@ -31,6 +35,15 @@ static s32 s_fanfareStarts;
 void StartClassClearFanfare(void) {
     s_fanfareStarts++;
 }
+
+s32 TickClassClearFanfare(void) { return 0; }
+void AdvanceGrandPrixClass(void) {}
+void DrawFullscreenFadeTile(s32 step, s32 clut) { (void)step; (void)clut; }
+void DrawGrandPrixIntro(void) {}
+void DrawPrizeMoneyPanel(s32 step) { (void)step; }
+void DrawRaceTimePanel(s32 step) { (void)step; }
+void PlaySoundCue(s32 cue) { (void)cue; }
+s32 RequestSelectBgmAssets(void) { return 0; }
 
 static void Check(const char *name, s32 actual, s32 expected) {
     if (actual != expected) {

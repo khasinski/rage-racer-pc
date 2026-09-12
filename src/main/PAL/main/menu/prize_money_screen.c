@@ -1,9 +1,13 @@
 #include "game/asset.h"
 #include "game/menu.h"
+#include "game/player_car_internal.h"
 #include "game/race.h"
+#include "game/race_internal.h"
 #include "game/audio.h"
+#include "game/scene.h"
 #include "game/screens.h"
 #include "game/sound.h"
+#include "game/state.h"
 
 #include <limits.h>
 #include <stdint.h>
@@ -18,7 +22,44 @@ enum {
     SOUND_CUE_COUNT = 0xF,
     SOUND_CUE_FAST_COUNT = 0x10,
     SOUND_CUE_CONFIRM = 0x11,
+    PRIZE_SCREEN_INITIAL_TIMER = 0x100,
+    PRIZE_SCREEN_FRAME_SYNC_THRESHOLD = 0x80,
+    PRIZE_COUNT_FRAMES = 80,
+    BONUS_COUNT_FRAMES = 250,
 };
+
+void EnterPrizeScreen(void) {
+    static const s32 noPrizes[PRIZE_PLACE_COUNT] = {0};
+    s32 courseIndex = SeriesCourseIndex();
+    const GrandPrixClassDefinition *definition =
+        GrandPrixContentClass(g_GrandPrixClass);
+    const s32 *prizes = noPrizes;
+
+    g_SceneTimer = PRIZE_SCREEN_INITIAL_TIMER;
+    g_FrameSyncThreshold = PRIZE_SCREEN_FRAME_SYNC_THRESHOLD;
+    if (g_RaceProgress != NULL) {
+        g_RaceProgress->money = ClampPrizeMoney(g_RaceProgress->money);
+    }
+    if (g_RaceProgress != NULL && definition != NULL &&
+        (u32)definition->prizeClass < GRAND_PRIX_PRIZE_CLASS_COUNT) {
+        prizes = g_PrizeMoney.values[courseIndex][definition->prizeClass];
+    }
+
+    g_PrizeScreenState = PRIZE_SCREEN_STATE_INTRO_FADE_IN;
+    g_PrizeAmount = PrizeForRacePosition(
+        prizes, PRIZE_PLACE_COUNT, g_PlayerCar.drive.racePosition);
+    g_PromotionBonus = PromotionBonusForClass(
+        g_PromotionBonusTable, PROMOTION_BONUS_COUNT,
+        definition != NULL ? definition->promotionBonusIndex : -1,
+        g_ClassPromoted);
+    g_PrizeCountStep = PrizeCountStep(
+        prizes[PRIZE_PLACE_THIRD], PRIZE_COUNT_FRAMES);
+    g_BonusCountStep = PrizeCountStep(g_PromotionBonus, BONUS_COUNT_FRAMES);
+    if (g_ClassResultPlace != 0) {
+        StartClassClearFanfare();
+    }
+    g_SceneId = GAME_SCENE_PRIZE;
+}
 
 static s32 AddClampedScreenValue(s32 value, s32 delta, s32 maximum) {
     int64_t next = (int64_t)value + delta;
