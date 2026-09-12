@@ -1,67 +1,14 @@
-#include "game/diagnostics.h"
 #include "game/car_internal.h"
 #include "game/integer.h"
 #include "game/player_car_internal.h"
 #include "game/render.h"
 #include "game/race.h"
-#include "game/state.h"
 #include "game/track_internal.h"
-
-typedef struct {
-    int enabled;
-    int exactTimer;
-    int firstTimer;
-    int lastTimer;
-} CarTrackTraceConfig;
 
 enum {
     MINIMUM_SEGMENT_LENGTH = 1,
     SEGMENT_FRACTION_SHIFT = 10,
 };
-
-static int ShouldTraceCarTrackState(const GameCarRuntime *car) {
-    static CarTrackTraceConfig config = {-1, -1, -1, -1};
-
-    if (config.enabled < 0) {
-        config.enabled = DiagnosticsEnabled("car.track_trace");
-        config.exactTimer = DiagnosticsIntValue("car.track_trace_timer", -1);
-        config.firstTimer = DiagnosticsIntValue(
-            "car.track_trace_timer_min", -1);
-        config.lastTimer = DiagnosticsIntValue(
-            "car.track_trace_timer_max", -1);
-    }
-
-    return config.enabled && car == AsRivalCar(&g_PlayerCar) &&
-           (config.exactTimer < 0 || g_SceneTimer == config.exactTimer) &&
-           (config.firstTimer < 0 || g_SceneTimer >= config.firstTimer) &&
-           (config.lastTimer < 0 || g_SceneTimer <= config.lastTimer);
-}
-
-static void TraceCarTrackEnter(const GameCarRuntime *car,
-                               s32 trackPointIndex,
-                               const CarTrackLimits *limits) {
-    Trace("car-track-enter", "timer=%d point=%d x=%d z=%d speed=%d "
-          "progress=%d lateral=%d yaw=%d limits=%d,%d,%d,%d",
-          g_SceneTimer, trackPointIndex, car->x, car->z, car->speed,
-          car->trackProgress, car->trackLateralOffset, car->bodyYaw,
-          limits->leftInset, limits->rightInset, limits->leftContact,
-          limits->rightContact);
-}
-
-static void TraceCarTrackExit(const GameCarRuntime *car, s32 trackPointIndex,
-                              s32 alongSegment,
-                              const CarTrackWork *work) {
-    Trace("car-track-exit", "timer=%d point=%d x=%d z=%d progress=%d "
-          "lateral=%d along=%d heading=%d curve=%d widths=%d,%d "
-          "correction=%d,%d contact=%d motion=%d,%d,%d,%d",
-          g_SceneTimer, trackPointIndex, car->x, car->z,
-          car->trackProgress, car->trackLateralOffset, alongSegment,
-          work->heading, work->curveMode, work->leftHalfWidth,
-          work->rightHalfWidth, work->edgeCorrection.x,
-          work->edgeCorrection.z,
-          work->trackContact, car->motionActive, car->motionTimer,
-          car->velocityX, car->velocityZ);
-}
 
 static void ApplyTrackEdgeCorrection(GameCarRuntime *car,
                                      CarTrackWork *work,
@@ -260,16 +207,10 @@ s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
     const GameTrackPoint *point;
     const GameTrackPoint *nextPoint;
     CarTrackWork *work;
-    int traceThisCall;
 
     if (car == NULL || g_TrackPointCount <= 0 || g_TrackPoints == NULL ||
         g_TrackLength <= 0 || limits == NULL) {
         return 0;
-    }
-
-    traceThisCall = ShouldTraceCarTrackState(car);
-    if (traceThisCall) {
-        TraceCarTrackEnter(car, trackPointIndex, limits);
     }
 
     work = &g_CarTrackWork;
@@ -304,8 +245,5 @@ s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
     UpdateCarSurfaceOrientation(car, work, point, nextPoint, alongSegment,
                                 lateralOffset);
     UpdateCarTrackProgress(car, work, alongSegment, lateralOffset);
-    if (traceThisCall) {
-        TraceCarTrackExit(car, trackPointIndex, alongSegment, work);
-    }
     return work->trackContact;
 }
