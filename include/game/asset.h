@@ -522,12 +522,6 @@ typedef struct TerrainCellAssetHeader {
 #define GAME_TERRAIN_CELL_LIMIT 2048
 extern const void *g_NativeTerrainCells[GAME_TERRAIN_CELL_LIMIT];
 
-typedef struct TerrainCellAsset {
-    u16 grid[32][32];
-    CellVisibilityRow visibility[32];
-    TerrainCellAssetHeader header;
-} TerrainCellAsset;
-
 typedef struct CourseModelAssetEntry {
     s32 geometryOffset;
     s32 vertexCount;

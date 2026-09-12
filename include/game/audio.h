@@ -63,11 +63,6 @@ static inline s32 ClampAudioSetting(s32 setting) {
     return setting > AUDIO_SETTING_MAX ? AUDIO_SETTING_MAX : setting;
 }
 
-typedef struct EffectCueBankHeader {
-    s32 voiceCount;
-    s32 volumeScale;
-} EffectCueBankHeader;
-
 typedef struct EffectCueBank {
     s32 voiceCount;
     s32 volumeScale;

@@ -30,17 +30,6 @@ static inline s32 PrintableAsciiGlyph(u8 character) {
         : PRINTABLE_ASCII_FALLBACK_GLYPH;
 }
 
-typedef struct CameraKey {
-    s32 eyeX;
-    s32 eyeY;
-    s32 eyeZ;
-    s32 atX;
-    s32 atY;
-    s32 atZ;
-    s32 duration;
-    s32 control;
-} CameraKey;
-
 /* The environment block at the head of each frame context. */
 typedef struct GameFrameEnvironmentHeader {
     DrawEnv draw;
