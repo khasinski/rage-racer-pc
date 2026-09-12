@@ -28,8 +28,6 @@ enum {
 typedef union TimedDrawArgument {
     s32 value;
     void *pointer;
-    u8 *bytes;
-    s32 *words;
     struct ScriptedSpriteShape *spriteShape;
     struct ScriptedSpriteMotion *spriteMotion;
     struct ScriptedLineShape *lineShape;
