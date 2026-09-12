@@ -13,8 +13,8 @@ void DrawControllerConfigScreen(void) {
     selection = g_PadType == PAD_TYPE_NEGCON ? g_NegconMappingIndex
                                               : g_PadMappingIndex;
     selection = ClampControllerMappingIndex(selection);
-    if (g_PadErrorState != PAD_ERROR_STATE_NONE) {
-        if (g_PadErrorState == PAD_ERROR_STATE_DISCONNECTED) {
+    if (g_PadValidation.error != PAD_ERROR_STATE_NONE) {
+        if (g_PadValidation.error == PAD_ERROR_STATE_DISCONNECTED) {
             DrawProportionalText(0x3A, 0xEA, "INSERT CONTROLLER", 0x7812);
         } else {
             DrawProportionalText(0x40, 0xEA, "CONTROLLER ERROR", 0x7812);

@@ -75,9 +75,9 @@ static void Reset(void) {
     memset(&g_PadState, 0, sizeof(g_PadState));
     g_PadRepeatTimer = 0;
     g_PadPrevHeld = 0;
-    g_PadErrorHoldBits = 0;
-    g_PadErrorState = PAD_ERROR_STATE_NONE;
-    g_PadValidateCountdown = 0;
+    g_PadValidation.holdBits = 0;
+    g_PadValidation.error = PAD_ERROR_STATE_NONE;
+    g_PadValidation.countdown = 0;
     g_NegconNeutralI = 0;
     g_NegconNeutralII = 0;
     g_NegconNeutralL = 0;
@@ -332,7 +332,7 @@ static void AutoRepeatTests(void) {
 static void ErrorHandlingTests(void) {
     Reset();
     Frame(0, 0x12, PAD_CROSS, 0xFF, 0xFF, 0xFF, 0xFF);
-    Check("an unknown packet reports an error", g_PadErrorState,
+    Check("an unknown packet reports an error", g_PadValidation.error,
           PAD_ERROR_STATE_INVALID_INPUT);
     Check("an unknown packet holds nothing", g_PadState.held, 0);
     Check("an unknown packet centres the twist", g_PadState.twist, 0x80);
@@ -350,11 +350,11 @@ static void ErrorHandlingTests(void) {
      * what the game sees for an unplugged pad is the flag, not the byte. */
     Check("an unplugged pad is flagged", g_PadState.status, 1);
     Check("an unplugged pad has no type", g_PadState.type, 0);
-    Check("an unplugged pad reports an error", g_PadErrorState,
+    Check("an unplugged pad reports an error", g_PadValidation.error,
           PAD_ERROR_STATE_DISCONNECTED);
     Check("validation leaves the BIOS packet type intact", g_PadBuffers[1],
           PAD_TYPE_DIGITAL);
-    Check("an unplugged pad rearms the validation", g_PadValidateCountdown,
+    Check("an unplugged pad rearms the validation", g_PadValidation.countdown,
           0x22);
     Check("an unplugged pad holds nothing", g_PadState.held, 0);
 
@@ -392,33 +392,33 @@ static void PacketValidationTests(void) {
 
     for (i = 0; i < sizeof(impossible) / sizeof(impossible[0]); i++) {
         Reset();
-        g_PadValidateCountdown = 0x10;
+        g_PadValidation.countdown = 0x10;
         Frame(0, 0x23, impossible[i].held, 0x80, 0, 0, 0);
-        Check(impossible[i].what, g_PadErrorState,
+        Check(impossible[i].what, g_PadValidation.error,
               PAD_ERROR_STATE_INVALID_INPUT);
-        Check("a bad read restarts the wait", g_PadValidateCountdown, 0x22);
+        Check("a bad read restarts the wait", g_PadValidation.countdown, 0x22);
     }
 
     /* A packet a NeGcon really can send just spends one frame of the wait. */
     Reset();
-    g_PadValidateCountdown = 0x10;
+    g_PadValidation.countdown = 0x10;
     Frame(0, 0x23, PAD_UP | PAD_R1, 0x80, 0, 0, 0);
-    Check("a plausible packet is accepted", g_PadErrorState,
+    Check("a plausible packet is accepted", g_PadValidation.error,
           PAD_ERROR_STATE_NONE);
     Check("a plausible packet spends one frame of the wait",
-          g_PadValidateCountdown, 0x0F);
+          g_PadValidation.countdown, 0x0F);
 
     /* The last frame of the wait still validates. */
     Reset();
-    g_PadValidateCountdown = 1;
+    g_PadValidation.countdown = 1;
     Frame(0, 0x23, PAD_LEFT | PAD_RIGHT, 0x80, 0, 0, 0);
-    Check("the last frame of the wait still checks", g_PadErrorState,
+    Check("the last frame of the wait still checks", g_PadValidation.error,
           PAD_ERROR_STATE_INVALID_INPUT);
 
     /* Once the pad is trusted, nothing is second-guessed. */
     Reset();
     Frame(0, 0x23, PAD_LEFT | PAD_RIGHT, 0x80, 0, 0, 0);
-    Check("a trusted pad is not second-guessed", g_PadErrorState,
+    Check("a trusted pad is not second-guessed", g_PadValidation.error,
           PAD_ERROR_STATE_NONE);
 }
 

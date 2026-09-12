@@ -36,9 +36,9 @@ static void ResetInputDefaults(void) {
     g_NegconNeutralII = 0;
     g_NegconNeutralL = 0;
     g_NegconMaxTwist = 0;
-    g_PadErrorState = PAD_ERROR_STATE_NONE;
-    g_PadValidateCountdown = DEFAULT_PAD_VALIDATION_FRAMES;
-    g_PadErrorHoldBits = 0;
+    g_PadValidation.error = PAD_ERROR_STATE_NONE;
+    g_PadValidation.countdown = DEFAULT_PAD_VALIDATION_FRAMES;
+    g_PadValidation.holdBits = 0;
 }
 
 static void FinalizeBootCamera(void) {

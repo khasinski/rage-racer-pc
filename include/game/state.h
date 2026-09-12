@@ -141,8 +141,6 @@ extern s32 g_AnimTimer;
  * once, from InitSubsystems.
  */
 void InitSaveDefaults(void);
-extern s32 g_PadErrorHoldBits;
-extern s32 g_PadValidateCountdown;
 extern s32 g_FrameSyncThreshold;
 extern s32 g_GameClock;
 extern s32 g_OptionLetterboxHeight;
@@ -153,7 +151,13 @@ typedef enum PadErrorState {
     PAD_ERROR_STATE_INVALID_INPUT
 } PadErrorState;
 
-extern PadErrorState g_PadErrorState;
+typedef struct PadValidation {
+    PadErrorState error;
+    s32 countdown;
+    s32 holdBits;
+} PadValidation;
+
+extern PadValidation g_PadValidation;
 
 
 extern s32 g_BootLogoHoldTimer;

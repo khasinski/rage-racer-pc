@@ -77,8 +77,8 @@ static void Report(int twist) {
     g_PadBuffers[5] = 0;
     g_PadBuffers[6] = 0;
     g_PadBuffers[7] = 0;
-    g_PadValidateCountdown = 0;
-    g_PadErrorHoldBits = 0;
+    g_PadValidation.countdown = 0;
+    g_PadValidation.holdBits = 0;
     UpdatePadState();
 }
 

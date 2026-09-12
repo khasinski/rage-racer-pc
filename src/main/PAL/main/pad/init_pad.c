@@ -93,9 +93,9 @@ static void UpdateNegconPadState(PadState *pad, const u8 *raw) {
     pad->pressed = pad->held & ~pad->prevHeld;
 }
 
-static void ClearInvalidPadState(PadState *pad) {
-    if (g_PadErrorState == PAD_ERROR_STATE_NONE) {
-        g_PadErrorState = PAD_ERROR_STATE_INVALID_INPUT;
+static void ClearInvalidPadState(PadState *pad, PadValidation *validation) {
+    if (validation->error == PAD_ERROR_STATE_NONE) {
+        validation->error = PAD_ERROR_STATE_INVALID_INPUT;
     }
     pad->status = 1;
     pad->type = 0;
@@ -119,28 +119,31 @@ static s32 HasInvalidNegconButtons(u16 held) {
            (held & NEGCON_DIGITAL_AXIS_MASK) != 0;
 }
 
-static void StartPadValidationError(PadErrorState error) {
-    g_PadErrorState = error;
-    g_PadValidateCountdown = PAD_VALIDATION_RETRY_FRAMES;
-    g_PadErrorHoldBits |= PAD_ERROR_HOLD_MASK;
+static void StartPadValidationError(PadValidation *validation,
+                                    PadErrorState error) {
+    validation->error = error;
+    validation->countdown = PAD_VALIDATION_RETRY_FRAMES;
+    validation->holdBits |= PAD_ERROR_HOLD_MASK;
 }
 
-static void ValidatePadPacket(const u8 *raw, PadState *pad) {
+static void ValidatePadPacket(const u8 *raw, PadState *pad,
+                              PadValidation *validation) {
     if (raw[0] != 0) {
-        StartPadValidationError(PAD_ERROR_STATE_DISCONNECTED);
-    } else if (g_PadValidateCountdown != 0) {
-        g_PadValidateCountdown--;
+        StartPadValidationError(validation, PAD_ERROR_STATE_DISCONNECTED);
+    } else if (validation->countdown != 0) {
+        validation->countdown--;
         if (raw[1] == PAD_TYPE_NEGCON &&
             HasInvalidNegconButtons(DecodeHeldButtons(raw))) {
-            StartPadValidationError(PAD_ERROR_STATE_INVALID_INPUT);
+            StartPadValidationError(validation,
+                                    PAD_ERROR_STATE_INVALID_INPUT);
         }
     }
 
-    g_PadErrorHoldBits >>= 1;
-    if (g_PadErrorHoldBits != 0) {
+    validation->holdBits >>= 1;
+    if (validation->holdBits != 0) {
         pad->type = 0;
     } else {
-        g_PadErrorState = PAD_ERROR_STATE_NONE;
+        validation->error = PAD_ERROR_STATE_NONE;
     }
 }
 
@@ -182,14 +185,14 @@ void UpdatePadState(void) {
     pad->status = raw[0];
     pad->type = raw[1];
     g_PadType = raw[1];
-    ValidatePadPacket(raw, pad);
+    ValidatePadPacket(raw, pad, &g_PadValidation);
 
     if (pad->type == PAD_TYPE_DIGITAL) {
         UpdateDigitalPadState(pad, raw);
     } else if (pad->type == PAD_TYPE_NEGCON) {
         UpdateNegconPadState(pad, raw);
     } else {
-        ClearInvalidPadState(pad);
+        ClearInvalidPadState(pad, &g_PadValidation);
     }
 
     UpdatePadAutoRepeat(pad);

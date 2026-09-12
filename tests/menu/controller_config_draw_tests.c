@@ -10,7 +10,7 @@
 GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
 u8 g_PadType;
-PadErrorState g_PadErrorState;
+PadValidation g_PadValidation;
 ControllerMappingIndex g_PadMappingIndex;
 ControllerMappingIndex g_NegconMappingIndex;
 s32 g_ControllerSceneAngleY;
@@ -162,7 +162,7 @@ static void Reset(void) {
     }
     g_DrawBuffer = &s_frame;
     g_RenderState.draw.packetCursor = s_packets;
-    g_PadErrorState = PAD_ERROR_STATE_NONE;
+    g_PadValidation.error = PAD_ERROR_STATE_NONE;
     g_PadType = PAD_TYPE_DIGITAL;
     g_PadMappingIndex = 2;
     g_NegconMappingIndex = 3;
@@ -203,14 +203,14 @@ static void TestPadAndNegconScreens(void) {
 
 static void TestErrorScreens(void) {
     Reset();
-    g_PadErrorState = PAD_ERROR_STATE_DISCONNECTED;
+    g_PadValidation.error = PAD_ERROR_STATE_DISCONNECTED;
     DrawControllerConfigScreen();
     CHECK(s_proportionalX == 0x3A &&
           strcmp(s_proportionalText, "INSERT CONTROLLER") == 0);
     CHECK(s_selectorCount == 0 && g_RenderState.draw.packetCursor == s_packets);
 
     Reset();
-    g_PadErrorState = PAD_ERROR_STATE_INVALID_INPUT;
+    g_PadValidation.error = PAD_ERROR_STATE_INVALID_INPUT;
     DrawControllerConfigScreen();
     CHECK(s_proportionalX == 0x40 &&
           strcmp(s_proportionalText, "CONTROLLER ERROR") == 0);

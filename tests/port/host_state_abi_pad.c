@@ -13,5 +13,5 @@ _Static_assert(sizeof(g_PadCalloutLabelPoints) ==
 _Static_assert(sizeof(g_PadCalloutButtonPoints) ==
                    CONTROLLER_CONFIG_BUTTON_POINT_COUNT * sizeof(DVec),
                "pad callout button table shape changed");
-_Static_assert(sizeof(g_PadErrorState) == sizeof(s32),
+_Static_assert(sizeof(g_PadValidation.error) == sizeof(s32),
                "pad error state must be a scalar");
