@@ -9,8 +9,6 @@
 #include <string.h>
 
 s32 g_BestTotalTimes[2][4][2];
-char g_CaptionLapTime[] = "LAP TIME";
-char g_CaptionTotalTime[] = "TOTAL TIME";
 s32 g_CourseIndex;
 s16 g_GrandPrixMode;
 s16 g_GrandPrixSeries;

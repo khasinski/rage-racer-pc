@@ -23,11 +23,6 @@ GameRenderState g_RenderState;
 static GameFrameContext s_frame;
 GameFrameContext *g_DrawBuffer = &s_frame;
 
-char g_CaptionLapTime2[] = "LAPS";
-char g_CaptionRanking2[] = "RANKING";
-char g_CaptionTotalTime2[] = "TOTAL";
-char g_FmtRecordName[] = "/%s/%s";
-char g_FmtCarName[] = "/%s";
 const char *g_NativeCarNames[GAME_CAR_COUNT] = {"CAR0", "CAR1", "CAR2"};
 const char *g_NativeCarClassNames[GAME_CAR_COUNT] = {"C0", "C1", "C2"};
 static const char s_first[] = "1ST";
@@ -121,7 +116,7 @@ int main(void) {
     DrawRankingPanel(10);
     CHECK(s_callCount == 15);
     CHECK(s_calls[0].proportional && s_calls[0].x == 26 &&
-          strcmp(s_calls[0].text, "LAPS") == 0);
+          strcmp(s_calls[0].text, "hfgi") == 0);
     CHECK(strcmp(s_calls[1].text, "1/0'01\"000") == 0);
     CHECK(s_calls[2].x == 30 && s_calls[2].y == 0x60);
     CHECK(s_calls[2].color == 0x780F);
@@ -138,7 +133,7 @@ int main(void) {
     g_RaceTotalTime = 9000;
     DrawTimeRecordPanel(-4);
     CHECK(s_callCount == 13);
-    CHECK(strcmp(s_calls[0].text, "TOTAL") == 0);
+    CHECK(strcmp(s_calls[0].text, "hegi") == 0);
     CHECK(strcmp(s_calls[1].text, "T/0'09\"000") == 0);
     CHECK(strcmp(s_calls[3].text, "1ST/0'01\"000/N0/C0") == 0);
     CHECK(s_calls[3].x == 16 && s_calls[3].y == 0x78);

@@ -50,11 +50,11 @@ static void DrawRecordRows(s32 slideX,
         text[2] = g_PlaceSuffixNames[row][2];
         text[3] = '/';
         FormatLapTime(&text[4], record->raceTime);
-        snprintf(&text[0xC], textSize - 0xC, g_FmtRecordName,
+        snprintf(&text[0xC], textSize - 0xC, "/%s/%s",
                  driverName, className);
         DrawText8x8(slideX + 0x14, y, text, color);
 
-        snprintf(text, textSize, g_FmtCarName, carName);
+        snprintf(text, textSize, "/%s", carName);
         DrawText8x8(slideX + 0x2C, y + 0xA, text, color);
     }
 }
@@ -69,7 +69,7 @@ void DrawRankingPanel(s32 slideX) {
         return;
     }
 
-    DrawProportionalText(slideX + 0x10, 0x4C, g_CaptionLapTime2, 0x7852);
+    DrawProportionalText(slideX + 0x10, 0x4C, "hfgi", 0x7852);
     text[1] = '/';
     lapCount = CourseLapCount(g_CourseIndex);
     for (row = 0; row < lapCount; row++) {
@@ -85,7 +85,7 @@ void DrawRankingPanel(s32 slideX) {
         DrawText8x8(x, y, text, color);
     }
 
-    DrawProportionalText(slideX + 0x10, 0x6C, g_CaptionRanking2, 0x7812);
+    DrawProportionalText(slideX + 0x10, 0x6C, "hai", 0x7812);
     DrawRecordRows(slideX, g_RankingRecords[g_GrandPrixSeries][course],
                    g_RankingInsertRow, text, sizeof(text));
 }
@@ -98,14 +98,14 @@ void DrawTimeRecordPanel(s32 slideX) {
         return;
     }
 
-    DrawProportionalText(slideX + 0x10, 0x4C, g_CaptionTotalTime2, 0x7852);
+    DrawProportionalText(slideX + 0x10, 0x4C, "hegi", 0x7852);
 
     text[0] = 'T';
     text[1] = '/';
     FormatLapTime(&text[2], g_RaceTotalTime);
     DrawText8x8(slideX + 0x14, 0x58, text, 0x78CC);
 
-    DrawProportionalText(slideX + 0x10, 0x6C, g_CaptionRanking2, 0x7812);
+    DrawProportionalText(slideX + 0x10, 0x6C, "hai", 0x7812);
     DrawRecordRows(slideX, g_TimeRecords[g_GrandPrixSeries][course],
                    g_TimeRecordInsertRow, text, sizeof(text));
 }

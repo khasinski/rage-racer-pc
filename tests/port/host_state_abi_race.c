@@ -1,7 +1,5 @@
 #include "../../src/port/host_state_race.c"
 
-_Static_assert(sizeof(g_CaptionPromotionBonus) == sizeof("hji"),
-               "promotion caption must not absorb adjacent pointers");
 _Static_assert(sizeof(g_TextNowLoading) == sizeof("NOW LOADING"),
                "loading caption must not absorb the prologue text");
 _Static_assert(sizeof(g_ChanceDigits) == 6 * 2,

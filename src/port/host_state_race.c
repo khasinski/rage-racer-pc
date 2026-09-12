@@ -18,18 +18,6 @@
 #include "game/result_screen_types.h"
 #include "game/save_types.h"
 
-char g_CaptionTotalTime[8] __attribute__((aligned(16))) = "hegi";
-char g_CaptionLapTime[8] __attribute__((aligned(16))) = "hfgi";
-char g_CaptionPrizeMoney[8] __attribute__((aligned(16))) = "hci";
-char g_FmtMoney[8] __attribute__((aligned(16))) = "%dv";
-char g_CaptionTotalMoney[8] __attribute__((aligned(16))) = "hebi";
-char g_CaptionPromotionBonus[] __attribute__((aligned(16))) = "hji";
-char g_FmtLapTime[16] __attribute__((aligned(16))) = "%1d'%02d\"%03d";
-char g_CaptionLapTime2[8] __attribute__((aligned(16))) = "hfgi";
-char g_CaptionRanking2[8] __attribute__((aligned(16))) = "hai";
-char g_FmtRecordName[8] __attribute__((aligned(16))) = "/%s/%s";
-char g_FmtCarName[8] __attribute__((aligned(16))) = "/%s";
-char g_CaptionTotalTime2[8] __attribute__((aligned(16))) = "hegi";
 u8 g_NameEntryCharset[42] __attribute__((aligned(16))) = {
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ' ',
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',

@@ -36,7 +36,7 @@ void DrawRaceTimePanel(s32 slideY) {
     s32 lap;
 
     DrawProportionalText(PANEL_LABEL_X, slideY + TOTAL_TIME_LABEL_Y,
-                         g_CaptionTotalTime, PANEL_TEXT_CLUT);
+                         "hegi", PANEL_TEXT_CLUT);
 
     FormatLabeledRaceTime(text, 'T', g_RaceTotalTime);
     bestTimeColor =
@@ -48,7 +48,7 @@ void DrawRaceTimePanel(s32 slideY) {
                          text, bestTimeColor);
 
     DrawProportionalText(PANEL_LABEL_X, slideY + LAP_TIME_LABEL_Y,
-                         g_CaptionLapTime, PANEL_TEXT_CLUT);
+                         "hfgi", PANEL_TEXT_CLUT);
     for (lap = 0; lap < lapCount; lap++) {
         s32 x = lap < LAP_ROWS_PER_COLUMN ? PANEL_VALUE_LEFT_X
                                           : PANEL_VALUE_RIGHT_X;

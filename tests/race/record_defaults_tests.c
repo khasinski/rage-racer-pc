@@ -31,7 +31,6 @@ RaceRecord g_RankingRecords[RECORD_SERIES_COUNT][RECORD_COURSE_COUNT]
 RaceRecord g_TimeRecords[RECORD_SERIES_COUNT][RECORD_COURSE_COUNT]
                         [RECORD_TABLE_LENGTH];
 
-char g_FmtLapTime[] = "%d'%02d\"%03d";
 int main(void) {
     static const char expectedNames[5][8] = {
         {'R', 'A', 'G', 'E', ' ', ' ', '\0', '\0'},

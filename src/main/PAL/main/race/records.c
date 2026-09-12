@@ -167,6 +167,6 @@ void FormatLapTime(char dst[LAP_TIME_TEXT_CAPACITY], s32 value) {
     seconds = value / 1000 % 60;
     fraction = value % 1000;
 
-    snprintf(dst, LAP_TIME_TEXT_CAPACITY, g_FmtLapTime, minutes, seconds,
+    snprintf(dst, LAP_TIME_TEXT_CAPACITY, "%1d'%02d\"%03d", minutes, seconds,
              fraction);
 }

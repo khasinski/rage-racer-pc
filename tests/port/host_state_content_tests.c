@@ -64,18 +64,6 @@ typedef struct StaticSceneryState {
     SceneryPlacement highClass;
 } StaticSceneryState;
 
-extern char g_CaptionTotalTime[8];
-extern char g_CaptionLapTime[8];
-extern char g_CaptionPrizeMoney[8];
-extern char g_FmtMoney[8];
-extern char g_CaptionTotalMoney[8];
-extern char g_CaptionPromotionBonus[];
-extern char g_FmtLapTime[16];
-extern char g_CaptionLapTime2[8];
-extern char g_CaptionRanking2[8];
-extern char g_FmtRecordName[8];
-extern char g_FmtCarName[8];
-extern char g_CaptionTotalTime2[8];
 extern unsigned char g_NameEntryCharset[42];
 extern char g_TextNowLoading[];
 extern unsigned char g_MsgGame0Ok[12];
@@ -196,18 +184,6 @@ typedef struct HostStateBlob {
 #define BYTES(value) ((const unsigned char *)(value))
 
 static const HostStateBlob s_blobs[] = {
-    {"g_CaptionTotalTime", BYTES(g_CaptionTotalTime), 8},
-    {"g_CaptionLapTime", BYTES(g_CaptionLapTime), 8},
-    {"g_CaptionPrizeMoney", BYTES(g_CaptionPrizeMoney), 8},
-    {"g_FmtMoney", BYTES(g_FmtMoney), 8},
-    {"g_CaptionTotalMoney", BYTES(g_CaptionTotalMoney), 8},
-    {"g_CaptionPromotionBonus", BYTES(g_CaptionPromotionBonus), 4},
-    {"g_FmtLapTime", BYTES(g_FmtLapTime), 16},
-    {"g_CaptionLapTime2", BYTES(g_CaptionLapTime2), 8},
-    {"g_CaptionRanking2", BYTES(g_CaptionRanking2), 8},
-    {"g_FmtRecordName", BYTES(g_FmtRecordName), 8},
-    {"g_FmtCarName", BYTES(g_FmtCarName), 8},
-    {"g_CaptionTotalTime2", BYTES(g_CaptionTotalTime2), 8},
     {"g_NameEntryCharset", g_NameEntryCharset, 42},
     {"g_TextNowLoading", BYTES(g_TextNowLoading), 12},
     {"g_MsgGame0Ok", g_MsgGame0Ok, 12},
@@ -355,7 +331,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the canonical host constants alone. */
-    const unsigned long expected = 923808908UL;
+    const unsigned long expected = 992015905UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

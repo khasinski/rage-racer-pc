@@ -23,7 +23,7 @@ static void DrawMoneyRow(s32 yOffset, s32 labelY, s32 valueY,
 
     DrawProportionalText(MONEY_LABEL_X, yOffset + labelY, label,
                          MONEY_TEXT_CLUT);
-    snprintf(moneyText, sizeof(moneyText), g_FmtMoney, amount);
+    snprintf(moneyText, sizeof(moneyText), "%dv", amount);
     DrawProportionalText(MONEY_VALUE_X, yOffset + valueY, moneyText,
                          MONEY_TEXT_CLUT);
 }
@@ -32,12 +32,12 @@ void DrawPrizeMoneyPanel(s32 yOffset) {
     s32 totalMoney = g_RaceProgress != NULL ? g_RaceProgress->money : 0;
 
     DrawMoneyRow(yOffset, PRIZE_LABEL_Y, PRIZE_VALUE_Y,
-                 g_CaptionPrizeMoney, g_PrizeAmount);
+                 "hci", g_PrizeAmount);
     DrawMoneyRow(yOffset, TOTAL_LABEL_Y, TOTAL_VALUE_Y,
-                 g_CaptionTotalMoney, totalMoney);
+                 "hebi", totalMoney);
 
     if (g_ClassPromoted) {
         DrawMoneyRow(yOffset, BONUS_LABEL_Y, BONUS_VALUE_Y,
-                     g_CaptionPromotionBonus, g_PromotionBonus);
+                     "hji", g_PromotionBonus);
     }
 }
