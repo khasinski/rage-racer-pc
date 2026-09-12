@@ -9,9 +9,6 @@
 #include "game/sound.h"
 #include "game/state.h"
 
-#include <limits.h>
-#include <stdint.h>
-
 enum {
     PRIZE_SCREEN_FADE_LIMIT = 0x100,
     PRIZE_SCREEN_FADE_CLUT = 0x49,
@@ -67,25 +64,6 @@ void EnterPrizeScreen(void) {
     EnterPrizeScreenState(&s_screen);
 }
 
-static s32 AddClampedScreenValue(s32 value, s32 delta, s32 maximum) {
-    int64_t next = (int64_t)value + delta;
-
-    if (next <= 0) {
-        return 0;
-    }
-    return next < maximum ? (s32)next : maximum;
-}
-
-static s32 ScaledCountStep(s32 step, s32 multiplier) {
-    int64_t scaled;
-
-    if (step <= 0) {
-        step = 1;
-    }
-    scaled = (int64_t)step * multiplier;
-    return scaled < INT_MAX ? (s32)scaled : INT_MAX;
-}
-
 /*
  * Move up to `step` of what is still owed into the player's money.
  *
@@ -94,23 +72,9 @@ static s32 ScaledCountStep(s32 step, s32 multiplier) {
  * the confirm button counts four times as fast.
  */
 static void CountTowardsMoney(s32 *owed, s32 step) {
-    s32 amount;
-    s32 payment;
+    s32 payment = *owed < step ? *owed : step;
 
-    if (owed == NULL) {
-        return;
-    }
-    amount = *owed;
-    if (amount <= 0 || g_RaceProgress == NULL) {
-        *owed = 0;
-        return;
-    }
-    if (step <= 0) {
-        step = 1;
-    }
-    payment = amount < step ? amount : step;
-
-    *owed = amount - payment;
+    *owed -= payment;
     g_RaceProgress->money =
         CreditPrizeMoney(g_RaceProgress->money, payment);
 }
@@ -120,13 +84,14 @@ void UpdatePrizeMoneyScreenState(PrizeScreen *screen) {
     s32 multiplier = (g_PadHeld & PAD_CONFIRM)
         ? FAST_COUNT_MULTIPLIER
         : 1;
-    s32 prizeStep = ScaledCountStep(screen->prizeStep, multiplier);
-    s32 bonusStep = ScaledCountStep(screen->bonusStep, multiplier);
+    s32 prizeStep = screen->prizeStep * multiplier;
+    s32 bonusStep = screen->bonusStep * multiplier;
 
     switch (screen->state) {
     case PRIZE_SCREEN_STATE_INTRO_FADE_IN:
-        screen->timer = AddClampedScreenValue(
-            screen->timer, -PANEL_SLIDE_STEP, PRIZE_SCREEN_FADE_LIMIT);
+        screen->timer = screen->timer > PANEL_SLIDE_STEP
+            ? screen->timer - PANEL_SLIDE_STEP
+            : 0;
         DrawFullscreenFadeTile(screen->timer, PRIZE_SCREEN_FADE_CLUT);
         if (screen->timer == 0) {
             screen->state = PRIZE_SCREEN_STATE_WAIT_FOR_INTRO_CONFIRM;
@@ -143,9 +108,7 @@ void UpdatePrizeMoneyScreenState(PrizeScreen *screen) {
         DrawGrandPrixIntro(0);
         return;
     case PRIZE_SCREEN_STATE_HIDE_RACE_TIME:
-        screen->timer = AddClampedScreenValue(
-            screen->timer, PANEL_SLIDE_STEP,
-            PANEL_OFFSCREEN_OFFSET + PANEL_SLIDE_STEP);
+        screen->timer += PANEL_SLIDE_STEP;
         DrawRaceTimePanel(screen->timer);
         if (screen->timer > PANEL_OFFSCREEN_OFFSET) {
             screen->state = PRIZE_SCREEN_STATE_SHOW_PRIZE_PANEL;
@@ -153,9 +116,9 @@ void UpdatePrizeMoneyScreenState(PrizeScreen *screen) {
         DrawGrandPrixIntro(0);
         return;
     case PRIZE_SCREEN_STATE_SHOW_PRIZE_PANEL:
-        screen->timer = AddClampedScreenValue(
-            screen->timer, -PANEL_SLIDE_STEP,
-            PANEL_OFFSCREEN_OFFSET + PANEL_SLIDE_STEP);
+        screen->timer = screen->timer > PANEL_SLIDE_STEP
+            ? screen->timer - PANEL_SLIDE_STEP
+            : 0;
         DrawPrizeMoneyPanel(screen->timer, screen->prize, screen->bonus);
         if (screen->timer == 0) {
             screen->state = PRIZE_SCREEN_STATE_COUNT_PRIZE;
@@ -163,8 +126,9 @@ void UpdatePrizeMoneyScreenState(PrizeScreen *screen) {
         DrawGrandPrixIntro(0);
         return;
     case PRIZE_SCREEN_STATE_COUNT_PRIZE:
-        screen->timer = AddClampedScreenValue(
-            screen->timer, 1, PRIZE_COUNT_DELAY_FRAMES + 1);
+        if (screen->timer <= PRIZE_COUNT_DELAY_FRAMES) {
+            screen->timer++;
+        }
         /* The panel settles for two seconds before the counter starts. */
         if (screen->timer > PRIZE_COUNT_DELAY_FRAMES && screen->prize != 0) {
             PlaySoundCue((g_PadHeld & PAD_CONFIRM)
@@ -210,9 +174,10 @@ void UpdatePrizeMoneyScreenState(PrizeScreen *screen) {
         screen->state = PRIZE_SCREEN_STATE_FADE_OUT;
         break;
     case PRIZE_SCREEN_STATE_FADE_OUT:
-        screen->timer = AddClampedScreenValue(
-            screen->timer, g_SeriesCleared != 0 ? 1 : 2,
-            PRIZE_SCREEN_FADE_LIMIT);
+        screen->timer += g_SeriesCleared != 0 ? 1 : 2;
+        if (screen->timer > PRIZE_SCREEN_FADE_LIMIT) {
+            screen->timer = PRIZE_SCREEN_FADE_LIMIT;
+        }
         DrawFullscreenFadeTile(screen->timer, PRIZE_SCREEN_FADE_CLUT);
         if (screen->timer >= PRIZE_SCREEN_FADE_LIMIT) {
             AdvanceGrandPrixClass();
