@@ -14,7 +14,7 @@ enum {
 };
 
 void PlaySequence(void) {
-    SsSeqPlay(g_SeqHandle.value, SEQUENCE_PLAY_MODE, SEQUENCE_LOOP_COUNT);
+    SsSeqPlay((s16)g_SeqHandle, SEQUENCE_PLAY_MODE, SEQUENCE_LOOP_COUNT);
 }
 
 void StartSequenceFadeOut(void) {
@@ -46,7 +46,7 @@ static void UpdateReverbFade(void) {
 static void FinishSequenceFadeOut(void) {
     g_SeqVolume = 0;
     g_SeqVolumeFadeStep = 0;
-    SsSeqStop(g_SeqHandle.value);
+    SsSeqStop((s16)g_SeqHandle);
     CloseSequenceAudioSlot();
     SetDefaultReverbDepth();
 }
@@ -77,13 +77,13 @@ void ApplyDuckedSequenceAudio(void) {
     s32 volume = ClampVoiceVolume(g_SeqVolume) * DUCKED_VOLUME_NUMERATOR /
                  DUCKED_VOLUME_DENOMINATOR;
 
-    SsSeqSetVol(g_SeqHandle.value, volume, volume);
+    SsSeqSetVol((s16)g_SeqHandle, volume, volume);
     SetReverbDepth(DUCKED_REVERB_DEPTH, DUCKED_REVERB_DEPTH);
 }
 
 void ApplyCurrentSequenceAudio(void) {
     s16 volume = (s16)ClampVoiceVolume(g_SeqVolume);
 
-    SsSeqSetVol(g_SeqHandle.value, volume, volume);
+    SsSeqSetVol((s16)g_SeqHandle, volume, volume);
     SetDefaultReverbDepth();
 }

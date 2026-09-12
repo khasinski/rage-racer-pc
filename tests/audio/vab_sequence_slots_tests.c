@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 SoundScale g_SoundScale;
-SequenceHandle g_SeqHandle;
+s32 g_SeqHandle;
 s32 g_SeqVolumeFadeStep;
 s32 g_AudioLoadSlot;
 s32 g_AudioLoadedSlotMask;
@@ -86,7 +86,7 @@ int main(void) {
           "sequence slot opens and transfers its VAB");
     Check(s_sequenceData == (u_long *)(void *)sequence &&
               s_sequenceVab == 8 &&
-              g_SeqHandle.storage == (s16)0x8056 &&
+              g_SeqHandle == (s16)0x8056 &&
               g_SeqVolumeFadeStep == 0,
           "sequence slot opens score and clears fade state");
 

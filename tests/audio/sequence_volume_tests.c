@@ -7,7 +7,7 @@
 #include <stdio.h>
 
 s32 g_SeqVolumeSetting;
-SequenceHandle g_SeqHandle;
+s32 g_SeqHandle;
 s32 g_SeqVolume;
 
 static s32 s_appliedVolume;

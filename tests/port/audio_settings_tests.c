@@ -14,7 +14,7 @@ s32 g_SfxVolumeSetting;
 s32 g_MonoOutput;
 s32 g_SeqVolumeSetting;
 s32 g_SeqVolume;
-SequenceHandle g_SeqHandle;
+s32 g_SeqHandle;
 
 static s32 s_cdVolumeSetting;
 static s32 s_sequenceVolume;

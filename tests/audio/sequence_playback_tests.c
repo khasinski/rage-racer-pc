@@ -9,7 +9,7 @@
 s32 g_ReverbDepthL;
 s32 g_ReverbDepthR;
 s32 g_ReverbFadeStep;
-SequenceHandle g_SeqHandle;
+s32 g_SeqHandle;
 s32 g_SeqVolume;
 s32 g_SeqVolumeFadeStep;
 
@@ -61,7 +61,7 @@ void CloseSequenceAudioSlot(void) {
 } while (0)
 
 int main(void) {
-    g_SeqHandle.value = 7;
+    g_SeqHandle = 7;
     PlaySequence();
     CHECK(s_sequencePlays == 1 && s_playMode == 1 && s_loopCount == 0);
 

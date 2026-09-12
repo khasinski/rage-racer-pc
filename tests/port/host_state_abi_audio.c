@@ -18,5 +18,5 @@ _Static_assert(sizeof(g_MusicChannels) == 2 * sizeof(MusicChannel),
                "music-channel table shape changed");
 _Static_assert(sizeof(g_EffectVoices) == 4 * sizeof(EffectVoice),
                "effect-voice table shape changed");
-_Static_assert(sizeof(g_SeqHandle) == sizeof(SequenceHandle),
+_Static_assert(sizeof(g_SeqHandle) == sizeof(s32),
                "sequence handle type changed");

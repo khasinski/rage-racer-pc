@@ -97,12 +97,7 @@ extern s32 g_ReverbDepthR; /* reverb depth right */
 /* Per-frame step added to g_ReverbDepthL/R by UpdateSequenceFadeOut; -3
  * while a BGM fade-out runs, 0 when it has finished. */
 extern s32 g_ReverbFadeStep;
-typedef union SequenceHandle {
-    s32 storage;
-    s16 value;
-} SequenceHandle;
-
-extern SequenceHandle g_SeqHandle;
+extern s32 g_SeqHandle;
 extern s32 g_SeqVolume; /* current SEQ volume, also read as s16 */
 extern s32 g_SeqVolumeSetting; /* 0..15 OPTIONS level; volume = n * 114 / 15 */
 /* Step added to g_SeqVolume each frame; -4 while fading out. */

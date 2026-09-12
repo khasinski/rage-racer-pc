@@ -66,7 +66,7 @@ EffectVoice g_EffectVoices[AUDIO_EFFECT_VOICE_COUNT];
 s32 g_ReverbDepthL;
 s32 g_ReverbDepthR;
 s32 g_ReverbFadeStep;
-SequenceHandle g_SeqHandle;
+s32 g_SeqHandle;
 s32 g_SeqVolume;
 s32 g_SeqVolumeSetting;
 s32 g_SeqVolumeFadeStep;

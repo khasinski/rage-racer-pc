@@ -11,7 +11,7 @@ enum {
 void SetSequenceVolume(s32 volume) {
     volume = ClampVoiceVolume(volume);
     g_SeqVolume = volume;
-    SsSeqSetVol(g_SeqHandle.value, (s16)volume, (s16)volume);
+    SsSeqSetVol((s16)g_SeqHandle, (s16)volume, (s16)volume);
 }
 
 static s32 SequenceVolumeForSetting(s32 setting) {
