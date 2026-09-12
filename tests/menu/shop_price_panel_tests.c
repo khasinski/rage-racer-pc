@@ -3,10 +3,6 @@
 #include "game/render_state.h"
 
 #include <stdio.h>
-#include <limits.h>
-
-s32 g_CarShopPanelSlide;
-s32 g_EngineerShopPanelSlide;
 s32 g_MenuAltLayout;
 GameRenderState g_RenderState;
 
@@ -71,20 +67,16 @@ void GameDrawMenuButton(s32 x, s32 y, s32 width, s32 height, u8 r, u8 g,
         }                                                                      \
     } while (0)
 
-static int CheckPanel(void (*draw)(s32, s32, s32), s32 *slide,
-                      s32 captionWidth, s32 captionU) {
+static int CheckPanel(void (*draw)(s32, s32, s32), s32 captionWidth,
+                      s32 captionU) {
     s_recordCount = 0;
-    *slide = 9;
     draw(0, 100, 50);
-    CHECK(*slide == 0);
     CHECK(s_recordCount == 0);
 
     draw(11, 100, 50);
-    CHECK(*slide == 11);
     CHECK(s_recordCount == 0);
 
     draw(1, 100, 50);
-    CHECK(*slide == 12);
     CHECK(s_recordCount == 8);
     CHECK(s_records[0].kind == 1 && s_records[0].y == 502 &&
           s_records[0].value == 100);
@@ -94,9 +86,9 @@ static int CheckPanel(void (*draw)(s32, s32, s32), s32 *slide,
           s_records[3].textureU == captionU);
 
     s_recordCount = 0;
-    *slide = SHOP_PANEL_SLIDE_MAX;
+    draw(SHOP_PANEL_SLIDE_MAX, 100, 50);
+    s_recordCount = 0;
     draw(1, 100, 50);
-    CHECK(*slide == SHOP_PANEL_SLIDE_MAX);
     CHECK(s_records[0].y == 152);
     CHECK(s_records[1].y == 192);
     CHECK(s_records[6].kind == 3 && s_records[6].y == 142);
@@ -105,16 +97,8 @@ static int CheckPanel(void (*draw)(s32, s32, s32), s32 *slide,
     s_recordCount = 0;
     g_MenuAltLayout = 1;
     draw(-30, 100, 50);
-    CHECK(*slide == 0);
     CHECK(s_recordCount == 0);
     g_MenuAltLayout = 0;
-
-    *slide = INT_MAX;
-    draw(INT_MAX, 100, 50);
-    CHECK(*slide == SHOP_PANEL_SLIDE_MAX);
-    *slide = INT_MIN;
-    draw(-1, 100, 50);
-    CHECK(*slide == 0);
     return 0;
 }
 
@@ -122,16 +106,14 @@ int main(void) {
     static GameOrderingTableEntry orderingTable[1];
 
     RENDER_OT_BASE = orderingTable;
-    CHECK(CheckPanel(DrawCarShopPricePanel, &g_CarShopPanelSlide, 0x18, 0x3C) ==
-          0);
-    CHECK(CheckPanel(DrawEngineerShopPricePanel, &g_EngineerShopPanelSlide,
-                     0x34, 0x54) == 0);
+    CHECK(CheckPanel(DrawCarShopPricePanel, 0x18, 0x3C) == 0);
+    CHECK(CheckPanel(DrawEngineerShopPricePanel, 0x34, 0x54) == 0);
 
     s_recordCount = 0;
     RENDER_OT_BASE = NULL;
-    g_CarShopPanelSlide = SHOP_PANEL_VISIBLE_AT;
+    DrawCarShopPricePanel(0, 100, 50);
+    DrawCarShopPricePanel(SHOP_PANEL_VISIBLE_AT, 100, 50);
     DrawCarShopPricePanel(1, 100, 50);
-    CHECK(g_CarShopPanelSlide == SHOP_PANEL_VISIBLE_AT + 1);
     CHECK(s_recordCount == 0);
     puts("shop price panel tests passed");
     return 0;

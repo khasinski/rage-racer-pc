@@ -123,8 +123,6 @@ s32 g_MenuLightBurstLevel;
 s32 g_LogoSamplePanelSlide;
 s32 g_TeamNameEntrySlide;
 s32 g_OwnedCarCounterSlide;
-s32 g_CarShopPanelSlide;
-s32 g_EngineerShopPanelSlide;
 s32 g_CarNamePlateFade;
 s32 g_ClassChangeCurtainSlide;
 s32 g_MenuUpperAltPanelProgress;

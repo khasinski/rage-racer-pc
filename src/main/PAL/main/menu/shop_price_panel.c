@@ -6,6 +6,9 @@ typedef struct ShopPriceCaption {
     u16 textureU;
 } ShopPriceCaption;
 
+static s32 s_CarShopPanelSlide;
+static s32 s_EngineerShopPanelSlide;
+
 static void DrawShopPricePanel(s32 step, s32 money, s32 price, s32 *slide,
                                ShopPriceCaption priceCaption) {
     GameOrderingTableEntry *ot = RENDER_OT_BASE;
@@ -64,11 +67,11 @@ static void DrawShopPricePanel(s32 step, s32 money, s32 price, s32 *slide,
 void DrawCarShopPricePanel(s32 step, s32 money, s32 price) {
     const ShopPriceCaption caption = {0x18, 0x3C};
 
-    DrawShopPricePanel(step, money, price, &g_CarShopPanelSlide, caption);
+    DrawShopPricePanel(step, money, price, &s_CarShopPanelSlide, caption);
 }
 
 void DrawEngineerShopPricePanel(s32 step, s32 money, s32 price) {
     const ShopPriceCaption caption = {0x34, 0x54};
 
-    DrawShopPricePanel(step, money, price, &g_EngineerShopPanelSlide, caption);
+    DrawShopPricePanel(step, money, price, &s_EngineerShopPanelSlide, caption);
 }

@@ -164,9 +164,6 @@ enum ShopPricePanelLayout {
     SHOP_PANEL_PRICE_TEXT_Y = 542
 };
 
-/* Slide counters for the two shop money panels. */
-extern s32 g_CarShopPanelSlide;
-extern s32 g_EngineerShopPanelSlide;
 void DrawCarShopPricePanel(s32 step, s32 money, s32 price);
 void DrawEngineerShopPricePanel(s32 step, s32 money, s32 price);
 
