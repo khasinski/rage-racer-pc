@@ -12,7 +12,6 @@ void CommitClassProgress(void) {
     s32 grade;
     s32 carUnlockLevel;
 
-    g_ClassClearFanfareTimer = 0;
     g_ClassCompleted = 0;
     g_ClassPromoted = 0;
     g_ClassResultPlace = 0;
@@ -49,7 +48,6 @@ void CommitClassProgress(void) {
         if (grade != 0) {
             g_ClassRecords[classRecordIndex].place = (s16)BestClassGrade(
                 g_ClassRecords[classRecordIndex].place, grade);
-            g_ClassClearFanfareTimer = CLASS_CLEAR_FANFARE_DURATION_FRAMES;
         }
 
         RefreshClassWinState();

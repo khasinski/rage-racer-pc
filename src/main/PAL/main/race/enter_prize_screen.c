@@ -44,4 +44,7 @@ void EnterPrizeScreen(void) {
         prizes[PRIZE_PLACE_THIRD], PRIZE_COUNT_FRAMES);
     g_BonusCountStep = PrizeCountStep(
         g_PromotionBonus, BONUS_COUNT_FRAMES);
+    if (g_ClassResultPlace != 0) {
+        StartClassClearFanfare();
+    }
 }

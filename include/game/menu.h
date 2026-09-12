@@ -580,7 +580,6 @@ void DrawTeamNameCharModel(void);
 void DrawTireCompoundSlider(u8 compound, s32 confirming);
 void DrawVolumeBar(s32 level, s32 y);
 void UpdateAndDrawCourseCard(void);
-void TickClassClearFanfare(void);
 void UpdateCarListCursor(void);
 void UpdateFrontend(void);
 void UpdateTitleAttract(void);

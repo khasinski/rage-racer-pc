@@ -10,7 +10,6 @@
 s16 g_ExtraGrandPrixUnlocked;
 s16 g_GrandPrixSeries;
 s16 g_SeriesSelection;
-s32 g_ClassClearFanfareTimer;
 s32 g_ClassCompleted;
 s32 g_ClassPromoted;
 s32 g_ClassResultPlace;
@@ -64,7 +63,6 @@ static void Reset(void) {
     g_SeriesSelection = 0;
     g_PlayerCarIndex = 0;
     g_ExtraGrandPrixUnlocked = 0;
-    g_ClassClearFanfareTimer = 99;
     g_ClassCompleted = 0;
     g_ClassPromoted = 0;
     g_ClassResultPlace = -1;
@@ -81,7 +79,6 @@ int main(void) {
     Check("course result is recorded", s_courseProgress.bestPlace[0], 2);
     Check("partial class stays incomplete", g_ClassCompleted, 0);
     Check("partial class has no grade", g_ClassResultPlace, 0);
-    Check("partial class clears stale fanfare", g_ClassClearFanfareTimer, 0);
     Check("partial class does not update BGM", s_bgmUpdates, 0);
 
     Reset();
@@ -96,8 +93,6 @@ int main(void) {
     Check("class record stores grade", g_ClassRecords[0].place, 1);
     Check("first-place clear is counted", g_ClassRecords[0].clears, 1);
     Check("next class record unlocks", g_ClassRecords[1].place, 0);
-    Check("class clear starts fanfare", g_ClassClearFanfareTimer,
-          CLASS_CLEAR_FANFARE_DURATION_FRAMES);
     Check("completed class updates BGM", s_bgmUpdates, 1);
     Check("new class is promoted", g_ClassPromoted, 1);
 
@@ -112,7 +107,6 @@ int main(void) {
     Check("over-level car marks unlock pending",
           s_courseProgress.unlockPending, 1);
     Check("unlock pending blocks grade", g_ClassResultPlace, 0);
-    Check("blocked grade has no fanfare", g_ClassClearFanfareTimer, 0);
     Check("blocked grade does not count clear", g_ClassRecords[0].clears, 0);
 
     Reset();
@@ -134,8 +128,6 @@ int main(void) {
     CommitClassProgress();
     Check("missing course progress stays incomplete", g_ClassCompleted, 0);
     Check("missing course progress clears stale grade", g_ClassResultPlace, 0);
-    Check("missing course progress clears stale fanfare",
-          g_ClassClearFanfareTimer, 0);
 
     Reset();
     g_RaceProgress = NULL;

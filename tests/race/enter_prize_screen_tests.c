@@ -9,6 +9,7 @@
 
 s32 g_BonusCountStep;
 s32 g_ClassPromoted;
+s32 g_ClassResultPlace;
 s32 g_CourseIndex;
 s32 g_FrameSyncThreshold;
 s32 g_GrandPrixClass;
@@ -25,6 +26,11 @@ RagePrizeMoneyStorage g_PrizeMoneyState;
 
 static GameRaceProgress s_progress;
 static s32 s_failures;
+static s32 s_fanfareStarts;
+
+void StartClassClearFanfare(void) {
+    s_fanfareStarts++;
+}
 
 static void Check(const char *name, s32 actual, s32 expected) {
     if (actual != expected) {
@@ -40,8 +46,10 @@ static void Reset(void) {
     memset(g_PromotionBonusTable, 0, sizeof(g_PromotionBonusTable));
     g_RaceProgress = &s_progress;
     g_ClassPromoted = 0;
+    g_ClassResultPlace = 0;
     g_GrandPrixClass = 0;
     g_CourseIndex = 0;
+    s_fanfareStarts = 0;
 }
 
 int main(void) {
@@ -82,6 +90,12 @@ int main(void) {
     Check("bonus count step", g_BonusCountStep, 400);
     Check("loaded money is clamped", s_progress.money,
           RACE_MAX_PRIZE_MONEY);
+    Check("ordinary result has no class fanfare", s_fanfareStarts, 0);
+
+    Reset();
+    g_ClassResultPlace = 1;
+    EnterPrizeScreen();
+    Check("class result starts fanfare", s_fanfareStarts, 1);
 
     Reset();
     g_CourseIndex = 5;

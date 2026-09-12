@@ -26,7 +26,6 @@ s32 g_PrizeAmount;
 s32 g_PromotionBonus;
 s32 g_PrizeCountStep;
 s32 g_BonusCountStep;
-s32 g_ClassClearFanfareTimer;
 s32 g_ClassCompleted;
 s32 g_SeriesCleared;
 s32 g_SceneTimer;
@@ -39,6 +38,7 @@ u16 g_PadHeld;
 static int s_bgmRequested;
 static int s_classAdvanced;
 static int s_fanfareTicks;
+static int s_fanfareFrames;
 
 void DrawFullscreenFadeTile(s32 step, s32 clut) { (void)step; (void)clut; }
 void DrawGrandPrixIntro(void) {}
@@ -50,7 +50,13 @@ s32 RequestSelectBgmAssets(void) {
     return 0;
 }
 void AdvanceGrandPrixClass(void) { s_classAdvanced++; }
-void TickClassClearFanfare(void) { s_fanfareTicks++; }
+s32 TickClassClearFanfare(void) {
+    s_fanfareTicks++;
+    if (s_fanfareFrames != 0) {
+        s_fanfareFrames--;
+    }
+    return s_fanfareFrames;
+}
 
 static GameRaceProgress s_progress;
 static int s_failures;
@@ -69,7 +75,6 @@ static void Reset(s32 prize, s32 bonus) {
     g_PromotionBonus = bonus;
     g_PrizeCountStep = 100;
     g_BonusCountStep = 50;
-    g_ClassClearFanfareTimer = 0;
     g_ClassCompleted = 0;
     g_SeriesCleared = 0;
     g_SceneTimer = 0x100;
@@ -78,6 +83,7 @@ static void Reset(s32 prize, s32 bonus) {
     s_bgmRequested = 0;
     s_classAdvanced = 0;
     s_fanfareTicks = 0;
+    s_fanfareFrames = 0;
 }
 
 /*
@@ -236,7 +242,7 @@ int main(void) {
      * the player presses. */
     Reset(0, 0);
     g_PrizeScreenState = PRIZE_SCREEN_STATE_WAIT_TO_FINISH;
-    g_ClassClearFanfareTimer = 1;
+    s_fanfareFrames = 101;
     {
         int i;
         for (i = 0; i < 100; i++) {

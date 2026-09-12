@@ -160,9 +160,8 @@ void UpdatePrizeMoneyScreen(void) {
         g_PrizeScreenState = PRIZE_SCREEN_STATE_WAIT_TO_FINISH;
         break;
     case PRIZE_SCREEN_STATE_WAIT_TO_FINISH:
-        TickClassClearFanfare();
         PlaySoundCue(SOUND_CUE_CONFIRM);
-        if (!(g_PadPressed & PAD_CONFIRM) || g_ClassClearFanfareTimer != 0) {
+        if (!(g_PadPressed & PAD_CONFIRM) || TickClassClearFanfare() != 0) {
             break;
         }
         if (g_ClassCompleted == 0) {

@@ -4,8 +4,6 @@
 
 #include <stdio.h>
 
-s32 g_ClassClearFanfareTimer;
-
 static s32 s_cueCount;
 static s32 s_lastCue;
 static s32 s_failures;
@@ -25,24 +23,20 @@ static void Check(const char *name, s32 actual, s32 expected) {
 int main(void) {
     s32 frame;
 
-    g_ClassClearFanfareTimer = CLASS_CLEAR_FANFARE_DURATION_FRAMES;
+    StartClassClearFanfare();
     for (frame = 0; frame < 29; frame++) {
         TickClassClearFanfare();
     }
-    Check("timer before cue", g_ClassClearFanfareTimer, 181);
     Check("no early cue", s_cueCount, 0);
 
-    TickClassClearFanfare();
-    Check("timer at cue", g_ClassClearFanfareTimer, 180);
+    Check("timer at cue", TickClassClearFanfare(), 180);
     Check("one class-clear cue", s_cueCount, 1);
     Check("class-clear cue id", s_lastCue, 0x42);
 
-    while (g_ClassClearFanfareTimer != 0) {
-        TickClassClearFanfare();
+    while (TickClassClearFanfare() != 0) {
     }
     Check("cue is not repeated", s_cueCount, 1);
-    TickClassClearFanfare();
-    Check("zero timer remains zero", g_ClassClearFanfareTimer, 0);
+    Check("zero timer remains zero", TickClassClearFanfare(), 0);
     Check("zero timer has no cue", s_cueCount, 1);
 
     return s_failures != 0;
