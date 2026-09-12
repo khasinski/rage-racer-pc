@@ -66,8 +66,8 @@ int main(void) {
     memset(g_Cars, 0x5A, sizeof(g_Cars));
     for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
         g_Cars[index].aiEnabled = 1;
-        g_RaceGridSlots[index].value = index % 3 == 0 ? -1 : index;
-        g_AttractGridSlots[index].value = index;
+        g_RaceGridSlots[index] = index % 3 == 0 ? -1 : index;
+        g_AttractGridSlots[index] = index;
     }
     g_GrandPrixSeries = 1;
     g_SceneId = 11;
@@ -81,7 +81,7 @@ int main(void) {
     CHECK(g_ClosestRivalRank == 3 && g_RaceSeries == 1);
     CHECK(s_routeSeedCalls == 1);
     for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
-        s32 active = g_RaceGridSlots[index].value >= 0;
+        s32 active = g_RaceGridSlots[index] >= 0;
 
         CHECK(g_Cars[index].activeFlag == (active ? 1 : -1));
         CHECK(g_Cars[index].aiEnabled == active);
@@ -105,8 +105,8 @@ int main(void) {
     memset(s_initCalls, 0, sizeof(s_initCalls));
     memset(s_aiCalls, 0, sizeof(s_aiCalls));
     for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
-        g_RaceGridSlots[index].value = -1;
-        g_AttractGridSlots[index].value = index == 4 ? 4 : -1;
+        g_RaceGridSlots[index] = -1;
+        g_AttractGridSlots[index] = index == 4 ? 4 : -1;
     }
     g_GrandPrixSeries = 0;
     g_SceneId = 3;
@@ -135,12 +135,12 @@ int main(void) {
     memset(s_aiCalls, 0, sizeof(s_aiCalls));
     g_GrandPrixSeries = 3;
     g_SceneId = 11;
-    g_RaceGridSlots[4].value = 4;
+    g_RaceGridSlots[4] = 4;
     s_expectedGrid = g_RaceGridSlots;
     BuildStartingGrid();
     CHECK(g_RaceSeries == 1);
     for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
-        s32 active = g_RaceGridSlots[index].value >= 0;
+        s32 active = g_RaceGridSlots[index] >= 0;
 
         CHECK(s_initCalls[index] == active);
         CHECK(s_aiCalls[index] == active);

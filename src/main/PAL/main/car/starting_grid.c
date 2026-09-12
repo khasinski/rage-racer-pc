@@ -36,7 +36,7 @@ void BuildStartingGrid(void) {
     for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
         GameCarRuntime *car = &g_Cars[index];
 
-        if (grid[index].value < 0) {
+        if (grid[index] < 0) {
             DisableRivalCar(car);
             continue;
         }

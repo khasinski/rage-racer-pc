@@ -10,13 +10,11 @@ enum {
     RACE_GRID_STORAGE_COUNT = 12,
 };
 
-typedef union RaceGridSlot {
-    s32 value;
-    struct {
-        u16 modelId;
-        u16 reserved;
-    } halves;
-} RaceGridSlot;
+typedef s32 RaceGridSlot;
+
+static inline u16 RaceGridModelId(RaceGridSlot slot) {
+    return (u16)slot;
+}
 
 typedef union RaceIntroCameraCoordinate {
     s32 word;

@@ -289,15 +289,11 @@ GameSpriteDesc
 };
 RaceGridSlot g_RaceGridSlots[RACE_GRID_STORAGE_COUNT]
     __attribute__((aligned(16))) = {
-        {.value = 0},  {.value = 1}, {.value = 2}, {.value = 3},
-        {.value = 4},  {.value = 5}, {.value = 6}, {.value = 7},
-        {.value = 8},  {.value = 9}, {.value = 10}, {.value = -1},
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -1,
 };
 RaceGridSlot g_AttractGridSlots[RACE_GRID_STORAGE_COUNT]
     __attribute__((aligned(16))) = {
-        {.value = 0},  {.value = 1}, {.value = 2}, {.value = 3},
-        {.value = 4},  {.value = 5}, {.value = 6}, {.value = 7},
-        {.value = 8},  {.value = 9}, {.value = 10}, {.value = -1},
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -1,
 };
 Rect g_CarImageRect __attribute__((aligned(16))) = {704, 0, 64, 256};
 StartCountdownPattern g_CountdownDigitPatterns

@@ -229,7 +229,7 @@ static void ScenarioApplyGrid(void) {
     int index;
     if (!s_scenario.customGrid || s_scenario.gridApplied) return;
     for (index=0;index<RACE_CAR_SLOT_COUNT;index++)
-        g_RaceGridSlots[index].value=s_scenario.grid[index];
+        g_RaceGridSlots[index] = s_scenario.grid[index];
     s_scenario.gridApplied=1;
     fprintf(stderr,"rage-port: custom rival grid applied\n");
 }

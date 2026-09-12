@@ -35,7 +35,7 @@ static void CheckConfiguredRival(void) {
     g_TrackEventData = &events;
     g_RaceSeries = 1;
     g_TrackLength = 12000;
-    grid[6].value = 5;
+    grid[6] = 5;
     config = &events.rivalAiConfigs[1][5];
     config->speed = 160;
     config->accelerationStep = 7;
@@ -65,7 +65,7 @@ static void CheckConfiguredRival(void) {
 
 static void CheckInvalidConfigIndex(void) {
     TrackEventData events;
-    RaceGridSlot grid = {.value = -1};
+    RaceGridSlot grid = -1;
     GameCarRuntime car;
 
     memset(&events, 0, sizeof(events));

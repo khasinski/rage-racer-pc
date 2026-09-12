@@ -40,7 +40,7 @@ static void SetRivalEngineRpmLow(GameCarRuntime *car, s16 rpm) {
 void InitRivalCarAi(GameCarRuntime *car,
     s32 gridPosition,
                     const RaceGridSlot *grid) {
-    s32 configIndex = grid[gridPosition].value;
+    s32 configIndex = grid[gridPosition];
     s32 series = g_RaceSeries != 0;
     const TrackRivalAiConfig *config;
 

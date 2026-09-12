@@ -25,8 +25,8 @@ void InitRivalCar(GameCarRuntime *car,
     car->initializedFlag = 1;
     car->aiEnabled = 1;
     car->facingBackwards = (s16)series;
-    car->modelIndex = grid[gridPosition].halves.modelId;
-    car->rivalModelId = grid[gridPosition].halves.modelId;
+    car->modelIndex = RaceGridModelId(grid[gridPosition]);
+    car->rivalModelId = RaceGridModelId(grid[gridPosition]);
     startPointIndex = WrapTrackPointIndex(start->trackPointIndex);
     car->trackPointIndex = startPointIndex;
     car->x = start->x;

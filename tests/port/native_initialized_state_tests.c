@@ -231,14 +231,14 @@ static void CheckInitialStartingGrids(void) {
     int index;
 
     for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
-        Check(g_RaceGridSlots[index].value == index,
+        Check(g_RaceGridSlots[index] == index,
               "race starting-grid slot");
-        Check(g_AttractGridSlots[index].value == index,
+        Check(g_AttractGridSlots[index] == index,
               "attract starting-grid slot");
     }
-    Check(g_RaceGridSlots[RACE_CAR_SLOT_COUNT].value == -1,
+    Check(g_RaceGridSlots[RACE_CAR_SLOT_COUNT] == -1,
           "race starting-grid terminator");
-    Check(g_AttractGridSlots[RACE_CAR_SLOT_COUNT].value == -1,
+    Check(g_AttractGridSlots[RACE_CAR_SLOT_COUNT] == -1,
           "attract starting-grid terminator");
 }
 

@@ -62,7 +62,7 @@ int main(void) {
     g_TrackPoints = points;
     g_TrackPointCount = 3;
     g_RaceSeries = 7;
-    grid[0].halves.modelId = 7;
+    grid[0] = 7;
     start = &events.rivalStarts[1][1];
     start->x = 1000;
     start->z = 2000;
