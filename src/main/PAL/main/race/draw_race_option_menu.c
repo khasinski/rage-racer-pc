@@ -161,8 +161,8 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     quad->x3 = 0xA0 + pulseState.halfWidth;
     quad->y0 = 0x58;
     quad->y1 = 0x58;
-    quad->y2 = 0x90;
-    quad->y3 = 0x90;
+    quad->y2 = 0x9A;
+    quad->y3 = 0x9A;
     quad->u0 = 0xA8;
     quad->v0 = 0xA8;
     quad->u1 = 0xFF;

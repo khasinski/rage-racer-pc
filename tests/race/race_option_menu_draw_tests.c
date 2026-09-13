@@ -161,7 +161,7 @@ static int CheckLayout(s32 grandPrix, s32 expectedSprites) {
 
     pulse = (POLY_FT4 *)s_drawModePacket - 1;
     CHECK(pulse->x0 == 0x74 && pulse->x1 == 0xCC);
-    CHECK(pulse->y0 == 0x58 && pulse->y2 == 0x90);
+    CHECK(pulse->y0 == 0x58 && pulse->y2 == 0x9A);
     CHECK(pulse->clut == 0x784B && pulse->tpage == 9);
     CHECK(g_RenderState.draw.packetCursor == (DrawPacket *)s_drawModePacket + 1);
     return 0;

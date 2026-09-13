@@ -127,6 +127,11 @@ static s32 UpdateRacePause(void) {
 
     g_PauseDebounce = PAUSE_TOGGLE_DEBOUNCE;
     g_RacePaused = toggle.paused;
+    if (toggle.action == RACE_PAUSE_TOGGLE_RENDERER) {
+        PortToggleRenderer();
+        PlaySoundCue(2);
+        return 0;
+    }
     if (toggle.paused) {
         ResetRaceOptionMenuAnimation();
         PauseCdAudio();
@@ -136,11 +141,7 @@ static s32 UpdateRacePause(void) {
         return 0;
     }
 
-    if (toggle.action == RACE_PAUSE_TOGGLE_RENDERER) {
-        PortToggleRenderer();
-        PlaySoundCue(2);
-        return 0;
-    } else if (toggle.action == RACE_PAUSE_QUIT) {
+    if (toggle.action == RACE_PAUSE_QUIT) {
         g_RaceFadeTimer = 0;
         g_RacePhase = RACE_PHASE_QUIT;
         if (g_GrandPrixMode == 0) {
