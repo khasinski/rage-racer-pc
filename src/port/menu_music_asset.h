@@ -18,5 +18,7 @@ typedef struct MenuMusicAsset {
 } MenuMusicAsset;
 
 int MenuMusicAssetOpen(const void *data, size_t size, MenuMusicAsset *asset);
+int MenuMusicSequenceTicks(const MenuMusicAsset *asset, unsigned tickRate,
+                           size_t *tickCount);
 
 #endif

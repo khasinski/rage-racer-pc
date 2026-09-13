@@ -35,12 +35,44 @@ static void CheckRegionTempo(unsigned tempo, unsigned expected) {
     CHECK(asset.tempoUs == expected);
 }
 
+static void CheckSequenceTicks(void) {
+    unsigned char data[80] = {0};
+    unsigned char *seq = data + 24;
+    MenuMusicAsset asset;
+    size_t ticks = 0;
+
+    Write32Le(data, 12);
+    Write32Le(data + 4, 24);
+    Write32Le(data + 8, 43);
+    memcpy(seq, "pQES", 4);
+    seq[7] = 1;
+    seq[8] = 0;
+    seq[9] = 60;       /* 60 MIDI ticks per quarter note. */
+    seq[10] = 0x0f;
+    seq[11] = 0x42;
+    seq[12] = 0x40;    /* 1 second per quarter note. */
+    seq[15] = 60;      /* EOT occurs after one quarter note. */
+    seq[16] = 0xff;
+    seq[17] = 0x2f;
+    seq[18] = 0;
+
+    CHECK(MenuMusicAssetOpen(data, sizeof(data), &asset));
+    CHECK(MenuMusicSequenceTicks(&asset, 60, &ticks));
+    CHECK(ticks == 60);
+    CHECK(MenuMusicSequenceTicks(&asset, 50, &ticks));
+    CHECK(ticks == 50);
+
+    seq[18] = 4;       /* Truncated EOT payload. */
+    CHECK(!MenuMusicSequenceTicks(&asset, 60, &ticks));
+}
+
 int main(void) {
     unsigned char invalid[48] = {0};
     MenuMusicAsset asset;
 
     CheckRegionTempo(0x0504f3, 328947); /* PAL disc */
     CheckRegionTempo(0x0605f0, 394736); /* NTSC-U/J discs */
+    CheckSequenceTicks();
     CHECK(!MenuMusicAssetOpen(NULL, 0, &asset));
     CHECK(!MenuMusicAssetOpen(invalid, sizeof(invalid), &asset));
     Write32Le(invalid, 12);
