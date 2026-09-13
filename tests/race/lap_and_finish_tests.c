@@ -17,6 +17,7 @@
 #include "game/menu.h"
 #include "game/race.h"
 #include "game/race_internal.h"
+#include "game/render.h"
 #include "game/save_internal.h"
 #include "game/track.h"
 
@@ -25,6 +26,7 @@
 #include <string.h>
 
 s32 g_BestLapThisRace;
+GameRenderState g_RenderState;
 s32 g_BestLapTimes[2][4][2];
 s32 g_BestSectorTimes[2][4][3];
 s32 g_BestTotalTimes[2][4][2];
