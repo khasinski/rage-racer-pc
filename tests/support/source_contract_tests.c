@@ -324,12 +324,9 @@ static void RaceProgress(void) {
             "Extra GP maximum class is detached from its progress object");
     Require(strstr(menu, "g_GrandPrixSeries = (u16)g_RaceProgress->timeAttackSeries") != NULL,
             "Time Attack does not restore its series from progress");
-    for (size_t i = 0; i < 2; ++i) {
-        char *source = i == 0 ? course : car;
-        Require(strstr(source, "g_RaceProgress->money = g_PlayerMoney") &&
-                strstr(source, "g_RaceProgress->timeAttackSeries = g_GrandPrixSeries"),
-                "race select does not store the Time Attack series in progress");
-    }
+    Require(strstr(course, "StoreRaceSelection(g_RaceProgress") != NULL &&
+                strstr(car, "StoreRaceSelection(g_RaceProgress") != NULL,
+            "race select bypasses the validated progress update");
     free(car); free(course); free(menu); free(native); free(host); free(header);
 }
 static void AudioStateLayout(void) {

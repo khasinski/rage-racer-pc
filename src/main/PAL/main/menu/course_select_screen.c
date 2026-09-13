@@ -365,21 +365,13 @@ static void UpdateCourseSelectModal(GameOrderingTableEntry *ot, s32 state) {
 
 /* What the race is started with, once the screen has finished sliding off. */
 static s32 HandOverToRace(s32 sceneId, s32 course) {
-    if (g_RaceProgress == NULL || (u32)course >= COURSE_SLOT_COUNT ||
-        (u32)g_PlayerCarIndex >= GAME_CAR_COUNT ||
-        (u32)g_GrandPrixClass > GRAND_PRIX_FINAL_CLASS_INDEX) {
+    if (!StoreRaceSelection(g_RaceProgress, g_GrandPrixMode, course,
+                            g_PlayerCarIndex, g_GrandPrixClass, g_PlayerMoney,
+                            g_GrandPrixSeries)) {
         return 0;
     }
     g_SceneId = sceneId;
     g_CourseIndex = course;
-    g_RaceProgress->course = course;
-    g_RaceProgress->carIndex = g_PlayerCarIndex;
-    g_RaceProgress->classIndex = g_GrandPrixClass;
-    if (g_GrandPrixMode != 0) {
-        g_RaceProgress->money = g_PlayerMoney;
-    } else {
-        g_RaceProgress->timeAttackSeries = g_GrandPrixSeries;
-    }
     return 1;
 }
 

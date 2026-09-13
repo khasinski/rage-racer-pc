@@ -806,7 +806,8 @@ set_tests_properties(car_spec_graph PROPERTIES LABELS unit)
 add_executable(car_select_screen_tests
     car_select_screen_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/car_select_screen.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/menu_turntable.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/menu_turntable.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/race_progress.c)
 target_include_directories(car_select_screen_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
@@ -962,7 +963,8 @@ set_tests_properties(ending_still PROPERTIES LABELS functional)
 add_executable(course_select_screen_tests
     course_select_screen_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/course_select_screen.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/course_select_input.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/course_select_input.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/race_progress.c)
 target_include_directories(course_select_screen_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

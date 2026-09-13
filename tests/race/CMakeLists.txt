@@ -879,7 +879,8 @@ endif()
 if(TARGET rage-host-state)
 add_executable(save_defaults_tests
     save_defaults_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/save_defaults.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/save_defaults.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/race_progress.c)
 target_include_directories(save_defaults_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

@@ -42,6 +42,33 @@ static int TestProgressSlotReset(void) {
     return 0;
 }
 
+static int TestRaceSelection(void) {
+    GameRaceProgress progress = {.maxClassReached = 4};
+    GameRaceProgress unchanged;
+
+    CHECK(StoreRaceSelection(&progress, 1, 2, 7, 3, 12345, 1));
+    CHECK(progress.course == 2 && progress.carIndex == 7);
+    CHECK(progress.classIndex == 3 && progress.maxClassReached == 4);
+    CHECK(progress.money == 12345);
+
+    CHECK(StoreRaceSelection(&progress, 0, 1, 4, 2, 999, 1));
+    CHECK(progress.course == 1 && progress.carIndex == 4);
+    CHECK(progress.classIndex == 2 && progress.maxClassReached == 4);
+    CHECK(progress.timeAttackSeries == 1);
+
+    unchanged = progress;
+    CHECK(!StoreRaceSelection(NULL, 1, 0, 0, 0, 0, 0));
+    CHECK(!StoreRaceSelection(&progress, 1, -1, 0, 0, 0, 0));
+    CHECK(!StoreRaceSelection(&progress, 1, COURSE_SLOT_COUNT, 0, 0, 0, 0));
+    CHECK(!StoreRaceSelection(&progress, 1, 0, -1, 0, 0, 0));
+    CHECK(!StoreRaceSelection(&progress, 1, 0, GAME_CAR_COUNT, 0, 0, 0));
+    CHECK(!StoreRaceSelection(&progress, 1, 0, 0, -1, 0, 0));
+    CHECK(!StoreRaceSelection(&progress, 1, 0, 0,
+                              GRAND_PRIX_FINAL_CLASS_INDEX + 1, 0, 0));
+    CHECK(memcmp(&progress, &unchanged, sizeof(progress)) == 0);
+    return 0;
+}
+
 static int TestCourseProgressModes(void) {
     CourseProgressState progress;
 
@@ -113,6 +140,7 @@ static int TestAllDefaults(void) {
 
 int main(void) {
     if (TestProgressSlotReset() != 0) return 1;
+    if (TestRaceSelection() != 0) return 1;
     if (TestCourseProgressModes() != 0) return 1;
     if (TestAllDefaults() != 0) return 1;
     puts("save defaults reset cars, progress, records and audio settings");

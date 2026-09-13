@@ -122,6 +122,9 @@ extern GameRaceProgress g_TimeAttackSave;
 #define g_ExtraGrandPrixSaveMaxClass (g_ExtraGrandPrixSave.maxClassReached)
 
 void ResetProgressSlot(struct CarEntry *cars, GameRaceProgress *progress);
+s32 StoreRaceSelection(GameRaceProgress *progress, s32 grandPrixMode,
+                       s32 course, s32 carIndex, s32 classIndex, s32 money,
+                       s32 timeAttackSeries);
 
 extern s32 g_ClosestRivalRank;
 

@@ -225,22 +225,16 @@ static void UpdateCarSelectModal(void) {
  * it.  Asset/bootstrap failures must leave the outgoing screen alive for a
  * later retry instead of dereferencing an absent save-state record. */
 static s32 HandOverToRace(void) {
-    if (g_RaceProgress == NULL ||
-        (u32)g_PlayerCarIndex >= GAME_CAR_COUNT ||
-        (u32)g_GrandPrixClass > GRAND_PRIX_FINAL_CLASS_INDEX) {
+    s32 course = CourseSlot(g_CourseIndex);
+
+    if (!StoreRaceSelection(g_RaceProgress, g_GrandPrixMode, course,
+                            g_PlayerCarIndex, g_GrandPrixClass, g_PlayerMoney,
+                            g_GrandPrixSeries)) {
         return 0;
     }
 
     g_SceneId = 9;
-    g_CourseIndex = CourseSlot(g_CourseIndex);
-    g_RaceProgress->course = g_CourseIndex;
-    g_RaceProgress->carIndex = g_PlayerCarIndex;
-    g_RaceProgress->classIndex = g_GrandPrixClass;
-    if (g_GrandPrixMode != 0) {
-        g_RaceProgress->money = g_PlayerMoney;
-    } else {
-        g_RaceProgress->timeAttackSeries = g_GrandPrixSeries;
-    }
+    g_CourseIndex = course;
     return 1;
 }
 
