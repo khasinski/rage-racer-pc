@@ -1,6 +1,4 @@
 #include <stdio.h>
-#include <string.h>
-
 #include "game/player_car_internal.h"
 #include "game/prim.h"
 #include "game/race.h"
@@ -24,13 +22,14 @@ enum {
 
 static void DrawRecordRows(s32 slideX,
                            const RaceRecord records[RECORD_TABLE_LENGTH],
-                           s32 insertedRow, char *text, size_t textSize) {
+                           s32 insertedRow) {
     s32 row;
 
     for (row = 0; row < RECORD_TABLE_LENGTH; row++) {
         const RaceRecord *record = &records[row];
         s32 carIndex = record->carIndex;
-        char driverName[sizeof(record->driverName) + 1];
+        char time[LAP_TIME_TEXT_CAPACITY];
+        char text[56];
         const char *carName;
         const char *className;
         s32 color = insertedRow == row ? 0x780F : 0x78CC;
@@ -39,22 +38,18 @@ static void DrawRecordRows(s32 slideX,
         if ((u32)carIndex >= GAME_CAR_COUNT) {
             carIndex = 0;
         }
-        memcpy(driverName, record->driverName, sizeof(record->driverName));
-        driverName[sizeof(record->driverName)] = '\0';
         carName = g_CarNames[carIndex] != NULL ? g_CarNames[carIndex] : "";
         className =
             g_CarClassNames[carIndex] != NULL ? g_CarClassNames[carIndex] : "";
 
-        text[0] = g_PlaceSuffixNames[row][0];
-        text[1] = g_PlaceSuffixNames[row][1];
-        text[2] = g_PlaceSuffixNames[row][2];
-        text[3] = '/';
-        FormatLapTime(&text[4], record->raceTime);
-        snprintf(&text[0xC], textSize - 0xC, "/%s/%s",
-                 driverName, className);
+        FormatLapTime(time, record->raceTime);
+        snprintf(text, sizeof(text), "%.3s/%s/%.*s/%s",
+                 g_PlaceSuffixNames[row], time,
+                 (int)sizeof(record->driverName), record->driverName,
+                 className);
         DrawText8x8(slideX + 0x14, y, text, color);
 
-        snprintf(text, textSize, "/%s", carName);
+        snprintf(text, sizeof(text), "/%s", carName);
         DrawText8x8(slideX + 0x2C, y + 0xA, text, color);
     }
 }
@@ -87,7 +82,7 @@ void DrawRankingPanel(s32 slideX) {
 
     DrawProportionalText(slideX + 0x10, 0x6C, "hai", 0x7812);
     DrawRecordRows(slideX, g_RankingRecords[g_GrandPrixSeries][course],
-                   g_RankingInsertRow, text, sizeof(text));
+                   g_RankingInsertRow);
 }
 
 void DrawTimeRecordPanel(s32 slideX) {
@@ -107,7 +102,7 @@ void DrawTimeRecordPanel(s32 slideX) {
 
     DrawProportionalText(slideX + 0x10, 0x6C, "hai", 0x7812);
     DrawRecordRows(slideX, g_TimeRecords[g_GrandPrixSeries][course],
-                   g_TimeRecordInsertRow, text, sizeof(text));
+                   g_TimeRecordInsertRow);
 }
 
 void DrawNameEntryCursor(s32 charIndex, s32 row) {
