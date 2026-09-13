@@ -9,7 +9,7 @@ set(trace "${root}/spu.csv")
 execute_process(COMMAND ${CMAKE_COMMAND} -E env SDL_AUDIODRIVER=dummy
     RAGE_PORT_SMOKE_FRAMES=2400 RAGE_PORT_SMOKE_STOP_SCENE=12 RAGE_PORT_SMOKE_STOP_SCENE_TIMER=562
     RAGE_PORT_INPUT_SCRIPT=400:START,500:START,650:CROSS,950:CROSS,1100:CROSS,1200:CROSS,1470-2400:CROSS
-    "RAGE_PORT_CAPTURE_PATH=${capture}" RAGE_PORT_TERRAIN_TRACE_TIMER=562 RAGE_PORT_SMOKE_AUDIO_METRICS=1
+    "RAGE_PORT_CAPTURE_PATH=${capture}" RAGE_PORT_SMOKE_AUDIO_METRICS=1
     "RAGE_PORT_SPU_TRACE=${trace}" "${GAME}" --set video.renderer=classic --set video.aspect=4:3
     WORKING_DIRECTORY "${SOURCE}" TIMEOUT 135 RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE error)
 set(log "${output}${error}")
@@ -17,7 +17,6 @@ if(NOT result EQUAL 0 OR NOT EXISTS "${capture}" OR NOT EXISTS "${trace}")
     message(FATAL_ERROR "Race-start run failed: ${root}\n${log}")
 endif()
 foreach(required
-    "terrain-lod timer=562.*mirror=0.*shift=10" "terrain-lod timer=562.*mirror=1.*shift=9"
     "scene=12 frontend=3 sky_row=0" "scene 12" "speed=[1-9][0-9]* accelerator=256"
     "rpm=[1-9][0-9][0-9][0-9].*terrain_second=[1-9][0-9]*"
     "audio metrics: .*pitch_updates=[1-9][0-9]*"

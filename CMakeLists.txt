@@ -339,7 +339,6 @@ if(RAGE_BUILD_PORT)
         src/port/debug_autopilot.c
         src/port/debug_route.c
         src/port/native_visibility.c
-        src/port/classic/native_geometry_diagnostics.c
         src/port/native_asset_importer.c
         src/port/native_mesh_writer.c
         src/port/track_texture_snapshot.c

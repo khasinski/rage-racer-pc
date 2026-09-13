@@ -13,12 +13,10 @@
 #include "game/terrain_internal.h"
 
 #include "../modern/scene_capture.h"
-#include "native_geometry_diagnostics.h"
 #include "../native_geometry_interpolation.h"
 
 extern int g_CourseModelCount;
 extern int g_AnimTimer;
-extern int g_SceneTimer;
 void DpqColor(CVECTOR *source, long depthCue, CVECTOR *destination);
 void NormalColorCol3(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, CVECTOR *base,
                      CVECTOR *out0, CVECTOR *out1, CVECTOR *out2);
@@ -50,84 +48,8 @@ unsigned long long g_RageModelRejectBackface;
 unsigned long long g_RageTerrainSecondTriangleVisible;
 unsigned long long g_RageTerrainChildRejectBackface;
 unsigned long long g_RageTerrainChildSecondTriangleVisible;
-static int g_RageTerrainClip0;
-static int g_RageTerrainClip1;
 static int g_RageProjectionReject;
 static int g_RageProjectionFlag;
-static RageGeometryDiagnostics s_diagnostics;
-#define g_RageTerrainTraceEnabled s_diagnostics.terrainTraceEnabled
-#define g_RageTerrainTraceTimer s_diagnostics.terrainTraceTimer
-#define g_RageTerrainTraceClut s_diagnostics.terrainTraceClut
-#define g_RageTerrainTraceTpage s_diagnostics.terrainTraceTpage
-#define g_RageTerrainDecisionTraceEnabled s_diagnostics.terrainDecisionTraceEnabled
-#define g_RageTerrainDecisionTraceTimer s_diagnostics.terrainDecisionTraceTimer
-#define g_RageTerrainDecisionTraceLimit s_diagnostics.terrainDecisionTraceLimit
-#define g_RageTerrainDecisionTraceCount s_diagnostics.terrainDecisionTraceCount
-#define g_RageCourseTraceEnabled s_diagnostics.courseTraceEnabled
-#define g_RageCourseTraceTimer s_diagnostics.courseTraceTimer
-#define g_RageCourseTraceClut s_diagnostics.courseTraceClut
-#define g_RageCourseTraceTpage s_diagnostics.courseTraceTpage
-#define g_RageModelTraceEnabled s_diagnostics.modelTraceEnabled
-#define g_RageModelTraceTimer s_diagnostics.modelTraceTimer
-static long g_RageCourseVertexDepth[4];
-
-
-
-
-static void TraceTerrainDecision(
-    int cell, int face, uint16_t clut, uint16_t tpage, int projected,
-    const uint16_t vertexIndices[4], const VECTOR *translation,
-    int clip0, int clip1, const int sxy[4], int rawDepth, int depth) {
-    const char *reason;
-    if (!g_RageTerrainDecisionTraceEnabled ||
-        (g_RageTerrainDecisionTraceTimer >= 0 &&
-         g_RageTerrainDecisionTraceTimer != g_SceneTimer) ||
-        g_RageTerrainDecisionTraceCount >= g_RageTerrainDecisionTraceLimit)
-        return;
-    reason = g_RageProjectionReject == 1 ? "offscreen" :
-        g_RageProjectionReject == 2 ? "backface" :
-        g_RageProjectionReject == 3 ? "depth" : "unknown";
-    if (projected)
-        fprintf(stderr,
-                "terrain-decision timer=%d index=%d cell=%d face=%d mirror=%d "
-                "clut=%04x tpage=%04x vertices=%u,%u,%u,%u "
-                "translation=%d,%d,%d clip=%d,%d "
-                "sxy=%d,%d/%d,%d/%d,%d/%d,%d bounds=%d,%d,%d,%d "
-                "raw=%d depth=%d result=%s\n",
-                g_SceneTimer, g_RageTerrainDecisionTraceCount, cell, face,
-                g_RenderState.pass.orderingFlag, clut, tpage & 0x9ff,
-                vertexIndices[0], vertexIndices[1], vertexIndices[2],
-                vertexIndices[3], translation->vx, translation->vy,
-                translation->vz, clip0, clip1,
-                (int16_t)sxy[0], (int16_t)(sxy[0] >> 16),
-                (int16_t)sxy[1], (int16_t)(sxy[1] >> 16),
-                (int16_t)sxy[2], (int16_t)(sxy[2] >> 16),
-                (int16_t)sxy[3], (int16_t)(sxy[3] >> 16),
-                g_RenderState.draw.clipX0, g_RenderState.draw.clipX1,
-                g_RenderState.draw.clipY0, g_RenderState.draw.clipY1,
-                rawDepth, depth, "submit");
-    else
-        fprintf(stderr,
-                "terrain-decision timer=%d index=%d cell=%d face=%d mirror=%d "
-                "clut=%04x tpage=%04x vertices=%u,%u,%u,%u "
-                "translation=%d,%d,%d clip=%d,%d "
-                "sxy=%d,%d/%d,%d/%d,%d/%d,%d bounds=%d,%d,%d,%d "
-                "raw=na depth=na result=reject "
-                "reason=%s\n",
-                g_SceneTimer, g_RageTerrainDecisionTraceCount, cell, face,
-                g_RenderState.pass.orderingFlag, clut, tpage & 0x9ff,
-                vertexIndices[0], vertexIndices[1], vertexIndices[2],
-                vertexIndices[3], translation->vx, translation->vy,
-                translation->vz, clip0, clip1,
-                (int16_t)sxy[0], (int16_t)(sxy[0] >> 16),
-                (int16_t)sxy[1], (int16_t)(sxy[1] >> 16),
-                (int16_t)sxy[2], (int16_t)(sxy[2] >> 16),
-                (int16_t)sxy[3], (int16_t)(sxy[3] >> 16),
-                g_RenderState.draw.clipX0, g_RenderState.draw.clipX1,
-                g_RenderState.draw.clipY0, g_RenderState.draw.clipY1, reason);
-    g_RageTerrainDecisionTraceCount++;
-}
-
 
 static int PrimitiveSpaceAvailable(const uint8_t *cursor, size_t size) {
     int i;
@@ -163,16 +85,6 @@ static uint32_t RageReadU32(const uint8_t *p) {
     return value;
 }
 
-static int CourseTraceMatches(int timer, int type, const uint8_t *face) {
-    uint16_t clut;
-    uint16_t tpage;
-    if (!g_RageCourseTraceEnabled || type == 0) return 0;
-    clut = RageReadU16(face + 14);
-    tpage = RageReadU16(face + 18) & 0x9ff;
-    return (g_RageCourseTraceTimer < 0 || g_RageCourseTraceTimer == timer) &&
-           (g_RageCourseTraceClut < 0 || g_RageCourseTraceClut == clut) &&
-           (g_RageCourseTraceTpage < 0 || g_RageCourseTraceTpage == tpage);
-}
 
 static void StoreSxy(short *x, short *y, int packed) {
     *x = (short)(packed & 0xffff);
@@ -218,10 +130,6 @@ static int ProjectQuad(
         int clip0 = NormalClip(sxy[0], sxy[1], sxy[2]);
         int clip1 = terrainQuad
             ? NormalClip(sxy[1], sxy[2], sxy[3]) : clip0;
-        if (terrainQuad) {
-            g_RageTerrainClip0 = clip0;
-            g_RageTerrainClip1 = clip1;
-        }
         if (g_RageInsideModelProjection && g_RageSubmittedModelIndex == 0 &&
             g_RageSubmittedModelType == RAGE_MODEL_GT4) {
             if (clip0 > 0) g_RageGt4ClipPositive++;
@@ -289,7 +197,6 @@ static int ProjectCourseFace(
         vertexDepth[vertex] = RotTransPers(
             (SVECTOR *)&vertices[RageReadU16(face + vertex * 2)],
             &sxy[vertex], &p, &vertexFlag);
-        g_RageCourseVertexDepth[vertex] = vertexDepth[vertex];
     }
     /* The retail course transform first stores each GTE Z in its 16-bit
      * working table at 1/8 of RotTransPers' result.  The face loop then adds
@@ -517,8 +424,6 @@ static void RageSubmitModelFaces(
     GameOrderingTableEntry *ot = RENDER_OT_BASE + 128;
     int i;
 
-    GeometryDiagnosticsInit(&s_diagnostics);
-
     if ((unsigned)type >= 4 || count <= 0 || faces == NULL || vertices == NULL)
         return;
 
@@ -551,29 +456,7 @@ static void RageSubmitModelFaces(
         }
         g_RageInsideModelProjection = 0;
         if (depth <= 0 || depth >= 448) continue;
-        if (g_RageModelTraceEnabled &&
-            (g_RageModelTraceTimer < 0 ||
-             g_RageModelTraceTimer == g_SceneTimer)) {
-            char recordBytes[65];
-            int byteIndex;
-            for (byteIndex = 0; byteIndex < strides[type]; byteIndex++)
-                snprintf(recordBytes + byteIndex * 2, 3, "%02x", faces[byteIndex]);
-            fprintf(stderr,
-                    "model-face timer=%d model=%d type=%d face=%d depth=%d bias=%d "
-                    "packet=%p mode=%08x record=%p record_bytes=%s "
-                    "indices=%u,%u,%u,%u "
-                    "sxy=%d,%d/%d,%d/%d,%d/%d,%d\n",
-                    g_SceneTimer, g_RageSubmittedModelIndex, type, i, depth,
-                    (int8_t)faces[strides[type] - 3],
-                    (void *)cursor, (unsigned)g_RenderState.geometry.envMode4,
-                    (const void *)faces, recordBytes,
-                    RageReadU16(faces), RageReadU16(faces + 2),
-                    RageReadU16(faces + 4), RageReadU16(faces + 6),
-                    (int16_t)sxy[0], (int16_t)(sxy[0] >> 16),
-                    (int16_t)sxy[1], (int16_t)(sxy[1] >> 16),
-                    (int16_t)sxy[2], (int16_t)(sxy[2] >> 16),
-                    (int16_t)sxy[3], (int16_t)(sxy[3] >> 16));
-        }
+
         /* Every model record ends with a signed OT adjustment.  Apply it
          * only after retail's range test of the projected parent depth. */
         depth += (int8_t)faces[strides[type] - 3];
@@ -657,21 +540,7 @@ static void RageSubmitModelFaces(
                 &colors[0], &colors[1], &colors[2]);
             NormalColorCol((SVECTOR *)&normals[RageReadU16(faces + 14)], &base,
                            &colors[3]);
-            if (g_RageModelTraceEnabled &&
-                (g_RageModelTraceTimer < 0 ||
-                 g_RageModelTraceTimer == g_SceneTimer)) {
-                fprintf(stderr,
-                        "model-color timer=%d model=%d type=%d face=%d "
-                        "normal=%u,%u,%u,%u rgb=%02x%02x%02x/%02x%02x%02x/"
-                        "%02x%02x%02x/%02x%02x%02x\n",
-                        g_SceneTimer, g_RageSubmittedModelIndex, type, i,
-                        RageReadU16(faces + 8), RageReadU16(faces + 10),
-                        RageReadU16(faces + 12), RageReadU16(faces + 14),
-                        colors[0].r, colors[0].g, colors[0].b,
-                        colors[1].r, colors[1].g, colors[1].b,
-                        colors[2].r, colors[2].g, colors[2].b,
-                        colors[3].r, colors[3].g, colors[3].b);
-            }
+
             poly->r0=colors[0].r; poly->g0=colors[0].g; poly->b0=colors[0].b;
             poly->r1=colors[1].r; poly->g1=colors[1].g; poly->b1=colors[1].b;
             poly->r2=colors[2].r; poly->g2=colors[2].g; poly->b2=colors[2].b;
@@ -714,21 +583,7 @@ static void RageSubmitModelFaces(
                 &colors[0], &colors[1], &colors[2]);
             NormalColor((SVECTOR *)&normals[RageReadU16(faces + 14)], &base,
                         &colors[3]);
-            if (g_RageModelTraceEnabled &&
-                (g_RageModelTraceTimer < 0 ||
-                 g_RageModelTraceTimer == g_SceneTimer)) {
-                fprintf(stderr,
-                        "model-color timer=%d model=%d type=%d face=%d "
-                        "normal=%u,%u,%u,%u rgb=%02x%02x%02x/%02x%02x%02x/"
-                        "%02x%02x%02x/%02x%02x%02x\n",
-                        g_SceneTimer, g_RageSubmittedModelIndex, type, i,
-                        RageReadU16(faces + 8), RageReadU16(faces + 10),
-                        RageReadU16(faces + 12), RageReadU16(faces + 14),
-                        colors[0].r, colors[0].g, colors[0].b,
-                        colors[1].r, colors[1].g, colors[1].b,
-                        colors[2].r, colors[2].g, colors[2].b,
-                        colors[3].r, colors[3].g, colors[3].b);
-            }
+
             poly->r0=colors[0].r; poly->g0=colors[0].g; poly->b0=colors[0].b;
             poly->r1=colors[1].r; poly->g1=colors[1].g; poly->b1=colors[1].b;
             poly->r2=colors[2].r; poly->g2=colors[2].g; poly->b2=colors[2].b;
@@ -786,11 +641,6 @@ void SubmitModel(void *ctx, int index) {
     }
     stream = models[index];
     g_RageSubmittedModelIndex = index;
-    if (g_RageModelTraceEnabled &&
-        (g_RageModelTraceTimer < 0 ||
-         g_RageModelTraceTimer == g_SceneTimer))
-        fprintf(stderr, "model-submit timer=%d model=%d table=%p stream=%p\n",
-                g_SceneTimer, index, (void *)models, (void *)stream);
     CaptureModelBegin(RAGE_CAPTURE_KIND_MODEL, index, 0);
     while ((opcode = RageReadU32(stream)) != 0) {
         int type = opcode & 0xffff;
@@ -816,12 +666,6 @@ static void RageSubmitCourseModel(int index, int fogged) {
     GameOrderingTableEntry *ot = RENDER_OT_BASE + 128;
     const SVECTOR *vertices;
     uint32_t opcode;
-    GeometryDiagnosticsInit(&s_diagnostics);
-    if (g_RageCourseTraceEnabled &&
-        (g_RageCourseTraceTimer < 0 || g_RageCourseTraceTimer == g_SceneTimer)) {
-        fprintf(stderr, "course-model timer=%d model=%d fogged=%d\n",
-                g_SceneTimer, index, fogged);
-    }
     if (models == NULL || index < 0 || index >= g_CourseModelCount ||
         models[index].geometry == NULL || models[index].model == NULL) return;
     CaptureModelBegin(RAGE_CAPTURE_KIND_COURSE, index, fogged);
@@ -838,38 +682,12 @@ static void RageSubmitCourseModel(int index, int fogged) {
         for (i = 0; i < count; i++, stream += stride) {
             int sxy[4] = {0}, depth = 0, fog = 0, rawDepth = 0;
             int projected;
-            int trace = CourseTraceMatches(g_SceneTimer, type, stream);
             int bias = (int8_t)stream[type == 0 ? 13 : 25];
             uint8_t color[3] = {stream[8], stream[9], stream[10]};
             int extendedDepth = 0;
             projected = ProjectCourseFace(stream, vertices, sxy, &depth,
                                                &fog, &rawDepth);
-            if (trace) {
-                int clip = projected ? NormalClip(sxy[0], sxy[1], sxy[2]) : 0;
-                fprintf(stderr,
-                        "course-face timer=%d model=%d type=%d face=%d "
-                        "fogged=%d projected=%d reject=%d mirror=%d "
-                        "idx=%u,%u,%u,%u clut=%04x tpage=%04x "
-                        "z=%ld,%ld,%ld,%ld raw_depth=%d depth=%d bias=%d clip=%d "
-                        "sxy=%d,%d/%d,%d/%d,%d/%d,%d "
-                        "uv=%u,%u/%u,%u/%u,%u/%u,%u\n",
-                        g_SceneTimer, index, type, i, fogged, projected,
-                        projected ? 0 : g_RageProjectionReject,
-                        g_RenderState.pass.orderingFlag, RageReadU16(stream + 0),
-                        RageReadU16(stream + 2), RageReadU16(stream + 4),
-                        RageReadU16(stream + 6), RageReadU16(stream + 14),
-                        RageReadU16(stream + 18) & 0x9ff,
-                        g_RageCourseVertexDepth[0], g_RageCourseVertexDepth[1],
-                        g_RageCourseVertexDepth[2], g_RageCourseVertexDepth[3],
-                        projected ? rawDepth : -1,
-                        projected ? depth : -1, bias, clip,
-                        (int16_t)sxy[0], (int16_t)(sxy[0] >> 16),
-                        (int16_t)sxy[1], (int16_t)(sxy[1] >> 16),
-                        (int16_t)sxy[2], (int16_t)(sxy[2] >> 16),
-                        (int16_t)sxy[3], (int16_t)(sxy[3] >> 16),
-                        stream[12], stream[13], stream[16], stream[17],
-                        stream[20], stream[21], stream[22], stream[23]);
-            }
+
             if (!projected) {
                 /* Beyond-cutoff faces feed only the modern far view. */
                 if (g_RageProjectionReject == 3 &&
@@ -1085,7 +903,6 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
     int decodedFaces = 0;
     int emittedFaces = 0;
     (void)ctx;
-    GeometryDiagnosticsInit(&s_diagnostics);
     if (cells == NULL || cellTable == NULL || vertices == NULL) return;
 
     /* The hand-written retail dispatcher mirrors the active GTE view by
@@ -1153,10 +970,6 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
                 uint16_t tpage = RageReadU16(stream + 14);
                 uint32_t textureWindow = dispatch >= 2
                     ? RageReadU32(stream + 32) : 0;
-                uint16_t vertexIndices[4] = {
-                    RageReadU16(stream + 0), RageReadU16(stream + 2),
-                    RageReadU16(stream + 4), RageReadU16(stream + 6)
-                };
                 int bias;
                 int extendedDepth = 0;
                 if (farCell && (stream[20] & 2) != 0) {
@@ -1169,42 +982,7 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
                 {
                     int projected = ProjectQuad(
                         v0, v1, v2, v3, sxy, &depth, &fog, &rawDepth, 1);
-                    if (g_RageTerrainTraceEnabled &&
-                        (g_RageTerrainTraceTimer < 0 ||
-                         g_RageTerrainTraceTimer == g_SceneTimer) &&
-                        (g_RageTerrainTraceClut < 0 ||
-                         g_RageTerrainTraceClut == clut) &&
-                        (g_RageTerrainTraceTpage < 0 ||
-                         g_RageTerrainTraceTpage == (tpage & 0x9ff))) {
-                        fprintf(stderr,
-                                "terrain-face timer=%d cell=%d face=%d packet=%p "
-                                "mode=%d mirror=%d reject=%d depth=%d raw=%d fog=%d "
-                                "bias=%d lod=%u,%u shift=%d "
-                                "rgb=%02x%02x%02x clut=%04x tpage=%04x "
-                                "window=%05x indices=%u,%u,%u,%u "
-                                "translation=%d,%d,%d "
-                                "sxy=%d,%d/%d,%d/%d,%d/%d,%d\n",
-                                g_SceneTimer, cellIndex, faceIndex, (void *)cursor,
-                                dispatch,
-                                g_RenderState.pass.orderingFlag,
-                                projected ? 0 : g_RageProjectionReject, depth,
-                                rawDepth, fog, (int8_t)stream[21], stream[22], stream[23],
-                                g_RenderState.pass.faceOtShift,
-                                color[0], color[1], color[2],
-                                clut, tpage, textureWindow & 0xfffff,
-                                RageReadU16(stream + 0), RageReadU16(stream + 2),
-                                RageReadU16(stream + 4), RageReadU16(stream + 6),
-                                translation.vx, translation.vy, translation.vz,
-                                (int16_t)sxy[0], (int16_t)(sxy[0] >> 16),
-                                (int16_t)sxy[1], (int16_t)(sxy[1] >> 16),
-                                (int16_t)sxy[2], (int16_t)(sxy[2] >> 16),
-                                (int16_t)sxy[3], (int16_t)(sxy[3] >> 16));
-                    }
-                    TraceTerrainDecision(
-                        cellIndex, faceIndex, clut, tpage, projected,
-                        vertexIndices, &translation,
-                        g_RageTerrainClip0, g_RageTerrainClip1, sxy,
-                        rawDepth, depth);
+
                     if (!projected) {
                         /* Faces beyond the retail depth cutoff are captured
                          * for the modern renderer's extended draw distance
@@ -1253,23 +1031,7 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
                 vLevel = stream[23] - (rawDepth >> g_RenderState.pass.faceOtShift);
                 if (uLevel < 0) uLevel = 0;
                 if (vLevel < 0) vLevel = 0;
-                if (g_RageTerrainTraceEnabled &&
-                    (g_RageTerrainTraceTimer < 0 ||
-                     g_RageTerrainTraceTimer == g_SceneTimer) &&
-                    (g_RageTerrainTraceClut < 0 ||
-                     g_RageTerrainTraceClut == clut) &&
-                    (g_RageTerrainTraceTpage < 0 ||
-                     g_RageTerrainTraceTpage == (tpage & 0x9ff))) {
-                    fprintf(stderr,
-                            "terrain-lod timer=%d cell=%d face=%d mirror=%d "
-                            "raw=%d shift=%d source=%u,%u level=%d,%d "
-                            "steps=%u,%u\n",
-                            g_SceneTimer, cellIndex, faceIndex, g_RenderState.pass.orderingFlag,
-                            rawDepth, g_RenderState.pass.faceOtShift, stream[22],
-                            stream[23], uLevel, vLevel,
-                            uLevel < 31 ? 1u << uLevel : 0,
-                            vLevel < 31 ? 1u << vLevel : 0);
-                }
+
                 if (uLevel > 6 || vLevel > 6) continue;
                 uSteps = 1 << uLevel;
                 vSteps = 1 << vLevel;
@@ -1329,23 +1091,7 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
                     int sy, sx;
                     DR_TWIN *subdivisionWindow = NULL;
                     uint32_t lineCommand = RageReadU32(stream + 24);
-                    if (g_RageTerrainDecisionTraceEnabled &&
-                        (g_RageTerrainDecisionTraceTimer < 0 ||
-                         g_RageTerrainDecisionTraceTimer == g_SceneTimer)) {
-                        fprintf(stderr,
-                                "terrain-subdivision-lines timer=%d cell=%d face=%d "
-                                "sxy=%d,%d/%d,%d/%d,%d/%d,%d flag=%08x "
-                                "command=%08x emit=%d depth=%d\n",
-                                g_SceneTimer, cellIndex, faceIndex,
-                                (int16_t)sxy[0], (int16_t)(sxy[0] >> 16),
-                                (int16_t)sxy[1], (int16_t)(sxy[1] >> 16),
-                                (int16_t)sxy[2], (int16_t)(sxy[2] >> 16),
-                                (int16_t)sxy[3], (int16_t)(sxy[3] >> 16),
-                                (uint32_t)g_RageProjectionFlag, lineCommand,
-                                (((uint32_t)g_RageProjectionFlag | lineCommand) &
-                                 0x80000000u) == 0,
-                                depth + bias);
-                    }
+
                     if ((((uint32_t)g_RageProjectionFlag | lineCommand) &
                          0x80000000u) == 0) {
                         uint8_t *next = EmitTerrainSubdivisionLines(
@@ -1380,23 +1126,7 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
                                     &child[0], &child[1], &child[2], &child[3],
                                     subSxy, &childDepth, &childFog,
                                     &childRawDepth, 2);
-                                if (g_RageTerrainTraceEnabled &&
-                                    (g_RageTerrainTraceTimer < 0 ||
-                                     g_RageTerrainTraceTimer == g_SceneTimer) &&
-                                    (g_RageTerrainTraceClut < 0 ||
-                                     g_RageTerrainTraceClut == clut) &&
-                                    (g_RageTerrainTraceTpage < 0 ||
-                                     g_RageTerrainTraceTpage == (tpage & 0x9ff))) {
-                                    fprintf(stderr,
-                                            "terrain-nclip timer=%d cell=%d face=%d "
-                                            "child=%d,%d/%d,%d mirror=%d "
-                                            "clip=%d,%d visible=%d reject=%d\n",
-                                            g_SceneTimer, cellIndex, faceIndex,
-                                            sy, sx, uSteps, vSteps,
-                                            g_RenderState.pass.orderingFlag, g_RageTerrainClip0,
-                                            g_RageTerrainClip1, childVisible,
-                                            childVisible ? 0 : g_RageProjectionReject);
-                                }
+
                                 if (!childVisible) continue;
                             }
                             /* The retail emitter brackets the complete set of
@@ -1431,45 +1161,7 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
                                 uv, 3, baseUv, sy + 1, sx + 1,
                                 uSteps, vSteps);
                             {
-                                if (g_RageTerrainTraceEnabled &&
-                                    (g_RageTerrainTraceTimer < 0 ||
-                                     g_RageTerrainTraceTimer == g_SceneTimer) &&
-                                    (g_RageTerrainTraceClut < 0 ||
-                                     g_RageTerrainTraceClut == clut) &&
-                                    (g_RageTerrainTraceTpage < 0 ||
-                                     g_RageTerrainTraceTpage ==
-                                         (tpage & 0x9ff))) {
-                                    fprintf(stderr,
-                                            "terrain-child timer=%d cell=%d "
-                                            "face=%d child=%d,%d/%d,%d packet=%p "
-                                            "visible=%d mirror=%d depth=%d bias=%d ot=%d "
-                                            "rgb=%02x%02x%02x "
-                                            "xyz=%d,%d,%d/%d,%d,%d/"
-                                            "%d,%d,%d/%d,%d,%d "
-                                            "sxy=%d,%d/%d,%d/%d,%d/%d,%d "
-                                            "uv=%u,%u/%u,%u/%u,%u/%u,%u\n",
-                                            g_SceneTimer, cellIndex, faceIndex,
-                                            sy, sx, uSteps, vSteps, (void *)cursor, 1,
-                                            g_RenderState.pass.orderingFlag, depth, bias,
-                                            subDepth + 128,
-                                            color[0], color[1], color[2],
-                                            child[0].vx, child[0].vy,
-                                            child[0].vz, child[1].vx,
-                                            child[1].vy, child[1].vz,
-                                            child[2].vx, child[2].vy,
-                                            child[2].vz, child[3].vx,
-                                            child[3].vy, child[3].vz,
-                                            (int16_t)subSxy[0],
-                                            (int16_t)(subSxy[0] >> 16),
-                                            (int16_t)subSxy[1],
-                                            (int16_t)(subSxy[1] >> 16),
-                                            (int16_t)subSxy[2],
-                                            (int16_t)(subSxy[2] >> 16),
-                                            (int16_t)subSxy[3],
-                                            (int16_t)(subSxy[3] >> 16),
-                                            uv[0], uv[1], uv[2], uv[3],
-                                            uv[4], uv[5], uv[6], uv[7]);
-                                }
+
                             }
                             next = EmitTerrainFt4(cursor,ot,subDepth,fog,
                                                       dispatch,subSxy,uv,clut,
