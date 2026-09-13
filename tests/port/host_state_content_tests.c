@@ -146,7 +146,6 @@ extern unsigned char g_ShuttlePathDwellMax[124];
 extern unsigned char g_TeamNameChars[16];
 extern int16_t g_SkyTileMap[5][16];
 extern unsigned char g_SkyTileUV[64];
-extern unsigned char g_CdMixPresets[8];
 extern Cd g_Cd;
 extern MenuOverlayPatternFrame
     g_MenuOverlayPatternTable[MENU_OVERLAY_PATTERN_FRAME_COUNT];
@@ -275,7 +274,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_TeamNameChars", g_TeamNameChars, 16},
     {"g_SkyTileMap", (const unsigned char *)g_SkyTileMap, 160},
     {"g_SkyTileUV", g_SkyTileUV, 64},
-    {"g_CdMixPresets", g_CdMixPresets, 8},
     {"g_Cd.pendingCommand", (const unsigned char *)&g_Cd.pendingCommand,
      sizeof(g_Cd.pendingCommand)},
     {"g_MenuOverlayPatternTable", BYTES(g_MenuOverlayPatternTable),
@@ -303,7 +301,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the canonical host constants alone. */
-    const unsigned long expected = 1798342671UL;
+    const unsigned long expected = 3943613123UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");
