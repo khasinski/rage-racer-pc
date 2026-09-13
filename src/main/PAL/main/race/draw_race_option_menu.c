@@ -6,6 +6,7 @@
 #include "game/render_internal.h"
 #include "game/race_hud_internal.h"
 #include "game/state.h"
+#include "rage/compat.h"
 
 enum {
     RACE_OPTION_SELECTION_TOP = 0x68,

@@ -40,7 +40,7 @@ void GameRenderWorldSubmitCourseObject(uint32_t entity, int32_t mesh,
 void GameRenderWorldSubmitDynamicCourseObject(
     uint32_t entity, int32_t mesh, int32_t x, int32_t y, int32_t z,
     const int16_t rotation[3][3], int fogged, int mirror_pass);
-void GameRenderWorldSubmitDynamicCourseObjectTwoSided(
+void GameRenderWorldSubmitStartGridScenery(
     uint32_t entity, int32_t mesh, int32_t x, int32_t y, int32_t z,
     const int16_t rotation[3][3], int fogged, int mirror_pass);
 /* Animated signs are layered directly onto an authored screen surface. */

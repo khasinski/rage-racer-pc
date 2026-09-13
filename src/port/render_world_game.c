@@ -26,6 +26,7 @@
 #include "rage/track_lighting.h"
 
 enum { RAGE_GAME_RENDER_WORLD_MAX_INSTANCES = 4096 };
+static const float START_GRID_DEPTH_BIAS = -128.0f;
 
 static RenderMeshInstance s_instances[3][RAGE_GAME_RENDER_WORLD_MAX_INSTANCES];
 static RenderWorld s_worlds[3];
@@ -493,7 +494,8 @@ void GameRenderWorldPublishCurrentCamera(void) {
 static void GameRenderWorldSubmitCourseTransform(
     uint32_t entity, int32_t mesh, int32_t x, int32_t y, int32_t z,
     RageSceneMat3 rotation, int fogged, int mirror_pass,
-    int cullBackfaces, int depthOverlay, uint8_t paletteOffset) {
+    int cullBackfaces, int depthOverlay, float depthBias,
+    uint8_t paletteOffset) {
     RenderMeshInstance instance;
 
     if (!s_initialized || mesh < 0) return;
@@ -507,6 +509,7 @@ static void GameRenderWorldSubmitCourseTransform(
         (uint8_t)(((g_TrackTexturePageWanted != 0) ? 4u : 0u) +
                   (paletteOffset & 3u));
     instance.textureScrollU = (uint8_t)(g_AnimTimer & 0x7F);
+    instance.depthBias = depthBias;
     instance.pass = mirror_pass ? RAGE_RENDER_PASS_MIRROR : RAGE_RENDER_PASS_MAIN;
     instance.transform.position.x =
         (float)CourseCoordinateNearReference(x, g_Camera.view.x);
@@ -541,13 +544,13 @@ void GameRenderWorldSubmitCourseObject(uint32_t entity, int32_t mesh,
                                            int mirror_pass) {
     GameRenderWorldSubmitCourseTransform(
         0x10000u + entity, mesh, x, y, z, SceneRotationY(yaw), fogged,
-        mirror_pass, 0, 0, 0);
+        mirror_pass, 1, 0, 0.0f, 0);
 }
 
 static void GameRenderWorldSubmitDynamicCourseObjectInternal(
     uint32_t entity, int32_t mesh, int32_t x, int32_t y, int32_t z,
     const int16_t rotation[3][3], int fogged, int mirror_pass,
-    int cullBackfaces, int depthOverlay) {
+    int cullBackfaces, int depthOverlay, float depthBias) {
     RageSceneMat3 matrix;
     RenderWorld *world;
     uint32_t semanticEntity = 0x30000u + entity;
@@ -575,28 +578,30 @@ static void GameRenderWorldSubmitDynamicCourseObjectInternal(
     GameRenderWorldSubmitCourseTransform(
         semanticEntity, mesh, x, y, z, matrix, fogged, mirror_pass,
         cullBackfaces,
-        depthOverlay, (uint8_t)((g_RenderState.geometry.envMode4 >> 16) & 3));
+        depthOverlay, depthBias,
+        (uint8_t)((g_RenderState.geometry.envMode4 >> 16) & 3));
 }
 
 void GameRenderWorldSubmitDynamicCourseObject(
     uint32_t entity, int32_t mesh, int32_t x, int32_t y, int32_t z,
     const int16_t rotation[3][3], int fogged, int mirror_pass) {
     GameRenderWorldSubmitDynamicCourseObjectInternal(
-        entity, mesh, x, y, z, rotation, fogged, mirror_pass, 1, 0);
+        entity, mesh, x, y, z, rotation, fogged, mirror_pass, 1, 0, 0.0f);
 }
 
-void GameRenderWorldSubmitDynamicCourseObjectTwoSided(
+void GameRenderWorldSubmitStartGridScenery(
     uint32_t entity, int32_t mesh, int32_t x, int32_t y, int32_t z,
     const int16_t rotation[3][3], int fogged, int mirror_pass) {
     GameRenderWorldSubmitDynamicCourseObjectInternal(
-        entity, mesh, x, y, z, rotation, fogged, mirror_pass, 0, 0);
+        entity, mesh, x, y, z, rotation, fogged, mirror_pass, 1, 0,
+        START_GRID_DEPTH_BIAS);
 }
 
 void GameRenderWorldSubmitDynamicCourseOverlay(
     uint32_t entity, int32_t mesh, int32_t x, int32_t y, int32_t z,
     const int16_t rotation[3][3], int fogged, int mirror_pass) {
     GameRenderWorldSubmitDynamicCourseObjectInternal(
-        entity, mesh, x, y, z, rotation, fogged, mirror_pass, 0, 1);
+        entity, mesh, x, y, z, rotation, fogged, mirror_pass, 0, 1, 0.0f);
 }
 
 void GameRenderWorldSubmitTerrainCell(uint32_t grid_x, uint32_t grid_z,

@@ -56,9 +56,9 @@ void DrawStartGridScenery(s32 timer) {
     SetGteObjectMatrix(AsPosition(&position),
                        &objectMatrix);
     g_RenderState.geometry.envMode4 = 0;
-    /* The start-grid actor mixes thin, double-sided pieces with overlapping
-     * body art. Keep ordinary depth ordering, but do not discard either side. */
-    GameRenderWorldSubmitDynamicCourseObjectTwoSided(
+    /* Preserve the actor's authored face selection and its OT priority over
+     * the road beneath the moving feet. */
+    GameRenderWorldSubmitStartGridScenery(
         START_GRID_ENTITY_ID, modelId, position.x, position.y, position.z,
         worldMatrix.m, 0, 0);
     SubmitCourseModel(&g_RenderState, modelId);

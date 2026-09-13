@@ -165,10 +165,10 @@ static int TriangleIsBackFacing(const RenderWorld *world,
         screenX[corner] = view[corner].x / depth;
         screenY[corner] = view[corner].y / depth;
     }
-    /* Runtime indices use clockwise front faces in the renderer's Y-up
-     * projection. This is the same side selected by the game's NCLIP path. */
+    /* The imported PS1 quads become counter-clockwise in the renderer's Y-up
+     * projection. Keep the same side selected by the game's NCLIP path. */
     return (screenX[1] - screenX[0]) * (screenY[2] - screenY[0]) -
-           (screenY[1] - screenY[0]) * (screenX[2] - screenX[0]) >= 0.0f;
+           (screenY[1] - screenY[0]) * (screenX[2] - screenX[0]) <= 0.0f;
 }
 
 static uint32_t ClipViewTriangleNear(
@@ -415,7 +415,7 @@ static int BuildVertex(const RageTransformBasis *basis,
     out->lighting = instanceState->lighting;
     memcpy(out->environmentLight, instanceState->environmentLight,
            sizeof(out->environmentLight));
-    out->depthBias = 0.0f;
+    out->depthBias = instance->depthBias;
     out->shadowReception = instanceState->shadowReception;
     *depthDecal =
         (instance->flags & RAGE_RENDER_INSTANCE_DEPTH_DECAL) != 0;
@@ -426,7 +426,7 @@ static int BuildVertex(const RageTransformBasis *basis,
          * is intentionally not an instance-wide nudge: each face retains
          * the exact ordering the retail emitter authored. */
         if (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN)
-            out->depthBias = (float)(int8_t)(source.material >>
+            out->depthBias += (float)(int8_t)(source.material >>
                 RAGE_RUNTIME_MATERIAL_DEPTH_BIAS_SHIFT);
         source.material &= RAGE_RUNTIME_MATERIAL_INDEX_MASK;
         if (source.material == RAGE_RUNTIME_MATERIAL_INDEX_MASK)

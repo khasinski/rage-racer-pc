@@ -89,6 +89,10 @@ void UpdateBgmSelect(void) {}
 void UpdateBgmSelectFadeIn(void) {}
 void UpdateBgmSelectLoad(void) {}
 void ExitBgmSelect(void) {}
+int PortModernRendererEnabled(void) { return 0; }
+s32 LastRacePauseOption(s16 grandPrixMode) {
+    return grandPrixMode != 0 ? 2 : 3;
+}
 
 static void Usage(const char *program) {
     fprintf(stderr,

@@ -150,7 +150,7 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
     EXPECT_EQ(25, (int)(vertices[0].environmentLight[0] * 100.0f));
     EXPECT_EQ(50, (int)(vertices[0].environmentLight[1] * 100.0f));
     EXPECT_EQ(75, (int)(vertices[0].environmentLight[2] * 100.0f));
-    EXPECT_EQ(0, (int)vertices[0].depthBias);
+    EXPECT_EQ(-16, (int)vertices[0].depthBias);
     EXPECT_EQ(0, (int)vertices[0].shadowReception);
 
     storage[0].lightInfluence = 0.4f;
