@@ -45,7 +45,7 @@ typedef struct RageImportedScan {
 
 static RageImportedMeshEntry s_entries[RAGE_IMPORT_ENTRY_LIMIT];
 static uint32_t s_entryCount;
-int NativeAssetImporterMaterialSlot(const RageRenderMeshInstance *instance,
+int NativeAssetImporterMaterialSlot(const RenderMeshInstance *instance,
     uint16_t tpage, uint16_t clut) {
     uint32_t i,j;
     if (!instance) return -1;
@@ -208,7 +208,7 @@ static int ImportVisitTerrainBank(RageImportedFaceVisitor visitor,
     return 1;
 }
 
-static int ImportVisit(const RageRenderMeshInstance *instance,
+static int ImportVisit(const RenderMeshInstance *instance,
                            RageImportedFaceVisitor visitor, void *context,
                            uint32_t *meshCount) {
     if (instance == NULL || visitor == NULL || meshCount == NULL) return 0;
@@ -253,7 +253,7 @@ static int ImportScanFace(uint32_t mesh, const RageImportedFace *face,
 
 
 static RageImportedMeshEntry *ImportFindEntry(
-    uint32_t assetKey, RageRenderAssetSet assetSet) {
+    uint32_t assetKey, RenderAssetSet assetSet) {
     uint32_t index;
     for (index = 0; index < s_entryCount; index++)
         if (s_entries[index].cached.assetKey == assetKey &&
@@ -268,7 +268,7 @@ static void ImportReleaseMeshBytes(void *context, const void *bytes) {
 }
 
 static RageImportedMeshEntry *ImportBuildMesh(
-    const RageRenderMeshInstance *instance) {
+    const RenderMeshInstance *instance) {
     RageImportedTextureKey *materials;
     RageImportedScan scan;
     RageImportedWrite write;
@@ -579,7 +579,7 @@ void NativeAssetImporterShutdown(void) {
 int NativeAssetImporterReady(void) { return s_ready; }
 
 const RageRuntimeCachedMesh *NativeAssetImporterFind(
-    const RageRenderMeshInstance *instance) {
+    const RenderMeshInstance *instance) {
     RageImportedMeshEntry *entry;
     if (!s_ready || instance == NULL) return NULL;
     entry = ImportFindEntry(instance->assetKey, instance->assetSet);
@@ -602,13 +602,13 @@ const RageRuntimeCachedMesh *NativeAssetImporterFind(
 
 uint32_t NativeAssetImporterMeshCount(void) { return s_entryCount; }
 
-const RageRuntimeCachedMesh *NativeAssetImporterPeek(uint32_t assetKey, RageRenderAssetSet assetSet) {
+const RageRuntimeCachedMesh *NativeAssetImporterPeek(uint32_t assetKey, RenderAssetSet assetSet) {
     RageImportedMeshEntry *entry = s_ready ? ImportFindEntry(assetKey, assetSet) : NULL;
     return entry != NULL ? &entry->cached : NULL;
 }
 
 int NativeAssetImporterLoadMaterial(
-    const RageRenderMeshInstance *instance, uint32_t material,
+    const RenderMeshInstance *instance, uint32_t material,
     uint8_t variant, RageRenderMaterial *definition, ModernAssetImage *image) {
     RageImportedMeshEntry *entry;
     RageImportedTextureKey *texture;

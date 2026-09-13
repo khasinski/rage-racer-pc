@@ -74,29 +74,29 @@ static int ReadFloat(FILE *file, float *value) {
     return 1;
 }
 
-static int WriteVec3(FILE *file, const RageRenderVec3 *value) {
+static int WriteVec3(FILE *file, const Vec3 *value) {
     return WriteFloat(file, value->x) && WriteFloat(file, value->y) &&
            WriteFloat(file, value->z);
 }
 
-static int ReadVec3(FILE *file, RageRenderVec3 *value) {
+static int ReadVec3(FILE *file, Vec3 *value) {
     return ReadFloat(file, &value->x) && ReadFloat(file, &value->y) &&
            ReadFloat(file, &value->z);
 }
 
-static int WriteLight(FILE *file, const RageRenderDirectionalLight *value) {
+static int WriteLight(FILE *file, const RenderDirectionalLight *value) {
     return WriteVec3(file, &value->direction) &&
            WriteVec3(file, &value->ambientColor) &&
            WriteVec3(file, &value->diffuseColor);
 }
 
-static int ReadLight(FILE *file, RageRenderDirectionalLight *value) {
+static int ReadLight(FILE *file, RenderDirectionalLight *value) {
     return ReadVec3(file, &value->direction) &&
            ReadVec3(file, &value->ambientColor) &&
            ReadVec3(file, &value->diffuseColor);
 }
 
-static int WriteTransform(FILE *file, const RageRenderTransform *value) {
+static int WriteTransform(FILE *file, const RenderTransform *value) {
     return WriteVec3(file, &value->position) &&
            WriteVec3(file, &value->rotation) &&
            WriteVec3(file, &value->scale) &&
@@ -107,7 +107,7 @@ static int WriteTransform(FILE *file, const RageRenderTransform *value) {
            WriteU8(file, value->hasOrientation);
 }
 
-static int ReadTransform(FILE *file, RageRenderTransform *value) {
+static int ReadTransform(FILE *file, RenderTransform *value) {
     return ReadVec3(file, &value->position) &&
            ReadVec3(file, &value->rotation) &&
            ReadVec3(file, &value->scale) &&
@@ -118,7 +118,7 @@ static int ReadTransform(FILE *file, RageRenderTransform *value) {
            ReadU8(file, &value->hasOrientation);
 }
 
-static int SkyLayoutValid(const RageRenderCamera *value) {
+static int SkyLayoutValid(const RenderCamera *value) {
     if (value->hasSkyLayout > 1) return 0;
     if (!value->hasSkyLayout) return 1;
     for (unsigned row = 0; row < 2; ++row)
@@ -127,7 +127,7 @@ static int SkyLayoutValid(const RageRenderCamera *value) {
     return 1;
 }
 
-static int WriteCamera(FILE *file, const RageRenderCamera *value) {
+static int WriteCamera(FILE *file, const RenderCamera *value) {
     if (!SkyLayoutValid(value)) return 0;
     return WriteTransform(file, &value->transform) &&
            WriteFloat(file, value->verticalFovDegrees) &&
@@ -149,7 +149,7 @@ static int WriteCamera(FILE *file, const RageRenderCamera *value) {
            WriteBytes(file, value->skyLayout.tiles, sizeof(value->skyLayout.tiles));
 }
 
-static int ReadCamera(FILE *file, RageRenderCamera *value, uint32_t version) {
+static int ReadCamera(FILE *file, RenderCamera *value, uint32_t version) {
     if (!ReadTransform(file, &value->transform) ||
         !ReadFloat(file, &value->verticalFovDegrees) ||
         !ReadFloat(file, &value->nearPlane) ||
@@ -186,7 +186,7 @@ static int ReadCamera(FILE *file, RageRenderCamera *value, uint32_t version) {
 }
 
 static int WriteInstance(FILE *file,
-                         const RageRenderMeshInstance *value) {
+                         const RenderMeshInstance *value) {
     return WriteU32(file, value->entity) &&
            WriteU32(file, value->mesh) &&
            WriteU32(file, (uint32_t)value->assetSet) &&
@@ -207,7 +207,7 @@ static int WriteInstance(FILE *file,
            WriteU32(file, (uint32_t)value->pass);
 }
 
-static int ReadInstance(FILE *file, RageRenderMeshInstance *value,
+static int ReadInstance(FILE *file, RenderMeshInstance *value,
                         uint32_t version) {
     uint32_t assetSet, pass;
     if (!ReadU32(file, &value->entity) ||
@@ -232,13 +232,13 @@ static int ReadInstance(FILE *file, RageRenderMeshInstance *value,
         !ReadU32(file, &pass)) return 0;
     if (assetSet > RAGE_RENDER_ASSET_TRACK_MODEL_BANK_2 ||
         pass > RAGE_RENDER_PASS_MIRROR) return 0;
-    value->assetSet = (RageRenderAssetSet)assetSet;
-    value->pass = (RageRenderPass)pass;
+    value->assetSet = (RenderAssetSet)assetSet;
+    value->pass = (RenderPass)pass;
     return 1;
 }
 
-int RenderWorldSnapshotCopy(RageRenderWorldSnapshot *snapshot, const RageRenderWorld *world) {
-    RageRenderWorldSnapshot copy = {0};
+int RenderWorldSnapshotCopy(RenderWorldSnapshot *snapshot, const RenderWorld *world) {
+    RenderWorldSnapshot copy = {0};
     if (snapshot == NULL || world == NULL || world->instanceCount > world->instanceCapacity ||
         world->instanceCount > RAGE_RENDER_WORLD_SNAPSHOT_MAX_INSTANCES ||
         (world->instanceCount != 0 && world->instances == NULL)) return 0;
@@ -267,7 +267,7 @@ int RenderWorldSnapshotCopy(RageRenderWorldSnapshot *snapshot, const RageRenderW
 }
 
 int RenderWorldSnapshotWrite(const char *path,
-                                 const RageRenderWorld *world) {
+                                 const RenderWorld *world) {
     char *temporaryPath;
     size_t pathLength;
     FILE *file;
@@ -314,7 +314,7 @@ int RenderWorldSnapshotWrite(const char *path,
 }
 
 static int ReadNewSnapshot(const char *path,
-                                RageRenderWorldSnapshot *snapshot) {
+                                RenderWorldSnapshot *snapshot) {
     unsigned char magic[sizeof(RAGE_RENDER_WORLD_SNAPSHOT_MAGIC)];
     uint32_t version, instance, count;
     FILE *file;
@@ -366,15 +366,15 @@ static int ReadNewSnapshot(const char *path,
     return 1;
 }
 
-int RenderWorldSnapshotRead(const char *path, RageRenderWorldSnapshot *snapshot) {
-    RageRenderWorldSnapshot next = {0};
+int RenderWorldSnapshotRead(const char *path, RenderWorldSnapshot *snapshot) {
+    RenderWorldSnapshot next = {0};
     if (!path || !snapshot || !ReadNewSnapshot(path, &next)) return 0;
     RenderWorldSnapshotRelease(snapshot);
     *snapshot = next;
     return 1;
 }
 
-void RenderWorldSnapshotRelease(RageRenderWorldSnapshot *snapshot) {
+void RenderWorldSnapshotRelease(RenderWorldSnapshot *snapshot) {
     if (snapshot == NULL) return;
     free(snapshot->instances);
     memset(snapshot, 0, sizeof(*snapshot));

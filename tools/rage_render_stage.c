@@ -54,7 +54,7 @@ static void Usage(const char *program) {
             program);
 }
 
-static int ParseSet(const char *text, RageRenderAssetSet *out) {
+static int ParseSet(const char *text, RenderAssetSet *out) {
     if (strcmp(text, "model") == 0) *out = RAGE_RENDER_ASSET_MODEL_BANK;
     else if (strcmp(text, "course") == 0) *out = RAGE_RENDER_ASSET_COURSE;
     else if (strcmp(text, "terrain") == 0) *out = RAGE_RENDER_ASSET_TERRAIN;
@@ -67,7 +67,7 @@ static int ParseSet(const char *text, RageRenderAssetSet *out) {
 }
 
 /* SET:KEY[:MESH] */
-static int ParsePose(const char *text, RageRenderPose *pose) {
+static int ParsePose(const char *text, RenderPose *pose) {
     char buffer[64];
     char *cursor;
     char *field;
@@ -96,7 +96,7 @@ static int ParsePose(const char *text, RageRenderPose *pose) {
  * what lets a caller name a thing and see it, rather than having to know
  * where in the world it was built.
  */
-static void RotateEuler(RageRenderVec3 *v, const RageRenderVec3 *degrees) {
+static void RotateEuler(Vec3 *v, const Vec3 *degrees) {
     const float toRadians = 3.14159265358979323846f / 180.0f;
     float x = degrees->x * toRadians;
     float y = degrees->y * toRadians;
@@ -114,14 +114,14 @@ static void RotateEuler(RageRenderVec3 *v, const RageRenderVec3 *degrees) {
     v->x = tx; v->y = ty;
 }
 
-static int StageBounds(const RageRenderWorld *world, RageRenderVec3 *center,
+static int StageBounds(const RenderWorld *world, Vec3 *center,
                        float *radius) {
     uint32_t index;
     int found = 0;
     for (index = 0; index < world->instanceCount; index++) {
-        const RageRenderMeshInstance *instance = &world->instances[index];
+        const RenderMeshInstance *instance = &world->instances[index];
         const RageRuntimeCachedMesh *cached = ModernAssetsFind(instance);
-        RageRenderVec3 point;
+        Vec3 point;
         float local[3];
         float localRadius;
         if (cached == NULL ||
@@ -162,15 +162,15 @@ static int StageBounds(const RageRenderWorld *world, RageRenderVec3 *center,
     return found;
 }
 
-static int ParseTriple(const char *text, RageRenderVec3 *out) {
+static int ParseTriple(const char *text, Vec3 *out) {
     return sscanf(text, "%f,%f,%f", &out->x, &out->y, &out->z) == 3;
 }
 
 int main(int argc, char **argv) {
-    RageRenderStage stage;
-    RageRenderPose poses[MAX_POSES];
-    RageRenderMeshInstance instances[MAX_POSES];
-    RageRenderWorld world;
+    RenderStage stage;
+    RenderPose poses[MAX_POSES];
+    RenderMeshInstance instances[MAX_POSES];
+    RenderWorld world;
     const char *assetsPath = NULL;
     const char *outputPath = "stage.ppm";
     const char *drawPath = NULL;
@@ -223,7 +223,7 @@ int main(int argc, char **argv) {
         } else if (strcmp(option, "--at") == 0 ||
                    strcmp(option, "--rot") == 0 ||
                    strcmp(option, "--variant") == 0) {
-            RageRenderPose *pose;
+            RenderPose *pose;
             if (poseCount == 0 || value == NULL) {
                 fprintf(stderr, "rage-render-stage: %s needs a --pose first\n",
                         option);
@@ -322,7 +322,7 @@ int main(int argc, char **argv) {
     }
     ModernAssetsPrepareWorld(&world);
     {
-        RageRenderVec3 center;
+        Vec3 center;
         float radius = 0.0f;
         if ((!haveTarget || !haveDistance) && StageBounds(&world, &center,
                                                           &radius)) {
@@ -376,7 +376,7 @@ int main(int argc, char **argv) {
         char sweepPath[1024];
         const char *framePath = outputPath;
         if (sweep > 0) {
-            RageRenderPose turned[MAX_POSES];
+            RenderPose turned[MAX_POSES];
             int pose;
             float turn = (float)step * 360.0f / (float)sweep;
             size_t stem = strlen(outputPath);

@@ -17,7 +17,7 @@ static int TrackName(char *out, size_t capacity, uint32_t assetKey) {
     return written >= 0 && (size_t)written < capacity;
 }
 
-static const char *AssetSetMaterialName(RageRenderAssetSet assetSet) {
+static const char *AssetSetMaterialName(RenderAssetSet assetSet) {
     switch (assetSet) {
     case RAGE_RENDER_ASSET_COURSE: return "course";
     case RAGE_RENDER_ASSET_TERRAIN: return "terrain";
@@ -36,7 +36,7 @@ static int AssetIdWasWritten(char *out, size_t capacity, int written) {
 }
 
 int AssetMaterialId(char *out, size_t capacity, uint32_t assetKey,
-                        RageRenderAssetSet assetSet, uint32_t material) {
+                        RenderAssetSet assetSet, uint32_t material) {
     const char *setName;
     char track[16];
     int written;
@@ -62,7 +62,7 @@ int AssetMaterialId(char *out, size_t capacity, uint32_t assetKey,
 
 int AssetMaterialVariantId(char *out, size_t capacity,
                            uint32_t assetKey,
-                           RageRenderAssetSet assetSet,
+                           RenderAssetSet assetSet,
                            uint32_t material, uint8_t variant) {
     char base[128];
     int written;

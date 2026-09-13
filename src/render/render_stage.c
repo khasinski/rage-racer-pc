@@ -7,7 +7,7 @@ static float Radians(float degrees) {
     return degrees * (3.14159265358979323846f / 180.0f);
 }
 
-void RenderStageDefaults(RageRenderStage *stage) {
+void RenderStageDefaults(RenderStage *stage) {
     if (stage == NULL) return;
     memset(stage, 0, sizeof(*stage));
     /* A car is roughly a thousand world units long, so this frames one with
@@ -19,9 +19,9 @@ void RenderStageDefaults(RageRenderStage *stage) {
     stage->farPlane = 200000.0f;
 }
 
-static RageRenderQuaternion MultiplyQuaternion(RageRenderQuaternion a,
-                                              RageRenderQuaternion b) {
-    RageRenderQuaternion out;
+static Quaternion MultiplyQuaternion(Quaternion a,
+                                              Quaternion b) {
+    Quaternion out;
     out.w = a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z;
     out.x = a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y;
     out.y = a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x;
@@ -29,10 +29,10 @@ static RageRenderQuaternion MultiplyQuaternion(RageRenderQuaternion a,
     return out;
 }
 
-static RageRenderQuaternion AxisQuaternion(int axis, float degrees) {
+static Quaternion AxisQuaternion(int axis, float degrees) {
     float half = Radians(degrees) * 0.5f;
     float sine = sinf(half);
-    RageRenderQuaternion out;
+    Quaternion out;
     out.x = axis == 0 ? sine : 0.0f;
     out.y = axis == 1 ? sine : 0.0f;
     out.z = axis == 2 ? sine : 0.0f;
@@ -43,14 +43,14 @@ static RageRenderQuaternion AxisQuaternion(int axis, float degrees) {
 /* The same rotation the Euler triple describes, in the form the game uses.
  * The scene applies its Euler angles X first, then Y, then Z, so the
  * quaternion composes in the opposite order. */
-static RageRenderQuaternion QuaternionFromEuler(const RageRenderVec3 *degrees) {
+static Quaternion QuaternionFromEuler(const Vec3 *degrees) {
     return MultiplyQuaternion(
         AxisQuaternion(2, degrees->z),
         MultiplyQuaternion(AxisQuaternion(1, degrees->y),
                            AxisQuaternion(0, degrees->x)));
 }
 
-void RenderPoseDefaults(RageRenderPose *pose) {
+void RenderPoseDefaults(RenderPose *pose) {
     if (pose == NULL) return;
     memset(pose, 0, sizeof(*pose));
     pose->assetSet = RAGE_RENDER_ASSET_MODEL_BANK;
@@ -63,10 +63,10 @@ void RenderPoseDefaults(RageRenderPose *pose) {
  * pitch and azimuth its yaw. Its position is then one orbit radius back along
  * the direction it faces, which is -Z in camera space.
  */
-void RenderStageCamera(const RageRenderStage *stage,
-                       RageRenderCamera *camera) {
+void RenderStageCamera(const RenderStage *stage,
+                       RenderCamera *camera) {
     float pitch, yaw, cosPitch;
-    RageRenderVec3 forward;
+    Vec3 forward;
     if (camera == NULL) return;
     memset(camera, 0, sizeof(*camera));
     if (stage == NULL) return;
@@ -98,11 +98,11 @@ void RenderStageCamera(const RageRenderStage *stage,
     camera->fogFar = stage->farPlane;
 }
 
-uint32_t RenderStageCompose(RageRenderWorld *world,
-                            RageRenderMeshInstance *storage,
+uint32_t RenderStageCompose(RenderWorld *world,
+                            RenderMeshInstance *storage,
                             uint32_t capacity,
-                            const RageRenderStage *stage,
-                            const RageRenderPose *poses, uint32_t count) {
+                            const RenderStage *stage,
+                            const RenderPose *poses, uint32_t count) {
     uint32_t placed = 0;
     uint32_t index;
     if (world == NULL) return 0;
@@ -134,8 +134,8 @@ uint32_t RenderStageCompose(RageRenderWorld *world,
     world->hasCamera = 1;
 
     for (index = 0; index < count && placed < capacity; index++) {
-        RageRenderMeshInstance *instance = &storage[placed];
-        const RageRenderPose *pose = &poses[index];
+        RenderMeshInstance *instance = &storage[placed];
+        const RenderPose *pose = &poses[index];
         instance->entity = placed + 1;
         instance->mesh = pose->mesh;
         instance->assetSet = pose->assetSet;

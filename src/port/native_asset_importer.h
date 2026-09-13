@@ -19,14 +19,14 @@ int NativeAssetImporterReady(void);
 RageTrackTextureGeneration *NativeAssetImporterRetainTextures(uint64_t revision);
 /* Borrowed until importer shutdown. Meshes are session-resident, not evicted
  * on a track revision: prepared/captured frames may still reference them. */
-int NativeAssetImporterMaterialSlot(const RageRenderMeshInstance *instance,
+int NativeAssetImporterMaterialSlot(const RenderMeshInstance *instance,
     uint16_t tpage, uint16_t clut);
 const RageRuntimeCachedMesh *NativeAssetImporterFind(
-    const RageRenderMeshInstance *instance);
+    const RenderMeshInstance *instance);
 uint32_t NativeAssetImporterMeshCount(void);
-const RageRuntimeCachedMesh *NativeAssetImporterPeek(uint32_t assetKey, RageRenderAssetSet assetSet);
+const RageRuntimeCachedMesh *NativeAssetImporterPeek(uint32_t assetKey, RenderAssetSet assetSet);
 int NativeAssetImporterLoadMaterial(
-    const RageRenderMeshInstance *instance, uint32_t material,
+    const RenderMeshInstance *instance, uint32_t material,
     uint8_t variant, RageRenderMaterial *definition, ModernAssetImage *image);
 int NativeAssetImporterLoadSky(uint32_t assetKey,
     const RageSkyPanoramaLayout *layout, ModernAssetImage *image);

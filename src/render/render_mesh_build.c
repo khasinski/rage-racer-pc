@@ -12,12 +12,12 @@ static float Radians(float degrees) {
     return degrees * (3.14159265358979323846f / 180.0f);
 }
 
-typedef RageRenderInstanceTransform RageTransformBasis;
+typedef RenderInstanceTransform RageTransformBasis;
 
-static RageRenderVec3 TransformPosition(const RageTransformBasis *basis,
+static Vec3 TransformPosition(const RageTransformBasis *basis,
                                              const RageRuntimeVertex *vertex) {
     return RenderTransformInstancePoint(basis,
-        (RageRenderVec3){vertex->position[0], vertex->position[1], vertex->position[2]});
+        (Vec3){vertex->position[0], vertex->position[1], vertex->position[2]});
 }
 
 static float SnapTerrainCellBoundary(float value) {
@@ -29,16 +29,16 @@ static float SnapTerrainCellBoundary(float value) {
     return fabsf(value - boundary) <= 0.5f ? boundary : value;
 }
 
-static RageRenderVec3 TransformNormal(const RageTransformBasis *basis,
+static Vec3 TransformNormal(const RageTransformBasis *basis,
                                           const RageRuntimeVertex *vertex) {
-    RageRenderVec3 out = {vertex->normal[0], vertex->normal[1], vertex->normal[2]};
+    Vec3 out = {vertex->normal[0], vertex->normal[1], vertex->normal[2]};
     return RenderRotateInstanceVector(basis, out);
 }
 
-static RageRenderVec3 TransformPoint(const RageTransformBasis *basis,
+static Vec3 TransformPoint(const RageTransformBasis *basis,
                                          const float position[3]) {
     return RenderTransformInstancePoint(basis,
-        (RageRenderVec3){position[0], position[1], position[2]});
+        (Vec3){position[0], position[1], position[2]});
 }
 
 static float Vec3Length(float x, float y, float z) {
@@ -51,9 +51,9 @@ static float Vec3Length(float x, float y, float z) {
 static void PrepareTriangleGeometry(const RageNativeDrawVertex triangle[3],
                                     RageTriangleGeometry *geometry) {
     if (geometry->prepared) return;
-    RageRenderVec3 positions[3];
+    Vec3 positions[3];
     for (unsigned corner = 0; corner < 3; ++corner) {
-        positions[corner] = (RageRenderVec3){triangle[corner].position[0],
+        positions[corner] = (Vec3){triangle[corner].position[0],
             triangle[corner].position[1], triangle[corner].position[2]};
     }
     *geometry = RenderTriangleGeometry(positions);
@@ -81,9 +81,9 @@ static void ApplyFlatTriangleNormal(RageNativeDrawVertex triangle[3],
  * modes or ordering-table hints. */
 static int TriangleIsRoadDecal(const RageNativeDrawVertex triangle[3],
                                RageTriangleGeometry *geometry) {
-    RageRenderVec3 positions[3];
+    Vec3 positions[3];
     for (unsigned corner = 0; corner < 3; ++corner) {
-        positions[corner] = (RageRenderVec3){triangle[corner].position[0],
+        positions[corner] = (Vec3){triangle[corner].position[0],
             triangle[corner].position[1], triangle[corner].position[2]};
     }
     return RenderTriangleIsRoadDecal(positions, geometry);
@@ -106,7 +106,7 @@ static void LiftRoadDecal(RageNativeDrawVertex triangle[3],
 }
 
 static void LiftOverlayTowardCamera(
-    RageNativeDrawVertex triangle[3], RageRenderVec3 camera,
+    RageNativeDrawVertex triangle[3], Vec3 camera,
     RageTriangleGeometry *geometry) {
     PrepareTriangleGeometry(triangle, geometry);
     float nx = geometry->nx, ny = geometry->ny, nz = geometry->nz;
@@ -146,14 +146,14 @@ static void LiftCarDecal(RageNativeDrawVertex triangle[3]) {
     }
 }
 
-static int TriangleIsBackFacing(const RageRenderWorld *world,
-                                    const RageRenderViewTransform *viewTransform,
+static int TriangleIsBackFacing(const RenderWorld *world,
+                                    const RenderViewTransform *viewTransform,
                                     const RageNativeDrawVertex triangle[3]) {
-    RageRenderVec3 view[3];
+    Vec3 view[3];
     float screenX[3], screenY[3];
     int corner;
     for (corner = 0; corner < 3; corner++) {
-        RageRenderVec3 position = {triangle[corner].position[0],
+        Vec3 position = {triangle[corner].position[0],
                                    triangle[corner].position[1],
                                    triangle[corner].position[2]};
         float depth;
@@ -172,17 +172,17 @@ static int TriangleIsBackFacing(const RageRenderWorld *world,
 }
 
 static uint32_t ClipViewTriangleNear(
-    const RageRenderVec3 input[3], RageRenderVec3 output[4], float nearPlane) {
-    RageRenderVec3 previous = input[2];
+    const Vec3 input[3], Vec3 output[4], float nearPlane) {
+    Vec3 previous = input[2];
     int previousInside = -previous.z >= nearPlane;
     uint32_t inputIndex, count = 0;
     for (inputIndex = 0; inputIndex < 3; inputIndex++) {
-        RageRenderVec3 current = input[inputIndex];
+        Vec3 current = input[inputIndex];
         int currentInside = -current.z >= nearPlane;
         if (currentInside != previousInside) {
             float boundaryZ = -nearPlane;
             float t = (boundaryZ - previous.z) / (current.z - previous.z);
-            RageRenderVec3 clipped = {
+            Vec3 clipped = {
                 previous.x + (current.x - previous.x) * t,
                 previous.y + (current.y - previous.y) * t,
                 boundaryZ,
@@ -197,9 +197,9 @@ static uint32_t ClipViewTriangleNear(
 }
 
 static int TerrainTriangleFacesCamera(
-    const RageRenderWorld *world, const RageRenderViewTransform *viewTransform,
-    const RageRenderVec3 triangle[3]) {
-    RageRenderVec3 input[3], clipped[4];
+    const RenderWorld *world, const RenderViewTransform *viewTransform,
+    const Vec3 triangle[3]) {
+    Vec3 input[3], clipped[4];
     uint32_t corner, count, piece;
     for (corner = 0; corner < 3; corner++) {
         RenderWorldToViewPrepared(viewTransform, &triangle[corner], &input[corner]);
@@ -207,7 +207,7 @@ static int TerrainTriangleFacesCamera(
     count = ClipViewTriangleNear(
         input, clipped, world->camera.nearPlane);
     for (piece = 1; piece + 1 < count; piece++) {
-        RageRenderVec3 view[3] = {clipped[0], clipped[piece],
+        Vec3 view[3] = {clipped[0], clipped[piece],
                                   clipped[piece + 1]};
         float screenX[3], screenY[3], area;
         for (corner = 0; corner < 3; corner++) {
@@ -227,19 +227,19 @@ static int TerrainTriangleFacesCamera(
 typedef struct RagePreparedTerrainQuad {
     uint32_t indices[6];
     RageRuntimeVertex source[4];
-    RageRenderVec3 positions[6];
+    Vec3 positions[6];
     int indicesValid, positionsValid;
 } RagePreparedTerrainQuad;
 
 static int TerrainQuadIsHidden(
-    const RageRenderWorld *world, const RageTransformBasis *basis,
-    const RageRenderViewTransform *viewTransform,
+    const RenderWorld *world, const RageTransformBasis *basis,
+    const RenderViewTransform *viewTransform,
     const RageRuntimeMesh *mesh, uint32_t first,
     RagePreparedTerrainQuad *quad) {
     quad->indicesValid = quad->positionsValid = 0;
     /* Visibility has no UV, normal, fog or lighting dependency. Keep its
      * temporary geometry independent of the expanded shading payload. */
-    RageRenderVec3 triangles[2][3];
+    Vec3 triangles[2][3];
     static const uint8_t uniqueCorners[4] = {0, 1, 2, 5};
     uint32_t corner;
     for (corner = 0; corner < 6; corner++)
@@ -250,7 +250,7 @@ static int TerrainQuadIsHidden(
      * infer quad culling for an independent triangle pair from a mod. */
     if (quad->indices[3] != quad->indices[2] || quad->indices[4] != quad->indices[1]) return 0;
     for (corner = 0; corner < 4; corner++) {
-        RageRenderVec3 position;
+        Vec3 position;
         uint32_t target = uniqueCorners[corner];
         if (!RuntimeMeshVertex(mesh, quad->indices[target], &quad->source[corner]))
             return 0;
@@ -286,7 +286,7 @@ typedef struct RageInstanceFrustum {
 } RageInstanceFrustum;
 
 static RageInstanceFrustum PrepareInstanceFrustum(
-    const RageRenderWorld *world, float aspect) {
+    const RenderWorld *world, float aspect) {
     RageInstanceFrustum result;
     float tanY = tanf(Radians(world->camera.verticalFovDegrees) * 0.5f);
     float tanX = tanY * aspect;
@@ -298,15 +298,15 @@ static RageInstanceFrustum PrepareInstanceFrustum(
     return result;
 }
 
-static int InstanceOutsideFrustum(const RageRenderWorld *world,
-                                      const RageRenderViewTransform *viewTransform,
+static int InstanceOutsideFrustum(const RenderWorld *world,
+                                      const RenderViewTransform *viewTransform,
                                       const RageInstanceFrustum *frustum,
                                       const RageTransformBasis *basis,
                                       const RageRuntimeMesh *mesh,
                                       uint32_t meshIndex) {
     float center[3], radius, maxScale, depth;
     float horizontalRadius, verticalRadius;
-    RageRenderVec3 worldCenter, view;
+    Vec3 worldCenter, view;
     if (!RuntimeMeshBounds(mesh, meshIndex, center, &radius)) return 0;
     worldCenter = TransformPoint(basis, center);
     RenderWorldToViewPrepared(viewTransform, &worldCenter, &view);
@@ -333,7 +333,7 @@ static int InstanceOutsideFrustum(const RageRenderWorld *world,
 /* These values belong to an instance, not its immutable source vertices or
  * camera. Resolve compatibility defaults once, before visiting the mesh. */
 static RageNativeInstanceState PrepareInstanceState(
-    const RageRenderMeshInstance *instance) {
+    const RenderMeshInstance *instance) {
     RageNativeInstanceState state = {0};
     if ((instance->flags & RAGE_RENDER_INSTANCE_ENABLE_LIGHTING) != 0) {
         state.lighting = instance->lightInfluence;
@@ -359,25 +359,25 @@ static RageNativeInstanceState PrepareInstanceState(
 }
 
 static int BuildVertex(const RageTransformBasis *basis,
-                           const RageRenderViewTransform *viewTransform,
-                           const RageRenderWorld *world, int fogged, int gpuFog, int gpuUV,
-                           const RageRenderMeshInstance *instance,
+                           const RenderViewTransform *viewTransform,
+                           const RenderWorld *world, int fogged, int gpuFog, int gpuUV,
+                           const RenderMeshInstance *instance,
                            const RageNativeInstanceState *instanceState,
                            const RageRuntimeMesh *mesh, uint32_t index,
                            const RageRuntimeVertex *preparedSource,
-                           const RageRenderVec3 *preparedPosition,
+                           const Vec3 *preparedPosition,
                            float aspect, int localSource, RageNativeDrawVertex *out,
                            uint32_t *material, uint32_t *materialFlags,
                            uint8_t *depthDecal) {
     RageRuntimeVertex source;
-    RageRenderVec3 normal;
-    RageRenderVec3 worldPosition;
+    Vec3 normal;
+    Vec3 worldPosition;
     if (preparedSource) source = *preparedSource;
     else if (!RuntimeMeshVertex(mesh, index, &source)) return 0;
     *materialFlags = source.material &
         (RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY |
          RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT);
-    worldPosition = localSource ? (RageRenderVec3){source.position[0], source.position[1], source.position[2]} :
+    worldPosition = localSource ? (Vec3){source.position[0], source.position[1], source.position[2]} :
         preparedPosition != NULL ? *preparedPosition
                                              : TransformPosition(basis, &source);
     if (preparedPosition == NULL && instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
@@ -395,7 +395,7 @@ static int BuildVertex(const RageTransformBasis *basis,
         source.material &= ~RAGE_RUNTIME_MATERIAL_SCROLL_U;
     }
     memcpy(out->color, source.color, sizeof(out->color));
-    normal = localSource ? (RageRenderVec3){source.normal[0], source.normal[1], source.normal[2]} :
+    normal = localSource ? (Vec3){source.normal[0], source.normal[1], source.normal[2]} :
         TransformNormal(basis, &source);
     out->normal[0] = normal.x;
     out->normal[1] = normal.y;
@@ -452,7 +452,7 @@ typedef struct RageNativeMeshTemplate {
     struct RageNativeMeshTemplate *next;
     const RageRuntimeMesh *source;
     uint32_t mesh;
-    RageRenderAssetSet assetSet;
+    RenderAssetSet assetSet;
     RageNativeGpuVertex *vertices;
     RageNativeDrawSpan *spans;
     uint32_t vertexCount, spanCount;
@@ -465,13 +465,13 @@ typedef struct RageNativeMeshTemplateState {
 } RageNativeMeshTemplateState;
 
 static const RageRuntimeMesh *TemplateMeshLookup(void *context,
-    const RageRenderMeshInstance *instance) {
+    const RenderMeshInstance *instance) {
     (void)instance;
     return context;
 }
 
 static int SpanMatches(const RageNativeDrawSpan *span,
-    const RageRenderMeshInstance *instance, const RageNativeInstanceState *state,
+    const RenderMeshInstance *instance, const RageNativeInstanceState *state,
     uint32_t material, uint32_t flags, uint8_t decal, uint8_t variant) {
     return span->material == material && span->materialFlags == flags &&
         span->depthDecal == decal && span->assetKey == instance->assetKey &&
@@ -490,10 +490,10 @@ static void TransformTemplateVertices(const RageNativeGpuVertex *source, uint32_
     for (uint32_t v = 0; v < count; ++v) {
         const RageNativeGpuVertex *input = &source[v];
         RageNativeGpuVertex *output = &vertices[v];
-        RageRenderVec3 position = RenderTransformInstancePoint(basis,
-            (RageRenderVec3){input->position[0], input->position[1], input->position[2]});
-        RageRenderVec3 normal = RenderRotateInstanceVector(basis,
-            (RageRenderVec3){input->normal[0], input->normal[1], input->normal[2]});
+        Vec3 position = RenderTransformInstancePoint(basis,
+            (Vec3){input->position[0], input->position[1], input->position[2]});
+        Vec3 normal = RenderRotateInstanceVector(basis,
+            (Vec3){input->normal[0], input->normal[1], input->normal[2]});
         *output = *input;
         output->fog[0] = position.x; output->fog[1] = position.y; output->fog[2] = position.z;
         output->fog[3] = (flags & RAGE_RENDER_INSTANCE_ENABLE_FOG) ? 1.0f : 0.0f;
@@ -522,7 +522,7 @@ int RenderExpandNativeLocalDraw(const RageNativeDrawSpan *span,
 }
 
 static int AppendMeshTemplate(const RageNativeMeshTemplateView *source, int localDraws,
-    const RageRenderMeshInstance *instance, const RageTransformBasis *basis,
+    const RenderMeshInstance *instance, const RageTransformBasis *basis,
     const RageNativeInstanceState *state, RageNativeGpuVertex *vertices, uint32_t capacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *vertexCount, uint32_t *spanCount) {
     for (uint32_t s = 0; s < source->spanCount; ++s) {
@@ -565,7 +565,7 @@ static int AppendMeshTemplate(const RageNativeMeshTemplateView *source, int loca
 
 static uint32_t RenderBuildNativeDrawsFiltered(
     RageNativeMeshTemplateCache *cache, int localSource, int localDraws,
-    const RageRenderWorld *world, int passFilter, float aspect, int gpuFog,
+    const RenderWorld *world, int passFilter, float aspect, int gpuFog,
     RageRenderMeshLookup lookup, void *context,
     RageNativeDrawVertex *vertices, RageNativeGpuVertex *compactVertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
@@ -574,7 +574,7 @@ static uint32_t RenderBuildNativeDrawsFiltered(
      * scroll state of different instances sharing the same source mesh.
      * Cache the base vertex BEFORE per-triangle normals/displacement. */
     RagePreparedVertexCacheEntry vertexCache[256] = {0};
-    RageRenderViewTransform viewTransform;
+    RenderViewTransform viewTransform;
     RageInstanceFrustum frustum;
     if (spanCount != NULL) *spanCount = 0;
     if (world == NULL || lookup == NULL || (vertices == NULL && compactVertices == NULL) || spans == NULL ||
@@ -584,7 +584,7 @@ static uint32_t RenderBuildNativeDrawsFiltered(
     viewTransform = RenderPrepareView(&world->camera);
     frustum = PrepareInstanceFrustum(world, aspect);
     for (instanceIndex = 0; instanceIndex < world->instanceCount; instanceIndex++) {
-        const RageRenderMeshInstance *instance = &world->instances[instanceIndex];
+        const RenderMeshInstance *instance = &world->instances[instanceIndex];
         const RageRuntimeMesh *mesh;
         RageTransformBasis basis;
         RageNativeInstanceState instanceState;
@@ -592,7 +592,7 @@ static uint32_t RenderBuildNativeDrawsFiltered(
         int terrainQuadHidden = 0;
         RagePreparedTerrainQuad terrainQuad;
         terrainQuad.indicesValid = terrainQuad.positionsValid = 0;
-        if (passFilter >= 0 && instance->pass != (RageRenderPass)passFilter)
+        if (passFilter >= 0 && instance->pass != (RenderPass)passFilter)
             continue;
         /* Excluded passes must not consult (or trigger work in) the asset
          * provider. Both cameras may consume only the main semantic scene. */
@@ -849,7 +849,7 @@ uint32_t RenderShareNativeViewVertices(RageNativeGpuVertex *vertices,
 
 const RageNativeMeshTemplateView *RenderNativeMeshTemplateAcquire(
     RageNativeMeshTemplateCache *cache, const RageRuntimeMesh *mesh,
-    RageRenderAssetSet assetSet, uint32_t submesh) {
+    RenderAssetSet assetSet, uint32_t submesh) {
     enum { MAX_BYTES = 32 * 1024 * 1024 };
     uint32_t first, count;
     if (!cache || !mesh ||
@@ -874,12 +874,12 @@ const RageNativeMeshTemplateView *RenderNativeMeshTemplateAcquire(
         free(entry->vertices); free(entry->spans); free(entry);
         return NULL;
     }
-    RageRenderMeshInstance local = {0};
-    RageRenderWorld world = {0};
+    RenderMeshInstance local = {0};
+    RenderWorld world = {0};
     local.assetSet = assetSet;
     local.mesh = submesh;
     local.pass = RAGE_RENDER_PASS_MAIN;
-    local.transform.scale = (RageRenderVec3){1, 1, 1};
+    local.transform.scale = (Vec3){1, 1, 1};
     world.instances = &local;
     world.instanceCapacity = world.instanceCount = 1;
     world.camera.verticalFovDegrees = 90;
@@ -899,7 +899,7 @@ const RageNativeMeshTemplateView *RenderNativeMeshTemplateAcquire(
     return &entry->view;
 }
 
-uint32_t RenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
+uint32_t RenderBuildNativeDraws(const RenderWorld *world, float aspect,
                                     RageRenderMeshLookup lookup, void *context,
                                     RageNativeDrawVertex *vertices,
                                     uint32_t vertexCapacity,
@@ -912,7 +912,7 @@ uint32_t RenderBuildNativeDraws(const RageRenderWorld *world, float aspect,
 }
 
 uint32_t RenderBuildNativePassDraws(
-    const RageRenderWorld *world, RageRenderPass pass, float aspect,
+    const RenderWorld *world, RenderPass pass, float aspect,
     RageRenderMeshLookup lookup, void *context,
     RageNativeDrawVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
@@ -922,7 +922,7 @@ uint32_t RenderBuildNativePassDraws(
 }
 
 uint32_t RenderBuildNativeGpuPassDraws(
-    const RageRenderWorld *world, RageRenderPass pass, float aspect,
+    const RenderWorld *world, RenderPass pass, float aspect,
     RageRenderMeshLookup lookup, void *context,
     RageNativeDrawVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
@@ -932,7 +932,7 @@ uint32_t RenderBuildNativeGpuPassDraws(
 }
 
 uint32_t RenderBuildNativeCompactPassDraws(
-    const RageRenderWorld *world, RageRenderPass pass, float aspect, int cpuFog,
+    const RenderWorld *world, RenderPass pass, float aspect, int cpuFog,
     RageRenderMeshLookup lookup, void *context,
     RageNativeGpuVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
@@ -942,7 +942,7 @@ uint32_t RenderBuildNativeCompactPassDraws(
 
 uint32_t RenderBuildNativeCachedCompactPassDraws(
     RageNativeMeshTemplateCache *cache,
-    const RageRenderWorld *world, RageRenderPass pass, float aspect, int cpuFog,
+    const RenderWorld *world, RenderPass pass, float aspect, int cpuFog,
     RageRenderMeshLookup lookup, void *context,
     RageNativeGpuVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
@@ -952,7 +952,7 @@ uint32_t RenderBuildNativeCachedCompactPassDraws(
 
 uint32_t RenderBuildNativeLocalCompactPassDraws(
     RageNativeMeshTemplateCache *cache,
-    const RageRenderWorld *world, RageRenderPass pass, float aspect, int cpuFog, int expandWorldVertices,
+    const RenderWorld *world, RenderPass pass, float aspect, int cpuFog, int expandWorldVertices,
     RageRenderMeshLookup lookup, void *context,
     RageNativeGpuVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {

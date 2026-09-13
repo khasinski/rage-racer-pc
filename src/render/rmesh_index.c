@@ -89,7 +89,7 @@ int EnvironmentIndexFind(const char *text, size_t size, uint32_t assetKey,
     return 0;
 }
 
-static int AssetSetName(RageRenderAssetSet set, const char **name,
+static int AssetSetName(RenderAssetSet set, const char **name,
                             size_t *length) {
     switch (set) {
     case RAGE_RENDER_ASSET_MODEL_BANK: *name = "model"; *length = 5; return 1;
@@ -159,7 +159,7 @@ fail:
 }
 
 int RuntimeIndexValidate(const char *text, size_t size, size_t *errorLine) {
-    static const RageRenderAssetSet sets[] = {
+    static const RenderAssetSet sets[] = {
         RAGE_RENDER_ASSET_MODEL_BANK, RAGE_RENDER_ASSET_COURSE,
         RAGE_RENDER_ASSET_TERRAIN, RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1,
         RAGE_RENDER_ASSET_TRACK_MODEL_BANK_2
@@ -231,7 +231,7 @@ done:
 }
 
 int RuntimeIndexFind(const char *text, size_t size, uint32_t assetKey,
-                         RageRenderAssetSet assetSet,
+                         RenderAssetSet assetSet,
                          RageRuntimeAssetLocation *out) {
     const char *setName;
     size_t setLength;

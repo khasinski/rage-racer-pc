@@ -4,7 +4,7 @@
 /*
  * Composing a scene from nothing, for looking at one thing on its own.
  *
- * The renderer takes a RageRenderWorld, and until now the only way to get one
+ * The renderer takes a RenderWorld, and until now the only way to get one
  * was to capture a frame out of a running race. That makes a whole class of
  * question awkward to ask: how does this car look from behind, how do two
  * track pieces meet, does anything come apart at an angle the captured frames
@@ -21,8 +21,8 @@
 
 /* Where the camera stands, in orbit around what it is looking at. Azimuth
  * turns around the subject and elevation climbs above it, both in degrees. */
-typedef struct RageRenderStage {
-    RageRenderVec3 target;
+typedef struct RenderStage {
+    Vec3 target;
     float distance;
     float azimuthDegrees;
     float elevationDegrees;
@@ -30,16 +30,16 @@ typedef struct RageRenderStage {
     float verticalFovDegrees;
     float nearPlane;
     float farPlane;
-} RageRenderStage;
+} RenderStage;
 
 /* One asset placed in the world. */
-typedef struct RageRenderPose {
-    RageRenderAssetSet assetSet;
+typedef struct RenderPose {
+    RenderAssetSet assetSet;
     uint32_t assetKey;
     uint32_t mesh;
     uint8_t materialVariant;
-    RageRenderVec3 position;
-    RageRenderVec3 rotationDegrees;
+    Vec3 position;
+    Vec3 rotationDegrees;
     uint32_t flags;
     float lightInfluence;
     /* The scene carries a rotation either as the Euler triple above or as a
@@ -49,25 +49,25 @@ typedef struct RageRenderPose {
      * branch the cars do not take. Set this to pose through the quaternion
      * the same angles describe. */
     uint8_t useQuaternion;
-} RageRenderPose;
+} RenderPose;
 
 /* A stage that frames a car-sized subject, and a pose at the origin. */
-void RenderStageDefaults(RageRenderStage *stage);
-void RenderPoseDefaults(RageRenderPose *pose);
+void RenderStageDefaults(RenderStage *stage);
+void RenderPoseDefaults(RenderPose *pose);
 
 /* Place the camera on its orbit, looking at the target. */
-void RenderStageCamera(const RageRenderStage *stage,
-                       RageRenderCamera *camera);
+void RenderStageCamera(const RenderStage *stage,
+                       RenderCamera *camera);
 
 /*
  * Fill `world` with the given poses seen from the given stage, using
  * `storage` for the instances. Returns the number placed, which is fewer than
  * `count` only when `capacity` runs out.
  */
-uint32_t RenderStageCompose(RageRenderWorld *world,
-                            RageRenderMeshInstance *storage,
+uint32_t RenderStageCompose(RenderWorld *world,
+                            RenderMeshInstance *storage,
                             uint32_t capacity,
-                            const RageRenderStage *stage,
-                            const RageRenderPose *poses, uint32_t count);
+                            const RenderStage *stage,
+                            const RenderPose *poses, uint32_t count);
 
 #endif

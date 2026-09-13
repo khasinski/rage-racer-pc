@@ -7,7 +7,7 @@
 size_t PortAssetRoomAt(const void *at) { (void)at; return 0; }
 
 static int TestMaterialRetry(const char *root, const char *sidecar,
-                             const RageRenderMeshInstance *instance) {
+                             const RenderMeshInstance *instance) {
     char path[4096], pixelsPath[4096];
     static const char material[] = "# rage-rmat v4\n0 texture.rgba\n";
     static unsigned char pixels[256 * 256 * 4];
@@ -58,7 +58,7 @@ static void Write32(unsigned char *p, unsigned value) {
 }
 
 static int TestMaterialRetirement(const char *root,
-                                   const RageRenderMeshInstance *instance) {
+                                   const RenderMeshInstance *instance) {
     char sidecar[4096], texture[4096];
     static unsigned char pixels[256 * 256 * 4];
     static const char updated[] = "# rage-rmat v6\n"
@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
     char meshPath[4096];
     char secondRoot[4096], secondIndex[4096], secondMesh[4096];
     unsigned char meshBytes[96] = {0};
-    RageRenderMeshInstance instance = {0};
+    RenderMeshInstance instance = {0};
     const char index[] = "# rage-rmesh-index v2\n123 model mesh.rmesh m\n";
     char setting[4096] = "modern.assets=disc";
     char *configArgs[] = {"asset-retry", "--set", setting};

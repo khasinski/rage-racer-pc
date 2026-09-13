@@ -14,29 +14,29 @@ static int same(float a, float b) { return a == b || (isnan(a) && isnan(b)); }
 int main(void) {
     unsigned count = 0;
     for (int iteration = 0; iteration < 4000; ++iteration) {
-        RageRenderCamera camera = {0};
-        camera.transform.position = (RageRenderVec3){
+        RenderCamera camera = {0};
+        camera.transform.position = (Vec3){
             random_float(), random_float(), random_float()};
-        camera.transform.rotation = (RageRenderVec3){
+        camera.transform.rotation = (Vec3){
             random_float(), random_float(), random_float()};
         camera.transform.hasOrientation = iteration % 2;
-        camera.transform.orientation = (RageRenderQuaternion){
+        camera.transform.orientation = (Quaternion){
             random_float(), random_float(), random_float(), random_float()};
         if (iteration % 11 == 0)
-            camera.transform.orientation = (RageRenderQuaternion){0};
+            camera.transform.orientation = (Quaternion){0};
         if (iteration % 13 == 0) camera.transform.orientation.x = NAN;
         if (iteration % 17 == 0) camera.transform.orientation.w = INFINITY;
         if (iteration % 19 == 0)
-            camera.transform.orientation = (RageRenderQuaternion){1e-30f, 0, 0, 1e-30f};
+            camera.transform.orientation = (Quaternion){1e-30f, 0, 0, 1e-30f};
         if (iteration % 23 == 0) camera.transform.rotation.y = NAN;
         camera.fogNear = 1.0f + fabsf(random_float());
         camera.fogFar = camera.fogNear + 1.0f + fabsf(random_float());
         if (iteration % 7 == 0) camera.fogFar = camera.fogNear;
         if (iteration % 29 == 0) camera.fogNear = NAN;
-        RageRenderViewTransform prepared = RenderPrepareView(&camera);
+        RenderViewTransform prepared = RenderPrepareView(&camera);
         for (int point = 0; point < 64; ++point) {
-            RageRenderVec3 world = {random_float(), random_float(), random_float()};
-            RageRenderVec3 expected, actual;
+            Vec3 world = {random_float(), random_float(), random_float()};
+            Vec3 expected, actual;
             if (point == 0) world.x = NAN;
             if (point == 1) world.z = INFINITY;
             RenderWorldToView(&camera, &world, &expected);
@@ -49,15 +49,15 @@ int main(void) {
             ++count;
         }
         /* Prepared state must survive mutation/reuse of a source world. */
-        RageRenderCamera saved = camera;
+        RenderCamera saved = camera;
         camera.transform.position.x += 500;
-        RageRenderVec3 world = {12, 25, -45}, a, b;
+        Vec3 world = {12, 25, -45}, a, b;
         RenderWorldToView(&saved, &world, &a);
         RenderWorldToViewPrepared(&prepared, &world, &b);
         CHECK(same(a.x, b.x) && same(a.y, b.y) && same(a.z, b.z));
     }
-    RageRenderViewTransform absent = RenderPrepareView(NULL);
-    RageRenderVec3 world = {1, 2, 3}, view = world;
+    RenderViewTransform absent = RenderPrepareView(NULL);
+    Vec3 world = {1, 2, 3}, view = world;
     RenderWorldToViewPrepared(&absent, &world, &view);
     CHECK(view.x == 0 && view.y == 0 && view.z == 0);
     CHECK(RenderFogFactorPrepared(&absent, &world) == 0);

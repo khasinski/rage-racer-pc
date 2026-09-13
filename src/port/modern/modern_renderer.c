@@ -53,7 +53,7 @@ static int s_enabled;
 static int s_classicEnhancements = 1;
 static float s_classicFraction;
 static int s_classicPacketIndex = -1;
-static const RageRenderWorld *s_classicSkyWorld;
+static const RenderWorld *s_classicSkyWorld;
 static int s_presentOffscreen;
 static int s_initialized;
 static int s_shutdownRegistered;
@@ -94,9 +94,9 @@ static PsyzOverlayInitCB_SDL3GPU s_prev_overlay_init;
 static PsyzPresentSourceCB_SDL3GPU s_prev_present_source;
 static RagePortConfig s_config;
 
-static const RageRenderWorld *ModernSkyOnlyWorld(
-    const RageRenderWorld *world) {
-    static RageRenderWorld skyOnly;
+static const RenderWorld *ModernSkyOnlyWorld(
+    const RenderWorld *world) {
+    static RenderWorld skyOnly;
     if (!s_skyOnlyDiagnostic || world == NULL) return world;
     skyOnly = *world;
     skyOnly.instanceCount = 0;
@@ -132,7 +132,7 @@ static uint32_t s_ringFrame[MODERN_RING];
 static float s_ringT[MODERN_RING];
 static int s_ringNext;
 static RageTrackTextureGeneration *s_ringGenerations[MODERN_RING];
-static RageRenderWorldSnapshot s_ringWorlds[MODERN_RING];
+static RenderWorldSnapshot s_ringWorlds[MODERN_RING];
 static RageSceneSnapshot *s_ringScene; /* MODERN_RING copies */
 static int s_ringEnabled;
 static int s_resourcesReady;
@@ -539,8 +539,8 @@ enum {
     MODERN_LAYER_HUD,
     MODERN_LAYER_MIRROR_FOREGROUND,
 };
-static const RageRenderCamera *s_skyPacketCamera;
-static const RageRenderCamera *s_skyPresentationCamera;
+static const RenderCamera *s_skyPacketCamera;
+static const RenderCamera *s_skyPresentationCamera;
 
 /* ---- arbitrary-FPS presentation timing ---- */
 
@@ -810,7 +810,7 @@ static void ClassicBuildFrame(const RageSceneSnapshot *snapshot) {
      * camera cut deliberately snaps that history to the new shot. Reusing the
      * snapped camera here interpreted old packets in the new grid and left a
      * stale/misaligned sky for one presentation. */
-    const RageRenderWorld *previous = GameRenderWorldPrevious();
+    const RenderWorld *previous = GameRenderWorldPrevious();
     if (s_classicSkyWorld) {
         s_skyPresentationCamera = &s_classicSkyWorld->camera;
         if (previous &&
@@ -862,8 +862,8 @@ static void ModernBuildOverlayFrame(const RageSceneSnapshot *snapshot) {
     s_skyPacketCamera = NULL;
     s_skyPresentationCamera = NULL;
     if (s_config.modernFps != RAGE_MODERN_FPS_LOGIC) {
-        const RageRenderWorld *previous = GameRenderWorldPrevious();
-        const RageRenderWorld *presentation = ModernNativeGpuPreparedWorld();
+        const RenderWorld *previous = GameRenderWorldPrevious();
+        const RenderWorld *presentation = ModernNativeGpuPreparedWorld();
         if (presentation != NULL) {
             s_skyPresentationCamera = &presentation->camera;
             if (previous != NULL &&
@@ -1262,7 +1262,7 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
             ? finished - profilePrevious : finished - profileStart;
         profilePrevious = finished;
         if (profileTrace) {
-            const RageRenderWorld *world = ModernNativeGpuPreparedWorld();
+            const RenderWorld *world = ModernNativeGpuPreparedWorld();
             fprintf(stderr,
                     "modern-frame frame=%u scene=%d point=%d interval_ms=%.3f "
                     "prepare_ms=%.3f build_ms=%.3f submit_ms=%.3f instances=%u end_ns=%llu\n",
@@ -1409,8 +1409,8 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
         }
         if (restarted < restartCount && s_haveRenderedFrame &&
             CaptureCurrent()->frameCounter >= restartFrame) {
-            const RageRenderWorld *world = ModernNativeGpuPreparedWorld();
-            RageRenderMeshInstance probe = {0};
+            const RenderWorld *world = ModernNativeGpuPreparedWorld();
+            RenderMeshInstance probe = {0};
             const RageRuntimeMesh *before = NULL;
             if (world != NULL && world->instanceCount != 0) {
                 probe = world->instances[0];
@@ -1553,7 +1553,7 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
         ModernPresentationClockPresented(&s_presentationClock, now, interval);
         if (s_haveRenderedFrame) ModernMaybeDump(snapshot);
     } else if (snapshot->frameCounter != s_lastRenderedFrame) {
-        const RageRenderWorld *world = GameRenderWorldPrevious();
+        const RenderWorld *world = GameRenderWorldPrevious();
         if (world == NULL) world = GameRenderWorldCurrent();
         Uint64 prepareStart = s_profileTiming ? SDL_GetTicksNS() : 0;
         if (s_enabled)

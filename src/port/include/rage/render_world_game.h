@@ -5,7 +5,7 @@
 
 struct GameCarRuntime;
 struct GameSkyGridLayout;
-struct RageRenderWorld;
+struct RenderWorld;
 
 typedef enum RageGameCarRenderDetail {
     RAGE_GAME_CAR_RENDER_CLOSE = 0,
@@ -65,11 +65,11 @@ void GameRenderWorldSubmitPlayerCar(const struct GameCarRuntime *object,
                                         int mirror_pass);
 /* Completed worlds, NULL until one/two frames have been published. These
  * borrowed metadata and instance arrays remain intact during construction. */
-const struct RageRenderWorld *GameRenderWorldCurrent(void);
-const struct RageRenderWorld *GameRenderWorldPrevious(void);
+const struct RenderWorld *GameRenderWorldCurrent(void);
+const struct RenderWorld *GameRenderWorldPrevious(void);
 /* Build the previous->current presentation state used by unlocked rendering.
  * The returned storage is owned by the adapter until the next call. */
-const struct RageRenderWorld *GameRenderWorldPresentation(float t);
+const struct RenderWorld *GameRenderWorldPresentation(float t);
 
 /* The nine environment colours of the frame being drawn, for diagnostics
  * that need the palette and the picture to come from the same moment. */

@@ -13,27 +13,27 @@ static int failures;
     }                                                                       \
 } while (0)
 
-static void FillTransform(RageRenderTransform *transform, float base) {
-    transform->position = (RageRenderVec3){base + 1, base + 2, base + 3};
-    transform->rotation = (RageRenderVec3){base + 4, base + 5, base + 6};
-    transform->scale = (RageRenderVec3){base + 7, base + 8, base + 9};
-    transform->orientation = (RageRenderQuaternion){
+static void FillTransform(RenderTransform *transform, float base) {
+    transform->position = (Vec3){base + 1, base + 2, base + 3};
+    transform->rotation = (Vec3){base + 4, base + 5, base + 6};
+    transform->scale = (Vec3){base + 7, base + 8, base + 9};
+    transform->orientation = (Quaternion){
         base + 10, base + 11, base + 12, base + 13};
     transform->hasOrientation = 1;
 }
 
-static void FillCamera(RageRenderCamera *camera, float base) {
+static void FillCamera(RenderCamera *camera, float base) {
     FillTransform(&camera->transform, base);
     camera->verticalFovDegrees = base + 20;
     camera->nearPlane = base + 21;
     camera->farPlane = base + 22;
-    camera->fogColor = (RageRenderVec3){base + 23, base + 24, base + 25};
-    camera->skyTopColor = (RageRenderVec3){base + 26, base + 27, base + 28};
-    camera->skyColor = (RageRenderVec3){base + 29, base + 30, base + 31};
+    camera->fogColor = (Vec3){base + 23, base + 24, base + 25};
+    camera->skyTopColor = (Vec3){base + 26, base + 27, base + 28};
+    camera->skyColor = (Vec3){base + 29, base + 30, base + 31};
     camera->skyHorizonColor =
-        (RageRenderVec3){base + 32, base + 33, base + 34};
+        (Vec3){base + 32, base + 33, base + 34};
     camera->skyBottomColor =
-        (RageRenderVec3){base + 35, base + 36, base + 37};
+        (Vec3){base + 35, base + 36, base + 37};
     camera->skyAssetKey = (uint32_t)(base + 38);
     camera->skyCloudRow = (uint32_t)(base + 39);
     camera->hasSkyLayout = 1;
@@ -41,17 +41,17 @@ static void FillCamera(RageRenderCamera *camera, float base) {
         for (unsigned c = 0; c < 8; ++c)
             camera->skyLayout.tiles[r][c] = (uint8_t)(((unsigned)base + r + c) % 8);
     camera->skyGridOrigin =
-        (RageRenderVec3){base + 40, base + 41, base + 42};
+        (Vec3){base + 40, base + 41, base + 42};
     camera->skyGridColumn =
-        (RageRenderVec3){base + 43, base + 44, base + 45};
+        (Vec3){base + 43, base + 44, base + 45};
     camera->skyGridRow =
-        (RageRenderVec3){base + 46, base + 47, base + 48};
+        (Vec3){base + 46, base + 47, base + 48};
     camera->fogNear = base + 49;
     camera->fogFar = base + 50;
 }
 
-static int SameTransform(const RageRenderTransform *a,
-                         const RageRenderTransform *b) {
+static int SameTransform(const RenderTransform *a,
+                         const RenderTransform *b) {
     return memcmp(&a->position, &b->position, sizeof(a->position)) == 0 &&
            memcmp(&a->rotation, &b->rotation, sizeof(a->rotation)) == 0 &&
            memcmp(&a->scale, &b->scale, sizeof(a->scale)) == 0 &&
@@ -60,7 +60,7 @@ static int SameTransform(const RageRenderTransform *a,
            a->hasOrientation == b->hasOrientation;
 }
 
-static int SameCamera(const RageRenderCamera *a, const RageRenderCamera *b) {
+static int SameCamera(const RenderCamera *a, const RenderCamera *b) {
     return SameTransform(&a->transform, &b->transform) &&
            a->verticalFovDegrees == b->verticalFovDegrees &&
            a->nearPlane == b->nearPlane && a->farPlane == b->farPlane &&
@@ -85,20 +85,20 @@ static int SameCamera(const RageRenderCamera *a, const RageRenderCamera *b) {
            a->fogNear == b->fogNear && a->fogFar == b->fogFar;
 }
 
-static int SameLight(const RageRenderDirectionalLight *a,
-                     const RageRenderDirectionalLight *b) {
+static int SameLight(const RenderDirectionalLight *a,
+                     const RenderDirectionalLight *b) {
     return memcmp(a, b, sizeof(*a)) == 0;
 }
 
 static void TestRoundTrip(void) {
     const char *path = "render-world-snapshot-test.bin";
-    RageRenderMeshInstance instances[2] = {0};
-    RageRenderWorld world = {0};
-    RageRenderWorldSnapshot loaded = {0};
+    RenderMeshInstance instances[2] = {0};
+    RenderWorld world = {0};
+    RenderWorldSnapshot loaded = {0};
     world.frame = UINT64_C(0x123456789abcdef0);
-    world.light.direction = (RageRenderVec3){.1f, .2f, .3f};
-    world.light.ambientColor = (RageRenderVec3){.4f, .5f, .6f};
-    world.light.diffuseColor = (RageRenderVec3){.7f, .8f, .9f};
+    world.light.direction = (Vec3){.1f, .2f, .3f};
+    world.light.ambientColor = (Vec3){.4f, .5f, .6f};
+    world.light.diffuseColor = (Vec3){.7f, .8f, .9f};
     FillCamera(&world.camera, 1);
     FillCamera(&world.previousCamera, 40);
     FillCamera(&world.mirrorCamera, 80);
@@ -124,7 +124,7 @@ static void TestRoundTrip(void) {
     instances[0].carPaintColor2 = 18;
     instances[0].textureScrollU = 19;
     instances[0].lightInfluence = 0.4f;
-    instances[0].environmentLight = (RageRenderVec3){.1f, .2f, .3f};
+    instances[0].environmentLight = (Vec3){.1f, .2f, .3f};
     instances[0].depthBias = -2.5f;
     FillTransform(&instances[0].transform, 160);
     FillTransform(&instances[0].previousTransform, 180);
@@ -169,7 +169,7 @@ static void TestRoundTrip(void) {
 
 static void TestRejectsInvalidFile(void) {
     const char *path = "render-world-snapshot-invalid.bin";
-    RageRenderWorldSnapshot loaded = {0};
+    RenderWorldSnapshot loaded = {0};
     FILE *file = fopen(path, "wb");
     CHECK(file != NULL);
     if (file != NULL) {
@@ -184,7 +184,7 @@ static void TestPreservesReservedOutput(void) {
     const char *path = "render-world-reserved.bin";
     const char *temporary = "render-world-reserved.bin.tmp";
     const char *paths[] = {path, temporary};
-    RageRenderWorld world = {0};
+    RenderWorld world = {0};
     for (size_t i = 0; i < 2; ++i) {
         FILE *file = fopen(paths[i], "wbx");
         CHECK(file != NULL);
@@ -204,7 +204,7 @@ static void TestPreservesReservedOutput(void) {
         CHECK(remove(paths[i]) == 0);
     }
     CHECK(RenderWorldSnapshotWrite(path, &world));
-    RageRenderWorldSnapshot read = {0};
+    RenderWorldSnapshot read = {0};
     CHECK(RenderWorldSnapshotRead(path, &read));
     RenderWorldSnapshotRelease(&read);
     CHECK(remove(path) == 0);
@@ -212,8 +212,8 @@ static void TestPreservesReservedOutput(void) {
 
 static void TestRejectsInvalidWorldBounds(void) {
     const char *path = "render-world-snapshot-invalid-bounds.bin";
-    RageRenderMeshInstance instance = {0};
-    RageRenderWorld world = {0};
+    RenderMeshInstance instance = {0};
+    RenderWorld world = {0};
 
     world.instances = &instance;
     world.instanceCapacity = 1;
@@ -243,8 +243,8 @@ static void TestRejectsInvalidWorldBounds(void) {
 
 static void TestSkyLayoutVersionCompatibility(void) {
     const char *path = "render-world-sky-compat.bin";
-    RageRenderWorld world = {0};
-    RageRenderWorldSnapshot loaded = {0};
+    RenderWorld world = {0};
+    RenderWorldSnapshot loaded = {0};
     unsigned char bytes[2048], legacy[2048];
     size_t size = 0, used = 0;
     CHECK(RenderWorldSnapshotWrite(path, &world));
@@ -290,17 +290,17 @@ static void TestSkyLayoutVersionCompatibility(void) {
 }
 
 static void TestReusableCapacity(void) {
-    RageRenderMeshInstance instances[4] = {0};
+    RenderMeshInstance instances[4] = {0};
     for (unsigned i = 0; i < 4; ++i) instances[i].assetKey = 10 + i;
-    RageRenderWorld world = {0};
+    RenderWorld world = {0};
     world.instances = instances;
     world.instanceCapacity = 4;
     world.instanceCount = 1;
-    RageRenderWorldSnapshot snapshot = {0};
+    RenderWorldSnapshot snapshot = {0};
     CHECK(RenderWorldSnapshotCopy(&snapshot, &world));
     world.instanceCount = 4;
     CHECK(RenderWorldSnapshotCopy(&snapshot, &world));
-    RageRenderMeshInstance *capacity = snapshot.instances;
+    RenderMeshInstance *capacity = snapshot.instances;
     CHECK(snapshot.world.instanceCapacity == 4);
     CHECK(snapshot.instances[3].assetKey == 13);
     world.instanceCount = 2;
@@ -332,21 +332,21 @@ static void TestReusableCapacity(void) {
 int main(void) {
     TestReusableCapacity();
     {
-        RageRenderMeshInstance instance = {0};
+        RenderMeshInstance instance = {0};
         instance.assetKey = 42;
-        RageRenderWorld world = {0};
+        RenderWorld world = {0};
         world.instances = &instance;
         world.instanceCount = world.instanceCapacity = 1;
         world.frame = 123;
         FillCamera(&world.camera, 0);
-        RageRenderWorldSnapshot copy = {0};
+        RenderWorldSnapshot copy = {0};
         CHECK(RenderWorldSnapshotCopy(&copy, &world));
         CHECK(copy.instances != &instance && copy.world.instances == copy.instances);
         CHECK(copy.instances[0].assetKey == 42 && copy.world.frame == 123);
         CHECK(SameCamera(&copy.world.camera, &world.camera));
         instance.assetKey = 99;
         CHECK(copy.instances[0].assetKey == 42);
-        RageRenderMeshInstance *reused = copy.instances;
+        RenderMeshInstance *reused = copy.instances;
         CHECK(RenderWorldSnapshotCopy(&copy, &copy.world));
         CHECK(copy.instances == reused);
         CHECK(copy.instances[0].assetKey == 42);
@@ -360,7 +360,7 @@ int main(void) {
         CHECK(RenderWorldSnapshotRead(path, &copy));
         CHECK(copy.instances[0].assetKey == 42);
         CHECK(RenderWorldSnapshotRead(path, &copy));
-        RageRenderMeshInstance *owned = copy.instances;
+        RenderMeshInstance *owned = copy.instances;
         FILE *broken = fopen(path, "wb");
         CHECK(broken != NULL);
         if (broken) { CHECK(fputs("broken", broken) >= 0); CHECK(fclose(broken) == 0); }

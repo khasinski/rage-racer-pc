@@ -13,8 +13,8 @@ static float RenderWrappedAngleDelta(float from, float to) {
     return fabsf(delta);
 }
 
-static int RenderCameraIsCut(const RageRenderCamera *previous,
-                                 const RageRenderCamera *current) {
+static int RenderCameraIsCut(const RenderCamera *previous,
+                                 const RenderCamera *current) {
     float dx = current->transform.position.x - previous->transform.position.x;
     float dy = current->transform.position.y - previous->transform.position.y;
     float dz = current->transform.position.z - previous->transform.position.z;
@@ -47,15 +47,15 @@ static int RenderCameraIsCut(const RageRenderCamera *previous,
                   previous->verticalFovDegrees) > 10.0f;
 }
 
-void RenderDirectionalLightDefault(RageRenderDirectionalLight *light) {
+void RenderDirectionalLightDefault(RenderDirectionalLight *light) {
     if (light == NULL) return;
-    light->direction = (RageRenderVec3){-0.1f, 1.0f, 0.12f};
-    light->ambientColor = (RageRenderVec3){0.35f, 0.35f, 0.35f};
-    light->diffuseColor = (RageRenderVec3){0.65f, 0.65f, 0.65f};
+    light->direction = (Vec3){-0.1f, 1.0f, 0.12f};
+    light->ambientColor = (Vec3){0.35f, 0.35f, 0.35f};
+    light->diffuseColor = (Vec3){0.65f, 0.65f, 0.65f};
 }
 
-void RenderWorldInit(RageRenderWorld *world,
-                         RageRenderMeshInstance *instances,
+void RenderWorldInit(RenderWorld *world,
+                         RenderMeshInstance *instances,
                          uint32_t capacity) {
     if (world == NULL) return;
     memset(world, 0, sizeof(*world));
@@ -64,7 +64,7 @@ void RenderWorldInit(RageRenderWorld *world,
     RenderDirectionalLightDefault(&world->light);
 }
 
-void RenderWorldBeginFrame(RageRenderWorld *world, uint64_t frame) {
+void RenderWorldBeginFrame(RenderWorld *world, uint64_t frame) {
     if (world == NULL) return;
     if (world->hasCamera) world->previousCamera = world->camera;
     if (world->hasMirrorCamera) {
@@ -77,13 +77,13 @@ void RenderWorldBeginFrame(RageRenderWorld *world, uint64_t frame) {
 }
 
 void RenderWorldSetDirectionalLight(
-    RageRenderWorld *world, const RageRenderDirectionalLight *light) {
+    RenderWorld *world, const RenderDirectionalLight *light) {
     if (world == NULL || light == NULL) return;
     world->light = *light;
 }
 
-void RenderWorldSetCamera(RageRenderWorld *world,
-                              const RageRenderCamera *camera) {
+void RenderWorldSetCamera(RenderWorld *world,
+                              const RenderCamera *camera) {
     if (world == NULL || camera == NULL) return;
     if (world->hasCamera &&
         RenderCameraIsCut(&world->previousCamera, camera))
@@ -93,8 +93,8 @@ void RenderWorldSetCamera(RageRenderWorld *world,
     world->hasCamera = 1;
 }
 
-void RenderWorldSetMirrorCamera(RageRenderWorld *world,
-                                    const RageRenderCamera *camera,
+void RenderWorldSetMirrorCamera(RenderWorld *world,
+                                    const RenderCamera *camera,
                                     int active, float panelY) {
     if (world == NULL || camera == NULL) return;
     if (world->hasMirrorCamera &&
@@ -112,8 +112,8 @@ void RenderWorldSetMirrorCamera(RageRenderWorld *world,
     world->hasMirrorCamera = 1;
 }
 
-int RenderWorldSubmitMesh(RageRenderWorld *world,
-                          const RageRenderMeshInstance *instance) {
+int RenderWorldSubmitMesh(RenderWorld *world,
+                          const RenderMeshInstance *instance) {
     if (world == NULL || instance == NULL) return 0;
     if (world->instances == NULL ||
         world->instanceCount >= world->instanceCapacity) {
@@ -124,7 +124,7 @@ int RenderWorldSubmitMesh(RageRenderWorld *world,
     return 1;
 }
 
-void RenderWorldDiscardPass(RageRenderWorld *world, RageRenderPass pass) {
+void RenderWorldDiscardPass(RenderWorld *world, RenderPass pass) {
     uint32_t source, destination = 0;
     if (world == NULL) return;
     for (source = 0; source < world->instanceCount; source++) {
@@ -137,7 +137,7 @@ void RenderWorldDiscardPass(RageRenderWorld *world, RageRenderPass pass) {
 }
 
 void RenderTerrainCellTransform(uint32_t grid_x, uint32_t grid_z,
-                                    RageRenderTransform *transform) {
+                                    RenderTransform *transform) {
     if (transform == NULL) return;
     memset(transform, 0, sizeof(*transform));
     /* Original cells are in an inverted 32x32 grid and use 8192 mesh units. */

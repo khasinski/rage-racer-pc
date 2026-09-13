@@ -11,41 +11,41 @@
 #include <stdint.h>
 #include "sky_layout.h"
 
-typedef struct RageRenderVec3 {
+typedef struct Vec3 {
     float x, y, z;
-} RageRenderVec3;
+} Vec3;
 
 /* A scene transform normally uses the friendly Euler form below.  Hierarchical
  * animated objects may instead provide a unit quaternion: it represents one
  * ordinary world-space rotation, rather than a renderer/backend matrix. */
-typedef struct RageRenderQuaternion {
+typedef struct Quaternion {
     float x, y, z, w;
-} RageRenderQuaternion;
+} Quaternion;
 
-typedef struct RageRenderTransform {
-    RageRenderVec3 position;
-    RageRenderVec3 rotation;
-    RageRenderVec3 scale;
-    RageRenderQuaternion orientation;
+typedef struct RenderTransform {
+    Vec3 position;
+    Vec3 rotation;
+    Vec3 scale;
+    Quaternion orientation;
     uint8_t hasOrientation;
-} RageRenderTransform;
+} RenderTransform;
 
-typedef struct RageRenderCamera {
-    RageRenderTransform transform;
+typedef struct RenderCamera {
+    RenderTransform transform;
     float verticalFovDegrees;
     float nearPlane;
     float farPlane;
     /* Perspective depth fog is semantic scene data. `fogNear` starts the
      * blend and `fogFar` reaches the authored environment colour. */
-    RageRenderVec3 fogColor;
+    Vec3 fogColor;
     /* Renderer-neutral sky bands. Backends evaluate them against a world
      * view ray, so the horizon follows camera pitch and roll without any
      * screen-space PS1 sky geometry. `skyColor` is the central band retained
      * for compatibility with version-1 frame snapshots. */
-    RageRenderVec3 skyTopColor;
-    RageRenderVec3 skyColor;
-    RageRenderVec3 skyHorizonColor;
-    RageRenderVec3 skyBottomColor;
+    Vec3 skyTopColor;
+    Vec3 skyColor;
+    Vec3 skyHorizonColor;
+    Vec3 skyBottomColor;
     /* Stable environment asset identity. Import providers may resolve it to
      * the extracted panorama above the gradient or to a mod-supplied image. */
     uint32_t skyAssetKey;
@@ -59,31 +59,31 @@ typedef struct RageRenderCamera {
     uint8_t hasSkyLayout;
     /* The retail cloud layer is screen-space geometry. These three vectors
      * preserve its measured origin and two tile axes for native backends. */
-    RageRenderVec3 skyGridOrigin;
-    RageRenderVec3 skyGridColumn;
-    RageRenderVec3 skyGridRow;
+    Vec3 skyGridOrigin;
+    Vec3 skyGridColumn;
+    Vec3 skyGridRow;
     float fogNear;
     float fogFar;
-} RageRenderCamera;
+} RenderCamera;
 
 /* One renderer-neutral sun and ambient environment. Both direct shading and
  * shadow cameras consume this value, so a backend cannot silently use a
  * different hard-coded light direction. Colours already include intensity. */
-typedef struct RageRenderDirectionalLight {
-    RageRenderVec3 direction;
-    RageRenderVec3 ambientColor;
-    RageRenderVec3 diffuseColor;
-} RageRenderDirectionalLight;
+typedef struct RenderDirectionalLight {
+    Vec3 direction;
+    Vec3 ambientColor;
+    Vec3 diffuseColor;
+} RenderDirectionalLight;
 
-typedef enum RageRenderPass {
+typedef enum RenderPass {
     RAGE_RENDER_PASS_MAIN = 0,
     RAGE_RENDER_PASS_MIRROR = 1,
-} RageRenderPass;
+} RenderPass;
 
 /* Which imported asset collection owns `mesh`.  A numeric mesh id is only
  * meaningful inside one collection; making that explicit prevents a modern
  * backend from falling back to the currently-selected PS1 model bank. */
-typedef enum RageRenderAssetSet {
+typedef enum RenderAssetSet {
     RAGE_RENDER_ASSET_MODEL_BANK = 0,
     RAGE_RENDER_ASSET_COURSE = 1,
     RAGE_RENDER_ASSET_TERRAIN = 2,
@@ -92,12 +92,12 @@ typedef enum RageRenderAssetSet {
      * whichever duplicate happened to be listed first. */
     RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 = 3,
     RAGE_RENDER_ASSET_TRACK_MODEL_BANK_2 = 4,
-} RageRenderAssetSet;
+} RenderAssetSet;
 
-typedef struct RageRenderMeshInstance {
+typedef struct RenderMeshInstance {
     uint32_t entity;
     uint32_t mesh;
-    RageRenderAssetSet assetSet;
+    RenderAssetSet assetSet;
     /* Stable game asset identity inside the asset set. It is never a pointer
      * into a loaded PS1 bank, so streaming/replay and native cache lookup are
      * deterministic. */
@@ -128,16 +128,16 @@ typedef struct RageRenderMeshInstance {
     float lightInfluence;
     /* Semantic ambient light sampled from the track light volume. The modern
      * backend combines it with its directional vehicle lighting. */
-    RageRenderVec3 environmentLight;
+    Vec3 environmentLight;
     /* Small post-projection ordering hint for independently submitted parts
      * of one semantic object. It preserves authored overlap (for example a
      * car body masking wheels inside its arches) without moving geometry. */
     float depthBias;
-    RageRenderTransform transform;
-    RageRenderTransform previousTransform;
+    RenderTransform transform;
+    RenderTransform previousTransform;
     uint32_t flags;
-    RageRenderPass pass;
-} RageRenderMeshInstance;
+    RenderPass pass;
+} RenderMeshInstance;
 
 enum {
     /* Bounds are optional imported metadata. Do not cull an instance until
@@ -164,44 +164,44 @@ enum {
     RAGE_RENDER_INSTANCE_FLAT_SHADED = 1u << 6,
 };
 
-typedef struct RageRenderWorld {
+typedef struct RenderWorld {
     uint64_t frame;
-    RageRenderDirectionalLight light;
-    RageRenderCamera camera;
-    RageRenderCamera previousCamera;
+    RenderDirectionalLight light;
+    RenderCamera camera;
+    RenderCamera previousCamera;
     uint8_t hasCamera;
     /* A rear-view mirror is an ordinary second camera in the native scene.
      * Keeping it here prevents modern backends from depending on the PS1
      * mirror ordering table, GTE matrix, or precomputed visibility list. */
-    RageRenderCamera mirrorCamera;
-    RageRenderCamera previousMirrorCamera;
+    RenderCamera mirrorCamera;
+    RenderCamera previousMirrorCamera;
     float mirrorPanelY;
     float previousMirrorPanelY;
     uint8_t hasMirrorCamera;
     uint8_t mirrorActive;
-    RageRenderMeshInstance *instances;
+    RenderMeshInstance *instances;
     uint32_t instanceCapacity;
     uint32_t instanceCount;
     uint32_t overflowCount;
-} RageRenderWorld;
+} RenderWorld;
 
-void RenderWorldInit(RageRenderWorld *world,
-                         RageRenderMeshInstance *instances,
+void RenderWorldInit(RenderWorld *world,
+                         RenderMeshInstance *instances,
                          uint32_t capacity);
-void RenderWorldBeginFrame(RageRenderWorld *world, uint64_t frame);
+void RenderWorldBeginFrame(RenderWorld *world, uint64_t frame);
 void RenderWorldSetDirectionalLight(
-    RageRenderWorld *world, const RageRenderDirectionalLight *light);
-void RenderDirectionalLightDefault(RageRenderDirectionalLight *light);
-void RenderWorldSetCamera(RageRenderWorld *world,
-                              const RageRenderCamera *camera);
-void RenderWorldSetMirrorCamera(RageRenderWorld *world,
-                                    const RageRenderCamera *camera,
+    RenderWorld *world, const RenderDirectionalLight *light);
+void RenderDirectionalLightDefault(RenderDirectionalLight *light);
+void RenderWorldSetCamera(RenderWorld *world,
+                              const RenderCamera *camera);
+void RenderWorldSetMirrorCamera(RenderWorld *world,
+                                    const RenderCamera *camera,
                                     int active, float panelY);
-int RenderWorldSubmitMesh(RageRenderWorld *world,
-                              const RageRenderMeshInstance *instance);
-void RenderWorldDiscardPass(RageRenderWorld *world, RageRenderPass pass);
+int RenderWorldSubmitMesh(RenderWorld *world,
+                              const RenderMeshInstance *instance);
+void RenderWorldDiscardPass(RenderWorld *world, RenderPass pass);
 void RenderTerrainCellTransform(uint32_t grid_x, uint32_t grid_z,
-                                    RageRenderTransform *transform);
+                                    RenderTransform *transform);
 /* Convert a PS1-space rotation into the conventional (+Y up, -Z forward)
  * scene basis used by imported meshes and Render World positions. */
 void RenderConvertPsxMatrix(const float source[3][3], float out[3][3]);

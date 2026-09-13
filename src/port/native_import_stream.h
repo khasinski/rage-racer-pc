@@ -88,7 +88,7 @@ static int ImportVisitTerrainStream(
 }
 
 static uint16_t ImportMaterialClut(const RageImportedTextureKey *texture,
-                                   RageRenderAssetSet assetSet,
+                                   RenderAssetSet assetSet,
                                    uint8_t variant) {
     uint32_t offset = 0;
     if (assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1)

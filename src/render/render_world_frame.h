@@ -11,13 +11,13 @@
 enum { RAGE_RENDER_PRESENTATION_MAX_INSTANCES = 4096 };
 
 float RenderLerpAngleDegrees(float from, float to, float t);
-void RenderInterpolateTransform(const RageRenderTransform *previous,
-                                    const RageRenderTransform *current,
+void RenderInterpolateTransform(const RenderTransform *previous,
+                                    const RenderTransform *current,
                                     float t,
-                                    RageRenderTransform *out);
-void RenderInterpolateCamera(const RageRenderCamera *previous,
-                                 const RageRenderCamera *current, float t,
-                                 RageRenderCamera *out);
+                                    RenderTransform *out);
+void RenderInterpolateCamera(const RenderCamera *previous,
+                                 const RenderCamera *current, float t,
+                                 RenderCamera *out);
 
 /* Build the frame shown alongside a previous-frame compatibility snapshot.
  * Static world instances retain the normal producer-supplied interpolation,
@@ -28,12 +28,12 @@ void RenderInterpolateCamera(const RageRenderCamera *previous,
  * leaves output unchanged, rather than publishing a truncated scene.
  * Zero denotes empty or rejected output. */
 uint32_t RenderWorldBuildSynchronizedPresentation(
-    const RageRenderWorld *previous, const RageRenderWorld *current, float t,
-    RageRenderMeshInstance *out, uint32_t capacity);
+    const RenderWorld *previous, const RenderWorld *current, float t,
+    RenderMeshInstance *out, uint32_t capacity);
 /* Explicit success result, including a valid empty scene. Failure preserves
  * both output storage and *count; success publishes the complete count. */
 int RenderWorldTryBuildSynchronizedPresentation(
-    const RageRenderWorld *previous, const RageRenderWorld *current, float t,
-    RageRenderMeshInstance *out, uint32_t capacity, uint32_t *count);
+    const RenderWorld *previous, const RenderWorld *current, float t,
+    RenderMeshInstance *out, uint32_t capacity, uint32_t *count);
 
 #endif

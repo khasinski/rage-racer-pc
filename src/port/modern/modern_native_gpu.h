@@ -13,14 +13,14 @@ void ModernNativeGpuShutdown(void);
  * Preparation may reuse an unchanged revision and aspect within the same
  * asset generation; aspect changes are detected independently. The game
  * interpolation adapter issues a fresh revision for each presentation. */
-void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect);
+void ModernNativeGpuPrepare(const RenderWorld *world, float aspect);
 /* Call after successfully submitting the command buffer used by Draw and
  * DrawMirror. On cancellation/submission failure, shut down this renderer
  * before reuse: cached textures and geometry may refer to discarded uploads. */
 void ModernNativeGpuSubmitted(void);
 /* Backend-owned immutable values, borrowed until the next preparation or
  * shutdown. Mesh/material IDs still refer to external asset generations. */
-const RageRenderWorld *ModernNativeGpuPreparedWorld(void);
+const RenderWorld *ModernNativeGpuPreparedWorld(void);
 uint64_t ModernNativeGpuTextureRevision(void);
 int ModernNativeGpuWriteDrawDump(FILE *file);
 /* Diagnostic CPU-only measurement of the resident world; restores its revision.

@@ -6,38 +6,38 @@
 /* Caller-owned snapshot, prepared once per draw build; no global cache shared
  * between the main view, mirror, or interpolated frames. */
 typedef struct {
-    RageRenderCamera camera;
+    RenderCamera camera;
     float matrix[3][3];
     float cosine[3], sine[3];
     int mode;
-} RageRenderViewTransform;
+} RenderViewTransform;
 
-RageRenderViewTransform RenderPrepareView(const RageRenderCamera *camera);
-void RenderWorldToViewPrepared(const RageRenderViewTransform *transform,
-                              const RageRenderVec3 *world,
-                              RageRenderVec3 *view);
-float RenderFogFactorPrepared(const RageRenderViewTransform *transform,
-                             const RageRenderVec3 *world);
+RenderViewTransform RenderPrepareView(const RenderCamera *camera);
+void RenderWorldToViewPrepared(const RenderViewTransform *transform,
+                              const Vec3 *world,
+                              Vec3 *view);
+float RenderFogFactorPrepared(const RenderViewTransform *transform,
+                             const Vec3 *world);
 
 /* Native renderer camera math. The result is conventional view space where
  * positive Z is forward; no PS1 GTE matrix or screen-space quantization is
  * involved. */
-void RenderWorldToView(const RageRenderCamera *camera,
-                           const RageRenderVec3 *world,
-                           RageRenderVec3 *view);
-int RenderProject(const RageRenderCamera *camera, const RageRenderVec3 *view,
-                      float aspect, RageRenderVec3 *clip);
+void RenderWorldToView(const RenderCamera *camera,
+                           const Vec3 *world,
+                           Vec3 *view);
+int RenderProject(const RenderCamera *camera, const Vec3 *view,
+                      float aspect, Vec3 *clip);
 /* Homogeneous depth terms for a 0..1 depth buffer:
  * clip_z = view_depth * scale + offset, clip_w = view_depth. */
 /* GPU projection scales, preserving float operation order for valid cameras.
  * Rejects invalid or unrepresentable projection before division/upload. */
-int RenderPerspectiveScales(const RageRenderCamera *camera, float aspect,
+int RenderPerspectiveScales(const RenderCamera *camera, float aspect,
                             float *horizontal, float *vertical);
 
-int RenderPerspectiveDepthTerms(const RageRenderCamera *camera,
+int RenderPerspectiveDepthTerms(const RenderCamera *camera,
                                     float *scale, float *offset);
 /* Perspective-correct fog weight for a world-space point. */
-float RenderFogFactor(const RageRenderCamera *camera,
-                          const RageRenderVec3 *world);
+float RenderFogFactor(const RenderCamera *camera,
+                          const Vec3 *world);
 
 #endif

@@ -6,7 +6,7 @@
 #include <string.h>
 
 int ModernPreparedMeshesPrepare(ModernPreparedMeshes *cache,
-                                const RageRenderWorld *world,
+                                const RenderWorld *world,
                                 ModernPreparedMeshResolve resolve,
                                 void *context) {
     const RageRuntimeMesh **items;
@@ -32,7 +32,7 @@ int ModernPreparedMeshesPrepare(ModernPreparedMeshes *cache,
 
 const RageRuntimeMesh *ModernPreparedMeshesLookup(
     const ModernPreparedMeshes *cache,
-    const RageRenderMeshInstance *instance) {
+    const RenderMeshInstance *instance) {
     ptrdiff_t index;
     if (!cache || !cache->world || !instance) return NULL;
     index = instance - cache->world->instances;

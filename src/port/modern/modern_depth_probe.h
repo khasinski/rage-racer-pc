@@ -6,7 +6,7 @@
 #include <stdint.h>
 
 typedef struct ModernDepthProbeVertex {
-    RageRenderVec3 view;
+    Vec3 view;
     float depthBias;
 } ModernDepthProbeVertex;
 

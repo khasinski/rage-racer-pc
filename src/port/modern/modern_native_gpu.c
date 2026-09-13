@@ -98,7 +98,7 @@ typedef struct ModernNativeTexture {
     uint8_t hasCarPaint;
     uint8_t carPaintColor1;
     uint8_t carPaintColor2;
-    RageRenderAssetSet assetSet;
+    RenderAssetSet assetSet;
     RageRenderMaterial definition;
     int transparent;
     SDL_GPUTexture *texture;
@@ -177,20 +177,20 @@ static void ModernNativeReleaseGeometry(void) {
 }
 static uint32_t s_mirrorSpanCount;
 static uint64_t s_worldFrame = UINT64_MAX;
-static const RageRenderWorld *s_world;
-static RageRenderWorldSnapshot s_ownedWorld;
+static const RenderWorld *s_world;
+static RenderWorldSnapshot s_ownedWorld;
 static ModernPreparedMeshes s_preparedMeshes;
 
 /* Borrow only for this preparation. Both cameras use the same owned instance
  * array; resolve after warming finishes so a later successful retry is visible
  * to every instance that references the asset. */
 static const RageRuntimeMesh *ModernNativePreparedMeshLookup(
-    void *context, const RageRenderMeshInstance *instance) {
+    void *context, const RenderMeshInstance *instance) {
     if (!context) return ModernAssetsResidentMeshLookup(NULL, instance);
     return ModernPreparedMeshesLookup(context, instance);
 }
 
-static void *ModernNativePrepareMeshLookup(const RageRenderWorld *world) {
+static void *ModernNativePrepareMeshLookup(const RenderWorld *world) {
     return ModernPreparedMeshesPrepare(&s_preparedMeshes, world,
         ModernAssetsResidentMeshLookup, NULL)
         ? &s_preparedMeshes : NULL;
@@ -239,7 +239,7 @@ static void ModernNativeRetireUpload(SDL_GPUTransferBuffer *upload) {
 static ModernTextureIndex s_textureIndex;
 static uint64_t s_trackAssetRevision = UINT64_MAX;
 static uint64_t s_assetGeneration = UINT64_MAX;
-static RageRenderShadowMap s_shadowMap;
+static RenderShadowMap s_shadowMap;
 static int s_haveShadowMap;
 
 /*
@@ -402,10 +402,10 @@ static SDL_GPUGraphicsPipeline *ModernNativeCreateSkyPipeline(
 }
 
 static void ModernNativeRotate(float out[3], const float in[3],
-                               const RageRenderCamera *camera) {
+                               const RenderCamera *camera) {
     float x = in[0], y = in[1], z = in[2];
     if (camera->transform.hasOrientation) {
-        const RageRenderQuaternion *q = &camera->transform.orientation;
+        const Quaternion *q = &camera->transform.orientation;
         float length = sqrtf(q->x * q->x + q->y * q->y +
                              q->z * q->z + q->w * q->w);
         if (length > 0.0f) {
@@ -438,7 +438,7 @@ static void ModernNativeRotate(float out[3], const float in[3],
     out[0] = x; out[1] = y; out[2] = z;
 }
 
-static int ModernNativeBuildCamera(const RageRenderCamera *camera, float aspect,
+static int ModernNativeBuildCamera(const RenderCamera *camera, float aspect,
                                     ModernNativeCameraUniform *out) {
     static const float axes[3][3] = {
         {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}};
@@ -472,7 +472,7 @@ static int ModernNativeBuildCamera(const RageRenderCamera *camera, float aspect,
     return 1;
 }
 
-static void ModernNativeBuildSky(const RageRenderCamera *camera,
+static void ModernNativeBuildSky(const RenderCamera *camera,
                                  float aspect,
                                  int targetHeight,
                                  ModernNativeSkyUniform *out) {
@@ -509,8 +509,8 @@ static void ModernNativeBuildSky(const RageRenderCamera *camera,
     out->gridParams[3] = (float)targetHeight;
 }
 
-static void ModernNativeBuildLight(const RageRenderDirectionalLight *light,
-                                   const RageRenderCamera *camera,
+static void ModernNativeBuildLight(const RenderDirectionalLight *light,
+                                   const RenderCamera *camera,
                                    ModernNativeLightUniform *out) {
     memset(out, 0, sizeof(*out));
     out->direction[0] = light->direction.x;
@@ -535,7 +535,7 @@ static void ModernNativeBuildLight(const RageRenderDirectionalLight *light,
 
 
 static void ModernNativeBuildShadowCamera(
-    const RageRenderShadowMap *shadow, ModernNativeCameraUniform *out) {
+    const RenderShadowMap *shadow, ModernNativeCameraUniform *out) {
     memset(out, 0, sizeof(*out));
     out->position[0] = shadow->position.x;
     out->position[1] = shadow->position.y;
@@ -753,7 +753,7 @@ static void ModernNativeReleaseSkyTexture(void) {
 }
 
 static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
-                                        const RageRenderCamera *camera) {
+                                        const RenderCamera *camera) {
     uint32_t assetKey = camera->skyAssetKey, cloudRow = camera->skyCloudRow;
     const RageSkyTextureIdentity identity = {
         assetKey, cloudRow, camera->skyLayout, camera->hasSkyLayout
@@ -850,13 +850,13 @@ static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
     return 1;
 }
 
-void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
+void ModernNativeGpuPrepare(const RenderWorld *world, float aspect) {
     const int trace = RuntimeConfigEnabled("diagnostics.performance_trace");
     Uint64 started = 0, copied = 0, lookupFinished = 0, mainStarted = 0;
     Uint64 mainFinished = 0, mirrorFinished = 0;
     uint32_t instance;
     uint32_t mirrorFirstVertex;
-    RageRenderVec3 shadowCenter;
+    Vec3 shadowCenter;
     uint64_t trackAssetRevision;
     if (s_vertices == NULL || s_spans == NULL || world == NULL) return;
     trackAssetRevision = TrackAssetIdentityRevision();
@@ -902,7 +902,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
     if (trace) lookupFinished = SDL_GetTicksNS();
     shadowCenter = world->camera.transform.position;
     for (instance = 0; instance < world->instanceCount; instance++) {
-        const RageRenderMeshInstance *candidate = &world->instances[instance];
+        const RenderMeshInstance *candidate = &world->instances[instance];
         if (candidate->pass == RAGE_RENDER_PASS_MAIN &&
             candidate->entity == 11 && candidate->component == 0 &&
             candidate->assetSet == RAGE_RENDER_ASSET_MODEL_BANK) {
@@ -927,7 +927,7 @@ void ModernNativeGpuPrepare(const RageRenderWorld *world, float aspect) {
     s_uploadVertexCount = 0;
     mirrorFirstVertex = s_vertexCount;
     if (world->mirrorActive && world->hasMirrorCamera) {
-        RageRenderWorld mirrorWorld = *world;
+        RenderWorld mirrorWorld = *world;
         uint32_t span;
         mirrorWorld.camera = world->mirrorCamera;
         s_mirrorVertexCount = RenderBuildNativeLocalCompactPassDraws(s_cpuGeometryReference ? NULL : &s_meshTemplates,
@@ -1005,7 +1005,7 @@ static int ComparePrepareTicks(const void *a, const void *b) {
 }
 
 int ModernNativeGpuBenchmarkPrepare(FILE *file, unsigned repeats) {
-    RageRenderWorldSnapshot frozen = {0};
+    RenderWorldSnapshot frozen = {0};
     Uint64 *samples;
     uint64_t revision;
     float aspect = s_aspect;
@@ -1050,7 +1050,7 @@ int ModernNativeGpuBenchmarkPrepare(FILE *file, unsigned repeats) {
     return valid;
 }
 
-const RageRenderWorld *ModernNativeGpuPreparedWorld(void) {
+const RenderWorld *ModernNativeGpuPreparedWorld(void) {
     return s_world;
 }
 
@@ -1170,7 +1170,7 @@ int ModernNativeGpuWriteProbe(FILE *file, int x, int y,
             uint32_t corner, clippedCount, piece;
             for (corner = 0; corner < 3; corner++) {
                 const RageNativeGpuVertex *vertex = &s_vertices[first + corner];
-                RageRenderVec3 position = {
+                Vec3 position = {
                     vertex->position[0], vertex->position[1],
                     vertex->position[2]};
                 RenderWorldToView(&s_world->camera, &position,
@@ -1245,7 +1245,7 @@ static void ModernNativeIndexTexture(const ModernNativeTexture *entry) {
 static ModernNativeTexture *ModernNativeLoadTexture(
     SDL_GPUCommandBuffer *command, const RageNativeDrawSpan *span) {
     ModernNativeTexture *entry = ModernNativeFindTexture(span);
-    RageRenderMeshInstance instance = {0};
+    RenderMeshInstance instance = {0};
     RageRenderMaterial materialDefinition;
     RageRenderMaterialStorage materialStorage;
     ModernAssetImage image;
@@ -1817,7 +1817,7 @@ static void ModernNativeGpuDrawSet(
     SDL_GPUCommandBuffer *command,
     SDL_GPUTexture *colorTarget, SDL_GPUTexture *depthTarget, int clearColor,
     int drawSky,
-    const RageRenderCamera *renderCamera, float aspect,
+    const RenderCamera *renderCamera, float aspect,
     const RageNativeDrawSpan *spans, uint32_t spanCount,
     uint32_t drawVertexCount, const char *viewName, int targetHeight) {
     SDL_GPUColorTargetInfo color = {

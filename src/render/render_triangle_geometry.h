@@ -13,7 +13,7 @@ typedef struct RageTriangleGeometry {
 } RageTriangleGeometry;
 
 static inline RageTriangleGeometry RenderTriangleGeometry(
-    const RageRenderVec3 positions[3]) {
+    const Vec3 positions[3]) {
     float ax = positions[1].x - positions[0].x;
     float ay = positions[1].y - positions[0].y;
     float az = positions[1].z - positions[0].z;
@@ -31,7 +31,7 @@ static inline RageTriangleGeometry RenderTriangleGeometry(
 /* Retail road-paint shape heuristic in world units. Evaluate after instance
  * scaling and terrain snapping, never blindly cache it in source-mesh space. */
 static inline int RenderTriangleIsRoadDecal(
-    const RageRenderVec3 positions[3], RageTriangleGeometry *geometry) {
+    const Vec3 positions[3], RageTriangleGeometry *geometry) {
     float edge[3];
     for (unsigned corner = 0; corner < 3; ++corner) {
         unsigned next = (corner + 1) % 3;

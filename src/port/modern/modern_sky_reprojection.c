@@ -5,8 +5,8 @@
 #include <math.h>
 #include <stdint.h>
 
-void ModernSkyReprojectPoint(const RageRenderCamera *source,
-                             const RageRenderCamera *target,
+void ModernSkyReprojectPoint(const RenderCamera *source,
+                             const RenderCamera *target,
                              float *x, float *y) {
     float determinant;
     float dx, dy, column, row;
@@ -27,8 +27,8 @@ void ModernSkyReprojectPoint(const RageRenderCamera *source,
 }
 
 int ModernSkyBuildSmoothQuad(const RageCapturePacket *packet,
-                             const RageRenderCamera *source,
-                             const RageRenderCamera *target,
+                             const RenderCamera *source,
+                             const RenderCamera *target,
                              float x[4], float y[4]) {
     int index, row, column;
     float originX, originY, cellX, cellY, sourceColumn;

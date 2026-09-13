@@ -79,7 +79,7 @@ void RuntimeMeshCacheInit(RageRuntimeMeshCache *cache,
 }
 
 const RageRuntimeCachedMesh *RuntimeMeshCachePeek(const RageRuntimeMeshCache *cache,
-    uint32_t assetKey, RageRenderAssetSet assetSet) {
+    uint32_t assetKey, RenderAssetSet assetSet) {
     if (cache == NULL || cache->entries == NULL || cache->count > cache->capacity) return NULL;
     for (uint32_t i = 0; i < cache->count; ++i) {
         const RageRuntimeCachedMesh *entry = &cache->entries[i];
@@ -90,7 +90,7 @@ const RageRuntimeCachedMesh *RuntimeMeshCachePeek(const RageRuntimeMeshCache *ca
 }
 
 RageRuntimeMeshStatus RuntimeMeshCacheResolve(
-    RageRuntimeMeshCache *cache, uint32_t assetKey, RageRenderAssetSet assetSet,
+    RageRuntimeMeshCache *cache, uint32_t assetKey, RenderAssetSet assetSet,
     const RageRuntimeCachedMesh **out) {
     RageRuntimeAssetLocation location;
     const void *bytes;
@@ -124,7 +124,7 @@ RageRuntimeMeshStatus RuntimeMeshCacheResolve(
 }
 
 const RageRuntimeCachedMesh *RuntimeMeshCacheFind(
-    RageRuntimeMeshCache *cache, uint32_t assetKey, RageRenderAssetSet assetSet) {
+    RageRuntimeMeshCache *cache, uint32_t assetKey, RenderAssetSet assetSet) {
     const RageRuntimeCachedMesh *result = NULL;
     RuntimeMeshCacheResolve(cache, assetKey, assetSet, &result);
     return result;

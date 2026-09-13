@@ -28,7 +28,7 @@ uint32_t RenderShareNativeViewVertices(RageNativeGpuVertex *vertices,
 
 /* Direct compact output; CPU fog encoding remains available for A/B runs. */
 uint32_t RenderBuildNativeCompactPassDraws(
-    const RageRenderWorld *world, RageRenderPass pass, float aspect, int cpuFog,
+    const RenderWorld *world, RenderPass pass, float aspect, int cpuFog,
     RageRenderMeshLookup lookup, void *context,
     RageNativeGpuVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount);
@@ -53,7 +53,7 @@ typedef struct RageNativeMeshTemplateView {
  * cache memory; existing views remain valid. Does not perform view culling. */
 const RageNativeMeshTemplateView *RenderNativeMeshTemplateAcquire(
     RageNativeMeshTemplateCache *cache, const RageRuntimeMesh *mesh,
-    RageRenderAssetSet assetSet, uint32_t submesh);
+    RenderAssetSet assetSet, uint32_t submesh);
 void RenderNativeMeshTemplateCacheRelease(RageNativeMeshTemplateCache *cache);
 /* Also retain local source/transform metadata for resident GPU draws. Spans
  * are separated at instance/template boundaries. With expandWorldVertices=0,
@@ -61,7 +61,7 @@ void RenderNativeMeshTemplateCacheRelease(RageNativeMeshTemplateCache *cache);
  * only when diagnostics or a GPU allocation failure require world vertices. */
 uint32_t RenderBuildNativeLocalCompactPassDraws(
     RageNativeMeshTemplateCache *cache,
-    const RageRenderWorld *world, RageRenderPass pass, float aspect, int cpuFog, int expandWorldVertices,
+    const RenderWorld *world, RenderPass pass, float aspect, int cpuFog, int expandWorldVertices,
     RageRenderMeshLookup lookup, void *context,
     RageNativeGpuVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount);
@@ -69,7 +69,7 @@ int RenderExpandNativeLocalDraw(const RageNativeDrawSpan *span,
     RageNativeGpuVertex *vertices, uint32_t capacity);
 uint32_t RenderBuildNativeCachedCompactPassDraws(
     RageNativeMeshTemplateCache *cache,
-    const RageRenderWorld *world, RageRenderPass pass, float aspect, int cpuFog,
+    const RenderWorld *world, RenderPass pass, float aspect, int cpuFog,
     RageRenderMeshLookup lookup, void *context,
     RageNativeGpuVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount);

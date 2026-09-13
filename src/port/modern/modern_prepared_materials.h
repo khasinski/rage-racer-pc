@@ -17,7 +17,7 @@ enum {
 typedef struct ModernPreparedMaterialEntry {
     uint32_t assetKey;
     uint32_t material;
-    RageRenderAssetSet assetSet;
+    RenderAssetSet assetSet;
     uint8_t variant;
     uint8_t hasCarPaint;
     uint8_t color1;
@@ -36,10 +36,10 @@ typedef struct ModernPreparedMaterials {
 
 void ModernPreparedMaterialsClear(ModernPreparedMaterials *cache);
 int ModernPreparedMaterialsContains(const ModernPreparedMaterials *cache,
-                                    const RageRenderMeshInstance *instance,
+                                    const RenderMeshInstance *instance,
                                     uint32_t material, uint8_t variant);
 int ModernPreparedMaterialsCopy(const ModernPreparedMaterials *cache,
-                                const RageRenderMeshInstance *instance,
+                                const RenderMeshInstance *instance,
                                 uint32_t material, uint8_t variant,
                                 RageRenderMaterial *definition,
                                 ModernAssetImage *image,
@@ -47,7 +47,7 @@ int ModernPreparedMaterialsCopy(const ModernPreparedMaterials *cache,
 /* On a full cache or a failed private copy, caller ownership remains with
  * image. A successful cached copy replaces image with independent pixels. */
 int ModernPreparedMaterialsStore(ModernPreparedMaterials *cache,
-                                 const RageRenderMeshInstance *instance,
+                                 const RenderMeshInstance *instance,
                                  uint32_t material, uint8_t variant,
                                  RageRenderMaterial *definition,
                                  ModernAssetImage *image,

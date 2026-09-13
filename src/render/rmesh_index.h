@@ -45,7 +45,7 @@ int RuntimeIndexValidate(const char *text, size_t size, size_t *errorLine);
  * exactly four fields and relative file paths without traversal/control bytes.
  * This is lexical validation, not symlink containment. Failure clears out. */
 int RuntimeIndexFind(const char *text, size_t size, uint32_t assetKey,
-                         RageRenderAssetSet assetSet,
+                         RenderAssetSet assetSet,
                          RageRuntimeAssetLocation *out);
 
 #endif

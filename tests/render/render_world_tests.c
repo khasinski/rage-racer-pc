@@ -23,9 +23,9 @@ static int failures;
 } while (0)
 
 static void test_frame_reset_preserves_storage_and_resets_overflow(void) {
-    RageRenderMeshInstance storage[1];
-    RageRenderWorld world;
-    RageRenderMeshInstance instance = {0};
+    RenderMeshInstance storage[1];
+    RenderWorld world;
+    RenderMeshInstance instance = {0};
 
     RenderWorldInit(&world, storage, 1);
     RenderWorldBeginFrame(&world, 41);
@@ -55,9 +55,9 @@ static void test_frame_reset_preserves_storage_and_resets_overflow(void) {
 }
 
 static void test_mesh_submission_rejects_invalid_storage(void) {
-    RageRenderMeshInstance storage[1] = {0};
-    RageRenderMeshInstance instance = {0};
-    RageRenderWorld world;
+    RenderMeshInstance storage[1] = {0};
+    RenderMeshInstance instance = {0};
+    RenderWorld world;
 
     RenderWorldInit(&world, NULL, 1);
     EXPECT_EQ(0, RenderWorldSubmitMesh(&world, &instance));
@@ -72,8 +72,8 @@ static void test_mesh_submission_rejects_invalid_storage(void) {
 }
 
 static void test_public_world_mutators_reject_null_inputs(void) {
-    RageRenderWorld world;
-    RageRenderCamera camera = {0};
+    RenderWorld world;
+    RenderCamera camera = {0};
 
     RenderWorldInit(NULL, NULL, 0);
     RenderWorldInit(&world, NULL, 0);
@@ -89,8 +89,8 @@ static void test_public_world_mutators_reject_null_inputs(void) {
 }
 
 static void test_legacy_mirror_instances_can_be_removed_from_scene(void) {
-    RageRenderMeshInstance storage[3] = {0};
-    RageRenderWorld world;
+    RenderMeshInstance storage[3] = {0};
+    RenderWorld world;
 
     RenderWorldInit(&world, storage, 3);
     storage[0].entity = 10;
@@ -107,9 +107,9 @@ static void test_legacy_mirror_instances_can_be_removed_from_scene(void) {
 }
 
 static void test_camera_is_scene_data_not_backend_state(void) {
-    RageRenderMeshInstance storage[2];
-    RageRenderWorld world;
-    RageRenderCamera camera = {0};
+    RenderMeshInstance storage[2];
+    RenderWorld world;
+    RenderCamera camera = {0};
 
     RenderWorldInit(&world, storage, 2);
     camera.transform.position.y = 3.5f;
@@ -123,9 +123,9 @@ static void test_camera_is_scene_data_not_backend_state(void) {
     camera.skyBottomColor.x = 0.40f;
     camera.skyAssetKey = 88;
     camera.skyCloudRow = 2;
-    camera.skyGridOrigin = (RageRenderVec3){-96.0f, 112.0f, -96.0f};
-    camera.skyGridColumn = (RageRenderVec3){64.0f, 0.0f, 4.0f};
-    camera.skyGridRow = (RageRenderVec3){0.0f, 128.0f, 107.0f};
+    camera.skyGridOrigin = (Vec3){-96.0f, 112.0f, -96.0f};
+    camera.skyGridColumn = (Vec3){64.0f, 0.0f, 4.0f};
+    camera.skyGridRow = (Vec3){0.0f, 128.0f, 107.0f};
     camera.fogNear = 100.0f;
     camera.fogFar = 500.0f;
     RenderWorldSetCamera(&world, &camera);
@@ -150,9 +150,9 @@ static void test_camera_is_scene_data_not_backend_state(void) {
     camera.skyBottomColor.x = 1.00f;
     camera.skyAssetKey = 90;
     camera.skyCloudRow = 4;
-    camera.skyGridOrigin = (RageRenderVec3){-32.0f, 96.0f, -32.0f};
-    camera.skyGridColumn = (RageRenderVec3){64.0f, 0.0f, 5.0f};
-    camera.skyGridRow = (RageRenderVec3){0.0f, 128.0f, 91.0f};
+    camera.skyGridOrigin = (Vec3){-32.0f, 96.0f, -32.0f};
+    camera.skyGridColumn = (Vec3){64.0f, 0.0f, 5.0f};
+    camera.skyGridRow = (Vec3){0.0f, 128.0f, 91.0f};
     camera.fogNear = 200.0f;
     camera.fogFar = 1000.0f;
     RenderWorldSetCamera(&world, &camera);
@@ -177,7 +177,7 @@ static void test_camera_is_scene_data_not_backend_state(void) {
     EXPECT_EQ(750, (int)camera.fogFar);
 
     {
-        RageRenderCamera before = world.camera, after = world.camera, result;
+        RenderCamera before = world.camera, after = world.camera, result;
         before.hasSkyLayout = after.hasSkyLayout = 1;
         before.skyLayout.tiles[1][3] = 0;
         after.skyLayout.tiles[1][3] = 7;
@@ -214,16 +214,16 @@ static void test_camera_is_scene_data_not_backend_state(void) {
 }
 
 static void test_directional_light_is_scene_data(void) {
-    RageRenderMeshInstance storage[1];
-    RageRenderWorld world;
-    RageRenderDirectionalLight light;
+    RenderMeshInstance storage[1];
+    RenderWorld world;
+    RenderDirectionalLight light;
 
     RenderWorldInit(&world, storage, 1);
     EXPECT_EQ(35, (int)(world.light.ambientColor.x * 100.0f));
     EXPECT_EQ(65, (int)(world.light.diffuseColor.x * 100.0f));
-    light.direction = (RageRenderVec3){1.0f, 2.0f, 3.0f};
-    light.ambientColor = (RageRenderVec3){0.2f, 0.3f, 0.4f};
-    light.diffuseColor = (RageRenderVec3){0.8f, 0.7f, 0.6f};
+    light.direction = (Vec3){1.0f, 2.0f, 3.0f};
+    light.ambientColor = (Vec3){0.2f, 0.3f, 0.4f};
+    light.diffuseColor = (Vec3){0.8f, 0.7f, 0.6f};
     RenderWorldSetDirectionalLight(&world, &light);
     EXPECT_EQ(2, (int)world.light.direction.y);
     EXPECT_EQ(30, (int)(world.light.ambientColor.y * 100.0f));
@@ -231,9 +231,9 @@ static void test_directional_light_is_scene_data(void) {
 }
 
 static void test_mirror_is_an_independent_scene_camera(void) {
-    RageRenderMeshInstance storage[1];
-    RageRenderWorld world;
-    RageRenderCamera camera = {0};
+    RenderMeshInstance storage[1];
+    RenderWorld world;
+    RenderCamera camera = {0};
 
     RenderWorldInit(&world, storage, 1);
     camera.transform.position.z = 100.0f;
@@ -258,10 +258,10 @@ static void test_mirror_is_an_independent_scene_camera(void) {
 }
 
 static void test_camera_cuts_are_not_interpolated_as_motion(void) {
-    RageRenderMeshInstance storage[1];
-    RageRenderWorld world;
-    RageRenderCamera camera = {0};
-    RageRenderCamera presentation;
+    RenderMeshInstance storage[1];
+    RenderWorld world;
+    RenderCamera camera = {0};
+    RenderCamera presentation;
 
     RenderWorldInit(&world, storage, 1);
     camera.transform.hasOrientation = 1;
@@ -281,9 +281,9 @@ static void test_camera_cuts_are_not_interpolated_as_motion(void) {
 }
 
 static void test_transform_interpolation_takes_short_angle_path(void) {
-    RageRenderTransform previous = {0};
-    RageRenderTransform current = {0};
-    RageRenderTransform presentation;
+    RenderTransform previous = {0};
+    RenderTransform current = {0};
+    RenderTransform presentation;
 
     previous.rotation.y = 350.0f;
     current.rotation.y = 10.0f;
@@ -294,9 +294,9 @@ static void test_transform_interpolation_takes_short_angle_path(void) {
 }
 
 static void test_transform_interpolation_normalizes_large_quaternions(void) {
-    RageRenderTransform previous = {0};
-    RageRenderTransform current = {0};
-    RageRenderTransform presentation;
+    RenderTransform previous = {0};
+    RenderTransform current = {0};
+    RenderTransform presentation;
 
     previous.hasOrientation = current.hasOrientation = 1;
     previous.orientation.y = current.orientation.y = FLT_MAX;
@@ -308,8 +308,8 @@ static void test_transform_interpolation_normalizes_large_quaternions(void) {
 }
 
 static void test_interpolation_rejects_null_inputs(void) {
-    RageRenderTransform transform;
-    RageRenderCamera camera;
+    RenderTransform transform;
+    RenderCamera camera;
 
     memset(&transform, 0x7f, sizeof(transform));
     RenderInterpolateTransform(NULL, NULL, 0.5f, &transform);
@@ -325,12 +325,12 @@ static void test_interpolation_rejects_null_inputs(void) {
 }
 
 static void test_non_finite_angles_do_not_stall_interpolation(void) {
-    RageRenderTransform previous = {0};
-    RageRenderTransform current = {0};
-    RageRenderTransform presentation;
-    RageRenderMeshInstance storage[1];
-    RageRenderWorld world;
-    RageRenderCamera camera = {0};
+    RenderTransform previous = {0};
+    RenderTransform current = {0};
+    RenderTransform presentation;
+    RenderMeshInstance storage[1];
+    RenderWorld world;
+    RenderCamera camera = {0};
 
     /* Compare against the previous bounded-domain algorithm, including ties.
      * Quarter-degree steps are exact binary floats, avoiding oracle drift. */
@@ -361,7 +361,7 @@ static void test_non_finite_angles_do_not_stall_interpolation(void) {
     }
     const float largePhases[] = {1e20f, -1e20f, FLT_MAX, -FLT_MAX, INFINITY, NAN};
     for (int step = -512; step <= 512; ++step) {
-        RageRenderCamera before = {0}, after = {0}, result;
+        RenderCamera before = {0}, after = {0}, result;
         float expected = (float)step * 0.25f;
         after.skyGridColumn.z = expected;
         while (expected > 16.0f) expected -= 32.0f;
@@ -370,7 +370,7 @@ static void test_non_finite_angles_do_not_stall_interpolation(void) {
         EXPECT_EQ(1, result.skyGridColumn.z == expected * 0.5f);
     }
     for (unsigned i = 0; i < sizeof(largePhases)/sizeof(largePhases[0]); ++i) {
-        RageRenderCamera before = {0}, after = {0}, result;
+        RenderCamera before = {0}, after = {0}, result;
         after.skyGridColumn.z = largePhases[i];
         RenderInterpolateCamera(&before, &after, 0.5f, &result);
         EXPECT_EQ(1, isfinite(result.skyGridColumn.z));
@@ -390,8 +390,8 @@ static void test_non_finite_angles_do_not_stall_interpolation(void) {
 }
 
 static void test_perspective_fog_uses_authored_near_and_far_depths(void) {
-    RageRenderCamera camera = {0};
-    RageRenderVec3 point = {0.0f, 0.0f, -10.0f};
+    RenderCamera camera = {0};
+    Vec3 point = {0.0f, 0.0f, -10.0f};
     camera.fogNear = 10.0f;
     camera.fogFar = 50.0f;
     EXPECT_EQ(0, (int)(RenderFogFactor(&camera, &point) * 100.0f));
@@ -402,9 +402,9 @@ static void test_perspective_fog_uses_authored_near_and_far_depths(void) {
 }
 
 static void test_projection_rejects_non_finite_camera_data(void) {
-    RageRenderCamera camera = {0};
-    RageRenderVec3 view = {0.0f, 0.0f, -10.0f};
-    RageRenderVec3 clip;
+    RenderCamera camera = {0};
+    Vec3 view = {0.0f, 0.0f, -10.0f};
+    Vec3 clip;
     float scale, offset;
 
     camera.verticalFovDegrees = 60.0f;
@@ -412,7 +412,7 @@ static void test_projection_rejects_non_finite_camera_data(void) {
     camera.farPlane = 100.0f;
     camera.fogNear = 1.0f;
     camera.fogFar = 100.0f;
-    clip = (RageRenderVec3){1.0f, 2.0f, 3.0f};
+    clip = (Vec3){1.0f, 2.0f, 3.0f};
     EXPECT_EQ(0, RenderProject(&camera, &view, NAN, &clip));
     EXPECT_EQ(0, (int)clip.x);
     camera.verticalFovDegrees = INFINITY;
@@ -436,7 +436,7 @@ static void test_projection_rejects_non_finite_camera_data(void) {
 }
 
 static void test_gpu_projection_scales_are_bounded(void) {
-    RageRenderCamera camera = {0};
+    RenderCamera camera = {0};
     float horizontal, vertical;
     const float fovs[] = {20.0f, 30.0f, 41.112f, 60.0f, 90.0f, 179.0f};
     const float aspects[] = {1.0f, 4.0f / 3.0f, 16.0f / 9.0f, 148.0f / 36.0f};
@@ -474,9 +474,9 @@ static void test_gpu_projection_scales_are_bounded(void) {
 }
 
 static void test_terrain_grid_places_adjacent_cells_without_overlap(void) {
-    RageRenderTransform left;
-    RageRenderTransform right;
-    RageRenderTransform south;
+    RenderTransform left;
+    RenderTransform right;
+    RenderTransform south;
 
     RenderTerrainCellTransform(0, 0, &left);
     RenderTerrainCellTransform(1, 0, &right);
@@ -489,11 +489,11 @@ static void test_terrain_grid_places_adjacent_cells_without_overlap(void) {
 }
 
 static void test_synchronized_presentation_keeps_previous_vehicle_models(void) {
-    RageRenderMeshInstance previousStorage[3] = {0};
-    RageRenderMeshInstance currentStorage[3] = {0};
-    RageRenderMeshInstance presentation[4] = {0};
-    RageRenderWorld previous;
-    RageRenderWorld current;
+    RenderMeshInstance previousStorage[3] = {0};
+    RenderMeshInstance currentStorage[3] = {0};
+    RenderMeshInstance presentation[4] = {0};
+    RenderWorld previous;
+    RenderWorld current;
     uint32_t count;
 
     RenderWorldInit(&previous, previousStorage, 3);
@@ -535,11 +535,11 @@ static void test_synchronized_presentation_keeps_previous_vehicle_models(void) {
 }
 
 static void test_synchronized_presentation_moves_matching_vehicle(void) {
-    RageRenderMeshInstance previousStorage[1] = {0};
-    RageRenderMeshInstance currentStorage[1] = {0};
-    RageRenderMeshInstance presentation[1] = {0};
-    RageRenderWorld previous;
-    RageRenderWorld current;
+    RenderMeshInstance previousStorage[1] = {0};
+    RenderMeshInstance currentStorage[1] = {0};
+    RenderMeshInstance presentation[1] = {0};
+    RenderWorld previous;
+    RenderWorld current;
 
     RenderWorldInit(&previous, previousStorage, 1);
     RenderWorldInit(&current, currentStorage, 1);
@@ -560,11 +560,11 @@ static void test_synchronized_presentation_moves_matching_vehicle(void) {
 }
 
 static void test_synchronized_presentation_keeps_wheel_sides_paired(void) {
-    RageRenderMeshInstance previousStorage[2] = {0};
-    RageRenderMeshInstance currentStorage[2] = {0};
-    RageRenderMeshInstance presentation[2] = {0};
-    RageRenderWorld previous;
-    RageRenderWorld current;
+    RenderMeshInstance previousStorage[2] = {0};
+    RenderMeshInstance currentStorage[2] = {0};
+    RenderMeshInstance presentation[2] = {0};
+    RenderWorld previous;
+    RenderWorld current;
     unsigned i;
 
     RenderWorldInit(&previous, previousStorage, 2);
@@ -593,11 +593,11 @@ static void test_synchronized_presentation_keeps_wheel_sides_paired(void) {
 }
 
 static void test_synchronized_presentation_matches_animated_wheel_mesh(void) {
-    RageRenderMeshInstance previousStorage[1] = {0};
-    RageRenderMeshInstance currentStorage[1] = {0};
-    RageRenderMeshInstance presentation[1] = {0};
-    RageRenderWorld previous;
-    RageRenderWorld current;
+    RenderMeshInstance previousStorage[1] = {0};
+    RenderMeshInstance currentStorage[1] = {0};
+    RenderMeshInstance presentation[1] = {0};
+    RenderWorld previous;
+    RenderWorld current;
 
     RenderWorldInit(&previous, previousStorage, 1);
     RenderWorldInit(&current, currentStorage, 1);
@@ -619,11 +619,11 @@ static void test_synchronized_presentation_matches_animated_wheel_mesh(void) {
 }
 
 static void test_synchronized_presentation_moves_dynamic_scenery(void) {
-    RageRenderMeshInstance previousStorage[1] = {0};
-    RageRenderMeshInstance currentStorage[1] = {0};
-    RageRenderMeshInstance presentation[1] = {0};
-    RageRenderWorld previous;
-    RageRenderWorld current;
+    RenderMeshInstance previousStorage[1] = {0};
+    RenderMeshInstance currentStorage[1] = {0};
+    RenderMeshInstance presentation[1] = {0};
+    RenderWorld previous;
+    RenderWorld current;
 
     RenderWorldInit(&previous, previousStorage, 1);
     RenderWorldInit(&current, currentStorage, 1);
@@ -643,10 +643,10 @@ static void test_synchronized_presentation_moves_dynamic_scenery(void) {
 }
 
 static void test_synchronized_presentation_rejects_invalid_world_bounds(void) {
-    RageRenderMeshInstance instance = {0};
-    RageRenderMeshInstance presentation;
-    RageRenderWorld previous;
-    RageRenderWorld current;
+    RenderMeshInstance instance = {0};
+    RenderMeshInstance presentation;
+    RenderWorld previous;
+    RenderWorld current;
 
     RenderWorldInit(&previous, &instance, 1);
     RenderWorldInit(&current, &instance, 1);
@@ -660,13 +660,13 @@ static void test_synchronized_presentation_rejects_invalid_world_bounds(void) {
     EXPECT_EQ(0, RenderWorldBuildSynchronizedPresentation(
                      &previous, &current, 0.5f, &presentation, 1));
 
-    RageRenderMeshInstance sources[2] = {0};
+    RenderMeshInstance sources[2] = {0};
     sources[0].assetSet = sources[1].assetSet = RAGE_RENDER_ASSET_TERRAIN;
     RenderWorldInit(&previous, sources, 2);
     RenderWorldInit(&current, sources, 2);
     current.instanceCount = 2;
     memset(&presentation, 0x5a, sizeof(presentation));
-    RageRenderMeshInstance sentinel = presentation;
+    RenderMeshInstance sentinel = presentation;
     EXPECT_EQ(0, RenderWorldBuildSynchronizedPresentation(
                      &previous, &current, 0.5f, &presentation, 1));
     EXPECT_EQ(0, memcmp(&presentation, &sentinel, sizeof(presentation)));
@@ -674,12 +674,12 @@ static void test_synchronized_presentation_rejects_invalid_world_bounds(void) {
     EXPECT_EQ(0, RenderWorldTryBuildSynchronizedPresentation(
         &previous, &current, 0.5f, &presentation, 1, &checkedCount));
     EXPECT_EQ(77, checkedCount);
-    RageRenderWorld empty = {0};
+    RenderWorld empty = {0};
     EXPECT_EQ(1, RenderWorldTryBuildSynchronizedPresentation(
         &empty, &empty, 0.5f, &presentation, 1, &checkedCount));
     EXPECT_EQ(0, checkedCount);
     EXPECT_EQ(0, memcmp(&presentation, &sentinel, sizeof(presentation)));
-    RageRenderWorld incomplete = empty;
+    RenderWorld incomplete = empty;
     incomplete.overflowCount = 1;
     checkedCount = 77;
     EXPECT_EQ(0, RenderWorldTryBuildSynchronizedPresentation(
@@ -700,10 +700,10 @@ static void test_synchronized_presentation_rejects_invalid_world_bounds(void) {
 }
 
 static void test_native_camera_projection_has_no_gte_quantization(void) {
-    RageRenderCamera camera = {0};
-    RageRenderVec3 world = {10.0f, 5.0f, -100.0f};
-    RageRenderVec3 view;
-    RageRenderVec3 clip;
+    RenderCamera camera = {0};
+    Vec3 world = {10.0f, 5.0f, -100.0f};
+    Vec3 view;
+    Vec3 clip;
     float depthScale;
     float depthOffset;
 
@@ -745,12 +745,12 @@ static void test_psx_rotation_uses_the_same_basis_as_imported_positions(void) {
 }
 
 static void test_directional_shadow_map_is_texel_stable(void) {
-    RageRenderVec3 light = RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
-    RageRenderVec3 center = {1000.0f, 200.0f, -500.0f};
-    RageRenderVec3 moved = center;
-    RageRenderVec3 projected;
-    RageRenderShadowMap first;
-    RageRenderShadowMap second;
+    Vec3 light = RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
+    Vec3 center = {1000.0f, 200.0f, -500.0f};
+    Vec3 moved = center;
+    Vec3 projected;
+    RenderShadowMap first;
+    RenderShadowMap second;
     float firstRight;
     float secondRight;
 
@@ -774,9 +774,9 @@ static void test_directional_shadow_map_is_texel_stable(void) {
 }
 
 static void test_high_resolution_vehicle_shadow_density(void) {
-    RageRenderVec3 light = RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
-    RageRenderVec3 center = {0.0f, 0.0f, 0.0f};
-    RageRenderShadowMap shadow;
+    Vec3 light = RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
+    Vec3 center = {0.0f, 0.0f, 0.0f};
+    RenderShadowMap shadow;
 
     EXPECT_EQ(1, RenderBuildDirectionalShadowMap(
                      &center, &light, RAGE_RENDER_VEHICLE_SHADOW_EXTENT,
@@ -785,9 +785,9 @@ static void test_high_resolution_vehicle_shadow_density(void) {
 }
 
 static void test_shadow_map_rejects_non_finite_geometry(void) {
-    RageRenderVec3 center = {0.0f, 0.0f, 0.0f};
-    RageRenderVec3 light = RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
-    RageRenderShadowMap shadow;
+    Vec3 center = {0.0f, 0.0f, 0.0f};
+    Vec3 light = RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
+    RenderShadowMap shadow;
 
     center.x = INFINITY;
     EXPECT_EQ(0, RenderBuildDirectionalShadowMap(
@@ -804,14 +804,14 @@ static void test_shadow_map_rejects_non_finite_geometry(void) {
                      &center, &light, FLT_MIN, UINT32_MAX, &shadow));
     EXPECT_EQ(0, (int)shadow.texelWorldSize);
 
-    light = (RageRenderVec3){0.0f, FLT_MAX, 0.0f};
+    light = (Vec3){0.0f, FLT_MAX, 0.0f};
     EXPECT_EQ(1, RenderBuildDirectionalShadowMap(
                      &center, &light, 4096.0f, 2048, &shadow));
     EXPECT_EQ(1, shadow.row2.y > 0.99f);
 
     {
-        RageRenderVec3 projected = {1.0f, 2.0f, 3.0f};
-        RageRenderVec3 invalidPoint = {INFINITY, 0.0f, 0.0f};
+        Vec3 projected = {1.0f, 2.0f, 3.0f};
+        Vec3 invalidPoint = {INFINITY, 0.0f, 0.0f};
 
         RenderProjectShadowPoint(&shadow, &invalidPoint, &projected);
         EXPECT_EQ(0, (int)projected.x);
@@ -821,7 +821,7 @@ static void test_shadow_map_rejects_non_finite_geometry(void) {
 }
 
 static void test_default_shadow_light_stays_near_overhead(void) {
-    const RageRenderVec3 light = RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
+    const Vec3 light = RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
     float horizontalSquared = light.x * light.x + light.z * light.z;
     /* Less than 14 degrees from vertical keeps a 100-unit-high caster's
      * shadow within 25 world units of its contact point. */

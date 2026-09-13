@@ -28,7 +28,7 @@ int NativeAssetImporterInit(void) {
     return 0;
 }
 
-const RageRuntimeCachedMesh *NativeAssetImporterPeek(uint32_t assetKey, RageRenderAssetSet assetSet) {
+const RageRuntimeCachedMesh *NativeAssetImporterPeek(uint32_t assetKey, RenderAssetSet assetSet) {
     (void)assetKey;
     (void)assetSet;
     return NULL;
@@ -46,14 +46,14 @@ int NativeAssetImporterReady(void) {
     return 0;
 }
 
-int NativeAssetImporterMaterialSlot(const RageRenderMeshInstance *instance,
+int NativeAssetImporterMaterialSlot(const RenderMeshInstance *instance,
     uint16_t tpage, uint16_t clut) {
     (void)instance; (void)tpage; (void)clut;
     return -1;
 }
 
 const RageRuntimeCachedMesh *NativeAssetImporterFind(
-    const RageRenderMeshInstance *instance) {
+    const RenderMeshInstance *instance) {
     (void)instance;
     return NULL;
 }
@@ -63,7 +63,7 @@ uint32_t NativeAssetImporterMeshCount(void) {
 }
 
 int NativeAssetImporterLoadMaterial(
-    const RageRenderMeshInstance *instance, uint32_t material,
+    const RenderMeshInstance *instance, uint32_t material,
     uint8_t variant, RageRenderMaterial *definition, ModernAssetImage *image) {
     (void)instance;
     (void)material;

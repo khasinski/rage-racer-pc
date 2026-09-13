@@ -5,17 +5,17 @@
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "line %d: %s\n", __LINE__, #x); return 1; } } while (0)
 
 int main(void) {
-    RageRenderCamera source = {0};
-    RageRenderCamera target = {0};
+    RenderCamera source = {0};
+    RenderCamera target = {0};
     RageCapturePacket packet = {0};
     float x[4], y[4];
 
-    source.skyGridOrigin = (RageRenderVec3){10, 20, 0};
-    source.skyGridColumn = (RageRenderVec3){4, 0, 3};
-    source.skyGridRow = (RageRenderVec3){0, 5, 0};
-    target.skyGridOrigin = (RageRenderVec3){100, 200, 0};
-    target.skyGridColumn = (RageRenderVec3){8, 0, 4};
-    target.skyGridRow = (RageRenderVec3){0, 10, 0};
+    source.skyGridOrigin = (Vec3){10, 20, 0};
+    source.skyGridColumn = (Vec3){4, 0, 3};
+    source.skyGridRow = (Vec3){0, 5, 0};
+    target.skyGridOrigin = (Vec3){100, 200, 0};
+    target.skyGridColumn = (Vec3){8, 0, 4};
+    target.skyGridRow = (Vec3){0, 10, 0};
     x[0] = 18;
     y[0] = 35;
     ModernSkyReprojectPoint(&source, &target, &x[0], &y[0]);
@@ -26,9 +26,9 @@ int main(void) {
     y[0] = 9;
     ModernSkyReprojectPoint(&source, &target, &x[0], &y[0]);
     CHECK(x[0] == 7 && y[0] == 9);
-    source.skyGridColumn = (RageRenderVec3){4, 0, 31};
-    target.skyGridColumn = (RageRenderVec3){8, 0, 0};
-    target.skyGridRow = (RageRenderVec3){0, 10, 7};
+    source.skyGridColumn = (Vec3){4, 0, 31};
+    target.skyGridColumn = (Vec3){8, 0, 0};
+    target.skyGridRow = (Vec3){0, 10, 7};
     target.skyCloudRow = 1;
     packet.skyIndex = 25;
     CHECK(ModernSkyBuildSmoothQuad(&packet, &source, &target, x, y));

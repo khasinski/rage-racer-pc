@@ -3,18 +3,18 @@
 #include <math.h>
 #include <string.h>
 
-const RageRenderVec3 RAGE_RENDER_DEFAULT_LIGHT_DIRECTION =
+const Vec3 RAGE_RENDER_DEFAULT_LIGHT_DIRECTION =
     {-0.1f, 1.0f, 0.12f};
 
-static float RenderShadowDot(RageRenderVec3 left, RageRenderVec3 right) {
+static float RenderShadowDot(Vec3 left, Vec3 right) {
     return left.x * right.x + left.y * right.y + left.z * right.z;
 }
 
-static int RenderShadowVec3IsFinite(RageRenderVec3 value) {
+static int RenderShadowVec3IsFinite(Vec3 value) {
     return isfinite(value.x) && isfinite(value.y) && isfinite(value.z);
 }
 
-static int RenderShadowMapIsFinite(const RageRenderShadowMap *shadow) {
+static int RenderShadowMapIsFinite(const RenderShadowMap *shadow) {
     return RenderShadowVec3IsFinite(shadow->position) &&
            RenderShadowVec3IsFinite(shadow->row0) &&
            RenderShadowVec3IsFinite(shadow->row1) &&
@@ -25,28 +25,28 @@ static int RenderShadowMapIsFinite(const RageRenderShadowMap *shadow) {
            shadow->texelWorldSize > 0.0f;
 }
 
-static RageRenderVec3 RenderShadowScale(RageRenderVec3 value,
+static Vec3 RenderShadowScale(Vec3 value,
                                              float scale) {
-    RageRenderVec3 out = {value.x * scale, value.y * scale, value.z * scale};
+    Vec3 out = {value.x * scale, value.y * scale, value.z * scale};
     return out;
 }
 
-static RageRenderVec3 RenderShadowAdd(RageRenderVec3 left,
-                                           RageRenderVec3 right) {
-    RageRenderVec3 out = {
+static Vec3 RenderShadowAdd(Vec3 left,
+                                           Vec3 right) {
+    Vec3 out = {
         left.x + right.x, left.y + right.y, left.z + right.z};
     return out;
 }
 
 int RenderBuildDirectionalShadowMap(
-    const RageRenderVec3 *center, const RageRenderVec3 *lightDirection,
-    float extent, uint32_t resolution, RageRenderShadowMap *out) {
-    RageRenderVec3 up = {0.0f, 1.0f, 0.0f};
-    RageRenderVec3 light;
-    RageRenderVec3 right;
-    RageRenderVec3 vertical;
-    RageRenderVec3 snappedCenter;
-    RageRenderShadowMap result;
+    const Vec3 *center, const Vec3 *lightDirection,
+    float extent, uint32_t resolution, RenderShadowMap *out) {
+    Vec3 up = {0.0f, 1.0f, 0.0f};
+    Vec3 light;
+    Vec3 right;
+    Vec3 vertical;
+    Vec3 snappedCenter;
+    RenderShadowMap result;
     double length;
     double rightLength;
     float distance;
@@ -116,13 +116,13 @@ int RenderBuildDirectionalShadowMap(
     return 1;
 }
 
-void RenderProjectShadowPoint(const RageRenderShadowMap *shadow,
-                                  const RageRenderVec3 *point,
-                                  RageRenderVec3 *out) {
-    RageRenderVec3 relative;
+void RenderProjectShadowPoint(const RenderShadowMap *shadow,
+                                  const Vec3 *point,
+                                  Vec3 *out) {
+    Vec3 relative;
     float depth;
     if (out == NULL) return;
-    *out = (RageRenderVec3){0.0f, 0.0f, 0.0f};
+    *out = (Vec3){0.0f, 0.0f, 0.0f};
     if (shadow == NULL || point == NULL ||
         !RenderShadowMapIsFinite(shadow) ||
         !RenderShadowVec3IsFinite(*point)) return;
@@ -134,5 +134,5 @@ void RenderProjectShadowPoint(const RageRenderShadowMap *shadow,
     out->y = RenderShadowDot(shadow->row1, relative) * shadow->scaleY;
     out->z = depth * shadow->depthScale + shadow->depthOffset;
     if (!RenderShadowVec3IsFinite(*out))
-        *out = (RageRenderVec3){0.0f, 0.0f, 0.0f};
+        *out = (Vec3){0.0f, 0.0f, 0.0f};
 }

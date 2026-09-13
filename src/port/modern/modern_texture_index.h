@@ -13,7 +13,7 @@ enum {
 typedef struct ModernTextureKey {
     uint32_t assetKey;
     uint32_t material;
-    RageRenderAssetSet assetSet;
+    RenderAssetSet assetSet;
     uint8_t variant;
     uint8_t hasCarPaint;
     uint8_t carPaintColor1;

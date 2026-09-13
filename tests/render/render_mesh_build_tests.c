@@ -21,7 +21,7 @@ static void write_u32(unsigned char *p, unsigned value) {
 }
 
 static const RageRuntimeMesh *test_mesh_lookup(
-    void *context, const RageRenderMeshInstance *instance) {
+    void *context, const RenderMeshInstance *instance) {
     (void)instance;
     return context;
 }
@@ -49,8 +49,8 @@ static const RageRuntimeMesh *test_mesh_lookup(
 static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
     unsigned char bytes[164] = {0};
     RageRuntimeMesh mesh;
-    RageRenderMeshInstance storage[2] = {0};
-    RageRenderWorld world;
+    RenderMeshInstance storage[2] = {0};
+    RenderWorld world;
     RageNativeDrawVertex vertices[3];
     RageNativeDrawSpan spans[1];
     float positions[3][3] = {{-1.0f, 0.0f, 10.0f},
@@ -193,8 +193,8 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
 }
 
 static void test_native_draw_builder_rejects_invalid_inputs(void) {
-    RageRenderMeshInstance storage[1] = {0};
-    RageRenderWorld world;
+    RenderMeshInstance storage[1] = {0};
+    RenderWorld world;
     RageNativeDrawVertex vertices[3];
     RageNativeDrawSpan spans[1];
     uint32_t spanCount = 99;
@@ -226,8 +226,8 @@ static void test_native_draw_builder_rejects_invalid_inputs(void) {
 static void test_native_draw_builder_keeps_triangles_for_gpu_frustum_clipping(void) {
     unsigned char bytes[164] = {0};
     RageRuntimeMesh mesh;
-    RageRenderMeshInstance storage[1] = {0};
-    RageRenderWorld world;
+    RenderMeshInstance storage[1] = {0};
+    RenderWorld world;
     RageNativeDrawVertex vertices[3];
     RageNativeDrawSpan spans[1];
     /* One corner lies before the near plane. It must reach the GPU so the
@@ -264,8 +264,8 @@ static void test_native_draw_builder_keeps_triangles_for_gpu_frustum_clipping(vo
 static void test_native_draw_builder_culls_dynamic_course_backfaces(void) {
     unsigned char bytes[296] = {0};
     RageRuntimeMesh mesh;
-    RageRenderMeshInstance storage[1] = {0};
-    RageRenderWorld world;
+    RenderMeshInstance storage[1] = {0};
+    RenderWorld world;
     RageNativeDrawVertex vertices[6];
     RageNativeDrawSpan spans[1];
     float positions[6][3] = {
@@ -304,8 +304,8 @@ static void test_native_draw_builder_culls_dynamic_course_backfaces(void) {
 static void test_native_draw_builder_culls_terrain_per_authored_quad(void) {
     unsigned char bytes[216] = {0};
     RageRuntimeMesh mesh;
-    RageRenderMeshInstance storage[1] = {0};
-    RageRenderWorld world;
+    RenderMeshInstance storage[1] = {0};
+    RenderWorld world;
     RageNativeDrawVertex vertices[6];
     RageNativeDrawSpan spans[1];
     const float visible[4][3] = {
@@ -396,8 +396,8 @@ static void test_terrain_culling_respects_mesh_range(void) {
         {-1,-1,-10}, {1,-1,-10}, {-1,1,-10}, {1,1,-10}};
     const uint32_t indices[6] = {0,2,1, 1,2,3};
     RageRuntimeMesh mesh;
-    RageRenderMeshInstance storage[1] = {0};
-    RageRenderWorld world;
+    RenderMeshInstance storage[1] = {0};
+    RenderWorld world;
     RageNativeDrawVertex vertices[6];
     RageNativeDrawSpan spans[1];
     uint32_t spanCount;
@@ -417,7 +417,7 @@ static void test_terrain_culling_respects_mesh_range(void) {
     world.camera.nearPlane = 1; world.camera.farPlane = 100;
     world.instanceCount = 1;
     storage[0].assetSet = RAGE_RENDER_ASSET_TERRAIN;
-    storage[0].transform.scale = (RageRenderVec3){1,1,1};
+    storage[0].transform.scale = (Vec3){1,1,1};
     /* The remaining global indices form a back-facing quad, but lie outside
      * this mesh range. Its independent triangle must reach GPU clipping. */
     EXPECT_EQ(3, RenderBuildNativeDraws(&world, 1, test_mesh_lookup, &mesh,
@@ -433,8 +433,8 @@ static void test_terrain_position_reuse_stops_at_incomplete_quad(void) {
         {1,-1,-10}, {-1,-1,-10}, {1,1,-10}, {-1,1,-10}};
     const uint32_t indices[9] = {0,2,1, 1,2,3, 3,0,2};
     RageRuntimeMesh mesh;
-    RageRenderMeshInstance storage[1] = {0};
-    RageRenderWorld world;
+    RenderMeshInstance storage[1] = {0};
+    RenderWorld world;
     RageNativeGpuVertex vertices[9];
     RageNativeDrawSpan spans[1];
     uint32_t spanCount;
@@ -459,7 +459,7 @@ static void test_terrain_position_reuse_stops_at_incomplete_quad(void) {
     world.camera.nearPlane = 1; world.camera.farPlane = 100;
     world.instanceCount = 1;
     storage[0].assetSet = RAGE_RENDER_ASSET_TERRAIN;
-    storage[0].transform.scale = (RageRenderVec3){1,1,1};
+    storage[0].transform.scale = (Vec3){1,1,1};
     for (int cpuFog = 0; cpuFog <= 1; ++cpuFog) {
         EXPECT_EQ(9, RenderBuildNativeCompactPassDraws(&world,
             RAGE_RENDER_PASS_MAIN, 1, cpuFog, test_mesh_lookup, &mesh,
@@ -478,8 +478,8 @@ static void test_terrain_position_reuse_stops_at_incomplete_quad(void) {
 static void test_native_draw_builder_welds_terrain_cell_boundaries(void) {
     unsigned char bytes[164] = {0};
     RageRuntimeMesh mesh;
-    RageRenderMeshInstance storage[1] = {0};
-    RageRenderWorld world;
+    RenderMeshInstance storage[1] = {0};
+    RenderWorld world;
     RageNativeDrawVertex vertices[3];
     RageNativeDrawSpan spans[1];
     float positions[3][3] = {
@@ -521,8 +521,8 @@ static void test_native_draw_builder_welds_terrain_cell_boundaries(void) {
 static void test_native_draw_builder_applies_authored_course_texture_scroll(void) {
     unsigned char bytes[164] = {0};
     RageRuntimeMesh mesh;
-    RageRenderMeshInstance storage[1] = {0};
-    RageRenderWorld world;
+    RenderMeshInstance storage[1] = {0};
+    RenderWorld world;
     RageNativeDrawVertex vertices[3];
     RageNativeDrawSpan spans[1];
     float positions[3][3] = {{-1.0f, 0.0f, 10.0f},
@@ -592,8 +592,8 @@ static void test_scroll_draw_boundaries_and_mixed_cache_reuse(void) {
     unsigned char bytes[320] = {0};
     const uint32_t indices[12] = {0,1,2, 3,4,5, 0,4,2, 0,1,2};
     RageRuntimeMesh mesh;
-    RageRenderMeshInstance instance = {0};
-    RageRenderWorld world;
+    RenderMeshInstance instance = {0};
+    RenderWorld world;
     RageNativeGpuVertex compact[12];
     RageNativeDrawVertex reference[12];
     RageNativeDrawSpan spans[4] = {0}, referenceSpans[4] = {0};
@@ -615,7 +615,7 @@ static void test_scroll_draw_boundaries_and_mixed_cache_reuse(void) {
     world.instanceCount = 1;
     world.camera.nearPlane = 1; world.camera.farPlane = 100;
     world.camera.verticalFovDegrees = 90;
-    instance.transform.scale = (RageRenderVec3){1,1,1};
+    instance.transform.scale = (Vec3){1,1,1};
     instance.textureScrollU = 64;
     EXPECT_EQ(12, RenderBuildNativePassDraws(&world, RAGE_RENDER_PASS_MAIN,
         1, test_mesh_lookup, &mesh, reference, 12, referenceSpans, 4, &referenceCount));
@@ -640,8 +640,8 @@ static void test_scroll_draw_boundaries_and_mixed_cache_reuse(void) {
 static void test_native_draw_builder_preserves_terrain_ot_bias(void) {
     unsigned char bytes[164] = {0};
     RageRuntimeMesh mesh;
-    RageRenderMeshInstance storage[1] = {0};
-    RageRenderWorld world;
+    RenderMeshInstance storage[1] = {0};
+    RenderWorld world;
     RageNativeDrawVertex vertices[3];
     RageNativeDrawSpan spans[1];
     float positions[3][3] = {{-1.0f, 0.0f, 10.0f},
@@ -682,8 +682,8 @@ static void test_native_draw_builder_preserves_terrain_ot_bias(void) {
 static void test_native_draw_builder_preserves_dynamic_terrain_material_flags(void) {
     unsigned char bytes[164] = {0};
     RageRuntimeMesh mesh;
-    RageRenderMeshInstance storage[1] = {0};
-    RageRenderWorld world;
+    RenderMeshInstance storage[1] = {0};
+    RenderWorld world;
     RageNativeDrawVertex vertices[3];
     RageNativeDrawSpan spans[1];
     float positions[3][3] = {{-1.0f, 0.0f, 10.0f},
@@ -748,8 +748,8 @@ static void test_native_draw_builder_preserves_dynamic_terrain_material_flags(vo
 static void test_native_draw_builder_makes_road_paint_real_geometry(void) {
     unsigned char bytes[164] = {0};
     RageRuntimeMesh mesh;
-    RageRenderMeshInstance storage[1] = {0};
-    RageRenderWorld world;
+    RenderMeshInstance storage[1] = {0};
+    RenderWorld world;
     RageNativeDrawVertex vertices[3];
     RageNativeDrawSpan spans[1];
     float positions[3][3] = {
@@ -790,8 +790,8 @@ static void test_native_draw_builder_makes_road_paint_real_geometry(void) {
 static void test_native_draw_builder_keeps_terrain_detail_at_long_range(void) {
     unsigned char bytes[164] = {0};
     RageRuntimeMesh mesh;
-    RageRenderMeshInstance storage[1] = {0};
-    RageRenderWorld world;
+    RenderMeshInstance storage[1] = {0};
+    RenderWorld world;
     RageNativeDrawVertex vertices[3];
     RageNativeDrawSpan spans[1];
     float positions[3][3] = {{-1.0f, 0.0f, 0.0f},
@@ -833,8 +833,8 @@ static void test_native_draw_builder_keeps_terrain_detail_at_long_range(void) {
 static void test_native_draw_builder_culls_fully_offscreen_instance(void) {
     unsigned char bytes[164] = {0};
     RageRuntimeMesh mesh;
-    RageRenderMeshInstance storage[1] = {0};
-    RageRenderWorld world;
+    RenderMeshInstance storage[1] = {0};
+    RenderWorld world;
     RageNativeDrawVertex vertices[3];
     RageNativeDrawSpan spans[1];
     float positions[3][3] = {{-1.0f, 0.0f, 10.0f}, {1.0f, 0.0f, 10.0f},
@@ -867,8 +867,8 @@ static void test_native_draw_builder_culls_fully_offscreen_instance(void) {
 static void test_native_draw_builder_keeps_large_instance_crossing_frustum(void) {
     unsigned char bytes[164] = {0};
     RageRuntimeMesh mesh;
-    RageRenderMeshInstance storage[1] = {0};
-    RageRenderWorld world;
+    RenderMeshInstance storage[1] = {0};
+    RenderWorld world;
     RageNativeDrawVertex vertices[3];
     RageNativeDrawSpan spans[1];
     /* The centre of this large triangle is beyond the right edge at its
@@ -905,8 +905,8 @@ static void test_native_draw_builder_keeps_large_instance_crossing_frustum(void)
 static void test_native_draw_builder_keeps_instance_in_frustum_guard_band(void) {
     unsigned char bytes[164] = {0};
     RageRuntimeMesh mesh;
-    RageRenderMeshInstance storage[1] = {0};
-    RageRenderWorld world;
+    RenderMeshInstance storage[1] = {0};
+    RenderWorld world;
     RageNativeDrawVertex vertices[3];
     RageNativeDrawSpan spans[1];
     float positions[3][3] = {{10.8f, -0.1f, -10.0f},
@@ -965,8 +965,8 @@ static void test_shared_mesh_independent_views(void) {
     unsigned char bytes[164] = {0}, original[164];
     RageRuntimeMesh mesh;
     RageRuntimeVertex source = {0};
-    RageRenderMeshInstance instance = {0}, originalInstance;
-    RageRenderWorld world, rear;
+    RenderMeshInstance instance = {0}, originalInstance;
+    RenderWorld world, rear;
     RageNativeDrawVertex mainVertices[3], rearVertices[3], repeated[3];
     RageNativeDrawSpan spans[1];
     uint32_t spanCount;
@@ -1061,8 +1061,8 @@ static void test_gpu_vertex_reuse_preserves_instance_and_triangle_state(void) {
     RageRuntimeVertex vertex = {0};
     const uint32_t indices[] = {0, 1, 2, 0, 2, 256, 0, 1, 2};
     const float positions[4][3] = {{-1, 0, -10}, {1, 0, -10}, {0, 1, -10}, {-1, 1, -9}};
-    RageRenderMeshInstance instances[2] = {0};
-    RageRenderWorld world;
+    RenderMeshInstance instances[2] = {0};
+    RenderWorld world;
     RageNativeDrawVertex reference[18], cached[18];
     RageNativeDrawSpan referenceSpans[2] = {0}, cachedSpans[2] = {0};
     uint32_t referenceCount, cachedCount;
@@ -1085,10 +1085,10 @@ static void test_gpu_vertex_reuse_preserves_instance_and_triangle_state(void) {
     for (unsigned i = 0; i < 2; ++i) {
         instances[i].entity = i + 1;
         instances[i].pass = RAGE_RENDER_PASS_MAIN;
-        instances[i].transform.scale = (RageRenderVec3){1, 1, 1};
+        instances[i].transform.scale = (Vec3){1, 1, 1};
         instances[i].transform.position.x = (float)i * 10;
         instances[i].textureScrollU = (uint8_t)(i * 64);
-        instances[i].environmentLight = (RageRenderVec3){0.25f + (float)i * 0.5f, 0.5f, 1};
+        instances[i].environmentLight = (Vec3){0.25f + (float)i * 0.5f, 0.5f, 1};
         instances[i].flags = RAGE_RENDER_INSTANCE_FLAT_SHADED |
             RAGE_RENDER_INSTANCE_DEPTH_DECAL | RAGE_RENDER_INSTANCE_ENABLE_FOG;
     }
@@ -1118,12 +1118,12 @@ static void test_gpu_vertex_reuse_preserves_instance_and_triangle_state(void) {
         static const float expected[] = {1.0f, 1.0f, 0.4f, 1.0f};
         for (unsigned state = 0; state < 4; ++state) {
             for (unsigned instance = 0; instance < 2; ++instance) {
-                instances[instance].assetSet = (RageRenderAssetSet)asset;
+                instances[instance].assetSet = (RenderAssetSet)asset;
                 instances[instance].flags = instance == 0
                     ? RAGE_RENDER_INSTANCE_ENABLE_LIGHTING : 0;
                 instances[instance].lightInfluence = influence[state];
                 instances[instance].environmentLight = instance == 0
-                    ? (RageRenderVec3){0, 0, 0} : (RageRenderVec3){0, 0.5f, 0};
+                    ? (Vec3){0, 0, 0} : (Vec3){0, 0.5f, 0};
             }
             for (unsigned gpu = 0; gpu < 2; ++gpu) {
                 uint32_t count = gpu
@@ -1217,8 +1217,8 @@ static void test_overlay_orientation_and_degenerate_geometry(void) {
         unsigned char bytes[164] = {0};
         RageRuntimeMesh mesh;
         RageRuntimeVertex vertex = {0};
-        RageRenderMeshInstance instance = {0};
-        RageRenderWorld world;
+        RenderMeshInstance instance = {0};
+        RenderWorld world;
         RageNativeGpuVertex output[3];
         RageNativeDrawSpan span;
         uint32_t spanCount;
@@ -1238,7 +1238,7 @@ static void test_overlay_orientation_and_degenerate_geometry(void) {
         world.camera.verticalFovDegrees = 90;
         world.camera.nearPlane = 1; world.camera.farPlane = 100;
         instance.pass = RAGE_RENDER_PASS_MAIN;
-        instance.transform.scale = (RageRenderVec3){1, 1, 1};
+        instance.transform.scale = (Vec3){1, 1, 1};
         instance.flags = RAGE_RENDER_INSTANCE_FLAT_SHADED |
             RAGE_RENDER_INSTANCE_DEPTH_DECAL | RAGE_RENDER_INSTANCE_ENABLE_FOG;
         for (unsigned view = 0; view < 3; ++view) {
@@ -1264,8 +1264,8 @@ static void test_overlay_orientation_and_degenerate_geometry(void) {
 static void test_car_marking_stays_outside_hood(void) {
     unsigned char bytes[164] = {0};
     RageRuntimeMesh mesh;
-    RageRenderMeshInstance storage[1] = {0};
-    RageRenderWorld world;
+    RenderMeshInstance storage[1] = {0};
+    RenderWorld world;
     RageNativeDrawVertex vertices[3];
     RageNativeDrawSpan spans[1];
     float positions[3][3] = {{-1, 0, 10}, {1, 0, 10}, {0, 0, 12}};
@@ -1304,15 +1304,15 @@ static void test_car_marking_stays_outside_hood(void) {
 }
 
 static const RageRuntimeMesh *count_missing_lookup(
-    void *context, const RageRenderMeshInstance *instance) {
+    void *context, const RenderMeshInstance *instance) {
     unsigned *calls = context;
     ++calls[instance->pass == RAGE_RENDER_PASS_MAIN ? 0 : 1];
     return NULL;
 }
 
 static void test_pass_filter_precedes_asset_lookup(void) {
-    RageRenderMeshInstance instances[2] = {0};
-    RageRenderWorld world;
+    RenderMeshInstance instances[2] = {0};
+    RenderWorld world;
     RageNativeDrawVertex vertices[3];
     RageNativeGpuVertex compact[3];
     RageNativeDrawSpan spans[1];
@@ -1338,32 +1338,32 @@ static void test_pass_filter_precedes_asset_lookup(void) {
 }
 
 static void test_instance_transform_contract(void) {
-    RageRenderTransform transform = {0};
-    transform.scale = (RageRenderVec3){2, -3, 0};
-    transform.position = (RageRenderVec3){10, 20, 30};
-    const RageRenderVec3 source = {1, 2, 3};
-    RageRenderInstanceTransform basis = RenderPrepareInstanceTransform(&transform);
-    RageRenderVec3 point = RenderTransformInstancePoint(&basis, source);
-    RageRenderVec3 normal = RenderRotateInstanceVector(&basis, source);
+    RenderTransform transform = {0};
+    transform.scale = (Vec3){2, -3, 0};
+    transform.position = (Vec3){10, 20, 30};
+    const Vec3 source = {1, 2, 3};
+    RenderInstanceTransform basis = RenderPrepareInstanceTransform(&transform);
+    Vec3 point = RenderTransformInstancePoint(&basis, source);
+    Vec3 normal = RenderRotateInstanceVector(&basis, source);
     EXPECT_NEAR(12, point.x, 0); EXPECT_NEAR(14, point.y, 0); EXPECT_NEAR(30, point.z, 0);
     EXPECT_NEAR(1, normal.x, 0); EXPECT_NEAR(2, normal.y, 0); EXPECT_NEAR(3, normal.z, 0);
-    transform.rotation = (RageRenderVec3){17, 83, -24};
+    transform.rotation = (Vec3){17, 83, -24};
     basis = RenderPrepareInstanceTransform(&transform);
     point = RenderTransformInstancePoint(&basis, source);
     normal = RenderRotateInstanceVector(&basis, source);
-    const RageRenderQuaternion invalid[] = {{0,0,0,0}, {NAN,0,0,1}, {0,INFINITY,0,1}};
+    const Quaternion invalid[] = {{0,0,0,0}, {NAN,0,0,1}, {0,INFINITY,0,1}};
     transform.hasOrientation = 1;
     for (unsigned i = 0; i < sizeof(invalid) / sizeof(*invalid); ++i) {
         transform.orientation = invalid[i];
         basis = RenderPrepareInstanceTransform(&transform);
-        RageRenderVec3 p = RenderTransformInstancePoint(&basis, source);
-        RageRenderVec3 n = RenderRotateInstanceVector(&basis, source);
+        Vec3 p = RenderTransformInstancePoint(&basis, source);
+        Vec3 n = RenderRotateInstanceVector(&basis, source);
         EXPECT_EQ(0, basis.useMatrix);
         EXPECT_EQ(0, memcmp(&p, &point, sizeof(p)));
         EXPECT_EQ(0, memcmp(&n, &normal, sizeof(n)));
     }
     /* Non-unit quaternion must normalize and override the Euler angles. */
-    transform.orientation = (RageRenderQuaternion){0,0,0,7};
+    transform.orientation = (Quaternion){0,0,0,7};
     basis = RenderPrepareInstanceTransform(&transform);
     EXPECT_EQ(1, basis.useMatrix);
     point = RenderTransformInstancePoint(&basis, source);
@@ -1371,7 +1371,7 @@ static void test_instance_transform_contract(void) {
 }
 
 static void test_position_only_triangle_geometry(void) {
-    RageRenderVec3 p[3] = {{0,0,0}, {8,0,0}, {0,0,128}};
+    Vec3 p[3] = {{0,0,0}, {8,0,0}, {0,0,128}};
     RageTriangleGeometry g = RenderTriangleGeometry(p);
     EXPECT_NEAR(-1024, g.ny, 0);
     EXPECT_NEAR(1024, g.length, 0);
@@ -1390,7 +1390,7 @@ static void test_position_only_triangle_geometry(void) {
 }
 
 static void compare_vehicle_template(RageNativeMeshTemplateCache *cache,
-    RageRenderWorld *world, RageRuntimeMesh *mesh, uint32_t capacity, uint32_t spanCapacity, int cpuFog) {
+    RenderWorld *world, RageRuntimeMesh *mesh, uint32_t capacity, uint32_t spanCapacity, int cpuFog) {
     RageNativeGpuVertex expected[24] = {0}, actual[24] = {0};
     RageNativeDrawSpan expectedSpans[12] = {0}, actualSpans[12] = {0};
     uint32_t expectedCount, actualCount;
@@ -1436,8 +1436,8 @@ static void test_vehicle_templates_follow_instance_state_and_capacity(void) {
     unsigned char bytes[456] = {0};
     RageRuntimeMesh mesh;
     RageNativeMeshTemplateCache cache = {0};
-    RageRenderMeshInstance instances[2] = {0};
-    RageRenderWorld world;
+    RenderMeshInstance instances[2] = {0};
+    RenderWorld world;
     const uint32_t indices[15] = {0,1,2, 3,4,5, 0,4,2, 6,7,8, 0,1,2};
     EXPECT_EQ(1, RuntimeMeshEncodeHeader(bytes, sizeof(bytes), 2, 9, 15));
     write_u32(bytes + 24, 0); write_u32(bytes + 28, 12);
@@ -1483,15 +1483,15 @@ static void test_vehicle_templates_follow_instance_state_and_capacity(void) {
             instances[i].entity = i;
             instances[i].mesh = frame < 6 ? 0 : 1;
             instances[i].component = (uint8_t)i;
-            instances[i].transform.scale = (RageRenderVec3){-0.25f, 0.5f, 1};
-            instances[i].transform.position = (RageRenderVec3){(float)frame, (float)i, -3};
-            instances[i].transform.rotation = (RageRenderVec3){10, 37 + (float)frame, 22};
-            instances[i].transform.orientation = (RageRenderQuaternion){0.3f, 0.1f, -0.2f, 0.8f};
+            instances[i].transform.scale = (Vec3){-0.25f, 0.5f, 1};
+            instances[i].transform.position = (Vec3){(float)frame, (float)i, -3};
+            instances[i].transform.rotation = (Vec3){10, 37 + (float)frame, 22};
+            instances[i].transform.orientation = (Quaternion){0.3f, 0.1f, -0.2f, 0.8f};
             instances[i].transform.hasOrientation = (uint8_t)(frame & 1);
             instances[i].flags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING |
                 (frame & 2 ? RAGE_RENDER_INSTANCE_ENABLE_FOG : 0);
             instances[i].lightInfluence = (float)frame / 8;
-            instances[i].environmentLight = (RageRenderVec3){0.2f, 0.7f, 1};
+            instances[i].environmentLight = (Vec3){0.2f, 0.7f, 1};
             instances[i].hasCarPaint = (uint8_t)i;
             instances[i].carPaintColor1 = (uint8_t)frame;
             instances[i].materialVariant = (uint8_t)(frame % 3);
@@ -1570,7 +1570,7 @@ static void test_local_uniform_state_tracks_shader_inputs(void) {
     RageNativeMeshTemplateView meshA = {0}, meshB = {0};
     EXPECT_EQ(1, RenderNativeLocalStateEqual(NULL, &a));
     a.localGeometry = &meshA;
-    a.localTransform.scale = (RageRenderVec3){1, 1, 1};
+    a.localTransform.scale = (Vec3){1, 1, 1};
     EXPECT_EQ(0, RenderNativeLocalStateEqual(&a, NULL));
     EXPECT_EQ(0, RenderNativeLocalStateEqual(NULL, &a));
     b = a;
@@ -1593,7 +1593,7 @@ static void test_local_uniform_state_tracks_shader_inputs(void) {
     b = a; b.localTransform.rotation.z = 10;
     EXPECT_EQ(0, RenderNativeLocalStateEqual(&a, &b));
     b = a; b.localTransform.hasOrientation = 1;
-    b.localTransform.orientation = (RageRenderQuaternion){0, 0, 1, 1};
+    b.localTransform.orientation = (Quaternion){0, 0, 1, 1};
     EXPECT_EQ(0, RenderNativeLocalStateEqual(&a, &b));
 }
 

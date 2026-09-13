@@ -3,7 +3,7 @@
 #include <math.h>
 #include <string.h>
 
-static int RenderWorldInstancesAreValid(const RageRenderWorld *world) {
+static int RenderWorldInstancesAreValid(const RenderWorld *world) {
     return world != NULL &&
            world->overflowCount == 0 &&
            world->instanceCount <= world->instanceCapacity &&
@@ -18,9 +18,9 @@ static float Clamp01(float value) {
     return value;
 }
 
-static void InterpolateVec3(const RageRenderVec3 *previous,
-                            const RageRenderVec3 *current, float t,
-                            RageRenderVec3 *out) {
+static void InterpolateVec3(const Vec3 *previous,
+                            const Vec3 *current, float t,
+                            Vec3 *out) {
     out->x = previous->x + (current->x - previous->x) * t;
     out->y = previous->y + (current->y - previous->y) * t;
     out->z = previous->z + (current->z - previous->z) * t;
@@ -52,10 +52,10 @@ float RenderLerpAngleDegrees(float from, float to, float t) {
     return from + delta * t;
 }
 
-void RenderInterpolateTransform(const RageRenderTransform *previous,
-                                    const RageRenderTransform *current,
+void RenderInterpolateTransform(const RenderTransform *previous,
+                                    const RenderTransform *current,
                                     float t,
-                                    RageRenderTransform *out) {
+                                    RenderTransform *out) {
     if (out == NULL) return;
     if (previous == NULL || current == NULL) {
         memset(out, 0, sizeof(*out));
@@ -109,9 +109,9 @@ void RenderInterpolateTransform(const RageRenderTransform *previous,
     InterpolateVec3(&previous->scale, &current->scale, t, &out->scale);
 }
 
-void RenderInterpolateCamera(const RageRenderCamera *previous,
-                                 const RageRenderCamera *current, float t,
-                                 RageRenderCamera *out) {
+void RenderInterpolateCamera(const RenderCamera *previous,
+                                 const RenderCamera *current, float t,
+                                 RenderCamera *out) {
     if (out == NULL) return;
     if (previous == NULL || current == NULL) {
         memset(out, 0, sizeof(*out));
@@ -203,21 +203,21 @@ void RenderInterpolateCamera(const RageRenderCamera *previous,
 }
 
 static int RenderInstanceIsVehicle(
-    const RageRenderMeshInstance *instance) {
+    const RenderMeshInstance *instance) {
     return instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
            instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
 }
 
 static int RenderInstanceNeedsSynchronizedMatch(
-    const RageRenderMeshInstance *instance) {
+    const RenderMeshInstance *instance) {
     return RenderInstanceIsVehicle(instance) ||
            (instance->assetSet == RAGE_RENDER_ASSET_COURSE &&
             instance->entity >= 0x30000u && instance->entity < 0x40000u);
 }
 
 static int RenderVehicleIdentityMatches(
-    const RageRenderMeshInstance *left,
-    const RageRenderMeshInstance *right) {
+    const RenderMeshInstance *left,
+    const RenderMeshInstance *right) {
     if (left->entity != right->entity ||
         left->assetSet != right->assetSet ||
         left->assetKey != right->assetKey ||
@@ -231,7 +231,7 @@ static int RenderVehicleIdentityMatches(
 }
 
 static float RenderTransformDistanceSquared(
-    const RageRenderTransform *left, const RageRenderTransform *right) {
+    const RenderTransform *left, const RenderTransform *right) {
     float x = left->position.x - right->position.x;
     float y = left->position.y - right->position.y;
     float z = left->position.z - right->position.z;
@@ -239,8 +239,8 @@ static float RenderTransformDistanceSquared(
 }
 
 int RenderWorldTryBuildSynchronizedPresentation(
-    const RageRenderWorld *previous, const RageRenderWorld *current, float t,
-    RageRenderMeshInstance *out, uint32_t capacity, uint32_t *count) {
+    const RenderWorld *previous, const RenderWorld *current, float t,
+    RenderMeshInstance *out, uint32_t capacity, uint32_t *count) {
     uint32_t outputCount = 0;
     uint32_t currentIndex;
     uint8_t matched[RAGE_RENDER_PRESENTATION_MAX_INSTANCES];
@@ -261,7 +261,7 @@ int RenderWorldTryBuildSynchronizedPresentation(
     for (currentIndex = 0;
          currentIndex < current->instanceCount && outputCount < capacity;
          currentIndex++) {
-        const RageRenderMeshInstance *instance =
+        const RenderMeshInstance *instance =
             &current->instances[currentIndex];
         if (RenderInstanceNeedsSynchronizedMatch(instance)) continue;
         out[outputCount] = *instance;
@@ -278,16 +278,16 @@ int RenderWorldTryBuildSynchronizedPresentation(
     for (uint32_t previousIndex = 0;
          previousIndex < previous->instanceCount && outputCount < capacity;
          previousIndex++) {
-        const RageRenderMeshInstance *base =
+        const RenderMeshInstance *base =
             &previous->instances[previousIndex];
-        const RageRenderMeshInstance *target = NULL;
+        const RenderMeshInstance *target = NULL;
         uint32_t targetIndex = 0;
         float bestDistance = 0.0f;
 
         if (!RenderInstanceNeedsSynchronizedMatch(base)) continue;
         for (currentIndex = 0; currentIndex < current->instanceCount;
              currentIndex++) {
-            const RageRenderMeshInstance *candidate =
+            const RenderMeshInstance *candidate =
                 &current->instances[currentIndex];
             float distance;
             if (matched[currentIndex] ||
@@ -315,8 +315,8 @@ int RenderWorldTryBuildSynchronizedPresentation(
 }
 
 uint32_t RenderWorldBuildSynchronizedPresentation(
-    const RageRenderWorld *previous, const RageRenderWorld *current, float t,
-    RageRenderMeshInstance *out, uint32_t capacity) {
+    const RenderWorld *previous, const RenderWorld *current, float t,
+    RenderMeshInstance *out, uint32_t capacity) {
     uint32_t count = 0;
     RenderWorldTryBuildSynchronizedPresentation(previous, current, t, out, capacity, &count);
     return count;

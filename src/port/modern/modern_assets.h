@@ -17,7 +17,7 @@ int ModernAssetsExportCar(const char *key, const char *path);
 int ModernAssetsInitRoot(const char *root);
 void ModernAssetsShutdown(void);
 const RageRuntimeCachedMesh *ModernAssetsFind(
-    const RageRenderMeshInstance *instance);
+    const RenderMeshInstance *instance);
 int ModernAssetsReady(void);
 /* Process-local lifetime token, not a content fingerprint. Changes on successful
  * session creation and retirement; stable across retries and idempotent calls.
@@ -25,10 +25,10 @@ int ModernAssetsReady(void);
 uint64_t ModernAssetsGeneration(void);
 uint32_t ModernAssetsCachedMeshCount(void);
 const RageRuntimeMesh *ModernAssetsMeshLookup(
-    void *context, const RageRenderMeshInstance *instance);
+    void *context, const RenderMeshInstance *instance);
 /* Build-stage lookup, after WarmWorld. Missing assets stay missing; no import. */
 const RageRuntimeMesh *ModernAssetsResidentMeshLookup(
-    void *context, const RageRenderMeshInstance *instance);
+    void *context, const RenderMeshInstance *instance);
 /* On success, definition paths refer to caller-owned storage, not shared
  * scratch bytes. Keep storage at a stable address until done with the view.
  * Image pixels have separate ownership and must be freed with the API below.
@@ -37,7 +37,7 @@ const RageRuntimeMesh *ModernAssetsResidentMeshLookup(
  * Cached sidecar definitions are immutable once validated in this session;
  * edits become visible after full shutdown/reinitialization. Failed catalog
  * opens are retryable. Pixel files are read separately, not a source snapshot. */
-int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
+int ModernAssetsLoadMaterial(const RenderMeshInstance *instance,
                              uint32_t material, uint8_t variant,
                              RageRenderMaterial *definition,
                              ModernAssetImage *image,
@@ -50,6 +50,6 @@ void ModernAssetsFreeMaterialImage(ModernAssetImage *image);
 /* Import meshes after a completed logic frame, before presentation begins.
  * This may decode source data and must never run from the GPU prepare/draw
  * path, which is also entered for high-FPS repeat presentations. */
-void ModernAssetsPrepareWorld(const RageRenderWorld *world);
+void ModernAssetsPrepareWorld(const RenderWorld *world);
 
 #endif

@@ -98,7 +98,7 @@ int ModernAssetsExportCar(const char *key, const char *path) {
 }
 
 static int AuthoredCarMatches(const AuthoredCarReplacement *car,
-                             const RageRenderMeshInstance *instance) {
+                             const RenderMeshInstance *instance) {
     return car->assetKey == instance->assetKey &&
            car->assetSet == instance->assetSet;
 }
@@ -109,7 +109,7 @@ static void ReleaseAuthoredBytes(void *context, const void *bytes) {
 }
 
 static const RageRuntimeCachedMesh *ModernAuthoredCar(
-    const RageRuntimeCachedMesh *base, const RageRenderMeshInstance *instance,
+    const RageRuntimeCachedMesh *base, const RenderMeshInstance *instance,
     int imported) {
     RageRuntimeMesh working;
     RageRuntimeCachedMesh *entry;
@@ -464,7 +464,7 @@ void ModernAssetsShutdown(void) {
 }
 
 typedef struct MeshProviderRequest {
-    const RageRenderMeshInstance *instance;
+    const RenderMeshInstance *instance;
     const RageRuntimeCachedMesh *mesh;
     int residentOnly;
 } MeshProviderRequest;
@@ -489,14 +489,14 @@ static RageResourceStatus ResolveCachedMesh(void *context) {
     return status == RAGE_RUNTIME_MESH_READY ? RAGE_RESOURCE_READY :
         status == RAGE_RUNTIME_MESH_MISSING ? RAGE_RESOURCE_MISSING : RAGE_RESOURCE_ERROR;
 }
-static const RageRuntimeCachedMesh *ResolveBaseMesh(const RageRenderMeshInstance *instance,int residentOnly) {
+static const RageRuntimeCachedMesh *ResolveBaseMesh(const RenderMeshInstance *instance,int residentOnly) {
     MeshProviderRequest request={instance,NULL,residentOnly};
     const RageResourceProvider providers[]={{ResolveImportedMesh,&request},{ResolveCachedMesh,&request}};
     if(ResourceProviderResolve(providers,2,NULL)!=RAGE_RESOURCE_READY)return NULL;
     return request.mesh;
 }
 const RageRuntimeCachedMesh *ModernAssetsFind(
-    const RageRenderMeshInstance *instance) {
+    const RenderMeshInstance *instance) {
     if (s_source == MODERN_ASSET_SOURCE_NONE || instance == NULL) return NULL;
     return ModernAuthoredCar(ResolveBaseMesh(instance,0),instance,(s_source == MODERN_ASSET_SOURCE_DISC));
 }
@@ -558,7 +558,7 @@ uint32_t ModernAssetsCachedMeshCount(void) {
 }
 
 const RageRuntimeMesh *ModernAssetsMeshLookup(
-    void *context, const RageRenderMeshInstance *instance) {
+    void *context, const RenderMeshInstance *instance) {
     const RageRuntimeCachedMesh *cached;
     (void)context;
     cached = ModernAssetsFind(instance);
@@ -566,7 +566,7 @@ const RageRuntimeMesh *ModernAssetsMeshLookup(
 }
 
 const RageRuntimeMesh *ModernAssetsResidentMeshLookup(
-    void *context, const RageRenderMeshInstance *instance) {
+    void *context, const RenderMeshInstance *instance) {
     (void)context;
     if (s_source == MODERN_ASSET_SOURCE_NONE || instance == NULL) return NULL;
     for (size_t i = 0; i != RAGE_AUTHORED_CAR_COUNT; ++i) {
@@ -579,7 +579,7 @@ const RageRuntimeMesh *ModernAssetsResidentMeshLookup(
 }
 
 static const char *ModernAssetsFindModMaterialProperties(
-    const RageRenderMeshInstance *instance, uint32_t material,
+    const RenderMeshInstance *instance, uint32_t material,
     uint8_t variant) {
     char exactId[160], baseId[160];
     if (!s_modReady || !AssetMaterialVariantId(
@@ -618,7 +618,7 @@ static const RageMaterialCatalog *ModernAssetsMaterialCatalog(
 }
 
 static int ModernAssetsFindMaterial(
-    const RageRenderMeshInstance *instance, uint32_t material,
+    const RenderMeshInstance *instance, uint32_t material,
     uint8_t variant, RageRenderMaterial *definition,RageRenderMaterialStorage *storage) {
     const RageRuntimeCachedMesh *cached;
     const RageMaterialCatalog *catalog;
@@ -639,7 +639,7 @@ static int ModernAssetsFindMaterial(
     return 1;
 }
 
-static int ModernAssetsLoadModImage(const RageRenderMeshInstance *instance,
+static int ModernAssetsLoadModImage(const RenderMeshInstance *instance,
                                     uint32_t material, uint8_t variant,
                                     ModernAssetImage *image) {
     char exactId[160], baseId[160], fullPath[sizeof(s_modRoot) + 512];
@@ -698,7 +698,7 @@ fail:
     return 0;
 }
 
-static int ModernAssetsLoadCachedImage(const RageRenderMeshInstance *instance,
+static int ModernAssetsLoadCachedImage(const RenderMeshInstance *instance,
                              uint32_t material,
                              RageRenderMaterial *definition,
                              ModernAssetImage *image) {
@@ -748,7 +748,7 @@ static int ModernAssetsLoadCachedImage(const RageRenderMeshInstance *instance,
 }
 
 typedef struct MaterialProviderRequest {
-    const RageRenderMeshInstance *instance;
+    const RenderMeshInstance *instance;
     uint32_t material;
     uint8_t variant;
     RageRenderMaterial *definition;
@@ -784,7 +784,7 @@ static RageResourceStatus ResolveBaseMaterialImage(void *context) {
     return ModernAssetsLoadCachedImage(request->instance,request->material,
         request->definition,request->image)?RAGE_RESOURCE_READY:RAGE_RESOURCE_ERROR;
 }
-static int ModernAssetsLoadBaseMaterial(const RageRenderMeshInstance *instance,
+static int ModernAssetsLoadBaseMaterial(const RenderMeshInstance *instance,
                              uint32_t material,uint8_t variant,
                              RageRenderMaterial *definition,ModernAssetImage *image,RageRenderMaterialStorage *storage) {
     if(!instance||!definition||!image||!storage)return 0;
@@ -796,7 +796,7 @@ static int ModernAssetsLoadBaseMaterial(const RageRenderMeshInstance *instance,
     return ResourceProviderResolve(images,2,NULL)==RAGE_RESOURCE_READY;
 }
 
-static uint16_t ModernPlayerMarkingClut(const RageRenderMeshInstance *instance,
+static uint16_t ModernPlayerMarkingClut(const RenderMeshInstance *instance,
                                       uint32_t slot) {
     size_t i, j;
     if (instance->assetSet != RAGE_RENDER_ASSET_MODEL_BANK) return 0;
@@ -816,7 +816,7 @@ static uint16_t ModernPlayerMarkingClut(const RageRenderMeshInstance *instance,
     return 0;
 }
 
-static int ModernAssetsBuildMaterial(const RageRenderMeshInstance *instance,
+static int ModernAssetsBuildMaterial(const RenderMeshInstance *instance,
                              uint32_t material, uint8_t variant,
                              RageRenderMaterial *definition,
                              ModernAssetImage *image,RageRenderMaterialStorage *storage) {
@@ -850,7 +850,7 @@ static int ModernAssetsBuildMaterial(const RageRenderMeshInstance *instance,
 }
 
 typedef struct MaterialBuildRequest {
-    const RageRenderMeshInstance *instance;
+    const RenderMeshInstance *instance;
     uint32_t material;
     uint8_t variant;
 } MaterialBuildRequest;
@@ -860,7 +860,7 @@ static int BuildMaterialTransaction(void *context,RageRenderMaterial *definition
     return ModernAssetsBuildMaterial(request->instance,request->material,request->variant,
                                      definition,image,storage);
 }
-int ModernAssetsLoadMaterial(const RageRenderMeshInstance *instance,
+int ModernAssetsLoadMaterial(const RenderMeshInstance *instance,
                              uint32_t material,uint8_t variant,
                              RageRenderMaterial *definition,
                              ModernAssetImage *image,RageRenderMaterialStorage *storage) {
@@ -884,7 +884,7 @@ void ModernAssetsFreeMaterialImage(ModernAssetImage *image) {
     if (image != NULL) memset(image, 0, sizeof(*image));
 }
 
-static void ModernAssetsPrepareInstance(const RageRenderMeshInstance *instance) {
+static void ModernAssetsPrepareInstance(const RenderMeshInstance *instance) {
     const RageRuntimeCachedMesh *cached = ModernAssetsFind(instance);
     uint32_t first, count;
     if (cached == NULL || instance->pass != RAGE_RENDER_PASS_MAIN ||
@@ -921,7 +921,7 @@ static void ModernAssetsPrepareInstance(const RageRenderMeshInstance *instance) 
     }
 }
 
-void ModernAssetsPrepareWorld(const RageRenderWorld *world) {
+void ModernAssetsPrepareWorld(const RenderWorld *world) {
     uint32_t i, pass;
     if (s_source == MODERN_ASSET_SOURCE_NONE || world == NULL) return;
     /* Vehicles have a small, bounded material set. Prepare them before the
@@ -929,7 +929,7 @@ void ModernAssetsPrepareWorld(const RageRenderWorld *world) {
      * geometry. */
     for (pass = 0; pass < 2; ++pass) {
         for (i = 0; i < world->instanceCount; ++i) {
-            const RageRenderMeshInstance *instance = &world->instances[i];
+            const RenderMeshInstance *instance = &world->instances[i];
             int vehicle = instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
                 instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
             if ((pass == 0) != vehicle) continue;

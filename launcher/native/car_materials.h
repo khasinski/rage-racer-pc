@@ -12,7 +12,7 @@ static int CarMaterialsCommand(int argc,char **argv) {
     uint16_t pages[4096],cluts[4096];
     int result=1;
     unsigned long assetKey=0;
-    RageRenderAssetSet assetSet;
+    RenderAssetSet assetSet;
     if((argc!=4 && argc!=5) || (strcmp(argv[2],"player") && strcmp(argv[2],"rival")))return 1;
     assetSet=!strcmp(argv[2],"player")?RAGE_RENDER_ASSET_MODEL_BANK:RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
     if(argc==5){char *end;char id[160];errno=0;assetKey=strtoul(argv[4],&end,10);if(errno||!*argv[4]||*end||assetKey>UINT32_MAX||!AssetMaterialId(id,sizeof(id),(uint32_t)assetKey,assetSet,0))return 1;}

@@ -31,24 +31,24 @@ static void ExpectTrue(const char *what, int condition) {
     failures++;
 }
 
-static float Distance(RageRenderVec3 a, RageRenderVec3 b) {
+static float Distance(Vec3 a, Vec3 b) {
     float dx = a.x - b.x, dy = a.y - b.y, dz = a.z - b.z;
     return sqrtf(dx * dx + dy * dy + dz * dz);
 }
 
 /* Where the target lands in the camera's own space. A camera looking at its
  * target puts it straight ahead, which is negative Z and nothing else. */
-static RageRenderVec3 TargetInView(const RageRenderStage *stage) {
-    RageRenderCamera camera;
-    RageRenderVec3 view;
+static Vec3 TargetInView(const RenderStage *stage) {
+    RenderCamera camera;
+    Vec3 view;
     RenderStageCamera(stage, &camera);
     RenderWorldToView(&camera, &stage->target, &view);
     return view;
 }
 
 static void OrbitTests(void) {
-    RageRenderStage stage;
-    RageRenderCamera camera;
+    RenderStage stage;
+    RenderCamera camera;
     int azimuth;
     int elevation;
 
@@ -62,7 +62,7 @@ static void OrbitTests(void) {
      * looking straight at it. */
     for (azimuth = 0; azimuth < 360; azimuth += 30) {
         for (elevation = -60; elevation <= 60; elevation += 30) {
-            RageRenderVec3 view;
+            Vec3 view;
             stage.azimuthDegrees = (float)azimuth;
             stage.elevationDegrees = (float)elevation;
             RenderStageCamera(&stage, &camera);
@@ -78,7 +78,7 @@ static void OrbitTests(void) {
 }
 
 static void InvalidCameraTests(void) {
-    RageRenderCamera camera;
+    RenderCamera camera;
 
     memset(&camera, 0xff, sizeof(camera));
     RenderStageCamera(NULL, &camera);
@@ -90,8 +90,8 @@ static void InvalidCameraTests(void) {
 }
 
 static void ElevationTests(void) {
-    RageRenderStage stage;
-    RageRenderCamera above, below, level;
+    RenderStage stage;
+    RenderCamera above, below, level;
 
     RenderStageDefaults(&stage);
     stage.distance = 1000.0f;
@@ -120,8 +120,8 @@ static void ElevationTests(void) {
 }
 
 static void AzimuthTests(void) {
-    RageRenderStage stage;
-    RageRenderCamera front, quarter, side, back;
+    RenderStage stage;
+    RenderCamera front, quarter, side, back;
 
     RenderStageDefaults(&stage);
     stage.distance = 1000.0f;
@@ -153,10 +153,10 @@ static void AzimuthTests(void) {
 
 /* Composing has to place every pose asked for, and say so when it cannot. */
 static void ComposeTests(void) {
-    RageRenderStage stage;
-    RageRenderPose poses[3];
-    RageRenderMeshInstance instances[3];
-    RageRenderWorld world;
+    RenderStage stage;
+    RenderPose poses[3];
+    RenderMeshInstance instances[3];
+    RenderWorld world;
     uint32_t index;
 
     RenderStageDefaults(&stage);
@@ -232,10 +232,10 @@ int main(void) {
     AzimuthTests();
     ComposeTests();
     {
-        RageRenderStage stage;
-        RageRenderPose pose;
-        RageRenderMeshInstance instance;
-        RageRenderWorld world;
+        RenderStage stage;
+        RenderPose pose;
+        RenderMeshInstance instance;
+        RenderWorld world;
         RenderStageDefaults(&stage);
         RenderPoseDefaults(&pose);
         pose.rotationDegrees.x = -720;

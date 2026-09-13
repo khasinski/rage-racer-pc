@@ -11,21 +11,21 @@ static inline float RenderInstanceRadians(float degrees) {
     return degrees * (3.14159265358979323846f / 180.0f);
 }
 
-typedef struct RageRenderInstanceTransform {
-    RageRenderVec3 position;
-    RageRenderVec3 scale;
+typedef struct RenderInstanceTransform {
+    Vec3 position;
+    Vec3 scale;
     float cx, sx, cy, sy, cz, sz;
     float matrix[3][3];
     int useMatrix;
-} RageRenderInstanceTransform;
+} RenderInstanceTransform;
 
-static inline RageRenderInstanceTransform RenderPrepareInstanceTransform(
-    const RageRenderTransform *transform) {
-    RageRenderInstanceTransform basis = {0};
+static inline RenderInstanceTransform RenderPrepareInstanceTransform(
+    const RenderTransform *transform) {
+    RenderInstanceTransform basis = {0};
     basis.position = transform->position;
     basis.scale = transform->scale;
     if (transform->hasOrientation) {
-        const RageRenderQuaternion *q = &transform->orientation;
+        const Quaternion *q = &transform->orientation;
         double lengthSquared =
             (double)q->x * q->x + (double)q->y * q->y +
             (double)q->z * q->z + (double)q->w * q->w;
@@ -58,11 +58,11 @@ static inline RageRenderInstanceTransform RenderPrepareInstanceTransform(
     return basis;
 }
 
-static inline RageRenderVec3 RenderRotateInstanceVector(
-    const RageRenderInstanceTransform *basis, RageRenderVec3 vector) {
+static inline Vec3 RenderRotateInstanceVector(
+    const RenderInstanceTransform *basis, Vec3 vector) {
     float x;
     if (basis->useMatrix) {
-        RageRenderVec3 rotated;
+        Vec3 rotated;
         rotated.x = basis->matrix[0][0] * vector.x +
                     basis->matrix[0][1] * vector.y +
                     basis->matrix[0][2] * vector.z;
@@ -89,8 +89,8 @@ static inline RageRenderVec3 RenderRotateInstanceVector(
     return vector;
 }
 
-static inline RageRenderVec3 RenderTransformInstancePoint(
-    const RageRenderInstanceTransform *basis, RageRenderVec3 point) {
+static inline Vec3 RenderTransformInstancePoint(
+    const RenderInstanceTransform *basis, Vec3 point) {
     point.x *= basis->scale.x;
     point.y *= basis->scale.y;
     point.z *= basis->scale.z;

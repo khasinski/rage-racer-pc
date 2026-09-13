@@ -17,7 +17,7 @@ typedef void (*RageRuntimeFreeFile)(void *context, const void *bytes);
  * a live owner except as an explicit move; consumers borrow its mesh view. */
 typedef struct RageRuntimeCachedMesh {
     uint32_t assetKey;
-    RageRenderAssetSet assetSet;
+    RenderAssetSet assetSet;
     RageRuntimeMesh mesh;
     const void *ownedBytes;
     RageRuntimeAssetLocation location;
@@ -67,13 +67,13 @@ typedef enum RageRuntimeMeshStatus {
  * MISSING means no index entry. An indexed but unreadable/invalid mesh, or
  * exhausted cache capacity, is ERROR. Output is cleared on every failure. */
 RageRuntimeMeshStatus RuntimeMeshCacheResolve(RageRuntimeMeshCache *cache,
-    uint32_t assetKey, RageRenderAssetSet assetSet,
+    uint32_t assetKey, RenderAssetSet assetSet,
     const RageRuntimeCachedMesh **out);
 const RageRuntimeCachedMesh *RuntimeMeshCacheFind(
-    RageRuntimeMeshCache *cache, uint32_t assetKey, RageRenderAssetSet assetSet);
+    RageRuntimeMeshCache *cache, uint32_t assetKey, RenderAssetSet assetSet);
 void RuntimeMeshCacheRelease(RageRuntimeMeshCache *cache);
 /* Resident-only lookup: never performs I/O, imports or changes the cache. */
 const RageRuntimeCachedMesh *RuntimeMeshCachePeek(const RageRuntimeMeshCache *cache,
-    uint32_t assetKey, RageRenderAssetSet assetSet);
+    uint32_t assetKey, RenderAssetSet assetSet);
 
 #endif

@@ -8,26 +8,26 @@ static float Radians(float degrees) {
     return degrees * (3.14159265358979323846f / 180.0f);
 }
 
-static void RotateX(RageRenderVec3 *v, float radians) {
+static void RotateX(Vec3 *v, float radians) {
     float y = v->y * cosf(radians) - v->z * sinf(radians);
     float z = v->y * sinf(radians) + v->z * cosf(radians);
     v->y = y; v->z = z;
 }
 
-static void RotateY(RageRenderVec3 *v, float radians) {
+static void RotateY(Vec3 *v, float radians) {
     float x = v->x * cosf(radians) + v->z * sinf(radians);
     float z = -v->x * sinf(radians) + v->z * cosf(radians);
     v->x = x; v->z = z;
 }
 
-static void RotateZ(RageRenderVec3 *v, float radians) {
+static void RotateZ(Vec3 *v, float radians) {
     float x = v->x * cosf(radians) - v->y * sinf(radians);
     float y = v->x * sinf(radians) + v->y * cosf(radians);
     v->x = x; v->y = y;
 }
 
-static void RotateByCameraOrientation(RageRenderVec3 *v,
-                                          const RageRenderQuaternion *orientation) {
+static void RotateByCameraOrientation(Vec3 *v,
+                                          const Quaternion *orientation) {
     double lengthSquared =
         (double)orientation->x * orientation->x +
         (double)orientation->y * orientation->y +
@@ -54,11 +54,11 @@ static void RotateByCameraOrientation(RageRenderVec3 *v,
            (1.0f - 2.0f * (xx + yy)) * z;
 }
 
-void RenderWorldToView(const RageRenderCamera *camera,
-                           const RageRenderVec3 *world,
-                           RageRenderVec3 *view) {
+void RenderWorldToView(const RenderCamera *camera,
+                           const Vec3 *world,
+                           Vec3 *view) {
     if (view == NULL) return;
-    *view = (RageRenderVec3){0.0f, 0.0f, 0.0f};
+    *view = (Vec3){0.0f, 0.0f, 0.0f};
     if (camera == NULL || world == NULL) return;
     *view = *world;
     view->x -= camera->transform.position.x;
@@ -74,14 +74,14 @@ void RenderWorldToView(const RageRenderCamera *camera,
     }
 }
 
-RageRenderViewTransform RenderPrepareView(const RageRenderCamera *camera) {
-    RageRenderViewTransform result = {0};
+RenderViewTransform RenderPrepareView(const RenderCamera *camera) {
+    RenderViewTransform result = {0};
     result.mode = -1;
     if (camera == NULL) return result;
     result.camera = *camera;
     result.mode = 0;
     if (camera->transform.hasOrientation) {
-        const RageRenderQuaternion *q = &camera->transform.orientation;
+        const Quaternion *q = &camera->transform.orientation;
         double lengthSquared = (double)q->x * q->x + (double)q->y * q->y +
                                (double)q->z * q->z + (double)q->w * q->w;
         if (!isfinite(lengthSquared) || lengthSquared <= 0.0) return result;
@@ -116,11 +116,11 @@ RageRenderViewTransform RenderPrepareView(const RageRenderCamera *camera) {
     return result;
 }
 
-void RenderWorldToViewPrepared(const RageRenderViewTransform *p,
-                              const RageRenderVec3 *world,
-                              RageRenderVec3 *view) {
+void RenderWorldToViewPrepared(const RenderViewTransform *p,
+                              const Vec3 *world,
+                              Vec3 *view) {
     if (view == NULL) return;
-    *view = (RageRenderVec3){0};
+    *view = (Vec3){0};
     if (p == NULL || p->mode < 0 || world == NULL) return;
     *view = *world;
     view->x -= p->camera.transform.position.x;
@@ -145,14 +145,14 @@ void RenderWorldToViewPrepared(const RageRenderViewTransform *p,
     }
 }
 
-int RenderProject(const RageRenderCamera *camera, const RageRenderVec3 *view,
-                  float aspect, RageRenderVec3 *clip) {
+int RenderProject(const RenderCamera *camera, const Vec3 *view,
+                  float aspect, Vec3 *clip) {
     float depthScale, depthOffset;
     double verticalScale, depth;
     double x, y, z;
 
     if (clip == NULL) return 0;
-    *clip = (RageRenderVec3){0.0f, 0.0f, 0.0f};
+    *clip = (Vec3){0.0f, 0.0f, 0.0f};
     if (camera == NULL || view == NULL ||
         !isfinite(aspect) || aspect <= 0.0f ||
         !isfinite(camera->verticalFovDegrees) ||
@@ -179,7 +179,7 @@ int RenderProject(const RageRenderCamera *camera, const RageRenderVec3 *view,
     return 1;
 }
 
-int RenderPerspectiveScales(const RageRenderCamera *camera, float aspect,
+int RenderPerspectiveScales(const RenderCamera *camera, float aspect,
                             float *horizontal, float *vertical) {
     float tangent, scale;
     if (!horizontal || !vertical) return 0;
@@ -199,7 +199,7 @@ int RenderPerspectiveScales(const RageRenderCamera *camera, float aspect,
     return 1;
 }
 
-int RenderPerspectiveDepthTerms(const RageRenderCamera *camera,
+int RenderPerspectiveDepthTerms(const RenderCamera *camera,
                                 float *scale, float *offset) {
     double range;
     double resultScale;
@@ -224,9 +224,9 @@ int RenderPerspectiveDepthTerms(const RageRenderCamera *camera,
     return 1;
 }
 
-float RenderFogFactor(const RageRenderCamera *camera,
-                      const RageRenderVec3 *world) {
-    RageRenderVec3 view;
+float RenderFogFactor(const RenderCamera *camera,
+                      const Vec3 *world) {
+    Vec3 view;
     float depth, inverseNear, inverseFar, factor;
     if (camera == NULL || world == NULL ||
         !isfinite(camera->fogNear) || !isfinite(camera->fogFar) ||
@@ -248,11 +248,11 @@ float RenderFogFactor(const RageRenderCamera *camera,
     return factor;
 }
 
-float RenderFogFactorPrepared(const RageRenderViewTransform *transform,
-                             const RageRenderVec3 *world) {
-    const RageRenderCamera *camera = transform != NULL && transform->mode >= 0
+float RenderFogFactorPrepared(const RenderViewTransform *transform,
+                             const Vec3 *world) {
+    const RenderCamera *camera = transform != NULL && transform->mode >= 0
         ? &transform->camera : NULL;
-    RageRenderVec3 view;
+    Vec3 view;
     float depth, inverseNear, inverseFar, factor;
     if (camera == NULL || world == NULL ||
         !isfinite(camera->fogNear) || !isfinite(camera->fogFar) ||

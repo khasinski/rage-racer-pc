@@ -62,8 +62,8 @@ static int CompareTicks(const void *a, const void *b) {
     return (x > y) - (x < y);
 }
 
-static RageRenderQuaternion QuaternionFromMatrix(float matrix[3][3]) {
-    RageRenderQuaternion out;
+static Quaternion QuaternionFromMatrix(float matrix[3][3]) {
+    Quaternion out;
     float trace = matrix[0][0] + matrix[1][1] + matrix[2][2];
     float root;
     if (trace > 0.0f) {
@@ -95,7 +95,7 @@ static RageRenderQuaternion QuaternionFromMatrix(float matrix[3][3]) {
     return out;
 }
 
-static int ApplyCapturedCamera(const char *path, RageRenderWorld *world) {
+static int ApplyCapturedCamera(const char *path, RenderWorld *world) {
     RageSceneSnapshot *scene;
     FILE *file;
     float source[3][3], converted[3][3], pose[3][3];
@@ -142,15 +142,15 @@ static int ApplyCapturedCamera(const char *path, RageRenderWorld *world) {
  * without replaying the game. Let the harness substitute them directly: the
  * mapping is what one iterates on, and it is the one thing the capture bakes.
  */
-static int ApplySkyOverrides(int argc, char **argv, RageRenderCamera *camera) {
+static int ApplySkyOverrides(int argc, char **argv, RenderCamera *camera) {
     static const struct {
         const char *name;
         size_t offset;
     } bands[] = {
-        {"top", offsetof(RageRenderCamera, skyTopColor)},
-        {"middle", offsetof(RageRenderCamera, skyColor)},
-        {"horizon", offsetof(RageRenderCamera, skyHorizonColor)},
-        {"bottom", offsetof(RageRenderCamera, skyBottomColor)},
+        {"top", offsetof(RenderCamera, skyTopColor)},
+        {"middle", offsetof(RenderCamera, skyColor)},
+        {"horizon", offsetof(RenderCamera, skyHorizonColor)},
+        {"bottom", offsetof(RenderCamera, skyBottomColor)},
     };
     int index;
     for (index = 1; index < argc; index++) {
@@ -164,7 +164,7 @@ static int ApplySkyOverrides(int argc, char **argv, RageRenderCamera *camera) {
         }
         for (band = 0; band < sizeof(bands) / sizeof(bands[0]); band++) {
             size_t length = strlen(bands[band].name);
-            RageRenderVec3 *target;
+            Vec3 *target;
             unsigned red, green, blue;
             if (strncmp(value, bands[band].name, length) != 0 ||
                 value[length] != '=')
@@ -174,7 +174,7 @@ static int ApplySkyOverrides(int argc, char **argv, RageRenderCamera *camera) {
                 fprintf(stderr, "rage-frame-replay: bad --sky %s\n", value);
                 return 0;
             }
-            target = (RageRenderVec3 *)((char *)camera + bands[band].offset);
+            target = (Vec3 *)((char *)camera + bands[band].offset);
             target->x = (float)red / 255.0f;
             target->y = (float)green / 255.0f;
             target->z = (float)blue / 255.0f;
@@ -193,7 +193,7 @@ int main(int argc, char **argv) {
     const char *outputPath;
     const char *drawPath;
     const char *assetsPath;
-    RageRenderWorldSnapshot snapshot = {0};
+    RenderWorldSnapshot snapshot = {0};
     SDL_GPUDevice *device = NULL;
     SDL_GPUTexture *color = NULL;
     SDL_GPUTexture *depth = NULL;

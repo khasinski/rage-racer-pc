@@ -6,7 +6,7 @@
 
 static const ModernPreparedMaterialEntry *Find(
     const ModernPreparedMaterials *cache,
-    const RageRenderMeshInstance *instance, uint32_t material, uint8_t variant) {
+    const RenderMeshInstance *instance, uint32_t material, uint8_t variant) {
     uint32_t i;
     if (!cache || !instance) return NULL;
     for (i = 0; i < cache->count; ++i) {
@@ -50,13 +50,13 @@ void ModernPreparedMaterialsClear(ModernPreparedMaterials *cache) {
 }
 
 int ModernPreparedMaterialsContains(const ModernPreparedMaterials *cache,
-                                    const RageRenderMeshInstance *instance,
+                                    const RenderMeshInstance *instance,
                                     uint32_t material, uint8_t variant) {
     return Find(cache, instance, material, variant) != NULL;
 }
 
 int ModernPreparedMaterialsCopy(const ModernPreparedMaterials *cache,
-                                const RageRenderMeshInstance *instance,
+                                const RenderMeshInstance *instance,
                                 uint32_t material, uint8_t variant,
                                 RageRenderMaterial *definition,
                                 ModernAssetImage *image,
@@ -66,7 +66,7 @@ int ModernPreparedMaterialsCopy(const ModernPreparedMaterials *cache,
 }
 
 int ModernPreparedMaterialsStore(ModernPreparedMaterials *cache,
-                                 const RageRenderMeshInstance *instance,
+                                 const RenderMeshInstance *instance,
                                  uint32_t material, uint8_t variant,
                                  RageRenderMaterial *definition,
                                  ModernAssetImage *image,

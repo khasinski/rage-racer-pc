@@ -18,7 +18,7 @@ static ModernAssetImage Image(void) {
 
 int main(void) {
     ModernPreparedMaterials cache = {0};
-    RageRenderMeshInstance instance = {
+    RenderMeshInstance instance = {
         .assetKey = 17,
         .assetSet = RAGE_RENDER_ASSET_MODEL_BANK,
         .hasCarPaint = 1,

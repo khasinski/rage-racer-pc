@@ -33,7 +33,7 @@ static inline RageNativeLocalUniform RenderNativeLocalUniform(
     const RageNativeDrawSpan *span) {
     RageNativeLocalUniform out = {0};
     if (!span || !span->localGeometry) return out;
-    RageRenderInstanceTransform b = RenderPrepareInstanceTransform(&span->localTransform);
+    RenderInstanceTransform b = RenderPrepareInstanceTransform(&span->localTransform);
     out.positionMode[0] = b.position.x; out.positionMode[1] = b.position.y;
     out.positionMode[2] = b.position.z; out.positionMode[3] = b.useMatrix ? 2 : 1;
     out.scaleFog[0] = b.scale.x; out.scaleFog[1] = b.scale.y; out.scaleFog[2] = b.scale.z;

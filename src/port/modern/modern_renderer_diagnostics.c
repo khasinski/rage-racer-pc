@@ -87,7 +87,7 @@ void ModernDiagnosticsMaybeDump(
                 snapshot->frameCounter, path);
     if (RuntimeConfigEnabled("diagnostics.modern_dump_scene")) {
         char scenePath[512];
-        const RageRenderWorld *world = ModernNativeGpuPreparedWorld();
+        const RenderWorld *world = ModernNativeGpuPreparedWorld();
         FILE *file;
         snprintf(scenePath, sizeof(scenePath), "%s.scene.bin", path);
         file = fopen(scenePath, "wb");
@@ -214,12 +214,12 @@ static void WriteSceneInfo(FILE *file, const RageSceneSnapshot *snapshot,
     {
         /* Describe the world prepared for this image, not a newer logic frame
          * already published while presentation is interpolating. */
-        const RageRenderWorld *world = ModernNativeGpuPreparedWorld();
+        const RenderWorld *world = ModernNativeGpuPreparedWorld();
         uint32_t dynamicCount = 0;
         if (world != NULL) {
             for (uint32_t worldIndex = 0;
                  worldIndex < world->instanceCount; worldIndex++) {
-                const RageRenderMeshInstance *instance =
+                const RenderMeshInstance *instance =
                     &world->instances[worldIndex];
                 if (instance->assetSet != RAGE_RENDER_ASSET_COURSE ||
                     instance->entity < 0x30000u ||
@@ -238,7 +238,7 @@ static void WriteSceneInfo(FILE *file, const RageSceneSnapshot *snapshot,
                     (unsigned long long)world->frame, world->instanceCount,
                     dynamicCount);
             if (world->hasCamera) {
-                const RageRenderCamera *camera = &world->camera;
+                const RenderCamera *camera = &world->camera;
                 fprintf(file, "nativeCamera pos=%.9g,%.9g,%.9g "
                         "orientation=%.9g,%.9g,%.9g,%.9g near=%.9g far=%.9g fov=%.9g\n",
                         camera->transform.position.x, camera->transform.position.y,
@@ -414,7 +414,7 @@ void ModernDiagnosticsCheckMarker(
         fclose(file);
     }
     {
-        const RageRenderWorld *world = ModernNativeGpuPreparedWorld();
+        const RenderWorld *world = ModernNativeGpuPreparedWorld();
         if (world != NULL) {
             snprintf(path, sizeof(path), "%s/marker-%d-world.bin",
                      markerDirectory, index);

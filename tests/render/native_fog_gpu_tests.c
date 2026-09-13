@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
     for (unsigned range = 0; range < 3; ++range)
     for (unsigned enabled = 0; enabled < 2; ++enabled)
     for (unsigned sample = 0; sample < SDL_arraysize(depths); ++sample) {
-        RageRenderCamera camera = {0};
+        RenderCamera camera = {0};
         camera.transform.position.z = view ? 8.0f : -8.0f;
         camera.fogNear = range == 1 ? 0.0f : 5.0f;
         camera.fogFar = range == 2 ? 4.0f : 20.0f;
@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
             uniform[6][2] = 1.0f / camera.fogNear;
             uniform[6][3] = uniform[6][2] - 1.0f / camera.fogFar;
         }
-        RageRenderVec3 original = {0, 0, camera.transform.position.z - depths[sample]};
+        Vec3 original = {0, 0, camera.transform.position.z - depths[sample]};
         float expected = enabled ? RenderFogFactor(&camera, &original) : 0.0f;
         for (unsigned i = 0; i < 3; ++i) {
             vertices[i].uv[0] = 0.125f;
@@ -150,21 +150,21 @@ int main(int argc, char **argv) {
             RageNativeMeshTemplateView sourceView = {0};
             RageNativeDrawSpan span = {0};
             span.localGeometry = &sourceView;
-            span.localTransform.position = (RageRenderVec3){4, -3, 7};
-            span.localTransform.scale = (RageRenderVec3){-2, 0.5f, 1.5f};
+            span.localTransform.position = (Vec3){4, -3, 7};
+            span.localTransform.scale = (Vec3){-2, 0.5f, 1.5f};
             span.localTransform.rotation.z = 90;
-            span.localTransform.orientation = (RageRenderQuaternion){0, 0, 1, 1};
+            span.localTransform.orientation = (Quaternion){0, 0, 1, 1};
             span.localTransform.hasOrientation = localMode == 2;
             span.depthDecal = 1;
             local = RenderNativeLocalUniform(&span);
-            RageRenderInstanceTransform basis = RenderPrepareInstanceTransform(&span.localTransform);
+            RenderInstanceTransform basis = RenderPrepareInstanceTransform(&span.localTransform);
             /* Invert the CPU transform of the desired world triangle. The GPU
              * must recover its depth/coverage, including the two-unit decal
              * lift and a negative nonuniform scale, for both rotation modes. */
-            RageRenderVec3 axes[3] = {
-                RenderRotateInstanceVector(&basis, (RageRenderVec3){1, 0, 0}),
-                RenderRotateInstanceVector(&basis, (RageRenderVec3){0, 1, 0}),
-                RenderRotateInstanceVector(&basis, (RageRenderVec3){0, 0, 1})};
+            Vec3 axes[3] = {
+                RenderRotateInstanceVector(&basis, (Vec3){1, 0, 0}),
+                RenderRotateInstanceVector(&basis, (Vec3){0, 1, 0}),
+                RenderRotateInstanceVector(&basis, (Vec3){0, 0, 1})};
             for (unsigned i = 0; i < 3; ++i) {
                 float x = vertices[i].position[0] - 4;
                 float y = vertices[i].position[1] + 3;

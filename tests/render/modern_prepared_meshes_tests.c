@@ -6,7 +6,7 @@
 static RageRuntimeMesh s_meshes[4];
 
 static const RageRuntimeMesh *Resolve(void *context,
-                                      const RageRenderMeshInstance *instance) {
+                                      const RenderMeshInstance *instance) {
     (void)context;
     assert(instance->assetKey < 4);
     return &s_meshes[instance->assetKey];
@@ -14,18 +14,18 @@ static const RageRuntimeMesh *Resolve(void *context,
 
 int main(void) {
     ModernPreparedMeshes cache = {0};
-    RageRenderMeshInstance firstInstances[2] = {
+    RenderMeshInstance firstInstances[2] = {
         {.assetKey = 1, .pass = RAGE_RENDER_PASS_MAIN},
         {.assetKey = 2, .pass = RAGE_RENDER_PASS_MIRROR},
     };
-    RageRenderMeshInstance secondInstances[3] = {
+    RenderMeshInstance secondInstances[3] = {
         {.assetKey = 3, .pass = RAGE_RENDER_PASS_MAIN},
         {.assetKey = 2, .pass = RAGE_RENDER_PASS_MAIN},
         {.assetKey = 1, .pass = RAGE_RENDER_PASS_MIRROR},
     };
-    RageRenderMeshInstance outsider = {.assetKey = 1};
-    RageRenderWorld first = {.instances = firstInstances, .instanceCount = 2};
-    RageRenderWorld second = {.instances = secondInstances, .instanceCount = 3};
+    RenderMeshInstance outsider = {.assetKey = 1};
+    RenderWorld first = {.instances = firstInstances, .instanceCount = 2};
+    RenderWorld second = {.instances = secondInstances, .instanceCount = 3};
 
     memset(s_meshes, 0, sizeof(s_meshes));
     assert(!ModernPreparedMeshesPrepare(NULL, &first, Resolve, NULL));

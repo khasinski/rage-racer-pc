@@ -6,15 +6,15 @@
 #include <time.h>
 
 static int Measure(unsigned count, unsigned iterations) {
-    RageRenderMeshInstance *instances = calloc(count, sizeof(*instances));
+    RenderMeshInstance *instances = calloc(count, sizeof(*instances));
     if (!instances) return 0;
     for (unsigned i = 0; i < count; ++i) instances[i].assetKey = i;
-    RageRenderWorld world = {0};
+    RenderWorld world = {0};
     world.instances = instances;
     world.instanceCount = world.instanceCapacity = count;
-    RageRenderWorldSnapshot snapshot = {0};
+    RenderWorldSnapshot snapshot = {0};
     int ok = RenderWorldSnapshotCopy(&snapshot, &world);
-    RageRenderMeshInstance *allocation = snapshot.instances;
+    RenderMeshInstance *allocation = snapshot.instances;
     clock_t begin = clock();
     for (unsigned i = 0; ok && i < iterations; ++i) {
         world.frame = i;

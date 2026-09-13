@@ -20,7 +20,7 @@ typedef struct RageModernDiagnosticFrame {
     const unsigned int *ringFrames;
     const float *ringInterpolation;
     const RageSceneSnapshot *ringScenes;
-    const RageRenderWorldSnapshot *ringWorlds;
+    const RenderWorldSnapshot *ringWorlds;
     RageTrackTextureGeneration *const *ringGenerations;
     int ringCount;
     int ringNext;
