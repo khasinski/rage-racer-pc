@@ -5,6 +5,14 @@ add_test(
 
 set_tests_properties(audio_state_layout PROPERTIES LABELS functional)
 
+add_executable(pcm_music_tests pcm_music_tests.c)
+target_link_libraries(pcm_music_tests PRIVATE psyz)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(pcm_music_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
+add_test(NAME pcm_music COMMAND pcm_music_tests)
+set_tests_properties(pcm_music PROPERTIES LABELS unit)
+
 add_executable(cd_audio_policy_tests cd_audio_policy_tests.c)
 target_include_directories(cd_audio_policy_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/include)

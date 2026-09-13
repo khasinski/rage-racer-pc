@@ -28,7 +28,7 @@ test('launch configuration forces modern and selected regional content while pre
   await service.init();service.state.settings['video.internal_scale']='4';
   service.state.settings['diagnostics.marker_capture']=true;
   for(const region of ['PAL','NTSC-U','NTSC-J']){
-   service.state.disc={region,path:path.join(root,'selected image.bin')};
+   service.state.disc={region,path:path.join(root,'selected image.bin'),data:path.join(root,'data')};
    const config=await service.configuration(path.join(root,'active mods'));
    assert.equal((config.match(/renderer = modern/g)||[]).length,2);
    assert.doesNotMatch(config,/renderer\s*=\s*classic/);
@@ -39,6 +39,7 @@ test('launch configuration forces modern and selected regional content while pre
    assert.ok(config.includes('image = '+service.state.disc.path));
    assert.match(config,/choose = false/);
    assert.ok(config.includes('directory = '+path.join(root,'active mods')));
+   assert.ok(config.includes('menu_music = '+path.join(root,'data','menu_music.wav')));
   }
   assert.equal(await fs.readFile(file,'utf8'),original);
  }finally{await fs.rm(root,{recursive:true,force:true});}

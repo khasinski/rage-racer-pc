@@ -17,6 +17,7 @@ for(const [region,variable] of [['PAL','RAGE_LAUNCHER_PAL_CUE'],['NTSC-U','RAGE_
    const manifest=await service.assets();
    assert.equal(manifest.entries.length,135);
    assert.equal(new Set(manifest.entries.map(e=>e.index)).size,135);
+   assert.ok((await fs.stat(path.join(service.state.disc.data,'menu_music.wav'))).size>44);
    for(const entry of manifest.entries) {
     assert.ok(Number.isInteger(entry.index)&&entry.index>=0&&entry.index<135);
     if(entry.present!==false)assert.equal((await fs.stat(path.join(service.state.disc.data,entry.raw))).size,entry.size);
@@ -26,6 +27,7 @@ for(const [region,variable] of [['PAL','RAGE_LAUNCHER_PAL_CUE'],['NTSC-U','RAGE_
    assert.equal((await restored.snapshot()).ready,true);
    const config=await restored.configuration();
    assert.match(config,/renderer\s*=\s*modern/);
+   assert.ok(config.includes('menu_music = '+path.join(restored.state.disc.data,'menu_music.wav')));
    const previous=structuredClone(restored.state);
    const games=await fs.readdir(path.join(root,'games'));
    const invalid=path.join(root,'invalid.bin');

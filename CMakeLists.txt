@@ -405,6 +405,16 @@ if(RAGE_BUILD_PORT)
     )
     target_compile_definitions(rage-racer-smoke PRIVATE RAGE_SMOKE_TARGET=1)
     add_executable(rage-extract tools/rage_extract.c)
+    add_executable(rage-menu-music tools/rage_menu_music.c
+        src/port/menu_music_asset.c)
+    target_include_directories(rage-menu-music PRIVATE src/port)
+    target_link_libraries(rage-menu-music PRIVATE psyz)
+    if(MSVC)
+        target_compile_options(rage-menu-music PRIVATE /W4 /WX)
+    else()
+        target_compile_options(rage-menu-music PRIVATE
+            ${RAGE_STRICT_WARNING_OPTIONS})
+    endif()
     add_executable(rage-stage-discs tools/rage_stage_discs.c
         src/port/disc_stage_validation.c
         src/port/disc_cue.c
@@ -668,7 +678,7 @@ if(RAGE_BUILD_PORT)
         # Electron passes Unicode paths; native argv and narrow filesystem APIs
         # must use the same UTF-8 encoding (Windows 10 1903 or newer).
         if(MSVC)
-            foreach(target rage-racer rage-extract rage-pack rage-save-generator
+            foreach(target rage-racer rage-extract rage-menu-music rage-pack rage-save-generator
                            rage-save-cli rage-mod-cli rage-mesh-obj)
                 target_sources(${target} PRIVATE packaging/windows/utf8.manifest)
             endforeach()

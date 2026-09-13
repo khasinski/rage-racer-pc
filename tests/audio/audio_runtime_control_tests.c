@@ -24,6 +24,9 @@ static long s_vabId;
 static long s_program;
 static long s_note;
 static s32 s_failures;
+static s32 s_pcmMusicLoaded;
+
+int Psyz_PcmMusicIsLoaded(void) { return s_pcmMusicLoaded; }
 
 void SsSeqCalledTbyT(void) { s_sequenceTicks++; }
 void SpuVmDamperStep(void) { s_damperSteps++; }
@@ -84,6 +87,13 @@ static void TestSequenceTicking(void) {
     TickSequenceAudio();
     Check(s_sequenceTicks == 10 && s_damperSteps == 11,
           "sequence clock remains independent from host timing configuration");
+
+    s_pcmMusicLoaded = 1;
+    g_Audio.seq.fade = -4;
+    TickSequenceAudio();
+    Check(s_sequenceTicks == 10 && s_damperSteps == 11 && s_fadeUpdates == 6,
+          "pre-rendered music fades without servicing the sequence synthesizer");
+    s_pcmMusicLoaded = 0;
 }
 
 static void TestReverbDepth(void) {

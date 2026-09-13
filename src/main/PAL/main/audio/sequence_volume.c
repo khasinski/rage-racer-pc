@@ -3,6 +3,7 @@
 #include "game/cd.h"
 #include "game/sound.h"
 #include "psyq/snd.h"
+#include <psyz/audio.h>
 
 enum {
     SEQUENCE_VOLUME_AT_MAX_SETTING = 114,
@@ -12,6 +13,7 @@ void SetSequenceVolume(s32 volume) {
     volume = ClampVoiceVolume(volume);
     g_Audio.seq.volume = volume;
     SsSeqSetVol((s16)g_Audio.seq.handle, (s16)volume, (s16)volume);
+    Psyz_PcmMusicSetVolume(volume);
 }
 
 static s32 SequenceVolumeForSetting(s32 setting) {

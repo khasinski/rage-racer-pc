@@ -143,7 +143,16 @@ int main(int argc, char **argv) {
         fprintf(stderr, "rage-port: car catalog=%s\n", carCatalogPath);
     }
     CarCatalogApplyMetadata();
+    {
+        const char *menuMusic = RuntimeConfigGet("audio.menu_music");
+        if (menuMusic != NULL && menuMusic[0] != '\0' &&
+            Psyz_PcmMusicLoad(menuMusic) != 0) {
+            fprintf(stderr, "rage-port: cannot load menu music %s; using disc sequence\n",
+                    menuMusic);
+        }
+    }
     MainLoop();
+    Psyz_PcmMusicUnload();
     Psyz_AudioDestroy();
     ModernShutdown();
     return EXIT_SUCCESS;

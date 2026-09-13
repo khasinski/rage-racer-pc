@@ -18,6 +18,8 @@ static s32 s_cdMixPreset;
 static s32 s_stereoCalls;
 static s32 s_failures;
 
+void Psyz_PcmMusicSetVolume(int volume) { (void)volume; }
+
 void SetCdVolumeSetting(s32 level) { s_cdVolumeSetting = level; }
 void SsSeqSetVol(short sequence, short left, short right) {
     (void)sequence;

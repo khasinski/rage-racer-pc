@@ -202,8 +202,8 @@ class LauncherService {
   async persist() { await atomic(path.join(this.root,'launcher.json'),JSON.stringify(this.state,null,2)); }
   async snapshot() {
     let ready=false;
-    if(this.state.disc)try{await fs.access(this.state.disc.path);await fs.access(path.join(this.state.disc.data,'manifest.json'));ready=true;}catch{}
-    let toolsReady=true;for(const name of ['rage-racer','rage-extract','rage-pack','rage-save-cli','rage-mod-cli','rage-mesh-obj'])try{await fs.access(this.tool(name));}catch{toolsReady=false;}
+    if(this.state.disc)try{await fs.access(this.state.disc.path);await fs.access(path.join(this.state.disc.data,'manifest.json'));await fs.access(path.join(this.state.disc.data,'menu_music.wav'));ready=true;}catch{}
+    let toolsReady=true;for(const name of ['rage-racer','rage-extract','rage-menu-music','rage-pack','rage-save-cli','rage-mod-cli','rage-mesh-obj'])try{await fs.access(this.tool(name));}catch{toolsReady=false;}
     return {...this.state,ready,toolsReady,overlaps:this.overlaps(),conflicts:this.conflicts(),busy:this.busy?.label||null,canCancel:!!this.busy?.cancellable,running:!!this.game,error:this.startupError||this.gameError||null};
   }
   async update() {this.onChange(await this.snapshot());}
@@ -241,6 +241,9 @@ class LauncherService {
         if(!['PAL','NTSC-U','NTSC-J'].includes(region))throw Error('The selected image is not a recognized Rage Racer release');
         this.busy.label='Preparing the asset library';await this.update();
         const data=path.join(staging,'data');await run(this.tool('rage-extract'),[archive,data],{cwd:staging,signal});
+        await run(this.tool('rage-menu-music'),[
+          path.join(data,'raw','asset_007.bin'),region==='PAL'?'50':'60',
+          path.join(data,'menu_music.wav')],{cwd:staging,signal});
         const manifest=JSON.parse(await fs.readFile(path.join(data,'manifest.json'),'utf8'));
         if(!Array.isArray(manifest.entries)||manifest.entries.length!==135)throw Error('Archive extraction did not produce a complete library');
         for(const entry of manifest.entries)if(entry.present!==false){
@@ -271,7 +274,7 @@ class LauncherService {
     if(!ownedJob)this.requireReady();let text='';
     try{text=await fs.readFile(path.join(this.root,'rage-port.ini'),'utf8');}catch(e){if(e.code!=='ENOENT')throw e;text=await fs.readFile(this.baseConfig,'utf8');}
     const style=this.state.disc.region==='NTSC-J'?'japanese':'international';
-    return patchIni(text,{...this.state.settings,'video.renderer':'modern','disc.image':this.state.disc.path,'disc.choose':false,'mods.directory':modDirectory,'content.car_names':style,'content.prologue':style,'diagnostics.log':path.join(this.root,'game.log')});
+    return patchIni(text,{...this.state.settings,'video.renderer':'modern','disc.image':this.state.disc.path,'disc.choose':false,'mods.directory':modDirectory,'audio.menu_music':path.join(this.state.disc.data,'menu_music.wav'),'content.car_names':style,'content.prologue':style,'diagnostics.log':path.join(this.root,'game.log')});
   }
   async launch() {
     this.requireReady();

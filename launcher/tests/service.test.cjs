@@ -260,7 +260,7 @@ test('failed spawn cleans its profile even when closing the log fails',async()=>
  const open=fs.open;
  try{
   const data=path.join(root,'data'),disc=path.join(root,'disc.bin');
-  await fs.mkdir(data);await fs.writeFile(path.join(data,'manifest.json'),'{}');await fs.writeFile(disc,'fixture');
+  await fs.mkdir(data);await fs.writeFile(path.join(data,'manifest.json'),'{}');await fs.writeFile(path.join(data,'menu_music.wav'),'fixture');await fs.writeFile(disc,'fixture');
   const service=new LauncherService({root,bin:root,config:path.resolve(__dirname,'../resources/rage-port.ini')});
   await service.init();service.state.disc={path:disc,data,region:'PAL'};
   const active=path.join(root,'active-mods-fixture');await fs.mkdir(active);
@@ -284,7 +284,7 @@ test('failed spawn cleans its profile even when closing the log fails',async()=>
 test('failed game launch releases state and reports process failure on retry',async()=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-launch-failure-'));
  try{
-  const data=path.join(root,'data'),disc=path.join(root,'disc.bin');await fs.mkdir(data);await fs.writeFile(path.join(data,'manifest.json'),'{}');await fs.writeFile(disc,'fixture');
+  const data=path.join(root,'data'),disc=path.join(root,'disc.bin');await fs.mkdir(data);await fs.writeFile(path.join(data,'manifest.json'),'{}');await fs.writeFile(path.join(data,'menu_music.wav'),'fixture');await fs.writeFile(disc,'fixture');
   let notify;const stopped=new Promise(resolve=>notify=resolve);
   const service=new LauncherService({root,bin:root,config:path.resolve(__dirname,'../resources/rage-port.ini'),onChange:s=>{if(!s.running&&s.error?.includes('exited with code'))notify(s);}});await service.init();service.state.disc={path:disc,data,region:'NTSC-U'};
   await assert.rejects(service.launch(),/ENOENT/);assert.equal(service.game,null);assert.equal(service.busy,null);

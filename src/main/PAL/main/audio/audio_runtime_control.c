@@ -5,6 +5,7 @@
 #include "game/state.h"
 #include "game/work_buffer.h"
 #include "psyq/snd.h"
+#include <psyz/audio.h>
 
 enum {
     DEFAULT_REVERB_DEPTH = 0x28,
@@ -18,16 +19,20 @@ void TickSequenceAudio(void) {
     if (g_SceneId == GAME_SCENE_RACE) {
         SpuVmDamperStep();
     } else {
-        /* Menu SEQ data advances with the game frame. Advancing it at a
-         * synthetic 60 Hz on PAL accelerated the note stream by 20% while
-         * leaving each VAG sample's pitch unchanged. */
-        SsSeqCalledTbyT();
+        if (!Psyz_PcmMusicIsLoaded()) {
+            /* Menu SEQ data advances with the game frame. Advancing it at a
+             * synthetic 60 Hz on PAL accelerated the note stream by 20% while
+             * leaving each VAG sample's pitch unchanged. */
+            SsSeqCalledTbyT();
+        }
         if (g_Audio.seq.fade != 0) {
             UpdateSequenceFadeOut();
         }
-        /* libsnd batches voice register writes. On PS1 its sound interrupt
-         * flushed the final key-off; the host drives this service directly. */
-        SpuVmDamperStep();
+        if (!Psyz_PcmMusicIsLoaded()) {
+            /* libsnd batches voice register writes. On PS1 its sound interrupt
+             * flushed the final key-off; the host drives this service directly. */
+            SpuVmDamperStep();
+        }
     }
 }
 

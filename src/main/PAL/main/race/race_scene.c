@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "game/audio.h"
+#include <psyz/audio.h>
 #include "game/car.h"
 #include "game/cd.h"
 #include "game/input_internal.h"
@@ -179,6 +180,9 @@ void EnterRaceScene(void) {
     s32 recordMode;
     s32 i;
 
+    /* Never let the frontend stream overlap the race CD track if a menu
+     * transition completes before its visual fade has consumed every step. */
+    Psyz_PcmMusicStop();
     SetupDisplay240(0, 0, 0);
     InitRenderState(5);
     ResetReplayWriteCursor();
