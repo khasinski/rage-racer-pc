@@ -508,15 +508,6 @@ set_tests_properties(audio_output PROPERTIES LABELS e2e)
     set_tests_properties(audio_output PROPERTIES TIMEOUT 90)
 
     add_test(
-        NAME menu_music_tempo
-        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
-            -DSOURCE=${CMAKE_SOURCE_DIR}
-            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_menu_music_tempo.cmake
-    )
-set_tests_properties(menu_music_tempo PROPERTIES LABELS e2e)
-    set_tests_properties(menu_music_tempo PROPERTIES TIMEOUT 180)
-
-    add_test(
         NAME race_cdda
         COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
             -DSOURCE=${CMAKE_SOURCE_DIR}

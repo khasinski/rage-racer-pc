@@ -15,6 +15,9 @@
  * 4 bits per texel, 256 mean 8.
  */
 
+#include "menu_music_asset.h"
+#include "menu_music_render.h"
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,6 +32,7 @@
 #define SCENE_OFFSETS 11
 #define VRAM_W 1024u
 #define VRAM_H 512u
+#define MENU_MUSIC_ASSET 7
 
 static FILE *s_index; /* textures/index.txt: which textures belong to which asset */
 
@@ -406,6 +410,23 @@ int main(int argc, char **argv) {
     fprintf(manifest, "  ]\n}\n");
     fclose(manifest);
     fclose(s_index);
+
+    if (entries[MENU_MUSIC_ASSET].size != 0 &&
+        (size_t)entries[MENU_MUSIC_ASSET].offset +
+                entries[MENU_MUSIC_ASSET].size <= (size_t)size) {
+        MenuMusicAsset music;
+        const uint8_t *musicData = data + entries[MENU_MUSIC_ASSET].offset;
+        unsigned tickRate;
+        snprintf(path, sizeof(path), "%s/menu_music.wav", outPath);
+        if (!MenuMusicAssetOpen(musicData, entries[MENU_MUSIC_ASSET].size,
+                                &music) ||
+            (tickRate = MenuMusicTickRate(&music)) == 0 ||
+            !MenuMusicRenderWav(&music, tickRate, path)) {
+            fprintf(stderr, "rage-extract: cannot generate menu_music.wav\n");
+            free(data);
+            return 1;
+        }
+    }
     free(data);
     printf("rage-extract: %d entries written, %d carrying images\n",
            ARCHIVE_ENTRIES, images);

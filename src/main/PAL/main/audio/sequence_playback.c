@@ -1,12 +1,9 @@
 #include "game/audio.h"
 #include "game/audio_internal.h"
 #include "game/sound.h"
-#include "psyq/snd.h"
 #include <psyz/audio.h>
 
 enum {
-    SEQUENCE_PLAY_MODE = 1,
-    SEQUENCE_LOOP_COUNT = 0,
     SEQUENCE_VOLUME_FADE_STEP = -4,
     REVERB_VOLUME_FADE_STEP = -3,
     DUCKED_VOLUME_NUMERATOR = 3,
@@ -15,11 +12,7 @@ enum {
 };
 
 void PlaySequence(void) {
-    if (Psyz_PcmMusicIsLoaded())
-        Psyz_PcmMusicPlay(1);
-    else
-        SsSeqPlay((s16)g_Audio.seq.handle, SEQUENCE_PLAY_MODE,
-                  SEQUENCE_LOOP_COUNT);
+    Psyz_PcmMusicPlay(1);
 }
 
 void StartSequenceFadeOut(void) {
@@ -51,7 +44,6 @@ static void UpdateReverbFade(void) {
 static void FinishSequenceFadeOut(void) {
     g_Audio.seq.volume = 0;
     g_Audio.seq.fade = 0;
-    SsSeqStop((s16)g_Audio.seq.handle);
     Psyz_PcmMusicStop();
     CloseSequenceAudioSlot();
     SetDefaultReverbDepth();
@@ -83,7 +75,6 @@ void ApplyDuckedSequenceAudio(void) {
     s32 volume = ClampVoiceVolume(g_Audio.seq.volume) * DUCKED_VOLUME_NUMERATOR /
                  DUCKED_VOLUME_DENOMINATOR;
 
-    SsSeqSetVol((s16)g_Audio.seq.handle, volume, volume);
     Psyz_PcmMusicSetVolume(volume);
     SetReverbDepth(DUCKED_REVERB_DEPTH, DUCKED_REVERB_DEPTH);
 }
@@ -91,6 +82,6 @@ void ApplyDuckedSequenceAudio(void) {
 void ApplyCurrentSequenceAudio(void) {
     s16 volume = (s16)ClampVoiceVolume(g_Audio.seq.volume);
 
-    SsSeqSetVol((s16)g_Audio.seq.handle, volume, volume);
+    Psyz_PcmMusicSetVolume(volume);
     SetDefaultReverbDepth();
 }

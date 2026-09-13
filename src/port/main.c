@@ -147,8 +147,11 @@ int main(int argc, char **argv) {
         const char *menuMusic = RuntimeConfigGet("audio.menu_music");
         if (menuMusic != NULL && menuMusic[0] != '\0' &&
             Psyz_PcmMusicLoad(menuMusic) != 0) {
-            fprintf(stderr, "rage-port: cannot load menu music %s; using disc sequence\n",
+            fprintf(stderr, "rage-port: menu music PCM is unreadable: %s\n",
                     menuMusic);
+            Psyz_AudioDestroy();
+            ModernShutdown();
+            return EXIT_FAILURE;
         }
     }
     MainLoop();

@@ -3,7 +3,7 @@ const fs=require('node:fs');
 (async()=>{
   const root=path.resolve(__dirname,'..');
   const extension=process.platform==='win32'?'.exe':'';
-  for(const name of ['rage-racer','rage-extract','rage-menu-music','rage-pack','rage-save-cli','rage-mod-cli','rage-mesh-obj']){
+  for(const name of ['rage-racer','rage-extract','rage-pack','rage-save-cli','rage-mod-cli','rage-mesh-obj']){
     const file=path.join(root,'resources','bin',name+extension);
     if(!fs.existsSync(file)||!fs.statSync(file).isFile())throw Error(`Missing ${name}. Run npm run build:native before packaging`);
     fs.accessSync(file,process.platform==='win32'?fs.constants.R_OK:fs.constants.R_OK|fs.constants.X_OK);

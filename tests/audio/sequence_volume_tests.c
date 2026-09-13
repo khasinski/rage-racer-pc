@@ -10,19 +10,12 @@
 Audio g_Audio;
 
 static s32 s_appliedVolume;
-static s32 s_outputLeft;
-static s32 s_outputRight;
 static s32 s_cdVolumeSetting;
 static s32 s_failures;
 static s32 s_pcmVolume;
 
 void Psyz_PcmMusicSetVolume(int volume) { s_pcmVolume = volume; }
 
-void SsSeqSetVol(short sequence, short left, short right) {
-    (void)sequence;
-    s_outputLeft = left;
-    s_outputRight = right;
-}
 void SetCdVolumeSetting(s32 setting) { s_cdVolumeSetting = setting; }
 
 static void Check(s32 condition, const char *label) {
@@ -34,8 +27,7 @@ static void Check(s32 condition, const char *label) {
 
 static void CheckAppliedVolume(s32 expected, const char *label) {
     s_appliedVolume = g_Audio.seq.volume;
-    Check(s_appliedVolume == expected && s_outputLeft == expected &&
-              s_outputRight == expected && s_pcmVolume == expected,
+    Check(s_appliedVolume == expected && s_pcmVolume == expected,
           label);
 }
 

@@ -11,30 +11,16 @@ Audio g_Audio;
 static s32 s_closeCalls;
 static s32 s_reverbLeft;
 static s32 s_reverbRight;
-static s32 s_sequenceLeft;
-static s32 s_sequenceRight;
-static s32 s_sequenceStops;
+static s32 s_pcmVolume;
+static s32 s_pcmStops;
 static s32 s_setVolume;
 static s32 s_setVolumeCalls;
-static s32 s_sequencePlays;
-static s32 s_playMode;
-static s32 s_loopCount;
+static s32 s_pcmPlays;
+static s32 s_pcmLoop;
 
-void SsSeqPlay(short sequence, char playMode, short loopCount) {
-    (void)sequence;
-    s_sequencePlays++;
-    s_playMode = playMode;
-    s_loopCount = loopCount;
-}
-void SsSeqStop(short sequence) {
-    (void)sequence;
-    s_sequenceStops++;
-}
-void SsSeqSetVol(short sequence, short left, short right) {
-    (void)sequence;
-    s_sequenceLeft = left;
-    s_sequenceRight = right;
-}
+void Psyz_PcmMusicPlay(int loop) { s_pcmPlays++; s_pcmLoop = loop; }
+void Psyz_PcmMusicStop(void) { s_pcmStops++; }
+void Psyz_PcmMusicSetVolume(int volume) { s_pcmVolume = volume; }
 void SetReverbDepth(s32 left, s32 right) {
     s_reverbLeft = left;
     s_reverbRight = right;
@@ -58,27 +44,27 @@ void CloseSequenceAudioSlot(void) {
 int main(void) {
     g_Audio.seq.handle = 7;
     PlaySequence();
-    CHECK(s_sequencePlays == 1 && s_playMode == 1 && s_loopCount == 0);
+    CHECK(s_pcmPlays == 1 && s_pcmLoop == 1);
 
     StartSequenceFadeOut();
     CHECK(g_Audio.seq.fade == -4 && g_Audio.reverb.fade == -3);
 
     g_Audio.seq.volume = 100;
     ApplyDuckedSequenceAudio();
-    CHECK(s_sequenceLeft == 75 && s_sequenceRight == 75);
+    CHECK(s_pcmVolume == 75);
     CHECK(s_reverbLeft == 0x3C && s_reverbRight == 0x3C);
 
     g_Audio.seq.volume = -5;
     ApplyDuckedSequenceAudio();
-    CHECK(s_sequenceLeft == 0 && s_sequenceRight == 0);
+    CHECK(s_pcmVolume == 0);
 
     g_Audio.seq.volume = INT_MAX;
     ApplyDuckedSequenceAudio();
-    CHECK(s_sequenceLeft == 96 && s_sequenceRight == 96);
+    CHECK(s_pcmVolume == 96);
 
     g_Audio.seq.volume = INT_MAX;
     ApplyCurrentSequenceAudio();
-    CHECK(s_sequenceLeft == 0x80 && s_sequenceRight == 0x80);
+    CHECK(s_pcmVolume == 0x80);
     CHECK(s_reverbLeft == 0x28 && s_reverbRight == 0x28);
 
     g_Audio.reverb.left = 2;
@@ -92,7 +78,7 @@ int main(void) {
     CHECK(g_Audio.reverb.left == 0 && g_Audio.reverb.right == 1);
     CHECK(g_Audio.reverb.fade == -3);
     CHECK(g_Audio.seq.volume == 0 && g_Audio.seq.fade == 0);
-    CHECK(s_sequenceStops == 1 && s_closeCalls == 1);
+    CHECK(s_pcmStops == 1 && s_closeCalls == 1);
     CHECK(s_reverbLeft == 0x28 && s_reverbRight == 0x28);
     CHECK(s_setVolumeCalls == 0);
 
@@ -110,7 +96,7 @@ int main(void) {
     UpdateSequenceFadeOut();
     CHECK(g_Audio.reverb.left == 0 && g_Audio.reverb.right == 0);
     CHECK(g_Audio.seq.volume == 0 && g_Audio.seq.fade == 0);
-    CHECK(s_sequenceStops == 2 && s_closeCalls == 2);
+    CHECK(s_pcmStops == 2 && s_closeCalls == 2);
 
     g_Audio.reverb.left = 10;
     g_Audio.reverb.right = 20;

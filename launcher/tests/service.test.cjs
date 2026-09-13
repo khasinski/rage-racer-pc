@@ -301,6 +301,20 @@ test('failed game launch releases state and reports process failure on retry',as
  }finally{await fs.rm(root,{recursive:true,force:true});}
 });
 
+test('launch regenerates missing menu PCM with the normal extractor',async()=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-launch-music-repair-'));
+ try{
+  const data=path.join(root,'data'),disc=path.join(root,'disc.bin'),archive=path.join(root,'extract.cjs');
+  await fs.mkdir(data);await fs.writeFile(path.join(data,'manifest.json'),'{}');await fs.writeFile(disc,'fixture');
+  await fs.writeFile(archive,"require('node:fs').writeFileSync(require('node:path').join(process.argv[2],'menu_music.wav'),'pcm')");
+  const service=new LauncherService({root,bin:root,config:path.resolve(__dirname,'../resources/rage-port.ini')});
+  await service.init();service.state.disc={path:disc,data,archive,region:'PAL'};
+  service.tool=()=>process.execPath;
+  await service.launch();
+  assert.equal(await fs.readFile(path.join(data,'menu_music.wav'),'utf8'),'pcm');
+ }finally{await fs.rm(root,{recursive:true,force:true});}
+});
+
 test('diagnostics reads bounded tails and handles logs not created yet',async()=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-log-tail-'));
  try{

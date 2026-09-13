@@ -1,11 +1,10 @@
-#include "menu_music_asset.h"
+#include "menu_music_render.h"
 
 #include <libsnd.h>
 #include <psyz/spu.h>
 
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 enum {
     SAMPLE_RATE = 44100,
@@ -15,6 +14,8 @@ enum {
     MASTER_VOLUME = 0x3fff,
     REVERB_PRESET = 2,
     REVERB_DEPTH = 0x28,
+    PAL_TEMPO_US = 328947,
+    NTSC_TEMPO_US = 394736,
 };
 
 extern void _SsInit(void);
@@ -47,28 +48,15 @@ static int WriteWavHeader(FILE *file, uint32_t frames) {
     return !ferror(file);
 }
 
-static uint8_t *ReadFile(const char *path, size_t *size) {
-    FILE *file = fopen(path, "rb");
-    long length;
-    uint8_t *data;
-    if (file == NULL || fseek(file, 0, SEEK_END) != 0 ||
-        (length = ftell(file)) <= 0 || fseek(file, 0, SEEK_SET) != 0) {
-        if (file != NULL) fclose(file);
-        return NULL;
-    }
-    data = malloc((size_t)length);
-    if (data == NULL || fread(data, 1, (size_t)length, file) != (size_t)length) {
-        free(data);
-        fclose(file);
-        return NULL;
-    }
-    fclose(file);
-    *size = (size_t)length;
-    return data;
+unsigned MenuMusicTickRate(const MenuMusicAsset *asset) {
+    if (asset == NULL) return 0;
+    if (asset->tempoUs == PAL_TEMPO_US) return 50;
+    if (asset->tempoUs == NTSC_TEMPO_US) return 60;
+    return 0;
 }
 
-static int Render(const MenuMusicAsset *asset, unsigned tickRate,
-                  const char *outputPath) {
+int MenuMusicRenderWav(const MenuMusicAsset *asset, unsigned tickRate,
+                       const char *outputPath) {
     unsigned char sequenceTable[512] = {0};
     int16_t samples[SAMPLE_RATE / 50 * CHANNELS];
     size_t ticks;
@@ -78,10 +66,11 @@ static int Render(const MenuMusicAsset *asset, unsigned tickRate,
     short sequence;
     FILE *output;
 
-    /* Rage services PAL once per 50 Hz frame, but PsyQ's manual SEQ clock is
-     * 60 Hz. The PAL disc's 1.2x tempo compensates for that service rate. */
+    /* PsyQ's manual SEQ clock is 60 Hz. The PAL asset's tempo encodes the
+     * original 50 Hz service rate, while output remains ordinary 44.1 kHz PCM. */
     if (!MenuMusicSequenceTicks(asset, 60, &ticks) ||
-        SAMPLE_RATE % tickRate != 0) return 0;
+        (tickRate != 50 && tickRate != 60) || SAMPLE_RATE % tickRate != 0)
+        return 0;
     framesPerTick = SAMPLE_RATE / tickRate;
     frameCount = ticks * (uint64_t)framesPerTick;
     if (frameCount > (UINT32_MAX - 36) / (CHANNELS * sizeof(int16_t))) return 0;
@@ -116,33 +105,13 @@ static int Render(const MenuMusicAsset *asset, unsigned tickRate,
         if (fwrite(samples, sizeof(int16_t) * CHANNELS, framesPerTick, output) !=
             framesPerTick) {
             fclose(output);
+            remove(outputPath);
             return 0;
         }
     }
-    return fclose(output) == 0;
-}
-
-int main(int argc, char **argv) {
-    MenuMusicAsset asset;
-    size_t size;
-    uint8_t *data;
-    unsigned tickRate;
-    int ok;
-
-    if (argc != 4 || (argv[2][0] != '5' && argv[2][0] != '6')) {
-        fprintf(stderr, "usage: %s SELBGM.BIN 50|60 OUTPUT.wav\n", argv[0]);
-        return 2;
+    if (fclose(output) != 0) {
+        remove(outputPath);
+        return 0;
     }
-    tickRate = (unsigned)strtoul(argv[2], NULL, 10);
-    if (tickRate != 50 && tickRate != 60) return 2;
-    data = ReadFile(argv[1], &size);
-    if (data == NULL || !MenuMusicAssetOpen(data, size, &asset)) {
-        fprintf(stderr, "invalid menu music asset: %s\n", argv[1]);
-        free(data);
-        return 1;
-    }
-    ok = Render(&asset, tickRate, argv[3]);
-    free(data);
-    if (!ok) fprintf(stderr, "could not render menu music\n");
-    return ok ? 0 : 1;
+    return 1;
 }

@@ -2,7 +2,6 @@
 #include "game/audio_internal.h"
 #include "game/cd.h"
 #include "game/sound.h"
-#include "psyq/snd.h"
 #include <psyz/audio.h>
 
 enum {
@@ -12,7 +11,6 @@ enum {
 void SetSequenceVolume(s32 volume) {
     volume = ClampVoiceVolume(volume);
     g_Audio.seq.volume = volume;
-    SsSeqSetVol((s16)g_Audio.seq.handle, (s16)volume, (s16)volume);
     Psyz_PcmMusicSetVolume(volume);
 }
 

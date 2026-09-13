@@ -11,7 +11,6 @@ s32 g_SceneId;
 SoundScale g_SoundScale;
 s16 g_SoundSlotTone[ENGINE_SOUND_SLOT_COUNT][ENGINE_SOUND_BANK_COUNT];
 
-static s32 s_sequenceTicks;
 static s32 s_damperSteps;
 static s32 s_fadeUpdates;
 static s32 s_reverbOffCalls;
@@ -24,11 +23,6 @@ static long s_vabId;
 static long s_program;
 static long s_note;
 static s32 s_failures;
-static s32 s_pcmMusicLoaded;
-
-int Psyz_PcmMusicIsLoaded(void) { return s_pcmMusicLoaded; }
-
-void SsSeqCalledTbyT(void) { s_sequenceTicks++; }
 void SpuVmDamperStep(void) { s_damperSteps++; }
 void UpdateSequenceFadeOut(void) { s_fadeUpdates++; }
 void SsUtSetReverbDepth(short left, short right) {
@@ -67,33 +61,29 @@ static void TestSequenceTicking(void) {
     g_SceneId = 0;
     g_Audio.seq.fade = -4;
     for (frame = 0; frame < 5; frame++) TickSequenceAudio();
-    Check(s_sequenceTicks == 5,
-          "PAL frames service one sequence tick per game frame");
-    Check(s_damperSteps == 5 && s_fadeUpdates == 5,
-          "normal audio frames flush voices and advance fades");
+    Check(s_damperSteps == 0 && s_fadeUpdates == 5,
+          "menu PCM advances fades without servicing SPU voices");
 
     g_SceneId = 0xC;
     TickSequenceAudio();
-    Check(s_sequenceTicks == 5 && s_fadeUpdates == 5 && s_damperSteps == 6,
+    Check(s_fadeUpdates == 5 && s_damperSteps == 1,
           "sound-mode scene only services the voice damper");
 
     g_SceneId = 0;
     g_Audio.seq.fade = 0;
     for (frame = 0; frame < 3; frame++) TickSequenceAudio();
-    Check(s_sequenceTicks == 8 && s_fadeUpdates == 5 && s_damperSteps == 9,
-          "NTSC frames service one sequence tick without an inactive fade");
+    Check(s_fadeUpdates == 5 && s_damperSteps == 1,
+          "inactive menu PCM needs no per-frame SPU work");
 
     TickSequenceAudio();
     TickSequenceAudio();
-    Check(s_sequenceTicks == 10 && s_damperSteps == 11,
-          "sequence clock remains independent from host timing configuration");
+    Check(s_damperSteps == 1,
+          "menu PCM remains independent from the SPU voice clock");
 
-    s_pcmMusicLoaded = 1;
     g_Audio.seq.fade = -4;
     TickSequenceAudio();
-    Check(s_sequenceTicks == 10 && s_damperSteps == 11 && s_fadeUpdates == 6,
+    Check(s_damperSteps == 1 && s_fadeUpdates == 6,
           "pre-rendered music fades without servicing the sequence synthesizer");
-    s_pcmMusicLoaded = 0;
 }
 
 static void TestReverbDepth(void) {
