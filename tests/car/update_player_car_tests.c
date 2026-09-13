@@ -14,7 +14,6 @@ s32 g_ShiftTargetRpm;
 static GameCarSpec s_spec;
 static char s_order[64];
 static int s_orderLength;
-static int s_traceCalls;
 static s32 s_skid;
 static s32 s_crash;
 static s32 s_jumpGround;
@@ -27,8 +26,6 @@ static void Step(char step) {
     s_order[s_orderLength++] = step;
     s_order[s_orderLength] = '\0';
 }
-
-void TraceCarStates(void) { Step('A'); }
 
 s32 IsCarFacingBackwards(const PlayerCarRuntime *car) {
     (void)car;
@@ -132,12 +129,6 @@ void UpdatePlayerEnginePresentation(PlayerCarRuntime *car) {
     Step('T');
 }
 
-void TraceCarMotion(const char *phase, PlayerCarRuntime *car) {
-    (void)phase;
-    (void)car;
-    s_traceCalls++;
-}
-
 static void Reset(PlayerCarRuntime *car) {
     memset(car, 0, sizeof(*car));
     memset(&s_spec, 0, sizeof(s_spec));
@@ -148,7 +139,6 @@ static void Reset(PlayerCarRuntime *car) {
     g_PadType = PAD_TYPE_DIGITAL;
     s_orderLength = 0;
     s_order[0] = '\0';
-    s_traceCalls = 0;
     s_skid = 0;
     s_crash = 0;
     s_jumpGround = 0;
@@ -184,13 +174,12 @@ int main(void) {
     car.drive.accelPos = 640;
     car.drive.brakePos = 1280;
     UpdatePlayerCar(&car);
-    CheckOrder("ABCDEFGHIJKMPQRST");
+    CheckOrder("BCDEFGHIJKMPQRST");
     CHECK(car.facingBackwards == 1 && s_shiftMapping == 0);
     CHECK(car.x == 98 && car.z == 193);
     CHECK(car.y == 50 && car.positionW == 77);
     CHECK(s_jumpGround == 42);
     CHECK(s_responseSkid == 0 && s_responseCrash == 0);
-    CHECK(s_traceCalls == 4);
 
     Reset(&car);
     g_PadType = PAD_TYPE_NEGCON;
@@ -200,7 +189,7 @@ int main(void) {
     s_skid = 3;
     s_crash = 1;
     UpdatePlayerCar(&car);
-    CheckOrder("ABCDFGHIJKLMNPQRST");
+    CheckOrder("BCDFGHIJKLMNPQRST");
     CHECK(s_shiftMapping == 1);
     CHECK(car.bodyPitch > 0);
     CHECK(s_responseSkid == 3 && s_responseCrash == 1);

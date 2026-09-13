@@ -312,7 +312,6 @@ if(RAGE_BUILD_PORT)
         src/port/platform_paths.c
         src/port/diagnostic_log.c
         src/port/game_diagnostics.c
-        src/port/rage_trace.c
         src/port/render_world_game.c
         src/port/render_world_scene.c
         src/port/sky_panorama_layout.c

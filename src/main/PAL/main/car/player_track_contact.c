@@ -4,7 +4,6 @@
 #include "game/render.h"
 #include "game/track_internal.h"
 
-#include "rage/trace.h"
 
 enum {
     SLOW_SKID_SPEED_LIMIT = 64,
@@ -42,10 +41,8 @@ s32 ResolvePlayerTrackContact(PlayerCarRuntime *car) {
     if (car->motionActive) {
         ApplyCarKnockback(AsRivalCar(car));
     }
-    TraceCarMotion("post-knockback", car);
     skid = UpdateCarTrackState(
         AsRivalCar(car), car->trackPointIndex, &limits);
-    TraceCarMotion("post-track", car);
 
     if (ShouldSuppressSlowSkid(skid, car->speed)) {
         return 0;

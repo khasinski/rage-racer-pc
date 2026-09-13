@@ -5,7 +5,6 @@
 #include "game/integer.h"
 #include "game/random.h"
 
-#include "rage/trace.h"
 
 enum {
     PLAYER_BODY_GROUND_OFFSET = 8,
@@ -59,7 +58,6 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
     s32 skid;
     s32 crash;
 
-    TraceCarStates();
 
     useAlternateGearMapping = g_PadType == PAD_TYPE_NEGCON;
     car->facingBackwards = IsCarFacingBackwards(car);
@@ -77,18 +75,14 @@ void UpdatePlayerCar(PlayerCarRuntime *car) {
 
     UpdatePlayerControlFeedback(car);
 
-    TraceCarMotion("pre-integrate", car);
     IntegratePlayerHorizontalPosition(car);
-    TraceCarMotion("post-position", car);
     AccumulateLapProgress(AsRivalCar(car));
-    TraceCarMotion("post-progress", car);
 
     skid = ResolvePlayerTrackContact(car);
 
     ApplyGearShiftBodyPitch(car);
 
     crash = CollidePlayerWithCars(car);
-    TraceCarMotion(crash != 0 ? "post-cars-hit" : "post-cars-clear", car);
     if (skid != 0 || crash != 0) {
         StartCarBodyKick(AsRivalCar(car), CAR_BODY_KICK_CORNERING);
     }

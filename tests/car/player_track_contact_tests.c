@@ -16,7 +16,6 @@ static s32 s_rotation;
 static int s_measureCalls;
 static int s_knockbackCalls;
 static int s_trackCalls;
-static int s_traceCalls;
 static int s_failures;
 
 /* The track frame comes from the GTE rotation, whose Y convention is the
@@ -49,12 +48,6 @@ s32 UpdateCarTrackState(GameCarRuntime *car, s32 pointIndex,
     return s_trackResult;
 }
 
-void TraceCarMotion(const char *phase, PlayerCarRuntime *car) {
-    (void)phase;
-    (void)car;
-    s_traceCalls++;
-}
-
 static void Reset(PlayerCarRuntime *car) {
     memset(car, 0, sizeof(*car));
     memset(s_points, 0, sizeof(s_points));
@@ -68,7 +61,6 @@ static void Reset(PlayerCarRuntime *car) {
     s_measureCalls = 0;
     s_knockbackCalls = 0;
     s_trackCalls = 0;
-    s_traceCalls = 0;
 }
 
 #define CHECK(condition) do {                                                \
@@ -85,7 +77,7 @@ int main(void) {
     s_trackResult = 4;
     CHECK(ResolvePlayerTrackContact(&car) == 4);
     CHECK(s_rotation == 0x180);
-    CHECK(s_measureCalls == 1 && s_trackCalls == 1 && s_traceCalls == 2);
+    CHECK(s_measureCalls == 1 && s_trackCalls == 1);
     CHECK(s_knockbackCalls == 0);
 
     Reset(&car);
@@ -128,12 +120,12 @@ int main(void) {
     Reset(&car);
     g_TrackPoints = NULL;
     CHECK(ResolvePlayerTrackContact(&car) == 0);
-    CHECK(s_measureCalls == 0 && s_trackCalls == 0 && s_traceCalls == 0);
+    CHECK(s_measureCalls == 0 && s_trackCalls == 0);
 
     Reset(&car);
     g_TrackPointCount = 0;
     CHECK(ResolvePlayerTrackContact(&car) == 0);
-    CHECK(s_measureCalls == 0 && s_trackCalls == 0 && s_traceCalls == 0);
+    CHECK(s_measureCalls == 0 && s_trackCalls == 0);
 
     Reset(&car);
     car.bodyYaw = INT_MAX;

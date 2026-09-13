@@ -15,7 +15,6 @@ s32 g_TrackLength;
 s32 g_AnimTimer;
 s32 g_ClosestRivalRank;
 
-static int s_traceCalls;
 static int s_trafficCalls;
 static int s_trafficCallsBySlot[RACE_CAR_SLOT_COUNT];
 static int s_collisionCalls;
@@ -46,11 +45,6 @@ static void RecordEvent(char event) {
         s_events[s_eventCount++] = event;
         s_events[s_eventCount] = '\0';
     }
-}
-
-void TraceCarStates(void) {
-    RecordEvent('T');
-    s_traceCalls++;
 }
 
 void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 index) {
@@ -199,7 +193,6 @@ int main(void) {
     CHECK_EQ(car->collisionFlag, 0);
     CHECK_EQ(car->bodyYaw, 0);
     CHECK_EQ(g_Cars[1].bodyYaw, 10);
-    CHECK_EQ(s_traceCalls, 1);
     CHECK_EQ(s_trafficCalls, 1);
     CHECK_EQ(s_collisionCalls, RACE_CAR_SLOT_COUNT - 1);
     CHECK_EQ(s_targetSpeedCalls, 1);
@@ -213,7 +206,7 @@ int main(void) {
     CHECK_EQ(s_bodyMotionCalls, 1);
     CHECK_EQ(s_attractAccelerationCalls, 1);
     CHECK_EQ(s_placementCalls, 1);
-    CHECK_EVENTS("TACSHLREMPB");
+    CHECK_EVENTS("ACSHLREMPB");
 
     g_TrackLength = 100;
     car->progressA = 123;

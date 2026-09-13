@@ -7,7 +7,6 @@
 #include "game/render.h"
 #include "game/state.h"
 
-#include "rage/trace.h"
 
 enum {
     DISPLAYED_RPM_MINIMUM = 500,
@@ -93,7 +92,6 @@ static void UpdatePlayerEngineAudio(PlayerCarRuntime *car) {
         g_EngineRpm + g_EngineRpmJitter, usePoweredBank);
 
     drive->gearDisp = drive->gear;
-    TraceCarMotion("post-update", car);
 }
 
 void UpdatePlayerEnginePresentation(PlayerCarRuntime *car) {

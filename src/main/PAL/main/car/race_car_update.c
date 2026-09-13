@@ -3,7 +3,6 @@
 #include "game/race.h"
 #include "game/state.h"
 #include "game/track.h"
-#include "rage/trace.h"
 
 
 /* Every car starts the frame from the heading it settled on last frame, and
@@ -97,7 +96,6 @@ void UpdateRaceCars(void) {
 void UpdateAttractCars(void) {
     s32 i;
 
-    TraceCarStates();
     for (i = 0; i < RACE_CAR_SLOT_COUNT; i++) {
         GameCarRuntime *car = &g_Cars[i];
 

@@ -22,7 +22,6 @@ static s32 s_audioBank;
 static int s_audioCalls;
 static int s_effectCalls;
 static s32 s_effectIndex;
-static int s_traceCalls;
 static int s_failures;
 
 s32 Random15(void) {
@@ -46,12 +45,6 @@ void SetIndexedEffectVoice(s32 index, s32 phase, s32 volume) {
     s_effectCalls++;
 }
 
-void TraceCarMotion(const char *phase, PlayerCarRuntime *car) {
-    (void)phase;
-    (void)car;
-    s_traceCalls++;
-}
-
 static void Reset(PlayerCarRuntime *car) {
     memset(car, 0, sizeof(*car));
     memset(&s_spec, 0, sizeof(s_spec));
@@ -70,7 +63,6 @@ static void Reset(PlayerCarRuntime *car) {
     s_audioCalls = 0;
     s_effectCalls = 0;
     s_effectIndex = 0;
-    s_traceCalls = 0;
 }
 
 #define CHECK(condition) do {                                                \
@@ -90,7 +82,7 @@ int main(void) {
     UpdatePlayerEnginePresentation(&car);
     CHECK(g_EngineRpm == 1875 && g_EngineRpmSnapshot == 1875);
     CHECK(s_audioCalls == 1 && s_audioPosition == 1875 && s_audioBank == 1);
-    CHECK(car.drive.gearDisp == 1 && s_traceCalls == 1);
+    CHECK(car.drive.gearDisp == 1);
 
     Reset(&car);
     car.drive.engineRpm = 4500;
