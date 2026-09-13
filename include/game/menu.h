@@ -461,7 +461,6 @@ extern s32 g_LogoSampleCursor;
 extern s32 g_ShopCarIndex;
 extern s32 g_RankingCursor;
 extern s32 g_EngineerShopOption;
-extern s32 g_CarShopOption;
 extern s32 g_TitleFadeLevel;
 extern s32 g_PaintColorCursor;
 extern s32 g_TeamLogoOption;

@@ -59,8 +59,7 @@ static TimedDrawCommand s_promptGnade[7];
 static TimedDrawCommand s_promptLeizard[7];
 static TimedDrawCommand s_promptAssoluto[7];
 TimedDrawCommand g_CarShopNoFundsScript[5];
-const TimedDrawCommand *g_CarShopModalScript;
-s32 g_CarShopOption;
+TimedDrawCommand g_UiEmptyScript[1];
 TimedDrawCommand g_CarShopScreenScript[9];
 s32 g_CarSwapFromIndex;
 s32 g_CarSwapToIndex;
@@ -234,6 +233,7 @@ int main(int argc, char **argv) {
         -MENU_CAR_VIEW_SETTLE_WINDOW,
     };
     GameOrderingTableEntry ot[64];
+    CarShop shop;
     int bi, sr, p2, opt, pb, hb, settled, swap, oi, ci, sub, rich, timer,
         transmission, prog, same;
     int steps = 0;
@@ -286,7 +286,7 @@ int main(int argc, char **argv) {
         s_scriptResult = sr;
         g_UiScriptProgress2 = p2;
         g_UiScriptProgress = prog;
-        g_CarShopOption = opt;
+        shop.option = opt;
         g_PadPressed = buttons[pb];
         g_PadHeld = held[hb];
         g_MenuViewAngleTarget = 0x7A120;
@@ -311,7 +311,7 @@ int main(int argc, char **argv) {
         g_MenuOutgoingHandlerIndex = 0;
         g_MenuOverlayPattern = 0;
         g_MenuScreen = 0;
-        g_CarShopModalScript = NULL;
+        shop.modal = NULL;
 
         sprintf(label,
                 "== busy%d/script%d/p2_%d/opt%d/pad%04x/held%04x/settled%d/"
@@ -322,12 +322,12 @@ int main(int argc, char **argv) {
                 transmission, prog, same);
         Record(label, NULL, 0);
 
-        UpdateCarShopScreen();
+        UpdateCarShop(&shop);
 
         {
             s32 after[18];
             after[0] = GameMenuBusy;
-            after[1] = g_CarShopOption;
+            after[1] = shop.option;
             after[2] = g_CarListCursor;
             after[3] = g_PlayerCarIndex;
             after[4] = g_PlayerMoney;
@@ -343,7 +343,7 @@ int main(int argc, char **argv) {
             after[14] = g_MenuScreen;
             after[15] = g_MenuHandlerIndex;
             after[16] = g_MenuOutgoingHandlerIndex;
-            after[17] = ScriptId(g_CarShopModalScript);
+            after[17] = ScriptId(shop.modal);
             Record("state", after, 18);
             RECORD("owned", s_cars[cars[ci]].enabled,
                    g_TimeAttackCars[cars[ci]].enabled, g_UiScriptProgress,
@@ -372,7 +372,7 @@ int main(int argc, char **argv) {
         GameMenuBusy = 0;
         s_scriptResult = 1;
         g_UiScriptProgress2 = 0;
-        g_CarShopOption = 0;
+        shop.option = 0;
         g_PadPressed = PAD_CONFIRM;
         g_PadHeld = 0;
         g_MenuViewAngle = 0x7A120;
@@ -380,12 +380,12 @@ int main(int argc, char **argv) {
         g_CarSwapToIndex = -1;
         g_CarListCursor = ci;
         g_PlayerCarIndex = ci;
-        g_CarShopModalScript = NULL;
+        shop.modal = NULL;
 
         sprintf(label, "== prompt for car %d", ci);
         Record(label, NULL, 0);
-        UpdateCarShopScreen();
-        RECORD("prompt", ScriptId(g_CarShopModalScript), GameMenuBusy,
+        UpdateCarShop(&shop);
+        RECORD("prompt", ScriptId(shop.modal), GameMenuBusy,
                g_MenuSubCursor);
         steps++;
     }
@@ -405,7 +405,7 @@ int main(int argc, char **argv) {
         GameMenuBusy = 0;
         s_scriptResult = 1;
         g_UiScriptProgress2 = 0;
-        g_CarShopOption = 0;
+        shop.option = 0;
         g_PadPressed = 0;
         g_PadHeld = PAD_LEFT | PAD_RIGHT;
         g_MenuViewAngle = 0x7A120;
@@ -415,10 +415,10 @@ int main(int argc, char **argv) {
         g_PlayerCarIndex = 4;
         g_PrevOwnedCarIndex = (s16)owned[oi];
         g_NextOwnedCarIndex = (s16)owned[1 - oi];
-        g_CarShopModalScript = NULL;
+        shop.modal = NULL;
 
         Record("== both directions held", NULL, 0);
-        UpdateCarShopScreen();
+        UpdateCarShop(&shop);
         RECORD("bothheld", g_CarListCursor, g_CarSwapFromIndex,
                g_CarSwapToIndex, g_MenuViewAngle, g_MenuViewAngleTarget);
         steps++;
@@ -443,15 +443,15 @@ int main(int argc, char **argv) {
         g_MenuSubCursor = 1;
         g_CarListCursor = 4;
         g_PlayerCarIndex = 4;
-        g_CarShopModalScript = NULL;
+        shop.modal = NULL;
         /* Car 4 costs g_CarPriceTable[4 & 7], one short of it and one over. */
         g_PlayerMoney = g_CarPriceTable[4] + (rich - 1);
 
         sprintf(label, "== money %d", g_PlayerMoney);
         Record(label, NULL, 0);
-        UpdateCarShopScreen();
+        UpdateCarShop(&shop);
         RECORD("afford", GameMenuBusy, g_MenuConfirmTimer,
-               ScriptId(g_CarShopModalScript));
+               ScriptId(shop.modal));
         steps++;
     }
 
@@ -474,7 +474,7 @@ int main(int argc, char **argv) {
     g_CarListCursor = 4;
     g_PlayerMoney = INT32_MAX;
     s_assetIndexOverride = CAR_PRICE_COUNT;
-    UpdateCarShopScreen();
+    UpdateCarShop(&shop);
     if (GameMenuBusy == -3) {
         puts("FAIL an invalid car price started a free purchase");
         return 1;
@@ -483,7 +483,7 @@ int main(int argc, char **argv) {
     GameMenuBusy = 2;
     g_UiScriptProgress = 0;
     g_PlayerMoney = 12345;
-    UpdateCarShopScreen();
+    UpdateCarShop(&shop);
     if (g_PlayerMoney != 12345) {
         puts("FAIL an invalid car price changed player money");
         return 1;
@@ -494,7 +494,7 @@ int main(int argc, char **argv) {
     g_MenuConfirmTimer = 0;
     s_cars[4].enabled = 0;
     g_TimeAttackCars[4].enabled = 0;
-    UpdateCarShopScreen();
+    UpdateCarShop(&shop);
     if (GameMenuBusy != 0 || s_cars[4].enabled != 0 ||
         g_TimeAttackCars[4].enabled != 0) {
         puts("FAIL an invalid car price completed the sale countdown");
@@ -507,7 +507,7 @@ int main(int argc, char **argv) {
     g_PadPressed = PAD_CONFIRM;
     g_MenuSubCursor = 1;
     g_PlayerMoney = INT_MAX;
-    UpdateCarShopScreen();
+    UpdateCarShop(&shop);
     if (GameMenuBusy == CAR_SHOP_SALE_COUNTDOWN) {
         puts("FAIL a negative price started a purchase");
         return 1;
@@ -517,7 +517,7 @@ int main(int argc, char **argv) {
     GameMenuBusy = CAR_SHOP_BUY_PROMPT;
     g_PadPressed = 0;
     g_MenuSubCursor = UINT8_MAX;
-    UpdateCarShopScreen();
+    UpdateCarShop(&shop);
     if (g_MenuSubCursor != 1) {
         puts("FAIL buy prompt did not normalize its cursor");
         return 1;
@@ -527,7 +527,7 @@ int main(int argc, char **argv) {
     GameMenuBusy = CAR_SHOP_IDLE;
     s_scriptResult = 1;
     g_UiScriptProgress2 = 0;
-    g_CarShopOption = 0;
+    shop.option = 0;
     g_PadPressed = PAD_CONFIRM;
     g_PadHeld = 0;
     g_CarListCursor = 4;
@@ -536,15 +536,15 @@ int main(int argc, char **argv) {
     g_MenuViewAngleTarget = 0x7A120;
     g_CarSwapToIndex = -1;
     s_cars[4].enabled = 0;
-    g_CarShopModalScript = NULL;
-    UpdateCarShopScreen();
-    if (g_CarShopModalScript != s_promptGnade) {
+    shop.modal = NULL;
+    UpdateCarShop(&shop);
+    if (shop.modal != s_promptGnade) {
         puts("FAIL custom manufacturer did not use the Gnade buy prompt");
         return 1;
     }
 
     GameMenuBusy = -99;
-    UpdateCarShopScreen();
+    UpdateCarShop(&shop);
     if (GameMenuBusy != CAR_SHOP_IDLE) {
         puts("FAIL unknown car-shop state did not recover to idle");
         return 1;

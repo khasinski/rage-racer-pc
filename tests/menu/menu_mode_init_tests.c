@@ -19,6 +19,7 @@ static s32 s_displaySetups;
 static s32 s_drawResetCalls;
 static s32 s_initRenderMode;
 static s32 s_cameraCalls;
+static s32 s_carShopResets;
 
 s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
@@ -29,6 +30,7 @@ void MenuRuntimeReset(void) {
     g_MenuHandlerIndex = -1;
     g_MenuOutgoingHandlerIndex = -1;
 }
+void ResetCarShopScreen(void) { s_carShopResets++; }
 
 void SetDispMask(s32 enabled) { s_displayMask = enabled; }
 void InitRenderState(s32 mode) { s_initRenderMode = mode; }
@@ -91,7 +93,6 @@ static void PoisonEntryState(void) {
     g_CustomizePopupScript = NULL;
     g_TeamLogoSubPanelScript = NULL;
     g_LogoSampleSubPanelScript = NULL;
-    g_CarShopModalScript = NULL;
     g_EngineerShopModalScript = NULL;
     g_MenuViewAngle = 1;
     g_MenuViewAngleTarget = 2;
@@ -133,6 +134,7 @@ static void PoisonEntryState(void) {
     s_drawResetCalls = 0;
     s_initRenderMode = -1;
     s_cameraCalls = 0;
+    s_carShopResets = 0;
 }
 
 static int CheckCommonEntryState(const GameRaceProgress *progress) {
@@ -149,7 +151,6 @@ static int CheckCommonEntryState(const GameRaceProgress *progress) {
     CHECK(g_CustomizePopupScript == g_UiEmptyScript);
     CHECK(g_TeamLogoSubPanelScript == g_UiEmptyScript);
     CHECK(g_LogoSampleSubPanelScript == g_UiEmptyScript);
-    CHECK(g_CarShopModalScript == g_UiEmptyScript);
     CHECK(g_EngineerShopModalScript == g_UiEmptyScript);
     CHECK(g_MenuViewAngle == MENU_COURSE_VIEW_REBASE_SPAN);
     CHECK(g_MenuViewAngleTarget == MENU_COURSE_VIEW_REBASE_SPAN);
@@ -171,6 +172,7 @@ static int CheckCommonEntryState(const GameRaceProgress *progress) {
     CHECK(g_CourseSelectOption == 0 && g_CarSelectCursor == 0);
     CHECK(g_CustomizeOption == 0 && g_DesignModeOption == 0);
     CHECK(s_drawResetCalls == 3);
+    CHECK(s_carShopResets == 1);
     return 0;
 }
 

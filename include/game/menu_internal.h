@@ -505,4 +505,12 @@ extern ScoreRecord g_ClassRecords[CLASS_RECORD_COUNT];
 extern s32 g_ClassWinCount;
 extern u8 g_DesignModeCellMask[6][6];
 
+typedef struct CarShop {
+    const TimedDrawCommand *modal;
+    s32 option;
+} CarShop;
+
+void UpdateCarShop(CarShop *shop);
+void ResetCarShopScreen(void);
+
 #endif
