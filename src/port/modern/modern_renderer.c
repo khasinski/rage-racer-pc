@@ -14,7 +14,6 @@
 #include <psyz/present_sdl3_gpu.h>
 #include <psyz/video.h>
 #include <psyz/overlay.h>
-#include <psyz/gpu_decode.h>
 
 #include <math.h>
 #include <stddef.h>
@@ -605,16 +604,15 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
     }
     if (state->areaEmpty) return;
     {
-        PsyzGpuPrimitive primitive;
-        int decoded = Psyz_GpuDecodePrimitive(
-            words, packet->size, (unsigned short)state->tpage,
-            state->offsetX, state->offsetY, &primitive);
-        int textured, quad, semi;
+        int isPoly = (command & 0xE0u) == 0x20u;
+        int isLine = (command & 0xE0u) == 0x40u;
+        int isRect = (command & 0xE0u) == 0x60u;
+        int textured = (command & 0x04u) != 0;
+        int gouraud = (command & 0x10u) != 0;
+        int quad = (command & 0x08u) != 0;
+        int semi = (command & 0x02u) != 0;
+        int raw = (command & 0x01u) != 0;
         Modern2DState spanState = *state;
-        if (decoded <= 0) return;
-        textured = (primitive.flags & PSYZ_GPU_TEXTURED) != 0;
-        quad = (primitive.flags & PSYZ_GPU_QUAD) != 0;
-        semi = (primitive.flags & PSYZ_GPU_SEMITRANSPARENT) != 0;
         if (CapturePacketIsMainSky(packet)) {
             /* The PS1 drawing area is 320 pixels wide. The extended authored
              * grid is intentionally allowed into the native ultrawide area;
@@ -636,25 +634,44 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
                                            s_overscanX, s_targetW, s_targetH);
             if (spanState.scissor.w <= 0 || spanState.scissor.h <= 0) return;
         }
-        if (primitive.type == PSYZ_GPU_PRIMITIVE_POLYGON) {
+        if (isPoly) {
             ModernVertex corners[4];
-            uint32_t prim_tpage = primitive.tpage;
-            int count = primitive.count;
+            uint32_t prim_tpage = state->tpage;
+            uint32_t clut = 0;
+            int count = quad ? 4 : 3;
             int vertex;
+            int cursor = 1; /* word 0 = command + colour 0 */
+            uint32_t colors[4];
             float rawX[4], rawY[4];
             int minX = 4096, minY = 4096, maxX = -4096, maxY = -4096;
+            colors[0] = words[0] & 0xFFFFFFu;
             for (vertex = 0; vertex < count; vertex++) {
-                int px = primitive.points[vertex].x;
-                int py = primitive.points[vertex].y;
-                rawX[vertex] = (float)px;
-                rawY[vertex] = (float)py;
-                if (px < minX) minX = px;
-                if (px > maxX) maxX = px;
-                if (py < minY) minY = py;
-                if (py > maxY) maxY = py;
+                uint32_t xy;
+                if (vertex > 0) {
+                    if (gouraud) colors[vertex] = words[cursor++] & 0xFFFFFFu;
+                    else colors[vertex] = colors[0];
+                }
+                xy = words[cursor++];
+                {
+                    int px = (int)((xy & 0x7FFu) ^ 1024) - 1024 +
+                             state->offsetX;
+                    int py = (int)(((xy >> 16) & 0x7FFu) ^ 1024) - 1024 +
+                             state->offsetY;
+                    rawX[vertex] = (float)px;
+                    rawY[vertex] = (float)py;
+                    if (px < minX) minX = px;
+                    if (px > maxX) maxX = px;
+                    if (py < minY) minY = py;
+                    if (py > maxY) maxY = py;
+                }
                 memset(&corners[vertex], 0, sizeof(corners[vertex]));
-                corners[vertex].u = (float)primitive.points[vertex].u;
-                corners[vertex].v = (float)primitive.points[vertex].v;
+                if (textured) {
+                    uint32_t uvWord = words[cursor++];
+                    corners[vertex].u = (float)(uvWord & 0xFFu);
+                    corners[vertex].v = (float)((uvWord >> 8) & 0xFFu);
+                    if (vertex == 0) clut = (uvWord >> 16) & 0xFFFFu;
+                    if (vertex == 1) prim_tpage = (uvWord >> 16) & 0x1FFu;
+                }
             }
             if (textured) state->tpage = prim_tpage;
             /* Full-screen overlays (fades, night filters) stretch across a
@@ -691,14 +708,14 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
             }
             for (vertex = 0; vertex < count; vertex++) {
                 ModernVertex *out = &corners[vertex];
-                uint32_t color = primitive.points[vertex].color;
+                uint32_t color = raw && textured ? 0x808080u : colors[vertex];
                 out->color[0] = (uint8_t)(color & 0xFFu);
                 out->color[1] = (uint8_t)((color >> 8) & 0xFFu);
                 out->color[2] = (uint8_t)((color >> 16) & 0xFFu);
                 out->color[3] = (uint8_t)(semi ? 0 : 255);
                 out->attr = textured ? prim_tpage : (prim_tpage | 0x8000u);
                 out->twin = state->twin;
-                out->clut = primitive.clut;
+                out->clut = clut;
             }
             {
                 uint32_t abr = (prim_tpage >> 5) & 3u;
@@ -709,12 +726,35 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
                 if (quad) ModernOverlayBatchesEmitQuad(&s_overlay, span, corners);
                 else ModernOverlayBatchesEmitTriangle(&s_overlay, span, corners);
             }
-        } else if (primitive.type == PSYZ_GPU_PRIMITIVE_RECTANGLE) {
+        } else if (isRect) {
             ModernVertex corners[4];
-            int px = primitive.points[0].x;
-            int py = primitive.points[0].y;
-            int w = primitive.points[3].x - px;
-            int h = primitive.points[3].y - py;
+            int sizeMode = (int)((command >> 3) & 3u);
+            int cursor = 1;
+            uint32_t xy, uvWord = 0, clut = 0;
+            int px, py, w, h;
+            int u0 = 0, v0 = 0;
+            xy = words[cursor++];
+            px = (int)((xy & 0x7FFu) ^ 1024) - 1024;
+            py = (int)(((xy >> 16) & 0x7FFu) ^ 1024) - 1024;
+            if (textured) {
+                uvWord = words[cursor++];
+                u0 = (int)(uvWord & 0xFFu);
+                v0 = (int)((uvWord >> 8) & 0xFFu);
+                clut = (uvWord >> 16) & 0xFFFFu;
+            }
+            if (sizeMode == 0) {
+                uint32_t wh = words[cursor++];
+                w = (int)(wh & 0x3FFu);
+                h = (int)((wh >> 16) & 0x1FFu);
+            } else if (sizeMode == 1) {
+                w = h = 1;
+            } else if (sizeMode == 2) {
+                w = h = 8;
+            } else {
+                w = h = 16;
+            }
+            px += state->offsetX;
+            py += state->offsetY;
             if (packet->table == 0 && s_overscanX > 0.0f && !textured && px <= 0 && py <= 0 &&
                 px + w >= 320 && py + h >= 240) {
                 /* Full-screen fade/filter tiles cover the widened view. */
@@ -730,10 +770,11 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
                     memset(out, 0, sizeof(*out));
                     ModernOrtho(out, (float)(px + (right ? w : 0)),
                                 (float)(py + (bottom ? h : 0)));
-                    out->u = (float)primitive.points[vertex].u;
-                    out->v = (float)primitive.points[vertex].v;
+                    out->u = (float)(u0 + (right ? w : 0));
+                    out->v = (float)(v0 + (bottom ? h : 0));
                     {
-                        uint32_t color = primitive.points[vertex].color;
+                        uint32_t color =
+                            raw && textured ? 0x808080u : (words[0] & 0xFFFFFFu);
                         out->color[0] = (uint8_t)(color & 0xFFu);
                         out->color[1] = (uint8_t)((color >> 8) & 0xFFu);
                         out->color[2] = (uint8_t)((color >> 16) & 0xFFu);
@@ -742,7 +783,7 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
                     out->attr =
                         textured ? state->tpage : (state->tpage | 0x8000u);
                     out->twin = state->twin;
-                    out->clut = primitive.clut;
+                    out->clut = clut;
                 }
             }
             {
@@ -753,16 +794,36 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
                                                               pipeline, &spanState);
                 ModernOverlayBatchesEmitQuad(&s_overlay, span, corners);
             }
-        } else if (primitive.type == PSYZ_GPU_PRIMITIVE_LINE) {
+        } else if (isLine) {
             /* Fixed two/three-point lines; expand each segment to a thin
              * quad, PS1-style single-pixel thickness. */
+            int points[8][2];
+            uint32_t colors[8];
+            int count = 0;
+            int cursor = 1;
             int vertex;
-            for (vertex = 0; vertex + 1 < primitive.count; vertex++) {
+            colors[0] = words[0] & 0xFFFFFFu;
+            while (cursor < packet->size && count < 8) {
+                uint32_t word;
+                if (count > 0 && gouraud) {
+                    if (cursor >= packet->size) break;
+                    colors[count] = words[cursor++] & 0xFFFFFFu;
+                }
+                if (cursor >= packet->size) break;
+                word = words[cursor++];
+                if ((word & 0xF000F000u) == 0x50005000u && count >= 2) break;
+                points[count][0] =
+                    (int)((word & 0x7FFu) ^ 1024) - 1024 + state->offsetX;
+                points[count][1] =
+                    (int)(((word >> 16) & 0x7FFu) ^ 1024) - 1024 +
+                    state->offsetY;
+                if (count > 0 && !gouraud) colors[count] = colors[0];
+                count++;
+            }
+            for (vertex = 0; vertex + 1 < count; vertex++) {
                 ModernVertex corners[4];
-                int x0 = primitive.points[vertex].x;
-                int y0 = primitive.points[vertex].y;
-                int x1 = primitive.points[vertex + 1].x;
-                int y1 = primitive.points[vertex + 1].y;
+                int x0 = points[vertex][0], y0 = points[vertex][1];
+                int x1 = points[vertex + 1][0], y1 = points[vertex + 1][1];
                 int horizontal = abs(x1 - x0) >= abs(y1 - y0);
                 int corner;
                 for (corner = 0; corner < 4; corner++) {
@@ -776,8 +837,7 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
                     memset(out, 0, sizeof(*out));
                     ModernOrtho(out, px, py);
                     {
-                        uint32_t color =
-                            primitive.points[end ? vertex + 1 : vertex].color;
+                        uint32_t color = colors[end ? vertex + 1 : vertex];
                         out->color[0] = (uint8_t)(color & 0xFFu);
                         out->color[1] = (uint8_t)((color >> 8) & 0xFFu);
                         out->color[2] = (uint8_t)((color >> 16) & 0xFFu);
