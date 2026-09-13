@@ -1,6 +1,7 @@
 #include <libgpu.h>
 #include <libgte.h>
 #include <psyz/gte.h>
+#include <psyz/gpu.h>
 
 #include <stdio.h>
 #include <stddef.h>
@@ -412,26 +413,6 @@ static void CaptureMaskIgnoredFields(uint32_t *words, int length) {
     }
 }
 
-/* Mirror of PsyZ's CanonicalizePacket: drawing primitives keep their payload
- * as dense 32-bit words after O_TAG; environment packets use u_long slots. */
-static int CapturePacketWords(const DR_ENV *packet, uint32_t *out, int cap) {
-    int length = getlen(packet);
-    int code;
-    int i;
-    if (length <= 0 || length > cap) return length;
-    code = getcode(packet) & ~3;
-    if (code >= 0x20 && code < 0x80) {
-        const u32 *packed = (const u32 *)packet->code;
-        for (i = 0; i < length; i++) out[i] = packed[i];
-    } else {
-        for (i = 0; i < length; i++) {
-            out[i] = (uint32_t)(packet->code[i] & 0xFFFFFFFFu);
-        }
-    }
-    CaptureMaskIgnoredFields(out, length);
-    return length;
-}
-
 static void CaptureClassicSource(const RageSceneSnapshot *snapshot,
                                  uintptr_t address, int packetIndex) {
     RageClassicPacketSource *source = &s_classicSources[s_building][packetIndex];
@@ -509,8 +490,9 @@ static void CaptureWalkTable(RageSceneSnapshot *snapshot, int tableIndex,
                         out->flags |= RAGE_CAPTURE_PACKET_SKY;
                         out->skyIndex = CaptureSkyPacketIndex(address);
                     }
-                    out->size = (uint8_t)CapturePacketWords(
+                    out->size = (uint8_t)Psyz_GpuCanonicalizePacket(
                         node, out->words, RAGE_CAPTURE_PACKET_WORDS);
+                    CaptureMaskIgnoredFields(out->words, out->size);
                 }
             }
         }
