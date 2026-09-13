@@ -19,7 +19,7 @@ void InitCdAudio(void) {
     BuildCdTrackTable();
 
     ResetCdAudioState();
-    g_Cd.preset = 0;
+    g_Cd.reservedMixPreset = 0;
     g_Cd.restart = 0;
     g_Cd.volume = CD_VOLUME_MAX;
     g_Cd.fade = 0;

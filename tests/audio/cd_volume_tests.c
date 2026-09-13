@@ -31,7 +31,7 @@ int main(void) {
     g_CdMixPresets[6] = 30;
     g_CdMixPresets[7] = 40;
 
-    g_Cd.preset = 0;
+    g_Cd.reservedMixPreset = 0;
     SetCdVolume(127);
     CHECK(g_Cd.volume == 127 && s_fadeSteps == 1);
     CHECK(g_Cd.mix.ll == 127U * 4096 && g_Cd.mix.lr == 64U * 4096);
@@ -39,14 +39,14 @@ int main(void) {
     CHECK(g_Cd.mix.ll == g_Cd.fullMix.ll && g_Cd.mix.lr == g_Cd.fullMix.lr);
     CHECK(g_Cd.mix.rr == g_Cd.fullMix.rr && g_Cd.mix.rl == g_Cd.fullMix.rl);
 
-    g_Cd.preset = 1;
+    g_Cd.reservedMixPreset = 1;
     SetCdVolume(63);
-    CHECK(g_Cd.mix.ll == (10 * 63 / 127) * 4096U);
-    CHECK(g_Cd.mix.lr == (20 * 63 / 127) * 4096U);
-    CHECK(g_Cd.mix.rr == (30 * 63 / 127) * 4096U);
-    CHECK(g_Cd.mix.rl == (40 * 63 / 127) * 4096U);
+    CHECK(g_Cd.mix.ll == (127 * 63 / 127) * 4096U);
+    CHECK(g_Cd.mix.lr == (64 * 63 / 127) * 4096U);
+    CHECK(g_Cd.mix.rr == (32 * 63 / 127) * 4096U);
+    CHECK(g_Cd.mix.rl == 0);
 
-    g_Cd.preset = 0;
+    g_Cd.reservedMixPreset = 0;
     SetCdVolumeSetting(0);
     CHECK(g_Cd.volume == 0 && g_Cd.mix.ll == 0);
     SetCdVolumeSetting(15);
@@ -62,18 +62,7 @@ int main(void) {
     SetCdVolumeSetting(20);
     CHECK(g_Cd.volume == 127);
 
-    SetCdMixPreset(-1);
-    CHECK(g_Cd.preset == 0 && g_Cd.mix.ll == 127U * 4096);
-    SetCdMixPreset(9);
-    CHECK(g_Cd.preset == 1 && g_Cd.mix.ll == 10U * 4096);
-
-    g_Cd.preset = -100;
-    SetCdVolume(127);
-    CHECK(g_Cd.preset == 0 && g_Cd.mix.ll == 127U * 4096);
-    g_Cd.preset = 100;
-    SetCdVolume(127);
-    CHECK(g_Cd.preset == 1 && g_Cd.mix.ll == 10U * 4096);
-    CHECK(s_fadeSteps == 13);
+    CHECK(s_fadeSteps == 9);
 
     puts("CD volume tests passed");
     return 0;

@@ -45,7 +45,8 @@ typedef struct CdLevels {
 
 typedef struct Cd {
     s32 restart;
-    s32 preset;
+    /* Retained padding: this word was the removed stereo/mono preset. */
+    s32 reservedMixPreset;
     s32 pendingTrack;
     CdCommandType pendingCommand;
     s32 trackStep;
@@ -108,8 +109,6 @@ void SetCdVolume(s32 volume);
 void StartCdVolumeFade(s32 frames);
 /* Map the 0..15 option-screen level onto the 0..0x7F attenuator. */
 void SetCdVolumeSetting(s32 level);
-/* Select which 4-byte row of the g_CdMixPresets mix table SetCdVolume scales. */
-void SetCdMixPreset(s32 preset);
 
 /*
  * The CD-DA pump. TickCdAudio runs once per frame from MainLoop and
@@ -127,7 +126,8 @@ extern char *g_CdAudioFileNames[];
 /* Eight-byte CdlGetlocP response. Retail also names bytes 2 and 3 as
  * g_CdLocMinute/g_CdLocSecond; indexing the shared buffer preserves that
  * overlap on hosts where separately declared globals cannot alias safely. */
-extern u8 g_CdMixPresets[];
+/* The second retail row is retained only to preserve the host-state layout. */
+extern u8 g_CdMixPresets[8];
 
 void CdMix(u8* vol);
 

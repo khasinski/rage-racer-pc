@@ -13,14 +13,12 @@ s32 g_BgmVolumeSetting;
 s32 g_SfxVolumeSetting;
 
 static s32 s_cdVolumeSetting;
-static s32 s_cdMixPreset;
 static s32 s_stereoCalls;
 static s32 s_failures;
 
 void Psyz_PcmMusicSetVolume(int volume) { (void)volume; }
 
 void SetCdVolumeSetting(s32 level) { s_cdVolumeSetting = level; }
-void SetCdMixPreset(s32 preset) { s_cdMixPreset = preset; }
 void SsSetStereo(void) { s_stereoCalls++; }
 
 static void Check(s32 condition, const char *label) {
@@ -67,8 +65,7 @@ static void TestVolumeSettings(void) {
 
 static void TestOutputMode(void) {
     ApplyAudioSettings();
-    Check(s_cdMixPreset == 0 && s_stereoCalls == 1,
-          "audio settings select stereo for CD and SPU output");
+    Check(s_stereoCalls == 1, "audio settings select stereo output");
 }
 
 static void TestApplyingSavedSettings(void) {
@@ -86,7 +83,7 @@ static void TestApplyingSavedSettings(void) {
     ApplyAudioSettings();
     Check(s_cdVolumeSetting == 15 && g_SoundScale.scale == 0,
           "saved volume settings are clamped while applying");
-    Check(s_cdMixPreset == 0 && s_stereoCalls == 3,
+    Check(s_stereoCalls == 3,
           "audio output remains stereo while applying settings");
 }
 
