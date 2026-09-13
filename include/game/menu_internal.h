@@ -162,6 +162,8 @@ typedef struct ShopPrice {
     s32 available;
 } ShopPrice;
 
+const TimedDrawCommand *CarShopPrompt(CarMaker maker);
+
 static inline ShopPrice LookupShopPrice(const s32 *prices, size_t count,
                                         s32 assetIndex) {
     ShopPrice result = {0, 0};

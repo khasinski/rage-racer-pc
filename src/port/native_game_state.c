@@ -138,12 +138,23 @@ RAGE_DEFINE_NATIVE_UI_SCRIPT(EngineerShopUnavailableScript, 3);
 RAGE_DEFINE_NATIVE_UI_SCRIPT(EngineerShopNoFundsScript, 2);
 RAGE_DEFINE_NATIVE_UI_SCRIPT(CarShopNoFundsScript, 5);
 RAGE_DEFINE_NATIVE_UI_SCRIPT(DesignModeDeniedScript, 2);
-RAGE_DEFINE_NATIVE_UI_SCRIPT(CarShopBuyPromptScript2, 7);
-RAGE_DEFINE_NATIVE_UI_SCRIPT(CarShopBuyPromptScript1, 7);
-RAGE_DEFINE_NATIVE_UI_SCRIPT(CarShopBuyPromptScript3, 7);
-RAGE_DEFINE_NATIVE_UI_SCRIPT(CarShopBuyPromptScript4, 7);
 RAGE_DEFINE_NATIVE_UI_SCRIPT(EngineerShopTuneUpPromptScript, 5);
 #undef RAGE_DEFINE_NATIVE_UI_SCRIPT
+static TimedDrawCommand s_CarShopBuyPromptGnade[7];
+static TimedDrawCommand s_CarShopBuyPromptAge[7];
+static TimedDrawCommand s_CarShopBuyPromptLeizard[7];
+static TimedDrawCommand s_CarShopBuyPromptAssoluto[7];
+static TimedDrawCommand *const s_CarShopPrompts[CAR_MAKER_COUNT] = {
+    s_CarShopBuyPromptGnade,
+    s_CarShopBuyPromptAge,
+    s_CarShopBuyPromptLeizard,
+    s_CarShopBuyPromptAssoluto,
+};
+
+const TimedDrawCommand *CarShopPrompt(CarMaker maker) {
+    return (u32)maker < CAR_MAKER_COUNT
+        ? s_CarShopPrompts[maker] : s_CarShopPrompts[CAR_MAKER_GNADE];
+}
 static char g_BgmName00[] = "\"RANDOM PLAY\"";
 static char g_BgmName01[] = "\"RAGE RACER\"";
 static char g_BgmName02[] = "\"MATHEMABEAT\"";
@@ -225,18 +236,6 @@ const char *g_NativeCarClassNames[GAME_CAR_COUNT] = {
     g_CarClassLizard, g_CarClassLizard, g_CarClassLizard,
     g_CarClassAssolute, g_CarClassAssolute, g_CarClassAssolute,
     g_CarClassAge, g_CarClassLizard, g_CarClassAssolute
-};
-static char g_CarManufacturerAge[] = "AGE";
-static char g_CarManufacturerGnade[] = "GNADE";
-static char g_CarManufacturerLeizard[] = "LEIZARD";
-static char g_CarManufacturerAssoluto[] = "ASSOLUTO";
-const char *g_NativeCarManufacturerNames[GAME_CAR_COUNT] = {
-    g_CarManufacturerAge, g_CarManufacturerAge, g_CarManufacturerAge,
-    g_CarManufacturerGnade, g_CarManufacturerLeizard,
-    g_CarManufacturerLeizard, g_CarManufacturerLeizard,
-    g_CarManufacturerAssoluto, g_CarManufacturerAssoluto,
-    g_CarManufacturerAssoluto, g_CarManufacturerAge,
-    g_CarManufacturerLeizard, g_CarManufacturerAssoluto
 };
 char g_SaveTitleSjis[MEMORY_CARD_SAVE_TITLE_STORAGE_SIZE];
 char g_SaveFilePath[MEMORY_CARD_SAVE_PATH_STORAGE_SIZE];
@@ -410,10 +409,10 @@ static const NativeTimedDrawScript s_nativeUiScripts[] = {
     NATIVE_UI_SCRIPT(g_NativeEngineerShopNoFundsScript, 0x80082898u),
     NATIVE_UI_SCRIPT(g_NativeCarShopNoFundsScript, 0x800828b0u),
     NATIVE_UI_SCRIPT(g_NativeDesignModeDeniedScript, 0x800828ecu),
-    NATIVE_UI_SCRIPT(g_NativeCarShopBuyPromptScript2, 0x80082904u),
-    NATIVE_UI_SCRIPT(g_NativeCarShopBuyPromptScript1, 0x80082958u),
-    NATIVE_UI_SCRIPT(g_NativeCarShopBuyPromptScript3, 0x800829acu),
-    NATIVE_UI_SCRIPT(g_NativeCarShopBuyPromptScript4, 0x80082a00u),
+    NATIVE_UI_SCRIPT(s_CarShopBuyPromptGnade, 0x80082904u),
+    NATIVE_UI_SCRIPT(s_CarShopBuyPromptAge, 0x80082958u),
+    NATIVE_UI_SCRIPT(s_CarShopBuyPromptLeizard, 0x800829acu),
+    NATIVE_UI_SCRIPT(s_CarShopBuyPromptAssoluto, 0x80082a00u),
     NATIVE_UI_SCRIPT(g_NativeEngineerShopTuneUpPromptScript, 0x80082a54u),
 };
 

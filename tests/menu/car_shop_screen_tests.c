@@ -42,12 +42,22 @@ s32 g_CarListCursor;
 CarModelAsset *g_CarModelAsset;
 s32 g_CarNamePlateStep;
 s32 g_CarPriceTable[CAR_PRICE_COUNT];
-/* The four buy prompts and the refusals are decoded command arrays; they are
- * never walked here, only identified. */
-TimedDrawCommand g_CarShopBuyPromptScript1[7];
-TimedDrawCommand g_CarShopBuyPromptScript2[7];
-TimedDrawCommand g_CarShopBuyPromptScript3[7];
-TimedDrawCommand g_CarShopBuyPromptScript4[7];
+static u8 s_makers[GAME_CAR_COUNT] = {
+    CAR_MAKER_AGE, CAR_MAKER_AGE, CAR_MAKER_AGE, CAR_MAKER_GNADE,
+    CAR_MAKER_LEIZARD, CAR_MAKER_LEIZARD, CAR_MAKER_LEIZARD,
+    CAR_MAKER_ASSOLUTO, CAR_MAKER_ASSOLUTO, CAR_MAKER_ASSOLUTO,
+    CAR_MAKER_AGE, CAR_MAKER_LEIZARD, CAR_MAKER_ASSOLUTO,
+};
+CarMaker GetCarMaker(s32 model) {
+    return (u32)model < GAME_CAR_COUNT
+        ? (CarMaker)s_makers[model] : CAR_MAKER_GNADE;
+}
+/* The private prompt assets are represented by identities in this screen
+ * test; native_game_state.c owns and decodes the real command arrays. */
+static TimedDrawCommand s_promptAge[7];
+static TimedDrawCommand s_promptGnade[7];
+static TimedDrawCommand s_promptLeizard[7];
+static TimedDrawCommand s_promptAssoluto[7];
 TimedDrawCommand g_CarShopNoFundsScript[5];
 const TimedDrawCommand *g_CarShopModalScript;
 s32 g_CarShopOption;
@@ -134,12 +144,19 @@ static s32 ScriptId(const void *commands) {
     if (commands == g_CarShopScreenScript) return 1;
     if (commands == g_UiChromeScript) return 2;
     if (commands == g_UiChromeScript2) return 3;
-    if (commands == g_CarShopBuyPromptScript1) return 4;
-    if (commands == g_CarShopBuyPromptScript2) return 5;
-    if (commands == g_CarShopBuyPromptScript3) return 6;
-    if (commands == g_CarShopBuyPromptScript4) return 7;
+    if (commands == s_promptAge) return 4;
+    if (commands == s_promptGnade) return 5;
+    if (commands == s_promptLeizard) return 6;
+    if (commands == s_promptAssoluto) return 7;
     if (commands == g_CarShopNoFundsScript) return 8;
     return commands == NULL ? 0 : 9;
+}
+
+const TimedDrawCommand *CarShopPrompt(CarMaker maker) {
+    static TimedDrawCommand *const prompts[CAR_MAKER_COUNT] = {
+        s_promptGnade, s_promptAge, s_promptLeizard, s_promptAssoluto,
+    };
+    return (u32)maker < CAR_MAKER_COUNT ? prompts[maker] : prompts[0];
 }
 
 s32 RunTimedDrawScript(const TimedDrawCommand *commands, s32 *progress, s32 step) {
@@ -503,6 +520,26 @@ int main(int argc, char **argv) {
     UpdateCarShopScreen();
     if (g_MenuSubCursor != 1) {
         puts("FAIL buy prompt did not normalize its cursor");
+        return 1;
+    }
+
+    s_makers[4] = CAR_MAKER_GNADE;
+    GameMenuBusy = CAR_SHOP_IDLE;
+    s_scriptResult = 1;
+    g_UiScriptProgress2 = 0;
+    g_CarShopOption = 0;
+    g_PadPressed = PAD_CONFIRM;
+    g_PadHeld = 0;
+    g_CarListCursor = 4;
+    g_PlayerCarIndex = 4;
+    g_MenuViewAngle = 0x7A120;
+    g_MenuViewAngleTarget = 0x7A120;
+    g_CarSwapToIndex = -1;
+    s_cars[4].enabled = 0;
+    g_CarShopModalScript = NULL;
+    UpdateCarShopScreen();
+    if (g_CarShopModalScript != s_promptGnade) {
+        puts("FAIL custom manufacturer did not use the Gnade buy prompt");
         return 1;
     }
 

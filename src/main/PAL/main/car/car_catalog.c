@@ -1,11 +1,41 @@
 #include "game/car.h"
 #include "car_catalog.h"
 
+#include <string.h>
+
 enum {
     LIMITED_VARIANT_MODEL = 8,
     LIMITED_VARIANT_MAXIMUM = 2,
     FIRST_FIXED_ASSET_MODEL = 9,
 };
+
+static u8 s_makers[GAME_CAR_COUNT] = {
+    CAR_MAKER_AGE, CAR_MAKER_AGE, CAR_MAKER_AGE, CAR_MAKER_GNADE,
+    CAR_MAKER_LEIZARD, CAR_MAKER_LEIZARD, CAR_MAKER_LEIZARD,
+    CAR_MAKER_ASSOLUTO, CAR_MAKER_ASSOLUTO, CAR_MAKER_ASSOLUTO,
+    CAR_MAKER_AGE, CAR_MAKER_LEIZARD, CAR_MAKER_ASSOLUTO,
+};
+
+CarMaker GetCarMaker(s32 model) {
+    return (u32)model < GAME_CAR_COUNT
+        ? (CarMaker)s_makers[model] : CAR_MAKER_GNADE;
+}
+
+void SetCarMaker(s32 model, const char *name) {
+    static const char *const names[CAR_MAKER_COUNT] = {
+        "GNADE", "AGE", "LEIZARD", "ASSOLUTO",
+    };
+    CarMaker maker;
+
+    if ((u32)model >= GAME_CAR_COUNT) return;
+    s_makers[model] = CAR_MAKER_GNADE;
+    for (maker = 0; maker < CAR_MAKER_COUNT; maker++) {
+        if (strcmp(name, names[maker]) == 0) {
+            s_makers[model] = (u8)maker;
+            return;
+        }
+    }
+}
 
 s32 GetCarAssetIndex(s32 model, s32 grade) {
     s32 firstVariant;

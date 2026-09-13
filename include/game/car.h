@@ -319,6 +319,17 @@ extern u8 g_CarModelBaseIndex[GAME_CAR_COUNT];
  * this plus the grade being bought (GetCarUnlockLevel). */
 extern u8 g_CarModelUnlockBase[GAME_CAR_COUNT];
 
+typedef enum CarMaker {
+    CAR_MAKER_GNADE,
+    CAR_MAKER_AGE,
+    CAR_MAKER_LEIZARD,
+    CAR_MAKER_ASSOLUTO,
+    CAR_MAKER_COUNT,
+} CarMaker;
+
+CarMaker GetCarMaker(s32 model);
+void SetCarMaker(s32 model, const char *name);
+
 /* One automatic-gearbox shift point; `spec->shiftPoints[gear - 1]`. */
 typedef struct GameCarSpecShiftPoint {
     s16 downshiftSpeed;

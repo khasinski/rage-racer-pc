@@ -266,7 +266,8 @@ void CarCatalogApplyMetadata(void) {
             index < CAR_MODEL_VARIANT_COUNT - 1) g_CarTuneUpPriceTable[index] = entry->upgradePrice;
         if (entry->grade == 0) {
             if (entry->fields & RAGE_CAR_FIELD_NAME) g_NativeCarNames[entry->modelIndex] = entry->name;
-            if (entry->fields & RAGE_CAR_FIELD_MANUFACTURER) g_NativeCarManufacturerNames[entry->modelIndex] = entry->manufacturer;
+            if (entry->fields & RAGE_CAR_FIELD_MANUFACTURER)
+                SetCarMaker(entry->modelIndex, entry->manufacturer);
             if (entry->fields & RAGE_CAR_FIELD_CLASS) g_NativeCarClassNames[entry->modelIndex] = entry->className;
         }
     }

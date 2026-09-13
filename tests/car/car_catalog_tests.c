@@ -35,6 +35,15 @@ static const u8 expectedUnlockBase[GAME_CAR_COUNT] = {
 int main(void) {
     s32 model;
 
+    CHECK(GetCarMaker(0) == CAR_MAKER_AGE);
+    CHECK(GetCarMaker(3) == CAR_MAKER_GNADE);
+    CHECK(GetCarMaker(4) == CAR_MAKER_LEIZARD);
+    CHECK(GetCarMaker(7) == CAR_MAKER_ASSOLUTO);
+    SetCarMaker(0, "CUSTOM");
+    CHECK(GetCarMaker(0) == CAR_MAKER_GNADE);
+    SetCarMaker(0, "AGE");
+    CHECK(GetCarMaker(0) == CAR_MAKER_AGE);
+
     CHECK(memcmp(g_CarModelBaseIndex, expectedBaseIndex, sizeof(expectedBaseIndex)) == 0);
     CHECK(memcmp(g_CarModelUnlockBase, expectedUnlockBase, sizeof(expectedUnlockBase)) == 0);
 

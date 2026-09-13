@@ -15,30 +15,6 @@
 #include "game/menu_internal.h"
 #include "game/menu_scripts_internal.h"
 
-/* Which of the four buy prompts a car gets. Cars past the table get none. */
-static const TimedDrawCommand *CarShopBuyPrompt(s32 car) {
-    switch (car) {
-    case 0:
-    case 1:
-    case 2:
-    case 10:
-        return g_CarShopBuyPromptScript1;
-    case 3:
-        return g_CarShopBuyPromptScript2;
-    case 4:
-    case 5:
-    case 6:
-    case 11:
-        return g_CarShopBuyPromptScript3;
-    case 7:
-    case 8:
-    case 9:
-    case 12:
-        return g_CarShopBuyPromptScript4;
-    }
-    return NULL;
-}
-
 /* Everything the shop keeps on the display whichever state it is in. */
 static void DrawCarShopChrome(s32 price, s32 chromeStep) {
     DrawBrowseArrows(1, 0, g_PrevOwnedCarIndex != -1,
@@ -75,10 +51,8 @@ static void OfferToBuyCar(s32 purchaseAvailable) {
     GameMenuBusy = CAR_SHOP_BUY_PROMPT;
     g_UiScriptProgress2 = 0;
     g_MenuSubCursor = 0;
-    prompt = CarShopBuyPrompt(g_CarListCursor);
-    if (prompt != NULL) {
-        g_CarShopModalScript = prompt;
-    }
+    prompt = CarShopPrompt(GetCarMaker(g_CarListCursor));
+    g_CarShopModalScript = prompt;
 }
 
 /* Idle: the pad browses the cars and picks one of the two rows. */
@@ -119,10 +93,10 @@ static void UpdateCarShopInput(s32 purchaseAvailable) {
         return;
     }
     if (g_PadPressed & PAD_CONFIRM) {
-        if (g_CarShopOption == 1) {
-            LeaveCarShop();
-        } else if (g_CarShopOption == 0) {
+        if (g_CarShopOption == 0) {
             OfferToBuyCar(purchaseAvailable);
+        } else {
+            LeaveCarShop();
         }
     } else if (g_PadPressed & PAD_CANCEL) {
         LeaveCarShop();
@@ -194,9 +168,12 @@ static void UpdateSaleCountdown(GameOrderingTableEntry *ot,
     }
     RunTimedDrawScript(g_CarShopModalScript, &g_UiScriptProgress2, -1);
     RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
-    if (g_UiScriptProgress2 <= 0 && !purchaseAvailable) {
+    if (g_UiScriptProgress2 > 0) {
+        return;
+    }
+    if (!purchaseAvailable) {
         GameMenuBusy = CAR_SHOP_IDLE;
-    } else if (g_UiScriptProgress2 <= 0) {
+    } else {
         g_CarTable[g_CarListCursor].enabled = 1;
         g_TimeAttackCars[g_CarListCursor].enabled = 1;
         GameMenuBusy = CAR_SHOP_LEAVE_AFTER_SALE;

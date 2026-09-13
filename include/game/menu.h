@@ -444,8 +444,6 @@ enum {
     CAR_TUNE_UP_PRICE_COUNT = 31,
 };
 extern s32 g_CarTuneUpPriceTable[CAR_TUNE_UP_PRICE_COUNT];
-extern const char *g_NativeCarManufacturerNames[];
-#define g_CarManufacturerNames g_NativeCarManufacturerNames
 extern s32 g_LogoSampleCharIndex;
 extern s32 g_LogoSampleBackIndex;
 extern s32 g_LogoSampleSavedIndex;
@@ -505,10 +503,6 @@ RAGE_NATIVE_UI_SCRIPT(EngineerShopUnavailableScript, 3);
 RAGE_NATIVE_UI_SCRIPT(EngineerShopNoFundsScript, 2);
 RAGE_NATIVE_UI_SCRIPT(CarShopNoFundsScript, 5);
 RAGE_NATIVE_UI_SCRIPT(DesignModeDeniedScript, 2);
-RAGE_NATIVE_UI_SCRIPT(CarShopBuyPromptScript2, 7);
-RAGE_NATIVE_UI_SCRIPT(CarShopBuyPromptScript1, 7);
-RAGE_NATIVE_UI_SCRIPT(CarShopBuyPromptScript3, 7);
-RAGE_NATIVE_UI_SCRIPT(CarShopBuyPromptScript4, 7);
 RAGE_NATIVE_UI_SCRIPT(EngineerShopTuneUpPromptScript, 5);
 #undef RAGE_NATIVE_UI_SCRIPT
 
@@ -536,10 +530,6 @@ RAGE_NATIVE_UI_SCRIPT(EngineerShopTuneUpPromptScript, 5);
 #define g_EngineerShopNoFundsScript g_NativeEngineerShopNoFundsScript
 #define g_CarShopNoFundsScript g_NativeCarShopNoFundsScript
 #define g_DesignModeDeniedScript g_NativeDesignModeDeniedScript
-#define g_CarShopBuyPromptScript2 g_NativeCarShopBuyPromptScript2
-#define g_CarShopBuyPromptScript1 g_NativeCarShopBuyPromptScript1
-#define g_CarShopBuyPromptScript3 g_NativeCarShopBuyPromptScript3
-#define g_CarShopBuyPromptScript4 g_NativeCarShopBuyPromptScript4
 #define g_EngineerShopTuneUpPromptScript g_NativeEngineerShopTuneUpPromptScript
 extern u8 g_NegconAxisI;
 extern u8 g_NegconAxisII;

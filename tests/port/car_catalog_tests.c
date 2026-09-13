@@ -11,7 +11,12 @@ s32 g_CarPriceTable[CAR_PRICE_COUNT];
 s32 g_CarTuneUpPriceTable[CAR_TUNE_UP_PRICE_COUNT];
 const char *g_NativeCarNames[GAME_CAR_COUNT];
 const char *g_NativeCarClassNames[GAME_CAR_COUNT];
-const char *g_NativeCarManufacturerNames[GAME_CAR_COUNT];
+static u8 s_makers[GAME_CAR_COUNT];
+void SetCarMaker(s32 model, const char *name) {
+    if ((u32)model < GAME_CAR_COUNT)
+        s_makers[model] = strcmp(name, "AGE") == 0 ? CAR_MAKER_AGE
+                                                   : CAR_MAKER_GNADE;
+}
 static CarEntry carTable[GAME_CAR_COUNT];
 CarEntry *g_CarTable = carTable;
 
@@ -148,6 +153,7 @@ int main(void) {
     remove("car_catalog_test.toml");
     CarCatalogApplyMetadata();
     if (g_CarPriceTable[31] != 3100 || strcmp(g_NativeCarNames[12], "NAME12") != 0 ||
+        s_makers[12] != CAR_MAKER_GNADE ||
         CarCatalogUnlockClass(2, 0, 0) != 8) return 1;
     memset(&catalog.entries[0].specification, 0, sizeof(GameCarSpec));
     catalog.entries[0].specification.revLimit = 1234;
