@@ -415,7 +415,10 @@ static int BuildVertex(const RageTransformBasis *basis,
     out->lighting = instanceState->lighting;
     memcpy(out->environmentLight, instanceState->environmentLight,
            sizeof(out->environmentLight));
-    out->depthBias = instance->depthBias;
+    /* An instance ordering hint applies to its visible material surfaces.
+     * Untextured companion geometry, such as a ground shadow, stays on the
+     * surface it was authored against. */
+    out->depthBias = source.material != UINT32_MAX ? instance->depthBias : 0.0f;
     out->shadowReception = instanceState->shadowReception;
     *depthDecal =
         (instance->flags & RAGE_RENDER_INSTANCE_DEPTH_DECAL) != 0;
@@ -700,6 +703,12 @@ static uint32_t RenderBuildNativeDrawsFiltered(
             RageTriangleGeometry geometry = {0};
             if ((instance->flags & RAGE_RENDER_INSTANCE_FLAT_SHADED) != 0)
                 ApplyFlatTriangleNormal(triangle, &geometry);
+            if (instance->depthBias != 0.0f && geometry.prepared &&
+                geometry.length > 0.000001f &&
+                fabsf(geometry.ny / geometry.length) > 0.8f) {
+                for (corner = 0; corner < 3; corner++)
+                    triangle[corner].depthBias -= instance->depthBias;
+            }
             if (depthDecals[0] && !localSource) {
                 /* Explicit screen/art layers are semantic overlays. Give them
                  * real separation from their backing mesh instead of changing

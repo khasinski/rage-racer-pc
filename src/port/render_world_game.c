@@ -26,7 +26,7 @@
 #include "rage/track_lighting.h"
 
 enum { RAGE_GAME_RENDER_WORLD_MAX_INSTANCES = 4096 };
-static const float START_GRID_DEPTH_BIAS = -128.0f;
+static const float START_GRID_DEPTH_BIAS = -2048.0f;
 
 static RenderMeshInstance s_instances[3][RAGE_GAME_RENDER_WORLD_MAX_INSTANCES];
 static RenderWorld s_worlds[3];
