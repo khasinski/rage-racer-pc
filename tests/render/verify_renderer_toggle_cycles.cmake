@@ -27,10 +27,10 @@ endif()
 foreach(event created destroyed)
     string(REGEX MATCHALL "modern resources ${event} generation=" events "${log}")
     list(LENGTH events count)
-    # One generation renders the first race frame; each of the four switches
-    # then replaces it for the selected modern/enhanced-classic presenter.
-    if(NOT count EQUAL 5)
-        message(FATAL_ERROR "Expected five ${event} resource generations, got ${count}: ${root}")
+    # Classic and modern share presentation targets. Switching must retain
+    # them so the previous completed frame remains visible during handoff.
+    if(NOT count EQUAL 1)
+        message(FATAL_ERROR "Expected one ${event} resource generation, got ${count}: ${root}")
     endif()
 endforeach()
 # Desktop runs exercise real swapchain policy as well as renderer lifetime.

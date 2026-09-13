@@ -136,6 +136,7 @@ static RenderWorldSnapshot s_ringWorlds[MODERN_RING];
 static RageSceneSnapshot *s_ringScene; /* MODERN_RING copies */
 static int s_ringEnabled;
 static int s_resourcesReady;
+static int s_nativeGpuReady;
 static unsigned int s_resourceGeneration;
 static uint32_t s_lastRenderedFrame = 0xFFFFFFFFu;
 static int s_haveRenderedFrame;
@@ -343,6 +344,7 @@ static void ModernDestroyResources(void) {
     ModernDisableFrameHistory();
     ModernOverlayBatchesRelease(&s_overlay);
     ModernNativeGpuShutdown();
+    s_nativeGpuReady = 0;
     s_resourcesReady = 0;
     s_haveRenderedFrame = 0;
     s_lastRenderedFrame = 0xFFFFFFFFu;
@@ -439,6 +441,7 @@ static int ModernEnsureResources(void) {
         ModernDestroyResources();
         return 0;
     }
+    s_nativeGpuReady = s_enabled;
 
     if (s_ringEnabled) {
         SDL_GPUTextureCreateInfo info = {0};
@@ -1783,16 +1786,20 @@ void ModernToggle(void) {
                 "assets are unavailable\n");
         return;
     }
+    if (!s_enabled && s_resourcesReady && !s_nativeGpuReady &&
+        !ModernNativeGpuInit(s_device)) {
+        fprintf(stderr,
+                "rage-port: renderer switch to modern refused: native GPU "
+                "setup failed\n");
+        return;
+    }
+    if (!s_enabled) s_nativeGpuReady = 1;
     s_enabled = !s_enabled;
     s_config.renderer = s_enabled ? RAGE_RENDERER_MODERN : RAGE_RENDERER_CLASSIC;
     PortConfigSetActive(&s_config);
-    {
-        /* The outgoing texture may still be queued for presentation.  Vulkan
-         * drivers are less forgiving than the software backends about
-         * releasing it here, which showed up as a corrupted transition frame. */
-        if (s_device != NULL) SDL_WaitForGPUIdle(s_device);
-        ModernDestroyResources();
-    }
+    /* Both renderers present through these targets.  Keeping them alive also
+     * keeps the last completed image available until the newly selected path
+     * has rendered, instead of exposing a cleared allocation for one frame. */
     s_lastRenderedFrame = 0xFFFFFFFFu;
     ModernPresentationClockReset(&s_presentationClock);
     fprintf(stderr, "rage-port: renderer switched to %s\n",

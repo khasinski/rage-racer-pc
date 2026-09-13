@@ -56,7 +56,10 @@ void DrawStartGridScenery(s32 timer) {
     SetGteObjectMatrix(AsPosition(&position),
                        &objectMatrix);
     g_RenderState.geometry.envMode4 = 0;
-    GameRenderWorldSubmitDynamicCourseObject(
+    /* Reiko and her board are flat, transparent course art.  Treating this
+     * animation as an ordinary solid course object lets modern back-face
+     * culling discard it, even though the classic ordering table draws it. */
+    GameRenderWorldSubmitDynamicCourseOverlay(
         START_GRID_ENTITY_ID, modelId, position.x, position.y, position.z,
         worldMatrix.m, 0, 0);
     SubmitCourseModel(&g_RenderState, modelId);
