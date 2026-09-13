@@ -22,13 +22,14 @@ extern u16 g_PadButtonPresets[CONTROLLER_MAPPING_COUNT]
                              [CONTROLLER_MAPPING_BUTTON_COUNT];
 extern u16 g_NegconButtonPresets[CONTROLLER_MAPPING_COUNT]
                                 [CONTROLLER_MAPPING_BUTTON_COUNT];
-extern u8 g_PadConfigLabelRows[CONTROLLER_CONFIG_ROW_COUNT];
-extern u8 g_PadConfigButtonRows[CONTROLLER_CONFIG_ROW_COUNT];
-extern u8 g_NegconConfigLabelRows[CONTROLLER_CONFIG_ROW_COUNT];
-extern u8 g_NegconConfigButtonRows[CONTROLLER_CONFIG_ROW_COUNT];
-extern DVec g_PadLabelSlots[CONTROLLER_CONFIG_LABEL_SLOT_COUNT];
-extern DVec g_PadCalloutLabelPoints[CONTROLLER_CONFIG_LABEL_SLOT_COUNT];
-extern DVec
+extern const u8 g_PadConfigLabelRows[CONTROLLER_CONFIG_ROW_COUNT];
+extern const u8 g_PadConfigButtonRows[CONTROLLER_CONFIG_ROW_COUNT];
+extern const u8 g_NegconConfigLabelRows[CONTROLLER_CONFIG_ROW_COUNT];
+extern const u8 g_NegconConfigButtonRows[CONTROLLER_CONFIG_ROW_COUNT];
+extern const DVec g_PadLabelSlots[CONTROLLER_CONFIG_LABEL_SLOT_COUNT];
+extern const DVec
+    g_PadCalloutLabelPoints[CONTROLLER_CONFIG_LABEL_SLOT_COUNT];
+extern const DVec
     g_PadCalloutButtonPoints[CONTROLLER_CONFIG_BUTTON_POINT_COUNT];
 
 static inline ControllerMappingIndex ClampControllerMappingIndex(s32 index) {

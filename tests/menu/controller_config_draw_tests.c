@@ -14,13 +14,30 @@ PadValidation g_PadValidation;
 ControllerMappingIndex g_PadMappingIndex;
 ControllerMappingIndex g_NegconMappingIndex;
 ControllerSetup g_ControllerSetup;
-DVec g_PadLabelSlots[CONTROLLER_CONFIG_LABEL_SLOT_COUNT];
-DVec g_PadCalloutLabelPoints[CONTROLLER_CONFIG_LABEL_SLOT_COUNT];
-DVec g_PadCalloutButtonPoints[CONTROLLER_CONFIG_BUTTON_POINT_COUNT];
-u8 g_PadConfigLabelRows[CONTROLLER_CONFIG_ROW_COUNT];
-u8 g_PadConfigButtonRows[CONTROLLER_CONFIG_ROW_COUNT];
-u8 g_NegconConfigLabelRows[CONTROLLER_CONFIG_ROW_COUNT];
-u8 g_NegconConfigButtonRows[CONTROLLER_CONFIG_ROW_COUNT];
+const DVec g_PadLabelSlots[CONTROLLER_CONFIG_LABEL_SLOT_COUNT] = {
+    {0, 0}, {10, 12}, {20, 24}, {30, 36}, {40, 48}, {50, 60},
+};
+const DVec g_PadCalloutLabelPoints[CONTROLLER_CONFIG_LABEL_SLOT_COUNT] = {
+    {0, 0}, {10, 12}, {20, 24}, {30, 36}, {40, 48}, {50, 60},
+};
+const DVec g_PadCalloutButtonPoints[CONTROLLER_CONFIG_BUTTON_POINT_COUNT] = {
+    {100, 80}, {101, 81}, {102, 82}, {103, 83},
+    {104, 84}, {105, 85}, {106, 86}, {107, 87},
+    {108, 88}, {109, 89}, {110, 90}, {111, 91},
+    {112, 92}, {113, 93}, {114, 94}, {115, 95},
+};
+const u8 g_PadConfigLabelRows[CONTROLLER_CONFIG_ROW_COUNT] = {
+    [0] = 1, [10] = 0, [11] = 1, [12] = 2, [13] = 3, [14] = 4,
+};
+const u8 g_PadConfigButtonRows[CONTROLLER_CONFIG_ROW_COUNT] = {
+    [10] = 0, [11] = 1, [12] = 2, [13] = 3, [14] = 4,
+};
+const u8 g_NegconConfigLabelRows[CONTROLLER_CONFIG_ROW_COUNT] = {
+    [15] = 0, [16] = 1, [17] = 2, [18] = 3, [19] = 4, [35] = 2,
+};
+const u8 g_NegconConfigButtonRows[CONTROLLER_CONFIG_ROW_COUNT] = {
+    [15] = 0, [16] = 1, [17] = 2, [18] = 3, [19] = 4,
+};
 
 static GameFrameContext s_frame;
 static u8 s_packets[128];
@@ -139,27 +156,8 @@ void DrawSpriteString(s32 x, s32 y, const char *text, s32 clut) {
 }
 
 static void Reset(void) {
-    s32 i;
-
     memset(&s_frame, 0, sizeof(s_frame));
     memset(&g_RenderState, 0, sizeof(g_RenderState));
-    memset(g_PadConfigLabelRows, 0, sizeof(g_PadConfigLabelRows));
-    memset(g_PadConfigButtonRows, 0, sizeof(g_PadConfigButtonRows));
-    memset(g_NegconConfigLabelRows, 0, sizeof(g_NegconConfigLabelRows));
-    memset(g_NegconConfigButtonRows, 0, sizeof(g_NegconConfigButtonRows));
-    for (i = 0; i < CONTROLLER_CONFIG_LABEL_SLOT_COUNT; i++) {
-        g_PadLabelSlots[i] = (DVec){i * 10, i * 12};
-        g_PadCalloutLabelPoints[i] = (DVec){i * 10, i * 12};
-    }
-    for (i = 0; i < CONTROLLER_CONFIG_BUTTON_POINT_COUNT; i++) {
-        g_PadCalloutButtonPoints[i] = (DVec){100 + i, 80 + i};
-    }
-    for (i = 0; i < CONTROLLER_CONFIG_ACTION_COUNT; i++) {
-        g_PadConfigLabelRows[10 + i] = i;
-        g_PadConfigButtonRows[10 + i] = i;
-        g_NegconConfigLabelRows[15 + i] = i;
-        g_NegconConfigButtonRows[15 + i] = i;
-    }
     g_DrawBuffer = &s_frame;
     g_RenderState.draw.packetCursor = s_packets;
     g_PadValidation.error = PAD_ERROR_STATE_NONE;
@@ -233,14 +231,11 @@ static void TestCalloutVisibilityAndNeutralPanel(void) {
 static void TestDiagramClampsMappingRows(void) {
     Reset();
     g_PadMappingIndex = -1;
-    g_PadConfigLabelRows[0] = 1;
     DrawPadConfigDiagram(GameSecondaryOrderingTable(51), s_packets);
     CHECK(s_firstSpriteX == g_PadLabelSlots[1].vx + 4);
 
     Reset();
     g_NegconMappingIndex = 99;
-    g_NegconConfigLabelRows[CONTROLLER_MAPPING_LAST *
-                            CONTROLLER_CONFIG_ACTION_COUNT] = 2;
     DrawNegconConfigDiagram(GameSecondaryOrderingTable(51), s_packets);
     CHECK(s_firstSpriteX == g_PadLabelSlots[2].vx + 4);
 }
