@@ -1146,7 +1146,6 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
     static unsigned long long profilePresented;
     static int profile = -1, profileTrace;
     Uint64 profileStart = 0, profileBuilt = 0;
-    int i;
     vram = ModernVramSnapshotForFrame(
         &s_sampledVram, snapshot->frameCounter,
         s_enabled ? ModernNativeGpuTextureRevision() : TrackAssetIdentityRevision(), ModernAssetsGeneration(),
@@ -1373,20 +1372,6 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
         }
     }
     s_haveRenderedFrame = 1;
-    if (RuntimeConfigEnabled("diagnostics.modern_span_trace")) {
-        int counts[5] = {0};
-        int verts[5] = {0};
-        for (i = 0; i < s_overlay.spanCount; i++) {
-            counts[s_overlay.spans[i].pipeline]++;
-            verts[s_overlay.spans[i].pipeline] += s_overlay.spans[i].count;
-        }
-        fprintf(stderr,
-                "modern-spans frame=%u spans=%d verts=%d "
-                "opaque=%d/%d blend=%d/%d sub=%d/%d 2d=%d/%d 2dsub=%d/%d\n",
-                snapshot->frameCounter, s_overlay.spanCount, s_overlay.vertexCount,
-                counts[0], verts[0], counts[1], verts[1], counts[2], verts[2],
-                counts[3], verts[3], counts[4], verts[4]);
-    }
     return 1;
 }
 

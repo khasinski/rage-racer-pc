@@ -197,7 +197,6 @@ static const EnvironmentAlias s_environmentAliases[] = {
     {"diagnostics.modern_dump_every", "RAGE_PORT_MODERN_DUMP_EVERY"},
     {"diagnostics.modern_dump_frame", "RAGE_PORT_MODERN_DUMP_FRAME"},
     {"diagnostics.modern_dump_scene", "RAGE_PORT_MODERN_DUMP_SCENE"},
-    {"diagnostics.modern_span_trace", "RAGE_PORT_MODERN_SPAN_TRACE"},
     {"diagnostics.scene_trace", "RAGE_PORT_SCENE_TRACE"},
     {"diagnostics.scene_trace_verbose", "RAGE_PORT_SCENE_TRACE_VERBOSE"},
     {"diagnostics.test_log", "RAGE_PORT_TEST_LOG"},
