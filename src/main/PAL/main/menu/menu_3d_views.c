@@ -6,6 +6,8 @@
 #include "game/render_internal.h"
 #include "game/track.h"
 
+#include <string.h>
+
 enum {
     MENU_VIEW_FIXED_SCALE = 1000,
     SHOWROOM_FLOOR_MODEL = 5,
@@ -13,14 +15,18 @@ enum {
     SHOWROOM_OT_DEPTH_BIAS = 30,
 };
 
+static PlayerCarRuntime s_Car;
+
+void ResetMenuCar(void) {
+    memset(&s_Car, 0, sizeof(s_Car));
+}
+
 static void SetupMenuViewCamera(s32 pitch, s32 yaw) {
-    g_Camera.view.x = 0;
-    g_Camera.view.y = -64;
-    g_Camera.view.z = -256;
-    g_Camera.view.angleX = pitch;
-    g_Camera.view.angleY = yaw;
-    g_Camera.view.angleZ = 0;
-    SetCameraRotMatrix(&g_RenderState, &g_Camera.view);
+    GameViewWork view = {
+        .x = 0, .y = -64, .z = -256,
+        .angleX = pitch, .angleY = yaw, .angleZ = 0,
+    };
+    SetCameraRotMatrix(&g_RenderState, &view);
     ScaleMatrix(&g_RenderState.geometry.matrix, &g_MenuViewScale);
 
     g_MenuViewOffset = PrepareMenuViewOffset(
@@ -55,7 +61,7 @@ static void DrawShowroomFloor(PlayerCarRuntime *car, Matrix *matrix) {
 }
 
 void DrawMenuCarView(void) {
-    PlayerCarRuntime *car = &g_PlayerCar;
+    PlayerCarRuntime *car = &s_Car;
     GameCarRuntime *renderObject = AsRivalCar(car);
     Matrix mtxA;
     Matrix mtxB;
@@ -108,13 +114,10 @@ void DrawMenuCarView(void) {
     if (car->modelIndex < 0) {
         return;
     }
-    g_PlayerCar.showroomTireCompound = g_CarTable[carIndex].tireCompound;
-
-    g_PlayerCar.steeringAngle =
-        UpdatedShowroomSteering(g_PlayerCar.steeringAngle, g_PadHeld);
-    g_PlayerCar.drive.manual = g_CarTable[carIndex].transmission;
-    g_PlayerCar.wheelRotation =
-        ((u32)g_PlayerCar.wheelRotation + 68u) & 0xFFFu;
+    car->showroomTireCompound = g_CarTable[carIndex].tireCompound;
+    car->steeringAngle = UpdatedShowroomSteering(car->steeringAngle, g_PadHeld);
+    car->drive.manual = g_CarTable[carIndex].transmission;
+    car->wheelRotation = ((u32)car->wheelRotation + 68u) & 0xFFFu;
 
     g_MenuViewSpin = UpdatedMenuViewSpin(g_MenuViewSpin, g_PadHeld);
     car->bodyRotation.y =
@@ -148,7 +151,7 @@ void DrawMenuCarView(void) {
 
 /* The course diorama behind COURSE SELECT and RANKING, with the carousel easing. */
 void DrawMenuCourseView(void) {
-    PlayerCarRuntime *car = &g_PlayerCar;
+    PlayerCarRuntime *car = &s_Car;
     GameCarRuntime *renderObject = AsRivalCar(car);
     Matrix mtxA;
     Matrix mtxB;

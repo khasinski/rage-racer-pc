@@ -20,6 +20,7 @@ static s32 s_drawResetCalls;
 static s32 s_initRenderMode;
 static s32 s_cameraCalls;
 static s32 s_carShopResets;
+static s32 s_menuCarResets;
 
 s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
@@ -31,6 +32,7 @@ void MenuRuntimeReset(void) {
     g_MenuOutgoingHandlerIndex = -1;
 }
 void ResetCarShopScreen(void) { s_carShopResets++; }
+void ResetMenuCar(void) { s_menuCarResets++; }
 
 void SetDispMask(s32 enabled) { s_displayMask = enabled; }
 void InitRenderState(s32 mode) { s_initRenderMode = mode; }
@@ -135,6 +137,7 @@ static void PoisonEntryState(void) {
     s_initRenderMode = -1;
     s_cameraCalls = 0;
     s_carShopResets = 0;
+    s_menuCarResets = 0;
 }
 
 static int CheckCommonEntryState(const GameRaceProgress *progress) {
@@ -173,6 +176,7 @@ static int CheckCommonEntryState(const GameRaceProgress *progress) {
     CHECK(g_CustomizeOption == 0 && g_DesignModeOption == 0);
     CHECK(s_drawResetCalls == 3);
     CHECK(s_carShopResets == 1);
+    CHECK(s_menuCarResets == 1);
     return 0;
 }
 

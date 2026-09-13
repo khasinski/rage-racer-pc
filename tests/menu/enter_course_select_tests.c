@@ -47,6 +47,7 @@ static s32 s_imageLoads;
 static s32 s_sequenceCalls;
 static s32 s_teamNameUploads;
 static s32 s_teamLogoClutUploads;
+static PlayerCarRuntime s_playerBefore;
 
 s32 RequestCarSelectAssets(void) { return s_assetRequestResult; }
 void PlaySequence(void) { s_sequenceCalls++; }
@@ -82,6 +83,7 @@ void UploadTeamLogoClut(void) { s_teamLogoClutUploads++; }
 
 static void PoisonState(void) {
     memset(&g_PlayerCar, 0x5A, sizeof(g_PlayerCar));
+    s_playerBefore = g_PlayerCar;
     g_MenuHandlerIndex = -7;
     g_MenuScreen = -8;
     g_MenuViewAngle = -1;
@@ -111,11 +113,7 @@ static int CheckShowroomReset(s32 expectedGrade, s32 expectedPlateStep) {
     CHECK(g_CourseCardSpin == 2048000 && g_CourseCardSpinTarget == 0);
     CHECK(g_CourseCardPendingGrade == expectedGrade);
     CHECK(g_TimeAttackPlateStep == expectedPlateStep);
-    CHECK(g_PlayerCar.x == 0 && g_PlayerCar.y == 0 && g_PlayerCar.z == 0);
-    CHECK(g_PlayerCar.bodyPitch == 0 && g_PlayerCar.bodyYaw == 0 &&
-          g_PlayerCar.bodyRoll == 0);
-    CHECK(g_PlayerCar.trackProgress == 0 && g_PlayerCar.steeringAngle == 0 &&
-          g_PlayerCar.wheelRotation == 0);
+    CHECK(memcmp(&g_PlayerCar, &s_playerBefore, sizeof(g_PlayerCar)) == 0);
     CHECK(s_sequenceCalls == 1 && s_arrowCalls == 1);
     CHECK(s_imageLoads == 1 && s_teamLogoClutUploads == 1 &&
           s_teamNameUploads == 1);

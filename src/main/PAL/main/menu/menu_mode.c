@@ -52,6 +52,7 @@ static void ResetMenuNavigation(void) {
     g_TeamLogoSubPanelScript = g_UiEmptyScript;
     g_LogoSampleSubPanelScript = g_UiEmptyScript;
     ResetCarShopScreen();
+    ResetMenuCar();
     g_EngineerShopModalScript = g_UiEmptyScript;
     g_MenuViewAngle = MENU_COURSE_VIEW_REBASE_SPAN;
     g_MenuViewAngleTarget = MENU_COURSE_VIEW_REBASE_SPAN;

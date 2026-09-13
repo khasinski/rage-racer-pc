@@ -20,15 +20,6 @@ static void ResetCourseSelectShowroom(void) {
     g_MenuViewOffset = COURSE_SELECT_INITIAL_VIEW_OFFSET;
     g_MenuViewSpin = 8;
     g_UiScriptProgress = 0;
-    g_PlayerCar.x = 0;
-    g_PlayerCar.y = 0;
-    g_PlayerCar.z = 0;
-    g_PlayerCar.bodyPitch = 0;
-    g_PlayerCar.bodyYaw = 0;
-    g_PlayerCar.bodyRoll = 0;
-    g_PlayerCar.trackProgress = 0;
-    g_PlayerCar.steeringAngle = 0;
-    g_PlayerCar.wheelRotation = 0;
     g_MenuViewAngleTarget = MENU_COURSE_VIEW_REBASE_SPAN;
     g_MenuViewAngle = MENU_COURSE_VIEW_REBASE_SPAN;
     g_MenuViewOffsetTarget = 0;

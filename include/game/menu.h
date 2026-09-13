@@ -282,6 +282,7 @@ void DrawTeamNameEntry(s32 step, s32 cursorIndex);
 /* The 3D car view behind screens 3, 4, 5, 6, 10, 11, 12: eases
  * g_MenuViewAngle/Offset, then submits the car and the showroom floor. */
 void DrawMenuCarView(void);
+void ResetMenuCar(void);
 /* Draw and input halves of the logo painter. The canvas D_801E6F2C is a 64x64
  * 4bpp bitmap with its own 16-entry CLUT at g_TeamLogoClut. */
 extern u16 g_TeamLogoClut[16];
