@@ -50,9 +50,6 @@ static void UpdateRankingMenu(void) {
             g_RankingCursor == RANKING_OPTION_LAP) {
             PlaySoundCue(2);
             GameMenuBusy = RANKING_MENU_CLOSING;
-            g_RankingPendingState = g_RankingCursor == RANKING_OPTION_TOTAL
-                ? RANKING_TOTAL_TABLE
-                : RANKING_LAP_TABLE;
         } else if (g_RankingCursor == RANKING_OPTION_EXIT) {
             PlaySoundCue(3);
             GameMenuBusy = RANKING_EXIT_TO_COURSE_SELECT;
@@ -69,12 +66,11 @@ static void CloseRankingMenu(void) {
     RunTimedDrawScript(g_RankingMenuScript, &g_UiScriptProgress2, -1);
     DrawFadingMenuSprites(g_UiScriptProgress2, 2, g_RankingCursor);
     if (g_UiScriptProgress2 <= 0) {
-        if (g_RankingPendingState == RANKING_TOTAL_TABLE ||
-            g_RankingPendingState == RANKING_LAP_TABLE) {
-            GameMenuBusy = g_RankingPendingState;
-        } else {
-            GameMenuBusy = RANKING_MENU;
-        }
+        GameMenuBusy = g_RankingCursor == RANKING_OPTION_TOTAL
+            ? RANKING_TOTAL_TABLE
+            : g_RankingCursor == RANKING_OPTION_LAP
+                ? RANKING_LAP_TABLE
+                : RANKING_MENU;
     }
 }
 

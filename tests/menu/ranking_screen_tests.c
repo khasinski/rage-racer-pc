@@ -26,7 +26,6 @@ s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuOverlayPattern;
 s32 g_MenuScreen;
 s32 g_RankingCursor;
-s32 g_RankingPendingState;
 s32 g_TimeAttackPlateStep;
 s32 g_UiScriptProgress;
 s32 g_UiScriptProgress2;
@@ -79,7 +78,6 @@ static void Reset(void) {
     g_MenuOverlayPattern = 0;
     g_PadPressed = 0;
     g_RankingCursor = 0;
-    g_RankingPendingState = 0;
     g_UiScriptProgress = 0;
     g_UiScriptProgress2 = 0;
     s_scriptResult = 0;
@@ -100,7 +98,7 @@ int main(void) {
     s_scriptResult = 1;
     g_PadPressed = PAD_CONFIRM;
     UpdateRankingScreen();
-    CHECK(GameMenuBusy == -2 && g_RankingPendingState == -3);
+    CHECK(GameMenuBusy == -2);
     CHECK(s_lastCue == 2);
 
     g_UiScriptProgress2 = 0;
@@ -118,7 +116,7 @@ int main(void) {
     g_RankingCursor = 1;
     g_PadPressed = PAD_CONFIRM;
     UpdateRankingScreen();
-    CHECK(GameMenuBusy == -2 && g_RankingPendingState == -5);
+    CHECK(GameMenuBusy == -2);
     g_UiScriptProgress2 = 0;
     UpdateRankingScreen();
     CHECK(GameMenuBusy == -5);
@@ -155,7 +153,7 @@ int main(void) {
 
     Reset();
     GameMenuBusy = -2;
-    g_RankingPendingState = INT_MAX;
+    g_RankingCursor = INT_MAX;
     g_UiScriptProgress2 = 0;
     UpdateRankingScreen();
     CHECK(GameMenuBusy == -1);

@@ -3,15 +3,28 @@
 #include "game/input_internal.h"
 #include "game/state.h"
 
+typedef struct NegconCalibrationBackup {
+    NegconCalibrationValue steerNeutral;
+    NegconCalibrationValue neutralI;
+    NegconCalibrationValue neutralII;
+    NegconCalibrationValue neutralL;
+    NegconCalibrationValue steerPlay;
+    NegconCalibrationValue maxTwist;
+} NegconCalibrationBackup;
+
+static NegconCalibrationBackup s_backup;
+
 void BeginNegconCalibration(void) {
     ControllerSetup *setup = MenuControllerSetup();
 
-    g_NegconSteerNeutralSaved = g_NegconSteerNeutral;
-    g_NegconNeutralISaved = g_NegconNeutralI;
-    g_NegconNeutralIISaved = g_NegconNeutralII;
-    g_NegconNeutralLSaved = g_NegconNeutralL;
-    g_NegconSteerPlaySaved = g_NegconSteerPlay;
-    g_NegconMaxTwistSaved = g_NegconMaxTwist;
+    s_backup = (NegconCalibrationBackup){
+        .steerNeutral = g_NegconSteerNeutral,
+        .neutralI = g_NegconNeutralI,
+        .neutralII = g_NegconNeutralII,
+        .neutralL = g_NegconNeutralL,
+        .steerPlay = g_NegconSteerPlay,
+        .maxTwist = g_NegconMaxTwist,
+    };
 
     g_NegconSteerNeutral = 0;
     g_NegconNeutralI = 0;
@@ -23,12 +36,12 @@ void BeginNegconCalibration(void) {
 }
 
 void RestoreNegconCalibrationSettings(void) {
-    g_NegconSteerNeutral = g_NegconSteerNeutralSaved;
-    g_NegconNeutralI = g_NegconNeutralISaved;
-    g_NegconNeutralII = g_NegconNeutralIISaved;
-    g_NegconNeutralL = g_NegconNeutralLSaved;
-    g_NegconSteerPlay = g_NegconSteerPlaySaved;
-    g_NegconMaxTwist = g_NegconMaxTwistSaved;
+    g_NegconSteerNeutral = s_backup.steerNeutral;
+    g_NegconNeutralI = s_backup.neutralI;
+    g_NegconNeutralII = s_backup.neutralII;
+    g_NegconNeutralL = s_backup.neutralL;
+    g_NegconSteerPlay = s_backup.steerPlay;
+    g_NegconMaxTwist = s_backup.maxTwist;
 }
 
 void UpdateNegconNeutralScreen(void) {
