@@ -13,6 +13,14 @@ int main(void) {
         fputs("render world scene selection failed\n", stderr);
         return 1;
     }
+    if (GameRenderWorldSceneCanInterpolate(GAME_SCENE_RACE, 0) ||
+        GameRenderWorldSceneCanInterpolate(GAME_SCENE_RACE, 89) ||
+        !GameRenderWorldSceneCanInterpolate(GAME_SCENE_RACE, 90) ||
+        !GameRenderWorldSceneCanInterpolate(GAME_SCENE_REPLAY, 0) ||
+        !GameRenderWorldSceneCanInterpolate(GAME_SCENE_ATTRACT_DEMO, 0)) {
+        fputs("render world interpolation policy failed\n", stderr);
+        return 1;
+    }
     puts("render world only follows scenes with live 3D packets");
     return 0;
 }

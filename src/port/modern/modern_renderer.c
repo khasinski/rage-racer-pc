@@ -27,6 +27,7 @@
 #include "game/race.h"
 #include "game/render_internal.h"
 #include "game/track_internal.h"
+#include "rage/render_world_scene.h"
 #include "modern_renderer_diagnostics.h"
 #include "../runtime_config.h"
 #include "../native_asset_importer.h"
@@ -560,6 +561,13 @@ static Uint64 ModernPresentationInterval(void) {
         reportedInterval = interval;
     }
     return interval;
+}
+
+static int ModernShouldInterpolate(const RageSceneSnapshot *snapshot) {
+    return s_config.modernFps != RAGE_MODERN_FPS_LOGIC &&
+           snapshot != NULL &&
+           GameRenderWorldSceneCanInterpolate(
+               (GameSceneId)snapshot->sceneId, snapshot->sceneTimer);
 }
 
 void ModernLogicFrameReady(uint32_t frame) {
@@ -1550,11 +1558,11 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
         /* The compat GPU still submits each logic frame while hidden. */
         return;
     }
-    fpsMode = s_config.modernFps != RAGE_MODERN_FPS_LOGIC;
     /* Both modes render the PREVIOUS logic frame - the one compat is
      * presenting during this tick; fps mode moves its transforms toward
      * the newest frame by the wall-clock fraction of the tick. */
     snapshot = CapturePrevious();
+    fpsMode = ModernShouldInterpolate(snapshot);
     /* Scenes with no captured 3D pass through to the compat image, and so
      * do 480-line menu scenes: their double-height buffer follows PS1
      * interlace conventions the compat presenter already handles. */
@@ -1655,7 +1663,7 @@ void ModernFrameWaitTick(int frameLimit) {
     /* A short bounded sleep yields the CPU without tying emulated VBlank
      * to the monitor. The caller rechecks its original logic deadline. */
     SDL_DelayNS(100000u);
-    if (s_config.modernFps == RAGE_MODERN_FPS_LOGIC) return;
+    if (!ModernShouldInterpolate(CaptureCurrent())) return;
     if (ModernWindowOccluded() &&
         RuntimeConfigGet("diagnostics.modern_dump") == NULL) return;
     if (frameLimit < 0x180) return;
