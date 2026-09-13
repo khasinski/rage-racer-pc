@@ -41,7 +41,7 @@ void ResumeCdAudio(void) {
     if (restartTrack) {
         QueueCdTrackRestart(g_Cd.currentTrack);
     } else {
-        QueueCdCommand(CD_COMMAND_RESUME, CD_PLAY_WAIT_FOR_DRIVE);
+        QueueCdCommand(CD_COMMAND_PLAY, CD_PLAY_WAIT_FOR_DRIVE);
     }
 }
 

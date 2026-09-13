@@ -40,7 +40,7 @@ int main(void) {
     g_Cd.restart = 0;
     g_Cd.commandStep = 9;
     ResumeCdAudio();
-    CHECK(g_Cd.pendingCommand == CD_COMMAND_RESUME &&
+    CHECK(g_Cd.pendingCommand == CD_COMMAND_PLAY &&
           g_Cd.commandStep == CD_PLAY_WAIT_FOR_DRIVE);
 
     g_Cd.currentTrack = 5;
@@ -59,7 +59,7 @@ int main(void) {
     g_Cd.pendingTrack = -1;
     ResumeCdAudio();
     CHECK(g_Cd.pendingTrack == -1 && g_Cd.restart == 0);
-    CHECK(g_Cd.pendingCommand == CD_COMMAND_RESUME);
+    CHECK(g_Cd.pendingCommand == CD_COMMAND_PLAY);
 
     g_Cd.currentTrack = 9;
     g_Cd.pendingTrack = 4;

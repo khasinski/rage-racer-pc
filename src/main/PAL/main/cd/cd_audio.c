@@ -19,7 +19,6 @@ void InitCdAudio(void) {
     BuildCdTrackTable();
 
     ResetCdAudioState();
-    g_Cd.reservedMixPreset = 0;
     g_Cd.restart = 0;
     g_Cd.volume = CD_VOLUME_MAX;
     g_Cd.fade = 0;
@@ -31,12 +30,7 @@ void TickCdAudio(void) {
         switch (g_Cd.pendingCommand) {
         case CD_COMMAND_NONE:
             break;
-        /* Resuming and starting are the same command sequence: both issue
-         * CdlPlay and wait on the same three steps. They were written out
-         * twice, in two files, identical but for whether the status test
-         * used else or a second break. */
         case CD_COMMAND_PLAY:
-        case CD_COMMAND_RESUME:
             StepCdPlayRequest();
             break;
         case CD_COMMAND_PAUSE:

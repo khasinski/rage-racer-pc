@@ -106,7 +106,7 @@ static int TestRequestDispatch(void) {
     g_Cd.pendingCommand = CD_COMMAND_PLAY;
     TickCdAudio();
     CHECK(s_playSteps == 1 && s_fadeSteps == 1);
-    g_Cd.pendingCommand = CD_COMMAND_RESUME;
+    g_Cd.pendingCommand = CD_COMMAND_PLAY;
     TickCdAudio();
     CHECK(s_playSteps == 2);
     g_Cd.pendingCommand = CD_COMMAND_PAUSE;

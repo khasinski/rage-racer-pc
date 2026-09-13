@@ -8,7 +8,6 @@ typedef enum CdCommandType {
     CD_COMMAND_NONE = -1,
     CD_COMMAND_PLAY = 1,
     CD_COMMAND_PAUSE,
-    CD_COMMAND_RESUME
 } CdCommandType;
 
 typedef enum CdDriveCommand {
@@ -89,7 +88,7 @@ extern s32 g_CdTrackEnded;
  */
 /* Queue track `track` from the g_CdTrackLocs CdlLOC table. */
 void RequestCdTrack(s32 track);
-/* Issue CdlPlay for whatever is queued / paused. */
+/* Issue CdlPlay for a selected or paused track. */
 void StartCdAudio(void);
 /* Capture the current position, then CdlPause. */
 void PauseCdAudio(void);
