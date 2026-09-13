@@ -3,6 +3,18 @@ target_link_libraries(region_profile_tests PRIVATE rage-content)
 add_test(NAME region_profile COMMAND region_profile_tests)
 set_tests_properties(region_profile PROPERTIES LABELS unit)
 
+add_executable(menu_music_asset_tests menu_music_asset_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/menu_music_asset.c)
+target_include_directories(menu_music_asset_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port)
+if(MSVC)
+    target_compile_options(menu_music_asset_tests PRIVATE /W4 /WX)
+else()
+    target_compile_options(menu_music_asset_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
+add_test(NAME menu_music_asset COMMAND menu_music_asset_tests)
+set_tests_properties(menu_music_asset PROPERTIES LABELS unit)
+
 add_executable(car_catalog_profile_tests
     car_catalog_profile_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/car_catalog_profile.c
