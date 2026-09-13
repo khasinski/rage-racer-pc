@@ -116,6 +116,7 @@ int main(void) {
     g_PadValidation.error = PAD_ERROR_STATE_INVALID_INPUT;
     g_PadValidation.countdown = -1;
     g_PadValidation.holdBits = -1;
+    g_PadValidation.lastValidType = 0;
     memset(&g_PadState, 0x7F, sizeof(g_PadState));
     g_PadType = 0x41;
     g_PadPrevHeld = PAD_LEFT;
@@ -142,6 +143,7 @@ int main(void) {
     CHECK(g_NegconNeutralL == 0);
     CHECK(g_PadValidation.error == PAD_ERROR_STATE_NONE);
     CHECK(g_PadValidation.countdown == 0x21 && g_PadValidation.holdBits == 0);
+    CHECK(g_PadValidation.lastValidType == PAD_TYPE_DIGITAL);
     CHECK(memcmp(&g_PadState, &clearedPad, sizeof(clearedPad)) == 0);
     CHECK(g_PadType == 0 && g_PadPrevHeld == 0 && g_PadHeld == 0);
     CHECK(g_PadPressed == 0 && g_PadPressedRepeat == 0);

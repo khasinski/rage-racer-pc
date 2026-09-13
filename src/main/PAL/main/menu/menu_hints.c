@@ -60,7 +60,7 @@ void DrawOptionHintBar(s32 variant) {
     g_RenderState.draw.packetCursor = QueueDrawModePrim(ot, next, 0x3F);
 }
 
-/* Two glyphs plus a label naming the connected pad; caches the last valid g_PadType. */
+/* Two glyphs plus a label naming the connected pad; caches the last valid type. */
 void DrawPadTypeHint(void) {
     GameOrderingTableEntry *ot;
     u8 padType = g_PadType;
@@ -70,12 +70,12 @@ void DrawPadTypeHint(void) {
     if (!CanDrawMenuHint()) return;
 
     if (padType != PAD_TYPE_DIGITAL && padType != PAD_TYPE_NEGCON) {
-        padType = g_LastValidPadType;
+        padType = g_PadValidation.lastValidType;
     }
     if (padType != PAD_TYPE_DIGITAL && padType != PAD_TYPE_NEGCON) {
         padType = PAD_TYPE_DIGITAL;
     }
-    g_LastValidPadType = padType;
+    g_PadValidation.lastValidType = padType;
 
     ot = GamePrimaryOrderingTable(0);
     next = RENDER_PRIM_CURSOR_AS(u8);

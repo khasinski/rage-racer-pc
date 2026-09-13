@@ -39,6 +39,7 @@ static void ResetInputDefaults(void) {
     g_PadValidation.error = PAD_ERROR_STATE_NONE;
     g_PadValidation.countdown = DEFAULT_PAD_VALIDATION_FRAMES;
     g_PadValidation.holdBits = 0;
+    g_PadValidation.lastValidType = PAD_TYPE_DIGITAL;
 }
 
 static void FinalizeBootCamera(void) {

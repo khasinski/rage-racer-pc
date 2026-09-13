@@ -158,6 +158,7 @@ typedef struct PadValidation {
     PadErrorState error;
     s32 countdown;
     s32 holdBits;
+    u8 lastValidType;
 } PadValidation;
 
 extern PadValidation g_PadValidation;

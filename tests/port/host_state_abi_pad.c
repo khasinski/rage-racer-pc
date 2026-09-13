@@ -15,3 +15,5 @@ _Static_assert(sizeof(g_PadCalloutButtonPoints) ==
                "pad callout button table shape changed");
 _Static_assert(sizeof(g_PadValidation.error) == sizeof(s32),
                "pad error state must be a scalar");
+_Static_assert(sizeof(g_PadValidation.lastValidType) == sizeof(u8),
+               "cached pad type must remain a byte");

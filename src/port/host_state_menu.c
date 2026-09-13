@@ -72,7 +72,6 @@ OptionHintCaption g_OptionHintCaptions[MENU_OPTION_HINT_COUNT] = {
     {0xA0, 0x90, 0x20, 0x24},
     {0xA0, 0x90, 0x50, 0x52}
 };
-u8 g_LastValidPadType = 65;
 DVec g_ClassRecordCellPoints[CLASS_RECORD_COUNT] = {
     {44, 184}, {84, 184}, {124, 184}, {164, 184}, {204, 184},
     {244, 232}, {44, 280}, {84, 280}, {124, 280}, {164, 280},

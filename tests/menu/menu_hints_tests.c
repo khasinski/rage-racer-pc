@@ -4,8 +4,8 @@
 #include <limits.h>
 #include <stdio.h>
 
-u8 g_LastValidPadType;
 u8 g_PadType;
+PadValidation g_PadValidation;
 GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
 OptionHintCaption g_OptionHintCaptions[MENU_OPTION_HINT_COUNT];
@@ -88,22 +88,22 @@ int main(void) {
 
     ResetCalls();
     g_PadType = PAD_TYPE_NEGCON;
-    g_LastValidPadType = PAD_TYPE_DIGITAL;
+    g_PadValidation.lastValidType = PAD_TYPE_DIGITAL;
     DrawPadTypeHint();
-    CHECK(g_LastValidPadType == PAD_TYPE_NEGCON && s_callCount == 3);
+    CHECK(g_PadValidation.lastValidType == PAD_TYPE_NEGCON && s_callCount == 3);
     CHECK(s_calls[0].u == 0xA0 && s_calls[1].u == 0xA8);
     CHECK(s_calls[2].x == 0x58 && s_calls[2].width == 0x90);
 
     ResetCalls();
     g_PadType = 0;
     DrawPadTypeHint();
-    CHECK(g_LastValidPadType == PAD_TYPE_NEGCON);
+    CHECK(g_PadValidation.lastValidType == PAD_TYPE_NEGCON);
     CHECK(s_calls[0].u == 0xA0 && s_calls[1].u == 0xA8);
 
     ResetCalls();
     g_PadType = PAD_TYPE_DIGITAL;
     DrawPadTypeHint();
-    CHECK(g_LastValidPadType == PAD_TYPE_DIGITAL);
+    CHECK(g_PadValidation.lastValidType == PAD_TYPE_DIGITAL);
     CHECK(s_calls[0].u == 0x90 && s_calls[1].u == 0x98);
     CHECK(s_drawModeOt == ot0 && s_drawMode == 0x3F);
     CHECK(g_RenderState.draw.packetCursor == s_packets + 4);
@@ -116,9 +116,9 @@ int main(void) {
 
     ResetCalls();
     g_PadType = 0;
-    g_LastValidPadType = 0;
+    g_PadValidation.lastValidType = 0;
     DrawPadTypeHint();
-    CHECK(g_LastValidPadType == PAD_TYPE_DIGITAL);
+    CHECK(g_PadValidation.lastValidType == PAD_TYPE_DIGITAL);
     CHECK(s_calls[0].u == 0x90 && s_calls[1].u == 0x98);
 
     ResetCalls();

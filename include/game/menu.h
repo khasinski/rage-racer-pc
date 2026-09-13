@@ -473,7 +473,6 @@ extern s32 g_CarPriceTable[CAR_PRICE_COUNT];
 extern s32 g_CarSpecBars[4];
 extern s32 g_CarSpecGraphProgress;
 extern s32 g_ClassRecordMenuCursor;
-extern u8 g_LastValidPadType;
 extern TimedDrawCommand g_MenuHintBarScript[];
 
 /* Retail stores timed-draw commands as packed 12-byte records containing
