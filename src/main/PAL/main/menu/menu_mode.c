@@ -46,7 +46,11 @@ static void InitMenuCamera(void) {
 }
 
 static void ResetMenuNavigation(void) {
-    g_CourseSelectModalScript = g_UiEmptyScript;
+    CourseSelectScreen *courseSelect;
+
+    MenuRuntimeReset();
+    courseSelect = MenuCourseSelect();
+    courseSelect->modalScript = g_UiEmptyScript;
     g_CarSelectPopupScript = g_UiEmptyScript;
     g_CustomizePopupScript = g_UiEmptyScript;
     g_TeamLogoSubPanelScript = g_UiEmptyScript;
@@ -62,7 +66,6 @@ static void ResetMenuNavigation(void) {
     g_MenuConfirmTimer = 0;
     GameMenuBusy = 0;
     g_MenuHintBarStep = 0;
-    g_ClassChangeApplied = 0;
     g_CourseSwapDelay = 0;
     g_MenuViewOffset = 0;
     g_MenuViewOffsetTarget = 0;
@@ -81,10 +84,8 @@ static void ResetMenuNavigation(void) {
     g_MenuLowerAltPanelStep = 0;
     g_TimeAttackPlateStep = 0;
     g_MenuHintButtonsVisible = 1;
-    MenuRuntimeReset();
     g_MenuAltLayoutSetting = 0;
     g_CarShopUnlockAll = 0;
-    g_CourseSelectOption = 0;
     g_CarSelectCursor = 0;
     g_CustomizeOption = 0;
     g_DesignModeOption = 0;

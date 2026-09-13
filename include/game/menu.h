@@ -42,6 +42,12 @@ extern s32 GameMenuCursor;
 extern s32 GameMenuBusy;
 /* Cursor animation gate: input is only accepted while this is negative. */
 extern s32 GameMenuCursorAnim;
+typedef struct CourseSelectScreen {
+    s32 option;
+    const TimedDrawCommand *modalScript;
+    s32 classChangeApplied;
+} CourseSelectScreen;
+
 typedef struct MenuRuntime {
     /* State-machine screen updated this frame. */
     s32 activeScreen;
@@ -53,12 +59,14 @@ typedef struct MenuRuntime {
     s32 screenState[MENU_SCREEN_COUNT];
     /* Fade/slide accumulator passed explicitly to each screen renderer. */
     s32 drawProgress[MENU_SCREEN_COUNT];
+    CourseSelectScreen courseSelect;
     ControllerSetup controllerSetup;
 } MenuRuntime;
 
 void MenuRuntimeReset(void);
 const MenuRuntime *MenuRuntimeCurrent(void);
 ControllerSetup *MenuControllerSetup(void);
+CourseSelectScreen *MenuCourseSelect(void);
 s32 MenuRuntimeScreenState(s32 screen);
 void MenuRuntimeSetScreenState(s32 screen, s32 state);
 
@@ -327,7 +335,6 @@ extern s32 g_TeamLogoGuideMode;
 extern s32 g_TeamLogoBrushSize;
 extern s32 g_TeamLogoPaletteMode;
 extern s32 g_TeamLogoColorChannel;
-extern s32 g_ClassChangeApplied;
 extern s32 g_CarSpecGraphStep;
 extern s32 g_MenuUpperAltPanelStep;
 extern s32 g_MenuLowerAltPanelStep;
@@ -358,7 +365,6 @@ extern s32 g_BgmTrackCount;
 extern s32 g_CarNamePlateStep;
 extern s32 g_CarSwapFromIndex;
 extern s32 g_CarSwapToIndex;
-extern s32 g_CourseSelectOption;
 extern s32 g_CourseSwapDelay;
 extern s32 g_DesignModeOption;
 typedef enum FrontendState {

@@ -126,7 +126,7 @@ static void SpinCardAway(void) {
 }
 
 /* Confirm on the row the cursor is on. */
-static void ChooseCourseSelectRow(s32 row) {
+static void ChooseCourseSelectRow(CourseSelectScreen *screen, s32 row) {
     if (row == COURSE_SELECT_OPTION_CAR_SELECT) {
         PlaySoundCue(2);
         GameMenuBusy = COURSE_SELECT_TO_CAR_SELECT;
@@ -140,7 +140,7 @@ static void ChooseCourseSelectRow(s32 row) {
             /* Saving is only offered in a Grand Prix; class five is the extra
              * series, which has no round of its own to record. */
             PlaySoundCue(2);
-            g_CourseSelectModalScript = g_CourseSelectSavePromptScript;
+            screen->modalScript = g_CourseSelectSavePromptScript;
             GameMenuBusy = COURSE_SELECT_SAVE_PROMPT;
             g_GrandPrixSeries = (s16)GrandPrixAssetSeries(
                 g_GrandPrixSeries, g_GrandPrixClass);
@@ -159,7 +159,7 @@ static void ChooseCourseSelectRow(s32 row) {
     }
     PlaySoundCue(2);
     if (g_GrandPrixMode != 0) {
-        g_CourseSelectModalScript = g_MenuDialogPanelLowerScript;
+        screen->modalScript = g_MenuDialogPanelLowerScript;
         GameMenuBusy = COURSE_SELECT_CLASS_PROMPT;
         g_UiScriptProgress2 = 0;
         g_MenuSubCursor = g_GrandPrixClass;
@@ -170,16 +170,16 @@ static void ChooseCourseSelectRow(s32 row) {
     g_TimeAttackPlateStep = -1;
 }
 
-static void UpdateCourseSelectInput(void) {
+static void UpdateCourseSelectInput(CourseSelectScreen *screen) {
     CourseSelectInputOutcome choice;
     s32 i;
     g_MenuOverlayPattern = -1;
     choice = DecideCourseSelectInput(g_PadPressed, g_PadHeld,
-                                     g_CourseSelectOption);
+                                     screen->option);
     for (i = 0; i < choice.cueCount; i++) {
         PlaySoundCue(choice.cues[i]);
     }
-    g_CourseSelectOption = choice.option;
+    screen->option = choice.option;
     /* Asked in this order, and each condition only when the one before it
      * held, because settling the card is a question the screen answers by
      * looking rather than by remembering. */
@@ -192,29 +192,30 @@ static void UpdateCourseSelectInput(void) {
         BrowseToCourse(1, MENU_COURSE_VIEW_RIGHT_TARGET);
     }
     if (choice.choosesRow) {
-        ChooseCourseSelectRow(choice.option);
+        ChooseCourseSelectRow(screen, choice.option);
     }
 }
 
-static void UpdateCourseSelectIdle(void) {
+static void UpdateCourseSelectIdle(CourseSelectScreen *screen) {
     g_MenuHintBarStep = 1;
-    RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, -1);
+    RunTimedDrawScript(screen->modalScript, &g_UiScriptProgress2, -1);
     DrawCourseArrows(1);
-    DrawFadingMenuSprites(g_UiScriptProgress, 2, g_CourseSelectOption);
+    DrawFadingMenuSprites(g_UiScriptProgress, 2, screen->option);
     RunTimedDrawScript(CourseSelectMenuScript(), &g_UiScriptProgress, 0);
     DrawMenuLightBurst(7);
     if ((RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1) != 0) &&
         (g_UiScriptProgress2 <= 0)) {
-        UpdateCourseSelectInput();
+        UpdateCourseSelectInput(screen);
     }
 }
 
-static void UpdateSavePrompt(GameOrderingTableEntry *ot) {
+static void UpdateSavePrompt(CourseSelectScreen *screen,
+                             GameOrderingTableEntry *ot) {
     MenuPromptOutcome choice;
     s32 cue;
     RunTimedDrawScript(g_CourseSelectSavePromptBanner, &g_UiScriptProgress2, 0);
     RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
-    if (RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 1)
+    if (RunTimedDrawScript(screen->modalScript, &g_UiScriptProgress2, 1)
         == 0) {
         return;
     }
@@ -229,18 +230,19 @@ static void UpdateSavePrompt(GameOrderingTableEntry *ot) {
     DrawSavePromptButtons(ot, 0);
 }
 
-static void UpdateClassPrompt(GameOrderingTableEntry *ot) {
+static void UpdateClassPrompt(CourseSelectScreen *screen,
+                              GameOrderingTableEntry *ot) {
     MenuClassPromptOutcome choice;
     s32 maxClass;
     s32 effect;
-    if (RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 1)
+    if (RunTimedDrawScript(screen->modalScript, &g_UiScriptProgress2, 1)
         == 0) {
         return;
     }
     maxClass = MaxSelectableClass();
     choice = DecideClassPrompt(g_PadPressed, GameMenuBusy, g_MenuConfirmTimer,
                                g_MenuSubCursor, g_GrandPrixClass, maxClass,
-                               g_ClassChangeApplied);
+                               screen->classChangeApplied);
     for (effect = 0; effect < choice.effectCount; effect++) {
         if (choice.effects[effect].kind == MENU_PROMPT_CURTAIN) {
             DrawClassChangeCurtain(choice.effects[effect].value);
@@ -250,27 +252,28 @@ static void UpdateClassPrompt(GameOrderingTableEntry *ot) {
     }
     GameMenuBusy = choice.busy;
     g_MenuConfirmTimer = choice.confirmTimer;
-    g_ClassChangeApplied = choice.changeApplied;
+    screen->classChangeApplied = choice.changeApplied;
     g_MenuSubCursor = (u8)choice.subCursor;
     DrawClassList(ot, 0);
 }
 
 /* The save going through: the prompt flashes for a while, then the screen
  * starts on its way out, to the race or to the record entry. */
-static void UpdateSaveCountdown(GameOrderingTableEntry *ot) {
+static void UpdateSaveCountdown(CourseSelectScreen *screen,
+                                GameOrderingTableEntry *ot) {
     if (g_MenuConfirmTimer > 0) {
         g_MenuConfirmTimer -= 1;
         RunTimedDrawScript(g_CourseSelectSavePromptBanner,
                            &g_UiScriptProgress2, 0);
         RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
-        RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 1);
+        RunTimedDrawScript(screen->modalScript, &g_UiScriptProgress2, 1);
         DrawSavePromptButtons(ot, 1);
         return;
     }
     RunTimedDrawScript(g_CourseSelectSavePromptBanner, &g_UiScriptProgress2,
                        -1);
     RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
-    RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 0);
+    RunTimedDrawScript(screen->modalScript, &g_UiScriptProgress2, 0);
     if (g_UiScriptProgress2 <= 0) {
         StartSequenceFadeOut();
         GameMenuBusy = (g_MenuSubCursor != 0)
@@ -282,11 +285,11 @@ static void UpdateSaveCountdown(GameOrderingTableEntry *ot) {
 }
 
 /* The save prompt refused: wait for it to slide off, then go back to idle. */
-static void UpdateSaveDismissed(void) {
+static void UpdateSaveDismissed(CourseSelectScreen *screen) {
     RunTimedDrawScript(g_CourseSelectSavePromptBanner, &g_UiScriptProgress2,
                        -1);
     RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
-    RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 0);
+    RunTimedDrawScript(screen->modalScript, &g_UiScriptProgress2, 0);
     if (g_UiScriptProgress2 <= 0) {
         GameMenuBusy = COURSE_SELECT_IDLE;
     }
@@ -297,21 +300,22 @@ static void UpdateSaveDismissed(void) {
  * the new class is applied and the player's progress through the series is
  * reset; then the curtain comes back and the screen returns to idle.
  */
-static void UpdateClassChange(GameOrderingTableEntry *ot) {
+static void UpdateClassChange(CourseSelectScreen *screen,
+                              GameOrderingTableEntry *ot) {
     if (g_CourseProgress == NULL) {
         GameMenuBusy = COURSE_SELECT_IDLE;
-        g_ClassChangeApplied = 0;
+        screen->classChangeApplied = 0;
         return;
     }
     g_MenuSubCursor = (u8)AddClampedMenuValue(
         g_MenuSubCursor, 0, 0, MaxSelectableClass());
     if (g_MenuConfirmTimer > 0) {
         g_MenuConfirmTimer -= 1;
-        RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 1);
+        RunTimedDrawScript(screen->modalScript, &g_UiScriptProgress2, 1);
         DrawClassList(ot, 1);
         return;
     }
-    if (g_ClassChangeApplied != 0) {
+    if (screen->classChangeApplied != 0) {
         if (DrawClassChangeCurtain(-1) == 0) {
             GameMenuBusy = COURSE_SELECT_IDLE;
             g_UiScriptProgress2 = 0;
@@ -319,45 +323,46 @@ static void UpdateClassChange(GameOrderingTableEntry *ot) {
         return;
     }
     if (DrawClassChangeCurtain(1) >= COURSE_CLASS_CURTAIN_CLOSED) {
-        g_ClassChangeApplied = 1;
+        screen->classChangeApplied = 1;
         g_GrandPrixClass = g_MenuSubCursor;
         ResetCourseProgressState(g_CourseProgress, g_MenuSubCursor);
         g_MenuViewAngle = MENU_COURSE_VIEW_REBASE_SPAN;
         g_MenuViewAngleTarget = MENU_COURSE_VIEW_REBASE_SPAN;
-        g_CourseSelectOption = 0;
+        screen->option = 0;
         g_MenuPendingCourseIndex = -1;
         g_CourseCardSpin = 0;
         g_CourseIndex = CourseSeries(g_CourseIndex) * COURSE_SLOT_COUNT;
         g_MenuCourseModelIndex = g_CourseIndex;
         g_CourseCardPendingGrade = CourseBestPlace(g_CourseIndex);
     }
-    RunTimedDrawScript(g_CourseSelectModalScript, &g_UiScriptProgress2, 1);
+    RunTimedDrawScript(screen->modalScript, &g_UiScriptProgress2, 1);
     DrawClassList(ot, 1);
 }
 
-static void UpdateCourseSelectModal(GameOrderingTableEntry *ot, s32 state) {
+static void UpdateCourseSelectModal(CourseSelectScreen *screen,
+                                    GameOrderingTableEntry *ot, s32 state) {
     switch (state) {
     case COURSE_SELECT_SAVE_PROMPT:
-        UpdateSavePrompt(ot);
+        UpdateSavePrompt(screen, ot);
         break;
     case COURSE_SELECT_CLASS_PROMPT:
-        UpdateClassPrompt(ot);
+        UpdateClassPrompt(screen, ot);
         break;
     case COURSE_SELECT_SAVE_COUNTDOWN:
-        UpdateSaveCountdown(ot);
+        UpdateSaveCountdown(screen, ot);
         break;
     case COURSE_SELECT_SAVE_DISMISSED:
-        UpdateSaveDismissed();
+        UpdateSaveDismissed(screen);
         break;
     case COURSE_SELECT_CLASS_CHANGE:
-        UpdateClassChange(ot);
+        UpdateClassChange(screen, ot);
         break;
     default:
         GameMenuBusy = COURSE_SELECT_IDLE;
         break;
     }
     DrawCourseArrows(1);
-    DrawFadingMenuSprites(g_UiScriptProgress, 2, g_CourseSelectOption);
+    DrawFadingMenuSprites(g_UiScriptProgress, 2, screen->option);
     RunTimedDrawScript(CourseSelectMenuScript(), &g_UiScriptProgress, 0);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
     DrawMenuLightBurst(7);
@@ -420,19 +425,19 @@ static void EnterChosenScreen(void) {
     GameMenuBusy = COURSE_SELECT_IDLE;
 }
 
-static void UpdateCourseSelectOutgoing(void) {
+static void UpdateCourseSelectOutgoing(CourseSelectScreen *screen) {
     MenuBeginExit(MENU_SCREEN_COURSE_SELECT);
     DrawCourseArrows(-1);
     RunTimedDrawScript(CourseSelectMenuScript(), &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
-    DrawFadingMenuSprites(g_UiScriptProgress, 2, g_CourseSelectOption);
+    DrawFadingMenuSprites(g_UiScriptProgress, 2, screen->option);
     DrawMenuLightBurst(-9);
     if (g_UiScriptProgress <= 0) {
         EnterChosenScreen();
     }
 }
 
-void UpdateCourseSelectScreen(void) {
+static void UpdateCourseSelect(CourseSelectScreen *screen) {
     GameOrderingTableEntry *ot = RENDER_OT_BASE;
     s32 state = GameMenuBusy;
 
@@ -446,10 +451,14 @@ void UpdateCourseSelectScreen(void) {
     DrawMenuCourseView();
 
     if (state == COURSE_SELECT_IDLE) {
-        UpdateCourseSelectIdle();
+        UpdateCourseSelectIdle(screen);
     } else if (state < 0) {
-        UpdateCourseSelectModal(ot, state);
+        UpdateCourseSelectModal(screen, ot, state);
     } else {
-        UpdateCourseSelectOutgoing();
+        UpdateCourseSelectOutgoing(screen);
     }
+}
+
+void UpdateCourseSelectScreen(void) {
+    UpdateCourseSelect(MenuCourseSelect());
 }

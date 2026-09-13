@@ -29,6 +29,10 @@ ControllerSetup *MenuControllerSetup(void) {
     return &s_menuRuntime.controllerSetup;
 }
 
+CourseSelectScreen *MenuCourseSelect(void) {
+    return &s_menuRuntime.courseSelect;
+}
+
 s32 MenuRuntimeScreenState(s32 screen) {
     if ((u32)screen >= MENU_SCREEN_COUNT) return 0;
     return s_menuRuntime.screenState[screen];

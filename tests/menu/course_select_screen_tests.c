@@ -28,15 +28,12 @@ s32 GameMenuBusy;
 s32 g_CarNamePlateStep;
 s32 g_CarSwapFromIndex;
 s32 g_CarSwapToIndex;
-s32 g_ClassChangeApplied;
 s32 g_CourseCardPendingGrade;
 s32 g_CourseCardSpin;
 s32 g_CourseCardSpinTarget;
 s32 g_CourseIndex;
 CourseProgressState *g_CourseProgress;
 TimedDrawCommand g_CourseSelectGpScript[1];
-const TimedDrawCommand *g_CourseSelectModalScript;
-s32 g_CourseSelectOption;
 /* The prompts are decoded command arrays; never walked here, only named. */
 TimedDrawCommand g_CourseSelectSavePromptBanner[2];
 TimedDrawCommand g_CourseSelectSavePromptScript[4];
@@ -102,6 +99,9 @@ static s32 s_curtain;
 static s32 s_canPrev;
 static s32 s_canNext;
 static s32 s_progressResets;
+static CourseSelectScreen s_courseSelect;
+
+CourseSelectScreen *MenuCourseSelect(void) { return &s_courseSelect; }
 
 static void Fold(unsigned char byte) {
     s_digest = ((s_digest ^ byte) * 16777619UL) & 0xFFFFFFFFUL;
@@ -278,14 +278,14 @@ int main(int argc, char **argv) {
         g_UiScriptProgress2 = p2;
         g_UiScriptProgress = prog;
         g_GrandPrixMode = (s16)gp;
-        g_CourseSelectOption = opt;
+        s_courseSelect.option = opt;
         g_PadPressed = buttons[pb];
         g_PadHeld = 0;
         g_MenuSubCursor = (u8)sub;
         g_MenuConfirmTimer = timer;
         g_MenuViewOffset = offsets[off];
         g_MenuOutgoingScreenProgress = off;
-        g_ClassChangeApplied = applied;
+        s_courseSelect.classChangeApplied = applied;
         g_CourseIndex = courses[ci];
 
         g_MenuAltLayoutSetting = 1;
@@ -313,7 +313,7 @@ int main(int argc, char **argv) {
         g_PlayerMoney = 12345;
         g_SceneId = 0;
         g_TimeAttackPlateStep = 0;
-        g_CourseSelectModalScript = NULL;
+        s_courseSelect.modalScript = NULL;
 
         sprintf(label,
                 "== busy%d/script%d/p2_%d/gp%d/opt%d/pad%04x/sub%d/curtain%d/"
@@ -328,7 +328,7 @@ int main(int argc, char **argv) {
         {
             s32 after[23];
             after[0] = GameMenuBusy;
-            after[1] = g_CourseSelectOption;
+            after[1] = s_courseSelect.option;
             after[2] = g_CourseIndex;
             after[3] = g_MenuSubCursor;
             after[4] = g_MenuConfirmTimer;
@@ -340,7 +340,7 @@ int main(int argc, char **argv) {
             after[10] = g_SceneId;
             after[11] = g_GrandPrixClass;
             after[12] = g_GrandPrixSeries;
-            after[13] = g_ClassChangeApplied;
+            after[13] = s_courseSelect.classChangeApplied;
             after[14] = g_CourseCardSpin;
             after[15] = g_CourseCardPendingGrade;
             after[16] = g_TimeAttackPlateStep;
@@ -348,7 +348,7 @@ int main(int argc, char **argv) {
             after[18] = g_MenuViewOffset;
             after[19] = g_MenuViewOffsetTarget;
             after[20] = g_MenuPendingCourseIndex;
-            after[21] = ScriptId(g_CourseSelectModalScript);
+            after[21] = ScriptId(s_courseSelect.modalScript);
             /* The showroom angle the class change swings to. It sits beside
              * the offset above and was the one thing the class change writes
              * that nothing here looked at. */
@@ -406,7 +406,7 @@ int main(int argc, char **argv) {
             g_UiScriptProgress = 0;
             g_GrandPrixMode = (s16)gpi;
             g_GrandPrixClass = 2;
-            g_CourseSelectOption = 0;
+            s_courseSelect.option = 0;
             g_PadPressed = 0;
             g_PadHeld = held[hb];
             g_MenuViewAngleTarget = 0x7A120;
@@ -419,7 +419,7 @@ int main(int argc, char **argv) {
             g_MenuCourseModelIndex = 0;
             g_TimeAttackPlateStep = 0;
             g_CourseCardPendingGrade = 0;
-            g_CourseSelectModalScript = NULL;
+            s_courseSelect.modalScript = NULL;
             g_MenuSubCursor = 0;
             g_MenuConfirmTimer = 0;
             g_MenuAltLayoutSetting = 1;
@@ -474,14 +474,14 @@ int main(int argc, char **argv) {
             g_UiScriptProgress = 0;
             g_UiScriptProgress2 = 0;
             g_GrandPrixMode = 1;
-            g_CourseSelectOption = 0;
+            s_courseSelect.option = 0;
             g_PadPressed = 0;
             g_PadHeld = 0;
             g_MenuSubCursor = 0;
             g_MenuConfirmTimer = 0;
             g_MenuViewOffset = offs[ofi];
             g_MenuOutgoingScreenProgress = prog;
-            g_ClassChangeApplied = 0;
+            s_courseSelect.classChangeApplied = 0;
             /* Five is the one of these the handover's mask changes, so the
              * course it writes is not the course it was given. */
             g_CourseIndex = courseIn[cj];
@@ -498,7 +498,7 @@ int main(int argc, char **argv) {
             g_CourseCardPendingGrade = 0;
             g_CourseCardSpin = 0x1000;
             g_CourseCardSpinTarget = 0x800;
-            g_CourseSelectModalScript = NULL;
+            s_courseSelect.modalScript = NULL;
 
             sprintf(label, "== handover busy%d/offset%d/outgoing%d/course%d",
                     chosen[ch], offs[ofi], prog, courseIn[cj]);
@@ -807,7 +807,7 @@ int main(int argc, char **argv) {
     g_UiScriptProgress = 0;
     g_UiScriptProgress2 = 0;
     g_GrandPrixMode = 0;
-    g_CourseSelectOption = 0;
+    s_courseSelect.option = 0;
     g_PadPressed = 0;
     g_PadHeld = PAD_LEFT;
     g_MenuViewAngle = 0;
@@ -847,12 +847,12 @@ int main(int argc, char **argv) {
 
     GameMenuBusy = -5;
     g_CourseProgress = NULL;
-    g_ClassChangeApplied = 0;
+    s_courseSelect.classChangeApplied = 0;
     g_MenuConfirmTimer = 0;
     s_curtain = 0x19;
     s_progressResets = 0;
     UpdateCourseSelectScreen();
-    if (GameMenuBusy != 0 || g_ClassChangeApplied != 0 ||
+    if (GameMenuBusy != 0 || s_courseSelect.classChangeApplied != 0 ||
         s_progressResets != 0) {
         puts("FAIL a missing course-progress record changed class");
         return 1;
@@ -863,7 +863,7 @@ int main(int argc, char **argv) {
     g_RaceProgress = &s_progress;
     s_progress.maxClassReached = 2;
     g_MenuSubCursor = UINT8_MAX;
-    g_ClassChangeApplied = 0;
+    s_courseSelect.classChangeApplied = 0;
     g_MenuConfirmTimer = 0;
     s_curtain = 0x19;
     s_progressResets = 0;
