@@ -1,5 +1,6 @@
 #include "game/prim.h"
 #include "game/race.h"
+#include "game/race_scene_internal.h"
 #include "game/race_hud_internal.h"
 #include "game/render_internal.h"
 #include "game/save_internal.h"
@@ -24,8 +25,11 @@ static s32 s_drawModeCount;
 static s32 s_selectionY[4];
 static s32 s_retryDigitU;
 static u8 *s_drawModePacket;
-static const char *s_text[2];
-static s32 s_textX[2];
+static const char *s_text[3];
+static s32 s_textX[3];
+static int s_modernEnabled;
+
+int PortModernRendererEnabled(void) { return s_modernEnabled; }
 
 s32 rcos(s32 angle) {
     (void)angle;
@@ -47,7 +51,7 @@ void DrawText8x8(s32 x, s32 y, const char *text, s32 clut) {
     (void)x;
     (void)y;
     (void)clut;
-    if (s_textCount < 2) {
+    if (s_textCount < 3) {
         s_text[s_textCount] = text;
         s_textX[s_textCount] = x;
     }
@@ -67,7 +71,7 @@ u8 *GameQueueSprite(GameOrderingTableEntry *ot, u8 *packet, s32 x, s32 y,
     (void)v;
     (void)clut;
     s_spriteCount++;
-    if (x == 0xB8 && y == 0x7E) s_retryDigitU = u;
+    if (x == 0xB8 && y == 0x88) s_retryDigitU = u;
     return (u8 *)((SPRT *)packet + 1);
 }
 
@@ -135,19 +139,20 @@ static void Reset(void) {
 static int CheckLayout(s32 grandPrix, s32 expectedSprites) {
     CourseProgressState progress = {0};
     POLY_FT4 *pulse;
-    s32 expectedSelectionY = grandPrix != 0 ? 0x72 : 0x7C;
+    s32 expectedSelectionY = grandPrix != 0 ? 0x7C : 0x86;
 
     Reset();
     progress.retriesRemaining = 2;
     g_CourseProgress = &progress;
     g_GrandPrixMode = grandPrix;
-    DrawRaceOptionMenu(2);
+    DrawRaceOptionMenu(LastRacePauseOption((s16)grandPrix));
 
     CHECK(s_spriteCount == expectedSprites);
     CHECK(s_tileCount == 4 && s_translucentTileCount == 2);
-    CHECK(s_drawAreaCount == 2 && s_textCount == 2 && s_drawModeCount == 1);
+    CHECK(s_drawAreaCount == 2 && s_textCount == 3 && s_drawModeCount == 1);
     CHECK(strcmp(s_text[0], "  RAGE RACER GE") == 0);
     CHECK(strcmp(s_text[1], "TS YOU GOING!  ") == 0);
+    CHECK(strcmp(s_text[2], "CLASSIC") == 0);
     CHECK(s_selectionY[0] == expectedSelectionY);
     CHECK(s_selectionY[1] == expectedSelectionY + 0xB);
     CHECK(s_selectionY[2] == expectedSelectionY);
@@ -166,10 +171,17 @@ int main(void) {
     if (CheckLayout(1, 6) || CheckLayout(0, 3)) return 1;
 
     Reset();
+    s_modernEnabled = 1;
+    g_GrandPrixMode = 1;
+    DrawRaceOptionMenu(2);
+    CHECK(strcmp(s_text[2], "MODERN") == 0);
+    s_modernEnabled = 0;
+
+    Reset();
     g_CourseProgress = NULL;
     g_GrandPrixMode = 1;
     DrawRaceOptionMenu(INT_MAX);
-    CHECK(s_selectionY[0] == 0x72 && s_retryDigitU == 0);
+    CHECK(s_selectionY[0] == 0x7C && s_retryDigitU == 0);
 
     Reset();
     g_CourseProgress = NULL;

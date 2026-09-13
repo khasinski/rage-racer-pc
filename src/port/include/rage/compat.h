@@ -22,6 +22,8 @@ void PortDuringFrameWait(int frameLimit);
 void PortProfileFramePhase(const char *phase);
 int PortMirrorFarDepth(int retailFar);
 void PortSampleAnalogPad(void);
+int PortModernRendererEnabled(void);
+void PortToggleRenderer(void);
 
 /*
  * Says that a case falling into the next one is meant. A comment saying so is

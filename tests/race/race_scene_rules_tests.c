@@ -40,8 +40,8 @@ static void TestInputRules(void) {
     Check(!CanToggleRaceCamera(1) && CanToggleRaceCamera(2) &&
               CanToggleRaceCamera(3) && !CanToggleRaceCamera(4),
           "camera toggle is limited to active driving phases");
-    Check(LastRacePauseOption(0) == 2 && LastRacePauseOption(1) == 1,
-          "time attack exposes one more pause option than Grand Prix");
+    Check(LastRacePauseOption(0) == 3 && LastRacePauseOption(1) == 2,
+          "both pause menus append the renderer option");
 }
 
 static void TestPauseActions(void) {
@@ -59,6 +59,9 @@ static void TestPauseActions(void) {
           "Grand Prix final row quits before the start");
     Check(DecideRacePauseAction(2, 1, 1) == RACE_PAUSE_RETIRE,
           "Grand Prix final row retires after the start");
+    Check(DecideRacePauseAction(2, 0, 3) == RACE_PAUSE_TOGGLE_RENDERER &&
+              DecideRacePauseAction(2, 1, 2) == RACE_PAUSE_TOGGLE_RENDERER,
+          "last pause row toggles the renderer in either race mode");
 }
 
 static void TestPauseToggle(void) {
@@ -82,6 +85,10 @@ static void TestPauseToggle(void) {
     toggle = DecideRacePauseToggle(1, 1, 1, 0, 1, 1);
     Check(toggle.action == RACE_PAUSE_QUIT,
           "leaving pre-start pause carries the quit action");
+    toggle = DecideRacePauseToggle(2, 1, 1, 0, 1, 2);
+    Check(toggle.toggled && toggle.paused &&
+              toggle.action == RACE_PAUSE_TOGGLE_RENDERER,
+          "renderer switch keeps the race paused");
 }
 
 static void TestPauseCursor(void) {
@@ -90,19 +97,19 @@ static void TestPauseCursor(void) {
     result = MoveRacePauseCursor(PAD_UP, 0, 0);
     Check(result.cursor == 0 && result.moveCount == 0,
           "pause cursor does not move above the first row");
-    result = MoveRacePauseCursor(PAD_DOWN, 2, 0);
-    Check(result.cursor == 2 && result.moveCount == 0,
+    result = MoveRacePauseCursor(PAD_DOWN, 3, 0);
+    Check(result.cursor == 3 && result.moveCount == 0,
           "time attack cursor does not move below its final row");
     result = MoveRacePauseCursor(PAD_DOWN, 0, 1);
     Check(result.cursor == 1 && result.moveCount == 1,
-          "Grand Prix cursor reaches its second and final row");
+          "Grand Prix cursor reaches its second row");
     result = MoveRacePauseCursor(PAD_UP | PAD_DOWN, 2, 0);
     Check(result.cursor == 2 && result.moveCount == 2,
           "simultaneous directions retain sequential retail input");
     result = MoveRacePauseCursor(0, SHRT_MIN, 0);
     Check(result.cursor == 0, "negative pause cursor resets");
     result = MoveRacePauseCursor(0, SHRT_MAX, 1);
-    Check(result.cursor == 1, "past-end pause cursor is clamped");
+    Check(result.cursor == 2, "past-end pause cursor is clamped");
 }
 
 static void TestRaceEndPresentation(void) {

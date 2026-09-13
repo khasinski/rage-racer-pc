@@ -1,5 +1,6 @@
 #include "game/prim.h"
 #include "game/race.h"
+#include "game/race_scene_internal.h"
 #include "game/save_internal.h"
 #include "game/render.h"
 #include "game/render_internal.h"
@@ -38,7 +39,7 @@ void ResetRaceOptionMenuAnimation(void) {
 }
 
 static s32 ClampRaceOptionCursor(s32 cursor, s32 grandPrixMode) {
-    s32 lastOption = grandPrixMode != 0 ? 1 : 2;
+    s32 lastOption = LastRacePauseOption(grandPrixMode);
 
     if (cursor < 0) {
         return 0;
@@ -107,20 +108,26 @@ void DrawRaceOptionMenu(s32 cursorRow) {
         packet = GameQueueSprite(
             ot, packet, 0x88, 0x74, 0x30, 8, 0xA0, 0x28, 0x7893);
         packet = GameQueueSprite(
-            ot, packet, 0x84, 0x7E, 0x30, 8, 0xD0, 0x28, 0x7893);
+            ot, packet, 0x84, 0x88, 0x30, 8, 0xD0, 0x28, 0x7893);
         packet = GameQueueSprite(
-            ot, packet, 0xB8, 0x7E, 8, 8,
+            ot, packet, 0xB8, 0x88, 8, 8,
             RaceOptionRetryDigit() * 8, 0, 0x78CC);
         packet = GameQueueSprite(
-            ot, packet, 0x78, 0x7E, 8, 8, 0xD8, 8, 0x78CC);
+            ot, packet, 0x78, 0x88, 8, 8, 0xD8, 8, 0x78CC);
         packet = GameQueueSprite(
-            ot, packet, 0xC0, 0x7E, 8, 8, 0xE8, 8, 0x78CC);
+            ot, packet, 0xC0, 0x88, 8, 8, 0xE8, 8, 0x78CC);
     } else {
         packet = GameQueueSprite(
             ot, packet, 0x85, 0x74, 0x38, 8, 0xA0, 0x40, 0x7893);
         packet = GameQueueSprite(
             ot, packet, 0x90, 0x7E, 0x28, 8, 0xD8, 0x40, 0x7893);
     }
+
+    g_RenderState.draw.packetCursor = packet;
+    DrawText8x8(PortModernRendererEnabled() ? 0x88 : 0x84,
+                g_GrandPrixMode != 0 ? 0x7E : 0x88,
+                PortModernRendererEnabled() ? "MODERN" : "CLASSIC", 0x78CC);
+    packet = RENDER_PRIM_CURSOR_AS(u8);
 
     selectionY = cursorRow * RACE_OPTION_SELECTION_ROW_HEIGHT +
                  RACE_OPTION_SELECTION_TOP;

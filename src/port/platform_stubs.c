@@ -63,6 +63,14 @@ void PortDuringFrameWait(int frameLimit) {
     ModernFrameWaitTick(frameLimit);
 }
 
+int PortModernRendererEnabled(void) {
+    return ModernIsEnabled();
+}
+
+void PortToggleRenderer(void) {
+    ModernToggle();
+}
+
 void PortAfterFrameTransfers(void) {
     ModernFrameTexturesReady();
 }

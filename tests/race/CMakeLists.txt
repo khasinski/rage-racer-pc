@@ -573,7 +573,8 @@ set_tests_properties(race_option_animation PROPERTIES LABELS unit)
 add_executable(race_option_menu_draw_tests
     race_option_menu_draw_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/draw_race_option_menu.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/race_option_animation.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/race_option_animation.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/race_scene_rules.c)
 target_include_directories(race_option_menu_draw_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

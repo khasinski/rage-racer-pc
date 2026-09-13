@@ -59,12 +59,15 @@ s32 RaceLookBehindActive(u16 held, s16 phase, CameraViewMode selectedView) {
 }
 
 s32 LastRacePauseOption(s16 grandPrixMode) {
-    return grandPrixMode != 0 ? 1 : 2;
+    return grandPrixMode != 0 ? 2 : 3;
 }
 
 RacePauseAction DecideRacePauseAction(s16 phase, s16 grandPrixMode,
                                       s16 cursor) {
     if (cursor == LastRacePauseOption(grandPrixMode)) {
+        return RACE_PAUSE_TOGGLE_RENDERER;
+    }
+    if (cursor == LastRacePauseOption(grandPrixMode) - 1) {
         if (grandPrixMode == 0 || phase < RACE_PHASE_ACTIVE) {
             return RACE_PAUSE_QUIT;
         }
@@ -94,6 +97,9 @@ RacePauseToggleResult DecideRacePauseToggle(s16 phase, s32 paused,
     if (!result.paused) {
         result.action =
             DecideRacePauseAction(phase, grandPrixMode, cursor);
+        if (result.action == RACE_PAUSE_TOGGLE_RENDERER) {
+            result.paused = 1;
+        }
     }
     return result;
 }
