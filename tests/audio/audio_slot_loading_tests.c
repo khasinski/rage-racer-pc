@@ -19,7 +19,6 @@ static s16 s_completed = 1;
 static s32 s_openAddress;
 static u8 *s_openHeader;
 static u8 *s_body;
-static s32 s_sequenceCalls;
 static s32 s_tableCalls;
 static const void *s_tableData;
 static size_t s_tableSize;
@@ -27,7 +26,6 @@ static s32 s_closeVab;
 static s32 s_reverbCalls;
 static s32 s_vmInitCalls;
 static s32 s_damperCalls;
-static s32 s_closeAudioCalls;
 
 short SsVabOpenHeadSticky(u8 *header, short vabId, u_long address) {
     (void)vabId;
@@ -45,12 +43,6 @@ short SsVabTransBody(u8 *body, short vabId) {
 short SsVabTransCompleted(short immediate) {
     (void)immediate;
     return s_completed;
-}
-
-s32 OpenSequenceAudioSlot(u8 *header, u8 *body, void *sequence) {
-    (void)header; (void)body; (void)sequence;
-    s_sequenceCalls++;
-    return 61;
 }
 
 void LoadAudioParameterTable(const void *data, size_t size) {
@@ -71,9 +63,6 @@ void _SsVmInit(int voices) {
 
 void SsVabClose(short vabId) { s_closeVab = vabId; }
 void SpuVmDamperStep(void) { s_damperCalls++; }
-void CloseSequenceAudioSlot(void) {
-    s_closeAudioCalls++;
-}
 
 void BiosExit(s32 code) {
     (void)code;
@@ -108,7 +97,6 @@ static void WriteLittleEndianU32(u8 *destination, u32 value) {
 int main(void) {
     u8 header[40000];
     u8 body[16];
-    u8 sequence[16];
     u16 table[ENGINE_SOUND_PARAMETER_TABLE_WORD_COUNT];
     AudioSlotAsset asset;
     AudioSlotAsset invalid;
@@ -118,7 +106,6 @@ int main(void) {
     memset(&g_EngineSoundState, 0, sizeof(g_EngineSoundState));
     memset(header, 0, sizeof(header));
     memset(body, 0, sizeof(body));
-    memset(sequence, 0, sizeof(sequence));
     memcpy(header, "pBAV", 4);
     WriteLittleEndianU32(header + 4, 4);
     WriteLittleEndianU16(header + 18, 0);
@@ -126,10 +113,6 @@ int main(void) {
     vagLengths = header + TEST_VAB_HEADER_SIZE +
                  64 * TEST_VAB_PROGRAM_ATTRIBUTE_SIZE;
     WriteLittleEndianU16(vagLengths, 1);
-    sequence[0] = 'p';
-    sequence[7] = 1;
-    sequence[9] = 1;
-    sequence[12] = 1;
     asset = (AudioSlotAsset){
         .vabHeader = header,
         .vabHeaderSize = TEST_VAB_HEADER_SIZE +
@@ -156,17 +139,6 @@ int main(void) {
     CHECK(PollAudioSlotLoad() == 1);
     CHECK(g_Audio.slots.loaded == 0 && g_Audio.slots.cueBank == -1);
 
-    asset.auxiliaryData = sequence;
-    asset.auxiliarySize = sizeof(sequence);
-    CHECK(StartAudioSlotLoad(AUDIO_SLOT_SEQUENCE, &asset) == 61);
-    CHECK(s_sequenceCalls == 1);
-    invalid = asset;
-    invalid.auxiliaryData = NULL;
-    invalid.auxiliarySize = 0;
-    CHECK(StartAudioSlotLoad(AUDIO_SLOT_SEQUENCE, &invalid) == -1);
-    invalid = asset;
-    invalid.auxiliarySize = sizeof(sequence) - 1;
-    CHECK(StartAudioSlotLoad(AUDIO_SLOT_SEQUENCE, &invalid) == -1);
     invalid = asset;
     invalid.vabHeaderSize--;
     CHECK(StartAudioSlotLoad(AUDIO_SLOT_MAIN_CUES, &invalid) == -1);
@@ -196,7 +168,6 @@ int main(void) {
     WriteLittleEndianU16(header + 22, 0);
     CHECK(StartAudioSlotLoad(6, &asset) == -1);
     CHECK(StartAudioSlotLoad(-1, &asset) == -1);
-    CHECK(s_sequenceCalls == 1);
 
     g_Audio.slots.loading = 99;
     s_openResult = -1;
@@ -234,8 +205,6 @@ int main(void) {
     CHECK(PollAudioSlotLoad() == 1);
     CHECK(g_Audio.slots.loaded == 0 && g_Audio.slots.cueBank == -1);
 
-    g_Audio.slots.loading = 1;
-    CHECK(PollAudioSlotLoad() == 1 && g_Audio.slots.cueBank == 1);
     g_Audio.slots.loading = 2;
     CHECK(PollAudioSlotLoad() == 1 && g_Audio.slots.cueBank == 2);
     g_Audio.slots.loading = 3;
@@ -245,13 +214,11 @@ int main(void) {
     g_Audio.slots.cueBank = 2;
     g_SoundScale.vabIds[2] = 22;
     g_SoundScale.vabIds[3] = 23;
-    s_closeAudioCalls = 0;
     s_damperCalls = 0;
     s_reverbCalls = 0;
     s_vmInitCalls = 0;
     CloseLoadedAudioSlots();
-    CHECK(s_damperCalls == 2 && s_closeAudioCalls == 1 &&
-          g_Audio.slots.loaded == 1 && s_closeVab == 23);
+    CHECK(s_damperCalls == 2 && g_Audio.slots.loaded == 1 && s_closeVab == 23);
     CHECK(s_reverbCalls == 2 && s_vmInitCalls == 2);
     CHECK(g_Audio.slots.cueBank == 1);
 

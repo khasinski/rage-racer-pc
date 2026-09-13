@@ -45,7 +45,6 @@ static void FinishSequenceFadeOut(void) {
     g_Audio.seq.volume = 0;
     g_Audio.seq.fade = 0;
     Psyz_PcmMusicStop();
-    CloseSequenceAudioSlot();
     SetDefaultReverbDepth();
 }
 

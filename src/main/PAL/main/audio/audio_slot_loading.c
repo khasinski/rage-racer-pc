@@ -14,7 +14,6 @@ enum {
     VAB_NEW_PROGRAM_LIMIT = 128,
     VAB_TONES_PER_PROGRAM = 16,
     VAB_LENGTH_TABLE_ENTRIES = 256,
-    SEQUENCE_HEADER_SIZE = 15,
 };
 
 static u16 ReadLittleEndianU16(const u8 *bytes) {
@@ -24,15 +23,6 @@ static u16 ReadLittleEndianU16(const u8 *bytes) {
 static u32 ReadLittleEndianU32(const u8 *bytes) {
     return (u32)bytes[0] | (u32)bytes[1] << 8 | (u32)bytes[2] << 16 |
            (u32)bytes[3] << 24;
-}
-
-static s32 IsValidSequenceAsset(const void *data, size_t size) {
-    const u8 *bytes = data;
-
-    return bytes != NULL && size >= SEQUENCE_HEADER_SIZE + 1 &&
-           (bytes[0] == 'S' || bytes[0] == 'p') && bytes[7] == 1 &&
-           (bytes[8] != 0 || bytes[9] != 0) &&
-           (bytes[10] != 0 || bytes[11] != 0 || bytes[12] != 0);
 }
 
 static s32 IsValidVabAsset(const AudioSlotAsset *asset) {
@@ -135,15 +125,6 @@ s32 StartAudioSlotLoad(s32 slot, const AudioSlotAsset *asset) {
     if (slot == AUDIO_SLOT_ENGINE) {
         return StartEngineAudioSlotLoad(asset);
     }
-    if (slot == AUDIO_SLOT_SEQUENCE) {
-        if (!IsValidSequenceAsset(asset->auxiliaryData,
-                                  asset->auxiliarySize)) {
-            return -1;
-        }
-        return OpenSequenceAudioSlot(asset->vabHeader, asset->vabBody,
-                                     asset->auxiliaryData);
-    }
-
     if (!TransferVabToSlot(slot, asset->vabHeader, asset->vabBody,
                            g_VabSpuAddress[slot])) {
         return -1;
@@ -168,8 +149,6 @@ s32 PollAudioSlotLoad(void) {
 
         if (slot == AUDIO_SLOT_MAIN_CUES) {
             g_Audio.slots.cueBank = 1;
-        } else if (slot == AUDIO_SLOT_SEQUENCE) {
-            g_Audio.slots.cueBank = slot;
         } else if (slot == AUDIO_SLOT_RACE_CUES ||
                    slot == AUDIO_SLOT_ENGINE) {
             g_Audio.slots.cueBank = 2;
@@ -204,7 +183,6 @@ void CloseLoadedAudioSlots(void) {
      * On hardware the sound interrupt supplied that second flush; without it
      * the host can replay a short fragment of menu music on the round screen. */
     SpuVmDamperStep();
-    CloseSequenceAudioSlot();
     CloseVabOnlyAudioSlot(AUDIO_SLOT_RACE_CUES);
     CloseVabOnlyAudioSlot(AUDIO_SLOT_ENGINE);
     SpuVmDamperStep();

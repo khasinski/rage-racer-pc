@@ -8,7 +8,6 @@
 
 Audio g_Audio;
 
-static s32 s_closeCalls;
 static s32 s_reverbLeft;
 static s32 s_reverbRight;
 static s32 s_pcmVolume;
@@ -29,9 +28,6 @@ void SetDefaultReverbDepth(void) { SetReverbDepth(0x28, 0x28); }
 void SetSequenceVolume(s32 volume) {
     s_setVolume = volume;
     s_setVolumeCalls++;
-}
-void CloseSequenceAudioSlot(void) {
-    s_closeCalls++;
 }
 
 #define CHECK(condition) do {                                                  \
@@ -72,13 +68,12 @@ int main(void) {
     g_Audio.reverb.fade = -3;
     g_Audio.seq.volume = 3;
     g_Audio.seq.fade = -4;
-    s_closeCalls = 0;
     s_setVolumeCalls = 0;
     UpdateSequenceFadeOut();
     CHECK(g_Audio.reverb.left == 0 && g_Audio.reverb.right == 1);
     CHECK(g_Audio.reverb.fade == -3);
     CHECK(g_Audio.seq.volume == 0 && g_Audio.seq.fade == 0);
-    CHECK(s_pcmStops == 1 && s_closeCalls == 1);
+    CHECK(s_pcmStops == 1);
     CHECK(s_reverbLeft == 0x28 && s_reverbRight == 0x28);
     CHECK(s_setVolumeCalls == 0);
 
@@ -96,7 +91,7 @@ int main(void) {
     UpdateSequenceFadeOut();
     CHECK(g_Audio.reverb.left == 0 && g_Audio.reverb.right == 0);
     CHECK(g_Audio.seq.volume == 0 && g_Audio.seq.fade == 0);
-    CHECK(s_pcmStops == 2 && s_closeCalls == 2);
+    CHECK(s_pcmStops == 2);
 
     g_Audio.reverb.left = 10;
     g_Audio.reverb.right = 20;

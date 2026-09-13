@@ -6,7 +6,6 @@
 
 enum {
     CAR_SELECT_BEGIN_AUDIO = 1,
-    CAR_SELECT_WAIT_FOR_AUDIO,
     CAR_SELECT_LOAD_SHARED_ASSETS,
     CAR_SELECT_LOAD_INITIAL_MODEL,
     CAR_SELECT_SCENE_MODEL_BANK = 14,
@@ -50,48 +49,10 @@ s32 RequestCarSelectAssets(void) {
 }
 
 static void BeginCarSelectAudioLoad(void) {
-    AudioSlotAsset asset;
-
-    if (s_haveCarSelectAudioAssets) {
-        asset = (AudioSlotAsset){
-            .vabHeader = s_carSelectAudioAssets.audioHeader.data,
-            .vabHeaderSize = s_carSelectAudioAssets.audioHeader.size,
-            .vabBody = s_carSelectAudioAssets.audioBody.data,
-            .vabBodySize = s_carSelectAudioAssets.audioBody.size,
-            .auxiliaryData = s_carSelectAudioAssets.sequence.data,
-            .auxiliarySize = s_carSelectAudioAssets.sequence.size,
-        };
-    } else {
-        /* Direct boot and isolated loaders retain the retail hand-off. */
-        asset = (AudioSlotAsset){
-            .vabHeader = g_AssetBlockPtr,
-            .vabHeaderSize = g_AssetBlockSize,
-            .vabBody = g_AssetSubBlockPtr,
-            .vabBodySize = g_AssetSubBlockSize,
-            .auxiliaryData = g_AssetBlockPtr2,
-            .auxiliarySize = g_AssetBlock2Size,
-        };
-    }
-
-    if (StartAudioSlotLoad(AUDIO_SLOT_SEQUENCE, &asset) < 0) {
-        FailAssetLoad();
-        return;
-    }
-    /* g_AssetLoadCursor is derived from the same audio pack after the SPU
-     * transfer completes, so retain the exact body range used above. */
     if (s_haveCarSelectAudioAssets) {
         g_AssetSubBlockPtr = s_carSelectAudioAssets.audioBody.data;
         g_AssetSubBlockSize = s_carSelectAudioAssets.audioBody.size;
     }
-    g_AssetLoadState = CAR_SELECT_WAIT_FOR_AUDIO;
-}
-
-static void WaitForCarSelectAudio(void) {
-    if (PollAudioSlotLoad() == 0) {
-        return;
-    }
-
-    InitSequenceAudio();
     g_AssetLoadCursor = g_AssetSubBlockPtr;
     g_AssetLoadState = CAR_SELECT_LOAD_SHARED_ASSETS;
 }
@@ -197,9 +158,6 @@ void LoadCarSelectAssets(void) {
     switch (g_AssetLoadState) {
     case CAR_SELECT_BEGIN_AUDIO:
         BeginCarSelectAudioLoad();
-        break;
-    case CAR_SELECT_WAIT_FOR_AUDIO:
-        WaitForCarSelectAudio();
         break;
     case CAR_SELECT_LOAD_SHARED_ASSETS:
         LoadCarSelectSharedAssets();

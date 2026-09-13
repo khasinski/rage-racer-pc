@@ -63,8 +63,6 @@ static void ResetSoundState(void) {
 void InitSoundRuntime(void) {
     SsSetTableSize((char *)GetSndTableArea(), SOUND_TABLE_SEQUENCE_COUNT,
                    SOUND_TABLE_TRACK_COUNT);
-    /* The native port owns the sequence clock in TickSequenceAudio; it does
-     * not install a simulated PlayStation counter interrupt. */
     SsSetTickMode(SS_NOTICK);
     SsSetReservedVoice(SOUND_RUNTIME_VOICE_COUNT);
     SsUtReverbOff();
