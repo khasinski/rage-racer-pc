@@ -40,7 +40,7 @@ void SubmitCourseModel(void *renderState, s32 model) {
     (void)renderState;
     (void)model;
 }
-void GameRenderWorldSubmitDynamicCourseOverlay(
+void GameRenderWorldSubmitDynamicCourseObjectTwoSided(
     u32 entity, s32 model, s32 x, s32 y, s32 z,
     const s16 rotation[3][3], int fogged, int mirrorPass) {
     (void)entity;

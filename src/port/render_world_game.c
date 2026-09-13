@@ -547,7 +547,7 @@ void GameRenderWorldSubmitCourseObject(uint32_t entity, int32_t mesh,
 static void GameRenderWorldSubmitDynamicCourseObjectInternal(
     uint32_t entity, int32_t mesh, int32_t x, int32_t y, int32_t z,
     const int16_t rotation[3][3], int fogged, int mirror_pass,
-    int depthOverlay) {
+    int cullBackfaces, int depthOverlay) {
     RageSceneMat3 matrix;
     RenderWorld *world;
     uint32_t semanticEntity = 0x30000u + entity;
@@ -574,7 +574,7 @@ static void GameRenderWorldSubmitDynamicCourseObjectInternal(
      * removes the entire image while leaving the black screen frame. */
     GameRenderWorldSubmitCourseTransform(
         semanticEntity, mesh, x, y, z, matrix, fogged, mirror_pass,
-        depthOverlay ? 0 : 1,
+        cullBackfaces,
         depthOverlay, (uint8_t)((g_RenderState.geometry.envMode4 >> 16) & 3));
 }
 
@@ -582,14 +582,21 @@ void GameRenderWorldSubmitDynamicCourseObject(
     uint32_t entity, int32_t mesh, int32_t x, int32_t y, int32_t z,
     const int16_t rotation[3][3], int fogged, int mirror_pass) {
     GameRenderWorldSubmitDynamicCourseObjectInternal(
-        entity, mesh, x, y, z, rotation, fogged, mirror_pass, 0);
+        entity, mesh, x, y, z, rotation, fogged, mirror_pass, 1, 0);
+}
+
+void GameRenderWorldSubmitDynamicCourseObjectTwoSided(
+    uint32_t entity, int32_t mesh, int32_t x, int32_t y, int32_t z,
+    const int16_t rotation[3][3], int fogged, int mirror_pass) {
+    GameRenderWorldSubmitDynamicCourseObjectInternal(
+        entity, mesh, x, y, z, rotation, fogged, mirror_pass, 0, 0);
 }
 
 void GameRenderWorldSubmitDynamicCourseOverlay(
     uint32_t entity, int32_t mesh, int32_t x, int32_t y, int32_t z,
     const int16_t rotation[3][3], int fogged, int mirror_pass) {
     GameRenderWorldSubmitDynamicCourseObjectInternal(
-        entity, mesh, x, y, z, rotation, fogged, mirror_pass, 1);
+        entity, mesh, x, y, z, rotation, fogged, mirror_pass, 0, 1);
 }
 
 void GameRenderWorldSubmitTerrainCell(uint32_t grid_x, uint32_t grid_z,

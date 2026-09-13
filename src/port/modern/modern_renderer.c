@@ -1800,6 +1800,8 @@ void ModernToggle(void) {
     /* Both renderers present through these targets.  Keeping them alive also
      * keeps the last completed image available until the newly selected path
      * has rendered, instead of exposing a cleared allocation for one frame. */
+    ModernVramSnapshotReset(&s_sampledVram);
+    ClassicMotionReset();
     s_lastRenderedFrame = 0xFFFFFFFFu;
     ModernPresentationClockReset(&s_presentationClock);
     fprintf(stderr, "rage-port: renderer switched to %s\n",
