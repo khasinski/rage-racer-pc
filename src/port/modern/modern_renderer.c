@@ -140,6 +140,7 @@ static int s_nativeGpuReady;
 static unsigned int s_resourceGeneration;
 static uint32_t s_lastRenderedFrame = 0xFFFFFFFFu;
 static int s_haveRenderedFrame;
+static int s_holdToggleFrame;
 
 enum {
     MODERN_PIPE_2D,
@@ -347,6 +348,7 @@ static void ModernDestroyResources(void) {
     s_nativeGpuReady = 0;
     s_resourcesReady = 0;
     s_haveRenderedFrame = 0;
+    s_holdToggleFrame = 0;
     s_lastRenderedFrame = 0xFFFFFFFFu;
     ModernVramSnapshotReset(&s_sampledVram);
     ClassicMotionReset();
@@ -1504,6 +1506,20 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
     toggleDown = keys != NULL && keys[s_toggleScancode];
     if (toggleDown && !s_toggleWasDown) ModernToggle();
     s_toggleWasDown = toggleDown;
+    /* The mode changes between two complete logic frames. Present the last
+     * complete image once while the newly selected renderer builds its first
+     * frame; otherwise the two capture paths can be visible in one swap. */
+    if (s_holdToggleFrame && s_haveRenderedFrame) {
+        s_holdToggleFrame = 0;
+        info->texture = ModernPresentTexture();
+        info->w = (Uint32)s_targetW;
+        info->h = (Uint32)s_targetH;
+        info->aspect = (4.0f / 3.0f) * (s_logicalW / 320.0f);
+        info->filter = s_config.modernTextureFilterLinear
+                           ? SDL_GPU_FILTER_LINEAR
+                           : SDL_GPU_FILTER_NEAREST;
+        return;
+    }
     if (s_markerCaptureEnabled) {
         /* M writes what the modern renderer is showing, with the state that
          * produced it, so a player who can see something wrong can hand over
@@ -1795,6 +1811,7 @@ void ModernToggle(void) {
     }
     if (!s_enabled) s_nativeGpuReady = 1;
     s_enabled = !s_enabled;
+    s_holdToggleFrame = s_haveRenderedFrame;
     s_config.renderer = s_enabled ? RAGE_RENDERER_MODERN : RAGE_RENDERER_CLASSIC;
     PortConfigSetActive(&s_config);
     /* Both renderers present through these targets.  Keeping them alive also

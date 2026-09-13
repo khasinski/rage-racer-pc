@@ -10,7 +10,8 @@
 
 enum {
     RACE_OPTION_SELECTION_TOP = 0x68,
-    RACE_OPTION_SELECTION_ROW_HEIGHT = 10,
+    RACE_OPTION_SELECTION_ROW_HEIGHT = 8,
+    RACE_OPTION_SELECTION_HEIGHT = 9,
     RACE_OPTION_DIM_PASSES = 2,
     RACE_OPTION_RETRY_DIGIT_COUNT = 6,
 };
@@ -107,26 +108,26 @@ void DrawRaceOptionMenu(s32 cursorRow) {
         ot, next, 0x88, 0x6A, 0x30, 8, 0xD0, 0x10, 0x7893);
     if (g_GrandPrixMode != 0) {
         packet = GameQueueSprite(
-            ot, packet, 0x88, 0x74, 0x30, 8, 0xA0, 0x28, 0x7893);
+            ot, packet, 0x88, 0x72, 0x30, 8, 0xA0, 0x28, 0x7893);
         packet = GameQueueSprite(
-            ot, packet, 0x84, 0x88, 0x30, 8, 0xD0, 0x28, 0x7893);
+            ot, packet, 0x84, 0x82, 0x30, 8, 0xD0, 0x28, 0x7893);
         packet = GameQueueSprite(
-            ot, packet, 0xB8, 0x88, 8, 8,
+            ot, packet, 0xB8, 0x82, 8, 8,
             RaceOptionRetryDigit() * 8, 0, 0x78CC);
         packet = GameQueueSprite(
-            ot, packet, 0x78, 0x88, 8, 8, 0xD8, 8, 0x78CC);
+            ot, packet, 0x78, 0x82, 8, 8, 0xD8, 8, 0x78CC);
         packet = GameQueueSprite(
-            ot, packet, 0xC0, 0x88, 8, 8, 0xE8, 8, 0x78CC);
+            ot, packet, 0xC0, 0x82, 8, 8, 0xE8, 8, 0x78CC);
     } else {
         packet = GameQueueSprite(
-            ot, packet, 0x85, 0x74, 0x38, 8, 0xA0, 0x40, 0x7893);
+            ot, packet, 0x85, 0x72, 0x38, 8, 0xA0, 0x40, 0x7893);
         packet = GameQueueSprite(
-            ot, packet, 0x90, 0x7E, 0x28, 8, 0xD8, 0x40, 0x7893);
+            ot, packet, 0x90, 0x7A, 0x28, 8, 0xD8, 0x40, 0x7893);
     }
 
     g_RenderState.draw.packetCursor = packet;
     DrawText8x8(PortModernRendererEnabled() ? 0x88 : 0x84,
-                g_GrandPrixMode != 0 ? 0x7E : 0x88,
+                g_GrandPrixMode != 0 ? 0x7A : 0x82,
                 PortModernRendererEnabled() ? "MODERN" : "CLASSIC", 0x78CC);
     packet = RENDER_PRIM_CURSOR_AS(u8);
 
@@ -135,11 +136,14 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     packet = AddTilePrim(
         ot, packet, 0x80, selectionY, 0x40, 1, 0xFF, 0xFF, 0);
     packet = AddTilePrim(
-        ot, packet, 0x80, selectionY + 0xB, 0x40, 1, 0xFF, 0xFF, 0);
+        ot, packet, 0x80, selectionY + RACE_OPTION_SELECTION_HEIGHT,
+        0x40, 1, 0xFF, 0xFF, 0);
     packet = AddTilePrim(
-        ot, packet, 0x80, selectionY, 1, 0xB, 0xFF, 0xFF, 0);
+        ot, packet, 0x80, selectionY, 1, RACE_OPTION_SELECTION_HEIGHT,
+        0xFF, 0xFF, 0);
     packet = AddTilePrim(
-        ot, packet, 0xBF, selectionY, 1, 0xB, 0xFF, 0xFF, 0);
+        ot, packet, 0xBF, selectionY, 1, RACE_OPTION_SELECTION_HEIGHT,
+        0xFF, 0xFF, 0);
 
     /* The original overlay deliberately applies the same translucent tile
      * twice to make the paused race dark enough behind the menu. */
@@ -162,8 +166,8 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     quad->x3 = 0xA0 + pulseState.halfWidth;
     quad->y0 = 0x58;
     quad->y1 = 0x58;
-    quad->y2 = 0x9A;
-    quad->y3 = 0x9A;
+    quad->y2 = 0x90;
+    quad->y3 = 0x90;
     quad->u0 = 0xA8;
     quad->v0 = 0xA8;
     quad->u1 = 0xFF;
