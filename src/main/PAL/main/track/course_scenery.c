@@ -8,7 +8,8 @@ enum {
 };
 
 static void DrawCourseLandmarks(s32 course, s32 timer, s32 animate,
-                                s32 usePresentationAnimation) {
+                                s32 usePresentationAnimation,
+                                s32 drawRaceStatus) {
     const GrandPrixClassDefinition *definition = GrandPrixContentClass(g_GrandPrixClass);
     if (definition && definition->freezeScenery) {
         animate = 0;
@@ -42,10 +43,10 @@ static void DrawCourseLandmarks(s32 course, s32 timer, s32 animate,
         DrawStaticScenery(0);
         break;
     case 3:
-        if (usePresentationAnimation) {
+        if (usePresentationAnimation && drawRaceStatus) {
             DrawPresentationAnimatedScenery(
                 timer, 1, g_SceneId == REPLAY_SCENE_ID, animate);
-        } else {
+        } else if (!usePresentationAnimation) {
             DrawAnimatedScenery(timer, 1);
         }
         DrawStaticScenery(1);
@@ -55,13 +56,17 @@ static void DrawCourseLandmarks(s32 course, s32 timer, s32 animate,
 
 void DrawCourseScenery(s32 course, s32 timer, s32 animate) {
     DrawAnimatedScenery(timer, 0);
-    DrawCourseLandmarks(course, timer, animate, 0);
+    DrawCourseLandmarks(course, timer, animate, 0, 1);
 }
 
-void DrawPresentationCourseScenery(s32 timer, s32 animate) {
+void DrawPresentationCourseScenery(s32 timer, s32 animate,
+                                   s32 drawRaceStatus) {
     const GrandPrixClassDefinition *definition = GrandPrixContentClass(g_GrandPrixClass);
-    DrawPresentationAnimatedScenery(
-        timer, 0, g_SceneId == REPLAY_SCENE_ID,
-        definition && definition->freezeScenery ? 0 : animate);
-    DrawCourseLandmarks(SeriesCourseIndex(), timer, animate, 1);
+    if (drawRaceStatus) {
+        DrawPresentationAnimatedScenery(
+            timer, 0, g_SceneId == REPLAY_SCENE_ID,
+            definition && definition->freezeScenery ? 0 : animate);
+    }
+    DrawCourseLandmarks(SeriesCourseIndex(), timer, animate, 1,
+                        drawRaceStatus);
 }

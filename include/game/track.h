@@ -283,7 +283,8 @@ static inline const GameTrackPoint *TrackPoint(s32 index) {
  * for the replay/attract scenes (reads g_CourseIndex); they keep separate
  * animation state. `animate` == 0 draws a frozen frame. */
 void DrawCourseScenery(s32 course, s32 timer, s32 animate);
-void DrawPresentationCourseScenery(s32 timer, s32 animate);
+void DrawPresentationCourseScenery(s32 timer, s32 animate,
+                                   s32 drawRaceStatus);
 void BuildVisibleCells(const GameCameraState *camera, s32 near, s32 far);
 void DrawCourseObjects(void);
 void DrawTerrainCells(const GameCameraState *camera);

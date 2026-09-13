@@ -62,9 +62,11 @@ void DrawFullscreenFadeTile(s32 color, s32 tpage) {
     (void)color;
     (void)tpage;
 }
-void DrawPresentationCourseScenery(s32 timer, s32 animate) {
+void DrawPresentationCourseScenery(s32 timer, s32 animate,
+                                   s32 drawRaceStatus) {
     (void)timer;
     (void)animate;
+    assert(drawRaceStatus == 1);
 }
 void DrawProportionalText(s32 x, s32 y, const char *text, s32 clut) {
     (void)x;

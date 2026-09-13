@@ -61,9 +61,11 @@ void DrawTerrainCellsWide(const GameCameraState *camera) {
     RecordStep(STEP_TERRAIN);
 }
 void DrawCourseObjects(void) { RecordStep(STEP_OBJECTS); }
-void DrawPresentationCourseScenery(s32 timer, s32 animate) {
+void DrawPresentationCourseScenery(s32 timer, s32 animate,
+                                   s32 drawRaceStatus) {
     s_sceneryTimer = timer;
     s_sceneryAnimate = animate;
+    assert(drawRaceStatus == 0);
     RecordStep(STEP_SCENERY);
 }
 

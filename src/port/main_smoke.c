@@ -514,7 +514,8 @@ int main(int argc, char **argv) {
 #endif
     }
     Psyz_VideoSetAspectMode(PSYZ_ASPECT_SQUARE);
-    Psyz_VideoSetVsyncMode(PSYZ_VSYNC_LIMITLESS);
+    if (!RuntimeConfigEnabled("test.display_sync"))
+        Psyz_VideoSetVsyncMode(PSYZ_VSYNC_LIMITLESS);
     PadInit(0);
     if (RuntimeConfigEnabled("input.disable_host")) {
         Psyz_SetHostInputEnabled(0);

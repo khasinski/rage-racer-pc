@@ -69,9 +69,11 @@ void DrawTerrainCellsWide(const GameCameraState *camera) {
 }
 void DrawReplayRivalCar(void) { s_RivalCarDraws++; }
 void DrawCourseObjects(void) { s_ObjectDraws++; }
-void DrawPresentationCourseScenery(s32 timer, s32 animate) {
+void DrawPresentationCourseScenery(s32 timer, s32 animate,
+                                   s32 drawRaceStatus) {
     assert(timer == g_SceneTimer);
     assert(animate == 1);
+    assert(drawRaceStatus == 1);
     s_SceneryDraws++;
 }
 void UpdateEnvironment(void) { s_EnvironmentUpdates++; }

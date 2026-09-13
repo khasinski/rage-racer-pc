@@ -4,7 +4,8 @@
 #include <stdio.h>
 
 void DrawCourseScenery(s32 course, s32 timer, s32 animate);
-void DrawPresentationCourseScenery(s32 timer, s32 animate);
+void DrawPresentationCourseScenery(s32 timer, s32 animate,
+                                   s32 drawRaceStatus);
 
 s32 g_CourseIndex;
 s32 g_GrandPrixClass;
@@ -126,7 +127,7 @@ static int CheckRetailDispatch(s32 cls, s32 course, s32 animate,
     g_GrandPrixClass = cls;
     g_CourseIndex = course;
     g_SceneId = replay ? 0x11 : 0;
-    if (presentation) DrawPresentationCourseScenery(7, animate);
+    if (presentation) DrawPresentationCourseScenery(7, animate, 1);
     else DrawCourseScenery(course, 7, animate);
     if (!Expect("retail scenery matrix", expected, count)) {
         printf("class=%d course=%d animate=%d presentation=%d replay=%d\n",
@@ -193,6 +194,9 @@ int main(void) {
         {EVENT_ANIMATED_2, 4, 1, 10},
         {EVENT_STATIC, 1, 0, 0},
     };
+    static const Event attractPresentation[] = {
+        {EVENT_STATIC, 1, 0, 0},
+    };
 
     g_GrandPrixClass = 4;
     DrawCourseScenery(0, 9, 1);
@@ -217,8 +221,12 @@ int main(void) {
 
     g_CourseIndex = 3;
     g_SceneId = 0x11;
-    DrawPresentationCourseScenery(4, 1);
+    DrawPresentationCourseScenery(4, 1, 1);
     if (!Expect("second pass", secondPass, 3)) return 1;
+
+    DrawPresentationCourseScenery(4, 1, 0);
+    if (!Expect("attract has no race-status scenery",
+                attractPresentation, 1)) return 1;
 
     puts("course scenery dispatch preserved");
     return 0;
