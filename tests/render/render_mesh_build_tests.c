@@ -175,6 +175,23 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
     EXPECT_EQ(100, (int)(vertices[0].shadowReception * 100.0f));
     storage[0].assetSet = RAGE_RENDER_ASSET_MODEL_BANK;
 
+    /* Ordering applies to every textured surface of one submitted object.
+     * Cancelling it for horizontal faces cuts animated feet into the road. */
+    {
+        const float horizontal[3][3] = {
+            {-1.0f, 0.0f, 10.0f},
+            {1.0f, 0.0f, 10.0f},
+            {0.0f, 0.0f, 11.0f},
+        };
+        for (i = 0; i < 3; ++i)
+            memcpy(bytes + 32 + i * 40, horizontal[i], sizeof(horizontal[i]));
+        storage[0].transform.rotation.y = 0.0f;
+        EXPECT_EQ(3, RenderBuildNativeDraws(
+                         &world, 1.0f, test_mesh_lookup, &mesh, vertices, 3,
+                         spans, 1, &spanCount));
+        EXPECT_EQ(-16, (int)vertices[0].depthBias);
+    }
+
     /* A native rear-view camera renders the ordinary main scene again. The
      * old PS1 mirror submissions must be independently selectable. */
     storage[1] = storage[0];

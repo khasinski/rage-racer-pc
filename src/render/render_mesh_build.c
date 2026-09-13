@@ -703,12 +703,6 @@ static uint32_t RenderBuildNativeDrawsFiltered(
             RageTriangleGeometry geometry = {0};
             if ((instance->flags & RAGE_RENDER_INSTANCE_FLAT_SHADED) != 0)
                 ApplyFlatTriangleNormal(triangle, &geometry);
-            if (instance->depthBias != 0.0f && geometry.prepared &&
-                geometry.length > 0.000001f &&
-                fabsf(geometry.ny / geometry.length) > 0.8f) {
-                for (corner = 0; corner < 3; corner++)
-                    triangle[corner].depthBias -= instance->depthBias;
-            }
             if (depthDecals[0] && !localSource) {
                 /* Explicit screen/art layers are semantic overlays. Give them
                  * real separation from their backing mesh instead of changing
