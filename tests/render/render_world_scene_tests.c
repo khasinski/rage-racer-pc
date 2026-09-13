@@ -6,6 +6,7 @@ int main(void) {
     if (!GameRenderWorldSceneHas3d(GAME_SCENE_RACE) ||
         !GameRenderWorldSceneHas3d(GAME_SCENE_REPLAY) ||
         !GameRenderWorldSceneHas3d(GAME_SCENE_ATTRACT_DEMO) ||
+        !GameRenderWorldSceneHas3d(GAME_SCENE_PROLOGUE) ||
         GameRenderWorldSceneHas3d(GAME_SCENE_ENTER_LOST_RACE) ||
         GameRenderWorldSceneHas3d(GAME_SCENE_LOST_RACE) ||
         GameRenderWorldSceneHas3d(GAME_SCENE_RACE_END) ||

@@ -1855,6 +1855,15 @@ set_tests_properties(sky_frames PROPERTIES LABELS e2e)
 set_tests_properties(grand_prix_terrain_frame PROPERTIES LABELS e2e)
     set_tests_properties(grand_prix_terrain_frame PROPERTIES TIMEOUT 120)
 
+    add_test(
+        NAME prologue_geometry
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DCHECK=$<TARGET_FILE:ppm_capture_check> -DSOURCE=${CMAKE_SOURCE_DIR}
+            -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_prologue_geometry.cmake
+    )
+set_tests_properties(prologue_geometry PROPERTIES LABELS e2e TIMEOUT 60)
+
     add_test(NAME mirror_entry COMMAND ${CMAKE_COMMAND}
         -DGAME=$<TARGET_FILE:rage-racer-smoke> -DCHECK=$<TARGET_FILE:mirror_entry_check>
         -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}

@@ -3,7 +3,7 @@
 
 #include "game/scene.h"
 
-/* Race, replay and attract playback produce semantic 3D worlds. */
+/* Race and the three scripted driving presentations produce semantic 3D worlds. */
 int GameRenderWorldSceneHas3d(GameSceneId scene);
 
 /* The scripted Grand Prix flyby cuts between authored cameras.  Blending

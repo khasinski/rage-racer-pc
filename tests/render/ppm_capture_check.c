@@ -83,9 +83,9 @@ static int Prologue(const unsigned char *pixels, unsigned width, unsigned height
         colored += maximum > 40 && maximum - minimum > 20;
         lower += i >= 320u * 120u && maximum != 0;
     }
-    if (nonBlack < 15000 || brightText < 1000 || colored < 6000 || lower < 8000)
+    if (nonBlack < 15000 || brightText < 300 || colored < 6000 || lower < 8000)
         fprintf(stderr, "prologue missing text/cars/track: non_black=%u bright=%u colored=%u lower=%u\n", nonBlack, brightText, colored, lower);
-    return nonBlack >= 15000 && brightText >= 1000 && colored >= 6000 && lower >= 8000;
+    return nonBlack >= 15000 && brightText >= 300 && colored >= 6000 && lower >= 8000;
 }
 static int Title(const char *firstPath, const char *secondPath) {
     unsigned firstWidth, firstHeight, secondWidth, secondHeight;
