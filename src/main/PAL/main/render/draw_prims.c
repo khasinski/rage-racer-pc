@@ -66,15 +66,6 @@ u8 *GameQueueShadedSprite(GameOrderingTableEntry *ot, u8 *packetCursor,
                              intensity, 0, 0);
 }
 
-u8 *GameQueueShadedSpriteTrans(GameOrderingTableEntry *ot, u8 *packetCursor,
-                               s32 x, s32 y, s32 width, s32 height,
-                               s32 textureU, s32 textureV, s32 clutIndex,
-                               s32 intensity) {
-    return QueueSpritePacket(ot, packetCursor, x, y, width, height, textureU,
-                             textureV, clutIndex, intensity, intensity,
-                             intensity, 0, 1);
-}
-
 u8 *GameQueueSpriteTrans(GameOrderingTableEntry *ot, u8 *packetCursor, s32 x,
                          s32 y, s32 width, s32 height, s32 textureU,
                          s32 textureV, s32 clutIndex) {

@@ -399,17 +399,6 @@ void DrawScriptedQuad(s32 elapsed, const ScriptedQuadShape *shape,
 /* SPRT, 20 bytes. */
 u8 *GameQueueShadedSprite(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y, s32 w, s32 h,
                           s32 u, s32 v, s32 clutIndex, s32 intensity);
-u8 *GameQueueShadedSpriteTrans(
-    GameOrderingTableEntry *ot,
-    u8 *prim,
-    s32 x,
-    s32 y,
-    s32 w,
-    s32 h,
-    s32 u,
-    s32 v,
-    s32 clutIndex,
-    s32 intensity);
 u8 *GameQueueSpriteTrans(
     GameOrderingTableEntry *ot,
     u8 *prim,

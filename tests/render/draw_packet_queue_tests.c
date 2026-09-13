@@ -136,13 +136,6 @@ static void CheckSpriteVariants(void) {
 
     ResetPackets();
     sprite = (SPRT *)s_packets.bytes;
-    GameQueueShadedSpriteTrans(&s_ot, s_packets.bytes, 1, 2, 3, 4, 5, 6,
-                               7, 0x67);
-    CHECK_EQ(sprite->code & 3, 2, "transparent shaded sprite flags");
-    CHECK_EQ(sprite->r0, 0x67, "transparent shaded sprite intensity");
-
-    ResetPackets();
-    sprite = (SPRT *)s_packets.bytes;
     GameQueueSpriteTrans(&s_ot, s_packets.bytes, 1, 2, 3, 4, 5, 6, 7);
     CHECK_EQ(sprite->code & 3, 3, "transparent raw sprite flags");
 }
