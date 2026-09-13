@@ -9,7 +9,7 @@ execute_process(COMMAND "${CMAKE_COMMAND}" -E env SDL_AUDIODRIVER=dummy
     WORKING_DIRECTORY "${SOURCE}" TIMEOUT 105 RESULT_VARIABLE result
     OUTPUT_VARIABLE output ERROR_VARIABLE error)
 set(log "${output}${error}")
-foreach(needle "stopped at frame 1420, scene 12" "smoke synchronized stop frame=1420 scene=12 timer=56" "ref_lap=100765")
+foreach(needle "stopped at frame 1420, scene 12" "smoke synchronized stop frame=1420 scene=12 timer=56" "sync=180" "ref_lap=100765")
     if(NOT log MATCHES "${needle}")
         message(FATAL_ERROR "Grand Prix assertion missing ${needle}: ${root}\n${log}")
     endif()
