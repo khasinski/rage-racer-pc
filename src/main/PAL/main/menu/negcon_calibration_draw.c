@@ -24,11 +24,11 @@ static u8 *QueueDoubleGaugeLine(GameOrderingTableEntry *ot, u8 *prim, s32 y,
 }
 
 static u8 *QueueCalibrationArrows(GameOrderingTableEntry *ot, u8 *prim,
-                                  NegconCalibrationValue value) {
+                                  NegconCalibrationValue value, s32 phase) {
     prim = DrawLeftArrow(ot, prim, 0x28, 0xE0,
-                         value != NEGCON_CALIBRATION_FIRST);
+                         value != NEGCON_CALIBRATION_FIRST, phase);
     return DrawRightArrow(ot, prim, 0x108, 0xE0,
-                          value != NEGCON_CALIBRATION_LAST);
+                          value != NEGCON_CALIBRATION_LAST, phase);
 }
 
 static u8 *QueueCalibrationPanel(GameOrderingTableEntry *ot, u8 *prim) {
@@ -38,7 +38,7 @@ static u8 *QueueCalibrationPanel(GameOrderingTableEntry *ot, u8 *prim) {
                        0xFF, 0xFF, 0xFF);
 }
 
-void DrawNegconSteerPlayScreen(void) {
+void DrawNegconSteerPlayScreen(s32 arrowPhase) {
     GameOrderingTableEntry *ot;
     u8 *prim;
     s32 halfSpan;
@@ -49,7 +49,7 @@ void DrawNegconSteerPlayScreen(void) {
     DrawSpriteString(0x18, 0x30, "Steer play.", 0x7F81);
     ot = GamePrimaryOrderingTable(51);
     prim = RENDER_PRIM_CURSOR_AS(u8);
-    prim = QueueCalibrationArrows(ot, prim, play);
+    prim = QueueCalibrationArrows(ot, prim, play, arrowPhase);
     prim = GameQueueSpriteTrans(
         ot, prim, 0x70, 0x30, 0xC, 0x18, 0x8C, 0x18, 0x7F81);
     prim = GameQueueSpriteTrans(
@@ -67,7 +67,7 @@ void DrawNegconSteerPlayScreen(void) {
         QueueDoubleGaugeLine(ot, prim, NEGCON_GAUGE_CENTER_Y, 0, 0, 0);
 }
 
-void DrawNegconMaxTwistScreen(void) {
+void DrawNegconMaxTwistScreen(s32 arrowPhase) {
     GameOrderingTableEntry *ot;
     u8 *prim;
     s32 gaugeXOffset;
@@ -77,7 +77,7 @@ void DrawNegconMaxTwistScreen(void) {
     DrawSpriteString(0x18, 0x30, "Maximum twist.", 0x7F81);
     ot = GamePrimaryOrderingTable(51);
     prim = RENDER_PRIM_CURSOR_AS(u8);
-    prim = QueueCalibrationArrows(ot, prim, maxTwist);
+    prim = QueueCalibrationArrows(ot, prim, maxTwist, arrowPhase);
     if (maxTwist == NEGCON_CALIBRATION_LAST) {
         gaugeXOffset = 0;
         gaugeWidth = 0x24;

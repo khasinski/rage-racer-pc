@@ -4,6 +4,7 @@
 #include "common.h"
 
 #include "game/menu_types.h"
+#include "game/input_internal.h"
 #include "game/render_state.h"
 #include "game/scene.h"
 #include "game/state.h"
@@ -52,10 +53,12 @@ typedef struct MenuRuntime {
     s32 screenState[MENU_SCREEN_COUNT];
     /* Fade/slide accumulator passed explicitly to each screen renderer. */
     s32 drawProgress[MENU_SCREEN_COUNT];
+    ControllerSetup controllerSetup;
 } MenuRuntime;
 
 void MenuRuntimeReset(void);
 const MenuRuntime *MenuRuntimeCurrent(void);
+ControllerSetup *MenuControllerSetup(void);
 s32 MenuRuntimeScreenState(s32 screen);
 void MenuRuntimeSetScreenState(s32 screen, s32 state);
 

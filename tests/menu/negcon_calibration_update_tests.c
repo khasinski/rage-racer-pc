@@ -9,7 +9,8 @@ u8 g_PadType;
 u16 g_PadPressed;
 s32 g_GameMode;
 s32 g_AnimTimer;
-ControllerSetup g_ControllerSetup;
+static ControllerSetup s_controllerSetup;
+ControllerSetup *MenuControllerSetup(void) { return &s_controllerSetup; }
 NegconCalibrationValue g_NegconSteerPlay;
 NegconCalibrationValue g_NegconMaxTwist;
 
@@ -38,11 +39,13 @@ void RestoreNegconCalibrationSettings(void) {
     s_restoreCount++;
 }
 
-void DrawNegconSteerPlayScreen(void) {
+void DrawNegconSteerPlayScreen(s32 arrowPhase) {
+    CHECK(arrowPhase == s_controllerSetup.arrowPhase);
     s_steerDrawCount++;
 }
 
-void DrawNegconMaxTwistScreen(void) {
+void DrawNegconMaxTwistScreen(s32 arrowPhase) {
+    CHECK(arrowPhase == s_controllerSetup.arrowPhase);
     s_twistDrawCount++;
 }
 
@@ -50,7 +53,8 @@ void DrawOptionHintBar(s32 variant) {
     s_hintVariant = variant;
 }
 
-void DrawControllerSetupScene(s32 variant) {
+void DrawControllerSetupScene(const ControllerSetup *setup, s32 variant) {
+    CHECK(setup == &s_controllerSetup);
     s_sceneVariant = variant;
 }
 
@@ -59,8 +63,8 @@ static void ResetState(void) {
     g_PadPressed = 0;
     g_GameMode = -1;
     g_AnimTimer = 10;
-    g_ControllerSetup.arrowPhase = 20;
-    g_ControllerSetup.angleX = 0;
+    MenuControllerSetup()->arrowPhase = 20;
+    MenuControllerSetup()->angleX = 0;
     g_NegconSteerPlay = 2;
     g_NegconMaxTwist = 2;
     s_soundCueCount = 0;
@@ -72,7 +76,7 @@ static void ResetState(void) {
 }
 
 static void CheckSharedFrame(s32 expectedSteerDraws, s32 expectedTwistDraws) {
-    CHECK(g_ControllerSetup.angleX == -896);
+    CHECK(MenuControllerSetup()->angleX == -896);
     CHECK(s_steerDrawCount == expectedSteerDraws);
     CHECK(s_twistDrawCount == expectedTwistDraws);
     CHECK(s_hintVariant == MENU_OPTION_HINT_NEGCON_CALIBRATION);
@@ -85,7 +89,7 @@ static void TestSteerNavigation(void) {
     UpdateNegconSteerPlayScreen();
     CHECK(g_GameMode == OPTION_MODE_NEGCON_MAX_TWIST);
     CHECK(g_AnimTimer == 11);
-    CHECK(g_ControllerSetup.arrowPhase == 116);
+    CHECK(MenuControllerSetup()->arrowPhase == 116);
     CHECK(s_soundCueCount == 1 && s_soundCues[0] == 2);
     CHECK(s_restoreCount == 0);
     CheckSharedFrame(1, 0);
@@ -99,10 +103,10 @@ static void TestSteerNavigation(void) {
 
     ResetState();
     g_AnimTimer = INT_MAX;
-    g_ControllerSetup.arrowPhase = INT_MAX;
+    MenuControllerSetup()->arrowPhase = INT_MAX;
     UpdateNegconSteerPlayScreen();
     CHECK(g_AnimTimer == INT_MIN);
-    CHECK(g_ControllerSetup.arrowPhase == (s32)((u32)INT_MAX + 96u));
+    CHECK(MenuControllerSetup()->arrowPhase == (s32)((u32)INT_MAX + 96u));
 }
 
 static void TestTwistNavigation(void) {
@@ -111,7 +115,7 @@ static void TestTwistNavigation(void) {
     UpdateNegconMaxTwistScreen();
     CHECK(g_GameMode == OPTION_MODE_ROOT);
     CHECK(g_AnimTimer == 11);
-    CHECK(g_ControllerSetup.arrowPhase == 20);
+    CHECK(MenuControllerSetup()->arrowPhase == 20);
     CHECK(s_soundCueCount == 1 && s_soundCues[0] == 2);
     CHECK(s_restoreCount == 0);
     CheckSharedFrame(0, 1);

@@ -16,7 +16,8 @@ Matrix g_SceneLightMatrix;
 u8 g_PadType;
 s32 g_GameMode;
 s32 g_AnimTimer;
-ControllerSetup g_ControllerSetup;
+static ControllerSetup s_controllerSetup;
+ControllerSetup *MenuControllerSetup(void) { return &s_controllerSetup; }
 s32 g_ModelBankCount;
 s16 g_NegconSteer;
 NegconCalibrationValue g_NegconSteerPlay;
@@ -100,8 +101,8 @@ static void Reset(void) {
     g_PadType = PAD_TYPE_DIGITAL;
     g_GameMode = OPTION_MODE_CONTROLLER_CONFIG;
     g_AnimTimer = 5;
-    g_ControllerSetup.angleX = 100;
-    g_ControllerSetup.angleY = 200;
+    MenuControllerSetup()->angleX = 100;
+    MenuControllerSetup()->angleY = 200;
     g_ModelBankCount = 5;
     g_NegconSteer = 4;
     g_NegconSteerPlay = 2;
@@ -116,7 +117,7 @@ static void Reset(void) {
 static void TestDigitalPadModels(void) {
     Reset();
     g_ModelBankCount = 0;
-    DrawControllerSetupScene(0);
+    DrawControllerSetupScene(&s_controllerSetup, 0);
     CHECK(s_cameraCalls == 1);
     CHECK(g_Camera.view.x == 0 && g_Camera.view.y == -0x40);
     CHECK(g_Camera.view.z == -0x1080);
@@ -127,7 +128,7 @@ static void TestDigitalPadModels(void) {
 
     Reset();
     g_ModelBankCount = 1;
-    DrawControllerSetupScene(0);
+    DrawControllerSetupScene(&s_controllerSetup, 0);
     CHECK(s_modelCount == 1 && s_models[0] == 0);
 }
 
@@ -135,7 +136,7 @@ static void TestNegconPartsAndOverlays(void) {
     Reset();
     g_PadType = PAD_TYPE_NEGCON;
     g_GameMode = OPTION_MODE_NEGCON_STEER_PLAY;
-    DrawControllerSetupScene(1);
+    DrawControllerSetupScene(&s_controllerSetup, 1);
     CHECK(g_Camera.view.y == 0 && g_Camera.view.z == -0xC80);
     CHECK(s_pitchCount == 2);
     CHECK(s_pitchAngles[0] == 39 && s_pitchAngles[1] == 33);
@@ -147,7 +148,7 @@ static void TestNegconPartsAndOverlays(void) {
     Reset();
     g_PadType = PAD_TYPE_NEGCON;
     g_GameMode = OPTION_MODE_NEGCON_MAX_TWIST;
-    DrawControllerSetupScene(0);
+    DrawControllerSetupScene(&s_controllerSetup, 0);
     CHECK(s_pitchAngles[0] == 40 && s_pitchAngles[1] == 32);
     CHECK(s_modelCount == 2 && s_models[0] == 1 && s_models[1] == 2);
 }
@@ -155,7 +156,7 @@ static void TestNegconPartsAndOverlays(void) {
 static void TestUnknownPadDrawsNoModel(void) {
     Reset();
     g_PadType = 0;
-    DrawControllerSetupScene(1);
+    DrawControllerSetupScene(&s_controllerSetup, 1);
     CHECK(s_cameraCalls == 1);
     CHECK(s_modelCount == 0 && s_objectMatrixCount == 0);
     CHECK(RENDER_OT_BASE == s_originalOt);
@@ -166,7 +167,7 @@ static void TestInvalidPlayUsesFirstPreset(void) {
     g_PadType = PAD_TYPE_NEGCON;
     g_GameMode = OPTION_MODE_NEGCON_STEER_PLAY;
     g_NegconSteerPlay = 99;
-    DrawControllerSetupScene(0);
+    DrawControllerSetupScene(&s_controllerSetup, 0);
     CHECK(s_pitchAngles[0] == 41 && s_pitchAngles[1] == 31);
 }
 

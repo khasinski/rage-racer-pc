@@ -62,10 +62,11 @@ static u8 *DrawConfigLabels(GameOrderingTableEntry *ot, u8 *prim,
  * button. Suppressed while the panel is still sliding.
  */
 static u8 *DrawConfigCallouts(GameOrderingTableEntry *ot, u8 *prim,
-                              const u8 *labelRow, const u8 *buttonRow) {
+                              const u8 *labelRow, const u8 *buttonRow,
+                              s32 angleY) {
     s32 i;
 
-    if (g_ControllerSetup.angleY > -16 && g_ControllerSetup.angleY < 16) {
+    if (angleY > -16 && angleY < 16) {
         for (i = 0; i < CONTROLLER_CONFIG_ACTION_COUNT; i++) {
             const DVec *labelPoint = &g_PadCalloutLabelPoints[labelRow[i]];
             const DVec *buttonPoint = &g_PadCalloutButtonPoints[buttonRow[i]];
@@ -108,26 +109,28 @@ static u8 *DrawConfigCallouts(GameOrderingTableEntry *ot, u8 *prim,
 
 static u8 *DrawConfigDiagram(GameOrderingTableEntry *ot, u8 *prim,
                              ControllerMappingIndex mapping,
-                             const u8 *labelRows, const u8 *buttonRows) {
+                             const u8 *labelRows, const u8 *buttonRows,
+                             s32 angleY) {
     const s32 row = ClampControllerMappingIndex(mapping) *
                     CONTROLLER_CONFIG_ACTION_COUNT;
     const u8 *labelRow = &labelRows[row];
     const u8 *buttonRow = &buttonRows[row];
 
     prim = DrawConfigLabels(ot, prim, labelRow);
-    return DrawConfigCallouts(ot, prim, labelRow, buttonRow);
+    return DrawConfigCallouts(ot, prim, labelRow, buttonRow, angleY);
 }
 
 /* One whole standard-pad diagram for the current selection: the five action
  * labels, then the five callout lines from each label to its button. */
-u8 *DrawPadConfigDiagram(GameOrderingTableEntry *ot, u8 *prim) {
+u8 *DrawPadConfigDiagram(GameOrderingTableEntry *ot, u8 *prim, s32 angleY) {
     return DrawConfigDiagram(ot, prim, g_PadMappingIndex,
-                             g_PadConfigLabelRows, g_PadConfigButtonRows);
+                             g_PadConfigLabelRows, g_PadConfigButtonRows,
+                             angleY);
 }
 
 /* One whole NeGcon diagram for the current selection: labels, then callouts. */
-u8 *DrawNegconConfigDiagram(GameOrderingTableEntry *ot, u8 *prim) {
+u8 *DrawNegconConfigDiagram(GameOrderingTableEntry *ot, u8 *prim, s32 angleY) {
     return DrawConfigDiagram(ot, prim, g_NegconMappingIndex,
                              g_NegconConfigLabelRows,
-                             g_NegconConfigButtonRows);
+                             g_NegconConfigButtonRows, angleY);
 }

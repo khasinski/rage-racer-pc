@@ -37,6 +37,9 @@ static s32 s_lastCue;
 static GameSceneId s_lastExitScene;
 static s32 s_cursorCalls;
 static s32 s_controllerConfigCalls;
+static ControllerSetup s_controllerSetup;
+
+ControllerSetup *MenuControllerSetup(void) { return &s_controllerSetup; }
 static s32 s_soundMenuStarts;
 static s32 s_trackLoadCalls;
 static s32 s_randomValues[3];
@@ -65,7 +68,10 @@ void DrawMenuCursorArrow(s32 x, s32 y) {
 }
 
 void PlaySoundCue(s32 cue) { s_lastCue = cue; }
-void BeginControllerConfig(void) { s_controllerConfigCalls++; }
+void BeginControllerConfig(ControllerSetup *setup) {
+    (void)setup;
+    s_controllerConfigCalls++;
+}
 void EnterSoundOptionMenu(void) { s_soundMenuStarts++; }
 s32 Random15(void) { return s_randomValues[s_randomIndex++]; }
 s32 RandomIndex(s32 count) {

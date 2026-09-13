@@ -5,7 +5,8 @@
 #include "game/render.h"
 #include "game/input_internal.h"
 
-ControllerSetup g_ControllerSetup;
+static ControllerSetup s_controllerSetup;
+ControllerSetup *MenuControllerSetup(void) { return &s_controllerSetup; }
 
 static s32 s_spriteU[4];
 static s32 s_spriteCount;
@@ -116,24 +117,24 @@ static void TestArrows(void) {
     GameOrderingTableEntry ot;
 
     Reset();
-    CHECK(DrawLeftArrow(&ot, packets, 10, 20, 0) == packets + 2);
+    CHECK(DrawLeftArrow(&ot, packets, 10, 20, 0, s_controllerSetup.arrowPhase) == packets + 2);
     CHECK(s_spriteCount == 1 && s_spriteU[0] == 0x48);
     CHECK(s_modeCount == 1 && s_modePages[0] == 0x39);
     CHECK(s_tileCount == 0);
 
     Reset();
-    g_ControllerSetup.arrowPhase = 0x1123;
+    MenuControllerSetup()->arrowPhase = 0x1123;
     s_expectedSineAngle = 0x123;
     s_sineValue = 4096;
-    CHECK(DrawRightArrow(&ot, packets, 30, 40, 1) == packets + 3);
+    CHECK(DrawRightArrow(&ot, packets, 30, 40, 1, s_controllerSetup.arrowPhase) == packets + 3);
     CHECK(s_spriteCount == 1 && s_spriteU[0] == 0x58);
     CHECK(s_tileCount == 1 && s_tileGreen == 0xFF);
 
     Reset();
-    g_ControllerSetup.arrowPhase = -1;
+    MenuControllerSetup()->arrowPhase = -1;
     s_expectedSineAngle = 0xFFF;
     s_sineValue = -4096;
-    DrawLeftArrow(&ot, packets, 10, 20, 1);
+    DrawLeftArrow(&ot, packets, 10, 20, 1, s_controllerSetup.arrowPhase);
     CHECK(s_tileCount == 1 && s_tileGreen == 0x7F);
 }
 

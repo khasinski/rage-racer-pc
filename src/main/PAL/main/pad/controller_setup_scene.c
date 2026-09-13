@@ -26,12 +26,13 @@ static void SubmitControllerModel(s32 model) {
     RENDER_OT_BASE = otBase;
 }
 
-static void BuildControllerPartTransform(Matrix *transform, s32 pitch) {
+static void BuildControllerPartTransform(Matrix *transform, s32 pitch,
+                                         s32 angleY) {
     Matrix yawRotation;
     Vec4 scale = {0x1000, 0x2000, 0x1000, 0};
 
     BuildRotMatrixX(transform, pitch);
-    BuildRotMatrixY(&yawRotation, g_ControllerSetup.angleY + 0x400);
+    BuildRotMatrixY(&yawRotation, angleY + 0x400);
     MulMatrix2(&yawRotation, transform);
     MulMatrix2(&g_RenderState.geometry.matrix, transform);
     ScaleMatrix(&yawRotation, &scale);
@@ -54,7 +55,8 @@ static s32 ControllerModelOrFallback(s32 model, s32 requiredModelCount) {
  * screens. The read-only render state is retained for the three camera
  * matrix multiplies; write-only fields stay absolute so each store
  * is independently rematerialized. */
-void DrawControllerSetupScene(s32 showButtonOverlays) {
+void DrawControllerSetupScene(const ControllerSetup *setup,
+                              s32 showButtonOverlays) {
     Matrix partTransform;
     LVec position = {0, 0, 0};
     s32 baseAngle;
@@ -80,7 +82,7 @@ void DrawControllerSetupScene(s32 showButtonOverlays) {
     SetCameraRotMatrix(&g_RenderState, &g_Camera.view);
 
     if (g_PadType == PAD_TYPE_DIGITAL) {
-        BuildControllerPartTransform(&partTransform, -0xD0);
+        BuildControllerPartTransform(&partTransform, -0xD0, setup->angleY);
         model = ControllerModelOrFallback(0, 1);
         SubmitControllerPart(&position, &partTransform, model);
         return;
@@ -99,15 +101,17 @@ void DrawControllerSetupScene(s32 showButtonOverlays) {
         steer = g_NegconSteer * 8;
     }
 
-    baseAngle = g_ControllerSetup.angleX - 0x40;
-    BuildControllerPartTransform(&partTransform, baseAngle + steer);
+    baseAngle = setup->angleX - 0x40;
+    BuildControllerPartTransform(&partTransform, baseAngle + steer,
+                                 setup->angleY);
     SubmitControllerPart(&position, &partTransform, 1);
     if (showButtonOverlays) {
         model = ControllerModelOrFallback(3, 4);
         SubmitControllerPart(&position, &partTransform, model);
     }
 
-    BuildControllerPartTransform(&partTransform, baseAngle - steer);
+    BuildControllerPartTransform(&partTransform, baseAngle - steer,
+                                 setup->angleY);
     model = ControllerModelOrFallback(2, 3);
     SubmitControllerPart(&position, &partTransform, model);
     if (showButtonOverlays) {

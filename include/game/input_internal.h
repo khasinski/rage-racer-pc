@@ -52,7 +52,6 @@ typedef struct ControllerSetup {
     s32 arrowPhase;
 } ControllerSetup;
 
-extern ControllerSetup g_ControllerSetup;
 typedef s16 NegconCalibrationValue;
 extern NegconCalibrationValue g_NegconMaxTwist;
 extern NegconCalibrationValue g_NegconSteerPlay;
@@ -88,7 +87,7 @@ static inline s32 NegconCalibrationIndex(NegconCalibrationValue value) {
 
 /* Reset controller-screen animation and retain both mapping selections so
  * cancelling the screen can restore them. */
-void BeginControllerConfig(void);
+void BeginControllerConfig(ControllerSetup *setup);
 
 static inline s32 GetNegconSteerRange(void) {
     s32 index = NegconCalibrationIndex(g_NegconMaxTwist);

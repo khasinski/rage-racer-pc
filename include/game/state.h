@@ -4,6 +4,8 @@
 #include "common.h"
 #include "game/scene.h"
 
+typedef struct ControllerSetup ControllerSetup;
+
 extern void (*g_SceneHandlers[GAME_SCENE_HANDLER_COUNT])(void);
 
 extern u8 g_PadType;
@@ -111,15 +113,16 @@ extern PadState g_PadState;
 /* Controller-config and NeGcon calibration screens: g_GameModeHandlers entries
  * 7..11, each drawing its own screen plus the shared 3D backdrop. */
 void UpdateControllerConfigScreen(void);
-void DrawControllerConfigScreen(void);
+void DrawControllerConfigScreen(const ControllerSetup *setup);
 void BeginNegconCalibration(void);
 void UpdateNegconNeutralScreen(void);
 void DrawNegconNeutralScreen(void);
 void UpdateNegconSteerPlayScreen(void);
-void DrawNegconSteerPlayScreen(void);
+void DrawNegconSteerPlayScreen(s32 arrowPhase);
 void UpdateNegconMaxTwistScreen(void);
-void DrawNegconMaxTwistScreen(void);
-void DrawControllerSetupScene(s32 showButtonOverlays);
+void DrawNegconMaxTwistScreen(s32 arrowPhase);
+void DrawControllerSetupScene(const ControllerSetup *setup,
+                              s32 showButtonOverlays);
 
 /* Identity of the running scene: queried (`== 0xC`, `== 0x11`, `== 0x1E`, ...)
  * but never dispatched. Every writer also resets g_SceneTimer. */

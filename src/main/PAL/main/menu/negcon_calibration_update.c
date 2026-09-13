@@ -20,11 +20,12 @@ static void AdjustCalibrationValue(NegconCalibrationValue *value) {
     }
 }
 
-static void FinishCalibrationFrame(void (*drawScreen)(void)) {
-    g_ControllerSetup.angleX = CONTROLLER_SCENE_ANGLE_X;
-    drawScreen();
+static void FinishCalibrationFrame(ControllerSetup *setup,
+                                   void (*drawScreen)(s32)) {
+    setup->angleX = CONTROLLER_SCENE_ANGLE_X;
+    drawScreen(setup->arrowPhase);
     DrawOptionHintBar(MENU_OPTION_HINT_NEGCON_CALIBRATION);
-    DrawControllerSetupScene(1);
+    DrawControllerSetupScene(setup, 1);
 }
 
 static int LeaveIfNegconDisconnected(void) {
@@ -37,8 +38,10 @@ static int LeaveIfNegconDisconnected(void) {
 }
 
 void UpdateNegconSteerPlayScreen(void) {
+    ControllerSetup *setup = MenuControllerSetup();
+
     g_AnimTimer = (s32)((u32)g_AnimTimer + 1u);
-    g_ControllerSetup.arrowPhase = (s32)((u32)g_ControllerSetup.arrowPhase + 96u);
+    setup->arrowPhase = (s32)((u32)setup->arrowPhase + 96u);
     if (!LeaveIfNegconDisconnected()) {
         if (g_PadPressed & PAD_CANCEL) {
             PlaySoundCue(3);
@@ -51,10 +54,12 @@ void UpdateNegconSteerPlayScreen(void) {
             AdjustCalibrationValue(&g_NegconSteerPlay);
         }
     }
-    FinishCalibrationFrame(DrawNegconSteerPlayScreen);
+    FinishCalibrationFrame(setup, DrawNegconSteerPlayScreen);
 }
 
 void UpdateNegconMaxTwistScreen(void) {
+    ControllerSetup *setup = MenuControllerSetup();
+
     g_AnimTimer = (s32)((u32)g_AnimTimer + 1u);
     if (!LeaveIfNegconDisconnected()) {
         if (g_PadPressed & PAD_CANCEL) {
@@ -68,5 +73,5 @@ void UpdateNegconMaxTwistScreen(void) {
             AdjustCalibrationValue(&g_NegconMaxTwist);
         }
     }
-    FinishCalibrationFrame(DrawNegconMaxTwistScreen);
+    FinishCalibrationFrame(setup, DrawNegconMaxTwistScreen);
 }

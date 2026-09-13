@@ -11,33 +11,33 @@ static ControllerMappingIndex *SelectedControllerMapping(void) {
                                         : &g_PadMappingIndex;
 }
 
-static void UpdateControllerMappingSelection(u16 pressed) {
+static void UpdateControllerMappingSelection(ControllerSetup *setup,
+                                             u16 pressed) {
     ControllerMappingIndex *selection = SelectedControllerMapping();
 
     if ((pressed & PAD_LEFT) && *selection > CONTROLLER_MAPPING_FIRST) {
         PlaySoundCue(8);
         (*selection)--;
-        g_ControllerSetup.angleY =
-            (s32)((u32)g_ControllerSetup.angleY + CONTROLLER_HALF_TURN);
+        setup->angleY = (s32)((u32)setup->angleY + CONTROLLER_HALF_TURN);
     }
     if ((pressed & PAD_RIGHT) && *selection < CONTROLLER_MAPPING_LAST) {
         PlaySoundCue(8);
         (*selection)++;
-        g_ControllerSetup.angleY =
-            (s32)((u32)g_ControllerSetup.angleY - CONTROLLER_HALF_TURN);
+        setup->angleY = (s32)((u32)setup->angleY - CONTROLLER_HALF_TURN);
     }
 }
 
 void UpdateControllerConfigScreen(void) {
+    ControllerSetup *setup = MenuControllerSetup();
     u16 pressed = g_PadPressed;
 
     g_AnimTimer = (s32)((u32)g_AnimTimer + 1u);
-    g_ControllerSetup.arrowPhase = (s32)((u32)g_ControllerSetup.arrowPhase + 96u);
+    setup->arrowPhase = (s32)((u32)setup->arrowPhase + 96u);
     if (pressed & PAD_CANCEL) {
         PlaySoundCue(3);
         g_GameMode = OPTION_MODE_ROOT;
-        g_PadMappingIndex = g_ControllerSetup.savedPadMapping;
-        g_NegconMappingIndex = g_ControllerSetup.savedNegconMapping;
+        g_PadMappingIndex = setup->savedPadMapping;
+        g_NegconMappingIndex = setup->savedNegconMapping;
     } else if (pressed & PAD_CONFIRM) {
         PlaySoundCue(2);
         LoadPadButtonMapping(g_PadMappingIndex, g_NegconMappingIndex);
@@ -47,11 +47,10 @@ void UpdateControllerConfigScreen(void) {
             g_GameMode = OPTION_MODE_ROOT;
         }
     } else {
-        UpdateControllerMappingSelection(pressed);
+        UpdateControllerMappingSelection(setup, pressed);
     }
-    g_ControllerSetup.angleY =
-        (s32)(((int64_t)g_ControllerSetup.angleY * 15) / 16);
-    DrawControllerConfigScreen();
+    setup->angleY = (s32)(((int64_t)setup->angleY * 15) / 16);
+    DrawControllerConfigScreen(setup);
     DrawOptionHintBar(MENU_OPTION_HINT_CONTROLLER);
-    DrawControllerSetupScene(0);
+    DrawControllerSetupScene(setup, 0);
 }

@@ -5,7 +5,7 @@
 #include "game/input_internal.h"
 #include "game/state.h"
 
-void DrawControllerConfigScreen(void) {
+void DrawControllerConfigScreen(const ControllerSetup *setup) {
     s32 selection;
     GameOrderingTableEntry *ot;
     u8 *prim;
@@ -25,18 +25,20 @@ void DrawControllerConfigScreen(void) {
     ot = GameSecondaryOrderingTable(51);
     prim = RENDER_PRIM_CURSOR_AS(u8);
     prim = DrawLeftArrow(
-        ot, prim, 0x28, 0xE0, selection != CONTROLLER_MAPPING_FIRST);
+        ot, prim, 0x28, 0xE0, selection != CONTROLLER_MAPPING_FIRST,
+        setup->arrowPhase);
     prim = DrawRightArrow(
-        ot, prim, 0x108, 0xE0, selection != CONTROLLER_MAPPING_LAST);
+        ot, prim, 0x108, 0xE0, selection != CONTROLLER_MAPPING_LAST,
+        setup->arrowPhase);
     if (g_PadType == PAD_TYPE_NEGCON) {
         prim = DrawPadConfigSelector(ot, prim, 0xF0, 0x28, selection);
-        prim = DrawNegconConfigDiagram(ot, prim);
+        prim = DrawNegconConfigDiagram(ot, prim, setup->angleY);
         prim = GameQueueSpriteTrans(
             ot, prim, 0x10, 0x40, 0xD8, 0x10, 0, 0xA8, 0x7F40);
         prim = QueueDrawModePrim(ot, prim, 0x3F);
     } else {
         prim = DrawPadConfigSelector(ot, prim, 0xF0, 0x28, selection);
-        prim = DrawPadConfigDiagram(ot, prim);
+        prim = DrawPadConfigDiagram(ot, prim, setup->angleY);
     }
     g_RenderState.draw.packetCursor = prim;
 }

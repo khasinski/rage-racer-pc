@@ -9,12 +9,12 @@ enum {
 };
 
 static u8 *DrawConfigArrow(GameOrderingTableEntry *ot, u8 *prim, s32 x,
-                           s32 y, s32 textureU, s32 pulse) {
+                           s32 y, s32 textureU, s32 pulse, s32 phase) {
     prim = GameQueueSprite(
         ot, prim, x, y, 0x10, 0x20, textureU, 0xB8, 0x7F82);
     prim = QueueDrawModePrim(ot, prim, 0x39);
     if (pulse != 0) {
-        s32 phase = (s32)((u32)g_ControllerSetup.arrowPhase & ANGLE_MASK);
+        phase = (s32)((u32)phase & ANGLE_MASK);
         u8 glow = (u8)(ARROW_GLOW_CENTER +
                        rsin(phase) / ARROW_GLOW_SINE_DIVISOR);
 
@@ -24,13 +24,13 @@ static u8 *DrawConfigArrow(GameOrderingTableEntry *ot, u8 *prim, s32 x,
 }
 
 u8 *DrawLeftArrow(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
-                  s32 pulse) {
-    return DrawConfigArrow(ot, prim, x, y, 0x48, pulse);
+                  s32 pulse, s32 phase) {
+    return DrawConfigArrow(ot, prim, x, y, 0x48, pulse, phase);
 }
 
 u8 *DrawRightArrow(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
-                   s32 pulse) {
-    return DrawConfigArrow(ot, prim, x, y, 0x58, pulse);
+                   s32 pulse, s32 phase) {
+    return DrawConfigArrow(ot, prim, x, y, 0x58, pulse, phase);
 }
 
 /* The framed "CONFIG n" panel: a caption, three digit cells and two nested

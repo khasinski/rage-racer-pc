@@ -4,7 +4,8 @@
 
 ControllerMappingIndex g_PadMappingIndex;
 ControllerMappingIndex g_NegconMappingIndex;
-ControllerSetup g_ControllerSetup;
+static ControllerSetup s_controllerSetup;
+ControllerSetup *MenuControllerSetup(void) { return &s_controllerSetup; }
 
 #define CHECK(condition)                                                       \
     do {                                                                       \
@@ -18,16 +19,16 @@ ControllerSetup g_ControllerSetup;
 int main(void) {
     g_PadMappingIndex = -4;
     g_NegconMappingIndex = 20;
-    g_ControllerSetup.angleX = 1;
-    g_ControllerSetup.angleY = 2;
+    MenuControllerSetup()->angleX = 1;
+    MenuControllerSetup()->angleY = 2;
 
-    BeginControllerConfig();
+    BeginControllerConfig(&s_controllerSetup);
 
     CHECK(g_PadMappingIndex == CONTROLLER_MAPPING_FIRST);
     CHECK(g_NegconMappingIndex == CONTROLLER_MAPPING_LAST);
-    CHECK(g_ControllerSetup.savedPadMapping == CONTROLLER_MAPPING_FIRST);
-    CHECK(g_ControllerSetup.savedNegconMapping == CONTROLLER_MAPPING_LAST);
-    CHECK(g_ControllerSetup.angleX == 0 && g_ControllerSetup.angleY == 0);
+    CHECK(MenuControllerSetup()->savedPadMapping == CONTROLLER_MAPPING_FIRST);
+    CHECK(MenuControllerSetup()->savedNegconMapping == CONTROLLER_MAPPING_LAST);
+    CHECK(MenuControllerSetup()->angleX == 0 && MenuControllerSetup()->angleY == 0);
 
     puts("controller config begins from normalized mapping selections");
     return 0;

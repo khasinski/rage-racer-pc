@@ -13,7 +13,8 @@ u8 g_PadType;
 PadValidation g_PadValidation;
 ControllerMappingIndex g_PadMappingIndex;
 ControllerMappingIndex g_NegconMappingIndex;
-ControllerSetup g_ControllerSetup;
+static ControllerSetup s_controllerSetup;
+ControllerSetup *MenuControllerSetup(void) { return &s_controllerSetup; }
 const DVec g_PadLabelSlots[CONTROLLER_CONFIG_LABEL_SLOT_COUNT] = {
     {0, 0}, {10, 12}, {20, 24}, {30, 36}, {40, 48}, {50, 60},
 };
@@ -113,19 +114,21 @@ u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *prim, s32 tpage) {
 }
 
 u8 *DrawLeftArrow(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
-                  s32 pulse) {
+                  s32 pulse, s32 phase) {
     (void)ot;
     (void)x;
     (void)y;
+    (void)phase;
     s_leftPulse = pulse;
     return prim + 1;
 }
 
 u8 *DrawRightArrow(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
-                   s32 pulse) {
+                   s32 pulse, s32 phase) {
     (void)ot;
     (void)x;
     (void)y;
+    (void)phase;
     s_rightPulse = pulse;
     return prim + 1;
 }
@@ -164,7 +167,7 @@ static void Reset(void) {
     g_PadType = PAD_TYPE_DIGITAL;
     g_PadMappingIndex = 2;
     g_NegconMappingIndex = 3;
-    g_ControllerSetup.angleY = 0;
+    MenuControllerSetup()->angleY = 0;
     s_spriteCount = 0;
     s_firstSpriteX = -1;
     s_tileCount = 0;
@@ -181,7 +184,7 @@ static void Reset(void) {
 
 static void TestPadAndNegconScreens(void) {
     Reset();
-    DrawControllerConfigScreen();
+    DrawControllerConfigScreen(&s_controllerSetup);
     CHECK(s_leftPulse == 1 && s_rightPulse == 1);
     CHECK(s_selectorCount == 1 && s_selectorSelection == 2);
     CHECK(s_spriteCount == 6 && s_tileCount == 10 && s_lineCount == 15);
@@ -191,7 +194,7 @@ static void TestPadAndNegconScreens(void) {
     Reset();
     g_PadType = PAD_TYPE_NEGCON;
     g_NegconMappingIndex = 7;
-    DrawControllerConfigScreen();
+    DrawControllerConfigScreen(&s_controllerSetup);
     CHECK(s_leftPulse == 1 && s_rightPulse == 0);
     CHECK(s_selectorSelection == 7);
     CHECK(s_spriteCount == 7 && s_tileCount == 10 && s_lineCount == 15);
@@ -202,14 +205,14 @@ static void TestPadAndNegconScreens(void) {
 static void TestErrorScreens(void) {
     Reset();
     g_PadValidation.error = PAD_ERROR_STATE_DISCONNECTED;
-    DrawControllerConfigScreen();
+    DrawControllerConfigScreen(&s_controllerSetup);
     CHECK(s_proportionalX == 0x3A &&
           strcmp(s_proportionalText, "INSERT CONTROLLER") == 0);
     CHECK(s_selectorCount == 0 && g_RenderState.draw.packetCursor == s_packets);
 
     Reset();
     g_PadValidation.error = PAD_ERROR_STATE_INVALID_INPUT;
-    DrawControllerConfigScreen();
+    DrawControllerConfigScreen(&s_controllerSetup);
     CHECK(s_proportionalX == 0x40 &&
           strcmp(s_proportionalText, "CONTROLLER ERROR") == 0);
     CHECK(s_selectorCount == 0);
@@ -217,8 +220,8 @@ static void TestErrorScreens(void) {
 
 static void TestCalloutVisibilityAndNeutralPanel(void) {
     Reset();
-    g_ControllerSetup.angleY = 16;
-    DrawPadConfigDiagram(GameSecondaryOrderingTable(51), s_packets);
+    MenuControllerSetup()->angleY = 16;
+    DrawPadConfigDiagram(GameSecondaryOrderingTable(51), s_packets, s_controllerSetup.angleY);
     CHECK(s_lineCount == 0);
     CHECK(s_spriteCount == 6 && s_tileCount == 10 && s_modeCount == 1);
 
@@ -231,12 +234,12 @@ static void TestCalloutVisibilityAndNeutralPanel(void) {
 static void TestDiagramClampsMappingRows(void) {
     Reset();
     g_PadMappingIndex = -1;
-    DrawPadConfigDiagram(GameSecondaryOrderingTable(51), s_packets);
+    DrawPadConfigDiagram(GameSecondaryOrderingTable(51), s_packets, s_controllerSetup.angleY);
     CHECK(s_firstSpriteX == g_PadLabelSlots[1].vx + 4);
 
     Reset();
     g_NegconMappingIndex = 99;
-    DrawNegconConfigDiagram(GameSecondaryOrderingTable(51), s_packets);
+    DrawNegconConfigDiagram(GameSecondaryOrderingTable(51), s_packets, s_controllerSetup.angleY);
     CHECK(s_firstSpriteX == g_PadLabelSlots[2].vx + 4);
 }
 

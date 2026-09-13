@@ -94,7 +94,7 @@ void UpdateOptionRootMenu(void) {
             g_ClassRecordRow = 0;
             break;
         case OPTION_ROOT_CONTROLLER:
-            BeginControllerConfig();
+            BeginControllerConfig(MenuControllerSetup());
             g_GameMode = OPTION_MODE_CONTROLLER_CONFIG;
             break;
         case OPTION_ROOT_SOUND:

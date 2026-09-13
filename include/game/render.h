@@ -423,13 +423,13 @@ u8 *GameQueueSpriteTrans(
 u8 *DrawShadowedTile(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y);
 /* Controller-configuration widgets and their complete pad diagrams. */
 u8 *DrawLeftArrow(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
-                  s32 pulse);
+                  s32 pulse, s32 phase);
 u8 *DrawRightArrow(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
-                   s32 pulse);
+                   s32 pulse, s32 phase);
 u8 *DrawPadConfigSelector(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32 y,
                           s32 selection);
-u8 *DrawPadConfigDiagram(GameOrderingTableEntry *ot, u8 *prim);
-u8 *DrawNegconConfigDiagram(GameOrderingTableEntry *ot, u8 *prim);
+u8 *DrawPadConfigDiagram(GameOrderingTableEntry *ot, u8 *prim, s32 angleY);
+u8 *DrawNegconConfigDiagram(GameOrderingTableEntry *ot, u8 *prim, s32 angleY);
 /* Semi-transparent TILE, 16 bytes. */
 u8 *GameQueueTileTrans(
     GameOrderingTableEntry *ot,

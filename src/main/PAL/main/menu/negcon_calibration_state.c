@@ -4,6 +4,8 @@
 #include "game/state.h"
 
 void BeginNegconCalibration(void) {
+    ControllerSetup *setup = MenuControllerSetup();
+
     g_NegconSteerNeutralSaved = g_NegconSteerNeutral;
     g_NegconNeutralISaved = g_NegconNeutralI;
     g_NegconNeutralIISaved = g_NegconNeutralII;
@@ -15,8 +17,8 @@ void BeginNegconCalibration(void) {
     g_NegconNeutralI = 0;
     g_NegconNeutralII = 0;
     g_NegconNeutralL = 0;
-    g_ControllerSetup.angleY = 0;
-    g_ControllerSetup.angleX = 0;
+    setup->angleY = 0;
+    setup->angleX = 0;
     g_GameMode = OPTION_MODE_NEGCON_NEUTRAL;
 }
 
@@ -30,6 +32,8 @@ void RestoreNegconCalibrationSettings(void) {
 }
 
 void UpdateNegconNeutralScreen(void) {
+    ControllerSetup *setup = MenuControllerSetup();
+
     g_AnimTimer = (s32)((u32)g_AnimTimer + 1u);
     if (g_PadPressed & PAD_START) {
         PlaySoundCue(2);
@@ -45,5 +49,5 @@ void UpdateNegconNeutralScreen(void) {
     }
     DrawNegconNeutralScreen();
     DrawOptionHintBar(MENU_OPTION_HINT_NEGCON_CALIBRATION);
-    DrawControllerSetupScene(0);
+    DrawControllerSetupScene(setup, 0);
 }
