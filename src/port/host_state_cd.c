@@ -9,6 +9,7 @@
 
 #include "game/cd.h"
 
+unsigned char g_CdMixPresets[8] = {0x7f,0x00,0x7f,0x00,0x3f,0x3f,0x3f,0x3f};
 Cd g_Cd = {
     .pendingTrack = -1,
     .pendingCommand = CD_COMMAND_NONE,

@@ -45,6 +45,7 @@ typedef struct CdLevels {
 
 typedef struct Cd {
     s32 restart;
+    s32 preset;
     s32 pendingTrack;
     CdCommandType pendingCommand;
     s32 trackStep;
@@ -97,8 +98,9 @@ void ResumeCdAudio(void);
 void ResetCdAudioState(void);
 
 /*
- * CD-DA attenuator. SetCdVolume applies `volume` (0..0x7F) to the stereo
- * channels and pushes it with CdMix; StartCdVolumeFade sets the remaining frame count of the
+ * CD-DA attenuator. SetCdVolume scales the four g_CdMixPresets mix values by
+ * `volume` (0..0x7F) into both the current and target levels and pushes them
+ * with CdMix; StartCdVolumeFade sets the remaining frame count of the
  * fade StepCdVolumeFade runs each frame (positive fades out, negative fades
  * back to the targets), clamped to +/-0xFFF.
  */
@@ -106,6 +108,8 @@ void SetCdVolume(s32 volume);
 void StartCdVolumeFade(s32 frames);
 /* Map the 0..15 option-screen level onto the 0..0x7F attenuator. */
 void SetCdVolumeSetting(s32 level);
+/* Select which 4-byte row of the g_CdMixPresets mix table SetCdVolume scales. */
+void SetCdMixPreset(s32 preset);
 
 /*
  * The CD-DA pump. TickCdAudio runs once per frame from MainLoop and
@@ -123,6 +127,8 @@ extern char *g_CdAudioFileNames[];
 /* Eight-byte CdlGetlocP response. Retail also names bytes 2 and 3 as
  * g_CdLocMinute/g_CdLocSecond; indexing the shared buffer preserves that
  * overlap on hosts where separately declared globals cannot alias safely. */
+extern u8 g_CdMixPresets[];
+
 void CdMix(u8* vol);
 
 #endif

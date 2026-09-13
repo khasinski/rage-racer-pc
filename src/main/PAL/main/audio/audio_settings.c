@@ -20,5 +20,6 @@ void SetEffectVolumeSetting(s32 level) {
 void ApplyAudioSettings(void) {
     SetSequenceVolumeSetting(g_BgmVolumeSetting);
     SetEffectVolumeSetting(g_SfxVolumeSetting);
+    SetCdMixPreset(0);
     SsSetStereo();
 }
