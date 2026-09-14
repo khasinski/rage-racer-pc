@@ -22,9 +22,10 @@ void ResetCarShopScreen(void) {
 }
 
 /* Everything the shop keeps on the display whichever state it is in. */
-static void DrawCarShopChrome(const CarShop *shop, s32 price, s32 chromeStep) {
-    DrawBrowseArrows(MenuBrowseArrows(), 1, 0, g_PrevOwnedCarIndex != -1,
-                     g_NextOwnedCarIndex != -1);
+static void DrawCarShopChrome(const CarShop *shop, const CarBrowse *browse,
+                              s32 price, s32 chromeStep) {
+    DrawBrowseArrows(MenuBrowseArrows(), 1, 0, browse->previous != -1,
+                     browse->next != -1);
     DrawCarShopPricePanel(1, g_PlayerMoney, price);
     DrawFadingMenuSprites(g_UiScriptProgress, 1, shop->option);
     RunTimedDrawScript(g_CarShopScreenScript, &g_UiScriptProgress, 0);
@@ -34,9 +35,9 @@ static void DrawCarShopChrome(const CarShop *shop, s32 price, s32 chromeStep) {
 }
 
 /* Leaving the shop, either by choosing to or by backing out. */
-static void LeaveCarShop(void) {
-    if (g_PlayerCarIndex != g_CarListCursor) {
-        MenuSpinBackToPlayerCar();
+static void LeaveCarShop(const CarBrowse *browse) {
+    if (g_PlayerCarIndex != browse->cursor) {
+        MenuSpinBackToPlayerCar(browse->cursor);
     }
     PlaySoundCue(3);
     GameMenuBusy = CAR_SHOP_LEAVE;
@@ -47,22 +48,24 @@ static void LeaveCarShop(void) {
 
 /* Confirm on the car itself: put up the buy prompt, unless it is already
  * owned, in which case there is nothing to buy. */
-static void OfferToBuyCar(CarShop *shop, s32 purchaseAvailable) {
+static void OfferToBuyCar(CarShop *shop, const CarBrowse *browse,
+                          s32 purchaseAvailable) {
     const TimedDrawCommand *prompt;
 
-    if (!purchaseAvailable || g_CarTable[g_CarListCursor].enabled != 0) {
+    if (!purchaseAvailable || g_CarTable[browse->cursor].enabled != 0) {
         return;
     }
     PlaySoundCue(2);
     GameMenuBusy = CAR_SHOP_BUY_PROMPT;
     g_UiScriptProgress2 = 0;
     shop->modalCursor = 0;
-    prompt = CarShopPrompt(GetCarMaker(g_CarListCursor));
+    prompt = CarShopPrompt(GetCarMaker(browse->cursor));
     shop->modal = prompt;
 }
 
 /* Idle: the pad browses the cars and picks one of the two rows. */
-static void UpdateCarShopInput(CarShop *shop, s32 purchaseAvailable) {
+static void UpdateCarShopInput(CarShop *shop, CarBrowse *browse,
+                               s32 purchaseAvailable) {
     s32 carBeforeSwap;
 
     g_MenuOverlayPattern = -1;
@@ -75,16 +78,16 @@ static void UpdateCarShopInput(CarShop *shop, s32 purchaseAvailable) {
         PlaySoundCue(1);
         shop->option = (shop->option <= 0) ? shop->option + 1 : 0;
     }
-    UpdateCarListCursor();
+    UpdateCarListCursor(browse);
 
-    carBeforeSwap = g_CarListCursor;
-    if ((g_PadHeld & PAD_LEFT) && (g_PrevOwnedCarIndex != -1) &&
+    carBeforeSwap = browse->cursor;
+    if ((g_PadHeld & PAD_LEFT) && (browse->previous != -1) &&
         MenuCarViewSettled() && (g_CarSwapToIndex < 0)) {
-        MenuSpinToCar(&g_CarListCursor, carBeforeSwap, g_PrevOwnedCarIndex, 0);
+        MenuSpinToCar(&browse->cursor, carBeforeSwap, browse->previous, 0);
     }
-    if ((g_PadHeld & PAD_RIGHT) && (g_NextOwnedCarIndex != -1) &&
+    if ((g_PadHeld & PAD_RIGHT) && (browse->next != -1) &&
         MenuCarViewSettled() && (g_CarSwapToIndex < 0)) {
-        MenuSpinToCar(&g_CarListCursor, carBeforeSwap, g_NextOwnedCarIndex,
+        MenuSpinToCar(&browse->cursor, carBeforeSwap, browse->next,
                       MENU_CAR_VIEW_RIGHT_TARGET);
     }
 
@@ -100,23 +103,24 @@ static void UpdateCarShopInput(CarShop *shop, s32 purchaseAvailable) {
     }
     if (g_PadPressed & PAD_CONFIRM) {
         if (shop->option == 0) {
-            OfferToBuyCar(shop, purchaseAvailable);
+            OfferToBuyCar(shop, browse, purchaseAvailable);
         } else {
-            LeaveCarShop();
+            LeaveCarShop(browse);
         }
     } else if (g_PadPressed & PAD_CANCEL) {
-        LeaveCarShop();
+        LeaveCarShop(browse);
     }
 }
 
-static void UpdateCarShopIdle(CarShop *shop, ShopPrice price) {
-    MenuWidgetState()->carNameModel = g_CarListCursor;
+static void UpdateCarShopIdle(CarShop *shop, CarBrowse *browse,
+                              ShopPrice price) {
+    MenuWidgetState()->carNameModel = browse->cursor;
     RunTimedDrawScript(shop->modal, &g_UiScriptProgress2, -1);
     RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
-    DrawCarShopChrome(shop, price.amount, -1);
+    DrawCarShopChrome(shop, browse, price.amount, -1);
     if ((RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1) != 0) &&
         (g_UiScriptProgress2 <= 0)) {
-        UpdateCarShopInput(shop, price.available);
+        UpdateCarShopInput(shop, browse, price.available);
     }
 }
 
@@ -164,7 +168,8 @@ static void UpdateBuyPrompt(CarShop *shop, GameOrderingTableEntry *ot,
 
 /* The sale going through: the prompt flashes for a while, then the car is
  * marked owned and the screen starts on its way out. */
-static void UpdateSaleCountdown(CarShop *shop, GameOrderingTableEntry *ot,
+static void UpdateSaleCountdown(CarShop *shop, CarBrowse *browse,
+                                GameOrderingTableEntry *ot,
                                 s32 purchaseAvailable) {
     if (shop->confirmTimer > 0) {
         shop->confirmTimer -= 1;
@@ -181,33 +186,34 @@ static void UpdateSaleCountdown(CarShop *shop, GameOrderingTableEntry *ot,
     if (!purchaseAvailable) {
         GameMenuBusy = CAR_SHOP_IDLE;
     } else {
-        g_CarTable[g_CarListCursor].enabled = 1;
-        g_TimeAttackCars[g_CarListCursor].enabled = 1;
+        g_CarTable[browse->cursor].enabled = 1;
+        g_TimeAttackCars[browse->cursor].enabled = 1;
         GameMenuBusy = CAR_SHOP_LEAVE_AFTER_SALE;
         MenuWidgetState()->upperAltPanelStep = -1;
-        g_PlayerCarIndex = g_CarListCursor;
+        g_PlayerCarIndex = browse->cursor;
     }
 }
 
-static void UpdateCarShopModal(CarShop *shop, GameOrderingTableEntry *ot,
-                               ShopPrice price) {
+static void UpdateCarShopModal(CarShop *shop, CarBrowse *browse,
+                               GameOrderingTableEntry *ot, ShopPrice price) {
     if ((GameMenuBusy == CAR_SHOP_BUY_PROMPT) ||
         (GameMenuBusy == CAR_SHOP_NO_FUNDS)) {
         UpdateBuyPrompt(shop, ot, price);
     } else if (GameMenuBusy == CAR_SHOP_SALE_COUNTDOWN) {
-        UpdateSaleCountdown(shop, ot, price.available);
+        UpdateSaleCountdown(shop, browse, ot, price.available);
     } else {
         GameMenuBusy = CAR_SHOP_IDLE;
     }
-    DrawCarShopChrome(shop, price.amount, 1);
+    DrawCarShopChrome(shop, browse, price.amount, 1);
 }
 
 /* On the way out, back to the car select screen. A sale is paid for here, so
  * the money only leaves once the screen has actually finished. */
-static void UpdateCarShopOutgoing(CarShop *shop, ShopPrice price) {
+static void UpdateCarShopOutgoing(CarShop *shop, const CarBrowse *browse,
+                                  ShopPrice price) {
     MenuBeginExit(MENU_SCREEN_CAR_SHOP);
-    DrawBrowseArrows(MenuBrowseArrows(), -1, 0, g_PrevOwnedCarIndex != -1,
-                     g_NextOwnedCarIndex != -1);
+    DrawBrowseArrows(MenuBrowseArrows(), -1, 0, browse->previous != -1,
+                     browse->next != -1);
     DrawCarShopPricePanel(-1, g_PlayerMoney, price.amount);
     RunTimedDrawScript(g_CarShopScreenScript, &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
@@ -226,7 +232,7 @@ static void UpdateCarShopOutgoing(CarShop *shop, ShopPrice price) {
     UploadTeamLogoClut();
 }
 
-void UpdateCarShop(CarShop *shop) {
+void UpdateCarShop(CarShop *shop, CarBrowse *browse) {
     GameOrderingTableEntry *ot = RENDER_OT_BASE;
     ShopPrice price;
     s32 assetIndex;
@@ -234,20 +240,20 @@ void UpdateCarShop(CarShop *shop) {
     DrawMenuAltPanel(MenuWidgetState());
     DrawCarNamePlate(MenuWidgetState());
     DrawMenuCarView();
-    if ((u32)g_CarListCursor >= GAME_CAR_COUNT || g_CarTable == NULL) {
+    if ((u32)browse->cursor >= GAME_CAR_COUNT || g_CarTable == NULL) {
         price = (ShopPrice){0, 0};
     } else {
-        assetIndex = GetOwnedCarAssetIndex(g_CarListCursor);
+        assetIndex = GetOwnedCarAssetIndex(browse->cursor);
         price = LookupShopPrice(g_CarPriceTable, CAR_PRICE_COUNT, assetIndex);
     }
 
     if (GameMenuBusy == CAR_SHOP_IDLE) {
-        UpdateCarShopIdle(shop, price);
+        UpdateCarShopIdle(shop, browse, price);
     } else if (GameMenuBusy < 0) {
-        UpdateCarShopModal(shop, ot, price);
+        UpdateCarShopModal(shop, browse, ot, price);
     } else {
-        UpdateCarShopOutgoing(shop, price);
+        UpdateCarShopOutgoing(shop, browse, price);
     }
 }
 
-void UpdateCarShopScreen(void) { UpdateCarShop(&s_shop); }
+void UpdateCarShopScreen(void) { UpdateCarShop(&s_shop, MenuCarBrowse()); }

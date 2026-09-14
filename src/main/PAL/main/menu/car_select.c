@@ -12,21 +12,21 @@ static s32 FindOwnedCar(s32 from, s32 step) {
     return -1;
 }
 
-void UpdateOwnedCarNeighbours(void) {
+void UpdateOwnedCarNeighbours(CarBrowse *browse) {
     if (g_CarTable == NULL || (u32)g_PlayerCarIndex >= GAME_CAR_COUNT) {
-        g_PrevOwnedCarIndex = -1;
-        g_NextOwnedCarIndex = -1;
+        browse->previous = -1;
+        browse->next = -1;
         return;
     }
-    g_PrevOwnedCarIndex = FindOwnedCar(g_PlayerCarIndex - 1, -1);
-    g_NextOwnedCarIndex = FindOwnedCar(g_PlayerCarIndex + 1, 1);
+    browse->previous = FindOwnedCar(g_PlayerCarIndex - 1, -1);
+    browse->next = FindOwnedCar(g_PlayerCarIndex + 1, 1);
 }
 
 void EnterCarSelectScreen(void) {
     ActivateShowroomCarModel((s32)g_CarModelSlot);
     MenuActivateScreen(MENU_SCREEN_CAR_SELECT);
     g_UiScriptProgress = 0;
-    UpdateOwnedCarNeighbours();
+    UpdateOwnedCarNeighbours(MenuCarBrowse());
     DrawCarNamePlate(MenuWidgetState());
     DrawMenuCarView();
     DrawMenuLightBurst(MenuWidgetState(), -9);

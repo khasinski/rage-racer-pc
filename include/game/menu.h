@@ -145,6 +145,13 @@ typedef struct CarSelect {
     s32 cursor;
 } CarSelect;
 
+typedef struct CarBrowse {
+    s32 cursor;
+    s32 shopIndex;
+    s32 previous;
+    s32 next;
+} CarBrowse;
+
 typedef struct Ranking {
     s32 cursor;
 } Ranking;
@@ -200,6 +207,7 @@ typedef struct MenuRuntime {
     TeamLogo teamLogo;
     CarSpecGraph carSpecGraph;
     CarSelect carSelect;
+    CarBrowse carBrowse;
     Ranking ranking;
     OptionMenu optionMenu;
     Frontend frontend;
@@ -220,6 +228,7 @@ TeamName *MenuTeamName(void);
 TeamLogo *MenuTeamLogo(void);
 CarSpecGraph *MenuCarSpecGraph(void);
 CarSelect *MenuCarSelect(void);
+CarBrowse *MenuCarBrowse(void);
 Ranking *MenuRanking(void);
 OptionMenu *MenuOption(void);
 MenuWidgets *MenuWidgetState(void);
@@ -381,8 +390,8 @@ void DrawShopPromptButtons(GameOrderingTableEntry *ot, s32 cursor, s32 flash);
 
 /* Rescans the owned-car list either side of the current one, and rechecks
  * what the shop and the engineer will accept. Both live in car_select.c. */
-void UpdateOwnedCarNeighbours(void);
-void RefreshCarUnlockState(void);
+void UpdateOwnedCarNeighbours(CarBrowse *browse);
+void RefreshCarUnlockState(CarBrowse *browse);
 void UpdateCarSelectScreen(void);
 s32 DrawCarSelectScreen(s32 *progress, s32 step);
 
@@ -484,9 +493,7 @@ typedef enum FrontendState {
 extern s32 g_MenuViewSpin;
 extern s16 g_NegconMaxTwistSaved;
 extern s16 g_NegconSteerPlaySaved;
-extern s16 g_NextOwnedCarIndex;
 extern s32 g_PlayerMoney;
-extern s16 g_PrevOwnedCarIndex;
 extern TimedDrawCommand g_UiChromeScript[];
 extern TimedDrawCommand g_UiChromeScript2[];
 
@@ -520,7 +527,6 @@ enum {
 };
 extern s32 g_CarTuneUpPriceTable[CAR_TUNE_UP_PRICE_COUNT];
 extern s32 g_RankingPendingState;
-extern s32 g_ShopCarIndex;
 extern char *g_BgmTrackNames[];
 extern s32 g_CarPriceTable[CAR_PRICE_COUNT];
 extern TimedDrawCommand g_MenuHintBarScript[];
@@ -619,7 +625,7 @@ void DrawTireCompoundSlider(Customize *customize, u8 compound,
                             s32 confirming);
 void DrawVolumeBar(s32 level, s32 y);
 void UpdateAndDrawCourseCard(CourseSelectScreen *screen);
-void UpdateCarListCursor(void);
+void UpdateCarListCursor(CarBrowse *browse);
 void UpdateFrontend(void);
 void UpdateTitleAttract(void);
 

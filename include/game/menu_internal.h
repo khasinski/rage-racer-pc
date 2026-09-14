@@ -348,7 +348,7 @@ static inline ShowroomCarLoadAction ResolveShowroomCarLoadAction(
 /* The showroom turntable is implementation shared by CAR SELECT and SHOP. */
 int MenuCarViewSettled(void);
 void MenuSpinToCar(s32 *shownCar, s32 fromIndex, s32 toIndex, s32 newTarget);
-void MenuSpinBackToPlayerCar(void);
+void MenuSpinBackToPlayerCar(s32 shownCar);
 
 void RestoreTeamLogoClut(void);
 void UploadTeamLogoClut(void);
@@ -481,7 +481,7 @@ typedef struct CarShop {
     s32 modalCursor;
 } CarShop;
 
-void UpdateCarShop(CarShop *shop);
+void UpdateCarShop(CarShop *shop, CarBrowse *browse);
 void ResetCarShopScreen(void);
 
 #endif

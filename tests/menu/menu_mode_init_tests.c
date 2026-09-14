@@ -11,6 +11,7 @@ static MenuWidgets s_menuWidgets;
 #include <string.h>
 
 static CarSelect s_carSelect;
+static CarBrowse s_carBrowse;
 
 GameRenderState g_RenderState;
 Camera g_Camera;
@@ -40,6 +41,7 @@ s32 g_MenuScreen;
 
 void MenuRuntimeReset(void) {
     memset(&s_courseSelect, 0, sizeof(s_courseSelect));
+    s_carBrowse = (CarBrowse){.shopIndex = -1, .previous = -1, .next = -1};
     memset(&s_customize, 0, sizeof(s_customize));
     memset(&s_designMode, 0, sizeof(s_designMode));
     memset(&s_logo, 0, sizeof(s_logo));
@@ -50,6 +52,7 @@ void MenuRuntimeReset(void) {
     g_MenuOutgoingHandlerIndex = -1;
 }
 CourseSelectScreen *MenuCourseSelect(void) { return &s_courseSelect; }
+CarBrowse *MenuCarBrowse(void) { return &s_carBrowse; }
 Customize *MenuCustomize(void) { return &s_customize; }
 DesignMode *MenuDesignMode(void) { return &s_designMode; }
 LogoSample *MenuLogoSample(void) { return &s_logo; }

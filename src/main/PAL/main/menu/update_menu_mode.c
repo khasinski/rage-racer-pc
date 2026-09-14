@@ -20,6 +20,7 @@ void MenuRuntimeReset(void) {
         .activeScreen = MENU_SCREEN_BOOTSTRAP,
         .activeDrawScreen = -1,
         .outgoingDrawScreen = -1,
+        .carBrowse = {.shopIndex = -1, .previous = -1, .next = -1},
     };
 }
 
@@ -71,6 +72,10 @@ CarSpecGraph *MenuCarSpecGraph(void) {
 
 CarSelect *MenuCarSelect(void) {
     return &s_menuRuntime.carSelect;
+}
+
+CarBrowse *MenuCarBrowse(void) {
+    return &s_menuRuntime.carBrowse;
 }
 
 Ranking *MenuRanking(void) {
@@ -126,7 +131,7 @@ s32 MenuOutgoingProgress(void) {
 
 static u32 CurrentMenuCarTireCompound(void) {
     s32 carIndex = s_menuRuntime.activeScreen == MENU_SCREEN_CAR_SHOP
-                       ? g_CarListCursor
+                       ? s_menuRuntime.carBrowse.cursor
                        : g_PlayerCarIndex;
 
     if (g_CarTable == NULL || (u32)carIndex >= GAME_CAR_COUNT) {

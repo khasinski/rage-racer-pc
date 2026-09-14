@@ -23,9 +23,9 @@ static MenuWidgets s_menuWidgets;
 #include <stdio.h>
 #include <string.h>
 
-s32 g_CarListCursor;
 CarModelAsset *g_CarModelAsset;
 static CarSelect s_carSelect;
+static CarBrowse s_browse;
 TimedDrawCommand g_CarSelectMenuScriptGp[1];
 TimedDrawCommand g_CarSelectMenuScriptTimeAttack[1];
 
@@ -68,15 +68,12 @@ s32 g_MenuViewAngle;
 s32 g_MenuViewAngleTarget;
 s32 g_MenuViewOffset;
 s32 g_MenuViewOffsetTarget;
-s16 g_NextOwnedCarIndex;
 u16 g_PadHeld;
 u16 g_PadPressed;
 s32 g_PlayerCarIndex;
 s32 g_PlayerMoney;
-s16 g_PrevOwnedCarIndex;
 GameRaceProgress *g_RaceProgress;
 s32 g_SceneId;
-s32 g_ShopCarIndex;
 TimedDrawCommand g_UiChromeScript[1];
 TimedDrawCommand g_UiChromeScript2[1];
 s32 g_UiScriptProgress;
@@ -177,8 +174,14 @@ void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
     RECORD("sprites", progress, count, slot);
 }
 s32 CountOwnedCars(void) { RECORD("countowned", 0); return 6; }
-void UpdateOwnedCarNeighbours(void) { RECORD("neighbours", 0); }
-void RefreshCarUnlockState(void) { RECORD("unlockstate", 0); }
+void UpdateOwnedCarNeighbours(CarBrowse *browse) {
+    (void)browse;
+    RECORD("neighbours", 0);
+}
+void RefreshCarUnlockState(CarBrowse *browse) {
+    (void)browse;
+    RECORD("unlockstate", 0);
+}
 s32 RequestCarModel(s32 carIndex) {
     RECORD("requestcar", carIndex);
     return 1;
@@ -284,9 +287,9 @@ int main(int argc, char **argv) {
         g_MenuViewAngleTarget = 0x7A120;
         g_MenuViewAngle = 0x7A120 + settledOffsets[settled];
         g_CarSwapToIndex = swap ? -1 : 3;
-        g_PrevOwnedCarIndex = (s16)owned[oi];
-        g_NextOwnedCarIndex = (s16)owned[1 - oi];
-        g_ShopCarIndex = shop ? -1 : 7;
+        s_browse.previous = (s16)owned[oi];
+        s_browse.next = (s16)owned[1 - oi];
+        s_browse.shopIndex = shop ? -1 : 7;
         g_MenuViewOffset = offsets[off];
         s_outgoingProgress = off;
 
@@ -294,7 +297,7 @@ int main(int argc, char **argv) {
         s_carSpecGraph.step = 1;
         s_menuWidgets.carNameModel = 2;
         g_PlayerCarIndex = 9;
-        g_CarListCursor = 0;
+        s_browse.cursor = 0;
         g_CarSwapFromIndex = 0;
         g_CourseIndex = 6;
         g_GrandPrixClass = gp ? 5 : 2;
@@ -330,7 +333,7 @@ int main(int argc, char **argv) {
             after[0] = MenuRuntimeScreenState(MENU_SCREEN_CAR_SELECT);
             after[1] = s_carSelect.cursor;
             after[2] = g_PlayerCarIndex;
-            after[3] = g_CarListCursor;
+            after[3] = s_browse.cursor;
             after[4] = g_CarSwapFromIndex;
             after[5] = g_CarSwapToIndex;
             after[6] = g_MenuViewAngle;
@@ -420,6 +423,7 @@ int main(int argc, char **argv) {
 }
 
 CarSelect *MenuCarSelect(void) { return &s_carSelect; }
+CarBrowse *MenuCarBrowse(void) { return &s_browse; }
 MenuWidgets *MenuWidgetState(void) { return &s_menuWidgets; }
 
 s32 MenuOutgoingProgress(void) { return s_outgoingProgress; }

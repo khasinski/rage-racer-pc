@@ -18,10 +18,10 @@ static CarEntry s_cars[GAME_CAR_COUNT];
 CarEntry *g_CarTable = s_cars;
 u32 g_CarModelSlot;
 s32 g_MenuScreen;
-s16 g_NextOwnedCarIndex;
 s32 g_PlayerCarIndex;
-s16 g_PrevOwnedCarIndex;
 s32 g_UiScriptProgress;
+static CarBrowse s_browse;
+CarBrowse *MenuCarBrowse(void) { return &s_browse; }
 
 static s32 s_installCalls;
 static s32 s_namePlateCalls;
@@ -61,30 +61,30 @@ int main(void) {
     s_cars[4].enabled = 1;
     s_cars[10].enabled = 1;
     g_PlayerCarIndex = 6;
-    UpdateOwnedCarNeighbours();
-    CHECK(g_PrevOwnedCarIndex == 4);
-    CHECK(g_NextOwnedCarIndex == 10);
+    UpdateOwnedCarNeighbours(&s_browse);
+    CHECK(s_browse.previous == 4);
+    CHECK(s_browse.next == 10);
 
     g_PlayerCarIndex = 1;
-    UpdateOwnedCarNeighbours();
-    CHECK(g_PrevOwnedCarIndex == -1);
-    CHECK(g_NextOwnedCarIndex == 4);
+    UpdateOwnedCarNeighbours(&s_browse);
+    CHECK(s_browse.previous == -1);
+    CHECK(s_browse.next == 4);
 
     g_PlayerCarIndex = 10;
-    UpdateOwnedCarNeighbours();
-    CHECK(g_PrevOwnedCarIndex == 4);
-    CHECK(g_NextOwnedCarIndex == -1);
+    UpdateOwnedCarNeighbours(&s_browse);
+    CHECK(s_browse.previous == 4);
+    CHECK(s_browse.next == -1);
 
     g_PlayerCarIndex = INT_MIN;
-    UpdateOwnedCarNeighbours();
-    CHECK(g_PrevOwnedCarIndex == -1 && g_NextOwnedCarIndex == -1);
+    UpdateOwnedCarNeighbours(&s_browse);
+    CHECK(s_browse.previous == -1 && s_browse.next == -1);
     g_PlayerCarIndex = INT_MAX;
-    UpdateOwnedCarNeighbours();
-    CHECK(g_PrevOwnedCarIndex == -1 && g_NextOwnedCarIndex == -1);
+    UpdateOwnedCarNeighbours(&s_browse);
+    CHECK(s_browse.previous == -1 && s_browse.next == -1);
     g_CarTable = NULL;
     g_PlayerCarIndex = 4;
-    UpdateOwnedCarNeighbours();
-    CHECK(g_PrevOwnedCarIndex == -1 && g_NextOwnedCarIndex == -1);
+    UpdateOwnedCarNeighbours(&s_browse);
+    CHECK(s_browse.previous == -1 && s_browse.next == -1);
     g_CarTable = s_cars;
     g_PlayerCarIndex = 10;
 

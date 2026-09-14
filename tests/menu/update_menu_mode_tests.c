@@ -7,7 +7,6 @@
 #include <string.h>
 
 s32 g_AnimTimer;
-s32 g_CarListCursor;
 CarEntry *g_CarTable;
 GameRenderState g_RenderState;
 s32 g_MenuHandlerIndex;
@@ -123,7 +122,7 @@ static void Reset(void) {
     MenuActivateScreen(MENU_SCREEN_COURSE_SELECT);
     MenuCarSpecGraph()->step = 7;
     g_PlayerCarIndex = 1;
-    g_CarListCursor = 2;
+    MenuCarBrowse()->cursor = 2;
     s_cars[1].tireCompound = 4;
     s_cars[2].tireCompound = 8;
     MenuWidgetState()->hintStep = 0;
@@ -193,7 +192,7 @@ static int TestInvalidIndices(void) {
 
     Reset();
     MenuActivateScreen(MENU_SCREEN_CAR_SHOP);
-    g_CarListCursor = GAME_CAR_COUNT;
+    MenuCarBrowse()->cursor = GAME_CAR_COUNT;
     UpdateMenuMode();
     CHECK(s_specCarTire == 0);
 

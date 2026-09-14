@@ -56,7 +56,7 @@ void MenuSpinToCar(s32 *shownCar, s32 fromIndex, s32 toIndex, s32 newTarget) {
  * Leaving the shop puts the player's own car back on the turntable. No cue and
  * no panel here: this runs under the sound the choice itself makes.
  */
-void MenuSpinBackToPlayerCar(void) {
+void MenuSpinBackToPlayerCar(s32 shownCar) {
     s32 previousTarget;
 
     if ((u32)g_PlayerCarIndex >= GAME_CAR_COUNT) {
@@ -67,7 +67,7 @@ void MenuSpinBackToPlayerCar(void) {
     }
     previousTarget = g_MenuViewAngleTarget;
     g_MenuViewAngleTarget = 0;
-    g_CarSwapFromIndex = g_CarListCursor;
+    g_CarSwapFromIndex = shownCar;
     g_CarSwapToIndex = g_PlayerCarIndex;
     g_MenuViewAngle = RebaseCarouselValue(
         g_MenuViewAngle, previousTarget, MENU_CAR_VIEW_REBASE_SPAN);

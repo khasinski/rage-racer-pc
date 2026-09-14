@@ -6,7 +6,6 @@
 
 static MenuWidgets s_menuWidgets;
 
-s32 g_CarListCursor;
 s32 g_CarSwapFromIndex;
 s32 g_CarSwapToIndex;
 s32 g_MenuViewAngle;
@@ -135,10 +134,9 @@ int main(void) {
 
     ResetCalls();
     g_PlayerCarIndex = 4;
-    g_CarListCursor = 9;
     g_MenuViewAngle = 300000;
     g_MenuViewAngleTarget = 1200000;
-    MenuSpinBackToPlayerCar();
+    MenuSpinBackToPlayerCar(9);
     CHECK(s_requestCount == 1 && s_lastRequestedCar == 4);
     CHECK(g_CarSwapFromIndex == 9 && g_CarSwapToIndex == 4);
     CHECK(g_MenuViewAngleTarget == 0);
@@ -146,22 +144,21 @@ int main(void) {
 
     ResetCalls();
     s_requestResult = 0;
-    g_CarListCursor = 7;
     g_PlayerCarIndex = 4;
     g_MenuViewAngle = 123;
     g_MenuViewAngleTarget = 456;
     g_CarSwapFromIndex = 8;
     g_CarSwapToIndex = 9;
-    MenuSpinBackToPlayerCar();
+    MenuSpinBackToPlayerCar(7);
     CHECK(s_requestCount == 1 && s_lastRequestedCar == 4);
     CHECK(g_MenuViewAngle == 123 && g_MenuViewAngleTarget == 456);
     CHECK(g_CarSwapFromIndex == 8 && g_CarSwapToIndex == 9);
 
     ResetCalls();
     g_PlayerCarIndex = -1;
-    MenuSpinBackToPlayerCar();
+    MenuSpinBackToPlayerCar(0);
     g_PlayerCarIndex = GAME_CAR_COUNT;
-    MenuSpinBackToPlayerCar();
+    MenuSpinBackToPlayerCar(0);
     CHECK(s_requestCount == 0);
 
     puts("menu turntable tests passed");

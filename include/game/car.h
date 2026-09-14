@@ -304,12 +304,8 @@ extern CarEntry g_TimeAttackCars[];
 extern s32 g_CameraCarIndex;
 
 /* Index into g_CarTable of the car the player drives; selects the model and
- * texture pack to install. Distinct from g_CarListCursor. */
+ * texture pack to install. Distinct from the menu's CarBrowse cursor. */
 extern s32 g_PlayerCarIndex;
-
-/* Cursor of the car list being browsed in the shop; steps to the next entry
- * with `enabled == 0`. Buying it copies it into g_PlayerCarIndex. */
-extern s32 g_CarListCursor;
 
 /* Index of each car model's first grade in the 32-entry asset list; thirteen
  * entries, one per model. GetCarAssetIndex adds the owned grade to it. */

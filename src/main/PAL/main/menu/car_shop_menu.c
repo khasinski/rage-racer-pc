@@ -43,11 +43,11 @@ static s32 FindAdjacentCarOnOffer(s32 cursor, s32 step) {
     return FindCarOnOffer((s32)from, step);
 }
 
-void RefreshCarUnlockState(void) {
-    g_ShopCarIndex = FindCarOnOffer(0, 1);
+void RefreshCarUnlockState(CarBrowse *browse) {
+    browse->shopIndex = FindCarOnOffer(0, 1);
 }
 
-void UpdateCarListCursor(void) {
-    g_PrevOwnedCarIndex = FindAdjacentCarOnOffer(g_CarListCursor, -1);
-    g_NextOwnedCarIndex = FindAdjacentCarOnOffer(g_CarListCursor, 1);
+void UpdateCarListCursor(CarBrowse *browse) {
+    browse->previous = FindAdjacentCarOnOffer(browse->cursor, -1);
+    browse->next = FindAdjacentCarOnOffer(browse->cursor, 1);
 }
