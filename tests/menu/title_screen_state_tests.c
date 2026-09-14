@@ -9,21 +9,16 @@
 #include <limits.h>
 #include <stdio.h>
 
+static Frontend s_frontend;
+
 s32 g_AnimTimer;
 GameFrameContext *g_DrawBuffer;
 s32 g_FrameSyncThreshold;
-u32 g_FrontendIdleTimer;
-FrontendState g_FrontendState;
-s32 g_MainMenuSlide;
 u16 g_PadPressed;
 GameRenderState g_RenderState;
 s32 g_SceneId;
 s32 g_SceneTimer;
 Fmv g_Fmv;
-s32 g_TitleAttractTimer;
-s32 g_TitleExitTimer;
-s32 g_TitleFadeLevel;
-s32 g_TitleMenuSelection;
 
 static GameFrameContext s_frame;
 static s32 s_audioFadeCalls;
@@ -127,9 +122,9 @@ int main(void) {
     CHECK(s_setupCalls == 1 && s_displayMaskCalls == 1 &&
           s_imageUploadCalls == 1);
     CHECK(s_textureResetCalls == 1 && s_textureResetBeforeUpload == 1);
-    CHECK(g_TitleFadeLevel == 0 && g_TitleAttractTimer == 0 &&
-          g_TitleExitTimer == 30);
-    CHECK(g_FrontendState == FRONTEND_STATE_TITLE && g_SceneId == 4 &&
+    CHECK(s_frontend.fade == 0 && s_frontend.attractTimer == 0 &&
+          s_frontend.exitTimer == 30);
+    CHECK(s_frontend.state == FRONTEND_STATE_TITLE && g_SceneId == 4 &&
           g_SceneTimer == 0);
     CHECK(s_classRefreshCalls == 1 && s_reverbCalls == 1);
 
@@ -139,27 +134,29 @@ int main(void) {
     CHECK(s_setupCalls == 1 && s_displayMaskCalls == 0 &&
           s_imageUploadCalls == 0);
     CHECK(s_textureResetCalls == 1);
-    CHECK(g_TitleFadeLevel == 253 && g_TitleAttractTimer == 400 &&
-          g_TitleExitTimer == 0);
+    CHECK(s_frontend.fade == 253 && s_frontend.attractTimer == 400 &&
+          s_frontend.exitTimer == 0);
     CHECK(s_lastFadeBrightness == 255);
 
-    g_TitleFadeLevel = 1;
+    s_frontend.fade = 1;
     DrawPressStartPrompt();
-    CHECK(g_TitleFadeLevel == 0 && s_lastFadeBrightness == 1);
+    CHECK(s_frontend.fade == 0 && s_lastFadeBrightness == 1);
 
     g_AnimTimer = INT_MAX;
     DrawPressStartPrompt();
     CHECK(s_lastSinAngle >= 0 && s_lastSinAngle <= 0xFE0);
 
     g_PadPressed = PAD_START;
-    g_TitleAttractTimer = 10;
-    g_TitleMenuSelection = 4;
+    s_frontend.attractTimer = 10;
+    s_frontend.selection = 4;
     UpdateTitleScreen();
-    CHECK(g_FrontendState == FRONTEND_STATE_MENU_OPENING);
-    CHECK(g_FrontendIdleTimer == 0 && g_TitleMenuSelection == 0);
-    CHECK(g_TitleAttractTimer == 0 && s_audioFadeCalls == 1);
+    CHECK(s_frontend.state == FRONTEND_STATE_MENU_OPENING);
+    CHECK(s_frontend.idleTimer == 0 && s_frontend.selection == 0);
+    CHECK(s_frontend.attractTimer == 0 && s_audioFadeCalls == 1);
     CHECK(s_soundCue == 2);
 
     puts("title screen state tests passed");
     return 0;
 }
+
+Frontend *MenuFrontend(void) { return &s_frontend; }

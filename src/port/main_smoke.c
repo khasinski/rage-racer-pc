@@ -25,6 +25,7 @@
 #include "modern/scene_capture.h"
 #include "game/player_car_internal.h"
 #include "game/input_internal.h"
+#include "game/frontend_internal.h"
 #include "game/menu.h"
 #include "game/state.h"
 #include "game/race.h"
@@ -55,7 +56,6 @@ static int LoadCarCatalogForSmoke(void) {
 }
 extern int g_SceneId;
 extern int g_FrameCounter;
-extern int g_FrontendState;
 extern int GameMenuBusy;
 extern int g_MenuViewAngle;
 extern int g_MenuViewAngleTarget;
@@ -476,7 +476,7 @@ static void ReportFinalState(void) {
            "rpm=%d jitter=%d terrain_second=%llu terrain_child_reject=%llu "
            "terrain_child_second=%llu model_backface=%llu mirror_y=%d "
            "steer=%d course_mirror=%d retire_camera=%d capture_faces=%d\n",
-           g_FrameCounter, g_SceneId, g_FrontendState,
+           g_FrameCounter, g_SceneId, MenuFrontend()->state,
            g_PlayerCar.x, g_PlayerCar.z, g_PlayerCar.speed,
            g_PlayerCar.drive.acceleratorInput.value, g_PadHeld,
            g_PadButtonMapping[2], g_PadType, g_RacePhase,

@@ -6,6 +6,8 @@
 
 /* Scene 2: reset title/menu state, then hand over to UpdateFrontend. */
 void EnterFrontend(void) {
+    Frontend *frontend = MenuFrontend();
+
     SetDispMask(0);
     CloseLoadedAudioSlots();
     ResetTrackTextureSwap();
@@ -14,13 +16,10 @@ void EnterFrontend(void) {
     g_FrameSyncThreshold = 0x80;
     g_SceneId = 4;
     g_SceneTimer = 0;
-    g_FrontendIdleTimer = 0;
-    g_TitleFadeLevel = 0;
-    g_MainMenuSlide = 0;
-    g_TitlePulse = 0;
-    g_FrontendState = FRONTEND_STATE_TITLE;
-    g_TitleExitTimer = 0;
-    g_TitleAttractTimer = -1;
+    *frontend = (Frontend){
+        .state = FRONTEND_STATE_TITLE,
+        .attractTimer = -1,
+    };
 
     RefreshClassWinState();
     SetDefaultReverbDepth();

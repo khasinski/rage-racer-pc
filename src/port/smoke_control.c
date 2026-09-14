@@ -8,6 +8,7 @@
 
 #include "game/player_car_internal.h"
 #include "game/input_internal.h"
+#include "game/frontend_internal.h"
 #include "game/menu.h"
 #include "game/race.h"
 #include "game/race_internal.h"
@@ -649,7 +650,7 @@ int PortShouldExit(int frame_number) {
     for (index = 0; index < g_SmokeStateInputCount; index++) {
         RageSmokeStateInput *input = &g_SmokeStateInputs[index];
         int phaseMatches = !input->hasPhase ||
-            (input->scene == 4 && g_FrontendState == input->phase) ||
+            (input->scene == 4 && MenuFrontend()->state == input->phase) ||
             (input->scene == 8 &&
              MenuRuntimeCurrent()->activeScreen == input->phase) ||
             (input->scene == 32 &&
@@ -711,12 +712,12 @@ int PortShouldExit(int frame_number) {
             retireStep = 3;
         }
     }
-    if (g_SceneId != lastScene || g_FrontendState != lastFrontend) {
+    if (g_SceneId != lastScene || MenuFrontend()->state != lastFrontend) {
         fprintf(stderr,
                 "smoke state frame=%d scene=%d frontend=%d sky_row=%d\n",
-                frame_number, g_SceneId, g_FrontendState, g_SkyRowBase);
+                frame_number, g_SceneId, MenuFrontend()->state, g_SkyRowBase);
         lastScene = g_SceneId;
-        lastFrontend = g_FrontendState;
+        lastFrontend = MenuFrontend()->state;
     }
     if (g_SceneId == 8 &&
         MenuRuntimeCurrent()->activeScreen != lastMenuScreen) {

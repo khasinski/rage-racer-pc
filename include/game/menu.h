@@ -4,6 +4,7 @@
 #include "common.h"
 
 #include "game/menu_types.h"
+#include "game/frontend_internal.h"
 #include "game/input_internal.h"
 #include "game/render_state.h"
 #include "game/scene.h"
@@ -154,6 +155,7 @@ typedef struct MenuRuntime {
     CarSpecGraph carSpecGraph;
     CarSelect carSelect;
     OptionMenu optionMenu;
+    Frontend frontend;
     MenuWidgets widgets;
 } MenuRuntime;
 
@@ -201,7 +203,6 @@ extern s32 (*g_MenuScreenDraw[MENU_SCREEN_COUNT])(s32 *progress, s32 step);
  * (g_GrandPrixMode 0), 3 starts the attract demo and 4 opens the options.
  * DrawMainMenuRows draws the row whose index equals it as selected.
  */
-extern s32 g_TitleMenuSelection;
 
 /*
  * Element mask handed to DrawBitPatternOverlay by
@@ -450,8 +451,6 @@ typedef enum FrontendState {
     FRONTEND_STATE_COUNT
 } FrontendState;
 
-extern FrontendState g_FrontendState;
-extern s32 g_MainMenuSlide;
 extern s32 g_MenuConfirmTimer;
 extern u8 g_MenuSubCursor;
 extern s32 g_MenuViewSpin;
@@ -461,9 +460,6 @@ extern s16 g_NextOwnedCarIndex;
 extern s32 g_PlayerMoney;
 extern s16 g_PrevOwnedCarIndex;
 extern u16 g_TeamLogoSwatches[15];
-extern s32 g_TitleAttractTimer;
-extern s32 g_TitleExitTimer;
-extern s32 g_TitlePulse;
 extern TimedDrawCommand g_UiChromeScript[];
 extern TimedDrawCommand g_UiChromeScript2[];
 
@@ -483,7 +479,6 @@ void DrawTimeAttackPlate(MenuWidgets *widgets);
  * model access and rendering. */
 s32 ActivateShowroomCarModel(s32 slot);
 
-extern s32 g_AttractCycleCount;
 extern u8 g_TeamNameFontGlyphs
     [TEAM_NAME_FONT_GLYPH_COUNT * TEAM_NAME_FONT_GLYPH_BYTES];
 extern u8 g_TeamNameBlankTile[192];
@@ -512,7 +507,6 @@ extern u16 g_TeamLogoFadedClut[16];
 extern s32 g_RankingPendingState;
 extern s32 g_ShopCarIndex;
 extern s32 g_RankingCursor;
-extern s32 g_TitleFadeLevel;
 extern s32 g_TeamLogoOption;
 extern char *g_BgmTrackNames[];
 extern s32 g_CarPriceTable[CAR_PRICE_COUNT];

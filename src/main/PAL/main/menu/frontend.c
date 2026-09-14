@@ -22,11 +22,13 @@ enum {
 };
 
 void UpdateMainMenuExit(void) {
-    g_TitlePulse++;
-    DrawFullscreenFadeTile(g_TitlePulse * 2, 0x59);
+    Frontend *frontend = MenuFrontend();
 
-    if (g_TitlePulse >= 0x81) {
-        switch (g_TitleMenuSelection) {
+    frontend->pulse++;
+    DrawFullscreenFadeTile(frontend->pulse * 2, 0x59);
+
+    if (frontend->pulse >= 0x81) {
+        switch (frontend->selection) {
         case TITLE_MENU_GRAND_PRIX:
         case TITLE_MENU_EXTRA_GRAND_PRIX:
             g_GrandPrixMode = 1;
@@ -55,12 +57,13 @@ void UpdateMainMenuExit(void) {
 }
 
 void UpdateTitleAttract(void) {
+    const Frontend *frontend = MenuFrontend();
     s32 alpha;
     u16 panelClut = 0x7E00;
     void *orderingTable = GamePrimaryOrderingTable(1);
     void *next;
 
-    alpha = 0x7F - g_MainMenuSlide * 2;
+    alpha = 0x7F - frontend->menuSlide * 2;
     if (alpha < 0x30) {
         alpha = 0x30;
     } else if (alpha > 0x7F) {
@@ -90,11 +93,12 @@ void UpdateTitleAttract(void) {
 
 
 static void UpdateAttractRaceLoading(void) {
+    const Frontend *frontend = MenuFrontend();
     s32 randomCourse;
     const GrandPrixClassDefinition *definition;
 
-    if (g_FrontendState == FRONTEND_STATE_MENU_EXIT ||
-        (g_AttractCycleCount % 2) != 0) {
+    if (frontend->state == FRONTEND_STATE_MENU_EXIT ||
+        (frontend->attractCycle % 2) != 0) {
         return;
     }
 
@@ -126,34 +130,37 @@ static void UpdateAttractRaceLoading(void) {
 }
 
 static void UpdateFrontendIdleAttract(void) {
-    if (g_FrontendIdleTimer < FRONTEND_IDLE_FRAMES) {
-        g_FrontendIdleTimer++;
+    Frontend *frontend = MenuFrontend();
+
+    if (frontend->idleTimer < FRONTEND_IDLE_FRAMES) {
+        frontend->idleTimer++;
         return;
     }
 
-    if ((g_AttractCycleCount % 2) != 0) {
+    if ((frontend->attractCycle % 2) != 0) {
         BeginIntroFmv(3);
-        g_AttractCycleCount++;
+        frontend->attractCycle++;
     } else if (g_SceneTimer == FRONTEND_ATTRACT_READY) {
         g_GrandPrixMode = 1;
         g_SceneId = 0x1D;
-        g_AttractCycleCount++;
+        frontend->attractCycle++;
     }
 }
 
 void UpdateFrontend(void) {
+    Frontend *frontend = MenuFrontend();
     u32 sceneTimer;
 
     g_AnimTimer++;
     Random15();
 
-    if (g_TitleAttractTimer > 0) {
-        g_TitleAttractTimer--;
+    if (frontend->attractTimer > 0) {
+        frontend->attractTimer--;
     }
-    if (g_TitleAttractTimer == 0 && CdControl(9, 0, 0) == 1) {
-        g_TitleAttractTimer--;
+    if (frontend->attractTimer == 0 && CdControl(9, 0, 0) == 1) {
+        frontend->attractTimer--;
     }
-    if (g_TitleExitTimer != 0 && --g_TitleExitTimer == 0) {
+    if (frontend->exitTimer != 0 && --frontend->exitTimer == 0) {
         PlaySoundCue(0x1A);
     }
 
@@ -172,10 +179,10 @@ void UpdateFrontend(void) {
         SetupDisplay240(0, 0, 0);
     }
 
-    if ((u32)g_FrontendState >= FRONTEND_STATE_COUNT) {
-        g_FrontendState = FRONTEND_STATE_TITLE;
+    if ((u32)frontend->state >= FRONTEND_STATE_COUNT) {
+        frontend->state = FRONTEND_STATE_TITLE;
     }
-    g_FrontendDrawHandlers[g_FrontendState]();
+    g_FrontendDrawHandlers[frontend->state]();
     UpdateFrontendIdleAttract();
     UpdateTitleAttract();
 }

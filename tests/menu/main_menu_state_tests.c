@@ -10,6 +10,8 @@
 #include <limits.h>
 #include <stdio.h>
 
+static Frontend s_frontend;
+
 static OptionMenu s_optionMenu;
 
 CarEntry g_GrandPrixCars[GAME_CAR_COUNT];
@@ -27,14 +29,9 @@ GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
 s32 g_CourseIndex;
 s16 g_ExtraGrandPrixUnlocked;
-u32 g_FrontendIdleTimer;
-FrontendState g_FrontendState;
 s32 g_GrandPrixClass;
-s32 g_MainMenuSlide;
 u16 g_PadPressed;
 s16 g_SeriesSelection;
-s32 g_TitleMenuSelection;
-s32 g_TitlePulse;
 
 static GameFrameContext s_frame;
 static s32 s_assetComplete;
@@ -95,10 +92,10 @@ u8 *GameQueueTexturedRect(GameOrderingTableEntry *ot, u8 *packet, s32 x,
 static void ResetState(s32 selection) {
     g_DrawBuffer = &s_frame;
     g_RenderState.draw.packetCursor = s_frame.layout.primitiveBuffer;
-    g_TitleMenuSelection = selection;
+    s_frontend.selection = selection;
     g_PadPressed = PAD_CONFIRM;
-    g_FrontendState = FRONTEND_STATE_MENU_INPUT;
-    g_FrontendIdleTimer = 99;
+    s_frontend.state = FRONTEND_STATE_MENU_INPUT;
+    s_frontend.idleTimer = 99;
     s_optionMenu.cursor = 7;
     g_GrandPrixClass = 5;
     g_CourseIndex = 2;
@@ -112,8 +109,8 @@ static void ResetState(s32 selection) {
 }
 
 static int CheckCommonConfirmation(void) {
-    CHECK(g_FrontendState == FRONTEND_STATE_MENU_EXIT);
-    CHECK(g_FrontendIdleTimer == 0);
+    CHECK(s_frontend.state == FRONTEND_STATE_MENU_EXIT);
+    CHECK(s_frontend.idleTimer == 0);
     CHECK(s_shuffleCalls == 1 && s_resetCalls == 1);
     return 0;
 }
@@ -167,20 +164,22 @@ int main(void) {
 
     ResetState(TITLE_MENU_GRAND_PRIX);
     g_PadPressed = 0;
-    g_FrontendState = FRONTEND_STATE_MENU_OPENING;
-    g_MainMenuSlide = INT_MAX;
+    s_frontend.state = FRONTEND_STATE_MENU_OPENING;
+    s_frontend.menuSlide = INT_MAX;
     UpdateMainMenuOpen();
-    CHECK(g_MainMenuSlide == 0x30);
-    CHECK(g_FrontendState == FRONTEND_STATE_MENU_INPUT);
+    CHECK(s_frontend.menuSlide == 0x30);
+    CHECK(s_frontend.state == FRONTEND_STATE_MENU_INPUT);
 
-    g_FrontendState = FRONTEND_STATE_MENU_OPENING;
-    g_MainMenuSlide = INT_MIN;
+    s_frontend.state = FRONTEND_STATE_MENU_OPENING;
+    s_frontend.menuSlide = INT_MIN;
     UpdateMainMenuOpen();
-    CHECK(g_MainMenuSlide == 1);
-    CHECK(g_FrontendState == FRONTEND_STATE_MENU_OPENING);
+    CHECK(s_frontend.menuSlide == 1);
+    CHECK(s_frontend.state == FRONTEND_STATE_MENU_OPENING);
 
     puts("main menu state tests passed");
     return 0;
 }
 
 OptionMenu *MenuOption(void) { return &s_optionMenu; }
+
+Frontend *MenuFrontend(void) { return &s_frontend; }

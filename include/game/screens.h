@@ -22,7 +22,7 @@ void DrawGrandPrixIntro(s32 drawClassBanner); /* "CLASS%d %s GRANDPRIX" */
 /*
  * Title screen and main menu. UpdateFrontend runs one of the
  * four handlers below each frame via the jump table at g_FrontendDrawHandlers, indexed by
- * the sub-state g_FrontendState: 0 title -> 1 menu wipe-in -> 2 cursor/confirm ->
+ * the frontend sub-state: 0 title -> 1 menu wipe-in -> 2 cursor/confirm ->
  * 3 fade out and request the selected scene.
  */
 
@@ -32,7 +32,7 @@ void EnterFrontend(void);
 void EnterTitleScreen(void);
 
 /* The pulsing "PRESS START" sprite: a 112x16 cell at (0x68, 0xC8), brightness
- * from rsin(g_AnimTimer * 96). Also drains g_TitleFadeLevel. */
+ * from rsin(g_AnimTimer * 96). Also drains the title fade level. */
 void DrawPressStartPrompt(void);
 
 /* Frontend state 0: hold on the title screen until Start is pressed. */
@@ -43,7 +43,7 @@ void UpdateTitleScreen(void);
  * while g_ExtraGrandPrixUnlocked == 0, leaving four visible rows. */
 void DrawMainMenuRows(void);
 
-/* Frontend state 1: the 48-frame menu wipe-in (counter g_MainMenuSlide to 0x30). */
+/* Frontend state 1: the 48-frame menu wipe-in (menu slide counter to 0x30). */
 void UpdateMainMenuOpen(void);
 
 /* Frontend state 2: cursor (wrapped % 5, skipping the locked entry 1) and

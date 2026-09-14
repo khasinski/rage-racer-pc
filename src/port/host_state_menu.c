@@ -25,7 +25,6 @@ typedef struct CarEntry CarEntry;
 typedef struct CarModelAsset CarModelAsset;
 typedef struct GameRaceProgress GameRaceProgress;
 
-s32 g_FrontendState;
 const s16 g_MenuLightBurstBandX[MENU_LIGHT_BURST_RAY_COUNT] = {
         48, 48, 48, 48, 48, 47, 47, 46, 46, 45, 44, 43, 42, 41, 39, 38,
         37, 35, 33, 32, 30, 28, 26, 24, 22, 19, 17, 14, 12, 9, 6, 4, 0};
@@ -60,7 +59,6 @@ Rect g_TeamLogoRect = {656, 48, 16, 64};
 s16 g_NegconPlayPercent[4] = {
     0, 3, 5, 7
 };
-s32 g_AttractCycleCount;
 s16 g_RoundScreenFadeDelays[ROUND_SCREEN_FADE_DELAY_STORAGE_COUNT] = {
     15, 256, 512, 0
 };
@@ -154,7 +152,6 @@ s32 g_AnimTimer;
 CarModelAsset *g_CarModelAsset;
 s32 g_GrandPrixClass;
 s32 g_BgmShuffleIndex;
-s32 g_TitleExitTimer;
 s32 g_GrandPrixRound;
 s32 g_DesignModeOption;
 s32 g_ShopCarIndex;
@@ -173,7 +170,6 @@ s16 g_NegconSteerPlay;
 s16 g_NegconMappingIndex;
 s32 g_MenuAltLayout;
 s32 g_GameMode;
-s32 g_TitleAttractTimer;
 s32 g_RankingCursor;
 s16 g_PadMappingIndex;
 s16 g_SeriesSelection;
@@ -183,21 +179,16 @@ u8 g_NegconAxisII;
 u8 g_NegconAxisL;
 s32 g_PlayerCarIndex;
 s32 g_BgmTrack;
-s32 g_TitleMenuSelection;
 s16 g_NegconMaxTwist;
 s16 g_NextOwnedCarIndex;
 s32 g_CourseIndex;
-s32 g_TitlePulse;
 s32 g_BgmSelection;
 u16 g_TeamLogoClut[16];
 u16 g_TeamLogoSwatches[15];
 s32 g_CarListCursor;
 s16 g_NegconSteerNeutral;
 GameRaceProgress *g_RaceProgress;
-s32 g_MainMenuSlide;
-s32 g_TitleFadeLevel;
 TeamLogoCanvas g_TeamLogoCanvas;
-u32 g_FrontendIdleTimer;
 s32 g_MenuViewSpin;
 const TimedDrawCommand *g_TeamLogoSubPanelScript;
 s32 g_TeamLogoOption;

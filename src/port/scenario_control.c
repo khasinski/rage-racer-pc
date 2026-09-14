@@ -353,7 +353,7 @@ static void ScenarioConfirm(void) {
     g_PadPressed |= PAD_CONFIRM;
     s_scenario.retryFrames = 0;
     fprintf(stderr, "rage-port: scenario confirm scene=%d phase=%d screen=%d\n",
-            g_SceneId, g_FrontendState, MenuRuntimeCurrent()->activeScreen);
+            g_SceneId, MenuFrontend()->state, MenuRuntimeCurrent()->activeScreen);
 }
 
 /* This is the sole adapter from a scenario request into the recovered game
@@ -421,7 +421,7 @@ void PortScenarioBeforeSceneHandler(void) {
 
     if (g_SceneId == GAME_SCENE_FRONTEND &&
         !s_scenario.titleSelectionApplied) {
-        g_TitleMenuSelection = s_scenario.launch.mode
+        MenuFrontend()->selection = s_scenario.launch.mode
             ? s_scenario.launch.series : 2;
         s_scenario.titleSelectionApplied = 1;
     }
@@ -429,7 +429,7 @@ void PortScenarioBeforeSceneHandler(void) {
 
     changed = g_SceneId != s_scenario.lastScene ||
               (g_SceneId == GAME_SCENE_FRONTEND &&
-               g_FrontendState != s_scenario.lastFrontend) ||
+               MenuFrontend()->state != s_scenario.lastFrontend) ||
               (g_SceneId == GAME_SCENE_MENU &&
                MenuRuntimeCurrent()->activeScreen != s_scenario.lastMenuScreen);
     if (changed) {
@@ -442,7 +442,7 @@ void PortScenarioBeforeSceneHandler(void) {
         if (g_SceneId != GAME_SCENE_FRONTEND)
             s_scenario.titleSelectionApplied = 0;
         s_scenario.lastScene = g_SceneId;
-        s_scenario.lastFrontend = g_FrontendState;
+        s_scenario.lastFrontend = MenuFrontend()->state;
         s_scenario.lastMenuScreen = MenuRuntimeCurrent()->activeScreen;
         s_scenario.stableFrames = s_scenario.retryFrames = 0;
     } else {
@@ -485,11 +485,11 @@ void PortScenarioBeforeSceneHandler(void) {
     }
 
     if (g_SceneId == GAME_SCENE_FRONTEND &&
-        g_FrontendState == FRONTEND_STATE_TITLE &&
+        MenuFrontend()->state == FRONTEND_STATE_TITLE &&
         s_scenario.stableFrames >= 20 && s_scenario.retryFrames >= 60) {
         ScenarioConfirm();
     } else if (g_SceneId == GAME_SCENE_FRONTEND &&
-               g_FrontendState == FRONTEND_STATE_MENU_INPUT &&
+               MenuFrontend()->state == FRONTEND_STATE_MENU_INPUT &&
                s_scenario.stableFrames >= 10 && s_scenario.retryFrames >= 30) {
         ScenarioConfirm();
     } else if (g_SceneId == GAME_SCENE_MENU && s_scenario.stableFrames >= 20 &&

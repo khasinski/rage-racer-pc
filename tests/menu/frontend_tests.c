@@ -1,6 +1,7 @@
 #include "common.h"
 #include "game/asset.h"
 #include "game/fmv.h"
+#include "game/frontend_internal.h"
 #include "game/menu.h"
 #include "game/race.h"
 #include "game/render_internal.h"
@@ -9,27 +10,21 @@
 #include "game/state.h"
 
 #include <stdio.h>
+
+static Frontend s_frontend;
 #include <string.h>
 
 s32 g_AnimTimer;
 s32 g_AssetLoadState;
 static s32 s_assetLoadFailed;
-s32 g_AttractCycleCount;
 ScoreRecord g_ClassRecords[CLASS_RECORD_COUNT];
 s32 g_CourseIndex;
-FrontendState g_FrontendState;
-u32 g_FrontendIdleTimer;
 s32 g_GrandPrixClass;
 s16 g_GrandPrixMode;
 s16 g_GrandPrixSeries;
-s32 g_MainMenuSlide;
 GameRaceProgress *g_RaceProgress;
 s32 g_SceneId;
 s32 g_SceneTimer;
-s32 g_TitleAttractTimer;
-s32 g_TitleExitTimer;
-s32 g_TitleMenuSelection;
-s32 g_TitlePulse;
 void (*g_FrontendDrawHandlers[FRONTEND_STATE_COUNT])(void);
 GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
@@ -154,14 +149,14 @@ static void Reset(void) {
     g_DrawBuffer = &s_frame;
     g_RenderState.draw.packetCursor = s_packets;
     g_RaceProgress = &s_progress;
-    g_FrontendState = FRONTEND_STATE_TITLE;
+    s_frontend.state = FRONTEND_STATE_TITLE;
     g_FrontendDrawHandlers[FRONTEND_STATE_TITLE] = DrawHandler;
     g_SceneTimer = 0;
-    g_FrontendIdleTimer = 0;
-    g_AttractCycleCount = 0;
-    g_TitleAttractTimer = 1;
-    g_TitleExitTimer = 0;
-    g_MainMenuSlide = 0;
+    s_frontend.idleTimer = 0;
+    s_frontend.attractCycle = 0;
+    s_frontend.attractTimer = 1;
+    s_frontend.exitTimer = 0;
+    s_frontend.menuSlide = 0;
     g_AssetLoadState = 0;
     s_assetLoadFailed = 0;
     s_drawHandlerCalls = 0;
@@ -195,19 +190,19 @@ int main(void) {
         }
     }
     Reset();
-    g_TitlePulse = 0x80;
-    g_TitleMenuSelection = 0;
+    s_frontend.pulse = 0x80;
+    s_frontend.selection = 0;
     s_progress.maxClassReached = -1;
     UpdateMainMenuExit();
-    CHECK(g_TitlePulse == 0x81 && s_fadeColor == 0x102);
+    CHECK(s_frontend.pulse == 0x81 && s_fadeColor == 0x102);
     CHECK(s_progress.maxClassReached == 0 && g_GrandPrixMode == 1);
     CHECK(g_GrandPrixSeries == 0 && g_SceneId == 0x1F);
 
     Reset();
-    g_TitleExitTimer = 1;
+    s_frontend.exitTimer = 1;
     UpdateFrontend();
     CHECK(g_SceneTimer == 1 && s_setupCalls == 1);
-    CHECK(g_TitleExitTimer == 0 && s_lastCue == 0x1A);
+    CHECK(s_frontend.exitTimer == 0 && s_lastCue == 0x1A);
 
     Reset();
     g_SceneTimer = 0x1CC;
@@ -231,24 +226,24 @@ int main(void) {
 
     Reset();
     g_SceneTimer = 0x1CF;
-    g_FrontendIdleTimer = 900;
-    g_AttractCycleCount = 0;
+    s_frontend.idleTimer = 900;
+    s_frontend.attractCycle = 0;
     UpdateFrontend();
     CHECK(g_SceneId == 0x1D && g_GrandPrixMode == 1);
-    CHECK(g_AttractCycleCount == 1);
+    CHECK(s_frontend.attractCycle == 1);
 
     Reset();
     g_SceneTimer = 0x1CF;
-    g_FrontendIdleTimer = 900;
-    g_AttractCycleCount = 1;
+    s_frontend.idleTimer = 900;
+    s_frontend.attractCycle = 1;
     UpdateFrontend();
-    CHECK(s_fmvCalls == 1 && g_AttractCycleCount == 2);
+    CHECK(s_fmvCalls == 1 && s_frontend.attractCycle == 2);
 
     Reset();
-    g_MainMenuSlide = 100;
+    s_frontend.menuSlide = 100;
     UpdateTitleAttract();
     CHECK(s_lastAlpha == 0x30);
-    g_MainMenuSlide = -10;
+    s_frontend.menuSlide = -10;
     for (s32 i = 0; i < CLASS_RECORD_COUNT; i++) {
         g_ClassRecords[i].place = 1;
     }
@@ -256,17 +251,19 @@ int main(void) {
     CHECK(s_lastAlpha == 0x7F && s_lastPanelClut == 0x7D80);
 
     Reset();
-    g_FrontendState = FRONTEND_STATE_INVALID;
+    s_frontend.state = FRONTEND_STATE_INVALID;
     UpdateFrontend();
-    CHECK(g_FrontendState == FRONTEND_STATE_TITLE &&
+    CHECK(s_frontend.state == FRONTEND_STATE_TITLE &&
           s_drawHandlerCalls == 1);
 
     Reset();
-    g_FrontendState = FRONTEND_STATE_COUNT;
+    s_frontend.state = FRONTEND_STATE_COUNT;
     UpdateFrontend();
-    CHECK(g_FrontendState == FRONTEND_STATE_TITLE &&
+    CHECK(s_frontend.state == FRONTEND_STATE_TITLE &&
           s_drawHandlerCalls == 1);
 
     puts("frontend transitions, attract loading and overlays are preserved");
     return 0;
 }
+
+Frontend *MenuFrontend(void) { return &s_frontend; }

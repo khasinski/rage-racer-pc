@@ -69,6 +69,10 @@ OptionMenu *MenuOption(void) {
     return &s_menuRuntime.optionMenu;
 }
 
+Frontend *MenuFrontend(void) {
+    return &s_menuRuntime.frontend;
+}
+
 MenuWidgets *MenuWidgetState(void) {
     return &s_menuRuntime.widgets;
 }

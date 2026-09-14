@@ -5,16 +5,11 @@
 
 #include <stdio.h>
 
+static Frontend s_frontend;
+
 s32 g_FrameSyncThreshold;
-u32 g_FrontendIdleTimer;
-FrontendState g_FrontendState;
-s32 g_MainMenuSlide;
 s32 g_SceneId;
 s32 g_SceneTimer;
-s32 g_TitleAttractTimer;
-s32 g_TitleExitTimer;
-s32 g_TitleFadeLevel;
-s32 g_TitlePulse;
 
 static s32 s_audioCloseCalls;
 static s32 s_classRefreshCalls;
@@ -41,15 +36,15 @@ void UploadLoadBufferImage(void) { s_imageUploadCalls++; }
 
 int main(void) {
     g_FrameSyncThreshold = -1;
-    g_FrontendIdleTimer = 99;
-    g_FrontendState = -1;
-    g_MainMenuSlide = -1;
+    s_frontend.idleTimer = 99;
+    s_frontend.state = -1;
+    s_frontend.menuSlide = -1;
     g_SceneId = -1;
     g_SceneTimer = -1;
-    g_TitleAttractTimer = 99;
-    g_TitleExitTimer = 99;
-    g_TitleFadeLevel = 99;
-    g_TitlePulse = 99;
+    s_frontend.attractTimer = 99;
+    s_frontend.exitTimer = 99;
+    s_frontend.fade = 99;
+    s_frontend.pulse = 99;
     s_displayMask = -1;
 
     EnterFrontend();
@@ -59,13 +54,15 @@ int main(void) {
           s_imageUploadCalls == 1);
     CHECK(g_FrameSyncThreshold == 0x80 && g_SceneId == 4 &&
           g_SceneTimer == 0);
-    CHECK(g_FrontendIdleTimer == 0 && g_MainMenuSlide == 0 &&
-          g_TitlePulse == 0);
-    CHECK(g_FrontendState == FRONTEND_STATE_TITLE);
-    CHECK(g_TitleFadeLevel == 0 && g_TitleExitTimer == 0 &&
-          g_TitleAttractTimer == -1);
+    CHECK(s_frontend.idleTimer == 0 && s_frontend.menuSlide == 0 &&
+          s_frontend.pulse == 0);
+    CHECK(s_frontend.state == FRONTEND_STATE_TITLE);
+    CHECK(s_frontend.fade == 0 && s_frontend.exitTimer == 0 &&
+          s_frontend.attractTimer == -1);
     CHECK(s_classRefreshCalls == 1 && s_reverbCalls == 1);
 
     puts("enter frontend tests passed");
     return 0;
 }
+
+Frontend *MenuFrontend(void) { return &s_frontend; }

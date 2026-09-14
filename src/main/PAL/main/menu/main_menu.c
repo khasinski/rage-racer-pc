@@ -11,6 +11,7 @@
 enum { MAIN_MENU_OPEN_FRAMES = 0x30 };
 
 void DrawMainMenuRows(void) {
+    const Frontend *frontend = MenuFrontend();
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     u8 *packet = RENDER_PRIM_CURSOR_AS(u8);
     s32 row = 0;
@@ -25,13 +26,13 @@ void DrawMainMenuRows(void) {
             item == TITLE_MENU_EXTRA_GRAND_PRIX) {
             item = TITLE_MENU_TIME_ATTACK;
         }
-        if (item == g_TitleMenuSelection &&
-            g_FrontendState != FRONTEND_STATE_MENU_OPENING &&
-            (g_TitlePulse & 2) == 0) {
+        if (item == frontend->selection &&
+            frontend->state != FRONTEND_STATE_MENU_OPENING &&
+            (frontend->pulse & 2) == 0) {
             clut = 0x7E86;
         }
 
-        delta = g_MainMenuSlide - row * 8;
+        delta = frontend->menuSlide - row * 8;
         height = delta > 0x10 ? 0x10 : delta;
         if (height < 0) height = 0;
 
@@ -46,12 +47,14 @@ void DrawMainMenuRows(void) {
 }
 
 void UpdateMainMenuOpen(void) {
-    g_MainMenuSlide = AddClampedMenuValue(
-        g_MainMenuSlide, 0, 0, MAIN_MENU_OPEN_FRAMES);
-    g_MainMenuSlide = AddClampedMenuValue(
-        g_MainMenuSlide, 1, 0, MAIN_MENU_OPEN_FRAMES);
-    if (g_MainMenuSlide >= MAIN_MENU_OPEN_FRAMES) {
-        g_FrontendState = FRONTEND_STATE_MENU_INPUT;
+    Frontend *frontend = MenuFrontend();
+
+    frontend->menuSlide = AddClampedMenuValue(
+        frontend->menuSlide, 0, 0, MAIN_MENU_OPEN_FRAMES);
+    frontend->menuSlide = AddClampedMenuValue(
+        frontend->menuSlide, 1, 0, MAIN_MENU_OPEN_FRAMES);
+    if (frontend->menuSlide >= MAIN_MENU_OPEN_FRAMES) {
+        frontend->state = FRONTEND_STATE_MENU_INPUT;
     }
     DrawMainMenuRows();
 }
@@ -73,27 +76,28 @@ static void SelectGrandPrixSave(CarEntry *cars, GameRaceProgress *progress,
 }
 
 void UpdateMainMenuInput(void) {
+    Frontend *frontend = MenuFrontend();
     s32 oldSelection;
     s32 direction = 0;
     u16 pressed = g_PadPressed;
 
-    if (pressed != 0) g_FrontendIdleTimer = 0;
-    oldSelection = g_TitleMenuSelection;
+    if (pressed != 0) frontend->idleTimer = 0;
+    oldSelection = frontend->selection;
     if (pressed & PAD_UP) {
         direction = -1;
     } else if (pressed & PAD_DOWN) {
         direction = 1;
     }
 
-    g_TitleMenuSelection = MoveTitleMenuSelection(
+    frontend->selection = MoveTitleMenuSelection(
         oldSelection, direction, g_ExtraGrandPrixUnlocked != 0);
-    if (oldSelection != g_TitleMenuSelection) PlaySoundCue(1);
+    if (oldSelection != frontend->selection) PlaySoundCue(1);
 
     if (pressed & PAD_CONFIRM) {
         PlaySoundCue(2);
         if (!AssetLoadCompletedSuccessfully()) ResetAssetLoader();
         ShuffleBgmOrder();
-        switch (g_TitleMenuSelection) {
+        switch (frontend->selection) {
         case TITLE_MENU_GRAND_PRIX:
             SelectGrandPrixSave(g_GrandPrixCars, &g_GrandPrixSave,
                                 &g_GrandPrixCourseProgress, 0);
@@ -116,7 +120,7 @@ void UpdateMainMenuInput(void) {
             MenuOption()->cursor = 0;
             break;
         }
-        g_FrontendState = FRONTEND_STATE_MENU_EXIT;
+        frontend->state = FRONTEND_STATE_MENU_EXIT;
     }
     DrawMainMenuRows();
 }

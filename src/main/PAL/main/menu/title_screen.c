@@ -17,27 +17,29 @@ enum {
 };
 
 void EnterTitleScreen(void) {
+    Frontend *frontend = MenuFrontend();
+
     /* A demo can leave a partial track-page swap pending. Cancel it before
      * title textures occupy the same VRAM rows. */
     ResetTrackTextureSwap();
     SetupDisplay240(0, 0, 0);
     if (g_Fmv.returnScene != 0) {
-        g_TitleFadeLevel = TITLE_RETURN_FADE;
-        g_TitleAttractTimer = TITLE_RETURN_ATTRACT_FRAMES;
-        g_TitleExitTimer = 0;
+        frontend->fade = TITLE_RETURN_FADE;
+        frontend->attractTimer = TITLE_RETURN_ATTRACT_FRAMES;
+        frontend->exitTimer = 0;
     } else {
         SetDispMask(0);
         UploadLoadBufferImage();
-        g_TitleFadeLevel = 0;
-        g_TitleAttractTimer = 0;
-        g_TitleExitTimer = TITLE_INITIAL_EXIT_FRAMES;
+        frontend->fade = 0;
+        frontend->attractTimer = 0;
+        frontend->exitTimer = TITLE_INITIAL_EXIT_FRAMES;
     }
     g_FrameSyncThreshold = 0x80;
     g_SceneTimer = 0;
     g_SceneId = GAME_SCENE_FRONTEND;
-    g_FrontendIdleTimer = 0;
-    g_MainMenuSlide = 0;
-    g_FrontendState = FRONTEND_STATE_TITLE;
+    frontend->idleTimer = 0;
+    frontend->menuSlide = 0;
+    frontend->state = FRONTEND_STATE_TITLE;
     RefreshClassWinState();
     SetDefaultReverbDepth();
     DrawPressStartPrompt();
@@ -56,15 +58,16 @@ static void DrawTitleFadeOverlay(s32 brightness) {
 
 
 void DrawPressStartPrompt(void) {
+    Frontend *frontend = MenuFrontend();
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     u8 *next;
     s32 sinValue;
     s32 frame;
 
-    if (g_TitleFadeLevel > 0) {
-        DrawTitleFadeOverlay((u8)g_TitleFadeLevel);
-        g_TitleFadeLevel -= 2;
-        if (g_TitleFadeLevel < 0) g_TitleFadeLevel = 0;
+    if (frontend->fade > 0) {
+        DrawTitleFadeOverlay((u8)frontend->fade);
+        frontend->fade -= 2;
+        if (frontend->fade < 0) frontend->fade = 0;
     }
 
     sinValue = rsin((s32)(((u32)g_AnimTimer * 96U) &
@@ -78,13 +81,15 @@ void DrawPressStartPrompt(void) {
 
 
 void UpdateTitleScreen(void) {
+    Frontend *frontend = MenuFrontend();
+
     if (g_PadPressed & PAD_START) {
         PlaySoundCue(2);
-        g_FrontendState = FRONTEND_STATE_MENU_OPENING;
-        g_FrontendIdleTimer = 0;
-        g_TitleMenuSelection = TITLE_MENU_GRAND_PRIX;
-        if (g_TitleAttractTimer > 0) {
-            g_TitleAttractTimer = 0;
+        frontend->state = FRONTEND_STATE_MENU_OPENING;
+        frontend->idleTimer = 0;
+        frontend->selection = TITLE_MENU_GRAND_PRIX;
+        if (frontend->attractTimer > 0) {
+            frontend->attractTimer = 0;
             StartCdVolumeFade(1);
         }
     }
