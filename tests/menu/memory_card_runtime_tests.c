@@ -5,15 +5,6 @@
 
 static MemoryCardPoll s_poll;
 
-s32 g_McHwEventIoe;
-s32 g_McHwEventError;
-s32 g_McHwEventTimeout;
-s32 g_McHwEventNew;
-s32 g_McSwEventIoe;
-s32 g_McSwEventError;
-s32 g_McSwEventTimeout;
-s32 g_McSwEventNew;
-
 static MemoryCardEvent s_hwEvent;
 static MemoryCardEvent s_swEvent;
 static s32 s_infoHandle;

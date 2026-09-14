@@ -5,20 +5,22 @@
 #include <stdio.h>
 #include <string.h>
 
-s32 g_McHwEventIoe = 1;
-s32 g_McHwEventError = 2;
-s32 g_McHwEventTimeout = 3;
-s32 g_McHwEventNew = 4;
-s32 g_McSwEventIoe = 5;
-s32 g_McSwEventError = 6;
-s32 g_McSwEventTimeout = 7;
-s32 g_McSwEventNew = 8;
+enum {
+    HW_IO_EVENT = 100,
+    HW_ERROR_EVENT,
+    HW_TIMEOUT_EVENT,
+    HW_NEW_EVENT,
+    SW_IO_EVENT,
+    SW_ERROR_EVENT,
+    SW_TIMEOUT_EVENT,
+    SW_NEW_EVENT,
+};
 static MemoryCardPoll s_poll;
 s32 g_FrameSyncThreshold;
 s32 g_SaveElapsedTicks;
 
-static int s_active[9];
-static int s_calls[9];
+static int s_active[108];
+static int s_calls[108];
 static int s_buInitCalls;
 static int s_criticalDepth;
 static int s_openCalls;
@@ -86,15 +88,15 @@ static int TestNoEventAndTimeout(void) {
 
 static int TestPollPriority(void) {
     ResetMock();
-    s_active[g_McHwEventIoe] = 1;
-    s_active[g_McHwEventError] = 1;
-    s_active[g_McHwEventTimeout] = 1;
-    s_active[g_McHwEventNew] = 1;
+    s_active[HW_IO_EVENT] = 1;
+    s_active[HW_ERROR_EVENT] = 1;
+    s_active[HW_TIMEOUT_EVENT] = 1;
+    s_active[HW_NEW_EVENT] = 1;
     CHECK(PollMemoryCardHwEvent(&s_poll) == MC_EVENT_NEW_CARD);
 
     ResetMock();
     s_poll.ticks = 90;
-    s_active[g_McHwEventIoe] = 1;
+    s_active[HW_IO_EVENT] = 1;
     CHECK(PollMemoryCardHwEvent(&s_poll) == MC_EVENT_IO_COMPLETE);
     CHECK(s_poll.ticks == 91);
     return 0;
@@ -102,13 +104,13 @@ static int TestPollPriority(void) {
 
 static int TestWaitAndClear(void) {
     ResetMock();
-    s_active[g_McSwEventError] = 1;
+    s_active[SW_ERROR_EVENT] = 1;
     CHECK(WaitMemoryCardSwEvent() == MC_EVENT_ERROR);
 
     ClearMemoryCardHwEvents();
     ClearMemoryCardSwEvents();
-    CHECK(s_calls[g_McHwEventIoe] > 0 && s_calls[g_McHwEventNew] > 0);
-    CHECK(s_calls[g_McSwEventIoe] > 0 && s_calls[g_McSwEventNew] > 0);
+    CHECK(s_calls[HW_IO_EVENT] > 0 && s_calls[HW_NEW_EVENT] > 0);
+    CHECK(s_calls[SW_IO_EVENT] > 0 && s_calls[SW_NEW_EVENT] > 0);
     return 0;
 }
 
@@ -146,8 +148,6 @@ static int TestEventSessionLifecycle(void) {
     s_closeCalls = 0;
     StartMemoryCardEvents();
     CHECK(s_criticalDepth == 0 && s_openCalls == 8 && s_enableCalls == 8);
-    CHECK(g_McHwEventIoe == 100 && g_McHwEventNew == 103);
-    CHECK(g_McSwEventIoe == 104 && g_McSwEventNew == 107);
     for (index = 0; index < 8; index++) {
         CHECK(s_enabled[index] == 100 + index);
     }
@@ -162,6 +162,7 @@ static int TestEventSessionLifecycle(void) {
 }
 
 int main(void) {
+    StartMemoryCardEvents();
     if (TestNoEventAndTimeout() || TestPollPriority() ||
         TestWaitAndClear() || TestSaveCounter() ||
         TestEventSessionLifecycle()) return 1;
