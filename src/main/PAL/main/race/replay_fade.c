@@ -26,7 +26,8 @@ s32 UpdateReplayFade(void) {
     s32 sceneChanged = 0;
 
     if (g_FadeStep < 0) {
-        g_FadeLevel = AdvanceReplayFadeLevel(g_FadeLevel, g_FadeStep);
+        g_FadeLevel = StepFade(
+            g_FadeLevel, g_FadeStep, REPLAY_OPAQUE_FADE);
         if (g_FadeLevel == 0) {
             g_FadeStep = 0;
             g_EndingWashLevel = 0;
@@ -51,7 +52,8 @@ s32 UpdateReplayFade(void) {
             StartReplayExitFade(g_Replay.wrapped == 0);
         }
     } else {
-        g_FadeLevel = AdvanceReplayFadeLevel(g_FadeLevel, g_FadeStep);
+        g_FadeLevel = StepFade(
+            g_FadeLevel, g_FadeStep, REPLAY_OPAQUE_FADE);
         if (g_FadeLevel >= REPLAY_OPAQUE_FADE) {
             g_MirrorMode = 0;
             g_SceneId = g_GrandPrixMode == 0

@@ -45,7 +45,7 @@ static void UpdatePrologueLoad(void) {
     }
 
     if (g_FadeStep < 0) {
-        g_FadeLevel = AdvancePrologueFade(
+        g_FadeLevel = StepFade(
             g_FadeLevel, g_FadeStep, INT_MAX);
 
         if (g_FadeLevel == 0) {
@@ -54,7 +54,7 @@ static void UpdatePrologueLoad(void) {
 
         DrawFullscreenFadeTile(g_FadeLevel, PROLOGUE_FADE_TPAGE);
     } else if (g_FadeStep > 0) {
-        g_FadeLevel = AdvancePrologueFade(g_FadeLevel, g_FadeStep, 0x101);
+        g_FadeLevel = StepFade(g_FadeLevel, g_FadeStep, 0x101);
 
         DrawFullscreenFadeTile(g_FadeLevel, PROLOGUE_FADE_TPAGE);
 
@@ -163,7 +163,7 @@ static void UpdatePrologue(void) {
         return;
     }
 
-    g_FadeLevel = AdvancePrologueFade(g_FadeLevel, g_FadeStep, 0xFF);
+    g_FadeLevel = StepFade(g_FadeLevel, g_FadeStep, 0xFF);
     if (g_FadeLevel == 0 && g_FadeStep < 0) {
         g_FadeStep = 0;
     } else if (g_FadeLevel == 0xFF && g_FadeStep > 0) {

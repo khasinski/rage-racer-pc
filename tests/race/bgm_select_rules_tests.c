@@ -11,17 +11,7 @@ static void TestSceneTimer(void) {
     assert(NextBgmSelectTimer(INT_MAX) == 10000);
 }
 
-static void TestFadeStep(void) {
-    assert(StepBgmSelectFade(100, 4, 257) == 104);
-    assert(StepBgmSelectFade(2, -4, 257) == 0);
-    assert(StepBgmSelectFade(254, 4, 257) == 257);
-    assert(StepBgmSelectFade(INT_MAX, INT_MAX, 257) == 257);
-    assert(StepBgmSelectFade(INT_MIN, INT_MIN, 257) == 0);
-    assert(StepBgmSelectFade(10, 1, -1) == 0);
-}
-
 int main(void) {
     TestSceneTimer();
-    TestFadeStep();
     return 0;
 }

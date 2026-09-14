@@ -35,7 +35,6 @@ static inline s32 RaceSeriesIndex(s32 series) {
 
 s32 ReplayEndingWashActive(s32 sceneTimer, s32 frameCount);
 s32 ReplayEndingWashLevel(s32 sceneTimer, s32 frameCount);
-s32 AdvanceReplayFadeLevel(s32 level, s32 step);
 s32 ShouldStartReplayExitFade(s32 sceneTimer, s32 frameCount);
 s32 ReplayBadgeVisible(s32 sceneTimer, s32 seriesCleared);
 s32 ReplayResultCue(s32 sceneTimer, s32 grandPrixMode, s32 seriesCleared,
@@ -54,7 +53,6 @@ s32 AttractTitleFadeLevel(s32 step, s32 timer, s32 fadeLevel, s32 delay);
 s32 BgmCdTrack(s32 selectedTrack);
 s32 WrapBgmTrackIndex(s32 track, s32 trackCount);
 s32 NextBgmSelectTimer(s32 timer);
-s32 StepBgmSelectFade(s32 fade, s32 step, s32 ceiling);
 s32 AttractOpeningWashLevel(s32 timer);
 s32 AttractClosingWashLevel(s32 timer);
 s32 NextAttractLoadTimer(s32 timer);
@@ -95,7 +93,6 @@ extern PrologueCameraCut g_PrologueCameraCuts[PROLOGUE_CAMERA_CUT_COUNT];
 s32 PrologueLineIntensity(s32 screenY);
 s32 IsPrologueWorldActive(s32 sceneTimer);
 s32 NextPrologueTimer(s32 sceneTimer);
-s32 AdvancePrologueFade(s32 level, s32 step, s32 maximum);
 s32 PrologueCameraIndex(s32 cameraIndex);
 s32 PrologueCameraCutIndex(s32 cutIndex);
 

@@ -42,6 +42,13 @@ int main(void) {
     progress = 123;
     CHECK(AdvanceMenuFade(&progress, 0) == 0);
 
+    CHECK(StepFade(100, 4, 257) == 104);
+    CHECK(StepFade(2, -4, 257) == 0);
+    CHECK(StepFade(254, 4, 257) == 257);
+    CHECK(StepFade(INT_MAX, INT_MAX, 257) == 257);
+    CHECK(StepFade(INT_MIN, INT_MIN, 255) == 0);
+    CHECK(StepFade(10, 1, -1) == 0);
+
     CHECK(MenuValueWithinWindow(100, 110, 10));
     CHECK(MenuValueWithinWindow(110, 100, 10));
     CHECK(!MenuValueWithinWindow(100, 111, 10));

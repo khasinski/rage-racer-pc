@@ -36,12 +36,6 @@ int main(void) {
     CHECK(NextPrologueTimer(1280) == 1280);
     CHECK(NextPrologueTimer(INT_MAX) == 1280);
 
-    CHECK(AdvancePrologueFade(264, -4, INT_MAX) == 260);
-    CHECK(AdvancePrologueFade(2, -4, INT_MAX) == 0);
-    CHECK(AdvancePrologueFade(255, 4, 257) == 257);
-    CHECK(AdvancePrologueFade(INT_MAX, INT_MAX, 257) == 257);
-    CHECK(AdvancePrologueFade(INT_MIN, INT_MIN, 255) == 0);
-
     CHECK(PrologueCameraIndex(0) == 0);
     CHECK(PrologueCameraIndex(RACE_CAR_SLOT_COUNT - 1) ==
           RACE_CAR_SLOT_COUNT - 1);

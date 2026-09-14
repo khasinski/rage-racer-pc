@@ -1,6 +1,5 @@
 #include "game/car.h"
 #include "game/race_internal.h"
-#include "game/render.h"
 
 #include <stdint.h>
 
@@ -17,10 +16,6 @@ s32 NextPrologueTimer(s32 sceneTimer) {
     return sceneTimer < PROLOGUE_END_FRAME
         ? sceneTimer + 1
         : PROLOGUE_END_FRAME;
-}
-
-s32 AdvancePrologueFade(s32 level, s32 step, s32 maximum) {
-    return StepFade(level, step, maximum);
 }
 
 s32 PrologueCameraIndex(s32 cameraIndex) {
