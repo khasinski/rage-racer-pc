@@ -15,10 +15,14 @@ static char DecodeSaveNameCharacter(u8 characterIndex) {
     return s_saveNameCharacters[characterIndex];
 }
 
+static void DrawSaveText(s32 x, s32 y, const char *text) {
+    DrawLargeText(x, y, text, 0x7F, 0x7F, 0x7F, 0x244, 0xA0);
+}
+
 static void DrawSaveRowSlotNumber(char *text, const char *format,
                                   s32 slotNumber, s32 y) {
     snprintf(text, SAVE_ROW_TEXT_SIZE, format, slotNumber);
-    DrawLargeText(0x48, y, text, 0x7F, 0x7F, 0x7F, 0x244, 0xA0);
+    DrawSaveText(0x48, y, text);
 }
 
 static void DrawUsedSaveRow(char *text, s32 slotNumber, s32 y,
@@ -31,20 +35,12 @@ static void DrawUsedSaveRow(char *text, s32 slotNumber, s32 y,
                       ? DecodeSaveNameCharacter(row->fields.name[i])
                       : ' ';
     }
-    snprintf(text + SAVE_ROW_VISIBLE_NAME_LENGTH,
-             SAVE_ROW_TEXT_SIZE - SAVE_ROW_VISIBLE_NAME_LENGTH,
-             "%s",
-             " /");
-    DrawLargeText(0x68, y, text, 0x7F, 0x7F, 0x7F, 0x244, 0xA0);
-    DrawLargeText(
-        0xB0,
-        y,
-        FormatSaveElapsedTime(text, row->fields.saveCounter),
-        0x7F,
-        0x7F,
-        0x7F,
-        0x244,
-        0xA0);
+    text[SAVE_ROW_VISIBLE_NAME_LENGTH] = ' ';
+    text[SAVE_ROW_VISIBLE_NAME_LENGTH + 1] = '/';
+    text[SAVE_ROW_VISIBLE_NAME_LENGTH + 2] = '\0';
+    DrawSaveText(0x68, y, text);
+    DrawSaveText(0xB0, y,
+                 FormatSaveElapsedTime(text, row->fields.saveCounter));
 }
 
 void DrawMemoryCardSaveRows(s32 flags, GameSaveHeaderRow *rows) {
@@ -61,13 +57,11 @@ void DrawMemoryCardSaveRows(s32 flags, GameSaveHeaderRow *rows) {
             DrawUsedSaveRow(text, slotNumber, y, &rows[rowIndex]);
         } else if (error) {
             DrawSaveRowSlotNumber(text, "%1d /", slotNumber, y);
-            DrawLargeText(
-                0x88, y, "FILE ERROR", 0x7F, 0x7F, 0x7F, 0x244, 0xA0);
+            DrawSaveText(0x88, y, "FILE ERROR");
         } else if (g_McFreeBlocks == 0 && g_McMenuPage != 0 &&
                    g_McMenuRowCursor != 0) {
             DrawSaveRowSlotNumber(text, "%1d /", slotNumber, y);
-            DrawLargeText(
-                0x90, y, "NO FILE", 0x7F, 0x7F, 0x7F, 0x244, 0xA0);
+            DrawSaveText(0x90, y, "NO FILE");
         } else if (g_McFreeBlocks == 0 || g_McMenuPage == 0) {
             DrawSaveRowSlotNumber(text, "%1d /        /", slotNumber, y);
         } else {
@@ -75,8 +69,7 @@ void DrawMemoryCardSaveRows(s32 flags, GameSaveHeaderRow *rows) {
                 g_McMenuRowCursor == 0 ? "NEW FILE" : "NO FILE";
 
             DrawSaveRowSlotNumber(text, "%1d /", slotNumber, y);
-            DrawLargeText(
-                0x90, y, slotLabel, 0x7F, 0x7F, 0x7F, 0x244, 0xA0);
+            DrawSaveText(0x90, y, slotLabel);
         }
     }
 }
