@@ -7,19 +7,10 @@
 #include "game/race_hud_internal.h"
 #include "game/race_internal.h"
 
-s32 g_SectorIndex;
+static RaceTiming s_timing;
 s32 g_SectorEndDistance[SPLIT_SECTOR_COUNT];
-s32 g_SectorTimes[SPLIT_SECTOR_COUNT];
 s32 g_LapTimeMs;
-s32 g_RefLapTime;
-SectorReferenceTimes g_RefSectorTimes;
-s16 g_SplitSign;
-s32 g_SplitDelta;
-s16 g_SplitTimer;
-s16 g_SplitSector;
-s32 g_SplitTargetTime;
 s32 g_BestLapThisRace;
-s32 g_LastSectorTime;
 s32 g_BestSectorTimes[2][4][3];
 s32 g_RaceSeries;
 s32 g_LapCount;
@@ -31,20 +22,11 @@ static s32 s_SoundCue;
 void PlaySoundCue(s32 cue) { s_SoundCue = cue; }
 
 static void ResetState(void) {
-    g_SectorIndex = 0;
+    memset(&s_timing, 0, sizeof(s_timing));
     memset(g_SectorEndDistance, 0, sizeof(g_SectorEndDistance));
-    memset(g_SectorTimes, 0, sizeof(g_SectorTimes));
-    memset(&g_RefSectorTimes, 0, sizeof(g_RefSectorTimes));
     memset(g_BestSectorTimes, 0, sizeof(g_BestSectorTimes));
     g_LapTimeMs = 0;
-    g_RefLapTime = 0;
-    g_SplitSign = 0;
-    g_SplitDelta = 0;
-    g_SplitTimer = 0;
-    g_SplitSector = 0;
-    g_SplitTargetTime = 0;
     g_BestLapThisRace = 0;
-    g_LastSectorTime = 0;
     g_RaceSeries = 0;
     g_LapCount = 0;
     g_TrackLength = 1000;
@@ -56,36 +38,36 @@ static void TestModesThatDoNotHaveSplits(void) {
     PlayerCarRuntime car = {0};
 
     ResetState();
-    UpdateSplitTimes(&car, 1, 0);
-    UpdateSplitTimes(&car, 0, 2);
-    assert(g_SectorIndex == 0);
+    UpdateSplitTimes(&s_timing, &car, 1, 0);
+    UpdateSplitTimes(&s_timing, &car, 0, 2);
+    assert(s_timing.sectorIndex == 0);
 }
 
 static void TestInitialLapEvent(void) {
     PlayerCarRuntime car = {0};
 
     ResetState();
-    g_SectorIndex = -2;
+    s_timing.sectorIndex = -2;
     g_RaceSeries = 1;
     g_BestSectorTimes[1][2][0] = 4321;
-    UpdateSplitTimes(&car, 0, 1);
+    UpdateSplitTimes(&s_timing, &car, 0, 1);
 
-    assert(g_SectorIndex == 0);
-    assert(g_SplitTargetTime == 4321);
-    assert(g_SplitTimer == 0x3C);
-    assert(g_SplitSector == 0);
+    assert(s_timing.sectorIndex == 0);
+    assert(s_timing.splitTargetTime == 4321);
+    assert(s_timing.splitTimer == 0x3C);
+    assert(s_timing.splitSector == 0);
 }
 
 static void TestPreStartWaitsForStartLine(void) {
     PlayerCarRuntime car = {0};
 
     ResetState();
-    g_SectorIndex = -2;
-    g_SplitTargetTime = 98765;
-    UpdateSplitTimes(&car, 0, 0);
+    s_timing.sectorIndex = -2;
+    s_timing.splitTargetTime = 98765;
+    UpdateSplitTimes(&s_timing, &car, 0, 0);
 
-    assert(g_SectorIndex == -2);
-    assert(g_SplitTargetTime == 98765);
+    assert(s_timing.sectorIndex == -2);
+    assert(s_timing.splitTargetTime == 98765);
 }
 
 static void TestBlankReferenceDoesNotCreateDelta(void) {
@@ -96,13 +78,13 @@ static void TestBlankReferenceDoesNotCreateDelta(void) {
     car.progressA = 100;
     g_SectorEndDistance[0] = 100;
     g_LapTimeMs = 900;
-    g_RefSectorTimes.values[0] = 0;
-    g_SplitSign = -1;
-    UpdateSplitTimes(&car, 0, 0);
+    s_timing.refSectorTimes.values[0] = 0;
+    s_timing.splitSign = -1;
+    UpdateSplitTimes(&s_timing, &car, 0, 0);
 
-    assert(g_SectorTimes[0] == 900);
-    assert(g_SectorIndex == 1);
-    assert(g_SplitSign == 0);
+    assert(s_timing.sectorTimes[0] == 900);
+    assert(s_timing.sectorIndex == 1);
+    assert(s_timing.splitSign == 0);
     assert(s_SoundCue == 0);
 }
 
@@ -114,26 +96,26 @@ static void TestSectorClose(void) {
     car.progressA = 100;
     g_SectorEndDistance[0] = 100;
     g_LapTimeMs = 900;
-    g_RefSectorTimes.values[0] = 1000;
-    UpdateSplitTimes(&car, 0, 0);
+    s_timing.refSectorTimes.values[0] = 1000;
+    UpdateSplitTimes(&s_timing, &car, 0, 0);
 
-    assert(g_SectorTimes[0] == 900);
-    assert(g_SectorIndex == 1);
-    assert(g_SplitSign == 1);
-    assert(g_SplitDelta == 100);
-    assert(g_SplitTargetTime == 1000);
-    assert(g_LastSectorTime == 900);
+    assert(s_timing.sectorTimes[0] == 900);
+    assert(s_timing.sectorIndex == 1);
+    assert(s_timing.splitSign == 1);
+    assert(s_timing.splitDelta == 100);
+    assert(s_timing.splitTargetTime == 1000);
+    assert(s_timing.lastSectorTime == 900);
     assert(s_SoundCue == 0x3E);
 
     car.progressA = 0;
     car.progressB = 200;
     g_SectorEndDistance[1] = 200;
     g_LapTimeMs = 1100;
-    g_RefSectorTimes.values[1] = 1000;
-    UpdateSplitTimes(&car, 0, 0);
-    assert(g_SectorIndex == 2);
-    assert(g_SplitSign == -1);
-    assert(g_SplitDelta == 100);
+    s_timing.refSectorTimes.values[1] = 1000;
+    UpdateSplitTimes(&s_timing, &car, 0, 0);
+    assert(s_timing.sectorIndex == 2);
+    assert(s_timing.splitSign == -1);
+    assert(s_timing.splitDelta == 100);
     assert(s_SoundCue == 0x3F);
 }
 
@@ -144,15 +126,15 @@ static void TestSplitDisplayExpiry(void) {
     car.lap = 1;
     g_LapCount = 1;
     g_SectorEndDistance[0] = 500;
-    g_RefSectorTimes.values[0] = 1234;
-    g_SplitTimer = 59;
-    g_SplitSign = -1;
+    s_timing.refSectorTimes.values[0] = 1234;
+    s_timing.splitTimer = 59;
+    s_timing.splitSign = -1;
 
-    UpdateSplitTimes(&car, 0, 0);
+    UpdateSplitTimes(&s_timing, &car, 0, 0);
 
-    assert(g_SplitTimer == 60);
-    assert(g_SplitTargetTime == 1234);
-    assert(g_SplitSign == 0 && g_SplitSector == 0);
+    assert(s_timing.splitTimer == 60);
+    assert(s_timing.splitTargetTime == 1234);
+    assert(s_timing.splitSign == 0 && s_timing.splitSector == 0);
 }
 
 static void TestInactiveLapResetsSplit(void) {
@@ -160,16 +142,16 @@ static void TestInactiveLapResetsSplit(void) {
 
     ResetState();
     car.lap = 1;
-    g_SectorIndex = 1;
+    s_timing.sectorIndex = 1;
     g_SectorEndDistance[1] = 500;
-    g_RefSectorTimes.values[0] = 4321;
-    g_SplitTimer = 12;
-    g_SplitSign = -1;
+    s_timing.refSectorTimes.values[0] = 4321;
+    s_timing.splitTimer = 12;
+    s_timing.splitSign = -1;
 
-    UpdateSplitTimes(&car, 0, 0);
+    UpdateSplitTimes(&s_timing, &car, 0, 0);
 
-    assert(g_SplitSector == 0 && g_SplitTimer == 0 && g_SplitSign == 0);
-    assert(g_SplitTargetTime == 4321);
+    assert(s_timing.splitSector == 0 && s_timing.splitTimer == 0 && s_timing.splitSign == 0);
+    assert(s_timing.splitTargetTime == 4321);
 }
 
 static void TestUnrepresentableTimeHasNoDelta(void) {
@@ -180,30 +162,30 @@ static void TestUnrepresentableTimeHasNoDelta(void) {
     car.progressA = 100;
     g_SectorEndDistance[0] = 100;
     g_LapTimeMs = SPLIT_TIME_MAX_MS + 1;
-    g_SplitSign = -1;
+    s_timing.splitSign = -1;
 
-    UpdateSplitTimes(&car, 0, 0);
+    UpdateSplitTimes(&s_timing, &car, 0, 0);
 
-    assert(g_SectorTimes[0] == SPLIT_TIME_MAX_MS + 1);
-    assert(g_SplitSign == 0 && s_SoundCue == 0);
+    assert(s_timing.sectorTimes[0] == SPLIT_TIME_MAX_MS + 1);
+    assert(s_timing.splitSign == 0 && s_SoundCue == 0);
 }
 
 static void TestInvalidStateIsContained(void) {
     PlayerCarRuntime car = {0};
 
     ResetState();
-    g_SectorIndex = INT_MAX;
-    g_SplitSign = -1;
-    g_SplitTimer = 12;
-    g_RefSectorTimes.values[0] = 321;
-    UpdateSplitTimes(&car, 0, 0);
-    assert(g_SectorIndex == 0 && g_SplitSector == 0);
-    assert(g_SplitSign == 0 && g_SplitTimer == 0);
-    assert(g_SplitTargetTime == 321);
+    s_timing.sectorIndex = INT_MAX;
+    s_timing.splitSign = -1;
+    s_timing.splitTimer = 12;
+    s_timing.refSectorTimes.values[0] = 321;
+    UpdateSplitTimes(&s_timing, &car, 0, 0);
+    assert(s_timing.sectorIndex == 0 && s_timing.splitSector == 0);
+    assert(s_timing.splitSign == 0 && s_timing.splitTimer == 0);
+    assert(s_timing.splitTargetTime == 321);
 
-    g_SectorIndex = 2;
-    UpdateSplitTimes(NULL, 0, 0);
-    assert(g_SectorIndex == 2);
+    s_timing.sectorIndex = 2;
+    UpdateSplitTimes(&s_timing, NULL, 0, 0);
+    assert(s_timing.sectorIndex == 2);
 }
 
 static void TestExtremeArithmeticSaturates(void) {
@@ -216,17 +198,17 @@ static void TestExtremeArithmeticSaturates(void) {
     g_TrackLength = INT_MAX;
     g_SectorEndDistance[0] = INT_MIN;
     g_LapTimeMs = 0;
-    g_RefLapTime = INT_MAX;
-    UpdateSplitTimes(&car, 0, 1);
-    assert(g_SplitSign == 0);
+    s_timing.refLapTime = INT_MAX;
+    UpdateSplitTimes(&s_timing, &car, 0, 1);
+    assert(s_timing.splitSign == 0);
 
     ResetState();
     car.lap = 1;
     car.progressA = 100;
     g_SectorEndDistance[0] = 100;
     g_LapTimeMs = -1;
-    UpdateSplitTimes(&car, 0, 0);
-    assert(g_SplitSign == 0);
+    UpdateSplitTimes(&s_timing, &car, 0, 0);
+    assert(s_timing.splitSign == 0);
 }
 
 int main(void) {

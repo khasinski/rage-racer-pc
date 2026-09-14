@@ -19,30 +19,30 @@ enum {
     DEFAULT_TIME_CLUT = 0x78CC,
 };
 
-void DrawSplitTimes(void) {
+void DrawSplitTimes(const RaceTiming *timing) {
     s32 clut;
 
     if (!HudShowLapTimes()) {
         return;
     }
 
-    if (SplitCurrentTimeVisible(g_SplitTimer, g_SectorIndex)) {
-        if (SplitDeltaVisible(g_SplitTimer, g_SectorIndex, g_SplitSign,
+    if (SplitCurrentTimeVisible(timing->splitTimer, timing->sectorIndex)) {
+        if (SplitDeltaVisible(timing->splitTimer, timing->sectorIndex, timing->splitSign,
                               g_LapCount, g_PlayerCar.lap)) {
-            clut = SplitDeltaClut(g_SplitSign);
-            DrawTimeValue(SPLIT_DELTA_X, SPLIT_DELTA_Y, g_SplitDelta, clut,
+            clut = SplitDeltaClut(timing->splitSign);
+            DrawTimeValue(SPLIT_DELTA_X, SPLIT_DELTA_Y, timing->splitDelta, clut,
                           MILLISECONDS_PER_SECOND);
         }
 
-        clut = SplitTimeClut(g_LastSectorTime);
+        clut = SplitTimeClut(timing->lastSectorTime);
         DrawTimeValue(HudLeftX(SPLIT_TIME_X), LAST_SPLIT_TIME_Y,
-                      g_LastSectorTime, clut, MILLISECONDS_PER_SECOND);
+                      timing->lastSectorTime, clut, MILLISECONDS_PER_SECOND);
     }
 
     DrawTimeValue(HudLeftX(SPLIT_TIME_X), TARGET_SPLIT_TIME_Y,
-                  g_SplitTargetTime, DEFAULT_TIME_CLUT,
+                  timing->splitTargetTime, DEFAULT_TIME_CLUT,
                   MILLISECONDS_PER_SECOND);
-    DrawSplitIndicator(SplitDisplaySectorIndex(g_SplitSector), g_SplitSign);
+    DrawSplitIndicator(SplitDisplaySectorIndex(timing->splitSector), timing->splitSign);
 
     DrawTimeValue(HudRightX(BEST_TOTAL_TIME_X), BEST_TOTAL_TIME_Y,
                   g_BestTotalTimes[RaceSeriesIndex(g_RaceSeries)]

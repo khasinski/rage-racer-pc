@@ -15,41 +15,42 @@ enum {
     SPLIT_BEHIND_CUE = 0x3F,
 };
 
-static void ResetSplitDisplay(void) {
-    g_SectorIndex = 0;
-    g_SplitSector = 0;
-    g_SplitTimer = 0;
-    g_SplitSign = 0;
-    g_SplitTargetTime = g_RefSectorTimes.values[0];
+static void ResetSplitDisplay(RaceTiming *timing) {
+    timing->sectorIndex = 0;
+    timing->splitSector = 0;
+    timing->splitTimer = 0;
+    timing->splitSign = 0;
+    timing->splitTargetTime = timing->refSectorTimes.values[0];
 }
 
-void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
+void UpdateSplitTimes(RaceTiming *timing, PlayerCarRuntime *car,
+                      s32 grandPrixMode, s32 lapEvent) {
     s32 slot;
     s32 nextSlot;
     s32 targetTime;
     int64_t delta;
 
-    if (car == NULL || lapEvent == 2 || grandPrixMode != 0) {
+    if (timing == NULL || car == NULL || lapEvent == 2 || grandPrixMode != 0) {
         return;
     }
 
-    if (g_SectorIndex == SPLIT_STATE_WAITING_FOR_LAP) {
+    if (timing->sectorIndex == SPLIT_STATE_WAITING_FOR_LAP) {
         if (lapEvent == 0) {
             return;
         }
-        g_SectorIndex = 0;
-        g_SplitSign = 0;
-        g_SplitTargetTime =
+        timing->sectorIndex = 0;
+        timing->splitSign = 0;
+        timing->splitTargetTime =
             g_BestSectorTimes[RaceSeriesIndex(g_RaceSeries)]
                              [SeriesCourseIndex()][0];
-        g_SplitTimer = SPLIT_DISPLAY_FRAMES;
-        g_SplitSector = 0;
+        timing->splitTimer = SPLIT_DISPLAY_FRAMES;
+        timing->splitSector = 0;
         return;
     }
 
-    slot = g_SectorIndex;
+    slot = timing->sectorIndex;
     if (slot >= SPLIT_SECTOR_COUNT) {
-        ResetSplitDisplay();
+        ResetSplitDisplay(timing);
         return;
     }
     if (slot >= 0 &&
@@ -57,16 +58,16 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
                  g_SectorEndDistance[slot] <=
              (int64_t)car->progressB + car->progressA ||
          lapEvent != 0)) {
-        g_SectorTimes[slot] = g_LapTimeMs;
-        targetTime = lapEvent != 0 ? g_RefLapTime
-                                   : g_RefSectorTimes.values[slot];
+        timing->sectorTimes[slot] = g_LapTimeMs;
+        targetTime = lapEvent != 0 ? timing->refLapTime
+                                   : timing->refSectorTimes.values[slot];
         if (g_LapTimeMs >= 0 && g_LapTimeMs <= SPLIT_TIME_MAX_MS &&
             targetTime > 0 && targetTime <= SPLIT_TIME_MAX_MS) {
             delta = (int64_t)targetTime - g_LapTimeMs;
 
-            g_SplitSign = 1;
+            timing->splitSign = 1;
             if (delta < 0) {
-                g_SplitSign = -1;
+                timing->splitSign = -1;
                 delta = -delta;
                 if (lapEvent == 0) {
                     PlaySoundCue(SPLIT_BEHIND_CUE);
@@ -74,46 +75,46 @@ void UpdateSplitTimes(PlayerCarRuntime *car, s32 grandPrixMode, s32 lapEvent) {
             } else if (delta > 0 && lapEvent == 0) {
                 PlaySoundCue(SPLIT_AHEAD_CUE);
             }
-            g_SplitDelta = delta < INT_MAX ? (s32)delta : INT_MAX;
+            timing->splitDelta = delta < INT_MAX ? (s32)delta : INT_MAX;
         } else {
-            g_SplitSign = 0;
+            timing->splitSign = 0;
         }
 
-        g_SplitTimer = 0;
+        timing->splitTimer = 0;
         nextSlot = (slot + 1) % SPLIT_SECTOR_COUNT;
-        g_SectorIndex = nextSlot;
+        timing->sectorIndex = nextSlot;
 
         if (lapEvent != 0) {
-            g_SplitSector = 2;
-            g_SplitTargetTime = g_RefLapTime;
-            g_RefLapTime = g_BestLapThisRace;
+            timing->splitSector = 2;
+            timing->splitTargetTime = timing->refLapTime;
+            timing->refLapTime = g_BestLapThisRace;
         } else {
             const s32 closedSlot =
                 (nextSlot + SPLIT_SECTOR_COUNT - 1) % SPLIT_SECTOR_COUNT;
 
-            g_SplitSector = closedSlot;
-            g_SplitTargetTime = g_RefSectorTimes.values[closedSlot];
+            timing->splitSector = closedSlot;
+            timing->splitTargetTime = timing->refSectorTimes.values[closedSlot];
         }
 
-        g_LastSectorTime = g_SectorTimes[
-            (g_SectorIndex + SPLIT_SECTOR_COUNT - 1) % SPLIT_SECTOR_COUNT];
+        timing->lastSectorTime = timing->sectorTimes[
+            (timing->sectorIndex + SPLIT_SECTOR_COUNT - 1) % SPLIT_SECTOR_COUNT];
         return;
     }
 
-    if (g_SectorIndex >= 0 && g_LapCount >= car->lap) {
-        if (g_SplitTimer < 0) {
-            g_SplitTimer = 0;
+    if (timing->sectorIndex >= 0 && g_LapCount >= car->lap) {
+        if (timing->splitTimer < 0) {
+            timing->splitTimer = 0;
         }
-        if (g_SplitTimer < SPLIT_DISPLAY_FRAMES) {
-            g_SplitTimer++;
-            if (g_SplitTimer == SPLIT_DISPLAY_FRAMES) {
-                g_SplitTargetTime =
-                    g_RefSectorTimes.values[g_SectorIndex];
-                g_SplitSign = 0;
-                g_SplitSector = (u16)g_SectorIndex;
+        if (timing->splitTimer < SPLIT_DISPLAY_FRAMES) {
+            timing->splitTimer++;
+            if (timing->splitTimer == SPLIT_DISPLAY_FRAMES) {
+                timing->splitTargetTime =
+                    timing->refSectorTimes.values[timing->sectorIndex];
+                timing->splitSign = 0;
+                timing->splitSector = (u16)timing->sectorIndex;
             }
         }
     } else {
-        ResetSplitDisplay();
+        ResetSplitDisplay(timing);
     }
 }

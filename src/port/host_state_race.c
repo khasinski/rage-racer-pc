@@ -40,17 +40,6 @@ StartCountdownPattern
      4228112447, 4228112384, 4228112434, 4228112438,
      4229954610, 4229954610, 4229954610, 0},
 };
-s32 g_LastSectorTime;
-s32 g_SplitDelta;
-s32 g_SectorTimes[3] = {
-    0, 0, 0
-};
-s32 g_RefLapTime;
-SectorReferenceTimes g_RefSectorTimes;
-s16 g_SplitSector;
-s16 g_SplitTimer;
-s16 g_SplitSign;
-s32 g_SplitTargetTime;
 s32 g_CameraCarIndex;
 CourseProgressState *g_CourseProgress;
 s32 g_BestTotalTimes[2][4][2];
@@ -62,7 +51,6 @@ s32 g_SeriesCleared;
 ScoreRecord g_ClassRecords[CLASS_RECORD_COUNT];
 s16 g_TrackZoneCode;
 s32 g_BgmTrackCount;
-s32 g_SectorIndex;
 unsigned char g_RankingNameCodes[8];
 s32 g_ClassPromoted;
 /* [series][course][sector], 2 * 4 * 3 signed 32-bit times.  The following

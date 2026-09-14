@@ -15,6 +15,17 @@ typedef union SectorReferenceTimes {
 _Static_assert(sizeof(SectorReferenceTimes) == 3 * sizeof(s32),
                "sector reference time layout changed");
 
-extern SectorReferenceTimes g_RefSectorTimes;
+typedef struct RaceTiming {
+    s32 sectorIndex;
+    s32 sectorTimes[3];
+    s32 refLapTime;
+    SectorReferenceTimes refSectorTimes;
+    s32 lastSectorTime;
+    s32 splitDelta;
+    s32 splitTargetTime;
+    s16 splitSign;
+    s16 splitSector;
+    s16 splitTimer;
+} RaceTiming;
 
 #endif

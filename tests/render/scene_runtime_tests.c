@@ -173,19 +173,25 @@ int main(void) {
     SceneRuntimeRace()->optionCursor = 2;
     SceneRuntimeRace()->timeRemaining = 1234;
     SceneRuntimeRace()->fadeTimer = 12;
+    SceneRuntimeRace()->timing.sectorIndex = 2;
+    SceneRuntimeRace()->timing.splitTargetTime = 4567;
     g_SceneId = GAME_SCENE_RACE;
     SceneRuntimeBeforeDispatch(g_SceneId);
     CHECK(SceneRuntimeRace()->pauseDelay == 30 &&
           SceneRuntimeRace()->optionCursor == 2 &&
           SceneRuntimeRace()->timeRemaining == 1234 &&
-          SceneRuntimeRace()->fadeTimer == 12);
+          SceneRuntimeRace()->fadeTimer == 12 &&
+          SceneRuntimeRace()->timing.sectorIndex == 2 &&
+          SceneRuntimeRace()->timing.splitTargetTime == 4567);
 
     g_SceneId = GAME_SCENE_MENU;
     SceneRuntimeBeforeDispatch(g_SceneId);
     CHECK(SceneRuntimeRace()->pauseDelay == 0 &&
           SceneRuntimeRace()->optionCursor == 0 &&
           SceneRuntimeRace()->timeRemaining == 0 &&
-          SceneRuntimeRace()->fadeTimer == 0);
+          SceneRuntimeRace()->fadeTimer == 0 &&
+          SceneRuntimeRace()->timing.sectorIndex == 0 &&
+          SceneRuntimeRace()->timing.splitTargetTime == 0);
 
     puts("scene runtime scopes transition state and asset results to one scene");
     return 0;

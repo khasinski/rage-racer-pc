@@ -44,9 +44,7 @@ static RaceScene s_state;
 s16 g_RacePhase;
 s32 g_RaceTotalTime;
 RaceRecord g_RankingRecords[2][4][5];
-SectorReferenceTimes g_RefSectorTimes;
 s16 g_RivalCueEnabled;
-s32 g_SectorTimes[3];
 s32 g_SeriesCleared;
 s32 g_TrackLength;
 s16 g_WrongWayTimer;
@@ -185,7 +183,7 @@ int main(int argc, char **argv) {
         memset(g_BestSectorTimes, 0, sizeof(g_BestSectorTimes));
         memset(g_BestTotalTimes, 0, sizeof(g_BestTotalTimes));
         memset(g_RankingRecords, 0, sizeof(g_RankingRecords));
-        memset(g_SectorTimes, 0, sizeof(g_SectorTimes));
+        memset(s_state.timing.sectorTimes, 0, sizeof(s_state.timing.sectorTimes));
 
         g_TrackLength = 0x10000;
         g_RaceSeries = 1;
@@ -253,7 +251,7 @@ int main(int argc, char **argv) {
         g_RivalCueEnabled = 0;
         g_SeriesCleared = cleared;
         g_GrandPrixMode = (s16)gpGlobal;
-        memset(&g_RefSectorTimes, 0, sizeof(g_RefSectorTimes));
+        memset(&s_state.timing.refSectorTimes, 0, sizeof(s_state.timing.refSectorTimes));
         s_course.retriesRemaining = (s16)retries;
 
         snprintf(label, sizeof(label),
@@ -282,12 +280,12 @@ int main(int argc, char **argv) {
             after[10] = g_RenderState.mirror.enabled;
             after[11] = g_RivalCueEnabled;
             after[12] = g_SeriesCleared;
-            after[13] = g_SectorTimes[0];
-            after[14] = g_SectorTimes[1];
-            after[15] = g_SectorTimes[2];
-            after[16] = g_RefSectorTimes.fields.second;
-            after[17] = g_RefSectorTimes.fields.third;
-            after[18] = g_RefSectorTimes.fields.first;
+            after[13] = s_state.timing.sectorTimes[0];
+            after[14] = s_state.timing.sectorTimes[1];
+            after[15] = s_state.timing.sectorTimes[2];
+            after[16] = s_state.timing.refSectorTimes.fields.second;
+            after[17] = s_state.timing.refSectorTimes.fields.third;
+            after[18] = s_state.timing.refSectorTimes.fields.first;
             Record("state", after, 19);
             Record("laptimes", g_PlayerCar.lapTimes.words, 12);
             Record("bestlap", &g_BestLapTimes[0][0][0], 2 * 4 * 2);

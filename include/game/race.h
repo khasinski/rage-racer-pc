@@ -158,33 +158,6 @@ extern s32 g_LapTimeMs;
 /* Grand Prix time limit, in frames; counts down from the active phase onward
  * and retires the race when it reaches zero. Seeded to 15000. */
 
-/* Sector being timed, 0..2; -2 before the first start-line crossing. */
-extern s32 g_SectorIndex;
-
-/* This lap's three sector times, filled in as each boundary is crossed. */
-extern s32 g_SectorTimes[3];
-
-/* Total of the best lap the split is measured against; seeded from the save
- * records and written back when the race completes. */
-extern s32 g_RefLapTime;
-
-/* Two 3-element arrays:
- *   g_SectorEndDistance[3] lap distance ending each sector (L/3, 2L/3, L)
- *   g_RefSectorTimes[3]    the best lap's sector times
- */
-
-/* Split readout: the sector time just recorded, the unsigned difference from
- * the reference, and its sign (+1 ahead, -1 behind, 0 no split). */
-extern s32 g_LastSectorTime;
-extern s32 g_SplitDelta;
-extern s16 g_SplitSign;
-
-/* Which sector's reference is on screen, the reference time itself, and the
- * 0..0x3C frame counter that ends the split display. */
-extern s16 g_SplitSector;
-extern s32 g_SplitTargetTime;
-extern s16 g_SplitTimer;
-
 /* Frames the player has been driving the wrong way. Past 10 the warning shows
  * and rival cues are muted; in Time Attack 60 on lap 0 aborts the run. */
 extern s16 g_WrongWayTimer;

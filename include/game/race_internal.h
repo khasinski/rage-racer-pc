@@ -44,8 +44,8 @@ s32 NextReplayReadCursor(s32 cursor, s32 frameCount);
 s32 NextReplaySceneTimer(s32 sceneTimer, s32 frameCount);
 void PlayCountdownCues(s32 timer);
 void UpdateRivalCueGate(void);
-void UpdateSplitTimes(struct PlayerCarRuntime *car, s32 grandPrixMode,
-                      s32 lapEvent);
+void UpdateSplitTimes(RaceTiming *timing, struct PlayerCarRuntime *car,
+                      s32 grandPrixMode, s32 lapEvent);
 void SeedFinishCamera(FinishCamera *finish, struct PlayerCarRuntime *car);
 void UpdateFinishCamera(Camera *camera, FinishCamera *finish,
                         struct PlayerCarRuntime *car);

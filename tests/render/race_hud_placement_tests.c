@@ -69,13 +69,7 @@ s16 g_GrandPrixMode;
 s32 g_LapCount;
 s32 g_BestLapThisRace;
 s32 g_LapTimeMs;
-s32 g_SectorIndex;
-s32 g_LastSectorTime;
-s32 g_SplitDelta;
-s16 g_SplitSign;
-s16 g_SplitSector;
-s32 g_SplitTargetTime;
-s16 g_SplitTimer;
+static RaceTiming s_timing;
 s32 g_RaceSeries;
 s32 g_BestTotalTimes[2][4][2];
 PlayerCarRuntime g_PlayerCar;
@@ -256,14 +250,14 @@ static void DrawWholeHud(s32 mode) {
     g_PlayerCar.drive.racePosition = 12;  /* a macro onto the player car, not a global */
     for (lap = 0; lap < 6; lap++)
         g_PlayerCar.lapTimes.table.milliseconds[lap] = 95000 + lap * 1234;
-    g_SplitTimer = 0;
-    g_SectorIndex = 1;
-    g_SplitSign = -1;
-    g_SplitDelta = 1200;
-    g_SplitSector = 1;
+    s_timing.splitTimer = 0;
+    s_timing.sectorIndex = 1;
+    s_timing.splitSign = -1;
+    s_timing.splitDelta = 1200;
+    s_timing.splitSector = 1;
     g_LapTimeMs = 92345;
-    g_LastSectorTime = 31450;
-    g_SplitTargetTime = 91000;
+    s_timing.lastSectorTime = 31450;
+    s_timing.splitTargetTime = 91000;
     g_RaceSeries = 0;
     g_BestTotalTimes[0][0][0] = 278900;
 
@@ -271,7 +265,7 @@ static void DrawWholeHud(s32 mode) {
     DrawLapTimes();
     DrawRaceHudLabels(mode);
     if (mode != 0) DrawRacePosition();
-    DrawSplitTimes();
+    DrawSplitTimes(&s_timing);
     DrawTimeRemaining(4500);
 }
 

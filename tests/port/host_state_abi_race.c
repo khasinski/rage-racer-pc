@@ -1,6 +1,6 @@
 #include "../../src/port/host_state_race.c"
 
-_Static_assert(sizeof(g_RefSectorTimes) == 12,
+_Static_assert(sizeof(SectorReferenceTimes) == 12,
                "reference sector times must retain their retail size");
 _Static_assert(sizeof(g_CourseProgress) == 8,
                "course progress selector must remain a host pointer");

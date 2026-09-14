@@ -2,6 +2,7 @@
 #define GAME_SCENE_STATE_H
 
 #include "common.h"
+#include "game/race_time_types.h"
 
 typedef enum AttractDemoStep {
     ATTRACT_DEMO_STEP_INVALID = -1,
@@ -18,6 +19,7 @@ typedef struct LostRace {
 } LostRace;
 
 typedef struct RaceScene {
+    RaceTiming timing;
     s32 timeRemaining;
     s16 fadeTimer;
     s16 pauseDelay;

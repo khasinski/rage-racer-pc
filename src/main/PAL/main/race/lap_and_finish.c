@@ -76,7 +76,8 @@ static void TickRunningLapTime(PlayerCarRuntime *car) {
  * The lap just completed, if it beats the best of this race, becomes the new
  * best and its sector times become the ones the next lap is measured against.
  */
-static void RecordBestLap(PlayerCarRuntime *car, s32 recordMode) {
+static void RecordBestLap(RaceTiming *timing, PlayerCarRuntime *car,
+                          s32 recordMode) {
     s32 lap = car->lap;
     s32 lapTime;
 
@@ -89,11 +90,11 @@ static void RecordBestLap(PlayerCarRuntime *car, s32 recordMode) {
     }
     car->drive.hudLapHighlightRow = (s16)((u16)lap - 2);
     g_BestLapThisRace = lapTime;
-    g_SectorTimes[2] = lapTime;
+    timing->sectorTimes[2] = lapTime;
     if (recordMode == 0) {
-        g_RefSectorTimes.fields.first = g_SectorTimes[0];
-        g_RefSectorTimes.fields.second = g_SectorTimes[1];
-        g_RefSectorTimes.fields.third = lapTime;
+        timing->refSectorTimes.fields.first = timing->sectorTimes[0];
+        timing->refSectorTimes.fields.second = timing->sectorTimes[1];
+        timing->refSectorTimes.fields.third = lapTime;
     }
     /* Announced only while there are still laps left to run. */
     if (g_LapCount >= lap) {
@@ -104,8 +105,8 @@ static void RecordBestLap(PlayerCarRuntime *car, s32 recordMode) {
 
 /* The race is over and the player finished it: add up the laps, keep whatever
  * beats the records, and hand over to the finish sequence. */
-static void FinishRace(PlayerCarRuntime *car, s32 recordMode,
-                       s32 lapsRun) {
+static void FinishRace(const RaceTiming *timing, PlayerCarRuntime *car,
+                       s32 recordMode, s32 lapsRun) {
     s32 series = RaceSeriesIndex(g_RaceSeries);
     s32 course = SeriesCourseIndex();
     int64_t totalTime = g_RaceTotalTime;
@@ -133,9 +134,12 @@ static void FinishRace(PlayerCarRuntime *car, s32 recordMode,
         g_BestLapTimes[series][course][recordMode] = g_BestLapThisRace;
     }
     if (recordMode == 0) {
-        g_BestSectorTimes[series][course][0] = g_RefSectorTimes.fields.first;
-        g_BestSectorTimes[series][course][1] = g_RefSectorTimes.fields.second;
-        g_BestSectorTimes[series][course][2] = g_RefSectorTimes.fields.third;
+        g_BestSectorTimes[series][course][0] =
+            timing->refSectorTimes.fields.first;
+        g_BestSectorTimes[series][course][1] =
+            timing->refSectorTimes.fields.second;
+        g_BestSectorTimes[series][course][2] =
+            timing->refSectorTimes.fields.third;
     }
     g_RacePhase = RACE_PHASE_FINISHED;
     StartCdVolumeFade(FINISH_AUDIO_FADE_FRAMES);
@@ -167,13 +171,13 @@ static s32 CrossTheLine(RaceScene *state, PlayerCarRuntime *car,
     if (g_RaceCueDelay == 0) {
         g_RaceCueDelay = LAP_CUE_ARM_DELAY;
     }
-    RecordBestLap(car, recordMode);
+    RecordBestLap(&state->timing, car, recordMode);
 
     lapsRun = g_LapCount;
     if (car->lap == lapsRun + 1) {
         /* Anything below fourth is not a finish; the race is retired. */
         if (car->drive.racePosition <= FINISHING_PLACE_LIMIT) {
-            FinishRace(car, recordMode, lapsRun);
+            FinishRace(&state->timing, car, recordMode, lapsRun);
         } else {
             RetireAtLastLap();
         }

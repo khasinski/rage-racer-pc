@@ -205,21 +205,21 @@ void EnterRaceScene(void) {
     recordMode = RaceRecordMode(g_GrandPrixMode);
     g_LapTimeMs = 0;
     BuildRaceSectorEnds(g_TrackLength, g_SectorEndDistance);
-    g_RefSectorTimes.fields.first = g_BestSectorTimes[series][course][0];
-    g_RefSectorTimes.fields.second = g_BestSectorTimes[series][course][1];
-    g_RefSectorTimes.fields.third = g_BestSectorTimes[series][course][2];
-    g_SectorIndex = PRE_START_SECTOR;
-    g_SplitSector = 0;
-    g_SplitTimer = SPLIT_DISPLAY_FRAMES;
-    g_SplitSign = 0;
-    g_SplitTargetTime = g_RefSectorTimes.fields.first;
-    g_LastSectorTime = -1;
+    state->timing.refSectorTimes.fields.first = g_BestSectorTimes[series][course][0];
+    state->timing.refSectorTimes.fields.second = g_BestSectorTimes[series][course][1];
+    state->timing.refSectorTimes.fields.third = g_BestSectorTimes[series][course][2];
+    state->timing.sectorIndex = PRE_START_SECTOR;
+    state->timing.splitSector = 0;
+    state->timing.splitTimer = SPLIT_DISPLAY_FRAMES;
+    state->timing.splitSign = 0;
+    state->timing.splitTargetTime = state->timing.refSectorTimes.fields.first;
+    state->timing.lastSectorTime = -1;
     /* The retail expression builds a 32-bit address through integer/union
      * arithmetic. On a 64-bit host that truncates the native table pointer.
      * This is the same game lookup expressed with its actual dimensions. */
-    g_RefLapTime = g_BestLapTimes[series][course][recordMode];
+    state->timing.refLapTime = g_BestLapTimes[series][course][recordMode];
     state->timeRemaining = INITIAL_RACE_TIME;
-    g_BestLapThisRace = g_RefLapTime;
+    g_BestLapThisRace = state->timing.refLapTime;
     for (i = 0; i < g_LapCount; i++) {
         g_PlayerCar.lapTimes.table.frameCounts[i] = 0;
         g_PlayerCar.lapTimes.table.milliseconds[i] = 0;
@@ -301,7 +301,7 @@ static void UpdatePausedRaceScene(RaceScene *state) {
 
     DrawRaceOptionMenu(state->optionCursor);
     if (g_GrandPrixMode == 0) {
-        DrawSplitTimes();
+        DrawSplitTimes(&state->timing);
     }
     DrawRaceHudLabels(g_GrandPrixMode);
     if (g_GrandPrixMode != 0) {
@@ -373,9 +373,9 @@ static void UpdateActiveRaceScene(RaceScene *state) {
 
     if (g_RacePhase < RACE_PHASE_RETIRED) {
         lapUpdateResult = UpdateLapAndFinish(state, &g_PlayerCar, g_GrandPrixMode);
-        UpdateSplitTimes(&g_PlayerCar, g_GrandPrixMode, lapUpdateResult);
+        UpdateSplitTimes(&state->timing, &g_PlayerCar, g_GrandPrixMode, lapUpdateResult);
         if (g_GrandPrixMode == 0 && lapUpdateResult != 2) {
-            DrawSplitTimes();
+            DrawSplitTimes(&state->timing);
         }
         if (lapUpdateResult < 2) {
             DrawLapTimes();

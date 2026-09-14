@@ -2,6 +2,7 @@
 #define GAME_RACE_HUD_INTERNAL_H
 
 #include "common.h"
+#include "game/race_time_types.h"
 
 #include "game/render_types.h"
 #include "game/vector.h"
@@ -37,7 +38,7 @@ extern u8 g_TileStripStorage[START_COUNTDOWN_TILE_STORAGE_SIZE];
 
 u8 *DrawHudDigit(u8 *packet, s32 x, s32 y, s32 digit, u16 clut);
 void DrawSpeedDigits(s32 x, s32 y, s32 speed);
-void DrawSplitTimes(void);
+void DrawSplitTimes(const RaceTiming *timing);
 void DrawSplitIndicator(s32 sectorIndex, s32 direction);
 void DrawStartCountdown(s32 sceneTimer);
 void BuildTileStrips(void);
