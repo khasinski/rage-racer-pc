@@ -17,9 +17,6 @@ PlayerCarRuntime g_PlayerCar;
 GameSpriteDesc g_TachoNeedleSprite;
 s16 g_TachoNeedleQuad[4][2];
 u16 g_HudGlyphClut;
-u8 g_TachoFaceR;
-u8 g_TachoFaceG;
-u8 g_TachoFaceB;
 
 static s32 s_sineAngle;
 static s32 s_cosineAngle;
@@ -153,28 +150,28 @@ int main(void) {
     DrawTachometer(0, 0, TACHOMETER_LIGHTING_FADE_TO_DARK, 200);
     needle = (POLY_F4 *)packets;
     CHECK(needle->r0 == 32 && needle->g0 == 32 && needle->b0 == 32);
-    CHECK(g_TachoFaceR == 32);
+    CHECK(frame->layout.raceHud.tachometerFace.r0 == 32);
 
     memset(packets, 0, sizeof(packets));
     ResetState(packets);
     DrawTachometer(0, 0, TACHOMETER_LIGHTING_FADE_FROM_DARK, 32);
     needle = (POLY_F4 *)packets;
     CHECK(needle->r0 == 32 && needle->g0 == 32 && needle->b0 == 32);
-    CHECK(g_TachoFaceR == 32);
+    CHECK(frame->layout.raceHud.tachometerFace.r0 == 32);
 
     memset(packets, 0, sizeof(packets));
     ResetState(packets);
     DrawTachometer(0, 0, TACHOMETER_LIGHTING_FADE_TO_DARK, 48);
     needle = (POLY_F4 *)packets;
     CHECK(needle->r0 == 21 && needle->g0 == 26 && needle->b0 == 31);
-    CHECK(g_TachoFaceR == 80);
+    CHECK(frame->layout.raceHud.tachometerFace.r0 == 80);
 
     memset(packets, 0, sizeof(packets));
     ResetState(packets);
     DrawTachometer(0, 0, TACHOMETER_LIGHTING_FADE_FROM_DARK, 80);
     needle = (POLY_F4 *)packets;
     CHECK(needle->r0 == 21 && needle->g0 == 26 && needle->b0 == 31);
-    CHECK(g_TachoFaceR == 80);
+    CHECK(frame->layout.raceHud.tachometerFace.r0 == 80);
 
     memset(packets, 0, sizeof(packets));
     ResetState(packets);
@@ -195,7 +192,7 @@ int main(void) {
     DrawTachometer(0, 0, TACHOMETER_LIGHTING_FADE_FROM_DARK, INT_MIN);
     needle = (POLY_F4 *)packets;
     CHECK(needle->r0 == 32 && needle->g0 == 32 && needle->b0 == 32);
-    CHECK(g_TachoFaceR == 32);
+    CHECK(frame->layout.raceHud.tachometerFace.r0 == 32);
 
     memset(packets, 0, sizeof(packets));
     ResetState(packets);

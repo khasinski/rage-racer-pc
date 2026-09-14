@@ -37,19 +37,15 @@ static u8 BlendTachometerChannel(s32 from, s32 to, s32 amount) {
                 TACHOMETER_BLEND_FRAMES);
 }
 
-static void SetTachometerFaceBrightness(s32 brightness) {
-    g_TachoFaceR = (u8)brightness;
-    g_TachoFaceG = (u8)brightness;
-    g_TachoFaceB = (u8)brightness;
-}
+static u8 SetTachometerNeedleColor(POLY_F4 *needle,
+                                   const CarTachometerSpec *spec,
+                                   TachometerLightingMode lighting,
+                                   s32 amount, GameFrameContext *frame) {
+    s32 brightness;
 
-static void SetTachometerNeedleColor(POLY_F4 *needle,
-                                    const CarTachometerSpec *spec,
-                                    TachometerLightingMode lighting,
-                                    s32 amount, GameFrameContext *frame) {
     if (lighting == TACHOMETER_LIGHTING_FADE_TO_DARK) {
         amount = ClampTachometerBlend(amount);
-        SetTachometerFaceBrightness(TACHOMETER_NORMAL_LEVEL - amount);
+        brightness = TACHOMETER_NORMAL_LEVEL - amount;
         needle->r0 = BlendTachometerChannel(
             spec->needleColor[0], TACHOMETER_DARK_LEVEL, amount);
         needle->g0 = BlendTachometerChannel(
@@ -62,7 +58,7 @@ static void SetTachometerNeedleColor(POLY_F4 *needle,
         } else {
             amount = ClampTachometerBlend(amount - TACHOMETER_DARK_LEVEL);
         }
-        SetTachometerFaceBrightness(TACHOMETER_DARK_LEVEL + amount);
+        brightness = TACHOMETER_DARK_LEVEL + amount;
         needle->r0 = BlendTachometerChannel(
             TACHOMETER_DARK_LEVEL, spec->needleColor[0], amount);
         needle->g0 = BlendTachometerChannel(
@@ -72,17 +68,18 @@ static void SetTachometerNeedleColor(POLY_F4 *needle,
         frame->layout.raceHud.tachometerFace.clut = 0x33A8;
     } else if (lighting == TACHOMETER_LIGHTING_DARK) {
         frame->layout.raceHud.tachometerFace.clut = 0x33E8;
-        SetTachometerFaceBrightness(TACHOMETER_NORMAL_LEVEL);
+        brightness = TACHOMETER_NORMAL_LEVEL;
         needle->r0 = spec->needleColorAlt[0];
         needle->g0 = spec->needleColorAlt[1];
         needle->b0 = spec->needleColorAlt[2];
     } else {
         frame->layout.raceHud.tachometerFace.clut = 0x33A8;
-        SetTachometerFaceBrightness(TACHOMETER_NORMAL_LEVEL);
+        brightness = TACHOMETER_NORMAL_LEVEL;
         needle->r0 = spec->needleColor[0];
         needle->g0 = spec->needleColor[1];
         needle->b0 = spec->needleColor[2];
     }
+    return (u8)brightness;
 }
 
 void DrawTachometer(s32 rpm, s32 shiftLightOn, TachometerLightingMode lighting,
@@ -102,6 +99,7 @@ void DrawTachometer(s32 rpm, s32 shiftLightOn, TachometerLightingMode lighting,
     s16 *vertex = &needle->x0;
     u8 *next;
     TILE *shiftLight;
+    u8 faceBrightness;
     s32 i;
 
     SetPolyF4(needle);
@@ -116,7 +114,8 @@ void DrawTachometer(s32 rpm, s32 shiftLightOn, TachometerLightingMode lighting,
             ((int64_t)cosine * localX + (int64_t)sine * localY) / 4096);
     }
 
-    SetTachometerNeedleColor(needle, spec, lighting, amount, frame);
+    faceBrightness =
+        SetTachometerNeedleColor(needle, spec, lighting, amount, frame);
 
     AddPrim(ot, needle);
     next = DrawHudDigit(
@@ -126,9 +125,9 @@ void DrawTachometer(s32 rpm, s32 shiftLightOn, TachometerLightingMode lighting,
     DrawSpeedDigits(centerX, centerY,
                     SpeedDisplayValue(g_PlayerCar.speed));
 
-    frame->layout.raceHud.tachometerFace.r0 = g_TachoFaceR;
-    frame->layout.raceHud.tachometerFace.g0 = g_TachoFaceG;
-    frame->layout.raceHud.tachometerFace.b0 = g_TachoFaceB;
+    frame->layout.raceHud.tachometerFace.r0 = faceBrightness;
+    frame->layout.raceHud.tachometerFace.g0 = faceBrightness;
+    frame->layout.raceHud.tachometerFace.b0 = faceBrightness;
     frame->layout.raceHud.tachometerFace.x0 =
         WrapSigned16(HudRightX(g_TachoNeedleSprite.x));
     AddPrim(ot, &frame->layout.raceHud.tachometerDrawModes[0]);

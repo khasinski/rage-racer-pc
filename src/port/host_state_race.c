@@ -64,9 +64,6 @@ StartCountdownPattern
      4228112447, 4228112384, 4228112434, 4228112438,
      4229954610, 4229954610, 4229954610, 0},
 };
-u8 g_TachoFaceR = 128;
-u8 g_TachoFaceG = 128;
-u8 g_TachoFaceB = 128;
 s32 g_LastSectorTime;
 s32 g_SplitDelta;
 s32 g_SectorTimes[3] = {

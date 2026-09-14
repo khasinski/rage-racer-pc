@@ -280,9 +280,6 @@ enum { PROMOTION_BONUS_COUNT = 5 };
 extern s32 g_PromotionBonusTable[PROMOTION_BONUS_COUNT];
 extern u8 g_RankingNameCodes[];
 extern u16 g_ResultPlaceCluts[];
-extern u8 g_TachoFaceB;
-extern u8 g_TachoFaceG;
-extern u8 g_TachoFaceR;
 extern u8 g_TimeRecordNameCodes[];
 
 s32 BeginMirrorPass(void);
