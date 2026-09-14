@@ -210,10 +210,6 @@ enum {
  * negative: the request cannot complete. */
 s32 LoadAsset(s32 assetIndex, void *dst);
 
-/* Phase of LoadAsset's own CD state machine, 0..6 (seek, SetLoc, CdRead,
- * wait, success, failure). Sequences one transfer, unlike g_AssetLoadState. */
-extern s16 g_CdLoadPhase;
-
 typedef union GameCdPosition {
     u32 sectorOffset;
     CdlLOC location;

@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 
-s16 g_CdLoadPhase;
 s32 g_AssetLoadState;
 s32 g_AssetLoadFailed;
 AssetRequestType g_AssetRequestType;
@@ -187,12 +186,10 @@ int main(void) {
     Check(s_uploads == 1 && g_AssetLoadFailed == 1,
           "invalid boot logo image stops asset initialization");
 
-    g_CdLoadPhase = 4;
     g_AssetLoadState = 5;
     g_AssetRequestType = ASSET_REQUEST_RACE;
     ResetAssetLoader();
-    Check(g_CdLoadPhase == 0 && g_AssetLoadState == 0 &&
-              g_AssetRequestType == ASSET_REQUEST_IDLE,
+    Check(g_AssetLoadState == 0 && g_AssetRequestType == ASSET_REQUEST_IDLE,
           "asset reset clears every loader state");
     Check(s_transactionResetCalls == 1,
           "asset reset invalidates the scene transaction snapshot");

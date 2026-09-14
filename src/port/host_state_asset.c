@@ -19,7 +19,6 @@
 typedef struct CarImageData CarImageData;
 typedef struct GameCdLoadEntry GameCdLoadEntry;
 
-s16 g_CdLoadPhase;
 s32 g_AssetLoadState;
 s32 g_AssetRequestType;
 Rect g_TrackTextureRect = {576, 256, 448, 256};

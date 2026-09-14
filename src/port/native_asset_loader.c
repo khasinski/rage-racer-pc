@@ -37,7 +37,6 @@ _Static_assert(offsetof(GameCdLoadEntry, size) ==
 
 void ResetAssetLoader(void) {
     ResetAssetLoadTransaction();
-    g_CdLoadPhase = 0;
     g_AssetLoadState = 0;
     g_AssetLoadFailed = 0;
     g_AssetRequestType = ASSET_REQUEST_IDLE;
