@@ -8,7 +8,16 @@
 #include "game/save_internal.h"
 #include "game/screens.h"
 
-enum { MAIN_MENU_OPEN_FRAMES = 0x30 };
+enum {
+    MAIN_MENU_ROW_REVEAL_FRAMES = 8,
+    MAIN_MENU_OPEN_FRAMES =
+        0x10 + (TITLE_MENU_ITEM_COUNT - 1) * MAIN_MENU_ROW_REVEAL_FRAMES,
+};
+
+static void DrawCustomMenuRow(s32 y, s32 selected) {
+    GameDrawProportionalTextShaded(0x78, y + 2, "CUSTOM", 0x7812,
+                                   selected ? 0x80 : 0x100);
+}
 
 void DrawMainMenuRows(void) {
     const Frontend *frontend = MenuFrontend();
@@ -21,6 +30,7 @@ void DrawMainMenuRows(void) {
         s32 clut = 0x7E85;
         s32 height;
         s32 delta;
+        s32 spriteItem = item;
 
         if (g_ExtraGrandPrixUnlocked == 0 &&
             item == TITLE_MENU_EXTRA_GRAND_PRIX) {
@@ -32,13 +42,22 @@ void DrawMainMenuRows(void) {
             clut = 0x7E86;
         }
 
-        delta = frontend->menuSlide - row * 8;
+        delta = frontend->menuSlide - row * MAIN_MENU_ROW_REVEAL_FRAMES;
         height = delta > 0x10 ? 0x10 : delta;
         if (height < 0) height = 0;
 
-        packet = GameQueueTexturedRect(
-            ot, packet, 0x68, 0x64 + row * 0x18, 0x70, height, 0,
-            item * 0x10 + 0xA0, 0x70, 0x10, clut, 0x39);
+        if (item == TITLE_MENU_CUSTOM) {
+            g_RenderState.draw.packetCursor = packet;
+            if (height == 0x10) {
+                DrawCustomMenuRow(0x64 + row * 0x18, clut == 0x7E86);
+            }
+            packet = RENDER_PRIM_CURSOR_AS(u8);
+        } else {
+            if (item > TITLE_MENU_CUSTOM) spriteItem--;
+            packet = GameQueueTexturedRect(
+                ot, packet, 0x68, 0x64 + row * 0x18, 0x70, height, 0,
+                spriteItem * 0x10 + 0xA0, 0x70, 0x10, clut, 0x39);
+        }
         item++;
         row++;
     }
@@ -93,7 +112,8 @@ void UpdateMainMenuInput(void) {
         oldSelection, direction, g_ExtraGrandPrixUnlocked != 0);
     if (oldSelection != frontend->selection) PlaySoundCue(1);
 
-    if (pressed & PAD_CONFIRM) {
+    if ((pressed & PAD_CONFIRM) &&
+        frontend->selection != TITLE_MENU_CUSTOM) {
         PlaySoundCue(2);
         if (!AssetLoadCompletedSuccessfully()) ResetAssetLoader();
         ShuffleBgmOrder();

@@ -255,11 +255,11 @@ extern void (*g_MenuScreenUpdate[MENU_SCREEN_COUNT])(void);
 extern s32 (*g_MenuScreenDraw[MENU_SCREEN_COUNT])(s32 *progress, s32 step);
 
 /*
- * Title-menu cursor, 0..4 (UpdateMainMenuInput wraps it with `(sel + 5) % 5` on the
- * up/down pad edges and skips entry 1 while g_ExtraGrandPrixUnlocked is 0). 0 and 1 are the
+ * Title-menu cursor, indexed by TitleMenuItem. Up/down wraps at
+ * TITLE_MENU_ITEM_COUNT and skips entry 1 while g_ExtraGrandPrixUnlocked is 0. 0 and 1 are the
  * two Grand Prix save files - they repoint g_CarTable / g_RaceProgress / g_CourseProgress
- * at that file's tables and set g_GrandPrixMode to 1 - 2 is Time Attack
- * (g_GrandPrixMode 0), 3 starts the attract demo and 4 opens the options.
+ * at that file's tables and set g_GrandPrixMode to 1 - 2 is Time Attack and
+ * 3 is Custom Race. The remaining entries load a save or open the options.
  * DrawMainMenuRows draws the row whose index equals it as selected.
  */
 
