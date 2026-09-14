@@ -94,6 +94,11 @@ typedef struct TeamName {
     s32 charModel;
 } TeamName;
 
+typedef struct TeamLogo {
+    const TimedDrawCommand *subPanelScript;
+    s32 option;
+} TeamLogo;
+
 typedef struct CarSpecGraph {
     s32 step;
     s32 progress;
@@ -156,6 +161,7 @@ typedef struct MenuRuntime {
     Customize customize;
     LogoSample logoSample;
     TeamName teamName;
+    TeamLogo teamLogo;
     CarSpecGraph carSpecGraph;
     CarSelect carSelect;
     Ranking ranking;
@@ -174,6 +180,7 @@ PaintColor *MenuPaintColor(void);
 Customize *MenuCustomize(void);
 LogoSample *MenuLogoSample(void);
 TeamName *MenuTeamName(void);
+TeamLogo *MenuTeamLogo(void);
 CarSpecGraph *MenuCarSpecGraph(void);
 CarSelect *MenuCarSelect(void);
 Ranking *MenuRanking(void);
@@ -444,7 +451,6 @@ extern s32 g_TeamLogoPaletteMode;
 extern s32 g_TeamLogoColorChannel;
 extern s32 g_CarShopUnlockAll;
 extern s32 g_TeamLogoPaintArmed;
-extern const TimedDrawCommand *g_TeamLogoSubPanelScript;
 extern s32 g_BgmTrackCount;
 extern s32 g_CarSwapFromIndex;
 extern s32 g_CarSwapToIndex;
@@ -513,7 +519,6 @@ extern s32 g_TeamLogoZoomLevel;
 extern u16 g_TeamLogoFadedClut[16];
 extern s32 g_RankingPendingState;
 extern s32 g_ShopCarIndex;
-extern s32 g_TeamLogoOption;
 extern char *g_BgmTrackNames[];
 extern s32 g_CarPriceTable[CAR_PRICE_COUNT];
 extern TimedDrawCommand g_MenuHintBarScript[];

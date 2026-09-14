@@ -189,5 +189,3 @@ s16 g_NegconSteerNeutral;
 GameRaceProgress *g_RaceProgress;
 TeamLogoCanvas g_TeamLogoCanvas;
 s32 g_MenuViewSpin;
-const TimedDrawCommand *g_TeamLogoSubPanelScript;
-s32 g_TeamLogoOption;

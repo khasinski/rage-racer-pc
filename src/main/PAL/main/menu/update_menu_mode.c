@@ -57,6 +57,10 @@ TeamName *MenuTeamName(void) {
     return &s_menuRuntime.teamName;
 }
 
+TeamLogo *MenuTeamLogo(void) {
+    return &s_menuRuntime.teamLogo;
+}
+
 CarSpecGraph *MenuCarSpecGraph(void) {
     return &s_menuRuntime.carSpecGraph;
 }

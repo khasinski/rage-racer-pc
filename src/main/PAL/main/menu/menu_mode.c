@@ -60,7 +60,7 @@ static void ResetMenuNavigation(void) {
     customize->popupScript = g_UiEmptyScript;
     logoSample->subPanelScript = g_UiEmptyScript;
     MenuCarSelect()->popupScript = g_UiEmptyScript;
-    g_TeamLogoSubPanelScript = g_UiEmptyScript;
+    MenuTeamLogo()->subPanelScript = g_UiEmptyScript;
     ResetCarShopScreen();
     ResetEngineerShopScreen();
     ResetMenuCar();

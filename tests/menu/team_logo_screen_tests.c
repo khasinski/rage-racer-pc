@@ -7,6 +7,7 @@
 #include <string.h>
 
 static MenuWidgets s_menuWidgets;
+static TeamLogo s_teamLogo;
 
 extern s32 g_MenuHandlerIndex;
 extern s32 g_MenuOutgoingHandlerIndex;
@@ -30,7 +31,6 @@ s32 g_MenuOverlayPattern;
 s32 g_MenuScreen;
 u8 g_MenuSubCursor;
 u16 g_PadPressed;
-s32 g_TeamLogoOption;
 s32 g_TeamLogoPaintArmed;
 u16 g_TeamLogoClut[16];
 Rect g_TeamLogoClutRect;
@@ -46,12 +46,12 @@ TimedDrawCommand g_NativeTeamLogoScreenScript2[2];
 TimedDrawCommand g_UiChromeScript[1];
 TimedDrawCommand g_UiChromeScript2[1];
 TimedDrawCommand g_EmptyScript[1];
-const TimedDrawCommand *g_TeamLogoSubPanelScript = g_EmptyScript;
 
 GameRenderState g_RenderState;
 static LogoSample s_logo;
 
 LogoSample *MenuLogoSample(void) { return &s_logo; }
+TeamLogo *MenuTeamLogo(void) { return &s_teamLogo; }
 
 static s32 s_scriptFinished = 1;
 static s32 s_canvasUpdates;
@@ -146,9 +146,9 @@ static void Reset(void) {
     g_MenuConfirmTimer = 0;
     g_MenuSubCursor = 0;
     g_PadPressed = 0;
-    g_TeamLogoOption = 0;
+    s_teamLogo.option = 0;
     g_TeamLogoPaintArmed = 1;
-    g_TeamLogoSubPanelScript = g_EmptyScript;
+    s_teamLogo.subPanelScript = g_EmptyScript;
     s_logo.background = 0;
     s_logo.character = 0;
     s_logo.cursor = 0;
@@ -179,15 +179,15 @@ int main(void) {
     g_PadPressed = PAD_CONFIRM;
     UpdateTeamLogoScreen();
     CHECK(GameMenuBusy == -1);
-    CHECK(g_TeamLogoSubPanelScript == g_MenuDialogPanelUpperScript);
+    CHECK(s_teamLogo.subPanelScript == g_MenuDialogPanelUpperScript);
 
     Reset();
-    g_TeamLogoOption = 1;
+    s_teamLogo.option = 1;
     g_PadPressed = PAD_CONFIRM;
     UpdateTeamLogoScreen();
     CHECK(GameMenuBusy == -3);
     CHECK(g_TeamLogoPaintArmed == 0);
-    CHECK(g_TeamLogoSubPanelScript == g_MenuRow1MarkerScript);
+    CHECK(s_teamLogo.subPanelScript == g_MenuRow1MarkerScript);
 
     Reset();
     GameMenuBusy = -1;
@@ -222,10 +222,10 @@ int main(void) {
     CHECK(s_clutUploadCalls == 1);
 
     Reset();
-    g_TeamLogoOption = INT_MAX;
+    s_teamLogo.option = INT_MAX;
     g_MenuSubCursor = UINT8_MAX;
     UpdateTeamLogoScreen();
-    CHECK(g_TeamLogoOption == 2 && g_MenuSubCursor == 1);
+    CHECK(s_teamLogo.option == 2 && g_MenuSubCursor == 1);
 
     Reset();
     GameMenuBusy = -2;

@@ -33,14 +33,14 @@ static void DrawTeamLogoSaveButtons(GameOrderingTableEntry *ot, s32 flash) {
     GameDrawMenuButton(0xDA, 0x44, 0x20, 0x20, 0x3A, 0x1E, 0x95);
 }
 
-static void ChooseTeamLogoOption(void) {
-    switch (g_TeamLogoOption) {
+static void ChooseTeamLogoOption(TeamLogo *logo) {
+    switch (logo->option) {
     case TEAM_LOGO_OPTION_SAMPLES:
         PlaySoundCue(2);
         GameMenuBusy = TEAM_LOGO_SAVE_PROMPT;
         g_MenuSubCursor = 0;
         g_UiScriptProgress2 = 0;
-        g_TeamLogoSubPanelScript = g_MenuDialogPanelUpperScript;
+        logo->subPanelScript = g_MenuDialogPanelUpperScript;
         break;
     case TEAM_LOGO_OPTION_PAINT:
         PlaySoundCue(2);
@@ -48,7 +48,7 @@ static void ChooseTeamLogoOption(void) {
         GameMenuBusy = TEAM_LOGO_PAINTING;
         g_TeamLogoPaintArmed = 0;
         g_UiScriptProgress2 = 0;
-        g_TeamLogoSubPanelScript = g_MenuRow1MarkerScript;
+        logo->subPanelScript = g_MenuRow1MarkerScript;
         break;
     case TEAM_LOGO_OPTION_EXIT:
         PlaySoundCue(3);
@@ -58,13 +58,13 @@ static void ChooseTeamLogoOption(void) {
     }
 }
 
-static void UpdateTeamLogoIdle(void) {
+static void UpdateTeamLogoIdle(TeamLogo *logo) {
     RampTeamLogoCanvas(-13, -21);
     RunTimedDrawScript(g_TeamLogoScreenScript2, &g_UiScriptProgress2, -1);
     RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
-    RunTimedDrawScript(g_TeamLogoSubPanelScript, &g_UiScriptProgress2, 0);
+    RunTimedDrawScript(logo->subPanelScript, &g_UiScriptProgress2, 0);
     DrawTeamLogoCanvas(1, -1);
-    DrawFadingMenuSprites(g_UiScriptProgress, 2, g_TeamLogoOption);
+    DrawFadingMenuSprites(g_UiScriptProgress, 2, logo->option);
     RunTimedDrawScript(g_TeamLogoScreenScript, &g_UiScriptProgress, 0);
     if (RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1) == 0 ||
         g_UiScriptProgress2 > 0) {
@@ -75,16 +75,16 @@ static void UpdateTeamLogoIdle(void) {
     g_MenuOverlayPattern = -1;
     if (g_PadPressed & PAD_UP) {
         PlaySoundCue(1);
-        g_TeamLogoOption = WrapMenuIndex(
-            g_TeamLogoOption, -1, TEAM_LOGO_OPTION_COUNT);
+        logo->option = WrapMenuIndex(
+            logo->option, -1, TEAM_LOGO_OPTION_COUNT);
     }
     if (g_PadPressed & PAD_DOWN) {
         PlaySoundCue(1);
-        g_TeamLogoOption = WrapMenuIndex(
-            g_TeamLogoOption, 1, TEAM_LOGO_OPTION_COUNT);
+        logo->option = WrapMenuIndex(
+            logo->option, 1, TEAM_LOGO_OPTION_COUNT);
     }
     if (g_PadPressed & PAD_CONFIRM) {
-        ChooseTeamLogoOption();
+        ChooseTeamLogoOption(logo);
     } else if (g_PadPressed & PAD_CANCEL) {
         PlaySoundCue(3);
         GameMenuBusy = TEAM_LOGO_EXIT_TO_DESIGN;
@@ -92,12 +92,13 @@ static void UpdateTeamLogoIdle(void) {
     }
 }
 
-static void UpdateTeamLogoSavePrompt(GameOrderingTableEntry *ot) {
+static void UpdateTeamLogoSavePrompt(TeamLogo *logo,
+                                     GameOrderingTableEntry *ot) {
     MenuDialogAction action;
 
     RunTimedDrawScript(g_TeamLogoScreenScript2, &g_UiScriptProgress2, 0);
     RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
-    if (RunTimedDrawScript(g_TeamLogoSubPanelScript, &g_UiScriptProgress2, 1) !=
+    if (RunTimedDrawScript(logo->subPanelScript, &g_UiScriptProgress2, 1) !=
         0) {
         action = ChooseMenuDialogAction(g_PadPressed);
         if (action == MENU_DIALOG_CONFIRM) {
@@ -124,11 +125,12 @@ static void UpdateTeamLogoSavePrompt(GameOrderingTableEntry *ot) {
     DrawTeamLogoCanvas(1, 0);
 }
 
-static void UpdateTeamLogoSaveCountdown(GameOrderingTableEntry *ot) {
+static void UpdateTeamLogoSaveCountdown(TeamLogo *logo,
+                                        GameOrderingTableEntry *ot) {
     if (g_MenuConfirmTimer <= 0) {
         RunTimedDrawScript(g_TeamLogoScreenScript2, &g_UiScriptProgress2, -1);
         RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
-        RunTimedDrawScript(g_TeamLogoSubPanelScript, &g_UiScriptProgress2, 0);
+        RunTimedDrawScript(logo->subPanelScript, &g_UiScriptProgress2, 0);
         if (g_UiScriptProgress2 <= 0) {
             GameMenuBusy = TEAM_LOGO_EXIT_TO_SAMPLES;
             g_MenuOverlayPattern = 1;
@@ -137,15 +139,15 @@ static void UpdateTeamLogoSaveCountdown(GameOrderingTableEntry *ot) {
         g_MenuConfirmTimer--;
         RunTimedDrawScript(g_TeamLogoScreenScript2, &g_UiScriptProgress2, 0);
         RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
-        RunTimedDrawScript(g_TeamLogoSubPanelScript, &g_UiScriptProgress2, 1);
+        RunTimedDrawScript(logo->subPanelScript, &g_UiScriptProgress2, 1);
         DrawTeamLogoSaveButtons(ot, 1);
     }
     DrawTeamLogoCanvas(1, 0);
 }
 
-static void UpdateTeamLogoPainting(void) {
+static void UpdateTeamLogoPainting(TeamLogo *logo) {
     RampTeamLogoCanvas(9, 0x15);
-    if (RunTimedDrawScript(g_TeamLogoSubPanelScript, &g_UiScriptProgress2, 1) !=
+    if (RunTimedDrawScript(logo->subPanelScript, &g_UiScriptProgress2, 1) !=
         0) {
         if (g_PadPressed & PAD_START) {
             PlaySoundCue(3);
@@ -160,9 +162,9 @@ static void UpdateTeamLogoPainting(void) {
     DrawTeamLogoCanvas(1, 1);
 }
 
-static void UpdateTeamLogoPaintClosing(void) {
+static void UpdateTeamLogoPaintClosing(TeamLogo *logo) {
     RampTeamLogoCanvas(-13, -21);
-    RunTimedDrawScript(g_TeamLogoSubPanelScript, &g_UiScriptProgress2, -1);
+    RunTimedDrawScript(logo->subPanelScript, &g_UiScriptProgress2, -1);
     DrawTeamLogoCanvas(1, -1);
     if (g_UiScriptProgress2 < 7) {
         MenuWidgetState()->hintButtonsVisible = 1;
@@ -172,35 +174,36 @@ static void UpdateTeamLogoPaintClosing(void) {
     }
 }
 
-static void UpdateActiveTeamLogoModal(GameOrderingTableEntry *ot,
+static void UpdateActiveTeamLogoModal(TeamLogo *logo,
+                                      GameOrderingTableEntry *ot,
                                       TeamLogoScreenState state) {
     switch (state) {
     case TEAM_LOGO_SAVE_PROMPT:
-        UpdateTeamLogoSavePrompt(ot);
+        UpdateTeamLogoSavePrompt(logo, ot);
         break;
     case TEAM_LOGO_SAVE_COUNTDOWN:
-        UpdateTeamLogoSaveCountdown(ot);
+        UpdateTeamLogoSaveCountdown(logo, ot);
         break;
     case TEAM_LOGO_PAINTING:
-        UpdateTeamLogoPainting();
+        UpdateTeamLogoPainting(logo);
         break;
     case TEAM_LOGO_PAINT_CLOSING:
-        UpdateTeamLogoPaintClosing();
+        UpdateTeamLogoPaintClosing(logo);
         break;
     default:
         break;
     }
-    DrawFadingMenuSprites(g_UiScriptProgress, 2, g_TeamLogoOption);
+    DrawFadingMenuSprites(g_UiScriptProgress, 2, logo->option);
     RunTimedDrawScript(g_TeamLogoScreenScript, &g_UiScriptProgress, 0);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
 }
 
-static void UpdateTeamLogoOutgoing(TeamLogoScreenState state) {
+static void UpdateTeamLogoOutgoing(TeamLogo *logo, TeamLogoScreenState state) {
     MenuBeginExit(MENU_SCREEN_TEAM_LOGO);
     DrawTeamLogoCanvas(state == TEAM_LOGO_EXIT_TO_DESIGN ? -1 : 1, 0);
     RunTimedDrawScript(g_TeamLogoScreenScript, &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
-    DrawFadingMenuSprites(g_UiScriptProgress, 2, g_TeamLogoOption);
+    DrawFadingMenuSprites(g_UiScriptProgress, 2, logo->option);
     if (g_UiScriptProgress > 0) {
         return;
     }
@@ -213,7 +216,7 @@ static void UpdateTeamLogoOutgoing(TeamLogoScreenState state) {
 
     case TEAM_LOGO_EXIT_TO_DESIGN:
         MenuActivateScreen(MENU_SCREEN_DESIGN_MODE);
-        g_TeamLogoOption = 0;
+        logo->option = 0;
         g_TeamLogoClut[0] = 0;
         UploadTeamLogoClut();
         break;
@@ -226,10 +229,11 @@ static void UpdateTeamLogoOutgoing(TeamLogoScreenState state) {
 }
 
 void UpdateTeamLogoScreen(void) {
+    TeamLogo *logo = MenuTeamLogo();
     TeamLogoScreenState state = (TeamLogoScreenState)GameMenuBusy;
 
-    g_TeamLogoOption = AddClampedMenuValue(
-        g_TeamLogoOption, 0, 0, TEAM_LOGO_OPTION_COUNT - 1);
+    logo->option = AddClampedMenuValue(
+        logo->option, 0, 0, TEAM_LOGO_OPTION_COUNT - 1);
     g_MenuSubCursor = g_MenuSubCursor != 0;
     if (state == TEAM_LOGO_SAVE_COUNTDOWN) {
         g_MenuConfirmTimer = AddClampedMenuValue(
@@ -237,13 +241,13 @@ void UpdateTeamLogoScreen(void) {
     }
     g_MenuAltLayout = 0;
     if (state == TEAM_LOGO_IDLE) {
-        UpdateTeamLogoIdle();
+        UpdateTeamLogoIdle(logo);
     } else if (state >= TEAM_LOGO_PAINT_CLOSING &&
                state <= TEAM_LOGO_SAVE_PROMPT) {
-        UpdateActiveTeamLogoModal(RENDER_OT_BASE, state);
+        UpdateActiveTeamLogoModal(logo, RENDER_OT_BASE, state);
     } else if (state == TEAM_LOGO_EXIT_TO_SAMPLES ||
                state == TEAM_LOGO_EXIT_TO_DESIGN) {
-        UpdateTeamLogoOutgoing(state);
+        UpdateTeamLogoOutgoing(logo, state);
     } else {
         GameMenuBusy = TEAM_LOGO_IDLE;
     }
