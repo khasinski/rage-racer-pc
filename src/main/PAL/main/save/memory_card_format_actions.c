@@ -31,7 +31,7 @@ static void ReturnToUnformattedCardRoot(void) {
 static void RunUnformattedCardRootPage(s32 fadeBusy) {
     g_McMenuPhase = MC_PROMPT_NONE;
     AdjustMenuSelectionVertical(&g_McMenuRowCursor, 0,
-                                g_McMenuRowCount - 1);
+                                MemoryCardMenuRowCount() - 1);
 
     if (!(g_PadPressed & PAD_CONFIRM)) {
         if ((g_PadPressed & PAD_CANCEL) && !fadeBusy) {
@@ -47,7 +47,7 @@ static void RunUnformattedCardRootPage(s32 fadeBusy) {
         g_McMenuPage = 1;
         g_McConfirmChoice = 0;
         g_McSaveMode = 0;
-    } else if (g_McMenuRowCursor == g_McMenuRowCount - 1) {
+    } else if (g_McMenuRowCursor == MemoryCardMenuRowCount() - 1) {
         if (fadeBusy) return;
         PlaySoundCue(2);
         g_McActionBusy = 0;

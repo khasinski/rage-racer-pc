@@ -109,10 +109,10 @@ static void ExitNoCardMenu(s32 soundCue, int resetAction) {
 
 static void RunNoCardRootPage(s32 fadeBusy) {
     AdjustMenuSelectionVertical(&g_McMenuRowCursor, 0,
-                                g_McMenuRowCount - 1);
+                                MemoryCardMenuRowCount() - 1);
 
     if (PollMenuConfirmInput() != 0) {
-        if (g_McMenuRowCursor != g_McMenuRowCount - 1) {
+        if (g_McMenuRowCursor != MemoryCardMenuRowCount() - 1) {
             PlaySoundCue(5);
         } else if (fadeBusy == 0) {
             ExitNoCardMenu(2, 1);

@@ -15,7 +15,6 @@ u8 g_TeamNameChars[16];
 u8 g_TeamNameLength;
 s32 g_SaveElapsedTicks;
 DirEntry g_McDirEntries[MEMORY_CARD_MAX_FILES];
-s32 g_McCardFileCount;
 s32 g_McFreeBlocks;
 
 static u8 s_files[MOCK_FILE_COUNT][MOCK_FILE_SIZE];
@@ -287,7 +286,6 @@ static int TestCardStatus(void) {
     PutHeader(0, 0x1280, 31, 1);
     memset(headers, 0xCC, sizeof(headers));
     CHECK(RefreshMemoryCardSaveStatus(headers) == 1);
-    CHECK(g_McCardFileCount == 2);
     CHECK(g_McFreeBlocks == 14);
     CHECK(headers[0].fields.name[0] == 31);
     CHECK(GameMenuLoadPhase == 0x200);

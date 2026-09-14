@@ -39,7 +39,6 @@ s32 g_McLastMenuState;
 s32 g_McLastSlot;
 s32 g_McMenuPage;
 MemoryCardPrompt g_McMenuPhase;
-s32 g_McMenuRowCount;
 s32 g_McMenuRowCursor;
 s32 g_McMenuSelection;
 s32 g_McMenuState;
@@ -199,7 +198,7 @@ static int TestFailedLoadReportsError(void) {
     g_McMenuSelection = 1;
     g_McCardStatus = 1;
     g_McMenuPage = 1;
-    g_McMenuRowCount = 4;
+    g_McFromLoadMenu = 1;
     g_McActionState = 0x21;
     g_McActionTimer = 0;
     g_McActionBusy = 1;
@@ -234,7 +233,7 @@ static int TestOverwritePromptResetsChoice(void) {
     g_McMenuSelection = 1;
     g_McCardStatus = 1;
     g_McMenuPage = 1;
-    g_McMenuRowCount = 4;
+    g_McFromLoadMenu = 1;
     g_McActionState = 0;
     g_McActionBusy = 1;
     g_McConfirmChoice = 1;
@@ -262,7 +261,7 @@ static void PrepareFormatOperation(s32 formatAnswer) {
     g_McMenuSelection = MC_MENU_STATE_UNFORMATTED;
     g_McCardStatus = MC_MENU_STATE_UNFORMATTED;
     g_McMenuPage = 1;
-    g_McMenuRowCount = 2;
+    g_McFromLoadMenu = 0;
     g_McActionState = 5;
     g_McActionBusy = 1;
     g_McActionResult = 0;
@@ -365,7 +364,7 @@ int main(int argc, char **argv) {
      * sweep out and diff the two to see which steps changed. Dead internal
      * bookkeeping is deliberately not part of the contract.
      */
-    static const unsigned long expected = 121158013UL;
+    static const unsigned long expected = 1163284757UL;
     FILE *out = NULL;
     size_t si, ai, pi, ci;
     s32 page, mode, freeBlocks;
@@ -420,7 +419,6 @@ int main(int argc, char **argv) {
                                     g_McFromLoadMenu = 0;
                                     g_McLastMenuState = 0;
                                     g_McLastSlot = 0;
-                                    g_McMenuRowCount = 4;
                                     g_McMenuRowCursor = 1;
                                     g_McMenuSelection = 0;
                                     g_McNoCardTicks = noCardTicks[ti];

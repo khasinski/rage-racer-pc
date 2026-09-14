@@ -22,7 +22,6 @@ static void ResetMemoryCardMenuSession(void) {
 }
 
 static void InitializeMemoryCardMenu(s32 fromLoadMenu) {
-    g_McMenuRowCount = fromLoadMenu != 0 ? 3 : 2;
     g_McMenuRowCursor = fromLoadMenu != 0 ? 2 : 0;
     g_McMenuState = MC_MENU_STATE_NO_CARD;
     g_SceneTimer = 0;

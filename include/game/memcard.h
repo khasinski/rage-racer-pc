@@ -70,14 +70,12 @@ extern s32 g_McFadeStep;
 extern s32 g_McFreeBlocks;
 extern s32 g_McFromLoadMenu;
 extern s32 g_McMenuPage;
-extern s32 g_McMenuRowCount;
 extern s32 g_McMenuRowCursor;
 
 extern s32 g_McActionBusy;
 extern s32 g_McActionResult;
 extern s32 g_McActionState;
 extern s32 g_McActionTimer;
-extern s32 g_McCardFileCount;
 extern s32 g_McConfirmChoice;
 extern DirEntry g_McDirEntries[];
 extern s32 g_McErrorCountdown;

@@ -19,7 +19,6 @@ s32 g_McFadeStep;
 s32 g_McFreeBlocks;
 s32 g_McFromLoadMenu;
 s32 g_McMenuPage;
-s32 g_McMenuRowCount;
 s32 g_McMenuRowCursor;
 s32 g_McMenuState;
 MemoryCardStatusState g_McStatusState;
@@ -228,7 +227,7 @@ static void TestMenuLifecycle(void) {
     g_McSettleTicks = 3;
     EnterMemoryCardMenu();
     CHECK(s_displayMask == 0 && s_displaySetup == 1 && s_startEvents == 1);
-    CHECK(g_McMenuRowCount == 2 && g_McMenuState == -1);
+    CHECK(MemoryCardMenuRowCount() == 2 && g_McMenuState == -1);
     CHECK(g_McMenuPage == 0 && g_McMenuRowCursor == 0);
     CHECK(g_McFadeStep == -8 && g_McFadeLevel == 0xFF);
     CHECK(g_SceneId == 0x1A && g_SceneTimer == 0);
@@ -253,7 +252,7 @@ static void TestMenuLifecycle(void) {
     g_AssetLoadState = 0;
     EnterMemoryCardMenuFromLoad();
     CHECK(s_displaySetup == 2 && s_imageUploads == 1 && s_startEvents == 1);
-    CHECK(g_McMenuRowCount == 3 && g_McMenuRowCursor == 2);
+    CHECK(MemoryCardMenuRowCount() == 3 && g_McMenuRowCursor == 2);
     CHECK(g_McMenuState == -1 && g_McMenuPage == 0);
     CHECK(g_McFromLoadMenu == 1 && g_SceneTimer == 0);
     CHECK(g_McFadeStep == -8 && g_McFadeLevel == 0xFF);

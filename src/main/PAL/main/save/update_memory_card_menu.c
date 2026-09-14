@@ -60,10 +60,10 @@ static void RunCardMenuRows(s32 fadeBusy) {
 
     g_McMenuPhase = MC_PROMPT_NONE;
     AdjustMenuSelectionVertical(&g_McMenuRowCursor, 0,
-                                g_McMenuRowCount - 1);
+                                MemoryCardMenuRowCount() - 1);
     pad = g_PadPressed;
     if (pad & PAD_CONFIRM) {
-        if (g_McMenuRowCursor < g_McMenuRowCount - 1) {
+        if (g_McMenuRowCursor < MemoryCardMenuRowCount() - 1) {
             PlaySoundCue(2);
             g_McMenuPage = 1;
             g_McActionState = 0;
@@ -115,7 +115,7 @@ static void RunCardReadyState(s32 fadeBusy) {
         g_McSlotCursor = 0;
         ResetCardAction();
         g_McActionTimer = 0;
-        g_McMenuRowCursor = g_McMenuRowCount - 1;
+        g_McMenuRowCursor = MemoryCardMenuRowCount() - 1;
     }
     switch (g_McMenuSelection) {
     case MC_MENU_STATE_BUSY:

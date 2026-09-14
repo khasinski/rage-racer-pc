@@ -15,6 +15,10 @@ typedef enum MemoryCardMenuState {
     MC_MENU_STATE_BUSY = 3,
 } MemoryCardMenuState;
 
+static inline s32 MemoryCardMenuRowCount(void) {
+    return g_McFromLoadMenu != 0 ? 3 : 2;
+}
+
 /* Advance a positive frame countdown and report its deadline. Invalid or
  * already elapsed values finish immediately instead of counting away from
  * zero or overflowing at INT_MIN. */

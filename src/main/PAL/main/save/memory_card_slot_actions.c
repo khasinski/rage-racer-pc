@@ -194,7 +194,7 @@ void RunCardSlotActions(void) {
         if (!MemoryCardCountdownElapsed(&g_McActionTimer)) break;
         g_McMenuPage = 0;
         g_McActionState = CARD_SLOT_ACTION_PICK;
-        g_McMenuRowCursor = g_McMenuRowCount - 1;
+        g_McMenuRowCursor = MemoryCardMenuRowCount() - 1;
         break;
 
     case CARD_SLOT_ACTION_SHOW_CARD_FULL:
@@ -236,7 +236,7 @@ void RunCardSlotActions(void) {
         if (!MemoryCardCountdownElapsed(&g_McActionTimer)) break;
         g_McMenuPage = 0;
         g_McActionState = CARD_SLOT_ACTION_PICK;
-        g_McMenuRowCursor = g_McMenuRowCount - 1;
+        g_McMenuRowCursor = MemoryCardMenuRowCount() - 1;
         break;
 
     case CARD_SLOT_ACTION_SHOW_NO_FILE:
