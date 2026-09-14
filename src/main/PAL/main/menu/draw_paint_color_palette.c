@@ -13,7 +13,7 @@ enum {
 };
 
 /* The 18-swatch PAINT COLOR strip with its selection frame and enlarged preview. */
-s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index) {
+s32 DrawPaintColorPalette(PaintColor *paint, s32 *counter, s32 step) {
     GameOrderingTableEntry *ot = RENDER_OT_BASE;
     s32 frame;
     s32 x;
@@ -24,8 +24,8 @@ s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index) {
     if (counter == NULL) {
         return 0;
     }
-    if ((u32)index >= MENU_PAINT_COLOR_COUNT) {
-        index = 0;
+    if ((u32)paint->selected >= MENU_PAINT_COLOR_COUNT) {
+        paint->selected = 0;
     }
     *counter = AddClampedMenuValue(*counter, 0, 0, PAINT_PALETTE_COMPLETE);
 
@@ -47,17 +47,16 @@ s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index) {
         y = 0x20B - frame * 15;
 
         highlight =
-            rsin((g_PaintPalettePulsePhase * 2) & ANGLE_MASK) / 64 - 0x41;
+            rsin((paint->pulsePhase * 2) & ANGLE_MASK) / 64 - 0x41;
 
-        g_PaintPalettePulsePhase =
-            (s32)((u32)g_PaintPalettePulsePhase + 0x20u);
+        paint->pulsePhase = (s32)((u32)paint->pulsePhase + 0x20u);
 
-        DrawRectOutline(ot, x + index * PAINT_SWATCH_WIDTH - 2, y, 0xD,
+        DrawRectOutline(ot, x + paint->selected * PAINT_SWATCH_WIDTH - 2, y, 0xD,
                         0x1A, 0, (u8)highlight, 0, 0xFF);
-        DrawSolidRect(ot, x + index * PAINT_SWATCH_WIDTH - 1, y + 2, 0xB,
-                      0x16, g_PaintColorTable[index].r,
-                      g_PaintColorTable[index].g,
-                      g_PaintColorTable[index].b, 0xFF);
+        DrawSolidRect(ot, x + paint->selected * PAINT_SWATCH_WIDTH - 1, y + 2,
+                      0xB, 0x16, g_PaintColorTable[paint->selected].r,
+                      g_PaintColorTable[paint->selected].g,
+                      g_PaintColorTable[paint->selected].b, 0xFF);
         DrawRectOutline(ot, x, y + 3, 0x92, 0x14, 0xB4, 0xB4, 0xB4,
                         0xFF);
 

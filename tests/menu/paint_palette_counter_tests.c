@@ -8,7 +8,6 @@
 #include <limits.h>
 
 Rgb g_PaintColorTable[MENU_PAINT_COLOR_COUNT];
-s32 g_PaintPalettePulsePhase;
 s32 g_MenuAltLayout;
 s32 g_OwnedCarCounterSlide;
 GameRenderState g_RenderState;
@@ -28,6 +27,11 @@ static s32 s_outlineCount;
 static s32 s_spriteCount;
 static s32 s_spriteY;
 static s32 s_numberCount;
+
+static s32 DrawPalette(PaintColor *paint, s32 *progress, s32 step, s32 index) {
+    paint->selected = index;
+    return DrawPaintColorPalette(paint, progress, step);
+}
 static s32 s_numberY;
 static u32 s_firstNumber;
 static s32 s_buttonCount;
@@ -123,6 +127,7 @@ static void ResetDraws(void) {
 }
 
 int main(void) {
+    PaintColor paint = {0};
     GameOrderingTableEntry orderingTable[1] = {0};
     s32 progress = 10;
     s32 i;
@@ -132,47 +137,47 @@ int main(void) {
         g_PaintColorTable[i] = (Rgb){i, i + 1, i + 2};
     }
 
-    CHECK(DrawPaintColorPalette(&progress, 1, 3) == 0);
+    CHECK(DrawPalette(&paint, &progress, 1, 3) == 0);
     CHECK(progress == 11 && s_solidCount == 0);
-    CHECK(DrawPaintColorPalette(&progress, 1, 3) == 0);
+    CHECK(DrawPalette(&paint, &progress, 1, 3) == 0);
     CHECK(progress == 12 && s_solidCount == 19 && s_outlineCount == 2);
     CHECK(s_outlines[0].x == 0xB4 && s_outlines[0].y == 0x20B);
     CHECK(s_solidRects[0].x == 0xB5 && s_solidRects[0].y == 0x20D);
     CHECK(s_solidRects[0].r == 3 && s_solidRects[0].g == 4);
     CHECK(s_solidRects[1].x == 0x9F && s_solidRects[18].x == 0x127);
-    CHECK(g_PaintPalettePulsePhase == 0x20);
+    CHECK(paint.pulsePhase == 0x20);
 
     ResetDraws();
     progress = 12;
-    g_PaintPalettePulsePhase = 0x400;
-    CHECK(DrawPaintColorPalette(&progress, 0, 0) == 0);
+    paint.pulsePhase = 0x400;
+    CHECK(DrawPalette(&paint, &progress, 0, 0) == 0);
     CHECK(s_outlineCount == 2 && s_outlines[0].g == 127);
-    CHECK(g_PaintPalettePulsePhase == 0x420);
+    CHECK(paint.pulsePhase == 0x420);
 
     ResetDraws();
     progress = 25;
     g_MenuAltLayout = 1;
-    CHECK(DrawPaintColorPalette(&progress, 0, 17) == 1);
+    CHECK(DrawPalette(&paint, &progress, 0, 17) == 1);
     CHECK(s_outlines[0].x == 0xF8 && s_outlines[0].y == 0x175);
     CHECK(progress == 25);
 
     ResetDraws();
-    CHECK(DrawPaintColorPalette(NULL, 1, 0) == 0);
+    CHECK(DrawPalette(&paint, NULL, 1, 0) == 0);
     progress = 12;
-    CHECK(DrawPaintColorPalette(&progress, 0, -1) == 0);
+    CHECK(DrawPalette(&paint, &progress, 0, -1) == 0);
     CHECK(s_solidRects[0].r == 0 && s_solidRects[0].g == 1);
     ResetDraws();
     progress = INT_MAX;
-    CHECK(DrawPaintColorPalette(&progress, INT_MAX, 0) == 1);
+    CHECK(DrawPalette(&paint, &progress, INT_MAX, 0) == 1);
     CHECK(progress == 25);
     progress = INT_MIN;
-    CHECK(DrawPaintColorPalette(&progress, -1, 0) == 0);
+    CHECK(DrawPalette(&paint, &progress, -1, 0) == 0);
     CHECK(progress == 0);
 
     ResetDraws();
     g_RenderState.draw.orderingTable = NULL;
     progress = 12;
-    CHECK(DrawPaintColorPalette(&progress, 1, 0) == 0);
+    CHECK(DrawPalette(&paint, &progress, 1, 0) == 0);
     CHECK(progress == 13 && s_solidCount == 0 && s_outlineCount == 0);
     g_RenderState.draw.orderingTable = orderingTable;
 

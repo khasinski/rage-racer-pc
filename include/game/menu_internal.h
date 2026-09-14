@@ -466,7 +466,6 @@ MenuClassPromptOutcome DecideClassPrompt(u16 pressed, s32 busy,
                                          s32 changeApplied);
 
 extern Rgb g_PaintColorTable[MENU_PAINT_COLOR_COUNT];
-extern s32 g_PaintPalettePulsePhase;
 extern s32 g_MenuAltLayout;
 extern s32 g_OwnedCarCounterSlide;
 extern u16 g_TeamLogoClut[16];

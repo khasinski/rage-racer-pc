@@ -143,12 +143,10 @@ s32 g_CarTuneUpPriceTable[31] = {
 s32 g_LogoSampleCharIndex;
 s32 g_LogoSampleBackIndex;
 s32 g_LogoSampleSavedIndex;
-s32 g_PaintColorIndex;
 s32 g_TireSliderPulsePhase;
 s32 g_CarSpecBars[4];
 s32 g_TeamLogoColorCycleAngle;
 s32 g_TeamNameCursorPhase;
-s32 g_PaintPalettePulsePhase;
 s32 g_TeamLogoFadeLevel;
 s32 g_TeamLogoZoomLevel;
 u16 g_TeamLogoFadedClut[16];
@@ -246,5 +244,4 @@ TeamLogoCanvas g_TeamLogoCanvas;
 u32 g_FrontendIdleTimer;
 s32 g_MenuViewSpin;
 const TimedDrawCommand *g_TeamLogoSubPanelScript;
-s32 g_PaintColorCursor;
 s32 g_TeamLogoOption;

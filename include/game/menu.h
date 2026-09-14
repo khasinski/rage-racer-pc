@@ -58,6 +58,12 @@ typedef struct EngineerShop {
     s32 option;
 } EngineerShop;
 
+typedef struct PaintColor {
+    s32 cursor;
+    s32 selected;
+    s32 pulsePhase;
+} PaintColor;
+
 typedef struct MenuRuntime {
     /* State-machine screen updated this frame. */
     s32 activeScreen;
@@ -73,6 +79,7 @@ typedef struct MenuRuntime {
     ControllerSetup controllerSetup;
     BrowseArrows browseArrows;
     EngineerShop engineerShop;
+    PaintColor paintColor;
 } MenuRuntime;
 
 void MenuRuntimeReset(void);
@@ -81,6 +88,7 @@ ControllerSetup *MenuControllerSetup(void);
 CourseSelectScreen *MenuCourseSelect(void);
 BrowseArrows *MenuBrowseArrows(void);
 EngineerShop *MenuEngineerShop(void);
+PaintColor *MenuPaintColor(void);
 s32 MenuRuntimeScreenState(s32 screen);
 void MenuRuntimeSetScreenState(s32 screen, s32 state);
 
@@ -448,11 +456,9 @@ extern s32 g_CarTuneUpPriceTable[CAR_TUNE_UP_PRICE_COUNT];
 extern s32 g_LogoSampleCharIndex;
 extern s32 g_LogoSampleBackIndex;
 extern s32 g_LogoSampleSavedIndex;
-extern s32 g_PaintColorIndex;
 extern s32 g_TireSliderPulsePhase;
 extern s32 g_TeamLogoColorCycleAngle;
 extern s32 g_TeamNameCursorPhase;
-extern s32 g_PaintPalettePulsePhase;
 extern s32 g_TeamLogoFadeLevel;
 extern s32 g_TeamLogoZoomLevel;
 extern u16 g_TeamLogoFadedClut[16];
@@ -461,7 +467,6 @@ extern s32 g_LogoSampleCursor;
 extern s32 g_ShopCarIndex;
 extern s32 g_RankingCursor;
 extern s32 g_TitleFadeLevel;
-extern s32 g_PaintColorCursor;
 extern s32 g_TeamLogoOption;
 extern char *g_BgmTrackNames[];
 extern s32 g_CarPriceTable[CAR_PRICE_COUNT];
@@ -558,7 +563,7 @@ void UploadTeamNameTexture(const u8 *str, s32 len);
 s32 DrawClassChangeCurtain(s32 step);
 void UpdateOptionScene(void);
 void UpdateOptionMenuFade(void);
-s32 DrawPaintColorPalette(s32 *counter, s32 step, s32 index);
+s32 DrawPaintColorPalette(PaintColor *paint, s32 *counter, s32 step);
 void DrawTeamNameCharModel(void);
 void DrawTireCompoundSlider(u8 compound, s32 confirming);
 void DrawVolumeBar(s32 level, s32 y);
