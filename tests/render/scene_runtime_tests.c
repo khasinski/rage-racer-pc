@@ -194,6 +194,12 @@ int main(void) {
           SceneRuntimeRace()->timing.lapTime == 0 &&
           SceneRuntimeRace()->timing.bestLap == 0);
 
+    g_SceneId = GAME_SCENE_BOOT_LOGO;
+    SceneRuntimeBeforeDispatch(g_SceneId);
+    CHECK(SceneRuntimeBootLogo()->state == BOOT_LOGO_STATE_FADE_IN &&
+          SceneRuntimeBootLogo()->timer == 0 &&
+          SceneRuntimeBootLogo()->holdTimer == BOOT_LOGO_INITIAL_HOLD_FRAMES);
+
     puts("scene runtime scopes transition state and asset results to one scene");
     return 0;
 }

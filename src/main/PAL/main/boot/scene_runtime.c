@@ -53,12 +53,21 @@ void SceneRuntimeBeforeDispatch(s32 scene) {
         s_runtime.generation = generation;
         s_runtime.assetGeneration = AssetLoadTransactionGeneration();
         if (continues) s_runtime.state = state;
+        if (scene == GAME_SCENE_BOOT_LOGO) {
+            s_runtime.state.bootLogo.state = BOOT_LOGO_STATE_FADE_IN;
+            s_runtime.state.bootLogo.holdTimer =
+                BOOT_LOGO_INITIAL_HOLD_FRAMES;
+        }
         ResetLegacyTransitionState();
     }
 }
 
 const SceneRuntime *SceneRuntimeCurrent(void) {
     return &s_runtime;
+}
+
+BootLogo *SceneRuntimeBootLogo(void) {
+    return &s_runtime.state.bootLogo;
 }
 
 MemoryCardSession *SceneRuntimeMemoryCard(void) {

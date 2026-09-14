@@ -164,17 +164,6 @@ typedef struct PadValidation {
 extern PadValidation g_PadValidation;
 
 
-extern s32 g_BootLogoHoldTimer;
-typedef enum BootLogoState {
-    BOOT_LOGO_STATE_INVALID = -1,
-    BOOT_LOGO_STATE_FADE_IN,
-    BOOT_LOGO_STATE_HOLD,
-    BOOT_LOGO_STATE_FADE_OUT,
-    BOOT_LOGO_STATE_START_FMV
-} BootLogoState;
-
-extern BootLogoState g_BootLogoState;
-extern s32 g_BootLogoTimer;
 extern s32 g_FrameCounter;
 extern u8 g_PadBuffers[PAD_BUFFER_SIZE];
 extern u16 g_PadPrevHeld;

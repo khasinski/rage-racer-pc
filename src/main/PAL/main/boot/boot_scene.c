@@ -5,6 +5,7 @@
 #include "game/race.h"
 #include "game/render_internal.h"
 #include "game/scene.h"
+#include "game/scene_runtime.h"
 
 enum {
     BOOT_ENDING_STILL_FRAMES = 110,
@@ -14,7 +15,7 @@ enum {
     BOOT_FMV_START_DELAY = 21,
 };
 
-static void AdvanceBootLogoFadeIn(void) {
+static void AdvanceBootLogoFadeIn(BootLogo *state) {
     if (g_SceneTimer < 0) {
         g_SceneTimer = 0;
     }
@@ -26,10 +27,10 @@ static void AdvanceBootLogoFadeIn(void) {
         return;
     }
 
-    g_BootLogoState = BOOT_LOGO_STATE_HOLD;
+    state->state = BOOT_LOGO_STATE_HOLD;
 }
 
-static void AdvanceBootLogoFadeOut(void) {
+static void AdvanceBootLogoFadeOut(BootLogo *state) {
     if (g_SceneTimer > BOOT_LOGO_FADE_LIMIT) {
         g_SceneTimer = BOOT_LOGO_FADE_LIMIT;
     }
@@ -39,51 +40,53 @@ static void AdvanceBootLogoFadeOut(void) {
     }
 
     g_SceneTimer = 0;
-    g_BootLogoState = BOOT_LOGO_STATE_START_FMV;
+    state->state = BOOT_LOGO_STATE_START_FMV;
     SetupDisplay240(0, 0, 0);
 }
 
 void UpdateBootLogoScene(void) {
-    if (g_BootLogoTimer < 0) {
-        g_BootLogoTimer = 0;
+    BootLogo *state = SceneRuntimeBootLogo();
+
+    if (state->timer < 0) {
+        state->timer = 0;
     }
-    if (g_BootLogoTimer < BOOT_ENDING_STILL_FRAMES) {
-        if (g_BootLogoTimer >= BOOT_ENDING_STILL_DISPLAY_AT) {
+    if (state->timer < BOOT_ENDING_STILL_FRAMES) {
+        if (state->timer >= BOOT_ENDING_STILL_DISPLAY_AT) {
             SetDispMask(1);
         }
         DrawEndingStill();
-        g_BootLogoTimer++;
+        state->timer++;
         return;
     }
-    if (g_BootLogoTimer == BOOT_ENDING_STILL_FRAMES) {
+    if (state->timer == BOOT_ENDING_STILL_FRAMES) {
         SetDispMask(0);
         SetupDisplay480(0, 0, 0);
-        g_BootLogoTimer++;
+        state->timer++;
         return;
     }
 
-    if (g_BootLogoHoldTimer > 0) {
-        g_BootLogoHoldTimer--;
+    if (state->holdTimer > 0) {
+        state->holdTimer--;
         if (AssetLoadCompletedSuccessfully() && g_PadHeld != 0) {
-            g_BootLogoHoldTimer = 0;
+            state->holdTimer = 0;
         }
     } else {
-        g_BootLogoHoldTimer = 0;
+        state->holdTimer = 0;
     }
 
-    switch (g_BootLogoState) {
+    switch (state->state) {
     case BOOT_LOGO_STATE_INVALID:
         break;
     case BOOT_LOGO_STATE_FADE_IN:
-        AdvanceBootLogoFadeIn();
+        AdvanceBootLogoFadeIn(state);
         break;
     case BOOT_LOGO_STATE_HOLD:
-        if (g_BootLogoHoldTimer == 0) {
-            g_BootLogoState = BOOT_LOGO_STATE_FADE_OUT;
+        if (state->holdTimer == 0) {
+            state->state = BOOT_LOGO_STATE_FADE_OUT;
         }
         break;
     case BOOT_LOGO_STATE_FADE_OUT:
-        AdvanceBootLogoFadeOut();
+        AdvanceBootLogoFadeOut(state);
         break;
     case BOOT_LOGO_STATE_START_FMV:
         if (g_SceneTimer < 0) {
@@ -97,12 +100,12 @@ void UpdateBootLogoScene(void) {
         }
         break;
     default:
-        g_BootLogoState = BOOT_LOGO_STATE_FADE_IN;
+        state->state = BOOT_LOGO_STATE_FADE_IN;
         g_SceneTimer = 0;
         break;
     }
 
-    if (g_BootLogoState != BOOT_LOGO_STATE_START_FMV) {
+    if (state->state != BOOT_LOGO_STATE_START_FMV) {
         DrawBootLogo();
         if ((u32)g_SceneTimer >= BOOT_ENDING_STILL_DISPLAY_AT) {
             SetDispMask(1);

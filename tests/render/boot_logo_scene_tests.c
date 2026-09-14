@@ -2,15 +2,17 @@
 #include "game/fmv.h"
 #include "game/scene.h"
 #include "game/state.h"
+#include "game/scene_state.h"
 
 #include <limits.h>
 #include <stdio.h>
 
 s32 g_AssetLoadState;
 static s32 s_assetLoadFailed;
-s32 g_BootLogoHoldTimer;
-BootLogoState g_BootLogoState;
-s32 g_BootLogoTimer;
+static BootLogo s_boot = {
+    .state = BOOT_LOGO_STATE_FADE_IN,
+    .holdTimer = BOOT_LOGO_INITIAL_HOLD_FRAMES,
+};
 s32 g_SceneTimer;
 u16 g_PadHeld;
 
@@ -20,6 +22,8 @@ static s32 s_display480Calls;
 static s32 s_endingDraws;
 static s32 s_logoDraws;
 static s32 s_fmvReturnScene;
+
+BootLogo *SceneRuntimeBootLogo(void) { return &s_boot; }
 
 s32 AssetLoadCompletedSuccessfully(void) {
     return g_AssetLoadState == 0 && !s_assetLoadFailed;
@@ -65,63 +69,63 @@ void BeginIntroFmv(s32 returnScene) {
     } while (0)
 
 int main(void) {
-    g_BootLogoTimer = 9;
+    s_boot.timer = 9;
     s_displayMask = -1;
     UpdateBootLogoScene();
-    CHECK(g_BootLogoTimer == 10 && s_endingDraws == 1);
+    CHECK(s_boot.timer == 10 && s_endingDraws == 1);
     CHECK(s_displayMask == -1);
     UpdateBootLogoScene();
-    CHECK(g_BootLogoTimer == 11 && s_endingDraws == 2);
+    CHECK(s_boot.timer == 11 && s_endingDraws == 2);
     CHECK(s_displayMask == 1);
 
-    g_BootLogoTimer = 110;
+    s_boot.timer = 110;
     UpdateBootLogoScene();
-    CHECK(g_BootLogoTimer == 111 && s_displayMask == 0);
+    CHECK(s_boot.timer == 111 && s_displayMask == 0);
     CHECK(s_display480Calls == 1 && s_logoDraws == 0);
 
-    g_BootLogoState = BOOT_LOGO_STATE_FADE_IN;
+    s_boot.state = BOOT_LOGO_STATE_FADE_IN;
     g_SceneTimer = 248;
     UpdateBootLogoScene();
-    CHECK(g_SceneTimer == 256 && g_BootLogoState == BOOT_LOGO_STATE_FADE_IN);
+    CHECK(g_SceneTimer == 256 && s_boot.state == BOOT_LOGO_STATE_FADE_IN);
     CHECK(s_logoDraws == 1);
     UpdateBootLogoScene();
-    CHECK(g_BootLogoState == BOOT_LOGO_STATE_HOLD);
+    CHECK(s_boot.state == BOOT_LOGO_STATE_HOLD);
 
-    g_BootLogoState = BOOT_LOGO_STATE_FADE_IN;
+    s_boot.state = BOOT_LOGO_STATE_FADE_IN;
     g_SceneTimer = 251;
     UpdateBootLogoScene();
-    CHECK(g_SceneTimer == 256 && g_BootLogoState == BOOT_LOGO_STATE_FADE_IN);
+    CHECK(g_SceneTimer == 256 && s_boot.state == BOOT_LOGO_STATE_FADE_IN);
 
-    g_BootLogoState = BOOT_LOGO_STATE_HOLD;
-    g_BootLogoHoldTimer = -1;
+    s_boot.state = BOOT_LOGO_STATE_HOLD;
+    s_boot.holdTimer = -1;
     UpdateBootLogoScene();
-    CHECK(g_BootLogoHoldTimer == 0);
-    CHECK(g_BootLogoState == BOOT_LOGO_STATE_FADE_OUT);
+    CHECK(s_boot.holdTimer == 0);
+    CHECK(s_boot.state == BOOT_LOGO_STATE_FADE_OUT);
 
-    g_BootLogoHoldTimer = 10;
-    g_BootLogoState = BOOT_LOGO_STATE_HOLD;
+    s_boot.holdTimer = 10;
+    s_boot.state = BOOT_LOGO_STATE_HOLD;
     g_AssetLoadState = 0;
     s_assetLoadFailed = 1;
     g_PadHeld = 1;
     UpdateBootLogoScene();
-    CHECK(g_BootLogoHoldTimer == 9);
-    CHECK(g_BootLogoState == BOOT_LOGO_STATE_HOLD);
+    CHECK(s_boot.holdTimer == 9);
+    CHECK(s_boot.state == BOOT_LOGO_STATE_HOLD);
 
     s_assetLoadFailed = 0;
     UpdateBootLogoScene();
-    CHECK(g_BootLogoHoldTimer == 0);
-    CHECK(g_BootLogoState == BOOT_LOGO_STATE_FADE_OUT);
+    CHECK(s_boot.holdTimer == 0);
+    CHECK(s_boot.state == BOOT_LOGO_STATE_FADE_OUT);
 
     g_PadHeld = 0;
     g_SceneTimer = 8;
     UpdateBootLogoScene();
-    CHECK(g_SceneTimer == 0 && g_BootLogoState == BOOT_LOGO_STATE_START_FMV);
+    CHECK(g_SceneTimer == 0 && s_boot.state == BOOT_LOGO_STATE_START_FMV);
     CHECK(s_display240Calls == 1);
 
-    g_BootLogoState = BOOT_LOGO_STATE_FADE_OUT;
+    s_boot.state = BOOT_LOGO_STATE_FADE_OUT;
     g_SceneTimer = 5;
     UpdateBootLogoScene();
-    CHECK(g_SceneTimer == 0 && g_BootLogoState == BOOT_LOGO_STATE_START_FMV);
+    CHECK(g_SceneTimer == 0 && s_boot.state == BOOT_LOGO_STATE_START_FMV);
     CHECK(s_display240Calls == 2);
 
     g_SceneTimer = 20;
@@ -130,17 +134,17 @@ int main(void) {
     CHECK(g_SceneTimer == 21 &&
           s_fmvReturnScene == GAME_SCENE_ENTER_TITLE);
 
-    g_BootLogoState = BOOT_LOGO_STATE_FADE_IN;
+    s_boot.state = BOOT_LOGO_STATE_FADE_IN;
     g_SceneTimer = INT_MIN;
     UpdateBootLogoScene();
     CHECK(g_SceneTimer == 8);
 
-    g_BootLogoState = BOOT_LOGO_STATE_FADE_OUT;
+    s_boot.state = BOOT_LOGO_STATE_FADE_OUT;
     g_SceneTimer = INT_MAX;
     UpdateBootLogoScene();
     CHECK(g_SceneTimer == 248);
 
-    g_BootLogoState = BOOT_LOGO_STATE_START_FMV;
+    s_boot.state = BOOT_LOGO_STATE_START_FMV;
     g_SceneTimer = INT_MIN;
     s_fmvReturnScene = -1;
     UpdateBootLogoScene();
@@ -151,17 +155,17 @@ int main(void) {
     CHECK(g_SceneTimer == INT_MAX &&
           s_fmvReturnScene == GAME_SCENE_ENTER_TITLE);
 
-    g_BootLogoTimer = 111;
-    g_BootLogoState = (BootLogoState)99;
+    s_boot.timer = 111;
+    s_boot.state = (BootLogoState)99;
     g_SceneTimer = 123;
     UpdateBootLogoScene();
-    CHECK(g_BootLogoState == BOOT_LOGO_STATE_FADE_IN);
+    CHECK(s_boot.state == BOOT_LOGO_STATE_FADE_IN);
     CHECK(g_SceneTimer == 0);
 
-    g_BootLogoTimer = -1;
-    g_BootLogoState = BOOT_LOGO_STATE_INVALID;
+    s_boot.timer = -1;
+    s_boot.state = BOOT_LOGO_STATE_INVALID;
     UpdateBootLogoScene();
-    CHECK(g_BootLogoTimer == 1);
+    CHECK(s_boot.timer == 1);
 
     puts("boot logo scene tests passed");
     return 0;

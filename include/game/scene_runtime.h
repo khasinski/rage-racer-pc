@@ -16,6 +16,7 @@
  * than inferred from whichever globals the previous handler happened to use.
  */
 typedef union SceneState {
+    BootLogo bootLogo;
     MemoryCardSession memoryCard;
     BgmSelect bgmSelect;
     RecordEntry recordEntry;
@@ -34,6 +35,7 @@ typedef struct SceneRuntime {
 
 void SceneRuntimeBeforeDispatch(s32 scene);
 const SceneRuntime *SceneRuntimeCurrent(void);
+BootLogo *SceneRuntimeBootLogo(void);
 MemoryCardSession *SceneRuntimeMemoryCard(void);
 BgmSelect *SceneRuntimeBgmSelect(void);
 RecordEntry *SceneRuntimeRecordEntry(void);
