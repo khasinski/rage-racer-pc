@@ -13,26 +13,26 @@ enum {
     BGM_SELECT_CLUT_INACTIVE = 0x3FEF,
 };
 
-void UpdateBgmSelectBar(void) {
-    if (g_BgmRandomLabelTimer > 0) {
-        g_BgmRandomLabelTimer--;
-    } else if (g_BgmRandomLabelTimer < 0) {
-        g_BgmRandomLabelTimer = 0;
+void UpdateBgmSelectBar(BgmSelect *state) {
+    if (state->labelTimer > 0) {
+        state->labelTimer--;
+    } else if (state->labelTimer < 0) {
+        state->labelTimer = 0;
     }
 }
 
-void DrawBgmSelectBar(void) {
+void DrawBgmSelectBar(const BgmSelect *state) {
     void *ot = GamePrimaryOrderingTable(1);
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
     s32 labelV;
     s32 button;
-    s32 cursor = g_BgmSelectCursor;
+    s32 cursor = state->cursor;
     s32 track;
 
     if (cursor < 0 || cursor >= BGM_SELECT_BUTTON_COUNT) {
         cursor = 0;
     }
-    track = WrapBgmTrackIndex(g_BgmSelectTrack, BGM_PLAYABLE_TRACK_COUNT);
+    track = WrapBgmTrackIndex(state->track, BGM_PLAYABLE_TRACK_COUNT);
 
     for (button = 0; button < BGM_SELECT_BUTTON_COUNT; button++) {
         s32 clut = button == cursor
@@ -45,7 +45,7 @@ void DrawBgmSelectBar(void) {
             button * BGM_SELECT_BUTTON_WIDTH, 0, clut);
     }
 
-    if (g_BgmRandomLabelTimer > 0) {
+    if (state->labelTimer > 0) {
         labelV = 0x10;
     } else {
         labelV = track * 12 + 0x1C;

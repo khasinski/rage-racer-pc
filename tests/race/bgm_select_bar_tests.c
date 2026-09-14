@@ -9,9 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 
-s32 g_BgmRandomLabelTimer;
-s32 g_BgmSelectCursor;
-s32 g_BgmSelectTrack;
+static BgmSelect s_state;
 GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
 
@@ -65,9 +63,7 @@ static void Reset(void) {
     memset(&s_frame, 0, sizeof(s_frame));
     g_DrawBuffer = &s_frame;
     g_RenderState.draw.packetCursor = s_packets;
-    g_BgmRandomLabelTimer = 0;
-    g_BgmSelectCursor = 1;
-    g_BgmSelectTrack = 4;
+    s_state = (BgmSelect){.cursor = 1, .track = 4};
     s_spriteCount = 0;
     s_tileCount = 0;
     s_drawMode = -1;
@@ -75,7 +71,7 @@ static void Reset(void) {
 
 int main(void) {
     Reset();
-    DrawBgmSelectBar();
+    DrawBgmSelectBar(&s_state);
     CHECK(s_spriteCount == 5 && s_tileCount == 1 && s_drawMode == 0xB);
     CHECK(s_sprites[0].x == 0x20 && s_sprites[0].u == 0);
     CHECK(s_sprites[1].x == 0x36 && s_sprites[1].u == 0x14);
@@ -86,27 +82,27 @@ int main(void) {
     CHECK(s_sprites[3].v == 4 * 12 + 0x1C);
 
     Reset();
-    g_BgmSelectCursor = 2;
-    g_BgmRandomLabelTimer = 2;
-    DrawBgmSelectBar();
-    CHECK(g_BgmRandomLabelTimer == 2 && s_sprites[3].v == 0x10);
+    s_state.cursor = 2;
+    s_state.labelTimer = 2;
+    DrawBgmSelectBar(&s_state);
+    CHECK(s_state.labelTimer == 2 && s_sprites[3].v == 0x10);
     CHECK(s_sprites[2].clut == 0x3FEC);
 
-    UpdateBgmSelectBar();
-    CHECK(g_BgmRandomLabelTimer == 1);
-    UpdateBgmSelectBar();
-    UpdateBgmSelectBar();
-    CHECK(g_BgmRandomLabelTimer == 0);
+    UpdateBgmSelectBar(&s_state);
+    CHECK(s_state.labelTimer == 1);
+    UpdateBgmSelectBar(&s_state);
+    UpdateBgmSelectBar(&s_state);
+    CHECK(s_state.labelTimer == 0);
 
     Reset();
-    g_BgmRandomLabelTimer = INT_MIN;
-    g_BgmSelectCursor = INT_MAX;
-    g_BgmSelectTrack = INT_MAX;
-    DrawBgmSelectBar();
+    s_state.labelTimer = INT_MIN;
+    s_state.cursor = INT_MAX;
+    s_state.track = INT_MAX;
+    DrawBgmSelectBar(&s_state);
     CHECK(s_sprites[0].clut == 0x3FEC);
     CHECK(s_sprites[3].v == 7 * 12 + 0x1C);
-    UpdateBgmSelectBar();
-    CHECK(g_BgmRandomLabelTimer == 0);
+    UpdateBgmSelectBar(&s_state);
+    CHECK(s_state.labelTimer == 0);
 
     puts("BGM selector bar preserves layout, highlight, and random label");
     return 0;

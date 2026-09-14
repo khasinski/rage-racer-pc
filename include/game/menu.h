@@ -340,20 +340,6 @@ extern const TimedDrawCommand *g_LogoSampleSubPanelScript;
 extern s32 g_TeamLogoPaintArmed;
 extern s32 g_CarSelectCursor;
 extern const TimedDrawCommand *g_TeamLogoSubPanelScript;
-extern s32 g_BgmChangeDelay;
-extern s32 g_BgmSelectCdTrack;
-extern s32 g_BgmSelectCursor;
-extern s32 g_BgmSelectShowUi;
-typedef enum BgmSelectStep {
-    BGM_SELECT_STEP_INVALID = -1,
-    BGM_SELECT_STEP_LOAD_ASSETS,
-    BGM_SELECT_STEP_FADE_IN,
-    BGM_SELECT_STEP_ACTIVE,
-    BGM_SELECT_STEP_EXIT
-} BgmSelectStep;
-
-extern BgmSelectStep g_BgmSelectStep;
-extern s32 g_BgmSelectTrack;
 extern s32 g_BgmTrackCount;
 extern s32 g_CarNamePlateStep;
 extern s32 g_CarSwapFromIndex;

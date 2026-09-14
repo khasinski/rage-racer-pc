@@ -99,6 +99,23 @@ int main(void) {
           SceneRuntimeMemoryCard()->poll.ticks == 0 &&
           SceneRuntimeMemoryCard()->slots.lastSlot == 0);
 
+    g_SceneId = GAME_SCENE_ENTER_BGM_SELECT;
+    SceneRuntimeBeforeDispatch(g_SceneId);
+    SceneRuntimeBgmSelect()->cursor = 2;
+    SceneRuntimeBgmSelect()->track = 6;
+    SceneRuntimeBgmSelect()->randomPlay = 1;
+    g_SceneId = GAME_SCENE_BGM_SELECT;
+    SceneRuntimeBeforeDispatch(g_SceneId);
+    CHECK(SceneRuntimeBgmSelect()->cursor == 2 &&
+          SceneRuntimeBgmSelect()->track == 6 &&
+          SceneRuntimeBgmSelect()->randomPlay == 1);
+
+    g_SceneId = GAME_SCENE_MENU;
+    SceneRuntimeBeforeDispatch(g_SceneId);
+    CHECK(SceneRuntimeBgmSelect()->cursor == 0 &&
+          SceneRuntimeBgmSelect()->track == 0 &&
+          SceneRuntimeBgmSelect()->randomPlay == 0);
+
     puts("scene runtime scopes transition state and asset results to one scene");
     return 0;
 }

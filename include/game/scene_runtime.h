@@ -2,6 +2,7 @@
 #define GAME_SCENE_RUNTIME_H
 
 #include "game/asset.h"
+#include "game/bgm_select_state.h"
 #include "game/memcard_types.h"
 #include "game/memcard_state.h"
 #include "game/scene.h"
@@ -25,12 +26,14 @@ typedef struct SceneRuntime {
     u32 assetGeneration;
     SceneTransitionRuntime transition;
     MemoryCardSession memoryCard;
+    BgmSelect bgmSelect;
 } SceneRuntime;
 
 void SceneRuntimeBeforeDispatch(s32 scene);
 void SceneRuntimeAfterDispatch(s32 scene);
 const SceneRuntime *SceneRuntimeCurrent(void);
 MemoryCardSession *SceneRuntimeMemoryCard(void);
+BgmSelect *SceneRuntimeBgmSelect(void);
 /* A result belongs to a scene only when it was the active transaction at the
  * point that scene began. */
 const AssetLoadTransaction *SceneRuntimeAssetResult(AssetRequestType request);

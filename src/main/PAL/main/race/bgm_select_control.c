@@ -45,48 +45,48 @@ void AdvanceBgmShuffleBag(u32 track) {
     }
 }
 
-static void SelectNextBgmTrack(void) {
-    if (g_BgmRandomPlay != 0 && g_BgmTrackCount > 0) {
-        g_BgmSelectTrack = BgmShuffleTrackAt(
+static void SelectNextBgmTrack(BgmSelect *state) {
+    if (state->randomPlay != 0 && g_BgmTrackCount > 0) {
+        state->track = BgmShuffleTrackAt(
             g_BgmShuffleOrder, g_BgmTrackCount, g_BgmShuffleIndex);
-        AdvanceBgmShuffleBag((u32)g_BgmSelectTrack);
+        AdvanceBgmShuffleBag((u32)state->track);
     } else {
-        g_BgmSelectTrack = WrapBgmTrackIndex(
-            WrapBgmTrackIndex(g_BgmSelectTrack, g_BgmTrackCount) + 1,
+        state->track = WrapBgmTrackIndex(
+            WrapBgmTrackIndex(state->track, g_BgmTrackCount) + 1,
             g_BgmTrackCount);
     }
-    g_BgmSelectCdTrack = BgmCdTrack(g_BgmSelectTrack);
+    state->cdTrack = BgmCdTrack(state->track);
 }
 
-static void BeginManualTrackChange(void) {
-    if (g_BgmChangeDelay == 0) {
+static void BeginManualTrackChange(BgmSelect *state) {
+    if (state->changeDelay == 0) {
         StartCdVolumeFade(BGM_VOLUME_FADE_FRAMES);
-        g_BgmChangeDelay = BGM_CHANGE_DELAY_MANUAL;
+        state->changeDelay = BGM_CHANGE_DELAY_MANUAL;
     }
-    g_BgmSelectCdTrack = BgmCdTrack(g_BgmSelectTrack);
+    state->cdTrack = BgmCdTrack(state->track);
 }
 
-void UpdateBgmSelectPlayback(void) {
+void UpdateBgmSelectPlayback(BgmSelect *state) {
     g_BgmTrackCount = ClampBgmTrackCount(g_BgmTrackCount);
 
-    if (g_BgmChangeDelay > 0) {
-        g_BgmChangeDelay--;
-        if (g_BgmChangeDelay == 0) {
-            RequestCdTrack(g_BgmSelectCdTrack);
+    if (state->changeDelay > 0) {
+        state->changeDelay--;
+        if (state->changeDelay == 0) {
+            RequestCdTrack(state->cdTrack);
             StartCdAudio();
             g_CdTrackEnded = 0;
         }
     } else if (g_CdTrackEnded != 0) {
-        g_BgmChangeDelay = BGM_CHANGE_DELAY_AUTO;
-        SelectNextBgmTrack();
+        state->changeDelay = BGM_CHANGE_DELAY_AUTO;
+        SelectNextBgmTrack(state);
     }
 }
 
-static void EnableRandomPlay(void) {
+static void EnableRandomPlay(BgmSelect *state) {
     ShuffleBgmOrder();
-    PreventImmediateShuffleRepeat((u32)g_BgmSelectTrack);
-    g_BgmRandomPlay = 1;
-    g_BgmRandomLabelTimer = BGM_RANDOM_LABEL_FRAMES;
+    PreventImmediateShuffleRepeat((u32)state->track);
+    state->randomPlay = 1;
+    state->labelTimer = BGM_RANDOM_LABEL_FRAMES;
 }
 
 static void ExitBgmSelectScreen(void) {
@@ -94,48 +94,48 @@ static void ExitBgmSelectScreen(void) {
     g_FadeStep = BGM_SELECT_EXIT_FADE_STEP;
 }
 
-void UpdateBgmSelectInput(void) {
+void UpdateBgmSelectInput(BgmSelect *state) {
     u16 buttons = g_PadPressed;
 
     g_BgmTrackCount = ClampBgmTrackCount(g_BgmTrackCount);
-    if (g_BgmSelectCursor < BGM_SELECT_FIRST_OPTION) {
-        g_BgmSelectCursor = BGM_SELECT_FIRST_OPTION;
-    } else if (g_BgmSelectCursor > BGM_SELECT_LAST_OPTION) {
-        g_BgmSelectCursor = BGM_SELECT_LAST_OPTION;
+    if (state->cursor < BGM_SELECT_FIRST_OPTION) {
+        state->cursor = BGM_SELECT_FIRST_OPTION;
+    } else if (state->cursor > BGM_SELECT_LAST_OPTION) {
+        state->cursor = BGM_SELECT_LAST_OPTION;
     }
 
     if ((buttons & PAD_LEFT) &&
-        g_BgmSelectCursor > BGM_SELECT_FIRST_OPTION) {
-        g_BgmSelectCursor--;
+        state->cursor > BGM_SELECT_FIRST_OPTION) {
+        state->cursor--;
     }
     if ((buttons & PAD_RIGHT) &&
-        g_BgmSelectCursor < BGM_SELECT_LAST_OPTION) {
-        g_BgmSelectCursor++;
+        state->cursor < BGM_SELECT_LAST_OPTION) {
+        state->cursor++;
     }
     if (buttons & PAD_L2) {
-        EnableRandomPlay();
+        EnableRandomPlay(state);
     }
     if (buttons & PAD_R2) {
-        g_BgmRandomPlay = 0;
-        g_BgmRandomLabelTimer = 0;
+        state->randomPlay = 0;
+        state->labelTimer = 0;
     }
 
     if (buttons & PAD_CONFIRM) {
-        switch (g_BgmSelectCursor) {
+        switch (state->cursor) {
         case 0:
-            if (g_BgmRandomPlay == 0) {
-                g_BgmSelectTrack = WrapBgmTrackIndex(
-                    WrapBgmTrackIndex(g_BgmSelectTrack, g_BgmTrackCount) - 1,
+            if (state->randomPlay == 0) {
+                state->track = WrapBgmTrackIndex(
+                    WrapBgmTrackIndex(state->track, g_BgmTrackCount) - 1,
                     g_BgmTrackCount);
             }
-            BeginManualTrackChange();
+            BeginManualTrackChange(state);
             break;
         case 1:
             ExitBgmSelectScreen();
             break;
         case 2:
-            SelectNextBgmTrack();
-            BeginManualTrackChange();
+            SelectNextBgmTrack(state);
+            BeginManualTrackChange(state);
             break;
         }
     } else if (buttons & PAD_CANCEL) {
@@ -143,9 +143,9 @@ void UpdateBgmSelectInput(void) {
     }
 
     if (buttons & PAD_L1) {
-        g_BgmSelectShowUi = 1;
+        state->showUi = 1;
     }
     if (buttons & PAD_R1) {
-        g_BgmSelectShowUi = 0;
+        state->showUi = 0;
     }
 }

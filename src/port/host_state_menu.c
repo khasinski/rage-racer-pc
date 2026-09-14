@@ -204,7 +204,6 @@ s32 g_CustomizeOption;
 CarEntry *g_CarTable;
 s32 g_PlayerMoney;
 s32 g_ClassRecordMenuCursor;
-s32 g_BgmSelectStep;
 s32 g_UiScriptProgress;
 s16 g_NegconNeutralI;
 s16 g_NegconNeutralII;

@@ -42,8 +42,6 @@ ResultPlaceBarTable g_ClassPlaceBarSizes = {
         {0xa8, 0x24},
     },
 };
-s32 g_BgmRandomLabelTimer;
-s32 g_BgmRandomPlay;
 s16 g_AttractTitleDelays[4] = {
     15, 256, 0, 0
 };
@@ -93,14 +91,11 @@ s32 g_SeriesCleared;
 s32 g_NameEntryCursor;
 s32 g_RecordPanelSlide;
 s32 g_BestLapIndex;
-s32 g_BgmChangeDelay;
 ScoreRecord g_ClassRecords[CLASS_RECORD_COUNT];
-s32 g_BgmSelectCdTrack;
 s32 g_TimeRecordInsertRow;
 s16 g_TrackZoneCode;
 s32 g_LostRaceChoice;
 s32 g_BgmTrackCount;
-s32 g_BgmSelectShowUi;
 s32 g_SectorIndex;
 s16 g_RaceOptionCursor;
 s32 g_PrologueStep;
@@ -113,10 +108,8 @@ s32 g_FadeStep;
 s32 g_FadeLevel;
 s32 g_LapCount;
 s16 g_RaceFadeTimer;
-s32 g_BgmSelectTrack;
 s32 g_BestLapTimes[2][4][2];
 s32 g_FrameParity;
-s32 g_BgmSelectCursor;
 s32 g_ClassCompleted;
 s32 g_RaceTotalTime;
 s32 g_RacePaused;

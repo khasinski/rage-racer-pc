@@ -7,13 +7,7 @@
 #include <limits.h>
 #include <stdio.h>
 
-s32 g_BgmChangeDelay;
-s32 g_BgmRandomLabelTimer;
-s32 g_BgmRandomPlay;
-s32 g_BgmSelectCdTrack;
-s32 g_BgmSelectCursor;
-s32 g_BgmSelectShowUi;
-s32 g_BgmSelectTrack;
+static BgmSelect s_state;
 s32 g_BgmShuffleIndex;
 u8 g_BgmShuffleOrder[BGM_SHUFFLE_CAPACITY];
 s32 g_BgmTrackCount;
@@ -49,13 +43,7 @@ void ShuffleBgmOrder(void) {
 } while (0)
 
 static void Reset(void) {
-    g_BgmChangeDelay = 0;
-    g_BgmRandomLabelTimer = 0;
-    g_BgmRandomPlay = 0;
-    g_BgmSelectCdTrack = 3;
-    g_BgmSelectCursor = 1;
-    g_BgmSelectShowUi = 1;
-    g_BgmSelectTrack = 0;
+    s_state = (BgmSelect){.cdTrack = 3, .cursor = 1, .showUi = 1};
     g_BgmShuffleIndex = 0;
     g_BgmShuffleOrder[0] = 0;
     g_BgmShuffleOrder[1] = 1;
@@ -75,15 +63,15 @@ int main(void) {
 
     Reset();
     g_BgmTrackCount = 10;
-    g_BgmSelectTrack = 8;
+    s_state.track = 8;
     g_CdTrackEnded = 1;
-    UpdateBgmSelectPlayback();
-    CHECK(g_BgmSelectTrack == 9 && g_BgmSelectCdTrack == 17);
-    CHECK(g_BgmChangeDelay == 6 && s_cdStarts == 0);
+    UpdateBgmSelectPlayback(&s_state);
+    CHECK(s_state.track == 9 && s_state.cdTrack == 17);
+    CHECK(s_state.changeDelay == 6 && s_cdStarts == 0);
     for (frame = 0; frame < 6; frame++) {
-        UpdateBgmSelectPlayback();
+        UpdateBgmSelectPlayback(&s_state);
     }
-    CHECK(g_BgmChangeDelay == 0 && g_BgmSelectCdTrack == 17);
+    CHECK(s_state.changeDelay == 0 && s_state.cdTrack == 17);
     CHECK(s_cdRequest == 17 && s_cdStarts == 1 && g_CdTrackEnded == 0);
 
     Reset();
@@ -111,69 +99,69 @@ int main(void) {
     CHECK(g_BgmShuffleIndex == 8 && s_shuffleCalls == 0);
 
     Reset();
-    g_BgmRandomPlay = 1;
+    s_state.randomPlay = 1;
     g_BgmShuffleIndex = INT_MIN;
     g_CdTrackEnded = 1;
-    UpdateBgmSelectPlayback();
-    CHECK(g_BgmSelectTrack == 1 && g_BgmShuffleIndex == 2);
+    UpdateBgmSelectPlayback(&s_state);
+    CHECK(s_state.track == 1 && g_BgmShuffleIndex == 2);
 
     Reset();
-    g_BgmRandomPlay = 1;
+    s_state.randomPlay = 1;
     g_BgmShuffleOrder[0] = 0xFF;
     g_CdTrackEnded = 1;
-    UpdateBgmSelectPlayback();
-    CHECK(g_BgmSelectTrack == 0);
+    UpdateBgmSelectPlayback(&s_state);
+    CHECK(s_state.track == 0);
 
     Reset();
-    g_BgmSelectTrack = INT_MAX;
+    s_state.track = INT_MAX;
     g_CdTrackEnded = 1;
-    UpdateBgmSelectPlayback();
-    CHECK(g_BgmSelectTrack == 2);
+    UpdateBgmSelectPlayback(&s_state);
+    CHECK(s_state.track == 2);
 
     Reset();
-    g_BgmSelectCursor = 0;
-    g_BgmSelectTrack = 0;
+    s_state.cursor = 0;
+    s_state.track = 0;
     g_PadPressed = PAD_CONFIRM;
-    UpdateBgmSelectInput();
-    CHECK(g_BgmSelectTrack == 2 && g_BgmSelectCdTrack == 5);
-    CHECK(g_BgmChangeDelay == 0x40 && s_fadeCalls == 1);
+    UpdateBgmSelectInput(&s_state);
+    CHECK(s_state.track == 2 && s_state.cdTrack == 5);
+    CHECK(s_state.changeDelay == 0x40 && s_fadeCalls == 1);
 
     Reset();
-    g_BgmSelectCursor = 2;
-    g_BgmSelectTrack = 2;
+    s_state.cursor = 2;
+    s_state.track = 2;
     g_PadPressed = PAD_CONFIRM;
-    UpdateBgmSelectInput();
-    CHECK(g_BgmSelectTrack == 0 && g_BgmSelectCdTrack == 3);
+    UpdateBgmSelectInput(&s_state);
+    CHECK(s_state.track == 0 && s_state.cdTrack == 3);
 
     Reset();
-    g_BgmSelectTrack = 1;
+    s_state.track = 1;
     g_PadPressed = PAD_L2;
-    UpdateBgmSelectInput();
-    CHECK(g_BgmRandomPlay == 1 && g_BgmRandomLabelTimer == 60);
+    UpdateBgmSelectInput(&s_state);
+    CHECK(s_state.randomPlay == 1 && s_state.labelTimer == 60);
     CHECK(g_BgmShuffleOrder[0] == 2 && g_BgmShuffleOrder[2] == 1);
 
     Reset();
-    g_BgmSelectCursor = 1;
+    s_state.cursor = 1;
     g_PadPressed = PAD_CONFIRM;
-    UpdateBgmSelectInput();
+    UpdateBgmSelectInput(&s_state);
     CHECK(g_FadeStep == 4 && s_fadeCalls == 1);
 
     Reset();
-    g_BgmSelectCursor = 1;
+    s_state.cursor = 1;
     g_PadPressed = PAD_LEFT | PAD_L1 | PAD_R1;
-    UpdateBgmSelectInput();
-    CHECK(g_BgmSelectCursor == 0 && g_BgmSelectShowUi == 0);
+    UpdateBgmSelectInput(&s_state);
+    CHECK(s_state.cursor == 0 && s_state.showUi == 0);
 
     Reset();
-    g_BgmSelectCursor = INT_MAX;
-    UpdateBgmSelectInput();
-    CHECK(g_BgmSelectCursor == 2);
+    s_state.cursor = INT_MAX;
+    UpdateBgmSelectInput(&s_state);
+    CHECK(s_state.cursor == 2);
 
     Reset();
-    g_BgmSelectCursor = INT_MIN;
+    s_state.cursor = INT_MIN;
     g_BgmTrackCount = INT_MAX;
-    UpdateBgmSelectInput();
-    CHECK(g_BgmSelectCursor == 0);
+    UpdateBgmSelectInput(&s_state);
+    CHECK(s_state.cursor == 0);
     CHECK(g_BgmTrackCount == BGM_PLAYABLE_TRACK_COUNT);
 
     puts("BGM selector preserves playback delay, shuffle, and input");

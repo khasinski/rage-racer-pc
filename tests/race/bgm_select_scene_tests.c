@@ -7,8 +7,7 @@
 #include "game/race_internal.h"
 
 s32 g_AnimTimer;
-s32 g_BgmSelectShowUi;
-BgmSelectStep g_BgmSelectStep;
+static BgmSelect s_state;
 s32 g_CameraCarIndex;
 s32 g_FadeLevel;
 s32 g_FadeStep;
@@ -26,8 +25,8 @@ static s32 s_uiDraws;
 static s32 s_uiUpdates;
 static s32 s_worldUpdates;
 
-void UpdateBgmSelectPlayback(void) { s_playbackUpdates++; }
-void UpdateBgmSelectInput(void) { s_inputUpdates++; }
+void UpdateBgmSelectPlayback(BgmSelect *state) { (void)state; s_playbackUpdates++; }
+void UpdateBgmSelectInput(BgmSelect *state) { (void)state; s_inputUpdates++; }
 s32 RequestOptionScreenAssets(void) {
     s_assetRequests++;
     return 1;
@@ -40,22 +39,22 @@ void DrawFullscreenFadeTile(s32 level, s32 tpage) {
     assert(tpage == 0x49);
     s_fadeLevel = level;
 }
-void DrawBgmSelectBar(void) { s_uiDraws++; }
-void UpdateBgmSelectBar(void) { s_uiUpdates++; }
+void DrawBgmSelectBar(const BgmSelect *state) { (void)state; s_uiDraws++; }
+void UpdateBgmSelectBar(BgmSelect *state) { (void)state; s_uiUpdates++; }
 s32 CycleBgmSelectCameraCar(s32 mask, s32 current) {
     (void)mask;
     assert(mask == 0xFF);
     return current + 1;
 }
 void UpdateAndDrawAttractWorld(void) { s_worldUpdates++; }
-void UpdateBgmSelectLoad(void) { s_loadUpdates++; }
-void UpdateBgmSelectFadeIn(void) { s_fadeInUpdates++; }
+void UpdateBgmSelectLoad(BgmSelect *state) { (void)state; s_loadUpdates++; }
+void UpdateBgmSelectFadeIn(BgmSelect *state) { (void)state; s_fadeInUpdates++; }
 void ExitBgmSelect(void) { s_exitUpdates++; }
+BgmSelect *SceneRuntimeBgmSelect(void) { return &s_state; }
 
 static void Reset(void) {
     g_AnimTimer = 10;
-    g_BgmSelectShowUi = 1;
-    g_BgmSelectStep = BGM_SELECT_STEP_ACTIVE;
+    s_state = (BgmSelect){.showUi = 1, .step = BGM_SELECT_STEP_ACTIVE};
     g_CameraCarIndex = 2;
     g_FadeLevel = 0;
     g_FadeStep = 0;
@@ -77,7 +76,7 @@ static void TestActiveFrame(void) {
     Reset();
     g_SceneTimer = 2;
 
-    UpdateBgmSelect();
+    UpdateBgmSelect(&s_state);
 
     assert(s_playbackUpdates == 1 && s_inputUpdates == 1);
     assert(s_displayMask == 1 && s_uiUpdates == 1 && s_uiDraws == 1);
@@ -90,25 +89,25 @@ static void TestExitFadeRequest(void) {
     g_FadeLevel = 254;
     g_FadeStep = 4;
 
-    UpdateBgmSelect();
+    UpdateBgmSelect(&s_state);
 
     assert(s_inputUpdates == 0);
     assert(s_fadeLevel == 254 && s_assetRequests == 1);
-    assert(g_BgmSelectStep == BGM_SELECT_STEP_EXIT);
+    assert(s_state.step == BGM_SELECT_STEP_EXIT);
     assert(g_FadeLevel == 256 && g_FadeStep == -4);
 }
 
 static void TestSceneDispatch(void) {
     Reset();
-    g_BgmSelectStep = BGM_SELECT_STEP_LOAD_ASSETS;
+    s_state.step = BGM_SELECT_STEP_LOAD_ASSETS;
     UpdateBgmSelectScene();
     assert(g_SceneTimer == 2 && s_loadUpdates == 1);
 
-    g_BgmSelectStep = BGM_SELECT_STEP_FADE_IN;
+    s_state.step = BGM_SELECT_STEP_FADE_IN;
     UpdateBgmSelectScene();
     assert(s_fadeInUpdates == 1);
 
-    g_BgmSelectStep = BGM_SELECT_STEP_EXIT;
+    s_state.step = BGM_SELECT_STEP_EXIT;
     UpdateBgmSelectScene();
     assert(s_exitUpdates == 1);
 
@@ -124,7 +123,7 @@ static void TestExtremeFadeAndAnimationState(void) {
     g_FadeLevel = INT_MAX;
     g_FadeStep = INT_MAX;
 
-    UpdateBgmSelect();
+    UpdateBgmSelect(&s_state);
 
     assert(s_fadeLevel == 256 && s_assetRequests == 1);
     assert(g_FadeLevel == 256 && g_FadeStep == -4);

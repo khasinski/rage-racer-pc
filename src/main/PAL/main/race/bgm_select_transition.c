@@ -25,19 +25,21 @@ enum {
 };
 
 void EnterBgmSelectScreen(void) {
+    BgmSelect *state = SceneRuntimeBgmSelect();
+
     SetDispMask(0);
     SetupDisplay240(0, 0, 0);
     g_FrameSyncThreshold = BGM_SELECT_FRAME_SYNC_THRESHOLD;
     g_FadeLevel = BGM_SELECT_INITIAL_FADE;
     g_FadeStep = BGM_SELECT_FADE_IN_STEP;
     g_SceneId = GAME_SCENE_BGM_SELECT;
-    g_BgmSelectCursor = BGM_SELECT_DEFAULT_CURSOR;
-    g_BgmSelectShowUi = 1;
-    g_BgmSelectCdTrack = BgmCdTrack(BGM_SELECT_INITIAL_TRACK);
-    g_BgmSelectStep = BGM_SELECT_STEP_LOAD_ASSETS;
+    state->cursor = BGM_SELECT_DEFAULT_CURSOR;
+    state->showUi = 1;
+    state->cdTrack = BgmCdTrack(BGM_SELECT_INITIAL_TRACK);
+    state->step = BGM_SELECT_STEP_LOAD_ASSETS;
     g_SceneTimer = 0;
-    g_BgmSelectTrack = BGM_SELECT_INITIAL_TRACK;
-    g_BgmChangeDelay = BGM_SELECT_INITIAL_CHANGE_DELAY;
+    state->track = BGM_SELECT_INITIAL_TRACK;
+    state->changeDelay = BGM_SELECT_INITIAL_CHANGE_DELAY;
     g_CdTrackEnded = 0;
     g_CameraCarIndex = 0;
 }
@@ -60,7 +62,7 @@ static s32 AdvanceBgmSelectFade(void) {
     return g_FadeStep > 0 && g_FadeLevel >= BGM_SELECT_OPAQUE_FADE;
 }
 
-static void UpdateBgmSelectTransition(void) {
+static void UpdateBgmSelectTransition(BgmSelect *state) {
     if (g_SceneTimer == BGM_SELECT_DISPLAY_ENABLE_FRAME) {
         SetDispMask(1);
     }
@@ -70,12 +72,12 @@ static void UpdateBgmSelectTransition(void) {
         InitTrackScene();
         g_FadeStep = 0;
         g_FadeLevel = 0;
-        g_BgmSelectStep = BGM_SELECT_STEP_ACTIVE;
+        state->step = BGM_SELECT_STEP_ACTIVE;
     }
 
 }
 
-void UpdateBgmSelectLoad(void) {
+void UpdateBgmSelectLoad(BgmSelect *state) {
     const AssetLoadTransaction *assets;
     const AssetLoadSpan *texturePack = NULL;
 
@@ -100,17 +102,17 @@ void UpdateBgmSelectLoad(void) {
             FailAssetLoad();
         } else {
             RequestTrackDataAssets();
-            g_BgmSelectStep = BGM_SELECT_STEP_FADE_IN;
+            state->step = BGM_SELECT_STEP_FADE_IN;
         }
     }
-    UpdateBgmSelectTransition();
+    UpdateBgmSelectTransition(state);
 }
 
-void UpdateBgmSelectFadeIn(void) {
+void UpdateBgmSelectFadeIn(BgmSelect *state) {
     if (AssetLoadCompletedSuccessfully()) {
         g_FadeStep = BGM_SELECT_FADE_OUT_STEP;
     }
-    UpdateBgmSelectTransition();
+    UpdateBgmSelectTransition(state);
 }
 
 void ExitBgmSelect(void) {

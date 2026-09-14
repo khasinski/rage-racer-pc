@@ -4,6 +4,7 @@
 #include "game/race.h"
 #include "game/race_internal.h"
 #include "game/render_internal.h"
+#include "game/scene_runtime.h"
 
 enum {
     BGM_SELECT_DISPLAY_ENABLE_FRAME = 2,
@@ -13,14 +14,14 @@ enum {
     BGM_SELECT_CAMERA_MASK = 0xFF,
 };
 
-void UpdateBgmSelect(void) {
-    UpdateBgmSelectPlayback();
+void UpdateBgmSelect(BgmSelect *state) {
+    UpdateBgmSelectPlayback(state);
 
     if (g_SceneTimer == BGM_SELECT_DISPLAY_ENABLE_FRAME) {
         SetDispMask(1);
     }
     if (g_FadeStep == 0) {
-        UpdateBgmSelectInput();
+        UpdateBgmSelectInput(state);
     } else {
         g_FadeLevel = StepFade(
             g_FadeLevel, 0, BGM_SELECT_OPAQUE_FADE);
@@ -29,15 +30,15 @@ void UpdateBgmSelect(void) {
             g_FadeLevel, g_FadeStep, BGM_SELECT_OPAQUE_FADE);
         if (g_FadeLevel >= BGM_SELECT_OPAQUE_FADE) {
             RequestOptionScreenAssets();
-            g_BgmSelectStep = BGM_SELECT_STEP_EXIT;
+            state->step = BGM_SELECT_STEP_EXIT;
             g_FadeLevel = BGM_SELECT_OPAQUE_FADE;
             g_FadeStep = BGM_SELECT_EXIT_FADE_STEP;
         }
     }
 
-    if (g_BgmSelectShowUi != 0) {
-        UpdateBgmSelectBar();
-        DrawBgmSelectBar();
+    if (state->showUi != 0) {
+        UpdateBgmSelectBar(state);
+        DrawBgmSelectBar(state);
     }
     g_AnimTimer = (s32)((u32)g_AnimTimer + 1);
     g_CameraCarIndex =
@@ -46,19 +47,21 @@ void UpdateBgmSelect(void) {
 }
 
 void UpdateBgmSelectScene(void) {
+    BgmSelect *state = SceneRuntimeBgmSelect();
+
     g_SceneTimer = NextBgmSelectTimer(g_SceneTimer);
 
-    switch (g_BgmSelectStep) {
+    switch (state->step) {
     case BGM_SELECT_STEP_INVALID:
         break;
     case BGM_SELECT_STEP_LOAD_ASSETS:
-        UpdateBgmSelectLoad();
+        UpdateBgmSelectLoad(state);
         break;
     case BGM_SELECT_STEP_FADE_IN:
-        UpdateBgmSelectFadeIn();
+        UpdateBgmSelectFadeIn(state);
         break;
     case BGM_SELECT_STEP_ACTIVE:
-        UpdateBgmSelect();
+        UpdateBgmSelect(state);
         break;
     case BGM_SELECT_STEP_EXIT:
         ExitBgmSelect();

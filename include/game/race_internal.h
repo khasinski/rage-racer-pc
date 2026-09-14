@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "game/camera_types.h"
+#include "game/bgm_select_state.h"
 #include "game/menu_types.h"
 #include "game/race.h"
 #include "game/grand_prix_content.h"
@@ -61,14 +62,14 @@ s32 ShouldStartAttractExitFade(s32 timer);
 s32 ShouldReturnFromAttractDemo(s32 timer);
 void UpdateAndDrawAttractWorld(void);
 void UpdateBgmSelectScene(void);
-void UpdateBgmSelectBar(void);
-void DrawBgmSelectBar(void);
+void UpdateBgmSelectBar(BgmSelect *state);
+void DrawBgmSelectBar(const BgmSelect *state);
 void AdvanceBgmShuffleBag(u32 track);
-void UpdateBgmSelectPlayback(void);
-void UpdateBgmSelectInput(void);
-void UpdateBgmSelectLoad(void);
-void UpdateBgmSelectFadeIn(void);
-void UpdateBgmSelect(void);
+void UpdateBgmSelectPlayback(BgmSelect *state);
+void UpdateBgmSelectInput(BgmSelect *state);
+void UpdateBgmSelectLoad(BgmSelect *state);
+void UpdateBgmSelectFadeIn(BgmSelect *state);
+void UpdateBgmSelect(BgmSelect *state);
 void ExitBgmSelect(void);
 s32 CycleAttractCameraCar(s32 mask, s32 current);
 s32 CycleBgmSelectCameraCar(s32 mask, s32 current);
