@@ -192,6 +192,19 @@ void DrawPlayerCarModel(GameCarRuntime *object) {
     }
 }
 
+void DrawRacePlayerCarModel(GameCarRuntime *object) {
+    s32 model = CustomRaceRivalModel();
+
+    if (model >= 0) {
+        s32 savedModel = object->modelIndex;
+        object->modelIndex = (s16)model;
+        DrawCar(object);
+        object->modelIndex = (s16)savedModel;
+        return;
+    }
+    DrawPlayerCarModel(object);
+}
+
 void DrawCar(GameCarRuntime *object) {
     Matrix scratchMatrix;
     Matrix bodyLocalMatrix;

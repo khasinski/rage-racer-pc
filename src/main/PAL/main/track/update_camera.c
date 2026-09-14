@@ -125,7 +125,7 @@ void UpdateCamera(Camera *camera, CameraViewMode cameraModeSel, GameCarRuntime *
     if (cameraModeSel > 0 &&
         car == AsRivalCar(&g_PlayerCar)) {
         SelectModelBank(0);
-        DrawPlayerCarModel(car);
+        DrawRacePlayerCarModel(car);
     }
 }
 
@@ -137,5 +137,5 @@ void UpdateLookBehindCamera(Camera *camera, GameCarRuntime *car) {
     StoreViewWork(&camera->view, &viewWork);
     SetCameraRotMatrix(&g_RenderState, &camera->view);
     SelectModelBank(0);
-    DrawPlayerCarModel(car);
+    DrawRacePlayerCarModel(car);
 }

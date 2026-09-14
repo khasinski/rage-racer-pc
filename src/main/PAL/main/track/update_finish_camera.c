@@ -67,5 +67,5 @@ void UpdateFinishCamera(Camera *camera, FinishCamera *finish,
     StoreViewWork(&camera->view, &viewWork);
     SetCameraRotMatrix(&g_RenderState, &camera->view);
     SelectModelBank(0);
-    DrawPlayerCarModel(obj);
+    DrawRacePlayerCarModel(obj);
 }

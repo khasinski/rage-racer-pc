@@ -15,6 +15,7 @@
 #include "game/menu_types.h"
 #include "game/race_hud_internal.h"
 #include "game/race_time_types.h"
+#include "game/race.h"
 #include "game/replay_internal.h"
 #include "game/save_types.h"
 
@@ -63,6 +64,7 @@ s32 g_ClassCompleted;
 s32 g_RaceTotalTime;
 s32 g_RacePaused;
 s16 g_GrandPrixMode;
+RaceSession g_RaceSession;
 s16 g_RaceCueDelay;
 s16 g_RacePhase;
 s16 g_RivalCueCooldowns[4];

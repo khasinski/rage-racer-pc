@@ -32,6 +32,7 @@ s16 g_ExtraGrandPrixUnlocked;
 s32 g_GrandPrixClass;
 u16 g_PadPressed;
 s16 g_SeriesSelection;
+RaceSession g_RaceSession;
 
 static GameFrameContext s_frame;
 static s32 s_assetComplete;
@@ -154,8 +155,13 @@ int main(void) {
 
     ResetState(TITLE_MENU_CUSTOM);
     UpdateMainMenuInput();
-    CHECK(s_frontend.state == FRONTEND_STATE_MENU_INPUT);
-    CHECK(s_resetCalls == 0 && s_shuffleCalls == 0);
+    CHECK(s_frontend.state == FRONTEND_STATE_MENU_EXIT);
+    CHECK(g_RaceSession.kind == RACE_SESSION_CUSTOM);
+    CHECK(g_RaceSession.course == 0 && g_RaceSession.classIndex == 0 &&
+          g_RaceSession.model == 3);
+    CHECK(g_CarTable == g_RaceSession.cars &&
+          g_RaceProgress == &g_TimeAttackSave);
+    CHECK(s_selectBgmRequests == 1);
 
     ResetState(TITLE_MENU_LOAD_SAVE);
     UpdateMainMenuInput();

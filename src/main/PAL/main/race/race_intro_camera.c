@@ -101,7 +101,7 @@ void RunRaceIntroCamera(Camera *camera, PlayerCarRuntime *car, s32 mode) {
         StoreViewWork(&camera->view, &viewWork);
         SetCameraRotMatrix(&g_RenderState, &camera->view);
         SelectModelBank(0);
-        DrawPlayerCarModel(AsRivalCar(car));
+        DrawRacePlayerCarModel(AsRivalCar(car));
     } else {
         DrawFullscreenFadeTile(camera->intro.timer * 26, 0x29);
         viewWork.x = car->x;

@@ -34,7 +34,8 @@ s32 RequestRoundAssets(void) {
         ResetAssetLoader();
     }
 
-    if (g_GrandPrixMode == 0) {
+    if (g_GrandPrixMode == 0 &&
+        g_RaceSession.kind != RACE_SESSION_CUSTOM) {
         s32 maximum = MaximumUnlockedRoundClass();
 
         g_GrandPrixClass = RandomClassInRange(0, maximum);

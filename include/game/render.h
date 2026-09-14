@@ -207,6 +207,7 @@ s32 TrackTexturePageForSection(s32 trackSection);
 void UpdateCamera(Camera *camera, CameraViewMode mode, GameCarRuntime *car);
 void UpdateLookBehindCamera(Camera *camera, GameCarRuntime *car);
 void DrawPlayerCarModel(GameCarRuntime *object);
+void DrawRacePlayerCarModel(GameCarRuntime *object);
 void DrawTimeValue(s32 x, s32 y, s32 value, s32 color, s32 divisor);
 
 /*

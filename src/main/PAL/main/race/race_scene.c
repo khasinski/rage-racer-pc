@@ -268,7 +268,7 @@ static void DrawRaceWorld(s32 animateScenery) {
     PortProfileFramePhase("scene_course_objects");
     DrawCourseObjects();
     PortProfileFramePhase("scene_scripted_scenery");
-    if (g_GrandPrixMode != 0) {
+    if (RaceHasRivals()) {
         if (g_GrandPrixClass != GRAND_PRIX_FINAL_CLASS_INDEX) {
             DrawStartGridScenery(g_SceneTimer);
         }
@@ -305,7 +305,7 @@ static void UpdatePausedRaceScene(RaceScene *state) {
         DrawSplitTimes(&state->timing);
     }
     DrawRaceHudLabels(g_GrandPrixMode);
-    if (g_GrandPrixMode != 0) {
+    if (RaceHasRivals()) {
         DrawTimeRemaining(state->timeRemaining);
         DrawRacePosition();
     }
@@ -400,7 +400,7 @@ static void UpdateActiveRaceScene(RaceScene *state) {
         }
     }
 
-    if (g_GrandPrixMode != 0) {
+    if (RaceHasRivals()) {
         if (g_RacePhase < RACE_PHASE_FINISHED) {
             UpdateRacePosition();
             DrawRacePosition();
@@ -417,7 +417,7 @@ static void UpdateActiveRaceScene(RaceScene *state) {
         UpdateLoadedAudioVoices(0, 0);
     }
 
-    if ((g_RacePhase >= RACE_PHASE_ACTIVE) && (g_GrandPrixMode != 0)) {
+    if ((g_RacePhase >= RACE_PHASE_ACTIVE) && RaceHasRivals()) {
         UpdateRaceCars();
     }
 
@@ -449,7 +449,7 @@ static void UpdateActiveRaceScene(RaceScene *state) {
     RequestTrackTexturePage(textureSection);
 
     PortProfileFramePhase("scene_cars");
-    if (g_GrandPrixMode != 0) {
+    if (RaceHasRivals()) {
         DrawCars();
     }
     PortProfileFramePhase("scene_environment");

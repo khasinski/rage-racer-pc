@@ -9,6 +9,7 @@
 #include "game/replay.h"
 #include "game/render_types.h"
 #include "game/scene_state.h"
+#include "game/car.h"
 
 struct PlayerCarRuntime;
 struct GameCarRuntime;
@@ -18,6 +19,31 @@ enum {
     GRAND_PRIX_SERIES_COUNT = 2,
     GRAND_PRIX_FINAL_CLASS_INDEX = 5,
 };
+
+typedef enum RaceSessionKind {
+    RACE_SESSION_STANDARD,
+    RACE_SESSION_CUSTOM,
+} RaceSessionKind;
+
+enum {
+    CUSTOM_RACE_COURSE_COUNT = 8,
+    CUSTOM_RACE_MODEL_COUNT = 24,
+};
+
+typedef struct RaceSession {
+    RaceSessionKind kind;
+    s32 course;
+    s32 classIndex;
+    s32 model;
+    CarEntry cars[GAME_CAR_COUNT];
+} RaceSession;
+
+extern RaceSession g_RaceSession;
+
+int CustomRaceUsesRivalModel(void);
+s32 CustomRaceRivalModel(void);
+s32 CustomRacePerformanceCar(s32 course, s32 classIndex, s32 rivalModel);
+void ApplyCustomRaceSelection(void);
 
 /* Grand Prix class index, 0-based; displayed as CLASS(n+1). Also the track
  * tier: course asset index = 0x57 + (CourseSlot(course) << 1) + (class << 3).
@@ -46,6 +72,10 @@ extern s32 g_GrandPrixRound;
  * innermost index of the record tables, and the in-race option count
  * (2 - mode). */
 extern s16 g_GrandPrixMode;
+
+static inline int RaceHasRivals(void) {
+    return g_GrandPrixMode != 0 || g_RaceSession.kind == RACE_SESSION_CUSTOM;
+}
 
 /* In-race copy of g_GrandPrixSeries, latched when the grid is built. Outer
  * index of the per-series tables and, because the Extra GP runs the

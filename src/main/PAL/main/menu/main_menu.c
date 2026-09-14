@@ -7,6 +7,7 @@
 #include "game/render_internal.h"
 #include "game/save_internal.h"
 #include "game/screens.h"
+#include <string.h>
 
 enum {
     MAIN_MENU_ROW_REVEAL_FRAMES = 8,
@@ -97,11 +98,11 @@ void UpdateMainMenuInput(void) {
         oldSelection, direction, g_ExtraGrandPrixUnlocked != 0);
     if (oldSelection != frontend->selection) PlaySoundCue(1);
 
-    if ((pressed & PAD_CONFIRM) &&
-        frontend->selection != TITLE_MENU_CUSTOM) {
+    if (pressed & PAD_CONFIRM) {
         PlaySoundCue(2);
         if (!AssetLoadCompletedSuccessfully()) ResetAssetLoader();
         ShuffleBgmOrder();
+        g_RaceSession.kind = RACE_SESSION_STANDARD;
         switch (frontend->selection) {
         case TITLE_MENU_GRAND_PRIX:
             SelectGrandPrixSave(g_GrandPrixCars, &g_GrandPrixSave,
@@ -114,6 +115,21 @@ void UpdateMainMenuInput(void) {
         case TITLE_MENU_TIME_ATTACK:
             g_CarTable = g_TimeAttackCars;
             g_RaceProgress = &g_TimeAttackSave;
+            g_SeriesSelection = 0;
+            RequestSelectBgmAssetsKeepAudioSlots();
+            break;
+        case TITLE_MENU_CUSTOM:
+            g_RaceSession = (RaceSession){
+                .kind = RACE_SESSION_CUSTOM,
+                .course = 0,
+                .classIndex = 0,
+                .model = 3,
+            };
+            memcpy(g_RaceSession.cars, g_TimeAttackCars,
+                   sizeof(g_RaceSession.cars));
+            g_CarTable = g_RaceSession.cars;
+            g_RaceProgress = &g_TimeAttackSave;
+            g_CourseProgress = NULL;
             g_SeriesSelection = 0;
             RequestSelectBgmAssetsKeepAudioSlots();
             break;

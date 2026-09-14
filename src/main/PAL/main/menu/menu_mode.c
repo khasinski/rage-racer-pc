@@ -18,12 +18,17 @@ static void InitMenuLighting(void) {
 }
 
 static void LoadMenuSelection(void) {
+    if (g_RaceSession.kind == RACE_SESSION_CUSTOM) {
+        ApplyCustomRaceSelection();
+        return;
+    }
     g_CourseIndex = g_RaceProgress->course;
     g_PlayerCarIndex = g_RaceProgress->carIndex;
     g_GrandPrixClass = g_RaceProgress->classIndex;
 }
 
 static void LoadMenuSeriesProgress(void) {
+    if (g_RaceSession.kind == RACE_SESSION_CUSTOM) return;
     if (g_GrandPrixMode != 0) {
         g_GrandPrixSeries = g_SeriesSelection;
         g_PlayerMoney = g_RaceProgress->money;

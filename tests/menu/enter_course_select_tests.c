@@ -3,6 +3,7 @@
 #include "game/menu.h"
 #include "game/menu_internal.h"
 #include "game/player_car_internal.h"
+#include "game/race.h"
 #include "game/save_internal.h"
 #include "game/state.h"
 
@@ -21,6 +22,7 @@ void MenuActivateScreen(s32 screen) {
 }
 
 s32 g_CourseIndex;
+RaceSession g_RaceSession;
 CourseProgressState *g_CourseProgress;
 s32 g_MenuHandlerIndex;
 s32 g_MenuScreen;

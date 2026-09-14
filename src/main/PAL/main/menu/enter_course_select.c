@@ -4,6 +4,7 @@
 #include "game/menu.h"
 #include "game/menu_internal.h"
 #include "game/player_car_internal.h"
+#include "game/race.h"
 #include "game/save_internal.h"
 #include "game/state.h"
 
@@ -41,7 +42,9 @@ void EnterCourseSelectScreen(void) {
     }
 
     PlaySequence();
-    MenuActivateScreen(MENU_SCREEN_COURSE_SELECT);
+    MenuActivateScreen(g_RaceSession.kind == RACE_SESSION_CUSTOM
+                           ? MENU_SCREEN_CUSTOM_RACE
+                           : MENU_SCREEN_COURSE_SELECT);
     DrawBrowseArrows(MenuBrowseArrows(), 0, 0, 0, 0);
     ResetCourseSelectShowroom(screen);
     LoadImage(&g_TeamLogoRect, &g_TeamLogoCanvas);

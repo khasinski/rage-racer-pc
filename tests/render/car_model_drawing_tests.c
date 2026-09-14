@@ -2,6 +2,7 @@
 #include "game/car.h"
 #include "game/render.h"
 #include "game/render_internal.h"
+#include "game/race.h"
 #include "game/state.h"
 #include "game/track.h"
 #include "rage/render_world_game.h"
@@ -26,6 +27,8 @@ s32 g_ModelBankCount;
 s32 g_PlayerCarIndex;
 s32 g_SceneId;
 s32 g_SceneTimer;
+
+s32 CustomRaceRivalModel(void) { return -1; }
 
 static s32 s_viewDepth;
 static s32 s_zoneBlend;

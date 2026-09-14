@@ -1410,3 +1410,9 @@ set_tests_properties(time_attack_records PROPERTIES LABELS e2e)
 set_tests_properties(save_roundtrip PROPERTIES LABELS e2e)
     set_tests_properties(save_roundtrip PROPERTIES TIMEOUT 270)
 endif()
+add_executable(custom_race_tests
+    custom_race_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/custom_race.c)
+target_include_directories(custom_race_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(custom_race_tests PRIVATE __psyz=1)
+add_test(NAME custom_race COMMAND custom_race_tests)

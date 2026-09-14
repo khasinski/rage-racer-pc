@@ -33,7 +33,7 @@ enum MenuScreenId {
     MENU_SCREEN_PAINT_COLOR,
     MENU_SCREEN_CAR_SHOP,
     MENU_SCREEN_ENGINEER_SHOP,
-    MENU_SCREEN_UNUSED,
+    MENU_SCREEN_CUSTOM_RACE,
     MENU_SCREEN_COUNT,
 };
 
@@ -393,6 +393,8 @@ void DrawShopPromptButtons(GameOrderingTableEntry *ot, s32 cursor, s32 flash);
 void UpdateOwnedCarNeighbours(CarBrowse *browse);
 void RefreshCarUnlockState(CarBrowse *browse);
 void UpdateCarSelectScreen(void);
+s32 DrawCustomRaceScreen(s32 *progress, s32 step);
+void UpdateCustomRaceScreen(void);
 s32 DrawCarSelectScreen(s32 *progress, s32 step);
 
 /* id 5 -- "CUSTOMIZE": tire compound (5 settings) and transmission (AT/MT). */
