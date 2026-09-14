@@ -167,6 +167,20 @@ int main(void) {
     CHECK(SceneRuntimeAttractDemo()->step == 0 &&
           SceneRuntimeLostRace()->choice == 0);
 
+    g_SceneId = GAME_SCENE_ENTER_RACE;
+    SceneRuntimeBeforeDispatch(g_SceneId);
+    SceneRuntimeRace()->pauseDelay = 30;
+    SceneRuntimeRace()->optionCursor = 2;
+    g_SceneId = GAME_SCENE_RACE;
+    SceneRuntimeBeforeDispatch(g_SceneId);
+    CHECK(SceneRuntimeRace()->pauseDelay == 30 &&
+          SceneRuntimeRace()->optionCursor == 2);
+
+    g_SceneId = GAME_SCENE_MENU;
+    SceneRuntimeBeforeDispatch(g_SceneId);
+    CHECK(SceneRuntimeRace()->pauseDelay == 0 &&
+          SceneRuntimeRace()->optionCursor == 0);
+
     puts("scene runtime scopes transition state and asset results to one scene");
     return 0;
 }

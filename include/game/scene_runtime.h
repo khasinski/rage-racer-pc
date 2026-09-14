@@ -30,6 +30,7 @@ typedef union SceneState {
     Prologue prologue;
     AttractDemo attractDemo;
     LostRace lostRace;
+    RaceScene race;
 } SceneState;
 
 typedef struct SceneRuntime {
@@ -49,6 +50,7 @@ RecordEntry *SceneRuntimeRecordEntry(void);
 Prologue *SceneRuntimePrologue(void);
 AttractDemo *SceneRuntimeAttractDemo(void);
 LostRace *SceneRuntimeLostRace(void);
+RaceScene *SceneRuntimeRace(void);
 /* A result belongs to a scene only when it was the active transaction at the
  * point that scene began. */
 const AssetLoadTransaction *SceneRuntimeAssetResult(AssetRequestType request);

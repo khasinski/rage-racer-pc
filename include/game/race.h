@@ -202,7 +202,6 @@ extern s16 g_RivalCueEnabled;
 extern s16 g_RaceFadeTimer;
 
 /* Cursor of the in-race option overlay, clamped to 2 - g_GrandPrixMode. */
-extern s16 g_RaceOptionCursor;
 
 /* Best lap of this race so far (g_BestLapThisRace), seeded from g_BestLapTimes at the
  * grid, and DrawTimeValue, which prints one millisecond
@@ -223,7 +222,6 @@ s32 TickClassClearFanfare(void);
 extern s32 g_ClassCompleted;
 extern s32 g_ClassResultPlace;
 extern s32 g_LapCount;
-extern s16 g_PauseDebounce;
 typedef enum PrizeScreenState {
     PRIZE_SCREEN_STATE_INVALID = -1,
     PRIZE_SCREEN_STATE_INTRO_FADE_IN,

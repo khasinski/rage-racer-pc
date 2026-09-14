@@ -55,7 +55,6 @@ s32 g_SplitTargetTime;
 s32 g_CameraCarIndex;
 CourseProgressState *g_CourseProgress;
 s32 g_BestTotalTimes[2][4][2];
-s16 g_PauseDebounce;
 s32 g_FrameSyncThreshold;
 s16 g_ReverbZoneDepth;
 s32 g_CdTrackEnded;
@@ -65,7 +64,6 @@ ScoreRecord g_ClassRecords[CLASS_RECORD_COUNT];
 s16 g_TrackZoneCode;
 s32 g_BgmTrackCount;
 s32 g_SectorIndex;
-s16 g_RaceOptionCursor;
 unsigned char g_RankingNameCodes[8];
 s32 g_ClassPromoted;
 /* [series][course][sector], 2 * 4 * 3 signed 32-bit times.  The following

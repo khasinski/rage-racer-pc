@@ -698,7 +698,7 @@ int PortShouldExit(int frame_number) {
     }
     if (RuntimeConfigEnabled("hooks.retire") && g_SceneId == 12) {
         if (retireStep == 0 && g_RacePhase == RACE_PHASE_ACTIVE &&
-            g_PauseDebounce <= 0) {
+            SceneRuntimeCurrent()->state.race.pauseDelay <= 0) {
             g_PadPressed |= PAD_START;
             retireStep = 1;
             retireWait = 0;

@@ -18,6 +18,7 @@
 #include "game/race_scene_internal.h"
 #include "game/screens.h"
 #include "game/scene.h"
+#include "game/scene_runtime.h"
 #include "game/track.h"
 #include "game/track_internal.h"
 #include "psyq/snd.h"
@@ -115,17 +116,17 @@ static s32 UpdateRaceEndState(void) {
 }
 
 /* Returns non-zero when the selected action has already replaced this scene. */
-static s32 UpdateRacePause(void) {
+static s32 UpdateRacePause(RaceScene *state) {
     RacePauseToggleResult toggle;
 
     toggle = DecideRacePauseToggle(
         g_RacePhase, g_RacePaused, (g_PadPressed & PAD_START) != 0,
-        g_PauseDebounce, g_GrandPrixMode, g_RaceOptionCursor);
+        state->pauseDelay, g_GrandPrixMode, state->optionCursor);
     if (!toggle.toggled) {
         return 0;
     }
 
-    g_PauseDebounce = PAUSE_TOGGLE_DEBOUNCE;
+    state->pauseDelay = PAUSE_TOGGLE_DEBOUNCE;
     g_RacePaused = toggle.paused;
     if (toggle.action == RACE_PAUSE_TOGGLE_RENDERER) {
         PortToggleRenderer();
@@ -136,7 +137,7 @@ static s32 UpdateRacePause(void) {
         ResetRaceOptionMenuAnimation();
         PauseCdAudio();
         ForceAllEffectVoicesEnabled(0);
-        g_RaceOptionCursor = 0;
+        state->optionCursor = 0;
         PlaySoundCue(2);
         return 0;
     }
@@ -166,7 +167,7 @@ static s32 UpdateRacePause(void) {
         g_RacePhase = RACE_PHASE_RESTART;
         return 1;
     } else {
-        g_PauseDebounce = PAUSE_RESUME_DEBOUNCE;
+        state->pauseDelay = PAUSE_RESUME_DEBOUNCE;
         ForceAllEffectVoicesEnabled(1);
         if (g_RacePhase >= RACE_PHASE_ACTIVE) {
             ResumeCdAudio();
@@ -180,6 +181,7 @@ int RetireCameraActive(void) {
 }
 
 void EnterRaceScene(void) {
+    RaceScene *state = SceneRuntimeRace();
     s32 course;
     s32 series;
     s32 recordMode;
@@ -244,7 +246,7 @@ void EnterRaceScene(void) {
     SeedRouteScenery();
     InitPathScenery();
     RequestCdTrack(BgmCdTrack(g_BgmTrack));
-    g_PauseDebounce = 0;
+    state->pauseDelay = 0;
     g_RaceFadeTimer = 0;
     InitEffectVoiceRuntime();
     g_RivalCueEnabled = 1;
@@ -285,19 +287,19 @@ static void DrawRaceWorld(s32 animateScenery) {
     PortProfileFramePhase("scene");
 }
 
-static void UpdatePausedRaceScene(void) {
+static void UpdatePausedRaceScene(RaceScene *state) {
     RacePauseCursorResult cursor;
     s32 move;
 
     SetReverbDepth(0x28, 0x28);
     cursor = MoveRacePauseCursor(
-        g_PadPressed, g_RaceOptionCursor, g_GrandPrixMode);
-    g_RaceOptionCursor = cursor.cursor;
+        g_PadPressed, state->optionCursor, g_GrandPrixMode);
+    state->optionCursor = cursor.cursor;
     for (move = 0; move < cursor.moveCount; move++) {
         PlaySoundCue(1);
     }
 
-    DrawRaceOptionMenu(g_RaceOptionCursor);
+    DrawRaceOptionMenu(state->optionCursor);
     if (g_GrandPrixMode == 0) {
         DrawSplitTimes();
     }
@@ -340,7 +342,7 @@ static void UpdatePausedRaceScene(void) {
     DrawRaceWorld(0);
 }
 
-static void UpdateActiveRaceScene(void) {
+static void UpdateActiveRaceScene(RaceScene *state) {
     s32 lapUpdateResult;
     s32 textureSection;
     RaceClockUpdate raceClock;
@@ -361,7 +363,7 @@ static void UpdateActiveRaceScene(void) {
     } else if (raceStart.action == RACE_START_ACTION_BEGIN) {
         BeginCarStandingStart(&g_PlayerCar);
         StartCdAudio();
-        g_PauseDebounce = 0x1E;
+        state->pauseDelay = 0x1E;
     }
 
     if (g_RacePhase < RACE_PHASE_FINISHED) {
@@ -494,6 +496,7 @@ static void UpdateActiveRaceScene(void) {
 }
 
 void UpdateRaceScene(void) {
+    RaceScene *state = SceneRuntimeRace();
     s32 frameStartTimer = NormalizeRaceSceneTimer(g_SceneTimer);
 
     g_SceneTimer = NextRaceSceneTimer(frameStartTimer);
@@ -503,11 +506,11 @@ void UpdateRaceScene(void) {
         DrawFullscreenFadeTile(0xFF - ((g_SceneTimer - 6) * 0xB), 0x49);
     }
 
-    if (g_PauseDebounce > 0) {
-        g_PauseDebounce--;
+    if (state->pauseDelay > 0) {
+        state->pauseDelay--;
     }
 
-    if (UpdateRacePause()) {
+    if (UpdateRacePause(state)) {
         return;
     }
     if (UpdateRaceEndState()) {
@@ -516,8 +519,8 @@ void UpdateRaceScene(void) {
 
     if (g_RacePaused != 0) {
         g_SceneTimer = frameStartTimer;
-        UpdatePausedRaceScene();
+        UpdatePausedRaceScene(state);
     } else {
-        UpdateActiveRaceScene();
+        UpdateActiveRaceScene(state);
     }
 }

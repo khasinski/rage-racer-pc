@@ -24,6 +24,8 @@ static int ContinuesScene(s32 previous, s32 scene) {
         return previous == GAME_SCENE_ENTER_ATTRACT_DEMO;
     case GAME_SCENE_LOST_RACE:
         return previous == GAME_SCENE_ENTER_LOST_RACE;
+    case GAME_SCENE_RACE:
+        return previous == GAME_SCENE_ENTER_RACE;
     default:
         return 0;
     }
@@ -95,6 +97,10 @@ AttractDemo *SceneRuntimeAttractDemo(void) {
 
 LostRace *SceneRuntimeLostRace(void) {
     return &s_runtime.state.lostRace;
+}
+
+RaceScene *SceneRuntimeRace(void) {
+    return &s_runtime.state.race;
 }
 
 const AssetLoadTransaction *SceneRuntimeAssetResult(AssetRequestType request) {
