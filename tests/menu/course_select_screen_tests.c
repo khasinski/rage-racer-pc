@@ -40,8 +40,6 @@ TimedDrawCommand g_CourseSelectTimeAttackScript[1];
 s32 g_GrandPrixClass;
 s16 g_GrandPrixMode;
 s16 g_GrandPrixSeries;
-s32 g_MenuAltLayout;
-s32 g_MenuAltLayoutSetting;
 u8 g_MenuBlankCaption;
 s32 g_MenuConfirmTimer;
 s32 g_MenuHandlerIndex;
@@ -292,7 +290,6 @@ int main(int argc, char **argv) {
         s_courseSelect.classChangeApplied = applied;
         g_CourseIndex = courses[ci];
 
-        g_MenuAltLayoutSetting = 1;
         s_menuWidgets.carNameStep = 4;
         s_menuWidgets.carNameModel = 2;
         g_CarSwapFromIndex = 0;
@@ -426,7 +423,6 @@ int main(int argc, char **argv) {
             s_courseSelect.modalScript = NULL;
             g_MenuSubCursor = 0;
             g_MenuConfirmTimer = 0;
-            g_MenuAltLayoutSetting = 1;
 
             sprintf(label, "== browse held%04x/settle%d/pending%d/allow%d/"
                     "gp%d/course%d", held[hb], settleOffsets[se],
@@ -494,7 +490,6 @@ int main(int argc, char **argv) {
             g_GrandPrixClass = 1;
             g_PlayerMoney = 4321;
             g_GrandPrixSeries = 7;
-            g_MenuAltLayoutSetting = 1;
             s_menuWidgets.carNameStep = 4;
             s_menuWidgets.carNameModel = 2;
             g_CarSwapFromIndex = 0;

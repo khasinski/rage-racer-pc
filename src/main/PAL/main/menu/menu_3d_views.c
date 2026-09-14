@@ -130,11 +130,7 @@ void DrawMenuCarView(void) {
     MulMatrix2(&mtxB, &mtxA);
     MulMatrix2(&g_RenderState.geometry.matrix, &mtxA);
 
-    if (g_MenuAltLayout != 0) {
-        offset = horizontalAngle - 23;
-    } else {
-        offset = horizontalAngle - 52;
-    }
+    offset = horizontalAngle - 52;
     car->x = out.x - offset;
     car->y = viewHeight + 30;
     car->z = -out.z;
@@ -143,8 +139,7 @@ void DrawMenuCarView(void) {
     SelectModelBank(g_CarModelSlot);
     DrawPlayerCarModel(renderObject);
 
-    car->x =
-        (g_MenuAltLayout != 0 ? 23 : 52) - horizontalAngle;
+    car->x = 52 - horizontalAngle;
     car->y = viewHeight + 30;
     DrawShowroomFloor(car, &mtxA);
 }
@@ -221,7 +216,7 @@ void DrawTeamNameCharModel(TeamName *teamName) {
     GameMenuCursorAnim = animation.pendingModel;
 
     viewHeight = AdvanceMenuViewOffset();
-    baseHeight = g_MenuAltLayout != 0 ? 64 : 40;
+    baseHeight = 40;
 
     position.x = 0;
     position.y =

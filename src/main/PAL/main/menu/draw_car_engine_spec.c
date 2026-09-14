@@ -37,8 +37,7 @@ void DrawCarEngineSpec(s32 slide, s32 brightness) {
     s16 torqueY;
     s32 cursorX;
 
-    if (g_MenuAltLayout != 0 || g_CarModelAsset == NULL ||
-        RENDER_OT_BASE == NULL) {
+    if (g_CarModelAsset == NULL || RENDER_OT_BASE == NULL) {
         return;
     }
     ot = RENDER_OT_BASE + 1;

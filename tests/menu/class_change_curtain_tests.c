@@ -5,7 +5,6 @@
 #include <limits.h>
 #include <stdio.h>
 
-s32 g_MenuAltLayout;
 GameRenderState g_RenderState;
 
 typedef struct SolidRectCall {
@@ -96,13 +95,8 @@ int main(void) {
     CHECK(CheckPanel(1, 480) == 0);
 
     ResetDraws();
-    g_MenuAltLayout = 1;
-    CHECK(DrawClassChangeCurtain(&screen, 3) == 3);
-    CHECK(s_rectCount == 0);
-
-    g_MenuAltLayout = 0;
     g_RenderState.draw.orderingTable = NULL;
-    CHECK(DrawClassChangeCurtain(&screen, 3) == 6);
+    CHECK(DrawClassChangeCurtain(&screen, 3) == 3);
     CHECK(s_rectCount == 0);
 
     puts("class change curtain tests passed");

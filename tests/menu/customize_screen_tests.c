@@ -26,8 +26,6 @@ s32 GameMenuBusy;
 CarModelAsset *g_CarModelAsset;
 CarEntry *g_CarTable;
 s16 g_GrandPrixMode;
-s32 g_MenuAltLayout;
-s32 g_MenuAltLayoutSetting;
 s32 g_MenuConfirmTimer;
 s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;

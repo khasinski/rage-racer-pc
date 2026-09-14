@@ -8,7 +8,6 @@ enum {
     PAINT_PALETTE_LAST_FRAME = 10,
     PAINT_PALETTE_COMPLETE = 25,
     PAINT_PALETTE_X = 0x9E,
-    PAINT_PALETTE_WIDE_OFFSET = 0x2C,
     PAINT_SWATCH_WIDTH = 8,
 };
 
@@ -41,9 +40,6 @@ s32 DrawPaintColorPalette(PaintColor *paint, s32 *counter, s32 step) {
         }
 
         x = PAINT_PALETTE_X;
-        if (g_MenuAltLayout != 0) {
-            x -= PAINT_PALETTE_WIDE_OFFSET;
-        }
         y = 0x20B - frame * 15;
 
         highlight =

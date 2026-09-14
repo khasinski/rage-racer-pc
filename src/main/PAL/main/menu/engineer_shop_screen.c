@@ -210,7 +210,6 @@ void UpdateEngineerShopScreen(void) {
     ShopPrice price;
     s32 assetIndex;
 
-    g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawCarNamePlate(MenuWidgetState());
     DrawMenuCarView();
     MenuWidgetState()->carNameModel = g_PlayerCarIndex;

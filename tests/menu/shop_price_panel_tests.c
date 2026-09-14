@@ -3,7 +3,6 @@
 #include "game/render_state.h"
 
 #include <stdio.h>
-s32 g_MenuAltLayout;
 GameRenderState g_RenderState;
 
 typedef struct DrawRecord {
@@ -94,11 +93,6 @@ static int CheckPanel(void (*draw)(s32, s32, s32), s32 captionWidth,
     CHECK(s_records[6].kind == 3 && s_records[6].y == 142);
     CHECK(s_records[7].kind == 3 && s_records[7].y == 182);
 
-    s_recordCount = 0;
-    g_MenuAltLayout = 1;
-    draw(-30, 100, 50);
-    CHECK(s_recordCount == 0);
-    g_MenuAltLayout = 0;
     return 0;
 }
 

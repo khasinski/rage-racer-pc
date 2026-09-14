@@ -148,8 +148,7 @@ void DrawCarSpecGraph(CarSpecGraph *graph, u32 tireGrade) {
     if (floorProgress < 0) {
         floorProgress = 0;
     }
-    if (graph->progress == 0 || g_MenuAltLayout != 0 ||
-        RENDER_OT_BASE == NULL) {
+    if (graph->progress == 0 || RENDER_OT_BASE == NULL) {
         return;
     }
 

@@ -153,7 +153,6 @@ void UpdatePaintColorScreen(void) {
         paint->cursor, 0, 0, PAINT_COLOR_OPTION_COUNT - 1);
     paint->selected = AddClampedMenuValue(
         paint->selected, 0, 0, MENU_PAINT_COLOR_COUNT - 1);
-    g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawMenuCarView();
     if (state == PAINT_COLOR_IDLE) {
         UpdatePaintColorIdle(paint);

@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <limits.h>
 
-s32 g_MenuAltLayout;
 static CarModelAsset s_model;
 CarModelAsset *g_CarModelAsset = &s_model;
 GameRenderState g_RenderState;
@@ -103,12 +102,13 @@ int main(void) {
     graph.bars[1] = 3;
     graph.bars[2] = 1;
     graph.bars[3] = 0;
-    g_MenuAltLayout = 1;
+    RENDER_OT_BASE = NULL;
     DrawGraph(&graph, 1, 2);
     CHECK(graph.progress == 1);
     CHECK(graph.bars[0] == 1 && graph.bars[1] == 2);
     CHECK(graph.bars[2] == 1 && graph.bars[3] == 1);
     CHECK(s_spriteCount == 0 && s_quadCount == 0);
+    RENDER_OT_BASE = orderingTable;
 
     DrawGraph(&graph, -5, 5);
     CHECK(graph.progress == 0);
@@ -122,7 +122,6 @@ int main(void) {
     graph.bars[2] = 30;
     graph.bars[3] = 50;
     graph.progress = 95;
-    g_MenuAltLayout = 0;
     DrawGraph(&graph, 10, 2);
     CHECK(graph.progress == 96);
     CHECK(s_spriteCount == 8);
@@ -138,7 +137,6 @@ int main(void) {
     graph.bars[1] = INT_MIN;
     graph.bars[2] = 2;
     graph.bars[3] = INT_MAX;
-    g_MenuAltLayout = 1;
     DrawGraph(&graph, INT_MAX, 5);
     CHECK(graph.progress == 96);
     CHECK(graph.bars[0] == 95 && graph.bars[1] == 0);

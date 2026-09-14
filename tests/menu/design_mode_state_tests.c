@@ -25,8 +25,6 @@ void MenuBeginExit(s32 screen) {
 
 u8 g_DesignModeCellMask[6][6];
 s32 g_DesignModeOption;
-s32 g_MenuAltLayout;
-s32 g_MenuAltLayoutSetting;
 s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuOverlayPattern;

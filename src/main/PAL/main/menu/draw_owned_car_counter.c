@@ -23,7 +23,7 @@ void DrawOwnedCarCounter(MenuWidgets *widgets, s32 direction, s32 ownedCount) {
     }
 
     frame = widgets->ownedCarCounter - OWNED_CAR_COUNTER_DRAW_START;
-    if (frame >= 0 && g_MenuAltLayout == 0 && RENDER_OT_BASE != NULL) {
+    if (frame >= 0 && RENDER_OT_BASE != NULL) {
         s32 y;
         u32 displayedCount;
 

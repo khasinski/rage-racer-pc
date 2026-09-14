@@ -99,7 +99,6 @@ static void ResetMenuNavigation(void) {
     MenuWidgetState()->lowerAltPanelStep = 0;
     MenuWidgetState()->timeAttackStep = 0;
     MenuWidgetState()->hintButtonsVisible = 1;
-    g_MenuAltLayoutSetting = 0;
     g_CarShopUnlockAll = 0;
     MenuCarSelect()->cursor = 0;
     g_DesignModeOption = 0;

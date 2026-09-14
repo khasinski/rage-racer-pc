@@ -21,8 +21,6 @@ void MenuBeginExit(s32 screen) {
 s32 GameMenuBusy;
 s32 GameMenuCursor;
 s32 GameMenuCursorAnim;
-s32 g_MenuAltLayout;
-s32 g_MenuAltLayoutSetting;
 s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuOverlayPattern;

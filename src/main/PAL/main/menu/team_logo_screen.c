@@ -240,7 +240,6 @@ void UpdateTeamLogoScreen(void) {
         g_MenuConfirmTimer = AddClampedMenuValue(
             g_MenuConfirmTimer, 0, 0, TEAM_LOGO_SAVE_CONFIRM_FRAMES);
     }
-    g_MenuAltLayout = 0;
     if (state == TEAM_LOGO_IDLE) {
         UpdateTeamLogoIdle(logo);
     } else if (state >= TEAM_LOGO_PAINT_CLOSING &&

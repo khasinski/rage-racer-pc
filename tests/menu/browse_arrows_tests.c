@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <limits.h>
 
-s32 g_MenuAltLayout;
 GameRenderState g_RenderState;
 
 typedef struct DrawRecord {
@@ -95,10 +94,9 @@ int main(void) {
     CHECK(s_highlightCount == 1 && s_highlights[0].x == 72);
 
     ResetDraws();
-    g_MenuAltLayout = 1;
     arrows.fade = 25;
     DrawBrowseArrows(&arrows, 1, 0, 1, 1);
-    CHECK(s_sprites[0].x == 72 && s_sprites[0].y == 0x119);
+    CHECK(s_sprites[0].x == 159 && s_sprites[0].y == 0x119);
     CHECK(s_sprites[1].x == 287 && s_sprites[1].y == 0x119);
 
     ResetDraws();
@@ -107,7 +105,6 @@ int main(void) {
     CHECK(arrows.fade == 10 && s_spriteCount == 0);
 
     ResetDraws();
-    g_MenuAltLayout = 0;
     arrows.fade = INT_MAX;
     arrows.pulsePhase = INT_MAX;
     DrawBrowseArrows(&arrows, INT_MAX, 0, 1, 1);

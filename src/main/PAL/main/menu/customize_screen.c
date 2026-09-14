@@ -262,7 +262,6 @@ void UpdateCustomizeScreen(void) {
     const TimedDrawCommand *cmdList;
 
     ot = RENDER_OT_BASE;
-    g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawCarNamePlate(MenuWidgetState());
     DrawMenuCarView();
     exitOption = g_GrandPrixMode != 0 ? CUSTOMIZE_OPTION_EXIT

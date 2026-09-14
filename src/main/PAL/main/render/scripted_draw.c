@@ -202,13 +202,6 @@ void DrawTimedDrawScript(const TimedDrawCommand *commands, s32 progress) {
             if (type < 40) {
                 switch (type) {
                 case 9:
-                    if (g_MenuAltLayout != 0) {
-                        break;
-                    }
-                    DrawScriptedSprite(
-                        remaining, cmd->shape.spriteShape,
-                        cmd->motion.spriteMotion, type);
-                    break;
                 case 0:
                 case 1:
                     DrawScriptedSprite(
@@ -216,36 +209,17 @@ void DrawTimedDrawScript(const TimedDrawCommand *commands, s32 progress) {
                         cmd->motion.spriteMotion, type);
                     break;
                 case 19:
-                    if (g_MenuAltLayout != 0) {
-                        break;
-                    }
-                    DrawScriptedLine(
-                        remaining, cmd->shape.lineShape, cmd->motion.lineMotion);
-                    break;
                 case 10:
                     DrawScriptedLine(
                         remaining, cmd->shape.lineShape, cmd->motion.lineMotion);
                     break;
                 case 29:
-                    if (g_MenuAltLayout != 0) {
-                        break;
-                    }
-                    DrawScriptedTriangle(
-                        remaining, cmd->shape.triangleShape,
-                        cmd->motion.triangleMotion);
-                    break;
                 case 20:
                     DrawScriptedTriangle(
                         remaining, cmd->shape.triangleShape,
                         cmd->motion.triangleMotion);
                     break;
                 case 39:
-                    if (g_MenuAltLayout != 0) {
-                        break;
-                    }
-                    DrawScriptedQuad(
-                        remaining, cmd->shape.quadShape, cmd->motion.quadMotion);
-                    break;
                 case 30:
                     DrawScriptedQuad(
                         remaining, cmd->shape.quadShape, cmd->motion.quadMotion);

@@ -202,7 +202,6 @@ void UpdateDesignModeScreen(void) {
     g_DesignModeOption = AddClampedMenuValue(
         g_DesignModeOption, 0, DESIGN_MODE_OPTION_LOGO,
         DESIGN_MODE_OPTION_COUNT - 1);
-    g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawMenuCarView();
 
     if (GameMenuBusy == DESIGN_MODE_IDLE) {

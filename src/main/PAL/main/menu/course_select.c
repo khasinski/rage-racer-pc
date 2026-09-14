@@ -28,10 +28,6 @@ s32 DrawCourseSelectScreen(s32 *progress, s32 step) {
     *progress = scroll.progress;
     slide = scroll.slide;
 
-    if (g_MenuAltLayout != 0) {
-        return *progress;
-    }
-
     /* The reset and alternate-layout paths do not draw.  Resolve the
      * ordering-table layer only once we know this frame needs it, so those
      * paths remain valid before the renderer has installed an OT. */

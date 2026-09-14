@@ -126,7 +126,6 @@ void UpdateTeamNameScreen(void) {
     if (GameMenuCursorAnim >= 0) {
         GameMenuCursorAnim = NormalizeTeamNameCursor(GameMenuCursorAnim);
     }
-    g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawTeamNameCharModel(teamName);
     if (state == TEAM_NAME_IDLE) {
         UpdateTeamNameIdle(teamName);

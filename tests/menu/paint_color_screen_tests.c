@@ -23,8 +23,6 @@ s32 GameMenuBusy;
 static CarEntry s_cars[13];
 CarEntry *g_CarTable = s_cars;
 CarEntry g_TimeAttackCars[13];
-s32 g_MenuAltLayout;
-s32 g_MenuAltLayoutSetting;
 s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuOverlayPattern;

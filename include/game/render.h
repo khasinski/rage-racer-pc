@@ -354,8 +354,9 @@ extern s32 g_FadeStep;
  * Timed draw script: a table of {time, type, shape, motion} entries replayed
  * against a progress counter, terminated by time < 0. Element types 0/1/9 draw
  * a sprite, 10/19 a line, 20/29 a triangle and 30/39 a textured quad; the +9
- * variants are skipped while g_MenuAltLayout is set. Each element interpolates its
- * position from a packed s16 velocity pair by (elapsed * velocity) >> 5.
+ * variants use the same shape with a separate command type. Each element
+ * interpolates its position from a packed s16 velocity pair by
+ * (elapsed * velocity) >> 5.
  * Returns 1 once the progress counter has reached the terminator's limit.
  */
 s32 RunTimedDrawScript(

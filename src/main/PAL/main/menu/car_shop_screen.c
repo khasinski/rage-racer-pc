@@ -231,7 +231,6 @@ void UpdateCarShop(CarShop *shop) {
     ShopPrice price;
     s32 assetIndex;
 
-    g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawMenuAltPanel(MenuWidgetState());
     DrawCarNamePlate(MenuWidgetState());
     DrawMenuCarView();

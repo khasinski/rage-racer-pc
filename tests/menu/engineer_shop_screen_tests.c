@@ -46,8 +46,6 @@ s32 g_CarTuneUpPriceTable[CAR_TUNE_UP_PRICE_COUNT];
 TimedDrawCommand g_EngineerShopNoFundsScript[2];
 TimedDrawCommand g_EngineerShopScreenScript[68];
 TimedDrawCommand g_EngineerShopTuneUpPromptScript[5];
-s32 g_MenuAltLayout;
-s32 g_MenuAltLayoutSetting;
 u8 g_MenuBlankCaption;
 s32 g_MenuConfirmTimer;
 s32 g_MenuHandlerIndex;
@@ -244,7 +242,7 @@ int main(int argc, char **argv) {
      * What the shop did before it was taken apart. Run the test with a file
      * name to write the sweep out and diff two runs.
      */
-    static const unsigned long expected = 3796990581UL;
+    static const unsigned long expected = 1179724149UL;
     static const s32 busyStates[] = {0, -1, -2, -3, 1, 2};
     static const u16 buttons[] = {0, PAD_UP, PAD_DOWN, PAD_CONFIRM, PAD_CANCEL,
                                   PAD_LEFT, PAD_RIGHT};
@@ -301,7 +299,6 @@ int main(int argc, char **argv) {
         g_PlayerMoney = g_CarTuneUpPriceTable[cars[ci] & 7] + (rich - 1);
         g_MenuConfirmTimer = timer;
 
-        g_MenuAltLayoutSetting = 1;
         s_menuWidgets.carNameStep = 4;
         s_menuWidgets.carNameModel = 0;
         g_CarSwapFromIndex = 0;
@@ -342,7 +339,7 @@ int main(int argc, char **argv) {
             Record("state", after, 14);
             RECORD("car", s_cars[cars[ci]].modelVariant,
                    g_TimeAttackCars[cars[ci]].modelVariant, g_UiScriptProgress,
-                   s_menuWidgets.carNameModel, g_MenuAltLayout);
+                   s_menuWidgets.carNameModel, 0);
         }
         steps++;
     }

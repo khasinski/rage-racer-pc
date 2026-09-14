@@ -7,7 +7,7 @@ enum {
 
 static void DrawUpperAltPanel(GameOrderingTableEntry *ot, s32 progress) {
     const s32 verticalOffset = (progress - 1) * 2;
-    const s32 left = g_MenuAltLayout != 0 ? 0x69 : 0xA8;
+    const s32 left = 0xA8;
     const s32 right = left + 0x1C;
     const s32 top = 0x9E - verticalOffset;
     const s32 bottom = 0x9F + verticalOffset;
@@ -19,7 +19,7 @@ static void DrawUpperAltPanel(GameOrderingTableEntry *ot, s32 progress) {
 
 static void DrawLowerAltPanel(GameOrderingTableEntry *ot, s32 progress) {
     const s32 verticalOffset = progress - 1;
-    const s32 left = g_MenuAltLayout != 0 ? 0x92 : 0xC0;
+    const s32 left = 0xC0;
     const s32 right = left + 0x4E;
     const s32 top = 0x128 - verticalOffset;
     const s32 bottom = 0x128 + progress;

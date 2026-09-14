@@ -442,7 +442,6 @@ static void UpdateCourseSelect(CourseSelectScreen *screen) {
     GameOrderingTableEntry *ot = RENDER_OT_BASE;
     s32 state = GameMenuBusy;
 
-    g_MenuAltLayout = g_MenuAltLayoutSetting;
     if (g_GrandPrixMode != 0) {
         UpdateAndDrawCourseCard(screen);
     } else {

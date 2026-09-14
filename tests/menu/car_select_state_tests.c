@@ -17,8 +17,6 @@ void MenuActivateScreen(s32 screen) {
 static CarEntry s_cars[GAME_CAR_COUNT];
 CarEntry *g_CarTable = s_cars;
 u32 g_CarModelSlot;
-s32 g_MenuAltLayout;
-s32 g_MenuAltLayoutSetting;
 s32 g_MenuScreen;
 s16 g_NextOwnedCarIndex;
 s32 g_PlayerCarIndex;
@@ -90,10 +88,9 @@ int main(void) {
     g_CarTable = s_cars;
     g_PlayerCarIndex = 10;
 
-    g_MenuAltLayoutSetting = 3;
     g_UiScriptProgress = 99;
     EnterCarSelectScreen();
-    CHECK(g_MenuAltLayout == 3 && g_MenuScreen == 4);
+    CHECK(g_MenuScreen == 4);
     CHECK(g_UiScriptProgress == 0 && s_installCalls == 1);
     CHECK(s_namePlateCalls == 1 && s_carViewCalls == 1);
     CHECK(s_lightBurstStep == -9);

@@ -28,8 +28,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-s32 g_MenuAltLayout;
-
 static unsigned long s_digest = 2166136261UL;
 static int s_calls;
 static FILE *s_out;
@@ -342,8 +340,8 @@ int main(void) {
     static const s32 progresses[] = {-4, 0, 1, 2, 4, 8, 16, 24, 31, 32, 40};
     static const s32 steps[] = {-8, -1, 0, 1, 3, 8, 40};
     static const s32 limits[] = {0, 1, 32, 33};
-    static const unsigned long expected = 732887165UL;
-    int pi, si, li, alt;
+    static const unsigned long expected = 3924841700UL;
+    int pi, si, li;
     int states = 0;
 
     g_RenderState.draw.orderingTable = orderingTable;
@@ -354,16 +352,14 @@ int main(void) {
 
     for (pi = 0; pi < (int)(sizeof(progresses) / sizeof(progresses[0])); pi++)
     for (si = 0; si < (int)(sizeof(steps) / sizeof(steps[0])); si++)
-    for (li = 0; li < (int)(sizeof(limits) / sizeof(limits[0])); li++)
-    for (alt = 0; alt < 2; alt++) {
+    for (li = 0; li < (int)(sizeof(limits) / sizeof(limits[0])); li++) {
         char label[128];
         s32 progress = progresses[pi];
         s32 result;
 
         BuildScript(limits[li]);
-        g_MenuAltLayout = alt;
-        sprintf(label, "== progress%d/step%d/limit%d/alt%d", progresses[pi],
-                steps[si], limits[li], alt);
+        sprintf(label, "== progress%d/step%d/limit%d", progresses[pi],
+                steps[si], limits[li]);
         Record(label, NULL, 0);
         result = RunTimedDrawScript(s_script, &progress, steps[si]);
         RECORD("after", result, progress);

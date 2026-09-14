@@ -142,7 +142,6 @@ void UpdateLogoSampleScreen(void) {
         logo->background, 0, 0, TEAM_LOGO_SAMPLE_CHOICE_COUNT - 1);
     logo->saved = AddClampedMenuValue(
         logo->saved, 0, 0, TEAM_LOGO_SAMPLE_CHOICE_COUNT - 1);
-    g_MenuAltLayout = 0;
     ComposeSampleTeamLogo(teamLogo, logo->character, logo->background);
     DrawTeamLogoCanvas(teamLogo, 1, 0);
 

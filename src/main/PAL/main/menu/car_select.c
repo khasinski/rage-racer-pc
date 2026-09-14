@@ -23,7 +23,6 @@ void UpdateOwnedCarNeighbours(void) {
 }
 
 void EnterCarSelectScreen(void) {
-    g_MenuAltLayout = g_MenuAltLayoutSetting;
     ActivateShowroomCarModel((s32)g_CarModelSlot);
     MenuActivateScreen(MENU_SCREEN_CAR_SELECT);
     g_UiScriptProgress = 0;

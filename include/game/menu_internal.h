@@ -466,7 +466,6 @@ MenuClassPromptOutcome DecideClassPrompt(u16 pressed, s32 busy,
                                          s32 changeApplied);
 
 extern Rgb g_PaintColorTable[MENU_PAINT_COLOR_COUNT];
-extern s32 g_MenuAltLayout;
 extern u16 g_TeamLogoClut[16];
 extern TeamLogoCanvas g_TeamLogoCanvas;
 extern const s16 g_MenuLightBurstBandX[MENU_LIGHT_BURST_RAY_COUNT];

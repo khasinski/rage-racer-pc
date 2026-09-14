@@ -35,9 +35,7 @@ s32 DrawClassChangeCurtain(CourseSelectScreen *screen, s32 step) {
             CLASS_CHANGE_CURTAIN_MAX_SLIDE);
     }
 
-    if (g_MenuAltLayout == 0) {
-        DrawClassChangeCurtainPanels(screen->curtainSlide);
-    }
+    DrawClassChangeCurtainPanels(screen->curtainSlide);
 
     if (step > 0) {
         screen->curtainSlide = AddClampedMenuValue(

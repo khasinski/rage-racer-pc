@@ -250,16 +250,6 @@ extern s32 g_MenuOverlayPattern;
 /* Debug/status phase code written through an asset-load state machine. */
 extern s32 GameMenuLoadPhase;
 
-/*
- * Alternate menu layout. The garage screens copy the setting into the live
- * flag on entry, RANKING / TEAM LOGO / LOGO SAMPLE force it to 0. Non-zero
- * pulls the 3D car view back (40 -> 64), shifts the HUD left by 0x2C, widens
- * the bottom bar and makes DrawScriptedSprite skip element types 9/19/29/39.
- * The setting is only ever written 0, so the layout is unreachable in retail.
- */
-extern s32 g_MenuAltLayout;
-extern s32 g_MenuAltLayoutSetting;
-
 /* The two RaceRecord[series][course][5] high-score tables kept in the save block:
  * race ranking (+0x9A4) and time ranking (+0x8DC). */
 extern RaceRecord g_RankingRecords[][4][5];

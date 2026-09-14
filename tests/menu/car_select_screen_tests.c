@@ -40,8 +40,6 @@ TimedDrawCommand g_EngineerShopUnavailableScript[3];
 s32 g_GrandPrixClass;
 s16 g_GrandPrixMode;
 s16 g_GrandPrixSeries;
-s32 g_MenuAltLayout;
-s32 g_MenuAltLayoutSetting;
 s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
 
@@ -215,7 +213,7 @@ int main(int argc, char **argv) {
     /* Direction reversal now rebases by a full revolution. A differential
      * sweep with angles reduced modulo 600000 retains the old call/state
      * digest; only the unwrapped animation angle changes. */
-    static const unsigned long expected = 2587280085UL;
+    static const unsigned long expected = 1551541317UL;
     static const s32 busyStates[] = {0, -1, 1, 2, 3, 4, 5};
     static const u16 buttons[] = {0, PAD_UP, PAD_DOWN, PAD_CONFIRM, PAD_CANCEL};
     /* Both directions at once is unreachable on a d-pad but not in the
@@ -292,7 +290,6 @@ int main(int argc, char **argv) {
         g_MenuViewOffset = offsets[off];
         s_outgoingProgress = off;
 
-        g_MenuAltLayoutSetting = 1;
         s_menuWidgets.carNameStep = 4;
         s_carSpecGraph.step = 1;
         s_menuWidgets.carNameModel = 2;
@@ -351,7 +348,7 @@ int main(int argc, char **argv) {
             after[18] = g_GrandPrixSeries;
             after[19] = s_menuWidgets.timeAttackStep;
             after[20] = ScriptId(s_carSelect.popupScript);
-            after[21] = g_MenuAltLayout;
+            after[21] = 0;
             Record("state", after, 22);
             RECORD("saved", s_progress.course, s_progress.carIndex,
                    s_progress.classIndex, s_progress.money);

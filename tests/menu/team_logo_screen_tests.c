@@ -23,7 +23,6 @@ void MenuBeginExit(s32 screen) {
 }
 
 s32 GameMenuBusy;
-s32 g_MenuAltLayout;
 s32 g_MenuConfirmTimer;
 s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;

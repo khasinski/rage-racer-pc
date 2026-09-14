@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <string.h>
 
-s32 g_MenuAltLayout;
 static CarModelAsset s_model;
 CarModelAsset *g_CarModelAsset = &s_model;
 GameRenderState g_RenderState;
@@ -71,11 +70,6 @@ int main(void) {
     s_model.maxTorqueFraction = 3;
     s_model.maxTorqueRpm = 4500;
 
-    g_MenuAltLayout = 1;
-    DrawCarEngineSpec(7, 300);
-    CHECK(s_recordCount == 0);
-
-    g_MenuAltLayout = 0;
     DrawCarEngineSpec(7, 300);
     CHECK(s_recordCount == 16);
     CHECK(s_records[0].kind == 'S' && s_records[0].x == 0xA1 &&

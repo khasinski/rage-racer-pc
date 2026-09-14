@@ -38,9 +38,8 @@ void DrawBrowseArrows(BrowseArrows *arrows, s32 step, s32 courseLayout,
                                            BROWSE_ARROWS_FADE_MAX);
     }
 
-    halfWidth = courseLayout != 0 || g_MenuAltLayout != 0
-                    ? BROWSE_ARROWS_WIDE_HALF_WIDTH
-                    : BROWSE_ARROWS_COMPACT_HALF_WIDTH;
+    halfWidth = courseLayout != 0 ? BROWSE_ARROWS_WIDE_HALF_WIDTH
+                                  : BROWSE_ARROWS_COMPACT_HALF_WIDTH;
     y = courseLayout != 0 ? BROWSE_ARROWS_COURSE_Y
                           : BROWSE_ARROWS_COMPACT_Y;
     slidePhase = arrows->fade - BROWSE_ARROWS_VISIBLE_AT;

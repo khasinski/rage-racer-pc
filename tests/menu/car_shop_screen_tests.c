@@ -65,8 +65,6 @@ TimedDrawCommand g_CarShopScreenScript[9];
 s32 g_CarSwapFromIndex;
 s32 g_CarSwapToIndex;
 CarEntry *g_CarTable;
-s32 g_MenuAltLayout;
-s32 g_MenuAltLayoutSetting;
 u8 g_MenuBlankCaption;
 s32 g_MenuConfirmTimer;
 s32 g_MenuHandlerIndex;
@@ -222,7 +220,7 @@ int main(int argc, char **argv) {
      */
     /* Shared turntable reversal fix: the differential sweep is unchanged
      * when the animation angle is reduced modulo one full revolution. */
-    static const unsigned long expected = 3007458141UL;
+    static const unsigned long expected = 195901629UL;
     static const s32 busyStates[] = {0, -1, -2, -3, 1, 2};
     static const u16 buttons[] = {0, PAD_UP, PAD_DOWN, PAD_CONFIRM, PAD_CANCEL,
                                   0x8000, 0x0080, 0x0010};
@@ -308,7 +306,6 @@ int main(int argc, char **argv) {
         g_PlayerMoney = rich ? 1000000 : 0;
         g_MenuConfirmTimer = timer;
 
-        g_MenuAltLayoutSetting = 1;
         s_menuWidgets.carNameStep = 4;
         s_menuWidgets.carNameModel = 2;
         g_CarSwapFromIndex = 0;
@@ -354,7 +351,7 @@ int main(int argc, char **argv) {
             Record("state", after, 18);
             RECORD("owned", s_cars[cars[ci]].enabled,
                    g_TimeAttackCars[cars[ci]].enabled, g_UiScriptProgress,
-                   s_menuWidgets.carNameModel, g_MenuAltLayout);
+                   s_menuWidgets.carNameModel, 0);
         }
         steps++;
     }

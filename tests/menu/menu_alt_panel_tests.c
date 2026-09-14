@@ -5,7 +5,6 @@
 #include <limits.h>
 #include <stdio.h>
 
-s32 g_MenuAltLayout;
 static MenuWidgets s_widgets;
 
 static void DrawPanel(s32 upperStep, s32 lowerStep) {
@@ -110,12 +109,11 @@ int main(void) {
     CHECK(s_calls[0].clut == 0x259);
 
     ResetCalls();
-    g_MenuAltLayout = 1;
     s_widgets.upperAltPanel = 1;
     s_widgets.lowerAltPanel = 1;
     DrawPanel(INT_MAX, INT_MAX);
     CHECK(s_callCount == 2);
-    CHECK(s_calls[0].x[0] == 0x69 && s_calls[1].x[0] == 0x92);
+    CHECK(s_calls[0].x[0] == 0xA8 && s_calls[1].x[0] == 0xC0);
     CHECK(s_widgets.upperAltPanel == 14);
     CHECK(s_widgets.lowerAltPanel == 16);
 

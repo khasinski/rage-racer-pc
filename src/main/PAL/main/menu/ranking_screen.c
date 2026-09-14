@@ -94,7 +94,6 @@ void UpdateRankingScreen(void) {
     Ranking *ranking = MenuRanking();
     RankingScreenState state;
 
-    g_MenuAltLayout = 0;
     ranking->cursor = AddClampedMenuValue(
         ranking->cursor, 0, 0, RANKING_OPTION_COUNT - 1);
     DrawMenuCourseView(MenuCourseSelect());

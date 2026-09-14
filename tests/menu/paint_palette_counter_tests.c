@@ -8,7 +8,6 @@
 #include <limits.h>
 
 Rgb g_PaintColorTable[MENU_PAINT_COLOR_COUNT];
-s32 g_MenuAltLayout;
 static MenuWidgets s_widgets;
 GameRenderState g_RenderState;
 
@@ -156,9 +155,8 @@ int main(void) {
 
     ResetDraws();
     progress = 25;
-    g_MenuAltLayout = 1;
     CHECK(DrawPalette(&paint, &progress, 0, 17) == 1);
-    CHECK(s_outlines[0].x == 0xF8 && s_outlines[0].y == 0x175);
+    CHECK(s_outlines[0].x == 0x124 && s_outlines[0].y == 0x175);
     CHECK(progress == 25);
 
     ResetDraws();
@@ -182,7 +180,6 @@ int main(void) {
     g_RenderState.draw.orderingTable = orderingTable;
 
     ResetDraws();
-    g_MenuAltLayout = 0;
     DrawOwnedCarCounter(&s_widgets, 0, 9);
     CHECK(s_widgets.ownedCarCounter == 0 && s_spriteCount == 0);
 
@@ -200,9 +197,8 @@ int main(void) {
     CHECK(s_numberY == 0xBD && s_buttonY == 0xB3);
 
     ResetDraws();
-    g_MenuAltLayout = 1;
     DrawOwnedCarCounter(&s_widgets, -1, 13);
-    CHECK(s_widgets.ownedCarCounter == 24 && s_numberCount == 0);
+    CHECK(s_widgets.ownedCarCounter == 24 && s_numberCount == 2);
 
     s_widgets.ownedCarCounter = INT_MAX;
     DrawOwnedCarCounter(&s_widgets, INT_MAX, 13);
@@ -212,7 +208,6 @@ int main(void) {
     CHECK(s_widgets.ownedCarCounter == 0);
 
     ResetDraws();
-    g_MenuAltLayout = 0;
     s_widgets.ownedCarCounter = 11;
     DrawOwnedCarCounter(&s_widgets, 1, -10);
     CHECK(s_firstNumber == 0);
