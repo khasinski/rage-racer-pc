@@ -245,7 +245,6 @@ FontGlyph g_LargeFontGlyphs[LARGE_FONT_GLYPH_COUNT] = {
     {.u = 0x00, .v = 0x18, .width = 8},
     {.u = 0x80, .v = 0x28, .width = 8},
 };
-s32 g_MenuOverlayPatternAnimFrame = 2;
 s32 g_MenuRowFlashLevels[5];
 /* Eight consecutive s16 coordinates.  The seven D_* labels in the symbol
  * map are interior halfwords of this array, not independent globals. */

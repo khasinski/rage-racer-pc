@@ -11,28 +11,25 @@ enum {
     PATTERN_FOOTER_BLOCKS = 16,
 };
 
+static s32 s_animationFrame = PATTERN_ANIMATION_FIRST_FRAME;
+
 static const MenuOverlayPatternFrame *AnimatedPatternFrame(void) {
     const MenuOverlayPatternFrame *candidate;
 
-    if (g_MenuOverlayPatternAnimFrame < PATTERN_ANIMATION_FIRST_FRAME ||
-        g_MenuOverlayPatternAnimFrame >= MENU_OVERLAY_PATTERN_FRAME_COUNT) {
-        g_MenuOverlayPatternAnimFrame = PATTERN_ANIMATION_FIRST_FRAME;
-    }
-
     if ((g_AnimTimer % PATTERN_ANIMATION_PERIOD) == 0) {
-        if (g_MenuOverlayPatternAnimFrame <
+        if (s_animationFrame <
             MENU_OVERLAY_PATTERN_FRAME_COUNT - 1) {
-            g_MenuOverlayPatternAnimFrame++;
+            s_animationFrame++;
         } else {
-            g_MenuOverlayPatternAnimFrame = PATTERN_ANIMATION_FIRST_FRAME;
+            s_animationFrame = PATTERN_ANIMATION_FIRST_FRAME;
         }
     }
 
-    candidate = &g_MenuOverlayPatternTable[g_MenuOverlayPatternAnimFrame];
+    candidate = &g_MenuOverlayPatternTable[s_animationFrame];
     if (candidate->rows[MENU_OVERLAY_PATTERN_ROW_COUNT - 1] != 0) {
-        g_MenuOverlayPatternAnimFrame = PATTERN_ANIMATION_FIRST_FRAME;
+        s_animationFrame = PATTERN_ANIMATION_FIRST_FRAME;
     }
-    return &g_MenuOverlayPatternTable[g_MenuOverlayPatternAnimFrame];
+    return &g_MenuOverlayPatternTable[s_animationFrame];
 }
 
 void DrawBitPatternOverlay(s32 pattern) {

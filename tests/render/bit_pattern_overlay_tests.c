@@ -7,7 +7,6 @@
 GameRenderState g_RenderState;
 MenuOverlayPatternFrame
     g_MenuOverlayPatternTable[MENU_OVERLAY_PATTERN_FRAME_COUNT];
-s32 g_MenuOverlayPatternAnimFrame;
 s32 g_AnimTimer;
 
 typedef struct SpriteCall {
@@ -70,41 +69,16 @@ int main(void) {
     CHECK(s_drawModeOt == s_ot + 1);
 
     s_callCount = 0;
-    g_MenuOverlayPatternAnimFrame = 2;
     g_AnimTimer = 6;
     g_MenuOverlayPatternTable[3].rows[0] = 0x80;
     DrawBitPatternOverlay(-1);
-    CHECK(g_MenuOverlayPatternAnimFrame == 3);
     CHECK(s_callCount == 17);
     CHECK(s_calls[0].x == 0x22 && s_calls[0].y == 0x150);
 
     s_callCount = 0;
-    g_MenuOverlayPatternAnimFrame = 2;
-    g_MenuOverlayPatternTable[3].rows[7] = 1;
-    DrawBitPatternOverlay(-1);
-    CHECK(g_MenuOverlayPatternAnimFrame == 2);
-    CHECK(s_callCount == 16);
-
-    s_callCount = 0;
-    g_AnimTimer = 1;
-    g_MenuOverlayPatternAnimFrame = -1;
+    g_MenuOverlayPatternTable[4].rows[7] = 1;
     g_MenuOverlayPatternTable[2].rows[0] = 0x80;
     DrawBitPatternOverlay(-1);
-    CHECK(g_MenuOverlayPatternAnimFrame == 2);
-    CHECK(s_callCount == 17);
-
-    s_callCount = 0;
-    g_AnimTimer = 6;
-    g_MenuOverlayPatternAnimFrame = MENU_OVERLAY_PATTERN_FRAME_COUNT - 1;
-    DrawBitPatternOverlay(-1);
-    CHECK(g_MenuOverlayPatternAnimFrame == 2);
-    CHECK(s_callCount == 17);
-
-    s_callCount = 0;
-    g_AnimTimer = 1;
-    g_MenuOverlayPatternAnimFrame = MENU_OVERLAY_PATTERN_FRAME_COUNT;
-    DrawBitPatternOverlay(-1);
-    CHECK(g_MenuOverlayPatternAnimFrame == 2);
     CHECK(s_callCount == 17);
 
     puts("bit_pattern_overlay: pattern grid and footer positions ok");
