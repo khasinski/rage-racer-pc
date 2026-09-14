@@ -173,7 +173,6 @@ s32 g_MenuCourseModelIndex;
 s32 g_MenuPendingCourseIndex;
 s32 g_CarSwapFromIndex;
 s32 g_CarSwapToIndex;
-s32 g_TeamNameCharModel;
 s32 GameMenuCursorAnim;
 s32 g_AnimTimer;
 CarModelAsset *g_CarModelAsset;

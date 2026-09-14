@@ -37,7 +37,6 @@ TimedDrawCommand g_NativeDesignModeScript[16];
 u16 g_PadPressed;
 s32 g_PlayerCarIndex;
 GameRenderState g_RenderState;
-s32 g_TeamNameCharModel;
 u8 g_TeamNameLength;
 TimedDrawCommand g_UiChromeScript[1];
 TimedDrawCommand g_UiChromeScript2[1];

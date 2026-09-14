@@ -170,7 +170,7 @@ static void FinishDesignModeExit(void) {
         GameMenuCursor = g_TeamNameLength >= MENU_TEAM_NAME_MAX_LENGTH
                              ? TEAM_NAME_KEY_END
                              : 0;
-        g_TeamNameCharModel = GameMenuCursor;
+        MenuTeamName()->charModel = GameMenuCursor;
         break;
     case DESIGN_MODE_EXIT_TO_PAINT:
         MenuActivateScreen(MENU_SCREEN_PAINT_COLOR);

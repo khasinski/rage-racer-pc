@@ -54,7 +54,7 @@ s32 RunTimedDrawScript(const TimedDrawCommand *commands, s32 *progress,
     return 1;
 }
 void PlaySoundCue(s32 cue) { s_lastCue = cue; }
-void DrawTeamNameCharModel(void) {}
+void DrawTeamNameCharModel(TeamName *teamName) { (void)teamName; }
 void DrawTeamNameEntry(TeamName *teamName, s32 step, s32 cursor) {
     (void)teamName;
     (void)step;

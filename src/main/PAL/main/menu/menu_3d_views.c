@@ -197,7 +197,7 @@ void DrawMenuCourseView(void) {
 }
 
 /* The 3D character model under the TEAM NAME grid cursor; skips the BS and ED cells. */
-void DrawTeamNameCharModel(void) {
+void DrawTeamNameCharModel(TeamName *teamName) {
     Matrix mtxA;
     Matrix mtxB;
     Vec4 position;
@@ -214,10 +214,10 @@ void DrawTeamNameCharModel(void) {
     SetupMenuViewCamera(0, -104);
 
     animation = AdvanceTeamNameModelAnimation(
-        g_MenuViewAngle, g_MenuViewAngleTarget, g_TeamNameCharModel,
+        g_MenuViewAngle, g_MenuViewAngleTarget, teamName->charModel,
         GameMenuCursorAnim);
     g_MenuViewAngle = animation.angle;
-    g_TeamNameCharModel = animation.displayedModel;
+    teamName->charModel = animation.displayedModel;
     GameMenuCursorAnim = animation.pendingModel;
 
     viewHeight = AdvanceMenuViewOffset();
@@ -239,7 +239,7 @@ void DrawTeamNameCharModel(void) {
     MulMatrix2(&g_RenderState.geometry.matrix, &mtxA);
     ScaleMatrix(&mtxA, &vcopy);
 
-    modelIndex = TeamNameCharacterModelIndex(g_TeamNameCharModel,
+    modelIndex = TeamNameCharacterModelIndex(teamName->charModel,
                                              g_CourseModelCount);
     if (modelIndex >= 0) {
         SetGteObjectMatrix(AsPosition(&position), &mtxA);

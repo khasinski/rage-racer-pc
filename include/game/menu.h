@@ -82,6 +82,7 @@ typedef struct LogoSample {
 typedef struct TeamName {
     s32 entrySlide;
     s32 cursorPhase;
+    s32 charModel;
 } TeamName;
 
 typedef struct MenuRuntime {
@@ -423,7 +424,6 @@ extern s16 g_PrevOwnedCarIndex;
 extern s32 g_ClassRecordColumn;
 extern s32 g_ClassRecordRow;
 extern u16 g_TeamLogoSwatches[15];
-extern s32 g_TeamNameCharModel;
 extern s32 g_TimeAttackPlateStep;
 extern s32 g_TitleAttractTimer;
 extern s32 g_TitleExitTimer;
@@ -580,7 +580,7 @@ s32 DrawClassChangeCurtain(s32 step);
 void UpdateOptionScene(void);
 void UpdateOptionMenuFade(void);
 s32 DrawPaintColorPalette(PaintColor *paint, s32 *counter, s32 step);
-void DrawTeamNameCharModel(void);
+void DrawTeamNameCharModel(TeamName *teamName);
 void DrawTireCompoundSlider(Customize *customize, u8 compound,
                             s32 confirming);
 void DrawVolumeBar(s32 level, s32 y);
