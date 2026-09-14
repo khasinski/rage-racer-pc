@@ -18,6 +18,7 @@ typedef struct LostRace {
 } LostRace;
 
 typedef struct RaceScene {
+    s32 timeRemaining;
     s16 pauseDelay;
     s16 optionCursor;
 } RaceScene;

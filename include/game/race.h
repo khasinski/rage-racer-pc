@@ -157,7 +157,6 @@ extern s32 g_LapTimeMs;
 
 /* Grand Prix time limit, in frames; counts down from the active phase onward
  * and retires the race when it reaches zero. Seeded to 15000. */
-extern s32 g_RaceTimeRemaining;
 
 /* Sector being timed, 0..2; -2 before the first start-line crossing. */
 extern s32 g_SectorIndex;

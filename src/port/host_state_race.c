@@ -47,7 +47,6 @@ s32 g_SectorTimes[3] = {
 };
 s32 g_RefLapTime;
 SectorReferenceTimes g_RefSectorTimes;
-s32 g_RaceTimeRemaining;
 s16 g_SplitSector;
 s16 g_SplitTimer;
 s16 g_SplitSign;

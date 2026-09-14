@@ -218,7 +218,7 @@ void EnterRaceScene(void) {
      * arithmetic. On a 64-bit host that truncates the native table pointer.
      * This is the same game lookup expressed with its actual dimensions. */
     g_RefLapTime = g_BestLapTimes[series][course][recordMode];
-    g_RaceTimeRemaining = INITIAL_RACE_TIME;
+    state->timeRemaining = INITIAL_RACE_TIME;
     g_BestLapThisRace = g_RefLapTime;
     for (i = 0; i < g_LapCount; i++) {
         g_PlayerCar.lapTimes.table.frameCounts[i] = 0;
@@ -305,7 +305,7 @@ static void UpdatePausedRaceScene(RaceScene *state) {
     }
     DrawRaceHudLabels(g_GrandPrixMode);
     if (g_GrandPrixMode != 0) {
-        DrawTimeRemaining(g_RaceTimeRemaining);
+        DrawTimeRemaining(state->timeRemaining);
         DrawRacePosition();
     }
     DrawLapTimes();
@@ -352,9 +352,9 @@ static void UpdateActiveRaceScene(RaceScene *state) {
 
     lapUpdateResult = 0;
     g_AnimTimer = NextRaceAnimationTimer(g_AnimTimer);
-    raceClock = UpdateRaceClock(g_RaceTimeRemaining, g_RacePhase,
+    raceClock = UpdateRaceClock(state->timeRemaining, g_RacePhase,
                                 g_GrandPrixMode);
-    g_RaceTimeRemaining = raceClock.remaining;
+    state->timeRemaining = raceClock.remaining;
 
     raceStart = UpdateRaceStartState(g_RacePhase, g_SceneTimer);
     g_RacePhase = raceStart.phase;
@@ -384,7 +384,7 @@ static void UpdateActiveRaceScene(RaceScene *state) {
 
     if (g_RacePhase < RACE_PHASE_FINISHED) {
         if (g_GrandPrixMode != 0) {
-            DrawTimeRemaining(g_RaceTimeRemaining);
+            DrawTimeRemaining(state->timeRemaining);
         }
         if (raceClock.expired) {
             if (RaceRetriesRemaining() > 0) {
