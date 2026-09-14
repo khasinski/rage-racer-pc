@@ -51,14 +51,21 @@ static void TestGrandPrixRecording(void) {
     GameCarRuntime rival = MakeCar(200, 4);
     ReplayGrandPrixFrame untouched;
     ReplayGrandPrixFrame *frame;
+    s32 i;
     /* Only the assertions read it, and a release build compiles those
      * away, which leaves it set but unused. */
     (void)frame;
 
     memset(&untouched, 0xA5, sizeof(untouched));
     g_ReplayFrameBuffer.grandPrixReplay[0] = untouched;
+    memset(g_Cars, 0, sizeof(g_Cars));
+    for (i = 0; i < RACE_CAR_SLOT_COUNT; i++) {
+        g_Cars[i].activeFlag = -1;
+    }
     *AsRivalCar(&g_PlayerCar) = player;
     g_Cars[0] = rival;
+    g_Cars[0].activeFlag = 1;
+    g_Cars[0].aiEnabled = 1;
     g_Cars[4] = MakeCar(600, 9);
     g_Cars[4].activeFlag = 1;
     g_Cars[4].aiEnabled = 1;
@@ -99,6 +106,8 @@ static void TestGrandPrixRecording(void) {
     assert(frame->rivals[4].modelIndex == 9);
     assert(frame->rivals[4].activeFlag == 1);
     assert(frame->rivals[4].aiEnabled == 1);
+    assert(frame->rivals[10].activeFlag == -1);
+    assert(frame->rivals[10].aiEnabled == 0);
 }
 
 static void TestTimeAttackRecording(void) {
