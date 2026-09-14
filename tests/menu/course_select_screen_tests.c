@@ -17,6 +17,7 @@
 #include "game/menu.h"
 
 static MenuWidgets s_menuWidgets;
+static CarBrowse s_carBrowse;
 #include "game/menu_internal.h"
 #include "game/race.h"
 #include "game/save_internal.h"
@@ -96,6 +97,7 @@ static s32 s_progressResets;
 static CourseSelectScreen s_courseSelect;
 
 CourseSelectScreen *MenuCourseSelect(void) { return &s_courseSelect; }
+CarBrowse *MenuCarBrowse(void) { return &s_carBrowse; }
 
 static void Fold(unsigned char byte) {
     s_digest = ((s_digest ^ byte) * 16777619UL) & 0xFFFFFFFFUL;

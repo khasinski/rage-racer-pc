@@ -29,6 +29,9 @@ s32 g_SceneId;
 s32 g_SceneTimer;
 
 s32 CustomRaceRivalModel(void) { return -1; }
+s32 CustomRaceRivalModelForSelection(s32 selection) {
+    return selection >= GAME_CAR_COUNT ? selection - GAME_CAR_COUNT : -1;
+}
 int CustomRaceUsesRivalModel(void) { return 0; }
 const TrackRenderTable *CustomRivalPreviewRenderTable(void) { return NULL; }
 void SelectModelBank(s32 index) { (void)index; }

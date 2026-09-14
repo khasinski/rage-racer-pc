@@ -102,6 +102,11 @@ void DrawMenuCarView(void) {
         }
         g_CarSwapFromIndex = g_CarSwapToIndex;
         g_CarSwapToIndex = -1;
+        if (g_RaceSession.kind == RACE_SESSION_CUSTOM &&
+            MenuCarBrowse()->targetModel >= 0) {
+            MenuCarBrowse()->displayedModel = MenuCarBrowse()->targetModel;
+            MenuCarBrowse()->targetModel = -1;
+        }
     } else if (currentAngle != g_MenuViewAngleTarget) {
         g_MenuViewAngle = AdvanceMenuViewAngleValue(
             currentAngle, g_MenuViewAngleTarget, 24);
@@ -143,8 +148,10 @@ void DrawMenuCarView(void) {
     car->z = -out.z;
     car->modelRotation = car->bodyRotation;
     car->modelY = car->y;
-    if (CustomRaceUsesRivalModel()) {
-        DrawCustomRivalPreview(renderObject);
+    if (g_RaceSession.kind == RACE_SESSION_CUSTOM &&
+        CustomRaceRivalModelForSelection(
+            MenuCarBrowse()->displayedModel) >= 0) {
+        DrawCustomRivalPreview(renderObject, MenuCarBrowse()->displayedModel);
     } else {
         SelectModelBank(g_CarModelSlot);
         DrawPlayerCarModel(renderObject);

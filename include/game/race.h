@@ -41,12 +41,13 @@ typedef struct RaceSession {
 extern RaceSession g_RaceSession;
 
 int CustomRaceUsesRivalModel(void);
+s32 CustomRaceRivalModelForSelection(s32 selection);
 s32 CustomRaceRivalModel(void);
 s32 CustomRacePerformanceCar(s32 course, s32 classIndex, s32 rivalModel);
 s32 CustomRacePreviewCar(s32 model);
 s32 CustomRaceModelCount(s32 classIndex);
 void ApplyCustomRaceSelection(void);
-void DrawCustomRivalPreview(struct GameCarRuntime *object);
+void DrawCustomRivalPreview(struct GameCarRuntime *object, s32 selection);
 
 /* Grand Prix class index, 0-based; displayed as CLASS(n+1). Also the track
  * tier: course asset index = 0x57 + (CourseSlot(course) << 1) + (class << 3).

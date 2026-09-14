@@ -205,17 +205,18 @@ void DrawRacePlayerCarModel(GameCarRuntime *object) {
     DrawPlayerCarModel(object);
 }
 
-void DrawCustomRivalPreview(GameCarRuntime *object) {
+void DrawCustomRivalPreview(GameCarRuntime *object, s32 selection) {
     const TrackRenderTable *previewTable;
     const TrackRenderTable *savedTable;
     s32 savedModel;
 
     previewTable = CustomRivalPreviewRenderTable();
-    if (object == NULL || !CustomRaceUsesRivalModel() || previewTable == NULL)
+    s32 rival = CustomRaceRivalModelForSelection(selection);
+    if (object == NULL || rival < 0 || previewTable == NULL)
         return;
     savedModel = object->modelIndex;
     savedTable = g_TrackRenderTable;
-    object->modelIndex = (s16)CustomRaceRivalModel();
+    object->modelIndex = (s16)rival;
     g_TrackRenderTable = previewTable;
     SelectModelBank(13);
     DrawCar(object);

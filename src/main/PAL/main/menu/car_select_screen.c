@@ -56,11 +56,13 @@ static void UpdateSelectableCarNeighbours(CarBrowse *browse) {
 }
 
 static void SpinToSelectableCar(s32 selection, s32 target) {
+    CarBrowse *browse = MenuCarBrowse();
     s32 from = g_PlayerCarIndex;
     s32 preview = CustomRacePreviewCar(selection);
 
     MenuSpinToCar(&g_PlayerCarIndex, from, preview, target);
     if (g_PlayerCarIndex == preview) {
+        browse->targetModel = selection;
         g_RaceSession.model = selection;
     }
 }

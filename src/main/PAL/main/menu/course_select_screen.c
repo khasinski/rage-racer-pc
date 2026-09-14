@@ -436,6 +436,8 @@ static void EnterChosenScreen(void) {
         g_MenuViewOffset = MENU_VIEW_OFFSET_MAX;
         g_MenuViewOffsetTarget = 0;
         g_CarSwapFromIndex = g_PlayerCarIndex;
+        MenuCarBrowse()->displayedModel = g_RaceSession.model;
+        MenuCarBrowse()->targetModel = -1;
         break;
     case COURSE_SELECT_TO_RACE:
         if ((MenuOutgoingProgress() > 0) ||

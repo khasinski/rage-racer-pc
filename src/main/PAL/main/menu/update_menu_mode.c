@@ -20,7 +20,8 @@ void MenuRuntimeReset(void) {
         .activeScreen = MENU_SCREEN_BOOTSTRAP,
         .activeDrawScreen = -1,
         .outgoingDrawScreen = -1,
-        .carBrowse = {.shopIndex = -1, .previous = -1, .next = -1},
+        .carBrowse = {.shopIndex = -1, .previous = -1, .next = -1,
+                      .targetModel = -1},
     };
 }
 

@@ -20,9 +20,13 @@ int CustomRaceUsesRivalModel(void) {
            g_RaceSession.model >= GAME_CAR_COUNT;
 }
 
+s32 CustomRaceRivalModelForSelection(s32 selection) {
+    return selection >= GAME_CAR_COUNT ? selection - GAME_CAR_COUNT : -1;
+}
+
 s32 CustomRaceRivalModel(void) {
     return CustomRaceUsesRivalModel()
-               ? g_RaceSession.model - GAME_CAR_COUNT
+               ? CustomRaceRivalModelForSelection(g_RaceSession.model)
                : -1;
 }
 

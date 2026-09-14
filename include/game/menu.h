@@ -150,6 +150,8 @@ typedef struct CarBrowse {
     s32 shopIndex;
     s32 previous;
     s32 next;
+    s32 displayedModel;
+    s32 targetModel;
 } CarBrowse;
 
 typedef struct Ranking {
