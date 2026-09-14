@@ -448,7 +448,7 @@ static void UpdateCourseSelect(CourseSelectScreen *screen) {
     } else {
         DrawTimeAttackPlate(g_TimeAttackPlateStep);
     }
-    DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex);
+    DrawCarNamePlate(MenuWidgetState());
     DrawMenuCourseView(screen);
 
     if (state == COURSE_SELECT_IDLE) {

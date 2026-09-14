@@ -15,6 +15,8 @@
 #include "common.h"
 #include "game/asset.h"
 #include "game/menu.h"
+
+static MenuWidgets s_menuWidgets;
 #include "game/menu_internal.h"
 #include "game/race.h"
 #include "game/save_internal.h"
@@ -25,7 +27,6 @@
 #include <string.h>
 
 s32 GameMenuBusy;
-s32 g_CarNamePlateStep;
 s32 g_CarSwapFromIndex;
 s32 g_CarSwapToIndex;
 s32 g_CourseIndex;
@@ -65,7 +66,6 @@ void MenuBeginExit(s32 screen) {
 s32 g_MenuHintBarStep;
 s32 g_MenuOutgoingScreenProgress;
 s32 g_MenuOverlayPattern;
-s32 g_MenuPlateCarIndex;
 s32 g_MenuScreen;
 u8 g_MenuSubCursor;
 s32 g_MenuViewAngle;
@@ -151,7 +151,9 @@ s32 RunTimedDrawScript(const TimedDrawCommand *commands, s32 *progress, s32 step
     return s_scriptResult;
 }
 
-void DrawCarNamePlate(s32 step, s32 model) {
+void DrawCarNamePlate(MenuWidgets *widgets) {
+    s32 step = widgets->carNameStep;
+    s32 model = widgets->carNameModel;
     RECORD("nameplate", step, model, 0);
 }
 void DrawMenuCourseView(CourseSelectScreen *screen) { (void)screen; RECORD("courseview", 0); }
@@ -293,8 +295,8 @@ int main(int argc, char **argv) {
         g_CourseIndex = courses[ci];
 
         g_MenuAltLayoutSetting = 1;
-        g_CarNamePlateStep = 4;
-        g_MenuPlateCarIndex = 2;
+        s_menuWidgets.carNameStep = 4;
+        s_menuWidgets.carNameModel = 2;
         g_CarSwapFromIndex = 0;
         g_CarSwapToIndex = 0;
         s_courseSelect.cardPendingGrade = 0;
@@ -495,8 +497,8 @@ int main(int argc, char **argv) {
             g_PlayerMoney = 4321;
             g_GrandPrixSeries = 7;
             g_MenuAltLayoutSetting = 1;
-            g_CarNamePlateStep = 4;
-            g_MenuPlateCarIndex = 2;
+            s_menuWidgets.carNameStep = 4;
+            s_menuWidgets.carNameModel = 2;
             g_CarSwapFromIndex = 0;
             g_CarSwapToIndex = 0;
             s_courseSelect.cardPendingGrade = 0;
@@ -889,5 +891,4 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-static MenuWidgets s_menuWidgets;
 MenuWidgets *MenuWidgetState(void) { return &s_menuWidgets; }

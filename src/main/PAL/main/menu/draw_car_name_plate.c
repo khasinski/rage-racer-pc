@@ -20,8 +20,6 @@ enum {
     CAR_NAME_PLATE_SHADE_DIVISOR = 4,
 };
 
-static s32 s_Fade;
-
 static const CarNamePlateSprite s_manufacturerSprites[] = {
     [CAR_MANUFACTURER_AGE] = {0x112, 0x14, 0x50, 0xBC},
     [CAR_MANUFACTURER_LIZARD] = {0x105, 0x20, 0x00, 0xBC},
@@ -56,23 +54,26 @@ static void DrawNamePlateSprite(GameOrderingTableEntry *ot,
                sprite->textureV, shade, shade, shade, 0x244, 0, 1, flags);
 }
 
-static void AdvanceCarNamePlateFade(s32 step) {
-    s_Fade = StepFade(s_Fade, step, CAR_NAME_PLATE_FADE_MAX);
+static void AdvanceCarNamePlateFade(MenuWidgets *widgets, s32 step) {
+    widgets->carNameFade =
+        StepFade(widgets->carNameFade, step, CAR_NAME_PLATE_FADE_MAX);
 }
 
 /* The bottom-right plate: grade digit, manufacturer sprite and model-name sprite. */
-void DrawCarNamePlate(s32 step, s32 model) {
+void DrawCarNamePlate(MenuWidgets *widgets) {
     GameOrderingTableEntry *ot;
+    s32 step = widgets->carNameStep;
+    s32 model = widgets->carNameModel;
     s32 unlockLevel;
     s32 displayedGrade;
     u32 shade;
 
     if (step == 0) {
-        s_Fade = 0;
+        widgets->carNameFade = 0;
         return;
     }
     if (step < 0) {
-        AdvanceCarNamePlateFade(step);
+        AdvanceCarNamePlateFade(widgets, step);
     }
 
     unlockLevel = GetCarUnlockLevel(model);
@@ -80,13 +81,13 @@ void DrawCarNamePlate(s32 step, s32 model) {
     if ((u32)model >= GAME_CAR_COUNT || unlockLevel < 0 ||
         RENDER_OT_BASE == NULL) {
         if (step > 0) {
-            AdvanceCarNamePlateFade(step);
+            AdvanceCarNamePlateFade(widgets, step);
         }
         return;
     }
 
     ot = RENDER_OT_BASE + 1;
-    shade = s_Fade / CAR_NAME_PLATE_SHADE_DIVISOR;
+    shade = widgets->carNameFade / CAR_NAME_PLATE_SHADE_DIVISOR;
     DrawSprite(ot, 0x100, 0x168, 0x20, 0x10, 0x7C, 0x7C, (u8)shade,
                   (u8)shade, (u8)shade, 0x244, 0, 1, 0x3B);
 
@@ -106,6 +107,6 @@ void DrawCarNamePlate(s32 step, s32 model) {
                         0x3E);
 
     if (step > 0) {
-        AdvanceCarNamePlateFade(step);
+        AdvanceCarNamePlateFade(widgets, step);
     }
 }

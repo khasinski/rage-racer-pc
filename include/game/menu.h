@@ -109,6 +109,9 @@ typedef struct MenuWidgets {
     s32 ownedCarCounter;
     s32 upperAltPanel;
     s32 lowerAltPanel;
+    s32 carNameFade;
+    s32 carNameStep;
+    s32 carNameModel;
 } MenuWidgets;
 
 typedef struct MenuRuntime {
@@ -417,7 +420,6 @@ extern s32 g_MenuOutgoingScreenProgress;
 extern s32 g_TeamLogoPaintArmed;
 extern const TimedDrawCommand *g_TeamLogoSubPanelScript;
 extern s32 g_BgmTrackCount;
-extern s32 g_CarNamePlateStep;
 extern s32 g_CarSwapFromIndex;
 extern s32 g_CarSwapToIndex;
 extern s32 g_DesignModeOption;
@@ -436,7 +438,6 @@ extern s32 g_MenuConfirmTimer;
 extern s32 g_MenuHintBarProgress;
 extern s32 g_MenuHintBarStep;
 extern s32 g_MenuHintButtonsVisible;
-extern s32 g_MenuPlateCarIndex;
 extern u8 g_MenuSubCursor;
 extern s32 g_MenuViewSpin;
 extern s16 g_NegconMaxTwistSaved;
@@ -456,7 +457,7 @@ extern TimedDrawCommand g_UiChromeScript[];
 extern TimedDrawCommand g_UiChromeScript2[];
 
 void ClearTeamNameTexture(void);
-void DrawCarNamePlate(s32 step, s32 model);
+void DrawCarNamePlate(MenuWidgets *widgets);
 void DrawMenuAltPanel(MenuWidgets *widgets, s32 stepA, s32 stepB);
 void DrawMenuCourseView(CourseSelectScreen *screen);
 void DrawOptionRootMenu(void);

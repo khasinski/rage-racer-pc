@@ -110,7 +110,7 @@ static void UpdateCarShopInput(CarShop *shop, s32 purchaseAvailable) {
 }
 
 static void UpdateCarShopIdle(CarShop *shop, ShopPrice price) {
-    g_MenuPlateCarIndex = g_CarListCursor;
+    MenuWidgetState()->carNameModel = g_CarListCursor;
     RunTimedDrawScript(shop->modal, &g_UiScriptProgress2, -1);
     RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
     DrawCarShopChrome(shop, price.amount, -1);
@@ -234,7 +234,7 @@ void UpdateCarShop(CarShop *shop) {
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawMenuAltPanel(MenuWidgetState(), g_MenuUpperAltPanelStep,
                      g_MenuLowerAltPanelStep);
-    DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex);
+    DrawCarNamePlate(MenuWidgetState());
     DrawMenuCarView();
     if ((u32)g_CarListCursor >= GAME_CAR_COUNT || g_CarTable == NULL) {
         price = (ShopPrice){0, 0};

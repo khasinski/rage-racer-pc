@@ -144,8 +144,6 @@ s32 GameMenuBusy;
 s32 g_MenuHintBarStep;
 s32 g_MenuHintButtonsVisible;
 s32 g_MenuOverlayPattern;
-s32 g_CarNamePlateStep;
-s32 g_MenuPlateCarIndex;
 s32 g_MenuUpperAltPanelStep;
 s32 g_MenuLowerAltPanelStep;
 s32 g_TimeAttackPlateStep;

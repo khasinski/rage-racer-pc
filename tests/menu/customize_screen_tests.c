@@ -2,6 +2,8 @@
 #include "game/asset.h"
 #include "game/car.h"
 #include "game/menu.h"
+
+static MenuWidgets s_menuWidgets;
 #include "game/render_state.h"
 
 #include <stdio.h>
@@ -21,7 +23,6 @@ void MenuBeginExit(s32 screen) {
 }
 
 s32 GameMenuBusy;
-s32 g_CarNamePlateStep;
 CarModelAsset *g_CarModelAsset;
 CarEntry *g_CarTable;
 s16 g_GrandPrixMode;
@@ -31,7 +32,6 @@ s32 g_MenuConfirmTimer;
 s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuOverlayPattern;
-s32 g_MenuPlateCarIndex;
 s32 g_MenuScreen;
 u8 g_MenuSubCursor;
 s32 g_MenuViewOffset;
@@ -66,7 +66,9 @@ s32 RunTimedDrawScript(const TimedDrawCommand *commands, s32 *progress,
     return 1;
 }
 void PlaySoundCue(s32 cue) { s_lastCue = cue; }
-void DrawCarNamePlate(s32 step, s32 model) {
+void DrawCarNamePlate(MenuWidgets *widgets) {
+    s32 step = widgets->carNameStep;
+    s32 model = widgets->carNameModel;
     (void)step;
     (void)model;
 }
@@ -231,3 +233,5 @@ int main(void) {
     puts("customize screen tests passed");
     return 0;
 }
+
+MenuWidgets *MenuWidgetState(void) { return &s_menuWidgets; }

@@ -14,6 +14,8 @@
 #include "common.h"
 #include "game/asset.h"
 #include "game/menu.h"
+
+static MenuWidgets s_menuWidgets;
 #include "game/menu_internal.h"
 #include "game/race.h"
 #include "game/save_internal.h"
@@ -23,7 +25,6 @@
 
 s32 g_CarListCursor;
 CarModelAsset *g_CarModelAsset;
-s32 g_CarNamePlateStep;
 static CarSelect s_carSelect;
 TimedDrawCommand g_CarSelectMenuScriptGp[1];
 TimedDrawCommand g_CarSelectMenuScriptTimeAttack[1];
@@ -67,7 +68,6 @@ void MenuRuntimeSetScreenState(s32 screen, s32 state) {
 s32 g_MenuHintBarStep;
 s32 g_MenuOutgoingScreenProgress;
 s32 g_MenuOverlayPattern;
-s32 g_MenuPlateCarIndex;
 s32 g_MenuScreen;
 s32 g_MenuViewAngle;
 s32 g_MenuViewAngleTarget;
@@ -154,7 +154,9 @@ s32 RunTimedDrawScript(const TimedDrawCommand *commands, s32 *progress, s32 step
     return s_scriptResult;
 }
 
-void DrawCarNamePlate(s32 step, s32 model) {
+void DrawCarNamePlate(MenuWidgets *widgets) {
+    s32 step = widgets->carNameStep;
+    s32 model = widgets->carNameModel;
     RECORD("nameplate", step, model, 0);
 }
 void DrawMenuCarView(void) { RECORD("carview", 0); }
@@ -295,9 +297,9 @@ int main(int argc, char **argv) {
         g_MenuOutgoingScreenProgress = off;
 
         g_MenuAltLayoutSetting = 1;
-        g_CarNamePlateStep = 4;
+        s_menuWidgets.carNameStep = 4;
         s_carSpecGraph.step = 1;
-        g_MenuPlateCarIndex = 2;
+        s_menuWidgets.carNameModel = 2;
         g_PlayerCarIndex = 9;
         g_CarListCursor = 0;
         g_CarSwapFromIndex = 0;
@@ -345,7 +347,7 @@ int main(int argc, char **argv) {
             after[10] = g_MenuHandlerIndex;
             after[11] = g_MenuOutgoingHandlerIndex;
             after[12] = g_MenuOverlayPattern;
-            after[13] = g_CarNamePlateStep;
+            after[13] = s_menuWidgets.carNameStep;
             after[14] = s_carSpecGraph.step;
             after[15] = g_MenuHintBarStep;
             after[16] = g_SceneId;
@@ -424,6 +426,5 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-static MenuWidgets s_menuWidgets;
 CarSelect *MenuCarSelect(void) { return &s_carSelect; }
 MenuWidgets *MenuWidgetState(void) { return &s_menuWidgets; }

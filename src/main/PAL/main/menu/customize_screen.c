@@ -263,7 +263,7 @@ void UpdateCustomizeScreen(void) {
 
     ot = RENDER_OT_BASE;
     g_MenuAltLayout = g_MenuAltLayoutSetting;
-    DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex);
+    DrawCarNamePlate(MenuWidgetState());
     DrawMenuCarView();
     exitOption = g_GrandPrixMode != 0 ? CUSTOMIZE_OPTION_EXIT
                                      : CUSTOMIZE_OPTION_DESIGN;

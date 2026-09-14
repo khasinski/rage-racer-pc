@@ -19,6 +19,13 @@ typedef struct DrawnSprite {
 
 static DrawnSprite s_draws[4];
 static s32 s_drawCount;
+static MenuWidgets s_widgets;
+
+static void DrawPlate(s32 step, s32 model) {
+    s_widgets.carNameStep = step;
+    s_widgets.carNameModel = model;
+    DrawCarNamePlate(&s_widgets);
+}
 
 s32 GetCarUnlockLevel(s32 model) { return model; }
 
@@ -91,16 +98,16 @@ int main(void) {
 
     g_RenderState.draw.orderingTable = orderingTable;
     s_drawCount = 0;
-    DrawCarNamePlate(0, 0);
+    DrawPlate(0, 0);
     CHECK(s_drawCount == 0);
-    DrawCarNamePlate(INT_MAX, -1);
+    DrawPlate(INT_MAX, -1);
 
     for (model = 0; model < GAME_CAR_COUNT; model++) {
         const DrawnSprite *manufacturer = &expectedManufacturers[model];
         const DrawnSprite *name = &expectedNames[model];
 
         s_drawCount = 0;
-        DrawCarNamePlate(1, model);
+        DrawPlate(1, model);
         CHECK(s_drawCount == 4);
         if (CheckSprite(&s_draws[2], manufacturer->x, 0x178,
                         manufacturer->width, manufacturer->textureU,
@@ -109,24 +116,24 @@ int main(void) {
                         name->textureU, name->textureV, 0x3E)) return 1;
     }
 
-    DrawCarNamePlate(0, 0);
-    DrawCarNamePlate(8, -1);
+    DrawPlate(0, 0);
+    DrawPlate(8, -1);
     s_drawCount = 0;
-    DrawCarNamePlate(-20, -1);
+    DrawPlate(-20, -1);
     CHECK(s_drawCount == 0);
 
-    DrawCarNamePlate(0, 0);
+    DrawPlate(0, 0);
     g_RenderState.draw.orderingTable = NULL;
-    DrawCarNamePlate(101, 0);
+    DrawPlate(101, 0);
     CHECK(s_drawCount == 0);
     g_RenderState.draw.orderingTable = orderingTable;
-    DrawCarNamePlate(1, 0);
+    DrawPlate(1, 0);
     CHECK(s_draws[0].shade == 25);
 
-    DrawCarNamePlate(0, 0);
-    DrawCarNamePlate(INT_MAX, -1);
+    DrawPlate(0, 0);
+    DrawPlate(INT_MAX, -1);
     s_drawCount = 0;
-    DrawCarNamePlate(INT_MIN, 0);
+    DrawPlate(INT_MIN, 0);
     CHECK(s_drawCount == 4 && s_draws[0].shade == 0);
 
     puts("car name plate tests passed");

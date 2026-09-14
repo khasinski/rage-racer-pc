@@ -1,5 +1,7 @@
 #include "game/car.h"
 #include "game/menu.h"
+
+static MenuWidgets s_menuWidgets;
 #include "game/menu_internal.h"
 #include "game/menu_scripts_internal.h"
 #include "game/race.h"
@@ -136,8 +138,8 @@ static void PoisonEntryState(void) {
     g_CarSwapFromIndex = 15;
     g_CarSwapToIndex = 8;
     g_MenuOverlayPattern = 16;
-    g_CarNamePlateStep = 17;
-    g_MenuPlateCarIndex = 18;
+    s_menuWidgets.carNameStep = 17;
+    s_menuWidgets.carNameModel = 18;
     s_carSpecGraph.step = 19;
     g_MenuUpperAltPanelStep = 20;
     g_MenuLowerAltPanelStep = 21;
@@ -187,8 +189,8 @@ static int CheckCommonEntryState(const GameRaceProgress *progress) {
     CHECK(s_courseSelect.cardSpin == 0 && s_courseSelect.cardSpinTarget == 0);
     CHECK(s_courseSelect.cardPendingGrade == 0 && g_CarSwapFromIndex == 0);
     CHECK(s_courseSelect.pendingCourse == -1 && g_CarSwapToIndex == -1);
-    CHECK(g_MenuOverlayPattern == 0 && g_CarNamePlateStep == 0);
-    CHECK(g_MenuPlateCarIndex == 0 && s_carSpecGraph.step == 0);
+    CHECK(g_MenuOverlayPattern == 0 && s_menuWidgets.carNameStep == 0);
+    CHECK(s_menuWidgets.carNameModel == 0 && s_carSpecGraph.step == 0);
     CHECK(g_MenuUpperAltPanelStep == 0 && g_MenuLowerAltPanelStep == 0);
     CHECK(g_TimeAttackPlateStep == 0 && g_MenuHintButtonsVisible == 1);
     CHECK(g_MenuHandlerIndex == -1 && g_MenuOutgoingHandlerIndex == -1);
@@ -250,6 +252,5 @@ int main(void) {
     return 0;
 }
 
-static MenuWidgets s_menuWidgets;
 CarSelect *MenuCarSelect(void) { return &s_carSelect; }
 MenuWidgets *MenuWidgetState(void) { return &s_menuWidgets; }

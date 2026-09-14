@@ -43,7 +43,7 @@ static void LeaveCarSelectScreen(void) {
     PlaySoundCue(3);
     SetCarSelectState(5);
     g_MenuOverlayPattern = 2;
-    g_CarNamePlateStep = -10;
+    MenuWidgetState()->carNameStep = -10;
     MenuCarSpecGraph()->step = -3;
     g_MenuViewOffsetTarget = 0x3D090;
 }
@@ -103,7 +103,7 @@ static void ChooseCarSelectRow(s32 row) {
         RequestRoundAssets();
         SetCarSelectState(1);
         g_MenuHintBarStep = -1;
-        g_CarNamePlateStep = -10;
+        MenuWidgetState()->carNameStep = -10;
         g_MenuOverlayPattern = 0;
         MenuCarSpecGraph()->step = -3;
         g_MenuViewOffsetTarget = 0x3D090;
@@ -113,7 +113,7 @@ static void ChooseCarSelectRow(s32 row) {
         PlaySoundCue(2);
         SetCarSelectState(2);
         g_MenuOverlayPattern = 1;
-        g_CarNamePlateStep = -10;
+        MenuWidgetState()->carNameStep = -10;
         return;
     }
     if (row == CarSelectLastRow()) {
@@ -184,9 +184,9 @@ static void UpdateCarSelectInput(void) {
 static void UpdateCarSelectIdle(void) {
     CarSelect *screen = MenuCarSelect();
 
-    g_CarNamePlateStep = 0x14;
+    MenuWidgetState()->carNameStep = 0x14;
     MenuCarSpecGraph()->step = 3;
-    g_MenuPlateCarIndex = g_PlayerCarIndex;
+    MenuWidgetState()->carNameModel = g_PlayerCarIndex;
     RunTimedDrawScript(screen->popupScript, &g_UiScriptProgress2, -1);
     RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
     DrawBrowseArrows(MenuBrowseArrows(), 1, 0, g_PrevOwnedCarIndex != -1,
@@ -321,7 +321,7 @@ static void UpdateCarSelectOutgoing(void) {
 
 void UpdateCarSelectScreen(void) {
     g_MenuAltLayout = g_MenuAltLayoutSetting;
-    DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex);
+    DrawCarNamePlate(MenuWidgetState());
     DrawMenuCarView();
     DrawMenuLightBurst(MenuWidgetState(), -9);
 

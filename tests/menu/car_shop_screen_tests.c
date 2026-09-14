@@ -17,6 +17,8 @@
 #include "game/asset.h"
 #include "game/car.h"
 #include "game/menu.h"
+
+static MenuWidgets s_menuWidgets;
 #include "game/menu_internal.h"
 #include "game/render_state.h"
 
@@ -40,7 +42,6 @@ void MenuBeginExit(s32 screen) {
 s32 GameMenuBusy;
 s32 g_CarListCursor;
 CarModelAsset *g_CarModelAsset;
-s32 g_CarNamePlateStep;
 s32 g_CarPriceTable[CAR_PRICE_COUNT];
 static u8 s_makers[GAME_CAR_COUNT] = {
     CAR_MAKER_AGE, CAR_MAKER_AGE, CAR_MAKER_AGE, CAR_MAKER_GNADE,
@@ -73,7 +74,6 @@ s32 g_MenuConfirmTimer;
 s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuOverlayPattern;
-s32 g_MenuPlateCarIndex;
 s32 g_MenuScreen;
 u8 g_MenuSubCursor;
 s32 g_MenuViewAngle;
@@ -164,7 +164,9 @@ s32 RunTimedDrawScript(const TimedDrawCommand *commands, s32 *progress, s32 step
     return s_scriptResult;
 }
 
-void DrawCarNamePlate(s32 step, s32 model) {
+void DrawCarNamePlate(MenuWidgets *widgets) {
+    s32 step = widgets->carNameStep;
+    s32 model = widgets->carNameModel;
     RECORD("nameplate", step, model, 0);
 }
 void DrawMenuCarView(void) { RECORD("carview", 0); }
@@ -309,8 +311,8 @@ int main(int argc, char **argv) {
         g_MenuConfirmTimer = timer;
 
         g_MenuAltLayoutSetting = 1;
-        g_CarNamePlateStep = 4;
-        g_MenuPlateCarIndex = 2;
+        s_menuWidgets.carNameStep = 4;
+        s_menuWidgets.carNameModel = 2;
         g_CarSwapFromIndex = 0;
         g_MenuUpperAltPanelStep = 0;
         g_MenuLowerAltPanelStep = 0;
@@ -354,7 +356,7 @@ int main(int argc, char **argv) {
             Record("state", after, 18);
             RECORD("owned", s_cars[cars[ci]].enabled,
                    g_TimeAttackCars[cars[ci]].enabled, g_UiScriptProgress,
-                   g_MenuPlateCarIndex, g_MenuAltLayout);
+                   s_menuWidgets.carNameModel, g_MenuAltLayout);
         }
         steps++;
     }
@@ -560,5 +562,4 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-static MenuWidgets s_menuWidgets;
 MenuWidgets *MenuWidgetState(void) { return &s_menuWidgets; }

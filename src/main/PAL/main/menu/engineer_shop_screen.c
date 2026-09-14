@@ -211,9 +211,9 @@ void UpdateEngineerShopScreen(void) {
     s32 assetIndex;
 
     g_MenuAltLayout = g_MenuAltLayoutSetting;
-    DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex);
+    DrawCarNamePlate(MenuWidgetState());
     DrawMenuCarView();
-    g_MenuPlateCarIndex = g_PlayerCarIndex;
+    MenuWidgetState()->carNameModel = g_PlayerCarIndex;
     if ((u32)g_PlayerCarIndex >= GAME_CAR_COUNT || g_CarTable == NULL) {
         price = (ShopPrice){0, 0};
     } else {

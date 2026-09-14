@@ -2,6 +2,8 @@
 #include "game/car.h"
 #include "game/menu.h"
 
+static MenuWidgets s_menuWidgets;
+
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
@@ -15,10 +17,8 @@ void MenuActivateScreen(s32 screen) {
 static CarEntry s_cars[GAME_CAR_COUNT];
 CarEntry *g_CarTable = s_cars;
 u32 g_CarModelSlot;
-s32 g_CarNamePlateStep;
 s32 g_MenuAltLayout;
 s32 g_MenuAltLayoutSetting;
-s32 g_MenuPlateCarIndex;
 s32 g_MenuScreen;
 s16 g_NextOwnedCarIndex;
 s32 g_PlayerCarIndex;
@@ -35,7 +35,9 @@ s32 ActivateShowroomCarModel(s32 slot) {
     s_installCalls++;
     return 1;
 }
-void DrawCarNamePlate(s32 step, s32 model) {
+void DrawCarNamePlate(MenuWidgets *widgets) {
+    s32 step = widgets->carNameStep;
+    s32 model = widgets->carNameModel;
     (void)step;
     (void)model;
     s_namePlateCalls++;
@@ -100,5 +102,4 @@ int main(void) {
     return 0;
 }
 
-static MenuWidgets s_menuWidgets;
 MenuWidgets *MenuWidgetState(void) { return &s_menuWidgets; }
