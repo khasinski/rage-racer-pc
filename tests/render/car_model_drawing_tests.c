@@ -28,12 +28,20 @@ s32 g_PlayerCarIndex;
 s32 g_SceneId;
 s32 g_SceneTimer;
 
+static const TrackRenderTable *s_previewTable;
+static s32 s_auxiliaryTextures;
+
 s32 CustomRaceRivalModel(void) { return -1; }
 s32 CustomRaceRivalModelForSelection(s32 selection) {
     return selection >= GAME_CAR_COUNT ? selection - GAME_CAR_COUNT : -1;
 }
+void UseAuxiliaryModelTextures(s32 enabled) {
+    s_auxiliaryTextures = enabled != 0;
+}
 int CustomRaceUsesRivalModel(void) { return 0; }
-const TrackRenderTable *CustomRivalPreviewRenderTable(void) { return NULL; }
+const TrackRenderTable *CustomRivalPreviewRenderTable(void) {
+    return s_previewTable;
+}
 void SelectModelBank(s32 index) { (void)index; }
 
 static s32 s_viewDepth;
@@ -44,6 +52,7 @@ static RageGameCarRenderDetail s_detail;
 static s32 s_submitCount;
 static s32 s_submittedBanks[8];
 static s32 s_materialModes[8];
+static s32 s_auxiliaryTextureUse[8];
 static s32 s_restoreCalls;
 static s32 s_zoneLightCalls;
 static s32 s_lightMatrixCalls;
@@ -114,6 +123,7 @@ void SubmitModel(void *ctx, s32 bank) {
     if (s_submitCount < 8) {
         s_submittedBanks[s_submitCount] = bank;
         s_materialModes[s_submitCount] = state->geometry.envMode4;
+        s_auxiliaryTextureUse[s_submitCount] = s_auxiliaryTextures;
         memcpy(s_submittedPositions[s_submitCount], s_currentPosition,
                sizeof(s_currentPosition));
     }
@@ -152,11 +162,13 @@ static void ResetCounters(void) {
     s_zoneLightCalls = 0;
     s_lightMatrixCalls = 0;
     s_yAngleCount = 0;
+    s_auxiliaryTextures = 0;
     memset(s_currentPosition, 0, sizeof(s_currentPosition));
     memset(s_submittedPositions, 0, sizeof(s_submittedPositions));
     memset(s_yAngles, 0, sizeof(s_yAngles));
     memset(s_submittedBanks, 0, sizeof(s_submittedBanks));
     memset(s_materialModes, 0, sizeof(s_materialModes));
+    memset(s_auxiliaryTextureUse, 0, sizeof(s_auxiliaryTextureUse));
 }
 
 #define CHECK(condition)                                                       \
@@ -271,6 +283,17 @@ int main(void) {
     CHECK(s_yAngleCount == 3 && s_yAngles[2] == 10);
     CHECK(s_zoneLightCalls == 0 && s_restoreCalls == 0);
     CHECK(object.y == 200 && object.modelY == 220);
+
+    ResetCounters();
+    s_previewTable = &track.header;
+    DrawCustomRivalPreview(&object, GAME_CAR_COUNT);
+    CHECK(s_submitCount == 6);
+    CHECK(s_auxiliaryTextureUse[0] == 0 && s_auxiliaryTextureUse[1] == 0);
+    CHECK(s_auxiliaryTextureUse[2] == 1);
+    CHECK(s_auxiliaryTextureUse[3] == 0 && s_auxiliaryTextureUse[4] == 0 &&
+          s_auxiliaryTextureUse[5] == 0);
+    CHECK(s_auxiliaryTextures == 0);
+    CHECK(g_TrackRenderTable == &track.header);
 
     puts("car model drawing tests passed");
     return 0;

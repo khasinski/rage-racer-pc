@@ -318,7 +318,7 @@ static void TestDistinctTrackPages(void) {
     s_copyPixels = 0;
 }
 
-static void TestCarPreviewLeavesTrackPagesAlone(void) {
+static void TestCarPreviewUploadsCompletePrivatePack(void) {
     static u8 pack[TRACK_TEXTURE_SHADOW_SIZE + 16];
     s32 *offsets = (s32 *)(void *)pack;
     GameImageEntryHeader *entry;
@@ -337,11 +337,11 @@ static void TestCarPreviewLeavesTrackPagesAlone(void) {
 
     s_loadCount = 0;
     s_textureResets = s_textureRevisions = 0;
-    Check(InstallTrackCarPreviewTexture(pack, sizeof(pack)) == 1,
+    Check(InstallTrackPreviewTexturePack(pack, sizeof(pack)) == 1,
           "car preview accepts a complete track texture pack");
     Check(s_loadCount == 1 && s_loadRects[0].x == 400 &&
               s_loadRects[0].y == 240,
-          "car preview uploads only the car image");
+          "car preview visits the complete pack and uploads its populated image");
     Check(s_textureResets == 0 && s_textureRevisions == 0,
           "car preview leaves track texture paging untouched");
 }
@@ -351,7 +351,7 @@ int main(void) {
     TestImageAssetChain();
     TestTeamLogoStorage();
     TestDistinctTrackPages();
-    TestCarPreviewLeavesTrackPagesAlone();
+    TestCarPreviewUploadsCompletePrivatePack();
 
     if (s_failures != 0) return 1;
     puts("image assets upload their CLUT, pixels, chain and team logo state");

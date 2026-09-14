@@ -43,7 +43,10 @@ typedef struct CloseCarAssembly {
     s16 wheelOffsetY;
     s16 wheelOffsetZ;
     s32 useZoneLighting;
+    s32 bodyUsesAuxiliaryTextures;
 } CloseCarAssembly;
+
+static s32 s_previewUsesAuxiliaryTextures;
 
 /* Player and close rival cars use the same six-part matrix stack. Their model
  * banks, wheel geometry and steering scale come from different asset formats. */
@@ -104,8 +107,10 @@ static s32 DrawCloseCarAssembly(GameCarRuntime *object,
 
     BuildRotMatrixZ(&partMatrix, object->bodyRoll);
     MulMatrix2(&bodyViewMatrix, &partMatrix);
+    UseAuxiliaryModelTextures(assembly->bodyUsesAuxiliaryTextures);
     SubmitCarPart(AsPositionWords(&object->x), &partMatrix,
                   assembly->bodyMaterialMode, assembly->bodyBank);
+    UseAuxiliaryModelTextures(0);
 
     BuildRotMatrixZ(
         &scratchMatrix,
@@ -182,6 +187,7 @@ void DrawPlayerCarModel(GameCarRuntime *object) {
         .wheelOffsetY = modelAsset->modelOffsetY,
         .wheelOffsetZ = modelAsset->modelOffsetZ,
         .useZoneLighting = g_SceneId != 8,
+        .bodyUsesAuxiliaryTextures = 0,
     };
 
     OffsetCarHorizon(object, -modelAsset->horizon);
@@ -219,7 +225,9 @@ void DrawCustomRivalPreview(GameCarRuntime *object, s32 selection) {
     object->modelIndex = (s16)rival;
     g_TrackRenderTable = previewTable;
     SelectModelBank(13);
+    s_previewUsesAuxiliaryTextures = 1;
     DrawCar(object);
+    s_previewUsesAuxiliaryTextures = 0;
     g_TrackRenderTable = savedTable;
     object->modelIndex = (s16)savedModel;
 }
@@ -279,6 +287,7 @@ void DrawCar(GameCarRuntime *object) {
             .wheelOffsetY = WrapSigned16(params->axis1),
             .wheelOffsetZ = WrapSigned16(params->axis2),
             .useZoneLighting = g_SceneId != 8,
+            .bodyUsesAuxiliaryTextures = s_previewUsesAuxiliaryTextures,
         };
 
         clipHandle = DrawCloseCarAssembly(object, &assembly);

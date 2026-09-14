@@ -39,6 +39,15 @@ int g_RageGt4DepthMaximum = -0x7fffffff;
 static int g_RageSubmittedModelIndex;
 static int g_RageSubmittedModelType;
 static int g_RageInsideModelProjection;
+static int s_auxiliaryModelTextures;
+
+void UseAuxiliaryModelTextures(s32 enabled) {
+    s_auxiliaryModelTextures = enabled != 0;
+}
+
+static uint16_t ModelTexturePage(uint16_t tpage) {
+    return (uint16_t)(tpage | (s_auxiliaryModelTextures ? 0x0200 : 0));
+}
 unsigned long long g_RageGt4ClipPositive;
 unsigned long long g_RageGt4ClipNegative;
 unsigned long long g_RageGt4RejectOffscreen;
@@ -271,7 +280,7 @@ static uint8_t *EmitTerrainFt4(
     poly->u0=uv[0]; poly->v0=uv[1]; poly->u1=uv[2]; poly->v1=uv[3];
     poly->u2=uv[4]; poly->v2=uv[5]; poly->u3=uv[6]; poly->v3=uv[7];
     poly->clut = (uint16_t)(clut + ((dispatch & 1) != 0));
-    poly->tpage = tpage;
+    poly->tpage = ModelTexturePage(tpage);
     StoreSxy(&poly->x0,&poly->y0,sxy[0]);
     StoreSxy(&poly->x1,&poly->y1,sxy[1]);
     StoreSxy(&poly->x2,&poly->y2,sxy[2]);
@@ -353,7 +362,7 @@ static uint8_t *EmitCourseFt4(
     poly->u0=uv[0]; poly->v0=uv[1]; poly->u1=uv[2]; poly->v1=uv[3];
     poly->u2=uv[4]; poly->v2=uv[5]; poly->u3=uv[6]; poly->v3=uv[7];
     poly->clut = clut;
-    poly->tpage = tpage;
+    poly->tpage = ModelTexturePage(tpage);
     StoreSxy(&poly->x0,&poly->y0,sxy[0]);
     StoreSxy(&poly->x1,&poly->y1,sxy[1]);
     StoreSxy(&poly->x2,&poly->y2,sxy[2]);
@@ -390,7 +399,7 @@ static void CopyFt4UvWithMode(
     poly->clut = (uint16_t)(uv0 >> 16);
     poly->u1 = (uint8_t)uv1;
     poly->v1 = (uint8_t)(uv1 >> 8);
-    poly->tpage = (uint16_t)(uv1 >> 16);
+    poly->tpage = ModelTexturePage((uint16_t)(uv1 >> 16));
     poly->u2 = (uint8_t)uv23;
     poly->v2 = (uint8_t)(uv23 >> 8);
     poly->u3 = (uint8_t)(uv23 >> 16);
@@ -407,7 +416,7 @@ static void CopyGt4UvWithMode(
     poly->clut = (uint16_t)(uv0 >> 16);
     poly->u1 = (uint8_t)uv1;
     poly->v1 = (uint8_t)(uv1 >> 8);
-    poly->tpage = (uint16_t)(uv1 >> 16);
+    poly->tpage = ModelTexturePage((uint16_t)(uv1 >> 16));
     poly->u2 = (uint8_t)uv23;
     poly->v2 = (uint8_t)(uv23 >> 8);
     poly->u3 = (uint8_t)(uv23 >> 16);

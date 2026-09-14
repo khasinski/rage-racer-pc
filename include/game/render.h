@@ -222,6 +222,7 @@ void DrawTimeValue(s32 x, s32 y, s32 value, s32 color, s32 divisor);
  */
 void SelectModelBank(s32 index);
 void SubmitModel(void *ctx, s32 index);
+void UseAuxiliaryModelTextures(s32 enabled);
 void SubmitCourseModel(void *ctx, s32 index);
 void SubmitCourseModel2(void *ctx, s32 index);
 

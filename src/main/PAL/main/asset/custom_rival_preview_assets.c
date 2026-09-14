@@ -2,6 +2,7 @@
 #include "game/asset_internal.h"
 #include "game/race.h"
 #include "game/track_internal.h"
+#include <psyz/gpu.h>
 
 enum {
     CUSTOM_PREVIEW_LOAD_TEXTURES = 1,
@@ -64,7 +65,11 @@ void LoadCustomRivalPreviewAssets(void) {
                                       g_RaceSession.course % COURSE_SLOT_COUNT);
         loaded = LoadAsset(asset, s_buffer);
         if (AssetLoadDidNotComplete(loaded)) return;
-        if (!InstallTrackCarPreviewTexture(s_buffer, (size_t)loaded)) {
+        Psyz_GpuTextureUploadContext(1);
+        s32 installed =
+            InstallTrackPreviewTexturePack(s_buffer, (size_t)loaded);
+        Psyz_GpuTextureUploadContext(0);
+        if (!installed) {
             FailAssetLoad();
             return;
         }

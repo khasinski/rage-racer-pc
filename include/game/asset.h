@@ -552,7 +552,7 @@ s32 InstallTerrainCellData(const void *data, size_t size);
 s32 InstallCarModelAsset(CarModelAsset *asset, size_t size, s32 slot,
                          s32 carIndex);
 s32 InstallTrackTextureAssetPack(u8 *base, size_t size);
-s32 InstallTrackCarPreviewTexture(u8 *base, size_t size);
+s32 InstallTrackPreviewTexturePack(u8 *base, size_t size);
 s32 InstallTrackEventData(const struct TrackEventData *eventData, size_t size);
 s32 InstallTrackPoints(const struct TrackPointTable *trackData, size_t size);
 s32 InstallTrackRuntimeAssetPack(const void *data, size_t size, s32 assetIndex,

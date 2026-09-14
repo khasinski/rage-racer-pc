@@ -126,11 +126,27 @@ s32 InstallTrackTextureAssetPack(u8 *base, size_t size) {
     return 1;
 }
 
-s32 InstallTrackCarPreviewTexture(u8 *base, size_t size) {
+s32 InstallTrackPreviewTexturePack(u8 *base, size_t size) {
     TrackTextureAssetView view;
 
     if (!ResolveTrackTextureAssetPack(base, size, &view)) return 0;
-    return UploadImageEntry(
-        GetImageEntryHeader(view.blocks[TRACK_TEXTURE_CAR_IMAGE]),
-        view.sizes[TRACK_TEXTURE_CAR_IMAGE]);
+    return UploadImageAsset(
+               GetImageAssetHeaderWords(
+                   view.blocks[TRACK_TEXTURE_PRIMARY_IMAGES]),
+               view.sizes[TRACK_TEXTURE_PRIMARY_IMAGES]) &&
+           UploadImageAsset(
+               GetImageAssetHeaderWords(
+                   view.blocks[TRACK_TEXTURE_SECONDARY_IMAGES]),
+               view.sizes[TRACK_TEXTURE_SECONDARY_IMAGES]) &&
+           UploadImageEntry(
+               GetImageEntryHeader(view.blocks[TRACK_TEXTURE_CAR_IMAGE]),
+               view.sizes[TRACK_TEXTURE_CAR_IMAGE]) &&
+           UploadImageAsset(
+               GetImageAssetHeaderWords(
+                   view.blocks[TRACK_TEXTURE_ACTIVE_IMAGES]),
+               view.sizes[TRACK_TEXTURE_ACTIVE_IMAGES]) &&
+           UploadImageAsset(
+               GetImageAssetHeaderWords(
+                   view.blocks[TRACK_TEXTURE_DEFERRED_IMAGES]),
+               view.sizes[TRACK_TEXTURE_DEFERRED_IMAGES]);
 }
