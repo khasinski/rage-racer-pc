@@ -51,12 +51,6 @@ _Static_assert(sizeof(g_CourseCardVerts) == 32,
                "course-card vertices ABI changed");
 _Static_assert(sizeof(g_DesignModeCellMask) == 36,
                "design-mode mask ABI changed");
-_Static_assert(sizeof(g_TeamLogoCursorX) == sizeof(s32),
-               "team-logo cursor coordinate ABI changed");
-_Static_assert(sizeof(g_TeamLogoViewX) == sizeof(s32),
-               "team-logo view coordinate ABI changed");
-_Static_assert(sizeof(g_TeamLogoPenColor) == sizeof(s32),
-               "team-logo pen colour ABI changed");
 _Static_assert(sizeof(g_TeamLogoBlankClut) == sizeof(u16) * 16,
                "blank team-logo CLUT ABI changed");
 _Static_assert(sizeof(g_TeamLogoFadedClut) == sizeof(u16) * 16,

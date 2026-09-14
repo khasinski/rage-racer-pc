@@ -57,11 +57,11 @@ static void DrawCanvasPanel(const TeamLogo *logo, GameOrderingTableEntry *ot,
                     (u8)0xFF);
 
     /* Zoomed in and not mixing a colour, the brush gets a pulsing outline. */
-    if ((logo->zoom >= 0x100) && (g_TeamLogoPaletteMode == 0)) {
+    if ((logo->zoom >= 0x100) && (logo->paletteMode == 0)) {
         u8 shade = LogoPulseShade(logo);
-        DrawRectOutline(ot, (s16)((g_TeamLogoCursorX * 4) + 0x88),
-                        (s16)(panelTop + (g_TeamLogoCursorY * 8) + 2),
-                        (s16)(g_TeamLogoBrushSize * 4), (s16)(g_TeamLogoBrushSize * 8), 0,
+        DrawRectOutline(ot, (s16)((logo->cursorX * 4) + 0x88),
+                        (s16)(panelTop + (logo->cursorY * 8) + 2),
+                        (s16)(logo->brushSize * 4), (s16)(logo->brushSize * 8), 0,
                         (u8)shade, 0, (u8)0xFF);
     }
 
@@ -78,8 +78,8 @@ static void DrawCanvasPanel(const TeamLogo *logo, GameOrderingTableEntry *ot,
      * far the zoom has closed in. */
     zoomShortfall = 0x220 - logo->zoomSpan;
     texLeft =
-        ((g_TeamLogoRect.x * 4) - 1) + ((zoomShortfall * g_TeamLogoViewX) / 272);
-    texTop = ((u8)g_TeamLogoRect.y - 1) + ((zoomShortfall * g_TeamLogoViewY) / 272);
+        ((g_TeamLogoRect.x * 4) - 1) + ((zoomShortfall * logo->viewX) / 272);
+    texTop = ((u8)g_TeamLogoRect.y - 1) + ((zoomShortfall * logo->viewY) / 272);
     texRight = texLeft + (logo->zoomSpan / 8);
     texBottom = texTop + (logo->zoomSpan / 8);
 
@@ -117,25 +117,25 @@ static void DrawPreviewPanel(const TeamLogo *logo, GameOrderingTableEntry *ot,
                     (u8)0xFF);
 
     /* Zoomed in, the preview marks where the big panel is looking. */
-    if ((logo->zoom >= 0x100) && (g_TeamLogoGuideMode != 0)) {
-        viewLeft = (u16)((u16)g_TeamLogoViewX + 0x30);
-        viewTop = (u16)(panelTop + ((g_TeamLogoViewY * 2) + 2));
+    if ((logo->zoom >= 0x100) && (logo->guideMode != 0)) {
+        viewLeft = (u16)((u16)logo->viewX + 0x30);
+        viewTop = (u16)(panelTop + ((logo->viewY * 2) + 2));
         u8 shade = LogoPulseShade(logo);
-        if (g_TeamLogoGuideMode == 2) {
+        if (logo->guideMode == 2) {
             /* Crosshairs: both edges of the brush drawn the full height and the
              * full width of the preview. Each row of the logo is two pixels
              * here, so a row needs a pair of lines. */
             s16 top = (s16)(panelTop + 2);
             s16 bottom = (s16)(panelTop + 0x82);
-            s16 column = (s16)(viewLeft + (u16)g_TeamLogoCursorX);
-            s32 lastRow = (g_TeamLogoCursorY + g_TeamLogoBrushSize) - 1;
+            s16 column = (s16)(viewLeft + (u16)logo->cursorX);
+            s32 lastRow = (logo->cursorY + logo->brushSize) - 1;
             s16 row;
 
             DrawLine(ot, column, top, column, bottom, (u8)shade, (u8)shade, (u8)shade, (u8)0xFF);
-            column = (s16)((column + ((u16)g_TeamLogoBrushSize)) - 1);
+            column = (s16)((column + ((u16)logo->brushSize)) - 1);
             DrawLine(ot, column, top, column, bottom, (u8)shade, (u8)shade, (u8)shade, (u8)0xFF);
-            for (row = (s16)(viewTop + (g_TeamLogoCursorY * 2));
-                 row <= (s16)(viewTop + (g_TeamLogoCursorY * 2) + 1); row++) {
+            for (row = (s16)(viewTop + (logo->cursorY * 2));
+                 row <= (s16)(viewTop + (logo->cursorY * 2) + 1); row++) {
                 DrawLine(ot, (s16)0x30, row, (s16)0x70, row, (u8)shade, (u8)shade, (u8)shade,
                          (u8)0xFF);
             }
@@ -144,17 +144,17 @@ static void DrawPreviewPanel(const TeamLogo *logo, GameOrderingTableEntry *ot,
                 DrawLine(ot, (s16)0x30, row, (s16)0x70, row, (u8)shade, (u8)shade, (u8)shade,
                          (u8)0xFF);
             }
-        } else if (g_TeamLogoBrushSize == 1) {
+        } else if (logo->brushSize == 1) {
             /* A single pixel of the logo is a two-pixel line in the preview. */
-            s16 column = (s16)(viewLeft + (u16)g_TeamLogoCursorX);
-            s16 row = (s16)(viewTop + (g_TeamLogoCursorY * 2));
+            s16 column = (s16)(viewLeft + (u16)logo->cursorX);
+            s16 row = (s16)(viewTop + (logo->cursorY * 2));
 
             DrawLine(ot, column, row, column, (s16)(row + 1), (u8)shade, (u8)shade, (u8)shade,
                      (u8)0xFF);
         } else {
-            DrawRectOutline(ot, (s16)(viewLeft + (u16)g_TeamLogoCursorX),
-                            (s16)(viewTop + g_TeamLogoCursorY * 2), (s16)g_TeamLogoBrushSize,
-                            (s16)(g_TeamLogoBrushSize * 2), (u8)shade, (u8)shade, (u8)shade,
+            DrawRectOutline(ot, (s16)(viewLeft + (u16)logo->cursorX),
+                            (s16)(viewTop + logo->cursorY * 2), (s16)logo->brushSize,
+                            (s16)(logo->brushSize * 2), (u8)shade, (u8)shade, (u8)shade,
                             (u8)0xFF);
         }
         DrawRectOutline(ot, (s16)viewLeft, (s16)viewTop, (s16)0x20, 0x40, 0, (u8)shade, 0,
@@ -199,8 +199,8 @@ static void DrawSwatchStrip(const TeamLogo *logo, GameOrderingTableEntry *ot,
     /* The pen well, above the strip, outlined in the pulsing colour while a
      * colour is being mixed and in grey otherwise. */
     wellTop = (u16)(panelTop - 3);
-    wellX = (u16)((g_TeamLogoPenColor * 8) + 0x80);
-    if (g_TeamLogoPaletteMode == 1) {
+    wellX = (u16)((logo->penColor * 8) + 0x80);
+    if (logo->paletteMode == 1) {
         u8 shade = LogoPulseShade(logo);
         DrawRectOutline(ot, (s16)wellX, (s16)wellTop, (s16)0xD, 0x1A, 0, (u8)shade, 0, (u8)0xFF);
     } else {
@@ -208,9 +208,9 @@ static void DrawSwatchStrip(const TeamLogo *logo, GameOrderingTableEntry *ot,
                         (u8)0xFF);
     }
     DrawSolidRect(ot, (s16)(wellX + 1), (s16)(wellTop + 2), (s16)0xB, (s16)0x16,
-                  LogoColorRed(g_TeamLogoClut[g_TeamLogoPenColor]),
-                  LogoColorGreen(g_TeamLogoClut[g_TeamLogoPenColor]),
-                  LogoColorBlue(g_TeamLogoClut[g_TeamLogoPenColor]), (u8)0xFF);
+                  LogoColorRed(g_TeamLogoClut[logo->penColor]),
+                  LogoColorGreen(g_TeamLogoClut[logo->penColor]),
+                  LogoColorBlue(g_TeamLogoClut[logo->penColor]), (u8)0xFF);
 
     /* The fifteen fixed colours, eight pixels apart along the strip. */
     for (i = 0; i < 15; i++) {
@@ -289,10 +289,10 @@ static void DrawChannelSliders(const TeamLogo *logo, GameOrderingTableEntry *ot,
     sliderX = 0x140 - slide * 10;
 
     /* While a colour is being mixed, the channel being edited is ringed. */
-    if (g_TeamLogoPaletteMode == 1) {
+    if (logo->paletteMode == 1) {
         u8 shade = LogoPulseShade(logo);
 
-        DrawRectOutline(ot, (s16)sliderX, (s16)((g_TeamLogoColorChannel * 0x30) + 0xD9), (s16)0x12,
+        DrawRectOutline(ot, (s16)sliderX, (s16)((logo->colorChannel * 0x30) + 0xD9), (s16)0x12,
                         0x15, 0, (u8)shade, 0, (u8)0xFF);
     }
 
@@ -300,7 +300,7 @@ static void DrawChannelSliders(const TeamLogo *logo, GameOrderingTableEntry *ot,
     for (i = 0; i < 3; i++) {
         GameDrawNumber((s16)(sliderX - 0x3F), (s16)(top + (i * 0x30) + 0x14),
                        DRAW_NUMBER_LARGE_DIGITS | DRAW_NUMBER_TEN_DIGIT_FIELD,
-                       (g_TeamLogoClut[g_TeamLogoPenColor] >> (i * 5)) & 0x1F,
+                       (g_TeamLogoClut[logo->penColor] >> (i * 5)) & 0x1F,
                        (u8)0x7F, (u8)0x7F, (u8)0x7F, 0x244, 0x20);
     }
 
@@ -386,7 +386,7 @@ void DrawTeamLogoCanvas(TeamLogo *logo, s32 panelStep, s32 editorStep) {
 
     DrawEditorHint(ot, logo->editorStep - 7);
 
-    if (g_TeamLogoExpertMode != 0) {
+    if (logo->expertMode != 0) {
         DrawChannelSliders(logo, ot, logo->editorStep - 8);
     }
 

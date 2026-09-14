@@ -14,127 +14,127 @@ enum {
     TEAM_LOGO_REPEAT_MAX_TIMER = 23,
 };
 
-static void PaintTeamLogoBrush(u16 colour) {
+static void PaintTeamLogoBrush(const TeamLogo *logo, u16 colour) {
     s32 row;
     s32 column;
-    s32 x = g_TeamLogoViewX + g_TeamLogoCursorX;
-    s32 y = g_TeamLogoViewY + g_TeamLogoCursorY;
+    s32 x = logo->viewX + logo->cursorX;
+    s32 y = logo->viewY + logo->cursorY;
 
-    for (row = 0; row < g_TeamLogoBrushSize; row++) {
-        for (column = 0; column < g_TeamLogoBrushSize; column++) {
+    for (row = 0; row < logo->brushSize; row++) {
+        for (column = 0; column < logo->brushSize; column++) {
             SetTeamLogoCanvasPixel(&g_TeamLogoCanvas, x + column, y + row,
                                    colour);
         }
     }
 }
 
-static void AdjustTeamLogoColour(s32 step) {
-    s32 shift = g_TeamLogoColorChannel * 5;
+static void AdjustTeamLogoColour(const TeamLogo *logo, s32 step) {
+    s32 shift = logo->colorChannel * 5;
     u16 mask = (u16)(0x1F << shift);
-    u16 colour = g_TeamLogoClut[g_TeamLogoPenColor] | 0x8000;
+    u16 colour = g_TeamLogoClut[logo->penColor] | 0x8000;
     s32 component = (colour >> shift) & 0x1F;
 
     component = (component + step) & 0x1F;
-    g_TeamLogoClut[g_TeamLogoPenColor] =
+    g_TeamLogoClut[logo->penColor] =
         (u16)((colour & ~mask) | (component << shift));
 }
 
-static s32 TeamLogoDpadRepeatsNow(void) {
-    return g_TeamLogoDpadRepeatTimer == TEAM_LOGO_REPEAT_INITIAL_FRAME ||
-           g_TeamLogoDpadRepeatTimer == TEAM_LOGO_REPEAT_FRAME;
+static s32 TeamLogoDpadRepeatsNow(const TeamLogo *logo) {
+    return logo->repeatTimer == TEAM_LOGO_REPEAT_INITIAL_FRAME ||
+           logo->repeatTimer == TEAM_LOGO_REPEAT_FRAME;
 }
 
-static void NormalizeTeamLogoEditorState(void) {
-    if (g_TeamLogoBrushSize != 1 && g_TeamLogoBrushSize != 2 &&
-        g_TeamLogoBrushSize != 4) {
-        g_TeamLogoBrushSize = 1;
+static void NormalizeTeamLogoEditorState(TeamLogo *logo) {
+    if (logo->brushSize != 1 && logo->brushSize != 2 &&
+        logo->brushSize != 4) {
+        logo->brushSize = 1;
     }
-    g_TeamLogoPenColor = AddClampedMenuValue(
-        g_TeamLogoPenColor, 0, TEAM_LOGO_FIRST_EDITABLE_COLOR,
+    logo->penColor = AddClampedMenuValue(
+        logo->penColor, 0, TEAM_LOGO_FIRST_EDITABLE_COLOR,
         TEAM_LOGO_LAST_EDITABLE_COLOR);
-    g_TeamLogoColorChannel = AddClampedMenuValue(
-        g_TeamLogoColorChannel, 0, 0, TEAM_LOGO_COLOR_CHANNEL_COUNT - 1);
-    g_TeamLogoViewX = AddClampedMenuValue(
-        g_TeamLogoViewX, 0, 0, TEAM_LOGO_EDITOR_VIEW_SIZE);
-    g_TeamLogoViewY = AddClampedMenuValue(
-        g_TeamLogoViewY, 0, 0, TEAM_LOGO_EDITOR_VIEW_SIZE);
-    g_TeamLogoCursorX = AddClampedMenuValue(
-        g_TeamLogoCursorX, 0, 0,
-        TEAM_LOGO_EDITOR_VIEW_SIZE - g_TeamLogoBrushSize);
-    g_TeamLogoCursorY = AddClampedMenuValue(
-        g_TeamLogoCursorY, 0, 0,
-        TEAM_LOGO_EDITOR_VIEW_SIZE - g_TeamLogoBrushSize);
-    g_TeamLogoDpadRepeatTimer = AddClampedMenuValue(
-        g_TeamLogoDpadRepeatTimer, 0, 0, TEAM_LOGO_REPEAT_MAX_TIMER);
-    g_TeamLogoDpadRepeatMask &= PAD_UP | PAD_RIGHT | PAD_DOWN | PAD_LEFT;
-    g_TeamLogoExpertMode = g_TeamLogoExpertMode != 0;
-    g_TeamLogoGuideMode = AddClampedMenuValue(
-        g_TeamLogoGuideMode, 0, 0, 2);
-    g_TeamLogoGuideModePrev = AddClampedMenuValue(
-        g_TeamLogoGuideModePrev, 0, 0, 2);
-    g_TeamLogoPaintArmed = g_TeamLogoPaintArmed != 0;
-    g_TeamLogoPaletteMode = g_TeamLogoPaletteMode != 0;
+    logo->colorChannel = AddClampedMenuValue(
+        logo->colorChannel, 0, 0, TEAM_LOGO_COLOR_CHANNEL_COUNT - 1);
+    logo->viewX = AddClampedMenuValue(
+        logo->viewX, 0, 0, TEAM_LOGO_EDITOR_VIEW_SIZE);
+    logo->viewY = AddClampedMenuValue(
+        logo->viewY, 0, 0, TEAM_LOGO_EDITOR_VIEW_SIZE);
+    logo->cursorX = AddClampedMenuValue(
+        logo->cursorX, 0, 0,
+        TEAM_LOGO_EDITOR_VIEW_SIZE - logo->brushSize);
+    logo->cursorY = AddClampedMenuValue(
+        logo->cursorY, 0, 0,
+        TEAM_LOGO_EDITOR_VIEW_SIZE - logo->brushSize);
+    logo->repeatTimer = AddClampedMenuValue(
+        logo->repeatTimer, 0, 0, TEAM_LOGO_REPEAT_MAX_TIMER);
+    logo->repeatMask &= PAD_UP | PAD_RIGHT | PAD_DOWN | PAD_LEFT;
+    logo->expertMode = logo->expertMode != 0;
+    logo->guideMode = AddClampedMenuValue(
+        logo->guideMode, 0, 0, 2);
+    logo->previousGuideMode = AddClampedMenuValue(
+        logo->previousGuideMode, 0, 0, 2);
+    logo->paintArmed = logo->paintArmed != 0;
+    logo->paletteMode = logo->paletteMode != 0;
 }
 
 /* Mixing a colour: the cursor walks the editable palette slots and the three
  * five-bit channels of the selected colour. */
-static void EditLogoPalette(void) {
+static void EditLogoPalette(TeamLogo *logo) {
     u16 pressed = g_PadPressed;
     u16 held = g_PadHeld;
 
     if (pressed & (PAD_CROSS | PAD_CIRCLE)) {
         PlaySoundCue(2);
-        g_TeamLogoPaletteMode = 0;
-        g_TeamLogoPaintArmed = 0;
+        logo->paletteMode = 0;
+        logo->paintArmed = 0;
     }
     if ((pressed & PAD_SELECT) &&
         ((held & (PAD_L2 | PAD_R2 | PAD_L1 | PAD_R1)) ==
          (PAD_L2 | PAD_R2 | PAD_L1 | PAD_R1))) {
-        g_TeamLogoExpertMode = g_TeamLogoExpertMode == 0;
-        g_TeamLogoGuideMode = g_TeamLogoGuideModePrev;
+        logo->expertMode = logo->expertMode == 0;
+        logo->guideMode = logo->previousGuideMode;
     }
 
-    if (TeamLogoDpadRepeatsNow()) {
+    if (TeamLogoDpadRepeatsNow(logo)) {
         if (held & PAD_LEFT) {
             PlaySoundCue(1);
-            g_TeamLogoPenColor =
-                WrapMenuIndex(g_TeamLogoPenColor -
+            logo->penColor =
+                WrapMenuIndex(logo->penColor -
                                   TEAM_LOGO_FIRST_EDITABLE_COLOR,
                               -1, TEAM_LOGO_EDITABLE_COLOR_COUNT) +
                 TEAM_LOGO_FIRST_EDITABLE_COLOR;
         }
         if (held & PAD_RIGHT) {
             PlaySoundCue(1);
-            g_TeamLogoPenColor =
-                WrapMenuIndex(g_TeamLogoPenColor -
+            logo->penColor =
+                WrapMenuIndex(logo->penColor -
                                   TEAM_LOGO_FIRST_EDITABLE_COLOR,
                               1, TEAM_LOGO_EDITABLE_COLOR_COUNT) +
                 TEAM_LOGO_FIRST_EDITABLE_COLOR;
         }
     }
 
-    if (g_TeamLogoExpertMode == 0) return;
+    if (logo->expertMode == 0) return;
     if (held & (PAD_R1 | PAD_R2)) {
         if (g_PadPressedRepeat & PAD_UP) {
             PlaySoundCue(4);
-            AdjustTeamLogoColour(-1);
+            AdjustTeamLogoColour(logo, -1);
         }
         if (g_PadPressedRepeat & PAD_DOWN) {
             PlaySoundCue(4);
-            AdjustTeamLogoColour(1);
+            AdjustTeamLogoColour(logo, 1);
         }
         return;
     }
 
     if (pressed & PAD_UP) {
         PlaySoundCue(1);
-        g_TeamLogoColorChannel = WrapMenuIndex(
-            g_TeamLogoColorChannel, -1, TEAM_LOGO_COLOR_CHANNEL_COUNT);
+        logo->colorChannel = WrapMenuIndex(
+            logo->colorChannel, -1, TEAM_LOGO_COLOR_CHANNEL_COUNT);
     }
     if (pressed & PAD_DOWN) {
         PlaySoundCue(1);
-        g_TeamLogoColorChannel = WrapMenuIndex(
-            g_TeamLogoColorChannel, 1, TEAM_LOGO_COLOR_CHANNEL_COUNT);
+        logo->colorChannel = WrapMenuIndex(
+            logo->colorChannel, 1, TEAM_LOGO_COLOR_CHANNEL_COUNT);
     }
 }
 
@@ -143,54 +143,54 @@ static void EditLogoPalette(void) {
  * brush down and the other rubs it out, both at whatever size the brush
  * is set to. Every plot is a nibble inside a canvas word.
  */
-static void EditLogoCanvas(void) {
+static void EditLogoCanvas(TeamLogo *logo) {
     s32 movedHorizontally;
     u16 sampledColour;
     s32 movedVertically;
     u16 pressed = g_PadPressed;
     u16 held = g_PadHeld;
 
-    if ((held & PAD_CIRCLE) && (g_TeamLogoPaintArmed != 0)) {
+    if ((held & PAD_CIRCLE) && (logo->paintArmed != 0)) {
         if (pressed & PAD_CIRCLE) {
             PlaySoundCue(4);
         }
-        PaintTeamLogoBrush((u16)g_TeamLogoPenColor);
+        PaintTeamLogoBrush(logo, (u16)logo->penColor);
     }
     if (held & PAD_SQUARE) {
         if (pressed & PAD_SQUARE) {
             PlaySoundCue(4);
         }
-        PaintTeamLogoBrush(0);
+        PaintTeamLogoBrush(logo, 0);
     }
     if (pressed & PAD_CROSS) {
         PlaySoundCue(2);
-        g_TeamLogoPaletteMode = 1;
+        logo->paletteMode = 1;
     }
     if (pressed & PAD_TRIANGLE) {
         PlaySoundCue(2);
-        switch (g_TeamLogoBrushSize) {
+        switch (logo->brushSize) {
         case 1:
-            g_TeamLogoBrushSize = 2;
+            logo->brushSize = 2;
             break;
         case 2:
-            g_TeamLogoBrushSize = 4;
+            logo->brushSize = 4;
             break;
         case 4:
-            g_TeamLogoBrushSize = 1;
+            logo->brushSize = 1;
             break;
         }
-        if ((g_TeamLogoCursorX + g_TeamLogoBrushSize) >=
+        if ((logo->cursorX + logo->brushSize) >=
             TEAM_LOGO_EDITOR_VIEW_SIZE) {
-            g_TeamLogoCursorX =
-                TEAM_LOGO_EDITOR_VIEW_SIZE - g_TeamLogoBrushSize;
+            logo->cursorX =
+                TEAM_LOGO_EDITOR_VIEW_SIZE - logo->brushSize;
         }
-        if ((g_TeamLogoCursorY + g_TeamLogoBrushSize) >=
+        if ((logo->cursorY + logo->brushSize) >=
             TEAM_LOGO_EDITOR_VIEW_SIZE) {
-            g_TeamLogoCursorY =
-                TEAM_LOGO_EDITOR_VIEW_SIZE - g_TeamLogoBrushSize;
+            logo->cursorY =
+                TEAM_LOGO_EDITOR_VIEW_SIZE - logo->brushSize;
         }
     }
-    if ((held & PAD_R1) && (g_TeamLogoExpertMode != 0)) {
+    if ((held & PAD_R1) && (logo->expertMode != 0)) {
         if (held & PAD_L1) {
             if (pressed & PAD_UP) {
                 RotateTeamLogoCw();
@@ -204,7 +204,7 @@ static void EditLogoCanvas(void) {
             if (pressed & PAD_RIGHT) {
                 FlipTeamLogoHorizontal();
             }
-        } else if (TeamLogoDpadRepeatsNow()) {
+        } else if (TeamLogoDpadRepeatsNow(logo)) {
             if (held & PAD_UP) {
                 ScrollTeamLogoUp();
             }
@@ -220,43 +220,43 @@ static void EditLogoCanvas(void) {
         }
     } else {
         movedHorizontally = 0;
-        if (TeamLogoDpadRepeatsNow() || (held & (PAD_L2 | PAD_L1))) {
+        if (TeamLogoDpadRepeatsNow(logo) || (held & (PAD_L2 | PAD_L1))) {
             movedVertically = 0;
             if (held & PAD_UP) {
-                if (g_TeamLogoCursorY > 0) {
-                    g_TeamLogoCursorY -= 1;
+                if (logo->cursorY > 0) {
+                    logo->cursorY -= 1;
                     movedVertically = 1;
-                } else if (g_TeamLogoViewY > 0) {
-                    g_TeamLogoViewY -= 1;
+                } else if (logo->viewY > 0) {
+                    logo->viewY -= 1;
                     movedVertically = 1;
                 }
             }
             if (held & PAD_DOWN) {
-                if ((g_TeamLogoCursorY + g_TeamLogoBrushSize) <
+                if ((logo->cursorY + logo->brushSize) <
                     TEAM_LOGO_EDITOR_VIEW_SIZE) {
-                    g_TeamLogoCursorY += 1;
+                    logo->cursorY += 1;
                     movedVertically = 1;
-                } else if (g_TeamLogoViewY < TEAM_LOGO_EDITOR_VIEW_SIZE) {
-                    g_TeamLogoViewY += 1;
+                } else if (logo->viewY < TEAM_LOGO_EDITOR_VIEW_SIZE) {
+                    logo->viewY += 1;
                     movedVertically = 1;
                 }
             }
             if (held & PAD_LEFT) {
-                if (g_TeamLogoCursorX > 0) {
-                    g_TeamLogoCursorX -= 1;
+                if (logo->cursorX > 0) {
+                    logo->cursorX -= 1;
                     movedHorizontally = 1;
-                } else if (g_TeamLogoViewX > 0) {
-                    g_TeamLogoViewX -= 1;
+                } else if (logo->viewX > 0) {
+                    logo->viewX -= 1;
                     movedHorizontally = 1;
                 }
             }
             if (held & PAD_RIGHT) {
-                if ((g_TeamLogoCursorX + g_TeamLogoBrushSize) <
+                if ((logo->cursorX + logo->brushSize) <
                     TEAM_LOGO_EDITOR_VIEW_SIZE) {
-                    g_TeamLogoCursorX += 1;
+                    logo->cursorX += 1;
                     movedHorizontally = 1;
-                } else if (g_TeamLogoViewX < TEAM_LOGO_EDITOR_VIEW_SIZE) {
-                    g_TeamLogoViewX += 1;
+                } else if (logo->viewX < TEAM_LOGO_EDITOR_VIEW_SIZE) {
+                    logo->viewX += 1;
                     movedHorizontally = 1;
                 }
             }
@@ -266,52 +266,52 @@ static void EditLogoCanvas(void) {
             }
         }
     }
-    if ((pressed & PAD_R2) && (g_TeamLogoExpertMode != 0)) {
+    if ((pressed & PAD_R2) && (logo->expertMode != 0)) {
         PlaySoundCue(4);
         sampledColour = (u16)GetTeamLogoCanvasPixel(
-            &g_TeamLogoCanvas, g_TeamLogoViewX + g_TeamLogoCursorX,
-            g_TeamLogoViewY + g_TeamLogoCursorY);
+            &g_TeamLogoCanvas, logo->viewX + logo->cursorX,
+            logo->viewY + logo->cursorY);
         if (sampledColour == 0) {
-            sampledColour = g_TeamLogoPenColor;
+            sampledColour = logo->penColor;
         }
-        g_TeamLogoPenColor = sampledColour;
+        logo->penColor = sampledColour;
     }
 }
 
-void UpdateTeamLogoCanvas(void) {
+void UpdateTeamLogoCanvas(TeamLogo *logo) {
     u16 held = g_PadHeld;
     s32 repeatDelay = (held & (PAD_L2 | PAD_L1)) ? 0 : 3;
 
-    NormalizeTeamLogoEditorState();
-    if (held & g_TeamLogoDpadRepeatMask) {
-        if (g_TeamLogoDpadRepeatTimer <
+    NormalizeTeamLogoEditorState(logo);
+    if (held & logo->repeatMask) {
+        if (logo->repeatTimer <
             TEAM_LOGO_REPEAT_INITIAL_FRAME + repeatDelay) {
-            g_TeamLogoDpadRepeatTimer++;
+            logo->repeatTimer++;
         }
     } else {
-        g_TeamLogoDpadRepeatTimer = 0;
+        logo->repeatTimer = 0;
     }
 
-    g_TeamLogoDpadRepeatMask = held &
+    logo->repeatMask = held &
         (PAD_UP | PAD_RIGHT | PAD_DOWN | PAD_LEFT);
     if (!(held & PAD_CIRCLE)) {
-        g_TeamLogoPaintArmed = 1;
+        logo->paintArmed = 1;
     }
 
-    if (g_TeamLogoExpertMode != 0) {
+    if (logo->expertMode != 0) {
         if (g_PadPressed & PAD_SELECT) {
-            g_TeamLogoGuideModePrev = g_TeamLogoGuideMode;
-            g_TeamLogoGuideMode = g_TeamLogoGuideMode < 2
-                                      ? g_TeamLogoGuideMode + 1
+            logo->previousGuideMode = logo->guideMode;
+            logo->guideMode = logo->guideMode < 2
+                                      ? logo->guideMode + 1
                                       : 0;
         }
     } else {
-        g_TeamLogoGuideMode = 1;
+        logo->guideMode = 1;
     }
 
-    if (g_TeamLogoPaletteMode == 1) {
-        EditLogoPalette();
+    if (logo->paletteMode == 1) {
+        EditLogoPalette(logo);
     } else {
-        EditLogoCanvas();
+        EditLogoCanvas(logo);
     }
 }

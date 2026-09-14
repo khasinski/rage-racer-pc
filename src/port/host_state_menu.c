@@ -96,21 +96,8 @@ Rgb g_ClassRecordNameSprites[CLASS_RECORD_COUNT + 1] = {
     };
 u8 g_TeamNameLength = 5;
 unsigned char g_TeamNameChars[16] = {0x18,0x0b,0x17,0x0d,0x19,0x0a,0x0a,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
-u8 g_TeamLogoExpertMode;
-s32 g_TeamLogoCursorX;
-s32 g_TeamLogoCursorY;
-s32 g_TeamLogoViewX;
-s32 g_TeamLogoViewY;
-s32 g_TeamLogoGuideMode = 1;
-s32 g_TeamLogoBrushSize = 1;
-s32 g_TeamLogoPenColor = 1;
-s32 g_TeamLogoPaletteMode;
-s32 g_TeamLogoColorChannel;
 u16 g_TeamLogoFadedClutRect = 304;
 u16 g_TeamLogoBlankClut[16];
-s32 g_TeamLogoDpadRepeatTimer;
-s32 g_TeamLogoDpadRepeatMask;
-s32 g_TeamLogoGuideModePrev = 1;
 Vec4 g_MenuViewScale = {4096, 8192, 4096, 0};
 /* Retail stores these as one run, with tune-up prices starting at the second
  * element. Keep the public tables typed and make that relationship explicit. */
@@ -157,7 +144,6 @@ s16 g_NegconNeutralII;
 s16 g_NegconNeutralL;
 s16 g_PrevOwnedCarIndex;
 const TeamLogoSample *g_TeamLogoSampleData;
-s32 g_TeamLogoPaintArmed;
 s16 g_GrandPrixSeries;
 s16 g_ExtraGrandPrixUnlocked;
 s16 g_NegconSteerPlay;

@@ -31,7 +31,6 @@ s32 g_MenuOverlayPattern;
 s32 g_MenuScreen;
 u8 g_MenuSubCursor;
 u16 g_PadPressed;
-s32 g_TeamLogoPaintArmed;
 u16 g_TeamLogoClut[16];
 Rect g_TeamLogoClutRect;
 s32 g_UiScriptProgress;
@@ -91,7 +90,10 @@ void ComposeSampleTeamLogo(s32 character, s32 background) {
     s_composedCharacter = character;
     s_composedBackground = background;
 }
-void UpdateTeamLogoCanvas(void) { s_canvasUpdates++; }
+void UpdateTeamLogoCanvas(TeamLogo *logo) {
+    (void)logo;
+    s_canvasUpdates++;
+}
 void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
     (void)progress;
     (void)count;
@@ -149,7 +151,7 @@ static void Reset(void) {
     g_MenuSubCursor = 0;
     g_PadPressed = 0;
     s_teamLogo.option = 0;
-    g_TeamLogoPaintArmed = 1;
+    s_teamLogo.paintArmed = 1;
     s_teamLogo.subPanelScript = g_EmptyScript;
     s_logo.background = 0;
     s_logo.character = 0;
@@ -188,7 +190,7 @@ int main(void) {
     g_PadPressed = PAD_CONFIRM;
     UpdateTeamLogoScreen();
     CHECK(GameMenuBusy == -3);
-    CHECK(g_TeamLogoPaintArmed == 0);
+    CHECK(s_teamLogo.paintArmed == 0);
     CHECK(s_teamLogo.subPanelScript == g_MenuRow1MarkerScript);
 
     Reset();

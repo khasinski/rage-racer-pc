@@ -147,9 +147,6 @@ extern unsigned char g_CdMixPresets[8];
 extern Cd g_Cd;
 extern MenuOverlayPatternFrame
     g_MenuOverlayPatternTable[MENU_OVERLAY_PATTERN_FRAME_COUNT];
-extern s32 g_TeamLogoCursorX;
-extern s32 g_TeamLogoViewX;
-extern s32 g_TeamLogoPenColor;
 extern uint16_t g_TeamLogoBlankClut[16];
 extern FontGlyph g_SmallFontGlyphs[SMALL_FONT_GLYPH_COUNT];
 extern FontGlyph g_LargeFontGlyphs[LARGE_FONT_GLYPH_COUNT];
@@ -267,9 +264,6 @@ static const HostStateBlob s_blobs[] = {
      sizeof(g_Cd.pendingCommand)},
     {"g_MenuOverlayPatternTable", BYTES(g_MenuOverlayPatternTable),
      sizeof(g_MenuOverlayPatternTable)},
-    {"g_TeamLogoCursorX", (const unsigned char *)&g_TeamLogoCursorX, 4},
-    {"g_TeamLogoViewX", (const unsigned char *)&g_TeamLogoViewX, 4},
-    {"g_TeamLogoPenColor", (const unsigned char *)&g_TeamLogoPenColor, 4},
     {"g_TeamLogoBlankClut", (const unsigned char *)g_TeamLogoBlankClut, 32},
     {"g_SmallFontGlyphs", BYTES(g_SmallFontGlyphs),
      sizeof(g_SmallFontGlyphs)},
@@ -288,7 +282,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the canonical host constants alone. */
-    const unsigned long expected = 2400424458UL;
+    const unsigned long expected = 3047489607UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

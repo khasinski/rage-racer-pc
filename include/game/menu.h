@@ -103,6 +103,20 @@ typedef struct TeamLogo {
     s32 zoomSpan;
     s32 panelStep;
     s32 editorStep;
+    s32 cursorX;
+    s32 cursorY;
+    s32 viewX;
+    s32 viewY;
+    s32 guideMode;
+    s32 previousGuideMode;
+    s32 brushSize;
+    s32 penColor;
+    s32 paletteMode;
+    s32 colorChannel;
+    s32 repeatTimer;
+    s32 repeatMask;
+    s32 expertMode;
+    s32 paintArmed;
 } TeamLogo;
 
 typedef struct CarSpecGraph {
@@ -416,7 +430,7 @@ void ResetMenuButtonAnimation(void);
 extern u16 g_TeamLogoClut[16];
 extern TeamLogoCanvas g_TeamLogoCanvas;
 void DrawTeamLogoCanvas(TeamLogo *logo, s32 panelStep, s32 editorStep);
-void UpdateTeamLogoCanvas(void);
+void UpdateTeamLogoCanvas(TeamLogo *logo);
 
 /*
  * The eight whole-canvas transforms UpdateTeamLogoCanvas offers, each
@@ -448,15 +462,7 @@ void RotateTeamLogoCw(void);
  * g_ClassRecords g_ClassRecords is the 11 x {s16 grade, s16 clears} table.
  */
 
-extern u8 g_TeamLogoExpertMode;
-extern s32 g_TeamLogoCursorY;
-extern s32 g_TeamLogoViewY;
-extern s32 g_TeamLogoGuideMode;
-extern s32 g_TeamLogoBrushSize;
-extern s32 g_TeamLogoPaletteMode;
-extern s32 g_TeamLogoColorChannel;
 extern s32 g_CarShopUnlockAll;
-extern s32 g_TeamLogoPaintArmed;
 extern s32 g_BgmTrackCount;
 extern s32 g_CarSwapFromIndex;
 extern s32 g_CarSwapToIndex;
@@ -503,9 +509,6 @@ extern u8 g_TeamNameFontGlyphs
 extern u8 g_TeamNameBlankTile[192];
 extern u16 g_TeamLogoFadedClutRect;
 extern u16 g_TeamLogoBlankClut[16];
-extern s32 g_TeamLogoDpadRepeatTimer;
-extern s32 g_TeamLogoDpadRepeatMask;
-extern s32 g_TeamLogoGuideModePrev;
 extern TimedDrawCommand g_CourseSelectGpScript[];
 extern TimedDrawCommand g_CourseSelectTimeAttackScript[];
 extern TimedDrawCommand g_CarSelectMenuScriptGp[];

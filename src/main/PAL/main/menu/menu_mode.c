@@ -60,8 +60,14 @@ static void ResetMenuNavigation(void) {
     customize->popupScript = g_UiEmptyScript;
     logoSample->subPanelScript = g_UiEmptyScript;
     MenuCarSelect()->popupScript = g_UiEmptyScript;
-    MenuTeamLogo()->subPanelScript = g_UiEmptyScript;
-    MenuTeamLogo()->zoomSpan = 0x220;
+    *MenuTeamLogo() = (TeamLogo){
+        .subPanelScript = g_UiEmptyScript,
+        .zoomSpan = 0x220,
+        .guideMode = 1,
+        .previousGuideMode = 1,
+        .brushSize = 1,
+        .penColor = 1,
+    };
     ResetCarShopScreen();
     ResetEngineerShopScreen();
     ResetMenuCar();

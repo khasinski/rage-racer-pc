@@ -33,16 +33,6 @@ u16 g_TeamLogoSwatches[15];
 Rect g_TeamLogoRect;
 Rect g_TeamLogoClutRect;
 u16 g_TeamLogoFadedClutRect;
-s32 g_TeamLogoPenColor;
-s32 g_TeamLogoCursorX;
-s32 g_TeamLogoViewX;
-s32 g_TeamLogoBrushSize;
-s32 g_TeamLogoColorChannel;
-s32 g_TeamLogoCursorY;
-u8 g_TeamLogoExpertMode;
-s32 g_TeamLogoGuideMode;
-s32 g_TeamLogoPaletteMode;
-s32 g_TeamLogoViewY;
 u8 g_PadType;
 GameRenderState g_RenderState;
 static TeamLogo s_logoState;
@@ -218,20 +208,20 @@ int main(int argc, char **argv) {
         s_logoState.panelStep = panelSteps[a];
         s_logoState.editorStep = editorSteps[b];
         s_logoState.zoom = zooms[c];
-        g_TeamLogoPaletteMode = e;
-        g_TeamLogoGuideMode = guides[gi];
-        g_TeamLogoBrushSize = brushes[bi];
-        g_TeamLogoColorChannel = channels[ci];
+        s_logoState.paletteMode = e;
+        s_logoState.guideMode = guides[gi];
+        s_logoState.brushSize = brushes[bi];
+        s_logoState.colorChannel = channels[ci];
         g_PadType = (u8)pads[pi];
-        g_TeamLogoExpertMode = (u8)(ai == 0);
+        s_logoState.expertMode = (u8)(ai == 0);
         s_logoState.colorCycle = 0x321;
         s_logoState.fade = 0xC0;
         s_logoState.zoomSpan = 0x210;
-        g_TeamLogoPenColor = 3;
-        g_TeamLogoCursorX = 20;
-        g_TeamLogoCursorY = 30;
-        g_TeamLogoViewX = 4;
-        g_TeamLogoViewY = 6;
+        s_logoState.penColor = 3;
+        s_logoState.cursorX = 20;
+        s_logoState.cursorY = 30;
+        s_logoState.viewX = 4;
+        s_logoState.viewY = 6;
 
         sprintf(label, "== p%d/e%d/z%d/m%d/g%d/b%d/c%d/pad%02x/arg%d",
                 panelSteps[a], editorSteps[b], zooms[c], e, guides[gi],

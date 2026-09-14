@@ -46,7 +46,7 @@ static void ChooseTeamLogoOption(TeamLogo *logo) {
         PlaySoundCue(2);
         ApplyDuckedSequenceAudio();
         GameMenuBusy = TEAM_LOGO_PAINTING;
-        g_TeamLogoPaintArmed = 0;
+        logo->paintArmed = 0;
         g_UiScriptProgress2 = 0;
         logo->subPanelScript = g_MenuRow1MarkerScript;
         break;
@@ -154,7 +154,7 @@ static void UpdateTeamLogoPainting(TeamLogo *logo) {
             ApplyCurrentSequenceAudio();
             GameMenuBusy = TEAM_LOGO_PAINT_CLOSING;
         }
-        UpdateTeamLogoCanvas();
+        UpdateTeamLogoCanvas(logo);
     }
     if (g_UiScriptProgress2 >= 8) {
         MenuWidgetState()->hintButtonsVisible = 0;

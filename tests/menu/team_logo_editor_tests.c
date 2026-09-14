@@ -20,20 +20,7 @@
 /* The editor's own state. */
 TeamLogoCanvas g_TeamLogoCanvas;
 u16 g_TeamLogoClut[16];
-s32 g_TeamLogoPenColor;
-s32 g_TeamLogoBrushSize;
-s32 g_TeamLogoColorChannel;
-s32 g_TeamLogoCursorX;
-s32 g_TeamLogoCursorY;
-s32 g_TeamLogoDpadRepeatTimer;
-s32 g_TeamLogoDpadRepeatMask;
-u8 g_TeamLogoExpertMode;
-s32 g_TeamLogoGuideMode;
-s32 g_TeamLogoGuideModePrev;
-s32 g_TeamLogoPaintArmed;
-s32 g_TeamLogoPaletteMode;
-s32 g_TeamLogoViewX;
-s32 g_TeamLogoViewY;
+static TeamLogo s_logo;
 u16 g_PadHeld;
 u16 g_PadPressed;
 u16 g_PadPressedRepeat;
@@ -71,34 +58,34 @@ static unsigned long s_digest = 2166136261UL;
 
 static int TestEditorControl(void) {
     memset(&g_TeamLogoCanvas, 0, sizeof(g_TeamLogoCanvas));
-    g_TeamLogoPaletteMode = 0;
-    g_TeamLogoExpertMode = 1;
-    g_TeamLogoGuideMode = 2;
-    g_TeamLogoGuideModePrev = 1;
-    g_TeamLogoDpadRepeatTimer = 7;
-    g_TeamLogoDpadRepeatMask = PAD_RIGHT;
-    g_TeamLogoPaintArmed = 0;
+    s_logo.paletteMode = 0;
+    s_logo.expertMode = 1;
+    s_logo.guideMode = 2;
+    s_logo.previousGuideMode = 1;
+    s_logo.repeatTimer = 7;
+    s_logo.repeatMask = PAD_RIGHT;
+    s_logo.paintArmed = 0;
     g_PadHeld = PAD_RIGHT;
     g_PadPressed = PAD_SELECT;
 
-    UpdateTeamLogoCanvas();
-    if (g_TeamLogoDpadRepeatTimer != 8 ||
-        g_TeamLogoDpadRepeatMask != PAD_RIGHT ||
-        g_TeamLogoGuideMode != 0 || g_TeamLogoGuideModePrev != 2 ||
-        g_TeamLogoPaintArmed != 1) {
+    UpdateTeamLogoCanvas(&s_logo);
+    if (s_logo.repeatTimer != 8 ||
+        s_logo.repeatMask != PAD_RIGHT ||
+        s_logo.guideMode != 0 || s_logo.previousGuideMode != 2 ||
+        s_logo.paintArmed != 1) {
         puts("FAIL team logo editor control state");
         return 0;
     }
 
-    g_TeamLogoExpertMode = 0;
-    g_TeamLogoGuideMode = 2;
-    g_TeamLogoDpadRepeatTimer = 5;
-    g_TeamLogoDpadRepeatMask = PAD_LEFT;
+    s_logo.expertMode = 0;
+    s_logo.guideMode = 2;
+    s_logo.repeatTimer = 5;
+    s_logo.repeatMask = PAD_LEFT;
     g_PadHeld = 0;
     g_PadPressed = 0;
-    UpdateTeamLogoCanvas();
-    if (g_TeamLogoGuideMode != 1 || g_TeamLogoDpadRepeatTimer != 0 ||
-        g_TeamLogoDpadRepeatMask != 0) {
+    UpdateTeamLogoCanvas(&s_logo);
+    if (s_logo.guideMode != 1 || s_logo.repeatTimer != 0 ||
+        s_logo.repeatMask != 0) {
         puts("FAIL team logo editor idle control state");
         return 0;
     }
@@ -107,31 +94,31 @@ static int TestEditorControl(void) {
 
 static int TestInvalidEditorState(void) {
     memset(&g_TeamLogoCanvas, 0, sizeof(g_TeamLogoCanvas));
-    g_TeamLogoPenColor = INT_MIN;
-    g_TeamLogoColorChannel = INT_MAX;
-    g_TeamLogoBrushSize = INT_MAX;
-    g_TeamLogoCursorX = INT_MAX;
-    g_TeamLogoCursorY = INT_MAX;
-    g_TeamLogoViewX = INT_MAX;
-    g_TeamLogoViewY = INT_MAX;
-    g_TeamLogoDpadRepeatTimer = INT_MAX;
-    g_TeamLogoDpadRepeatMask = INT_MAX;
-    g_TeamLogoExpertMode = UINT8_MAX;
-    g_TeamLogoGuideMode = INT_MAX;
-    g_TeamLogoGuideModePrev = INT_MIN;
-    g_TeamLogoPaintArmed = INT_MAX;
-    g_TeamLogoPaletteMode = 0;
+    s_logo.penColor = INT_MIN;
+    s_logo.colorChannel = INT_MAX;
+    s_logo.brushSize = INT_MAX;
+    s_logo.cursorX = INT_MAX;
+    s_logo.cursorY = INT_MAX;
+    s_logo.viewX = INT_MAX;
+    s_logo.viewY = INT_MAX;
+    s_logo.repeatTimer = INT_MAX;
+    s_logo.repeatMask = INT_MAX;
+    s_logo.expertMode = UINT8_MAX;
+    s_logo.guideMode = INT_MAX;
+    s_logo.previousGuideMode = INT_MIN;
+    s_logo.paintArmed = INT_MAX;
+    s_logo.paletteMode = 0;
     g_PadHeld = PAD_CIRCLE;
     g_PadPressed = 0;
     g_PadPressedRepeat = 0;
 
-    UpdateTeamLogoCanvas();
-    if (g_TeamLogoPenColor != 1 || g_TeamLogoColorChannel != 2 ||
-        g_TeamLogoBrushSize != 1 || g_TeamLogoCursorX != 31 ||
-        g_TeamLogoCursorY != 31 || g_TeamLogoViewX != 32 ||
-        g_TeamLogoViewY != 32 || g_TeamLogoDpadRepeatTimer != 0 ||
-        g_TeamLogoDpadRepeatMask != 0 || g_TeamLogoExpertMode != 1 ||
-        g_TeamLogoGuideMode != 2 || g_TeamLogoGuideModePrev != 0 ||
+    UpdateTeamLogoCanvas(&s_logo);
+    if (s_logo.penColor != 1 || s_logo.colorChannel != 2 ||
+        s_logo.brushSize != 1 || s_logo.cursorX != 31 ||
+        s_logo.cursorY != 31 || s_logo.viewX != 32 ||
+        s_logo.viewY != 32 || s_logo.repeatTimer != 0 ||
+        s_logo.repeatMask != 0 || s_logo.expertMode != 1 ||
+        s_logo.guideMode != 2 || s_logo.previousGuideMode != 0 ||
         GetTeamLogoCanvasPixel(&g_TeamLogoCanvas, 63, 63) != 1) {
         puts("FAIL invalid team logo editor state was not normalized");
         return 0;
@@ -153,11 +140,11 @@ static void Fold(FILE *out, const char *label) {
              "%s pen=%d channel=%d brush=%d cursor=%d,%d view=%d,%d "
              "repeat=%d expert=%d guide=%d/%d armed=%d palette=%d "
              "clut=%04x,%04x,%04x canvas=%08lx cues=%d\n",
-             label, (int)g_TeamLogoPenColor, g_TeamLogoColorChannel,
-             g_TeamLogoBrushSize, (int)g_TeamLogoCursorX, g_TeamLogoCursorY,
-             (int)g_TeamLogoViewX, g_TeamLogoViewY, g_TeamLogoDpadRepeatTimer,
-             (int)g_TeamLogoExpertMode, g_TeamLogoGuideMode, g_TeamLogoGuideModePrev,
-             g_TeamLogoPaintArmed, g_TeamLogoPaletteMode, g_TeamLogoClut[0],
+             label, (int)s_logo.penColor, s_logo.colorChannel,
+             s_logo.brushSize, (int)s_logo.cursorX, s_logo.cursorY,
+             (int)s_logo.viewX, s_logo.viewY, s_logo.repeatTimer,
+             (int)s_logo.expertMode, s_logo.guideMode, s_logo.previousGuideMode,
+             s_logo.paintArmed, s_logo.paletteMode, g_TeamLogoClut[0],
              g_TeamLogoClut[1], g_TeamLogoClut[15], canvas, s_cues);
     for (p = line; *p != '\0'; p++) {
         s_digest = (s_digest ^ (unsigned char)*p) * 16777619UL;
@@ -220,28 +207,28 @@ int main(int argc, char **argv) {
                                 for (i = 0; i < 16; i++) {
                                     g_TeamLogoClut[i] = (u16)(0x0421 * i);
                                 }
-                                g_TeamLogoPenColor = 3;
-                                g_TeamLogoColorChannel = channel;
-                                g_TeamLogoBrushSize = brushSizes[brush];
-                                g_TeamLogoCursorX = 20;
-                                g_TeamLogoCursorY = 30;
-                                g_TeamLogoViewX = 4;
-                                g_TeamLogoViewY = 6;
-                                g_TeamLogoDpadRepeatTimer = repeats[repeat];
-                                g_TeamLogoDpadRepeatMask =
+                                s_logo.penColor = 3;
+                                s_logo.colorChannel = channel;
+                                s_logo.brushSize = brushSizes[brush];
+                                s_logo.cursorX = 20;
+                                s_logo.cursorY = 30;
+                                s_logo.viewX = 4;
+                                s_logo.viewY = 6;
+                                s_logo.repeatTimer = repeats[repeat];
+                                s_logo.repeatMask =
                                     buttons[held] &
                                     (PAD_UP | PAD_RIGHT | PAD_DOWN | PAD_LEFT);
-                                g_TeamLogoExpertMode = (u8)expert;
-                                g_TeamLogoGuideMode = 1;
-                                g_TeamLogoGuideModePrev = 0;
-                                g_TeamLogoPaintArmed = 1;
-                                g_TeamLogoPaletteMode = palette;
+                                s_logo.expertMode = (u8)expert;
+                                s_logo.guideMode = 1;
+                                s_logo.previousGuideMode = 0;
+                                s_logo.paintArmed = 1;
+                                s_logo.paletteMode = palette;
                                 g_PadHeld = buttons[held];
                                 g_PadPressed = buttons[pressed];
                                 g_PadPressedRepeat = buttons[pressed];
                                 s_cues = 0;
 
-                                UpdateTeamLogoCanvas();
+                                UpdateTeamLogoCanvas(&s_logo);
 
                                 sprintf(label,
                                         "e%d/p%d/c%d/b%d/r%d/h%04x/x%04x",
