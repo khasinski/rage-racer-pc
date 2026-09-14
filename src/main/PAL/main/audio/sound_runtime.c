@@ -61,8 +61,7 @@ static void ResetSoundState(void) {
 }
 
 void InitSoundRuntime(void) {
-    SsSetTableSize((char *)GetSndTableArea(), SOUND_TABLE_SEQUENCE_COUNT,
-                   SOUND_TABLE_TRACK_COUNT);
+    PrepareSoundTable(SOUND_TABLE_SEQUENCE_COUNT, SOUND_TABLE_TRACK_COUNT);
     SsSetTickMode(SS_NOTICK);
     SsSetReservedVoice(SOUND_RUNTIME_VOICE_COUNT);
     SsUtReverbOff();

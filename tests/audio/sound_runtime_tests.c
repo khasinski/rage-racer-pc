@@ -14,7 +14,6 @@ EffectVoice g_EffectVoices[AUDIO_EFFECT_VOICE_COUNT];
 Audio g_Audio;
 SoundScale g_SoundScale;
 
-static u8 s_tableArea[16];
 static s32 s_playCalls[6];
 static s32 s_keyOffCalls[6];
 static s32 s_prepareCalls;
@@ -25,8 +24,10 @@ static s32 s_reservedVoiceCalls;
 static s32 s_sequenceInitCalls;
 static s32 s_failures;
 
-struct SeqStruct *GetSndTableArea(void) {
-    return (struct SeqStruct *)s_tableArea;
+void PrepareSoundTable(s16 sequences, s16 tracks) {
+    if (sequences == 2 && tracks == 1) {
+        s_prepareCalls++;
+    }
 }
 void PlaySoundSlotVoice(s32 slot, s32 tone, s32 vabSlot) {
     (void)tone;
@@ -37,11 +38,6 @@ short SsUtKeyOffV(short voice) {
     s32 slot = voice - 14;
     if (slot >= 0 && slot < 6) s_keyOffCalls[slot]++;
     return voice;
-}
-void SsSetTableSize(char *table, short sequences, short tracks) {
-    if (table == (char *)s_tableArea && sequences == 2 && tracks == 1) {
-        s_prepareCalls++;
-    }
 }
 void SsSetTickMode(long mode) {
     if (mode != SS_NOTICK) abort();

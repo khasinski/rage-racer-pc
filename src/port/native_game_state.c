@@ -19,6 +19,8 @@
 #include "game/cd_internal.h"
 #include "game/memcard.h"
 
+void SsSetTableSize(u8 *table, short sequences, short tracks);
+
 GameRenderState g_RenderState;
 CarTrackWork g_CarTrackWork;
 
@@ -45,10 +47,10 @@ PlayerCarRuntime g_PlayerCar;
 GameRaceProgress g_GrandPrixSave;
 GameRaceProgress g_ExtraGrandPrixSave;
 GameRaceProgress g_TimeAttackSave;
-SeqStruct g_SndTableArea[2];
+static SeqStruct s_soundTable[2];
 
-struct SeqStruct *GetSndTableArea(void) {
-    return g_SndTableArea;
+void PrepareSoundTable(s16 sequences, s16 tracks) {
+    SsSetTableSize((u8 *)s_soundTable, sequences, tracks);
 }
 
 GameSpriteDesc g_RaceHudSpriteDescsGp[GRAND_PRIX_HUD_SPRITE_COUNT];
