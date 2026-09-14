@@ -24,8 +24,8 @@ static s32 CourseCardDepth(s32 face) {
     }
 }
 
-static s32 AdvanceCourseCardSpin(void) {
-    int64_t delta = (int64_t)g_CourseCardSpinTarget - g_CourseCardSpin;
+static s32 AdvanceCourseCardSpin(CourseSelectScreen *screen) {
+    int64_t delta = (int64_t)screen->cardSpinTarget - screen->cardSpin;
     int64_t step = 0;
 
     if (delta > 0) {
@@ -33,30 +33,30 @@ static s32 AdvanceCourseCardSpin(void) {
     } else if (delta < 0) {
         step = (delta - 12) / 12;
     }
-    g_CourseCardSpin = (s32)((int64_t)g_CourseCardSpin + step);
-    return g_CourseCardSpin / 1000;
+    screen->cardSpin = (s32)((int64_t)screen->cardSpin + step);
+    return screen->cardSpin / 1000;
 }
 
-void UpdateAndDrawCourseCard(void) {
+void UpdateAndDrawCourseCard(CourseSelectScreen *screen) {
     SVec projected[4];
     Matrix rotation;
     s32 angle;
     s32 depth;
     s32 i;
 
-    angle = AdvanceCourseCardSpin();
+    angle = AdvanceCourseCardSpin(screen);
     if (angle < COURSE_CARD_MIN_ANGLE) {
         angle = COURSE_CARD_MIN_ANGLE;
     }
     /* A place of zero means no result yet and 0xff marks a locked course.
      * Both deliberately select no face, just like any damaged save value. */
     if (angle < COURSE_CARD_FACE_CHANGE_ANGLE &&
-        g_CourseCardPendingGrade >= 0) {
-        g_CourseCardFace = g_CourseCardPendingGrade;
-        g_CourseCardPendingGrade = -1;
+        screen->cardPendingGrade >= 0) {
+        screen->cardFace = screen->cardPendingGrade;
+        screen->cardPendingGrade = -1;
     }
 
-    depth = CourseCardDepth(g_CourseCardFace);
+    depth = CourseCardDepth(screen->cardFace);
     if (depth < 0) {
         return;
     }

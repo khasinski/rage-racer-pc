@@ -28,9 +28,6 @@ s32 GameMenuBusy;
 s32 g_CarNamePlateStep;
 s32 g_CarSwapFromIndex;
 s32 g_CarSwapToIndex;
-s32 g_CourseCardPendingGrade;
-s32 g_CourseCardSpin;
-s32 g_CourseCardSpinTarget;
 s32 g_CourseIndex;
 CourseProgressState *g_CourseProgress;
 TimedDrawCommand g_CourseSelectGpScript[1];
@@ -188,9 +185,10 @@ void GameDrawMenuButton(s32 x0, s32 y0, s32 x1, s32 y1, u8 r, u8 g, u8 b) {
     RECORD("button", x0, y0, x1, y1, r, g, b);
 }
 void DrawTimeAttackPlate(s32 stepArg) { RECORD("timeattackplate", stepArg); }
-void UpdateAndDrawCourseCard(void) {
-    RECORD("flipcard", g_CourseCardSpinTarget, g_CourseCardSpin,
-           g_CourseCardPendingGrade);
+void UpdateAndDrawCourseCard(CourseSelectScreen *screen) {
+    (void)screen;
+    RECORD("flipcard", s_courseSelect.cardSpinTarget, s_courseSelect.cardSpin,
+           s_courseSelect.cardPendingGrade);
 }
 /* How far the curtain has drawn across is what the class change waits on, so
  * the sweep sets it rather than the stub deciding. */
@@ -298,9 +296,9 @@ int main(int argc, char **argv) {
         g_MenuPlateCarIndex = 2;
         g_CarSwapFromIndex = 0;
         g_CarSwapToIndex = 0;
-        g_CourseCardPendingGrade = 0;
-        g_CourseCardSpin = 0x1000;
-        g_CourseCardSpinTarget = 0x800;
+        s_courseSelect.cardPendingGrade = 0;
+        s_courseSelect.cardSpin = 0x1000;
+        s_courseSelect.cardSpinTarget = 0x800;
         g_CourseSwapDelay = 0;
         g_GrandPrixClass = classes[kl];
         g_GrandPrixSeries = 3;
@@ -346,8 +344,8 @@ int main(int argc, char **argv) {
             after[11] = g_GrandPrixClass;
             after[12] = g_GrandPrixSeries;
             after[13] = s_courseSelect.classChangeApplied;
-            after[14] = g_CourseCardSpin;
-            after[15] = g_CourseCardPendingGrade;
+            after[14] = s_courseSelect.cardSpin;
+            after[15] = s_courseSelect.cardPendingGrade;
             after[16] = g_TimeAttackPlateStep;
             after[17] = g_MenuViewAngle;
             after[18] = g_MenuViewOffset;
@@ -418,12 +416,12 @@ int main(int argc, char **argv) {
             g_MenuViewAngle = 0x7A120 + settleOffsets[se];
             g_MenuPendingCourseIndex = pendings[pend];
             g_CourseIndex = browseCourses[cj];
-            g_CourseCardSpin = 0x1000;
-            g_CourseCardSpinTarget = 0x800;
+            s_courseSelect.cardSpin = 0x1000;
+            s_courseSelect.cardSpinTarget = 0x800;
             g_CourseSwapDelay = 7;
             g_MenuCourseModelIndex = 0;
             g_TimeAttackPlateStep = 0;
-            g_CourseCardPendingGrade = 0;
+            s_courseSelect.cardPendingGrade = 0;
             s_courseSelect.modalScript = NULL;
             g_MenuSubCursor = 0;
             g_MenuConfirmTimer = 0;
@@ -436,8 +434,8 @@ int main(int argc, char **argv) {
             UpdateCourseSelectScreen();
             RECORD("browsed", g_CourseIndex, g_MenuPendingCourseIndex,
                    g_MenuCourseModelIndex, g_MenuViewAngle,
-                   g_MenuViewAngleTarget, g_CourseCardSpin,
-                   g_CourseCardPendingGrade, g_TimeAttackPlateStep,
+                   g_MenuViewAngleTarget, s_courseSelect.cardSpin,
+                   s_courseSelect.cardPendingGrade, g_TimeAttackPlateStep,
                    g_CourseSwapDelay);
             steps++;
         }
@@ -500,9 +498,9 @@ int main(int argc, char **argv) {
             g_MenuPlateCarIndex = 2;
             g_CarSwapFromIndex = 0;
             g_CarSwapToIndex = 0;
-            g_CourseCardPendingGrade = 0;
-            g_CourseCardSpin = 0x1000;
-            g_CourseCardSpinTarget = 0x800;
+            s_courseSelect.cardPendingGrade = 0;
+            s_courseSelect.cardSpin = 0x1000;
+            s_courseSelect.cardSpinTarget = 0x800;
             s_courseSelect.modalScript = NULL;
 
             sprintf(label, "== handover busy%d/offset%d/outgoing%d/course%d",
@@ -821,7 +819,7 @@ int main(int argc, char **argv) {
     g_CourseIndex = 0;
     g_CourseProgress = NULL;
     UpdateCourseSelectScreen();
-    if (g_CourseIndex != 0 || g_CourseCardPendingGrade != 0) {
+    if (g_CourseIndex != 0 || s_courseSelect.cardPendingGrade != 0) {
         puts("FAIL browsing escaped the physical course range");
         return 1;
     }

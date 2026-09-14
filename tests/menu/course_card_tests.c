@@ -7,14 +7,11 @@
 #include <stdio.h>
 #include <string.h>
 
-s32 g_CourseCardFace;
-s32 g_CourseCardPendingGrade;
-s32 g_CourseCardSpin;
-s32 g_CourseCardSpinTarget;
 SVec g_CourseCardVerts[4];
 GameRenderState g_RenderState;
 
 static GameOrderingTableEntry s_orderingTable[2];
+static CourseSelectScreen s_screen;
 static s32 s_rotationAngle;
 static s32 s_matrixCalls;
 static s32 s_drawCalls;
@@ -93,10 +90,10 @@ void GameDrawTexturedQuad(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u1
 static void Reset(void) {
     memset(&g_RenderState, 0, sizeof(g_RenderState));
     RENDER_OT_BASE = s_orderingTable;
-    g_CourseCardFace = 1;
-    g_CourseCardPendingGrade = -1;
-    g_CourseCardSpin = 0;
-    g_CourseCardSpinTarget = 12000;
+    s_screen.cardFace = 1;
+    s_screen.cardPendingGrade = -1;
+    s_screen.cardSpin = 0;
+    s_screen.cardSpinTarget = 12000;
     g_CourseCardVerts[0] = (SVec){-10, -20, 0, 0};
     g_CourseCardVerts[1] = (SVec){10, -20, 0, 0};
     g_CourseCardVerts[2] = (SVec){-10, 20, 0, 0};
@@ -111,9 +108,10 @@ static void Reset(void) {
 }
 
 int main(void) {
+    s_screen = (CourseSelectScreen){0};
     Reset();
-    UpdateAndDrawCourseCard();
-    CHECK(g_CourseCardSpin == 1001);
+    UpdateAndDrawCourseCard(&s_screen);
+    CHECK(s_screen.cardSpin == 1001);
     CHECK(s_rotationAngle == 11 && s_matrixCalls == 4);
     CHECK(s_wrongMatrixSource == 0);
     CHECK(s_drawCalls == 1 && s_drawDepth == 0x1F8);
@@ -122,50 +120,50 @@ int main(void) {
     CHECK(s_drawX[3] == 0xE4 + 10 && s_drawY[3] == 0x58 + 20);
 
     Reset();
-    g_CourseCardSpin = 2000000;
-    g_CourseCardSpinTarget = 2000000;
-    g_CourseCardPendingGrade = 2;
-    UpdateAndDrawCourseCard();
-    CHECK(g_CourseCardPendingGrade == 2 && g_CourseCardFace == 1);
+    s_screen.cardSpin = 2000000;
+    s_screen.cardSpinTarget = 2000000;
+    s_screen.cardPendingGrade = 2;
+    UpdateAndDrawCourseCard(&s_screen);
+    CHECK(s_screen.cardPendingGrade == 2 && s_screen.cardFace == 1);
     CHECK(s_rotationAngle == 2000);
 
     Reset();
-    g_CourseCardSpin = 12000;
-    g_CourseCardSpinTarget = 0;
-    g_CourseCardPendingGrade = 2;
-    UpdateAndDrawCourseCard();
-    CHECK(g_CourseCardSpin == 10999);
-    CHECK(g_CourseCardPendingGrade == -1 && g_CourseCardFace == 2);
+    s_screen.cardSpin = 12000;
+    s_screen.cardSpinTarget = 0;
+    s_screen.cardPendingGrade = 2;
+    UpdateAndDrawCourseCard(&s_screen);
+    CHECK(s_screen.cardSpin == 10999);
+    CHECK(s_screen.cardPendingGrade == -1 && s_screen.cardFace == 2);
     CHECK(s_rotationAngle == 11 && s_drawDepth == 0x20B);
 
     Reset();
-    g_CourseCardFace = 0;
-    UpdateAndDrawCourseCard();
+    s_screen.cardFace = 0;
+    UpdateAndDrawCourseCard(&s_screen);
     CHECK(s_matrixCalls == 0 && s_drawCalls == 0);
 
     Reset();
-    g_CourseCardPendingGrade = 0;
-    UpdateAndDrawCourseCard();
-    CHECK(g_CourseCardPendingGrade == -1 && g_CourseCardFace == 0);
+    s_screen.cardPendingGrade = 0;
+    UpdateAndDrawCourseCard(&s_screen);
+    CHECK(s_screen.cardPendingGrade == -1 && s_screen.cardFace == 0);
     CHECK(s_matrixCalls == 0 && s_drawCalls == 0);
 
     Reset();
-    g_CourseCardPendingGrade = 0xFF;
-    UpdateAndDrawCourseCard();
-    CHECK(g_CourseCardPendingGrade == -1 && g_CourseCardFace == 0xFF);
+    s_screen.cardPendingGrade = 0xFF;
+    UpdateAndDrawCourseCard(&s_screen);
+    CHECK(s_screen.cardPendingGrade == -1 && s_screen.cardFace == 0xFF);
     CHECK(s_matrixCalls == 0 && s_drawCalls == 0);
 
     Reset();
-    g_CourseCardSpin = INT_MIN;
-    g_CourseCardSpinTarget = INT_MAX;
-    UpdateAndDrawCourseCard();
-    CHECK(g_CourseCardSpin > INT_MIN && g_CourseCardSpin < INT_MAX);
+    s_screen.cardSpin = INT_MIN;
+    s_screen.cardSpinTarget = INT_MAX;
+    UpdateAndDrawCourseCard(&s_screen);
+    CHECK(s_screen.cardSpin > INT_MIN && s_screen.cardSpin < INT_MAX);
 
     Reset();
-    g_CourseCardSpin = INT_MAX;
-    g_CourseCardSpinTarget = INT_MIN;
-    UpdateAndDrawCourseCard();
-    CHECK(g_CourseCardSpin < INT_MAX && g_CourseCardSpin > INT_MIN);
+    s_screen.cardSpin = INT_MAX;
+    s_screen.cardSpinTarget = INT_MIN;
+    UpdateAndDrawCourseCard(&s_screen);
+    CHECK(s_screen.cardSpin < INT_MAX && s_screen.cardSpin > INT_MIN);
 
     puts("course card easing, face swap, and rendering are preserved");
     return 0;

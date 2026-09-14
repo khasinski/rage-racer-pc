@@ -34,8 +34,6 @@ TimedDrawCommand g_CarShopUnavailableScript[2];
 s32 g_CarSpecGraphStep;
 s32 g_CarSwapFromIndex;
 s32 g_CarSwapToIndex;
-s32 g_CourseCardPendingGrade;
-s32 g_CourseCardSpin;
 s32 g_CourseIndex;
 CourseProgressState *g_CourseProgress;
 TimedDrawCommand g_EngineerShopUnavailableScript[3];
@@ -165,7 +163,9 @@ void DrawCarNamePlate(s32 step, s32 model) {
 void DrawMenuCarView(void) { RECORD("carview", 0); }
 void DrawMenuLightBurst(s32 arg) { RECORD("burst", arg); }
 static BrowseArrows s_browseArrows;
+static CourseSelectScreen s_courseSelect;
 BrowseArrows *MenuBrowseArrows(void) { return &s_browseArrows; }
+CourseSelectScreen *MenuCourseSelect(void) { return &s_courseSelect; }
 
 void DrawBrowseArrows(BrowseArrows *arrows, s32 step, s32 wide, s32 drawLeft, s32 drawRight) {
     (void)arrows;
@@ -311,8 +311,8 @@ int main(int argc, char **argv) {
         g_PlayerMoney = 12345;
         g_SceneId = 0;
         g_TimeAttackPlateStep = 0;
-        g_CourseCardPendingGrade = 0;
-        g_CourseCardSpin = 0;
+        s_courseSelect.cardPendingGrade = 0;
+        s_courseSelect.cardSpin = 0;
         g_CarSelectPopupScript = NULL;
 
         sprintf(label,
@@ -405,11 +405,11 @@ int main(int argc, char **argv) {
     g_CourseProgress = NULL;
     g_CourseIndex = 4;
     g_MenuViewOffset = 0x3D090;
-    g_CourseCardPendingGrade = -1;
+    s_courseSelect.cardPendingGrade = -1;
     UpdateCarSelectScreen();
     if (MenuRuntimeScreenState(MENU_SCREEN_CAR_SELECT) != 0 ||
         g_MenuScreen != MENU_SCREEN_COURSE_SELECT ||
-        g_CourseCardPendingGrade != 0) {
+        s_courseSelect.cardPendingGrade != 0) {
         puts("FAIL missing course progress prevented a safe menu return");
         return 1;
     }

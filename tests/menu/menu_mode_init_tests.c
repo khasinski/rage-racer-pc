@@ -123,9 +123,9 @@ static void PoisonEntryState(void) {
     g_CourseSwapDelay = 9;
     g_MenuViewOffset = 10;
     g_MenuViewOffsetTarget = 11;
-    g_CourseCardSpin = 12;
-    g_CourseCardSpinTarget = 13;
-    g_CourseCardPendingGrade = 14;
+    s_courseSelect.cardSpin = 12;
+    s_courseSelect.cardSpinTarget = 13;
+    s_courseSelect.cardPendingGrade = 14;
     g_MenuPendingCourseIndex = 7;
     g_CarSwapFromIndex = 15;
     g_CarSwapToIndex = 8;
@@ -178,8 +178,8 @@ static int CheckCommonEntryState(const GameRaceProgress *progress) {
     CHECK(g_MenuConfirmTimer == 0 && g_MenuHintBarStep == 0);
     CHECK(s_courseSelect.classChangeApplied == 0 && g_CourseSwapDelay == 0);
     CHECK(g_MenuViewOffset == 0 && g_MenuViewOffsetTarget == 0);
-    CHECK(g_CourseCardSpin == 0 && g_CourseCardSpinTarget == 0);
-    CHECK(g_CourseCardPendingGrade == 0 && g_CarSwapFromIndex == 0);
+    CHECK(s_courseSelect.cardSpin == 0 && s_courseSelect.cardSpinTarget == 0);
+    CHECK(s_courseSelect.cardPendingGrade == 0 && g_CarSwapFromIndex == 0);
     CHECK(g_MenuPendingCourseIndex == -1 && g_CarSwapToIndex == -1);
     CHECK(g_MenuOverlayPattern == 0 && g_CarNamePlateStep == 0);
     CHECK(g_MenuPlateCarIndex == 0 && g_CarSpecGraphStep == 0);

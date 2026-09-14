@@ -73,9 +73,9 @@ static void ResetMenuNavigation(void) {
     g_CourseSwapDelay = 0;
     g_MenuViewOffset = 0;
     g_MenuViewOffsetTarget = 0;
-    g_CourseCardSpin = 0;
-    g_CourseCardSpinTarget = 0;
-    g_CourseCardPendingGrade = 0;
+    courseSelect->cardSpin = 0;
+    courseSelect->cardSpinTarget = 0;
+    courseSelect->cardPendingGrade = 0;
     g_MenuPendingCourseIndex = -1;
     g_CarSwapFromIndex = 0;
     g_CarSwapToIndex = -1;

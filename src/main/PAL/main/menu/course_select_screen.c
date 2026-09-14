@@ -51,9 +51,10 @@ static s32 MaxSelectableClass(void) {
  * the view angle and on the card's spin, and differ only in which way the
  * index moves and where the view is asked to stop.
  */
-static void BrowseToCourse(s32 step, s32 newTarget) {
+static void BrowseToCourse(CourseSelectScreen *screen, s32 step,
+                           s32 newTarget) {
     s32 previousTarget = g_MenuViewAngleTarget;
-    s32 previousSpin = g_CourseCardSpinTarget;
+    s32 previousSpin = screen->cardSpinTarget;
     s32 course = g_CourseIndex;
 
     PlaySoundCue(8);
@@ -65,12 +66,12 @@ static void BrowseToCourse(s32 step, s32 newTarget) {
     g_MenuViewAngle =
         RebaseCarouselValue(g_MenuViewAngle, previousTarget,
                             MENU_COURSE_VIEW_REBASE_SPAN);
-    g_CourseCardSpin =
-        RebaseCarouselValue(g_CourseCardSpin, previousSpin,
+    screen->cardSpin =
+        RebaseCarouselValue(screen->cardSpin, previousSpin,
                             COURSE_CARD_FULL_TURN);
     g_CourseIndex = course;
     g_MenuPendingCourseIndex = course;
-    g_CourseCardPendingGrade = CourseBestPlace(course);
+    screen->cardPendingGrade = CourseBestPlace(course);
     /* Only the extra series shows the time-attack plate. */
     g_TimeAttackPlateStep = CourseSeries(course) == 0 ? -1 : 1;
 }
@@ -118,11 +119,11 @@ static void DrawClassList(GameOrderingTableEntry *ot, s32 flash) {
 
 /* Leaving the screen downwards, into the race or the ranking: the card spins
  * back to where the next screen wants it. */
-static void SpinCardAway(void) {
+static void SpinCardAway(CourseSelectScreen *screen) {
     g_MenuViewOffsetTarget = MENU_VIEW_OFFSET_MAX;
-    g_CourseCardPendingGrade = 0;
-    g_CourseCardSpin = RebaseCarouselValue(
-        g_CourseCardSpin, g_CourseCardSpinTarget, COURSE_CARD_FULL_TURN);
+    screen->cardPendingGrade = 0;
+    screen->cardSpin = RebaseCarouselValue(
+        screen->cardSpin, screen->cardSpinTarget, COURSE_CARD_FULL_TURN);
 }
 
 /* Confirm on the row the cursor is on. */
@@ -132,7 +133,7 @@ static void ChooseCourseSelectRow(CourseSelectScreen *screen, s32 row) {
         GameMenuBusy = COURSE_SELECT_TO_CAR_SELECT;
         g_MenuOverlayPattern = 1;
         g_TimeAttackPlateStep = -1;
-        SpinCardAway();
+        SpinCardAway(screen);
         return;
     }
     if (row == COURSE_SELECT_OPTION_SAVE_OR_START) {
@@ -154,7 +155,7 @@ static void ChooseCourseSelectRow(CourseSelectScreen *screen, s32 row) {
         g_TimeAttackPlateStep = -1;
         GameMenuBusy = COURSE_SELECT_TO_RACE;
         g_GrandPrixSeries = CourseSeries(g_CourseIndex);
-        SpinCardAway();
+        SpinCardAway(screen);
         return;
     }
     PlaySoundCue(2);
@@ -185,11 +186,11 @@ static void UpdateCourseSelectInput(CourseSelectScreen *screen) {
      * looking rather than by remembering. */
     if (choice.wantsPrev && (CanSelectPrevCourse() != 0) &&
         CourseCardSettled() && (g_MenuPendingCourseIndex < 0)) {
-        BrowseToCourse(-1, 0);
+        BrowseToCourse(screen, -1, 0);
     }
     if (choice.wantsNext && (CanSelectNextCourse() != 0) &&
         CourseCardSettled() && (g_MenuPendingCourseIndex < 0)) {
-        BrowseToCourse(1, MENU_COURSE_VIEW_RIGHT_TARGET);
+        BrowseToCourse(screen, 1, MENU_COURSE_VIEW_RIGHT_TARGET);
     }
     if (choice.choosesRow) {
         ChooseCourseSelectRow(screen, choice.option);
@@ -280,7 +281,7 @@ static void UpdateSaveCountdown(CourseSelectScreen *screen,
                            ? COURSE_SELECT_TO_RECORD_ENTRY
                            : COURSE_SELECT_TO_RACE;
         g_MenuHintBarStep = -1;
-        SpinCardAway();
+        SpinCardAway(screen);
     }
 }
 
@@ -330,10 +331,10 @@ static void UpdateClassChange(CourseSelectScreen *screen,
         g_MenuViewAngleTarget = MENU_COURSE_VIEW_REBASE_SPAN;
         screen->option = 0;
         g_MenuPendingCourseIndex = -1;
-        g_CourseCardSpin = 0;
+        screen->cardSpin = 0;
         g_CourseIndex = CourseSeries(g_CourseIndex) * COURSE_SLOT_COUNT;
         g_MenuCourseModelIndex = g_CourseIndex;
-        g_CourseCardPendingGrade = CourseBestPlace(g_CourseIndex);
+        screen->cardPendingGrade = CourseBestPlace(g_CourseIndex);
     }
     RunTimedDrawScript(screen->modalScript, &g_UiScriptProgress2, 1);
     DrawClassList(ot, 1);
@@ -443,7 +444,7 @@ static void UpdateCourseSelect(CourseSelectScreen *screen) {
 
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     if (g_GrandPrixMode != 0) {
-        UpdateAndDrawCourseCard();
+        UpdateAndDrawCourseCard(screen);
     } else {
         DrawTimeAttackPlate(g_TimeAttackPlateStep);
     }

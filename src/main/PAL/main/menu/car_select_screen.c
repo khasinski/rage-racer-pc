@@ -244,6 +244,8 @@ static s32 HandOverToRace(void) {
  * still travelling, so the next frame tries again.
  */
 static void EnterChosenScreen(void) {
+    CourseSelectScreen *courseSelect = MenuCourseSelect();
+
     switch (CarSelectState()) {
     case 1:
         if ((g_MenuOutgoingScreenProgress > 0) &&
@@ -282,9 +284,9 @@ static void EnterChosenScreen(void) {
         g_MenuPendingCourseIndex = -1;
         g_MenuViewOffset = 0x3D090;
         g_MenuViewOffsetTarget = 0;
-        g_CourseCardSpin = 0x1F4000;
+        courseSelect->cardSpin = 0x1F4000;
         g_MenuCourseModelIndex = g_CourseIndex;
-        g_CourseCardPendingGrade =
+        courseSelect->cardPendingGrade =
             g_CourseProgress != NULL
                 ? g_CourseProgress->bestPlace[CourseSlot(g_CourseIndex)]
                 : 0;

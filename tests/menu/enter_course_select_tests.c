@@ -18,9 +18,6 @@ void MenuActivateScreen(s32 screen) {
     g_MenuHandlerIndex = screen;
 }
 
-s32 g_CourseCardPendingGrade;
-s32 g_CourseCardSpin;
-s32 g_CourseCardSpinTarget;
 s32 g_CourseIndex;
 CourseProgressState *g_CourseProgress;
 s32 g_MenuHandlerIndex;
@@ -52,7 +49,9 @@ static PlayerCarRuntime s_playerBefore;
 s32 RequestCarSelectAssets(void) { return s_assetRequestResult; }
 void PlaySequence(void) { s_sequenceCalls++; }
 static BrowseArrows s_browseArrows;
+static CourseSelectScreen s_courseSelect;
 BrowseArrows *MenuBrowseArrows(void) { return &s_browseArrows; }
+CourseSelectScreen *MenuCourseSelect(void) { return &s_courseSelect; }
 
 void DrawBrowseArrows(BrowseArrows *arrows, s32 step, s32 wide, s32 left, s32 right) {
     (void)arrows;
@@ -96,9 +95,9 @@ static void PoisonState(void) {
     g_MenuViewOffsetTarget = -1;
     g_MenuViewSpin = -1;
     g_UiScriptProgress = -1;
-    g_CourseCardSpin = -1;
-    g_CourseCardSpinTarget = -1;
-    g_CourseCardPendingGrade = -1;
+    s_courseSelect.cardSpin = -1;
+    s_courseSelect.cardSpinTarget = -1;
+    s_courseSelect.cardPendingGrade = -1;
     g_TimeAttackPlateStep = 0;
     s_arrowCalls = 0;
     s_imageLoads = 0;
@@ -114,8 +113,8 @@ static int CheckShowroomReset(s32 expectedGrade, s32 expectedPlateStep) {
     CHECK(g_MenuViewAngle == MENU_COURSE_VIEW_REBASE_SPAN);
     CHECK(g_MenuViewAngleTarget == MENU_COURSE_VIEW_REBASE_SPAN);
     CHECK(g_MenuViewSpin == 8 && g_UiScriptProgress == 0);
-    CHECK(g_CourseCardSpin == 2048000 && g_CourseCardSpinTarget == 0);
-    CHECK(g_CourseCardPendingGrade == expectedGrade);
+    CHECK(s_courseSelect.cardSpin == 2048000 && s_courseSelect.cardSpinTarget == 0);
+    CHECK(s_courseSelect.cardPendingGrade == expectedGrade);
     CHECK(g_TimeAttackPlateStep == expectedPlateStep);
     CHECK(memcmp(&g_PlayerCar, &s_playerBefore, sizeof(g_PlayerCar)) == 0);
     CHECK(s_sequenceCalls == 1 && s_arrowCalls == 1);

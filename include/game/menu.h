@@ -47,6 +47,10 @@ typedef struct CourseSelectScreen {
     const TimedDrawCommand *modalScript;
     s32 classChangeApplied;
     s32 curtainSlide;
+    s32 cardSpin;
+    s32 cardSpinTarget;
+    s32 cardPendingGrade;
+    s32 cardFace;
 } CourseSelectScreen;
 
 typedef struct BrowseArrows {
@@ -384,9 +388,6 @@ extern s32 g_MenuUpperAltPanelStep;
 extern s32 g_MenuLowerAltPanelStep;
 extern s32 g_CarShopUnlockAll;
 extern s32 g_MenuOutgoingScreenProgress;
-extern s32 g_CourseCardSpin;
-extern s32 g_CourseCardSpinTarget;
-extern s32 g_CourseCardPendingGrade;
 extern s32 g_TeamLogoPaintArmed;
 extern s32 g_CarSelectCursor;
 extern const TimedDrawCommand *g_TeamLogoSubPanelScript;
@@ -464,7 +465,6 @@ extern s32 g_MenuLightBurstLevel;
 extern s32 g_OwnedCarCounterSlide;
 extern s32 g_MenuUpperAltPanelProgress;
 extern s32 g_MenuLowerAltPanelProgress;
-extern s32 g_CourseCardFace;
 extern TimedDrawCommand g_CourseSelectGpScript[];
 extern TimedDrawCommand g_CourseSelectTimeAttackScript[];
 extern TimedDrawCommand g_CarSelectMenuScriptGp[];
@@ -584,7 +584,7 @@ void DrawTeamNameCharModel(TeamName *teamName);
 void DrawTireCompoundSlider(Customize *customize, u8 compound,
                             s32 confirming);
 void DrawVolumeBar(s32 level, s32 y);
-void UpdateAndDrawCourseCard(void);
+void UpdateAndDrawCourseCard(CourseSelectScreen *screen);
 void UpdateCarListCursor(void);
 void UpdateFrontend(void);
 void UpdateTitleAttract(void);

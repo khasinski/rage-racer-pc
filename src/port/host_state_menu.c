@@ -121,7 +121,6 @@ s32 g_MenuLightBurstLevel;
 s32 g_OwnedCarCounterSlide;
 s32 g_MenuUpperAltPanelProgress;
 s32 g_MenuLowerAltPanelProgress;
-s32 g_CourseCardFace;
 Vec4 g_MenuViewScale = {4096, 8192, 4096, 0};
 /* Retail stores these as one run, with tune-up prices starting at the second
  * element. Keep the public tables typed and make that relationship explicit. */
@@ -165,9 +164,6 @@ s32 g_MenuViewAngleTarget;
 s32 g_CourseSwapDelay;
 s32 g_MenuViewOffset;
 s32 g_MenuViewOffsetTarget;
-s32 g_CourseCardSpin;
-s32 g_CourseCardSpinTarget;
-s32 g_CourseCardPendingGrade;
 s32 g_MenuCourseModelIndex;
 s32 g_MenuPendingCourseIndex;
 s32 g_CarSwapFromIndex;
