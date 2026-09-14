@@ -88,7 +88,7 @@ static void ResetMenuNavigation(void) {
     courseSelect->displayedCourse = g_CourseIndex;
     g_MenuUpperAltPanelStep = 0;
     g_MenuLowerAltPanelStep = 0;
-    g_TimeAttackPlateStep = 0;
+    MenuWidgetState()->timeAttackStep = 0;
     g_MenuHintButtonsVisible = 1;
     g_MenuAltLayoutSetting = 0;
     g_CarShopUnlockAll = 0;
@@ -100,7 +100,7 @@ static void ResetMenuNavigation(void) {
 static void ResetMenuWidgets(void) {
     DrawCarSpecGraph(MenuCarSpecGraph(), 0);
     DrawMenuLightBurst(MenuWidgetState(), 0);
-    DrawTimeAttackPlate(0);
+    DrawTimeAttackPlate(MenuWidgetState());
 }
 
 void InitMenuMode(void) {

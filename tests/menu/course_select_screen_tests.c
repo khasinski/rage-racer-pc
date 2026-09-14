@@ -78,7 +78,6 @@ s32 g_PlayerCarIndex;
 s32 g_PlayerMoney;
 GameRaceProgress *g_RaceProgress;
 s32 g_SceneId;
-s32 g_TimeAttackPlateStep;
 TimedDrawCommand g_UiChromeScript[1];
 TimedDrawCommand g_UiChromeScript2[1];
 s32 g_UiScriptProgress;
@@ -187,7 +186,7 @@ void DrawSprite(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 
 void GameDrawMenuButton(s32 x0, s32 y0, s32 x1, s32 y1, u8 r, u8 g, u8 b) {
     RECORD("button", x0, y0, x1, y1, r, g, b);
 }
-void DrawTimeAttackPlate(s32 stepArg) { RECORD("timeattackplate", stepArg); }
+void DrawTimeAttackPlate(MenuWidgets *widgets) { RECORD("timeattackplate", widgets->timeAttackStep); }
 void UpdateAndDrawCourseCard(CourseSelectScreen *screen) {
     (void)screen;
     RECORD("flipcard", s_courseSelect.cardSpinTarget, s_courseSelect.cardSpin,
@@ -318,7 +317,7 @@ int main(int argc, char **argv) {
         g_PlayerCarIndex = 9;
         g_PlayerMoney = 12345;
         g_SceneId = 0;
-        g_TimeAttackPlateStep = 0;
+        s_menuWidgets.timeAttackStep = 0;
         s_courseSelect.modalScript = NULL;
 
         sprintf(label,
@@ -349,7 +348,7 @@ int main(int argc, char **argv) {
             after[13] = s_courseSelect.classChangeApplied;
             after[14] = s_courseSelect.cardSpin;
             after[15] = s_courseSelect.cardPendingGrade;
-            after[16] = g_TimeAttackPlateStep;
+            after[16] = s_menuWidgets.timeAttackStep;
             after[17] = g_MenuViewAngle;
             after[18] = g_MenuViewOffset;
             after[19] = g_MenuViewOffsetTarget;
@@ -423,7 +422,7 @@ int main(int argc, char **argv) {
             s_courseSelect.cardSpinTarget = 0x800;
             s_courseSelect.swapDelay = 7;
             s_courseSelect.displayedCourse = 0;
-            g_TimeAttackPlateStep = 0;
+            s_menuWidgets.timeAttackStep = 0;
             s_courseSelect.cardPendingGrade = 0;
             s_courseSelect.modalScript = NULL;
             g_MenuSubCursor = 0;
@@ -438,7 +437,7 @@ int main(int argc, char **argv) {
             RECORD("browsed", g_CourseIndex, s_courseSelect.pendingCourse,
                    s_courseSelect.displayedCourse, g_MenuViewAngle,
                    g_MenuViewAngleTarget, s_courseSelect.cardSpin,
-                   s_courseSelect.cardPendingGrade, g_TimeAttackPlateStep,
+                   s_courseSelect.cardPendingGrade, s_menuWidgets.timeAttackStep,
                    s_courseSelect.swapDelay);
             steps++;
         }

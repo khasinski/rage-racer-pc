@@ -293,8 +293,9 @@ static void EnterChosenScreen(void) {
             g_CourseProgress != NULL
                 ? g_CourseProgress->bestPlace[CourseSlot(g_CourseIndex)]
                 : 0;
-        DrawTimeAttackPlate(0);
-        g_TimeAttackPlateStep = CourseSeries(g_CourseIndex) != 0 ? 1 : -1;
+        MenuWidgetState()->timeAttackStep = 0;
+        DrawTimeAttackPlate(MenuWidgetState());
+        MenuWidgetState()->timeAttackStep = CourseSeries(g_CourseIndex) != 0 ? 1 : -1;
         break;
     }
     g_UiScriptProgress = 0;

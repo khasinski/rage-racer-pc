@@ -73,7 +73,7 @@ static void BrowseToCourse(CourseSelectScreen *screen, s32 step,
     screen->pendingCourse = course;
     screen->cardPendingGrade = CourseBestPlace(course);
     /* Only the extra series shows the time-attack plate. */
-    g_TimeAttackPlateStep = CourseSeries(course) == 0 ? -1 : 1;
+    MenuWidgetState()->timeAttackStep = CourseSeries(course) == 0 ? -1 : 1;
 }
 
 /* Which way out of this screen is reachable is asked three times a frame. */
@@ -132,7 +132,7 @@ static void ChooseCourseSelectRow(CourseSelectScreen *screen, s32 row) {
         PlaySoundCue(2);
         GameMenuBusy = COURSE_SELECT_TO_CAR_SELECT;
         g_MenuOverlayPattern = 1;
-        g_TimeAttackPlateStep = -1;
+        MenuWidgetState()->timeAttackStep = -1;
         SpinCardAway(screen);
         return;
     }
@@ -152,7 +152,7 @@ static void ChooseCourseSelectRow(CourseSelectScreen *screen, s32 row) {
         PlaySoundCue(3);
         StartSequenceFadeOut();
         g_MenuHintBarStep = -1;
-        g_TimeAttackPlateStep = -1;
+        MenuWidgetState()->timeAttackStep = -1;
         GameMenuBusy = COURSE_SELECT_TO_RACE;
         g_GrandPrixSeries = CourseSeries(g_CourseIndex);
         SpinCardAway(screen);
@@ -168,7 +168,7 @@ static void ChooseCourseSelectRow(CourseSelectScreen *screen, s32 row) {
     }
     GameMenuBusy = COURSE_SELECT_TO_RANKING;
     g_MenuOverlayPattern = 1;
-    g_TimeAttackPlateStep = -1;
+    MenuWidgetState()->timeAttackStep = -1;
 }
 
 static void UpdateCourseSelectInput(CourseSelectScreen *screen) {
@@ -446,7 +446,7 @@ static void UpdateCourseSelect(CourseSelectScreen *screen) {
     if (g_GrandPrixMode != 0) {
         UpdateAndDrawCourseCard(screen);
     } else {
-        DrawTimeAttackPlate(g_TimeAttackPlateStep);
+        DrawTimeAttackPlate(MenuWidgetState());
     }
     DrawCarNamePlate(MenuWidgetState());
     DrawMenuCourseView(screen);

@@ -95,8 +95,8 @@ void DrawMenuLightBurst(MenuWidgets *widgets, s32 step) {
     (void)widgets;
     if (step == 0) s_drawResetCalls++;
 }
-void DrawTimeAttackPlate(s32 step) {
-    if (step == 0) s_drawResetCalls++;
+void DrawTimeAttackPlate(MenuWidgets *widgets) {
+    if (widgets->timeAttackStep == 0) s_drawResetCalls++;
 }
 
 #define CHECK(condition)                                                       \
@@ -143,7 +143,7 @@ static void PoisonEntryState(void) {
     s_carSpecGraph.step = 19;
     g_MenuUpperAltPanelStep = 20;
     g_MenuLowerAltPanelStep = 21;
-    g_TimeAttackPlateStep = 22;
+    s_menuWidgets.timeAttackStep = 22;
     g_MenuHintButtonsVisible = 0;
     g_MenuHandlerIndex = 9;
     g_MenuOutgoingHandlerIndex = 10;
@@ -192,7 +192,7 @@ static int CheckCommonEntryState(const GameRaceProgress *progress) {
     CHECK(g_MenuOverlayPattern == 0 && s_menuWidgets.carNameStep == 0);
     CHECK(s_menuWidgets.carNameModel == 0 && s_carSpecGraph.step == 0);
     CHECK(g_MenuUpperAltPanelStep == 0 && g_MenuLowerAltPanelStep == 0);
-    CHECK(g_TimeAttackPlateStep == 0 && g_MenuHintButtonsVisible == 1);
+    CHECK(s_menuWidgets.timeAttackStep == 0 && g_MenuHintButtonsVisible == 1);
     CHECK(g_MenuHandlerIndex == -1 && g_MenuOutgoingHandlerIndex == -1);
     CHECK(g_MenuAltLayoutSetting == 0 && g_CarShopUnlockAll == 0);
     CHECK(g_MenuScreen == MENU_SCREEN_BOOTSTRAP);

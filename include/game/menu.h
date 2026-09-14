@@ -112,6 +112,8 @@ typedef struct MenuWidgets {
     s32 carNameFade;
     s32 carNameStep;
     s32 carNameModel;
+    s32 timeAttackProgress;
+    s32 timeAttackStep;
 } MenuWidgets;
 
 typedef struct MenuRuntime {
@@ -449,7 +451,6 @@ extern s16 g_PrevOwnedCarIndex;
 extern s32 g_ClassRecordColumn;
 extern s32 g_ClassRecordRow;
 extern u16 g_TeamLogoSwatches[15];
-extern s32 g_TimeAttackPlateStep;
 extern s32 g_TitleAttractTimer;
 extern s32 g_TitleExitTimer;
 extern s32 g_TitlePulse;
@@ -467,7 +468,7 @@ void UpdateClassRecordBrowse(void);
 void DrawPadTypeHint(void);
 void UpdateSoundOptionMenu(void);
 void UpdateSoundSettingAdjust(void);
-void DrawTimeAttackPlate(s32 stepArg);
+void DrawTimeAttackPlate(MenuWidgets *widgets);
 /* Validate and activate one double-buffered showroom model for both CPU-side
  * model access and rendering. */
 s32 ActivateShowroomCarModel(s32 slot);

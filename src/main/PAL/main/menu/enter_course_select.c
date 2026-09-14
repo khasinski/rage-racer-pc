@@ -29,7 +29,7 @@ static void ResetCourseSelectShowroom(CourseSelectScreen *screen) {
         g_CourseProgress != NULL
             ? g_CourseProgress->bestPlace[CourseSlot(course)]
             : 0;
-    g_TimeAttackPlateStep = CourseSeries(course) != 0 ? 1 : -1;
+    MenuWidgetState()->timeAttackStep = CourseSeries(course) != 0 ? 1 : -1;
 }
 
 /* g_MenuScreenUpdate[MENU_SCREEN_BOOTSTRAP]: wait for the shared car-select

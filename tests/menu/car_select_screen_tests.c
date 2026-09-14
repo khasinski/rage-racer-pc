@@ -82,7 +82,6 @@ s16 g_PrevOwnedCarIndex;
 GameRaceProgress *g_RaceProgress;
 s32 g_SceneId;
 s32 g_ShopCarIndex;
-s32 g_TimeAttackPlateStep;
 TimedDrawCommand g_UiChromeScript[1];
 TimedDrawCommand g_UiChromeScript2[1];
 s32 g_UiScriptProgress;
@@ -205,7 +204,7 @@ void RestoreTeamLogoClut(void) { RECORD("restoreclut", 0); }
 void DrawEngineerShopPricePanel(s32 step, s32 money, s32 price) {
     RECORD("engineerprice", step, money, price);
 }
-void DrawTimeAttackPlate(s32 stepArg) { RECORD("timeattackplate", stepArg); }
+void DrawTimeAttackPlate(MenuWidgets *widgets) { RECORD("timeattackplate", widgets->timeAttackStep); }
 
 static GameRaceProgress s_progress;
 static CourseProgressState s_course;
@@ -318,7 +317,7 @@ int main(int argc, char **argv) {
         g_MenuViewOffsetTarget = 0;
         g_PlayerMoney = 12345;
         g_SceneId = 0;
-        g_TimeAttackPlateStep = 0;
+        s_menuWidgets.timeAttackStep = 0;
         s_courseSelect.cardPendingGrade = 0;
         s_courseSelect.cardSpin = 0;
         s_carSelect.popupScript = NULL;
@@ -353,7 +352,7 @@ int main(int argc, char **argv) {
             after[16] = g_SceneId;
             after[17] = g_CourseIndex;
             after[18] = g_GrandPrixSeries;
-            after[19] = g_TimeAttackPlateStep;
+            after[19] = s_menuWidgets.timeAttackStep;
             after[20] = ScriptId(s_carSelect.popupScript);
             after[21] = g_MenuAltLayout;
             Record("state", after, 22);

@@ -5,6 +5,8 @@
 #include <limits.h>
 #include <stdio.h>
 
+static MenuWidgets s_menuWidgets;
+
 extern s32 g_MenuHandlerIndex;
 extern s32 g_MenuOutgoingHandlerIndex;
 extern s32 g_MenuScreen;
@@ -26,7 +28,6 @@ s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuOverlayPattern;
 s32 g_MenuScreen;
 s32 g_RankingCursor;
-s32 g_TimeAttackPlateStep;
 s32 g_UiScriptProgress;
 s32 g_UiScriptProgress2;
 u16 g_PadPressed;
@@ -66,7 +67,7 @@ void DrawMenuLightBurst(MenuWidgets *widgets, s32 step) {
     (void)widgets;
     (void)step;
 }
-void DrawTimeAttackPlate(s32 step) { s_timeAttackPlateStep = step; }
+void DrawTimeAttackPlate(MenuWidgets *widgets) { s_timeAttackPlateStep = widgets->timeAttackStep; }
 void PlaySoundCue(s32 cue) { s_lastCue = cue; }
 
 #define CHECK(condition)                                                       \
@@ -141,13 +142,13 @@ int main(void) {
     UpdateRankingScreen();
     CHECK(GameMenuBusy == 0 && g_MenuScreen == 1);
     CHECK(g_MenuHandlerIndex == 1 && g_MenuOutgoingHandlerIndex == 2);
-    CHECK(g_RankingCursor == 0 && g_TimeAttackPlateStep == 1);
+    CHECK(g_RankingCursor == 0 && s_menuWidgets.timeAttackStep == 1);
     CHECK(s_timeAttackPlateStep == 0);
 
     GameMenuBusy = 1;
     g_CourseIndex = 3;
     UpdateRankingScreen();
-    CHECK(g_TimeAttackPlateStep == -1);
+    CHECK(s_menuWidgets.timeAttackStep == -1);
 
     Reset();
     GameMenuBusy = -1;
@@ -178,5 +179,4 @@ int main(void) {
     return 0;
 }
 
-static MenuWidgets s_menuWidgets;
 MenuWidgets *MenuWidgetState(void) { return &s_menuWidgets; }

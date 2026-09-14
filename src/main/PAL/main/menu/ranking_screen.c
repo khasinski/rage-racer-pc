@@ -159,6 +159,7 @@ void UpdateRankingScreen(void) {
     g_RankingCursor = 0;
     g_UiScriptProgress = 0;
     GameMenuBusy = 0;
-    DrawTimeAttackPlate(0);
-    g_TimeAttackPlateStep = CourseSeries(g_CourseIndex) != 0 ? 1 : -1;
+    MenuWidgetState()->timeAttackStep = 0;
+    DrawTimeAttackPlate(MenuWidgetState());
+    MenuWidgetState()->timeAttackStep = CourseSeries(g_CourseIndex) != 0 ? 1 : -1;
 }

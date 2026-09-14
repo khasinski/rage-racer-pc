@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <string.h>
 
+static MenuWidgets s_menuWidgets;
+
 extern s32 g_MenuHandlerIndex;
 extern s32 g_MenuOutgoingHandlerIndex;
 extern s32 g_MenuScreen;
@@ -35,7 +37,6 @@ Rect g_TeamLogoClutRect;
 Rect g_TeamLogoRect;
 u8 g_TeamNameChars[16];
 u8 g_TeamNameLength;
-s32 g_TimeAttackPlateStep;
 s32 g_UiScriptProgress;
 
 static s32 s_assetRequestResult;
@@ -98,7 +99,7 @@ static void PoisonState(void) {
     s_courseSelect.cardSpin = -1;
     s_courseSelect.cardSpinTarget = -1;
     s_courseSelect.cardPendingGrade = -1;
-    g_TimeAttackPlateStep = 0;
+    s_menuWidgets.timeAttackStep = 0;
     s_arrowCalls = 0;
     s_imageLoads = 0;
     s_sequenceCalls = 0;
@@ -115,7 +116,7 @@ static int CheckShowroomReset(s32 expectedGrade, s32 expectedPlateStep) {
     CHECK(g_MenuViewSpin == 8 && g_UiScriptProgress == 0);
     CHECK(s_courseSelect.cardSpin == 2048000 && s_courseSelect.cardSpinTarget == 0);
     CHECK(s_courseSelect.cardPendingGrade == expectedGrade);
-    CHECK(g_TimeAttackPlateStep == expectedPlateStep);
+    CHECK(s_menuWidgets.timeAttackStep == expectedPlateStep);
     CHECK(memcmp(&g_PlayerCar, &s_playerBefore, sizeof(g_PlayerCar)) == 0);
     CHECK(s_sequenceCalls == 1 && s_arrowCalls == 1);
     CHECK(s_imageLoads == 1 && s_teamLogoClutUploads == 1 &&
@@ -163,3 +164,5 @@ int main(void) {
     puts("enter course select tests passed");
     return 0;
 }
+
+MenuWidgets *MenuWidgetState(void) { return &s_menuWidgets; }

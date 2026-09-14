@@ -146,7 +146,6 @@ s32 g_MenuHintButtonsVisible;
 s32 g_MenuOverlayPattern;
 s32 g_MenuUpperAltPanelStep;
 s32 g_MenuLowerAltPanelStep;
-s32 g_TimeAttackPlateStep;
 s32 g_MenuAltLayoutSetting;
 s32 g_CarShopUnlockAll;
 s32 g_MenuOutgoingScreenProgress;

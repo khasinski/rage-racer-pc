@@ -10,6 +10,12 @@ GameRenderState g_RenderState;
 static s32 s_drawCount;
 static s16 s_top;
 static s16 s_bottom;
+static MenuWidgets s_widgets;
+
+static void DrawPlate(s32 step) {
+    s_widgets.timeAttackStep = step;
+    DrawTimeAttackPlate(&s_widgets);
+}
 
 void GameDrawTexturedQuad(
     GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u16 x2, u16 y2, u16 x3,
@@ -32,29 +38,29 @@ int main(void) {
 
     memset(&g_RenderState, 0, sizeof(g_RenderState));
     g_RenderState.draw.orderingTable = &orderingTable;
-    DrawTimeAttackPlate(0);
+    DrawPlate(0);
     if (s_drawCount != 0) return 1;
 
-    DrawTimeAttackPlate(5);
+    DrawPlate(5);
     if (s_drawCount != 0) return 1;
-    DrawTimeAttackPlate(3);
+    DrawPlate(3);
     if (s_drawCount != 1 ||
         s_top != 0xD2 || s_bottom != 0xDD) return 1;
-    DrawTimeAttackPlate(20);
+    DrawPlate(20);
     if (s_drawCount != 2) return 1;
-    DrawTimeAttackPlate(-20);
+    DrawPlate(-20);
     if (s_drawCount != 2) return 1;
 
-    DrawTimeAttackPlate(0);
-    DrawTimeAttackPlate(100);
-    DrawTimeAttackPlate(1);
+    DrawPlate(0);
+    DrawPlate(100);
+    DrawPlate(1);
     if (s_drawCount != 3 || s_top != 0xCB || s_bottom != 0xE4) return 1;
-    DrawTimeAttackPlate(-100);
+    DrawPlate(-100);
     if (s_drawCount != 3) return 1;
 
     g_RenderState.draw.orderingTable = NULL;
-    DrawTimeAttackPlate(5);
-    DrawTimeAttackPlate(1);
+    DrawPlate(5);
+    DrawPlate(1);
     if (s_drawCount != 3) return 1;
 
     puts("time attack plate animation preserved");
