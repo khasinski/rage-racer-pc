@@ -266,9 +266,9 @@ static void EnterChosenScreen(void) {
         MenuActivateScreen(MENU_SCREEN_CAR_SHOP);
         DrawCarShopPricePanel(0, 0, 0);
         DrawBrowseArrows(MenuBrowseArrows(), 0, 0, 0, 0);
-        DrawMenuAltPanel(MenuWidgetState(), 0, 0);
-        g_MenuUpperAltPanelStep = 0;
-        g_MenuLowerAltPanelStep = 0;
+        MenuWidgetState()->upperAltPanelStep = 0;
+        MenuWidgetState()->lowerAltPanelStep = 0;
+        DrawMenuAltPanel(MenuWidgetState());
         ClearTeamNameTexture();
         RestoreTeamLogoClut();
         break;

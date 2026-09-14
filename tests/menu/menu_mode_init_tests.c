@@ -141,8 +141,8 @@ static void PoisonEntryState(void) {
     s_menuWidgets.carNameStep = 17;
     s_menuWidgets.carNameModel = 18;
     s_carSpecGraph.step = 19;
-    g_MenuUpperAltPanelStep = 20;
-    g_MenuLowerAltPanelStep = 21;
+    s_menuWidgets.upperAltPanelStep = 20;
+    s_menuWidgets.lowerAltPanelStep = 21;
     s_menuWidgets.timeAttackStep = 22;
     g_MenuHintButtonsVisible = 0;
     g_MenuHandlerIndex = 9;
@@ -191,7 +191,7 @@ static int CheckCommonEntryState(const GameRaceProgress *progress) {
     CHECK(s_courseSelect.pendingCourse == -1 && g_CarSwapToIndex == -1);
     CHECK(g_MenuOverlayPattern == 0 && s_menuWidgets.carNameStep == 0);
     CHECK(s_menuWidgets.carNameModel == 0 && s_carSpecGraph.step == 0);
-    CHECK(g_MenuUpperAltPanelStep == 0 && g_MenuLowerAltPanelStep == 0);
+    CHECK(s_menuWidgets.upperAltPanelStep == 0 && s_menuWidgets.lowerAltPanelStep == 0);
     CHECK(s_menuWidgets.timeAttackStep == 0 && g_MenuHintButtonsVisible == 1);
     CHECK(g_MenuHandlerIndex == -1 && g_MenuOutgoingHandlerIndex == -1);
     CHECK(g_MenuAltLayoutSetting == 0 && g_CarShopUnlockAll == 0);

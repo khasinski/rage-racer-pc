@@ -67,8 +67,6 @@ s32 g_CarSwapToIndex;
 CarEntry *g_CarTable;
 s32 g_MenuAltLayout;
 s32 g_MenuAltLayoutSetting;
-s32 g_MenuUpperAltPanelStep;
-s32 g_MenuLowerAltPanelStep;
 u8 g_MenuBlankCaption;
 s32 g_MenuConfirmTimer;
 s32 g_MenuHandlerIndex;
@@ -170,9 +168,9 @@ void DrawCarNamePlate(MenuWidgets *widgets) {
     RECORD("nameplate", step, model, 0);
 }
 void DrawMenuCarView(void) { RECORD("carview", 0); }
-void DrawMenuAltPanel(MenuWidgets *widgets, s32 stepA, s32 stepB) {
-    (void)widgets;
-    RECORD("altpanel", stepA, stepB);
+void DrawMenuAltPanel(MenuWidgets *widgets) {
+    RECORD("altpanel", widgets->upperAltPanelStep,
+           widgets->lowerAltPanelStep);
 }
 static BrowseArrows s_browseArrows;
 BrowseArrows *MenuBrowseArrows(void) { return &s_browseArrows; }
@@ -314,8 +312,8 @@ int main(int argc, char **argv) {
         s_menuWidgets.carNameStep = 4;
         s_menuWidgets.carNameModel = 2;
         g_CarSwapFromIndex = 0;
-        g_MenuUpperAltPanelStep = 0;
-        g_MenuLowerAltPanelStep = 0;
+        s_menuWidgets.upperAltPanelStep = 0;
+        s_menuWidgets.lowerAltPanelStep = 0;
         g_MenuHandlerIndex = 0;
         g_MenuOutgoingHandlerIndex = 0;
         g_MenuOverlayPattern = 0;
@@ -346,8 +344,8 @@ int main(int argc, char **argv) {
             after[8] = g_MenuViewAngleTarget;
             after[9] = g_MenuSubCursor;
             after[10] = g_MenuConfirmTimer;
-            after[11] = g_MenuUpperAltPanelStep;
-            after[12] = g_MenuLowerAltPanelStep;
+            after[11] = s_menuWidgets.upperAltPanelStep;
+            after[12] = s_menuWidgets.lowerAltPanelStep;
             after[13] = g_MenuOverlayPattern;
             after[14] = g_MenuScreen;
             after[15] = g_MenuHandlerIndex;

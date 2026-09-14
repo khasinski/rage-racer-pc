@@ -86,8 +86,8 @@ static void ResetMenuNavigation(void) {
     MenuWidgetState()->carNameModel = 0;
     carSpecGraph->step = 0;
     courseSelect->displayedCourse = g_CourseIndex;
-    g_MenuUpperAltPanelStep = 0;
-    g_MenuLowerAltPanelStep = 0;
+    MenuWidgetState()->upperAltPanelStep = 0;
+    MenuWidgetState()->lowerAltPanelStep = 0;
     MenuWidgetState()->timeAttackStep = 0;
     g_MenuHintButtonsVisible = 1;
     g_MenuAltLayoutSetting = 0;

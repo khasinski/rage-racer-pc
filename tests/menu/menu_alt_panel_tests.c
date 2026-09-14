@@ -8,6 +8,12 @@
 s32 g_MenuAltLayout;
 static MenuWidgets s_widgets;
 
+static void DrawPanel(s32 upperStep, s32 lowerStep) {
+    s_widgets.upperAltPanelStep = upperStep;
+    s_widgets.lowerAltPanelStep = lowerStep;
+    DrawMenuAltPanel(&s_widgets);
+}
+
 GameRenderState g_RenderState;
 
 typedef struct QuadCall {
@@ -72,13 +78,13 @@ int main(void) {
 
     s_widgets.upperAltPanel = 7;
     s_widgets.lowerAltPanel = 8;
-    DrawMenuAltPanel(&s_widgets, 0, 0);
+    DrawPanel(0, 0);
     CHECK(s_widgets.upperAltPanel == 0 && s_widgets.lowerAltPanel == 0);
     CHECK(s_callCount == 0);
 
-    DrawMenuAltPanel(&s_widgets, 1, 0);
+    DrawPanel(1, 0);
     CHECK(s_widgets.upperAltPanel == 1 && s_callCount == 0);
-    DrawMenuAltPanel(&s_widgets, 1, 0);
+    DrawPanel(1, 0);
     CHECK(s_widgets.upperAltPanel == 2 && s_callCount == 1);
     CHECK(s_calls[0].ot == RENDER_OT_BASE);
     CHECK(s_calls[0].x[0] == 0xA8 && s_calls[0].x[1] == 0xC4);
@@ -88,15 +94,15 @@ int main(void) {
     CHECK(s_calls[0].clut == 0x232);
 
     ResetCalls();
-    DrawMenuAltPanel(&s_widgets, -1, 0);
+    DrawPanel(-1, 0);
     CHECK(s_widgets.upperAltPanel == 1 && s_callCount == 1);
     CHECK(s_calls[0].y[0] == 0x9E && s_calls[0].y[2] == 0x9F);
 
     ResetCalls();
-    DrawMenuAltPanel(&s_widgets, 0, 0);
-    DrawMenuAltPanel(&s_widgets, 0, 1);
+    DrawPanel(0, 0);
+    DrawPanel(0, 1);
     CHECK(s_widgets.lowerAltPanel == 1 && s_callCount == 0);
-    DrawMenuAltPanel(&s_widgets, 0, 1);
+    DrawPanel(0, 1);
     CHECK(s_widgets.lowerAltPanel == 2 && s_callCount == 1);
     CHECK(s_calls[0].x[0] == 0xC0 && s_calls[0].x[1] == 0x10E);
     CHECK(s_calls[0].y[0] == 0x128 && s_calls[0].y[2] == 0x129);
@@ -107,20 +113,20 @@ int main(void) {
     g_MenuAltLayout = 1;
     s_widgets.upperAltPanel = 1;
     s_widgets.lowerAltPanel = 1;
-    DrawMenuAltPanel(&s_widgets, INT_MAX, INT_MAX);
+    DrawPanel(INT_MAX, INT_MAX);
     CHECK(s_callCount == 2);
     CHECK(s_calls[0].x[0] == 0x69 && s_calls[1].x[0] == 0x92);
     CHECK(s_widgets.upperAltPanel == 14);
     CHECK(s_widgets.lowerAltPanel == 16);
 
     ResetCalls();
-    DrawMenuAltPanel(&s_widgets, INT_MIN, INT_MIN);
+    DrawPanel(INT_MIN, INT_MIN);
     CHECK(s_widgets.upperAltPanel == 0 && s_widgets.lowerAltPanel == 0);
     CHECK(s_callCount == 0);
 
     g_RenderState.draw.orderingTable = NULL;
-    DrawMenuAltPanel(&s_widgets, 1, 1);
-    DrawMenuAltPanel(&s_widgets, 1, 1);
+    DrawPanel(1, 1);
+    DrawPanel(1, 1);
     CHECK(s_widgets.upperAltPanel == 2);
     CHECK(s_widgets.lowerAltPanel == 2);
     CHECK(s_callCount == 0);

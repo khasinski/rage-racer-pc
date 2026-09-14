@@ -42,8 +42,6 @@ s16 g_GrandPrixMode;
 s16 g_GrandPrixSeries;
 s32 g_MenuAltLayout;
 s32 g_MenuAltLayoutSetting;
-s32 g_MenuUpperAltPanelStep;
-s32 g_MenuLowerAltPanelStep;
 s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
 
@@ -195,9 +193,9 @@ s32 GetCarUnlockLevel(s32 model) { RECORD("unlocklevel", model); return 3; }
 void DrawCarShopPricePanel(s32 step, s32 money, s32 price) {
     RECORD("shopprice", step, money, price);
 }
-void DrawMenuAltPanel(MenuWidgets *widgets, s32 stepA, s32 stepB) {
-    (void)widgets;
-    RECORD("altpanel", stepA, stepB);
+void DrawMenuAltPanel(MenuWidgets *widgets) {
+    RECORD("altpanel", widgets->upperAltPanelStep,
+           widgets->lowerAltPanelStep);
 }
 void ClearTeamNameTexture(void) { RECORD("clearteamname", 0); }
 void RestoreTeamLogoClut(void) { RECORD("restoreclut", 0); }
@@ -305,8 +303,8 @@ int main(int argc, char **argv) {
         g_CourseIndex = 6;
         g_GrandPrixClass = gp ? 5 : 2;
         g_GrandPrixSeries = 3;
-        g_MenuUpperAltPanelStep = 0;
-        g_MenuLowerAltPanelStep = 0;
+        s_menuWidgets.upperAltPanelStep = 0;
+        s_menuWidgets.lowerAltPanelStep = 0;
         s_courseSelect.displayedCourse = 0;
         g_MenuHandlerIndex = 0;
         g_MenuOutgoingHandlerIndex = 0;

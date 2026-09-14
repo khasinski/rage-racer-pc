@@ -4,10 +4,11 @@
 #include <limits.h>
 #include <stdio.h>
 
+static MenuWidgets s_menuWidgets;
+
 s32 g_CarListCursor;
 s32 g_CarSwapFromIndex;
 s32 g_CarSwapToIndex;
-s32 g_MenuLowerAltPanelStep;
 s32 g_MenuViewAngle;
 s32 g_MenuViewAngleTarget;
 s32 g_PlayerCarIndex;
@@ -100,7 +101,7 @@ int main(void) {
     ResetCalls();
     g_MenuViewAngle = 700000;
     g_MenuViewAngleTarget = 500000;
-    g_MenuLowerAltPanelStep = 5;
+    s_menuWidgets.lowerAltPanelStep = 5;
     MenuSpinToCar(&shownCar, 2, 6, 1200000);
     CHECK(shownCar == 6);
     CHECK(s_requestCount == 1 && s_lastRequestedCar == 6);
@@ -108,20 +109,20 @@ int main(void) {
     CHECK(g_CarSwapFromIndex == 2 && g_CarSwapToIndex == 6);
     CHECK(g_MenuViewAngleTarget == 1200000);
     CHECK(g_MenuViewAngle == 200000);
-    CHECK(g_MenuLowerAltPanelStep == -1);
+    CHECK(s_menuWidgets.lowerAltPanelStep == -1);
 
     ResetCalls();
     s_requestResult = 0;
     g_MenuViewAngle = 123;
     g_MenuViewAngleTarget = 456;
-    g_MenuLowerAltPanelStep = 7;
+    s_menuWidgets.lowerAltPanelStep = 7;
     g_CarSwapFromIndex = 8;
     g_CarSwapToIndex = 9;
     MenuSpinToCar(&shownCar, 6, 3, 789);
     CHECK(s_requestCount == 1 && s_lastRequestedCar == 3);
     CHECK(s_soundCount == 0 && shownCar == 6);
     CHECK(g_MenuViewAngle == 123 && g_MenuViewAngleTarget == 456);
-    CHECK(g_MenuLowerAltPanelStep == 7);
+    CHECK(s_menuWidgets.lowerAltPanelStep == 7);
     CHECK(g_CarSwapFromIndex == 8 && g_CarSwapToIndex == 9);
 
     ResetCalls();
@@ -166,3 +167,5 @@ int main(void) {
     puts("menu turntable tests passed");
     return 0;
 }
+
+MenuWidgets *MenuWidgetState(void) { return &s_menuWidgets; }

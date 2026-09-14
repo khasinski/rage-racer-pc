@@ -29,8 +29,10 @@ static void DrawLowerAltPanel(GameOrderingTableEntry *ot, s32 progress) {
                          0x58, 0x7F, 0x7F, 0x7F, 0x259, 0, 0, 0x1C);
 }
 
-void DrawMenuAltPanel(MenuWidgets *widgets, s32 upperStep, s32 lowerStep) {
+void DrawMenuAltPanel(MenuWidgets *widgets) {
     GameOrderingTableEntry *ot = RENDER_OT_BASE;
+    s32 upperStep = widgets->upperAltPanelStep;
+    s32 lowerStep = widgets->lowerAltPanelStep;
 
     if (upperStep == 0 && lowerStep == 0) {
         widgets->upperAltPanel = 0;

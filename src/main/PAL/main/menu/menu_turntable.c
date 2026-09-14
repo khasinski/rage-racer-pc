@@ -36,7 +36,7 @@ void MenuSpinToCar(s32 *shownCar, s32 fromIndex, s32 toIndex, s32 newTarget) {
     previousTarget = g_MenuViewAngleTarget;
     g_CarSwapFromIndex = fromIndex;
     g_MenuViewAngleTarget = newTarget;
-    g_MenuLowerAltPanelStep = -1;
+    MenuWidgetState()->lowerAltPanelStep = -1;
     g_CarSwapToIndex = *shownCar;
     g_MenuViewAngle = RebaseCarouselValue(
         g_MenuViewAngle, previousTarget, MENU_CAR_VIEW_REBASE_SPAN);
