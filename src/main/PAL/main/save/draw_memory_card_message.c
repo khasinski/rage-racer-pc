@@ -18,8 +18,9 @@ static int IsMemoryCardBanner(s32 message) {
            message <= MEMORY_CARD_BANNER_LAST;
 }
 
-static void DrawMemoryCardMessageText(s32 message) {
-    MemoryCardMessageRow *row = g_McMessageRows[message];
+static void DrawMemoryCardMessageText(
+    s32 message, const MemoryCardMessageLayout *layout) {
+    const MemoryCardMessageRow *row = layout->rows[message];
     s32 x = 0x60;
     s32 y = 0x40;
     u8 nextColumn = 1;
@@ -27,7 +28,7 @@ static void DrawMemoryCardMessageText(s32 message) {
     if (row == NULL) return;
     for (;;) {
         if (nextColumn != 1) {
-            x = g_McMessageColumnX[nextColumn];
+            x = layout->columnX[nextColumn];
             y = 0x60;
         }
         DrawSpriteString(x, y, row->text, 0x7F81);
@@ -43,6 +44,7 @@ static void DrawMemoryCardMessageText(s32 message) {
 }
 
 void DrawMemoryCardMessage(s32 message) {
+    const MemoryCardMessageLayout layout = GetMemoryCardMessageLayout();
     GameOrderingTableEntry *ot;
     u8 *prim;
 
@@ -70,7 +72,7 @@ void DrawMemoryCardMessage(s32 message) {
          * after it. Reading it first queued the icon over the text packets
          * and left the ordering table with a link back into itself, which
          * hung the modern renderer's capture walk on the memory card menu. */
-        DrawMemoryCardMessageText(message);
+        DrawMemoryCardMessageText(message, &layout);
         prim = RENDER_PRIM_CURSOR_AS(u8);
         if (message >= MEMORY_CARD_SLOT_MESSAGE_FIRST &&
             message <= MEMORY_CARD_SLOT_MESSAGE_LAST) {

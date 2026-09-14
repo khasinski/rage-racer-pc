@@ -239,51 +239,57 @@ const char *g_NativeCarClassNames[GAME_CAR_COUNT] = {
 };
 char g_SaveTitleSjis[MEMORY_CARD_SAVE_TITLE_STORAGE_SIZE];
 char g_SaveFilePath[MEMORY_CARD_SAVE_PATH_STORAGE_SIZE];
-static char g_McMessage00[] = "Select file to save.";
-static char g_McMessage01[] = "Select file to load.";
-static char g_McMessage02[] = "No Memory card.";
-static char g_McMessage03[] = "Please insert a Memory card.";
-static char g_McMessage04[] = "Memory card full.";
-static char g_McMessage05[] = "Please delete a file.";
-static char g_McMessage06[] = "No data in Memory card.";
-static char g_McMessage07[] = "Please insert another card.";
-static char g_McMessage08[] = "New Memory card.";
-static char g_McMessage09[] = "Format Memory card?";
-static char g_McMessage10[] = "                      Yes       No";
-static char g_McMessage11[] = "Overwrite old file?";
-static char g_McMessage17[] = "Now accessing Memory card.";
-static char g_McMessage18[] = "Memory card error.";
-static char g_McMessage19[] = "LOAD DATA OK!";
-static char g_McMessage20[] = "SAVE DATA OK!";
-static char g_McMessage21[] = "FORMAT DATA OK!";
-static char g_McMessage22[] = "No file found.";
-static char g_McMessage23[] = "Choose another file.";
+static const char s_mcMessage00[] = "Select file to save.";
+static const char s_mcMessage01[] = "Select file to load.";
+static const char s_mcMessage02[] = "No Memory card.";
+static const char s_mcMessage03[] = "Please insert a Memory card.";
+static const char s_mcMessage04[] = "Memory card full.";
+static const char s_mcMessage05[] = "Please delete a file.";
+static const char s_mcMessage06[] = "No data in Memory card.";
+static const char s_mcMessage07[] = "Please insert another card.";
+static const char s_mcMessage08[] = "New Memory card.";
+static const char s_mcMessage09[] = "Format Memory card?";
+static const char s_mcMessage10[] = "                      Yes       No";
+static const char s_mcMessage11[] = "Overwrite old file?";
+static const char s_mcMessage17[] = "Now accessing Memory card.";
+static const char s_mcMessage18[] = "Memory card error.";
+static const char s_mcMessage19[] = "LOAD DATA OK!";
+static const char s_mcMessage20[] = "SAVE DATA OK!";
+static const char s_mcMessage21[] = "FORMAT DATA OK!";
+static const char s_mcMessage22[] = "No file found.";
+static const char s_mcMessage23[] = "Choose another file.";
 #define MC_MESSAGE_ROW(message_, flags_) \
     {.text = (message_), .column = (flags_), .reserved = {0, 0, 0}}
-static MemoryCardMessageRow g_RageMcMessageRowStorage[24] = {
-    MC_MESSAGE_ROW(g_McMessage00, 0), MC_MESSAGE_ROW(g_McMessage01, 0), MC_MESSAGE_ROW(g_McMessage02, 2),
-    MC_MESSAGE_ROW(g_McMessage03, 0), MC_MESSAGE_ROW(g_McMessage04, 2), MC_MESSAGE_ROW(g_McMessage05, 0),
-    MC_MESSAGE_ROW(g_McMessage06, 2), MC_MESSAGE_ROW(g_McMessage07, 0), MC_MESSAGE_ROW(g_McMessage08, 0),
-    MC_MESSAGE_ROW(g_McMessage09, 2), MC_MESSAGE_ROW(g_McMessage10, 0), MC_MESSAGE_ROW(g_McMessage11, 2),
-    MC_MESSAGE_ROW(g_McMessage10, 0), MC_MESSAGE_ROW(g_McMessage11, 2), MC_MESSAGE_ROW(g_McMessage10, 0),
-    MC_MESSAGE_ROW(g_McMessage11, 2), MC_MESSAGE_ROW(g_McMessage10, 0), MC_MESSAGE_ROW(g_McMessage17, 0),
-    MC_MESSAGE_ROW(g_McMessage18, 0), MC_MESSAGE_ROW(g_McMessage19, 0), MC_MESSAGE_ROW(g_McMessage20, 0),
-    MC_MESSAGE_ROW(g_McMessage21, 0), MC_MESSAGE_ROW(g_McMessage22, 2), MC_MESSAGE_ROW(g_McMessage23, 0)
+static const MemoryCardMessageRow s_mcMessageRowsStorage[24] = {
+    MC_MESSAGE_ROW(s_mcMessage00, 0), MC_MESSAGE_ROW(s_mcMessage01, 0), MC_MESSAGE_ROW(s_mcMessage02, 2),
+    MC_MESSAGE_ROW(s_mcMessage03, 0), MC_MESSAGE_ROW(s_mcMessage04, 2), MC_MESSAGE_ROW(s_mcMessage05, 0),
+    MC_MESSAGE_ROW(s_mcMessage06, 2), MC_MESSAGE_ROW(s_mcMessage07, 0), MC_MESSAGE_ROW(s_mcMessage08, 0),
+    MC_MESSAGE_ROW(s_mcMessage09, 2), MC_MESSAGE_ROW(s_mcMessage10, 0), MC_MESSAGE_ROW(s_mcMessage11, 2),
+    MC_MESSAGE_ROW(s_mcMessage10, 0), MC_MESSAGE_ROW(s_mcMessage11, 2), MC_MESSAGE_ROW(s_mcMessage10, 0),
+    MC_MESSAGE_ROW(s_mcMessage11, 2), MC_MESSAGE_ROW(s_mcMessage10, 0), MC_MESSAGE_ROW(s_mcMessage17, 0),
+    MC_MESSAGE_ROW(s_mcMessage18, 0), MC_MESSAGE_ROW(s_mcMessage19, 0), MC_MESSAGE_ROW(s_mcMessage20, 0),
+    MC_MESSAGE_ROW(s_mcMessage21, 0), MC_MESSAGE_ROW(s_mcMessage22, 2), MC_MESSAGE_ROW(s_mcMessage23, 0)
 };
 #undef MC_MESSAGE_ROW
-MemoryCardMessageRow *g_McMessageRows[MEMORY_CARD_MESSAGE_COUNT] = {
-    &g_RageMcMessageRowStorage[0], &g_RageMcMessageRowStorage[1],
-    &g_RageMcMessageRowStorage[2], &g_RageMcMessageRowStorage[4],
-    &g_RageMcMessageRowStorage[6], &g_RageMcMessageRowStorage[8],
-    &g_RageMcMessageRowStorage[9], &g_RageMcMessageRowStorage[9],
-    &g_RageMcMessageRowStorage[11], &g_RageMcMessageRowStorage[11],
-    &g_RageMcMessageRowStorage[13], &g_RageMcMessageRowStorage[13],
-    &g_RageMcMessageRowStorage[15], &g_RageMcMessageRowStorage[15],
-    &g_RageMcMessageRowStorage[17], &g_RageMcMessageRowStorage[18],
-    &g_RageMcMessageRowStorage[19], &g_RageMcMessageRowStorage[20],
-    &g_RageMcMessageRowStorage[21], &g_RageMcMessageRowStorage[22]
+static const MemoryCardMessageRow *const s_mcMessageRows[MEMORY_CARD_MESSAGE_COUNT] = {
+    &s_mcMessageRowsStorage[0], &s_mcMessageRowsStorage[1],
+    &s_mcMessageRowsStorage[2], &s_mcMessageRowsStorage[4],
+    &s_mcMessageRowsStorage[6], &s_mcMessageRowsStorage[8],
+    &s_mcMessageRowsStorage[9], &s_mcMessageRowsStorage[9],
+    &s_mcMessageRowsStorage[11], &s_mcMessageRowsStorage[11],
+    &s_mcMessageRowsStorage[13], &s_mcMessageRowsStorage[13],
+    &s_mcMessageRowsStorage[15], &s_mcMessageRowsStorage[15],
+    &s_mcMessageRowsStorage[17], &s_mcMessageRowsStorage[18],
+    &s_mcMessageRowsStorage[19], &s_mcMessageRowsStorage[20],
+    &s_mcMessageRowsStorage[21], &s_mcMessageRowsStorage[22]
 };
-s16 g_McMessageColumnX[MEMORY_CARD_MESSAGE_COLUMN_COUNT];
+static const s16 s_mcMessageColumnX[MEMORY_CARD_MESSAGE_COLUMN_COUNT] = {
+    0, 0, 0x60, 0x78, 0xB4,
+};
+
+MemoryCardMessageLayout GetMemoryCardMessageLayout(void) {
+    return (MemoryCardMessageLayout){s_mcMessageRows, s_mcMessageColumnX};
+}
 static char g_CdAudioName00[] = "\\CDDA\\DA02PRO.DA;1";
 static char g_CdAudioName01[] = "\\CDDA\\DA03TECH.DA;1";
 static char g_CdAudioName02[] = "\\CDDA\\DA04HC.DA;1";

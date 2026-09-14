@@ -11,8 +11,12 @@
 GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
 s32 g_SceneTimer;
-s16 g_McMessageColumnX[MEMORY_CARD_MESSAGE_COLUMN_COUNT];
-MemoryCardMessageRow *g_McMessageRows[MEMORY_CARD_MESSAGE_COUNT];
+static s16 s_messageColumnX[MEMORY_CARD_MESSAGE_COLUMN_COUNT];
+static const MemoryCardMessageRow *s_messageRows[MEMORY_CARD_MESSAGE_COUNT];
+
+MemoryCardMessageLayout GetMemoryCardMessageLayout(void) {
+    return (MemoryCardMessageLayout){s_messageRows, s_messageColumnX};
+}
 
 typedef struct DrawRecord {
     GameOrderingTableEntry *ot;
@@ -162,9 +166,9 @@ int main(void) {
           s_padHints == 1);
     CHECK(g_RenderState.draw.packetCursor == s_packets + 16);
 
-    g_McMessageColumnX[2] = 42;
+    s_messageColumnX[2] = 42;
     for (s32 message = 6; message <= 13; message++) {
-        g_McMessageRows[message] = textRows;
+        s_messageRows[message] = textRows;
         Reset();
         DrawMemoryCardMessage(message);
         CHECK(s_textCount == 2);
@@ -177,7 +181,7 @@ int main(void) {
         CHECK(g_RenderState.draw.packetCursor == s_packets + 4);
     }
 
-    g_McMessageRows[5] = textRows;
+    s_messageRows[5] = textRows;
     Reset();
     g_SceneTimer = 0;
     DrawMemoryCardMessage(5);
@@ -188,7 +192,7 @@ int main(void) {
     CHECK(s_messageSpriteCount == 1 && s_messageSprite.x == 0x108);
 
     for (s32 message = 0x10; message <= 0x12; message++) {
-        g_McMessageRows[message] = textRows;
+        s_messageRows[message] = textRows;
         Reset();
         DrawMemoryCardMessage(message);
         CHECK(s_textCount == 0);
@@ -198,7 +202,7 @@ int main(void) {
         CHECK(g_RenderState.draw.packetCursor == s_packets + 2);
     }
 
-    g_McMessageRows[MC_PROMPT_NO_FILE - 1] = textRows;
+    s_messageRows[MC_PROMPT_NO_FILE - 1] = textRows;
     Reset();
     DrawMemoryCardMessage(MC_PROMPT_NO_FILE - 1);
     CHECK(s_textCount == 2);
@@ -213,13 +217,13 @@ int main(void) {
     CHECK(s_textCount == 0 && s_messageSpriteCount == 0 &&
           s_drawModeCount == 0);
 
-    g_McMessageRows[0] = NULL;
+    s_messageRows[0] = NULL;
     DrawMemoryCardMessage(0);
     CHECK(s_textCount == 0 && s_drawModeCount == 1);
 
     Reset();
     textRows[0].column = MEMORY_CARD_MESSAGE_COLUMN_COUNT;
-    g_McMessageRows[0] = textRows;
+    s_messageRows[0] = textRows;
     DrawMemoryCardMessage(0);
     CHECK(s_textCount == 1 && s_drawModeCount == 1);
     textRows[0].column = 2;

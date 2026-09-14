@@ -11,7 +11,7 @@
 #include "psyq/gpu.h"
 #include "psyq/kernel.h"
 
-/* Memory-card prompts use the retail strings reached through g_McMessageRows. */
+/* Immutable retail text layout used by the memory-card screen. */
 enum {
     MEMORY_CARD_MESSAGE_COUNT = MC_PROMPT_NO_FILE,
     MEMORY_CARD_MESSAGE_COLUMN_COUNT = 5,
@@ -28,10 +28,17 @@ enum {
 
 
 typedef struct MemoryCardMessageRow {
-    char *text;
+    const char *text;
     u8 column;
     u8 reserved[3];
 } MemoryCardMessageRow;
+
+typedef struct MemoryCardMessageLayout {
+    const MemoryCardMessageRow *const *rows;
+    const s16 *columnX;
+} MemoryCardMessageLayout;
+
+MemoryCardMessageLayout GetMemoryCardMessageLayout(void);
 
 void AdvanceSaveHeaderCounter(void);
 void RestartMemoryCard(void);
@@ -61,8 +68,6 @@ void EnterMemoryCardMenu(void);
 void EnterMemoryCardMenuFromLoad(void);
 void UpdateMemoryCardMenu(void);
 
-extern s16 g_McMessageColumnX[MEMORY_CARD_MESSAGE_COLUMN_COUNT];
-extern MemoryCardMessageRow *g_McMessageRows[MEMORY_CARD_MESSAGE_COUNT];
 extern s32 g_SaveElapsedTicks;
 extern char g_SaveFilePath[MEMORY_CARD_SAVE_PATH_STORAGE_SIZE];
 enum {

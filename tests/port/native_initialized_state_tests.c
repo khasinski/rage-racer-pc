@@ -253,9 +253,9 @@ static void CheckMemoryCardLabels(void) {
                               MC_SAVE_TITLE_SIZE] == 0 &&
               g_SaveTitleSjis[MEMORY_CARD_SAVE_TITLE_STORAGE_SIZE - 1] == 0,
           "memory-card save title table padding");
-    Check(g_McMessageColumnX[2] == 0x60 &&
-              g_McMessageColumnX[3] == 0x78 &&
-              g_McMessageColumnX[4] == 0xB4,
+    const MemoryCardMessageLayout messages = GetMemoryCardMessageLayout();
+    Check(messages.columnX[2] == 0x60 && messages.columnX[3] == 0x78 &&
+              messages.columnX[4] == 0xB4,
           "memory-card message columns");
 }
 
