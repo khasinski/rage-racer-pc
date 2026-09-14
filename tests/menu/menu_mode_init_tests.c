@@ -132,6 +132,10 @@ static void PoisonEntryState(void) {
     s_engineerShop.confirmTimer = 6;
     s_customize.confirmTimer = 6;
     s_teamLogo.confirmTimer = 6;
+    s_courseSelect.modalCursor = 6;
+    s_engineerShop.modalCursor = 6;
+    s_customize.modalCursor = 6;
+    s_teamLogo.modalCursor = 6;
     GameMenuBusy = 6;
     s_menuWidgets.hintStep = 7;
     s_courseSelect.classChangeApplied = 8;
@@ -192,6 +196,9 @@ static int CheckCommonEntryState(const GameRaceProgress *progress) {
     CHECK(s_courseSelect.confirmTimer == 0 &&
           s_engineerShop.confirmTimer == 0 &&
           s_customize.confirmTimer == 0 && s_teamLogo.confirmTimer == 0);
+    CHECK(s_courseSelect.modalCursor == 0 &&
+          s_engineerShop.modalCursor == 0 &&
+          s_customize.modalCursor == 0 && s_teamLogo.modalCursor == 0);
     CHECK(s_menuWidgets.hintStep == 0);
     CHECK(s_courseSelect.classChangeApplied == 0 && s_courseSelect.swapDelay == 0);
     CHECK(g_MenuViewOffset == 0 && g_MenuViewOffsetTarget == 0);

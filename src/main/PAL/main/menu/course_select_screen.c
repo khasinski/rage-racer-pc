@@ -91,8 +91,9 @@ static const TimedDrawCommand *CourseSelectMenuScript(void) {
 }
 
 /* The save prompt's two buttons, and the box round whichever is picked. */
-static void DrawSavePromptButtons(GameOrderingTableEntry *ot, s32 flash) {
-    DrawMenuCursorBox((g_MenuSubCursor != 0) ? 0xB8 : 0xDA, 0x8C, 0x20, 0x20,
+static void DrawSavePromptButtons(const CourseSelectScreen *screen,
+                                  GameOrderingTableEntry *ot, s32 flash) {
+    DrawMenuCursorBox((screen->modalCursor != 0) ? 0xB8 : 0xDA, 0x8C, 0x20, 0x20,
                       flash);
     DrawSprite(ot, 0xC0, 0x94, 0x10, 0x10, 0x9D, 0x7C, 0, 0, 0, 0x244, 1, 1,
                0x3B);
@@ -103,11 +104,12 @@ static void DrawSavePromptButtons(GameOrderingTableEntry *ot, s32 flash) {
 }
 
 /* One row per class the player has reached, with the cursor on the chosen. */
-static void DrawClassList(GameOrderingTableEntry *ot, s32 flash) {
+static void DrawClassList(const CourseSelectScreen *screen,
+                          GameOrderingTableEntry *ot, s32 flash) {
     s32 classCount = MaxSelectableClass() + 1;
     s32 i;
 
-    DrawMenuCursorBox(0xB8, g_MenuSubCursor * 0x1E + 0x6C, 0x38, 0x20, flash);
+    DrawMenuCursorBox(0xB8, screen->modalCursor * 0x1E + 0x6C, 0x38, 0x20, flash);
     for (i = 0; i < classCount; i++) {
         DrawSprite(ot, 0xC0, i * 0x1E + 0x74, 0x1A, 0x10, 0x60, 0xCC, 0, 0, 0,
                    0x244, 1, 1, 0x3B);
@@ -146,7 +148,7 @@ static void ChooseCourseSelectRow(CourseSelectScreen *screen, s32 row) {
             g_GrandPrixSeries = (s16)GrandPrixAssetSeries(
                 g_GrandPrixSeries, g_GrandPrixClass);
             g_UiScriptProgress2 = 0;
-            g_MenuSubCursor = 1;
+            screen->modalCursor = 1;
             return;
         }
         PlaySoundCue(3);
@@ -163,7 +165,7 @@ static void ChooseCourseSelectRow(CourseSelectScreen *screen, s32 row) {
         screen->modalScript = g_MenuDialogPanelLowerScript;
         GameMenuBusy = COURSE_SELECT_CLASS_PROMPT;
         g_UiScriptProgress2 = 0;
-        g_MenuSubCursor = g_GrandPrixClass;
+        screen->modalCursor = g_GrandPrixClass;
         return;
     }
     GameMenuBusy = COURSE_SELECT_TO_RANKING;
@@ -221,14 +223,14 @@ static void UpdateSavePrompt(CourseSelectScreen *screen,
         return;
     }
     choice = DecideSavePrompt(g_PadPressed, GameMenuBusy, screen->confirmTimer,
-                              g_MenuSubCursor);
+                              screen->modalCursor);
     for (cue = 0; cue < choice.cueCount; cue++) {
         PlaySoundCue(choice.cues[cue]);
     }
     GameMenuBusy = choice.busy;
     screen->confirmTimer = choice.confirmTimer;
-    g_MenuSubCursor = (u8)choice.subCursor;
-    DrawSavePromptButtons(ot, 0);
+    screen->modalCursor = (u8)choice.subCursor;
+    DrawSavePromptButtons(screen, ot, 0);
 }
 
 static void UpdateClassPrompt(CourseSelectScreen *screen,
@@ -242,7 +244,7 @@ static void UpdateClassPrompt(CourseSelectScreen *screen,
     }
     maxClass = MaxSelectableClass();
     choice = DecideClassPrompt(g_PadPressed, GameMenuBusy, screen->confirmTimer,
-                               g_MenuSubCursor, g_GrandPrixClass, maxClass,
+                               screen->modalCursor, g_GrandPrixClass, maxClass,
                                screen->classChangeApplied);
     for (effect = 0; effect < choice.effectCount; effect++) {
         if (choice.effects[effect].kind == MENU_PROMPT_CURTAIN) {
@@ -254,8 +256,8 @@ static void UpdateClassPrompt(CourseSelectScreen *screen,
     GameMenuBusy = choice.busy;
     screen->confirmTimer = choice.confirmTimer;
     screen->classChangeApplied = choice.changeApplied;
-    g_MenuSubCursor = (u8)choice.subCursor;
-    DrawClassList(ot, 0);
+    screen->modalCursor = (u8)choice.subCursor;
+    DrawClassList(screen, ot, 0);
 }
 
 /* The save going through: the prompt flashes for a while, then the screen
@@ -268,7 +270,7 @@ static void UpdateSaveCountdown(CourseSelectScreen *screen,
                            &g_UiScriptProgress2, 0);
         RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
         RunTimedDrawScript(screen->modalScript, &g_UiScriptProgress2, 1);
-        DrawSavePromptButtons(ot, 1);
+        DrawSavePromptButtons(screen, ot, 1);
         return;
     }
     RunTimedDrawScript(g_CourseSelectSavePromptBanner, &g_UiScriptProgress2,
@@ -277,7 +279,7 @@ static void UpdateSaveCountdown(CourseSelectScreen *screen,
     RunTimedDrawScript(screen->modalScript, &g_UiScriptProgress2, 0);
     if (g_UiScriptProgress2 <= 0) {
         StartSequenceFadeOut();
-        GameMenuBusy = (g_MenuSubCursor != 0)
+        GameMenuBusy = (screen->modalCursor != 0)
                            ? COURSE_SELECT_TO_RECORD_ENTRY
                            : COURSE_SELECT_TO_RACE;
         MenuWidgetState()->hintStep = -1;
@@ -308,12 +310,12 @@ static void UpdateClassChange(CourseSelectScreen *screen,
         screen->classChangeApplied = 0;
         return;
     }
-    g_MenuSubCursor = (u8)AddClampedMenuValue(
-        g_MenuSubCursor, 0, 0, MaxSelectableClass());
+    screen->modalCursor = (u8)AddClampedMenuValue(
+        screen->modalCursor, 0, 0, MaxSelectableClass());
     if (screen->confirmTimer > 0) {
         screen->confirmTimer -= 1;
         RunTimedDrawScript(screen->modalScript, &g_UiScriptProgress2, 1);
-        DrawClassList(ot, 1);
+        DrawClassList(screen, ot, 1);
         return;
     }
     if (screen->classChangeApplied != 0) {
@@ -325,8 +327,8 @@ static void UpdateClassChange(CourseSelectScreen *screen,
     }
     if (DrawClassChangeCurtain(screen, 1) >= COURSE_CLASS_CURTAIN_CLOSED) {
         screen->classChangeApplied = 1;
-        g_GrandPrixClass = g_MenuSubCursor;
-        ResetCourseProgressState(g_CourseProgress, g_MenuSubCursor);
+        g_GrandPrixClass = screen->modalCursor;
+        ResetCourseProgressState(g_CourseProgress, screen->modalCursor);
         g_MenuViewAngle = MENU_COURSE_VIEW_REBASE_SPAN;
         g_MenuViewAngleTarget = MENU_COURSE_VIEW_REBASE_SPAN;
         screen->option = 0;
@@ -337,7 +339,7 @@ static void UpdateClassChange(CourseSelectScreen *screen,
         screen->cardPendingGrade = CourseBestPlace(g_CourseIndex);
     }
     RunTimedDrawScript(screen->modalScript, &g_UiScriptProgress2, 1);
-    DrawClassList(ot, 1);
+    DrawClassList(screen, ot, 1);
 }
 
 static void UpdateCourseSelectModal(CourseSelectScreen *screen,

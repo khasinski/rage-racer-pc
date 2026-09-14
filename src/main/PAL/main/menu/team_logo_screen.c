@@ -22,8 +22,9 @@ enum TeamLogoOption {
 
 enum { TEAM_LOGO_SAVE_CONFIRM_FRAMES = 35 };
 
-static void DrawTeamLogoSaveButtons(GameOrderingTableEntry *ot, s32 flash) {
-    DrawMenuCursorBox(g_MenuSubCursor != 0 ? 0xB8 : 0xDA, 0x44, 0x20, 0x20,
+static void DrawTeamLogoSaveButtons(const TeamLogo *logo,
+                                    GameOrderingTableEntry *ot, s32 flash) {
+    DrawMenuCursorBox(logo->modalCursor != 0 ? 0xB8 : 0xDA, 0x44, 0x20, 0x20,
                       flash);
     DrawSprite(ot, 0xC0, 0x4C, 0x10, 0x10, 0x9D, 0x7C, 0, 0, 0, 0x244, 1, 1,
                0x3B);
@@ -38,7 +39,7 @@ static void ChooseTeamLogoOption(TeamLogo *logo) {
     case TEAM_LOGO_OPTION_SAMPLES:
         PlaySoundCue(2);
         GameMenuBusy = TEAM_LOGO_SAVE_PROMPT;
-        g_MenuSubCursor = 0;
+        logo->modalCursor = 0;
         g_UiScriptProgress2 = 0;
         logo->subPanelScript = g_MenuDialogPanelUpperScript;
         break;
@@ -102,7 +103,7 @@ static void UpdateTeamLogoSavePrompt(TeamLogo *logo,
         0) {
         action = ChooseMenuDialogAction(g_PadPressed);
         if (action == MENU_DIALOG_CONFIRM) {
-            if (g_MenuSubCursor != 0) {
+            if (logo->modalCursor != 0) {
                 PlaySoundCue(2);
                 GameMenuBusy = TEAM_LOGO_SAVE_COUNTDOWN;
                 logo->confirmTimer = TEAM_LOGO_SAVE_CONFIRM_FRAMES;
@@ -113,14 +114,14 @@ static void UpdateTeamLogoSavePrompt(TeamLogo *logo,
         } else if (action == MENU_DIALOG_CANCEL) {
             PlaySoundCue(3);
             GameMenuBusy = 0;
-        } else if (action == MENU_DIALOG_LEFT && g_MenuSubCursor == 0) {
+        } else if (action == MENU_DIALOG_LEFT && logo->modalCursor == 0) {
             PlaySoundCue(1);
-            g_MenuSubCursor = 1;
-        } else if (action == MENU_DIALOG_RIGHT && g_MenuSubCursor != 0) {
+            logo->modalCursor = 1;
+        } else if (action == MENU_DIALOG_RIGHT && logo->modalCursor != 0) {
             PlaySoundCue(1);
-            g_MenuSubCursor = 0;
+            logo->modalCursor = 0;
         }
-        DrawTeamLogoSaveButtons(ot, 0);
+        DrawTeamLogoSaveButtons(logo, ot, 0);
     }
     DrawTeamLogoCanvas(logo, 1, 0);
 }
@@ -140,7 +141,7 @@ static void UpdateTeamLogoSaveCountdown(TeamLogo *logo,
         RunTimedDrawScript(g_TeamLogoScreenScript2, &g_UiScriptProgress2, 0);
         RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
         RunTimedDrawScript(logo->subPanelScript, &g_UiScriptProgress2, 1);
-        DrawTeamLogoSaveButtons(ot, 1);
+        DrawTeamLogoSaveButtons(logo, ot, 1);
     }
     DrawTeamLogoCanvas(logo, 1, 0);
 }
@@ -235,7 +236,7 @@ void UpdateTeamLogoScreen(void) {
 
     logo->option = AddClampedMenuValue(
         logo->option, 0, 0, TEAM_LOGO_OPTION_COUNT - 1);
-    g_MenuSubCursor = g_MenuSubCursor != 0;
+    logo->modalCursor = logo->modalCursor != 0;
     if (state == TEAM_LOGO_SAVE_COUNTDOWN) {
         logo->confirmTimer = AddClampedMenuValue(
             logo->confirmTimer, 0, 0, TEAM_LOGO_SAVE_CONFIRM_FRAMES);

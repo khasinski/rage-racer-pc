@@ -50,7 +50,7 @@ static void UpdateEngineerShopInput(EngineerShop *shop, ShopPrice price) {
                 shop->modalScript = g_EngineerShopTuneUpPromptScript;
                 GameMenuBusy = ENGINEER_SHOP_TUNE_UP_PROMPT;
                 g_UiScriptProgress2 = 0;
-                g_MenuSubCursor = 0;
+                shop->modalCursor = 0;
             } else {
                 PlaySoundCue(5);
                 shop->modalScript = g_EngineerShopNoFundsScript;
@@ -84,19 +84,19 @@ static void UpdateTuneUpPrompt(EngineerShop *shop, GameOrderingTableEntry *ot,
     if (RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1) == 0) {
         return;
     }
-    g_MenuSubCursor = (u8)AddClampedMenuValue(g_MenuSubCursor, 0, 0, 1);
+    shop->modalCursor = (u8)AddClampedMenuValue(shop->modalCursor, 0, 0, 1);
     action = ChooseMenuDialogAction(g_PadPressed);
     if (action == MENU_DIALOG_CONFIRM) {
-        if (g_MenuSubCursor != 0 && price.available &&
+        if (shop->modalCursor != 0 && price.available &&
             g_PlayerMoney >= price.amount) {
             if (!RequestUpgradedCarModel(g_PlayerCarIndex)) {
-                DrawShopPromptButtons(ot, 0);
+                DrawShopPromptButtons(ot, shop->modalCursor, 0);
                 return;
             }
             PlaySoundCue(2);
             GameMenuBusy = ENGINEER_SHOP_TUNE_UP_COUNTDOWN;
             shop->confirmTimer = 0x23;
-        } else if (g_MenuSubCursor != 0) {
+        } else if (shop->modalCursor != 0) {
             PlaySoundCue(5);
             shop->modalScript = g_EngineerShopNoFundsScript;
             GameMenuBusy = ENGINEER_SHOP_NO_FUNDS;
@@ -107,14 +107,14 @@ static void UpdateTuneUpPrompt(EngineerShop *shop, GameOrderingTableEntry *ot,
     } else if (action == MENU_DIALOG_CANCEL) {
         PlaySoundCue(3);
         GameMenuBusy = ENGINEER_SHOP_IDLE;
-    } else if (action == MENU_DIALOG_LEFT && g_MenuSubCursor == 0) {
+    } else if (action == MENU_DIALOG_LEFT && shop->modalCursor == 0) {
         PlaySoundCue(1);
-        g_MenuSubCursor = 1;
-    } else if (action == MENU_DIALOG_RIGHT && g_MenuSubCursor != 0) {
+        shop->modalCursor = 1;
+    } else if (action == MENU_DIALOG_RIGHT && shop->modalCursor != 0) {
         PlaySoundCue(1);
-        g_MenuSubCursor = 0;
+        shop->modalCursor = 0;
     }
-    DrawShopPromptButtons(ot, 0);
+    DrawShopPromptButtons(ot, shop->modalCursor, 0);
 }
 
 /*
@@ -128,7 +128,7 @@ static void UpdateTuneUpCountdown(EngineerShop *shop, GameOrderingTableEntry *ot
         shop->confirmTimer -= 1;
         RunTimedDrawScript(shop->modalScript, &g_UiScriptProgress2, 0);
         RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1);
-        DrawShopPromptButtons(ot, 1);
+        DrawShopPromptButtons(ot, shop->modalCursor, 1);
         return;
     }
     RunTimedDrawScript(shop->modalScript, &g_UiScriptProgress2, -1);

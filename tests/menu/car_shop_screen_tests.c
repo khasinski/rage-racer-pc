@@ -70,7 +70,6 @@ s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuOverlayPattern;
 s32 g_MenuScreen;
-u8 g_MenuSubCursor;
 s32 g_MenuViewAngle;
 s32 g_MenuViewAngleTarget;
 s16 g_NextOwnedCarIndex;
@@ -300,7 +299,7 @@ int main(int argc, char **argv) {
         g_NextOwnedCarIndex = (s16)owned[1 - oi];
         g_CarListCursor = cars[ci];
         g_PlayerCarIndex = same ? cars[ci] : 9;
-        g_MenuSubCursor = (u8)sub;
+        shop.modalCursor = (u8)sub;
         /* Either side of the price of the car the cursor is on. */
         g_PlayerMoney = rich ? 1000000 : 0;
         shop.confirmTimer = timer;
@@ -338,7 +337,7 @@ int main(int argc, char **argv) {
             after[6] = g_CarSwapToIndex;
             after[7] = g_MenuViewAngle;
             after[8] = g_MenuViewAngleTarget;
-            after[9] = g_MenuSubCursor;
+            after[9] = shop.modalCursor;
             after[10] = shop.confirmTimer;
             after[11] = s_menuWidgets.upperAltPanelStep;
             after[12] = s_menuWidgets.lowerAltPanelStep;
@@ -389,7 +388,7 @@ int main(int argc, char **argv) {
         Record(label, NULL, 0);
         UpdateCarShop(&shop);
         RECORD("prompt", ScriptId(shop.modal), GameMenuBusy,
-               g_MenuSubCursor);
+               shop.modalCursor);
         steps++;
     }
 
@@ -443,7 +442,7 @@ int main(int argc, char **argv) {
         g_UiScriptProgress2 = 0;
         g_PadPressed = PAD_CONFIRM;
         g_PadHeld = 0;
-        g_MenuSubCursor = 1;
+        shop.modalCursor = 1;
         g_CarListCursor = 4;
         g_PlayerCarIndex = 4;
         shop.modal = NULL;
@@ -473,7 +472,7 @@ int main(int argc, char **argv) {
     s_scriptResult = 1;
     g_UiScriptProgress2 = 0;
     g_PadPressed = PAD_CONFIRM;
-    g_MenuSubCursor = 1;
+    shop.modalCursor = 1;
     g_CarListCursor = 4;
     g_PlayerMoney = INT32_MAX;
     s_assetIndexOverride = CAR_PRICE_COUNT;
@@ -508,7 +507,7 @@ int main(int argc, char **argv) {
     g_CarPriceTable[4] = -1;
     GameMenuBusy = CAR_SHOP_BUY_PROMPT;
     g_PadPressed = PAD_CONFIRM;
-    g_MenuSubCursor = 1;
+    shop.modalCursor = 1;
     g_PlayerMoney = INT_MAX;
     UpdateCarShop(&shop);
     if (GameMenuBusy == CAR_SHOP_SALE_COUNTDOWN) {
@@ -519,9 +518,9 @@ int main(int argc, char **argv) {
     g_CarPriceTable[4] = 5000;
     GameMenuBusy = CAR_SHOP_BUY_PROMPT;
     g_PadPressed = 0;
-    g_MenuSubCursor = UINT8_MAX;
+    shop.modalCursor = UINT8_MAX;
     UpdateCarShop(&shop);
-    if (g_MenuSubCursor != 1) {
+    if (shop.modalCursor != 1) {
         puts("FAIL buy prompt did not normalize its cursor");
         return 1;
     }

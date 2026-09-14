@@ -30,8 +30,9 @@ enum CustomizeOption {
     CUSTOMIZE_OPTION_EXIT,
 };
 
-static void DrawTransmissionChoice(GameOrderingTableEntry *ot, s32 flash) {
-    DrawMenuCursorBox(g_MenuSubCursor != 0 ? 0xDA : 0xB8, 0x68, 0x20, 0x20,
+static void DrawTransmissionChoice(const Customize *customize,
+                                   GameOrderingTableEntry *ot, s32 flash) {
+    DrawMenuCursorBox(customize->modalCursor != 0 ? 0xDA : 0xB8, 0x68, 0x20, 0x20,
                       flash);
     DrawSprite(ot, 0xC2, 0x70, 0xC, 0x10, 0x60, 0x7C, 0, 0, 0, 0x244, 1, 1,
                0x3B);
@@ -72,7 +73,7 @@ static void HandleCustomizeMenuInput(Customize *customize, s32 exitOption,
             customize->popupScript = g_MenuDialogPanelUpperScript;
             GameMenuBusy = CUSTOMIZE_TIRE_DIALOG;
             g_UiScriptProgress2 = 0;
-            g_MenuSubCursor = (u8)AddClampedMenuValue(
+            customize->modalCursor = (u8)AddClampedMenuValue(
                 g_CarTable[g_PlayerCarIndex].tireCompound, 0, 0,
                 TIRE_COMPOUND_LAST);
             return;
@@ -83,7 +84,7 @@ static void HandleCustomizeMenuInput(Customize *customize, s32 exitOption,
                 PlaySoundCue(2);
                 customize->popupScript = g_MenuDialogPanelLowerScript;
                 GameMenuBusy = CUSTOMIZE_TRANSMISSION_DIALOG;
-                g_MenuSubCursor =
+                customize->modalCursor =
                     g_CarTable[g_PlayerCarIndex].transmission != 0;
             } else {
                 PlaySoundCue(5);
@@ -119,8 +120,8 @@ static void UpdateTireDialog(Customize *customize) {
         GameMenuBusy = CUSTOMIZE_IDLE;
         return;
     }
-    g_MenuSubCursor = (u8)AddClampedMenuValue(
-        g_MenuSubCursor, 0, 0, TIRE_COMPOUND_LAST);
+    customize->modalCursor = (u8)AddClampedMenuValue(
+        customize->modalCursor, 0, 0, TIRE_COMPOUND_LAST);
     if (RunTimedDrawScript(customize->popupScript, &g_UiScriptProgress2, 1) ==
         0) {
         return;
@@ -134,14 +135,14 @@ static void UpdateTireDialog(Customize *customize) {
         PlaySoundCue(3);
         GameMenuBusy = CUSTOMIZE_IDLE;
     } else if (action == MENU_DIALOG_LEFT &&
-               g_MenuSubCursor < TIRE_COMPOUND_LAST) {
+               customize->modalCursor < TIRE_COMPOUND_LAST) {
         PlaySoundCue(1);
-        g_MenuSubCursor++;
-    } else if (action == MENU_DIALOG_RIGHT && g_MenuSubCursor != 0) {
+        customize->modalCursor++;
+    } else if (action == MENU_DIALOG_RIGHT && customize->modalCursor != 0) {
         PlaySoundCue(1);
-        g_MenuSubCursor--;
+        customize->modalCursor--;
     }
-    DrawTireCompoundSlider(MenuCustomize(), g_MenuSubCursor, 0);
+    DrawTireCompoundSlider(MenuCustomize(), customize->modalCursor, 0);
 }
 
 static void UpdateTransmissionDialog(Customize *customize,
@@ -152,7 +153,7 @@ static void UpdateTransmissionDialog(Customize *customize,
         GameMenuBusy = CUSTOMIZE_IDLE;
         return;
     }
-    g_MenuSubCursor = g_MenuSubCursor != 0;
+    customize->modalCursor = customize->modalCursor != 0;
     if (RunTimedDrawScript(customize->popupScript, &g_UiScriptProgress2, 1) ==
         0) {
         return;
@@ -162,19 +163,19 @@ static void UpdateTransmissionDialog(Customize *customize,
         PlaySoundCue(2);
         GameMenuBusy = CUSTOMIZE_TRANSMISSION_CONFIRMING;
         customize->confirmTimer = CUSTOMIZE_CONFIRM_FRAMES;
-        g_CarTable[g_PlayerCarIndex].transmission = g_MenuSubCursor;
-        g_TimeAttackCars[g_PlayerCarIndex].transmission = g_MenuSubCursor;
+        g_CarTable[g_PlayerCarIndex].transmission = customize->modalCursor;
+        g_TimeAttackCars[g_PlayerCarIndex].transmission = customize->modalCursor;
     } else if (action == MENU_DIALOG_CANCEL) {
         PlaySoundCue(3);
         GameMenuBusy = CUSTOMIZE_IDLE;
-    } else if (action == MENU_DIALOG_LEFT && g_MenuSubCursor != 0) {
+    } else if (action == MENU_DIALOG_LEFT && customize->modalCursor != 0) {
         PlaySoundCue(1);
-        g_MenuSubCursor = 0;
-    } else if (action == MENU_DIALOG_RIGHT && g_MenuSubCursor == 0) {
+        customize->modalCursor = 0;
+    } else if (action == MENU_DIALOG_RIGHT && customize->modalCursor == 0) {
         PlaySoundCue(1);
-        g_MenuSubCursor = 1;
+        customize->modalCursor = 1;
     }
-    DrawTransmissionChoice(ot, 0);
+    DrawTransmissionChoice(customize, ot, 0);
 }
 
 static void UpdateUnavailableDialog(Customize *customize) {
@@ -198,19 +199,19 @@ static void UpdateTireConfirmation(Customize *customize) {
         GameMenuBusy = CUSTOMIZE_IDLE;
         return;
     }
-    g_MenuSubCursor = (u8)AddClampedMenuValue(
-        g_MenuSubCursor, 0, 0, TIRE_COMPOUND_LAST);
+    customize->modalCursor = (u8)AddClampedMenuValue(
+        customize->modalCursor, 0, 0, TIRE_COMPOUND_LAST);
     if (customize->confirmTimer > 0) {
         customize->confirmTimer--;
         RunTimedDrawScript(customize->popupScript, &g_UiScriptProgress2, 1);
-        DrawTireCompoundSlider(MenuCustomize(), g_MenuSubCursor, 1);
+        DrawTireCompoundSlider(MenuCustomize(), customize->modalCursor, 1);
         return;
     }
     RunTimedDrawScript(customize->popupScript, &g_UiScriptProgress2, -1);
     if (g_UiScriptProgress2 <= 0) {
         GameMenuBusy = CUSTOMIZE_IDLE;
-        g_CarTable[g_PlayerCarIndex].tireCompound = g_MenuSubCursor;
-        g_TimeAttackCars[g_PlayerCarIndex].tireCompound = g_MenuSubCursor;
+        g_CarTable[g_PlayerCarIndex].tireCompound = customize->modalCursor;
+        g_TimeAttackCars[g_PlayerCarIndex].tireCompound = customize->modalCursor;
     }
 }
 
@@ -219,7 +220,7 @@ static void UpdateTransmissionConfirmation(Customize *customize,
     if (customize->confirmTimer > 0) {
         customize->confirmTimer--;
         RunTimedDrawScript(customize->popupScript, &g_UiScriptProgress2, 1);
-        DrawTransmissionChoice(ot, 1);
+        DrawTransmissionChoice(customize, ot, 1);
         return;
     }
     RunTimedDrawScript(customize->popupScript, &g_UiScriptProgress2, -1);

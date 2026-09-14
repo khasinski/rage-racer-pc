@@ -27,7 +27,6 @@ s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuOverlayPattern;
 s32 g_MenuScreen;
-u8 g_MenuSubCursor;
 u16 g_PadPressed;
 u16 g_TeamLogoClut[16];
 Rect g_TeamLogoClutRect;
@@ -149,7 +148,7 @@ static void Reset(void) {
     g_MenuOutgoingHandlerIndex = 0;
     g_MenuOverlayPattern = 0;
     s_teamLogo.confirmTimer = 0;
-    g_MenuSubCursor = 0;
+    s_teamLogo.modalCursor = 0;
     g_PadPressed = 0;
     s_teamLogo.option = 0;
     s_teamLogo.paintArmed = 1;
@@ -198,7 +197,7 @@ int main(void) {
     GameMenuBusy = -1;
     g_PadPressed = PAD_LEFT;
     UpdateTeamLogoScreen();
-    CHECK(g_MenuSubCursor == 1);
+    CHECK(s_teamLogo.modalCursor == 1);
     g_PadPressed = PAD_CONFIRM;
     UpdateTeamLogoScreen();
     CHECK(GameMenuBusy == -2);
@@ -228,9 +227,9 @@ int main(void) {
 
     Reset();
     s_teamLogo.option = INT_MAX;
-    g_MenuSubCursor = UINT8_MAX;
+    s_teamLogo.modalCursor = UINT8_MAX;
     UpdateTeamLogoScreen();
-    CHECK(s_teamLogo.option == 2 && g_MenuSubCursor == 1);
+    CHECK(s_teamLogo.option == 2 && s_teamLogo.modalCursor == 1);
 
     Reset();
     GameMenuBusy = -2;

@@ -56,7 +56,7 @@ static void OfferToBuyCar(CarShop *shop, s32 purchaseAvailable) {
     PlaySoundCue(2);
     GameMenuBusy = CAR_SHOP_BUY_PROMPT;
     g_UiScriptProgress2 = 0;
-    g_MenuSubCursor = 0;
+    shop->modalCursor = 0;
     prompt = CarShopPrompt(GetCarMaker(g_CarListCursor));
     shop->modal = prompt;
 }
@@ -130,11 +130,11 @@ static void UpdateBuyPrompt(CarShop *shop, GameOrderingTableEntry *ot,
     if (RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1) == 0) {
         return;
     }
-    g_MenuSubCursor = (u8)AddClampedMenuValue(g_MenuSubCursor, 0, 0, 1);
+    shop->modalCursor = (u8)AddClampedMenuValue(shop->modalCursor, 0, 0, 1);
     if (GameMenuBusy == CAR_SHOP_BUY_PROMPT) {
         action = ChooseMenuDialogAction(g_PadPressed);
         if (action == MENU_DIALOG_CONFIRM) {
-            if (g_MenuSubCursor == 0) {
+            if (shop->modalCursor == 0) {
                 PlaySoundCue(3);
                 GameMenuBusy = CAR_SHOP_IDLE;
             } else if (price.available && g_PlayerMoney >= price.amount) {
@@ -149,17 +149,17 @@ static void UpdateBuyPrompt(CarShop *shop, GameOrderingTableEntry *ot,
         } else if (action == MENU_DIALOG_CANCEL) {
             PlaySoundCue(3);
             GameMenuBusy = CAR_SHOP_IDLE;
-        } else if (action == MENU_DIALOG_LEFT && g_MenuSubCursor == 0) {
+        } else if (action == MENU_DIALOG_LEFT && shop->modalCursor == 0) {
             PlaySoundCue(1);
-            g_MenuSubCursor = 1;
-        } else if (action == MENU_DIALOG_RIGHT && g_MenuSubCursor != 0) {
+            shop->modalCursor = 1;
+        } else if (action == MENU_DIALOG_RIGHT && shop->modalCursor != 0) {
             PlaySoundCue(1);
-            g_MenuSubCursor = 0;
+            shop->modalCursor = 0;
         }
     } else if (g_PadPressed & (PAD_CONFIRM | PAD_CANCEL)) {
         GameMenuBusy = CAR_SHOP_IDLE;
     }
-    DrawShopPromptButtons(ot, 0);
+    DrawShopPromptButtons(ot, shop->modalCursor, 0);
 }
 
 /* The sale going through: the prompt flashes for a while, then the car is
@@ -170,7 +170,7 @@ static void UpdateSaleCountdown(CarShop *shop, GameOrderingTableEntry *ot,
         shop->confirmTimer -= 1;
         RunTimedDrawScript(shop->modal, &g_UiScriptProgress2, 0);
         RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1);
-        DrawShopPromptButtons(ot, 1);
+        DrawShopPromptButtons(ot, shop->modalCursor, 1);
         return;
     }
     RunTimedDrawScript(shop->modal, &g_UiScriptProgress2, -1);

@@ -30,7 +30,6 @@ s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuOverlayPattern;
 s32 g_MenuScreen;
-u8 g_MenuSubCursor;
 s32 g_MenuViewOffset;
 s32 g_MenuViewOffsetTarget;
 TimedDrawCommand g_NativeCustomizeMenuScriptGp[13];
@@ -138,7 +137,7 @@ static void Reset(void) {
     g_PadPressed = 0;
     g_UiScriptProgress = 0;
     g_UiScriptProgress2 = 0;
-    g_MenuSubCursor = 0;
+    s_customize.modalCursor = 0;
     s_customize.confirmTimer = 0;
     s_lastCue = -1;
 }
@@ -178,10 +177,10 @@ int main(void) {
     s_cars[3].tireCompound = UINT8_MAX;
     g_PadPressed = PAD_CONFIRM;
     UpdateCustomizeScreen();
-    CHECK(GameMenuBusy == -1 && g_MenuSubCursor == 4);
+    CHECK(GameMenuBusy == -1 && s_customize.modalCursor == 4);
 
     GameMenuBusy = -5;
-    g_MenuSubCursor = UINT8_MAX;
+    s_customize.modalCursor = UINT8_MAX;
     s_customize.confirmTimer = 0;
     UpdateCustomizeScreen();
     CHECK(GameMenuBusy == 0 && s_cars[3].tireCompound == 4 &&
@@ -193,7 +192,7 @@ int main(void) {
     s_customize.option = 1;
     g_PadPressed = PAD_CONFIRM;
     UpdateCustomizeScreen();
-    CHECK(GameMenuBusy == -2 && g_MenuSubCursor == 1);
+    CHECK(GameMenuBusy == -2 && s_customize.modalCursor == 1);
 
     g_PadPressed = PAD_CONFIRM;
     UpdateCustomizeScreen();
@@ -203,7 +202,7 @@ int main(void) {
     Reset();
     s_model.transmissionAvailable = 1;
     GameMenuBusy = -2;
-    g_MenuSubCursor = 1;
+    s_customize.modalCursor = 1;
     g_CarModelAsset = NULL;
     g_PadPressed = PAD_CONFIRM;
     UpdateCustomizeScreen();

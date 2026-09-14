@@ -480,6 +480,7 @@ typedef struct CarShop {
     const TimedDrawCommand *modal;
     s32 option;
     s32 confirmTimer;
+    s32 modalCursor;
 } CarShop;
 
 void UpdateCarShop(CarShop *shop);

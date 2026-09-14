@@ -51,7 +51,6 @@ s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuOverlayPattern;
 s32 g_MenuScreen;
-u8 g_MenuSubCursor;
 s32 g_MenuViewAngle;
 s32 g_MenuViewAngleTarget;
 u16 g_PadPressed;
@@ -208,7 +207,7 @@ static void TestRetailUpgradeTransactions(void) {
             GameMenuBusy = ENGINEER_SHOP_IDLE;
             UpdateEngineerShopScreen();
             assert(GameMenuBusy == ENGINEER_SHOP_TUNE_UP_PROMPT);
-            g_MenuSubCursor = 1;
+            s_shop.modalCursor = 1;
             s_upgradedModelRequestResult = 0;
             UpdateEngineerShopScreen();
             assert(GameMenuBusy == ENGINEER_SHOP_TUNE_UP_PROMPT);
@@ -292,7 +291,7 @@ int main(int argc, char **argv) {
         g_UiScriptProgress = prog;
         s_shop.option = opt;
         g_PadPressed = buttons[pb];
-        g_MenuSubCursor = (u8)sub;
+        s_shop.modalCursor = (u8)sub;
         g_PlayerCarIndex = cars[ci];
         /* One short of the asking price, exactly it, and comfortably over. */
         g_PlayerMoney = g_CarTuneUpPriceTable[cars[ci] & 7] + (rich - 1);
@@ -324,7 +323,7 @@ int main(int argc, char **argv) {
             after[0] = GameMenuBusy;
             after[1] = s_shop.option;
             after[2] = g_PlayerMoney;
-            after[3] = g_MenuSubCursor;
+            after[3] = s_shop.modalCursor;
             after[4] = s_shop.confirmTimer;
             after[5] = g_MenuOverlayPattern;
             after[6] = g_MenuScreen;
@@ -371,7 +370,7 @@ int main(int argc, char **argv) {
 
     GameMenuBusy = -1;
     g_UiScriptProgress2 = 0;
-    g_MenuSubCursor = 1;
+    s_shop.modalCursor = 1;
     s_upgradedModelRequests = 0;
     UpdateEngineerShopScreen();
     if (GameMenuBusy == -2 || s_upgradedModelRequests != 0) {
@@ -423,16 +422,16 @@ int main(int argc, char **argv) {
     s_cars[5].modelVariant = 2;
     GameMenuBusy = ENGINEER_SHOP_TUNE_UP_PROMPT;
     g_PadPressed = 0;
-    g_MenuSubCursor = UINT8_MAX;
+    s_shop.modalCursor = UINT8_MAX;
     UpdateEngineerShopScreen();
-    if (g_MenuSubCursor != 1) {
+    if (s_shop.modalCursor != 1) {
         puts("FAIL tune-up prompt did not normalize its cursor");
         return 1;
     }
 
     GameMenuBusy = ENGINEER_SHOP_TUNE_UP_PROMPT;
     g_PadPressed = PAD_CONFIRM;
-    g_MenuSubCursor = 1;
+    s_shop.modalCursor = 1;
     s_shop.confirmTimer = 17;
     g_PlayerMoney = 5000;
     s_cars[5].modelVariant = 2;
@@ -450,7 +449,7 @@ int main(int argc, char **argv) {
 
     GameMenuBusy = ENGINEER_SHOP_TUNE_UP_PROMPT;
     g_PadPressed = PAD_CONFIRM;
-    g_MenuSubCursor = 1;
+    s_shop.modalCursor = 1;
     g_PlayerMoney = 4999;
     s_upgradedModelRequests = 0;
     UpdateEngineerShopScreen();

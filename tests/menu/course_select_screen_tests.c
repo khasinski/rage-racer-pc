@@ -63,7 +63,6 @@ void MenuBeginExit(s32 screen) {
 static s32 s_outgoingProgress;
 s32 g_MenuOverlayPattern;
 s32 g_MenuScreen;
-u8 g_MenuSubCursor;
 s32 g_MenuViewAngle;
 s32 g_MenuViewAngleTarget;
 s32 g_MenuViewOffset;
@@ -282,7 +281,7 @@ int main(int argc, char **argv) {
         s_courseSelect.option = opt;
         g_PadPressed = buttons[pb];
         g_PadHeld = 0;
-        g_MenuSubCursor = (u8)sub;
+        s_courseSelect.modalCursor = (u8)sub;
         s_courseSelect.confirmTimer = timer;
         g_MenuViewOffset = offsets[off];
         s_outgoingProgress = off;
@@ -330,7 +329,7 @@ int main(int argc, char **argv) {
             after[0] = GameMenuBusy;
             after[1] = s_courseSelect.option;
             after[2] = g_CourseIndex;
-            after[3] = g_MenuSubCursor;
+            after[3] = s_courseSelect.modalCursor;
             after[4] = s_courseSelect.confirmTimer;
             after[5] = g_MenuScreen;
             after[6] = g_MenuHandlerIndex;
@@ -420,7 +419,7 @@ int main(int argc, char **argv) {
             s_menuWidgets.timeAttackStep = 0;
             s_courseSelect.cardPendingGrade = 0;
             s_courseSelect.modalScript = NULL;
-            g_MenuSubCursor = 0;
+            s_courseSelect.modalCursor = 0;
             s_courseSelect.confirmTimer = 0;
 
             sprintf(label, "== browse held%04x/settle%d/pending%d/allow%d/"
@@ -476,7 +475,7 @@ int main(int argc, char **argv) {
             s_courseSelect.option = 0;
             g_PadPressed = 0;
             g_PadHeld = 0;
-            g_MenuSubCursor = 0;
+            s_courseSelect.modalCursor = 0;
             s_courseSelect.confirmTimer = 0;
             g_MenuViewOffset = offs[ofi];
             s_outgoingProgress = prog;
@@ -823,11 +822,11 @@ int main(int argc, char **argv) {
     g_GrandPrixMode = 1;
     g_PadPressed = PAD_CONFIRM;
     g_PadHeld = 0;
-    g_MenuSubCursor = UINT8_MAX;
+    s_courseSelect.modalCursor = UINT8_MAX;
     g_GrandPrixClass = 0;
     g_RaceProgress = NULL;
     UpdateCourseSelectScreen();
-    if (GameMenuBusy != 0 || g_MenuSubCursor != 0) {
+    if (GameMenuBusy != 0 || s_courseSelect.modalCursor != 0) {
         puts("FAIL a missing race-progress record left an invalid class");
         return 1;
     }
@@ -860,13 +859,13 @@ int main(int argc, char **argv) {
     g_CourseProgress = &s_course;
     g_RaceProgress = &s_progress;
     s_progress.maxClassReached = 2;
-    g_MenuSubCursor = UINT8_MAX;
+    s_courseSelect.modalCursor = UINT8_MAX;
     s_courseSelect.classChangeApplied = 0;
     s_courseSelect.confirmTimer = 0;
     s_curtain = 0x19;
     s_progressResets = 0;
     UpdateCourseSelectScreen();
-    if (g_MenuSubCursor != 2 || g_GrandPrixClass != 2 ||
+    if (s_courseSelect.modalCursor != 2 || g_GrandPrixClass != 2 ||
         s_progressResets != 1) {
         puts("FAIL class change accepted an unavailable class");
         return 1;

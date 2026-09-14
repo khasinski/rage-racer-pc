@@ -111,7 +111,6 @@ s32 g_CarTuneUpPriceTable[31] = {
     362500, 15200, 62400, 331400, 136700, 577000, 20000, 77500,
     405700, 151600, 559700, 695900, 2143500, 2836800, 6666666,
 };
-u8 g_MenuSubCursor;
 s32 GameMenuCursor;
 s32 g_UiScriptProgress2;
 s32 GameMenuBusy;

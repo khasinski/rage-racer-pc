@@ -46,6 +46,7 @@ extern s32 GameMenuCursorAnim;
 typedef struct CourseSelectScreen {
     s32 option;
     s32 confirmTimer;
+    s32 modalCursor;
     const TimedDrawCommand *modalScript;
     s32 classChangeApplied;
     s32 curtainSlide;
@@ -67,6 +68,7 @@ typedef struct EngineerShop {
     const TimedDrawCommand *modalScript;
     s32 option;
     s32 confirmTimer;
+    s32 modalCursor;
 } EngineerShop;
 
 typedef struct PaintColor {
@@ -80,6 +82,7 @@ typedef struct Customize {
     s32 option;
     s32 tirePulsePhase;
     s32 confirmTimer;
+    s32 modalCursor;
 } Customize;
 
 typedef struct LogoSample {
@@ -101,6 +104,7 @@ typedef struct TeamLogo {
     const TimedDrawCommand *subPanelScript;
     s32 option;
     s32 confirmTimer;
+    s32 modalCursor;
     s32 colorCycle;
     s32 fade;
     s32 zoom;
@@ -367,7 +371,7 @@ void EnterCarSelectScreen(void);
 
 /* id 4 -- "CAR SELECT"; the hub that starts a race or opens the shops. */
 /* The yes/no prompt both shops put up before taking the player's money. */
-void DrawShopPromptButtons(GameOrderingTableEntry *ot, s32 flash);
+void DrawShopPromptButtons(GameOrderingTableEntry *ot, s32 cursor, s32 flash);
 
 /* Rescans the owned-car list either side of the current one, and rechecks
  * what the shop and the engineer will accept. Both live in car_select.c. */
@@ -473,7 +477,6 @@ typedef enum FrontendState {
     FRONTEND_STATE_COUNT
 } FrontendState;
 
-extern u8 g_MenuSubCursor;
 extern s32 g_MenuViewSpin;
 extern s16 g_NegconMaxTwistSaved;
 extern s16 g_NegconSteerPlaySaved;

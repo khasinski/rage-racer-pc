@@ -8,10 +8,10 @@
 
 #include "game/menu.h"
 
-void DrawShopPromptButtons(GameOrderingTableEntry *ot, s32 flash) {
+void DrawShopPromptButtons(GameOrderingTableEntry *ot, s32 cursor, s32 flash) {
     if (ot == NULL) return;
 
-    DrawMenuCursorBox((g_MenuSubCursor != 0) ? 0xB8 : 0xDA, 0x44, 0x20, 0x20,
+    DrawMenuCursorBox((cursor != 0) ? 0xB8 : 0xDA, 0x44, 0x20, 0x20,
                       flash);
     DrawSprite(ot, 0xC0, 0x4C, 0x10, 0x10, 0x9D, 0x7C, 0, 0, 0, 0x244, 1, 1,
                0x3B);
