@@ -45,6 +45,10 @@ PaintColor *MenuPaintColor(void) {
     return &s_menuRuntime.paintColor;
 }
 
+Customize *MenuCustomize(void) {
+    return &s_menuRuntime.customize;
+}
+
 s32 MenuRuntimeScreenState(s32 screen) {
     if ((u32)screen >= MENU_SCREEN_COUNT) return 0;
     return s_menuRuntime.screenState[screen];

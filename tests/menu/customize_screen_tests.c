@@ -55,6 +55,9 @@ s32 g_UiScriptProgress2;
 
 static CarEntry s_cars[GAME_CAR_COUNT];
 static CarModelAsset s_model;
+static Customize s_customize;
+Customize *MenuCustomize(void) { return &s_customize; }
+
 static s32 s_lastCue;
 
 s32 RunTimedDrawScript(const TimedDrawCommand *commands, s32 *progress,
@@ -108,7 +111,8 @@ void GameDrawMenuButton(s32 x, s32 y, s32 w, s32 h, u8 r, u8 g, u8 b) {
     (void)g;
     (void)b;
 }
-void DrawTireCompoundSlider(u8 compound, s32 flash) {
+void DrawTireCompoundSlider(Customize *customize, u8 compound, s32 flash) {
+    (void)customize;
     (void)compound;
     (void)flash;
 }

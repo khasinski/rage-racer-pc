@@ -6,7 +6,6 @@
 #include <stdio.h>
 
 s32 g_AnimTimer;
-s32 g_TireSliderPulsePhase;
 GameRenderState g_RenderState;
 
 static s32 s_directionTriangles;
@@ -114,49 +113,50 @@ static void ResetDraws(void) {
 }
 
 int main(void) {
+    Customize customize = {0};
     static GameOrderingTableEntry orderingTable[3];
 
     RENDER_OT_BASE = orderingTable;
     g_AnimTimer = 2;
-    DrawTireCompoundSlider(4, 1);
+    DrawTireCompoundSlider(&customize, 4, 1);
     CHECK(s_directionTriangles == 1 && s_lineCount == 7);
-    CHECK(s_highlight == 0xFF && g_TireSliderPulsePhase == 0x60);
+    CHECK(s_highlight == 0xFF && customize.tirePulsePhase == 0x60);
 
     ResetDraws();
     g_AnimTimer = 0;
-    DrawTireCompoundSlider(0, 1);
+    DrawTireCompoundSlider(&customize, 0, 1);
     CHECK(s_directionTriangles == 1 && s_lineCount == 7);
     CHECK(s_highlight == 0x60);
 
     ResetDraws();
-    DrawTireCompoundSlider(2, 1);
+    DrawTireCompoundSlider(&customize, 2, 1);
     CHECK(s_directionTriangles == 2 && s_lineCount == 11);
 
     ResetDraws();
-    g_TireSliderPulsePhase = 17;
+    customize.tirePulsePhase = 17;
     s_rsinValue = -4000;
-    DrawTireCompoundSlider(2, 0);
+    DrawTireCompoundSlider(&customize, 2, 0);
     CHECK(s_rsinAngle == 17);
     CHECK(s_highlight == (u8)(-4000 / 64 - 0x41));
-    CHECK(g_TireSliderPulsePhase == 17 + 0x60);
+    CHECK(customize.tirePulsePhase == 17 + 0x60);
 
     ResetDraws();
-    g_TireSliderPulsePhase = -1;
-    DrawTireCompoundSlider(UINT8_MAX, 0);
+    customize.tirePulsePhase = -1;
+    DrawTireCompoundSlider(&customize, UINT8_MAX, 0);
     CHECK(s_rsinAngle == 0xFFF);
     CHECK(s_directionTriangles == 1 && s_lineCount == 7);
 
-    g_TireSliderPulsePhase = INT_MAX;
-    DrawTireCompoundSlider(2, 1);
-    CHECK(g_TireSliderPulsePhase ==
+    customize.tirePulsePhase = INT_MAX;
+    DrawTireCompoundSlider(&customize, 2, 1);
+    CHECK(customize.tirePulsePhase ==
           (s32)((u32)INT_MAX + 0x60u));
 
     ResetDraws();
     RENDER_OT_BASE = NULL;
-    g_TireSliderPulsePhase = 12;
-    DrawTireCompoundSlider(2, 0);
+    customize.tirePulsePhase = 12;
+    DrawTireCompoundSlider(&customize, 2, 0);
     CHECK(s_lineCount == 0 && s_directionTriangles == 0);
-    CHECK(g_TireSliderPulsePhase == 12);
+    CHECK(customize.tirePulsePhase == 12);
 
     puts("tire compound slider tests passed");
     return 0;

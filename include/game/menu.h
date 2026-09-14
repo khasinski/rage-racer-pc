@@ -64,6 +64,10 @@ typedef struct PaintColor {
     s32 pulsePhase;
 } PaintColor;
 
+typedef struct Customize {
+    s32 tirePulsePhase;
+} Customize;
+
 typedef struct MenuRuntime {
     /* State-machine screen updated this frame. */
     s32 activeScreen;
@@ -80,6 +84,7 @@ typedef struct MenuRuntime {
     BrowseArrows browseArrows;
     EngineerShop engineerShop;
     PaintColor paintColor;
+    Customize customize;
 } MenuRuntime;
 
 void MenuRuntimeReset(void);
@@ -89,6 +94,7 @@ CourseSelectScreen *MenuCourseSelect(void);
 BrowseArrows *MenuBrowseArrows(void);
 EngineerShop *MenuEngineerShop(void);
 PaintColor *MenuPaintColor(void);
+Customize *MenuCustomize(void);
 s32 MenuRuntimeScreenState(s32 screen);
 void MenuRuntimeSetScreenState(s32 screen, s32 state);
 
@@ -456,7 +462,6 @@ extern s32 g_CarTuneUpPriceTable[CAR_TUNE_UP_PRICE_COUNT];
 extern s32 g_LogoSampleCharIndex;
 extern s32 g_LogoSampleBackIndex;
 extern s32 g_LogoSampleSavedIndex;
-extern s32 g_TireSliderPulsePhase;
 extern s32 g_TeamLogoColorCycleAngle;
 extern s32 g_TeamNameCursorPhase;
 extern s32 g_TeamLogoFadeLevel;
@@ -565,7 +570,8 @@ void UpdateOptionScene(void);
 void UpdateOptionMenuFade(void);
 s32 DrawPaintColorPalette(PaintColor *paint, s32 *counter, s32 step);
 void DrawTeamNameCharModel(void);
-void DrawTireCompoundSlider(u8 compound, s32 confirming);
+void DrawTireCompoundSlider(Customize *customize, u8 compound,
+                            s32 confirming);
 void DrawVolumeBar(s32 level, s32 y);
 void UpdateAndDrawCourseCard(void);
 void UpdateCarListCursor(void);

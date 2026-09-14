@@ -143,7 +143,6 @@ s32 g_CarTuneUpPriceTable[31] = {
 s32 g_LogoSampleCharIndex;
 s32 g_LogoSampleBackIndex;
 s32 g_LogoSampleSavedIndex;
-s32 g_TireSliderPulsePhase;
 s32 g_CarSpecBars[4];
 s32 g_TeamLogoColorCycleAngle;
 s32 g_TeamNameCursorPhase;

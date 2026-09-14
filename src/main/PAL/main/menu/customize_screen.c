@@ -140,7 +140,7 @@ static void UpdateTireDialog(void) {
         PlaySoundCue(1);
         g_MenuSubCursor--;
     }
-    DrawTireCompoundSlider(g_MenuSubCursor, 0);
+    DrawTireCompoundSlider(MenuCustomize(), g_MenuSubCursor, 0);
 }
 
 static void UpdateTransmissionDialog(GameOrderingTableEntry *ot) {
@@ -201,7 +201,7 @@ static void UpdateTireConfirmation(void) {
     if (g_MenuConfirmTimer > 0) {
         g_MenuConfirmTimer--;
         RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, 1);
-        DrawTireCompoundSlider(g_MenuSubCursor, 1);
+        DrawTireCompoundSlider(MenuCustomize(), g_MenuSubCursor, 1);
         return;
     }
     RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, -1);

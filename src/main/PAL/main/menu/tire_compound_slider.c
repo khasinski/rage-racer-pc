@@ -9,11 +9,11 @@ static const s16 s_tireCompoundX[CAR_TIRE_COMPOUND_COUNT] = {
     0xF7, 0xE7, 0xD7, 0xC7, 0xB8,
 };
 
-static u8 GetSliderHighlight(s32 confirming) {
+static u8 GetSliderHighlight(const Customize *customize, s32 confirming) {
     if (confirming != 0) {
         return g_AnimTimer & 2 ? 0xFF : 0x60;
     }
-    return (u8)(rsin((s32)((u32)g_TireSliderPulsePhase & 0xFFFu)) / 64 -
+    return (u8)(rsin((s32)((u32)customize->tirePulsePhase & 0xFFFu)) / 64 -
                 0x41);
 }
 
@@ -37,7 +37,8 @@ static void DrawRightSliderArrow(GameOrderingTableEntry *ot, s16 x,
 }
 
 /* The five-position tire-compound slider of the CUSTOMIZE screen. */
-void DrawTireCompoundSlider(u8 compound, s32 confirming) {
+void DrawTireCompoundSlider(Customize *customize, u8 compound,
+                            s32 confirming) {
     GameOrderingTableEntry *ot;
     s16 x;
     u8 highlight;
@@ -47,7 +48,7 @@ void DrawTireCompoundSlider(u8 compound, s32 confirming) {
         return;
     }
     ot = RENDER_OT_BASE + 2;
-    highlight = GetSliderHighlight(confirming);
+    highlight = GetSliderHighlight(customize, confirming);
     if (compound >= CAR_TIRE_COMPOUND_COUNT) {
         compound = CAR_TIRE_COMPOUND_COUNT - 1;
     }
@@ -77,6 +78,6 @@ void DrawTireCompoundSlider(u8 compound, s32 confirming) {
                      0x95, 0, 0x80);
     DrawSolidRect(ot, 0xB8, 0x48, 0x40, 0x40, 0x95, 0x25, 0x1E, 0xFF);
 
-    g_TireSliderPulsePhase =
-        (s32)((u32)g_TireSliderPulsePhase + TIRE_SLIDER_PULSE_STEP);
+    customize->tirePulsePhase =
+        (s32)((u32)customize->tirePulsePhase + TIRE_SLIDER_PULSE_STEP);
 }
