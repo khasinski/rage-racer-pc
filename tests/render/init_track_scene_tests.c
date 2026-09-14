@@ -16,6 +16,7 @@ s32 g_FrameSyncThreshold;
 s32 g_TrackTextureSectionLo;
 s32 g_TrackTextureSectionHi;
 const TrackRenderTable *g_TrackRenderTable;
+SceneryAnimation g_SceneryAnimation;
 
 static s32 s_order;
 static s32 s_renderOrder;
@@ -58,6 +59,7 @@ int main(void) {
     g_AnimTimer = 111;
     g_SceneTimer = 222;
     g_FrameSyncThreshold = 333;
+    g_SceneryAnimation = (SceneryAnimation){1, 2, 3};
 
     InitTrackScene();
 
@@ -67,7 +69,10 @@ int main(void) {
         g_TrackTextureSectionLo != 12 || g_TrackTextureSectionHi != 34 ||
         s_textureSection != 89 || s_environmentOffset != 567 ||
         g_Camera.mode != CAMERA_VIEW_TRACK || g_AnimTimer != 0 ||
-        g_SceneTimer != 0 || g_FrameSyncThreshold != 0x180) {
+        g_SceneTimer != 0 || g_FrameSyncThreshold != 0x180 ||
+        g_SceneryAnimation.racePosition != 0 ||
+        g_SceneryAnimation.raceVariant != 0 ||
+        g_SceneryAnimation.presentationVariant != 0) {
         puts("FAIL: track scene initialization contract changed");
         return 1;
     }

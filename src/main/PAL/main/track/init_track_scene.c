@@ -22,6 +22,7 @@ void InitTrackScene(void) {
     SetTrackTexturePageNow(g_Cars[g_CameraCarIndex].trackSection);
     SeekEnvironmentScript(g_TrackRenderTable->environmentScriptOffset);
     g_Camera.mode = CAMERA_VIEW_TRACK;
+    g_SceneryAnimation = (SceneryAnimation){0};
     g_AnimTimer = 0;
     g_SceneTimer = 0;
     g_FrameSyncThreshold = TRACK_SCENE_FRAME_SYNC_THRESHOLD;

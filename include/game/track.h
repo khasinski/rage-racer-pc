@@ -361,14 +361,13 @@ extern s16 g_ShuttlePathDwellMax[];
 
 void InterpolateTrackPoint(s32 pointIndex, LVec *out, s32 weight);
 
-extern s16 g_PresentationSceneryFrame;
-extern s32 g_PresentationSceneryTint;
-extern s16 g_PresentationSceneryVariant;
-extern s16 g_AnimSceneryFrame;
 extern s16 g_AnimSceneryPitch[];
-extern s16 g_AnimSceneryRacePosition;
-extern s32 g_AnimSceneryTint;
-extern s16 g_AnimSceneryVariant;
+typedef struct SceneryAnimation {
+    s16 racePosition;
+    s16 raceVariant;
+    s16 presentationVariant;
+} SceneryAnimation;
+extern SceneryAnimation g_SceneryAnimation;
 /* The orientation quads, same three-group shape as the offsets: delta at
  * 0x8009B1E8, start at +0x10, current at +0x20. Elements 0..2 are pitch, yaw
  * and roll -- 12-bit angles, wrapped to +-0x800 on load and masked with 0xFFF

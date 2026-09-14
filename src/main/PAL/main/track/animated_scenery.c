@@ -55,6 +55,8 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
     AnimatedSceneryTransform transform;
     s32 primaryModel;
     s32 secondaryModel;
+    s32 frame;
+    s32 tint;
 
     if (instance < 0 || instance >= ANIMATED_SCENERY_INSTANCE_COUNT) {
         return;
@@ -66,13 +68,12 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
         return;
     }
 
-    g_AnimSceneryFrame = (timer / 4) % 16;
-    if (g_AnimSceneryFrame == 0 && timer % 8 == 0 && g_RacePaused == 0) {
-        g_AnimSceneryTint = 0;
-        g_AnimSceneryRacePosition = g_PlayerCar.drive.racePosition;
-        g_AnimSceneryVariant = (Random15() & 7) / 3;
-        if (g_AnimSceneryRacePosition >= 4) {
-            g_AnimSceneryRacePosition = 0;
+    frame = (timer / 4) % 16;
+    if (frame == 0 && timer % 8 == 0 && g_RacePaused == 0) {
+        g_SceneryAnimation.racePosition = g_PlayerCar.drive.racePosition;
+        g_SceneryAnimation.raceVariant = (Random15() & 7) / 3;
+        if (g_SceneryAnimation.racePosition >= 4) {
+            g_SceneryAnimation.racePosition = 0;
         }
     }
 
@@ -81,21 +82,21 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
         return;
     }
 
-    g_AnimSceneryTint = ((timer >> 3) & 3) << 16;
-    if (g_AnimSceneryRacePosition != 0) {
-        primaryModel = g_AnimSceneryFrame < 13
-            ? g_AnimSceneryFrame + 10
-            : g_AnimSceneryRacePosition;
-        secondaryModel = g_AnimSceneryVariant + 4;
+    tint = ((timer >> 3) & 3) << 16;
+    if (g_SceneryAnimation.racePosition != 0) {
+        primaryModel = frame < 13
+            ? frame + 10
+            : g_SceneryAnimation.racePosition;
+        secondaryModel = g_SceneryAnimation.raceVariant + 4;
     } else {
-        primaryModel = g_AnimSceneryFrame + 0x18;
-        secondaryModel = g_AnimSceneryVariant + 7;
+        primaryModel = frame + 0x18;
+        secondaryModel = g_SceneryAnimation.raceVariant + 7;
     }
 
     SubmitAnimatedSceneryLayer(&transform, 0x20 + instance * 2,
                                primaryModel, 0);
     SubmitAnimatedSceneryLayer(&transform, 0x21 + instance * 2,
-                               secondaryModel, g_AnimSceneryTint);
+                               secondaryModel, tint);
 }
 
 void DrawPresentationAnimatedScenery(s32 timer, s32 instance, s32 isReplay,
@@ -103,6 +104,8 @@ void DrawPresentationAnimatedScenery(s32 timer, s32 instance, s32 isReplay,
     AnimatedSceneryTransform transform;
     s32 primaryModel;
     s32 secondaryModel;
+    s32 frame;
+    s32 tint;
 
     if (instance < 0 || instance >= ANIMATED_SCENERY_INSTANCE_COUNT ||
         g_GrandPrixMode == 0 ||
@@ -115,21 +118,20 @@ void DrawPresentationAnimatedScenery(s32 timer, s32 instance, s32 isReplay,
         return;
     }
 
-    g_PresentationSceneryFrame = (timer / 4) % 16;
-    if (g_PresentationSceneryFrame == 0 && timer % 8 == 0 && animate == 1) {
-        g_PresentationSceneryTint = 0;
-        g_PresentationSceneryVariant = (Random15() & 7) / 3;
+    frame = (timer / 4) % 16;
+    if (frame == 0 && timer % 8 == 0 && animate == 1) {
+        g_SceneryAnimation.presentationVariant = (Random15() & 7) / 3;
     }
 
     BuildAnimatedSceneryTransform(&transform, instance);
-    g_PresentationSceneryTint = ((timer >> 3) & 3) << 16;
-    primaryModel = g_PresentationSceneryFrame +
+    tint = ((timer >> 3) & 3) << 16;
+    primaryModel = frame +
                    (isReplay != 0 ? 0xA : 0x18);
-    secondaryModel = g_PresentationSceneryVariant +
+    secondaryModel = g_SceneryAnimation.presentationVariant +
                      (isReplay != 0 ? 4 : 7);
 
     SubmitAnimatedSceneryLayer(&transform, 0x30 + instance * 2,
                                primaryModel, 0);
     SubmitAnimatedSceneryLayer(&transform, 0x31 + instance * 2,
-                               secondaryModel, g_PresentationSceneryTint);
+                               secondaryModel, tint);
 }

@@ -17,13 +17,7 @@ s16 g_GrandPrixMode;
 s32 g_RacePaused;
 Vec4 g_AnimSceneryPos[2];
 s16 g_AnimSceneryPitch[2];
-s16 g_AnimSceneryFrame;
-s32 g_AnimSceneryTint;
-s16 g_AnimSceneryRacePosition;
-s16 g_AnimSceneryVariant;
-s16 g_PresentationSceneryFrame;
-s32 g_PresentationSceneryTint;
-s16 g_PresentationSceneryVariant;
+SceneryAnimation g_SceneryAnimation;
 
 typedef struct Submission {
     u32 entity;
@@ -128,16 +122,16 @@ int main(void) {
     Reset();
     DrawAnimatedScenery(0, 0);
     if (g_SubmissionCount != 0 || g_RandomCalls != 1 ||
-        g_AnimSceneryFrame != 0 || g_AnimSceneryRacePosition != 2 ||
-        g_AnimSceneryVariant != 1) {
+        g_SceneryAnimation.racePosition != 2 ||
+        g_SceneryAnimation.raceVariant != 1) {
         puts("FAIL: race animation state-only update");
         return 1;
     }
 
     g_GrandPrixMode = 1;
     g_CourseIndex = 3;
-    g_AnimSceneryRacePosition = 2;
-    g_AnimSceneryVariant = 1;
+    g_SceneryAnimation.racePosition = 2;
+    g_SceneryAnimation.raceVariant = 1;
     Reset();
     DrawAnimatedScenery(52, 1);
     if (!ExpectPair("race position layers", 0x22, 2, 5,
@@ -146,7 +140,7 @@ int main(void) {
     }
 
     g_CourseIndex = 0;
-    g_AnimSceneryRacePosition = 0;
+    g_SceneryAnimation.racePosition = 0;
     Reset();
     DrawAnimatedScenery(4, 0);
     if (!ExpectPair("generic race layers", 0x20, 25, 8,
@@ -167,11 +161,9 @@ int main(void) {
 
     /* The replay variant returns before changing state when GP mode is off. */
     g_GrandPrixMode = 0;
-    g_PresentationSceneryFrame = 9;
     Reset();
     DrawPresentationAnimatedScenery(0, 0, 1, 1);
-    if (g_PresentationSceneryFrame != 9 || g_RandomCalls != 0 ||
-        g_SubmissionCount != 0) {
+    if (g_RandomCalls != 0 || g_SubmissionCount != 0) {
         puts("FAIL: replay early GP-mode guard");
         return 1;
     }
@@ -185,7 +177,7 @@ int main(void) {
         return 1;
     }
 
-    g_PresentationSceneryVariant = 1;
+    g_SceneryAnimation.presentationVariant = 1;
     Reset();
     DrawPresentationAnimatedScenery(4, 1, 1, 0);
     if (!ExpectPair("replay layers", 0x32, 11, 5, 110, 310, 0)) {
@@ -203,7 +195,7 @@ int main(void) {
     g_Visible = 1;
     g_CourseIndex = 3;
     g_AnimSceneryPos[0].z = INT_MAX;
-    g_AnimSceneryRacePosition = 0;
+    g_SceneryAnimation.racePosition = 0;
     Reset();
     DrawAnimatedScenery(4, 0);
     if (!ExpectPair("wrapped course offset", 0x20, 25, 8,

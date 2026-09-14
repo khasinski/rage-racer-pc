@@ -49,12 +49,7 @@ Vec4 g_AnimSceneryPos[2] = {
 s16 g_AnimSceneryPitch[4] = {
     -111, 0, 0, 0
 };
-s32 g_AnimSceneryTint;
-s16 g_AnimSceneryRacePosition;
-s16 g_AnimSceneryFrame;
-s32 g_PresentationSceneryTint;
-s16 g_PresentationSceneryVariant;
-s16 g_PresentationSceneryFrame;
+SceneryAnimation g_SceneryAnimation;
 u16 g_SpinningSceneryRate[4] = {
     32, 64, 0, 0
 };
@@ -116,7 +111,6 @@ SkyTileUV g_SkyTileUV[SKY_TILE_COUNT] = {
 _Static_assert(sizeof(g_SkyTileUV) == 64,
                "sky UV records must contain exactly eight tiles");
 Camera g_Camera = {.orbitDistance = 330};
-s16 g_AnimSceneryVariant;
 s32 g_FogNear;
 VisibleTerrainCell g_MainVisibleCellList[64];
 s32 g_EnvScriptLength;

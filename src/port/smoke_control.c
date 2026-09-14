@@ -246,8 +246,8 @@ void PortSmokeBeforeSceneHandler(void) {
         g_SceneTimer >= g_SmokeRandomSyncTimer) {
         g_RandomSeed = (unsigned int)g_SmokeRandomSyncSeed;
         if (g_SmokeRandomSyncHasVariants) {
-            g_AnimSceneryVariant = (s16)g_SmokeRandomSyncVariant;
-            g_PresentationSceneryVariant =
+            g_SceneryAnimation.raceVariant = (s16)g_SmokeRandomSyncVariant;
+            g_SceneryAnimation.presentationVariant =
                 (s16)g_SmokeRandomSyncPresentationVariant;
         }
         g_SmokeRandomSyncFired = 1;
@@ -256,7 +256,8 @@ void PortSmokeBeforeSceneHandler(void) {
                 "random sync before-scene frame=%d scene=%d timer=%d "
                 "seed=%08x variants=%d,%d\n",
                 g_FrameCounter, g_SceneId, g_SceneTimer, g_RandomSeed,
-                g_AnimSceneryVariant, g_PresentationSceneryVariant);
+                g_SceneryAnimation.raceVariant,
+                g_SceneryAnimation.presentationVariant);
     }
 }
 static int g_SmokeStateInputCount;
@@ -835,7 +836,8 @@ int PortShouldExit(int frame_number) {
                         g_CourseObjectCount,
                         SmokeHashBytes(g_CourseObjects,
                             (size_t)g_CourseObjectCount * sizeof(CourseObject)),
-                        g_AnimSceneryVariant, g_PresentationSceneryVariant,
+                        g_SceneryAnimation.raceVariant,
+                        g_SceneryAnimation.presentationVariant,
                         g_SpinningSceneryAngle[0], g_SpinningSceneryAngle[1],
                         g_SpinningSceneryAngle[2], g_SpinningSceneryAngle[3],
                         SmokeHashCarRenderState(g_Cars,
