@@ -51,7 +51,7 @@ static void LeaveCarSelectScreen(void) {
 /* A shop that will not take the player shows a modal instead of opening. */
 static void RefuseWithModal(const TimedDrawCommand *script, s32 busyState) {
     PlaySoundCue(5);
-    g_CarSelectPopupScript = script;
+    MenuCarSelect()->popupScript = script;
     SetCarSelectState(busyState);
     g_UiScriptProgress2 = 0;
 }
@@ -141,19 +141,18 @@ static void ChooseCarSelectRow(s32 row) {
 
 /* Idle: the screen is up and the pad drives it. */
 static void UpdateCarSelectInput(void) {
+    CarSelect *screen = MenuCarSelect();
     s32 lastRow = CarSelectLastRow();
     s32 carBeforeSwap;
 
     g_MenuOverlayPattern = -1;
     if (g_PadPressed & PAD_UP) {
         PlaySoundCue(1);
-        g_CarSelectCursor =
-            (g_CarSelectCursor > 0) ? g_CarSelectCursor - 1 : lastRow;
+        screen->cursor = screen->cursor > 0 ? screen->cursor - 1 : lastRow;
     }
     if (g_PadPressed & PAD_DOWN) {
         PlaySoundCue(1);
-        g_CarSelectCursor =
-            (g_CarSelectCursor < lastRow) ? g_CarSelectCursor + 1 : 0;
+        screen->cursor = screen->cursor < lastRow ? screen->cursor + 1 : 0;
     }
     UpdateOwnedCarNeighbours();
     RefreshCarUnlockState();
@@ -173,7 +172,7 @@ static void UpdateCarSelectInput(void) {
         return;
     }
     if (g_PadPressed & PAD_CONFIRM) {
-        ChooseCarSelectRow(g_CarSelectCursor);
+        ChooseCarSelectRow(screen->cursor);
     } else if ((g_PadPressed & PAD_CANCEL) &&
                ((u32)g_MenuViewAngle - 0x2710U > 0x120160U)) {
         LeaveCarSelectScreen();
@@ -183,10 +182,12 @@ static void UpdateCarSelectInput(void) {
 /* Idle: everything the screen puts on the display, and the input once the
  * chrome has finished sliding in and no modal is on top of it. */
 static void UpdateCarSelectIdle(void) {
+    CarSelect *screen = MenuCarSelect();
+
     g_CarNamePlateStep = 0x14;
     MenuCarSpecGraph()->step = 3;
     g_MenuPlateCarIndex = g_PlayerCarIndex;
-    RunTimedDrawScript(g_CarSelectPopupScript, &g_UiScriptProgress2, -1);
+    RunTimedDrawScript(screen->popupScript, &g_UiScriptProgress2, -1);
     RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
     DrawBrowseArrows(MenuBrowseArrows(), 1, 0, g_PrevOwnedCarIndex != -1,
                      g_NextOwnedCarIndex != -1);
@@ -194,7 +195,7 @@ static void UpdateCarSelectIdle(void) {
         DrawOwnedCarCounter(MenuWidgetState(), 1, CountOwnedCars());
     }
     DrawFadingMenuSprites(g_UiScriptProgress, CarSelectLastRow(),
-                          g_CarSelectCursor);
+                          screen->cursor);
     RunTimedDrawScript(CarSelectMenuScript(), &g_UiScriptProgress, 0);
     if ((RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1) != 0) &&
         (g_UiScriptProgress2 <= 0)) {
@@ -204,7 +205,9 @@ static void UpdateCarSelectIdle(void) {
 
 /* A modal is up over the screen; the only thing it takes is dismissal. */
 static void UpdateCarSelectModal(void) {
-    RunTimedDrawScript(g_CarSelectPopupScript, &g_UiScriptProgress2, 0);
+    CarSelect *screen = MenuCarSelect();
+
+    RunTimedDrawScript(screen->popupScript, &g_UiScriptProgress2, 0);
     if (RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
         if (g_PadPressed & (PAD_CONFIRM | PAD_CANCEL)) {
             SetCarSelectState(0);
@@ -216,7 +219,7 @@ static void UpdateCarSelectModal(void) {
         DrawOwnedCarCounter(MenuWidgetState(), 1, CountOwnedCars());
     }
     DrawFadingMenuSprites(g_UiScriptProgress, CarSelectLastRow(),
-                          g_CarSelectCursor);
+                          screen->cursor);
     RunTimedDrawScript(CarSelectMenuScript(), &g_UiScriptProgress, 0);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
 }
@@ -280,7 +283,7 @@ static void EnterChosenScreen(void) {
         g_MenuViewAngle = 0x7A120;
         g_MenuViewAngleTarget = 0x7A120;
         MenuActivateScreen(MENU_SCREEN_COURSE_SELECT);
-        g_CarSelectCursor = 0;
+        MenuCarSelect()->cursor = 0;
         courseSelect->pendingCourse = -1;
         g_MenuViewOffset = 0x3D090;
         g_MenuViewOffsetTarget = 0;
@@ -299,6 +302,8 @@ static void EnterChosenScreen(void) {
 }
 
 static void UpdateCarSelectOutgoing(void) {
+    CarSelect *screen = MenuCarSelect();
+
     MenuBeginExit(MENU_SCREEN_CAR_SELECT);
     DrawBrowseArrows(MenuBrowseArrows(), -1, 0, g_PrevOwnedCarIndex != -1,
                      g_NextOwnedCarIndex != -1);
@@ -308,7 +313,7 @@ static void UpdateCarSelectOutgoing(void) {
     RunTimedDrawScript(CarSelectMenuScript(), &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
     DrawFadingMenuSprites(g_UiScriptProgress, CarSelectLastRow(),
-                          g_CarSelectCursor);
+                          screen->cursor);
     if (g_UiScriptProgress <= 0) {
         EnterChosenScreen();
     }

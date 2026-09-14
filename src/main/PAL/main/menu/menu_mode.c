@@ -59,7 +59,7 @@ static void ResetMenuNavigation(void) {
     courseSelect->modalScript = g_UiEmptyScript;
     customize->popupScript = g_UiEmptyScript;
     logoSample->subPanelScript = g_UiEmptyScript;
-    g_CarSelectPopupScript = g_UiEmptyScript;
+    MenuCarSelect()->popupScript = g_UiEmptyScript;
     g_TeamLogoSubPanelScript = g_UiEmptyScript;
     ResetCarShopScreen();
     ResetEngineerShopScreen();
@@ -92,7 +92,7 @@ static void ResetMenuNavigation(void) {
     g_MenuHintButtonsVisible = 1;
     g_MenuAltLayoutSetting = 0;
     g_CarShopUnlockAll = 0;
-    g_CarSelectCursor = 0;
+    MenuCarSelect()->cursor = 0;
     g_DesignModeOption = 0;
 }
 

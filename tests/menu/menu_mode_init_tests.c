@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <string.h>
 
+static CarSelect s_carSelect;
+
 GameRenderState g_RenderState;
 Camera g_Camera;
 Matrix g_SceneColorMatrix;
@@ -110,7 +112,7 @@ static void PoisonEntryState(void) {
     g_SceneId = -1;
     g_SceneTimer = 99;
     s_courseSelect.modalScript = NULL;
-    g_CarSelectPopupScript = NULL;
+    s_carSelect.popupScript = NULL;
     s_customize.popupScript = NULL;
     g_TeamLogoSubPanelScript = NULL;
     s_logo.subPanelScript = NULL;
@@ -147,7 +149,7 @@ static void PoisonEntryState(void) {
     g_CarShopUnlockAll = 24;
     g_MenuScreen = MENU_SCREEN_UNUSED;
     s_courseSelect.option = 25;
-    g_CarSelectCursor = 26;
+    s_carSelect.cursor = 26;
     s_customize.option = 27;
     g_DesignModeOption = 28;
     s_displayMask = -1;
@@ -170,7 +172,7 @@ static int CheckCommonEntryState(const GameRaceProgress *progress) {
     CHECK(g_Camera.view.x == 0 && g_Camera.view.y == -64);
     CHECK(g_Camera.view.z == -256 && g_Camera.view.angleX == 0x100);
     CHECK(s_courseSelect.modalScript == g_UiEmptyScript);
-    CHECK(g_CarSelectPopupScript == g_UiEmptyScript);
+    CHECK(s_carSelect.popupScript == g_UiEmptyScript);
     CHECK(s_customize.popupScript == g_UiEmptyScript);
     CHECK(g_TeamLogoSubPanelScript == g_UiEmptyScript);
     CHECK(s_logo.subPanelScript == g_UiEmptyScript);
@@ -192,7 +194,7 @@ static int CheckCommonEntryState(const GameRaceProgress *progress) {
     CHECK(g_MenuHandlerIndex == -1 && g_MenuOutgoingHandlerIndex == -1);
     CHECK(g_MenuAltLayoutSetting == 0 && g_CarShopUnlockAll == 0);
     CHECK(g_MenuScreen == MENU_SCREEN_BOOTSTRAP);
-    CHECK(s_courseSelect.option == 0 && g_CarSelectCursor == 0);
+    CHECK(s_courseSelect.option == 0 && s_carSelect.cursor == 0);
     CHECK(s_customize.option == 0 && g_DesignModeOption == 0);
     CHECK(s_drawResetCalls == 3);
     CHECK(s_carShopResets == 1);
@@ -249,4 +251,5 @@ int main(void) {
 }
 
 static MenuWidgets s_menuWidgets;
+CarSelect *MenuCarSelect(void) { return &s_carSelect; }
 MenuWidgets *MenuWidgetState(void) { return &s_menuWidgets; }

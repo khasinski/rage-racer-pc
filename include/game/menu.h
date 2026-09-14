@@ -99,6 +99,11 @@ typedef struct CarSpecGraph {
     s32 bars[4];
 } CarSpecGraph;
 
+typedef struct CarSelect {
+    const TimedDrawCommand *popupScript;
+    s32 cursor;
+} CarSelect;
+
 typedef struct MenuWidgets {
     s32 lightBurst;
     s32 ownedCarCounter;
@@ -126,6 +131,7 @@ typedef struct MenuRuntime {
     LogoSample logoSample;
     TeamName teamName;
     CarSpecGraph carSpecGraph;
+    CarSelect carSelect;
     MenuWidgets widgets;
 } MenuRuntime;
 
@@ -140,6 +146,7 @@ Customize *MenuCustomize(void);
 LogoSample *MenuLogoSample(void);
 TeamName *MenuTeamName(void);
 CarSpecGraph *MenuCarSpecGraph(void);
+CarSelect *MenuCarSelect(void);
 MenuWidgets *MenuWidgetState(void);
 s32 MenuRuntimeScreenState(s32 screen);
 void MenuRuntimeSetScreenState(s32 screen, s32 state);
@@ -408,7 +415,6 @@ extern s32 g_MenuLowerAltPanelStep;
 extern s32 g_CarShopUnlockAll;
 extern s32 g_MenuOutgoingScreenProgress;
 extern s32 g_TeamLogoPaintArmed;
-extern s32 g_CarSelectCursor;
 extern const TimedDrawCommand *g_TeamLogoSubPanelScript;
 extern s32 g_BgmTrackCount;
 extern s32 g_CarNamePlateStep;

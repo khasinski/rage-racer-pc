@@ -61,6 +61,10 @@ CarSpecGraph *MenuCarSpecGraph(void) {
     return &s_menuRuntime.carSpecGraph;
 }
 
+CarSelect *MenuCarSelect(void) {
+    return &s_menuRuntime.carSelect;
+}
+
 MenuWidgets *MenuWidgetState(void) {
     return &s_menuRuntime.widgets;
 }

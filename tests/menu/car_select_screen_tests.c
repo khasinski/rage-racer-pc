@@ -24,10 +24,10 @@
 s32 g_CarListCursor;
 CarModelAsset *g_CarModelAsset;
 s32 g_CarNamePlateStep;
-s32 g_CarSelectCursor;
+static CarSelect s_carSelect;
 TimedDrawCommand g_CarSelectMenuScriptGp[1];
 TimedDrawCommand g_CarSelectMenuScriptTimeAttack[1];
-const TimedDrawCommand *g_CarSelectPopupScript;
+
 /* The two modal scripts are decoded command arrays rather than raw bytes;
  * they are never walked here, only identified. */
 TimedDrawCommand g_CarShopUnavailableScript[2];
@@ -279,7 +279,7 @@ int main(int argc, char **argv) {
         g_UiScriptProgress2 = p2;
         g_UiScriptProgress = prog;
         g_GrandPrixMode = (s16)gp;
-        g_CarSelectCursor = cursors[ci];
+        s_carSelect.cursor = cursors[ci];
         g_PadPressed = buttons[pb];
         g_PadHeld = held[hb];
         /* The screen only lets a car be swapped once the view has come to rest
@@ -319,7 +319,7 @@ int main(int argc, char **argv) {
         g_TimeAttackPlateStep = 0;
         s_courseSelect.cardPendingGrade = 0;
         s_courseSelect.cardSpin = 0;
-        g_CarSelectPopupScript = NULL;
+        s_carSelect.popupScript = NULL;
 
         sprintf(label,
                 "== busy%d/script%d/p2_%d/gp%d/cur%d/pad%04x/held%04x/"
@@ -333,7 +333,7 @@ int main(int argc, char **argv) {
         {
             s32 after[22];
             after[0] = MenuRuntimeScreenState(MENU_SCREEN_CAR_SELECT);
-            after[1] = g_CarSelectCursor;
+            after[1] = s_carSelect.cursor;
             after[2] = g_PlayerCarIndex;
             after[3] = g_CarListCursor;
             after[4] = g_CarSwapFromIndex;
@@ -352,7 +352,7 @@ int main(int argc, char **argv) {
             after[17] = g_CourseIndex;
             after[18] = g_GrandPrixSeries;
             after[19] = g_TimeAttackPlateStep;
-            after[20] = ScriptId(g_CarSelectPopupScript);
+            after[20] = ScriptId(s_carSelect.popupScript);
             after[21] = g_MenuAltLayout;
             Record("state", after, 22);
             RECORD("saved", s_progress.course, s_progress.carIndex,
@@ -375,7 +375,7 @@ int main(int argc, char **argv) {
     s_scriptResult = 1;
     g_UiScriptProgress2 = 0;
     g_GrandPrixMode = 1;
-    g_CarSelectCursor = 3;
+    s_carSelect.cursor = 3;
     g_PadPressed = PAD_CONFIRM;
     g_PadHeld = 0;
     g_MenuViewAngle = 0;
@@ -384,10 +384,10 @@ int main(int argc, char **argv) {
     g_PlayerCarIndex = 0;
     g_CarModelAsset = NULL;
     g_RaceProgress = NULL;
-    g_CarSelectPopupScript = NULL;
+    s_carSelect.popupScript = NULL;
     UpdateCarSelectScreen();
     if (MenuRuntimeScreenState(MENU_SCREEN_CAR_SELECT) != -2 ||
-        g_CarSelectPopupScript != g_EngineerShopUnavailableScript) {
+        s_carSelect.popupScript != g_EngineerShopUnavailableScript) {
         puts("FAIL missing car state opened the engineer shop");
         return 1;
     }
@@ -425,4 +425,5 @@ int main(int argc, char **argv) {
 }
 
 static MenuWidgets s_menuWidgets;
+CarSelect *MenuCarSelect(void) { return &s_carSelect; }
 MenuWidgets *MenuWidgetState(void) { return &s_menuWidgets; }
