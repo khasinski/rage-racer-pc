@@ -16,5 +16,4 @@ void DispatchCurrentScene(void) {
 
     SceneRuntimeBeforeDispatch(sceneId);
     g_SceneHandlers[sceneId]();
-    SceneRuntimeAfterDispatch(sceneId);
 }

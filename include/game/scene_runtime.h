@@ -15,14 +15,6 @@
  * globals, but cross-scene resources are attached to this generation rather
  * than inferred from whichever globals the previous handler happened to use.
  */
-typedef struct SceneTransitionRuntime {
-    s32 timer;
-    s32 fadeLevel;
-    s32 fadeStep;
-    s32 frameSyncThreshold;
-    s32 cameraCarIndex;
-} SceneTransitionRuntime;
-
 typedef union SceneState {
     MemoryCardSession memoryCard;
     BgmSelect bgmSelect;
@@ -37,12 +29,10 @@ typedef struct SceneRuntime {
     s32 scene;
     u32 generation;
     u32 assetGeneration;
-    SceneTransitionRuntime transition;
     SceneState state;
 } SceneRuntime;
 
 void SceneRuntimeBeforeDispatch(s32 scene);
-void SceneRuntimeAfterDispatch(s32 scene);
 const SceneRuntime *SceneRuntimeCurrent(void);
 MemoryCardSession *SceneRuntimeMemoryCard(void);
 BgmSelect *SceneRuntimeBgmSelect(void);

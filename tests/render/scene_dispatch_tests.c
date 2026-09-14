@@ -16,10 +16,8 @@ static s32 s_traceCalls;
 static char s_traceTopic[32];
 static char s_traceMessage[64];
 static s32 s_runtimeBefore;
-static s32 s_runtimeAfter;
 
 void SceneRuntimeBeforeDispatch(s32 scene) { s_runtimeBefore = scene; }
-void SceneRuntimeAfterDispatch(s32 scene) { s_runtimeAfter = scene; }
 
 static void SceneHandler(void) {
     s_handlerCalls++;
@@ -50,7 +48,7 @@ static void Reset(void) {
     s_traceCalls = 0;
     s_traceTopic[0] = '\0';
     s_traceMessage[0] = '\0';
-    s_runtimeBefore = s_runtimeAfter = -1;
+    s_runtimeBefore = -1;
 }
 
 int main(void) {
@@ -59,14 +57,14 @@ int main(void) {
     g_SceneHandlers[7] = SceneHandler;
     DispatchCurrentScene();
     CHECK(s_handlerCalls == 1 && s_traceCalls == 0 &&
-          s_runtimeBefore == 7 && s_runtimeAfter == 7);
+          s_runtimeBefore == 7);
 
     Reset();
     g_SceneId = 7;
     g_SceneTimer = 123;
     DispatchCurrentScene();
     CHECK(s_handlerCalls == 0 && s_traceCalls == 1);
-    CHECK(s_runtimeBefore == -1 && s_runtimeAfter == -1);
+    CHECK(s_runtimeBefore == -1);
     CHECK(strcmp(s_traceTopic, "scene-unhandled") == 0);
     CHECK(strcmp(s_traceMessage, "id=7 timer=123") == 0);
 

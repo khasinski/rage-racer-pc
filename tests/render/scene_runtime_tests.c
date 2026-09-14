@@ -57,13 +57,9 @@ int main(void) {
     g_FadeStep = -4;
     g_FrameSyncThreshold = 128;
     g_CameraCarIndex = 3;
-    SceneRuntimeAfterDispatch(g_SceneId);
     runtime = SceneRuntimeCurrent();
     CHECK(runtime->scene == GAME_SCENE_BGM_SELECT && runtime->generation == 1 &&
-          runtime->assetGeneration == 7 && runtime->transition.timer == 11 &&
-          runtime->transition.fadeLevel == 12 && runtime->transition.fadeStep == -4 &&
-          runtime->transition.frameSyncThreshold == 128 &&
-          runtime->transition.cameraCarIndex == 3);
+          runtime->assetGeneration == 7);
 
     s_assets = (AssetLoadTransaction){
         .request = ASSET_REQUEST_SELECT_BGM,
@@ -78,8 +74,7 @@ int main(void) {
     SceneRuntimeBeforeDispatch(g_SceneId);
     runtime = SceneRuntimeCurrent();
     CHECK(runtime->scene == GAME_SCENE_MENU && runtime->generation == 2 &&
-          runtime->assetGeneration == 8 && runtime->transition.timer == 0 &&
-          runtime->transition.fadeLevel == 0 &&
+          runtime->assetGeneration == 8 &&
           SceneRuntimeAssetResult(ASSET_REQUEST_SELECT_BGM) == NULL);
 
     g_SceneId = GAME_SCENE_ENTER_MEMORY_CARD;

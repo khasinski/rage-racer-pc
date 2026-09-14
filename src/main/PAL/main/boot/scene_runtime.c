@@ -55,20 +55,6 @@ void SceneRuntimeBeforeDispatch(s32 scene) {
         if (continues) s_runtime.state = state;
         ResetLegacyTransitionState();
     }
-    s_runtime.transition.timer = g_SceneTimer;
-    s_runtime.transition.fadeLevel = g_FadeLevel;
-    s_runtime.transition.fadeStep = g_FadeStep;
-    s_runtime.transition.frameSyncThreshold = g_FrameSyncThreshold;
-    s_runtime.transition.cameraCarIndex = g_CameraCarIndex;
-}
-
-void SceneRuntimeAfterDispatch(s32 scene) {
-    if (s_runtime.scene != scene || g_SceneId != scene) return;
-    s_runtime.transition.timer = g_SceneTimer;
-    s_runtime.transition.fadeLevel = g_FadeLevel;
-    s_runtime.transition.fadeStep = g_FadeStep;
-    s_runtime.transition.frameSyncThreshold = g_FrameSyncThreshold;
-    s_runtime.transition.cameraCarIndex = g_CameraCarIndex;
 }
 
 const SceneRuntime *SceneRuntimeCurrent(void) {
