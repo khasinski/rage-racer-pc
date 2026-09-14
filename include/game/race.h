@@ -192,7 +192,6 @@ typedef enum PrizeScreenState {
 extern s32 g_RacePaused;
 extern s16 g_ReverbZoneDepth;
 extern s32 g_RivalCueFlags;
-extern s32 g_SectorEndDistance[];
 extern s32 g_SeriesCleared;
 extern s16 g_TrackZoneCode;
 

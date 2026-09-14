@@ -55,7 +55,7 @@ void UpdateSplitTimes(RaceTiming *timing, PlayerCarRuntime *car,
     }
     if (slot >= 0 &&
         (((int64_t)car->lap - 1) * g_TrackLength +
-                 g_SectorEndDistance[slot] <=
+                 timing->sectorEnds[slot] <=
              (int64_t)car->progressB + car->progressA ||
          lapEvent != 0)) {
         timing->sectorTimes[slot] = timing->lapTime;

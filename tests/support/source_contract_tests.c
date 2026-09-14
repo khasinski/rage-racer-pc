@@ -336,14 +336,14 @@ static void AudioStateLayout(void) {
     char *records = Read("src/main/PAL/main/race/records.c");
     char *reset = Read("src/main/PAL/main/audio/reset_audio_voice_state.c");
     const char *typedState[] = {"s32 g_BestSectorTimes[2][4][3]",
-        "s32 g_SectorEndDistance[3]", "s32 g_CarSpecBars[4]",
+        "s32 g_CarSpecBars[4]",
         "u16 g_TeamLogoClut[16]"};
     Require(strstr(host, "Cd g_Cd") != NULL,
             "CD runtime must remain one typed state object");
     Require(strstr(host, "unsigned char g_CdLocMinute") == NULL &&
             strstr(host, "unsigned char g_CdLocSecond") == NULL,
             "CdlGetlocP response detaches an MSF byte");
-    for (size_t i = 0; i < 4; ++i)
+    for (size_t i = 0; i < 3; ++i)
         Require(strstr(host, typedState[i]) != NULL,
                 "audio state backing object has the wrong typed dimensions");
     const char *cars[] = {"g_GrandPrixCars", "g_ExtraGrandPrixCars", "g_TimeAttackCars"};

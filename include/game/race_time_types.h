@@ -18,6 +18,7 @@ _Static_assert(sizeof(SectorReferenceTimes) == 3 * sizeof(s32),
 typedef struct RaceTiming {
     s32 lapTime;
     s32 bestLap;
+    s32 sectorEnds[3];
     s32 sectorIndex;
     s32 sectorTimes[3];
     s32 refLapTime;

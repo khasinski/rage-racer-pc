@@ -8,7 +8,6 @@
 #include "game/race_internal.h"
 
 static RaceTiming s_timing;
-s32 g_SectorEndDistance[SPLIT_SECTOR_COUNT];
 s32 g_BestSectorTimes[2][4][3];
 s32 g_RaceSeries;
 s32 g_LapCount;
@@ -21,7 +20,6 @@ void PlaySoundCue(s32 cue) { s_SoundCue = cue; }
 
 static void ResetState(void) {
     memset(&s_timing, 0, sizeof(s_timing));
-    memset(g_SectorEndDistance, 0, sizeof(g_SectorEndDistance));
     memset(g_BestSectorTimes, 0, sizeof(g_BestSectorTimes));
     s_timing.lapTime = 0;
     s_timing.bestLap = 0;
@@ -74,7 +72,7 @@ static void TestBlankReferenceDoesNotCreateDelta(void) {
     ResetState();
     car.lap = 1;
     car.progressA = 100;
-    g_SectorEndDistance[0] = 100;
+    s_timing.sectorEnds[0] = 100;
     s_timing.lapTime = 900;
     s_timing.refSectorTimes.values[0] = 0;
     s_timing.splitSign = -1;
@@ -92,7 +90,7 @@ static void TestSectorClose(void) {
     ResetState();
     car.lap = 1;
     car.progressA = 100;
-    g_SectorEndDistance[0] = 100;
+    s_timing.sectorEnds[0] = 100;
     s_timing.lapTime = 900;
     s_timing.refSectorTimes.values[0] = 1000;
     UpdateSplitTimes(&s_timing, &car, 0, 0);
@@ -107,7 +105,7 @@ static void TestSectorClose(void) {
 
     car.progressA = 0;
     car.progressB = 200;
-    g_SectorEndDistance[1] = 200;
+    s_timing.sectorEnds[1] = 200;
     s_timing.lapTime = 1100;
     s_timing.refSectorTimes.values[1] = 1000;
     UpdateSplitTimes(&s_timing, &car, 0, 0);
@@ -123,7 +121,7 @@ static void TestSplitDisplayExpiry(void) {
     ResetState();
     car.lap = 1;
     g_LapCount = 1;
-    g_SectorEndDistance[0] = 500;
+    s_timing.sectorEnds[0] = 500;
     s_timing.refSectorTimes.values[0] = 1234;
     s_timing.splitTimer = 59;
     s_timing.splitSign = -1;
@@ -141,7 +139,7 @@ static void TestInactiveLapResetsSplit(void) {
     ResetState();
     car.lap = 1;
     s_timing.sectorIndex = 1;
-    g_SectorEndDistance[1] = 500;
+    s_timing.sectorEnds[1] = 500;
     s_timing.refSectorTimes.values[0] = 4321;
     s_timing.splitTimer = 12;
     s_timing.splitSign = -1;
@@ -158,7 +156,7 @@ static void TestUnrepresentableTimeHasNoDelta(void) {
     ResetState();
     car.lap = 1;
     car.progressA = 100;
-    g_SectorEndDistance[0] = 100;
+    s_timing.sectorEnds[0] = 100;
     s_timing.lapTime = SPLIT_TIME_MAX_MS + 1;
     s_timing.splitSign = -1;
 
@@ -194,7 +192,7 @@ static void TestExtremeArithmeticSaturates(void) {
     car.progressA = INT_MAX;
     car.progressB = INT_MAX;
     g_TrackLength = INT_MAX;
-    g_SectorEndDistance[0] = INT_MIN;
+    s_timing.sectorEnds[0] = INT_MIN;
     s_timing.lapTime = 0;
     s_timing.refLapTime = INT_MAX;
     UpdateSplitTimes(&s_timing, &car, 0, 1);
@@ -203,7 +201,7 @@ static void TestExtremeArithmeticSaturates(void) {
     ResetState();
     car.lap = 1;
     car.progressA = 100;
-    g_SectorEndDistance[0] = 100;
+    s_timing.sectorEnds[0] = 100;
     s_timing.lapTime = -1;
     UpdateSplitTimes(&s_timing, &car, 0, 0);
     assert(s_timing.splitSign == 0);
