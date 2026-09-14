@@ -20,10 +20,6 @@ void MenuBeginExit(s32 screen) {
 }
 
 s32 GameMenuBusy;
-s32 g_LogoSampleBackIndex;
-s32 g_LogoSampleCharIndex;
-s32 g_LogoSampleCursor;
-s32 g_LogoSampleSavedIndex;
 s32 g_MenuAltLayout;
 s32 g_MenuConfirmTimer;
 s32 g_MenuHandlerIndex;
@@ -50,9 +46,11 @@ TimedDrawCommand g_UiChromeScript[1];
 TimedDrawCommand g_UiChromeScript2[1];
 TimedDrawCommand g_EmptyScript[1];
 const TimedDrawCommand *g_TeamLogoSubPanelScript = g_EmptyScript;
-const TimedDrawCommand *g_LogoSampleSubPanelScript = g_EmptyScript;
 
 GameRenderState g_RenderState;
+static LogoSample s_logo;
+
+LogoSample *MenuLogoSample(void) { return &s_logo; }
 
 static s32 s_scriptFinished = 1;
 static s32 s_canvasUpdates;
@@ -131,7 +129,8 @@ void GameDrawMenuButton(s32 x, s32 y, s32 width, s32 height, u8 r, u8 g,
     (void)g;
     (void)b;
 }
-void DrawLogoSamplePanel(s32 step, s32 sample) {
+void DrawLogoSamplePanel(LogoSample *logo, s32 step, s32 sample) {
+    (void)logo;
     (void)step;
     (void)sample;
     s_samplePanelCalls++;
@@ -149,11 +148,11 @@ static void Reset(void) {
     g_TeamLogoOption = 0;
     g_TeamLogoPaintArmed = 1;
     g_TeamLogoSubPanelScript = g_EmptyScript;
-    g_LogoSampleBackIndex = 0;
-    g_LogoSampleCharIndex = 0;
-    g_LogoSampleCursor = 0;
-    g_LogoSampleSavedIndex = 0;
-    g_LogoSampleSubPanelScript = g_EmptyScript;
+    s_logo.background = 0;
+    s_logo.character = 0;
+    s_logo.cursor = 0;
+    s_logo.saved = 0;
+    s_logo.subPanelScript = g_EmptyScript;
     g_UiScriptProgress = 0;
     g_UiScriptProgress2 = 0;
     s_canvasUpdates = 0;
@@ -245,27 +244,27 @@ int main(void) {
     CHECK(GameMenuBusy == 0 && g_MenuScreen == 0);
 
     Reset();
-    g_LogoSampleCharIndex = 7;
-    g_LogoSampleBackIndex = 9;
+    s_logo.character = 7;
+    s_logo.background = 9;
     g_PadPressed = PAD_CONFIRM;
     UpdateLogoSampleScreen();
     CHECK(s_composedCharacter == 7);
     CHECK(s_composedBackground == 9);
     CHECK(GameMenuBusy == -1);
-    CHECK(g_LogoSampleSavedIndex == 7);
-    CHECK(g_LogoSampleSubPanelScript == g_MenuRow0MarkerScript);
+    CHECK(s_logo.saved == 7);
+    CHECK(s_logo.subPanelScript == g_MenuRow0MarkerScript);
 
     Reset();
-    g_LogoSampleCursor = 1;
-    g_LogoSampleBackIndex = 11;
+    s_logo.cursor = 1;
+    s_logo.background = 11;
     g_PadPressed = PAD_CONFIRM;
     UpdateLogoSampleScreen();
     CHECK(GameMenuBusy == -2);
-    CHECK(g_LogoSampleSavedIndex == 11);
-    CHECK(g_LogoSampleSubPanelScript == g_MenuRow1MarkerScript);
+    CHECK(s_logo.saved == 11);
+    CHECK(s_logo.subPanelScript == g_MenuRow1MarkerScript);
 
     Reset();
-    g_LogoSampleCursor = 2;
+    s_logo.cursor = 2;
     g_PadPressed = PAD_CONFIRM;
     UpdateLogoSampleScreen();
     CHECK(GameMenuBusy == 1 && g_MenuOverlayPattern == 2);
@@ -277,55 +276,55 @@ int main(void) {
 
     Reset();
     GameMenuBusy = -1;
-    g_LogoSampleCharIndex = 0;
+    s_logo.character = 0;
     g_PadPressed = PAD_LEFT;
     UpdateLogoSampleScreen();
-    CHECK(g_LogoSampleCharIndex == 19);
+    CHECK(s_logo.character == 19);
 
     Reset();
     GameMenuBusy = -2;
-    g_LogoSampleBackIndex = 19;
+    s_logo.background = 19;
     g_PadPressed = PAD_RIGHT;
     UpdateLogoSampleScreen();
-    CHECK(g_LogoSampleBackIndex == 0);
+    CHECK(s_logo.background == 0);
 
     Reset();
     GameMenuBusy = -1;
-    g_LogoSampleCharIndex = 8;
+    s_logo.character = 8;
     g_PadPressed = PAD_CONFIRM | PAD_RIGHT;
     UpdateLogoSampleScreen();
     CHECK(GameMenuBusy == 0);
-    CHECK(g_LogoSampleSavedIndex == 8);
-    CHECK(g_LogoSampleCharIndex == 8);
+    CHECK(s_logo.saved == 8);
+    CHECK(s_logo.character == 8);
 
     Reset();
     GameMenuBusy = -2;
-    g_LogoSampleBackIndex = 12;
-    g_LogoSampleSavedIndex = 4;
+    s_logo.background = 12;
+    s_logo.saved = 4;
     g_PadPressed = PAD_CANCEL;
     UpdateLogoSampleScreen();
     CHECK(GameMenuBusy == 0);
-    CHECK(g_LogoSampleBackIndex == 4);
+    CHECK(s_logo.background == 4);
 
     Reset();
-    g_LogoSampleCursor = INT_MAX;
-    g_LogoSampleCharIndex = INT_MIN;
-    g_LogoSampleBackIndex = INT_MAX;
-    g_LogoSampleSavedIndex = INT_MAX;
+    s_logo.cursor = INT_MAX;
+    s_logo.character = INT_MIN;
+    s_logo.background = INT_MAX;
+    s_logo.saved = INT_MAX;
     UpdateLogoSampleScreen();
-    CHECK(g_LogoSampleCursor == 2);
-    CHECK(g_LogoSampleCharIndex == 0 && g_LogoSampleBackIndex == 19);
-    CHECK(g_LogoSampleSavedIndex == 19);
+    CHECK(s_logo.cursor == 2);
+    CHECK(s_logo.character == 0 && s_logo.background == 19);
+    CHECK(s_logo.saved == 19);
     CHECK(s_composedCharacter == 0 && s_composedBackground == 19);
 
     Reset();
     GameMenuBusy = INT_MIN;
-    g_LogoSampleCharIndex = 6;
-    g_LogoSampleBackIndex = 7;
+    s_logo.character = 6;
+    s_logo.background = 7;
     g_PadPressed = PAD_RIGHT;
     UpdateLogoSampleScreen();
     CHECK(GameMenuBusy == 0);
-    CHECK(g_LogoSampleCharIndex == 6 && g_LogoSampleBackIndex == 7);
+    CHECK(s_logo.character == 6 && s_logo.background == 7);
 
     puts("logo screen state tests passed");
     return 0;

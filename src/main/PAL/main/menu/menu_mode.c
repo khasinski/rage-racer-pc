@@ -48,15 +48,17 @@ static void InitMenuCamera(void) {
 static void ResetMenuNavigation(void) {
     CourseSelectScreen *courseSelect;
     Customize *customize;
+    LogoSample *logoSample;
 
     MenuRuntimeReset();
     courseSelect = MenuCourseSelect();
     customize = MenuCustomize();
+    logoSample = MenuLogoSample();
     courseSelect->modalScript = g_UiEmptyScript;
     customize->popupScript = g_UiEmptyScript;
+    logoSample->subPanelScript = g_UiEmptyScript;
     g_CarSelectPopupScript = g_UiEmptyScript;
     g_TeamLogoSubPanelScript = g_UiEmptyScript;
-    g_LogoSampleSubPanelScript = g_UiEmptyScript;
     ResetCarShopScreen();
     ResetEngineerShopScreen();
     ResetMenuCar();

@@ -8,29 +8,29 @@ enum {
     LOGO_SAMPLE_SWATCH_COUNT = 15,
 };
 
-void DrawLogoSamplePanel(s32 step, s32 sample) {
+void DrawLogoSamplePanel(LogoSample *logo, s32 step, s32 sample) {
     GameOrderingTableEntry *ot = RENDER_OT_BASE;
     s32 frame;
     s32 y;
     s32 i;
 
     if (step == 0) {
-        g_LogoSamplePanelSlide = 0;
+        logo->panelSlide = 0;
         return;
     }
     if (sample < 0) {
         sample = 0;
     }
-    g_LogoSamplePanelSlide = AddClampedMenuValue(
-        g_LogoSamplePanelSlide, 0, 0, LOGO_SAMPLE_PANEL_LAST_FRAME);
+    logo->panelSlide = AddClampedMenuValue(
+        logo->panelSlide, 0, 0, LOGO_SAMPLE_PANEL_LAST_FRAME);
     if (step < 0) {
-        g_LogoSamplePanelSlide = AddClampedMenuValue(
-            g_LogoSamplePanelSlide, step, 0, LOGO_SAMPLE_PANEL_LAST_FRAME);
+        logo->panelSlide = AddClampedMenuValue(
+            logo->panelSlide, step, 0, LOGO_SAMPLE_PANEL_LAST_FRAME);
     }
-    frame = g_LogoSamplePanelSlide;
+    frame = logo->panelSlide;
     if (step > 0) {
-        g_LogoSamplePanelSlide = AddClampedMenuValue(
-            g_LogoSamplePanelSlide, step, 0,
+        logo->panelSlide = AddClampedMenuValue(
+            logo->panelSlide, step, 0,
             LOGO_SAMPLE_PANEL_LAST_FRAME);
     }
     if (ot == NULL) return;

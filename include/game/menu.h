@@ -70,6 +70,15 @@ typedef struct Customize {
     s32 tirePulsePhase;
 } Customize;
 
+typedef struct LogoSample {
+    const TimedDrawCommand *subPanelScript;
+    s32 cursor;
+    s32 character;
+    s32 background;
+    s32 saved;
+    s32 panelSlide;
+} LogoSample;
+
 typedef struct MenuRuntime {
     /* State-machine screen updated this frame. */
     s32 activeScreen;
@@ -87,6 +96,7 @@ typedef struct MenuRuntime {
     EngineerShop engineerShop;
     PaintColor paintColor;
     Customize customize;
+    LogoSample logoSample;
 } MenuRuntime;
 
 void MenuRuntimeReset(void);
@@ -97,6 +107,7 @@ BrowseArrows *MenuBrowseArrows(void);
 EngineerShop *MenuEngineerShop(void);
 PaintColor *MenuPaintColor(void);
 Customize *MenuCustomize(void);
+LogoSample *MenuLogoSample(void);
 s32 MenuRuntimeScreenState(s32 screen);
 void MenuRuntimeSetScreenState(s32 screen, s32 state);
 
@@ -367,7 +378,6 @@ extern s32 g_MenuOutgoingScreenProgress;
 extern s32 g_CourseCardSpin;
 extern s32 g_CourseCardSpinTarget;
 extern s32 g_CourseCardPendingGrade;
-extern const TimedDrawCommand *g_LogoSampleSubPanelScript;
 extern s32 g_TeamLogoPaintArmed;
 extern s32 g_CarSelectCursor;
 extern const TimedDrawCommand *g_TeamLogoSubPanelScript;
@@ -443,7 +453,6 @@ extern s32 g_TeamLogoDpadRepeatTimer;
 extern s32 g_TeamLogoDpadRepeatMask;
 extern s32 g_TeamLogoGuideModePrev;
 extern s32 g_MenuLightBurstLevel;
-extern s32 g_LogoSamplePanelSlide;
 extern s32 g_TeamNameEntrySlide;
 extern s32 g_OwnedCarCounterSlide;
 extern s32 g_ClassChangeCurtainSlide;
@@ -460,16 +469,12 @@ enum {
     CAR_TUNE_UP_PRICE_COUNT = 31,
 };
 extern s32 g_CarTuneUpPriceTable[CAR_TUNE_UP_PRICE_COUNT];
-extern s32 g_LogoSampleCharIndex;
-extern s32 g_LogoSampleBackIndex;
-extern s32 g_LogoSampleSavedIndex;
 extern s32 g_TeamLogoColorCycleAngle;
 extern s32 g_TeamNameCursorPhase;
 extern s32 g_TeamLogoFadeLevel;
 extern s32 g_TeamLogoZoomLevel;
 extern u16 g_TeamLogoFadedClut[16];
 extern s32 g_RankingPendingState;
-extern s32 g_LogoSampleCursor;
 extern s32 g_ShopCarIndex;
 extern s32 g_RankingCursor;
 extern s32 g_TitleFadeLevel;
@@ -555,7 +560,7 @@ s32 CountOwnedCars(void);
 void ComposeSampleTeamLogo(s32 character, s32 background);
 void DrawBrowseArrows(BrowseArrows *arrows, s32 step, s32 courseLayout,
                       s32 drawLeft, s32 drawRight);
-void DrawLogoSamplePanel(s32 step, s32 sample);
+void DrawLogoSamplePanel(LogoSample *logo, s32 step, s32 sample);
 void DrawMenuCursorArrow(s32 x, s32 y);
 void DrawMenuLightBurst(s32 arg);
 void DrawOptionHintBar(s32 variant);

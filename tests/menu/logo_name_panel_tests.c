@@ -6,7 +6,6 @@
 #include <limits.h>
 #include <string.h>
 
-s32 g_LogoSamplePanelSlide;
 s32 g_TeamNameEntrySlide;
 s32 g_TeamNameCursorPhase;
 u8 g_TeamNameLength;
@@ -98,15 +97,16 @@ static void ResetDraws(void) {
 }
 
 int main(void) {
+    LogoSample logo = {0};
     static GameOrderingTableEntry orderingTable[2];
 
     RENDER_OT_BASE = orderingTable;
     g_TeamLogoSwatches[0] = 0x7FFF;
-    DrawLogoSamplePanel(0, 0);
-    CHECK(g_LogoSamplePanelSlide == 0 && s_spriteCount == 0);
+    DrawLogoSamplePanel(&logo, 0, 0);
+    CHECK(logo.panelSlide == 0 && s_spriteCount == 0);
 
-    DrawLogoSamplePanel(1, 27);
-    CHECK(g_LogoSamplePanelSlide == 1);
+    DrawLogoSamplePanel(&logo, 1, 27);
+    CHECK(logo.panelSlide == 1);
     CHECK(s_spriteCount == 5 && s_sprites[0].y == 494);
     CHECK(s_sprites[0].u == 16 && s_sprites[1].u == 56);
     CHECK(s_rectCount == 15 && s_rects[0].x == 0x8B);
@@ -115,20 +115,20 @@ int main(void) {
     CHECK(s_outlineCount == 1);
 
     ResetDraws();
-    g_LogoSamplePanelSlide = 5;
-    DrawLogoSamplePanel(1, 1);
-    CHECK(g_LogoSamplePanelSlide == 5 && s_sprites[0].y == 344);
+    logo.panelSlide = 5;
+    DrawLogoSamplePanel(&logo, 1, 1);
+    CHECK(logo.panelSlide == 5 && s_sprites[0].y == 344);
 
     ResetDraws();
-    g_LogoSamplePanelSlide = INT_MAX;
-    DrawLogoSamplePanel(INT_MAX, -1);
-    CHECK(g_LogoSamplePanelSlide == 5);
+    logo.panelSlide = INT_MAX;
+    DrawLogoSamplePanel(&logo, INT_MAX, -1);
+    CHECK(logo.panelSlide == 5);
     CHECK(s_sprites[0].u == 0 && s_sprites[1].u == 0);
 
     ResetDraws();
-    g_LogoSamplePanelSlide = INT_MIN;
-    DrawLogoSamplePanel(-1, 99);
-    CHECK(g_LogoSamplePanelSlide == 0);
+    logo.panelSlide = INT_MIN;
+    DrawLogoSamplePanel(&logo, -1, 99);
+    CHECK(logo.panelSlide == 0);
     CHECK(s_sprites[0].u == 72 && s_sprites[1].u == 72);
 
     ResetDraws();
@@ -189,9 +189,9 @@ int main(void) {
     DrawTeamNameEntry(3, 0);
     CHECK(g_TeamNameEntrySlide == 3 && s_spriteCount == 0);
 
-    g_LogoSamplePanelSlide = 0;
-    DrawLogoSamplePanel(3, 0);
-    CHECK(g_LogoSamplePanelSlide == 3 && s_spriteCount == 0);
+    logo.panelSlide = 0;
+    DrawLogoSamplePanel(&logo, 3, 0);
+    CHECK(logo.panelSlide == 3 && s_spriteCount == 0);
 
     puts("logo and team name panels preserve their layout and animation");
     return 0;

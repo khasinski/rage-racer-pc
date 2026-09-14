@@ -118,7 +118,6 @@ s32 g_TeamLogoDpadRepeatTimer;
 s32 g_TeamLogoDpadRepeatMask;
 s32 g_TeamLogoGuideModePrev = 1;
 s32 g_MenuLightBurstLevel;
-s32 g_LogoSamplePanelSlide;
 s32 g_TeamNameEntrySlide;
 s32 g_OwnedCarCounterSlide;
 s32 g_ClassChangeCurtainSlide;
@@ -140,9 +139,6 @@ s32 g_CarTuneUpPriceTable[31] = {
     362500, 15200, 62400, 331400, 136700, 577000, 20000, 77500,
     405700, 151600, 559700, 695900, 2143500, 2836800, 6666666,
 };
-s32 g_LogoSampleCharIndex;
-s32 g_LogoSampleBackIndex;
-s32 g_LogoSampleSavedIndex;
 s32 g_CarSpecBars[4];
 s32 g_TeamLogoColorCycleAngle;
 s32 g_TeamNameCursorPhase;
@@ -188,9 +184,7 @@ s32 g_BgmShuffleIndex;
 s32 g_TitleExitTimer;
 s32 g_GrandPrixRound;
 s32 g_OptionLetterboxHeight;
-const TimedDrawCommand *g_LogoSampleSubPanelScript;
 s32 g_DesignModeOption;
-s32 g_LogoSampleCursor;
 GameSceneId g_OptionMenuExitScene;
 s32 g_OptionMenuCursor;
 s32 g_ShopCarIndex;
