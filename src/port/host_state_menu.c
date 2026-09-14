@@ -96,7 +96,6 @@ Rgb g_ClassRecordNameSprites[CLASS_RECORD_COUNT + 1] = {
     };
 u8 g_TeamNameLength = 5;
 unsigned char g_TeamNameChars[16] = {0x18,0x0b,0x17,0x0d,0x19,0x0a,0x0a,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
-u16 g_TeamLogoFadedClutRect = 304;
 u16 g_TeamLogoBlankClut[16];
 Vec4 g_MenuViewScale = {4096, 8192, 4096, 0};
 /* Retail stores these as one run, with tune-up prices starting at the second
@@ -113,7 +112,6 @@ s32 g_CarTuneUpPriceTable[31] = {
     362500, 15200, 62400, 331400, 136700, 577000, 20000, 77500,
     405700, 151600, 559700, 695900, 2143500, 2836800, 6666666,
 };
-u16 g_TeamLogoFadedClut[16];
 u8 g_MenuSubCursor;
 s32 GameMenuCursor;
 s32 g_UiScriptProgress2;

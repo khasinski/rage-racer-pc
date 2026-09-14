@@ -28,11 +28,9 @@
 /* The editor's own state. */
 TeamLogoCanvas g_TeamLogoCanvas;
 u16 g_TeamLogoClut[16];
-u16 g_TeamLogoFadedClut[16];
 u16 g_TeamLogoSwatches[15];
 Rect g_TeamLogoRect;
 Rect g_TeamLogoClutRect;
-u16 g_TeamLogoFadedClutRect;
 u8 g_PadType;
 GameRenderState g_RenderState;
 static TeamLogo s_logoState;
@@ -197,7 +195,7 @@ int main(int argc, char **argv) {
         }
         for (x = 0; x < 16; x++) {
             g_TeamLogoClut[x] = (u16)(0x0421 * x);
-            g_TeamLogoFadedClut[x] = 0;
+            s_logoState.fadedClut[x] = 0;
             if (x < 15) {
                 g_TeamLogoSwatches[x] = (u16)(0x1111 * x);
             }
@@ -236,8 +234,8 @@ int main(int argc, char **argv) {
             after[1] = s_logoState.editorStep;
             after[2] = s_logoState.colorCycle;
             after[3] = g_TeamLogoClut[0];
-            after[4] = g_TeamLogoFadedClut[0];
-            after[5] = g_TeamLogoFadedClut[15];
+            after[4] = s_logoState.fadedClut[0];
+            after[5] = s_logoState.fadedClut[15];
             Record("state", after, 6);
         }
         steps++;

@@ -117,6 +117,8 @@ typedef struct TeamLogo {
     s32 repeatMask;
     s32 expertMode;
     s32 paintArmed;
+    u16 fadedClut[16];
+    Rect fadedClutRect;
 } TeamLogo;
 
 typedef struct CarSpecGraph {
@@ -507,7 +509,6 @@ s32 ActivateShowroomCarModel(s32 slot);
 extern u8 g_TeamNameFontGlyphs
     [TEAM_NAME_FONT_GLYPH_COUNT * TEAM_NAME_FONT_GLYPH_BYTES];
 extern u8 g_TeamNameBlankTile[192];
-extern u16 g_TeamLogoFadedClutRect;
 extern u16 g_TeamLogoBlankClut[16];
 extern TimedDrawCommand g_CourseSelectGpScript[];
 extern TimedDrawCommand g_CourseSelectTimeAttackScript[];
@@ -519,7 +520,6 @@ enum {
     CAR_TUNE_UP_PRICE_COUNT = 31,
 };
 extern s32 g_CarTuneUpPriceTable[CAR_TUNE_UP_PRICE_COUNT];
-extern u16 g_TeamLogoFadedClut[16];
 extern s32 g_RankingPendingState;
 extern s32 g_ShopCarIndex;
 extern char *g_BgmTrackNames[];

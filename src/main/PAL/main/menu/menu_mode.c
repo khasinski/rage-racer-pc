@@ -67,6 +67,7 @@ static void ResetMenuNavigation(void) {
         .previousGuideMode = 1,
         .brushSize = 1,
         .penColor = 1,
+        .fadedClutRect = {304, 0, 0, 0},
     };
     ResetCarShopScreen();
     ResetEngineerShopScreen();

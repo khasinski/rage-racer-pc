@@ -354,7 +354,7 @@ static void AnimateLogoClut(TeamLogo *logo) {
 
     fade = logo->fade;
     for (i = 0; i < 16; i++) {
-        g_TeamLogoFadedClut[i] = FadeLogoColor(g_TeamLogoClut[i], fade);
+        logo->fadedClut[i] = FadeLogoColor(g_TeamLogoClut[i], fade);
     }
 }
 
@@ -371,7 +371,7 @@ void DrawTeamLogoCanvas(TeamLogo *logo, s32 panelStep, s32 editorStep) {
     AnimateLogoClut(logo);
     LoadImage(&g_TeamLogoRect, &g_TeamLogoCanvas);
     LoadImage(&g_TeamLogoClutRect, g_TeamLogoClut);
-    LoadImage(&g_TeamLogoFadedClutRect, g_TeamLogoFadedClut);
+    LoadImage(&logo->fadedClutRect, logo->fadedClut);
     logo->panelStep =
         AddClampedMenuValue(logo->panelStep,
                             panelStep < 0 ? panelStep : 0, 0, 0x19);

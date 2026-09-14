@@ -53,7 +53,5 @@ _Static_assert(sizeof(g_DesignModeCellMask) == 36,
                "design-mode mask ABI changed");
 _Static_assert(sizeof(g_TeamLogoBlankClut) == sizeof(u16) * 16,
                "blank team-logo CLUT ABI changed");
-_Static_assert(sizeof(g_TeamLogoFadedClut) == sizeof(u16) * 16,
-               "faded team-logo CLUT ABI changed");
 _Static_assert(sizeof(g_TeamLogoSwatches) == sizeof(u16) * 15,
                "team-logo swatch ABI changed");
