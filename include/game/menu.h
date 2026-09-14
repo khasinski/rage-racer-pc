@@ -107,6 +107,7 @@ typedef struct CarSelect {
 typedef struct OptionMenu {
     GameSceneId exitScene;
     s32 cursor;
+    s32 letterboxHeight;
 } OptionMenu;
 
 typedef struct MenuWidgets {

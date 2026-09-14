@@ -2,9 +2,12 @@
 #include <string.h>
 
 #include "game/asset.h"
+#include "game/menu.h"
 #include "game/race.h"
 #include "game/render_internal.h"
 #include "game/state.h"
+
+static OptionMenu s_optionMenu;
 
 static u8 s_ImageData[16];
 static const GameImageAssetHeaderWord *s_UploadedImage;
@@ -26,7 +29,6 @@ s32 g_FrameSyncThreshold;
 s32 g_MirrorMode;
 s32 g_SceneId;
 s32 g_SceneTimer;
-s32 g_OptionLetterboxHeight;
 s32 g_FadeLevel;
 s32 g_FadeStep;
 s32 g_GameMode;
@@ -142,7 +144,7 @@ static void TestInitializesAttractScene(void) {
            g_Camera.view.angleY == 0 &&
            g_Camera.view.angleZ == 0);
     assert(s_CameraMatrixUpdates == 1);
-    assert(g_OptionLetterboxHeight == 240);
+    assert(s_optionMenu.letterboxHeight == 240);
     assert(g_FadeLevel == 256 && g_FadeStep == -8);
     assert(g_GameMode == 0);
 }
@@ -153,3 +155,5 @@ int main(void) {
     TestInitializesAttractScene();
     return 0;
 }
+
+OptionMenu *MenuOption(void) { return &s_optionMenu; }

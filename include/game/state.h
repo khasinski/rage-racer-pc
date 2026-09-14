@@ -146,7 +146,6 @@ extern s32 g_AnimTimer;
 void InitSaveDefaults(void);
 extern s32 g_FrameSyncThreshold;
 extern s32 g_GameClock;
-extern s32 g_OptionLetterboxHeight;
 typedef enum PadErrorState {
     PAD_ERROR_STATE_INVALID = -1,
     PAD_ERROR_STATE_NONE,

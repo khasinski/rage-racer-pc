@@ -47,7 +47,7 @@ void EnterAttractScene(void) {
     g_Camera.view.angleY = 0;
     g_Camera.view.angleZ = 0;
     SetCameraRotMatrix(&g_RenderState, &g_Camera.view);
-    g_OptionLetterboxHeight = ATTRACT_LETTERBOX_HEIGHT;
+    MenuOption()->letterboxHeight = ATTRACT_LETTERBOX_HEIGHT;
     g_FadeLevel = ATTRACT_INITIAL_FADE;
     g_GameMode = 0;
     g_FadeStep = ATTRACT_FADE_STEP;

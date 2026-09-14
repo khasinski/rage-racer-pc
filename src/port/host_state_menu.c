@@ -156,7 +156,6 @@ s32 g_GrandPrixClass;
 s32 g_BgmShuffleIndex;
 s32 g_TitleExitTimer;
 s32 g_GrandPrixRound;
-s32 g_OptionLetterboxHeight;
 s32 g_DesignModeOption;
 s32 g_ShopCarIndex;
 CarEntry *g_CarTable;

@@ -23,6 +23,7 @@ static s32 ApproachLetterboxHeight(s32 height, s32 target) {
 }
 
 static void DrawOptionSceneOverlay(void) {
+    OptionMenu *menu = MenuOption();
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(54);
     u8 *next;
 
@@ -30,15 +31,14 @@ static void DrawOptionSceneOverlay(void) {
         DrawPadTypeHint();
     }
 
-    g_OptionLetterboxHeight = AddClampedMenuValue(
-        g_OptionLetterboxHeight, 0, 0, OPTION_LETTERBOX_MENU_HEIGHT);
-    g_OptionLetterboxHeight =
-        ApproachLetterboxHeight(g_OptionLetterboxHeight,
-                                OPTION_LETTERBOX_MENU_HEIGHT);
+    menu->letterboxHeight = AddClampedMenuValue(
+        menu->letterboxHeight, 0, 0, OPTION_LETTERBOX_MENU_HEIGHT);
+    menu->letterboxHeight = ApproachLetterboxHeight(
+        menu->letterboxHeight, OPTION_LETTERBOX_MENU_HEIGHT);
 
     next = RENDER_PRIM_CURSOR_AS(u8);
     g_RenderState.draw.packetCursor = AddTilePrim(
-        ot, next, 0, 0, 0x140, g_OptionLetterboxHeight, 0x85, 0x15, 0xE);
+        ot, next, 0, 0, 0x140, menu->letterboxHeight, 0x85, 0x15, 0xE);
 }
 
 /* Scene 23: the setup / OPTION scene, dispatching g_GameModeHandlers[g_GameMode]. */

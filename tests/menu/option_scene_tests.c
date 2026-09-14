@@ -6,9 +6,10 @@
 #include <stdio.h>
 #include <string.h>
 
+static OptionMenu s_optionMenu;
+
 s32 g_AnimTimer;
 s32 g_GameMode;
-s32 g_OptionLetterboxHeight;
 s32 g_SceneTimer;
 GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
@@ -74,7 +75,7 @@ static void Reset(OptionMode mode) {
     g_RenderState.draw.packetCursor = s_packets;
     g_AnimTimer = 10;
     g_GameMode = mode;
-    g_OptionLetterboxHeight = 0;
+    s_optionMenu.letterboxHeight = 0;
     g_SceneTimer = 0;
     s_displayMask = 0;
     s_hintCalls = 0;
@@ -88,7 +89,7 @@ int main(void) {
     CHECK(s_handlerCalls[OPTION_MODE_SOUND_EDIT] == 1);
     CHECK(g_AnimTimer == 11 && g_SceneTimer == 1);
     CHECK(s_displayMask == 0 && s_hintCalls == 1);
-    CHECK(g_OptionLetterboxHeight == 4);
+    CHECK(s_optionMenu.letterboxHeight == 4);
     CHECK(s_tileCalls == 2);
 
     UpdateOptionScene();
@@ -101,14 +102,14 @@ int main(void) {
     CHECK(s_hintCalls == 0);
 
     Reset(OPTION_MODE_ROOT);
-    g_OptionLetterboxHeight = 239;
+    s_optionMenu.letterboxHeight = 239;
     UpdateOptionScene();
-    CHECK(g_OptionLetterboxHeight == 240 && s_lastTileHeight == 240);
+    CHECK(s_optionMenu.letterboxHeight == 240 && s_lastTileHeight == 240);
 
     Reset(OPTION_MODE_ROOT);
-    g_OptionLetterboxHeight = 241;
+    s_optionMenu.letterboxHeight = 241;
     UpdateOptionScene();
-    CHECK(g_OptionLetterboxHeight == 240 && s_lastTileHeight == 240);
+    CHECK(s_optionMenu.letterboxHeight == 240 && s_lastTileHeight == 240);
 
     Reset(OPTION_MODE_FADE);
     g_GameMode = OPTION_MODE_COUNT;
@@ -121,14 +122,14 @@ int main(void) {
     CHECK(g_GameMode == OPTION_MODE_ROOT && s_handlerCalls[OPTION_MODE_ROOT] == 1);
 
     Reset(OPTION_MODE_ROOT);
-    g_OptionLetterboxHeight = INT_MIN;
+    s_optionMenu.letterboxHeight = INT_MIN;
     UpdateOptionScene();
-    CHECK(g_OptionLetterboxHeight == 4 && s_lastTileHeight == 4);
+    CHECK(s_optionMenu.letterboxHeight == 4 && s_lastTileHeight == 4);
 
     Reset(OPTION_MODE_ROOT);
-    g_OptionLetterboxHeight = INT_MAX;
+    s_optionMenu.letterboxHeight = INT_MAX;
     UpdateOptionScene();
-    CHECK(g_OptionLetterboxHeight == 240 && s_lastTileHeight == 240);
+    CHECK(s_optionMenu.letterboxHeight == 240 && s_lastTileHeight == 240);
 
     Reset(OPTION_MODE_ROOT);
     g_AnimTimer = INT_MAX;
@@ -140,3 +141,5 @@ int main(void) {
     puts("option scene tests passed");
     return 0;
 }
+
+OptionMenu *MenuOption(void) { return &s_optionMenu; }
