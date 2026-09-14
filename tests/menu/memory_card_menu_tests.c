@@ -202,7 +202,8 @@ static int TestFailedLoadReportsError(void) {
     g_McCardStatus = 1;
     g_McMenuPage = 1;
     g_McMenuRowCount = 4;
-    g_McActionState = 0x22;
+    g_McActionState = 0x21;
+    g_McActionTimer = 0;
     g_McActionBusy = 1;
     g_McSlotCursor = 1;
     g_McFadeLevel = 0;
@@ -218,8 +219,10 @@ static int TestFailedLoadReportsError(void) {
         return 0;
     }
 
-    g_McActionState = 0x26;
-    UpdateMemoryCardMenu();
+    g_McActionState = 0x25;
+    g_McSettleTicks = 3;
+    s_cardStatusAnswer = MC_MENU_STATE_READY;
+    RunCardSlotActions();
     if (g_McMenuPhase != MC_PROMPT_CARD_ERROR) {
         printf("FAIL a failed load reports prompt %d instead of card error\n",
                g_McMenuPhase);
@@ -324,7 +327,7 @@ static int TestCardSettleRequiresConsecutiveReadyPolls(void) {
         return 0;
     }
     RunCardSlotActions();
-    if (g_McActionState != 0x26) {
+    if (g_McActionState != 0x27) {
         printf("FAIL settle did not complete after four consecutive polls\n");
         return 0;
     }
@@ -333,6 +336,7 @@ static int TestCardSettleRequiresConsecutiveReadyPolls(void) {
 
 static int TestRealCardDriverSettlesSaveAndLoad(void) {
     static const s32 actions[] = {0x13, 0x25};
+    static const s32 completed[] = {0x15, 0x27};
     for (unsigned i = 0; i < 2; ++i) {
         FixtureResetMemoryCardStatus();
         s_useRealCardDriver = 1;
@@ -341,7 +345,7 @@ static int TestRealCardDriverSettlesSaveAndLoad(void) {
         for (int frame = 0; frame < 60 && g_McActionState == actions[i]; ++frame)
             RunCardSlotActions();
         s_useRealCardDriver = 0;
-        if (g_McActionState != actions[i] + 1) {
+        if (g_McActionState != completed[i]) {
             printf("FAIL real card driver stuck settling action %x\n", actions[i]);
             return 0;
         }
@@ -351,10 +355,9 @@ static int TestRealCardDriverSettlesSaveAndLoad(void) {
 
 int main(int argc, char **argv) {
     static const s32 states[] = {3, 1, 2, -1, -2, -3, 7};
-    static const s32 actions[] = {0, 1, 2, 3, 5, 6, 7, 8, 9, 0xA, 0xB, 0xC,
-                                  0xD, 0xF, 0x10, 0x11, 0x12, 0x13, 0x14,
-                                  0x15, 0x19, 0x1E, 0x1F, 0x20, 0x21, 0x22,
-                                  0x23, 0x24, 0x25, 0x26, 0x27, 0x28};
+    static const s32 actions[] = {0, 1, 2, 3, 5, 6, 7, 8, 9, 0xA, 0xC,
+                                  0x12, 0x13, 0x15, 0x19, 0x1F, 0x21,
+                                  0x24, 0x25, 0x27, 0x28};
     static const u16 pads[] = {0, 0x800, 0x10, 0x20, 0x40, 0x80, 0x1000,
                                0x2000};
     static const s32 statuses[] = {0, 1, 2, -1, -2, -3};
@@ -364,7 +367,7 @@ int main(int argc, char **argv) {
      * sweep out and diff the two to see which steps changed. Dead internal
      * bookkeeping is deliberately not part of the contract.
      */
-    static const unsigned long expected = 3437069393UL;
+    static const unsigned long expected = 2310702901UL;
     FILE *out = NULL;
     size_t si, ai, pi, ci;
     s32 page, mode, freeBlocks;
