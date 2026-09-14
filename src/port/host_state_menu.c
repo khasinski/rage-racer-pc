@@ -107,7 +107,6 @@ s32 GameMenuCursor;
 s32 g_UiScriptProgress2;
 s32 GameMenuBusy;
 s32 g_MenuOverlayPattern;
-s32 g_CarShopUnlockAll;
 s32 g_MenuViewAngle;
 s32 g_MenuViewAngleTarget;
 s32 g_MenuViewOffset;

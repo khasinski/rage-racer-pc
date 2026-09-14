@@ -469,7 +469,6 @@ void RotateTeamLogoCw(void);
  * g_ClassRecords g_ClassRecords is the 11 x {s16 grade, s16 clears} table.
  */
 
-extern s32 g_CarShopUnlockAll;
 extern s32 g_BgmTrackCount;
 extern s32 g_CarSwapFromIndex;
 extern s32 g_CarSwapToIndex;

@@ -14,10 +14,6 @@ static s32 IsCarOnOffer(s32 index) {
     if (g_CarTable[index].enabled != 0) {
         return 0;
     }
-    if (g_CarShopUnlockAll != 0) {
-        return 1;
-    }
-
     unlockLevel = GetCarUnlockLevel(index);
     if (unlockLevel < 0) {
         return 0;
