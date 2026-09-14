@@ -5,9 +5,10 @@
 
 #include <limits.h>
 #include <stdio.h>
+
+static OptionMenu s_optionMenu;
 #include <string.h>
 
-s32 g_ClassRecordMenuCursor;
 DVec g_ClassRecordCellPoints[CLASS_RECORD_COUNT];
 ClassRecordSprite g_ClassRecordCellSprites[CLASS_RECORD_COUNT];
 Rgb g_ClassRecordNameSprites[CLASS_RECORD_COUNT + 1];
@@ -16,8 +17,6 @@ GameFrameContext *g_DrawBuffer;
 s32 g_GameMode;
 u16 g_PadPressed;
 GameRenderState g_RenderState;
-s32 g_ClassRecordColumn;
-s32 g_ClassRecordRow;
 
 static GameFrameContext s_frame;
 static u8 s_packets[512];
@@ -90,9 +89,9 @@ static void Reset(void) {
     g_DrawBuffer = &s_frame;
     g_RenderState.draw.packetCursor = s_packets;
     g_GameMode = OPTION_MODE_CLASS_MENU;
-    g_ClassRecordMenuCursor = 0;
-    g_ClassRecordColumn = 0;
-    g_ClassRecordRow = 0;
+    s_optionMenu.classRecordCursor = 0;
+    s_optionMenu.classRecordColumn = 0;
+    s_optionMenu.classRecordRow = 0;
     g_PadPressed = 0;
     s_lastCue = 0;
     s_soundCalls = 0;
@@ -106,12 +105,12 @@ static int TestMenuNavigation(void) {
     Reset();
     g_PadPressed = PAD_DOWN;
     UpdateClassRecordMenu();
-    CHECK(g_ClassRecordMenuCursor == 1 && s_lastCue == 1);
+    CHECK(s_optionMenu.classRecordCursor == 1 && s_lastCue == 1);
 
     Reset();
     g_PadPressed = PAD_UP;
     UpdateClassRecordMenu();
-    CHECK(g_ClassRecordMenuCursor == 1 && s_lastCue == 1);
+    CHECK(s_optionMenu.classRecordCursor == 1 && s_lastCue == 1);
 
     Reset();
     g_PadPressed = PAD_CONFIRM;
@@ -119,7 +118,7 @@ static int TestMenuNavigation(void) {
     CHECK(g_GameMode == OPTION_MODE_CLASS_BROWSE && s_lastCue == 2);
 
     Reset();
-    g_ClassRecordMenuCursor = 1;
+    s_optionMenu.classRecordCursor = 1;
     g_PadPressed = PAD_CONFIRM;
     UpdateClassRecordMenu();
     CHECK(g_GameMode == OPTION_MODE_ROOT && s_lastCue == 2);
@@ -135,12 +134,12 @@ static int CheckBrowseMove(s32 x, s32 y, u16 buttons, s32 expectedX,
                            s32 expectedY, s32 expectedSoundCalls) {
     Reset();
     g_GameMode = OPTION_MODE_CLASS_BROWSE;
-    g_ClassRecordColumn = x;
-    g_ClassRecordRow = y;
+    s_optionMenu.classRecordColumn = x;
+    s_optionMenu.classRecordRow = y;
     g_PadPressed = buttons;
     UpdateClassRecordBrowse();
-    CHECK(g_ClassRecordColumn == expectedX);
-    CHECK(g_ClassRecordRow == expectedY);
+    CHECK(s_optionMenu.classRecordColumn == expectedX);
+    CHECK(s_optionMenu.classRecordRow == expectedY);
     CHECK(s_soundCalls == expectedSoundCalls);
     return 0;
 }
@@ -167,14 +166,14 @@ static int TestGridNavigation(void) {
 
 static int TestInvalidMenuCursor(void) {
     Reset();
-    g_ClassRecordMenuCursor = INT_MIN;
+    s_optionMenu.classRecordCursor = INT_MIN;
     UpdateClassRecordMenu();
-    CHECK(g_ClassRecordMenuCursor == 0 && s_soundCalls == 0);
+    CHECK(s_optionMenu.classRecordCursor == 0 && s_soundCalls == 0);
 
     Reset();
-    g_ClassRecordMenuCursor = INT_MAX;
+    s_optionMenu.classRecordCursor = INT_MAX;
     UpdateClassRecordMenu();
-    CHECK(g_ClassRecordMenuCursor == 1 && s_soundCalls == 0);
+    CHECK(s_optionMenu.classRecordCursor == 1 && s_soundCalls == 0);
     return 0;
 }
 
@@ -185,3 +184,5 @@ int main(void) {
     puts("class record menu tests passed");
     return 0;
 }
+
+OptionMenu *MenuOption(void) { return &s_optionMenu; }

@@ -13,15 +13,15 @@ enum {
     CLASS_RECORD_GRID_LAST_TOP_COLUMN = 5,
 };
 
-static s32 SelectedClassRecordIndex(void) {
-    return g_ClassRecordRow * CLASS_RECORD_GRID_COLUMN_COUNT +
-           g_ClassRecordColumn;
+static s32 SelectedClassRecordIndex(const OptionMenu *menu) {
+    return menu->classRecordRow * CLASS_RECORD_GRID_COLUMN_COUNT +
+           menu->classRecordColumn;
 }
 
-static void DrawClassRecordDetail(void) {
+static void DrawClassRecordDetail(const OptionMenu *menu) {
     GameOrderingTableEntry *detailOt = GamePrimaryOrderingTable(51);
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
-    s32 recordIndex = SelectedClassRecordIndex();
+    s32 recordIndex = SelectedClassRecordIndex(menu);
     s32 panelX = 0xB4;
     s32 panelY = 0x38;
     s32 clears;
@@ -36,7 +36,7 @@ static void DrawClassRecordDetail(void) {
     next = GameQueueSpriteTrans(detailOt, next, 0xBC, 0x40, 0x18, 0x10,
                                 0, 0x6C, 0x7F40);
     next = GameQueueSpriteTrans(detailOt, next, 0xD8, 0x40, 8, 0x10,
-                                g_ClassRecordColumn * 8 + 8, 0x18, 0x7F40);
+                                menu->classRecordColumn * 8 + 8, 0x18, 0x7F40);
 
     if (g_ClassRecords[recordIndex].place == -1) {
         for (i = 0; i < 8; i++) {
@@ -75,7 +75,7 @@ static void DrawClassRecordDetail(void) {
         0x7E, 0x42, 0xFF, 0xFF, 0xFF);
 }
 
-static void DrawClassRecordGrid(void) {
+static void DrawClassRecordGrid(const OptionMenu *menu) {
     GameOrderingTableEntry *base;
     GameOrderingTableEntry *labelBase;
     u8 *next;
@@ -92,7 +92,7 @@ static void DrawClassRecordGrid(void) {
     next = GameQueueSpriteTrans(labelBase, next, 0x24, 0x38, 0x24, 0x18, 0x38, 0x90, 0x7F40);
     next = GameQueueSpriteTrans(labelBase, next, 0x24, 0x58, 0x1C, 0x18, 0xD0, 0x60, 0x7F40);
     g_RenderState.draw.packetCursor = QueueDrawModePrim(labelBase, next, 0x3F);
-    DrawMenuCursorArrow(0x14, (g_ClassRecordMenuCursor * 32) + 56);
+    DrawMenuCursorArrow(0x14, (menu->classRecordCursor * 32) + 56);
     next = RENDER_PRIM_CURSOR_AS(u8);
 
     base = GamePrimaryOrderingTable(0);
@@ -130,31 +130,32 @@ static void DrawClassRecordGrid(void) {
 
 /* OPTION_MODE_CLASS_MENU: two-row menu into the class-record grid. */
 void UpdateClassRecordMenu(void) {
+    OptionMenu *menu = MenuOption();
     s32 oldCursor;
     u16 buttons;
 
-    g_ClassRecordMenuCursor = AddClampedMenuValue(
-        g_ClassRecordMenuCursor, 0, 0, CLASS_RECORD_MENU_ITEM_COUNT - 1);
-    DrawClassRecordGrid();
+    menu->classRecordCursor = AddClampedMenuValue(
+        menu->classRecordCursor, 0, 0, CLASS_RECORD_MENU_ITEM_COUNT - 1);
+    DrawClassRecordGrid(menu);
 
-    oldCursor = g_ClassRecordMenuCursor;
+    oldCursor = menu->classRecordCursor;
     buttons = g_PadPressed;
     if (buttons & PAD_UP) {
-        g_ClassRecordMenuCursor = WrapMenuIndex(
-            g_ClassRecordMenuCursor, -1, CLASS_RECORD_MENU_ITEM_COUNT);
+        menu->classRecordCursor = WrapMenuIndex(
+            menu->classRecordCursor, -1, CLASS_RECORD_MENU_ITEM_COUNT);
     }
     if (buttons & PAD_DOWN) {
-        g_ClassRecordMenuCursor = WrapMenuIndex(
-            g_ClassRecordMenuCursor, 1, CLASS_RECORD_MENU_ITEM_COUNT);
+        menu->classRecordCursor = WrapMenuIndex(
+            menu->classRecordCursor, 1, CLASS_RECORD_MENU_ITEM_COUNT);
     }
-    if (oldCursor != g_ClassRecordMenuCursor) {
+    if (oldCursor != menu->classRecordCursor) {
         PlaySoundCue(1);
     }
 
     buttons = g_PadPressed;
     if (buttons & PAD_CONFIRM) {
         PlaySoundCue(2);
-        if (g_ClassRecordMenuCursor == CLASS_RECORD_MENU_EXIT) {
+        if (menu->classRecordCursor == CLASS_RECORD_MENU_EXIT) {
             g_GameMode = OPTION_MODE_ROOT;
         } else {
             g_GameMode = OPTION_MODE_CLASS_BROWSE;
@@ -164,50 +165,51 @@ void UpdateClassRecordMenu(void) {
         g_GameMode = OPTION_MODE_ROOT;
     }
 
-    DrawClassRecordDetail();
+    DrawClassRecordDetail(menu);
 }
 
 /* OPTION_MODE_CLASS_BROWSE: moves the cursor over the eleven class cells. */
 void UpdateClassRecordBrowse(void) {
+    OptionMenu *menu = MenuOption();
     s32 oldColumn;
     s32 oldRow;
     u16 buttons;
 
-    g_ClassRecordColumn = AddClampedMenuValue(
-        g_ClassRecordColumn, 0, 0, CLASS_RECORD_GRID_LAST_TOP_COLUMN);
-    g_ClassRecordRow = AddClampedMenuValue(
-        g_ClassRecordRow, 0, 0, CLASS_RECORD_GRID_BOTTOM_ROW);
-    if (g_ClassRecordColumn == CLASS_RECORD_GRID_LAST_TOP_COLUMN) {
-        g_ClassRecordRow = 0;
+    menu->classRecordColumn = AddClampedMenuValue(
+        menu->classRecordColumn, 0, 0, CLASS_RECORD_GRID_LAST_TOP_COLUMN);
+    menu->classRecordRow = AddClampedMenuValue(
+        menu->classRecordRow, 0, 0, CLASS_RECORD_GRID_BOTTOM_ROW);
+    if (menu->classRecordColumn == CLASS_RECORD_GRID_LAST_TOP_COLUMN) {
+        menu->classRecordRow = 0;
     }
-    DrawClassRecordGrid();
-    oldColumn = g_ClassRecordColumn;
-    oldRow = g_ClassRecordRow;
+    DrawClassRecordGrid(menu);
+    oldColumn = menu->classRecordColumn;
+    oldRow = menu->classRecordRow;
     buttons = g_PadPressed;
 
     if ((buttons & PAD_UP) && oldRow == CLASS_RECORD_GRID_BOTTOM_ROW) {
-        g_ClassRecordRow = 0;
+        menu->classRecordRow = 0;
     }
-    if ((buttons & PAD_DOWN) && g_ClassRecordRow == 0) {
-        g_ClassRecordRow = CLASS_RECORD_GRID_BOTTOM_ROW;
+    if ((buttons & PAD_DOWN) && menu->classRecordRow == 0) {
+        menu->classRecordRow = CLASS_RECORD_GRID_BOTTOM_ROW;
     }
     if (buttons & PAD_LEFT) {
-        g_ClassRecordColumn = WrapMenuIndex(
-            g_ClassRecordColumn, -1, CLASS_RECORD_GRID_COLUMN_COUNT);
+        menu->classRecordColumn = WrapMenuIndex(
+            menu->classRecordColumn, -1, CLASS_RECORD_GRID_COLUMN_COUNT);
     }
     if (buttons & PAD_RIGHT) {
-        g_ClassRecordColumn = WrapMenuIndex(
-            g_ClassRecordColumn, 1, CLASS_RECORD_GRID_COLUMN_COUNT);
+        menu->classRecordColumn = WrapMenuIndex(
+            menu->classRecordColumn, 1, CLASS_RECORD_GRID_COLUMN_COUNT);
     }
-    if (g_ClassRecordColumn == CLASS_RECORD_GRID_LAST_TOP_COLUMN) {
-        g_ClassRecordRow = 0;
+    if (menu->classRecordColumn == CLASS_RECORD_GRID_LAST_TOP_COLUMN) {
+        menu->classRecordRow = 0;
     }
-    if (oldColumn != g_ClassRecordColumn || oldRow != g_ClassRecordRow) {
+    if (oldColumn != menu->classRecordColumn || oldRow != menu->classRecordRow) {
         PlaySoundCue(1);
     }
     if (buttons & (PAD_CONFIRM | PAD_CANCEL)) {
         PlaySoundCue(2);
         g_GameMode = OPTION_MODE_CLASS_MENU;
     }
-    DrawClassRecordDetail();
+    DrawClassRecordDetail(menu);
 }

@@ -108,6 +108,9 @@ typedef struct OptionMenu {
     GameSceneId exitScene;
     s32 cursor;
     s32 letterboxHeight;
+    s32 classRecordCursor;
+    s32 classRecordColumn;
+    s32 classRecordRow;
 } OptionMenu;
 
 typedef struct MenuWidgets {
@@ -457,8 +460,6 @@ extern s16 g_NegconSteerPlaySaved;
 extern s16 g_NextOwnedCarIndex;
 extern s32 g_PlayerMoney;
 extern s16 g_PrevOwnedCarIndex;
-extern s32 g_ClassRecordColumn;
-extern s32 g_ClassRecordRow;
 extern u16 g_TeamLogoSwatches[15];
 extern s32 g_TitleAttractTimer;
 extern s32 g_TitleExitTimer;
@@ -515,7 +516,6 @@ extern s32 g_TitleFadeLevel;
 extern s32 g_TeamLogoOption;
 extern char *g_BgmTrackNames[];
 extern s32 g_CarPriceTable[CAR_PRICE_COUNT];
-extern s32 g_ClassRecordMenuCursor;
 extern TimedDrawCommand g_MenuHintBarScript[];
 
 /* Retail stores timed-draw commands as packed 12-byte records containing

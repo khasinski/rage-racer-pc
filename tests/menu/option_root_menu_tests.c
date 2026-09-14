@@ -10,7 +10,6 @@
 static OptionMenu s_optionMenu;
 #include <string.h>
 
-s32 g_ClassRecordMenuCursor;
 s32 g_CourseIndex;
 GameFrameContext *g_DrawBuffer;
 s32 g_GameMode;
@@ -19,8 +18,6 @@ s16 g_GrandPrixMode;
 s16 g_GrandPrixSeries;
 u16 g_PadPressed;
 GameRenderState g_RenderState;
-s32 g_ClassRecordColumn;
-s32 g_ClassRecordRow;
 
 typedef struct LabelRecord {
     s32 x;
@@ -100,9 +97,9 @@ static void Reset(void) {
     g_GameMode = OPTION_MODE_ROOT;
     s_optionMenu.cursor = 0;
     g_PadPressed = 0;
-    g_ClassRecordMenuCursor = -1;
-    g_ClassRecordColumn = -1;
-    g_ClassRecordRow = -1;
+    s_optionMenu.classRecordCursor = -1;
+    s_optionMenu.classRecordColumn = -1;
+    s_optionMenu.classRecordRow = -1;
     s_labelCount = 0;
     s_lastCue = 0;
     s_lastExitScene = GAME_SCENE_BOOT_LOGO;
@@ -160,8 +157,8 @@ int main(void) {
         CHECK(s_lastCue == 2);
         if (cursor == 0) {
             CHECK(g_GameMode == OPTION_MODE_CLASS_MENU &&
-                  g_ClassRecordMenuCursor == 0);
-            CHECK(g_ClassRecordColumn == 0 && g_ClassRecordRow == 0);
+                  s_optionMenu.classRecordCursor == 0);
+            CHECK(s_optionMenu.classRecordColumn == 0 && s_optionMenu.classRecordRow == 0);
         } else if (cursor == 1) {
             CHECK(g_GameMode == OPTION_MODE_CONTROLLER_CONFIG &&
                   s_controllerConfigCalls == 1);

@@ -89,9 +89,9 @@ void UpdateOptionRootMenu(void) {
         switch (menu->cursor) {
         case OPTION_ROOT_TROPHIES:
             g_GameMode = OPTION_MODE_CLASS_MENU;
-            g_ClassRecordMenuCursor = 0;
-            g_ClassRecordColumn = 0;
-            g_ClassRecordRow = 0;
+            menu->classRecordCursor = 0;
+            menu->classRecordColumn = 0;
+            menu->classRecordRow = 0;
             break;
         case OPTION_ROOT_CONTROLLER:
             BeginControllerConfig(MenuControllerSetup());
