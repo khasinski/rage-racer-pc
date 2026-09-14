@@ -16,10 +16,16 @@ enum {
 };
 
 static PlayerCarRuntime s_Car;
+static s32 s_rotationSpeed;
 
 void ResetMenuCar(void) {
     memset(&s_Car, 0, sizeof(s_Car));
+    s_rotationSpeed = 0;
 }
+
+void StartMenuCarRotation(void) { s_rotationSpeed = 8; }
+
+s32 MenuCarRotationSpeed(void) { return s_rotationSpeed; }
 
 static void SetupMenuViewCamera(s32 pitch, s32 yaw) {
     GameViewWork view = {
@@ -119,9 +125,9 @@ void DrawMenuCarView(void) {
     car->drive.manual = g_CarTable[carIndex].transmission;
     car->wheelRotation = ((u32)car->wheelRotation + 68u) & 0xFFFu;
 
-    g_MenuViewSpin = UpdatedMenuViewSpin(g_MenuViewSpin, g_PadHeld);
+    s_rotationSpeed = UpdatedMenuViewSpin(s_rotationSpeed, g_PadHeld);
     car->bodyRotation.y =
-        (s32)((u32)car->bodyRotation.y + (u32)g_MenuViewSpin);
+        (s32)((u32)car->bodyRotation.y + (u32)s_rotationSpeed);
     BuildRotMatrixY(&mtxA, car->bodyRotation.y);
     vec.z = (s16)(-((s16)g_CarModelAsset->modelOffsetZ / 2));
     ApplyMatrixLV(&mtxA, AsWords(&vec), AsWords(&out));
@@ -175,8 +181,8 @@ void DrawMenuCourseView(CourseSelectScreen *screen) {
     car->z = -20;
     car->y = viewHeight + 15;
 
-    g_MenuViewSpin = UpdatedMenuViewSpin(g_MenuViewSpin, g_PadHeld);
-    car->bodyYaw = (s32)((u32)car->bodyYaw + (u32)g_MenuViewSpin);
+    s_rotationSpeed = UpdatedMenuViewSpin(s_rotationSpeed, g_PadHeld);
+    car->bodyYaw = (s32)((u32)car->bodyYaw + (u32)s_rotationSpeed);
     BuildRotMatrixY(&mtxB, 0x800 - car->bodyYaw);
     BuildRotMatrixX(&mtxA, car->bodyPitch);
     MulMatrix2(&mtxB, &mtxA);

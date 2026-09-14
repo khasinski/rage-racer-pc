@@ -60,7 +60,6 @@ extern int GameMenuBusy;
 extern int g_MenuViewAngle;
 extern int g_MenuViewAngleTarget;
 extern int g_MenuViewOffset;
-extern int g_MenuViewSpin;
 extern int g_FadeLevel;
 extern int g_FrameSyncThreshold;
 extern s32 g_SkyRowBase;
@@ -357,7 +356,7 @@ static void ReportCameraState(void) {
            g_RenderState.mirror.viewMatrix.m[2][2]);
     printf(" menu=%d busy=%d view=%d/%d offset=%d spin=%d yaw=%d/%d",
            MenuRuntimeCurrent()->activeScreen, GameMenuBusy, g_MenuViewAngle, g_MenuViewAngleTarget,
-           g_MenuViewOffset, g_MenuViewSpin, g_PlayerCar.bodyYaw,
+           g_MenuViewOffset, MenuCarRotationSpeed(), g_PlayerCar.bodyYaw,
            g_PlayerCar.modelYaw);
     printf(" scene_timer=%d fade=%d sync=%x",
            g_SceneTimer, g_FadeLevel, g_FrameSyncThreshold);

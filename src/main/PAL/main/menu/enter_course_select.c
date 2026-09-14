@@ -18,7 +18,7 @@ static void ResetCourseSelectShowroom(CourseSelectScreen *screen) {
 
     g_CourseIndex = course;
     g_MenuViewOffset = COURSE_SELECT_INITIAL_VIEW_OFFSET;
-    g_MenuViewSpin = 8;
+    StartMenuCarRotation();
     g_UiScriptProgress = 0;
     g_MenuViewAngleTarget = MENU_COURSE_VIEW_REBASE_SPAN;
     g_MenuViewAngle = MENU_COURSE_VIEW_REBASE_SPAN;

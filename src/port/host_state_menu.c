@@ -146,4 +146,3 @@ u16 g_TeamLogoClut[16];
 s16 g_NegconSteerNeutral;
 GameRaceProgress *g_RaceProgress;
 TeamLogoCanvas g_TeamLogoCanvas;
-s32 g_MenuViewSpin;

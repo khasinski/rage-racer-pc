@@ -28,7 +28,9 @@ s32 g_MenuViewAngle;
 s32 g_MenuViewAngleTarget;
 s32 g_MenuViewOffset;
 s32 g_MenuViewOffsetTarget;
-s32 g_MenuViewSpin;
+static s32 s_menuCarRotationStarted;
+
+void StartMenuCarRotation(void) { s_menuCarRotationStarted = 1; }
 PlayerCarRuntime g_PlayerCar;
 s32 g_SceneTimer;
 TeamLogoCanvas g_TeamLogoCanvas;
@@ -94,7 +96,7 @@ static void PoisonState(void) {
     g_MenuViewAngleTarget = -1;
     g_MenuViewOffset = -1;
     g_MenuViewOffsetTarget = -1;
-    g_MenuViewSpin = -1;
+    s_menuCarRotationStarted = 0;
     g_UiScriptProgress = -1;
     s_courseSelect.cardSpin = -1;
     s_courseSelect.cardSpinTarget = -1;
@@ -113,7 +115,7 @@ static int CheckShowroomReset(s32 expectedGrade, s32 expectedPlateStep) {
     CHECK(g_MenuViewOffset == 250000 && g_MenuViewOffsetTarget == 0);
     CHECK(g_MenuViewAngle == MENU_COURSE_VIEW_REBASE_SPAN);
     CHECK(g_MenuViewAngleTarget == MENU_COURSE_VIEW_REBASE_SPAN);
-    CHECK(g_MenuViewSpin == 8 && g_UiScriptProgress == 0);
+    CHECK(s_menuCarRotationStarted && g_UiScriptProgress == 0);
     CHECK(s_courseSelect.cardSpin == 2048000 && s_courseSelect.cardSpinTarget == 0);
     CHECK(s_courseSelect.cardPendingGrade == expectedGrade);
     CHECK(s_menuWidgets.timeAttackStep == expectedPlateStep);
