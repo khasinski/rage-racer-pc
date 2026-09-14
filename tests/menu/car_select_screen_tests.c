@@ -164,7 +164,11 @@ void DrawCarNamePlate(s32 step, s32 model) {
 }
 void DrawMenuCarView(void) { RECORD("carview", 0); }
 void DrawMenuLightBurst(s32 arg) { RECORD("burst", arg); }
-void DrawBrowseArrows(s32 step, s32 wide, s32 drawLeft, s32 drawRight) {
+static BrowseArrows s_browseArrows;
+BrowseArrows *MenuBrowseArrows(void) { return &s_browseArrows; }
+
+void DrawBrowseArrows(BrowseArrows *arrows, s32 step, s32 wide, s32 drawLeft, s32 drawRight) {
+    (void)arrows;
     RECORD("arrows", step, wide, drawLeft, drawRight);
 }
 void DrawOwnedCarCounter(s32 owned, s32 step) {

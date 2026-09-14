@@ -60,7 +60,7 @@ static void ChoosePaintColorRow(void) {
 
 static void UpdatePaintColorIdle(void) {
     DrawPaintColorPalette(&g_UiScriptProgress2, -1, g_PaintColorIndex);
-    DrawBrowseArrows(-1, 0, 1, 1);
+    DrawBrowseArrows(MenuBrowseArrows(), -1, 0, 1, 1);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, g_PaintColorCursor);
     RunTimedDrawScript(g_PaintColorScreenScript, &g_UiScriptProgress, 0);
     if (RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1) == 0 ||
@@ -125,7 +125,7 @@ static void UpdateSelectedPaintColor(PaintColorScreenState state) {
         }
     }
 
-    DrawBrowseArrows(1, 0, 1, 1);
+    DrawBrowseArrows(MenuBrowseArrows(), 1, 0, 1, 1);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, g_PaintColorCursor);
     RunTimedDrawScript(g_PaintColorScreenScript, &g_UiScriptProgress, 0);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);

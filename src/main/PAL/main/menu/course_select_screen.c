@@ -79,7 +79,7 @@ static void BrowseToCourse(s32 step, s32 newTarget) {
 static void DrawCourseArrows(s32 step) {
     s32 previous = CanSelectPrevCourse();
 
-    DrawBrowseArrows(step, 1, previous, CanSelectNextCourse());
+    DrawBrowseArrows(MenuBrowseArrows(), step, 1, previous, CanSelectNextCourse());
 }
 
 static const TimedDrawCommand *CourseSelectMenuScript(void) {
@@ -390,7 +390,7 @@ static void EnterChosenScreen(void) {
         MenuActivateEnteringScreen(MENU_SCREEN_ENTER_CAR_SELECT,
                                    MENU_SCREEN_CAR_SELECT);
         DrawOwnedCarCounter(0, 0);
-        DrawBrowseArrows(0, 0, 0, 0);
+        DrawBrowseArrows(MenuBrowseArrows(), 0, 0, 0, 0);
         g_CarSwapToIndex = -1;
         g_MenuViewAngle = 0;
         g_MenuViewAngleTarget = 0;

@@ -51,7 +51,11 @@ static PlayerCarRuntime s_playerBefore;
 
 s32 RequestCarSelectAssets(void) { return s_assetRequestResult; }
 void PlaySequence(void) { s_sequenceCalls++; }
-void DrawBrowseArrows(s32 step, s32 wide, s32 left, s32 right) {
+static BrowseArrows s_browseArrows;
+BrowseArrows *MenuBrowseArrows(void) { return &s_browseArrows; }
+
+void DrawBrowseArrows(BrowseArrows *arrows, s32 step, s32 wide, s32 left, s32 right) {
+    (void)arrows;
     (void)step;
     (void)wide;
     (void)left;

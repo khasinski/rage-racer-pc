@@ -48,6 +48,11 @@ typedef struct CourseSelectScreen {
     s32 classChangeApplied;
 } CourseSelectScreen;
 
+typedef struct BrowseArrows {
+    s32 fade;
+    s32 pulsePhase;
+} BrowseArrows;
+
 typedef struct MenuRuntime {
     /* State-machine screen updated this frame. */
     s32 activeScreen;
@@ -61,12 +66,14 @@ typedef struct MenuRuntime {
     s32 drawProgress[MENU_SCREEN_COUNT];
     CourseSelectScreen courseSelect;
     ControllerSetup controllerSetup;
+    BrowseArrows browseArrows;
 } MenuRuntime;
 
 void MenuRuntimeReset(void);
 const MenuRuntime *MenuRuntimeCurrent(void);
 ControllerSetup *MenuControllerSetup(void);
 CourseSelectScreen *MenuCourseSelect(void);
+BrowseArrows *MenuBrowseArrows(void);
 s32 MenuRuntimeScreenState(s32 screen);
 void MenuRuntimeSetScreenState(s32 screen, s32 state);
 
@@ -435,7 +442,6 @@ extern s32 g_LogoSampleBackIndex;
 extern s32 g_LogoSampleSavedIndex;
 extern s32 g_PaintColorIndex;
 extern s32 g_TireSliderPulsePhase;
-extern s32 g_BrowseArrowsPulsePhase;
 extern s32 g_TeamLogoColorCycleAngle;
 extern s32 g_TeamNameCursorPhase;
 extern s32 g_PaintPalettePulsePhase;
@@ -451,7 +457,6 @@ extern s32 g_TitleFadeLevel;
 extern s32 g_PaintColorCursor;
 extern s32 g_TeamLogoOption;
 extern char *g_BgmTrackNames[];
-extern s32 g_BrowseArrowsFade;
 extern s32 g_CarPriceTable[CAR_PRICE_COUNT];
 extern s32 g_CarSpecBars[4];
 extern s32 g_CarSpecGraphProgress;
@@ -530,7 +535,8 @@ extern GameSceneId g_OptionMenuExitScene;
 void AdvanceGrandPrixClass(void);
 s32 CountOwnedCars(void);
 void ComposeSampleTeamLogo(s32 character, s32 background);
-void DrawBrowseArrows(s32 step, s32 courseLayout, s32 drawLeft, s32 drawRight);
+void DrawBrowseArrows(BrowseArrows *arrows, s32 step, s32 courseLayout,
+                      s32 drawLeft, s32 drawRight);
 void DrawLogoSamplePanel(s32 step, s32 sample);
 void DrawMenuCursorArrow(s32 x, s32 y);
 void DrawMenuLightBurst(s32 arg);

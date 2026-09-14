@@ -23,7 +23,7 @@ void ResetCarShopScreen(void) {
 
 /* Everything the shop keeps on the display whichever state it is in. */
 static void DrawCarShopChrome(const CarShop *shop, s32 price, s32 chromeStep) {
-    DrawBrowseArrows(1, 0, g_PrevOwnedCarIndex != -1,
+    DrawBrowseArrows(MenuBrowseArrows(), 1, 0, g_PrevOwnedCarIndex != -1,
                      g_NextOwnedCarIndex != -1);
     DrawCarShopPricePanel(1, g_PlayerMoney, price);
     DrawFadingMenuSprites(g_UiScriptProgress, 1, shop->option);
@@ -206,7 +206,7 @@ static void UpdateCarShopModal(CarShop *shop, GameOrderingTableEntry *ot,
  * the money only leaves once the screen has actually finished. */
 static void UpdateCarShopOutgoing(CarShop *shop, ShopPrice price) {
     MenuBeginExit(MENU_SCREEN_CAR_SHOP);
-    DrawBrowseArrows(-1, 0, g_PrevOwnedCarIndex != -1,
+    DrawBrowseArrows(MenuBrowseArrows(), -1, 0, g_PrevOwnedCarIndex != -1,
                      g_NextOwnedCarIndex != -1);
     DrawCarShopPricePanel(-1, g_PlayerMoney, price.amount);
     RunTimedDrawScript(g_CarShopScreenScript, &g_UiScriptProgress, -1);

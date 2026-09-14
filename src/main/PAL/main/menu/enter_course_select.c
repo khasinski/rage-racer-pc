@@ -41,7 +41,7 @@ void EnterCourseSelectScreen(void) {
 
     PlaySequence();
     MenuActivateScreen(MENU_SCREEN_COURSE_SELECT);
-    DrawBrowseArrows(0, 0, 0, 0);
+    DrawBrowseArrows(MenuBrowseArrows(), 0, 0, 0, 0);
     ResetCourseSelectShowroom();
     LoadImage(&g_TeamLogoRect, &g_TeamLogoCanvas);
     UploadTeamLogoClut();

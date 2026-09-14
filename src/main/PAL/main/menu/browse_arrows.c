@@ -18,24 +18,24 @@ enum {
 /* The two side browse arrows, each lit only when that direction has somewhere
  * to go. Positive steps fade in after drawing; negative steps fade out before
  * drawing, matching the other menu widgets. */
-void DrawBrowseArrows(s32 step, s32 courseLayout, s32 drawLeft,
-                      s32 drawRight) {
+void DrawBrowseArrows(BrowseArrows *arrows, s32 step, s32 courseLayout,
+                      s32 drawLeft, s32 drawRight) {
     GameOrderingTableEntry *ot;
     s32 halfWidth;
     s32 y;
     s32 slidePhase;
 
     if (step == 0) {
-        g_BrowseArrowsFade = 0;
+        arrows->fade = 0;
         return;
     }
 
-    g_BrowseArrowsFade = AddClampedMenuValue(
-        g_BrowseArrowsFade, 0, 0, BROWSE_ARROWS_FADE_MAX);
+    arrows->fade = AddClampedMenuValue(arrows->fade, 0, 0,
+                                       BROWSE_ARROWS_FADE_MAX);
 
     if (step < 0) {
-        g_BrowseArrowsFade = AddClampedMenuValue(
-            g_BrowseArrowsFade, step, 0, BROWSE_ARROWS_FADE_MAX);
+        arrows->fade = AddClampedMenuValue(arrows->fade, step, 0,
+                                           BROWSE_ARROWS_FADE_MAX);
     }
 
     halfWidth = courseLayout != 0 || g_MenuAltLayout != 0
@@ -43,7 +43,7 @@ void DrawBrowseArrows(s32 step, s32 courseLayout, s32 drawLeft,
                     : BROWSE_ARROWS_COMPACT_HALF_WIDTH;
     y = courseLayout != 0 ? BROWSE_ARROWS_COURSE_Y
                           : BROWSE_ARROWS_COMPACT_Y;
-    slidePhase = g_BrowseArrowsFade - BROWSE_ARROWS_VISIBLE_AT;
+    slidePhase = arrows->fade - BROWSE_ARROWS_VISIBLE_AT;
     if (slidePhase >= 0 && RENDER_OT_BASE != NULL) {
         s32 leftX;
         s16 leftEdge;
@@ -57,10 +57,10 @@ void DrawBrowseArrows(s32 step, s32 courseLayout, s32 drawLeft,
         leftEdge = leftX - halfWidth;
         rightEdge = BROWSE_ARROWS_RIGHT_ORIGIN - leftX;
         intensity =
-            (u8)(rsin((s32)((u32)g_BrowseArrowsPulsePhase & 0xFFFu)) / 64 -
+            (u8)(rsin((s32)((u32)arrows->pulsePhase & 0xFFFu)) / 64 -
                  65);
-        g_BrowseArrowsPulsePhase =
-            (s32)((u32)g_BrowseArrowsPulsePhase + BROWSE_ARROWS_PULSE_STEP);
+        arrows->pulsePhase =
+            (s32)((u32)arrows->pulsePhase + BROWSE_ARROWS_PULSE_STEP);
         ot = RENDER_OT_BASE;
 
         DrawSprite(ot, leftEdge, y, BROWSE_ARROWS_SPRITE_WIDTH,
@@ -80,7 +80,7 @@ void DrawBrowseArrows(s32 step, s32 courseLayout, s32 drawLeft,
     }
 
     if (step > 0) {
-        g_BrowseArrowsFade = AddClampedMenuValue(
-            g_BrowseArrowsFade, step, 0, BROWSE_ARROWS_FADE_MAX);
+        arrows->fade = AddClampedMenuValue(arrows->fade, step, 0,
+                                           BROWSE_ARROWS_FADE_MAX);
     }
 }

@@ -5,8 +5,6 @@
 #include <stdio.h>
 #include <limits.h>
 
-s32 g_BrowseArrowsFade;
-s32 g_BrowseArrowsPulsePhase;
 s32 g_MenuAltLayout;
 GameRenderState g_RenderState;
 
@@ -71,65 +69,66 @@ static void ResetDraws(void) {
 }
 
 int main(void) {
+    BrowseArrows arrows = {0};
     GameOrderingTableEntry orderingTable[1] = {0};
 
     g_RenderState.draw.orderingTable = orderingTable;
-    g_BrowseArrowsFade = 9;
-    DrawBrowseArrows(0, 0, 1, 1);
-    CHECK(g_BrowseArrowsFade == 0 && s_spriteCount == 0);
+    arrows.fade = 9;
+    DrawBrowseArrows(&arrows, 0, 0, 1, 1);
+    CHECK(arrows.fade == 0 && s_spriteCount == 0);
 
-    DrawBrowseArrows(11, 0, 1, 1);
-    CHECK(g_BrowseArrowsFade == 11 && s_spriteCount == 0);
-    DrawBrowseArrows(1, 0, 1, 1);
-    CHECK(g_BrowseArrowsFade == 12 && s_spriteCount == 2);
+    DrawBrowseArrows(&arrows, 11, 0, 1, 1);
+    CHECK(arrows.fade == 11 && s_spriteCount == 0);
+    DrawBrowseArrows(&arrows, 1, 0, 1, 1);
+    CHECK(arrows.fade == 12 && s_spriteCount == 2);
     CHECK(s_sprites[0].x == -26 && s_sprites[0].y == 0x119);
     CHECK(s_sprites[1].x == 472 && s_sprites[1].y == 0x119);
     CHECK(s_highlightCount == 2 && s_highlights[0].intensity == 0xFF);
-    CHECK(g_BrowseArrowsPulsePhase == 0x60);
+    CHECK(arrows.pulsePhase == 0x60);
 
     ResetDraws();
-    g_BrowseArrowsFade = 25;
-    DrawBrowseArrows(1, 1, 1, 0);
-    CHECK(g_BrowseArrowsFade == 25);
+    arrows.fade = 25;
+    DrawBrowseArrows(&arrows, 1, 1, 1, 0);
+    CHECK(arrows.fade == 25);
     CHECK(s_sprites[0].x == 72 && s_sprites[0].y == 0x144);
     CHECK(s_sprites[1].x == 287 && s_sprites[1].y == 0x144);
     CHECK(s_highlightCount == 1 && s_highlights[0].x == 72);
 
     ResetDraws();
     g_MenuAltLayout = 1;
-    g_BrowseArrowsFade = 25;
-    DrawBrowseArrows(1, 0, 1, 1);
+    arrows.fade = 25;
+    DrawBrowseArrows(&arrows, 1, 0, 1, 1);
     CHECK(s_sprites[0].x == 72 && s_sprites[0].y == 0x119);
     CHECK(s_sprites[1].x == 287 && s_sprites[1].y == 0x119);
 
     ResetDraws();
-    g_BrowseArrowsFade = 11;
-    DrawBrowseArrows(-1, 0, 1, 1);
-    CHECK(g_BrowseArrowsFade == 10 && s_spriteCount == 0);
+    arrows.fade = 11;
+    DrawBrowseArrows(&arrows, -1, 0, 1, 1);
+    CHECK(arrows.fade == 10 && s_spriteCount == 0);
 
     ResetDraws();
     g_MenuAltLayout = 0;
-    g_BrowseArrowsFade = INT_MAX;
-    g_BrowseArrowsPulsePhase = INT_MAX;
-    DrawBrowseArrows(INT_MAX, 0, 1, 1);
-    CHECK(g_BrowseArrowsFade == 25 && s_spriteCount == 2);
-    CHECK(g_BrowseArrowsPulsePhase == (s32)((u32)INT_MAX + 0x60u));
-    g_BrowseArrowsFade = INT_MIN;
-    DrawBrowseArrows(-1, 0, 1, 1);
-    CHECK(g_BrowseArrowsFade == 0);
+    arrows.fade = INT_MAX;
+    arrows.pulsePhase = INT_MAX;
+    DrawBrowseArrows(&arrows, INT_MAX, 0, 1, 1);
+    CHECK(arrows.fade == 25 && s_spriteCount == 2);
+    CHECK(arrows.pulsePhase == (s32)((u32)INT_MAX + 0x60u));
+    arrows.fade = INT_MIN;
+    DrawBrowseArrows(&arrows, -1, 0, 1, 1);
+    CHECK(arrows.fade == 0);
 
     ResetDraws();
-    g_BrowseArrowsFade = 25;
-    g_BrowseArrowsPulsePhase = -1;
-    DrawBrowseArrows(1, 0, 1, 1);
+    arrows.fade = 25;
+    arrows.pulsePhase = -1;
+    DrawBrowseArrows(&arrows, 1, 0, 1, 1);
     CHECK(s_sineAngle == 0xFFF);
 
     ResetDraws();
     g_RenderState.draw.orderingTable = NULL;
-    g_BrowseArrowsFade = 11;
-    g_BrowseArrowsPulsePhase = 123;
-    DrawBrowseArrows(1, 0, 1, 1);
-    CHECK(g_BrowseArrowsFade == 12 && g_BrowseArrowsPulsePhase == 123);
+    arrows.fade = 11;
+    arrows.pulsePhase = 123;
+    DrawBrowseArrows(&arrows, 1, 0, 1, 1);
+    CHECK(arrows.fade == 12 && arrows.pulsePhase == 123);
     CHECK(s_spriteCount == 0 && s_highlightCount == 0);
 
     puts("browse arrows tests passed");

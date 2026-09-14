@@ -169,7 +169,11 @@ void DrawCarNamePlate(s32 step, s32 model) {
 }
 void DrawMenuCarView(void) { RECORD("carview", 0); }
 void DrawMenuAltPanel(s32 stepA, s32 stepB) { RECORD("altpanel", stepA, stepB); }
-void DrawBrowseArrows(s32 step, s32 wide, s32 drawLeft, s32 drawRight) {
+static BrowseArrows s_browseArrows;
+BrowseArrows *MenuBrowseArrows(void) { return &s_browseArrows; }
+
+void DrawBrowseArrows(BrowseArrows *arrows, s32 step, s32 wide, s32 drawLeft, s32 drawRight) {
+    (void)arrows;
     RECORD("arrows", step, wide, drawLeft, drawRight);
 }
 void DrawCarShopPricePanel(s32 step, s32 money, s32 price) {

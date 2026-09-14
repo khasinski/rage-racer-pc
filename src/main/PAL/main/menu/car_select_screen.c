@@ -188,7 +188,7 @@ static void UpdateCarSelectIdle(void) {
     g_MenuPlateCarIndex = g_PlayerCarIndex;
     RunTimedDrawScript(g_CarSelectPopupScript, &g_UiScriptProgress2, -1);
     RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
-    DrawBrowseArrows(1, 0, g_PrevOwnedCarIndex != -1,
+    DrawBrowseArrows(MenuBrowseArrows(), 1, 0, g_PrevOwnedCarIndex != -1,
                      g_NextOwnedCarIndex != -1);
     if (g_GrandPrixMode == 0) {
         DrawOwnedCarCounter(1, CountOwnedCars());
@@ -210,7 +210,7 @@ static void UpdateCarSelectModal(void) {
             SetCarSelectState(0);
         }
     }
-    DrawBrowseArrows(1, 0, g_PrevOwnedCarIndex != -1,
+    DrawBrowseArrows(MenuBrowseArrows(), 1, 0, g_PrevOwnedCarIndex != -1,
                      g_NextOwnedCarIndex != -1);
     if (g_GrandPrixMode == 0) {
         DrawOwnedCarCounter(1, CountOwnedCars());
@@ -260,7 +260,7 @@ static void EnterChosenScreen(void) {
     case 3:
         MenuActivateScreen(MENU_SCREEN_CAR_SHOP);
         DrawCarShopPricePanel(0, 0, 0);
-        DrawBrowseArrows(0, 0, 0, 0);
+        DrawBrowseArrows(MenuBrowseArrows(), 0, 0, 0, 0);
         DrawMenuAltPanel(0, 0);
         g_MenuUpperAltPanelStep = 0;
         g_MenuLowerAltPanelStep = 0;
@@ -298,7 +298,7 @@ static void EnterChosenScreen(void) {
 
 static void UpdateCarSelectOutgoing(void) {
     MenuBeginExit(MENU_SCREEN_CAR_SELECT);
-    DrawBrowseArrows(-1, 0, g_PrevOwnedCarIndex != -1,
+    DrawBrowseArrows(MenuBrowseArrows(), -1, 0, g_PrevOwnedCarIndex != -1,
                      g_NextOwnedCarIndex != -1);
     if (g_GrandPrixMode == 0) {
         DrawOwnedCarCounter(-1, CountOwnedCars());
