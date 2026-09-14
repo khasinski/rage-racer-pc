@@ -87,7 +87,6 @@ extern unsigned char g_PadConfigLabelRows[40];
 extern unsigned char g_PadConfigButtonRows[40];
 extern unsigned char g_NegconConfigLabelRows[40];
 extern unsigned char g_NegconConfigButtonRows[40];
-extern unsigned char g_NegconPlayPercent[8];
 extern unsigned char g_WordFontCells[40];
 extern unsigned char g_HighFontCell[4];
 extern unsigned char g_CarModelBaseIndex[13];
@@ -189,7 +188,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_PadConfigButtonRows", g_PadConfigButtonRows, 40},
     {"g_NegconConfigLabelRows", g_NegconConfigLabelRows, 40},
     {"g_NegconConfigButtonRows", g_NegconConfigButtonRows, 40},
-    {"g_NegconPlayPercent", g_NegconPlayPercent, 8},
     {"g_WordFontCells", g_WordFontCells, 40},
     {"g_HighFontCell", g_HighFontCell, 4},
     {"g_CarModelBaseIndex", g_CarModelBaseIndex, 13},
@@ -278,7 +276,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the canonical host constants alone. */
-    const unsigned long expected = 3930866870UL;
+    const unsigned long expected = 1813178631UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

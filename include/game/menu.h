@@ -593,7 +593,6 @@ RAGE_NATIVE_UI_SCRIPT(EngineerShopTuneUpPromptScript, 5);
 extern s16 g_NegconNeutralIISaved;
 extern s16 g_NegconNeutralISaved;
 extern s16 g_NegconNeutralLSaved;
-extern s16 g_NegconPlayPercent[];
 extern s16 g_NegconSteerNeutralSaved;
 
 void AdvanceGrandPrixClass(void);

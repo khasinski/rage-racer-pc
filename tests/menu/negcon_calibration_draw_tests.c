@@ -10,7 +10,6 @@ GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
 NegconCalibrationValue g_NegconMaxTwist;
 NegconCalibrationValue g_NegconSteerPlay;
-s16 g_NegconPlayPercent[NEGCON_CALIBRATION_COUNT] = {0, 3, 5, 7};
 
 typedef struct SpriteCall {
     s32 x;

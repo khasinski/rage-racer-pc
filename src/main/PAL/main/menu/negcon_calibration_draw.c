@@ -11,6 +11,8 @@ enum {
     NEGCON_PLAY_PERCENT_SCALE = 128,
 };
 
+static const s16 s_playPercent[NEGCON_CALIBRATION_COUNT] = {0, 3, 5, 7};
+
 static s32 NegconPlayGaugeHalfSpan(s32 percent) {
     return (percent * NEGCON_PLAY_PERCENT_SCALE / 100) * 2;
 }
@@ -58,7 +60,7 @@ void DrawNegconSteerPlayScreen(s32 arrowPhase) {
         ot, prim, 0x88, 0x30, 0xC, 0x18, 0x6C, 0x30, 0x7F81);
     prim = QueueCalibrationPanel(ot, prim);
 
-    halfSpan = NegconPlayGaugeHalfSpan(g_NegconPlayPercent[play]);
+    halfSpan = NegconPlayGaugeHalfSpan(s_playPercent[play]);
     upperY = NEGCON_GAUGE_CENTER_Y - halfSpan;
     lowerY = NEGCON_GAUGE_CENTER_Y + halfSpan;
     prim = QueueDoubleGaugeLine(ot, prim, upperY, 0x20, 0x40, 0xFF);

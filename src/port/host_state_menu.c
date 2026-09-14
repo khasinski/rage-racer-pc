@@ -48,9 +48,6 @@ Vec4 g_MenuCarPivotOffset = {0, 0, 42, 0};
 const Vec4 g_TeamNameCharScale = {384, 384, 384, 0};
 Rect g_TeamLogoClutRect = {16, 480, 16, 1};
 Rect g_TeamLogoRect = {656, 48, 16, 64};
-s16 g_NegconPlayPercent[4] = {
-    0, 3, 5, 7
-};
 s16 g_RoundScreenFadeDelays[ROUND_SCREEN_FADE_DELAY_STORAGE_COUNT] = {
     15, 256, 512, 0
 };
