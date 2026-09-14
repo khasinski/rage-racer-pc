@@ -86,7 +86,8 @@ void DrawTeamLogoCanvas(TeamLogo *logo, s32 panelStep, s32 editorStep) {
     (void)panelStep;
     (void)editorStep;
 }
-void ComposeSampleTeamLogo(s32 character, s32 background) {
+void ComposeSampleTeamLogo(TeamLogo *logo, s32 character, s32 background) {
+    (void)logo;
     s_composedCharacter = character;
     s_composedBackground = background;
 }
@@ -134,7 +135,9 @@ void GameDrawMenuButton(s32 x, s32 y, s32 width, s32 height, u8 r, u8 g,
     (void)g;
     (void)b;
 }
-void DrawLogoSamplePanel(LogoSample *logo, s32 step, s32 sample) {
+void DrawLogoSamplePanel(LogoSample *samplePanel, const TeamLogo *logo,
+                         s32 step, s32 sample) {
+    (void)samplePanel;
     (void)logo;
     (void)step;
     (void)sample;

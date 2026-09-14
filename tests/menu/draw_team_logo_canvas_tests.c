@@ -28,7 +28,6 @@
 /* The editor's own state. */
 TeamLogoCanvas g_TeamLogoCanvas;
 u16 g_TeamLogoClut[16];
-u16 g_TeamLogoSwatches[15];
 Rect g_TeamLogoRect;
 Rect g_TeamLogoClutRect;
 u8 g_PadType;
@@ -197,7 +196,7 @@ int main(int argc, char **argv) {
             g_TeamLogoClut[x] = (u16)(0x0421 * x);
             s_logoState.fadedClut[x] = 0;
             if (x < 15) {
-                g_TeamLogoSwatches[x] = (u16)(0x1111 * x);
+                s_logoState.swatches[x] = (u16)(0x1111 * x);
             }
         }
         memset(ot, 0, sizeof(ot));

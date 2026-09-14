@@ -117,6 +117,7 @@ typedef struct TeamLogo {
     s32 repeatMask;
     s32 expertMode;
     s32 paintArmed;
+    u16 swatches[15];
     u16 fadedClut[16];
     Rect fadedClutRect;
 } TeamLogo;
@@ -486,7 +487,6 @@ extern s16 g_NegconSteerPlaySaved;
 extern s16 g_NextOwnedCarIndex;
 extern s32 g_PlayerMoney;
 extern s16 g_PrevOwnedCarIndex;
-extern u16 g_TeamLogoSwatches[15];
 extern TimedDrawCommand g_UiChromeScript[];
 extern TimedDrawCommand g_UiChromeScript2[];
 
@@ -595,10 +595,11 @@ extern s16 g_NegconSteerNeutralSaved;
 
 void AdvanceGrandPrixClass(void);
 s32 CountOwnedCars(void);
-void ComposeSampleTeamLogo(s32 character, s32 background);
+void ComposeSampleTeamLogo(TeamLogo *logo, s32 character, s32 background);
 void DrawBrowseArrows(BrowseArrows *arrows, s32 step, s32 courseLayout,
                       s32 drawLeft, s32 drawRight);
-void DrawLogoSamplePanel(LogoSample *logo, s32 step, s32 sample);
+void DrawLogoSamplePanel(LogoSample *samplePanel, const TeamLogo *logo,
+                         s32 step, s32 sample);
 void DrawMenuCursorArrow(s32 x, s32 y);
 void DrawMenuLightBurst(MenuWidgets *widgets, s32 arg);
 void DrawOptionHintBar(s32 variant);

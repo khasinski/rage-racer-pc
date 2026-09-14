@@ -51,5 +51,3 @@ _Static_assert(sizeof(g_CourseCardVerts) == 32,
                "course-card vertices ABI changed");
 _Static_assert(sizeof(g_DesignModeCellMask) == 36,
                "design-mode mask ABI changed");
-_Static_assert(sizeof(g_TeamLogoSwatches) == sizeof(u16) * 15,
-               "team-logo swatch ABI changed");

@@ -8,9 +8,9 @@
 const TeamLogoSample *g_TeamLogoSampleData;
 TeamLogoCanvas g_TeamLogoCanvas;
 u16 g_TeamLogoClut[16];
-u16 g_TeamLogoSwatches[15];
 
 static TeamLogoSample samples[TEAM_LOGO_SAMPLE_RECORD_COUNT];
+static TeamLogo logo;
 
 static int Check(int condition, const char *message) {
     if (!condition) {
@@ -28,7 +28,7 @@ int main(void) {
 
     memset(samples, 0, sizeof(samples));
     memset(g_TeamLogoClut, 0xA5, sizeof(g_TeamLogoClut));
-    memset(g_TeamLogoSwatches, 0, sizeof(g_TeamLogoSwatches));
+    memset(&logo, 0, sizeof(logo));
     g_TeamLogoSampleData = samples;
 
     for (index = 1; index < 12; index++) {
@@ -38,11 +38,11 @@ int main(void) {
         samples[10].clut[0][index] = (u16)(0x200 + index);
     }
 
-    ComposeSampleTeamLogo(0, 0);
+    ComposeSampleTeamLogo(&logo, 0, 0);
 
     ok &= Check(g_TeamLogoClut[0] == 0xA5A5, "colour zero was overwritten");
     for (index = 1; index < 12; index++) {
-        ok &= Check(g_TeamLogoSwatches[index - 1] == (u16)(0x100 + index),
+        ok &= Check(logo.swatches[index - 1] == (u16)(0x100 + index),
                     "character swatch differs");
         ok &= Check(g_TeamLogoClut[index] == (u16)(0x100 + index),
                     "character CLUT differs");
@@ -64,7 +64,7 @@ int main(void) {
     samples[1].canvas[63][15] = 0x0000;
     samples[12].canvas[63][15] = 0x5678;
 
-    ComposeSampleTeamLogo(3, 5);
+    ComposeSampleTeamLogo(&logo, 3, 5);
 
     ok &= Check(g_TeamLogoCanvas.halfwordRows[0][0] == 0x1B2D,
                 "transparent character pixels were not composited");
@@ -84,18 +84,18 @@ int main(void) {
 
     savedCanvas = g_TeamLogoCanvas;
     memcpy(savedClut, g_TeamLogoClut, sizeof(savedClut));
-    memcpy(savedSwatches, g_TeamLogoSwatches, sizeof(savedSwatches));
-    ComposeSampleTeamLogo(-1, 20);
+    memcpy(savedSwatches, logo.swatches, sizeof(savedSwatches));
+    ComposeSampleTeamLogo(&logo, -1, 20);
     ok &= Check(memcmp(&g_TeamLogoCanvas, &savedCanvas, sizeof(savedCanvas)) == 0,
                 "invalid sample changed the canvas");
     ok &= Check(memcmp(g_TeamLogoClut, savedClut, sizeof(savedClut)) == 0,
                 "invalid sample changed the CLUT");
-    ok &= Check(memcmp(g_TeamLogoSwatches, savedSwatches,
+    ok &= Check(memcmp(logo.swatches, savedSwatches,
                        sizeof(savedSwatches)) == 0,
                 "invalid sample changed the swatches");
 
     g_TeamLogoSampleData = NULL;
-    ComposeSampleTeamLogo(0, 0);
+    ComposeSampleTeamLogo(&logo, 0, 0);
     ok &= Check(memcmp(&g_TeamLogoCanvas, &savedCanvas, sizeof(savedCanvas)) == 0,
                 "missing sample bank changed the canvas");
 

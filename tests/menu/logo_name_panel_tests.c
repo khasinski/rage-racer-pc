@@ -8,7 +8,6 @@
 
 u8 g_TeamNameLength;
 u8 g_TeamNameChars[16];
-u16 g_TeamLogoSwatches[15];
 GameRenderState g_RenderState;
 
 typedef struct SpriteRecord {
@@ -96,15 +95,16 @@ static void ResetDraws(void) {
 
 int main(void) {
     LogoSample logo = {0};
+    TeamLogo teamLogo = {0};
     TeamName teamName = {0};
     static GameOrderingTableEntry orderingTable[2];
 
     RENDER_OT_BASE = orderingTable;
-    g_TeamLogoSwatches[0] = 0x7FFF;
-    DrawLogoSamplePanel(&logo, 0, 0);
+    teamLogo.swatches[0] = 0x7FFF;
+    DrawLogoSamplePanel(&logo, &teamLogo, 0, 0);
     CHECK(logo.panelSlide == 0 && s_spriteCount == 0);
 
-    DrawLogoSamplePanel(&logo, 1, 27);
+    DrawLogoSamplePanel(&logo, &teamLogo, 1, 27);
     CHECK(logo.panelSlide == 1);
     CHECK(s_spriteCount == 5 && s_sprites[0].y == 494);
     CHECK(s_sprites[0].u == 16 && s_sprites[1].u == 56);
@@ -115,18 +115,18 @@ int main(void) {
 
     ResetDraws();
     logo.panelSlide = 5;
-    DrawLogoSamplePanel(&logo, 1, 1);
+    DrawLogoSamplePanel(&logo, &teamLogo, 1, 1);
     CHECK(logo.panelSlide == 5 && s_sprites[0].y == 344);
 
     ResetDraws();
     logo.panelSlide = INT_MAX;
-    DrawLogoSamplePanel(&logo, INT_MAX, -1);
+    DrawLogoSamplePanel(&logo, &teamLogo, INT_MAX, -1);
     CHECK(logo.panelSlide == 5);
     CHECK(s_sprites[0].u == 0 && s_sprites[1].u == 0);
 
     ResetDraws();
     logo.panelSlide = INT_MIN;
-    DrawLogoSamplePanel(&logo, -1, 99);
+    DrawLogoSamplePanel(&logo, &teamLogo, -1, 99);
     CHECK(logo.panelSlide == 0);
     CHECK(s_sprites[0].u == 72 && s_sprites[1].u == 72);
 
@@ -189,7 +189,7 @@ int main(void) {
     CHECK(teamName.entrySlide == 3 && s_spriteCount == 0);
 
     logo.panelSlide = 0;
-    DrawLogoSamplePanel(&logo, 3, 0);
+    DrawLogoSamplePanel(&logo, &teamLogo, 3, 0);
     CHECK(logo.panelSlide == 3 && s_spriteCount == 0);
 
     puts("logo and team name panels preserve their layout and animation");

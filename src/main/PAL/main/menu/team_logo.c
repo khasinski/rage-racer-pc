@@ -23,7 +23,7 @@ static u16 CompositeLogoPixels(u16 characterPixels, u16 backgroundPixels) {
 }
 
 /* Builds the editable logo from one character layer and one background layer. */
-void ComposeSampleTeamLogo(s32 character, s32 background) {
+void ComposeSampleTeamLogo(TeamLogo *logo, s32 character, s32 background) {
     const TeamLogoSample *characterSample;
     const TeamLogoSample *backgroundSample;
     const u16 *characterClut;
@@ -46,7 +46,7 @@ void ComposeSampleTeamLogo(s32 character, s32 background) {
 
     for (index = TEAM_LOGO_CHARACTER_COLOR_FIRST;
          index < TEAM_LOGO_BACKGROUND_COLOR_FIRST; index++) {
-        g_TeamLogoSwatches[index - TEAM_LOGO_CHARACTER_COLOR_FIRST] =
+        logo->swatches[index - TEAM_LOGO_CHARACTER_COLOR_FIRST] =
             characterClut[index];
         g_TeamLogoClut[index] = characterClut[index];
     }

@@ -8,29 +8,30 @@ enum {
     LOGO_SAMPLE_SWATCH_COUNT = 15,
 };
 
-void DrawLogoSamplePanel(LogoSample *logo, s32 step, s32 sample) {
+void DrawLogoSamplePanel(LogoSample *samplePanel, const TeamLogo *logo,
+                         s32 step, s32 sample) {
     GameOrderingTableEntry *ot = RENDER_OT_BASE;
     s32 frame;
     s32 y;
     s32 i;
 
     if (step == 0) {
-        logo->panelSlide = 0;
+        samplePanel->panelSlide = 0;
         return;
     }
     if (sample < 0) {
         sample = 0;
     }
-    logo->panelSlide = AddClampedMenuValue(
-        logo->panelSlide, 0, 0, LOGO_SAMPLE_PANEL_LAST_FRAME);
+    samplePanel->panelSlide = AddClampedMenuValue(
+        samplePanel->panelSlide, 0, 0, LOGO_SAMPLE_PANEL_LAST_FRAME);
     if (step < 0) {
-        logo->panelSlide = AddClampedMenuValue(
-            logo->panelSlide, step, 0, LOGO_SAMPLE_PANEL_LAST_FRAME);
+        samplePanel->panelSlide = AddClampedMenuValue(
+            samplePanel->panelSlide, step, 0, LOGO_SAMPLE_PANEL_LAST_FRAME);
     }
-    frame = logo->panelSlide;
+    frame = samplePanel->panelSlide;
     if (step > 0) {
-        logo->panelSlide = AddClampedMenuValue(
-            logo->panelSlide, step, 0,
+        samplePanel->panelSlide = AddClampedMenuValue(
+            samplePanel->panelSlide, step, 0,
             LOGO_SAMPLE_PANEL_LAST_FRAME);
     }
     if (ot == NULL) return;
@@ -49,7 +50,7 @@ void DrawLogoSamplePanel(LogoSample *logo, s32 step, s32 sample) {
                1, 0x3A);
 
     for (i = 0; i < LOGO_SAMPLE_SWATCH_COUNT; i++) {
-        u16 colour = g_TeamLogoSwatches[i];
+        u16 colour = logo->swatches[i];
 
         DrawSolidRect(ot, 0x8B + i * 8, y + 34, 8, 0x10,
                       (colour & 0x1F) << 3, ((colour >> 5) & 0x1F) << 3,

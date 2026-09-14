@@ -41,9 +41,9 @@ static void ChooseLogoSampleRow(LogoSample *logo) {
     }
 }
 
-static void UpdateLogoSampleIdle(LogoSample *logo) {
-    RampTeamLogoCanvas(MenuTeamLogo(), -10, 0);
-    DrawLogoSamplePanel(logo, -1, logo->saved + 1);
+static void UpdateLogoSampleIdle(LogoSample *logo, TeamLogo *teamLogo) {
+    RampTeamLogoCanvas(teamLogo, -10, 0);
+    DrawLogoSamplePanel(logo, teamLogo, -1, logo->saved + 1);
     RunTimedDrawScript(logo->subPanelScript, &g_UiScriptProgress2, -1);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, logo->cursor);
     RunTimedDrawScript(g_LogoSampleScreenScript, &g_UiScriptProgress, 0);
@@ -100,22 +100,24 @@ static void UpdateLogoSamplePicker(LogoSample *logo, s32 *selection) {
     }
 }
 
-static void UpdateLogoSampleModal(LogoSample *logo, s32 state) {
+static void UpdateLogoSampleModal(LogoSample *logo, TeamLogo *teamLogo,
+                                  s32 state) {
     s32 *selection = state == LOGO_SAMPLE_PICK_CHARACTER
                          ? &logo->character
                          : &logo->background;
 
-    RampTeamLogoCanvas(MenuTeamLogo(), 10, 0);
+    RampTeamLogoCanvas(teamLogo, 10, 0);
     UpdateLogoSamplePicker(logo, selection);
-    DrawLogoSamplePanel(logo, 1, *selection + 1);
+    DrawLogoSamplePanel(logo, teamLogo, 1, *selection + 1);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, logo->cursor);
     RunTimedDrawScript(g_LogoSampleScreenScript, &g_UiScriptProgress, 0);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
 }
 
-static void UpdateLogoSampleOutgoing(LogoSample *logo) {
+static void UpdateLogoSampleOutgoing(LogoSample *logo,
+                                     const TeamLogo *teamLogo) {
     MenuBeginExit(MENU_SCREEN_LOGO_SAMPLE);
-    DrawLogoSamplePanel(logo, -1, 0);
+    DrawLogoSamplePanel(logo, teamLogo, -1, 0);
     RunTimedDrawScript(g_LogoSampleScreenScript, &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, logo->cursor);
@@ -129,6 +131,7 @@ static void UpdateLogoSampleOutgoing(LogoSample *logo) {
 
 void UpdateLogoSampleScreen(void) {
     LogoSample *logo = MenuLogoSample();
+    TeamLogo *teamLogo = MenuTeamLogo();
     s32 state = GameMenuBusy;
 
     logo->cursor = AddClampedMenuValue(
@@ -140,16 +143,16 @@ void UpdateLogoSampleScreen(void) {
     logo->saved = AddClampedMenuValue(
         logo->saved, 0, 0, TEAM_LOGO_SAMPLE_CHOICE_COUNT - 1);
     g_MenuAltLayout = 0;
-    ComposeSampleTeamLogo(logo->character, logo->background);
-    DrawTeamLogoCanvas(MenuTeamLogo(), 1, 0);
+    ComposeSampleTeamLogo(teamLogo, logo->character, logo->background);
+    DrawTeamLogoCanvas(teamLogo, 1, 0);
 
     if (state == LOGO_SAMPLE_IDLE) {
-        UpdateLogoSampleIdle(logo);
+        UpdateLogoSampleIdle(logo, teamLogo);
     } else if (state == LOGO_SAMPLE_PICK_CHARACTER ||
                state == LOGO_SAMPLE_PICK_BACKGROUND) {
-        UpdateLogoSampleModal(logo, state);
+        UpdateLogoSampleModal(logo, teamLogo, state);
     } else if (state > LOGO_SAMPLE_IDLE) {
-        UpdateLogoSampleOutgoing(logo);
+        UpdateLogoSampleOutgoing(logo, teamLogo);
     } else {
         GameMenuBusy = LOGO_SAMPLE_IDLE;
     }

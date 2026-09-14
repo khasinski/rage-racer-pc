@@ -212,7 +212,7 @@ static void UpdateTeamLogoOutgoing(TeamLogo *logo, TeamLogoScreenState state) {
     switch (state) {
     case TEAM_LOGO_EXIT_TO_SAMPLES:
         MenuActivateScreen(MENU_SCREEN_LOGO_SAMPLE);
-        DrawLogoSamplePanel(MenuLogoSample(), 0, 0);
+        DrawLogoSamplePanel(MenuLogoSample(), logo, 0, 0);
         break;
 
     case TEAM_LOGO_EXIT_TO_DESIGN:

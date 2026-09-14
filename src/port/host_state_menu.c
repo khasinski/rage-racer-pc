@@ -160,7 +160,6 @@ s16 g_NextOwnedCarIndex;
 s32 g_CourseIndex;
 s32 g_BgmSelection;
 u16 g_TeamLogoClut[16];
-u16 g_TeamLogoSwatches[15];
 s32 g_CarListCursor;
 s16 g_NegconSteerNeutral;
 GameRaceProgress *g_RaceProgress;

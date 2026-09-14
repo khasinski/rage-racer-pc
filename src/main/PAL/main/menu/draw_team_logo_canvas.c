@@ -215,8 +215,8 @@ static void DrawSwatchStrip(const TeamLogo *logo, GameOrderingTableEntry *ot,
     /* The fifteen fixed colours, eight pixels apart along the strip. */
     for (i = 0; i < 15; i++) {
         DrawSolidRect(ot, (s16)(stripX + 1 + i * 8), (s16)(panelTop + 2), (s16)8, (s16)0x10,
-                      LogoColorRed(g_TeamLogoSwatches[i]), LogoColorGreen(g_TeamLogoSwatches[i]),
-                      LogoColorBlue(g_TeamLogoSwatches[i]), (u8)0xFF);
+                      LogoColorRed(logo->swatches[i]), LogoColorGreen(logo->swatches[i]),
+                      LogoColorBlue(logo->swatches[i]), (u8)0xFF);
     }
     DrawRectOutline(ot, (s16)stripX, (s16)panelTop, (s16)0x7A, 0x14, (u8)0xB4, (u8)0xB4, (u8)0xB4,
                     (u8)0xFF);
