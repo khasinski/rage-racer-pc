@@ -2,7 +2,6 @@
 
 #include <stdio.h>
 
-u16 g_TeamLogoBlankClut[16];
 u16 g_TeamLogoClut[16];
 Rect g_TeamLogoClutRect;
 
@@ -28,7 +27,9 @@ int LoadImage(RECT *rect, u_long *pixels) {
 int main(void) {
     RestoreTeamLogoClut();
     CHECK(s_uploadedRect == &g_TeamLogoClutRect);
-    CHECK(s_uploadedPixels == (u_long *)(void *)g_TeamLogoBlankClut);
+    for (s32 i = 0; i < 16; i++) {
+        CHECK(((u16 *)(void *)s_uploadedPixels)[i] == 0);
+    }
 
     s_uploadedRect = NULL;
     s_uploadedPixels = NULL;

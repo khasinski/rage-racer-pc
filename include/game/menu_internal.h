@@ -469,7 +469,6 @@ extern Rgb g_PaintColorTable[MENU_PAINT_COLOR_COUNT];
 extern s32 g_MenuAltLayout;
 extern u16 g_TeamLogoClut[16];
 extern TeamLogoCanvas g_TeamLogoCanvas;
-extern u16 g_TeamLogoBlankClut[16];
 extern const s16 g_MenuLightBurstBandX[MENU_LIGHT_BURST_RAY_COUNT];
 extern const s16 g_MenuLightBurstBandY[MENU_LIGHT_BURST_RAY_COUNT];
 extern RaceRecord g_RankingRecords[2][4][5];

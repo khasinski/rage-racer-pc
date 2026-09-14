@@ -509,7 +509,6 @@ s32 ActivateShowroomCarModel(s32 slot);
 extern u8 g_TeamNameFontGlyphs
     [TEAM_NAME_FONT_GLYPH_COUNT * TEAM_NAME_FONT_GLYPH_BYTES];
 extern u8 g_TeamNameBlankTile[192];
-extern u16 g_TeamLogoBlankClut[16];
 extern TimedDrawCommand g_CourseSelectGpScript[];
 extern TimedDrawCommand g_CourseSelectTimeAttackScript[];
 extern TimedDrawCommand g_CarSelectMenuScriptGp[];

@@ -96,7 +96,6 @@ Rgb g_ClassRecordNameSprites[CLASS_RECORD_COUNT + 1] = {
     };
 u8 g_TeamNameLength = 5;
 unsigned char g_TeamNameChars[16] = {0x18,0x0b,0x17,0x0d,0x19,0x0a,0x0a,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
-u16 g_TeamLogoBlankClut[16];
 Vec4 g_MenuViewScale = {4096, 8192, 4096, 0};
 /* Retail stores these as one run, with tune-up prices starting at the second
  * element. Keep the public tables typed and make that relationship explicit. */
