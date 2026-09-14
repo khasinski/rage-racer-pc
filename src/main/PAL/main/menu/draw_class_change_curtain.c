@@ -23,27 +23,27 @@ static void DrawClassChangeCurtainPanels(s32 slide) {
                   CLASS_CHANGE_CURTAIN_HEIGHT, 0x95, 0x25, 0x1E, 0xFF);
 }
 
-s32 DrawClassChangeCurtain(s32 step) {
+s32 DrawClassChangeCurtain(CourseSelectScreen *screen, s32 step) {
     if (step == 0) {
-        g_ClassChangeCurtainSlide = 0;
+        screen->curtainSlide = 0;
         return 0;
     }
 
     if (step < 0) {
-        g_ClassChangeCurtainSlide = AddClampedMenuValue(
-            g_ClassChangeCurtainSlide, step, 0,
+        screen->curtainSlide = AddClampedMenuValue(
+            screen->curtainSlide, step, 0,
             CLASS_CHANGE_CURTAIN_MAX_SLIDE);
     }
 
     if (g_MenuAltLayout == 0) {
-        DrawClassChangeCurtainPanels(g_ClassChangeCurtainSlide);
+        DrawClassChangeCurtainPanels(screen->curtainSlide);
     }
 
     if (step > 0) {
-        g_ClassChangeCurtainSlide = AddClampedMenuValue(
-            g_ClassChangeCurtainSlide, step, 0,
+        screen->curtainSlide = AddClampedMenuValue(
+            screen->curtainSlide, step, 0,
             CLASS_CHANGE_CURTAIN_MAX_SLIDE);
     }
 
-    return g_ClassChangeCurtainSlide;
+    return screen->curtainSlide;
 }

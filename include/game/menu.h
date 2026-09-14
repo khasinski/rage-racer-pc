@@ -46,6 +46,7 @@ typedef struct CourseSelectScreen {
     s32 option;
     const TimedDrawCommand *modalScript;
     s32 classChangeApplied;
+    s32 curtainSlide;
 } CourseSelectScreen;
 
 typedef struct BrowseArrows {
@@ -461,7 +462,6 @@ extern s32 g_TeamLogoDpadRepeatMask;
 extern s32 g_TeamLogoGuideModePrev;
 extern s32 g_MenuLightBurstLevel;
 extern s32 g_OwnedCarCounterSlide;
-extern s32 g_ClassChangeCurtainSlide;
 extern s32 g_MenuUpperAltPanelProgress;
 extern s32 g_MenuLowerAltPanelProgress;
 extern s32 g_CourseCardFace;
@@ -576,7 +576,7 @@ void RampTeamLogoCanvas(s32 from, s32 to);
 void ShuffleBgmOrder(void);
 void StartOptionMenuExit(GameSceneId scene);
 void UploadTeamNameTexture(const u8 *str, s32 len);
-s32 DrawClassChangeCurtain(s32 step);
+s32 DrawClassChangeCurtain(CourseSelectScreen *screen, s32 step);
 void UpdateOptionScene(void);
 void UpdateOptionMenuFade(void);
 s32 DrawPaintColorPalette(PaintColor *paint, s32 *counter, s32 step);

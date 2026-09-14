@@ -5,7 +5,6 @@
 #include <limits.h>
 #include <stdio.h>
 
-s32 g_ClassChangeCurtainSlide;
 s32 g_MenuAltLayout;
 GameRenderState g_RenderState;
 
@@ -62,47 +61,48 @@ static int CheckPanel(s32 index, s32 y) {
 }
 
 int main(void) {
+    CourseSelectScreen screen = {0};
     g_RenderState.draw.orderingTable = (GameOrderingTableEntry *)0x1234;
 
-    g_ClassChangeCurtainSlide = 9;
-    CHECK(DrawClassChangeCurtain(0) == 0);
+    screen.curtainSlide = 9;
+    CHECK(DrawClassChangeCurtain(&screen, 0) == 0);
     CHECK(s_rectCount == 0);
 
-    CHECK(DrawClassChangeCurtain(1) == 1);
+    CHECK(DrawClassChangeCurtain(&screen, 1) == 1);
     CHECK(s_rectCount == 2);
     CHECK(CheckPanel(0, -240) == 0);
     CHECK(CheckPanel(1, 480) == 0);
 
     ResetDraws();
-    g_ClassChangeCurtainSlide = 15;
-    CHECK(DrawClassChangeCurtain(1) == 16);
+    screen.curtainSlide = 15;
+    CHECK(DrawClassChangeCurtain(&screen, 1) == 16);
     CHECK(CheckPanel(0, 0) == 0);
     CHECK(CheckPanel(1, 240) == 0);
 
     ResetDraws();
-    g_ClassChangeCurtainSlide = 25;
-    CHECK(DrawClassChangeCurtain(INT_MAX) == 25);
+    screen.curtainSlide = 25;
+    CHECK(DrawClassChangeCurtain(&screen, INT_MAX) == 25);
     CHECK(CheckPanel(0, 0) == 0);
     CHECK(CheckPanel(1, 240) == 0);
 
     ResetDraws();
-    CHECK(DrawClassChangeCurtain(-10) == 15);
+    CHECK(DrawClassChangeCurtain(&screen, -10) == 15);
     CHECK(CheckPanel(0, 0) == 0);
     CHECK(CheckPanel(1, 240) == 0);
 
     ResetDraws();
-    CHECK(DrawClassChangeCurtain(INT_MIN) == 0);
+    CHECK(DrawClassChangeCurtain(&screen, INT_MIN) == 0);
     CHECK(CheckPanel(0, -240) == 0);
     CHECK(CheckPanel(1, 480) == 0);
 
     ResetDraws();
     g_MenuAltLayout = 1;
-    CHECK(DrawClassChangeCurtain(3) == 3);
+    CHECK(DrawClassChangeCurtain(&screen, 3) == 3);
     CHECK(s_rectCount == 0);
 
     g_MenuAltLayout = 0;
     g_RenderState.draw.orderingTable = NULL;
-    CHECK(DrawClassChangeCurtain(3) == 6);
+    CHECK(DrawClassChangeCurtain(&screen, 3) == 6);
     CHECK(s_rectCount == 0);
 
     puts("class change curtain tests passed");

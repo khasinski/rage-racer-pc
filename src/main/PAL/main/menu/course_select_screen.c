@@ -245,7 +245,7 @@ static void UpdateClassPrompt(CourseSelectScreen *screen,
                                screen->classChangeApplied);
     for (effect = 0; effect < choice.effectCount; effect++) {
         if (choice.effects[effect].kind == MENU_PROMPT_CURTAIN) {
-            DrawClassChangeCurtain(choice.effects[effect].value);
+            DrawClassChangeCurtain(screen, choice.effects[effect].value);
         } else {
             PlaySoundCue(choice.effects[effect].value);
         }
@@ -316,13 +316,13 @@ static void UpdateClassChange(CourseSelectScreen *screen,
         return;
     }
     if (screen->classChangeApplied != 0) {
-        if (DrawClassChangeCurtain(-1) == 0) {
+        if (DrawClassChangeCurtain(screen, -1) == 0) {
             GameMenuBusy = COURSE_SELECT_IDLE;
             g_UiScriptProgress2 = 0;
         }
         return;
     }
-    if (DrawClassChangeCurtain(1) >= COURSE_CLASS_CURTAIN_CLOSED) {
+    if (DrawClassChangeCurtain(screen, 1) >= COURSE_CLASS_CURTAIN_CLOSED) {
         screen->classChangeApplied = 1;
         g_GrandPrixClass = g_MenuSubCursor;
         ResetCourseProgressState(g_CourseProgress, g_MenuSubCursor);

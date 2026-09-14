@@ -119,7 +119,6 @@ s32 g_TeamLogoDpadRepeatMask;
 s32 g_TeamLogoGuideModePrev = 1;
 s32 g_MenuLightBurstLevel;
 s32 g_OwnedCarCounterSlide;
-s32 g_ClassChangeCurtainSlide;
 s32 g_MenuUpperAltPanelProgress;
 s32 g_MenuLowerAltPanelProgress;
 s32 g_CourseCardFace;

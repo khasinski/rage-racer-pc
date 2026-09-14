@@ -194,7 +194,8 @@ void UpdateAndDrawCourseCard(void) {
 }
 /* How far the curtain has drawn across is what the class change waits on, so
  * the sweep sets it rather than the stub deciding. */
-s32 DrawClassChangeCurtain(s32 step) {
+s32 DrawClassChangeCurtain(CourseSelectScreen *screen, s32 step) {
+    (void)screen;
     RECORD("curtain", step);
     return s_curtain;
 }
