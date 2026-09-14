@@ -6,8 +6,6 @@
 #include <limits.h>
 #include <string.h>
 
-s32 g_TeamNameEntrySlide;
-s32 g_TeamNameCursorPhase;
 u8 g_TeamNameLength;
 u8 g_TeamNameChars[16];
 u16 g_TeamLogoSwatches[15];
@@ -98,6 +96,7 @@ static void ResetDraws(void) {
 
 int main(void) {
     LogoSample logo = {0};
+    TeamName teamName = {0};
     static GameOrderingTableEntry orderingTable[2];
 
     RENDER_OT_BASE = orderingTable;
@@ -136,11 +135,11 @@ int main(void) {
     g_TeamNameChars[0] = 0;
     g_TeamNameChars[1] = 10;
     g_TeamNameChars[2] = 11;
-    g_TeamNameEntrySlide = 25;
-    g_TeamNameCursorPhase = 0;
-    DrawTeamNameEntry(1, 12);
+    teamName.entrySlide = 25;
+    teamName.cursorPhase = 0;
+    DrawTeamNameEntry(&teamName, 1, 12);
 
-    CHECK(g_TeamNameEntrySlide == 25);
+    CHECK(teamName.entrySlide == 25);
     CHECK(s_spriteCount == 50);
     CHECK(s_rectCount == 1 && s_rects[0].x == 0x60 && s_rects[0].y == 0xFD);
     CHECK(s_rects[0].g == -1);
@@ -150,44 +149,44 @@ int main(void) {
     CHECK(s_sprites[2].x == 0x56 && s_sprites[2].u == 0);
     CHECK(s_sprites[12].x == 0x56 && s_sprites[12].y == 0x101);
     CHECK(s_sprites[48].flags == 0x3B && s_sprites[49].flags == 0x3B);
-    CHECK(g_TeamNameCursorPhase == 0x60);
+    CHECK(teamName.cursorPhase == 0x60);
 
     ResetDraws();
     g_TeamNameLength = 0;
-    g_TeamNameEntrySlide = 25;
-    g_TeamNameCursorPhase = 0x800;
-    DrawTeamNameEntry(1, 0);
+    teamName.entrySlide = 25;
+    teamName.cursorPhase = 0x800;
+    DrawTeamNameEntry(&teamName, 1, 0);
     CHECK(s_rectCount == 1 && s_rects[0].g == -129);
-    CHECK(g_TeamNameCursorPhase == 0x860);
+    CHECK(teamName.cursorPhase == 0x860);
 
     ResetDraws();
     memset(g_TeamNameChars, 1, sizeof(g_TeamNameChars));
     g_TeamNameLength = 0xFF;
-    DrawTeamNameEntry(1, -1);
+    DrawTeamNameEntry(&teamName, 1, -1);
     CHECK(s_rectCount == 1);
     CHECK(s_rects[0].x == 0x54 && s_rects[0].y == 0xE5);
     CHECK(s_spriteCount == 53);
 
     ResetDraws();
-    g_TeamNameEntrySlide = INT_MAX;
-    g_TeamNameCursorPhase = INT_MAX;
-    DrawTeamNameEntry(INT_MAX, 0);
-    CHECK(g_TeamNameEntrySlide == 25);
-    CHECK(g_TeamNameCursorPhase == (s32)((u32)INT_MAX + 0x60u));
+    teamName.entrySlide = INT_MAX;
+    teamName.cursorPhase = INT_MAX;
+    DrawTeamNameEntry(&teamName, INT_MAX, 0);
+    CHECK(teamName.entrySlide == 25);
+    CHECK(teamName.cursorPhase == (s32)((u32)INT_MAX + 0x60u));
 
     ResetDraws();
-    g_TeamNameEntrySlide = INT_MIN;
-    DrawTeamNameEntry(-1, 0);
-    CHECK(g_TeamNameEntrySlide == 0);
+    teamName.entrySlide = INT_MIN;
+    DrawTeamNameEntry(&teamName, -1, 0);
+    CHECK(teamName.entrySlide == 0);
     CHECK(s_spriteCount == 0);
 
     ResetDraws();
-    DrawTeamNameEntry(0, 0);
-    CHECK(g_TeamNameEntrySlide == 0 && s_spriteCount == 0);
+    DrawTeamNameEntry(&teamName, 0, 0);
+    CHECK(teamName.entrySlide == 0 && s_spriteCount == 0);
 
     RENDER_OT_BASE = NULL;
-    DrawTeamNameEntry(3, 0);
-    CHECK(g_TeamNameEntrySlide == 3 && s_spriteCount == 0);
+    DrawTeamNameEntry(&teamName, 3, 0);
+    CHECK(teamName.entrySlide == 3 && s_spriteCount == 0);
 
     logo.panelSlide = 0;
     DrawLogoSamplePanel(&logo, 3, 0);

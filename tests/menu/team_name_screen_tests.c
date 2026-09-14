@@ -38,6 +38,9 @@ u8 g_TeamNameLength;
 s32 g_UiScriptProgress;
 TimedDrawCommand g_NativeTeamNameScreenScript[61];
 
+static TeamName s_teamName;
+TeamName *MenuTeamName(void) { return &s_teamName; }
+
 static s32 s_lastCue;
 static s32 s_uploadCalls;
 static s32 s_uploadedLength;
@@ -52,7 +55,8 @@ s32 RunTimedDrawScript(const TimedDrawCommand *commands, s32 *progress,
 }
 void PlaySoundCue(s32 cue) { s_lastCue = cue; }
 void DrawTeamNameCharModel(void) {}
-void DrawTeamNameEntry(s32 step, s32 cursor) {
+void DrawTeamNameEntry(TeamName *teamName, s32 step, s32 cursor) {
+    (void)teamName;
     (void)step;
     (void)cursor;
 }

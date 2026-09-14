@@ -53,6 +53,10 @@ LogoSample *MenuLogoSample(void) {
     return &s_menuRuntime.logoSample;
 }
 
+TeamName *MenuTeamName(void) {
+    return &s_menuRuntime.teamName;
+}
+
 s32 MenuRuntimeScreenState(s32 screen) {
     if ((u32)screen >= MENU_SCREEN_COUNT) return 0;
     return s_menuRuntime.screenState[screen];

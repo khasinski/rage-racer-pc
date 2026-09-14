@@ -85,7 +85,11 @@ void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep) {
     (void)editorStep;
     s_logoCanvasCalls++;
 }
-void DrawTeamNameEntry(s32 step, s32 cursor) {
+static TeamName s_teamName;
+TeamName *MenuTeamName(void) { return &s_teamName; }
+
+void DrawTeamNameEntry(TeamName *teamName, s32 step, s32 cursor) {
+    (void)teamName;
     (void)step;
     (void)cursor;
     s_nameEntryCalls++;

@@ -92,18 +92,18 @@ static void DrawEnteredTeamName(GameOrderingTableEntry *ot, s32 frame,
     }
 }
 
-void DrawTeamNameEntry(s32 step, s32 cursorIndex) {
+void DrawTeamNameEntry(TeamName *teamName, s32 step, s32 cursorIndex) {
     GameOrderingTableEntry *ot;
     s32 nameLength;
     s32 frame;
 
     if (step == 0) {
-        g_TeamNameEntrySlide = 0;
+        teamName->entrySlide = 0;
         return;
     }
     if (RENDER_OT_BASE == NULL) {
-        g_TeamNameEntrySlide = AddClampedMenuValue(
-            g_TeamNameEntrySlide, step, 0, TEAM_NAME_LAST_FRAME);
+        teamName->entrySlide = AddClampedMenuValue(
+            teamName->entrySlide, step, 0, TEAM_NAME_LAST_FRAME);
         return;
     }
     ot = RENDER_OT_BASE;
@@ -115,24 +115,24 @@ void DrawTeamNameEntry(s32 step, s32 cursorIndex) {
     if ((u32)cursorIndex >= TEAM_NAME_GRID_CELL_COUNT) {
         cursorIndex = 0;
     }
-    g_TeamNameEntrySlide = AddClampedMenuValue(
-        g_TeamNameEntrySlide, 0, 0, TEAM_NAME_LAST_FRAME);
+    teamName->entrySlide = AddClampedMenuValue(
+        teamName->entrySlide, 0, 0, TEAM_NAME_LAST_FRAME);
     if (step < 0) {
-        g_TeamNameEntrySlide = AddClampedMenuValue(
-            g_TeamNameEntrySlide, step, 0, TEAM_NAME_LAST_FRAME);
+        teamName->entrySlide = AddClampedMenuValue(
+            teamName->entrySlide, step, 0, TEAM_NAME_LAST_FRAME);
     }
 
-    if (g_TeamNameEntrySlide >= TEAM_NAME_LAST_FRAME &&
+    if (teamName->entrySlide >= TEAM_NAME_LAST_FRAME &&
         nameLength < MENU_TEAM_NAME_MAX_LENGTH) {
         DrawSprite(ot, nameLength * TEAM_NAME_CELL_WIDTH + 0x53, 0x7D,
                    TEAM_NAME_CELL_WIDTH, 0x18, 0xF4, 0x28, 0, 0, 0, 0x244,
                    1, 1, 0x39);
     }
 
-    frame = ClampAnimationFrame(g_TeamNameEntrySlide - 0xE, 0xB);
+    frame = ClampAnimationFrame(teamName->entrySlide - 0xE, 0xB);
     if (frame >= 0) {
         s32 y = SlideUp(0xFB, frame, 64);
-        s32 phase = g_TeamNameCursorPhase & ANGLE_MASK;
+        s32 phase = teamName->cursorPhase & ANGLE_MASK;
         s32 pulse = rsin(phase) / 64 - 0x41;
 
         DrawSolidRect(ot + 1,
@@ -142,16 +142,16 @@ void DrawTeamNameEntry(s32 step, s32 cursorIndex) {
                       y + (cursorIndex / MENU_TEAM_NAME_GRID_COLUMNS) *
                               TEAM_NAME_CELL_HEIGHT,
                       0xB, frame * 2, 0, pulse, 0, 0xFF);
-        g_TeamNameCursorPhase =
-            (s32)((u32)g_TeamNameCursorPhase + 0x60u);
+        teamName->cursorPhase =
+            (s32)((u32)teamName->cursorPhase + 0x60u);
     }
 
-    frame = ClampAnimationFrame(g_TeamNameEntrySlide - 0x11, 8);
+    frame = ClampAnimationFrame(teamName->entrySlide - 0x11, 8);
     if (frame >= 0) {
         DrawKeyboardGrid(ot, frame, cursorIndex);
     }
 
-    frame = ClampAnimationFrame(g_TeamNameEntrySlide - 0x13, 6);
+    frame = ClampAnimationFrame(teamName->entrySlide - 0x13, 6);
     if (frame >= 0) {
         s32 y = SlideUp(0xF4, frame, 64);
         s32 height = frame * 2;
@@ -164,13 +164,13 @@ void DrawTeamNameEntry(s32 step, s32 cursorIndex) {
                    0xF4, 0, 0, 0, 0x244, 1, 1, 0x3A);
     }
 
-    frame = ClampAnimationFrame(g_TeamNameEntrySlide - 0x11, 8);
+    frame = ClampAnimationFrame(teamName->entrySlide - 0x11, 8);
     if (frame >= 0) {
         DrawEnteredTeamName(ot, frame, nameLength);
     }
 
     if (step > 0) {
-        g_TeamNameEntrySlide = AddClampedMenuValue(
-            g_TeamNameEntrySlide, step, 0, TEAM_NAME_LAST_FRAME);
+        teamName->entrySlide = AddClampedMenuValue(
+            teamName->entrySlide, step, 0, TEAM_NAME_LAST_FRAME);
     }
 }

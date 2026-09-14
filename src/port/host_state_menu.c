@@ -118,7 +118,6 @@ s32 g_TeamLogoDpadRepeatTimer;
 s32 g_TeamLogoDpadRepeatMask;
 s32 g_TeamLogoGuideModePrev = 1;
 s32 g_MenuLightBurstLevel;
-s32 g_TeamNameEntrySlide;
 s32 g_OwnedCarCounterSlide;
 s32 g_ClassChangeCurtainSlide;
 s32 g_MenuUpperAltPanelProgress;
@@ -141,7 +140,6 @@ s32 g_CarTuneUpPriceTable[31] = {
 };
 s32 g_CarSpecBars[4];
 s32 g_TeamLogoColorCycleAngle;
-s32 g_TeamNameCursorPhase;
 s32 g_TeamLogoFadeLevel;
 s32 g_TeamLogoZoomLevel;
 u16 g_TeamLogoFadedClut[16];

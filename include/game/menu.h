@@ -79,6 +79,11 @@ typedef struct LogoSample {
     s32 panelSlide;
 } LogoSample;
 
+typedef struct TeamName {
+    s32 entrySlide;
+    s32 cursorPhase;
+} TeamName;
+
 typedef struct MenuRuntime {
     /* State-machine screen updated this frame. */
     s32 activeScreen;
@@ -97,6 +102,7 @@ typedef struct MenuRuntime {
     PaintColor paintColor;
     Customize customize;
     LogoSample logoSample;
+    TeamName teamName;
 } MenuRuntime;
 
 void MenuRuntimeReset(void);
@@ -108,6 +114,7 @@ EngineerShop *MenuEngineerShop(void);
 PaintColor *MenuPaintColor(void);
 Customize *MenuCustomize(void);
 LogoSample *MenuLogoSample(void);
+TeamName *MenuTeamName(void);
 s32 MenuRuntimeScreenState(s32 screen);
 void MenuRuntimeSetScreenState(s32 screen, s32 state);
 
@@ -321,7 +328,7 @@ void DrawCarSpecGraph(s32 step, u32 tireGrade);
 /* "MAX POWER <n> ps / <n> rpm" and "MAX TORQUE <n>.<n> kgm / <n> rpm". */
 void DrawCarEngineSpec(s32 slideRaw, s32 brightness);
 /* The TEAM NAME 4x11 grid, its highlight and caret, and the typed name. */
-void DrawTeamNameEntry(s32 step, s32 cursorIndex);
+void DrawTeamNameEntry(TeamName *teamName, s32 step, s32 cursorIndex);
 /* The 3D car view behind screens 3, 4, 5, 6, 10, 11, 12: eases
  * g_MenuViewAngle/Offset, then submits the car and the showroom floor. */
 void DrawMenuCarView(void);
@@ -453,7 +460,6 @@ extern s32 g_TeamLogoDpadRepeatTimer;
 extern s32 g_TeamLogoDpadRepeatMask;
 extern s32 g_TeamLogoGuideModePrev;
 extern s32 g_MenuLightBurstLevel;
-extern s32 g_TeamNameEntrySlide;
 extern s32 g_OwnedCarCounterSlide;
 extern s32 g_ClassChangeCurtainSlide;
 extern s32 g_MenuUpperAltPanelProgress;
@@ -470,7 +476,6 @@ enum {
 };
 extern s32 g_CarTuneUpPriceTable[CAR_TUNE_UP_PRICE_COUNT];
 extern s32 g_TeamLogoColorCycleAngle;
-extern s32 g_TeamNameCursorPhase;
 extern s32 g_TeamLogoFadeLevel;
 extern s32 g_TeamLogoZoomLevel;
 extern u16 g_TeamLogoFadedClut[16];

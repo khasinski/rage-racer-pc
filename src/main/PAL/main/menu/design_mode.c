@@ -162,7 +162,7 @@ static void FinishDesignModeExit(void) {
         break;
     case DESIGN_MODE_EXIT_TO_NAME:
         MenuActivateScreen(MENU_SCREEN_TEAM_NAME);
-        DrawTeamNameEntry(0, 0);
+        DrawTeamNameEntry(MenuTeamName(), 0, 0);
         g_MenuViewOffset = MENU_VIEW_OFFSET_MAX;
         g_MenuViewOffsetTarget = 0;
         g_MenuViewAngleTarget = 0;

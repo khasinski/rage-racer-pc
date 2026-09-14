@@ -89,8 +89,8 @@ static void ApplyTeamNameInput(void) {
     g_TeamNameLength = (u8)(newLength + 1);
 }
 
-static void UpdateTeamNameIdle(void) {
-    DrawTeamNameEntry(1, GameMenuCursor);
+static void UpdateTeamNameIdle(TeamName *teamName) {
+    DrawTeamNameEntry(teamName, 1, GameMenuCursor);
     if (RunTimedDrawScript(g_TeamNameScreenScript, &g_UiScriptProgress, 1) ==
         0) {
         return;
@@ -100,9 +100,9 @@ static void UpdateTeamNameIdle(void) {
     ApplyTeamNameInput();
 }
 
-static void UpdateTeamNameOutgoing(void) {
+static void UpdateTeamNameOutgoing(TeamName *teamName) {
     MenuBeginExit(MENU_SCREEN_TEAM_NAME);
-    DrawTeamNameEntry(-1, GameMenuCursor);
+    DrawTeamNameEntry(teamName, -1, GameMenuCursor);
     RunTimedDrawScript(g_TeamNameScreenScript, &g_UiScriptProgress, -1);
     if (g_UiScriptProgress > 0 ||
         g_MenuViewOffset < MENU_VIEW_OFFSET_MAX) {
@@ -116,6 +116,7 @@ static void UpdateTeamNameOutgoing(void) {
 }
 
 void UpdateTeamNameScreen(void) {
+    TeamName *teamName = MenuTeamName();
     TeamNameScreenState state = (TeamNameScreenState)GameMenuBusy;
 
     if (g_TeamNameLength > MENU_TEAM_NAME_MAX_LENGTH) {
@@ -128,9 +129,9 @@ void UpdateTeamNameScreen(void) {
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawTeamNameCharModel();
     if (state == TEAM_NAME_IDLE) {
-        UpdateTeamNameIdle();
+        UpdateTeamNameIdle(teamName);
     } else if (state == TEAM_NAME_EXIT_TO_DESIGN) {
-        UpdateTeamNameOutgoing();
+        UpdateTeamNameOutgoing(teamName);
     } else {
         GameMenuBusy = TEAM_NAME_IDLE;
     }
