@@ -161,7 +161,6 @@ extern EngineSoundCurveRow
     g_EngineSoundCurves[ENGINE_SOUND_BANK_COUNT][ENGINE_SOUND_PARAMETER_COUNT];
 extern EngineSoundState g_EngineSoundState;
 
-extern s32 g_CarSoundVolumeScales[CAR_SOUND_VOLUME_SCALE_COUNT];
 extern EffectCueBank g_EffectCueTable[EFFECT_CUE_BANK_COUNT];
 typedef struct SoundCueParams {
     s32 volume;

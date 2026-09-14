@@ -11,7 +11,6 @@ MusicChannel g_MusicChannels[AUDIO_MUSIC_CHANNEL_COUNT];
 EffectVoice g_EffectVoices[AUDIO_EFFECT_VOICE_COUNT];
 Audio g_Audio;
 EngineSoundState g_EngineSoundState;
-s32 g_CarSoundVolumeScales[CAR_SOUND_VOLUME_SCALE_COUNT];
 s32 g_PlayerCarIndex;
 
 static s32 s_vmInitCalls;
@@ -78,7 +77,6 @@ static void TestEffectInitialization(void) {
     g_Audio.cue.previous = 15;
     g_Audio.indexed.volume = 127;
     g_PlayerCarIndex = 2;
-    g_CarSoundVolumeScales[3] = 91;
     g_EngineSoundState.bank = 1;
     s_vmInitCalls = 0;
     s_slotEnableCalls = 0;
@@ -104,13 +102,12 @@ static void TestEffectInitialization(void) {
     Check(s_slotEnableCalls == 2 && s_slotEnable[0] == 0 &&
               s_slotEnable[1] == 1 && g_EngineSoundState.bank == -1,
           "effect initialization rebuilds engine voices and bank state");
-    Check(s_presetType == 2 && s_loadedScale == 91,
+    Check(s_presetType == 2 && s_loadedScale == 23,
           "effect initialization selects reverb and car volume");
 
     g_PlayerCarIndex = -2;
-    g_CarSoundVolumeScales[0] = 37;
     InitEffectVoiceRuntime();
-    Check(s_loadedScale == 37,
+    Check(s_loadedScale == 20,
           "invalid car asset uses the base volume scale");
 }
 

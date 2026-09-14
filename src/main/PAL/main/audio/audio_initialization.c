@@ -12,6 +12,11 @@ enum {
     EFFECT_REVERB_PRESET = 2,
 };
 
+static const s32 s_carVolumeScales[CAR_SOUND_VOLUME_SCALE_COUNT] = {
+    20, 21, 22, 23, 21, 22, 23, 22, 23, 26, 27, 28, 29, 30, 50, 52,
+    54, 50, 52, 54, 52, 42, 44, 28, 28, 29, 30, 31, 30, 26, 46, 80,
+};
+
 void InitSequenceAudio(void) {
     _SsVmInit(LIBSND_RESET);
     SsSetReservedVoice(SEQUENCE_VOICE_COUNT);
@@ -35,5 +40,5 @@ void InitEffectVoiceRuntime(void) {
     if ((u32)carAssetIndex >= CAR_SOUND_VOLUME_SCALE_COUNT) {
         carAssetIndex = 0;
     }
-    SetLoadedTableVolumeScale(g_CarSoundVolumeScales[carAssetIndex]);
+    SetLoadedTableVolumeScale(s_carVolumeScales[carAssetIndex]);
 }
