@@ -1,6 +1,8 @@
 #include "game/menu.h"
 #include "game/render_internal.h"
 
+static s32 s_rowFlashLevels[FADING_MENU_ROW_COUNT];
+
 static s32 LimitScriptElapsed(s32 elapsed, s32 limit) {
     return elapsed < limit ? elapsed : limit;
 }
@@ -284,7 +286,7 @@ void DrawFadingMenuSprites(s32 progress, s32 lastRow, s32 selectedRow) {
 
     firstMotion = g_MenuRowScript[0].motion.spriteMotion;
     elapsed = LimitScriptElapsed(elapsed, firstMotion->limit);
-    g_MenuRowFlashLevels[selectedRow] = 0x1FC;
+    s_rowFlashLevels[selectedRow] = 0x1FC;
     xOffset = ScriptOffset(
         elapsed, ScriptVelocity(firstMotion->packedVelocity, 0));
     yOffset = ScriptOffset(
@@ -294,7 +296,7 @@ void DrawFadingMenuSprites(s32 progress, s32 lastRow, s32 selectedRow) {
         TimedDrawCommand *command = &g_MenuRowScript[i];
         ScriptedSpriteShape *shape = command->shape.spriteShape;
         ScriptedSpriteMotion *motion = command->motion.spriteMotion;
-        s32 *timer = &g_MenuRowFlashLevels[i];
+        s32 *timer = &s_rowFlashLevels[i];
         u32 fade = *timer & 0x1FF;
 
         fade >>= 2;

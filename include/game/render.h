@@ -633,7 +633,6 @@ extern MirrorBadgeSprite g_MirrorBadgeSprites[MIRROR_BADGE_STYLE_COUNT];
 extern GameSpriteDesc g_RaceHudSpriteDescsGp[GRAND_PRIX_HUD_SPRITE_COUNT];
 extern GameSpriteDesc
     g_RaceHudSpriteDescsTimeTrial[TIME_ATTACK_HUD_SPRITE_COUNT];
-extern s32 g_MenuRowFlashLevels[];
 extern VisibleTerrainCell g_MirrorVisibleCellList[];
 extern u32 g_MirrorVisibleCellMask[];
 extern u8 g_TrackTextureShadowPage[256];

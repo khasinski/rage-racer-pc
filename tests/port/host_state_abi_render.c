@@ -35,8 +35,6 @@ _Static_assert(sizeof(g_LargeFontGlyphs) == 196,
                "large atlas font table ABI changed");
 _Static_assert(sizeof(((MirrorRenderState *)0)->savedMatrix) == sizeof(Matrix),
                "saved camera matrix type changed");
-_Static_assert(sizeof(g_MenuRowFlashLevels) == 5 * sizeof(s32),
-               "menu-row flash table shape changed");
 _Static_assert(sizeof(g_TachoNeedleQuad) == 4 * 2 * sizeof(s16),
                "tachometer needle quad shape changed");
 _Static_assert(sizeof(g_TrackRenderTable) == sizeof(void *),

@@ -284,7 +284,7 @@ void DrawCarShopPricePanel(s32 step, s32 money, s32 price);
 void DrawEngineerShopPricePanel(s32 step, s32 money, s32 price);
 
 /* Menu widgets: an outlined filled box, the two-ring selection frame, and the
- * timeline sprites whose brightness decays through g_MenuRowFlashLevels[]. */
+ * timeline sprites whose brightness decays after each draw. */
 void GameDrawMenuButton(
     s32 x,
     s32 y,
