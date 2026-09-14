@@ -55,6 +55,7 @@ void ResetEngineerShopScreen(void) {
     s_engineerShopResets++;
 }
 void ResetMenuCar(void) { s_menuCarResets++; }
+void ResetMenuButtonAnimation(void) {}
 
 void SetDispMask(s32 enabled) { s_displayMask = enabled; }
 void InitRenderState(s32 mode) { s_initRenderMode = mode; }

@@ -64,6 +64,7 @@ static void ResetMenuNavigation(void) {
     ResetCarShopScreen();
     ResetEngineerShopScreen();
     ResetMenuCar();
+    ResetMenuButtonAnimation();
     g_MenuViewAngle = MENU_COURSE_VIEW_REBASE_SPAN;
     g_MenuViewAngleTarget = MENU_COURSE_VIEW_REBASE_SPAN;
     g_UiScriptProgress = 0;

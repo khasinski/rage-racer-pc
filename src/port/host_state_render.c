@@ -247,7 +247,6 @@ FontGlyph g_LargeFontGlyphs[LARGE_FONT_GLYPH_COUNT] = {
 };
 s32 g_MenuOverlayPatternAnimFrame = 2;
 s32 g_MenuRowFlashLevels[5];
-s32 g_MenuCursorPulsePhase;
 /* Eight consecutive s16 coordinates.  The seven D_* labels in the symbol
  * map are interior halfwords of this array, not independent globals. */
 s16 g_TachoNeedleQuad[4][2];

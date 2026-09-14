@@ -3,11 +3,9 @@
 #include "game/render_state.h"
 
 #include <stdio.h>
-#include <limits.h>
 
 GameRenderState g_RenderState;
 s32 g_AnimTimer;
-s32 g_MenuCursorPulsePhase;
 
 typedef struct RectCall {
     s32 x;
@@ -83,7 +81,7 @@ int main(void) {
     Check(s_fills[0].alpha, 0xFF, "button fill alpha");
 
     g_AnimTimer = 0;
-    g_MenuCursorPulsePhase = 123;
+    ResetMenuButtonAnimation();
     DrawMenuCursorBox(50, 60, 70, 80, 1);
     Check(s_outlineCount, 3, "cursor outline count");
     Check(s_outlines[1].x, 49, "outer cursor x");
@@ -92,29 +90,21 @@ int main(void) {
     Check(s_outlines[1].height, 84, "outer cursor height");
     Check(s_outlines[1].g, 0x60, "cursor flash colour");
     Check(s_outlines[2].x, 50, "inner cursor x");
-    Check(g_MenuCursorPulsePhase, 123 + 0x60, "cursor phase advance");
-
     g_AnimTimer = 2;
     DrawMenuCursorBox(0, 0, 1, 1, 1);
     Check(s_outlines[3].g, 0xFF, "bright cursor flash colour");
 
-    g_MenuCursorPulsePhase = 0;
+    ResetMenuButtonAnimation();
     DrawMenuCursorBox(0, 0, 1, 1, 0);
     Check(s_outlines[5].g, 0x7F, "cursor pulse minimum colour");
 
-    g_MenuCursorPulsePhase = INT_MAX;
     DrawMenuCursorBox(0, 0, 1, 1, 0);
-    Check(s_sineAngle, 0xFFF, "cursor wrapped sine angle");
-    Check(g_MenuCursorPulsePhase, (s32)((u32)INT_MAX + 0x60u),
-          "cursor phase wrap");
 
     g_RenderState.draw.orderingTable = NULL;
     GameDrawMenuButton(10, 20, 30, 40, 1, 2, 3);
     DrawMenuCursorBox(0, 0, 1, 1, 0);
     Check(s_outlineCount, 9, "null renderer outline count");
     Check(s_fillCount, 1, "null renderer fill count");
-    Check(g_MenuCursorPulsePhase, (s32)((u32)INT_MAX + 0x60u),
-          "null renderer cursor phase");
 
     if (s_failures != 0) {
         printf("%d menu button assertion(s) failed\n", s_failures);

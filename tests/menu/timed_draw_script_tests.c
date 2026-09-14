@@ -73,7 +73,6 @@ static void Record(const char *name, const s32 *values, int count) {
  * than pulled in; none of it is called by anything below.
  */
 s32 g_AnimTimer;
-s32 g_MenuCursorPulsePhase;
 s32 g_MenuRowFlashLevels[16];
 TimedDrawCommand g_MenuRowScript[4];
 GameRenderState g_RenderState;

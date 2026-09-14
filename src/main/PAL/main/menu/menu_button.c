@@ -8,6 +8,12 @@ enum {
     MENU_CURSOR_PULSE_STEP = 0x60,
 };
 
+static s32 s_pulsePhase;
+
+void ResetMenuButtonAnimation(void) {
+    s_pulsePhase = 0;
+}
+
 void GameDrawMenuButton(s32 x, s32 y, s32 width, s32 height,
                         u8 r, u8 g, u8 b) {
     GameOrderingTableEntry *ot = RENDER_OT_BASE;
@@ -37,7 +43,7 @@ void DrawMenuCursorBox(s32 x, s32 y, s32 width, s32 height, s32 useFlash) {
                                         : MENU_CURSOR_FLASH_DIM;
     } else {
         colour = MENU_CURSOR_PULSE_BASE +
-                 rsin((s32)((u32)g_MenuCursorPulsePhase & 0xFFFu)) / 64;
+                 rsin((s32)((u32)s_pulsePhase & 0xFFFu)) / 64;
     }
 
     DrawRectOutline(ot, (s16)(x - 1), (s16)(y - 2),
@@ -45,6 +51,5 @@ void DrawMenuCursorBox(s32 x, s32 y, s32 width, s32 height, s32 useFlash) {
                     0, (u8)colour, 0, 0xFF);
     DrawRectOutline(ot, (s16)x, (s16)y, (s16)width, (s16)height,
                     0, (u8)colour, 0, 0xFF);
-    g_MenuCursorPulsePhase =
-        (s32)((u32)g_MenuCursorPulsePhase + MENU_CURSOR_PULSE_STEP);
+    s_pulsePhase = (s32)((u32)s_pulsePhase + MENU_CURSOR_PULSE_STEP);
 }
