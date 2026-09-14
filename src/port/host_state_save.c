@@ -53,7 +53,6 @@ s32 g_McFromLoadMenu;
 s32 g_McSaveMode;
 s32 g_McFreeBlocks;
 s32 GameMenuLoadPhase;
-DirEntry g_McDirEntries[MEMORY_CARD_MAX_FILES];
 s32 g_McFadeStep;
 s32 g_McFadeLevel;
 CourseProgressState g_ExtraGrandPrixCourseProgress;

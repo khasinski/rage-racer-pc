@@ -72,7 +72,6 @@ extern s32 g_McFromLoadMenu;
 extern s32 g_McMenuPage;
 extern s32 g_McMenuRowCursor;
 
-extern DirEntry g_McDirEntries[];
 extern s32 g_McErrorCountdown;
 extern s32 g_McErrorPending;
 extern s32 g_McErrorTicks;

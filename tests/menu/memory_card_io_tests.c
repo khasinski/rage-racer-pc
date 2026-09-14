@@ -14,7 +14,7 @@ char g_SaveTitleSjis[MEMORY_CARD_SAVE_TITLE_STORAGE_SIZE];
 u8 g_TeamNameChars[16];
 u8 g_TeamNameLength;
 s32 g_SaveElapsedTicks;
-DirEntry g_McDirEntries[MEMORY_CARD_MAX_FILES];
+DirEntry s_entries[MEMORY_CARD_MAX_FILES];
 s32 g_McFreeBlocks;
 
 static u8 s_files[MOCK_FILE_COUNT][MOCK_FILE_SIZE];
@@ -46,7 +46,7 @@ static void ResetMock(void) {
     memset(s_exists, 0, sizeof(s_exists));
     memset(s_openResults, 0, sizeof(s_openResults));
     memset(g_SaveFilePath, 0, sizeof(g_SaveFilePath));
-    memset(g_McDirEntries, 0, sizeof(g_McDirEntries));
+    memset(s_entries, 0, sizeof(s_entries));
     memset(g_TeamNameChars, 0, sizeof(g_TeamNameChars));
     strcpy(&g_SaveFilePath[0 * MC_SAVE_PATH_SIZE], "slot-0");
     strcpy(&g_SaveFilePath[1 * MC_SAVE_PATH_SIZE], "slot-1");
@@ -139,12 +139,16 @@ long BiosFileClose(long fd) {
 
 void *BiosFirstFile(char *path, void *entry) {
     (void)path;
-    return s_directoryFiles > 0 ? entry : NULL;
+    if (s_directoryFiles <= 0) return NULL;
+    memcpy(entry, &s_entries[0], sizeof(s_entries[0]));
+    return entry;
 }
 
 void *BiosNextFile(void *entry) {
     s_directoryNextCalls++;
-    return s_directoryNextCalls < s_directoryFiles ? entry : NULL;
+    if (s_directoryNextCalls >= s_directoryFiles) return NULL;
+    memcpy(entry, &s_entries[s_directoryNextCalls], sizeof(s_entries[0]));
+    return entry;
 }
 
 void BuildSaveIconBlock(GameSaveIconBlock *block, const char *title) {
@@ -247,13 +251,13 @@ static int TestWriteAndDirectoryCount(void) {
     CHECK(s_closeCalls == 1);
 
     s_directoryFiles = 4;
-    CHECK(CountMemoryCardFiles(0, 0) == 4);
+    CHECK(CountMemoryCardFiles(0, 0, s_entries) == 4);
     s_directoryFiles = 0;
-    CHECK(CountMemoryCardFiles(0, 0) == 0);
+    CHECK(CountMemoryCardFiles(0, 0, s_entries) == 0);
 
     ResetMock();
     s_directoryFiles = MEMORY_CARD_MAX_FILES + 5;
-    CHECK(CountMemoryCardFiles(0, 0) == MEMORY_CARD_MAX_FILES);
+    CHECK(CountMemoryCardFiles(0, 0, s_entries) == MEMORY_CARD_MAX_FILES);
     CHECK(s_directoryNextCalls == MEMORY_CARD_MAX_FILES - 1);
     return 0;
 }
@@ -264,17 +268,17 @@ static int TestCardStatus(void) {
     char *visibleElapsed;
 
     ResetMock();
-    g_McDirEntries[0].size = 0x2000;
-    g_McDirEntries[1].size = 0x1000;
-    CHECK(CalculateMemoryCardFreeBlocks(0) == 15);
-    CHECK(CalculateMemoryCardFreeBlocks(-1) == 15);
-    CHECK(CalculateMemoryCardFreeBlocks(2) == 14);
-    CHECK(CalculateMemoryCardFreeBlocks(MEMORY_CARD_MAX_FILES + 5) == 14);
-    g_McDirEntries[0].size = 0x7FFFFFFF;
-    g_McDirEntries[1].size = 0x7FFFFFFF;
-    CHECK(CalculateMemoryCardFreeBlocks(2) == 0);
-    g_McDirEntries[0].size = 0x2000;
-    g_McDirEntries[1].size = 0x1000;
+    s_entries[0].size = 0x2000;
+    s_entries[1].size = 0x1000;
+    CHECK(CalculateMemoryCardFreeBlocks(s_entries, 0) == 15);
+    CHECK(CalculateMemoryCardFreeBlocks(s_entries, -1) == 15);
+    CHECK(CalculateMemoryCardFreeBlocks(s_entries, 2) == 14);
+    CHECK(CalculateMemoryCardFreeBlocks(s_entries, MEMORY_CARD_MAX_FILES + 5) == 14);
+    s_entries[0].size = 0x7FFFFFFF;
+    s_entries[1].size = 0x7FFFFFFF;
+    CHECK(CalculateMemoryCardFreeBlocks(s_entries, 2) == 0);
+    s_entries[0].size = 0x2000;
+    s_entries[1].size = 0x1000;
 
     visibleElapsed = FormatSaveElapsedTime(elapsed, 3723 * 60);
     CHECK(strcmp(elapsed, "    1:02:03") == 0);

@@ -230,7 +230,7 @@ s32 LoadMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *outHeader) {
 }
 
 
-s32 CountMemoryCardFiles(s32 port, s32 slot) {
+s32 CountMemoryCardFiles(s32 port, s32 slot, DirEntry *entries) {
     char path[0x20];
     DirEntry *entry;
     s32 count;
@@ -240,7 +240,7 @@ s32 CountMemoryCardFiles(s32 port, s32 slot) {
     if (pathLength < 0 || (size_t)pathLength >= sizeof(path)) {
         return 0;
     }
-    entry = g_McDirEntries;
+    entry = entries;
     if (BiosFirstFile(path, entry) != entry) {
         return 0;
     }

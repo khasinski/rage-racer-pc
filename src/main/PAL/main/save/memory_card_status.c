@@ -3,7 +3,7 @@
 #include "game/menu.h"
 #include <stdio.h>
 
-s32 CalculateMemoryCardFreeBlocks(s32 fileCount) {
+s32 CalculateMemoryCardFreeBlocks(const DirEntry *entries, s32 fileCount) {
     s32 i;
     uint64_t usedBytes = 0;
     uint64_t capacity = MEMORY_CARD_BLOCK_COUNT * MEMORY_CARD_BLOCK_SIZE;
@@ -15,8 +15,8 @@ s32 CalculateMemoryCardFreeBlocks(s32 fileCount) {
         fileCount = MEMORY_CARD_MAX_FILES;
     }
     for (i = 0; i < fileCount; i++) {
-        if (g_McDirEntries[i].size > 0) {
-            usedBytes += (u32)g_McDirEntries[i].size;
+        if (entries[i].size > 0) {
+            usedBytes += (u32)entries[i].size;
         }
         if (usedBytes >= capacity) {
             return 0;
@@ -27,12 +27,13 @@ s32 CalculateMemoryCardFreeBlocks(s32 fileCount) {
 }
 
 s32 RefreshMemoryCardSaveStatus(GameSaveHeaderRow *header) {
-    const s32 fileCount = CountMemoryCardFiles(0, 0);
+    DirEntry entries[MEMORY_CARD_MAX_FILES];
+    const s32 fileCount = CountMemoryCardFiles(0, 0, entries);
     s32 ret;
 
     GameMenuLoadPhase = 0x100;
     ClearSaveHeaderRows(header);
-    g_McFreeBlocks = CalculateMemoryCardFreeBlocks(fileCount);
+    g_McFreeBlocks = CalculateMemoryCardFreeBlocks(entries, fileCount);
     ret = ScanMemoryCardSaveHeaders(header);
     GameMenuLoadPhase = 0x200;
 
