@@ -264,7 +264,6 @@ extern const char *g_NativeCarNames[];
 #define g_CarNames g_NativeCarNames
 extern s32 g_ClassPromoted;
 extern char *g_CourseNames[COURSE_SLOT_COUNT];
-extern s32 g_EndingWashLevel;
 typedef struct PrologueLine {
     s16 x;
     s16 y;

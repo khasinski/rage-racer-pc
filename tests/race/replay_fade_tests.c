@@ -9,7 +9,6 @@
 Replay g_Replay;
 s32 g_FadeLevel;
 s32 g_FadeStep;
-s32 g_EndingWashLevel;
 s32 g_SeriesCleared;
 s32 g_SceneTimer;
 u16 g_PadPressed;
@@ -40,7 +39,7 @@ void DrawSeriesClearedWash(s32 progress, s32 fade) {
 static void ResetState(void) {
     g_FadeLevel = 0;
     g_FadeStep = 0;
-    g_EndingWashLevel = 99;
+    g_Replay.endingWash = 99;
     g_SeriesCleared = 0;
     g_SceneTimer = 0;
     g_Replay.count = 1000;
@@ -62,7 +61,7 @@ static void TestFadeInClampsAtClear(void) {
     assert(!UpdateReplayFade());
 
     assert(g_FadeLevel == 0 && g_FadeStep == 0);
-    assert(g_EndingWashLevel == 0);
+    assert(g_Replay.endingWash == 0);
     assert(s_FadeDraws == 1 && s_FadeColor == 0 && s_FadeTpage == 0x29);
 }
 
@@ -73,7 +72,7 @@ static void TestSeriesClearWashProgress(void) {
 
     assert(!UpdateReplayFade());
 
-    assert(g_EndingWashLevel == 1);
+    assert(g_Replay.endingWash == 1);
     assert(s_WashDraws == 1 && s_WashProgress == 1 && s_WashFade == 0);
     assert(s_FadeDraws == 0);
 }

@@ -114,7 +114,6 @@ s32 g_ClassWinCount;
 s16 g_GrandPrixMode;
 s16 g_RaceCueDelay;
 s16 g_RacePhase;
-s32 g_EndingWashLevel;
 s16 g_RivalCueCooldowns[4];
 unsigned char g_BgmShuffleOrder[12];
 s16 g_WrongWayTimer;

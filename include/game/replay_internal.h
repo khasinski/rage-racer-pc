@@ -11,6 +11,7 @@ typedef struct Replay {
     s32 write;
     s32 count;
     s32 wrapped;
+    s32 endingWash;
     s16 playerModel;
     s16 rivalModel;
 } Replay;

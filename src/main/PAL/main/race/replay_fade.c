@@ -30,7 +30,7 @@ s32 UpdateReplayFade(void) {
             g_FadeLevel, g_FadeStep, REPLAY_OPAQUE_FADE);
         if (g_FadeLevel == 0) {
             g_FadeStep = 0;
-            g_EndingWashLevel = 0;
+            g_Replay.endingWash = 0;
         }
         DrawFullscreenFadeTile(g_FadeLevel, REPLAY_FADE_IN_TPAGE);
         return 0;
@@ -40,7 +40,7 @@ s32 UpdateReplayFade(void) {
                        ReplayEndingWashActive(g_SceneTimer,
                                               g_Replay.count);
     if (endingWashActive) {
-        g_EndingWashLevel = ReplayEndingWashLevel(
+        g_Replay.endingWash = ReplayEndingWashLevel(
             g_SceneTimer, g_Replay.count);
     }
 
@@ -65,7 +65,7 @@ s32 UpdateReplayFade(void) {
 
     if (g_SeriesCleared != 0) {
         if (endingWashActive || g_FadeLevel != 0) {
-            DrawSeriesClearedWash(g_EndingWashLevel, g_FadeLevel);
+            DrawSeriesClearedWash(g_Replay.endingWash, g_FadeLevel);
         }
     } else if (g_FadeLevel != 0) {
         DrawFullscreenFadeTile(g_FadeLevel, REPLAY_FADE_OUT_TPAGE);
