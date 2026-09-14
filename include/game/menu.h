@@ -104,6 +104,11 @@ typedef struct CarSelect {
     s32 cursor;
 } CarSelect;
 
+typedef struct OptionMenu {
+    GameSceneId exitScene;
+    s32 cursor;
+} OptionMenu;
+
 typedef struct MenuWidgets {
     s32 lightBurst;
     s32 ownedCarCounter;
@@ -144,6 +149,7 @@ typedef struct MenuRuntime {
     TeamName teamName;
     CarSpecGraph carSpecGraph;
     CarSelect carSelect;
+    OptionMenu optionMenu;
     MenuWidgets widgets;
 } MenuRuntime;
 
@@ -159,6 +165,7 @@ LogoSample *MenuLogoSample(void);
 TeamName *MenuTeamName(void);
 CarSpecGraph *MenuCarSpecGraph(void);
 CarSelect *MenuCarSelect(void);
+OptionMenu *MenuOption(void);
 MenuWidgets *MenuWidgetState(void);
 s32 MenuRuntimeScreenState(s32 screen);
 void MenuRuntimeSetScreenState(s32 screen, s32 state);
@@ -447,7 +454,6 @@ extern s32 g_MenuViewSpin;
 extern s16 g_NegconMaxTwistSaved;
 extern s16 g_NegconSteerPlaySaved;
 extern s16 g_NextOwnedCarIndex;
-extern s32 g_OptionMenuCursor;
 extern s32 g_PlayerMoney;
 extern s16 g_PrevOwnedCarIndex;
 extern s32 g_ClassRecordColumn;
@@ -578,7 +584,6 @@ extern s16 g_NegconNeutralISaved;
 extern s16 g_NegconNeutralLSaved;
 extern s16 g_NegconPlayPercent[];
 extern s16 g_NegconSteerNeutralSaved;
-extern GameSceneId g_OptionMenuExitScene;
 
 void AdvanceGrandPrixClass(void);
 s32 CountOwnedCars(void);

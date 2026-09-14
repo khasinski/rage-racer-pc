@@ -65,6 +65,10 @@ CarSelect *MenuCarSelect(void) {
     return &s_menuRuntime.carSelect;
 }
 
+OptionMenu *MenuOption(void) {
+    return &s_menuRuntime.optionMenu;
+}
+
 MenuWidgets *MenuWidgetState(void) {
     return &s_menuRuntime.widgets;
 }

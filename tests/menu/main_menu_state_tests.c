@@ -10,6 +10,8 @@
 #include <limits.h>
 #include <stdio.h>
 
+static OptionMenu s_optionMenu;
+
 CarEntry g_GrandPrixCars[GAME_CAR_COUNT];
 CarEntry g_ExtraGrandPrixCars[GAME_CAR_COUNT];
 CarEntry g_TimeAttackCars[GAME_CAR_COUNT];
@@ -29,7 +31,6 @@ u32 g_FrontendIdleTimer;
 FrontendState g_FrontendState;
 s32 g_GrandPrixClass;
 s32 g_MainMenuSlide;
-s32 g_OptionMenuCursor;
 u16 g_PadPressed;
 s16 g_SeriesSelection;
 s32 g_TitleMenuSelection;
@@ -98,7 +99,7 @@ static void ResetState(s32 selection) {
     g_PadPressed = PAD_CONFIRM;
     g_FrontendState = FRONTEND_STATE_MENU_INPUT;
     g_FrontendIdleTimer = 99;
-    g_OptionMenuCursor = 7;
+    s_optionMenu.cursor = 7;
     g_GrandPrixClass = 5;
     g_CourseIndex = 2;
     s_assetComplete = 0;
@@ -157,7 +158,7 @@ int main(void) {
 
     ResetState(TITLE_MENU_OPTIONS);
     UpdateMainMenuInput();
-    CHECK(s_optionRequests == 1 && g_OptionMenuCursor == 0);
+    CHECK(s_optionRequests == 1 && s_optionMenu.cursor == 0);
 
     ResetState(TITLE_MENU_OPTIONS);
     s_assetComplete = 1;
@@ -181,3 +182,5 @@ int main(void) {
     puts("main menu state tests passed");
     return 0;
 }
+
+OptionMenu *MenuOption(void) { return &s_optionMenu; }

@@ -6,6 +6,8 @@
 
 #include <limits.h>
 #include <stdio.h>
+
+static OptionMenu s_optionMenu;
 #include <string.h>
 
 s32 g_ClassRecordMenuCursor;
@@ -15,7 +17,6 @@ s32 g_GameMode;
 s32 g_GrandPrixClass;
 s16 g_GrandPrixMode;
 s16 g_GrandPrixSeries;
-s32 g_OptionMenuCursor;
 u16 g_PadPressed;
 GameRenderState g_RenderState;
 s32 g_ClassRecordColumn;
@@ -97,7 +98,7 @@ static void Reset(void) {
     g_DrawBuffer = &s_frame;
     g_RenderState.draw.packetCursor = s_packets;
     g_GameMode = OPTION_MODE_ROOT;
-    g_OptionMenuCursor = 0;
+    s_optionMenu.cursor = 0;
     g_PadPressed = 0;
     g_ClassRecordMenuCursor = -1;
     g_ClassRecordColumn = -1;
@@ -130,30 +131,30 @@ int main(void) {
     CHECK(s_drawMode == 0x3F && s_cursorCalls == 1);
 
     Reset();
-    g_OptionMenuCursor = INT_MIN;
+    s_optionMenu.cursor = INT_MIN;
     DrawOptionRootMenu();
-    CHECK(g_OptionMenuCursor == 0 && s_cursorCalls == 1);
+    CHECK(s_optionMenu.cursor == 0 && s_cursorCalls == 1);
 
     Reset();
-    g_OptionMenuCursor = INT_MAX;
+    s_optionMenu.cursor = INT_MAX;
     DrawOptionRootMenu();
-    CHECK(g_OptionMenuCursor == 4 && s_cursorCalls == 1);
+    CHECK(s_optionMenu.cursor == 4 && s_cursorCalls == 1);
 
     Reset();
-    g_OptionMenuCursor = 0;
+    s_optionMenu.cursor = 0;
     g_PadPressed = PAD_UP;
     UpdateOptionRootMenu();
-    CHECK(g_OptionMenuCursor == 4 && s_lastCue == 1);
+    CHECK(s_optionMenu.cursor == 4 && s_lastCue == 1);
 
     Reset();
-    g_OptionMenuCursor = INT_MAX;
+    s_optionMenu.cursor = INT_MAX;
     g_PadPressed = PAD_DOWN;
     UpdateOptionRootMenu();
-    CHECK(g_OptionMenuCursor == 0 && s_lastCue == 1);
+    CHECK(s_optionMenu.cursor == 0 && s_lastCue == 1);
 
     for (cursor = 0; cursor < 5; cursor++) {
         Reset();
-        g_OptionMenuCursor = cursor;
+        s_optionMenu.cursor = cursor;
         g_PadPressed = PAD_CONFIRM;
         UpdateOptionRootMenu();
         CHECK(s_lastCue == 2);
@@ -176,7 +177,7 @@ int main(void) {
     }
 
     Reset();
-    g_OptionMenuCursor = 3;
+    s_optionMenu.cursor = 3;
     s_randomValues[0] = 0;
     s_randomValues[1] = 3;
     s_randomValues[2] = 2;
@@ -187,7 +188,7 @@ int main(void) {
     CHECK(s_randomIndex == 3);
 
     Reset();
-    g_OptionMenuCursor = 3;
+    s_optionMenu.cursor = 3;
     s_randomValues[0] = 0x1004;
     s_randomValues[1] = 0x1003;
     g_PadPressed = PAD_CONFIRM;
@@ -204,3 +205,5 @@ int main(void) {
     puts("option root menu preserves rendering and all navigation paths");
     return 0;
 }
+
+OptionMenu *MenuOption(void) { return &s_optionMenu; }

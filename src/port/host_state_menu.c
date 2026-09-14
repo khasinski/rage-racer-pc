@@ -158,8 +158,6 @@ s32 g_TitleExitTimer;
 s32 g_GrandPrixRound;
 s32 g_OptionLetterboxHeight;
 s32 g_DesignModeOption;
-GameSceneId g_OptionMenuExitScene;
-s32 g_OptionMenuCursor;
 s32 g_ShopCarIndex;
 CarEntry *g_CarTable;
 s32 g_PlayerMoney;

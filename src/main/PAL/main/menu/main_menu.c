@@ -113,7 +113,7 @@ void UpdateMainMenuInput(void) {
             break;
         case TITLE_MENU_OPTIONS:
             RequestOptionScreenAssets();
-            g_OptionMenuCursor = 0;
+            MenuOption()->cursor = 0;
             break;
         }
         g_FrontendState = FRONTEND_STATE_MENU_EXIT;

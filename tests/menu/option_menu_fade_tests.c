@@ -4,12 +4,13 @@
 
 #include <limits.h>
 #include <stdio.h>
+
+static OptionMenu s_optionMenu;
 #include <string.h>
 
 s32 g_FadeLevel;
 s32 g_FadeStep;
 s32 g_GameMode;
-GameSceneId g_OptionMenuExitScene;
 s32 g_SceneId;
 GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
@@ -43,7 +44,7 @@ static void Reset(void) {
     g_FadeLevel = 0;
     g_FadeStep = 0;
     g_GameMode = OPTION_MODE_ROOT;
-    g_OptionMenuExitScene = 0;
+    s_optionMenu.exitScene = 0;
     g_SceneId = 7;
     s_drawMode = -1;
     s_rootDraws = 0;
@@ -71,7 +72,7 @@ static int TestFadeTileClamping(void) {
 static int TestFadeStateTransitions(void) {
     Reset();
     StartOptionMenuExit(GAME_SCENE_ENTER_BGM_SELECT);
-    CHECK(g_OptionMenuExitScene == GAME_SCENE_ENTER_BGM_SELECT);
+    CHECK(s_optionMenu.exitScene == GAME_SCENE_ENTER_BGM_SELECT);
     CHECK(g_GameMode == OPTION_MODE_FADE && g_FadeStep == 8);
 
     g_FadeLevel = 0;
@@ -83,7 +84,7 @@ static int TestFadeStateTransitions(void) {
 
     Reset();
     g_GameMode = OPTION_MODE_FADE;
-    g_OptionMenuExitScene = GAME_SCENE_ENTER_PROLOGUE;
+    s_optionMenu.exitScene = GAME_SCENE_ENTER_PROLOGUE;
     g_FadeLevel = 0x100;
     g_FadeStep = 8;
     UpdateOptionMenuFade();
@@ -94,7 +95,7 @@ static int TestFadeStateTransitions(void) {
 
     Reset();
     g_GameMode = OPTION_MODE_FADE;
-    g_OptionMenuExitScene = GAME_SCENE_PRIZE;
+    s_optionMenu.exitScene = GAME_SCENE_PRIZE;
     g_FadeLevel = INT_MAX;
     g_FadeStep = INT_MAX;
     UpdateOptionMenuFade();
@@ -116,3 +117,5 @@ int main(void) {
     puts("option menu fade tests passed");
     return 0;
 }
+
+OptionMenu *MenuOption(void) { return &s_optionMenu; }

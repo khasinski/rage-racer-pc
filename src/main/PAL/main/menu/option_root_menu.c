@@ -34,12 +34,13 @@ static const OptionRootLabel s_optionRootLabels[OPTION_ROOT_ITEM_COUNT] = {
 };
 
 void DrawOptionRootMenu(void) {
+    OptionMenu *menu = MenuOption();
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(51);
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
     s32 row;
 
-    g_OptionMenuCursor = AddClampedMenuValue(
-        g_OptionMenuCursor, 0, 0, OPTION_ROOT_ITEM_COUNT - 1);
+    menu->cursor = AddClampedMenuValue(
+        menu->cursor, 0, 0, OPTION_ROOT_ITEM_COUNT - 1);
     for (row = 0; row < OPTION_ROOT_ITEM_COUNT; row++) {
         const OptionRootLabel *label = &s_optionRootLabels[row];
 
@@ -50,7 +51,7 @@ void DrawOptionRootMenu(void) {
     g_RenderState.draw.packetCursor = QueueDrawModePrim(ot, next, 0x3F);
 
     if (g_GameMode == OPTION_MODE_ROOT) {
-        DrawMenuCursorArrow(0x14, g_OptionMenuCursor * 0x20 + 0x94);
+        DrawMenuCursorArrow(0x14, menu->cursor * 0x20 + 0x94);
     }
 }
 
@@ -69,24 +70,23 @@ static void StartRandomOptionRace(void) {
 
 /* OPTION_MODE_ROOT: the root menu and where each row goes. */
 void UpdateOptionRootMenu(void) {
+    OptionMenu *menu = MenuOption();
     s32 oldCursor;
 
     DrawOptionRootMenu();
-    oldCursor = g_OptionMenuCursor;
+    oldCursor = menu->cursor;
     if (g_PadPressed & PAD_UP) {
-        g_OptionMenuCursor = WrapMenuIndex(
-            g_OptionMenuCursor, -1, OPTION_ROOT_ITEM_COUNT);
+        menu->cursor = WrapMenuIndex(menu->cursor, -1, OPTION_ROOT_ITEM_COUNT);
     } else if (g_PadPressed & PAD_DOWN) {
-        g_OptionMenuCursor = WrapMenuIndex(
-            g_OptionMenuCursor, 1, OPTION_ROOT_ITEM_COUNT);
+        menu->cursor = WrapMenuIndex(menu->cursor, 1, OPTION_ROOT_ITEM_COUNT);
     }
-    if (oldCursor != g_OptionMenuCursor) {
+    if (oldCursor != menu->cursor) {
         PlaySoundCue(1);
     }
 
     if (g_PadPressed & PAD_CONFIRM) {
         PlaySoundCue(2);
-        switch (g_OptionMenuCursor) {
+        switch (menu->cursor) {
         case OPTION_ROOT_TROPHIES:
             g_GameMode = OPTION_MODE_CLASS_MENU;
             g_ClassRecordMenuCursor = 0;
