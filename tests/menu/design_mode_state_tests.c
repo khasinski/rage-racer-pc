@@ -7,6 +7,9 @@
 #include <stdio.h>
 #include <string.h>
 
+static TeamLogo s_teamLogo;
+TeamLogo *MenuTeamLogo(void) { return &s_teamLogo; }
+
 extern s32 g_MenuHandlerIndex;
 extern s32 g_MenuOutgoingHandlerIndex;
 extern s32 g_MenuScreen;
@@ -79,7 +82,8 @@ void DrawSprite(GameOrderingTableEntry *ot, s16 x, s16 y, s16 width,
     s_spriteCalls++;
     if (clut == 0x26F) s_selectedCellSprites++;
 }
-void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep) {
+void DrawTeamLogoCanvas(TeamLogo *logo, s32 panelStep, s32 editorStep) {
+    (void)logo;
     (void)panelStep;
     (void)editorStep;
     s_logoCanvasCalls++;
@@ -94,7 +98,8 @@ void DrawTeamNameEntry(TeamName *teamName, s32 step, s32 cursor) {
     s_nameEntryCalls++;
 }
 void PlaySoundCue(s32 cue) { s_lastCue = cue; }
-void RampTeamLogoCanvas(s32 from, s32 to) {
+void RampTeamLogoCanvas(TeamLogo *logo, s32 from, s32 to) {
+    (void)logo;
     (void)from;
     (void)to;
     s_rampCalls++;

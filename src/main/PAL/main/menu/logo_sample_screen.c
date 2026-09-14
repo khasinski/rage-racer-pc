@@ -42,7 +42,7 @@ static void ChooseLogoSampleRow(LogoSample *logo) {
 }
 
 static void UpdateLogoSampleIdle(LogoSample *logo) {
-    RampTeamLogoCanvas(-10, 0);
+    RampTeamLogoCanvas(MenuTeamLogo(), -10, 0);
     DrawLogoSamplePanel(logo, -1, logo->saved + 1);
     RunTimedDrawScript(logo->subPanelScript, &g_UiScriptProgress2, -1);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, logo->cursor);
@@ -105,7 +105,7 @@ static void UpdateLogoSampleModal(LogoSample *logo, s32 state) {
                          ? &logo->character
                          : &logo->background;
 
-    RampTeamLogoCanvas(10, 0);
+    RampTeamLogoCanvas(MenuTeamLogo(), 10, 0);
     UpdateLogoSamplePicker(logo, selection);
     DrawLogoSamplePanel(logo, 1, *selection + 1);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, logo->cursor);
@@ -141,7 +141,7 @@ void UpdateLogoSampleScreen(void) {
         logo->saved, 0, 0, TEAM_LOGO_SAMPLE_CHOICE_COUNT - 1);
     g_MenuAltLayout = 0;
     ComposeSampleTeamLogo(logo->character, logo->background);
-    DrawTeamLogoCanvas(1, 0);
+    DrawTeamLogoCanvas(MenuTeamLogo(), 1, 0);
 
     if (state == LOGO_SAMPLE_IDLE) {
         UpdateLogoSampleIdle(logo);

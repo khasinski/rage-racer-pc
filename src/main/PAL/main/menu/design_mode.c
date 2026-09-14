@@ -104,7 +104,7 @@ static void HandleDesignModeInput(void) {
     switch (g_DesignModeOption) {
     case DESIGN_MODE_OPTION_LOGO:
         PlaySoundCue(2);
-        RampTeamLogoCanvas(-256, -256);
+        RampTeamLogoCanvas(MenuTeamLogo(), -256, -256);
         GameMenuBusy = DESIGN_MODE_EXIT_TO_LOGO;
         g_MenuOverlayPattern = 1;
         break;
@@ -158,7 +158,7 @@ static void FinishDesignModeExit(void) {
     switch (GameMenuBusy) {
     case DESIGN_MODE_EXIT_TO_LOGO:
         MenuActivateScreen(MENU_SCREEN_TEAM_LOGO);
-        DrawTeamLogoCanvas(0, 0);
+        DrawTeamLogoCanvas(MenuTeamLogo(), 0, 0);
         break;
     case DESIGN_MODE_EXIT_TO_NAME:
         MenuActivateScreen(MENU_SCREEN_TEAM_NAME);

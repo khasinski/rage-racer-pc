@@ -76,12 +76,14 @@ s32 RunTimedDrawScript(const TimedDrawCommand *commands, s32 *progress,
 void PlaySoundCue(s32 cue) { (void)cue; }
 void ApplyDuckedSequenceAudio(void) { s_duckCalls++; }
 void ApplyCurrentSequenceAudio(void) { s_restoreCalls++; }
-void RampTeamLogoCanvas(s32 from, s32 to) {
+void RampTeamLogoCanvas(TeamLogo *logo, s32 from, s32 to) {
+    (void)logo;
     (void)from;
     (void)to;
 }
 void UploadTeamLogoClut(void) { s_clutUploadCalls++; }
-void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep) {
+void DrawTeamLogoCanvas(TeamLogo *logo, s32 panelStep, s32 editorStep) {
+    (void)logo;
     (void)panelStep;
     (void)editorStep;
 }

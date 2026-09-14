@@ -61,6 +61,7 @@ static void ResetMenuNavigation(void) {
     logoSample->subPanelScript = g_UiEmptyScript;
     MenuCarSelect()->popupScript = g_UiEmptyScript;
     MenuTeamLogo()->subPanelScript = g_UiEmptyScript;
+    MenuTeamLogo()->zoomSpan = 0x220;
     ResetCarShopScreen();
     ResetEngineerShopScreen();
     ResetMenuCar();

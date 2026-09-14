@@ -59,11 +59,11 @@ static void ChooseTeamLogoOption(TeamLogo *logo) {
 }
 
 static void UpdateTeamLogoIdle(TeamLogo *logo) {
-    RampTeamLogoCanvas(-13, -21);
+    RampTeamLogoCanvas(logo, -13, -21);
     RunTimedDrawScript(g_TeamLogoScreenScript2, &g_UiScriptProgress2, -1);
     RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
     RunTimedDrawScript(logo->subPanelScript, &g_UiScriptProgress2, 0);
-    DrawTeamLogoCanvas(1, -1);
+    DrawTeamLogoCanvas(logo, 1, -1);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, logo->option);
     RunTimedDrawScript(g_TeamLogoScreenScript, &g_UiScriptProgress, 0);
     if (RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1) == 0 ||
@@ -122,7 +122,7 @@ static void UpdateTeamLogoSavePrompt(TeamLogo *logo,
         }
         DrawTeamLogoSaveButtons(ot, 0);
     }
-    DrawTeamLogoCanvas(1, 0);
+    DrawTeamLogoCanvas(logo, 1, 0);
 }
 
 static void UpdateTeamLogoSaveCountdown(TeamLogo *logo,
@@ -142,11 +142,11 @@ static void UpdateTeamLogoSaveCountdown(TeamLogo *logo,
         RunTimedDrawScript(logo->subPanelScript, &g_UiScriptProgress2, 1);
         DrawTeamLogoSaveButtons(ot, 1);
     }
-    DrawTeamLogoCanvas(1, 0);
+    DrawTeamLogoCanvas(logo, 1, 0);
 }
 
 static void UpdateTeamLogoPainting(TeamLogo *logo) {
-    RampTeamLogoCanvas(9, 0x15);
+    RampTeamLogoCanvas(logo, 9, 0x15);
     if (RunTimedDrawScript(logo->subPanelScript, &g_UiScriptProgress2, 1) !=
         0) {
         if (g_PadPressed & PAD_START) {
@@ -159,13 +159,13 @@ static void UpdateTeamLogoPainting(TeamLogo *logo) {
     if (g_UiScriptProgress2 >= 8) {
         MenuWidgetState()->hintButtonsVisible = 0;
     }
-    DrawTeamLogoCanvas(1, 1);
+    DrawTeamLogoCanvas(logo, 1, 1);
 }
 
 static void UpdateTeamLogoPaintClosing(TeamLogo *logo) {
-    RampTeamLogoCanvas(-13, -21);
+    RampTeamLogoCanvas(logo, -13, -21);
     RunTimedDrawScript(logo->subPanelScript, &g_UiScriptProgress2, -1);
-    DrawTeamLogoCanvas(1, -1);
+    DrawTeamLogoCanvas(logo, 1, -1);
     if (g_UiScriptProgress2 < 7) {
         MenuWidgetState()->hintButtonsVisible = 1;
     }
@@ -200,7 +200,8 @@ static void UpdateActiveTeamLogoModal(TeamLogo *logo,
 
 static void UpdateTeamLogoOutgoing(TeamLogo *logo, TeamLogoScreenState state) {
     MenuBeginExit(MENU_SCREEN_TEAM_LOGO);
-    DrawTeamLogoCanvas(state == TEAM_LOGO_EXIT_TO_DESIGN ? -1 : 1, 0);
+    DrawTeamLogoCanvas(logo,
+                       state == TEAM_LOGO_EXIT_TO_DESIGN ? -1 : 1, 0);
     RunTimedDrawScript(g_TeamLogoScreenScript, &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, logo->option);

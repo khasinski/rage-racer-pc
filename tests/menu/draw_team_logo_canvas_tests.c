@@ -38,19 +38,14 @@ s32 g_TeamLogoCursorX;
 s32 g_TeamLogoViewX;
 s32 g_TeamLogoBrushSize;
 s32 g_TeamLogoColorChannel;
-s32 g_TeamLogoColorCycleAngle;
 s32 g_TeamLogoCursorY;
-s32 g_TeamLogoEditorStep;
 u8 g_TeamLogoExpertMode;
-s32 g_TeamLogoFadeLevel;
 s32 g_TeamLogoGuideMode;
 s32 g_TeamLogoPaletteMode;
-s32 g_TeamLogoPanelStep;
 s32 g_TeamLogoViewY;
-s32 g_TeamLogoZoomLevel;
-s32 g_TeamLogoZoomSpan;
 u8 g_PadType;
 GameRenderState g_RenderState;
+static TeamLogo s_logoState;
 
 static unsigned long s_digest = 2166136261UL;
 static FILE *s_out;
@@ -220,18 +215,18 @@ int main(int argc, char **argv) {
         memset(ot, 0, sizeof(ot));
         RENDER_OT_BASE = ot;
 
-        g_TeamLogoPanelStep = panelSteps[a];
-        g_TeamLogoEditorStep = editorSteps[b];
-        g_TeamLogoZoomLevel = zooms[c];
+        s_logoState.panelStep = panelSteps[a];
+        s_logoState.editorStep = editorSteps[b];
+        s_logoState.zoom = zooms[c];
         g_TeamLogoPaletteMode = e;
         g_TeamLogoGuideMode = guides[gi];
         g_TeamLogoBrushSize = brushes[bi];
         g_TeamLogoColorChannel = channels[ci];
         g_PadType = (u8)pads[pi];
         g_TeamLogoExpertMode = (u8)(ai == 0);
-        g_TeamLogoColorCycleAngle = 0x321;
-        g_TeamLogoFadeLevel = 0xC0;
-        g_TeamLogoZoomSpan = 0x210;
+        s_logoState.colorCycle = 0x321;
+        s_logoState.fade = 0xC0;
+        s_logoState.zoomSpan = 0x210;
         g_TeamLogoPenColor = 3;
         g_TeamLogoCursorX = 20;
         g_TeamLogoCursorY = 30;
@@ -243,13 +238,13 @@ int main(int argc, char **argv) {
                 brushes[bi], channels[ci], pads[pi], args[ai]);
         Record(label, NULL, 0);
 
-        DrawTeamLogoCanvas(args[ai], args[1 - ai]);
+        DrawTeamLogoCanvas(&s_logoState, args[ai], args[1 - ai]);
 
         {
             s32 after[6];
-            after[0] = g_TeamLogoPanelStep;
-            after[1] = g_TeamLogoEditorStep;
-            after[2] = g_TeamLogoColorCycleAngle;
+            after[0] = s_logoState.panelStep;
+            after[1] = s_logoState.editorStep;
+            after[2] = s_logoState.colorCycle;
             after[3] = g_TeamLogoClut[0];
             after[4] = g_TeamLogoFadedClut[0];
             after[5] = g_TeamLogoFadedClut[15];
@@ -268,35 +263,35 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    g_TeamLogoFadeLevel = 0xF8;
-    g_TeamLogoZoomLevel = 0xF8;
-    RampTeamLogoCanvas(13, 21);
-    if (g_TeamLogoFadeLevel != 0x100 || g_TeamLogoZoomLevel != 0x100 ||
-        g_TeamLogoZoomSpan != 0x110) {
+    s_logoState.fade = 0xF8;
+    s_logoState.zoom = 0xF8;
+    RampTeamLogoCanvas(&s_logoState, 13, 21);
+    if (s_logoState.fade != 0x100 || s_logoState.zoom != 0x100 ||
+        s_logoState.zoomSpan != 0x110) {
         puts("FAIL logo canvas upper ramp limit");
         return 1;
     }
-    g_TeamLogoFadeLevel = 0x41;
-    g_TeamLogoZoomLevel = 1;
-    RampTeamLogoCanvas(-13, -21);
-    if (g_TeamLogoFadeLevel != 0x40 || g_TeamLogoZoomLevel != 0 ||
-        g_TeamLogoZoomSpan != 0x220) {
+    s_logoState.fade = 0x41;
+    s_logoState.zoom = 1;
+    RampTeamLogoCanvas(&s_logoState, -13, -21);
+    if (s_logoState.fade != 0x40 || s_logoState.zoom != 0 ||
+        s_logoState.zoomSpan != 0x220) {
         puts("FAIL logo canvas lower ramp limit");
         return 1;
     }
-    g_TeamLogoFadeLevel = INT_MAX;
-    g_TeamLogoZoomLevel = INT_MIN;
-    RampTeamLogoCanvas(INT_MAX, INT_MIN);
-    if (g_TeamLogoFadeLevel != 0x100 || g_TeamLogoZoomLevel != 0 ||
-        g_TeamLogoZoomSpan != 0x220) {
+    s_logoState.fade = INT_MAX;
+    s_logoState.zoom = INT_MIN;
+    RampTeamLogoCanvas(&s_logoState, INT_MAX, INT_MIN);
+    if (s_logoState.fade != 0x100 || s_logoState.zoom != 0 ||
+        s_logoState.zoomSpan != 0x220) {
         puts("FAIL logo canvas extreme ramp limits");
         return 1;
     }
-    g_TeamLogoPanelStep = INT_MAX;
-    g_TeamLogoEditorStep = INT_MIN;
-    g_TeamLogoColorCycleAngle = INT_MAX;
-    DrawTeamLogoCanvas(1, -1);
-    if (g_TeamLogoPanelStep != 0x19 || g_TeamLogoEditorStep != 0) {
+    s_logoState.panelStep = INT_MAX;
+    s_logoState.editorStep = INT_MIN;
+    s_logoState.colorCycle = INT_MAX;
+    DrawTeamLogoCanvas(&s_logoState, 1, -1);
+    if (s_logoState.panelStep != 0x19 || s_logoState.editorStep != 0) {
         puts("FAIL logo canvas extreme panel steps");
         return 1;
     }

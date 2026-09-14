@@ -97,6 +97,12 @@ typedef struct TeamName {
 typedef struct TeamLogo {
     const TimedDrawCommand *subPanelScript;
     s32 option;
+    s32 colorCycle;
+    s32 fade;
+    s32 zoom;
+    s32 zoomSpan;
+    s32 panelStep;
+    s32 editorStep;
 } TeamLogo;
 
 typedef struct CarSpecGraph {
@@ -409,7 +415,7 @@ void ResetMenuButtonAnimation(void);
  * 4bpp bitmap with its own 16-entry CLUT at g_TeamLogoClut. */
 extern u16 g_TeamLogoClut[16];
 extern TeamLogoCanvas g_TeamLogoCanvas;
-void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep);
+void DrawTeamLogoCanvas(TeamLogo *logo, s32 panelStep, s32 editorStep);
 void UpdateTeamLogoCanvas(void);
 
 /*
@@ -495,11 +501,8 @@ s32 ActivateShowroomCarModel(s32 slot);
 extern u8 g_TeamNameFontGlyphs
     [TEAM_NAME_FONT_GLYPH_COUNT * TEAM_NAME_FONT_GLYPH_BYTES];
 extern u8 g_TeamNameBlankTile[192];
-extern s32 g_TeamLogoZoomSpan;
 extern u16 g_TeamLogoFadedClutRect;
 extern u16 g_TeamLogoBlankClut[16];
-extern s32 g_TeamLogoPanelStep;
-extern s32 g_TeamLogoEditorStep;
 extern s32 g_TeamLogoDpadRepeatTimer;
 extern s32 g_TeamLogoDpadRepeatMask;
 extern s32 g_TeamLogoGuideModePrev;
@@ -513,9 +516,6 @@ enum {
     CAR_TUNE_UP_PRICE_COUNT = 31,
 };
 extern s32 g_CarTuneUpPriceTable[CAR_TUNE_UP_PRICE_COUNT];
-extern s32 g_TeamLogoColorCycleAngle;
-extern s32 g_TeamLogoFadeLevel;
-extern s32 g_TeamLogoZoomLevel;
 extern u16 g_TeamLogoFadedClut[16];
 extern s32 g_RankingPendingState;
 extern s32 g_ShopCarIndex;
@@ -603,7 +603,7 @@ void DrawOptionHintBar(s32 variant);
 void RestoreNegconCalibrationSettings(void);
 void DrawOwnedCarCounter(MenuWidgets *widgets, s32 direction, s32 ownedCount);
 void DrawSpriteString(s32 x, s32 y, const char *str, s32 clutIndex);
-void RampTeamLogoCanvas(s32 from, s32 to);
+void RampTeamLogoCanvas(TeamLogo *logo, s32 from, s32 to);
 void ShuffleBgmOrder(void);
 void StartOptionMenuExit(GameSceneId scene);
 void UploadTeamNameTexture(const u8 *str, s32 len);

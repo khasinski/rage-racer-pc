@@ -2,8 +2,8 @@
 #include "game/menu.h"
 #include "game/menu_internal.h"
 
-static u8 LogoPulseShade(void) {
-    u32 phase = (u32)g_TeamLogoColorCycleAngle * 2u & 0xFFFu;
+static u8 LogoPulseShade(const TeamLogo *logo) {
+    u32 phase = (u32)logo->colorCycle * 2u & 0xFFFu;
 
     return (u8)((rsin((s32)phase) / 64) - 0x41);
 }
@@ -29,7 +29,8 @@ static u16 FadeLogoColor(u16 color, s32 fade) {
  * The big canvas: its frame slides down, the brush outline blinks over the
  * cursor, and the canvas itself goes down as one zoomed textured quad.
  */
-static void DrawCanvasPanel(GameOrderingTableEntry *ot, s32 slide) {
+static void DrawCanvasPanel(const TeamLogo *logo, GameOrderingTableEntry *ot,
+                            s32 slide) {
     s32 panelTop;
     s32 frameX;
     s32 quadLeft;
@@ -56,8 +57,8 @@ static void DrawCanvasPanel(GameOrderingTableEntry *ot, s32 slide) {
                     (u8)0xFF);
 
     /* Zoomed in and not mixing a colour, the brush gets a pulsing outline. */
-    if ((g_TeamLogoZoomLevel >= 0x100) && (g_TeamLogoPaletteMode == 0)) {
-        u8 shade = LogoPulseShade();
+    if ((logo->zoom >= 0x100) && (g_TeamLogoPaletteMode == 0)) {
+        u8 shade = LogoPulseShade(logo);
         DrawRectOutline(ot, (s16)((g_TeamLogoCursorX * 4) + 0x88),
                         (s16)(panelTop + (g_TeamLogoCursorY * 8) + 2),
                         (s16)(g_TeamLogoBrushSize * 4), (s16)(g_TeamLogoBrushSize * 8), 0,
@@ -66,8 +67,8 @@ static void DrawCanvasPanel(GameOrderingTableEntry *ot, s32 slide) {
 
     /* Zooming in nudges the canvas a pixel left and two up inside its frame. */
     quadTop = (s16)panelTop;
-    quadLeft = ((s16)frameX) - (g_TeamLogoZoomSpan < 0x220);
-    if (g_TeamLogoZoomSpan < 0x220) {
+    quadLeft = ((s16)frameX) - (logo->zoomSpan < 0x220);
+    if (logo->zoomSpan < 0x220) {
         quadTop -= 2;
     }
     quadBottom = quadTop + 0x110;
@@ -75,12 +76,12 @@ static void DrawCanvasPanel(GameOrderingTableEntry *ot, s32 slide) {
 
     /* The view scrolls by taking a smaller window of the texture, panned by how
      * far the zoom has closed in. */
-    zoomShortfall = 0x220 - g_TeamLogoZoomSpan;
+    zoomShortfall = 0x220 - logo->zoomSpan;
     texLeft =
         ((g_TeamLogoRect.x * 4) - 1) + ((zoomShortfall * g_TeamLogoViewX) / 272);
     texTop = ((u8)g_TeamLogoRect.y - 1) + ((zoomShortfall * g_TeamLogoViewY) / 272);
-    texRight = texLeft + (g_TeamLogoZoomSpan / 8);
-    texBottom = texTop + (g_TeamLogoZoomSpan / 8);
+    texRight = texLeft + (logo->zoomSpan / 8);
+    texBottom = texTop + (logo->zoomSpan / 8);
 
     SetDrawClipRect(&g_RenderState.draw, ot, (s16)0, (s16)0, (s16)0x140, (s16)0x1E0);
     GameDrawTexturedQuad(ot, (s16)quadLeft, (s16)quadTop, (s16)quadRight, (s16)quadTop,
@@ -94,7 +95,8 @@ static void DrawCanvasPanel(GameOrderingTableEntry *ot, s32 slide) {
  * The small unzoomed preview, with the guide lines that mark the brush and
  * its row across the whole logo.
  */
-static void DrawPreviewPanel(GameOrderingTableEntry *ot, s32 slide) {
+static void DrawPreviewPanel(const TeamLogo *logo, GameOrderingTableEntry *ot,
+                             s32 slide) {
     s32 panelTop;
     s32 viewLeft;
     s32 viewTop;
@@ -115,10 +117,10 @@ static void DrawPreviewPanel(GameOrderingTableEntry *ot, s32 slide) {
                     (u8)0xFF);
 
     /* Zoomed in, the preview marks where the big panel is looking. */
-    if ((g_TeamLogoZoomLevel >= 0x100) && (g_TeamLogoGuideMode != 0)) {
+    if ((logo->zoom >= 0x100) && (g_TeamLogoGuideMode != 0)) {
         viewLeft = (u16)((u16)g_TeamLogoViewX + 0x30);
         viewTop = (u16)(panelTop + ((g_TeamLogoViewY * 2) + 2));
-        u8 shade = LogoPulseShade();
+        u8 shade = LogoPulseShade(logo);
         if (g_TeamLogoGuideMode == 2) {
             /* Crosshairs: both edges of the brush drawn the full height and the
              * full width of the preview. Each row of the logo is two pixels
@@ -176,7 +178,8 @@ static void DrawPreviewPanel(GameOrderingTableEntry *ot, s32 slide) {
  * The fifteen fixed colours, the pen well showing the mixed colour, and the
  * four button prompts, whose glyphs differ between pad and NeGcon.
  */
-static void DrawSwatchStrip(GameOrderingTableEntry *ot, s32 slide) {
+static void DrawSwatchStrip(const TeamLogo *logo, GameOrderingTableEntry *ot,
+                            s32 slide) {
     s32 panelTop;
     s32 stripX;
     s32 wellX;
@@ -198,7 +201,7 @@ static void DrawSwatchStrip(GameOrderingTableEntry *ot, s32 slide) {
     wellTop = (u16)(panelTop - 3);
     wellX = (u16)((g_TeamLogoPenColor * 8) + 0x80);
     if (g_TeamLogoPaletteMode == 1) {
-        u8 shade = LogoPulseShade();
+        u8 shade = LogoPulseShade(logo);
         DrawRectOutline(ot, (s16)wellX, (s16)wellTop, (s16)0xD, 0x1A, 0, (u8)shade, 0, (u8)0xFF);
     } else {
         DrawRectOutline(ot, (s16)wellX, (s16)wellTop, (s16)0xD, 0x1A, (u8)0xB4, (u8)0xB4, (u8)0xB4,
@@ -264,7 +267,8 @@ static void DrawEditorHint(GameOrderingTableEntry *ot, s32 slide) {
  * Expert mode's three colour channels: a numeric readout and a bar for each
  * of red, green and blue.
  */
-static void DrawChannelSliders(GameOrderingTableEntry *ot, s32 slide) {
+static void DrawChannelSliders(const TeamLogo *logo, GameOrderingTableEntry *ot,
+                               s32 slide) {
     /* Red, green and blue, one slider each, 0x30 apart down the screen. */
     static const u8 glyphU[3] = {0xD8, 0x80, 0x58};
     static const u8 barRed[3] = {0xC0, 0, 0};
@@ -286,7 +290,7 @@ static void DrawChannelSliders(GameOrderingTableEntry *ot, s32 slide) {
 
     /* While a colour is being mixed, the channel being edited is ringed. */
     if (g_TeamLogoPaletteMode == 1) {
-        u8 shade = LogoPulseShade();
+        u8 shade = LogoPulseShade(logo);
 
         DrawRectOutline(ot, (s16)sliderX, (s16)((g_TeamLogoColorChannel * 0x30) + 0xD9), (s16)0x12,
                         0x15, 0, (u8)shade, 0, (u8)0xFF);
@@ -331,8 +335,8 @@ static void DrawChannelSliders(GameOrderingTableEntry *ot, s32 slide) {
  * Colour zero cycles through the spectrum on its own, and the whole palette is
  * then dimmed by the fade level into the second CLUT the panels draw with.
  */
-static void AnimateLogoClut(void) {
-    u32 phase = (u32)g_TeamLogoColorCycleAngle;
+static void AnimateLogoClut(TeamLogo *logo) {
+    u32 phase = (u32)logo->colorCycle;
     s32 fade;
     s32 blue;
     s32 i;
@@ -346,58 +350,58 @@ static void AnimateLogoClut(void) {
         blue += 0x7F;
     }
     g_TeamLogoClut[0] |= (((blue >> 7) + 0x20) >> 3) << 10;
-    g_TeamLogoColorCycleAngle = (s32)(phase + 0x20u);
+    logo->colorCycle = (s32)(phase + 0x20u);
 
-    fade = g_TeamLogoFadeLevel;
+    fade = logo->fade;
     for (i = 0; i < 16; i++) {
         g_TeamLogoFadedClut[i] = FadeLogoColor(g_TeamLogoClut[i], fade);
     }
 }
 
-void DrawTeamLogoCanvas(s32 panelStep, s32 editorStep) {
+void DrawTeamLogoCanvas(TeamLogo *logo, s32 panelStep, s32 editorStep) {
     GameOrderingTableEntry *ot;
 
     ot = RENDER_OT_BASE;
     if (panelStep == 0) {
-        g_TeamLogoPanelStep = 0;
-        g_TeamLogoEditorStep = 0;
+        logo->panelStep = 0;
+        logo->editorStep = 0;
         return;
     }
 
-    AnimateLogoClut();
+    AnimateLogoClut(logo);
     LoadImage(&g_TeamLogoRect, &g_TeamLogoCanvas);
     LoadImage(&g_TeamLogoClutRect, g_TeamLogoClut);
     LoadImage(&g_TeamLogoFadedClutRect, g_TeamLogoFadedClut);
-    g_TeamLogoPanelStep =
-        AddClampedMenuValue(g_TeamLogoPanelStep,
+    logo->panelStep =
+        AddClampedMenuValue(logo->panelStep,
                             panelStep < 0 ? panelStep : 0, 0, 0x19);
-    g_TeamLogoEditorStep =
-        AddClampedMenuValue(g_TeamLogoEditorStep,
+    logo->editorStep =
+        AddClampedMenuValue(logo->editorStep,
                             editorStep < 0 ? editorStep : 0, 0, 0x10);
-    DrawCanvasPanel(ot, g_TeamLogoPanelStep - 0xA);
+    DrawCanvasPanel(logo, ot, logo->panelStep - 0xA);
 
-    DrawPreviewPanel(ot, g_TeamLogoPanelStep - 0xE);
+    DrawPreviewPanel(logo, ot, logo->panelStep - 0xE);
 
-    DrawSwatchStrip(ot, g_TeamLogoEditorStep - 8);
+    DrawSwatchStrip(logo, ot, logo->editorStep - 8);
 
-    DrawEditorHint(ot, g_TeamLogoEditorStep - 7);
+    DrawEditorHint(ot, logo->editorStep - 7);
 
     if (g_TeamLogoExpertMode != 0) {
-        DrawChannelSliders(ot, g_TeamLogoEditorStep - 8);
+        DrawChannelSliders(logo, ot, logo->editorStep - 8);
     }
 
-    g_TeamLogoPanelStep =
-        AddClampedMenuValue(g_TeamLogoPanelStep,
+    logo->panelStep =
+        AddClampedMenuValue(logo->panelStep,
                             panelStep > 0 ? panelStep : 0, 0, 0x19);
-    g_TeamLogoEditorStep =
-        AddClampedMenuValue(g_TeamLogoEditorStep,
+    logo->editorStep =
+        AddClampedMenuValue(logo->editorStep,
                             editorStep > 0 ? editorStep : 0, 0, 0x10);
 }
 
-void RampTeamLogoCanvas(s32 stepA, s32 stepB) {
-    g_TeamLogoFadeLevel =
-        AddClampedMenuValue(g_TeamLogoFadeLevel, stepA, 0x40, 0x100);
-    g_TeamLogoZoomLevel =
-        AddClampedMenuValue(g_TeamLogoZoomLevel, stepB, 0, 0x100);
-    g_TeamLogoZoomSpan = 0x220 - ((g_TeamLogoZoomLevel * 17) / 16);
+void RampTeamLogoCanvas(TeamLogo *logo, s32 stepA, s32 stepB) {
+    logo->fade =
+        AddClampedMenuValue(logo->fade, stepA, 0x40, 0x100);
+    logo->zoom =
+        AddClampedMenuValue(logo->zoom, stepB, 0, 0x100);
+    logo->zoomSpan = 0x220 - ((logo->zoom * 17) / 16);
 }

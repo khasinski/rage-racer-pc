@@ -102,15 +102,12 @@ s32 g_TeamLogoCursorY;
 s32 g_TeamLogoViewX;
 s32 g_TeamLogoViewY;
 s32 g_TeamLogoGuideMode = 1;
-s32 g_TeamLogoZoomSpan = 544;
 s32 g_TeamLogoBrushSize = 1;
 s32 g_TeamLogoPenColor = 1;
 s32 g_TeamLogoPaletteMode;
 s32 g_TeamLogoColorChannel;
 u16 g_TeamLogoFadedClutRect = 304;
 u16 g_TeamLogoBlankClut[16];
-s32 g_TeamLogoPanelStep;
-s32 g_TeamLogoEditorStep;
 s32 g_TeamLogoDpadRepeatTimer;
 s32 g_TeamLogoDpadRepeatMask;
 s32 g_TeamLogoGuideModePrev = 1;
@@ -129,9 +126,6 @@ s32 g_CarTuneUpPriceTable[31] = {
     362500, 15200, 62400, 331400, 136700, 577000, 20000, 77500,
     405700, 151600, 559700, 695900, 2143500, 2836800, 6666666,
 };
-s32 g_TeamLogoColorCycleAngle;
-s32 g_TeamLogoFadeLevel;
-s32 g_TeamLogoZoomLevel;
 u16 g_TeamLogoFadedClut[16];
 u8 g_MenuSubCursor;
 s32 GameMenuCursor;
