@@ -82,12 +82,7 @@ extern s32 g_RaceTotalTime;
  * fast host frame cannot make the second cue replace the first. Lives in the
  * race scene; the lap update is what asks for it. */
 void QueueFinishFollowupCue(s32 cue);
-extern s32 g_PrologueStep;
 enum {
-    PROLOGUE_STEP_LOAD_TEXTURES,
-    PROLOGUE_STEP_LOAD_TRACK,
-    PROLOGUE_STEP_WAIT_FOR_FADE,
-    PROLOGUE_STEP_ACTIVE,
     PROLOGUE_END_FRAME = 0x500,
 };
 extern PrologueCameraCut g_PrologueCameraCuts[PROLOGUE_CAMERA_CUT_COUNT];

@@ -31,9 +31,13 @@ void SceneRuntimeBeforeDispatch(s32 scene) {
         const int continueRecordEntry =
             scene == GAME_SCENE_RECORD_ENTRY &&
             s_runtime.scene == GAME_SCENE_ENTER_RECORD_ENTRY;
+        const int continuePrologue =
+            scene == GAME_SCENE_PROLOGUE &&
+            s_runtime.scene == GAME_SCENE_ENTER_PROLOGUE;
         MemoryCardSession memoryCard = s_runtime.memoryCard;
         BgmSelect bgmSelect = s_runtime.bgmSelect;
         RecordEntry recordEntry = s_runtime.recordEntry;
+        Prologue prologue = s_runtime.prologue;
         u32 generation = s_runtime.generation + 1;
 
         if (generation == 0) generation = 1;
@@ -46,6 +50,7 @@ void SceneRuntimeBeforeDispatch(s32 scene) {
         }
         if (continueBgmSelect) s_runtime.bgmSelect = bgmSelect;
         if (continueRecordEntry) s_runtime.recordEntry = recordEntry;
+        if (continuePrologue) s_runtime.prologue = prologue;
         ResetLegacyTransitionState();
     }
     s_runtime.transition.timer = g_SceneTimer;
@@ -78,6 +83,10 @@ BgmSelect *SceneRuntimeBgmSelect(void) {
 
 RecordEntry *SceneRuntimeRecordEntry(void) {
     return &s_runtime.recordEntry;
+}
+
+Prologue *SceneRuntimePrologue(void) {
+    return &s_runtime.prologue;
 }
 
 const AssetLoadTransaction *SceneRuntimeAssetResult(AssetRequestType request) {

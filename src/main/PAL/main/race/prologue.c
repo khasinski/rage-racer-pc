@@ -8,6 +8,7 @@
 #include "game/render_internal.h"
 #include "game/race_internal.h"
 #include "game/scene.h"
+#include "game/scene_runtime.h"
 #include "game/state.h"
 #include "game/track.h"
 
@@ -26,6 +27,8 @@ enum {
 };
 
 void EnterPrologue(void) {
+    Prologue *state = SceneRuntimePrologue();
+
     SetDispMask(0);
     SetupDisplay240(0, 0, 0);
 
@@ -33,13 +36,13 @@ void EnterPrologue(void) {
     g_FadeLevel = PROLOGUE_INITIAL_FADE_LEVEL;
     g_FadeStep = PROLOGUE_FADE_IN_STEP;
     g_SceneId = GAME_SCENE_PROLOGUE;
-    g_PrologueStep = PROLOGUE_STEP_LOAD_TEXTURES;
-    g_PrologueCutIndex = 0;
+    state->step = PROLOGUE_STEP_LOAD_TEXTURES;
+    state->cameraCut = 0;
     g_SceneTimer = 0;
     g_CameraCarIndex = 3;
 }
 
-static void UpdatePrologueLoad(void) {
+static void UpdatePrologueLoad(Prologue *state) {
     if (g_SceneTimer == PROLOGUE_DISPLAY_ENABLE_FRAME) {
         SetDispMask(1);
     }
@@ -63,7 +66,7 @@ static void UpdatePrologueLoad(void) {
             g_CourseIndex = 0;
             InitTrackScene();
             StartCdAudio();
-            g_PrologueStep = PROLOGUE_STEP_ACTIVE;
+            state->step = PROLOGUE_STEP_ACTIVE;
             g_FadeLevel = 0x100;
             g_FadeStep = 0;
         }
@@ -71,7 +74,7 @@ static void UpdatePrologueLoad(void) {
 
 }
 
-static void UpdatePrologueTextureLoad(void) {
+static void UpdatePrologueTextureLoad(Prologue *state) {
     size_t texturePackSize;
 
     if (AssetLoadCompletedSuccessfully()) {
@@ -81,21 +84,21 @@ static void UpdatePrologueTextureLoad(void) {
             FailAssetLoad();
         } else {
             RequestTrackDataAssets();
-            g_PrologueStep = PROLOGUE_STEP_LOAD_TRACK;
+            state->step = PROLOGUE_STEP_LOAD_TRACK;
         }
     }
 
-    UpdatePrologueLoad();
+    UpdatePrologueLoad(state);
 }
 
-static void UpdatePrologueTrackLoad(void) {
+static void UpdatePrologueTrackLoad(Prologue *state) {
     if (AssetLoadCompletedSuccessfully()) {
         g_FadeStep = PROLOGUE_FADE_OUT_STEP;
         RequestCdTrack(2);
-        g_PrologueStep = PROLOGUE_STEP_WAIT_FOR_FADE;
+        state->step = PROLOGUE_STEP_WAIT_FOR_FADE;
     }
 
-    UpdatePrologueLoad();
+    UpdatePrologueLoad(state);
 }
 
 static void DrawPrologueText(void) {
@@ -138,7 +141,7 @@ static void ExitPrologue(void) {
     RequestSelectBgmAssets();
 }
 
-static void UpdatePrologue(void) {
+static void UpdatePrologue(Prologue *state) {
     s32 timer;
     s32 worldActive;
     s32 eventIndex;
@@ -174,12 +177,12 @@ static void UpdatePrologue(void) {
 
     worldActive = IsPrologueWorldActive(g_SceneTimer);
     if (worldActive) {
-        eventIndex = PrologueCameraCutIndex(g_PrologueCutIndex);
-        g_PrologueCutIndex = eventIndex;
+        eventIndex = PrologueCameraCutIndex(state->cameraCut);
+        state->cameraCut = eventIndex;
         g_AnimTimer = (s32)((u32)g_AnimTimer + 1u);
         if (g_PrologueCameraCuts[eventIndex].timer == g_SceneTimer) {
             if (eventIndex + 1 < PROLOGUE_CAMERA_CUT_COUNT) {
-                g_PrologueCutIndex = eventIndex + 1;
+                state->cameraCut = eventIndex + 1;
             }
             g_CameraCarIndex = PrologueCameraIndex(
                 g_PrologueCameraCuts[eventIndex].carIndex);
@@ -205,20 +208,22 @@ static void UpdatePrologue(void) {
 }
 
 void TickPrologueStep(void) {
+    Prologue *state = SceneRuntimePrologue();
+
     g_SceneTimer = NextPrologueTimer(g_SceneTimer);
 
-    switch (g_PrologueStep) {
+    switch (state->step) {
     case PROLOGUE_STEP_LOAD_TEXTURES:
-        UpdatePrologueTextureLoad();
+        UpdatePrologueTextureLoad(state);
         break;
     case PROLOGUE_STEP_LOAD_TRACK:
-        UpdatePrologueTrackLoad();
+        UpdatePrologueTrackLoad(state);
         break;
     case PROLOGUE_STEP_WAIT_FOR_FADE:
-        UpdatePrologueLoad();
+        UpdatePrologueLoad(state);
         break;
     case PROLOGUE_STEP_ACTIVE:
-        UpdatePrologue();
+        UpdatePrologue(state);
         break;
     }
 }

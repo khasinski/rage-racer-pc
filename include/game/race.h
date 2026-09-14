@@ -272,7 +272,6 @@ extern s32 g_ClassPromoted;
 extern char *g_CourseNames[COURSE_SLOT_COUNT];
 extern s32 g_EndingWashLevel;
 extern s32 g_LostRaceChoice;
-extern s32 g_PrologueCutIndex;
 typedef struct PrologueLine {
     s16 x;
     s16 y;

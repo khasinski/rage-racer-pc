@@ -6,6 +6,7 @@
 #include "game/memcard_types.h"
 #include "game/memcard_state.h"
 #include "game/record_entry_state.h"
+#include "game/prologue_state.h"
 #include "game/scene.h"
 
 /*
@@ -29,6 +30,7 @@ typedef struct SceneRuntime {
     MemoryCardSession memoryCard;
     BgmSelect bgmSelect;
     RecordEntry recordEntry;
+    Prologue prologue;
 } SceneRuntime;
 
 void SceneRuntimeBeforeDispatch(s32 scene);
@@ -37,6 +39,7 @@ const SceneRuntime *SceneRuntimeCurrent(void);
 MemoryCardSession *SceneRuntimeMemoryCard(void);
 BgmSelect *SceneRuntimeBgmSelect(void);
 RecordEntry *SceneRuntimeRecordEntry(void);
+Prologue *SceneRuntimePrologue(void);
 /* A result belongs to a scene only when it was the active transaction at the
  * point that scene began. */
 const AssetLoadTransaction *SceneRuntimeAssetResult(AssetRequestType request);

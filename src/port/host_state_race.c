@@ -94,7 +94,6 @@ s32 g_LostRaceChoice;
 s32 g_BgmTrackCount;
 s32 g_SectorIndex;
 s16 g_RaceOptionCursor;
-s32 g_PrologueStep;
 unsigned char g_RankingNameCodes[8];
 s32 g_ClassPromoted;
 /* [series][course][sector], 2 * 4 * 3 signed 32-bit times.  The following
@@ -114,7 +113,6 @@ s32 g_LapTimeMs;
 s32 g_SectorEndDistance[3];
 s32 g_ClassWinCount;
 s16 g_GrandPrixMode;
-s32 g_PrologueCutIndex;
 s32 g_AttractDemoStep;
 s16 g_RaceCueDelay;
 s16 g_RacePhase;

@@ -6,6 +6,7 @@
 #include "game/race_internal.h"
 #include "game/render.h"
 #include "game/render_internal.h"
+#include "game/scene_runtime.h"
 #include "game/state.h"
 #include "game/track.h"
 
@@ -29,10 +30,9 @@ s32 g_FrameSyncThreshold;
 s32 g_IsEnvironmentMode4;
 u16 g_PadPressed;
 PrologueCameraCut g_PrologueCameraCuts[PROLOGUE_CAMERA_CUT_COUNT];
-s32 g_PrologueCutIndex;
+static Prologue s_state;
 PrologueLine g_PrologueLines[17];
 s32 g_PrologueLineCount;
-s32 g_PrologueStep;
 GameRenderState g_RenderState;
 s32 g_SceneId;
 s32 g_SceneTimer;
@@ -136,6 +136,7 @@ void UpdateCamera(Camera *camera, CameraViewMode mode, GameCarRuntime *car) {
     (void)car;
 }
 void UpdateEnvironment(void) {}
+Prologue *SceneRuntimePrologue(void) { return &s_state; }
 
 #define CHECK(condition)                                                       \
     do {                                                                       \
@@ -153,7 +154,7 @@ int main(void) {
     g_AssetBase = asset;
     g_ImageBlockBuffer = asset + sizeof(asset);
     EnterPrologue();
-    CHECK(g_PrologueStep == PROLOGUE_STEP_LOAD_TEXTURES);
+    CHECK(s_state.step == PROLOGUE_STEP_LOAD_TEXTURES);
     CHECK(g_SceneId == 0x20 && g_SceneTimer == 0);
     CHECK(g_CameraCarIndex == 3 && g_FadeLevel == 0x108 && g_FadeStep == -4);
     CHECK(s_displayMask == 0);
@@ -162,7 +163,7 @@ int main(void) {
     g_FadeStep = 0;
     s_assetReady = 1;
     TickPrologueStep();
-    CHECK(g_PrologueStep == PROLOGUE_STEP_LOAD_TRACK);
+    CHECK(s_state.step == PROLOGUE_STEP_LOAD_TRACK);
     CHECK(s_installCalls == 1 && s_installedSize == sizeof(asset));
     CHECK(s_trackDataRequests == 1);
 
@@ -173,7 +174,7 @@ int main(void) {
     g_AssetLoadFailed = 0;
     TickPrologueStep();
     CHECK(g_AssetLoadFailed == 1 && g_AssetLoadState == 0);
-    CHECK(g_PrologueStep == PROLOGUE_STEP_LOAD_TEXTURES);
+    CHECK(s_state.step == PROLOGUE_STEP_LOAD_TEXTURES);
 
     EnterPrologue();
     g_ImageBlockBuffer = asset + sizeof(asset);
@@ -183,7 +184,7 @@ int main(void) {
     s_installSucceeds = 0;
     TickPrologueStep();
     CHECK(g_AssetLoadFailed == 1 && s_trackDataRequests == 1);
-    CHECK(g_PrologueStep == PROLOGUE_STEP_LOAD_TEXTURES);
+    CHECK(s_state.step == PROLOGUE_STEP_LOAD_TEXTURES);
     s_installSucceeds = 1;
 
     EnterPrologue();
@@ -193,9 +194,9 @@ int main(void) {
     g_AssetLoadFailed = 0;
 
     TickPrologueStep();
-    CHECK(g_PrologueStep == PROLOGUE_STEP_LOAD_TRACK);
+    CHECK(s_state.step == PROLOGUE_STEP_LOAD_TRACK);
     TickPrologueStep();
-    CHECK(g_PrologueStep == PROLOGUE_STEP_WAIT_FOR_FADE);
+    CHECK(s_state.step == PROLOGUE_STEP_WAIT_FOR_FADE);
     /* Physical Track 02 is instrumental on the international releases and
      * carries the English prologue narration on NTSC-J. The content option
      * changes the matching text, but must not sever that authored audio. */
@@ -203,29 +204,29 @@ int main(void) {
     CHECK(g_FadeLevel == 4 && g_FadeStep == 4);
 
     for (i = 0; i < 63; i++) TickPrologueStep();
-    CHECK(g_PrologueStep == PROLOGUE_STEP_WAIT_FOR_FADE);
+    CHECK(s_state.step == PROLOGUE_STEP_WAIT_FOR_FADE);
     CHECK(g_FadeLevel == 0x100);
     TickPrologueStep();
-    CHECK(g_PrologueStep == PROLOGUE_STEP_ACTIVE);
+    CHECK(s_state.step == PROLOGUE_STEP_ACTIVE);
     CHECK(g_FadeLevel == 0x100 && g_FadeStep == 0);
     CHECK(g_CourseIndex == 0 && s_trackInitCalls == 1);
     CHECK(s_startAudioCalls == 1 && s_displayMask == 0);
 
-    g_PrologueStep = PROLOGUE_STEP_ACTIVE;
+    s_state.step = PROLOGUE_STEP_ACTIVE;
     g_SceneTimer = 100;
-    g_PrologueCutIndex = INT_MAX;
+    s_state.cameraCut = INT_MAX;
     g_CameraCarIndex = INT_MAX;
     g_PrologueLineCount = INT_MAX;
     g_RenderState.draw.packetCursor = s_frame.layout.primitiveBuffer;
     TickPrologueStep();
     CHECK(g_SceneTimer == 101);
-    CHECK(g_PrologueCutIndex == PROLOGUE_CAMERA_CUT_COUNT - 1);
+    CHECK(s_state.cameraCut == PROLOGUE_CAMERA_CUT_COUNT - 1);
     CHECK(g_CameraCarIndex == 0);
 
     g_SceneTimer = 100;
-    g_PrologueCutIndex = -1;
+    s_state.cameraCut = -1;
     TickPrologueStep();
-    CHECK(g_PrologueCutIndex == 0);
+    CHECK(s_state.cameraCut == 0);
 
     g_SceneTimer = 1279;
     TickPrologueStep();

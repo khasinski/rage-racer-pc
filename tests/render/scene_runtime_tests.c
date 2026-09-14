@@ -134,6 +134,20 @@ int main(void) {
           SceneRuntimeRecordEntry()->nameCursor == 0 &&
           SceneRuntimeRecordEntry()->rankingRow == 0);
 
+    g_SceneId = GAME_SCENE_ENTER_PROLOGUE;
+    SceneRuntimeBeforeDispatch(g_SceneId);
+    SceneRuntimePrologue()->step = PROLOGUE_STEP_ACTIVE;
+    SceneRuntimePrologue()->cameraCut = 4;
+    g_SceneId = GAME_SCENE_PROLOGUE;
+    SceneRuntimeBeforeDispatch(g_SceneId);
+    CHECK(SceneRuntimePrologue()->step == PROLOGUE_STEP_ACTIVE &&
+          SceneRuntimePrologue()->cameraCut == 4);
+
+    g_SceneId = GAME_SCENE_MENU;
+    SceneRuntimeBeforeDispatch(g_SceneId);
+    CHECK(SceneRuntimePrologue()->step == 0 &&
+          SceneRuntimePrologue()->cameraCut == 0);
+
     puts("scene runtime scopes transition state and asset results to one scene");
     return 0;
 }

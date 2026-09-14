@@ -14,6 +14,7 @@
 #include "game/render_internal.h"
 #include "game/random.h"
 #include "game/save_internal.h"
+#include "game/scene_runtime.h"
 #include "game/track_internal.h"
 #include "runtime_config.h"
 #include "scenario_control.h"
@@ -651,7 +652,8 @@ int PortShouldExit(int frame_number) {
             (input->scene == 4 && g_FrontendState == input->phase) ||
             (input->scene == 8 &&
              MenuRuntimeCurrent()->activeScreen == input->phase) ||
-            (input->scene == 32 && g_PrologueStep == input->phase);
+            (input->scene == 32 &&
+             (int)SceneRuntimeCurrent()->prologue.step == input->phase);
         if (!input->fired && g_SceneId == input->scene && phaseMatches &&
             g_SceneTimer <= input->timer) {
             input->armed = 1;
