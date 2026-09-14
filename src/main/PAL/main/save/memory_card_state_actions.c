@@ -31,27 +31,25 @@ void RunCardWorkingActions(s32 fadeBusy) {
     switch (g_McActionState) {
     case CARD_WORK_WAIT_FOR_SCENE:
         if ((u32)g_SceneTimer < CARD_WORK_START_FRAME) break;
-        g_McCardOkFrames = 0;
-        g_McActionElapsed = 0;
+        g_McSettleTicks = 0;
+        g_McActionTimer = CARD_WORK_CANCEL_DELAY_FRAMES;
         g_McActionState = CARD_WORK_WAIT_FOR_CARD;
         break;
     case CARD_WORK_WAIT_FOR_CARD:
         g_McActionBusy = 0;
-        g_McActionElapsed++;
+        if (g_McActionTimer > 0) g_McActionTimer--;
         if ((g_PadPressed & PAD_CANCEL) &&
-            g_McActionElapsed >= CARD_WORK_CANCEL_DELAY_FRAMES) {
-            g_McCardOkFrames = 0;
-            g_McActionElapsed = 0;
+            g_McActionTimer == 0) {
+            g_McSettleTicks = 0;
             if (fadeBusy == 0) {
                 PlaySoundCue(3);
                 StartMenuExitFade();
             }
         }
         if (g_McCardStatus != MC_MENU_STATE_READY) break;
-        g_McCardOkFrames++;
-        if (g_McCardOkFrames < CARD_WORK_READY_FRAMES) break;
-        g_McCardOkFrames = 0;
-        g_McActionElapsed = 0;
+        g_McSettleTicks++;
+        if (g_McSettleTicks < CARD_WORK_READY_FRAMES) break;
+        g_McSettleTicks = 0;
         g_McActionState = CARD_WORK_BEGIN_STATUS_DELAY;
         break;
     case CARD_WORK_BEGIN_STATUS_DELAY:

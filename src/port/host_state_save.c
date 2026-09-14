@@ -59,8 +59,6 @@ s32 g_McNoCardTicks;
 s32 g_McErrorTicks;
 s32 g_McLastMenuState;
 s32 g_McSettleTicks;
-s32 g_McCardOkFrames;
-s32 g_McActionElapsed;
 s32 g_McMenuState;
 s32 g_McCardStatus;
 s32 g_McMenuSelection;

@@ -32,7 +32,6 @@ s32 g_McErrorTicks;
 s32 g_McErrorPending;
 s32 g_McErrorCountdown;
 s32 g_McSettleTicks;
-s32 g_McCardOkFrames;
 s32 g_SceneId;
 s32 g_SceneTimer;
 u16 g_PadPressed;
@@ -227,7 +226,6 @@ static void TestMenuLifecycle(void) {
     g_McErrorPending = 1;
     g_McErrorCountdown = -1;
     g_McSettleTicks = 3;
-    g_McCardOkFrames = 1;
     EnterMemoryCardMenu();
     CHECK(s_displayMask == 0 && s_displaySetup == 1 && s_startEvents == 1);
     CHECK(g_McMenuRowCount == 2 && g_McMenuState == -1);
@@ -240,7 +238,7 @@ static void TestMenuLifecycle(void) {
           g_McLastCardStatus == MC_CARD_RESULT_PENDING);
     CHECK(g_McNoCardTicks == 0 && g_McErrorTicks == 0 &&
           g_McErrorPending == 0 && g_McErrorCountdown == 3);
-    CHECK(g_McSettleTicks == 0 && g_McCardOkFrames == 0);
+    CHECK(g_McSettleTicks == 0);
 
     StartMenuExitFade();
     CHECK(s_stopEvents == 1 && g_McFadeStep == 8);

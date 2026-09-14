@@ -19,7 +19,6 @@ static void ResetMemoryCardMenuSession(void) {
     g_McErrorPending = 0;
     g_McErrorCountdown = 3;
     g_McSettleTicks = 0;
-    g_McCardOkFrames = 0;
 }
 
 static void InitializeMemoryCardMenu(s32 fromLoadMenu) {
