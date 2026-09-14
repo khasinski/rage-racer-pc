@@ -23,135 +23,135 @@ enum {
     FORMAT_RESULT_DISPLAY_FRAMES = 60,
 };
 
-static void ReturnToUnformattedCardRoot(MemoryCardAction *action) {
-    g_McMenuPage = 0;
-    action->state = FORMAT_CARD_ACTION_PROMPT;
+static void ReturnToUnformattedCardRoot(MemoryCardSession *memoryCard) {
+    memoryCard->menuPage = 0;
+    memoryCard->action.state = FORMAT_CARD_ACTION_PROMPT;
 }
 
-static void RunUnformattedCardRootPage(MemoryCardAction *action, s32 fadeBusy) {
-    g_McMenuPhase = MC_PROMPT_NONE;
-    AdjustMenuSelectionVertical(&g_McMenuRowCursor, 0,
-                                MemoryCardMenuRowCount() - 1);
+static void RunUnformattedCardRootPage(MemoryCardSession *memoryCard, s32 fadeBusy) {
+    memoryCard->phase = MC_PROMPT_NONE;
+    AdjustMenuSelectionVertical(&memoryCard->menuRow, 0,
+                                MemoryCardMenuRowCount(memoryCard) - 1);
 
     if (!(g_PadPressed & PAD_CONFIRM)) {
         if ((g_PadPressed & PAD_CANCEL) && !fadeBusy) {
             PlaySoundCue(3);
-            action->busy = 0;
-            StartMenuExitFade();
+            memoryCard->action.busy = 0;
+            StartMenuExitFade(memoryCard);
         }
         return;
     }
 
-    if (g_McMenuRowCursor == 0) {
+    if (memoryCard->menuRow == 0) {
         PlaySoundCue(2);
-        g_McMenuPage = 1;
-        action->confirmChoice = 0;
-        g_McSaveMode = 0;
-    } else if (g_McMenuRowCursor == MemoryCardMenuRowCount() - 1) {
+        memoryCard->menuPage = 1;
+        memoryCard->action.confirmChoice = 0;
+        memoryCard->saveMode = 0;
+    } else if (memoryCard->menuRow == MemoryCardMenuRowCount(memoryCard) - 1) {
         if (fadeBusy) return;
         PlaySoundCue(2);
-        action->busy = 0;
-        StartMenuExitFade();
+        memoryCard->action.busy = 0;
+        StartMenuExitFade(memoryCard);
     } else {
         PlaySoundCue(5);
-        g_McMenuPage = 1;
-        g_McSaveMode = g_McMenuRowCursor;
+        memoryCard->menuPage = 1;
+        memoryCard->saveMode = memoryCard->menuRow;
     }
 }
 
-static void RunFormatPrompt(MemoryCardAction *action) {
-    if (g_McSaveMode != 0) {
-        g_McMenuPhase = MC_PROMPT_NO_DATA;
+static void RunFormatPrompt(MemoryCardSession *memoryCard) {
+    if (memoryCard->saveMode != 0) {
+        memoryCard->phase = MC_PROMPT_NO_DATA;
         if (PollMenuConfirmInput() != 0 || PollMenuBackInput() != 0) {
-            ReturnToUnformattedCardRoot(action);
+            ReturnToUnformattedCardRoot(memoryCard);
         }
         return;
     }
 
-    g_McMenuPhase = MC_PROMPT_NEW_CARD;
+    memoryCard->phase = MC_PROMPT_NEW_CARD;
     if (PollMenuConfirmInput() != 0) {
-        action->state = FORMAT_CARD_ACTION_CONFIRM;
+        memoryCard->action.state = FORMAT_CARD_ACTION_CONFIRM;
     } else if (PollMenuBackInput() != 0) {
-        ReturnToUnformattedCardRoot(action);
+        ReturnToUnformattedCardRoot(memoryCard);
     }
 }
 
-static void RunFormatConfirmation(MemoryCardAction *action) {
+static void RunFormatConfirmation(MemoryCardSession *memoryCard) {
     u16 confirm;
 
-    g_McMenuPhase = action->confirmChoice + MC_PROMPT_FORMAT_ASK;
-    SetMenuBinaryChoiceHorizontal(&action->confirmChoice);
+    memoryCard->phase = memoryCard->action.confirmChoice + MC_PROMPT_FORMAT_ASK;
+    SetMenuBinaryChoiceHorizontal(&memoryCard->action.confirmChoice);
     confirm = PollMenuConfirmInput();
-    if (action->confirmChoice != 0 && confirm != 0) {
-        action->state = FORMAT_CARD_ACTION_BEGIN_DELAY;
+    if (memoryCard->action.confirmChoice != 0 && confirm != 0) {
+        memoryCard->action.state = FORMAT_CARD_ACTION_BEGIN_DELAY;
     } else if (confirm != 0 || PollMenuBackInput() != 0) {
-        ReturnToUnformattedCardRoot(action);
+        ReturnToUnformattedCardRoot(memoryCard);
     }
 }
 
-static void RunFormatOperation(MemoryCardAction *action) {
-    action->result = FormatMemoryCard(0, 0);
-    if (action->result == 1) {
-        action->state = FORMAT_CARD_ACTION_SHOW_SUCCESS;
-        action->timer = FORMAT_RESULT_DISPLAY_FRAMES;
+static void RunFormatOperation(MemoryCardSession *memoryCard) {
+    memoryCard->action.result = FormatMemoryCard(0, 0);
+    if (memoryCard->action.result == 1) {
+        memoryCard->action.state = FORMAT_CARD_ACTION_SHOW_SUCCESS;
+        memoryCard->action.timer = FORMAT_RESULT_DISPLAY_FRAMES;
     } else {
-        action->state = FORMAT_CARD_ACTION_SHOW_ERROR;
+        memoryCard->action.state = FORMAT_CARD_ACTION_SHOW_ERROR;
     }
 }
 
-static void RunFormatCardActions(MemoryCardAction *action, s32 fadeBusy) {
-    switch (action->state) {
+static void RunFormatCardActions(MemoryCardSession *memoryCard, s32 fadeBusy) {
+    switch (memoryCard->action.state) {
     case FORMAT_CARD_ACTION_PROMPT:
-        RunFormatPrompt(action);
+        RunFormatPrompt(memoryCard);
         break;
 
     case FORMAT_CARD_ACTION_CONFIRM:
-        RunFormatConfirmation(action);
+        RunFormatConfirmation(memoryCard);
         break;
 
     case FORMAT_CARD_ACTION_BEGIN_DELAY:
-        action->busy = 1;
-        action->timer = FORMAT_CARD_DELAY_FRAMES;
-        action->state = FORMAT_CARD_ACTION_WAIT_DELAY;
+        memoryCard->action.busy = 1;
+        memoryCard->action.timer = FORMAT_CARD_DELAY_FRAMES;
+        memoryCard->action.state = FORMAT_CARD_ACTION_WAIT_DELAY;
         break;
 
     case FORMAT_CARD_ACTION_WAIT_DELAY:
-        if (MemoryCardCountdownElapsed(&action->timer)) {
-            action->state = FORMAT_CARD_ACTION_RUN;
+        if (MemoryCardCountdownElapsed(&memoryCard->action.timer)) {
+            memoryCard->action.state = FORMAT_CARD_ACTION_RUN;
         }
         break;
 
     case FORMAT_CARD_ACTION_RUN:
-        RunFormatOperation(action);
+        RunFormatOperation(memoryCard);
         break;
 
     case FORMAT_CARD_ACTION_SHOW_SUCCESS:
-        g_McMenuPhase = MC_PROMPT_FORMAT_OK;
-        if (MemoryCardCountdownElapsed(&action->timer)) {
-            action->busy = 0;
-            action->state = FORMAT_CARD_ACTION_WAIT_TO_EXIT;
+        memoryCard->phase = MC_PROMPT_FORMAT_OK;
+        if (MemoryCardCountdownElapsed(&memoryCard->action.timer)) {
+            memoryCard->action.busy = 0;
+            memoryCard->action.state = FORMAT_CARD_ACTION_WAIT_TO_EXIT;
         }
         break;
 
     case FORMAT_CARD_ACTION_WAIT_TO_EXIT:
-        g_McMenuPhase = MC_PROMPT_FORMAT_OK;
+        memoryCard->phase = MC_PROMPT_FORMAT_OK;
         if (!(g_PadPressed & PAD_CANCEL)) break;
-        action->busy = 0;
-        action->state = FORMAT_CARD_ACTION_PROMPT;
-        action->result = 0;
-        action->confirmChoice = 0;
-        action->timer = 0;
+        memoryCard->action.busy = 0;
+        memoryCard->action.state = FORMAT_CARD_ACTION_PROMPT;
+        memoryCard->action.result = 0;
+        memoryCard->action.confirmChoice = 0;
+        memoryCard->action.timer = 0;
         if (!fadeBusy) {
             PlaySoundCue(3);
-            StartMenuExitFade();
+            StartMenuExitFade(memoryCard);
         }
         break;
 
     case FORMAT_CARD_ACTION_SHOW_ERROR:
-        g_McMenuPhase = MC_PROMPT_CARD_ERROR;
-        action->busy = 0;
+        memoryCard->phase = MC_PROMPT_CARD_ERROR;
+        memoryCard->action.busy = 0;
         if (PollMenuConfirmInput() != 0 || PollMenuBackInput() != 0) {
-            action->state = FORMAT_CARD_ACTION_PROMPT;
+            memoryCard->action.state = FORMAT_CARD_ACTION_PROMPT;
         }
         break;
 
@@ -160,13 +160,13 @@ static void RunFormatCardActions(MemoryCardAction *action, s32 fadeBusy) {
     }
 }
 
-void RunUnformattedCardPage(MemoryCardAction *action, s32 fadeBusy) {
-    switch (g_McMenuPage) {
+void RunUnformattedCardPage(MemoryCardSession *memoryCard, s32 fadeBusy) {
+    switch (memoryCard->menuPage) {
     case 0:
-        RunUnformattedCardRootPage(action, fadeBusy);
+        RunUnformattedCardRootPage(memoryCard, fadeBusy);
         break;
     case 1:
-        RunFormatCardActions(action, fadeBusy);
+        RunFormatCardActions(memoryCard, fadeBusy);
         break;
     default:
         break;

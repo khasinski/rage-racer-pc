@@ -15,8 +15,8 @@ typedef enum MemoryCardMenuState {
     MC_MENU_STATE_BUSY = 3,
 } MemoryCardMenuState;
 
-static inline s32 MemoryCardMenuRowCount(void) {
-    return g_McFromLoadMenu != 0 ? 3 : 2;
+static inline s32 MemoryCardMenuRowCount(const MemoryCardSession *memoryCard) {
+    return memoryCard->fromLoadMenu != 0 ? 3 : 2;
 }
 
 /* Advance a positive frame countdown and report its deadline. Invalid or
@@ -37,10 +37,11 @@ s32 ScanMemoryCardSaveHeaders(GameSaveHeaderRow *headers);
 s32 LoadMemoryCardSaveSlot(s32 slot, GameSaveHeaderRow *header);
 s32 CountMemoryCardFiles(s32 device, s32 port, DirEntry *entries);
 s32 CalculateMemoryCardFreeBlocks(const DirEntry *entries, s32 fileCount);
-s32 RefreshMemoryCardSaveStatus(GameSaveHeaderRow *headers);
+s32 RefreshMemoryCardSaveStatus(GameSaveHeaderRow *headers, s32 *freeBlocks);
 enum { SAVE_ELAPSED_TIME_CAPACITY = 16 };
 char *FormatSaveElapsedTime(char dst[SAVE_ELAPSED_TIME_CAPACITY], u32 ticks);
-void DrawMemoryCardSaveRows(s32 flags, const GameSaveHeaderRow *rows);
+void DrawMemoryCardSaveRows(s32 flags, const GameSaveHeaderRow *rows,
+                            s32 freeBlocks, s32 menuPage, s32 menuRow);
 
 void ClearMemoryCardHwEvents(void);
 void ClearMemoryCardSwEvents(void);
@@ -55,18 +56,14 @@ void AdjustMenuSelectionVertical(s32 *value, s32 min, s32 max);
 void SetMenuBinaryChoiceHorizontal(s32 *value);
 u16 PollMenuConfirmInput(void);
 u16 PollMenuBackInput(void);
-void StartMenuExitFade(void);
-s32 UpdateMemoryCardFade(MemoryCardAction *action);
-s32 AdvanceMemoryCardMenuStartup(MemoryCardAction *action,
-                                 MemoryCardSlots *slots);
-void DrawMemoryCardMenu(const MemoryCardSlots *slots);
-void RunCardSlotActions(MemoryCardAction *action, MemoryCardPoll *poll,
-                        MemoryCardSlots *slots);
-void RunUnformattedCardPage(MemoryCardAction *action, s32 fadeBusy);
-void RunCardWorkingActions(MemoryCardAction *action, MemoryCardSlots *slots,
-                           s32 fadeBusy);
-void RunNoCardActions(MemoryCardAction *action, MemoryCardSlots *slots,
-                      s32 fadeBusy);
+void StartMenuExitFade(MemoryCardSession *memoryCard);
+s32 UpdateMemoryCardFade(MemoryCardSession *memoryCard);
+s32 AdvanceMemoryCardMenuStartup(MemoryCardSession *memoryCard);
+void DrawMemoryCardMenu(const MemoryCardSession *memoryCard);
+void RunCardSlotActions(MemoryCardSession *memoryCard);
+void RunUnformattedCardPage(MemoryCardSession *memoryCard, s32 fadeBusy);
+void RunCardWorkingActions(MemoryCardSession *memoryCard, s32 fadeBusy);
+void RunNoCardActions(MemoryCardSession *memoryCard, s32 fadeBusy);
 void DrawMemoryCardMessage(s32 message);
 s32 PollMemoryCardStatus(MemoryCardPoll *poll, s32 port, s32 slot);
 void DrawMemoryCardScreen(s32 showSlotBar, s32 fromLoadMenu,

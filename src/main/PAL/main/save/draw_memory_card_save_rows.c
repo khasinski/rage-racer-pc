@@ -43,7 +43,8 @@ static void DrawUsedSaveRow(char *text, s32 slotNumber, s32 y,
                  FormatSaveElapsedTime(text, row->fields.saveCounter));
 }
 
-void DrawMemoryCardSaveRows(s32 flags, const GameSaveHeaderRow *rows) {
+void DrawMemoryCardSaveRows(s32 flags, const GameSaveHeaderRow *rows,
+                            s32 freeBlocks, s32 menuPage, s32 menuRow) {
     char text[SAVE_ROW_TEXT_SIZE];
     s32 rowIndex;
 
@@ -58,15 +59,13 @@ void DrawMemoryCardSaveRows(s32 flags, const GameSaveHeaderRow *rows) {
         } else if (error) {
             DrawSaveRowSlotNumber(text, "%1d /", slotNumber, y);
             DrawSaveText(0x88, y, "FILE ERROR");
-        } else if (g_McFreeBlocks == 0 && g_McMenuPage != 0 &&
-                   g_McMenuRowCursor != 0) {
+        } else if (freeBlocks == 0 && menuPage != 0 && menuRow != 0) {
             DrawSaveRowSlotNumber(text, "%1d /", slotNumber, y);
             DrawSaveText(0x90, y, "NO FILE");
-        } else if (g_McFreeBlocks == 0 || g_McMenuPage == 0) {
+        } else if (freeBlocks == 0 || menuPage == 0) {
             DrawSaveRowSlotNumber(text, "%1d /        /", slotNumber, y);
         } else {
-            const char *slotLabel =
-                g_McMenuRowCursor == 0 ? "NEW FILE" : "NO FILE";
+            const char *slotLabel = menuRow == 0 ? "NEW FILE" : "NO FILE";
 
             DrawSaveRowSlotNumber(text, "%1d /", slotNumber, y);
             DrawSaveText(0x90, y, slotLabel);

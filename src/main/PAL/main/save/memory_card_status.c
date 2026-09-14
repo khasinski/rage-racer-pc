@@ -26,14 +26,14 @@ s32 CalculateMemoryCardFreeBlocks(const DirEntry *entries, s32 fileCount) {
            (s32)(usedBytes / MEMORY_CARD_BLOCK_SIZE);
 }
 
-s32 RefreshMemoryCardSaveStatus(GameSaveHeaderRow *header) {
+s32 RefreshMemoryCardSaveStatus(GameSaveHeaderRow *header, s32 *freeBlocks) {
     DirEntry entries[MEMORY_CARD_MAX_FILES];
     const s32 fileCount = CountMemoryCardFiles(0, 0, entries);
     s32 ret;
 
     GameMenuLoadPhase = 0x100;
     ClearSaveHeaderRows(header);
-    g_McFreeBlocks = CalculateMemoryCardFreeBlocks(entries, fileCount);
+    *freeBlocks = CalculateMemoryCardFreeBlocks(entries, fileCount);
     ret = ScanMemoryCardSaveHeaders(header);
     GameMenuLoadPhase = 0x200;
 

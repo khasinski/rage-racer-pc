@@ -14,18 +14,6 @@ static s32 s_assetLoadFailed;
 static u8 s_imageData[16];
 u8 *g_ImageBlockBuffer = s_imageData;
 size_t g_ImageBlockSize = sizeof(s_imageData);
-s32 g_McFadeLevel;
-s32 g_McFadeStep;
-s32 g_McFreeBlocks;
-s32 g_McFromLoadMenu;
-s32 g_McMenuPage;
-s32 g_McMenuRowCursor;
-s32 g_McMenuState;
-s32 g_McNoCardTicks;
-s32 g_McErrorTicks;
-s32 g_McErrorPending;
-s32 g_McErrorCountdown;
-s32 g_McSettleTicks;
 s32 g_SceneId;
 s32 g_SceneTimer;
 u16 g_PadPressed;
@@ -124,9 +112,9 @@ static void Reset(void) {
     s_displaySetup = 0;
     s_imageUploads = 0;
     g_AssetLoadState = 0;
-    g_McFreeBlocks = 1;
-    g_McMenuPage = 1;
-    g_McMenuRowCursor = 0;
+    s_memoryCard.freeBlocks = 1;
+    s_memoryCard.menuPage = 1;
+    s_memoryCard.menuRow = 0;
     g_PadPressed = 0;
     g_PadPressedRepeat = 0;
 }
@@ -143,7 +131,9 @@ static void TestSaveRows(void) {
     rows[0].fields.name[3] = 3;
     rows[0].fields.name[4] = 4;
     rows[0].fields.name[5] = 5;
-    DrawMemoryCardSaveRows(1 | (0x10000 << 1), rows);
+    DrawMemoryCardSaveRows(1 | (0x10000 << 1), rows,
+                           s_memoryCard.freeBlocks, s_memoryCard.menuPage,
+                           s_memoryCard.menuRow);
     CHECK(s_drawCount == 7);
     CHECK(strcmp(s_draws[0].text, "1 /") == 0);
     CHECK(strcmp(s_draws[1].text, "012345 /") == 0);
@@ -156,9 +146,10 @@ static void TestSaveRows(void) {
 
     Reset();
     memset(rows, 0, sizeof(rows));
-    g_McFreeBlocks = 0;
-    g_McMenuRowCursor = 1;
-    DrawMemoryCardSaveRows(0, rows);
+    s_memoryCard.freeBlocks = 0;
+    s_memoryCard.menuRow = 1;
+    DrawMemoryCardSaveRows(0, rows, s_memoryCard.freeBlocks,
+                           s_memoryCard.menuPage, s_memoryCard.menuRow);
     CHECK(s_drawCount == 6);
     CHECK(strcmp(s_draws[1].text, "NO FILE") == 0);
 
@@ -166,7 +157,8 @@ static void TestSaveRows(void) {
     memset(rows, 0, sizeof(rows));
     rows[0].fields.nameLength = 1;
     rows[0].fields.name[0] = 0xFF;
-    DrawMemoryCardSaveRows(1, rows);
+    DrawMemoryCardSaveRows(1, rows, s_memoryCard.freeBlocks,
+                           s_memoryCard.menuPage, s_memoryCard.menuRow);
     CHECK(strcmp(s_draws[1].text, "?      /") == 0);
 
     Reset();
@@ -174,7 +166,8 @@ static void TestSaveRows(void) {
     rows[0].fields.nameLength = 2;
     rows[0].fields.name[0] = SAVE_NAME_CHARACTER_COUNT;
     rows[0].fields.name[1] = SAVE_NAME_CHARSET_STORAGE_SIZE - 1;
-    DrawMemoryCardSaveRows(1, rows);
+    DrawMemoryCardSaveRows(1, rows, s_memoryCard.freeBlocks,
+                           s_memoryCard.menuPage, s_memoryCard.menuRow);
     CHECK(strcmp(s_draws[1].text, "??     /") == 0);
 }
 
@@ -218,42 +211,42 @@ static void TestMenuLifecycle(void) {
     s_memoryCard.poll.result = MC_CARD_RESULT_READY;
     s_memoryCard.poll.pendingResult = MC_CARD_RESULT_ERROR;
     s_memoryCard.poll.lastStatus = MC_CARD_RESULT_READY;
-    g_McNoCardTicks = 6;
-    g_McErrorTicks = 4;
-    g_McErrorPending = 1;
-    g_McErrorCountdown = -1;
-    g_McSettleTicks = 3;
+    s_memoryCard.noCardTicks = 6;
+    s_memoryCard.errorTicks = 4;
+    s_memoryCard.errorPending = 1;
+    s_memoryCard.errorCountdown = -1;
+    s_memoryCard.settleTicks = 3;
     EnterMemoryCardMenu();
     CHECK(s_displayMask == 0 && s_displaySetup == 1 && s_startEvents == 1);
-    CHECK(MemoryCardMenuRowCount() == 2 && g_McMenuState == -1);
-    CHECK(g_McMenuPage == 0 && g_McMenuRowCursor == 0);
-    CHECK(g_McFadeStep == -8 && g_McFadeLevel == 0xFF);
+    CHECK(MemoryCardMenuRowCount(&s_memoryCard) == 2 && s_memoryCard.menuState == -1);
+    CHECK(s_memoryCard.menuPage == 0 && s_memoryCard.menuRow == 0);
+    CHECK(s_memoryCard.fadeStep == -8 && s_memoryCard.fadeLevel == 0xFF);
     CHECK(g_SceneId == 0x1A && g_SceneTimer == 0);
     CHECK(s_memoryCard.poll.state == MC_STATUS_REQUEST_INFO && s_memoryCard.poll.ticks == 0);
     CHECK(s_memoryCard.poll.result == MC_CARD_RESULT_PENDING &&
           s_memoryCard.poll.pendingResult == MC_CARD_RESULT_PENDING &&
           s_memoryCard.poll.lastStatus == MC_CARD_RESULT_PENDING);
-    CHECK(g_McNoCardTicks == 0 && g_McErrorTicks == 0 &&
-          g_McErrorPending == 0 && g_McErrorCountdown == 3);
-    CHECK(g_McSettleTicks == 0);
+    CHECK(s_memoryCard.noCardTicks == 0 && s_memoryCard.errorTicks == 0 &&
+          s_memoryCard.errorPending == 0 && s_memoryCard.errorCountdown == 3);
+    CHECK(s_memoryCard.settleTicks == 0);
 
-    StartMenuExitFade();
-    CHECK(s_stopEvents == 1 && g_McFadeStep == 8);
+    StartMenuExitFade(&s_memoryCard);
+    CHECK(s_stopEvents == 1 && s_memoryCard.fadeStep == 8);
     Reset();
     g_AssetLoadState = 1;
-    g_McMenuState = 99;
+    s_memoryCard.menuState = 99;
     EnterMemoryCardMenuFromLoad();
     CHECK(s_displayMask == 0 && s_displaySetup == 1);
     CHECK(s_imageUploads == 0 && s_startEvents == 0);
-    CHECK(g_McMenuState == 99);
+    CHECK(s_memoryCard.menuState == 99);
 
     g_AssetLoadState = 0;
     EnterMemoryCardMenuFromLoad();
     CHECK(s_displaySetup == 2 && s_imageUploads == 1 && s_startEvents == 1);
-    CHECK(MemoryCardMenuRowCount() == 3 && g_McMenuRowCursor == 2);
-    CHECK(g_McMenuState == -1 && g_McMenuPage == 0);
-    CHECK(g_McFromLoadMenu == 1 && g_SceneTimer == 0);
-    CHECK(g_McFadeStep == -8 && g_McFadeLevel == 0xFF);
+    CHECK(MemoryCardMenuRowCount(&s_memoryCard) == 3 && s_memoryCard.menuRow == 2);
+    CHECK(s_memoryCard.menuState == -1 && s_memoryCard.menuPage == 0);
+    CHECK(s_memoryCard.fromLoadMenu == 1 && g_SceneTimer == 0);
+    CHECK(s_memoryCard.fadeStep == -8 && s_memoryCard.fadeLevel == 0xFF);
     CHECK(g_SceneId == 0x1A);
 }
 

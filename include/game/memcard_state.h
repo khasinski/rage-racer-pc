@@ -14,6 +14,24 @@ typedef struct MemoryCardSession {
     MemoryCardAction action;
     MemoryCardPoll poll;
     MemoryCardSlots slots;
+    MemoryCardPrompt phase;
+    s32 cardStatus;
+    s32 errorCountdown;
+    s32 errorPending;
+    s32 errorTicks;
+    s32 fadeLevel;
+    s32 fadeStep;
+    s32 freeBlocks;
+    s32 fromLoadMenu;
+    s32 lastMenuState;
+    s32 menuPage;
+    s32 menuRow;
+    s32 menuSelection;
+    s32 menuState;
+    s32 noCardTicks;
+    s32 saveMode;
+    s32 settleTicks;
+    s32 slot;
 } MemoryCardSession;
 
 #endif

@@ -6,37 +6,36 @@
 
 #include <string.h>
 
-void StartMenuExitFade(void) {
+void StartMenuExitFade(MemoryCardSession *memoryCard) {
     StopMemoryCardEvents();
-    g_McFadeStep = 8;
+    memoryCard->fadeStep = 8;
 }
 
-static void ResetMemoryCardMenuSession(MemoryCardPoll *poll) {
-    poll->state = MC_STATUS_REQUEST_INFO;
-    poll->ticks = 0;
-    poll->result = MC_CARD_RESULT_PENDING;
-    poll->pendingResult = MC_CARD_RESULT_PENDING;
-    poll->lastStatus = MC_CARD_RESULT_PENDING;
-    g_McNoCardTicks = 0;
-    g_McErrorTicks = 0;
-    g_McErrorPending = 0;
-    g_McErrorCountdown = 3;
-    g_McSettleTicks = 0;
+static void ResetMemoryCardMenuSession(MemoryCardSession *memoryCard) {
+    memoryCard->poll.state = MC_STATUS_REQUEST_INFO;
+    memoryCard->poll.ticks = 0;
+    memoryCard->poll.result = MC_CARD_RESULT_PENDING;
+    memoryCard->poll.pendingResult = MC_CARD_RESULT_PENDING;
+    memoryCard->poll.lastStatus = MC_CARD_RESULT_PENDING;
+    memoryCard->noCardTicks = 0;
+    memoryCard->errorTicks = 0;
+    memoryCard->errorPending = 0;
+    memoryCard->errorCountdown = 3;
+    memoryCard->settleTicks = 0;
 }
 
-static void InitializeMemoryCardMenu(MemoryCardAction *action,
-                                     MemoryCardPoll *poll,
+static void InitializeMemoryCardMenu(MemoryCardSession *memoryCard,
                                      s32 fromLoadMenu) {
-    g_McMenuRowCursor = fromLoadMenu != 0 ? 2 : 0;
-    g_McMenuState = MC_MENU_STATE_NO_CARD;
+    memoryCard->menuRow = fromLoadMenu != 0 ? 2 : 0;
+    memoryCard->menuState = MC_MENU_STATE_NO_CARD;
     g_SceneTimer = 0;
-    g_McMenuPage = 0;
-    g_McFromLoadMenu = fromLoadMenu;
-    memset(action, 0, sizeof(*action));
-    ResetMemoryCardMenuSession(poll);
+    memoryCard->menuPage = 0;
+    memoryCard->fromLoadMenu = fromLoadMenu;
+    memset(&memoryCard->action, 0, sizeof(memoryCard->action));
+    ResetMemoryCardMenuSession(memoryCard);
     StartMemoryCardEvents();
-    g_McFadeStep = -8;
-    g_McFadeLevel = 0xFF;
+    memoryCard->fadeStep = -8;
+    memoryCard->fadeLevel = 0xFF;
     g_SceneId = 0x1A;
 }
 
@@ -45,7 +44,7 @@ void EnterMemoryCardMenu(void) {
 
     SetDispMask(0);
     SetupDisplay480(0, 0, 0);
-    InitializeMemoryCardMenu(&memoryCard->action, &memoryCard->poll, 0);
+    InitializeMemoryCardMenu(memoryCard, 0);
 }
 
 void EnterMemoryCardMenuFromLoad(void) {
@@ -59,5 +58,5 @@ void EnterMemoryCardMenuFromLoad(void) {
                           g_ImageBlockSize)) {
         return;
     }
-    InitializeMemoryCardMenu(&memoryCard->action, &memoryCard->poll, 1);
+    InitializeMemoryCardMenu(memoryCard, 1);
 }

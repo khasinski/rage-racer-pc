@@ -160,7 +160,6 @@ extern Vec4 g_MenuViewScale;
 extern int32_t g_CarPriceTable[32];
 extern int32_t g_CarTuneUpPriceTable[31];
 extern unsigned char g_SoundSlotTone[24];
-extern unsigned char g_McSlotCursor[4];
 extern unsigned char g_SectorTimes[12];
 
 typedef struct HostStateBlob {
@@ -293,7 +292,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_CarTuneUpPriceTable",
      (const unsigned char *)g_CarTuneUpPriceTable, 124},
     {"g_SoundSlotTone", g_SoundSlotTone, 24},
-    {"g_McSlotCursor", g_McSlotCursor, 4},
     {"g_SectorTimes", g_SectorTimes, 12},
     {"g_RaceIntroCameraDelta",
      (const unsigned char *)&g_Camera.intro.delta,
@@ -303,7 +301,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the canonical host constants alone. */
-    const unsigned long expected = 1798342671UL;
+    const unsigned long expected = 3810563359UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

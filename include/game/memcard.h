@@ -11,11 +11,7 @@
 #include "psyq/gpu.h"
 #include "psyq/kernel.h"
 
-/*
- * g_McMenuPhase picks the prompt drawn under the slot list; 0 draws none, and
- * DrawMemoryCardMessage is called with the value minus one. The names come
- * from the retail strings the index reaches through g_McMessageRows, quoted here.
- */
+/* Memory-card prompts use the retail strings reached through g_McMessageRows. */
 enum {
     MEMORY_CARD_MESSAGE_COUNT = MC_PROMPT_NO_FILE,
     MEMORY_CARD_MESSAGE_COLUMN_COUNT = 5,
@@ -30,7 +26,6 @@ enum {
         MEMORY_CARD_SAVE_TABLE_PADDING,
 };
 
-extern MemoryCardPrompt g_McMenuPhase;
 
 typedef struct MemoryCardMessageRow {
     char *text;
@@ -66,23 +61,8 @@ void EnterMemoryCardMenu(void);
 void EnterMemoryCardMenuFromLoad(void);
 void UpdateMemoryCardMenu(void);
 
-extern s32 g_McFadeLevel;
-extern s32 g_McFadeStep;
-extern s32 g_McFreeBlocks;
-extern s32 g_McFromLoadMenu;
-extern s32 g_McMenuPage;
-extern s32 g_McMenuRowCursor;
-
-extern s32 g_McErrorCountdown;
-extern s32 g_McErrorPending;
-extern s32 g_McErrorTicks;
-extern s32 g_McLastMenuState;
 extern s16 g_McMessageColumnX[MEMORY_CARD_MESSAGE_COLUMN_COUNT];
 extern MemoryCardMessageRow *g_McMessageRows[MEMORY_CARD_MESSAGE_COUNT];
-extern s32 g_McNoCardTicks;
-extern s32 g_McSaveMode;
-extern s32 g_McSettleTicks;
-extern s32 g_McSlotCursor;
 extern s32 g_SaveElapsedTicks;
 extern char g_SaveFilePath[MEMORY_CARD_SAVE_PATH_STORAGE_SIZE];
 enum {

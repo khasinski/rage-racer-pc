@@ -33,25 +33,7 @@ CarEntry g_SaveDefaults[GAME_CAR_COUNT] = {
     {0x00, 0x00, 0x01, 0x00, 0x00, 0x00, {0x00, 0x00}},
     {0x00, 0x03, 0x01, 0x00, 0x00, 0x00, {0x00, 0x00}},
 };
-s32 g_McMenuPage;
-s32 g_McMenuRowCursor;
-s32 g_McSlotCursor;
-s32 g_McErrorCountdown = 3;
-s32 g_McErrorPending;
-s32 g_McNoCardTicks;
-s32 g_McErrorTicks;
-s32 g_McLastMenuState;
-s32 g_McSettleTicks;
-s32 g_McMenuState;
-s32 g_McCardStatus;
-s32 g_McMenuSelection;
-MemoryCardPrompt g_McMenuPhase;
-s32 g_McFromLoadMenu;
-s32 g_McSaveMode;
-s32 g_McFreeBlocks;
 s32 GameMenuLoadPhase;
-s32 g_McFadeStep;
-s32 g_McFadeLevel;
 CourseProgressState g_ExtraGrandPrixCourseProgress;
 s32 g_BgmVolumeSetting;
 CarEntry g_ExtraGrandPrixCars[GAME_CAR_COUNT];
