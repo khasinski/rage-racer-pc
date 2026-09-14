@@ -43,7 +43,7 @@ static void DrawUsedSaveRow(char *text, s32 slotNumber, s32 y,
                  FormatSaveElapsedTime(text, row->fields.saveCounter));
 }
 
-void DrawMemoryCardSaveRows(s32 flags, GameSaveHeaderRow *rows) {
+void DrawMemoryCardSaveRows(s32 flags, const GameSaveHeaderRow *rows) {
     char text[SAVE_ROW_TEXT_SIZE];
     s32 rowIndex;
 

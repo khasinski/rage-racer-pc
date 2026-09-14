@@ -4,6 +4,7 @@
 #include "common.h"
 
 #include "game/memcard_types.h"
+#include "game/memcard_state.h"
 #include "game/menu_types.h"
 #include "game/save_format.h"
 
@@ -76,15 +77,12 @@ extern s32 g_McErrorCountdown;
 extern s32 g_McErrorPending;
 extern s32 g_McErrorTicks;
 extern s32 g_McLastMenuState;
-extern s32 g_McLastSlot;
 extern s16 g_McMessageColumnX[MEMORY_CARD_MESSAGE_COLUMN_COUNT];
 extern MemoryCardMessageRow *g_McMessageRows[MEMORY_CARD_MESSAGE_COUNT];
 extern s32 g_McNoCardTicks;
-extern GameSaveHeaderRow g_McSaveHeaders[];
 extern s32 g_McSaveMode;
 extern s32 g_McSettleTicks;
 extern s32 g_McSlotCursor;
-extern s32 g_McSlotUsedMask;
 extern s32 g_SaveElapsedTicks;
 extern char g_SaveFilePath[MEMORY_CARD_SAVE_PATH_STORAGE_SIZE];
 enum {

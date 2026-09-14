@@ -31,10 +31,8 @@ s32 g_SceneTimer;
 u16 g_PadPressed;
 u16 g_PadPressedRepeat;
 
-static MemoryCardAction s_action;
-static MemoryCardPoll s_poll;
-MemoryCardAction *SceneRuntimeMemoryCardAction(void) { return &s_action; }
-MemoryCardPoll *SceneRuntimeMemoryCardPoll(void) { return &s_poll; }
+static MemoryCardSession s_memoryCard;
+MemoryCardSession *SceneRuntimeMemoryCard(void) { return &s_memoryCard; }
 
 typedef struct TextDraw {
     s32 x;
@@ -215,11 +213,11 @@ static void TestMenuControls(void) {
 
 static void TestMenuLifecycle(void) {
     Reset();
-    s_poll.state = MC_STATUS_WAIT_LOAD;
-    s_poll.ticks = 40;
-    s_poll.result = MC_CARD_RESULT_READY;
-    s_poll.pendingResult = MC_CARD_RESULT_ERROR;
-    s_poll.lastStatus = MC_CARD_RESULT_READY;
+    s_memoryCard.poll.state = MC_STATUS_WAIT_LOAD;
+    s_memoryCard.poll.ticks = 40;
+    s_memoryCard.poll.result = MC_CARD_RESULT_READY;
+    s_memoryCard.poll.pendingResult = MC_CARD_RESULT_ERROR;
+    s_memoryCard.poll.lastStatus = MC_CARD_RESULT_READY;
     g_McNoCardTicks = 6;
     g_McErrorTicks = 4;
     g_McErrorPending = 1;
@@ -231,10 +229,10 @@ static void TestMenuLifecycle(void) {
     CHECK(g_McMenuPage == 0 && g_McMenuRowCursor == 0);
     CHECK(g_McFadeStep == -8 && g_McFadeLevel == 0xFF);
     CHECK(g_SceneId == 0x1A && g_SceneTimer == 0);
-    CHECK(s_poll.state == MC_STATUS_REQUEST_INFO && s_poll.ticks == 0);
-    CHECK(s_poll.result == MC_CARD_RESULT_PENDING &&
-          s_poll.pendingResult == MC_CARD_RESULT_PENDING &&
-          s_poll.lastStatus == MC_CARD_RESULT_PENDING);
+    CHECK(s_memoryCard.poll.state == MC_STATUS_REQUEST_INFO && s_memoryCard.poll.ticks == 0);
+    CHECK(s_memoryCard.poll.result == MC_CARD_RESULT_PENDING &&
+          s_memoryCard.poll.pendingResult == MC_CARD_RESULT_PENDING &&
+          s_memoryCard.poll.lastStatus == MC_CARD_RESULT_PENDING);
     CHECK(g_McNoCardTicks == 0 && g_McErrorTicks == 0 &&
           g_McErrorPending == 0 && g_McErrorCountdown == 3);
     CHECK(g_McSettleTicks == 0);

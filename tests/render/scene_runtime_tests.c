@@ -82,6 +82,23 @@ int main(void) {
           runtime->transition.fadeLevel == 0 &&
           SceneRuntimeAssetResult(ASSET_REQUEST_SELECT_BGM) == NULL);
 
+    g_SceneId = GAME_SCENE_ENTER_MEMORY_CARD;
+    SceneRuntimeBeforeDispatch(g_SceneId);
+    SceneRuntimeMemoryCard()->action.state = 7;
+    SceneRuntimeMemoryCard()->poll.ticks = 8;
+    SceneRuntimeMemoryCard()->slots.lastSlot = 2;
+    g_SceneId = GAME_SCENE_MEMORY_CARD;
+    SceneRuntimeBeforeDispatch(g_SceneId);
+    CHECK(SceneRuntimeMemoryCard()->action.state == 7 &&
+          SceneRuntimeMemoryCard()->poll.ticks == 8 &&
+          SceneRuntimeMemoryCard()->slots.lastSlot == 2);
+
+    g_SceneId = GAME_SCENE_MENU;
+    SceneRuntimeBeforeDispatch(g_SceneId);
+    CHECK(SceneRuntimeMemoryCard()->action.state == 0 &&
+          SceneRuntimeMemoryCard()->poll.ticks == 0 &&
+          SceneRuntimeMemoryCard()->slots.lastSlot == 0);
+
     puts("scene runtime scopes transition state and asset results to one scene");
     return 0;
 }

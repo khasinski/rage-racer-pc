@@ -7,7 +7,7 @@
 #define FormatMemoryCard FixtureFormatMemoryCard
 #include "../../src/main/PAL/main/save/memory_card_runtime.c"
 
-extern MemoryCardPoll s_poll;
+extern MemoryCardSession s_memoryCard;
 
 MemoryCardEvent PollMemoryCardHwEvent(MemoryCardPoll *poll) {
     (void)poll;
@@ -20,9 +20,9 @@ long _card_clear(long channel) { (void)channel; return 1; }
 long BiosFormatDevice(void *device) { (void)device; return 1; }
 
 void FixtureResetMemoryCardStatus(void) {
-    s_poll.state = MC_STATUS_REQUEST_INFO;
-    s_poll.ticks = 0;
-    s_poll.result = MC_CARD_RESULT_PENDING;
-    s_poll.pendingResult = MC_CARD_RESULT_PENDING;
-    s_poll.lastStatus = MC_CARD_RESULT_PENDING;
+    s_memoryCard.poll.state = MC_STATUS_REQUEST_INFO;
+    s_memoryCard.poll.ticks = 0;
+    s_memoryCard.poll.result = MC_CARD_RESULT_PENDING;
+    s_memoryCard.poll.pendingResult = MC_CARD_RESULT_PENDING;
+    s_memoryCard.poll.lastStatus = MC_CARD_RESULT_PENDING;
 }

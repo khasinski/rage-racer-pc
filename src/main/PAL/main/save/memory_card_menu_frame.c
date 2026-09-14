@@ -26,7 +26,8 @@ s32 UpdateMemoryCardFade(MemoryCardAction *action) {
     return step != 0;
 }
 
-s32 AdvanceMemoryCardMenuStartup(MemoryCardAction *action) {
+s32 AdvanceMemoryCardMenuStartup(MemoryCardAction *action,
+                                 MemoryCardSlots *slots) {
     s32 next;
 
     if ((u32)g_SceneTimer >= 5) {
@@ -36,8 +37,8 @@ s32 AdvanceMemoryCardMenuStartup(MemoryCardAction *action) {
     next = ++g_SceneTimer;
     g_McMenuPhase = MC_PROMPT_ACCESSING;
     if (next == 3) {
-        g_McSlotUsedMask = 0;
-        ClearSaveHeaderRows(g_McSaveHeaders);
+        slots->usedMask = 0;
+        ClearSaveHeaderRows(slots->headers);
         g_McLastMenuState = MC_MENU_STATE_NO_CARD;
         g_McMenuPhase = MC_PROMPT_NONE;
         g_McMenuSelection = MC_MENU_STATE_BUSY;
@@ -51,11 +52,11 @@ s32 AdvanceMemoryCardMenuStartup(MemoryCardAction *action) {
     return 0;
 }
 
-void DrawMemoryCardMenu(void) {
+void DrawMemoryCardMenu(const MemoryCardSlots *slots) {
     DrawMemoryCardScreen(g_McMenuPage, g_McFromLoadMenu, g_McMenuRowCursor,
                          g_McSlotCursor);
     if (g_McMenuPhase != MC_PROMPT_NONE) {
         DrawMemoryCardMessage(g_McMenuPhase - 1);
     }
-    DrawMemoryCardSaveRows(g_McSlotUsedMask, g_McSaveHeaders);
+    DrawMemoryCardSaveRows(slots->usedMask, slots->headers);
 }

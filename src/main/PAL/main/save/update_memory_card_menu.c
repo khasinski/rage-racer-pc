@@ -56,7 +56,8 @@ static void RunCardBusyState(MemoryCardAction *action, s32 fadeBusy) {
  * The list of things the player can do with a readable card. The last row
  * is the way out.
  */
-static void RunCardMenuRows(MemoryCardAction *action, s32 fadeBusy) {
+static void RunCardMenuRows(MemoryCardAction *action,
+                            const MemoryCardSlots *slots, s32 fadeBusy) {
     u16 pad;
 
     g_McMenuPhase = MC_PROMPT_NONE;
@@ -69,7 +70,7 @@ static void RunCardMenuRows(MemoryCardAction *action, s32 fadeBusy) {
             g_McMenuPage = 1;
             action->state = 0;
             action->result = 0;
-            g_McSlotCursor = g_McLastSlot;
+            g_McSlotCursor = slots->lastSlot;
             g_McSaveMode = g_McMenuRowCursor;
             return;
         }
@@ -105,13 +106,14 @@ static void TrackPersistentCardError(void) {
 }
 
 static void RunCardReadyState(MemoryCardAction *action, MemoryCardPoll *poll,
+                              MemoryCardSlots *slots,
                               s32 fadeBusy) {
     /* Page 0 is the list of things to do with the card, page 1 is picking a
      * slot; any other page is not one this screen has, so it goes back. */
     if (g_McMenuPage == 0) {
-        RunCardMenuRows(action, fadeBusy);
+        RunCardMenuRows(action, slots, fadeBusy);
     } else if (g_McMenuPage == 1) {
-        RunCardSlotActions(action, poll);
+        RunCardSlotActions(action, poll, slots);
     } else {
         g_McMenuPage = 0;
         g_McSlotCursor = 0;
@@ -141,8 +143,9 @@ static void RunCardReadyState(MemoryCardAction *action, MemoryCardPoll *poll,
     }
 }
 
-static void RunCardWorkingState(MemoryCardAction *action, s32 fadeBusy) {
-    RunCardWorkingActions(action, fadeBusy);
+static void RunCardWorkingState(MemoryCardAction *action,
+                                MemoryCardSlots *slots, s32 fadeBusy) {
+    RunCardWorkingActions(action, slots, fadeBusy);
 
     switch (g_McMenuSelection) {
     case MC_MENU_STATE_BUSY:
@@ -171,8 +174,9 @@ static void RunCardWorkingState(MemoryCardAction *action, s32 fadeBusy) {
     action->confirmChoice = 0;
 }
 
-static void RunNoCardState(MemoryCardAction *action, s32 fadeBusy) {
-    RunNoCardActions(action, fadeBusy);
+static void RunNoCardState(MemoryCardAction *action, MemoryCardSlots *slots,
+                           s32 fadeBusy) {
+    RunNoCardActions(action, slots, fadeBusy);
     switch (g_McMenuSelection) {
     case MC_MENU_STATE_READY:
     case MC_MENU_STATE_WORKING:
@@ -268,11 +272,13 @@ static void PollCardMenuSelection(MemoryCardAction *action,
 }
 
 void UpdateMemoryCardMenu(void) {
-    MemoryCardAction *action = SceneRuntimeMemoryCardAction();
-    MemoryCardPoll *poll = SceneRuntimeMemoryCardPoll();
+    MemoryCardSession *memoryCard = SceneRuntimeMemoryCard();
+    MemoryCardAction *action = &memoryCard->action;
+    MemoryCardPoll *poll = &memoryCard->poll;
+    MemoryCardSlots *slots = &memoryCard->slots;
     s32 fadeBusy = UpdateMemoryCardFade(action);
-    if (!AdvanceMemoryCardMenuStartup(action)) {
-        DrawMemoryCardMenu();
+    if (!AdvanceMemoryCardMenuStartup(action, slots)) {
+        DrawMemoryCardMenu(slots);
         return;
     }
     /* An action already under way owns the card, so its status is not asked
@@ -288,13 +294,13 @@ void UpdateMemoryCardMenu(void) {
         RunCardBusyState(action, fadeBusy);
         break;
     case MC_MENU_STATE_READY:
-        RunCardReadyState(action, poll, fadeBusy);
+        RunCardReadyState(action, poll, slots, fadeBusy);
         break;
     case MC_MENU_STATE_WORKING:
-        RunCardWorkingState(action, fadeBusy);
+        RunCardWorkingState(action, slots, fadeBusy);
         break;
     case MC_MENU_STATE_NO_CARD:
-        RunNoCardState(action, fadeBusy);
+        RunNoCardState(action, slots, fadeBusy);
         break;
     case MC_MENU_STATE_UNFORMATTED:
         RunUnformattedCardState(action, fadeBusy);
@@ -304,5 +310,5 @@ void UpdateMemoryCardMenu(void) {
         RunCardErrorState(action, fadeBusy);
         break;
     }
-    DrawMemoryCardMenu();
+    DrawMemoryCardMenu(slots);
 }

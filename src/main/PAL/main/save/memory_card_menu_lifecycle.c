@@ -41,13 +41,16 @@ static void InitializeMemoryCardMenu(MemoryCardAction *action,
 }
 
 void EnterMemoryCardMenu(void) {
+    MemoryCardSession *memoryCard = SceneRuntimeMemoryCard();
+
     SetDispMask(0);
     SetupDisplay480(0, 0, 0);
-    InitializeMemoryCardMenu(SceneRuntimeMemoryCardAction(),
-                             SceneRuntimeMemoryCardPoll(), 0);
+    InitializeMemoryCardMenu(&memoryCard->action, &memoryCard->poll, 0);
 }
 
 void EnterMemoryCardMenuFromLoad(void) {
+    MemoryCardSession *memoryCard = SceneRuntimeMemoryCard();
+
     SetDispMask(0);
     SetupDisplay480(0, 0, 0);
     if (!AssetLoadCompletedSuccessfully()) return;
@@ -56,6 +59,5 @@ void EnterMemoryCardMenuFromLoad(void) {
                           g_ImageBlockSize)) {
         return;
     }
-    InitializeMemoryCardMenu(SceneRuntimeMemoryCardAction(),
-                             SceneRuntimeMemoryCardPoll(), 1);
+    InitializeMemoryCardMenu(&memoryCard->action, &memoryCard->poll, 1);
 }

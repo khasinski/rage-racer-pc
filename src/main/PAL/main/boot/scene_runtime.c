@@ -21,6 +21,11 @@ static void ResetLegacyTransitionState(void) {
 
 void SceneRuntimeBeforeDispatch(s32 scene) {
     if (s_runtime.scene != scene) {
+        const int continueMemoryCard =
+            scene == GAME_SCENE_MEMORY_CARD &&
+            (s_runtime.scene == GAME_SCENE_ENTER_MEMORY_CARD ||
+             s_runtime.scene == GAME_SCENE_ENTER_MEMORY_CARD_LOAD);
+        MemoryCardSession memoryCard = s_runtime.memoryCard;
         u32 generation = s_runtime.generation + 1;
 
         if (generation == 0) generation = 1;
@@ -28,6 +33,9 @@ void SceneRuntimeBeforeDispatch(s32 scene) {
         s_runtime.scene = scene;
         s_runtime.generation = generation;
         s_runtime.assetGeneration = AssetLoadTransactionGeneration();
+        if (continueMemoryCard) {
+            s_runtime.memoryCard = memoryCard;
+        }
         ResetLegacyTransitionState();
     }
     s_runtime.transition.timer = g_SceneTimer;
@@ -50,12 +58,8 @@ const SceneRuntime *SceneRuntimeCurrent(void) {
     return &s_runtime;
 }
 
-MemoryCardAction *SceneRuntimeMemoryCardAction(void) {
-    return &s_runtime.memoryCardAction;
-}
-
-MemoryCardPoll *SceneRuntimeMemoryCardPoll(void) {
-    return &s_runtime.memoryCardPoll;
+MemoryCardSession *SceneRuntimeMemoryCard(void) {
+    return &s_runtime.memoryCard;
 }
 
 const AssetLoadTransaction *SceneRuntimeAssetResult(AssetRequestType request) {

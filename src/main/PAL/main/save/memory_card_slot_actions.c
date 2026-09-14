@@ -4,8 +4,8 @@
 #include "game/audio.h"
 
 /* Whether a slot already holds a save. */
-static int CardSlotIsUsed(s32 slot) {
-    return ((g_McSlotUsedMask >> slot) & 1) != 0;
+static int CardSlotIsUsed(const MemoryCardSlots *slots, s32 slot) {
+    return ((slots->usedMask >> slot) & 1) != 0;
 }
 
 enum {
@@ -62,8 +62,8 @@ static void BeginLoad(MemoryCardAction *action) {
     action->state = CARD_SLOT_ACTION_WAIT_LOAD_PREP;
 }
 
-static void PickLoadSlot(MemoryCardAction *action) {
-    if ((g_McSlotUsedMask & 7) == 0) {
+static void PickLoadSlot(MemoryCardAction *action, const MemoryCardSlots *slots) {
+    if ((slots->usedMask & 7) == 0) {
         g_McMenuPhase = MC_PROMPT_NO_DATA;
         if (g_PadPressed & PAD_CONFIRM) {
             PlaySoundCue(5);
@@ -74,7 +74,7 @@ static void PickLoadSlot(MemoryCardAction *action) {
 
     g_McMenuPhase = MC_PROMPT_SELECT_LOAD;
     if (g_PadPressed & PAD_CONFIRM) {
-        if (CardSlotIsUsed(g_McSlotCursor)) {
+        if (CardSlotIsUsed(slots, g_McSlotCursor)) {
             PlaySoundCue(2);
             action->confirmChoice = 0;
             BeginLoad(action);
@@ -85,13 +85,13 @@ static void PickLoadSlot(MemoryCardAction *action) {
     }
 }
 
-static void PickSaveSlot(MemoryCardAction *action) {
-    if (g_McFreeBlocks != 0 || (g_McSlotUsedMask & 7) != 0) {
+static void PickSaveSlot(MemoryCardAction *action, const MemoryCardSlots *slots) {
+    if (g_McFreeBlocks != 0 || (slots->usedMask & 7) != 0) {
         g_McMenuPhase = MC_PROMPT_SELECT_SAVE;
         if (!(g_PadPressed & PAD_CONFIRM)) return;
 
         PlaySoundCue(2);
-        if (CardSlotIsUsed(g_McSlotCursor)) {
+        if (CardSlotIsUsed(slots, g_McSlotCursor)) {
             action->confirmChoice = 0;
             action->state = CARD_SLOT_ACTION_CONFIRM_OVERWRITE;
         } else if (g_McFreeBlocks != 0) {
@@ -115,44 +115,45 @@ static void PickSaveSlot(MemoryCardAction *action) {
  * Pick a slot to save or load. Retail asks for back twice on the card-full
  * path, once in PickSaveSlot and once below, and each ask plays its own cue.
  */
-static void PickCardSlot(MemoryCardAction *action) {
+static void PickCardSlot(MemoryCardAction *action, const MemoryCardSlots *slots) {
     AdjustMenuSelectionVertical(&g_McSlotCursor, 0, 2);
     if (g_McSaveMode != 0) {
-        PickLoadSlot(action);
+        PickLoadSlot(action, slots);
     } else {
-        PickSaveSlot(action);
+        PickSaveSlot(action, slots);
     }
 
     if (PollMenuBackInput() == 0) return;
     g_McMenuPage = 0;
 }
 
-static void WriteSelectedSaveSlot(MemoryCardAction *action) {
+static void WriteSelectedSaveSlot(MemoryCardAction *action, MemoryCardSlots *slots) {
     s32 slot = g_McSlotCursor;
 
-    action->result = WriteMemoryCardSaveSlot(slot, &g_McSaveHeaders[slot]);
+    action->result = WriteMemoryCardSaveSlot(slot, &slots->headers[slot]);
     if (action->result != 0) {
-        g_McSlotUsedMask = RefreshMemoryCardSaveStatus(g_McSaveHeaders);
+        slots->usedMask = RefreshMemoryCardSaveStatus(slots->headers);
     }
     action->timer = CARD_IO_SETTLE_DELAY_FRAMES;
     action->state = CARD_SLOT_ACTION_WAIT_SAVE_SETTLE;
 }
 
-static void ReadSelectedSaveSlot(MemoryCardAction *action) {
+static void ReadSelectedSaveSlot(MemoryCardAction *action, MemoryCardSlots *slots) {
     s32 slot = g_McSlotCursor;
 
-    action->result = LoadMemoryCardSaveSlot(slot, &g_McSaveHeaders[slot]);
+    action->result = LoadMemoryCardSaveSlot(slot, &slots->headers[slot]);
     if (action->result != 0) {
-        g_McLastSlot = slot;
+        slots->lastSlot = slot;
     }
     action->timer = CARD_IO_SETTLE_DELAY_FRAMES;
     action->state = CARD_SLOT_ACTION_WAIT_LOAD_SETTLE;
 }
 
-void RunCardSlotActions(MemoryCardAction *action, MemoryCardPoll *poll) {
+void RunCardSlotActions(MemoryCardAction *action, MemoryCardPoll *poll,
+                        MemoryCardSlots *slots) {
     switch (action->state) {
     case CARD_SLOT_ACTION_PICK:
-        PickCardSlot(action);
+        PickCardSlot(action, slots);
         break;
     case CARD_SLOT_ACTION_CONFIRM_OVERWRITE:
         g_McMenuPhase = MC_PROMPT_OVERWRITE_ASK + (g_McSlotCursor * 2) +
@@ -172,7 +173,7 @@ void RunCardSlotActions(MemoryCardAction *action, MemoryCardPoll *poll) {
     case CARD_SLOT_ACTION_WAIT_SAVE_DELAY:
         action->busy = 1;
         if (!MemoryCardCountdownElapsed(&action->timer)) break;
-        WriteSelectedSaveSlot(action);
+        WriteSelectedSaveSlot(action, slots);
         break;
 
     case CARD_SLOT_ACTION_WAIT_SAVE_SETTLE:
@@ -214,7 +215,7 @@ void RunCardSlotActions(MemoryCardAction *action, MemoryCardPoll *poll) {
 
     case CARD_SLOT_ACTION_WAIT_LOAD_DELAY:
         if (!MemoryCardCountdownElapsed(&action->timer)) break;
-        ReadSelectedSaveSlot(action);
+        ReadSelectedSaveSlot(action, slots);
         break;
 
     case CARD_SLOT_ACTION_WAIT_LOAD_SETTLE:

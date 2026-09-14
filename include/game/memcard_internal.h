@@ -40,7 +40,7 @@ s32 CalculateMemoryCardFreeBlocks(const DirEntry *entries, s32 fileCount);
 s32 RefreshMemoryCardSaveStatus(GameSaveHeaderRow *headers);
 enum { SAVE_ELAPSED_TIME_CAPACITY = 16 };
 char *FormatSaveElapsedTime(char dst[SAVE_ELAPSED_TIME_CAPACITY], u32 ticks);
-void DrawMemoryCardSaveRows(s32 flags, GameSaveHeaderRow *rows);
+void DrawMemoryCardSaveRows(s32 flags, const GameSaveHeaderRow *rows);
 
 void ClearMemoryCardHwEvents(void);
 void ClearMemoryCardSwEvents(void);
@@ -57,12 +57,16 @@ u16 PollMenuConfirmInput(void);
 u16 PollMenuBackInput(void);
 void StartMenuExitFade(void);
 s32 UpdateMemoryCardFade(MemoryCardAction *action);
-s32 AdvanceMemoryCardMenuStartup(MemoryCardAction *action);
-void DrawMemoryCardMenu(void);
-void RunCardSlotActions(MemoryCardAction *action, MemoryCardPoll *poll);
+s32 AdvanceMemoryCardMenuStartup(MemoryCardAction *action,
+                                 MemoryCardSlots *slots);
+void DrawMemoryCardMenu(const MemoryCardSlots *slots);
+void RunCardSlotActions(MemoryCardAction *action, MemoryCardPoll *poll,
+                        MemoryCardSlots *slots);
 void RunUnformattedCardPage(MemoryCardAction *action, s32 fadeBusy);
-void RunCardWorkingActions(MemoryCardAction *action, s32 fadeBusy);
-void RunNoCardActions(MemoryCardAction *action, s32 fadeBusy);
+void RunCardWorkingActions(MemoryCardAction *action, MemoryCardSlots *slots,
+                           s32 fadeBusy);
+void RunNoCardActions(MemoryCardAction *action, MemoryCardSlots *slots,
+                      s32 fadeBusy);
 void DrawMemoryCardMessage(s32 message);
 s32 PollMemoryCardStatus(MemoryCardPoll *poll, s32 port, s32 slot);
 void DrawMemoryCardScreen(s32 showSlotBar, s32 fromLoadMenu,

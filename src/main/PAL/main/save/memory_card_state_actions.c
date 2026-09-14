@@ -26,7 +26,8 @@ enum {
  * A format or a save running, stepping through its own stages while the
  * screen says it is busy.
  */
-void RunCardWorkingActions(MemoryCardAction *action, s32 fadeBusy) {
+void RunCardWorkingActions(MemoryCardAction *action, MemoryCardSlots *slots,
+                           s32 fadeBusy) {
     g_McMenuPhase = MC_PROMPT_ACCESSING;
     switch (action->state) {
     case CARD_WORK_WAIT_FOR_SCENE:
@@ -62,7 +63,7 @@ void RunCardWorkingActions(MemoryCardAction *action, s32 fadeBusy) {
         action->state = CARD_WORK_REFRESH_STATUS;
         break;
     case CARD_WORK_REFRESH_STATUS:
-        g_McSlotUsedMask = RefreshMemoryCardSaveStatus(g_McSaveHeaders);
+        slots->usedMask = RefreshMemoryCardSaveStatus(slots->headers);
         action->state = CARD_WORK_BEGIN_SETTLE_DELAY;
         break;
     case CARD_WORK_BEGIN_SETTLE_DELAY:
@@ -146,15 +147,16 @@ static void RunNoCardReadyState(MemoryCardAction *action, s32 fadeBusy) {
     }
 }
 
-void RunNoCardActions(MemoryCardAction *action, s32 fadeBusy) {
+void RunNoCardActions(MemoryCardAction *action, MemoryCardSlots *slots,
+                      s32 fadeBusy) {
     g_McMenuPhase = MC_PROMPT_NO_CARD;
     action->busy = 0;
     switch (action->state) {
     case NO_CARD_ACTION_INIT:
         action->timer = NO_CARD_READY_DELAY_FRAMES;
-        g_McSlotUsedMask = 0;
-        ClearSaveHeaderRows(g_McSaveHeaders);
-        g_McLastSlot = 0;
+        slots->usedMask = 0;
+        ClearSaveHeaderRows(slots->headers);
+        slots->lastSlot = 0;
         action->state = NO_CARD_ACTION_WAIT;
         break;
 
