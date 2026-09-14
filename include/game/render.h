@@ -193,6 +193,15 @@ void SetupDisplay480(s32 r, s32 g, s32 b);
 void InitRenderState(s32 otShift);
 void DrawFullscreenFadeTile(s32 color, s32 tpage);
 void DrawFullscreenFadeTile480(s32 color, s32 tpage);
+
+static inline s32 StepFade(s32 level, s32 step, s32 maximum) {
+    int64_t next;
+
+    if (maximum < 0) maximum = 0;
+    next = (int64_t)level + step;
+    if (next <= 0) return 0;
+    return next < maximum ? (s32)next : maximum;
+}
 void RequestTrackTexturePage(s32 trackSection);
 s32 TrackTexturePageForSection(s32 trackSection);
 void UpdateCamera(Camera *camera, CameraViewMode mode, GameCarRuntime *car);

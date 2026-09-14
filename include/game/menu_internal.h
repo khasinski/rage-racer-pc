@@ -39,20 +39,11 @@ static inline s32 WrapMenuIndex(s32 index, s32 delta, s32 count) {
 /* Screen draw entry points use step zero as a reset command. Other steps move
  * their fade within the brightness range accepted by the menu renderer. */
 static inline s32 AdvanceMenuFade(s32 *progress, s32 step) {
-    int64_t updated;
-
     if (step == 0) {
         *progress = 0;
         return 0;
     }
-
-    updated = (int64_t)*progress + step;
-    if (updated < 0) {
-        updated = 0;
-    } else if (updated > MENU_FADE_MAX) {
-        updated = MENU_FADE_MAX;
-    }
-    *progress = (s32)updated;
+    *progress = StepFade(*progress, step, MENU_FADE_MAX);
     return *progress;
 }
 

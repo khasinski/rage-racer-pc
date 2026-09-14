@@ -57,11 +57,7 @@ static void DrawNamePlateSprite(GameOrderingTableEntry *ot,
 }
 
 static void AdvanceCarNamePlateFade(s32 step) {
-    int64_t fade = (int64_t)s_Fade + step;
-
-    if (fade < 0) fade = 0;
-    if (fade > CAR_NAME_PLATE_FADE_MAX) fade = CAR_NAME_PLATE_FADE_MAX;
-    s_Fade = (s32)fade;
+    s_Fade = StepFade(s_Fade, step, CAR_NAME_PLATE_FADE_MAX);
 }
 
 /* The bottom-right plate: grade digit, manufacturer sprite and model-name sprite. */

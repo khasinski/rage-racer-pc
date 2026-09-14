@@ -1,4 +1,5 @@
 #include "game/race_internal.h"
+#include "game/render.h"
 
 enum {
     REPLAY_ENDING_WASH_FRAMES = 600,
@@ -11,12 +12,7 @@ enum {
 };
 
 s32 AdvanceReplayFadeLevel(s32 level, s32 step) {
-    int64_t next = (int64_t)level + step;
-
-    if (next <= 0) {
-        return 0;
-    }
-    return next < REPLAY_OPAQUE_FADE ? (s32)next : REPLAY_OPAQUE_FADE;
+    return StepFade(level, step, REPLAY_OPAQUE_FADE);
 }
 
 s32 ReplayEndingWashActive(s32 sceneTimer, s32 frameCount) {

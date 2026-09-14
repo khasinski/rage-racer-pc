@@ -5,7 +5,6 @@
 #include "game/state.h"
 
 #include <limits.h>
-#include <stdint.h>
 
 enum {
     ENDING_STILL_DISPLAY_ENABLE_FRAME = 2,
@@ -15,32 +14,15 @@ enum {
 };
 
 static void AdvanceEndingStillFade(void) {
-    s32 current = g_FadeLevel;
-    int64_t fade;
+    const s32 step = g_FadeStep;
 
-    if (current < 0) current = 0;
-    if (current > ENDING_STILL_FADE_MAX) {
-        current = ENDING_STILL_FADE_MAX;
-    }
-    g_FadeLevel = current;
-    fade = (int64_t)current + g_FadeStep;
-
-    if (g_FadeStep > 0) {
-        if (fade >= ENDING_STILL_FADE_MAX) {
-            g_FadeLevel = ENDING_STILL_FADE_MAX;
-            g_FadeStep = 0;
-        } else {
-            g_FadeLevel = fade > 0 ? (s32)fade : 0;
-        }
-    } else if (g_FadeStep < 0) {
-        if (fade <= 0) {
-            g_FadeLevel = 0;
-            g_SceneId = ENDING_STILL_RETURN_SCENE;
-        } else {
-            g_FadeLevel = fade < ENDING_STILL_FADE_MAX
-                              ? (s32)fade
-                              : ENDING_STILL_FADE_MAX;
-        }
+    g_FadeLevel = StepFade(
+        StepFade(g_FadeLevel, 0, ENDING_STILL_FADE_MAX),
+        step, ENDING_STILL_FADE_MAX);
+    if (step > 0 && g_FadeLevel == ENDING_STILL_FADE_MAX) {
+        g_FadeStep = 0;
+    } else if (step < 0 && g_FadeLevel == 0) {
+        g_SceneId = ENDING_STILL_RETURN_SCENE;
     }
 }
 

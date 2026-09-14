@@ -17,17 +17,15 @@ void StartOptionMenuExit(GameSceneId scene) {
 /* OPTION_MODE_FADE: integrates the fade, then opens the root menu or leaves
  * for g_OptionMenuExitScene. */
 void UpdateOptionMenuFade(void) {
-    int64_t nextLevel = (int64_t)g_FadeLevel + g_FadeStep;
+    const s32 step = g_FadeStep;
+    const int64_t next = (int64_t)g_FadeLevel + step;
 
-    if (nextLevel < 0) {
-        g_FadeLevel = 0;
+    g_FadeLevel = StepFade(g_FadeLevel, step, OPTION_FADE_OPAQUE);
+    if (step < 0 && g_FadeLevel == 0) {
         g_FadeStep = 0;
         g_GameMode = OPTION_MODE_ROOT;
-    } else if (nextLevel > OPTION_FADE_OPAQUE) {
-        g_FadeLevel = OPTION_FADE_OPAQUE;
+    } else if (step > 0 && next > OPTION_FADE_OPAQUE) {
         g_SceneId = g_OptionMenuExitScene;
-    } else {
-        g_FadeLevel = (s32)nextLevel;
     }
 
     DrawFullscreenFadeTile480(g_FadeLevel, 0x49);

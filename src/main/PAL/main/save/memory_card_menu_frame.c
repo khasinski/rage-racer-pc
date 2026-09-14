@@ -3,27 +3,19 @@
 #include "game/menu.h"
 
 s32 UpdateMemoryCardFade(void) {
-    s32 busy = 0;
-    s32 step;
+    const s32 step = g_McFadeStep;
 
     if (g_SceneTimer == 2) SetDispMask(1);
     if ((u32)g_SceneTimer < 6) {
         DrawFullscreenFadeTile480(g_McFadeLevel, 0x40);
         return 0;
     }
-    step = g_McFadeStep;
-    if (step < 0) {
-        g_McFadeLevel += step;
-        busy = 1;
-        if (g_McFadeLevel <= 0) {
-            g_McFadeStep = 0;
-            g_McFadeLevel = 0;
-        }
+    g_McFadeLevel = StepFade(g_McFadeLevel, step, 0xFF);
+    if (step < 0 && g_McFadeLevel == 0) {
+        g_McFadeStep = 0;
     } else if (step > 0) {
         g_McActionBusy = 1;
-        g_McFadeLevel += step;
-        busy = 1;
-        if (g_McFadeLevel >= 0xFF) {
+        if (g_McFadeLevel == 0xFF) {
             g_McFadeStep = 0;
             g_McFadeLevel = 0;
             g_McActionBusy = 0;
@@ -31,7 +23,7 @@ s32 UpdateMemoryCardFade(void) {
         }
     }
     DrawFullscreenFadeTile480(g_McFadeLevel, 0x40);
-    return busy;
+    return step != 0;
 }
 
 s32 AdvanceMemoryCardMenuStartup(void) {
