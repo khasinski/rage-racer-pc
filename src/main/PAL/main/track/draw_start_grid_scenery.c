@@ -11,6 +11,7 @@ enum {
     START_GRID_FRAMES_PER_MODEL = 3,
     START_GRID_MODEL_COUNT = 15,
     START_GRID_FIRST_MODEL = 0x28,
+    START_GRID_HEIGHT_OFFSET = 8,
     SERIES_COURSE_Z_OFFSET = 0x5000,
 };
 
@@ -34,6 +35,10 @@ void DrawStartGridScenery(s32 timer) {
     MulMatrix2(&g_RenderState.geometry.matrix, &objectMatrix);
 
     position = g_StartGridSceneryPos[series];
+    /* Retail ordering let the feet win against the coplanar road. With a
+     * depth buffer their lower edge intersects the asphalt, so lift the actor
+     * by two imported vertex units. PS1 world Y grows downwards. */
+    position.y -= START_GRID_HEIGHT_OFFSET;
     if (timer > START_GRID_MOTION_FRAME) {
         animationFrame =
             (timer - START_GRID_MOTION_FRAME) / START_GRID_FRAMES_PER_MODEL;

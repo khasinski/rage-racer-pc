@@ -140,7 +140,7 @@ static int s_nativeGpuReady;
 static unsigned int s_resourceGeneration;
 static uint32_t s_lastRenderedFrame = 0xFFFFFFFFu;
 static int s_haveRenderedFrame;
-static int s_holdToggleFrame;
+static int s_waitClassicFrame;
 
 enum {
     MODERN_PIPE_2D,
@@ -348,7 +348,7 @@ static void ModernDestroyResources(void) {
     s_nativeGpuReady = 0;
     s_resourcesReady = 0;
     s_haveRenderedFrame = 0;
-    s_holdToggleFrame = 0;
+    s_waitClassicFrame = 0;
     s_lastRenderedFrame = 0xFFFFFFFFu;
     ModernVramSnapshotReset(&s_sampledVram);
     ClassicMotionReset();
@@ -543,6 +543,7 @@ enum {
     MODERN_LAYER_SKY,
     MODERN_LAYER_HUD,
     MODERN_LAYER_MIRROR_FOREGROUND,
+    MODERN_LAYER_PAUSE_FOREGROUND,
 };
 static const RenderCamera *s_skyPacketCamera;
 static const RenderCamera *s_skyPresentationCamera;
@@ -600,6 +601,63 @@ static void ModernOrtho(ModernVertex *out, float px, float py) {
     out->y = -(py / 120.0f - 1.0f);
     out->z = 0.0f;
     out->w = 1.0f;
+}
+
+static void ClassicEmitPauseLabel(const Modern2DState *state,
+                                  const Modern2DState *spanState,
+                                  int x, int y, uint8_t intensity) {
+    static const char pixels[7][41] = {
+        "012566f00012bf00016f012f00b2356fd012569f",
+        "022ed59f00215f00015f021f00216fffd022ffff",
+        "021f01bf02256f0001af022f00825e000022f000",
+        "022821f0622f4dc0529f022f000065c000146160",
+        "614ceff0127718f0329f013f0000b66d0626fff0",
+        "326fff0622ff35f0328f02bf0628b16f0313f000",
+        "323f00022ff016f0616321ff031221ff03263210",
+    };
+    static const uint16_t palette[16] = {
+        0x0000, 0x7BDE, 0x77BD, 0x739C, 0x6739, 0x6318, 0x5AD6, 0x56B5,
+        0x4E73, 0x39CE, 0x318C, 0x294A, 0x1CE7, 0x1084, 0x0842, 0x0800,
+    };
+    uint8_t previousLayer = s_overlay.currentLayer;
+
+    s_overlay.currentLayer = MODERN_LAYER_PAUSE_FOREGROUND;
+    for (int row = 0; row < 7; row++) {
+        for (int column = 0; column < 40;) {
+            int first = column;
+            int index = pixels[row][column] <= '9'
+                            ? pixels[row][column] - '0'
+                            : pixels[row][column] - 'a' + 10;
+            uint16_t source;
+            ModernVertex corners[4];
+            ModernSpan *span;
+
+            column++;
+            if (index == 0) continue;
+            while (column < 40 &&
+                   pixels[row][column] == pixels[row][first])
+                column++;
+            source = palette[index];
+            for (int vertex = 0; vertex < 4; vertex++) {
+                ModernVertex *out = &corners[vertex];
+                int right = vertex & 1;
+                int bottom = vertex >> 1;
+                memset(out, 0, sizeof(*out));
+                ModernOrtho(out, (float)(x + (right ? column : first)),
+                            (float)(y + row + bottom));
+                out->color[0] = (uint8_t)((((source >> 0) & 31) * intensity) >> 4);
+                out->color[1] = (uint8_t)((((source >> 5) & 31) * intensity) >> 4);
+                out->color[2] = (uint8_t)((((source >> 10) & 31) * intensity) >> 4);
+                out->color[3] = 255;
+                out->attr = state->tpage | 0x8000u;
+                out->twin = state->twin;
+            }
+            span = ModernOverlayBatchesBegin(&s_overlay, MODERN_PIPE_2D,
+                                              spanState);
+            ModernOverlayBatchesEmitQuad(&s_overlay, span, corners);
+        }
+    }
+    s_overlay.currentLayer = previousLayer;
 }
 
 static void ModernReplay2DPacket(const RageCapturePacket *packet,
@@ -686,7 +744,10 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
                     if (vertex == 1) prim_tpage = (uvWord >> 16) & 0x1FFu;
                 }
             }
-            if (textured) state->tpage = prim_tpage;
+            /* A polygon carries its texture page in the primitive. Unlike a
+             * GP0(E1) draw-mode command, it does not change the page used by
+             * later sprites. Classic includes the race's 3D polygons here;
+             * leaking their pages hid the PAUSE sprite that follows them. */
             /* Full-screen overlays (fades, night filters) stretch across a
              * widened view; otherwise they mask only the 4:3 centre. */
             if (packet->table == 0 && !(packet->flags & RAGE_CAPTURE_PACKET_3D) &&
@@ -746,6 +807,7 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
             uint32_t xy, uvWord = 0, clut = 0;
             int px, py, w, h;
             int u0 = 0, v0 = 0;
+            int pauseForeground;
             xy = words[cursor++];
             px = (int)((xy & 0x7FFu) ^ 1024) - 1024;
             py = (int)(((xy >> 16) & 0x7FFu) ^ 1024) - 1024;
@@ -766,8 +828,16 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
             } else {
                 w = h = 16;
             }
+            pauseForeground = !s_enabled && textured &&
+                              u0 == 0xD8 && v0 == 0x38 &&
+                              clut == 0x7893 && w == 0x28 && h == 8;
             px += state->offsetX;
             py += state->offsetY;
+            if (pauseForeground) {
+                ClassicEmitPauseLabel(state, &spanState, px, py,
+                                      (uint8_t)(words[0] & 0xFFu));
+                return;
+            }
             if (packet->table == 0 && s_overscanX > 0.0f && !textured && px <= 0 && py <= 0 &&
                 px + w >= 320 && py + h >= 240) {
                 /* Full-screen fade/filter tiles cover the widened view. */
@@ -786,15 +856,15 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
                     out->u = (float)(u0 + (right ? w : 0));
                     out->v = (float)(v0 + (bottom ? h : 0));
                     {
-                        uint32_t color =
-                            raw && textured ? 0x808080u : (words[0] & 0xFFFFFFu);
+                        uint32_t color = raw && textured ? 0x808080u
+                                                        : (words[0] & 0xFFFFFFu);
                         out->color[0] = (uint8_t)(color & 0xFFu);
                         out->color[1] = (uint8_t)((color >> 8) & 0xFFu);
                         out->color[2] = (uint8_t)((color >> 16) & 0xFFu);
                         out->color[3] = (uint8_t)(semi ? 0 : 255);
                     }
-                    out->attr =
-                        textured ? state->tpage : (state->tpage | 0x8000u);
+                    out->attr = textured ? state->tpage
+                                         : (state->tpage | 0x8000u);
                     out->twin = state->twin;
                     out->clut = clut;
                 }
@@ -803,8 +873,9 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
                 uint32_t abr = (state->tpage >> 5) & 3u;
                 int pipeline = (semi && abr == 2u) ? MODERN_PIPE_2D_SUB
                                                    : MODERN_PIPE_2D;
-                ModernSpan *span = ModernOverlayBatchesBegin(&s_overlay,
-                                                              pipeline, &spanState);
+                ModernSpan *span;
+                span = ModernOverlayBatchesBegin(&s_overlay, pipeline,
+                                                  &spanState);
                 ModernOverlayBatchesEmitQuad(&s_overlay, span, corners);
             }
         } else if (isLine) {
@@ -1077,6 +1148,22 @@ static void ModernRenderOverlaySelection(SDL_GPUCommandBuffer *cmd,
         SDL_SetGPUScissor(pass, &scissor);
         SDL_DrawGPUPrimitives(pass, (Uint32)span->count, 1,
                               (Uint32)span->start, 0);
+    }
+    if (!s_enabled && (layerMask & (1u << MODERN_LAYER_HUD)) != 0) {
+        SDL_Rect full = {0, 0, s_targetW, s_targetH};
+        for (spanIndex = 0; spanIndex < s_overlay.spanCount; spanIndex++) {
+            const ModernSpan *span = &s_overlay.spans[spanIndex];
+            if (span->layer != MODERN_LAYER_PAUSE_FOREGROUND ||
+                span->pass != passNumber || span->count == 0)
+                continue;
+            if (pipelines[span->pipeline] != bound) {
+                bound = pipelines[span->pipeline];
+                SDL_BindGPUGraphicsPipeline(pass, bound);
+            }
+            SDL_SetGPUScissor(pass, &full);
+            SDL_DrawGPUPrimitives(pass, (Uint32)span->count, 1,
+                                  (Uint32)span->start, 0);
+        }
     }
     SDL_EndGPURenderPass(pass);
 }
@@ -1509,8 +1596,8 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
     /* The mode changes between two complete logic frames. Present the last
      * complete image once while the newly selected renderer builds its first
      * frame; otherwise the two capture paths can be visible in one swap. */
-    if (s_holdToggleFrame && s_haveRenderedFrame) {
-        s_holdToggleFrame = 0;
+    if (s_waitClassicFrame && s_haveRenderedFrame &&
+        CaptureClassicSources(CapturePrevious()) == NULL) {
         info->texture = ModernPresentTexture();
         info->w = (Uint32)s_targetW;
         info->h = (Uint32)s_targetH;
@@ -1520,6 +1607,7 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
                            : SDL_GPU_FILTER_NEAREST;
         return;
     }
+    s_waitClassicFrame = 0;
     if (s_markerCaptureEnabled) {
         /* M writes what the modern renderer is showing, with the state that
          * produced it, so a player who can see something wrong can hand over
@@ -1811,7 +1899,10 @@ void ModernToggle(void) {
     }
     if (!s_enabled) s_nativeGpuReady = 1;
     s_enabled = !s_enabled;
-    s_holdToggleFrame = s_haveRenderedFrame;
+    /* Classic packet sources only start being captured after this switch and
+     * reach CapturePrevious two publications later. Retain the modern image
+     * until that complete classic frame exists. */
+    s_waitClassicFrame = !s_enabled && s_haveRenderedFrame;
     s_config.renderer = s_enabled ? RAGE_RENDERER_MODERN : RAGE_RENDERER_CLASSIC;
     PortConfigSetActive(&s_config);
     /* Both renderers present through these targets.  Keeping them alive also
