@@ -41,6 +41,7 @@ void UpdateMainMenuExit(void) {
             }
             break;
         case TITLE_MENU_TIME_ATTACK:
+        case TITLE_MENU_CUSTOM:
             g_GrandPrixMode = 0;
             g_SceneId = 6;
             break;

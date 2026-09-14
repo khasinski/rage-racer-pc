@@ -199,6 +199,14 @@ int main(void) {
     CHECK(g_GrandPrixSeries == 0 && g_SceneId == 0x1F);
 
     Reset();
+    s_frontend.pulse = 0x80;
+    s_frontend.selection = TITLE_MENU_CUSTOM;
+    g_GrandPrixMode = 1;
+    UpdateMainMenuExit();
+    CHECK(s_frontend.pulse == 0x81);
+    CHECK(g_GrandPrixMode == 0 && g_SceneId == GAME_SCENE_INIT_MENU);
+
+    Reset();
     s_frontend.exitTimer = 1;
     UpdateFrontend();
     CHECK(g_SceneTimer == 1 && s_setupCalls == 1);
