@@ -20,6 +20,7 @@
 #include "modern/modern_assets.h"
 #include "native_asset_importer.h"
 #include "platform_paths.h"
+#include "menu_music_runtime.h"
 
 #ifdef _WIN32
 #ifndef PATH_MAX
@@ -143,16 +144,10 @@ int main(int argc, char **argv) {
         fprintf(stderr, "rage-port: car catalog=%s\n", carCatalogPath);
     }
     CarCatalogApplyMetadata();
-    {
-        const char *menuMusic = RuntimeConfigGet("audio.menu_music");
-        if (menuMusic != NULL && menuMusic[0] != '\0' &&
-            Psyz_PcmMusicLoad(menuMusic) != 0) {
-            fprintf(stderr, "rage-port: menu music PCM is unreadable: %s\n",
-                    menuMusic);
-            Psyz_AudioDestroy();
-            ModernShutdown();
-            return EXIT_FAILURE;
-        }
+    if (!MenuMusicPrepare()) {
+        Psyz_AudioDestroy();
+        ModernShutdown();
+        return EXIT_FAILURE;
     }
     MainLoop();
     Psyz_PcmMusicUnload();

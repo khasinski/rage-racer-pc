@@ -17,7 +17,7 @@ if(NOT result EQUAL 0 OR NOT EXISTS "${trace}" OR NOT EXISTS "${spu}")
 endif()
 string(REGEX MATCH "audio metrics: frames=([0-9]+) energy=([0-9]+) seq_notes=([0-9]+) seq_voices=([0-9]+) pitch_updates=([0-9]+) cdda=([0-9]+)" metrics "${log}")
 if(NOT metrics OR CMAKE_MATCH_1 LESS 10000 OR CMAKE_MATCH_2 LESS 1000000 OR
-   CMAKE_MATCH_3 LESS 110 OR CMAKE_MATCH_3 GREATER 140 OR CMAKE_MATCH_4 LESS CMAKE_MATCH_3 OR
+   NOT CMAKE_MATCH_3 EQUAL 0 OR NOT CMAKE_MATCH_4 EQUAL 0 OR
    NOT CMAKE_MATCH_6 EQUAL 0)
     message(FATAL_ERROR "Audio metrics invalid: ${root}\n${log}")
 endif()

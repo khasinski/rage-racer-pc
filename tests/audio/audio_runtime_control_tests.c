@@ -61,29 +61,29 @@ static void TestSequenceTicking(void) {
     g_SceneId = 0;
     g_Audio.seq.fade = -4;
     for (frame = 0; frame < 5; frame++) TickSequenceAudio();
-    Check(s_damperSteps == 0 && s_fadeUpdates == 5,
-          "menu PCM advances fades without servicing SPU voices");
+    Check(s_damperSteps == 5 && s_fadeUpdates == 5,
+          "menu frames advance fades and flush queued effect voices");
 
     g_SceneId = 0xC;
     TickSequenceAudio();
-    Check(s_fadeUpdates == 5 && s_damperSteps == 1,
-          "sound-mode scene only services the voice damper");
+    Check(s_fadeUpdates == 5 && s_damperSteps == 6,
+          "sound-mode scene services the voice damper");
 
     g_SceneId = 0;
     g_Audio.seq.fade = 0;
     for (frame = 0; frame < 3; frame++) TickSequenceAudio();
-    Check(s_fadeUpdates == 5 && s_damperSteps == 1,
-          "inactive menu PCM needs no per-frame SPU work");
+    Check(s_fadeUpdates == 5 && s_damperSteps == 9,
+          "inactive menu PCM still flushes menu effects");
 
     TickSequenceAudio();
     TickSequenceAudio();
-    Check(s_damperSteps == 1,
-          "menu PCM remains independent from the SPU voice clock");
+    Check(s_damperSteps == 11,
+          "each menu frame flushes queued effect voices");
 
     g_Audio.seq.fade = -4;
     TickSequenceAudio();
-    Check(s_damperSteps == 1 && s_fadeUpdates == 6,
-          "pre-rendered music fades without servicing the sequence synthesizer");
+    Check(s_damperSteps == 12 && s_fadeUpdates == 6,
+          "pre-rendered music fades while effects continue to flush");
 }
 
 static void TestReverbDepth(void) {

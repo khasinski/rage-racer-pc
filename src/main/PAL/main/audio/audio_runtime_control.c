@@ -21,6 +21,10 @@ void TickSequenceAudio(void) {
         if (g_Audio.seq.fade != 0) {
             UpdateSequenceFadeOut();
         }
+        /* libsnd queues key-on and key-off writes.  Menu music no longer uses
+         * the retail sequencer, but menu effects still use libsnd and need the
+         * same once-per-frame flush that the sequencer used to provide. */
+        SpuVmDamperStep();
     }
 }
 

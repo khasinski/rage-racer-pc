@@ -310,6 +310,9 @@ if(RAGE_BUILD_PORT)
         src/port/input_config.c
         src/port/input_device_select.c
         src/port/platform_paths.c
+        src/port/menu_music_asset.c
+        src/port/menu_music_render.c
+        src/port/menu_music_runtime.c
         src/port/diagnostic_log.c
         src/port/game_diagnostics.c
         src/port/render_world_game.c

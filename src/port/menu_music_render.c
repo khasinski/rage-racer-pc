@@ -1,6 +1,7 @@
 #include "menu_music_render.h"
 
 #include <libsnd.h>
+#include <libspu.h>
 #include <psyz/spu.h>
 
 #include <stdint.h>
@@ -12,8 +13,7 @@ enum {
     SEQUENCE_VOICES = 18,
     SEQUENCE_SPU_ADDRESS = 0x20000,
     MASTER_VOLUME = 0x3fff,
-    REVERB_PRESET = 2,
-    REVERB_DEPTH = 0x28,
+    SEQUENCE_VOLUME = 96,
     PAL_TEMPO_US = 328947,
     NTSC_TEMPO_US = 394736,
 };
@@ -76,21 +76,20 @@ int MenuMusicRenderWav(const MenuMusicAsset *asset, unsigned tickRate,
     if (frameCount > (UINT32_MAX - 36) / (CHANNELS * sizeof(int16_t))) return 0;
 
     Psyz_SpuInit();
+    SpuInit();
     _SsInit();
     SsSetTableSize((char *)sequenceTable, 1, 1);
     SsSetTickMode(SS_NOTICK | 60);
     SsSetReservedVoice(SEQUENCE_VOICES);
     SsSetMVol(MASTER_VOLUME, MASTER_VOLUME);
-    SsUtSetReverbType(REVERB_PRESET);
-    SsUtReverbOn();
-    SsUtSetReverbDepth(REVERB_DEPTH, REVERB_DEPTH);
+    SsUtReverbOff();
     vab = SsVabOpenHeadSticky((unsigned char *)asset->header.data, -1,
                               SEQUENCE_SPU_ADDRESS);
     if (vab < 0 || SsVabTransBody((unsigned char *)asset->samples.data, vab) < 0 ||
         !SsVabTransCompleted(0)) return 0;
     sequence = SsSeqOpen((unsigned long *)asset->sequence.data, vab);
     if (sequence < 0) return 0;
-    SsSeqSetVol(sequence, 127, 127);
+    SsSeqSetVol(sequence, SEQUENCE_VOLUME, SEQUENCE_VOLUME);
     SsSeqPlay(sequence, SSPLAY_PLAY, 1);
 
     output = fopen(outputPath, "wb");
