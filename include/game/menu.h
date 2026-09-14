@@ -105,6 +105,10 @@ typedef struct CarSelect {
     s32 cursor;
 } CarSelect;
 
+typedef struct Ranking {
+    s32 cursor;
+} Ranking;
+
 typedef struct OptionMenu {
     GameSceneId exitScene;
     s32 cursor;
@@ -154,6 +158,7 @@ typedef struct MenuRuntime {
     TeamName teamName;
     CarSpecGraph carSpecGraph;
     CarSelect carSelect;
+    Ranking ranking;
     OptionMenu optionMenu;
     Frontend frontend;
     MenuWidgets widgets;
@@ -171,6 +176,7 @@ LogoSample *MenuLogoSample(void);
 TeamName *MenuTeamName(void);
 CarSpecGraph *MenuCarSpecGraph(void);
 CarSelect *MenuCarSelect(void);
+Ranking *MenuRanking(void);
 OptionMenu *MenuOption(void);
 MenuWidgets *MenuWidgetState(void);
 s32 MenuRuntimeScreenState(s32 screen);
@@ -506,7 +512,6 @@ extern s32 g_TeamLogoZoomLevel;
 extern u16 g_TeamLogoFadedClut[16];
 extern s32 g_RankingPendingState;
 extern s32 g_ShopCarIndex;
-extern s32 g_RankingCursor;
 extern s32 g_TeamLogoOption;
 extern char *g_BgmTrackNames[];
 extern s32 g_CarPriceTable[CAR_PRICE_COUNT];

@@ -65,6 +65,10 @@ CarSelect *MenuCarSelect(void) {
     return &s_menuRuntime.carSelect;
 }
 
+Ranking *MenuRanking(void) {
+    return &s_menuRuntime.ranking;
+}
+
 OptionMenu *MenuOption(void) {
     return &s_menuRuntime.optionMenu;
 }

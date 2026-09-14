@@ -27,8 +27,8 @@ static void DrawRankingScreenChrome(void) {
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
 }
 
-static void UpdateRankingMenu(void) {
-    DrawFadingMenuSprites(g_UiScriptProgress2, 2, g_RankingCursor);
+static void UpdateRankingMenu(Ranking *ranking) {
+    DrawFadingMenuSprites(g_UiScriptProgress2, 2, ranking->cursor);
     if (RunTimedDrawScript(g_RankingMenuScript, &g_UiScriptProgress2, 1) ==
         0) {
         return;
@@ -37,20 +37,20 @@ static void UpdateRankingMenu(void) {
     g_MenuOverlayPattern = -1;
     if (g_PadPressed & PAD_UP) {
         PlaySoundCue(1);
-        g_RankingCursor = WrapMenuIndex(
-            g_RankingCursor, -1, RANKING_OPTION_COUNT);
+        ranking->cursor = WrapMenuIndex(
+            ranking->cursor, -1, RANKING_OPTION_COUNT);
     }
     if (g_PadPressed & PAD_DOWN) {
         PlaySoundCue(1);
-        g_RankingCursor = WrapMenuIndex(
-            g_RankingCursor, 1, RANKING_OPTION_COUNT);
+        ranking->cursor = WrapMenuIndex(
+            ranking->cursor, 1, RANKING_OPTION_COUNT);
     }
     if (g_PadPressed & PAD_CONFIRM) {
-        if (g_RankingCursor == RANKING_OPTION_TOTAL ||
-            g_RankingCursor == RANKING_OPTION_LAP) {
+        if (ranking->cursor == RANKING_OPTION_TOTAL ||
+            ranking->cursor == RANKING_OPTION_LAP) {
             PlaySoundCue(2);
             GameMenuBusy = RANKING_MENU_CLOSING;
-        } else if (g_RankingCursor == RANKING_OPTION_EXIT) {
+        } else if (ranking->cursor == RANKING_OPTION_EXIT) {
             PlaySoundCue(3);
             GameMenuBusy = RANKING_EXIT_TO_COURSE_SELECT;
             g_MenuOverlayPattern = 2;
@@ -62,13 +62,13 @@ static void UpdateRankingMenu(void) {
     }
 }
 
-static void CloseRankingMenu(void) {
+static void CloseRankingMenu(Ranking *ranking) {
     RunTimedDrawScript(g_RankingMenuScript, &g_UiScriptProgress2, -1);
-    DrawFadingMenuSprites(g_UiScriptProgress2, 2, g_RankingCursor);
+    DrawFadingMenuSprites(g_UiScriptProgress2, 2, ranking->cursor);
     if (g_UiScriptProgress2 <= 0) {
-        GameMenuBusy = g_RankingCursor == RANKING_OPTION_TOTAL
+        GameMenuBusy = ranking->cursor == RANKING_OPTION_TOTAL
             ? RANKING_TOTAL_TABLE
-            : g_RankingCursor == RANKING_OPTION_LAP
+            : ranking->cursor == RANKING_OPTION_LAP
                 ? RANKING_LAP_TABLE
                 : RANKING_MENU;
     }
@@ -91,18 +91,19 @@ static void CloseRankingTable(RankingTableKind table) {
 }
 
 void UpdateRankingScreen(void) {
+    Ranking *ranking = MenuRanking();
     RankingScreenState state;
 
     g_MenuAltLayout = 0;
-    g_RankingCursor = AddClampedMenuValue(
-        g_RankingCursor, 0, 0, RANKING_OPTION_COUNT - 1);
+    ranking->cursor = AddClampedMenuValue(
+        ranking->cursor, 0, 0, RANKING_OPTION_COUNT - 1);
     DrawMenuCourseView(MenuCourseSelect());
     DrawMenuLightBurst(MenuWidgetState(), -9);
     state = (RankingScreenState)GameMenuBusy;
     if (state == RANKING_ENTER) {
         g_UiScriptProgress2 = 0;
         GameMenuBusy = RANKING_MENU;
-        DrawFadingMenuSprites(0, 2, g_RankingCursor);
+        DrawFadingMenuSprites(0, 2, ranking->cursor);
         RunTimedDrawScript(g_RankingMenuScript, &g_UiScriptProgress2, 1);
         /*
          * Having just arrived, draw the frame and wait for the next one.
@@ -117,10 +118,10 @@ void UpdateRankingScreen(void) {
     if (state < 0) {
         switch (state) {
         case RANKING_MENU:
-            UpdateRankingMenu();
+            UpdateRankingMenu(ranking);
             break;
         case RANKING_MENU_CLOSING:
-            CloseRankingMenu();
+            CloseRankingMenu(ranking);
             break;
         case RANKING_TOTAL_TABLE:
             UpdateRankingTable(RANKING_TABLE_TOTAL,
@@ -149,14 +150,14 @@ void UpdateRankingScreen(void) {
     }
     MenuBeginExit(MENU_SCREEN_RANKING);
     RunTimedDrawScript(g_RankingMenuScript, &g_UiScriptProgress2, -1);
-    DrawFadingMenuSprites(g_UiScriptProgress2, 2, g_RankingCursor);
+    DrawFadingMenuSprites(g_UiScriptProgress2, 2, ranking->cursor);
     RunTimedDrawScript(g_RankingPanelScript, &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
     if (g_UiScriptProgress > 0) {
         return;
     }
     MenuActivateScreen(MENU_SCREEN_COURSE_SELECT);
-    g_RankingCursor = 0;
+    ranking->cursor = 0;
     g_UiScriptProgress = 0;
     GameMenuBusy = 0;
     MenuWidgetState()->timeAttackStep = 0;

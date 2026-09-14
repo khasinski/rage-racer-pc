@@ -6,6 +6,7 @@
 #include <stdio.h>
 
 static MenuWidgets s_menuWidgets;
+static Ranking s_ranking;
 
 extern s32 g_MenuHandlerIndex;
 extern s32 g_MenuOutgoingHandlerIndex;
@@ -27,7 +28,6 @@ s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuOverlayPattern;
 s32 g_MenuScreen;
-s32 g_RankingCursor;
 s32 g_UiScriptProgress;
 s32 g_UiScriptProgress2;
 u16 g_PadPressed;
@@ -83,7 +83,7 @@ static void Reset(void) {
     GameMenuBusy = 0;
     g_MenuOverlayPattern = 0;
     g_PadPressed = 0;
-    g_RankingCursor = 0;
+    s_ranking.cursor = 0;
     g_UiScriptProgress = 0;
     g_UiScriptProgress2 = 0;
     s_scriptResult = 0;
@@ -119,7 +119,7 @@ int main(void) {
     UpdateRankingScreen();
     CHECK(GameMenuBusy == -1);
 
-    g_RankingCursor = 1;
+    s_ranking.cursor = 1;
     g_PadPressed = PAD_CONFIRM;
     UpdateRankingScreen();
     CHECK(GameMenuBusy == -2);
@@ -132,7 +132,7 @@ int main(void) {
     UpdateRankingScreen();
     CHECK(GameMenuBusy == -1);
 
-    g_RankingCursor = 2;
+    s_ranking.cursor = 2;
     g_PadPressed = PAD_CONFIRM;
     UpdateRankingScreen();
     CHECK(GameMenuBusy == 1 && g_MenuOverlayPattern == 2 && s_lastCue == 3);
@@ -142,7 +142,7 @@ int main(void) {
     UpdateRankingScreen();
     CHECK(GameMenuBusy == 0 && g_MenuScreen == 1);
     CHECK(g_MenuHandlerIndex == 1 && g_MenuOutgoingHandlerIndex == 2);
-    CHECK(g_RankingCursor == 0 && s_menuWidgets.timeAttackStep == 1);
+    CHECK(s_ranking.cursor == 0 && s_menuWidgets.timeAttackStep == 1);
     CHECK(s_timeAttackPlateStep == 0);
 
     GameMenuBusy = 1;
@@ -159,16 +159,16 @@ int main(void) {
 
     Reset();
     GameMenuBusy = -2;
-    g_RankingCursor = INT_MAX;
+    s_ranking.cursor = INT_MAX;
     g_UiScriptProgress2 = 0;
     UpdateRankingScreen();
     CHECK(GameMenuBusy == -1);
 
     Reset();
     GameMenuBusy = INT_MIN;
-    g_RankingCursor = INT_MAX;
+    s_ranking.cursor = INT_MAX;
     UpdateRankingScreen();
-    CHECK(GameMenuBusy == -1 && g_RankingCursor == 2);
+    CHECK(GameMenuBusy == -1 && s_ranking.cursor == 2);
 
     Reset();
     GameMenuBusy = INT_MAX;
@@ -180,3 +180,4 @@ int main(void) {
 }
 
 MenuWidgets *MenuWidgetState(void) { return &s_menuWidgets; }
+Ranking *MenuRanking(void) { return &s_ranking; }

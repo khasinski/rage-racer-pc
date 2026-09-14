@@ -170,7 +170,6 @@ s16 g_NegconSteerPlay;
 s16 g_NegconMappingIndex;
 s32 g_MenuAltLayout;
 s32 g_GameMode;
-s32 g_RankingCursor;
 s16 g_PadMappingIndex;
 s16 g_SeriesSelection;
 u8 g_NegconAxisSteer;
