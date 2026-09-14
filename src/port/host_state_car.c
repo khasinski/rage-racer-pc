@@ -28,9 +28,6 @@ CarHullPoint g_CarCornerOffsets[4] = {
 LaunchSpeedThreshold g_LaunchSpeedThresholds[CAR_LAUNCH_THRESHOLD_COUNT] = {
         {960, 320}, {960, 320}, {960, 320}, {960, 320}, {960, 320}
     };
-s16 g_LaunchEnergyThresholds[6] = {
-    450, 900, 1000, 1300, 1550, 0
-};
 CarCollisionPoint g_CarCollisionCorners[4] = {
     {-96, 512}, {96, 512}, {-96, -128}, {96, -128}
 };

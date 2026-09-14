@@ -70,8 +70,7 @@ int main(void) {
     CHECK_EQ(spec.baseSteeringGrip, 1, "minimum steering grip");
     CHECK_EQ(drive.speedScale, 0x490, "speed scale");
     CHECK_EQ(drive.steeringGripResponse, 73, "steering response");
-    CHECK_EQ(drive.launchEnergyThreshold,
-             g_LaunchEnergyThresholds[2] * 0xE,
+    CHECK_EQ(drive.launchEnergyThreshold, 1000 * 0xE,
              "launch threshold");
     CHECK_EQ(g_PeakOutputValue, spec.torqueCurve[15] / 20,
              "peak output");
@@ -126,8 +125,7 @@ int main(void) {
 
     drive.launchThresholdIndex = -1;
     PrepareCarPerformance(&drive);
-    CHECK_EQ(drive.launchEnergyThreshold,
-             g_LaunchEnergyThresholds[4] * 0xE,
+    CHECK_EQ(drive.launchEnergyThreshold, 1550 * 0xE,
              "negative launch threshold wraps safely");
 
     memset(spec.torqueBand.values, 0, sizeof(spec.torqueBand.values));

@@ -18,6 +18,10 @@ enum {
     LAUNCH_ENERGY_THRESHOLD_SCALE = 0xE,
 };
 
+static const s16 s_launchEnergyThresholds[CAR_LAUNCH_THRESHOLD_COUNT] = {
+    450, 900, 1000, 1300, 1550,
+};
+
 static s32 ClampPositiveInt64ToS32(int64_t value) {
     return value > INT32_MAX ? INT32_MAX : (s32)value;
 }
@@ -128,7 +132,7 @@ void PrepareCarPerformance(GameCarDrive *drive) {
     }
 
     drive->launchEnergyThreshold =
-        g_LaunchEnergyThresholds[
+        s_launchEnergyThresholds[
             NormalizeCarLaunchThresholdIndex(drive->launchThresholdIndex)] *
         LAUNCH_ENERGY_THRESHOLD_SCALE;
     drive->steeringGripResponse = spec->steeringGripResponse;

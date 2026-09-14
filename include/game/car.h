@@ -727,7 +727,6 @@ void ApplyPrimaryBodyColor(u32 colour, CarImageData *imageData);
 void ApplySecondaryBodyColor(u32 colour, CarImageData *imageData);
 void SetPrimaryBodyColor(s32 colour);
 void SetSecondaryBodyColor(s32 colour);
-extern s16 g_LaunchEnergyThresholds[];
 extern s16 g_RedlineToPeakRpmHalf;
 extern s16 g_PeakToRevLimitRpmHalf;
 extern RaceGridSlot g_AttractGridSlots[RACE_GRID_STORAGE_COUNT];
