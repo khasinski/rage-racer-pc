@@ -204,7 +204,9 @@ void DrawRacePlayerCarModel(GameCarRuntime *object) {
     if (model >= 0) {
         s32 savedModel = object->modelIndex;
         object->modelIndex = (s16)model;
+        SelectModelBank(1);
         DrawCar(object);
+        SelectModelBank(0);
         object->modelIndex = (s16)savedModel;
         return;
     }

@@ -57,6 +57,9 @@ void DrawPlayerCarModel(GameCarRuntime *obj) {
     (void)obj;
     s_drawCalls++;
 }
+void DrawRacePlayerCarModel(GameCarRuntime *obj) {
+    DrawPlayerCarModel(obj);
+}
 
 static int RunCase(s32 cameraPoint, s32 backwards, s32 expectedPoint) {
     PlayerCarRuntime target;

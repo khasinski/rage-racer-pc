@@ -35,6 +35,9 @@ void DrawPlayerCarModel(GameCarRuntime *car) {
     (void)car;
     s_drawCalls++;
 }
+void DrawRacePlayerCarModel(GameCarRuntime *car) {
+    DrawPlayerCarModel(car);
+}
 
 void DrawFullscreenFadeTile(s32 color, s32 tpage) {
     (void)tpage;

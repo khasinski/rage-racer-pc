@@ -29,9 +29,10 @@ s32 g_SceneId;
 s32 g_SceneTimer;
 
 static const TrackRenderTable *s_previewTable;
+static s32 s_customRival = -1;
 static s32 s_auxiliaryTextures;
 
-s32 CustomRaceRivalModel(void) { return -1; }
+s32 CustomRaceRivalModel(void) { return s_customRival; }
 s32 CustomRaceRivalModelForSelection(s32 selection) {
     return selection >= GAME_CAR_COUNT ? selection - GAME_CAR_COUNT : -1;
 }
@@ -42,7 +43,13 @@ int CustomRaceUsesRivalModel(void) { return 0; }
 const TrackRenderTable *CustomRivalPreviewRenderTable(void) {
     return s_previewTable;
 }
-void SelectModelBank(s32 index) { (void)index; }
+static s32 s_selectedModelBanks[4];
+static s32 s_selectModelBankCount;
+void SelectModelBank(s32 index) {
+    if (s_selectModelBankCount < 4)
+        s_selectedModelBanks[s_selectModelBankCount] = index;
+    s_selectModelBankCount++;
+}
 
 static s32 s_viewDepth;
 static s32 s_zoneBlend;
@@ -162,6 +169,7 @@ static void ResetCounters(void) {
     s_zoneLightCalls = 0;
     s_lightMatrixCalls = 0;
     s_yAngleCount = 0;
+    s_selectModelBankCount = 0;
     s_auxiliaryTextures = 0;
     memset(s_currentPosition, 0, sizeof(s_currentPosition));
     memset(s_submittedPositions, 0, sizeof(s_submittedPositions));
@@ -169,6 +177,7 @@ static void ResetCounters(void) {
     memset(s_submittedBanks, 0, sizeof(s_submittedBanks));
     memset(s_materialModes, 0, sizeof(s_materialModes));
     memset(s_auxiliaryTextureUse, 0, sizeof(s_auxiliaryTextureUse));
+    memset(s_selectedModelBanks, 0, sizeof(s_selectedModelBanks));
 }
 
 #define CHECK(condition)                                                       \
@@ -294,6 +303,15 @@ int main(void) {
           s_auxiliaryTextureUse[5] == 0);
     CHECK(s_auxiliaryTextures == 0);
     CHECK(g_TrackRenderTable == &track.header);
+
+    ResetCounters();
+    s_customRival = 0;
+    DrawRacePlayerCarModel(&object);
+    s_customRival = -1;
+    CHECK(s_submitCount == 6);
+    CHECK(s_selectModelBankCount == 2);
+    CHECK(s_selectedModelBanks[0] == 1 && s_selectedModelBanks[1] == 0);
+    CHECK(object.modelIndex == 0);
 
     puts("car model drawing tests passed");
     return 0;
