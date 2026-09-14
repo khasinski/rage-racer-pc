@@ -47,7 +47,6 @@ void InitSaveDefaults(void) {
 
     g_ClassRecords[0].place = 0;
     g_ClassRecords[0].clears = 0;
-    g_ClassWinCount = 0;
 
     for (i = 1; i < CLASS_RECORD_COUNT; i++) {
         g_ClassRecords[i].place = -1;

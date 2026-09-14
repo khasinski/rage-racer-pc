@@ -4,6 +4,7 @@
 #include "game/save_internal.h"
 
 void RefreshClassWinState(void) {
-    g_ClassWinCount = CountClassWins(g_ClassRecords, CLASS_RECORD_COUNT);
-    g_BgmTrackCount = BgmTrackCountForClassWins(g_ClassWinCount);
+    s32 wins = CountClassWins(g_ClassRecords, CLASS_RECORD_COUNT);
+
+    g_BgmTrackCount = BgmTrackCountForClassWins(wins);
 }

@@ -1131,7 +1131,8 @@ set_tests_properties(ranking_table PROPERTIES LABELS unit)
 
 add_executable(frontend_tests
     frontend_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/frontend.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/frontend.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/class_progress_rules.c)
 target_include_directories(frontend_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

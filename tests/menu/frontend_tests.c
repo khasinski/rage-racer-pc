@@ -15,7 +15,7 @@ s32 g_AnimTimer;
 s32 g_AssetLoadState;
 static s32 s_assetLoadFailed;
 s32 g_AttractCycleCount;
-s32 g_ClassWinCount;
+ScoreRecord g_ClassRecords[CLASS_RECORD_COUNT];
 s32 g_CourseIndex;
 FrontendState g_FrontendState;
 u32 g_FrontendIdleTimer;
@@ -149,6 +149,7 @@ u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *prim, s32 tpage) {
 static void Reset(void) {
     memset(&s_frame, 0, sizeof(s_frame));
     memset(&s_progress, 0, sizeof(s_progress));
+    memset(g_ClassRecords, 0, sizeof(g_ClassRecords));
     memset(s_packets, 0, sizeof(s_packets));
     g_DrawBuffer = &s_frame;
     g_RenderState.draw.packetCursor = s_packets;
@@ -161,7 +162,6 @@ static void Reset(void) {
     g_TitleAttractTimer = 1;
     g_TitleExitTimer = 0;
     g_MainMenuSlide = 0;
-    g_ClassWinCount = 0;
     g_AssetLoadState = 0;
     s_assetLoadFailed = 0;
     s_drawHandlerCalls = 0;
@@ -249,7 +249,9 @@ int main(void) {
     UpdateTitleAttract();
     CHECK(s_lastAlpha == 0x30);
     g_MainMenuSlide = -10;
-    g_ClassWinCount = 11;
+    for (s32 i = 0; i < CLASS_RECORD_COUNT; i++) {
+        g_ClassRecords[i].place = 1;
+    }
     UpdateTitleAttract();
     CHECK(s_lastAlpha == 0x7F && s_lastPanelClut == 0x7D80);
 

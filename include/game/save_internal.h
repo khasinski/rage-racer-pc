@@ -12,7 +12,6 @@
 
 extern CarEntry g_SaveDefaults[GAME_CAR_COUNT];
 extern ScoreRecord g_ClassRecords[CLASS_RECORD_COUNT];
-extern s32 g_ClassWinCount;
 extern CourseProgressState g_GrandPrixCourseProgress;
 extern CourseProgressState g_ExtraGrandPrixCourseProgress;
 extern CourseProgressState *g_CourseProgress;

@@ -6,6 +6,7 @@
 #include "game/menu_internal.h"
 #include "game/frontend_internal.h"
 #include "game/race.h"
+#include "game/race_internal.h"
 #include "game/grand_prix_content.h"
 #include "game/random.h"
 #include "game/render_internal.h"
@@ -75,7 +76,8 @@ void UpdateTitleAttract(void) {
                                  0xE0, 0xB0, 0x7DC0, alpha);
     next = QueueDrawModePrim(orderingTable, next, 0x19);
 
-    if (g_ClassWinCount >= CLASS_RECORD_COUNT) {
+    if (CountClassWins(g_ClassRecords, CLASS_RECORD_COUNT) >=
+        CLASS_RECORD_COUNT) {
         panelClut = 0x7D80;
     }
 

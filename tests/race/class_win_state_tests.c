@@ -5,7 +5,6 @@
 #include "game/save_internal.h"
 
 s32 g_BgmTrackCount;
-s32 g_ClassWinCount;
 ScoreRecord g_ClassRecords[CLASS_RECORD_COUNT];
 
 static void SetClassWins(s32 winCount) {
@@ -16,24 +15,21 @@ static void SetClassWins(s32 winCount) {
     }
 }
 
-static void TestRefreshesWinAndTrackCounts(void) {
+static void TestRefreshesTrackCount(void) {
     SetClassWins(4);
-    g_ClassWinCount = -1;
     g_BgmTrackCount = -1;
 
     RefreshClassWinState();
 
-    assert(g_ClassWinCount == 4);
     assert(g_BgmTrackCount == 9);
 
     SetClassWins(5);
     RefreshClassWinState();
 
-    assert(g_ClassWinCount == 5);
     assert(g_BgmTrackCount == 10);
 }
 
 int main(void) {
-    TestRefreshesWinAndTrackCounts();
+    TestRefreshesTrackCount();
     return 0;
 }

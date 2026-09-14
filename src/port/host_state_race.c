@@ -62,7 +62,6 @@ s32 g_FrameParity;
 s32 g_ClassCompleted;
 s32 g_RaceTotalTime;
 s32 g_RacePaused;
-s32 g_ClassWinCount;
 s16 g_GrandPrixMode;
 s16 g_RaceCueDelay;
 s16 g_RacePhase;
