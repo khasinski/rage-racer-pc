@@ -54,6 +54,10 @@ MemoryCardAction *SceneRuntimeMemoryCardAction(void) {
     return &s_runtime.memoryCardAction;
 }
 
+MemoryCardPoll *SceneRuntimeMemoryCardPoll(void) {
+    return &s_runtime.memoryCardPoll;
+}
+
 const AssetLoadTransaction *SceneRuntimeAssetResult(AssetRequestType request) {
     return AssetLoadTransactionResult(request, s_runtime.assetGeneration);
 }

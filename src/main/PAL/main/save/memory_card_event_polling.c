@@ -35,7 +35,7 @@ void ClearMemoryCardSwEvents(void) {
     ClearEventHandles(s_swEventHandles);
 }
 
-MemoryCardEvent PollMemoryCardHwEvent(void) {
+MemoryCardEvent PollMemoryCardHwEvent(MemoryCardPoll *poll) {
     MemoryCardEvent result = MC_EVENT_NONE;
     s32 index;
 
@@ -45,11 +45,11 @@ MemoryCardEvent PollMemoryCardHwEvent(void) {
         }
     }
 
-    if (g_McPollTicks < MEMORY_CARD_POLL_DEADLINE_TICKS) {
-        g_McPollTicks++;
+    if (poll->ticks < MEMORY_CARD_POLL_DEADLINE_TICKS) {
+        poll->ticks++;
     }
     if (result == MC_EVENT_NONE &&
-        g_McPollTicks >= MEMORY_CARD_POLL_DEADLINE_TICKS) {
+        poll->ticks >= MEMORY_CARD_POLL_DEADLINE_TICKS) {
         result = MC_EVENT_ERROR;
     }
 

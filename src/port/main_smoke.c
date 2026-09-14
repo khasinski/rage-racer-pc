@@ -489,8 +489,8 @@ static void ReportFinalState(void) {
            g_RageModelRejectBackface, g_MirrorPanelY,
            g_PlayerCar.drive.steerPos, g_MirrorMode,
            RetireCameraActive(), CaptureCurrent()->faceCount);
-    printf("memory card: phase=%d status=%d free=%d mask=%x page=%d\n",
-           g_McMenuPhase, g_McStatusResult,
+    printf("memory card: phase=%d free=%d mask=%x page=%d\n",
+           g_McMenuPhase,
            g_McFreeBlocks, g_McSlotUsedMask, g_McMenuPage);
 }
 

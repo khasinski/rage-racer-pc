@@ -3,11 +3,8 @@
 
 #include <stdio.h>
 
-MemoryCardStatusState g_McStatusState;
-s32 g_McPollTicks;
-s32 g_McStatusResult;
-s32 g_McPollStatus;
-s32 g_McLastCardStatus;
+static MemoryCardPoll s_poll;
+
 s32 g_McHwEventIoe;
 s32 g_McHwEventError;
 s32 g_McHwEventTimeout;
@@ -45,8 +42,9 @@ long _card_clear(long handle) {
     s_clearHandle = (s32)handle;
     return 0;
 }
-MemoryCardEvent PollMemoryCardHwEvent(void) {
+MemoryCardEvent PollMemoryCardHwEvent(MemoryCardPoll *poll) {
     MemoryCardEvent event = s_hwEvent;
+    (void)poll;
     s_hwEvent = MC_EVENT_NONE;
     return event;
 }
@@ -72,11 +70,11 @@ long EnableEvent(long event) { (void)event; return 1; }
 long DisableEvent(long event) { (void)event; return 1; }
 
 static void ResetPoller(void) {
-    g_McStatusState = MC_STATUS_REQUEST_INFO;
-    g_McPollTicks = 99;
-    g_McStatusResult = 0;
-    g_McPollStatus = 0;
-    g_McLastCardStatus = 0;
+    s_poll.state = MC_STATUS_REQUEST_INFO;
+    s_poll.ticks = 99;
+    s_poll.result = 0;
+    s_poll.pendingResult = 0;
+    s_poll.lastStatus = 0;
     s_hwEvent = MC_EVENT_NONE;
     s_swEvent = MC_EVENT_IO_COMPLETE;
     s_infoHandle = -1;
@@ -88,46 +86,46 @@ static void ResetPoller(void) {
 
 static int TestSuccessfulPoll(void) {
     ResetPoller();
-    CHECK(PollMemoryCardStatus(2, 3) == MC_CARD_RESULT_PENDING);
+    CHECK(PollMemoryCardStatus(&s_poll, 2, 3) == MC_CARD_RESULT_PENDING);
     CHECK(s_infoHandle == 35);
-    CHECK(g_McStatusState == MC_STATUS_WAIT_INFO && g_McPollTicks == 0);
+    CHECK(s_poll.state == MC_STATUS_WAIT_INFO && s_poll.ticks == 0);
 
     s_hwEvent = MC_EVENT_IO_COMPLETE;
-    CHECK(PollMemoryCardStatus(2, 3) == MC_CARD_RESULT_PENDING);
-    CHECK(g_McStatusState == MC_STATUS_REQUEST_LOAD);
-    CHECK(PollMemoryCardStatus(2, 3) == MC_CARD_RESULT_PENDING);
-    CHECK(s_loadHandle == 35 && g_McStatusState == MC_STATUS_WAIT_LOAD);
+    CHECK(PollMemoryCardStatus(&s_poll, 2, 3) == MC_CARD_RESULT_PENDING);
+    CHECK(s_poll.state == MC_STATUS_REQUEST_LOAD);
+    CHECK(PollMemoryCardStatus(&s_poll, 2, 3) == MC_CARD_RESULT_PENDING);
+    CHECK(s_loadHandle == 35 && s_poll.state == MC_STATUS_WAIT_LOAD);
 
     s_hwEvent = MC_EVENT_IO_COMPLETE;
-    CHECK(PollMemoryCardStatus(2, 3) == MC_CARD_RESULT_PENDING);
-    CHECK(g_McStatusState == MC_STATUS_PUBLISH_RESULT);
-    CHECK(PollMemoryCardStatus(2, 3) == MC_CARD_RESULT_READY);
-    CHECK(g_McStatusState == MC_STATUS_REQUEST_INFO);
+    CHECK(PollMemoryCardStatus(&s_poll, 2, 3) == MC_CARD_RESULT_PENDING);
+    CHECK(s_poll.state == MC_STATUS_PUBLISH_RESULT);
+    CHECK(PollMemoryCardStatus(&s_poll, 2, 3) == MC_CARD_RESULT_READY);
+    CHECK(s_poll.state == MC_STATUS_REQUEST_INFO);
     return 0;
 }
 
 static int TestInfoTimeout(void) {
     ResetPoller();
-    PollMemoryCardStatus(0, 0);
+    PollMemoryCardStatus(&s_poll, 0, 0);
     s_hwEvent = MC_EVENT_TIMEOUT;
-    PollMemoryCardStatus(0, 0);
-    CHECK(g_McStatusState == MC_STATUS_PUBLISH_RESULT);
-    CHECK(PollMemoryCardStatus(0, 0) == MC_CARD_RESULT_NO_CARD);
+    PollMemoryCardStatus(&s_poll, 0, 0);
+    CHECK(s_poll.state == MC_STATUS_PUBLISH_RESULT);
+    CHECK(PollMemoryCardStatus(&s_poll, 0, 0) == MC_CARD_RESULT_NO_CARD);
     return 0;
 }
 
 static int TestNewCardLoadFailure(void) {
     ResetPoller();
-    PollMemoryCardStatus(0, 1);
+    PollMemoryCardStatus(&s_poll, 0, 1);
     s_hwEvent = MC_EVENT_NEW_CARD;
-    PollMemoryCardStatus(0, 1);
-    CHECK(g_McPollStatus == MC_CARD_RESULT_NEW_CARD && s_clearHandle == 1);
+    PollMemoryCardStatus(&s_poll, 0, 1);
+    CHECK(s_poll.pendingResult == MC_CARD_RESULT_NEW_CARD && s_clearHandle == 1);
     CHECK(s_clearSwCalls == 1 && s_waitSwCalls == 1);
 
-    PollMemoryCardStatus(0, 1);
+    PollMemoryCardStatus(&s_poll, 0, 1);
     s_hwEvent = MC_EVENT_NEW_CARD;
-    PollMemoryCardStatus(0, 1);
-    CHECK(PollMemoryCardStatus(0, 1) == MC_CARD_RESULT_UNFORMATTED);
+    PollMemoryCardStatus(&s_poll, 0, 1);
+    CHECK(PollMemoryCardStatus(&s_poll, 0, 1) == MC_CARD_RESULT_UNFORMATTED);
     return 0;
 }
 

@@ -104,13 +104,14 @@ static void TrackPersistentCardError(void) {
     }
 }
 
-static void RunCardReadyState(MemoryCardAction *action, s32 fadeBusy) {
+static void RunCardReadyState(MemoryCardAction *action, MemoryCardPoll *poll,
+                              s32 fadeBusy) {
     /* Page 0 is the list of things to do with the card, page 1 is picking a
      * slot; any other page is not one this screen has, so it goes back. */
     if (g_McMenuPage == 0) {
         RunCardMenuRows(action, fadeBusy);
     } else if (g_McMenuPage == 1) {
-        RunCardSlotActions(action);
+        RunCardSlotActions(action, poll);
     } else {
         g_McMenuPage = 0;
         g_McSlotCursor = 0;
@@ -246,12 +247,13 @@ static void RunCardErrorState(MemoryCardAction *action, s32 fadeBusy) {
     ClearPendingCardError();
 }
 
-static void PollCardMenuSelection(MemoryCardAction *action) {
+static void PollCardMenuSelection(MemoryCardAction *action,
+                                  MemoryCardPoll *poll) {
     s32 status;
 
     if (action->busy != 0 && g_McErrorPending == 0) return;
 
-    status = PollMemoryCardStatus(0, 0);
+    status = PollMemoryCardStatus(poll, 0, 0);
     g_McCardStatus = status;
     if (status == 0) {
         /* Debounce a card being reseated before changing the screen. */
@@ -267,6 +269,7 @@ static void PollCardMenuSelection(MemoryCardAction *action) {
 
 void UpdateMemoryCardMenu(void) {
     MemoryCardAction *action = SceneRuntimeMemoryCardAction();
+    MemoryCardPoll *poll = SceneRuntimeMemoryCardPoll();
     s32 fadeBusy = UpdateMemoryCardFade(action);
     if (!AdvanceMemoryCardMenuStartup(action)) {
         DrawMemoryCardMenu();
@@ -274,7 +277,7 @@ void UpdateMemoryCardMenu(void) {
     }
     /* An action already under way owns the card, so its status is not asked
      * again until it reports an error. */
-    PollCardMenuSelection(action);
+    PollCardMenuSelection(action, poll);
 
     /*
      * What the menu does this frame is decided by what the card is: each of
@@ -285,7 +288,7 @@ void UpdateMemoryCardMenu(void) {
         RunCardBusyState(action, fadeBusy);
         break;
     case MC_MENU_STATE_READY:
-        RunCardReadyState(action, fadeBusy);
+        RunCardReadyState(action, poll, fadeBusy);
         break;
     case MC_MENU_STATE_WORKING:
         RunCardWorkingState(action, fadeBusy);

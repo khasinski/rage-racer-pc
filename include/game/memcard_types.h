@@ -51,4 +51,12 @@ typedef enum MemoryCardStatusState {
     MC_STATUS_PUBLISH_RESULT
 } MemoryCardStatusState;
 
+typedef struct MemoryCardPoll {
+    MemoryCardStatusState state;
+    s32 ticks;
+    s32 result;
+    s32 pendingResult;
+    s32 lastStatus;
+} MemoryCardPoll;
+
 #endif

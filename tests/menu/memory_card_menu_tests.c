@@ -23,8 +23,10 @@
 
 /* The menu's own state. */
 static MemoryCardAction s_action;
+MemoryCardPoll s_poll;
 
 MemoryCardAction *SceneRuntimeMemoryCardAction(void) { return &s_action; }
+MemoryCardPoll *SceneRuntimeMemoryCardPoll(void) { return &s_poll; }
 s32 g_McCardStatus;
 s32 g_McErrorCountdown;
 s32 g_McErrorPending;
@@ -59,15 +61,16 @@ s32 GameMenuLoadPhase;
  */
 static s32 s_cardStatusAnswer;
 static int s_useRealCardDriver;
-s32 FixturePollMemoryCardStatus(s32 port, s32 slot);
+s32 FixturePollMemoryCardStatus(MemoryCardPoll *poll, s32 port, s32 slot);
 void FixtureResetMemoryCardStatus(void);
 static s32 s_formatAnswer;
 static s32 s_loadAnswer;
 static s32 s_writeAnswer;
 static int s_calls;
 
-s32 PollMemoryCardStatus(s32 a, s32 b) {
-    if (s_useRealCardDriver) return FixturePollMemoryCardStatus(a, b);
+s32 PollMemoryCardStatus(MemoryCardPoll *poll, s32 a, s32 b) {
+    if (s_useRealCardDriver) return FixturePollMemoryCardStatus(poll, a, b);
+    (void)poll;
     (void)a;
     (void)b;
     s_calls++;
@@ -217,7 +220,7 @@ static int TestFailedLoadReportsError(void) {
     s_action.state = 0x25;
     g_McSettleTicks = 3;
     s_cardStatusAnswer = MC_MENU_STATE_READY;
-    RunCardSlotActions(&s_action);
+    RunCardSlotActions(&s_action, &s_poll);
     if (g_McMenuPhase != MC_PROMPT_CARD_ERROR) {
         printf("FAIL a failed load reports prompt %d instead of card error\n",
                g_McMenuPhase);
@@ -299,14 +302,14 @@ static int TestCardSettleRequiresConsecutiveReadyPolls(void) {
     g_McSettleTicks = 2;
 
     s_cardStatusAnswer = MC_MENU_STATE_READY;
-    RunCardSlotActions(&s_action);
+    RunCardSlotActions(&s_action, &s_poll);
     if (g_McSettleTicks != 3 || s_action.state != 0x25) {
         printf("FAIL settle did not accept the third ready poll\n");
         return 0;
     }
 
     s_cardStatusAnswer = MC_MENU_STATE_NO_CARD;
-    RunCardSlotActions(&s_action);
+    RunCardSlotActions(&s_action, &s_poll);
     if (g_McSettleTicks != 0 || s_action.state != 0x25) {
         printf("FAIL interrupted settle kept %d ready polls in action %x\n",
                g_McSettleTicks, s_action.state);
@@ -315,13 +318,13 @@ static int TestCardSettleRequiresConsecutiveReadyPolls(void) {
 
     s_cardStatusAnswer = MC_MENU_STATE_READY;
     for (i = 0; i < 3; i++) {
-        RunCardSlotActions(&s_action);
+        RunCardSlotActions(&s_action, &s_poll);
     }
     if (s_action.state != 0x25) {
         printf("FAIL settle completed after only three consecutive polls\n");
         return 0;
     }
-    RunCardSlotActions(&s_action);
+    RunCardSlotActions(&s_action, &s_poll);
     if (s_action.state != 0x27) {
         printf("FAIL settle did not complete after four consecutive polls\n");
         return 0;
@@ -338,7 +341,7 @@ static int TestRealCardDriverSettlesSaveAndLoad(void) {
         s_action.state = actions[i];
         g_McSettleTicks = 0;
         for (int frame = 0; frame < 60 && s_action.state == actions[i]; ++frame)
-            RunCardSlotActions(&s_action);
+            RunCardSlotActions(&s_action, &s_poll);
         s_useRealCardDriver = 0;
         if (s_action.state != completed[i]) {
             printf("FAIL real card driver stuck settling action %x\n", actions[i]);

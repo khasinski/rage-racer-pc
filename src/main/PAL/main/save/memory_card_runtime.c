@@ -2,114 +2,114 @@
 #include "game/memcard_internal.h"
 #include <stdio.h>
 
-static void RequestCardInfo(s32 handle) {
+static void RequestCardInfo(MemoryCardPoll *poll, s32 handle) {
     _card_info(handle);
-    g_McStatusState = MC_STATUS_WAIT_INFO;
-    g_McPollTicks = 0;
-    g_McStatusResult = MC_CARD_RESULT_PENDING;
+    poll->state = MC_STATUS_WAIT_INFO;
+    poll->ticks = 0;
+    poll->result = MC_CARD_RESULT_PENDING;
 }
 
-static void HandleCardInfoEvent(s32 handle) {
-    MemoryCardEvent event = PollMemoryCardHwEvent();
+static void HandleCardInfoEvent(MemoryCardPoll *poll, s32 handle) {
+    MemoryCardEvent event = PollMemoryCardHwEvent(poll);
 
     if (event == MC_EVENT_NONE) return;
 
     switch (event) {
     case MC_EVENT_IO_COMPLETE:
-        g_McPollStatus = MC_CARD_RESULT_READY;
-        g_McStatusState = g_McLastCardStatus == MC_CARD_RESULT_READY
+        poll->pendingResult = MC_CARD_RESULT_READY;
+        poll->state = poll->lastStatus == MC_CARD_RESULT_READY
                               ? MC_STATUS_PUBLISH_RESULT
                               : MC_STATUS_REQUEST_LOAD;
         break;
     case MC_EVENT_TIMEOUT:
-        g_McPollStatus = MC_CARD_RESULT_NO_CARD;
-        g_McStatusState = MC_STATUS_PUBLISH_RESULT;
-        g_McLastCardStatus = MC_CARD_RESULT_PENDING;
+        poll->pendingResult = MC_CARD_RESULT_NO_CARD;
+        poll->state = MC_STATUS_PUBLISH_RESULT;
+        poll->lastStatus = MC_CARD_RESULT_PENDING;
         break;
     case MC_EVENT_NEW_CARD:
-        g_McPollStatus = MC_CARD_RESULT_NEW_CARD;
+        poll->pendingResult = MC_CARD_RESULT_NEW_CARD;
         ClearMemoryCardSwEvents();
         _card_clear(handle);
         WaitMemoryCardSwEvent();
-        g_McStatusState = MC_STATUS_REQUEST_LOAD;
-        g_McLastCardStatus = MC_CARD_RESULT_PENDING;
+        poll->state = MC_STATUS_REQUEST_LOAD;
+        poll->lastStatus = MC_CARD_RESULT_PENDING;
         break;
     case MC_EVENT_ERROR:
     default:
-        g_McPollStatus = MC_CARD_RESULT_ERROR;
-        g_McStatusState = MC_STATUS_PUBLISH_RESULT;
-        g_McLastCardStatus = MC_CARD_RESULT_PENDING;
+        poll->pendingResult = MC_CARD_RESULT_ERROR;
+        poll->state = MC_STATUS_PUBLISH_RESULT;
+        poll->lastStatus = MC_CARD_RESULT_PENDING;
         break;
     }
 }
 
-static void RequestCardLoad(s32 handle) {
+static void RequestCardLoad(MemoryCardPoll *poll, s32 handle) {
     ClearMemoryCardHwEvents();
     _card_load(handle);
-    g_McStatusState = MC_STATUS_WAIT_LOAD;
-    g_McPollTicks = 0;
+    poll->state = MC_STATUS_WAIT_LOAD;
+    poll->ticks = 0;
 }
 
-static void HandleCardLoadEvent(void) {
-    MemoryCardEvent event = PollMemoryCardHwEvent();
+static void HandleCardLoadEvent(MemoryCardPoll *poll) {
+    MemoryCardEvent event = PollMemoryCardHwEvent(poll);
 
     if (event == MC_EVENT_NONE) return;
 
-    g_McStatusState = MC_STATUS_PUBLISH_RESULT;
+    poll->state = MC_STATUS_PUBLISH_RESULT;
     switch (event) {
     case MC_EVENT_IO_COMPLETE:
-        g_McLastCardStatus = MC_CARD_RESULT_READY;
+        poll->lastStatus = MC_CARD_RESULT_READY;
         break;
     case MC_EVENT_TIMEOUT:
-        g_McPollStatus = MC_CARD_RESULT_NO_CARD;
-        g_McLastCardStatus = MC_CARD_RESULT_PENDING;
+        poll->pendingResult = MC_CARD_RESULT_NO_CARD;
+        poll->lastStatus = MC_CARD_RESULT_PENDING;
         break;
     case MC_EVENT_NEW_CARD:
-        g_McPollStatus = MC_CARD_RESULT_UNFORMATTED;
-        g_McLastCardStatus = MC_CARD_RESULT_PENDING;
+        poll->pendingResult = MC_CARD_RESULT_UNFORMATTED;
+        poll->lastStatus = MC_CARD_RESULT_PENDING;
         break;
     case MC_EVENT_ERROR:
     default:
-        g_McPollStatus = MC_CARD_RESULT_ERROR;
-        g_McLastCardStatus = MC_CARD_RESULT_PENDING;
+        poll->pendingResult = MC_CARD_RESULT_ERROR;
+        poll->lastStatus = MC_CARD_RESULT_PENDING;
         break;
     }
 }
 
 
-s32 PollMemoryCardStatus(s32 port, s32 slot) {
+s32 PollMemoryCardStatus(MemoryCardPoll *poll, s32 port, s32 slot) {
     s32 handle;
 
     handle = (port * 16) + slot;
 
-    switch (g_McStatusState) {
+    switch (poll->state) {
     case MC_STATUS_REQUEST_INFO:
-        RequestCardInfo(handle);
+        RequestCardInfo(poll, handle);
         break;
 
     case MC_STATUS_WAIT_INFO:
-        HandleCardInfoEvent(handle);
+        HandleCardInfoEvent(poll, handle);
         break;
 
     case MC_STATUS_REQUEST_LOAD:
-        RequestCardLoad(handle);
+        RequestCardLoad(poll, handle);
         break;
 
     case MC_STATUS_WAIT_LOAD:
-        HandleCardLoadEvent();
+        HandleCardLoadEvent(poll);
         break;
 
     case MC_STATUS_PUBLISH_RESULT:
-        g_McStatusState = MC_STATUS_REQUEST_INFO;
-        g_McStatusResult = g_McPollStatus;
+        poll->state = MC_STATUS_REQUEST_INFO;
+        poll->result = poll->pendingResult;
         break;
 
     default:
-        g_McStatusState = MC_STATUS_REQUEST_INFO;
-        g_McStatusResult = MC_CARD_RESULT_PENDING;
+        poll->state = MC_STATUS_REQUEST_INFO;
+        poll->result = MC_CARD_RESULT_PENDING;
     }
 
-    return g_McStatusResult;
+    return poll->result;
 }
 
 s32 FormatMemoryCard(s32 port, s32 slot) {

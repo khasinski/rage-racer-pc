@@ -21,11 +21,6 @@ s32 g_McFromLoadMenu;
 s32 g_McMenuPage;
 s32 g_McMenuRowCursor;
 s32 g_McMenuState;
-MemoryCardStatusState g_McStatusState;
-s32 g_McPollTicks;
-s32 g_McStatusResult;
-s32 g_McPollStatus;
-s32 g_McLastCardStatus;
 s32 g_McNoCardTicks;
 s32 g_McErrorTicks;
 s32 g_McErrorPending;
@@ -37,7 +32,9 @@ u16 g_PadPressed;
 u16 g_PadPressedRepeat;
 
 static MemoryCardAction s_action;
+static MemoryCardPoll s_poll;
 MemoryCardAction *SceneRuntimeMemoryCardAction(void) { return &s_action; }
+MemoryCardPoll *SceneRuntimeMemoryCardPoll(void) { return &s_poll; }
 
 typedef struct TextDraw {
     s32 x;
@@ -218,11 +215,11 @@ static void TestMenuControls(void) {
 
 static void TestMenuLifecycle(void) {
     Reset();
-    g_McStatusState = MC_STATUS_WAIT_LOAD;
-    g_McPollTicks = 40;
-    g_McStatusResult = MC_CARD_RESULT_READY;
-    g_McPollStatus = MC_CARD_RESULT_ERROR;
-    g_McLastCardStatus = MC_CARD_RESULT_READY;
+    s_poll.state = MC_STATUS_WAIT_LOAD;
+    s_poll.ticks = 40;
+    s_poll.result = MC_CARD_RESULT_READY;
+    s_poll.pendingResult = MC_CARD_RESULT_ERROR;
+    s_poll.lastStatus = MC_CARD_RESULT_READY;
     g_McNoCardTicks = 6;
     g_McErrorTicks = 4;
     g_McErrorPending = 1;
@@ -234,10 +231,10 @@ static void TestMenuLifecycle(void) {
     CHECK(g_McMenuPage == 0 && g_McMenuRowCursor == 0);
     CHECK(g_McFadeStep == -8 && g_McFadeLevel == 0xFF);
     CHECK(g_SceneId == 0x1A && g_SceneTimer == 0);
-    CHECK(g_McStatusState == MC_STATUS_REQUEST_INFO && g_McPollTicks == 0);
-    CHECK(g_McStatusResult == MC_CARD_RESULT_PENDING &&
-          g_McPollStatus == MC_CARD_RESULT_PENDING &&
-          g_McLastCardStatus == MC_CARD_RESULT_PENDING);
+    CHECK(s_poll.state == MC_STATUS_REQUEST_INFO && s_poll.ticks == 0);
+    CHECK(s_poll.result == MC_CARD_RESULT_PENDING &&
+          s_poll.pendingResult == MC_CARD_RESULT_PENDING &&
+          s_poll.lastStatus == MC_CARD_RESULT_PENDING);
     CHECK(g_McNoCardTicks == 0 && g_McErrorTicks == 0 &&
           g_McErrorPending == 0 && g_McErrorCountdown == 3);
     CHECK(g_McSettleTicks == 0);

@@ -45,7 +45,7 @@ void DrawMemoryCardSaveRows(s32 flags, GameSaveHeaderRow *rows);
 void ClearMemoryCardHwEvents(void);
 void ClearMemoryCardSwEvents(void);
 MemoryCardEvent WaitMemoryCardSwEvent(void);
-MemoryCardEvent PollMemoryCardHwEvent(void);
+MemoryCardEvent PollMemoryCardHwEvent(MemoryCardPoll *poll);
 /* libcard _card_clear (see psyq/): _new_card() + _card_write(chan, 0x3F, 0). */
 s32 FormatMemoryCard(s32 port, s32 slot);
 void StartMemoryCardEvents(void);
@@ -59,12 +59,12 @@ void StartMenuExitFade(void);
 s32 UpdateMemoryCardFade(MemoryCardAction *action);
 s32 AdvanceMemoryCardMenuStartup(MemoryCardAction *action);
 void DrawMemoryCardMenu(void);
-void RunCardSlotActions(MemoryCardAction *action);
+void RunCardSlotActions(MemoryCardAction *action, MemoryCardPoll *poll);
 void RunUnformattedCardPage(MemoryCardAction *action, s32 fadeBusy);
 void RunCardWorkingActions(MemoryCardAction *action, s32 fadeBusy);
 void RunNoCardActions(MemoryCardAction *action, s32 fadeBusy);
 void DrawMemoryCardMessage(s32 message);
-s32 PollMemoryCardStatus(s32 port, s32 slot);
+s32 PollMemoryCardStatus(MemoryCardPoll *poll, s32 port, s32 slot);
 void DrawMemoryCardScreen(s32 showSlotBar, s32 fromLoadMenu,
                           s32 selectedRow, s32 selectedSlot);
 

@@ -11,12 +11,12 @@ void StartMenuExitFade(void) {
     g_McFadeStep = 8;
 }
 
-static void ResetMemoryCardMenuSession(void) {
-    g_McStatusState = MC_STATUS_REQUEST_INFO;
-    g_McPollTicks = 0;
-    g_McStatusResult = MC_CARD_RESULT_PENDING;
-    g_McPollStatus = MC_CARD_RESULT_PENDING;
-    g_McLastCardStatus = MC_CARD_RESULT_PENDING;
+static void ResetMemoryCardMenuSession(MemoryCardPoll *poll) {
+    poll->state = MC_STATUS_REQUEST_INFO;
+    poll->ticks = 0;
+    poll->result = MC_CARD_RESULT_PENDING;
+    poll->pendingResult = MC_CARD_RESULT_PENDING;
+    poll->lastStatus = MC_CARD_RESULT_PENDING;
     g_McNoCardTicks = 0;
     g_McErrorTicks = 0;
     g_McErrorPending = 0;
@@ -25,6 +25,7 @@ static void ResetMemoryCardMenuSession(void) {
 }
 
 static void InitializeMemoryCardMenu(MemoryCardAction *action,
+                                     MemoryCardPoll *poll,
                                      s32 fromLoadMenu) {
     g_McMenuRowCursor = fromLoadMenu != 0 ? 2 : 0;
     g_McMenuState = MC_MENU_STATE_NO_CARD;
@@ -32,7 +33,7 @@ static void InitializeMemoryCardMenu(MemoryCardAction *action,
     g_McMenuPage = 0;
     g_McFromLoadMenu = fromLoadMenu;
     memset(action, 0, sizeof(*action));
-    ResetMemoryCardMenuSession();
+    ResetMemoryCardMenuSession(poll);
     StartMemoryCardEvents();
     g_McFadeStep = -8;
     g_McFadeLevel = 0xFF;
@@ -42,7 +43,8 @@ static void InitializeMemoryCardMenu(MemoryCardAction *action,
 void EnterMemoryCardMenu(void) {
     SetDispMask(0);
     SetupDisplay480(0, 0, 0);
-    InitializeMemoryCardMenu(SceneRuntimeMemoryCardAction(), 0);
+    InitializeMemoryCardMenu(SceneRuntimeMemoryCardAction(),
+                             SceneRuntimeMemoryCardPoll(), 0);
 }
 
 void EnterMemoryCardMenuFromLoad(void) {
@@ -54,5 +56,6 @@ void EnterMemoryCardMenuFromLoad(void) {
                           g_ImageBlockSize)) {
         return;
     }
-    InitializeMemoryCardMenu(SceneRuntimeMemoryCardAction(), 1);
+    InitializeMemoryCardMenu(SceneRuntimeMemoryCardAction(),
+                             SceneRuntimeMemoryCardPoll(), 1);
 }

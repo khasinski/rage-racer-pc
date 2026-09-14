@@ -16,8 +16,8 @@ enum {
     CARD_STABLE_STATUS_FRAMES = 4,
 };
 
-static int CardStatusSettledAfterIo(void) {
-    s32 status = PollMemoryCardStatus(0, 0);
+static int CardStatusSettledAfterIo(MemoryCardPoll *poll) {
+    s32 status = PollMemoryCardStatus(poll, 0, 0);
     /* The asynchronous driver reports pending between completed probes.
      * Pending is not evidence that the card disappeared: resetting here
      * prevents four successful probes from ever accumulating. */
@@ -149,7 +149,7 @@ static void ReadSelectedSaveSlot(MemoryCardAction *action) {
     action->state = CARD_SLOT_ACTION_WAIT_LOAD_SETTLE;
 }
 
-void RunCardSlotActions(MemoryCardAction *action) {
+void RunCardSlotActions(MemoryCardAction *action, MemoryCardPoll *poll) {
     switch (action->state) {
     case CARD_SLOT_ACTION_PICK:
         PickCardSlot(action);
@@ -182,7 +182,7 @@ void RunCardSlotActions(MemoryCardAction *action) {
         break;
 
     case CARD_SLOT_ACTION_WAIT_SAVE_CARD:
-        if (!CardStatusSettledAfterIo()) break;
+        if (!CardStatusSettledAfterIo(poll)) break;
         g_McMenuPhase = action->result != 0 ? MC_PROMPT_SAVE_OK
                                              : MC_PROMPT_CARD_ERROR;
         action->timer = CARD_RESULT_DISPLAY_FRAMES;
@@ -224,7 +224,7 @@ void RunCardSlotActions(MemoryCardAction *action) {
         break;
 
     case CARD_SLOT_ACTION_WAIT_LOAD_CARD:
-        if (!CardStatusSettledAfterIo()) break;
+        if (!CardStatusSettledAfterIo(poll)) break;
         g_McMenuPhase = action->result != 0 ? MC_PROMPT_LOAD_OK
                                              : MC_PROMPT_CARD_ERROR;
         action->timer = CARD_RESULT_DISPLAY_FRAMES;

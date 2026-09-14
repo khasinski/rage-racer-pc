@@ -13,7 +13,7 @@ s32 g_McSwEventIoe = 5;
 s32 g_McSwEventError = 6;
 s32 g_McSwEventTimeout = 7;
 s32 g_McSwEventNew = 8;
-s32 g_McPollTicks;
+static MemoryCardPoll s_poll;
 s32 g_FrameSyncThreshold;
 s32 g_SaveElapsedTicks;
 
@@ -69,18 +69,18 @@ long CloseEvent(long event) {
 static void ResetMock(void) {
     memset(s_active, 0, sizeof(s_active));
     memset(s_calls, 0, sizeof(s_calls));
-    g_McPollTicks = 0;
+    s_poll.ticks = 0;
 }
 
 static int TestNoEventAndTimeout(void) {
     ResetMock();
-    CHECK(PollMemoryCardHwEvent() == MC_EVENT_NONE);
-    CHECK(g_McPollTicks == 1);
-    g_McPollTicks = 90;
-    CHECK(PollMemoryCardHwEvent() == MC_EVENT_ERROR);
-    CHECK(g_McPollTicks == 91);
-    CHECK(PollMemoryCardHwEvent() == MC_EVENT_ERROR);
-    CHECK(g_McPollTicks == 91);
+    CHECK(PollMemoryCardHwEvent(&s_poll) == MC_EVENT_NONE);
+    CHECK(s_poll.ticks == 1);
+    s_poll.ticks = 90;
+    CHECK(PollMemoryCardHwEvent(&s_poll) == MC_EVENT_ERROR);
+    CHECK(s_poll.ticks == 91);
+    CHECK(PollMemoryCardHwEvent(&s_poll) == MC_EVENT_ERROR);
+    CHECK(s_poll.ticks == 91);
     return 0;
 }
 
@@ -90,13 +90,13 @@ static int TestPollPriority(void) {
     s_active[g_McHwEventError] = 1;
     s_active[g_McHwEventTimeout] = 1;
     s_active[g_McHwEventNew] = 1;
-    CHECK(PollMemoryCardHwEvent() == MC_EVENT_NEW_CARD);
+    CHECK(PollMemoryCardHwEvent(&s_poll) == MC_EVENT_NEW_CARD);
 
     ResetMock();
-    g_McPollTicks = 90;
+    s_poll.ticks = 90;
     s_active[g_McHwEventIoe] = 1;
-    CHECK(PollMemoryCardHwEvent() == MC_EVENT_IO_COMPLETE);
-    CHECK(g_McPollTicks == 91);
+    CHECK(PollMemoryCardHwEvent(&s_poll) == MC_EVENT_IO_COMPLETE);
+    CHECK(s_poll.ticks == 91);
     return 0;
 }
 
