@@ -318,11 +318,40 @@ static void TestDistinctTrackPages(void) {
     s_copyPixels = 0;
 }
 
+static void TestCarPreviewLeavesTrackPagesAlone(void) {
+    static u8 pack[TRACK_TEXTURE_SHADOW_SIZE + 16];
+    s32 *offsets = (s32 *)(void *)pack;
+    GameImageEntryHeader *entry;
+    GameImageBlock *pixels;
+    size_t carSize = sizeof(GameImageEntryHeader) + sizeof(GameImageBlock);
+
+    memset(pack, 0, sizeof(pack));
+    offsets[0] = 20;
+    offsets[1] = 28;
+    offsets[2] = 36;
+    offsets[3] = offsets[2] + (s32)carSize;
+    offsets[4] = TRACK_TEXTURE_SHADOW_SIZE;
+    entry = (GameImageEntryHeader *)(void *)(pack + offsets[2]);
+    pixels = (GameImageBlock *)(void *)(entry + 1);
+    InitBlock(pixels, sizeof(*pixels), 400, 240, 1, 1, 0x5A);
+
+    s_loadCount = 0;
+    s_textureResets = s_textureRevisions = 0;
+    Check(InstallTrackCarPreviewTexture(pack, sizeof(pack)) == 1,
+          "car preview accepts a complete track texture pack");
+    Check(s_loadCount == 1 && s_loadRects[0].x == 400 &&
+              s_loadRects[0].y == 240,
+          "car preview uploads only the car image");
+    Check(s_textureResets == 0 && s_textureRevisions == 0,
+          "car preview leaves track texture paging untouched");
+}
+
 int main(void) {
     TestImageEntries();
     TestImageAssetChain();
     TestTeamLogoStorage();
     TestDistinctTrackPages();
+    TestCarPreviewLeavesTrackPagesAlone();
 
     if (s_failures != 0) return 1;
     puts("image assets upload their CLUT, pixels, chain and team logo state");

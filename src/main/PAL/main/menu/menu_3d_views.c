@@ -2,6 +2,7 @@
 #include "game/course_index.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
+#include "game/race.h"
 #include "game/player_car_internal.h"
 #include "game/render_internal.h"
 #include "game/track.h"
@@ -142,8 +143,12 @@ void DrawMenuCarView(void) {
     car->z = -out.z;
     car->modelRotation = car->bodyRotation;
     car->modelY = car->y;
-    SelectModelBank(g_CarModelSlot);
-    DrawPlayerCarModel(renderObject);
+    if (CustomRaceUsesRivalModel()) {
+        DrawCustomRivalPreview(renderObject);
+    } else {
+        SelectModelBank(g_CarModelSlot);
+        DrawPlayerCarModel(renderObject);
+    }
 
     car->x = 52 - horizontalAngle;
     car->y = viewHeight + 30;

@@ -205,6 +205,24 @@ void DrawRacePlayerCarModel(GameCarRuntime *object) {
     DrawPlayerCarModel(object);
 }
 
+void DrawCustomRivalPreview(GameCarRuntime *object) {
+    const TrackRenderTable *previewTable;
+    const TrackRenderTable *savedTable;
+    s32 savedModel;
+
+    previewTable = CustomRivalPreviewRenderTable();
+    if (object == NULL || !CustomRaceUsesRivalModel() || previewTable == NULL)
+        return;
+    savedModel = object->modelIndex;
+    savedTable = g_TrackRenderTable;
+    object->modelIndex = (s16)CustomRaceRivalModel();
+    g_TrackRenderTable = previewTable;
+    SelectModelBank(13);
+    DrawCar(object);
+    g_TrackRenderTable = savedTable;
+    object->modelIndex = (s16)savedModel;
+}
+
 void DrawCar(GameCarRuntime *object) {
     Matrix scratchMatrix;
     Matrix bodyLocalMatrix;
@@ -259,7 +277,7 @@ void DrawCar(GameCarRuntime *object) {
             .wheelOffsetX = WrapSigned16(params->axis0),
             .wheelOffsetY = WrapSigned16(params->axis1),
             .wheelOffsetZ = WrapSigned16(params->axis2),
-            .useZoneLighting = 1,
+            .useZoneLighting = g_SceneId != 8,
         };
 
         clipHandle = DrawCloseCarAssembly(object, &assembly);

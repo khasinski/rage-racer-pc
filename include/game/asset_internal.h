@@ -17,6 +17,7 @@ static inline s32 AssetPayloadOffsetIsValid(s32 offset,
 
 /* Writable bytes remaining in the port-owned buffer containing `at`. */
 size_t PortAssetRoomAt(const void *at);
+u8 *CustomPreviewAssetBuffer(size_t *size);
 
 /* Computes a byte span without relational comparison or subtraction between
  * C pointers that may have lost their common-array provenance in host state. */

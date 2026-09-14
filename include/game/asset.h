@@ -40,7 +40,8 @@ typedef enum AssetRequestType {
     ASSET_REQUEST_RACE,
     ASSET_REQUEST_GRAND_PRIX_SCREEN,
     ASSET_REQUEST_COURSE_TEXTURES,
-    ASSET_REQUEST_TRACK_DATA
+    ASSET_REQUEST_TRACK_DATA,
+    ASSET_REQUEST_CUSTOM_RIVAL_PREVIEW
 } AssetRequestType;
 
 extern AssetRequestType g_AssetRequestType;
@@ -485,6 +486,9 @@ void LoadCourseTextureAssets(void);
 /* Phase 12: <COURSE>n.2ND, handing its 11 sub-blocks to the track subsystems. */
 s32 RequestTrackDataAssets(void);
 void LoadTrackDataAssets(void);
+s32 RequestCustomRivalPreviewAssets(void);
+void LoadCustomRivalPreviewAssets(void);
+const struct TrackRenderTable *CustomRivalPreviewRenderTable(void);
 /* Copy the live car model into g_AssetBase and re-register its bank there. */
 s32 RelocateCarModel(void);
 
@@ -548,6 +552,7 @@ s32 InstallTerrainCellData(const void *data, size_t size);
 s32 InstallCarModelAsset(CarModelAsset *asset, size_t size, s32 slot,
                          s32 carIndex);
 s32 InstallTrackTextureAssetPack(u8 *base, size_t size);
+s32 InstallTrackCarPreviewTexture(u8 *base, size_t size);
 s32 InstallTrackEventData(const struct TrackEventData *eventData, size_t size);
 s32 InstallTrackPoints(const struct TrackPointTable *trackData, size_t size);
 s32 InstallTrackRuntimeAssetPack(const void *data, size_t size, s32 assetIndex,

@@ -47,6 +47,9 @@ void ServiceAssetLoad(void) {
     case ASSET_REQUEST_TRACK_DATA:
         LoadTrackDataAssets();
         break;
+    case ASSET_REQUEST_CUSTOM_RIVAL_PREVIEW:
+        LoadCustomRivalPreviewAssets();
+        break;
     default:
         RejectInvalidActiveRequest();
         break;

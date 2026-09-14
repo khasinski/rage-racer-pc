@@ -80,6 +80,10 @@ s32 g_UiScriptProgress2;
 GameRenderState g_RenderState;
 RaceSession g_RaceSession;
 void ApplyCustomRaceSelection(void) {}
+s32 RequestCustomRivalPreviewAssets(void) { return 1; }
+s32 AssetLoadCompletedSuccessfully(void) { return 1; }
+s32 AssetLoadHasFailed(void) { return 0; }
+void ResetAssetLoader(void) {}
 
 static unsigned long s_digest = 2166136261UL;
 static FILE *s_out;

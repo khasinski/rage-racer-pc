@@ -138,6 +138,7 @@ static void ChooseCourseSelectRow(CourseSelectScreen *screen, s32 row) {
             g_RaceSession.course = g_CourseIndex;
             g_RaceSession.classIndex = g_GrandPrixClass;
             ApplyCustomRaceSelection();
+            RequestCustomRivalPreviewAssets();
         }
         PlaySoundCue(2);
         GameMenuBusy = COURSE_SELECT_TO_CAR_SELECT;
@@ -415,6 +416,15 @@ static void EnterChosenScreen(void) {
         /* To the car select screen, with the showroom put back at its start. */
         if (g_MenuViewOffset < MENU_VIEW_OFFSET_MAX) {
             return;
+        }
+        if (g_RaceSession.kind == RACE_SESSION_CUSTOM) {
+            if (AssetLoadHasFailed()) {
+                ResetAssetLoader();
+                g_MenuViewOffsetTarget = 0;
+                GameMenuBusy = COURSE_SELECT_IDLE;
+                return;
+            }
+            if (!AssetLoadCompletedSuccessfully()) return;
         }
         MenuActivateEnteringScreen(MENU_SCREEN_ENTER_CAR_SELECT,
                                    MENU_SCREEN_CAR_SELECT);

@@ -29,6 +29,9 @@ s32 g_SceneId;
 s32 g_SceneTimer;
 
 s32 CustomRaceRivalModel(void) { return -1; }
+int CustomRaceUsesRivalModel(void) { return 0; }
+const TrackRenderTable *CustomRivalPreviewRenderTable(void) { return NULL; }
+void SelectModelBank(s32 index) { (void)index; }
 
 static s32 s_viewDepth;
 static s32 s_zoneBlend;

@@ -30,6 +30,7 @@ s32 g_PendingCarModelIndex;
 u32 g_CarModelSlot;
 s32 g_LoadBuffer[1037896 / sizeof(s32)];
 static u8 s_AssetMemory[64 * 1024 * 1024];
+static u8 s_CustomPreviewAssets[4 * 1024 * 1024];
 u8 *g_AssetBase = s_AssetMemory;
 
 static size_t BufferRoomAt(const void *at, const void *buffer, size_t size) {
@@ -46,7 +47,15 @@ size_t PortAssetRoomAt(const void *at) {
     size_t room = BufferRoomAt(at, s_AssetMemory, sizeof(s_AssetMemory));
 
     if (room != 0) return room;
+    room = BufferRoomAt(at, s_CustomPreviewAssets,
+                        sizeof(s_CustomPreviewAssets));
+    if (room != 0) return room;
     return BufferRoomAt(at, g_LoadBuffer, sizeof(g_LoadBuffer));
+}
+
+u8 *CustomPreviewAssetBuffer(size_t *size) {
+    if (size != NULL) *size = sizeof(s_CustomPreviewAssets);
+    return s_CustomPreviewAssets;
 }
 s32 g_AssetLoadFailed;
 u8 *g_AssetBlockPtr2;

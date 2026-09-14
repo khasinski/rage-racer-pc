@@ -125,3 +125,12 @@ s32 InstallTrackTextureAssetPack(u8 *base, size_t size) {
     TrackAssetIdentityInvalidate();
     return 1;
 }
+
+s32 InstallTrackCarPreviewTexture(u8 *base, size_t size) {
+    TrackTextureAssetView view;
+
+    if (!ResolveTrackTextureAssetPack(base, size, &view)) return 0;
+    return UploadImageEntry(
+        GetImageEntryHeader(view.blocks[TRACK_TEXTURE_CAR_IMAGE]),
+        view.sizes[TRACK_TEXTURE_CAR_IMAGE]);
+}
