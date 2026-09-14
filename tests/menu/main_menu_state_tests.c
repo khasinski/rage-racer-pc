@@ -9,7 +9,6 @@
 
 #include <limits.h>
 #include <stdio.h>
-#include <string.h>
 
 static Frontend s_frontend;
 
@@ -42,15 +41,11 @@ static s32 s_resetCalls;
 static s32 s_saveRequests;
 static s32 s_selectBgmRequests;
 static s32 s_shuffleCalls;
-static s32 s_rectCount;
-static s32 s_rectY[TITLE_MENU_ITEM_COUNT];
-static s32 s_rectV[TITLE_MENU_ITEM_COUNT];
-static s32 s_customTextCount;
-static s32 s_customTextX;
-static s32 s_customTextY;
-static s32 s_customTextClut;
-static s32 s_customTextIntensity;
-static const char *s_customText;
+static s32 s_labelCount;
+static TitleMenuItem s_labelItem[TITLE_MENU_ITEM_COUNT];
+static s32 s_labelY[TITLE_MENU_ITEM_COUNT];
+static s32 s_labelHeight[TITLE_MENU_ITEM_COUNT];
+static s32 s_labelSelected[TITLE_MENU_ITEM_COUNT];
 
 s32 AssetLoadCompletedSuccessfully(void) { return s_assetComplete; }
 void ResetAssetLoader(void) { s_resetCalls++; }
@@ -72,33 +67,18 @@ s32 RequestSelectBgmAssetsKeepAudioSlots(void) {
     return 1;
 }
 void PlaySoundCue(s32 cue) { (void)cue; }
-void GameDrawProportionalTextShaded(s32 x, s32 y, const char *text,
-                                    s32 clut, s32 intensity) {
-    s_customTextCount++;
-    s_customTextX = x;
-    s_customTextY = y;
-    s_customText = text;
-    s_customTextClut = clut;
-    s_customTextIntensity = intensity;
-}
-u8 *GameQueueTexturedRect(GameOrderingTableEntry *ot, u8 *packet, s32 x,
-                          s32 y, s32 width, s32 height, s32 u, s32 v,
-                          s32 textureWidth, s32 textureHeight, s32 clut,
-                          s32 flags) {
+u8 *DrawTitleMenuLabel(GameOrderingTableEntry *ot, u8 *packet,
+                       TitleMenuItem item, s32 x, s32 y,
+                       s32 visibleHeight, s32 selected) {
     (void)ot;
     (void)x;
-    if (s_rectCount < TITLE_MENU_ITEM_COUNT) {
-        s_rectY[s_rectCount] = y;
-        s_rectV[s_rectCount] = v;
+    if (s_labelCount < TITLE_MENU_ITEM_COUNT) {
+        s_labelItem[s_labelCount] = item;
+        s_labelY[s_labelCount] = y;
+        s_labelHeight[s_labelCount] = visibleHeight;
+        s_labelSelected[s_labelCount] = selected;
     }
-    s_rectCount++;
-    (void)width;
-    (void)height;
-    (void)u;
-    (void)textureWidth;
-    (void)textureHeight;
-    (void)clut;
-    (void)flags;
+    s_labelCount++;
     return packet;
 }
 
@@ -128,9 +108,7 @@ static void ResetState(s32 selection) {
     s_saveRequests = 0;
     s_selectBgmRequests = 0;
     s_shuffleCalls = 0;
-    s_rectCount = 0;
-    s_customTextCount = 0;
-    s_customText = NULL;
+    s_labelCount = 0;
 }
 
 static int CheckCommonConfirmation(void) {
@@ -212,17 +190,17 @@ int main(void) {
     s_frontend.menuSlide = 0x38;
     s_frontend.pulse = 0;
     DrawMainMenuRows();
-    CHECK(s_rectCount == TITLE_MENU_ITEM_COUNT - 1);
-    CHECK(s_rectV[0] == 0xA0 && s_rectV[1] == 0xB0);
-    CHECK(s_rectV[2] == 0xC0 && s_rectV[3] == 0xD0);
-    CHECK(s_rectV[4] == 0xE0);
-    CHECK(s_rectY[0] == 0x64 && s_rectY[1] == 0x7C);
-    CHECK(s_rectY[2] == 0x94 && s_rectY[3] == 0xC4);
-    CHECK(s_rectY[4] == 0xDC);
-    CHECK(s_customTextCount == 1);
-    CHECK(s_customText != NULL && strcmp(s_customText, "CUSTOM") == 0);
-    CHECK(s_customTextX == 0x78 && s_customTextY == 0xAE);
-    CHECK(s_customTextClut == 0x7812 && s_customTextIntensity == 0x80);
+    CHECK(s_labelCount == TITLE_MENU_ITEM_COUNT);
+    CHECK(s_labelItem[0] == TITLE_MENU_GRAND_PRIX);
+    CHECK(s_labelItem[1] == TITLE_MENU_EXTRA_GRAND_PRIX);
+    CHECK(s_labelItem[2] == TITLE_MENU_TIME_ATTACK);
+    CHECK(s_labelItem[3] == TITLE_MENU_CUSTOM);
+    CHECK(s_labelItem[4] == TITLE_MENU_LOAD_SAVE);
+    CHECK(s_labelItem[5] == TITLE_MENU_OPTIONS);
+    CHECK(s_labelY[0] == 0x64 && s_labelY[1] == 0x7C);
+    CHECK(s_labelY[2] == 0x94 && s_labelY[3] == 0xAC);
+    CHECK(s_labelY[4] == 0xC4 && s_labelY[5] == 0xDC);
+    CHECK(s_labelHeight[3] == 0x10 && s_labelSelected[3] == 1);
 
     puts("main menu state tests passed");
     return 0;

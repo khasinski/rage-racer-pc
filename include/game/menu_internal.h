@@ -484,4 +484,8 @@ typedef struct CarShop {
 void UpdateCarShop(CarShop *shop, CarBrowse *browse);
 void ResetCarShopScreen(void);
 
+u8 *DrawTitleMenuLabel(GameOrderingTableEntry *ot, u8 *packet,
+                       TitleMenuItem item, s32 x, s32 y,
+                       s32 visibleHeight, s32 selected);
+
 #endif
