@@ -23,6 +23,8 @@ enum {
     ROUND_SCREEN_TEXT_CAPACITY = 88,
 };
 
+static const s16 s_fadeDelays[ROUND_SCREEN_FADE_STAGE_COUNT] = {15, 256};
+
 /* Scene 9: finishes the asset load, relocates the car model and derives g_GrandPrixRound. */
 void EnterRoundScreen(void) {
     SetDispMask(0);
@@ -56,7 +58,7 @@ static s32 NextRoundScreenFade(RoundScreenFadeStage stage) {
 
     if (g_SceneId == GAME_SCENE_ROUND) {
         return RoundScreenFadeFromTimer(
-            g_SceneTimer, g_RoundScreenFadeDelays[stage]);
+            g_SceneTimer, s_fadeDelays[stage]);
     }
     if (g_FadeLevel > 0) {
         g_FadeLevel--;

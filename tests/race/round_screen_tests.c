@@ -38,7 +38,6 @@ u16 g_PadHeld;
 u16 g_PadPressed;
 RagePrizeMoneyStorage g_PrizeMoneyState;
 GameRenderState g_RenderState;
-s16 g_RoundScreenFadeDelays[ROUND_SCREEN_FADE_DELAY_STORAGE_COUNT];
 s32 g_SceneId;
 s32 g_SceneTimer;
 
@@ -168,7 +167,6 @@ static void ResetState(void) {
     memset(&progress, 0, sizeof(progress));
     memset(&s_frame, 0, sizeof(s_frame));
     memset(&g_RenderState, 0, sizeof(g_RenderState));
-    memset(g_RoundScreenFadeDelays, 0, sizeof(g_RoundScreenFadeDelays));
     g_CourseProgress = &progress;
     g_ImageBlockBuffer = image;
     g_ImageBlockSize = sizeof(image);
@@ -199,8 +197,6 @@ static void ResetState(void) {
 
 int main(void) {
     ResetState();
-    g_RoundScreenFadeDelays[ROUND_SCREEN_FADE_TITLE] = 15;
-    g_RoundScreenFadeDelays[ROUND_SCREEN_FADE_COURSE] = 256;
     g_SceneId = GAME_SCENE_ROUND;
     g_SceneTimer = 15;
     DrawRoundScreen();

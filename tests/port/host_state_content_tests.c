@@ -97,7 +97,6 @@ extern GpuRectPacked g_TeamLogoClutMoveRect;
 extern MirrorBadgeStyle
     g_CarMirrorBadgeStyles[MIRROR_BADGE_STYLE_STORAGE_COUNT];
 extern MirrorBadgeSprite g_MirrorBadgeSprites[MIRROR_BADGE_STYLE_COUNT];
-extern unsigned char g_RoundScreenFadeDelays[8];
 extern unsigned char g_TeamNameFontGlyphs
     [TEAM_NAME_FONT_GLYPH_COUNT * TEAM_NAME_FONT_GLYPH_BYTES];
 extern unsigned char g_TeamNameBlankTile[192];
@@ -200,7 +199,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_CarMirrorBadgeStyles", g_CarMirrorBadgeStyles, 16},
     {"g_MirrorBadgeSprites", BYTES(g_MirrorBadgeSprites),
      sizeof(g_MirrorBadgeSprites)},
-    {"g_RoundScreenFadeDelays", g_RoundScreenFadeDelays, 8},
     {"g_TeamNameFontGlyphs", g_TeamNameFontGlyphs,
      sizeof(g_TeamNameFontGlyphs)},
     {"g_TeamNameBlankTile", g_TeamNameBlankTile, 192},
@@ -276,7 +274,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the canonical host constants alone. */
-    const unsigned long expected = 1813178631UL;
+    const unsigned long expected = 2181699841UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");
