@@ -110,6 +110,8 @@ static void TestSeedGrandPrixCarsForAnyNonzeroMode(void) {
     g_Replay.read = 9;
     player->trackPointIndex = 3;
     rival->trackPointIndex = 5;
+    rival->activeFlag = 1;
+    rival->aiEnabled = 1;
 
     SeedReplayCars();
 
@@ -140,6 +142,8 @@ static void TestUpdateCarsAndRequestPlayerTexture(void) {
     s_CallCount = 0;
     g_GrandPrixMode = 1;
     player->trackSection = 27;
+    rival->activeFlag = 1;
+    rival->aiEnabled = 1;
 
     UpdateReplayCars();
 

@@ -23,10 +23,10 @@ static inline s32 ReplayFrameCapacity(s32 grandPrixMode) {
 }
 
 void ApplyReplayFrame(s32 subframe, struct GameCarRuntime *player,
-                      struct GameCarRuntime *rival);
+                      struct GameCarRuntime *rivals);
 void ApplyReplayFrameAndTrackPoint(s32 subframe,
                                    struct GameCarRuntime *player,
-                                   struct GameCarRuntime *rival);
+                                   struct GameCarRuntime *rivals);
 void BeginReplay(void);
 void UpdateReplayScene(void);
 s32 UpdateReplayFade(void);

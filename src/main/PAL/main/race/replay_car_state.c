@@ -18,28 +18,37 @@ static void AdvanceReplayCarTrackState(GameCarRuntime *car) {
 
 void SeedReplayCars(void) {
     GameCarRuntime *player = AsRivalCar(&g_PlayerCar);
-    GameCarRuntime *rival = &g_Cars[0];
+    s32 i;
 
     InitShuttleScenery();
     if (g_Replay.count <= 0) {
         return;
     }
-    ApplyReplayFrameAndTrackPoint(g_Replay.read, player, rival);
+    ApplyReplayFrameAndTrackPoint(g_Replay.read, player, g_Cars);
 
     SeedReplayCarTrackState(player);
 
     if (g_GrandPrixMode != 0) {
-        SeedReplayCarTrackState(rival);
+        for (i = 0; i < REPLAY_RIVAL_COUNT; i++) {
+            if (g_Cars[i].activeFlag != -1 && g_Cars[i].aiEnabled == 1) {
+                SeedReplayCarTrackState(&g_Cars[i]);
+            }
+        }
     }
 }
 
 void UpdateReplayCars(void) {
     GameCarRuntime *player = AsRivalCar(&g_PlayerCar);
+    s32 i;
 
     AdvanceReplayCarTrackState(player);
 
     if (g_GrandPrixMode != 0) {
-        AdvanceReplayCarTrackState(&g_Cars[0]);
+        for (i = 0; i < REPLAY_RIVAL_COUNT; i++) {
+            if (g_Cars[i].activeFlag != -1 && g_Cars[i].aiEnabled == 1) {
+                AdvanceReplayCarTrackState(&g_Cars[i]);
+            }
+        }
     }
 
     RequestTrackTexturePage(player->trackSection);

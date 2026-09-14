@@ -4,6 +4,7 @@
 #include "common.h"
 
 enum {
+    REPLAY_RIVAL_COUNT = 11,
     REPLAY_SUBFRAMES_PER_SAMPLE = 2,
     GRAND_PRIX_REPLAY_SAMPLE_COUNT = 0x2EE,
     TIME_ATTACK_REPLAY_SAMPLE_COUNT = 0x505,
@@ -13,28 +14,26 @@ enum {
         TIME_ATTACK_REPLAY_SAMPLE_COUNT * REPLAY_SUBFRAMES_PER_SAMPLE,
 };
 
+typedef struct ReplayCarFrame {
+    s32 x;
+    s32 y;
+    s32 z;
+    s32 modelY;
+    s32 bodyPitch;
+    s32 bodyYaw;
+    s32 bodyRoll;
+    s32 wheelRotation;
+    s32 trackPointIndex;
+    s16 steeringAngle;
+    s16 modelIndex;
+    s16 activeFlag;
+    s16 aiEnabled;
+} ReplayCarFrame;
+
 typedef struct ReplayGrandPrixFrame {
-    u16 x0;
-    s16 y0;
-    u16 z0;
-    s16 modelY0;
-    s16 bodyPitch0;
-    s16 bodyYaw0;
-    s16 bodyRoll0;
-    s16 wheelRotation0;
-    u16 x1;
-    s16 y1;
-    u16 z1;
-    s16 modelY1;
-    s16 bodyPitch1;
-    s16 bodyYaw1;
-    s16 bodyRoll1;
-    s16 wheelRotation1;
+    ReplayCarFrame player;
+    ReplayCarFrame rivals[REPLAY_RIVAL_COUNT];
     s32 tiltCounter;
-    s32 trackPointIndex0;
-    s32 trackPointIndex1;
-    s16 steeringAngle0;
-    s16 steeringAngle1;
 } ReplayGrandPrixFrame;
 
 typedef struct ReplayTimeAttackFrame {

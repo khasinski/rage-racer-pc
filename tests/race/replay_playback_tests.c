@@ -13,44 +13,53 @@ s16 g_GrandPrixMode;
 
 static void TestGrandPrixFrames(void) {
     GameCarRuntime player = {0};
-    GameCarRuntime rival = {0};
+    GameCarRuntime rivals[REPLAY_RIVAL_COUNT] = {{0}};
     ReplayGrandPrixFrame *first = &g_ReplayFrameBuffer.grandPrixReplay[0];
     ReplayGrandPrixFrame *second = &g_ReplayFrameBuffer.grandPrixReplay[1];
 
     g_GrandPrixMode = 1;
     g_Replay.playerModel = 12;
     g_Replay.rivalModel = 34;
-    first->x0 = 100;
-    first->y0 = -20;
-    first->z0 = 300;
-    first->modelY0 = 40;
-    first->bodyPitch0 = -5;
-    first->bodyYaw0 = 30;
-    first->bodyRoll0 = 6;
-    first->wheelRotation0 = 70;
-    first->steeringAngle0 = -8;
-    first->x1 = 400;
-    first->y1 = 410;
-    first->z1 = 420;
-    first->modelY1 = 43;
-    first->bodyPitch1 = -44;
-    first->bodyYaw1 = 45;
-    first->bodyRoll1 = -40;
-    first->wheelRotation1 = 46;
-    first->steeringAngle1 = -47;
-    first->trackPointIndex0 = 51;
-    first->trackPointIndex1 = 52;
+    first->player.modelIndex = 12;
+    first->rivals[0].modelIndex = 34;
+    first->player.x = 100;
+    first->player.y = -20;
+    first->player.z = 300;
+    first->player.modelY = 40;
+    first->player.bodyPitch = -5;
+    first->player.bodyYaw = 30;
+    first->player.bodyRoll = 6;
+    first->player.wheelRotation = 70;
+    first->player.steeringAngle = -8;
+    first->rivals[0].x = 400;
+    first->rivals[0].y = 410;
+    first->rivals[0].z = 420;
+    first->rivals[0].modelY = 43;
+    first->rivals[0].bodyPitch = -44;
+    first->rivals[0].bodyYaw = 45;
+    first->rivals[0].bodyRoll = -40;
+    first->rivals[0].wheelRotation = 46;
+    first->rivals[0].steeringAngle = -47;
+    first->player.trackPointIndex = 51;
+    first->rivals[0].trackPointIndex = 52;
+    first->rivals[3].x = 700;
+    first->rivals[3].trackPointIndex = 73;
+    first->rivals[3].modelIndex = 45;
+    first->rivals[3].activeFlag = 1;
+    first->rivals[3].aiEnabled = 1;
+    first->rivals[7].activeFlag = -1;
+    first->rivals[7].aiEnabled = 0;
     first->tiltCounter = 53;
 
     player.trackPointIndex = 901;
-    rival.trackPointIndex = 902;
-    ApplyReplayFrame(0, &player, &rival);
+    rivals[0].trackPointIndex = 902;
+    ApplyReplayFrame(0, &player, rivals);
     assert(player.trackPointIndex == 901);
-    assert(rival.trackPointIndex == 902);
+    assert(rivals[0].trackPointIndex == 902);
 
-    ApplyReplayFrameAndTrackPoint(0, &player, &rival);
+    ApplyReplayFrameAndTrackPoint(0, &player, rivals);
     assert(player.modelIndex == 12);
-    assert(rival.modelIndex == 34);
+    assert(rivals[0].modelIndex == 34);
     assert(player.x == 100);
     assert(player.y == -20);
     assert(player.z == 300);
@@ -60,42 +69,52 @@ static void TestGrandPrixFrames(void) {
     assert(player.bodyRoll == 6);
     assert(player.wheelRotation == 70);
     assert(player.steeringAngle == -8);
-    assert(rival.x == 400);
-    assert(rival.y == 410);
-    assert(rival.z == 420);
-    assert(rival.modelY == 43);
-    assert(rival.bodyPitch == -44);
-    assert(rival.bodyYaw == 45);
-    assert(rival.bodyRoll == -40);
-    assert(rival.wheelRotation == 46);
-    assert(rival.steeringAngle == -47);
+    assert(rivals[0].x == 400);
+    assert(rivals[0].y == 410);
+    assert(rivals[0].z == 420);
+    assert(rivals[0].modelY == 43);
+    assert(rivals[0].bodyPitch == -44);
+    assert(rivals[0].bodyYaw == 45);
+    assert(rivals[0].bodyRoll == -40);
+    assert(rivals[0].wheelRotation == 46);
+    assert(rivals[0].steeringAngle == -47);
     assert(player.tiltCounter == 53);
     assert(player.trackPointIndex == 51);
-    assert(rival.trackPointIndex == 52);
+    assert(rivals[0].trackPointIndex == 52);
+    assert(rivals[3].x == 700);
+    assert(rivals[3].trackPointIndex == 73);
+    assert(rivals[3].modelIndex == 45);
+    assert(rivals[3].activeFlag == 1 && rivals[3].aiEnabled == 1);
+    assert(rivals[7].activeFlag == -1 && rivals[7].aiEnabled == 0);
 
-    second->x0 = 200;
-    second->y0 = -10;
-    second->z0 = 500;
-    second->modelY0 = 60;
-    second->bodyPitch0 = 5;
-    second->bodyYaw0 = -9;
-    second->bodyRoll0 = 10;
-    second->wheelRotation0 = 90;
-    second->steeringAngle0 = 10;
-    second->x1 = 600;
-    second->y1 = 610;
-    second->z1 = 620;
-    second->modelY1 = 63;
-    second->bodyPitch1 = 64;
-    second->bodyYaw1 = -65;
-    second->bodyRoll1 = 20;
-    second->wheelRotation1 = 66;
-    second->steeringAngle1 = 67;
-    second->trackPointIndex0 = 61;
-    second->trackPointIndex1 = 62;
+    second->player.x = 200;
+    second->player.modelIndex = 12;
+    second->player.y = -10;
+    second->player.z = 500;
+    second->player.modelY = 60;
+    second->player.bodyPitch = 5;
+    second->player.bodyYaw = -9;
+    second->player.bodyRoll = 10;
+    second->player.wheelRotation = 90;
+    second->player.steeringAngle = 10;
+    second->rivals[0].x = 600;
+    second->rivals[0].modelIndex = 34;
+    second->rivals[0].y = 610;
+    second->rivals[0].z = 620;
+    second->rivals[0].modelY = 63;
+    second->rivals[0].bodyPitch = 64;
+    second->rivals[0].bodyYaw = -65;
+    second->rivals[0].bodyRoll = 20;
+    second->rivals[0].wheelRotation = 66;
+    second->rivals[0].steeringAngle = 67;
+    second->player.trackPointIndex = 61;
+    second->rivals[0].trackPointIndex = 62;
+    second->rivals[3] = first->rivals[3];
+    second->rivals[3].x = 900;
+    second->rivals[3].trackPointIndex = 83;
     second->tiltCounter = 63;
 
-    ApplyReplayFrameAndTrackPoint(1, &player, &rival);
+    ApplyReplayFrameAndTrackPoint(1, &player, rivals);
     assert(player.x == 150);
     assert(player.y == -15);
     assert(player.z == 400);
@@ -105,38 +124,40 @@ static void TestGrandPrixFrames(void) {
     assert(player.bodyRoll == 8);
     assert(player.wheelRotation == 80);
     assert(player.steeringAngle == 1);
-    assert(rival.x == 500);
-    assert(rival.y == 510);
-    assert(rival.z == 520);
-    assert(rival.modelY == 53);
-    assert(rival.bodyPitch == 10);
-    assert(rival.bodyYaw == -10);
-    assert(rival.bodyRoll == -10);
-    assert(rival.wheelRotation == 56);
-    assert(rival.steeringAngle == 10);
+    assert(rivals[0].x == 500);
+    assert(rivals[0].y == 510);
+    assert(rivals[0].z == 520);
+    assert(rivals[0].modelY == 53);
+    assert(rivals[0].bodyPitch == 10);
+    assert(rivals[0].bodyYaw == -10);
+    assert(rivals[0].bodyRoll == -10);
+    assert(rivals[0].wheelRotation == 56);
+    assert(rivals[0].steeringAngle == 10);
     assert(player.tiltCounter == 63);
     assert(player.trackPointIndex == 61);
-    assert(rival.trackPointIndex == 62);
+    assert(rivals[0].trackPointIndex == 62);
+    assert(rivals[3].x == 800);
+    assert(rivals[3].trackPointIndex == 83);
 
     player.x = 300;
-    rival.x = 500;
+    rivals[0].x = 500;
     ApplyReplayFrameAndTrackPoint(GRAND_PRIX_REPLAY_SUBFRAME_COUNT - 1,
-                                  &player, &rival);
+                                  &player, rivals);
     assert(player.x == 200);
-    assert(rival.x == 450);
+    assert(rivals[0].x == 450);
     assert(player.trackPointIndex == 51);
-    assert(rival.trackPointIndex == 52);
+    assert(rivals[0].trackPointIndex == 52);
 }
 
 static void TestTimeAttackFrames(void) {
     GameCarRuntime player = {0};
-    GameCarRuntime rival;
+    GameCarRuntime rivals[REPLAY_RIVAL_COUNT];
     ReplayTimeAttackFrame *first =
         &g_ReplayFrameBuffer.timeAttackReplay[0];
     ReplayTimeAttackFrame *second =
         &g_ReplayFrameBuffer.timeAttackReplay[1];
 
-    memset(&rival, 0x5A, sizeof(rival));
+    memset(rivals, 0x5A, sizeof(rivals));
     g_GrandPrixMode = 0;
     g_Replay.playerModel = 7;
     first->x = 80;
@@ -152,10 +173,10 @@ static void TestTimeAttackFrames(void) {
     first->tiltCounter = 72;
 
     player.trackPointIndex = 903;
-    ApplyReplayFrame(0, &player, &rival);
+    ApplyReplayFrame(0, &player, rivals);
     assert(player.trackPointIndex == 903);
 
-    ApplyReplayFrameAndTrackPoint(0, &player, &rival);
+    ApplyReplayFrameAndTrackPoint(0, &player, rivals);
     assert(player.modelIndex == 7);
     assert(player.x == 80);
     assert(player.y == -30);
@@ -168,7 +189,7 @@ static void TestTimeAttackFrames(void) {
     assert(player.steeringAngle == -6);
     assert(player.trackPointIndex == 71);
     assert(player.tiltCounter == 72);
-    assert(((unsigned char *)&rival)[0] == 0x5A);
+    assert(((unsigned char *)rivals)[0] == 0x5A);
 
     second->x = 120;
     second->y = 10;
@@ -182,7 +203,7 @@ static void TestTimeAttackFrames(void) {
     second->trackPointIndex = 81;
     second->tiltCounter = 82;
 
-    ApplyReplayFrameAndTrackPoint(1, &player, &rival);
+    ApplyReplayFrameAndTrackPoint(1, &player, rivals);
     assert(player.x == 100);
     assert(player.y == -10);
     assert(player.z == 200);
@@ -197,14 +218,14 @@ static void TestTimeAttackFrames(void) {
 
     player.x = 200;
     ApplyReplayFrameAndTrackPoint(TIME_ATTACK_REPLAY_SUBFRAME_COUNT - 1,
-                                  &player, &rival);
+                                  &player, rivals);
     assert(player.x == 140);
     assert(player.trackPointIndex == 71);
 }
 
 static void TestInterpolationUsesDefinedMachineWrapping(void) {
     GameCarRuntime player = {0};
-    GameCarRuntime rival = {0};
+    GameCarRuntime rivals[REPLAY_RIVAL_COUNT] = {{0}};
     ReplayTimeAttackFrame *frame =
         &g_ReplayFrameBuffer.timeAttackReplay[1];
 
@@ -213,42 +234,42 @@ static void TestInterpolationUsesDefinedMachineWrapping(void) {
     frame->x = UINT16_MAX;
     player.x = INT_MAX;
 
-    ApplyReplayFrame(1, &player, &rival);
+    ApplyReplayFrame(1, &player, rivals);
 
     assert(player.x == -1073709057);
 
     frame->bodyPitch = INT16_MIN;
     player.bodyPitch = INT_MIN;
-    ApplyReplayFrame(1, &player, &rival);
+    ApplyReplayFrame(1, &player, rivals);
     assert(player.bodyPitch == 1073725440);
 }
 
 static void TestInvalidFramesAreIgnored(void) {
     GameCarRuntime player;
-    GameCarRuntime rival;
+    GameCarRuntime rivals[REPLAY_RIVAL_COUNT];
     GameCarRuntime originalPlayer;
-    GameCarRuntime originalRival;
+    GameCarRuntime originalRivals[REPLAY_RIVAL_COUNT];
 
     memset(&player, 0x3C, sizeof(player));
-    memset(&rival, 0x5A, sizeof(rival));
+    memset(rivals, 0x5A, sizeof(rivals));
     originalPlayer = player;
-    originalRival = rival;
+    memcpy(originalRivals, rivals, sizeof(rivals));
 
     g_GrandPrixMode = 1;
-    ApplyReplayFrame(-1, &player, &rival);
+    ApplyReplayFrame(-1, &player, rivals);
     assert(memcmp(&player, &originalPlayer, sizeof(player)) == 0);
-    assert(memcmp(&rival, &originalRival, sizeof(rival)) == 0);
+    assert(memcmp(rivals, originalRivals, sizeof(rivals)) == 0);
 
-    ApplyReplayFrame(GRAND_PRIX_REPLAY_SUBFRAME_COUNT, &player, &rival);
+    ApplyReplayFrame(GRAND_PRIX_REPLAY_SUBFRAME_COUNT, &player, rivals);
     assert(memcmp(&player, &originalPlayer, sizeof(player)) == 0);
     ApplyReplayFrame(0, &player, NULL);
     assert(memcmp(&player, &originalPlayer, sizeof(player)) == 0);
 
     g_GrandPrixMode = 0;
-    ApplyReplayFrame(TIME_ATTACK_REPLAY_SUBFRAME_COUNT, &player, &rival);
+    ApplyReplayFrame(TIME_ATTACK_REPLAY_SUBFRAME_COUNT, &player, rivals);
     assert(memcmp(&player, &originalPlayer, sizeof(player)) == 0);
-    ApplyReplayFrame(0, NULL, &rival);
-    assert(memcmp(&rival, &originalRival, sizeof(rival)) == 0);
+    ApplyReplayFrame(0, NULL, rivals);
+    assert(memcmp(rivals, originalRivals, sizeof(rivals)) == 0);
 }
 
 int main(void) {

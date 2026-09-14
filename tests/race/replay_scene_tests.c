@@ -51,9 +51,9 @@ s32 UpdateReplayFade(void) {
     return s_FadeExited;
 }
 void ApplyReplayFrame(s32 subframe, GameCarRuntime *player,
-                      GameCarRuntime *rival) {
+                      GameCarRuntime *rivals) {
     assert(player == AsRivalCar(&g_PlayerCar));
-    assert(rival == &g_Cars[0]);
+    assert(rivals == g_Cars);
     s_AppliedCursor = subframe;
 }
 void UpdateReplayCars(void) { s_CarUpdates++; }
@@ -67,7 +67,7 @@ void DrawTerrainCellsWide(const GameCameraState *camera) {
     (void)camera;
     s_TerrainDraws++;
 }
-void DrawReplayRivalCar(void) { s_RivalCarDraws++; }
+void DrawCars(void) { s_RivalCarDraws++; }
 void DrawCourseObjects(void) { s_ObjectDraws++; }
 void DrawPresentationCourseScenery(s32 timer, s32 animate,
                                    s32 drawRaceStatus) {

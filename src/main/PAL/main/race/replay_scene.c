@@ -48,7 +48,7 @@ void UpdateReplayScene(void) {
 
     if (g_Replay.count > 0) {
         ApplyReplayFrame(g_Replay.read, AsRivalCar(&g_PlayerCar),
-                         &g_Cars[0]);
+                         g_Cars);
         g_Replay.read = NextReplayReadCursor(
             g_Replay.read, g_Replay.count);
         UpdateReplayCars();
@@ -58,7 +58,7 @@ void UpdateReplayScene(void) {
     g_RenderState.geometry.envMode4 = g_IsEnvironmentMode4;
     DrawTerrainCellsWide(&g_Camera.view);
     if (g_GrandPrixMode != 0) {
-        DrawReplayRivalCar();
+        DrawCars();
     }
     DrawCourseObjects();
     DrawPresentationCourseScenery(g_SceneTimer, 1, 1);

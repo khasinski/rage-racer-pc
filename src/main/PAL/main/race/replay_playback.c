@@ -34,32 +34,17 @@ static s32 AverageReplayValue(s32 recorded, s32 current) {
     return wrappedSum / 2;
 }
 
-static ReplayCarPose GrandPrixPlayerPose(const ReplayGrandPrixFrame *frame) {
+static ReplayCarPose GrandPrixCarPose(const ReplayCarFrame *frame) {
     const ReplayCarPose pose = {
-        .x = frame->x0,
-        .y = frame->y0,
-        .z = frame->z0,
-        .modelY = frame->modelY0,
-        .bodyPitch = frame->bodyPitch0,
-        .bodyYaw = frame->bodyYaw0,
-        .bodyRoll = frame->bodyRoll0,
-        .wheelRotation = frame->wheelRotation0,
-        .steeringAngle = frame->steeringAngle0,
-    };
-    return pose;
-}
-
-static ReplayCarPose GrandPrixRivalPose(const ReplayGrandPrixFrame *frame) {
-    const ReplayCarPose pose = {
-        .x = frame->x1,
-        .y = frame->y1,
-        .z = frame->z1,
-        .modelY = frame->modelY1,
-        .bodyPitch = frame->bodyPitch1,
-        .bodyYaw = frame->bodyYaw1,
-        .bodyRoll = frame->bodyRoll1,
-        .wheelRotation = frame->wheelRotation1,
-        .steeringAngle = frame->steeringAngle1,
+        .x = frame->x,
+        .y = frame->y,
+        .z = frame->z,
+        .modelY = frame->modelY,
+        .bodyPitch = frame->bodyPitch,
+        .bodyYaw = frame->bodyYaw,
+        .bodyRoll = frame->bodyRoll,
+        .wheelRotation = frame->wheelRotation,
+        .steeringAngle = frame->steeringAngle,
     };
     return pose;
 }
@@ -108,13 +93,13 @@ static void ApplyReplayPose(GameCarRuntime *car, const ReplayCarPose *pose,
 }
 
 static void ApplyReplayFrameState(s32 subframe, GameCarRuntime *player,
-                                  GameCarRuntime *rival,
+                                  GameCarRuntime *rivals,
                                   s32 restoreTrackPoint) {
     const s32 interpolate = subframe & 1;
     const s32 frameCount = ReplayFrameCapacity(g_GrandPrixMode);
 
     if (player == NULL || subframe < 0 || subframe >= frameCount ||
-        (g_GrandPrixMode != 0 && rival == NULL)) {
+        (g_GrandPrixMode != 0 && rivals == NULL)) {
         return;
     }
 
@@ -124,16 +109,27 @@ static void ApplyReplayFrameState(s32 subframe, GameCarRuntime *player,
             subframe, GRAND_PRIX_REPLAY_SAMPLE_COUNT);
         const ReplayGrandPrixFrame *frame =
             &g_ReplayFrameBuffer.grandPrixReplay[index];
-        const ReplayCarPose playerPose = GrandPrixPlayerPose(frame);
-        const ReplayCarPose rivalPose = GrandPrixRivalPose(frame);
+        const ReplayCarPose playerPose = GrandPrixCarPose(&frame->player);
+        s32 i;
 
-        rival->modelIndex = g_Replay.rivalModel;
         ApplyReplayPose(player, &playerPose, interpolate);
-        ApplyReplayPose(rival, &rivalPose, interpolate);
+        player->modelIndex = frame->player.modelIndex;
         player->tiltCounter = frame->tiltCounter;
         if (restoreTrackPoint != 0) {
-            player->trackPointIndex = frame->trackPointIndex0;
-            rival->trackPointIndex = frame->trackPointIndex1;
+            player->trackPointIndex = frame->player.trackPointIndex;
+        }
+        for (i = 0; i < REPLAY_RIVAL_COUNT; i++) {
+            const ReplayCarFrame *recorded = &frame->rivals[i];
+            const ReplayCarPose rivalPose = GrandPrixCarPose(recorded);
+            GameCarRuntime *rival = &rivals[i];
+
+            ApplyReplayPose(rival, &rivalPose, interpolate);
+            rival->modelIndex = recorded->modelIndex;
+            rival->activeFlag = recorded->activeFlag;
+            rival->aiEnabled = recorded->aiEnabled;
+            if (restoreTrackPoint != 0) {
+                rival->trackPointIndex = recorded->trackPointIndex;
+            }
         }
     } else {
         const s32 index = ReplaySampleIndex(
@@ -151,11 +147,11 @@ static void ApplyReplayFrameState(s32 subframe, GameCarRuntime *player,
 }
 
 void ApplyReplayFrame(s32 subframe, GameCarRuntime *player,
-                      GameCarRuntime *rival) {
-    ApplyReplayFrameState(subframe, player, rival, 0);
+                      GameCarRuntime *rivals) {
+    ApplyReplayFrameState(subframe, player, rivals, 0);
 }
 
 void ApplyReplayFrameAndTrackPoint(s32 subframe, GameCarRuntime *player,
-                                   GameCarRuntime *rival) {
-    ApplyReplayFrameState(subframe, player, rival, 1);
+                                   GameCarRuntime *rivals) {
+    ApplyReplayFrameState(subframe, player, rivals, 1);
 }

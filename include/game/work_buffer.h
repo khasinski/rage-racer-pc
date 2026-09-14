@@ -17,9 +17,8 @@ typedef union GameWorkBuffer {
     ReplayTimeAttackFrame timeAttackReplay[TIME_ATTACK_REPLAY_SAMPLE_COUNT];
 } GameWorkBuffer;
 
-_Static_assert(sizeof(ReplayGrandPrixFrame) * GRAND_PRIX_REPLAY_SAMPLE_COUNT <=
-                   0x8CA0,
-               "Grand Prix replay frames must fit the shared work arena");
+/* The PC port retains a complete Grand Prix grid instead of the two cars that
+ * fit in the original PlayStation work arena. */
 _Static_assert(sizeof(ReplayTimeAttackFrame) *
                        TIME_ATTACK_REPLAY_SAMPLE_COUNT <=
                    0x8CA0,
