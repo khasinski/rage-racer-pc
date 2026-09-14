@@ -85,12 +85,12 @@ static s32 RaceRetriesRemaining(void) {
     return g_CourseProgress->retriesRemaining;
 }
 
-static s32 UpdateRaceEndState(void) {
+static s32 UpdateRaceEndState(RaceScene *state) {
     RaceEndFrame frame;
 
     frame = BuildRaceEndFrame(g_RacePhase, g_GrandPrixMode,
                               RaceRetriesRemaining(),
-                              g_RaceFadeTimer);
+                              state->fadeTimer);
     if (frame.drawPresentation) {
         if (frame.presentation == RACE_END_PRESENTATION_FINAL) {
             DrawRaceEndBanner(frame.fade);
@@ -111,7 +111,7 @@ static s32 UpdateRaceEndState(void) {
         return 0;
     }
     g_RenderState.mirror.enabled = 0;
-    g_RaceFadeTimer = NextRaceFadeTimer(g_RaceFadeTimer);
+    state->fadeTimer = NextRaceFadeTimer(state->fadeTimer);
     return 0;
 }
 
@@ -143,7 +143,7 @@ static s32 UpdateRacePause(RaceScene *state) {
     }
 
     if (toggle.action == RACE_PAUSE_QUIT) {
-        g_RaceFadeTimer = 0;
+        state->fadeTimer = 0;
         g_RacePhase = RACE_PHASE_QUIT;
         if (g_GrandPrixMode == 0) {
             s32 series = RaceSeriesIndex(g_RaceSeries);
@@ -155,7 +155,7 @@ static s32 UpdateRacePause(RaceScene *state) {
         SeedFinishCamera(&g_FinishCamera, &g_PlayerCar);
         StartCdVolumeFade(8);
     } else if (toggle.action == RACE_PAUSE_RETIRE) {
-        g_RaceFadeTimer = 0;
+        state->fadeTimer = 0;
         g_RacePhase = RACE_PHASE_RETIRED;
         s_RetireCameraActive = 1;
         if (RaceRetriesRemaining() > 0) {
@@ -247,7 +247,7 @@ void EnterRaceScene(void) {
     InitPathScenery();
     RequestCdTrack(BgmCdTrack(g_BgmTrack));
     state->pauseDelay = 0;
-    g_RaceFadeTimer = 0;
+    state->fadeTimer = 0;
     InitEffectVoiceRuntime();
     g_RivalCueEnabled = 1;
     g_PlayerAutoSteer = 0;
@@ -372,7 +372,7 @@ static void UpdateActiveRaceScene(RaceScene *state) {
     }
 
     if (g_RacePhase < RACE_PHASE_RETIRED) {
-        lapUpdateResult = UpdateLapAndFinish(&g_PlayerCar, g_GrandPrixMode);
+        lapUpdateResult = UpdateLapAndFinish(state, &g_PlayerCar, g_GrandPrixMode);
         UpdateSplitTimes(&g_PlayerCar, g_GrandPrixMode, lapUpdateResult);
         if (g_GrandPrixMode == 0 && lapUpdateResult != 2) {
             DrawSplitTimes();
@@ -392,7 +392,7 @@ static void UpdateActiveRaceScene(RaceScene *state) {
             }
             ForceAllEffectVoicesEnabled(0);
             g_RacePhase = RACE_PHASE_RETIRED;
-            g_RaceFadeTimer = 0;
+            state->fadeTimer = 0;
             SeedFinishCamera(&g_FinishCamera, &g_PlayerCar);
             StartCdVolumeFade(8);
         }
@@ -513,7 +513,7 @@ void UpdateRaceScene(void) {
     if (UpdateRacePause(state)) {
         return;
     }
-    if (UpdateRaceEndState()) {
+    if (UpdateRaceEndState(state)) {
         return;
     }
 

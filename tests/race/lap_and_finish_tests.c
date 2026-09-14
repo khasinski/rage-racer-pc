@@ -40,7 +40,7 @@ FinishCamera g_FinishCamera;
 s32 g_RaceSeries;
 s16 g_RaceCueDelay;
 s32 g_RaceCueFlags;
-s16 g_RaceFadeTimer;
+static RaceScene s_state;
 s16 g_RacePhase;
 s32 g_RaceTotalTime;
 RaceRecord g_RankingRecords[2][4][5];
@@ -243,7 +243,7 @@ int main(int argc, char **argv) {
 
         g_LapCount = lapCounts[lc];
         g_RacePhase = (s16)(phase ? 4 : 0);
-        g_RaceFadeTimer = (s16)fadeTimers[ft];
+        s_state.fadeTimer = (s16)fadeTimers[ft];
         g_RaceCueDelay = (s16)cueDelays[cd];
         g_RaceCueFlags = 0xFF;
         g_BestLapThisRace = best ? 0x7FFFFFFF : 100;
@@ -264,7 +264,7 @@ int main(int argc, char **argv) {
                 gpGlobal, wrongWay, saturating);
         Record(label, NULL, 0);
 
-        result = UpdateLapAndFinish(&g_PlayerCar, gp);
+        result = UpdateLapAndFinish(&s_state, &g_PlayerCar, gp);
 
         {
             s32 after[19];
@@ -273,7 +273,7 @@ int main(int argc, char **argv) {
             after[1] = g_PlayerCar.lap;
             after[2] = g_PlayerCar.drive.hudLapHighlightRow;
             after[3] = g_RacePhase;
-            after[4] = g_RaceFadeTimer;
+            after[4] = s_state.fadeTimer;
             after[5] = g_RaceCueDelay;
             after[6] = g_RaceCueFlags;
             after[7] = g_RaceTotalTime;
@@ -320,7 +320,7 @@ int main(int argc, char **argv) {
             g_CourseIndex = 2;
             g_LapCount = 3;
             g_RacePhase = 0;
-            g_RaceFadeTimer = 0;
+            s_state.fadeTimer = 0;
             g_RaceCueDelay = 0;
             g_RaceTotalTime = 0;
             g_BestLapThisRace = 0x7FFFFFFF;
@@ -335,7 +335,7 @@ int main(int argc, char **argv) {
             snprintf(label, sizeof(label), "== frames %d jitter %d", frameCounts[fi],
                     jitters[ji]);
             Record(label, NULL, 0);
-            UpdateLapAndFinish(&g_PlayerCar, 0);
+            UpdateLapAndFinish(&s_state, &g_PlayerCar, 0);
             RECORD("saturation",
                    g_PlayerCar.lapTimes.table.frameCounts[0],
                    g_PlayerCar.lapTimes.table.milliseconds[0],
@@ -364,20 +364,20 @@ int main(int argc, char **argv) {
     g_LapCount = 1;
     g_TrackLength = 0x10000;
     g_RacePhase = 0;
-    g_RaceFadeTimer = 0;
+    s_state.fadeTimer = 0;
     g_RaceCueFlags = 8;
     g_RaceCueDelay = 0;
     g_BestLapThisRace = 0x7FFFFFFF;
     s_lastSoundCue = -1;
     s_followupCue = -1;
     s_followupCount = 0;
-    UpdateLapAndFinish(&g_PlayerCar, 0);
+    UpdateLapAndFinish(&s_state, &g_PlayerCar, 0);
     if (s_lastSoundCue != -1 || s_followupCue != 0x2B ||
         s_followupCount != 1) {
         puts("FAIL finish repeated encouragement or omitted Finish!");
         return 1;
     }
-    UpdateLapAndFinish(&g_PlayerCar, 0);
+    UpdateLapAndFinish(&s_state, &g_PlayerCar, 0);
     if (s_followupCount != 1) {
         puts("FAIL finish announcement queued twice");
         return 1;
@@ -391,13 +391,13 @@ int main(int argc, char **argv) {
     g_TrackLength = 0x10000;
     g_RacePhase = 0;
     s_jitter = 0;
-    UpdateLapAndFinish(&g_PlayerCar, 0);
+    UpdateLapAndFinish(&s_state, &g_PlayerCar, 0);
     if (g_PlayerCar.lapTimes.table.frameCounts[0] != 0x10000 ||
         g_PlayerCar.lapTimes.table.milliseconds[0] != RACE_TIME_MAX_MS) {
         puts("FAIL extreme lap timer did not saturate");
         return 1;
     }
-    if (UpdateLapAndFinish(NULL, 0) != 0) {
+    if (UpdateLapAndFinish(&s_state, NULL, 0) != 0) {
         puts("FAIL missing car was not rejected");
         return 1;
     }
@@ -413,7 +413,7 @@ int main(int argc, char **argv) {
     g_GrandPrixMode = 1;
     s_course.retriesRemaining = -1;
     s_lastSoundCue = -1;
-    UpdateLapAndFinish(&g_PlayerCar, 1);
+    UpdateLapAndFinish(&s_state, &g_PlayerCar, 1);
     if (g_RacePhase != 5 || s_lastSoundCue != -1) {
         puts("FAIL corrupt retry count announced another attempt");
         return 1;
@@ -432,7 +432,7 @@ int main(int argc, char **argv) {
         g_RacePhase = 0;
         g_RaceCueDelay = 0;
         g_GrandPrixMode = 1;
-        if (UpdateLapAndFinish(&otherCar, 1) != 1 || otherCar.lap != 2 ||
+        if (UpdateLapAndFinish(&s_state, &otherCar, 1) != 1 || otherCar.lap != 2 ||
             g_PlayerCar.lap != 0) {
             puts("FAIL lap crossing ignored the supplied car");
             return 1;
@@ -451,13 +451,13 @@ int main(int argc, char **argv) {
     g_RaceCueDelay = 0;
     g_GrandPrixMode = 1;
     g_BestLapThisRace = 0x7FFFFFFF;
-    if (UpdateLapAndFinish(&g_PlayerCar, 1) != 0 ||
+    if (UpdateLapAndFinish(&s_state, &g_PlayerCar, 1) != 0 ||
         g_PlayerCar.lap != 0) {
         puts("FAIL grid state crossed the start line early");
         return 1;
     }
     g_PlayerCar.progressA = 0;
-    if (UpdateLapAndFinish(&g_PlayerCar, 1) != 1 ||
+    if (UpdateLapAndFinish(&s_state, &g_PlayerCar, 1) != 1 ||
         g_PlayerCar.lap != 1 || g_BestLapThisRace != 0x7FFFFFFF ||
         g_PlayerCar.lapTimes.table.milliseconds[0] != 0) {
         puts("FAIL crossing the start line did not open lap one");
@@ -470,7 +470,7 @@ int main(int argc, char **argv) {
     g_TrackLength = 1500000000;
     g_RacePhase = 0;
     g_GrandPrixMode = 1;
-    UpdateLapAndFinish(&g_PlayerCar, 1);
+    UpdateLapAndFinish(&s_state, &g_PlayerCar, 1);
     if (g_PlayerCar.lap != 2) {
         puts("FAIL overflowed progress crossed the lap line");
         return 1;

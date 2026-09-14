@@ -198,7 +198,6 @@ extern s16 g_RivalCueEnabled;
 
 /* Frame counter of the in-race fade transitions; every use is the brightness
  * argument of DrawFullscreenFadeTile plus a frame threshold. */
-extern s16 g_RaceFadeTimer;
 
 /* Cursor of the in-race option overlay, clamped to 2 - g_GrandPrixMode. */
 
@@ -287,7 +286,8 @@ void DrawRaceTimePanel(s32 slideY);
 void DrawRearViewMirror(const GameCameraState *camera, s32 sceneTimer);
 void DrawTimeRemaining(s32 ticks);
 void ResetMirrorState(void);
-s32 UpdateLapAndFinish(struct PlayerCarRuntime *car, s32 grandPrixMode);
+s32 UpdateLapAndFinish(RaceScene *state, struct PlayerCarRuntime *car,
+                       s32 grandPrixMode);
 void ExitRaceScene(s32 sceneId);
 void EnterAttractScene(void);
 s32 GetTrackZoneBlend(s32 position);

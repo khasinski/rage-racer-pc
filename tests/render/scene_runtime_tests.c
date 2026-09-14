@@ -172,17 +172,20 @@ int main(void) {
     SceneRuntimeRace()->pauseDelay = 30;
     SceneRuntimeRace()->optionCursor = 2;
     SceneRuntimeRace()->timeRemaining = 1234;
+    SceneRuntimeRace()->fadeTimer = 12;
     g_SceneId = GAME_SCENE_RACE;
     SceneRuntimeBeforeDispatch(g_SceneId);
     CHECK(SceneRuntimeRace()->pauseDelay == 30 &&
           SceneRuntimeRace()->optionCursor == 2 &&
-          SceneRuntimeRace()->timeRemaining == 1234);
+          SceneRuntimeRace()->timeRemaining == 1234 &&
+          SceneRuntimeRace()->fadeTimer == 12);
 
     g_SceneId = GAME_SCENE_MENU;
     SceneRuntimeBeforeDispatch(g_SceneId);
     CHECK(SceneRuntimeRace()->pauseDelay == 0 &&
           SceneRuntimeRace()->optionCursor == 0 &&
-          SceneRuntimeRace()->timeRemaining == 0);
+          SceneRuntimeRace()->timeRemaining == 0 &&
+          SceneRuntimeRace()->fadeTimer == 0);
 
     puts("scene runtime scopes transition state and asset results to one scene");
     return 0;

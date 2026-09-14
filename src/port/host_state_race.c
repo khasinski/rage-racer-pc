@@ -71,7 +71,6 @@ s32 g_BestSectorTimes[2][4][3];
 s32 g_FadeStep;
 s32 g_FadeLevel;
 s32 g_LapCount;
-s16 g_RaceFadeTimer;
 s32 g_BestLapTimes[2][4][2];
 s32 g_FrameParity;
 s32 g_ClassCompleted;

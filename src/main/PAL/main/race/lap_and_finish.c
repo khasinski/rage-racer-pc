@@ -158,7 +158,8 @@ static void RetireAtLastLap(void) {
 }
 
 /* The car has covered the distance the current lap needs. */
-static s32 CrossTheLine(PlayerCarRuntime *car, s32 recordMode) {
+static s32 CrossTheLine(RaceScene *state, PlayerCarRuntime *car,
+                        s32 recordMode) {
     s32 lapsRun;
 
     car->lap += 1;
@@ -177,7 +178,7 @@ static s32 CrossTheLine(PlayerCarRuntime *car, s32 recordMode) {
             RetireAtLastLap();
         }
         ForceAllEffectVoicesEnabled(0);
-        g_RaceFadeTimer = 0;
+        state->fadeTimer = 0;
         g_RenderState.mirror.enabled = 0;
     }
     return 1;
@@ -187,8 +188,8 @@ static s32 CrossTheLine(PlayerCarRuntime *car, s32 recordMode) {
  * After the finish the screen fades out, and the fade doubles as the timer
  * that starts the results music and then the replay.
  */
-static s32 AdvanceFinishFade(s32 returnValue) {
-    s32 fadeTimer = g_RaceFadeTimer;
+static s32 AdvanceFinishFade(RaceScene *state, s32 returnValue) {
+    s32 fadeTimer = state->fadeTimer;
 
     if (fadeTimer < 0) {
         fadeTimer = 0;
@@ -202,8 +203,8 @@ static s32 AdvanceFinishFade(s32 returnValue) {
     if (fadeTimer < FINISH_FADE_END_FRAME) {
         fadeTimer++;
     }
-    g_RaceFadeTimer = (s16)fadeTimer;
-    if (g_RaceFadeTimer == FINISH_FADE_AUDIO_FRAME) {
+    state->fadeTimer = (s16)fadeTimer;
+    if (state->fadeTimer == FINISH_FADE_AUDIO_FRAME) {
         if (g_GrandPrixMode != 0) {
             CommitClassProgress();
             RequestCdTrack(g_SeriesCleared == 1
@@ -214,7 +215,7 @@ static s32 AdvanceFinishFade(s32 returnValue) {
             RequestCdTrack(TIME_ATTACK_RESULT_CD_TRACK);
         }
     }
-    if (g_RaceFadeTimer >= FINISH_FADE_END_FRAME) {
+    if (state->fadeTimer >= FINISH_FADE_END_FRAME) {
         BeginReplay();
         ExitRaceScene(GAME_SCENE_REPLAY);
         StartCdAudio();
@@ -224,7 +225,7 @@ static s32 AdvanceFinishFade(s32 returnValue) {
 
 /* Outside a Grand Prix, a car a whole lap behind the line or stuck facing the
  * wrong way for a second is retired where it stands. */
-static void RetireWrongWay(void) {
+static void RetireWrongWay(RaceScene *state) {
     s32 series = RaceSeriesIndex(g_RaceSeries);
     s32 course = SeriesCourseIndex();
 
@@ -233,7 +234,7 @@ static void RetireWrongWay(void) {
         g_RankingRecords[series][course][0].raceTime;
     StartCdVolumeFade(FINISH_AUDIO_FADE_FRAMES);
     ForceAllEffectVoicesEnabled(0);
-    g_RaceFadeTimer = 0;
+    state->fadeTimer = 0;
     SeedFinishCamera(&g_FinishCamera, &g_PlayerCar);
 }
 
@@ -270,7 +271,8 @@ static int IsWholeLapBehind(s32 trackLength, s32 progressA, s32 progressB) {
     return (int64_t)progressA + progressB <= -(int64_t)trackLength;
 }
 
-s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
+s32 UpdateLapAndFinish(RaceScene *state, PlayerCarRuntime *car,
+                       s32 grandPrixMode) {
     s32 series = RaceSeriesIndex(g_RaceSeries);
     s32 course = SeriesCourseIndex();
     s32 recordMode = RaceRecordMode(grandPrixMode);
@@ -297,20 +299,20 @@ s32 UpdateLapAndFinish(PlayerCarRuntime *car, s32 grandPrixMode) {
         HasCrossedCurrentLapLine(lapAtEntry, g_TrackLength,
                                 car->progressA, car->progressB) &&
         (lapAtEntry <= g_LapCount)) {
-        returnValue = CrossTheLine(car, recordMode);
+        returnValue = CrossTheLine(state, car, recordMode);
     } else {
         returnValue = 0;
     }
 
     if ((g_LapCount < car->lap) &&
         (g_RacePhase == RACE_PHASE_FINISHED)) {
-        returnValue = AdvanceFinishFade(returnValue);
+        returnValue = AdvanceFinishFade(state, returnValue);
     } else if ((g_GrandPrixMode == 0) &&
                (IsWholeLapBehind(g_TrackLength, car->progressA,
                                  car->progressB) ||
                 ((car->lap == 0) &&
                  (g_WrongWayTimer >= WRONG_WAY_RETIRE_FRAMES)))) {
-        RetireWrongWay();
+        RetireWrongWay(state);
     }
 
     CountDownTheLaps(car);
