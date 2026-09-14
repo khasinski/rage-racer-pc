@@ -20,10 +20,6 @@ char *g_CourseNames[COURSE_SLOT_COUNT] = {
     "COURSE 0", "COURSE 1", "COURSE 2", "COURSE 3",
 };
 char *g_GrandPrixNames[11];
-ResultPlaceBarTable g_ClassPlaceBarSizes;
-ResultPlaceSpriteTable g_ResultPlaceSprites;
-ResultPanelClutTable g_ResultPanelCluts;
-u16 g_ResultPlaceCluts[4];
 
 static const char *s_courseNameDrawn;
 static s32 s_spriteCount;
@@ -95,15 +91,11 @@ int main(void) {
     g_ClassResultPlace = 0;
     g_GrandPrixNames[0] = "GP";
     g_PlayerCar.drive.racePosition = 2;
-    g_ResultPlaceSprites.places[1] =
-        (ResultPlaceSpriteLayout){.x = 26, .width = 64, .u = 48};
-    g_ResultPanelCluts.byPlace[2] = 0x1234;
-    g_ResultPlaceCluts[2] = 0x5678;
     s_spriteCount = 0;
     DrawGrandPrixIntro(0);
-    if (s_spriteCount != 2 || s_spriteClut[0] != 0x1234 ||
+    if (s_spriteCount != 2 || s_spriteClut[0] != 30795 ||
         s_spriteX[1] != 26 || s_spriteWidth[1] != 64 ||
-        s_spriteU[1] != 48 || s_spriteClut[1] != 0x5678) {
+        s_spriteU[1] != 48 || s_spriteClut[1] != 30926) {
         fprintf(stderr, "result place did not use its typed table row\n");
         return 1;
     }

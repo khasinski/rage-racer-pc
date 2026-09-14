@@ -16,34 +16,10 @@
 #include "game/race_hud_internal.h"
 #include "game/race_time_types.h"
 #include "game/replay_internal.h"
-#include "game/result_screen_types.h"
 #include "game/save_types.h"
 
 s32 g_PromotionBonusTable[5] = {
     500, 4800, 20000, 100000, 500000
-};
-ResultPlaceSpriteTable g_ResultPlaceSprites = {
-    .places = {
-        {0x24, 0x30, 0x00},
-        {0x1a, 0x40, 0x30},
-        {0x1c, 0x38, 0x70},
-    },
-};
-u16 g_ResultPlaceCluts[4] = {
-    0, 30739, 30926, 30925
-};
-ResultPanelClutTable g_ResultPanelCluts = {
-    .byPlace = {0, 30803, 30795, 30859},
-};
-ResultPlaceBarTable g_ClassPlaceBarSizes = {
-    .places = {
-        {0xb8, 0x18},
-        {0xb0, 0x1c},
-        {0xa8, 0x24},
-    },
-};
-s16 g_AttractTitleDelays[4] = {
-    15, 256, 0, 0
 };
 StartCountdownPattern
     g_CountdownGlyphTable[START_COUNTDOWN_GLYPH_PATTERN_COUNT] = {

@@ -22,6 +22,8 @@ enum {
     ATTRACT_FADE_TPAGE = 0x49,
 };
 
+static const s16 s_titleDelays[] = {15, 256};
+
 void EnterAttractDemo(void) {
     AttractDemo *state = SceneRuntimeAttractDemo();
     size_t texturePackSize;
@@ -55,7 +57,7 @@ static s32 GetAttractTitleFade(AttractDemo *state, s32 element) {
     }
 
     return AttractTitleFadeLevel(state->step, g_SceneTimer, g_FadeLevel,
-                                 g_AttractTitleDelays[element]);
+                                 s_titleDelays[element]);
 }
 
 static void DrawAttractTitle(AttractDemo *state) {

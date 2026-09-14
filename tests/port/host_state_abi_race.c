@@ -1,11 +1,5 @@
 #include "../../src/port/host_state_race.c"
 
-_Static_assert(sizeof(g_ResultPlaceSprites) == 10,
-               "result place sprites must retain their trailing padding");
-_Static_assert(sizeof(g_ResultPanelCluts) == 10,
-               "result panel CLUTs must retain their trailing padding");
-_Static_assert(sizeof(g_ClassPlaceBarSizes) == 8,
-               "class place bars must retain their trailing padding");
 _Static_assert(sizeof(g_RefSectorTimes) == 12,
                "reference sector times must retain their retail size");
 _Static_assert(sizeof(g_CourseProgress) == 8,

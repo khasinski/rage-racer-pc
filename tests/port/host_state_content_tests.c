@@ -30,7 +30,6 @@
 #include "game/cd.h"
 #include "game/menu_types.h"
 #include "game/race_hud_internal.h"
-#include "game/result_screen_types.h"
 #include "game/render_internal.h"
 #include "game/team_logo.h"
 #include "game/visible_cell_scan.h"
@@ -104,12 +103,10 @@ extern unsigned char g_RoundScreenFadeDelays[8];
 extern unsigned char g_TeamNameFontGlyphs
     [TEAM_NAME_FONT_GLYPH_COUNT * TEAM_NAME_FONT_GLYPH_BYTES];
 extern unsigned char g_TeamNameBlankTile[192];
-extern unsigned char g_ResultPlaceCluts[8];
 extern OptionHintCaption g_OptionHintCaptions[MENU_OPTION_HINT_COUNT];
 extern DVec g_ClassRecordCellPoints[CLASS_RECORD_COUNT];
 extern ClassRecordSprite g_ClassRecordCellSprites[CLASS_RECORD_COUNT];
 extern Rgb g_ClassRecordNameSprites[CLASS_RECORD_COUNT + 1];
-extern unsigned char g_AttractTitleDelays[8];
 extern int32_t g_RoadGrade;
 extern ContentCarPoint g_PlayerHullPoints[6];
 extern ContentCarPoint g_OpponentHullCorners[4];
@@ -216,13 +213,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_TeamNameFontGlyphs", g_TeamNameFontGlyphs,
      sizeof(g_TeamNameFontGlyphs)},
     {"g_TeamNameBlankTile", g_TeamNameBlankTile, 192},
-    {"g_ResultPlaceSprites", BYTES(&g_ResultPlaceSprites),
-     sizeof(g_ResultPlaceSprites)},
-    {"g_ResultPlaceCluts", g_ResultPlaceCluts, 8},
-    {"g_ResultPanelCluts", BYTES(&g_ResultPanelCluts),
-     sizeof(g_ResultPanelCluts)},
-    {"g_ClassPlaceBarSizes", BYTES(&g_ClassPlaceBarSizes),
-     sizeof(g_ClassPlaceBarSizes)},
     {"g_OptionHintCaptions", (const unsigned char *)g_OptionHintCaptions, 24},
     {"g_ClassRecordCellPoints", (const unsigned char *)g_ClassRecordCellPoints,
      44},
@@ -230,7 +220,6 @@ static const HostStateBlob s_blobs[] = {
      (const unsigned char *)g_ClassRecordCellSprites, 132},
     {"g_ClassRecordNameSprites",
      (const unsigned char *)g_ClassRecordNameSprites, 36},
-    {"g_AttractTitleDelays", g_AttractTitleDelays, 8},
     {"g_SpriteFontCells", BYTES(g_SpriteFontCells),
      sizeof(g_SpriteFontCells)},
     {"g_SpriteFontWidth", g_SpriteFontWidth,
@@ -301,7 +290,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the canonical host constants alone. */
-    const unsigned long expected = 3810563359UL;
+    const unsigned long expected = 236671978UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

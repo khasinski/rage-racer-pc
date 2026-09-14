@@ -31,7 +31,6 @@ u16 g_PadPressed;
 s32 g_SceneId;
 s32 g_SceneTimer;
 Fmv g_Fmv;
-s16 g_AttractTitleDelays[4];
 
 static GameFrameContext s_frame;
 GameFrameContext *g_DrawBuffer = &s_frame;

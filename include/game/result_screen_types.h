@@ -41,8 +41,4 @@ _Static_assert(sizeof(ResultPlaceBarTable) == 8,
 _Static_assert(sizeof(ResultPanelClutTable) == 10,
                "result panel CLUT table ABI size changed");
 
-extern ResultPlaceSpriteTable g_ResultPlaceSprites;
-extern ResultPlaceBarTable g_ClassPlaceBarSizes;
-extern ResultPanelClutTable g_ResultPanelCluts;
-
 #endif

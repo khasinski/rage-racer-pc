@@ -11,6 +11,25 @@
 
 enum { RESULT_INTRO_TEXT_CAPACITY = 48 };
 
+static const ResultPlaceSpriteTable s_placeSprites = {
+    .places = {
+        {0x24, 0x30, 0x00},
+        {0x1a, 0x40, 0x30},
+        {0x1c, 0x38, 0x70},
+    },
+};
+static const u16 s_placeCluts[4] = {0, 30739, 30926, 30925};
+static const ResultPanelClutTable s_panelCluts = {
+    .byPlace = {0, 30803, 30795, 30859},
+};
+static const ResultPlaceBarTable s_placeBarSizes = {
+    .places = {
+        {0xb8, 0x18},
+        {0xb0, 0x1c},
+        {0xa8, 0x24},
+    },
+};
+
 static void DrawResultBackdrop(void) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     s32 courseNameY = ResultCourseNameY(g_GrandPrixMode);
@@ -35,7 +54,7 @@ void DrawCourseIntro(void) {
 static void DrawClassPlaceBanner(void) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     const ResultPlaceBarPosition *bar =
-        &g_ClassPlaceBarSizes.places[g_ClassResultPlace - 1];
+        &s_placeBarSizes.places[g_ClassResultPlace - 1];
     u8 *next = RENDER_PRIM_CURSOR_AS(u8);
 
     next = GameQueueSprite(ot, next, 0x14, 0x1C, 0x38, 8,
@@ -59,13 +78,13 @@ static void DrawResultPlace(void) {
     if (!IsValidRaceResultPlace(racePosition)) {
         return;
     }
-    placeSprite = &g_ResultPlaceSprites.places[racePosition - 1];
+    placeSprite = &s_placeSprites.places[racePosition - 1];
     next = GameQueueSprite(ot, RENDER_PRIM_CURSOR_AS(u8),
                            0xB4, 0x60, 0x58, 0x38, 0xA8, 0xA8,
-                           g_ResultPanelCluts.byPlace[racePosition]);
+                           s_panelCluts.byPlace[racePosition]);
     g_RenderState.draw.packetCursor = GameQueueSprite(
         ot, next, placeSprite->x, 0x5C, placeSprite->width, 0x1C,
-        placeSprite->u, 0xCC, g_ResultPlaceCluts[racePosition]);
+        placeSprite->u, 0xCC, s_placeCluts[racePosition]);
 }
 
 void DrawGrandPrixIntro(s32 drawClassBanner) {
