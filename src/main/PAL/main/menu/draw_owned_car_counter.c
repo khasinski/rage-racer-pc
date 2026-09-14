@@ -8,21 +8,21 @@ enum {
     OWNED_CAR_COUNTER_COMPLETE = 25,
 };
 
-void DrawOwnedCarCounter(s32 direction, s32 ownedCount) {
+void DrawOwnedCarCounter(MenuWidgets *widgets, s32 direction, s32 ownedCount) {
     s32 frame;
 
     if (direction == 0) {
-        g_OwnedCarCounterSlide = 0;
+        widgets->ownedCarCounter = 0;
         return;
     }
-    g_OwnedCarCounterSlide = AddClampedMenuValue(
-        g_OwnedCarCounterSlide, 0, 0, OWNED_CAR_COUNTER_COMPLETE);
+    widgets->ownedCarCounter = AddClampedMenuValue(
+        widgets->ownedCarCounter, 0, 0, OWNED_CAR_COUNTER_COMPLETE);
     if (direction < 0) {
-        g_OwnedCarCounterSlide = AddClampedMenuValue(
-            g_OwnedCarCounterSlide, direction, 0, OWNED_CAR_COUNTER_COMPLETE);
+        widgets->ownedCarCounter = AddClampedMenuValue(
+            widgets->ownedCarCounter, direction, 0, OWNED_CAR_COUNTER_COMPLETE);
     }
 
-    frame = g_OwnedCarCounterSlide - OWNED_CAR_COUNTER_DRAW_START;
+    frame = widgets->ownedCarCounter - OWNED_CAR_COUNTER_DRAW_START;
     if (frame >= 0 && g_MenuAltLayout == 0 && RENDER_OT_BASE != NULL) {
         s32 y;
         u32 displayedCount;
@@ -49,8 +49,8 @@ void DrawOwnedCarCounter(s32 direction, s32 ownedCount) {
     }
 
     if (direction > 0) {
-        g_OwnedCarCounterSlide = AddClampedMenuValue(
-            g_OwnedCarCounterSlide, direction, 0,
+        widgets->ownedCarCounter = AddClampedMenuValue(
+            widgets->ownedCarCounter, direction, 0,
             OWNED_CAR_COUNTER_COMPLETE);
     }
 }

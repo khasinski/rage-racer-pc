@@ -48,31 +48,31 @@ static void DrawLightBurstBands(GameOrderingTableEntry *ot, s32 level) {
     }
 }
 
-void DrawMenuLightBurst(s32 step) {
+void DrawMenuLightBurst(MenuWidgets *widgets, s32 step) {
     GameOrderingTableEntry *ot;
 
     if (step == 0) {
-        g_MenuLightBurstLevel = 0;
+        widgets->lightBurst = 0;
         return;
     }
-    g_MenuLightBurstLevel = AddClampedMenuValue(
-        g_MenuLightBurstLevel, 0, 0, LIGHT_BURST_MAX_LEVEL);
+    widgets->lightBurst = AddClampedMenuValue(
+        widgets->lightBurst, 0, 0, LIGHT_BURST_MAX_LEVEL);
     if (step < 0) {
-        g_MenuLightBurstLevel = AddClampedMenuValue(
-            g_MenuLightBurstLevel, step, 0, LIGHT_BURST_MAX_LEVEL);
+        widgets->lightBurst = AddClampedMenuValue(
+            widgets->lightBurst, step, 0, LIGHT_BURST_MAX_LEVEL);
     }
 
-    if (g_MenuLightBurstLevel > 0 && RENDER_OT_BASE != NULL) {
+    if (widgets->lightBurst > 0 && RENDER_OT_BASE != NULL) {
         ot = &RENDER_OT_BASE[0x2BF];
         SetDrawClipRect(&g_RenderState.draw, ot, 0, 0, 0x140, 0x1E0);
-        DrawLightBurstRays(ot, g_MenuLightBurstLevel);
-        DrawLightBurstBands(ot, g_MenuLightBurstLevel);
-        DrawLightBurstFadeQuad(ot, g_MenuLightBurstLevel);
+        DrawLightBurstRays(ot, widgets->lightBurst);
+        DrawLightBurstBands(ot, widgets->lightBurst);
+        DrawLightBurstFadeQuad(ot, widgets->lightBurst);
         SetDrawClipRect(&g_RenderState.draw, ot, 0x48, 0, 0x140, 0x1E0);
     }
 
     if (step > 0) {
-        g_MenuLightBurstLevel = AddClampedMenuValue(
-            g_MenuLightBurstLevel, step, 0, LIGHT_BURST_MAX_LEVEL);
+        widgets->lightBurst = AddClampedMenuValue(
+            widgets->lightBurst, step, 0, LIGHT_BURST_MAX_LEVEL);
     }
 }

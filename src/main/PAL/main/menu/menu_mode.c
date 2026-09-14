@@ -99,7 +99,7 @@ static void ResetMenuNavigation(void) {
 /* Shared widgets outside the screen transition table own these counters. */
 static void ResetMenuWidgets(void) {
     DrawCarSpecGraph(MenuCarSpecGraph(), 0);
-    DrawMenuLightBurst(0);
+    DrawMenuLightBurst(MenuWidgetState(), 0);
     DrawTimeAttackPlate(0);
 }
 

@@ -99,6 +99,13 @@ typedef struct CarSpecGraph {
     s32 bars[4];
 } CarSpecGraph;
 
+typedef struct MenuWidgets {
+    s32 lightBurst;
+    s32 ownedCarCounter;
+    s32 upperAltPanel;
+    s32 lowerAltPanel;
+} MenuWidgets;
+
 typedef struct MenuRuntime {
     /* State-machine screen updated this frame. */
     s32 activeScreen;
@@ -119,6 +126,7 @@ typedef struct MenuRuntime {
     LogoSample logoSample;
     TeamName teamName;
     CarSpecGraph carSpecGraph;
+    MenuWidgets widgets;
 } MenuRuntime;
 
 void MenuRuntimeReset(void);
@@ -132,6 +140,7 @@ Customize *MenuCustomize(void);
 LogoSample *MenuLogoSample(void);
 TeamName *MenuTeamName(void);
 CarSpecGraph *MenuCarSpecGraph(void);
+MenuWidgets *MenuWidgetState(void);
 s32 MenuRuntimeScreenState(s32 screen);
 void MenuRuntimeSetScreenState(s32 screen, s32 state);
 
@@ -442,7 +451,7 @@ extern TimedDrawCommand g_UiChromeScript2[];
 
 void ClearTeamNameTexture(void);
 void DrawCarNamePlate(s32 step, s32 model);
-void DrawMenuAltPanel(s32 stepA, s32 stepB);
+void DrawMenuAltPanel(MenuWidgets *widgets, s32 stepA, s32 stepB);
 void DrawMenuCourseView(CourseSelectScreen *screen);
 void DrawOptionRootMenu(void);
 void UpdateOptionRootMenu(void);
@@ -468,10 +477,6 @@ extern s32 g_TeamLogoEditorStep;
 extern s32 g_TeamLogoDpadRepeatTimer;
 extern s32 g_TeamLogoDpadRepeatMask;
 extern s32 g_TeamLogoGuideModePrev;
-extern s32 g_MenuLightBurstLevel;
-extern s32 g_OwnedCarCounterSlide;
-extern s32 g_MenuUpperAltPanelProgress;
-extern s32 g_MenuLowerAltPanelProgress;
 extern TimedDrawCommand g_CourseSelectGpScript[];
 extern TimedDrawCommand g_CourseSelectTimeAttackScript[];
 extern TimedDrawCommand g_CarSelectMenuScriptGp[];
@@ -572,10 +577,10 @@ void DrawBrowseArrows(BrowseArrows *arrows, s32 step, s32 courseLayout,
                       s32 drawLeft, s32 drawRight);
 void DrawLogoSamplePanel(LogoSample *logo, s32 step, s32 sample);
 void DrawMenuCursorArrow(s32 x, s32 y);
-void DrawMenuLightBurst(s32 arg);
+void DrawMenuLightBurst(MenuWidgets *widgets, s32 arg);
 void DrawOptionHintBar(s32 variant);
 void RestoreNegconCalibrationSettings(void);
-void DrawOwnedCarCounter(s32 direction, s32 ownedCount);
+void DrawOwnedCarCounter(MenuWidgets *widgets, s32 direction, s32 ownedCount);
 void DrawSpriteString(s32 x, s32 y, const char *str, s32 clutIndex);
 void RampTeamLogoCanvas(s32 from, s32 to);
 void ShuffleBgmOrder(void);

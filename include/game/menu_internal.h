@@ -467,7 +467,6 @@ MenuClassPromptOutcome DecideClassPrompt(u16 pressed, s32 busy,
 
 extern Rgb g_PaintColorTable[MENU_PAINT_COLOR_COUNT];
 extern s32 g_MenuAltLayout;
-extern s32 g_OwnedCarCounterSlide;
 extern u16 g_TeamLogoClut[16];
 extern TeamLogoCanvas g_TeamLogoCanvas;
 extern u8 g_TeamLogoExpertMode;
@@ -485,7 +484,6 @@ extern s32 g_TeamLogoDpadRepeatMask;
 extern s32 g_TeamLogoGuideModePrev;
 extern s32 g_TeamLogoPaintArmed;
 extern u16 g_TeamLogoBlankClut[16];
-extern s32 g_MenuLightBurstLevel;
 extern const s16 g_MenuLightBurstBandX[MENU_LIGHT_BURST_RAY_COUNT];
 extern const s16 g_MenuLightBurstBandY[MENU_LIGHT_BURST_RAY_COUNT];
 extern RaceRecord g_RankingRecords[2][4][5];

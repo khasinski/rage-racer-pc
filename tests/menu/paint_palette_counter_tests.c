@@ -9,7 +9,7 @@
 
 Rgb g_PaintColorTable[MENU_PAINT_COLOR_COUNT];
 s32 g_MenuAltLayout;
-s32 g_OwnedCarCounterSlide;
+static MenuWidgets s_widgets;
 GameRenderState g_RenderState;
 
 typedef struct RectRecord {
@@ -183,49 +183,49 @@ int main(void) {
 
     ResetDraws();
     g_MenuAltLayout = 0;
-    DrawOwnedCarCounter(0, 9);
-    CHECK(g_OwnedCarCounterSlide == 0 && s_spriteCount == 0);
+    DrawOwnedCarCounter(&s_widgets, 0, 9);
+    CHECK(s_widgets.ownedCarCounter == 0 && s_spriteCount == 0);
 
-    g_OwnedCarCounterSlide = 11;
-    DrawOwnedCarCounter(1, 9);
-    CHECK(g_OwnedCarCounterSlide == 12);
+    s_widgets.ownedCarCounter = 11;
+    DrawOwnedCarCounter(&s_widgets, 1, 9);
+    CHECK(s_widgets.ownedCarCounter == 12);
     CHECK(s_numberCount == 2 && s_firstNumber == 9 && s_numberY == 0x21B);
     CHECK(s_spriteCount == 2 && s_spriteY == 0x21B);
     CHECK(s_buttonCount == 1 && s_buttonY == 0x211);
 
     ResetDraws();
-    g_OwnedCarCounterSlide = 25;
-    DrawOwnedCarCounter(1, 13);
-    CHECK(g_OwnedCarCounterSlide == 25);
+    s_widgets.ownedCarCounter = 25;
+    DrawOwnedCarCounter(&s_widgets, 1, 13);
+    CHECK(s_widgets.ownedCarCounter == 25);
     CHECK(s_numberY == 0xBD && s_buttonY == 0xB3);
 
     ResetDraws();
     g_MenuAltLayout = 1;
-    DrawOwnedCarCounter(-1, 13);
-    CHECK(g_OwnedCarCounterSlide == 24 && s_numberCount == 0);
+    DrawOwnedCarCounter(&s_widgets, -1, 13);
+    CHECK(s_widgets.ownedCarCounter == 24 && s_numberCount == 0);
 
-    g_OwnedCarCounterSlide = INT_MAX;
-    DrawOwnedCarCounter(INT_MAX, 13);
-    CHECK(g_OwnedCarCounterSlide == 25);
-    g_OwnedCarCounterSlide = INT_MIN;
-    DrawOwnedCarCounter(-1, 13);
-    CHECK(g_OwnedCarCounterSlide == 0);
+    s_widgets.ownedCarCounter = INT_MAX;
+    DrawOwnedCarCounter(&s_widgets, INT_MAX, 13);
+    CHECK(s_widgets.ownedCarCounter == 25);
+    s_widgets.ownedCarCounter = INT_MIN;
+    DrawOwnedCarCounter(&s_widgets, -1, 13);
+    CHECK(s_widgets.ownedCarCounter == 0);
 
     ResetDraws();
     g_MenuAltLayout = 0;
-    g_OwnedCarCounterSlide = 11;
-    DrawOwnedCarCounter(1, -10);
+    s_widgets.ownedCarCounter = 11;
+    DrawOwnedCarCounter(&s_widgets, 1, -10);
     CHECK(s_firstNumber == 0);
     ResetDraws();
-    g_OwnedCarCounterSlide = 11;
-    DrawOwnedCarCounter(1, INT_MAX);
+    s_widgets.ownedCarCounter = 11;
+    DrawOwnedCarCounter(&s_widgets, 1, INT_MAX);
     CHECK(s_firstNumber == GAME_CAR_COUNT);
 
     ResetDraws();
     g_RenderState.draw.orderingTable = NULL;
-    g_OwnedCarCounterSlide = 11;
-    DrawOwnedCarCounter(1, 9);
-    CHECK(g_OwnedCarCounterSlide == 12);
+    s_widgets.ownedCarCounter = 11;
+    DrawOwnedCarCounter(&s_widgets, 1, 9);
+    CHECK(s_widgets.ownedCarCounter == 12);
     CHECK(s_numberCount == 0 && s_spriteCount == 0 && s_buttonCount == 0);
 
     puts("paint palette and owned car counter preserve their animations");

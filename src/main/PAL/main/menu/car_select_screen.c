@@ -191,7 +191,7 @@ static void UpdateCarSelectIdle(void) {
     DrawBrowseArrows(MenuBrowseArrows(), 1, 0, g_PrevOwnedCarIndex != -1,
                      g_NextOwnedCarIndex != -1);
     if (g_GrandPrixMode == 0) {
-        DrawOwnedCarCounter(1, CountOwnedCars());
+        DrawOwnedCarCounter(MenuWidgetState(), 1, CountOwnedCars());
     }
     DrawFadingMenuSprites(g_UiScriptProgress, CarSelectLastRow(),
                           g_CarSelectCursor);
@@ -213,7 +213,7 @@ static void UpdateCarSelectModal(void) {
     DrawBrowseArrows(MenuBrowseArrows(), 1, 0, g_PrevOwnedCarIndex != -1,
                      g_NextOwnedCarIndex != -1);
     if (g_GrandPrixMode == 0) {
-        DrawOwnedCarCounter(1, CountOwnedCars());
+        DrawOwnedCarCounter(MenuWidgetState(), 1, CountOwnedCars());
     }
     DrawFadingMenuSprites(g_UiScriptProgress, CarSelectLastRow(),
                           g_CarSelectCursor);
@@ -263,7 +263,7 @@ static void EnterChosenScreen(void) {
         MenuActivateScreen(MENU_SCREEN_CAR_SHOP);
         DrawCarShopPricePanel(0, 0, 0);
         DrawBrowseArrows(MenuBrowseArrows(), 0, 0, 0, 0);
-        DrawMenuAltPanel(0, 0);
+        DrawMenuAltPanel(MenuWidgetState(), 0, 0);
         g_MenuUpperAltPanelStep = 0;
         g_MenuLowerAltPanelStep = 0;
         ClearTeamNameTexture();
@@ -303,7 +303,7 @@ static void UpdateCarSelectOutgoing(void) {
     DrawBrowseArrows(MenuBrowseArrows(), -1, 0, g_PrevOwnedCarIndex != -1,
                      g_NextOwnedCarIndex != -1);
     if (g_GrandPrixMode == 0) {
-        DrawOwnedCarCounter(-1, CountOwnedCars());
+        DrawOwnedCarCounter(MenuWidgetState(), -1, CountOwnedCars());
     }
     RunTimedDrawScript(CarSelectMenuScript(), &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
@@ -318,7 +318,7 @@ void UpdateCarSelectScreen(void) {
     g_MenuAltLayout = g_MenuAltLayoutSetting;
     DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex);
     DrawMenuCarView();
-    DrawMenuLightBurst(-9);
+    DrawMenuLightBurst(MenuWidgetState(), -9);
 
     if (CarSelectState() == 0) {
         UpdateCarSelectIdle();

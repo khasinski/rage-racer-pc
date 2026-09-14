@@ -116,10 +116,6 @@ s32 g_TeamLogoEditorStep;
 s32 g_TeamLogoDpadRepeatTimer;
 s32 g_TeamLogoDpadRepeatMask;
 s32 g_TeamLogoGuideModePrev = 1;
-s32 g_MenuLightBurstLevel;
-s32 g_OwnedCarCounterSlide;
-s32 g_MenuUpperAltPanelProgress;
-s32 g_MenuLowerAltPanelProgress;
 Vec4 g_MenuViewScale = {4096, 8192, 4096, 0};
 /* Retail stores these as one run, with tune-up prices starting at the second
  * element. Keep the public tables typed and make that relationship explicit. */

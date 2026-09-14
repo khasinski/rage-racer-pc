@@ -232,10 +232,12 @@ static int TestScreenStateIsolation(void) {
     MenuRuntimeReset();
     MenuRuntimeSetScreenState(MENU_SCREEN_CAR_SELECT, 5);
     MenuRuntimeSetScreenState(MENU_SCREEN_COURSE_SELECT, -2);
+    MenuWidgetState()->lightBurst = 12;
     CHECK(MenuRuntimeScreenState(MENU_SCREEN_CAR_SELECT) == 5);
     CHECK(MenuRuntimeScreenState(MENU_SCREEN_COURSE_SELECT) == -2);
 
     MenuRuntimeReset();
+    CHECK(MenuWidgetState()->lightBurst == 0);
     CHECK(MenuRuntimeScreenState(MENU_SCREEN_CAR_SELECT) == 0);
     CHECK(MenuRuntimeScreenState(MENU_SCREEN_COURSE_SELECT) == 0);
     CHECK(MenuRuntimeCurrent()->drawProgress[MENU_SCREEN_CAR_SELECT] == 0);

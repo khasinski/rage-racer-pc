@@ -168,7 +168,10 @@ void DrawCarNamePlate(s32 step, s32 model) {
     RECORD("nameplate", step, model, 0);
 }
 void DrawMenuCarView(void) { RECORD("carview", 0); }
-void DrawMenuAltPanel(s32 stepA, s32 stepB) { RECORD("altpanel", stepA, stepB); }
+void DrawMenuAltPanel(MenuWidgets *widgets, s32 stepA, s32 stepB) {
+    (void)widgets;
+    RECORD("altpanel", stepA, stepB);
+}
 static BrowseArrows s_browseArrows;
 BrowseArrows *MenuBrowseArrows(void) { return &s_browseArrows; }
 
@@ -556,3 +559,6 @@ int main(int argc, char **argv) {
     printf("the car shop takes the same %d states it always did\n", steps);
     return 0;
 }
+
+static MenuWidgets s_menuWidgets;
+MenuWidgets *MenuWidgetState(void) { return &s_menuWidgets; }

@@ -155,7 +155,10 @@ void DrawCarNamePlate(s32 step, s32 model) {
     RECORD("nameplate", step, model, 0);
 }
 void DrawMenuCourseView(CourseSelectScreen *screen) { (void)screen; RECORD("courseview", 0); }
-void DrawMenuLightBurst(s32 arg) { RECORD("burst", arg); }
+void DrawMenuLightBurst(MenuWidgets *widgets, s32 arg) {
+    (void)widgets;
+    RECORD("burst", arg);
+}
 static BrowseArrows s_browseArrows;
 BrowseArrows *MenuBrowseArrows(void) { return &s_browseArrows; }
 
@@ -166,7 +169,8 @@ void DrawBrowseArrows(BrowseArrows *arrows, s32 step, s32 wide, s32 drawLeft, s3
 void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
     RECORD("sprites", progress, count, slot);
 }
-void DrawOwnedCarCounter(s32 owned, s32 step) {
+void DrawOwnedCarCounter(MenuWidgets *widgets, s32 owned, s32 step) {
+    (void)widgets;
     RECORD("counter", owned, step);
 }
 void DrawMenuCursorBox(s32 x0, s32 y0, s32 x1, s32 y1, s32 flash) {
@@ -884,3 +888,6 @@ int main(int argc, char **argv) {
            steps);
     return 0;
 }
+
+static MenuWidgets s_menuWidgets;
+MenuWidgets *MenuWidgetState(void) { return &s_menuWidgets; }

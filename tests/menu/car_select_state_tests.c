@@ -41,7 +41,10 @@ void DrawCarNamePlate(s32 step, s32 model) {
     s_namePlateCalls++;
 }
 void DrawMenuCarView(void) { s_carViewCalls++; }
-void DrawMenuLightBurst(s32 step) { s_lightBurstStep = step; }
+void DrawMenuLightBurst(MenuWidgets *widgets, s32 step) {
+    (void)widgets;
+    s_lightBurstStep = step;
+}
 
 #define CHECK(condition)                                                       \
     do {                                                                       \
@@ -96,3 +99,6 @@ int main(void) {
     puts("car select state tests passed");
     return 0;
 }
+
+static MenuWidgets s_menuWidgets;
+MenuWidgets *MenuWidgetState(void) { return &s_menuWidgets; }

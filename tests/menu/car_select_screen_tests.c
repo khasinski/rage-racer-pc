@@ -158,7 +158,10 @@ void DrawCarNamePlate(s32 step, s32 model) {
     RECORD("nameplate", step, model, 0);
 }
 void DrawMenuCarView(void) { RECORD("carview", 0); }
-void DrawMenuLightBurst(s32 arg) { RECORD("burst", arg); }
+void DrawMenuLightBurst(MenuWidgets *widgets, s32 arg) {
+    (void)widgets;
+    RECORD("burst", arg);
+}
 static BrowseArrows s_browseArrows;
 static CourseSelectScreen s_courseSelect;
 static CarSpecGraph s_carSpecGraph;
@@ -170,7 +173,8 @@ void DrawBrowseArrows(BrowseArrows *arrows, s32 step, s32 wide, s32 drawLeft, s3
     (void)arrows;
     RECORD("arrows", step, wide, drawLeft, drawRight);
 }
-void DrawOwnedCarCounter(s32 owned, s32 step) {
+void DrawOwnedCarCounter(MenuWidgets *widgets, s32 owned, s32 step) {
+    (void)widgets;
     RECORD("counter", owned, step);
 }
 void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
@@ -190,7 +194,10 @@ s32 GetCarUnlockLevel(s32 model) { RECORD("unlocklevel", model); return 3; }
 void DrawCarShopPricePanel(s32 step, s32 money, s32 price) {
     RECORD("shopprice", step, money, price);
 }
-void DrawMenuAltPanel(s32 stepA, s32 stepB) { RECORD("altpanel", stepA, stepB); }
+void DrawMenuAltPanel(MenuWidgets *widgets, s32 stepA, s32 stepB) {
+    (void)widgets;
+    RECORD("altpanel", stepA, stepB);
+}
 void ClearTeamNameTexture(void) { RECORD("clearteamname", 0); }
 void RestoreTeamLogoClut(void) { RECORD("restoreclut", 0); }
 void DrawEngineerShopPricePanel(s32 step, s32 money, s32 price) {
@@ -416,3 +423,6 @@ int main(int argc, char **argv) {
            steps);
     return 0;
 }
+
+static MenuWidgets s_menuWidgets;
+MenuWidgets *MenuWidgetState(void) { return &s_menuWidgets; }

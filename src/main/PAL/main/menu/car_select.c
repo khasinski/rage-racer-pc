@@ -30,5 +30,5 @@ void EnterCarSelectScreen(void) {
     UpdateOwnedCarNeighbours();
     DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex);
     DrawMenuCarView();
-    DrawMenuLightBurst(-9);
+    DrawMenuLightBurst(MenuWidgetState(), -9);
 }

@@ -7,7 +7,7 @@
 #include <limits.h>
 #include <string.h>
 
-s32 g_MenuLightBurstLevel;
+static MenuWidgets s_widgets;
 const s16 g_MenuLightBurstBandX[MENU_LIGHT_BURST_RAY_COUNT] = {
     20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
     31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
@@ -100,14 +100,14 @@ int main(void) {
     RENDER_OT_BASE = orderingTable;
     g_RenderState.draw.packetCursor = packets;
 
-    g_MenuLightBurstLevel = 99;
-    DrawMenuLightBurst(0);
-    CHECK(g_MenuLightBurstLevel == 0 && s_lineCount == 0);
+    s_widgets.lightBurst = 99;
+    DrawMenuLightBurst(&s_widgets, 0);
+    CHECK(s_widgets.lightBurst == 0 && s_lineCount == 0);
 
-    DrawMenuLightBurst(7);
-    CHECK(g_MenuLightBurstLevel == 7 && s_lineCount == 0);
-    DrawMenuLightBurst(7);
-    CHECK(g_MenuLightBurstLevel == 14);
+    DrawMenuLightBurst(&s_widgets, 7);
+    CHECK(s_widgets.lightBurst == 7 && s_lineCount == 0);
+    DrawMenuLightBurst(&s_widgets, 7);
+    CHECK(s_widgets.lightBurst == 14);
     CHECK(s_lineCount == 33 && s_bandCount == 33 && s_clipCount == 2);
     CHECK(s_lines[0].x0 == 0x30 && s_lines[0].x1 == 0);
     CHECK(s_lines[32].x0 == 0x110 && s_lines[32].x1 == 320);
@@ -123,28 +123,28 @@ int main(void) {
     CHECK(g_RenderState.draw.packetCursor == packets + sizeof(POLY_G4));
 
     ResetDraws();
-    g_MenuLightBurstLevel = 5;
-    DrawMenuLightBurst(-9);
-    CHECK(g_MenuLightBurstLevel == 0 && s_lineCount == 0);
+    s_widgets.lightBurst = 5;
+    DrawMenuLightBurst(&s_widgets, -9);
+    CHECK(s_widgets.lightBurst == 0 && s_lineCount == 0);
 
-    g_MenuLightBurstLevel = 510;
-    DrawMenuLightBurst(7);
-    CHECK(g_MenuLightBurstLevel == 512);
+    s_widgets.lightBurst = 510;
+    DrawMenuLightBurst(&s_widgets, 7);
+    CHECK(s_widgets.lightBurst == 512);
 
     ResetDraws();
     g_RenderState.draw.packetCursor = packets;
-    g_MenuLightBurstLevel = INT_MAX;
-    DrawMenuLightBurst(INT_MAX);
-    CHECK(g_MenuLightBurstLevel == 512 && s_lineCount == 33);
+    s_widgets.lightBurst = INT_MAX;
+    DrawMenuLightBurst(&s_widgets, INT_MAX);
+    CHECK(s_widgets.lightBurst == 512 && s_lineCount == 33);
     ResetDraws();
-    g_MenuLightBurstLevel = INT_MIN;
-    DrawMenuLightBurst(-1);
-    CHECK(g_MenuLightBurstLevel == 0 && s_lineCount == 0);
+    s_widgets.lightBurst = INT_MIN;
+    DrawMenuLightBurst(&s_widgets, -1);
+    CHECK(s_widgets.lightBurst == 0 && s_lineCount == 0);
 
     RENDER_OT_BASE = NULL;
-    g_MenuLightBurstLevel = 7;
-    DrawMenuLightBurst(7);
-    CHECK(g_MenuLightBurstLevel == 14 && s_lineCount == 0 &&
+    s_widgets.lightBurst = 7;
+    DrawMenuLightBurst(&s_widgets, 7);
+    CHECK(s_widgets.lightBurst == 14 && s_lineCount == 0 &&
           s_bandCount == 0 && s_clipCount == 0);
 
     puts("menu light burst preserves its rays, bands, fade and animation");

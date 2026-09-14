@@ -29,41 +29,41 @@ static void DrawLowerAltPanel(GameOrderingTableEntry *ot, s32 progress) {
                          0x58, 0x7F, 0x7F, 0x7F, 0x259, 0, 0, 0x1C);
 }
 
-void DrawMenuAltPanel(s32 upperStep, s32 lowerStep) {
+void DrawMenuAltPanel(MenuWidgets *widgets, s32 upperStep, s32 lowerStep) {
     GameOrderingTableEntry *ot = RENDER_OT_BASE;
 
     if (upperStep == 0 && lowerStep == 0) {
-        g_MenuUpperAltPanelProgress = 0;
-        g_MenuLowerAltPanelProgress = 0;
+        widgets->upperAltPanel = 0;
+        widgets->lowerAltPanel = 0;
         return;
     }
 
     if (upperStep < 0) {
-        g_MenuUpperAltPanelProgress = AddClampedMenuValue(
-            g_MenuUpperAltPanelProgress, upperStep,
+        widgets->upperAltPanel = AddClampedMenuValue(
+            widgets->upperAltPanel, upperStep,
             0, MENU_UPPER_ALT_PANEL_MAX_PROGRESS);
     }
     if (lowerStep < 0) {
-        g_MenuLowerAltPanelProgress = AddClampedMenuValue(
-            g_MenuLowerAltPanelProgress, lowerStep,
+        widgets->lowerAltPanel = AddClampedMenuValue(
+            widgets->lowerAltPanel, lowerStep,
             0, MENU_LOWER_ALT_PANEL_MAX_PROGRESS);
     }
 
-    if (g_MenuUpperAltPanelProgress != 0 && ot != NULL) {
-        DrawUpperAltPanel(ot, g_MenuUpperAltPanelProgress);
+    if (widgets->upperAltPanel != 0 && ot != NULL) {
+        DrawUpperAltPanel(ot, widgets->upperAltPanel);
     }
-    if (g_MenuLowerAltPanelProgress != 0 && ot != NULL) {
-        DrawLowerAltPanel(ot, g_MenuLowerAltPanelProgress);
+    if (widgets->lowerAltPanel != 0 && ot != NULL) {
+        DrawLowerAltPanel(ot, widgets->lowerAltPanel);
     }
 
     if (upperStep > 0) {
-        g_MenuUpperAltPanelProgress = AddClampedMenuValue(
-            g_MenuUpperAltPanelProgress, upperStep,
+        widgets->upperAltPanel = AddClampedMenuValue(
+            widgets->upperAltPanel, upperStep,
             0, MENU_UPPER_ALT_PANEL_MAX_PROGRESS);
     }
     if (lowerStep > 0) {
-        g_MenuLowerAltPanelProgress = AddClampedMenuValue(
-            g_MenuLowerAltPanelProgress, lowerStep,
+        widgets->lowerAltPanel = AddClampedMenuValue(
+            widgets->lowerAltPanel, lowerStep,
             0, MENU_LOWER_ALT_PANEL_MAX_PROGRESS);
     }
 }

@@ -62,7 +62,10 @@ void DrawFadingMenuSprites(s32 progress, s32 count, s32 selected) {
 static CourseSelectScreen s_courseSelect;
 CourseSelectScreen *MenuCourseSelect(void) { return &s_courseSelect; }
 void DrawMenuCourseView(CourseSelectScreen *screen) { (void)screen; }
-void DrawMenuLightBurst(s32 step) { (void)step; }
+void DrawMenuLightBurst(MenuWidgets *widgets, s32 step) {
+    (void)widgets;
+    (void)step;
+}
 void DrawTimeAttackPlate(s32 step) { s_timeAttackPlateStep = step; }
 void PlaySoundCue(s32 cue) { s_lastCue = cue; }
 
@@ -174,3 +177,6 @@ int main(void) {
     puts("ranking screen tests passed");
     return 0;
 }
+
+static MenuWidgets s_menuWidgets;
+MenuWidgets *MenuWidgetState(void) { return &s_menuWidgets; }

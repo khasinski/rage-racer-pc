@@ -203,7 +203,7 @@ static void UpdateCourseSelectIdle(CourseSelectScreen *screen) {
     DrawCourseArrows(1);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, screen->option);
     RunTimedDrawScript(CourseSelectMenuScript(), &g_UiScriptProgress, 0);
-    DrawMenuLightBurst(7);
+    DrawMenuLightBurst(MenuWidgetState(), 7);
     if ((RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1) != 0) &&
         (g_UiScriptProgress2 <= 0)) {
         UpdateCourseSelectInput(screen);
@@ -366,7 +366,7 @@ static void UpdateCourseSelectModal(CourseSelectScreen *screen,
     DrawFadingMenuSprites(g_UiScriptProgress, 2, screen->option);
     RunTimedDrawScript(CourseSelectMenuScript(), &g_UiScriptProgress, 0);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
-    DrawMenuLightBurst(7);
+    DrawMenuLightBurst(MenuWidgetState(), 7);
 }
 
 /* What the race is started with, once the screen has finished sliding off. */
@@ -390,7 +390,7 @@ static void EnterChosenScreen(void) {
         }
         MenuActivateEnteringScreen(MENU_SCREEN_ENTER_CAR_SELECT,
                                    MENU_SCREEN_CAR_SELECT);
-        DrawOwnedCarCounter(0, 0);
+        DrawOwnedCarCounter(MenuWidgetState(), 0, 0);
         DrawBrowseArrows(MenuBrowseArrows(), 0, 0, 0, 0);
         g_CarSwapToIndex = -1;
         g_MenuViewAngle = 0;
@@ -432,7 +432,7 @@ static void UpdateCourseSelectOutgoing(CourseSelectScreen *screen) {
     RunTimedDrawScript(CourseSelectMenuScript(), &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, screen->option);
-    DrawMenuLightBurst(-9);
+    DrawMenuLightBurst(MenuWidgetState(), -9);
     if (g_UiScriptProgress <= 0) {
         EnterChosenScreen();
     }

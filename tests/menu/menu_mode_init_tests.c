@@ -87,7 +87,8 @@ MATRIX *ScaleMatrix(MATRIX *matrix, VECTOR *scale) {
 void DrawCarSpecGraph(CarSpecGraph *graph, u32 tireGrade) {
     if (graph->step == 0 && tireGrade == 0) s_drawResetCalls++;
 }
-void DrawMenuLightBurst(s32 step) {
+void DrawMenuLightBurst(MenuWidgets *widgets, s32 step) {
+    (void)widgets;
     if (step == 0) s_drawResetCalls++;
 }
 void DrawTimeAttackPlate(s32 step) {
@@ -246,3 +247,6 @@ int main(void) {
     puts("menu mode initialization tests passed");
     return 0;
 }
+
+static MenuWidgets s_menuWidgets;
+MenuWidgets *MenuWidgetState(void) { return &s_menuWidgets; }
