@@ -8,7 +8,6 @@ s32 g_EngineRpm;
 s32 g_EngineRpmJitter;
 s32 g_TachoShiftLightOn;
 s32 g_EnvScriptClock;
-s16 g_TrackZoneDark;
 
 static s32 s_rpm;
 static s32 s_flash;
@@ -30,9 +29,8 @@ static void CheckClock(s32 clock, s32 dark,
                        TachometerLightingMode expectedLighting,
                        s32 expectedAmount) {
     g_EnvScriptClock = clock;
-    g_TrackZoneDark = (s16)dark;
     s_calls = 0;
-    DrawPlayerTachometer();
+    DrawPlayerTachometer(dark);
     if (s_calls != 1 || s_rpm != 5123 || s_flash != 1 ||
         s_lighting != expectedLighting || s_amount != expectedAmount) {
         printf("FAIL clock=%d dark=%d: calls=%d rpm=%d flash=%d "
@@ -60,7 +58,7 @@ int main(void) {
 
     g_EngineRpm = INT_MAX;
     g_EngineRpmJitter = 1;
-    DrawPlayerTachometer();
+    DrawPlayerTachometer(0);
     if (s_rpm != INT_MIN) {
         printf("FAIL extreme displayed RPM became %d\n", s_rpm);
         s_failures++;

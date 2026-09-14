@@ -190,10 +190,8 @@ typedef enum PrizeScreenState {
 } PrizeScreenState;
 
 extern s32 g_RacePaused;
-extern s16 g_ReverbZoneDepth;
 extern s32 g_RivalCueFlags;
 extern s32 g_SeriesCleared;
-extern s16 g_TrackZoneCode;
 
 /*
  * None of the Draw* functions below draw. Each one packs primitives at the
@@ -245,7 +243,6 @@ s32 UpdateLapAndFinish(RaceScene *state, struct PlayerCarRuntime *car,
                        s32 grandPrixMode);
 void ExitRaceScene(s32 sceneId);
 void EnterAttractScene(void);
-s32 GetTrackZoneBlend(s32 position);
 void EnterBgmSelectScreen(void);
 
 #endif

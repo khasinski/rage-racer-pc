@@ -8,6 +8,7 @@
 #include "game/render.h"
 #include "game/render_internal.h"
 #include "game/state.h"
+#include "game/track.h"
 #include "rage/render_world_game.h"
 
 enum {
@@ -70,9 +71,11 @@ static s32 DrawCloseCarAssembly(GameCarRuntime *object,
     MulMatrix0(&g_SceneLightMatrix, &bodyViewMatrix, &lightMatrix);
 
     if (assembly->useZoneLighting) {
-        clipHandle = GetTrackZoneBlend(object->trackProgress);
+        TrackZoneEffect zone = GetTrackZoneEffect(object->trackProgress);
+
+        clipHandle = zone.blend;
         if (clipHandle != 0) {
-            ApplyZoneLighting(clipHandle, &lightMatrix);
+            ApplyZoneLighting(clipHandle, zone.code, &lightMatrix);
         }
     }
     SetLightMatrix(&lightMatrix);
@@ -152,7 +155,7 @@ static s32 DrawCloseCarAssembly(GameCarRuntime *object,
  * object's angle sets, loads each transform into the GTE and dispatches the
  * primitive builder SubmitModel at increasing depth buckets. X/Z column flips
  * build the opposite-side transforms; clipHandle is the optional lighting
- * volume from GetTrackZoneBlend.
+ * volume from GetTrackZoneEffect.
  */
 void DrawPlayerCarModel(GameCarRuntime *object) {
     const CarModelAsset *modelAsset = g_CarModelAsset;
@@ -255,9 +258,11 @@ void DrawCar(GameCarRuntime *object) {
         BuildRotMatrixX(&bodyLocalMatrix, object->bodyPitch);
         MulMatrix2(&scratchMatrix, &bodyLocalMatrix);
         MulMatrix0(&g_SceneLightMatrix, &bodyLocalMatrix, &lightMatrix);
-        clipHandle = GetTrackZoneBlend(object->trackProgress);
+        TrackZoneEffect zone = GetTrackZoneEffect(object->trackProgress);
+
+        clipHandle = zone.blend;
         if (clipHandle != 0) {
-            ApplyZoneLighting(clipHandle, &lightMatrix);
+            ApplyZoneLighting(clipHandle, zone.code, &lightMatrix);
         }
         SetLightMatrix(&lightMatrix);
 

@@ -41,7 +41,6 @@ s16 g_PeakOutputRpm;
 s32 g_DriveBoostTimer;
 s16 g_PlayerAutoSteer;
 s32 g_StandingStartSpin;
-s16 g_TrackZoneDark;
 s32 g_EngineRpm;
 const RaceIntroCameraScript *g_RaceIntroCameraScript;
 FinishCamera g_FinishCamera;

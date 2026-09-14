@@ -289,6 +289,7 @@ static void DrawRaceWorld(s32 animateScenery) {
 
 static void UpdatePausedRaceScene(RaceScene *state) {
     RacePauseCursorResult cursor;
+    TrackZoneEffect zone;
     s32 move;
 
     SetReverbDepth(0x28, 0x28);
@@ -308,10 +309,10 @@ static void UpdatePausedRaceScene(RaceScene *state) {
         DrawTimeRemaining(state->timeRemaining);
         DrawRacePosition();
     }
-        DrawLapTimes(state->timing.bestLap);
+    DrawLapTimes(state->timing.bestLap);
     DrawStartCountdown(g_SceneTimer);
-    GetTrackZoneBlend(g_PlayerCar.trackProgress);
-    DrawPlayerTachometer();
+    zone = GetTrackZoneEffect(g_PlayerCar.trackProgress);
+    DrawPlayerTachometer(zone.dark);
 
     if ((g_PadHeld &
          RaceCameraButtonMask(g_PadType, g_PadButtonMapping)) &&
@@ -348,6 +349,7 @@ static void UpdateActiveRaceScene(RaceScene *state) {
     RaceClockUpdate raceClock;
     RaceStartUpdate raceStart;
     RaceViewSelection raceView;
+    TrackZoneEffect zone;
     WrongWayUpdate wrongWay;
 
     lapUpdateResult = 0;
@@ -470,14 +472,14 @@ static void UpdateActiveRaceScene(RaceScene *state) {
 
     DrawRaceWorld(1);
 
-    GetTrackZoneBlend(g_PlayerCar.trackProgress);
+    zone = GetTrackZoneEffect(g_PlayerCar.trackProgress);
     if (g_RacePhase >= RACE_PHASE_FINISHED) {
-        g_ReverbZoneDepth = 0;
+        zone.reverb = 0;
     }
-    SetReverbDepth(g_ReverbZoneDepth, g_ReverbZoneDepth);
+    SetReverbDepth(zone.reverb, zone.reverb);
     if ((g_RacePhase != RACE_PHASE_INTRO) && (lapUpdateResult < 2) &&
         (g_RacePhase < RACE_PHASE_RETIRED)) {
-        DrawPlayerTachometer();
+        DrawPlayerTachometer(zone.dark);
     }
 
     if (g_RacePhase < RACE_PHASE_FINISHED) {

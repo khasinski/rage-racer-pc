@@ -617,7 +617,7 @@ extern s32 g_IsEnvironmentMode4;
 extern s32 g_ModelBankCount;
 extern s16 g_NegconSteer;
 
-void ApplyZoneLighting(s32 blend, Matrix *lightMatrix);
+void ApplyZoneLighting(s32 blend, s32 zoneCode, Matrix *lightMatrix);
 void EndMirrorPass(void);
 void RestoreColorMatrix(void);
 s32 rsin(s32 angle);

@@ -10,19 +10,14 @@
 const TrackEventData *g_TrackEventData;
 s32 g_RaceSeries;
 s32 g_TrackLength;
-s16 g_TrackZoneCode;
-s16 g_ReverbZoneDepth;
-s16 g_TrackZoneDark;
-
 static int Expect(const char *label, s32 position, s32 blend,
                   s32 code, s32 depth, s32 dark) {
-    s32 actual = GetTrackZoneBlend(position);
+    TrackZoneEffect actual = GetTrackZoneEffect(position);
 
-    if (actual != blend || g_TrackZoneCode != code ||
-        g_ReverbZoneDepth != depth || g_TrackZoneDark != dark) {
+    if (actual.blend != blend || actual.code != code ||
+        actual.reverb != depth || actual.dark != dark) {
         printf("FAIL %s: blend=%d code=%d depth=%d dark=%d\n",
-               label, actual, g_TrackZoneCode,
-               g_ReverbZoneDepth, g_TrackZoneDark);
+               label, actual.blend, actual.code, actual.reverb, actual.dark);
         return 0;
     }
     return 1;
@@ -72,9 +67,6 @@ int main(void) {
     if (!Expect("reverse series", 1899, 1, 1, 7, 0)) return 1;
 
     g_TrackEventData = NULL;
-    g_TrackZoneCode = 9;
-    g_ReverbZoneDepth = 10;
-    g_TrackZoneDark = 11;
     if (!Expect("no installed track events", 500, 0, 0, 0, 0)) return 1;
 
     puts("track zone blend behavior preserved");

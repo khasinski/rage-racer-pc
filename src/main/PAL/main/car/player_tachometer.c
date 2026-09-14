@@ -10,12 +10,12 @@ enum {
     NIGHT_START = 0x54A0,
 };
 
-void DrawPlayerTachometer(void) {
+void DrawPlayerTachometer(s32 zoneDark) {
     TachometerLightingMode lighting;
     s32 blendAmount;
     s32 displayedRpm;
 
-    if (g_TrackZoneDark == TACHOMETER_DARK_ZONE ||
+    if (zoneDark == TACHOMETER_DARK_ZONE ||
         g_EnvScriptClock < DAWN_FADE_START ||
         g_EnvScriptClock >= NIGHT_START) {
         lighting = TACHOMETER_LIGHTING_DARK;

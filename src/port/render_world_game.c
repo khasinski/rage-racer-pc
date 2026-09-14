@@ -784,12 +784,12 @@ static void GameRenderWorldSubmitCarAssembly(const GameCarRuntime *object,
 static Vec3 GameTrackLightForCar(const GameCarRuntime *object) {
     Vec3 result = {1.0f, 1.0f, 1.0f};
     float light[3];
-    int blend;
+    TrackZoneEffect zone;
     /* Live race and attract playback share one native scene treatment.
      * Scripted presentation scenes keep their authored neutral appearance. */
     if (!GameSceneUsesRaceWorld()) return result;
-    blend = GetTrackZoneBlend(object->trackProgress);
-    TrackZoneLightColor(blend, g_TrackZoneCode, light);
+    zone = GetTrackZoneEffect(object->trackProgress);
+    TrackZoneLightColor(zone.blend, zone.code, light);
     result.x = light[0];
     result.y = light[1];
     result.z = light[2];

@@ -10,7 +10,6 @@ Matrix g_SceneColorMatrix;
 Matrix g_SceneLightMatrix;
 Matrix g_TrackColorMatrix;
 Matrix g_TrackLightMatrix;
-s16 g_TrackZoneCode;
 
 static Matrix s_colorSet;
 static Matrix s_lightSet;
@@ -62,24 +61,21 @@ int main(void) {
     FillMatrix(&g_SceneColorMatrix, 1000);
     FillMatrix(&g_TrackLightMatrix, 600);
     FillMatrix(&light, 200);
-    g_TrackZoneCode = 1;
-    ApplyZoneLighting(128, &light);
+    ApplyZoneLighting(128, 1, &light);
     CHECK(s_colorCalls == 1);
     CHECK(s_colorSet.m[0][0] == 625 && s_colorSet.m[2][2] == 625);
     CHECK(light.m[0][0] == 200 && light.m[2][2] == 200);
 
-    g_TrackZoneCode = 0;
-    ApplyZoneLighting(128, &light);
+    ApplyZoneLighting(128, 0, &light);
     CHECK(s_colorSet.m[0][0] == 1000);
     CHECK(s_colorSet.m[1][1] == 750);
     CHECK(s_colorSet.m[2][2] == 625);
     CHECK(light.m[0][0] == 400 && light.m[2][2] == 400);
 
     FillMatrix(&light, 200);
-    g_TrackZoneCode = 1;
-    ApplyZoneLighting(-1, &light);
+    ApplyZoneLighting(-1, 1, &light);
     CHECK(s_colorSet.m[0][0] == 1000 && s_colorSet.m[2][2] == 1000);
-    ApplyZoneLighting(500, &light);
+    ApplyZoneLighting(500, 1, &light);
     CHECK(s_colorSet.m[0][0] == 250 && s_colorSet.m[2][2] == 250);
 
     RestoreColorMatrix();

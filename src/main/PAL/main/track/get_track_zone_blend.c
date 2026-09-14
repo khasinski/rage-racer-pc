@@ -31,15 +31,13 @@ static s32 ZoneBlend(const TrackZone *zone, s32 position, s32 *zonePhase) {
     return TRACK_ZONE_FADE_DISTANCE;
 }
 
-s32 GetTrackZoneBlend(s32 position) {
+TrackZoneEffect GetTrackZoneEffect(s32 position) {
+    TrackZoneEffect result = {0};
     const TrackZone *zones;
     s32 index;
 
-    g_TrackZoneCode = 0;
-    g_ReverbZoneDepth = 0;
-    g_TrackZoneDark = 0;
     if (g_TrackEventData == NULL) {
-        return 0;
+        return result;
     }
 
     position = TrackPositionForSeries(position, g_TrackLength, g_RaceSeries);
@@ -58,29 +56,32 @@ s32 GetTrackZoneBlend(s32 position) {
 
         blend = ZoneBlend(current, position, &phase);
         code = current->code;
-        g_TrackZoneCode = (s16)code;
-        g_ReverbZoneDepth = current->value;
+        result.code = (s16)code;
+        result.reverb = current->value;
 
         if (code == TRACK_ZONE_CODE_DARK_ONLY) {
-            g_TrackZoneDark = TRACK_ZONE_DARK_LEVEL;
+            result.dark = TRACK_ZONE_DARK_LEVEL;
         } else if (code == TRACK_ZONE_CODE_NO_BLEND ||
                    code == TRACK_ZONE_CODE_EXIT_ONLY_BLEND) {
-            g_TrackZoneCode = 1;
+            result.code = 1;
             if (code == TRACK_ZONE_CODE_NO_BLEND) {
-                return 0;
+                return result;
             }
             if (phase == TRACK_ZONE_PHASE_FADE_OUT) {
-                return TRACK_ZONE_FADE_DISTANCE;
+                result.blend = TRACK_ZONE_FADE_DISTANCE;
+                return result;
             }
         } else if (code < 0) {
             s32 positiveCode = -(s32)code;
 
-            g_TrackZoneCode = (s16)(positiveCode > INT16_MAX
-                                        ? INT16_MAX
-                                        : positiveCode);
-            return TRACK_ZONE_FADE_DISTANCE;
+            result.code = (s16)(positiveCode > INT16_MAX
+                                    ? INT16_MAX
+                                    : positiveCode);
+            result.blend = TRACK_ZONE_FADE_DISTANCE;
+            return result;
         }
-        return blend;
+        result.blend = blend;
+        return result;
     }
-    return 0;
+    return result;
 }

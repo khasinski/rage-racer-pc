@@ -12,7 +12,6 @@ s16 g_GrandPrixSeries;
 s32 g_RaceSeries;
 s16 g_RacePhase;
 s32 g_AutoShiftCooldown;
-s16 g_TrackZoneDark;
 s32 g_ShiftSoundLevel;
 s32 g_RoadGrade;
 s32 g_ShiftTargetRpm;
@@ -102,7 +101,6 @@ static void ResetFixtures(void) {
     g_TrackPointCount = 2;
     g_GrandPrixSeries = 3;
     g_AutoShiftCooldown = 99;
-    g_TrackZoneDark = 3;
     g_ShiftSoundLevel = 99;
     g_RoadGrade = 99;
     g_ShiftTargetRpm = 99;
@@ -161,7 +159,7 @@ int main(void) {
     CHECK(car.positionW == 0 && car.bodyRotationW == 0 && car.reserved4C == 0);
     CHECK(car.lapTimes.words[11] == 0);
 
-    CHECK(g_AutoShiftCooldown == 0 && g_TrackZoneDark == 0);
+    CHECK(g_AutoShiftCooldown == 0);
     CHECK(g_ShiftSoundLevel == 0 && g_RoadGrade == 0 && g_ShiftTargetRpm == 0);
     CHECK(g_EngineRpmJitter == 0 && g_EngineRpm == 0 &&
           g_EngineRpmSnapshot == 0);

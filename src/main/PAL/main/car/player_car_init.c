@@ -104,7 +104,6 @@ void InitPlayerCar(PlayerCarRuntime *car) {
     g_RaceSeries = g_GrandPrixSeries & RACE_DIRECTION_BIT;
     BuildTachoNeedleQuad();
     g_AutoShiftCooldown = 0;
-    g_TrackZoneDark = 0;
     g_ShiftSoundLevel = 0;
     g_RoadGrade = 0;
 

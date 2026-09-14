@@ -715,7 +715,6 @@ extern s32 g_ShiftTargetRpm;
 extern s32 g_StandingStartSpin;
 extern s16 g_SteerHoldFrames;
 extern s16 g_TachoNeedleQuad[4][2];
-extern s16 g_TrackZoneDark;
 
 /* (model, owned grade) -> index of the CAR_xx asset pair, 0..31. */
 s32 GetCarAssetIndex(s32 model, s32 grade);
@@ -773,7 +772,7 @@ s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
                         const CarTrackLimits *limits);
 void DrawTachometer(s32 rpm, s32 shiftLightOn, TachometerLightingMode lighting,
                     s32 blendAmount);
-void DrawPlayerTachometer(void);
+void DrawPlayerTachometer(s32 zoneDark);
 void BeginCarStandingStart(PlayerCarRuntime *car);
 void RunRaceIntroCamera(Camera *camera, PlayerCarRuntime *car, s32 mode);
 void UpdatePlayerCar(PlayerCarRuntime *car);

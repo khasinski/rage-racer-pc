@@ -94,6 +94,13 @@ typedef struct TrackZone {
     s16 value;
 } TrackZone;
 
+typedef struct TrackZoneEffect {
+    s32 blend;
+    s16 code;
+    s16 reverb;
+    s16 dark;
+} TrackZoneEffect;
+
 typedef struct TrackEventOffsets {
     s32 routeScenery;
     s32 raceIntroCamera;
@@ -296,6 +303,7 @@ void DrawScriptedScenery(s32 animate);
 void DrawStartGridScenery(s32 timer);
 void InitTrackScene(void);
 void TriggerRaceCues(void);
+TrackZoneEffect GetTrackZoneEffect(s32 position);
 void UpdatePointAmbience(const GameCameraState *camera, s32 trackPosition);
 
 /* The static landmark at g_StaticSceneryPos (40594, 6002, 11940), on all four courses;

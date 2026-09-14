@@ -35,8 +35,8 @@ static void BlendLightMatrix(Matrix *matrix, s32 blend) {
     }
 }
 
-/* Darkens the scene colour matrix by GetTrackZoneBlend's 0..0x100 ramp. */
-void ApplyZoneLighting(s32 blend, Matrix *lightMatrix) {
+/* Darkens the scene colour matrix by the track zone's 0..0x100 ramp. */
+void ApplyZoneLighting(s32 blend, s32 zoneCode, Matrix *lightMatrix) {
     Matrix colorMatrix;
 
     if (blend < 0) {
@@ -45,7 +45,7 @@ void ApplyZoneLighting(s32 blend, Matrix *lightMatrix) {
         blend = LIGHTING_BLEND_MAX;
     }
 
-    if (g_TrackZoneCode != 0) {
+    if (zoneCode != 0) {
         s32 scale = LIGHTING_BLEND_MAX - (blend * 3) / 4;
 
         ScaleColorMatrix(&colorMatrix, &g_SceneColorMatrix,

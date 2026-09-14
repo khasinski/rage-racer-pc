@@ -3,6 +3,7 @@
 #include "game/render.h"
 #include "game/render_internal.h"
 #include "game/state.h"
+#include "game/track.h"
 #include "rage/render_world_game.h"
 
 #include <limits.h>
@@ -122,12 +123,14 @@ void GameRenderWorldSubmitPlayerCar(const GameCarRuntime *object,
     (void)mirror;
     s_modernPlayerCalls++;
 }
-s32 GetTrackZoneBlend(s32 position) {
+TrackZoneEffect GetTrackZoneEffect(s32 position) {
+    TrackZoneEffect effect = {.blend = s_zoneBlend};
     (void)position;
-    return s_zoneBlend;
+    return effect;
 }
-void ApplyZoneLighting(s32 blend, Matrix *lightMatrix) {
+void ApplyZoneLighting(s32 blend, s32 zoneCode, Matrix *lightMatrix) {
     (void)blend;
+    (void)zoneCode;
     (void)lightMatrix;
     s_zoneLightCalls++;
 }
