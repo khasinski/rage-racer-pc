@@ -228,7 +228,7 @@ void EnterRaceScene(void) {
     ResetMirrorState();
     SeekEnvironmentScript(g_TrackRenderTable->environmentScriptOffset);
     BuildTileStrips();
-    BuildRaceHudPrims(g_GrandPrixMode);
+    BuildRaceHudPrims(RaceHasRivals());
     g_AnimTimer = 0;
     g_SceneTimer = 0;
     g_Camera.mode = CAMERA_VIEW_CAR;
@@ -301,10 +301,10 @@ static void UpdatePausedRaceScene(RaceScene *state) {
     }
 
     DrawRaceOptionMenu(state->optionCursor);
-    if (g_GrandPrixMode == 0) {
+    if (!RaceHasRivals()) {
         DrawSplitTimes(&state->timing);
     }
-    DrawRaceHudLabels(g_GrandPrixMode);
+    DrawRaceHudLabels(RaceHasRivals());
     if (RaceHasRivals()) {
         DrawTimeRemaining(state->timeRemaining);
         DrawRacePosition();
@@ -329,7 +329,7 @@ static void UpdatePausedRaceScene(RaceScene *state) {
                  AsRivalCar(&g_PlayerCar));
     RequestTrackTexturePage(g_PlayerCar.trackSection);
     PortProfileFramePhase("scene_cars");
-    if (g_GrandPrixMode != 0) {
+    if (RaceHasRivals()) {
         DrawCars();
     }
     PortProfileFramePhase("scene");
@@ -376,7 +376,7 @@ static void UpdateActiveRaceScene(RaceScene *state) {
     if (g_RacePhase < RACE_PHASE_RETIRED) {
         lapUpdateResult = UpdateLapAndFinish(state, &g_PlayerCar, g_GrandPrixMode);
         UpdateSplitTimes(&state->timing, &g_PlayerCar, g_GrandPrixMode, lapUpdateResult);
-        if (g_GrandPrixMode == 0 && lapUpdateResult != 2) {
+        if (!RaceHasRivals() && lapUpdateResult != 2) {
             DrawSplitTimes(&state->timing);
         }
         if (lapUpdateResult < 2) {
@@ -385,7 +385,7 @@ static void UpdateActiveRaceScene(RaceScene *state) {
     }
 
     if (g_RacePhase < RACE_PHASE_FINISHED) {
-        if (g_GrandPrixMode != 0) {
+        if (RaceHasRivals()) {
             DrawTimeRemaining(state->timeRemaining);
         }
         if (raceClock.expired) {
@@ -407,7 +407,7 @@ static void UpdateActiveRaceScene(RaceScene *state) {
         }
     }
     if (lapUpdateResult < 2 && g_RacePhase < RACE_PHASE_RETIRED) {
-        DrawRaceHudLabels(g_GrandPrixMode);
+        DrawRaceHudLabels(RaceHasRivals());
     }
 
     if (g_RacePhase > RACE_PHASE_INTRO) {

@@ -66,6 +66,7 @@ GameRenderState g_RenderState;
 Rect g_DrawModeEnv;
 s32 g_GrandPrixClass;
 s16 g_GrandPrixMode;
+RaceSession g_RaceSession;
 s32 g_LapCount;
 static RaceTiming s_timing;
 s32 g_RaceSeries;

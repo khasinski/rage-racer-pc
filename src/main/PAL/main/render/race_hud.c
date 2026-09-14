@@ -74,7 +74,7 @@ void DrawLapTimes(s32 bestLap) {
     s32 activeLap = g_PlayerCar.drive.hudLapHighlightRow;
     GameFrameContext *frame = g_DrawBuffer;
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
-    const GameSpriteDesc *descs = g_GrandPrixMode != 0
+    const GameSpriteDesc *descs = RaceHasRivals()
                                       ? g_RaceHudSpriteDescsGp
                                       : g_RaceHudSpriteDescsTimeTrial;
     s32 lap;

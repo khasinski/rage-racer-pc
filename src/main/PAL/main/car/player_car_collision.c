@@ -306,7 +306,7 @@ s32 CollidePlayerWithCars(PlayerCarRuntime *car) {
     PlayerCollisionHit hit;
     s32 index;
 
-    if (g_GrandPrixMode == 0 || g_TrackLength <= 0) {
+    if (!RaceHasRivals() || g_TrackLength <= 0) {
         return 0;
     }
 

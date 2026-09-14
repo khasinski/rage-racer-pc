@@ -14,6 +14,7 @@
 
 GameRenderState g_RenderState;
 GameCarRuntime g_Cars[11];
+RaceSession g_RaceSession;
 
 static u32 s_digest = 2166136261U;
 static s32 s_sound;
@@ -71,6 +72,7 @@ static void PrepareSoundCollision(PlayerCarRuntime *player,
         g_Cars[index].activeFlag = -1;
 
     g_GrandPrixMode = 1;
+    g_RaceSession.kind = RACE_SESSION_STANDARD;
     g_RaceSeries = 0;
     g_RacePhase = 2;
     g_MirrorMode = 0;
@@ -141,6 +143,19 @@ static int CheckWrappedWorldCoordinates(void) {
     g_Cars[0].x = 4;
     if (CollidePlayerWithCars(&player) <= 0) {
         puts("FAIL nearby cars did not collide across world-coordinate wrap");
+        return 1;
+    }
+    return 0;
+}
+
+static int CheckCustomRaceCollision(void) {
+    PlayerCarRuntime player;
+
+    PrepareSoundCollision(&player, 0);
+    g_GrandPrixMode = 0;
+    g_RaceSession.kind = RACE_SESSION_CUSTOM;
+    if (CollidePlayerWithCars(&player) <= 0) {
+        puts("FAIL custom race did not collide with a rival");
         return 1;
     }
     return 0;
@@ -250,6 +265,7 @@ int main(void) {
     size_t playerYaw, opponentYaw, nudge, speed, backwards;
 
     if (CheckCollisionSoundGates() != 0 ||
+        CheckCustomRaceCollision() != 0 ||
         CheckWrappedWorldCoordinates() != 0 ||
         CheckWrappedTrackProgress() != 0 ||
         CheckAllCollisionFlagsReset() != 0 ||
@@ -281,6 +297,7 @@ int main(void) {
             g_Cars[index].activeFlag = -1;
         }
         g_GrandPrixMode = (s16)gp;
+        g_RaceSession.kind = RACE_SESSION_STANDARD;
         g_RaceSeries = 0;
         g_RacePhase = 2;
         g_MirrorMode = 0;
