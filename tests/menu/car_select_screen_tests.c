@@ -31,7 +31,6 @@ const TimedDrawCommand *g_CarSelectPopupScript;
 /* The two modal scripts are decoded command arrays rather than raw bytes;
  * they are never walked here, only identified. */
 TimedDrawCommand g_CarShopUnavailableScript[2];
-s32 g_CarSpecGraphStep;
 s32 g_CarSwapFromIndex;
 s32 g_CarSwapToIndex;
 s32 g_CourseIndex;
@@ -162,8 +161,10 @@ void DrawMenuCarView(void) { RECORD("carview", 0); }
 void DrawMenuLightBurst(s32 arg) { RECORD("burst", arg); }
 static BrowseArrows s_browseArrows;
 static CourseSelectScreen s_courseSelect;
+static CarSpecGraph s_carSpecGraph;
 BrowseArrows *MenuBrowseArrows(void) { return &s_browseArrows; }
 CourseSelectScreen *MenuCourseSelect(void) { return &s_courseSelect; }
+CarSpecGraph *MenuCarSpecGraph(void) { return &s_carSpecGraph; }
 
 void DrawBrowseArrows(BrowseArrows *arrows, s32 step, s32 wide, s32 drawLeft, s32 drawRight) {
     (void)arrows;
@@ -288,7 +289,7 @@ int main(int argc, char **argv) {
 
         g_MenuAltLayoutSetting = 1;
         g_CarNamePlateStep = 4;
-        g_CarSpecGraphStep = 1;
+        s_carSpecGraph.step = 1;
         g_MenuPlateCarIndex = 2;
         g_PlayerCarIndex = 9;
         g_CarListCursor = 0;
@@ -338,7 +339,7 @@ int main(int argc, char **argv) {
             after[11] = g_MenuOutgoingHandlerIndex;
             after[12] = g_MenuOverlayPattern;
             after[13] = g_CarNamePlateStep;
-            after[14] = g_CarSpecGraphStep;
+            after[14] = s_carSpecGraph.step;
             after[15] = g_MenuHintBarStep;
             after[16] = g_SceneId;
             after[17] = g_CourseIndex;

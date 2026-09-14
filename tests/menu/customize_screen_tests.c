@@ -23,7 +23,6 @@ void MenuBeginExit(s32 screen) {
 s32 GameMenuBusy;
 s32 g_CarNamePlateStep;
 CarModelAsset *g_CarModelAsset;
-s32 g_CarSpecGraphStep;
 CarEntry *g_CarTable;
 s16 g_GrandPrixMode;
 s32 g_MenuAltLayout;
@@ -54,7 +53,9 @@ s32 g_UiScriptProgress2;
 static CarEntry s_cars[GAME_CAR_COUNT];
 static CarModelAsset s_model;
 static Customize s_customize;
+static CarSpecGraph s_carSpecGraph;
 Customize *MenuCustomize(void) { return &s_customize; }
+CarSpecGraph *MenuCarSpecGraph(void) { return &s_carSpecGraph; }
 
 static s32 s_lastCue;
 

@@ -8,7 +8,6 @@
 
 s32 g_AnimTimer;
 s32 g_CarListCursor;
-s32 g_CarSpecGraphStep;
 CarEntry *g_CarTable;
 GameRenderState g_RenderState;
 s32 g_MenuHandlerIndex;
@@ -63,9 +62,9 @@ void DrawSolidRect(GameOrderingTableEntry *ot, s32 x, s32 y, s32 width,
     s_solidRectCalls++;
 }
 
-void DrawCarSpecGraph(s32 step, u32 tireGrade) {
-    (void)step;
+void DrawCarSpecGraph(CarSpecGraph *graph, u32 tireGrade) {
     s_specCarTire = (s32)tireGrade;
+    (void)graph;
 }
 
 s32 RunTimedDrawScript(const TimedDrawCommand *commands, s32 *progress,
@@ -127,7 +126,7 @@ static void Reset(void) {
     MenuRuntimeReset();
     MenuActivateScreen(MENU_SCREEN_COURSE_SELECT);
     g_MenuOutgoingScreenProgress = -1;
-    g_CarSpecGraphStep = 7;
+    MenuCarSpecGraph()->step = 7;
     g_PlayerCarIndex = 1;
     g_CarListCursor = 2;
     s_cars[1].tireCompound = 4;

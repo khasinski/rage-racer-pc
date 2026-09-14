@@ -44,7 +44,7 @@ static void LeaveCarSelectScreen(void) {
     SetCarSelectState(5);
     g_MenuOverlayPattern = 2;
     g_CarNamePlateStep = -10;
-    g_CarSpecGraphStep = -3;
+    MenuCarSpecGraph()->step = -3;
     g_MenuViewOffsetTarget = 0x3D090;
 }
 
@@ -105,7 +105,7 @@ static void ChooseCarSelectRow(s32 row) {
         g_MenuHintBarStep = -1;
         g_CarNamePlateStep = -10;
         g_MenuOverlayPattern = 0;
-        g_CarSpecGraphStep = -3;
+        MenuCarSpecGraph()->step = -3;
         g_MenuViewOffsetTarget = 0x3D090;
         return;
     }
@@ -184,7 +184,7 @@ static void UpdateCarSelectInput(void) {
  * chrome has finished sliding in and no modal is on top of it. */
 static void UpdateCarSelectIdle(void) {
     g_CarNamePlateStep = 0x14;
-    g_CarSpecGraphStep = 3;
+    MenuCarSpecGraph()->step = 3;
     g_MenuPlateCarIndex = g_PlayerCarIndex;
     RunTimedDrawScript(g_CarSelectPopupScript, &g_UiScriptProgress2, -1);
     RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);

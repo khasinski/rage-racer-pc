@@ -28,7 +28,7 @@ static void ApproachPerformanceRating(s32 *value, s32 target) {
     }
 }
 
-static void UpdateCarSpecValues(u32 tireGrade) {
+static void UpdateCarSpecValues(CarSpecGraph *graph, u32 tireGrade) {
     s32 i;
 
     if (tireGrade >= CAR_TIRE_COMPOUND_COUNT) {
@@ -37,14 +37,14 @@ static void UpdateCarSpecValues(u32 tireGrade) {
     if (g_CarModelAsset != NULL) {
         for (i = 0; i < CAR_SPEC_MODEL_BAR_COUNT; i++) {
             ApproachPerformanceRating(
-                &g_CarSpecBars[i], g_CarModelAsset->performanceRatings[i]);
+                &graph->bars[i], g_CarModelAsset->performanceRatings[i]);
         }
     } else {
         for (i = 0; i < CAR_SPEC_MODEL_BAR_COUNT; i++) {
-            ApproachPerformanceRating(&g_CarSpecBars[i], 0);
+            ApproachPerformanceRating(&graph->bars[i], 0);
         }
     }
-    ApproachPerformanceRating(&g_CarSpecBars[CAR_SPEC_TIRE_BAR],
+    ApproachPerformanceRating(&graph->bars[CAR_SPEC_TIRE_BAR],
                               10 + (s32)tireGrade * 20);
 }
 
@@ -76,7 +76,7 @@ static void DrawCarSpecFloor(GameOrderingTableEntry *ot, s32 progress) {
     DrawCarSpecFloorLine(ot, progress);
 }
 
-static void DrawCarSpecBar(GameOrderingTableEntry *ot, s32 index,
+static void DrawCarSpecBar(const CarSpecGraph *graph, GameOrderingTableEntry *ot, s32 index,
                            s32 revealedHeight) {
     const CVec *color;
     s32 offset;
@@ -93,9 +93,9 @@ static void DrawCarSpecBar(GameOrderingTableEntry *ot, s32 index,
         return;
     }
 
-    height = revealedHeight < g_CarSpecBars[index]
+    height = revealedHeight < graph->bars[index]
                  ? revealedHeight
-                 : g_CarSpecBars[index];
+                 : graph->bars[index];
     offset = index * 0xC;
     baseX = 0x66 + offset;
     baseY = 0x144 + offset;
@@ -122,33 +122,33 @@ static void DrawCarSpecBar(GameOrderingTableEntry *ot, s32 index,
 }
 
 /* The four animated performance bars on the CUSTOMIZE car panel. */
-void DrawCarSpecGraph(s32 step, u32 tireGrade) {
+void DrawCarSpecGraph(CarSpecGraph *graph, u32 tireGrade) {
     s32 revealed[CAR_SPEC_BAR_COUNT];
     s32 floorProgress;
     s32 i;
     GameOrderingTableEntry *ot;
 
-    if (step == 0) {
-        g_CarSpecGraphProgress = 0;
+    if (graph->step == 0) {
+        graph->progress = 0;
         return;
     }
 
-    UpdateCarSpecValues(tireGrade);
-    g_CarSpecGraphProgress = AddClampedMenuValue(
-        g_CarSpecGraphProgress, step, 0, CAR_SPEC_BAR_MAX);
+    UpdateCarSpecValues(graph, tireGrade);
+    graph->progress = AddClampedMenuValue(
+        graph->progress, graph->step, 0, CAR_SPEC_BAR_MAX);
 
     for (i = 0; i < CAR_SPEC_BAR_COUNT; i++) {
-        revealed[i] = g_CarSpecGraphProgress - CAR_SPEC_BAR_MAX +
-                      g_CarSpecBars[i];
+        revealed[i] = graph->progress - CAR_SPEC_BAR_MAX +
+                      graph->bars[i];
         if (revealed[i] < 0) {
             revealed[i] = 0;
         }
     }
-    floorProgress = g_CarSpecGraphProgress - CAR_SPEC_FLOOR_DELAY;
+    floorProgress = graph->progress - CAR_SPEC_FLOOR_DELAY;
     if (floorProgress < 0) {
         floorProgress = 0;
     }
-    if (g_CarSpecGraphProgress == 0 || g_MenuAltLayout != 0 ||
+    if (graph->progress == 0 || g_MenuAltLayout != 0 ||
         RENDER_OT_BASE == NULL) {
         return;
     }
@@ -173,6 +173,6 @@ void DrawCarSpecGraph(s32 step, u32 tireGrade) {
 
     DrawCarSpecFloor(ot, floorProgress);
     for (i = 0; i < CAR_SPEC_BAR_COUNT; i++) {
-        DrawCarSpecBar(ot, i, revealed[i]);
+        DrawCarSpecBar(graph, ot, i, revealed[i]);
     }
 }

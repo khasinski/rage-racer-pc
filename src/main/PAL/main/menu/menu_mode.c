@@ -49,11 +49,13 @@ static void ResetMenuNavigation(void) {
     CourseSelectScreen *courseSelect;
     Customize *customize;
     LogoSample *logoSample;
+    CarSpecGraph *carSpecGraph;
 
     MenuRuntimeReset();
     courseSelect = MenuCourseSelect();
     customize = MenuCustomize();
     logoSample = MenuLogoSample();
+    carSpecGraph = MenuCarSpecGraph();
     courseSelect->modalScript = g_UiEmptyScript;
     customize->popupScript = g_UiEmptyScript;
     logoSample->subPanelScript = g_UiEmptyScript;
@@ -82,7 +84,7 @@ static void ResetMenuNavigation(void) {
     g_MenuOverlayPattern = 0;
     g_CarNamePlateStep = 0;
     g_MenuPlateCarIndex = 0;
-    g_CarSpecGraphStep = 0;
+    carSpecGraph->step = 0;
     courseSelect->displayedCourse = g_CourseIndex;
     g_MenuUpperAltPanelStep = 0;
     g_MenuLowerAltPanelStep = 0;
@@ -96,7 +98,7 @@ static void ResetMenuNavigation(void) {
 
 /* Shared widgets outside the screen transition table own these counters. */
 static void ResetMenuWidgets(void) {
-    DrawCarSpecGraph(0, 0); /* step 0 resets and returns before the grade */
+    DrawCarSpecGraph(MenuCarSpecGraph(), 0);
     DrawMenuLightBurst(0);
     DrawTimeAttackPlate(0);
 }

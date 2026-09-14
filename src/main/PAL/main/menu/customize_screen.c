@@ -102,7 +102,7 @@ static void HandleCustomizeMenuInput(Customize *customize, s32 exitOption,
             PlaySoundCue(2);
             GameMenuBusy = CUSTOMIZE_EXIT_TO_DESIGN;
             g_MenuOverlayPattern = 1;
-            g_CarSpecGraphStep = -3;
+            MenuCarSpecGraph()->step = -3;
             g_MenuViewOffsetTarget = MENU_VIEW_OFFSET_MAX;
         }
     } else if (g_PadPressed & PAD_CANCEL) {
@@ -273,7 +273,7 @@ void UpdateCustomizeScreen(void) {
                                    : g_CustomizeMenuScriptTimeAttack;
 
     if (GameMenuBusy == CUSTOMIZE_IDLE) {
-        g_CarSpecGraphStep = 3;
+        MenuCarSpecGraph()->step = 3;
         RunTimedDrawScript(customize->popupScript, &g_UiScriptProgress2, -1);
         DrawFadingMenuSprites(g_UiScriptProgress, exitOption,
                               customize->option);

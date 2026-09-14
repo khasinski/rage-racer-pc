@@ -93,6 +93,12 @@ typedef struct TeamName {
     s32 charModel;
 } TeamName;
 
+typedef struct CarSpecGraph {
+    s32 step;
+    s32 progress;
+    s32 bars[4];
+} CarSpecGraph;
+
 typedef struct MenuRuntime {
     /* State-machine screen updated this frame. */
     s32 activeScreen;
@@ -112,6 +118,7 @@ typedef struct MenuRuntime {
     Customize customize;
     LogoSample logoSample;
     TeamName teamName;
+    CarSpecGraph carSpecGraph;
 } MenuRuntime;
 
 void MenuRuntimeReset(void);
@@ -124,6 +131,7 @@ PaintColor *MenuPaintColor(void);
 Customize *MenuCustomize(void);
 LogoSample *MenuLogoSample(void);
 TeamName *MenuTeamName(void);
+CarSpecGraph *MenuCarSpecGraph(void);
 s32 MenuRuntimeScreenState(s32 screen);
 void MenuRuntimeSetScreenState(s32 screen, s32 state);
 
@@ -333,7 +341,7 @@ void ResetEngineerShopScreen(void);
  * draws nothing, positive ramps in, negative ramps out.
  */
 /* The four-bar car performance chart; only visible on CUSTOMIZE. */
-void DrawCarSpecGraph(s32 step, u32 tireGrade);
+void DrawCarSpecGraph(CarSpecGraph *graph, u32 tireGrade);
 /* "MAX POWER <n> ps / <n> rpm" and "MAX TORQUE <n>.<n> kgm / <n> rpm". */
 void DrawCarEngineSpec(s32 slideRaw, s32 brightness);
 /* The TEAM NAME 4x11 grid, its highlight and caret, and the typed name. */
@@ -386,7 +394,6 @@ extern s32 g_TeamLogoGuideMode;
 extern s32 g_TeamLogoBrushSize;
 extern s32 g_TeamLogoPaletteMode;
 extern s32 g_TeamLogoColorChannel;
-extern s32 g_CarSpecGraphStep;
 extern s32 g_MenuUpperAltPanelStep;
 extern s32 g_MenuLowerAltPanelStep;
 extern s32 g_CarShopUnlockAll;
@@ -486,8 +493,6 @@ extern s32 g_TitleFadeLevel;
 extern s32 g_TeamLogoOption;
 extern char *g_BgmTrackNames[];
 extern s32 g_CarPriceTable[CAR_PRICE_COUNT];
-extern s32 g_CarSpecBars[4];
-extern s32 g_CarSpecGraphProgress;
 extern s32 g_ClassRecordMenuCursor;
 extern TimedDrawCommand g_MenuHintBarScript[];
 

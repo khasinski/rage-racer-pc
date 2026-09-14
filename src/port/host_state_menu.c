@@ -111,7 +111,6 @@ s32 g_TeamLogoPaletteMode;
 s32 g_TeamLogoColorChannel;
 u16 g_TeamLogoFadedClutRect = 304;
 u16 g_TeamLogoBlankClut[16];
-s32 g_CarSpecGraphProgress;
 s32 g_TeamLogoPanelStep;
 s32 g_TeamLogoEditorStep;
 s32 g_TeamLogoDpadRepeatTimer;
@@ -136,7 +135,6 @@ s32 g_CarTuneUpPriceTable[31] = {
     362500, 15200, 62400, 331400, 136700, 577000, 20000, 77500,
     405700, 151600, 559700, 695900, 2143500, 2836800, 6666666,
 };
-s32 g_CarSpecBars[4];
 s32 g_TeamLogoColorCycleAngle;
 s32 g_TeamLogoFadeLevel;
 s32 g_TeamLogoZoomLevel;
@@ -152,7 +150,6 @@ s32 g_MenuHintButtonsVisible;
 s32 g_MenuOverlayPattern;
 s32 g_CarNamePlateStep;
 s32 g_MenuPlateCarIndex;
-s32 g_CarSpecGraphStep;
 s32 g_MenuUpperAltPanelStep;
 s32 g_MenuLowerAltPanelStep;
 s32 g_TimeAttackPlateStep;

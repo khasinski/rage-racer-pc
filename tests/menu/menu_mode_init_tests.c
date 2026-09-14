@@ -26,6 +26,7 @@ static Customize s_customize;
 static LogoSample s_logo;
 static s32 s_menuCarResets;
 static CourseSelectScreen s_courseSelect;
+static CarSpecGraph s_carSpecGraph;
 
 s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
@@ -35,6 +36,7 @@ void MenuRuntimeReset(void) {
     memset(&s_courseSelect, 0, sizeof(s_courseSelect));
     memset(&s_customize, 0, sizeof(s_customize));
     memset(&s_logo, 0, sizeof(s_logo));
+    memset(&s_carSpecGraph, 0, sizeof(s_carSpecGraph));
     g_MenuScreen = MENU_SCREEN_BOOTSTRAP;
     g_MenuHandlerIndex = -1;
     g_MenuOutgoingHandlerIndex = -1;
@@ -42,6 +44,7 @@ void MenuRuntimeReset(void) {
 CourseSelectScreen *MenuCourseSelect(void) { return &s_courseSelect; }
 Customize *MenuCustomize(void) { return &s_customize; }
 LogoSample *MenuLogoSample(void) { return &s_logo; }
+CarSpecGraph *MenuCarSpecGraph(void) { return &s_carSpecGraph; }
 void ResetCarShopScreen(void) { s_carShopResets++; }
 void ResetEngineerShopScreen(void) {
     s_engineerShop = (EngineerShop){g_UiEmptyScript, 0};
@@ -81,8 +84,8 @@ MATRIX *ScaleMatrix(MATRIX *matrix, VECTOR *scale) {
     return matrix;
 }
 
-void DrawCarSpecGraph(s32 step, u32 tireGrade) {
-    if (step == 0 && tireGrade == 0) s_drawResetCalls++;
+void DrawCarSpecGraph(CarSpecGraph *graph, u32 tireGrade) {
+    if (graph->step == 0 && tireGrade == 0) s_drawResetCalls++;
 }
 void DrawMenuLightBurst(s32 step) {
     if (step == 0) s_drawResetCalls++;
@@ -132,7 +135,7 @@ static void PoisonEntryState(void) {
     g_MenuOverlayPattern = 16;
     g_CarNamePlateStep = 17;
     g_MenuPlateCarIndex = 18;
-    g_CarSpecGraphStep = 19;
+    s_carSpecGraph.step = 19;
     g_MenuUpperAltPanelStep = 20;
     g_MenuLowerAltPanelStep = 21;
     g_TimeAttackPlateStep = 22;
@@ -182,7 +185,7 @@ static int CheckCommonEntryState(const GameRaceProgress *progress) {
     CHECK(s_courseSelect.cardPendingGrade == 0 && g_CarSwapFromIndex == 0);
     CHECK(s_courseSelect.pendingCourse == -1 && g_CarSwapToIndex == -1);
     CHECK(g_MenuOverlayPattern == 0 && g_CarNamePlateStep == 0);
-    CHECK(g_MenuPlateCarIndex == 0 && g_CarSpecGraphStep == 0);
+    CHECK(g_MenuPlateCarIndex == 0 && s_carSpecGraph.step == 0);
     CHECK(g_MenuUpperAltPanelStep == 0 && g_MenuLowerAltPanelStep == 0);
     CHECK(g_TimeAttackPlateStep == 0 && g_MenuHintButtonsVisible == 1);
     CHECK(g_MenuHandlerIndex == -1 && g_MenuOutgoingHandlerIndex == -1);

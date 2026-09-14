@@ -6,8 +6,6 @@
 #include <stdio.h>
 #include <limits.h>
 
-s32 g_CarSpecBars[4];
-s32 g_CarSpecGraphProgress;
 s32 g_MenuAltLayout;
 static CarModelAsset s_model;
 CarModelAsset *g_CarModelAsset = &s_model;
@@ -83,44 +81,50 @@ void DrawFlatQuad(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u1
         }                                                                      \
     } while (0)
 
+static void DrawGraph(CarSpecGraph *graph, s32 step, u32 tireGrade) {
+    graph->step = step;
+    DrawCarSpecGraph(graph, tireGrade);
+}
+
 int main(void) {
+    CarSpecGraph graph = {0};
     static GameOrderingTableEntry orderingTable[4];
 
     RENDER_OT_BASE = orderingTable;
-    g_CarSpecGraphProgress = 42;
-    g_CarSpecBars[0] = 7;
-    DrawCarSpecGraph(0, 0);
-    CHECK(g_CarSpecGraphProgress == 0 && g_CarSpecBars[0] == 7);
+    graph.progress = 42;
+    graph.bars[0] = 7;
+    DrawGraph(&graph, 0, 0);
+    CHECK(graph.progress == 0 && graph.bars[0] == 7);
 
     s_model.performanceRatings[0] = 3;
     s_model.performanceRatings[1] = 2;
     s_model.performanceRatings[2] = 1;
-    g_CarSpecBars[0] = 0;
-    g_CarSpecBars[1] = 3;
-    g_CarSpecBars[2] = 1;
-    g_CarSpecBars[3] = 0;
+    graph.bars[0] = 0;
+    graph.bars[1] = 3;
+    graph.bars[2] = 1;
+    graph.bars[3] = 0;
     g_MenuAltLayout = 1;
-    DrawCarSpecGraph(1, 2);
-    CHECK(g_CarSpecGraphProgress == 1);
-    CHECK(g_CarSpecBars[0] == 1 && g_CarSpecBars[1] == 2);
-    CHECK(g_CarSpecBars[2] == 1 && g_CarSpecBars[3] == 1);
+    DrawGraph(&graph, 1, 2);
+    CHECK(graph.progress == 1);
+    CHECK(graph.bars[0] == 1 && graph.bars[1] == 2);
+    CHECK(graph.bars[2] == 1 && graph.bars[3] == 1);
     CHECK(s_spriteCount == 0 && s_quadCount == 0);
 
-    DrawCarSpecGraph(-5, 5);
-    CHECK(g_CarSpecGraphProgress == 0);
-    CHECK(g_CarSpecBars[0] == 2 && g_CarSpecBars[3] == 2);
+    DrawGraph(&graph, -5, 5);
+    CHECK(graph.progress == 0);
+    CHECK(graph.bars[0] == 2 && graph.bars[3] == 2);
 
     s_model.performanceRatings[0] = 10;
     s_model.performanceRatings[1] = 20;
     s_model.performanceRatings[2] = 30;
-    g_CarSpecBars[0] = 10;
-    g_CarSpecBars[1] = 20;
-    g_CarSpecBars[2] = 30;
-    g_CarSpecBars[3] = 50;
-    g_CarSpecGraphProgress = 95;
+    graph.bars[0] = 10;
+    graph.bars[1] = 20;
+    graph.bars[2] = 30;
+    graph.bars[3] = 50;
+    graph.progress = 95;
     g_MenuAltLayout = 0;
-    DrawCarSpecGraph(10, 2);
-    CHECK(g_CarSpecGraphProgress == 96);
+    DrawGraph(&graph, 10, 2);
+    CHECK(graph.progress == 96);
     CHECK(s_spriteCount == 8);
     CHECK(s_polyLineCount == 12);
     CHECK(s_polyLineY[0] == 0x13E && s_polyLineY[1] == 0x13F);
@@ -129,21 +133,21 @@ int main(void) {
     CHECK(s_quadCount == 16);
 
     g_CarModelAsset = NULL;
-    g_CarSpecGraphProgress = INT_MAX;
-    g_CarSpecBars[0] = INT_MAX;
-    g_CarSpecBars[1] = INT_MIN;
-    g_CarSpecBars[2] = 2;
-    g_CarSpecBars[3] = INT_MAX;
+    graph.progress = INT_MAX;
+    graph.bars[0] = INT_MAX;
+    graph.bars[1] = INT_MIN;
+    graph.bars[2] = 2;
+    graph.bars[3] = INT_MAX;
     g_MenuAltLayout = 1;
-    DrawCarSpecGraph(INT_MAX, 5);
-    CHECK(g_CarSpecGraphProgress == 96);
-    CHECK(g_CarSpecBars[0] == 95 && g_CarSpecBars[1] == 0);
-    CHECK(g_CarSpecBars[2] == 1 && g_CarSpecBars[3] == 95);
+    DrawGraph(&graph, INT_MAX, 5);
+    CHECK(graph.progress == 96);
+    CHECK(graph.bars[0] == 95 && graph.bars[1] == 0);
+    CHECK(graph.bars[2] == 1 && graph.bars[3] == 95);
 
     s_spriteCount = 0;
     s_quadCount = 0;
     RENDER_OT_BASE = NULL;
-    DrawCarSpecGraph(1, UINT_MAX);
+    DrawGraph(&graph, 1, UINT_MAX);
     CHECK(s_spriteCount == 0 && s_quadCount == 0);
 
     puts("car spec graph tests passed");

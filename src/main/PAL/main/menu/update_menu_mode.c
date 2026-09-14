@@ -57,6 +57,10 @@ TeamName *MenuTeamName(void) {
     return &s_menuRuntime.teamName;
 }
 
+CarSpecGraph *MenuCarSpecGraph(void) {
+    return &s_menuRuntime.carSpecGraph;
+}
+
 s32 MenuRuntimeScreenState(s32 screen) {
     if ((u32)screen >= MENU_SCREEN_COUNT) return 0;
     return s_menuRuntime.screenState[screen];
@@ -160,6 +164,6 @@ void UpdateMenuMode(void) {
 
     DrawMenuTransitions();
     g_MenuScreenUpdate[s_menuRuntime.activeScreen]();
-    DrawCarSpecGraph(g_CarSpecGraphStep, CurrentMenuCarTireCompound());
+    DrawCarSpecGraph(MenuCarSpecGraph(), CurrentMenuCarTireCompound());
     DrawMenuHints(ot);
 }
