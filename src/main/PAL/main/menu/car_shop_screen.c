@@ -18,7 +18,7 @@
 static CarShop s_shop;
 
 void ResetCarShopScreen(void) {
-    s_shop = (CarShop){g_UiEmptyScript, 0};
+    s_shop = (CarShop){.modal = g_UiEmptyScript};
 }
 
 /* Everything the shop keeps on the display whichever state it is in. */
@@ -140,7 +140,7 @@ static void UpdateBuyPrompt(CarShop *shop, GameOrderingTableEntry *ot,
             } else if (price.available && g_PlayerMoney >= price.amount) {
                 PlaySoundCue(2);
                 GameMenuBusy = CAR_SHOP_SALE_COUNTDOWN;
-                g_MenuConfirmTimer = 0x23;
+                shop->confirmTimer = 0x23;
             } else {
                 PlaySoundCue(5);
                 shop->modal = g_CarShopNoFundsScript;
@@ -166,8 +166,8 @@ static void UpdateBuyPrompt(CarShop *shop, GameOrderingTableEntry *ot,
  * marked owned and the screen starts on its way out. */
 static void UpdateSaleCountdown(CarShop *shop, GameOrderingTableEntry *ot,
                                 s32 purchaseAvailable) {
-    if (g_MenuConfirmTimer > 0) {
-        g_MenuConfirmTimer -= 1;
+    if (shop->confirmTimer > 0) {
+        shop->confirmTimer -= 1;
         RunTimedDrawScript(shop->modal, &g_UiScriptProgress2, 0);
         RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1);
         DrawShopPromptButtons(ot, 1);

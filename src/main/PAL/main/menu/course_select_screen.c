@@ -220,13 +220,13 @@ static void UpdateSavePrompt(CourseSelectScreen *screen,
         == 0) {
         return;
     }
-    choice = DecideSavePrompt(g_PadPressed, GameMenuBusy, g_MenuConfirmTimer,
+    choice = DecideSavePrompt(g_PadPressed, GameMenuBusy, screen->confirmTimer,
                               g_MenuSubCursor);
     for (cue = 0; cue < choice.cueCount; cue++) {
         PlaySoundCue(choice.cues[cue]);
     }
     GameMenuBusy = choice.busy;
-    g_MenuConfirmTimer = choice.confirmTimer;
+    screen->confirmTimer = choice.confirmTimer;
     g_MenuSubCursor = (u8)choice.subCursor;
     DrawSavePromptButtons(ot, 0);
 }
@@ -241,7 +241,7 @@ static void UpdateClassPrompt(CourseSelectScreen *screen,
         return;
     }
     maxClass = MaxSelectableClass();
-    choice = DecideClassPrompt(g_PadPressed, GameMenuBusy, g_MenuConfirmTimer,
+    choice = DecideClassPrompt(g_PadPressed, GameMenuBusy, screen->confirmTimer,
                                g_MenuSubCursor, g_GrandPrixClass, maxClass,
                                screen->classChangeApplied);
     for (effect = 0; effect < choice.effectCount; effect++) {
@@ -252,7 +252,7 @@ static void UpdateClassPrompt(CourseSelectScreen *screen,
         }
     }
     GameMenuBusy = choice.busy;
-    g_MenuConfirmTimer = choice.confirmTimer;
+    screen->confirmTimer = choice.confirmTimer;
     screen->classChangeApplied = choice.changeApplied;
     g_MenuSubCursor = (u8)choice.subCursor;
     DrawClassList(ot, 0);
@@ -262,8 +262,8 @@ static void UpdateClassPrompt(CourseSelectScreen *screen,
  * starts on its way out, to the race or to the record entry. */
 static void UpdateSaveCountdown(CourseSelectScreen *screen,
                                 GameOrderingTableEntry *ot) {
-    if (g_MenuConfirmTimer > 0) {
-        g_MenuConfirmTimer -= 1;
+    if (screen->confirmTimer > 0) {
+        screen->confirmTimer -= 1;
         RunTimedDrawScript(g_CourseSelectSavePromptBanner,
                            &g_UiScriptProgress2, 0);
         RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
@@ -310,8 +310,8 @@ static void UpdateClassChange(CourseSelectScreen *screen,
     }
     g_MenuSubCursor = (u8)AddClampedMenuValue(
         g_MenuSubCursor, 0, 0, MaxSelectableClass());
-    if (g_MenuConfirmTimer > 0) {
-        g_MenuConfirmTimer -= 1;
+    if (screen->confirmTimer > 0) {
+        screen->confirmTimer -= 1;
         RunTimedDrawScript(screen->modalScript, &g_UiScriptProgress2, 1);
         DrawClassList(ot, 1);
         return;

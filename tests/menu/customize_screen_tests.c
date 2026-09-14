@@ -26,7 +26,6 @@ s32 GameMenuBusy;
 CarModelAsset *g_CarModelAsset;
 CarEntry *g_CarTable;
 s16 g_GrandPrixMode;
-s32 g_MenuConfirmTimer;
 s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuOverlayPattern;
@@ -140,7 +139,7 @@ static void Reset(void) {
     g_UiScriptProgress = 0;
     g_UiScriptProgress2 = 0;
     g_MenuSubCursor = 0;
-    g_MenuConfirmTimer = 0;
+    s_customize.confirmTimer = 0;
     s_lastCue = -1;
 }
 
@@ -183,7 +182,7 @@ int main(void) {
 
     GameMenuBusy = -5;
     g_MenuSubCursor = UINT8_MAX;
-    g_MenuConfirmTimer = 0;
+    s_customize.confirmTimer = 0;
     UpdateCustomizeScreen();
     CHECK(GameMenuBusy == 0 && s_cars[3].tireCompound == 4 &&
           g_TimeAttackCars[3].tireCompound == 4);

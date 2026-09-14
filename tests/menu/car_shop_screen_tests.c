@@ -66,7 +66,6 @@ s32 g_CarSwapFromIndex;
 s32 g_CarSwapToIndex;
 CarEntry *g_CarTable;
 u8 g_MenuBlankCaption;
-s32 g_MenuConfirmTimer;
 s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuOverlayPattern;
@@ -304,7 +303,7 @@ int main(int argc, char **argv) {
         g_MenuSubCursor = (u8)sub;
         /* Either side of the price of the car the cursor is on. */
         g_PlayerMoney = rich ? 1000000 : 0;
-        g_MenuConfirmTimer = timer;
+        shop.confirmTimer = timer;
 
         s_menuWidgets.carNameStep = 4;
         s_menuWidgets.carNameModel = 2;
@@ -340,7 +339,7 @@ int main(int argc, char **argv) {
             after[7] = g_MenuViewAngle;
             after[8] = g_MenuViewAngleTarget;
             after[9] = g_MenuSubCursor;
-            after[10] = g_MenuConfirmTimer;
+            after[10] = shop.confirmTimer;
             after[11] = s_menuWidgets.upperAltPanelStep;
             after[12] = s_menuWidgets.lowerAltPanelStep;
             after[13] = g_MenuOverlayPattern;
@@ -454,7 +453,7 @@ int main(int argc, char **argv) {
         sprintf(label, "== money %d", g_PlayerMoney);
         Record(label, NULL, 0);
         UpdateCarShop(&shop);
-        RECORD("afford", GameMenuBusy, g_MenuConfirmTimer,
+        RECORD("afford", GameMenuBusy, shop.confirmTimer,
                ScriptId(shop.modal));
         steps++;
     }
@@ -495,7 +494,7 @@ int main(int argc, char **argv) {
 
     GameMenuBusy = -3;
     g_UiScriptProgress2 = 0;
-    g_MenuConfirmTimer = 0;
+    shop.confirmTimer = 0;
     s_cars[4].enabled = 0;
     g_TimeAttackCars[4].enabled = 0;
     UpdateCarShop(&shop);

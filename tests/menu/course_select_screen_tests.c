@@ -41,7 +41,6 @@ s32 g_GrandPrixClass;
 s16 g_GrandPrixMode;
 s16 g_GrandPrixSeries;
 u8 g_MenuBlankCaption;
-s32 g_MenuConfirmTimer;
 s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
 
@@ -284,7 +283,7 @@ int main(int argc, char **argv) {
         g_PadPressed = buttons[pb];
         g_PadHeld = 0;
         g_MenuSubCursor = (u8)sub;
-        g_MenuConfirmTimer = timer;
+        s_courseSelect.confirmTimer = timer;
         g_MenuViewOffset = offsets[off];
         s_outgoingProgress = off;
         s_courseSelect.classChangeApplied = applied;
@@ -332,7 +331,7 @@ int main(int argc, char **argv) {
             after[1] = s_courseSelect.option;
             after[2] = g_CourseIndex;
             after[3] = g_MenuSubCursor;
-            after[4] = g_MenuConfirmTimer;
+            after[4] = s_courseSelect.confirmTimer;
             after[5] = g_MenuScreen;
             after[6] = g_MenuHandlerIndex;
             after[7] = g_MenuOutgoingHandlerIndex;
@@ -422,7 +421,7 @@ int main(int argc, char **argv) {
             s_courseSelect.cardPendingGrade = 0;
             s_courseSelect.modalScript = NULL;
             g_MenuSubCursor = 0;
-            g_MenuConfirmTimer = 0;
+            s_courseSelect.confirmTimer = 0;
 
             sprintf(label, "== browse held%04x/settle%d/pending%d/allow%d/"
                     "gp%d/course%d", held[hb], settleOffsets[se],
@@ -478,7 +477,7 @@ int main(int argc, char **argv) {
             g_PadPressed = 0;
             g_PadHeld = 0;
             g_MenuSubCursor = 0;
-            g_MenuConfirmTimer = 0;
+            s_courseSelect.confirmTimer = 0;
             g_MenuViewOffset = offs[ofi];
             s_outgoingProgress = prog;
             s_courseSelect.classChangeApplied = 0;
@@ -847,7 +846,7 @@ int main(int argc, char **argv) {
     GameMenuBusy = -5;
     g_CourseProgress = NULL;
     s_courseSelect.classChangeApplied = 0;
-    g_MenuConfirmTimer = 0;
+    s_courseSelect.confirmTimer = 0;
     s_curtain = 0x19;
     s_progressResets = 0;
     UpdateCourseSelectScreen();
@@ -863,7 +862,7 @@ int main(int argc, char **argv) {
     s_progress.maxClassReached = 2;
     g_MenuSubCursor = UINT8_MAX;
     s_courseSelect.classChangeApplied = 0;
-    g_MenuConfirmTimer = 0;
+    s_courseSelect.confirmTimer = 0;
     s_curtain = 0x19;
     s_progressResets = 0;
     UpdateCourseSelectScreen();

@@ -47,7 +47,6 @@ TimedDrawCommand g_EngineerShopNoFundsScript[2];
 TimedDrawCommand g_EngineerShopScreenScript[68];
 TimedDrawCommand g_EngineerShopTuneUpPromptScript[5];
 u8 g_MenuBlankCaption;
-s32 g_MenuConfirmTimer;
 s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuOverlayPattern;
@@ -297,7 +296,7 @@ int main(int argc, char **argv) {
         g_PlayerCarIndex = cars[ci];
         /* One short of the asking price, exactly it, and comfortably over. */
         g_PlayerMoney = g_CarTuneUpPriceTable[cars[ci] & 7] + (rich - 1);
-        g_MenuConfirmTimer = timer;
+        s_shop.confirmTimer = timer;
 
         s_menuWidgets.carNameStep = 4;
         s_menuWidgets.carNameModel = 0;
@@ -326,7 +325,7 @@ int main(int argc, char **argv) {
             after[1] = s_shop.option;
             after[2] = g_PlayerMoney;
             after[3] = g_MenuSubCursor;
-            after[4] = g_MenuConfirmTimer;
+            after[4] = s_shop.confirmTimer;
             after[5] = g_MenuOverlayPattern;
             after[6] = g_MenuScreen;
             after[7] = g_MenuHandlerIndex;
@@ -392,7 +391,7 @@ int main(int argc, char **argv) {
 
     GameMenuBusy = -2;
     g_UiScriptProgress2 = 0;
-    g_MenuConfirmTimer = 0;
+    s_shop.confirmTimer = 0;
     UpdateEngineerShopScreen();
     if (GameMenuBusy != 0) {
         puts("FAIL an invalid tune-up price completed the countdown");
@@ -434,7 +433,7 @@ int main(int argc, char **argv) {
     GameMenuBusy = ENGINEER_SHOP_TUNE_UP_PROMPT;
     g_PadPressed = PAD_CONFIRM;
     g_MenuSubCursor = 1;
-    g_MenuConfirmTimer = 17;
+    s_shop.confirmTimer = 17;
     g_PlayerMoney = 5000;
     s_cars[5].modelVariant = 2;
     s_upgradedModelRequests = 0;
@@ -442,7 +441,7 @@ int main(int argc, char **argv) {
     UpdateEngineerShopScreen();
     if (s_upgradedModelRequests != 1 ||
         GameMenuBusy != ENGINEER_SHOP_TUNE_UP_PROMPT ||
-        g_MenuConfirmTimer != 17 || g_PlayerMoney != 5000 ||
+        s_shop.confirmTimer != 17 || g_PlayerMoney != 5000 ||
         s_cars[5].modelVariant != 2) {
         puts("FAIL rejected model request started a tune-up");
         return 1;

@@ -54,7 +54,7 @@ TeamLogo *MenuTeamLogo(void) { return &s_teamLogo; }
 CarSpecGraph *MenuCarSpecGraph(void) { return &s_carSpecGraph; }
 void ResetCarShopScreen(void) { s_carShopResets++; }
 void ResetEngineerShopScreen(void) {
-    s_engineerShop = (EngineerShop){g_UiEmptyScript, 0};
+    s_engineerShop = (EngineerShop){.modalScript = g_UiEmptyScript};
     s_engineerShopResets++;
 }
 void ResetMenuCar(void) { s_menuCarResets++; }
@@ -128,7 +128,10 @@ static void PoisonEntryState(void) {
     g_UiScriptProgress = 3;
     g_UiScriptProgress2 = 4;
     s_menuWidgets.hintProgress = 5;
-    g_MenuConfirmTimer = 6;
+    s_courseSelect.confirmTimer = 6;
+    s_engineerShop.confirmTimer = 6;
+    s_customize.confirmTimer = 6;
+    s_teamLogo.confirmTimer = 6;
     GameMenuBusy = 6;
     s_menuWidgets.hintStep = 7;
     s_courseSelect.classChangeApplied = 8;
@@ -186,7 +189,10 @@ static int CheckCommonEntryState(const GameRaceProgress *progress) {
     CHECK(g_MenuViewAngleTarget == MENU_COURSE_VIEW_REBASE_SPAN);
     CHECK(g_UiScriptProgress == 0 && g_UiScriptProgress2 == 0);
     CHECK(s_menuWidgets.hintProgress == 0 && GameMenuBusy == 0);
-    CHECK(g_MenuConfirmTimer == 0 && s_menuWidgets.hintStep == 0);
+    CHECK(s_courseSelect.confirmTimer == 0 &&
+          s_engineerShop.confirmTimer == 0 &&
+          s_customize.confirmTimer == 0 && s_teamLogo.confirmTimer == 0);
+    CHECK(s_menuWidgets.hintStep == 0);
     CHECK(s_courseSelect.classChangeApplied == 0 && s_courseSelect.swapDelay == 0);
     CHECK(g_MenuViewOffset == 0 && g_MenuViewOffsetTarget == 0);
     CHECK(s_courseSelect.cardSpin == 0 && s_courseSelect.cardSpinTarget == 0);

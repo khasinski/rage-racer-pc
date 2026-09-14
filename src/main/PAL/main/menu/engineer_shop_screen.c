@@ -95,7 +95,7 @@ static void UpdateTuneUpPrompt(EngineerShop *shop, GameOrderingTableEntry *ot,
             }
             PlaySoundCue(2);
             GameMenuBusy = ENGINEER_SHOP_TUNE_UP_COUNTDOWN;
-            g_MenuConfirmTimer = 0x23;
+            shop->confirmTimer = 0x23;
         } else if (g_MenuSubCursor != 0) {
             PlaySoundCue(5);
             shop->modalScript = g_EngineerShopNoFundsScript;
@@ -124,8 +124,8 @@ static void UpdateTuneUpPrompt(EngineerShop *shop, GameOrderingTableEntry *ot,
  */
 static void UpdateTuneUpCountdown(EngineerShop *shop, GameOrderingTableEntry *ot,
                                   s32 purchaseAvailable) {
-    if (g_MenuConfirmTimer > 0) {
-        g_MenuConfirmTimer -= 1;
+    if (shop->confirmTimer > 0) {
+        shop->confirmTimer -= 1;
         RunTimedDrawScript(shop->modalScript, &g_UiScriptProgress2, 0);
         RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1);
         DrawShopPromptButtons(ot, 1);
@@ -201,7 +201,7 @@ static void UpdateEngineerShopOutgoing(EngineerShop *shop, ShopPrice price) {
 void ResetEngineerShopScreen(void) {
     EngineerShop *shop = MenuEngineerShop();
 
-    *shop = (EngineerShop){g_UiEmptyScript, 0};
+    *shop = (EngineerShop){.modalScript = g_UiEmptyScript};
 }
 
 void UpdateEngineerShopScreen(void) {

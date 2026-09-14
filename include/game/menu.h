@@ -45,6 +45,7 @@ extern s32 GameMenuBusy;
 extern s32 GameMenuCursorAnim;
 typedef struct CourseSelectScreen {
     s32 option;
+    s32 confirmTimer;
     const TimedDrawCommand *modalScript;
     s32 classChangeApplied;
     s32 curtainSlide;
@@ -65,6 +66,7 @@ typedef struct BrowseArrows {
 typedef struct EngineerShop {
     const TimedDrawCommand *modalScript;
     s32 option;
+    s32 confirmTimer;
 } EngineerShop;
 
 typedef struct PaintColor {
@@ -77,6 +79,7 @@ typedef struct Customize {
     const TimedDrawCommand *popupScript;
     s32 option;
     s32 tirePulsePhase;
+    s32 confirmTimer;
 } Customize;
 
 typedef struct LogoSample {
@@ -97,6 +100,7 @@ typedef struct TeamName {
 typedef struct TeamLogo {
     const TimedDrawCommand *subPanelScript;
     s32 option;
+    s32 confirmTimer;
     s32 colorCycle;
     s32 fade;
     s32 zoom;
@@ -469,7 +473,6 @@ typedef enum FrontendState {
     FRONTEND_STATE_COUNT
 } FrontendState;
 
-extern s32 g_MenuConfirmTimer;
 extern u8 g_MenuSubCursor;
 extern s32 g_MenuViewSpin;
 extern s16 g_NegconMaxTwistSaved;

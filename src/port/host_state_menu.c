@@ -114,7 +114,6 @@ s32 g_CarTuneUpPriceTable[31] = {
 u8 g_MenuSubCursor;
 s32 GameMenuCursor;
 s32 g_UiScriptProgress2;
-s32 g_MenuConfirmTimer;
 s32 GameMenuBusy;
 s32 g_MenuOverlayPattern;
 s32 g_CarShopUnlockAll;

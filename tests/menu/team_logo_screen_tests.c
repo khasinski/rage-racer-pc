@@ -23,7 +23,6 @@ void MenuBeginExit(s32 screen) {
 }
 
 s32 GameMenuBusy;
-s32 g_MenuConfirmTimer;
 s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuOverlayPattern;
@@ -149,7 +148,7 @@ static void Reset(void) {
     g_MenuHandlerIndex = 0;
     g_MenuOutgoingHandlerIndex = 0;
     g_MenuOverlayPattern = 0;
-    g_MenuConfirmTimer = 0;
+    s_teamLogo.confirmTimer = 0;
     g_MenuSubCursor = 0;
     g_PadPressed = 0;
     s_teamLogo.option = 0;
@@ -203,7 +202,7 @@ int main(void) {
     g_PadPressed = PAD_CONFIRM;
     UpdateTeamLogoScreen();
     CHECK(GameMenuBusy == -2);
-    CHECK(g_MenuConfirmTimer == 0x23);
+    CHECK(s_teamLogo.confirmTimer == 0x23);
 
     Reset();
     GameMenuBusy = -3;
@@ -235,9 +234,9 @@ int main(void) {
 
     Reset();
     GameMenuBusy = -2;
-    g_MenuConfirmTimer = INT_MAX;
+    s_teamLogo.confirmTimer = INT_MAX;
     UpdateTeamLogoScreen();
-    CHECK(g_MenuConfirmTimer == 34 && GameMenuBusy == -2);
+    CHECK(s_teamLogo.confirmTimer == 34 && GameMenuBusy == -2);
 
     Reset();
     GameMenuBusy = INT_MIN;

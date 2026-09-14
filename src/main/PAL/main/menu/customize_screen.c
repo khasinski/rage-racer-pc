@@ -129,7 +129,7 @@ static void UpdateTireDialog(Customize *customize) {
     if (action == MENU_DIALOG_CONFIRM) {
         PlaySoundCue(2);
         GameMenuBusy = CUSTOMIZE_TIRE_CONFIRMING;
-        g_MenuConfirmTimer = CUSTOMIZE_CONFIRM_FRAMES;
+        customize->confirmTimer = CUSTOMIZE_CONFIRM_FRAMES;
     } else if (action == MENU_DIALOG_CANCEL) {
         PlaySoundCue(3);
         GameMenuBusy = CUSTOMIZE_IDLE;
@@ -161,7 +161,7 @@ static void UpdateTransmissionDialog(Customize *customize,
     if (action == MENU_DIALOG_CONFIRM) {
         PlaySoundCue(2);
         GameMenuBusy = CUSTOMIZE_TRANSMISSION_CONFIRMING;
-        g_MenuConfirmTimer = CUSTOMIZE_CONFIRM_FRAMES;
+        customize->confirmTimer = CUSTOMIZE_CONFIRM_FRAMES;
         g_CarTable[g_PlayerCarIndex].transmission = g_MenuSubCursor;
         g_TimeAttackCars[g_PlayerCarIndex].transmission = g_MenuSubCursor;
     } else if (action == MENU_DIALOG_CANCEL) {
@@ -200,8 +200,8 @@ static void UpdateTireConfirmation(Customize *customize) {
     }
     g_MenuSubCursor = (u8)AddClampedMenuValue(
         g_MenuSubCursor, 0, 0, TIRE_COMPOUND_LAST);
-    if (g_MenuConfirmTimer > 0) {
-        g_MenuConfirmTimer--;
+    if (customize->confirmTimer > 0) {
+        customize->confirmTimer--;
         RunTimedDrawScript(customize->popupScript, &g_UiScriptProgress2, 1);
         DrawTireCompoundSlider(MenuCustomize(), g_MenuSubCursor, 1);
         return;
@@ -216,8 +216,8 @@ static void UpdateTireConfirmation(Customize *customize) {
 
 static void UpdateTransmissionConfirmation(Customize *customize,
                                            GameOrderingTableEntry *ot) {
-    if (g_MenuConfirmTimer > 0) {
-        g_MenuConfirmTimer--;
+    if (customize->confirmTimer > 0) {
+        customize->confirmTimer--;
         RunTimedDrawScript(customize->popupScript, &g_UiScriptProgress2, 1);
         DrawTransmissionChoice(ot, 1);
         return;

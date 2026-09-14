@@ -479,6 +479,7 @@ extern u8 g_DesignModeCellMask[6][6];
 typedef struct CarShop {
     const TimedDrawCommand *modal;
     s32 option;
+    s32 confirmTimer;
 } CarShop;
 
 void UpdateCarShop(CarShop *shop);

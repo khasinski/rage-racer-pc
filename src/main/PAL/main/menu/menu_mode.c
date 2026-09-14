@@ -78,7 +78,6 @@ static void ResetMenuNavigation(void) {
     g_UiScriptProgress = 0;
     g_UiScriptProgress2 = 0;
     MenuWidgetState()->hintProgress = 0;
-    g_MenuConfirmTimer = 0;
     GameMenuBusy = 0;
     MenuWidgetState()->hintStep = 0;
     courseSelect->swapDelay = 0;

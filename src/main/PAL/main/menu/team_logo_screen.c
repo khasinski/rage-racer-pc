@@ -105,7 +105,7 @@ static void UpdateTeamLogoSavePrompt(TeamLogo *logo,
             if (g_MenuSubCursor != 0) {
                 PlaySoundCue(2);
                 GameMenuBusy = TEAM_LOGO_SAVE_COUNTDOWN;
-                g_MenuConfirmTimer = TEAM_LOGO_SAVE_CONFIRM_FRAMES;
+                logo->confirmTimer = TEAM_LOGO_SAVE_CONFIRM_FRAMES;
             } else {
                 PlaySoundCue(3);
                 GameMenuBusy = 0;
@@ -127,7 +127,7 @@ static void UpdateTeamLogoSavePrompt(TeamLogo *logo,
 
 static void UpdateTeamLogoSaveCountdown(TeamLogo *logo,
                                         GameOrderingTableEntry *ot) {
-    if (g_MenuConfirmTimer <= 0) {
+    if (logo->confirmTimer <= 0) {
         RunTimedDrawScript(g_TeamLogoScreenScript2, &g_UiScriptProgress2, -1);
         RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
         RunTimedDrawScript(logo->subPanelScript, &g_UiScriptProgress2, 0);
@@ -136,7 +136,7 @@ static void UpdateTeamLogoSaveCountdown(TeamLogo *logo,
             g_MenuOverlayPattern = 1;
         }
     } else {
-        g_MenuConfirmTimer--;
+        logo->confirmTimer--;
         RunTimedDrawScript(g_TeamLogoScreenScript2, &g_UiScriptProgress2, 0);
         RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
         RunTimedDrawScript(logo->subPanelScript, &g_UiScriptProgress2, 1);
@@ -237,8 +237,8 @@ void UpdateTeamLogoScreen(void) {
         logo->option, 0, 0, TEAM_LOGO_OPTION_COUNT - 1);
     g_MenuSubCursor = g_MenuSubCursor != 0;
     if (state == TEAM_LOGO_SAVE_COUNTDOWN) {
-        g_MenuConfirmTimer = AddClampedMenuValue(
-            g_MenuConfirmTimer, 0, 0, TEAM_LOGO_SAVE_CONFIRM_FRAMES);
+        logo->confirmTimer = AddClampedMenuValue(
+            logo->confirmTimer, 0, 0, TEAM_LOGO_SAVE_CONFIRM_FRAMES);
     }
     if (state == TEAM_LOGO_IDLE) {
         UpdateTeamLogoIdle(logo);
