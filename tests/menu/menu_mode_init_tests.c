@@ -27,6 +27,7 @@ static s32 s_carShopResets;
 static s32 s_engineerShopResets;
 static EngineerShop s_engineerShop;
 static Customize s_customize;
+static DesignMode s_designMode;
 static LogoSample s_logo;
 static TeamLogo s_teamLogo;
 static s32 s_menuCarResets;
@@ -40,6 +41,7 @@ s32 g_MenuScreen;
 void MenuRuntimeReset(void) {
     memset(&s_courseSelect, 0, sizeof(s_courseSelect));
     memset(&s_customize, 0, sizeof(s_customize));
+    memset(&s_designMode, 0, sizeof(s_designMode));
     memset(&s_logo, 0, sizeof(s_logo));
     memset(&s_teamLogo, 0, sizeof(s_teamLogo));
     memset(&s_carSpecGraph, 0, sizeof(s_carSpecGraph));
@@ -49,6 +51,7 @@ void MenuRuntimeReset(void) {
 }
 CourseSelectScreen *MenuCourseSelect(void) { return &s_courseSelect; }
 Customize *MenuCustomize(void) { return &s_customize; }
+DesignMode *MenuDesignMode(void) { return &s_designMode; }
 LogoSample *MenuLogoSample(void) { return &s_logo; }
 TeamLogo *MenuTeamLogo(void) { return &s_teamLogo; }
 CarSpecGraph *MenuCarSpecGraph(void) { return &s_carSpecGraph; }
@@ -163,7 +166,7 @@ static void PoisonEntryState(void) {
     s_courseSelect.option = 25;
     s_carSelect.cursor = 26;
     s_customize.option = 27;
-    g_DesignModeOption = 28;
+    s_designMode.option = 28;
     s_displayMask = -1;
     s_displaySetups = 0;
     s_drawResetCalls = 0;
@@ -213,7 +216,7 @@ static int CheckCommonEntryState(const GameRaceProgress *progress) {
     CHECK(g_CarShopUnlockAll == 0);
     CHECK(g_MenuScreen == MENU_SCREEN_BOOTSTRAP);
     CHECK(s_courseSelect.option == 0 && s_carSelect.cursor == 0);
-    CHECK(s_customize.option == 0 && g_DesignModeOption == 0);
+    CHECK(s_customize.option == 0 && s_designMode.option == 0);
     CHECK(s_drawResetCalls == 3);
     CHECK(s_carShopResets == 1);
     CHECK(s_engineerShopResets == 1);

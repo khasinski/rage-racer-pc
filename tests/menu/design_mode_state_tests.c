@@ -23,8 +23,8 @@ void MenuBeginExit(s32 screen) {
     g_MenuOutgoingHandlerIndex = screen;
 }
 
-u8 g_DesignModeCellMask[6][6];
-s32 g_DesignModeOption;
+static DesignMode s_designMode;
+DesignMode *MenuDesignMode(void) { return &s_designMode; }
 s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuOverlayPattern;
@@ -119,7 +119,7 @@ s32 RunTimedDrawScript(const TimedDrawCommand *commands, s32 *progress,
     } while (0)
 
 static void ResetState(void) {
-    g_DesignModeOption = 0;
+    s_designMode.option = 0;
     g_MenuHandlerIndex = MENU_SCREEN_DESIGN_MODE;
     g_MenuOutgoingHandlerIndex = -1;
     g_MenuOverlayPattern = 0;
@@ -143,7 +143,7 @@ static void ResetState(void) {
 
 static int CheckChoice(s32 option, s32 expectedBusy, s32 expectedCue) {
     ResetState();
-    g_DesignModeOption = option;
+    s_designMode.option = option;
     g_PadPressed = PAD_CONFIRM;
     UpdateDesignModeScreen();
     CHECK(GameMenuBusy == expectedBusy);
@@ -166,13 +166,11 @@ int main(void) {
     GameOrderingTableEntry ot[4];
     s32 progress = 123;
 
-    memset(&g_DesignModeCellMask, 0, sizeof(g_DesignModeCellMask));
     memset(ot, 0, sizeof(ot));
     RENDER_OT_BASE = ot;
-    g_DesignModeCellMask[2][3] = 1;
     CHECK(DrawDesignModeScreen(&progress, 0) == 0 && s_spriteCalls == 0);
     CHECK(DrawDesignModeScreen(&progress, MENU_FADE_MAX) == MENU_FADE_MAX);
-    CHECK(s_spriteCalls == 38 && s_selectedCellSprites == 1);
+    CHECK(s_spriteCalls == 38 && s_selectedCellSprites == 11);
 
     s_spriteCalls = 0;
     RENDER_OT_BASE = NULL;
@@ -186,12 +184,12 @@ int main(void) {
     if (CheckChoice(2, 3, 2)) return 1;
     if (CheckChoice(3, 4, 3)) return 1;
     if (CheckChoice(INT_MIN, 1, 2)) return 1;
-    CHECK(g_DesignModeOption == 0);
+    CHECK(s_designMode.option == 0);
     if (CheckChoice(INT_MAX, 4, 3)) return 1;
-    CHECK(g_DesignModeOption == 3);
+    CHECK(s_designMode.option == 3);
 
     ResetState();
-    g_DesignModeOption = 2;
+    s_designMode.option = 2;
     g_PlayerCarIndex = CUSTOM_PAINT_CAR_COUNT;
     g_PadPressed = PAD_CONFIRM;
     UpdateDesignModeScreen();

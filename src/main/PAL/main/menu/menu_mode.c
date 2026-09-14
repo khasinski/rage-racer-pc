@@ -100,7 +100,6 @@ static void ResetMenuNavigation(void) {
     MenuWidgetState()->hintButtonsVisible = 1;
     g_CarShopUnlockAll = 0;
     MenuCarSelect()->cursor = 0;
-    g_DesignModeOption = 0;
 }
 
 /* Shared widgets outside the screen transition table own these counters. */

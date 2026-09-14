@@ -85,6 +85,10 @@ typedef struct Customize {
     s32 modalCursor;
 } Customize;
 
+typedef struct DesignMode {
+    s32 option;
+} DesignMode;
+
 typedef struct LogoSample {
     const TimedDrawCommand *subPanelScript;
     s32 cursor;
@@ -190,6 +194,7 @@ typedef struct MenuRuntime {
     EngineerShop engineerShop;
     PaintColor paintColor;
     Customize customize;
+    DesignMode designMode;
     LogoSample logoSample;
     TeamName teamName;
     TeamLogo teamLogo;
@@ -209,6 +214,7 @@ BrowseArrows *MenuBrowseArrows(void);
 EngineerShop *MenuEngineerShop(void);
 PaintColor *MenuPaintColor(void);
 Customize *MenuCustomize(void);
+DesignMode *MenuDesignMode(void);
 LogoSample *MenuLogoSample(void);
 TeamName *MenuTeamName(void);
 TeamLogo *MenuTeamLogo(void);
@@ -467,7 +473,6 @@ extern s32 g_CarShopUnlockAll;
 extern s32 g_BgmTrackCount;
 extern s32 g_CarSwapFromIndex;
 extern s32 g_CarSwapToIndex;
-extern s32 g_DesignModeOption;
 typedef enum FrontendState {
     FRONTEND_STATE_INVALID = -1,
     FRONTEND_STATE_TITLE,

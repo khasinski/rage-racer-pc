@@ -49,6 +49,10 @@ Customize *MenuCustomize(void) {
     return &s_menuRuntime.customize;
 }
 
+DesignMode *MenuDesignMode(void) {
+    return &s_menuRuntime.designMode;
+}
+
 LogoSample *MenuLogoSample(void) {
     return &s_menuRuntime.logoSample;
 }

@@ -71,7 +71,6 @@ extern Rgb g_PaintColorTable[MENU_PAINT_COLOR_COUNT];
 extern SVec g_CourseCardVerts[4];
 extern Vec4 g_MenuCarPivotOffset;
 extern const Vec4 g_TeamNameCharScale;
-extern u8 g_DesignModeCellMask[6][6];
 extern unsigned char g_CarSoundVolumeScales[128];
 extern unsigned char g_IndexedEffects[36];
 extern unsigned char g_SoundModes[96];
@@ -171,7 +170,6 @@ static const HostStateBlob s_blobs[] = {
     {"g_CourseCardVerts", (const unsigned char *)g_CourseCardVerts, 32},
     {"g_MenuCarPivotOffset", (const unsigned char *)&g_MenuCarPivotOffset, 16},
     {"g_TeamNameCharScale", (const unsigned char *)&g_TeamNameCharScale, 16},
-    {"g_DesignModeCellMask", (const unsigned char *)&g_DesignModeCellMask, 36},
     {"g_CarSoundVolumeScales", g_CarSoundVolumeScales, 128},
     {"g_IndexedEffects", g_IndexedEffects, 36},
     {"g_SoundModes", g_SoundModes, 96},
@@ -280,7 +278,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the canonical host constants alone. */
-    const unsigned long expected = 1294275143UL;
+    const unsigned long expected = 3930866870UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

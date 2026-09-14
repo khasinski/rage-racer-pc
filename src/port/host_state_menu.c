@@ -46,14 +46,6 @@ SVec g_CourseCardVerts[4] = {
 };
 Vec4 g_MenuCarPivotOffset = {0, 0, 42, 0};
 const Vec4 g_TeamNameCharScale = {384, 384, 384, 0};
-u8 g_DesignModeCellMask[6][6] = {
-        {0, 0, 0, 0, 1, 0},
-        {0, 0, 1, 0, 0, 0},
-        {0, 0, 1, 0, 0, 0},
-        {1, 1, 1, 0, 0, 0},
-        {1, 0, 1, 0, 0, 0},
-        {1, 1, 1, 0, 0, 0}
-};
 Rect g_TeamLogoClutRect = {16, 480, 16, 1};
 Rect g_TeamLogoRect = {656, 48, 16, 64};
 s16 g_NegconPlayPercent[4] = {
@@ -128,7 +120,6 @@ CarModelAsset *g_CarModelAsset;
 s32 g_GrandPrixClass;
 s32 g_BgmShuffleIndex;
 s32 g_GrandPrixRound;
-s32 g_DesignModeOption;
 s32 g_ShopCarIndex;
 CarEntry *g_CarTable;
 s32 g_PlayerMoney;
