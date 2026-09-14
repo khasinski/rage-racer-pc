@@ -2,6 +2,7 @@
 #define GAME_SCENE_RUNTIME_H
 
 #include "game/asset.h"
+#include "game/memcard_types.h"
 #include "game/scene.h"
 
 /*
@@ -22,11 +23,13 @@ typedef struct SceneRuntime {
     u32 generation;
     u32 assetGeneration;
     SceneTransitionRuntime transition;
+    MemoryCardAction memoryCardAction;
 } SceneRuntime;
 
 void SceneRuntimeBeforeDispatch(s32 scene);
 void SceneRuntimeAfterDispatch(s32 scene);
 const SceneRuntime *SceneRuntimeCurrent(void);
+MemoryCardAction *SceneRuntimeMemoryCardAction(void);
 /* A result belongs to a scene only when it was the active transaction at the
  * point that scene began. */
 const AssetLoadTransaction *SceneRuntimeAssetResult(AssetRequestType request);

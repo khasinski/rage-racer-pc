@@ -2,6 +2,9 @@
 #include "game/memcard.h"
 #include "game/memcard_internal.h"
 #include "game/menu.h"
+#include "game/scene_runtime.h"
+
+#include <string.h>
 
 void StartMenuExitFade(void) {
     StopMemoryCardEvents();
@@ -21,12 +24,14 @@ static void ResetMemoryCardMenuSession(void) {
     g_McSettleTicks = 0;
 }
 
-static void InitializeMemoryCardMenu(s32 fromLoadMenu) {
+static void InitializeMemoryCardMenu(MemoryCardAction *action,
+                                     s32 fromLoadMenu) {
     g_McMenuRowCursor = fromLoadMenu != 0 ? 2 : 0;
     g_McMenuState = MC_MENU_STATE_NO_CARD;
     g_SceneTimer = 0;
     g_McMenuPage = 0;
     g_McFromLoadMenu = fromLoadMenu;
+    memset(action, 0, sizeof(*action));
     ResetMemoryCardMenuSession();
     StartMemoryCardEvents();
     g_McFadeStep = -8;
@@ -37,7 +42,7 @@ static void InitializeMemoryCardMenu(s32 fromLoadMenu) {
 void EnterMemoryCardMenu(void) {
     SetDispMask(0);
     SetupDisplay480(0, 0, 0);
-    InitializeMemoryCardMenu(0);
+    InitializeMemoryCardMenu(SceneRuntimeMemoryCardAction(), 0);
 }
 
 void EnterMemoryCardMenuFromLoad(void) {
@@ -49,5 +54,5 @@ void EnterMemoryCardMenuFromLoad(void) {
                           g_ImageBlockSize)) {
         return;
     }
-    InitializeMemoryCardMenu(1);
+    InitializeMemoryCardMenu(SceneRuntimeMemoryCardAction(), 1);
 }

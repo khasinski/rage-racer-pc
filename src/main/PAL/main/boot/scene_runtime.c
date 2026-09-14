@@ -50,6 +50,10 @@ const SceneRuntime *SceneRuntimeCurrent(void) {
     return &s_runtime;
 }
 
+MemoryCardAction *SceneRuntimeMemoryCardAction(void) {
+    return &s_runtime.memoryCardAction;
+}
+
 const AssetLoadTransaction *SceneRuntimeAssetResult(AssetRequestType request) {
     return AssetLoadTransactionResult(request, s_runtime.assetGeneration);
 }

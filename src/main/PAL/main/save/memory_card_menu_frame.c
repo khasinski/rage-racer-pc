@@ -2,7 +2,7 @@
 #include "game/memcard_internal.h"
 #include "game/menu.h"
 
-s32 UpdateMemoryCardFade(void) {
+s32 UpdateMemoryCardFade(MemoryCardAction *action) {
     const s32 step = g_McFadeStep;
 
     if (g_SceneTimer == 2) SetDispMask(1);
@@ -14,11 +14,11 @@ s32 UpdateMemoryCardFade(void) {
     if (step < 0 && g_McFadeLevel == 0) {
         g_McFadeStep = 0;
     } else if (step > 0) {
-        g_McActionBusy = 1;
+        action->busy = 1;
         if (g_McFadeLevel == 0xFF) {
             g_McFadeStep = 0;
             g_McFadeLevel = 0;
-            g_McActionBusy = 0;
+            action->busy = 0;
             g_SceneId = 2;
         }
     }
@@ -26,7 +26,7 @@ s32 UpdateMemoryCardFade(void) {
     return step != 0;
 }
 
-s32 AdvanceMemoryCardMenuStartup(void) {
+s32 AdvanceMemoryCardMenuStartup(MemoryCardAction *action) {
     s32 next;
 
     if ((u32)g_SceneTimer >= 5) {
@@ -42,11 +42,11 @@ s32 AdvanceMemoryCardMenuStartup(void) {
         g_McMenuPhase = MC_PROMPT_NONE;
         g_McMenuSelection = MC_MENU_STATE_BUSY;
         g_McMenuState = MC_MENU_STATE_BUSY;
-        g_McActionState = 0;
-        g_McActionResult = 0;
-        g_McConfirmChoice = 0;
-        g_McActionTimer = 0;
-        g_McActionBusy = 0;
+        action->state = 0;
+        action->result = 0;
+        action->confirmChoice = 0;
+        action->timer = 0;
+        action->busy = 0;
     }
     return 0;
 }

@@ -26,20 +26,20 @@ enum {
  * A format or a save running, stepping through its own stages while the
  * screen says it is busy.
  */
-void RunCardWorkingActions(s32 fadeBusy) {
+void RunCardWorkingActions(MemoryCardAction *action, s32 fadeBusy) {
     g_McMenuPhase = MC_PROMPT_ACCESSING;
-    switch (g_McActionState) {
+    switch (action->state) {
     case CARD_WORK_WAIT_FOR_SCENE:
         if ((u32)g_SceneTimer < CARD_WORK_START_FRAME) break;
         g_McSettleTicks = 0;
-        g_McActionTimer = CARD_WORK_CANCEL_DELAY_FRAMES;
-        g_McActionState = CARD_WORK_WAIT_FOR_CARD;
+        action->timer = CARD_WORK_CANCEL_DELAY_FRAMES;
+        action->state = CARD_WORK_WAIT_FOR_CARD;
         break;
     case CARD_WORK_WAIT_FOR_CARD:
-        g_McActionBusy = 0;
-        if (g_McActionTimer > 0) g_McActionTimer--;
+        action->busy = 0;
+        if (action->timer > 0) action->timer--;
         if ((g_PadPressed & PAD_CANCEL) &&
-            g_McActionTimer == 0) {
+            action->timer == 0) {
             g_McSettleTicks = 0;
             if (fadeBusy == 0) {
                 PlaySoundCue(3);
@@ -50,34 +50,34 @@ void RunCardWorkingActions(s32 fadeBusy) {
         g_McSettleTicks++;
         if (g_McSettleTicks < CARD_WORK_READY_FRAMES) break;
         g_McSettleTicks = 0;
-        g_McActionState = CARD_WORK_BEGIN_STATUS_DELAY;
+        action->state = CARD_WORK_BEGIN_STATUS_DELAY;
         break;
     case CARD_WORK_BEGIN_STATUS_DELAY:
-        g_McActionBusy = 1;
-        g_McActionTimer = CARD_WORK_DELAY_FRAMES;
-        g_McActionState = CARD_WORK_WAIT_STATUS_DELAY;
+        action->busy = 1;
+        action->timer = CARD_WORK_DELAY_FRAMES;
+        action->state = CARD_WORK_WAIT_STATUS_DELAY;
         break;
     case CARD_WORK_WAIT_STATUS_DELAY:
-        if (!MemoryCardCountdownElapsed(&g_McActionTimer)) break;
-        g_McActionState = CARD_WORK_REFRESH_STATUS;
+        if (!MemoryCardCountdownElapsed(&action->timer)) break;
+        action->state = CARD_WORK_REFRESH_STATUS;
         break;
     case CARD_WORK_REFRESH_STATUS:
         g_McSlotUsedMask = RefreshMemoryCardSaveStatus(g_McSaveHeaders);
-        g_McActionState = CARD_WORK_BEGIN_SETTLE_DELAY;
+        action->state = CARD_WORK_BEGIN_SETTLE_DELAY;
         break;
     case CARD_WORK_BEGIN_SETTLE_DELAY:
-        g_McActionTimer = CARD_WORK_DELAY_FRAMES;
-        g_McActionState = CARD_WORK_WAIT_SETTLE_DELAY;
+        action->timer = CARD_WORK_DELAY_FRAMES;
+        action->state = CARD_WORK_WAIT_SETTLE_DELAY;
         break;
     case CARD_WORK_WAIT_SETTLE_DELAY:
-        if (!MemoryCardCountdownElapsed(&g_McActionTimer)) break;
-        g_McActionTimer = CARD_WORK_DELAY_FRAMES;
-        g_McActionBusy = 0;
-        g_McActionState = CARD_WORK_WAIT_FINAL_DELAY;
+        if (!MemoryCardCountdownElapsed(&action->timer)) break;
+        action->timer = CARD_WORK_DELAY_FRAMES;
+        action->busy = 0;
+        action->state = CARD_WORK_WAIT_FINAL_DELAY;
         break;
     case CARD_WORK_WAIT_FINAL_DELAY:
-        if (!MemoryCardCountdownElapsed(&g_McActionTimer)) break;
-        g_McActionState = CARD_WORK_RETURN_READY;
+        if (!MemoryCardCountdownElapsed(&action->timer)) break;
+        action->state = CARD_WORK_RETURN_READY;
         break;
     case CARD_WORK_RETURN_READY:
         if (g_McMenuSelection != MC_MENU_STATE_READY) break;
@@ -99,15 +99,16 @@ typedef enum NoCardActionState {
 
 enum { NO_CARD_READY_DELAY_FRAMES = 5 };
 
-static void ExitNoCardMenu(s32 soundCue, int resetAction) {
+static void ExitNoCardMenu(MemoryCardAction *action, s32 soundCue,
+                           int resetAction) {
     if (resetAction) {
-        g_McActionState = NO_CARD_ACTION_INIT;
+        action->state = NO_CARD_ACTION_INIT;
     }
     PlaySoundCue(soundCue);
     StartMenuExitFade();
 }
 
-static void RunNoCardRootPage(s32 fadeBusy) {
+static void RunNoCardRootPage(MemoryCardAction *action, s32 fadeBusy) {
     AdjustMenuSelectionVertical(&g_McMenuRowCursor, 0,
                                 MemoryCardMenuRowCount() - 1);
 
@@ -115,56 +116,56 @@ static void RunNoCardRootPage(s32 fadeBusy) {
         if (g_McMenuRowCursor != MemoryCardMenuRowCount() - 1) {
             PlaySoundCue(5);
         } else if (fadeBusy == 0) {
-            ExitNoCardMenu(2, 1);
+            ExitNoCardMenu(action, 2, 1);
         }
         return;
     }
 
     if ((g_PadPressed & PAD_CANCEL) != 0 && fadeBusy == 0) {
-        ExitNoCardMenu(3, 1);
+        ExitNoCardMenu(action, 3, 1);
     }
 }
 
-static void RunNoCardEmptyPage(s32 fadeBusy) {
+static void RunNoCardEmptyPage(MemoryCardAction *action, s32 fadeBusy) {
     if ((g_PadPressed & PAD_CANCEL) != 0 && fadeBusy == 0) {
-        ExitNoCardMenu(3, 0);
+        ExitNoCardMenu(action, 3, 0);
     }
 }
 
-static void RunNoCardReadyState(s32 fadeBusy) {
+static void RunNoCardReadyState(MemoryCardAction *action, s32 fadeBusy) {
     switch (g_McMenuPage) {
     case 0:
-        RunNoCardRootPage(fadeBusy);
+        RunNoCardRootPage(action, fadeBusy);
         break;
     case 1:
         /* This page has no rows and deliberately preserves the action state. */
-        RunNoCardEmptyPage(fadeBusy);
+        RunNoCardEmptyPage(action, fadeBusy);
         break;
     default:
         break;
     }
 }
 
-void RunNoCardActions(s32 fadeBusy) {
+void RunNoCardActions(MemoryCardAction *action, s32 fadeBusy) {
     g_McMenuPhase = MC_PROMPT_NO_CARD;
-    g_McActionBusy = 0;
-    switch (g_McActionState) {
+    action->busy = 0;
+    switch (action->state) {
     case NO_CARD_ACTION_INIT:
-        g_McActionTimer = NO_CARD_READY_DELAY_FRAMES;
+        action->timer = NO_CARD_READY_DELAY_FRAMES;
         g_McSlotUsedMask = 0;
         ClearSaveHeaderRows(g_McSaveHeaders);
         g_McLastSlot = 0;
-        g_McActionState = NO_CARD_ACTION_WAIT;
+        action->state = NO_CARD_ACTION_WAIT;
         break;
 
     case NO_CARD_ACTION_WAIT:
-        if (MemoryCardCountdownElapsed(&g_McActionTimer)) {
-            g_McActionState = NO_CARD_ACTION_READY;
+        if (MemoryCardCountdownElapsed(&action->timer)) {
+            action->state = NO_CARD_ACTION_READY;
         }
         break;
 
     case NO_CARD_ACTION_READY:
-        RunNoCardReadyState(fadeBusy);
+        RunNoCardReadyState(action, fadeBusy);
         break;
 
     default:

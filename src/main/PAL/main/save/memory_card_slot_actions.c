@@ -50,19 +50,19 @@ typedef enum CardSlotActionState {
     CARD_SLOT_ACTION_SHOW_NO_FILE = 0x28,
 } CardSlotActionState;
 
-static void BeginSave(void) {
+static void BeginSave(MemoryCardAction *action) {
     g_McMenuPhase = MC_PROMPT_ACCESSING;
-    g_McActionTimer = CARD_SAVE_DELAY_FRAMES;
-    g_McActionBusy = 1;
-    g_McActionState = CARD_SLOT_ACTION_WAIT_SAVE_DELAY;
+    action->timer = CARD_SAVE_DELAY_FRAMES;
+    action->busy = 1;
+    action->state = CARD_SLOT_ACTION_WAIT_SAVE_DELAY;
 }
 
-static void BeginLoad(void) {
-    g_McActionTimer = CARD_IO_SETTLE_DELAY_FRAMES;
-    g_McActionState = CARD_SLOT_ACTION_WAIT_LOAD_PREP;
+static void BeginLoad(MemoryCardAction *action) {
+    action->timer = CARD_IO_SETTLE_DELAY_FRAMES;
+    action->state = CARD_SLOT_ACTION_WAIT_LOAD_PREP;
 }
 
-static void PickLoadSlot(void) {
+static void PickLoadSlot(MemoryCardAction *action) {
     if ((g_McSlotUsedMask & 7) == 0) {
         g_McMenuPhase = MC_PROMPT_NO_DATA;
         if (g_PadPressed & PAD_CONFIRM) {
@@ -76,28 +76,28 @@ static void PickLoadSlot(void) {
     if (g_PadPressed & PAD_CONFIRM) {
         if (CardSlotIsUsed(g_McSlotCursor)) {
             PlaySoundCue(2);
-            g_McConfirmChoice = 0;
-            BeginLoad();
+            action->confirmChoice = 0;
+            BeginLoad(action);
         } else {
             PlaySoundCue(5);
-            g_McActionState = CARD_SLOT_ACTION_SHOW_NO_FILE;
+            action->state = CARD_SLOT_ACTION_SHOW_NO_FILE;
         }
     }
 }
 
-static void PickSaveSlot(void) {
+static void PickSaveSlot(MemoryCardAction *action) {
     if (g_McFreeBlocks != 0 || (g_McSlotUsedMask & 7) != 0) {
         g_McMenuPhase = MC_PROMPT_SELECT_SAVE;
         if (!(g_PadPressed & PAD_CONFIRM)) return;
 
         PlaySoundCue(2);
         if (CardSlotIsUsed(g_McSlotCursor)) {
-            g_McConfirmChoice = 0;
-            g_McActionState = CARD_SLOT_ACTION_CONFIRM_OVERWRITE;
+            action->confirmChoice = 0;
+            action->state = CARD_SLOT_ACTION_CONFIRM_OVERWRITE;
         } else if (g_McFreeBlocks != 0) {
-            BeginSave();
+            BeginSave(action);
         } else {
-            g_McActionState = CARD_SLOT_ACTION_SHOW_CARD_FULL;
+            action->state = CARD_SLOT_ACTION_SHOW_CARD_FULL;
         }
         return;
     }
@@ -115,85 +115,85 @@ static void PickSaveSlot(void) {
  * Pick a slot to save or load. Retail asks for back twice on the card-full
  * path, once in PickSaveSlot and once below, and each ask plays its own cue.
  */
-static void PickCardSlot(void) {
+static void PickCardSlot(MemoryCardAction *action) {
     AdjustMenuSelectionVertical(&g_McSlotCursor, 0, 2);
     if (g_McSaveMode != 0) {
-        PickLoadSlot();
+        PickLoadSlot(action);
     } else {
-        PickSaveSlot();
+        PickSaveSlot(action);
     }
 
     if (PollMenuBackInput() == 0) return;
     g_McMenuPage = 0;
 }
 
-static void WriteSelectedSaveSlot(void) {
+static void WriteSelectedSaveSlot(MemoryCardAction *action) {
     s32 slot = g_McSlotCursor;
 
-    g_McActionResult = WriteMemoryCardSaveSlot(slot, &g_McSaveHeaders[slot]);
-    if (g_McActionResult != 0) {
+    action->result = WriteMemoryCardSaveSlot(slot, &g_McSaveHeaders[slot]);
+    if (action->result != 0) {
         g_McSlotUsedMask = RefreshMemoryCardSaveStatus(g_McSaveHeaders);
     }
-    g_McActionTimer = CARD_IO_SETTLE_DELAY_FRAMES;
-    g_McActionState = CARD_SLOT_ACTION_WAIT_SAVE_SETTLE;
+    action->timer = CARD_IO_SETTLE_DELAY_FRAMES;
+    action->state = CARD_SLOT_ACTION_WAIT_SAVE_SETTLE;
 }
 
-static void ReadSelectedSaveSlot(void) {
+static void ReadSelectedSaveSlot(MemoryCardAction *action) {
     s32 slot = g_McSlotCursor;
 
-    g_McActionResult = LoadMemoryCardSaveSlot(slot, &g_McSaveHeaders[slot]);
-    if (g_McActionResult != 0) {
+    action->result = LoadMemoryCardSaveSlot(slot, &g_McSaveHeaders[slot]);
+    if (action->result != 0) {
         g_McLastSlot = slot;
     }
-    g_McActionTimer = CARD_IO_SETTLE_DELAY_FRAMES;
-    g_McActionState = CARD_SLOT_ACTION_WAIT_LOAD_SETTLE;
+    action->timer = CARD_IO_SETTLE_DELAY_FRAMES;
+    action->state = CARD_SLOT_ACTION_WAIT_LOAD_SETTLE;
 }
 
-void RunCardSlotActions(void) {
-    switch (g_McActionState) {
+void RunCardSlotActions(MemoryCardAction *action) {
+    switch (action->state) {
     case CARD_SLOT_ACTION_PICK:
-        PickCardSlot();
+        PickCardSlot(action);
         break;
     case CARD_SLOT_ACTION_CONFIRM_OVERWRITE:
         g_McMenuPhase = MC_PROMPT_OVERWRITE_ASK + (g_McSlotCursor * 2) +
-                        g_McConfirmChoice;
-        SetMenuBinaryChoiceHorizontal(&g_McConfirmChoice);
+                        action->confirmChoice;
+        SetMenuBinaryChoiceHorizontal(&action->confirmChoice);
         if (PollMenuConfirmInput() != 0) {
-            if (g_McConfirmChoice != 0) {
-                BeginSave();
+            if (action->confirmChoice != 0) {
+                BeginSave(action);
             } else {
-                g_McActionState = CARD_SLOT_ACTION_PICK;
+                action->state = CARD_SLOT_ACTION_PICK;
             }
         } else if (PollMenuBackInput() != 0) {
-            g_McActionState = CARD_SLOT_ACTION_PICK;
+            action->state = CARD_SLOT_ACTION_PICK;
         }
         break;
 
     case CARD_SLOT_ACTION_WAIT_SAVE_DELAY:
-        g_McActionBusy = 1;
-        if (!MemoryCardCountdownElapsed(&g_McActionTimer)) break;
-        WriteSelectedSaveSlot();
+        action->busy = 1;
+        if (!MemoryCardCountdownElapsed(&action->timer)) break;
+        WriteSelectedSaveSlot(action);
         break;
 
     case CARD_SLOT_ACTION_WAIT_SAVE_SETTLE:
-        if (!MemoryCardCountdownElapsed(&g_McActionTimer)) break;
+        if (!MemoryCardCountdownElapsed(&action->timer)) break;
         g_McSettleTicks = 0;
-        g_McActionState = CARD_SLOT_ACTION_WAIT_SAVE_CARD;
+        action->state = CARD_SLOT_ACTION_WAIT_SAVE_CARD;
         break;
 
     case CARD_SLOT_ACTION_WAIT_SAVE_CARD:
         if (!CardStatusSettledAfterIo()) break;
-        g_McMenuPhase = g_McActionResult != 0 ? MC_PROMPT_SAVE_OK
+        g_McMenuPhase = action->result != 0 ? MC_PROMPT_SAVE_OK
                                              : MC_PROMPT_CARD_ERROR;
-        g_McActionTimer = CARD_RESULT_DISPLAY_FRAMES;
-        g_McActionBusy = 0;
-        g_McActionState = CARD_SLOT_ACTION_WAIT_SAVE_RESULT;
+        action->timer = CARD_RESULT_DISPLAY_FRAMES;
+        action->busy = 0;
+        action->state = CARD_SLOT_ACTION_WAIT_SAVE_RESULT;
         break;
 
     case CARD_SLOT_ACTION_WAIT_SAVE_RESULT:
-        if (!MemoryCardCountdownElapsed(&g_McActionTimer)) break;
+        if (!MemoryCardCountdownElapsed(&action->timer)) break;
         g_McMenuPage = 0;
-        g_McActionState = CARD_SLOT_ACTION_PICK;
+        action->state = CARD_SLOT_ACTION_PICK;
         g_McMenuRowCursor = MemoryCardMenuRowCount() - 1;
         break;
 
@@ -201,41 +201,41 @@ void RunCardSlotActions(void) {
         g_McMenuPhase = MC_PROMPT_CARD_FULL;
         if (!CardResultPromptDismissed()) break;
         g_McMenuPage = 0;
-        g_McActionState = CARD_SLOT_ACTION_PICK;
+        action->state = CARD_SLOT_ACTION_PICK;
         break;
 
     case CARD_SLOT_ACTION_WAIT_LOAD_PREP:
-        if (!MemoryCardCountdownElapsed(&g_McActionTimer)) break;
+        if (!MemoryCardCountdownElapsed(&action->timer)) break;
         g_McMenuPhase = MC_PROMPT_ACCESSING;
-        g_McActionTimer = CARD_LOAD_DELAY_FRAMES;
-        g_McActionBusy = 1;
-        g_McActionState = CARD_SLOT_ACTION_WAIT_LOAD_DELAY;
+        action->timer = CARD_LOAD_DELAY_FRAMES;
+        action->busy = 1;
+        action->state = CARD_SLOT_ACTION_WAIT_LOAD_DELAY;
         break;
 
     case CARD_SLOT_ACTION_WAIT_LOAD_DELAY:
-        if (!MemoryCardCountdownElapsed(&g_McActionTimer)) break;
-        ReadSelectedSaveSlot();
+        if (!MemoryCardCountdownElapsed(&action->timer)) break;
+        ReadSelectedSaveSlot(action);
         break;
 
     case CARD_SLOT_ACTION_WAIT_LOAD_SETTLE:
-        if (!MemoryCardCountdownElapsed(&g_McActionTimer)) break;
+        if (!MemoryCardCountdownElapsed(&action->timer)) break;
         g_McSettleTicks = 0;
-        g_McActionState = CARD_SLOT_ACTION_WAIT_LOAD_CARD;
+        action->state = CARD_SLOT_ACTION_WAIT_LOAD_CARD;
         break;
 
     case CARD_SLOT_ACTION_WAIT_LOAD_CARD:
         if (!CardStatusSettledAfterIo()) break;
-        g_McMenuPhase = g_McActionResult != 0 ? MC_PROMPT_LOAD_OK
+        g_McMenuPhase = action->result != 0 ? MC_PROMPT_LOAD_OK
                                              : MC_PROMPT_CARD_ERROR;
-        g_McActionTimer = CARD_RESULT_DISPLAY_FRAMES;
-        g_McActionBusy = 0;
-        g_McActionState = CARD_SLOT_ACTION_WAIT_LOAD_RESULT;
+        action->timer = CARD_RESULT_DISPLAY_FRAMES;
+        action->busy = 0;
+        action->state = CARD_SLOT_ACTION_WAIT_LOAD_RESULT;
         break;
 
     case CARD_SLOT_ACTION_WAIT_LOAD_RESULT:
-        if (!MemoryCardCountdownElapsed(&g_McActionTimer)) break;
+        if (!MemoryCardCountdownElapsed(&action->timer)) break;
         g_McMenuPage = 0;
-        g_McActionState = CARD_SLOT_ACTION_PICK;
+        action->state = CARD_SLOT_ACTION_PICK;
         g_McMenuRowCursor = MemoryCardMenuRowCount() - 1;
         break;
 
@@ -243,7 +243,7 @@ void RunCardSlotActions(void) {
         g_McMenuPhase = MC_PROMPT_NO_FILE;
         if (!CardResultPromptDismissed()) break;
         g_McMenuPage = 0;
-        g_McActionState = CARD_SLOT_ACTION_PICK;
+        action->state = CARD_SLOT_ACTION_PICK;
         break;
 
     default:

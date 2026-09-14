@@ -3,6 +3,14 @@
 
 #include "common.h"
 
+typedef struct MemoryCardAction {
+    s32 state;
+    s32 result;
+    s32 timer;
+    s32 busy;
+    s32 confirmChoice;
+} MemoryCardAction;
+
 enum {
     MEMORY_CARD_SAVE_SLOT_COUNT = 3,
     MEMORY_CARD_MAX_FILES = 15,

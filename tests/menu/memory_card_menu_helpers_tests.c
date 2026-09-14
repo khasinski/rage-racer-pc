@@ -36,6 +36,9 @@ s32 g_SceneTimer;
 u16 g_PadPressed;
 u16 g_PadPressedRepeat;
 
+static MemoryCardAction s_action;
+MemoryCardAction *SceneRuntimeMemoryCardAction(void) { return &s_action; }
+
 typedef struct TextDraw {
     s32 x;
     s32 y;

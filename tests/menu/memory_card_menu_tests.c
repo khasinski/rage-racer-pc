@@ -22,12 +22,10 @@
 #include <string.h>
 
 /* The menu's own state. */
-s32 g_McActionBusy;
-s32 g_McActionResult;
-s32 g_McActionState;
-s32 g_McActionTimer;
+static MemoryCardAction s_action;
+
+MemoryCardAction *SceneRuntimeMemoryCardAction(void) { return &s_action; }
 s32 g_McCardStatus;
-s32 g_McConfirmChoice;
 s32 g_McErrorCountdown;
 s32 g_McErrorPending;
 s32 g_McErrorTicks;
@@ -171,11 +169,11 @@ static void Record(FILE *out, const char *label) {
             "sel=%d busy=%d timer=%d result=%d choice=%d "
             "err=%d/%d/%d fade=%d/%d last=%d/%d mask=%x free=%d ticks=%d/%d "
             "loadphase=%d scene=%d/%d calls=%d\n",
-            label, g_McMenuState, g_McActionState,
+            label, g_McMenuState, s_action.state,
             g_McMenuPhase, g_McMenuPage, g_McMenuRowCursor, g_McSlotCursor,
-            g_McMenuSelection, g_McActionBusy, g_McActionTimer,
-            g_McActionResult,
-            g_McConfirmChoice, g_McErrorPending,
+            g_McMenuSelection, s_action.busy, s_action.timer,
+            s_action.result,
+            s_action.confirmChoice, g_McErrorPending,
             g_McErrorCountdown, g_McErrorTicks, g_McFadeLevel, g_McFadeStep,
             g_McLastMenuState, g_McLastSlot, g_McSlotUsedMask, g_McFreeBlocks,
             g_McNoCardTicks, g_McSettleTicks,
@@ -199,9 +197,9 @@ static int TestFailedLoadReportsError(void) {
     g_McCardStatus = 1;
     g_McMenuPage = 1;
     g_McFromLoadMenu = 1;
-    g_McActionState = 0x21;
-    g_McActionTimer = 0;
-    g_McActionBusy = 1;
+    s_action.state = 0x21;
+    s_action.timer = 0;
+    s_action.busy = 1;
     g_McSlotCursor = 1;
     g_McFadeLevel = 0;
     g_McFadeStep = 0;
@@ -211,15 +209,15 @@ static int TestFailedLoadReportsError(void) {
     s_loadAnswer = 0;
 
     UpdateMemoryCardMenu();
-    if (g_McActionResult != 0) {
-        printf("FAIL a failed load returned %d\n", g_McActionResult);
+    if (s_action.result != 0) {
+        printf("FAIL a failed load returned %d\n", s_action.result);
         return 0;
     }
 
-    g_McActionState = 0x25;
+    s_action.state = 0x25;
     g_McSettleTicks = 3;
     s_cardStatusAnswer = MC_MENU_STATE_READY;
-    RunCardSlotActions();
+    RunCardSlotActions(&s_action);
     if (g_McMenuPhase != MC_PROMPT_CARD_ERROR) {
         printf("FAIL a failed load reports prompt %d instead of card error\n",
                g_McMenuPhase);
@@ -234,9 +232,9 @@ static int TestOverwritePromptResetsChoice(void) {
     g_McCardStatus = 1;
     g_McMenuPage = 1;
     g_McFromLoadMenu = 1;
-    g_McActionState = 0;
-    g_McActionBusy = 1;
-    g_McConfirmChoice = 1;
+    s_action.state = 0;
+    s_action.busy = 1;
+    s_action.confirmChoice = 1;
     g_McSlotCursor = 1;
     g_McSlotUsedMask = 1 << 1;
     g_McFreeBlocks = 1;
@@ -248,9 +246,9 @@ static int TestOverwritePromptResetsChoice(void) {
     g_PadPressed = PAD_CONFIRM;
 
     UpdateMemoryCardMenu();
-    if (g_McActionState != 0xA || g_McConfirmChoice != 0) {
+    if (s_action.state != 0xA || s_action.confirmChoice != 0) {
         printf("FAIL overwrite prompt starts in action %x with choice %d\n",
-               g_McActionState, g_McConfirmChoice);
+               s_action.state, s_action.confirmChoice);
         return 0;
     }
     return 1;
@@ -262,9 +260,9 @@ static void PrepareFormatOperation(s32 formatAnswer) {
     g_McCardStatus = MC_MENU_STATE_UNFORMATTED;
     g_McMenuPage = 1;
     g_McFromLoadMenu = 0;
-    g_McActionState = 5;
-    g_McActionBusy = 1;
-    g_McActionResult = 0;
+    s_action.state = 5;
+    s_action.busy = 1;
+    s_action.result = 0;
     g_McFadeLevel = 0;
     g_McFadeStep = 0;
     g_McErrorPending = 0;
@@ -277,18 +275,18 @@ static void PrepareFormatOperation(s32 formatAnswer) {
 static int TestFormatOperationReportsItsResult(void) {
     PrepareFormatOperation(1);
     UpdateMemoryCardMenu();
-    if (g_McActionResult != 1 || g_McActionState != 7 ||
-        g_McActionTimer != 60) {
+    if (s_action.result != 1 || s_action.state != 7 ||
+        s_action.timer != 60) {
         printf("FAIL successful format result=%d action=%x timer=%d\n",
-               g_McActionResult, g_McActionState, g_McActionTimer);
+               s_action.result, s_action.state, s_action.timer);
         return 0;
     }
 
     PrepareFormatOperation(0);
     UpdateMemoryCardMenu();
-    if (g_McActionResult != 0 || g_McActionState != 0xA) {
+    if (s_action.result != 0 || s_action.state != 0xA) {
         printf("FAIL failed format result=%d action=%x\n",
-               g_McActionResult, g_McActionState);
+               s_action.result, s_action.state);
         return 0;
     }
     return 1;
@@ -297,34 +295,34 @@ static int TestFormatOperationReportsItsResult(void) {
 static int TestCardSettleRequiresConsecutiveReadyPolls(void) {
     int i;
 
-    g_McActionState = 0x25;
+    s_action.state = 0x25;
     g_McSettleTicks = 2;
 
     s_cardStatusAnswer = MC_MENU_STATE_READY;
-    RunCardSlotActions();
-    if (g_McSettleTicks != 3 || g_McActionState != 0x25) {
+    RunCardSlotActions(&s_action);
+    if (g_McSettleTicks != 3 || s_action.state != 0x25) {
         printf("FAIL settle did not accept the third ready poll\n");
         return 0;
     }
 
     s_cardStatusAnswer = MC_MENU_STATE_NO_CARD;
-    RunCardSlotActions();
-    if (g_McSettleTicks != 0 || g_McActionState != 0x25) {
+    RunCardSlotActions(&s_action);
+    if (g_McSettleTicks != 0 || s_action.state != 0x25) {
         printf("FAIL interrupted settle kept %d ready polls in action %x\n",
-               g_McSettleTicks, g_McActionState);
+               g_McSettleTicks, s_action.state);
         return 0;
     }
 
     s_cardStatusAnswer = MC_MENU_STATE_READY;
     for (i = 0; i < 3; i++) {
-        RunCardSlotActions();
+        RunCardSlotActions(&s_action);
     }
-    if (g_McActionState != 0x25) {
+    if (s_action.state != 0x25) {
         printf("FAIL settle completed after only three consecutive polls\n");
         return 0;
     }
-    RunCardSlotActions();
-    if (g_McActionState != 0x27) {
+    RunCardSlotActions(&s_action);
+    if (s_action.state != 0x27) {
         printf("FAIL settle did not complete after four consecutive polls\n");
         return 0;
     }
@@ -337,12 +335,12 @@ static int TestRealCardDriverSettlesSaveAndLoad(void) {
     for (unsigned i = 0; i < 2; ++i) {
         FixtureResetMemoryCardStatus();
         s_useRealCardDriver = 1;
-        g_McActionState = actions[i];
+        s_action.state = actions[i];
         g_McSettleTicks = 0;
-        for (int frame = 0; frame < 60 && g_McActionState == actions[i]; ++frame)
-            RunCardSlotActions();
+        for (int frame = 0; frame < 60 && s_action.state == actions[i]; ++frame)
+            RunCardSlotActions(&s_action);
         s_useRealCardDriver = 0;
-        if (g_McActionState != completed[i]) {
+        if (s_action.state != completed[i]) {
             printf("FAIL real card driver stuck settling action %x\n", actions[i]);
             return 0;
         }
@@ -406,11 +404,11 @@ int main(int argc, char **argv) {
                                     /* A step starts from a clean slate so one
                                      * step's damage cannot hide the next
                                      * one's. */
-                                    g_McActionBusy = 0;
-                                    g_McActionResult = 0;
-                                    g_McActionTimer = 3;
+                                    s_action.busy = 0;
+                                    s_action.result = 0;
+                                    s_action.timer = 3;
                                     g_McCardStatus = statuses[ci];
-                                    g_McConfirmChoice = 0;
+                                    s_action.confirmChoice = 0;
                                     g_McErrorCountdown = 2;
                                     g_McErrorPending = 0;
                                     g_McErrorTicks = 0;
@@ -431,7 +429,7 @@ int main(int argc, char **argv) {
                                            sizeof(g_McSaveHeaders));
 
                                     g_McMenuState = states[si];
-                                    g_McActionState = actions[ai];
+                                    s_action.state = actions[ai];
                                     g_McMenuPage = page;
                                     g_McSaveMode = mode;
                                     g_McFreeBlocks = freeBlocks;

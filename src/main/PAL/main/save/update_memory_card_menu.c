@@ -2,6 +2,7 @@
 #include "game/memcard_internal.h"
 #include "game/menu.h"
 #include "game/audio.h"
+#include "game/scene_runtime.h"
 
 enum {
     BUSY_ERROR_DEBOUNCE_FRAMES = 5,
@@ -13,9 +14,9 @@ enum {
  * The card is mid-operation. Nothing to choose here; the cancel button
  * is the only way out, and only once the fade has finished.
  */
-static void RunCardBusyState(s32 fadeBusy) {
+static void RunCardBusyState(MemoryCardAction *action, s32 fadeBusy) {
     g_McMenuPhase = MC_PROMPT_ACCESSING;
-    g_McActionBusy = 0;
+    action->busy = 0;
     if ((g_PadPressed & PAD_CANCEL) && !fadeBusy) {
         PlaySoundCue(3);
         StartMenuExitFade();
@@ -55,7 +56,7 @@ static void RunCardBusyState(s32 fadeBusy) {
  * The list of things the player can do with a readable card. The last row
  * is the way out.
  */
-static void RunCardMenuRows(s32 fadeBusy) {
+static void RunCardMenuRows(MemoryCardAction *action, s32 fadeBusy) {
     u16 pad;
 
     g_McMenuPhase = MC_PROMPT_NONE;
@@ -66,8 +67,8 @@ static void RunCardMenuRows(s32 fadeBusy) {
         if (g_McMenuRowCursor < MemoryCardMenuRowCount() - 1) {
             PlaySoundCue(2);
             g_McMenuPage = 1;
-            g_McActionState = 0;
-            g_McActionResult = 0;
+            action->state = 0;
+            action->result = 0;
             g_McSlotCursor = g_McLastSlot;
             g_McSaveMode = g_McMenuRowCursor;
             return;
@@ -78,15 +79,15 @@ static void RunCardMenuRows(s32 fadeBusy) {
         if ((pad & PAD_CANCEL) == 0 || fadeBusy) return;
         PlaySoundCue(3);
     }
-    g_McActionBusy = 0;
+    action->busy = 0;
     StartMenuExitFade();
 }
 
-static void ResetCardAction(void) {
-    g_McActionState = 0;
-    g_McActionResult = 0;
-    g_McConfirmChoice = 0;
-    g_McActionBusy = 0;
+static void ResetCardAction(MemoryCardAction *action) {
+    action->state = 0;
+    action->result = 0;
+    action->confirmChoice = 0;
+    action->busy = 0;
 }
 
 static void ClearPendingCardError(void) {
@@ -103,18 +104,18 @@ static void TrackPersistentCardError(void) {
     }
 }
 
-static void RunCardReadyState(s32 fadeBusy) {
+static void RunCardReadyState(MemoryCardAction *action, s32 fadeBusy) {
     /* Page 0 is the list of things to do with the card, page 1 is picking a
      * slot; any other page is not one this screen has, so it goes back. */
     if (g_McMenuPage == 0) {
-        RunCardMenuRows(fadeBusy);
+        RunCardMenuRows(action, fadeBusy);
     } else if (g_McMenuPage == 1) {
-        RunCardSlotActions();
+        RunCardSlotActions(action);
     } else {
         g_McMenuPage = 0;
         g_McSlotCursor = 0;
-        ResetCardAction();
-        g_McActionTimer = 0;
+        ResetCardAction(action);
+        action->timer = 0;
         g_McMenuRowCursor = MemoryCardMenuRowCount() - 1;
     }
     switch (g_McMenuSelection) {
@@ -135,12 +136,12 @@ static void RunCardReadyState(s32 fadeBusy) {
         break;
     }
     if (g_McMenuState != MC_MENU_STATE_READY) {
-        ResetCardAction();
+        ResetCardAction(action);
     }
 }
 
-static void RunCardWorkingState(s32 fadeBusy) {
-    RunCardWorkingActions(fadeBusy);
+static void RunCardWorkingState(MemoryCardAction *action, s32 fadeBusy) {
+    RunCardWorkingActions(action, fadeBusy);
 
     switch (g_McMenuSelection) {
     case MC_MENU_STATE_BUSY:
@@ -164,13 +165,13 @@ static void RunCardWorkingState(s32 fadeBusy) {
 
     if (g_McMenuState == MC_MENU_STATE_WORKING) return;
     g_McMenuPhase = MC_PROMPT_ACCESSING;
-    g_McActionState = 0;
-    g_McActionResult = 0;
-    g_McConfirmChoice = 0;
+    action->state = 0;
+    action->result = 0;
+    action->confirmChoice = 0;
 }
 
-static void RunNoCardState(s32 fadeBusy) {
-    RunNoCardActions(fadeBusy);
+static void RunNoCardState(MemoryCardAction *action, s32 fadeBusy) {
+    RunNoCardActions(action, fadeBusy);
     switch (g_McMenuSelection) {
     case MC_MENU_STATE_READY:
     case MC_MENU_STATE_WORKING:
@@ -192,12 +193,12 @@ static void RunNoCardState(s32 fadeBusy) {
     }
 
     if (g_McMenuState != MC_MENU_STATE_NO_CARD) {
-        g_McActionState = 0;
+        action->state = 0;
     }
 }
 
-static void RunUnformattedCardState(s32 fadeBusy) {
-    RunUnformattedCardPage(fadeBusy);
+static void RunUnformattedCardState(MemoryCardAction *action, s32 fadeBusy) {
+    RunUnformattedCardPage(action, fadeBusy);
     switch (g_McMenuSelection) {
     case MC_MENU_STATE_READY:
     case MC_MENU_STATE_WORKING:
@@ -220,18 +221,18 @@ static void RunUnformattedCardState(s32 fadeBusy) {
     }
 
     if (g_McMenuState != MC_MENU_STATE_UNFORMATTED) {
-        ResetCardAction();
+        ResetCardAction(action);
     }
 }
 
 /*
  * The card answered with something the menu has no name for.
  */
-static void RunCardErrorState(s32 fadeBusy) {
+static void RunCardErrorState(MemoryCardAction *action, s32 fadeBusy) {
     g_McMenuPhase = MC_PROMPT_CARD_ERROR;
     if ((g_PadPressed & PAD_CANCEL) && !fadeBusy) {
         PlaySoundCue(3);
-        g_McActionBusy = 0;
+        action->busy = 0;
         StartMenuExitFade();
     }
 
@@ -245,10 +246,10 @@ static void RunCardErrorState(s32 fadeBusy) {
     ClearPendingCardError();
 }
 
-static void PollCardMenuSelection(void) {
+static void PollCardMenuSelection(MemoryCardAction *action) {
     s32 status;
 
-    if (g_McActionBusy != 0 && g_McErrorPending == 0) return;
+    if (action->busy != 0 && g_McErrorPending == 0) return;
 
     status = PollMemoryCardStatus(0, 0);
     g_McCardStatus = status;
@@ -265,16 +266,15 @@ static void PollCardMenuSelection(void) {
 }
 
 void UpdateMemoryCardMenu(void) {
-    s32 fadeBusy;
-
-    fadeBusy = UpdateMemoryCardFade();
-    if (!AdvanceMemoryCardMenuStartup()) {
+    MemoryCardAction *action = SceneRuntimeMemoryCardAction();
+    s32 fadeBusy = UpdateMemoryCardFade(action);
+    if (!AdvanceMemoryCardMenuStartup(action)) {
         DrawMemoryCardMenu();
         return;
     }
     /* An action already under way owns the card, so its status is not asked
      * again until it reports an error. */
-    PollCardMenuSelection();
+    PollCardMenuSelection(action);
 
     /*
      * What the menu does this frame is decided by what the card is: each of
@@ -282,23 +282,23 @@ void UpdateMemoryCardMenu(void) {
      */
     switch (g_McMenuState) {
     case MC_MENU_STATE_BUSY:
-        RunCardBusyState(fadeBusy);
+        RunCardBusyState(action, fadeBusy);
         break;
     case MC_MENU_STATE_READY:
-        RunCardReadyState(fadeBusy);
+        RunCardReadyState(action, fadeBusy);
         break;
     case MC_MENU_STATE_WORKING:
-        RunCardWorkingState(fadeBusy);
+        RunCardWorkingState(action, fadeBusy);
         break;
     case MC_MENU_STATE_NO_CARD:
-        RunNoCardState(fadeBusy);
+        RunNoCardState(action, fadeBusy);
         break;
     case MC_MENU_STATE_UNFORMATTED:
-        RunUnformattedCardState(fadeBusy);
+        RunUnformattedCardState(action, fadeBusy);
         break;
     case MC_MENU_STATE_ERROR:
     default:
-        RunCardErrorState(fadeBusy);
+        RunCardErrorState(action, fadeBusy);
         break;
     }
     DrawMemoryCardMenu();
