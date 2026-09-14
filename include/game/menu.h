@@ -65,6 +65,8 @@ typedef struct PaintColor {
 } PaintColor;
 
 typedef struct Customize {
+    const TimedDrawCommand *popupScript;
+    s32 option;
     s32 tirePulsePhase;
 } Customize;
 
@@ -401,7 +403,6 @@ extern s16 g_NextOwnedCarIndex;
 extern s32 g_OptionMenuCursor;
 extern s32 g_PlayerMoney;
 extern s16 g_PrevOwnedCarIndex;
-extern s32 g_CustomizeOption;
 extern s32 g_ClassRecordColumn;
 extern s32 g_ClassRecordRow;
 extern u16 g_TeamLogoSwatches[15];

@@ -25,8 +25,6 @@ s32 g_CarNamePlateStep;
 CarModelAsset *g_CarModelAsset;
 s32 g_CarSpecGraphStep;
 CarEntry *g_CarTable;
-s32 g_CustomizeOption;
-const TimedDrawCommand *g_CustomizePopupScript;
 s16 g_GrandPrixMode;
 s32 g_MenuAltLayout;
 s32 g_MenuAltLayoutSetting;
@@ -134,8 +132,8 @@ static void Reset(void) {
     g_CarModelAsset = &s_model;
     g_PlayerCarIndex = 3;
     g_GrandPrixMode = 1;
-    g_CustomizeOption = 0;
-    g_CustomizePopupScript = NULL;
+    s_customize.option = 0;
+    s_customize.popupScript = NULL;
     GameMenuBusy = 0;
     g_PadPressed = 0;
     g_UiScriptProgress = 0;
@@ -149,19 +147,19 @@ int main(void) {
     Reset();
     g_PadPressed = PAD_UP;
     UpdateCustomizeScreen();
-    CHECK(g_CustomizeOption == 3 && s_lastCue == 1);
+    CHECK(s_customize.option == 3 && s_lastCue == 1);
 
     Reset();
-    g_CustomizeOption = 3;
+    s_customize.option = 3;
     g_PadPressed = PAD_DOWN;
     UpdateCustomizeScreen();
-    CHECK(g_CustomizeOption == 0 && s_lastCue == 1);
+    CHECK(s_customize.option == 0 && s_lastCue == 1);
 
     Reset();
     g_GrandPrixMode = 0;
     g_PadPressed = PAD_UP;
     UpdateCustomizeScreen();
-    CHECK(g_CustomizeOption == 2);
+    CHECK(s_customize.option == 2);
 
     Reset();
     g_CarTable = NULL;
@@ -171,7 +169,7 @@ int main(void) {
 
     Reset();
     g_PlayerCarIndex = GAME_CAR_COUNT;
-    g_CustomizeOption = 1;
+    s_customize.option = 1;
     g_PadPressed = PAD_CONFIRM;
     UpdateCustomizeScreen();
     CHECK(GameMenuBusy == -3 && s_lastCue == 5);
@@ -192,7 +190,7 @@ int main(void) {
     Reset();
     s_model.transmissionAvailable = 1;
     s_cars[3].transmission = 7;
-    g_CustomizeOption = 1;
+    s_customize.option = 1;
     g_PadPressed = PAD_CONFIRM;
     UpdateCustomizeScreen();
     CHECK(GameMenuBusy == -2 && g_MenuSubCursor == 1);
@@ -214,10 +212,10 @@ int main(void) {
 
     Reset();
     g_GrandPrixMode = 0;
-    g_CustomizeOption = INT32_MAX;
+    s_customize.option = INT32_MAX;
     g_PadPressed = PAD_CONFIRM;
     UpdateCustomizeScreen();
-    CHECK(g_CustomizeOption == 2 && GameMenuBusy == 2);
+    CHECK(s_customize.option == 2 && GameMenuBusy == 2);
 
     Reset();
     GameMenuBusy = -99;

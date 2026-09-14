@@ -22,6 +22,7 @@ static s32 s_cameraCalls;
 static s32 s_carShopResets;
 static s32 s_engineerShopResets;
 static EngineerShop s_engineerShop;
+static Customize s_customize;
 static s32 s_menuCarResets;
 static CourseSelectScreen s_courseSelect;
 
@@ -31,11 +32,13 @@ s32 g_MenuScreen;
 
 void MenuRuntimeReset(void) {
     memset(&s_courseSelect, 0, sizeof(s_courseSelect));
+    memset(&s_customize, 0, sizeof(s_customize));
     g_MenuScreen = MENU_SCREEN_BOOTSTRAP;
     g_MenuHandlerIndex = -1;
     g_MenuOutgoingHandlerIndex = -1;
 }
 CourseSelectScreen *MenuCourseSelect(void) { return &s_courseSelect; }
+Customize *MenuCustomize(void) { return &s_customize; }
 void ResetCarShopScreen(void) { s_carShopResets++; }
 void ResetEngineerShopScreen(void) {
     s_engineerShop = (EngineerShop){g_UiEmptyScript, 0};
@@ -101,7 +104,7 @@ static void PoisonEntryState(void) {
     g_SceneTimer = 99;
     s_courseSelect.modalScript = NULL;
     g_CarSelectPopupScript = NULL;
-    g_CustomizePopupScript = NULL;
+    s_customize.popupScript = NULL;
     g_TeamLogoSubPanelScript = NULL;
     g_LogoSampleSubPanelScript = NULL;
     s_engineerShop.modalScript = NULL;
@@ -138,7 +141,7 @@ static void PoisonEntryState(void) {
     g_MenuScreen = MENU_SCREEN_UNUSED;
     s_courseSelect.option = 25;
     g_CarSelectCursor = 26;
-    g_CustomizeOption = 27;
+    s_customize.option = 27;
     g_DesignModeOption = 28;
     s_displayMask = -1;
     s_displaySetups = 0;
@@ -161,7 +164,7 @@ static int CheckCommonEntryState(const GameRaceProgress *progress) {
     CHECK(g_Camera.view.z == -256 && g_Camera.view.angleX == 0x100);
     CHECK(s_courseSelect.modalScript == g_UiEmptyScript);
     CHECK(g_CarSelectPopupScript == g_UiEmptyScript);
-    CHECK(g_CustomizePopupScript == g_UiEmptyScript);
+    CHECK(s_customize.popupScript == g_UiEmptyScript);
     CHECK(g_TeamLogoSubPanelScript == g_UiEmptyScript);
     CHECK(g_LogoSampleSubPanelScript == g_UiEmptyScript);
     CHECK(s_engineerShop.modalScript == g_UiEmptyScript);
@@ -183,7 +186,7 @@ static int CheckCommonEntryState(const GameRaceProgress *progress) {
     CHECK(g_MenuAltLayoutSetting == 0 && g_CarShopUnlockAll == 0);
     CHECK(g_MenuScreen == MENU_SCREEN_BOOTSTRAP);
     CHECK(s_courseSelect.option == 0 && g_CarSelectCursor == 0);
-    CHECK(g_CustomizeOption == 0 && g_DesignModeOption == 0);
+    CHECK(s_customize.option == 0 && g_DesignModeOption == 0);
     CHECK(s_drawResetCalls == 3);
     CHECK(s_carShopResets == 1);
     CHECK(s_engineerShopResets == 1);

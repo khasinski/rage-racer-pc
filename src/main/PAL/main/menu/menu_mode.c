@@ -47,12 +47,14 @@ static void InitMenuCamera(void) {
 
 static void ResetMenuNavigation(void) {
     CourseSelectScreen *courseSelect;
+    Customize *customize;
 
     MenuRuntimeReset();
     courseSelect = MenuCourseSelect();
+    customize = MenuCustomize();
     courseSelect->modalScript = g_UiEmptyScript;
+    customize->popupScript = g_UiEmptyScript;
     g_CarSelectPopupScript = g_UiEmptyScript;
-    g_CustomizePopupScript = g_UiEmptyScript;
     g_TeamLogoSubPanelScript = g_UiEmptyScript;
     g_LogoSampleSubPanelScript = g_UiEmptyScript;
     ResetCarShopScreen();
@@ -87,7 +89,6 @@ static void ResetMenuNavigation(void) {
     g_MenuAltLayoutSetting = 0;
     g_CarShopUnlockAll = 0;
     g_CarSelectCursor = 0;
-    g_CustomizeOption = 0;
     g_DesignModeOption = 0;
 }
 

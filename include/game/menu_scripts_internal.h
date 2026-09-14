@@ -4,6 +4,5 @@
 typedef struct TimedDrawCommand TimedDrawCommand;
 
 extern const TimedDrawCommand *g_CarSelectPopupScript;
-extern const TimedDrawCommand *g_CustomizePopupScript;
 
 #endif

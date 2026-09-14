@@ -50,25 +50,26 @@ static s32 CustomizeTransmissionAvailable(void) {
            g_CarModelAsset->transmissionAvailable != 0;
 }
 
-static void HandleCustomizeMenuInput(s32 exitOption, s32 carAvailable) {
+static void HandleCustomizeMenuInput(Customize *customize, s32 exitOption,
+                                     s32 carAvailable) {
     if (g_PadPressed & PAD_UP) {
         PlaySoundCue(1);
-        g_CustomizeOption =
-            WrapMenuIndex(g_CustomizeOption, -1, exitOption + 1);
+        customize->option =
+            WrapMenuIndex(customize->option, -1, exitOption + 1);
     }
     if (g_PadPressed & PAD_DOWN) {
         PlaySoundCue(1);
-        g_CustomizeOption =
-            WrapMenuIndex(g_CustomizeOption, 1, exitOption + 1);
+        customize->option =
+            WrapMenuIndex(customize->option, 1, exitOption + 1);
     }
 
     if (g_PadPressed & PAD_CONFIRM) {
-        if (g_CustomizeOption == CUSTOMIZE_OPTION_TIRES) {
+        if (customize->option == CUSTOMIZE_OPTION_TIRES) {
             if (!carAvailable) {
                 return;
             }
             PlaySoundCue(2);
-            g_CustomizePopupScript = g_MenuDialogPanelUpperScript;
+            customize->popupScript = g_MenuDialogPanelUpperScript;
             GameMenuBusy = CUSTOMIZE_TIRE_DIALOG;
             g_UiScriptProgress2 = 0;
             g_MenuSubCursor = (u8)AddClampedMenuValue(
@@ -76,28 +77,28 @@ static void HandleCustomizeMenuInput(s32 exitOption, s32 carAvailable) {
                 TIRE_COMPOUND_LAST);
             return;
         }
-        if (g_CustomizeOption == CUSTOMIZE_OPTION_TRANSMISSION) {
+        if (customize->option == CUSTOMIZE_OPTION_TRANSMISSION) {
             g_UiScriptProgress2 = 0;
             if (CustomizeTransmissionAvailable()) {
                 PlaySoundCue(2);
-                g_CustomizePopupScript = g_MenuDialogPanelLowerScript;
+                customize->popupScript = g_MenuDialogPanelLowerScript;
                 GameMenuBusy = CUSTOMIZE_TRANSMISSION_DIALOG;
                 g_MenuSubCursor =
                     g_CarTable[g_PlayerCarIndex].transmission != 0;
             } else {
                 PlaySoundCue(5);
-                g_CustomizePopupScript = g_TransmissionUnavailableScript;
+                customize->popupScript = g_TransmissionUnavailableScript;
                 GameMenuBusy = CUSTOMIZE_TRANSMISSION_UNAVAILABLE;
             }
             return;
         }
-        if (g_CustomizeOption == exitOption) {
+        if (customize->option == exitOption) {
             PlaySoundCue(3);
             GameMenuBusy = CUSTOMIZE_EXIT_TO_CAR_SELECT;
             g_MenuOverlayPattern = 2;
             return;
         }
-        if (g_CustomizeOption == CUSTOMIZE_OPTION_DESIGN) {
+        if (customize->option == CUSTOMIZE_OPTION_DESIGN) {
             PlaySoundCue(2);
             GameMenuBusy = CUSTOMIZE_EXIT_TO_DESIGN;
             g_MenuOverlayPattern = 1;
@@ -111,7 +112,7 @@ static void HandleCustomizeMenuInput(s32 exitOption, s32 carAvailable) {
     }
 }
 
-static void UpdateTireDialog(void) {
+static void UpdateTireDialog(Customize *customize) {
     MenuDialogAction action;
 
     if (!CustomizeCarSetupAvailable()) {
@@ -120,7 +121,7 @@ static void UpdateTireDialog(void) {
     }
     g_MenuSubCursor = (u8)AddClampedMenuValue(
         g_MenuSubCursor, 0, 0, TIRE_COMPOUND_LAST);
-    if (RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, 1) ==
+    if (RunTimedDrawScript(customize->popupScript, &g_UiScriptProgress2, 1) ==
         0) {
         return;
     }
@@ -143,7 +144,8 @@ static void UpdateTireDialog(void) {
     DrawTireCompoundSlider(MenuCustomize(), g_MenuSubCursor, 0);
 }
 
-static void UpdateTransmissionDialog(GameOrderingTableEntry *ot) {
+static void UpdateTransmissionDialog(Customize *customize,
+                                     GameOrderingTableEntry *ot) {
     MenuDialogAction action;
 
     if (!CustomizeTransmissionAvailable()) {
@@ -151,7 +153,7 @@ static void UpdateTransmissionDialog(GameOrderingTableEntry *ot) {
         return;
     }
     g_MenuSubCursor = g_MenuSubCursor != 0;
-    if (RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, 1) ==
+    if (RunTimedDrawScript(customize->popupScript, &g_UiScriptProgress2, 1) ==
         0) {
         return;
     }
@@ -175,23 +177,23 @@ static void UpdateTransmissionDialog(GameOrderingTableEntry *ot) {
     DrawTransmissionChoice(ot, 0);
 }
 
-static void UpdateUnavailableDialog(void) {
-    RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, 0);
+static void UpdateUnavailableDialog(Customize *customize) {
+    RunTimedDrawScript(customize->popupScript, &g_UiScriptProgress2, 0);
     if (RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0 &&
         (g_PadPressed & (PAD_CONFIRM | PAD_CANCEL))) {
         GameMenuBusy = CUSTOMIZE_TRANSMISSION_UNAVAILABLE_CLOSING;
     }
 }
 
-static void CloseUnavailableDialog(void) {
-    RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, -1);
+static void CloseUnavailableDialog(Customize *customize) {
+    RunTimedDrawScript(customize->popupScript, &g_UiScriptProgress2, -1);
     RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
     if (g_UiScriptProgress2 <= 0) {
         GameMenuBusy = CUSTOMIZE_IDLE;
     }
 }
 
-static void UpdateTireConfirmation(void) {
+static void UpdateTireConfirmation(Customize *customize) {
     if (!CustomizeCarSetupAvailable()) {
         GameMenuBusy = CUSTOMIZE_IDLE;
         return;
@@ -200,11 +202,11 @@ static void UpdateTireConfirmation(void) {
         g_MenuSubCursor, 0, 0, TIRE_COMPOUND_LAST);
     if (g_MenuConfirmTimer > 0) {
         g_MenuConfirmTimer--;
-        RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, 1);
+        RunTimedDrawScript(customize->popupScript, &g_UiScriptProgress2, 1);
         DrawTireCompoundSlider(MenuCustomize(), g_MenuSubCursor, 1);
         return;
     }
-    RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, -1);
+    RunTimedDrawScript(customize->popupScript, &g_UiScriptProgress2, -1);
     if (g_UiScriptProgress2 <= 0) {
         GameMenuBusy = CUSTOMIZE_IDLE;
         g_CarTable[g_PlayerCarIndex].tireCompound = g_MenuSubCursor;
@@ -212,38 +214,40 @@ static void UpdateTireConfirmation(void) {
     }
 }
 
-static void UpdateTransmissionConfirmation(GameOrderingTableEntry *ot) {
+static void UpdateTransmissionConfirmation(Customize *customize,
+                                           GameOrderingTableEntry *ot) {
     if (g_MenuConfirmTimer > 0) {
         g_MenuConfirmTimer--;
-        RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, 1);
+        RunTimedDrawScript(customize->popupScript, &g_UiScriptProgress2, 1);
         DrawTransmissionChoice(ot, 1);
         return;
     }
-    RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, -1);
+    RunTimedDrawScript(customize->popupScript, &g_UiScriptProgress2, -1);
     if (g_UiScriptProgress2 <= 0) {
         GameMenuBusy = CUSTOMIZE_IDLE;
     }
 }
 
-static void UpdateCustomizeDialog(GameOrderingTableEntry *ot) {
+static void UpdateCustomizeDialog(Customize *customize,
+                                  GameOrderingTableEntry *ot) {
     switch (GameMenuBusy) {
     case CUSTOMIZE_TIRE_DIALOG:
-        UpdateTireDialog();
+        UpdateTireDialog(customize);
         break;
     case CUSTOMIZE_TRANSMISSION_DIALOG:
-        UpdateTransmissionDialog(ot);
+        UpdateTransmissionDialog(customize, ot);
         break;
     case CUSTOMIZE_TRANSMISSION_UNAVAILABLE:
-        UpdateUnavailableDialog();
+        UpdateUnavailableDialog(customize);
         break;
     case CUSTOMIZE_TRANSMISSION_UNAVAILABLE_CLOSING:
-        CloseUnavailableDialog();
+        CloseUnavailableDialog(customize);
         break;
     case CUSTOMIZE_TIRE_CONFIRMING:
-        UpdateTireConfirmation();
+        UpdateTireConfirmation(customize);
         break;
     case CUSTOMIZE_TRANSMISSION_CONFIRMING:
-        UpdateTransmissionConfirmation(ot);
+        UpdateTransmissionConfirmation(customize, ot);
         break;
     default:
         GameMenuBusy = CUSTOMIZE_IDLE;
@@ -252,6 +256,7 @@ static void UpdateCustomizeDialog(GameOrderingTableEntry *ot) {
 }
 
 void UpdateCustomizeScreen(void) {
+    Customize *customize = MenuCustomize();
     GameOrderingTableEntry *ot;
     s32 exitOption;
     const TimedDrawCommand *cmdList;
@@ -262,30 +267,30 @@ void UpdateCustomizeScreen(void) {
     DrawMenuCarView();
     exitOption = g_GrandPrixMode != 0 ? CUSTOMIZE_OPTION_EXIT
                                      : CUSTOMIZE_OPTION_DESIGN;
-    g_CustomizeOption =
-        AddClampedMenuValue(g_CustomizeOption, 0, 0, exitOption);
+    customize->option =
+        AddClampedMenuValue(customize->option, 0, 0, exitOption);
     cmdList = g_GrandPrixMode != 0 ? g_CustomizeMenuScriptGp
                                    : g_CustomizeMenuScriptTimeAttack;
 
     if (GameMenuBusy == CUSTOMIZE_IDLE) {
         g_CarSpecGraphStep = 3;
-        RunTimedDrawScript(g_CustomizePopupScript, &g_UiScriptProgress2, -1);
+        RunTimedDrawScript(customize->popupScript, &g_UiScriptProgress2, -1);
         DrawFadingMenuSprites(g_UiScriptProgress, exitOption,
-                              g_CustomizeOption);
+                              customize->option);
         RunTimedDrawScript(cmdList, &g_UiScriptProgress, 0);
         if (RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1) != 0 &&
             g_UiScriptProgress2 <= 0) {
             g_MenuOverlayPattern = -1;
-            HandleCustomizeMenuInput(exitOption,
+            HandleCustomizeMenuInput(customize, exitOption,
                                      CustomizeCarSetupAvailable());
         }
         return;
     }
 
     if (GameMenuBusy < 0) {
-        UpdateCustomizeDialog(ot);
+        UpdateCustomizeDialog(customize, ot);
         DrawFadingMenuSprites(g_UiScriptProgress, exitOption,
-                              g_CustomizeOption);
+                              customize->option);
         RunTimedDrawScript(cmdList, &g_UiScriptProgress, 0);
         RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
         return;
@@ -294,7 +299,7 @@ void UpdateCustomizeScreen(void) {
     MenuBeginExit(MENU_SCREEN_CUSTOMIZE);
     RunTimedDrawScript(cmdList, &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
-    DrawFadingMenuSprites(g_UiScriptProgress, exitOption, g_CustomizeOption);
+    DrawFadingMenuSprites(g_UiScriptProgress, exitOption, customize->option);
     if (g_UiScriptProgress <= 0) {
         switch (GameMenuBusy) {
         case CUSTOMIZE_EXIT_TO_DESIGN:
@@ -305,7 +310,7 @@ void UpdateCustomizeScreen(void) {
             break;
         case CUSTOMIZE_EXIT_TO_CAR_SELECT:
             MenuActivateScreen(MENU_SCREEN_CAR_SELECT);
-            g_CustomizeOption = CUSTOMIZE_OPTION_TIRES;
+            customize->option = CUSTOMIZE_OPTION_TIRES;
             break;
         }
         g_UiScriptProgress = 0;
