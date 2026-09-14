@@ -123,10 +123,10 @@ static void PoisonEntryState(void) {
     g_MenuViewAngleTarget = 2;
     g_UiScriptProgress = 3;
     g_UiScriptProgress2 = 4;
-    g_MenuHintBarProgress = 5;
+    s_menuWidgets.hintProgress = 5;
     g_MenuConfirmTimer = 6;
     GameMenuBusy = 6;
-    g_MenuHintBarStep = 7;
+    s_menuWidgets.hintStep = 7;
     s_courseSelect.classChangeApplied = 8;
     s_courseSelect.swapDelay = 9;
     g_MenuViewOffset = 10;
@@ -144,7 +144,7 @@ static void PoisonEntryState(void) {
     s_menuWidgets.upperAltPanelStep = 20;
     s_menuWidgets.lowerAltPanelStep = 21;
     s_menuWidgets.timeAttackStep = 22;
-    g_MenuHintButtonsVisible = 0;
+    s_menuWidgets.hintButtonsVisible = 0;
     g_MenuHandlerIndex = 9;
     g_MenuOutgoingHandlerIndex = 10;
     g_MenuAltLayoutSetting = 23;
@@ -182,8 +182,8 @@ static int CheckCommonEntryState(const GameRaceProgress *progress) {
     CHECK(g_MenuViewAngle == MENU_COURSE_VIEW_REBASE_SPAN);
     CHECK(g_MenuViewAngleTarget == MENU_COURSE_VIEW_REBASE_SPAN);
     CHECK(g_UiScriptProgress == 0 && g_UiScriptProgress2 == 0);
-    CHECK(g_MenuHintBarProgress == 0 && GameMenuBusy == 0);
-    CHECK(g_MenuConfirmTimer == 0 && g_MenuHintBarStep == 0);
+    CHECK(s_menuWidgets.hintProgress == 0 && GameMenuBusy == 0);
+    CHECK(g_MenuConfirmTimer == 0 && s_menuWidgets.hintStep == 0);
     CHECK(s_courseSelect.classChangeApplied == 0 && s_courseSelect.swapDelay == 0);
     CHECK(g_MenuViewOffset == 0 && g_MenuViewOffsetTarget == 0);
     CHECK(s_courseSelect.cardSpin == 0 && s_courseSelect.cardSpinTarget == 0);
@@ -192,7 +192,7 @@ static int CheckCommonEntryState(const GameRaceProgress *progress) {
     CHECK(g_MenuOverlayPattern == 0 && s_menuWidgets.carNameStep == 0);
     CHECK(s_menuWidgets.carNameModel == 0 && s_carSpecGraph.step == 0);
     CHECK(s_menuWidgets.upperAltPanelStep == 0 && s_menuWidgets.lowerAltPanelStep == 0);
-    CHECK(s_menuWidgets.timeAttackStep == 0 && g_MenuHintButtonsVisible == 1);
+    CHECK(s_menuWidgets.timeAttackStep == 0 && s_menuWidgets.hintButtonsVisible == 1);
     CHECK(g_MenuHandlerIndex == -1 && g_MenuOutgoingHandlerIndex == -1);
     CHECK(g_MenuAltLayoutSetting == 0 && g_CarShopUnlockAll == 0);
     CHECK(g_MenuScreen == MENU_SCREEN_BOOTSTRAP);

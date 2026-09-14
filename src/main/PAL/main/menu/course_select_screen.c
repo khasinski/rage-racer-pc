@@ -151,7 +151,7 @@ static void ChooseCourseSelectRow(CourseSelectScreen *screen, s32 row) {
         }
         PlaySoundCue(3);
         StartSequenceFadeOut();
-        g_MenuHintBarStep = -1;
+        MenuWidgetState()->hintStep = -1;
         MenuWidgetState()->timeAttackStep = -1;
         GameMenuBusy = COURSE_SELECT_TO_RACE;
         g_GrandPrixSeries = CourseSeries(g_CourseIndex);
@@ -198,7 +198,7 @@ static void UpdateCourseSelectInput(CourseSelectScreen *screen) {
 }
 
 static void UpdateCourseSelectIdle(CourseSelectScreen *screen) {
-    g_MenuHintBarStep = 1;
+    MenuWidgetState()->hintStep = 1;
     RunTimedDrawScript(screen->modalScript, &g_UiScriptProgress2, -1);
     DrawCourseArrows(1);
     DrawFadingMenuSprites(g_UiScriptProgress, 2, screen->option);
@@ -280,7 +280,7 @@ static void UpdateSaveCountdown(CourseSelectScreen *screen,
         GameMenuBusy = (g_MenuSubCursor != 0)
                            ? COURSE_SELECT_TO_RECORD_ENTRY
                            : COURSE_SELECT_TO_RACE;
-        g_MenuHintBarStep = -1;
+        MenuWidgetState()->hintStep = -1;
         SpinCardAway(screen);
     }
 }

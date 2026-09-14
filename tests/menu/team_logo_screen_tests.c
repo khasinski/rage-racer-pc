@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <string.h>
 
+static MenuWidgets s_menuWidgets;
+
 extern s32 g_MenuHandlerIndex;
 extern s32 g_MenuOutgoingHandlerIndex;
 extern s32 g_MenuScreen;
@@ -24,7 +26,6 @@ s32 g_MenuAltLayout;
 s32 g_MenuConfirmTimer;
 s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
-s32 g_MenuHintButtonsVisible;
 s32 g_MenuOverlayPattern;
 s32 g_MenuScreen;
 u8 g_MenuSubCursor;
@@ -329,3 +330,5 @@ int main(void) {
     puts("logo screen state tests passed");
     return 0;
 }
+
+MenuWidgets *MenuWidgetState(void) { return &s_menuWidgets; }

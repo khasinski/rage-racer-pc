@@ -116,6 +116,9 @@ typedef struct MenuWidgets {
     s32 carNameModel;
     s32 timeAttackProgress;
     s32 timeAttackStep;
+    s32 hintProgress;
+    s32 hintStep;
+    s32 hintButtonsVisible;
 } MenuWidgets;
 
 typedef struct MenuRuntime {
@@ -437,9 +440,6 @@ typedef enum FrontendState {
 extern FrontendState g_FrontendState;
 extern s32 g_MainMenuSlide;
 extern s32 g_MenuConfirmTimer;
-extern s32 g_MenuHintBarProgress;
-extern s32 g_MenuHintBarStep;
-extern s32 g_MenuHintButtonsVisible;
 extern u8 g_MenuSubCursor;
 extern s32 g_MenuViewSpin;
 extern s16 g_NegconMaxTwistSaved;

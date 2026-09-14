@@ -130,13 +130,15 @@ static void DrawMenuTransitions(void) {
 }
 
 static void DrawMenuHints(GameOrderingTableEntry *ot) {
-    if (g_MenuHintBarStep == 0 ||
-        RunTimedDrawScript(g_MenuHintBarScript, &g_MenuHintBarProgress,
-                           g_MenuHintBarStep) == 0) {
+    MenuWidgets *widgets = MenuWidgetState();
+
+    if (widgets->hintStep == 0 ||
+        RunTimedDrawScript(g_MenuHintBarScript, &widgets->hintProgress,
+                           widgets->hintStep) == 0) {
         return;
     }
 
-    if (g_MenuHintButtonsVisible != 0 && ot != NULL) {
+    if (widgets->hintButtonsVisible != 0 && ot != NULL) {
         GameOrderingTableEntry *hintOt = ot + 1;
         u16 textureV = g_PadType == PAD_TYPE_NEGCON ? 0xF4 : 0xE8;
 

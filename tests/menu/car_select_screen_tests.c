@@ -63,7 +63,6 @@ s32 MenuRuntimeScreenState(s32 screen) { return s_menuScreenState[screen]; }
 void MenuRuntimeSetScreenState(s32 screen, s32 state) {
     s_menuScreenState[screen] = state;
 }
-s32 g_MenuHintBarStep;
 s32 g_MenuOutgoingScreenProgress;
 s32 g_MenuOverlayPattern;
 s32 g_MenuScreen;
@@ -308,7 +307,7 @@ int main(int argc, char **argv) {
         s_courseSelect.displayedCourse = 0;
         g_MenuHandlerIndex = 0;
         g_MenuOutgoingHandlerIndex = 0;
-        g_MenuHintBarStep = 0;
+        s_menuWidgets.hintStep = 0;
         g_MenuOverlayPattern = 0;
         s_courseSelect.pendingCourse = 0;
         g_MenuScreen = 0;
@@ -346,7 +345,7 @@ int main(int argc, char **argv) {
             after[12] = g_MenuOverlayPattern;
             after[13] = s_menuWidgets.carNameStep;
             after[14] = s_carSpecGraph.step;
-            after[15] = g_MenuHintBarStep;
+            after[15] = s_menuWidgets.hintStep;
             after[16] = g_SceneId;
             after[17] = g_CourseIndex;
             after[18] = g_GrandPrixSeries;

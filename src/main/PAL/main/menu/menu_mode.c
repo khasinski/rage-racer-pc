@@ -68,10 +68,10 @@ static void ResetMenuNavigation(void) {
     g_MenuViewAngleTarget = MENU_COURSE_VIEW_REBASE_SPAN;
     g_UiScriptProgress = 0;
     g_UiScriptProgress2 = 0;
-    g_MenuHintBarProgress = 0;
+    MenuWidgetState()->hintProgress = 0;
     g_MenuConfirmTimer = 0;
     GameMenuBusy = 0;
-    g_MenuHintBarStep = 0;
+    MenuWidgetState()->hintStep = 0;
     courseSelect->swapDelay = 0;
     g_MenuViewOffset = 0;
     g_MenuViewOffsetTarget = 0;
@@ -89,7 +89,7 @@ static void ResetMenuNavigation(void) {
     MenuWidgetState()->upperAltPanelStep = 0;
     MenuWidgetState()->lowerAltPanelStep = 0;
     MenuWidgetState()->timeAttackStep = 0;
-    g_MenuHintButtonsVisible = 1;
+    MenuWidgetState()->hintButtonsVisible = 1;
     g_MenuAltLayoutSetting = 0;
     g_CarShopUnlockAll = 0;
     MenuCarSelect()->cursor = 0;

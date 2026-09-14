@@ -11,10 +11,7 @@ s32 g_CarListCursor;
 CarEntry *g_CarTable;
 GameRenderState g_RenderState;
 s32 g_MenuHandlerIndex;
-s32 g_MenuHintBarProgress;
 TimedDrawCommand g_MenuHintBarScript[1];
-s32 g_MenuHintBarStep;
-s32 g_MenuHintButtonsVisible;
 s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuOutgoingScreenProgress;
 s32 g_MenuOverlayPattern;
@@ -131,9 +128,9 @@ static void Reset(void) {
     g_CarListCursor = 2;
     s_cars[1].tireCompound = 4;
     s_cars[2].tireCompound = 8;
-    g_MenuHintBarStep = 0;
-    g_MenuHintBarProgress = 0;
-    g_MenuHintButtonsVisible = 0;
+    MenuWidgetState()->hintStep = 0;
+    MenuWidgetState()->hintProgress = 0;
+    MenuWidgetState()->hintButtonsVisible = 0;
     g_MenuOverlayPattern = 0;
     g_PadType = PAD_TYPE_DIGITAL;
     s_displayMask = 0;
@@ -163,17 +160,17 @@ static int TestDispatchAndLayers(void) {
 
     Reset();
     MenuActivateScreen(MENU_SCREEN_CAR_SHOP);
-    g_MenuHintBarStep = 1;
-    g_MenuHintButtonsVisible = 1;
+    MenuWidgetState()->hintStep = 1;
+    MenuWidgetState()->hintButtonsVisible = 1;
     s_hintResult = 1;
     UpdateMenuMode();
     CHECK(g_RenderState.pass.otShift == 5 && s_specCarTire == 8);
-    CHECK(g_MenuHintBarProgress == 1 && s_overlayCalls == 1);
+    CHECK(MenuWidgetState()->hintProgress == 1 && s_overlayCalls == 1);
     CHECK(s_spriteCount == 2 && s_spriteTextureV == 0xE8);
 
     Reset();
-    g_MenuHintBarStep = 1;
-    g_MenuHintButtonsVisible = 1;
+    MenuWidgetState()->hintStep = 1;
+    MenuWidgetState()->hintButtonsVisible = 1;
     g_PadType = PAD_TYPE_NEGCON;
     s_hintResult = 1;
     UpdateMenuMode();
@@ -209,8 +206,8 @@ static int TestInvalidIndices(void) {
 
     Reset();
     RENDER_OT_BASE = NULL;
-    g_MenuHintBarStep = 1;
-    g_MenuHintButtonsVisible = 1;
+    MenuWidgetState()->hintStep = 1;
+    MenuWidgetState()->hintButtonsVisible = 1;
     s_hintResult = 1;
     UpdateMenuMode();
     CHECK(s_solidRectCalls == 0 && s_spriteCount == 0);

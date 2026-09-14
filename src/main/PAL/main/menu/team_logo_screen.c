@@ -71,7 +71,7 @@ static void UpdateTeamLogoIdle(void) {
         return;
     }
 
-    g_MenuHintButtonsVisible = 1;
+    MenuWidgetState()->hintButtonsVisible = 1;
     g_MenuOverlayPattern = -1;
     if (g_PadPressed & PAD_UP) {
         PlaySoundCue(1);
@@ -155,7 +155,7 @@ static void UpdateTeamLogoPainting(void) {
         UpdateTeamLogoCanvas();
     }
     if (g_UiScriptProgress2 >= 8) {
-        g_MenuHintButtonsVisible = 0;
+        MenuWidgetState()->hintButtonsVisible = 0;
     }
     DrawTeamLogoCanvas(1, 1);
 }
@@ -165,7 +165,7 @@ static void UpdateTeamLogoPaintClosing(void) {
     RunTimedDrawScript(g_TeamLogoSubPanelScript, &g_UiScriptProgress2, -1);
     DrawTeamLogoCanvas(1, -1);
     if (g_UiScriptProgress2 < 7) {
-        g_MenuHintButtonsVisible = 1;
+        MenuWidgetState()->hintButtonsVisible = 1;
     }
     if (g_UiScriptProgress2 <= 0) {
         GameMenuBusy = 0;

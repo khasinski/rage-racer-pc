@@ -102,7 +102,7 @@ static void ChooseCarSelectRow(s32 row) {
         }
         RequestRoundAssets();
         SetCarSelectState(1);
-        g_MenuHintBarStep = -1;
+        MenuWidgetState()->hintStep = -1;
         MenuWidgetState()->carNameStep = -10;
         g_MenuOverlayPattern = 0;
         MenuCarSpecGraph()->step = -3;

@@ -63,7 +63,6 @@ void MenuBeginExit(s32 screen) {
     g_MenuHandlerIndex = -1;
     g_MenuOutgoingHandlerIndex = screen;
 }
-s32 g_MenuHintBarStep;
 s32 g_MenuOutgoingScreenProgress;
 s32 g_MenuOverlayPattern;
 s32 g_MenuScreen;
@@ -307,7 +306,7 @@ int main(int argc, char **argv) {
         s_courseSelect.displayedCourse = 0;
         g_MenuHandlerIndex = 0;
         g_MenuOutgoingHandlerIndex = 0;
-        g_MenuHintBarStep = 0;
+        s_menuWidgets.hintStep = 0;
         g_MenuOverlayPattern = 0;
         s_courseSelect.pendingCourse = 0;
         g_MenuScreen = 0;
@@ -341,7 +340,7 @@ int main(int argc, char **argv) {
             after[6] = g_MenuHandlerIndex;
             after[7] = g_MenuOutgoingHandlerIndex;
             after[8] = g_MenuOverlayPattern;
-            after[9] = g_MenuHintBarStep;
+            after[9] = s_menuWidgets.hintStep;
             after[10] = g_SceneId;
             after[11] = g_GrandPrixClass;
             after[12] = g_GrandPrixSeries;
