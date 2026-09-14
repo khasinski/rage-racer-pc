@@ -63,7 +63,7 @@ s32 MenuRuntimeScreenState(s32 screen) { return s_menuScreenState[screen]; }
 void MenuRuntimeSetScreenState(s32 screen, s32 state) {
     s_menuScreenState[screen] = state;
 }
-s32 g_MenuOutgoingScreenProgress;
+static s32 s_outgoingProgress;
 s32 g_MenuOverlayPattern;
 s32 g_MenuScreen;
 s32 g_MenuViewAngle;
@@ -290,7 +290,7 @@ int main(int argc, char **argv) {
         g_NextOwnedCarIndex = (s16)owned[1 - oi];
         g_ShopCarIndex = shop ? -1 : 7;
         g_MenuViewOffset = offsets[off];
-        g_MenuOutgoingScreenProgress = off;
+        s_outgoingProgress = off;
 
         g_MenuAltLayoutSetting = 1;
         s_menuWidgets.carNameStep = 4;
@@ -392,7 +392,7 @@ int main(int argc, char **argv) {
 
     MenuRuntimeSetScreenState(MENU_SCREEN_CAR_SELECT, 1);
     g_UiScriptProgress = 0;
-    g_MenuOutgoingScreenProgress = 0;
+    s_outgoingProgress = 0;
     g_MenuViewOffset = 0x3D090;
     g_PlayerCarIndex = 0;
     g_GrandPrixClass = 0;
@@ -424,3 +424,5 @@ int main(int argc, char **argv) {
 
 CarSelect *MenuCarSelect(void) { return &s_carSelect; }
 MenuWidgets *MenuWidgetState(void) { return &s_menuWidgets; }
+
+s32 MenuOutgoingProgress(void) { return s_outgoingProgress; }

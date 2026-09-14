@@ -13,7 +13,6 @@ GameRenderState g_RenderState;
 s32 g_MenuHandlerIndex;
 TimedDrawCommand g_MenuHintBarScript[1];
 s32 g_MenuOutgoingHandlerIndex;
-s32 g_MenuOutgoingScreenProgress;
 s32 g_MenuOverlayPattern;
 s32 g_MenuScreen;
 u8 g_PadType;
@@ -122,7 +121,6 @@ static void Reset(void) {
     g_SceneTimer = 0;
     MenuRuntimeReset();
     MenuActivateScreen(MENU_SCREEN_COURSE_SELECT);
-    g_MenuOutgoingScreenProgress = -1;
     MenuCarSpecGraph()->step = 7;
     g_PlayerCarIndex = 1;
     g_CarListCursor = 2;
@@ -155,7 +153,7 @@ static int TestDispatchAndLayers(void) {
     CHECK(s_solidRectCalls == 1);
     CHECK(s_drawCalls == 1 && s_drawSteps[0] == -10);
     CHECK(MenuRuntimeCurrent()->drawProgress[MENU_SCREEN_CUSTOMIZE] == -10);
-    CHECK(g_MenuOutgoingScreenProgress == 123);
+    CHECK(MenuRuntimeCurrent()->outgoingProgress == 123);
     CHECK(s_specCarTire == 4 && s_overlayCalls == 0);
 
     Reset();

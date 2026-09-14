@@ -100,6 +100,10 @@ void MenuBeginExit(s32 screen) {
     s_menuRuntime.outgoingDrawScreen = screen;
 }
 
+s32 MenuOutgoingProgress(void) {
+    return s_menuRuntime.outgoingProgress;
+}
+
 static u32 CurrentMenuCarTireCompound(void) {
     s32 carIndex = s_menuRuntime.activeScreen == MENU_SCREEN_CAR_SHOP
                        ? g_CarListCursor
@@ -123,7 +127,7 @@ static void DrawMenuTransitions(void) {
         s_menuRuntime.outgoingDrawScreen < MENU_SCREEN_COUNT) {
         s32 screen = s_menuRuntime.outgoingDrawScreen;
 
-        g_MenuOutgoingScreenProgress =
+        s_menuRuntime.outgoingProgress =
             g_MenuScreenDraw[screen](&s_menuRuntime.drawProgress[screen],
                                      MENU_OUTGOING_SCREEN_FADE_STEP);
     }

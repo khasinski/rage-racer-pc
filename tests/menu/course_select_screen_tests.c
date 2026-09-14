@@ -63,7 +63,7 @@ void MenuBeginExit(s32 screen) {
     g_MenuHandlerIndex = -1;
     g_MenuOutgoingHandlerIndex = screen;
 }
-s32 g_MenuOutgoingScreenProgress;
+static s32 s_outgoingProgress;
 s32 g_MenuOverlayPattern;
 s32 g_MenuScreen;
 u8 g_MenuSubCursor;
@@ -288,7 +288,7 @@ int main(int argc, char **argv) {
         g_MenuSubCursor = (u8)sub;
         g_MenuConfirmTimer = timer;
         g_MenuViewOffset = offsets[off];
-        g_MenuOutgoingScreenProgress = off;
+        s_outgoingProgress = off;
         s_courseSelect.classChangeApplied = applied;
         g_CourseIndex = courses[ci];
 
@@ -484,7 +484,7 @@ int main(int argc, char **argv) {
             g_MenuSubCursor = 0;
             g_MenuConfirmTimer = 0;
             g_MenuViewOffset = offs[ofi];
-            g_MenuOutgoingScreenProgress = prog;
+            s_outgoingProgress = prog;
             s_courseSelect.classChangeApplied = 0;
             /* Five is the one of these the handover's mask changes, so the
              * course it writes is not the course it was given. */
@@ -840,7 +840,7 @@ int main(int argc, char **argv) {
 
     GameMenuBusy = 2;
     g_UiScriptProgress = 0;
-    g_MenuOutgoingScreenProgress = 0;
+    s_outgoingProgress = 0;
     g_MenuViewOffset = 0x3D090;
     g_SceneId = -1;
     UpdateCourseSelectScreen();
@@ -890,3 +890,5 @@ int main(int argc, char **argv) {
 }
 
 MenuWidgets *MenuWidgetState(void) { return &s_menuWidgets; }
+
+s32 MenuOutgoingProgress(void) { return s_outgoingProgress; }

@@ -143,7 +143,6 @@ s32 GameMenuBusy;
 s32 g_MenuOverlayPattern;
 s32 g_MenuAltLayoutSetting;
 s32 g_CarShopUnlockAll;
-s32 g_MenuOutgoingScreenProgress;
 s32 g_MenuViewAngle;
 s32 g_MenuViewAngleTarget;
 s32 g_MenuViewOffset;

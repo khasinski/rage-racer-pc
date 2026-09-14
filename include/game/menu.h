@@ -128,6 +128,8 @@ typedef struct MenuRuntime {
     s32 activeDrawScreen;
     /* Screen fading out, or -1 when no outgoing screen remains. */
     s32 outgoingDrawScreen;
+    /* Result returned by the outgoing screen's transition renderer. */
+    s32 outgoingProgress;
     /* Each screen owns a separate state-machine value. */
     s32 screenState[MENU_SCREEN_COUNT];
     /* Fade/slide accumulator passed explicitly to each screen renderer. */
@@ -168,6 +170,7 @@ void MenuActivateEnteringScreen(s32 screen, s32 drawScreen);
 /* Start fading `screen` out. The destination is activated after that screen's
  * state machine has completed its own exit animation. */
 void MenuBeginExit(s32 screen);
+s32 MenuOutgoingProgress(void);
 
 /*
  * The two parallel screen tables UpdateMenuMode dispatches through, both indexed
@@ -421,7 +424,6 @@ extern s32 g_TeamLogoBrushSize;
 extern s32 g_TeamLogoPaletteMode;
 extern s32 g_TeamLogoColorChannel;
 extern s32 g_CarShopUnlockAll;
-extern s32 g_MenuOutgoingScreenProgress;
 extern s32 g_TeamLogoPaintArmed;
 extern const TimedDrawCommand *g_TeamLogoSubPanelScript;
 extern s32 g_BgmTrackCount;

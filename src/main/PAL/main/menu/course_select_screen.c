@@ -400,7 +400,7 @@ static void EnterChosenScreen(void) {
         g_CarSwapFromIndex = g_PlayerCarIndex;
         break;
     case COURSE_SELECT_TO_RACE:
-        if ((g_MenuOutgoingScreenProgress > 0) ||
+        if ((MenuOutgoingProgress() > 0) ||
             (g_MenuViewOffset < MENU_VIEW_OFFSET_MAX)) {
             return;
         }
@@ -413,7 +413,7 @@ static void EnterChosenScreen(void) {
         break;
     case COURSE_SELECT_TO_RECORD_ENTRY:
         /* The saved-game route reaches the race through the record screen. */
-        if ((g_MenuOutgoingScreenProgress > 0) ||
+        if ((MenuOutgoingProgress() > 0) ||
             (g_MenuViewOffset < MENU_VIEW_OFFSET_MAX)) {
             return;
         }

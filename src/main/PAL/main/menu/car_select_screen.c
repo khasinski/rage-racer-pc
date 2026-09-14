@@ -251,7 +251,7 @@ static void EnterChosenScreen(void) {
 
     switch (CarSelectState()) {
     case 1:
-        if ((g_MenuOutgoingScreenProgress > 0) &&
+        if ((MenuOutgoingProgress() > 0) &&
             (g_MenuViewOffset <= 0x3D08F)) {
             return;
         }
