@@ -10,13 +10,14 @@
 #include "game/race.h"
 #include "game/race_internal.h"
 #include "game/render_internal.h"
+#include "game/scene_runtime.h"
 #include "game/state.h"
 
 u8 *g_AssetBase;
 s32 g_AssetLoadFailed;
 s32 g_AssetLoadState;
 s32 g_AnimTimer;
-AttractDemoStep g_AttractDemoStep;
+static AttractDemo s_state;
 s32 g_BgmShuffleIndex;
 u8 g_BgmShuffleOrder[BGM_SHUFFLE_CAPACITY];
 s32 g_BgmTrackCount;
@@ -94,10 +95,11 @@ s32 CycleAttractCameraCar(s32 mask, s32 current) {
 }
 void UpdateAndDrawAttractWorld(void) { s_worldUpdates++; }
 void ResetAssetLoader(void) {}
+AttractDemo *SceneRuntimeAttractDemo(void) { return &s_state; }
 
 static void Reset(void) {
+    s_state = (AttractDemo){.step = ATTRACT_DEMO_STEP_RACE};
     g_AnimTimer = 10;
-    g_AttractDemoStep = ATTRACT_DEMO_STEP_RACE;
     g_CameraCarIndex = 2;
     g_PadPressed = 0;
     g_SceneId = 0x1E;

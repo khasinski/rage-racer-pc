@@ -7,6 +7,7 @@
 #include "game/render_internal.h"
 #include "game/save_internal.h"
 #include "game/screens.h"
+#include "game/scene_runtime.h"
 #include "game/state.h"
 
 GameRenderState g_RenderState;
@@ -15,7 +16,7 @@ GameFrameContext *g_DrawBuffer = &s_FrameContext;
 s32 g_FrameSyncThreshold;
 s32 g_SceneId;
 s32 g_SceneTimer;
-s32 g_LostRaceChoice;
+static LostRace s_state;
 s32 g_GrandPrixClass;
 u16 g_PadPressed;
 static CourseProgressState s_CourseProgress;
@@ -30,6 +31,8 @@ static s32 s_ResetProgressCalls;
 static s32 s_ResetProgressClass;
 static s32 s_BannerDraws;
 static s32 s_ChanceDigit;
+
+LostRace *SceneRuntimeLostRace(void) { return &s_state; }
 
 void SetReverbDepth(s32 left, s32 right) {
     if (left == 0x28 && right == 0x28) s_ReverbCalls++;
@@ -97,10 +100,10 @@ void DrawSprite(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1,
     } while (0)
 
 static void ResetState(void) {
+    s_state = (LostRace){0};
     g_FrameSyncThreshold = 0;
     g_SceneId = -1;
     g_SceneTimer = 0;
-    g_LostRaceChoice = 0;
     g_GrandPrixClass = 2;
     g_PadPressed = 0;
     s_CourseProgress.retriesRemaining = 3;
@@ -120,7 +123,7 @@ static int TestLostRaceRetry(void) {
     EnterLostRaceScreen();
     CHECK(g_FrameSyncThreshold == 0x80);
     CHECK(g_SceneId == 14 && g_SceneTimer == -1);
-    CHECK(g_LostRaceChoice == 0 && s_ReverbCalls == 1);
+    CHECK(s_state.choice == 0 && s_ReverbCalls == 1);
 
     g_PadPressed = PAD_START;
     UpdateLostRaceScreen();
@@ -158,7 +161,7 @@ static int TestLostRaceExit(void) {
     EnterLostRaceScreen();
     g_PadPressed = PAD_DOWN;
     UpdateLostRaceScreen();
-    CHECK(g_LostRaceChoice == 1 && s_LastSoundCue == 1);
+    CHECK(s_state.choice == 1 && s_LastSoundCue == 1);
 
     g_PadPressed = PAD_START;
     UpdateLostRaceScreen();

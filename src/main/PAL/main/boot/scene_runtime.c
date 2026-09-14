@@ -9,6 +9,26 @@
 
 static SceneRuntime s_runtime = {.scene = -1};
 
+static int ContinuesScene(s32 previous, s32 scene) {
+    switch (scene) {
+    case GAME_SCENE_MEMORY_CARD:
+        return previous == GAME_SCENE_ENTER_MEMORY_CARD ||
+               previous == GAME_SCENE_ENTER_MEMORY_CARD_LOAD;
+    case GAME_SCENE_BGM_SELECT:
+        return previous == GAME_SCENE_ENTER_BGM_SELECT;
+    case GAME_SCENE_RECORD_ENTRY:
+        return previous == GAME_SCENE_ENTER_RECORD_ENTRY;
+    case GAME_SCENE_PROLOGUE:
+        return previous == GAME_SCENE_ENTER_PROLOGUE;
+    case GAME_SCENE_ATTRACT_DEMO:
+        return previous == GAME_SCENE_ENTER_ATTRACT_DEMO;
+    case GAME_SCENE_LOST_RACE:
+        return previous == GAME_SCENE_ENTER_LOST_RACE;
+    default:
+        return 0;
+    }
+}
+
 static void ResetLegacyTransitionState(void) {
     /* These fields are scratch state for a single top-level scene.  Retail
      * code has many direct scene writes; centralising the reset here makes a
@@ -21,23 +41,8 @@ static void ResetLegacyTransitionState(void) {
 
 void SceneRuntimeBeforeDispatch(s32 scene) {
     if (s_runtime.scene != scene) {
-        const int continueMemoryCard =
-            scene == GAME_SCENE_MEMORY_CARD &&
-            (s_runtime.scene == GAME_SCENE_ENTER_MEMORY_CARD ||
-             s_runtime.scene == GAME_SCENE_ENTER_MEMORY_CARD_LOAD);
-        const int continueBgmSelect =
-            scene == GAME_SCENE_BGM_SELECT &&
-            s_runtime.scene == GAME_SCENE_ENTER_BGM_SELECT;
-        const int continueRecordEntry =
-            scene == GAME_SCENE_RECORD_ENTRY &&
-            s_runtime.scene == GAME_SCENE_ENTER_RECORD_ENTRY;
-        const int continuePrologue =
-            scene == GAME_SCENE_PROLOGUE &&
-            s_runtime.scene == GAME_SCENE_ENTER_PROLOGUE;
-        MemoryCardSession memoryCard = s_runtime.memoryCard;
-        BgmSelect bgmSelect = s_runtime.bgmSelect;
-        RecordEntry recordEntry = s_runtime.recordEntry;
-        Prologue prologue = s_runtime.prologue;
+        const int continues = ContinuesScene(s_runtime.scene, scene);
+        SceneState state = s_runtime.state;
         u32 generation = s_runtime.generation + 1;
 
         if (generation == 0) generation = 1;
@@ -45,12 +50,7 @@ void SceneRuntimeBeforeDispatch(s32 scene) {
         s_runtime.scene = scene;
         s_runtime.generation = generation;
         s_runtime.assetGeneration = AssetLoadTransactionGeneration();
-        if (continueMemoryCard) {
-            s_runtime.memoryCard = memoryCard;
-        }
-        if (continueBgmSelect) s_runtime.bgmSelect = bgmSelect;
-        if (continueRecordEntry) s_runtime.recordEntry = recordEntry;
-        if (continuePrologue) s_runtime.prologue = prologue;
+        if (continues) s_runtime.state = state;
         ResetLegacyTransitionState();
     }
     s_runtime.transition.timer = g_SceneTimer;
@@ -74,19 +74,27 @@ const SceneRuntime *SceneRuntimeCurrent(void) {
 }
 
 MemoryCardSession *SceneRuntimeMemoryCard(void) {
-    return &s_runtime.memoryCard;
+    return &s_runtime.state.memoryCard;
 }
 
 BgmSelect *SceneRuntimeBgmSelect(void) {
-    return &s_runtime.bgmSelect;
+    return &s_runtime.state.bgmSelect;
 }
 
 RecordEntry *SceneRuntimeRecordEntry(void) {
-    return &s_runtime.recordEntry;
+    return &s_runtime.state.recordEntry;
 }
 
 Prologue *SceneRuntimePrologue(void) {
-    return &s_runtime.prologue;
+    return &s_runtime.state.prologue;
+}
+
+AttractDemo *SceneRuntimeAttractDemo(void) {
+    return &s_runtime.state.attractDemo;
+}
+
+LostRace *SceneRuntimeLostRace(void) {
+    return &s_runtime.state.lostRace;
 }
 
 const AssetLoadTransaction *SceneRuntimeAssetResult(AssetRequestType request) {

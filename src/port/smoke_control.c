@@ -653,7 +653,7 @@ int PortShouldExit(int frame_number) {
             (input->scene == 8 &&
              MenuRuntimeCurrent()->activeScreen == input->phase) ||
             (input->scene == 32 &&
-             (int)SceneRuntimeCurrent()->prologue.step == input->phase);
+             (int)SceneRuntimeCurrent()->state.prologue.step == input->phase);
         if (!input->fired && g_SceneId == input->scene && phaseMatches &&
             g_SceneTimer <= input->timer) {
             input->armed = 1;

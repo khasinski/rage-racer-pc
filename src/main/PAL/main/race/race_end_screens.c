@@ -8,6 +8,7 @@
 #include "game/save_internal.h"
 #include "game/screens.h"
 #include "game/scene.h"
+#include "game/scene_runtime.h"
 
 enum {
     LOST_RACE_INPUT_TIMER = -1,
@@ -19,15 +20,17 @@ void DrawLostRaceCaption(s32 level) {
 }
 
 void EnterLostRaceScreen(void) {
+    LostRace *state = SceneRuntimeLostRace();
+
     g_FrameSyncThreshold = 0x80;
     SetReverbDepth(0x28, 0x28);
     g_SceneId = GAME_SCENE_LOST_RACE;
-    g_LostRaceChoice = 0;
+    state->choice = 0;
     g_SceneTimer = LOST_RACE_INPUT_TIMER;
     DrawLostRaceCaption(0xFF);
 }
 
-static void DrawRaceEndPrompt(void) {
+static void DrawRaceEndPrompt(const LostRace *state) {
     char chance[2];
     s32 color = 0x7812;
     s32 drawColor;
@@ -38,13 +41,13 @@ static void DrawRaceEndPrompt(void) {
     }
 
     drawColor = 0x7812;
-    if (g_LostRaceChoice == 0) {
+    if (state->choice == 0) {
         drawColor = color;
     }
     DrawProportionalText(0x6A, 0x68, "TRY AGAIN", drawColor);
 
     drawColor = 0x7812;
-    if (g_LostRaceChoice != 0) {
+    if (state->choice != 0) {
         drawColor = color;
     }
     DrawProportionalText(0x70, 0x78, "END RACE", drawColor);
@@ -62,19 +65,20 @@ static void DrawRaceEndPrompt(void) {
 }
 
 void UpdateLostRaceScreen(void) {
+    LostRace *state = SceneRuntimeLostRace();
     s32 timer = g_SceneTimer;
 
     if (timer == LOST_RACE_INPUT_TIMER) {
-        s32 previousChoice = g_LostRaceChoice;
+        s32 previousChoice = state->choice;
 
-        g_LostRaceChoice =
+        state->choice =
             UpdateLostRaceChoice(previousChoice, g_PadPressed);
-        if (previousChoice != g_LostRaceChoice) {
+        if (previousChoice != state->choice) {
             PlaySoundCue(1);
         }
         if (g_PadPressed & PAD_START) {
             PlaySoundCue(2);
-            if (g_LostRaceChoice != 0) {
+            if (state->choice != 0) {
                 RequestSelectBgmAssets();
             }
             g_SceneTimer = 0;
@@ -88,11 +92,11 @@ void UpdateLostRaceScreen(void) {
         g_SceneTimer = timer;
         DrawFullscreenFadeTile(timer, 0x49);
         if (g_SceneTimer >= RACE_END_SCREEN_FADE_COMPLETE) {
-            g_SceneId = LostRaceExitScene(g_LostRaceChoice);
+            g_SceneId = LostRaceExitScene(state->choice);
         }
     }
 
-    DrawRaceEndPrompt();
+    DrawRaceEndPrompt(state);
 }
 
 void DrawRaceEndBanner(s32 level) {

@@ -8,6 +8,7 @@
 #include "game/race.h"
 #include "game/race_internal.h"
 #include "game/scene.h"
+#include "game/scene_runtime.h"
 #include "game/render_internal.h"
 #include "game/track.h"
 
@@ -22,6 +23,7 @@ enum {
 };
 
 void EnterAttractDemo(void) {
+    AttractDemo *state = SceneRuntimeAttractDemo();
     size_t texturePackSize;
 
     SetDispMask(0);
@@ -40,38 +42,38 @@ void EnterAttractDemo(void) {
     }
     RequestTrackDataAssets();
 
-    g_AttractDemoStep = ATTRACT_DEMO_STEP_LOAD;
+    state->step = ATTRACT_DEMO_STEP_LOAD;
     g_FadeLevel = ATTRACT_INITIAL_TITLE_FADE;
     g_SceneTimer = 0;
     g_SceneId = GAME_SCENE_ATTRACT_DEMO;
     g_CameraCarIndex = 0;
 }
 
-static s32 GetAttractTitleFade(s32 element) {
-    if (g_AttractDemoStep != ATTRACT_DEMO_STEP_LOAD && g_FadeLevel > 0) {
+static s32 GetAttractTitleFade(AttractDemo *state, s32 element) {
+    if (state->step != ATTRACT_DEMO_STEP_LOAD && g_FadeLevel > 0) {
         g_FadeLevel--;
     }
 
-    return AttractTitleFadeLevel(g_AttractDemoStep, g_SceneTimer, g_FadeLevel,
+    return AttractTitleFadeLevel(state->step, g_SceneTimer, g_FadeLevel,
                                  g_AttractTitleDelays[element]);
 }
 
-static void DrawAttractTitle(void) {
+static void DrawAttractTitle(AttractDemo *state) {
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     s32 fade;
 
-    fade = GetAttractTitleFade(0);
+    fade = GetAttractTitleFade(state, 0);
     DrawSprite(ot, 0x74, 0x34, 0x58, 0x38, 0xA8, 0xA8, fade, fade, fade,
                0x1F, 0, 1, 0x29);
     DrawSprite(ot, 0x44, 0x70, 0xB8, 0x14, 0x48, 0xE8, fade, fade, fade,
                0x80, 0, 1, 0x29);
-    fade = GetAttractTitleFade(1);
+    fade = GetAttractTitleFade(state, 1);
     DrawSprite(ot, 0x5E, 0x90, 0x84, 0xC, 0,
                g_CourseIndex * 12 + 0x9C, fade, fade, fade, 0x12, 0, 1,
                0x29);
 }
 
-static void UpdateAttractDemoStart(void) {
+static void UpdateAttractDemoStart(AttractDemo *state) {
     s32 shuffleTrack;
     s32 cdTrack;
     g_SceneTimer = NextAttractLoadTimer(g_SceneTimer);
@@ -83,7 +85,7 @@ static void UpdateAttractDemoStart(void) {
     if (AssetLoadCompletedSuccessfully()) {
         InitTrackScene();
 
-        g_AttractDemoStep = ATTRACT_DEMO_STEP_RACE;
+        state->step = ATTRACT_DEMO_STEP_RACE;
         shuffleTrack = BgmShuffleTrackAt(g_BgmShuffleOrder, g_BgmTrackCount,
                                          g_BgmShuffleIndex);
         AdvanceBgmShuffleBag(shuffleTrack);
@@ -93,7 +95,7 @@ static void UpdateAttractDemoStart(void) {
         StartCdAudio();
     }
 
-    DrawAttractTitle();
+    DrawAttractTitle(state);
 }
 
 static void ReturnToTitleScene(void) {
@@ -102,13 +104,13 @@ static void ReturnToTitleScene(void) {
     ResetCdAudioState();
 }
 
-static void UpdateAttractDemoRace(void) {
+static void UpdateAttractDemoRace(AttractDemo *state) {
     s32 timer;
 
     g_SceneTimer = NextAttractRaceTimer(g_SceneTimer);
     timer = g_SceneTimer;
     if (timer < ATTRACT_TITLE_END_FRAME) {
-        DrawAttractTitle();
+        DrawAttractTitle(state);
         DrawFullscreenFadeTile(AttractOpeningWashLevel(timer),
                                ATTRACT_FADE_TPAGE);
     }
@@ -133,14 +135,16 @@ static void UpdateAttractDemoRace(void) {
 }
 
 void UpdateAttractDemoScene(void) {
-    switch (g_AttractDemoStep) {
+    AttractDemo *state = SceneRuntimeAttractDemo();
+
+    switch (state->step) {
     case ATTRACT_DEMO_STEP_INVALID:
         break;
     case ATTRACT_DEMO_STEP_LOAD:
-        UpdateAttractDemoStart();
+        UpdateAttractDemoStart(state);
         break;
     case ATTRACT_DEMO_STEP_RACE:
-        UpdateAttractDemoRace();
+        UpdateAttractDemoRace(state);
         break;
     }
 

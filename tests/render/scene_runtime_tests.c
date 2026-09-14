@@ -148,6 +148,25 @@ int main(void) {
     CHECK(SceneRuntimePrologue()->step == 0 &&
           SceneRuntimePrologue()->cameraCut == 0);
 
+    g_SceneId = GAME_SCENE_ENTER_ATTRACT_DEMO;
+    SceneRuntimeBeforeDispatch(g_SceneId);
+    SceneRuntimeAttractDemo()->step = ATTRACT_DEMO_STEP_RACE;
+    g_SceneId = GAME_SCENE_ATTRACT_DEMO;
+    SceneRuntimeBeforeDispatch(g_SceneId);
+    CHECK(SceneRuntimeAttractDemo()->step == ATTRACT_DEMO_STEP_RACE);
+
+    g_SceneId = GAME_SCENE_ENTER_LOST_RACE;
+    SceneRuntimeBeforeDispatch(g_SceneId);
+    SceneRuntimeLostRace()->choice = 1;
+    g_SceneId = GAME_SCENE_LOST_RACE;
+    SceneRuntimeBeforeDispatch(g_SceneId);
+    CHECK(SceneRuntimeLostRace()->choice == 1);
+
+    g_SceneId = GAME_SCENE_MENU;
+    SceneRuntimeBeforeDispatch(g_SceneId);
+    CHECK(SceneRuntimeAttractDemo()->step == 0 &&
+          SceneRuntimeLostRace()->choice == 0);
+
     puts("scene runtime scopes transition state and asset results to one scene");
     return 0;
 }

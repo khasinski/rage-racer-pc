@@ -8,6 +8,7 @@
 #include "game/vector.h"
 #include "game/replay.h"
 #include "game/render_types.h"
+#include "game/scene_state.h"
 
 struct PlayerCarRuntime;
 struct GameCarRuntime;
@@ -213,13 +214,6 @@ extern s16 g_RaceOptionCursor;
 void DrawWrongWayWarning(void);
 
 extern s16 g_PlayerAutoSteer;
-typedef enum AttractDemoStep {
-    ATTRACT_DEMO_STEP_INVALID = -1,
-    ATTRACT_DEMO_STEP_LOAD,
-    ATTRACT_DEMO_STEP_RACE
-} AttractDemoStep;
-
-extern AttractDemoStep g_AttractDemoStep;
 void EnterAttractDemo(void);
 void UpdateAttractDemoScene(void);
 extern s32 g_BestLapThisRace;
@@ -271,7 +265,6 @@ extern const char *g_NativeCarNames[];
 extern s32 g_ClassPromoted;
 extern char *g_CourseNames[COURSE_SLOT_COUNT];
 extern s32 g_EndingWashLevel;
-extern s32 g_LostRaceChoice;
 typedef struct PrologueLine {
     s16 x;
     s16 y;
