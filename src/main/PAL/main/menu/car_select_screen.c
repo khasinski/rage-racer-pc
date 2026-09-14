@@ -18,6 +18,8 @@
 #include "game/race_internal.h"
 #include "game/save_internal.h"
 
+#include <stdio.h>
+
 /* The last row of the menu backs out, so its index is also the count of the
  * rows above it: two in time attack, four in a Grand Prix. */
 static s32 CarSelectLastRow(void) { return g_GrandPrixMode != 0 ? 4 : 2; }
@@ -35,6 +37,53 @@ static const TimedDrawCommand *CarSelectMenuScript(void) {
         return g_CarSelectMenuScriptGp;
     }
     return g_CarSelectMenuScriptTimeAttack;
+}
+
+static void UpdateSelectableCarNeighbours(CarBrowse *browse) {
+    s32 modelCount;
+
+    if (g_RaceSession.kind != RACE_SESSION_CUSTOM) {
+        UpdateOwnedCarNeighbours(browse);
+        return;
+    }
+    modelCount = CustomRaceModelCount(g_RaceSession.classIndex);
+    browse->previous = g_RaceSession.model > 0
+                           ? g_RaceSession.model - 1
+                           : -1;
+    browse->next = g_RaceSession.model + 1 < modelCount
+                       ? g_RaceSession.model + 1
+                       : -1;
+}
+
+static void SpinToSelectableCar(s32 selection, s32 target) {
+    s32 from = g_PlayerCarIndex;
+    s32 preview = CustomRacePreviewCar(selection);
+
+    MenuSpinToCar(&g_PlayerCarIndex, from, preview, target);
+    if (g_PlayerCarIndex == preview) {
+        g_RaceSession.model = selection;
+    }
+}
+
+static void DrawCustomCarLabel(void) {
+    char text[24];
+
+    if (g_RaceSession.kind != RACE_SESSION_CUSTOM) return;
+    snprintf(text, sizeof(text), "%02d / %02d%s",
+             g_RaceSession.model + 1,
+             CustomRaceModelCount(g_RaceSession.classIndex),
+             CustomRaceUsesRivalModel() ? "  RIVAL" : "");
+    DrawText8x8(0xE8, 0x15C, text, 0x78CC);
+}
+
+static void DrawSelectableCarCounter(s32 direction) {
+    if (g_RaceSession.kind == RACE_SESSION_CUSTOM) {
+        DrawCarCounter(MenuWidgetState(), direction,
+                       g_RaceSession.model + 1,
+                       CustomRaceModelCount(g_RaceSession.classIndex));
+    } else if (g_GrandPrixMode == 0) {
+        DrawOwnedCarCounter(MenuWidgetState(), direction, CountOwnedCars());
+    }
 }
 
 /* Leaving the screen upwards, back to the course: the same wind-down whether
@@ -93,7 +142,10 @@ static void ChooseCarSelectRow(CarBrowse *browse, s32 row) {
     if (row == 0) {
         PlaySoundCue(2);
         StartSequenceFadeOut();
-        if (g_GrandPrixMode != 0) {
+        if (g_RaceSession.kind == RACE_SESSION_CUSTOM) {
+            ApplyCustomRaceSelection();
+            g_GrandPrixSeries = CourseSeries(g_CourseIndex);
+        } else if (g_GrandPrixMode != 0) {
             /* Class five is the extra series, which has no round of its own. */
             g_GrandPrixSeries = (s16)GrandPrixAssetSeries(
                 g_GrandPrixSeries, g_GrandPrixClass);
@@ -154,18 +206,28 @@ static void UpdateCarSelectInput(CarBrowse *browse) {
         PlaySoundCue(1);
         screen->cursor = screen->cursor < lastRow ? screen->cursor + 1 : 0;
     }
-    UpdateOwnedCarNeighbours(browse);
-    RefreshCarUnlockState(browse);
+    UpdateSelectableCarNeighbours(browse);
+    if (g_RaceSession.kind != RACE_SESSION_CUSTOM) {
+        RefreshCarUnlockState(browse);
+    }
 
     carBeforeSwap = g_PlayerCarIndex;
     if ((g_PadHeld & PAD_LEFT) && (browse->previous != -1) &&
         MenuCarViewSettled() && (g_CarSwapToIndex < 0)) {
-        MenuSpinToCar(&g_PlayerCarIndex, carBeforeSwap, browse->previous, 0);
+        if (g_RaceSession.kind == RACE_SESSION_CUSTOM) {
+            SpinToSelectableCar(browse->previous, 0);
+        } else {
+            MenuSpinToCar(&g_PlayerCarIndex, carBeforeSwap, browse->previous, 0);
+        }
     }
     if ((g_PadHeld & PAD_RIGHT) && (browse->next != -1) &&
         MenuCarViewSettled() && (g_CarSwapToIndex < 0)) {
-        MenuSpinToCar(&g_PlayerCarIndex, carBeforeSwap, browse->next,
-                      MENU_CAR_VIEW_RIGHT_TARGET);
+        if (g_RaceSession.kind == RACE_SESSION_CUSTOM) {
+            SpinToSelectableCar(browse->next, MENU_CAR_VIEW_RIGHT_TARGET);
+        } else {
+            MenuSpinToCar(&g_PlayerCarIndex, carBeforeSwap, browse->next,
+                          MENU_CAR_VIEW_RIGHT_TARGET);
+        }
     }
 
     if (!MenuCarViewSettled() || (g_CarSwapToIndex >= 0)) {
@@ -191,9 +253,7 @@ static void UpdateCarSelectIdle(CarBrowse *browse) {
     RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
     DrawBrowseArrows(MenuBrowseArrows(), 1, 0, browse->previous != -1,
                      browse->next != -1);
-    if (g_GrandPrixMode == 0) {
-        DrawOwnedCarCounter(MenuWidgetState(), 1, CountOwnedCars());
-    }
+    DrawSelectableCarCounter(1);
     DrawFadingMenuSprites(g_UiScriptProgress, CarSelectLastRow(),
                           screen->cursor);
     RunTimedDrawScript(CarSelectMenuScript(), &g_UiScriptProgress, 0);
@@ -215,9 +275,7 @@ static void UpdateCarSelectModal(const CarBrowse *browse) {
     }
     DrawBrowseArrows(MenuBrowseArrows(), 1, 0, browse->previous != -1,
                      browse->next != -1);
-    if (g_GrandPrixMode == 0) {
-        DrawOwnedCarCounter(MenuWidgetState(), 1, CountOwnedCars());
-    }
+    DrawSelectableCarCounter(1);
     DrawFadingMenuSprites(g_UiScriptProgress, CarSelectLastRow(),
                           screen->cursor);
     RunTimedDrawScript(CarSelectMenuScript(), &g_UiScriptProgress, 0);
@@ -230,6 +288,12 @@ static void UpdateCarSelectModal(const CarBrowse *browse) {
 static s32 HandOverToRace(void) {
     s32 course = CourseSlot(g_CourseIndex);
 
+    if (g_RaceSession.kind == RACE_SESSION_CUSTOM) {
+        ApplyCustomRaceSelection();
+        g_SceneId = 9;
+        g_CourseIndex = course;
+        return 1;
+    }
     if (!StoreRaceSelection(g_RaceProgress, g_GrandPrixMode, course,
                             g_PlayerCarIndex, g_GrandPrixClass, g_PlayerMoney,
                             g_GrandPrixSeries)) {
@@ -308,9 +372,7 @@ static void UpdateCarSelectOutgoing(const CarBrowse *browse) {
     MenuBeginExit(MENU_SCREEN_CAR_SELECT);
     DrawBrowseArrows(MenuBrowseArrows(), -1, 0, browse->previous != -1,
                      browse->next != -1);
-    if (g_GrandPrixMode == 0) {
-        DrawOwnedCarCounter(MenuWidgetState(), -1, CountOwnedCars());
-    }
+    DrawSelectableCarCounter(-1);
     RunTimedDrawScript(CarSelectMenuScript(), &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
     DrawFadingMenuSprites(g_UiScriptProgress, CarSelectLastRow(),
@@ -326,6 +388,7 @@ void UpdateCarSelectScreen(void) {
     DrawCarNamePlate(MenuWidgetState());
     DrawMenuCarView();
     DrawMenuLightBurst(MenuWidgetState(), -9);
+    DrawCustomCarLabel();
 
     if (CarSelectState() == 0) {
         UpdateCarSelectIdle(browse);

@@ -35,7 +35,7 @@ s32 DrawCourseSelectScreen(s32 *progress, s32 step) {
     fade = (u8)(*progress / 4);
     course = SeriesCourseIndex();
 
-    if (g_GrandPrixMode != 0) {
+    if (g_GrandPrixMode != 0 || g_RaceSession.kind == RACE_SESSION_CUSTOM) {
         if (GetCourseClassHeaderSprite(
                 g_SeriesSelection, g_GrandPrixClass, &classHeader)) {
             DrawSprite(ot, 0x50, 0xB0 - slide, classHeader.width, 0x10,

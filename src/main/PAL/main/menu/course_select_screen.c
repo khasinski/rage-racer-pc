@@ -39,6 +39,9 @@ static s32 CourseBestPlace(s32 course) {
 }
 
 static s32 MaxSelectableClass(void) {
+    if (g_RaceSession.kind == RACE_SESSION_CUSTOM) {
+        return GRAND_PRIX_FINAL_CLASS_INDEX;
+    }
     if (g_RaceProgress == NULL) {
         return 0;
     }
@@ -84,7 +87,7 @@ static void DrawCourseArrows(s32 step) {
 }
 
 static const TimedDrawCommand *CourseSelectMenuScript(void) {
-    if (g_GrandPrixMode != 0) {
+    if (g_GrandPrixMode != 0 || g_RaceSession.kind == RACE_SESSION_CUSTOM) {
         return g_CourseSelectGpScript;
     }
     return g_CourseSelectTimeAttackScript;
@@ -131,6 +134,11 @@ static void SpinCardAway(CourseSelectScreen *screen) {
 /* Confirm on the row the cursor is on. */
 static void ChooseCourseSelectRow(CourseSelectScreen *screen, s32 row) {
     if (row == COURSE_SELECT_OPTION_CAR_SELECT) {
+        if (g_RaceSession.kind == RACE_SESSION_CUSTOM) {
+            g_RaceSession.course = g_CourseIndex;
+            g_RaceSession.classIndex = g_GrandPrixClass;
+            ApplyCustomRaceSelection();
+        }
         PlaySoundCue(2);
         GameMenuBusy = COURSE_SELECT_TO_CAR_SELECT;
         g_MenuOverlayPattern = 1;
@@ -157,11 +165,15 @@ static void ChooseCourseSelectRow(CourseSelectScreen *screen, s32 row) {
         MenuWidgetState()->timeAttackStep = -1;
         GameMenuBusy = COURSE_SELECT_TO_RACE;
         g_GrandPrixSeries = CourseSeries(g_CourseIndex);
+        if (g_RaceSession.kind == RACE_SESSION_CUSTOM) {
+            g_RaceSession.course = g_CourseIndex;
+            g_RaceSession.classIndex = g_GrandPrixClass;
+        }
         SpinCardAway(screen);
         return;
     }
     PlaySoundCue(2);
-    if (g_GrandPrixMode != 0) {
+    if (g_GrandPrixMode != 0 || g_RaceSession.kind == RACE_SESSION_CUSTOM) {
         screen->modalScript = g_MenuDialogPanelLowerScript;
         GameMenuBusy = COURSE_SELECT_CLASS_PROMPT;
         g_UiScriptProgress2 = 0;
@@ -305,7 +317,8 @@ static void UpdateSaveDismissed(CourseSelectScreen *screen) {
  */
 static void UpdateClassChange(CourseSelectScreen *screen,
                               GameOrderingTableEntry *ot) {
-    if (g_CourseProgress == NULL) {
+    if (g_CourseProgress == NULL &&
+        g_RaceSession.kind != RACE_SESSION_CUSTOM) {
         GameMenuBusy = COURSE_SELECT_IDLE;
         screen->classChangeApplied = 0;
         return;
@@ -328,7 +341,12 @@ static void UpdateClassChange(CourseSelectScreen *screen,
     if (DrawClassChangeCurtain(screen, 1) >= COURSE_CLASS_CURTAIN_CLOSED) {
         screen->classChangeApplied = 1;
         g_GrandPrixClass = screen->modalCursor;
-        ResetCourseProgressState(g_CourseProgress, screen->modalCursor);
+        if (g_RaceSession.kind == RACE_SESSION_CUSTOM) {
+            g_RaceSession.classIndex = g_GrandPrixClass;
+            ApplyCustomRaceSelection();
+        } else {
+            ResetCourseProgressState(g_CourseProgress, screen->modalCursor);
+        }
         g_MenuViewAngle = MENU_COURSE_VIEW_REBASE_SPAN;
         g_MenuViewAngleTarget = MENU_COURSE_VIEW_REBASE_SPAN;
         screen->option = 0;
@@ -373,6 +391,14 @@ static void UpdateCourseSelectModal(CourseSelectScreen *screen,
 
 /* What the race is started with, once the screen has finished sliding off. */
 static s32 HandOverToRace(s32 sceneId, s32 course) {
+    if (g_RaceSession.kind == RACE_SESSION_CUSTOM) {
+        g_RaceSession.course = g_CourseIndex;
+        g_RaceSession.classIndex = g_GrandPrixClass;
+        ApplyCustomRaceSelection();
+        g_SceneId = sceneId;
+        g_CourseIndex = course;
+        return 1;
+    }
     if (!StoreRaceSelection(g_RaceProgress, g_GrandPrixMode, course,
                             g_PlayerCarIndex, g_GrandPrixClass, g_PlayerMoney,
                             g_GrandPrixSeries)) {
@@ -444,7 +470,7 @@ static void UpdateCourseSelect(CourseSelectScreen *screen) {
     GameOrderingTableEntry *ot = RENDER_OT_BASE;
     s32 state = GameMenuBusy;
 
-    if (g_GrandPrixMode != 0) {
+    if (g_GrandPrixMode != 0 || g_RaceSession.kind == RACE_SESSION_CUSTOM) {
         UpdateAndDrawCourseCard(screen);
     } else {
         DrawTimeAttackPlate(MenuWidgetState());

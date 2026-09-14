@@ -1,5 +1,6 @@
 #include "game/car.h"
 #include "game/menu.h"
+#include "game/race.h"
 
 static s32 FindOwnedCar(s32 from, s32 step) {
     s32 index;
@@ -26,7 +27,18 @@ void EnterCarSelectScreen(void) {
     ActivateShowroomCarModel((s32)g_CarModelSlot);
     MenuActivateScreen(MENU_SCREEN_CAR_SELECT);
     g_UiScriptProgress = 0;
-    UpdateOwnedCarNeighbours(MenuCarBrowse());
+    if (g_RaceSession.kind == RACE_SESSION_CUSTOM) {
+        MenuCarBrowse()->previous = g_RaceSession.model > 0
+                                        ? g_RaceSession.model - 1
+                                        : -1;
+        MenuCarBrowse()->next =
+            g_RaceSession.model + 1 <
+                    CustomRaceModelCount(g_RaceSession.classIndex)
+                                    ? g_RaceSession.model + 1
+                                    : -1;
+    } else {
+        UpdateOwnedCarNeighbours(MenuCarBrowse());
+    }
     DrawCarNamePlate(MenuWidgetState());
     DrawMenuCarView();
     DrawMenuLightBurst(MenuWidgetState(), -9);

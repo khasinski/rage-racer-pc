@@ -21,6 +21,13 @@ int main(void) {
     CHECK(CustomRacePerformanceCar(0, 5, 0) == 11);
     CHECK(CustomRacePerformanceCar(0, 5, 1) == 11);
     CHECK(CustomRacePerformanceCar(0, 5, 2) == 10);
+    g_RaceSession.course = 0;
+    g_RaceSession.classIndex = 0;
+    CHECK(CustomRacePreviewCar(2) == 2);
+    CHECK(CustomRacePreviewCar(GAME_CAR_COUNT) == 3);
+    CHECK(CustomRaceModelCount(0) == 24);
+    CHECK(CustomRaceModelCount(4) == 24);
+    CHECK(CustomRaceModelCount(5) == 17);
     for (s32 classIndex = 0; classIndex < 6; ++classIndex) {
         for (s32 model = 3; model < RACE_CAR_SLOT_COUNT; ++model) {
             CHECK(CustomRacePerformanceCar(0, classIndex, model) == 3);

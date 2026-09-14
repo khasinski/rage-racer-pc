@@ -78,6 +78,17 @@ TimedDrawCommand g_UiChromeScript[1];
 TimedDrawCommand g_UiChromeScript2[1];
 s32 g_UiScriptProgress;
 s32 g_UiScriptProgress2;
+RaceSession g_RaceSession;
+void ApplyCustomRaceSelection(void) {}
+int CustomRaceUsesRivalModel(void) { return 0; }
+s32 CustomRacePreviewCar(s32 model) { return model; }
+s32 CustomRaceModelCount(s32 classIndex) {
+    (void)classIndex;
+    return CUSTOM_RACE_MODEL_COUNT;
+}
+void DrawText8x8(s32 x, s32 y, const char *text, s32 color) {
+    (void)x; (void)y; (void)text; (void)color;
+}
 
 static unsigned long s_digest = 2166136261UL;
 static FILE *s_out;
@@ -169,6 +180,10 @@ void DrawBrowseArrows(BrowseArrows *arrows, s32 step, s32 wide, s32 drawLeft, s3
 void DrawOwnedCarCounter(MenuWidgets *widgets, s32 owned, s32 step) {
     (void)widgets;
     RECORD("counter", owned, step);
+}
+void DrawCarCounter(MenuWidgets *widgets, s32 direction, s32 current,
+                    s32 total) {
+    DrawOwnedCarCounter(widgets, direction, current + total);
 }
 void DrawFadingMenuSprites(s32 progress, s32 count, s32 slot) {
     RECORD("sprites", progress, count, slot);

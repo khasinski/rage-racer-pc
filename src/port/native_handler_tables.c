@@ -106,7 +106,7 @@ void (*g_MenuScreenUpdate[MENU_SCREEN_COUNT])(void) = {
     [MENU_SCREEN_PAINT_COLOR] = UpdatePaintColorScreen,
     [MENU_SCREEN_CAR_SHOP] = UpdateCarShopScreen,
     [MENU_SCREEN_ENGINEER_SHOP] = UpdateEngineerShopScreen,
-    [MENU_SCREEN_CUSTOM_RACE] = UpdateCustomRaceScreen,
+    [MENU_SCREEN_CUSTOM_RACE] = UpdateMenuScreenNoOp,
 };
 
 s32 (*g_MenuScreenDraw[MENU_SCREEN_COUNT])(s32 *, s32) = {
@@ -123,5 +123,5 @@ s32 (*g_MenuScreenDraw[MENU_SCREEN_COUNT])(s32 *, s32) = {
     [MENU_SCREEN_PAINT_COLOR] = AdvanceMenuFade,
     [MENU_SCREEN_CAR_SHOP] = AdvanceCarSpecPanel,
     [MENU_SCREEN_ENGINEER_SHOP] = AdvanceCarSpecPanel,
-    [MENU_SCREEN_CUSTOM_RACE] = DrawCustomRaceScreen,
+    [MENU_SCREEN_CUSTOM_RACE] = DrawMenuScreenNoOp,
 };

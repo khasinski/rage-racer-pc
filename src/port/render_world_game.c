@@ -845,6 +845,25 @@ void GameRenderWorldSubmitPlayerCar(const GameCarRuntime *object,
     Vec3 environmentLight;
 
     if (!s_initialized || object == NULL || g_CarModelAsset == NULL) return;
+    if (CustomRaceUsesRivalModel()) {
+        s32 rival = CustomRaceRivalModel();
+        s32 course = g_RaceSession.course % COURSE_SLOT_COUNT;
+        s32 car = g_CarModelByCourse[course][rival];
+        const s16 *rivalLod = g_CarModelBankTable[car];
+        uint32_t trackAsset = (uint32_t)TrackCourseAssetIndex(
+            ASSET_TRACK_2ND_BASE, g_RaceSession.classIndex, course);
+
+        environmentLight = GameTrackLightForCar(object);
+        GameRenderWorldSubmitCarAssembly(
+            object, RAGE_PLAYER_CAR_ENTITY, trackAsset,
+            RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1,
+            (uint32_t)rivalLod[0], (uint32_t)rivalLod[0] + 2u,
+            (uint32_t)rivalLod[0] + 3u, (uint8_t)rivalLod[1],
+            g_CarModelAsset->horizon, g_CarModelAsset->modelOffsetX,
+            g_CarModelAsset->modelOffsetY, g_CarModelAsset->modelOffsetZ,
+            object->steeringAngle / 12, environmentLight, mirror_pass);
+        return;
+    }
     asset = (uint32_t)(10 + GetCarAssetIndex(
         g_PlayerCarIndex, g_CarTable[g_PlayerCarIndex].modelVariant) * 2);
     environmentLight = GameTrackLightForCar(object);

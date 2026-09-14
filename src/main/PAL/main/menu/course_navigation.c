@@ -33,6 +33,11 @@ static CourseSelectionRange CurrentCourseSelectionRange(void) {
     s32 extraSeries;
     s32 maxClassReached;
 
+    if (g_RaceSession.kind == RACE_SESSION_CUSTOM) {
+        range.first = STANDARD_SERIES_FIRST_COURSE;
+        range.last = EXTRA_SERIES_LAST_COURSE_UNLOCKED;
+        return range;
+    }
     if (g_GrandPrixMode) {
         extraSeries = g_SeriesSelection != 0;
         range.first = extraSeries ? EXTRA_SERIES_FIRST_COURSE

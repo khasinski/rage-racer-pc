@@ -42,9 +42,7 @@ void EnterCourseSelectScreen(void) {
     }
 
     PlaySequence();
-    MenuActivateScreen(g_RaceSession.kind == RACE_SESSION_CUSTOM
-                           ? MENU_SCREEN_CUSTOM_RACE
-                           : MENU_SCREEN_COURSE_SELECT);
+    MenuActivateScreen(MENU_SCREEN_COURSE_SELECT);
     DrawBrowseArrows(MenuBrowseArrows(), 0, 0, 0, 0);
     ResetCourseSelectShowroom(screen);
     LoadImage(&g_TeamLogoRect, &g_TeamLogoCanvas);

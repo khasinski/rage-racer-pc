@@ -127,6 +127,9 @@ void UpdateMainMenuInput(void) {
             };
             memcpy(g_RaceSession.cars, g_TimeAttackCars,
                    sizeof(g_RaceSession.cars));
+            for (s32 car = 0; car < GAME_CAR_COUNT; ++car) {
+                g_RaceSession.cars[car].enabled = 1;
+            }
             g_CarTable = g_RaceSession.cars;
             g_RaceProgress = &g_TimeAttackSave;
             g_CourseProgress = NULL;

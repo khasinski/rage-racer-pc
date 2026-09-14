@@ -1,5 +1,6 @@
 #include "common.h"
 #include "game/menu.h"
+#include "game/race.h"
 
 #include <limits.h>
 #include <stdio.h>
@@ -10,6 +11,7 @@ s32 g_GrandPrixClass;
 s16 g_GrandPrixMode;
 s32 g_MaxClassReached[2];
 s16 g_SeriesSelection;
+RaceSession g_RaceSession;
 
 static int s_failures;
 
@@ -73,6 +75,15 @@ static void CheckTimeAttackLimits(void) {
 int main(void) {
     CheckGrandPrixLimits();
     CheckTimeAttackLimits();
+
+    g_RaceSession.kind = RACE_SESSION_CUSTOM;
+    for (s32 course = 0; course < CUSTOM_RACE_COURSE_COUNT; ++course) {
+        g_CourseIndex = course;
+        Check("custom previous", CanSelectPrevCourse(), course > 0);
+        Check("custom next", CanSelectNextCourse(),
+              course + 1 < CUSTOM_RACE_COURSE_COUNT);
+    }
+    g_RaceSession.kind = RACE_SESSION_STANDARD;
 
     g_GrandPrixMode = 1;
     g_SeriesSelection = 1;

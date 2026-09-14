@@ -393,8 +393,6 @@ void DrawShopPromptButtons(GameOrderingTableEntry *ot, s32 cursor, s32 flash);
 void UpdateOwnedCarNeighbours(CarBrowse *browse);
 void RefreshCarUnlockState(CarBrowse *browse);
 void UpdateCarSelectScreen(void);
-s32 DrawCustomRaceScreen(s32 *progress, s32 step);
-void UpdateCustomRaceScreen(void);
 s32 DrawCarSelectScreen(s32 *progress, s32 step);
 
 /* id 5 -- "CUSTOMIZE": tire compound (5 settings) and transmission (AT/MT). */
@@ -609,6 +607,8 @@ void DrawMenuLightBurst(MenuWidgets *widgets, s32 arg);
 void DrawOptionHintBar(s32 variant);
 void RestoreNegconCalibrationSettings(void);
 void DrawOwnedCarCounter(MenuWidgets *widgets, s32 direction, s32 ownedCount);
+void DrawCarCounter(MenuWidgets *widgets, s32 direction, s32 current,
+                    s32 total);
 void DrawSpriteString(s32 x, s32 y, const char *str, s32 clutIndex);
 void RampTeamLogoCanvas(TeamLogo *logo, s32 from, s32 to);
 void ShuffleBgmOrder(void);

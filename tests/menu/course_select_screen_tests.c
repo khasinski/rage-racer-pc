@@ -78,6 +78,8 @@ TimedDrawCommand g_UiChromeScript2[1];
 s32 g_UiScriptProgress;
 s32 g_UiScriptProgress2;
 GameRenderState g_RenderState;
+RaceSession g_RaceSession;
+void ApplyCustomRaceSelection(void) {}
 
 static unsigned long s_digest = 2166136261UL;
 static FILE *s_out;
