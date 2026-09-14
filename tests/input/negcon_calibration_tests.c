@@ -98,7 +98,7 @@ int main(void) {
             g_NegconMaxTwist = maxTwist;
             g_NegconSteerPlay = play;
             /* What the calibration screen records for a stick that rests in the
-             * middle: g_NegconAxisSteer - 128, and the port centres at 128. */
+             * middle: the raw twist axis minus 128, and the port centres at 128. */
             g_NegconSteerNeutral = 0;
 
             /* At rest the car must go straight, whatever the play is. */

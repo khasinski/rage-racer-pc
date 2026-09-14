@@ -8,6 +8,7 @@
 
 u8 g_PadType;
 u16 g_PadPressed;
+PadState g_PadState;
 s32 g_GameMode;
 s32 g_AnimTimer;
 ControllerMappingIndex g_PadMappingIndex;
@@ -20,10 +21,6 @@ NegconCalibrationValue g_NegconSteerNeutral;
 NegconCalibrationValue g_NegconNeutralI;
 NegconCalibrationValue g_NegconNeutralII;
 NegconCalibrationValue g_NegconNeutralL;
-u8 g_NegconAxisI;
-u8 g_NegconAxisII;
-u8 g_NegconAxisL;
-u8 g_NegconAxisSteer;
 
 static s32 s_cues[4];
 static s32 s_cueCount;
@@ -73,6 +70,7 @@ void DrawControllerSetupScene(const ControllerSetup *setup, s32 variant) {
 }
 
 static void ResetState(void) {
+    g_PadState = (PadState){0};
     g_PadType = PAD_TYPE_DIGITAL;
     g_PadPressed = 0;
     g_GameMode = -1;
@@ -181,10 +179,10 @@ static void TestNeutralCaptureAndDisconnect(void) {
     ResetState();
     g_PadType = PAD_TYPE_NEGCON;
     g_PadPressed = PAD_START;
-    g_NegconAxisSteer = 140;
-    g_NegconAxisI = 21;
-    g_NegconAxisII = 31;
-    g_NegconAxisL = 41;
+    g_PadState.twist = 140;
+    g_PadState.buttonI = 21;
+    g_PadState.buttonII = 31;
+    g_PadState.buttonL = 41;
     UpdateNegconNeutralScreen();
     CHECK(g_GameMode == OPTION_MODE_NEGCON_STEER_PLAY &&
           g_NegconSteerNeutral == 12);

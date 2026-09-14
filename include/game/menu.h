@@ -590,10 +590,6 @@ RAGE_NATIVE_UI_SCRIPT(EngineerShopTuneUpPromptScript, 5);
 #define g_CarShopNoFundsScript g_NativeCarShopNoFundsScript
 #define g_DesignModeDeniedScript g_NativeDesignModeDeniedScript
 #define g_EngineerShopTuneUpPromptScript g_NativeEngineerShopTuneUpPromptScript
-extern u8 g_NegconAxisI;
-extern u8 g_NegconAxisII;
-extern u8 g_NegconAxisL;
-extern u8 g_NegconAxisSteer;
 extern s16 g_NegconNeutralIISaved;
 extern s16 g_NegconNeutralISaved;
 extern s16 g_NegconNeutralLSaved;

@@ -51,10 +51,10 @@ void UpdateNegconNeutralScreen(void) {
     if (g_PadPressed & PAD_START) {
         PlaySoundCue(2);
         g_GameMode = OPTION_MODE_NEGCON_STEER_PLAY;
-        g_NegconSteerNeutral = g_NegconAxisSteer - 128;
-        g_NegconNeutralI = g_NegconAxisI;
-        g_NegconNeutralII = g_NegconAxisII;
-        g_NegconNeutralL = g_NegconAxisL;
+        g_NegconSteerNeutral = g_PadState.twist - 128;
+        g_NegconNeutralI = g_PadState.buttonI;
+        g_NegconNeutralII = g_PadState.buttonII;
+        g_NegconNeutralL = g_PadState.buttonL;
     }
     if (g_PadType != PAD_TYPE_NEGCON) {
         RestoreNegconCalibrationSettings();
