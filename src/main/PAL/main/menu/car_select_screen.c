@@ -281,11 +281,11 @@ static void EnterChosenScreen(void) {
         g_MenuViewAngleTarget = 0x7A120;
         MenuActivateScreen(MENU_SCREEN_COURSE_SELECT);
         g_CarSelectCursor = 0;
-        g_MenuPendingCourseIndex = -1;
+        courseSelect->pendingCourse = -1;
         g_MenuViewOffset = 0x3D090;
         g_MenuViewOffsetTarget = 0;
         courseSelect->cardSpin = 0x1F4000;
-        g_MenuCourseModelIndex = g_CourseIndex;
+        courseSelect->displayedCourse = g_CourseIndex;
         courseSelect->cardPendingGrade =
             g_CourseProgress != NULL
                 ? g_CourseProgress->bestPlace[CourseSlot(g_CourseIndex)]

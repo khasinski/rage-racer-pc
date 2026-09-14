@@ -59,8 +59,8 @@ static void BrowseToCourse(CourseSelectScreen *screen, s32 step,
 
     PlaySoundCue(8);
     g_MenuViewAngleTarget = newTarget;
-    g_CourseSwapDelay = 0;
-    g_MenuCourseModelIndex = course;
+    screen->swapDelay = 0;
+    screen->displayedCourse = course;
     course = AddClampedMenuValue(course, step, 0,
                                  PHYSICAL_COURSE_COUNT - 1);
     g_MenuViewAngle =
@@ -70,7 +70,7 @@ static void BrowseToCourse(CourseSelectScreen *screen, s32 step,
         RebaseCarouselValue(screen->cardSpin, previousSpin,
                             COURSE_CARD_FULL_TURN);
     g_CourseIndex = course;
-    g_MenuPendingCourseIndex = course;
+    screen->pendingCourse = course;
     screen->cardPendingGrade = CourseBestPlace(course);
     /* Only the extra series shows the time-attack plate. */
     g_TimeAttackPlateStep = CourseSeries(course) == 0 ? -1 : 1;
@@ -185,11 +185,11 @@ static void UpdateCourseSelectInput(CourseSelectScreen *screen) {
      * held, because settling the card is a question the screen answers by
      * looking rather than by remembering. */
     if (choice.wantsPrev && (CanSelectPrevCourse() != 0) &&
-        CourseCardSettled() && (g_MenuPendingCourseIndex < 0)) {
+        CourseCardSettled() && (screen->pendingCourse < 0)) {
         BrowseToCourse(screen, -1, 0);
     }
     if (choice.wantsNext && (CanSelectNextCourse() != 0) &&
-        CourseCardSettled() && (g_MenuPendingCourseIndex < 0)) {
+        CourseCardSettled() && (screen->pendingCourse < 0)) {
         BrowseToCourse(screen, 1, MENU_COURSE_VIEW_RIGHT_TARGET);
     }
     if (choice.choosesRow) {
@@ -330,10 +330,10 @@ static void UpdateClassChange(CourseSelectScreen *screen,
         g_MenuViewAngle = MENU_COURSE_VIEW_REBASE_SPAN;
         g_MenuViewAngleTarget = MENU_COURSE_VIEW_REBASE_SPAN;
         screen->option = 0;
-        g_MenuPendingCourseIndex = -1;
+        screen->pendingCourse = -1;
         screen->cardSpin = 0;
         g_CourseIndex = CourseSeries(g_CourseIndex) * COURSE_SLOT_COUNT;
-        g_MenuCourseModelIndex = g_CourseIndex;
+        screen->displayedCourse = g_CourseIndex;
         screen->cardPendingGrade = CourseBestPlace(g_CourseIndex);
     }
     RunTimedDrawScript(screen->modalScript, &g_UiScriptProgress2, 1);
@@ -449,7 +449,7 @@ static void UpdateCourseSelect(CourseSelectScreen *screen) {
         DrawTimeAttackPlate(g_TimeAttackPlateStep);
     }
     DrawCarNamePlate(g_CarNamePlateStep, g_MenuPlateCarIndex);
-    DrawMenuCourseView();
+    DrawMenuCourseView(screen);
 
     if (state == COURSE_SELECT_IDLE) {
         UpdateCourseSelectIdle(screen);

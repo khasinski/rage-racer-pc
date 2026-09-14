@@ -36,7 +36,6 @@ TimedDrawCommand g_CourseSelectSavePromptBanner[2];
 TimedDrawCommand g_CourseSelectSavePromptScript[4];
 TimedDrawCommand g_MenuDialogPanelLowerScript[8];
 TimedDrawCommand g_CourseSelectTimeAttackScript[1];
-s32 g_CourseSwapDelay;
 s32 g_GrandPrixClass;
 s16 g_GrandPrixMode;
 s16 g_GrandPrixSeries;
@@ -44,7 +43,6 @@ s32 g_MenuAltLayout;
 s32 g_MenuAltLayoutSetting;
 u8 g_MenuBlankCaption;
 s32 g_MenuConfirmTimer;
-s32 g_MenuCourseModelIndex;
 s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
 
@@ -67,7 +65,6 @@ void MenuBeginExit(s32 screen) {
 s32 g_MenuHintBarStep;
 s32 g_MenuOutgoingScreenProgress;
 s32 g_MenuOverlayPattern;
-s32 g_MenuPendingCourseIndex;
 s32 g_MenuPlateCarIndex;
 s32 g_MenuScreen;
 u8 g_MenuSubCursor;
@@ -157,7 +154,7 @@ s32 RunTimedDrawScript(const TimedDrawCommand *commands, s32 *progress, s32 step
 void DrawCarNamePlate(s32 step, s32 model) {
     RECORD("nameplate", step, model, 0);
 }
-void DrawMenuCourseView(void) { RECORD("courseview", 0); }
+void DrawMenuCourseView(CourseSelectScreen *screen) { (void)screen; RECORD("courseview", 0); }
 void DrawMenuLightBurst(s32 arg) { RECORD("burst", arg); }
 static BrowseArrows s_browseArrows;
 BrowseArrows *MenuBrowseArrows(void) { return &s_browseArrows; }
@@ -299,15 +296,15 @@ int main(int argc, char **argv) {
         s_courseSelect.cardPendingGrade = 0;
         s_courseSelect.cardSpin = 0x1000;
         s_courseSelect.cardSpinTarget = 0x800;
-        g_CourseSwapDelay = 0;
+        s_courseSelect.swapDelay = 0;
         g_GrandPrixClass = classes[kl];
         g_GrandPrixSeries = 3;
-        g_MenuCourseModelIndex = 0;
+        s_courseSelect.displayedCourse = 0;
         g_MenuHandlerIndex = 0;
         g_MenuOutgoingHandlerIndex = 0;
         g_MenuHintBarStep = 0;
         g_MenuOverlayPattern = 0;
-        g_MenuPendingCourseIndex = 0;
+        s_courseSelect.pendingCourse = 0;
         g_MenuScreen = 0;
         g_MenuViewAngle = 0;
         g_MenuViewAngleTarget = 0;
@@ -350,7 +347,7 @@ int main(int argc, char **argv) {
             after[17] = g_MenuViewAngle;
             after[18] = g_MenuViewOffset;
             after[19] = g_MenuViewOffsetTarget;
-            after[20] = g_MenuPendingCourseIndex;
+            after[20] = s_courseSelect.pendingCourse;
             after[21] = ScriptId(s_courseSelect.modalScript);
             /* The showroom angle the class change swings to. It sits beside
              * the offset above and was the one thing the class change writes
@@ -359,7 +356,7 @@ int main(int argc, char **argv) {
             Record("state", after, 23);
             RECORD("saved", s_progress.course, s_progress.carIndex,
                    s_progress.classIndex, s_progress.money,
-                   g_UiScriptProgress, g_MenuCourseModelIndex,
+                   g_UiScriptProgress, s_courseSelect.displayedCourse,
                    g_CarSwapFromIndex, g_CarSwapToIndex);
         }
         steps++;
@@ -414,12 +411,12 @@ int main(int argc, char **argv) {
             g_PadHeld = held[hb];
             g_MenuViewAngleTarget = 0x7A120;
             g_MenuViewAngle = 0x7A120 + settleOffsets[se];
-            g_MenuPendingCourseIndex = pendings[pend];
+            s_courseSelect.pendingCourse = pendings[pend];
             g_CourseIndex = browseCourses[cj];
             s_courseSelect.cardSpin = 0x1000;
             s_courseSelect.cardSpinTarget = 0x800;
-            g_CourseSwapDelay = 7;
-            g_MenuCourseModelIndex = 0;
+            s_courseSelect.swapDelay = 7;
+            s_courseSelect.displayedCourse = 0;
             g_TimeAttackPlateStep = 0;
             s_courseSelect.cardPendingGrade = 0;
             s_courseSelect.modalScript = NULL;
@@ -432,11 +429,11 @@ int main(int argc, char **argv) {
                     pendings[pend], allow, gpi, browseCourses[cj]);
             Record(label, NULL, 0);
             UpdateCourseSelectScreen();
-            RECORD("browsed", g_CourseIndex, g_MenuPendingCourseIndex,
-                   g_MenuCourseModelIndex, g_MenuViewAngle,
+            RECORD("browsed", g_CourseIndex, s_courseSelect.pendingCourse,
+                   s_courseSelect.displayedCourse, g_MenuViewAngle,
                    g_MenuViewAngleTarget, s_courseSelect.cardSpin,
                    s_courseSelect.cardPendingGrade, g_TimeAttackPlateStep,
-                   g_CourseSwapDelay);
+                   s_courseSelect.swapDelay);
             steps++;
         }
     }
@@ -815,7 +812,7 @@ int main(int argc, char **argv) {
     g_PadHeld = PAD_LEFT;
     g_MenuViewAngle = 0;
     g_MenuViewAngleTarget = 0;
-    g_MenuPendingCourseIndex = -1;
+    s_courseSelect.pendingCourse = -1;
     g_CourseIndex = 0;
     g_CourseProgress = NULL;
     UpdateCourseSelectScreen();

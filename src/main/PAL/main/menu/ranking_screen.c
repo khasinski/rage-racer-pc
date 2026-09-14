@@ -96,7 +96,7 @@ void UpdateRankingScreen(void) {
     g_MenuAltLayout = 0;
     g_RankingCursor = AddClampedMenuValue(
         g_RankingCursor, 0, 0, RANKING_OPTION_COUNT - 1);
-    DrawMenuCourseView();
+    DrawMenuCourseView(MenuCourseSelect());
     DrawMenuLightBurst(-9);
     state = (RankingScreenState)GameMenuBusy;
     if (state == RANKING_ENTER) {

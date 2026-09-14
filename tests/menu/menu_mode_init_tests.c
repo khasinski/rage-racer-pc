@@ -120,13 +120,13 @@ static void PoisonEntryState(void) {
     GameMenuBusy = 6;
     g_MenuHintBarStep = 7;
     s_courseSelect.classChangeApplied = 8;
-    g_CourseSwapDelay = 9;
+    s_courseSelect.swapDelay = 9;
     g_MenuViewOffset = 10;
     g_MenuViewOffsetTarget = 11;
     s_courseSelect.cardSpin = 12;
     s_courseSelect.cardSpinTarget = 13;
     s_courseSelect.cardPendingGrade = 14;
-    g_MenuPendingCourseIndex = 7;
+    s_courseSelect.pendingCourse = 7;
     g_CarSwapFromIndex = 15;
     g_CarSwapToIndex = 8;
     g_MenuOverlayPattern = 16;
@@ -176,11 +176,11 @@ static int CheckCommonEntryState(const GameRaceProgress *progress) {
     CHECK(g_UiScriptProgress == 0 && g_UiScriptProgress2 == 0);
     CHECK(g_MenuHintBarProgress == 0 && GameMenuBusy == 0);
     CHECK(g_MenuConfirmTimer == 0 && g_MenuHintBarStep == 0);
-    CHECK(s_courseSelect.classChangeApplied == 0 && g_CourseSwapDelay == 0);
+    CHECK(s_courseSelect.classChangeApplied == 0 && s_courseSelect.swapDelay == 0);
     CHECK(g_MenuViewOffset == 0 && g_MenuViewOffsetTarget == 0);
     CHECK(s_courseSelect.cardSpin == 0 && s_courseSelect.cardSpinTarget == 0);
     CHECK(s_courseSelect.cardPendingGrade == 0 && g_CarSwapFromIndex == 0);
-    CHECK(g_MenuPendingCourseIndex == -1 && g_CarSwapToIndex == -1);
+    CHECK(s_courseSelect.pendingCourse == -1 && g_CarSwapToIndex == -1);
     CHECK(g_MenuOverlayPattern == 0 && g_CarNamePlateStep == 0);
     CHECK(g_MenuPlateCarIndex == 0 && g_CarSpecGraphStep == 0);
     CHECK(g_MenuUpperAltPanelStep == 0 && g_MenuLowerAltPanelStep == 0);
@@ -213,7 +213,7 @@ static int TestGrandPrixEntry(void) {
     InitMenuMode();
     CHECK(CheckCommonEntryState(&progress) == 0);
     CHECK(g_GrandPrixSeries == 1 && g_CourseIndex == 6);
-    CHECK(g_MenuCourseModelIndex == 6 && g_PlayerMoney == 123456);
+    CHECK(s_courseSelect.displayedCourse == 6 && g_PlayerMoney == 123456);
     return 0;
 }
 
@@ -233,7 +233,7 @@ static int TestTimeAttackEntry(void) {
     InitMenuMode();
     CHECK(CheckCommonEntryState(&progress) == 0);
     CHECK(g_GrandPrixSeries == 1 && g_CourseIndex == 7);
-    CHECK(g_MenuCourseModelIndex == 7 && g_PlayerMoney == 0);
+    CHECK(s_courseSelect.displayedCourse == 7 && g_PlayerMoney == 0);
     return 0;
 }
 

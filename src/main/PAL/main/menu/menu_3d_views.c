@@ -150,7 +150,7 @@ void DrawMenuCarView(void) {
 }
 
 /* The course diorama behind COURSE SELECT and RANKING, with the carousel easing. */
-void DrawMenuCourseView(void) {
+void DrawMenuCourseView(CourseSelectScreen *screen) {
     PlayerCarRuntime *car = &s_Car;
     GameCarRuntime *renderObject = AsRivalCar(car);
     Matrix mtxA;
@@ -163,17 +163,17 @@ void DrawMenuCourseView(void) {
     SetupMenuViewCamera(0x100, 0);
 
     animation = AdvanceCourseCarouselAnimation(
-        g_MenuViewAngle, g_MenuViewAngleTarget, g_CourseSwapDelay,
-        g_MenuCourseModelIndex, g_MenuPendingCourseIndex);
+        g_MenuViewAngle, g_MenuViewAngleTarget, screen->swapDelay,
+        screen->displayedCourse, screen->pendingCourse);
     g_MenuViewAngle = animation.angle;
-    g_CourseSwapDelay = animation.swapDelay;
-    g_MenuCourseModelIndex = animation.displayedCourse;
-    g_MenuPendingCourseIndex = animation.pendingCourse;
+    screen->swapDelay = animation.swapDelay;
+    screen->displayedCourse = animation.displayedCourse;
+    screen->pendingCourse = animation.pendingCourse;
 
     horizontalAngle =
         MenuWrapAngle(g_MenuViewAngle, MENU_COURSE_VIEW_REBASE_SPAN) /
         MENU_VIEW_FIXED_SCALE;
-    courseModelIndex = g_MenuCourseModelIndex;
+    courseModelIndex = screen->displayedCourse;
     viewHeight = AdvanceMenuViewOffset();
 
     car->x = 23 - horizontalAngle;

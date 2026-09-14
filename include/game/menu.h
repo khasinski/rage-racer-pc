@@ -51,6 +51,9 @@ typedef struct CourseSelectScreen {
     s32 cardSpinTarget;
     s32 cardPendingGrade;
     s32 cardFace;
+    s32 swapDelay;
+    s32 displayedCourse;
+    s32 pendingCourse;
 } CourseSelectScreen;
 
 typedef struct BrowseArrows {
@@ -395,7 +398,6 @@ extern s32 g_BgmTrackCount;
 extern s32 g_CarNamePlateStep;
 extern s32 g_CarSwapFromIndex;
 extern s32 g_CarSwapToIndex;
-extern s32 g_CourseSwapDelay;
 extern s32 g_DesignModeOption;
 typedef enum FrontendState {
     FRONTEND_STATE_INVALID = -1,
@@ -409,11 +411,9 @@ typedef enum FrontendState {
 extern FrontendState g_FrontendState;
 extern s32 g_MainMenuSlide;
 extern s32 g_MenuConfirmTimer;
-extern s32 g_MenuCourseModelIndex;
 extern s32 g_MenuHintBarProgress;
 extern s32 g_MenuHintBarStep;
 extern s32 g_MenuHintButtonsVisible;
-extern s32 g_MenuPendingCourseIndex;
 extern s32 g_MenuPlateCarIndex;
 extern u8 g_MenuSubCursor;
 extern s32 g_MenuViewSpin;
@@ -436,7 +436,7 @@ extern TimedDrawCommand g_UiChromeScript2[];
 void ClearTeamNameTexture(void);
 void DrawCarNamePlate(s32 step, s32 model);
 void DrawMenuAltPanel(s32 stepA, s32 stepB);
-void DrawMenuCourseView(void);
+void DrawMenuCourseView(CourseSelectScreen *screen);
 void DrawOptionRootMenu(void);
 void UpdateOptionRootMenu(void);
 void UpdateClassRecordMenu(void);

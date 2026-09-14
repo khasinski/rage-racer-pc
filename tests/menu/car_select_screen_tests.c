@@ -44,7 +44,6 @@ s32 g_MenuAltLayout;
 s32 g_MenuAltLayoutSetting;
 s32 g_MenuUpperAltPanelStep;
 s32 g_MenuLowerAltPanelStep;
-s32 g_MenuCourseModelIndex;
 s32 g_MenuHandlerIndex;
 s32 g_MenuOutgoingHandlerIndex;
 
@@ -69,7 +68,6 @@ void MenuRuntimeSetScreenState(s32 screen, s32 state) {
 s32 g_MenuHintBarStep;
 s32 g_MenuOutgoingScreenProgress;
 s32 g_MenuOverlayPattern;
-s32 g_MenuPendingCourseIndex;
 s32 g_MenuPlateCarIndex;
 s32 g_MenuScreen;
 s32 g_MenuViewAngle;
@@ -300,12 +298,12 @@ int main(int argc, char **argv) {
         g_GrandPrixSeries = 3;
         g_MenuUpperAltPanelStep = 0;
         g_MenuLowerAltPanelStep = 0;
-        g_MenuCourseModelIndex = 0;
+        s_courseSelect.displayedCourse = 0;
         g_MenuHandlerIndex = 0;
         g_MenuOutgoingHandlerIndex = 0;
         g_MenuHintBarStep = 0;
         g_MenuOverlayPattern = 0;
-        g_MenuPendingCourseIndex = 0;
+        s_courseSelect.pendingCourse = 0;
         g_MenuScreen = 0;
         g_MenuViewOffsetTarget = 0;
         g_PlayerMoney = 12345;
