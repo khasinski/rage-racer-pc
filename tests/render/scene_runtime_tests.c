@@ -116,6 +116,24 @@ int main(void) {
           SceneRuntimeBgmSelect()->track == 0 &&
           SceneRuntimeBgmSelect()->randomPlay == 0);
 
+    g_SceneId = GAME_SCENE_ENTER_RECORD_ENTRY;
+    SceneRuntimeBeforeDispatch(g_SceneId);
+    SceneRuntimeRecordEntry()->step = RECORD_ENTRY_STATE_EDIT_LAP_NAME;
+    SceneRuntimeRecordEntry()->nameCursor = 3;
+    SceneRuntimeRecordEntry()->rankingRow = 1;
+    g_SceneId = GAME_SCENE_RECORD_ENTRY;
+    SceneRuntimeBeforeDispatch(g_SceneId);
+    CHECK(SceneRuntimeRecordEntry()->step ==
+              RECORD_ENTRY_STATE_EDIT_LAP_NAME &&
+          SceneRuntimeRecordEntry()->nameCursor == 3 &&
+          SceneRuntimeRecordEntry()->rankingRow == 1);
+
+    g_SceneId = GAME_SCENE_MENU;
+    SceneRuntimeBeforeDispatch(g_SceneId);
+    CHECK(SceneRuntimeRecordEntry()->step == 0 &&
+          SceneRuntimeRecordEntry()->nameCursor == 0 &&
+          SceneRuntimeRecordEntry()->rankingRow == 0);
+
     puts("scene runtime scopes transition state and asset results to one scene");
     return 0;
 }

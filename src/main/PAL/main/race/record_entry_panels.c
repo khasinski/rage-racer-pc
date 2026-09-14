@@ -54,7 +54,7 @@ static void DrawRecordRows(s32 slideX,
     }
 }
 
-void DrawRankingPanel(s32 slideX) {
+void DrawRankingPanel(const RecordEntry *state, s32 slideX) {
     char text[56];
     s32 lapCount;
     s32 row;
@@ -72,7 +72,7 @@ void DrawRankingPanel(s32 slideX) {
         s32 x = slideX + 0x14 +
                 (row / LAP_ROWS_PER_COLUMN) * LAP_COLUMN_WIDTH;
         s32 y = 0x58 + rowInColumn * 8;
-        s32 color = g_BestLapIndex == row ? 0x780F : 0x78CC;
+        s32 color = state->bestLap == row ? 0x780F : 0x78CC;
 
         text[0] = row + '1';
         FormatLapTime(&text[2],
@@ -82,10 +82,10 @@ void DrawRankingPanel(s32 slideX) {
 
     DrawProportionalText(slideX + 0x10, 0x6C, "hai", 0x7812);
     DrawRecordRows(slideX, g_RankingRecords[g_GrandPrixSeries][course],
-                   g_RankingInsertRow);
+                   state->rankingRow);
 }
 
-void DrawTimeRecordPanel(s32 slideX) {
+void DrawTimeRecordPanel(const RecordEntry *state, s32 slideX) {
     char text[48];
     s32 course = SeriesCourseIndex();
 
@@ -102,7 +102,7 @@ void DrawTimeRecordPanel(s32 slideX) {
 
     DrawProportionalText(slideX + 0x10, 0x6C, "hai", 0x7812);
     DrawRecordRows(slideX, g_TimeRecords[g_GrandPrixSeries][course],
-                   g_TimeRecordInsertRow);
+                   state->timeRow);
 }
 
 void DrawNameEntryCursor(s32 charIndex, s32 row) {

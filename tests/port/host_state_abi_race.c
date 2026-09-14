@@ -27,8 +27,6 @@ _Static_assert(sizeof(g_FadeStep) == sizeof(s32),
                "fade step must be a scalar");
 _Static_assert(sizeof(g_FrameParity) == sizeof(s32),
                "frame parity must be a scalar");
-_Static_assert(sizeof(g_TimeRecordInsertRow) == sizeof(s32),
-               "time-record insertion row must be a scalar");
 _Static_assert(sizeof(g_Replay.playerModel) == sizeof(s16),
                "replay player model index must match the car field");
 _Static_assert(sizeof(g_Replay.rivalModel) == sizeof(s16),

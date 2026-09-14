@@ -264,7 +264,6 @@ void RefreshClassWinState(void);
 void UpdateZoneAmbience(s32 zone);
 
 extern s16 g_AttractTitleDelays[];
-extern s32 g_BestLapIndex;
 extern const char *g_NativeCarClassNames[];
 extern const char *g_NativeCarNames[];
 #define g_CarClassNames g_NativeCarClassNames
@@ -273,8 +272,6 @@ extern s32 g_ClassPromoted;
 extern char *g_CourseNames[COURSE_SLOT_COUNT];
 extern s32 g_EndingWashLevel;
 extern s32 g_LostRaceChoice;
-extern s32 g_NameEntryChar;
-extern s32 g_NameEntryCursor;
 extern s32 g_PrologueCutIndex;
 typedef struct PrologueLine {
     s16 x;
@@ -290,26 +287,11 @@ extern PrologueLine g_PrologueLines[PROLOGUE_LINE_CAPACITY];
 extern s32 g_PrologueLineCount;
 enum { PROMOTION_BONUS_COUNT = 5 };
 extern s32 g_PromotionBonusTable[PROMOTION_BONUS_COUNT];
-extern s32 g_RankingInsertRow;
 extern u8 g_RankingNameCodes[];
-typedef enum RecordEntryState {
-    RECORD_ENTRY_STATE_INVALID = -1,
-    RECORD_ENTRY_STATE_FADE_IN,
-    RECORD_ENTRY_STATE_EDIT_LAP_NAME,
-    RECORD_ENTRY_STATE_WAIT_AFTER_LAP_NAME,
-    RECORD_ENTRY_STATE_SWITCH_TO_RACE_RECORD,
-    RECORD_ENTRY_STATE_EDIT_RACE_NAME,
-    RECORD_ENTRY_STATE_WAIT_TO_FINISH,
-    RECORD_ENTRY_STATE_FADE_OUT
-} RecordEntryState;
-
-extern RecordEntryState g_RecordEntryState;
-extern s32 g_RecordPanelSlide;
 extern u16 g_ResultPlaceCluts[];
 extern u8 g_TachoFaceB;
 extern u8 g_TachoFaceG;
 extern u8 g_TachoFaceR;
-extern s32 g_TimeRecordInsertRow;
 extern u8 g_TimeRecordNameCodes[];
 
 s32 BeginMirrorPass(void);

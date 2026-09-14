@@ -46,18 +46,18 @@ void WriteRecordDriverName(RaceRecord *record, const u8 *nameCodes) {
     }
 }
 
-s32 UpdateRecordNameEntry(u8 *nameCodes) {
-    s32 previousCharacter = g_NameEntryChar;
+s32 UpdateRecordNameEntry(RecordEntry *state, u8 *nameCodes) {
+    s32 previousCharacter = state->nameCharacter;
     s32 step = 0;
 
     if (nameCodes == NULL) {
         return 0;
     }
-    if (g_NameEntryCursor == RECORD_NAME_LENGTH) {
+    if (state->nameCursor == RECORD_NAME_LENGTH) {
         return 1;
     }
-    if ((u32)g_NameEntryCursor >= RECORD_NAME_LENGTH) {
-        g_NameEntryCursor = 0;
+    if ((u32)state->nameCursor >= RECORD_NAME_LENGTH) {
+        state->nameCursor = 0;
     }
 
     if (g_PadPressedRepeat & PAD_LEFT) {
@@ -65,23 +65,23 @@ s32 UpdateRecordNameEntry(u8 *nameCodes) {
     } else if (g_PadPressedRepeat & PAD_RIGHT) {
         step = 1;
     }
-    g_NameEntryChar = WrapNameEntryCharacter(g_NameEntryChar, step);
-    if (previousCharacter != g_NameEntryChar) {
+    state->nameCharacter = WrapNameEntryCharacter(state->nameCharacter, step);
+    if (previousCharacter != state->nameCharacter) {
         PlaySoundCue(NAME_ENTRY_MOVE_CUE);
     }
 
-    nameCodes[g_NameEntryCursor] = g_NameEntryChar;
+    nameCodes[state->nameCursor] = state->nameCharacter;
     if (g_PadPressed & PAD_CONFIRM) {
         PlaySoundCue(NAME_ENTRY_CONFIRM_CUE);
-        g_NameEntryCursor++;
-        if (g_NameEntryCursor == RECORD_NAME_LENGTH) {
+        state->nameCursor++;
+        if (state->nameCursor == RECORD_NAME_LENGTH) {
             return 1;
         }
-        g_NameEntryChar = WrapNameEntryCharacter(nameCodes[g_NameEntryCursor], 0);
-    } else if ((g_PadPressed & PAD_CANCEL) && g_NameEntryCursor > 0) {
+        state->nameCharacter = WrapNameEntryCharacter(nameCodes[state->nameCursor], 0);
+    } else if ((g_PadPressed & PAD_CANCEL) && state->nameCursor > 0) {
         PlaySoundCue(NAME_ENTRY_CANCEL_CUE);
-        g_NameEntryCursor--;
-        g_NameEntryChar = WrapNameEntryCharacter(nameCodes[g_NameEntryCursor], 0);
+        state->nameCursor--;
+        state->nameCharacter = WrapNameEntryCharacter(nameCodes[state->nameCursor], 0);
     }
     return 0;
 }

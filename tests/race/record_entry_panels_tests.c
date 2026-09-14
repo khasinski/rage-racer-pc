@@ -11,13 +11,11 @@
 
 RaceRecord g_RankingRecords[2][4][RECORD_TABLE_LENGTH];
 RaceRecord g_TimeRecords[2][4][RECORD_TABLE_LENGTH];
-s32 g_BestLapIndex;
+static RecordEntry s_state;
 s32 g_CourseIndex;
 s16 g_GrandPrixSeries;
 s32 g_RaceTotalTime;
 s32 g_AnimTimer;
-s32 g_RankingInsertRow;
-s32 g_TimeRecordInsertRow;
 PlayerCarRuntime g_PlayerCar;
 GameRenderState g_RenderState;
 static GameFrameContext s_frame;
@@ -111,9 +109,9 @@ int main(void) {
     g_PlayerCar.lapTimes.table.milliseconds[0] = 1000;
     g_PlayerCar.lapTimes.table.milliseconds[1] = 2000;
     g_PlayerCar.lapTimes.table.milliseconds[2] = 3000;
-    g_BestLapIndex = 1;
+    s_state.bestLap = 1;
 
-    DrawRankingPanel(10);
+    DrawRankingPanel(&s_state, 10);
     CHECK(s_callCount == 15);
     CHECK(s_calls[0].proportional && s_calls[0].x == 26 &&
           strcmp(s_calls[0].text, "hfgi") == 0);
@@ -131,7 +129,7 @@ int main(void) {
 
     s_callCount = 0;
     g_RaceTotalTime = 9000;
-    DrawTimeRecordPanel(-4);
+    DrawTimeRecordPanel(&s_state, -4);
     CHECK(s_callCount == 13);
     CHECK(strcmp(s_calls[0].text, "hegi") == 0);
     CHECK(strcmp(s_calls[1].text, "T/0'09\"000") == 0);
@@ -140,15 +138,15 @@ int main(void) {
 
     s_callCount = 0;
     g_GrandPrixSeries = -1;
-    DrawRankingPanel(0);
-    DrawTimeRecordPanel(0);
+    DrawRankingPanel(&s_state, 0);
+    DrawTimeRecordPanel(&s_state, 0);
     CHECK(s_callCount == 0);
 
     g_GrandPrixSeries = 0;
     memset(g_RankingRecords[0][1][0].driverName, 'X', 8);
     g_RankingRecords[0][1][0].carIndex = -1;
     s_callCount = 0;
-    DrawRankingPanel(0);
+    DrawRankingPanel(&s_state, 0);
     CHECK(strstr(s_calls[5].text, "XXXXXXXX/C0") != NULL);
     CHECK(strcmp(s_calls[6].text, "/CAR0") == 0);
 
