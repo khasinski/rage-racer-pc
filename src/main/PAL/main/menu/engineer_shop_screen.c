@@ -16,9 +16,9 @@
 #include "game/menu_scripts_internal.h"
 
 /* Everything the shop keeps on the display whichever state it is in. */
-static void DrawEngineerShopChrome(s32 price) {
+static void DrawEngineerShopChrome(const EngineerShop *shop, s32 price) {
     DrawEngineerShopPricePanel(1, g_PlayerMoney, price);
-    DrawFadingMenuSprites(g_UiScriptProgress, 1, g_EngineerShopOption);
+    DrawFadingMenuSprites(g_UiScriptProgress, 1, shop->option);
     RunTimedDrawScript(g_EngineerShopScreenScript, &g_UiScriptProgress, 0);
 }
 
@@ -30,34 +30,34 @@ static void LeaveEngineerShop(void) {
 }
 
 /* Idle: two rows, tune up or leave. */
-static void UpdateEngineerShopInput(ShopPrice price) {
+static void UpdateEngineerShopInput(EngineerShop *shop, ShopPrice price) {
     g_MenuOverlayPattern = -1;
-    g_EngineerShopOption = AddClampedMenuValue(g_EngineerShopOption, 0, 0, 1);
+    shop->option = AddClampedMenuValue(shop->option, 0, 0, 1);
     if (g_PadPressed & PAD_UP) {
         PlaySoundCue(1);
-        g_EngineerShopOption =
-            (g_EngineerShopOption > 0) ? g_EngineerShopOption - 1 : 1;
+        shop->option =
+            (shop->option > 0) ? shop->option - 1 : 1;
     }
     if (g_PadPressed & PAD_DOWN) {
         PlaySoundCue(1);
-        g_EngineerShopOption =
-            (g_EngineerShopOption <= 0) ? g_EngineerShopOption + 1 : 0;
+        shop->option =
+            (shop->option <= 0) ? shop->option + 1 : 0;
     }
     if (g_PadPressed & PAD_CONFIRM) {
-        if (g_EngineerShopOption == 0) {
+        if (shop->option == 0) {
             if (price.available && g_PlayerMoney >= price.amount) {
                 PlaySoundCue(2);
-                g_EngineerShopModalScript = g_EngineerShopTuneUpPromptScript;
+                shop->modalScript = g_EngineerShopTuneUpPromptScript;
                 GameMenuBusy = ENGINEER_SHOP_TUNE_UP_PROMPT;
                 g_UiScriptProgress2 = 0;
                 g_MenuSubCursor = 0;
             } else {
                 PlaySoundCue(5);
-                g_EngineerShopModalScript = g_EngineerShopNoFundsScript;
+                shop->modalScript = g_EngineerShopNoFundsScript;
                 GameMenuBusy = ENGINEER_SHOP_NO_FUNDS;
                 g_UiScriptProgress2 = 0;
             }
-        } else if (g_EngineerShopOption == 1) {
+        } else if (shop->option == 1) {
             LeaveEngineerShop();
         }
     } else if (g_PadPressed & PAD_CANCEL) {
@@ -65,21 +65,22 @@ static void UpdateEngineerShopInput(ShopPrice price) {
     }
 }
 
-static void UpdateEngineerShopIdle(ShopPrice price) {
-    RunTimedDrawScript(g_EngineerShopModalScript, &g_UiScriptProgress2, -1);
+static void UpdateEngineerShopIdle(EngineerShop *shop, ShopPrice price) {
+    RunTimedDrawScript(shop->modalScript, &g_UiScriptProgress2, -1);
     RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
-    DrawEngineerShopChrome(price.amount);
+    DrawEngineerShopChrome(shop, price.amount);
     if ((RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1) != 0) &&
         (g_UiScriptProgress2 <= 0)) {
-        UpdateEngineerShopInput(price);
+        UpdateEngineerShopInput(shop, price);
     }
 }
 
 /* The tune-up prompt, with its own yes/no cursor. */
-static void UpdateTuneUpPrompt(GameOrderingTableEntry *ot, ShopPrice price) {
+static void UpdateTuneUpPrompt(EngineerShop *shop, GameOrderingTableEntry *ot,
+                               ShopPrice price) {
     MenuDialogAction action;
 
-    RunTimedDrawScript(g_EngineerShopModalScript, &g_UiScriptProgress2, 0);
+    RunTimedDrawScript(shop->modalScript, &g_UiScriptProgress2, 0);
     if (RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1) == 0) {
         return;
     }
@@ -97,7 +98,7 @@ static void UpdateTuneUpPrompt(GameOrderingTableEntry *ot, ShopPrice price) {
             g_MenuConfirmTimer = 0x23;
         } else if (g_MenuSubCursor != 0) {
             PlaySoundCue(5);
-            g_EngineerShopModalScript = g_EngineerShopNoFundsScript;
+            shop->modalScript = g_EngineerShopNoFundsScript;
             GameMenuBusy = ENGINEER_SHOP_NO_FUNDS;
         } else {
             PlaySoundCue(3);
@@ -121,16 +122,16 @@ static void UpdateTuneUpPrompt(GameOrderingTableEntry *ot, ShopPrice price) {
  * keeps its new variant and the screen starts on its way out, spinning the
  * turntable a half turn so the rebuilt car comes back round.
  */
-static void UpdateTuneUpCountdown(GameOrderingTableEntry *ot,
+static void UpdateTuneUpCountdown(EngineerShop *shop, GameOrderingTableEntry *ot,
                                   s32 purchaseAvailable) {
     if (g_MenuConfirmTimer > 0) {
         g_MenuConfirmTimer -= 1;
-        RunTimedDrawScript(g_EngineerShopModalScript, &g_UiScriptProgress2, 0);
+        RunTimedDrawScript(shop->modalScript, &g_UiScriptProgress2, 0);
         RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1);
         DrawShopPromptButtons(ot, 1);
         return;
     }
-    RunTimedDrawScript(g_EngineerShopModalScript, &g_UiScriptProgress2, -1);
+    RunTimedDrawScript(shop->modalScript, &g_UiScriptProgress2, -1);
     RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 0);
     if (g_UiScriptProgress2 <= 0 && !purchaseAvailable) {
         GameMenuBusy = ENGINEER_SHOP_IDLE;
@@ -145,8 +146,8 @@ static void UpdateTuneUpCountdown(GameOrderingTableEntry *ot,
 }
 
 /* "You cannot afford this": nothing to do but dismiss it. */
-static void UpdateNoFundsModal(void) {
-    RunTimedDrawScript(g_EngineerShopModalScript, &g_UiScriptProgress2, 0);
+static void UpdateNoFundsModal(EngineerShop *shop) {
+    RunTimedDrawScript(shop->modalScript, &g_UiScriptProgress2, 0);
     if (RunTimedDrawScript(g_UiChromeScript2, &g_UiScriptProgress2, 1) != 0) {
         if (g_PadPressed & (PAD_CONFIRM | PAD_CANCEL)) {
             GameMenuBusy = ENGINEER_SHOP_IDLE;
@@ -154,29 +155,30 @@ static void UpdateNoFundsModal(void) {
     }
 }
 
-static void UpdateEngineerShopModal(GameOrderingTableEntry *ot,
+static void UpdateEngineerShopModal(EngineerShop *shop,
+                                    GameOrderingTableEntry *ot,
                                     ShopPrice price) {
     if (GameMenuBusy == ENGINEER_SHOP_TUNE_UP_PROMPT) {
-        UpdateTuneUpPrompt(ot, price);
+        UpdateTuneUpPrompt(shop, ot, price);
     } else if (GameMenuBusy == ENGINEER_SHOP_TUNE_UP_COUNTDOWN) {
-        UpdateTuneUpCountdown(ot, price.available);
+        UpdateTuneUpCountdown(shop, ot, price.available);
     } else if (GameMenuBusy == ENGINEER_SHOP_NO_FUNDS) {
-        UpdateNoFundsModal();
+        UpdateNoFundsModal(shop);
     } else {
         GameMenuBusy = ENGINEER_SHOP_IDLE;
     }
-    DrawEngineerShopChrome(price.amount);
+    DrawEngineerShopChrome(shop, price.amount);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 1);
 }
 
 /* On the way out, back to the car select screen. The tune-up is paid for and
  * recorded here, so it only counts once the screen has actually finished. */
-static void UpdateEngineerShopOutgoing(ShopPrice price) {
+static void UpdateEngineerShopOutgoing(EngineerShop *shop, ShopPrice price) {
     MenuBeginExit(MENU_SCREEN_ENGINEER_SHOP);
     DrawEngineerShopPricePanel(-1, g_PlayerMoney, price.amount);
     RunTimedDrawScript(g_EngineerShopScreenScript, &g_UiScriptProgress, -1);
     RunTimedDrawScript(g_UiChromeScript, &g_UiScriptProgress, 0);
-    DrawFadingMenuSprites(g_UiScriptProgress, 1, g_EngineerShopOption);
+    DrawFadingMenuSprites(g_UiScriptProgress, 1, shop->option);
     if (g_UiScriptProgress > 0) {
         return;
     }
@@ -193,10 +195,17 @@ static void UpdateEngineerShopOutgoing(ShopPrice price) {
     MenuActivateScreen(MENU_SCREEN_CAR_SELECT);
     g_UiScriptProgress = 0;
     GameMenuBusy = ENGINEER_SHOP_IDLE;
-    g_EngineerShopOption = 0;
+    shop->option = 0;
+}
+
+void ResetEngineerShopScreen(void) {
+    EngineerShop *shop = MenuEngineerShop();
+
+    *shop = (EngineerShop){g_UiEmptyScript, 0};
 }
 
 void UpdateEngineerShopScreen(void) {
+    EngineerShop *shop = MenuEngineerShop();
     GameOrderingTableEntry *ot = RENDER_OT_BASE;
     ShopPrice price;
     s32 assetIndex;
@@ -217,10 +226,10 @@ void UpdateEngineerShopScreen(void) {
     }
 
     if (GameMenuBusy == ENGINEER_SHOP_IDLE) {
-        UpdateEngineerShopIdle(price);
+        UpdateEngineerShopIdle(shop, price);
     } else if (GameMenuBusy < 0) {
-        UpdateEngineerShopModal(ot, price);
+        UpdateEngineerShopModal(shop, ot, price);
     } else {
-        UpdateEngineerShopOutgoing(price);
+        UpdateEngineerShopOutgoing(shop, price);
     }
 }

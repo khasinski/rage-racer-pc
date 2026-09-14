@@ -41,12 +41,10 @@ s32 g_CarSwapFromIndex;
 s32 g_CarSwapToIndex;
 CarEntry *g_CarTable;
 s32 g_CarTuneUpPriceTable[CAR_TUNE_UP_PRICE_COUNT];
-const TimedDrawCommand *g_EngineerShopModalScript;
 /* The prompts are decoded command arrays; never walked here, only named. */
 TimedDrawCommand g_EngineerShopNoFundsScript[2];
 TimedDrawCommand g_EngineerShopScreenScript[68];
 TimedDrawCommand g_EngineerShopTuneUpPromptScript[5];
-s32 g_EngineerShopOption;
 s32 g_MenuAltLayout;
 s32 g_MenuAltLayoutSetting;
 u8 g_MenuBlankCaption;
@@ -65,9 +63,12 @@ s32 g_PlayerMoney;
 CarEntry g_TimeAttackCars[16];
 TimedDrawCommand g_UiChromeScript[1];
 TimedDrawCommand g_UiChromeScript2[1];
+TimedDrawCommand g_UiEmptyScript[1];
 s32 g_UiScriptProgress;
 s32 g_UiScriptProgress2;
 GameRenderState g_RenderState;
+static EngineerShop s_shop;
+EngineerShop *MenuEngineerShop(void) { return &s_shop; }
 
 static unsigned long s_digest = 2166136261UL;
 static FILE *s_out;
@@ -195,7 +196,7 @@ static void TestRetailUpgradeTransactions(void) {
             s_cars[model].modelVariant = (u8)grade;
             g_TimeAttackCars[model].modelVariant = (u8)grade;
             g_UiScriptProgress = g_UiScriptProgress2 = 0;
-            g_EngineerShopOption = 0;
+            s_shop.option = 0;
             g_PadPressed = PAD_CONFIRM;
             s_upgradedModelRequests = 0;
             g_PlayerMoney = price - 1;
@@ -290,7 +291,7 @@ int main(int argc, char **argv) {
         s_scriptResult = sr;
         g_UiScriptProgress2 = p2;
         g_UiScriptProgress = prog;
-        g_EngineerShopOption = opt;
+        s_shop.option = opt;
         g_PadPressed = buttons[pb];
         g_MenuSubCursor = (u8)sub;
         g_PlayerCarIndex = cars[ci];
@@ -309,7 +310,7 @@ int main(int argc, char **argv) {
         g_MenuScreen = 0;
         g_MenuViewAngle = 0;
         g_MenuViewAngleTarget = 0;
-        g_EngineerShopModalScript = NULL;
+        s_shop.modalScript = NULL;
 
         sprintf(label,
                 "== busy%d/script%d/p2_%d/opt%d/pad%04x/sub%d/rich%d/timer%d/"
@@ -323,7 +324,7 @@ int main(int argc, char **argv) {
         {
             s32 after[14];
             after[0] = GameMenuBusy;
-            after[1] = g_EngineerShopOption;
+            after[1] = s_shop.option;
             after[2] = g_PlayerMoney;
             after[3] = g_MenuSubCursor;
             after[4] = g_MenuConfirmTimer;
@@ -335,7 +336,7 @@ int main(int argc, char **argv) {
             after[10] = g_MenuViewAngleTarget;
             after[11] = g_CarSwapFromIndex;
             after[12] = g_CarSwapToIndex;
-            after[13] = ScriptId(g_EngineerShopModalScript);
+            after[13] = ScriptId(s_shop.modalScript);
             Record("state", after, 14);
             RECORD("car", s_cars[cars[ci]].modelVariant,
                    g_TimeAttackCars[cars[ci]].modelVariant, g_UiScriptProgress,
@@ -359,7 +360,7 @@ int main(int argc, char **argv) {
     GameMenuBusy = 0;
     s_scriptResult = 1;
     g_UiScriptProgress2 = 0;
-    g_EngineerShopOption = 0;
+    s_shop.option = 0;
     g_PadPressed = PAD_CONFIRM;
     g_PlayerCarIndex = 5;
     g_PlayerMoney = INT32_MAX;
@@ -402,7 +403,7 @@ int main(int argc, char **argv) {
     s_assetIndexOverride = 5;
     g_CarTuneUpPriceTable[5] = -1;
     GameMenuBusy = ENGINEER_SHOP_IDLE;
-    g_EngineerShopOption = 0;
+    s_shop.option = 0;
     g_PadPressed = PAD_CONFIRM;
     g_PlayerMoney = INT_MAX;
     UpdateEngineerShopScreen();

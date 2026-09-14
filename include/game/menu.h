@@ -53,6 +53,11 @@ typedef struct BrowseArrows {
     s32 pulsePhase;
 } BrowseArrows;
 
+typedef struct EngineerShop {
+    const TimedDrawCommand *modalScript;
+    s32 option;
+} EngineerShop;
+
 typedef struct MenuRuntime {
     /* State-machine screen updated this frame. */
     s32 activeScreen;
@@ -67,6 +72,7 @@ typedef struct MenuRuntime {
     CourseSelectScreen courseSelect;
     ControllerSetup controllerSetup;
     BrowseArrows browseArrows;
+    EngineerShop engineerShop;
 } MenuRuntime;
 
 void MenuRuntimeReset(void);
@@ -74,6 +80,7 @@ const MenuRuntime *MenuRuntimeCurrent(void);
 ControllerSetup *MenuControllerSetup(void);
 CourseSelectScreen *MenuCourseSelect(void);
 BrowseArrows *MenuBrowseArrows(void);
+EngineerShop *MenuEngineerShop(void);
 s32 MenuRuntimeScreenState(s32 screen);
 void MenuRuntimeSetScreenState(s32 screen, s32 state);
 
@@ -275,6 +282,7 @@ void UpdateCarShopScreen(void);
 
 /* id 12 -- "SHOP" (engineer shop): pay the tune-up fee to grade the car up. */
 void UpdateEngineerShopScreen(void);
+void ResetEngineerShopScreen(void);
 
 /*
  * Menu widgets shared across those screens. Each keeps its own accumulator and
@@ -452,7 +460,6 @@ extern s32 g_RankingPendingState;
 extern s32 g_LogoSampleCursor;
 extern s32 g_ShopCarIndex;
 extern s32 g_RankingCursor;
-extern s32 g_EngineerShopOption;
 extern s32 g_TitleFadeLevel;
 extern s32 g_PaintColorCursor;
 extern s32 g_TeamLogoOption;

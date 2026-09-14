@@ -20,6 +20,8 @@ static s32 s_drawResetCalls;
 static s32 s_initRenderMode;
 static s32 s_cameraCalls;
 static s32 s_carShopResets;
+static s32 s_engineerShopResets;
+static EngineerShop s_engineerShop;
 static s32 s_menuCarResets;
 static CourseSelectScreen s_courseSelect;
 
@@ -35,6 +37,10 @@ void MenuRuntimeReset(void) {
 }
 CourseSelectScreen *MenuCourseSelect(void) { return &s_courseSelect; }
 void ResetCarShopScreen(void) { s_carShopResets++; }
+void ResetEngineerShopScreen(void) {
+    s_engineerShop = (EngineerShop){g_UiEmptyScript, 0};
+    s_engineerShopResets++;
+}
 void ResetMenuCar(void) { s_menuCarResets++; }
 
 void SetDispMask(s32 enabled) { s_displayMask = enabled; }
@@ -98,7 +104,7 @@ static void PoisonEntryState(void) {
     g_CustomizePopupScript = NULL;
     g_TeamLogoSubPanelScript = NULL;
     g_LogoSampleSubPanelScript = NULL;
-    g_EngineerShopModalScript = NULL;
+    s_engineerShop.modalScript = NULL;
     g_MenuViewAngle = 1;
     g_MenuViewAngleTarget = 2;
     g_UiScriptProgress = 3;
@@ -140,6 +146,7 @@ static void PoisonEntryState(void) {
     s_initRenderMode = -1;
     s_cameraCalls = 0;
     s_carShopResets = 0;
+    s_engineerShopResets = 0;
     s_menuCarResets = 0;
 }
 
@@ -157,7 +164,7 @@ static int CheckCommonEntryState(const GameRaceProgress *progress) {
     CHECK(g_CustomizePopupScript == g_UiEmptyScript);
     CHECK(g_TeamLogoSubPanelScript == g_UiEmptyScript);
     CHECK(g_LogoSampleSubPanelScript == g_UiEmptyScript);
-    CHECK(g_EngineerShopModalScript == g_UiEmptyScript);
+    CHECK(s_engineerShop.modalScript == g_UiEmptyScript);
     CHECK(g_MenuViewAngle == MENU_COURSE_VIEW_REBASE_SPAN);
     CHECK(g_MenuViewAngleTarget == MENU_COURSE_VIEW_REBASE_SPAN);
     CHECK(g_UiScriptProgress == 0 && g_UiScriptProgress2 == 0);
@@ -179,6 +186,7 @@ static int CheckCommonEntryState(const GameRaceProgress *progress) {
     CHECK(g_CustomizeOption == 0 && g_DesignModeOption == 0);
     CHECK(s_drawResetCalls == 3);
     CHECK(s_carShopResets == 1);
+    CHECK(s_engineerShopResets == 1);
     CHECK(s_menuCarResets == 1);
     return 0;
 }

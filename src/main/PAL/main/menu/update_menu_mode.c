@@ -37,6 +37,10 @@ BrowseArrows *MenuBrowseArrows(void) {
     return &s_menuRuntime.browseArrows;
 }
 
+EngineerShop *MenuEngineerShop(void) {
+    return &s_menuRuntime.engineerShop;
+}
+
 s32 MenuRuntimeScreenState(s32 screen) {
     if ((u32)screen >= MENU_SCREEN_COUNT) return 0;
     return s_menuRuntime.screenState[screen];
