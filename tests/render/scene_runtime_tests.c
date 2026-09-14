@@ -175,6 +175,8 @@ int main(void) {
     SceneRuntimeRace()->fadeTimer = 12;
     SceneRuntimeRace()->timing.sectorIndex = 2;
     SceneRuntimeRace()->timing.splitTargetTime = 4567;
+    SceneRuntimeRace()->timing.lapTime = 2345;
+    SceneRuntimeRace()->timing.bestLap = 6789;
     g_SceneId = GAME_SCENE_RACE;
     SceneRuntimeBeforeDispatch(g_SceneId);
     CHECK(SceneRuntimeRace()->pauseDelay == 30 &&
@@ -182,7 +184,9 @@ int main(void) {
           SceneRuntimeRace()->timeRemaining == 1234 &&
           SceneRuntimeRace()->fadeTimer == 12 &&
           SceneRuntimeRace()->timing.sectorIndex == 2 &&
-          SceneRuntimeRace()->timing.splitTargetTime == 4567);
+          SceneRuntimeRace()->timing.splitTargetTime == 4567 &&
+          SceneRuntimeRace()->timing.lapTime == 2345 &&
+          SceneRuntimeRace()->timing.bestLap == 6789);
 
     g_SceneId = GAME_SCENE_MENU;
     SceneRuntimeBeforeDispatch(g_SceneId);
@@ -191,7 +195,9 @@ int main(void) {
           SceneRuntimeRace()->timeRemaining == 0 &&
           SceneRuntimeRace()->fadeTimer == 0 &&
           SceneRuntimeRace()->timing.sectorIndex == 0 &&
-          SceneRuntimeRace()->timing.splitTargetTime == 0);
+          SceneRuntimeRace()->timing.splitTargetTime == 0 &&
+          SceneRuntimeRace()->timing.lapTime == 0 &&
+          SceneRuntimeRace()->timing.bestLap == 0);
 
     puts("scene runtime scopes transition state and asset results to one scene");
     return 0;

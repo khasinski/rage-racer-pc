@@ -152,12 +152,6 @@ void DrawRaceEndBanner(s32 level);
  */
 enum { RACE_TIME_MAX_MS = 0x927BF };
 
-/* Elapsed time of the lap in progress. */
-extern s32 g_LapTimeMs;
-
-/* Grand Prix time limit, in frames; counts down from the active phase onward
- * and retires the race when it reaches zero. Seeded to 15000. */
-
 /* Frames the player has been driving the wrong way. Past 10 the warning shows
  * and rival cues are muted; in Time Attack 60 on lap 0 aborts the run. */
 extern s16 g_WrongWayTimer;
@@ -169,16 +163,6 @@ extern s16 g_WrongWayTimer;
  * the middle of a lap and cleared by the wrong-way warning. */
 extern s16 g_RivalCueEnabled;
 
-/* Frame counter of the in-race fade transitions; every use is the brightness
- * argument of DrawFullscreenFadeTile plus a frame threshold. */
-
-/* Cursor of the in-race option overlay, clamped to 2 - g_GrandPrixMode. */
-
-/* Best lap of this race so far (g_BestLapThisRace), seeded from g_BestLapTimes at the
- * grid, and DrawTimeValue, which prints one millisecond
- * time as m'ss"fff. Both are also referenced from render/, so they are
- * declared per file rather than here. */
-
 /* The wrong-way warning: three sprites over a backing panel, drawn once
  * g_WrongWayTimer passes 10. */
 void DrawWrongWayWarning(void);
@@ -186,7 +170,6 @@ void DrawWrongWayWarning(void);
 extern s16 g_PlayerAutoSteer;
 void EnterAttractDemo(void);
 void UpdateAttractDemoScene(void);
-extern s32 g_BestLapThisRace;
 extern s32 g_BgmTrack;
 void StartClassClearFanfare(void);
 s32 TickClassClearFanfare(void);
@@ -252,7 +235,7 @@ extern u8 g_TimeRecordNameCodes[];
 s32 BeginMirrorPass(void);
 void BuildRaceHudPrims(s32 grandPrixMode);
 void EnterPrizeScreen(void);
-void DrawLapTimes(void);
+void DrawLapTimes(s32 bestLap);
 void DrawRaceHudLabels(s32 grandPrixMode);
 void DrawRacePosition(void);
 void DrawRaceTimePanel(s32 slideY);

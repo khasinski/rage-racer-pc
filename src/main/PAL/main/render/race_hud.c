@@ -68,7 +68,7 @@ void DrawRaceHudLabels(s32 grandPrixMode) {
 
 /* The lap-time column: one row per lap from the player timing table at x=0xFA,
  * y stepping 0xA, the current lap highlighted and unset laps drawn as -1. */
-void DrawLapTimes(void) {
+void DrawLapTimes(s32 bestLap) {
     s32 visibleCount = g_PlayerCar.lap;
     s32 lapCount = g_LapCount;
     s32 activeLap = g_PlayerCar.drive.hudLapHighlightRow;
@@ -107,7 +107,7 @@ void DrawLapTimes(void) {
         AddPrim(ot, sprite);
     }
 
-    DrawTimeValue(HudRightX(0xFA), 0x20, g_BestLapThisRace,
+    DrawTimeValue(HudRightX(0xFA), 0x20, bestLap,
                   0x78CC, 0x3E8);
 }
 

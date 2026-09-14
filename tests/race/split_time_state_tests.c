@@ -9,8 +9,6 @@
 
 static RaceTiming s_timing;
 s32 g_SectorEndDistance[SPLIT_SECTOR_COUNT];
-s32 g_LapTimeMs;
-s32 g_BestLapThisRace;
 s32 g_BestSectorTimes[2][4][3];
 s32 g_RaceSeries;
 s32 g_LapCount;
@@ -25,8 +23,8 @@ static void ResetState(void) {
     memset(&s_timing, 0, sizeof(s_timing));
     memset(g_SectorEndDistance, 0, sizeof(g_SectorEndDistance));
     memset(g_BestSectorTimes, 0, sizeof(g_BestSectorTimes));
-    g_LapTimeMs = 0;
-    g_BestLapThisRace = 0;
+    s_timing.lapTime = 0;
+    s_timing.bestLap = 0;
     g_RaceSeries = 0;
     g_LapCount = 0;
     g_TrackLength = 1000;
@@ -77,7 +75,7 @@ static void TestBlankReferenceDoesNotCreateDelta(void) {
     car.lap = 1;
     car.progressA = 100;
     g_SectorEndDistance[0] = 100;
-    g_LapTimeMs = 900;
+    s_timing.lapTime = 900;
     s_timing.refSectorTimes.values[0] = 0;
     s_timing.splitSign = -1;
     UpdateSplitTimes(&s_timing, &car, 0, 0);
@@ -95,7 +93,7 @@ static void TestSectorClose(void) {
     car.lap = 1;
     car.progressA = 100;
     g_SectorEndDistance[0] = 100;
-    g_LapTimeMs = 900;
+    s_timing.lapTime = 900;
     s_timing.refSectorTimes.values[0] = 1000;
     UpdateSplitTimes(&s_timing, &car, 0, 0);
 
@@ -110,7 +108,7 @@ static void TestSectorClose(void) {
     car.progressA = 0;
     car.progressB = 200;
     g_SectorEndDistance[1] = 200;
-    g_LapTimeMs = 1100;
+    s_timing.lapTime = 1100;
     s_timing.refSectorTimes.values[1] = 1000;
     UpdateSplitTimes(&s_timing, &car, 0, 0);
     assert(s_timing.sectorIndex == 2);
@@ -161,7 +159,7 @@ static void TestUnrepresentableTimeHasNoDelta(void) {
     car.lap = 1;
     car.progressA = 100;
     g_SectorEndDistance[0] = 100;
-    g_LapTimeMs = SPLIT_TIME_MAX_MS + 1;
+    s_timing.lapTime = SPLIT_TIME_MAX_MS + 1;
     s_timing.splitSign = -1;
 
     UpdateSplitTimes(&s_timing, &car, 0, 0);
@@ -197,7 +195,7 @@ static void TestExtremeArithmeticSaturates(void) {
     car.progressB = INT_MAX;
     g_TrackLength = INT_MAX;
     g_SectorEndDistance[0] = INT_MIN;
-    g_LapTimeMs = 0;
+    s_timing.lapTime = 0;
     s_timing.refLapTime = INT_MAX;
     UpdateSplitTimes(&s_timing, &car, 0, 1);
     assert(s_timing.splitSign == 0);
@@ -206,7 +204,7 @@ static void TestExtremeArithmeticSaturates(void) {
     car.lap = 1;
     car.progressA = 100;
     g_SectorEndDistance[0] = 100;
-    g_LapTimeMs = -1;
+    s_timing.lapTime = -1;
     UpdateSplitTimes(&s_timing, &car, 0, 0);
     assert(s_timing.splitSign == 0);
 }

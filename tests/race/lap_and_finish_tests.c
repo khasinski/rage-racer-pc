@@ -25,7 +25,6 @@
 #include <limits.h>
 #include <string.h>
 
-s32 g_BestLapThisRace;
 GameRenderState g_RenderState;
 s32 g_BestLapTimes[2][4][2];
 s32 g_BestSectorTimes[2][4][3];
@@ -34,7 +33,6 @@ CourseProgressState *g_CourseProgress;
 s32 g_CourseIndex;
 s16 g_GrandPrixMode;
 s32 g_LapCount;
-s32 g_LapTimeMs;
 PlayerCarRuntime g_PlayerCar;
 FinishCamera g_FinishCamera;
 s32 g_RaceSeries;
@@ -244,9 +242,9 @@ int main(int argc, char **argv) {
         s_state.fadeTimer = (s16)fadeTimers[ft];
         g_RaceCueDelay = (s16)cueDelays[cd];
         g_RaceCueFlags = 0xFF;
-        g_BestLapThisRace = best ? 0x7FFFFFFF : 100;
+        s_state.timing.bestLap = best ? 0x7FFFFFFF : 100;
         g_RaceTotalTime = 150000;
-        g_LapTimeMs = 0;
+        s_state.timing.lapTime = 0;
         g_RenderState.mirror.enabled = 1;
         g_RivalCueEnabled = 0;
         g_SeriesCleared = cleared;
@@ -275,8 +273,8 @@ int main(int argc, char **argv) {
             after[5] = g_RaceCueDelay;
             after[6] = g_RaceCueFlags;
             after[7] = g_RaceTotalTime;
-            after[8] = g_BestLapThisRace;
-            after[9] = g_LapTimeMs;
+            after[8] = s_state.timing.bestLap;
+            after[9] = s_state.timing.lapTime;
             after[10] = g_RenderState.mirror.enabled;
             after[11] = g_RivalCueEnabled;
             after[12] = g_SeriesCleared;
@@ -321,8 +319,8 @@ int main(int argc, char **argv) {
             s_state.fadeTimer = 0;
             g_RaceCueDelay = 0;
             g_RaceTotalTime = 0;
-            g_BestLapThisRace = 0x7FFFFFFF;
-            g_LapTimeMs = 0;
+            s_state.timing.bestLap = 0x7FFFFFFF;
+            s_state.timing.lapTime = 0;
             s_jitter = jitters[ji];
             g_PlayerCar.lap = 1;
             g_PlayerCar.lapTimes.table.frameCounts[0] =
@@ -337,7 +335,7 @@ int main(int argc, char **argv) {
             RECORD("saturation",
                    g_PlayerCar.lapTimes.table.frameCounts[0],
                    g_PlayerCar.lapTimes.table.milliseconds[0],
-                   g_LapTimeMs);
+                   s_state.timing.lapTime);
             steps++;
         }
     }
@@ -365,7 +363,7 @@ int main(int argc, char **argv) {
     s_state.fadeTimer = 0;
     g_RaceCueFlags = 8;
     g_RaceCueDelay = 0;
-    g_BestLapThisRace = 0x7FFFFFFF;
+    s_state.timing.bestLap = 0x7FFFFFFF;
     s_lastSoundCue = -1;
     s_followupCue = -1;
     s_followupCount = 0;
@@ -448,7 +446,7 @@ int main(int argc, char **argv) {
     g_RacePhase = 0;
     g_RaceCueDelay = 0;
     g_GrandPrixMode = 1;
-    g_BestLapThisRace = 0x7FFFFFFF;
+    s_state.timing.bestLap = 0x7FFFFFFF;
     if (UpdateLapAndFinish(&s_state, &g_PlayerCar, 1) != 0 ||
         g_PlayerCar.lap != 0) {
         puts("FAIL grid state crossed the start line early");
@@ -456,7 +454,7 @@ int main(int argc, char **argv) {
     }
     g_PlayerCar.progressA = 0;
     if (UpdateLapAndFinish(&s_state, &g_PlayerCar, 1) != 1 ||
-        g_PlayerCar.lap != 1 || g_BestLapThisRace != 0x7FFFFFFF ||
+        g_PlayerCar.lap != 1 || s_state.timing.bestLap != 0x7FFFFFFF ||
         g_PlayerCar.lapTimes.table.milliseconds[0] != 0) {
         puts("FAIL crossing the start line did not open lap one");
         return 1;

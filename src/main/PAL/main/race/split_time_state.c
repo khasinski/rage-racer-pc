@@ -58,12 +58,12 @@ void UpdateSplitTimes(RaceTiming *timing, PlayerCarRuntime *car,
                  g_SectorEndDistance[slot] <=
              (int64_t)car->progressB + car->progressA ||
          lapEvent != 0)) {
-        timing->sectorTimes[slot] = g_LapTimeMs;
+        timing->sectorTimes[slot] = timing->lapTime;
         targetTime = lapEvent != 0 ? timing->refLapTime
                                    : timing->refSectorTimes.values[slot];
-        if (g_LapTimeMs >= 0 && g_LapTimeMs <= SPLIT_TIME_MAX_MS &&
+        if (timing->lapTime >= 0 && timing->lapTime <= SPLIT_TIME_MAX_MS &&
             targetTime > 0 && targetTime <= SPLIT_TIME_MAX_MS) {
-            delta = (int64_t)targetTime - g_LapTimeMs;
+            delta = (int64_t)targetTime - timing->lapTime;
 
             timing->splitSign = 1;
             if (delta < 0) {
@@ -87,7 +87,7 @@ void UpdateSplitTimes(RaceTiming *timing, PlayerCarRuntime *car,
         if (lapEvent != 0) {
             timing->splitSector = 2;
             timing->splitTargetTime = timing->refLapTime;
-            timing->refLapTime = g_BestLapThisRace;
+            timing->refLapTime = timing->bestLap;
         } else {
             const s32 closedSlot =
                 (nextSlot + SPLIT_SECTOR_COUNT - 1) % SPLIT_SECTOR_COUNT;

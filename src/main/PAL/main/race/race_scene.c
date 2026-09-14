@@ -203,7 +203,7 @@ void EnterRaceScene(void) {
     series = RaceSeriesIndex(g_RaceSeries);
     g_RaceSeries = series;
     recordMode = RaceRecordMode(g_GrandPrixMode);
-    g_LapTimeMs = 0;
+    state->timing.lapTime = 0;
     BuildRaceSectorEnds(g_TrackLength, g_SectorEndDistance);
     state->timing.refSectorTimes.fields.first = g_BestSectorTimes[series][course][0];
     state->timing.refSectorTimes.fields.second = g_BestSectorTimes[series][course][1];
@@ -219,7 +219,7 @@ void EnterRaceScene(void) {
      * This is the same game lookup expressed with its actual dimensions. */
     state->timing.refLapTime = g_BestLapTimes[series][course][recordMode];
     state->timeRemaining = INITIAL_RACE_TIME;
-    g_BestLapThisRace = state->timing.refLapTime;
+    state->timing.bestLap = state->timing.refLapTime;
     for (i = 0; i < g_LapCount; i++) {
         g_PlayerCar.lapTimes.table.frameCounts[i] = 0;
         g_PlayerCar.lapTimes.table.milliseconds[i] = 0;
@@ -308,7 +308,7 @@ static void UpdatePausedRaceScene(RaceScene *state) {
         DrawTimeRemaining(state->timeRemaining);
         DrawRacePosition();
     }
-    DrawLapTimes();
+        DrawLapTimes(state->timing.bestLap);
     DrawStartCountdown(g_SceneTimer);
     GetTrackZoneBlend(g_PlayerCar.trackProgress);
     DrawPlayerTachometer();
@@ -378,7 +378,7 @@ static void UpdateActiveRaceScene(RaceScene *state) {
             DrawSplitTimes(&state->timing);
         }
         if (lapUpdateResult < 2) {
-            DrawLapTimes();
+            DrawLapTimes(state->timing.bestLap);
         }
     }
 

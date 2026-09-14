@@ -64,8 +64,6 @@ s32 g_FrameParity;
 s32 g_ClassCompleted;
 s32 g_RaceTotalTime;
 s32 g_RacePaused;
-s32 g_BestLapThisRace;
-s32 g_LapTimeMs;
 s32 g_SectorEndDistance[3];
 s32 g_ClassWinCount;
 s16 g_GrandPrixMode;

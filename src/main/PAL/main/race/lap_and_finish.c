@@ -50,7 +50,7 @@ enum {
 };
 /* A lap's clock counts frames, and the frame count is converted to a time as
  * it goes. Both saturate: 0x10000 frames and just under ten minutes. */
-static void TickRunningLapTime(PlayerCarRuntime *car) {
+static void TickRunningLapTime(RaceTiming *timing, PlayerCarRuntime *car) {
     PlayerLapTimes *times = &car->lapTimes;
     s32 slot = car->lap - 1;
 
@@ -69,7 +69,7 @@ static void TickRunningLapTime(PlayerCarRuntime *car) {
     if (times->table.milliseconds[slot] >= RACE_TIME_MAX_MS) {
         times->table.milliseconds[slot] = RACE_TIME_MAX_MS;
     }
-    g_LapTimeMs = times->table.milliseconds[slot];
+    timing->lapTime = times->table.milliseconds[slot];
 }
 
 /*
@@ -85,11 +85,11 @@ static void RecordBestLap(RaceTiming *timing, PlayerCarRuntime *car,
         return;
     }
     lapTime = car->lapTimes.table.milliseconds[lap - 2];
-    if (lapTime >= g_BestLapThisRace) {
+    if (lapTime >= timing->bestLap) {
         return;
     }
     car->drive.hudLapHighlightRow = (s16)((u16)lap - 2);
-    g_BestLapThisRace = lapTime;
+    timing->bestLap = lapTime;
     timing->sectorTimes[2] = lapTime;
     if (recordMode == 0) {
         timing->refSectorTimes.fields.first = timing->sectorTimes[0];
@@ -130,8 +130,8 @@ static void FinishRace(const RaceTiming *timing, PlayerCarRuntime *car,
     g_RaceTotalTime = totalTime < RACE_TIME_MAX_MS
                           ? (s32)totalTime
                           : RACE_TIME_MAX_MS;
-    if (g_BestLapTimes[series][course][recordMode] > g_BestLapThisRace) {
-        g_BestLapTimes[series][course][recordMode] = g_BestLapThisRace;
+    if (g_BestLapTimes[series][course][recordMode] > timing->bestLap) {
+        g_BestLapTimes[series][course][recordMode] = timing->bestLap;
     }
     if (recordMode == 0) {
         g_BestSectorTimes[series][course][0] =
@@ -288,7 +288,7 @@ s32 UpdateLapAndFinish(RaceScene *state, PlayerCarRuntime *car,
     }
 
     if ((car->lap > 0) && (g_LapCount >= car->lap)) {
-        TickRunningLapTime(car);
+        TickRunningLapTime(&state->timing, car);
     } else if (g_LapCount < car->lap) {
         /* Past the last lap the clock stops and the total is kept instead. */
         if (g_RaceTotalTime < g_BestTotalTimes[series][course][recordMode]) {

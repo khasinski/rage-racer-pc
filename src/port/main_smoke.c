@@ -28,6 +28,7 @@
 #include "game/menu.h"
 #include "game/state.h"
 #include "game/race.h"
+#include "game/scene_runtime.h"
 #include "game/cd.h"
 #include "game/memcard.h"
 #include "game/memcard_internal.h"
@@ -380,7 +381,7 @@ static void ReportCameraState(void) {
     ReportFirstModelStream();
     printf(" ref_lap=%d gt4=%llu max=%u z=%d..%d "
            "clip=%llu/%llu reject=%llu/%llu/%llu",
-           g_BestLapThisRace, g_RageGt4FacesEmitted,
+           SceneRuntimeRace()->timing.bestLap, g_RageGt4FacesEmitted,
            g_RageGt4ColorMaximum, g_RageGt4DepthMinimum,
            g_RageGt4DepthMaximum, g_RageGt4ClipPositive,
            g_RageGt4ClipNegative, g_RageGt4RejectOffscreen,

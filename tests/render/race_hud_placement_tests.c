@@ -67,8 +67,6 @@ Rect g_DrawModeEnv;
 s32 g_GrandPrixClass;
 s16 g_GrandPrixMode;
 s32 g_LapCount;
-s32 g_BestLapThisRace;
-s32 g_LapTimeMs;
 static RaceTiming s_timing;
 s32 g_RaceSeries;
 s32 g_BestTotalTimes[2][4][2];
@@ -204,7 +202,7 @@ static void CheckLapColumnCapacity(void) {
     g_LapCount = COURSE_LONG_LAPS + 2;
     g_PlayerCar.lap = COURSE_LONG_LAPS + 2;
 
-    DrawLapTimes();
+    DrawLapTimes(s_timing.bestLap);
 
     if (s_placementCount != COURSE_LONG_LAPS + 1) {
         printf("FAIL lap column drew %d time values, expected %d\n",
@@ -246,7 +244,7 @@ static void DrawWholeHud(s32 mode) {
     g_LapCount = 3;
     g_PlayerCar.lap = 3;
     g_PlayerCar.drive.hudLapHighlightRow = 2;
-    g_BestLapThisRace = 91875;
+    s_timing.bestLap = 91875;
     g_PlayerCar.drive.racePosition = 12;  /* a macro onto the player car, not a global */
     for (lap = 0; lap < 6; lap++)
         g_PlayerCar.lapTimes.table.milliseconds[lap] = 95000 + lap * 1234;
@@ -255,14 +253,14 @@ static void DrawWholeHud(s32 mode) {
     s_timing.splitSign = -1;
     s_timing.splitDelta = 1200;
     s_timing.splitSector = 1;
-    g_LapTimeMs = 92345;
+    s_timing.lapTime = 92345;
     s_timing.lastSectorTime = 31450;
     s_timing.splitTargetTime = 91000;
     g_RaceSeries = 0;
     g_BestTotalTimes[0][0][0] = 278900;
 
     BuildRaceHudPrims(mode);
-    DrawLapTimes();
+    DrawLapTimes(s_timing.bestLap);
     DrawRaceHudLabels(mode);
     if (mode != 0) DrawRacePosition();
     DrawSplitTimes(&s_timing);
