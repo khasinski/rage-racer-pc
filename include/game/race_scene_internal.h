@@ -87,7 +87,8 @@ RacePauseToggleResult DecideRacePauseToggle(s16 phase, s32 paused,
 RaceEndPresentation ChooseRaceEndPresentation(s16 grandPrixMode,
                                               s32 retriesRemaining);
 RaceEndFrame BuildRaceEndFrame(s16 phase, s16 grandPrixMode,
-                               s32 retriesRemaining, s32 fadeTimer);
+                               s32 retriesRemaining, s32 fadeTimer,
+                               s32 customRace);
 RacePauseCursorResult MoveRacePauseCursor(u16 pressed, s16 cursor,
                                           s16 grandPrixMode);
 s32 WrongWayWarningVisible(s16 timer);

@@ -123,7 +123,9 @@ void UpdateRaceEndScreen(void) {
     }
     if (g_SceneTimer == 0) {
         RequestSelectBgmAssets();
-        ResetCourseProgressState(g_CourseProgress, g_GrandPrixClass);
+        if (g_CourseProgress != NULL) {
+            ResetCourseProgressState(g_CourseProgress, g_GrandPrixClass);
+        }
         g_SceneId = GAME_SCENE_INIT_MENU;
     }
     DrawRaceEndBanner(g_SceneTimer);

@@ -117,7 +117,8 @@ RaceEndPresentation ChooseRaceEndPresentation(s16 grandPrixMode,
 }
 
 RaceEndFrame BuildRaceEndFrame(s16 phase, s16 grandPrixMode,
-                               s32 retriesRemaining, s32 fadeTimer) {
+                               s32 retriesRemaining, s32 fadeTimer,
+                               s32 customRace) {
     RaceEndFrame frame = {
         .presentation = RACE_END_PRESENTATION_NONE,
         .fade = 0,
@@ -128,6 +129,10 @@ RaceEndFrame BuildRaceEndFrame(s16 phase, s16 grandPrixMode,
     };
 
     if (phase == RACE_PHASE_QUIT) {
+        frame.exitScene = GAME_SCENE_INIT_MENU;
+        return frame;
+    }
+    if (customRace && phase == RACE_PHASE_RETIRED) {
         frame.exitScene = GAME_SCENE_INIT_MENU;
         return frame;
     }

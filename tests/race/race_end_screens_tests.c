@@ -210,6 +210,12 @@ static int TestMissingCourseProgress(void) {
     g_SceneTimer = -1;
     g_PadPressed = PAD_START;
     UpdateLostRaceScreen();
+
+    ResetState();
+    g_SceneTimer = 1;
+    UpdateRaceEndScreen();
+    CHECK(g_SceneId == GAME_SCENE_INIT_MENU && s_AssetRequests == 1);
+    CHECK(s_ResetProgressCalls == 0);
     g_CourseProgress = saved;
     return 0;
 }

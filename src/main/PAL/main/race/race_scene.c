@@ -90,7 +90,8 @@ static s32 UpdateRaceEndState(RaceScene *state) {
 
     frame = BuildRaceEndFrame(g_RacePhase, g_GrandPrixMode,
                               RaceRetriesRemaining(),
-                              state->fadeTimer);
+                              state->fadeTimer,
+                              g_RaceSession.kind == RACE_SESSION_CUSTOM);
     if (frame.drawPresentation) {
         if (frame.presentation == RACE_END_PRESENTATION_FINAL) {
             DrawRaceEndBanner(frame.fade);
