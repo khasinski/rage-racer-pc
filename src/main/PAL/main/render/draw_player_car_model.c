@@ -15,7 +15,7 @@ enum {
     CAR_SHELL_PASS_COUNT = 2,
     CAR_SIDE_COUNT = 2,
     PLAYER_STEERING_RANGE = 4096,
-    RIVAL_WHEEL_STEERING_RANGE = 600,
+    RIVAL_STEERING_RANGE = 300,
 };
 
 static void SubmitCarPart(const LVec *position, Matrix *transform,
@@ -34,10 +34,10 @@ static s32 CarMaterialMode(s16 palette) {
     return (s32)((u32)(u16)palette << 16);
 }
 
-static s32 RivalPlayerWheelAngle(void) {
+static s32 RivalPlayerSteeringAngle(void) {
     return WrapSigned32(
                -(int64_t)g_PlayerCar.drive.steerPos *
-               RIVAL_WHEEL_STEERING_RANGE) /
+               RIVAL_STEERING_RANGE) /
            PLAYER_STEERING_RANGE;
 }
 
@@ -56,7 +56,6 @@ typedef struct CloseCarAssembly {
 } CloseCarAssembly;
 
 static s32 s_previewUsesAuxiliaryTextures;
-static s32 s_drawingRivalPlayer;
 
 /* Player and close rival cars use the same six-part matrix stack. Their model
  * banks, wheel geometry and steering scale come from different asset formats. */
@@ -215,12 +214,13 @@ void DrawRacePlayerCarModel(GameCarRuntime *object) {
 
     if (model >= 0) {
         s32 savedModel = object->modelIndex;
+        s32 savedSteeringAngle = object->steeringAngle;
         object->modelIndex = (s16)model;
+        object->steeringAngle = RivalPlayerSteeringAngle();
         SelectModelBank(1);
-        s_drawingRivalPlayer = 1;
         DrawCar(object);
-        s_drawingRivalPlayer = 0;
         SelectModelBank(0);
+        object->steeringAngle = savedSteeringAngle;
         object->modelIndex = (s16)savedModel;
         return;
     }
@@ -297,9 +297,8 @@ void DrawCar(GameCarRuntime *object) {
             .wheelBank = ResolveCarModelBank(
                 lod[0], 2, g_ModelBankCount),
             .bodyMaterialMode = CarMaterialMode(lod[1]),
-            .steeringAngle = s_drawingRivalPlayer
-                ? RivalPlayerWheelAngle()
-                : WrapSigned32((int64_t)object->steeringAngle * 2),
+            .steeringAngle = WrapSigned32(
+                (int64_t)object->steeringAngle * 2),
             .wheelOffsetX = WrapSigned16(params->axis0),
             .wheelOffsetY = WrapSigned16(params->axis1),
             .wheelOffsetZ = WrapSigned16(params->axis2),

@@ -56,6 +56,7 @@ static s32 s_zoneBlend;
 static s32 s_modernCarCalls;
 static s32 s_modernPlayerCalls;
 static RageGameCarRenderDetail s_detail;
+static s32 s_modernSteeringAngle;
 static s32 s_submitCount;
 static s32 s_submittedBanks[8];
 static s32 s_materialModes[8];
@@ -142,6 +143,7 @@ void GameRenderWorldSubmitCar(const GameCarRuntime *object, int mirror,
     (void)mirror;
     s_modernCarCalls++;
     s_detail = detail;
+    s_modernSteeringAngle = object->steeringAngle;
 }
 void GameRenderWorldSubmitPlayerCar(const GameCarRuntime *object,
                                     int mirror) {
@@ -164,6 +166,7 @@ void RestoreColorMatrix(void) { s_restoreCalls++; }
 static void ResetCounters(void) {
     s_modernCarCalls = 0;
     s_modernPlayerCalls = 0;
+    s_modernSteeringAngle = 0;
     s_submitCount = 0;
     s_restoreCalls = 0;
     s_zoneLightCalls = 0;
@@ -312,6 +315,8 @@ int main(void) {
     CHECK(s_selectModelBankCount == 2);
     CHECK(s_selectedModelBanks[0] == 1 && s_selectedModelBanks[1] == 0);
     CHECK(s_yAngleCount == 3 && s_yAngles[2] == -600);
+    CHECK(s_modernSteeringAngle == -300);
+    CHECK(object.steeringAngle == 120);
     CHECK(object.modelIndex == 0);
 
     puts("car model drawing tests passed");
