@@ -14,6 +14,8 @@
 enum {
     CAR_SHELL_PASS_COUNT = 2,
     CAR_SIDE_COUNT = 2,
+    PLAYER_STEERING_RANGE = 4096,
+    RIVAL_WHEEL_STEERING_RANGE = 600,
 };
 
 static void SubmitCarPart(const LVec *position, Matrix *transform,
@@ -30,6 +32,13 @@ static void OffsetCarHorizon(GameCarRuntime *object, s32 offset) {
 
 static s32 CarMaterialMode(s16 palette) {
     return (s32)((u32)(u16)palette << 16);
+}
+
+static s32 RivalPlayerWheelAngle(void) {
+    return WrapSigned32(
+               -(int64_t)g_PlayerCar.drive.steerPos *
+               RIVAL_WHEEL_STEERING_RANGE) /
+           PLAYER_STEERING_RANGE;
 }
 
 typedef struct CloseCarAssembly {
@@ -289,7 +298,7 @@ void DrawCar(GameCarRuntime *object) {
                 lod[0], 2, g_ModelBankCount),
             .bodyMaterialMode = CarMaterialMode(lod[1]),
             .steeringAngle = s_drawingRivalPlayer
-                ? object->steeringAngle / 12
+                ? RivalPlayerWheelAngle()
                 : WrapSigned32((int64_t)object->steeringAngle * 2),
             .wheelOffsetX = WrapSigned16(params->axis0),
             .wheelOffsetY = WrapSigned16(params->axis1),

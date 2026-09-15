@@ -305,12 +305,13 @@ int main(void) {
 
     ResetCounters();
     s_customRival = 0;
+    g_PlayerCar.drive.steerPos = 4096;
     DrawRacePlayerCarModel(&object);
     s_customRival = -1;
     CHECK(s_submitCount == 6);
     CHECK(s_selectModelBankCount == 2);
     CHECK(s_selectedModelBanks[0] == 1 && s_selectedModelBanks[1] == 0);
-    CHECK(s_yAngleCount == 3 && s_yAngles[2] == object.steeringAngle / 12);
+    CHECK(s_yAngleCount == 3 && s_yAngles[2] == -600);
     CHECK(object.modelIndex == 0);
 
     puts("car model drawing tests passed");
