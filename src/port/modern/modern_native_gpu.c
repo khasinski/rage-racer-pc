@@ -555,7 +555,7 @@ static void ModernNativeBuildShadowCamera(
     out->projection[3] = shadow->depthOffset;
 }
 
-int ModernNativeGpuInit(SDL_GPUDevice *device) {
+int ModernNativeGpuInit(SDL_GPUDevice *device, int linearTextureFilter) {
     SDL_GPUShader *vertex = NULL, *skyVertex = NULL, *shadowVertex = NULL;
     SDL_GPUShader *skyFragment = NULL;
     SDL_GPUShader *shadowFragment = NULL, *shadowMaskedFragment = NULL;
@@ -657,16 +657,21 @@ int ModernNativeGpuInit(SDL_GPUDevice *device) {
         buffer.size = MODERN_NATIVE_MAX_BUFFER_VERTICES * sizeof(uint32_t);
         s_worldIndexBuffer = SDL_CreateGPUBuffer(s_device, &buffer);
     }
-    sampler.min_filter = SDL_GPU_FILTER_LINEAR;
-    sampler.mag_filter = SDL_GPU_FILTER_LINEAR;
+    sampler.min_filter = linearTextureFilter
+                             ? SDL_GPU_FILTER_LINEAR
+                             : SDL_GPU_FILTER_NEAREST;
+    sampler.mag_filter = sampler.min_filter;
     /* The CPU supplies a deliberately bounded atlas-safe mip chain. Blend
-     * adjacent levels to avoid visible transitions on long road surfaces. */
-    sampler.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR;
+     * adjacent levels when linear filtering is enabled; nearest must apply
+     * to the 3D scene itself, rather than only to the final screen blit. */
+    sampler.mipmap_mode = linearTextureFilter
+                              ? SDL_GPU_SAMPLERMIPMAPMODE_LINEAR
+                              : SDL_GPU_SAMPLERMIPMAPMODE_NEAREST;
     sampler.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
     sampler.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
     sampler.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
-    sampler.max_anisotropy = 8.0f;
-    sampler.enable_anisotropy = true;
+    sampler.max_anisotropy = linearTextureFilter ? 8.0f : 1.0f;
+    sampler.enable_anisotropy = linearTextureFilter != 0;
     s_sampler = SDL_CreateGPUSampler(s_device, &sampler);
     /* The cloud sheet wraps the horizon as a band: it repeats round the
      * turn, but never upwards. Sample it the way

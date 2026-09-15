@@ -439,7 +439,8 @@ static int ModernEnsureResources(void) {
         ModernDestroyResources();
         return 0;
     }
-    if (s_enabled && !ModernNativeGpuInit(s_device)) {
+    if (s_enabled &&
+        !ModernNativeGpuInit(s_device, s_config.modernTextureFilterLinear)) {
         ModernDestroyResources();
         return 0;
     }
@@ -1891,7 +1892,7 @@ void ModernToggle(void) {
         return;
     }
     if (!s_enabled && s_resourcesReady && !s_nativeGpuReady &&
-        !ModernNativeGpuInit(s_device)) {
+        !ModernNativeGpuInit(s_device, s_config.modernTextureFilterLinear)) {
         fprintf(stderr,
                 "rage-port: renderer switch to modern refused: native GPU "
                 "setup failed\n");

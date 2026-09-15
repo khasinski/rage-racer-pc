@@ -6,7 +6,7 @@
 
 #include "render/render_world.h"
 
-int ModernNativeGpuInit(SDL_GPUDevice *device);
+int ModernNativeGpuInit(SDL_GPUDevice *device, int linearTextureFilter);
 void ModernNativeGpuShutdown(void);
 /* world->frame is a presentation revision, not necessarily a simulation tick.
  * Callers must advance it when camera/instance/environment contents change.

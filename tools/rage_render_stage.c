@@ -297,7 +297,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "rage-render-stage: GPU: %s\n", SDL_GetError());
         return EXIT_FAILURE;
     }
-    if (!ModernAssetsInitRoot(assetsPath) || !ModernNativeGpuInit(device)) {
+    if (!ModernAssetsInitRoot(assetsPath) || !ModernNativeGpuInit(device, 1)) {
         fprintf(stderr, "rage-render-stage: cannot open %s\n", assetsPath);
         goto release_gpu;
     }

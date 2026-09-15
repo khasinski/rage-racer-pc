@@ -254,7 +254,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "rage-frame-replay: GPU: %s\n", SDL_GetError());
         goto release_snapshot;
     }
-    if (!ModernAssetsInitRoot(assetsPath) || !ModernNativeGpuInit(device))
+    if (!ModernAssetsInitRoot(assetsPath) || !ModernNativeGpuInit(device, 1))
         goto release_gpu;
     {
         SDL_GPUTextureCreateInfo info = {0};
