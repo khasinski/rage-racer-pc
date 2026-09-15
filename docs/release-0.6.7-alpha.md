@@ -12,6 +12,10 @@ the same steering state in both renderers, including visible front-wheel
 steering. Replays record the complete active field and handle the smaller
 final-class grid.
 
+The modern renderer now applies `texture_filter = nearest` to world textures
+and mip selection as well as the final screen image. Linear filtering keeps
+the atlas-safe mip chain and anisotropic road sampling.
+
 The in-race pause menu can switch between the classic and modern renderers.
 The hand-off preserves the current frame, the classic PAUSE overlay and the
 menu layout. Start-grid scenery, course faces and the Reiko presentation use
