@@ -51,7 +51,8 @@ enum {
     LOADER_ROUND,
     LOADER_RACE,
     LOADER_GP_SCREEN,
-    LOADER_COURSE
+    LOADER_COURSE,
+    LOADER_CUSTOM_RIVAL_PREVIEW
 };
 
 void BeginFmv(s32 returnScene) { s_beginReturnScene = returnScene; }
@@ -92,6 +93,9 @@ void LoadRoundAssets(void) { s_loaderCall = LOADER_ROUND; }
 void LoadRaceAssets(void) { s_loaderCall = LOADER_RACE; }
 void LoadGrandPrixScreen(void) { s_loaderCall = LOADER_GP_SCREEN; }
 void LoadCourseTextureAssets(void) { s_loaderCall = LOADER_COURSE; }
+void LoadCustomRivalPreviewAssets(void) {
+    s_loaderCall = LOADER_CUSTOM_RIVAL_PREVIEW;
+}
 
 static void Check(s32 condition, const char *label) {
     if (!condition) {
@@ -206,6 +210,8 @@ static void TestAssetDispatch(void) {
     CheckDispatch(ASSET_REQUEST_RACE, LOADER_RACE);
     CheckDispatch(ASSET_REQUEST_GRAND_PRIX_SCREEN, LOADER_GP_SCREEN);
     CheckDispatch(ASSET_REQUEST_COURSE_TEXTURES, LOADER_COURSE);
+    CheckDispatch(ASSET_REQUEST_CUSTOM_RIVAL_PREVIEW,
+                  LOADER_CUSTOM_RIVAL_PREVIEW);
 
     s_resetLoaderCalls = 0;
     g_AssetRequestType = ASSET_REQUEST_INVALID;

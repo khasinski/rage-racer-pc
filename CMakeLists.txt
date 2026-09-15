@@ -722,50 +722,6 @@ if(RAGE_BUILD_PORT)
         target_link_libraries(rage-gte-replay PRIVATE psyz)
         add_executable(rage-gp0-replay tools/rage_gp0_replay.c)
         target_link_libraries(rage-gp0-replay PRIVATE psyz)
-        add_executable(rage-hud-preview
-            tools/rage_hud_preview.c
-            src/main/PAL/main/render/build_race_hud_prims.c
-            src/main/PAL/main/render/race_hud.c
-            src/main/PAL/main/render/text.c
-            src/main/PAL/main/render/text_8x8.c
-            src/main/PAL/main/render/draw_area_packet.c
-            src/main/PAL/main/render/draw_prims.c
-            src/main/PAL/main/race/countdown_tiles.c
-            src/main/PAL/main/race/draw_start_countdown.c
-            src/main/PAL/main/race/draw_race_option_menu.c
-            src/main/PAL/main/race/race_option_animation.c
-            src/main/PAL/main/race/race_time_text.c
-            src/main/PAL/main/race/start_countdown_timing.c
-            src/main/PAL/main/race/draw_split_times.c
-            src/main/PAL/main/race/split_time_display.c
-            src/main/PAL/main/render/add_tile_prim.c
-            src/main/PAL/main/render/build_sprite_from_desc.c
-            src/port/native_game_state.c
-            src/port/hud_config.c
-            $<TARGET_OBJECTS:rage-host-state>)
-        target_include_directories(rage-hud-preview PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/port/include
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/port
-            ${CMAKE_CURRENT_SOURCE_DIR}/include)
-        target_link_libraries(rage-hud-preview PRIVATE psyz)
-        # It links the host state, which the sanitizer build instruments, so
-        # it needs the runtime that instrumentation calls into. Only the two
-        # game executables were given it, and this tool then failed to link
-        # in the sanitizer job while every release build passed, because the
-        # tool is only built when testing is enabled.
-        if(RAGE_ENABLE_SANITIZERS AND
-           CMAKE_C_COMPILER_ID MATCHES "Clang|GNU" AND NOT WIN32)
-            target_link_options(rage-hud-preview PRIVATE
-                -fsanitize=address,undefined)
-        endif()
-        target_compile_options(rage-hud-preview PRIVATE
-            ${RAGE_COMPAT_COMPILE_OPTIONS})
-        if(MSVC AND CMAKE_C_COMPILER_ID STREQUAL "Clang")
-            target_compile_options(rage-hud-preview PRIVATE /clang:-fcommon)
-        endif()
-        if(NOT WIN32 AND CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
-            target_compile_options(rage-hud-preview PRIVATE -fcommon)
-        endif()
         add_test(NAME save_generator
             COMMAND rage-save-generator --self-test)
         set_tests_properties(save_generator PROPERTIES LABELS functional)

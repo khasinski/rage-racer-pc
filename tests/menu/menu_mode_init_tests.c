@@ -65,6 +65,7 @@ void ResetEngineerShopScreen(void) {
 }
 void ResetMenuCar(void) { s_menuCarResets++; }
 void ResetMenuButtonAnimation(void) {}
+void ApplyCustomRaceSelection(void) {}
 
 void SetDispMask(s32 enabled) { s_displayMask = enabled; }
 void InitRenderState(s32 mode) { s_initRenderMode = mode; }
@@ -164,7 +165,7 @@ static void PoisonEntryState(void) {
     s_menuWidgets.hintButtonsVisible = 0;
     g_MenuHandlerIndex = 9;
     g_MenuOutgoingHandlerIndex = 10;
-    g_MenuScreen = MENU_SCREEN_UNUSED;
+    g_MenuScreen = -1;
     s_courseSelect.option = 25;
     s_carSelect.cursor = 26;
     s_customize.option = 27;

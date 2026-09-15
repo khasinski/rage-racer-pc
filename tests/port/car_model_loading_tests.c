@@ -444,36 +444,10 @@ static void TestCarSelectAssetPhases(void) {
     Check(RequestCarSelectAssets() == 0, "car select request acknowledged");
 
     g_AssetLoadState = 1;
-    g_AssetBlockPtr = storage + 16;
-    g_AssetBlockSize = 16;
-    g_AssetBlockPtr2 = storage + 32;
-    g_AssetBlock2Size = 16;
-    g_AssetSubBlockPtr = storage + 48;
-    g_AssetSubBlockSize = 32;
-    s_startAudioResult = -1;
+    g_AssetSubBlockPtr = storage;
     LoadCarSelectAssets();
-    Check(g_AssetLoadState == 0,
-          "failed sequence audio transfer cancels car-select loading");
-
-    g_AssetLoadState = 1;
-    s_startAudioResult = 1;
-    LoadCarSelectAssets();
-    Check(g_AssetLoadState == 2 && s_audioSlot == 1 &&
-              s_audioHeader == storage + 16 && s_audioBody == storage + 48 &&
-              s_audioTable == (u16 *)(void *)(storage + 32) &&
-              s_audioHeaderSize == 16 && s_audioBodySize == 32 &&
-              s_audioAuxiliarySize == 16,
-          "car select audio phase");
-
-    s_pollResult = 0;
-    LoadCarSelectAssets();
-    Check(g_AssetLoadState == 2, "pending car select audio holds phase");
-    s_pollResult = 1;
-    s_sequenceInitCalls = 0;
-    LoadCarSelectAssets();
-    Check(g_AssetLoadState == 3 && g_AssetLoadCursor == storage + 48 &&
-              s_sequenceInitCalls == 1,
-          "car select audio completion");
+    Check(g_AssetLoadState == 2 && g_AssetLoadCursor == storage,
+          "car select begins shared asset loading");
 
     g_AssetLoadCursor = storage;
     pack->offsets[0] = TEAM_LOGO_SAMPLES_OFFSET;
@@ -481,17 +455,17 @@ static void TestCarSelectAssetPhases(void) {
     pack->offsets[2] = IMAGE_OFFSET;
     s_loadResult = 0;
     LoadCarSelectAssets();
-    Check(g_AssetLoadState == 3 && s_loadAssetId == 8,
+    Check(g_AssetLoadState == 2 && s_loadAssetId == 8,
           "pending shared car assets hold phase");
     s_loadResult = SHARED_ASSET_SIZE;
-    g_AssetLoadState = 3;
+    g_AssetLoadState = 2;
     s_loadResult = 3 * (s32)sizeof(s32) - 1;
     s_registeredBank = NULL;
     LoadCarSelectAssets();
     Check(g_AssetLoadState == 0 && s_registeredBank == NULL,
           "truncated showroom header cancels installation");
 
-    g_AssetLoadState = 3;
+    g_AssetLoadState = 2;
     s_loadResult = SHARED_ASSET_SIZE;
     pack->offsets[1] = COURSE_MODELS_OFFSET - 1;
     s_registeredBank = NULL;
@@ -502,14 +476,14 @@ static void TestCarSelectAssetPhases(void) {
               s_courseModels == NULL && s_uploadedImage == NULL,
           "truncated team-logo samples cancel installation");
 
-    g_AssetLoadState = 3;
+    g_AssetLoadState = 2;
     pack->offsets[1] = COURSE_MODELS_OFFSET;
     pack->offsets[2] = pack->offsets[1];
     s_registeredBank = NULL;
     LoadCarSelectAssets();
     Check(g_AssetLoadState == 0 && s_registeredBank == NULL,
           "overlapping showroom blocks cancel installation");
-    g_AssetLoadState = 3;
+    g_AssetLoadState = 2;
     pack->offsets[2] = IMAGE_OFFSET;
     s_assetRoom = CAR_MODEL_BUFFER_SIZE - 1;
     s_registeredBank = NULL;
@@ -521,7 +495,7 @@ static void TestCarSelectAssetPhases(void) {
               s_uploadedImage == NULL,
           "undersized showroom arena publishes no shared assets");
 
-    g_AssetLoadState = 3;
+    g_AssetLoadState = 2;
     s_assetRoom = SIZE_MAX;
     memcpy(originalSharedAssets, storage, sizeof(originalSharedAssets));
     LoadCarSelectAssets();
@@ -544,7 +518,7 @@ static void TestCarSelectAssetPhases(void) {
     Check(g_CarModelBuffer == storage + IMAGE_OFFSET &&
               g_ImageBlockBuffer == storage + IMAGE_OFFSET +
                                         CAR_MODEL_BUFFER_SIZE &&
-              g_AssetLoadState == 4,
+              g_AssetLoadState == 3,
           "shared assets publish car buffers");
 
     model = (CarModelAsset *)(void *)(storage + IMAGE_OFFSET);
@@ -573,13 +547,13 @@ static void TestCarSelectAssetPhases(void) {
           "initial showroom paint applied");
     Check(g_AssetLoadState == 0, "car select asset load completes");
 
-    g_AssetLoadState = 4;
+    g_AssetLoadState = 3;
     g_PlayerCarIndex = GAME_CAR_COUNT;
     LoadCarSelectAssets();
     Check(g_AssetLoadState == 0 && AssetLoadHasFailed(),
           "out-of-range showroom car is rejected before table access");
 
-    g_AssetLoadState = 4;
+    g_AssetLoadState = 3;
     g_AssetLoadFailed = 0;
     g_PlayerCarIndex = 1;
     g_CarTable = NULL;
@@ -591,7 +565,7 @@ static void TestCarSelectAssetPhases(void) {
 
     g_CarTable = cars;
     g_CarModelBuffer = NULL;
-    g_AssetLoadState = 4;
+    g_AssetLoadState = 3;
     g_AssetLoadFailed = 0;
     s_loadAssetId = -123;
     LoadCarSelectAssets();
@@ -600,7 +574,7 @@ static void TestCarSelectAssetPhases(void) {
           "missing showroom model buffer is rejected before asset lookup");
 
     g_CarModelBuffer = storage + IMAGE_OFFSET;
-    g_AssetLoadState = 4;
+    g_AssetLoadState = 3;
     g_AssetLoadFailed = 0;
     cars[1].modelVariant = UINT8_MAX;
     LoadCarSelectAssets();
@@ -609,7 +583,7 @@ static void TestCarSelectAssetPhases(void) {
           "invalid showroom variant is rejected before asset lookup");
     cars[1].modelVariant = 2;
 
-    g_AssetLoadState = 4;
+    g_AssetLoadState = 3;
     g_PlayerCarIndex = 1;
     g_CarModelSlot = 1;
     g_CarModelAsset = NULL;
@@ -663,13 +637,9 @@ static void TestCarSelectPreservesSelectBgmSequence(void) {
     g_AssetBlock2Size = 1;
     g_AssetSubBlockPtr = storage + 3;
     g_AssetSubBlockSize = 1;
-    s_startAudioResult = 1;
     LoadCarSelectAssets();
-    Check(s_audioHeader == storage + 16 && s_audioHeaderSize == 16 &&
-              s_audioTable == (u16 *)(void *)(storage + 40) &&
-              s_audioAuxiliarySize == 24 && s_audioBody == storage + 72 &&
-              s_audioBodySize == 24,
-          "car-select sequence uses the captured SELECT.BIN payload");
+    Check(g_AssetLoadState == 2 && g_AssetLoadCursor == storage + 72,
+          "car-select reuses the captured SELECT.BIN payload boundary");
 }
 
 static void TestEveryRetailVariantLoad(void) {

@@ -16,6 +16,12 @@
 
 static int s_failures;
 
+void SsSetTableSize(u8 *table, short sequences, short tracks) {
+    (void)table;
+    (void)sequences;
+    (void)tracks;
+}
+
 static void Check(int condition, const char *message) {
     if (condition) return;
     s_failures++;

@@ -8,6 +8,12 @@ enum { UI_SCRIPT_DATA_SIZE = 0x321c };
 extern const unsigned char g_UiScriptData[UI_SCRIPT_DATA_SIZE];
 int InitNativeGameData(void);
 
+void SsSetTableSize(unsigned char *table, short sequences, short tracks) {
+    (void)table;
+    (void)sequences;
+    (void)tracks;
+}
+
 static int IsUiDataPointer(const void *pointer) {
     const unsigned char *bytes = pointer;
     return bytes >= g_UiScriptData &&

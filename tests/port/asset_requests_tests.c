@@ -32,6 +32,7 @@ s16 g_GrandPrixMode;
 s16 g_GrandPrixSeries;
 s32 g_GrandPrixClass;
 s32 g_CourseIndex;
+RaceSession g_RaceSession;
 s32 g_MaxClassReached[2];
 u16 g_TeamLogoClut[16];
 TeamLogoCanvas g_TeamLogoCanvas;

@@ -32,8 +32,8 @@ void DrawCarCounter(MenuWidgets *widgets, s32 direction, s32 current,
             frame = OWNED_CAR_COUNTER_LAST_FRAME;
         }
         y = 0x21B - frame * 35;
-        displayedCount = (u32)AddClampedMenuValue(current, 0, 0, 99);
         total = AddClampedMenuValue(total, 0, 0, 99);
+        displayedCount = (u32)AddClampedMenuValue(current, 0, 0, total);
 
         const s32 numberFlags = DRAW_NUMBER_LARGE_DIGITS |
                                 DRAW_NUMBER_TEN_DIGIT_FIELD |

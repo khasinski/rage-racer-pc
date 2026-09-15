@@ -1,6 +1,7 @@
 #include "common.h"
 #include "game/car.h"
 #include "game/menu.h"
+#include "game/race.h"
 
 static MenuWidgets s_menuWidgets;
 
@@ -20,8 +21,13 @@ u32 g_CarModelSlot;
 s32 g_MenuScreen;
 s32 g_PlayerCarIndex;
 s32 g_UiScriptProgress;
+RaceSession g_RaceSession;
 static CarBrowse s_browse;
 CarBrowse *MenuCarBrowse(void) { return &s_browse; }
+int CustomRaceModelCount(int classIndex) {
+    (void)classIndex;
+    return 0;
+}
 
 static s32 s_installCalls;
 static s32 s_namePlateCalls;
