@@ -25,9 +25,9 @@ foreach(mode resident reference)
     endif()
     execute_process(COMMAND "${GAME}" --config "${SOURCE}/rage-port.ini"
         --set "disc.image=${DISC}" --set race.enabled=false
-        --set run.frames=3000 --set stop.scene=12 --set stop.timer=110
+        --set run.frames=4000 --set stop.scene=12 --set stop.timer=110
         --set input.disable_host=true
-        --set input.script=1450:START,1550:START,1700:CROSS,2000:CROSS,2150:CROSS,2250:CROSS
+        --set input.script=1450:START,1550:START,1700:CROSS,2000:CROSS,2150:CROSS,2250:CROSS,2400:CROSS,2600:CROSS
         --set video.renderer=modern --set video.fps=logic
         --set video.internal_scale=1 --set video.post=none
         --set "diagnostics.modern_cpu_geometry=${cpu}"

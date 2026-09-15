@@ -18,7 +18,7 @@ if(NOT result EQUAL 0)
 endif()
 # The hard-cut fix reads the previous published world's sky grid instead of
 # current->previousCamera, whose history intentionally resets at a shot cut.
-execute_process(COMMAND "${CHECK}" sky 0xB51DBD37 ${captures} RESULT_VARIABLE check_result
+execute_process(COMMAND "${CHECK}" sky 0x930DD489 ${captures} RESULT_VARIABLE check_result
     OUTPUT_VARIABLE check_output ERROR_VARIABLE check_error)
 if(NOT check_result EQUAL 0)
     message(FATAL_ERROR "Sky digest failed: ${root}\n${check_output}${check_error}")

@@ -13,7 +13,9 @@ foreach(renderer classic modern)
     if(renderer STREQUAL "modern")
         list(APPEND env "RAGE_PORT_MODERN_ASSETS=${root}/native-assets" RAGE_PORT_MODERN_ASSET_TRACE=1)
         set(extra --set video.internal_scale=1 --set video.aspect=4:3
-            --set "diagnostics.modern_dump=${out}/native-mirror.ppm" --set diagnostics.modern_dump_frame=620)
+            --set "diagnostics.modern_dump=${out}/native-mirror.ppm"
+            --set diagnostics.modern_dump_scene_id=12
+            --set diagnostics.modern_dump_timer=430)
     endif()
     execute_process(COMMAND "${CMAKE_COMMAND}" -E env ${env} "${GAME}"
         --scenario "${SOURCE}/race-scenario.ini" --set run.frames=3000 --set stop.scene=12

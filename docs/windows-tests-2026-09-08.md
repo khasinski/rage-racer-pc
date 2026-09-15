@@ -1,7 +1,7 @@
 # Windows test suite repair — 2026-09-08
 
 The full Visual Studio 2022 / x64 / ClangCL Release build now succeeds,
-including every test executable and `rage-hud-preview`. The previous report
+including every test executable and the then-existing HUD preview tool. The previous report
 contained 83 failing build targets: 82 tests and the HUD tool, not 83 failing
 test assertions. The release workflow had built only a selected subset and
 therefore did not catch this drift.
