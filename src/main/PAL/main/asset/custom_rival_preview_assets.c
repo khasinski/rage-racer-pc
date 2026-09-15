@@ -73,7 +73,8 @@ void LoadCustomRivalPreviewAssets(void) {
             FailAssetLoad();
             return;
         }
-        g_AssetLoadCursor = s_buffer + ((size_t)loaded + 15u & ~(size_t)15u);
+        g_AssetLoadCursor =
+            s_buffer + (((size_t)loaded + 15u) & ~(size_t)15u);
         if ((size_t)(g_AssetLoadCursor - s_buffer) >= s_bufferSize) {
             FailAssetLoad();
             return;

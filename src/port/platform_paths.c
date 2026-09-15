@@ -1,4 +1,8 @@
 
+#if !defined(_WIN32) && !defined(__APPLE__)
+#define _POSIX_C_SOURCE 200809L
+#endif
+
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
