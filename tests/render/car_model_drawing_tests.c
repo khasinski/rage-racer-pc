@@ -297,10 +297,9 @@ int main(void) {
     s_previewTable = &track.header;
     DrawCustomRivalPreview(&object, GAME_CAR_COUNT);
     CHECK(s_submitCount == 6);
-    CHECK(s_auxiliaryTextureUse[0] == 0 && s_auxiliaryTextureUse[1] == 0);
-    CHECK(s_auxiliaryTextureUse[2] == 1);
-    CHECK(s_auxiliaryTextureUse[3] == 0 && s_auxiliaryTextureUse[4] == 0 &&
-          s_auxiliaryTextureUse[5] == 0);
+    CHECK(s_auxiliaryTextureUse[0] == 1 && s_auxiliaryTextureUse[1] == 1);
+    CHECK(s_auxiliaryTextureUse[2] == 1 && s_auxiliaryTextureUse[3] == 1);
+    CHECK(s_auxiliaryTextureUse[4] == 1 && s_auxiliaryTextureUse[5] == 1);
     CHECK(s_auxiliaryTextures == 0);
     CHECK(g_TrackRenderTable == &track.header);
 
@@ -311,6 +310,7 @@ int main(void) {
     CHECK(s_submitCount == 6);
     CHECK(s_selectModelBankCount == 2);
     CHECK(s_selectedModelBanks[0] == 1 && s_selectedModelBanks[1] == 0);
+    CHECK(s_yAngleCount == 3 && s_yAngles[2] == object.steeringAngle / 12);
     CHECK(object.modelIndex == 0);
 
     puts("car model drawing tests passed");

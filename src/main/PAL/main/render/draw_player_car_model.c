@@ -43,10 +43,11 @@ typedef struct CloseCarAssembly {
     s16 wheelOffsetY;
     s16 wheelOffsetZ;
     s32 useZoneLighting;
-    s32 bodyUsesAuxiliaryTextures;
+    s32 usesAuxiliaryTextures;
 } CloseCarAssembly;
 
 static s32 s_previewUsesAuxiliaryTextures;
+static s32 s_drawingRivalPlayer;
 
 /* Player and close rival cars use the same six-part matrix stack. Their model
  * banks, wheel geometry and steering scale come from different asset formats. */
@@ -65,6 +66,8 @@ static s32 DrawCloseCarAssembly(GameCarRuntime *object,
     s32 clipHandle = 0;
     s32 passIndex;
     s32 sideIndex;
+
+    UseAuxiliaryModelTextures(assembly->usesAuxiliaryTextures);
 
     BuildRotMatrixY(
         &scratchMatrix,
@@ -107,10 +110,8 @@ static s32 DrawCloseCarAssembly(GameCarRuntime *object,
 
     BuildRotMatrixZ(&partMatrix, object->bodyRoll);
     MulMatrix2(&bodyViewMatrix, &partMatrix);
-    UseAuxiliaryModelTextures(assembly->bodyUsesAuxiliaryTextures);
     SubmitCarPart(AsPositionWords(&object->x), &partMatrix,
                   assembly->bodyMaterialMode, assembly->bodyBank);
-    UseAuxiliaryModelTextures(0);
 
     BuildRotMatrixZ(
         &scratchMatrix,
@@ -151,6 +152,8 @@ static s32 DrawCloseCarAssembly(GameCarRuntime *object,
         SetLightMatrix(&lightMatrix);
     }
 
+    UseAuxiliaryModelTextures(0);
+
     return clipHandle;
 }
 
@@ -187,7 +190,7 @@ void DrawPlayerCarModel(GameCarRuntime *object) {
         .wheelOffsetY = modelAsset->modelOffsetY,
         .wheelOffsetZ = modelAsset->modelOffsetZ,
         .useZoneLighting = g_SceneId != 8,
-        .bodyUsesAuxiliaryTextures = 0,
+        .usesAuxiliaryTextures = 0,
     };
 
     OffsetCarHorizon(object, -modelAsset->horizon);
@@ -205,7 +208,9 @@ void DrawRacePlayerCarModel(GameCarRuntime *object) {
         s32 savedModel = object->modelIndex;
         object->modelIndex = (s16)model;
         SelectModelBank(1);
+        s_drawingRivalPlayer = 1;
         DrawCar(object);
+        s_drawingRivalPlayer = 0;
         SelectModelBank(0);
         object->modelIndex = (s16)savedModel;
         return;
@@ -283,13 +288,14 @@ void DrawCar(GameCarRuntime *object) {
             .wheelBank = ResolveCarModelBank(
                 lod[0], 2, g_ModelBankCount),
             .bodyMaterialMode = CarMaterialMode(lod[1]),
-            .steeringAngle = WrapSigned32(
-                (int64_t)object->steeringAngle * 2),
+            .steeringAngle = s_drawingRivalPlayer
+                ? object->steeringAngle / 12
+                : WrapSigned32((int64_t)object->steeringAngle * 2),
             .wheelOffsetX = WrapSigned16(params->axis0),
             .wheelOffsetY = WrapSigned16(params->axis1),
             .wheelOffsetZ = WrapSigned16(params->axis2),
             .useZoneLighting = g_SceneId != 8,
-            .bodyUsesAuxiliaryTextures = s_previewUsesAuxiliaryTextures,
+            .usesAuxiliaryTextures = s_previewUsesAuxiliaryTextures,
         };
 
         clipHandle = DrawCloseCarAssembly(object, &assembly);
