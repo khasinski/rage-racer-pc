@@ -19,6 +19,9 @@
 #else
 #include <unistd.h>
 #endif
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 
 #include <psyz/cd.h>
 #include <psyz/audio.h>
