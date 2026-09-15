@@ -35,7 +35,6 @@ void UpdateCamera(Camera *camera, CameraViewMode mode, GameCarRuntime *car);
 /* The two the camera writes through, which the port allocates alongside the
  * renderer rather than in host state. */
 GameRenderState g_RenderState;
-Camera g_Camera;
 PlayerCarRuntime g_PlayerCar;
 
 static GameTrackCameraNode s_nodes[2];
