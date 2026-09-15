@@ -1,7 +1,8 @@
+#include <SDL3/SDL_timer.h>
+
 #include <psyz/video.h>
 #include <psyz/cd.h>
 #include <libgpu.h>
-#include <SDL3/SDL_timer.h>
 
 #include <limits.h>
 #include <stdio.h>
