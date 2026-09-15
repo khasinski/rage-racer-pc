@@ -14,7 +14,6 @@ static CarSelect s_carSelect;
 static CarBrowse s_carBrowse;
 
 GameRenderState g_RenderState;
-Camera g_Camera;
 Matrix g_SceneColorMatrix;
 Matrix g_SceneLightMatrix;
 TimedDrawCommand g_UiEmptyScript[1];
