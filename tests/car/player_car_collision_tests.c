@@ -14,7 +14,6 @@
 
 GameRenderState g_RenderState;
 GameCarRuntime g_Cars[11];
-RaceSession g_RaceSession;
 
 static u32 s_digest = 2166136261U;
 static s32 s_sound;
