@@ -10,6 +10,13 @@ set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
+# Request the POSIX interfaces used by the native Linux runtime while keeping
+# the project in strict C17 mode. glibc otherwise hides APIs such as setenv,
+# strdup, readlink, and realpath when compiler extensions are disabled.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_compile_definitions(_POSIX_C_SOURCE=200809L)
+endif()
+
 # The retail data segment, split so each subsystem's state sits with the code
 # that reads it. Nothing links one of these without the rest: they were one
 # object file in retail and they still describe one program's state, so every

@@ -22,10 +22,8 @@
 #include "platform_paths.h"
 #include "menu_music_runtime.h"
 
-#ifdef _WIN32
 #ifndef PATH_MAX
 #define PATH_MAX 4096
-#endif
 #endif
 
 void MainLoop(void);
