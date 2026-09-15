@@ -6,6 +6,13 @@
 # compile against. The Asset Browser is isolated development tooling and keeps
 # its own Python fixtures under tools/assetbrowser/.
 
+# Strict ISO C hides POSIX declarations on glibc unless the translation unit
+# explicitly requests them. Test fixtures use mkdtemp, symlink, fdopen and
+# fileno to verify filesystem and IPC behavior.
+if(UNIX AND NOT APPLE)
+    add_compile_definitions(_POSIX_C_SOURCE=200809L)
+endif()
+
 # Test timeouts are wall-clock, and most of these run the game at its own pace
 # rather than as fast as the machine can. race_cdda waits out an audio track and
 # needs 66 seconds of real time; its limit was 45, so it failed whenever anything
