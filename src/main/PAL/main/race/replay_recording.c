@@ -4,7 +4,7 @@
 #include "game/replay_internal.h"
 #include "game/work_buffer.h"
 
-_Static_assert(REPLAY_RIVAL_COUNT == RACE_CAR_SLOT_COUNT,
+_Static_assert((int)REPLAY_RIVAL_COUNT == (int)RACE_CAR_SLOT_COUNT,
                "replay must retain every rival slot");
 
 static void StoreGrandPrixReplaySample(s32 subframe,
