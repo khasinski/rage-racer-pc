@@ -51,8 +51,7 @@ char *FormatSaveElapsedTime(char dst[SAVE_ELAPSED_TIME_CAPACITY], u32 ticks) {
     u32 totalMinutes = ticks / TICKS_PER_MINUTE;
     u32 totalSeconds = ticks / TICKS_PER_SECOND;
 
-    snprintf(dst, SAVE_ELAPSED_TIME_CAPACITY, "%5d:%02d:%02d", (s32)hours,
-             (s32)(totalMinutes - hours * 60),
-             (s32)(totalSeconds - totalMinutes * 60));
+    snprintf(dst, SAVE_ELAPSED_TIME_CAPACITY, "%5u:%02u:%02u", hours,
+             totalMinutes % 60, totalSeconds % 60);
     return dst + PLAY_TIME_HIDDEN_PADDING;
 }
