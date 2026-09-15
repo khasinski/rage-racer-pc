@@ -4,5 +4,8 @@
 /* Return the host-only yaw offset, in the game's 12-bit angle units, used to
  * point the chase camera into a turn. */
 int ChaseCameraYawOffset(int steeringAngle);
+int ChaseCameraHeight(int authoredHeight);
+int ChaseCameraDistance(int authoredDistance);
+int ChaseCameraPitchOffset(void);
 
 #endif

@@ -15,6 +15,9 @@ const char *RuntimeConfigGet(const char *key) {
     const char *override = getenv("CHASE_TEST_VALUE");
     if (!strcmp(key, "camera.chase_turn_lookahead"))
         return override != NULL ? override : "0.5";
+    if (!strcmp(key, "camera.chase_height")) return "1.5";
+    if (!strcmp(key, "camera.chase_distance")) return "0.5";
+    if (!strcmp(key, "camera.chase_pitch")) return "10";
     return NULL;
 }
 
@@ -29,5 +32,8 @@ int main(void) {
     EXPECT_EQ(170, ChaseCameraYawOffset(8192));
     EXPECT_EQ(-170, ChaseCameraYawOffset(-8192));
     EXPECT_EQ(85, ChaseCameraYawOffset(2048));
+    EXPECT_EQ(90, ChaseCameraHeight(60));
+    EXPECT_EQ(160, ChaseCameraDistance(320));
+    EXPECT_EQ(114, ChaseCameraPitchOffset());
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

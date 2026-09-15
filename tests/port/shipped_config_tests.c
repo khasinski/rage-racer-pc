@@ -13,11 +13,13 @@ static char *Trim(char *value) {
 }
 
 /* Release-policy check only: do not load user profiles or environment
- * overrides. These four settings must be present explicitly in the artifact.
+ * overrides. These settings must be present explicitly in the artifact.
  * Resolve section-qualified keys like the runtime; unrelated settings are
  * not checked against this release policy. */
 static int Validate(FILE *file, int quiet) {
-    static const char *keys[] = {"video.draw_distance", "camera.chase_turn_lookahead",
+    static const char *keys[] = {
+        "video.draw_distance", "camera.chase_turn_lookahead",
+        "camera.chase_height", "camera.chase_distance", "camera.chase_pitch",
         "input.steering_linearity", "diagnostics.marker_capture"};
     unsigned seen = 0;
     char line[1400], section[64] = "";
@@ -47,11 +49,11 @@ static int Validate(FILE *file, int quiet) {
         if (length < 0 || (size_t)length >= sizeof(qualified)) return 0;
         key = qualified;
         char *value = Trim(equals + 1);
-        for (unsigned i = 0; i < 4; ++i) {
+        for (unsigned i = 0; i < 7; ++i) {
             if (strcmp(key, keys[i])) continue;
             int valid = !(seen & (1u << i));
             seen |= 1u << i;
-            if (i == 3) {
+            if (i == 6) {
                 for (char *p = value; *p; ++p) *p = (char)tolower((unsigned char)*p);
                 valid = valid && (!strcmp(value, "false") || !strcmp(value, "off") ||
                     !strcmp(value, "no") || !strcmp(value, "0"));
@@ -59,8 +61,10 @@ static int Validate(FILE *file, int quiet) {
                 char *end;
                 double number = strtod(value, &end);
                 valid = valid && end != value && *end == 0 && isfinite(number);
-                valid = valid && (i == 0 ? number >= 0 && number <= 1 :
-                                  i == 1 ? number == 0 : number == 0.5);
+                valid = valid &&
+                    (i == 0 ? number >= 0 && number <= 1 :
+                     i == 1 || i == 4 ? number == 0 :
+                     i == 2 || i == 3 ? number == 1 : number == 0.5);
             }
             if (!valid) {
                 if (!quiet) fprintf(stderr, "Unsafe, malformed or duplicate shipped setting: %s=%s\n", key, value);
@@ -68,7 +72,7 @@ static int Validate(FILE *file, int quiet) {
             }
         }
     }
-    if (ferror(file) || seen != 15) {
+    if (ferror(file) || seen != 127) {
         if (!quiet) fprintf(stderr, "Missing required shipped settings or read error (mask=%u)\n", seen);
         return 0;
     }
@@ -80,7 +84,8 @@ static int Fixture(const char *distance, const char *camera, const char *steerin
     FILE *file = tmpfile();
     if (!file) return 0;
     fprintf(file, "# draw_distance=100\n[video]\n draw_distance = %s\r\n"
-        "[camera]\nchase_turn_lookahead=%s\n[input]\nsteering_linearity=%s\n"
+        "[camera]\nchase_turn_lookahead=%s\nchase_height=1\n"
+        "chase_distance=1\nchase_pitch=0\n[input]\nsteering_linearity=%s\n"
         "[diagnostics]\nmarker_capture=%s\n%s",
         distance, camera, steering, marker, extra);
     rewind(file);
@@ -104,6 +109,7 @@ static int SelfTest(void) {
     FILE *file = tmpfile();
     if (!file) return 1;
     fputs("[video]\ndraw_distance=1\n[camera]\nchase_turn_lookahead=0\n"
+          "chase_height=1\nchase_distance=1\nchase_pitch=0\n"
           "[input]\nsteering_linearity=0.5\n[wrong_section]\nmarker_capture=false\n", file);
     rewind(file);
     int missingRejected = !Validate(file, 1);
@@ -112,6 +118,8 @@ static int SelfTest(void) {
     file = tmpfile();
     if (!file) return 1;
     fputs("video.draw_distance=1\ncamera.chase_turn_lookahead=0\n"
+          "camera.chase_height=1\ncamera.chase_distance=1\n"
+          "camera.chase_pitch=0\n"
           "input.steering_linearity=0.5\ndiagnostics.marker_capture=off\n", file);
     rewind(file);
     int dottedAccepted = Validate(file, 1);

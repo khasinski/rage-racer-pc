@@ -48,11 +48,15 @@ s32 FindNearestTrackCamera(GameCarRuntime *car) {
 }
 
 void DrawPlayerCarModel(GameCarRuntime *obj) { (void)obj; }
+void DrawRacePlayerCarModel(GameCarRuntime *obj) { DrawPlayerCarModel(obj); }
 void SelectModelBank(s32 bank) { (void)bank; }
 int ChaseCameraYawOffset(int steeringAngle) {
     (void)steeringAngle;
     return 0;
 }
+int ChaseCameraHeight(int authoredHeight) { return authoredHeight; }
+int ChaseCameraDistance(int authoredDistance) { return authoredDistance; }
+int ChaseCameraPitchOffset(void) { return 0; }
 
 /* Reached only from SetCameraRotMatrix, which builds the mirror view rather
  * than the camera this test reads. */

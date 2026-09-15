@@ -163,6 +163,39 @@
   },
   {
     "group": "hud",
+    "key": "camera.chase_height",
+    "label": "Third-person camera height",
+    "help": "Multiplier for the height of the selected chase-camera preset.",
+    "type": "number",
+    "default": "1",
+    "min": 0.25,
+    "max": 4,
+    "step": 0.05
+  },
+  {
+    "group": "hud",
+    "key": "camera.chase_distance",
+    "label": "Third-person camera distance",
+    "help": "Multiplier for the distance of the selected chase-camera preset.",
+    "type": "number",
+    "default": "1",
+    "min": 0.25,
+    "max": 4,
+    "step": 0.05
+  },
+  {
+    "group": "hud",
+    "key": "camera.chase_pitch",
+    "label": "Third-person camera pitch",
+    "help": "Vertical viewing-angle offset in degrees; positive looks downward.",
+    "type": "number",
+    "default": "0",
+    "min": -45,
+    "max": 45,
+    "step": 1
+  },
+  {
+    "group": "hud",
     "key": "modern.mirror_distance",
     "label": "Mirror view distance",
     "help": "Rear-view distance multiplier, capped by the main camera range.",

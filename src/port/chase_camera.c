@@ -6,32 +6,63 @@
 
 #include "runtime_config.h"
 
-enum { RAGE_CHASE_FULL_LOCK_YAW = 341 };
+enum {
+    RAGE_CHASE_FULL_LOCK_YAW = 341,
+    RAGE_ANGLE_UNITS_PER_TURN = 4096,
+};
 
 static int s_initialized;
 static float s_lookahead;
+static float s_heightScale;
+static float s_distanceScale;
+static float s_pitchDegrees;
 
-static void ChaseCameraInit(void) {
-    const char *text;
+static float ConfigFloat(const char *key, float fallback,
+                         float minimum, float maximum) {
+    const char *text = RuntimeConfigGet(key);
     char *end;
     float value;
 
-    if (s_initialized) return;
-    s_initialized = 1;
-    s_lookahead = 0.0f;
-    text = RuntimeConfigGet("camera.chase_turn_lookahead");
-    if (text == NULL || text[0] == '\0') return;
+    if (text == NULL || text[0] == '\0') return fallback;
     errno = 0;
     value = strtof(text, &end);
     if (errno == ERANGE || end == text || *end != '\0' || !isfinite(value) ||
-        value < 0.0f || value > 1.0f) {
+        value < minimum || value > maximum) {
         fprintf(stderr,
-                "rage-port: ignoring camera.chase_turn_lookahead=%s "
-                "(expected 0..1); using 0\n",
-                text);
-        return;
+                "rage-port: ignoring %s=%s (expected %.2f..%.2f); using %.2f\n",
+                key, text, minimum, maximum, fallback);
+        return fallback;
     }
-    s_lookahead = value;
+    return value;
+}
+
+static void ChaseCameraInit(void) {
+    if (s_initialized) return;
+    s_initialized = 1;
+    s_lookahead = ConfigFloat(
+        "camera.chase_turn_lookahead", 0.0f, 0.0f, 1.0f);
+    s_heightScale = ConfigFloat(
+        "camera.chase_height", 1.0f, 0.25f, 4.0f);
+    s_distanceScale = ConfigFloat(
+        "camera.chase_distance", 1.0f, 0.25f, 4.0f);
+    s_pitchDegrees = ConfigFloat(
+        "camera.chase_pitch", 0.0f, -45.0f, 45.0f);
+}
+
+int ChaseCameraHeight(int authoredHeight) {
+    ChaseCameraInit();
+    return (int)lroundf((float)authoredHeight * s_heightScale);
+}
+
+int ChaseCameraDistance(int authoredDistance) {
+    ChaseCameraInit();
+    return (int)lroundf((float)authoredDistance * s_distanceScale);
+}
+
+int ChaseCameraPitchOffset(void) {
+    ChaseCameraInit();
+    return (int)lroundf(
+        s_pitchDegrees * (float)RAGE_ANGLE_UNITS_PER_TURN / 360.0f);
 }
 
 int ChaseCameraYawOffset(int steeringAngle) {

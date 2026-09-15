@@ -193,6 +193,8 @@ void CameraViewFromChaseCamera(Camera *camera, GameCarRuntime *car, GameViewWork
         eyeOffset.z = 0x190;
         break;
     }
+    eyeOffset.y = ChaseCameraHeight(eyeOffset.y);
+    eyeOffset.z = ChaseCameraDistance(eyeOffset.z);
     ApplyMatrixLV(&matrixWork, AsWords(&eyeOffset), AsWords(&eyeWorld));
     view->x = CameraSubtractWord(view->x, eyeWorld.x);
     view->y = CameraSubtractWord(view->y, eyeWorld.y);
@@ -211,6 +213,6 @@ void CameraViewFromChaseCamera(Camera *camera, GameCarRuntime *car, GameViewWork
     } else {
         pitchOffset = view->angleX - 0x60;
     }
-    view->angleX = pitchOffset;
+    view->angleX = CameraAddWord(pitchOffset, ChaseCameraPitchOffset());
     camera->previousMode = TRACK_CAMERA_CHASE;
 }
