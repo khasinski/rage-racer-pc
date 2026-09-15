@@ -591,10 +591,9 @@ say what they wanted. Nothing else in the suite needs the disc.
 
 ## Known limitations
 
-For the 0.6.4-alpha candidate, see the [release notes](docs/release-0.6.4-alpha.md)
+For the current candidate, see the [0.6.7-alpha release notes](docs/release-0.6.7-alpha.md)
 and [enhanced classic renderer settings](docs/classic-renderer.md). Outstanding
-crash and frame-time verification is tracked in the
-[issue audit](docs/release-0.6.4-issues.md).
+work remains tracked in the GitHub issue list.
 
 - Controller configuration currently retains the original preset-oriented
   UI. Full per-action controller remapping is still to come.
