@@ -52,6 +52,9 @@ add_executable(chase_camera_tests
 target_include_directories(chase_camera_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port
     ${CMAKE_SOURCE_DIR}/src/port/include)
+if(UNIX AND NOT APPLE)
+    target_link_libraries(chase_camera_tests PRIVATE m)
+endif()
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(chase_camera_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
