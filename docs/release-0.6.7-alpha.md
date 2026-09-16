@@ -38,6 +38,9 @@ chase_pitch = 0
 Height and distance accept multipliers from 0.25 to 4. Pitch accepts -45 to
 45 degrees. The default values preserve the original chase-camera presets.
 
+The gear shift points and the Custom menu icon were created by Sevish. The
+adjustable chase-camera settings were suggested by Passion Wagon.
+
 Internal menu, race, replay, audio, memory-card and camera state has been
 grouped by lifetime. Dead compatibility paths, obsolete mono handling and
 unused developer probes were removed. The complete native unit and functional
