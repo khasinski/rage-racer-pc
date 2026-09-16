@@ -87,7 +87,7 @@ int MenuMusicRenderWav(const MenuMusicAsset *asset, unsigned tickRate,
                               SEQUENCE_SPU_ADDRESS);
     if (vab < 0 || SsVabTransBody((unsigned char *)asset->samples.data, vab) < 0 ||
         !SsVabTransCompleted(0)) return 0;
-    sequence = SsSeqOpen((unsigned long *)asset->sequence.data, vab);
+    sequence = SsSeqOpen((u_long *)asset->sequence.data, vab);
     if (sequence < 0) return 0;
     SsSeqSetVol(sequence, SEQUENCE_VOLUME, SEQUENCE_VOLUME);
     SsSeqPlay(sequence, SSPLAY_PLAY, 1);
