@@ -1,5 +1,3 @@
-#include <SDL3/SDL_timer.h>
-
 #include <psyz/video.h>
 #include <psyz/cd.h>
 #include <libgpu.h>
@@ -43,6 +41,12 @@
 #include "psyq/press.h"
 #include "runtime_config.h"
 #include "timing_control.h"
+
+/* Keep SDL's platform headers out of the legacy translation unit. On Windows
+ * they pull compiler intrinsics through the UCRT after the PsyQ compatibility
+ * headers have established their legacy ABI types. The timer has a plain C
+ * ABI and is provided by the SDL library already linked by the port. */
+extern uint64_t SDL_GetTicksNS(void);
 
 extern int g_FrameCounter;
 
