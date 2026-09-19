@@ -52,43 +52,21 @@ void main() {
     float diffuse = max(dot(n, normalize(sceneLight.direction.xyz)), 0.0);
     vec3 foggedColor = mix(color.rgb, fog.rgb, fog.a);
     float visibility = 1.0;
-    float contactOcclusion = 0.0;
     if (shadowReception > 0.5) {
         if (sceneLight.ray.x > 0.5) {
             vec3 rayDirection = normalize(sceneLight.direction.xyz);
             float epsilon = max(0.02, length(worldPositionIn) * 0.000001);
-            uint nodeCount = uint(sceneLight.ray.y + 0.5);
-            uint instanceCount = uint(sceneLight.ray.w + 0.5);
             visibility = tracedVisibility(
                 worldPositionIn + rayDirection * epsilon, rayDirection,
-                nodeCount, instanceCount);
-            if (n.y > 0.45) {
-                vec3 horizontal = sceneLight.direction.xyz;
-                horizontal.y = 0.0;
-                horizontal = dot(horizontal, horizontal) > 0.000001
-                    ? normalize(horizontal) : vec3(1.0, 0.0, 0.0);
-                for (int sampleIndex = -1; sampleIndex <= 1; ++sampleIndex) {
-                    vec3 contactDirection = normalize(
-                        n + horizontal * (float(sampleIndex) * 0.65));
-                    float hitDistance;
-                    vec3 hitNormal;
-                    if (tracedClosest(
-                            worldPositionIn + contactDirection * epsilon,
-                            contactDirection, nodeCount, instanceCount, true,
-                            hitDistance, hitNormal))
-                        contactOcclusion = max(contactOcclusion,
-                            1.0 - smoothstep(24.0, 180.0, hitDistance));
-                }
-            }
+                uint(sceneLight.ray.y + 0.5), uint(sceneLight.ray.w + 0.5));
         } else {
             visibility = shadowVisibility(n);
         }
     }
-    float directShadow = mix(0.12, 1.0, visibility);
-    float ambientShadow = mix(1.0, 0.20, contactOcclusion);
+    float shadow = mix(0.62, 1.0, visibility);
     vec3 light = mix(vec3(1.0),
-        environmentLight * (sceneLight.ambient.rgb * ambientShadow +
-            sceneLight.diffuse.rgb * diffuse * directShadow),
+        environmentLight * (sceneLight.ambient.rgb +
+            sceneLight.diffuse.rgb * diffuse * shadow),
         lighting);
     outColor = vec4(foggedColor * light, color.a);
 }
