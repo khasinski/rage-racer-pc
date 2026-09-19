@@ -72,7 +72,10 @@ static void ResetMenuNavigation(void) {
         .previousGuideMode = 1,
         .brushSize = 1,
         .penColor = 1,
-        .fadedClutRect = {304, 0, 0, 0},
+        /* Retail RECT{304,511,16,1}: the dimmed logo palette the sample and
+         * editor panels fade through. A zero-sized rect uploads nothing and
+         * leaves whatever palette last sat there. */
+        .fadedClutRect = {304, 511, 16, 1},
     };
     ResetCarShopScreen();
     ResetEngineerShopScreen();
