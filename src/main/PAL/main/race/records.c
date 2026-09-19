@@ -80,6 +80,15 @@ s32 InsertRaceRecord(RaceRecord records[RECORD_TABLE_LENGTH], s32 raceTime,
     return RECORD_TABLE_LENGTH;
 }
 
+static int RaceTimeIsUsable(s32 time) {
+    return time > 0 && time <= RACE_TIME_MAX_MS;
+}
+
+static void SeedRecordRow(RaceRecord *record, s32 slot, s32 base, s32 stride) {
+    *record = s_DefaultRecords[slot];
+    record->raceTime = ClampRaceTime((int64_t)base + slot * stride);
+}
+
 void InitRecordTables(void) {
     s32 series;
     s32 course;
@@ -103,15 +112,10 @@ void InitRecordTables(void) {
                     defaultLapTimes[index];
             }
             for (slot = 0; slot < RECORD_TABLE_LENGTH; slot++) {
-                g_RankingRecords[series][course][slot] =
-                    s_DefaultRecords[slot];
-                g_RankingRecords[series][course][slot].raceTime =
-                    ClampRaceTime((int64_t)defaultLapTimes[index] +
-                                  slot * 2000);
-                g_TimeRecords[series][course][slot] = s_DefaultRecords[slot];
-                g_TimeRecords[series][course][slot].raceTime =
-                    ClampRaceTime((int64_t)defaultTotalTimes[index] +
-                                  slot * 10000);
+                SeedRecordRow(&g_RankingRecords[series][course][slot], slot,
+                              defaultLapTimes[index], 2000);
+                SeedRecordRow(&g_TimeRecords[series][course][slot], slot,
+                              defaultTotalTimes[index], 10000);
             }
         }
     }
@@ -148,6 +152,21 @@ void RepairRecordTimes(void) {
                         RACE_TIME_MAX_MS) {
                     g_BestSectorTimes[series][course][slot] =
                         ClampRaceTime(defaultLapTimes[index]);
+                }
+            }
+            /* A save written by an external editor may carry zeroed ranking
+             * rows. A zero time can never be beaten, so restore the retail
+             * default row in its place. */
+            for (slot = 0; slot < RECORD_TABLE_LENGTH; slot++) {
+                if (!RaceTimeIsUsable(
+                        g_RankingRecords[series][course][slot].raceTime)) {
+                    SeedRecordRow(&g_RankingRecords[series][course][slot],
+                                  slot, defaultLapTimes[index], 2000);
+                }
+                if (!RaceTimeIsUsable(
+                        g_TimeRecords[series][course][slot].raceTime)) {
+                    SeedRecordRow(&g_TimeRecords[series][course][slot],
+                                  slot, defaultTotalTimes[index], 10000);
                 }
             }
         }
