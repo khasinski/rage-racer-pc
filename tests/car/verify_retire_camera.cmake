@@ -6,7 +6,10 @@ execute_process(
     COMMAND ${CMAKE_COMMAND} -E env
         SDL_AUDIODRIVER=dummy
         RAGE_PORT_SCENARIO=1
-        RAGE_PORT_SMOKE_FRAMES=2500
+        # Retiring hands over to the LOST RACE screen and a retry about 130
+        # frames after the pause menu confirm (frame ~1259), so stop while
+        # the retire camera is still the active one.
+        RAGE_PORT_SMOKE_FRAMES=1330
         RAGE_PORT_SMOKE_RETIRE=1
         RAGE_PORT_SMOKE_CAMERA_STATE=1
         "${GAME}"

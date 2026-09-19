@@ -547,6 +547,7 @@ int PortShouldExit(int frame_number) {
     static int lastGameMode = -1;
     static int lastOptionSweepMode = -1;
     static int retireStep;
+    static int lastRetireStep;
     static int retireWait;
     static int lastCapturedScene = -1;
     static int lastCapturedTimer = -1;
@@ -711,6 +712,13 @@ int PortShouldExit(int frame_number) {
         } else if (retireStep == 2 && g_RacePaused && ++retireWait >= 10) {
             g_PadPressed |= PAD_START;
             retireStep = 3;
+        }
+        if (retireStep != lastRetireStep) {
+            fprintf(stderr,
+                    "smoke retire step=%d frame=%d phase=%d paused=%d cursor=%d\n",
+                    retireStep, frame_number, g_RacePhase, g_RacePaused,
+                    SceneRuntimeCurrent()->state.race.optionCursor);
+            lastRetireStep = retireStep;
         }
     }
     if (g_SceneId != lastScene || MenuFrontend()->state != lastFrontend) {
