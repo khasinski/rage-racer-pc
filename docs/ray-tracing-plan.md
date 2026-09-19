@@ -250,3 +250,32 @@ question with measurements: can one half-resolution sun-visibility ray per
 pixel fit the target hardware without destabilizing the modern renderer? If not,
 we retain the scene/BVH work for offline captures and do not grow the runtime
 architecture around an unsuitable effect.
+
+## Prototype status (2026-09-19)
+
+The branch now has the complete Stage 1 data path and an intentionally narrow
+Stage 2 experiment:
+
+- deterministic CPU BLAS and TLAS construction and traversal;
+- direct import from resident RMESH assets, cached by asset generation;
+- deduplicated, std430-compatible GPU BLAS/TLAS/instance buffers;
+- nested TLAS-to-BLAS traversal in the shared GLSL source compiled to SPIR-V
+  and MSL;
+- directional shadow rays from opaque raster fragments;
+- `modern.ray_tracing = off|shadows`, defaulting to `off`.
+
+The first implementation flattened visible raster draws and rebuilt their BVH
+each frame, costing roughly 4–7 ms on the tested Mac. The instanced path traces
+the complete main-pass `RenderWorld`, including off-camera shadow casters. In a
+1600-frame PAL Grand Prix smoke with 7,000–8,500 unique mesh triangles, TLAS
+construction plus packing measured 0.355 ms median, 0.453 ms p95 and 0.375 ms
+mean. The run reached scene 12/timer 101 with a valid Metal capture. Strict C11
+compilation also passes for macOS and Zig cross-targets for x86-64 Linux and
+Windows.
+
+This is not a release candidate. It traces at raster resolution in the fragment
+shader and uploads the combined packed scene each frame. Alpha semantics,
+half-resolution compute output, temporal filtering, mirror history, runtime
+Vulkan/D3D12 validation and representative GPU timing remain open. The next
+performance step is to retain immutable packed BLAS buffers on the GPU and
+upload only TLAS nodes and instance transforms per presentation.
