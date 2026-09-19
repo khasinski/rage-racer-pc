@@ -277,6 +277,17 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 
+add_library(rage-ray STATIC
+    src/render/ray/ray.c
+    src/render/ray/ray_bvh.c)
+target_include_directories(rage-ray PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+if(NOT MSVC)
+    target_link_libraries(rage-ray PUBLIC m)
+endif()
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(rage-ray PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
+
 if(RAGE_BUILD_PORT)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
     set(CHDR_WANT_TESTS OFF CACHE BOOL "" FORCE)
