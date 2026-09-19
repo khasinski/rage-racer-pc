@@ -33,6 +33,12 @@ target_compile_options(ray_gpu_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 add_test(NAME ray_gpu COMMAND ray_gpu_tests)
 set_tests_properties(ray_gpu PROPERTIES LABELS unit)
 
+add_executable(ray_draws_tests ray_draws_tests.c)
+target_link_libraries(ray_draws_tests PRIVATE rage-ray)
+target_compile_options(ray_draws_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+add_test(NAME ray_draws COMMAND ray_draws_tests)
+set_tests_properties(ray_draws PROPERTIES LABELS unit)
+
 add_executable(render_world_scene_tests render_world_scene_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/render_world_scene.c)
 target_include_directories(render_world_scene_tests PRIVATE
