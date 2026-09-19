@@ -263,3 +263,12 @@ int RayMeshTraceAny(const RayMesh *mesh, const Ray *ray, uint32_t flags) {
     RayHit ignored;
     return Trace(mesh, ray, flags, &ignored, 1);
 }
+
+int RayMeshBounds(const RayMesh *mesh, RayBounds *out) {
+    if (mesh == NULL || out == NULL || mesh->nodes == NULL ||
+        mesh->nodeCount == 0) {
+        return 0;
+    }
+    *out = mesh->nodes[0].bounds;
+    return 1;
+}

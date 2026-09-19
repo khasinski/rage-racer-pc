@@ -28,5 +28,6 @@ void RayMeshRelease(RayMesh *mesh);
 int RayMeshTraceClosest(const RayMesh *mesh, const Ray *ray,
                         uint32_t flags, RayHit *hit);
 int RayMeshTraceAny(const RayMesh *mesh, const Ray *ray, uint32_t flags);
+int RayMeshBounds(const RayMesh *mesh, RayBounds *out);
 
 #endif

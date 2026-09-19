@@ -280,7 +280,8 @@ endif()
 add_library(rage-ray STATIC
     src/render/ray/ray.c
     src/render/ray/ray_bvh.c
-    src/render/ray/ray_mesh_import.c)
+    src/render/ray/ray_mesh_import.c
+    src/render/ray/ray_scene.c)
 target_include_directories(rage-ray PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 if(NOT MSVC)
     target_link_libraries(rage-ray PUBLIC m)

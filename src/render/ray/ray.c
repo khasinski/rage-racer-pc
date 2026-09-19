@@ -112,7 +112,11 @@ int RayIntersectTriangle(const Ray *ray, const RayTriangle *triangle,
     crossDirection = Cross(ray->direction, edge2);
     determinant = Dot(edge1, crossDirection);
     if ((flags & RAY_TRACE_CULL_BACKFACES) != 0) {
-        if (determinant <= epsilon) return 0;
+        if ((flags & RAY_TRACE_REVERSE_WINDING) != 0) {
+            if (determinant >= -epsilon) return 0;
+        } else if (determinant <= epsilon) {
+            return 0;
+        }
     } else if (fabsf(determinant) <= epsilon) {
         return 0;
     }

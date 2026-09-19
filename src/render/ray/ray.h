@@ -29,10 +29,13 @@ typedef struct RayHit {
     Vec3 normal;
     uint32_t triangle;
     uint32_t material;
+    uint32_t instance;
+    uint32_t entity;
 } RayHit;
 
 enum {
     RAY_TRACE_CULL_BACKFACES = 1u << 0,
+    RAY_TRACE_REVERSE_WINDING = 1u << 1,
 };
 
 int RayValid(const Ray *ray);
