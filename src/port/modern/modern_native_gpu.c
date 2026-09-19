@@ -132,13 +132,16 @@ static SDL_GPUSampler *s_shadowSampler;
 static RageNativeGpuVertex *s_vertices;
 static RageNativeMeshTemplateCache s_meshTemplates;
 static int s_cpuGeometryReference;
-static int s_rayEnabled;
+static int s_rayMode;
 
-static int ModernNativeRayConfigured(void) {
+static int ModernNativeRayMode(void) {
     const char *value = RuntimeConfigGet("modern.ray_tracing");
-    return value != NULL &&
-           (strcmp(value, "shadows") == 0 || strcmp(value, "true") == 0 ||
-            strcmp(value, "1") == 0);
+    if (value == NULL || strcmp(value, "off") == 0 || strcmp(value, "0") == 0)
+        return 0;
+    if (strcmp(value, "reflections") == 0) return 2;
+    if (strcmp(value, "full") == 0) return 3;
+    return strcmp(value, "shadows") == 0 || strcmp(value, "true") == 0 ||
+           strcmp(value, "1") == 0 ? 1 : 0;
 }
 static RageNativeDrawSpan *s_spans;
 static RageNativeDrawSpan *s_mirrorSpans;
@@ -543,8 +546,9 @@ static void ModernNativeBuildLight(const RenderDirectionalLight *light,
     out->skyBottom[0] = camera->skyBottomColor.x;
     out->skyBottom[1] = camera->skyBottomColor.y;
     out->skyBottom[2] = camera->skyBottomColor.z;
-    out->ray[0] = s_rayEnabled && ModernRayGpuNodeCount() != 0 ? 1.0f : 0.0f;
+    out->ray[0] = (s_rayMode & 1) && ModernRayGpuNodeCount() != 0 ? 1.0f : 0.0f;
     out->ray[1] = (float)ModernRayGpuNodeCount();
+    out->ray[2] = (s_rayMode & 2) && ModernRayGpuNodeCount() != 0 ? 1.0f : 0.0f;
     out->ray[3] = (float)ModernRayGpuInstanceCount();
 }
 
@@ -582,7 +586,7 @@ int ModernNativeGpuInit(SDL_GPUDevice *device, int linearTextureFilter) {
     const char *fogReference = SDL_getenv("RAGE_PORT_NATIVE_CPU_FOG");
     s_cpuFogReference = fogReference != NULL && strcmp(fogReference, "1") == 0;
     s_cpuGeometryReference = RuntimeConfigEnabled("diagnostics.modern_uncached_geometry");
-    s_rayEnabled = ModernNativeRayConfigured();
+    s_rayMode = ModernNativeRayMode();
     s_residentGeometryEnabled =
         !RuntimeConfigEnabled("diagnostics.modern_cpu_geometry");
     s_residentGeometryLimit = (uint32_t)RuntimeConfigInt("diagnostics.modern_geometry_limit", 512, 0, 512);
@@ -702,9 +706,10 @@ int ModernNativeGpuInit(SDL_GPUDevice *device, int linearTextureFilter) {
     sampler.max_anisotropy = 1.0f;
     sampler.enable_anisotropy = false;
     s_skySampler = SDL_CreateGPUSampler(s_device, &sampler);
-    if (s_rayEnabled && !ModernRayGpuInit(s_device)) s_rayEnabled = 0;
+    if (s_rayMode && !ModernRayGpuInit(s_device)) s_rayMode = 0;
     fprintf(stderr, "rage-port: ray tracing=%s\n",
-            s_rayEnabled ? "shadows" : "off");
+            s_rayMode == 3 ? "full" : s_rayMode == 2 ? "reflections" :
+            s_rayMode == 1 ? "shadows" : "off");
     {
         SDL_GPUTextureCreateInfo texture = {0};
         SDL_GPUSamplerCreateInfo shadowSampler = {0};
@@ -2012,7 +2017,7 @@ void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,
     if (s_world == NULL || !s_world->hasCamera) return;
     if (ModernNativeGpuHasDraws()) {
         if (!ModernNativeUploadVertices(command)) return;
-        if (s_rayEnabled) {
+        if (s_rayMode) {
             for (uint32_t span = 0; span < s_spanCount; ++span)
                 (void)ModernNativeLoadTexture(command, &s_spans[span]);
             if (!ModernRayGpuPrepare(command, s_world,
@@ -2125,7 +2130,7 @@ void ModernNativeGpuShutdown(void) {
     RenderWorldSnapshotRelease(&s_ownedWorld);
     ModernPreparedMeshesRelease(&s_preparedMeshes);
     s_completeWorld = 0;
-    s_rayEnabled = 0;
+    s_rayMode = 0;
     ModernNativeReleasePendingUploads();
     /* The lookup index has to go with the textures it points into. Leaving it
      * behind left entries naming slots that the next run filled with

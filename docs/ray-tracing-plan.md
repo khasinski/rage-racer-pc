@@ -262,7 +262,9 @@ Stage 2 experiment:
 - nested TLAS-to-BLAS traversal in the shared GLSL source compiled to SPIR-V
   and MSL;
 - directional shadow rays from opaque raster fragments;
-- `modern.ray_tracing = off|shadows`, defaulting to `off`.
+- `modern.ray_tracing = off|shadows|reflections|full`, defaulting to `off`.
+- `reflections` traces closest-hit geometry rays for glossy materials;
+  `full` enables these together with the directional-light visibility rays.
 
 The first implementation flattened visible raster draws and rebuilt their BVH
 each frame, costing roughly 4–7 ms on the tested Mac. The instanced path traces

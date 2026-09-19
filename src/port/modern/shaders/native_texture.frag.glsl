@@ -121,7 +121,23 @@ void main() {
         min(environmentLight.r, min(environmentLight.g, environmentLight.b)));
     float reflectionStrength = coat * zoneReflection * mix(0.10, 0.55, rim) *
         mix(0.85, 1.15, metallic);
-    vec3 reflected = reflectedSky(reflect(-view, n));
+    vec3 reflectionDirection = reflect(-view, n);
+    vec3 reflected = reflectedSky(reflectionDirection);
+    if (sceneLight.ray.z > 0.5 && coat > 0.001) {
+        float hitDistance;
+        vec3 hitNormal;
+        float epsilon = max(0.02, length(worldPositionIn) * 0.000001);
+        if (tracedClosest(worldPositionIn + n * epsilon,
+                          reflectionDirection,
+                          uint(sceneLight.ray.y + 0.5),
+                          uint(sceneLight.ray.w + 0.5),
+                          hitDistance, hitNormal)) {
+            vec3 hitLight = sceneLight.ambient.rgb + sceneLight.diffuse.rgb *
+                max(dot(hitNormal, normalize(sceneLight.direction.xyz)), 0.0);
+            reflected = mix(hitLight, sceneLight.skyHorizon.rgb,
+                            clamp(hitDistance / 2500.0, 0.0, 0.65));
+        }
+    }
     float reflectedLuminance = dot(reflected, vec3(0.2126, 0.7152, 0.0722));
     reflected = mix(vec3(reflectedLuminance), reflected, 0.65);
     vec3 environmentSpecular = reflected * reflectionStrength;
