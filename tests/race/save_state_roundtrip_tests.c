@@ -45,11 +45,11 @@ static void SetRepresentativeState(void) {
 
     g_PadMappingIndex = 3;
     g_NegconMappingIndex = 4;
-    g_NegconSteerNeutral = 101;
+    g_NegconSteerNeutral = -101;
     g_NegconSteerPlay = 2;
-    g_NegconNeutralI = 303;
-    g_NegconNeutralII = 404;
-    g_NegconNeutralL = 505;
+    g_NegconNeutralI = 33;
+    g_NegconNeutralII = 44;
+    g_NegconNeutralL = 55;
     g_NegconMaxTwist = 3;
 
     g_GrandPrixSave.course = 2;
@@ -218,6 +218,13 @@ int main(void) {
     outOfRange.padMappingIndex = 0xFF;
     outOfRange.negconMappingIndex = 0xFE;
     outOfRange.negconSteerPlay = 0xFF;
+    /* An editor's idea of "centre" (128) or a button neutral beyond the
+     * NeGcon's pressure range would pin the steering; both load as
+     * uncalibrated. */
+    outOfRange.negconSteerNeutral = 128;
+    outOfRange.negconNeutralI = 303;
+    outOfRange.negconNeutralII = 0x6A;
+    outOfRange.negconNeutralL = 0x6B;
     outOfRange.negconMaxTwist = 0xFF;
     outOfRange.grandPrixProgress.course = 99;
     outOfRange.grandPrixProgress.carIndex = -20;
@@ -252,6 +259,8 @@ int main(void) {
     CHECK(g_NegconMappingIndex == CONTROLLER_MAPPING_LAST);
     CHECK(g_NegconSteerPlay == NEGCON_CALIBRATION_LAST);
     CHECK(g_NegconMaxTwist == NEGCON_CALIBRATION_LAST);
+    CHECK(g_NegconSteerNeutral == 0 && g_NegconNeutralI == 0);
+    CHECK(g_NegconNeutralII == 0x6A && g_NegconNeutralL == 0);
     CHECK(s_loadedPadMapping == CONTROLLER_MAPPING_LAST);
     CHECK(s_loadedNegconMapping == CONTROLLER_MAPPING_LAST);
     CHECK(g_GrandPrixSave.course == COURSE_LONG_SLOT);
