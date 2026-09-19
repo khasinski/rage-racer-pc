@@ -280,6 +280,7 @@ endif()
 add_library(rage-ray STATIC
     src/render/ray/ray.c
     src/render/ray/ray_bvh.c
+    src/render/ray/ray_gpu.c
     src/render/ray/ray_mesh_import.c
     src/render/ray/ray_scene.c
     src/render/ray/ray_world.c)
