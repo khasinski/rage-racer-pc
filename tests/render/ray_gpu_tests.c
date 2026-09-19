@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "render/ray/ray_gpu.h"
 
@@ -108,6 +109,20 @@ static void TestGpuScenePackingDeduplicatesMeshes(void) {
         CHECK(instances[0].worldToLocal[2][3] == -4.0f);
         CHECK(indices[scene.instanceCount] == 0);
         CHECK(nodes[scene.nodeCount].childAndRange[2] == scene.instanceCount);
+        memset(nodes, 0xCD, layout.nodeBytes);
+        memset(indices, 0xCD, layout.indexBytes);
+        memset(instances, 0xCD, layout.instanceBytes);
+        second.position.x = 12.0f;
+        CHECK(RayInstancePrepare(&sourceInstances[1], &mesh, &second, 2, 0));
+        CHECK(RaySceneBuild(&scene, sourceInstances, 2));
+        CHECK(RayGpuPackSceneDynamic(
+            &scene, &layout, nodes, scene.nodeCount,
+            indices, scene.instanceCount, instances, scene.instanceCount));
+        CHECK(instances[0].meshAndFlags[0] == scene.nodeCount);
+        CHECK(instances[1].meshAndFlags[0] == scene.nodeCount);
+        CHECK(instances[1].worldToLocal[0][3] == -12.0f);
+        CHECK(((unsigned char *)&nodes[scene.nodeCount])[0] == 0xCD);
+        CHECK(((unsigned char *)&indices[scene.instanceCount])[0] == 0xCD);
     }
     free(instances);
     free(indices);

@@ -132,6 +132,10 @@ static void PackNode(RayGpuNode *out, const RayBvhNode *source,
     };
 }
 
+static uint32_t MeshNodeOffset(const RayScene *scene, uint32_t instanceIndex);
+static void PackInstance(RayGpuInstance *target, const RayInstance *source,
+                         uint32_t meshNodeOffset);
+
 int RayGpuPackScene(const RayScene *scene, const RayGpuSceneLayout *layout,
                     RayGpuNode *nodes, size_t nodeCapacity,
                     RayGpuTriangle *triangles, size_t triangleCapacity,
@@ -195,21 +199,67 @@ int RayGpuPackScene(const RayScene *scene, const RayGpuSceneLayout *layout,
             triangleOffset += mesh->triangleCount;
             indexOffset += mesh->triangleCount;
         }
-        for (uint32_t row = 0; row < 3; ++row) {
-            for (uint32_t column = 0; column < 3; ++column)
-                instances[i].worldToLocal[row][column] =
-                    source->worldToLocal[row][column];
-            instances[i].worldToLocal[row][3] =
-                -(source->worldToLocal[row][0] * source->position.x +
-                  source->worldToLocal[row][1] * source->position.y +
-                  source->worldToLocal[row][2] * source->position.z);
-        }
-        instances[i].meshAndFlags[0] = meshNodeOffset;
-        instances[i].meshAndFlags[1] = mesh->nodeCount;
-        instances[i].meshAndFlags[2] = source->flags;
-        instances[i].meshAndFlags[3] = 0;
+        PackInstance(&instances[i], source, meshNodeOffset);
     }
     return nodeOffset == layout->nodeCount &&
            triangleOffset == layout->triangleCount &&
            indexOffset == layout->indexCount;
+}
+
+static uint32_t MeshNodeOffset(const RayScene *scene, uint32_t instanceIndex) {
+    const RayMesh *mesh = scene->instances[instanceIndex].mesh;
+    uint32_t offset = scene->nodeCount;
+    for (uint32_t i = 0; i < instanceIndex; ++i) {
+        const RayMesh *candidate = scene->instances[i].mesh;
+        int first = 1;
+        if (candidate == mesh) return MeshNodeOffset(scene, i);
+        for (uint32_t prior = 0; prior < i; ++prior) {
+            if (scene->instances[prior].mesh == candidate) {
+                first = 0;
+                break;
+            }
+        }
+        if (first) offset += candidate->nodeCount;
+    }
+    return offset;
+}
+
+static void PackInstance(RayGpuInstance *target, const RayInstance *source,
+                         uint32_t meshNodeOffset) {
+    for (uint32_t row = 0; row < 3; ++row) {
+        for (uint32_t column = 0; column < 3; ++column)
+            target->worldToLocal[row][column] =
+                source->worldToLocal[row][column];
+        target->worldToLocal[row][3] =
+            -(source->worldToLocal[row][0] * source->position.x +
+              source->worldToLocal[row][1] * source->position.y +
+              source->worldToLocal[row][2] * source->position.z);
+    }
+    target->meshAndFlags[0] = meshNodeOffset;
+    target->meshAndFlags[1] = source->mesh->nodeCount;
+    target->meshAndFlags[2] = source->flags;
+    target->meshAndFlags[3] = 0;
+}
+
+int RayGpuPackSceneDynamic(const RayScene *scene,
+                           const RayGpuSceneLayout *layout,
+                           RayGpuNode *tlasNodes, size_t nodeCapacity,
+                           uint32_t *tlasIndices, size_t indexCapacity,
+                           RayGpuInstance *instances, size_t instanceCapacity) {
+    RayGpuSceneLayout expected;
+    if (!SceneCounts(scene, &expected) || layout == NULL ||
+        memcmp(layout, &expected, sizeof(expected)) != 0 ||
+        nodeCapacity < scene->nodeCount ||
+        indexCapacity < scene->instanceCount ||
+        instanceCapacity < scene->instanceCount || tlasNodes == NULL ||
+        tlasIndices == NULL || instances == NULL)
+        return 0;
+    for (uint32_t i = 0; i < scene->nodeCount; ++i)
+        PackNode(&tlasNodes[i], &scene->nodes[i], 0, 0);
+    memcpy(tlasIndices, scene->indices,
+           (size_t)scene->instanceCount * sizeof(*tlasIndices));
+    for (uint32_t i = 0; i < scene->instanceCount; ++i)
+        PackInstance(&instances[i], &scene->instances[i],
+                     MeshNodeOffset(scene, i));
+    return 1;
 }

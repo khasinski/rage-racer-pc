@@ -273,9 +273,13 @@ mean. The run reached scene 12/timer 101 with a valid Metal capture. Strict C11
 compilation also passes for macOS and Zig cross-targets for x86-64 Linux and
 Windows.
 
+The GPU cache now retains an unchanged packed BLAS set and uploads only TLAS
+nodes, instance indices and transforms on ordinary presentations. A 1050-logic-
+frame smoke produced 1487 presentations; 1349 reused static geometry. Dynamic
+uploads reached as little as 8 KiB, while a full scene upload reached 652 KiB.
+
 This is not a release candidate. It traces at raster resolution in the fragment
-shader and uploads the combined packed scene each frame. Alpha semantics,
+shader. Alpha semantics,
 half-resolution compute output, temporal filtering, mirror history, runtime
 Vulkan/D3D12 validation and representative GPU timing remain open. The next
-performance step is to retain immutable packed BLAS buffers on the GPU and
-upload only TLAS nodes and instance transforms per presentation.
+performance step is a half-resolution visibility target with GPU timing.

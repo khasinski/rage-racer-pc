@@ -2024,10 +2024,12 @@ void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,
             } else if (RuntimeConfigEnabled("diagnostics.performance_trace")) {
                 fprintf(stderr,
                         "native-ray-build frame=%llu triangles=%u nodes=%u "
-                        "cpu_ms=%.3f\n",
+                        "upload_bytes=%u static_reused=%d cpu_ms=%.3f\n",
                         (unsigned long long)s_worldFrame,
                         ModernRayGpuTriangleCount(),
                         ModernRayGpuNodeCount(),
+                        ModernRayGpuUploadBytes(),
+                        ModernRayGpuReusedStatic(),
                         (double)ModernRayGpuBuildNanoseconds() / 1000000.0);
             }
         }

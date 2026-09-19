@@ -59,4 +59,12 @@ int RayGpuPackScene(const RayScene *scene, const RayGpuSceneLayout *layout,
                     uint32_t *indices, size_t indexCapacity,
                     RayGpuInstance *instances, size_t instanceCapacity);
 
+/* Repack only frame-varying TLAS data for a scene whose distinct meshes and
+ * layout still match a preceding full pack. */
+int RayGpuPackSceneDynamic(const RayScene *scene,
+                           const RayGpuSceneLayout *layout,
+                           RayGpuNode *tlasNodes, size_t nodeCapacity,
+                           uint32_t *tlasIndices, size_t indexCapacity,
+                           RayGpuInstance *instances, size_t instanceCapacity);
+
 #endif

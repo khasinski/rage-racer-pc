@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "render/ray/ray_gpu.h"
 #include "render/ray/ray_mesh_import.h"
@@ -28,8 +29,15 @@ static SDL_GPUDevice *s_device;
 static RayBuffers s_buffers;
 static SDL_GPUTransferBuffer *s_pendingTransfer;
 static CachedMesh *s_meshes;
+static const RayMesh **s_staticMeshes;
+static uint32_t s_staticMeshCount, s_staticMeshCapacity;
+static uint32_t s_staticTlasNodes, s_staticInstances;
+static RayGpuSceneLayout s_staticLayout;
+static int s_staticValid;
 static uint64_t s_assetGeneration = UINT64_MAX;
 static uint32_t s_nodeCount, s_triangleCount, s_instanceCount;
+static uint32_t s_uploadBytes;
+static int s_reusedStatic;
 static uint64_t s_buildNanoseconds;
 
 static void ReleaseBuffers(RayBuffers *buffers) {
@@ -53,6 +61,10 @@ static void ReleaseMeshes(void) {
         RayMeshRelease(&entry->mesh);
         free(entry);
     }
+    free(s_staticMeshes);
+    s_staticMeshes = NULL;
+    s_staticMeshCount = s_staticMeshCapacity = 0;
+    s_staticValid = 0;
 }
 
 static int EnsureBuffers(const RayGpuSceneLayout *layout) {
@@ -89,7 +101,78 @@ static int EnsureBuffers(const RayGpuSceneLayout *layout) {
     }
     ReleaseBuffers(&s_buffers);
     s_buffers = next;
+    s_staticValid = 0;
     return 1;
+}
+
+static uint32_t UniqueMeshCount(const RayScene *scene) {
+    uint32_t count = 0;
+    for (uint32_t i = 0; i < scene->instanceCount; ++i) {
+        int first = 1;
+        for (uint32_t prior = 0; prior < i; ++prior) {
+            if (scene->instances[prior].mesh == scene->instances[i].mesh) {
+                first = 0;
+                break;
+            }
+        }
+        if (first) ++count;
+    }
+    return count;
+}
+
+static int StaticSceneMatches(const RayScene *scene,
+                              const RayGpuSceneLayout *layout) {
+    uint32_t unique = 0;
+    if (!s_staticValid || s_staticTlasNodes != scene->nodeCount ||
+        s_staticInstances != scene->instanceCount ||
+        memcmp(&s_staticLayout, layout, sizeof(*layout)) != 0)
+        return 0;
+    for (uint32_t i = 0; i < scene->instanceCount; ++i) {
+        int first = 1;
+        for (uint32_t prior = 0; prior < i; ++prior) {
+            if (scene->instances[prior].mesh == scene->instances[i].mesh) {
+                first = 0;
+                break;
+            }
+        }
+        if (!first) continue;
+        if (unique >= s_staticMeshCount ||
+            s_staticMeshes[unique] != scene->instances[i].mesh)
+            return 0;
+        ++unique;
+    }
+    return unique == s_staticMeshCount;
+}
+
+static void RememberStaticScene(const RayScene *scene,
+                                const RayGpuSceneLayout *layout) {
+    uint32_t count = UniqueMeshCount(scene);
+    uint32_t unique = 0;
+    if (count > s_staticMeshCapacity) {
+        const RayMesh **meshes = realloc(
+            s_staticMeshes, (size_t)count * sizeof(*s_staticMeshes));
+        if (meshes == NULL) {
+            s_staticValid = 0;
+            return;
+        }
+        s_staticMeshes = meshes;
+        s_staticMeshCapacity = count;
+    }
+    for (uint32_t i = 0; i < scene->instanceCount; ++i) {
+        int first = 1;
+        for (uint32_t prior = 0; prior < i; ++prior) {
+            if (scene->instances[prior].mesh == scene->instances[i].mesh) {
+                first = 0;
+                break;
+            }
+        }
+        if (first) s_staticMeshes[unique++] = scene->instances[i].mesh;
+    }
+    s_staticMeshCount = count;
+    s_staticTlasNodes = scene->nodeCount;
+    s_staticInstances = scene->instanceCount;
+    s_staticLayout = *layout;
+    s_staticValid = 1;
 }
 
 static const RayMesh *LookupRayMesh(void *opaque,
@@ -134,6 +217,8 @@ void ModernRayGpuShutdown(void) {
     s_device = NULL;
     s_assetGeneration = UINT64_MAX;
     s_nodeCount = s_triangleCount = s_instanceCount = 0;
+    s_uploadBytes = 0;
+    s_reusedStatic = 0;
     s_buildNanoseconds = 0;
 }
 
@@ -151,10 +236,13 @@ int ModernRayGpuPrepare(SDL_GPUCommandBuffer *command,
     SDL_GPUCopyPass *copy = NULL;
     uint8_t *mapped;
     uint64_t total;
+    int dynamic;
     int result = 0;
     uint64_t started = SDL_GetTicksNS();
 
     s_nodeCount = s_triangleCount = s_instanceCount = 0;
+    s_uploadBytes = 0;
+    s_reusedStatic = 0;
     if (s_device == NULL || command == NULL || world == NULL ||
         resolve == NULL || s_pendingTransfer != NULL)
         goto done;
@@ -166,15 +254,28 @@ int ModernRayGpuPrepare(SDL_GPUCommandBuffer *command,
                             LookupRayMesh, &lookup) ||
         !RayGpuLayoutForScene(&scene, &layout) || !EnsureBuffers(&layout))
         goto done;
-    total = layout.nodeBytes + layout.triangleBytes + layout.indexBytes +
-            layout.instanceBytes;
+    dynamic = StaticSceneMatches(&scene, &layout);
+    total = dynamic
+        ? (uint64_t)scene.nodeCount * sizeof(RayGpuNode) +
+              (uint64_t)scene.instanceCount * sizeof(uint32_t) +
+              layout.instanceBytes
+        : layout.nodeBytes + layout.triangleBytes + layout.indexBytes +
+              layout.instanceBytes;
     if (total > UINT32_MAX) goto done;
     transferInfo.size = (uint32_t)total;
     transfer = SDL_CreateGPUTransferBuffer(s_device, &transferInfo);
     mapped = transfer != NULL
         ? SDL_MapGPUTransferBuffer(s_device, transfer, false) : NULL;
     if (mapped == NULL) goto done;
-    if (!RayGpuPackScene(
+    if (dynamic ? !RayGpuPackSceneDynamic(
+            &scene, &layout, (RayGpuNode *)mapped, scene.nodeCount,
+            (uint32_t *)(mapped + (size_t)scene.nodeCount * sizeof(RayGpuNode)),
+            scene.instanceCount,
+            (RayGpuInstance *)(mapped +
+                (size_t)scene.nodeCount * sizeof(RayGpuNode) +
+                (size_t)scene.instanceCount * sizeof(uint32_t)),
+            layout.instanceCount)
+        : !RayGpuPackScene(
             &scene, &layout, (RayGpuNode *)mapped, layout.nodeCount,
             (RayGpuTriangle *)(mapped + layout.nodeBytes), layout.triangleCount,
             (uint32_t *)(mapped + layout.nodeBytes + layout.triangleBytes),
@@ -190,6 +291,19 @@ int ModernRayGpuPrepare(SDL_GPUCommandBuffer *command,
     {
         SDL_GPUTransferBufferLocation source = {.transfer_buffer = transfer};
         SDL_GPUBufferRegion target = {0};
+        if (dynamic) {
+            target.buffer = s_buffers.nodes;
+            target.size = scene.nodeCount * sizeof(RayGpuNode);
+            SDL_UploadToGPUBuffer(copy, &source, &target, true);
+            source.offset += target.size;
+            target.buffer = s_buffers.indices;
+            target.size = scene.instanceCount * sizeof(uint32_t);
+            SDL_UploadToGPUBuffer(copy, &source, &target, true);
+            source.offset += target.size;
+            target.buffer = s_buffers.instances;
+            target.size = (uint32_t)layout.instanceBytes;
+            SDL_UploadToGPUBuffer(copy, &source, &target, true);
+        } else {
 #define UPLOAD_BUFFER(member, bytes) do {                                    \
     target.buffer = s_buffers.member;                                        \
     target.size = (uint32_t)layout.bytes;                                    \
@@ -201,6 +315,7 @@ int ModernRayGpuPrepare(SDL_GPUCommandBuffer *command,
         UPLOAD_BUFFER(indices, indexBytes);
         UPLOAD_BUFFER(instances, instanceBytes);
 #undef UPLOAD_BUFFER
+        }
     }
     SDL_EndGPUCopyPass(copy);
     copy = NULL;
@@ -209,6 +324,9 @@ int ModernRayGpuPrepare(SDL_GPUCommandBuffer *command,
     s_nodeCount = layout.nodeCount;
     s_triangleCount = layout.triangleCount;
     s_instanceCount = layout.instanceCount;
+    s_uploadBytes = (uint32_t)total;
+    s_reusedStatic = dynamic;
+    if (!dynamic) RememberStaticScene(&scene, &layout);
     result = 1;
 done:
     if (copy != NULL) SDL_EndGPUCopyPass(copy);
@@ -231,4 +349,6 @@ void ModernRayGpuBind(SDL_GPURenderPass *pass) {
 uint32_t ModernRayGpuNodeCount(void) { return s_nodeCount; }
 uint32_t ModernRayGpuTriangleCount(void) { return s_triangleCount; }
 uint32_t ModernRayGpuInstanceCount(void) { return s_instanceCount; }
+uint32_t ModernRayGpuUploadBytes(void) { return s_uploadBytes; }
+int ModernRayGpuReusedStatic(void) { return s_reusedStatic; }
 uint64_t ModernRayGpuBuildNanoseconds(void) { return s_buildNanoseconds; }
