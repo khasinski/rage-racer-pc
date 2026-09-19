@@ -720,6 +720,25 @@ int PortShouldExit(int frame_number) {
         lastScene = g_SceneId;
         lastFrontend = MenuFrontend()->state;
     }
+    if (g_SceneId == 26) {
+        const MemoryCardSession *card = SceneRuntimeMemoryCard();
+        static s32 lastMask = -1, lastFree = -1, lastPage = -1;
+        int files = 0;
+        int bit;
+
+        for (bit = 0; bit < MEMORY_CARD_SAVE_SLOT_COUNT; bit++)
+            files += (card->slots.usedMask >> bit) & 1;
+        if (card->slots.usedMask != lastMask || card->freeBlocks != lastFree ||
+            card->menuPage != lastPage) {
+            fprintf(stderr,
+                    "smoke memory card frame=%d files=%d free=%d mask=%d page=%d\n",
+                    frame_number, files, card->freeBlocks,
+                    card->slots.usedMask, card->menuPage);
+            lastMask = card->slots.usedMask;
+            lastFree = card->freeBlocks;
+            lastPage = card->menuPage;
+        }
+    }
     if (g_SceneId == 8 &&
         MenuRuntimeCurrent()->activeScreen != lastMenuScreen) {
         fprintf(stderr, "smoke menu frame=%d timer=%d screen=%d\n",
