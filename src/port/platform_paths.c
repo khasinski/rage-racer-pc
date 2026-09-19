@@ -16,10 +16,12 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include <dlfcn.h>
 #include <mach-o/dyld.h>
+#include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #define Mkdir(path) mkdir(path, 0755)
 #else
+#include <dirent.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #define Mkdir(path) mkdir(path, 0755)
@@ -49,6 +51,52 @@ static int DirectoryExists(const char *path) {
 #else
     struct stat status;
     return stat(path, &status) == 0 && S_ISDIR(status.st_mode);
+#endif
+}
+
+/* A portable install is one that already holds saves beside the
+ * executable. An empty bu00 (left behind by an older build's BIOS card
+ * init, or by a curious player) must not hijack the per-user state root. */
+static int DirectoryHasFiles(const char *path) {
+#ifdef _WIN32
+    WIN32_FIND_DATAA entry;
+    char pattern[4096];
+    HANDLE handle;
+    int found = 0;
+    int written = snprintf(pattern, sizeof(pattern), "%s\\*", path);
+
+    if (written < 0 || (size_t)written >= sizeof(pattern)) return 0;
+    handle = FindFirstFileA(pattern, &entry);
+    if (handle == INVALID_HANDLE_VALUE) return 0;
+    do {
+        if (!(entry.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+            found = 1;
+            break;
+        }
+    } while (FindNextFileA(handle, &entry));
+    FindClose(handle);
+    return found;
+#else
+    DIR *directory = opendir(path);
+    struct dirent *entry;
+    int found = 0;
+
+    if (directory == NULL) return 0;
+    while ((entry = readdir(directory)) != NULL) {
+        char child[4096];
+        struct stat status;
+
+        if (entry->d_name[0] == '.') continue;
+        if (snprintf(child, sizeof(child), "%s/%s", path, entry->d_name) >=
+            (int)sizeof(child))
+            continue;
+        if (stat(child, &status) == 0 && S_ISREG(status.st_mode)) {
+            found = 1;
+            break;
+        }
+    }
+    closedir(directory);
+    return found;
 #endif
 }
 
@@ -189,7 +237,7 @@ int PlatformExistingPortableStateDirectory(
         if (parent != NULL) {
             *parent = '\0';
             if (JoinPath(card, sizeof(card), candidate, "bu00") &&
-                DirectoryExists(card)) {
+                DirectoryExists(card) && DirectoryHasFiles(card)) {
                 if (strlen(candidate) + 1 > outSize) return 0;
                 strcpy(out, candidate);
                 return 1;
@@ -199,7 +247,8 @@ int PlatformExistingPortableStateDirectory(
     }
 
     if (!JoinPath(card, sizeof(card), candidate, "bu00") ||
-        !DirectoryExists(card) || strlen(candidate) + 1 > outSize)
+        !DirectoryExists(card) || !DirectoryHasFiles(card) ||
+        strlen(candidate) + 1 > outSize)
         return 0;
     strcpy(out, candidate);
     return 1;

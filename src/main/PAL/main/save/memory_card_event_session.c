@@ -120,8 +120,11 @@ MemoryCardEvent WaitMemoryCardSwEvent(void) {
     return WaitForEvent(s_swEventHandles);
 }
 
+/* The card directories are created under the host state root by
+ * HostInitStorage; the BIOS helper would create a bare bu00/bu10 in the
+ * working directory and make the next boot mistake it for a portable
+ * install with no saves. */
 void RestartMemoryCard(void) {
-    _bu_init();
     g_SaveElapsedTicks = 0;
 }
 

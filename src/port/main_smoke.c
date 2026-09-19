@@ -414,7 +414,6 @@ static int CheckSaveRoundtrip(void) {
     const int marker = 123456789;
 
     if (!RuntimeConfigEnabled("checks.save_roundtrip")) return 1;
-    _bu_init();
     if (g_RaceProgress == NULL) {
         fprintf(stderr, "save roundtrip has no active progress slot\n");
         return 0;
@@ -444,7 +443,6 @@ static int CheckCompleteSaveLoad(void) {
     int car;
 
     if (!RuntimeConfigEnabled("checks.complete_save_load")) return 1;
-    _bu_init();
     if (!LoadMemoryCardSaveSlot(0, &header) ||
         g_ExtraGrandPrixUnlocked != 1 ||
         g_MaxClassReached[0] != 4 || g_MaxClassReached[1] != 5 ||

@@ -118,7 +118,9 @@ static int TestSaveCounter(void) {
     s_buInitCalls = 0;
     g_SaveElapsedTicks = 99;
     RestartMemoryCard();
-    CHECK(s_buInitCalls == 1 && g_SaveElapsedTicks == 0);
+    /* The host storage root owns the card directories; the BIOS helper must
+     * not create bu00/bu10 in the working directory. */
+    CHECK(s_buInitCalls == 0 && g_SaveElapsedTicks == 0);
 
     g_FrameSyncThreshold = 0x80;
     AdvanceSaveHeaderCounter();

@@ -523,9 +523,18 @@ static void test_platform_config_path(void) {
     rmdir(root);
 }
 
+static int TouchFile(const char *path) {
+    FILE *file = fopen(path, "wb");
+
+    if (file == NULL) return 0;
+    fclose(file);
+    return 1;
+}
+
 static void test_portable_state_path(void) {
     char root[] = TEST_TEMP_PREFIX "rage-portable-state-test-XXXXXX";
     char executable[320], bundleExecutable[320], card[326], found[320];
+    char save[352];
 
     if (mkdtemp(root) == NULL) {
         failures++;
@@ -543,18 +552,30 @@ static void test_portable_state_path(void) {
     EXPECT_EQ('\0', found[0]);
     snprintf(card, sizeof(card), "%s/bu00", executable);
     mkdir(card, 0700);
+    /* An empty card directory is not a portable install: the per-user
+     * state root must keep winning until real saves live beside the game. */
+    strcpy(found, "stale");
+    EXPECT_EQ(0, PlatformExistingPortableStateDirectory(
+                     executable, found, sizeof(found)));
+    EXPECT_EQ('\0', found[0]);
+    snprintf(save, sizeof(save), "%s/BASLUS-00000RAGE", card);
+    EXPECT_EQ(1, TouchFile(save));
     EXPECT_EQ(1, PlatformExistingPortableStateDirectory(
                      executable, found, sizeof(found)));
     EXPECT_EQ(0, strcmp(executable, found));
+    unlink(save);
     rmdir(card);
 
     snprintf(bundleExecutable, sizeof(bundleExecutable),
              "%s/Rage Racer.app/Contents/MacOS", root);
     snprintf(card, sizeof(card), "%s/bu00", root);
     mkdir(card, 0700);
+    snprintf(save, sizeof(save), "%s/BASLUS-00000RAGE", card);
+    EXPECT_EQ(1, TouchFile(save));
     EXPECT_EQ(1, PlatformExistingPortableStateDirectory(
                      bundleExecutable, found, sizeof(found)));
     EXPECT_EQ(0, strcmp(root, found));
+    unlink(save);
     rmdir(card);
     rmdir(executable);
     rmdir(root);
