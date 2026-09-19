@@ -179,6 +179,63 @@ int RenderProject(const RenderCamera *camera, const Vec3 *view,
     return 1;
 }
 
+int RenderUnproject(const RenderCamera *camera, float aspect,
+                    const Vec3 *clip, Vec3 *world) {
+    float horizontalScale, verticalScale, depthScale, depthOffset;
+    Vec3 view;
+    double denominator, depth;
+
+    if (world == NULL) return 0;
+    *world = (Vec3){0.0f, 0.0f, 0.0f};
+    if (camera == NULL || clip == NULL ||
+        !isfinite(clip->x) || !isfinite(clip->y) ||
+        !isfinite(clip->z) || clip->z < 0.0f || clip->z > 1.0f ||
+        !RenderPerspectiveScales(camera, aspect,
+                                 &horizontalScale, &verticalScale) ||
+        !RenderPerspectiveDepthTerms(camera, &depthScale, &depthOffset)) {
+        return 0;
+    }
+    denominator = (double)clip->z - depthScale;
+    if (denominator == 0.0) return 0;
+    depth = (double)depthOffset / denominator;
+    if (!isfinite(depth) || depth < camera->nearPlane ||
+        depth > camera->farPlane) return 0;
+    view.x = (float)((double)clip->x * depth / horizontalScale);
+    view.y = (float)((double)clip->y * depth / verticalScale);
+    view.z = (float)-depth;
+
+    if (camera->transform.hasOrientation) {
+        Quaternion orientation = camera->transform.orientation;
+        double lengthSquared =
+            (double)orientation.x * orientation.x +
+            (double)orientation.y * orientation.y +
+            (double)orientation.z * orientation.z +
+            (double)orientation.w * orientation.w;
+        double inverseLength;
+        if (!isfinite(lengthSquared) || lengthSquared <= 0.0) return 0;
+        inverseLength = 1.0 / sqrt(lengthSquared);
+        /* RotateByCameraOrientation applies the quaternion inverse. Pass its
+         * conjugate here to obtain the camera's local-to-world rotation. */
+        orientation.x = (float)(-(double)orientation.x * inverseLength);
+        orientation.y = (float)(-(double)orientation.y * inverseLength);
+        orientation.z = (float)(-(double)orientation.z * inverseLength);
+        orientation.w = (float)((double)orientation.w * inverseLength);
+        RotateByCameraOrientation(&view, &orientation);
+    } else {
+        RotateX(&view, Radians(camera->transform.rotation.x));
+        RotateY(&view, Radians(camera->transform.rotation.y));
+        RotateZ(&view, Radians(camera->transform.rotation.z));
+    }
+    world->x = view.x + camera->transform.position.x;
+    world->y = view.y + camera->transform.position.y;
+    world->z = view.z + camera->transform.position.z;
+    if (!isfinite(world->x) || !isfinite(world->y) || !isfinite(world->z)) {
+        *world = (Vec3){0.0f, 0.0f, 0.0f};
+        return 0;
+    }
+    return 1;
+}
+
 int RenderPerspectiveScales(const RenderCamera *camera, float aspect,
                             float *horizontal, float *vertical) {
     float tangent, scale;

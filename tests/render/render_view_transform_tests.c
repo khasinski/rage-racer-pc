@@ -11,6 +11,10 @@ static float random_float(void) {
     return ((int)(state % 200001) - 100000) / 100.0f;
 }
 static int same(float a, float b) { return a == b || (isnan(a) && isnan(b)); }
+static int close_enough(float a, float b) {
+    float scale = fmaxf(1.0f, fmaxf(fabsf(a), fabsf(b)));
+    return fabsf(a - b) <= scale * 2e-4f;
+}
 int main(void) {
     unsigned count = 0;
     for (int iteration = 0; iteration < 4000; ++iteration) {
@@ -66,6 +70,34 @@ int main(void) {
     RenderWorldToViewPrepared(&absent, NULL, &view);
     RenderWorldToViewPrepared(&absent, &world, NULL);
     CHECK(RenderFogFactorPrepared(NULL, &world) == 0);
+
+    for (int useQuaternion = 0; useQuaternion < 2; ++useQuaternion) {
+        RenderCamera camera = {0};
+        camera.transform.position = (Vec3){31.0f, -12.0f, 77.0f};
+        camera.transform.rotation = (Vec3){-17.0f, 38.0f, 4.0f};
+        camera.transform.hasOrientation = useQuaternion;
+        camera.transform.orientation = (Quaternion){
+            0.125f, -0.25f, 0.375f, 0.875f};
+        camera.verticalFovDegrees = 55.0f;
+        camera.nearPlane = 0.5f;
+        camera.farPlane = 5000.0f;
+        for (int point = 0; point < 100; ++point) {
+            Vec3 viewPoint = {
+                random_float() * 0.1f,
+                random_float() * 0.1f,
+                -1.0f - fabsf(random_float())};
+            Vec3 clip, reconstructed, worldPoint;
+            CHECK(RenderProject(&camera, &viewPoint, 16.0f / 9.0f, &clip));
+            CHECK(RenderUnproject(&camera, 16.0f / 9.0f, &clip,
+                                  &worldPoint));
+            RenderWorldToView(&camera, &worldPoint, &reconstructed);
+            CHECK(close_enough(reconstructed.x, viewPoint.x));
+            CHECK(close_enough(reconstructed.y, viewPoint.y));
+            CHECK(close_enough(reconstructed.z, viewPoint.z));
+        }
+    }
+    Vec3 invalidClip = {0.0f, 0.0f, NAN};
+    CHECK(!RenderUnproject(NULL, 1.0f, &invalidClip, &world));
     printf("Prepared view: %u exact reference transforms and fog values matched\n", count);
     return 0;
 }

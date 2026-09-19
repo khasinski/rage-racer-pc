@@ -27,6 +27,10 @@ void RenderWorldToView(const RenderCamera *camera,
                            Vec3 *view);
 int RenderProject(const RenderCamera *camera, const Vec3 *view,
                       float aspect, Vec3 *clip);
+/* Reconstructs a world-space point from normalized device coordinates and
+ * the 0..1 depth buffer written by RenderProject. */
+int RenderUnproject(const RenderCamera *camera, float aspect,
+                    const Vec3 *clip, Vec3 *world);
 /* Homogeneous depth terms for a 0..1 depth buffer:
  * clip_z = view_depth * scale + offset, clip_w = view_depth. */
 /* GPU projection scales, preserving float operation order for valid cameras.
