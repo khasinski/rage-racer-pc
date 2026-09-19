@@ -9,8 +9,6 @@ enum {
     ATTRACT_RENDER_OT_SHIFT = 5,
     ATTRACT_VIEW_Z = -3520,
     ATTRACT_LETTERBOX_HEIGHT = 240,
-    ATTRACT_INITIAL_FADE = 256,
-    ATTRACT_FADE_STEP = -8,
 };
 
 static void InitAttractLighting(void) {
@@ -48,7 +46,7 @@ void EnterAttractScene(void) {
     g_Camera.view.angleZ = 0;
     SetCameraRotMatrix(&g_RenderState, &g_Camera.view);
     MenuOption()->letterboxHeight = ATTRACT_LETTERBOX_HEIGHT;
-    g_FadeLevel = ATTRACT_INITIAL_FADE;
-    g_GameMode = 0;
-    g_FadeStep = ATTRACT_FADE_STEP;
+    /* The fade-in itself is armed by UpdateOptionScene on its first frame;
+     * the scene runtime clears g_FadeLevel/g_FadeStep before that dispatch. */
+    g_GameMode = OPTION_MODE_FADE;
 }

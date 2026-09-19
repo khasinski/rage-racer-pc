@@ -145,7 +145,8 @@ static void TestInitializesAttractScene(void) {
            g_Camera.view.angleZ == 0);
     assert(s_CameraMatrixUpdates == 1);
     assert(s_optionMenu.letterboxHeight == 240);
-    assert(g_FadeLevel == 256 && g_FadeStep == -8);
+    /* The fade-in is armed by the OPTION scene's first frame; the entry
+     * scene only selects the fade mode. */
     assert(g_GameMode == 0);
 }
 
