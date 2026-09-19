@@ -197,7 +197,8 @@ float tracedVisibility(vec3 origin, vec3 direction, uint nodeCount,
 }
 
 bool tracedClosest(vec3 origin, vec3 direction, uint nodeCount,
-                   uint instanceCount, out float distance, out vec3 normal) {
+                   uint instanceCount, bool shadowQuery,
+                   out float distance, out vec3 normal) {
     uint stack[64];
     uint stackCount = 1;
     bool found = false;
@@ -214,6 +215,8 @@ bool tracedClosest(vec3 origin, vec3 direction, uint nodeCount,
                 uint instanceIndex = rayIndices[offset];
                 if (instanceIndex >= instanceCount) return found;
                 RayInstance instance = rayInstances[instanceIndex];
+                if (shadowQuery &&
+                    (instance.meshAndFlags.z & 2u) != 0u) continue;
                 vec4 point = vec4(origin, 1.0);
                 vec4 vector = vec4(direction, 0.0);
                 vec3 localOrigin = vec3(dot(instance.worldToLocal0, point),
