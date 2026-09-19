@@ -519,6 +519,7 @@ if(RAGE_BUILD_PORT)
         src/port/modern/modern_material_uniform.c
         src/port/modern/modern_png.c
         src/port/modern/modern_native_gpu.c
+        src/port/modern/modern_ray_gpu.c
         src/port/modern/modern_texture_dump.c)
     add_executable(rage-render-stage
         tools/rage_render_stage.c
@@ -538,13 +539,14 @@ if(RAGE_BUILD_PORT)
         src/port/modern/modern_material_uniform.c
         src/port/modern/modern_png.c
         src/port/modern/modern_native_gpu.c
+        src/port/modern/modern_ray_gpu.c
         src/port/modern/modern_texture_dump.c)
     target_include_directories(rage-render-stage PRIVATE
         src src/port src/port/include include)
     add_dependencies(rage-render-stage rage-authored-cars)
     add_dependencies(rage-frame-replay rage-authored-cars)
     target_link_libraries(rage-render-stage PRIVATE
-        rage-render-world SDL3::SDL3 miniz rage-json)
+        rage-render-world rage-ray SDL3::SDL3 miniz rage-json)
     if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         target_compile_options(rage-render-stage PRIVATE
             ${RAGE_STRICT_WARNING_OPTIONS})
@@ -552,7 +554,7 @@ if(RAGE_BUILD_PORT)
     target_include_directories(rage-frame-replay PRIVATE
         src src/port src/port/include include)
     target_link_libraries(rage-frame-replay PRIVATE
-        rage-render-world SDL3::SDL3 miniz rage-json)
+        rage-render-world rage-ray SDL3::SDL3 miniz rage-json)
     if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         target_compile_options(rage-frame-replay PRIVATE
             ${RAGE_STRICT_WARNING_OPTIONS})
