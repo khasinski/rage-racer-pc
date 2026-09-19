@@ -100,5 +100,6 @@ void LoadPendingCarModelAsset(void) {
     CarCatalogApplyModelAvailability(
         carIndex, g_CarTable[carIndex].modelVariant + gradeOffset,
         g_CarModelSlots[targetSlot]);
+    g_CarModelSlotAssetIndex[targetSlot] = variantIndex;
     g_AssetLoadState = 0;
 }

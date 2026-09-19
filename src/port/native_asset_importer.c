@@ -16,6 +16,7 @@
 
 #include "game/render.h"
 #include "game/asset.h"
+#include "game/car.h"
 #include "game/model_stream.h"
 #include "game/render_state.h"
 #include "game/terrain_internal.h"
@@ -214,8 +215,12 @@ static int ImportVisit(const RenderMeshInstance *instance,
     if (instance == NULL || visitor == NULL || meshCount == NULL) return 0;
     switch (instance->assetSet) {
     case RAGE_RENDER_ASSET_MODEL_BANK:
-        return ImportVisitModelBank(&g_ModelBanks[0], visitor, context,
-                                        meshCount);
+        /* The showroom alternates the player car between banks 0 and 1;
+         * the race relocates it into bank 0. Read the bank the game draws. */
+        return ImportVisitModelBank(
+            &g_ModelBanks[g_CarModelSlot < CAR_ASSET_SLOT_COUNT
+                              ? g_CarModelSlot : 0],
+            visitor, context, meshCount);
     case RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1:
         return ImportVisitModelBank(&g_ModelBanks[1], visitor, context,
                                         meshCount);

@@ -8,6 +8,9 @@
 u8 *g_AssetBase;
 u8 *g_AssetLoadCursor;
 CarModelAsset *g_CarModelAsset;
+CarModelAsset *g_CarModelSlots[CAR_ASSET_SLOT_COUNT];
+s32 g_CarModelSlotAssetIndex[CAR_ASSET_SLOT_COUNT] = {-1, -1};
+u32 g_CarModelSlot;
 
 static CarModelAsset *s_serializedAsset;
 static CarModelAsset s_nativeAsset;
@@ -114,8 +117,14 @@ int main(void) {
     g_CarModelAsset = &s_nativeAsset;
     g_AssetBase = destination.bytes;
     s_destinationRoom = sizeof(destination.bytes);
+    /* The menu left the second showroom slot active and holding car 9. */
+    g_CarModelSlots[1] = &s_nativeAsset;
+    g_CarModelSlotAssetIndex[1] = 9;
+    g_CarModelSlot = 1;
 
     Check(RelocateCarModel() == 1, "valid serialized model is relocated");
+    Check(g_CarModelSlot == 0 && g_CarModelSlotAssetIndex[0] == 9,
+          "relocation makes slot 0 active and keeps the car identity");
 
     Check(memcmp(destination.bytes, source.bytes, MODEL_SIZE) == 0,
           "serialized model bytes copied");

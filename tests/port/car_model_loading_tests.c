@@ -26,6 +26,7 @@ u32 g_CarModelSlot;
 s32 g_PlayerCarIndex;
 CarEntry *g_CarTable;
 CarModelAsset *g_CarModelSlots[CAR_ASSET_SLOT_COUNT];
+s32 g_CarModelSlotAssetIndex[CAR_ASSET_SLOT_COUNT] = {-1, -1};
 CarImageData *g_CarImageSlots[CAR_ASSET_SLOT_COUNT];
 CarModelAsset *g_CarModelAsset;
 const TeamLogoSample *g_TeamLogoSampleData;
@@ -251,6 +252,8 @@ static void TestModelVariantLoads(void) {
               s_color1 == 4 && s_color2 == 5,
           "normal model applies player paint");
     Check(g_AssetLoadState == 0, "normal model completes loader");
+    Check(g_CarModelSlotAssetIndex[1] == 7 && g_CarModelSlotAssetIndex[0] == -1,
+          "normal model records its car identity on the loaded slot only");
 
     g_CarModelSlot = 1;
     g_AssetRequestType = ASSET_REQUEST_UPGRADED_CAR_MODEL;
@@ -262,6 +265,8 @@ static void TestModelVariantLoads(void) {
     Check(s_loadAssetId == 0xA + (8 << 1) &&
               s_loadDestination == buffers,
           "upgraded model asset and inactive slot");
+    Check(g_CarModelSlotAssetIndex[0] == 8 && g_CarModelSlotAssetIndex[1] == 7,
+          "upgraded model records the next grade on the other slot");
     Check(g_CarModelSlots[0] == lower &&
               s_registeredBank == GetModelBankHeader(
                                       (u8 *)lower +

@@ -844,9 +844,21 @@ void GameRenderWorldSubmitPlayerCar(const GameCarRuntime *object,
     uint32_t wheelBase;
     Vec3 environmentLight;
 
+    s32 assetIndex;
+
     if (!s_initialized || object == NULL || g_CarModelAsset == NULL) return;
-    asset = (uint32_t)(10 + GetCarAssetIndex(
-        g_PlayerCarIndex, g_CarTable[g_PlayerCarIndex].modelVariant) * 2);
+    /* Key the mesh by the car actually installed in the slot being drawn.
+     * The player's selection and grade move before the new model finishes
+     * loading, and a mesh imported under the new key from the old bank would
+     * be cached for every later race with that car. */
+    assetIndex = g_CarModelSlot < CAR_ASSET_SLOT_COUNT
+                     ? g_CarModelSlotAssetIndex[g_CarModelSlot]
+                     : -1;
+    if (assetIndex < 0) {
+        assetIndex = GetCarAssetIndex(
+            g_PlayerCarIndex, g_CarTable[g_PlayerCarIndex].modelVariant);
+    }
+    asset = (uint32_t)(10 + assetIndex * 2);
     environmentLight = GameTrackLightForCar(object);
     wheelBase = (uint32_t)object->renderDepth * 2u;
     if ((object->wheelRotation & 0x1000) != 0) wheelBase += 10u;
