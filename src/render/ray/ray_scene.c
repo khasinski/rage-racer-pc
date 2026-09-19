@@ -2,6 +2,9 @@
 
 #include <math.h>
 #include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "render/render_instance_transform.h"
 
@@ -175,4 +178,213 @@ int RayInstanceTraceClosest(const RayInstance *instance, const Ray *worldRay,
 int RayInstanceTraceAny(const RayInstance *instance, const Ray *worldRay) {
     RayHit hit;
     return RayInstanceTraceClosest(instance, worldRay, &hit);
+}
+
+typedef struct SceneBuild {
+    RayInstance *instances;
+    uint32_t *indices;
+    RayBvhNode *nodes;
+    uint32_t nodeCount;
+    uint32_t nodeCapacity;
+} SceneBuild;
+
+#define RAY_SCENE_NO_NODE UINT32_MAX
+
+enum { RAY_SCENE_LEAF_INSTANCES = 4 };
+
+static float Axis(Vec3 value, unsigned axis) {
+    if (axis == 0) return value.x;
+    if (axis == 1) return value.y;
+    return value.z;
+}
+
+static Vec3 BoundsCenter(RayBounds bounds) {
+    return (Vec3){(bounds.min.x + bounds.max.x) * 0.5f,
+                  (bounds.min.y + bounds.max.y) * 0.5f,
+                  (bounds.min.z + bounds.max.z) * 0.5f};
+}
+
+static void IncludeBounds(RayBounds *out, RayBounds value) {
+    out->min.x = fminf(out->min.x, value.min.x);
+    out->min.y = fminf(out->min.y, value.min.y);
+    out->min.z = fminf(out->min.z, value.min.z);
+    out->max.x = fmaxf(out->max.x, value.max.x);
+    out->max.y = fmaxf(out->max.y, value.max.y);
+    out->max.z = fmaxf(out->max.z, value.max.z);
+}
+
+static RayBounds SceneRangeBounds(const SceneBuild *build, uint32_t first,
+                                  uint32_t count) {
+    RayBounds bounds = build->instances[build->indices[first]].bounds;
+    for (uint32_t offset = 1; offset < count; ++offset)
+        IncludeBounds(&bounds,
+            build->instances[build->indices[first + offset]].bounds);
+    return bounds;
+}
+
+static RayBounds SceneCenterBounds(const SceneBuild *build, uint32_t first,
+                                   uint32_t count) {
+    Vec3 center = BoundsCenter(
+        build->instances[build->indices[first]].bounds);
+    RayBounds bounds = {center, center};
+    for (uint32_t offset = 1; offset < count; ++offset) {
+        center = BoundsCenter(
+            build->instances[build->indices[first + offset]].bounds);
+        RayBounds point = {center, center};
+        IncludeBounds(&bounds, point);
+    }
+    return bounds;
+}
+
+static unsigned SceneLargestAxis(RayBounds bounds) {
+    Vec3 extent = {bounds.max.x - bounds.min.x,
+                   bounds.max.y - bounds.min.y,
+                   bounds.max.z - bounds.min.z};
+    if (extent.y > extent.x && extent.y >= extent.z) return 1;
+    return extent.z > extent.x ? 2 : 0;
+}
+
+static uint32_t ScenePartition(SceneBuild *build, uint32_t first,
+                               uint32_t count, unsigned axis, float split) {
+    uint32_t low = first;
+    uint32_t high = first + count;
+    while (low < high) {
+        Vec3 center = BoundsCenter(build->instances[build->indices[low]].bounds);
+        if (Axis(center, axis) < split) {
+            ++low;
+        } else {
+            uint32_t temporary;
+            --high;
+            temporary = build->indices[low];
+            build->indices[low] = build->indices[high];
+            build->indices[high] = temporary;
+        }
+    }
+    if (low == first || low == first + count) return first + count / 2;
+    return low;
+}
+
+static uint32_t BuildSceneNode(SceneBuild *build, uint32_t first,
+                               uint32_t count) {
+    uint32_t nodeIndex;
+    RayBvhNode *node;
+    if (count == 0 || build->nodeCount >= build->nodeCapacity)
+        return RAY_SCENE_NO_NODE;
+    nodeIndex = build->nodeCount++;
+    node = &build->nodes[nodeIndex];
+    node->bounds = SceneRangeBounds(build, first, count);
+    node->first = first;
+    node->count = count;
+    node->left = node->right = RAY_SCENE_NO_NODE;
+    if (count > RAY_SCENE_LEAF_INSTANCES) {
+        RayBounds centers = SceneCenterBounds(build, first, count);
+        unsigned axis = SceneLargestAxis(centers);
+        float split = (Axis(centers.min, axis) + Axis(centers.max, axis)) * 0.5f;
+        uint32_t middle = ScenePartition(build, first, count, axis, split);
+        uint32_t left = BuildSceneNode(build, first, middle - first);
+        uint32_t right = BuildSceneNode(build, middle, first + count - middle);
+        if (left == RAY_SCENE_NO_NODE || right == RAY_SCENE_NO_NODE)
+            return RAY_SCENE_NO_NODE;
+        node = &build->nodes[nodeIndex];
+        node->first = node->count = 0;
+        node->left = left;
+        node->right = right;
+    }
+    return nodeIndex;
+}
+
+int RaySceneBuild(RayScene *scene, const RayInstance *instances, size_t count) {
+    RayScene next = {0};
+    SceneBuild build;
+    if (scene == NULL || instances == NULL || count == 0 ||
+        count > UINT32_MAX / 2 || count > SIZE_MAX / sizeof(*next.instances))
+        return 0;
+    next.instances = malloc(count * sizeof(*next.instances));
+    next.indices = malloc(count * sizeof(*next.indices));
+    next.nodes = calloc(count * 2, sizeof(*next.nodes));
+    if (next.instances == NULL || next.indices == NULL || next.nodes == NULL) {
+        RaySceneRelease(&next);
+        return 0;
+    }
+    memcpy(next.instances, instances, count * sizeof(*next.instances));
+    for (size_t index = 0; index < count; ++index) {
+        if (next.instances[index].mesh == NULL) {
+            RaySceneRelease(&next);
+            return 0;
+        }
+        next.indices[index] = (uint32_t)index;
+    }
+    build = (SceneBuild){next.instances, next.indices, next.nodes, 0,
+                         (uint32_t)(count * 2)};
+    if (BuildSceneNode(&build, 0, (uint32_t)count) != 0) {
+        RaySceneRelease(&next);
+        return 0;
+    }
+    next.instanceCount = (uint32_t)count;
+    next.nodeCount = build.nodeCount;
+    RaySceneRelease(scene);
+    *scene = next;
+    return 1;
+}
+
+void RaySceneRelease(RayScene *scene) {
+    if (scene == NULL) return;
+    free(scene->instances);
+    free(scene->indices);
+    free(scene->nodes);
+    *scene = (RayScene){0};
+}
+
+static int TraceScene(const RayScene *scene, const Ray *ray, RayHit *hit,
+                      int any) {
+    uint32_t stack[64];
+    uint32_t stackCount = 1;
+    float closest;
+    int found = 0;
+    if (scene == NULL || ray == NULL || hit == NULL || !RayValid(ray) ||
+        scene->nodes == NULL || scene->instances == NULL ||
+        scene->indices == NULL || scene->nodeCount == 0) return 0;
+    stack[0] = 0;
+    closest = ray->maxDistance;
+    while (stackCount != 0) {
+        uint32_t nodeIndex = stack[--stackCount];
+        const RayBvhNode *node;
+        if (nodeIndex >= scene->nodeCount) return 0;
+        node = &scene->nodes[nodeIndex];
+        if (!RayIntersectBounds(ray, &node->bounds, closest, NULL)) continue;
+        if (node->count != 0) {
+            if (node->first > scene->instanceCount ||
+                node->count > scene->instanceCount - node->first) return 0;
+            for (uint32_t offset = 0; offset < node->count; ++offset) {
+                uint32_t instanceIndex = scene->indices[node->first + offset];
+                RayHit candidate;
+                Ray limited = *ray;
+                limited.maxDistance = closest;
+                if (instanceIndex >= scene->instanceCount ||
+                    !RayInstanceTraceClosest(&scene->instances[instanceIndex],
+                                             &limited, &candidate)) continue;
+                if (any) return 1;
+                candidate.instance = instanceIndex;
+                closest = candidate.distance;
+                *hit = candidate;
+                found = 1;
+            }
+        } else {
+            if (node->left >= scene->nodeCount ||
+                node->right >= scene->nodeCount || stackCount + 2 > 64)
+                return 0;
+            stack[stackCount++] = node->right;
+            stack[stackCount++] = node->left;
+        }
+    }
+    return found;
+}
+
+int RaySceneTraceClosest(const RayScene *scene, const Ray *ray, RayHit *hit) {
+    return TraceScene(scene, ray, hit, 0);
+}
+
+int RaySceneTraceAny(const RayScene *scene, const Ray *ray) {
+    RayHit ignored;
+    return TraceScene(scene, ray, &ignored, 1);
 }

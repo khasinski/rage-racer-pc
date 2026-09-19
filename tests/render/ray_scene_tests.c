@@ -108,11 +108,43 @@ static void TestReflectedInstanceNormal(void) {
     RayMeshRelease(&mesh);
 }
 
+static void TestSceneTlasFindsClosestInstance(void) {
+    RayTriangle triangle = UnitTriangle();
+    RayMesh mesh = {0};
+    RayInstance instances[9];
+    RayScene scene = {0};
+    Ray ray = {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, 0.01f, 100.0f};
+    RayHit hit = {0};
+
+    CHECK(RayMeshBuild(&mesh, &triangle, 1));
+    for (uint32_t index = 0; index < 9; ++index) {
+        RenderTransform transform = IdentityTransform();
+        transform.position.z = 20.0f - (float)index;
+        transform.position.x = (index % 2) ? 8.0f : 0.0f;
+        CHECK(RayInstancePrepare(&instances[index], &mesh, &transform,
+                                 100 + index, 0));
+    }
+    CHECK(RaySceneBuild(&scene, instances, 9));
+    CHECK(scene.nodeCount > 1 && scene.instanceCount == 9);
+    CHECK(RaySceneTraceClosest(&scene, &ray, &hit));
+    CHECK(fabsf(hit.distance - 12.0f) < 0.0001f);
+    CHECK(hit.entity == 108 && hit.instance == 8);
+    CHECK(RaySceneTraceAny(&scene, &ray));
+    ray.maxDistance = 11.0f;
+    CHECK(!RaySceneTraceAny(&scene, &ray));
+    CHECK(!RaySceneBuild(&scene, NULL, 1));
+    CHECK(RaySceneTraceAny(&scene, &(Ray){
+        {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, 0.01f, 100.0f}));
+    RaySceneRelease(&scene);
+    RayMeshRelease(&mesh);
+}
+
 int main(void) {
     TestTranslatedAndScaledInstance();
     TestEulerRotationAndNormal();
     TestQuaternionAndInvalidTransform();
     TestReflectedInstanceNormal();
+    TestSceneTlasFindsClosestInstance();
     if (failures != 0) return 1;
     puts("ray scene tests passed");
     return 0;

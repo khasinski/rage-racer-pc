@@ -15,6 +15,14 @@ typedef struct RayInstance {
     uint32_t flags;
 } RayInstance;
 
+typedef struct RayScene {
+    RayInstance *instances;
+    uint32_t *indices;
+    RayBvhNode *nodes;
+    uint32_t instanceCount;
+    uint32_t nodeCount;
+} RayScene;
+
 enum {
     RAY_INSTANCE_CULL_BACKFACES = 1u << 0,
 };
@@ -27,5 +35,13 @@ int RayInstancePrepare(RayInstance *out, const RayMesh *mesh,
 int RayInstanceTraceClosest(const RayInstance *instance, const Ray *worldRay,
                             RayHit *hit);
 int RayInstanceTraceAny(const RayInstance *instance, const Ray *worldRay);
+
+/* The scene owns a shallow copy of instances; referenced immutable meshes must
+ * remain alive until release or replacement. Failed builds preserve the old
+ * scene. */
+int RaySceneBuild(RayScene *scene, const RayInstance *instances, size_t count);
+void RaySceneRelease(RayScene *scene);
+int RaySceneTraceClosest(const RayScene *scene, const Ray *ray, RayHit *hit);
+int RaySceneTraceAny(const RayScene *scene, const Ray *ray);
 
 #endif
