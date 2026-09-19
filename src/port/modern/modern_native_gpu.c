@@ -620,7 +620,7 @@ int ModernNativeGpuInit(SDL_GPUDevice *device, int linearTextureFilter) {
     colorFragment = ModernNativeCreateShader(
         native_color_frag_spv, native_color_frag_spv_len,
         native_color_frag_msl, native_color_frag_msl_len, "fs_native_color",
-        SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0, 1);
+        SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 3, 1);
     if (vertex != NULL && textureFragment != NULL) {
         s_texturedOpaque = ModernNativeCreatePipeline(
             vertex, textureFragment, 0);

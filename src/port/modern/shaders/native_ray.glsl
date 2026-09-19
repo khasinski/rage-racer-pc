@@ -10,13 +10,19 @@ struct RayTriangle {
     vec4 vertex2;
 };
 
-layout(set = 2, binding = 2, std430) readonly buffer RayNodes {
+#ifndef RAY_NODE_BINDING
+#define RAY_NODE_BINDING 2
+#define RAY_TRIANGLE_BINDING 3
+#define RAY_INDEX_BINDING 4
+#endif
+
+layout(set = 2, binding = RAY_NODE_BINDING, std430) readonly buffer RayNodes {
     RayNode rayNodes[];
 };
-layout(set = 2, binding = 3, std430) readonly buffer RayTriangles {
+layout(set = 2, binding = RAY_TRIANGLE_BINDING, std430) readonly buffer RayTriangles {
     RayTriangle rayTriangles[];
 };
-layout(set = 2, binding = 4, std430) readonly buffer RayIndices {
+layout(set = 2, binding = RAY_INDEX_BINDING, std430) readonly buffer RayIndices {
     uint rayIndices[];
 };
 

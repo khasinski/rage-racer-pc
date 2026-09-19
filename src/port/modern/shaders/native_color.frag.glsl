@@ -1,4 +1,9 @@
 #version 450
+#extension GL_GOOGLE_include_directive : require
+#define RAY_NODE_BINDING 1
+#define RAY_TRIANGLE_BINDING 2
+#define RAY_INDEX_BINDING 3
+#include "native_ray.glsl"
 
 layout(location = 0) in vec2 uv;
 layout(location = 1) in vec4 color;
@@ -8,6 +13,7 @@ layout(location = 4) in float lighting;
 layout(location = 5) in vec3 environmentLight;
 layout(location = 6) in vec3 shadowCoord;
 layout(location = 7) in float shadowReception;
+layout(location = 9) in vec3 worldPositionIn;
 layout(location = 0) out vec4 outColor;
 layout(set = 2, binding = 0) uniform sampler2D shadowMap;
 layout(set = 3, binding = 0, std140) uniform NativeSceneLight {
@@ -48,7 +54,18 @@ void main() {
         environmentLight *
             (sceneLight.ambient.rgb + sceneLight.diffuse.rgb * diffuse),
         lighting);
-    float visibility = shadowReception > 0.5 ? shadowVisibility(n) : 1.0;
+    float visibility = 1.0;
+    if (shadowReception > 0.5) {
+        if (sceneLight.ray.x > 0.5) {
+            vec3 rayDirection = normalize(sceneLight.direction.xyz);
+            float epsilon = max(0.02, length(worldPositionIn) * 0.000001);
+            visibility = tracedVisibility(
+                worldPositionIn + n * epsilon, rayDirection,
+                uint(sceneLight.ray.y + 0.5));
+        } else {
+            visibility = shadowVisibility(n);
+        }
+    }
     float shadow = mix(0.62, 1.0, visibility);
     light *= mix(shadow, 1.0, fog.a);
     outColor = vec4(foggedColor * light, color.a);
