@@ -279,11 +279,13 @@ endif()
 
 add_library(rage-ray STATIC
     src/render/ray/ray.c
-    src/render/ray/ray_bvh.c)
+    src/render/ray/ray_bvh.c
+    src/render/ray/ray_mesh_import.c)
 target_include_directories(rage-ray PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 if(NOT MSVC)
     target_link_libraries(rage-ray PUBLIC m)
 endif()
+target_link_libraries(rage-ray PUBLIC rage-rmesh)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(rage-ray PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 endif()

@@ -8,6 +8,13 @@ target_compile_options(ray_bvh_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 add_test(NAME ray_bvh COMMAND ray_bvh_tests)
 set_tests_properties(ray_bvh PROPERTIES LABELS unit)
 
+add_executable(ray_mesh_import_tests ray_mesh_import_tests.c)
+target_link_libraries(ray_mesh_import_tests PRIVATE rage-ray)
+target_compile_options(ray_mesh_import_tests PRIVATE
+    ${RAGE_STRICT_WARNING_OPTIONS})
+add_test(NAME ray_mesh_import COMMAND ray_mesh_import_tests)
+set_tests_properties(ray_mesh_import PROPERTIES LABELS unit)
+
 add_executable(render_world_scene_tests render_world_scene_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/render_world_scene.c)
 target_include_directories(render_world_scene_tests PRIVATE
