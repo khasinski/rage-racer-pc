@@ -15,6 +15,10 @@ static MenuRuntime s_menuRuntime = {
     .outgoingDrawScreen = -1,
 };
 
+/* Every screen keeps a draw script pointer for its modal or popup panel and
+ * runs it each frame, so a reset must leave them pointing at the empty script
+ * rather than NULL: a screen activated straight after a reset would otherwise
+ * dereference a null command list. */
 void MenuRuntimeReset(void) {
     s_menuRuntime = (MenuRuntime){
         .activeScreen = MENU_SCREEN_BOOTSTRAP,
@@ -22,6 +26,12 @@ void MenuRuntimeReset(void) {
         .outgoingDrawScreen = -1,
         .carBrowse = {.shopIndex = -1, .previous = -1, .next = -1,
                       .targetModel = -1},
+        .courseSelect = {.modalScript = g_UiEmptyScript},
+        .engineerShop = {.modalScript = g_UiEmptyScript},
+        .customize = {.popupScript = g_UiEmptyScript},
+        .logoSample = {.subPanelScript = g_UiEmptyScript},
+        .teamLogo = {.subPanelScript = g_UiEmptyScript},
+        .carSelect = {.popupScript = g_UiEmptyScript},
     };
 }
 

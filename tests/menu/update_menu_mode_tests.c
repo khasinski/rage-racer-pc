@@ -11,6 +11,7 @@ CarEntry *g_CarTable;
 GameRenderState g_RenderState;
 s32 g_MenuHandlerIndex;
 TimedDrawCommand g_MenuHintBarScript[1];
+TimedDrawCommand g_UiEmptyScript[1];
 s32 g_MenuOutgoingHandlerIndex;
 s32 g_MenuOverlayPattern;
 s32 g_MenuScreen;
@@ -236,6 +237,13 @@ static int TestScreenStateIsolation(void) {
     CHECK(MenuRuntimeScreenState(MENU_SCREEN_COURSE_SELECT) == 0);
     CHECK(MenuRuntimeCurrent()->drawProgress[MENU_SCREEN_CAR_SELECT] == 0);
     CHECK(MenuRuntimeCurrent()->drawProgress[MENU_SCREEN_COURSE_SELECT] == 0);
+    /* A reset leaves every panel script runnable, never NULL. */
+    CHECK(MenuCourseSelect()->modalScript == g_UiEmptyScript);
+    CHECK(MenuEngineerShop()->modalScript == g_UiEmptyScript);
+    CHECK(MenuCustomize()->popupScript == g_UiEmptyScript);
+    CHECK(MenuLogoSample()->subPanelScript == g_UiEmptyScript);
+    CHECK(MenuTeamLogo()->subPanelScript == g_UiEmptyScript);
+    CHECK(MenuCarSelect()->popupScript == g_UiEmptyScript);
     return 0;
 }
 
