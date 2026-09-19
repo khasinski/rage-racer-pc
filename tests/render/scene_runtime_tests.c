@@ -49,7 +49,8 @@ int main(void) {
     g_CdTrackEnded = 1;
     g_SceneId = GAME_SCENE_BGM_SELECT;
     SceneRuntimeBeforeDispatch(g_SceneId);
-    CHECK(g_SceneTimer == 0 && g_FadeLevel == 0 && g_FadeStep == 0 &&
+    /* The fade survives: the outgoing entry scene arms it for this one. */
+    CHECK(g_SceneTimer == 0 && g_FadeLevel == 99 && g_FadeStep == 99 &&
           g_FrameSyncThreshold == 99 && g_CameraCarIndex == 99 &&
           g_CdTrackEnded == 0);
     g_SceneTimer = 11;
