@@ -21,6 +21,12 @@ target_compile_options(ray_scene_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 add_test(NAME ray_scene COMMAND ray_scene_tests)
 set_tests_properties(ray_scene PROPERTIES LABELS unit)
 
+add_executable(ray_world_tests ray_world_tests.c)
+target_link_libraries(ray_world_tests PRIVATE rage-ray)
+target_compile_options(ray_world_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+add_test(NAME ray_world COMMAND ray_world_tests)
+set_tests_properties(ray_world PROPERTIES LABELS unit)
+
 add_executable(render_world_scene_tests render_world_scene_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/render_world_scene.c)
 target_include_directories(render_world_scene_tests PRIVATE

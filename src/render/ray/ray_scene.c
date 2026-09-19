@@ -296,9 +296,13 @@ static uint32_t BuildSceneNode(SceneBuild *build, uint32_t first,
 int RaySceneBuild(RayScene *scene, const RayInstance *instances, size_t count) {
     RayScene next = {0};
     SceneBuild build;
-    if (scene == NULL || instances == NULL || count == 0 ||
+    if (scene == NULL || (count != 0 && instances == NULL) ||
         count > UINT32_MAX / 2 || count > SIZE_MAX / sizeof(*next.instances))
         return 0;
+    if (count == 0) {
+        RaySceneRelease(scene);
+        return 1;
+    }
     next.instances = malloc(count * sizeof(*next.instances));
     next.indices = malloc(count * sizeof(*next.indices));
     next.nodes = calloc(count * 2, sizeof(*next.nodes));
