@@ -956,9 +956,9 @@ static void ClassicBuildFrame(const RageSceneSnapshot *snapshot) {
      * snapped camera here interpreted old packets in the new grid and left a
      * stale/misaligned sky for one presentation. */
     const RenderWorld *previous = GameRenderWorldPrevious();
-    if (s_classicSkyWorld) {
+    if (s_classicSkyWorld && s_classicSkyWorld->hasCamera) {
         s_skyPresentationCamera = &s_classicSkyWorld->camera;
-        if (previous &&
+        if (previous && previous->hasCamera &&
             previous->camera.skyAssetKey == s_classicSkyWorld->camera.skyAssetKey &&
             previous->camera.skyCloudRow == s_classicSkyWorld->camera.skyCloudRow)
             s_skyPacketCamera = &previous->camera;
@@ -1009,9 +1009,9 @@ static void ModernBuildOverlayFrame(const RageSceneSnapshot *snapshot) {
     if (s_config.modernFps != RAGE_MODERN_FPS_LOGIC) {
         const RenderWorld *previous = GameRenderWorldPrevious();
         const RenderWorld *presentation = ModernNativeGpuPreparedWorld();
-        if (presentation != NULL) {
+        if (presentation != NULL && presentation->hasCamera) {
             s_skyPresentationCamera = &presentation->camera;
-            if (previous != NULL &&
+            if (previous != NULL && previous->hasCamera &&
                 previous->camera.skyAssetKey == presentation->camera.skyAssetKey &&
                 previous->camera.skyCloudRow == presentation->camera.skyCloudRow)
                 s_skyPacketCamera = &previous->camera;
@@ -1111,13 +1111,31 @@ static void ModernFullscreenPass(SDL_GPUCommandBuffer *cmd,
     SDL_EndGPURenderPass(pass);
 }
 
+/* The colour behind the replayed sky tiles. On hardware the sky sits on a
+ * frame buffer already filled with sky colour, so any sub-pixel crack between
+ * rolled cloud rows or a discarded edge texel is invisible. Clearing to black
+ * turned those cracks into horizontal black lines on banked roads (#37). */
+static SDL_FColor ModernSkyClearColor(void) {
+    SDL_FColor color = {0.0f, 0.0f, 0.0f, 1.0f};
+    const RenderCamera *camera = s_skyPresentationCamera;
+
+    if (camera != NULL) {
+        color.r = camera->skyColor.x;
+        color.g = camera->skyColor.y;
+        color.b = camera->skyColor.z;
+    }
+    return color;
+}
+
 static void ModernRenderOverlaySelection(SDL_GPUCommandBuffer *cmd,
                                          SDL_GPUTexture *vram, int passNumber,
                                          uint32_t layerMask, int clearColor) {
     SDL_GPUGraphicsPipeline *pipelines[2] = {s_pipe2d, s_pipe2dSub};
     SDL_GPUColorTargetInfo color = {
         .texture = s_target,
-        .clear_color = {0.0f, 0.0f, 0.0f, 1.0f},
+        .clear_color = layerMask == (1u << MODERN_LAYER_SKY)
+                           ? ModernSkyClearColor()
+                           : (SDL_FColor){0.0f, 0.0f, 0.0f, 1.0f},
         .load_op = clearColor ? SDL_GPU_LOADOP_CLEAR : SDL_GPU_LOADOP_LOAD,
         .store_op = SDL_GPU_STOREOP_STORE,
     };
@@ -1674,7 +1692,12 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
     /* Scenes with no captured 3D pass through to the compat image, and so
      * do 480-line menu scenes: their double-height buffer follows PS1
      * interlace conventions the compat presenter already handles. */
-    if (snapshot->faceCount == 0) {
+    /* A scene without a race world (the LOST RACE prompt, for one) can still
+     * carry the previous race's captured faces for a frame or two; rendering
+     * that through an emptied world drew a black sky and reprojected the
+     * old sky through a dead camera (#32). Present the compat image instead. */
+    if (snapshot->faceCount == 0 ||
+        !GameRenderWorldSceneHas3d((GameSceneId)snapshot->sceneId)) {
         if (s_markerCaptureEnabled) ModernMarkerCheck(snapshot, 0);
         ModernPresentationClockReset(&s_presentationClock);
         /* Menus and other 2D-only scenes use the compatibility framebuffer,
