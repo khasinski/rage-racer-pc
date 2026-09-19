@@ -277,7 +277,9 @@ static void GameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
     else if (assetSet != RAGE_RENDER_ASSET_MODEL_BANK)
         instance.materialVariant = (uint8_t)(g_TrackTexturePageWanted != 0);
     instance.pass = mirror_pass ? RAGE_RENDER_PASS_MIRROR : RAGE_RENDER_PASS_MAIN;
-    instance.flags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING;
+    /* Cars are depth-cued like every other polygon on the PS1. */
+    instance.flags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING |
+                     RAGE_RENDER_INSTANCE_ENABLE_FOG;
     instance.environmentLight = environmentLight;
     instance.transform.position.x = psPosition.x;
     instance.transform.position.y = -psPosition.y;
@@ -629,9 +631,13 @@ void GameRenderWorldSubmitTerrainCell(uint32_t grid_x, uint32_t grid_z,
     instance.transform.scale.x = 0.25f;
     instance.transform.scale.y = 0.25f;
     instance.transform.scale.z = 0.25f;
+    /* The PS1 depth-cues every course polygon toward the environment's far
+     * colour, road and surroundings included. Without the flag the native
+     * terrain never fogged and only a few scenery models did. */
     instance.flags = RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL |
                      RAGE_RENDER_INSTANCE_ENABLE_LIGHTING |
-                     RAGE_RENDER_INSTANCE_FLAT_SHADED;
+                     RAGE_RENDER_INSTANCE_FLAT_SHADED |
+                     RAGE_RENDER_INSTANCE_ENABLE_FOG;
     instance.lightInfluence = 0.4f;
     if (g_IsEnvironmentMode4)
         instance.flags |= RAGE_RENDER_INSTANCE_ENVIRONMENT_MODE_4;

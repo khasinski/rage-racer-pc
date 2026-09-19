@@ -50,5 +50,6 @@ void main() {
     float visibility = shadowReception > 0.5 ? shadowVisibility(n) : 1.0;
     float shadow = mix(0.62, 1.0, visibility);
     light *= mix(shadow, 1.0, fog.a);
+    light = mix(light, vec3(1.0), fog.a);
     outColor = vec4(foggedColor * light, color.a);
 }

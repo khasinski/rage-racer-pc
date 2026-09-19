@@ -75,6 +75,9 @@ void main() {
         ? shadowVisibility(n) : 1.0;
     float shadow = mix(0.62, 1.0, visibility);
     light *= mix(shadow, 1.0, fog.a);
+    /* The PS1 depth cue replaces the lit vertex colour with the far colour,
+     * so lighting, highlights and emission all fade out with the fog. */
+    light = mix(light, vec3(1.0), fog.a);
     vec3 foggedColor = mix(color.rgb, fog.rgb, fog.a);
     vec3 modulation = min(foggedColor * 2.0, vec3(1.0));
     vec3 base = texel.rgb * modulation * light * material.baseColor.rgb;
@@ -115,6 +118,6 @@ void main() {
     vec3 specular = (environmentSpecular + directSpecular) *
         step(0.001, materialLighting);
     vec3 emissive = texel.rgb * material.emissiveAndShading.rgb;
-    outColor = vec4(base + specular + emissive,
+    outColor = vec4(base + (specular + emissive) * (1.0 - fog.a),
                     texel.a * color.a * material.baseColor.a);
 }
