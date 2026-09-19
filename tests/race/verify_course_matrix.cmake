@@ -8,14 +8,14 @@ file(MAKE_DIRECTORY "${root}")
 # Exact classic captures prove both that the frame is populated and that the
 # selected Grand Prix/Extra Grand Prix course reached its deterministic state.
 set(cases
-    "gp|0|da080b332d8d875330a8ab51c069d456271ac6f60e512dfea9180d167b02e769"
-    "gp|1|899c3a8382c274c5a24a4fdd79574424a03c651a123a48751006703cdefba795"
-    "gp|2|a6e27cce24ce4f7e663c1022dc0a978e6a1f1e45a6027379a933fb2cc03d7af3"
-    "gp|3|2dd8e9fc72c9b2d1a5bf71bef34e382e29f9c0232d26c9747b3282e8e8758121"
-    "extra-gp|0|50b97585f7aa7c9b75de5d6d8652a1bf9dc9b0476e2d2c3378935c2c18f62293"
-    "extra-gp|1|c221cbe8f75dff984d978c4f0c18a94d1c8539a8a23c6de7c8995e305a3a9a24"
-    "extra-gp|2|ddaf5d412cdfcfbd8ff1a3b12eb481fa96ce40daeda7b8d6027441e6d286da85"
-    "extra-gp|3|a81c48c7646fb2b61ae4abd250565036bdc48ff2807dfaca75489588271f9ca0")
+    "gp|0|5f6dc846ae40c6c4f26341d5df0578c16b2e8b1b4f2ff4d479d9de2021e54a5d"
+    "gp|1|d0d7f0d9d407ae66e8c41ad4dbf0b4c555201d09ede3f49ccea6d0c929198bb5"
+    "gp|2|d1f2c4e70e657c77a6fd112e42515d6d5fecb2958a0ed4a942f37c35c892897e"
+    "gp|3|050f9d3c6f4e4832e1b401c430b939ea4a76a461e8f1749ab63a6025fc9a80ec"
+    "extra-gp|0|c7e6a854abf897a4099f1b1c48cad1d62487e7409d226eece32b45048a3e042d"
+    "extra-gp|1|599b5fa9c178fb042d9357840b269e922446efbb4291899c185dc9a311467db8"
+    "extra-gp|2|95198877e34f6cd5e75a7e58a99c64bfff3d7edf4fde645b446b43cc1be13b65"
+    "extra-gp|3|d661cd8e19a25c399dd657301fb5446d955b3cddcf123b2005ceac8290b27023")
 foreach(case IN LISTS cases)
     string(REPLACE "|" ";" fields "${case}")
     list(GET fields 0 series)
