@@ -17,5 +17,7 @@ int ModernRayGpuPrepare(SDL_GPUCommandBuffer *command,
                         void *context);
 void ModernRayGpuBind(SDL_GPURenderPass *pass);
 uint32_t ModernRayGpuNodeCount(void);
+uint32_t ModernRayGpuTriangleCount(void);
+uint64_t ModernRayGpuBuildNanoseconds(void);
 
 #endif

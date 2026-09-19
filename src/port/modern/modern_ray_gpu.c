@@ -20,6 +20,8 @@ static SDL_GPUDevice *s_device;
 static RayBuffers s_buffers;
 static SDL_GPUTransferBuffer *s_pendingTransfer;
 static uint32_t s_nodeCount;
+static uint32_t s_triangleCount;
+static uint64_t s_buildNanoseconds;
 
 static void ReleaseBuffers(RayBuffers *buffers) {
     if (s_device != NULL) {
@@ -79,6 +81,8 @@ void ModernRayGpuShutdown(void) {
     ReleaseBuffers(&s_buffers);
     s_device = NULL;
     s_nodeCount = 0;
+    s_triangleCount = 0;
+    s_buildNanoseconds = 0;
 }
 
 int ModernRayGpuPrepare(SDL_GPUCommandBuffer *command,
@@ -97,8 +101,10 @@ int ModernRayGpuPrepare(SDL_GPUCommandBuffer *command,
     uint8_t *mapped;
     uint64_t total;
     int result = 0;
+    uint64_t started = SDL_GetTicksNS();
 
     s_nodeCount = 0;
+    s_triangleCount = 0;
     if (s_device == NULL || command == NULL || s_pendingTransfer != NULL ||
         !RayMeshBuildDraws(&mesh, vertices, vertexCount, spans, spanCount,
                            include, context) ||
@@ -143,11 +149,13 @@ int ModernRayGpuPrepare(SDL_GPUCommandBuffer *command,
     s_pendingTransfer = transfer;
     transfer = NULL;
     s_nodeCount = mesh.nodeCount;
+    s_triangleCount = mesh.triangleCount;
     result = 1;
 done:
     if (copy != NULL) SDL_EndGPUCopyPass(copy);
     if (transfer != NULL) SDL_ReleaseGPUTransferBuffer(s_device, transfer);
     RayMeshRelease(&mesh);
+    s_buildNanoseconds = SDL_GetTicksNS() - started;
     return result;
 }
 
@@ -161,3 +169,5 @@ void ModernRayGpuBind(SDL_GPURenderPass *pass) {
 }
 
 uint32_t ModernRayGpuNodeCount(void) { return s_nodeCount; }
+uint32_t ModernRayGpuTriangleCount(void) { return s_triangleCount; }
+uint64_t ModernRayGpuBuildNanoseconds(void) { return s_buildNanoseconds; }

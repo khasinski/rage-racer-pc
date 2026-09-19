@@ -583,7 +583,7 @@ int ModernNativeGpuInit(SDL_GPUDevice *device, int linearTextureFilter) {
     s_cpuGeometryReference = RuntimeConfigEnabled("diagnostics.modern_uncached_geometry");
     s_rayEnabled = ModernNativeRayConfigured();
     s_residentGeometryEnabled =
-        !RuntimeConfigEnabled("diagnostics.modern_cpu_geometry") && !s_rayEnabled;
+        !RuntimeConfigEnabled("diagnostics.modern_cpu_geometry");
     s_residentGeometryLimit = (uint32_t)RuntimeConfigInt("diagnostics.modern_geometry_limit", 512, 0, 512);
     s_worldVertexLimit = s_residentGeometryEnabled && !s_cpuFogReference
         ? (uint32_t)RuntimeConfigInt("diagnostics.modern_world_vertex_limit",
@@ -2023,13 +2023,33 @@ void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,
     if (ModernNativeGpuHasDraws()) {
         if (!ModernNativeUploadVertices(command)) return;
         if (s_rayEnabled) {
+            int expanded = 1;
+            for (uint32_t span = 0; span < s_spanCount; ++span) {
+                const RageNativeDrawSpan *draw = &s_spans[span];
+                if (draw->localGeometry != NULL &&
+                    !RenderExpandNativeLocalDraw(
+                        draw, s_vertices + draw->firstVertex,
+                        draw->vertexCount)) {
+                    expanded = 0;
+                    break;
+                }
+            }
             for (uint32_t span = 0; span < s_spanCount; ++span)
                 (void)ModernNativeLoadTexture(command, &s_spans[span]);
-            if (!ModernRayGpuPrepare(command, s_vertices, s_vertexCount,
+            if (!expanded ||
+                !ModernRayGpuPrepare(command, s_vertices, s_vertexCount,
                                      s_spans, s_spanCount,
                                      ModernNativeRayCaster, NULL)) {
                 fprintf(stderr, "rage-port: ray scene upload failed: %s\n",
                         SDL_GetError());
+            } else if (RuntimeConfigEnabled("diagnostics.performance_trace")) {
+                fprintf(stderr,
+                        "native-ray-build frame=%llu triangles=%u nodes=%u "
+                        "cpu_ms=%.3f\n",
+                        (unsigned long long)s_worldFrame,
+                        ModernRayGpuTriangleCount(),
+                        ModernRayGpuNodeCount(),
+                        (double)ModernRayGpuBuildNanoseconds() / 1000000.0);
             }
         }
         ModernNativeDrawShadowMap(command);
