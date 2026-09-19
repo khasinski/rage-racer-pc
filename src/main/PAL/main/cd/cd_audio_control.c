@@ -14,6 +14,7 @@ void QueueCdTrackRestart(s32 track) {
     g_Cd.trackStep = CD_TRACK_RESTART_WAIT_FOR_DRIVE;
     QueueCdCommand(CD_COMMAND_PLAY, CD_PLAY_WAIT_FOR_DRIVE);
     g_Cd.pendingTrack = track;
+    g_Cd.playedSinceSelect = 0;
 }
 
 void RequestCdTrack(s32 track) {
@@ -23,6 +24,7 @@ void RequestCdTrack(s32 track) {
     g_Cd.pendingTrack = track;
     g_Cd.trackStep = CD_TRACK_WAIT_FOR_DRIVE;
     QueueCdCommand(CD_COMMAND_NONE, CD_PLAY_WAIT_FOR_DRIVE);
+    g_Cd.playedSinceSelect = 0;
 }
 
 void StartCdAudio(void) {
@@ -50,4 +52,5 @@ void ResetCdAudioState(void) {
     g_Cd.trackStep = CD_TRACK_WAIT_FOR_DRIVE;
     QueueCdCommand(CD_COMMAND_NONE, CD_PLAY_WAIT_FOR_DRIVE);
     g_Cd.currentTrack = CD_INITIAL_TRACK;
+    g_Cd.playedSinceSelect = 0;
 }

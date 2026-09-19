@@ -59,6 +59,10 @@ typedef struct Cd {
     CdlFILE search;
     u8 currentTrack;
     s32 fade;
+    /* Set once the host has reported the selected track playing; the host
+     * EOF flag is sticky across pause and seek, so a restart may only follow
+     * an end this selection actually reached. */
+    s32 playedSinceSelect;
 } Cd;
 
 extern Cd g_Cd;

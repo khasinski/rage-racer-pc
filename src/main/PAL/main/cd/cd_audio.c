@@ -45,11 +45,19 @@ void TickCdAudio(void) {
         StepCdTrackRequest();
     }
 
+    if (Psyz_CdAudioPlaying()) {
+        g_Cd.playedSinceSelect = 1;
+    }
+
     /* The host EOF flag stays asserted until CdlPlay opens the track again.
      * Do not let repeated ticks rewind an in-flight restart back to its first
-     * seek step, or playback can never reach the command that clears EOF. */
+     * seek step, or playback can never reach the command that clears EOF.
+     * It also survives the pause and seek of a new selection, so an end
+     * reached by the previous track must not start this one early: the race
+     * BGM is seeked at scene entry and played only after the countdown. */
     if (CdAudioRequestsIdle(g_Cd.pendingTrack, g_Cd.pendingCommand) &&
-        Psyz_CdAudioEnded() && CdTrackIndexValid(g_Cd.currentTrack)) {
+        g_Cd.playedSinceSelect && Psyz_CdAudioEnded() &&
+        CdTrackIndexValid(g_Cd.currentTrack)) {
         if (g_SceneId == GAME_SCENE_BGM_SELECT) {
             g_CdTrackEnded = 1;
         } else {
