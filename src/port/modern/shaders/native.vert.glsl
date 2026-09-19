@@ -42,6 +42,7 @@ layout(location = 5) out vec3 environmentLight;
 layout(location = 6) out vec3 shadowCoord;
 layout(location = 7) out float shadowReception;
 layout(location = 8) out vec3 viewDirection;
+layout(location = 9) out vec3 worldPositionOut;
 
 void main() {
     vec3 worldPosition = inPosition;
@@ -99,4 +100,5 @@ void main() {
                            shadow.projection.w);
     shadowReception = instance.properties.y;
     viewDirection = camera.position.xyz - worldPosition;
+    worldPositionOut = worldPosition;
 }

@@ -1,4 +1,6 @@
 #version 450
+#extension GL_GOOGLE_include_directive : require
+#include "native_ray.glsl"
 
 layout(location = 0) in vec2 uv;
 layout(location = 1) in vec4 color;
@@ -9,6 +11,7 @@ layout(location = 5) in vec3 environmentLight;
 layout(location = 6) in vec3 shadowCoord;
 layout(location = 7) in float shadowReception;
 layout(location = 8) in vec3 viewDirection;
+layout(location = 9) in vec3 worldPositionIn;
 layout(location = 0) out vec4 outColor;
 layout(set = 2, binding = 0) uniform sampler2D materialTexture;
 layout(set = 2, binding = 1) uniform sampler2D shadowMap;
@@ -19,6 +22,7 @@ layout(set = 3, binding = 0, std140) uniform NativeSceneLight {
     vec4 skyTop;
     vec4 skyHorizon;
     vec4 skyBottom;
+    vec4 ray; // enabled, node count, reserved, reserved
 } sceneLight;
 layout(set = 3, binding = 1, std140) uniform NativeMaterial {
     vec4 baseColor;
@@ -71,8 +75,18 @@ void main() {
         environmentLight *
             (sceneLight.ambient.rgb + sceneLight.diffuse.rgb * diffuse),
         materialLighting);
-    float visibility = materialLighting > 0.001 && shadowReception > 0.5
-        ? shadowVisibility(n) : 1.0;
+    float visibility = 1.0;
+    if (materialLighting > 0.001 && shadowReception > 0.5) {
+        if (sceneLight.ray.x > 0.5) {
+            vec3 rayDirection = normalize(sceneLight.direction.xyz);
+            float epsilon = max(0.02, length(worldPositionIn) * 0.000001);
+            visibility = tracedVisibility(
+                worldPositionIn + n * epsilon, rayDirection,
+                uint(sceneLight.ray.y + 0.5));
+        } else {
+            visibility = shadowVisibility(n);
+        }
+    }
     float shadow = mix(0.62, 1.0, visibility);
     light *= mix(shadow, 1.0, fog.a);
     vec3 foggedColor = mix(color.rgb, fog.rgb, fog.a);

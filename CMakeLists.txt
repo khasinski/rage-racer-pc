@@ -383,6 +383,7 @@ if(RAGE_BUILD_PORT)
         src/port/modern/modern_material_uniform.c
         src/port/modern/modern_png.c
         src/port/modern/modern_native_gpu.c
+        src/port/modern/modern_ray_gpu.c
         src/port/modern/modern_shader_sources.c
         src/port/modern/modern_texture_dump.c
         src/port/modern/modern_renderer_diagnostics.c
@@ -608,7 +609,7 @@ if(RAGE_BUILD_PORT)
             endif()
         endif()
         target_link_libraries(${RAGE_PORT_TARGET} PRIVATE
-            rage-sim psyz rage-render-world rage-content chdr-static miniz rage-json)
+            rage-sim psyz rage-render-world rage-ray rage-content chdr-static miniz rage-json)
         if(WIN32)
             target_link_libraries(${RAGE_PORT_TARGET} PRIVATE comdlg32 legacy_stdio_definitions)
         endif()
@@ -617,14 +618,14 @@ if(RAGE_BUILD_PORT)
        CMAKE_C_COMPILER_ID MATCHES "Clang|GNU" AND NOT WIN32)
         foreach(RAGE_SANITIZER_TARGET rage-game-full rage-host-state rage-port-legacy
                                       rage-racer rage-racer-smoke rage-sim rage-content
-                                      rage-mod-package rage-rmesh rage-render-world)
+                                      rage-mod-package rage-rmesh rage-render-world rage-ray)
             target_compile_options(${RAGE_SANITIZER_TARGET} PRIVATE
                 -fsanitize=address,undefined -fno-omit-frame-pointer)
         endforeach()
         # Instrument the native renderer/asset libraries too. Their tools and
         # tests need the runtime even when they do not link a game executable.
         foreach(RAGE_SANITIZER_TARGET rage-sim rage-content rage-mod-package
-                                      rage-rmesh rage-render-world)
+                                      rage-rmesh rage-render-world rage-ray)
             target_link_options(${RAGE_SANITIZER_TARGET} INTERFACE
                 -fsanitize=address,undefined)
         endforeach()

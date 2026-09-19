@@ -211,6 +211,7 @@ Display, content and storage settings:
 | `hud` | `show_time_limit` | `true`, `false` | `true` |
 | `camera` | `chase_turn_lookahead` | `0` to `1`; `0` is retail | `0` |
 | `modern` | `assets` | Optional explicit prebuilt native-asset cache for renderer development, or `disc`; omitted always imports from the selected disc | omitted |
+| `modern` | `ray_tracing` | Experimental hybrid sun shadows: `off`, `shadows` | `off` |
 | `modern` | `mirror_distance` | `0.25` to `8`, capped at the main view distance | `1` |
 | `timing` | `standard` | `auto`, `pal`, `ntsc` | `auto` |
 | `content` | `car_names` | `international`, `japanese` | `international` |

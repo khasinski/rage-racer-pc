@@ -17,6 +17,7 @@ layout(set = 3, binding = 0, std140) uniform NativeSceneLight {
     vec4 skyTop;
     vec4 skyHorizon;
     vec4 skyBottom;
+    vec4 ray;
 } sceneLight;
 
 float shadowVisibility(vec3 n) {

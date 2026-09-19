@@ -6,6 +6,7 @@
 #include "modern_depth_probe.h"
 #include "modern_material_uniform.h"
 #include "modern_prepared_meshes.h"
+#include "modern_ray_gpu.h"
 #include "modern_texture_index.h"
 #include "modern_upload_queue.h"
 #include "render/render_mesh_build.h"
@@ -88,6 +89,7 @@ typedef struct ModernNativeLightUniform {
     float skyTop[4];
     float skyHorizon[4];
     float skyBottom[4];
+    float ray[4];
 } ModernNativeLightUniform;
 
 
@@ -130,6 +132,14 @@ static SDL_GPUSampler *s_shadowSampler;
 static RageNativeGpuVertex *s_vertices;
 static RageNativeMeshTemplateCache s_meshTemplates;
 static int s_cpuGeometryReference;
+static int s_rayEnabled;
+
+static int ModernNativeRayConfigured(void) {
+    const char *value = RuntimeConfigGet("modern.ray_tracing");
+    return value != NULL &&
+           (strcmp(value, "shadows") == 0 || strcmp(value, "true") == 0 ||
+            strcmp(value, "1") == 0);
+}
 static RageNativeDrawSpan *s_spans;
 static RageNativeDrawSpan *s_mirrorSpans;
 static uint32_t s_vertexCount;
@@ -229,6 +239,7 @@ static void ModernNativeReleasePendingUploads(void) {
 
 void ModernNativeGpuSubmitted(void) {
     ModernNativeReleasePendingUploads();
+    ModernRayGpuSubmitted();
 }
 
 /* The caller reserves capacity before recording any copy commands. */
@@ -249,11 +260,12 @@ static int s_haveShadowMap;
 static SDL_GPUShader *ModernNativeCreateShader(
     const unsigned char *spirv, size_t spirvSize, const unsigned char *msl,
     size_t mslSize, const char *entry, SDL_GPUShaderStage stage,
-    uint32_t samplers, uint32_t uniforms) {
+    uint32_t samplers, uint32_t storageBuffers, uint32_t uniforms) {
     SDL_GPUShaderCreateInfo info = {0};
     SDL_GPUShaderFormat formats = SDL_GetGPUShaderFormats(s_device);
     info.stage = stage;
     info.num_samplers = samplers;
+    info.num_storage_buffers = storageBuffers;
     info.num_uniform_buffers = uniforms;
     if ((formats & SDL_GPU_SHADERFORMAT_SPIRV) != 0) {
         info.code = spirv;
@@ -531,6 +543,8 @@ static void ModernNativeBuildLight(const RenderDirectionalLight *light,
     out->skyBottom[0] = camera->skyBottomColor.x;
     out->skyBottom[1] = camera->skyBottomColor.y;
     out->skyBottom[2] = camera->skyBottomColor.z;
+    out->ray[0] = s_rayEnabled && ModernRayGpuNodeCount() != 0 ? 1.0f : 0.0f;
+    out->ray[1] = (float)ModernRayGpuNodeCount();
 }
 
 
@@ -567,7 +581,9 @@ int ModernNativeGpuInit(SDL_GPUDevice *device, int linearTextureFilter) {
     const char *fogReference = SDL_getenv("RAGE_PORT_NATIVE_CPU_FOG");
     s_cpuFogReference = fogReference != NULL && strcmp(fogReference, "1") == 0;
     s_cpuGeometryReference = RuntimeConfigEnabled("diagnostics.modern_uncached_geometry");
-    s_residentGeometryEnabled = !RuntimeConfigEnabled("diagnostics.modern_cpu_geometry");
+    s_rayEnabled = ModernNativeRayConfigured();
+    s_residentGeometryEnabled =
+        !RuntimeConfigEnabled("diagnostics.modern_cpu_geometry") && !s_rayEnabled;
     s_residentGeometryLimit = (uint32_t)RuntimeConfigInt("diagnostics.modern_geometry_limit", 512, 0, 512);
     s_worldVertexLimit = s_residentGeometryEnabled && !s_cpuFogReference
         ? (uint32_t)RuntimeConfigInt("diagnostics.modern_world_vertex_limit",
@@ -577,34 +593,34 @@ int ModernNativeGpuInit(SDL_GPUDevice *device, int linearTextureFilter) {
     vertex = ModernNativeCreateShader(
         native_vert_spv, native_vert_spv_len,
         native_vert_msl, native_vert_msl_len, "vs_native",
-        SDL_GPU_SHADERSTAGE_VERTEX, 0, 4);
+        SDL_GPU_SHADERSTAGE_VERTEX, 0, 0, 4);
     skyVertex = ModernNativeCreateShader(
         native_sky_vert_spv, native_sky_vert_spv_len,
         native_sky_vert_msl, native_sky_vert_msl_len, "vs_native_sky",
-        SDL_GPU_SHADERSTAGE_VERTEX, 0, 1);
+        SDL_GPU_SHADERSTAGE_VERTEX, 0, 0, 1);
     skyFragment = ModernNativeCreateShader(
         native_sky_frag_spv, native_sky_frag_spv_len,
         native_sky_frag_msl, native_sky_frag_msl_len, "fs_native_sky",
-        SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 1);
+        SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0, 1);
     shadowVertex = ModernNativeCreateShader(
         native_shadow_vert_spv, native_shadow_vert_spv_len,
         native_shadow_vert_msl, native_shadow_vert_msl_len, "vs_shadow",
-        SDL_GPU_SHADERSTAGE_VERTEX, 0, 3);
+        SDL_GPU_SHADERSTAGE_VERTEX, 0, 0, 3);
     shadowFragment = ModernNativeCreateShader(
         native_shadow_frag_spv, native_shadow_frag_spv_len,
         native_shadow_frag_msl, native_shadow_frag_msl_len, "fs_shadow",
-        SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0);
+        SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0, 0);
     shadowMaskedFragment = ModernNativeCreateShader(
         native_shadow_masked_frag_spv, native_shadow_masked_frag_spv_len,
-        native_shadow_masked_frag_msl, native_shadow_masked_frag_msl_len, "fs_shadow_masked", SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0);
+        native_shadow_masked_frag_msl, native_shadow_masked_frag_msl_len, "fs_shadow_masked", SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0, 0);
     textureFragment = ModernNativeCreateShader(
         native_texture_frag_spv, native_texture_frag_spv_len,
         native_texture_frag_msl, native_texture_frag_msl_len, "fs_native",
-        SDL_GPU_SHADERSTAGE_FRAGMENT, 2, 2);
+        SDL_GPU_SHADERSTAGE_FRAGMENT, 2, 3, 2);
     colorFragment = ModernNativeCreateShader(
         native_color_frag_spv, native_color_frag_spv_len,
         native_color_frag_msl, native_color_frag_msl_len, "fs_native_color",
-        SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 1);
+        SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0, 1);
     if (vertex != NULL && textureFragment != NULL) {
         s_texturedOpaque = ModernNativeCreatePipeline(
             vertex, textureFragment, 0);
@@ -685,6 +701,9 @@ int ModernNativeGpuInit(SDL_GPUDevice *device, int linearTextureFilter) {
     sampler.max_anisotropy = 1.0f;
     sampler.enable_anisotropy = false;
     s_skySampler = SDL_CreateGPUSampler(s_device, &sampler);
+    if (s_rayEnabled && !ModernRayGpuInit(s_device)) s_rayEnabled = 0;
+    fprintf(stderr, "rage-port: ray tracing=%s\n",
+            s_rayEnabled ? "shadows" : "off");
     {
         SDL_GPUTextureCreateInfo texture = {0};
         SDL_GPUSamplerCreateInfo shadowSampler = {0};
@@ -1869,6 +1888,7 @@ static void ModernNativeGpuDrawSet(
         return;
     pass = SDL_BeginGPURenderPass(command, &color, 1, &depth);
     if (pass == NULL) return;
+    ModernRayGpuBind(pass);
     SDL_PushGPUVertexUniformData(command, 0, &camera, sizeof(camera));
     if (drawSky) {
         ModernNativeBuildSky(renderCamera, aspect, targetHeight, &sky);
@@ -1984,6 +2004,17 @@ static void ModernNativeGpuDrawSet(
 }
 
 
+static int ModernNativeRayCaster(void *context,
+                                 const RageNativeDrawSpan *span) {
+    ModernNativeTexture *texture;
+    (void)context;
+    if (span->material == UINT32_MAX) return 1;
+    texture = ModernNativeFindTexture(span);
+    if (texture == NULL || texture->transparent) return 0;
+    return texture->definition.alphaMode != RAGE_RENDER_MATERIAL_ALPHA_MASK &&
+           texture->definition.alphaMode != RAGE_RENDER_MATERIAL_ALPHA_BLEND;
+}
+
 void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,
                          SDL_GPUTexture *colorTarget,
                          SDL_GPUTexture *depthTarget,
@@ -1991,6 +2022,16 @@ void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,
     if (s_world == NULL || !s_world->hasCamera) return;
     if (ModernNativeGpuHasDraws()) {
         if (!ModernNativeUploadVertices(command)) return;
+        if (s_rayEnabled) {
+            for (uint32_t span = 0; span < s_spanCount; ++span)
+                (void)ModernNativeLoadTexture(command, &s_spans[span]);
+            if (!ModernRayGpuPrepare(command, s_vertices, s_vertexCount,
+                                     s_spans, s_spanCount,
+                                     ModernNativeRayCaster, NULL)) {
+                fprintf(stderr, "rage-port: ray scene upload failed: %s\n",
+                        SDL_GetError());
+            }
+        }
         ModernNativeDrawShadowMap(command);
     }
     ModernNativeGpuDrawSet(command, colorTarget, depthTarget, clearColor,
@@ -2011,6 +2052,7 @@ void ModernNativeGpuDrawMirror(SDL_GPUCommandBuffer *command,
 }
 
 void ModernNativeGpuShutdown(void) {
+    ModernRayGpuShutdown();
     ModernNativeGpuClearTextures();
     ModernNativeReleaseSkyTexture();
     ModernNativeReleaseGeometry();
@@ -2082,6 +2124,7 @@ void ModernNativeGpuShutdown(void) {
     RenderWorldSnapshotRelease(&s_ownedWorld);
     ModernPreparedMeshesRelease(&s_preparedMeshes);
     s_completeWorld = 0;
+    s_rayEnabled = 0;
     ModernNativeReleasePendingUploads();
     /* The lookup index has to go with the textures it points into. Leaving it
      * behind left entries naming slots that the next run filled with
