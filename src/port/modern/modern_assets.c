@@ -165,13 +165,23 @@ static const RageRuntimeCachedMesh *ModernAuthoredCar(
                 SDL_free(modBytes);
                 goto failed;
             }
-        } else if (!RuntimeMeshOpen(&body, car->bytes, car->byteCount)) goto failed;
+        } else if (!RuntimeMeshOpen(&body, car->bytes, car->byteCount)) {
+            fprintf(stderr, "rage-port: authored %s asset %u submesh %u: embedded mesh unreadable\n",
+                    car->name, car->assetKey, car->submesh);
+            goto failed;
+        }
         bytes = RuntimeMeshReplace(&working, car->submesh, &body,
                                    map, sizeof(map)/sizeof(map[0]), &size);
         SDL_free(modBytes);
-        if (!bytes) goto failed;
+        if (!bytes) {
+            fprintf(stderr, "rage-port: authored %s asset %u submesh %u: replace failed (base meshes=%u)\n",
+                    car->name, car->assetKey, car->submesh, working.meshCount);
+            goto failed;
+        }
         if (!RuntimeMeshOpen(&next, bytes, size)) {
             free(bytes);
+            fprintf(stderr, "rage-port: authored %s asset %u: replaced mesh unreadable\n",
+                    car->name, car->assetKey);
             goto failed;
         }
         free(owned);
