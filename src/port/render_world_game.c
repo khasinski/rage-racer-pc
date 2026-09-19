@@ -495,7 +495,7 @@ static void GameRenderWorldSubmitCourseTransform(
     uint32_t entity, int32_t mesh, int32_t x, int32_t y, int32_t z,
     RageSceneMat3 rotation, int fogged, int mirror_pass,
     int cullBackfaces, int depthOverlay, float depthBias,
-    uint8_t paletteOffset) {
+    uint8_t paletteOffset, int rayOnly) {
     RenderMeshInstance instance;
 
     if (!s_initialized || mesh < 0) return;
@@ -534,6 +534,8 @@ static void GameRenderWorldSubmitCourseTransform(
         instance.flags |= RAGE_RENDER_INSTANCE_CULL_BACKFACES;
     if (depthOverlay)
         instance.flags |= RAGE_RENDER_INSTANCE_DEPTH_DECAL;
+    if (rayOnly)
+        instance.flags |= RAGE_RENDER_INSTANCE_RAY_ONLY;
     instance.previousTransform = instance.transform;
     RenderWorldSubmitMesh(GameRenderWorldMutable(), &instance);
 }
@@ -544,7 +546,7 @@ void GameRenderWorldSubmitCourseObject(uint32_t entity, int32_t mesh,
                                            int mirror_pass) {
     GameRenderWorldSubmitCourseTransform(
         0x10000u + entity, mesh, x, y, z, SceneRotationY(yaw), fogged,
-        mirror_pass, 1, 0, 0.0f, 0);
+        mirror_pass, 1, 0, 0.0f, 0, 0);
 }
 
 static void GameRenderWorldSubmitDynamicCourseObjectInternal(
@@ -579,7 +581,7 @@ static void GameRenderWorldSubmitDynamicCourseObjectInternal(
         semanticEntity, mesh, x, y, z, matrix, fogged, mirror_pass,
         cullBackfaces,
         depthOverlay, depthBias,
-        (uint8_t)((g_RenderState.geometry.envMode4 >> 16) & 3));
+        (uint8_t)((g_RenderState.geometry.envMode4 >> 16) & 3), 0);
 }
 
 void GameRenderWorldSubmitDynamicCourseObject(
@@ -604,8 +606,8 @@ void GameRenderWorldSubmitDynamicCourseOverlay(
         entity, mesh, x, y, z, rotation, fogged, mirror_pass, 0, 1, 0.0f);
 }
 
-void GameRenderWorldSubmitTerrainCell(uint32_t grid_x, uint32_t grid_z,
-                                          int32_t mesh, int mirror_pass) {
+static void SubmitTerrainCell(uint32_t grid_x, uint32_t grid_z,
+                              int32_t mesh, int mirror_pass, int rayOnly) {
     RenderMeshInstance instance;
 
     if (!s_initialized || mesh < 0) return;
@@ -635,8 +637,15 @@ void GameRenderWorldSubmitTerrainCell(uint32_t grid_x, uint32_t grid_z,
     instance.lightInfluence = 0.4f;
     if (g_IsEnvironmentMode4)
         instance.flags |= RAGE_RENDER_INSTANCE_ENVIRONMENT_MODE_4;
+    if (rayOnly)
+        instance.flags |= RAGE_RENDER_INSTANCE_RAY_ONLY;
     instance.previousTransform = instance.transform;
     RenderWorldSubmitMesh(GameRenderWorldMutable(), &instance);
+}
+
+void GameRenderWorldSubmitTerrainCell(uint32_t grid_x, uint32_t grid_z,
+                                      int32_t mesh, int mirror_pass) {
+    SubmitTerrainCell(grid_x, grid_z, mesh, mirror_pass, 0);
 }
 
 /* The original per-region masks change with camera position and retain the
@@ -674,9 +683,8 @@ void GameRenderWorldPublishTerrainGrid(void) {
             int allowed = (trace || mesh != 0x3FF) &&
                           NativeRegionAllowsCell(grid_x, grid_z);
             if (trace && allowed) cells[grid_z] |= UINT32_C(1) << grid_x;
-            if (mesh != 0x3FF && allowed) {
-                GameRenderWorldSubmitTerrainCell(grid_x, grid_z, mesh, 0);
-            }
+            if (mesh != 0x3FF)
+                SubmitTerrainCell(grid_x, grid_z, mesh, 0, !allowed);
         }
     }
     if (trace && memcmp(cells, previousCells, sizeof(cells))) {
@@ -703,19 +711,21 @@ void GameRenderWorldPublishCourseObjects(void) {
     for (i = 0; i < g_CourseObjectCount; i++) {
         const CourseObject *object = &g_CourseObjects[i];
         if (object->modelId < 0) continue;
-        if (!NativeRegionAllowsCell(object->x / 2048, object->z / 2048))
-            continue;
+        int allowed = NativeRegionAllowsCell(
+            object->x / 2048, object->z / 2048);
         /* This is intentionally not gated by the 32x32 classic scan list:
          * it exists for the classic OT/GTE emitter.  The native path
          * keeps semantic scene data complete and applies normal frustum/depth
          * visibility when it builds GPU draws. */
-        GameRenderWorldSubmitCourseObject((uint32_t)i, object->modelId,
-            object->x, object->y, object->z, object->rotationY,
+        GameRenderWorldSubmitCourseTransform(
+            0x10000u + (uint32_t)i, object->modelId,
+            object->x, object->y, object->z,
+            SceneRotationY(object->rotationY),
             g_IsEnvironmentMode4
                 ? (object->flags &
                    COURSE_OBJECT_ALTERNATE_ENVIRONMENT_4) != 0
                 : (object->flags & COURSE_OBJECT_ALTERNATE_NORMAL) != 0,
-            0);
+            0, 1, 0, 0.0f, 0, !allowed);
     }
 }
 

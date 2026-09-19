@@ -128,6 +128,13 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
     EXPECT_EQ(0, (int)(vertices[0].fog[3] * 100.0f));
     EXPECT_EQ(0, (int)(vertices[0].lighting * 100.0f));
 
+    storage[0].flags |= RAGE_RENDER_INSTANCE_RAY_ONLY;
+    EXPECT_EQ(0, RenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+                                        &mesh, vertices, 3, spans, 1,
+                                        &spanCount));
+    EXPECT_EQ(0, spanCount);
+    storage[0].flags &= ~RAGE_RENDER_INSTANCE_RAY_ONLY;
+
     /* Quaternion normalization must not overflow for a perfectly valid
      * orientation whose components happen to use a large common scale. */
     storage[0].transform.rotation.y = 0.0f;

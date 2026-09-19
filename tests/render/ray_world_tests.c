@@ -48,6 +48,7 @@ static void TestWorldConversion(void) {
         Instance(12, 99, 2.0f, RAGE_RENDER_PASS_MAIN),
         Instance(13, 3, 1.0f, RAGE_RENDER_PASS_MIRROR),
     };
+    renderInstances[0].flags = RAGE_RENDER_INSTANCE_RAY_ONLY;
     RenderWorld world = {0};
     RayScene scene = {0};
     Ray ray = {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, 0.01f, 20.0f};

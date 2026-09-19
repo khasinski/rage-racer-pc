@@ -597,6 +597,7 @@ static uint32_t RenderBuildNativeDrawsFiltered(
         terrainQuad.indicesValid = terrainQuad.positionsValid = 0;
         if (passFilter >= 0 && instance->pass != (RenderPass)passFilter)
             continue;
+        if (instance->flags & RAGE_RENDER_INSTANCE_RAY_ONLY) continue;
         /* Excluded passes must not consult (or trigger work in) the asset
          * provider. Both cameras may consume only the main semantic scene. */
         mesh = lookup(context, instance);

@@ -61,7 +61,7 @@ void main() {
             vec3 rayDirection = normalize(sceneLight.direction.xyz);
             float epsilon = max(0.02, length(worldPositionIn) * 0.000001);
             visibility = tracedVisibility(
-                worldPositionIn + n * epsilon, rayDirection,
+                worldPositionIn + rayDirection * epsilon, rayDirection,
                 uint(sceneLight.ray.y + 0.5), uint(sceneLight.ray.w + 0.5));
         } else {
             visibility = shadowVisibility(n);

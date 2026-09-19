@@ -13,5 +13,5 @@ void ModernMaterialUniformBuild(const RageRenderMaterial *material,
     out->surface[0] = material->roughness;
     out->surface[1] = material->metallic;
     out->surface[2] = (float)material->alphaMode;
-    out->surface[3] = allowClearcoat ? 1.0f : 0.0f;
+    out->surface[3] = (float)allowClearcoat;
 }

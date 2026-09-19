@@ -265,6 +265,9 @@ Stage 2 experiment:
 - `modern.ray_tracing = off|shadows|reflections|full`, defaulting to `off`.
 - `reflections` traces closest-hit geometry rays for glossy materials;
   `full` enables these together with the directional-light visibility rays.
+- Static terrain and course objects remain in the ray scene even when the
+  retail region mask excludes them from raster visibility, so bridges and
+  tunnel shells can occlude rays without reappearing as distant geometry.
 
 The first implementation flattened visible raster draws and rebuilt their BVH
 each frame, costing roughly 4–7 ms on the tested Mac. The instanced path traces

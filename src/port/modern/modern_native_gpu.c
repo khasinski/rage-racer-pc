@@ -1829,9 +1829,11 @@ static ModernNativeDrawMaterial ModernNativeResolveDrawMaterial(
     if (!span->vertexCount || (span->material != UINT32_MAX && !texture)) return result;
     int vehicle = span->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
                   span->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
-    result.allowClearcoat = !vehicle || span->component == 0 ||
-        (span->material != UINT32_MAX &&
-         span->material / RAGE_CAR_SURFACE_RUNTIME_STRIDE == RAGE_CAR_SURFACE_METAL);
+    result.allowClearcoat = !vehicle ? 1 :
+        (span->component == 0 ||
+         (span->material != UINT32_MAX &&
+          span->material / RAGE_CAR_SURFACE_RUNTIME_STRIDE ==
+              RAGE_CAR_SURFACE_METAL)) ? 2 : 0;
     result.texture = texture;
     result.phase = texture && texture->transparent ? 3 : span->depthDecal ? 1 : vehicle ? 2 : 0;
     if (!texture)

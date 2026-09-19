@@ -76,12 +76,12 @@ void main() {
             (sceneLight.ambient.rgb + sceneLight.diffuse.rgb * diffuse),
         materialLighting);
     float visibility = 1.0;
-    if (materialLighting > 0.001 && shadowReception > 0.5) {
+    if (shadowReception > 0.5) {
         if (sceneLight.ray.x > 0.5) {
             vec3 rayDirection = normalize(sceneLight.direction.xyz);
             float epsilon = max(0.02, length(worldPositionIn) * 0.000001);
             visibility = tracedVisibility(
-                worldPositionIn + n * epsilon, rayDirection,
+                worldPositionIn + rayDirection * epsilon, rayDirection,
                 uint(sceneLight.ray.y + 0.5), uint(sceneLight.ray.w + 0.5));
         } else {
             visibility = shadowVisibility(n);
@@ -95,7 +95,10 @@ void main() {
     float roughness = clamp(material.surface.x, 0.0, 1.0);
     float metallic = clamp(material.surface.y, 0.0, 1.0);
     float gloss = 1.0 - roughness;
-    float coat = smoothstep(0.18, 0.55, gloss) * material.surface.w;
+    float coat = smoothstep(0.18, 0.55, gloss) *
+        min(material.surface.w, 1.0);
+    if (sceneLight.ray.z > 0.5 && material.surface.w > 1.5)
+        coat = max(coat, 0.35);
     vec3 lightDirection = normalize(sceneLight.direction.xyz);
     vec3 halfDirection = normalize(lightDirection + view);
     float ndl = max(dot(n, lightDirection), 0.0);
@@ -119,15 +122,20 @@ void main() {
     float rim = pow(1.0 - ndv, 5.0);
     float zoneReflection = smoothstep(0.30, 0.85,
         min(environmentLight.r, min(environmentLight.g, environmentLight.b)));
+    if (sceneLight.ray.z > 0.5 && material.surface.w > 1.5)
+        zoneReflection = max(zoneReflection, 0.35);
     float reflectionStrength = coat * zoneReflection * mix(0.10, 0.55, rim) *
         mix(0.85, 1.15, metallic);
+    if (sceneLight.ray.z > 0.5 && material.surface.w > 1.5)
+        reflectionStrength = max(reflectionStrength,
+            coat * mix(0.18, 0.60, rim) * mix(0.85, 1.15, metallic));
     vec3 reflectionDirection = reflect(-view, n);
     vec3 reflected = reflectedSky(reflectionDirection);
     if (sceneLight.ray.z > 0.5 && coat > 0.001) {
         float hitDistance;
         vec3 hitNormal;
         float epsilon = max(0.02, length(worldPositionIn) * 0.000001);
-        if (tracedClosest(worldPositionIn + n * epsilon,
+        if (tracedClosest(worldPositionIn + reflectionDirection * epsilon,
                           reflectionDirection,
                           uint(sceneLight.ray.y + 0.5),
                           uint(sceneLight.ray.w + 0.5),

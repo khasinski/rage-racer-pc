@@ -16,6 +16,8 @@ int main(void) {
     assert(uniform.emissiveAndShading[3] == 1.0f && uniform.surface[0] == 0.4f);
     assert(uniform.surface[1] == 0.8f && uniform.surface[2] == RAGE_RENDER_MATERIAL_ALPHA_BLEND);
     assert(uniform.surface[3] == 1.0f);
+    ModernMaterialUniformBuild(&material, 2, &uniform);
+    assert(uniform.surface[3] == 2.0f);
     material.shading = RAGE_RENDER_MATERIAL_SHADING_UNLIT;
     ModernMaterialUniformBuild(&material, 0, &uniform);
     assert(uniform.emissiveAndShading[3] == 0.0f && uniform.surface[3] == 0.0f);

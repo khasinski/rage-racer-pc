@@ -162,6 +162,10 @@ enum {
      * This is ordinary material geometry semantics, not a source-format
      * workaround: importers for richer formats can keep authored normals. */
     RAGE_RENDER_INSTANCE_FLAT_SHADED = 1u << 6,
+    /* Occluder needed by ray queries but deliberately absent from raster
+     * visibility. This keeps the ray scene complete without reviving distant
+     * course geometry in the color pass. */
+    RAGE_RENDER_INSTANCE_RAY_ONLY = 1u << 7,
 };
 
 typedef struct RenderWorld {
