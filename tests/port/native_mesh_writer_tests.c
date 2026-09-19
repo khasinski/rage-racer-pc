@@ -107,7 +107,7 @@ int main(void) {
               vertex.normal[1] == (mode ? -20 : 1) && vertex.normal[2] == (mode ? 30 : 0));
         CHECK(vertex.color[0] == 17 && vertex.color[1] == 34 && vertex.color[2] == 51 && vertex.color[3] == 255);
         CHECK(vertex.uv[0] == (mode ? 127.5f / 256 : 0) && vertex.uv[1] == (mode ? 255.5f / 256 : 0));
-        const uint32_t expectedMaterial[] = {UINT32_MAX, UINT32_C(0x80000000), UINT32_C(0x70FC0000)};
+        const uint32_t expectedMaterial[] = {UINT32_MAX, UINT32_C(0x80000000), UINT32_C(0x74FC0000)};
         CHECK(vertex.material == expectedMaterial[mode]);
         const uint32_t expectedIndices[] = {0, 2, 1, 1, 2, 3};
         for (unsigned i = 0; i < 6; ++i) {

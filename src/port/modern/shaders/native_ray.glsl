@@ -175,6 +175,7 @@ float tracedVisibility(vec3 origin, vec3 direction, uint nodeCount,
                 uint instanceIndex = rayIndices[offset];
                 if (instanceIndex >= instanceCount) return 1.0;
                 RayInstance instance = rayInstances[instanceIndex];
+                if ((instance.meshAndFlags.z & 2u) != 0u) continue;
                 vec4 point = vec4(origin, 1.0);
                 vec4 vector = vec4(direction, 0.0);
                 vec3 localOrigin = vec3(dot(instance.worldToLocal0, point),

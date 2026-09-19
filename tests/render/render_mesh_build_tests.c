@@ -727,7 +727,8 @@ static void test_native_draw_builder_preserves_dynamic_terrain_material_flags(vo
                   RAGE_RUNTIME_MATERIAL_METADATA |
                   (0xFCu << RAGE_RUNTIME_MATERIAL_DEPTH_BIAS_SHIFT) |
                   RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY |
-                  RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT | 4u);
+                  RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT |
+                  RAGE_RUNTIME_MATERIAL_FOGGED | 4u);
         write_u32(bytes + 152 + i * 4, i);
     }
     EXPECT_EQ(1, RuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
@@ -739,14 +740,16 @@ static void test_native_draw_builder_preserves_dynamic_terrain_material_flags(vo
         storage[0].transform.scale.z = 1.0f;
     world.instanceCount = 1;
 
-    EXPECT_EQ(3, RenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
-                                             &mesh, vertices, 3, spans, 1,
-                                             &spanCount));
+    EXPECT_EQ(3, RenderBuildNativeGpuPassDraws(
+        &world, RAGE_RENDER_PASS_MAIN, 1.0f, test_mesh_lookup,
+        &mesh, vertices, 3, spans, 1, &spanCount));
     EXPECT_EQ(1, spanCount);
     EXPECT_EQ(4, spans[0].material);
     EXPECT_EQ(RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY |
-                  RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT,
+                  RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT |
+                  RAGE_RUNTIME_MATERIAL_FOGGED,
               spans[0].materialFlags);
+    EXPECT_EQ(1, (int)vertices[0].fog[3]);
     EXPECT_EQ(0, spans[0].depthDecal);
     EXPECT_EQ(-4, (int)vertices[0].depthBias);
     /* Both texture banks must retain their identity across lighting changes.
@@ -766,6 +769,17 @@ static void test_native_draw_builder_preserves_dynamic_terrain_material_flags(vo
                       spans[0].materialVariant);
             EXPECT_EQ(4, spans[0].material);
         }
+    }
+    for (i = 0; i < 3; ++i)
+        write_u32(bytes + 32 + i * 40 + 36,
+                  RAGE_RUNTIME_MATERIAL_METADATA |
+                  RAGE_RUNTIME_MATERIAL_FOGGED_NORMAL_ENV | 4u);
+    for (unsigned environment4 = 0; environment4 < 2; ++environment4) {
+        storage[0].materialVariant = (uint8_t)environment4;
+        EXPECT_EQ(3, RenderBuildNativeGpuPassDraws(
+            &world, RAGE_RENDER_PASS_MAIN, 1.0f, test_mesh_lookup,
+            &mesh, vertices, 3, spans, 1, &spanCount));
+        EXPECT_EQ(environment4 ? 0 : 1, (int)vertices[0].fog[3]);
     }
 }
 

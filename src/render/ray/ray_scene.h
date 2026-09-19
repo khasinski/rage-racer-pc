@@ -25,6 +25,7 @@ typedef struct RayScene {
 
 enum {
     RAY_INSTANCE_CULL_BACKFACES = 1u << 0,
+    RAY_INSTANCE_NO_SHADOW = 1u << 1,
 };
 
 /* Prepare one immutable mesh instance. Singular and non-finite transforms are

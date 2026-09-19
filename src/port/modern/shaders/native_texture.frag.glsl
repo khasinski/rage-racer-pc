@@ -71,10 +71,6 @@ void main() {
     float materialLighting = lighting;
     if (material.emissiveAndShading.w >= 0.0)
         materialLighting = material.emissiveAndShading.w;
-    vec3 light = mix(vec3(1.0),
-        environmentLight *
-            (sceneLight.ambient.rgb + sceneLight.diffuse.rgb * diffuse),
-        materialLighting);
     float visibility = 1.0;
     if (shadowReception > 0.5) {
         if (sceneLight.ray.x > 0.5) {
@@ -88,7 +84,10 @@ void main() {
         }
     }
     float shadow = mix(0.62, 1.0, visibility);
-    light *= mix(shadow, 1.0, fog.a);
+    vec3 light = mix(vec3(1.0),
+        environmentLight * (sceneLight.ambient.rgb +
+            sceneLight.diffuse.rgb * diffuse * shadow),
+        materialLighting);
     vec3 foggedColor = mix(color.rgb, fog.rgb, fog.a);
     vec3 modulation = min(foggedColor * 2.0, vec3(1.0));
     vec3 base = texel.rgb * modulation * light * material.baseColor.rgb;
@@ -97,8 +96,6 @@ void main() {
     float gloss = 1.0 - roughness;
     float coat = smoothstep(0.18, 0.55, gloss) *
         min(material.surface.w, 1.0);
-    if (sceneLight.ray.z > 0.5 && material.surface.w > 1.5)
-        coat = max(coat, 0.35);
     vec3 lightDirection = normalize(sceneLight.direction.xyz);
     vec3 halfDirection = normalize(lightDirection + view);
     float ndl = max(dot(n, lightDirection), 0.0);
@@ -122,13 +119,8 @@ void main() {
     float rim = pow(1.0 - ndv, 5.0);
     float zoneReflection = smoothstep(0.30, 0.85,
         min(environmentLight.r, min(environmentLight.g, environmentLight.b)));
-    if (sceneLight.ray.z > 0.5 && material.surface.w > 1.5)
-        zoneReflection = max(zoneReflection, 0.35);
-    float reflectionStrength = coat * zoneReflection * mix(0.10, 0.55, rim) *
+    float reflectionStrength = coat * zoneReflection * mix(0.03, 0.18, rim) *
         mix(0.85, 1.15, metallic);
-    if (sceneLight.ray.z > 0.5 && material.surface.w > 1.5)
-        reflectionStrength = max(reflectionStrength,
-            coat * mix(0.18, 0.60, rim) * mix(0.85, 1.15, metallic));
     vec3 reflectionDirection = reflect(-view, n);
     vec3 reflected = reflectedSky(reflectionDirection);
     if (sceneLight.ray.z > 0.5 && coat > 0.001) {
@@ -148,10 +140,9 @@ void main() {
     }
     float reflectedLuminance = dot(reflected, vec3(0.2126, 0.7152, 0.0722));
     reflected = mix(vec3(reflectedLuminance), reflected, 0.65);
-    vec3 environmentSpecular = reflected * reflectionStrength;
+    base = mix(base, reflected, clamp(reflectionStrength, 0.0, 0.85));
     directSpecular *= coat * zoneReflection;
-    vec3 specular = (environmentSpecular + directSpecular) *
-        step(0.001, materialLighting);
+    vec3 specular = directSpecular * step(0.001, materialLighting);
     vec3 emissive = texel.rgb * material.emissiveAndShading.rgb;
     outColor = vec4(base + specular + emissive,
                     texel.a * color.a * material.baseColor.a);

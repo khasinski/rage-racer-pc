@@ -25,7 +25,11 @@ static inline int RenderNativeLocalStateEqual(const RageNativeDrawSpan *left,
     int b = right && right->localGeometry;
     if (!a || !b) return a == b;
     return !memcmp(&left->localTransform, &right->localTransform, sizeof(left->localTransform)) &&
-        !((left->instanceFlags ^ right->instanceFlags) & RAGE_RENDER_INSTANCE_ENABLE_FOG) &&
+        !(((left->instanceFlags ^ right->instanceFlags) & RAGE_RENDER_INSTANCE_ENABLE_FOG) ||
+          ((left->materialFlags ^ right->materialFlags) &
+           (RAGE_RUNTIME_MATERIAL_FOGGED |
+            RAGE_RUNTIME_MATERIAL_FOGGED_NORMAL_ENV)) ||
+          ((left->materialVariant ^ right->materialVariant) & 1u)) &&
         !!left->depthDecal == !!right->depthDecal;
 }
 
@@ -37,7 +41,10 @@ static inline RageNativeLocalUniform RenderNativeLocalUniform(
     out.positionMode[0] = b.position.x; out.positionMode[1] = b.position.y;
     out.positionMode[2] = b.position.z; out.positionMode[3] = b.useMatrix ? 2 : 1;
     out.scaleFog[0] = b.scale.x; out.scaleFog[1] = b.scale.y; out.scaleFog[2] = b.scale.z;
-    out.scaleFog[3] = !!(span->instanceFlags & RAGE_RENDER_INSTANCE_ENABLE_FOG);
+    out.scaleFog[3] = !!((span->instanceFlags & RAGE_RENDER_INSTANCE_ENABLE_FOG) ||
+        (span->materialFlags & RAGE_RUNTIME_MATERIAL_FOGGED) ||
+        ((span->materialFlags & RAGE_RUNTIME_MATERIAL_FOGGED_NORMAL_ENV) &&
+         !(span->materialVariant & 1u)));
     if (b.useMatrix) {
         for (unsigned row = 0; row < 3; ++row)
             for (unsigned col = 0; col < 3; ++col) out.rotation[row][col] = b.matrix[row][col];

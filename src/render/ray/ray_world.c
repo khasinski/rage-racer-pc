@@ -26,6 +26,8 @@ int RaySceneBuildWorld(RayScene *scene, const RenderWorld *world,
         if (mesh == NULL) continue;
         if (source->flags & RAGE_RENDER_INSTANCE_CULL_BACKFACES)
             flags |= RAY_INSTANCE_CULL_BACKFACES;
+        if (source->flags & RAGE_RENDER_INSTANCE_RAY_NO_SHADOW)
+            flags |= RAY_INSTANCE_NO_SHADOW;
         if (!RayInstancePrepare(&instances[count], mesh, &source->transform,
                                 source->entity, flags)) {
             free(instances);

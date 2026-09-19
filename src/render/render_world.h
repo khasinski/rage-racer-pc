@@ -166,6 +166,9 @@ enum {
      * visibility. This keeps the ray scene complete without reviving distant
      * course geometry in the color pass. */
     RAGE_RENDER_INSTANCE_RAY_ONLY = 1u << 7,
+    /* Keep rapidly rotating detail geometry in reflection queries while the
+     * stable body silhouette casts the vehicle's direct-light shadow. */
+    RAGE_RENDER_INSTANCE_RAY_NO_SHADOW = 1u << 8,
 };
 
 typedef struct RenderWorld {

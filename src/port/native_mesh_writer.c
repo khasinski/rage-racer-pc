@@ -63,7 +63,8 @@ int ImportWriteFace(uint32_t mesh, const RageImportedFace *face,
     }
     if (face->depthBias != 0 ||
         (write->entry->cached.assetSet == RAGE_RENDER_ASSET_TERRAIN &&
-         ((face->flags & 2) != 0 || face->prim < 2))) {
+         ((face->flags & 2) != 0 || face->prim < 2 ||
+          (face->prim >= 2 && (face->prim & 1) == 0)))) {
         uint32_t materialIndex =
             material == UINT32_MAX ? 0xFFFFu : material;
         encodedMaterial = materialIndex | RAGE_RUNTIME_MATERIAL_METADATA |
@@ -75,6 +76,12 @@ int ImportWriteFace(uint32_t mesh, const RageImportedFace *face,
         if (write->entry->cached.assetSet == RAGE_RENDER_ASSET_TERRAIN &&
             face->prim < 2)
             encodedMaterial |= RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT;
+        if (write->entry->cached.assetSet == RAGE_RENDER_ASSET_TERRAIN &&
+            face->prim < 2)
+            encodedMaterial |= RAGE_RUNTIME_MATERIAL_FOGGED_NORMAL_ENV;
+        else if (write->entry->cached.assetSet == RAGE_RENDER_ASSET_TERRAIN &&
+                 (face->prim & 1) == 0)
+            encodedMaterial |= RAGE_RUNTIME_MATERIAL_FOGGED;
     }
     if (write->entry->cached.assetSet == RAGE_RENDER_ASSET_COURSE &&
         face->prim == 3 && material != UINT32_MAX)

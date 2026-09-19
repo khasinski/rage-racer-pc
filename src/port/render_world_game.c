@@ -278,6 +278,8 @@ static void GameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
         instance.materialVariant = (uint8_t)(g_TrackTexturePageWanted != 0);
     instance.pass = mirror_pass ? RAGE_RENDER_PASS_MIRROR : RAGE_RENDER_PASS_MAIN;
     instance.flags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING;
+    if (part != 0)
+        instance.flags |= RAGE_RENDER_INSTANCE_RAY_NO_SHADOW;
     instance.environmentLight = environmentLight;
     instance.transform.position.x = psPosition.x;
     instance.transform.position.y = -psPosition.y;

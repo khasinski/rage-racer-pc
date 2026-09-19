@@ -374,9 +374,18 @@ static int BuildVertex(const RageTransformBasis *basis,
     Vec3 worldPosition;
     if (preparedSource) source = *preparedSource;
     else if (!RuntimeMeshVertex(mesh, index, &source)) return 0;
-    *materialFlags = source.material &
-        (RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY |
-         RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT);
+    *materialFlags = source.material != UINT32_MAX &&
+        (source.material & RAGE_RUNTIME_MATERIAL_METADATA) != 0
+        ? source.material &
+            (RAGE_RUNTIME_MATERIAL_TERRAIN_NEAR_ONLY |
+             RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT |
+             RAGE_RUNTIME_MATERIAL_FOGGED |
+             RAGE_RUNTIME_MATERIAL_FOGGED_NORMAL_ENV)
+        : 0;
+    const int materialFogged =
+        (*materialFlags & RAGE_RUNTIME_MATERIAL_FOGGED) != 0 ||
+        ((*materialFlags & RAGE_RUNTIME_MATERIAL_FOGGED_NORMAL_ENV) != 0 &&
+         (instance->materialVariant & 1u) == 0);
     worldPosition = localSource ? (Vec3){source.position[0], source.position[1], source.position[2]} :
         preparedPosition != NULL ? *preparedPosition
                                              : TransformPosition(basis, &source);
@@ -404,12 +413,12 @@ static int BuildVertex(const RageTransformBasis *basis,
         out->fog[0] = worldPosition.x;
         out->fog[1] = worldPosition.y;
         out->fog[2] = worldPosition.z;
-        out->fog[3] = fogged ? 1.0f : 0.0f;
+        out->fog[3] = (fogged || materialFogged) ? 1.0f : 0.0f;
     } else {
         out->fog[0] = world->camera.fogColor.x;
         out->fog[1] = world->camera.fogColor.y;
         out->fog[2] = world->camera.fogColor.z;
-        out->fog[3] = fogged
+        out->fog[3] = (fogged || materialFogged)
             ? RenderFogFactorPrepared(viewTransform, &worldPosition) : 0.0f;
     }
     out->lighting = instanceState->lighting;

@@ -365,6 +365,8 @@ static int TraceScene(const RayScene *scene, const Ray *ray, RayHit *hit,
                 Ray limited = *ray;
                 limited.maxDistance = closest;
                 if (instanceIndex >= scene->instanceCount ||
+                    (any && (scene->instances[instanceIndex].flags &
+                             RAY_INSTANCE_NO_SHADOW)) ||
                     !RayInstanceTraceClosest(&scene->instances[instanceIndex],
                                              &limited, &candidate)) continue;
                 if (any) return 1;

@@ -51,10 +51,6 @@ void main() {
         ? normalize(normal) : vec3(0.0, 1.0, 0.0);
     float diffuse = max(dot(n, normalize(sceneLight.direction.xyz)), 0.0);
     vec3 foggedColor = mix(color.rgb, fog.rgb, fog.a);
-    vec3 light = mix(vec3(1.0),
-        environmentLight *
-            (sceneLight.ambient.rgb + sceneLight.diffuse.rgb * diffuse),
-        lighting);
     float visibility = 1.0;
     if (shadowReception > 0.5) {
         if (sceneLight.ray.x > 0.5) {
@@ -68,6 +64,9 @@ void main() {
         }
     }
     float shadow = mix(0.62, 1.0, visibility);
-    light *= mix(shadow, 1.0, fog.a);
+    vec3 light = mix(vec3(1.0),
+        environmentLight * (sceneLight.ambient.rgb +
+            sceneLight.diffuse.rgb * diffuse * shadow),
+        lighting);
     outColor = vec4(foggedColor * light, color.a);
 }

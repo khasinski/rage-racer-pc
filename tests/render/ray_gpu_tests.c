@@ -83,7 +83,8 @@ static void TestGpuScenePackingDeduplicatesMeshes(void) {
     second.position = (Vec3){8.0f, 0.0f, 0.0f};
     CHECK(RayMeshBuild(&mesh, &source, 1));
     CHECK(RayInstancePrepare(&sourceInstances[0], &mesh, &first, 1, 0));
-    CHECK(RayInstancePrepare(&sourceInstances[1], &mesh, &second, 2, 0));
+    CHECK(RayInstancePrepare(&sourceInstances[1], &mesh, &second, 2,
+                             RAY_INSTANCE_NO_SHADOW));
     CHECK(RaySceneBuild(&scene, sourceInstances, 2));
     CHECK(RayGpuLayoutForScene(&scene, &layout));
     CHECK(layout.nodeCount == scene.nodeCount + mesh.nodeCount);
@@ -104,6 +105,7 @@ static void TestGpuScenePackingDeduplicatesMeshes(void) {
                               instances, layout.instanceCount));
         CHECK(instances[0].meshAndFlags[0] == scene.nodeCount);
         CHECK(instances[1].meshAndFlags[0] == scene.nodeCount);
+        CHECK(instances[1].meshAndFlags[2] == RAY_INSTANCE_NO_SHADOW);
         CHECK(instances[0].worldToLocal[0][3] == -2.0f);
         CHECK(instances[0].worldToLocal[1][3] == -3.0f);
         CHECK(instances[0].worldToLocal[2][3] == -4.0f);

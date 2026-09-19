@@ -49,6 +49,7 @@ static void TestWorldConversion(void) {
         Instance(13, 3, 1.0f, RAGE_RENDER_PASS_MIRROR),
     };
     renderInstances[0].flags = RAGE_RENDER_INSTANCE_RAY_ONLY;
+    renderInstances[1].flags = RAGE_RENDER_INSTANCE_RAY_NO_SHADOW;
     RenderWorld world = {0};
     RayScene scene = {0};
     Ray ray = {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, 0.01f, 20.0f};
@@ -61,8 +62,12 @@ static void TestWorldConversion(void) {
     CHECK(RaySceneBuildWorld(&scene, &world, RAGE_RENDER_PASS_MAIN,
                              Lookup, &lookup));
     CHECK(scene.instanceCount == 2);
+    CHECK((scene.instances[1].flags & RAY_INSTANCE_NO_SHADOW) != 0);
     CHECK(RaySceneTraceClosest(&scene, &ray, &hit));
     CHECK(hit.entity == 11 && hit.distance == 4.0f);
+    ray.maxDistance = 6.0f;
+    CHECK(!RaySceneTraceAny(&scene, &ray));
+    ray.maxDistance = 20.0f;
     CHECK(RaySceneBuildWorld(&scene, &world, RAGE_RENDER_PASS_MIRROR,
                              Lookup, &lookup));
     CHECK(scene.instanceCount == 1);
