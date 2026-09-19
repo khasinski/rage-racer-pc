@@ -19,8 +19,18 @@ enum {
     DEFAULT_DRAG_SCALE = 1000,
 };
 
+/* The CUSTOMIZE screen stores the AT/MT choice in the car table; the race car
+ * is a separate object from the showroom preview, so read it from there
+ * rather than trusting whatever the runtime last held. */
+static s16 PlayerTransmission(const PlayerCarRuntime *car) {
+    if (g_CarTable != NULL && (u32)g_PlayerCarIndex < GAME_CAR_COUNT) {
+        return g_CarTable[g_PlayerCarIndex].transmission != 0;
+    }
+    return car->drive.manual;
+}
+
 static void ResetPlayerCarRuntime(PlayerCarRuntime *car) {
-    s16 manual = car->drive.manual;
+    s16 manual = PlayerTransmission(car);
     s32 launchThresholdIndex = car->drive.launchThresholdIndex;
 
     memset(car, 0, sizeof(*car));

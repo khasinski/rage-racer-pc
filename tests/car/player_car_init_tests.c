@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <string.h>
 
+CarEntry *g_CarTable;
+s32 g_PlayerCarIndex;
 s16 g_GrandPrixSeries;
 s32 g_RaceSeries;
 s16 g_RacePhase;
@@ -212,6 +214,39 @@ int main(void) {
     InitPlayerCar(&car);
     CHECK(car.x == INT_MIN + 4);
     CHECK(car.z == INT_MAX - 6);
+
+    /* The race car takes its gearbox from the car table entry the player
+     * chose, not from whatever the runtime held before the race. */
+    {
+        static CarEntry cars[GAME_CAR_COUNT];
+
+        ResetFixtures();
+        memset(cars, 0, sizeof(cars));
+        g_CarTable = cars;
+        g_PlayerCarIndex = 2;
+        cars[2].transmission = 1;
+        memset(&car, 0, sizeof(car));
+        InitPlayerCar(&car);
+        CHECK(car.drive.manual == 1);
+        CHECK(g_HudGlyphClut == 0x7800);
+
+        ResetFixtures();
+        cars[2].transmission = 0;
+        memset(&car, 0, sizeof(car));
+        car.drive.manual = 1;
+        InitPlayerCar(&car);
+        CHECK(car.drive.manual == 0);
+        CHECK(g_HudGlyphClut == 0x78CF);
+
+        ResetFixtures();
+        g_PlayerCarIndex = GAME_CAR_COUNT;
+        memset(&car, 0, sizeof(car));
+        car.drive.manual = 1;
+        InitPlayerCar(&car);
+        CHECK(car.drive.manual == 1);
+        g_CarTable = NULL;
+        g_PlayerCarIndex = 0;
+    }
 
     if (s_failures != 0) {
         printf("%d player initialization checks failed\n", s_failures);
