@@ -3,6 +3,7 @@
 #define RAY_NODE_BINDING 1
 #define RAY_TRIANGLE_BINDING 2
 #define RAY_INDEX_BINDING 3
+#define RAY_INSTANCE_BINDING 4
 #include "native_ray.glsl"
 
 layout(location = 0) in vec2 uv;
@@ -61,7 +62,7 @@ void main() {
             float epsilon = max(0.02, length(worldPositionIn) * 0.000001);
             visibility = tracedVisibility(
                 worldPositionIn + n * epsilon, rayDirection,
-                uint(sceneLight.ray.y + 0.5));
+                uint(sceneLight.ray.y + 0.5), uint(sceneLight.ray.w + 0.5));
         } else {
             visibility = shadowVisibility(n);
         }

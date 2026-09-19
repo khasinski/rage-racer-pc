@@ -3,21 +3,19 @@
 
 #include <SDL3/SDL.h>
 
-#include "render/render_native_vertex.h"
-#include "render/ray/ray_draws.h"
+#include "render/render_mesh_build.h"
 
 int ModernRayGpuInit(SDL_GPUDevice *device);
 void ModernRayGpuShutdown(void);
 void ModernRayGpuSubmitted(void);
 int ModernRayGpuPrepare(SDL_GPUCommandBuffer *command,
-                        const RageNativeGpuVertex *vertices,
-                        uint32_t vertexCount,
-                        const RageNativeDrawSpan *spans,
-                        uint32_t spanCount, RayDrawInclude include,
-                        void *context);
+                        const RenderWorld *world,
+                        RageRenderMeshLookup lookup, void *context,
+                        uint64_t assetGeneration);
 void ModernRayGpuBind(SDL_GPURenderPass *pass);
 uint32_t ModernRayGpuNodeCount(void);
 uint32_t ModernRayGpuTriangleCount(void);
+uint32_t ModernRayGpuInstanceCount(void);
 uint64_t ModernRayGpuBuildNanoseconds(void);
 
 #endif

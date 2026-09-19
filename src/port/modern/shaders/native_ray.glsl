@@ -10,10 +10,18 @@ struct RayTriangle {
     vec4 vertex2;
 };
 
+struct RayInstance {
+    vec4 worldToLocal0;
+    vec4 worldToLocal1;
+    vec4 worldToLocal2;
+    uvec4 meshAndFlags;
+};
+
 #ifndef RAY_NODE_BINDING
 #define RAY_NODE_BINDING 2
 #define RAY_TRIANGLE_BINDING 3
 #define RAY_INDEX_BINDING 4
+#define RAY_INSTANCE_BINDING 5
 #endif
 
 layout(set = 2, binding = RAY_NODE_BINDING, std430) readonly buffer RayNodes {
@@ -24,6 +32,9 @@ layout(set = 2, binding = RAY_TRIANGLE_BINDING, std430) readonly buffer RayTrian
 };
 layout(set = 2, binding = RAY_INDEX_BINDING, std430) readonly buffer RayIndices {
     uint rayIndices[];
+};
+layout(set = 2, binding = RAY_INSTANCE_BINDING, std430) readonly buffer RayInstances {
+    RayInstance rayInstances[];
 };
 
 bool rayBoundsHit(vec3 origin, vec3 direction, RayNode node, float maximum) {
@@ -67,7 +78,34 @@ bool rayTriangleHit(vec3 origin, vec3 direction, RayTriangle triangle,
     return distance >= 0.02 && distance <= maximum;
 }
 
-float tracedVisibility(vec3 origin, vec3 direction, uint nodeCount) {
+bool rayMeshHit(vec3 origin, vec3 direction, uint root, uint nodeCount) {
+    uint stack[64];
+    uint stackCount = 1;
+    stack[0] = root;
+    while (stackCount != 0) {
+        uint nodeIndex = stack[--stackCount];
+        if (nodeIndex >= nodeCount) return false;
+        RayNode node = rayNodes[nodeIndex];
+        if (!rayBoundsHit(origin, direction, node, 100000.0)) continue;
+        if (node.childAndRange.w != 0) {
+            uint end = node.childAndRange.z + node.childAndRange.w;
+            for (uint offset = node.childAndRange.z; offset < end; ++offset) {
+                uint triangleIndex = rayIndices[offset];
+                if (rayTriangleHit(origin, direction,
+                                   rayTriangles[triangleIndex], 100000.0))
+                    return true;
+            }
+        } else {
+            if (stackCount + 2 > 64) return false;
+            stack[stackCount++] = node.childAndRange.y;
+            stack[stackCount++] = node.childAndRange.x;
+        }
+    }
+    return false;
+}
+
+float tracedVisibility(vec3 origin, vec3 direction, uint nodeCount,
+                       uint instanceCount) {
     uint stack[64];
     uint stackCount = 1;
     stack[0] = 0;
@@ -79,10 +117,19 @@ float tracedVisibility(vec3 origin, vec3 direction, uint nodeCount) {
         if (node.childAndRange.w != 0) {
             uint end = node.childAndRange.z + node.childAndRange.w;
             for (uint offset = node.childAndRange.z; offset < end; ++offset) {
-                uint triangleIndex = rayIndices[offset];
-                if (rayTriangleHit(origin, direction,
-                                   rayTriangles[triangleIndex], 100000.0))
-                    return 0.0;
+                uint instanceIndex = rayIndices[offset];
+                if (instanceIndex >= instanceCount) return 1.0;
+                RayInstance instance = rayInstances[instanceIndex];
+                vec4 point = vec4(origin, 1.0);
+                vec4 vector = vec4(direction, 0.0);
+                vec3 localOrigin = vec3(dot(instance.worldToLocal0, point),
+                                        dot(instance.worldToLocal1, point),
+                                        dot(instance.worldToLocal2, point));
+                vec3 localDirection = vec3(dot(instance.worldToLocal0, vector),
+                                           dot(instance.worldToLocal1, vector),
+                                           dot(instance.worldToLocal2, vector));
+                if (rayMeshHit(localOrigin, localDirection,
+                               instance.meshAndFlags.x, nodeCount)) return 0.0;
             }
         } else {
             if (stackCount + 2 > 64) return 1.0;

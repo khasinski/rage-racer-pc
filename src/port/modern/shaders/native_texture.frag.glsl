@@ -22,7 +22,7 @@ layout(set = 3, binding = 0, std140) uniform NativeSceneLight {
     vec4 skyTop;
     vec4 skyHorizon;
     vec4 skyBottom;
-    vec4 ray; // enabled, node count, reserved, reserved
+    vec4 ray; // enabled, total node count, TLAS node count, instance count
 } sceneLight;
 layout(set = 3, binding = 1, std140) uniform NativeMaterial {
     vec4 baseColor;
@@ -82,7 +82,7 @@ void main() {
             float epsilon = max(0.02, length(worldPositionIn) * 0.000001);
             visibility = tracedVisibility(
                 worldPositionIn + n * epsilon, rayDirection,
-                uint(sceneLight.ray.y + 0.5));
+                uint(sceneLight.ray.y + 0.5), uint(sceneLight.ray.w + 0.5));
         } else {
             visibility = shadowVisibility(n);
         }

@@ -545,6 +545,7 @@ static void ModernNativeBuildLight(const RenderDirectionalLight *light,
     out->skyBottom[2] = camera->skyBottomColor.z;
     out->ray[0] = s_rayEnabled && ModernRayGpuNodeCount() != 0 ? 1.0f : 0.0f;
     out->ray[1] = (float)ModernRayGpuNodeCount();
+    out->ray[3] = (float)ModernRayGpuInstanceCount();
 }
 
 
@@ -616,11 +617,11 @@ int ModernNativeGpuInit(SDL_GPUDevice *device, int linearTextureFilter) {
     textureFragment = ModernNativeCreateShader(
         native_texture_frag_spv, native_texture_frag_spv_len,
         native_texture_frag_msl, native_texture_frag_msl_len, "fs_native",
-        SDL_GPU_SHADERSTAGE_FRAGMENT, 2, 3, 2);
+        SDL_GPU_SHADERSTAGE_FRAGMENT, 2, 4, 2);
     colorFragment = ModernNativeCreateShader(
         native_color_frag_spv, native_color_frag_spv_len,
         native_color_frag_msl, native_color_frag_msl_len, "fs_native_color",
-        SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 3, 1);
+        SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 4, 1);
     if (vertex != NULL && textureFragment != NULL) {
         s_texturedOpaque = ModernNativeCreatePipeline(
             vertex, textureFragment, 0);
@@ -2004,17 +2005,6 @@ static void ModernNativeGpuDrawSet(
 }
 
 
-static int ModernNativeRayCaster(void *context,
-                                 const RageNativeDrawSpan *span) {
-    ModernNativeTexture *texture;
-    (void)context;
-    if (span->material == UINT32_MAX) return 1;
-    texture = ModernNativeFindTexture(span);
-    if (texture == NULL || texture->transparent) return 0;
-    return texture->definition.alphaMode != RAGE_RENDER_MATERIAL_ALPHA_MASK &&
-           texture->definition.alphaMode != RAGE_RENDER_MATERIAL_ALPHA_BLEND;
-}
-
 void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,
                          SDL_GPUTexture *colorTarget,
                          SDL_GPUTexture *depthTarget,
@@ -2023,23 +2013,12 @@ void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,
     if (ModernNativeGpuHasDraws()) {
         if (!ModernNativeUploadVertices(command)) return;
         if (s_rayEnabled) {
-            int expanded = 1;
-            for (uint32_t span = 0; span < s_spanCount; ++span) {
-                const RageNativeDrawSpan *draw = &s_spans[span];
-                if (draw->localGeometry != NULL &&
-                    !RenderExpandNativeLocalDraw(
-                        draw, s_vertices + draw->firstVertex,
-                        draw->vertexCount)) {
-                    expanded = 0;
-                    break;
-                }
-            }
             for (uint32_t span = 0; span < s_spanCount; ++span)
                 (void)ModernNativeLoadTexture(command, &s_spans[span]);
-            if (!expanded ||
-                !ModernRayGpuPrepare(command, s_vertices, s_vertexCount,
-                                     s_spans, s_spanCount,
-                                     ModernNativeRayCaster, NULL)) {
+            if (!ModernRayGpuPrepare(command, s_world,
+                                     ModernNativePreparedMeshLookup,
+                                     &s_preparedMeshes,
+                                     ModernAssetsGeneration())) {
                 fprintf(stderr, "rage-port: ray scene upload failed: %s\n",
                         SDL_GetError());
             } else if (RuntimeConfigEnabled("diagnostics.performance_trace")) {
