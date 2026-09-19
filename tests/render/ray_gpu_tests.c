@@ -12,6 +12,12 @@ static int failures;
     }                                                                         \
 } while (0)
 
+static RenderTransform IdentityTransform(void) {
+    RenderTransform transform = {0};
+    transform.scale = (Vec3){1.0f, 1.0f, 1.0f};
+    return transform;
+}
+
 static void TestGpuPacking(void) {
     RayTriangle source[6];
     RayMesh mesh = {0};
@@ -55,8 +61,65 @@ static void TestGpuPacking(void) {
     RayMeshRelease(&mesh);
 }
 
+static void TestGpuScenePackingDeduplicatesMeshes(void) {
+    RayTriangle source = {
+        .vertex = {{-1.0f, -1.0f, 0.0f},
+                   {1.0f, -1.0f, 0.0f},
+                   {0.0f, 1.0f, 0.0f}},
+    };
+    RayMesh mesh = {0};
+    RayInstance sourceInstances[2];
+    RayScene scene = {0};
+    RayGpuSceneLayout layout = {0};
+    RayGpuNode *nodes = NULL;
+    RayGpuTriangle *triangles = NULL;
+    RayGpuInstance *instances = NULL;
+    uint32_t *indices = NULL;
+    RenderTransform first = IdentityTransform();
+    RenderTransform second = IdentityTransform();
+
+    first.position = (Vec3){2.0f, 3.0f, 4.0f};
+    second.position = (Vec3){8.0f, 0.0f, 0.0f};
+    CHECK(RayMeshBuild(&mesh, &source, 1));
+    CHECK(RayInstancePrepare(&sourceInstances[0], &mesh, &first, 1, 0));
+    CHECK(RayInstancePrepare(&sourceInstances[1], &mesh, &second, 2, 0));
+    CHECK(RaySceneBuild(&scene, sourceInstances, 2));
+    CHECK(RayGpuLayoutForScene(&scene, &layout));
+    CHECK(layout.nodeCount == scene.nodeCount + mesh.nodeCount);
+    CHECK(layout.triangleCount == mesh.triangleCount);
+    CHECK(layout.indexCount == scene.instanceCount + mesh.triangleCount);
+    CHECK(layout.instanceCount == 2);
+    nodes = malloc(layout.nodeBytes);
+    triangles = malloc(layout.triangleBytes);
+    indices = malloc(layout.indexBytes);
+    instances = malloc(layout.instanceBytes);
+    CHECK(nodes != NULL && triangles != NULL && indices != NULL &&
+          instances != NULL);
+    if (nodes != NULL && triangles != NULL && indices != NULL &&
+        instances != NULL) {
+        CHECK(RayGpuPackScene(&scene, &layout, nodes, layout.nodeCount,
+                              triangles, layout.triangleCount,
+                              indices, layout.indexCount,
+                              instances, layout.instanceCount));
+        CHECK(instances[0].meshAndFlags[0] == scene.nodeCount);
+        CHECK(instances[1].meshAndFlags[0] == scene.nodeCount);
+        CHECK(instances[0].worldToLocal[0][3] == -2.0f);
+        CHECK(instances[0].worldToLocal[1][3] == -3.0f);
+        CHECK(instances[0].worldToLocal[2][3] == -4.0f);
+        CHECK(indices[scene.instanceCount] == 0);
+        CHECK(nodes[scene.nodeCount].childAndRange[2] == scene.instanceCount);
+    }
+    free(instances);
+    free(indices);
+    free(triangles);
+    free(nodes);
+    RaySceneRelease(&scene);
+    RayMeshRelease(&mesh);
+}
+
 int main(void) {
     TestGpuPacking();
+    TestGpuScenePackingDeduplicatesMeshes();
     if (failures != 0) return 1;
     puts("ray GPU packing tests passed");
     return 0;
