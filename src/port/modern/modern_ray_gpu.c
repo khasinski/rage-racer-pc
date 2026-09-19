@@ -294,15 +294,18 @@ int ModernRayGpuPrepare(SDL_GPUCommandBuffer *command,
         if (dynamic) {
             target.buffer = s_buffers.nodes;
             target.size = scene.nodeCount * sizeof(RayGpuNode);
-            SDL_UploadToGPUBuffer(copy, &source, &target, true);
+            /* Partial updates must retain the BLAS suffix already stored in
+             * this buffer. Cycling selects fresh backing storage whose
+             * untouched range is undefined, which made static scenery flash. */
+            SDL_UploadToGPUBuffer(copy, &source, &target, false);
             source.offset += target.size;
             target.buffer = s_buffers.indices;
             target.size = scene.instanceCount * sizeof(uint32_t);
-            SDL_UploadToGPUBuffer(copy, &source, &target, true);
+            SDL_UploadToGPUBuffer(copy, &source, &target, false);
             source.offset += target.size;
             target.buffer = s_buffers.instances;
             target.size = (uint32_t)layout.instanceBytes;
-            SDL_UploadToGPUBuffer(copy, &source, &target, true);
+            SDL_UploadToGPUBuffer(copy, &source, &target, false);
         } else {
 #define UPLOAD_BUFFER(member, bytes) do {                                    \
     target.buffer = s_buffers.member;                                        \
