@@ -820,13 +820,14 @@ static void test_shadow_map_rejects_non_finite_geometry(void) {
     }
 }
 
-static void test_default_shadow_light_stays_near_overhead(void) {
+static void test_default_shadow_light_exposes_vehicle_footprint(void) {
     const Vec3 light = RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
     float horizontalSquared = light.x * light.x + light.z * light.z;
-    /* Less than 14 degrees from vertical keeps a 100-unit-high caster's
-     * shadow within 25 world units of its contact point. */
+    /* A useful chase-camera shadow needs a lateral offset, while remaining
+     * predominantly overhead so it stays close to the vehicle. */
     EXPECT_EQ(1, light.y > 0.0f);
-    EXPECT_EQ(1, horizontalSquared * 16.0f < light.y * light.y);
+    EXPECT_EQ(1, horizontalSquared * 4.0f > light.y * light.y);
+    EXPECT_EQ(1, horizontalSquared < light.y * light.y);
 }
 
 int main(void) {
@@ -853,7 +854,7 @@ int main(void) {
     test_synchronized_presentation_moves_dynamic_scenery();
     test_synchronized_presentation_rejects_invalid_world_bounds();
     test_native_camera_projection_has_no_gte_quantization();
-    test_default_shadow_light_stays_near_overhead();
+    test_default_shadow_light_exposes_vehicle_footprint();
     test_psx_rotation_uses_the_same_basis_as_imported_positions();
     test_directional_shadow_map_is_texel_stable();
     test_high_resolution_vehicle_shadow_density();

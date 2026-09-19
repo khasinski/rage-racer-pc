@@ -83,9 +83,10 @@ void main() {
             visibility = shadowVisibility(n);
         }
     }
-    float shadow = mix(0.62, 1.0, visibility);
+    float shadow = mix(0.48, 1.0, visibility);
+    float ambientShadow = mix(0.76, 1.0, visibility);
     vec3 light = mix(vec3(1.0),
-        environmentLight * (sceneLight.ambient.rgb +
+        environmentLight * (sceneLight.ambient.rgb * ambientShadow +
             sceneLight.diffuse.rgb * diffuse * shadow),
         materialLighting);
     vec3 foggedColor = mix(color.rgb, fog.rgb, fog.a);

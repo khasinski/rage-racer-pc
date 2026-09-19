@@ -49,7 +49,9 @@ static int RenderCameraIsCut(const RenderCamera *previous,
 
 void RenderDirectionalLightDefault(RenderDirectionalLight *light) {
     if (light == NULL) return;
-    light->direction = (Vec3){-0.1f, 1.0f, 0.12f};
+    /* Keep vehicle shadows visible beside their casters.  A nearly vertical
+     * light hid the whole footprint beneath each car from the chase camera. */
+    light->direction = (Vec3){-0.34f, 1.0f, 0.42f};
     light->ambientColor = (Vec3){0.35f, 0.35f, 0.35f};
     light->diffuseColor = (Vec3){0.65f, 0.65f, 0.65f};
 }

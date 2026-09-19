@@ -4,7 +4,7 @@
 #include <string.h>
 
 const Vec3 RAGE_RENDER_DEFAULT_LIGHT_DIRECTION =
-    {-0.1f, 1.0f, 0.12f};
+    {-0.34f, 1.0f, 0.42f};
 
 static float RenderShadowDot(Vec3 left, Vec3 right) {
     return left.x * right.x + left.y * right.y + left.z * right.z;
