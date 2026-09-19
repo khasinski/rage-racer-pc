@@ -270,6 +270,29 @@ int main(void) {
           PRIZE_SCREEN_STATE_WAIT_TO_FINISH);
     Check(s_fanfareTicks == 100, "and keeps being ticked", s_fanfareTicks, 100);
 
+    /* The fanfare also runs down while the player waits without pressing,
+     * so a single confirm press afterwards is enough to leave. */
+    Reset(0, 0);
+    s_screen.state = PRIZE_SCREEN_STATE_WAIT_TO_FINISH;
+    s_fanfareFrames = 50;
+    {
+        int i;
+        for (i = 0; i < 50; i++) {
+            g_PadPressed = 0;
+            UpdatePrizeMoneyScreenState(&s_screen);
+        }
+    }
+    Check(s_fanfareTicks == 50, "the fanfare ticks without input",
+          s_fanfareTicks, 50);
+    Check(s_screen.state == PRIZE_SCREEN_STATE_WAIT_TO_FINISH,
+          "and waiting alone does not leave", s_screen.state,
+          PRIZE_SCREEN_STATE_WAIT_TO_FINISH);
+    g_PadPressed = PAD_CONFIRM;
+    UpdatePrizeMoneyScreenState(&s_screen);
+    Check(s_screen.state == PRIZE_SCREEN_STATE_FADE_OUT,
+          "one press leaves once the fanfare is over", s_screen.state,
+          PRIZE_SCREEN_STATE_FADE_OUT);
+
     /* Leaving asks for the menu music back only when the class is unfinished. */
     Reset(0, 0);
     s_screen.state = PRIZE_SCREEN_STATE_WAIT_TO_FINISH;

@@ -163,9 +163,14 @@ void UpdatePrizeMoneyScreenState(PrizeScreen *screen) {
         }
         screen->state = PRIZE_SCREEN_STATE_WAIT_TO_FINISH;
         break;
-    case PRIZE_SCREEN_STATE_WAIT_TO_FINISH:
+    case PRIZE_SCREEN_STATE_WAIT_TO_FINISH: {
+        /* The fanfare keeps running whether or not the player is pressing
+         * anything; gating it on the confirm press would make it advance
+         * one frame per press and hold the screen for hundreds of them. */
+        s32 fanfare = TickClassClearFanfare();
+
         PlaySoundCue(SOUND_CUE_CONFIRM);
-        if (!(g_PadPressed & PAD_CONFIRM) || TickClassClearFanfare() != 0) {
+        if (!(g_PadPressed & PAD_CONFIRM) || fanfare != 0) {
             break;
         }
         if (g_ClassCompleted == 0) {
@@ -173,6 +178,7 @@ void UpdatePrizeMoneyScreenState(PrizeScreen *screen) {
         }
         screen->state = PRIZE_SCREEN_STATE_FADE_OUT;
         break;
+    }
     case PRIZE_SCREEN_STATE_FADE_OUT:
         screen->timer += g_SeriesCleared != 0 ? 1 : 2;
         if (screen->timer > PRIZE_SCREEN_FADE_LIMIT) {
