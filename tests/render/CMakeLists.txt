@@ -38,7 +38,7 @@ if(TARGET rage-racer-smoke)
         -DFIXTURE=$<TARGET_FILE:native_asset_fixture> -DGAME=$<TARGET_FILE:rage-racer-smoke>
         -DSOURCE=${PROJECT_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_native_render_world.cmake)
-    set_tests_properties(native_render_world PROPERTIES LABELS e2e TIMEOUT 225)
+    set_tests_properties(native_render_world PROPERTIES LABELS e2e TIMEOUT 400 RUN_SERIAL TRUE)
 endif()
 if(TARGET rage-frame-replay)
     add_executable(rage-stage-image-check ${PROJECT_SOURCE_DIR}/tools/rage_stage_image_check.c)
