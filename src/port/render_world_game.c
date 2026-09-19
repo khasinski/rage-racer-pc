@@ -805,6 +805,11 @@ void GameRenderWorldSubmitCar(const GameCarRuntime *object,
     Vec3 environmentLight;
 
     if (!s_initialized || object == NULL || g_TrackRenderTable == NULL) return;
+    /* Rival and traffic cars belong to the race world. The custom race
+     * showroom draws its rival preview through the same path from a private
+     * bank; publishing that would import the wrong bank under the track's
+     * asset key and keep it for the race. */
+    if (!GameSceneUsesRaceWorld()) return;
     entity = CarEntity(object);
     environmentLight = GameTrackLightForCar(object);
     car = g_CarModelByCourse[SeriesCourseIndex()][object->modelIndex];

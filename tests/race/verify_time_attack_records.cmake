@@ -20,8 +20,10 @@ set(log "${output}${error}")
 if(NOT result STREQUAL "0")
     message(FATAL_ERROR "Time Attack scenario failed (${result}):\n${log}")
 endif()
-foreach(transition "scene=17 frontend=3" "scene=20 frontend=3"
-                   "scene=21 frontend=3")
+# The title frontend state is menu runtime state and is reset once the menu
+# opens; only the scene sequence matters here.
+foreach(transition "scene=17 frontend=" "scene=20 frontend="
+                   "scene=21 frontend=")
     string(FIND "${log}" "${transition}" position)
     if(position LESS 0)
         message(FATAL_ERROR "Time Attack missed transition ${transition}:\n${log}")

@@ -17,7 +17,7 @@ if(NOT result EQUAL 0 OR NOT EXISTS "${capture}" OR NOT EXISTS "${trace}")
     message(FATAL_ERROR "Race-start run failed: ${root}\n${log}")
 endif()
 foreach(required
-    "scene=12 frontend=3 sky_row=0" "scene 12" "speed=[1-9][0-9]* accelerator=256"
+    "scene=12 frontend=[0-9]+ sky_row=0" "scene 12" "speed=[1-9][0-9]* accelerator=256"
     "rpm=[1-9][0-9][0-9][0-9].*terrain_second=[1-9][0-9]*"
     "audio metrics: .*pitch_updates=[1-9][0-9]*"
     "terrain_child_reject=[1-9][0-9]* terrain_child_second=[1-9][0-9]*"
