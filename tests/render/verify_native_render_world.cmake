@@ -7,7 +7,7 @@ if(NOT result STREQUAL "0")
 endif()
 file(RENAME "${root}/terrain.png" "${root}/mod/textures/terrain.png")
 file(WRITE "${root}/mod/mod.toml" "[mod]\nid = \"native-world-test\"\n[textures]\n\"car.9.material.0\" = \"textures/terrain.png\"\n")
-file(WRITE "${root}/scenario.ini" "[video]\nrenderer=modern\n[race]\nenabled=true\nmode=grand-prix\nclass=0\ncourse=0\ncar=3\n[run]\nframes=900\n[stop]\nscene=12\ntimer=20\n")
+file(WRITE "${root}/scenario.ini" "[video]\nrenderer=modern\n[race]\nenabled=true\nmode=grand-prix\nclass=0\ncourse=0\ncar=3\n[run]\nframes=1400\n[stop]\nscene=12\ntimer=20\n")
 function(run name)
     set(correction_env)
     if(name STREQUAL "geometry-512" OR name STREQUAL "correction-reference")
@@ -61,7 +61,7 @@ endif()
 foreach(limit 512 0 1)
     run(geometry-${limit} --scenario "${root}/scenario.ini"
         --set video.fps=logic --set video.internal_scale=1 --set start.freeze=true
-        --set stop.timer=431 --set run.frames=1400
+        --set stop.timer=431 --set run.frames=1600
         --set diagnostics.modern_cpu_geometry=false
         --set "diagnostics.modern_geometry_limit=${limit}"
         --set diagnostics.performance_trace=true
@@ -96,7 +96,7 @@ foreach(limit 512 0 1)
 endforeach()
 run(correction-reference --scenario "${root}/scenario.ini"
     --set video.fps=logic --set video.internal_scale=1 --set start.freeze=true
-    --set stop.timer=431 --set run.frames=1400
+    --set stop.timer=431 --set run.frames=1600
     --set diagnostics.modern_cpu_geometry=false --set diagnostics.modern_geometry_limit=512
     --set "diagnostics.modern_dump=${root}/correction-reference.ppm"
     --set diagnostics.modern_dump_scene_id=12 --set diagnostics.modern_dump_timer=430
@@ -111,7 +111,7 @@ foreach(suffix .vram .ppm .ppm.draws.txt)
 endforeach()
 run(unbatched --scenario "${root}/scenario.ini"
     --set video.fps=logic --set video.internal_scale=1 --set start.freeze=true
-    --set stop.timer=431 --set run.frames=1400
+    --set stop.timer=431 --set run.frames=1600
     --set diagnostics.modern_cpu_geometry=false --set diagnostics.modern_geometry_limit=512
     --set diagnostics.modern_unbatched_draws=true
     --set "diagnostics.modern_dump=${root}/unbatched.ppm"
