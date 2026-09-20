@@ -99,5 +99,23 @@ int main(void) {
     CHECK(world.spotLightCount == 2);
     CHECK(fabsf(world.spotLights[0].color.x - 5 * tail) < 0.0001f);
     CHECK(world.spotLights[0].color.x == world.spotLights[1].color.x);
+    body.assetSet = RAGE_RENDER_ASSET_MODEL_BANK;
+    body.assetKey = 24;
+    body.lamps = (CarLights){1, 0.2f, 0, 1};
+    world.spotLightCount = 0;
+    RenderCarSpotLights(&world);
+    CHECK(world.spotLightCount == 4);
+    for (int i = 0; i < 4; ++i) {
+        CHECK(i < 2 ? world.spotLights[i].direction.z > 0.99f
+                    : world.spotLights[i].direction.z < -0.99f);
+        CHECK(i < 2 ? world.spotLights[i].position.z > body.transform.position.z
+                    : world.spotLights[i].position.z < body.transform.position.z);
+    }
+    body.lamps = (CarLights){0, 0, 1, 0};
+    world.spotLightCount = 0;
+    RenderCarSpotLights(&world);
+    CHECK(world.spotLightCount == 2); /* Braking during the day lights only the rear. */
+    CHECK(world.spotLights[0].direction.z < -0.99f);
+    CHECK(world.spotLights[1].direction.z < -0.99f);
     return failures != 0;
 }

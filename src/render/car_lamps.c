@@ -34,7 +34,18 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {0, {102, 15, 110, 20}, {107.25127f, 48.48477f, -51.85787f}, LAMP_TAIL_STOP, 1},
         {0, {177, 15, 185, 20}, {-107.09167f, 47.95f, -51.76667f}, LAMP_TAIL_STOP, 1},
     };
+    static const Lamp sport[] = {
+        {3, {7, 3, 16, 11}, {-49.55208f, 33.20833f, 381.82292f}, LAMP_HEAD, 1},
+        {3, {80, 3, 89, 11}, {50.60417f, 33.16667f, 381.27083f}, LAMP_HEAD, 1},
+        {0, {100, 6, 109, 11}, {102.78723f, 39.55319f, -74.76596f}, LAMP_TAIL_STOP, 1},
+        {0, {178, 6, 187, 11}, {-101.87805f, 39.58537f, -74.78049f}, LAMP_TAIL_STOP, 1},
+    };
     *lamps = NULL;
+    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
+        body->assetKey == 24 && body->mesh == 0) {
+        *lamps = sport;
+        return sizeof(sport) / sizeof(*sport);
+    }
     if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
         body->assetKey == 18 && body->mesh == 0) {
         *lamps = coupe;
