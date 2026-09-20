@@ -201,6 +201,7 @@ void RenderWorldSetDirectionalLight(
 void RenderDirectionalLightDefault(RenderDirectionalLight *light);
 void RenderDirectionalLightFromSky(const RenderCamera *camera,
                                    RenderDirectionalLight *light);
+int32_t RenderClampCarToGround(int32_t carY, int32_t groundY);
 void RenderWorldSetCamera(RenderWorld *world,
                               const RenderCamera *camera);
 void RenderWorldSetMirrorCamera(RenderWorld *world,

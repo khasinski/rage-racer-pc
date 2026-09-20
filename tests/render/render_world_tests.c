@@ -253,6 +253,12 @@ static void test_directional_light_follows_sky_time_and_color(void) {
     }
 }
 
+static void test_car_presentation_never_descends_below_ground(void) {
+    EXPECT_EQ(100, RenderClampCarToGround(104, 100));
+    EXPECT_EQ(100, RenderClampCarToGround(100, 100));
+    EXPECT_EQ(84, RenderClampCarToGround(84, 100));
+}
+
 static void test_mirror_is_an_independent_scene_camera(void) {
     RenderMeshInstance storage[1];
     RenderWorld world;
@@ -861,6 +867,7 @@ int main(void) {
     test_camera_is_scene_data_not_backend_state();
     test_directional_light_is_scene_data();
     test_directional_light_follows_sky_time_and_color();
+    test_car_presentation_never_descends_below_ground();
     test_mirror_is_an_independent_scene_camera();
     test_camera_cuts_are_not_interpolated_as_motion();
     test_transform_interpolation_takes_short_angle_path();

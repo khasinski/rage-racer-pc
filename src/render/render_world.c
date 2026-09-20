@@ -108,6 +108,13 @@ void RenderDirectionalLightFromSky(const RenderCamera *camera,
     light->diffuseColor.z = (0.52f + daylight * 0.34f) * tint.z;
 }
 
+int32_t RenderClampCarToGround(int32_t carY, int32_t groundY) {
+    /* Game Y grows downwards.  Smaller values are valid airborne positions;
+     * larger values would put the authored tyre/underbody contact plane below
+     * the track surface retained in modelY. */
+    return carY > groundY ? groundY : carY;
+}
+
 void RenderWorldInit(RenderWorld *world,
                          RenderMeshInstance *instances,
                          uint32_t capacity) {

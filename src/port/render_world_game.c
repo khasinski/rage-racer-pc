@@ -748,7 +748,8 @@ static void GameRenderWorldSubmitCarAssembly(const GameCarRuntime *object,
     Vec3 origin, front;
 
     origin.x = (float)object->x;
-    origin.y = (float)(object->y - horizon);
+    origin.y = (float)(RenderClampCarToGround(object->y, object->modelY) -
+                       horizon);
     origin.z = (float)object->z;
     /* Scene-space counterpart of DrawCar/DrawPlayerCarModel. The view matrix
      * is intentionally absent: the camera owns it at presentation time. */
