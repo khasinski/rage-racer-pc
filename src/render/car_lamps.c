@@ -12,11 +12,21 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {1, {74, 222, 80, 229}, {104.73947f, 43.53947f, -77.00053f}, LAMP_TAIL_STOP, 1},
         {1, {74, 222, 80, 229}, {-104.77895f, 43.53947f, -76.81105f}, LAMP_TAIL_STOP, 1},
     };
+    static const Lamp rival[] = {
+        {7, {29, 160, 42, 165}, {-64.43902f, 35.7f, 386.50244f}, LAMP_HEAD, 0},
+        {7, {29, 160, 42, 165}, {64.43902f, 35.7f, 386.50244f}, LAMP_HEAD, 0},
+    };
     *lamps = NULL;
     if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
         body->assetKey == 68 && body->mesh == 0) {
         *lamps = special;
         return sizeof(special) / sizeof(*special);
+    }
+    if (body->component == 0 &&
+        body->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 &&
+        body->assetKey == 128 && body->mesh == 0) {
+        *lamps = rival;
+        return sizeof(rival) / sizeof(*rival);
     }
     return 0;
 }

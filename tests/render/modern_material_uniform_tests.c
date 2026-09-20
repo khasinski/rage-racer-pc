@@ -52,5 +52,21 @@ int main(void) {
     car.lamps.stop = 1;
     ModernMaterialUniformLamps(&car, 3, &uniform);
     assert(uniform.lamps[0].emission[0] == 0);
+    ModernMaterialUniformBuild(&material, 0, &uniform);
+    car.assetSet = RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
+    car.assetKey = 128;
+    car.lamps.headlights = 1;
+    car.entity = 2;
+    ModernMaterialUniformLamps(&car, 7, &uniform);
+    assert(uniform.lamps[0].emission[0] == 2.5f);
+    assert(uniform.lamps[1].emission[0] == 0);
+    ModernMaterialUniformBuild(&material, 0, &uniform);
+    car.entity = 11; /* Same rival model driven by player in Custom Race. */
+    ModernMaterialUniformLamps(&car, 7, &uniform);
+    assert(uniform.lamps[0].emission[0] == 2.5f);
+    ModernMaterialUniformBuild(&material, 0, &uniform);
+    car.mesh = 5;
+    ModernMaterialUniformLamps(&car, 7, &uniform);
+    assert(uniform.lamps[0].emission[0] == 0);
     return 0;
 }
