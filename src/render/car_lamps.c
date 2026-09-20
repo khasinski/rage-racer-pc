@@ -80,7 +80,30 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {0, {104, 12, 117, 16}, {78.81556f, 53.58696f, -136.32609f}, LAMP_TAIL_STOP, 0},
         {0, {170, 12, 184, 16}, {-78.40658f, 53.58696f, -136.32609f}, LAMP_TAIL_STOP, 0},
     };
+    static const Lamp truck[] = {
+        {3, {7, 9, 26, 15}, {-82.43182f, 51.72727f, 502.25f}, LAMP_HEAD, 0},
+        {3, {70, 9, 89, 15}, {85.09091f, 51.72727f, 502}, LAMP_HEAD, 0},
+        /* Red inner rear lenses; the amber indicators are outside. */
+        {0, {120, 28, 131, 32}, {54.99630f, 11.70833f, -150.08333f}, LAMP_TAIL_STOP, 0},
+        {0, {157, 28, 169, 32}, {-58.34496f, 11.70833f, -150.08333f}, LAMP_TAIL_STOP, 0},
+    };
+    static const Lamp exotic[] = {
+        {3, {5, 3, 17, 13}, {93.55f, 19.01667f, 423.38333f}, LAMP_HEAD, 1},
+        {3, {79, 3, 91, 13}, {-96.5f, 18.66667f, 423.58333f}, LAMP_HEAD, 1},
+        {0, {117, 8, 122, 12}, {59.54615f, 32.69231f, -125.76923f}, LAMP_TAIL_STOP, 1},
+        {0, {166, 8, 171, 12}, {-62.02422f, 32.69231f, -125.76923f}, LAMP_TAIL_STOP, 1},
+    };
     *lamps = NULL;
+    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
+        body->assetKey == 56 && body->mesh == 0) {
+        *lamps = exotic;
+        return sizeof(exotic) / sizeof(*exotic);
+    }
+    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
+        body->assetKey == 52 && body->mesh == 0) {
+        *lamps = truck;
+        return sizeof(truck) / sizeof(*truck);
+    }
     if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
         body->assetKey == 46 && body->mesh == 0) {
         *lamps = wedge;
