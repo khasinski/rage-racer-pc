@@ -73,7 +73,19 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {0, {171, 8, 177, 16}, {-80.67084f, 45.38235f, -135.67647f}, LAMP_TAIL_STOP, 1},
         {0, {179, 8, 185, 16}, {-101.94743f, 45.38235f, -135.67647f}, LAMP_TAIL_STOP, 1},
     };
+    static const Lamp wedge[] = {
+        /* Existing bumper driving lamps; the pop-up covers stay opaque. */
+        {1, {10, 41, 25, 47}, {-64.35112f, 10.52357f, 465.31514f}, LAMP_HEAD, 1},
+        {1, {70, 41, 86, 47}, {64.97467f, 10.812f, 464.78267f}, LAMP_HEAD, 1},
+        {0, {104, 12, 117, 16}, {78.81556f, 53.58696f, -136.32609f}, LAMP_TAIL_STOP, 0},
+        {0, {170, 12, 184, 16}, {-78.40658f, 53.58696f, -136.32609f}, LAMP_TAIL_STOP, 0},
+    };
     *lamps = NULL;
+    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
+        body->assetKey == 46 && body->mesh == 0) {
+        *lamps = wedge;
+        return sizeof(wedge) / sizeof(*wedge);
+    }
     if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
         body->assetKey == 38 && body->mesh == 0) {
         *lamps = muscle;

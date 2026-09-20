@@ -158,5 +158,12 @@ int main(void) {
     assert(uniform.lamps[0].emission[0] == 0);
     ModernMaterialUniformLamps(&car, 3, &uniform);
     assert(uniform.lamps[0].emission[0] == 2.5f);
+    car.assetKey = 46;
+    ModernMaterialUniformBuild(&material, 0, &uniform);
+    ModernMaterialUniformLamps(&car, 3, &uniform);
+    assert(uniform.lamps[0].emission[0] == 0); /* Closed pop-up covers. */
+    ModernMaterialUniformLamps(&car, 1, &uniform);
+    assert(uniform.lamps[0].emission[0] == 2.5f);
+    assert(uniform.lamps[1].emission[0] == 2.5f);
     return 0;
 }
