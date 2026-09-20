@@ -646,6 +646,11 @@ _Static_assert(
     "player transmission must retain its retail alias offset");
 _Static_assert(
     __builtin_offsetof(PlayerCarRuntime, drive) +
+        __builtin_offsetof(GameCarDrive, brakeInput) ==
+        __builtin_offsetof(GameCarRuntime, brakeInput),
+    "rendering and replay must read the player's actual brake input");
+_Static_assert(
+    __builtin_offsetof(PlayerCarRuntime, drive) +
         __builtin_offsetof(GameCarDrive, engineRpm) == 0x134,
     "player target RPM must retain its retail alias offset");
 _Static_assert(

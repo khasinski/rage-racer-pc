@@ -22,6 +22,8 @@ static void TestGrandPrixFrames(void) {
     g_Replay.rivalModel = 34;
     first->player.modelIndex = 12;
     first->rivals[0].modelIndex = 34;
+    first->player.brakeInput = 256;
+    first->rivals[0].brakeInput = 128;
     first->player.x = 100;
     first->player.y = -20;
     first->player.z = 300;
@@ -60,6 +62,8 @@ static void TestGrandPrixFrames(void) {
     ApplyReplayFrameAndTrackPoint(0, &player, rivals);
     assert(player.modelIndex == 12);
     assert(rivals[0].modelIndex == 34);
+    assert(player.brakeInput == 256);
+    assert(rivals[0].brakeInput == 128);
     assert(player.x == 100);
     assert(player.y == -20);
     assert(player.z == 300);
@@ -87,6 +91,8 @@ static void TestGrandPrixFrames(void) {
     assert(rivals[3].activeFlag == 1 && rivals[3].aiEnabled == 1);
     assert(rivals[7].activeFlag == -1 && rivals[7].aiEnabled == 0);
 
+    second->player.brakeInput = 0;
+    second->rivals[0].brakeInput = 0;
     second->player.x = 200;
     second->player.modelIndex = 12;
     second->player.y = -10;
@@ -116,6 +122,8 @@ static void TestGrandPrixFrames(void) {
 
     ApplyReplayFrameAndTrackPoint(1, &player, rivals);
     assert(player.x == 150);
+    assert(player.brakeInput == 256);
+    assert(rivals[0].brakeInput == 128);
     assert(player.y == -15);
     assert(player.z == 400);
     assert(player.modelY == 50);
@@ -139,6 +147,8 @@ static void TestGrandPrixFrames(void) {
     assert(rivals[3].x == 800);
     assert(rivals[3].trackPointIndex == 83);
 
+    ApplyReplayFrame(2, &player, rivals);
+    assert(player.brakeInput == 0 && rivals[0].brakeInput == 0);
     player.x = 300;
     rivals[0].x = 500;
     ApplyReplayFrameAndTrackPoint(GRAND_PRIX_REPLAY_SUBFRAME_COUNT - 1,
@@ -160,6 +170,8 @@ static void TestTimeAttackFrames(void) {
     memset(rivals, 0x5A, sizeof(rivals));
     g_GrandPrixMode = 0;
     g_Replay.playerModel = 7;
+    first->brakeInput = 256;
+    second->brakeInput = 0;
     first->x = 80;
     first->y = -30;
     first->z = 160;
@@ -178,6 +190,7 @@ static void TestTimeAttackFrames(void) {
 
     ApplyReplayFrameAndTrackPoint(0, &player, rivals);
     assert(player.modelIndex == 7);
+    assert(player.brakeInput == 256);
     assert(player.x == 80);
     assert(player.y == -30);
     assert(player.z == 160);
@@ -205,6 +218,7 @@ static void TestTimeAttackFrames(void) {
 
     ApplyReplayFrameAndTrackPoint(1, &player, rivals);
     assert(player.x == 100);
+    assert(player.brakeInput == 256);
     assert(player.y == -10);
     assert(player.z == 200);
     assert(player.modelY == 30);
@@ -216,6 +230,8 @@ static void TestTimeAttackFrames(void) {
     assert(player.trackPointIndex == 81);
     assert(player.tiltCounter == 82);
 
+    ApplyReplayFrame(2, &player, rivals);
+    assert(player.brakeInput == 0);
     player.x = 200;
     ApplyReplayFrameAndTrackPoint(TIME_ATTACK_REPLAY_SUBFRAME_COUNT - 1,
                                   &player, rivals);

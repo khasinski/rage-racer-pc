@@ -28,6 +28,7 @@ typedef struct ReplayCarFrame {
     s16 modelIndex;
     s16 activeFlag;
     s16 aiEnabled;
+    s16 brakeInput;
 } ReplayCarFrame;
 
 typedef struct ReplayGrandPrixFrame {
@@ -48,6 +49,7 @@ typedef struct ReplayTimeAttackFrame {
     s32 tiltCounter;
     s32 trackPointIndex;
     s16 steeringAngle;
+    s16 brakeInput;
 } ReplayTimeAttackFrame;
 
 #endif

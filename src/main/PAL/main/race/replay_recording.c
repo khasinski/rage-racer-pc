@@ -61,6 +61,7 @@ static void StoreGrandPrixReplaySample(s32 subframe,
         player->wheelRotation, player->trackPointIndex,
         player->steeringAngle, player->modelIndex,
         player->activeFlag, player->aiEnabled,
+        player->brakeInput,
     };
     for (i = 0; i < REPLAY_RIVAL_COUNT; i++) {
         const GameCarRuntime *car = &rivals[i];
@@ -70,6 +71,7 @@ static void StoreGrandPrixReplaySample(s32 subframe,
             car->wheelRotation, car->trackPointIndex,
             car->steeringAngle, car->modelIndex,
             car->activeFlag, car->aiEnabled,
+            car->brakeInput,
         };
     }
     dst->tiltCounter = player->tiltCounter;
@@ -94,6 +96,7 @@ static void StoreTimeAttackReplaySample(s32 subframe,
     dst->bodyRoll = player->bodyRoll;
     dst->wheelRotation = player->wheelRotation;
     dst->steeringAngle = player->steeringAngle;
+    dst->brakeInput = player->brakeInput;
     dst->trackPointIndex = player->trackPointIndex;
     dst->tiltCounter = player->tiltCounter;
 }

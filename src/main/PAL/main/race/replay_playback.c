@@ -113,6 +113,10 @@ static void ApplyReplayFrameState(s32 subframe, GameCarRuntime *player,
         s32 i;
 
         ApplyReplayPose(player, &playerPose, interpolate);
+        /* Pedal edges are discrete; hold the current sample on the
+         * interpolated pose instead of switching half a sample early. */
+        player->brakeInput = g_ReplayFrameBuffer.grandPrixReplay[subframe >> 1]
+                                 .player.brakeInput;
         player->modelIndex = frame->player.modelIndex;
         player->tiltCounter = frame->tiltCounter;
         if (restoreTrackPoint != 0) {
@@ -124,6 +128,8 @@ static void ApplyReplayFrameState(s32 subframe, GameCarRuntime *player,
             GameCarRuntime *rival = &rivals[i];
 
             ApplyReplayPose(rival, &rivalPose, interpolate);
+            rival->brakeInput = g_ReplayFrameBuffer.grandPrixReplay[subframe >> 1]
+                                    .rivals[i].brakeInput;
             rival->modelIndex = recorded->modelIndex;
             rival->activeFlag = recorded->activeFlag;
             rival->aiEnabled = recorded->aiEnabled;
@@ -140,6 +146,8 @@ static void ApplyReplayFrameState(s32 subframe, GameCarRuntime *player,
 
         ApplyReplayPose(player, &playerPose, interpolate);
         player->tiltCounter = frame->tiltCounter;
+        player->brakeInput = g_ReplayFrameBuffer.timeAttackReplay[subframe >> 1]
+                                 .brakeInput;
         if (restoreTrackPoint != 0) {
             player->trackPointIndex = frame->trackPointIndex;
         }

@@ -73,6 +73,8 @@ int main(void) {
     CHECK_EQ(coastingBoost->acceleration, 0);
     CHECK_EQ(coastingBoost->speed, 752);
     CHECK_EQ(coastingBoost->boostTimer, 9);
+    CHECK_EQ(coastingBoost->brakeInput, 0);
+    CHECK_EQ(normal->brakeInput, 0);
     CHECK_EQ(pullingBoost->acceleration, 13);
     CHECK_EQ(pullingBoost->boostTimer, 3);
     CHECK_EQ(limitedBoost->acceleration, 20);
@@ -99,6 +101,21 @@ int main(void) {
     CHECK_EQ(equalAttract->acceleration, 20);
     CHECK_EQ(equalAttract->speed, 114);
     CHECK_EQ(equalAttract->boostTimer, 10);
+
+    ResetCars();
+    normal = Activate(0, 20, 1000);
+    AccelerateRaceRivals();
+    CHECK_EQ(normal->brakeInput, 256);
+    normal->accelerationLimit = 100;
+    AccelerateRaceRivals();
+    CHECK_EQ(normal->brakeInput, 0);
+    normal->speed = 1000;
+    normal->accelerationLimit = 20;
+    AccelerateAttractRivals();
+    CHECK_EQ(normal->brakeInput, 256);
+    normal->speed = 0;
+    AccelerateAttractRivals();
+    CHECK_EQ(normal->brakeInput, 0);
 
     puts("rival acceleration preserves thresholds, boost branches, and attract");
     return 0;

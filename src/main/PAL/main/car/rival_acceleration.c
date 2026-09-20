@@ -38,6 +38,18 @@ static void AdvanceRivalSpeedAndYaw(GameCarRuntime *car) {
     TurnRivalBodyTowardsTarget(car);
 }
 
+static void UpdateRivalBrakeInput(GameCarRuntime *car, int coasting) {
+    /* AI approaches its target speed by balancing acceleration against
+     * 6% drag. A limit below that equilibrium is its braking command.
+     * Ignore tiny rounding corrections and the explicit boost coast phase;
+     * collisions and hills never become brake commands. */
+    int64_t drag = (int64_t)car->speed *
+        (PERCENT_SCALE - RIVAL_SPEED_RETENTION_PERCENT);
+    int64_t target = (int64_t)car->accelerationLimit * PERCENT_SCALE;
+    car->brakeInput = !coasting && car->speed > 0 &&
+        drag > target + PERCENT_SCALE ? 0x100 : 0;
+}
+
 static void UpdateRaceRivalAcceleration(GameCarRuntime *car) {
     if (car->boostTimer <= 0) {
         IncreaseRivalAcceleration(car, car->accelerationStep);
@@ -63,6 +75,9 @@ void AccelerateRaceRivals(void) {
             continue;
         }
 
+        UpdateRivalBrakeInput(car,
+            car->boostTimer > car->boostAccelerationThreshold &&
+            car->boostTimer > 0 && car->speed >= RIVAL_BOOST_COAST_SPEED);
         UpdateRaceRivalAcceleration(car);
         AdvanceRivalSpeedAndYaw(car);
     }
@@ -77,6 +92,7 @@ void AccelerateAttractRivals(void) {
         if (car->activeFlag == -1) {
             continue;
         }
+        UpdateRivalBrakeInput(car, 0);
         if (car->acceleration < car->accelerationLimit) {
             car->acceleration = WrapSigned32(
                 (int64_t)car->acceleration + car->accelerationStep);

@@ -29,6 +29,7 @@ static GameCarRuntime MakeCar(s32 base, s16 modelIndex) {
     car.trackPointIndex = base + 10;
     car.tiltCounter = (s16)(base + 11);
     car.modelIndex = modelIndex;
+    car.brakeInput = (s16)(base % 257);
     return car;
 }
 
@@ -81,6 +82,10 @@ static void TestGrandPrixRecording(void) {
     assert(g_Replay.write == 2);
     RecordReplayFrame();
     frame = &g_ReplayFrameBuffer.grandPrixReplay[1];
+    assert(frame->player.brakeInput == 100);
+    assert(frame->rivals[0].brakeInput == 200);
+    assert(frame->rivals[4].brakeInput == 86);
+    assert(frame->rivals[10].brakeInput == 0);
     assert(frame->player.x == 101);
     assert(frame->player.y == 102);
     assert(frame->player.z == 103);
@@ -132,6 +137,7 @@ static void TestTimeAttackRecording(void) {
     assert(g_Replay.write == 2);
     RecordReplayFrame();
     frame = &g_ReplayFrameBuffer.timeAttackReplay[1];
+    assert(frame->brakeInput == 43);
     assert(frame->x == 301);
     assert(frame->y == 302);
     assert(frame->z == 303);
