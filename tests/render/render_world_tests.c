@@ -590,7 +590,17 @@ static void test_synchronized_presentation_moves_matching_vehicle(void) {
     EXPECT_EQ(110, (int)presentation[0].transform.position.z);
     EXPECT_EQ(1, fabsf(presentation[0].lamps.headlights - 0.25f) < 0.00001f);
     EXPECT_EQ(1, fabsf(presentation[0].lamps.tail - 0.05f) < 0.00001f);
-    EXPECT_EQ(1, presentation[0].lamps.stop == 1);
+    EXPECT_EQ(1, presentation[0].lamps.stop == 0);
+    for (int braking = 0; braking < 2; ++braking) {
+        previousStorage[0].lamps.stop = (float)!braking;
+        currentStorage[0].lamps.stop = (float)braking;
+        for (int sample = 0; sample <= 8; ++sample) {
+            EXPECT_EQ(1, RenderWorldBuildSynchronizedPresentation(
+                &previous, &current, sample / 8.0f, presentation, 1));
+            EXPECT_EQ(braking, (int)presentation[0].lamps.stop);
+        }
+    }
+
 }
 
 static void test_synchronized_presentation_keeps_wheel_sides_paired(void) {

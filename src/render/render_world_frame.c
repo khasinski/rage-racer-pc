@@ -309,8 +309,9 @@ int RenderWorldTryBuildSynchronizedPresentation(
                 (target->lamps.headlights - base->lamps.headlights) * blend;
             out[outputCount].lamps.tail = base->lamps.tail +
                 (target->lamps.tail - base->lamps.tail) * blend;
-            /* STOP is a discrete input edge belonging to the displayed
-             * simulation tick, unlike the automatic-light fade. */
+            /* Pedal feedback uses the latest sample; delaying a discrete
+             * edge behind pose interpolation adds a full tick of latency. */
+            out[outputCount].lamps.stop = target->lamps.stop;
             RenderInterpolateTransform(&base->transform,
                                            &target->transform, t,
                                            &out[outputCount].transform);
