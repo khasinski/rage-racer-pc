@@ -91,6 +91,22 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {0, {171, 8, 177, 16}, {-80.67084f, 45.38235f, -135.67647f}, LAMP_TAIL_STOP, 1},
         {0, {179, 8, 185, 16}, {-101.94743f, 45.38235f, -135.67647f}, LAMP_TAIL_STOP, 1},
     };
+    static const Lamp muscle1[] = {
+        {4, {6, 4, 32, 9}, {-73.37234f, 37.83191f, 497.28511f}, LAMP_HEAD, 0},
+        {4, {64, 4, 90, 9}, {74.95738f, 38.30213f, 497.02892f}, LAMP_HEAD, 0},
+        {0, {103, 8, 109, 16}, {100.95294f, 45.38235f, -135.67647f}, LAMP_TAIL_STOP, 1},
+        {0, {111, 8, 117, 16}, {79.56347f, 45.38235f, -135.67647f}, LAMP_TAIL_STOP, 1},
+        {0, {171, 8, 177, 16}, {-80.67084f, 45.38235f, -135.67647f}, LAMP_TAIL_STOP, 1},
+        {0, {179, 8, 185, 16}, {-101.94743f, 45.38235f, -135.67647f}, LAMP_TAIL_STOP, 1},
+    };
+    static const Lamp muscle3[] = {
+        {5, {6, 4, 32, 9}, {-73.37234f, 22.77888f, 498.56763f}, LAMP_HEAD, 0},
+        {5, {64, 4, 90, 9}, {75.94681f, 23.19885f, 498.22831f}, LAMP_HEAD, 0},
+        {0, {103, 8, 109, 16}, {100.95294f, 49.38235f, -133.67647f}, LAMP_TAIL_STOP, 1},
+        {0, {111, 8, 117, 16}, {79.56347f, 49.38235f, -133.67647f}, LAMP_TAIL_STOP, 1},
+        {0, {171, 8, 177, 16}, {-80.67084f, 49.38235f, -133.67647f}, LAMP_TAIL_STOP, 1},
+        {0, {179, 8, 185, 16}, {-101.94743f, 49.38235f, -133.67647f}, LAMP_TAIL_STOP, 1},
+    };
     static const Lamp sedan12[] = {
         {3, {10, 162, 30, 169}, {-68.25f, 29.66667f, 482.52381f}, LAMP_HEAD, 0},
         {3, {65, 162, 86, 169}, {69.66667f, 29.66667f, 482.09524f}, LAMP_HEAD, 0},
@@ -175,6 +191,8 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {34, sedan3, sizeof(sedan3) / sizeof(*sedan3)},
         {36, sedan4, sizeof(sedan4) / sizeof(*sedan4)},
         {38, muscle, sizeof(muscle) / sizeof(*muscle)},
+        {40, muscle1, sizeof(muscle1) / sizeof(*muscle1)},
+        {44, muscle3, sizeof(muscle3) / sizeof(*muscle3)},
         {46, wedge, sizeof(wedge) / sizeof(*wedge)},
         {52, truck, sizeof(truck) / sizeof(*truck)},
         {56, exotic, sizeof(exotic) / sizeof(*exotic)},
