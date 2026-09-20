@@ -65,6 +65,12 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {0, {14, 205, 17, 209}, {74.35294f, 47, -48.73529f}, LAMP_TAIL_STOP, 0},
         {0, {78, 205, 81, 209}, {-74.13333f, 47, -47.5f}, LAMP_TAIL_STOP, 0},
     };
+    static const Lamp sport1[] = {
+        {3, {103, 189, 112, 197}, {-49.55208f, 33.20833f, 381.82292f}, LAMP_HEAD, 1},
+        {3, {176, 189, 185, 197}, {50.60417f, 33.16667f, 381.27083f}, LAMP_HEAD, 1},
+        {0, {109, 151, 114, 158}, {84.56662f, 36.47826f, -74.08696f}, LAMP_TAIL_STOP, 1},
+        {0, {174, 151, 179, 158}, {-85.94279f, 36.47826f, -74.08696f}, LAMP_TAIL_STOP, 1},
+    };
     static const Lamp compact3[] = {
         {3, {5, 10, 17, 21}, {-69.07795f, 36.88023f, 357.18631f}, LAMP_HEAD, 1},
         {3, {78, 10, 90, 21}, {69.07795f, 36.88023f, 357.18631f}, LAMP_HEAD, 1},
@@ -132,6 +138,11 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {0, {5, 239, 81, 244}, {-77.95588f, 46, -158.5f}, LAMP_TAIL_STOP, 0},
     };
     *lamps = NULL;
+    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
+        body->assetKey == 26 && body->mesh == 0) {
+        *lamps = sport1;
+        return sizeof(sport1) / sizeof(*sport1);
+    }
     if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
         body->assetKey == 20 && body->mesh == 0) {
         *lamps = coupe1;
