@@ -27,8 +27,6 @@
 
 enum { RAGE_GAME_RENDER_WORLD_MAX_INSTANCES = 4096 };
 static const float START_GRID_DEPTH_BIAS = -2048.0f;
-static const float MODERN_CAR_GROUND_CLEARANCE = 2.0f;
-static const float VAINQURE_WHEEL_SETTLE = 1.0f;
 
 static RenderMeshInstance s_instances[3][RAGE_GAME_RENDER_WORLD_MAX_INSTANCES];
 static RenderWorld s_worlds[3];
@@ -280,8 +278,6 @@ static void GameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
         instance.materialVariant = (uint8_t)(g_TrackTexturePageWanted != 0);
     instance.pass = mirror_pass ? RAGE_RENDER_PASS_MIRROR : RAGE_RENDER_PASS_MAIN;
     instance.flags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING;
-    if (part != 0)
-        instance.flags |= RAGE_RENDER_INSTANCE_RAY_NO_SHADOW;
     instance.environmentLight = environmentLight;
     instance.transform.position.x = psPosition.x;
     instance.transform.position.y = -psPosition.y;
@@ -749,19 +745,11 @@ static void GameRenderWorldSubmitCarAssembly(const GameCarRuntime *object,
                                                  Vec3 environmentLight,
                                                  int mirror_pass) {
     RageSceneMat3 base, body, wheelBase, frontLeft, frontRight;
-    Vec3 origin, wheelOrigin, front;
-    int vainqure;
+    Vec3 origin, front;
 
     origin.x = (float)object->x;
-    /* Rounded native tyres expose sub-pixel road intersections which the PS1
-     * ordering table hid. Lift presentation geometry only; simulation and
-     * collision continue to use the authored car position. */
-    origin.y = (float)(object->y - horizon) - MODERN_CAR_GROUND_CLEARANCE;
+    origin.y = (float)(object->y - horizon);
     origin.z = (float)object->z;
-    vainqure = (assetSet == RAGE_RENDER_ASSET_MODEL_BANK && asset == 68u) ||
-        (assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 && bodyMesh == 10u);
-    wheelOrigin = origin;
-    if (vainqure) wheelOrigin.y += VAINQURE_WHEEL_SETTLE;
     /* Scene-space counterpart of DrawCar/DrawPlayerCarModel. The view matrix
      * is intentionally absent: the camera owns it at presentation time. */
     base = SceneMat3Multiply(SceneRotationY(0x800 - object->bodyYaw),
@@ -783,7 +771,7 @@ static void GameRenderWorldSubmitCarAssembly(const GameCarRuntime *object,
      * submesh never enters Render World. */
     GameRenderWorldSubmitCarPart(entity, 2, asset, assetSet, rearWheelMesh,
         0,
-        wheelOrigin,
+        origin,
         SceneMat3Multiply(wheelBase, SceneRotationX(object->wheelRotation)),
         environmentLight, mirror_pass);
     /* Place each front wheel in the road-aligned suspension plane as well as
@@ -792,18 +780,18 @@ static void GameRenderWorldSubmitCarAssembly(const GameCarRuntime *object,
      * wheel intersect the body and the opposite wheel detach. */
     front = SceneRotatePoint(wheelBase, (float)offsetX, (float)offsetY,
                                  (float)offsetZ);
-    front.x += wheelOrigin.x;
-    front.y += wheelOrigin.y;
-    front.z += wheelOrigin.z;
+    front.x += origin.x;
+    front.y += origin.y;
+    front.z += origin.z;
     GameRenderWorldSubmitCarPart(entity, 3, asset, assetSet, frontWheelMesh,
                                      0,
                                      front, frontLeft, environmentLight,
                                      mirror_pass);
     front = SceneRotatePoint(wheelBase, -(float)offsetX, (float)offsetY,
                                  (float)offsetZ);
-    front.x += wheelOrigin.x;
-    front.y += wheelOrigin.y;
-    front.z += wheelOrigin.z;
+    front.x += origin.x;
+    front.y += origin.y;
+    front.z += origin.z;
     GameRenderWorldSubmitCarPart(entity, 4, asset, assetSet, frontWheelMesh,
                                      0,
                                      front, frontRight, environmentLight,
