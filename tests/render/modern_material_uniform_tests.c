@@ -165,5 +165,11 @@ int main(void) {
     ModernMaterialUniformLamps(&car, 1, &uniform);
     assert(uniform.lamps[0].emission[0] == 2.5f);
     assert(uniform.lamps[1].emission[0] == 2.5f);
+    car.assetKey = 72;
+    car.lamps.stop = 1;
+    ModernMaterialUniformBuild(&material, 0, &uniform);
+    ModernMaterialUniformLamps(&car, 0, &uniform);
+    assert(uniform.lamps[0].emission[0] == 2.5f);
+    assert(uniform.lamps[1].emission[0] == 0); /* Continuous strip emitted once. */
     return 0;
 }

@@ -106,7 +106,30 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {0, {204, 5, 208, 10}, {96.40606f, 34.8f, -108.96364f}, LAMP_TAIL_STOP, 1},
         {0, {204, 5, 208, 10}, {-95.83943f, 33.89634f, -108.60976f}, LAMP_TAIL_STOP, 1},
     };
+    static const Lamp vintage[] = {
+        {7, {90, 22, 106, 28}, {-61.17073f, 37.1f, 387.87317f}, LAMP_HEAD, 0},
+        {7, {90, 22, 106, 28}, {61.17073f, 37.1f, 387.87317f}, LAMP_HEAD, 0},
+        {6, {94, 164, 99, 169}, {-115.5f, -2.87097f, -94.62298f}, LAMP_TAIL_STOP, 1},
+        {6, {94, 164, 99, 169}, {115.5f, -3.30847f, -94.62298f}, LAMP_TAIL_STOP, 1},
+    };
+    static const Lamp concept[] = {
+        {4, {21, 91, 35, 100}, {77.41462f, 14.83357f, 469.47323f}, LAMP_HEAD, 1},
+        {4, {93, 91, 107, 100}, {-79.52826f, 14.49246f, 467.80445f}, LAMP_HEAD, 1},
+        /* One continuous red strip, with spill from both ends. */
+        {0, {5, 239, 81, 244}, {77.95588f, 46, -158.5f}, LAMP_TAIL_STOP, 0},
+        {0, {5, 239, 81, 244}, {-77.95588f, 46, -158.5f}, LAMP_TAIL_STOP, 0},
+    };
     *lamps = NULL;
+    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
+        body->assetKey == 70 && body->mesh == 0) {
+        *lamps = vintage;
+        return sizeof(vintage) / sizeof(*vintage);
+    }
+    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
+        body->assetKey == 72 && body->mesh == 0) {
+        *lamps = concept;
+        return sizeof(concept) / sizeof(*concept);
+    }
     if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
         body->assetKey == 66 && body->mesh == 0) {
         *lamps = racer;
