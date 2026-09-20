@@ -20,7 +20,10 @@ void ModernMaterialUniformBuild(const RageRenderMaterial *material,
 void ModernMaterialUniformLamps(const RenderMeshInstance *body,
                                uint32_t material, ModernMaterialUniform *out) {
     const Lamp *lamps;
-    unsigned count = CarLamps(body, &lamps), output = 0;
+    uint32_t materialOffset;
+    unsigned count = CarLamps(body, &lamps, &materialOffset), output = 0;
+    if (material < materialOffset) return;
+    material -= materialOffset;
     for (unsigned i = 0; i < count && output < 8; i++) {
         if (lamps[i].material != material) continue;
         int duplicate = 0;

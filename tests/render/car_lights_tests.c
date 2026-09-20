@@ -185,6 +185,26 @@ int main(void) {
     world.spotLightCount = 0;
     RenderCarSpotLights(&world);
     CHECK(world.spotLightCount == 0);
+    for (unsigned bank = 96; bank <= 100; bank += 2)
+    for (unsigned mesh = 0; mesh <= 30; mesh += 5) {
+        if (mesh == 5 || mesh == 10) continue;
+        const Lamp *first, *second;
+        uint32_t offset = 99;
+        body.mesh = mesh;
+        body.assetKey = 88;
+        CHECK(CarLamps(&body, &first, &offset) == 4 && offset == 0);
+        body.assetKey = bank;
+        CHECK(CarLamps(&body, &second, &offset) == 4);
+        CHECK(offset == (mesh == 0 ? 0u : 3u));
+        CHECK(first == second);
+        world.spotLightCount = 0;
+        RenderCarSpotLights(&world);
+        CHECK(world.spotLightCount == 4);
+        body.component = 1;
+        CHECK(CarLamps(&body, &second, &offset) == 0);
+        CHECK(second == NULL && offset == 0);
+        body.component = 0;
+    }
     body.mesh = 0;
     body.assetSet = RAGE_RENDER_ASSET_MODEL_BANK;
     body.assetKey = 24;
@@ -212,7 +232,7 @@ int main(void) {
     for (unsigned m = 0; m < sizeof(models) / sizeof(*models); ++m) {
         body.assetKey = models[m];
         const Lamp *lamps;
-        unsigned count = CarLamps(&body, &lamps);
+        unsigned count = CarLamps(&body, &lamps, NULL);
         CHECK(count == 4);
         for (unsigned i = 0; i < count; ++i) {
             CHECK(lamps[i].bounds[0] < lamps[i].bounds[2]);
@@ -233,10 +253,10 @@ int main(void) {
         RenderCarSpotLights(&world);
         CHECK(world.spotLightCount == 0);
         body.component = 1;
-        CHECK(CarLamps(&body, &lamps) == 0 && lamps == NULL);
+        CHECK(CarLamps(&body, &lamps, NULL) == 0 && lamps == NULL);
         body.component = 0;
         body.mesh = 1;
-        CHECK(CarLamps(&body, &lamps) == 0 && lamps == NULL);
+        CHECK(CarLamps(&body, &lamps, NULL) == 0 && lamps == NULL);
         body.mesh = 0;
     }
     RenderMeshInstance grid[12] = {0};

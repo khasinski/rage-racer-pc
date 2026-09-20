@@ -9,7 +9,10 @@ typedef struct Lamp {
     LampKind kind;
     int round;
 } Lamp;
-unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps);
+/* Some banks reuse a body and atlas with shifted material indices.
+ * materialOffset may be NULL when only positions/intensities are needed. */
+unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps,
+                  uint32_t *materialOffset);
 float CarLightDaylight(Vec3 sky, Vec3 horizon);
 float CarLampIntensity(const CarLights *state, LampKind kind);
 void RenderCarSpotLights(RenderWorld *world);

@@ -9,7 +9,8 @@ float CarLightDaylight(Vec3 sky, Vec3 horizon) {
     return fmaxf(skyLight, fminf(horizon.x, fminf(horizon.y, horizon.z)));
 }
 
-unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
+unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps,
+                  uint32_t *materialOffset) {
     /* Centers projected through model 0/material 3's UV triangles. Keeping
      * the patch and its emitter together prevents independent placement drift. */
     static const Lamp special[] = {
@@ -313,6 +314,7 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {72, concept, sizeof(concept) / sizeof(*concept)},
     };
     *lamps = NULL;
+    if (materialOffset) *materialOffset = 0;
     if (body->component != 0) return 0;
     if (body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK) {
         if (body->mesh != 0) return 0;
@@ -321,6 +323,13 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
             *lamps = players[i].lamps;
             return players[i].count;
         }
+    } else if (body->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 &&
+               body->assetKey >= 96 && body->assetKey <= 100 &&
+               (body->assetKey & 1u) == 0 && (body->mesh == 0 || body->mesh >= 15) &&
+               body->mesh <= 30 && body->mesh % 5 == 0) {
+        *lamps = clubCars[body->mesh / 5];
+        if (materialOffset) *materialOffset = body->mesh == 0 ? 0 : 3;
+        return 4;
     } else if (body->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 &&
                body->assetKey >= 88 && body->assetKey <= 92 &&
                (body->assetKey & 1u) == 0 && body->mesh <= 30 &&
@@ -369,7 +378,7 @@ void RenderCarSpotLights(RenderWorld *world) {
         const RenderMeshInstance *body = &world->instances[i];
         const Lamp *lamps;
         if (body->pass != RAGE_RENDER_PASS_MAIN) continue;
-        unsigned count = CarLamps(body, &lamps);
+        unsigned count = CarLamps(body, &lamps, NULL);
         if (!count) continue;
         RenderInstanceTransform transform = RenderPrepareInstanceTransform(&body->transform);
         for (unsigned j = 0; j < count; ++j) {
