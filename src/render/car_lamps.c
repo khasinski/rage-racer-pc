@@ -41,6 +41,18 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {0, {14, 205, 17, 209}, {74.35294f, 47, -48.73529f}, LAMP_TAIL_STOP, 0},
         {0, {78, 205, 81, 209}, {-74.13333f, 47, -47.5f}, LAMP_TAIL_STOP, 0},
     };
+    static const Lamp coupe1[] = {
+        {3, {15, 176, 33, 181}, {58.925f, 41.2f, 416.225f}, LAMP_HEAD, 1},
+        {3, {62, 176, 80, 181}, {-58.925f, 41.2f, 416.225f}, LAMP_HEAD, 1},
+        {0, {203, 102, 208, 110}, {107.255f, 47.95f, -52.175f}, LAMP_TAIL_STOP, 1},
+        {0, {203, 177, 208, 185}, {-107.09167f, 47.95f, -51.76667f}, LAMP_TAIL_STOP, 1},
+    };
+    static const Lamp coupe2[] = {
+        {3, {15, 176, 33, 181}, {-58.925f, 41.2f, 416.225f}, LAMP_HEAD, 1},
+        {3, {62, 176, 80, 181}, {58.925f, 41.2f, 416.225f}, LAMP_HEAD, 1},
+        {0, {101, 207, 108, 211}, {108.61538f, 44.87660f, -52.03846f}, LAMP_TAIL_STOP, 1},
+        {0, {180, 207, 187, 211}, {-111.07692f, 44.1875f, -51.80769f}, LAMP_TAIL_STOP, 1},
+    };
     static const Lamp sport[] = {
         {3, {7, 3, 16, 11}, {-49.55208f, 33.20833f, 381.82292f}, LAMP_HEAD, 1},
         {3, {80, 3, 89, 11}, {50.60417f, 33.16667f, 381.27083f}, LAMP_HEAD, 1},
@@ -120,6 +132,16 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {0, {5, 239, 81, 244}, {-77.95588f, 46, -158.5f}, LAMP_TAIL_STOP, 0},
     };
     *lamps = NULL;
+    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
+        body->assetKey == 20 && body->mesh == 0) {
+        *lamps = coupe1;
+        return sizeof(coupe1) / sizeof(*coupe1);
+    }
+    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
+        body->assetKey == 22 && body->mesh == 0) {
+        *lamps = coupe2;
+        return sizeof(coupe2) / sizeof(*coupe2);
+    }
     if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
         body->assetKey == 70 && body->mesh == 0) {
         *lamps = vintage;
