@@ -69,6 +69,15 @@ int main(void) {
     RenderCarSpotLights(&world);
     CHECK(world.spotLightCount == 0);
     body.lamps.headlights = 1;
+    body.lamps.tail = 0.2f;
+    body.lamps.stop = 1;
+    RenderCarSpotLights(&world);
+    CHECK(world.spotLightCount == 4);
+    CHECK(world.spotLights[2].direction.z > 0.99f); /* Rotated rear faces away from front. */
+    CHECK(world.spotLights[2].color.x == 1.5f);
+    CHECK(world.spotLights[2].position.x < body.transform.position.x);
+    CHECK(world.spotLights[3].position.x > body.transform.position.x);
+    world.spotLightCount = 0;
     body.pass = RAGE_RENDER_PASS_MIRROR;
     RenderCarSpotLights(&world);
     CHECK(world.spotLightCount == 0);

@@ -35,6 +35,18 @@ int main(void) {
     car.component = 2;
     ModernMaterialUniformLamps(&car, 3, &uniform);
     assert(uniform.lamps[0].emission[0] == 0);
+    ModernMaterialUniformBuild(&material, 0, &uniform);
+    car.component = 0;
+    car.lamps = (CarLights){1, 0.2f, 0, 1};
+    ModernMaterialUniformLamps(&car, 1, &uniform);
+    assert(uniform.lamps[0].emission[0] == 0.5f);
+    assert(uniform.lamps[0].emission[3] == 1);
+    assert(uniform.lamps[1].emission[0] == 0); /* Mirrored UV isn't double lit. */
+    ModernMaterialUniformBuild(&material, 0, &uniform);
+    car.lamps.stop = 1;
+    ModernMaterialUniformLamps(&car, 1, &uniform);
+    assert(uniform.lamps[0].emission[0] == 2.5f);
+    ModernMaterialUniformBuild(&material, 0, &uniform);
     car.component = 0;
     car.lamps.headlights = 0;
     car.lamps.stop = 1;

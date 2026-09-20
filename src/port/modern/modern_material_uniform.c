@@ -23,6 +23,14 @@ void ModernMaterialUniformLamps(const RenderMeshInstance *body,
     unsigned count = CarLamps(body, &lamps), output = 0;
     for (unsigned i = 0; i < count && output < 8; i++) {
         if (lamps[i].material != material) continue;
+        int duplicate = 0;
+        for (unsigned j = 0; j < i; j++) {
+            if (lamps[j].material == material && lamps[j].kind == lamps[i].kind &&
+                lamps[j].round == lamps[i].round &&
+                memcmp(lamps[j].bounds, lamps[i].bounds, sizeof(lamps[i].bounds)) == 0)
+                duplicate = 1;
+        }
+        if (duplicate) continue;
         float strength = CarLampIntensity(&body->lamps, lamps[i].kind);
         for (int j = 0; j < 4; j++)
             out->lamps[output].bounds[j] = lamps[i].bounds[j] / 256.0f;
@@ -30,6 +38,7 @@ void ModernMaterialUniformLamps(const RenderMeshInstance *body,
         out->lamps[output].emission[0] = strength * 2.5f;
         out->lamps[output].emission[1] = strength * (front ? 2.35f : 0.025f);
         out->lamps[output].emission[2] = strength * (front ? 2.0f : 0.01f);
+        out->lamps[output].emission[3] = (float)lamps[i].round;
         output++;
     }
 }

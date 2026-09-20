@@ -6,8 +6,11 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
     /* Centers projected through model 0/material 3's UV triangles. Keeping
      * the patch and its emitter together prevents independent placement drift. */
     static const Lamp special[] = {
-        {3, {12, 131, 28, 139}, {91.88095f, 19.41667f, 434.88889f}, LAMP_HEAD},
-        {3, {85, 131, 98, 139}, {-92.98106f, 19.41667f, 434.88889f}, LAMP_HEAD},
+        {3, {12, 131, 28, 139}, {91.88095f, 19.41667f, 434.88889f}, LAMP_HEAD, 0},
+        {3, {85, 131, 98, 139}, {-92.98106f, 19.41667f, 434.88889f}, LAMP_HEAD, 0},
+        /* Both rear corners reuse this circular lens in the atlas. */
+        {1, {74, 222, 80, 229}, {104.73947f, 43.53947f, -77.00053f}, LAMP_TAIL_STOP, 1},
+        {1, {74, 222, 80, 229}, {-104.77895f, 43.53947f, -76.81105f}, LAMP_TAIL_STOP, 1},
     };
     *lamps = NULL;
     if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&

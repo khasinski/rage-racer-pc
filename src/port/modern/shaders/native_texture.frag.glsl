@@ -169,6 +169,11 @@ void main() {
     vec3 emissive = texel.rgb * material.emissiveAndShading.rgb;
     for (int i = 0; i < 8; ++i) {
         vec4 bounds = material.lamps[i].bounds;
+        if (material.lamps[i].emission.w > 0.5) {
+            vec2 lens = (uv - (bounds.xy + bounds.zw) * 0.5) /
+                        max((bounds.zw - bounds.xy) * 0.5, vec2(0.00001));
+            if (dot(lens, lens) > 1.0) continue;
+        }
         if (all(greaterThanEqual(uv, bounds.xy)) &&
             all(lessThan(uv, bounds.zw)))
             emissive += material.lamps[i].emission.rgb * (1.0 - fog.a);

@@ -7,6 +7,7 @@ typedef struct Lamp {
     float bounds[4]; /* Atlas texels, x0 y0 x1 y1. */
     Vec3 position;   /* Imported body-local coordinates. */
     LampKind kind;
+    int round;
 } Lamp;
 unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps);
 float CarLampIntensity(const CarLights *state, LampKind kind);
