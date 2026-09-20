@@ -330,5 +330,22 @@ int main(void) {
     ModernMaterialUniformLamps(&car, 0, &uniform);
     assert(uniform.lamps[0].emission[0] == 2.5f);
     assert(uniform.lamps[1].emission[0] == 0); /* Continuous strip emitted once. */
+    car.assetSet = RAGE_RENDER_ASSET_MODEL_BANK;
+    car.assetKey = 42;
+    car.mesh = 0;
+    car.component = 0;
+    car.lamps = (CarLights){1, 0.2f, 0, 1};
+    ModernMaterialUniformBuild(&material, 0, &uniform);
+    ModernMaterialUniformLamps(&car, 1, &uniform);
+    assert(uniform.lamps[0].bounds[1] == 225.0f / 256);
+    assert(uniform.lamps[0].emission[0] == 2.5f);
+    assert(uniform.lamps[1].emission[0] == 2.5f);
+    ModernMaterialUniformBuild(&material, 0, &uniform);
+    ModernMaterialUniformLamps(&car, 0, &uniform);
+    for (int i = 0; i < 4; ++i) assert(uniform.lamps[i].emission[0] == 0.5f);
+    car.lamps.stop = 1;
+    ModernMaterialUniformBuild(&material, 0, &uniform);
+    ModernMaterialUniformLamps(&car, 0, &uniform);
+    for (int i = 0; i < 4; ++i) assert(uniform.lamps[i].emission[0] == 2.5f);
     return 0;
 }

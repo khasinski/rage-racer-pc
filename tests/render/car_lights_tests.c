@@ -299,7 +299,6 @@ int main(void) {
     }
     RenderMeshInstance grid[12] = {0};
     for (unsigned key = 38; key <= 44; key += 2) {
-        if (key == 42) continue; /* This variant has blanked-off headlight panels. */
         body.assetKey = key;
         body.lamps = (CarLights){1, 0.2f, 1, 1};
         world.spotLightCount = 0;
