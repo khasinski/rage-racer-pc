@@ -143,6 +143,25 @@ int main(void) {
     RenderCarSpotLights(&world);
     CHECK(world.spotLightCount == 2);
     CHECK(fabsf(world.spotLights[0].color.x - 5 * tail) < 0.0001f);
+    for (unsigned mesh = 0; mesh <= 15; mesh += 5) {
+        body.mesh = mesh;
+        unsigned count = mesh == 15 ? 6 : 4;
+        body.lamps = (CarLights){1, 0.2f, 0, 1};
+        world.spotLightCount = 0;
+        RenderCarSpotLights(&world);
+        CHECK(world.spotLightCount == count);
+        for (unsigned i = 0; i < count; ++i)
+            CHECK(i < 2 ? world.spotLights[i].direction.z > 0
+                        : world.spotLights[i].direction.z < 0);
+        body.lamps = (CarLights){0, 0, 1, 0};
+        world.spotLightCount = 0;
+        RenderCarSpotLights(&world);
+        CHECK(world.spotLightCount == count - 2);
+        body.lamps = (CarLights){0};
+        world.spotLightCount = 0;
+        RenderCarSpotLights(&world);
+        CHECK(world.spotLightCount == 0);
+    }
     body.mesh = 0;
     body.assetSet = RAGE_RENDER_ASSET_MODEL_BANK;
     body.assetKey = 24;

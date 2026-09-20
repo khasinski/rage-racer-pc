@@ -40,6 +40,21 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {0, {178, 85, 181, 88}, {-114, 4.03590f, -92.69744f}, LAMP_TAIL_STOP, 1},
         {0, {211, 85, 214, 88}, {115.5f, 3.63942f, -92.58494f}, LAMP_TAIL_STOP, 1},
     };
+    static const Lamp rivalSport[] = {
+        /* The popup covers are closed. Use the round bumper lamps. */
+        {24, {124, 46, 131, 52}, {69.39130f, -5.25f, 476.90909f}, LAMP_HEAD, 1},
+        {24, {182, 46, 188, 52}, {-71.82609f, -5.25f, 476.90909f}, LAMP_HEAD, 1},
+        {23, {16, 58, 26, 65}, {99.78125f, 44.0625f, -77.43125f}, LAMP_TAIL_STOP, 1},
+        {23, {16, 58, 26, 65}, {-99.45313f, 44.0625f, -77.29063f}, LAMP_TAIL_STOP, 1},
+    };
+    static const Lamp rivalPrototype[] = {
+        {31, {10, 128, 16, 134}, {101.15019f, 17.19011f, 449.28517f}, LAMP_HEAD, 1},
+        {31, {80, 128, 86, 134}, {-102.65209f, 17.09125f, 447.63688f}, LAMP_HEAD, 1},
+        {28, {103, 142, 109, 148}, {91.63235f, 47, -158.25f}, LAMP_TAIL_STOP, 1},
+        {28, {114, 142, 120, 148}, {61.54412f, 47, -158.25f}, LAMP_TAIL_STOP, 1},
+        {28, {159, 142, 165, 148}, {-61.54412f, 47, -158.25f}, LAMP_TAIL_STOP, 1},
+        {28, {171, 142, 177, 148}, {-94.44444f, 46.94444f, -157.83333f}, LAMP_TAIL_STOP, 1},
+    };
     static const Lamp compact[] = {
         {3, {204, 46, 212, 57}, {-64.88971f, 41.61765f, 342.73235f}, LAMP_HEAD, 1},
         {3, {204, 118, 212, 129}, {64.42647f, 41.61765f, 342.91765f}, LAMP_HEAD, 1},
@@ -281,6 +296,14 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         if (body->mesh == 4) {
             *lamps = rivalFar;
             return sizeof(rivalFar) / sizeof(*rivalFar);
+        }
+        if (body->mesh == 10) {
+            *lamps = rivalSport;
+            return sizeof(rivalSport) / sizeof(*rivalSport);
+        }
+        if (body->mesh == 15) {
+            *lamps = rivalPrototype;
+            return sizeof(rivalPrototype) / sizeof(*rivalPrototype);
         }
     }
     return 0;

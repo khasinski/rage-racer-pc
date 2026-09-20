@@ -99,6 +99,29 @@ int main(void) {
         ModernMaterialUniformLamps(&car, 15, &uniform);
         assert(uniform.lamps[0].emission[0] == 2.5f);
     }
+    for (int driver = 0; driver < 2; ++driver) {
+        car.entity = driver ? 11 : 2;
+        for (unsigned mesh = 10; mesh <= 15; mesh += 5) {
+            car.mesh = mesh;
+            car.lamps = (CarLights){1, 0.2f, 0, 1};
+            unsigned rearMaterial = mesh == 10 ? 23 : 28;
+            unsigned rearPatches = mesh == 10 ? 1 : 4;
+            ModernMaterialUniformBuild(&material, 0, &uniform);
+            ModernMaterialUniformLamps(&car, mesh == 10 ? 24 : 31, &uniform);
+            assert(uniform.lamps[0].emission[0] == 2.5f);
+            assert(uniform.lamps[1].emission[0] == 2.5f);
+            ModernMaterialUniformBuild(&material, 0, &uniform);
+            ModernMaterialUniformLamps(&car, rearMaterial, &uniform);
+            for (unsigned i = 0; i < rearPatches; ++i)
+                assert(uniform.lamps[i].emission[0] == 0.5f);
+            assert(uniform.lamps[rearPatches].emission[0] == 0);
+            car.lamps.stop = 1;
+            ModernMaterialUniformBuild(&material, 0, &uniform);
+            ModernMaterialUniformLamps(&car, rearMaterial, &uniform);
+            for (unsigned i = 0; i < rearPatches; ++i)
+                assert(uniform.lamps[i].emission[0] == 2.5f);
+        }
+    }
     car.mesh = 4;
     car.lamps = (CarLights){1, 0.2f, 0, 1};
     ModernMaterialUniformBuild(&material, 0, &uniform);
