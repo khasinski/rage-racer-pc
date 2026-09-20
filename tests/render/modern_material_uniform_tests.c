@@ -196,6 +196,29 @@ int main(void) {
     }
     car.assetKey = 128;
     car.mesh = 4;
+    for (unsigned bank = 104; bank <= 108; bank += 2)
+    for (unsigned model = 0; model < 7; ++model) {
+        const unsigned front[] = {0, 5, 9, 12, 16, 20, 24};
+        const unsigned rear[] = {1, 6, 10, 13, 17, 21, 25};
+        car.assetKey = bank;
+        car.mesh = model * 5;
+        car.lamps = (CarLights){1, 0.2f, 0, 1};
+        ModernMaterialUniformBuild(&material, 0, &uniform);
+        ModernMaterialUniformLamps(&car, front[model], &uniform);
+        assert(uniform.lamps[0].emission[0] == 2.5f);
+        assert(uniform.lamps[1].emission[0] == 2.5f);
+        ModernMaterialUniformBuild(&material, 0, &uniform);
+        ModernMaterialUniformLamps(&car, rear[model], &uniform);
+        assert(uniform.lamps[0].emission[0] == 0.5f);
+        assert(uniform.lamps[1].emission[0] == 0.5f);
+        car.lamps.stop = 1;
+        ModernMaterialUniformBuild(&material, 0, &uniform);
+        ModernMaterialUniformLamps(&car, rear[model], &uniform);
+        assert(uniform.lamps[0].emission[0] == 2.5f);
+        assert(uniform.lamps[1].emission[0] == 2.5f);
+    }
+    car.assetKey = 128;
+    car.mesh = 4;
     car.lamps = (CarLights){1, 0.2f, 0, 1};
     ModernMaterialUniformBuild(&material, 0, &uniform);
     ModernMaterialUniformLamps(&car, 0, &uniform);

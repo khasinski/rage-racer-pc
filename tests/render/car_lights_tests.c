@@ -203,8 +203,9 @@ int main(void) {
         }
         body.lamps = (CarLights){1, 0.2f, 1, 1};
     }
-    for (unsigned bank = 96; bank <= 100; bank += 2)
+    for (unsigned bank = 96; bank <= 108; bank += 2)
     for (unsigned mesh = 0; mesh <= 30; mesh += 5) {
+        if (bank == 102) continue; /* Separate oval bank. */
         const Lamp *first, *second;
         body.mesh = mesh;
         body.assetKey = 88;
