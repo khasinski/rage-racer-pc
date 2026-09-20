@@ -196,15 +196,18 @@ int main(void) {
     }
     car.assetKey = 128;
     car.mesh = 4;
-    for (unsigned bank = 104; bank <= 116; bank += 2)
+    for (unsigned bank = 104; bank <= 124; bank += 2)
     for (unsigned model = 0; model < 7; ++model) {
-        if (bank == 110) continue;
+        if (bank == 110 || bank == 118) continue;
+        if (bank >= 120 && (model == 2 || model == 3)) continue;
         const unsigned fronts[][7] = {{0, 5, 9, 12, 16, 20, 24},
-                                      {0, 5, 10, 15, 19, 23, 27}};
+                                      {0, 5, 10, 15, 19, 23, 27},
+                                      {0, 5, 0, 0, 20, 24, 28}};
         const unsigned rears[][7] = {{1, 6, 10, 13, 17, 21, 25},
-                                     {1, 6, 11, 16, 20, 24, 28}};
-        const unsigned *front = fronts[bank >= 112];
-        const unsigned *rear = rears[bank >= 112];
+                                     {1, 6, 11, 16, 20, 24, 28},
+                                     {1, 6, 0, 0, 21, 25, 29}};
+        const unsigned *front = fronts[(bank - 104) / 8];
+        const unsigned *rear = rears[(bank - 104) / 8];
         car.assetKey = bank;
         car.mesh = model * 5;
         car.lamps = (CarLights){1, 0.2f, 0, 1};

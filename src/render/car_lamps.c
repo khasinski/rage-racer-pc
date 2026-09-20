@@ -167,12 +167,32 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {28, {112, 106, 120, 112}, {74.89362f, 48.825f, -132}, LAMP_TAIL_STOP, 0},
         {28, {168, 106, 176, 112}, {-77.61702f, 48.825f, -132}, LAMP_TAIL_STOP, 0},
     }};
-    static const Lamp eliteSedan[] = {
+    static const Lamp eliteCars[7][4] = {[0] = {
         {0, {7, 8, 23, 13}, {-86.24525f, 25.13181f, 480.09696f}, LAMP_HEAD, 0},
         {0, {73, 8, 89, 13}, {88.58511f, 25, 479.84043f}, LAMP_HEAD, 0},
         {1, {103, 13, 121, 16}, {93.21595f, 44, -127.28571f}, LAMP_TAIL_STOP, 0},
         {1, {169, 13, 187, 16}, {-99.60404f, 44, -127.28571f}, LAMP_TAIL_STOP, 0},
-    };
+    }, [1] = {
+        {5, {16, 79, 26, 86}, {-76.41558f, 3.28571f, 508.85714f}, LAMP_HEAD, 0},
+        {5, {69, 79, 79, 86}, {76.46013f, 3.28571f, 508.85714f}, LAMP_HEAD, 0},
+        {6, {101, 55, 106, 62}, {120.37791f, 61.05556f, -149.69444f}, LAMP_TAIL_STOP, 0},
+        {6, {182, 55, 187, 62}, {-121.97222f, 61.05556f, -149.69444f}, LAMP_TAIL_STOP, 0},
+    }, [4] = {
+        {20, {7, 5, 25, 11}, {-77.71739f, 27.33333f, 478.86232f}, LAMP_HEAD, 0},
+        {20, {70, 5, 90, 11}, {77.71739f, 27.33333f, 478.86232f}, LAMP_HEAD, 0},
+        {21, {102, 14, 119, 17}, {88.51064f, 44.725f, -132}, LAMP_TAIL_STOP, 0},
+        {21, {168, 14, 186, 17}, {-90.88f, 44.725f, -132}, LAMP_TAIL_STOP, 0},
+    }, [5] = {
+        {24, {6, 52, 26, 60}, {-77.71739f, 27.33333f, 478.86232f}, LAMP_HEAD, 0},
+        {24, {70, 52, 90, 60}, {77.71739f, 27.33333f, 478.86232f}, LAMP_HEAD, 0},
+        {25, {102, 62, 114, 65}, {96.68085f, 42.675f, -132}, LAMP_TAIL_STOP, 0},
+        {25, {172, 62, 185, 65}, {-96.13474f, 42.675f, -132}, LAMP_TAIL_STOP, 0},
+    }, [6] = {
+        {28, {9, 103, 25, 109}, {-72.93478f, 24.22222f, 480.66908f}, LAMP_HEAD, 0},
+        {28, {70, 103, 86, 109}, {72.93478f, 24.22222f, 480.66908f}, LAMP_HEAD, 0},
+        {29, {117, 104, 125, 112}, {61.2766f, 50.875f, -132}, LAMP_TAIL_STOP, 1},
+        {29, {163, 104, 171, 112}, {-64, 50.875f, -132}, LAMP_TAIL_STOP, 1},
+    }};
     static const Lamp clubCars[7][4] = {
         {
             {0, {5, 4, 25, 12}, {-88.72814f, 29.00634f, 478.34601f}, LAMP_HEAD, 0},
@@ -454,8 +474,9 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         *lamps = proCars[body->mesh / 5];
         return 4;
     } else if (body->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 &&
-               body->mesh == 0 && bank == 120) {
-        *lamps = eliteSedan;
+               bank == 120 && body->mesh <= 30 && body->mesh % 5 == 0 &&
+               body->mesh != 10 && body->mesh != 15) {
+        *lamps = eliteCars[body->mesh / 5];
         return 4;
     } else if (body->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 &&
                bank == 96 &&
