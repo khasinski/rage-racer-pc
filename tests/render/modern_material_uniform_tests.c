@@ -24,5 +24,21 @@ int main(void) {
     material.shading = (RageRenderMaterialShading)99;
     ModernMaterialUniformBuild(&material, 0, &uniform);
     assert(uniform.emissiveAndShading[3] == -1.0f);
+    RenderMeshInstance car = {0};
+    car.assetSet = RAGE_RENDER_ASSET_MODEL_BANK;
+    car.assetKey = 68;
+    car.lamps.headlights = 1;
+    ModernMaterialUniformLamps(&car, 3, &uniform);
+    assert(uniform.lamps[0].emission[0] == 2.5f);
+    assert(uniform.lamps[1].bounds[0] == 85.0f / 256);
+    ModernMaterialUniformBuild(&material, 0, &uniform);
+    car.component = 2;
+    ModernMaterialUniformLamps(&car, 3, &uniform);
+    assert(uniform.lamps[0].emission[0] == 0);
+    car.component = 0;
+    car.lamps.headlights = 0;
+    car.lamps.stop = 1;
+    ModernMaterialUniformLamps(&car, 3, &uniform);
+    assert(uniform.lamps[0].emission[0] == 0);
     return 0;
 }

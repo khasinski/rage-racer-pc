@@ -1934,6 +1934,8 @@ static void ModernNativeGpuDrawSet(
         SDL_GPUGraphicsPipeline *boundPipeline = NULL;
         ModernNativeTexture *boundTexture = NULL;
         int boundAllowClearcoat = -1;
+        uint32_t boundEntity = UINT32_MAX;
+        uint8_t boundComponent = UINT8_MAX;
         for (spanIndex = 0; spanIndex < spanCount; spanIndex++) {
             const RageNativeDrawSpan *span = &spans[spanIndex];
             const ModernNativeDrawMaterial *drawMaterial = &drawMaterials[spanIndex];
@@ -1958,18 +1960,35 @@ static void ModernNativeGpuDrawSet(
             }
             if (texture != NULL &&
                 (texture != boundTexture ||
-                 allowClearcoat != boundAllowClearcoat)) {
+                 allowClearcoat != boundAllowClearcoat ||
+                 span->component != boundComponent ||
+                 (span->component == 0 && span->entity != boundEntity))) {
                 SDL_GPUTextureSamplerBinding binding = {
                     .texture = texture->texture,
                     .sampler = s_sampler};
                 ModernMaterialUniform material;
                 ModernMaterialUniformBuild(
                     &texture->definition, allowClearcoat, &material);
+                if (span->component == 0 &&
+                    (span->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
+                     span->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1)) {
+                    for (uint32_t i = 0; i < s_world->instanceCount; ++i) {
+                        const RenderMeshInstance *body = &s_world->instances[i];
+                        if (body->entity == span->entity && body->component == 0 &&
+                            body->assetKey == span->assetKey &&
+                            body->assetSet == span->assetSet && body->mesh == span->mesh) {
+                            ModernMaterialUniformLamps(body, span->material, &material);
+                            break;
+                        }
+                    }
+                }
                 SDL_PushGPUFragmentUniformData(
                     command, 1, &material, sizeof(material));
                 SDL_BindGPUFragmentSamplers(pass, 0, &binding, 1);
                 boundTexture = texture;
                 boundAllowClearcoat = allowClearcoat;
+                boundEntity = span->entity;
+                boundComponent = span->component;
             }
             RageNativeInstanceState effectiveInstance = span->instanceState;
             /* In the traced path, tunnel and bridge geometry determines
@@ -2008,6 +2027,7 @@ static void ModernNativeGpuDrawSet(
                 const ModernGeometryBinding *binding = spans == s_mirrorSpans
                     ? &s_mirrorGeometry[spanIndex + 1] : &s_mainGeometry[spanIndex + 1];
                 if (material->phase != phase || material->pipeline != pipeline ||
+                    (allowClearcoat && next->entity != span->entity) ||
                     material->texture != texture || material->allowClearcoat != allowClearcoat ||
                     binding->buffer != geometry->buffer || binding->indices != geometry->indices ||
                     binding->local != geometry->local ||

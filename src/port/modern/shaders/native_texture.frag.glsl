@@ -33,10 +33,15 @@ layout(set = 3, binding = 0, std140) uniform NativeSceneLight {
     SpotLight spots[48];
 } sceneLight;
 #include "native_spot.glsl"
+struct LampPatch {
+    vec4 bounds;
+    vec4 emission;
+};
 layout(set = 3, binding = 1, std140) uniform NativeMaterial {
     vec4 baseColor;
     vec4 emissiveAndShading;
     vec4 surface;
+    LampPatch lamps[8];
 } material;
 
 float shadowVisibility(vec3 n) {
@@ -162,6 +167,12 @@ void main() {
     base += texel.rgb * modulation * material.baseColor.rgb *
         spotLighting(worldPositionIn, n) * (1.0 - fog.a);
     vec3 emissive = texel.rgb * material.emissiveAndShading.rgb;
+    for (int i = 0; i < 8; ++i) {
+        vec4 bounds = material.lamps[i].bounds;
+        if (all(greaterThanEqual(uv, bounds.xy)) &&
+            all(lessThan(uv, bounds.zw)))
+            emissive += material.lamps[i].emission.rgb * (1.0 - fog.a);
+    }
     outColor = vec4(base + specular + emissive,
                     texel.a * color.a * material.baseColor.a);
 }
