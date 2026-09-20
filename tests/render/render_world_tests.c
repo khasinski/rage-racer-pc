@@ -230,6 +230,29 @@ static void test_directional_light_is_scene_data(void) {
     EXPECT_EQ(60, (int)(world.light.diffuseColor.z * 100.0f));
 }
 
+static void test_directional_light_follows_sky_time_and_color(void) {
+    RenderCamera day = {0}, sunset = {0};
+    RenderDirectionalLight dayLight, sunsetLight;
+
+    day.skyTopColor = (Vec3){0.45f, 0.70f, 1.0f};
+    day.skyHorizonColor = (Vec3){0.75f, 0.85f, 1.0f};
+    sunset.skyTopColor = (Vec3){0.05f, 0.04f, 0.10f};
+    sunset.skyHorizonColor = (Vec3){0.80f, 0.28f, 0.08f};
+    RenderDirectionalLightFromSky(&day, &dayLight);
+    RenderDirectionalLightFromSky(&sunset, &sunsetLight);
+
+    EXPECT_EQ(1, dayLight.direction.y > sunsetLight.direction.y);
+    EXPECT_EQ(1, sunsetLight.diffuseColor.x > sunsetLight.diffuseColor.z);
+    EXPECT_EQ(1, dayLight.diffuseColor.z > sunsetLight.diffuseColor.z);
+    {
+        float lengthSquared =
+            dayLight.direction.x * dayLight.direction.x +
+            dayLight.direction.y * dayLight.direction.y +
+            dayLight.direction.z * dayLight.direction.z;
+        EXPECT_EQ(1, lengthSquared > 0.999f && lengthSquared < 1.001f);
+    }
+}
+
 static void test_mirror_is_an_independent_scene_camera(void) {
     RenderMeshInstance storage[1];
     RenderWorld world;
@@ -837,6 +860,7 @@ int main(void) {
     test_legacy_mirror_instances_can_be_removed_from_scene();
     test_camera_is_scene_data_not_backend_state();
     test_directional_light_is_scene_data();
+    test_directional_light_follows_sky_time_and_color();
     test_mirror_is_an_independent_scene_camera();
     test_camera_cuts_are_not_interpolated_as_motion();
     test_transform_interpolation_takes_short_angle_path();

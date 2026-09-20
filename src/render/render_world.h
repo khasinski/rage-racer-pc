@@ -199,6 +199,8 @@ void RenderWorldBeginFrame(RenderWorld *world, uint64_t frame);
 void RenderWorldSetDirectionalLight(
     RenderWorld *world, const RenderDirectionalLight *light);
 void RenderDirectionalLightDefault(RenderDirectionalLight *light);
+void RenderDirectionalLightFromSky(const RenderCamera *camera,
+                                   RenderDirectionalLight *light);
 void RenderWorldSetCamera(RenderWorld *world,
                               const RenderCamera *camera);
 void RenderWorldSetMirrorCamera(RenderWorld *world,

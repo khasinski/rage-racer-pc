@@ -56,6 +56,58 @@ void RenderDirectionalLightDefault(RenderDirectionalLight *light) {
     light->diffuseColor = (Vec3){0.65f, 0.65f, 0.65f};
 }
 
+static float RenderLightClamp(float value, float minimum, float maximum) {
+    return value < minimum ? minimum : value > maximum ? maximum : value;
+}
+
+static float RenderLightLuminance(Vec3 color) {
+    return color.x * 0.2126f + color.y * 0.7152f + color.z * 0.0722f;
+}
+
+void RenderDirectionalLightFromSky(const RenderCamera *camera,
+                                   RenderDirectionalLight *light) {
+    float sky, horizon, daylight, elevation, horizontal, tintMaximum;
+    Vec3 tint;
+
+    if (camera == NULL || light == NULL) return;
+    sky = RenderLightLuminance(camera->skyTopColor);
+    horizon = RenderLightLuminance(camera->skyHorizonColor);
+    daylight = RenderLightClamp(fmaxf(sky, horizon) * 1.35f, 0.08f, 1.0f);
+
+    /* The retail environment script animates these sky bands through the
+     * course.  Bright daylight places the sun high; dark and sunset palettes
+     * produce a lower, longer shadow without tying it to the camera. */
+    elevation = 0.28f + daylight * 0.58f;
+    horizontal = sqrtf(fmaxf(0.0f, 1.0f - elevation * elevation));
+    light->direction = (Vec3){-horizontal * 0.63f, elevation,
+                              horizontal * 0.7766f};
+
+    /* The horizon carries the sun's warm/cool cast.  Normalize its hue before
+     * applying intensity so a dark evening sky does not turn the light black. */
+    tintMaximum = fmaxf(camera->skyHorizonColor.x,
+                        fmaxf(camera->skyHorizonColor.y,
+                              camera->skyHorizonColor.z));
+    if (tintMaximum > 0.001f) {
+        tint.x = RenderLightClamp(camera->skyHorizonColor.x / tintMaximum,
+                                  0.38f, 1.0f);
+        tint.y = RenderLightClamp(camera->skyHorizonColor.y / tintMaximum,
+                                  0.38f, 1.0f);
+        tint.z = RenderLightClamp(camera->skyHorizonColor.z / tintMaximum,
+                                  0.38f, 1.0f);
+    } else {
+        tint = (Vec3){0.72f, 0.78f, 1.0f};
+    }
+    light->ambientColor.x = (0.18f + daylight * 0.20f) *
+                            (0.65f + tint.x * 0.35f);
+    light->ambientColor.y = (0.18f + daylight * 0.20f) *
+                            (0.65f + tint.y * 0.35f);
+    light->ambientColor.z = (0.18f + daylight * 0.20f) *
+                            (0.65f + tint.z * 0.35f);
+    light->diffuseColor.x = (0.52f + daylight * 0.34f) * tint.x;
+    light->diffuseColor.y = (0.52f + daylight * 0.34f) * tint.y;
+    light->diffuseColor.z = (0.52f + daylight * 0.34f) * tint.z;
+}
+
 void RenderWorldInit(RenderWorld *world,
                          RenderMeshInstance *instances,
                          uint32_t capacity) {

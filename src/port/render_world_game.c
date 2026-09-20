@@ -449,11 +449,14 @@ void GameRenderWorldEndSkyPackets(void) { CaptureSkyEnd(); }
 void GameRenderWorldSetCamera(int32_t x, int32_t y, int32_t z,
                                   int32_t pitch, int32_t yaw, int32_t roll) {
     RenderCamera camera;
+    RenderDirectionalLight light;
 
     if (!s_initialized) return;
     /* PAL's 320x240 active viewport with geom screen 320: 41.112°. */
     camera = GameRenderWorldBuildCamera(x, y, z, pitch, yaw, roll,
                                             41.112f, 0);
+    RenderDirectionalLightFromSky(&camera, &light);
+    RenderWorldSetDirectionalLight(GameRenderWorldMutable(), &light);
     RenderWorldSetCamera(GameRenderWorldMutable(), &camera);
 }
 
