@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "rage/track_lighting.h"
+#include "render/car_lights.h"
 
 static int failures;
 
@@ -30,5 +31,26 @@ int main(void) {
     expect_light(256, 0, 1.0f, 0.5f, 0.25f);
     expect_light(-50, 1, 1.0f, 1.0f, 1.0f);
     expect_light(500, 1, 0.25f, 0.25f, 0.25f);
+    EXPECT_NEAR(1, TrackZoneDaylight(-50));
+    EXPECT_NEAR(1, TrackZoneDaylight(0));
+    EXPECT_NEAR(0.625f, TrackZoneDaylight(128));
+    EXPECT_NEAR(0.25f, TrackZoneDaylight(256));
+    EXPECT_NEAR(0.25f, TrackZoneDaylight(500));
+    /* A warm tunnel keeps its red channel bright. That tint must not stop
+     * headlights coming on, even against the brightest daytime sky. */
+    {
+        CarLights lamps = {0};
+        UpdateCarLights(&lamps, 1, TrackZoneDaylight(0), 0, 1);
+        EXPECT_NEAR(0, lamps.headlights);
+        UpdateCarLights(&lamps, 1, TrackZoneDaylight(256), 0, 1);
+        EXPECT_NEAR(1, lamps.headlights);
+        EXPECT_NEAR(0.2f, lamps.tail);
+        UpdateCarLights(&lamps, 1, TrackZoneDaylight(0), 0, 1);
+        EXPECT_NEAR(0, lamps.headlights);
+        EXPECT_NEAR(0, lamps.tail);
+        UpdateCarLights(&lamps, 1, TrackZoneDaylight(0), 1, 1);
+        EXPECT_NEAR(0, lamps.headlights);
+        EXPECT_NEAR(1, lamps.stop);
+    }
     return failures != 0;
 }

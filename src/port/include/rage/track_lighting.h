@@ -6,4 +6,7 @@
  * by the original game; other zones darken all channels uniformly. */
 void TrackZoneLightColor(int blend, int zoneCode, float out[3]);
 
+/* Fraction of outdoor daylight reaching a car, independent of tunnel tint. */
+float TrackZoneDaylight(int blend);
+
 #endif

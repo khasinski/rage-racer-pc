@@ -1267,6 +1267,7 @@ set_tests_properties(track_asset_identity PROPERTIES LABELS functional)
 add_executable(track_lighting_tests
     track_lighting_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/track_lighting.c)
+target_link_libraries(track_lighting_tests PRIVATE rage-render-world)
 target_include_directories(track_lighting_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")

@@ -329,10 +329,6 @@ void GameRenderWorldBeginFrame(uint64_t frame) {
     s_buildingWorld = 1;
 }
 
-static float LightLuminance(Vec3 color) {
-    return color.x * 0.2126f + color.y * 0.7152f + color.z * 0.0722f;
-}
-
 static void PublishCarLights(void) {
     RenderWorld *world = GameRenderWorldMutable();
     const RenderWorld *previous = GameRenderWorldCurrent();
@@ -358,8 +354,9 @@ static void PublishCarLights(void) {
         }
         const GameCarRuntime *car = body->entity == RAGE_PLAYER_CAR_ENTITY
             ? AsRivalCar(&g_PlayerCar) : &g_Cars[body->entity];
+        TrackZoneEffect zone = GetTrackZoneEffect(car->trackProgress);
         UpdateCarLights(&body->lamps, daylight,
-                       LightLuminance(body->environmentLight),
+                       TrackZoneDaylight(zone.blend),
                        car->brakeInput > 0, seconds);
     }
 }
