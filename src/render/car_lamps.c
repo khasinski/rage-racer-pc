@@ -284,7 +284,8 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
             return players[i].count;
         }
     } else if (body->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 &&
-               body->assetKey == 128) {
+               body->assetKey >= 128 && body->assetKey <= 134 &&
+               (body->assetKey & 1u) == 0) {
         if (body->mesh == 0) {
             *lamps = rival;
             return sizeof(rival) / sizeof(*rival);

@@ -143,7 +143,9 @@ int main(void) {
     RenderCarSpotLights(&world);
     CHECK(world.spotLightCount == 2);
     CHECK(fabsf(world.spotLights[0].color.x - 5 * tail) < 0.0001f);
+    for (unsigned course = 0; course < 4; ++course)
     for (unsigned mesh = 0; mesh <= 15; mesh += 5) {
+        body.assetKey = 128 + course * 2;
         body.mesh = mesh;
         unsigned count = mesh == 15 ? 6 : 4;
         body.lamps = (CarLights){1, 0.2f, 0, 1};
@@ -162,6 +164,11 @@ int main(void) {
         RenderCarSpotLights(&world);
         CHECK(world.spotLightCount == 0);
     }
+    body.assetKey = 129; /* Track texture assets are not car model banks. */
+    body.lamps = (CarLights){1, 0.2f, 1, 1};
+    world.spotLightCount = 0;
+    RenderCarSpotLights(&world);
+    CHECK(world.spotLightCount == 0);
     body.mesh = 0;
     body.assetSet = RAGE_RENDER_ASSET_MODEL_BANK;
     body.assetKey = 24;
