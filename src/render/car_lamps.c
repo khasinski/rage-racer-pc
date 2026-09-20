@@ -456,8 +456,12 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
      * Oval banks are separate; only explicitly verified aliases belong here. */
     uint32_t bank = body->assetKey;
     if ((bank & 1u) == 0 && (bank & 6u) != 6u) bank &= ~7u;
-    if (bank == 94) bank = 120;
-    if (bank == 134) bank = 128;
+    switch (bank) {
+    case 94: case 126: bank = 120; break;
+    case 102: case 110: bank = 104; break;
+    case 118: bank = 112; break;
+    case 134: bank = 128; break;
+    }
     if (body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK) {
         if (body->mesh != 0) return 0;
         for (unsigned i = 0; i < sizeof(players) / sizeof(*players); ++i) {

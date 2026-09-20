@@ -228,6 +228,21 @@ int main(void) {
         CHECK(second == NULL);
         body.component = 0;
     }
+    {
+        const unsigned banks[][2] = {
+            {94, 120}, {102, 104}, {110, 104}, {118, 112}, {126, 120}, {134, 128},
+        };
+        for (unsigned i = 0; i < sizeof(banks) / sizeof(*banks); ++i)
+        for (unsigned mesh = 0; mesh < 35; ++mesh) {
+            const Lamp *oval, *road;
+            body.mesh = mesh;
+            body.assetKey = banks[i][0];
+            unsigned count = CarLamps(&body, &oval);
+            body.assetKey = banks[i][1];
+            CHECK(CarLamps(&body, &road) == count);
+            CHECK(oval == road);
+        }
+    }
     body.mesh = 0;
     body.assetSet = RAGE_RENDER_ASSET_MODEL_BANK;
     body.assetKey = 24;
