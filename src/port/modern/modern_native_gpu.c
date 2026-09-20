@@ -1964,32 +1964,20 @@ static void ModernNativeGpuDrawSet(
                 (texture != boundTexture ||
                  allowClearcoat != boundAllowClearcoat ||
                  span->component != boundComponent ||
-                 (span->component == 0 && span->entity != boundEntity))) {
+                 (span->component == 0 && span->sourceEntity != boundEntity))) {
                 SDL_GPUTextureSamplerBinding binding = {
                     .texture = texture->texture,
                     .sampler = s_sampler};
                 ModernMaterialUniform material;
                 ModernMaterialUniformBuild(
                     &texture->definition, allowClearcoat, &material);
-                if (span->component == 0 &&
-                    (span->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
-                     span->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1)) {
-                    for (uint32_t i = 0; i < s_world->instanceCount; ++i) {
-                        const RenderMeshInstance *body = &s_world->instances[i];
-                        if (body->entity == span->entity && body->component == 0 &&
-                            body->assetKey == span->assetKey &&
-                            body->assetSet == span->assetSet && body->mesh == span->mesh) {
-                            ModernMaterialUniformLamps(body, span->material, &material);
-                            break;
-                        }
-                    }
-                }
+                ModernMaterialUniformCar(s_world, span, &material);
                 SDL_PushGPUFragmentUniformData(
                     command, 1, &material, sizeof(material));
                 SDL_BindGPUFragmentSamplers(pass, 0, &binding, 1);
                 boundTexture = texture;
                 boundAllowClearcoat = allowClearcoat;
-                boundEntity = span->entity;
+                boundEntity = span->sourceEntity;
                 boundComponent = span->component;
             }
             RageNativeInstanceState effectiveInstance = span->instanceState;
@@ -2030,6 +2018,8 @@ static void ModernNativeGpuDrawSet(
                     ? &s_mirrorGeometry[spanIndex + 1] : &s_mainGeometry[spanIndex + 1];
                 if (material->phase != phase || material->pipeline != pipeline ||
                     (allowClearcoat && next->entity != span->entity) ||
+                    (span->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 &&
+                     span->component == 0 && next->sourceEntity != span->sourceEntity) ||
                     material->texture != texture || material->allowClearcoat != allowClearcoat ||
                     binding->buffer != geometry->buffer || binding->indices != geometry->indices ||
                     binding->local != geometry->local ||

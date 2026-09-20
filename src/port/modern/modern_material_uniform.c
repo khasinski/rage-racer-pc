@@ -42,3 +42,21 @@ void ModernMaterialUniformLamps(const RenderMeshInstance *body,
         output++;
     }
 }
+
+void ModernMaterialUniformCar(const RenderWorld *world,
+                              const RageNativeDrawSpan *span,
+                              ModernMaterialUniform *out) {
+    if (span->component != 0 ||
+        (span->assetSet != RAGE_RENDER_ASSET_MODEL_BANK &&
+         span->assetSet != RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1)) return;
+    for (uint32_t i = 0; i < world->instanceCount; ++i) {
+        const RenderMeshInstance *body = &world->instances[i];
+        /* entity is a material-cache identity; sourceEntity is the car. */
+        if (body->entity == span->sourceEntity && body->component == 0 &&
+            body->assetKey == span->assetKey && body->assetSet == span->assetSet &&
+            body->mesh == span->mesh && body->pass == span->pass) {
+            ModernMaterialUniformLamps(body, span->material, out);
+            return;
+        }
+    }
+}

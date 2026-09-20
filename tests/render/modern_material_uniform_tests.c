@@ -347,5 +347,41 @@ int main(void) {
     ModernMaterialUniformBuild(&material, 0, &uniform);
     ModernMaterialUniformLamps(&car, 0, &uniform);
     for (int i = 0; i < 4; ++i) assert(uniform.lamps[i].emission[0] == 2.5f);
+    /* Rivals share material-cache entity zero but have independent lamps. */
+    RenderMeshInstance rivals[2] = {0};
+    RenderWorld world;
+    RenderWorldInit(&world, rivals, 2);
+    world.instanceCount = 2;
+    for (unsigned i = 0; i < 2; ++i) {
+        rivals[i].entity = i;
+        rivals[i].assetSet = RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
+        rivals[i].assetKey = 120;
+        rivals[i].mesh = 15;
+    }
+    rivals[1].lamps = (CarLights){1, 0.2f, 1, 1};
+    RageNativeDrawSpan span = {0};
+    span.assetSet = RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
+    span.assetKey = 120;
+    span.mesh = 15;
+    span.material = 16;
+    span.entity = 0;
+    span.sourceEntity = 1;
+    ModernMaterialUniformBuild(&material, 0, &uniform);
+    ModernMaterialUniformCar(&world, &span, &uniform);
+    assert(uniform.lamps[0].emission[0] == 2.5f);
+    assert(uniform.lamps[1].emission[0] == 0); /* Mirrored shared lens, once. */
+    span.material = 17;
+    ModernMaterialUniformBuild(&material, 0, &uniform);
+    ModernMaterialUniformCar(&world, &span, &uniform);
+    assert(uniform.lamps[0].emission[0] == 2.5f);
+    span.sourceEntity = 0;
+    ModernMaterialUniformBuild(&material, 0, &uniform);
+    ModernMaterialUniformCar(&world, &span, &uniform);
+    assert(uniform.lamps[0].emission[0] == 0);
+    span.sourceEntity = 1;
+    span.component = 1;
+    ModernMaterialUniformBuild(&material, 0, &uniform);
+    ModernMaterialUniformCar(&world, &span, &uniform);
+    assert(uniform.lamps[0].emission[0] == 0);
     return 0;
 }

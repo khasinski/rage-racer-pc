@@ -3,6 +3,7 @@
 
 #include "render/render_material.h"
 #include "render/render_world.h"
+#include "render/render_mesh_build.h"
 
 typedef struct ModernMaterialUniform {
     float baseColor[4];
@@ -18,5 +19,9 @@ void ModernMaterialUniformBuild(const RageRenderMaterial *material,
                                 int allowClearcoat, ModernMaterialUniform *out);
 void ModernMaterialUniformLamps(const RenderMeshInstance *body,
                                uint32_t material, ModernMaterialUniform *out);
+
+void ModernMaterialUniformCar(const RenderWorld *world,
+                              const RageNativeDrawSpan *span,
+                              ModernMaterialUniform *out);
 
 #endif
