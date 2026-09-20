@@ -91,6 +91,12 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {0, {171, 8, 177, 16}, {-80.67084f, 45.38235f, -135.67647f}, LAMP_TAIL_STOP, 1},
         {0, {179, 8, 185, 16}, {-101.94743f, 45.38235f, -135.67647f}, LAMP_TAIL_STOP, 1},
     };
+    static const Lamp sedan12[] = {
+        {3, {10, 162, 30, 169}, {-68.25f, 29.66667f, 482.52381f}, LAMP_HEAD, 0},
+        {3, {65, 162, 86, 169}, {69.66667f, 29.66667f, 482.09524f}, LAMP_HEAD, 0},
+        {0, {104, 6, 120, 9}, {91.47727f, 65.09091f, -127.29545f}, LAMP_TAIL_STOP, 0},
+        {0, {167, 6, 184, 9}, {-93.52727f, 65.2f, -126.34545f}, LAMP_TAIL_STOP, 0},
+    };
     static const Lamp wedge[] = {
         /* Existing bumper driving lamps; the pop-up covers stay opaque. */
         {1, {10, 41, 25, 47}, {-64.35112f, 10.52357f, 465.31514f}, LAMP_HEAD, 1},
@@ -137,105 +143,43 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {0, {5, 239, 81, 244}, {77.95588f, 46, -158.5f}, LAMP_TAIL_STOP, 0},
         {0, {5, 239, 81, 244}, {-77.95588f, 46, -158.5f}, LAMP_TAIL_STOP, 0},
     };
+    static const struct {
+        unsigned key;
+        const Lamp *lamps;
+        unsigned count;
+    } players[] = {
+        {10, compact, sizeof(compact) / sizeof(*compact)},
+        {12, compactUpgrade, sizeof(compactUpgrade) / sizeof(*compactUpgrade)},
+        {14, compact2, sizeof(compact2) / sizeof(*compact2)},
+        {16, compact3, sizeof(compact3) / sizeof(*compact3)},
+        {18, coupe, sizeof(coupe) / sizeof(*coupe)},
+        {20, coupe1, sizeof(coupe1) / sizeof(*coupe1)},
+        {22, coupe2, sizeof(coupe2) / sizeof(*coupe2)},
+        {24, sport, sizeof(sport) / sizeof(*sport)},
+        {26, sport1, sizeof(sport1) / sizeof(*sport1)},
+        {28, sedan, sizeof(sedan) / sizeof(*sedan)},
+        {30, sedan12, sizeof(sedan12) / sizeof(*sedan12)},
+        {32, sedan12, sizeof(sedan12) / sizeof(*sedan12)},
+        {38, muscle, sizeof(muscle) / sizeof(*muscle)},
+        {46, wedge, sizeof(wedge) / sizeof(*wedge)},
+        {52, truck, sizeof(truck) / sizeof(*truck)},
+        {56, exotic, sizeof(exotic) / sizeof(*exotic)},
+        {62, prototype, sizeof(prototype) / sizeof(*prototype)},
+        {66, racer, sizeof(racer) / sizeof(*racer)},
+        {68, special, sizeof(special) / sizeof(*special)},
+        {70, vintage, sizeof(vintage) / sizeof(*vintage)},
+        {72, concept, sizeof(concept) / sizeof(*concept)},
+    };
     *lamps = NULL;
-    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
-        body->assetKey == 26 && body->mesh == 0) {
-        *lamps = sport1;
-        return sizeof(sport1) / sizeof(*sport1);
-    }
-    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
-        body->assetKey == 20 && body->mesh == 0) {
-        *lamps = coupe1;
-        return sizeof(coupe1) / sizeof(*coupe1);
-    }
-    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
-        body->assetKey == 22 && body->mesh == 0) {
-        *lamps = coupe2;
-        return sizeof(coupe2) / sizeof(*coupe2);
-    }
-    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
-        body->assetKey == 70 && body->mesh == 0) {
-        *lamps = vintage;
-        return sizeof(vintage) / sizeof(*vintage);
-    }
-    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
-        body->assetKey == 72 && body->mesh == 0) {
-        *lamps = concept;
-        return sizeof(concept) / sizeof(*concept);
-    }
-    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
-        body->assetKey == 66 && body->mesh == 0) {
-        *lamps = racer;
-        return sizeof(racer) / sizeof(*racer);
-    }
-    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
-        body->assetKey == 62 && body->mesh == 0) {
-        *lamps = prototype;
-        return sizeof(prototype) / sizeof(*prototype);
-    }
-    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
-        body->assetKey == 56 && body->mesh == 0) {
-        *lamps = exotic;
-        return sizeof(exotic) / sizeof(*exotic);
-    }
-    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
-        body->assetKey == 52 && body->mesh == 0) {
-        *lamps = truck;
-        return sizeof(truck) / sizeof(*truck);
-    }
-    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
-        body->assetKey == 46 && body->mesh == 0) {
-        *lamps = wedge;
-        return sizeof(wedge) / sizeof(*wedge);
-    }
-    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
-        body->assetKey == 38 && body->mesh == 0) {
-        *lamps = muscle;
-        return sizeof(muscle) / sizeof(*muscle);
-    }
-    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
-        body->assetKey == 14 && body->mesh == 0) {
-        *lamps = compact2;
-        return sizeof(compact2) / sizeof(*compact2);
-    }
-    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
-        body->assetKey == 16 && body->mesh == 0) {
-        *lamps = compact3;
-        return sizeof(compact3) / sizeof(*compact3);
-    }
-    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
-        body->assetKey == 12 && body->mesh == 0) {
-        *lamps = compactUpgrade;
-        return sizeof(compactUpgrade) / sizeof(*compactUpgrade);
-    }
-    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
-        body->assetKey == 28 && body->mesh == 0) {
-        *lamps = sedan;
-        return sizeof(sedan) / sizeof(*sedan);
-    }
-    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
-        body->assetKey == 24 && body->mesh == 0) {
-        *lamps = sport;
-        return sizeof(sport) / sizeof(*sport);
-    }
-    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
-        body->assetKey == 18 && body->mesh == 0) {
-        *lamps = coupe;
-        return sizeof(coupe) / sizeof(*coupe);
-    }
-    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
-        body->assetKey == 10 && body->mesh == 0) {
-        *lamps = compact;
-        return sizeof(compact) / sizeof(*compact);
-    }
-    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
-        body->assetKey == 68 && body->mesh == 0) {
-        *lamps = special;
-        return sizeof(special) / sizeof(*special);
-    }
-    if (body->component == 0 &&
-        body->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 &&
-        body->assetKey == 128 && body->mesh == 0) {
+    if (body->component != 0 || body->mesh != 0) return 0;
+    if (body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK) {
+        for (unsigned i = 0; i < sizeof(players) / sizeof(*players); ++i) {
+            if (players[i].key != body->assetKey) continue;
+            *lamps = players[i].lamps;
+            return players[i].count;
+        }
+    } else if (body->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 &&
+               body->assetKey == 128) {
         *lamps = rival;
         return sizeof(rival) / sizeof(*rival);
     }
