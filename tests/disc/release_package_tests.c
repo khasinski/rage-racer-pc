@@ -93,6 +93,13 @@ int main(int argc, char **argv) {
     }
     for (index = 0; index < sizeof(required) / sizeof(required[0]); index++)
         ok &= RequireFile(argv[1], required[index]);
+    {
+        char *config;
+        if (!ReadFile(argv[1], "rage-port.ini", &config)) return 1;
+        ok &= RequireText("rage-port.ini", config, "ray_tracing = full");
+        ok &= RequireText("rage-port.ini", config, "EXPERIMENTAL");
+        free(config);
+    }
     if (!ReadFile(argv[1], "CMakeLists.txt", &cmake)) return 1;
     /* Read the version the project declares rather than naming one here:
      * a release otherwise has to edit this test too, and a test that has to

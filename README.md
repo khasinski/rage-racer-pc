@@ -211,7 +211,7 @@ Display, content and storage settings:
 | `hud` | `show_time_limit` | `true`, `false` | `true` |
 | `camera` | `chase_turn_lookahead` | `0` to `1`; `0` is retail | `0` |
 | `modern` | `assets` | Optional explicit prebuilt native-asset cache for renderer development, or `disc`; omitted always imports from the selected disc | omitted |
-| `modern` | `ray_tracing` | Experimental hybrid rays: `off`, `shadows`, `reflections`, `full` | `off` |
+| `modern` | `ray_tracing` | **Experimental** hybrid rays: `off`, `shadows`, `reflections`, `full`. May cause visual artifacts and substantially reduce performance. | `full` |
 | `modern` | `mirror_distance` | `0.25` to `8`, capped at the main view distance | `1` |
 | `timing` | `standard` | `auto`, `pal`, `ntsc` | `auto` |
 | `content` | `car_names` | `international`, `japanese` | `international` |
@@ -592,7 +592,7 @@ say what they wanted. Nothing else in the suite needs the disc.
 
 ## Known limitations
 
-For the current candidate, see the [0.6.7-alpha release notes](docs/release-0.6.7-alpha.md)
+For the current experimental release, see the [0.6.8-alpha-raytracer release notes](docs/release-0.6.8-alpha-raytracer.md)
 and [enhanced classic renderer settings](docs/classic-renderer.md). Outstanding
 work remains tracked in the GitHub issue list.
 

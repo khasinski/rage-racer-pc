@@ -13,7 +13,7 @@ int RaySceneBuildWorld(RayScene *scene, const RenderWorld *world,
     if (scene == NULL || world == NULL || lookup == NULL ||
         (world->instanceCount != 0 && world->instances == NULL)) return 0;
     if (world->instanceCount == 0) return RaySceneBuild(scene, NULL, 0);
-    if ((size_t)world->instanceCount > SIZE_MAX / sizeof(*instances)) return 0;
+    if (sizeof(*instances) > SIZE_MAX / world->instanceCount) return 0;
     instances = malloc((size_t)world->instanceCount * sizeof(*instances));
     if (instances == NULL) return 0;
     for (uint32_t index = 0; index < world->instanceCount; ++index) {

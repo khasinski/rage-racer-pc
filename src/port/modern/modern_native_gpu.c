@@ -148,10 +148,11 @@ static int s_rayMode;
 
 static int ModernNativeRayMode(void) {
     const char *value = RuntimeConfigGet("modern.ray_tracing");
-    if (value == NULL || strcmp(value, "off") == 0 || strcmp(value, "0") == 0)
+    if (value == NULL || strcmp(value, "full") == 0 || strcmp(value, "on") == 0)
+        return 3;
+    if (strcmp(value, "off") == 0 || strcmp(value, "0") == 0)
         return 0;
     if (strcmp(value, "reflections") == 0) return 2;
-    if (strcmp(value, "full") == 0) return 3;
     return strcmp(value, "shadows") == 0 || strcmp(value, "true") == 0 ||
            strcmp(value, "1") == 0 ? 1 : 0;
 }

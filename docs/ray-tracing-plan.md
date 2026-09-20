@@ -1,5 +1,10 @@
 # Ray tracing plan
 
+The prototype notes below describe the earlier development defaults. The
+experimental `0.6.8-alpha-raytracer` release enables `full` by default; see its
+[release notes](release-0.6.8-alpha-raytracer.md) for current behavior and known
+limitations.
+
 ## Goal
 
 Add optional ray-traced lighting to the modern renderer without changing game

@@ -6,7 +6,7 @@ on:
       version:
         description: Release version used in the archive name
         required: true
-        default: 0.6.7-alpha
+        default: 0.6.8-alpha-raytracer
   push:
     tags:
       - "*"
