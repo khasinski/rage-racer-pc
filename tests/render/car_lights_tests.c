@@ -81,5 +81,23 @@ int main(void) {
     body.pass = RAGE_RENDER_PASS_MIRROR;
     RenderCarSpotLights(&world);
     CHECK(world.spotLightCount == 0);
+    body.pass = RAGE_RENDER_PASS_MAIN;
+    body.assetSet = RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
+    body.assetKey = 128;
+    body.transform.hasOrientation = 0;
+    body.lamps = (CarLights){0, 0.2f, 0, 1};
+    RenderCarSpotLights(&world);
+    CHECK(world.spotLightCount == 2);
+    CHECK(world.spotLights[0].position.x < body.transform.position.x);
+    CHECK(world.spotLights[1].position.x > body.transform.position.x);
+    CHECK(world.spotLights[0].direction.z < -0.99f);
+    CHECK(world.spotLights[1].direction.z < -0.99f);
+    float tail = world.spotLights[0].color.x;
+    world.spotLightCount = 0;
+    body.lamps.stop = 1;
+    RenderCarSpotLights(&world);
+    CHECK(world.spotLightCount == 2);
+    CHECK(fabsf(world.spotLights[0].color.x - 5 * tail) < 0.0001f);
+    CHECK(world.spotLights[0].color.x == world.spotLights[1].color.x);
     return failures != 0;
 }

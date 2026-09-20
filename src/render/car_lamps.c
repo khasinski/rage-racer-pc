@@ -15,6 +15,9 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
     static const Lamp rival[] = {
         {7, {29, 160, 42, 165}, {-64.43902f, 35.7f, 386.50244f}, LAMP_HEAD, 0},
         {7, {29, 160, 42, 165}, {64.43902f, 35.7f, 386.50244f}, LAMP_HEAD, 0},
+        /* Inner rear-fender lenses share UVs, but have separate emitters. */
+        {5, {71, 85, 75, 89}, {-114, 4.03590f, -92.69744f}, LAMP_TAIL_STOP, 1},
+        {5, {71, 85, 75, 89}, {115.5f, 3.63942f, -92.58494f}, LAMP_TAIL_STOP, 1},
     };
     static const Lamp compact[] = {
         {3, {204, 46, 212, 57}, {-64.88971f, 41.61765f, 342.73235f}, LAMP_HEAD, 1},
