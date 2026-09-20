@@ -169,6 +169,22 @@ int main(void) {
     world.spotLightCount = 0;
     RenderCarSpotLights(&world);
     CHECK(world.spotLightCount == 0);
+    for (unsigned bank = 88; bank <= 92; bank += 2)
+    for (unsigned mesh = 0; mesh <= 15; mesh += 5) {
+        body.assetKey = bank;
+        body.mesh = mesh;
+        world.spotLightCount = 0;
+        RenderCarSpotLights(&world);
+        CHECK(world.spotLightCount == 4);
+        CHECK(world.spotLights[0].position.x < body.transform.position.x);
+        CHECK(world.spotLights[1].position.x > body.transform.position.x);
+        CHECK(world.spotLights[2].direction.z < 0);
+        CHECK(world.spotLights[3].direction.z < 0);
+    }
+    body.assetKey = 94; /* Oval course has a different bank. */
+    world.spotLightCount = 0;
+    RenderCarSpotLights(&world);
+    CHECK(world.spotLightCount == 0);
     body.mesh = 0;
     body.assetSet = RAGE_RENDER_ASSET_MODEL_BANK;
     body.assetKey = 24;
