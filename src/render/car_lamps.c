@@ -26,7 +26,17 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {0, {110, 13, 113, 17}, {74.35294f, 47, -48.73529f}, LAMP_TAIL_STOP, 0},
         {0, {174, 13, 177, 17}, {-74.13333f, 47, -47.5f}, LAMP_TAIL_STOP, 0},
     };
+    static const Lamp coupe[] = {
+        /* White inner lenses; the amber outer corners are indicators. */
+        {3, {15, 8, 33, 13}, {58.925f, 41.2f, 416.225f}, LAMP_HEAD, 1},
+        {3, {62, 8, 80, 13}, {-58.925f, 41.2f, 416.225f}, LAMP_HEAD, 1},
+    };
     *lamps = NULL;
+    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
+        body->assetKey == 18 && body->mesh == 0) {
+        *lamps = coupe;
+        return sizeof(coupe) / sizeof(*coupe);
+    }
     if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
         body->assetKey == 10 && body->mesh == 0) {
         *lamps = compact;
