@@ -177,6 +177,18 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {5, {69, 79, 79, 86}, {76.46013f, 3.28571f, 508.85714f}, LAMP_HEAD, 0},
         {6, {101, 55, 106, 62}, {120.37791f, 61.05556f, -149.69444f}, LAMP_TAIL_STOP, 0},
         {6, {182, 55, 187, 62}, {-121.97222f, 61.05556f, -149.69444f}, LAMP_TAIL_STOP, 0},
+    }, [2] = {
+        /* Narrow dark lenses flank the central grille. */
+        {10, {8, 103, 19, 106}, {-47.16393f, 31.31148f, 385.37705f}, LAMP_HEAD, 0},
+        {10, {76, 103, 87, 106}, {47.16393f, 31.31148f, 385.37705f}, LAMP_HEAD, 0},
+        {11, {113, 102, 121, 109}, {70.22903f, 35.9f, -73.95f}, LAMP_TAIL_STOP, 1},
+        {11, {166, 102, 174, 109}, {-68.82632f, 35.9f, -73.95f}, LAMP_TAIL_STOP, 1},
+    }, [3] = {
+        /* Both sloping front fenders share the round lens in this atlas. */
+        {16, {213, 165, 219, 171}, {-124.57798f, 11.85321f, 462.19725f}, LAMP_HEAD, 1},
+        {16, {213, 165, 219, 171}, {124.58009f, 11.48398f, 462.93535f}, LAMP_HEAD, 1},
+        {17, {44, 180, 60, 186}, {104.67879f, 34.8f, -108.42424f}, LAMP_TAIL_STOP, 0},
+        {17, {44, 180, 60, 186}, {-106.34783f, 33.5f, -107.91304f}, LAMP_TAIL_STOP, 0},
     }, [4] = {
         {20, {7, 5, 25, 11}, {-77.71739f, 27.33333f, 478.86232f}, LAMP_HEAD, 0},
         {20, {70, 5, 90, 11}, {77.71739f, 27.33333f, 478.86232f}, LAMP_HEAD, 0},
@@ -487,8 +499,7 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         *lamps = proCars[body->mesh / 5];
         return 4;
     } else if (body->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 &&
-               bank == 120 && body->mesh <= 30 && body->mesh % 5 == 0 &&
-               body->mesh != 10 && body->mesh != 15) {
+               bank == 120 && body->mesh <= 30 && body->mesh % 5 == 0) {
         *lamps = eliteCars[body->mesh / 5];
         return 4;
     } else if (body->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 &&

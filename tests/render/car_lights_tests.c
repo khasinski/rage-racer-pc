@@ -182,10 +182,10 @@ int main(void) {
         CHECK(world.spotLights[3].direction.z < 0);
     }
     body.assetKey = 94; /* Oval course has a different bank. */
-    body.mesh = 15; /* Prototype still requires an authored light layout. */
+    body.mesh = 15; /* Prototype uses its fender lenses on the oval too. */
     world.spotLightCount = 0;
     RenderCarSpotLights(&world);
-    CHECK(world.spotLightCount == 0);
+    CHECK(world.spotLightCount == 4);
     {
         const unsigned banks[] = {94, 104, 106, 108, 112, 114, 116, 120, 122, 124};
         body.mesh = 0;
@@ -207,7 +207,6 @@ int main(void) {
     for (unsigned bank = 96; bank <= 124; bank += 2)
     for (unsigned mesh = 0; mesh <= 30; mesh += 5) {
         if (bank == 102 || bank == 110 || bank == 118) continue;
-        if (bank >= 120 && (mesh == 10 || mesh == 15)) continue;
         const Lamp *first, *second;
         body.mesh = mesh;
         body.assetKey = 88;

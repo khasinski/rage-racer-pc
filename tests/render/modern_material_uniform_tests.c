@@ -199,31 +199,31 @@ int main(void) {
     for (unsigned bank = 104; bank <= 124; bank += 2)
     for (unsigned model = 0; model < 7; ++model) {
         if (bank == 110 || bank == 118) continue;
-        if (bank >= 120 && (model == 2 || model == 3)) continue;
         const unsigned fronts[][7] = {{0, 5, 9, 12, 16, 20, 24},
                                       {0, 5, 10, 15, 19, 23, 27},
-                                      {0, 5, 0, 0, 20, 24, 28}};
+                                      {0, 5, 10, 16, 20, 24, 28}};
         const unsigned rears[][7] = {{1, 6, 10, 13, 17, 21, 25},
                                      {1, 6, 11, 16, 20, 24, 28},
-                                     {1, 6, 0, 0, 21, 25, 29}};
+                                     {1, 6, 11, 17, 21, 25, 29}};
         const unsigned *front = fronts[(bank - 104) / 8];
         const unsigned *rear = rears[(bank - 104) / 8];
+        const int shared = bank >= 120 && model == 3;
         car.assetKey = bank;
         car.mesh = model * 5;
         car.lamps = (CarLights){1, 0.2f, 0, 1};
         ModernMaterialUniformBuild(&material, 0, &uniform);
         ModernMaterialUniformLamps(&car, front[model], &uniform);
         assert(uniform.lamps[0].emission[0] == 2.5f);
-        assert(uniform.lamps[1].emission[0] == 2.5f);
+        assert(uniform.lamps[1].emission[0] == (shared ? 0 : 2.5f));
         ModernMaterialUniformBuild(&material, 0, &uniform);
         ModernMaterialUniformLamps(&car, rear[model], &uniform);
         assert(uniform.lamps[0].emission[0] == 0.5f);
-        assert(uniform.lamps[1].emission[0] == 0.5f);
+        assert(uniform.lamps[1].emission[0] == (shared ? 0 : 0.5f));
         car.lamps.stop = 1;
         ModernMaterialUniformBuild(&material, 0, &uniform);
         ModernMaterialUniformLamps(&car, rear[model], &uniform);
         assert(uniform.lamps[0].emission[0] == 2.5f);
-        assert(uniform.lamps[1].emission[0] == 2.5f);
+        assert(uniform.lamps[1].emission[0] == (shared ? 0 : 2.5f));
     }
     car.assetKey = 128;
     car.mesh = 4;
