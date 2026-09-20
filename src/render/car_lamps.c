@@ -9,8 +9,7 @@ float CarLightDaylight(Vec3 sky, Vec3 horizon) {
     return fmaxf(skyLight, fminf(horizon.x, fminf(horizon.y, horizon.z)));
 }
 
-unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps,
-                  uint32_t *materialOffset) {
+unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
     /* Centers projected through model 0/material 3's UV triangles. Keeping
      * the patch and its emitter together prevents independent placement drift. */
     static const Lamp special[] = {
@@ -56,6 +55,45 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps,
         {28, {159, 142, 165, 148}, {-61.54412f, 47, -158.25f}, LAMP_TAIL_STOP, 1},
         {28, {171, 142, 177, 148}, {-94.44444f, 46.94444f, -157.83333f}, LAMP_TAIL_STOP, 1},
     };
+    /* These bodies partly share geometry with clubCars, but use different
+     * lamp textures. Keep their lens masks tied to their own atlas. */
+    static const Lamp sportCars[7][4] = {{
+        {0, {10, 8, 30, 14}, {-73.10076f, 24.40558f, 482.14449f}, LAMP_HEAD, 0},
+        {0, {65, 8, 85, 14}, {72.65603f, 24.22222f, 482.29078f}, LAMP_HEAD, 0},
+        {1, {103, 12, 125, 16}, {87.30842f, 45, -127.2619f}, LAMP_TAIL_STOP, 0},
+        {1, {163, 12, 185, 16}, {-90.84265f, 45, -127.2619f}, LAMP_TAIL_STOP, 0},
+    }, {
+        {5, {6, 52, 18, 64}, {-94.85106f, 34.5f, 498.68085f}, LAMP_HEAD, 1},
+        {5, {78, 52, 90, 64}, {97.68554f, 34.91058f, 498.80328f}, LAMP_HEAD, 1},
+        {6, {110, 57, 115, 65}, {83.69164f, 43.67647f, -135.73529f}, LAMP_TAIL_STOP, 0},
+        {6, {172, 57, 178, 65}, {-83.29161f, 43.67647f, -135.73529f}, LAMP_TAIL_STOP, 0},
+    }, {
+        {10, {5, 101, 16, 112}, {65.96667f, 46.66667f, 337.33333f}, LAMP_HEAD, 1},
+        {10, {79, 101, 91, 112}, {-66.025f, 46.66667f, 337.31f}, LAMP_HEAD, 1},
+        /* Only the upper red strips, excluding amber and reversing lenses. */
+        {11, {111, 114, 120, 117}, {72.9f, 38.92857f, -58.38571f}, LAMP_TAIL_STOP, 0},
+        {11, {168, 114, 177, 117}, {-75.42857f, 38.92857f, -57.21429f}, LAMP_TAIL_STOP, 0},
+    }, {
+        {14, {3, 150, 26, 155}, {-86.12357f, 28.23954f, 478.97909f}, LAMP_HEAD, 0},
+        {14, {69, 150, 94, 155}, {88.47163f, 28.11111f, 478.71986f}, LAMP_HEAD, 0},
+        {15, {104, 156, 123, 161}, {87.30842f, 45, -127.2619f}, LAMP_TAIL_STOP, 0},
+        {15, {164, 156, 184, 161}, {-90.84265f, 45, -127.2619f}, LAMP_TAIL_STOP, 0},
+    }, {
+        {17, {10, 7, 30, 12}, {-61.36957f, 21.82353f, 463.48338f}, LAMP_HEAD, 0},
+        {17, {65, 7, 85, 12}, {61.36957f, 21.82353f, 463.48338f}, LAMP_HEAD, 0},
+        {18, {103, 8, 120, 13}, {68.6087f, 57.875f, -85.13587f}, LAMP_TAIL_STOP, 0},
+        {18, {170, 8, 187, 13}, {-74.9375f, 57.875f, -82.77083f}, LAMP_TAIL_STOP, 0},
+    }, {
+        {22, {7, 53, 16, 61}, {-81.69565f, 22.5f, 451.32609f}, LAMP_HEAD, 1},
+        {22, {80, 53, 88, 61}, {82.8913f, 22.5f, 450.65217f}, LAMP_HEAD, 1},
+        {23, {103, 59, 122, 64}, {66.45652f, 50.9375f, -91.13315f}, LAMP_TAIL_STOP, 0},
+        {23, {166, 59, 186, 64}, {-69.34375f, 50.9375f, -90.01042f}, LAMP_TAIL_STOP, 0},
+    }, {
+        {26, {7, 100, 25, 111}, {-70.93478f, 21.14706f, 458.2711f}, LAMP_HEAD, 1},
+        {26, {70, 100, 88, 111}, {70.93478f, 21.14706f, 458.2711f}, LAMP_HEAD, 1},
+        {27, {104, 104, 118, 110}, {69.72826f, 56.71875f, -85.81658f}, LAMP_TAIL_STOP, 0},
+        {27, {170, 104, 184, 110}, {-71.70313f, 56.71875f, -84.47396f}, LAMP_TAIL_STOP, 0},
+    }};
     static const Lamp clubCars[7][4] = {
         {
             {0, {5, 4, 25, 12}, {-88.72814f, 29.00634f, 478.34601f}, LAMP_HEAD, 0},
@@ -314,7 +352,6 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps,
         {72, concept, sizeof(concept) / sizeof(*concept)},
     };
     *lamps = NULL;
-    if (materialOffset) *materialOffset = 0;
     if (body->component != 0) return 0;
     if (body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK) {
         if (body->mesh != 0) return 0;
@@ -325,10 +362,9 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps,
         }
     } else if (body->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 &&
                body->assetKey >= 96 && body->assetKey <= 100 &&
-               (body->assetKey & 1u) == 0 && (body->mesh == 0 || body->mesh >= 15) &&
+               (body->assetKey & 1u) == 0 &&
                body->mesh <= 30 && body->mesh % 5 == 0) {
-        *lamps = clubCars[body->mesh / 5];
-        if (materialOffset) *materialOffset = body->mesh == 0 ? 0 : 3;
+        *lamps = sportCars[body->mesh / 5];
         return 4;
     } else if (body->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 &&
                body->assetKey >= 88 && body->assetKey <= 92 &&
@@ -378,7 +414,7 @@ void RenderCarSpotLights(RenderWorld *world) {
         const RenderMeshInstance *body = &world->instances[i];
         const Lamp *lamps;
         if (body->pass != RAGE_RENDER_PASS_MAIN) continue;
-        unsigned count = CarLamps(body, &lamps, NULL);
+        unsigned count = CarLamps(body, &lamps);
         if (!count) continue;
         RenderInstanceTransform transform = RenderPrepareInstanceTransform(&body->transform);
         for (unsigned j = 0; j < count; ++j) {

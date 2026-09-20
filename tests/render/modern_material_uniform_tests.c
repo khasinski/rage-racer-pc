@@ -146,10 +146,10 @@ int main(void) {
         }
     }
     for (unsigned bank = 96; bank <= 100; bank += 2)
-    for (unsigned model = 0; model < 5; ++model) {
-        const unsigned meshes[] = {0, 15, 20, 25, 30};
-        const unsigned front[] = {0, 14, 17, 22, 26};
-        const unsigned rear[] = {1, 15, 18, 23, 27};
+    for (unsigned model = 0; model < 7; ++model) {
+        const unsigned meshes[] = {0, 5, 10, 15, 20, 25, 30};
+        const unsigned front[] = {0, 5, 10, 14, 17, 22, 26};
+        const unsigned rear[] = {1, 6, 11, 15, 18, 23, 27};
         car.assetKey = bank;
         car.mesh = meshes[model];
         car.lamps = (CarLights){1, 0.2f, 0, 1};
