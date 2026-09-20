@@ -119,7 +119,7 @@ int main(void) {
     CHECK(world.spotLights[1].direction.z < -0.99f);
     /* Every mapped player body has a pair at each end. Validate dark/off and
      * day/braking separately so adding a model cannot silently omit one end. */
-    const unsigned models[] = {10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 46, 52, 56, 62, 66, 68, 70, 72};
+    const unsigned models[] = {10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 46, 52, 56, 62, 66, 68, 70, 72};
     body.assetSet = RAGE_RENDER_ASSET_MODEL_BANK;
     for (unsigned m = 0; m < sizeof(models) / sizeof(*models); ++m) {
         body.assetKey = models[m];

@@ -97,6 +97,18 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {0, {104, 6, 120, 9}, {91.47727f, 65.09091f, -127.29545f}, LAMP_TAIL_STOP, 0},
         {0, {167, 6, 184, 9}, {-93.52727f, 65.2f, -126.34545f}, LAMP_TAIL_STOP, 0},
     };
+    static const Lamp sedan3[] = {
+        {5, {106, 162, 126, 169}, {-75.375f, 29.66667f, 485.07738f}, LAMP_HEAD, 0},
+        {5, {161, 162, 182, 169}, {77.16667f, 29.66667f, 484.97619f}, LAMP_HEAD, 0},
+        {0, {104, 6, 120, 9}, {91.32143f, 67, -126.64286f}, LAMP_TAIL_STOP, 0},
+        {0, {167, 6, 184, 9}, {-93.64706f, 67, -126.97059f}, LAMP_TAIL_STOP, 0},
+    };
+    static const Lamp sedan4[] = {
+        {3, {248, 20, 254, 36}, {-70.25f, 24.11538f, 484.32308f}, LAMP_HEAD, 0},
+        {3, {248, 76, 254, 92}, {72.92073f, 23.71951f, 484.12195f}, LAMP_HEAD, 0},
+        {0, {242, 124, 247, 138}, {102.01934f, 61.40055f, -130.9558f}, LAMP_TAIL_STOP, 0},
+        {0, {242, 196, 247, 210}, {-99.17665f, 61.4521f, -131.29341f}, LAMP_TAIL_STOP, 0},
+    };
     static const Lamp wedge[] = {
         /* Existing bumper driving lamps; the pop-up covers stay opaque. */
         {1, {10, 41, 25, 47}, {-64.35112f, 10.52357f, 465.31514f}, LAMP_HEAD, 1},
@@ -160,6 +172,8 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {28, sedan, sizeof(sedan) / sizeof(*sedan)},
         {30, sedan12, sizeof(sedan12) / sizeof(*sedan12)},
         {32, sedan12, sizeof(sedan12) / sizeof(*sedan12)},
+        {34, sedan3, sizeof(sedan3) / sizeof(*sedan3)},
+        {36, sedan4, sizeof(sedan4) / sizeof(*sedan4)},
         {38, muscle, sizeof(muscle) / sizeof(*muscle)},
         {46, wedge, sizeof(wedge) / sizeof(*wedge)},
         {52, truck, sizeof(truck) / sizeof(*truck)},
