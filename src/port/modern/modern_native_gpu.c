@@ -16,6 +16,7 @@
 #include "render/render_geometry_pack.h"
 #include "render/authored_car_surface.h"
 #include "render/render_shadow.h"
+#include "render/car_lamps.h"
 #include "render/texture_mipmap.h"
 #include "rage/track_asset_identity.h"
 
@@ -932,6 +933,7 @@ void ModernNativeGpuPrepare(const RenderWorld *world, float aspect) {
         return;
     }
     world = &s_ownedWorld.world;
+    RenderCarSpotLights(&s_ownedWorld.world);
     if (trace) copied = SDL_GetTicksNS();
     void *meshLookupContext = ModernNativePrepareMeshLookup(world);
     if (trace) lookupFinished = SDL_GetTicksNS();

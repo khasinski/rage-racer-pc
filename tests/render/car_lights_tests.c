@@ -1,4 +1,5 @@
 #include "render/car_lights.h"
+#include "render/car_lamps.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -39,5 +40,37 @@ int main(void) {
     for (int i = 0; i < 50; i++) UpdateCarLights(&car, 0, 1, 0, 1.0f/50);
     for (int i = 0; i < 60; i++) UpdateCarLights(&rival, 0, 1, 0, 1.0f/60);
     CHECK(car.headlights == 1 && rival.headlights == 1);
+    CHECK(CarLampIntensity(&(CarLights){0, 0.2f, 1, 0}, LAMP_TAIL) == 0.2f);
+    CHECK(CarLampIntensity(&(CarLights){0, 0.2f, 1, 0}, LAMP_STOP) == 1);
+    CHECK(CarLampIntensity(&(CarLights){0, 0.2f, 1, 0}, LAMP_TAIL_STOP) == 1);
+    RenderMeshInstance body = {0};
+    body.assetSet = RAGE_RENDER_ASSET_MODEL_BANK;
+    body.assetKey = 68;
+    body.lamps.headlights = 1;
+    body.transform.scale = (Vec3){0.25f, 0.25f, 0.25f};
+    body.transform.position = (Vec3){10, 20, 30};
+    RenderWorld world;
+    RenderWorldInit(&world, &body, 1);
+    world.instanceCount = 1;
+    RenderCarSpotLights(&world);
+    CHECK(world.spotLightCount == 2);
+    CHECK(fabsf(world.spotLights[0].position.x - (10 + 91.88095f * 0.25f)) < 0.001f);
+    CHECK(fabsf(world.spotLights[0].position.z - (30 + 434.88889f * 0.25f)) < 0.001f);
+    CHECK(world.spotLights[0].direction.z > 0.99f);
+    CHECK(world.spotLights[0].direction.y < 0);
+    world.spotLightCount = 0;
+    body.transform.hasOrientation = 1;
+    body.transform.orientation = (Quaternion){0, 1, 0, 0};
+    RenderCarSpotLights(&world);
+    CHECK(world.spotLights[0].direction.z < -0.99f);
+    CHECK(fabsf(world.spotLights[0].position.z - (30 - 434.88889f * 0.25f)) < 0.001f);
+    world.spotLightCount = 0;
+    body.lamps.headlights = 0;
+    RenderCarSpotLights(&world);
+    CHECK(world.spotLightCount == 0);
+    body.lamps.headlights = 1;
+    body.pass = RAGE_RENDER_PASS_MIRROR;
+    RenderCarSpotLights(&world);
+    CHECK(world.spotLightCount == 0);
     return failures != 0;
 }

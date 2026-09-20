@@ -1,0 +1,57 @@
+#include "car_lamps.h"
+#include "render_instance_transform.h"
+#include <stddef.h>
+
+unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
+    /* Centers projected through model 0/material 3's UV triangles. Keeping
+     * the patch and its emitter together prevents independent placement drift. */
+    static const Lamp special[] = {
+        {3, {12, 131, 28, 139}, {91.88095f, 19.41667f, 434.88889f}, LAMP_HEAD},
+        {3, {85, 131, 98, 139}, {-92.98106f, 19.41667f, 434.88889f}, LAMP_HEAD},
+    };
+    *lamps = NULL;
+    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
+        body->assetKey == 68 && body->mesh == 0) {
+        *lamps = special;
+        return sizeof(special) / sizeof(*special);
+    }
+    return 0;
+}
+
+float CarLampIntensity(const CarLights *state, LampKind kind) {
+    switch (kind) {
+    case LAMP_HEAD: return state->headlights;
+    case LAMP_TAIL: return state->tail;
+    case LAMP_STOP: return state->stop;
+    case LAMP_TAIL_STOP: return fmaxf(state->tail, state->stop);
+    }
+    return 0;
+}
+
+void RenderCarSpotLights(RenderWorld *world) {
+    for (uint32_t i = 0; i < world->instanceCount; ++i) {
+        const RenderMeshInstance *body = &world->instances[i];
+        const Lamp *lamps;
+        if (body->pass != RAGE_RENDER_PASS_MAIN) continue;
+        unsigned count = CarLamps(body, &lamps);
+        if (!count) continue;
+        RenderInstanceTransform transform = RenderPrepareInstanceTransform(&body->transform);
+        for (unsigned j = 0; j < count; ++j) {
+            const Lamp *lamp = &lamps[j];
+            float strength = CarLampIntensity(&body->lamps, lamp->kind);
+            if (strength <= 0) continue;
+            int front = lamp->kind == LAMP_HEAD;
+            SpotLight light = {0};
+            light.position = RenderTransformInstancePoint(&transform, lamp->position);
+            light.direction = RenderRotateInstanceVector(&transform,
+                (Vec3){0, -0.06f, front ? 1.0f : -1.0f});
+            light.range = front ? 1200.0f : 160.0f;
+            light.innerCos = front ? 0.96f : 0.75f;
+            light.outerCos = front ? 0.80f : 0.25f;
+            light.color = front
+                ? (Vec3){strength * 5, strength * 4.7f, strength * 4}
+                : (Vec3){strength * 1.5f, strength * 0.025f, strength * 0.01f};
+            RenderWorldSubmitSpotLight(world, &light);
+        }
+    }
+}

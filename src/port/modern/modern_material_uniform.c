@@ -1,4 +1,5 @@
 #include "modern_material_uniform.h"
+#include "render/car_lamps.h"
 
 #include <string.h>
 
@@ -18,17 +19,17 @@ void ModernMaterialUniformBuild(const RageRenderMaterial *material,
 
 void ModernMaterialUniformLamps(const RenderMeshInstance *body,
                                uint32_t material, ModernMaterialUniform *out) {
-    /* Atlas coordinates are authored against the imported model, before
-     * painting. Do not infer lamps from color: several palettes share UVs. */
-    if (body->component != 0 || body->assetSet != RAGE_RENDER_ASSET_MODEL_BANK ||
-        body->assetKey != 68 || material != 3) return;
-    static const float head[2][4] = {
-        {12, 131, 28, 139}, {85, 131, 98, 139},
-    };
-    for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < 4; j++) out->lamps[i].bounds[j] = head[i][j] / 256.0f;
-        out->lamps[i].emission[0] = body->lamps.headlights * 2.5f;
-        out->lamps[i].emission[1] = body->lamps.headlights * 2.35f;
-        out->lamps[i].emission[2] = body->lamps.headlights * 2.0f;
+    const Lamp *lamps;
+    unsigned count = CarLamps(body, &lamps), output = 0;
+    for (unsigned i = 0; i < count && output < 8; i++) {
+        if (lamps[i].material != material) continue;
+        float strength = CarLampIntensity(&body->lamps, lamps[i].kind);
+        for (int j = 0; j < 4; j++)
+            out->lamps[output].bounds[j] = lamps[i].bounds[j] / 256.0f;
+        int front = lamps[i].kind == LAMP_HEAD;
+        out->lamps[output].emission[0] = strength * 2.5f;
+        out->lamps[output].emission[1] = strength * (front ? 2.35f : 0.025f);
+        out->lamps[output].emission[2] = strength * (front ? 2.0f : 0.01f);
+        output++;
     }
 }
