@@ -29,6 +29,7 @@ NativeModelBank g_ModelBanks[GAME_MODEL_BANK_LIMIT];
 const void *g_NativeTerrainCells[GAME_TERRAIN_CELL_LIMIT];
 NativeCourseModel g_NativeCourseModels[GAME_COURSE_MODEL_LIMIT];
 CarModelAsset *g_CarModelSlots[CAR_ASSET_SLOT_COUNT];
+s32 g_CarModelSlotAssetIndex[CAR_ASSET_SLOT_COUNT] = {-1, -1};
 GameCdLoadEntry g_AssetCdEntries[GAME_ASSET_COUNT];
 Matrix g_SceneColorMatrix;
 Matrix g_SceneLightMatrix;

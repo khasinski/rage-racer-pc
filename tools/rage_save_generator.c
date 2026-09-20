@@ -36,6 +36,13 @@ static const s32 kDefaultTotalTimes[2][4] = {
     {310765, 448765, 445765, 220765},
     {301765, 415765, 394765, 220765},
 };
+/* The retail ranking rows: RAGE / RACER / NAMCO / RIDGE / RACER. */
+static const char kDefaultRecordNames[5][8] = {
+    {'R', 'A', 'G', 'E', ' ', ' ', 0, 0}, {'R', 'A', 'C', 'E', 'R', ' ', 0, 0},
+    {'N', 'A', 'M', 'C', 'O', ' ', 0, 0}, {'R', 'I', 'D', 'G', 'E', ' ', 0, 0},
+    {'R', 'A', 'C', 'E', 'R', ' ', 0, 0},
+};
+static const s16 kDefaultRecordCars[5] = {0, 3, 4, 7, 3};
 static const char kNameCharset[] = "0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ.-!?@";
 
 _Static_assert(sizeof(GameSaveBlock) == MC_BLOCK_SIZE,
@@ -117,6 +124,18 @@ static void fill_complete_payload(GameSaveBlock *save) {
                 save->bestSectorTimes[series][course][slot] =
                     kDefaultLapTimes[series][course];
             }
+            for (slot = 0; slot < 5; slot++) {
+                RaceRecord *ranking = &save->rankingRecords[series][course][slot];
+                RaceRecord *total = &save->timeRecords[series][course][slot];
+
+                memcpy(ranking->driverName, kDefaultRecordNames[slot], 8);
+                ranking->raceTime = kDefaultLapTimes[series][course] + slot * 2000;
+                ranking->carIndex = kDefaultRecordCars[slot];
+                memcpy(total->driverName, kDefaultRecordNames[slot], 8);
+                total->raceTime =
+                    kDefaultTotalTimes[series][course] + slot * 10000;
+                total->carIndex = kDefaultRecordCars[slot];
+            }
         }
     }
     save->bgmVolume = 15;
@@ -174,6 +193,17 @@ static int validate_complete_save(const u8 file[SAVE_FILE_SIZE]) {
         for (car = 0; car < 13; car++) {
             if (save->carSetup[table][car].enabled != 1) {
                 return 0;
+            }
+        }
+    }
+    for (table = 0; table < 2; table++) {
+        for (car = 0; car < 4; car++) {
+            int slot;
+            for (slot = 0; slot < 5; slot++) {
+                if (save->rankingRecords[table][car][slot].raceTime <= 0 ||
+                    save->timeRecords[table][car][slot].raceTime <= 0) {
+                    return 0;
+                }
             }
         }
     }

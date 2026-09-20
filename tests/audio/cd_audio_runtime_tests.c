@@ -26,6 +26,8 @@ void StepCdPlayRequest(void) { s_playSteps++; }
 void StepCdPauseRequest(void) { s_pauseSteps++; }
 void StepCdVolumeFade(void) { s_fadeSteps++; }
 int Psyz_CdAudioEnded(void) { return s_hostEnded; }
+static s32 s_hostPlaying;
+int Psyz_CdAudioPlaying(void) { return s_hostPlaying; }
 void BuildCdTrackTable(void) { s_buildCalls++; }
 void SetCdVolume(s32 volume) { s_setVolume = volume; }
 
@@ -68,6 +70,8 @@ static void Reset(void) {
     s_pauseSteps = 0;
     s_fadeSteps = 0;
     s_hostEnded = 0;
+    s_hostPlaying = 0;
+    g_Cd.playedSinceSelect = 1;
 }
 
 static int TestInitialization(void) {
@@ -150,6 +154,28 @@ static int TestEndOfTrackPolicy(void) {
     g_CdTrackLoopPoint[3].second = 1;
     TickCdAudio();
     CHECK(g_Cd.pendingTrack == -1 && g_Cd.pendingCommand == CD_COMMAND_NONE);
+
+    /* A stale EOF left by the previous track must not restart a freshly
+     * selected one before the game asks for it; once the host reports the
+     * selection playing, its own end restarts it as before. */
+    Reset();
+    s_hostEnded = 1;
+    g_CdTrackLoopPoint[0].second = 1;
+    g_CdTrackLoopPoint[3].second = 2;
+    RequestCdTrack(3);
+    CHECK(g_Cd.playedSinceSelect == 0);
+    g_Cd.pendingTrack = -1;
+    TickCdAudio();
+    CHECK(g_Cd.pendingTrack == -1 && g_Cd.pendingCommand == CD_COMMAND_NONE);
+    s_hostPlaying = 1;
+    s_hostEnded = 0;
+    TickCdAudio();
+    CHECK(g_Cd.playedSinceSelect == 1);
+    s_hostPlaying = 0;
+    s_hostEnded = 1;
+    TickCdAudio();
+    CHECK(g_Cd.pendingTrack == 3 && g_Cd.pendingCommand == CD_COMMAND_PLAY);
+    CHECK(g_Cd.playedSinceSelect == 0);
     return 0;
 }
 

@@ -3,6 +3,8 @@
 #include "game/sound.h"
 #include "psyq/snd.h"
 
+enum { SPU_VOICE_COUNT = 24 };
+
 enum {
     VAB_HEADER_SIZE = 32,
     VAB_VERSION_OFFSET = 4,
@@ -77,6 +79,20 @@ static s32 IsValidVabAsset(const AudioSlotAsset *asset) {
     return requiredBodySize <= asset->vabBodySize;
 }
 
+/* Key every hardware voice off and apply it now. _SsVmInit(0) does not
+ * key anything off on its own, so a voice still sounding from the menu or
+ * the previous race kept looping through SPU RAM while a new bank was
+ * written over it, which played back as a random or pitched-up clip until
+ * the race scene finally silenced it. */
+static void SilenceAllVoices(void) {
+    s32 voice;
+
+    for (voice = 0; voice < SPU_VOICE_COUNT; voice++) {
+        SsUtKeyOffV(voice);
+    }
+    SpuVmDamperStep();
+}
+
 static s32 TransferVabToSlot(s32 slot, u8 *header, u8 *body,
                              s32 spuAddress) {
     s16 openedVabId = SsVabOpenHeadSticky(header, -1, spuAddress);
@@ -87,6 +103,7 @@ static s32 TransferVabToSlot(s32 slot, u8 *header, u8 *body,
         return 0;
     }
 
+    SilenceAllVoices();
     vabId = SsVabTransBody(body, openedVabId);
     if (vabId == -1) {
         SsVabClose(openedVabId);
@@ -175,6 +192,7 @@ static void CloseVabOnlyAudioSlot(s32 slot) {
     SsUtSetReverbDepth(0, 0);
     _SsVmInit(0);
     SsVabClose(g_SoundScale.vabIds[slot]);
+    g_SoundScale.vabIds[slot] = -1;
 }
 
 void CloseLoadedAudioSlots(void) {
@@ -183,6 +201,7 @@ void CloseLoadedAudioSlots(void) {
      * On hardware the sound interrupt supplied that second flush; without it
      * the host can replay a short fragment of menu music on the round screen. */
     SpuVmDamperStep();
+    SilenceAllVoices();
     CloseVabOnlyAudioSlot(AUDIO_SLOT_RACE_CUES);
     CloseVabOnlyAudioSlot(AUDIO_SLOT_ENGINE);
     SpuVmDamperStep();

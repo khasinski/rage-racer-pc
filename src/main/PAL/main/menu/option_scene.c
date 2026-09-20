@@ -6,6 +6,8 @@
 enum {
     OPTION_LETTERBOX_STEP = 4,
     OPTION_LETTERBOX_MENU_HEIGHT = 240,
+    OPTION_ENTRY_FADE = 0x100,
+    OPTION_ENTRY_FADE_STEP = -8,
 };
 
 static s32 ApproachLetterboxHeight(s32 height, s32 target) {
@@ -53,6 +55,15 @@ void UpdateOptionScene(void) {
     }
     if ((u32)g_GameMode >= OPTION_MODE_COUNT) {
         g_GameMode = OPTION_MODE_ROOT;
+    }
+    /* The scene runtime clears the fade when a scene is first dispatched,
+     * so arm the fade-in here rather than in the entry scene: with no fade
+     * running, OPTION_MODE_FADE never hands over to the root menu and the
+     * screen sits without a cursor. */
+    if (g_SceneTimer == 1 && g_GameMode == OPTION_MODE_FADE &&
+        g_FadeStep == 0) {
+        g_FadeLevel = OPTION_ENTRY_FADE;
+        g_FadeStep = OPTION_ENTRY_FADE_STEP;
     }
     g_GameModeHandlers[g_GameMode]();
     DrawOptionSceneOverlay();

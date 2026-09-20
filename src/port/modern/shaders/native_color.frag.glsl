@@ -85,6 +85,7 @@ void main() {
         lighting);
     float tracedOcclusion = mix(0.35, 1.0, visibility);
     light *= mix(1.0, tracedOcclusion, lighting);
+    light = mix(light, vec3(1.0), fog.a);
     outColor = vec4(foggedColor * light + color.rgb *
         spotLighting(worldPositionIn, n) * (1.0 - fog.a), color.a);
 }

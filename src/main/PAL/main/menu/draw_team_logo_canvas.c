@@ -356,6 +356,11 @@ static void AnimateLogoClut(TeamLogo *logo) {
     for (i = 0; i < 16; i++) {
         logo->fadedClut[i] = FadeLogoColor(g_TeamLogoClut[i], fade);
     }
+    /* The colour strip shows the live palette, including colours the editor
+     * has just mixed and the four background colours of a sample. */
+    for (i = 1; i < 16; i++) {
+        logo->swatches[i - 1] = g_TeamLogoClut[i];
+    }
 }
 
 void DrawTeamLogoCanvas(TeamLogo *logo, s32 panelStep, s32 editorStep) {

@@ -138,6 +138,23 @@ int main(void) {
     CHECK(g_BestSectorTimes[1][1][1] == g_DefaultLapTimes[5]);
     CHECK(g_BestSectorTimes[1][1][2] == 34567);
 
+    /* Zeroed ranking rows (an editor-made save) come back as the retail
+     * defaults; real entries are left alone. */
+    memset(g_RankingRecords[1][2], 0, sizeof(g_RankingRecords[1][2]));
+    memset(g_TimeRecords[0][1], 0, sizeof(g_TimeRecords[0][1]));
+    g_RankingRecords[1][2][1].raceTime = 45678;
+    memcpy(g_RankingRecords[1][2][1].driverName, "ME      ", 8);
+    g_TimeRecords[0][1][4].raceTime = -5;
+    RepairRecordTimes();
+    CHECK(g_RankingRecords[1][2][0].raceTime == g_DefaultLapTimes[6]);
+    CHECK(memcmp(g_RankingRecords[1][2][0].driverName, "RAGE  ", 6) == 0);
+    CHECK(g_RankingRecords[1][2][1].raceTime == 45678);
+    CHECK(memcmp(g_RankingRecords[1][2][1].driverName, "ME      ", 8) == 0);
+    CHECK(g_RankingRecords[1][2][4].raceTime == g_DefaultLapTimes[6] + 8000);
+    CHECK(g_TimeRecords[0][1][0].raceTime == g_DefaultTotalTimes[1]);
+    CHECK(g_TimeRecords[0][1][4].raceTime == g_DefaultTotalTimes[1] + 40000);
+    CHECK(g_TimeRecords[0][1][4].carIndex == 3);
+
     g_DefaultLapTimes[0] = INT_MAX;
     g_DefaultTotalTimes[0] = INT_MIN;
     InitRecordTables();

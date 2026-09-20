@@ -1105,6 +1105,10 @@ add_test(NAME record_entry_scene COMMAND record_entry_scene_tests)
 set_tests_properties(record_entry_scene PROPERTIES LABELS functional)
 
 if(TARGET rage-racer-smoke)
+    # These scenarios need the optional authored car bodies compiled into the
+    # game (assets/cars/*.obj). Without them the install lines they wait for
+    # can never appear.
+    if(RAGE_HAS_AUTHORED_CARS)
     add_test(NAME direct_grid
         COMMAND ${CMAKE_COMMAND} "-DGAME=$<TARGET_FILE:rage-racer>"
             "-DSOURCE=${CMAKE_SOURCE_DIR}"
@@ -1321,6 +1325,7 @@ if(TARGET rage-racer-smoke)
                 -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_compact_early_transition.cmake")
         set_tests_properties(compact_class${compact_class}_transition PROPERTIES LABELS e2e TIMEOUT 190 RUN_SERIAL TRUE)
     endforeach()
+    endif()
     add_test(
         NAME scenario_control
         COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>

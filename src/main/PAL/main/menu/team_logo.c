@@ -51,6 +51,8 @@ void ComposeSampleTeamLogo(TeamLogo *logo, s32 character, s32 background) {
         g_TeamLogoClut[index] = characterClut[index];
     }
     for (; index < TEAM_LOGO_COLOR_COUNT; index++) {
+        logo->swatches[index - TEAM_LOGO_CHARACTER_COLOR_FIRST] =
+            backgroundClut[index];
         g_TeamLogoClut[index] = backgroundClut[index];
     }
 

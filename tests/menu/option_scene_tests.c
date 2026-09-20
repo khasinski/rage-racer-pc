@@ -11,6 +11,8 @@ static OptionMenu s_optionMenu;
 s32 g_AnimTimer;
 s32 g_GameMode;
 s32 g_SceneTimer;
+s32 g_FadeLevel;
+s32 g_FadeStep;
 GameFrameContext *g_DrawBuffer;
 GameRenderState g_RenderState;
 
@@ -100,6 +102,27 @@ int main(void) {
     UpdateOptionScene();
     CHECK(s_handlerCalls[OPTION_MODE_NEGCON_NEUTRAL] == 1);
     CHECK(s_hintCalls == 0);
+
+    /* The first frame of a fresh OPTION scene arms the fade-in that the
+     * fade mode needs before it can open the root menu. */
+    Reset(OPTION_MODE_FADE);
+    g_FadeLevel = 0;
+    g_FadeStep = 0;
+    UpdateOptionScene();
+    CHECK(g_FadeLevel == 0x100 && g_FadeStep == -8);
+    CHECK(s_handlerCalls[OPTION_MODE_FADE] == 1);
+    /* An exit fade already running, or a later frame, is left alone. */
+    Reset(OPTION_MODE_FADE);
+    g_FadeLevel = 0;
+    g_FadeStep = 8;
+    UpdateOptionScene();
+    CHECK(g_FadeLevel == 0 && g_FadeStep == 8);
+    Reset(OPTION_MODE_FADE);
+    g_SceneTimer = 5;
+    g_FadeLevel = 0;
+    g_FadeStep = 0;
+    UpdateOptionScene();
+    CHECK(g_FadeLevel == 0 && g_FadeStep == 0);
 
     Reset(OPTION_MODE_ROOT);
     s_optionMenu.letterboxHeight = 239;

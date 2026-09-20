@@ -147,6 +147,7 @@ static void LoadInitialCarSelectModel(void) {
         g_CarModelSlots[0]);
     SelectCarModelSlot(0);
     g_CarModelSlot = 0;
+    g_CarModelSlotAssetIndex[0] = variantIndex;
     g_AssetLoadState = 0;
 }
 

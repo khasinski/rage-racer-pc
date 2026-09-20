@@ -114,6 +114,7 @@ void main() {
      * colour and vehicle shadows appear washed out. */
     float tracedOcclusion = mix(0.35, 1.0, visibility);
     light *= mix(1.0, tracedOcclusion, materialLighting);
+    light = mix(light, vec3(1.0), fog.a);
     vec3 foggedColor = mix(color.rgb, fog.rgb, fog.a);
     vec3 modulation = min(foggedColor * 2.0, vec3(1.0));
     vec3 base = texel.rgb * modulation * light * material.baseColor.rgb;
@@ -166,7 +167,7 @@ void main() {
     }
     float reflectedLuminance = dot(reflected, vec3(0.2126, 0.7152, 0.0722));
     reflected = mix(vec3(reflectedLuminance), reflected, 0.65);
-    base = mix(base, reflected, clamp(reflectionStrength, 0.0, 0.85));
+    base = mix(base, reflected, clamp(reflectionStrength, 0.0, 0.85) * (1.0 - fog.a));
     directSpecular *= coat * zoneReflection;
     vec3 specular = directSpecular * step(0.001, materialLighting);
     base += texel.rgb * modulation * material.baseColor.rgb *
@@ -181,8 +182,8 @@ void main() {
         }
         if (all(greaterThanEqual(uv, bounds.xy)) &&
             all(lessThan(uv, bounds.zw)))
-            emissive += material.lamps[i].emission.rgb * (1.0 - fog.a);
+            emissive += material.lamps[i].emission.rgb;
     }
-    outColor = vec4(base + specular + emissive,
+    outColor = vec4(base + (specular + emissive) * (1.0 - fog.a),
                     texel.a * color.a * material.baseColor.a);
 }

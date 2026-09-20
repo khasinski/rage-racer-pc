@@ -279,7 +279,9 @@ static void GameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
     else if (assetSet != RAGE_RENDER_ASSET_MODEL_BANK)
         instance.materialVariant = (uint8_t)(g_TrackTexturePageWanted != 0);
     instance.pass = mirror_pass ? RAGE_RENDER_PASS_MIRROR : RAGE_RENDER_PASS_MAIN;
-    instance.flags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING;
+    /* Cars are depth-cued like every other polygon on the PS1. */
+    instance.flags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING |
+                     RAGE_RENDER_INSTANCE_ENABLE_FOG;
     instance.environmentLight = environmentLight;
     instance.transform.position.x = psPosition.x;
     instance.transform.position.y = -psPosition.y;
@@ -669,9 +671,13 @@ static void SubmitTerrainCell(uint32_t grid_x, uint32_t grid_z,
     instance.transform.scale.x = 0.25f;
     instance.transform.scale.y = 0.25f;
     instance.transform.scale.z = 0.25f;
+    /* The PS1 depth-cues every course polygon toward the environment's far
+     * colour, road and surroundings included. Without the flag the native
+     * terrain never fogged and only a few scenery models did. */
     instance.flags = RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL |
                      RAGE_RENDER_INSTANCE_ENABLE_LIGHTING |
-                     RAGE_RENDER_INSTANCE_FLAT_SHADED;
+                     RAGE_RENDER_INSTANCE_FLAT_SHADED |
+                     RAGE_RENDER_INSTANCE_ENABLE_FOG;
     instance.lightInfluence = 0.65f;
     if (g_IsEnvironmentMode4)
         instance.flags |= RAGE_RENDER_INSTANCE_ENVIRONMENT_MODE_4;
@@ -858,6 +864,11 @@ void GameRenderWorldSubmitCar(const GameCarRuntime *object,
     Vec3 environmentLight;
 
     if (!s_initialized || object == NULL || g_TrackRenderTable == NULL) return;
+    /* Rival and traffic cars belong to the race world. The custom race
+     * showroom draws its rival preview through the same path from a private
+     * bank; publishing that would import the wrong bank under the track's
+     * asset key and keep it for the race. */
+    if (!GameSceneUsesRaceWorld()) return;
     entity = CarEntity(object);
     environmentLight = GameTrackLightForCar(object);
     car = g_CarModelByCourse[SeriesCourseIndex()][object->modelIndex];
@@ -897,9 +908,21 @@ void GameRenderWorldSubmitPlayerCar(const GameCarRuntime *object,
     uint32_t wheelBase;
     Vec3 environmentLight;
 
+    s32 assetIndex;
+
     if (!s_initialized || object == NULL || g_CarModelAsset == NULL) return;
-    asset = (uint32_t)(10 + GetCarAssetIndex(
-        g_PlayerCarIndex, g_CarTable[g_PlayerCarIndex].modelVariant) * 2);
+    /* Key the mesh by the car actually installed in the slot being drawn.
+     * The player's selection and grade move before the new model finishes
+     * loading, and a mesh imported under the new key from the old bank would
+     * be cached for every later race with that car. */
+    assetIndex = g_CarModelSlot < CAR_ASSET_SLOT_COUNT
+                     ? g_CarModelSlotAssetIndex[g_CarModelSlot]
+                     : -1;
+    if (assetIndex < 0) {
+        assetIndex = GetCarAssetIndex(
+            g_PlayerCarIndex, g_CarTable[g_PlayerCarIndex].modelVariant);
+    }
+    asset = (uint32_t)(10 + assetIndex * 2);
     environmentLight = GameTrackLightForCar(object);
     wheelBase = (uint32_t)object->renderDepth * 2u;
     if ((object->wheelRotation & 0x1000) != 0) wheelBase += 10u;

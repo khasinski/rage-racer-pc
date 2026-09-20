@@ -34,12 +34,10 @@ static int ContinuesScene(s32 previous, s32 scene) {
 static void ResetLegacyTransitionState(void) {
     /* These fields are scratch state for a single top-level scene.  Retail
      * code has many direct scene writes; centralising the reset here makes a
-     * newly dispatched scene independent of whichever path preceded it.
-     * The fade is deliberately left alone: entry scenes such as
-     * EnterAttractScene and EnterPrologue arm the fade-in for the scene they
-     * hand over to, and clearing it here left OPTION stuck in its fade mode
-     * with no cursor. */
+     * newly dispatched scene independent of whichever path preceded it. */
     g_SceneTimer = 0;
+    g_FadeLevel = 0;
+    g_FadeStep = 0;
     g_CdTrackEnded = 0;
 }
 

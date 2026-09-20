@@ -202,6 +202,20 @@ static void TestNeutralCaptureAndDisconnect(void) {
     CHECK(g_NegconNeutralI == 22 && g_NegconNeutralII == -33);
     CHECK(g_NegconNeutralL == 44);
 
+    /* Cancelling the neutral screen restores the old calibration instead
+     * of recording whatever the pad reads right now. */
+    ResetState();
+    SetCalibrationValues();
+    BeginNegconCalibration();
+    g_PadType = PAD_TYPE_NEGCON;
+    g_PadPressed = PAD_CANCEL;
+    g_PadState.twist = 140;
+    UpdateNegconNeutralScreen();
+    CHECK(g_GameMode == OPTION_MODE_ROOT && g_NegconSteerNeutral == -11);
+    CHECK(g_NegconNeutralI == 22 && g_NegconNeutralII == -33);
+    CHECK(g_NegconNeutralL == 44);
+    CHECK(s_cueCount == 1 && s_cues[0] == 3);
+
     ResetState();
     g_PadType = PAD_TYPE_NEGCON;
     g_AnimTimer = INT_MAX;

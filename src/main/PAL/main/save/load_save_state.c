@@ -8,6 +8,22 @@
 
 enum { MAX_SAVED_BGM_SELECTION = 10 };
 
+/* The calibration screen records the resting twist minus 128, so a neutral
+ * can only lie within one byte of centre, and a resting button pressure
+ * within the NeGcon's 0..0x6A range. Anything else was typed into the save
+ * by an editor (a "centre" of 128, say) and would pin the steering to one
+ * lock, so treat it as uncalibrated. */
+static NegconCalibrationValue SanitizeNegconSteerNeutral(u16 stored) {
+    s16 neutral = (s16)stored;
+
+    if (neutral < -127 || neutral > 127) return 0;
+    return neutral;
+}
+
+static NegconCalibrationValue SanitizeNegconButtonNeutral(u16 stored) {
+    return stored > 0x6A ? 0 : (NegconCalibrationValue)stored;
+}
+
 static s32 ClampSaveValue(s32 value, s32 minimum, s32 maximum) {
     if (value < minimum) return minimum;
     return value > maximum ? maximum : value;
@@ -118,12 +134,13 @@ s32 LoadSaveStateBlock(const GameSaveBlock *block) {
         ClampControllerMappingIndex(block->padMappingIndex);
     g_NegconMappingIndex =
         ClampControllerMappingIndex(block->negconMappingIndex);
-    g_NegconSteerNeutral = block->negconSteerNeutral;
+    g_NegconSteerNeutral =
+        SanitizeNegconSteerNeutral(block->negconSteerNeutral);
     g_NegconSteerPlay =
         ClampNegconCalibrationValue(block->negconSteerPlay);
-    g_NegconNeutralI = block->negconNeutralI;
-    g_NegconNeutralII = block->negconNeutralII;
-    g_NegconNeutralL = block->negconNeutralL;
+    g_NegconNeutralI = SanitizeNegconButtonNeutral(block->negconNeutralI);
+    g_NegconNeutralII = SanitizeNegconButtonNeutral(block->negconNeutralII);
+    g_NegconNeutralL = SanitizeNegconButtonNeutral(block->negconNeutralL);
     g_NegconMaxTwist =
         ClampNegconCalibrationValue(block->negconMaxTwist);
 

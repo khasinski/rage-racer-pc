@@ -575,6 +575,10 @@ extern RECT g_CarImageRect;
 struct CarImageData;
 extern struct CarImageData *g_CarImageSlots[CAR_ASSET_SLOT_COUNT];
 extern CarModelAsset *g_CarModelSlots[CAR_ASSET_SLOT_COUNT];
+/* Car asset index (GetCarAssetIndex) currently installed in each model slot,
+ * or -1. The renderer keys imported meshes by this identity rather than by
+ * the player's selection, which can change before the new model is shown. */
+extern s32 g_CarModelSlotAssetIndex[CAR_ASSET_SLOT_COUNT];
 extern NativeModelBank g_ModelBanks[GAME_MODEL_BANK_LIMIT];
 void LoadPendingCarModelAsset(void);
 

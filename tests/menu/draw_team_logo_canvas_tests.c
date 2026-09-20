@@ -148,7 +148,7 @@ int main(int argc, char **argv) {
      * What the screen drew before the function was taken apart. Run the test
      * with a file name to write every drawing command out and diff two runs.
      */
-    static const unsigned long expected = 4031224841UL;
+    static const unsigned long expected = 3377551649UL;
     static const s32 panelSteps[] = {0, 0xA, 0x12, 0x19};
     static const s32 editorSteps[] = {0, 7, 8, 0x10};
     static const s32 zooms[] = {0, 0x100};

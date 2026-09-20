@@ -53,7 +53,7 @@ int MenuMusicPrepare(void) {
 
     if (path == NULL || path[0] == '\0') {
         int written = snprintf(filename, sizeof(filename),
-                               "menu_music.v8.%s.wav", HostDiscRegion());
+                               "menu_music.v9.%s.wav", HostDiscRegion());
         if (written < 0 || (size_t)written >= sizeof(filename)) return 0;
         if (!PlatformUserConfigDirectory(directory, sizeof(directory)) ||
             !PlatformEnsureDirectory(directory) ||

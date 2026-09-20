@@ -48,7 +48,7 @@ if(NOT save_name STREQUAL "BESCES-00650 RAGE000" OR NOT save_size EQUAL 4864)
 endif()
 
 run_game("${work}" menu_log RAGE_PORT_SMOKE_FRAMES=900
-    RAGE_PORT_STATE_INPUT_SCRIPT=4@80@0:START,4@170@2:DOWN,4@190@2:DOWN,4@220@2:CROSS)
+    RAGE_PORT_STATE_INPUT_SCRIPT=4@80@0:START,4@170@2:DOWN,4@190@2:DOWN,4@210@2:DOWN,4@230@2:CROSS)
 foreach(required "stopped at frame 900, scene 26" "files=1 free=15 mask=1 page=0")
     string(FIND "${menu_log}" "${required}" found)
     if(found EQUAL -1)
@@ -65,7 +65,7 @@ foreach(label existing empty)
     endif()
     run_game("${load_work}" load_log RAGE_PORT_SMOKE_FRAMES=1150
         RAGE_PORT_RAW_INPUT_SCRIPT=880:UP,900:CROSS,1050:CROSS
-        RAGE_PORT_STATE_INPUT_SCRIPT=4@80@0:START,4@170@2:DOWN,4@190@2:DOWN,4@220@2:CROSS)
+        RAGE_PORT_STATE_INPUT_SCRIPT=4@80@0:START,4@170@2:DOWN,4@190@2:DOWN,4@210@2:DOWN,4@230@2:CROSS)
     if(NOT load_log MATCHES "stopped at frame 1150, scene 26")
         message(FATAL_ERROR "LOAD GAME with ${label} slot left the card menu: ${root}")
     endif()
@@ -75,7 +75,9 @@ set(complete_work "${root}/complete")
 set(complete_card "${complete_work}/${card_suffix}")
 file(MAKE_DIRECTORY "${complete_card}")
 link_assets("${complete_work}")
-execute_process(COMMAND "${GENERATOR}" --name UNLOCK WORKING_DIRECTORY "${complete_card}" TIMEOUT 15
+# The generator writes bu00/<name> under its working directory.
+get_filename_component(complete_card_root "${complete_card}" DIRECTORY)
+execute_process(COMMAND "${GENERATOR}" --name UNLOCK WORKING_DIRECTORY "${complete_card_root}" TIMEOUT 15
     RESULT_VARIABLE generator_result OUTPUT_VARIABLE generator_output ERROR_VARIABLE generator_error)
 if(NOT generator_result EQUAL 0)
     message(FATAL_ERROR "Complete save generator failed: ${generator_output}${generator_error}")

@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 enum {
     SAMPLE_RATE = 44100,
@@ -55,16 +56,34 @@ unsigned MenuMusicTickRate(const MenuMusicAsset *asset) {
     return 0;
 }
 
+static uint64_t SampleEnergy(const int16_t *samples, size_t count) {
+    uint64_t energy = 0;
+    size_t i;
+
+    for (i = 0; i < count; i++) {
+        energy += (uint64_t)((int32_t)samples[i] * (int32_t)samples[i]);
+    }
+    return energy;
+}
+
+/* The sequence is rendered twice back to back and the second pass is kept.
+ * A single pass ends exactly at the end-of-track event, cutting the release
+ * tails of the last notes, while the sequence itself opens with a rest, so
+ * looping the file jumped from full level into silence. The second pass
+ * carries the first pass's tails across its opening rest, which is what the
+ * hardware sequencer produced when it looped in place. */
 int MenuMusicRenderWav(const MenuMusicAsset *asset, unsigned tickRate,
                        const char *outputPath) {
     unsigned char sequenceTable[512] = {0};
-    int16_t samples[SAMPLE_RATE / 50 * CHANNELS];
+    int16_t *passes;
     size_t ticks;
+    size_t passSamples;
     uint64_t frameCount;
     unsigned framesPerTick;
     short vab;
     short sequence;
     FILE *output;
+    const int16_t *keep;
 
     /* PsyQ's manual SEQ clock is 60 Hz. The PAL asset's tempo encodes the
      * original 50 Hz service rate, while output remains ordinary 44.1 kHz PCM. */
@@ -90,27 +109,34 @@ int MenuMusicRenderWav(const MenuMusicAsset *asset, unsigned tickRate,
     sequence = SsSeqOpen((u_long *)asset->sequence.data, vab);
     if (sequence < 0) return 0;
     SsSeqSetVol(sequence, SEQUENCE_VOLUME, SEQUENCE_VOLUME);
-    SsSeqPlay(sequence, SSPLAY_PLAY, 1);
+    SsSeqPlay(sequence, SSPLAY_PLAY, 2);
 
-    output = fopen(outputPath, "wb");
-    if (output == NULL || !WriteWavHeader(output, (uint32_t)frameCount)) {
-        if (output != NULL) fclose(output);
-        return 0;
-    }
-    for (size_t tick = 0; tick < ticks; tick++) {
+    passSamples = (size_t)frameCount * CHANNELS;
+    passes = calloc(passSamples * 2, sizeof(int16_t));
+    if (passes == NULL) return 0;
+    for (size_t tick = 0; tick < ticks * 2; tick++) {
         SsSeqCalledTbyT();
         _SsVmFlush();
-        Psyz_SpuPullSamples(samples, (int)framesPerTick);
-        if (fwrite(samples, sizeof(int16_t) * CHANNELS, framesPerTick, output) !=
-            framesPerTick) {
-            fclose(output);
-            remove(outputPath);
-            return 0;
-        }
+        Psyz_SpuPullSamples(passes + tick * framesPerTick * CHANNELS,
+                            (int)framesPerTick);
     }
-    if (fclose(output) != 0) {
+    /* Keep the first pass if the sequencer did not repeat the score: a
+     * silent second pass would be worse than a clipped tail. */
+    keep = SampleEnergy(passes + passSamples, passSamples) * 4 >=
+                   SampleEnergy(passes, passSamples)
+               ? passes + passSamples
+               : passes;
+
+    output = fopen(outputPath, "wb");
+    if (output == NULL || !WriteWavHeader(output, (uint32_t)frameCount) ||
+        fwrite(keep, sizeof(int16_t) * CHANNELS, (size_t)frameCount, output) !=
+            (size_t)frameCount ||
+        fclose(output) != 0) {
+        if (output != NULL) fclose(output);
         remove(outputPath);
+        free(passes);
         return 0;
     }
+    free(passes);
     return 1;
 }

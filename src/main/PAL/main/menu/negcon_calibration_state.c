@@ -55,6 +55,12 @@ void UpdateNegconNeutralScreen(void) {
         g_NegconNeutralI = g_PadState.buttonI;
         g_NegconNeutralII = g_PadState.buttonII;
         g_NegconNeutralL = g_PadState.buttonL;
+    } else if (g_PadPressed & PAD_CANCEL) {
+        /* Like the two screens that follow: leave without recording a
+         * neutral, so a visit to the screen is not itself a recalibration. */
+        PlaySoundCue(3);
+        RestoreNegconCalibrationSettings();
+        g_GameMode = OPTION_MODE_ROOT;
     }
     if (g_PadType != PAD_TYPE_NEGCON) {
         RestoreNegconCalibrationSettings();

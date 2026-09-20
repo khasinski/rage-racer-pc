@@ -547,6 +547,7 @@ int PortShouldExit(int frame_number) {
     static int lastGameMode = -1;
     static int lastOptionSweepMode = -1;
     static int retireStep;
+    static int lastRetireStep;
     static int retireWait;
     static int lastCapturedScene = -1;
     static int lastCapturedTimer = -1;
@@ -712,6 +713,13 @@ int PortShouldExit(int frame_number) {
             g_PadPressed |= PAD_START;
             retireStep = 3;
         }
+        if (retireStep != lastRetireStep) {
+            fprintf(stderr,
+                    "smoke retire step=%d frame=%d phase=%d paused=%d cursor=%d\n",
+                    retireStep, frame_number, g_RacePhase, g_RacePaused,
+                    SceneRuntimeCurrent()->state.race.optionCursor);
+            lastRetireStep = retireStep;
+        }
     }
     if (g_SceneId != lastScene || MenuFrontend()->state != lastFrontend) {
         fprintf(stderr,
@@ -719,6 +727,25 @@ int PortShouldExit(int frame_number) {
                 frame_number, g_SceneId, MenuFrontend()->state, g_SkyRowBase);
         lastScene = g_SceneId;
         lastFrontend = MenuFrontend()->state;
+    }
+    if (g_SceneId == 26) {
+        const MemoryCardSession *card = SceneRuntimeMemoryCard();
+        static s32 lastMask = -1, lastFree = -1, lastPage = -1;
+        int files = 0;
+        int bit;
+
+        for (bit = 0; bit < MEMORY_CARD_SAVE_SLOT_COUNT; bit++)
+            files += (card->slots.usedMask >> bit) & 1;
+        if (card->slots.usedMask != lastMask || card->freeBlocks != lastFree ||
+            card->menuPage != lastPage) {
+            fprintf(stderr,
+                    "smoke memory card frame=%d files=%d free=%d mask=%d page=%d\n",
+                    frame_number, files, card->freeBlocks,
+                    card->slots.usedMask, card->menuPage);
+            lastMask = card->slots.usedMask;
+            lastFree = card->freeBlocks;
+            lastPage = card->menuPage;
+        }
     }
     if (g_SceneId == 8 &&
         MenuRuntimeCurrent()->activeScreen != lastMenuScreen) {

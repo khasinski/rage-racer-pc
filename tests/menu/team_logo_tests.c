@@ -50,6 +50,8 @@ int main(void) {
     for (index = 12; index < 16; index++) {
         ok &= Check(g_TeamLogoClut[index] == (u16)(0x200 + index),
                     "background CLUT differs");
+        ok &= Check(logo.swatches[index - 1] == (u16)(0x200 + index),
+                    "background swatch differs");
     }
 
     memset(samples, 0, sizeof(samples));

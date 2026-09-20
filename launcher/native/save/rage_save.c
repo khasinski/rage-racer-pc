@@ -364,6 +364,23 @@ static const unsigned char kCarDefaults[13][6] = {
     {0, 3, 1, 0, 0, 0},
 };
 
+/* Retail default record times per series and course, and the five default
+ * ranking rows (RAGE / RACER / NAMCO / RIDGE / RACER). */
+static const s32 kDefaultLapTimes[2][4] = {
+    {100765, 146765, 145765, 35765},
+    {97765, 135765, 128765, 35765},
+};
+static const s32 kDefaultTotalTimes[2][4] = {
+    {310765, 448765, 445765, 220765},
+    {301765, 415765, 394765, 220765},
+};
+static const char kDefaultRecordNames[5][8] = {
+    {'R', 'A', 'G', 'E', ' ', ' ', 0, 0}, {'R', 'A', 'C', 'E', 'R', ' ', 0, 0},
+    {'N', 'A', 'M', 'C', 'O', ' ', 0, 0}, {'R', 'I', 'D', 'G', 'E', ' ', 0, 0},
+    {'R', 'A', 'C', 'E', 'R', ' ', 0, 0},
+};
+static const s16 kDefaultRecordCars[5] = {0, 3, 4, 7, 3};
+
 void RageSaveInit(RageSaveFile *save, RageRegion region, int slot) {
     int garage;
     int car;
@@ -415,6 +432,37 @@ void RageSaveInit(RageSaveFile *save, RageRegion region, int slot) {
 
     save->block.bgmVolume = 0xF;
     save->block.sfxVolume = 0xF;
+
+    /* The record tables must hold beatable times: a zero row can never be
+     * beaten and would leave the ranking screen at 0'00"000 forever. */
+    for (i = 0; i < 2; i++) {
+        int course;
+        for (course = 0; course < 4; course++) {
+            int slot;
+            s32 lap = kDefaultLapTimes[i][course];
+            s32 total = kDefaultTotalTimes[i][course];
+
+            for (slot = 0; slot < 2; slot++) {
+                save->block.bestLapTimes[i][course][slot] = lap;
+                save->block.bestTotalTimes[i][course][slot] = total;
+            }
+            for (slot = 0; slot < 3; slot++) {
+                save->block.bestSectorTimes[i][course][slot] = lap;
+            }
+            for (slot = 0; slot < 5; slot++) {
+                RaceRecord *ranking =
+                    &save->block.rankingRecords[i][course][slot];
+                RaceRecord *record = &save->block.timeRecords[i][course][slot];
+
+                memcpy(ranking->driverName, kDefaultRecordNames[slot], 8);
+                ranking->raceTime = lap + slot * 2000;
+                ranking->carIndex = kDefaultRecordCars[slot];
+                memcpy(record->driverName, kDefaultRecordNames[slot], 8);
+                record->raceTime = total + slot * 10000;
+                record->carIndex = kDefaultRecordCars[slot];
+            }
+        }
+    }
 
     RageSaveRefresh(save);
 }

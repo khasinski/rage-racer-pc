@@ -4,9 +4,21 @@
 
 #include <string.h>
 
+static s32 ActiveCarModelSlotAssetIndex(void) {
+    u32 slot;
+
+    for (slot = 0; slot < CAR_ASSET_SLOT_COUNT; slot++) {
+        if (g_CarModelSlots[slot] == g_CarModelAsset) {
+            return g_CarModelSlotAssetIndex[slot];
+        }
+    }
+    return -1;
+}
+
 s32 RelocateCarModel(void) {
     const CarModelAsset *source =
         FindSerializedCarModelAsset(g_CarModelAsset);
+    s32 assetIndex = ActiveCarModelSlotAssetIndex();
     const SerializedCarModelAssetHeader *serialized;
     const ModelBankHeader *sourceBank;
     CarModelAsset *destination;
@@ -53,5 +65,9 @@ s32 RelocateCarModel(void) {
     }
     g_AssetLoadCursor = g_AssetBase + byteCount;
     SelectCarModelSlot(0);
+    /* The race draws from bank 0 whichever showroom slot the menu left
+     * active; keep the slot index and the car identity in step with it. */
+    g_CarModelSlot = 0;
+    g_CarModelSlotAssetIndex[0] = assetIndex;
     return 1;
 }

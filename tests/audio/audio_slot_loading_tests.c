@@ -63,6 +63,12 @@ void _SsVmInit(int voices) {
 
 void SsVabClose(short vabId) { s_closeVab = vabId; }
 void SpuVmDamperStep(void) { s_damperCalls++; }
+static int s_keyOffCalls;
+short SsUtKeyOffV(short voice) {
+    (void)voice;
+    s_keyOffCalls++;
+    return 0;
+}
 
 void BiosExit(s32 code) {
     (void)code;
@@ -217,16 +223,22 @@ int main(void) {
     s_damperCalls = 0;
     s_reverbCalls = 0;
     s_vmInitCalls = 0;
+    s_keyOffCalls = 0;
     CloseLoadedAudioSlots();
-    CHECK(s_damperCalls == 2 && g_Audio.slots.loaded == 1 && s_closeVab == 23);
+    /* Every voice is keyed off and flushed before the banks go away. */
+    CHECK(s_keyOffCalls == 24);
+    CHECK(s_damperCalls == 3 && g_Audio.slots.loaded == 1 && s_closeVab == 23);
     CHECK(s_reverbCalls == 2 && s_vmInitCalls == 2);
     CHECK(g_Audio.slots.cueBank == 1);
+    CHECK(g_SoundScale.vabIds[2] == -1 && g_SoundScale.vabIds[3] == -1);
 
     g_Audio.slots.loaded = 1 << 3;
     g_Audio.slots.cueBank = 2;
+    s_keyOffCalls = 0;
     CloseLoadedAudioSlots();
-    CHECK(g_Audio.slots.loaded == 0 && s_closeVab == 23 &&
-          g_Audio.slots.cueBank == 0);
+    CHECK(g_Audio.slots.loaded == 0 && g_Audio.slots.cueBank == 0);
+    /* The key-off does not depend on a slot bit being set. */
+    CHECK(s_keyOffCalls == 24);
 
     puts("audio slot loading preserves VAB routing, polling, and close state");
     return 0;
