@@ -7,6 +7,7 @@
 #include "game/replay_internal.h"
 #include "game/state.h"
 #include "game/work_buffer.h"
+#include "render/car_lights.h"
 
 GameWorkBuffer g_ReplayFrameBuffer;
 Replay g_Replay;
@@ -190,7 +191,53 @@ static void TestInvalidRecordingBoundsAreIgnored(void) {
     assert(memcmp(&g_ReplayFrameBuffer, &untouched, sizeof(untouched)) == 0);
 }
 
+/* Exercise recording and playback together: live pedal changes must not leak
+ * into a replay, and the interpolated half-frame must retain the old STOP. */
+static void TestRecordedBrakeLights(s16 grandPrix, int rivalCount) {
+    GameCarRuntime replayPlayer = {0};
+    GameCarRuntime replayRivals[REPLAY_RIVAL_COUNT] = {{0}};
+    CarLights playerLights = {0};
+    CarLights rivalLights[REPLAY_RIVAL_COUNT] = {{0}};
+    GameCarRuntime *player = AsRivalCar(&g_PlayerCar);
+
+    memset(&g_ReplayFrameBuffer, 0, sizeof(g_ReplayFrameBuffer));
+    memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
+    memset(g_Cars, 0, sizeof(g_Cars));
+    g_GrandPrixMode = grandPrix;
+    ResetReplayWriteCursor();
+    for (int frame = 0; frame < 6; ++frame) {
+        player->brakeInput = frame < 2 ? 256 : 0;
+        for (int car = 0; car < REPLAY_RIVAL_COUNT; ++car) {
+            g_Cars[car].activeFlag = car < rivalCount ? 1 : -1;
+            g_Cars[car].aiEnabled = car < rivalCount;
+            g_Cars[car].brakeInput = car < rivalCount && frame >= 2 ? 128 : 0;
+        }
+        RecordReplayFrame();
+    }
+    /* Deliberately contradict the recording in the live input state. */
+    player->brakeInput = 256;
+    memset(g_Cars, 0, sizeof(g_Cars));
+    for (int frame = 0; frame < 4; ++frame) {
+        ApplyReplayFrame(frame, &replayPlayer, grandPrix ? replayRivals : NULL);
+        UpdateCarLights(&playerLights, 1, 1, replayPlayer.brakeInput > 0, 1.0f / 60);
+        assert(playerLights.stop == (frame < 2 ? 1.0f : 0.0f));
+        assert(playerLights.headlights == 0 && playerLights.tail == 0);
+        if (!grandPrix) continue;
+        for (int car = 0; car < REPLAY_RIVAL_COUNT; ++car) {
+            UpdateCarLights(&rivalLights[car], 0, 1,
+                            replayRivals[car].brakeInput > 0, 1.0f / 60);
+            assert(rivalLights[car].stop ==
+                   (car < rivalCount && frame >= 2 ? 1.0f : 0.0f));
+            assert(replayRivals[car].activeFlag == (car < rivalCount ? 1 : -1));
+            assert(replayRivals[car].aiEnabled == (car < rivalCount));
+        }
+    }
+}
+
 int main(void) {
+    TestRecordedBrakeLights(1, REPLAY_RIVAL_COUNT);
+    TestRecordedBrakeLights(1, 4);
+    TestRecordedBrakeLights(0, 0);
     TestReplayBufferReset();
     TestGrandPrixRecording();
     TestTimeAttackRecording();

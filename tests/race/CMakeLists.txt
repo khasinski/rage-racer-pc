@@ -197,7 +197,9 @@ set_tests_properties(replay_playback PROPERTIES LABELS unit)
 
 add_executable(replay_recording_tests
     replay_recording_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/replay_recording.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/replay_recording.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/race/replay_playback.c)
+target_link_libraries(replay_recording_tests PRIVATE rage-render-world)
 target_include_directories(replay_recording_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
