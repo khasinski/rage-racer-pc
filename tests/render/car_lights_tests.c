@@ -99,6 +99,22 @@ int main(void) {
     CHECK(world.spotLightCount == 2);
     CHECK(fabsf(world.spotLights[0].color.x - 5 * tail) < 0.0001f);
     CHECK(world.spotLights[0].color.x == world.spotLights[1].color.x);
+    /* Changing body detail must not switch off or move the light sources. */
+    body.lamps = (CarLights){1, 0.2f, 1, 1};
+    world.spotLightCount = 0;
+    RenderCarSpotLights(&world);
+    SpotLight nearLights[4];
+    for (int i = 0; i < 4; ++i) nearLights[i] = world.spotLights[i];
+    body.mesh = 4;
+    world.spotLightCount = 0;
+    RenderCarSpotLights(&world);
+    CHECK(world.spotLightCount == 4);
+    for (int i = 0; i < 4; ++i) {
+        CHECK(world.spotLights[i].position.x == nearLights[i].position.x);
+        CHECK(world.spotLights[i].position.y == nearLights[i].position.y);
+        CHECK(world.spotLights[i].position.z == nearLights[i].position.z);
+        CHECK(world.spotLights[i].color.x == nearLights[i].color.x);
+    }
     body.mesh = 5;
     body.lamps = (CarLights){1, 0.2f, 0, 1};
     world.spotLightCount = 0;

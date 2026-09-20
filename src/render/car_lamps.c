@@ -25,6 +25,14 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {15, {67, 163, 72, 173}, {-122, -6.6f, -95.2f}, LAMP_TAIL_STOP, 1},
         {15, {67, 163, 72, 173}, {123, -7, -95.125f}, LAMP_TAIL_STOP, 1},
     };
+    /* The distant body has its own atlas panels. Keep the emitters at the
+     * same physical positions when changing detail; only the lens UVs change. */
+    static const Lamp rivalFar[] = {
+        {7, {86, 134, 89, 137}, {-64.43902f, 35.7f, 386.50244f}, LAMP_HEAD, 0},
+        {7, {102, 134, 105, 137}, {64.43902f, 35.7f, 386.50244f}, LAMP_HEAD, 0},
+        {0, {178, 85, 181, 88}, {-114, 4.03590f, -92.69744f}, LAMP_TAIL_STOP, 1},
+        {0, {211, 85, 214, 88}, {115.5f, 3.63942f, -92.58494f}, LAMP_TAIL_STOP, 1},
+    };
     static const Lamp compact[] = {
         {3, {204, 46, 212, 57}, {-64.88971f, 41.61765f, 342.73235f}, LAMP_HEAD, 1},
         {3, {204, 118, 212, 129}, {64.42647f, 41.61765f, 342.91765f}, LAMP_HEAD, 1},
@@ -262,6 +270,10 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         if (body->mesh == 5) {
             *lamps = rivalCoupe;
             return sizeof(rivalCoupe) / sizeof(*rivalCoupe);
+        }
+        if (body->mesh == 4) {
+            *lamps = rivalFar;
+            return sizeof(rivalFar) / sizeof(*rivalFar);
         }
     }
     return 0;
