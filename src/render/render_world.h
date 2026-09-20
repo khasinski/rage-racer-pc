@@ -171,6 +171,17 @@ enum {
     RAGE_RENDER_INSTANCE_RAY_NO_SHADOW = 1u << 8,
 };
 
+enum { RENDER_SPOT_LIGHT_CAPACITY = 48 };
+
+typedef struct SpotLight {
+    Vec3 position;
+    float range;
+    Vec3 direction;
+    float outerCos;
+    Vec3 color;
+    float innerCos;
+} SpotLight;
+
 typedef struct RenderWorld {
     uint64_t frame;
     RenderDirectionalLight light;
@@ -190,12 +201,16 @@ typedef struct RenderWorld {
     uint32_t instanceCapacity;
     uint32_t instanceCount;
     uint32_t overflowCount;
+    /* Shared by all views; colors include intensity in linear space. */
+    SpotLight spotLights[RENDER_SPOT_LIGHT_CAPACITY];
+    uint32_t spotLightCount;
 } RenderWorld;
 
 void RenderWorldInit(RenderWorld *world,
                          RenderMeshInstance *instances,
                          uint32_t capacity);
 void RenderWorldBeginFrame(RenderWorld *world, uint64_t frame);
+int RenderWorldSubmitSpotLight(RenderWorld *world, const SpotLight *light);
 void RenderWorldSetDirectionalLight(
     RenderWorld *world, const RenderDirectionalLight *light);
 void RenderDirectionalLightDefault(RenderDirectionalLight *light);

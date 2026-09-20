@@ -17,7 +17,13 @@ layout(location = 7) in float shadowReception;
 layout(location = 9) in vec3 worldPositionIn;
 layout(location = 0) out vec4 outColor;
 layout(set = 2, binding = 0) uniform sampler2D shadowMap;
+struct SpotLight {
+    vec4 positionRange;
+    vec4 directionOuter;
+    vec4 colorInner;
+};
 layout(set = 3, binding = 0, std140) uniform NativeSceneLight {
+
     vec4 direction;
     vec4 ambient;
     vec4 diffuse;
@@ -25,7 +31,10 @@ layout(set = 3, binding = 0, std140) uniform NativeSceneLight {
     vec4 skyHorizon;
     vec4 skyBottom;
     vec4 ray;
+    vec4 spotCount;
+    SpotLight spots[48];
 } sceneLight;
+#include "native_spot.glsl"
 
 float shadowVisibility(vec3 n) {
     if (shadowCoord.x <= 0.0 || shadowCoord.x >= 1.0 ||
@@ -71,5 +80,6 @@ void main() {
         lighting);
     float tracedOcclusion = mix(0.35, 1.0, visibility);
     light *= mix(1.0, tracedOcclusion, lighting);
-    outColor = vec4(foggedColor * light, color.a);
+    outColor = vec4(foggedColor * light + color.rgb *
+        spotLighting(worldPositionIn, n) * (1.0 - fog.a), color.a);
 }

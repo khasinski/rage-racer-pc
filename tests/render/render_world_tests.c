@@ -859,7 +859,35 @@ static void test_default_shadow_light_exposes_vehicle_footprint(void) {
     EXPECT_EQ(1, horizontalSquared < light.y * light.y);
 }
 
+static void test_spot_lights_validate_and_reset(void) {
+    RenderWorld world = {0};
+    SpotLight light = {
+        .position = {1, 2, 3}, .range = 100,
+        .direction = {0, 0, -2}, .outerCos = 0.7f,
+        .color = {2, 1, 0.5f}, .innerCos = 0.9f,
+    };
+    EXPECT_EQ(1, !!(RenderWorldSubmitSpotLight(&world, &light)));
+    EXPECT_EQ(1, !!(world.spotLights[0].direction.z == -1));
+    EXPECT_EQ(1, !!(world.spotLightCount == 1));
+    light.range = 0;
+    EXPECT_EQ(1, !!(!RenderWorldSubmitSpotLight(&world, &light)));
+    light.range = 100;
+    light.direction.z = NAN;
+    EXPECT_EQ(1, !!(!RenderWorldSubmitSpotLight(&world, &light)));
+    light.direction.z = -1;
+    light.outerCos = light.innerCos;
+    EXPECT_EQ(1, !!(!RenderWorldSubmitSpotLight(&world, &light)));
+    light.outerCos = 0.7f;
+    for (int i = 1; i < RENDER_SPOT_LIGHT_CAPACITY; i++)
+        EXPECT_EQ(1, !!(RenderWorldSubmitSpotLight(&world, &light)));
+    EXPECT_EQ(1, !!(!RenderWorldSubmitSpotLight(&world, &light)));
+    EXPECT_EQ(1, !!(world.spotLightCount == RENDER_SPOT_LIGHT_CAPACITY));
+    RenderWorldBeginFrame(&world, 5);
+    EXPECT_EQ(1, !!(world.spotLightCount == 0));
+}
+
 int main(void) {
+    test_spot_lights_validate_and_reset();
     test_frame_reset_preserves_storage_and_resets_overflow();
     test_mesh_submission_rejects_invalid_storage();
     test_public_world_mutators_reject_null_inputs();

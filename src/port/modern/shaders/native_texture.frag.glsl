@@ -15,7 +15,13 @@ layout(location = 9) in vec3 worldPositionIn;
 layout(location = 0) out vec4 outColor;
 layout(set = 2, binding = 0) uniform sampler2D materialTexture;
 layout(set = 2, binding = 1) uniform sampler2D shadowMap;
+struct SpotLight {
+    vec4 positionRange;
+    vec4 directionOuter;
+    vec4 colorInner;
+};
 layout(set = 3, binding = 0, std140) uniform NativeSceneLight {
+
     vec4 direction;
     vec4 ambient;
     vec4 diffuse;
@@ -23,7 +29,10 @@ layout(set = 3, binding = 0, std140) uniform NativeSceneLight {
     vec4 skyHorizon;
     vec4 skyBottom;
     vec4 ray; // enabled, total node count, TLAS node count, instance count
+    vec4 spotCount;
+    SpotLight spots[48];
 } sceneLight;
+#include "native_spot.glsl"
 layout(set = 3, binding = 1, std140) uniform NativeMaterial {
     vec4 baseColor;
     vec4 emissiveAndShading;
@@ -150,6 +159,8 @@ void main() {
     base = mix(base, reflected, clamp(reflectionStrength, 0.0, 0.85));
     directSpecular *= coat * zoneReflection;
     vec3 specular = directSpecular * step(0.001, materialLighting);
+    base += texel.rgb * modulation * material.baseColor.rgb *
+        spotLighting(worldPositionIn, n) * (1.0 - fog.a);
     vec3 emissive = texel.rgb * material.emissiveAndShading.rgb;
     outColor = vec4(base + specular + emissive,
                     texel.a * color.a * material.baseColor.a);

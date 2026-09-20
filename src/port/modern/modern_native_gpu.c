@@ -90,7 +90,12 @@ typedef struct ModernNativeLightUniform {
     float skyHorizon[4];
     float skyBottom[4];
     float ray[4];
+    float spotCount[4];
+    SpotLight spots[RENDER_SPOT_LIGHT_CAPACITY];
 } ModernNativeLightUniform;
+
+_Static_assert(sizeof(SpotLight) == 12 * sizeof(float),
+               "spot light must match three std140 vec4 values");
 
 
 typedef struct ModernNativeTexture {
@@ -1911,7 +1916,13 @@ static void ModernNativeGpuDrawSet(
         SDL_DrawGPUPrimitives(pass, 3, 1, 0, 0);
     }
     ModernNativeBuildLight(&s_world->light, renderCamera, &light);
+    uint32_t spotCount = s_world->spotLightCount <= RENDER_SPOT_LIGHT_CAPACITY
+        ? s_world->spotLightCount : 0;
+    light.spotCount[0] = (float)spotCount;
+    memcpy(light.spots, s_world->spotLights,
+           spotCount * sizeof(*light.spots));
     SDL_PushGPUFragmentUniformData(command, 0, &light, sizeof(light));
+
     ModernNativeBuildShadowCamera(&s_shadowMap, &shadowCamera);
     SDL_PushGPUVertexUniformData(
         command, 1, &shadowCamera, sizeof(shadowCamera));

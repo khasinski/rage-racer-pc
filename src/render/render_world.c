@@ -135,6 +135,31 @@ void RenderWorldBeginFrame(RenderWorld *world, uint64_t frame) {
     world->frame = frame;
     world->instanceCount = 0;
     world->overflowCount = 0;
+    world->spotLightCount = 0;
+}
+
+int RenderWorldSubmitSpotLight(RenderWorld *world, const SpotLight *light) {
+    float length;
+    if (!world || !light || world->spotLightCount >= RENDER_SPOT_LIGHT_CAPACITY)
+        return 0;
+    if (!isfinite(light->position.x) || !isfinite(light->position.y) ||
+        !isfinite(light->position.z) || !isfinite(light->range) ||
+        light->range <= 0 || !isfinite(light->color.x) ||
+        !isfinite(light->color.y) || !isfinite(light->color.z) ||
+        light->color.x < 0 || light->color.y < 0 || light->color.z < 0 ||
+        !isfinite(light->innerCos) || !isfinite(light->outerCos) ||
+        light->outerCos < -1 || light->innerCos > 1 ||
+        light->innerCos <= light->outerCos) return 0;
+    length = sqrtf(light->direction.x * light->direction.x +
+                   light->direction.y * light->direction.y +
+                   light->direction.z * light->direction.z);
+    if (!isfinite(length) || length <= 0.000001f) return 0;
+    SpotLight *out = &world->spotLights[world->spotLightCount++];
+    *out = *light;
+    out->direction.x /= length;
+    out->direction.y /= length;
+    out->direction.z /= length;
+    return 1;
 }
 
 void RenderWorldSetDirectionalLight(

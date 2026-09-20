@@ -5,7 +5,7 @@
 #include <string.h>
 
 enum {
-    RAGE_RENDER_WORLD_SNAPSHOT_VERSION = 7,
+    RAGE_RENDER_WORLD_SNAPSHOT_VERSION = 8,
     RAGE_RENDER_WORLD_SNAPSHOT_MAX_INSTANCES = 1000000,
 };
 
@@ -306,7 +306,16 @@ int RenderWorldSnapshotWrite(const char *path,
          WriteU32(file, world->overflowCount);
     for (instance = 0; ok && instance < world->instanceCount; instance++)
         ok = WriteInstance(file, &world->instances[instance]);
+    ok = ok && world->spotLightCount <= RENDER_SPOT_LIGHT_CAPACITY &&
+         WriteU32(file, world->spotLightCount);
+    for (uint32_t i = 0; ok && i < world->spotLightCount; i++) {
+        const SpotLight *light = &world->spotLights[i];
+        ok = WriteVec3(file, &light->position) && WriteFloat(file, light->range) &&
+             WriteVec3(file, &light->direction) && WriteFloat(file, light->outerCos) &&
+             WriteVec3(file, &light->color) && WriteFloat(file, light->innerCos);
+    }
     if (fclose(file) != 0) ok = 0;
+
     if (ok) ok = rename(temporaryPath, path) == 0;
     if (!ok) remove(temporaryPath);
     free(temporaryPath);
@@ -351,8 +360,20 @@ static int ReadNewSnapshot(const char *path,
     }
     for (instance = 0; ok && instance < count; instance++)
         ok = ReadInstance(file, &snapshot->instances[instance], version);
+    if (ok && version >= 8) {
+        uint32_t lightCount;
+        ok = ReadU32(file, &lightCount) && lightCount <= RENDER_SPOT_LIGHT_CAPACITY;
+        for (uint32_t i = 0; ok && i < lightCount; i++) {
+            SpotLight light;
+            ok = ReadVec3(file, &light.position) && ReadFloat(file, &light.range) &&
+                 ReadVec3(file, &light.direction) && ReadFloat(file, &light.outerCos) &&
+                 ReadVec3(file, &light.color) && ReadFloat(file, &light.innerCos) &&
+                 RenderWorldSubmitSpotLight(&snapshot->world, &light);
+        }
+    }
     if (ok) {
         unsigned char trailing;
+
         ok = fread(&trailing, 1, 1, file) == 0 && feof(file);
     }
     fclose(file);

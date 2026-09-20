@@ -95,7 +95,14 @@ static void TestRoundTrip(void) {
     RenderMeshInstance instances[2] = {0};
     RenderWorld world = {0};
     RenderWorldSnapshot loaded = {0};
+    SpotLight lamp = {
+        .position = {12, 5, -9}, .range = 80,
+        .direction = {0, 0, -1}, .outerCos = 0.7f,
+        .color = {3, 2, 1}, .innerCos = 0.95f,
+    };
+    CHECK(RenderWorldSubmitSpotLight(&world, &lamp));
     world.frame = UINT64_C(0x123456789abcdef0);
+
     world.light.direction = (Vec3){.1f, .2f, .3f};
     world.light.ambientColor = (Vec3){.4f, .5f, .6f};
     world.light.diffuseColor = (Vec3){.7f, .8f, .9f};
@@ -140,6 +147,8 @@ static void TestRoundTrip(void) {
     CHECK(RenderWorldSnapshotRead(path, &loaded));
     CHECK(loaded.world.frame == world.frame);
     CHECK(SameLight(&loaded.world.light, &world.light));
+    CHECK(loaded.world.spotLightCount == 1);
+    CHECK(memcmp(&loaded.world.spotLights[0], &lamp, sizeof(lamp)) == 0);
     CHECK(SameCamera(&loaded.world.camera, &world.camera));
     CHECK(SameCamera(&loaded.world.previousCamera, &world.previousCamera));
     CHECK(SameCamera(&loaded.world.mirrorCamera, &world.mirrorCamera));
@@ -259,8 +268,9 @@ static void TestSkyLayoutVersionCompatibility(void) {
      * starts after the 56-byte frame/light prefix. hasCamera separates the
      * first pair from the mirror pair. These are wire offsets, not sizeof(C). */
     static const size_t extension[] = {233, 427, 622, 816};
-    CHECK(bytes[8] == 7);
-    for (size_t i = 0; i < size; ++i) {
+    CHECK(bytes[8] == 8);
+    /* v8 appends a light count; an empty v6 world has no such tail. */
+    for (size_t i = 0; i < size - 4; ++i) {
         int skip = 0;
         for (size_t j = 0; j < 4; ++j)
             if (i >= extension[j] && i < extension[j] + 17) skip = 1;
