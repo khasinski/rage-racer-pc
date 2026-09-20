@@ -1,3 +1,6 @@
+#ifndef _WIN32
+#define _POSIX_C_SOURCE 200809L
+#endif
 #include "render/mod_file_snapshot.h"
 #include <assert.h>
 #include <stdio.h>
