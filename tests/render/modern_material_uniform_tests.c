@@ -117,5 +117,18 @@ int main(void) {
     assert(uniform.lamps[0].emission[3] == 1);
     assert(uniform.lamps[0].bounds[0] > 14.0f / 256);
     assert(uniform.lamps[1].bounds[2] < 82.0f / 256);
+    car.lamps = (CarLights){0, 0.2f, 0, 1};
+    ModernMaterialUniformBuild(&material, 0, &uniform);
+    ModernMaterialUniformLamps(&car, 0, &uniform);
+    assert(uniform.lamps[0].emission[0] == 0.5f);
+    assert(uniform.lamps[1].emission[0] == 0.5f);
+    car.lamps.stop = 1;
+    ModernMaterialUniformBuild(&material, 0, &uniform);
+    ModernMaterialUniformLamps(&car, 0, &uniform);
+    assert(uniform.lamps[0].emission[0] == 2.5f);
+    assert(uniform.lamps[1].emission[0] == 2.5f);
+    ModernMaterialUniformBuild(&material, 0, &uniform);
+    ModernMaterialUniformLamps(&car, 3, &uniform);
+    assert(uniform.lamps[0].emission[0] == 0);
     return 0;
 }

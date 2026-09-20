@@ -30,6 +30,9 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         /* White inner lenses; the amber outer corners are indicators. */
         {3, {15, 8, 33, 13}, {58.925f, 41.2f, 416.225f}, LAMP_HEAD, 1},
         {3, {62, 8, 80, 13}, {-58.925f, 41.2f, 416.225f}, LAMP_HEAD, 1},
+        /* Lower outer rear lenses, excluding the white reversing lights. */
+        {0, {102, 15, 110, 20}, {107.25127f, 48.48477f, -51.85787f}, LAMP_TAIL_STOP, 1},
+        {0, {177, 15, 185, 20}, {-107.09167f, 47.95f, -51.76667f}, LAMP_TAIL_STOP, 1},
     };
     *lamps = NULL;
     if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
