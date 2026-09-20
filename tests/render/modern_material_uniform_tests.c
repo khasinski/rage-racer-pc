@@ -83,6 +83,22 @@ int main(void) {
     car.lamps.headlights = 1;
     ModernMaterialUniformLamps(&car, 7, &uniform);
     assert(uniform.lamps[0].emission[0] == 0);
+    for (int driver = 0; driver < 2; ++driver) {
+        car.entity = driver ? 11 : 2;
+        car.lamps = (CarLights){1, 0.2f, 0, 1};
+        ModernMaterialUniformBuild(&material, 0, &uniform);
+        ModernMaterialUniformLamps(&car, 18, &uniform);
+        assert(uniform.lamps[0].emission[0] == 2.5f);
+        assert(uniform.lamps[1].emission[0] == 0);
+        ModernMaterialUniformBuild(&material, 0, &uniform);
+        ModernMaterialUniformLamps(&car, 15, &uniform);
+        assert(uniform.lamps[0].emission[0] == 0.5f);
+        assert(uniform.lamps[1].emission[0] == 0);
+        car.lamps.stop = 1;
+        ModernMaterialUniformBuild(&material, 0, &uniform);
+        ModernMaterialUniformLamps(&car, 15, &uniform);
+        assert(uniform.lamps[0].emission[0] == 2.5f);
+    }
     /* The compact's stop lights use the rear atlas, not its headlights.
      * Their upper red sections brighten together and turn off in daylight. */
     car.assetSet = RAGE_RENDER_ASSET_MODEL_BANK;

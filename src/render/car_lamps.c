@@ -19,6 +19,12 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {5, {71, 85, 75, 89}, {-114, 4.03590f, -92.69744f}, LAMP_TAIL_STOP, 1},
         {5, {71, 85, 75, 89}, {115.5f, 3.63942f, -92.58494f}, LAMP_TAIL_STOP, 1},
     };
+    static const Lamp rivalCoupe[] = {
+        {18, {83, 175, 100, 181}, {-62.87805f, 37.1f, 387.60488f}, LAMP_HEAD, 0},
+        {18, {83, 175, 100, 181}, {62.87805f, 37.1f, 387.60488f}, LAMP_HEAD, 0},
+        {15, {67, 163, 72, 173}, {-122, -6.6f, -95.2f}, LAMP_TAIL_STOP, 1},
+        {15, {67, 163, 72, 173}, {123, -7, -95.125f}, LAMP_TAIL_STOP, 1},
+    };
     static const Lamp compact[] = {
         {3, {204, 46, 212, 57}, {-64.88971f, 41.61765f, 342.73235f}, LAMP_HEAD, 1},
         {3, {204, 118, 212, 129}, {64.42647f, 41.61765f, 342.91765f}, LAMP_HEAD, 1},
@@ -239,8 +245,9 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {72, concept, sizeof(concept) / sizeof(*concept)},
     };
     *lamps = NULL;
-    if (body->component != 0 || body->mesh != 0) return 0;
+    if (body->component != 0) return 0;
     if (body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK) {
+        if (body->mesh != 0) return 0;
         for (unsigned i = 0; i < sizeof(players) / sizeof(*players); ++i) {
             if (players[i].key != body->assetKey) continue;
             *lamps = players[i].lamps;
@@ -248,8 +255,14 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         }
     } else if (body->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 &&
                body->assetKey == 128) {
-        *lamps = rival;
-        return sizeof(rival) / sizeof(*rival);
+        if (body->mesh == 0) {
+            *lamps = rival;
+            return sizeof(rival) / sizeof(*rival);
+        }
+        if (body->mesh == 5) {
+            *lamps = rivalCoupe;
+            return sizeof(rivalCoupe) / sizeof(*rivalCoupe);
+        }
     }
     return 0;
 }
