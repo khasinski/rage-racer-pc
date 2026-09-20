@@ -94,6 +94,25 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {27, {104, 104, 118, 110}, {69.72826f, 56.71875f, -85.81658f}, LAMP_TAIL_STOP, 0},
         {27, {170, 104, 184, 110}, {-71.70313f, 56.71875f, -84.47396f}, LAMP_TAIL_STOP, 0},
     }};
+    static const Lamp expertSedan[] = {
+        /* Closed popups: the low round lamps are the exposed front lenses. */
+        {0, {5, 26, 15, 35}, {-99.99557f, -5.05226f, 481.18158f}, LAMP_HEAD, 1},
+        {0, {81, 26, 90, 35}, {101.34145f, -5.07086f, 481.00044f}, LAMP_HEAD, 1},
+        {1, {102, 14, 124, 17}, {93.07807f, 41, -127.35714f}, LAMP_TAIL_STOP, 0},
+        {1, {164, 14, 187, 17}, {-99.47516f, 41, -127.35714f}, LAMP_TAIL_STOP, 0},
+    };
+    static const Lamp proSedan[] = {
+        {0, {8, 8, 24, 13}, {-84.92776f, 25.13688f, 480.27376f}, LAMP_HEAD, 0},
+        {0, {72, 8, 88, 13}, {85.92553f, 25, 480.20213f}, LAMP_HEAD, 0},
+        {1, {101, 8, 113, 15}, {108.37542f, 50, -127.14286f}, LAMP_TAIL_STOP, 0},
+        {1, {173, 8, 186, 15}, {-108.66615f, 50, -127.14286f}, LAMP_TAIL_STOP, 0},
+    };
+    static const Lamp eliteSedan[] = {
+        {0, {7, 8, 23, 13}, {-86.24525f, 25.13181f, 480.09696f}, LAMP_HEAD, 0},
+        {0, {73, 8, 89, 13}, {88.58511f, 25, 479.84043f}, LAMP_HEAD, 0},
+        {1, {103, 13, 121, 16}, {93.21595f, 44, -127.28571f}, LAMP_TAIL_STOP, 0},
+        {1, {169, 13, 187, 16}, {-99.60404f, 44, -127.28571f}, LAMP_TAIL_STOP, 0},
+    };
     static const Lamp clubCars[7][4] = {
         {
             {0, {5, 4, 25, 12}, {-88.72814f, 29.00634f, 478.34601f}, LAMP_HEAD, 0},
@@ -353,6 +372,12 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
     };
     *lamps = NULL;
     if (body->component != 0) return 0;
+    /* The three road courses share their class bank (mesh AND textures).
+     * Oval banks are separate; only explicitly verified aliases belong here. */
+    uint32_t bank = body->assetKey;
+    if ((bank & 1u) == 0 && (bank & 6u) != 6u) bank &= ~7u;
+    if (bank == 94) bank = 120;
+    if (bank == 134) bank = 128;
     if (body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK) {
         if (body->mesh != 0) return 0;
         for (unsigned i = 0; i < sizeof(players) / sizeof(*players); ++i) {
@@ -361,20 +386,23 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
             return players[i].count;
         }
     } else if (body->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 &&
-               body->assetKey >= 96 && body->assetKey <= 100 &&
-               (body->assetKey & 1u) == 0 &&
+               body->mesh == 0 &&
+               (bank == 104 || bank == 112 || bank == 120)) {
+        *lamps = bank == 104 ? expertSedan :
+                 bank == 112 ? proSedan : eliteSedan;
+        return 4;
+    } else if (body->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 &&
+               bank == 96 &&
                body->mesh <= 30 && body->mesh % 5 == 0) {
         *lamps = sportCars[body->mesh / 5];
         return 4;
     } else if (body->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 &&
-               body->assetKey >= 88 && body->assetKey <= 92 &&
-               (body->assetKey & 1u) == 0 && body->mesh <= 30 &&
+               bank == 88 && body->mesh <= 30 &&
                body->mesh % 5 == 0) {
         *lamps = clubCars[body->mesh / 5];
         return 4;
     } else if (body->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 &&
-               body->assetKey >= 128 && body->assetKey <= 134 &&
-               (body->assetKey & 1u) == 0) {
+               bank == 128) {
         if (body->mesh == 0) {
             *lamps = rival;
             return sizeof(rival) / sizeof(*rival);

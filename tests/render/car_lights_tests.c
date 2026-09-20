@@ -185,6 +185,24 @@ int main(void) {
     world.spotLightCount = 0;
     RenderCarSpotLights(&world);
     CHECK(world.spotLightCount == 0);
+    {
+        const unsigned banks[] = {94, 104, 106, 108, 112, 114, 116, 120, 122, 124};
+        body.mesh = 0;
+        for (unsigned i = 0; i < sizeof(banks) / sizeof(*banks); ++i) {
+            body.assetKey = banks[i];
+            body.lamps = (CarLights){1, 0.2f, 0, 1};
+            world.spotLightCount = 0;
+            RenderCarSpotLights(&world);
+            CHECK(world.spotLightCount == 4);
+            CHECK(world.spotLights[0].direction.z > 0);
+            CHECK(world.spotLights[2].direction.z < 0);
+            body.lamps = (CarLights){0, 0, 1, 0};
+            world.spotLightCount = 0;
+            RenderCarSpotLights(&world);
+            CHECK(world.spotLightCount == 2);
+        }
+        body.lamps = (CarLights){1, 0.2f, 1, 1};
+    }
     for (unsigned bank = 96; bank <= 100; bank += 2)
     for (unsigned mesh = 0; mesh <= 30; mesh += 5) {
         const Lamp *first, *second;
