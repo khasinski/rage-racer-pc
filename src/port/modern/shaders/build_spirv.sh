@@ -87,3 +87,5 @@ build_shader native_texture.frag native_texture_frag frag fs_native
 build_shader native_color.frag native_color_frag frag fs_native_color
 build_shader fog_probe.frag fog_probe_frag frag fs_fog_probe
 build_shader shadow_uv_probe.frag shadow_uv_probe_frag frag fs_shadow_uv_probe
+build_shader lamp_glow.vert lamp_glow_vert vert vs_lamp_glow
+build_shader lamp_glow.frag lamp_glow_frag frag fs_lamp_glow

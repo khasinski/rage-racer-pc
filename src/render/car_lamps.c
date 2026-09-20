@@ -564,12 +564,12 @@ void RenderCarSpotLights(RenderWorld *world) {
             SpotLight light = {0};
             light.position = RenderTransformInstancePoint(&transform, lamp->position);
             light.direction = RenderRotateInstanceVector(&transform,
-                (Vec3){0, -0.06f, front ? 1.0f : -1.0f});
+                (Vec3){0, front ? -0.12f : -0.06f, front ? 1.0f : -1.0f});
             light.range = front ? 1200.0f : 160.0f;
             light.innerCos = front ? 0.96f : 0.75f;
             light.outerCos = front ? 0.80f : 0.25f;
             light.color = front
-                ? (Vec3){strength, strength * 0.94f, strength * 0.8f}
+                ? (Vec3){strength * 12, strength * 11.28f, strength * 9.6f}
                 : (Vec3){strength * 1.5f, strength * 0.025f, strength * 0.01f};
             RenderWorldSubmitSpotLight(world, &light);
         }

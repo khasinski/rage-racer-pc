@@ -18,5 +18,8 @@ vec3 spotLighting(vec3 position, vec3 normal) {
         float facing = max(dot(normal, -direction), 0.0);
         result += lamp.colorInner.rgb * edge * falloff * falloff * facing;
     }
-    return result;
+    /* Compress the accumulated local light before the LDR target. Bright
+     * headlights can illuminate grazing road surfaces without bleaching
+     * every car directly in front of them. */
+    return result / (vec3(1.0) + result);
 }

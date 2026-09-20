@@ -43,16 +43,21 @@ float shadowVisibility(vec3 n) {
     float facing = max(dot(n, normalize(sceneLight.direction.xyz)), 0.0);
     float bias = mix(0.00025, 0.00008, facing);
     vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0));
+    vec2 pixel = shadowCoord.xy / texelSize - 0.5;
+    vec2 fraction = fract(pixel);
+    vec2 first = (floor(pixel) + 0.5) * texelSize;
     float visible = 0.0;
     for (int y = 0; y < 2; y++) {
         for (int x = 0; x < 2; x++) {
             float storedDepth = texture(
                 shadowMap,
-                shadowCoord.xy + (vec2(x, y) - 0.5) * texelSize).r;
-            visible += shadowCoord.z - bias <= storedDepth ? 1.0 : 0.0;
+                first + vec2(x, y) * texelSize).r;
+            float weight = (x == 0 ? 1.0 - fraction.x : fraction.x) *
+                           (y == 0 ? 1.0 - fraction.y : fraction.y);
+            visible += shadowCoord.z - bias <= storedDepth ? weight : 0.0;
         }
     }
-    return visible * 0.25;
+    return visible;
 }
 
 void main() {

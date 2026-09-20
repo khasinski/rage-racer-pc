@@ -1,3 +1,7 @@
+#include "shaders/lamp_glow_vert_spv.h"
+#include "shaders/lamp_glow_vert_msl.h"
+#include "shaders/lamp_glow_frag_spv.h"
+#include "shaders/lamp_glow_frag_msl.h"
 #include "modern_native_gpu.h"
 #include "../runtime_config.h"
 #include "../track_material_page.h"
@@ -16,6 +20,7 @@
 #include "render/render_geometry_pack.h"
 #include "render/authored_car_surface.h"
 #include "render/render_shadow.h"
+#include "render/render_projection.h"
 #include "render/car_lamps.h"
 #include "render/texture_mipmap.h"
 #include "rage/track_asset_identity.h"
@@ -127,6 +132,7 @@ static SDL_GPUSampler *s_skySampler;
 static RageSkyTextureIdentity s_skyIdentity;
 static int s_skyHasPanorama;
 static uint32_t s_skyRetryFrames;
+static SDL_GPUGraphicsPipeline *s_lampGlow;
 static SDL_GPUGraphicsPipeline *s_shadowDepth;
 static SDL_GPUGraphicsPipeline *s_shadowMasked;
 static SDL_GPUBuffer *s_vertexBuffer;
@@ -580,6 +586,44 @@ static void ModernNativeBuildShadowCamera(
     out->projection[3] = shadow->depthOffset;
 }
 
+static SDL_GPUGraphicsPipeline *CreateLampGlow(void) {
+    SDL_GPUShader *vertex = ModernNativeCreateShader(
+        lamp_glow_vert_spv, lamp_glow_vert_spv_len,
+        lamp_glow_vert_msl, lamp_glow_vert_msl_len, "vs_lamp_glow",
+        SDL_GPU_SHADERSTAGE_VERTEX, 0, 0, 1);
+    SDL_GPUShader *fragment = ModernNativeCreateShader(
+        lamp_glow_frag_spv, lamp_glow_frag_spv_len,
+        lamp_glow_frag_msl, lamp_glow_frag_msl_len, "fs_lamp_glow",
+        SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0, 1);
+    SDL_GPUGraphicsPipeline *pipeline = NULL;
+    if (vertex && fragment) {
+        SDL_GPUColorTargetDescription color = {.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM};
+        color.blend_state.enable_blend = true;
+        color.blend_state.src_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE;
+        color.blend_state.dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE;
+        color.blend_state.color_blend_op = SDL_GPU_BLENDOP_ADD;
+        color.blend_state.src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ZERO;
+        color.blend_state.dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE;
+        color.blend_state.alpha_blend_op = SDL_GPU_BLENDOP_ADD;
+        SDL_GPUGraphicsPipelineCreateInfo info = {0};
+        info.vertex_shader = vertex;
+        info.fragment_shader = fragment;
+        info.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
+        info.rasterizer_state.cull_mode = SDL_GPU_CULLMODE_NONE;
+        info.rasterizer_state.enable_depth_clip = true;
+        info.depth_stencil_state.enable_depth_test = true;
+        info.depth_stencil_state.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL;
+        info.target_info.color_target_descriptions = &color;
+        info.target_info.num_color_targets = 1;
+        info.target_info.has_depth_stencil_target = true;
+        info.target_info.depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
+        pipeline = SDL_CreateGPUGraphicsPipeline(s_device, &info);
+    }
+    if (vertex) SDL_ReleaseGPUShader(s_device, vertex);
+    if (fragment) SDL_ReleaseGPUShader(s_device, fragment);
+    return pipeline;
+}
+
 int ModernNativeGpuInit(SDL_GPUDevice *device, int linearTextureFilter) {
     SDL_GPUShader *vertex = NULL, *skyVertex = NULL, *shadowVertex = NULL;
     SDL_GPUShader *skyFragment = NULL;
@@ -712,6 +756,8 @@ int ModernNativeGpuInit(SDL_GPUDevice *device, int linearTextureFilter) {
     sampler.max_anisotropy = 1.0f;
     sampler.enable_anisotropy = false;
     s_skySampler = SDL_CreateGPUSampler(s_device, &sampler);
+    s_lampGlow = CreateLampGlow();
+    if (!s_lampGlow) { ModernNativeGpuShutdown(); return 0; }
     if (s_rayMode && !ModernRayGpuInit(s_device)) s_rayMode = 0;
     fprintf(stderr, "rage-port: ray tracing=%s\n",
             s_rayMode == 3 ? "full" : s_rayMode == 2 ? "reflections" :
@@ -1852,6 +1898,49 @@ static ModernNativeDrawMaterial ModernNativeResolveDrawMaterial(
     return result;
 }
 
+/* Lens glare is a depth-tested optical halo, separate from illumination of
+ * surfaces. Its billboard cannot reveal a lamp hidden behind opaque scenery. */
+static void DrawLampGlows(SDL_GPUCommandBuffer *command, SDL_GPURenderPass *pass,
+                          const RenderCamera *view, const ModernNativeCameraUniform *camera) {
+    if (!s_lampGlow || !s_world->spotLightCount) return;
+    SDL_BindGPUGraphicsPipeline(pass, s_lampGlow);
+    for (uint32_t i = 0; i < s_world->spotLightCount; ++i) {
+        const SpotLight *lamp = &s_world->spotLights[i];
+        Vec3 delta = {view->transform.position.x - lamp->position.x,
+                      view->transform.position.y - lamp->position.y,
+                      view->transform.position.z - lamp->position.z};
+        float distance = sqrtf(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z);
+        if (distance <= 1) continue;
+        float facing = (delta.x * lamp->direction.x + delta.y * lamp->direction.y +
+                        delta.z * lamp->direction.z) / distance;
+        if (facing <= 0.1f) continue;
+        /* Car decals are lifted two world units from their source mesh.
+         * Test the halo outside that surface rather than behind the lens. */
+        float relative[3] = {-delta.x + lamp->direction.x * 3.0f,
+                             -delta.y + lamp->direction.y * 3.0f,
+                             -delta.z + lamp->direction.z * 3.0f};
+        float position[3];
+        ModernNativeRotate(position, relative, view);
+        float depth = -position[2];
+        if (depth <= view->nearPlane) continue;
+        float strength = fmaxf(lamp->color.x, fmaxf(lamp->color.y, lamp->color.z));
+        if (strength <= 0) continue;
+        float radius = fminf(12, fmaxf(6, distance * 0.04f));
+        float transform[8] = {position[0] * camera->projection[0],
+            position[1] * camera->projection[1],
+            depth * camera->projection[2] + camera->projection[3], depth,
+            radius * camera->projection[0], radius * camera->projection[1], 0, 0};
+        float intensity = fminf(strength, 1) * fminf((facing - 0.1f) * 2, 1) * 0.65f;
+        intensity *= 1.0f - RenderFogFactor(view, &lamp->position);
+        float color[4] = {lamp->color.x / strength * intensity,
+                         lamp->color.y / strength * intensity,
+                         lamp->color.z / strength * intensity, 0};
+        SDL_PushGPUVertexUniformData(command, 0, transform, sizeof(transform));
+        SDL_PushGPUFragmentUniformData(command, 0, color, sizeof(color));
+        SDL_DrawGPUPrimitives(pass, 6, 1, 0, 0);
+    }
+}
+
 static void ModernNativeGpuDrawSet(
     SDL_GPUCommandBuffer *command,
     SDL_GPUTexture *colorTarget, SDL_GPUTexture *depthTarget, int clearColor,
@@ -2036,6 +2125,7 @@ static void ModernNativeGpuDrawSet(
             drawCount++;
         }
     }
+    DrawLampGlows(command, pass, renderCamera, &camera);
     SDL_EndGPURenderPass(pass);
     if (drawCount != 0 && RuntimeConfigEnabled("diagnostics.modern_asset_trace")) {
         fprintf(stderr,
@@ -2115,6 +2205,7 @@ void ModernNativeGpuShutdown(void) {
             SDL_ReleaseGPUGraphicsPipeline(s_device, s_colorOpaqueDecal);
         if (s_sky != NULL)
             SDL_ReleaseGPUGraphicsPipeline(s_device, s_sky);
+        if (s_lampGlow != NULL) SDL_ReleaseGPUGraphicsPipeline(s_device, s_lampGlow);
         if (s_shadowDepth != NULL)
             SDL_ReleaseGPUGraphicsPipeline(s_device, s_shadowDepth);
         if (s_shadowMasked != NULL)
@@ -2144,6 +2235,7 @@ void ModernNativeGpuShutdown(void) {
     s_colorOpaque = NULL;
     s_colorOpaqueDecal = NULL;
     s_sky = NULL;
+    s_lampGlow = NULL;
     s_shadowDepth = NULL;
     s_shadowMasked = NULL;
     s_vertexBuffer = NULL;
