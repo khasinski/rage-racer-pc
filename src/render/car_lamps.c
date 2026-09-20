@@ -549,7 +549,7 @@ void RenderCarSpotLights(RenderWorld *world) {
             light.innerCos = front ? 0.96f : 0.75f;
             light.outerCos = front ? 0.80f : 0.25f;
             light.color = front
-                ? (Vec3){strength * 5, strength * 4.7f, strength * 4}
+                ? (Vec3){strength, strength * 0.94f, strength * 0.8f}
                 : (Vec3){strength * 1.5f, strength * 0.025f, strength * 0.01f};
             RenderWorldSubmitSpotLight(world, &light);
         }
