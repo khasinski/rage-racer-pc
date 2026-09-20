@@ -117,5 +117,33 @@ int main(void) {
     CHECK(world.spotLightCount == 2); /* Braking during the day lights only the rear. */
     CHECK(world.spotLights[0].direction.z < -0.99f);
     CHECK(world.spotLights[1].direction.z < -0.99f);
+    /* Every mapped player body has a pair at each end. Validate dark/off and
+     * day/braking separately so adding a model cannot silently omit one end. */
+    const unsigned models[] = {10, 12, 18, 24, 28, 68};
+    body.assetSet = RAGE_RENDER_ASSET_MODEL_BANK;
+    for (unsigned m = 0; m < sizeof(models) / sizeof(*models); ++m) {
+        body.assetKey = models[m];
+        const Lamp *lamps;
+        unsigned count = CarLamps(&body, &lamps);
+        CHECK(count == 4);
+        for (unsigned i = 0; i < count; ++i) {
+            CHECK(lamps[i].bounds[0] < lamps[i].bounds[2]);
+            CHECK(lamps[i].bounds[1] < lamps[i].bounds[3]);
+            CHECK(isfinite(lamps[i].position.x) && isfinite(lamps[i].position.y));
+            CHECK(i < 2 ? lamps[i].position.z > 0 : lamps[i].position.z < 0);
+        }
+        body.lamps = (CarLights){1, 0.2f, 0, 1};
+        world.spotLightCount = 0;
+        RenderCarSpotLights(&world);
+        CHECK(world.spotLightCount == 4);
+        body.lamps = (CarLights){0, 0, 1, 0};
+        world.spotLightCount = 0;
+        RenderCarSpotLights(&world);
+        CHECK(world.spotLightCount == 2);
+        body.lamps = (CarLights){0};
+        world.spotLightCount = 0;
+        RenderCarSpotLights(&world);
+        CHECK(world.spotLightCount == 0);
+    }
     return failures != 0;
 }

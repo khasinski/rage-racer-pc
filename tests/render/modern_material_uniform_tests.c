@@ -130,5 +130,17 @@ int main(void) {
     ModernMaterialUniformBuild(&material, 0, &uniform);
     ModernMaterialUniformLamps(&car, 3, &uniform);
     assert(uniform.lamps[0].emission[0] == 0);
+    car.assetKey = 12;
+    car.lamps = (CarLights){1, 0.2f, 0, 1};
+    ModernMaterialUniformBuild(&material, 0, &uniform);
+    ModernMaterialUniformLamps(&car, 3, &uniform);
+    assert(uniform.lamps[0].emission[0] == 0); /* Base model's material isn't a lamp. */
+    ModernMaterialUniformLamps(&car, 4, &uniform);
+    assert(uniform.lamps[0].emission[0] == 2.5f);
+    assert(uniform.lamps[1].emission[0] == 2.5f);
+    ModernMaterialUniformBuild(&material, 0, &uniform);
+    ModernMaterialUniformLamps(&car, 0, &uniform);
+    assert(uniform.lamps[0].bounds[1] == 205.0f / 256);
+    assert(uniform.lamps[0].emission[0] == 0.5f);
     return 0;
 }

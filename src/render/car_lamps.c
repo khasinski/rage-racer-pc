@@ -34,13 +34,36 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {0, {102, 15, 110, 20}, {107.25127f, 48.48477f, -51.85787f}, LAMP_TAIL_STOP, 1},
         {0, {177, 15, 185, 20}, {-107.09167f, 47.95f, -51.76667f}, LAMP_TAIL_STOP, 1},
     };
+    static const Lamp compactUpgrade[] = {
+        /* Upgrade uses material 4 in front and the lower rear atlas panel. */
+        {4, {204, 46, 212, 57}, {-64.01471f, 41.61765f, 343.08235f}, LAMP_HEAD, 1},
+        {4, {204, 118, 212, 129}, {63.55147f, 41.61765f, 343.26765f}, LAMP_HEAD, 1},
+        {0, {14, 205, 17, 209}, {74.35294f, 47, -48.73529f}, LAMP_TAIL_STOP, 0},
+        {0, {78, 205, 81, 209}, {-74.13333f, 47, -47.5f}, LAMP_TAIL_STOP, 0},
+    };
     static const Lamp sport[] = {
         {3, {7, 3, 16, 11}, {-49.55208f, 33.20833f, 381.82292f}, LAMP_HEAD, 1},
         {3, {80, 3, 89, 11}, {50.60417f, 33.16667f, 381.27083f}, LAMP_HEAD, 1},
         {0, {100, 6, 109, 11}, {102.78723f, 39.55319f, -74.76596f}, LAMP_TAIL_STOP, 1},
         {0, {178, 6, 187, 11}, {-101.87805f, 39.58537f, -74.78049f}, LAMP_TAIL_STOP, 1},
     };
+    static const Lamp sedan[] = {
+        {3, {10, 2, 30, 9}, {-68.25f, 29.66667f, 482.52381f}, LAMP_HEAD, 0},
+        {3, {65, 2, 86, 9}, {69.66667f, 29.66667f, 482.09524f}, LAMP_HEAD, 0},
+        {0, {104, 6, 120, 9}, {91.47727f, 65.09091f, -127.29545f}, LAMP_TAIL_STOP, 0},
+        {0, {167, 6, 184, 9}, {-93.52727f, 65.2f, -126.34545f}, LAMP_TAIL_STOP, 0},
+    };
     *lamps = NULL;
+    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
+        body->assetKey == 12 && body->mesh == 0) {
+        *lamps = compactUpgrade;
+        return sizeof(compactUpgrade) / sizeof(*compactUpgrade);
+    }
+    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
+        body->assetKey == 28 && body->mesh == 0) {
+        *lamps = sedan;
+        return sizeof(sedan) / sizeof(*sedan);
+    }
     if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
         body->assetKey == 24 && body->mesh == 0) {
         *lamps = sport;
