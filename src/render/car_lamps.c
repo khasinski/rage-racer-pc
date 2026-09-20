@@ -132,6 +132,18 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {0, {104, 12, 117, 16}, {78.81556f, 53.58696f, -136.32609f}, LAMP_TAIL_STOP, 0},
         {0, {170, 12, 184, 16}, {-78.40658f, 53.58696f, -136.32609f}, LAMP_TAIL_STOP, 0},
     };
+    static const Lamp wedge1[] = {
+        {1, {10, 41, 25, 47}, {64.36037f, 10.81649f, 465.05053f}, LAMP_HEAD, 1},
+        {1, {70, 41, 86, 47}, {-65.44293f, 10.51737f, 464.83747f}, LAMP_HEAD, 1},
+        {0, {104, 12, 117, 16}, {78.81556f, 53.58696f, -136.32609f}, LAMP_TAIL_STOP, 0},
+        {0, {170, 12, 184, 16}, {-78.40658f, 53.58696f, -136.32609f}, LAMP_TAIL_STOP, 0},
+    };
+    static const Lamp wedge2[] = {
+        {1, {10, 234, 25, 240}, {64.35112f, 0.74814f, 465.31514f}, LAMP_HEAD, 1},
+        {1, {70, 234, 86, 240}, {-65.44293f, 0.76179f, 464.83747f}, LAMP_HEAD, 1},
+        {0, {104, 12, 117, 16}, {78.96339f, 56.58696f, -134.91304f}, LAMP_TAIL_STOP, 0},
+        {0, {170, 12, 184, 16}, {-78.46256f, 56.58696f, -134.91304f}, LAMP_TAIL_STOP, 0},
+    };
     static const Lamp truck[] = {
         {3, {7, 9, 26, 15}, {-82.43182f, 51.72727f, 502.25f}, LAMP_HEAD, 0},
         {3, {70, 9, 89, 15}, {85.09091f, 51.72727f, 502}, LAMP_HEAD, 0},
@@ -194,6 +206,8 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {40, muscle1, sizeof(muscle1) / sizeof(*muscle1)},
         {44, muscle3, sizeof(muscle3) / sizeof(*muscle3)},
         {46, wedge, sizeof(wedge) / sizeof(*wedge)},
+        {48, wedge1, sizeof(wedge1) / sizeof(*wedge1)},
+        {50, wedge2, sizeof(wedge2) / sizeof(*wedge2)},
         {52, truck, sizeof(truck) / sizeof(*truck)},
         {56, exotic, sizeof(exotic) / sizeof(*exotic)},
         {62, prototype, sizeof(prototype) / sizeof(*prototype)},
