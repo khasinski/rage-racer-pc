@@ -2,6 +2,13 @@
 #include "render_instance_transform.h"
 #include <stddef.h>
 
+float CarLightDaylight(Vec3 sky, Vec3 horizon) {
+    /* A bright orange sunset is not daylight. Its warm horizon glow must
+     * not keep the lamps off; use the neutral part of that light instead. */
+    float skyLight = sky.x * 0.2126f + sky.y * 0.7152f + sky.z * 0.0722f;
+    return fmaxf(skyLight, fminf(horizon.x, fminf(horizon.y, horizon.z)));
+}
+
 unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
     /* Centers projected through model 0/material 3's UV triangles. Keeping
      * the patch and its emitter together prevents independent placement drift. */

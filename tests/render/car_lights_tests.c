@@ -11,6 +11,21 @@ static int failures;
 
 int main(void) {
     CarLights car = {0}, rival = {0};
+    /* Captured Mythical Coast palettes: the sunset horizon is almost as
+     * luminous as the daytime one, but should still turn the lamps on. */
+    float day = CarLightDaylight((Vec3){14.f/255, 30.f/255, 78.f/255},
+                                (Vec3){96.f/255, 136.f/255, 184.f/255});
+    float dusk = CarLightDaylight((Vec3){26.f/255, 26.f/255, 45.f/255},
+                                 (Vec3){163.f/255, 125.f/255, 59.f/255});
+    UpdateCarLights(&car, day, 1, 0, 1);
+    CHECK(car.headlights == 0);
+    UpdateCarLights(&car, dusk, 1, 0, 1);
+    CHECK(car.headlights == 1 && car.tail == 0.2f);
+    UpdateCarLights(&car, day, 1, 0, 1);
+    CHECK(car.headlights == 0 && car.tail == 0);
+    UpdateCarLights(&car, day, 0.25f, 0, 1);
+    CHECK(car.headlights == 1);
+    car = (CarLights){0};
     UpdateCarLights(&car, 1, 1, 0, 1);
     CHECK(car.headlights == 0 && car.tail == 0 && car.stop == 0);
     UpdateCarLights(&car, 1, 1, 1, 0.02f);

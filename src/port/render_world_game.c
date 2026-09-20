@@ -10,6 +10,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include "render/car_lamps.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -336,8 +337,8 @@ static void PublishCarLights(void) {
     RenderWorld *world = GameRenderWorldMutable();
     const RenderWorld *previous = GameRenderWorldCurrent();
     if (!GameSceneUsesRaceWorld()) return;
-    float daylight = fmaxf(LightLuminance(world->camera.skyTopColor),
-                           LightLuminance(world->camera.skyHorizonColor));
+    float daylight = CarLightDaylight(world->camera.skyTopColor,
+                                      world->camera.skyHorizonColor);
     float seconds = g_RacePaused ? 0.0f : 1.0f / (float)TimingBaseHz();
     for (uint32_t i = 0; i < world->instanceCount; ++i) {
         RenderMeshInstance *body = &world->instances[i];
