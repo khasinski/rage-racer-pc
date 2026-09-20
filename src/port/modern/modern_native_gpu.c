@@ -1960,16 +1960,28 @@ static void ModernNativeGpuDrawSet(
                 boundTexture = texture;
                 boundAllowClearcoat = allowClearcoat;
             }
-            if (!hasBoundInstance || memcmp(&boundInstance, &span->instanceState,
+            RageNativeInstanceState effectiveInstance = span->instanceState;
+            /* In the traced path, tunnel and bridge geometry determines
+             * illumination at each car fragment.  The retail zone tint is
+             * one value per vehicle and would otherwise reintroduce the
+             * all-dark/all-light transition that rays replace. */
+            if ((s_rayMode & 1) != 0 &&
+                (span->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
+                 span->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1)) {
+                effectiveInstance.environmentLight[0] = 1.0f;
+                effectiveInstance.environmentLight[1] = 1.0f;
+                effectiveInstance.environmentLight[2] = 1.0f;
+            }
+            if (!hasBoundInstance || memcmp(&boundInstance, &effectiveInstance,
                                              sizeof(boundInstance)) != 0) {
                 float instanceUniform[2][4] = {
-                    {span->instanceState.environmentLight[0],
-                     span->instanceState.environmentLight[1],
-                     span->instanceState.environmentLight[2], 0},
-                    {span->instanceState.lighting, span->instanceState.shadowReception,
-                     span->instanceState.textureScrollU, 0}};
+                    {effectiveInstance.environmentLight[0],
+                     effectiveInstance.environmentLight[1],
+                     effectiveInstance.environmentLight[2], 0},
+                    {effectiveInstance.lighting, effectiveInstance.shadowReception,
+                     effectiveInstance.textureScrollU, 0}};
                 SDL_PushGPUVertexUniformData(command, 2, instanceUniform, sizeof(instanceUniform));
-                boundInstance = span->instanceState;
+                boundInstance = effectiveInstance;
                 hasBoundInstance = 1;
             }
             const ModernGeometryBinding *geometry = spans == s_mirrorSpans

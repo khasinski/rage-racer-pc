@@ -351,10 +351,10 @@ static RageNativeInstanceState PrepareInstanceState(
         state.environmentLight[1] = 1.0f;
         state.environmentLight[2] = 1.0f;
     }
-    state.shadowReception =
-        instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
-        instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1
-        ? 0.0f : 1.0f;
+    /* Shadowing is evaluated per fragment.  Vehicles used to opt out here
+     * and instead received one track-zone color for the entire assembly,
+     * making tunnel boundaries switch the whole car at once. */
+    state.shadowReception = 1.0f;
     return state;
 }
 

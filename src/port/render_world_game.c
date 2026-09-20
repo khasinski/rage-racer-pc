@@ -533,7 +533,7 @@ static void GameRenderWorldSubmitCourseTransform(
      * ordinary course scenery participate in native scene lighting. */
     if (!depthOverlay)
         instance.flags |= RAGE_RENDER_INSTANCE_ENABLE_LIGHTING;
-    instance.lightInfluence = depthOverlay ? 0.0f : 0.4f;
+    instance.lightInfluence = depthOverlay ? 0.0f : 0.65f;
     if (fogged) instance.flags |= RAGE_RENDER_INSTANCE_ENABLE_FOG;
     if (cullBackfaces)
         instance.flags |= RAGE_RENDER_INSTANCE_CULL_BACKFACES;
@@ -639,7 +639,7 @@ static void SubmitTerrainCell(uint32_t grid_x, uint32_t grid_z,
     instance.flags = RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL |
                      RAGE_RENDER_INSTANCE_ENABLE_LIGHTING |
                      RAGE_RENDER_INSTANCE_FLAT_SHADED;
-    instance.lightInfluence = 0.4f;
+    instance.lightInfluence = 0.65f;
     if (g_IsEnvironmentMode4)
         instance.flags |= RAGE_RENDER_INSTANCE_ENVIRONMENT_MODE_4;
     if (rayOnly)

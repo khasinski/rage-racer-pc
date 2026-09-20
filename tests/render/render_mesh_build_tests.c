@@ -158,7 +158,7 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
     EXPECT_EQ(50, (int)(vertices[0].environmentLight[1] * 100.0f));
     EXPECT_EQ(75, (int)(vertices[0].environmentLight[2] * 100.0f));
     EXPECT_EQ(-16, (int)vertices[0].depthBias);
-    EXPECT_EQ(0, (int)vertices[0].shadowReception);
+    EXPECT_EQ(100, (int)(vertices[0].shadowReception * 100.0f));
 
     storage[0].lightInfluence = 0.4f;
     EXPECT_EQ(3, RenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
@@ -1197,8 +1197,7 @@ static void test_gpu_vertex_reuse_preserves_instance_and_triangle_state(void) {
                     EXPECT_NEAR(i < 9 ? 1 : 0, cached[i].environmentLight[0], 0.0001f);
                     EXPECT_NEAR(i < 9 ? 1 : 0.5f, cached[i].environmentLight[1], 0.0001f);
                     EXPECT_NEAR(i < 9 ? 1 : 0, cached[i].environmentLight[2], 0.0001f);
-                    EXPECT_NEAR(asset == 0 || asset == 3 ? 0 : 1,
-                                cached[i].shadowReception, 0.0001f);
+                    EXPECT_NEAR(1, cached[i].shadowReception, 0.0001f);
                 }
             }
         }
