@@ -93,7 +93,18 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {0, {117, 8, 122, 12}, {59.54615f, 32.69231f, -125.76923f}, LAMP_TAIL_STOP, 1},
         {0, {166, 8, 171, 12}, {-62.02422f, 32.69231f, -125.76923f}, LAMP_TAIL_STOP, 1},
     };
+    static const Lamp prototype[] = {
+        {2, {6, 6, 17, 10}, {75.56522f, -5.53261f, 508.46429f}, LAMP_HEAD, 0},
+        {2, {79, 6, 90, 10}, {-76.09627f, -5.33385f, 508.59472f}, LAMP_HEAD, 0},
+        {0, {100, 9, 111, 13}, {106.57895f, 57.52632f, -106.73684f}, LAMP_TAIL_STOP, 0},
+        {0, {176, 9, 187, 13}, {-105.3f, 57.55f, -106.95f}, LAMP_TAIL_STOP, 0},
+    };
     *lamps = NULL;
+    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
+        body->assetKey == 62 && body->mesh == 0) {
+        *lamps = prototype;
+        return sizeof(prototype) / sizeof(*prototype);
+    }
     if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
         body->assetKey == 56 && body->mesh == 0) {
         *lamps = exotic;
