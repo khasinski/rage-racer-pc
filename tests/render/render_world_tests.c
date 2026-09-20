@@ -580,12 +580,17 @@ static void test_synchronized_presentation_moves_matching_vehicle(void) {
     previousStorage[0].materialVariant = currentStorage[0].materialVariant = 28;
     previousStorage[0].transform.position.z = 100.0f;
     currentStorage[0].transform.position.z = 140.0f;
+    previousStorage[0].lamps = (CarLights){0, 0, 1, 1};
+    currentStorage[0].lamps = (CarLights){1, 0.2f, 0, 1};
     previous.instanceCount = current.instanceCount = 1;
 
     EXPECT_EQ(1, RenderWorldBuildSynchronizedPresentation(
                      &previous, &current, 0.25f, presentation, 1));
     EXPECT_EQ(25, presentation[0].mesh);
     EXPECT_EQ(110, (int)presentation[0].transform.position.z);
+    EXPECT_EQ(1, fabsf(presentation[0].lamps.headlights - 0.25f) < 0.00001f);
+    EXPECT_EQ(1, fabsf(presentation[0].lamps.tail - 0.05f) < 0.00001f);
+    EXPECT_EQ(1, presentation[0].lamps.stop == 1);
 }
 
 static void test_synchronized_presentation_keeps_wheel_sides_paired(void) {

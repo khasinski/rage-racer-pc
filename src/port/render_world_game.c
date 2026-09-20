@@ -6,6 +6,7 @@
 #include "sky_panorama_layout.h"
 #include "runtime_config.h"
 #include "native_visibility.h"
+#include "timing_control.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -327,8 +328,44 @@ void GameRenderWorldBeginFrame(uint64_t frame) {
     s_buildingWorld = 1;
 }
 
+static float LightLuminance(Vec3 color) {
+    return color.x * 0.2126f + color.y * 0.7152f + color.z * 0.0722f;
+}
+
+static void PublishCarLights(void) {
+    RenderWorld *world = GameRenderWorldMutable();
+    const RenderWorld *previous = GameRenderWorldCurrent();
+    if (!GameSceneUsesRaceWorld()) return;
+    float daylight = fmaxf(LightLuminance(world->camera.skyTopColor),
+                           LightLuminance(world->camera.skyHorizonColor));
+    float seconds = g_RacePaused ? 0.0f : 1.0f / (float)TimingBaseHz();
+    for (uint32_t i = 0; i < world->instanceCount; ++i) {
+        RenderMeshInstance *body = &world->instances[i];
+        if (body->component != 0 || body->entity >= RAGE_CAR_ENTITY_COUNT ||
+            (body->assetSet != RAGE_RENDER_ASSET_MODEL_BANK &&
+             body->assetSet != RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1)) continue;
+        if (previous) {
+            for (uint32_t j = 0; j < previous->instanceCount; ++j) {
+                const RenderMeshInstance *old = &previous->instances[j];
+                if (old->entity == body->entity && old->component == 0 &&
+                    old->assetKey == body->assetKey &&
+                    old->assetSet == body->assetSet && old->pass == body->pass) {
+                    body->lamps = old->lamps;
+                    break;
+                }
+            }
+        }
+        const GameCarRuntime *car = body->entity == RAGE_PLAYER_CAR_ENTITY
+            ? AsRivalCar(&g_PlayerCar) : &g_Cars[body->entity];
+        UpdateCarLights(&body->lamps, daylight,
+                       LightLuminance(body->environmentLight),
+                       car->brakeInput > 0, seconds);
+    }
+}
+
 void GameRenderWorldEndFrame(void) {
     if (!s_initialized || !s_buildingWorld) return;
+    PublishCarLights();
     if (s_verifyPublication) {
         if (s_publishedHash != WorldPublicationHash(&s_worlds[s_publishedWorld]) ||
             s_previousHash != WorldPublicationHash(&s_worlds[s_previousWorld])) {

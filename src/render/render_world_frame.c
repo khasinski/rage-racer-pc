@@ -304,6 +304,13 @@ int RenderWorldTryBuildSynchronizedPresentation(
         out[outputCount] = *base;
         if (target != NULL) {
             matched[targetIndex] = 1;
+            float blend = Clamp01(t);
+            out[outputCount].lamps.headlights = base->lamps.headlights +
+                (target->lamps.headlights - base->lamps.headlights) * blend;
+            out[outputCount].lamps.tail = base->lamps.tail +
+                (target->lamps.tail - base->lamps.tail) * blend;
+            /* STOP is a discrete input edge belonging to the displayed
+             * simulation tick, unlike the automatic-light fade. */
             RenderInterpolateTransform(&base->transform,
                                            &target->transform, t,
                                            &out[outputCount].transform);

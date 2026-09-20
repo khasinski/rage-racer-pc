@@ -9,6 +9,7 @@
  */
 
 #include <stdint.h>
+#include "car_lights.h"
 #include "sky_layout.h"
 
 typedef struct Vec3 {
@@ -129,6 +130,7 @@ typedef struct RenderMeshInstance {
     /* Semantic ambient light sampled from the track light volume. The modern
      * backend combines it with its directional vehicle lighting. */
     Vec3 environmentLight;
+    CarLights lamps;
     /* Small post-projection ordering hint for independently submitted parts
      * of one semantic object. It preserves authored overlap (for example a
      * car body masking wheels inside its arches) without moving geometry. */
