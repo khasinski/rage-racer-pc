@@ -89,6 +89,12 @@ void main() {
         environmentLight * (sceneLight.ambient.rgb * ambientShadow +
             sceneLight.diffuse.rgb * diffuse * shadow),
         materialLighting);
+    /* Authored vertex colours retain some baked brightness even on lit
+     * terrain.  Apply traced occlusion after that blend as well, otherwise a
+     * fully blocked sun ray only changes a small fraction of the final road
+     * colour and vehicle shadows appear washed out. */
+    float tracedOcclusion = mix(0.35, 1.0, visibility);
+    light *= mix(1.0, tracedOcclusion, materialLighting);
     vec3 foggedColor = mix(color.rgb, fog.rgb, fog.a);
     vec3 modulation = min(foggedColor * 2.0, vec3(1.0));
     vec3 base = texel.rgb * modulation * light * material.baseColor.rgb;

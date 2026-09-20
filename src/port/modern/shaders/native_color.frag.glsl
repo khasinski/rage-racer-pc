@@ -69,5 +69,7 @@ void main() {
         environmentLight * (sceneLight.ambient.rgb * ambientShadow +
             sceneLight.diffuse.rgb * diffuse * shadow),
         lighting);
+    float tracedOcclusion = mix(0.35, 1.0, visibility);
+    light *= mix(1.0, tracedOcclusion, lighting);
     outColor = vec4(foggedColor * light, color.a);
 }
