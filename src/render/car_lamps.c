@@ -151,6 +151,24 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {0, {120, 28, 131, 32}, {54.99630f, 11.70833f, -150.08333f}, LAMP_TAIL_STOP, 0},
         {0, {157, 28, 169, 32}, {-58.34496f, 11.70833f, -150.08333f}, LAMP_TAIL_STOP, 0},
     };
+    static const Lamp truck1[] = {
+        {3, {7, 9, 26, 15}, {-82.43182f, 41.13636f, 502.95455f}, LAMP_HEAD, 0},
+        {3, {70, 9, 89, 15}, {85.09091f, 41.13636f, 503}, LAMP_HEAD, 0},
+        {0, {120, 28, 131, 32}, {54.99630f, 14.70833f, -149.375f}, LAMP_TAIL_STOP, 0},
+        {0, {157, 28, 169, 32}, {-58.34496f, 14.70833f, -149.375f}, LAMP_TAIL_STOP, 0},
+    };
+    static const Lamp exotic2[] = {
+        {2, {227, 5, 237, 17}, {99.55495f, 21.38462f, 439.6978f}, LAMP_HEAD, 1},
+        {2, {227, 79, 237, 91}, {-101.65385f, 21.47692f, 439.07385f}, LAMP_HEAD, 1},
+        {0, {21, 248, 26, 252}, {59.545f, 33.5f, -125.5f}, LAMP_TAIL_STOP, 1},
+        {0, {70, 248, 75, 252}, {-62.02315f, 33.5f, -125.5f}, LAMP_TAIL_STOP, 1},
+    };
+    static const Lamp prototype1[] = {
+        {2, {6, 6, 17, 10}, {75.56522f, -6.53261f, 508.46429f}, LAMP_HEAD, 0},
+        {2, {79, 6, 90, 10}, {-76.09627f, -6.33385f, 508.59472f}, LAMP_HEAD, 0},
+        {0, {100, 9, 111, 13}, {106.57895f, 57.52632f, -106.73684f}, LAMP_TAIL_STOP, 0},
+        {0, {176, 9, 187, 13}, {-105.23134f, 58.44403f, -106.3694f}, LAMP_TAIL_STOP, 0},
+    };
     static const Lamp exotic[] = {
         {3, {5, 3, 17, 13}, {93.55f, 19.01667f, 423.38333f}, LAMP_HEAD, 1},
         {3, {79, 3, 91, 13}, {-96.5f, 18.66667f, 423.58333f}, LAMP_HEAD, 1},
@@ -209,8 +227,12 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {48, wedge1, sizeof(wedge1) / sizeof(*wedge1)},
         {50, wedge2, sizeof(wedge2) / sizeof(*wedge2)},
         {52, truck, sizeof(truck) / sizeof(*truck)},
+        {54, truck1, sizeof(truck1) / sizeof(*truck1)},
         {56, exotic, sizeof(exotic) / sizeof(*exotic)},
+        {58, exotic, sizeof(exotic) / sizeof(*exotic)},
+        {60, exotic2, sizeof(exotic2) / sizeof(*exotic2)},
         {62, prototype, sizeof(prototype) / sizeof(*prototype)},
+        {64, prototype1, sizeof(prototype1) / sizeof(*prototype1)},
         {66, racer, sizeof(racer) / sizeof(*racer)},
         {68, special, sizeof(special) / sizeof(*special)},
         {70, vintage, sizeof(vintage) / sizeof(*vintage)},
