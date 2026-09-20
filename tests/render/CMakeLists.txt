@@ -1,4 +1,9 @@
 add_executable(native_asset_fixture native_asset_fixture.c)
+add_executable(car_lights_tests car_lights_tests.c)
+target_link_libraries(car_lights_tests PRIVATE rage-render-world)
+target_compile_options(car_lights_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+add_test(NAME car_lights COMMAND car_lights_tests)
+set_tests_properties(car_lights PROPERTIES LABELS unit)
 target_link_libraries(native_asset_fixture PRIVATE SDL3::SDL3)
 target_compile_options(native_asset_fixture PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 
