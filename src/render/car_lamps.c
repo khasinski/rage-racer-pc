@@ -19,6 +19,9 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
     static const Lamp compact[] = {
         {3, {204, 46, 212, 57}, {-64.88971f, 41.61765f, 342.73235f}, LAMP_HEAD, 1},
         {3, {204, 118, 212, 129}, {64.42647f, 41.61765f, 342.91765f}, LAMP_HEAD, 1},
+        /* Upper red lenses only; leave the white and amber sections unlit. */
+        {0, {110, 13, 113, 17}, {74.35294f, 47, -48.73529f}, LAMP_TAIL_STOP, 0},
+        {0, {174, 13, 177, 17}, {-74.13333f, 47, -47.5f}, LAMP_TAIL_STOP, 0},
     };
     *lamps = NULL;
     if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
