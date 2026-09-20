@@ -170,7 +170,7 @@ int main(void) {
     RenderCarSpotLights(&world);
     CHECK(world.spotLightCount == 0);
     for (unsigned bank = 88; bank <= 92; bank += 2)
-    for (unsigned mesh = 0; mesh <= 15; mesh += 5) {
+    for (unsigned mesh = 0; mesh <= 30; mesh += 5) {
         body.assetKey = bank;
         body.mesh = mesh;
         world.spotLightCount = 0;

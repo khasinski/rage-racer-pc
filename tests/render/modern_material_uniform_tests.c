@@ -124,10 +124,10 @@ int main(void) {
     }
     car.mesh = 4;
     for (unsigned bank = 88; bank <= 92; bank += 2) {
-        const unsigned front[] = {0, 5, 8, 11};
-        const unsigned rear[] = {1, 6, 9, 12};
+        const unsigned front[] = {0, 5, 8, 11, 14, 19, 23};
+        const unsigned rear[] = {1, 6, 9, 12, 15, 20, 24};
         car.assetKey = bank;
-        for (unsigned model = 0; model < 4; ++model) {
+        for (unsigned model = 0; model < 7; ++model) {
             car.mesh = model * 5;
             car.lamps = (CarLights){1, 0.2f, 0, 1};
             ModernMaterialUniformBuild(&material, 0, &uniform);

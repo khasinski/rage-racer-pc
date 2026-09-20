@@ -55,7 +55,7 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {28, {159, 142, 165, 148}, {-61.54412f, 47, -158.25f}, LAMP_TAIL_STOP, 1},
         {28, {171, 142, 177, 148}, {-94.44444f, 46.94444f, -157.83333f}, LAMP_TAIL_STOP, 1},
     };
-    static const Lamp clubCars[4][4] = {
+    static const Lamp clubCars[7][4] = {
         {
             {0, {5, 4, 25, 12}, {-88.72814f, 29.00634f, 478.34601f}, LAMP_HEAD, 0},
             {0, {70, 4, 90, 12}, {85.78369f, 28.88889f, 478.80142f}, LAMP_HEAD, 0},
@@ -76,6 +76,21 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
             {11, {70, 149, 91, 154}, {85.72695f, 30.44444f, 478.24113f}, LAMP_HEAD, 0},
             {12, {102, 161, 116, 164}, {101.82447f, 37, -127.45238f}, LAMP_TAIL_STOP, 0},
             {12, {173, 161, 187, 164}, {-108.10766f, 37, -127.45238f}, LAMP_TAIL_STOP, 0},
+        }, {
+            {14, {7, 5, 22, 12}, {-74.52174f, 23.17647f, 455.12532f}, LAMP_HEAD, 0},
+            {14, {73, 5, 88, 12}, {74.52174f, 23.17647f, 455.12532f}, LAMP_HEAD, 0},
+            {15, {107, 5, 114, 12}, {70.78261f, 62.5f, -80.97826f}, LAMP_TAIL_STOP, 1},
+            {15, {174, 5, 181, 12}, {-73, 62.5f, -79.16667f}, LAMP_TAIL_STOP, 1},
+        }, {
+            {19, {10, 53, 26, 59}, {-68.54348f, 23.85294f, 458.25064f}, LAMP_HEAD, 0},
+            {19, {69, 53, 85, 59}, {68.54348f, 23.85294f, 458.25064f}, LAMP_HEAD, 0},
+            {20, {104, 57, 123, 61}, {63.07609f, 56.71875f, -87.25136f}, LAMP_TAIL_STOP, 0},
+            {20, {166, 57, 184, 61}, {-65.32813f, 56.71875f, -85.84896f}, LAMP_TAIL_STOP, 0},
+        }, {
+            {23, {8, 103, 16, 111}, {-80.5f, 19.79412f, 453.41176f}, LAMP_HEAD, 1},
+            {23, {79, 103, 87, 111}, {80.5f, 19.79412f, 453.41176f}, LAMP_HEAD, 1},
+            {24, {101, 106, 127, 112}, {58.68478f, 52.09375f, -91.88723f}, LAMP_TAIL_STOP, 0},
+            {24, {160, 106, 186, 112}, {-60.89063f, 52.09375f, -90.82813f}, LAMP_TAIL_STOP, 0},
         },
     };
     static const Lamp compact[] = {
@@ -308,7 +323,7 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         }
     } else if (body->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 &&
                body->assetKey >= 88 && body->assetKey <= 92 &&
-               (body->assetKey & 1u) == 0 && body->mesh <= 15 &&
+               (body->assetKey & 1u) == 0 && body->mesh <= 30 &&
                body->mesh % 5 == 0) {
         *lamps = clubCars[body->mesh / 5];
         return 4;
