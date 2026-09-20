@@ -2,7 +2,7 @@
  * reject fragments before normalization; no extra BVH traversal is needed. */
 vec3 spotLighting(vec3 position, vec3 normal) {
     vec3 result = vec3(0.0);
-    int count = clamp(int(sceneLight.spotCount.x), 0, 48);
+    int count = clamp(int(sceneLight.spotCount.x), 0, 72);
     for (int i = 0; i < count; ++i) {
         SpotLight lamp = sceneLight.spots[i];
         vec3 offset = position - lamp.positionRange.xyz;

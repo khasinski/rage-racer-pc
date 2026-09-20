@@ -30,7 +30,7 @@ layout(set = 3, binding = 0, std140) uniform NativeSceneLight {
     vec4 skyBottom;
     vec4 ray; // enabled, total node count, TLAS node count, instance count
     vec4 spotCount;
-    SpotLight spots[48];
+    SpotLight spots[72];
 } sceneLight;
 #include "native_spot.glsl"
 struct LampPatch {

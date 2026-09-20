@@ -145,5 +145,19 @@ int main(void) {
         RenderCarSpotLights(&world);
         CHECK(world.spotLightCount == 0);
     }
+    RenderMeshInstance grid[12] = {0};
+    RenderWorldInit(&world, grid, 12);
+    world.instanceCount = 12;
+    for (int i = 0; i < 12; ++i) {
+        grid[i].assetSet = RAGE_RENDER_ASSET_MODEL_BANK;
+        grid[i].assetKey = 38;
+        grid[i].entity = i;
+        grid[i].transform.scale = (Vec3){1, 1, 1};
+        grid[i].transform.position.x = i * 1000;
+        grid[i].lamps = (CarLights){1, 0.2f, 1, 1};
+    }
+    RenderCarSpotLights(&world);
+    CHECK(world.spotLightCount == 72);
+    CHECK(world.spotLights[71].position.x > 10000);
     return failures != 0;
 }

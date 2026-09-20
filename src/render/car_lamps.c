@@ -65,7 +65,20 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {0, {104, 6, 120, 9}, {91.47727f, 65.09091f, -127.29545f}, LAMP_TAIL_STOP, 0},
         {0, {167, 6, 184, 9}, {-93.52727f, 65.2f, -126.34545f}, LAMP_TAIL_STOP, 0},
     };
+    static const Lamp muscle[] = {
+        {3, {6, 4, 32, 9}, {-73.37234f, 37.83191f, 497.28511f}, LAMP_HEAD, 0},
+        {3, {64, 4, 90, 9}, {74.95738f, 38.30213f, 497.02892f}, LAMP_HEAD, 0},
+        {0, {103, 8, 109, 16}, {100.95294f, 45.38235f, -135.67647f}, LAMP_TAIL_STOP, 1},
+        {0, {111, 8, 117, 16}, {79.56347f, 45.38235f, -135.67647f}, LAMP_TAIL_STOP, 1},
+        {0, {171, 8, 177, 16}, {-80.67084f, 45.38235f, -135.67647f}, LAMP_TAIL_STOP, 1},
+        {0, {179, 8, 185, 16}, {-101.94743f, 45.38235f, -135.67647f}, LAMP_TAIL_STOP, 1},
+    };
     *lamps = NULL;
+    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
+        body->assetKey == 38 && body->mesh == 0) {
+        *lamps = muscle;
+        return sizeof(muscle) / sizeof(*muscle);
+    }
     if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
         body->assetKey == 14 && body->mesh == 0) {
         *lamps = compact2;

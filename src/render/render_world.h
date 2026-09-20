@@ -173,7 +173,7 @@ enum {
     RAGE_RENDER_INSTANCE_RAY_NO_SHADOW = 1u << 8,
 };
 
-enum { RENDER_SPOT_LIGHT_CAPACITY = 48 };
+enum { RENDER_SPOT_LIGHT_CAPACITY = 72 }; /* Twelve cars, up to six lamps each. */
 
 typedef struct SpotLight {
     Vec3 position;
