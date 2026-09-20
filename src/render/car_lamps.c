@@ -47,6 +47,18 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {0, {100, 6, 109, 11}, {102.78723f, 39.55319f, -74.76596f}, LAMP_TAIL_STOP, 1},
         {0, {178, 6, 187, 11}, {-101.87805f, 39.58537f, -74.78049f}, LAMP_TAIL_STOP, 1},
     };
+    static const Lamp compact2[] = {
+        {4, {5, 10, 17, 21}, {-64.86029f, 40.88235f, 341.46765f}, LAMP_HEAD, 1},
+        {4, {78, 10, 90, 21}, {64.44853f, 40.88235f, 341.63235f}, LAMP_HEAD, 1},
+        {0, {14, 205, 17, 209}, {74.35294f, 47, -48.73529f}, LAMP_TAIL_STOP, 0},
+        {0, {78, 205, 81, 209}, {-74.13333f, 47, -47.5f}, LAMP_TAIL_STOP, 0},
+    };
+    static const Lamp compact3[] = {
+        {3, {5, 10, 17, 21}, {-69.07795f, 36.88023f, 357.18631f}, LAMP_HEAD, 1},
+        {3, {78, 10, 90, 21}, {69.07795f, 36.88023f, 357.18631f}, LAMP_HEAD, 1},
+        {0, {244, 113, 250, 119}, {64.93048f, 39.63333f, -90}, LAMP_TAIL_STOP, 1},
+        {0, {244, 170, 250, 176}, {-68.36596f, 39.63333f, -90}, LAMP_TAIL_STOP, 1},
+    };
     static const Lamp sedan[] = {
         {3, {10, 2, 30, 9}, {-68.25f, 29.66667f, 482.52381f}, LAMP_HEAD, 0},
         {3, {65, 2, 86, 9}, {69.66667f, 29.66667f, 482.09524f}, LAMP_HEAD, 0},
@@ -54,6 +66,16 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {0, {167, 6, 184, 9}, {-93.52727f, 65.2f, -126.34545f}, LAMP_TAIL_STOP, 0},
     };
     *lamps = NULL;
+    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
+        body->assetKey == 14 && body->mesh == 0) {
+        *lamps = compact2;
+        return sizeof(compact2) / sizeof(*compact2);
+    }
+    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
+        body->assetKey == 16 && body->mesh == 0) {
+        *lamps = compact3;
+        return sizeof(compact3) / sizeof(*compact3);
+    }
     if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
         body->assetKey == 12 && body->mesh == 0) {
         *lamps = compactUpgrade;
