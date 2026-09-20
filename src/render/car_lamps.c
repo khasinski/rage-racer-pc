@@ -99,7 +99,19 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
         {0, {100, 9, 111, 13}, {106.57895f, 57.52632f, -106.73684f}, LAMP_TAIL_STOP, 0},
         {0, {176, 9, 187, 13}, {-105.3f, 57.55f, -106.95f}, LAMP_TAIL_STOP, 0},
     };
+    static const Lamp racer[] = {
+        {3, {12, 90, 17, 95}, {-107.77885f, 4.75481f, 491.31731f}, LAMP_HEAD, 0},
+        {3, {78, 90, 83, 95}, {106.93496f, 2.16667f, 491.19106f}, LAMP_HEAD, 0},
+        /* Both rear corners reuse the inner circular red lens. */
+        {0, {204, 5, 208, 10}, {96.40606f, 34.8f, -108.96364f}, LAMP_TAIL_STOP, 1},
+        {0, {204, 5, 208, 10}, {-95.83943f, 33.89634f, -108.60976f}, LAMP_TAIL_STOP, 1},
+    };
     *lamps = NULL;
+    if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
+        body->assetKey == 66 && body->mesh == 0) {
+        *lamps = racer;
+        return sizeof(racer) / sizeof(*racer);
+    }
     if (body->component == 0 && body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
         body->assetKey == 62 && body->mesh == 0) {
         *lamps = prototype;
