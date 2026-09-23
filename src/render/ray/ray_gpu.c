@@ -1,6 +1,7 @@
 #include "ray_gpu.h"
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 _Static_assert(sizeof(RayGpuNode) == 48, "ray node GPU ABI");
@@ -132,7 +133,7 @@ static void PackNode(RayGpuNode *out, const RayBvhNode *source,
     };
 }
 
-static uint32_t MeshNodeOffset(const RayScene *scene, uint32_t instanceIndex);
+static int MeshNodeOffsets(const RayScene *scene, uint32_t *offsets);
 static void PackInstance(RayGpuInstance *target, const RayInstance *source,
                          uint32_t meshNodeOffset);
 
@@ -206,22 +207,40 @@ int RayGpuPackScene(const RayScene *scene, const RayGpuSceneLayout *layout,
            indexOffset == layout->indexCount;
 }
 
-static uint32_t MeshNodeOffset(const RayScene *scene, uint32_t instanceIndex) {
-    const RayMesh *mesh = scene->instances[instanceIndex].mesh;
-    uint32_t offset = scene->nodeCount;
-    for (uint32_t i = 0; i < instanceIndex; ++i) {
-        const RayMesh *candidate = scene->instances[i].mesh;
-        int first = 1;
-        if (candidate == mesh) return MeshNodeOffset(scene, i);
-        for (uint32_t prior = 0; prior < i; ++prior) {
-            if (scene->instances[prior].mesh == candidate) {
-                first = 0;
-                break;
-            }
-        }
-        if (first) offset += candidate->nodeCount;
+/* Node offset of every instance's BLAS in the packed node array, in one
+ * pass: unique meshes are laid out in first-appearance order after the TLAS.
+ * The previous per-instance recursion was cubic in the instance count and
+ * cost several milliseconds a frame on a full race grid. */
+static int MeshNodeOffsets(const RayScene *scene, uint32_t *offsets) {
+    const RayMesh **unique;
+    uint32_t *uniqueOffsets;
+    uint32_t uniqueCount = 0;
+    uint32_t running = scene->nodeCount;
+
+    if (scene->instanceCount == 0) return 1;
+    unique = malloc((size_t)scene->instanceCount * sizeof(*unique));
+    uniqueOffsets = malloc((size_t)scene->instanceCount * sizeof(*uniqueOffsets));
+    if (unique == NULL || uniqueOffsets == NULL) {
+        free(unique);
+        free(uniqueOffsets);
+        return 0;
     }
-    return offset;
+    for (uint32_t i = 0; i < scene->instanceCount; ++i) {
+        const RayMesh *mesh = scene->instances[i].mesh;
+        uint32_t u;
+        for (u = 0; u < uniqueCount; ++u)
+            if (unique[u] == mesh) break;
+        if (u == uniqueCount) {
+            unique[u] = mesh;
+            uniqueOffsets[u] = running;
+            running += mesh->nodeCount;
+            ++uniqueCount;
+        }
+        offsets[i] = uniqueOffsets[u];
+    }
+    free(unique);
+    free(uniqueOffsets);
+    return 1;
 }
 
 static void PackInstance(RayGpuInstance *target, const RayInstance *source,
@@ -258,8 +277,17 @@ int RayGpuPackSceneDynamic(const RayScene *scene,
         PackNode(&tlasNodes[i], &scene->nodes[i], 0, 0);
     memcpy(tlasIndices, scene->indices,
            (size_t)scene->instanceCount * sizeof(*tlasIndices));
-    for (uint32_t i = 0; i < scene->instanceCount; ++i)
-        PackInstance(&instances[i], &scene->instances[i],
-                     MeshNodeOffset(scene, i));
+    {
+        uint32_t *offsets = scene->instanceCount != 0
+            ? malloc((size_t)scene->instanceCount * sizeof(*offsets)) : NULL;
+        if (scene->instanceCount != 0 &&
+            (offsets == NULL || !MeshNodeOffsets(scene, offsets))) {
+            free(offsets);
+            return 0;
+        }
+        for (uint32_t i = 0; i < scene->instanceCount; ++i)
+            PackInstance(&instances[i], &scene->instances[i], offsets[i]);
+        free(offsets);
+    }
     return 1;
 }
