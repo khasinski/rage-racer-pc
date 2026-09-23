@@ -244,8 +244,8 @@ static Vec3 SceneRotatePoint(RageSceneMat3 matrix,
     return out;
 }
 
-/* Set while the in-car view publishes the player's body for its lamps and
- * reflections only; the rasterizer never draws it. */
+/* Set while the in-car view publishes the player's body for its lamps only:
+ * neither the rasterizer nor the ray scene ever sees it. */
 static int s_playerCarLampsOnly;
 
 static void GameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
@@ -287,7 +287,7 @@ static void GameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
     instance.flags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING |
                      RAGE_RENDER_INSTANCE_ENABLE_FOG;
     if (s_playerCarLampsOnly)
-        instance.flags |= RAGE_RENDER_INSTANCE_RAY_ONLY;
+        instance.flags |= RAGE_RENDER_INSTANCE_LAMPS_ONLY;
     instance.environmentLight = environmentLight;
     instance.transform.position.x = psPosition.x;
     instance.transform.position.y = -psPosition.y;

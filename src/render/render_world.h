@@ -171,6 +171,10 @@ enum {
     /* Keep rapidly rotating detail geometry in reflection queries while the
      * stable body silhouette casts the vehicle's direct-light shadow. */
     RAGE_RENDER_INSTANCE_RAY_NO_SHADOW = 1u << 8,
+    /* Published only for its lamps: neither drawn nor part of the ray scene.
+     * The in-car view keeps the player's headlights this way without the
+     * invisible body casting a shadow or showing up in reflections. */
+    RAGE_RENDER_INSTANCE_LAMPS_ONLY = 1u << 9,
 };
 
 enum { RENDER_SPOT_LIGHT_CAPACITY = 72 }; /* Twelve cars, up to six lamps each. */

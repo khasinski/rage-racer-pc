@@ -22,6 +22,7 @@ int RaySceneBuildWorld(RayScene *scene, const RenderWorld *world,
         uint32_t flags = 0;
 
         if (source->pass != pass) continue;
+        if (source->flags & RAGE_RENDER_INSTANCE_LAMPS_ONLY) continue;
         mesh = lookup(context, source);
         if (mesh == NULL) continue;
         if (source->flags & RAGE_RENDER_INSTANCE_CULL_BACKFACES)
