@@ -244,6 +244,10 @@ static Vec3 SceneRotatePoint(RageSceneMat3 matrix,
     return out;
 }
 
+/* Set while the in-car view publishes the player's body for its lamps and
+ * reflections only; the rasterizer never draws it. */
+static int s_playerCarLampsOnly;
+
 static void GameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
                                              uint32_t asset,
                                              RenderAssetSet assetSet,
@@ -282,6 +286,8 @@ static void GameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
     /* Cars are depth-cued like every other polygon on the PS1. */
     instance.flags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING |
                      RAGE_RENDER_INSTANCE_ENABLE_FOG;
+    if (s_playerCarLampsOnly)
+        instance.flags |= RAGE_RENDER_INSTANCE_RAY_ONLY;
     instance.environmentLight = environmentLight;
     instance.transform.position.x = psPosition.x;
     instance.transform.position.y = -psPosition.y;
@@ -900,6 +906,12 @@ void GameRenderWorldSubmitCar(const GameCarRuntime *object,
         (s16)g_TrackRenderTable->models[car].axis1,
         (s16)g_TrackRenderTable->models[car].axis2,
         object->steeringAngle * 2, environmentLight, mirror_pass);
+}
+
+void GameRenderWorldSubmitPlayerCarLamps(const GameCarRuntime *object) {
+    s_playerCarLampsOnly = 1;
+    GameRenderWorldSubmitPlayerCar(object, 0);
+    s_playerCarLampsOnly = 0;
 }
 
 void GameRenderWorldSubmitPlayerCar(const GameCarRuntime *object,

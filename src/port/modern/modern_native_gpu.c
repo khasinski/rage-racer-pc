@@ -1072,12 +1072,12 @@ void ModernNativeGpuPrepare(const RenderWorld *world, float aspect) {
         fprintf(stderr,
                 "rage-port: native world frame=%llu camera=%u instances=%u "
                 "cached=%u textures=%u vertices=%u spans=%u mirror_vertices=%u "
-                "mirror_spans=%u mirror_vehicle_spans=%u\n",
+                "mirror_spans=%u mirror_vehicle_spans=%u spot_lights=%u\n",
                 (unsigned long long)world->frame, (unsigned)world->hasCamera,
                 world->instanceCount, ModernAssetsCachedMeshCount(),
                 s_textureIndex.count,
                 s_vertexCount, s_spanCount, s_mirrorVertexCount,
-                s_mirrorSpanCount, mirrorVehicleSpans);
+                s_mirrorSpanCount, mirrorVehicleSpans, world->spotLightCount);
     }
 }
 

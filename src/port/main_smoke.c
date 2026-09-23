@@ -21,6 +21,8 @@
 #include "runtime_config.h"
 #include "timing_control.h"
 #include "modern/modern_renderer.h"
+#include "modern/modern_native_gpu.h"
+#include "render/render_world.h"
 #include "native_asset_importer.h"
 #include "modern/scene_capture.h"
 #include "game/player_car_internal.h"
@@ -465,6 +467,22 @@ static int CheckCompleteSaveLoad(void) {
     return 1;
 }
 
+/* -1 when the prepared world has no player body, otherwise its instance
+ * flags: the in-car view publishes the body ray-only for its lamps. */
+static int SmokePlayerBodyState(const RenderWorld *world) {
+    uint32_t i;
+
+    if (world == NULL) return -1;
+    for (i = 0; i < world->instanceCount; i++) {
+        const RenderMeshInstance *instance = &world->instances[i];
+        if (instance->entity == RACE_CAR_SLOT_COUNT &&
+            instance->component == 0 &&
+            instance->pass == RAGE_RENDER_PASS_MAIN)
+            return (int)instance->flags;
+    }
+    return -1;
+}
+
 static void ReportFinalState(void) {
     printf("Rage Racer smoke stopped at frame %d, scene %d, frontend %d, "
            "player=(%d,%d) speed=%d accelerator=%d held=%04x accel_mask=%04x "
@@ -472,7 +490,7 @@ static void ReportFinalState(void) {
            "gp_round=%d class_done=%d series_done=%d gear=%d manual=%d "
            "rpm=%d jitter=%d terrain_second=%llu terrain_child_reject=%llu "
            "terrain_child_second=%llu model_backface=%llu fog_near=%d "
-           "env_mode4=%d mirror_y=%d "
+           "env_mode4=%d spot_lights=%u player_body=%d mirror_y=%d "
            "steer=%d course_mirror=%d retire_camera=%d capture_faces=%d\n",
            g_FrameCounter, g_SceneId, MenuFrontend()->state,
            g_PlayerCar.x, g_PlayerCar.z, g_PlayerCar.speed,
@@ -486,6 +504,9 @@ static void ReportFinalState(void) {
            g_RageTerrainChildRejectBackface,
            g_RageTerrainChildSecondTriangleVisible,
            g_RageModelRejectBackface, g_FogNear, (int)g_IsEnvironmentMode4,
+           ModernNativeGpuPreparedWorld() != NULL
+               ? ModernNativeGpuPreparedWorld()->spotLightCount : 0u,
+           SmokePlayerBodyState(ModernNativeGpuPreparedWorld()),
            g_MirrorPanelY,
            g_PlayerCar.drive.steerPos, g_MirrorMode,
            RetireCameraActive(), CaptureCurrent()->faceCount);

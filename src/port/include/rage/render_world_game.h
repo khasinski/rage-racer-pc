@@ -66,6 +66,10 @@ void GameRenderWorldSubmitCar(const struct GameCarRuntime *object,
  * the course-specific opponent lookup used by GameRenderWorldSubmitCar. */
 void GameRenderWorldSubmitPlayerCar(const struct GameCarRuntime *object,
                                         int mirror_pass);
+/* The in-car view never draws the player's body, but its headlights and
+ * tail lamps still light the road: publish the body as a ray-only instance
+ * so the lamps are updated and their spot lights emitted. */
+void GameRenderWorldSubmitPlayerCarLamps(const struct GameCarRuntime *object);
 /* Completed worlds, NULL until one/two frames have been published. These
  * borrowed metadata and instance arrays remain intact during construction. */
 const struct RenderWorld *GameRenderWorldCurrent(void);

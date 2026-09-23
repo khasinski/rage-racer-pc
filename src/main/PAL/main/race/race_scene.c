@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "game/audio.h"
+#include "rage/render_world_game.h"
 #include <psyz/audio.h>
 #include "game/car.h"
 #include "game/cd.h"
@@ -441,6 +442,9 @@ static void UpdateActiveRaceScene(RaceScene *state) {
             UpdateLookBehindCamera(&g_Camera, player);
         } else {
             UpdateCamera(&g_Camera, raceView.cameraView, player);
+            if (raceView.cameraView == CAMERA_VIEW_CAR) {
+                GameRenderWorldSubmitPlayerCarLamps(player);
+            }
         }
     }
 
