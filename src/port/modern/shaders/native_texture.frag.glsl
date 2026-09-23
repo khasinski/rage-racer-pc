@@ -92,7 +92,9 @@ void main() {
         materialLighting = material.emissiveAndShading.w;
     float visibility = 1.0;
     if (shadowReception > 0.5) {
-        if (sceneLight.ray.x > 0.5) {
+        /* Fog replaces the lit colour, so a fragment that is nearly all fog
+         * gains nothing from a traced sun ray; the shadow map is enough. */
+        if (sceneLight.ray.x > 0.5 && fog.a < 0.9) {
             vec3 rayDirection = normalize(sceneLight.direction.xyz);
             float epsilon = max(0.02, length(worldPositionIn) * 0.000001);
             visibility = tracedVisibility(
@@ -154,10 +156,12 @@ void main() {
         float hitDistance;
         vec3 hitNormal;
         float epsilon = max(0.02, length(worldPositionIn) * 0.000001);
+        /* Hits beyond 2500 units already read almost entirely as sky, so
+         * stop the reflection ray there instead of walking the whole course. */
         if (tracedClosest(worldPositionIn + reflectionDirection * epsilon,
                           reflectionDirection,
                           uint(sceneLight.ray.y + 0.5),
-                          uint(sceneLight.ray.w + 0.5),
+                          uint(sceneLight.ray.w + 0.5), 4000.0,
                           hitDistance, hitNormal)) {
             vec3 hitLight = sceneLight.ambient.rgb + sceneLight.diffuse.rgb *
                 max(dot(hitNormal, normalize(sceneLight.direction.xyz)), 0.0);

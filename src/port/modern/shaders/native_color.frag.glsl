@@ -67,7 +67,9 @@ void main() {
     vec3 foggedColor = mix(color.rgb, fog.rgb, fog.a);
     float visibility = 1.0;
     if (shadowReception > 0.5) {
-        if (sceneLight.ray.x > 0.5) {
+        /* Fog replaces the lit colour, so a fragment that is nearly all fog
+         * gains nothing from a traced sun ray; the shadow map is enough. */
+        if (sceneLight.ray.x > 0.5 && fog.a < 0.9) {
             vec3 rayDirection = normalize(sceneLight.direction.xyz);
             float epsilon = max(0.02, length(worldPositionIn) * 0.000001);
             visibility = tracedVisibility(
