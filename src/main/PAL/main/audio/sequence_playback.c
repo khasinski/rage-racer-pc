@@ -12,6 +12,7 @@ enum {
 };
 
 void PlaySequence(void) {
+    RefreshSequenceVolumeScale();
     Psyz_PcmMusicPlay(1);
 }
 

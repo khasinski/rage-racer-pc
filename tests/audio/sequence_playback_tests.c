@@ -16,6 +16,7 @@ static s32 s_setVolume;
 static s32 s_setVolumeCalls;
 static s32 s_pcmPlays;
 static s32 s_pcmLoop;
+static s32 s_refreshVolumeCalls;
 
 void Psyz_PcmMusicPlay(int loop) { s_pcmPlays++; s_pcmLoop = loop; }
 void Psyz_PcmMusicStop(void) { s_pcmStops++; }
@@ -30,6 +31,9 @@ void SetSequenceVolume(s32 volume) {
     s_setVolumeCalls++;
 }
 
+void RefreshSequenceVolumeScale(void) {
+    s_refreshVolumeCalls++;
+}
 #define CHECK(condition) do {                                                  \
     if (!(condition)) {                                                        \
         fprintf(stderr, "check failed at line %d: %s\n", __LINE__, #condition);\
@@ -39,7 +43,9 @@ void SetSequenceVolume(s32 volume) {
 
 int main(void) {
     g_Audio.seq.handle = 7;
+    s_refreshVolumeCalls = 0;
     PlaySequence();
+    CHECK(s_refreshVolumeCalls == 1);
     CHECK(s_pcmPlays == 1 && s_pcmLoop == 1);
 
     StartSequenceFadeOut();
