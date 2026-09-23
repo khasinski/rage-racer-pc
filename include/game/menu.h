@@ -370,6 +370,7 @@ void EnterCourseSelectScreen(void);
  * next to the course list they read. */
 s32 CanSelectPrevCourse(void);
 s32 CanSelectNextCourse(void);
+s32 SelectableCourseStep(s32 course, s32 step);
 void UpdateCourseSelectScreen(void);
 s32 DrawCourseSelectScreen(s32 *progress, s32 step);
 

@@ -77,12 +77,30 @@ int main(void) {
     CheckTimeAttackLimits();
 
     g_RaceSession.kind = RACE_SESSION_CUSTOM;
+    g_GrandPrixClass = 2;
     for (s32 course = 0; course < CUSTOM_RACE_COURSE_COUNT; ++course) {
         g_CourseIndex = course;
         Check("custom previous", CanSelectPrevCourse(), course > 0);
         Check("custom next", CanSelectNextCourse(),
               course + 1 < CUSTOM_RACE_COURSE_COUNT);
+        Check("custom step next", SelectableCourseStep(course, 1),
+              course + 1 < CUSTOM_RACE_COURSE_COUNT ? course + 1 : -1);
     }
+    /* Below class 3 The Extreme Oval has no course data, so both ovals
+     * are stepped over in either direction. */
+    g_GrandPrixClass = 1;
+    Check("custom class 2 skips the oval forwards",
+          SelectableCourseStep(2, 1), 4);
+    Check("custom class 2 skips the oval backwards",
+          SelectableCourseStep(4, -1), 2);
+    Check("custom class 2 has no course past the extra oval",
+          SelectableCourseStep(6, 1), -1);
+    g_CourseIndex = 6;
+    Check("custom class 2 last course has no next", CanSelectNextCourse(), 0);
+    g_CourseIndex = 2;
+    Check("custom class 2 course 2 still has a next", CanSelectNextCourse(), 1);
+    g_GrandPrixClass = 2;
+    Check("custom class 3 reaches the oval", SelectableCourseStep(2, 1), 3);
     g_RaceSession.kind = RACE_SESSION_STANDARD;
 
     g_GrandPrixMode = 1;

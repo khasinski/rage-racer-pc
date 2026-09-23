@@ -1,3 +1,4 @@
+#include "game/course_index.h"
 #include "game/menu.h"
 #include "game/race.h"
 #include "game/state.h"
@@ -52,16 +53,35 @@ static CourseSelectionRange CurrentCourseSelectionRange(void) {
     return range;
 }
 
-/* Both arrows must use the same live range: only their edge comparison
- * differs. */
-s32 CanSelectPrevCourse(void) {
+/* A custom race may pick any class, but The Extreme Oval only has course
+ * data from class 3 up: below that the disc holds no track for the slot and
+ * the race falls back to the first course with a broken grid. */
+static s32 CourseIsSelectable(s32 course) {
+    if (g_RaceSession.kind == RACE_SESSION_CUSTOM &&
+        g_GrandPrixClass < COURSE_UNLOCK_CLASS &&
+        CourseSlot(course) == COURSE_LONG_SLOT) {
+        return 0;
+    }
+    return 1;
+}
+
+/* The next selectable course in `step`'s direction, or -1 at the edge. */
+s32 SelectableCourseStep(s32 course, s32 step) {
     const CourseSelectionRange range = CurrentCourseSelectionRange();
 
-    return g_CourseIndex > range.first && g_CourseIndex <= range.last;
+    if (course < range.first || course > range.last || step == 0) return -1;
+    for (course += step; course >= range.first && course <= range.last;
+         course += step) {
+        if (CourseIsSelectable(course)) return course;
+    }
+    return -1;
+}
+
+/* Both arrows must use the same live range: only their direction differs. */
+s32 CanSelectPrevCourse(void) {
+    return SelectableCourseStep(g_CourseIndex, -1) >= 0;
 }
 
 s32 CanSelectNextCourse(void) {
-    const CourseSelectionRange range = CurrentCourseSelectionRange();
-
-    return g_CourseIndex >= range.first && g_CourseIndex < range.last;
+    return SelectableCourseStep(g_CourseIndex, 1) >= 0;
 }

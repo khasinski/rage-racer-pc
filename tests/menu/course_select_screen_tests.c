@@ -213,6 +213,14 @@ void PlaySoundCue(s32 cue) { RECORD("cue", cue); }
  * the screen came out of; what matters here is that the screen asks. */
 s32 CanSelectPrevCourse(void) { RECORD("canprev", 0); return s_canPrev; }
 s32 CanSelectNextCourse(void) { RECORD("cannext", 0); return s_canNext; }
+/* The navigation rules have their own test; here every step lands on the
+ * neighbouring course, clamped like the carousel always was. */
+s32 SelectableCourseStep(s32 course, s32 step) {
+    course += step;
+    if (course < 0) course = 0;
+    if (course > 7) course = 7;
+    return course;
+}
 
 static GameRaceProgress s_progress;
 static CourseProgressState s_course;

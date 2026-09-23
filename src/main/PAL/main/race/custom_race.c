@@ -1,4 +1,5 @@
 #include "game/car.h"
+#include "game/course_index.h"
 #include "game/race.h"
 
 #include <string.h>
@@ -29,6 +30,8 @@ s32 CustomRaceRivalModel(void) {
                ? CustomRaceRivalModelForSelection(g_RaceSession.model)
                : -1;
 }
+
+enum { CUSTOM_RACE_OVAL_MINIMUM_CLASS = 2 };
 
 s32 CustomRacePerformanceCar(s32 course, s32 classIndex, s32 rivalModel) {
     if ((u32)course >= 4 || (u32)classIndex >= 6 ||
@@ -62,6 +65,14 @@ void ApplyCustomRaceSelection(void) {
     if (model >= modelCount) model = modelCount - 1;
     g_RaceSession.model = model;
 
+    /* The Extreme Oval only exists from class 3 up. Below that the slot has
+     * no track data and the race would load the first course with a broken
+     * grid, so fall back to the first course of the same series. */
+    if (g_RaceSession.classIndex < CUSTOM_RACE_OVAL_MINIMUM_CLASS &&
+        CourseSlot(course) == COURSE_LONG_SLOT) {
+        course -= COURSE_LONG_SLOT;
+        g_RaceSession.course = course;
+    }
     g_CourseIndex = course % COURSE_SLOT_COUNT;
     g_GrandPrixSeries = course / COURSE_SLOT_COUNT;
     g_GrandPrixClass = g_RaceSession.classIndex;

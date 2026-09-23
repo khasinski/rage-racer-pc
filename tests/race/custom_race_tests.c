@@ -43,6 +43,17 @@ int main(void) {
     g_RaceSession.model = 12;
     ApplyCustomRaceSelection();
     CHECK(g_PlayerCarIndex == 12 && !CustomRaceUsesRivalModel());
+
+    /* The ovals (slots 3 and 7) have no course data below class 3; the
+     * race falls back to the first course of the same series. */
+    g_RaceSession = (RaceSession){RACE_SESSION_CUSTOM, 7, 1, 0};
+    ApplyCustomRaceSelection();
+    CHECK(g_CourseIndex == 0 && g_GrandPrixSeries == 1 &&
+          g_RaceSession.course == 4);
+    g_RaceSession = (RaceSession){RACE_SESSION_CUSTOM, 3, 2, 0};
+    ApplyCustomRaceSelection();
+    CHECK(g_CourseIndex == 3 && g_GrandPrixSeries == 0 &&
+          g_RaceSession.course == 3);
     puts("custom race tests passed");
     return 0;
 }

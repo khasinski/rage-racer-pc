@@ -64,8 +64,11 @@ static void BrowseToCourse(CourseSelectScreen *screen, s32 step,
     g_MenuViewAngleTarget = newTarget;
     screen->swapDelay = 0;
     screen->displayedCourse = course;
-    course = AddClampedMenuValue(course, step, 0,
-                                 PHYSICAL_COURSE_COUNT - 1);
+    course = SelectableCourseStep(course, step);
+    if (course < 0) {
+        course = AddClampedMenuValue(g_CourseIndex, step, 0,
+                                     PHYSICAL_COURSE_COUNT - 1);
+    }
     g_MenuViewAngle =
         RebaseCarouselValue(g_MenuViewAngle, previousTarget,
                             MENU_COURSE_VIEW_REBASE_SPAN);
