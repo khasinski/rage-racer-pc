@@ -284,6 +284,10 @@ const char *RuntimeConfigGetForced(const char *key) {
     return value ? value : ConfiguredValue(key);
 }
 
+int RuntimeConfigSet(const char *key, const char *value) {
+    return Store(key, value);
+}
+
 int RuntimeConfigInt(const char *key, int fallback, int minimum, int maximum) {
     int value;
 

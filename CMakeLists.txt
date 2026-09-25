@@ -350,6 +350,8 @@ if(RAGE_BUILD_PORT)
         src/port/runtime_parse.c
         src/port/timing_control.c
         src/port/analog_pad.c
+        src/port/multiplayer_session.c
+        src/port/multiplayer_net.c
         src/port/force_feedback.c
         src/port/force_feedback_device.c
         src/port/axis_curve.c
@@ -617,7 +619,7 @@ if(RAGE_BUILD_PORT)
         target_link_libraries(${RAGE_PORT_TARGET} PRIVATE
             rage-sim psyz rage-render-world rage-ray rage-content chdr-static miniz rage-json)
         if(WIN32)
-            target_link_libraries(${RAGE_PORT_TARGET} PRIVATE comdlg32 legacy_stdio_definitions)
+            target_link_libraries(${RAGE_PORT_TARGET} PRIVATE comdlg32 legacy_stdio_definitions ws2_32)
         endif()
     endforeach()
     if(RAGE_ENABLE_SANITIZERS AND

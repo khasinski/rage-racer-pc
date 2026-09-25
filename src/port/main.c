@@ -21,6 +21,8 @@
 #include "native_asset_importer.h"
 #include "platform_paths.h"
 #include "menu_music_runtime.h"
+#include "multiplayer_net.h"
+#include "multiplayer_session.h"
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096
@@ -75,6 +77,18 @@ int main(int argc, char **argv) {
     char carCatalogError[256];
 
     if (!RuntimeConfigInit(argc, argv)) return EXIT_FAILURE;
+    {
+        MultiplayerCommand multiplayer;
+
+        if (!MultiplayerParseCommand(argc, argv, &multiplayer)) {
+            fprintf(stderr,
+                    "rage-port: use --host to wait for one client, or --join <ipv4>\n");
+            return EXIT_FAILURE;
+        }
+        /* Join before the disc and the window. The server stays here until a
+         * client connects, and only then is its session installed. */
+        if (!MultiplayerRunCommand(&multiplayer)) return EXIT_FAILURE;
+    }
     if (!DiagnosticLogOpen(logPath, sizeof(logPath))) {
         fprintf(stderr, "rage-port: could not open diagnostic log\n");
     }
