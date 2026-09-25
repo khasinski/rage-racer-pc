@@ -248,6 +248,17 @@ Input-device settings:
 | `wheel_l1_button` | SDL button index `0` to `63`, or `-1` | `4` |
 | `wheel_r1_button` | SDL button index `0` to `63`, or `-1` | `5` |
 | `wheel_start_button` | SDL button index `0` to `63`, or `-1` | `9` |
+| `force_feedback` | `true`, `false` | `true` |
+| `ffb_gain` | Master strength, `0` to `1` | `0.55` |
+| `ffb_center` | Speed-weighted centering, `0` to `1` | `0.80` |
+| `ffb_slide` | How light the wheel goes in a slide, `0` to `1` | `0.70` |
+| `ffb_collision` | Impact kick, `0` to `1` | `0.75` |
+| `ffb_road` | Crests and camber, `0` to `1` | `0.25` |
+| `ffb_damper` | Resistance to a fast hand, `0` to `1` | `0.20` |
+| `ffb_min_force` | Lifts weak torque over wheel friction, `0` to `1` | `0.06` |
+| `ffb_soft_lock` | Wall past the game's steering lock, `0` to `1` | `0.85` |
+| `ffb_engine` | Engine vibration, `0` to `1` | `0` |
+| `ffb_invert` | `true`, `false` | `false` |
 
 Each of the `steering`, `throttle` and `brake` axes accepts `_deadzone`
 (`0..0.99`), `_saturation` (`0.01..1`), `_linearity` (`-2..2`) and `_scaling`
@@ -270,6 +281,14 @@ gamepad. They use the game's NeGcon analog path; `wheel_steering_axis`,
 `wheel_throttle_axis`, `wheel_brake_axis`, pedal inversion and the face/shift
 button indexes can be adjusted under `[input]`. The defaults follow common
 Logitech layouts, while keyboard input remains available for menus.
+
+A wheel that can play a constant force gets one, built from the car's steering,
+speed, slide and impacts. Pause the race and confirm the `FFB` row to turn it
+on or off; left and right on that row change the strength in steps of 5
+percent. The choice is saved next to the remembered disc path. The other
+`ffb_*` scales stay in `[input]`. A gamepad takes the same impacts as rumble.
+On a wheel with no constant-force support, and on macOS where most rims have
+no force-feedback driver, the effect stays off and the race runs as before.
 
 In modern or enhanced classic 16:9, `[hud] anchor = edges` moves the corner HUD into the added
 widescreen area; use `center` for the retail 4:3 positions. Set

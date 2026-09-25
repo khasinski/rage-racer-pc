@@ -97,27 +97,29 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     next = QueueDrawAreaPrim(ot, (DrawPacket *)(marquee + 1),
                              0, 0, 0x140, 0xF0);
     g_RenderState.draw.packetCursor = next;
-    DrawText8x8((s_Animation.firstScroll >> 2) + 0xA0, 0x8A,
+    /* The feedback row sits under the renderer line, so the marquee moves
+     * down with it. */
+    DrawText8x8((s_Animation.firstScroll >> 2) + 0xA0, 0x92,
                 s_MarqueeText[marqueeState.textFrame].first, 0x7811);
-    DrawText8x8((s_Animation.secondScroll >> 2) + 0xA0, 0x8A,
+    DrawText8x8((s_Animation.secondScroll >> 2) + 0xA0, 0x92,
                 s_MarqueeText[marqueeState.textFrame].second, 0x7811);
 
     next = QueueDrawAreaPrim(ot, RENDER_PRIM_CURSOR_AS(DrawPacket),
-                             0x72, 0x8A, 0x5C, 0xC);
+                             0x72, 0x92, 0x5C, 0xC);
     packet = GameQueueSprite(
         ot, next, 0x88, 0x6A, 0x30, 8, 0xD0, 0x10, 0x7893);
     if (g_GrandPrixMode != 0) {
         packet = GameQueueSprite(
             ot, packet, 0x88, 0x72, 0x30, 8, 0xA0, 0x28, 0x7893);
         packet = GameQueueSprite(
-            ot, packet, 0x84, 0x82, 0x30, 8, 0xD0, 0x28, 0x7893);
+            ot, packet, 0x84, 0x8A, 0x30, 8, 0xD0, 0x28, 0x7893);
         packet = GameQueueSprite(
-            ot, packet, 0xB8, 0x82, 8, 8,
+            ot, packet, 0xB8, 0x8A, 8, 8,
             RaceOptionRetryDigit() * 8, 0, 0x78CC);
         packet = GameQueueSprite(
-            ot, packet, 0x78, 0x82, 8, 8, 0xD8, 8, 0x78CC);
+            ot, packet, 0x78, 0x8A, 8, 8, 0xD8, 8, 0x78CC);
         packet = GameQueueSprite(
-            ot, packet, 0xC0, 0x82, 8, 8, 0xE8, 8, 0x78CC);
+            ot, packet, 0xC0, 0x8A, 8, 8, 0xE8, 8, 0x78CC);
     } else {
         packet = GameQueueSprite(
             ot, packet, 0x85, 0x72, 0x38, 8, 0xA0, 0x40, 0x7893);
@@ -129,6 +131,13 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     DrawText8x8(PortModernRendererEnabled() ? 0x88 : 0x84,
                 g_GrandPrixMode != 0 ? 0x7A : 0x82,
                 PortModernRendererEnabled() ? "MODERN" : "CLASSIC", 0x78CC);
+    {
+        char feedback[16];
+
+        PortForceFeedbackLabel(feedback, sizeof(feedback));
+        DrawText8x8(0x84, g_GrandPrixMode != 0 ? 0x82 : 0x8A, feedback,
+                    0x78CC);
+    }
     packet = RENDER_PRIM_CURSOR_AS(u8);
 
     selectionY = cursorRow * RACE_OPTION_SELECTION_ROW_HEIGHT +
@@ -149,7 +158,7 @@ void DrawRaceOptionMenu(s32 cursorRow) {
      * twice to make the paused race dark enough behind the menu. */
     for (pass = 0; pass < RACE_OPTION_DIM_PASSES; pass++) {
         packet = GameQueueTileTrans(
-            ot, packet, 0x70, 0x50, 0x60, 0x48, 8, 8, 8);
+            ot, packet, 0x70, 0x50, 0x60, 0x50, 8, 8, 8);
     }
     quad = (POLY_FT4 *)packet;
 
@@ -166,8 +175,8 @@ void DrawRaceOptionMenu(s32 cursorRow) {
     quad->x3 = 0xA0 + pulseState.halfWidth;
     quad->y0 = 0x58;
     quad->y1 = 0x58;
-    quad->y2 = 0x90;
-    quad->y3 = 0x90;
+    quad->y2 = 0x9C;
+    quad->y3 = 0x9C;
     quad->u0 = 0xA8;
     quad->v0 = 0xA8;
     quad->u1 = 0xFF;

@@ -8,7 +8,9 @@
 #include "game/input_internal.h"
 #include "game/render.h"
 #include "game/state.h"
+#include "analog_pad.h"
 #include "axis_curve.h"
+#include "force_feedback_device.h"
 #include "input_device_select.h"
 #include "runtime_config.h"
 
@@ -211,6 +213,27 @@ static unsigned int GamepadButtons(SDL_Gamepad *pad) {
     return held;
 }
 
+static float s_steeringDeflection;
+static int s_wheelActive;
+static SDL_Joystick *s_wheel;
+static SDL_Gamepad *s_pad;
+
+float AnalogSteeringDeflection(void) { return s_steeringDeflection; }
+
+int AnalogWheelActive(void) { return s_wheelActive; }
+
+struct SDL_Joystick *AnalogWheelJoystick(void) { return s_wheel; }
+
+struct SDL_Gamepad *AnalogActiveGamepad(void) { return s_pad; }
+
+static void PublishAnalogInput(SDL_Joystick *wheel, SDL_Gamepad *pad,
+                               float deflection) {
+    s_wheel = wheel;
+    s_pad = pad;
+    s_wheelActive = wheel != NULL;
+    s_steeringDeflection = deflection;
+}
+
 static SDL_Joystick *AnalogFindWheel(void) {
     static SDL_Joystick *wheel;
     SDL_JoystickID *ids;
@@ -219,6 +242,7 @@ static SDL_Joystick *AnalogFindWheel(void) {
 
     if (wheel != NULL && SDL_JoystickConnected(wheel)) return wheel;
     if (wheel != NULL) {
+        ForceFeedbackDetachJoystick(wheel);
         SDL_CloseJoystick(wheel);
         wheel = NULL;
     }
@@ -289,14 +313,20 @@ void PortSampleAnalogPad(void) {
         AxisSetupLoad(&brake, "brake");
         WheelSetupLoad(&wheelSetup);
     }
-    if (!enabled) return;
+    if (!enabled) {
+        PublishAnalogInput(NULL, NULL, 0.0f);
+        return;
+    }
 
     wheel = RuntimeConfigGet("input.wheel") == NULL ||
                     RuntimeConfigEnabled("input.wheel")
                 ? AnalogFindWheel()
                 : NULL;
     pad = wheel == NULL ? AnalogFindGamepad() : NULL;
-    if (pad == NULL && wheel == NULL) return;
+    if (pad == NULL && wheel == NULL) {
+        PublishAnalogInput(NULL, NULL, 0.0f);
+        return;
+    }
 
     if (wheel != NULL && !wheelAnnounced) {
         wheelAnnounced = 1;
@@ -371,4 +401,5 @@ void PortSampleAnalogPad(void) {
     g_PadBuffers[5] = (u8)(g_NegconNeutralI + analogI);
     g_PadBuffers[6] = (u8)(g_NegconNeutralII + analogII);
     g_PadBuffers[7] = (u8)(g_NegconNeutralL + analogL);
+    PublishAnalogInput(wheel, pad, AxisShaped(lx, &steering));
 }

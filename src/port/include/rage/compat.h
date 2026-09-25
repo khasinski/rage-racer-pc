@@ -24,6 +24,10 @@ int PortMirrorFarDepth(int retailFar);
 void PortSampleAnalogPad(void);
 int PortModernRendererEnabled(void);
 void PortToggleRenderer(void);
+void PortUpdateForceFeedback(void);
+void PortToggleForceFeedback(void);
+int PortAdjustForceFeedbackGain(int direction);
+void PortForceFeedbackLabel(char *text, size_t size);
 
 /*
  * Says that a case falling into the next one is meant. A comment saying so is

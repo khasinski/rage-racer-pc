@@ -80,6 +80,7 @@ static void PresentGameFrame(GameFrameContext *frame) {
     GameDrawOrderingTable(
         &frame->layout.orderingTables[1][GAME_FRAME_OT_LENGTH - 1]);
     PortSampleAnalogPad();
+    PortUpdateForceFeedback();
     UpdatePadState();
 }
 

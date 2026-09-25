@@ -59,15 +59,20 @@ s32 RaceLookBehindActive(u16 held, s16 phase, CameraViewMode selectedView) {
 }
 
 s32 LastRacePauseOption(s16 grandPrixMode) {
-    return grandPrixMode != 0 ? 2 : 3;
+    return grandPrixMode != 0 ? 3 : 4;
 }
 
 RacePauseAction DecideRacePauseAction(s16 phase, s16 grandPrixMode,
                                       s16 cursor) {
-    if (cursor == LastRacePauseOption(grandPrixMode)) {
+    s32 lastOption = LastRacePauseOption(grandPrixMode);
+
+    if (cursor == lastOption) {
+        return RACE_PAUSE_TOGGLE_FFB;
+    }
+    if (cursor == lastOption - 1) {
         return RACE_PAUSE_TOGGLE_RENDERER;
     }
-    if (cursor == LastRacePauseOption(grandPrixMode) - 1) {
+    if (cursor == lastOption - 2) {
         if (grandPrixMode == 0 || phase < RACE_PHASE_ACTIVE) {
             return RACE_PAUSE_QUIT;
         }
@@ -97,7 +102,8 @@ RacePauseToggleResult DecideRacePauseToggle(s16 phase, s32 paused,
     if (!result.paused) {
         result.action =
             DecideRacePauseAction(phase, grandPrixMode, cursor);
-        if (result.action == RACE_PAUSE_TOGGLE_RENDERER) {
+        if (result.action == RACE_PAUSE_TOGGLE_RENDERER ||
+            result.action == RACE_PAUSE_TOGGLE_FFB) {
             result.paused = 1;
         }
     }

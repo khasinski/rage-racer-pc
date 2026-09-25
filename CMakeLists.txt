@@ -350,6 +350,8 @@ if(RAGE_BUILD_PORT)
         src/port/runtime_parse.c
         src/port/timing_control.c
         src/port/analog_pad.c
+        src/port/force_feedback.c
+        src/port/force_feedback_device.c
         src/port/axis_curve.c
         src/port/timing_restore.c
         src/port/chase_camera.c

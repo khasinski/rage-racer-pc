@@ -11,6 +11,7 @@ typedef enum RacePauseAction {
     RACE_PAUSE_RESTART,
     RACE_PAUSE_RETIRE,
     RACE_PAUSE_TOGGLE_RENDERER,
+    RACE_PAUSE_TOGGLE_FFB,
 } RacePauseAction;
 
 typedef enum RaceEndPresentation {

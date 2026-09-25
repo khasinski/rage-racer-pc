@@ -19,6 +19,18 @@ endif()
 add_test(NAME axis_curve COMMAND axis_curve_tests)
 set_tests_properties(axis_curve PROPERTIES LABELS functional)
 
+add_executable(force_feedback_tests
+    force_feedback_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/force_feedback.c)
+target_include_directories(force_feedback_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port)
+if(NOT MSVC)
+    target_compile_options(force_feedback_tests PRIVATE ${RAGE_WARNING_OPTIONS})
+    target_link_libraries(force_feedback_tests PRIVATE m)
+endif()
+add_test(NAME force_feedback COMMAND force_feedback_tests)
+set_tests_properties(force_feedback PROPERTIES LABELS functional)
+
 add_executable(controller_config_begin_tests
     controller_config_begin_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/pad/begin_controller_config.c)

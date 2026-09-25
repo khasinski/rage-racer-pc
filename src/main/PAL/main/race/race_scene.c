@@ -135,6 +135,11 @@ static s32 UpdateRacePause(RaceScene *state) {
         PlaySoundCue(2);
         return 0;
     }
+    if (toggle.action == RACE_PAUSE_TOGGLE_FFB) {
+        PortToggleForceFeedback();
+        PlaySoundCue(2);
+        return 0;
+    }
     if (toggle.paused) {
         ResetRaceOptionMenuAnimation();
         PauseCdAudio();
@@ -300,6 +305,18 @@ static void UpdatePausedRaceScene(RaceScene *state) {
     state->optionCursor = cursor.cursor;
     for (move = 0; move < cursor.moveCount; move++) {
         PlaySoundCue(1);
+    }
+    if (state->optionCursor == LastRacePauseOption(g_GrandPrixMode)) {
+        s32 direction = 0;
+
+        if ((g_PadPressed & PAD_LEFT) != 0 && (g_PadPressed & PAD_RIGHT) == 0) {
+            direction = -1;
+        } else if ((g_PadPressed & PAD_RIGHT) != 0) {
+            direction = 1;
+        }
+        if (direction != 0 && PortAdjustForceFeedbackGain(direction)) {
+            PlaySoundCue(1);
+        }
     }
 
     DrawRaceOptionMenu(state->optionCursor);
