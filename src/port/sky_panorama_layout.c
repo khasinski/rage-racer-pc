@@ -84,3 +84,17 @@ int RageSkyExpandPanorama(uint8_t *destination, size_t destinationSize,
     return RageSkyExpandPanoramaLayout(destination, destinationSize,
                                       source, sourceSize, &layout);
 }
+
+int RetailSkyLayout(RageSkyPanoramaLayout *out, int rowBase) {
+    if (!out || rowBase < 0 || rowBase > RAGE_SKY_MAP_ROWS - RAGE_SKY_PANORAMA_ROWS)
+        return 0;
+    RageSkyPanoramaLayout layout;
+    for (int row = 0; row < RAGE_SKY_PANORAMA_ROWS; ++row) {
+        const int authoredRow = rowBase + row;
+        const int offset = authoredRow >= 2 && authoredRow % 2 == 0 ? 4 : 0;
+        for (int column = 0; column < 8; ++column)
+            layout.tiles[row][column] = (uint8_t)((column + offset) % RAGE_SKY_TILE_COUNT);
+    }
+    *out = layout;
+    return 1;
+}

@@ -37,8 +37,14 @@ endif()
 add_executable(client_race_tests
     ${CMAKE_SOURCE_DIR}/tests/render/client_race_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/client_race.c
+    ${CMAKE_SOURCE_DIR}/src/port/client_world.c
+    ${CMAKE_SOURCE_DIR}/src/port/native_visibility.c
     ${CMAKE_SOURCE_DIR}/src/port/client_assets.c
     ${CMAKE_SOURCE_DIR}/src/port/client_frame.c
+    ${CMAKE_SOURCE_DIR}/src/port/modern/client_frame_gpu.c
+    ${CMAKE_SOURCE_DIR}/tests/render/client_frame_source_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/native_sky.c
+    ${CMAKE_SOURCE_DIR}/src/port/sky_panorama_layout.c
     ${CMAKE_SOURCE_DIR}/src/port/modern/modern_prepared_meshes.c
     ${CMAKE_SOURCE_DIR}/src/port/native_texture.c
     ${CMAKE_SOURCE_DIR}/src/port/native_mesh_writer.c
@@ -46,6 +52,7 @@ add_executable(client_race_tests
     ${CMAKE_SOURCE_DIR}/src/port/race_view.c
     ${CMAKE_SOURCE_DIR}/src/port/car_parts.c)
 target_include_directories(client_race_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/render
     ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src/port ${CMAKE_SOURCE_DIR}/src/port/include)
 target_compile_options(client_race_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 target_link_libraries(client_race_tests PRIVATE rage-data rage-rmesh rage-render-world)

@@ -32,6 +32,18 @@ int main(void) {
         }
     }
 
+    for (int base = 0; base < 4; ++base) {
+        RageSkyPanoramaLayout actual, expected;
+        assert(RetailSkyLayout(&actual, base));
+        RageSkyCapturePanoramaLayout(&expected, s_retailMap, base);
+        assert(memcmp(&actual, &expected, sizeof(actual)) == 0);
+        const RageSkyPanoramaLayout saved = actual;
+        assert(!RetailSkyLayout(&actual, -1));
+        assert(!RetailSkyLayout(&actual, 4));
+        assert(!RetailSkyLayout(NULL, base));
+        assert(memcmp(&actual, &saved, sizeof(actual)) == 0);
+    }
+
     /* Course 0 uses rows 0/1: both halves have the unshifted panorama. */
     assert(RageSkyPanoramaTile(s_retailMap, 0, 0, 0) == 0);
     assert(RageSkyPanoramaTile(s_retailMap, 0, 1, 4) == 4);

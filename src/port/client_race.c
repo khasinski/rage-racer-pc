@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include "game/asset_index.h"
+#include "game/grand_prix_content.h"
 
 ClientRace *RetainClientRace(ClientRace *race) {
     if (!race || !race->references || race->references == UINT_MAX) return NULL;
@@ -30,6 +31,23 @@ ClientRace *LoadClientRace(const RaceData *archive, const RaceSetup *setup,
     ClientRace *race = calloc(1, sizeof(*race));
     if (!race) return NULL;
     race->references = 1;
+    const GrandPrixClassDefinition *definition = GrandPrixContentClass(setup->classIndex);
+    race->spinners = (Spinners){{0, 64, 128, 256}, {32, 64}};
+    race->previousSpinners = race->spinners;
+    for (s32 i = 0; i < 4; ++i)
+        if (!RetailSpinner(i, &race->spinnerPlacements[i])) goto fail;
+    race->scenerySeed = setup->entrants[0].seed;
+    race->spinningScenery = setup->courseIndex == 0 ? 1 :
+        (setup->courseIndex == 1 && definition && definition->courseOneSpinningScenery ? 2 : 0);
+    race->freezeScenery = definition && definition->freezeScenery;
+    race->shuttleCount = setup->courseIndex == 2 ? 2u : (setup->courseIndex == 1 ? 1u : 0u);
+    for (u32 i = 0; i < race->shuttleCount; ++i) {
+        const s32 path = setup->courseIndex == 2 ? (s32)i + 1 : 0;
+        ShuttleConfig *config = &race->shuttlePaths[i];
+        if (!RetailShuttle(path, config) ||
+            !InitShuttle(&race->shuttles[i], &config->path, &config->angles, path, config->dwell)) goto fail;
+        race->previousShuttles[i] = race->shuttles[i];
+    }
     race->images = CopyRaceImages(archive, setup->classIndex, setup->courseIndex);
     if (!race->images) goto fail;
     size_t baseSize = 0;
@@ -45,6 +63,9 @@ ClientRace *LoadClientRace(const RaceData *archive, const RaceSetup *setup,
                        blocks[SCENE_SECONDARY_MODELS].size, &race->secondary)) goto fail;
     if (!ReadCourseBank(blocks[SCENE_COURSE_MODELS].data,
                         blocks[SCENE_COURSE_MODELS].size, &race->course)) goto fail;
+    if (!ReadCourseObjects(blocks[SCENE_COURSE_OBJECTS].data,
+                           blocks[SCENE_COURSE_OBJECTS].size,
+                           race->course.modelCount, &race->objects)) goto fail;
     if (!ReadTerrainBank(blocks[SCENE_TERRAIN_CELLS].data,
                          blocks[SCENE_TERRAIN_CELLS].size, &race->terrain)) goto fail;
     if (!IsValidEnvironmentScript(blocks[SCENE_ENVIRONMENT_SCRIPT].data,

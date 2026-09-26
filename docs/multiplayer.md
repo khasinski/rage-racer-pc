@@ -1216,6 +1216,129 @@ All 72 headless sanitizer tests, the client build and three client regressions
 pass. The live GPU backend still uses its existing global asset provider and
 material cache; it has not been switched to `ClientFrame` yet.
 
+The PAL client-resource test now also expands retained frame meshes into actual
+CPU draw vertices and spans through `RenderBuildNativeDraws`. It frames the
+car with an explicit camera, requires nonempty triangle output, then compares
+the output after original instance storage and race owners are released. This
+passes ASan/UBSan; it does not prove GPU rendering or visual correctness.
+
+`DecodeFrameSky` now decodes from the retained race's texture bank, captured
+palette and explicit copied camera layout. Missing/invalid layouts fail instead
+of consulting legacy state. PAL resource coverage checks repeat output after
+original camera/palette mutation and race-owner release, and rejected requests
+preserving output. The test supplies a diagnostic layout; extraction of the
+authored per-course layout into the owned camera remains pending. The client
+build and focused sanitizer tests pass; the GPU sky loader is not switched yet.
+
+Frame capture now publishes the owned environment's sky bands, fog distances,
+cloud row and panorama identity while preserving caller camera pose/clipping.
+`RetailSkyLayout` derives the immutable retail row pattern without accessing
+the legacy map; a narrow test compares all four legal selections to that map
+and checks invalid selections preserving output. PAL retained-resource coverage
+checks camera selection from the actual script. Live GPU adoption remains pending.
+
+The GPU backend now exposes an explicit retained resource source, and
+`PrepareClientFrameGpu` connects owned frame mesh/material/sky decoding to it.
+A source switch clears geometry/template and texture caches before releasing
+the previous owner; texture-bank or captured-palette changes clear textures.
+Ray geometry also receives a backend resource generation. The benchmark keeps
+the active source instead of accidentally reverting to the global provider.
+`ClientFrame` has main-thread retention, with overflow and partial-release
+coverage in the PAL sanitizer test. Client/tools builds pass. No playable
+client calls this entry yet, and GPU output/cache-switch behavior still needs
+execution with a display; these builds do not prove visual correctness.
+
+The frame GPU adapter now depends only on the resource-source contract, not
+SDL or a device. Image allocation is paired with the source's own `freeImage`
+callback rather than assuming SDL allocation for every provider. The headless
+PAL test drives the real adapter callbacks through a retained sink, checking
+copied-instance mesh resolution, real material/sky images, failed requests
+preserving outputs, repeat retention and owner replacement. It does not test
+GPU cache invalidation or rendering. The client/tools build and PAL sanitizer
+run pass; playable integration remains pending.
+
+`SubmitClientTerrain` publishes the owned terrain grid into an explicit world,
+with owned mesh identity, bank/environment variants and the existing authored
+region masks. Masked cells remain ray-only, following production behavior.
+It validates indices and capacity before replacing main-pass owned terrain,
+preserving cars, other geometry and mirror entries. The narrow `client_world`
+test checks coordinates, masking, replacement, independent worlds and atomic
+rejection. The PAL constructor test publishes all 24 packs and resolves every
+cell through the race owner. Sanitizer coverage and the client build pass.
+Course scenery/dynamic objects and playable adoption remain pending.
+
+Course-object validation is now shared by the legacy runtime installer and
+`ClientRace`, through a bounded aligned `ReadCourseObjects` view into owned
+scene storage. Invalid model IDs, flags and truncated tables are rejected.
+`SubmitClientScenery` publishes static objects with owned model identity,
+camera-relative wrapped coordinates, authored fog flags and region masks.
+Replacement preserves cars, terrain and other course entities; invalid input
+or insufficient capacity leaves the world unchanged. Narrow parser/world
+tests and legacy asset-loading regression pass. All 24 PAL packs publish
+terrain and exactly their active static-object count under ASan/UBSan; some
+packs legitimately have no active decorations. The client build passes.
+Dynamic scenery and playable client integration are still pending.
+
+Shuttle playback now has explicit `InitShuttle` / `StepShuttle` operations
+accepting caller-owned state, endpoints, angles and timing. Legacy init/update
+adapters use the same implementation, preserving wrapped integer coordinate
+interpolation and dwell/endpoint order. The new narrow headless test checks
+known intermediate poses, 1000 interleaved steps against isolated playback,
+failed-input atomicity and extreme coordinates. All 74 headless sanitizer
+tests, PAL resource coverage and the three existing shuttle regressions pass.
+Owned client adoption of authored shuttle configuration and dynamic publication
+remain pending; flyby/path animation still use legacy state.
+
+Retained-frame coverage now composes terrain, static course objects and the
+full configured human/AI field on all 24 PAL packs, captures them together,
+then releases original instance storage and the race owner before resolving
+every retained instance. The two independent forward/reverse scenes also feed
+the real CPU triangle builder; spans must include both cars and terrain.
+Repeated vertices and the selected terrain material's RGBA remain identical
+after owner release. This passes ASan/UBSan. It tests CPU composition/resource
+lifetime, not complete dynamic scenery, GPU output or playable client behavior.
+
+Authored shuttle tables now live in the shared data library, preserving their
+legacy symbols/bytes without duplicate initializers. `RetailShuttle` copies
+configuration into each `ClientRace`; current/previous poses and the animation
+clock are per race. `TickClientScenery` advances only the next simulation tick,
+is inert on duplicates, rejects skipped/rewound ticks atomically, handles tick
+wrap and freezes motion in the final class. Narrow tests and all 24 PAL packs
+exercise this path; legacy content/ABI and shuttle regressions pass. Dynamic
+mesh publication and playable use are still pending.
+
+`SubmitClientShuttles` now publishes each owned shuttle's current/previous
+pose with stable semantic identity and the production yaw/roll convention.
+It replaces only shuttle entities, preserves other scene objects, stages both
+instances before capacity checks and never advances animation. The legacy
+model-1 fallback policy for a missing course-specific model is retained.
+Camera coordinate validation is shared with static-object publication. Narrow
+pose/replacement/error coverage and all 24 PAL retained-frame cases pass under
+ASan/UBSan, and the client build passes. Flyby/path/other scripted scenery and
+playable client adoption remain pending.
+
+Spinner angle/rate playback now has a small caller-owned `Spinners` state
+and a shared `TickSpinners` operation. It applies the old rate before the
+512-frame refresh, using a local seed so cosmetic randomness cannot advance
+physics RNG. The legacy draw adapter calls the same implementation; owned
+client scenery updates it once per simulation tick, keeping previous angles
+and the final-class freeze. Narrow tests cover wrap, refresh order, pause,
+interleaved independence and rejected scenery updates preserving spinner state.
+All 24 PAL pack cases check the enabled course/class combinations, and the
+legacy spinning regression plus client build pass. Spinner placement/publication
+is not yet owned; the legacy draw path still carries its original draw cadence.
+
+Spinner placements now live with shuttle configuration in shared
+`scenery_data.c`, preserving legacy bytes and symbols. Each client copies
+placements and publishes current/previous spinner orientation through
+`SubmitClientSpinners`. Single/group/disabled selection replaces only spinner
+entities, preserving terrain, cars and shuttles. Dynamic instance construction,
+pose conversion and atomic entity replacement are shared with shuttles.
+Client selection/freeze uses the existing class-content definition. All 75
+headless sanitizer tests, all 24 PAL retained-scene cases, legacy data/ABI and
+spinning regressions pass; the client build passes. Scripted flyby/path/status
+scenery and playable integration remain unfinished.
+
 ## Order of work
 
 1. **Headless race context.** The C API above. Human/AI stepping, imported PAL

@@ -7,6 +7,8 @@
 #include "game/terrain_bank.h"
 #include "game/environment.h"
 #include "game/track_look.h"
+#include "game/course_objects.h"
+#include "game/spinners.h"
 
 /* Owns scene bytes borrowed by track/sim and the human model/image view. A prepared
  * race survives releasing its archive/configuration. Do not copy by value.
@@ -16,6 +18,7 @@ typedef struct ClientRace {
     TrackData track;
     NativeModelBank primary, secondary;
     CourseBank course;
+    CourseObjects objects;
     TerrainBank terrain;
     Environment env;
     TrackLook look;
@@ -30,6 +33,15 @@ typedef struct ClientRace {
     TrackPixels *pixels;
     RaceSim sim;
     RaceView *view;
+    ShuttleConfig shuttlePaths[SHUTTLE_INSTANCE_COUNT];
+    GameShuttleScenery shuttles[SHUTTLE_INSTANCE_COUNT];
+    GameShuttleScenery previousShuttles[SHUTTLE_INSTANCE_COUNT];
+    u32 sceneryTick, shuttleCount;
+    int freezeScenery;
+    Spinners spinners, previousSpinners;
+    SpinningSceneryPlacement spinnerPlacements[4];
+    u32 scenerySeed;
+    int spinningScenery; /* 0 absent, 1 single, 2 group */
 } ClientRace;
 
 typedef struct RaceSetup {
@@ -57,4 +69,18 @@ const RageImportedMeshEntry *FindClientMesh(const ClientRace *race,
 int DecodeClientMaterial(const ClientRace *race, const RenderMeshInstance *instance,
                           u32 material, int page, const u16 *palette,
                           u8 *rgba, size_t size);
+/* Replaces owned main-pass terrain, preserving other instances. Authored
+ * masks hide unrelated cells from rasterization, retaining ray geometry.
+ * Invalid banks/page or insufficient space preserve the complete world. */
+int SubmitClientTerrain(const ClientRace *race, int page, RenderWorld *world);
+/* Replaces static owned course objects, preserving terrain/cars/dynamics.
+ * Requires an explicit camera for wrapped-coordinate placement and visibility. */
+int SubmitClientScenery(const ClientRace *race, int page, RenderWorld *world);
+/* Called after each simulation tick. Repeated ticks are inert; skipped or
+ * rewound ticks reject without changing scenery. Rendering never advances it. */
+int TickClientScenery(ClientRace *race);
+/* Publishes current/previous shuttle poses without advancing animation.
+ * Replaces only this semantic entity range; failure preserves the world. */
+int SubmitClientShuttles(const ClientRace *race, int page, RenderWorld *world);
+int SubmitClientSpinners(const ClientRace *race, int page, RenderWorld *world);
 #endif

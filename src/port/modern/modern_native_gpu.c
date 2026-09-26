@@ -207,19 +207,26 @@ static uint64_t s_worldFrame = UINT64_MAX;
 static const RenderWorld *s_world;
 static RenderWorldSnapshot s_ownedWorld;
 static ModernPreparedMeshes s_preparedMeshes;
+static ModernNativeSource s_source;
+static uint64_t s_resourceGeneration;
+
+static void FreeImage(ModernAssetImage *image) {
+    if (s_source.context) s_source.freeImage(image);
+    else ModernAssetsFreeMaterialImage(image);
+}
 
 /* Borrow only for this preparation. Both cameras use the same owned instance
  * array; resolve after warming finishes so a later successful retry is visible
  * to every instance that references the asset. */
 static const RageRuntimeMesh *ModernNativePreparedMeshLookup(
     void *context, const RenderMeshInstance *instance) {
-    if (!context) return ModernAssetsResidentMeshLookup(NULL, instance);
+    if (!context) return s_source.context ? NULL : ModernAssetsResidentMeshLookup(NULL, instance);
     return ModernPreparedMeshesLookup(context, instance);
 }
 
 static void *ModernNativePrepareMeshLookup(const RenderWorld *world) {
     return ModernPreparedMeshesPrepare(&s_preparedMeshes, world,
-        ModernAssetsResidentMeshLookup, NULL)
+        s_source.context ? s_source.mesh : ModernAssetsResidentMeshLookup, s_source.context)
         ? &s_preparedMeshes : NULL;
 }
 static float s_aspect = 4.0f / 3.0f;
@@ -634,7 +641,6 @@ int ModernNativeGpuInit(SDL_GPUDevice *device, int linearTextureFilter) {
     SDL_GPUBufferCreateInfo buffer = {0};
     SDL_GPUTransferBufferCreateInfo transfer = {0};
     SDL_GPUSamplerCreateInfo sampler = {0};
-    if (!ModernAssetsReady()) return 0;
     const char *fogReference = SDL_getenv("RAGE_PORT_NATIVE_CPU_FOG");
     s_cpuFogReference = fogReference != NULL && strcmp(fogReference, "1") == 0;
     s_cpuGeometryReference = RuntimeConfigEnabled("diagnostics.modern_uncached_geometry");
@@ -866,7 +872,9 @@ static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
         }
     }
     ModernNativeReleaseSkyTexture();
-    loaded = ModernAssetsLoadSkyImage(assetKey,
+    if (s_source.context) {
+        loaded = s_source.sky(s_source.context, &image);
+    } else loaded = ModernAssetsLoadSkyImage(assetKey,
         camera->hasSkyLayout ? &camera->skyLayout : NULL, &image);
     if (loaded) {
         pixels = image.pixels;
@@ -886,7 +894,7 @@ static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
     transfer.size = (Uint32)size;
     upload = SDL_CreateGPUTransferBuffer(s_device, &transfer);
     if (s_skyTexture == NULL || upload == NULL) {
-        ModernAssetsFreeMaterialImage(&image);
+        FreeImage(&image);
         if (upload != NULL) SDL_ReleaseGPUTransferBuffer(s_device, upload);
         ModernNativeReleaseSkyTexture();
         ModernNativeReleaseGeometry();
@@ -894,7 +902,7 @@ static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
     }
     mapped = SDL_MapGPUTransferBuffer(s_device, upload, true);
     if (mapped == NULL) {
-        ModernAssetsFreeMaterialImage(&image);
+        FreeImage(&image);
         SDL_ReleaseGPUTransferBuffer(s_device, upload);
         ModernNativeReleaseSkyTexture();
         return 0;
@@ -910,7 +918,7 @@ static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
     destination.d = 1;
     copy = SDL_BeginGPUCopyPass(command);
     if (copy == NULL) {
-        ModernAssetsFreeMaterialImage(&image);
+        FreeImage(&image);
         SDL_ReleaseGPUTransferBuffer(s_device, upload);
         ModernNativeReleaseSkyTexture();
         return 0;
@@ -930,11 +938,11 @@ static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
                 assetKey, cloudRow, loaded ? "loaded" : "gradient", width,
                 height);
     }
-    ModernAssetsFreeMaterialImage(&image);
+    FreeImage(&image);
     return 1;
 }
 
-void ModernNativeGpuPrepare(const RenderWorld *world, float aspect) {
+static void Prepare(const RenderWorld *world, float aspect) {
     const int trace = RuntimeConfigEnabled("diagnostics.performance_trace");
     Uint64 started = 0, copied = 0, lookupFinished = 0, mainStarted = 0;
     Uint64 mainFinished = 0, mirrorFinished = 0;
@@ -943,9 +951,9 @@ void ModernNativeGpuPrepare(const RenderWorld *world, float aspect) {
     Vec3 shadowCenter;
     uint64_t trackAssetRevision;
     if (s_vertices == NULL || s_spans == NULL || world == NULL) return;
-    trackAssetRevision = TrackAssetIdentityRevision();
+    trackAssetRevision = s_source.context ? 0 : TrackAssetIdentityRevision();
     if (trackAssetRevision != s_trackAssetRevision ||
-        ModernAssetsGeneration() != s_assetGeneration) {
+        (s_source.context ? 0 : ModernAssetsGeneration()) != s_assetGeneration) {
         if (RuntimeConfigEnabled("diagnostics.modern_asset_trace") &&
             s_trackAssetRevision != UINT64_MAX) {
             fprintf(stderr,
@@ -961,8 +969,9 @@ void ModernNativeGpuPrepare(const RenderWorld *world, float aspect) {
          * different cars, otherwise binding an attract-mode body in GP. */
         ModernNativeReleaseGeometry();
         RenderNativeMeshTemplateCacheRelease(&s_meshTemplates);
+        ++s_resourceGeneration;
         s_trackAssetRevision = trackAssetRevision;
-        s_assetGeneration = ModernAssetsGeneration();
+        s_assetGeneration = s_source.context ? 0 : ModernAssetsGeneration();
         /* Scene-local frame counters can repeat across attract/race loads.
          * A generation change must rebuild the prepared world even when its
          * frame number happens to equal the preceding scene's last frame. */
@@ -1111,7 +1120,7 @@ int ModernNativeGpuBenchmarkPrepare(FILE *file, unsigned repeats) {
         Uint64 start;
         ++frozen.world.frame;
         start = SDL_GetPerformanceCounter();
-        ModernNativeGpuPrepare(&frozen.world, aspect);
+        Prepare(&frozen.world, aspect);
         samples[i] = SDL_GetPerformanceCounter() - start;
         if (!ModernNativeGpuHasDraws() || !ModernNativeGpuWorldComplete()) {
             valid = 0;
@@ -1119,7 +1128,7 @@ int ModernNativeGpuBenchmarkPrepare(FILE *file, unsigned repeats) {
         }
     }
     frozen.world.frame = revision;
-    ModernNativeGpuPrepare(&frozen.world, aspect);
+    Prepare(&frozen.world, aspect);
     valid = valid && ModernNativeGpuHasDraws() && ModernNativeGpuWorldComplete();
     if (valid) {
         double ms = 1000.0 / (double)SDL_GetPerformanceFrequency();
@@ -1328,6 +1337,44 @@ static void ModernNativeIndexTexture(const ModernNativeTexture *entry) {
     (void)ModernTextureIndexInsert(&s_textureIndex, &key);
 }
 
+static void SelectSource(const ModernNativeSource *source) {
+    const void *owner = source ? source->owner : NULL;
+    const int ownerChanged = owner != s_source.owner;
+    const int texturesChanged = ownerChanged || (source &&
+        source->textureRevision != s_source.textureRevision);
+    if (texturesChanged) {
+        ModernNativeGpuClearTextures();
+        ModernNativeReleaseSkyTexture();
+    }
+    if (ownerChanged) {
+        ++s_resourceGeneration;
+        ModernNativeReleaseGeometry();
+        RenderNativeMeshTemplateCacheRelease(&s_meshTemplates);
+    }
+    if (ownerChanged || (source && source->context != s_source.context))
+        s_worldFrame = UINT64_MAX;
+    if (s_source.context) s_source.release(s_source.context);
+    s_source = source ? *source : (ModernNativeSource){0};
+}
+
+void ModernNativeGpuPrepareSource(const RenderWorld *world, float aspect,
+                                  const ModernNativeSource *source) {
+    if (!world || !source || !source->context || !source->owner ||
+        !source->retain || !source->release || !source->mesh ||
+        !source->material || !source->sky || !source->freeImage) return;
+    ModernNativeSource retained = *source;
+    retained.context = source->retain(source->context);
+    if (!retained.context) return;
+    SelectSource(&retained);
+    Prepare(world, aspect);
+}
+
+void ModernNativeGpuPrepare(const RenderWorld *world, float aspect) {
+    if (!world) return;
+    SelectSource(NULL);
+    Prepare(world, aspect);
+}
+
 static ModernNativeTexture *ModernNativeLoadTexture(
     SDL_GPUCommandBuffer *command, const RageNativeDrawSpan *span) {
     ModernNativeTexture *entry = ModernNativeFindTexture(span);
@@ -1370,9 +1417,19 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     instance.hasCarPaint = span->hasCarPaint;
     instance.carPaintColor1 = span->carPaintColor1;
     instance.carPaintColor2 = span->carPaintColor2;
-    if (!ModernAssetsLoadMaterial(&instance, span->material,
-                                  span->materialVariant,
-                                  &materialDefinition, &image, &materialStorage)) return NULL;
+    instance.materialVariant = span->materialVariant;
+    if (s_source.context) {
+        image = (ModernAssetImage){0};
+        if (!s_source.material(s_source.context, &instance, span->material,
+                               &materialDefinition, &image)) return NULL;
+        memset(&materialStorage, 0, sizeof(materialStorage));
+    } else if (!ModernAssetsLoadMaterial(&instance, span->material,
+                                         span->materialVariant,
+                                         &materialDefinition, &image, &materialStorage)) return NULL;
+    if (!ModernAssetImageValidRGBA(&image)) {
+        FreeImage(&image);
+        return NULL;
+    }
     if (trace) materialDone = SDL_GetTicksNS();
     if (trace) {
         for (size_t i = 0; i < image.size; ++i) {
@@ -1458,7 +1515,7 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     else if (materialDefinition.alphaMode != RAGE_RENDER_MATERIAL_ALPHA_AUTO)
         entry->transparent = 0;
     free(mipChain);
-    ModernAssetsFreeMaterialImage(&image);
+    FreeImage(&image);
     entry->assetKey = span->assetKey;
     entry->assetSet = span->assetSet;
     entry->material = span->material;
@@ -1489,7 +1546,7 @@ fail:
      * memory is exactly when this path is taken, which made it a crash in
      * the one situation it exists to survive. */
     free(mipChain);
-    ModernAssetsFreeMaterialImage(&image);
+    FreeImage(&image);
     if (upload != NULL) SDL_ReleaseGPUTransferBuffer(s_device, upload);
     if (entry != NULL) {
         if (entry->texture != NULL)
@@ -2156,7 +2213,7 @@ void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,
             if (!ModernRayGpuPrepare(command, s_world,
                                      ModernNativePreparedMeshLookup,
                                      &s_preparedMeshes,
-                                     ModernAssetsGeneration())) {
+                                     s_resourceGeneration)) {
                 fprintf(stderr, "rage-port: ray scene upload failed: %s\n",
                         SDL_GetError());
             } else if (RuntimeConfigEnabled("diagnostics.performance_trace")) {
@@ -2264,6 +2321,8 @@ void ModernNativeGpuShutdown(void) {
     s_aspect = 4.0f / 3.0f;
     RenderWorldSnapshotRelease(&s_ownedWorld);
     ModernPreparedMeshesRelease(&s_preparedMeshes);
+    if (s_source.context) s_source.release(s_source.context);
+    s_source = (ModernNativeSource){0};
     s_completeWorld = 0;
     s_rayMode = 0;
     ModernNativeReleasePendingUploads();

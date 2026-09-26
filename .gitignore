@@ -2,6 +2,7 @@
 build/
 build-*/
 .claude/
+server/target/
 disc/**
 !disc/.gitkeep
 !disc/PAL/

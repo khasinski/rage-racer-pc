@@ -541,6 +541,7 @@ add_test(NAME audio_settings COMMAND audio_settings_tests)
 set_tests_properties(audio_settings PROPERTIES LABELS unit)
 
 add_executable(race_asset_loading_tests
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/read_course_objects.c
     race_asset_loading_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/asset_request.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/race_assets.c
@@ -580,7 +581,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include"
         "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/include")
 endif()
-target_link_libraries(host_state_content_tests PRIVATE rage-sim)
+target_link_libraries(host_state_content_tests PRIVATE rage-sim rage-data)
 add_test(NAME host_state_content COMMAND host_state_content_tests)
 set_tests_properties(host_state_content PROPERTIES LABELS functional)
 

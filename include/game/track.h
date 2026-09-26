@@ -8,6 +8,7 @@
 #include "game/integer.h"
 #include "game/vector.h"
 #include "game/shuttle_scenery.h"
+#include "game/spinners.h"
 #include "game/visibility.h"
 #include "game/visible_cell_scan.h"
 
@@ -351,16 +352,6 @@ void DrawStaticScenery(s32 shiftForSeriesCourse);
  * g_GrandPrixClass >= 4, and the one prop with no visibility cull. */
 void DrawHighClassScenery(void);
 
-typedef struct ShuttlePath {
-    Vec4 endpoint[2];
-} ShuttlePath;
-
-enum {
-    SHUTTLE_INSTANCE_COUNT = 2,
-    SHUTTLE_PATH_COUNT = 3,
-    SHUTTLE_ENDPOINT_COUNT = 2,
-};
-
 extern ShuttlePath g_ShuttlePathPoints[SHUTTLE_PATH_COUNT];
 
 /* The two shuttle instances. Instance 1 used to carry eight split symbols of
@@ -520,12 +511,6 @@ enum {
 extern s16 g_SkyTileMap[SKY_TILE_MAP_ROWS][SKY_TILE_MAP_COLUMNS];
 extern s16 g_SpinningSceneryAngle[];
 extern u16 g_SpinningSceneryRate[];
-typedef struct SpinningSceneryPlacement {
-    LVec position;
-    s32 yaw;
-} SpinningSceneryPlacement;
-_Static_assert(sizeof(SpinningSceneryPlacement) == 16,
-               "SpinningSceneryPlacement must match the retail layout");
 extern SpinningSceneryPlacement g_SpinningSceneryPlacements[4];
 extern s32 g_StartGridSceneryAngle[];
 

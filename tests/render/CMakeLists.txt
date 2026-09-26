@@ -977,7 +977,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/include"
         ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
-target_link_libraries(shuttle_scenery_init_tests PRIVATE psyz)
+target_link_libraries(shuttle_scenery_init_tests PRIVATE psyz rage-data)
 add_test(NAME shuttle_scenery_init COMMAND shuttle_scenery_init_tests)
 set_tests_properties(shuttle_scenery_init PROPERTIES LABELS functional)
 
@@ -995,7 +995,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/include"
         ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
-target_link_libraries(shuttle_scenery_playback_tests PRIVATE psyz)
+target_link_libraries(shuttle_scenery_playback_tests PRIVATE psyz rage-data)
 add_test(NAME shuttle_scenery_playback COMMAND shuttle_scenery_playback_tests)
 set_tests_properties(shuttle_scenery_playback PROPERTIES LABELS functional)
 
@@ -1031,7 +1031,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/include"
         ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
-target_link_libraries(spinning_scenery_tests PRIVATE psyz)
+target_link_libraries(spinning_scenery_tests PRIVATE psyz rage-data)
 add_test(NAME spinning_scenery COMMAND spinning_scenery_tests)
 set_tests_properties(spinning_scenery PROPERTIES LABELS functional)
 
@@ -2112,3 +2112,25 @@ target_link_libraries(client_assets_tests PRIVATE rage-data rage-rmesh)
 target_compile_options(client_assets_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 add_test(NAME client_assets COMMAND client_assets_tests)
 set_tests_properties(client_assets PROPERTIES LABELS unit)
+
+add_executable(client_world_tests ${CMAKE_SOURCE_DIR}/tests/render/client_world_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/client_world.c ${CMAKE_SOURCE_DIR}/src/port/native_visibility.c)
+target_include_directories(client_world_tests PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/port)
+target_link_libraries(client_world_tests PRIVATE rage-render-world rage-data)
+target_compile_options(client_world_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+add_test(NAME client_world COMMAND client_world_tests)
+set_tests_properties(client_world PROPERTIES LABELS unit)
+
+add_executable(shuttle_tests ${CMAKE_SOURCE_DIR}/tests/render/shuttle_tests.c)
+target_include_directories(shuttle_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(shuttle_tests PRIVATE rage-data)
+target_compile_options(shuttle_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+add_test(NAME shuttle COMMAND shuttle_tests)
+set_tests_properties(shuttle PROPERTIES LABELS unit)
+
+add_executable(spinners_tests ${CMAKE_SOURCE_DIR}/tests/render/spinners_tests.c)
+target_include_directories(spinners_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(spinners_tests PRIVATE rage-data)
+target_compile_options(spinners_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+add_test(NAME spinners COMMAND spinners_tests)
+set_tests_properties(spinners PROPERTIES LABELS unit)

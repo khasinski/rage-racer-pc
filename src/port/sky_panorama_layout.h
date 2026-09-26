@@ -12,6 +12,10 @@ enum {
     RAGE_SKY_PANORAMA_ROWS = 2,
 };
 
+/* Retail map is fixed; environment scripts select a pair of its rows.
+ * Invalid row/output preserves the destination. */
+int RetailSkyLayout(RageSkyPanoramaLayout *out, int rowBase);
+
 /* Resolves and copies authored selection. No pointers into game state survive. */
 void RageSkyCapturePanoramaLayout(RageSkyPanoramaLayout *out,
     const int16_t map[RAGE_SKY_MAP_ROWS][RAGE_SKY_MAP_COLUMNS], int rowBase);

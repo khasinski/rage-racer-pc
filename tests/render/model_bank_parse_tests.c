@@ -1,4 +1,5 @@
 #include "game/model_bank.h"
+#include "game/course_objects.h"
 #include "game/vector.h"
 #include <stdio.h>
 #include <string.h>
@@ -106,6 +107,22 @@ CHECK(!ReadCourseBank((const void *)&course, 48, &bank));
 CHECK(!ReadCourseBank(NULL, sizeof(course), &bank));
 CHECK(!ReadCourseBank((const void *)&course, sizeof(course), NULL));
 CHECK(memcmp(&bank, &savedCourse, sizeof(bank)) == 0);
+    struct { u32 count; CourseObject items[2]; } decorations = {2, {{.modelId = 0}, {.modelId = -1}}};
+    CourseObjects objects;
+    CHECK(ReadCourseObjects(&decorations, sizeof(decorations), 1, &objects));
+    CHECK(objects.count == 2 && objects.items == decorations.items);
+    const CourseObjects savedObjects = objects;
+    decorations.items[1].modelId = 1;
+    CHECK(!ReadCourseObjects(&decorations, sizeof(decorations), 1, &objects));
+    decorations.items[1].modelId = -2;
+    CHECK(!ReadCourseObjects(&decorations, sizeof(decorations), 1, &objects));
+    decorations.items[1].modelId = -1;
+    decorations.items[1].flags = 16;
+    CHECK(!ReadCourseObjects(&decorations, sizeof(decorations), 1, &objects));
+    CHECK(!ReadCourseObjects(&decorations, 4, 1, &objects));
+    CHECK(!ReadCourseObjects(NULL, sizeof(decorations), 1, &objects));
+    CHECK(!ReadCourseObjects(&decorations, sizeof(decorations), 1, NULL));
+    CHECK(memcmp(&savedObjects, &objects, sizeof(objects)) == 0);
 return 0;
 
 

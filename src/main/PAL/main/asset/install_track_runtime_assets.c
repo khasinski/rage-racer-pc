@@ -9,36 +9,7 @@
 
 #include <stdio.h>
 
-enum {
-    TRACK_RENDER_CAR_MODEL_COUNT = 11,
-    COURSE_OBJECT_KNOWN_FLAGS =
-        COURSE_OBJECT_ALTERNATE_NORMAL |
-        COURSE_OBJECT_ALTERNATE_ENVIRONMENT_4 |
-        COURSE_OBJECT_ENVIRONMENT_4 |
-        COURSE_OBJECT_BLINK_ENVIRONMENT_4,
-};
-
-static s32 IsValidCourseObjectTable(const CourseObjectTable *table,
-                                    size_t size, s32 modelCount) {
-    u32 i;
-
-    if (size < offsetof(CourseObjectTable, objects) ||
-        table->count >
-            (size - offsetof(CourseObjectTable, objects)) /
-                sizeof(table->objects[0])) {
-        return 0;
-    }
-    for (i = 0; i < table->count; i++) {
-        const CourseObject *object = &table->objects[i];
-
-        if ((object->modelId != -1 &&
-             (object->modelId < 0 || object->modelId >= modelCount)) ||
-            (object->flags & ~COURSE_OBJECT_KNOWN_FLAGS) != 0) {
-            return 0;
-        }
-    }
-    return 1;
-}
+enum { TRACK_RENDER_CAR_MODEL_COUNT = 11 };
 
 /* Every check below returns through here, so a pack the game refuses can
  * say which check refused it when the asset trace is on. */
@@ -64,6 +35,7 @@ s32 InstallTrackRuntimeAssetPack(const void *data, size_t size, s32 assetIndex,
                                  s32 useSeriesCamera) {
     const CourseModelAssetHeader *courseModels;
     const CourseObjectTable *courseObjects;
+    CourseObjects checkedObjects;
     SceneAssetBlock blocks[SCENE_ASSET_BLOCK_COUNT];
 
     if (!IsTrackRuntimeAssetIndex(assetIndex) || data == NULL ||
@@ -97,9 +69,9 @@ s32 InstallTrackRuntimeAssetPack(const void *data, size_t size, s32 assetIndex,
             courseModels, blocks[SCENE_COURSE_MODELS].size)) {
         return RejectTrackRuntimePack(assetIndex, "course models");
     }
-    if (!IsValidCourseObjectTable(
+    if (!ReadCourseObjects(
             courseObjects, blocks[SCENE_COURSE_OBJECTS].size,
-            courseModels->modelCount)) {
+            courseModels->modelCount, &checkedObjects)) {
         return RejectTrackRuntimePack(assetIndex, "course object table");
     }
     if (!IsValidModelBankAsset(
@@ -171,8 +143,8 @@ s32 InstallTrackRuntimeAssetPack(const void *data, size_t size, s32 assetIndex,
     }
     g_TrackRenderTable = blocks[SCENE_RENDER_TABLE].data;
     g_EnvPaletteTable = blocks[SCENE_ENVIRONMENT_PALETTE].data;
-    g_CourseObjects = courseObjects->objects;
-    g_CourseObjectCount = (s32)courseObjects->count;
+    g_CourseObjects = (CourseObject *)checkedObjects.items;
+    g_CourseObjectCount = (s32)checkedObjects.count;
     TrackAssetIdentitySet(assetIndex);
     return 1;
 }

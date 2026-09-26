@@ -4,7 +4,7 @@
 #include <SDL3/SDL.h>
 #include <stdio.h>
 
-#include "render/render_world.h"
+#include "modern_native_source.h"
 
 int ModernNativeGpuInit(SDL_GPUDevice *device, int linearTextureFilter);
 void ModernNativeGpuShutdown(void);

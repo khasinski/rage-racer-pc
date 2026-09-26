@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "game/track.h"
+#include "game/course_objects.h"
 #include "game/environment.h"
 #include "game/track_camera_internal.h"
 
@@ -13,27 +14,6 @@ static inline s32 ModelOrFallback(s32 modelId, s32 modelCount) {
                ? modelId
                : COURSE_MODEL_FALLBACK;
 }
-
-typedef struct CourseObject {
-    s16 modelId;
-    s16 rotationY;
-    s32 x;
-    s32 y;
-    s32 z;
-    s32 flags;
-} CourseObject;
-
-typedef enum CourseObjectFlags {
-    COURSE_OBJECT_ALTERNATE_NORMAL = 1 << 0,
-    COURSE_OBJECT_ALTERNATE_ENVIRONMENT_4 = 1 << 1,
-    COURSE_OBJECT_ENVIRONMENT_4 = 1 << 2,
-    COURSE_OBJECT_BLINK_ENVIRONMENT_4 = 1 << 3,
-} CourseObjectFlags;
-
-typedef struct CourseObjectTable {
-    u32 count;
-    CourseObject objects[1];
-} CourseObjectTable;
 
 typedef struct StartGridSceneryStep {
     s16 x;

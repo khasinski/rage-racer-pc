@@ -216,9 +216,13 @@ set(RAGE_DATA_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/asset/read_track_images.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/asset/read_track_look.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/asset/read_model_bank.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/asset/read_course_objects.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/asset/read_terrain_bank.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/track/read_environment_script.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/track/environment.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/track/shuttle.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/track/spinners.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/track/scenery_data.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/asset/race_data.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/asset/race_grid.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/asset/race_disc.c
@@ -278,6 +282,11 @@ add_library(rage-rmesh STATIC
 target_include_directories(rage-rmesh PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 add_executable(rage-mesh-obj tools/rage_mesh_obj.c)
 target_link_libraries(rage-mesh-obj PRIVATE rage-rmesh)
+if(NOT WIN32)
+    # Minimal networking test client for rage-racer-server (see
+    # docs/multiplayer.md); sockets only, no game/renderer dependency.
+    add_executable(rage-mp-test-client tools/rage_mp_test_client.c)
+endif()
 set(RAGE_HAS_AUTHORED_CARS 0)
 option(RAGE_EMBED_AUTHORED_CARS "Embed optional local authored car models" ON)
 if(RAGE_EMBED_AUTHORED_CARS AND
@@ -473,8 +482,10 @@ if(RAGE_BUILD_PORT)
         src/port/car_parts.c
         src/port/race_view.c
         src/port/client_race.c
+        src/port/client_world.c
         src/port/client_assets.c
         src/port/client_frame.c
+        src/port/modern/client_frame_gpu.c
         src/port/race_hud.c
         src/port/sky_panorama_layout.c
         src/port/track_asset_identity.c
