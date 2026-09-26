@@ -16,7 +16,8 @@ void SeedFlybyScenery(void) {
     }
     series = g_RaceSeries != 0;
     keyframeIndex = g_FlybySceneryData->firstKeyframe[series][0];
-    randomLap = Random15();
+    u32 random = g_RandomSeed;
+    randomLap = RandomNext(&random);
 
     g_FlybyScenery.lap = g_LapCount > 0
         ? (s16)(randomLap % g_LapCount + 1)

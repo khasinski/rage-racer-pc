@@ -136,6 +136,37 @@ void RenderWorldBeginFrame(RenderWorld *world, uint64_t frame) {
     world->instanceCount = 0;
     world->overflowCount = 0;
     world->spotLightCount = 0;
+    world->explicitCars = 0;
+}
+
+static int CarFieldInstance(const RenderMeshInstance *instance, uint32_t limit) {
+    return instance->entity < limit && instance->pass == RAGE_RENDER_PASS_MAIN &&
+        (instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
+         instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1);
+}
+
+int RenderWorldCarFieldFits(const RenderWorld *world, uint32_t entityLimit, uint32_t count) {
+    if (!world || world->instanceCount > world->instanceCapacity ||
+        (!world->instances && (world->instanceCount || count))) return 0;
+    uint32_t kept = 0;
+    for (uint32_t i = 0; i < world->instanceCount; ++i)
+        kept += !CarFieldInstance(&world->instances[i], entityLimit);
+    return count <= world->instanceCapacity - kept;
+}
+
+int RenderWorldBeginCarField(RenderWorld *world, uint32_t entityLimit) {
+    if (!world || world->instanceCount > world->instanceCapacity ||
+        (world->instanceCount && !world->instances)) return 0;
+    uint32_t destination = 0;
+    for (uint32_t source = 0; source < world->instanceCount; ++source) {
+        const RenderMeshInstance *instance = &world->instances[source];
+        if (CarFieldInstance(instance, entityLimit)) continue;
+        if (source != destination) world->instances[destination] = *instance;
+        ++destination;
+    }
+    world->instanceCount = destination;
+    world->explicitCars = 1;
+    return 1;
 }
 
 int RenderWorldSubmitSpotLight(RenderWorld *world, const SpotLight *light) {

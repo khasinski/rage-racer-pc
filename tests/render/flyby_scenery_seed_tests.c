@@ -11,11 +11,7 @@ const SceneryMotionData *g_FlybySceneryData;
 FlybySceneryState g_FlybyScenery;
 const SceneryMotionKeyframe *g_FlybySceneryKeyframe;
 
-static s32 g_RandomValue;
-
-s32 Random15(void) {
-    return g_RandomValue;
-}
+u32 g_RandomSeed;
 
 typedef struct FlybyFixture {
     s16 triggerSection[2][2];
@@ -48,11 +44,12 @@ int main(void) {
                 memset(&g_FlybyScenery, 0x7F, sizeof(g_FlybyScenery));
                 g_RaceSeries = series == 0 ? 0 : 7;
                 g_LapCount = lapCounts[count];
-                g_RandomValue = randomValues[random];
+                g_RandomSeed = (((u32)randomValues[random] << 16) - 0x3039u) * 0xEEB9EB65u;
+                const u32 seed = g_RandomSeed;
 
                 SeedFlybyScenery();
 
-                if (g_FlybyScenery.lap !=
+                if (g_RandomSeed != seed || g_FlybyScenery.lap !=
                         (lapCounts[count] > 0
                              ? randomValues[random] % lapCounts[count] + 1
                              : 1) ||

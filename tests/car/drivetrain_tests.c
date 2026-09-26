@@ -25,21 +25,24 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg);
 
 /* The tables the drivetrain reads. */
 GameCarSpec *g_CarSpec;
-GearCurveRow g_GearTorqueCurve[8];
-s16 g_TorqueBandEnd[CAR_TORQUE_BAND_COUNT];
-s16 g_TorqueLossBandEnd[CAR_TORQUE_BAND_COUNT];
+CarPerformance g_CarPerformance;
 const GameTrackPoint *g_TrackPoints;
 s32 g_TrackPointCount;
 const GameTrackArcCenter *g_TrackArcCenters;
 s16 g_RacePhase;
-s32 g_RoadGrade;
-s16 g_DragScale;
-s16 g_GripLossTimer;
-s32 g_DriveBoostTimer;
-s32 g_StandingStartSpin;
-s32 g_ShiftTargetRpm;
-s32 g_ShiftTargetSpeed;
 u8 g_PadType;
+u32 g_RandomSeed;
+LaunchSpeedThreshold g_LaunchSpeedThresholds[CAR_LAUNCH_THRESHOLD_COUNT];
+
+int StepCarMotion(PlayerCarRuntime *car, const GameCarSpec *spec,
+                  const TrackRoute *route, const LaunchSpeedThreshold *threshold,
+                  u32 *random) {
+    (void)car; (void)spec; (void)route; (void)threshold; (void)random;
+    return 0;
+}
+void SetIndexedEffectVoice(s32 voice, s32 pitch, s32 level) {
+    (void)voice; (void)pitch; (void)level;
+}
 
 /* Where the drivetrain hands off once it has worked out the forces. What
  * those do with the result is their own business, not this test's. */
@@ -48,19 +51,20 @@ static int s_launchCalls;
 static int s_airborneCalls;
 static int s_standingStartCalls;
 
-void UpdateCarDriving(PlayerCarRuntime *car) {
+void PlayCarDrivingVoice(const PlayerCarRuntime *car, const GameCarSpec *spec) {
+    (void)spec;
     (void)car;
     s_drivingCalls++;
 }
-void UpdateCarLaunch(PlayerCarRuntime *car) {
+void PlayCarLaunchVoice(const PlayerCarRuntime *car) {
     (void)car;
     s_launchCalls++;
 }
-void UpdateCarAirborne(PlayerCarRuntime *car) {
+void PlayCarAirborneVoice(const PlayerCarRuntime *car) {
     (void)car;
     s_airborneCalls++;
 }
-void UpdateCarStandingStart(PlayerCarRuntime *car) {
+void PlayCarStandingStartVoice(const PlayerCarRuntime *car) {
     (void)car;
     s_standingStartCalls++;
 }
@@ -91,7 +95,7 @@ static void BuildSpec(void) {
     int i;
 
     memset(&s_spec, 0, sizeof(s_spec));
-    memset(g_GearTorqueCurve, 0, sizeof(g_GearTorqueCurve));
+    memset(g_CarPerformance.curves, 0, sizeof(g_CarPerformance.curves));
 
     s_spec.topGear = 6;
     s_spec.redline = 8000;
@@ -118,8 +122,8 @@ static void BuildSpec(void) {
         s_spec.torqueBand.values[i] = i * 1000;
     }
     for (i = 0; i < 8; i++) {
-        g_TorqueBandEnd[i] = (s16)(i + 2);
-        g_TorqueLossBandEnd[i] = (s16)(i + 2);
+        g_CarPerformance.torqueBands[i] = (s16)(i + 2);
+        g_CarPerformance.lossBands[i] = (s16)(i + 2);
     }
     for (i = 0; i < 9; i++) {
         s_spec.torqueLossRpm[i] = i * 1000;
@@ -127,12 +131,12 @@ static void BuildSpec(void) {
     for (i = 0; i < 10; i++) {
         s_spec.torqueLossValue[i] = i * 10;
     }
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i <= CAR_FORWARD_GEAR_COUNT; i++) {
         int slot;
         for (slot = 0; slot < 16; slot++) {
             /* Each gear pulls differently, so reading the wrong gear's
              * curve is visible. */
-            g_GearTorqueCurve[i].values[slot] = slot * 1000 * (i + 1);
+            g_CarPerformance.curves[i].values[slot] = slot * 1000 * (i + 1);
         }
     }
     g_CarSpec = &s_spec;
@@ -154,10 +158,10 @@ static void PlaceCar(void) {
     s_car.drive.drivetrainCoupled = 1;
 
     g_RacePhase = 2;
-    g_RoadGrade = 0;
+    s_car.drive.roadGrade = 0;
     g_PadType = 0;
-    g_ShiftTargetRpm = 0;
-    g_ShiftTargetSpeed = 0;
+    s_car.drive.shiftTargetRpm = 0;
+    s_car.drive.shiftTargetSpeed = 0;
     s_drivingCalls = 0;
     s_launchCalls = 0;
     s_airborneCalls = 0;
@@ -237,7 +241,7 @@ static void ShiftInterpolationTests(void) {
     s_car.drive.gear = 3;
     s_car.drive.gearDisp = 3; /* not shifting: the target is left alone */
     s_car.drive.shiftRpmDelta = 200;
-    g_ShiftTargetRpm = 5000;
+    s_car.drive.shiftTargetRpm = 5000;
     UpdateCarDrivetrain(&s_car);
     Check(s_car.drive.jumpTimer == 9, "the shift timer runs down",
           s_car.drive.jumpTimer, 9);
@@ -253,7 +257,7 @@ static void ShiftInterpolationTests(void) {
     s_car.drive.gear = 3;
     s_car.drive.gearDisp = 3;
     s_car.drive.shiftRpmDelta = 200;
-    g_ShiftTargetRpm = 5000;
+    s_car.drive.shiftTargetRpm = 5000;
     UpdateCarDrivetrain(&s_car);
     late = s_car.drive.engineRpm;
     if (!(late < early && late > 5000)) {
@@ -268,7 +272,7 @@ static void ShiftInterpolationTests(void) {
     s_car.drive.jumpTimer = 0;
     s_car.drive.gear = 3;
     s_car.drive.gearDisp = 3;
-    g_ShiftTargetRpm = 5000;
+    s_car.drive.shiftTargetRpm = 5000;
     UpdateCarDrivetrain(&s_car);
     Check(s_car.drive.jumpTimer == 0, "the timer does not go negative",
           s_car.drive.jumpTimer, 0);
@@ -281,10 +285,10 @@ static void ShiftInterpolationTests(void) {
     s_car.speed = 5000;
     s_car.drive.gear = 3;
     s_car.drive.gearDisp = 2;
-    g_ShiftTargetRpm = 0;
+    s_car.drive.shiftTargetRpm = 0;
     UpdateCarDrivetrain(&s_car);
-    Check(g_ShiftTargetRpm == (((5000 * 0xA0) / 1168) * 0x2710) / 1000,
-          "the shift target follows road speed", g_ShiftTargetRpm,
+    Check(s_car.drive.shiftTargetRpm == (((5000 * 0xA0) / 1168) * 0x2710) / 1000,
+          "the shift target follows road speed", s_car.drive.shiftTargetRpm,
           (((5000 * 0xA0) / 1168) * 0x2710) / 1000);
 
     /* With the box caught up it is left where it was. */
@@ -294,10 +298,10 @@ static void ShiftInterpolationTests(void) {
     s_car.speed = 5000;
     s_car.drive.gear = 3;
     s_car.drive.gearDisp = 3;
-    g_ShiftTargetRpm = 1234;
+    s_car.drive.shiftTargetRpm = 1234;
     UpdateCarDrivetrain(&s_car);
-    Check(g_ShiftTargetRpm == 1234, "a caught-up box keeps its target",
-          g_ShiftTargetRpm, 1234);
+    Check(s_car.drive.shiftTargetRpm == 1234, "a caught-up box keeps its target",
+          s_car.drive.shiftTargetRpm, 1234);
 }
 
 /*
@@ -316,7 +320,7 @@ static void GradePenaltyTests(void) {
     s_car.drive.manual = 1;
     s_car.drive.gear = 6;
     s_car.drive.gearDisp = 5;
-    g_RoadGrade = 0;
+    s_car.drive.roadGrade = 0;
     UpdateCarDrivetrain(&s_car);
     level = s_car.drive.engineLoad;
 
@@ -325,7 +329,7 @@ static void GradePenaltyTests(void) {
     s_car.drive.manual = 1;
     s_car.drive.gear = 3;
     s_car.drive.gearDisp = 2;
-    g_RoadGrade = -1200;
+    s_car.drive.roadGrade = -1200;
     UpdateCarDrivetrain(&s_car);
     third = s_car.drive.engineLoad;
 
@@ -334,7 +338,7 @@ static void GradePenaltyTests(void) {
     s_car.drive.manual = 1;
     s_car.drive.gear = 4;
     s_car.drive.gearDisp = 3;
-    g_RoadGrade = -1200;
+    s_car.drive.roadGrade = -1200;
     UpdateCarDrivetrain(&s_car);
     fourth = s_car.drive.engineLoad;
 
@@ -343,7 +347,7 @@ static void GradePenaltyTests(void) {
     s_car.drive.manual = 1;
     s_car.drive.gear = 5;
     s_car.drive.gearDisp = 4;
-    g_RoadGrade = -1200;
+    s_car.drive.roadGrade = -1200;
     UpdateCarDrivetrain(&s_car);
     fifth = s_car.drive.engineLoad;
 
@@ -352,7 +356,7 @@ static void GradePenaltyTests(void) {
     s_car.drive.manual = 1;
     s_car.drive.gear = 6;
     s_car.drive.gearDisp = 5;
-    g_RoadGrade = -1200;
+    s_car.drive.roadGrade = -1200;
     UpdateCarDrivetrain(&s_car);
     sixth = s_car.drive.engineLoad;
 
@@ -361,7 +365,7 @@ static void GradePenaltyTests(void) {
     s_car.drive.manual = 1;
     s_car.drive.gear = 6;
     s_car.drive.gearDisp = 5;
-    g_RoadGrade = 1200;
+    s_car.drive.roadGrade = 1200;
     UpdateCarDrivetrain(&s_car);
     downhill = s_car.drive.engineLoad;
 
@@ -434,8 +438,8 @@ static void TorqueBandTests(void) {
     /* An empty band deliberately falls back to wheel torque minus drivetrain
      * load instead of inventing a zero interpolation. */
     BuildSpec();
-    g_TorqueBandEnd[2] = 4;
-    g_TorqueBandEnd[3] = 4;
+    g_CarPerformance.torqueBands[2] = 4;
+    g_CarPerformance.torqueBands[3] = 4;
     PlaceCar();
     s_car.drive.engineRpm = 3500;
     s_car.drive.drivetrainTorque = -200000;
@@ -452,8 +456,8 @@ static void TorqueBandTests(void) {
         BuildSpec();
         PlaceCar();
         s_car.drive.engineRpm = -1000;
-        ReadCarEngineTorque(&s_car.drive, &s_spec,
-                            g_GearTorqueCurve[1].values,
+        ReadCarEngineTorque(&s_car.drive, &s_spec, &g_CarPerformance,
+                            g_CarPerformance.curves[1].values,
                             &netTorque, &bandScale);
         Check(netTorque == 123, "negative RPM uses the first torque band",
               netTorque, 123);
@@ -525,10 +529,10 @@ static void GearBoundsTests(void) {
 
     BuildSpec();
     PlaceCar();
-    g_DragScale = 0;
+    s_car.drive.dragScale = 0;
     UpdateCarDrivetrain(&s_car);
-    Check(g_DragScale == 1000, "zero drag scale is repaired",
-          g_DragScale, 1000);
+    Check(s_car.drive.dragScale == 1000, "zero drag scale is repaired",
+          s_car.drive.dragScale, 1000);
 
     BuildSpec();
     PlaceCar();
@@ -537,12 +541,13 @@ static void GearBoundsTests(void) {
     s_car.drive.jumpTimer = 10;
     s_car.drive.gearDisp = 2;
     UpdateCarDrivetrain(&s_car);
-    Check(g_ShiftTargetRpm == (((2000 * 0xA0) / 1168) * 0x2710),
-          "zero shift ratio uses a unit divisor", g_ShiftTargetRpm,
+    Check(s_car.drive.shiftTargetRpm == (((2000 * 0xA0) / 1168) * 0x2710),
+          "zero shift ratio uses a unit divisor", s_car.drive.shiftTargetRpm,
           (((2000 * 0xA0) / 1168) * 0x2710));
 }
 
 static void MissingTrackTests(void) {
+    const DriveContext context = {0};
     CarDrivetrainLoads loads;
 
     BuildSpec();
@@ -551,7 +556,7 @@ static void MissingTrackTests(void) {
     g_TrackPointCount = 0;
     s_car.drive.steeringGrip = 20;
     s_car.drive.steeringGripResponse = 1000;
-    UpdateCarSteeringGrip(&s_car, &s_spec, 100);
+    UpdateCarSteeringGrip(&s_car, &s_spec, &context, 100);
     Check(s_car.drive.steeringGrip == 60,
           "missing track keeps neutral steering grip",
           s_car.drive.steeringGrip, 60);
@@ -559,19 +564,20 @@ static void MissingTrackTests(void) {
     s_car.drive.motionState = CAR_MOTION_TAKEOFF;
     s_car.drive.trackCurveMode = 1;
     s_car.drive.trackCurveBias = 7;
-    UpdateCarSteeringGrip(&s_car, &s_spec, 0);
+    UpdateCarSteeringGrip(&s_car, &s_spec, &context, 0);
     Check(s_car.drive.trackCurveBias == 7,
           "missing track does not change curve bias",
           s_car.drive.trackCurveBias, 7);
 
-    g_RoadGrade = 123;
-    loads = CalculateCarDrivetrainLoads(&s_car, &s_spec, 0, 0, 0);
+    s_car.drive.roadGrade = 123;
+    loads = CalculateCarDrivetrainLoads(&s_car, &s_spec, &context, 0, 0, 0);
     (void)loads;
-    Check(g_RoadGrade == 0, "missing track clears road grade",
-          g_RoadGrade, 0);
+    Check(s_car.drive.roadGrade == 0, "missing track clears road grade",
+          s_car.drive.roadGrade, 0);
 }
 
 static void ExtremeLoadArithmeticTests(void) {
+    const DriveContext context = {.racing = 1, .digitalSteering = 1};
     CarDrivetrainLoads loads;
 
     BuildSpec();
@@ -584,16 +590,16 @@ static void ExtremeLoadArithmeticTests(void) {
     s_car.drive.steeringGripResponse = INT_MAX;
     s_spec.speedDragDivisor = 1;
     s_spec.negconSteeringAssistScale = INT16_MAX;
-    g_DriveBoostTimer = INT_MAX;
-    g_DragScale = 1;
+    s_car.drive.driveBoostTimer = INT_MAX;
+    s_car.drive.dragScale = 1;
 
     loads = CalculateCarDrivetrainLoads(
-        &s_car, &s_spec, INT_MAX, INT_MAX, INT_MAX);
+        &s_car, &s_spec, &context, INT_MAX, INT_MAX, INT_MAX);
     (void)loads;
-    Check(g_DragScale == 1000, "extreme loads reset drag scale",
-          g_DragScale, 1000);
-    Check(g_DriveBoostTimer == INT_MAX - 1,
-          "extreme loads advance boost timer", g_DriveBoostTimer,
+    Check(s_car.drive.dragScale == 1000, "extreme loads reset drag scale",
+          s_car.drive.dragScale, 1000);
+    Check(s_car.drive.driveBoostTimer == INT_MAX - 1,
+          "extreme loads advance boost timer", s_car.drive.driveBoostTimer,
           INT_MAX - 1);
 }
 
@@ -606,8 +612,8 @@ static void ExtremeTorqueArithmeticTests(void) {
     s_car.drive.engineRpm = INT_MAX;
     netTorque = 0;
     bandScale = -1;
-    ReadCarEngineTorque(&s_car.drive, &s_spec,
-                        g_GearTorqueCurve[1].values,
+    ReadCarEngineTorque(&s_car.drive, &s_spec, &g_CarPerformance,
+                        g_CarPerformance.curves[1].values,
                         &netTorque, &bandScale);
     Check(netTorque == 7200, "rev limiter keeps 32-bit arithmetic",
           netTorque, 7200);
@@ -621,16 +627,16 @@ static void ExtremeTorqueArithmeticTests(void) {
     s_spec.torqueBand.values[1] = INT_MAX;
     s_spec.torqueLossRpm[0] = INT_MIN;
     s_spec.torqueLossRpm[1] = INT_MAX;
-    g_GearTorqueCurve[1].values[0] = INT_MAX;
-    g_GearTorqueCurve[1].values[1] = INT_MAX;
+    g_CarPerformance.curves[1].values[0] = INT_MAX;
+    g_CarPerformance.curves[1].values[1] = INT_MAX;
     s_spec.torqueLossValue[0] = INT_MAX;
     s_spec.torqueLossValue[1] = INT_MAX;
-    g_TorqueBandEnd[0] = 1;
-    g_TorqueLossBandEnd[0] = 1;
+    g_CarPerformance.torqueBands[0] = 1;
+    g_CarPerformance.lossBands[0] = 1;
     netTorque = 123;
     bandScale = -1;
-    ReadCarEngineTorque(&s_car.drive, &s_spec,
-                        g_GearTorqueCurve[1].values,
+    ReadCarEngineTorque(&s_car.drive, &s_spec, &g_CarPerformance,
+                        g_CarPerformance.curves[1].values,
                         &netTorque, &bandScale);
     Check(netTorque == 0, "torque interpolation wraps its products",
           netTorque, 0);
@@ -657,7 +663,7 @@ static void ExtremeDrivetrainArithmeticTests(void) {
     s_car.drive.acceleratorInput.value = 0x100;
     s_car.drive.brakeInput = INT16_MAX;
     s_car.drive.motionState = CAR_MOTION_TAKEOFF;
-    g_DragScale = 1;
+    s_car.drive.dragScale = 1;
     UpdateCarDrivetrain(&s_car);
     Check(s_car.drive.engineRpm >= 0 &&
               s_car.drive.engineRpm <= 0x3A98,
@@ -699,9 +705,9 @@ static void ExtremeShiftArithmeticTests(void) {
     s_car.speed = INT_MAX;
     s_car.acceleration = INT_MAX;
     s_spec.gearRatio[6] = INT_MAX;
-    g_RoadGrade = INT_MIN;
+    s_car.drive.roadGrade = INT_MIN;
     acceleration = INT_MAX;
-    UpdateCarGearShiftState(&s_car, &s_spec, &acceleration);
+    UpdateCarGearShiftState(&s_car, &s_spec, s_car.drive.roadGrade, &acceleration);
     Check(s_car.drive.clutch == 10, "extreme shift engages the clutch",
           s_car.drive.clutch, 10);
     Check(acceleration == 0, "extreme shift clears initial acceleration",
@@ -712,9 +718,9 @@ static void ExtremeShiftArithmeticTests(void) {
     s_car.drive.gearDisp = s_car.drive.gear;
     s_car.drive.clutch = INT16_MAX;
     s_car.drive.shiftSpeedDelta = INT16_MAX;
-    g_ShiftTargetSpeed = INT_MIN;
+    s_car.drive.shiftTargetSpeed = INT_MIN;
     acceleration = 0;
-    UpdateCarGearShiftState(&s_car, &s_spec, &acceleration);
+    UpdateCarGearShiftState(&s_car, &s_spec, s_car.drive.roadGrade, &acceleration);
     Check(s_car.drive.clutch == INT16_MAX - 1,
           "extreme shift countdown advances", s_car.drive.clutch,
           INT16_MAX - 1);
@@ -746,3 +752,6 @@ int main(void) {
     printf("the drivetrain's tall gears and mid-shift behave as they shipped\n");
     return 0;
 }
+
+s32 SinAngle(s32 angle) { return rsin(angle); }
+s32 CosAngle(s32 angle) { return rcos(angle); }

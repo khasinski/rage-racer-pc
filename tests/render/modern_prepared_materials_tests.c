@@ -41,6 +41,9 @@ int main(void) {
     assert(definition.baseColorTexture.text == storage.baseColorTexture);
     assert(strcmp(definition.baseColorTexture.text, texture) == 0);
     assert(ModernPreparedMaterialsContains(&cache, &instance, 9, 3));
+    instance.assetSource = RENDER_ASSET_OWNED;
+    assert(!ModernPreparedMaterialsContains(&cache, &instance, 9, 3));
+    instance.assetSource = RENDER_ASSET_DEFAULT;
     instance.carPaintColor2 = 6;
     assert(!ModernPreparedMaterialsContains(&cache, &instance, 9, 3));
     instance.carPaintColor2 = 5;

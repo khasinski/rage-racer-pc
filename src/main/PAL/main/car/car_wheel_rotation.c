@@ -1,6 +1,5 @@
 #include "game/angle.h"
-#include "game/car.h"
-#include "game/car_internal.h"
+#include "game/car_control.h"
 #include "game/integer.h"
 
 enum {

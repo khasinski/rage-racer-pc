@@ -4,6 +4,13 @@
 #include <stddef.h>
 
 #include "common.h"
+#include "game/scene_asset.h"
+#include "game/image_asset.h"
+#include "game/track_images.h"
+#include "game/model_bank.h"
+#include "game/terrain_bank.h"
+#include "game/car_asset.h"
+#include "game/asset_index.h"
 #include "game/fmv.h"
 #include "game/visibility.h"
 #include "psyq/cd_location.h"
@@ -145,60 +152,14 @@ extern u8 *g_ImageBlockBuffer;
 extern size_t g_ImageBlockSize;
 extern size_t g_LoadBufferImageSize;
 
-/*
- * Index of the first entry of each variable-size family in that table. Read off
- * the retail path table and cross-checked against the 135-entry RAGE.BIN index
- * on the PAL disc.
- *
- * CAR_1ST / CAR_2ND: [0x0A] starts the model/image pair for the first car
- * variant; every following variant occupies the next pair.
- *
- * ROUND_SCREEN: [0x4A] = "\DATA\GP0.TMS". Six screens per series, the sixth
- * being GP10 / GP11, so LoadGrandPrixScreen wants base + series * 6 + class.
- *
- * TRACK_1ST / TRACK_2ND: [0x57] = "\PACK\BIG1.1ST", [0x58] its ".2ND" sibling.
- * Four courses (BIG, MID, HI, OVAL) x two packs = eight entries per class, so
- * both are indexed base + class * 8 + course-slot * 2. The slot must be 0..3,
- * not the menu's physical 0..7 selector. Six classes fill [0x57..0x86], which
- * is exactly the end of the table.
- */
-#define ASSET_CAR_1ST_BASE      0x0A
-#define ASSET_CAR_2ND_BASE      0x0B
-#define ASSET_ROUND_SCREEN_BASE 0x4A
-#define ASSET_TIME_ATTACK_ROUND_SCREEN 0x55
-#define ASSET_VOICE_BANK        0x56
-#define ASSET_TRACK_1ST_BASE    0x57
-#define ASSET_TRACK_2ND_BASE    0x58
-
-enum {
-    GAME_ASSET_COUNT = 135,
-    CAR_ASSETS_PER_VARIANT = 2,
-    TRACK_CLASS_COUNT = 6,
-    TRACK_COURSE_COUNT = 4,
-    TRACK_ASSETS_PER_CLASS = 8,
-    TRACK_ASSETS_PER_COURSE = 2,
-};
-
-static inline s32 CarVariantAssetIndex(s32 base, s32 variantIndex) {
-    return base + variantIndex * CAR_ASSETS_PER_VARIANT;
-}
-
-static inline s32 TrackCourseAssetIndex(s32 base, s32 classIndex,
-                                        s32 courseIndex) {
-    if ((u32)classIndex >= TRACK_CLASS_COUNT ||
-        (u32)courseIndex >= TRACK_COURSE_COUNT) {
-        return -1;
-    }
-    return base + classIndex * TRACK_ASSETS_PER_CLASS +
-           courseIndex * TRACK_ASSETS_PER_COURSE;
-}
+#include "game/asset_index.h"
 enum {
     ASSET_BOOT_LOGO = 0,
     ASSET_TITLE_SCREEN = 1,
     ASSET_BOOT_AUDIO_HEADER = 2,
     ASSET_BOOT_AUDIO_BODY = 3,
     ASSET_BOOT_RESOURCES = 4,
-    ASSET_BOOT_CAR_SCREEN = 5,
+
     ASSET_SAVE_SCREEN = 6,
     ASSET_SELECT_BGM = 7,
     ASSET_CAR_SELECT_SCREEN = 8,
@@ -301,14 +262,6 @@ typedef struct CarModelAsset {
     AssetAddress imageData;
 } CarModelAsset;
 
-#define SERIALIZED_CAR_MODEL_HEADER_SIZE 0x28
-
-typedef struct SerializedCarModelAssetHeader {
-    u8 metadata[0x20];
-    s32 modelOffset;
-    s32 imageOffset;
-} SerializedCarModelAssetHeader;
-
 _Static_assert(offsetof(CarModelAsset, serializedModelSize) == 0x18,
                "serialized car model size must remain at +0x18");
 _Static_assert(offsetof(CarModelAsset, modelData) == 0x20,
@@ -332,46 +285,8 @@ enum {
     CAR_ASSET_SLOT_COUNT = 2,
 };
 
-/* One VRAM upload record inside an image entry. UploadImageAsset walks the
- * outer entry chain; UploadImageEntry uploads its optional CLUT and pixels. */
-typedef struct GameImageBlock {
-    u32 size;   /* +0x00 block size in bytes, rounded down to a word */
-    u16 x;      /* +0x04 VRAM destination */
-    u16 y;      /* +0x06 */
-    u16 w;      /* +0x08 in 16-bit words */
-    u16 h;      /* +0x0A */
-    u8 pixels[4]; /* +0x0C */
-} GameImageBlock;
-
-typedef union GameImageAssetHeaderWord {
-    s32 size;
-    s32 flags;
-} GameImageAssetHeaderWord;
-
-typedef struct GameImageEntryHeader {
-    s32 reserved;
-    u32 flags;
-} GameImageEntryHeader;
-
-enum {
-    GAME_IMAGE_ENTRY_HAS_CLUT = 1 << 3
-};
-
-static inline const GameImageAssetHeaderWord *GetImageAssetHeaderWords(
-    const void *data) {
-    return (const GameImageAssetHeaderWord *)data;
-}
-
-static inline const GameImageEntryHeader *GetImageEntryHeader(
-    const void *data) {
-    return (const GameImageEntryHeader *)data;
-}
-
 /* The offset table every asset pack starts with; sub-blocks live at
  * base + offsets[n]. Some packs only ever use the first three. */
-typedef struct GameSceneAssetHeader {
-    s32 offsets[11];
-} GameSceneAssetHeader;
 
 typedef struct VoiceBankAssetHeader {
     s32 sharedHeaderSize;
@@ -410,7 +325,6 @@ static inline void *GetSceneAssetBlock(GameSceneAssetHeader *header,
  * bytes = 0x38000 exactly.
  * Not a pack size - the largest .1ST on the disc is 0xB5830.
  */
-#define TRACK_TEXTURE_SHADOW_SIZE 0x38000
 
 /*
  * The showroom's double-buffered car-model slot. LoadPendingCarModelAsset
@@ -492,53 +406,13 @@ const struct TrackRenderTable *CustomRivalPreviewRenderTable(void);
 /* Copy the live car model into g_AssetBase and re-register its bank there. */
 s32 RelocateCarModel(void);
 
-typedef struct ModelBankHeader {
-    u32 modelCount;
-    s32 tableOffset;
-    s32 normalsOffset;
-    s32 modelOffsets[1];
-} ModelBankHeader;
-
-#define GAME_MODEL_BANK_LIMIT 16
-#define GAME_MODEL_PER_BANK_LIMIT 256
-typedef struct NativeModelBank {
-    s32 modelCount;
-    const void *table;
-    const void *normals;
-    const void *models[GAME_MODEL_PER_BANK_LIMIT];
-} NativeModelBank;
-
 typedef struct OptionScreenAsset {
     s32 imageOffset;
     ModelBankHeader modelBank;
 } OptionScreenAsset;
 
-typedef struct TerrainCellAssetHeader {
-    s32 cellCount;
-    s32 facesOffset;
-    s32 cellOffsets[1];
-} TerrainCellAssetHeader;
-
-#define GAME_TERRAIN_CELL_LIMIT 2048
 extern const void *g_NativeTerrainCells[GAME_TERRAIN_CELL_LIMIT];
 
-typedef struct CourseModelAssetEntry {
-    s32 geometryOffset;
-    s32 vertexCount;
-    s32 modelOffset;
-} CourseModelAssetEntry;
-
-typedef struct CourseModelAssetHeader {
-    s32 modelCount;
-    CourseModelAssetEntry models[1];
-} CourseModelAssetHeader;
-
-#define GAME_COURSE_MODEL_LIMIT 256
-typedef struct NativeCourseModel {
-    const void *geometry;
-    s32 vertexCount;
-    const void *model;
-} NativeCourseModel;
 extern NativeCourseModel g_NativeCourseModels[GAME_COURSE_MODEL_LIMIT];
 
 /* Asset-installation helpers. RegisterModelBank/RegisterCourseModels validate
@@ -575,6 +449,10 @@ extern RECT g_CarImageRect;
 struct CarImageData;
 extern struct CarImageData *g_CarImageSlots[CAR_ASSET_SLOT_COUNT];
 extern CarModelAsset *g_CarModelSlots[CAR_ASSET_SLOT_COUNT];
+/* Slot owning this installed metadata, or -1; NULL is never an installed asset. */
+s32 FindCarModelSlot(const CarModelAsset *asset);
+/* Only installed slots qualify; a stale asset index alone is not ownership. */
+s32 FindCarAssetSlot(s32 assetIndex);
 /* Car asset index (GetCarAssetIndex) currently installed in each model slot,
  * or -1. The renderer keys imported meshes by this identity rather than by
  * the player's selection, which can change before the new model is shown. */

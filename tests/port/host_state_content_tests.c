@@ -103,13 +103,12 @@ extern OptionHintCaption g_OptionHintCaptions[MENU_OPTION_HINT_COUNT];
 extern DVec g_ClassRecordCellPoints[CLASS_RECORD_COUNT];
 extern ClassRecordSprite g_ClassRecordCellSprites[CLASS_RECORD_COUNT];
 extern Rgb g_ClassRecordNameSprites[CLASS_RECORD_COUNT + 1];
-extern int32_t g_RoadGrade;
-extern ContentCarPoint g_PlayerHullPoints[6];
-extern ContentCarPoint g_OpponentHullCorners[4];
-extern ContentCarPoint g_CarCornerOffsets[4];
+extern const ContentCarPoint g_PlayerHullPoints[6];
+extern const ContentCarPoint g_OpponentHullCorners[4];
+extern const ContentCarPoint g_CarCornerOffsets[4];
 extern ContentLaunchSpeedThreshold g_LaunchSpeedThresholds[5];
 extern GameSpriteDesc g_TachoNeedleSprite;
-extern ContentCarPoint g_CarCollisionCorners[4];
+extern const ContentCarPoint g_CarCollisionCorners[4];
 typedef struct StartGridSceneryStep {
     int16_t x;
     int16_t y;
@@ -210,8 +209,6 @@ static const HostStateBlob s_blobs[] = {
      sizeof(g_SpriteFontCells)},
     {"g_SpriteFontWidth", g_SpriteFontWidth,
      sizeof(g_SpriteFontWidth)},
-    {"g_RoadGrade", (const unsigned char *)&g_RoadGrade,
-     sizeof(g_RoadGrade)},
     {"g_PlayerHullPoints", (const unsigned char *)g_PlayerHullPoints,
      sizeof(g_PlayerHullPoints)},
     {"g_OpponentHullCorners", (const unsigned char *)g_OpponentHullCorners,
@@ -270,7 +267,7 @@ static const HostStateBlob s_blobs[] = {
 
 int main(void) {
     /* Folded from the canonical host constants alone. */
-    const unsigned long expected = 3352542640UL;
+    const unsigned long expected = 1801198032UL;
     unsigned long digest = 2166136261UL;
     unsigned long bytes = 0;
     const char *trace = getenv("RAGE_HOST_STATE_TRACE");

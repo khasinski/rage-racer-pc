@@ -1,7 +1,6 @@
 #include "game/car.h"
-#include "game/car_internal.h"
+#include "game/rival.h"
 #include "game/integer.h"
-#include "game/race.h"
 #include "game/track.h"
 
 enum {
@@ -37,19 +36,11 @@ static void SetRivalEngineRpmLow(GameCarRuntime *car, s16 rpm) {
                            (u16)rpm);
 }
 
-void InitRivalCarAi(GameCarRuntime *car,
-    s32 gridPosition,
-                    const RaceGridSlot *grid) {
-    s32 configIndex = grid[gridPosition];
-    s32 series = g_RaceSeries != 0;
-    const TrackRivalAiConfig *config;
-
-    if ((u32)configIndex >= TRACK_RIVAL_COUNT) {
-        configIndex = 0;
-    }
-    config = &g_TrackEventData->rivalAiConfigs[
-        series][configIndex];
-
+void ConfigureRival(GameCarRuntime *car, const TrackRivalAiConfig *configs, s32 model,
+                      s32 trackLength, s32 gridPosition) {
+    if (car == NULL || configs == NULL) return;
+    if ((u32)model >= TRACK_RIVAL_COUNT) model = 0;
+    const TrackRivalAiConfig *config = &configs[model];
     car->targetSpeed = WrapSigned16(
         DecodeClampedConfigValue((u16)config->speed, 0, INT16_MAX) *
         TARGET_SPEED_SCALE / TARGET_SPEED_SOURCE_SCALE);
@@ -73,10 +64,10 @@ void InitRivalCarAi(GameCarRuntime *car,
     car->accelerationLimit =
         car->targetSpeed * ACCELERATION_LIMIT_PERCENT / PERCENT_SCALE;
     car->gridTargetProgress =
-        g_TrackLength / INITIAL_GRID_TARGET_LAP_DIVISOR;
+        trackLength / INITIAL_GRID_TARGET_LAP_DIVISOR;
     if (gridPosition >= FRONT_GRID_SLOT_COUNT) {
         car->gridTargetProgress +=
-            (g_TrackLength / TRAILING_GRID_SPACING_DIVISOR) *
+            (trackLength / TRAILING_GRID_SPACING_DIVISOR) *
             (gridPosition - FRONT_GRID_SLOT_COUNT);
     }
 }

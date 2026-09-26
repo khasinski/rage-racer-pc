@@ -15,8 +15,8 @@
 #include "game/car_collision_internal.h"
 #include "game/car_motion_internal.h"
 #include "game/integer.h"
-#include "game/track.h"
-#include "psyq/gte.h"
+#include "game/hull_rotation.h"
+#include <stddef.h>
 
 enum {
     /* Cars further apart than this along or across the track cannot touch. */
@@ -31,29 +31,15 @@ enum {
  * however far `source` is from the car the frame belongs to. */
 static void TransformCarHull(const GameCarRuntime *source,
                              CarCollisionPoint *corners, s32 offsetX,
-                             s32 offsetZ) {
-    SVECTOR rotation;
-    SVECTOR input;
-    VECTOR transformed;
-    Matrix matrix;
+                             s32 offsetZ, const CarHullPoint *hull) {
+    const HullAxes axes = BuildHullAxes(source->bodyPitch, source->bodyYaw, source->bodyRoll);
     s32 corner;
-
-    rotation.vx = WrapSigned16(source->bodyPitch);
-    rotation.vy = WrapSigned16(source->bodyYaw);
-    rotation.vz = WrapSigned16(source->bodyRoll);
-    rotation.pad = 0;
-    RotMatrix(&rotation, &matrix);
-    SetRotMatrix(&matrix);
-    input.vy = 0;
-    input.pad = 0;
     for (corner = 0; corner < CAR_COLLISION_QUAD_COUNT; corner++) {
-        input.vx = g_CarCollisionCorners[corner].x;
-        input.vz = g_CarCollisionCorners[corner].z;
-        ApplyRotMatrix(&input, &transformed);
+        const LVec transformed = RotateHullPoint(&axes, &hull[corner]);
         corners[corner].x = WrapSigned16(
-            (int64_t)(transformed.vx >> 2) + offsetX);
+            (int64_t)(transformed.x >> 2) + offsetX);
         corners[corner].z = WrapSigned16(
-            (int64_t)(transformed.vz >> 2) + offsetZ);
+            (int64_t)(transformed.z >> 2) + offsetZ);
     }
 }
 
@@ -140,19 +126,19 @@ static void ShoveApart(GameCarRuntime *car, GameCarRuntime *other, s32 hit) {
 /* Is the other car close enough along and across the track to be worth
  * testing, and on the same level of it? */
 static int WithinCollisionReach(const GameCarRuntime *car,
-                                const GameCarRuntime *other) {
+                                const GameCarRuntime *other, s32 trackLength) {
     s32 progressDelta;
     s32 distance;
 
     if ((other->activeFlag == -1) ||
         (other->verticalMotionState != car->verticalMotionState) ||
-        g_TrackLength <= 0) {
+        trackLength <= 0) {
         return 0;
     }
     progressDelta = WrapSigned32(
-        (int64_t)other->trackProgress + g_TrackLength);
+        (int64_t)other->trackProgress + trackLength);
     progressDelta = WrapSigned32(
-        (int64_t)progressDelta - car->trackProgress) % g_TrackLength;
+        (int64_t)progressDelta - car->trackProgress) % trackLength;
     distance = WrapSigned32((int64_t)other->trackLateralOffset -
                             car->trackLateralOffset);
     if (distance < 0) {
@@ -160,59 +146,28 @@ static int WithinCollisionReach(const GameCarRuntime *car,
     }
     return (distance < COLLISION_LATERAL_REACH) &&
            ((progressDelta < COLLISION_TRACK_REACH) ||
-            (g_TrackLength - COLLISION_TRACK_REACH < progressDelta));
+            (trackLength - COLLISION_TRACK_REACH < progressDelta));
 }
 
-s32 CollideRivalCars(s32 index) {
-    CarCollisionPoint quads[CAR_COLLISION_QUAD_COUNT]
-                           [CAR_COLLISION_QUAD_COUNT];
-    CarCollisionPoint carCorners[CAR_COLLISION_QUAD_COUNT];
-    CarCollisionPoint otherCorners[CAR_COLLISION_QUAD_COUNT];
-    CarCollisionPoint samples[CAR_COLLISION_SAMPLE_COUNT];
-    GameCarRuntime *car;
-    s32 nextIndex;
-    int hullBuilt = 0;
+s32 FindRivalContact(const GameCarRuntime *car, const CarHullPoint *hull,
+                     const GameCarRuntime *other, const CarHullPoint *otherHull,
+                     s32 trackLength) {
+    CarCollisionPoint quads[4][4], corners[4], otherCorners[4], samples[5];
+    if (car == NULL || other == NULL || car == other || hull == NULL ||
+        otherHull == NULL || car->activeFlag == -1 ||
+        !WithinCollisionReach(car, other, trackLength)) return 0;
+    TransformCarHull(car, corners, 0, 0, hull);
+    BuildCollisionQuads(corners, quads);
+    TransformCarHull(other, otherCorners,
+                     WrapSigned16((u16)other->x - (u16)car->x),
+                     WrapSigned16((u16)other->z - (u16)car->z), otherHull);
+    BuildHullSamples(otherCorners, samples);
+    CarCollisionHit hit = FindFirstCarCollisionQuad(quads, otherCorners, 4);
+    if (hit.region <= 0) hit = FindFirstCarCollisionQuad(quads, samples, 5);
+    return hit.region;
+}
 
-    if (index < 0 || index >= RACE_CAR_SLOT_COUNT - 1) {
-        return 0;
-    }
-    car = &g_Cars[index];
-    if (car->activeFlag == -1) {
-        return 0;
-    }
-
-    for (nextIndex = index + 1;
-         nextIndex < RACE_CAR_SLOT_COUNT;
-         nextIndex++) {
-        GameCarRuntime *other = &g_Cars[nextIndex];
-
-        if (WithinCollisionReach(car, other)) {
-            CarCollisionHit collision;
-
-            if (!hullBuilt) {
-                TransformCarHull(car, carCorners, 0, 0);
-                BuildCollisionQuads(carCorners, quads);
-                hullBuilt = 1;
-            }
-            TransformCarHull(other, otherCorners,
-                             WrapSigned16((u16)other->x - (u16)car->x),
-                             WrapSigned16((u16)other->z - (u16)car->z));
-            BuildHullSamples(otherCorners, samples);
-
-            /* Corners first, then the edge and centre points: the cheapest
-               test that can hit, first. */
-            collision =
-                FindFirstCarCollisionQuad(quads, otherCorners,
-                                          CAR_COLLISION_QUAD_COUNT);
-            if (collision.region <= 0) {
-                collision = FindFirstCarCollisionQuad(
-                    quads, samples, CAR_COLLISION_SAMPLE_COUNT);
-            }
-            if (collision.region > 0) {
-                ShoveApart(car, other, collision.region);
-                return collision.region;
-            }
-        }
-    }
-    return 0;
+void ApplyRivalCollision(GameCarRuntime *car, GameCarRuntime *other, s32 region) {
+    if (car == NULL || other == NULL || car == other || region < 1 || region > 4) return;
+    ShoveApart(car, other, region);
 }

@@ -6,9 +6,11 @@
 #include <stdio.h>
 #include <string.h>
 
+const TrackEventData *g_TrackEventData;
+s32 g_TrackLength;
+s32 g_RaceSeries;
 GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
 
-static int s_startKick[RACE_CAR_SLOT_COUNT];
 static int s_bodyKick[RACE_CAR_SLOT_COUNT];
 static int s_crestHop[RACE_CAR_SLOT_COUNT];
 
@@ -16,17 +18,13 @@ static s32 CarIndex(const GameCarRuntime *car) {
     return (s32)(car - g_Cars);
 }
 
-void StartCarBodyKick(GameCarRuntime *car, CarBodyKickMode mode) {
-    if (mode == CAR_BODY_KICK_LANDING) {
-        s_startKick[CarIndex(car)]++;
-    }
-}
 
 void UpdateCarBodyKick(GameCarRuntime *car) {
     s_bodyKick[CarIndex(car)]++;
 }
 
-void UpdateCarCrestHop(GameCarRuntime *car) {
+void StepCarCrestHop(GameCarRuntime *car, const TrackEventData *events, s32 length, int reverse) {
+    (void)events; (void)length; (void)reverse;
     s_crestHop[CarIndex(car)]++;
 }
 
@@ -123,7 +121,7 @@ int main(void) {
     CHECK_EQ(rising->verticalMotionState, CAR_VERTICAL_RISING);
     CHECK_EQ(rising->verticalMotionTimer, 1);
     CHECK_EQ(rising->y, 80);
-    CHECK_EQ(s_startKick[3], 0);
+    CHECK_EQ(rising->motionModeTimer, 0);
 
     CHECK_EQ(crest->verticalMotionState, CAR_VERTICAL_FALLING);
     CHECK_EQ(crest->verticalMotionRate, 1);
@@ -137,7 +135,7 @@ int main(void) {
     CHECK_EQ(falling->y, 100);
     CHECK_EQ(falling->verticalPitch, 0);
     CHECK_EQ(falling->verticalRoll, 0);
-    CHECK_EQ(s_startKick[5], 1);
+    CHECK_EQ(g_Cars[5].motionMode, CAR_BODY_KICK_LANDING);
     CHECK_EQ(s_bodyKick[5], 1);
     CHECK_EQ(s_crestHop[5], 1);
 

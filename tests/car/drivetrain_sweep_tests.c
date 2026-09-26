@@ -26,21 +26,24 @@ void UpdateCarDrivetrain(PlayerCarRuntime *carArg);
 
 /* The tables the drivetrain reads. */
 GameCarSpec *g_CarSpec;
-GearCurveRow g_GearTorqueCurve[8];
-s16 g_TorqueBandEnd[CAR_TORQUE_BAND_COUNT];
-s16 g_TorqueLossBandEnd[CAR_TORQUE_BAND_COUNT];
+CarPerformance g_CarPerformance;
 const GameTrackPoint *g_TrackPoints;
 s32 g_TrackPointCount;
 const GameTrackArcCenter *g_TrackArcCenters;
 s16 g_RacePhase;
-s32 g_RoadGrade;
-s16 g_DragScale;
-s16 g_GripLossTimer;
-s32 g_DriveBoostTimer;
-s32 g_StandingStartSpin;
-s32 g_ShiftTargetRpm;
-s32 g_ShiftTargetSpeed;
 u8 g_PadType;
+u32 g_RandomSeed;
+LaunchSpeedThreshold g_LaunchSpeedThresholds[CAR_LAUNCH_THRESHOLD_COUNT];
+
+int StepCarMotion(PlayerCarRuntime *car, const GameCarSpec *spec,
+                  const TrackRoute *route, const LaunchSpeedThreshold *threshold,
+                  u32 *random) {
+    (void)car; (void)spec; (void)route; (void)threshold; (void)random;
+    return 0;
+}
+void SetIndexedEffectVoice(s32 voice, s32 pitch, s32 level) {
+    (void)voice; (void)pitch; (void)level;
+}
 
 /* Where the drivetrain hands off once it has worked out the forces. What
  * those do with the result is their own business, not this test's. */
@@ -49,19 +52,20 @@ static int s_launchCalls;
 static int s_airborneCalls;
 static int s_standingStartCalls;
 
-void UpdateCarDriving(PlayerCarRuntime *car) {
+void PlayCarDrivingVoice(const PlayerCarRuntime *car, const GameCarSpec *spec) {
+    (void)spec;
     (void)car;
     s_drivingCalls++;
 }
-void UpdateCarLaunch(PlayerCarRuntime *car) {
+void PlayCarLaunchVoice(const PlayerCarRuntime *car) {
     (void)car;
     s_launchCalls++;
 }
-void UpdateCarAirborne(PlayerCarRuntime *car) {
+void PlayCarAirborneVoice(const PlayerCarRuntime *car) {
     (void)car;
     s_airborneCalls++;
 }
-void UpdateCarStandingStart(PlayerCarRuntime *car) {
+void PlayCarStandingStartVoice(const PlayerCarRuntime *car) {
     (void)car;
     s_standingStartCalls++;
 }
@@ -118,7 +122,7 @@ static void BuildSpec(void) {
     int i;
 
     memset(&s_spec, 0, sizeof(s_spec));
-    memset(g_GearTorqueCurve, 0, sizeof(g_GearTorqueCurve));
+    memset(g_CarPerformance.curves, 0, sizeof(g_CarPerformance.curves));
 
     s_spec.topGear = 6;
     s_spec.redline = 8000;
@@ -145,8 +149,8 @@ static void BuildSpec(void) {
         s_spec.torqueBand.values[i] = i * 1000;
     }
     for (i = 0; i < 8; i++) {
-        g_TorqueBandEnd[i] = (s16)(i + 2);
-        g_TorqueLossBandEnd[i] = (s16)(i + 2);
+        g_CarPerformance.torqueBands[i] = (s16)(i + 2);
+        g_CarPerformance.lossBands[i] = (s16)(i + 2);
     }
     for (i = 0; i < 9; i++) {
         s_spec.torqueLossRpm[i] = i * 1000;
@@ -154,12 +158,12 @@ static void BuildSpec(void) {
     for (i = 0; i < 10; i++) {
         s_spec.torqueLossValue[i] = i * 10;
     }
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i <= CAR_FORWARD_GEAR_COUNT; i++) {
         int slot;
         for (slot = 0; slot < 16; slot++) {
             /* Each gear pulls differently, so reading the wrong gear's
              * curve is visible. */
-            g_GearTorqueCurve[i].values[slot] = slot * 1000 * (i + 1);
+            g_CarPerformance.curves[i].values[slot] = slot * 1000 * (i + 1);
         }
     }
     g_CarSpec = &s_spec;
@@ -264,7 +268,10 @@ int main(int argc, char **argv) {
      * What the drivetrain did before it was taken apart. Run the test with a
      * file name to write the sweep out and diff two runs.
      */
-    static const unsigned long expected = 3242176527UL;
+    /* Physics now commits gearDisp itself. Comparing all 153744 records with
+     * the previous sweep changed only that field in 36 records, to the gear
+     * already selected. Audio no longer owns this state transition. */
+    static const unsigned long expected = 867186903UL;
     static const s32 speeds[] = {0, 0x100, 0x800, 0x4000, 0x20000};
     static const s32 gears[] = {1, 2, 5, 6};
     static const s32 pedals[] = {0, 0x7B, 0x85, 0x100};
@@ -319,14 +326,14 @@ int main(int argc, char **argv) {
         p->steeringGrip = 200;
         p->steerPos = (s16)(headings[hi] / 2);
         p->clutch = (s16)(gi & 1);
-        g_RoadGrade = grades[gr];
+        s_car.drive.roadGrade = grades[gr];
         g_RacePhase = 2;
-        g_DragScale = 0x2BC;
-        g_GripLossTimer = 0;
-        g_DriveBoostTimer = 0;
-        g_StandingStartSpin = 0;
-        g_ShiftTargetRpm = 5000;
-        g_ShiftTargetSpeed = 3000;
+        s_car.drive.dragScale = 0x2BC;
+        s_car.drive.gripLossTimer = 0;
+        s_car.drive.driveBoostTimer = 0;
+        s_car.drive.standingStartSpin = 0;
+        s_car.drive.shiftTargetRpm = 5000;
+        s_car.drive.shiftTargetSpeed = 3000;
         g_PadType = (u8)(pad ? 0x23 : 0x41);
         g_CarSpec = &s_spec;
         s_drivingCalls = 0;
@@ -388,11 +395,11 @@ int main(int argc, char **argv) {
             p->steerPos = -0x1000;
             p->clutch = 0;
             s_spec.referenceTurnRadius = (s16)radii[ri];
-            g_RoadGrade = 0x400;
+            s_car.drive.roadGrade = 0x400;
             g_RacePhase = 2;
-            g_DragScale = 0x2BC;
-            g_ShiftTargetRpm = 5000;
-            g_ShiftTargetSpeed = 3000;
+            s_car.drive.dragScale = 0x2BC;
+            s_car.drive.shiftTargetRpm = 5000;
+            s_car.drive.shiftTargetSpeed = 3000;
             g_PadType = 0x41;
             g_CarSpec = &s_spec;
             s_drivingCalls = 0;
@@ -423,3 +430,6 @@ int main(int argc, char **argv) {
     printf("the drivetrain takes the same %d states it always did\n", steps);
     return 0;
 }
+
+s32 SinAngle(s32 angle) { return rsin(angle); }
+s32 CosAngle(s32 angle) { return rcos(angle); }

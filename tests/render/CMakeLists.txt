@@ -1,4 +1,29 @@
 add_executable(native_asset_fixture native_asset_fixture.c)
+add_executable(car_parts_tests car_parts_tests.c
+    ${PROJECT_SOURCE_DIR}/src/port/car_parts.c)
+target_include_directories(car_parts_tests PRIVATE
+    ${PROJECT_SOURCE_DIR}/src/port ${PROJECT_SOURCE_DIR}/include)
+target_link_libraries(car_parts_tests PRIVATE rage-render-world)
+target_compile_options(car_parts_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+add_test(NAME car_parts COMMAND car_parts_tests)
+set_tests_properties(car_parts PROPERTIES LABELS unit)
+add_executable(native_texture_tests native_texture_tests.c)
+target_sources(native_texture_tests PRIVATE ${CMAKE_SOURCE_DIR}/src/port/native_texture.c)
+target_include_directories(native_texture_tests PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src)
+target_include_directories(native_texture_tests PRIVATE ${PROJECT_SOURCE_DIR}/src/port)
+target_compile_options(native_texture_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+target_link_libraries(native_texture_tests PRIVATE rage-data)
+add_test(NAME native_texture COMMAND native_texture_tests)
+set_tests_properties(native_texture PROPERTIES LABELS unit)
+add_executable(race_view_tests race_view_tests.c
+    ${PROJECT_SOURCE_DIR}/src/port/race_view.c)
+target_include_directories(race_view_tests PRIVATE ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/src/port ${PROJECT_SOURCE_DIR}/src/port/include)
+target_compile_options(race_view_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+target_sources(race_view_tests PRIVATE ${CMAKE_SOURCE_DIR}/src/port/car_parts.c)
+target_link_libraries(race_view_tests PRIVATE rage-data rage-render-world)
+add_test(NAME race_view COMMAND race_view_tests)
+set_tests_properties(race_view PROPERTIES LABELS unit)
 add_executable(car_lights_tests car_lights_tests.c)
 target_link_libraries(car_lights_tests PRIVATE rage-render-world)
 target_compile_options(car_lights_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
@@ -532,6 +557,22 @@ add_executable(model_banks_tests
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/car_asset_slots.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_catalog.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/init_render_state.c)
+target_link_libraries(model_banks_tests PRIVATE rage-data)
+
+add_executable(model_bank_parse_tests model_bank_parse_tests.c)
+target_link_libraries(model_bank_parse_tests PRIVATE rage-data)
+target_compile_options(model_bank_parse_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+add_test(NAME model_bank_parse COMMAND model_bank_parse_tests)
+set_tests_properties(model_bank_parse PROPERTIES LABELS unit)
+add_executable(car_model_data_tests car_model_data_tests.c)
+target_sources(car_model_data_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/native_mesh_writer.c
+    ${CMAKE_SOURCE_DIR}/src/port/native_car_cache.c)
+target_include_directories(car_model_data_tests PRIVATE ${CMAKE_SOURCE_DIR}/src/port)
+target_link_libraries(car_model_data_tests PRIVATE rage-data rage-rmesh)
+target_compile_options(car_model_data_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+add_test(NAME car_model_data COMMAND car_model_data_tests)
+set_tests_properties(car_model_data PROPERTIES LABELS unit)
 target_include_directories(model_banks_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/src/port
@@ -1152,7 +1193,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/include"
         ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
-target_link_libraries(environment_script_tests PRIVATE psyz)
+target_link_libraries(environment_script_tests PRIVATE rage-data psyz)
 add_test(NAME environment_script COMMAND environment_script_tests)
 set_tests_properties(environment_script PROPERTIES LABELS functional)
 
@@ -1170,7 +1211,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/include"
         ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
-target_link_libraries(track_zone_blend_tests PRIVATE psyz)
+target_link_libraries(track_zone_blend_tests PRIVATE rage-sim psyz)
 add_test(NAME track_zone_blend COMMAND track_zone_blend_tests)
 set_tests_properties(track_zone_blend PROPERTIES LABELS functional)
 
@@ -1188,7 +1229,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/include"
         ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
-target_link_libraries(install_track_points_tests PRIVATE psyz)
+target_link_libraries(install_track_points_tests PRIVATE rage-sim psyz)
 add_test(NAME install_track_points COMMAND install_track_points_tests)
 set_tests_properties(install_track_points PROPERTIES LABELS functional)
 
@@ -1264,9 +1305,7 @@ endif()
 add_test(NAME track_asset_identity COMMAND track_asset_identity_tests)
 
 set_tests_properties(track_asset_identity PROPERTIES LABELS functional)
-add_executable(track_lighting_tests
-    track_lighting_tests.c
-    ${CMAKE_SOURCE_DIR}/src/port/track_lighting.c)
+add_executable(track_lighting_tests track_lighting_tests.c)
 target_link_libraries(track_lighting_tests PRIVATE rage-render-world)
 target_include_directories(track_lighting_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include)
@@ -2017,3 +2056,59 @@ if(TARGET rage-racer)
             SKIP_REGULAR_EXPRESSION "SKIP:")
     endforeach()
 endif()
+
+add_executable(sim_hud_tests ${CMAKE_SOURCE_DIR}/tests/render/sim_hud_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/race_hud.c)
+target_include_directories(sim_hud_tests PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src/port)
+target_compile_options(sim_hud_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+target_link_libraries(sim_hud_tests PRIVATE rage-sim)
+add_test(NAME sim_hud COMMAND sim_hud_tests)
+set_tests_properties(sim_hud PROPERTIES LABELS unit)
+
+add_executable(terrain_bank_tests ${CMAKE_SOURCE_DIR}/tests/render/terrain_bank_tests.c)
+target_link_libraries(terrain_bank_tests PRIVATE rage-data)
+target_compile_options(terrain_bank_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+add_test(NAME terrain_bank COMMAND terrain_bank_tests)
+set_tests_properties(terrain_bank PROPERTIES LABELS unit)
+
+add_executable(environment_data_tests ${CMAKE_SOURCE_DIR}/tests/render/environment_data_tests.c)
+target_link_libraries(environment_data_tests PRIVATE rage-data)
+target_compile_options(environment_data_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+add_test(NAME environment_data COMMAND environment_data_tests)
+set_tests_properties(environment_data PROPERTIES LABELS unit)
+
+add_executable(environment_state_tests ${CMAKE_SOURCE_DIR}/tests/render/environment_state_tests.c)
+target_link_libraries(environment_state_tests PRIVATE rage-data)
+target_compile_options(environment_state_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+add_test(NAME environment_state COMMAND environment_state_tests)
+set_tests_properties(environment_state PROPERTIES LABELS unit)
+
+add_executable(track_look_tests ${CMAKE_SOURCE_DIR}/tests/render/track_look_tests.c)
+target_link_libraries(track_look_tests PRIVATE rage-data)
+target_compile_options(track_look_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+add_test(NAME track_look COMMAND track_look_tests)
+set_tests_properties(track_look PROPERTIES LABELS unit)
+
+add_executable(environment_view_tests ${CMAKE_SOURCE_DIR}/tests/render/environment_view_tests.c)
+target_include_directories(environment_view_tests PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/port)
+target_compile_options(environment_view_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+target_link_libraries(environment_view_tests PRIVATE rage-data)
+add_test(NAME environment_view COMMAND environment_view_tests)
+set_tests_properties(environment_view PROPERTIES LABELS unit)
+
+add_executable(native_sky_tests ${CMAKE_SOURCE_DIR}/tests/render/native_sky_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/native_sky.c ${CMAKE_SOURCE_DIR}/src/port/native_texture.c
+    ${CMAKE_SOURCE_DIR}/src/port/sky_panorama_layout.c)
+target_include_directories(native_sky_tests PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/port)
+target_link_libraries(native_sky_tests PRIVATE rage-data)
+target_compile_options(native_sky_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+add_test(NAME native_sky COMMAND native_sky_tests)
+set_tests_properties(native_sky PROPERTIES LABELS unit)
+
+add_executable(client_assets_tests ${CMAKE_SOURCE_DIR}/tests/render/client_assets_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/client_assets.c ${CMAKE_SOURCE_DIR}/src/port/native_texture.c)
+target_include_directories(client_assets_tests PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/port)
+target_link_libraries(client_assets_tests PRIVATE rage-data rage-rmesh)
+target_compile_options(client_assets_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+add_test(NAME client_assets COMMAND client_assets_tests)
+set_tests_properties(client_assets PROPERTIES LABELS unit)

@@ -4,7 +4,7 @@
 
 #include "game/asset.h"
 #include "game/asset_internal.h"
-#include "archive_index.h"
+#include "game/archive_index.h"
 #include "mod_assets.h"
 #include "rage/compat.h"
 #include "runtime_config.h"

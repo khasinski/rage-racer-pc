@@ -4,6 +4,9 @@
 #include <stdint.h>
 
 struct GameCarRuntime;
+struct CarModelAsset;
+struct CarEntry;
+struct CarShape;
 struct GameSkyGridLayout;
 struct RenderWorld;
 
@@ -62,10 +65,24 @@ void GameRenderWorldSetTrackCarAsset(int asset);
 void GameRenderWorldSubmitCar(const struct GameCarRuntime *object,
                                   int mirror_pass,
                                   RageGameCarRenderDetail detail);
+void GameRenderWorldSubmitRivalCar(const struct GameCarRuntime *object,
+                                  uint32_t entity, int mirror_pass,
+                                  RageGameCarRenderDetail detail);
 /* The player's selected model is a separately loaded bank.  It does not use
  * the course-specific opponent lookup used by GameRenderWorldSubmitCar. */
+/* Entity must be a stable, unique seat ID for the submitted field. */
 void GameRenderWorldSubmitPlayerCar(const struct GameCarRuntime *object,
+                                        uint32_t entity,
+                                        const struct CarModelAsset *modelAsset,
+                                        const struct CarEntry *paint,
                                         int mirror_pass);
+/* Human seat submission uses owned placement data and an explicit variant;
+ * it does not require a legacy car model slot. Entity IDs are unique 0..11.
+ */
+void GameRenderWorldSubmitHumanCar(const struct GameCarRuntime *object,
+                                  uint32_t entity, int32_t variant,
+                                  const struct CarShape *shape,
+                                  const struct CarEntry *paint, int mirror_pass);
 /* The in-car view never draws the player's body, but its headlights and
  * tail lamps still light the road: publish the body as a ray-only instance
  * so the lamps are updated and their spot lights emitted. */

@@ -4,6 +4,15 @@
 #include <stddef.h>
 
 #include "common.h"
+#include "game/vector.h"
+
+typedef struct EnvironmentPalette {
+    Rgb colors[16];
+} EnvironmentPalette;
+
+enum { ENVIRONMENT_PALETTE_COUNT = 5 };
+
+
 
 /*
  * These lay out retail's own bytes, so their packing is part of the format
@@ -99,6 +108,39 @@ _Static_assert(offsetof(GameEnvironmentColors, fields.slots) == 2,
 /* The union's own size is left out on purpose: it shares storage with a u32,
  * so how far it rounds up is the compiler's business. What must not move is
  * where the slots start and how big each one is. */
+
+/* Validates aligned borrowed source data without installing game state. */
+s32 IsValidEnvironmentScript(const GameEnvironmentScript *script, size_t size);
+
+/* Cue lookup borrows an already validated sequence; time is normalized. */
+s32 EnvironmentTime(s32 time, s32 length);
+const struct GameEnvironmentCue *EnvironmentCueAt(const struct GameEnvironmentCue *cues, s32 time);
+s16 EnvironmentCueFrame(s32 clock, s32 cueTime, s32 loopLength, s16 duration);
+
+static inline s32 LerpColorChannel(s32 from, s32 to, s32 blend) {
+    return from + (((to - from) * blend) >> 12);
+}
+
+/* Blend is 0..4096. Failure leaves caller-owned outputs unchanged. */
+int BlendEnvironmentColors(GameEnvironmentColors *colors, s32 course, s32 blend);
+int BlendEnvironmentPalette(const EnvironmentPalette *from, const EnvironmentPalette *to,
+                             s32 blend, u16 output[16]);
+
+/* Per-race animation. Script/palettes are immutable borrowed sources. */
+typedef struct Environment {
+    GameEnvironmentColors colors;
+    const struct GameEnvironmentCue *cues, *next;
+    const EnvironmentPalette *palettes;
+    s32 length, clock, course, skyRowBase, previousMode, mode4, fogNear;
+    s16 frame, duration, mode, spareLerp, spareFrom, spareTo;
+    u8 enabled;
+    u16 clut[16];
+} Environment;
+int InitEnvironment(Environment *env, const GameEnvironmentScript *script, size_t size,
+                     const EnvironmentPalette *palettes, s32 course);
+/* Returns whether palette/colors changed; the clock can advance on zero. */
+int TickEnvironment(Environment *env);
+void SeekEnvironment(Environment *env, s32 time);
 
 extern GameEnvironmentColors g_EnvironmentColors;
 

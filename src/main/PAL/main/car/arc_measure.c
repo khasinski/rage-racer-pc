@@ -1,15 +1,8 @@
-#include "game/angle.h"
-#include "game/car.h"
 #include "game/car_track_internal.h"
-#include "game/integer.h"
-#include "game/race.h"
-#include "game/render.h"
-#include "game/render_state.h"
-#include "game/track_internal.h"
 
 static s32 MeasureArcRadius(s32 angle, s32 offsetX, s32 offsetZ) {
-    s32 xProjection = WrapSigned32((int64_t)rcos(angle) * offsetX);
-    s32 zProjection = WrapSigned32((int64_t)rsin(angle) * offsetZ);
+    s32 xProjection = WrapSigned32((int64_t)CosAngle(angle) * offsetX);
+    s32 zProjection = WrapSigned32((int64_t)SinAngle(angle) * offsetZ);
 
     return CarTrackFixed12ToInteger(
         WrapSigned32((int64_t)xProjection + zProjection));
@@ -28,10 +21,9 @@ static s32 MeasureArcRadius(s32 angle, s32 offsetX, s32 offsetZ) {
  * bracketing. They then diverge on what to do with the span between the two
  * points, which is why that part stays with them.
  */
-void CarTrackMeasureArc(CarTrackWork *work, s32 arcIndex, s32 carX,
+void CarTrackMeasureArc(CarTrackWork *work, const GameTrackArcCenter *arcCenter, s32 carX,
                         s32 carZ, const GameTrackPoint *point,
                         const GameTrackPoint *nextPoint) {
-    const GameTrackArcCenter *arcCenter = &g_TrackArcCenters[arcIndex];
     s32 centerX = arcCenter->x;
     s32 centerZ = arcCenter->z;
 

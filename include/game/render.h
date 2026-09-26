@@ -174,15 +174,6 @@ void BuildRotMatrixX(void *mtx, s32 angle);
 void SetCameraRotMatrix(GameRenderState *state,
                         const GameCameraState *camera);
 /*
- * Integer atan2 in 12-bit angle units
- * (0x400 = 90 degrees). Argument order is (x, y), the reverse of C's atan2:
- * Atan2(0, +y) is 0x400.
- */
-s32 Atan2(s32 x, s32 y);
-/* (s32 a, s32 b); left unprototyped because UpdateCarDrivetrain calls it with two
- * extra arguments that the original left live in a2/a3. */
-
-/*
  * Sets up both environments for the frame and clears to (r, g, b):
  * 240 = two 320x240 buffers stacked at y=0 / y=0xF0, 480 = one 320x480 pair.
  * Both also set the GTE projection (SetGeomOffset / SetGeomScreen 0x140) and
@@ -204,10 +195,14 @@ static inline s32 StepFade(s32 level, s32 step, s32 maximum) {
 }
 void RequestTrackTexturePage(s32 trackSection);
 s32 TrackTexturePageForSection(s32 trackSection);
+/* Computes only caller-owned camera state; does not install a renderer view
+ * or draw a local-player model. Track camera data is still shared input. */
+void UpdateCameraPose(Camera *camera, CameraViewMode mode, const GameCarRuntime *car);
+void UpdateLookBehindPose(Camera *camera, const GameCarRuntime *car);
 void UpdateCamera(Camera *camera, CameraViewMode mode, GameCarRuntime *car);
 void UpdateLookBehindCamera(Camera *camera, GameCarRuntime *car);
 void DrawPlayerCarModel(GameCarRuntime *object);
-void DrawRacePlayerCarModel(GameCarRuntime *object);
+void DrawRacePlayerCarModel(GameCarRuntime *object, s32 rivalModel, s32 steering);
 void DrawTimeValue(s32 x, s32 y, s32 value, s32 color, s32 divisor);
 
 /*
@@ -593,12 +588,6 @@ extern s16 g_EnvironmentMode;
 extern s32 g_EnvironmentModePrev;
 /* Sky palette records, 48 bytes each, indexed by environment mode. Installed
  * from the loaded environment block by InstallTrackRuntimeAssetPack. */
-typedef struct EnvironmentPalette {
-    Rgb colors[16];
-} EnvironmentPalette;
-
-enum { ENVIRONMENT_PALETTE_COUNT = 5 };
-
 extern const EnvironmentPalette *g_EnvPaletteTable;
 /* The 16 interpolated BGR555 entries uploaded to VRAM at (0xE0, 0x1E6). */
 extern u16 g_EnvironmentClut[16];
@@ -623,8 +612,6 @@ extern s16 g_NegconSteer;
 void ApplyZoneLighting(s32 blend, s32 zoneCode, Matrix *lightMatrix);
 void EndMirrorPass(void);
 void RestoreColorMatrix(void);
-s32 rsin(s32 angle);
-s32 rcos(s32 angle);
 void ApplyMatrixLV(const Matrix *matrix, const s32 *input, s32 *output);
 void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, s32 count);
 void SetTrackTexturePageNow(s32 trackSection);

@@ -1,5 +1,4 @@
-#include "game/car.h"
-#include "game/car_internal.h"
+#include "game/car_drive.h"
 #include "game/integer.h"
 
 enum {
@@ -30,13 +29,14 @@ static s32 BandStartIndex(const s16 *bandEnds, s32 bandIndex) {
 }
 
 static s32 InterpolateDriveTorque(const GameCarSpec *spec,
+                                  const CarPerformance *performance,
                                   const s32 *gearCurve, s32 engineRpm,
                                   s32 bandIndex, s32 fallbackTorque) {
     s32 slot;
     s32 torque = fallbackTorque;
 
-    for (slot = BandStartIndex(g_TorqueBandEnd, bandIndex);
-         slot < g_TorqueBandEnd[bandIndex]; slot++) {
+    for (slot = BandStartIndex(performance->torqueBands, bandIndex);
+         slot < performance->torqueBands[bandIndex]; slot++) {
         s32 segmentStart = spec->torqueBand.values[slot];
         s32 segmentEnd = spec->torqueBand.values[slot + 1];
         s32 segmentLength;
@@ -67,13 +67,14 @@ static s32 InterpolateDriveTorque(const GameCarSpec *spec,
     return torque < 0 ? 0 : torque;
 }
 
-static s32 InterpolateEngineBraking(const GameCarSpec *spec, s32 engineRpm,
+static s32 InterpolateEngineBraking(const GameCarSpec *spec, const CarPerformance *performance,
+                                    s32 engineRpm,
                                     s32 bandIndex, s16 gear) {
     s32 slot;
     s32 braking = 0;
 
-    for (slot = BandStartIndex(g_TorqueLossBandEnd, bandIndex);
-         slot < g_TorqueLossBandEnd[bandIndex]; slot++) {
+    for (slot = BandStartIndex(performance->lossBands, bandIndex);
+         slot < performance->lossBands[bandIndex]; slot++) {
         s32 segmentStart = GetCarTorqueLossBoundary(spec, slot);
         s32 segmentEnd;
         s32 segmentLength;
@@ -113,6 +114,7 @@ static s32 InterpolateEngineBraking(const GameCarSpec *spec, s32 engineRpm,
 }
 
 void ReadCarEngineTorque(const GameCarDrive *drive, const GameCarSpec *spec,
+                         const CarPerformance *performance,
                          const s32 *gearCurve, s32 *netTorque,
                          s32 *bandScale) {
     s32 bandIndex;
@@ -134,9 +136,9 @@ void ReadCarEngineTorque(const GameCarDrive *drive, const GameCarSpec *spec,
         bandIndex = CAR_TORQUE_BAND_COUNT - 1;
     }
     *netTorque = InterpolateDriveTorque(
-        spec, gearCurve, drive->engineRpm, bandIndex, *netTorque);
+        spec, performance, gearCurve, drive->engineRpm, bandIndex, *netTorque);
     *bandScale = InterpolateEngineBraking(
-        spec, drive->engineRpm, bandIndex, drive->gear);
+        spec, performance, drive->engineRpm, bandIndex, drive->gear);
 }
 
 s32 CalculateCarInitialAcceleration(const GameCarDrive *drive,

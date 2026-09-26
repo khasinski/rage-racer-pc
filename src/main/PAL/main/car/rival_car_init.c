@@ -1,19 +1,16 @@
 #include "game/angle.h"
 #include "game/car.h"
-#include "game/car_internal.h"
-#include "game/player_car_internal.h"
-#include "game/race.h"
+#include "game/rival.h"
+#include "game/car_track_internal.h"
 #include "game/track.h"
-#include "game/track_internal.h"
 
 #include <string.h>
 
-void InitRivalCar(GameCarRuntime *car,
-                  s32 gridPosition,
-                  const RaceGridSlot *grid) {
-    const s32 series = g_RaceSeries != 0;
-    const TrackRivalStart *start =
-        &g_TrackEventData->rivalStarts[series][gridPosition + 1];
+int InitRival(GameCarRuntime *car, const TrackRoute *route,
+                 const TrackRivalStart *start, s32 walkStart, int reverse, u16 model) {
+    if (car == NULL || route == NULL || route->points == NULL || route->count <= 0 ||
+        route->length <= 0 || start == NULL || (reverse != 0 && reverse != 1)) return 0;
+    const s32 series = reverse;
     CarTrackLimits trackLimits = {
         .rightInset = 20,
         .leftInset = -20,
@@ -25,31 +22,31 @@ void InitRivalCar(GameCarRuntime *car,
     car->initializedFlag = 1;
     car->aiEnabled = 1;
     car->facingBackwards = (s16)series;
-    car->modelIndex = RaceGridModelId(grid[gridPosition]);
-    car->rivalModelId = RaceGridModelId(grid[gridPosition]);
-    startPointIndex = WrapTrackPointIndex(start->trackPointIndex);
+    car->modelIndex = model;
+    car->rivalModelId = model;
+    startPointIndex = RouteIndex(route, start->trackPointIndex);
     car->trackPointIndex = startPointIndex;
     car->x = start->x;
     car->z = start->z;
 
-    trackPointIndex = FindTrackSegment(car, car->trackPointIndex);
+    trackPointIndex = FindCarTrackSegment(car, route, car->trackPointIndex);
     if (trackPointIndex < 0) {
         trackPointIndex = startPointIndex;
-        car->x = TrackPoint(startPointIndex)->x;
-        car->z = TrackPoint(startPointIndex)->z;
+        car->x = RoutePoint(route, startPointIndex)->x;
+        car->z = RoutePoint(route, startPointIndex)->z;
     }
     car->trackPointIndex = trackPointIndex;
     car->bodyYaw = (ANGLE_THREE_QUARTER_TURN -
                     series * ANGLE_HALF_TURN -
-                    TrackPoint(trackPointIndex)->angle) & ANGLE_MASK;
+                    RoutePoint(route, trackPointIndex)->angle) & ANGLE_MASK;
     car->baseBodyYaw = car->bodyYaw;
     car->targetYaw = car->bodyYaw;
     car->headingAngle = car->bodyYaw;
-    SeedCarLapProgress(car, start->activeFlag);
+    SeedCarTrackProgress(car, route, walkStart, start->activeFlag, reverse);
 
     car->activeFlag = start->activeFlag;
     if (start->activeFlag != -1) {
-        UpdateCarTrackState(car, car->trackPointIndex, &trackLimits);
+        StepCarTrackState(car, route, car->trackPointIndex, &trackLimits, reverse, 0);
         car->modelY = car->y;
         car->previousTrackProgress = car->trackProgress;
     }
@@ -59,4 +56,5 @@ void InitRivalCar(GameCarRuntime *car,
     car->aiLateralOffset = car->trackLateralOffset;
     CopyCarBodyRotationToModel(car);
     car->modelY = car->y;
+    return 1;
 }

@@ -1,4 +1,5 @@
 #include "game/angle.h"
+#include "game/race.h"
 #include "camera_internal.h"
 #include "game/player_car_internal.h"
 
@@ -6,7 +7,7 @@
  * Mode 0: the camera sits where the car's own block says, lifted a fixed
  * amount along the car's up axis.
  */
-void CameraViewFromCarBlock(Camera *camera, GameCarRuntime *car, GameViewWork *view) {
+void CameraViewFromCarBlock(Camera *camera, const GameCarRuntime *car, GameViewWork *view) {
     SVec cameraLift = {0, -0x1C0, 0, 0};
     LVec cameraLiftWorld;
     Matrix matrixWork;
@@ -23,7 +24,7 @@ void CameraViewFromCarBlock(Camera *camera, GameCarRuntime *car, GameViewWork *v
     camera->previousMode = TRACK_CAMERA_CAR;
 }
 
-static void CameraViewFromOrbitPosition(Camera *camera, GameCarRuntime *car,
+static void CameraViewFromOrbitPosition(Camera *camera, const GameCarRuntime *car,
                                         GameViewWork *view, s32 yaw,
                                         s32 distance, s32 height) {
     Matrix cameraRotation;
@@ -63,12 +64,12 @@ static void CameraViewFromOrbitPosition(Camera *camera, GameCarRuntime *car,
     view->z = CameraSubtractWord(view->z, eyeWorld.z);
 }
 
-void CameraViewFromOrbit(Camera *camera, GameCarRuntime *car, GameViewWork *view) {
+void CameraViewFromOrbit(Camera *camera, const GameCarRuntime *car, GameViewWork *view) {
     CameraViewFromOrbitPosition(camera, car, view, camera->orbitYaw,
                                 camera->orbitDistance, 0);
 }
 
-void CameraViewFromLookBehind(Camera *camera, GameCarRuntime *car, GameViewWork *view) {
+void CameraViewFromLookBehind(Camera *camera, const GameCarRuntime *car, GameViewWork *view) {
     enum {
         LOOK_BEHIND_YAW = 0x800,
         LOOK_BEHIND_DISTANCE = 0xE0,
@@ -78,7 +79,7 @@ void CameraViewFromLookBehind(Camera *camera, GameCarRuntime *car, GameViewWork 
                                 LOOK_BEHIND_DISTANCE, LOOK_BEHIND_HEIGHT);
 }
 
-void UpdateCamera(Camera *camera, CameraViewMode cameraModeSel, GameCarRuntime *car) {
+void UpdateCameraPose(Camera *camera, CameraViewMode cameraModeSel, const GameCarRuntime *car) {
     GameViewWork viewWork;
     GameViewWork *view;
     s32 cameraMode;
@@ -86,18 +87,19 @@ void UpdateCamera(Camera *camera, CameraViewMode cameraModeSel, GameCarRuntime *
     s32 previousNodeIndex;
     u8 nodeChanged;
 
-    cameraNodeIndex = FindNearestTrackCamera(car);
+    if (camera == NULL || car == NULL) return;
     LoadViewWork(&viewWork, &camera->view);
     view = &viewWork;
-    previousNodeIndex = camera->node;
-    camera->node = cameraNodeIndex;
-    nodeChanged = cameraNodeIndex != previousNodeIndex;
-    if (cameraModeSel < CAMERA_VIEW_TRACK) {
-        cameraMode = cameraModeSel;
-    } else if (cameraNodeIndex >= 0) {
-        cameraMode = g_TrackCameras[cameraNodeIndex].mode;
-    } else {
-        cameraMode = 0;
+    cameraMode = cameraModeSel;
+    cameraNodeIndex = camera->node;
+    nodeChanged = 0;
+    if (cameraModeSel >= CAMERA_VIEW_TRACK) {
+        cameraNodeIndex = FindNearestTrackCamera(car);
+        previousNodeIndex = camera->node;
+        camera->node = cameraNodeIndex;
+        nodeChanged = cameraNodeIndex != previousNodeIndex;
+        cameraMode = cameraNodeIndex >= 0 ? g_TrackCameras[cameraNodeIndex].mode
+                                         : TRACK_CAMERA_CAR;
     }
     switch (cameraMode) {
     default:
@@ -121,21 +123,30 @@ void UpdateCamera(Camera *camera, CameraViewMode cameraModeSel, GameCarRuntime *
         break;
     }
     StoreViewWork(&camera->view, &viewWork);
+}
+
+void UpdateCamera(Camera *camera, CameraViewMode cameraModeSel, GameCarRuntime *car) {
+    UpdateCameraPose(camera, cameraModeSel, car);
     SetCameraRotMatrix(&g_RenderState, &camera->view);
     if (cameraModeSel > 0 &&
         car == AsRivalCar(&g_PlayerCar)) {
         SelectModelBank(0);
-        DrawRacePlayerCarModel(car);
+        DrawRacePlayerCarModel(car, CustomRaceRivalModel(), g_PlayerCar.drive.steerPos);
     }
 }
 
-void UpdateLookBehindCamera(Camera *camera, GameCarRuntime *car) {
+void UpdateLookBehindPose(Camera *camera, const GameCarRuntime *car) {
     GameViewWork viewWork;
+    if (camera == NULL || car == NULL) return;
 
     LoadViewWork(&viewWork, &camera->view);
     CameraViewFromLookBehind(camera, car, &viewWork);
     StoreViewWork(&camera->view, &viewWork);
+}
+
+void UpdateLookBehindCamera(Camera *camera, GameCarRuntime *car) {
+    UpdateLookBehindPose(camera, car);
     SetCameraRotMatrix(&g_RenderState, &camera->view);
     SelectModelBank(0);
-    DrawRacePlayerCarModel(car);
+    DrawRacePlayerCarModel(car, CustomRaceRivalModel(), g_PlayerCar.drive.steerPos);
 }

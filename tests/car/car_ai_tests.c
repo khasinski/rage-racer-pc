@@ -26,7 +26,7 @@ GameCarRuntime g_Cars[11];
 const TrackEventData *g_TrackEventData;
 s32 g_RaceSeries;
 s32 g_TrackLength;
-CarCollisionPoint g_CarCollisionCorners[4];
+const CarHullPoint g_CarCollisionCorners[4] = {{0}};
 
 void TransformCollisionVector(const s16 *input, s32 *output) {
     (void)input; (void)output;
@@ -72,53 +72,53 @@ static void CrestTests(void) {
     /* Driving onto a crest reports it; the crest's own position counts as
      * crossed, the position the car came from does not. */
     PlaceCar(&car, 0x0FF, 0x100);
-    Check(GetCarCrestTrigger(&car) == 11, "crest reached exactly",
-          GetCarCrestTrigger(&car), 11);
+    Check(FindCarCrest(&car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0) == 11, "crest reached exactly",
+          FindCarCrest(&car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0), 11);
 
     PlaceCar(&car, 0x100, 0x101);
-    Check(GetCarCrestTrigger(&car) == 0, "crest already behind",
-          GetCarCrestTrigger(&car), 0);
+    Check(FindCarCrest(&car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0) == 0, "crest already behind",
+          FindCarCrest(&car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0), 0);
 
     /* The second entry is reachable, so the scan does not stop at the first. */
     PlaceCar(&car, 0x1F0, 0x210);
-    Check(GetCarCrestTrigger(&car) == 22, "second crest",
-          GetCarCrestTrigger(&car), 22);
+    Check(FindCarCrest(&car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0) == 22, "second crest",
+          FindCarCrest(&car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0), 22);
 
     /* Nothing past the sentinel is ever read, even when it would match. */
     row[2].progress = 0x300;
     PlaceCar(&car, 0x2F0, 0x310);
-    Check(GetCarCrestTrigger(&car) == 0, "past the end of the list",
-          GetCarCrestTrigger(&car), 0);
+    Check(FindCarCrest(&car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0) == 0, "past the end of the list",
+          FindCarCrest(&car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0), 0);
     row[2].progress = 0;
 
     /* Too slow to trigger anything. */
     PlaceCar(&car, 0x0FF, 0x100);
     car.speed = 0x31F;
-    Check(GetCarCrestTrigger(&car) == 0, "below the speed floor",
-          GetCarCrestTrigger(&car), 0);
+    Check(FindCarCrest(&car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0) == 0, "below the speed floor",
+          FindCarCrest(&car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0), 0);
 
     /* Driving backwards over the same crest still reports it: the pair is
      * sorted before it is compared. */
     PlaceCar(&car, 0x100, 0x0FF);
-    Check(GetCarCrestTrigger(&car) == 11, "crossed backwards",
-          GetCarCrestTrigger(&car), 11);
+    Check(FindCarCrest(&car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0) == 11, "crossed backwards",
+          FindCarCrest(&car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0), 11);
 
     /* A jump of a whole lap is the counter wrapping, not a stretch of track,
      * and must not fire every crest between the two ends. */
     PlaceCar(&car, 0x7FFF, 0x10);
-    Check(GetCarCrestTrigger(&car) == 0, "lap wrap fires nothing",
-          GetCarCrestTrigger(&car), 0);
+    Check(FindCarCrest(&car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0) == 0, "lap wrap fires nothing",
+          FindCarCrest(&car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0), 0);
 
     /* A reversed race measures from the other end of the track. */
     g_RaceSeries = 1;
     PlaceCar(&car, g_TrackLength - 0x0FF, g_TrackLength - 0x100);
-    Check(GetCarCrestTrigger(&car) == 11, "reversed race",
-          GetCarCrestTrigger(&car), 11);
+    Check(FindCarCrest(&car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0) == 11, "reversed race",
+          FindCarCrest(&car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0), 11);
 
     PlaceCar(&car, INT_MAX, INT_MIN);
-    Check(GetCarCrestTrigger(&car) == 0,
+    Check(FindCarCrest(&car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0) == 0,
           "reversed crest scan wraps extreme progress",
-          GetCarCrestTrigger(&car), 0);
+          FindCarCrest(&car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0), 0);
     g_RaceSeries = 0;
 
     /* Direction is a boolean state even if a damaged runtime contains a
@@ -129,14 +129,14 @@ static void CrestTests(void) {
     row[1].motionValue = -1;
     PlaceCar(&car, 0x0FF, 0x100);
     car.facingBackwards = 7;
-    Check(GetCarCrestTrigger(&car) == 33, "normalized crest direction",
-          GetCarCrestTrigger(&car), 33);
+    Check(FindCarCrest(&car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0) == 33, "normalized crest direction",
+          FindCarCrest(&car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0), 33);
 
     g_TrackEventData = NULL;
-    Check(GetCarCrestTrigger(&car) == 0, "missing crest data",
-          GetCarCrestTrigger(&car), 0);
-    Check(GetCarCrestTrigger(NULL) == 0, "missing crest car",
-          GetCarCrestTrigger(NULL), 0);
+    Check(FindCarCrest(&car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0) == 0, "missing crest data",
+          FindCarCrest(&car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0), 0);
+    Check(FindCarCrest(NULL, g_TrackEventData, g_TrackLength, g_RaceSeries != 0) == 0, "missing crest car",
+          FindCarCrest(NULL, g_TrackEventData, g_TrackLength, g_RaceSeries != 0), 0);
 }
 
 static void TargetSpeedTests(void) {
@@ -469,3 +469,5 @@ int main(void) {
     printf("the AI walks the track's crest, speed and racing-line tables\n");
     return 0;
 }
+
+s32 SinAngle(s32 angle) { return rsin(angle); }

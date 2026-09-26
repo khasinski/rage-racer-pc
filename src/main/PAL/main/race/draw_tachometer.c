@@ -82,14 +82,15 @@ static u8 SetTachometerNeedleColor(POLY_F4 *needle,
     return (u8)brightness;
 }
 
-void DrawTachometer(s32 rpm, s32 shiftLightOn, TachometerLightingMode lighting,
+void DrawTachometer(const CarTachometerSpec *spec, s32 manual, s32 gear, s32 speed,
+                    s32 rpm, s32 shiftLightOn, TachometerLightingMode lighting,
                     s32 amount) {
-    const CarTachometerSpec *spec = &g_CarSpec->tachometer;
     GameFrameContext *frame = g_DrawBuffer;
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     const s32 centerX = HudRightX(spec->needleX);
     const s32 centerY = spec->needleY;
     const s32 safeRpm = ClampTachometerRpm(rpm);
+    const u16 digitColor = manual ? 0x7800 : 0x78CF;
     const s32 angle =
         spec->angleMin + safeRpm * (spec->angleMax - spec->angleMin) /
                              TACHOMETER_MAX_RPM;
@@ -104,8 +105,9 @@ void DrawTachometer(s32 rpm, s32 shiftLightOn, TachometerLightingMode lighting,
 
     SetPolyF4(needle);
     for (i = 0; i < 4; i++) {
-        const s32 localX = g_TachoNeedleQuad[i][0];
-        const s32 localY = g_TachoNeedleQuad[i][1];
+        const s32 width = spec->needleQuad[(i & 1) ? 1 : 3];
+        const s32 localX = WrapSigned16(i < 2 ? -width : width);
+        const s32 localY = WrapSigned16((i & 1) ? -spec->needleQuad[0] : spec->needleQuad[2]);
         *vertex++ = WrapSigned16(
             (int64_t)centerX +
             ((int64_t)sine * localX - (int64_t)cosine * localY) / 4096);
@@ -120,16 +122,18 @@ void DrawTachometer(s32 rpm, s32 shiftLightOn, TachometerLightingMode lighting,
     AddPrim(ot, needle);
     next = DrawHudDigit(
         (u8 *)(needle + 1), centerX + spec->gearDigitDX,
-        centerY + spec->gearDigitDY, g_PlayerCar.drive.gear, g_HudGlyphClut);
+        centerY + spec->gearDigitDY, gear, digitColor);
     g_RenderState.draw.packetCursor = next;
-    DrawSpeedDigits(centerX, centerY,
-                    SpeedDisplayValue(g_PlayerCar.speed));
+    DrawSpeedDigits(WrapSigned32((int64_t)centerX + spec->digitsX),
+                    WrapSigned32((int64_t)centerY + spec->digitsY),
+                    SpeedDisplayValue(speed), digitColor);
 
     frame->layout.raceHud.tachometerFace.r0 = faceBrightness;
     frame->layout.raceHud.tachometerFace.g0 = faceBrightness;
     frame->layout.raceHud.tachometerFace.b0 = faceBrightness;
     frame->layout.raceHud.tachometerFace.x0 =
-        WrapSigned16(HudRightX(g_TachoNeedleSprite.x));
+        WrapSigned16(HudRightX(spec->needleX + spec->faceDX));
+    frame->layout.raceHud.tachometerFace.y0 = WrapSigned16(spec->needleY + spec->faceDY);
     AddPrim(ot, &frame->layout.raceHud.tachometerDrawModes[0]);
     AddPrim(ot, &frame->layout.raceHud.tachometerFace);
     AddPrim(ot, &frame->layout.raceHud.tachometerDrawModes[1]);

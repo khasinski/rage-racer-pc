@@ -1,5 +1,7 @@
 #include "game/car.h"
-#include "game/car_internal.h"
+#include "game/rival.h"
+#include "game/car_control.h"
+#include "game/car_motion_internal.h"
 #include "game/integer.h"
 
 enum {
@@ -18,35 +20,27 @@ static void DampCollidingRivalSpeed(GameCarRuntime *car) {
         PERCENT_SCALE;
 }
 
-void UpdateRivalBodyMotion(void) {
-    s32 index;
-
-    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
-        GameCarRuntime *car = &g_Cars[index];
-        s32 ground;
-
-        if (car->activeFlag == -1) {
-            continue;
+void FinishRival(GameCarRuntime *car, const TrackEventData *events,
+                    s32 trackLength, int reverse) {
+    if (car == NULL || car->activeFlag == -1) return;
+    s32 ground;
+    ground = WrapSigned32(
+        (int64_t)car->y - CAR_WHEEL_GROUND_OFFSET);
+    UpdateCarWheelRotation(car);
+    CopyCarBodyRotationToModel(car);
+    car->bodyRoll = WrapSigned32(
+        (int64_t)car->bodyRoll + car->bodyRollVelocity);
+    car->modelY = car->y;
+    if (car->verticalMotionState != CAR_VERTICAL_GROUNDED) {
+        AdvanceCarJumpArc(car, ground);
+        if (car->verticalMotionState == CAR_VERTICAL_GROUNDED) {
+            ApplyCarLandingPose(car, ground);
         }
-
-        ground = WrapSigned32(
-            (int64_t)car->y - CAR_WHEEL_GROUND_OFFSET);
-        UpdateCarWheelRotation(car);
-        CopyCarBodyRotationToModel(car);
-        car->bodyRoll = WrapSigned32(
-            (int64_t)car->bodyRoll + car->bodyRollVelocity);
-        car->modelY = car->y;
-        if (car->verticalMotionState != CAR_VERTICAL_GROUNDED) {
-            AdvanceCarJumpArc(car, ground);
-            if (car->verticalMotionState == CAR_VERTICAL_GROUNDED) {
-                ApplyCarLandingPose(car, ground);
-            }
-        }
-        if (car->collisionFlag == 0) {
-            UpdateCarBodyKick(car);
-            UpdateCarCrestHop(car);
-        } else {
-            DampCollidingRivalSpeed(car);
-        }
+    }
+    if (car->collisionFlag == 0) {
+        UpdateCarBodyKick(car);
+        StepCarCrestHop(car, events, trackLength, reverse);
+    } else {
+        DampCollidingRivalSpeed(car);
     }
 }

@@ -26,7 +26,7 @@ GameCarRuntime g_Cars[11];
 const TrackEventData *g_TrackEventData;
 s32 g_RaceSeries;
 s32 g_TrackLength;
-CarCollisionPoint g_CarCollisionCorners[4];
+const CarHullPoint g_CarCollisionCorners[4] = {{0}};
 
 void TransformCollisionVector(const s16 *input, s32 *output) {
     (void)input; (void)output;
@@ -206,7 +206,7 @@ int main(int argc, char **argv) {
         sprintf(label, "hop state%d speed%d timer%d at%d", hopStates[hi],
                 speeds[si], hopTimers[ti], ii * 0x400);
         Record(label, NULL, 0);
-        UpdateCarCrestHop(&s_car);
+        StepCarCrestHop(&s_car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0);
         RecordCar("hopped", &s_car);
         steps++;
     }
@@ -258,7 +258,7 @@ int main(int argc, char **argv) {
             s_car.previousTrackProgress = s_car.trackProgress - 0x40;
             sprintf(label, "full table at%d", ii * 0x400);
             Record(label, NULL, 0);
-            UpdateCarCrestHop(&s_car);
+            StepCarCrestHop(&s_car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0);
             RecordCar("hopped", &s_car);
             steps++;
         }
@@ -292,7 +292,7 @@ int main(int argc, char **argv) {
     s_car.speed = INT32_MAX;
     s_car.previousTrackProgress = 0xFF;
     s_car.trackProgress = 0x100;
-    UpdateCarCrestHop(&s_car);
+    StepCarCrestHop(&s_car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0);
     if (s_car.verticalMotionState != CAR_VERTICAL_RISING ||
         s_car.verticalMotionRate != 11367) {
         puts("FAIL extreme crest launch did not use the wrapped product");
@@ -304,7 +304,7 @@ int main(int argc, char **argv) {
     s_car.speed = 0x400;
     s_car.previousTrackProgress = 0xFF;
     s_car.trackProgress = 0x100;
-    UpdateCarCrestHop(&s_car);
+    StepCarCrestHop(&s_car, g_TrackEventData, g_TrackLength, g_RaceSeries != 0);
     if (s_car.verticalMotionState != CAR_VERTICAL_AT_CREST ||
         s_car.verticalMotionRate != INT16_MIN) {
         puts("FAIL minimum crest motion did not wrap into its halfword");
@@ -364,3 +364,6 @@ int main(int argc, char **argv) {
     printf("car motion preserves %d validated states\n", steps);
     return 0;
 }
+
+s32 SinAngle(s32 angle) { return rsin(angle); }
+s32 CosAngle(s32 angle) { return rcos(angle); }

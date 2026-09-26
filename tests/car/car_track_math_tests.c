@@ -1,4 +1,4 @@
-#include "game/car_internal.h"
+#include "game/car_track_internal.h"
 
 #include <limits.h>
 #include <stdio.h>
@@ -45,6 +45,45 @@ int main(void) {
                                         INT_MAX, 1), INT16_MAX);
     CHECK_EQ(InterpolateCarTrackHeading(1, 1, INT_MIN, 1), 1);
 
-    puts("car track math tests passed");
+GameCarRuntime first = {0};
+GameCarRuntime second = {0};
+first.progressA = 900;
+first.progressB = 400;
+first.trackProgress = 700;
+second.progressA = -400;
+second.progressB = 100;
+second.trackProgress = 500;
+
+UpdateCarLapProgressState(&first, 1000, 0);
+UpdateCarLapProgressState(&second, 2000, 1);
+CHECK_EQ(first.previousTrackProgress, 700);
+CHECK_EQ(first.trackProgress, 300);
+CHECK_EQ(first.trackSection, 1);
+CHECK_EQ(second.previousTrackProgress, 500);
+CHECK_EQ(second.trackProgress, 1700);
+CHECK_EQ(second.trackSection, 1);
+
+/* Interleaving a different course/direction must not change this car. */
+UpdateCarLapProgressState(&first, 1000, 1);
+CHECK_EQ(first.previousTrackProgress, 300);
+CHECK_EQ(first.trackProgress, 300);
+CHECK_EQ(first.trackSection, 2);
+UpdateCarLapProgressState(&first, 0, 0);
+UpdateCarLapProgressState(&first, -1, 0);
+CHECK_EQ(first.previousTrackProgress, 300);
+CHECK_EQ(first.trackProgress, 300);
+CHECK_EQ(first.trackSection, 2);
+
+first.progressA = INT_MAX;
+first.progressB = 1;
+UpdateCarLapProgressState(&first, 1000, 0);
+CHECK_EQ(first.trackProgress, 352);
+first.progressA = 2000;
+first.progressB = 0;
+UpdateCarLapProgressState(&first, 1000, 1);
+CHECK_EQ(first.trackProgress, 0);
+CHECK_EQ(first.trackSection, 3);
+puts("car track math tests passed");
+
     return 0;
 }

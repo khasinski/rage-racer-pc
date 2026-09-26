@@ -13,6 +13,7 @@ static const ModernPreparedMaterialEntry *Find(
         const ModernPreparedMaterialEntry *entry = &cache->entries[i];
         if (entry->assetKey == instance->assetKey &&
             entry->assetSet == instance->assetSet &&
+            entry->assetSource == instance->assetSource &&
             entry->material == material && entry->variant == variant &&
             entry->hasCarPaint == instance->hasCarPaint &&
             entry->color1 == instance->carPaintColor1 &&
@@ -81,6 +82,7 @@ int ModernPreparedMaterialsStore(ModernPreparedMaterials *cache,
     entry = &cache->entries[cache->count++];
     entry->assetKey = instance->assetKey;
     entry->assetSet = instance->assetSet;
+    entry->assetSource = instance->assetSource;
     entry->material = material;
     entry->variant = variant;
     entry->hasCarPaint = instance->hasCarPaint;

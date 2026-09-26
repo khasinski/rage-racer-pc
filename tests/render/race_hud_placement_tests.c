@@ -196,6 +196,35 @@ static void CheckStaticLabelOwnership(void) {
     }
 }
 
+static void CheckExplicitLapTimes(void) {
+    ResetHud();
+    BuildRaceHudPrims(0);
+    g_GrandPrixMode = 0;
+    g_LapCount = 6;
+    g_PlayerCar.lap = 6;
+    g_PlayerCar.drive.hudLapHighlightRow = 5;
+    PlayerCarRuntime before = g_PlayerCar;
+    const s32 times[] = {1000, 2000, RACE_TIME_MAX_MS};
+    const u16 originalX = g_RaceHudSpriteDescsGp[0].x;
+    g_RaceHudSpriteDescsGp[0].x = 100;
+    DrawLapTimes(times, 3, 2, 1, 500, 1);
+    if (s_placementCount != 4 || s_placements[0].value != 1000 ||
+        s_placements[1].value != 2000 || s_placements[2].value != -1 ||
+        s_placements[3].value != 500 || s_placements[0].color != 0x78CC ||
+        s_placements[1].color != 0x780F || s_placements[2].color != 0x7890 ||
+        g_DrawBuffer->layout.raceHud.lapTimes[0].x0 != 100 ||
+        memcmp(&before, &g_PlayerCar, sizeof(before)) != 0) {
+        printf("FAIL explicit lap table used global player/mode/count\n");
+        s_failures++;
+    }
+    g_RaceHudSpriteDescsGp[0].x = originalX;
+    int placements = s_placementCount;
+    DrawLapTimes(NULL, 3, 2, 1, 500, 1);
+    if (s_placementCount != placements) {
+        printf("FAIL absent lap table drew values\n"); ++s_failures;
+    }
+}
+
 static void CheckLapColumnCapacity(void) {
     ResetHud();
     BuildRaceHudPrims(0);
@@ -203,7 +232,9 @@ static void CheckLapColumnCapacity(void) {
     g_LapCount = COURSE_LONG_LAPS + 2;
     g_PlayerCar.lap = COURSE_LONG_LAPS + 2;
 
-    DrawLapTimes(s_timing.bestLap);
+    DrawLapTimes(g_PlayerCar.lapTimes.table.milliseconds, g_LapCount,
+                 g_PlayerCar.lap, g_PlayerCar.drive.hudLapHighlightRow,
+                 s_timing.bestLap, RaceHasRivals());
 
     if (s_placementCount != COURSE_LONG_LAPS + 1) {
         printf("FAIL lap column drew %d time values, expected %d\n",
@@ -261,9 +292,11 @@ static void DrawWholeHud(s32 mode) {
     g_BestTotalTimes[0][0][0] = 278900;
 
     BuildRaceHudPrims(mode);
-    DrawLapTimes(s_timing.bestLap);
+    DrawLapTimes(g_PlayerCar.lapTimes.table.milliseconds, g_LapCount,
+                 g_PlayerCar.lap, g_PlayerCar.drive.hudLapHighlightRow,
+                 s_timing.bestLap, RaceHasRivals());
     DrawRaceHudLabels(mode);
-    if (mode != 0) DrawRacePosition();
+    if (mode != 0) DrawRacePosition(g_PlayerCar.drive.racePosition);
     DrawSplitTimes(&s_timing);
     DrawTimeRemaining(4500);
 }
@@ -404,7 +437,7 @@ static void CheckRacePositionDigits(void) {
     frame = g_DrawBuffer;
 
     g_PlayerCar.drive.racePosition = 3;
-    DrawRacePosition();
+    DrawRacePosition(g_PlayerCar.drive.racePosition);
     if (frame->layout.raceHud.labels[3].u0 != 0 ||
         frame->layout.raceHud.labels[4].u0 != 3 * 24 ||
         frame->layout.raceHud.labels[3].clut != 0x780B ||
@@ -413,12 +446,13 @@ static void CheckRacePositionDigits(void) {
         s_failures++;
     }
 
-    g_PlayerCar.drive.racePosition = 12;
-    DrawRacePosition();
+    /* A remote/local seat value must not be substituted by global player state. */
+    DrawRacePosition(12);
     if (frame->layout.raceHud.labels[3].u0 != 0x18 ||
         frame->layout.raceHud.labels[4].u0 != 2 * 24 ||
         frame->layout.raceHud.labels[3].clut != 0x780E ||
-        frame->layout.raceHud.labels[4].clut != 0x780E) {
+        frame->layout.raceHud.labels[4].clut != 0x780E ||
+        g_PlayerCar.drive.racePosition != 3) {
         printf("FAIL two-digit race-position digits or colors\n");
         s_failures++;
     }
@@ -451,6 +485,7 @@ static void CheckSplitDeltaSprites(void) {
 int main(void) {
     CheckStaticLabelOwnership();
     CheckLapColumnCapacity();
+    CheckExplicitLapTimes();
     CheckTimeLimitWarningBoundary();
     CheckMode(0);
     CheckMode(1);

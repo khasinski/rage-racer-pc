@@ -6,10 +6,8 @@
 #include "game/render_internal.h"
 
 static GameCarSpec s_CarSpec;
-GameCarSpec *g_CarSpec = &s_CarSpec;
 GameFrameContext g_FrameContexts[2];
 GameSpriteDesc g_TachoNeedleSprite;
-s16 g_TachoNeedleQuad[4][2];
 
 #define CHECK(condition)                                                       \
     do {                                                                       \
@@ -32,10 +30,6 @@ int main(void) {
     spec->needleY = 200;
     spec->faceDX = 7;
     spec->faceDY = 9;
-    spec->needleQuad[0] = 2;
-    spec->needleQuad[1] = 3;
-    spec->needleQuad[2] = 5;
-    spec->needleQuad[3] = 7;
     g_TachoNeedleSprite.w = 40;
     g_TachoNeedleSprite.h = 24;
     g_TachoNeedleSprite.u0 = 11;
@@ -43,18 +37,10 @@ int main(void) {
     g_TachoNeedleSprite.clut = 0x456;
     g_TachoNeedleSprite.semiTrans = 1;
 
-    BuildTachoNeedleQuad();
+    const GameSpriteDesc unchanged = g_TachoNeedleSprite;
+    BuildTachometerFace(spec);
 
-    CHECK(g_TachoNeedleQuad[0][0] == -7 &&
-          g_TachoNeedleQuad[0][1] == 5);
-    CHECK(g_TachoNeedleQuad[1][0] == -3 &&
-          g_TachoNeedleQuad[1][1] == -2);
-    CHECK(g_TachoNeedleQuad[2][0] == 7 &&
-          g_TachoNeedleQuad[2][1] == 5);
-    CHECK(g_TachoNeedleQuad[3][0] == 3 &&
-          g_TachoNeedleQuad[3][1] == -2);
-
-    CHECK(g_TachoNeedleSprite.x == 107 && g_TachoNeedleSprite.y == 209);
+    CHECK(memcmp(&unchanged, &g_TachoNeedleSprite, sizeof(unchanged)) == 0);
     CHECK(first->tachometerFace.x0 == 107 &&
           first->tachometerFace.y0 == 209);
     CHECK(first->tachometerFace.w == 40 && first->tachometerFace.h == 24);
@@ -71,6 +57,13 @@ int main(void) {
                  &first->tachometerDrawModes[1],
                  sizeof(first->tachometerDrawModes[0])) != 0);
 
-    puts("tachometer needle geometry and frame packets passed");
+CarTachometerSpec other = *spec;
+other.needleX = 10; other.needleY = 20;
+BuildTachometerFace(&other);
+CHECK(first->tachometerFace.x0 == 17 && first->tachometerFace.y0 == 29);
+CHECK(memcmp(&unchanged, &g_TachoNeedleSprite, sizeof(unchanged)) == 0);
+BuildTachometerFace(spec);
+CHECK(first->tachometerFace.x0 == 107 && first->tachometerFace.y0 == 209);
+    puts("tachometer face and frame packets passed");
     return 0;
 }

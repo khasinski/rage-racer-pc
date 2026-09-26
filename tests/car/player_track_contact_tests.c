@@ -1,142 +1,104 @@
-#include "game/car.h"
-#include "game/car_internal.h"
-#include "game/render.h"
-#include "game/track_internal.h"
+#include "game/car_track_internal.h"
 
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
-const GameTrackPoint *g_TrackPoints;
-s32 g_TrackPointCount;
-
-static GameTrackPoint s_points[2];
-static s32 s_trackResult;
-static s32 s_rotation;
-static int s_measureCalls;
-static int s_knockbackCalls;
-static int s_trackCalls;
-static int s_failures;
-
-/* The track frame comes from the GTE rotation, whose Y convention is the
- * transpose of BuildRotMatrixY. The helper must keep calling this one. */
-#undef RotMatrix
-MATRIX *RotMatrix(SVECTOR *rotation, MATRIX *matrix) {
-    memset(matrix, 0, sizeof(*matrix));
-    s_rotation = rotation->vy;
-    return matrix;
-}
-
-void MeasurePlayerTrackLimits(const Matrix *toTrack,
-                              CarTrackLimits *limits) {
-    (void)toTrack;
-    memset(limits, 0, sizeof(*limits));
-    s_measureCalls++;
-}
-
-void ApplyCarKnockback(GameCarRuntime *car) {
-    (void)car;
-    s_knockbackCalls++;
-}
-
-s32 UpdateCarTrackState(GameCarRuntime *car, s32 pointIndex,
-                        const CarTrackLimits *limits) {
-    (void)car;
-    (void)pointIndex;
-    (void)limits;
-    s_trackCalls++;
-    return s_trackResult;
-}
-
-static void Reset(PlayerCarRuntime *car) {
-    memset(car, 0, sizeof(*car));
-    memset(s_points, 0, sizeof(s_points));
-    g_TrackPoints = s_points;
-    g_TrackPointCount = 2;
-    s_points[0].angle = 0x100;
-    car->bodyYaw = 0xC80;
-    car->speed = 100;
-    s_trackResult = 0;
-    s_rotation = 0;
-    s_measureCalls = 0;
-    s_knockbackCalls = 0;
-    s_trackCalls = 0;
-}
-
-#define CHECK(condition) do {                                                \
-    if (!(condition)) {                                                      \
-        printf("FAIL line %d: %s\n", __LINE__, #condition);                 \
-        s_failures++;                                                        \
-    }                                                                        \
-} while (0)
+#define CHECK(condition) do { if (!(condition)) { \
+    fprintf(stderr, "line %d: %s\n", __LINE__, #condition); return 1; \
+} } while (0)
 
 int main(void) {
-    PlayerCarRuntime car;
+    const GameTrackPoint points[2] = {
+        {.segmentLength = 1000, .leftHalfWidth = 100, .rightHalfWidth = 100},
+        {.x = 1000, .segmentLength = 1000,
+         .leftHalfWidth = 100, .rightHalfWidth = 100},
+    };
+    const TrackRoute route = {.points = points, .count = 2, .length = 2000};
+    const CarHullPoint corners[4] = {{-15, 20}, {15, 20}, {-8, -10}, {8, -10}};
+    PlayerCarRuntime initial = {0};
+    initial.x = 200;
+    initial.z = 150;
+    initial.bodyYaw = 0xC00;
+    initial.speed = 100;
+    PlayerCarRuntime car = initial;
+    CHECK(ResolveCarTrackContact(&car, &route, corners, 0) == 2);
+    CHECK(car.z == 40 && car.motionActive == 1);
+    CHECK(car.trackProgress == 800);
 
-    Reset(&car);
-    s_trackResult = 4;
-    CHECK(ResolvePlayerTrackContact(&car) == 4);
-    CHECK(s_rotation == 0x180);
-    CHECK(s_measureCalls == 1 && s_trackCalls == 1);
-    CHECK(s_knockbackCalls == 0);
+    car = initial;
+    car.speed = 63;
+    CHECK(ResolveCarTrackContact(&car, &route, corners, 0) == 0);
+    CHECK(car.z == 40 && car.motionActive == 1);
+    car = initial;
+    car.speed = 64;
+    CHECK(ResolveCarTrackContact(&car, &route, corners, 0) == 2);
+    car = initial;
+    car.speed = 63;
+    car.z = -150;
+    CHECK(ResolveCarTrackContact(&car, &route, corners, 0) == 1);
+    CHECK(car.z == -40);
 
-    Reset(&car);
+    const CarHullPoint rearCorners[4] = {{-8, 20}, {8, 20}, {15, -10}, {-15, -10}};
+    car = initial;
+    car.speed = 63;
+    CHECK(ResolveCarTrackContact(&car, &route, rearCorners, 0) == 0);
+    car = initial;
+    car.speed = 63;
+    car.z = -150;
+    CHECK(ResolveCarTrackContact(&car, &route, rearCorners, 0) == 4);
+
+    car = initial;
+    car.z = 0;
     car.motionActive = 1;
     car.motionTimer = 1;
-    s_trackResult = 1;
-    CHECK(ResolvePlayerTrackContact(&car) == 1);
-    CHECK(s_knockbackCalls == 1);
-
-    Reset(&car);
+    car.velocityX = 8;
+    CHECK(ResolveCarTrackContact(&car, &route, corners, 0) == 0);
+    CHECK(car.x == 192 && car.velocityX == 7 && car.motionActive == 0);
+    car = initial;
+    car.z = 0;
     car.motionActive = 1;
     car.motionTimer = 0x8000;
-    CHECK(ResolvePlayerTrackContact(&car) == 0);
-    CHECK(s_knockbackCalls == 1);
-
-    Reset(&car);
+    car.velocityX = 8;
+    ResolveCarTrackContact(&car, &route, corners, 0);
+    CHECK(car.x == 192 && car.motionTimer == 0x7FFF);
+    car = initial;
+    car.z = 0;
     car.motionTimer = 1;
-    CHECK(ResolvePlayerTrackContact(&car) == 0);
-    CHECK(s_knockbackCalls == 0);
+    car.velocityX = 8;
+    ResolveCarTrackContact(&car, &route, corners, 0);
+    CHECK(car.x == 200);
 
-    Reset(&car);
-    car.speed = 63;
-    s_trackResult = 2;
-    CHECK(ResolvePlayerTrackContact(&car) == 0);
-    s_trackResult = 3;
-    CHECK(ResolvePlayerTrackContact(&car) == 0);
+    /* A quarter-turn changes the reaching corner through the track-frame
+     * convention; using the game's opposite Y rotation would pick another one. */
+    car = initial;
+    car.bodyYaw += 0x400;
+    CHECK(ResolveCarTrackContact(&car, &route, corners, 0) == 1);
+    CHECK(car.z == 20);
+    car = initial;
+    car.bodyYaw += 0x400;
+    car.z = -150;
+    CHECK(ResolveCarTrackContact(&car, &route, corners, 0) == 3);
+    CHECK(car.z == -60);
 
-    Reset(&car);
-    car.speed = 63;
-    s_trackResult = 1;
-    CHECK(ResolvePlayerTrackContact(&car) == 1);
-    s_trackResult = 4;
-    CHECK(ResolvePlayerTrackContact(&car) == 4);
-
-    Reset(&car);
-    car.speed = 64;
-    s_trackResult = 2;
-    CHECK(ResolvePlayerTrackContact(&car) == 2);
-
-    Reset(&car);
-    g_TrackPoints = NULL;
-    CHECK(ResolvePlayerTrackContact(&car) == 0);
-    CHECK(s_measureCalls == 0 && s_trackCalls == 0);
-
-    Reset(&car);
-    g_TrackPointCount = 0;
-    CHECK(ResolvePlayerTrackContact(&car) == 0);
-    CHECK(s_measureCalls == 0 && s_trackCalls == 0);
-
-    Reset(&car);
-    car.bodyYaw = INT_MAX;
-    s_points[0].angle = INT16_MAX;
-    ResolvePlayerTrackContact(&car);
-    CHECK(s_rotation == 0x3FE);
-
-    if (s_failures != 0) {
-        printf("%d player track contact checks failed\n", s_failures);
-        return 1;
-    }
-    puts("player track contact preserves skid filtering and knockback");
+    PlayerCarRuntime isolated = initial;
+    ResolveCarTrackContact(&isolated, &route, corners, 0);
+    PlayerCarRuntime other = initial;
+    other.bodyYaw += 0x400;
+    ResolveCarTrackContact(&other, &route, rearCorners, 1);
+    car = initial;
+    ResolveCarTrackContact(&car, &route, corners, 0);
+    CHECK(memcmp(&isolated, &car, sizeof(car)) == 0);
+    car = initial;
+    CHECK(ResolveCarTrackContact(&car, NULL, corners, 0) == 0);
+    CHECK(memcmp(&initial, &car, sizeof(car)) == 0);
+    CHECK(ResolveCarTrackContact(NULL, &route, corners, 0) == 0);
+    TrackRoute empty = route;
+    empty.count = 0;
+    CHECK(ResolveCarTrackContact(&car, &empty, corners, 0) == 0);
+    empty = route;
+    empty.points = NULL;
+    CHECK(ResolveCarTrackContact(&car, &empty, corners, 0) == 0);
+    puts("real player track contact checks passed");
     return 0;
 }

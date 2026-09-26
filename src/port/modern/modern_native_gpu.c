@@ -112,6 +112,7 @@ typedef struct ModernNativeTexture {
     uint8_t carPaintColor1;
     uint8_t carPaintColor2;
     RenderAssetSet assetSet;
+    RenderAssetSource assetSource;
     RageRenderMaterial definition;
     int transparent;
     SDL_GPUTexture *texture;
@@ -1317,6 +1318,7 @@ static void ModernNativeIndexTexture(const ModernNativeTexture *entry) {
     ModernTextureKey key = {
         .assetKey = entry->assetKey,
         .assetSet = entry->assetSet,
+        .assetSource = entry->assetSource,
         .material = entry->material,
         .variant = entry->materialVariant,
         .hasCarPaint = entry->hasCarPaint,
@@ -1364,6 +1366,7 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     }
     instance.assetKey = span->assetKey;
     instance.assetSet = span->assetSet;
+    instance.assetSource = span->assetSource;
     instance.hasCarPaint = span->hasCarPaint;
     instance.carPaintColor1 = span->carPaintColor1;
     instance.carPaintColor2 = span->carPaintColor2;
@@ -1460,6 +1463,7 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     entry->assetSet = span->assetSet;
     entry->material = span->material;
     entry->materialVariant = span->materialVariant;
+    entry->assetSource = span->assetSource;
     entry->hasCarPaint = span->hasCarPaint;
     entry->carPaintColor1 = span->carPaintColor1;
     entry->carPaintColor2 = span->carPaintColor2;
@@ -1517,6 +1521,7 @@ static void ModernNativeWarmTrackBank(SDL_GPUCommandBuffer *command) {
             span.assetSet = entry->assetSet;
             span.material = entry->material;
             span.materialVariant = (uint8_t)alternate;
+            span.assetSource = entry->assetSource;
             span.hasCarPaint = entry->hasCarPaint;
             span.carPaintColor1 = entry->carPaintColor1;
             span.carPaintColor2 = entry->carPaintColor2;

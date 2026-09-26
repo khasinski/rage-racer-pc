@@ -71,7 +71,8 @@ void DrawAnimatedScenery(s32 timer, s32 instance) {
     frame = (timer / 4) % 16;
     if (frame == 0 && timer % 8 == 0 && g_RacePaused == 0) {
         g_SceneryAnimation.racePosition = g_PlayerCar.drive.racePosition;
-        g_SceneryAnimation.raceVariant = (Random15() & 7) / 3;
+        u32 random = g_RandomSeed ^ (u32)timer;
+        g_SceneryAnimation.raceVariant = (RandomNext(&random) & 7) / 3;
         if (g_SceneryAnimation.racePosition >= 4) {
             g_SceneryAnimation.racePosition = 0;
         }
@@ -120,7 +121,8 @@ void DrawPresentationAnimatedScenery(s32 timer, s32 instance, s32 isReplay,
 
     frame = (timer / 4) % 16;
     if (frame == 0 && timer % 8 == 0 && animate == 1) {
-        g_SceneryAnimation.presentationVariant = (Random15() & 7) / 3;
+        u32 random = g_RandomSeed ^ (u32)timer;
+        g_SceneryAnimation.presentationVariant = (RandomNext(&random) & 7) / 3;
     }
 
     BuildAnimatedSceneryTransform(&transform, instance);

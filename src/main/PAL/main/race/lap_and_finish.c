@@ -9,6 +9,7 @@
  */
 
 #include "game/audio.h"
+#include "game/race_lap.h"
 #include "game/player_car_internal.h"
 #include "game/cd.h"
 #include "game/menu.h"
@@ -64,8 +65,9 @@ static void TickRunningLapTime(RaceTiming *timing, PlayerCarRuntime *car) {
     } else {
         times->table.frameCounts[slot] = LAP_FRAME_COUNT_MAX;
     }
+    u32 random = g_RandomSeed ^ (u32)times->table.frameCounts[slot];
     times->table.milliseconds[slot] =
-        FramesToMilliseconds(times->table.frameCounts[slot], Random15() % 40);
+        FramesToMilliseconds(times->table.frameCounts[slot], RandomNext(&random) % 40);
     if (times->table.milliseconds[slot] >= RACE_TIME_MAX_MS) {
         times->table.milliseconds[slot] = RACE_TIME_MAX_MS;
     }
@@ -166,7 +168,6 @@ static s32 CrossTheLine(RaceScene *state, PlayerCarRuntime *car,
                         s32 recordMode) {
     s32 lapsRun;
 
-    car->lap += 1;
     g_RaceCueFlags &= LAP_CUE_FLAG_MASK;
     if (g_RaceCueDelay == 0) {
         g_RaceCueDelay = LAP_CUE_ARM_DELAY;
@@ -265,22 +266,11 @@ static void CountDownTheLaps(PlayerCarRuntime *car) {
     }
 }
 
-static int HasCrossedCurrentLapLine(s32 lap, s32 trackLength,
-                                    s32 progressA, s32 progressB) {
-    return (int64_t)lap * trackLength <=
-           (int64_t)progressA + progressB;
-}
-
-static int IsWholeLapBehind(s32 trackLength, s32 progressA, s32 progressB) {
-    return (int64_t)progressA + progressB <= -(int64_t)trackLength;
-}
-
 s32 UpdateLapAndFinish(RaceScene *state, PlayerCarRuntime *car,
                        s32 grandPrixMode) {
     s32 series = RaceSeriesIndex(g_RaceSeries);
     s32 course = SeriesCourseIndex();
     s32 recordMode = RaceRecordMode(grandPrixMode);
-    s16 lapAtEntry;
     s32 returnValue;
 
     if (car == NULL) {
@@ -298,11 +288,7 @@ s32 UpdateLapAndFinish(RaceScene *state, PlayerCarRuntime *car,
 
     /* Lap 0 is the grid: the first line crossed is the start line, and it
      * opens lap one rather than completing a lap. */
-    lapAtEntry = car->lap;
-    if (lapAtEntry >= 0 && lapAtEntry <= PLAYER_LAP_TIME_CAPACITY &&
-        HasCrossedCurrentLapLine(lapAtEntry, g_TrackLength,
-                                car->progressA, car->progressB) &&
-        (lapAtEntry <= g_LapCount)) {
+    if (AdvanceCarLap(car, g_TrackLength, g_LapCount) != LAP_NONE) {
         returnValue = CrossTheLine(state, car, recordMode);
     } else {
         returnValue = 0;
@@ -312,8 +298,7 @@ s32 UpdateLapAndFinish(RaceScene *state, PlayerCarRuntime *car,
         (g_RacePhase == RACE_PHASE_FINISHED)) {
         returnValue = AdvanceFinishFade(state, returnValue);
     } else if ((g_GrandPrixMode == 0) &&
-               (IsWholeLapBehind(g_TrackLength, car->progressA,
-                                 car->progressB) ||
+               (IsCarLapBehind(car, g_TrackLength) ||
                 ((car->lap == 0) &&
                  (g_WrongWayTimer >= WRONG_WAY_RETIRE_FRAMES)))) {
         RetireWrongWay(state);

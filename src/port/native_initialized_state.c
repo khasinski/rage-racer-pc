@@ -30,19 +30,7 @@ ProportionalFontCell g_PropFontCells[PROPORTIONAL_FONT_CELL_COUNT] = {
     {0x90, 0x84}, {0x9c, 0x84}, {0xa8, 0x84}, {0x00, 0x00}, {0x00, 0x00}, {0x00, 0x00}, {0x00, 0x00}, {0x34, 0x90},
 };
 
-s16 g_CarModelBankTable[CAR_MODEL_BANK_ENTRY_COUNT][CAR_MODEL_BANK_FIELDS] = {
-    {0, 0},
-    {5, 0},
-    {10, 0},
-    {15, 0},
-    {20, 0},
-    {20, 1},
-    {25, 0},
-    {25, 1},
-    {30, 0},
-    {30, 1},
-    {30, 2},
-};
+
 u16 g_BodyColorPrimary[18] = {
     0xbe73, 0xa080, 0x8a14, 0xca52, 0x9153, 0xa0e6,
     0x95c2, 0x90d0, 0xc148, 0x9091, 0xacc4, 0x9cf4,
@@ -198,12 +186,7 @@ CdlLOC g_CdTrackLoopPoint[CD_TRACK_LOCATION_COUNT] = {
         {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0},
         {0, 0, 0, 0}, {0, 0, 0, 0}, {5, 0, 0, 0},
     };
-u8 g_CarModelByCourse[CAR_MODEL_COURSE_COUNT][RACE_CAR_SLOT_COUNT] = {
-    {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
-    {1, 2, 0, 3, 4, 5, 6, 7, 8, 9, 10},
-    {2, 0, 1, 3, 4, 5, 6, 7, 8, 9, 10},
-    {3, 0, 1, 2, 4, 5, 6, 7, 8, 9, 10},
-};
+
 Matrix g_TrackColorMatrix = {
     {{819, 0, 192}, {819, 0, 192}, {819, 0, 192}},
     {0, 0, 0},

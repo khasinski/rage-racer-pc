@@ -1,7 +1,5 @@
-#include "game/car.h"
-#include "game/car_internal.h"
+#include "game/car_control.h"
 #include "game/integer.h"
-#include "game/state.h"
 
 enum {
     STEERING_FULL_LOCK = 0x1000,
@@ -45,28 +43,27 @@ void UpdatePlayerSteeringTarget(PlayerCarRuntime *car) {
         (int64_t)drive->targetHeading + headingChange);
 }
 
-static void ClampPlayerSteeringAngle(PlayerCarRuntime *car) {
+static void ClampPlayerSteeringAngle(PlayerCarRuntime *car, int usesNegcon) {
     GameCarDrive *drive = &car->drive;
-    int usesNegcon = g_PadType == PAD_TYPE_NEGCON;
 
     if (car->steeringAngle >= STEERING_FULL_LOCK) {
         car->steeringAngle = STEERING_FULL_LOCK;
         if (!usesNegcon || drive->steerPos < -STEERING_FULL_LOCK) {
-            g_SteerHoldFrames = WrapSigned16(
-                (int64_t)g_SteerHoldFrames + 1);
+            drive->steerHoldFrames = WrapSigned16(
+                (int64_t)drive->steerHoldFrames + 1);
         }
     } else if (car->steeringAngle <= -STEERING_FULL_LOCK) {
         car->steeringAngle = -STEERING_FULL_LOCK;
         if (!usesNegcon || drive->steerPos > STEERING_FULL_LOCK) {
-            g_SteerHoldFrames = WrapSigned16(
-                (int64_t)g_SteerHoldFrames + 1);
+            drive->steerHoldFrames = WrapSigned16(
+                (int64_t)drive->steerHoldFrames + 1);
         }
     } else {
-        g_SteerHoldFrames = usesNegcon ? NEGCON_STEERING_RELEASE_FRAMES : 0;
+        drive->steerHoldFrames = usesNegcon ? NEGCON_STEERING_RELEASE_FRAMES : 0;
     }
 }
 
-void UpdatePlayerControlFeedback(PlayerCarRuntime *car) {
+void UpdateCarControlFeedback(PlayerCarRuntime *car, int analogSteering) {
     UpdateCarWheelRotation(AsRivalCar(car));
-    ClampPlayerSteeringAngle(car);
+    ClampPlayerSteeringAngle(car, analogSteering);
 }

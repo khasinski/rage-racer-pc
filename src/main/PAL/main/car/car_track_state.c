@@ -1,9 +1,5 @@
-#include "game/car_internal.h"
-#include "game/integer.h"
-#include "game/player_car_internal.h"
-#include "game/render.h"
-#include "game/race.h"
-#include "game/track_internal.h"
+#include "game/car_track_internal.h"
+#include "game/car_motion_internal.h"
 
 enum {
     MINIMUM_SEGMENT_LENGTH = 1,
@@ -13,14 +9,19 @@ enum {
 static void ApplyTrackEdgeCorrection(GameCarRuntime *car,
                                      CarTrackWork *work,
                                      s32 edgePenetration,
-                                     CarTrackContact contact) {
+                                     CarTrackContact contact, int knockback) {
     work->edgeOffset.vx = 0;
     work->edgeOffset.vy = 0;
     work->edgeOffset.vz = WrapSigned16(edgePenetration);
-    BuildRotMatrixY(&work->edgeCorrectionMatrix, work->heading);
-    ApplyMatrix(&work->edgeCorrectionMatrix, &work->edgeOffset,
-                &work->edgeCorrection);
-    if (car == AsRivalCar(&g_PlayerCar)) {
+    /* Only the lateral axis is nonzero. Preserve the old matrix multiply's
+     * signed 16-bit inputs and floor rounding without a render/GTE call. */
+    work->edgeCorrection.x =
+        ((int64_t)WrapSigned16(-SinAngle(work->heading)) *
+         work->edgeOffset.vz) >> 12;
+    work->edgeCorrection.z =
+        ((int64_t)WrapSigned16(CosAngle(work->heading)) *
+         work->edgeOffset.vz) >> 12;
+    if (knockback) {
         SetTrackBoundaryKnockback(
             car, work->edgeCorrection.x, work->edgeCorrection.z,
             contact);
@@ -35,14 +36,14 @@ static void ApplyTrackEdgeCorrection(GameCarRuntime *car,
  *
  * Both half-widths are interpolated along the segment and widened by their own
  * inset; a car outside either is pushed back to the edge and reported as
- * having hit it. Every car is moved back inside; only the player additionally
- * receives a knockback impulse.
+ * having hit it. Every car is moved back inside; human physics callers request
+ * a knockback impulse, while the retail AI requests clamping only.
  */
 static s32 ClampCarToTrackEdges(GameCarRuntime *car, CarTrackWork *work,
                                 const CarTrackLimits *limits,
                                 const GameTrackPoint *point,
                                 const GameTrackPoint *nextPoint,
-                                s32 alongSegment, s32 lateralOffset) {
+                                s32 alongSegment, s32 lateralOffset, int knockback) {
     s32 leftLimit;
     s32 rightLimit;
     s32 rightHalfWidth;
@@ -60,14 +61,14 @@ static s32 ClampCarToTrackEdges(GameCarRuntime *car, CarTrackWork *work,
     if (lateralOffset < -leftLimit) {
         ApplyTrackEdgeCorrection(
             car, work, lateralOffset + leftLimit,
-            (CarTrackContact)limits->leftContact);
+            (CarTrackContact)limits->leftContact, knockback);
         return -leftLimit;
     }
     rightLimit = WrapSigned16(rightHalfWidth) - limits->rightInset;
     if (rightLimit < lateralOffset) {
         ApplyTrackEdgeCorrection(
             car, work, lateralOffset - rightLimit,
-            (CarTrackContact)limits->rightContact);
+            (CarTrackContact)limits->rightContact, knockback);
         lateralOffset = rightLimit;
     }
     return lateralOffset;
@@ -88,12 +89,13 @@ static s32 ClampCarToTrackEdges(GameCarRuntime *car, CarTrackWork *work,
  */
 static void PlaceCarOnArc(GameCarRuntime *car, CarTrackWork *work,
                           const GameTrackPoint *point,
-                          const GameTrackPoint *nextPoint, s32 arcIndex) {
+                          const GameTrackPoint *nextPoint,
+                          const GameTrackArcCenter *arcCenter) {
     s32 arcLateral;
     s32 interpolatedRadius;
     s32 sweptAngle;
 
-    CarTrackMeasureArc(work, arcIndex, car->x, car->z, point, nextPoint);
+    CarTrackMeasureArc(work, arcCenter, car->x, car->z, point, nextPoint);
     work->arcSpan = GetAngleDistance(work->pointAngle, work->nextPointAngle);
     sweptAngle = GetAngleDistance(work->pointAngle, work->sweptAngle);
     work->sweptAngle = sweptAngle;
@@ -164,8 +166,8 @@ static void UpdateCarSurfaceOrientation(GameCarRuntime *car,
     work->camberAngle = WrapSigned16(InterpolateCarTrackValue(
         pointCamber, nextCamber, alongSegment, segmentLength));
 
-    work->headingCos = rcos(work->relativeHeading);
-    work->headingSin = rsin(work->relativeHeading);
+    work->headingCos = CosAngle(work->relativeHeading);
+    work->headingSin = SinAngle(work->relativeHeading);
     car->bodyPitch =
         CarTrackFixed12ToInteger(work->surfacePitch * work->headingCos) +
         CarTrackFixed12ToInteger(work->camberAngle * work->headingSin);
@@ -175,13 +177,14 @@ static void UpdateCarSurfaceOrientation(GameCarRuntime *car,
 }
 
 static void UpdateCarTrackProgress(GameCarRuntime *car, CarTrackWork *work,
-                                   s32 alongSegment, s32 lateralOffset) {
+                                   s32 alongSegment, s32 lateralOffset,
+                                   const TrackRoute *route, int reverse) {
     car->trackLateralOffset = lateralOffset;
-    car->progressB = g_RaceSeries != 0
+    car->progressB = reverse
         ? (u32)alongSegment
         : (u32)((s16)work->segmentLength - alongSegment);
     car->trackHeading = work->heading;
-    UpdateCarLapProgressState(car);
+    UpdateCarLapProgressState(car, route->length, reverse);
 }
 
 static s32 NormalizeLateralOffset(s32 lateralOffset,
@@ -199,24 +202,25 @@ static s32 NormalizeLateralOffset(s32 lateralOffset,
     return 0;
 }
 
-s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
-                        const CarTrackLimits *limits) {
+s32 StepCarTrackState(GameCarRuntime *car, const TrackRoute *route,
+                      s32 trackPointIndex, const CarTrackLimits *limits,
+                      int reverse, int knockback) {
     s32 arcIndex;
     s32 lateralOffset;
     s32 alongSegment;
     const GameTrackPoint *point;
     const GameTrackPoint *nextPoint;
-    CarTrackWork *work;
+    CarTrackWork storage = {0};
+    CarTrackWork *work = &storage;
 
-    if (car == NULL || g_TrackPointCount <= 0 || g_TrackPoints == NULL ||
-        g_TrackLength <= 0 || limits == NULL) {
+    if (car == NULL || route == NULL || route->count <= 0 ||
+        route->points == NULL || route->length <= 0 || limits == NULL) {
         return 0;
     }
 
-    work = &g_CarTrackWork;
     work->trackContact = CAR_TRACK_CONTACT_NONE;
-    point = TrackPoint(trackPointIndex);
-    nextPoint = TrackPoint(trackPointIndex + 1);
+    point = RoutePoint(route, trackPointIndex);
+    nextPoint = RoutePoint(route, WrapSigned32((int64_t)trackPointIndex + 1));
     work->segmentLength = point->segmentLength;
     if (WrapSigned16(work->segmentLength) <= 0) {
         work->segmentLength = MINIMUM_SEGMENT_LENGTH;
@@ -226,7 +230,8 @@ s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
     work->arcIndex = (s16)arcIndex;
     work->curveMode = TrackPointCurveMode(point);
     if (work->curveMode != TRACK_CURVE_NONE) {
-        PlaceCarOnArc(car, work, point, nextPoint, arcIndex);
+        if (route->arcs == NULL) return 0;
+        PlaceCarOnArc(car, work, point, nextPoint, &route->arcs[arcIndex]);
     }
 
     MeasureCarTrackAxes(car, point, work->heading, &work->edgeOffset,
@@ -236,7 +241,7 @@ s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
     }
     lateralOffset = ClampCarToTrackEdges(car, work, limits, point,
                                          nextPoint, alongSegment,
-                                         lateralOffset);
+                                         lateralOffset, knockback);
     alongSegment = ClampCarTrackAlongSegment(
         alongSegment, WrapSigned16(work->segmentLength));
     car->segmentFraction = (alongSegment << SEGMENT_FRACTION_SHIFT) /
@@ -244,6 +249,7 @@ s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
     car->normalizedLateralOffset = NormalizeLateralOffset(lateralOffset, work);
     UpdateCarSurfaceOrientation(car, work, point, nextPoint, alongSegment,
                                 lateralOffset);
-    UpdateCarTrackProgress(car, work, alongSegment, lateralOffset);
+    UpdateCarTrackProgress(car, work, alongSegment, lateralOffset,
+                           route, reverse);
     return work->trackContact;
 }

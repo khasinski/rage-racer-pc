@@ -117,8 +117,85 @@ endif()
 # Keeping this target usable when RAGE_BUILD_PORT=OFF gives unit tests a real
 # simulation boundary instead of compiling selected game files ad hoc.
 set(RAGE_SIM_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/catalog_parse.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/catalog_override.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/rival_traffic_avoidance.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/rival_collision.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/rival_step.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/rival_car_init.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/steer_car_along_route.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/clamp_car_lateral_offset.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/rival_track_pose.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/rival_body_motion.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/rival_car_movement.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/rival_racing_line.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/rival_acceleration.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/rival_target_speed.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/seed_car_ai_speed_keys.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/rival_ai_setup.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/car_hulls.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/car_shift_pitch.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/asset/read_car_spec.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/track/track_data.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/asset/read_scene_blocks.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/track/track_zone.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/track/read_track_events.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/track/read_track_route.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/math/sin_angle.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/math/cos_angle.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/math/hull_rotation.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/math/geometry.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/race/race_sim.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/race/race_lap.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/driver_init.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/driver_field.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/driver_collision.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/driver.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/car_dynamics.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/engine_sound.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/driver_input.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/car_slide.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/car_facing_direction.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/car_track_steering.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/integrate_player_position.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/player_body_offset.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/car_crest_motion.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/player_contact_response.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/player_track_contact.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/player_track_limits.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/car_contact.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/collision_quads.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/car_collision_response.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/player_tilt.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/car_body_kick.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/update_car_body_kick.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/car_jump_arc.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/player_jump.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/lap_progress.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/find_track_segment.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/car_track_state.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/car_knockback.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/replay_track_reconstruction.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/arc_measure.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/car_track_math.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/car_launch.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/car_airborne.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/car_standing_start.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/begin_car_standing_start.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/math/angle.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/update_car_travel_velocity.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/update_car_driving.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/step_car_drivetrain.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/drivetrain_torque.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/car_performance_setup.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/drivetrain_loads.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/car_body_roll.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/player_controls.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/car_wheel_rotation.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/drivetrain_shift.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/gear_shift.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/prepare_airborne_drivetrain.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/race/time_conversion.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/random/random.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/angle_math.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/track/blend_angle.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/track/interpolate_track_angle.c
@@ -126,10 +203,47 @@ set(RAGE_SIM_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/track/smooth_track_angle.c
 )
 add_library(rage-sim STATIC ${RAGE_SIM_SOURCES})
-target_include_directories(rage-sim PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_compile_options(rage-sim PRIVATE ${RAGE_COMPAT_COMPILE_OPTIONS})
+target_include_directories(rage-sim PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/psyz/psyz/src/psyz)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(rage-sim PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
+
+set(RAGE_DATA_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/asset/read_car_model.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/asset/read_image_asset.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/asset/read_track_images.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/asset/read_track_look.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/asset/read_model_bank.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/asset/read_terrain_bank.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/track/read_environment_script.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/track/environment.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/asset/race_data.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/asset/race_grid.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/asset/race_disc.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/port/archive_index.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/port/disc_cue.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/port/disc_iso.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/port/disc_identity.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/port/disc_raw_file.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/port/disc_discovery.c)
+add_library(rage-data STATIC ${RAGE_DATA_SOURCES})
+target_include_directories(rage-data PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/port)
+target_compile_options(rage-data PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+
+# The server simulation and import layer must be verifiable without the port.
+if(RAGE_ENABLE_SANITIZERS AND
+   CMAKE_C_COMPILER_ID MATCHES "Clang|GNU" AND NOT WIN32)
+    foreach(RAGE_SANITIZER_TARGET rage-sim rage-data)
+        target_compile_options(${RAGE_SANITIZER_TARGET} PUBLIC
+            -fsanitize=address,undefined -fno-omit-frame-pointer)
+        target_link_options(${RAGE_SANITIZER_TARGET} INTERFACE
+            -fsanitize=address,undefined)
+    endforeach()
+endif()
+target_link_libraries(rage-data PUBLIC rage-sim)
 
 add_library(rage-content STATIC src/content/region_profile.c)
 target_include_directories(rage-content PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -259,6 +373,7 @@ endif()
 
 add_library(rage-render-world STATIC
     src/render/car_lights.c
+    src/render/track_lighting.c
     src/render/car_lamps.c
     src/render/render_world.c
     src/render/render_world_frame.c
@@ -269,7 +384,8 @@ add_library(rage-render-world STATIC
     src/render/render_mesh_build.c
     src/render/render_geometry_pack.c)
 target_include_directories(rage-render-world PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/port/include)
 if(NOT MSVC)
     target_link_libraries(rage-render-world PUBLIC m)
 endif()
@@ -296,6 +412,17 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(rage-ray PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 
+# Native CPU libraries are tested in headless builds too. Instrument their
+# internals regardless of whether the windowed client is enabled.
+if(RAGE_ENABLE_SANITIZERS AND
+   CMAKE_C_COMPILER_ID MATCHES "Clang|GNU" AND NOT WIN32)
+    foreach(RAGE_SANITIZER_TARGET rage-content rage-mod-package rage-rmesh rage-render-world rage-ray)
+        target_compile_options(${RAGE_SANITIZER_TARGET} PRIVATE
+            -fsanitize=address,undefined -fno-omit-frame-pointer)
+        target_link_options(${RAGE_SANITIZER_TARGET} INTERFACE -fsanitize=address,undefined)
+    endforeach()
+endif()
+
 if(RAGE_BUILD_PORT)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
     set(CHDR_WANT_TESTS OFF CACHE BOOL "" FORCE)
@@ -308,7 +435,7 @@ if(RAGE_BUILD_PORT)
     file(GLOB_RECURSE RAGE_GAME_SOURCES CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/*.c"
     )
-    list(REMOVE_ITEM RAGE_GAME_SOURCES ${RAGE_SIM_SOURCES})
+    list(REMOVE_ITEM RAGE_GAME_SOURCES ${RAGE_SIM_SOURCES} ${RAGE_DATA_SOURCES})
 
     add_library(rage-game-full OBJECT
         ${RAGE_GAME_SOURCES}
@@ -343,9 +470,14 @@ if(RAGE_BUILD_PORT)
         src/port/game_diagnostics.c
         src/port/render_world_game.c
         src/port/render_world_scene.c
+        src/port/car_parts.c
+        src/port/race_view.c
+        src/port/client_race.c
+        src/port/client_assets.c
+        src/port/client_frame.c
+        src/port/race_hud.c
         src/port/sky_panorama_layout.c
         src/port/track_asset_identity.c
-        src/port/track_lighting.c
         src/port/runtime_config.c
         src/port/runtime_parse.c
         src/port/timing_control.c
@@ -363,6 +495,7 @@ if(RAGE_BUILD_PORT)
         src/port/chd_disc.c
         src/port/chd_track_layout.c
         src/port/disc_stream_table.c
+        src/port/disc_identity.c
         src/port/hud_config.c
         src/port/speed_display.c
         src/port/mod_assets.c
@@ -374,6 +507,9 @@ if(RAGE_BUILD_PORT)
         src/port/native_visibility.c
         src/port/native_asset_importer.c
         src/port/native_mesh_writer.c
+        src/port/native_car_cache.c
+        src/port/native_texture.c
+        src/port/native_sky.c
         src/port/track_texture_snapshot.c
         src/port/modern/modern_renderer.c
         src/port/modern/modern_presentation_clock.c
@@ -468,7 +604,8 @@ if(RAGE_BUILD_PORT)
     add_executable(rage-pcm-check tools/rage_pcm_check.c src/port/pcm_metrics.c)
     add_executable(rage-fmv-pacing-check tools/rage_fmv_pacing_check.c
         src/port/disc_raw_file.c src/port/disc_cue.c src/port/disc_iso.c
-        src/port/disc_stream_table.c)
+        src/port/disc_stream_table.c
+        src/port/disc_identity.c)
     target_include_directories(rage-fmv-pacing-check PRIVATE src/port)
     target_link_libraries(rage-fmv-pacing-check PRIVATE rage-content)
     if(MSVC)
@@ -617,7 +754,7 @@ if(RAGE_BUILD_PORT)
             endif()
         endif()
         target_link_libraries(${RAGE_PORT_TARGET} PRIVATE
-            rage-sim psyz rage-render-world rage-ray rage-content chdr-static miniz rage-json)
+            rage-data psyz rage-render-world rage-ray rage-content chdr-static miniz rage-json)
         if(WIN32)
             target_link_libraries(${RAGE_PORT_TARGET} PRIVATE comdlg32 legacy_stdio_definitions ws2_32)
         endif()
@@ -625,17 +762,9 @@ if(RAGE_BUILD_PORT)
     if(RAGE_ENABLE_SANITIZERS AND
        CMAKE_C_COMPILER_ID MATCHES "Clang|GNU" AND NOT WIN32)
         foreach(RAGE_SANITIZER_TARGET rage-game-full rage-host-state rage-port-legacy
-                                      rage-racer rage-racer-smoke rage-sim rage-content
-                                      rage-mod-package rage-rmesh rage-render-world rage-ray)
+                                      rage-racer rage-racer-smoke)
             target_compile_options(${RAGE_SANITIZER_TARGET} PRIVATE
                 -fsanitize=address,undefined -fno-omit-frame-pointer)
-        endforeach()
-        # Instrument the native renderer/asset libraries too. Their tools and
-        # tests need the runtime even when they do not link a game executable.
-        foreach(RAGE_SANITIZER_TARGET rage-sim rage-content rage-mod-package
-                                      rage-rmesh rage-render-world rage-ray)
-            target_link_options(${RAGE_SANITIZER_TARGET} INTERFACE
-                -fsanitize=address,undefined)
         endforeach()
         foreach(RAGE_SANITIZER_TARGET rage-racer rage-racer-smoke)
             target_link_options(${RAGE_SANITIZER_TARGET} PRIVATE

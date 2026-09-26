@@ -86,53 +86,6 @@ _Static_assert(offsetof(GameViewWork, angleZ) ==
                    offsetof(GameViewWork, angleX) + 8,
                "the camera angles must stay one block");
 
-typedef union CarTrackRadius {
-    s32 value;
-    struct {
-        u16 low;
-        u16 high;
-    } half;
-} CarTrackRadius;
-
-typedef struct CarTrackWork {
-    s32 arcCenterX;
-    s32 arcCenterZ;
-    s32 carToCenterX;
-    s32 carToCenterZ;
-    CarTrackRadius carRadius;
-    CarTrackRadius pointRadius;
-    CarTrackRadius nextPointRadius;
-    s32 pointToCenterX;
-    s32 nextPointToCenterX;
-    s32 pointToCenterZ;
-    s32 nextPointToCenterZ;
-    s32 headingSin;
-    s32 headingCos;
-    s32 trackContact;
-    MATRIX edgeCorrectionMatrix;
-    SVec edgeOffset;
-    LVec edgeCorrection;
-    s16 curveMode;
-    s16 arcIndex;
-    s16 arcSpan;
-    s16 sweptAngle;
-    s16 pointAngle;
-    s16 nextPointAngle;
-    s16 arcLateral;
-    s16 trackWidth;
-    s16 rightHalfWidth;
-    s16 leftHalfWidth;
-    s16 relativeHeading;
-    s16 crossSlope;
-    s16 heading;
-    s16 surfacePitch;
-    s16 camberAngle;
-    u16 segmentLength;
-} CarTrackWork;
-
-/* Where the car code works out where it sits on the track. */
-extern CarTrackWork g_CarTrackWork;
-
 /*
  * The primitive-packing cursor. Every emitter packs a GPU packet at it, bumps
  * it past the packet and stores it back, so each one spells the slot with the

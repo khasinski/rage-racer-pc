@@ -112,7 +112,7 @@ static void UpdateChaseYawStep(CameraChase *chase, s32 targetYaw,
  * distances, settling its yaw towards where the car is pointing rather than
  * snapping to it.
  */
-void CameraViewFromChaseCamera(Camera *camera, GameCarRuntime *car, GameViewWork *view) {
+void CameraViewFromChaseCamera(Camera *camera, const GameCarRuntime *car, GameViewWork *view) {
     Matrix cameraRotation;
     s32 chaseDistance;
     s32 chaseTargetYaw;

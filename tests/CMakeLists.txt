@@ -1,3 +1,8 @@
+if(NOT TARGET psyz)
+    add_subdirectory(sim)
+    return()
+endif()
+
 # Tests are grouped by what they are about, not by how they run. A unit test in
 # C and the end-to-end script covering the same subsystem live in the same
 # directory; ctest -L functional/e2e/tooling still answers how a test runs.

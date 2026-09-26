@@ -95,10 +95,15 @@ typedef enum RenderAssetSet {
     RAGE_RENDER_ASSET_TRACK_MODEL_BANK_2 = 4,
 } RenderAssetSet;
 
+typedef enum RenderAssetSource {
+    RENDER_ASSET_DEFAULT, RENDER_ASSET_OWNED, RENDER_ASSET_SOURCE_COUNT
+} RenderAssetSource;
+
 typedef struct RenderMeshInstance {
     uint32_t entity;
     uint32_t mesh;
     RenderAssetSet assetSet;
+    RenderAssetSource assetSource;
     /* Stable game asset identity inside the asset set. It is never a pointer
      * into a loaded PS1 bank, so streaming/replay and native cache lookup are
      * deterministic. */
@@ -207,6 +212,8 @@ typedef struct RenderWorld {
     uint32_t instanceCapacity;
     uint32_t instanceCount;
     uint32_t overflowCount;
+    /* This frame's cars were supplied by an explicit race field. */
+    uint8_t explicitCars;
     /* Shared by all views; colors include intensity in linear space. */
     SpotLight spotLights[RENDER_SPOT_LIGHT_CAPACITY];
     uint32_t spotLightCount;
@@ -216,6 +223,10 @@ void RenderWorldInit(RenderWorld *world,
                          RenderMeshInstance *instances,
                          uint32_t capacity);
 void RenderWorldBeginFrame(RenderWorld *world, uint64_t frame);
+/* Replace main-view car submissions for seats below entityLimit, preserving
+ * scenery and other passes. Reject invalid storage before changing anything. */
+int RenderWorldCarFieldFits(const RenderWorld *world, uint32_t entityLimit, uint32_t count);
+int RenderWorldBeginCarField(RenderWorld *world, uint32_t entityLimit);
 int RenderWorldSubmitSpotLight(RenderWorld *world, const SpotLight *light);
 void RenderWorldSetDirectionalLight(
     RenderWorld *world, const RenderDirectionalLight *light);

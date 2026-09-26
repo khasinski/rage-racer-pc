@@ -9,14 +9,13 @@ enum {
     SPEED_DIGIT_TEXTURE_PAGE = 9,
 };
 
-void DrawSpeedDigits(s32 x, s32 y, s32 value) {
+void DrawSpeedDigits(s32 x, s32 y, s32 value, u16 color) {
     u8 *prim;
     s32 screenX;
     s32 screenY;
     s32 hundreds;
     s32 tens;
     s32 ones;
-    u16 color;
 
     if (value < 0) {
         value = 0;
@@ -25,11 +24,8 @@ void DrawSpeedDigits(s32 x, s32 y, s32 value) {
     }
 
     hundreds = value / 100;
-    screenX = WrapSigned32(
-        (int64_t)x + g_CarSpec->tachometer.digitsX);
-    screenY = WrapSigned32(
-        (int64_t)y + g_CarSpec->tachometer.digitsY);
-    color = g_HudGlyphClut;
+    screenX = x;
+    screenY = y;
     prim = RENDER_PRIM_CURSOR_AS(u8);
 
     tens = (value / 10) % 10;

@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "archive_index.h"
+#include "game/archive_index.h"
 #include "mod_assets.h"
 #include "render/mod_manifest.h"
 #include "texture_patch.h"

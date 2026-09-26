@@ -1,56 +1,7 @@
 #include "game/race.h"
 #include "game/render.h"
 #include "game/track_internal.h"
-
-enum {
-    ENVIRONMENT_PALETTE_COLOR_COUNT = 16,
-    ENVIRONMENT_CLUT_X = 0xE0,
-    ENVIRONMENT_CLUT_Y = 0x1E6,
-    ENVIRONMENT_FOG_NEAR = 0x1770,
-    ENVIRONMENT_FOG_FAR = 0x7FFF,
-    ENVIRONMENT_FOG_STEP = 0xFA,
-    ENVIRONMENT_FAR_FOG_MODE = 2,
-};
-
-static s16 EnvironmentCueDuration(u16 duration) {
-    if (duration == 0) return 1;
-    return duration > INT16_MAX ? INT16_MAX : (s16)duration;
-}
-
-static void LerpEnvironmentColor(const GameEnvColor *from,
-                                 const GameEnvColor *to,
-                                 GameEnvColor *out, s32 blend) {
-    out->bytes.r = LerpColorChannel(from->bytes.r, to->bytes.r, blend);
-    out->bytes.g = LerpColorChannel(from->bytes.g, to->bytes.g, blend);
-    out->bytes.b = LerpColorChannel(from->bytes.b, to->bytes.b, blend);
-}
-
-static void LoadEnvironmentCue(const GameEnvironmentCue *cue) {
-    s32 slot;
-    s16 previousMode = g_EnvironmentMode;
-
-    g_EnvironmentColors.fields.fogEnabled = 1;
-    for (slot = 0; slot < ENV_SLOT_COUNT; slot++) {
-        GameEnvColorSlot *color =
-            &g_EnvironmentColors.fields.slots[slot];
-
-        color->from = color->cur;
-        color->to = cue->colors[slot];
-    }
-
-    /* A zero-duration cue is instantaneous. One update reaches its target
-     * without introducing a division-by-zero special case downstream. */
-    g_EnvLerpDuration = EnvironmentCueDuration(cue->duration);
-    g_EnvironmentModePrev = previousMode;
-    g_EnvironmentMode = (s16)cue->mode;
-    g_EnvSpareLerp = (cue->spareTarget & 0x8000) == 0;
-    if (g_EnvSpareLerp != 0) {
-        g_EnvSpareFrom =
-            g_EnvironmentColors.fields.slots[ENV_FOG].cur.bytes.unused;
-        g_EnvSpareTo = (s16)cue->spareTarget;
-    }
-    g_IsEnvironmentMode4 = g_EnvironmentMode == 4;
-}
+#include <string.h>
 
 static void ClearEnvironmentScript(void) {
     g_SkyRowBase = 0;
@@ -59,35 +10,6 @@ static void ClearEnvironmentScript(void) {
     g_EnvScriptCues = NULL;
     g_EnvScriptCursor = NULL;
     g_EnvScriptEnabled = 0;
-}
-
-s32 IsValidEnvironmentScript(const GameEnvironmentScript *script,
-                             size_t size) {
-    size_t cueCount;
-    size_t i;
-    s32 previousTime = -1;
-
-    if (script == NULL || size < offsetof(GameEnvironmentScript, cues) ||
-        script->skyRowBase > SKY_TILE_MAP_ROWS - 2 ||
-        script->length == 0 || script->length > INT32_MAX) {
-        return 0;
-    }
-    cueCount = (size - offsetof(GameEnvironmentScript, cues)) /
-               sizeof(script->cues[0]);
-    if (cueCount < 2 || script->cues[0].time != 0) return 0;
-
-    for (i = 0; i < cueCount; i++) {
-        const GameEnvironmentCue *cue = &script->cues[i];
-
-        if (cue->time == -1) return i != 0;
-        if (cue->time < 0 || (u32)cue->time >= script->length ||
-            cue->time <= previousTime ||
-            cue->mode >= ENVIRONMENT_PALETTE_COUNT) {
-            return 0;
-        }
-        previousTime = cue->time;
-    }
-    return 0;
 }
 
 s32 SetEnvironmentScript(const GameEnvironmentScript *script, size_t size) {
@@ -102,222 +24,74 @@ s32 SetEnvironmentScript(const GameEnvironmentScript *script, size_t size) {
     return 1;
 }
 
-static const GameEnvironmentCue *LastEnvironmentCue(void) {
-    const GameEnvironmentCue *cue = g_EnvScriptCues;
-
-    while (cue[1].time != -1) {
-        cue++;
-    }
-    return cue;
+static Environment LegacyEnvironment(void) {
+    Environment env = {
+        .colors = g_EnvironmentColors,
+        .duration = g_EnvLerpDuration,
+        .previousMode = g_EnvironmentModePrev,
+        .mode = g_EnvironmentMode,
+        .spareLerp = g_EnvSpareLerp,
+        .spareFrom = g_EnvSpareFrom,
+        .spareTo = g_EnvSpareTo,
+        .mode4 = g_IsEnvironmentMode4,
+        .fogNear = g_FogNear,
+        .enabled = g_EnvScriptEnabled,
+        .clock = g_EnvScriptClock,
+        .length = g_EnvScriptLength,
+        .next = g_EnvScriptCursor,
+        .frame = g_EnvLerpFrame,
+        .cues = g_EnvScriptCues,
+        .skyRowBase = g_SkyRowBase,
+        .palettes = g_EnvPaletteTable, .course = g_CourseIndex,
+    };
+    memcpy(env.clut, g_EnvironmentClut, sizeof(env.clut));
+    return env;
 }
 
-static const GameEnvironmentCue *NextEnvironmentCue(
-    const GameEnvironmentCue *cue) {
-    return cue[1].time < 0 ? g_EnvScriptCues : cue + 1;
+static void StoreEnvironment(const Environment *env) {
+    g_EnvironmentColors = env->colors;
+    g_EnvLerpDuration = env->duration;
+    g_EnvironmentModePrev = env->previousMode;
+    g_EnvironmentMode = env->mode;
+    g_EnvSpareLerp = env->spareLerp;
+    g_EnvSpareFrom = env->spareFrom;
+    g_EnvSpareTo = env->spareTo;
+    g_IsEnvironmentMode4 = env->mode4;
+    g_FogNear = env->fogNear;
+    g_EnvScriptEnabled = env->enabled;
+    g_EnvScriptClock = env->clock;
+    g_EnvScriptLength = env->length;
+    g_EnvScriptCursor = env->next;
+    g_EnvLerpFrame = env->frame;
+    g_EnvScriptCues = env->cues;
+    g_SkyRowBase = env->skyRowBase;
+    memcpy(g_EnvironmentClut, env->clut, sizeof(env->clut));
 }
 
-static const GameEnvironmentCue *PreviousCueAtClock(s32 clock) {
-    const GameEnvironmentCue *cue = g_EnvScriptCues;
-    s32 cueCount = 0;
-
-    while (cue[cueCount].time != -1 && cue[cueCount].time <= clock) {
-        cueCount++;
-    }
-    if (cueCount < 2) {
-        return LastEnvironmentCue();
-    }
-    return cue + cueCount - 2;
-}
-
-static s32 NormalizeEnvironmentTime(s32 time, s32 length) {
-    time %= length;
-    return time < 0 ? time + length : time;
-}
-
-static s16 EnvironmentCueFrame(s32 clock, s32 cueTime, s32 loopLength,
-                               s16 duration) {
-    int64_t elapsed = (int64_t)clock - cueTime;
-
-    if (elapsed < 0) {
-        elapsed += loopLength;
-    }
-    return elapsed > duration ? duration : (s16)elapsed;
-}
-
-static void SetCurrentEnvironmentColors(const GameEnvironmentCue *cue) {
-    s32 slot;
-
-    for (slot = 0; slot < ENV_SLOT_COUNT; slot++) {
-        g_EnvironmentColors.fields.slots[slot].cur = cue->colors[slot];
-    }
-    g_EnvironmentMode = cue->mode;
-}
-
-static void ApplyFogSettings(void) {
-    GameEnvColor fog = g_EnvironmentColors.fields.slots[ENV_FOG].cur;
-    s32 fogEnabled = 0;
-
-    if ((g_EnvironmentColors.fogColorWord & 0xFFFF0000) != 0x80800000 ||
-        fog.bytes.b != 0x80) {
-        fogEnabled = 1;
-    }
-    g_EnvironmentColors.fields.fogEnabled = (s16)fogEnabled;
+static void PresentEnvironment(const Environment *env) {
+    Rect rect = {0xE0, 0x1E6, 16, 1};
+    LoadImage(&rect, (u_long *)g_EnvironmentClut);
+    GameEnvColor fog = env->colors.fields.slots[ENV_FOG].cur;
     SetFarColor(fog.bytes.r, fog.bytes.g, fog.bytes.b);
-
-    g_FogNear = g_EnvironmentMode == ENVIRONMENT_FAR_FOG_MODE
-        ? ENVIRONMENT_FOG_FAR
-        : ENVIRONMENT_FOG_NEAR;
-    SetFogNear(g_FogNear, SCREEN_WIDTH);
+    SetFogNear(env->fogNear, SCREEN_WIDTH);
 }
 
 void SeekEnvironmentScript(s32 targetTime) {
-    const GameEnvironmentCue *previousCue;
-    const GameEnvironmentCue *targetCue;
-
-    if (g_EnvScriptLength <= 0 || g_EnvScriptCues == NULL) {
+    if (g_EnvScriptLength <= 0 || !g_EnvScriptCues) {
         g_EnvScriptClock = 0;
         g_EnvScriptEnabled = 0;
         return;
     }
-
-    g_EnvScriptClock =
-        NormalizeEnvironmentTime(targetTime, g_EnvScriptLength);
-    previousCue = PreviousCueAtClock(g_EnvScriptClock);
-    SetCurrentEnvironmentColors(previousCue);
-
-    targetCue = NextEnvironmentCue(previousCue);
-    LoadEnvironmentCue(targetCue);
-    g_EnvLerpFrame = EnvironmentCueFrame(
-        g_EnvScriptClock, targetCue->time, g_EnvScriptLength,
-        g_EnvLerpDuration);
-    g_EnvScriptCursor = NextEnvironmentCue(targetCue);
-
-    g_EnvScriptEnabled = 1;
-    g_EnvironmentColors.fields.fogEnabled = 1;
-    UpdateEnvironment();
-    if (g_GrandPrixClass >= GRAND_PRIX_FINAL_CLASS_INDEX) {
-        g_EnvScriptEnabled = 0;
-    }
-    ApplyFogSettings();
-}
-
-static u16 InterpolateClutColor(const Rgb *from, const Rgb *to, s32 blend) {
-    u16 red = (u16)LerpColorChannel(from->r, to->r, blend);
-    u16 green = (u16)LerpColorChannel(from->g, to->g, blend);
-    u16 blue = (u16)LerpColorChannel(from->b, to->b, blend);
-
-    return (u16)(red | (green << 5) | (blue << 10));
-}
-
-static void UpdateEnvironmentPalette(s32 blend) {
-    Rect rect = {
-        ENVIRONMENT_CLUT_X,
-        ENVIRONMENT_CLUT_Y,
-        ENVIRONMENT_PALETTE_COLOR_COUNT,
-        1,
-    };
-    s32 color;
-
-    for (color = 0; color < ENVIRONMENT_PALETTE_COLOR_COUNT; color++) {
-        const Rgb *from = &g_EnvPaletteTable[g_EnvironmentModePrev].colors[color];
-        const Rgb *to = &g_EnvPaletteTable[g_EnvironmentMode].colors[color];
-
-        g_EnvironmentClut[color] = InterpolateClutColor(from, to, blend);
-    }
-    LoadImage(&rect, (u_long *)g_EnvironmentClut);
-}
-
-static void UpdateEnvironmentColorSlots(s32 blend) {
-    s32 slot;
-    s32 firstGroundSlot;
-    s32 lastGroundSlot;
-
-    for (slot = ENV_FOG; slot <= ENV_SKY_BOTTOM; slot++) {
-        LerpEnvironmentColor(&g_EnvironmentColors.fields.slots[slot].from,
-                             &g_EnvironmentColors.fields.slots[slot].to,
-                             &g_EnvironmentColors.fields.slots[slot].cur,
-                             blend);
-    }
-
-    if (g_CourseIndex == 2) {
-        firstGroundSlot = ENV_GROUND_NEAR_TOP;
-        lastGroundSlot = ENV_GROUND_NEAR_BOTTOM;
-    } else {
-        firstGroundSlot = ENV_GROUND_FAR_TOP;
-        lastGroundSlot = ENV_GROUND_FAR_BOTTOM;
-    }
-    for (slot = firstGroundSlot; slot <= lastGroundSlot; slot++) {
-        LerpEnvironmentColor(
-            &g_EnvironmentColors.fields.slots[slot].from,
-            &g_EnvironmentColors.fields.slots[slot].to,
-            &g_EnvironmentColors.fields.slots[slot].cur, blend);
-    }
-}
-
-static void UpdateFogDistance(void) {
-    if (g_EnvironmentMode == ENVIRONMENT_FAR_FOG_MODE) {
-        if (g_FogNear >= ENVIRONMENT_FOG_FAR - ENVIRONMENT_FOG_STEP) {
-            g_FogNear = ENVIRONMENT_FOG_FAR;
-        } else {
-            g_FogNear += ENVIRONMENT_FOG_STEP;
-        }
-    } else {
-        if (g_FogNear <= ENVIRONMENT_FOG_NEAR + ENVIRONMENT_FOG_STEP) {
-            g_FogNear = ENVIRONMENT_FOG_NEAR;
-        } else {
-            g_FogNear -= ENVIRONMENT_FOG_STEP;
-        }
-    }
-    SetFogNear(g_FogNear, SCREEN_WIDTH);
+    Environment env = LegacyEnvironment();
+    SeekEnvironment(&env, targetTime);
+    if (g_GrandPrixClass >= GRAND_PRIX_FINAL_CLASS_INDEX) env.enabled = 0;
+    StoreEnvironment(&env);
+    PresentEnvironment(&env);
 }
 
 void UpdateEnvironment(void) {
-    GameEnvColor fog;
-    s32 remainingFrames;
-    s32 blend;
-
-    if (g_EnvScriptEnabled == 0) {
-        return;
-    }
-    if (g_EnvLerpDuration <= 0) {
-        g_EnvLerpDuration = 1;
-    }
-
-    if (g_EnvScriptCursor->time == g_EnvScriptClock) {
-        const GameEnvironmentCue *cue = g_EnvScriptCursor;
-
-        g_EnvLerpFrame = 0;
-        g_EnvScriptCursor = NextEnvironmentCue(cue);
-        LoadEnvironmentCue(cue);
-    }
-
-    g_EnvScriptClock = g_EnvScriptClock < g_EnvScriptLength - 1
-                           ? g_EnvScriptClock + 1
-                           : 0;
-    if (g_EnvironmentColors.fields.fogEnabled == 0) {
-        return;
-    }
-    if (g_EnvLerpFrame < g_EnvLerpDuration) {
-        g_EnvLerpFrame++;
-    }
-
-    remainingFrames = g_EnvLerpDuration - g_EnvLerpFrame;
-    blend = (g_EnvLerpFrame << 12) / g_EnvLerpDuration;
-    UpdateEnvironmentPalette(blend);
-    UpdateEnvironmentColorSlots(blend);
-
-    fog = g_EnvironmentColors.fields.slots[ENV_FOG].cur;
-    SetFarColor(fog.bytes.r, fog.bytes.g, fog.bytes.b);
-    if (g_EnvSpareLerp != 0) {
-        g_EnvironmentColors.fields.slots[ENV_FOG].cur.bytes.unused =
-            (u8)((g_EnvSpareFrom * remainingFrames +
-                  g_EnvSpareTo * g_EnvLerpFrame) / g_EnvLerpDuration);
-    }
-
-    if (g_EnvLerpFrame == g_EnvLerpDuration &&
-        (g_EnvironmentColors.fogColorWord & 0xFFFF0000) == 0x80800000 &&
-        fog.bytes.b == 0x80) {
-        g_EnvironmentColors.fields.fogEnabled = 0;
-    }
-    UpdateFogDistance();
+    Environment env = LegacyEnvironment();
+    int changed = TickEnvironment(&env);
+    StoreEnvironment(&env);
+    if (changed) PresentEnvironment(&env);
 }

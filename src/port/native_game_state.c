@@ -22,7 +22,6 @@
 void SsSetTableSize(u8 *table, short sequences, short tracks);
 
 GameRenderState g_RenderState;
-CarTrackWork g_CarTrackWork;
 
 GameFrameContext g_FrameContexts[2];
 NativeModelBank g_ModelBanks[GAME_MODEL_BANK_LIMIT];

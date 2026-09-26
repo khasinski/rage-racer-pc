@@ -1,7 +1,6 @@
 #include "game/car.h"
 #include "game/car_motion_internal.h"
 #include "game/integer.h"
-#include "game/race.h"
 
 enum {
     PEDAL_ACTIVE_THRESHOLD = 0x81,
@@ -17,16 +16,16 @@ enum {
     TILT_DAMPING_DENOMINATOR = 4,
 };
 
-void UpdatePlayerTilt(PlayerCarRuntime *car) {
+void UpdateCarTilt(PlayerCarRuntime *car, const GameCarSpec *spec, int racing) {
     GameCarDrive *drive = &car->drive;
 
-    if (g_RacePhase < RACE_PHASE_ACTIVE) {
+    if (!racing) {
         car->tiltCounter = TILT_REST;
         return;
     }
 
     if (car->verticalMotionState == CAR_VERTICAL_GROUNDED) {
-        if (drive->engineRpm >= g_CarSpec->redline &&
+        if (drive->engineRpm >= spec->redline &&
             drive->acceleratorInput.value >= PEDAL_ACTIVE_THRESHOLD &&
             drive->clutch == 0) {
             s32 tilt = WrapSigned16(

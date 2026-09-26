@@ -1,24 +1,8 @@
-#include "game/car.h"
-#include "game/car_internal.h"
+#include "game/car_drive.h"
 
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
-
-s32 g_EngineRpm;
-s16 g_PeakOutputRpm;
-s16 g_PeakOutputValue;
-s32 g_StandingStartSpin;
-s16 g_GripLossTimer;
-GameCarSpec *g_CarSpec;
-
-void UpdateCarTravelVelocity(GameCarRuntime *car) { (void)car; }
-void SetIndexedEffectVoice(s32 index, s32 phase, s32 volume) {
-    (void)index;
-    (void)phase;
-    (void)volume;
-}
-s32 Random15(void) { return 0; }
 
 #define CHECK_EQ(actual, expected) do {                                        \
     if ((actual) != (expected)) {                                               \
@@ -30,66 +14,100 @@ s32 Random15(void) { return 0; }
 
 int main(void) {
     GameCarSpec spec;
+    CarPerformance performance = {0};
+    s32 engineRpm;
     PlayerCarRuntime car;
 
     memset(&spec, 0, sizeof(spec));
     memset(&car, 0, sizeof(car));
-    g_CarSpec = &spec;
     spec.revLimit = 8000;
-    g_EngineRpm = 4000;
-    g_PeakOutputRpm = 3000;
-    g_PeakOutputValue = 1000;
+    engineRpm = 4000;
+    performance.peakRpm = 3000;
+    performance.peakOutput = 1000;
     car.drive.gear = 2;
     car.drive.drivetrainTorque = 600;
-    BeginCarStandingStart(&car);
+    BeginCarStandingStart(&car, &spec, &performance, engineRpm);
     CHECK_EQ(car.drive.drivetrainTorque, 300);
-    CHECK_EQ(g_StandingStartSpin, 1250);
-    CHECK_EQ(g_GripLossTimer, 200);
+    CHECK_EQ(car.drive.standingStartSpin, 1250);
+    CHECK_EQ(car.drive.gripLossTimer, 200);
 
     car.drive.gear = 0;
     car.drive.drivetrainTorque = 600;
     spec.revLimit = 0;
-    g_GripLossTimer = 123;
-    BeginCarStandingStart(&car);
+    car.drive.gripLossTimer = 123;
+    BeginCarStandingStart(&car, &spec, &performance, engineRpm);
     CHECK_EQ(car.drive.gear, 1);
     CHECK_EQ(car.drive.drivetrainTorque, 600);
-    CHECK_EQ(g_GripLossTimer, 0);
+    CHECK_EQ(car.drive.gripLossTimer, 0);
 
     spec.revLimit = 8000;
-    g_EngineRpm = 1500;
-    g_PeakOutputRpm = 3000;
-    BeginCarStandingStart(&car);
-    CHECK_EQ(g_StandingStartSpin, 0);
+    engineRpm = 1500;
+    performance.peakRpm = 3000;
+    BeginCarStandingStart(&car, &spec, &performance, engineRpm);
+    CHECK_EQ(car.drive.standingStartSpin, 0);
 
-    g_EngineRpm = 2500;
-    BeginCarStandingStart(&car);
-    CHECK_EQ(g_StandingStartSpin, 1500);
+    engineRpm = 2500;
+    BeginCarStandingStart(&car, &spec, &performance, engineRpm);
+    CHECK_EQ(car.drive.standingStartSpin, 1500);
 
     car.drive.gear = CAR_FORWARD_GEAR_COUNT + 5;
     car.drive.drivetrainTorque = 600;
-    g_EngineRpm = 4000;
-    BeginCarStandingStart(&car);
+    engineRpm = 4000;
+    BeginCarStandingStart(&car, &spec, &performance, engineRpm);
     CHECK_EQ(car.drive.gear, CAR_FORWARD_GEAR_COUNT);
     CHECK_EQ(car.drive.drivetrainTorque, 100);
-    CHECK_EQ(g_GripLossTimer, 200);
+    CHECK_EQ(car.drive.gripLossTimer, 200);
 
     memset(&car, 0, sizeof(car));
     car.drive.motionState = CAR_MOTION_STANDING_START;
     car.drive.engineRpm = 2000;
     car.drive.acceleratorInput.value = 0;
-    g_StandingStartSpin = 1000;
-    UpdateCarStandingStart(&car);
-    CHECK_EQ(g_StandingStartSpin, 968);
+    car.drive.standingStartSpin = 1000;
+    StepCarStandingStart(&car, 0, 0);
+    CHECK_EQ(car.drive.standingStartSpin, 968);
     CHECK_EQ(car.drive.motionState, CAR_MOTION_STANDING_START);
 
     memset(&car, 0, sizeof(car));
     car.drive.gear = 1;
     spec.revLimit = 1;
-    g_EngineRpm = INT_MAX;
-    g_PeakOutputRpm = INT16_MIN;
-    g_PeakOutputValue = 1000;
-    BeginCarStandingStart(&car);
-    CHECK_EQ(g_StandingStartSpin, 655340000);
+    engineRpm = INT_MAX;
+    performance.peakRpm = INT16_MIN;
+    performance.peakOutput = 1000;
+    BeginCarStandingStart(&car, &spec, &performance, engineRpm);
+    CHECK_EQ(car.drive.standingStartSpin, 655340000);
+
+    PlayerCarRuntime first = {0};
+    first.speed = 2000;
+    first.drive.motionState = CAR_MOTION_STANDING_START;
+    first.drive.engineRpm = 3000;
+    first.drive.acceleratorInput.value = 256;
+    first.drive.standingStartSpin = 5000;
+    PlayerCarRuntime second = first;
+    second.drive.standingStartSpin = 6000;
+    second.drive.brakeInput = 100;
+    PlayerCarRuntime alone = first;
+    StepCarStandingStart(&first, 3, 7);
+    CHECK_EQ(first.drive.standingStartSpin, 4712);
+    CHECK_EQ(first.drive.standingStartBounceY, 3);
+    CHECK_EQ(first.drive.standingStartBounceX, 7);
+    CHECK_EQ(first.speed, 200);
+    StepCarStandingStart(&alone, 3, 7);
+    for (int i = 0; i < 5; i++) {
+        StepCarStandingStart(&second, i + 2, i + 4);
+        StepCarStandingStart(&first, i, i + 1);
+        StepCarStandingStart(&alone, i, i + 1);
+    }
+    CHECK_EQ(memcmp(&first, &alone, sizeof(first)), 0);
+    PlayerCarRuntime restored = first;
+    StepCarStandingStart(&second, 1, 2);
+    StepCarStandingStart(&first, 2, 3);
+    StepCarStandingStart(&restored, 2, 3);
+    CHECK_EQ(memcmp(&first, &restored, sizeof(first)), 0);
+    first.drive.standingStartSpin = CAR_STANDING_START_MIN_SPIN - 1;
+    StepCarStandingStart(&first, 0x7FFF, 0x7FFF);
+    CHECK_EQ(first.drive.motionState, CAR_MOTION_DRIVING);
+    CHECK_EQ(first.drive.standingStartBounceY, 0);
+    CHECK_EQ(first.drive.standingStartBounceX, 0);
 
     puts("standing start setup tests passed");
     return 0;

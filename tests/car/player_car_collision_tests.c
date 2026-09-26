@@ -5,14 +5,12 @@
 #include "game/car_collision_internal.h"
 #include "game/car_motion_internal.h"
 #include "game/race.h"
-#include "game/render_state.h"
 #include "game/state.h"
 #include "game/track.h"
 
 #include <stdio.h>
 #include <string.h>
 
-GameRenderState g_RenderState;
 GameCarRuntime g_Cars[11];
 
 static u32 s_digest = 2166136261U;
@@ -49,16 +47,7 @@ void SetCarCollisionKnockback(GameCarRuntime *car, s32 x, s32 z) {
     s_knockbackCount++;
 }
 
-MATRIX *MulMatrix0(MATRIX *a, MATRIX *b, MATRIX *out) {
-    (void)a;
-    (void)b;
-    return out;
-}
 
-void GameRenderWorldSetCamera(s32 x, s32 y, s32 z, s32 pitch, s32 yaw,
-                              s32 roll) {
-    (void)x; (void)y; (void)z; (void)pitch; (void)yaw; (void)roll;
-}
 
 static void PrepareSoundCollision(PlayerCarRuntime *player,
                                   s32 lateralDistance) {
@@ -227,9 +216,9 @@ static int CheckExtremeSpeedDifference(void) {
     g_Cars[0].x -= 40;
     g_Cars[0].z -= 80;
     region = CollidePlayerWithCars(&player);
-    if (region != 1 || g_GripLossTimer != 0xF) {
+    if (region != 1 || player.drive.gripLossTimer != 0xF) {
         printf("FAIL extreme collision speed difference: region=%d grip=%d\n",
-               region, g_GripLossTimer);
+               region, player.drive.gripLossTimer);
         return 1;
     }
     return 0;
@@ -242,9 +231,9 @@ static int CheckWrappedSlipstreamDistance(void) {
     player.trackProgress = INT32_MAX;
     g_Cars[0].trackProgress = 0;
     g_Cars[0].y = 60;
-    if (CollidePlayerWithCars(&player) != 0 || g_DragScale != -7441) {
+    if (CollidePlayerWithCars(&player) != 0 || player.drive.dragScale != -7441) {
         printf("FAIL wrapped slipstream drag is %d, expected -7441\n",
-               g_DragScale);
+               player.drive.dragScale);
         return 1;
     }
     return 0;
@@ -301,8 +290,8 @@ int main(void) {
         g_RacePhase = 2;
         g_MirrorMode = 0;
         g_WrongWayTimer = 12;
-        g_DragScale = 1000;
-        g_GripLossTimer = 0;
+        player.drive.dragScale = 1000;
+        player.drive.gripLossTimer = 0;
         s_sound = -1;
         s_knockbackCount = 0;
         memset(s_knockbackValues, 0, sizeof(s_knockbackValues));
@@ -338,8 +327,8 @@ int main(void) {
 
         result = CollidePlayerWithCars(&player);
         Fold(result);
-        Fold(g_DragScale);
-        Fold(g_GripLossTimer);
+        Fold(player.drive.dragScale);
+        Fold(player.drive.gripLossTimer);
         Fold(player.acceleration);
         Fold(player.drive.drivetrainTorque);
         Fold(opponent->collisionFlag);

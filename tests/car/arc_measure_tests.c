@@ -1,12 +1,9 @@
 #include "game/car_track_internal.h"
-#include "game/render_state.h"
-#include "game/track_internal.h"
 
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
-const GameTrackArcCenter *g_TrackArcCenters;
 
 s32 Atan2(s32 x, s32 y) {
     if (x < 0 && y == 0) {
@@ -42,8 +39,7 @@ int main(void) {
     CarTrackWork work;
 
     memset(&work, 0x5A, sizeof(work));
-    g_TrackArcCenters = centers;
-    CarTrackMeasureArc(&work, 0, 0, 200, &point, &nextPoint);
+    CarTrackMeasureArc(&work, &centers[0], 0, 200, &point, &nextPoint);
 
     CHECK_EQ(work.arcCenterX, 100);
     CHECK_EQ(work.arcCenterZ, 200);
@@ -63,7 +59,7 @@ int main(void) {
     point.x = -50;
     point.z = 75;
     nextPoint = point;
-    CarTrackMeasureArc(&work, 1, -50, 75, &point, &nextPoint);
+    CarTrackMeasureArc(&work, &centers[1], -50, 75, &point, &nextPoint);
     CHECK_EQ(work.carRadius.value, 0);
     CHECK_EQ(work.pointRadius.value, 0);
     CHECK_EQ(work.nextPointRadius.value, 0);
@@ -74,7 +70,7 @@ int main(void) {
     point.z = INT_MAX;
     nextPoint.x = INT_MAX;
     nextPoint.z = INT_MIN;
-    CarTrackMeasureArc(&work, 0, INT_MIN, INT_MAX, &point, &nextPoint);
+    CarTrackMeasureArc(&work, &centers[0], INT_MIN, INT_MAX, &point, &nextPoint);
     CHECK_EQ(work.carToCenterX, 1);
     CHECK_EQ(work.carToCenterZ, -1);
     CHECK_EQ(work.pointToCenterX, 1);

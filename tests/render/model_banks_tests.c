@@ -38,6 +38,7 @@ u8 g_CarModelUnlockBase[GAME_CAR_COUNT];
 Rect g_CarImageRect;
 CarImageData *g_CarImageSlots[CAR_ASSET_SLOT_COUNT];
 CarModelAsset *g_CarModelSlots[CAR_ASSET_SLOT_COUNT];
+s32 g_CarModelSlotAssetIndex[CAR_ASSET_SLOT_COUNT] = {-1, -1};
 CarModelAsset *g_CarModelAsset;
 
 static s32 s_loadImageCalls;
@@ -146,7 +147,7 @@ static int TestCourseModels(void) {
     struct {
         s32 modelCount;
         CourseModelAssetEntry models[3];
-        u8 payload[64];
+        u8 payload[512];
     } data;
     CourseModelAssetHeader *header = (CourseModelAssetHeader *)&data;
 
@@ -351,9 +352,24 @@ static int TestCarAssetSlots(void) {
           storage.bytes + SERIALIZED_CAR_MODEL_HEADER_SIZE + 24);
     CHECK(FindSerializedCarModelAsset(g_CarModelSlots[1]) == view);
     CHECK(FindSerializedCarModelAsset(&unknownModel) == NULL);
+    CHECK(FindCarModelSlot(g_CarModelSlots[1]) == 1);
+    CHECK(FindCarModelSlot(&unknownModel) == -1);
     CHECK(InstallSerializedCarModelSlot(view, completeSize, 0) == 1);
+    CHECK(g_CarModelSlots[0] != g_CarModelSlots[1]);
+    CHECK(FindCarModelSlot(g_CarModelSlots[0]) == 0);
+    CHECK(FindCarModelSlot(g_CarModelSlots[1]) == 1);
+    CHECK(FindSerializedCarModelAsset(g_CarModelSlots[0]) == view);
+    g_CarModelSlotAssetIndex[0] = 3;
+    g_CarModelSlotAssetIndex[1] = 9;
+    CHECK(FindCarAssetSlot(3) == 0);
+    CHECK(FindCarAssetSlot(9) == 1);
+    CHECK(FindCarAssetSlot(4) == -1);
+    CHECK(FindCarAssetSlot(-1) == -1);
     g_CarModelSlots[0] = NULL;
+    CHECK(FindCarAssetSlot(3) == -1);
+    CHECK(FindCarAssetSlot(9) == 1);
     CHECK(FindSerializedCarModelAsset(NULL) == NULL);
+    CHECK(FindCarModelSlot(NULL) == -1);
     g_CarModelSlots[0] = &sentinelModel;
 
     CHECK(InstallSerializedCarModelSlot(NULL, completeSize, 0) == 0);

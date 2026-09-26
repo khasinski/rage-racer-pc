@@ -1,18 +1,13 @@
-#include "game/car.h"
-#include "game/car_internal.h"
-#include "game/integer.h"
-#include "game/race.h"
-#include "game/render.h"
+#include "game/car_track_internal.h"
 
 enum {
     CAR_HULL_COORDINATE_SCALE = 4,
 };
 
-void MeasurePlayerTrackLimits(const Matrix *toTrack,
-                              CarTrackLimits *limits) {
-    Matrix transform = *toTrack;
+void MeasureCarTrackLimits(const Matrix *toTrack,
+                            const CarHullPoint corners[CAR_HULL_CORNER_COUNT],
+                            CarTrackLimits *limits) {
     SVec corner;
-    Vec4 reach;
     s32 index;
 
     limits->rightInset = -1;
@@ -21,22 +16,23 @@ void MeasurePlayerTrackLimits(const Matrix *toTrack,
     limits->leftContact = CAR_TRACK_CONTACT_NONE;
     for (index = 0; index < CAR_HULL_CORNER_COUNT; index++) {
         corner.vx = WrapSigned16(
-            (int64_t)g_CarCornerOffsets[index].x *
+            (int64_t)corners[index].x *
             CAR_HULL_COORDINATE_SCALE);
         corner.vy = 0;
         corner.vz = WrapSigned16(
-            (int64_t)g_CarCornerOffsets[index].z *
+            (int64_t)corners[index].z *
             CAR_HULL_COORDINATE_SCALE);
-        ApplyMatrix(&transform, &corner, &reach);
+        const s32 reachX = ((int64_t)toTrack->m[0][0] * corner.vx +
+                            (int64_t)toTrack->m[0][2] * corner.vz) >> 12;
         /* Contact values are one-based, so zero means no reaching corner. */
-        if (limits->rightInset < reach.x) {
+        if (limits->rightInset < reachX) {
             limits->rightContact =
                 index + CAR_TRACK_CONTACT_FRONT_LEFT;
-            limits->rightInset = reach.x;
-        } else if (reach.x < limits->leftInset) {
+            limits->rightInset = reachX;
+        } else if (reachX < limits->leftInset) {
             limits->leftContact =
                 index + CAR_TRACK_CONTACT_FRONT_LEFT;
-            limits->leftInset = reach.x;
+            limits->leftInset = reachX;
         }
     }
 }

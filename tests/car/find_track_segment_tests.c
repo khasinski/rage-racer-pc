@@ -9,14 +9,14 @@
 
 #include "common.h"
 #include "game/car.h"
-#include "game/render.h"
+#include "game/car_track_internal.h"
 #include "game/track.h"
 
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
-s32 FindTrackSegment(const GameCarRuntime *car, s32 idx);
+static TrackRoute route;
 
 enum { TRACK_POINTS = 24, TRACK_RADIUS = 20000 };
 
@@ -59,8 +59,8 @@ static void BuildRing(void) {
             s_points[i].leftHalfWidth = 20000;
         }
     }
-    g_TrackPoints = s_points;
-    g_TrackPointCount = TRACK_POINTS;
+    route.points = s_points;
+    route.count = TRACK_POINTS;
 }
 
 int main(int argc, char **argv) {
@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
 
                 snprintf(label, sizeof(label), "angle=%d radius=%d guess=%d",
                          angle, radii[r], guesses[g]);
-                result = FindTrackSegment(&car, guesses[g]);
+                result = FindCarTrackSegment(&car, &route, guesses[g]);
                 Fold(out, label, result, &car);
                 cases++;
             }
@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
         car.x = s_points[step].x;
         car.z = s_points[step].z;
         snprintf(label, sizeof(label), "exactly on point %d", step);
-        result = FindTrackSegment(&car, step);
+        result = FindCarTrackSegment(&car, &route, step);
         Fold(out, label, result, &car);
         cases++;
     }
@@ -138,17 +138,17 @@ int main(int argc, char **argv) {
     normalized.x = s_points[5].x;
     normalized.z = s_points[5].z;
     oversized = normalized;
-    normalizedResult = FindTrackSegment(&normalized, 5);
-    oversizedResult = FindTrackSegment(&oversized, TRACK_POINTS + 5);
+    normalizedResult = FindCarTrackSegment(&normalized, &route, 5);
+    oversizedResult = FindCarTrackSegment(&oversized, &route, TRACK_POINTS + 5);
     if (oversizedResult != normalizedResult ||
         oversized.x != normalized.x || oversized.z != normalized.z) {
         fprintf(stderr, "oversized starting index was not normalized\n");
         return 1;
     }
     oversized = normalized;
-    extremeIndexResult = FindTrackSegment(&oversized, INT_MAX);
-    normalizedResult = FindTrackSegment(
-        &normalized, INT_MAX % TRACK_POINTS);
+    extremeIndexResult = FindCarTrackSegment(&oversized, &route, INT_MAX);
+    normalizedResult = FindCarTrackSegment(
+        &normalized, &route, INT_MAX % TRACK_POINTS);
     if (extremeIndexResult != normalizedResult ||
         oversized.x != normalized.x || oversized.z != normalized.z) {
         fprintf(stderr, "maximum starting index was not normalized\n");
@@ -158,24 +158,24 @@ int main(int argc, char **argv) {
     memset(&emptyTrackCar, 0, sizeof(emptyTrackCar));
     emptyTrackCar.x = 123;
     emptyTrackCar.z = 456;
-    g_TrackPointCount = 0;
-    if (FindTrackSegment(&emptyTrackCar, 0) != -1 ||
+    route.count = 0;
+    if (FindCarTrackSegment(&emptyTrackCar, &route, 0) != -1 ||
         emptyTrackCar.x != 123 || emptyTrackCar.z != 456) {
         fprintf(stderr, "empty track search changed the car\n");
         return 1;
     }
-    g_TrackPointCount = TRACK_POINTS;
-    g_TrackPoints = NULL;
-    if (FindTrackSegment(&emptyTrackCar, 0) != -1 ||
+    route.count = TRACK_POINTS;
+    route.points = NULL;
+    if (FindCarTrackSegment(&emptyTrackCar, &route, 0) != -1 ||
         emptyTrackCar.x != 123 || emptyTrackCar.z != 456) {
         fprintf(stderr, "missing track search changed the car\n");
         return 1;
     }
 
-    g_TrackPoints = s_points;
+    route.points = s_points;
     emptyTrackCar.x = 1000000;
     emptyTrackCar.z = -1000000;
-    if (FindTrackSegment(&emptyTrackCar, 7) != -1 ||
+    if (FindCarTrackSegment(&emptyTrackCar, &route, 7) != -1 ||
         emptyTrackCar.x != 1000000 || emptyTrackCar.z != -1000000) {
         fprintf(stderr, "failed segment search changed the car\n");
         return 1;
@@ -190,11 +190,37 @@ int main(int argc, char **argv) {
         memset(&signedExtreme, 0, sizeof(signedExtreme));
         signedExtreme.x = INT_MIN;
         signedExtreme.z = INT_MIN;
-        lowWordResult = FindTrackSegment(&lowWords, 0);
-        extremeResult = FindTrackSegment(&signedExtreme, 0);
+        lowWordResult = FindCarTrackSegment(&lowWords, &route, 0);
+        extremeResult = FindCarTrackSegment(&signedExtreme, &route, 0);
         if (extremeResult != lowWordResult) {
             fprintf(stderr,
                     "signed coordinate limits changed their low-word segment\n");
+            return 1;
+        }
+    }
+
+    {
+        const GameTrackPoint localPoints[] = {
+            {.x = 0, .z = 0, .leftHalfWidth = 100, .rightHalfWidth = 100},
+            {.x = 1000, .z = 0, .leftHalfWidth = 100, .rightHalfWidth = 100},
+        };
+        const GameTrackPoint remotePoints[] = {
+            {.x = 10000, .z = 0, .leftHalfWidth = 100, .rightHalfWidth = 100},
+            {.x = 11000, .z = 0, .leftHalfWidth = 100, .rightHalfWidth = 100},
+        };
+        const TrackRoute local = {.points = localPoints, .count = 2};
+        const TrackRoute remote = {.points = remotePoints, .count = 2};
+        GameCarRuntime localCar = {0};
+        GameCarRuntime remoteCar = {0};
+        localCar.x = 200;
+        remoteCar.x = 10200;
+        if (FindCarTrackSegment(&localCar, &local, -2) != 0 ||
+            FindCarTrackSegment(&remoteCar, &remote, 2) != 0 ||
+            FindCarTrackSegment(&localCar, &remote, 0) != -1 ||
+            FindCarTrackSegment(&localCar, &local, 0) != 0 ||
+            FindCarTrackSegment(NULL, &local, 0) != -1 ||
+            FindCarTrackSegment(&localCar, NULL, 0) != -1) {
+            puts("independent route searches failed");
             return 1;
         }
     }

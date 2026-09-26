@@ -1,7 +1,7 @@
 #include <math.h>
 #include <stdio.h>
 
-#include "rage/track_lighting.h"
+#include "render/track_lighting.h"
 #include "render/car_lights.h"
 
 static int failures;

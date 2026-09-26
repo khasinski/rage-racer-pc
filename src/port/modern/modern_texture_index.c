@@ -7,6 +7,7 @@ ModernTextureKey ModernTextureKeyFromSpan(const RageNativeDrawSpan *span) {
     if (!span) return key;
     key.assetKey = span->assetKey;
     key.assetSet = span->assetSet;
+    key.assetSource = span->assetSource;
     key.material = span->material;
     key.variant = span->materialVariant;
     key.hasCarPaint = span->hasCarPaint;
@@ -22,6 +23,7 @@ uint32_t ModernTextureKeyHash(const ModernTextureKey *key) {
     hash ^= (uint32_t)key->assetSet * 0x85EBCA77u;
     hash ^= key->material * 0xC2B2AE3Du;
     hash ^= (uint32_t)key->variant << 24;
+    hash ^= (uint32_t)key->assetSource * 0xC2B2AE35u;
     hash ^= (uint32_t)key->hasCarPaint << 23;
     hash ^= (uint32_t)key->carPaintColor1 << 8;
     hash ^= (uint32_t)key->carPaintColor2 << 16;
@@ -31,7 +33,7 @@ uint32_t ModernTextureKeyHash(const ModernTextureKey *key) {
 int ModernTextureKeyEqual(const ModernTextureKey *left,
                           const ModernTextureKey *right) {
     return left && right && left->assetKey == right->assetKey &&
-           left->assetSet == right->assetSet && left->material == right->material &&
+           left->assetSet == right->assetSet && left->assetSource == right->assetSource && left->material == right->material &&
            left->variant == right->variant &&
            left->hasCarPaint == right->hasCarPaint &&
            left->carPaintColor1 == right->carPaintColor1 &&

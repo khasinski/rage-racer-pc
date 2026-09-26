@@ -14,6 +14,15 @@
 int NativeAssetImporterInit(void);
 void NativeAssetImporterShutdown(void);
 int NativeAssetImporterReady(void);
+struct CarModelData;
+/* Import a canonical human model before its first cache use. Copies source
+ * storage; later material decoding does not depend on active slots or VRAM.
+ * Owned sources coexist with legacy keys; conflicting owned bytes are rejected. */
+int NativeAssetImporterPrepareCar(uint32_t variant, const struct CarModelData *model);
+struct RaceView;
+/* Call during race asset preparation, before submitting a field. Failure
+ * removes only entries added by this call and preserves the existing cache. */
+int NativeAssetImporterPrepareRaceView(const struct RaceView *view);
 /* Retain only already-captured pixels of the requested generation; no live
  * read/import occurs here. Caller releases the returned reference. */
 RageTrackTextureGeneration *NativeAssetImporterRetainTextures(uint64_t revision);
@@ -24,7 +33,7 @@ int NativeAssetImporterMaterialSlot(const RenderMeshInstance *instance,
 const RageRuntimeCachedMesh *NativeAssetImporterFind(
     const RenderMeshInstance *instance);
 uint32_t NativeAssetImporterMeshCount(void);
-const RageRuntimeCachedMesh *NativeAssetImporterPeek(uint32_t assetKey, RenderAssetSet assetSet);
+const RageRuntimeCachedMesh *NativeAssetImporterPeek(uint32_t assetKey, RenderAssetSet assetSet, RenderAssetSource source);
 int NativeAssetImporterLoadMaterial(
     const RenderMeshInstance *instance, uint32_t material,
     uint8_t variant, RageRenderMaterial *definition, ModernAssetImage *image);

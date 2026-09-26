@@ -199,6 +199,7 @@ extern s16 g_RivalCueEnabled;
 
 /* The wrong-way warning: three sprites over a backing panel, drawn once
  * g_WrongWayTimer passes 10. */
+enum { WRONG_WAY_WARNING_FRAMES = 10 };
 void DrawWrongWayWarning(void);
 
 extern s16 g_PlayerAutoSteer;
@@ -266,9 +267,11 @@ extern u8 g_TimeRecordNameCodes[];
 s32 BeginMirrorPass(void);
 void BuildRaceHudPrims(s32 grandPrixMode);
 void EnterPrizeScreen(void);
-void DrawLapTimes(s32 bestLap);
+/* times contains at least min(max(lapCount, 0), COURSE_LONG_LAPS) entries. */
+void DrawLapTimes(const s32 *times, s32 lapCount, s32 visibleCount,
+                  s32 activeLap, s32 bestLap, s32 hasRivals);
 void DrawRaceHudLabels(s32 grandPrixMode);
-void DrawRacePosition(void);
+void DrawRacePosition(s32 position);
 void DrawRaceTimePanel(s32 slideY);
 void DrawRearViewMirror(const GameCameraState *camera, s32 sceneTimer);
 void DrawTimeRemaining(s32 ticks);

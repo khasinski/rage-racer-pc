@@ -4,21 +4,11 @@
 
 #include <string.h>
 
-static s32 ActiveCarModelSlotAssetIndex(void) {
-    u32 slot;
-
-    for (slot = 0; slot < CAR_ASSET_SLOT_COUNT; slot++) {
-        if (g_CarModelSlots[slot] == g_CarModelAsset) {
-            return g_CarModelSlotAssetIndex[slot];
-        }
-    }
-    return -1;
-}
-
 s32 RelocateCarModel(void) {
     const CarModelAsset *source =
         FindSerializedCarModelAsset(g_CarModelAsset);
-    s32 assetIndex = ActiveCarModelSlotAssetIndex();
+    const s32 slot = FindCarModelSlot(g_CarModelAsset);
+    s32 assetIndex = slot >= 0 ? g_CarModelSlotAssetIndex[slot] : -1;
     const SerializedCarModelAssetHeader *serialized;
     const ModelBankHeader *sourceBank;
     CarModelAsset *destination;

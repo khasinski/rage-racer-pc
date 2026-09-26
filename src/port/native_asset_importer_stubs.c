@@ -28,8 +28,9 @@ int NativeAssetImporterInit(void) {
     return 0;
 }
 
-const RageRuntimeCachedMesh *NativeAssetImporterPeek(uint32_t assetKey, RenderAssetSet assetSet) {
+const RageRuntimeCachedMesh *NativeAssetImporterPeek(uint32_t assetKey, RenderAssetSet assetSet, RenderAssetSource source) {
     (void)assetKey;
+    (void)source;
     (void)assetSet;
     return NULL;
 }

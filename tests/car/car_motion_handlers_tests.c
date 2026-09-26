@@ -18,48 +18,66 @@
 #include "game/render.h"
 #include "game/render_state.h"
 #include "game/track.h"
+#include "game/race.h"
+#include "game/state.h"
 
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
+u8 g_PadType;
+
+static void StepLaunch(PlayerCarRuntime *car) {
+    const TrackRoute route = {.points = g_TrackPoints, .count = g_TrackPointCount};
+    PlayCarLaunchVoice(car);
+    StepCarLaunch(car, g_CarSpec, &route);
+}
+
+static void StepAirborne(PlayerCarRuntime *car) {
+    PlayCarAirborneVoice(car);
+    if (StepCarAirborne(car)) {
+        SetIndexedEffectVoice(-1, 0, 0);
+    }
+}
+
+static void StepStandingStart(PlayerCarRuntime *car) {
+    const GameCarDrive *drive = &car->drive;
+    s32 verticalRandom = 0;
+    s32 lateralRandom = 0;
+    PlayCarStandingStartVoice(car);
+    if (drive->standingStartSpin >= CAR_STANDING_START_MIN_SPIN) {
+        verticalRandom = Random15();
+        lateralRandom = Random15();
+    }
+    if (StepCarStandingStart(car, verticalRandom, lateralRandom)) {
+        SetIndexedEffectVoice(-1, 0, 0);
+    }
+}
+
 /* A ring of points, so an index maps to a position without a course. */
-void InterpolateTrackPoint(s32 pointIndex, LVec *out, s32 weight) {
-    s32 angle = (pointIndex * 4096) / (g_TrackPointCount > 0 ? g_TrackPointCount : 1);
+void InterpolateRoutePoint(const TrackRoute *route, s32 pointIndex, LVec *out, s32 weight) {
+    s32 angle = (pointIndex * 4096) / (route->count > 0 ? route->count : 1);
     angle = (angle + weight / 16) & 0xFFF;
     out->x = (rsin(angle) * 1000) >> 12;
     out->y = 0;
     out->z = (rcos(angle) * 1000) >> 12;
 }
 
-s32 SmoothTrackAngle(s32 pointIndex, s32 weight) {
-    s32 angle = (pointIndex * 4096) / (g_TrackPointCount > 0 ? g_TrackPointCount : 1);
+s32 SmoothRouteAngle(const TrackRoute *route, s32 pointIndex, s32 weight) {
+    s32 angle = (pointIndex * 4096) / (route->count > 0 ? route->count : 1);
     return (angle + weight / 16) & 0xFFF;
 }
 
 /*
  * The effect voice is recorded rather than ignored, because which sound a
- * spinning car asks for is part of what these handlers do. The camera and
- * matrix hooks below belong to the Atan2 implementation linked by steering.
+ * spinning car asks for is part of what these handlers do.
  */
-GameRenderState g_RenderState;
 static s32 s_voiceIndex, s_voicePhase, s_voiceVolume;
 
 void SetIndexedEffectVoice(s32 index, s32 phase, s32 volume) {
     s_voiceIndex = index;
     s_voicePhase = phase;
     s_voiceVolume = volume;
-}
-
-void GameRenderWorldSetCamera(int32_t x, int32_t y, int32_t z, int32_t pitch,
-                              int32_t yaw, int32_t roll) {
-    (void)x; (void)y; (void)z; (void)pitch; (void)yaw; (void)roll;
-}
-
-MATRIX *MulMatrix0(MATRIX *m0, MATRIX *m1, MATRIX *m2) {
-    (void)m0;
-    (void)m1;
-    return m2;
 }
 
 s32 Random15(void) {
@@ -94,9 +112,9 @@ static void Fold(FILE *out, const char *label, const PlayerCarRuntime *car) {
              drive->accelPos, drive->brakePos, drive->engineLoad,
              drive->shiftRpmDelta, drive->launchSpeed, drive->yawOffset,
              drive->drivetrainTorque, s_voiceIndex, s_voicePhase,
-             s_voiceVolume, g_ShiftSoundLevel,
+             s_voiceVolume, drive->shiftSoundLevel,
              drive->standingStartBounceX, drive->standingStartBounceY,
-             g_StandingStartSpin);
+             drive->standingStartSpin);
     FoldText(out, line);
 }
 
@@ -129,9 +147,9 @@ static int CheckAirborneYawSymmetry(GameCarSpec *spec) {
     left.drive.yawOffset = -1600;
     right.drive.yawOffset = 1600;
 
-    UpdateCarAirborne(&left);
+    StepAirborne(&left);
     leftPhase = s_voicePhase;
-    UpdateCarAirborne(&right);
+    StepAirborne(&right);
     rightPhase = s_voicePhase;
 
     if (left.speed != right.speed || leftPhase != rightPhase) {
@@ -158,12 +176,12 @@ static int CheckLaunchShiftSoundRange(GameCarSpec *spec) {
         spec->gearRatio[1] = 10000;
         landingRpm = car.speed * 0xA0 / 1168;
         car.drive.engineRpm = landingRpm - rpmDelta[test];
-        g_ShiftSoundLevel = -1;
+        car.drive.shiftSoundLevel = -1;
 
-        UpdateCarLaunch(&car);
-        if (g_ShiftSoundLevel != expectedSound[test]) {
+        StepLaunch(&car);
+        if (car.drive.shiftSoundLevel != expectedSound[test]) {
             printf("launch RPM delta %d produced shift sound %d, expected %d\n",
-                   rpmDelta[test], g_ShiftSoundLevel, expectedSound[test]);
+                   rpmDelta[test], car.drive.shiftSoundLevel, expectedSound[test]);
             return 1;
         }
     }
@@ -186,12 +204,12 @@ static int CheckSixthGearLaunchAssets(GameCarSpec *spec) {
     expectedLoad = expectedRpm * spec->gearRatio[0] / 0x20000;
     expectedLoad = expectedLoad * 985 / 1000;
 
-    UpdateCarLaunch(&car);
+    StepLaunch(&car);
 
-    if (g_ShiftTargetRpm != expectedRpm ||
+    if (car.drive.shiftTargetRpm != expectedRpm ||
         car.drive.engineLoad != expectedLoad) {
         printf("sixth-gear launch produced RPM/load %d/%d, expected %d/%d\n",
-               g_ShiftTargetRpm, car.drive.engineLoad,
+               car.drive.shiftTargetRpm, car.drive.engineLoad,
                expectedRpm, expectedLoad);
         return 1;
     }
@@ -205,7 +223,7 @@ static int CheckExtremeLaunchSpin(GameCarSpec *spec) {
     car.drive.gear = 1;
     car.drive.spinRate = INT_MIN;
     car.drive.launchEnergy = INT_MIN;
-    UpdateCarLaunch(&car);
+    StepLaunch(&car);
     if (car.drive.spinRate < -0x3600 || car.drive.spinRate > 0x3600) {
         puts("extreme launch spin escaped its clamp");
         return 1;
@@ -276,7 +294,7 @@ int main(int argc, char **argv) {
             car.headingAngle = (s16)headings[h];
             car.drive.gear = gears[g];
             car.verticalMotionState = verticals[vert];
-            g_StandingStartSpin = standingSpins[ss];
+            car.drive.standingStartSpin = standingSpins[ss];
 
             snprintf(label, sizeof(label),
                      "%s spin=%d energy=%d speed=%d yaw=%d heading=%d gear=%d "
@@ -284,9 +302,9 @@ int main(int argc, char **argv) {
                      names[which], spins[s], energies[e], speeds[v], yaws[y],
                      headings[h], gears[g], verticals[vert],
                      standingSpins[ss]);
-            if (which == 0) UpdateCarLaunch(&car);
-            else if (which == 1) UpdateCarAirborne(&car);
-            else UpdateCarStandingStart(&car);
+            if (which == 0) StepLaunch(&car);
+            else if (which == 1) StepAirborne(&car);
+            else StepStandingStart(&car);
             Fold(out, label, &car);
             cases++;
         }
@@ -302,7 +320,7 @@ int main(int argc, char **argv) {
     PrepareCar(&extremeCar, &spec);
     extremeCar.drive.jumpTimer = 10;
     extremeCar.drive.yawOffset = INT_MIN;
-    UpdateCarAirborne(&extremeCar);
+    StepAirborne(&extremeCar);
     if (extremeCar.drive.yawOffset != -67108864) {
         printf("extreme airborne yaw decayed to %d\n",
                extremeCar.drive.yawOffset);
@@ -311,12 +329,47 @@ int main(int argc, char **argv) {
 
     PrepareCar(&extremeCar, &spec);
     extremeCar.drive.jumpTimer = 10;
-    g_ShiftSoundLevel = INT_MAX;
-    UpdateCarAirborne(&extremeCar);
+    extremeCar.drive.shiftSoundLevel = INT_MAX;
+    StepAirborne(&extremeCar);
     if (s_voiceVolume != INT_MIN + 24) {
         printf("extreme shift sound volume became %d\n", s_voiceVolume);
         return 1;
     }
-    printf("car_motion_handlers: %d cases unchanged\n", cases);
+    /* Real client audio orchestration must not change physics or consume RNG.
+     * Compare it to the server step at motion, wheelspin and stopped boundaries. */
+    for (int started = 0; started <= 1; started++) {
+        for (int motion = CAR_MOTION_DRIVING; motion <= CAR_MOTION_STANDING_START; motion++) {
+            for (int spin = 10; spin <= 11; spin++) {
+                for (int speed = 7; speed <= 8; speed++) {
+                    PlayerCarRuntime client, server;
+                    PrepareCar(&client, &spec);
+                    PrepareCarPerformance(&client.drive, &spec, &g_CarPerformance);
+                    client.drive.motionState = motion;
+                    client.drive.standingStartSpin = spin;
+                    client.speed = speed;
+                    server = client;
+                    g_CarSpec = &spec;
+                    g_RacePhase = started ? RACE_PHASE_ACTIVE : RACE_PHASE_ACTIVE - 1;
+                    g_PadType = PAD_TYPE_DIGITAL;
+                    g_RandomSeed = 123;
+                    u32 seed = g_RandomSeed;
+                    const TrackRoute route = {.points = g_TrackPoints, .count = g_TrackPointCount};
+                    const DriveContext drive = {.point = RoutePoint(&route, server.trackPointIndex),
+                        .nextPoint = RoutePoint(&route, server.trackPointIndex + 1),
+                        .started = started, .racing = started, .digitalSteering = 1};
+                    const LaunchSpeedThreshold *threshold = &g_LaunchSpeedThresholds[
+                        NormalizeCarLaunchThresholdIndex(server.drive.launchThresholdIndex)];
+                    StepCarDynamics(&server, &spec, &g_CarPerformance, &drive, &route, threshold, &seed);
+                    UpdateCarDrivetrain(&client);
+                    if (memcmp(&client, &server, sizeof(client)) != 0 || g_RandomSeed != seed) {
+                        printf("client/server motion differs: started=%d motion=%d spin=%d speed=%d\n",
+                               started, motion, spin, speed);
+                        return 1;
+                    }
+                }
+            }
+        }
+    }
+    printf("car_motion_handlers: %d cases unchanged; client/server parity passed\n", cases);
     return 0;
 }

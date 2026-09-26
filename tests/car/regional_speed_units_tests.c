@@ -13,10 +13,6 @@ s32 g_RaceSeries;
 s32 g_TrackLength = 0x8000;
 static const char *s_region;
 const char *HostDiscRegion(void) { return s_region; }
-s32 GetAngleDelta(s32 from, s32 to) { return to - from; }
-void UpdateCarSlideAngle(GameCarRuntime *car, s32 pitch) {
-    (void)car; (void)pitch;
-}
 #define CHECK(x) do { if (!(x)) { fprintf(stderr,"line %d: %s\n",__LINE__,#x); return 1; } } while (0)
 
 int main(void) {

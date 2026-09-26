@@ -1,8 +1,11 @@
+#include "game/track_look.h"
+#include "environment_view.h"
 #include "game/angle.h"
 #include "rage/render_world_game.h"
 #include "rage/render_world_scene.h"
 
 #include "course_coordinate.h"
+#include "car_parts.h"
 #include "sky_panorama_layout.h"
 #include "runtime_config.h"
 #include "native_visibility.h"
@@ -15,6 +18,8 @@
 #include <string.h>
 
 #include "game/asset.h"
+#include "game/car_asset.h"
+#include "game/asset_index.h"
 #include "game/player_car_internal.h"
 #include "game/render.h"
 #include "game/race.h"
@@ -25,7 +30,7 @@
 #include "render/car_paint.h"
 #include "modern/scene_capture.h"
 #include "rage/track_asset_identity.h"
-#include "rage/track_lighting.h"
+#include "render/track_lighting.h"
 
 enum { RAGE_GAME_RENDER_WORLD_MAX_INSTANCES = 4096 };
 static const float START_GRID_DEPTH_BIAS = -2048.0f;
@@ -45,6 +50,22 @@ static RenderTransform
     s_previousCars[RAGE_CAR_ENTITY_COUNT][RAGE_CAR_RENDER_PART_COUNT];
 static uint8_t
     s_havePreviousCars[RAGE_CAR_ENTITY_COUNT][RAGE_CAR_RENDER_PART_COUNT];
+/* Per-frame presentation inputs copied from the submitted car, never borrowed
+ * from a global player/traffic array at publication time. */
+static struct {
+    float zoneDaylight;
+    int braking;
+    int present;
+} s_carLightInputs[RAGE_CAR_ENTITY_COUNT];
+
+static void CaptureCarLightInput(uint32_t entity, const GameCarRuntime *car, const TrackZoneEffect *effect) {
+    if (entity >= RAGE_CAR_ENTITY_COUNT) return;
+    TrackZoneEffect zone = effect ? *effect : GetTrackZoneEffect(car->trackProgress);
+    s_carLightInputs[entity].zoneDaylight = TrackZoneDaylight(zone.blend);
+    s_carLightInputs[entity].braking = car->brakeInput > 0;
+    s_carLightInputs[entity].present = 1;
+}
+
 static int s_trackCarAsset = -1;
 static int s_initialized;
 static int s_buildingIndex;
@@ -88,10 +109,6 @@ static void GameRenderWorldClearInactiveScene(void) {
     world->overflowCount = 0;
 }
 
-static float AngleToDegrees(s32 angle) {
-    return (float)(angle & ANGLE_MASK) * (360.0f / 4096.0f);
-}
-
 /*
  * The environment palette as the frame being marked sees it. These slots
  * change with the course and with the time of day, so reading them from a
@@ -106,15 +123,6 @@ void GameRenderWorldEnvironmentPalette(unsigned char out[9][3]) {
         out[slot][1] = g_EnvironmentColors.fields.slots[slot].cur.bytes.g;
         out[slot][2] = g_EnvironmentColors.fields.slots[slot].cur.bytes.b;
     }
-}
-
-static void GameRenderWorldEnvironmentColor(int slot, Vec3 *out) {
-    out->x =
-        (float)g_EnvironmentColors.fields.slots[slot].cur.bytes.r / 255.0f;
-    out->y =
-        (float)g_EnvironmentColors.fields.slots[slot].cur.bytes.g / 255.0f;
-    out->z =
-        (float)g_EnvironmentColors.fields.slots[slot].cur.bytes.b / 255.0f;
 }
 
 static uint32_t TrackDataAssetKey(void) {
@@ -151,99 +159,6 @@ void GameRenderWorldSetTrackCarAsset(int asset) {
     s_trackCarAsset = asset >= 0 && asset < 32 ? asset : -1;
 }
 
-typedef struct RageSceneMat3 {
-    float m[3][3];
-} RageSceneMat3;
-
-static RageSceneMat3 SceneMat3Multiply(RageSceneMat3 a, RageSceneMat3 b) {
-    RageSceneMat3 out = {{{0}}};
-    int row, column, i;
-    for (row = 0; row < 3; row++)
-        for (column = 0; column < 3; column++)
-            for (i = 0; i < 3; i++) out.m[row][column] += a.m[row][i] * b.m[i][column];
-    return out;
-}
-
-static RageSceneMat3 SceneMat3Transpose(RageSceneMat3 source) {
-    RageSceneMat3 out;
-    int row, column;
-    for (row = 0; row < 3; row++)
-        for (column = 0; column < 3; column++) out.m[row][column] = source.m[column][row];
-    return out;
-}
-
-static RageSceneMat3 SceneRotationX(s32 angle) {
-    float a = AngleToDegrees(angle) * 0.017453292519943295f;
-    float c = cosf(a), s = sinf(a);
-    RageSceneMat3 out = {{{1, 0, 0}, {0, c, -s}, {0, s, c}}};
-    return out;
-}
-
-static RageSceneMat3 SceneRotationY(s32 angle) {
-    float a = AngleToDegrees(angle) * 0.017453292519943295f;
-    float c = cosf(a), s = sinf(a);
-    /* This is the game's BuildRotMatrixY convention, not a generic
-     * right-handed Euler helper.  The PS1->scene basis conversion below
-     * turns it into the renderer's conventional rotation. */
-    RageSceneMat3 out = {{{c, 0, -s}, {0, 1, 0}, {s, 0, c}}};
-    return out;
-}
-
-static RageSceneMat3 SceneRotationZ(s32 angle) {
-    float a = AngleToDegrees(angle) * 0.017453292519943295f;
-    float c = cosf(a), s = sinf(a);
-    RageSceneMat3 out = {{{c, -s, 0}, {s, c, 0}, {0, 0, 1}}};
-    return out;
-}
-
-static Quaternion SceneQuaternion(RageSceneMat3 source) {
-    Quaternion out;
-    float (*m)[3] = source.m;
-    float trace, root;
-    trace = m[0][0] + m[1][1] + m[2][2];
-    if (trace > 0.0f) {
-        root = sqrtf(trace + 1.0f) * 2.0f;
-        out.w = 0.25f * root;
-        out.x = (m[2][1] - m[1][2]) / root;
-        out.y = (m[0][2] - m[2][0]) / root;
-        out.z = (m[1][0] - m[0][1]) / root;
-    } else if (m[0][0] > m[1][1] && m[0][0] > m[2][2]) {
-        root = sqrtf(1.0f + m[0][0] - m[1][1] - m[2][2]) * 2.0f;
-        out.w = (m[2][1] - m[1][2]) / root;
-        out.x = 0.25f * root;
-        out.y = (m[0][1] + m[1][0]) / root;
-        out.z = (m[0][2] + m[2][0]) / root;
-    } else if (m[1][1] > m[2][2]) {
-        root = sqrtf(1.0f + m[1][1] - m[0][0] - m[2][2]) * 2.0f;
-        out.w = (m[0][2] - m[2][0]) / root;
-        out.x = (m[0][1] + m[1][0]) / root;
-        out.y = 0.25f * root;
-        out.z = (m[1][2] + m[2][1]) / root;
-    } else {
-        root = sqrtf(1.0f + m[2][2] - m[0][0] - m[1][1]) * 2.0f;
-        out.w = (m[1][0] - m[0][1]) / root;
-        out.x = (m[0][2] + m[2][0]) / root;
-        out.y = (m[1][2] + m[2][1]) / root;
-        out.z = 0.25f * root;
-    }
-    return out;
-}
-
-static Quaternion SceneQuaternionFromPsx(RageSceneMat3 source) {
-    RageSceneMat3 converted;
-    RenderConvertPsxMatrix(source.m, converted.m);
-    return SceneQuaternion(converted);
-}
-
-static Vec3 SceneRotatePoint(RageSceneMat3 matrix,
-                                            float x, float y, float z) {
-    Vec3 out;
-    out.x = matrix.m[0][0] * x + matrix.m[0][1] * y + matrix.m[0][2] * z;
-    out.y = matrix.m[1][0] * x + matrix.m[1][1] * y + matrix.m[1][2] * z;
-    out.z = matrix.m[2][0] * x + matrix.m[2][1] * y + matrix.m[2][2] * z;
-    return out;
-}
-
 /* Set while the in-car view publishes the player's body for its lamps only:
  * neither the rasterizer nor the ray scene ever sees it. */
 static int s_playerCarLampsOnly;
@@ -252,11 +167,13 @@ static void GameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
                                              uint32_t asset,
                                              RenderAssetSet assetSet,
                                              uint32_t mesh,
-                                             uint8_t paletteOffset,
+                                             RenderAssetSource source,
+                                             uint8_t materialVariant,
                                              Vec3 psPosition,
-                                             RageSceneMat3 rotation,
+                                             SceneMat3 rotation,
                                              Vec3 environmentLight,
-                                             int mirror_pass) {
+                                             int mirror_pass,
+                                             const CarEntry *paint) {
     RenderMeshInstance instance;
     if (part >= RAGE_CAR_RENDER_PART_COUNT) return;
     memset(&instance, 0, sizeof(instance));
@@ -265,23 +182,15 @@ static void GameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
     instance.mesh = mesh;
     instance.assetSet = assetSet;
     instance.assetKey = asset;
-    if (assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
-        entity == RAGE_PLAYER_CAR_ENTITY &&
-        g_CarTable != NULL && g_PlayerCarIndex >= 0 &&
-        g_PlayerCarIndex < 10) {
-        const CarEntry *entry = &g_CarTable[g_PlayerCarIndex];
-        if (entry->paintColor1 < RAGE_CAR_PAINT_COLOR_COUNT &&
-            entry->paintColor2 < RAGE_CAR_PAINT_COLOR_COUNT) {
-            instance.hasCarPaint = 1;
-            instance.carPaintColor1 = entry->paintColor1;
-            instance.carPaintColor2 = entry->paintColor2;
-        }
+    instance.assetSource = source;
+    if (assetSet == RAGE_RENDER_ASSET_MODEL_BANK && paint != NULL &&
+        paint->paintColor1 < RAGE_CAR_PAINT_COLOR_COUNT &&
+        paint->paintColor2 < RAGE_CAR_PAINT_COLOR_COUNT) {
+        instance.hasCarPaint = 1;
+        instance.carPaintColor1 = paint->paintColor1;
+        instance.carPaintColor2 = paint->paintColor2;
     }
-    if (assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1)
-        instance.materialVariant =
-            TrackCarMaterialVariant(paletteOffset);
-    else if (assetSet != RAGE_RENDER_ASSET_MODEL_BANK)
-        instance.materialVariant = (uint8_t)(g_TrackTexturePageWanted != 0);
+    instance.materialVariant = materialVariant;
     instance.pass = mirror_pass ? RAGE_RENDER_PASS_MIRROR : RAGE_RENDER_PASS_MAIN;
     /* Cars are depth-cued like every other polygon on the PS1. */
     instance.flags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING |
@@ -289,16 +198,8 @@ static void GameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
     if (s_playerCarLampsOnly)
         instance.flags |= RAGE_RENDER_INSTANCE_LAMPS_ONLY;
     instance.environmentLight = environmentLight;
-    instance.transform.position.x = psPosition.x;
-    instance.transform.position.y = -psPosition.y;
-    instance.transform.position.z = -psPosition.z;
-    /* SetGteObjectMatrix translates game-world offsets by four before adding
-     * model vertices. Imported vertices therefore need the reciprocal scale
-     * when positions remain in semantic game-world units. */
-    instance.transform.scale.x = instance.transform.scale.y =
-        instance.transform.scale.z = 0.25f;
-    instance.transform.orientation = SceneQuaternionFromPsx(rotation);
-    instance.transform.hasOrientation = 1;
+    const CarPart currentPart = {psPosition, rotation};
+    instance.transform = CarPartTransform(&currentPart);
     if (s_havePreviousCars[entity][part])
         instance.previousTransform = s_previousCars[entity][part];
     else {
@@ -330,6 +231,7 @@ void GameRenderWorldBeginFrame(uint64_t frame) {
         *GameRenderWorldMutable() = s_worlds[s_publishedWorld];
         GameRenderWorldMutable()->instances = s_instances[s_buildingIndex];
     }
+    memset(s_carLightInputs, 0, sizeof(s_carLightInputs));
     RenderWorldBeginFrame(GameRenderWorldMutable(), frame);
     if (!GameSceneUsesRaceWorld()) {
         GameRenderWorldClearInactiveScene();
@@ -349,6 +251,8 @@ static void PublishCarLights(void) {
         if (body->component != 0 || body->entity >= RAGE_CAR_ENTITY_COUNT ||
             (body->assetSet != RAGE_RENDER_ASSET_MODEL_BANK &&
              body->assetSet != RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1)) continue;
+        if (body->assetSource == RENDER_ASSET_OWNED) continue;
+        if (!s_carLightInputs[body->entity].present) continue;
         if (previous) {
             for (uint32_t j = 0; j < previous->instanceCount; ++j) {
                 const RenderMeshInstance *old = &previous->instances[j];
@@ -360,12 +264,9 @@ static void PublishCarLights(void) {
                 }
             }
         }
-        const GameCarRuntime *car = body->entity == RAGE_PLAYER_CAR_ENTITY
-            ? AsRivalCar(&g_PlayerCar) : &g_Cars[body->entity];
-        TrackZoneEffect zone = GetTrackZoneEffect(car->trackProgress);
         UpdateCarLights(&body->lamps, daylight,
-                       TrackZoneDaylight(zone.blend),
-                       car->brakeInput > 0, seconds);
+                       s_carLightInputs[body->entity].zoneDaylight,
+                       s_carLightInputs[body->entity].braking, seconds);
     }
 }
 
@@ -394,7 +295,7 @@ static RenderCamera GameRenderWorldBuildCamera(
     int32_t x, int32_t y, int32_t z, int32_t pitch, int32_t yaw, int32_t roll,
     float verticalFovDegrees, int rearFacing) {
     RenderCamera camera;
-    RageSceneMat3 view;
+    SceneMat3 view;
     GameSkyGridLayout skyGrid;
 
     memset(&camera, 0, sizeof(camera));
@@ -414,7 +315,7 @@ static RenderCamera GameRenderWorldBuildCamera(
         view = SceneMat3Multiply(SceneRotationY(0x800), view);
     }
     {
-        RageSceneMat3 converted;
+        SceneMat3 converted;
         RenderConvertPsxMatrix(view.m, converted.m);
         camera.transform.orientation = SceneQuaternion(
             SceneMat3Transpose(converted));
@@ -433,7 +334,6 @@ static RenderCamera GameRenderWorldBuildCamera(
     camera.farPlane = (float)RuntimeConfigInt(
         "diagnostics.native_far_plane",
         GameSceneUsesRaceWorld() ? 16384 : 262144, 1024, 262144);
-    GameRenderWorldEnvironmentColor(ENV_FOG, &camera.fogColor);
     /* Convert the authored environment palette into semantic sky bands. The
      * native backend owns their projection; it never replays DrawSkyBackground
      * packets or depends on an ordering-table bucket. */
@@ -444,12 +344,10 @@ static RenderCamera GameRenderWorldBuildCamera(
      * the classic renderer's own pixels walk between exactly those two
      * across the visible sky.
      */
-    GameRenderWorldEnvironmentColor(ENV_SKY_TOP, &camera.skyTopColor);
-    GameRenderWorldEnvironmentColor(ENV_SKY_MIDDLE, &camera.skyColor);
-    GameRenderWorldEnvironmentColor(ENV_SKY_HORIZON, &camera.skyHorizonColor);
-    GameRenderWorldEnvironmentColor(ENV_SKY_BOTTOM, &camera.skyBottomColor);
     camera.skyAssetKey = TrackDataAssetKey();
-    camera.skyCloudRow = (uint32_t)g_SkyRowBase;
+    const Environment environment = {.colors = g_EnvironmentColors,
+        .fogNear = g_FogNear, .skyRowBase = g_SkyRowBase};
+    ApplyEnvironment(&camera, &environment);
     RageSkyCapturePanoramaLayout(&camera.skyLayout, g_SkyTileMap, g_SkyRowBase);
     camera.hasSkyLayout = 1;
     if (s_haveSkyGrid[rearFacing != 0]) {
@@ -470,8 +368,6 @@ static RenderCamera GameRenderWorldBuildCamera(
     /* Course geometry is stored in GTE units while Render World uses the
      * game's world units (four GTE units each). SetFogNear reaches full fog
      * at five times its authored near distance. */
-    camera.fogNear = (float)g_FogNear * 0.25f;
-    camera.fogFar = camera.fogNear * 5.0f;
     return camera;
 }
 
@@ -539,7 +435,7 @@ void GameRenderWorldPublishCurrentCamera(void) {
 
 static void GameRenderWorldSubmitCourseTransform(
     uint32_t entity, int32_t mesh, int32_t x, int32_t y, int32_t z,
-    RageSceneMat3 rotation, int fogged, int mirror_pass,
+    SceneMat3 rotation, int fogged, int mirror_pass,
     int cullBackfaces, int depthOverlay, float depthBias,
     uint8_t paletteOffset, int rayOnly) {
     RenderMeshInstance instance;
@@ -599,7 +495,7 @@ static void GameRenderWorldSubmitDynamicCourseObjectInternal(
     uint32_t entity, int32_t mesh, int32_t x, int32_t y, int32_t z,
     const int16_t rotation[3][3], int fogged, int mirror_pass,
     int cullBackfaces, int depthOverlay, float depthBias) {
-    RageSceneMat3 matrix;
+    SceneMat3 matrix;
     RenderWorld *world;
     uint32_t semanticEntity = 0x30000u + entity;
     int row, column;
@@ -785,75 +681,39 @@ static void GameRenderWorldSubmitCarAssembly(const GameCarRuntime *object,
                                                  uint32_t bodyMesh,
                                                  uint32_t frontWheelMesh,
                                                  uint32_t rearWheelMesh,
-                                                 uint8_t bodyPaletteOffset,
+                                                 RenderAssetSource source,
+                                                 uint8_t bodyMaterialVariant,
                                                  s16 horizon, s16 offsetX,
                                                  s16 offsetY, s16 offsetZ,
                                                  s32 steeringAngle,
                                                  Vec3 environmentLight,
-                                                 int mirror_pass) {
-    RageSceneMat3 base, body, wheelBase, frontLeft, frontRight;
-    Vec3 origin, front;
-
-    origin.x = (float)object->x;
-    origin.y = (float)(RenderClampCarToGround(object->y, object->modelY) -
-                       horizon);
-    origin.z = (float)object->z;
-    /* Scene-space counterpart of DrawCar/DrawPlayerCarModel. The view matrix
-     * is intentionally absent: the camera owns it at presentation time. */
-    base = SceneMat3Multiply(SceneRotationY(0x800 - object->bodyYaw),
-                                 SceneRotationX(object->bodyPitch));
-    body = SceneMat3Multiply(base, SceneRotationZ(object->bodyRoll));
-    wheelBase = SceneMat3Multiply(
-        base, SceneRotationZ(object->bodyRoll - object->bodyRollVelocity));
-    frontLeft = SceneMat3Multiply(
-        SceneMat3Multiply(wheelBase, SceneRotationY(steeringAngle)),
-        SceneRotationX(object->wheelRotation));
-    frontRight = SceneMat3Multiply(frontLeft, SceneRotationY(0x800));
-
-    GameRenderWorldSubmitCarPart(entity, 0, asset, assetSet, bodyMesh,
-                                     bodyPaletteOffset,
-                                     origin, body, environmentLight,
-                                     mirror_pass);
-    /* bodyMesh + 1 is the old flat PS1 shadow plate. Dynamic shadows are
-     * generated from the actual body and wheel geometry, so the compatibility
-     * submesh never enters Render World. */
-    GameRenderWorldSubmitCarPart(entity, 2, asset, assetSet, rearWheelMesh,
-        0,
-        origin,
-        SceneMat3Multiply(wheelBase, SceneRotationX(object->wheelRotation)),
-        environmentLight, mirror_pass);
-    /* Place each front wheel in the road-aligned suspension plane as well as
-     * rotating it there. Using `base` left both wheel centres at the same
-     * height on banked road while the body rolled between them, making one
-     * wheel intersect the body and the opposite wheel detach. */
-    front = SceneRotatePoint(wheelBase, (float)offsetX, (float)offsetY,
-                                 (float)offsetZ);
-    front.x += origin.x;
-    front.y += origin.y;
-    front.z += origin.z;
-    GameRenderWorldSubmitCarPart(entity, 3, asset, assetSet, frontWheelMesh,
-                                     0,
-                                     front, frontLeft, environmentLight,
-                                     mirror_pass);
-    front = SceneRotatePoint(wheelBase, -(float)offsetX, (float)offsetY,
-                                 (float)offsetZ);
-    front.x += origin.x;
-    front.y += origin.y;
-    front.z += origin.z;
-    GameRenderWorldSubmitCarPart(entity, 4, asset, assetSet, frontWheelMesh,
-                                     0,
-                                     front, frontRight, environmentLight,
-                                     mirror_pass);
+                                                 int mirror_pass,
+                                                 const CarEntry *paint) {
+    const CarShape shape = {offsetX, offsetY, offsetZ, horizon};
+    CarPart parts[CAR_PART_COUNT];
+    if (!BuildCarParts(object, &shape, steeringAngle, parts)) return;
+    const uint32_t components[CAR_PART_COUNT] = {0, 2, 3, 4};
+    const uint32_t meshes[CAR_PART_COUNT] = {
+        bodyMesh, rearWheelMesh, frontWheelMesh, frontWheelMesh
+    };
+    const uint8_t wheelMaterialVariant = assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1
+        ? (uint8_t)(bodyMaterialVariant / 3u * 3u) : 0;
+    /* The retail shadow plate is omitted; shadows use actual car geometry. */
+    for (unsigned i = 0; i < CAR_PART_COUNT; i++) {
+        GameRenderWorldSubmitCarPart(entity, components[i], asset, assetSet,
+            meshes[i], source, i == 0 ? bodyMaterialVariant : wheelMaterialVariant, parts[i].position,
+            parts[i].rotation, environmentLight, mirror_pass, paint);
+    }
 }
 
-static Vec3 GameTrackLightForCar(const GameCarRuntime *object) {
+static Vec3 GameTrackLightForCar(const GameCarRuntime *object, const TrackZoneEffect *effect) {
     Vec3 result = {1.0f, 1.0f, 1.0f};
     float light[3];
     TrackZoneEffect zone;
     /* Live race and attract playback share one native scene treatment.
      * Scripted presentation scenes keep their authored neutral appearance. */
-    if (!GameSceneUsesRaceWorld()) return result;
-    zone = GetTrackZoneEffect(object->trackProgress);
+    if (!effect && !GameSceneUsesRaceWorld()) return result;
+    zone = effect ? *effect : GetTrackZoneEffect(object->trackProgress);
     TrackZoneLightColor(zone.blend, zone.code, light);
     result.x = light[0];
     result.y = light[1];
@@ -861,26 +721,33 @@ static Vec3 GameTrackLightForCar(const GameCarRuntime *object) {
     return result;
 }
 
-void GameRenderWorldSubmitCar(const GameCarRuntime *object,
-                                  int mirror_pass,
+void GameRenderWorldSubmitCar(const GameCarRuntime *object, int mirror_pass,
+                            RageGameCarRenderDetail detail) {
+    GameRenderWorldSubmitRivalCar(object, CarEntity(object), mirror_pass, detail);
+}
+
+void GameRenderWorldSubmitRivalCar(const GameCarRuntime *object,
+                                  uint32_t entity, int mirror_pass,
                                   RageGameCarRenderDetail detail) {
-    uint32_t entity;
     int car;
     const s16 *lod;
     Vec3 environmentLight;
 
-    if (!s_initialized || object == NULL || g_TrackRenderTable == NULL) return;
+    if (!s_initialized || object == NULL || g_TrackRenderTable == NULL ||
+        entity >= RAGE_CAR_ENTITY_COUNT ||
+        (u32)object->modelIndex >= RACE_CAR_SLOT_COUNT) return;
     /* Rival and traffic cars belong to the race world. The custom race
      * showroom draws its rival preview through the same path from a private
      * bank; publishing that would import the wrong bank under the track's
      * asset key and keep it for the race. */
     if (!GameSceneUsesRaceWorld()) return;
-    entity = CarEntity(object);
-    environmentLight = GameTrackLightForCar(object);
+
+    CaptureCarLightInput(entity, object, NULL);
+    environmentLight = GameTrackLightForCar(object, NULL);
     car = g_CarModelByCourse[SeriesCourseIndex()][object->modelIndex];
     lod = g_CarModelBankTable[car];
     if (detail == RAGE_GAME_CAR_RENDER_FAR) {
-        RageSceneMat3 body = SceneMat3Multiply(
+        SceneMat3 body = SceneMat3Multiply(
             SceneMat3Multiply(
                 SceneRotationY(0x800 - object->bodyYaw),
                 SceneRotationX(object->bodyPitch)),
@@ -893,63 +760,68 @@ void GameRenderWorldSubmitCar(const GameCarRuntime *object,
         GameRenderWorldSubmitCarPart(
             entity, 0, TrackDataAssetKey(),
             RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1,
-            (uint32_t)lod[0] + 4u, (uint8_t)lod[1], origin, body,
-            environmentLight, mirror_pass);
+            (uint32_t)lod[0] + 4u, RENDER_ASSET_DEFAULT, TrackCarMaterialVariant((uint8_t)lod[1]), origin, body,
+            environmentLight, mirror_pass, NULL);
         return;
     }
     GameRenderWorldSubmitCarAssembly(object, entity, TrackDataAssetKey(),
         RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1,
         (uint32_t)lod[0], (uint32_t)lod[0] + 2u, (uint32_t)lod[0] + 3u,
-        (uint8_t)lod[1],
+        RENDER_ASSET_DEFAULT, TrackCarMaterialVariant((uint8_t)lod[1]),
         g_TrackRenderTable->models[car].horizon,
         g_TrackRenderTable->models[car].axis0,
         (s16)g_TrackRenderTable->models[car].axis1,
         (s16)g_TrackRenderTable->models[car].axis2,
-        object->steeringAngle * 2, environmentLight, mirror_pass);
+        object->steeringAngle * 2, environmentLight, mirror_pass, NULL);
 }
 
 void GameRenderWorldSubmitPlayerCarLamps(const GameCarRuntime *object) {
     s_playerCarLampsOnly = 1;
-    GameRenderWorldSubmitPlayerCar(object, 0);
+    const CarEntry *paint = g_CarTable != NULL &&
+        (u32)g_PlayerCarIndex < CUSTOM_PAINT_CAR_COUNT
+        ? &g_CarTable[g_PlayerCarIndex] : NULL;
+    GameRenderWorldSubmitPlayerCar(
+        object, RAGE_PLAYER_CAR_ENTITY, g_CarModelAsset, paint, 0);
     s_playerCarLampsOnly = 0;
 }
 
 void GameRenderWorldSubmitPlayerCar(const GameCarRuntime *object,
-                                        int mirror_pass) {
-    uint32_t asset;
-    uint32_t wheelBase;
-    Vec3 environmentLight;
-
-    s32 assetIndex;
-
-    if (!s_initialized || object == NULL || g_CarModelAsset == NULL) return;
-    /* Key the mesh by the car actually installed in the slot being drawn.
-     * The player's selection and grade move before the new model finishes
-     * loading, and a mesh imported under the new key from the old bank would
-     * be cached for every later race with that car. */
-    assetIndex = g_CarModelSlot < CAR_ASSET_SLOT_COUNT
-                     ? g_CarModelSlotAssetIndex[g_CarModelSlot]
-                     : -1;
-    if (assetIndex < 0) {
-        assetIndex = GetCarAssetIndex(
+                                   uint32_t entity,
+                                   const CarModelAsset *modelAsset,
+                                   const CarEntry *paint, int mirror_pass) {
+    if (modelAsset == NULL) return;
+    const s32 slot = FindCarModelSlot(modelAsset);
+    s32 variant = slot >= 0 ? g_CarModelSlotAssetIndex[slot] : -1;
+    if (variant < 0) {
+        if (g_CarTable == NULL || (u32)g_PlayerCarIndex >= GAME_CAR_COUNT) return;
+        variant = GetCarAssetIndex(
             g_PlayerCarIndex, g_CarTable[g_PlayerCarIndex].modelVariant);
     }
-    asset = (uint32_t)(10 + assetIndex * 2);
-    environmentLight = GameTrackLightForCar(object);
-    wheelBase = (uint32_t)object->renderDepth * 2u;
+    const CarShape shape = {modelAsset->modelOffsetX, modelAsset->modelOffsetY,
+                            modelAsset->modelOffsetZ, modelAsset->horizon};
+    GameRenderWorldSubmitHumanCar(object, entity, variant, &shape, paint,
+                                 mirror_pass);
+}
+
+void GameRenderWorldSubmitHumanCar(const GameCarRuntime *object,
+                                  uint32_t entity, s32 variant,
+                                  const CarShape *shape,
+                                  const CarEntry *paint, int mirror_pass) {
+    if (!s_initialized || object == NULL || shape == NULL ||
+        (u32)variant >= CAR_MODEL_VARIANT_COUNT ||
+        entity >= RAGE_CAR_ENTITY_COUNT) return;
+    uint32_t asset = (uint32_t)CarVariantAssetIndex(ASSET_CAR_1ST_BASE, variant);
+    CaptureCarLightInput(entity, object, NULL);
+    Vec3 environmentLight = GameTrackLightForCar(object, NULL);
+    uint32_t wheelBase = (uint32_t)object->renderDepth * 2u;
     if ((object->wheelRotation & 0x1000) != 0) wheelBase += 10u;
     if (wheelBase + 3u >= 22u) wheelBase = 0;
-    /* Unlike rivals, the player car does not select a CLUT from the shared
-     * track model bank. Each car/grade has already selected its own MODEL_BANK
-     * asset above, whose native materials carry that model's CLUTs; body paint
-     * is then supplied through hasCarPaint in GameRenderWorldSubmitCarPart.
-     * Keep the palette offset at zero: lod[1] belongs only to the rival path. */
-    GameRenderWorldSubmitCarAssembly(object, RAGE_PLAYER_CAR_ENTITY, asset,
+    /* Native model materials own their CLUTs; only rival banks use lod[1]. */
+    GameRenderWorldSubmitCarAssembly(object, entity, asset,
         RAGE_RENDER_ASSET_MODEL_BANK, 0, wheelBase + 2u, wheelBase + 3u,
-        0,
-        g_CarModelAsset->horizon, g_CarModelAsset->modelOffsetX,
-        g_CarModelAsset->modelOffsetY, g_CarModelAsset->modelOffsetZ,
-        object->steeringAngle / 12, environmentLight, mirror_pass);
+        GameRenderWorldMutable()->explicitCars ? RENDER_ASSET_OWNED : RENDER_ASSET_DEFAULT, 0,
+        shape->horizon, shape->offsetX, shape->offsetY, shape->offsetZ,
+        object->steeringAngle / 12, environmentLight, mirror_pass, paint);
 }
 
 void GameRenderWorldPublishRaceCars(void) {
@@ -960,6 +832,7 @@ void GameRenderWorldPublishRaceCars(void) {
     if (!s_initialized || !GameSceneUsesRaceWorld() ||
         (g_SceneId == 12 && g_GrandPrixMode == 0)) return;
     world = GameRenderWorldMutable();
+    if (world->explicitCars) return;
     /* DrawCar historically publishes only rivals accepted by the active GTE
      * view. Replace those partial main-camera submissions with one complete
      * semantic traffic list. Keep the separately loaded player model and

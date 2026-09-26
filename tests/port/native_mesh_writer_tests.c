@@ -1,13 +1,158 @@
 #include "native_mesh_writer.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static int failures;
 #define CHECK(x) do { if (!(x)) { ++failures; fprintf(stderr, "line %d: %s\n", __LINE__, #x); } } while (0)
 
+typedef struct MeshSource { int passes; int failPass; SVec vertices[4]; } MeshSource;
+static int VisitFixture(void *context, RageImportedFaceVisitor visitor,
+                        void *output, uint32_t *meshCount) {
+    MeshSource *source = context;
+    if (++source->passes == source->failPass) return 0;
+    RageImportedFace face = {0};
+    face.vertices = source->vertices;
+    face.color[0] = 255;
+    for (unsigned i = 0; i < 4; ++i) face.vertex[i] = (uint16_t)i;
+    *meshCount = 1;
+    return visitor(0, &face, output);
+}
+
+static void Put16(uint8_t *bytes, uint16_t value) {
+    bytes[0] = (uint8_t)value; bytes[1] = (uint8_t)(value >> 8);
+}
+static void TestModelPrimitives(void) {
+    for (unsigned prim = 0; prim < 4; ++prim) {
+        uint8_t stream[40] = {0};
+        SVec vertices[4] = {{.vx = 100, .vy = -20, .vz = 30},
+            {.vx = 200}, {.vx = 300}, {.vx = 400}};
+        SVec normals[4] = {{.vy = -7}, {.vy = -8}, {.vy = -9}, {.vy = -10}};
+        Put16(stream, (uint16_t)prim); Put16(stream + 2, 1);
+        for (unsigned i = 0; i < 4; ++i) {
+            Put16(stream + 4 + i * 2, (uint16_t)i);
+            if (prim >= 2) Put16(stream + 12 + i * 2, (uint16_t)i);
+        }
+        uint8_t *face = stream + 4;
+        if (prim & 1) {
+            unsigned uv = prim == 1 ? 8 : 16;
+            face[uv] = 64; face[uv + 1] = 128;
+            Put16(face + uv + 2, 123); Put16(face + uv + 6, 456);
+        } else {
+            unsigned color = prim == 0 ? 8 : 16;
+            face[color] = 11; face[color + 1] = 22; face[color + 2] = 33;
+        }
+        NativeModelBank bank = {.modelCount = 1, .table = vertices,
+            .normals = normals, .models = {stream}};
+        RenderMeshInstance identity = {.assetKey = 12,
+            .assetSet = RAGE_RENDER_ASSET_MODEL_BANK};
+        RageImportedMeshEntry entry = {0};
+        int built = ImportBuildBankMesh(&identity, &bank, &entry);
+        CHECK(built);
+        if (!built) continue;
+        RageRuntimeVertex vertex;
+        CHECK(RuntimeMeshVertex(&entry.cached.mesh, 0, &vertex));
+        CHECK(vertex.position[0] == 100 && vertex.position[1] == 20 && vertex.position[2] == -30);
+        CHECK(vertex.normal[1] == (prim >= 2 ? 7 : 1));
+        CHECK(entry.materialCount == (prim & 1));
+        if (prim & 1) {
+            CHECK(entry.materials[0].clut == 123 && entry.materials[0].tpage == 456);
+            CHECK(vertex.uv[0] == 64.5f / 256 && vertex.uv[1] == 128.5f / 256);
+        } else CHECK(vertex.color[0] == 11 && vertex.color[1] == 22 && vertex.color[2] == 33);
+RageImportedMeshEntry saved = entry;
+CHECK(!ImportBuildBankMesh(&identity, &bank, &entry));
+CHECK(memcmp(&entry, &saved, sizeof(entry)) == 0);
+RuntimeCachedMeshRelease(&entry.cached); free(entry.materials);
+memset(&entry, 0, sizeof(entry));
+bank.models[0] = NULL;
+CHECK(!ImportBuildBankMesh(&identity, &bank, &entry));
+CHECK(entry.cached.mesh.bytes == NULL && entry.materials == NULL);
+bank.modelCount = GAME_MODEL_PER_BANK_LIMIT + 1;
+CHECK(!ImportBuildBankMesh(&identity, &bank, &entry));
+
+    }
+}
+
+static void TestCoursePrimitives(void) {
+    for (unsigned prim = 0; prim < 4; ++prim) {
+        uint8_t stream[40] = {0};
+        SVec vertices[4] = {{.vx = 101, .vy = -22, .vz = 33},
+            {.vx = 201}, {.vx = 301}, {.vx = 401}};
+        Put16(stream, (uint16_t)prim); Put16(stream + 2, 1);
+        uint8_t *face = stream + 4;
+        for (unsigned i = 0; i < 4; ++i) Put16(face + i * 2, (uint16_t)i);
+        face[8] = 11; face[9] = 22; face[10] = 33;
+        if (prim != 0) {
+            face[12] = 64; face[13] = 128;
+            Put16(face + 14, 123); Put16(face + 18, 456);
+            face[25] = 7;
+            if (prim >= 2) {
+                const uint32_t window = UINT32_C(0xe2000001);
+                memcpy(face + 28, &window, sizeof(window));
+            }
+        }
+        CourseBank bank = {.modelCount = 1,
+            .models = {{vertices, 4, stream}}};
+        RenderMeshInstance identity = {.assetKey = 88,
+            .assetSet = RAGE_RENDER_ASSET_COURSE};
+        RageImportedMeshEntry entry = {0};
+        CHECK(!ImportBuildCourseMesh(&identity, NULL, &entry));
+        CHECK(entry.cached.mesh.bytes == NULL && entry.materials == NULL);
+        int built = ImportBuildCourseMesh(&identity, &bank, &entry);
+        CHECK(built);
+        if (!built) continue;
+        RageRuntimeVertex vertex;
+        CHECK(RuntimeMeshVertex(&entry.cached.mesh, 0, &vertex));
+        CHECK(vertex.position[0] == 101 && vertex.position[1] == 22 && vertex.position[2] == -33);
+        CHECK(vertex.color[0] == 11 && vertex.color[1] == 22 && vertex.color[2] == 33);
+        CHECK(entry.cached.mesh.meshCount == 1 && entry.cached.mesh.indexCount == 6);
+        CHECK(entry.materialCount == (prim != 0));
+        if (prim != 0) {
+            CHECK(entry.materials[0].clut == 123 && entry.materials[0].tpage == 456);
+            CHECK(entry.materials[0].emissive == (prim == 3));
+            CHECK(entry.materials[0].hasWindow == (prim >= 2));
+            if (prim >= 2) CHECK(entry.materials[0].windowWidthU == 248);
+        }
+        const void *bytes = entry.cached.mesh.bytes;
+        CHECK(!ImportBuildCourseMesh(&identity, &bank, &entry));
+        CHECK(entry.cached.mesh.bytes == bytes);
+        memset(stream, 0xff, sizeof(stream));
+        CHECK(RuntimeMeshVertex(&entry.cached.mesh, 0, &vertex));
+        CHECK(vertex.position[0] == 101);
+        RuntimeCachedMeshRelease(&entry.cached);
+        free(entry.materials);
+    }
+}
+
 int main(void) {
-    CHECK(!ImportWriteFinish(NULL, 0));
+    TestCoursePrimitives();
+    TestModelPrimitives();
+CHECK(!ImportWriteFinish(NULL, 0));
+for (int failPass = 0; failPass <= 2; ++failPass) {
+    MeshSource source = {.failPass = failPass,
+        .vertices = {{.vx = 12}, {.vx = 24}, {.vx = 36}, {.vx = 48}}};
+    RenderMeshInstance identity = {.assetKey = 10,
+        .assetSet = RAGE_RENDER_ASSET_MODEL_BANK};
+    RageImportedMeshEntry entry = {0}, before = entry;
+    int result = ImportBuildMeshEntry(&identity, VisitFixture, &source, &entry);
+    CHECK(result == (failPass == 0));
+    if (result) {
+        RageRuntimeVertex vertex;
+        CHECK(entry.cached.assetKey == 10);
+        CHECK(entry.cached.assetSet == RAGE_RENDER_ASSET_MODEL_BANK);
+        CHECK(RuntimeMeshVertex(&entry.cached.mesh, 0, &vertex));
+        CHECK(vertex.position[0] == 12);
+        memset(&source, 0, sizeof(source));
+        CHECK(RuntimeMeshVertex(&entry.cached.mesh, 0, &vertex));
+        CHECK(vertex.position[0] == 12);
+        RuntimeCachedMeshRelease(&entry.cached);
+        free(entry.materials);
+    } else {
+        CHECK(memcmp(&entry, &before, sizeof(entry)) == 0);
+    }
+}
+
     {
         uint8_t offsets[20] = {0};
         RageImportedWrite write = {.offsets = offsets, .meshLimit = 4,

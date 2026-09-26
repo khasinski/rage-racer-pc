@@ -7,7 +7,9 @@
  */
 
 #include "game/car_collision_internal.h"
-#include "psyq/gte.h"
+#include "game/geometry.h"
+
+#include <stddef.h>
 
 CarCollisionPoint CarCollisionMidpoint(CarCollisionPoint first,
                                        CarCollisionPoint second) {
@@ -44,10 +46,10 @@ static int IsPointInsideCollisionQuad(
     s32 packedPoint = GetCarCollisionPointPacked(point);
 
     return CollisionQuadAreaTwice(quad) != 0 &&
-           NormalClip(p0, p1, packedPoint) >= 0 &&
-           NormalClip(p1, p3, packedPoint) >= 0 &&
-           NormalClip(p3, p2, packedPoint) >= 0 &&
-           NormalClip(p2, p0, packedPoint) >= 0;
+           TriangleArea(p0, p1, packedPoint) >= 0 &&
+           TriangleArea(p1, p3, packedPoint) >= 0 &&
+           TriangleArea(p3, p2, packedPoint) >= 0 &&
+           TriangleArea(p2, p0, packedPoint) >= 0;
 }
 
 /*

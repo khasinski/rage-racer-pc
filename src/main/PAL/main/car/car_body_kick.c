@@ -2,8 +2,6 @@
 #include "game/car.h"
 #include "game/car_motion_internal.h"
 #include "game/integer.h"
-#include "game/random.h"
-#include "game/track.h"
 
 enum {
     BODY_KICK_MIN_SPEED = 0x140,
@@ -12,7 +10,8 @@ enum {
 };
 
 /* Start the short body impulse produced by a landing or a fast sideways hit. */
-void StartCarBodyKick(GameCarRuntime *car, CarBodyKickMode mode) {
+void BeginCarBodyKick(GameCarRuntime *car, CarBodyKickMode mode,
+                       s32 trackHeading, s32 random) {
     s32 lean;
     s32 speedOverMinimum;
 
@@ -27,7 +26,7 @@ void StartCarBodyKick(GameCarRuntime *car, CarBodyKickMode mode) {
         return;
     }
     lean = GetAngleDistance(
-        InterpolateTrackAngle(car->trackPointIndex, car->segmentFraction),
+        trackHeading,
         car->bodyYaw);
     if (lean > ANGLE_QUARTER_TURN) {
         lean = ANGLE_HALF_TURN - lean;
@@ -41,7 +40,7 @@ void StartCarBodyKick(GameCarRuntime *car, CarBodyKickMode mode) {
               WrapSigned32((int64_t)speedOverMinimum * lean) /
               ANGLE_FULL_TURN);
     car->motionModeTimer = CAR_BODY_KICK_DURATION;
-    if (Random15() & KICK_DIRECTION_RANDOM_BIT) {
+    if (random & KICK_DIRECTION_RANDOM_BIT) {
         car->motionValue = WrapSigned16(
             -(s32)(u16)car->motionValue);
     }

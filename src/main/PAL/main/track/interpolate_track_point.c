@@ -5,7 +5,8 @@
  * and its successor by `weight` (0..0x400), writing the result to out.
  * The +0x3FF/+0x7FF bias before the >>10 / >>11 shifts rounds toward zero.
  */
-void InterpolateTrackPoint(s32 pointIndex, LVec *out, s32 weight) {
+void InterpolateRoutePoint(const TrackRoute *route, s32 pointIndex,
+                            LVec *out, s32 weight) {
     s32 next;
     s32 inv = (s32)(0x400u - (u32)weight);
     const GameTrackPoint *cur;
@@ -15,14 +16,14 @@ void InterpolateTrackPoint(s32 pointIndex, LVec *out, s32 weight) {
     if (out == NULL) {
         return;
     }
-    if (g_TrackPoints == NULL || g_TrackPointCount <= 0) {
+    if (route == NULL || route->points == NULL || route->count <= 0) {
         *out = (LVec){0};
         return;
     }
 
-    next = WrapTrackPointIndex((s32)((u32)pointIndex + 1U));
-    cur = TrackPoint(pointIndex);
-    nxt = TrackPoint(next);
+    next = RouteIndex(route, (s32)((u32)pointIndex + 1U));
+    cur = RoutePoint(route, pointIndex);
+    nxt = RoutePoint(route, next);
     sum = (s32)((u32)cur->x * (u32)inv +
                 (u32)nxt->x * (u32)weight);
     if (sum < 0) {

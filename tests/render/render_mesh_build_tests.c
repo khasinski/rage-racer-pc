@@ -86,6 +86,7 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
     world.camera.fogColor.z = 0.75f;
     storage[0].mesh = 0;
     storage[0].assetKey = 10;
+    storage[0].assetSource = RENDER_ASSET_OWNED;
     storage[0].pass = RAGE_RENDER_PASS_MAIN;
     storage[0].materialVariant = 1;
     storage[0].hasCarPaint = 1;
@@ -109,6 +110,7 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
     EXPECT_EQ(1, spanCount);
     EXPECT_EQ(4, spans[0].material);
     EXPECT_EQ(10, spans[0].assetKey);
+    EXPECT_EQ(RENDER_ASSET_OWNED, spans[0].assetSource);
     EXPECT_EQ(RAGE_RENDER_ASSET_MODEL_BANK, spans[0].assetSet);
     EXPECT_EQ(0, spans[0].depthDecal);
     EXPECT_EQ(1, spans[0].materialVariant);

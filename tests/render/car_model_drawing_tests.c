@@ -20,8 +20,8 @@ PlayerCarRuntime g_PlayerCar;
 CarEntry *g_CarTable;
 CarModelAsset *g_CarModelAsset;
 const TrackRenderTable *g_TrackRenderTable;
-s16 g_CarModelBankTable[CAR_MODEL_BANK_ENTRY_COUNT][CAR_MODEL_BANK_FIELDS];
-u8 g_CarModelByCourse[CAR_MODEL_COURSE_COUNT][RACE_CAR_SLOT_COUNT];
+const s16 g_CarModelBankTable[CAR_MODEL_BANK_ENTRY_COUNT][CAR_MODEL_BANK_FIELDS] = {{20, -2}};
+const u8 g_CarModelByCourse[CAR_MODEL_COURSE_COUNT][RACE_CAR_SLOT_COUNT] = {{0}};
 s32 g_CourseIndex;
 s32 g_ModelBankCount;
 s32 g_PlayerCarIndex;
@@ -29,10 +29,8 @@ s32 g_SceneId;
 s32 g_SceneTimer;
 
 static const TrackRenderTable *s_previewTable;
-static s32 s_customRival = -1;
 static s32 s_auxiliaryTextures;
 
-s32 CustomRaceRivalModel(void) { return s_customRival; }
 s32 CustomRaceRivalModelForSelection(s32 selection) {
     return selection >= GAME_CAR_COUNT ? selection - GAME_CAR_COUNT : -1;
 }
@@ -145,10 +143,17 @@ void GameRenderWorldSubmitCar(const GameCarRuntime *object, int mirror,
     s_detail = detail;
     s_modernSteeringAngle = object->steeringAngle;
 }
+static const CarEntry *s_submittedPaint;
+
 void GameRenderWorldSubmitPlayerCar(const GameCarRuntime *object,
+                                    uint32_t entity,
+                                    const CarModelAsset *modelAsset,
+                                    const CarEntry *paint,
                                     int mirror) {
     (void)object;
     (void)mirror;
+    if (modelAsset != g_CarModelAsset || entity != RACE_CAR_SLOT_COUNT) abort();
+    s_submittedPaint = paint;
     s_modernPlayerCalls++;
 }
 TrackZoneEffect GetTrackZoneEffect(s32 position) {
@@ -203,9 +208,6 @@ int main(void) {
 
     g_TrackRenderTable = &track.header;
     g_CarModelAsset = &playerAsset;
-    g_CarModelByCourse[0][0] = 0;
-    g_CarModelBankTable[0][0] = 20;
-    g_CarModelBankTable[0][1] = -2;
     g_ModelBankCount = 64;
     track.header.models[0].axis0 = 10;
     track.header.models[0].axis1 = 20;
@@ -307,10 +309,8 @@ int main(void) {
     CHECK(g_TrackRenderTable == &track.header);
 
     ResetCounters();
-    s_customRival = 0;
-    g_PlayerCar.drive.steerPos = 4096;
-    DrawRacePlayerCarModel(&object);
-    s_customRival = -1;
+    g_PlayerCar.drive.steerPos = -4096; /* must not override this draw */
+    DrawRacePlayerCarModel(&object, 0, 4096);
     CHECK(s_submitCount == 6);
     CHECK(s_selectModelBankCount == 2);
     CHECK(s_selectedModelBanks[0] == 1 && s_selectedModelBanks[1] == 0);
@@ -319,6 +319,37 @@ int main(void) {
     CHECK(object.steeringAngle == 120);
     CHECK(object.modelIndex == 0);
 
+    ResetCounters();
+    DrawRacePlayerCarModel(&object, 0, -4096);
+    CHECK(s_modernSteeringAngle == 300 && s_yAngles[2] == 600);
+    CHECK(object.steeringAngle == 120 && object.modelIndex == 0);
+
+    ResetCounters();
+    DrawRacePlayerCarModel(&object, -1, 4096);
+    CHECK(s_modernPlayerCalls == 1 && s_modernCarCalls == 0);
+    CHECK(s_yAngles[2] == 10 && s_selectModelBankCount == 0);
+    CHECK(object.steeringAngle == 120 && object.modelIndex == 0);
+
+    CarEntry paints[CUSTOM_PAINT_CAR_COUNT] = {0};
+    g_CarTable = paints;
+    g_PlayerCarIndex = 3;
+    DrawPlayerCarModel(&object);
+    CHECK(s_submittedPaint == &paints[3]);
+    g_PlayerCarIndex = CUSTOM_PAINT_CAR_COUNT - 1;
+    DrawPlayerCarModel(&object);
+    CHECK(s_submittedPaint == &paints[CUSTOM_PAINT_CAR_COUNT - 1]);
+    g_PlayerCarIndex = CUSTOM_PAINT_CAR_COUNT;
+    DrawPlayerCarModel(&object);
+    CHECK(s_submittedPaint == NULL);
+    g_PlayerCarIndex = -1;
+    DrawPlayerCarModel(&object);
+    CHECK(s_submittedPaint == NULL);
+    g_PlayerCarIndex = 0;
+    g_CarTable = NULL;
+    DrawPlayerCarModel(&object);
+    CHECK(s_submittedPaint == NULL);
+
     puts("car model drawing tests passed");
+
     return 0;
 }

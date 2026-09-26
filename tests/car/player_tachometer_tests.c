@@ -4,11 +4,16 @@
 #include <limits.h>
 #include <stdio.h>
 
+static GameCarSpec s_spec;
+GameCarSpec *g_CarSpec = &s_spec;
+PlayerCarRuntime g_PlayerCar;
 s32 g_EngineRpm;
 s32 g_EngineRpmJitter;
 s32 g_TachoShiftLightOn;
 s32 g_EnvScriptClock;
 
+static const CarTachometerSpec *s_drawSpec;
+static s32 s_manual, s_gear, s_speed;
 static s32 s_rpm;
 static s32 s_flash;
 static TachometerLightingMode s_lighting;
@@ -16,8 +21,10 @@ static s32 s_amount;
 static int s_calls;
 static int s_failures;
 
-void DrawTachometer(s32 rpm, s32 flash, TachometerLightingMode lighting,
+void DrawTachometer(const CarTachometerSpec *spec, s32 manual, s32 gear, s32 speed,
+                    s32 rpm, s32 flash, TachometerLightingMode lighting,
                     s32 amount) {
+    s_manual = manual; s_drawSpec = spec; s_gear = gear; s_speed = speed;
     s_rpm = rpm;
     s_flash = flash;
     s_lighting = lighting;
@@ -31,7 +38,7 @@ static void CheckClock(s32 clock, s32 dark,
     g_EnvScriptClock = clock;
     s_calls = 0;
     DrawPlayerTachometer(dark);
-    if (s_calls != 1 || s_rpm != 5123 || s_flash != 1 ||
+    if (s_manual != g_PlayerCar.drive.manual || s_calls != 1 || s_drawSpec != &s_spec.tachometer || s_gear != 3 || s_speed != 1168 || s_rpm != 5123 || s_flash != 1 ||
         s_lighting != expectedLighting || s_amount != expectedAmount) {
         printf("FAIL clock=%d dark=%d: calls=%d rpm=%d flash=%d "
                "type=%d amount=%d; expected type=%d amount=%d\n",
@@ -42,6 +49,8 @@ static void CheckClock(s32 clock, s32 dark,
 }
 
 int main(void) {
+    g_PlayerCar.drive.gear = 3;
+    g_PlayerCar.speed = 1168;
     g_EngineRpm = 5000;
     g_EngineRpmJitter = 123;
     g_TachoShiftLightOn = 1;

@@ -1,20 +1,18 @@
 #include "game/car.h"
 #include "game/car_motion_internal.h"
+#include "game/rival.h"
+#include "game/race.h"
+#include "game/track_internal.h"
 
-enum { RIVAL_TRACK_INSET = 0x3C };
 
 /*
  * This stays two passes: every active car updates its lap progress before any
  * car applies knockback and resamples its track-relative pose.
  */
 void PlaceRivalCarsOnTrack(void) {
-    CarTrackLimits limits;
+    const TrackRoute route = {.points = g_TrackPoints, .arcs = g_TrackArcCenters,
+        .count = g_TrackPointCount, .length = g_TrackLength};
     s32 index;
-
-    limits.rightInset = RIVAL_TRACK_INSET;
-    limits.leftInset = -RIVAL_TRACK_INSET;
-    limits.rightContact = CAR_TRACK_CONTACT_NONE;
-    limits.leftContact = CAR_TRACK_CONTACT_NONE;
 
     for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
         if (g_Cars[index].activeFlag != -1) {
@@ -22,14 +20,6 @@ void PlaceRivalCarsOnTrack(void) {
         }
     }
     for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
-        GameCarRuntime *car = &g_Cars[index];
-
-        if (car->activeFlag == -1) {
-            continue;
-        }
-        if (car->motionActive) {
-            ApplyCarKnockback(car);
-        }
-        UpdateCarTrackState(car, car->trackPointIndex, &limits);
+        PlaceRival(&g_Cars[index], &route, g_RaceSeries != 0);
     }
 }

@@ -125,13 +125,13 @@ s32 UploadImageEntry(const GameImageEntryHeader *entry, size_t size) {
     s_uploadSizes[index] = size;
     return index != s_uploadFailureAt;
 }
-s32 IsValidImageAsset(const GameImageAssetHeaderWord *asset, size_t size) {
+s32 IsValidImageAsset(const void *asset, size_t size) {
     s32 index = s_validationCount++;
     (void)asset;
     (void)size;
     return index != s_validationFailureAt;
 }
-s32 IsValidImageEntry(const GameImageEntryHeader *entry, size_t size) {
+s32 IsValidImageEntry(const void *entry, size_t size) {
     s32 index = s_validationCount++;
     (void)entry;
     (void)size;

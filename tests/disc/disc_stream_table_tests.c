@@ -185,6 +185,15 @@ static void TestAmericanDisc(void) {
     FakeDisc *disc = malloc(sizeof(*disc));
     DiscIdentity identity;
     BuildDisc(disc, "SLUS_004.03", 1);
+    DiscIsoReader reader;
+    char boot[16] = "unchanged";
+    Check(DiscIsoOpen(&reader, ReadFake, disc), "opens identity reader");
+    Check(!DiscReadBootName(&reader, boot, 4), "rejects short boot output");
+    Check(strcmp(boot, "unchanged") == 0, "failed identification preserves output");
+    Check(!DiscReadBootName(NULL, boot, sizeof(boot)), "rejects null reader");
+    Check(!DiscReadBootName(&reader, NULL, sizeof(boot)), "rejects null boot output");
+    Check(DiscReadBootName(&reader, boot, sizeof(boot)), "reads identity without stream table");
+    Check(strcmp(boot, "SLUS_004.03") == 0, "standalone identity matches serial");
     Check(DiscIdentify(ReadFake, disc, &identity), "identifies the disc");
     Check(strcmp(identity.boot, "SLUS_004.03") == 0, "reads BOOT from SYSTEM.CNF");
     Check(strcmp(identity.region, "NTSC-U") == 0, "calls SLUS NTSC-U");

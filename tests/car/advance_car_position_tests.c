@@ -8,31 +8,11 @@
  * the previous heading.
  */
 
-#include "common.h"
-#include "game/car.h"
-#include "game/car_internal.h"
-#include "game/render.h"
-#include "game/render_state.h"
+#include "game/car_drive.h"
 
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
-
-/*
- * Atan2 lives beside the camera code, which reaches for the render state and
- * the render world. None of that runs here, so answer it rather than link
- * the renderer in to divide two numbers.
- */
-GameRenderState g_RenderState;
-MATRIX *MulMatrix0(MATRIX *m0, MATRIX *m1, MATRIX *m2) {
-    (void)m0;
-    (void)m1;
-    return m2;
-}
-void GameRenderWorldSetCamera(int32_t x, int32_t y, int32_t z, int32_t pitch,
-                              int32_t yaw, int32_t roll) {
-    (void)x; (void)y; (void)z; (void)pitch; (void)yaw; (void)roll;
-}
 
 static unsigned long s_digest = 2166136261UL;
 

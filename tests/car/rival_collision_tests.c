@@ -26,7 +26,9 @@
 #include <string.h>
 
 GameCarRuntime g_Cars[11];
-CarCollisionPoint g_CarCollisionCorners[4];
+const CarHullPoint g_CarCollisionCorners[4] = {
+    {-0x80, 0x100}, {0x80, 0x100}, {-0x80, -0x100}, {0x80, -0x100}
+};
 s32 g_TrackLength;
 
 static unsigned long s_digest = 2166136261UL;
@@ -107,14 +109,6 @@ int main(int argc, char **argv) {
     }
 
     /* A car two units long and one wide, in the units the hull uses. */
-    g_CarCollisionCorners[0].x = -0x80;
-    g_CarCollisionCorners[0].z = 0x100;
-    g_CarCollisionCorners[1].x = 0x80;
-    g_CarCollisionCorners[1].z = 0x100;
-    g_CarCollisionCorners[2].x = -0x80;
-    g_CarCollisionCorners[2].z = -0x100;
-    g_CarCollisionCorners[3].x = 0x80;
-    g_CarCollisionCorners[3].z = -0x100;
 
     for (ii = 0; ii < 3; ii++)
     for (pd = 0; pd < 6; pd++)

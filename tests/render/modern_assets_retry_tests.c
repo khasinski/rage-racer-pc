@@ -142,6 +142,12 @@ int main(int argc, char **argv) {
     instance.assetKey = 123;
     instance.assetSet = RAGE_RENDER_ASSET_MODEL_BANK;
     const RageRuntimeCachedMesh *resident = ModernAssetsFind(&instance);
+    /* An owned field source must not silently use an existing disk mesh. */
+    RenderMeshInstance ownedInstance = instance;
+    ownedInstance.assetSource = RENDER_ASSET_OWNED;
+    if (!resident || ModernAssetsFind(&ownedInstance) != NULL ||
+        ModernAssetsResidentMeshLookup(NULL, &ownedInstance) != NULL) return 60;
+
     if (!resident || ModernAssetsCachedMeshCount() != 1) return 23;
     const void *ownedBytes = resident->mesh.bytes;
     if (!ownedBytes || memcmp(ownedBytes, meshBytes, sizeof(meshBytes))) return 24;

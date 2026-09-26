@@ -1,7 +1,7 @@
 #include "game/car.h"
 #include "game/car_motion_internal.h"
 #include "game/integer.h"
-#include "psyq/gte.h"
+#include "game/angle.h"
 
 enum {
     BODY_KICK_WAVE_CYCLES = 3,
@@ -42,7 +42,7 @@ void UpdateCarBodyKick(GameCarRuntime *car) {
     timer = car->motionModeTimer;
     amplitude = timer * car->motionValue / BODY_KICK_AMPLITUDE_SCALE;
     wave = WrapSigned32(
-        (int64_t)rsin(((timer * BODY_KICK_WAVE_CYCLES) <<
+        (int64_t)SinAngle(((timer * BODY_KICK_WAVE_CYCLES) <<
                        BODY_KICK_WAVE_ANGLE_SHIFT) /
                      CAR_BODY_KICK_DURATION) * amplitude);
     value = wave / BODY_KICK_WAVE_SCALE;

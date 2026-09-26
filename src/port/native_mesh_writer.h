@@ -3,6 +3,8 @@
 
 #include "common.h"
 #include "game/vector.h"
+#include "game/model_bank.h"
+#include "game/terrain_bank.h"
 #include "render/rmesh_cache.h"
 
 typedef struct RageImportedTextureKey {
@@ -21,7 +23,17 @@ typedef struct RageImportedMeshEntry {
     RageRuntimeCachedMesh cached;
     RageImportedTextureKey *materials;
     uint32_t materialCount;
+    RenderAssetSource source;
+    struct CarModelData *carSource;
 } RageImportedMeshEntry;
+
+/* Prepare a variant-indexed array of CAR_MODEL_VARIANT_COUNT sources.
+ * Existing entries are immutable; failure releases only additions. */
+int ImportPrepareCars(RageImportedMeshEntry *entries, uint32_t *count,
+                      uint32_t capacity, struct CarModelData *const *models);
+void ImportReleaseEntry(RageImportedMeshEntry *entry);
+RageImportedMeshEntry *ImportFindMesh(RageImportedMeshEntry *entries, uint32_t count,
+                                    uint32_t key, RenderAssetSet set, RenderAssetSource source);
 
 typedef struct RageImportedFace {
     const SVec *vertices;
@@ -37,6 +49,43 @@ typedef struct RageImportedFace {
     uint8_t textured;
     uint8_t hasNormals;
 } RageImportedFace;
+
+typedef int (*RageImportedFaceVisitor)(uint32_t mesh,
+                                       const RageImportedFace *face,
+                                       void *context);
+
+/* Bank must be resolved from validated immutable source storage. */
+int ImportVisitModelBank(const NativeModelBank *bank,
+                          RageImportedFaceVisitor visitor, void *context,
+                          uint32_t *meshCount);
+
+typedef int (*RageImportedMeshSource)(void *context, RageImportedFaceVisitor visitor,
+                                      void *output, uint32_t *meshCount);
+
+/* Output must be empty. Failure leaves it unchanged; success transfers mesh
+ * bytes and materials to the caller. Sources are borrowed for both passes. */
+int ImportBuildMeshEntry(const RenderMeshInstance *instance,
+                         RageImportedMeshSource source, void *context,
+                         RageImportedMeshEntry *destination);
+
+/* Imports a validated bank into caller-owned native mesh bytes. No game slots
+ * or renderer state; source storage need only survive this synchronous call. */
+int ImportBuildBankMesh(const RenderMeshInstance *instance, const NativeModelBank *bank,
+                        RageImportedMeshEntry *destination);
+
+/* Models must borrow a validated immutable course bank for both passes. */
+int ImportVisitCourseModels(const NativeCourseModel *models, s32 count,
+                            RageImportedFaceVisitor visitor, void *context,
+                            uint32_t *meshCount);
+int ImportBuildCourseMesh(const RenderMeshInstance *instance, const CourseBank *bank,
+                          RageImportedMeshEntry *destination);
+
+/* Terrain sources must borrow validated immutable storage during both passes. */
+int ImportVisitTerrainCells(const void *const *cells, s32 count, const SVec *vertices,
+                            RageImportedFaceVisitor visitor, void *context,
+                            uint32_t *meshCount);
+int ImportBuildTerrainMesh(const RenderMeshInstance *instance, const TerrainBank *bank,
+                           RageImportedMeshEntry *destination);
 
 typedef struct RageImportedWrite {
     RageImportedMeshEntry *entry;

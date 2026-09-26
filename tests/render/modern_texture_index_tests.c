@@ -55,7 +55,16 @@ int main(void) {
     assert(ModernTextureIndexFind(&index, &collision) == 3 &&
            ModernTextureIndexFind(&index, &first) == 0);
 
-    memset(&index, 0, sizeof(index));
+RageNativeDrawSpan ownedSpan = firstSpan;
+ownedSpan.assetSource = RENDER_ASSET_OWNED;
+ModernTextureKey owned = ModernTextureKeyFromSpan(&ownedSpan);
+assert(!ModernTextureKeyEqual(&first, &owned));
+assert(ModernTextureIndexFind(&index, &owned) == -1);
+assert(ModernTextureIndexInsert(&index, &owned));
+assert(ModernTextureIndexFind(&index, &owned) == 4);
+assert(ModernTextureIndexFind(&index, &first) == 0);
+memset(&index, 0, sizeof(index));
+
     index.count = MODERN_TEXTURE_INDEX_CAPACITY;
     assert(!ModernTextureIndexInsert(&index, &first));
     ModernTextureIndexClear(&index);

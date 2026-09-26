@@ -39,15 +39,19 @@ PlayerCarRuntime g_PlayerCar;
 
 static GameTrackCameraNode s_nodes[2];
 static s32 s_nearestCamera;
+static unsigned s_nearestCalls;
+static unsigned s_drawCalls, s_viewPublications;
 
 /* The camera asks the track which node is nearest; the test says which. */
-s32 FindNearestTrackCamera(GameCarRuntime *car) {
+s32 FindNearestTrackCamera(const GameCarRuntime *car) {
+    ++s_nearestCalls;
     (void)car;
     return s_nearestCamera;
 }
 
-void DrawPlayerCarModel(GameCarRuntime *obj) { (void)obj; }
-void DrawRacePlayerCarModel(GameCarRuntime *obj) { DrawPlayerCarModel(obj); }
+void DrawPlayerCarModel(GameCarRuntime *obj) { (void)obj; ++s_drawCalls; }
+s32 CustomRaceRivalModel(void) { return -1; }
+void DrawRacePlayerCarModel(GameCarRuntime *obj, s32 rivalModel, s32 steering) { (void)rivalModel; (void)steering; DrawPlayerCarModel(obj); }
 void SelectModelBank(s32 bank) { (void)bank; }
 int ChaseCameraYawOffset(int steeringAngle) {
     (void)steeringAngle;
@@ -67,6 +71,7 @@ MATRIX *MulMatrix0(MATRIX *a, MATRIX *b, MATRIX *out) {
 void GameRenderWorldSetCamera(s32 x, s32 y, s32 z, s32 pitch, s32 yaw,
                               s32 roll) {
     (void)x; (void)y; (void)z; (void)pitch; (void)yaw; (void)roll;
+    ++s_viewPublications;
 }
 
 static int s_failures;
@@ -151,11 +156,58 @@ static s32 ChaseAdvance(s32 yawError, s32 speed) {
     return ((g_Camera.chase.yaw - startYaw) + 0x800) % 0x1000 - 0x800;
 }
 
+static void PoseDoesNotPublishOrDraw(void) {
+    Camera first = {0}, second = {0}, isolated = {0};
+    GameCarRuntime cars[2];
+    PlaceCar(&cars[0]);
+    PlaceCar(&cars[1]);
+    cars[1].x += 1000;
+    GameCarRuntime before[2];
+    memcpy(before, cars, sizeof(cars));
+    GameRenderState renderBefore = g_RenderState;
+    unsigned nearestCalls = s_nearestCalls;
+    const GameTrackCameraNode *trackCameras = g_TrackCameras;
+    g_TrackCameras = NULL;
+    unsigned draws = s_drawCalls, publications = s_viewPublications;
+    s_nearestCamera = 0;
+    UpdateCameraPose(&first, CAMERA_VIEW_CAR, &cars[0]);
+    Camera firstBefore = first;
+    UpdateCameraPose(&second, CAMERA_VIEW_CAR, &cars[1]);
+    UpdateCameraPose(&isolated, CAMERA_VIEW_CAR, &cars[1]);
+    if (memcmp(&first, &firstBefore, sizeof(first)) != 0 ||
+        memcmp(&second, &isolated, sizeof(second)) != 0 ||
+        second.view.x - first.view.x != 1000) {
+        printf("FAIL independent camera subjects\n"); ++s_failures;
+    }
+UpdateCameraPose(&second, CAMERA_VIEW_CHASE, &cars[1]);
+UpdateCameraPose(&isolated, CAMERA_VIEW_CHASE, &cars[1]);
+if (memcmp(&second, &isolated, sizeof(second)) != 0 ||
+    s_nearestCalls != nearestCalls) {
+    printf("FAIL local camera depends on track camera selection\n"); ++s_failures;
+}
+Camera unchanged = second;
+UpdateCameraPose(&second, CAMERA_VIEW_CAR, NULL);
+UpdateCameraPose(NULL, CAMERA_VIEW_CAR, &cars[1]);
+UpdateLookBehindPose(&second, NULL);
+UpdateLookBehindPose(NULL, &cars[1]);
+if (memcmp(&second, &unchanged, sizeof(second)) != 0) {
+    printf("FAIL invalid subject changed camera\n"); ++s_failures;
+}
+UpdateLookBehindPose(&second, &cars[1]);
+    if (memcmp(before, cars, sizeof(cars)) != 0 ||
+        memcmp(&g_RenderState, &renderBefore, sizeof(renderBefore)) != 0 ||
+        s_drawCalls != draws || s_viewPublications != publications) {
+        printf("FAIL camera pose published, drew or modified its subjects\n"); ++s_failures;
+    }
+    g_TrackCameras = trackCameras;
+}
+
 int main(void) {
     s32 view[6];
 
     g_TrackCameras = s_nodes;
     memset(s_nodes, 0, sizeof(s_nodes));
+    PoseDoesNotPublishOrDraw();
 
     /* Mode 0 takes the camera straight off the car's own block and lifts it
      * by a fixed amount along the car's up axis. */

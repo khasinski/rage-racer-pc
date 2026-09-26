@@ -54,6 +54,7 @@ else()
     target_compile_options(port_car_catalog_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 add_test(NAME port_car_catalog COMMAND port_car_catalog_tests)
+target_link_libraries(port_car_catalog_tests PRIVATE rage-sim)
 set_tests_properties(port_car_catalog PROPERTIES LABELS unit)
 
 add_executable(cd_backend_lifecycle_tests cd_backend_lifecycle_tests.c)
@@ -199,6 +200,7 @@ add_executable(archive_index_tests
     archive_index_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/archive_index.c)
 target_include_directories(archive_index_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/src/port)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(archive_index_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
@@ -235,6 +237,15 @@ else()
 endif()
 add_test(NAME main_loop_frame COMMAND main_loop_frame_tests)
 set_tests_properties(main_loop_frame PROPERTIES LABELS functional)
+
+add_executable(random_tests random_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/random/random.c)
+target_include_directories(random_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
+if(NOT MSVC)
+    target_compile_options(random_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
+add_test(NAME random COMMAND random_tests)
+set_tests_properties(random PROPERTIES LABELS unit)
 
 add_executable(game_logic_tests
     game_logic_tests.c
@@ -286,6 +297,8 @@ set_tests_properties(content_options PROPERTIES LABELS functional)
 add_executable(image_upload_tests
     image_upload_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/image_upload.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/read_image_asset.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/read_track_images.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/install_track_texture_assets.c)
 target_compile_definitions(image_upload_tests PRIVATE __psyz=1)
 target_include_directories(image_upload_tests PRIVATE
@@ -533,7 +546,8 @@ add_executable(race_asset_loading_tests
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/race_assets.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/track_data_assets.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/install_track_texture_assets.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/install_track_runtime_assets.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/install_track_runtime_assets.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/read_track_images.c)
 target_include_directories(race_asset_loading_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/src/port
@@ -548,6 +562,7 @@ else()
         "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
         ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
+target_link_libraries(race_asset_loading_tests PRIVATE rage-sim)
 add_test(NAME race_asset_loading COMMAND race_asset_loading_tests)
 set_tests_properties(race_asset_loading PROPERTIES LABELS unit)
 
@@ -565,6 +580,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include"
         "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/include")
 endif()
+target_link_libraries(host_state_content_tests PRIVATE rage-sim)
 add_test(NAME host_state_content COMMAND host_state_content_tests)
 set_tests_properties(host_state_content PROPERTIES LABELS functional)
 
@@ -630,6 +646,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/include"
         -fcommon ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
+target_link_libraries(native_initialized_state_tests PRIVATE rage-data)
 add_test(NAME native_initialized_state COMMAND native_initialized_state_tests)
 set_tests_properties(native_initialized_state PROPERTIES LABELS functional)
 

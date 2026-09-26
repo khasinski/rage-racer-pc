@@ -1,7 +1,6 @@
 #include "game/car.h"
-#include "game/car_internal.h"
+#include "game/rival.h"
 #include "game/integer.h"
-#include "game/race.h"
 #include "game/track.h"
 
 enum {
@@ -14,19 +13,17 @@ enum {
  * next entry and wraps at the list's -1 sentinel. Only the front four rivals
  * are nudged, and only while no nearby car is blocking them.
  */
-void ApplyCarRacingLineHint(GameCarRuntime *car, s32 carIndex) {
-    const s32 series = g_RaceSeries != 0;
+void StepRivalLine(GameCarRuntime *car, s32 carIndex,
+                     const TrackRacingLineHint hints[TRACK_RACING_LINE_HINT_COUNT]) {
     s32 position;
-    const TrackRacingLineHint *hints;
     const TrackRacingLineHint *hint;
 
-    if (car == NULL || g_TrackEventData == NULL || carIndex < 0 ||
+    if (car == NULL || hints == NULL || carIndex < 0 ||
         carIndex >= RACE_CAR_SLOT_COUNT) {
         return;
     }
 
     position = car->trackProgress >> 4;
-    hints = g_TrackEventData->racingLineHints[series];
     if (car->racingLineHintIndex < 0 ||
         car->racingLineHintIndex >= TRACK_RACING_LINE_HINT_COUNT) {
         /* Retail would read outside the table; the first hint stands in. */

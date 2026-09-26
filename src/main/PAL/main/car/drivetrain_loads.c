@@ -1,11 +1,6 @@
 #include "game/angle.h"
-#include "game/car.h"
-#include "game/car_internal.h"
+#include "game/car_drive.h"
 #include "game/integer.h"
-#include "game/race.h"
-#include "game/render.h"
-#include "game/state.h"
-#include "game/track_internal.h"
 
 enum {
     PER_THOUSAND_SCALE = 1000,
@@ -66,13 +61,13 @@ static void SettleSteeringGrip(GameCarDrive *drive, s32 gripBudget) {
  * its expected curve still agrees with the track below it.
  */
 void UpdateCarSteeringGrip(PlayerCarRuntime *car, const GameCarSpec *spec,
-                           s32 gripBudget) {
+                           const DriveContext *context, s32 gripBudget) {
     GameCarDrive *drive = &car->drive;
     const GameTrackPoint *trackPoint;
     TrackCurveMode curveModeNow;
     s32 camber;
     s32 camberLean;
-    const int hasTrack = g_TrackPoints != NULL && g_TrackPointCount > 0;
+    const int hasTrack = context->point != NULL;
 
     if (drive->motionState == CAR_MOTION_TAKEOFF) {
         TrackCurveMode driveCurveMode =
@@ -81,7 +76,7 @@ void UpdateCarSteeringGrip(PlayerCarRuntime *car, const GameCarSpec *spec,
 
         if (hasTrack && driveCurveMode != TRACK_CURVE_NONE) {
             TrackCurveMode pointCurveMode =
-                TrackPointCurveMode(TrackPoint(car->trackPointIndex));
+                TrackPointCurveMode(context->point);
 
             drive->trackCurveBias = WrapSigned16(
                 (s32)drive->trackCurveBias +
@@ -108,7 +103,7 @@ void UpdateCarSteeringGrip(PlayerCarRuntime *car, const GameCarSpec *spec,
         return;
     }
 
-    trackPoint = TrackPoint(car->trackPointIndex);
+    trackPoint = context->point;
     if (curveModeNow != TrackPointCurveMode(trackPoint) &&
         curveModeNow != TRACK_CURVE_NONE) {
         camber = trackPoint->crossSlope;
@@ -127,7 +122,7 @@ void UpdateCarSteeringGrip(PlayerCarRuntime *car, const GameCarSpec *spec,
 }
 
 static void UpdateLongitudinalResistance(CarDrivetrainLoads *loads,
-                                         const GameCarDrive *drive,
+                                         GameCarDrive *drive,
                                          s32 netTorque) {
     s32 throttleTorque = WrapSigned32(
         (int64_t)netTorque * drive->acceleratorInput.value);
@@ -140,10 +135,10 @@ static void UpdateLongitudinalResistance(CarDrivetrainLoads *loads,
     }
     loads->throttleAcceleration = throttleTorque >> PEDAL_FIXED_SHIFT;
 
-    if (g_GripLossTimer > 0) {
-        g_GripLossTimer--;
+    if (drive->gripLossTimer > 0) {
+        drive->gripLossTimer--;
     } else {
-        g_GripLossTimer = 0;
+        drive->gripLossTimer = 0;
     }
     loads->longitudinalResistance = WrapSigned32(
         (int64_t)loads->longitudinalResistance +
@@ -167,7 +162,7 @@ static void UpdateLongitudinalResistance(CarDrivetrainLoads *loads,
 static void UpdateSteeringResistance(CarDrivetrainLoads *loads,
                                      const PlayerCarRuntime *car,
                                      GameCarDrive *drive,
-                                     const GameCarSpec *spec) {
+                                     const GameCarSpec *spec, int digitalSteering) {
     s32 headingError = GetAngleDistance(car->bodyYaw, car->headingAngle);
 
     drive->steeringLoadAngle = headingError <= ANGLE_QUARTER_TURN
@@ -177,7 +172,7 @@ static void UpdateSteeringResistance(CarDrivetrainLoads *loads,
         (int64_t)loads->motionResistance +
         drive->steeringLoadAngle / HEADING_RESISTANCE_DIVISOR);
     if (drive->motionState != CAR_MOTION_TAKEOFF &&
-        g_PadType == PAD_TYPE_DIGITAL) {
+        digitalSteering) {
         s32 assistStep = WrapSigned32(
             (int64_t)spec->negconSteeringAssistScale *
             drive->steeringGripResponse) / PER_THOUSAND_SCALE;
@@ -205,7 +200,8 @@ static void UpdateSteeringResistance(CarDrivetrainLoads *loads,
 }
 
 static void UpdateRoadGradeResistance(CarDrivetrainLoads *loads,
-                                      const PlayerCarRuntime *car) {
+                                      PlayerCarRuntime *car, const DriveContext *context) {
+    GameCarDrive *drive = &car->drive;
     const GameTrackPoint *trackPoint;
     const GameTrackPoint *nextTrackPoint;
     s32 alongSegment = car->segmentFraction;
@@ -215,13 +211,13 @@ static void UpdateRoadGradeResistance(CarDrivetrainLoads *loads,
     s32 roadGrade;
     s32 sideForce;
 
-    if (g_TrackPoints == NULL || g_TrackPointCount <= 0) {
-        g_RoadGrade = 0;
+    if (context->point == NULL || context->nextPoint == NULL) {
+        drive->roadGrade = 0;
         return;
     }
 
-    trackPoint = TrackPoint(car->trackPointIndex);
-    nextTrackPoint = TrackPoint(car->trackPointIndex + 1);
+    trackPoint = context->point;
+    nextTrackPoint = context->nextPoint;
 
     trackHeadingError = GetAngleDistance(
         car->headingAngle,
@@ -239,7 +235,7 @@ static void UpdateRoadGradeResistance(CarDrivetrainLoads *loads,
     }
     roadGrade = pitchSum >> TRACK_SEGMENT_FRACTION_SHIFT;
     roadGradeProduct = WrapSigned32(
-        (int64_t)roadGrade * rcos(trackHeadingError));
+        (int64_t)roadGrade * CosAngle(trackHeadingError));
     roadGrade = roadGradeProduct < 0
         ? (roadGradeProduct + ANGLE_MASK) >> ROAD_GRADE_TRIG_SHIFT
         : roadGradeProduct >> ROAD_GRADE_TRIG_SHIFT;
@@ -248,8 +244,8 @@ static void UpdateRoadGradeResistance(CarDrivetrainLoads *loads,
     } else if (roadGrade > ROAD_GRADE_LIMIT) {
         roadGrade = ROAD_GRADE_LIMIT;
     }
-    g_RoadGrade = roadGrade;
-    sideForce = -rsin(roadGrade) * ROAD_GRADE_SIDE_FORCE_SCALE /
+    drive->roadGrade = roadGrade;
+    sideForce = -SinAngle(roadGrade) * ROAD_GRADE_SIDE_FORCE_SCALE /
                 ROAD_GRADE_SIDE_FORCE_DIVISOR;
     loads->motionResistance = WrapSigned32(
         (int64_t)loads->motionResistance +
@@ -259,23 +255,23 @@ static void UpdateRoadGradeResistance(CarDrivetrainLoads *loads,
 }
 
 static void ApplyTransientDriveLoads(CarDrivetrainLoads *loads,
-                                     const GameCarDrive *drive) {
-    if (g_RacePhase == RACE_PHASE_ACTIVE &&
+                                     GameCarDrive *drive, int racing) {
+    if (racing &&
         drive->motionState == CAR_MOTION_STANDING_START) {
         loads->motionResistance = WrapSigned32(
             (int64_t)loads->motionResistance +
-            (g_StandingStartSpin & STANDING_START_SPIN_MASK) *
+            (drive->standingStartSpin & STANDING_START_SPIN_MASK) *
                 STANDING_START_RESISTANCE_SCALE);
     }
-    if (g_DriveBoostTimer > 0) {
+    if (drive->driveBoostTimer > 0) {
         loads->motionResistance = WrapSigned32(
             (int64_t)loads->motionResistance +
             DRIVE_BOOST_BASE_RESISTANCE +
             WrapSigned32(
-                (int64_t)g_DriveBoostTimer *
+                (int64_t)drive->driveBoostTimer *
                 DRIVE_BOOST_RESISTANCE_STEP));
-        g_DriveBoostTimer = WrapSigned32(
-            (int64_t)g_DriveBoostTimer - 1);
+        drive->driveBoostTimer = WrapSigned32(
+            (int64_t)drive->driveBoostTimer - 1);
     }
     if (drive->motionState == CAR_MOTION_TAKEOFF) {
         loads->throttleAcceleration = WrapSigned32(
@@ -285,12 +281,12 @@ static void ApplyTransientDriveLoads(CarDrivetrainLoads *loads,
 }
 
 static void ApplyAerodynamicResistance(CarDrivetrainLoads *loads,
-                                       const PlayerCarRuntime *car,
+                                       PlayerCarRuntime *car,
                                        const GameCarSpec *spec,
                                        s32 bandScale) {
     s32 roadSpeed = WrapSigned32(
         (int64_t)car->speed * SPEED_DISPLAY_SCALE) / SPEED_INTERNAL_SCALE;
-    s32 dragScale = WrapSigned16(g_DragScale);
+    s32 dragScale = WrapSigned16(car->drive.dragScale);
     s32 dragDivisor;
 
     if (dragScale <= 0) {
@@ -304,7 +300,7 @@ static void ApplyAerodynamicResistance(CarDrivetrainLoads *loads,
     loads->motionResistance = WrapSigned32(
         (int64_t)loads->motionResistance +
         WrapSigned32((int64_t)roadSpeed * roadSpeed) / dragDivisor);
-    g_DragScale = DEFAULT_DRAG_SCALE;
+    car->drive.dragScale = DEFAULT_DRAG_SCALE;
     if (car->verticalMotionState == CAR_VERTICAL_GROUNDED) {
         loads->motionResistance = WrapSigned32(
             (int64_t)loads->motionResistance *
@@ -319,7 +315,8 @@ static void ApplyAerodynamicResistance(CarDrivetrainLoads *loads,
 }
 
 CarDrivetrainLoads CalculateCarDrivetrainLoads(
-    PlayerCarRuntime *car, const GameCarSpec *spec, s32 netTorque,
+    PlayerCarRuntime *car, const GameCarSpec *spec, const DriveContext *context,
+    s32 netTorque,
     s32 bandScale, s32 initialAcceleration) {
     GameCarDrive *drive = &car->drive;
     CarDrivetrainLoads loads = {
@@ -332,9 +329,9 @@ CarDrivetrainLoads CalculateCarDrivetrainLoads(
     };
 
     UpdateLongitudinalResistance(&loads, drive, netTorque);
-    UpdateSteeringResistance(&loads, car, drive, spec);
-    UpdateRoadGradeResistance(&loads, car);
-    ApplyTransientDriveLoads(&loads, drive);
+    UpdateSteeringResistance(&loads, car, drive, spec, context->digitalSteering);
+    UpdateRoadGradeResistance(&loads, car, context);
+    ApplyTransientDriveLoads(&loads, drive, context->racing);
     ApplyAerodynamicResistance(&loads, car, spec, bandScale);
     return loads;
 }

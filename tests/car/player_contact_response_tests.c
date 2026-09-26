@@ -12,7 +12,13 @@ const GameTrackPoint *g_TrackPoints;
 s32 g_TrackPointCount;
 s32 g_MirrorMode;
 s16 g_RacePhase;
-s32 g_ShiftTargetRpm;
+
+static void StepContact(PlayerCarRuntime *car, s32 skid, s32 crash) {
+    const GameTrackPoint *point = g_TrackPoints != NULL && g_TrackPointCount > 0
+        ? TrackPoint(car->trackPointIndex) : NULL;
+    const s32 slip = ApplyCarContactResponse(car, point, skid, crash);
+    PlayPlayerContactCue(car, skid, slip, g_RacePhase < RACE_PHASE_UNOBSERVED);
+}
 
 static GameTrackPoint s_points[2];
 static s32 s_slip;
@@ -49,7 +55,7 @@ static void Reset(PlayerCarRuntime *car) {
     g_TrackPointCount = 2;
     g_MirrorMode = 0;
     g_RacePhase = 2;
-    g_ShiftTargetRpm = 2000;
+    car->drive.shiftTargetRpm = 2000;
     s_slip = 500;
     s_bodyKickCalls = 0;
     s_soundCalls = 0;
@@ -75,13 +81,13 @@ static void CheckSkidCue(s32 skid, s32 slip, s32 mirror, s32 initialSpeed,
     car.speed = initialSpeed;
     s_slip = slip;
     g_MirrorMode = mirror;
-    ApplyPlayerContactResponse(&car, skid, 0);
+    StepContact(&car, skid, 0);
     CHECK(s_soundCalls == 1 && s_soundCue == expectedCue);
     CHECK(car.drive.launchEnergy == 5000);
     CHECK(car.drive.drivetrainTorque == 6500);
     CHECK(car.speed == expectedSpeed);
     CHECK(car.drive.engineLoad == 650);
-    CHECK(g_ShiftTargetRpm == 1300);
+    CHECK(car.drive.shiftTargetRpm == 1300);
 }
 
 int main(void) {
@@ -90,21 +96,21 @@ int main(void) {
     Reset(&car);
     car.y = 100;
     car.drive.standingStartBounceY = 7;
-    ApplyPlayerContactResponse(&car, 0, 0);
+    StepContact(&car, 0, 0);
     CHECK(car.y == 107 && s_bodyKickCalls == 1 && s_soundCalls == 0);
 
     Reset(&car);
     car.speed = 80;
-    ApplyPlayerContactResponse(&car, 0, 1);
+    StepContact(&car, 0, 1);
     CHECK(car.drive.launchEnergy == 9000);
     CHECK(car.speed == 80 && car.drive.drivetrainTorque == 10000);
 
     Reset(&car);
     car.speed = 81;
-    ApplyPlayerContactResponse(&car, 0, 1);
+    StepContact(&car, 0, 1);
     CHECK(car.drive.launchEnergy == 9000);
     CHECK(car.speed == 78 && car.drive.drivetrainTorque == 9800);
-    CHECK(car.drive.engineLoad == 950 && g_ShiftTargetRpm == 1900);
+    CHECK(car.drive.engineLoad == 950 && car.drive.shiftTargetRpm == 1900);
 
     CheckSkidCue(1, 800, 0, 100, 47, 0xA);
     CheckSkidCue(1, 768, 0, 100, 47, 0xA);
@@ -120,39 +126,39 @@ int main(void) {
     Reset(&car);
     car.speed = 100;
     car.motionTimer = 14;
-    ApplyPlayerContactResponse(&car, 1, 0);
+    StepContact(&car, 1, 0);
     CHECK(s_soundCalls == 0);
 
     Reset(&car);
     car.speed = 100;
     car.motionTimer = UINT16_MAX;
-    ApplyPlayerContactResponse(&car, 1, 0);
+    StepContact(&car, 1, 0);
     CHECK(s_soundCalls == 0);
 
     Reset(&car);
     car.speed = 100;
     g_RacePhase = 3;
-    ApplyPlayerContactResponse(&car, 1, 0);
+    StepContact(&car, 1, 0);
     CHECK(s_soundCalls == 0);
 
     Reset(&car);
     g_TrackPoints = NULL;
     car.speed = 81;
-    ApplyPlayerContactResponse(&car, 0, 1);
+    StepContact(&car, 0, 1);
     CHECK(car.drive.launchEnergy == 9000);
     CHECK(car.speed == 78 && car.drive.drivetrainTorque == 9800);
 
     Reset(&car);
     g_TrackPointCount = 0;
     car.speed = 100;
-    ApplyPlayerContactResponse(&car, 1, 0);
+    StepContact(&car, 1, 0);
     CHECK(car.drive.launchEnergy == 10000);
     CHECK(car.speed == 100 && s_soundCalls == 0);
 
     Reset(&car);
     car.y = INT_MAX;
     car.drive.standingStartBounceY = INT_MAX;
-    ApplyPlayerContactResponse(&car, 0, 0);
+    StepContact(&car, 0, 0);
     CHECK(car.y == -2 && s_bodyKickCalls == 1);
 
     Reset(&car);
@@ -160,14 +166,14 @@ int main(void) {
     car.drive.launchEnergy = INT_MIN;
     car.drive.drivetrainTorque = INT_MAX;
     car.drive.engineLoad = INT16_MAX;
-    g_ShiftTargetRpm = INT_MAX;
-    ApplyPlayerContactResponse(&car, 0, 1);
+    car.drive.shiftTargetRpm = INT_MAX;
+    StepContact(&car, 0, 1);
     CHECK(car.drive.launchEnergy == INT_MAX - 999);
     CHECK(car.drive.drivetrainTorque ==
           WrapSigned32((int64_t)INT_MAX * 98) / 100);
     CHECK(car.speed == WrapSigned32((int64_t)INT_MAX * 97) / 100);
     CHECK(car.drive.engineLoad == 31128);
-    CHECK(g_ShiftTargetRpm ==
+    CHECK(car.drive.shiftTargetRpm ==
           WrapSigned32((int64_t)INT_MAX * 95) / 100);
 
     Reset(&car);
@@ -175,14 +181,14 @@ int main(void) {
     car.drive.launchEnergy = INT_MIN;
     car.drive.drivetrainTorque = INT_MAX;
     car.drive.engineLoad = INT16_MAX;
-    g_ShiftTargetRpm = INT_MAX;
-    ApplyPlayerContactResponse(&car, 1, 0);
+    car.drive.shiftTargetRpm = INT_MAX;
+    StepContact(&car, 1, 0);
     CHECK(car.drive.launchEnergy == INT_MAX - 4999);
     CHECK(car.drive.drivetrainTorque ==
           WrapSigned32((int64_t)65 * INT_MAX) / 100);
     CHECK(car.speed == WrapSigned32((int64_t)47 * INT_MAX) / 100);
     CHECK(car.drive.engineLoad == 21298);
-    CHECK(g_ShiftTargetRpm ==
+    CHECK(car.drive.shiftTargetRpm ==
           WrapSigned32((int64_t)65 * INT_MAX) / 100);
 
     if (s_failures != 0) {
@@ -192,3 +198,5 @@ int main(void) {
     puts("player skid and collision responses preserve their thresholds");
     return 0;
 }
+
+s32 SinAngle(s32 angle) { return rsin(angle); }

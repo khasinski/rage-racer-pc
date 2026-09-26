@@ -2,18 +2,12 @@
 #define GAME_ASSET_INTERNAL_H
 
 #include "common.h"
+#include "game/asset_bounds.h"
 #include "game/asset.h"
 #include "game/menu_types.h"
 
 extern const TeamLogoSample *g_TeamLogoSampleData;
 extern s32 g_AssetLoadFailed;
-
-static inline s32 AssetPayloadOffsetIsValid(s32 offset,
-                                            size_t payloadOffset,
-                                            size_t size) {
-    return offset >= 0 && offset % (s32)sizeof(s32) == 0 &&
-           (size_t)offset >= payloadOffset && (size_t)offset < size;
-}
 
 /* Writable bytes remaining in the port-owned buffer containing `at`. */
 size_t PortAssetRoomAt(const void *at);
@@ -60,11 +54,7 @@ s32 RequestAssetLoad(AssetRequestType request, s32 firstLoadState,
 s32 RestartAssetLoad(AssetRequestType request, s32 firstLoadState,
                      s32 resetCdAudio);
 s32 IsValidModelBankAsset(const ModelBankHeader *base, size_t size);
-s32 IsValidCourseModelAsset(const CourseModelAssetHeader *base, size_t size);
-s32 IsValidTerrainCellAsset(const void *data, size_t size);
 s32 IsValidSerializedCarModelAsset(const CarModelAsset *asset, size_t size);
-s32 IsValidEnvironmentScript(const struct GameEnvironmentScript *script,
-                             size_t size);
 s32 IsValidTrackPointAsset(const struct TrackPointTable *trackData,
                            size_t size);
 s32 IsValidTrackEventAsset(const struct TrackEventData *eventData,
@@ -76,7 +66,5 @@ s32 PublishCarModelSlot(const CarModelAsset *serializedAsset,
                         struct CarImageData *imageData, s32 index);
 const CarModelAsset *FindSerializedCarModelAsset(
     const CarModelAsset *nativeAsset);
-s32 IsValidImageAsset(const GameImageAssetHeaderWord *asset, size_t size);
-s32 IsValidImageEntry(const GameImageEntryHeader *entry, size_t size);
 
 #endif

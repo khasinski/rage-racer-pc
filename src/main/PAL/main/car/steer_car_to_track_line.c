@@ -1,38 +1,6 @@
-#include "game/car.h"
-#include "game/car_internal.h"
-#include "game/integer.h"
-#include "game/track.h"
+#include "game/car_track_internal.h"
 
-/* Aim at an offset point on the centre-line and turn towards it. */
 void SteerCarToTrackLine(PlayerCarRuntime *car) {
-    const GameCarSpec *spec = g_CarSpec;
-    s32 lateral = car->trackLateralOffset;
-    s32 aheadIndex;
-    s32 wantedHeading;
-
-    if (spec == NULL || g_TrackPointCount <= 0 || g_TrackPoints == NULL) {
-        return;
-    }
-
-    /* A backwards-launched car follows the centre-line in reverse. */
-    aheadIndex = WrapTrackPointIndex(WrapSigned32(
-        (int64_t)car->trackPointIndex +
-        (car->drive.launchDirection != 0 ? 2 : -2)));
-
-    wantedHeading = CalculateTrackOffsetHeading(
-        aheadIndex, car->segmentFraction, car->x, car->z, lateral);
-
-    if (car->verticalMotionState == CAR_VERTICAL_GROUNDED) {
-        /* Preserve the recovered signed 16-bit view of the response. */
-        s32 response = WrapSigned16(spec->steerResponse);
-        s32 towards;
-
-        if (response <= 0) {
-            response = 1;
-        }
-        towards = GetAngleDelta(car->headingAngle, wantedHeading);
-        car->headingAngle = WrapSigned32(
-            (int64_t)car->headingAngle +
-            WrapSigned32((int64_t)towards * 20) / response);
-    }
+    const TrackRoute route = {.points = g_TrackPoints, .count = g_TrackPointCount};
+    SteerCarOnRoute(car, g_CarSpec, &route);
 }

@@ -10,18 +10,6 @@
 #include <stdio.h>
 
 enum {
-    TRACK_RUNTIME_RENDER_TABLE = 0,
-    TRACK_RUNTIME_ENVIRONMENT_PALETTE = 1,
-    TRACK_RUNTIME_ENVIRONMENT_SCRIPT = 2,
-    TRACK_RUNTIME_PRIMARY_MODELS = 3,
-    TRACK_RUNTIME_POINTS = 4,
-    TRACK_RUNTIME_COURSE_MODELS = 5,
-    TRACK_RUNTIME_SECONDARY_MODELS = 6,
-    TRACK_RUNTIME_TERRAIN_CELLS = 7,
-    TRACK_RUNTIME_COURSE_OBJECTS = 8,
-    TRACK_RUNTIME_EVENTS = 9,
-    TRACK_RUNTIME_CAMERAS = 10,
-    TRACK_RUNTIME_BLOCK_COUNT = 11,
     TRACK_RENDER_CAR_MODEL_COUNT = 11,
     COURSE_OBJECT_KNOWN_FLAGS =
         COURSE_OBJECT_ALTERNATE_NORMAL |
@@ -29,11 +17,6 @@ enum {
         COURSE_OBJECT_ENVIRONMENT_4 |
         COURSE_OBJECT_BLINK_ENVIRONMENT_4,
 };
-
-_Static_assert(TRACK_RUNTIME_BLOCK_COUNT ==
-                   sizeof(((GameSceneAssetHeader *)0)->offsets) /
-                       sizeof(((GameSceneAssetHeader *)0)->offsets[0]),
-               "runtime block names must cover the scene header");
 
 static s32 IsValidCourseObjectTable(const CourseObjectTable *table,
                                     size_t size, s32 modelCount) {
@@ -79,12 +62,9 @@ static s32 IsTrackRuntimeAssetIndex(s32 assetIndex) {
 
 s32 InstallTrackRuntimeAssetPack(const void *data, size_t size, s32 assetIndex,
                                  s32 useSeriesCamera) {
-    const GameSceneAssetHeader *header;
     const CourseModelAssetHeader *courseModels;
     const CourseObjectTable *courseObjects;
-    const void *blocks[TRACK_RUNTIME_BLOCK_COUNT];
-    size_t blockSizes[TRACK_RUNTIME_BLOCK_COUNT];
-    s32 i;
+    SceneAssetBlock blocks[SCENE_ASSET_BLOCK_COUNT];
 
     if (!IsTrackRuntimeAssetIndex(assetIndex) || data == NULL ||
         size < sizeof(GameSceneAssetHeader) ||
@@ -92,116 +72,105 @@ s32 InstallTrackRuntimeAssetPack(const void *data, size_t size, s32 assetIndex,
         return RejectTrackRuntimePack(assetIndex, "index or header size");
     }
 
-    header = (const GameSceneAssetHeader *)data;
-    for (i = 0; i < TRACK_RUNTIME_BLOCK_COUNT; i++) {
-        s32 start = header->offsets[i];
-        s32 end = i + 1 < TRACK_RUNTIME_BLOCK_COUNT
-                      ? header->offsets[i + 1]
-                      : (s32)size;
-
-        if (start < (s32)sizeof(*header) || end <= start ||
-            (size_t)end > size) {
-            return RejectTrackRuntimePack(assetIndex, "block offsets");
-        }
-        blocks[i] = (const u8 *)data + start;
-        blockSizes[i] = (size_t)(end - start);
+    if (!ReadSceneAssetBlocks(data, size, blocks)) {
+        return RejectTrackRuntimePack(assetIndex, "block offsets");
     }
-    courseObjects = blocks[TRACK_RUNTIME_COURSE_OBJECTS];
+    courseObjects = blocks[SCENE_COURSE_OBJECTS].data;
     courseModels =
-        GetCourseModelAssetHeader(blocks[TRACK_RUNTIME_COURSE_MODELS]);
-    if (blockSizes[TRACK_RUNTIME_RENDER_TABLE] <
+        GetCourseModelAssetHeader(blocks[SCENE_COURSE_MODELS].data);
+    if (blocks[SCENE_RENDER_TABLE].size <
             offsetof(TrackRenderTable, models) +
                 TRACK_RENDER_CAR_MODEL_COUNT *
                     sizeof(CarModelRenderParams) ||
-        blockSizes[TRACK_RUNTIME_ENVIRONMENT_PALETTE] <
+        blocks[SCENE_ENVIRONMENT_PALETTE].size <
             ENVIRONMENT_PALETTE_COUNT * sizeof(EnvironmentPalette) ||
-        blockSizes[TRACK_RUNTIME_COURSE_OBJECTS] <
+        blocks[SCENE_COURSE_OBJECTS].size <
             offsetof(CourseObjectTable, objects)) {
         return RejectTrackRuntimePack(assetIndex, "fixed block sizes");
     }
     if (!IsValidModelBankAsset(
-            GetModelBankHeader(blocks[TRACK_RUNTIME_PRIMARY_MODELS]),
-            blockSizes[TRACK_RUNTIME_PRIMARY_MODELS])) {
+            GetModelBankHeader(blocks[SCENE_PRIMARY_MODELS].data),
+            blocks[SCENE_PRIMARY_MODELS].size)) {
         return RejectTrackRuntimePack(assetIndex, "primary model bank");
     }
     if (!IsValidCourseModelAsset(
-            courseModels, blockSizes[TRACK_RUNTIME_COURSE_MODELS])) {
+            courseModels, blocks[SCENE_COURSE_MODELS].size)) {
         return RejectTrackRuntimePack(assetIndex, "course models");
     }
     if (!IsValidCourseObjectTable(
-            courseObjects, blockSizes[TRACK_RUNTIME_COURSE_OBJECTS],
+            courseObjects, blocks[SCENE_COURSE_OBJECTS].size,
             courseModels->modelCount)) {
         return RejectTrackRuntimePack(assetIndex, "course object table");
     }
     if (!IsValidModelBankAsset(
-            GetModelBankHeader(blocks[TRACK_RUNTIME_SECONDARY_MODELS]),
-            blockSizes[TRACK_RUNTIME_SECONDARY_MODELS])) {
+            GetModelBankHeader(blocks[SCENE_SECONDARY_MODELS].data),
+            blocks[SCENE_SECONDARY_MODELS].size)) {
         return RejectTrackRuntimePack(assetIndex, "secondary model bank");
     }
     if (!IsValidTerrainCellAsset(
-            blocks[TRACK_RUNTIME_TERRAIN_CELLS],
-            blockSizes[TRACK_RUNTIME_TERRAIN_CELLS])) {
+            blocks[SCENE_TERRAIN_CELLS].data,
+            blocks[SCENE_TERRAIN_CELLS].size)) {
         return RejectTrackRuntimePack(assetIndex, "terrain cells");
     }
     if (!IsValidEnvironmentScript(
-            blocks[TRACK_RUNTIME_ENVIRONMENT_SCRIPT],
-            blockSizes[TRACK_RUNTIME_ENVIRONMENT_SCRIPT])) {
+            blocks[SCENE_ENVIRONMENT_SCRIPT].data,
+            blocks[SCENE_ENVIRONMENT_SCRIPT].size)) {
         return RejectTrackRuntimePack(assetIndex, "environment script");
     }
     if (!IsValidTrackPointAsset(
-            blocks[TRACK_RUNTIME_POINTS],
-            blockSizes[TRACK_RUNTIME_POINTS])) {
+            blocks[SCENE_POINTS].data,
+            blocks[SCENE_POINTS].size)) {
         return RejectTrackRuntimePack(assetIndex, "track points");
     }
     if (!IsValidTrackEventAsset(
-            blocks[TRACK_RUNTIME_EVENTS],
-            blockSizes[TRACK_RUNTIME_EVENTS])) {
+            blocks[SCENE_EVENTS].data,
+            blocks[SCENE_EVENTS].size)) {
         return RejectTrackRuntimePack(assetIndex, "track events");
     }
     if (!IsValidTrackCameraTable(
-            blocks[TRACK_RUNTIME_CAMERAS],
-            blockSizes[TRACK_RUNTIME_CAMERAS], useSeriesCamera)) {
+            blocks[SCENE_CAMERAS].data,
+            blocks[SCENE_CAMERAS].size, useSeriesCamera)) {
         return RejectTrackRuntimePack(assetIndex, "track cameras");
     }
 
     if (!SetEnvironmentScript(
-            blocks[TRACK_RUNTIME_ENVIRONMENT_SCRIPT],
-            blockSizes[TRACK_RUNTIME_ENVIRONMENT_SCRIPT])) {
+            blocks[SCENE_ENVIRONMENT_SCRIPT].data,
+            blocks[SCENE_ENVIRONMENT_SCRIPT].size)) {
         return RejectTrackRuntimePack(assetIndex, "environment script install");
     }
     if (!RegisterModelBank(
-            GetModelBankHeader(blocks[TRACK_RUNTIME_PRIMARY_MODELS]),
-            blockSizes[TRACK_RUNTIME_PRIMARY_MODELS], 1)) {
+            GetModelBankHeader(blocks[SCENE_PRIMARY_MODELS].data),
+            blocks[SCENE_PRIMARY_MODELS].size, 1)) {
         return RejectTrackRuntimePack(assetIndex, "primary model bank install");
     }
     if (!InstallTrackPoints(
-            blocks[TRACK_RUNTIME_POINTS],
-            blockSizes[TRACK_RUNTIME_POINTS])) {
+            blocks[SCENE_POINTS].data,
+            blocks[SCENE_POINTS].size)) {
         return RejectTrackRuntimePack(assetIndex, "track point install");
     }
     if (!RegisterCourseModels(
             courseModels,
-            blockSizes[TRACK_RUNTIME_COURSE_MODELS]) ||
+            blocks[SCENE_COURSE_MODELS].size) ||
         !RegisterModelBank(
-            GetModelBankHeader(blocks[TRACK_RUNTIME_SECONDARY_MODELS]),
-            blockSizes[TRACK_RUNTIME_SECONDARY_MODELS], 2) ||
+            GetModelBankHeader(blocks[SCENE_SECONDARY_MODELS].data),
+            blocks[SCENE_SECONDARY_MODELS].size, 2) ||
         !InstallTerrainCellData(
-            blocks[TRACK_RUNTIME_TERRAIN_CELLS],
-            blockSizes[TRACK_RUNTIME_TERRAIN_CELLS])) {
+            blocks[SCENE_TERRAIN_CELLS].data,
+            blocks[SCENE_TERRAIN_CELLS].size)) {
         return RejectTrackRuntimePack(assetIndex, "model or terrain install");
     }
     if (!InstallTrackEventData(
-            blocks[TRACK_RUNTIME_EVENTS],
-            blockSizes[TRACK_RUNTIME_EVENTS])) {
+            blocks[SCENE_EVENTS].data,
+            blocks[SCENE_EVENTS].size)) {
         return RejectTrackRuntimePack(assetIndex, "track event install");
     }
     if (!SelectTrackCameraTable(
-            blocks[TRACK_RUNTIME_CAMERAS],
-            blockSizes[TRACK_RUNTIME_CAMERAS], useSeriesCamera)) {
+            blocks[SCENE_CAMERAS].data,
+            blocks[SCENE_CAMERAS].size, useSeriesCamera)) {
         return RejectTrackRuntimePack(assetIndex, "track camera install");
     }
-    g_TrackRenderTable = blocks[TRACK_RUNTIME_RENDER_TABLE];
-    g_EnvPaletteTable = blocks[TRACK_RUNTIME_ENVIRONMENT_PALETTE];
+    g_TrackRenderTable = blocks[SCENE_RENDER_TABLE].data;
+    g_EnvPaletteTable = blocks[SCENE_ENVIRONMENT_PALETTE].data;
     g_CourseObjects = courseObjects->objects;
     g_CourseObjectCount = (s32)courseObjects->count;
     TrackAssetIdentitySet(assetIndex);

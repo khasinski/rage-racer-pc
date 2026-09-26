@@ -2,6 +2,7 @@
 #define GAME_TRACK_H
 
 #include "common.h"
+#include <stddef.h>
 #include "game/camera_types.h"
 
 #include "game/integer.h"
@@ -227,16 +228,49 @@ _Static_assert(__builtin_offsetof(TrackEventData, reservedB7C) == 0xB7C,
  * The canonical global declaration lives in track_internal.h because the
  * table is installed and consumed only by track/car internals.
  */
+/* Validated view into caller-owned event storage; no client globals change. */
+const TrackEventData *ReadTrackEvents(const TrackEventData *events, size_t size);
+
 typedef struct GameTrackArcCenter {
     s32 x;      /* +0x00 */
     s32 z;      /* +0x04 */
     s32 reserved08;  /* +0x08 never read */
 } GameTrackArcCenter;
 
+/* Immutable route data; several races may share it without sharing car state.
+ * Arc references are validated by the route importer before simulation. */
+typedef struct TrackRoute {
+    const GameTrackPoint *points;
+    const GameTrackArcCenter *arcs;
+    s32 count;
+    s32 length;
+} TrackRoute;
+
+static inline s32 RouteIndex(const TrackRoute *route, s32 index) {
+    if (route->count <= 0) return 0;
+    index %= route->count;
+    if (index < 0) index += route->count;
+    return index;
+}
+
+static inline const GameTrackPoint *RoutePoint(const TrackRoute *route,
+                                               s32 index) {
+    return &route->points[RouteIndex(route, index)];
+}
+
+void InterpolateRoutePoint(const TrackRoute *route, s32 pointIndex,
+                            LVec *out, s32 weight);
+s32 InterpolateRouteAngle(const TrackRoute *route, s32 pointIndex, s32 weight);
+s32 SmoothRouteAngle(const TrackRoute *route, s32 pointIndex, s32 weight);
+
 typedef struct TrackPointTable {
     s32 count;
     GameTrackPoint points[];
 } TrackPointTable;
+
+/* Validated immutable view into caller-owned asset storage. Invalid data
+ * clears the output view. Storage must remain alive while a race uses it. */
+int ReadTrackRoute(const TrackPointTable *table, size_t size, TrackRoute *route);
 
 /* The retail asset stores its variable-length arc-centre table immediately
  * after the declared number of centreline points. Keep that format arithmetic
@@ -303,6 +337,8 @@ void DrawScriptedScenery(s32 animate);
 void DrawStartGridScenery(s32 timer);
 void InitTrackScene(void);
 void TriggerRaceCues(void);
+TrackZoneEffect ReadTrackZoneEffect(const TrackEventData *events, s32 position,
+                                    s32 length, int reverse);
 TrackZoneEffect GetTrackZoneEffect(s32 position);
 void UpdatePointAmbience(const GameCameraState *camera, s32 trackPosition);
 
@@ -391,6 +427,8 @@ typedef struct SceneryMotionStart {
     Vec4 position;
     s32 reserved[4];
 } SceneryMotionStart;
+
+enum { SCENERY_MOTION_END = -1 };
 
 typedef struct SceneryMotionData {
     s16 triggerSection[2][2];
@@ -492,7 +530,7 @@ extern SpinningSceneryPlacement g_SpinningSceneryPlacements[4];
 extern s32 g_StartGridSceneryAngle[];
 
 s32 BlendAngle(s32 angleA, s32 angleB, s32 weight);
-extern s32 FindNearestTrackCamera(struct GameCarRuntime *car);
+extern s32 FindNearestTrackCamera(const struct GameCarRuntime *car);
 void UpdateTrackEventSound(const GameCameraState *camera, s16 trackSection);
 
 extern Vec4 g_AnimSceneryPos[];

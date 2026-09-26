@@ -35,7 +35,8 @@ void DrawPlayerCarModel(GameCarRuntime *car) {
     (void)car;
     s_drawCalls++;
 }
-void DrawRacePlayerCarModel(GameCarRuntime *car) {
+s32 CustomRaceRivalModel(void) { return -1; }
+void DrawRacePlayerCarModel(GameCarRuntime *car, s32 rivalModel, s32 steering) { (void)rivalModel; (void)steering;
     DrawPlayerCarModel(car);
 }
 

@@ -1,8 +1,8 @@
 #include "game/angle.h"
 #include "game/car.h"
-#include "game/car_internal.h"
+#include "game/rival.h"
+#include "game/car_track_internal.h"
 #include "game/integer.h"
-#include "game/race.h"
 #include "game/track.h"
 
 enum {
@@ -15,15 +15,15 @@ enum {
  * Samples a point two segments ahead (or behind in the reverse series), moves
  * it sideways onto the rival's racing line, then turns the car towards it.
  */
-void SteerCarAlongRoute(GameCarRuntime *car) {
+void SteerRival(GameCarRuntime *car, const TrackRoute *route, int reverse) {
     const GameTrackPoint *point;
-    s32 raceSeries = g_RaceSeries != 0;
+    const s32 raceSeries = reverse != 0;
     s32 index;
     s32 lateral;
     s32 targetAngle;
     s32 trackFacing;
 
-    if (car == NULL || g_TrackPointCount <= 0 || g_TrackPoints == NULL) {
+    if (car == NULL || route == NULL || route->count <= 0 || route->points == NULL) {
         return;
     }
 
@@ -32,9 +32,9 @@ void SteerCarAlongRoute(GameCarRuntime *car) {
         (int64_t)car->trackPointIndex +
         (raceSeries ? ROUTE_LOOKAHEAD_SEGMENTS
                     : -ROUTE_LOOKAHEAD_SEGMENTS));
-    index = WrapTrackPointIndex(index);
+    index = RouteIndex(route, index);
 
-    point = TrackPoint(index);
+    point = RoutePoint(route, index);
     if (lateral > point->rightHalfWidth) {
         lateral = WrapSigned32(
             (int64_t)point->rightHalfWidth *
@@ -45,8 +45,8 @@ void SteerCarAlongRoute(GameCarRuntime *car) {
             car->normalizedLateralOffset) / NORMALIZED_LATERAL_DIVISOR;
     }
 
-    targetAngle = CalculateTrackOffsetHeading(
-        index, car->segmentFraction, car->x, car->z, lateral);
+    targetAngle = CalculateRouteOffsetHeading(
+        route, index, car->segmentFraction, car->x, car->z, lateral);
     trackFacing = WrapSigned32(
         (int64_t)raceSeries * ANGLE_HALF_TURN +
         ANGLE_THREE_QUARTER_TURN - car->trackHeading);

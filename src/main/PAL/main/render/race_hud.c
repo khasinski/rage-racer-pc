@@ -1,6 +1,5 @@
 #include "game/prim.h"
 #include "game/race.h"
-#include "game/player_car_internal.h"
 #include "game/race_hud_internal.h"
 #include "game/render.h"
 #include "game/render_internal.h"
@@ -68,18 +67,16 @@ void DrawRaceHudLabels(s32 grandPrixMode) {
 
 /* The lap-time column: one row per lap from the player timing table at x=0xFA,
  * y stepping 0xA, the current lap highlighted and unset laps drawn as -1. */
-void DrawLapTimes(s32 bestLap) {
-    s32 visibleCount = g_PlayerCar.lap;
-    s32 lapCount = g_LapCount;
-    s32 activeLap = g_PlayerCar.drive.hudLapHighlightRow;
+void DrawLapTimes(const s32 *times, s32 lapCount, s32 visibleCount,
+                  s32 activeLap, s32 bestLap, s32 hasRivals) {
     GameFrameContext *frame = g_DrawBuffer;
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
-    const GameSpriteDesc *descs = RaceHasRivals()
+    const GameSpriteDesc *descs = hasRivals
                                       ? g_RaceHudSpriteDescsGp
                                       : g_RaceHudSpriteDescsTimeTrial;
     s32 lap;
 
-    if (!HudShowLapTimes()) {
+    if (!times || !HudShowLapTimes()) {
         return;
     }
 
@@ -94,7 +91,7 @@ void DrawLapTimes(s32 bestLap) {
     }
 
     for (lap = 0; lap < lapCount; lap++) {
-        s32 lapTime = g_PlayerCar.lapTimes.table.milliseconds[lap];
+        s32 lapTime = times[lap];
         s32 color = lap == activeLap ? 0x780F
                     : lapTime >= RACE_TIME_MAX_MS ? 0x7890
                                                   : 0x78CC;
@@ -125,21 +122,21 @@ void DrawTimeRemaining(s32 ticks) {
     DrawMinuteSecondTime(HudLeftX(0xE), 0xD2, ticks, clut);
 }
 
-/* The two race-position digits, from g_PlayerCar.drive.racePosition; the tens digit is
+/* The two race-position digits; the tens digit is
  * blanked below 10 and the colour changes from 4th place down. */
-void DrawRacePosition(void) {
+void DrawRacePosition(s32 position) {
     GameFrameContext *frame = g_DrawBuffer;
     SPRT *tens = &frame->layout.raceHud.labels[HUD_DYNAMIC_DIGIT_LABEL];
     SPRT *ones =
         &frame->layout.raceHud.labels[HUD_DYNAMIC_SIGN_OR_ONES_LABEL];
-    u16 color = g_PlayerCar.drive.racePosition < RACE_POSITION_PODIUM_LIMIT
+    u16 color = position < RACE_POSITION_PODIUM_LIMIT
                     ? RACE_POSITION_PODIUM_CLUT
                     : RACE_POSITION_FIELD_CLUT;
 
-    tens->u0 = g_PlayerCar.drive.racePosition >= 10
+    tens->u0 = position >= 10
                    ? RACE_POSITION_DIGIT_WIDTH
                    : 0;
-    ones->u0 = (g_PlayerCar.drive.racePosition % 10) *
+    ones->u0 = (position % 10) *
                RACE_POSITION_DIGIT_WIDTH;
     tens->clut = color;
     ones->clut = color;

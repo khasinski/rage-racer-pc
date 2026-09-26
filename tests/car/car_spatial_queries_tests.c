@@ -1,7 +1,7 @@
 #include "common.h"
 #include "game/angle.h"
 #include "game/car.h"
-#include "game/car_internal.h"
+#include "game/car_track_internal.h"
 #include "game/track.h"
 
 #include <limits.h>
@@ -14,11 +14,12 @@ static int TestFacingBackwards(void) {
     GameTrackPoint points[2];
     PlayerCarRuntime car;
     int angle;
+    TrackRoute route = {0};
 
     memset(&car, 0, sizeof(car));
     memset(points, 0, sizeof(points));
-    g_TrackPoints = &s_trackPoint;
-    g_TrackPointCount = 1;
+    route.points = &s_trackPoint;
+    route.count = 1;
     s_trackPoint.angle = 0x235;
 
     for (angle = 0; angle <= ANGLE_MASK; angle++) {
@@ -28,47 +29,56 @@ static int TestFacingBackwards(void) {
                        delta < ANGLE_THREE_QUARTER_TURN;
 
         car.headingAngle = angle;
-        if (IsCarFacingBackwards(&car) != expected) {
+        if (CarFacesBackwards(&car, &route) != expected) {
             printf("FAIL facing at angle %#x, delta %#x\n", angle, delta);
             return 0;
         }
     }
 
-    g_TrackPoints = NULL;
-    if (IsCarFacingBackwards(&car) != 0) {
+    route.points = NULL;
+    if (CarFacesBackwards(&car, &route) != 0) {
         puts("FAIL missing track data reports backwards");
         return 0;
     }
-    g_TrackPoints = points;
-    g_TrackPointCount = 0;
-    if (IsCarFacingBackwards(&car) != 0) {
+    route.points = points;
+    route.count = 0;
+    if (CarFacesBackwards(&car, &route) != 0) {
         puts("FAIL empty track reports backwards");
         return 0;
     }
 
-    g_TrackPointCount = 2;
+    route.count = 2;
     points[0].angle = 0;
     points[1].angle = 0x400;
     car.trackPointIndex = -1;
     car.headingAngle = ANGLE_THREE_QUARTER_TURN - points[1].angle +
                        ANGLE_HALF_TURN;
-    if (IsCarFacingBackwards(&car) != 1) {
+    if (CarFacesBackwards(&car, &route) != 1) {
         puts("FAIL negative track index did not wrap");
         return 0;
     }
 
-    g_TrackPoints = &s_trackPoint;
-    g_TrackPointCount = 1;
+    route.points = &s_trackPoint;
+    route.count = 1;
     s_trackPoint.angle = ANGLE_QUARTER_TURN;
     car.trackPointIndex = 0;
     car.headingAngle = INT32_MIN;
-    if (IsCarFacingBackwards(&car) != 1) {
+    if (CarFacesBackwards(&car, &route) != 1) {
         puts("FAIL minimum heading did not wrap into the angle domain");
         return 0;
     }
     car.headingAngle = INT32_MAX;
-    if (IsCarFacingBackwards(&car) != 1) {
+    if (CarFacesBackwards(&car, &route) != 1) {
         puts("FAIL maximum heading did not wrap into the angle domain");
+        return 0;
+    }
+    points[0].angle = ANGLE_HALF_TURN;
+    const TrackRoute other = {.points = points, .count = 2};
+    car.headingAngle = ANGLE_THREE_QUARTER_TURN;
+    if (CarFacesBackwards(&car, &other) != 1 ||
+        CarFacesBackwards(&car, &route) != 0 ||
+        CarFacesBackwards(&car, NULL) != 0 ||
+        CarFacesBackwards(NULL, &route) != 0) {
         return 0;
     }
     return 1;

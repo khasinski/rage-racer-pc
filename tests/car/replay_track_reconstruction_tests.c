@@ -2,32 +2,16 @@
 
 #include "common.h"
 #include "game/car.h"
-#include "game/race.h"
-#include "game/replay_internal.h"
-#include "game/render_state.h"
+#include "game/car_track_internal.h"
 #include "game/track.h"
-#include "game/track_internal.h"
 
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
-CarTrackWork g_CarTrackWork;
-GameRenderState g_RenderState;
-
-MATRIX *MulMatrix0(MATRIX *a, MATRIX *b, MATRIX *out) {
-    (void)a;
-    (void)b;
-    return out;
-}
-
-void GameRenderWorldSetCamera(s32 x, s32 y, s32 z, s32 pitch, s32 yaw,
-                              s32 roll) {
-    (void)x; (void)y; (void)z; (void)pitch; (void)yaw; (void)roll;
-}
-
 static GameTrackPoint s_points[8];
 static GameTrackArcCenter s_arcs[2];
+static TrackRoute route;
 static u32 s_digest = 2166136261U;
 
 static void Fold(s32 value) {
@@ -60,17 +44,17 @@ static void BuildTrack(void) {
     s_arcs[1].z = -0x3800;
     s_points[4].arcRef = TRACK_CURVE_PRIMARY;
     s_points[5].arcRef = (1 << 4) | TRACK_CURVE_MIRRORED;
-    g_TrackPoints = s_points;
-    g_TrackPointCount = 8;
-    g_TrackArcCenters = s_arcs;
-    g_TrackLength = 8 * 0x1000;
+    route.points = s_points;
+    route.count = 8;
+    route.arcs = s_arcs;
+    route.length = 8 * 0x1000;
 }
 
 int main(void) {
     static const s32 alongValues[] = {0, 0x600, 0x1200};
     static const s32 lateralValues[] = {-0x600, -0x200, 0, 0x200, 0x600};
     static const s32 yaws[] = {0, 0x400, 0x800, 0xC00};
-    static const u32 expected = 79163237U;
+    static const u32 expected = 1581599701U;
     GameCarRuntime car;
     int series, point, along, lateral, yaw;
     int calls = 0;
@@ -82,8 +66,6 @@ int main(void) {
     for (lateral = 0; lateral < 5; lateral++)
     for (yaw = 0; yaw < 4; yaw++) {
         memset(&car, 0, sizeof(car));
-        memset(&g_CarTrackWork, 0, sizeof(g_CarTrackWork));
-        g_RaceSeries = series;
         car.trackPointIndex = point;
         car.x = s_points[point].x + alongValues[along];
         car.z = s_points[point].z + lateralValues[lateral];
@@ -91,7 +73,7 @@ int main(void) {
         car.progressA = point * 0x1000;
         car.trackProgress = car.progressA;
 
-        ReconstructReplayCarTrackState(&car);
+        ReconstructCarTrackState(&car, &route, series);
 
         Fold(car.modelPitch);
         Fold(car.modelYaw);
@@ -101,12 +83,6 @@ int main(void) {
         Fold(car.trackProgress);
         Fold(car.trackSection);
         Fold(car.progressB);
-        Fold(g_CarTrackWork.heading);
-        Fold(g_CarTrackWork.leftHalfWidth);
-        Fold(g_CarTrackWork.rightHalfWidth);
-        Fold(g_CarTrackWork.crossSlope);
-        Fold(g_CarTrackWork.surfacePitch);
-        Fold(g_CarTrackWork.camberAngle);
         calls++;
     }
 
@@ -118,8 +94,8 @@ int main(void) {
 
     memset(&car, 0, sizeof(car));
     car.modelYaw = 123;
-    g_TrackPointCount = 0;
-    ReconstructReplayCarTrackState(&car);
+    route.count = 0;
+    ReconstructCarTrackState(&car, &route, 0);
     if (car.modelYaw != 123) {
         puts("FAIL: empty track reset changed the car");
         return 1;
@@ -127,16 +103,61 @@ int main(void) {
 
     BuildTrack();
     memset(&car, 0, sizeof(car));
-    g_RaceSeries = 0;
     car.x = s_points[0].x;
     car.z = s_points[0].z;
     car.progressA = INT_MAX;
-    ReconstructReplayCarTrackState(&car);
+    ReconstructCarTrackState(&car, &route, 0);
     if (car.trackProgress != 0xFFF) {
         printf("FAIL: wrapped replay progress is %d, expected %d\n",
                car.trackProgress, 0xFFF);
         return 1;
     }
+    /* Run two independently configured routes without swapping host globals. */
+    GameTrackPoint otherPoints[2] = {
+        {.x = 100, .z = 200, .angle = 0x400, .segmentLength = 1024,
+         .leftHalfWidth = 128, .rightHalfWidth = 128},
+        {.x = 1124, .z = 200, .angle = 0x400, .segmentLength = 1024,
+         .leftHalfWidth = 128, .rightHalfWidth = 128},
+    };
+    const TrackRoute other = {
+        .points = otherPoints, .count = 2, .length = 2048,
+    };
+    GameCarRuntime initial = {0};
+    initial.x = s_points[4].x + 100;
+    initial.z = s_points[4].z + 200;
+    initial.trackPointIndex = 4;
+    initial.progressA = 5000;
+    initial.bodyYaw = 0x300;
+    GameCarRuntime isolated = initial;
+    ReconstructCarTrackState(&isolated, &route, 0);
+
+    GameCarRuntime second = {0};
+    second.x = 400;
+    second.z = 200;
+    second.progressA = 2100;
+    ReconstructCarTrackState(&second, &other, 1);
+    if (second.trackHeading != 0x400 || second.modelYaw != 0 ||
+        second.trackProgress < 0 || second.trackProgress >= other.length) {
+        puts("FAIL: independent route used the wrong geometry or length");
+        return 1;
+    }
+    GameCarRuntime interleaved = initial;
+    ReconstructCarTrackState(&interleaved, &route, 0);
+    if (memcmp(&isolated, &interleaved, sizeof(isolated)) != 0) {
+        puts("FAIL: interleaved routes changed reconstruction");
+        return 1;
+    }
+    TrackRoute missingArcs = route;
+    missingArcs.arcs = NULL;
+    interleaved = initial;
+    ReconstructCarTrackState(&interleaved, &missingArcs, 0);
+    if (memcmp(&initial, &interleaved, sizeof(initial)) != 0) {
+        puts("FAIL: missing arc data partially changed the car");
+        return 1;
+    }
+    ReconstructCarTrackState(NULL, &route, 0);
+    ReconstructCarTrackState(&interleaved, NULL, 0);
     printf("all %d reset track states preserved\n", calls);
+
     return 0;
 }

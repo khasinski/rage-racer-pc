@@ -26,7 +26,7 @@
 /* One entry per bank's first definition. More than one car may share a bank;
  * all matching replacements are assembled before the result is cached. */
 static RageRuntimeCachedMesh
-    s_authoredCarMesh[RAGE_AUTHORED_CAR_COUNT ? RAGE_AUTHORED_CAR_COUNT : 1];
+    s_authoredCarMesh[RENDER_ASSET_SOURCE_COUNT][RAGE_AUTHORED_CAR_COUNT ? RAGE_AUTHORED_CAR_COUNT : 1];
 /* CPU copies move source-image work to the completed logic frame. GPU upload
  * still needs a command buffer, but a first draw never has to reopen a disc
  * file, decode an override, apply paint, or rebuild the material definition. */
@@ -123,7 +123,7 @@ static const RageRuntimeCachedMesh *ModernAuthoredCar(
     for (first = 0; first != RAGE_AUTHORED_CAR_COUNT; first++)
         if (AuthoredCarMatches(&s_authoredCars[first], instance)) break;
     if (first == RAGE_AUTHORED_CAR_COUNT) return base;
-    entry = &s_authoredCarMesh[first];
+    entry = &s_authoredCarMesh[instance->assetSource][first];
     if (entry->ownedBytes) return entry;
     working = base->mesh;
     for (i = first; i != RAGE_AUTHORED_CAR_COUNT; i++) {
@@ -446,8 +446,9 @@ void ModernAssetsShutdown(void) {
     size_t i;
     if (s_source != MODERN_ASSET_SOURCE_NONE) ++s_generation;
     ModernPreparedMaterialsClear(&s_preparedMaterials);
-    for (i=0;i<sizeof(s_authoredCarMesh)/sizeof(s_authoredCarMesh[0]);i++)
-        RuntimeCachedMeshRelease(&s_authoredCarMesh[i]);
+    for (unsigned source = 0; source < RENDER_ASSET_SOURCE_COUNT; ++source)
+        for (i = 0; i < sizeof(s_authoredCarMesh[source])/sizeof(s_authoredCarMesh[source][0]); ++i)
+            RuntimeCachedMeshRelease(&s_authoredCarMesh[source][i]);
     memset(&s_authoredCarMesh,0,sizeof(s_authoredCarMesh));
     RuntimeMeshCacheRelease(&s_cache);
     while (s_materialCatalogs) {
@@ -480,15 +481,15 @@ typedef struct MeshProviderRequest {
 } MeshProviderRequest;
 static RageResourceStatus ResolveImportedMesh(void *context) {
     MeshProviderRequest *request=context;
-    if(s_source != MODERN_ASSET_SOURCE_DISC)return RAGE_RESOURCE_MISSING;
+    if(s_source != MODERN_ASSET_SOURCE_DISC && request->instance->assetSource != RENDER_ASSET_OWNED)return RAGE_RESOURCE_MISSING;
     request->mesh=request->residentOnly
-        ? NativeAssetImporterPeek(request->instance->assetKey,request->instance->assetSet)
+        ? NativeAssetImporterPeek(request->instance->assetKey,request->instance->assetSet,request->instance->assetSource)
         : NativeAssetImporterFind(request->instance);
     return request->mesh?RAGE_RESOURCE_READY:RAGE_RESOURCE_ERROR;
 }
 static RageResourceStatus ResolveCachedMesh(void *context) {
     MeshProviderRequest *request=context;
-    if (s_source == MODERN_ASSET_SOURCE_DISC)return RAGE_RESOURCE_MISSING;
+    if (s_source == MODERN_ASSET_SOURCE_DISC || request->instance->assetSource == RENDER_ASSET_OWNED)return RAGE_RESOURCE_MISSING;
     if (request->residentOnly) {
         request->mesh = RuntimeMeshCachePeek(&s_cache,
             request->instance->assetKey, request->instance->assetSet);
@@ -507,8 +508,8 @@ static const RageRuntimeCachedMesh *ResolveBaseMesh(const RenderMeshInstance *in
 }
 const RageRuntimeCachedMesh *ModernAssetsFind(
     const RenderMeshInstance *instance) {
-    if (s_source == MODERN_ASSET_SOURCE_NONE || instance == NULL) return NULL;
-    return ModernAuthoredCar(ResolveBaseMesh(instance,0),instance,(s_source == MODERN_ASSET_SOURCE_DISC));
+    if (s_source == MODERN_ASSET_SOURCE_NONE || instance == NULL || (unsigned)instance->assetSource >= RENDER_ASSET_SOURCE_COUNT) return NULL;
+    return ModernAuthoredCar(ResolveBaseMesh(instance,0),instance,(s_source == MODERN_ASSET_SOURCE_DISC || instance->assetSource == RENDER_ASSET_OWNED));
 }
 
 int ModernAssetsReady(void) {
@@ -578,11 +579,11 @@ const RageRuntimeMesh *ModernAssetsMeshLookup(
 const RageRuntimeMesh *ModernAssetsResidentMeshLookup(
     void *context, const RenderMeshInstance *instance) {
     (void)context;
-    if (s_source == MODERN_ASSET_SOURCE_NONE || instance == NULL) return NULL;
+    if (s_source == MODERN_ASSET_SOURCE_NONE || instance == NULL || (unsigned)instance->assetSource >= RENDER_ASSET_SOURCE_COUNT) return NULL;
     for (size_t i = 0; i != RAGE_AUTHORED_CAR_COUNT; ++i) {
         if (AuthoredCarMatches(&s_authoredCars[i], instance) &&
-            s_authoredCarMesh[i].ownedBytes != NULL)
-            return &s_authoredCarMesh[i].mesh;
+            s_authoredCarMesh[instance->assetSource][i].ownedBytes != NULL)
+            return &s_authoredCarMesh[instance->assetSource][i].mesh;
     }
     const RageRuntimeCachedMesh *cached = ResolveBaseMesh(instance,1);
     return cached != NULL ? &cached->mesh : NULL;
@@ -767,14 +768,14 @@ typedef struct MaterialProviderRequest {
 } MaterialProviderRequest;
 static RageResourceStatus ResolveImportedMaterial(void *context) {
     MaterialProviderRequest *request=context;
-    if(s_source != MODERN_ASSET_SOURCE_DISC)return RAGE_RESOURCE_MISSING;
+    if(s_source != MODERN_ASSET_SOURCE_DISC && request->instance->assetSource != RENDER_ASSET_OWNED)return RAGE_RESOURCE_MISSING;
     return NativeAssetImporterLoadMaterial(request->instance,request->material,
         request->variant,request->definition,request->image)
         ? RAGE_RESOURCE_READY : RAGE_RESOURCE_ERROR;
 }
 static RageResourceStatus ResolveCachedMaterial(void *context) {
     MaterialProviderRequest *request=context;
-    if (s_source == MODERN_ASSET_SOURCE_DISC)return RAGE_RESOURCE_MISSING;
+    if (s_source == MODERN_ASSET_SOURCE_DISC || request->instance->assetSource == RENDER_ASSET_OWNED)return RAGE_RESOURCE_MISSING;
     /* Defer cached pixel I/O until after the mod image has had first choice. */
     return ModernAssetsFindMaterial(request->instance,request->material,
         request->variant,request->definition,request->storage)?RAGE_RESOURCE_READY:RAGE_RESOURCE_ERROR;
@@ -790,7 +791,7 @@ static RageResourceStatus ResolveModMaterialImage(void *context) {
 }
 static RageResourceStatus ResolveBaseMaterialImage(void *context) {
     MaterialProviderRequest *request=context;
-    if (s_source == MODERN_ASSET_SOURCE_DISC)return RAGE_RESOURCE_READY; /* Importer already supplied pixels. */
+    if (s_source == MODERN_ASSET_SOURCE_DISC || request->instance->assetSource == RENDER_ASSET_OWNED)return RAGE_RESOURCE_READY; /* Importer already supplied pixels. */
     return ModernAssetsLoadCachedImage(request->instance,request->material,
         request->definition,request->image)?RAGE_RESOURCE_READY:RAGE_RESOURCE_ERROR;
 }
@@ -809,7 +810,7 @@ static int ModernAssetsLoadBaseMaterial(const RenderMeshInstance *instance,
 static uint16_t ModernPlayerMarkingClut(const RenderMeshInstance *instance,
                                       uint32_t slot) {
     size_t i, j;
-    if (instance->assetSet != RAGE_RENDER_ASSET_MODEL_BANK) return 0;
+    if (instance->assetSet != RAGE_RENDER_ASSET_MODEL_BANK || instance->assetSource == RENDER_ASSET_OWNED) return 0;
     for (i = 0; i != RAGE_AUTHORED_CAR_COUNT; ++i) {
         const AuthoredCarReplacement *car = &s_authoredCars[i];
         if (!AuthoredCarMatches(car, instance)) continue;
@@ -818,7 +819,7 @@ static uint16_t ModernPlayerMarkingClut(const RenderMeshInstance *instance,
             int resolved;
             if (m->page != 10 || (m->clut != 0x3bef && m->clut != 0x7801))
                 continue;
-            resolved = (s_source == MODERN_ASSET_SOURCE_DISC) ? NativeAssetImporterMaterialSlot(
+            resolved = (s_source == MODERN_ASSET_SOURCE_DISC || instance->assetSource == RENDER_ASSET_OWNED) ? NativeAssetImporterMaterialSlot(
                 instance, m->page, m->clut) : m->cacheSlot;
             if (resolved >= 0 && (uint32_t)resolved == slot) return m->clut;
         }
@@ -874,7 +875,7 @@ int ModernAssetsLoadMaterial(const RenderMeshInstance *instance,
                              uint32_t material,uint8_t variant,
                              RageRenderMaterial *definition,
                              ModernAssetImage *image,RageRenderMaterialStorage *storage) {
-    if(!instance)return 0;
+    if(!instance || (unsigned)instance->assetSource >= RENDER_ASSET_SOURCE_COUNT)return 0;
     if (ModernPreparedMaterialsCopy(&s_preparedMaterials, instance, material,
                                     variant, definition, image, storage))
         return 1;

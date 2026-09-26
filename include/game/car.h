@@ -24,9 +24,9 @@ enum {
 };
 
 /* Per drawable car model: {base model index, LOD variant}. */
-extern s16 g_CarModelBankTable[CAR_MODEL_BANK_ENTRY_COUNT]
+extern const s16 g_CarModelBankTable[CAR_MODEL_BANK_ENTRY_COUNT]
                               [CAR_MODEL_BANK_FIELDS];
-extern u8 g_CarModelByCourse[CAR_MODEL_COURSE_COUNT][RACE_CAR_SLOT_COUNT];
+extern const u8 g_CarModelByCourse[CAR_MODEL_COURSE_COUNT][RACE_CAR_SLOT_COUNT];
 
 typedef enum CarBodyKickMode {
     CAR_BODY_KICK_INACTIVE = 0,
@@ -264,10 +264,18 @@ static inline GameCarRuntime *AsRivalCar(struct PlayerCarRuntime *car) {
     return view.rival;
 }
 
-extern CarHullPoint g_PlayerHullPoints[PLAYER_HULL_SAMPLE_COUNT];
-extern CarHullPoint g_OpponentHullCorners[CAR_HULL_CORNER_COUNT];
-extern CarHullPoint g_CarCornerOffsets[CAR_HULL_CORNER_COUNT];
-extern CarCollisionPoint g_CarCollisionCorners[CAR_HULL_CORNER_COUNT];
+static inline const GameCarRuntime *AsConstRivalCar(const struct PlayerCarRuntime *car) {
+    union {
+        const struct PlayerCarRuntime *player;
+        const GameCarRuntime *rival;
+    } view = {.player = car};
+    return view.rival;
+}
+
+extern const CarHullPoint g_PlayerHullPoints[PLAYER_HULL_SAMPLE_COUNT];
+extern const CarHullPoint g_OpponentHullCorners[CAR_HULL_CORNER_COUNT];
+extern const CarHullPoint g_CarCornerOffsets[CAR_HULL_CORNER_COUNT];
+extern const CarHullPoint g_CarCollisionCorners[CAR_HULL_CORNER_COUNT];
 
 /* Per-car runtime state, player in slot 0. Individual slots and single fields
  * also have their own split symbols. */
@@ -428,7 +436,18 @@ typedef struct GearCurveRow {
     s32 values[CAR_TORQUE_CURVE_SAMPLE_COUNT];
 } GearCurveRow;
 
-extern GearCurveRow g_GearTorqueCurve[];
+typedef struct CarPerformance {
+    GearCurveRow curves[CAR_FORWARD_GEAR_COUNT + 1];
+    s16 torqueBands[CAR_TORQUE_BAND_COUNT];
+    s16 lossBands[CAR_TORQUE_BAND_COUNT];
+    s16 peakRpm;
+    s16 peakOutput;
+    s16 redlineToPeak;
+    s16 peakToLimit;
+} CarPerformance;
+
+/* Legacy single-player owner. Headless callers own their performance data. */
+extern CarPerformance g_CarPerformance;
 
 typedef enum CarMotionState {
     CAR_MOTION_DRIVING,
@@ -457,15 +476,16 @@ typedef struct CarInputValue {
  * player object and 32-bit / AI-speed fields on the rival cars, so use
  * GameCarRuntime for a g_Cars[] element. */
 typedef struct GameCarDrive {
-    s32 reserved00;
-    s32 reserved04;
+    s16 steerHoldFrames;
+    s16 gripLossTimer;
+    s32 autoShiftCooldown;
     s32 accelPos;    /* +0x08 */
-    s32 reserved0C;
+    s32 roadGrade;
     s32 brakePos;    /* +0x10 */
-    s32 reserved14;
-    s32 reserved18;
+    s32 driveBoostTimer;
+    s32 standingStartSpin;
     s32 steerPos;    /* +0x1C */
-    s32 reserved20;
+    s32 shiftSoundLevel;
     s32 reserved24;
     s32 launchThresholdIndex;
     s16 engineLoad;
@@ -475,7 +495,7 @@ typedef struct GameCarDrive {
     s16 clutch;      /* +0x34 */
     s16 shiftSpeedDelta;
     s16 jumpTimer;
-    s16 reserved3A;
+    s16 dragScale;
     s16 shiftRpmDelta;
     s16 bodyLiftOffset;
     s16 trackCurveMode;
@@ -496,8 +516,9 @@ typedef struct GameCarDrive {
     s16 manual;      /* +0x74 */
     s16 gear;        /* +0x76 */
     s32 engineRpm;   /* +0x78 */
-    s32 reserved7C;
-    s32 reserved80;
+    /* Native per-car shift state uses formerly unused runtime words. */
+    s32 shiftTargetRpm;
+    s32 shiftTargetSpeed;
     s32 launchEnergyThreshold;
     s32 steeringGripResponse; /* +0x88 */
     s32 speedScale;
@@ -679,8 +700,7 @@ static inline void CopyCarBodyRotationToModel(GameCarRuntime *car) {
 /*
  * The car pipeline.
  */
-/* Race-entry init for the player object: start pose plus the speed/gear lookup
- * tables g_GearTorqueCurve / g_TorqueBandEnd / g_TorqueLossBandEnd. Logs "init_car" .. "init_ok". */
+/* Race-entry init for the player object: start pose and engine performance. */
 void InitPlayerCar(PlayerCarRuntime *car);
 /* The two variants of the rival-car driver over all RACE_CAR_SLOT_COUNT
  * slots. Race runs
@@ -698,24 +718,10 @@ void DrawReplayRivalCar(void);
  * The player's own 0x19C-byte car object.
  */
 
-extern s32 g_DriveBoostTimer;
-extern s32 g_EngineRpmSnapshot;
-extern s32 g_AutoShiftCooldown;
 extern u8 *g_CarModelBuffer;
-extern s16 g_DragScale;
 extern s32 g_EngineRpm;
 extern s32 g_EngineRpmJitter;
-extern s16 g_GripLossTimer;
-extern u16 g_HudGlyphClut;
-extern s16 g_PeakOutputRpm;
-extern s16 g_PeakOutputValue;
 extern const RaceIntroCameraScript *g_RaceIntroCameraScript;
-extern s32 g_RoadGrade;
-extern s32 g_ShiftSoundLevel;
-extern s32 g_ShiftTargetRpm;
-extern s32 g_StandingStartSpin;
-extern s16 g_SteerHoldFrames;
-extern s16 g_TachoNeedleQuad[4][2];
 
 /* (model, owned grade) -> index of the CAR_xx asset pair, 0..31. */
 s32 GetCarAssetIndex(s32 model, s32 grade);
@@ -732,8 +738,6 @@ void ApplyPrimaryBodyColor(u32 colour, CarImageData *imageData);
 void ApplySecondaryBodyColor(u32 colour, CarImageData *imageData);
 void SetPrimaryBodyColor(s32 colour);
 void SetSecondaryBodyColor(s32 colour);
-extern s16 g_RedlineToPeakRpmHalf;
-extern s16 g_PeakToRevLimitRpmHalf;
 extern RaceGridSlot g_AttractGridSlots[RACE_GRID_STORAGE_COUNT];
 extern u16 g_BodyColorPrimary[18];
 extern u16 g_BodyColorSecondary[18];
@@ -745,15 +749,6 @@ extern u16 g_PaintSlots3StopA[10];
 extern u16 g_PaintSlots3StopB[8];
 extern u16 g_PaintSlots4Stop[4];
 extern RaceGridSlot g_RaceGridSlots[RACE_GRID_STORAGE_COUNT];
-/*
- * The race-intro camera's offset from the keyframe it is easing away from:
- * the three halfwords at 0x8009AFBC.  All three writers take them from one
- * keyframe's f0/f4/f8 in x/y/z order and the easing reads them back in the
- * same order, one per camera axis.  Retail's codegen does not discriminate
- * here -- no component is touched twice in a block -- so this is a layout
- * claim, not a proof.
- */
-extern s32 g_ShiftTargetSpeed;
 extern s32 g_TachoShiftLightOn;
 
 typedef enum TachometerLightingMode {
@@ -764,16 +759,16 @@ typedef enum TachometerLightingMode {
 } TachometerLightingMode;
 
 void BuildStartingGrid(void);
-void BuildTachoNeedleQuad(void);
+void BuildTachometerFace(const CarTachometerSpec *spec);
 void AccumulateLapProgress(GameCarRuntime *car);
 s32 FindTrackSegment(const GameCarRuntime *car, s32 idx);
 void SeedCarLapProgress(GameCarRuntime *car, s32 seedSelector);
 s32 UpdateCarTrackState(GameCarRuntime *car, s32 trackPointIndex,
                         const CarTrackLimits *limits);
-void DrawTachometer(s32 rpm, s32 shiftLightOn, TachometerLightingMode lighting,
+void DrawTachometer(const CarTachometerSpec *spec, s32 manual, s32 gear, s32 speed,
+                    s32 rpm, s32 shiftLightOn, TachometerLightingMode lighting,
                     s32 blendAmount);
 void DrawPlayerTachometer(s32 zoneDark);
-void BeginCarStandingStart(PlayerCarRuntime *car);
 void RunRaceIntroCamera(Camera *camera, PlayerCarRuntime *car, s32 mode);
 void UpdatePlayerCar(PlayerCarRuntime *car);
 

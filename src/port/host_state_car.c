@@ -14,30 +14,13 @@
 #include "game/car_runtime_state.h"
 #include "game/track.h"
 
-s32 g_ShiftTargetSpeed;
-s32 g_RoadGrade;
-CarHullPoint g_PlayerHullPoints[6] = {
-    {-32, 64}, {32, 64}, {-24, -72}, {24, -72}, {-32, 16}, {32, 16}
-};
-CarHullPoint g_OpponentHullCorners[4] = {
-    {-26, 96}, {26, 96}, {-26, -16}, {26, -16}
-};
-CarHullPoint g_CarCornerOffsets[4] = {
-    {-15, 20}, {15, 20}, {-8, -10}, {8, -10}
-};
 LaunchSpeedThreshold g_LaunchSpeedThresholds[CAR_LAUNCH_THRESHOLD_COUNT] = {
         {960, 320}, {960, 320}, {960, 320}, {960, 320}, {960, 320}
     };
-CarCollisionPoint g_CarCollisionCorners[4] = {
-    {-96, 512}, {96, 512}, {-96, -128}, {96, -128}
-};
 const GameTrackPoint *g_TrackPoints;
 s16 g_RivalCueEnabled;
 s32 g_TrackPointCount;
-s16 g_PeakOutputRpm;
-s32 g_DriveBoostTimer;
 s16 g_PlayerAutoSteer;
-s32 g_StandingStartSpin;
 s32 g_EngineRpm;
 const RaceIntroCameraScript *g_RaceIntroCameraScript;
 FinishCamera g_FinishCamera;
@@ -45,22 +28,10 @@ s32 g_RaceSeries;
 s32 g_TachoShiftLightOn;
 GameCarRuntime *g_RankedCars[RIVAL_CONTENDER_COUNT];
 s32 g_TrackLength;
-s16 g_TorqueBandEnd[CAR_TORQUE_BAND_COUNT];
-u16 g_HudGlyphClut;
 const TrackEventData *g_TrackEventData;
-s16 g_TorqueLossBandEnd[CAR_TORQUE_BAND_COUNT];
 s32 g_EngineRpmJitter;
-s32 g_EngineRpmSnapshot;
 GameCarSpec *g_CarSpec;
-s16 g_PeakOutputValue;
-s16 g_GripLossTimer;
 s32 g_RivalCueFlags;
-s32 g_ShiftTargetRpm;
-s16 g_DragScale;
-s16 g_RedlineToPeakRpmHalf;
-s16 g_PeakToRevLimitRpmHalf;
 s32 g_ClosestRivalRank;
-GearCurveRow g_GearTorqueCurve[7];
-s32 g_ShiftSoundLevel;
-s16 g_SteerHoldFrames;
-s32 g_AutoShiftCooldown;
+
+CarPerformance g_CarPerformance;

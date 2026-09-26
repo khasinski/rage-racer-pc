@@ -490,7 +490,7 @@ static int SpanMatches(const RageNativeDrawSpan *span,
         span->assetSet == instance->assetSet && span->mesh == instance->mesh &&
         span->sourceEntity == instance->entity && span->instanceFlags == instance->flags &&
         !memcmp(&span->instanceState, state, sizeof(*state)) &&
-        span->materialVariant == variant && span->hasCarPaint == instance->hasCarPaint &&
+        span->assetSource == instance->assetSource && span->materialVariant == variant && span->hasCarPaint == instance->hasCarPaint &&
         span->carPaintColor1 == instance->carPaintColor1 &&
         span->carPaintColor2 == instance->carPaintColor2 && span->component == instance->component &&
         span->entity == (instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ? instance->entity : 0) &&
@@ -554,6 +554,7 @@ static int AppendMeshTemplate(const RageNativeMeshTemplateView *source, int loca
             output->entity = instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ? instance->entity : 0;
             output->instanceFlags = instance->flags;
             output->materialVariant = instance->materialVariant;
+            output->assetSource = instance->assetSource;
             output->hasCarPaint = instance->hasCarPaint;
             output->carPaintColor1 = instance->carPaintColor1;
             output->carPaintColor2 = instance->carPaintColor2;
@@ -759,6 +760,7 @@ static uint32_t RenderBuildNativeDrawsFiltered(
                 spans[spansUsed].materialFlags = materialFlags[0];
                 spans[spansUsed].depthDecal = depthDecals[0];
                 spans[spansUsed].materialVariant = materialVariant;
+                spans[spansUsed].assetSource = instance->assetSource;
                 spans[spansUsed].hasCarPaint = instance->hasCarPaint;
                 spans[spansUsed].carPaintColor1 = instance->carPaintColor1;
                 spans[spansUsed].carPaintColor2 = instance->carPaintColor2;

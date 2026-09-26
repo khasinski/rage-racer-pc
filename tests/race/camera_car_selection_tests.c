@@ -10,10 +10,10 @@ GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
 s32 g_SceneTimer;
 s32 g_TrackTextureCursorRow;
 
-static s32 s_random;
+u32 g_RandomSeed;
 
-s32 Random15(void) {
-    return s_random;
+static void SelectSample(u32 sample) {
+    g_RandomSeed = (((sample << 16) - 0x3039u) * 0xEEB9EB65u) ^ (u32)g_SceneTimer;
 }
 
 s32 TrackTexturePageForSection(s32 section) {
@@ -43,20 +43,21 @@ static void TimerMaskControlsWhenTheCameraChanges(void) {
     g_TrackTextureCursorRow = 0;
     g_Cars[1].trackSection = 2;
     g_Cars[2].trackSection = 3;
-    s_random = 2;
-
     g_SceneTimer = 2;
+    SelectSample(2);
+    const u32 seed = g_RandomSeed;
     Check(CycleAttractCameraCar(2, 1) == 1,
           "matching timer bit keeps the current car");
     Check(CycleAttractCameraCar(1, 1) == 2,
           "clear timer bit permits a camera change");
+    Check(g_RandomSeed == seed, "camera selection leaves physics RNG unchanged");
 }
 
 static void CameraOnlyChangesAtACompletedTexturePage(void) {
     g_SceneTimer = 0;
     g_Cars[0].trackSection = 2;
     g_Cars[2].trackSection = 3;
-    s_random = 2;
+    SelectSample(2);
 
     g_TrackTextureCursorRow = 1;
     Check(CycleAttractCameraCar(0, 0) == 0,
@@ -71,7 +72,7 @@ static void CandidateMustUseTheCurrentTexturePage(void) {
     g_TrackTextureCursorRow = 0;
     g_Cars[0].trackSection = 2;
     g_Cars[2].trackSection = 12;
-    s_random = 2;
+    SelectSample(2);
 
     Check(CycleAttractCameraCar(0, 0) == 0,
           "candidate on another texture page is rejected");

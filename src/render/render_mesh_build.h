@@ -38,6 +38,7 @@ typedef struct RageNativeDrawSpan {
     uint32_t vertexCount;
     uint32_t assetKey;
     RenderAssetSet assetSet;
+    RenderAssetSource assetSource;
     uint32_t mesh;
     uint32_t sourceEntity;
     uint32_t instanceFlags;

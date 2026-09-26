@@ -12,7 +12,7 @@
 #include <unistd.h>
 #endif
 
-#include "archive_index.h"
+#include "game/archive_index.h"
 #include "mod_assets.h"
 #include "render/mod_manifest.h"
 

@@ -70,18 +70,26 @@ s32 PublishCarModelSlot(const CarModelAsset *serializedAsset,
     return 1;
 }
 
-const CarModelAsset *FindSerializedCarModelAsset(
-    const CarModelAsset *nativeAsset) {
-    u32 i;
-
-    if (nativeAsset == NULL) return NULL;
-
-    for (i = 0; i < CAR_ASSET_SLOT_COUNT; i++) {
-        if (nativeAsset == g_CarModelSlots[i]) {
-            return s_SerializedCarModelAssets[i];
-        }
+s32 FindCarModelSlot(const CarModelAsset *asset) {
+    if (asset == NULL) return -1;
+    for (u32 slot = 0; slot < CAR_ASSET_SLOT_COUNT; slot++) {
+        if (asset == g_CarModelSlots[slot]) return (s32)slot;
     }
-    return NULL;
+    return -1;
+}
+
+const CarModelAsset *FindSerializedCarModelAsset(const CarModelAsset *nativeAsset) {
+    const s32 slot = FindCarModelSlot(nativeAsset);
+    return slot >= 0 ? s_SerializedCarModelAssets[slot] : NULL;
+}
+
+s32 FindCarAssetSlot(s32 assetIndex) {
+    if (assetIndex < 0) return -1;
+    for (u32 slot = 0; slot < CAR_ASSET_SLOT_COUNT; slot++) {
+        if (g_CarModelSlots[slot] != NULL &&
+            g_CarModelSlotAssetIndex[slot] == assetIndex) return (s32)slot;
+    }
+    return -1;
 }
 
 void SelectCarModelSlot(s32 index) {

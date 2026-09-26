@@ -1,5 +1,6 @@
 #include "game/car.h"
-#include "game/car_internal.h"
+#include "game/rival.h"
+#include "game/car_track_internal.h"
 #include "game/track.h"
 
 enum {
@@ -16,20 +17,21 @@ enum {
  * half-width; the remaining slots use 4/7. The value is written back only
  * when it exceeds that limit.
  */
-void ClampCarLateralOffset(GameCarRuntime *car, s32 rivalSlot) {
-    s32 current = car->aiLateralOffset;
+void ClampRivalLine(GameCarRuntime *car, s32 rivalSlot, const TrackRoute *route) {
+    s32 current;
     s32 magnitude;
     s32 halfWidth;
     s32 limit;
     const GameTrackPoint *point;
 
-    if (g_TrackPointCount <= 0 || g_TrackPoints == NULL || rivalSlot < 0 ||
+    if (car == NULL || route == NULL || route->count <= 0 || route->points == NULL || rivalSlot < 0 ||
         rivalSlot >= RACE_CAR_SLOT_COUNT) {
         return;
     }
 
+    current = car->aiLateralOffset;
     magnitude = current < 0 ? -current : current;
-    point = TrackPoint(car->trackPointIndex);
+    point = RoutePoint(route, car->trackPointIndex);
     halfWidth = current < 0 ? point->leftHalfWidth : point->rightHalfWidth;
     if (halfWidth < 0) {
         halfWidth = 0;

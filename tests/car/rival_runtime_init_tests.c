@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <string.h>
 
+s32 g_TrackLength = 1000;
+const GameTrackArcCenter *g_TrackArcCenters;
 s32 g_RaceSeries;
 s32 g_TrackPointCount;
 const GameTrackPoint *g_TrackPoints;
@@ -17,19 +19,22 @@ static s32 s_findStart;
 static s32 s_seedMode;
 static s32 s_trackCalls;
 
-s32 FindTrackSegment(const GameCarRuntime *car, s32 startIndex) {
+s32 FindCarTrackSegment(const GameCarRuntime *car, const TrackRoute *route, s32 startIndex) {
+    (void)route;
     (void)car;
     s_findStart = startIndex;
     return s_findResult;
 }
 
-void SeedCarLapProgress(GameCarRuntime *car, s32 seedSelector) {
+void SeedCarTrackProgress(GameCarRuntime *car, const TrackRoute *route, s32 walkStart, s32 seedSelector, int reverse) {
+    (void)route; (void)walkStart; (void)reverse;
     car->progressA = 123;
     s_seedMode = seedSelector;
 }
 
-s32 UpdateCarTrackState(GameCarRuntime *car, s32 pointIndex,
-                        const CarTrackLimits *limits) {
+s32 StepCarTrackState(GameCarRuntime *car, const TrackRoute *route, s32 pointIndex,
+                        const CarTrackLimits *limits, int reverse, int knockback) {
+    (void)route; (void)reverse; (void)knockback;
     if (limits->leftInset != -20 || limits->rightInset != 20) {
         return -1;
     }

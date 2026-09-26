@@ -34,9 +34,9 @@ static s32 CarMaterialMode(s16 palette) {
     return (s32)((u32)(u16)palette << 16);
 }
 
-static s32 RivalPlayerSteeringAngle(void) {
+static s32 RivalPlayerSteeringAngle(s32 steering) {
     return WrapSigned32(
-               -(int64_t)g_PlayerCar.drive.steerPos *
+               -(int64_t)steering *
                RIVAL_STEERING_RANGE) /
            PLAYER_STEERING_RANGE;
 }
@@ -179,7 +179,12 @@ void DrawPlayerCarModel(GameCarRuntime *object) {
         (int64_t)object->renderDepth * 2);
     s32 clipHandle;
 
-    GameRenderWorldSubmitPlayerCar(object, g_RenderState.pass.orderingFlag != 0);
+    const CarEntry *paint = g_CarTable != NULL &&
+        (u32)g_PlayerCarIndex < CUSTOM_PAINT_CAR_COUNT
+        ? &g_CarTable[g_PlayerCarIndex] : NULL;
+    GameRenderWorldSubmitPlayerCar(
+        object, RACE_CAR_SLOT_COUNT, modelAsset, paint,
+        g_RenderState.pass.orderingFlag != 0);
 
     if (object->wheelRotation & CAR_WHEEL_BLUR_FLAG) {
         modelBankBase = WrapSigned32((int64_t)modelBankBase + 10);
@@ -209,14 +214,13 @@ void DrawPlayerCarModel(GameCarRuntime *object) {
     }
 }
 
-void DrawRacePlayerCarModel(GameCarRuntime *object) {
-    s32 model = CustomRaceRivalModel();
+void DrawRacePlayerCarModel(GameCarRuntime *object, s32 model, s32 steering) {
 
     if (model >= 0) {
         s32 savedModel = object->modelIndex;
         s32 savedSteeringAngle = object->steeringAngle;
         object->modelIndex = (s16)model;
-        object->steeringAngle = RivalPlayerSteeringAngle();
+        object->steeringAngle = RivalPlayerSteeringAngle(steering);
         SelectModelBank(1);
         DrawCar(object);
         SelectModelBank(0);
@@ -258,7 +262,7 @@ void DrawCar(GameCarRuntime *object) {
     s32 renderDistance;
     s32 model;
     s32 horizon;
-    s16 *lod;
+    const s16 *lod;
     CarRenderRange renderRange;
 
     model = g_CarModelByCourse[SeriesCourseIndex()][object->modelIndex];

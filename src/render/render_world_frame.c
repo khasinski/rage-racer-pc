@@ -220,6 +220,7 @@ static int RenderVehicleIdentityMatches(
     const RenderMeshInstance *right) {
     if (left->entity != right->entity ||
         left->assetSet != right->assetSet ||
+        left->assetSource != right->assetSource ||
         left->assetKey != right->assetKey ||
         left->materialVariant != right->materialVariant ||
         left->pass != right->pass)

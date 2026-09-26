@@ -1,5 +1,5 @@
 #include "game/car.h"
-#include "game/car_internal.h"
+#include "game/car_motion_internal.h"
 #include "game/integer.h"
 
 static s32 JumpCurve(s32 tick, s32 scale) {
@@ -14,7 +14,7 @@ void ApplyCarLandingPose(GameCarRuntime *car, s32 groundHeight) {
         (int64_t)groundHeight + CAR_WHEEL_GROUND_OFFSET);
     car->verticalPitch = 0;
     car->verticalRoll = 0;
-    StartCarBodyKick(car, CAR_BODY_KICK_LANDING);
+    BeginCarBodyKick(car, CAR_BODY_KICK_LANDING, 0, 0);
 }
 
 static void AdvanceRisingJump(GameCarRuntime *car, s16 tick,

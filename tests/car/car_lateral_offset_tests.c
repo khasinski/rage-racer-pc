@@ -1,13 +1,11 @@
 #include "common.h"
 #include "game/car.h"
-#include "game/car_internal.h"
+#include "game/rival.h"
 #include "game/track.h"
 
 #include <stdio.h>
 #include <string.h>
 
-const GameTrackPoint *g_TrackPoints;
-s32 g_TrackPointCount;
 
 int main(void) {
     static const struct {
@@ -30,23 +28,22 @@ int main(void) {
         {"rear group beyond left", 10, -69, -68},
         {"centre remains centred", 0, 0, 0},
     };
-    /* Static: the global keeps this address, and gcc is right to say so. */
-    static GameTrackPoint points[2];
+    GameTrackPoint points[2];
     GameCarRuntime car;
+    TrackRoute route = {.points = points, .count = 2};
     size_t i;
     int failures = 0;
 
     memset(points, 0, sizeof(points));
     points[1].leftHalfWidth = 120;
     points[1].rightHalfWidth = 80;
-    g_TrackPoints = points;
-    g_TrackPointCount = 2;
+    route.count = 2;
 
     for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
         memset(&car, 0, sizeof(car));
         car.trackPointIndex = 3; /* TrackPoint must wrap this to points[1]. */
         car.aiLateralOffset = cases[i].input;
-        ClampCarLateralOffset(&car, cases[i].carIndex);
+        ClampRivalLine(&car, cases[i].carIndex, &route);
         if (car.aiLateralOffset != cases[i].expected) {
             printf("FAIL %s: got %d, expected %d\n", cases[i].label,
                    car.aiLateralOffset, cases[i].expected);
@@ -56,33 +53,33 @@ int main(void) {
 
     memset(&car, 0, sizeof(car));
     car.aiLateralOffset = -123;
-    g_TrackPointCount = 0;
-    ClampCarLateralOffset(&car, 0);
+    route.count = 0;
+    ClampRivalLine(&car, 0, &route);
     if (car.aiLateralOffset != -123) {
         puts("FAIL empty track changed the lateral offset");
         failures++;
     }
 
-    g_TrackPointCount = 2;
-    g_TrackPoints = NULL;
-    ClampCarLateralOffset(&car, 0);
+    route.count = 2;
+    route.points = NULL;
+    ClampRivalLine(&car, 0, &route);
     if (car.aiLateralOffset != -123) {
         puts("FAIL missing track data changed the lateral offset");
         failures++;
     }
 
-    g_TrackPoints = points;
+    route.points = points;
     points[0].rightHalfWidth = -80;
     car.trackPointIndex = 0;
     car.aiLateralOffset = 25;
-    ClampCarLateralOffset(&car, 0);
+    ClampRivalLine(&car, 0, &route);
     if (car.aiLateralOffset != 0) {
         puts("FAIL negative track width reversed the lateral offset");
         failures++;
     }
 
     car.aiLateralOffset = 25;
-    ClampCarLateralOffset(&car, -1);
+    ClampRivalLine(&car, -1, &route);
     if (car.aiLateralOffset != 25) {
         puts("FAIL invalid rival slot changed the lateral offset");
         failures++;

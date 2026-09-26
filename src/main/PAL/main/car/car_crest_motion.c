@@ -1,7 +1,6 @@
 #include "game/car.h"
 #include "game/car_motion_internal.h"
 #include "game/integer.h"
-#include "game/race.h"
 #include "game/track.h"
 
 enum {
@@ -15,27 +14,28 @@ enum {
 };
 
 /* Return the track crest crossed this frame, or zero when none was crossed. */
-s32 GetCarCrestTrigger(const GameCarRuntime *car) {
+s32 FindCarCrest(const GameCarRuntime *car, const TrackEventData *data,
+                 s32 trackLength, int reverse) {
     s32 low;
     s32 high;
     s32 row;
     s32 i;
     const TrackCrestEvent *events;
 
-    if (car == NULL || g_TrackEventData == NULL ||
+    if (car == NULL || data == NULL ||
         car->speed < CREST_MINIMUM_SPEED ||
-        g_TrackLength <= 0) {
+        trackLength <= 0) {
         return 0;
     }
 
     high = car->trackProgress;
     low = car->previousTrackProgress;
     row = car->facingBackwards != 0;
-    events = g_TrackEventData->crestEvents[row];
+    events = data->crestEvents[row];
 
-    if (g_RaceSeries != 0) {
-        high = WrapSigned32((int64_t)g_TrackLength - high);
-        low = WrapSigned32((int64_t)g_TrackLength - low);
+    if (reverse) {
+        high = WrapSigned32((int64_t)trackLength - high);
+        low = WrapSigned32((int64_t)trackLength - low);
     }
     if (low >= high) {
         s32 swap = low;
@@ -59,7 +59,8 @@ s32 GetCarCrestTrigger(const GameCarRuntime *car) {
 }
 
 /* Start a crest hop, or update the body attitude while one is in progress. */
-void UpdateCarCrestHop(GameCarRuntime *car) {
+void StepCarCrestHop(GameCarRuntime *car, const TrackEventData *data,
+                     s32 trackLength, int reverse) {
     s32 trigger;
 
     if (car->verticalMotionState != CAR_VERTICAL_GROUNDED) {
@@ -78,7 +79,7 @@ void UpdateCarCrestHop(GameCarRuntime *car) {
         return;
     }
 
-    trigger = GetCarCrestTrigger(car);
+    trigger = FindCarCrest(car, data, trackLength, reverse);
     if (trigger == 0) {
         return;
     }

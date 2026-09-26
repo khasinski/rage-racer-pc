@@ -1,7 +1,5 @@
-#include "game/car.h"
-#include "game/car_internal.h"
+#include "game/car_drive.h"
 #include "game/integer.h"
-#include "game/player_car_internal.h"
 
 enum {
     SPEED_INTERNAL_SCALE = 1168,
@@ -70,13 +68,14 @@ static s32 FindFirstLossBandAtOrAbove(const GameCarSpec *spec,
     return -1;
 }
 
-void PrepareCarPerformance(GameCarDrive *drive) {
-    GameCarSpec *spec = g_CarSpec;
+void PrepareCarPerformance(GameCarDrive *drive, GameCarSpec *spec,
+                           CarPerformance *performance) {
     s32 peakOutput = 0;
     s32 peakIndex = 0;
     s32 speedThreshold;
     s32 gear;
     s32 index;
+    s32 launchIndex = NormalizeCarLaunchThresholdIndex(drive->launchThresholdIndex);
 
     if (spec->topGear < 1 || spec->topGear > CAR_FORWARD_GEAR_COUNT) {
         spec->topGear = CAR_FORWARD_GEAR_COUNT;
@@ -86,22 +85,22 @@ void PrepareCarPerformance(GameCarDrive *drive) {
         SPEED_DISPLAY_SCALE;
 
     for (index = 0; index < CAR_TORQUE_CURVE_SAMPLE_COUNT; index++) {
-        g_GearTorqueCurve[0].values[index] =
+        performance->curves[0].values[index] =
             spec->torqueCurve[index] / BASE_TORQUE_CURVE_DIVISOR;
-        if (peakOutput < g_GearTorqueCurve[0].values[index]) {
+        if (peakOutput < performance->curves[0].values[index]) {
             peakIndex = index;
-            peakOutput = g_GearTorqueCurve[0].values[index];
+            peakOutput = performance->curves[0].values[index];
         }
     }
-    g_PeakOutputValue = peakOutput;
-    g_PeakOutputRpm = WrapSigned16(
+    performance->peakOutput = peakOutput;
+    performance->peakRpm = WrapSigned16(
         spec->torqueBand.halves[
             peakIndex * TORQUE_BAND_HALFWORD_STRIDE]);
-    g_RedlineToPeakRpmHalf =
-        (g_PeakOutputRpm - spec->redline) /
+    performance->redlineToPeak =
+        (performance->peakRpm - spec->redline) /
         TORQUE_BAND_HALFWORD_STRIDE;
-    g_PeakToRevLimitRpmHalf =
-        (spec->revLimit - g_PeakOutputRpm) /
+    performance->peakToLimit =
+        (spec->revLimit - performance->peakRpm) /
         TORQUE_BAND_HALFWORD_STRIDE;
 
     for (gear = 0; gear < CAR_FORWARD_GEAR_COUNT; gear++) {
@@ -111,7 +110,7 @@ void PrepareCarPerformance(GameCarDrive *drive) {
 
         SetCarGearLoad(spec, gear + 1, CalculatePackedGearLoad(gearRatio));
         for (index = 0; index < CAR_TORQUE_CURVE_SAMPLE_COUNT; index++) {
-            g_GearTorqueCurve[gear + 1].values[index] =
+            performance->curves[gear + 1].values[index] =
                 spec->torqueCurve[index] / divisor;
         }
     }
@@ -127,13 +126,13 @@ void PrepareCarPerformance(GameCarDrive *drive) {
             speedThreshold);
         s32 lossBand = FindFirstLossBandAtOrAbove(spec, speedThreshold);
 
-        g_TorqueBandEnd[index] = (s16)(band >= 0 ? band : 0);
-        g_TorqueLossBandEnd[index] = (s16)(lossBand >= 0 ? lossBand : 0);
+        performance->torqueBands[index] = (s16)(band >= 0 ? band : 0);
+        performance->lossBands[index] = (s16)(lossBand >= 0 ? lossBand : 0);
     }
 
     drive->launchEnergyThreshold =
         s_launchEnergyThresholds[
-            NormalizeCarLaunchThresholdIndex(drive->launchThresholdIndex)] *
+            launchIndex] *
         LAUNCH_ENERGY_THRESHOLD_SCALE;
     drive->steeringGripResponse = spec->steeringGripResponse;
 }

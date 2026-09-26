@@ -38,7 +38,7 @@ static s32 TrackBoundaryPushAngle(const GameCarRuntime *car) {
 static s32 TrackBoundaryPushStrength(const GameCarRuntime *car) {
     s32 outward = TrackOutwardAngle(car);
     s32 approach = GetAngleDistance(outward, car->bodyYaw);
-    s32 sine = rsin(approach);
+    s32 sine = SinAngle(approach);
     s32 speed;
 
     if (car->speed < LOW_SPEED_KNOCKBACK_THRESHOLD) {
@@ -58,9 +58,9 @@ static void SetKnockbackVector(GameCarRuntime *car, s32 angle, s32 strength,
     car->motionActive = 1;
     car->motionTimer = duration;
     car->velocityX = WrapSigned16(
-        (rsin(angle) * strength) / FIXED_TRIG_SCALE);
+        (SinAngle(angle) * strength) / FIXED_TRIG_SCALE);
     car->velocityZ = WrapSigned16(
-        (rcos(angle) * strength) / FIXED_TRIG_SCALE);
+        (CosAngle(angle) * strength) / FIXED_TRIG_SCALE);
 }
 
 void SetCarCollisionKnockback(GameCarRuntime *car, s32 x, s32 z) {

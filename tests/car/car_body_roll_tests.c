@@ -1,28 +1,15 @@
 /*
- * Sweep every control path through UpdateCarBodyRoll. The function is called
+ * Sweep every control path through UpdateCarSteering. The function is called
  * once for each independent input state because its damping makes repeated
  * calls stateful. The digest protects the exact fixed-point behaviour while
- * the implementation is split into readable controller-specific helpers.
+ * the input is separated from controller devices and race globals.
  */
 
-#include "common.h"
-#include "game/car.h"
-#include "game/car_motion_internal.h"
-#include "game/input_internal.h"
-#include "game/race.h"
-#include "game/render.h"
-#include "game/state.h"
+#include "game/car_control.h"
 
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
-
-void UpdateCarBodyRoll(PlayerCarRuntime *car);
-
-u8 g_PadType;
-u16 g_PadHeld;
-u16 g_PadButtonMapping[16];
-s16 g_NegconSteer;
 
 static u32 FoldWord(u32 digest, s32 value) {
     int byte;
@@ -47,7 +34,7 @@ static int CheckNeutralSteering(PlayerCarRuntime *car, const char *what) {
 
 int main(void) {
     static const s16 modes[] = {0, 2, 4};
-    static const u8 padTypes[] = {PAD_TYPE_DIGITAL, PAD_TYPE_NEGCON, 0};
+    static const SteeringMode controls[] = {STEERING_DIGITAL, STEERING_ANALOG, STEERING_CENTER};
     static const s32 speeds[] = {0, 80, 81, 799, 800, 1600};
     static const s32 offsets[] = {-512, 0, 512};
     static const s32 steerPositions[] = {-5000, -4095, -1000, 0,
@@ -63,24 +50,18 @@ int main(void) {
     size_t mode, pad, autoSteer, backwards, speed, offset;
     size_t steer, angle, velocity, held, negcon;
 
-    g_PadButtonMapping[0] = 1;
-    g_PadButtonMapping[1] = 2;
-    g_NegconMaxTwist = 0;
+    SteeringInput input = {0};
 
     memset(&car, 0x55, sizeof(car));
-    g_RacePhase = 1;
-    UpdateCarBodyRoll(&car);
+    UpdateCarSteering(&car, &input);
     if (CheckNeutralSteering(&car, "pre-race phase") != 0) return 1;
 
     memset(&car, 0x55, sizeof(car));
-    g_RacePhase = 2;
-    g_PlayerAutoSteer = 0;
-    g_PadType = 0;
-    UpdateCarBodyRoll(&car);
+    UpdateCarSteering(&car, &input);
     if (CheckNeutralSteering(&car, "unknown controller") != 0) return 1;
 
     for (mode = 0; mode < sizeof(modes) / sizeof(modes[0]); mode++)
-    for (pad = 0; pad < sizeof(padTypes) / sizeof(padTypes[0]); pad++)
+    for (pad = 0; pad < sizeof(controls) / sizeof(controls[0]); pad++)
     for (autoSteer = 0; autoSteer < 2; autoSteer++)
     for (backwards = 0; backwards < 2; backwards++)
     for (speed = 0; speed < sizeof(speeds) / sizeof(speeds[0]); speed++)
@@ -91,11 +72,12 @@ int main(void) {
     for (held = 0; held < sizeof(heldStates) / sizeof(heldStates[0]); held++)
     for (negcon = 0; negcon < sizeof(negconPositions) / sizeof(negconPositions[0]); negcon++) {
         memset(&car, 0, sizeof(car));
-        g_RacePhase = modes[mode];
-        g_PadType = padTypes[pad];
-        g_PlayerAutoSteer = (s16)autoSteer;
-        g_PadHeld = heldStates[held];
-        g_NegconSteer = negconPositions[negcon];
+        input.mode = modes[mode] < 2 ? STEERING_CENTER
+            : modes[mode] >= 4 || autoSteer ? STEERING_AUTOMATIC
+            : controls[pad];
+        input.left = (heldStates[held] & 1) != 0;
+        input.right = (heldStates[held] & 2) != 0;
+        input.angle = negconPositions[negcon] * (13 * 512) / 25;
         car.facingBackwards = (s32)backwards;
         car.speed = speeds[speed];
         car.trackLateralOffset = offsets[offset];
@@ -105,7 +87,7 @@ int main(void) {
         car.steeringAngle = steeringAngles[angle];
         car.bodyRollVelocity = rollVelocities[velocity];
 
-        UpdateCarBodyRoll(&car);
+        UpdateCarSteering(&car, &input);
 
         digest = FoldWord(digest, car.drive.steerPos);
         digest = FoldWord(digest, car.drive.trackCurveMode);
@@ -120,27 +102,12 @@ int main(void) {
         return 1;
     }
 
-    memset(&car, 0, sizeof(car));
-    g_RacePhase = 2;
-    g_PlayerAutoSteer = 0;
-    g_PadType = PAD_TYPE_NEGCON;
-    g_NegconSteer = 64;
-    g_NegconMaxTwist = -1;
-    UpdateCarBodyRoll(&car);
-    if (GetNegconSteerRange() != g_NegconSteerRange[0] ||
-        car.drive.trackCurveMode == 0) {
-        puts("FAIL: invalid NeGcon range selection was not repaired");
-        return 1;
-    }
 
     memset(&car, 0, sizeof(car));
-    g_RacePhase = 2;
-    g_PlayerAutoSteer = 0;
-    g_PadType = PAD_TYPE_DIGITAL;
-    g_PadHeld = 0;
+    input = (SteeringInput){.mode = STEERING_DIGITAL};
     car.speed = 800;
     car.bodyRollVelocity = INT_MAX;
-    UpdateCarBodyRoll(&car);
+    UpdateCarSteering(&car, &input);
     if (car.bodyRollVelocity != 268435455) {
         printf("FAIL: wrapped body-roll damping produced %d\n",
                car.bodyRollVelocity);
@@ -148,19 +115,44 @@ int main(void) {
     }
 
     memset(&car, 0, sizeof(car));
-    g_RacePhase = 2;
-    g_PlayerAutoSteer = 0;
-    g_PadType = PAD_TYPE_DIGITAL;
-    g_PadHeld = g_PadButtonMapping[0];
+    input = (SteeringInput){.mode = STEERING_DIGITAL, .left = 1};
     car.speed = 800;
     car.drive.steerPos = INT_MIN;
-    UpdateCarBodyRoll(&car);
+    UpdateCarSteering(&car, &input);
     if (car.steeringAngle != INT_MIN) {
         printf("FAIL: minimum digital steering produced %d\n",
                car.steeringAngle);
         return 1;
     }
 
-    printf("all %d body-roll states preserved\n", calls);
+    PlayerCarRuntime left = {0};
+    PlayerCarRuntime right = {0};
+    PlayerCarRuntime alone = {0};
+    left.speed = right.speed = alone.speed = 800;
+    SteeringInput leftInput = {.mode = STEERING_DIGITAL, .left = 1};
+    SteeringInput rightInput = {.mode = STEERING_ANALOG, .angle = 2000};
+    for (int i = 0; i < 20; i++) {
+        UpdateCarSteering(&alone, &leftInput);
+    }
+    for (int i = 0; i < 20; i++) {
+        UpdateCarSteering(&left, &leftInput);
+        UpdateCarSteering(&right, &rightInput);
+    }
+    if (memcmp(&left, &alone, sizeof(left)) != 0 ||
+        left.drive.trackCurveMode != 2 || right.drive.trackCurveMode != 1) {
+        puts("FAIL independent digital and analog drivers");
+        return 1;
+    }
+    PlayerCarRuntime restored = right;
+    for (int i = 0; i < 10; i++) {
+        UpdateCarSteering(&right, &rightInput);
+        UpdateCarSteering(&left, &leftInput);
+        UpdateCarSteering(&restored, &rightInput);
+    }
+    if (memcmp(&right, &restored, sizeof(right)) != 0) {
+        puts("FAIL steering restored from car state");
+        return 1;
+    }
+    printf("all %d body-roll states preserved; drivers are independent\n", calls);
     return 0;
 }

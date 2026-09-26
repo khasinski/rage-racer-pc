@@ -1,6 +1,7 @@
 .venv/
 build/
 build-*/
+.claude/
 disc/**
 !disc/.gitkeep
 !disc/PAL/

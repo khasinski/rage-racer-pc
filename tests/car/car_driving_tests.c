@@ -1,6 +1,7 @@
 #include "game/car.h"
 #include "game/car_internal.h"
 #include "game/race.h"
+#include "game/audio.h"
 
 #include <limits.h>
 #include <stdio.h>
@@ -9,7 +10,16 @@
 GameCarSpec *g_CarSpec;
 LaunchSpeedThreshold g_LaunchSpeedThresholds[CAR_LAUNCH_THRESHOLD_COUNT];
 s16 g_RacePhase;
-s16 g_SteerHoldFrames;
+
+static void StepDriving(PlayerCarRuntime *car) {
+    const LaunchSpeedThreshold *threshold = &g_LaunchSpeedThresholds[
+        NormalizeCarLaunchThresholdIndex(car->drive.launchThresholdIndex)];
+    PlayCarDrivingVoice(car, g_CarSpec);
+    StepCarDriving(car, threshold);
+    if (car->drive.motionState == CAR_MOTION_TAKEOFF) {
+        SetIndexedEffectVoice(0, 0, 0);
+    }
+}
 
 static s32 s_voiceIndex;
 static s32 s_voiceLevel;
@@ -64,7 +74,7 @@ int main(void) {
     car.drive.acceleratorLatch = 1;
     car.drive.coastFrames = 2;
     car.drive.steeringGripResponse = 1000;
-    UpdateCarDriving(&car);
+    StepDriving(&car);
     CHECK(car.drive.motionState == CAR_MOTION_TAKEOFF);
     CHECK(car.drive.launchEnergy == 400 && car.drive.coastFrames == 0);
     CHECK(s_voiceIndex == 0);
@@ -74,7 +84,7 @@ int main(void) {
     car.headingAngle = 0x400;
     car.drive.launchThresholdIndex = -1;
     car.drive.brakeLatch = 1;
-    UpdateCarDriving(&car);
+    StepDriving(&car);
     CHECK(car.drive.motionState == CAR_MOTION_TAKEOFF);
     CHECK(car.drive.launchEnergy == 10000);
     CHECK(car.drive.spinRate == -3200);
@@ -82,7 +92,7 @@ int main(void) {
     memset(&car, 0, sizeof(car));
     car.drive.launchThresholdIndex = 8;
     car.drive.coastFrames = 4;
-    UpdateCarDriving(&car);
+    StepDriving(&car);
     CHECK(car.drive.coastFrames == 5 && car.drive.launchEnergy == 0);
 
     memset(&car, 0, sizeof(car));
@@ -92,22 +102,25 @@ int main(void) {
     car.drive.launchThresholdIndex = 0;
     car.drive.engineRpm = 9000;
     car.drive.gear = 5;
-    g_SteerHoldFrames = 100;
-    UpdateCarDriving(&car);
+    car.drive.steerHoldFrames = 100;
+    StepDriving(&car);
     CHECK(s_voiceIndex == -1);
 
     car.drive.gear = 6;
-    UpdateCarDriving(&car);
+    StepDriving(&car);
     CHECK(s_voiceIndex == 2 && s_voiceLevel == 100);
 
     memset(&car, 0, sizeof(car));
     car.speed = INT_MAX;
     car.drive.acceleratorLatch = 1;
     car.drive.coastFrames = 2;
-    UpdateCarDriving(&car);
+    StepDriving(&car);
     CHECK(car.drive.launchEnergy == -2);
     CHECK(car.drive.motionState != CAR_MOTION_TAKEOFF);
 
     puts("normal car driving tests passed");
     return 0;
 }
+
+s32 SinAngle(s32 angle) { return rsin(angle); }
+s32 CosAngle(s32 angle) { return rcos(angle); }

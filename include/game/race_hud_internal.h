@@ -37,7 +37,7 @@ extern RenderBufferAddress
 extern u8 g_TileStripStorage[START_COUNTDOWN_TILE_STORAGE_SIZE];
 
 u8 *DrawHudDigit(u8 *packet, s32 x, s32 y, s32 digit, u16 clut);
-void DrawSpeedDigits(s32 x, s32 y, s32 speed);
+void DrawSpeedDigits(s32 x, s32 y, s32 speed, u16 color);
 void DrawSplitTimes(const RaceTiming *timing);
 void DrawSplitIndicator(s32 sectorIndex, s32 direction);
 void DrawStartCountdown(s32 sceneTimer);

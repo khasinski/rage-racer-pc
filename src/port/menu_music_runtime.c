@@ -1,6 +1,6 @@
 #include "menu_music_runtime.h"
 
-#include "archive_index.h"
+#include "game/archive_index.h"
 #include "host_disc.h"
 #include "menu_music_asset.h"
 #include "menu_music_render.h"

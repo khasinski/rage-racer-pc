@@ -5,6 +5,12 @@
 #include <stdio.h>
 #include <string.h>
 
+static GameTrackPoint s_points[3];
+const GameTrackPoint *g_TrackPoints = s_points;
+const GameTrackArcCenter *g_TrackArcCenters;
+s32 g_TrackPointCount = 3;
+s32 g_TrackLength = 1000;
+s32 g_RaceSeries;
 GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
 
 static s32 s_events[16];
@@ -22,8 +28,9 @@ void ApplyCarKnockback(GameCarRuntime *car) {
     s_events[s_eventCount++] = 200 + CarIndex(car);
 }
 
-s32 UpdateCarTrackState(GameCarRuntime *car, s32 point,
-                        const CarTrackLimits *limits) {
+s32 StepCarTrackState(GameCarRuntime *car, const TrackRoute *route, s32 point,
+                        const CarTrackLimits *limits, int reverse, int knockback) {
+    (void)route; (void)reverse; (void)knockback;
     if (point != car->trackPointIndex || limits->leftInset != -0x3C ||
         limits->rightInset != 0x3C || limits->leftContact != 0 ||
         limits->rightContact != 0) {

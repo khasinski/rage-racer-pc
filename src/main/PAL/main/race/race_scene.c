@@ -326,9 +326,11 @@ static void UpdatePausedRaceScene(RaceScene *state) {
     DrawRaceHudLabels(RaceHasRivals());
     if (RaceHasRivals()) {
         DrawTimeRemaining(state->timeRemaining);
-        DrawRacePosition();
+        DrawRacePosition(g_PlayerCar.drive.racePosition);
     }
-    DrawLapTimes(state->timing.bestLap);
+    DrawLapTimes(g_PlayerCar.lapTimes.table.milliseconds, g_LapCount,
+                 g_PlayerCar.lap, g_PlayerCar.drive.hudLapHighlightRow,
+                 state->timing.bestLap, RaceHasRivals());
     DrawStartCountdown(g_SceneTimer);
     zone = GetTrackZoneEffect(g_PlayerCar.trackProgress);
     DrawPlayerTachometer(zone.dark);
@@ -382,7 +384,8 @@ static void UpdateActiveRaceScene(RaceScene *state) {
     if (raceStart.action == RACE_START_ACTION_UPDATE_INTRO_CAMERA) {
         RunRaceIntroCamera(&g_Camera, &g_PlayerCar, g_SceneTimer);
     } else if (raceStart.action == RACE_START_ACTION_BEGIN) {
-        BeginCarStandingStart(&g_PlayerCar);
+        BeginCarStandingStart(&g_PlayerCar, g_CarSpec, &g_CarPerformance,
+                              g_EngineRpm);
         StartCdAudio();
         state->pauseDelay = 0x1E;
     }
@@ -399,7 +402,9 @@ static void UpdateActiveRaceScene(RaceScene *state) {
             DrawSplitTimes(&state->timing);
         }
         if (lapUpdateResult < 2) {
-            DrawLapTimes(state->timing.bestLap);
+            DrawLapTimes(g_PlayerCar.lapTimes.table.milliseconds, g_LapCount,
+                 g_PlayerCar.lap, g_PlayerCar.drive.hudLapHighlightRow,
+                 state->timing.bestLap, RaceHasRivals());
         }
     }
 
@@ -422,7 +427,7 @@ static void UpdateActiveRaceScene(RaceScene *state) {
     if (RaceHasRivals()) {
         if (g_RacePhase < RACE_PHASE_FINISHED) {
             UpdateRacePosition();
-            DrawRacePosition();
+            DrawRacePosition(g_PlayerCar.drive.racePosition);
         }
     }
     if (lapUpdateResult < 2 && g_RacePhase < RACE_PHASE_RETIRED) {

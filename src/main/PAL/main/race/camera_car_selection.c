@@ -25,7 +25,8 @@ static s32 CycleCameraCar(s32 mask, s32 current, s32 carCount) {
         return current;
     }
 
-    candidate = (Random15() & 0x7FFF) % carCount;
+    u32 random = g_RandomSeed ^ (u32)g_SceneTimer;
+    candidate = RandomNext(&random) % carCount;
     currentPage = TrackTexturePageForSection(g_Cars[current].trackSection);
     if (currentPage ==
         TrackTexturePageForSection(g_Cars[candidate].trackSection)) {

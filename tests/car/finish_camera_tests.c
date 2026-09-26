@@ -57,7 +57,8 @@ void DrawPlayerCarModel(GameCarRuntime *obj) {
     (void)obj;
     s_drawCalls++;
 }
-void DrawRacePlayerCarModel(GameCarRuntime *obj) {
+s32 CustomRaceRivalModel(void) { return -1; }
+void DrawRacePlayerCarModel(GameCarRuntime *obj, s32 rivalModel, s32 steering) { (void)rivalModel; (void)steering;
     DrawPlayerCarModel(obj);
 }
 
@@ -138,3 +139,6 @@ int main(void) {
     puts("finish camera behavior preserved");
     return 0;
 }
+
+s32 SinAngle(s32 angle) { return rsin(angle); }
+s32 CosAngle(s32 angle) { return rcos(angle); }

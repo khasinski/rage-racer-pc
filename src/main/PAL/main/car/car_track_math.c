@@ -1,5 +1,5 @@
 #include "game/angle.h"
-#include "game/car_internal.h"
+#include "game/car_track_internal.h"
 #include "game/integer.h"
 
 s32 InterpolateCarTrackValue(s32 start, s32 end, s32 alongSegment,

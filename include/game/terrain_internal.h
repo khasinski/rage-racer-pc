@@ -2,6 +2,7 @@
 #define GAME_TERRAIN_INTERNAL_H
 
 #include "common.h"
+#include "game/model_stream.h"
 #include "game/camera_types.h"
 #include "game/environment.h"
 
@@ -21,21 +22,6 @@ enum {
     SKY_TILE_COUNT = 8,
 };
 extern SkyTileUV g_SkyTileUV[SKY_TILE_COUNT];
-
-static inline s32 TerrainPrimitiveStride(s32 primitive) {
-    switch (primitive) {
-    case 0:
-    case 2:
-    case 3:
-        return 0x20;
-    case 1:
-    case 4:
-    case 5:
-        return 0x24;
-    default:
-        return 0;
-    }
-}
 
 void DrawTerrainCellsInRange(const GameCameraState *camera, s32 nearDepth,
                              s32 farDepth);

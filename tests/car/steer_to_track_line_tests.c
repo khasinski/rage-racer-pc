@@ -15,51 +15,31 @@
 #include "common.h"
 #include "game/angle.h"
 #include "game/car.h"
-#include "game/car_internal.h"
+#include "game/car_track_internal.h"
 #include "game/integer.h"
-#include "game/render.h"
 #include "game/track.h"
-#include "game/render_state.h"
 
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
-void SteerCarToTrackLine(PlayerCarRuntime *car);
 
 
 /*
  * A ring of points a thousand units across, so an index maps to a position
  * and an angle without a course being loaded.
  */
-void InterpolateTrackPoint(s32 pointIndex, LVec *out, s32 weight) {
-    s32 angle = (pointIndex * 4096) / (g_TrackPointCount > 0 ? g_TrackPointCount : 1);
+void InterpolateRoutePoint(const TrackRoute *route, s32 pointIndex, LVec *out, s32 weight) {
+    s32 angle = (pointIndex * 4096) / (route->count > 0 ? route->count : 1);
     angle = (angle + weight / 16) & 0xFFF;
     out->x = (rsin(angle) * 1000) >> 12;
     out->y = 0;
     out->z = (rcos(angle) * 1000) >> 12;
 }
 
-s32 SmoothTrackAngle(s32 pointIndex, s32 weight) {
-    s32 angle = (pointIndex * 4096) / (g_TrackPointCount > 0 ? g_TrackPointCount : 1);
+s32 SmoothRouteAngle(const TrackRoute *route, s32 pointIndex, s32 weight) {
+    s32 angle = (pointIndex * 4096) / (route->count > 0 ? route->count : 1);
     return (angle + weight / 16) & 0xFFF;
-}
-
-/*
- * Atan2 shares an implementation file with matrix helpers, so its unrelated
- * render hooks are supplied here rather than linking the whole renderer.
- */
-GameRenderState g_RenderState;
-
-void GameRenderWorldSetCamera(int32_t x, int32_t y, int32_t z, int32_t pitch,
-                              int32_t yaw, int32_t roll) {
-    (void)x; (void)y; (void)z; (void)pitch; (void)yaw; (void)roll;
-}
-
-MATRIX *MulMatrix0(MATRIX *m0, MATRIX *m1, MATRIX *m2) {
-    (void)m0;
-    (void)m1;
-    return m2;
 }
 
 static unsigned long s_digest = 2166136261UL;
@@ -93,6 +73,7 @@ int main(int argc, char **argv) {
     static const s32 launchDirections[] = {0, 1};
     static const s16 verticalStates[] = {0, 1};
     GameCarSpec spec;
+    TrackRoute route = {0};
     static GameTrackPoint points[16];
     FILE *out = NULL;
     size_t l, p, h, f, s, d, v;
@@ -106,10 +87,9 @@ int main(int argc, char **argv) {
         }
     }
 
-    g_TrackPointCount = 16;
-    g_TrackPoints = points;
+    route.count = 16;
+    route.points = points;
     memset(&spec, 0, sizeof(spec));
-    g_CarSpec = &spec;
 
     for (l = 0; l < sizeof(lateralOffsets) / sizeof(lateralOffsets[0]); l++)
     for (p = 0; p < sizeof(pointIndices) / sizeof(pointIndices[0]); p++)
@@ -137,7 +117,7 @@ int main(int argc, char **argv) {
                  lateralOffsets[l], pointIndices[p], headings[h], fractions[f],
                  (unsigned)steerResponses[s], launchDirections[d],
                  verticalStates[v]);
-        SteerCarToTrackLine(&car);
+        SteerCarOnRoute(&car, &spec, &route);
         Fold(out, label, &car);
         cases++;
     }
@@ -154,37 +134,35 @@ int main(int argc, char **argv) {
 
         memset(&car, 0, sizeof(car));
         car.headingAngle = 123;
-        g_TrackPointCount = 0;
-        SteerCarToTrackLine(&car);
+        route.count = 0;
+        SteerCarOnRoute(&car, &spec, &route);
         if (car.headingAngle != 123) {
             puts("missing track changed steering heading");
             return 1;
         }
 
-        g_TrackPointCount = 16;
-        g_CarSpec = NULL;
-        SteerCarToTrackLine(&car);
+        route.count = 16;
+        SteerCarOnRoute(&car, NULL, &route);
         if (car.headingAngle != 123) {
             puts("missing car spec changed steering heading");
             return 1;
         }
 
         memset(&car, 0, sizeof(car));
-        g_CarSpec = &spec;
         spec.steerResponse = 1;
         car.trackPointIndex = INT_MAX;
         car.drive.launchDirection = 1;
         car.headingAngle = INT_MAX;
         car.verticalMotionState = CAR_VERTICAL_GROUNDED;
         {
-            s32 wanted = CalculateTrackOffsetHeading(
+            s32 wanted = CalculateRouteOffsetHeading(&route,
                 1, car.segmentFraction, car.x, car.z,
                 car.trackLateralOffset);
             s32 towards = GetAngleDelta(car.headingAngle, wanted);
             s32 expectedHeading = WrapSigned32(
                 (int64_t)car.headingAngle + towards * 20);
 
-            SteerCarToTrackLine(&car);
+            SteerCarOnRoute(&car, &spec, &route);
             if (car.headingAngle != expectedHeading) {
                 printf("extreme steering heading=%d expected=%d\n",
                        car.headingAngle, expectedHeading);

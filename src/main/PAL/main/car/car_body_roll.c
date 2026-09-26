@@ -1,11 +1,6 @@
 #include "game/angle.h"
-#include "game/car.h"
-#include "game/car_motion_internal.h"
+#include "game/car_control.h"
 #include "game/integer.h"
-#include "game/input_internal.h"
-#include "game/race.h"
-#include "game/render.h"
-#include "game/state.h"
 
 enum SteeringDirection {
     STEERING_RIGHT = 1,
@@ -19,7 +14,6 @@ enum {
     STEERING_ROLL_STEP = 6,
     BODY_ROLL_DAMPING_NUMERATOR = 7,
     BODY_ROLL_DAMPING_DIVISOR = 8,
-    NEGCON_STEERING_SCALE = 13 * 512,
     NEGCON_APPROACH_WINDOW = 256,
     NEGCON_RESPONSE_ANGLE_DIVISOR = 8,
     NEGCON_RESPONSE_DIVISOR = 4,
@@ -56,12 +50,11 @@ static void CenterSteering(PlayerCarRuntime *car) {
     car->bodyRollVelocity = 0;
 }
 
-static void UpdateDigitalSteering(PlayerCarRuntime *car) {
+static void UpdateDigitalSteering(PlayerCarRuntime *car, const SteeringInput *input) {
     GameCarDrive *drive = &car->drive;
-    u16 held = g_PadHeld;
     s32 steerPosition = drive->steerPos;
 
-    if (held & g_PadButtonMapping[0]) {
+    if (input->left) {
         drive->trackCurveMode = CurveModeForDriver(car, STEERING_LEFT);
         if (steerPosition > 0) {
             drive->steerPos = 0;
@@ -70,7 +63,7 @@ static void UpdateDigitalSteering(PlayerCarRuntime *car) {
         }
         car->bodyRollVelocity = WrapSigned32(
             (int64_t)car->bodyRollVelocity - STEERING_ROLL_STEP);
-    } else if (held & g_PadButtonMapping[1]) {
+    } else if (input->right) {
         drive->trackCurveMode = CurveModeForDriver(car, STEERING_RIGHT);
         if (steerPosition < 0) {
             drive->steerPos = 0;
@@ -88,10 +81,8 @@ static void UpdateDigitalSteering(PlayerCarRuntime *car) {
     DampBodyRoll(car);
 }
 
-static void UpdateNegconSteering(PlayerCarRuntime *car) {
+static void UpdateNegconSteering(PlayerCarRuntime *car, s32 requestedSteer) {
     GameCarDrive *drive = &car->drive;
-    s32 requestedSteer =
-        (g_NegconSteer * NEGCON_STEERING_SCALE) / GetNegconSteerRange();
     s32 steerPosition = drive->steerPos;
 
     if (requestedSteer < 0) {
@@ -101,7 +92,7 @@ static void UpdateNegconSteering(PlayerCarRuntime *car) {
             car->steeringAngle = 0;
         } else if (requestedSteer - NEGCON_APPROACH_WINDOW < steerPosition) {
             drive->steerPos -=
-                rcos(steerPosition / NEGCON_RESPONSE_ANGLE_DIVISOR) /
+                CosAngle(steerPosition / NEGCON_RESPONSE_ANGLE_DIVISOR) /
                 NEGCON_RESPONSE_DIVISOR;
             car->steeringAngle = WrapSigned32(
                 (int64_t)car->steeringAngle + DIGITAL_STEERING_STEP);
@@ -118,7 +109,7 @@ static void UpdateNegconSteering(PlayerCarRuntime *car) {
             car->steeringAngle = 0;
         } else if (steerPosition < requestedSteer + NEGCON_APPROACH_WINDOW) {
             drive->steerPos +=
-                rcos(steerPosition / NEGCON_RESPONSE_ANGLE_DIVISOR) /
+                CosAngle(steerPosition / NEGCON_RESPONSE_ANGLE_DIVISOR) /
                 NEGCON_RESPONSE_DIVISOR;
             car->steeringAngle = WrapSigned32(
                 (int64_t)car->steeringAngle - DIGITAL_STEERING_STEP);
@@ -144,7 +135,7 @@ static void UpdateAutomaticSteering(PlayerCarRuntime *car) {
         ANGLE_THREE_QUARTER_TURN - car->trackHeading);
     s32 headingCorrection = GetAngleDelta(car->bodyYaw, wantedHeading) *
                             AUTO_STEER_HEADING_RESPONSE;
-    s32 lateralCorrection = STEERING_FULL_LOCK - rcos(WrapSigned32(
+    s32 lateralCorrection = STEERING_FULL_LOCK - CosAngle(WrapSigned32(
         (int64_t)car->trackLateralOffset * 2));
     s32 steerPosition;
 
@@ -171,20 +162,21 @@ static void UpdateAutomaticSteering(PlayerCarRuntime *car) {
     car->bodyRollVelocity = steerPosition / AUTO_STEER_ROLL_DIVISOR;
 }
 
-void UpdateCarBodyRoll(PlayerCarRuntime *car) {
-    if (g_RacePhase < RACE_PHASE_ACTIVE) {
-        CenterSteering(car);
-    } else if (g_RacePhase < RACE_PHASE_FINISHED &&
-               g_PlayerAutoSteer == 0) {
-        if (g_PadType == PAD_TYPE_DIGITAL) {
-            UpdateDigitalSteering(car);
-        } else if (g_PadType == PAD_TYPE_NEGCON) {
-            UpdateNegconSteering(car);
-        } else {
-            CenterSteering(car);
-        }
-    } else {
+void UpdateCarSteering(PlayerCarRuntime *car, const SteeringInput *input) {
+    switch (input->mode) {
+    case STEERING_DIGITAL:
+        UpdateDigitalSteering(car, input);
+        break;
+    case STEERING_ANALOG:
+        UpdateNegconSteering(car, input->angle);
+        break;
+    case STEERING_AUTOMATIC:
         UpdateAutomaticSteering(car);
+        break;
+    case STEERING_CENTER:
+    default:
+        CenterSteering(car);
+        break;
     }
 
     if (car->speed < AUTO_STEER_FAST_SPEED) {

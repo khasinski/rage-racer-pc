@@ -1,8 +1,5 @@
-#include "common.h"
-#include "game/car.h"
-#include "game/car_internal.h"
+#include "game/car_drive.h"
 #include "game/integer.h"
-#include "game/player_car_internal.h"
 
 #include <limits.h>
 #include <stdio.h>
@@ -31,17 +28,67 @@ static s32 FirstBand(const s32 *values, int count, s32 threshold) {
     return -1;
 }
 
+static void IndependentEngineTests(void) {
+    GameCarSpec firstSpec = {0};
+    GameCarSpec secondSpec;
+    firstSpec.topGear = 6;
+    firstSpec.revLimit = 16000;
+    firstSpec.redline = 8000;
+    firstSpec.baseSteeringGrip = 100;
+    for (int i = 0; i < CAR_TORQUE_CURVE_SAMPLE_COUNT; i++) {
+        firstSpec.torqueCurve[i] = (i + 1) * 20000;
+        firstSpec.torqueBand.values[i] = i * 1000;
+    }
+    for (int i = 0; i < 6; i++) {
+        firstSpec.gearRatio[i + 1] = 100;
+        firstSpec.torqueScale[i] = 100;
+    }
+    secondSpec = firstSpec;
+    for (int i = 0; i < CAR_TORQUE_CURVE_SAMPLE_COUNT; i++) {
+        secondSpec.torqueCurve[i] *= 2;
+        secondSpec.torqueBand.values[i] /= 2;
+    }
+    GameCarDrive first = {.gear = 1, .engineRpm = 1500};
+    GameCarDrive second = first;
+    CarPerformance firstPerformance;
+    CarPerformance secondPerformance;
+    memset(&firstPerformance, 0, sizeof(firstPerformance));
+    memset(&secondPerformance, 0, sizeof(secondPerformance));
+    PrepareCarPerformance(&first, &firstSpec, &firstPerformance);
+    CarPerformance saved = firstPerformance;
+    s32 expectedTorque = 0;
+    s32 expectedBraking = 0;
+    ReadCarEngineTorque(&first, &firstSpec, &firstPerformance,
+                        firstPerformance.curves[1].values,
+                        &expectedTorque, &expectedBraking);
+    PrepareCarPerformance(&second, &secondSpec, &secondPerformance);
+    CHECK_EQ(memcmp(&firstPerformance, &saved, sizeof(saved)), 0,
+             "preparing a second engine leaves first engine tables unchanged");
+    for (int i = 0; i < 10; i++) {
+        s32 torque = 0;
+        s32 braking = 0;
+        ReadCarEngineTorque(&second, &secondSpec, &secondPerformance,
+                            secondPerformance.curves[1].values, &torque, &braking);
+        CHECK_EQ(torque > expectedTorque, 1, "second engine uses its own curve");
+        ReadCarEngineTorque(&first, &firstSpec, &firstPerformance,
+                            firstPerformance.curves[1].values, &torque, &braking);
+        CHECK_EQ(torque, expectedTorque, "interleaved engines retain torque");
+        CHECK_EQ(braking, expectedBraking, "interleaved engines retain braking");
+    }
+}
+
 int main(void) {
     GameCarSpec spec;
+    CarPerformance performance;
     GameCarDrive drive;
     int index;
     int gear;
 
     memset(&spec, 0, sizeof(spec));
     memset(&drive, 0, sizeof(drive));
-    memset(g_GearTorqueCurve, 0, sizeof(GearCurveRow) * 7);
-    memset(g_TorqueBandEnd, -1, sizeof(s16) * 10);
-    memset(g_TorqueLossBandEnd, -1, sizeof(s16) * 10);
+    memset(performance.curves, 0, sizeof(GearCurveRow) * 7);
+    memset(performance.torqueBands, -1, sizeof(s16) * 10);
+    memset(performance.lossBands, -1, sizeof(s16) * 10);
 
     spec.topGear = 0;
     spec.redline = 12000;
@@ -62,9 +109,8 @@ int main(void) {
         spec.torqueScale[gear] = 100;
     }
     drive.launchThresholdIndex = 2;
-    g_CarSpec = &spec;
 
-    PrepareCarPerformance(&drive);
+    PrepareCarPerformance(&drive, &spec, &performance);
 
     CHECK_EQ(spec.topGear, 6, "invalid top gear is repaired");
     CHECK_EQ(spec.baseSteeringGrip, 1, "minimum steering grip");
@@ -72,24 +118,24 @@ int main(void) {
     CHECK_EQ(drive.steeringGripResponse, 73, "steering response");
     CHECK_EQ(drive.launchEnergyThreshold, 1000 * 0xE,
              "launch threshold");
-    CHECK_EQ(g_PeakOutputValue, spec.torqueCurve[15] / 20,
+    CHECK_EQ(performance.peakOutput, spec.torqueCurve[15] / 20,
              "peak output");
-    CHECK_EQ(g_PeakOutputRpm, spec.torqueBand.halves[30],
+    CHECK_EQ(performance.peakRpm, spec.torqueBand.halves[30],
              "peak rpm");
-    CHECK_EQ(g_RedlineToPeakRpmHalf,
-             ((s16)g_PeakOutputRpm - spec.redline) / 2,
+    CHECK_EQ(performance.redlineToPeak,
+             ((s16)performance.peakRpm - spec.redline) / 2,
              "redline distance");
-    CHECK_EQ(g_PeakToRevLimitRpmHalf,
-             (spec.revLimit - (s16)g_PeakOutputRpm) / 2,
+    CHECK_EQ(performance.peakToLimit,
+             (spec.revLimit - (s16)performance.peakRpm) / 2,
              "rev-limit distance");
 
     for (index = 0; index < 16; index++) {
-        CHECK_EQ(g_GearTorqueCurve[0].values[index],
+        CHECK_EQ(performance.curves[0].values[index],
                  spec.torqueCurve[index] / 20, "base torque curve");
         for (gear = 0; gear < 6; gear++) {
             s32 divisor = spec.torqueScale[gear] *
                           spec.gearRatio[gear + 1] / 100;
-            CHECK_EQ(g_GearTorqueCurve[gear + 1].values[index],
+            CHECK_EQ(performance.curves[gear + 1].values[index],
                      spec.torqueCurve[index] / divisor,
                      "gear torque curve");
         }
@@ -118,66 +164,67 @@ int main(void) {
                                  CAR_TORQUE_LOSS_BOUNDARY_COUNT,
                                  threshold);
 
-        CHECK_EQ(g_TorqueBandEnd[index], expected, "torque band");
-        CHECK_EQ(g_TorqueLossBandEnd[index], expectedLoss,
+        CHECK_EQ(performance.torqueBands[index], expected, "torque band");
+        CHECK_EQ(performance.lossBands[index], expectedLoss,
                  "torque loss band");
     }
 
     drive.launchThresholdIndex = -1;
-    PrepareCarPerformance(&drive);
+    PrepareCarPerformance(&drive, &spec, &performance);
     CHECK_EQ(drive.launchEnergyThreshold, 1550 * 0xE,
              "negative launch threshold wraps safely");
 
     memset(spec.torqueBand.values, 0, sizeof(spec.torqueBand.values));
     memset(spec.torqueLossRpm, 0, sizeof(spec.torqueLossRpm));
     spec.gearLoad[0] = 0;
-    PrepareCarPerformance(&drive);
+    PrepareCarPerformance(&drive, &spec, &performance);
     for (index = 0; index < CAR_TORQUE_BAND_COUNT; index++) {
-        CHECK_EQ(g_TorqueBandEnd[index], 0,
+        CHECK_EQ(performance.torqueBands[index], 0,
                  "missing torque band clears previous car value");
-        CHECK_EQ(g_TorqueLossBandEnd[index], 0,
+        CHECK_EQ(performance.lossBands[index], 0,
                  "missing loss band clears previous car value");
     }
 
     spec.gearRatio[1] = 0;
-    PrepareCarPerformance(&drive);
-    CHECK_EQ(g_GearTorqueCurve[1].values[0], spec.torqueCurve[0],
+    PrepareCarPerformance(&drive, &spec, &performance);
+    CHECK_EQ(performance.curves[1].values[0], spec.torqueCurve[0],
              "zero gear ratio uses a safe unit divisor");
 
     spec.gearRatio[1] = INT32_MAX;
     spec.torqueScale[0] = INT16_MAX;
     spec.torqueCurve[0] = INT32_MAX;
-    PrepareCarPerformance(&drive);
+    PrepareCarPerformance(&drive, &spec, &performance);
     CHECK_EQ(GetCarGearLoad(&spec, 1), INT32_MAX,
              "large gear load saturates without signed overflow");
-    CHECK_EQ(g_GearTorqueCurve[1].values[0], 1,
+    CHECK_EQ(performance.curves[1].values[0], 1,
              "large torque divisor saturates without signed overflow");
 
     memset(spec.torqueCurve, 0, sizeof(spec.torqueCurve));
     spec.torqueBand.halves[0] = 4321;
-    g_PeakOutputRpm = 12345;
-    g_PeakOutputValue = 12345;
-    PrepareCarPerformance(&drive);
-    CHECK_EQ(g_PeakOutputRpm, 4321,
+    performance.peakRpm = 12345;
+    performance.peakOutput = 12345;
+    PrepareCarPerformance(&drive, &spec, &performance);
+    CHECK_EQ(performance.peakRpm, 4321,
              "empty torque curve uses the first rpm band");
-    CHECK_EQ(g_PeakOutputValue, 0,
+    CHECK_EQ(performance.peakOutput, 0,
              "empty torque curve clears stale peak output");
 
     spec.tachometer.speedScale = INT_MAX;
     spec.torqueBand.halves[0] = UINT16_MAX;
     spec.redline = INT16_MIN;
     spec.revLimit = INT16_MAX;
-    PrepareCarPerformance(&drive);
+    PrepareCarPerformance(&drive, &spec, &performance);
     CHECK_EQ(drive.speedScale,
              WrapSigned32((int64_t)INT_MAX * 0x490) / 160,
              "speed scale preserves 32-bit multiplication");
-    CHECK_EQ(g_PeakOutputRpm, -1,
+    CHECK_EQ(performance.peakRpm, -1,
              "peak rpm preserves signed halfword storage");
-    CHECK_EQ(g_RedlineToPeakRpmHalf, 16383,
+    CHECK_EQ(performance.redlineToPeak, 16383,
              "redline distance uses signed peak rpm");
-    CHECK_EQ(g_PeakToRevLimitRpmHalf, 16384,
+    CHECK_EQ(performance.peakToLimit, 16384,
              "rev-limit distance uses signed peak rpm");
 
+    IndependentEngineTests();
     if (s_failures != 0) {
         printf("%d car performance checks failed\n", s_failures);
         return 1;

@@ -27,7 +27,7 @@
 #include <psyz/audio.h>
 
 #include "host_disc.h"
-#include "archive_index.h"
+#include "game/archive_index.h"
 #include "disc_cue.h"
 #include "disc_discovery.h"
 #include "disc_iso.h"

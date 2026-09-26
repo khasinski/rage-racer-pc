@@ -1,5 +1,6 @@
 #include "game/car.h"
 #include "game/car_internal.h"
+#include "game/car_motion_internal.h"
 #include "game/race.h"
 
 #include <limits.h>
@@ -8,25 +9,22 @@
 
 GameCarSpec *g_CarSpec;
 s16 g_RacePhase;
-s32 g_ShiftSoundLevel;
-s32 g_ShiftTargetRpm;
 
 static GameCarSpec s_spec;
-static int s_kickCalls;
-static int s_kickMode;
 static int s_soundCalls;
 static int s_soundCue;
 static int s_failures;
 
-void StartCarBodyKick(GameCarRuntime *car, CarBodyKickMode mode) {
-    (void)car;
-    s_kickCalls++;
-    s_kickMode = mode;
-}
 
 void PlaySoundCue(s32 cue) {
     s_soundCalls++;
     s_soundCue = cue;
+}
+
+static void StepJump(PlayerCarRuntime *car, s32 ground) {
+    const s32 frames = StepPlayerJump(car, g_CarSpec, ground)
+        ? car->verticalMotionTimer : 0;
+    PlayPlayerLandingCue(frames, g_RacePhase <= RACE_PHASE_ACTIVE);
 }
 
 static void Reset(PlayerCarRuntime *car) {
@@ -36,10 +34,7 @@ static void Reset(PlayerCarRuntime *car) {
     s_spec.gearLoad[2] = 200;
     g_CarSpec = &s_spec;
     g_RacePhase = 2;
-    g_ShiftSoundLevel = 0;
-    g_ShiftTargetRpm = 0;
-    s_kickCalls = 0;
-    s_kickMode = 0;
+    car->drive.shiftTargetRpm = 0;
     s_soundCalls = 0;
     s_soundCue = 0;
 }
@@ -56,14 +51,14 @@ int main(void) {
 
     Reset(&car);
     car.y = 123;
-    UpdatePlayerJump(&car, 500);
-    CHECK(car.y == 123 && car.verticalMotionTimer == 0 && s_kickCalls == 0);
+    StepJump(&car, 500);
+    CHECK(car.y == 123 && car.verticalMotionTimer == 0 && car.motionModeTimer == 0);
 
     Reset(&car);
     car.verticalMotionState = CAR_VERTICAL_RISING;
     car.verticalMotionRate = -20;
     car.y = 100;
-    UpdatePlayerJump(&car, 500);
+    StepJump(&car, 500);
     CHECK(car.verticalMotionState == CAR_VERTICAL_RISING);
     CHECK(car.verticalMotionTimer == 1 && car.y == 80);
 
@@ -71,14 +66,14 @@ int main(void) {
     car.verticalMotionState = CAR_VERTICAL_AT_CREST;
     car.verticalMotionRate = 10;
     car.verticalTargetY = 100;
-    UpdatePlayerJump(&car, 105);
+    StepJump(&car, 105);
     CHECK(car.verticalMotionState == CAR_VERTICAL_AT_CREST && car.y == 100);
 
     Reset(&car);
     car.verticalMotionState = CAR_VERTICAL_AT_CREST;
     car.verticalMotionRate = 10;
     car.verticalTargetY = 100;
-    UpdatePlayerJump(&car, 200);
+    StepJump(&car, 200);
     CHECK(car.verticalMotionState == CAR_VERTICAL_FALLING &&
           car.verticalMotionRate == 1);
     CHECK(car.y == 100);
@@ -87,7 +82,7 @@ int main(void) {
     car.verticalMotionState = CAR_VERTICAL_FALLING;
     car.verticalMotionRate = 0;
     car.verticalTargetY = 100;
-    UpdatePlayerJump(&car, 500);
+    StepJump(&car, 500);
     CHECK(car.verticalMotionState == CAR_VERTICAL_FALLING && car.y == 102);
 
     Reset(&car);
@@ -103,13 +98,13 @@ int main(void) {
     car.drive.manual = 1;
     car.drive.motionState = CAR_MOTION_DRIVING;
     car.drive.engineRpm = 1200;
-    UpdatePlayerJump(&car, 100);
+    StepJump(&car, 100);
     CHECK(car.verticalMotionState == CAR_VERTICAL_GROUNDED && car.y == 108);
     CHECK(car.verticalPitch == 0 && car.verticalRoll == 0);
-    CHECK(s_kickCalls == 1 && s_kickMode == 1);
+    CHECK(car.motionMode == CAR_BODY_KICK_LANDING && car.motionModeTimer == 30);
     CHECK(s_soundCalls == 1 && s_soundCue == 0xE);
     CHECK(car.drive.motionState == CAR_MOTION_AIRBORNE);
-    CHECK(car.drive.jumpTimer == 20 && g_ShiftTargetRpm == 1600);
+    CHECK(car.drive.jumpTimer == 20 && car.drive.shiftTargetRpm == 1600);
     CHECK(car.drive.engineLoad == 2);
     CHECK(car.drive.launchHeading == car.headingAngle);
 
@@ -122,15 +117,15 @@ int main(void) {
     car.drive.gear = 2;
     car.drive.manual = 1;
     car.drive.motionState = CAR_MOTION_DRIVING;
-    UpdatePlayerJump(&car, 10);
+    StepJump(&car, 10);
     CHECK(car.drive.motionState == CAR_MOTION_AIRBORNE);
-    CHECK(g_ShiftTargetRpm == 1600000);
+    CHECK(car.drive.shiftTargetRpm == 1600000);
 
     Reset(&car);
     car.verticalMotionState = CAR_VERTICAL_RISING;
     car.verticalMotionTimer = INT16_MAX;
     car.verticalMotionRate = INT16_MAX;
-    UpdatePlayerJump(&car, INT_MAX);
+    StepJump(&car, INT_MAX);
     CHECK(car.verticalMotionTimer == INT16_MIN);
 
     Reset(&car);
@@ -140,11 +135,11 @@ int main(void) {
     car.drive.gear = 2;
     car.drive.engineRpm = INT_MIN;
     car.drive.manual = 0;
-    PrepareAirborneDrivetrain(&car);
+    PrepareAirborneDrivetrain(&car, &s_spec);
     CHECK(car.drive.motionState == CAR_MOTION_AIRBORNE);
     CHECK(car.drive.jumpTimer == 20);
     CHECK(car.drive.drivetrainTorque == 15107194);
-    CHECK(g_ShiftTargetRpm == 136980000);
+    CHECK(car.drive.shiftTargetRpm == 136980000);
     CHECK(car.drive.shiftRpmDelta == 9760);
     CHECK(car.drive.engineLoad == -1029);
 
@@ -154,10 +149,10 @@ int main(void) {
     car.verticalMotionRate = 0;
     car.y = INT_MAX;
     car.drive.motionState = CAR_MOTION_AIRBORNE;
-    UpdatePlayerJump(&car, INT_MAX);
+    StepJump(&car, INT_MAX);
     CHECK(car.verticalMotionState == CAR_VERTICAL_GROUNDED);
     CHECK(car.y == INT_MIN + CAR_WHEEL_GROUND_OFFSET - 1);
-    CHECK(s_kickCalls == 1 && s_kickMode == CAR_BODY_KICK_LANDING);
+    CHECK(car.motionMode == CAR_BODY_KICK_LANDING && car.motionModeTimer == 30);
 
     if (s_failures != 0) {
         printf("%d player jump checks failed\n", s_failures);

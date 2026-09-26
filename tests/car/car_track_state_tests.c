@@ -17,25 +17,22 @@
 #include "game/car.h"
 #include "game/car_motion_internal.h"
 #include "game/track.h"
-#include "game/track_internal.h"
-#include "game/race.h"
-#include "game/state.h"
-#include "game/render_state.h"
+#include "game/car_track_internal.h"
 
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
-s32 UpdateCarTrackState(GameCarRuntime *obj, s32 trackPointIndex,
-                        const CarTrackLimits *limits);
 
-/* These six come from the port's own state, which this test links; declaring
- * them here as well left two definitions of each, which only a linker that
- * merges tentative definitions would accept. */
-PlayerCarRuntime g_PlayerCar;
-/* The working set the track code hands its intermediate values through. */
-CarTrackWork g_CarTrackWork;
-GameRenderState g_RenderState;
+static PlayerCarRuntime player;
+static TrackRoute route;
+static int reverse;
+
+static s32 PlaceCar(GameCarRuntime *car, s32 pointIndex,
+                     const CarTrackLimits *limits) {
+    return StepCarTrackState(car, &route, pointIndex, limits, reverse,
+                             car == AsRivalCar(&player));
+}
 
 /* The boundary response calls out to the knockback code; what that does with
  * the hit is its own business, but that it was called is part of this one's
@@ -52,30 +49,6 @@ void SetTrackBoundaryKnockback(GameCarRuntime *car, s32 x, s32 z,
     s_lastKnockX = x;
     s_lastKnockZ = z;
     s_lastKnockMode = contact;
-}
-
-/* The diagnostics hooks are off in a test run. */
-int DiagnosticsEnabled(const char *channel) { (void)channel; return 0; }
-const char *DiagnosticsValue(const char *key) { (void)key; return NULL; }
-int DiagnosticsIntValue(const char *key, int fallback) {
-    (void)key;
-    return fallback;
-}
-void Trace(const char *channel, const char *format, ...) {
-    (void)channel;
-    (void)format;
-}
-
-/* Reached only from SetCameraRotMatrix in the matrix module, which builds the
- * mirror view rather than anything this test looks at. */
-MATRIX *MulMatrix0(MATRIX *a, MATRIX *b, MATRIX *out) {
-    (void)a;
-    (void)b;
-    return out;
-}
-void GameRenderWorldSetCamera(s32 x, s32 y, s32 z, s32 pitch, s32 yaw,
-                              s32 roll) {
-    (void)x; (void)y; (void)z; (void)pitch; (void)yaw; (void)roll;
 }
 
 /*
@@ -113,10 +86,10 @@ static void BuildTrack(void) {
     s_points[4].arcRef = TRACK_CURVE_PRIMARY;
     s_points[5].arcRef = (u16)((1 << 4) | TRACK_CURVE_MIRRORED);
 
-    g_TrackPoints = s_points;
-    g_TrackPointCount = 8;
-    g_TrackArcCenters = s_arcs;
-    g_TrackLength = 8 * 0x1000;
+    route.points = s_points;
+    route.count = 8;
+    route.arcs = s_arcs;
+    route.length = 8 * 0x1000;
 }
 
 static unsigned long s_digest = 2166136261UL;
@@ -134,7 +107,7 @@ static void Fold(FILE *out, const char *label, s32 result,
              label, result, car->x, car->y, car->z, car->bodyYaw,
              car->bodyPitch, car->bodyRoll, car->trackHeading,
              car->trackLateralOffset, car->normalizedLateralOffset,
-             car->trackProgress, g_TrackLength, car->previousTrackProgress,
+             car->trackProgress, route.length, car->previousTrackProgress,
              car->progressA, car->progressB, car->segmentFraction,
              car->trackSection, car->speed, car->velocityX, car->velocityZ,
              car->motionActive, car->motionTimer, s_knockbacks, s_lastKnockX,
@@ -152,19 +125,19 @@ static int CheckPlayerBoundaryKnockback(const CarTrackLimits *limits,
                                         s32 lateralOffset,
                                         s32 expectedMode,
                                         const char *edgeName) {
-    GameCarRuntime *car = AsRivalCar(&g_PlayerCar);
+    GameCarRuntime *car = AsRivalCar(&player);
     s32 startZ;
     s32 result;
 
     BuildTrack();
-    memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
+    memset(&player, 0, sizeof(player));
     car->x = s_points[0].x;
     car->z = s_points[0].z + lateralOffset;
     startZ = car->z;
     s_knockbacks = 0;
     s_lastKnockMode = 0;
 
-    result = UpdateCarTrackState(car, 0, limits);
+    result = PlaceCar(car, 0, limits);
     if (result != expectedMode || s_knockbacks != 1 ||
         s_lastKnockMode != expectedMode || car->z == startZ) {
         printf("FAIL player %s boundary: result=%d calls=%d "
@@ -232,16 +205,13 @@ int main(int argc, char **argv) {
                             limits.leftContact = CAR_TRACK_CONTACT_FRONT_RIGHT;
                             limits.rightContact = CAR_TRACK_CONTACT_REAR_LEFT;
 
-                            g_RaceSeries = series;
-                            g_SceneTimer = 100;
+                            reverse = series;
                             s_knockbacks = 0;
                             s_lastKnockX = 0;
                             s_lastKnockZ = 0;
                             s_lastKnockMode = 0;
-                            memset(&g_CarTrackWork, 0,
-                                   sizeof(g_CarTrackWork));
 
-                            result = UpdateCarTrackState(&car, point, &limits);
+                            result = PlaceCar(&car, point, &limits);
 
                             sprintf(label, "r%d/p%d/a%d/l%d/h%d/s%d", series,
                                     point, along, lateralOffsets[li],
@@ -277,13 +247,13 @@ int main(int argc, char **argv) {
 
     memset(&car, 0, sizeof(car));
     car.x = 123;
-    g_TrackPointCount = 0;
-    if (UpdateCarTrackState(&car, 0, &limits) != 0 || car.x != 123) {
+    route.count = 0;
+    if (PlaceCar(&car, 0, &limits) != 0 || car.x != 123) {
         puts("FAIL empty track placement changed the car");
         return 1;
     }
     BuildTrack();
-    if (UpdateCarTrackState(NULL, 0, &limits) != 0) {
+    if (PlaceCar(NULL, 0, &limits) != 0) {
         puts("FAIL missing car was accepted for track placement");
         return 1;
     }
@@ -295,7 +265,7 @@ int main(int argc, char **argv) {
     memset(&car, 0, sizeof(car));
     car.x = s_points[0].x;
     car.z = s_points[0].z;
-    UpdateCarTrackState(&car, 0, &limits);
+    PlaceCar(&car, 0, &limits);
     if (car.normalizedLateralOffset != 0) {
         puts("FAIL zero-width track produced a normalized offset");
         return 1;
@@ -306,8 +276,8 @@ int main(int argc, char **argv) {
     car.x = s_points[0].x;
     car.z = s_points[0].z;
     car.progressA = INT_MAX;
-    g_RaceSeries = 0;
-    UpdateCarTrackState(&car, 0, &limits);
+    reverse = 0;
+    PlaceCar(&car, 0, &limits);
     if (car.trackProgress != 0xFFF) {
         printf("FAIL wrapped track progress is %d, expected %d\n",
                car.trackProgress, 0xFFF);

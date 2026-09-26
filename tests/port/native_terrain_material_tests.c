@@ -1,5 +1,7 @@
 /* Exercise the production stream parser and material-key resolution together. */
 #include <stdio.h>
+#include <stdlib.h>
+#define CHECK(c) do { if (!(c)) { fprintf(stderr, "line %d: %s\n", __LINE__, #c); return 1; } } while (0)
 #include "../../src/port/native_import_stream.h"
 
 static RageImportedTextureKey s_keys[6];
@@ -19,7 +21,7 @@ static void Put16(uint8_t *p, uint16_t v) {
 int main(void) {
     uint8_t stream[6 * 40 + 4] = {0};
     uint8_t *cursor = stream;
-    SVec vertices[1] = {{0}};
+    SVec vertices[1] = {{.vx = 11, .vy = -22, .vz = 33}};
     unsigned mode, variant;
     /* Retail modes 0/1 follow environment lighting; 2..5 select a fixed
      * palette, including their encoded odd-mode offset. Page selection in
@@ -44,8 +46,10 @@ int main(void) {
         }
         cursor += stride;
     }
-    if (!ImportVisitTerrainStream(0, stream, vertices, SaveMaterial, NULL))
-        return 1;
+    const void *cells[] = {stream};
+    uint32_t meshCount;
+    CHECK(ImportVisitTerrainCells(cells, 1, vertices, SaveMaterial, NULL, &meshCount));
+    CHECK(meshCount == 1);
     for (mode = 0; mode < 6; mode++) {
         for (variant = 0; variant < 4; variant++) {
             uint16_t clut = ImportMaterialClut(&s_keys[mode],
@@ -64,6 +68,27 @@ int main(void) {
         fputs("fixed and environment-controlled terrain materials merged\n", stderr);
         return 1;
     }
+    TerrainBank bank = {.cellCount = 1, .vertices = vertices, .cells = {stream}};
+    RenderMeshInstance identity = {.assetKey = 88, .assetSet = RAGE_RENDER_ASSET_TERRAIN};
+    RageImportedMeshEntry entry = {0};
+    CHECK(!ImportBuildTerrainMesh(&identity, NULL, &entry));
+    CHECK(entry.cached.mesh.bytes == NULL && entry.materials == NULL);
+    bank.cellCount = 2; /* Reject a missing late cell after visiting the first. */
+    CHECK(!ImportBuildTerrainMesh(&identity, &bank, &entry));
+    CHECK(entry.cached.mesh.bytes == NULL && entry.materials == NULL);
+    bank.cellCount = 1;
+    CHECK(ImportBuildTerrainMesh(&identity, &bank, &entry));
+    CHECK(entry.cached.mesh.meshCount == 1 && entry.cached.mesh.vertexCount == 24);
+    CHECK(entry.cached.mesh.indexCount == 36 && entry.materialCount == 6);
+    const void *bytes = entry.cached.mesh.bytes;
+    CHECK(!ImportBuildTerrainMesh(&identity, &bank, &entry));
+    CHECK(entry.cached.mesh.bytes == bytes);
+    memset(stream, 0xff, sizeof(stream));
+    RageRuntimeVertex vertex;
+    CHECK(RuntimeMeshVertex(&entry.cached.mesh, 0, &vertex));
+    CHECK(vertex.position[0] == 11 && vertex.position[1] == 22 && vertex.position[2] == -33);
+    RuntimeCachedMeshRelease(&entry.cached);
+    free(entry.materials);
     puts("terrain stream modes retain their fixed or environment palette");
     return 0;
 }

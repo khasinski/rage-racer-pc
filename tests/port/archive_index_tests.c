@@ -1,4 +1,4 @@
-#include "archive_index.h"
+#include "game/archive_index.h"
 
 #include <stdint.h>
 #include <stdio.h>

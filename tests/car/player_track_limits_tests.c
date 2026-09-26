@@ -1,13 +1,11 @@
 #include "game/car.h"
-#include "game/car_internal.h"
-#include "game/race.h"
-#include "game/render.h"
+#include "game/car_track_internal.h"
 
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
-CarHullPoint g_CarCornerOffsets[4];
+static CarHullPoint corners[4];
 
 static int s_failures;
 
@@ -16,7 +14,7 @@ static void CheckLimits(const Matrix *matrix, s32 right, s32 left,
     CarTrackLimits limits;
 
     memset(&limits, 0x7F, sizeof(limits));
-    MeasurePlayerTrackLimits(matrix, &limits);
+    MeasureCarTrackLimits(matrix, corners, &limits);
     if (limits.rightInset != right || limits.leftInset != left ||
         limits.rightContact != rightMode ||
         limits.leftContact != leftMode) {
@@ -32,14 +30,14 @@ int main(void) {
     Matrix matrix;
 
     memset(&matrix, 0, sizeof(matrix));
-    g_CarCornerOffsets[0].x = -10;
-    g_CarCornerOffsets[0].z = 5;
-    g_CarCornerOffsets[1].x = 20;
-    g_CarCornerOffsets[1].z = -30;
-    g_CarCornerOffsets[2].x = -30;
-    g_CarCornerOffsets[2].z = 40;
-    g_CarCornerOffsets[3].x = 15;
-    g_CarCornerOffsets[3].z = -50;
+    corners[0].x = -10;
+    corners[0].z = 5;
+    corners[1].x = 20;
+    corners[1].z = -30;
+    corners[2].x = -30;
+    corners[2].z = 40;
+    corners[3].x = 15;
+    corners[3].z = -50;
 
     matrix.m[0][0] = 4096;
     CheckLimits(&matrix, 80, -120, 2, 3);
@@ -53,14 +51,14 @@ int main(void) {
 
     memset(&matrix, 0, sizeof(matrix));
     matrix.m[0][0] = 4096;
-    g_CarCornerOffsets[0].x = INT16_MAX;
-    g_CarCornerOffsets[1].x = INT16_MIN;
-    g_CarCornerOffsets[2].x = 1;
-    g_CarCornerOffsets[3].x = -1;
-    g_CarCornerOffsets[0].z = 0;
-    g_CarCornerOffsets[1].z = 0;
-    g_CarCornerOffsets[2].z = 0;
-    g_CarCornerOffsets[3].z = 0;
+    corners[0].x = INT16_MAX;
+    corners[1].x = INT16_MIN;
+    corners[2].x = 1;
+    corners[3].x = -1;
+    corners[0].z = 0;
+    corners[1].z = 0;
+    corners[2].z = 0;
+    corners[3].z = 0;
     CheckLimits(&matrix, 4, -4, 3, 1);
 
     if (s_failures != 0) {

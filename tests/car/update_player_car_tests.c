@@ -1,15 +1,23 @@
-#include "game/car.h"
+#include "game/car_control.h"
 #include "game/car_internal.h"
 #include "game/race.h"
 #include "game/state.h"
+#include "game/track_internal.h"
 
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
+u32 g_RandomSeed;
 u8 g_PadType;
 GameCarSpec *g_CarSpec;
-s32 g_ShiftTargetRpm;
+s16 g_RacePhase;
+s32 g_RaceSeries;
+const GameTrackPoint *g_TrackPoints;
+const GameTrackArcCenter *g_TrackArcCenters;
+s32 g_TrackPointCount;
+s32 g_TrackLength;
+const TrackEventData *g_TrackEventData;
 
 static GameCarSpec s_spec;
 static char s_order[64];
@@ -27,30 +35,25 @@ static void Step(char step) {
     s_order[s_orderLength] = '\0';
 }
 
-s32 IsCarFacingBackwards(const PlayerCarRuntime *car) {
+s32 CarFacesBackwards(const PlayerCarRuntime *car, const TrackRoute *route) {
     (void)car;
+    if (route->points != g_TrackPoints || route->count != g_TrackPointCount) s_failures++;
     Step('B');
     return 1;
 }
 
-void ShiftPlayerGears(PlayerCarRuntime *car, int useAlternateMapping) {
-    (void)car;
-    s_shiftMapping = useAlternateMapping;
+DriverInput ReadDriverInput(void) {
+    return (DriverInput){.steering.mode =
+        g_PadType == PAD_TYPE_NEGCON ? STEERING_ANALOG : STEERING_DIGITAL};
+}
+
+void ApplyDriverInput(PlayerCarRuntime *car, const GameCarSpec *spec,
+                       const DriverInput *input) {
+    (void)spec;
+    s_shiftMapping = input->steering.mode == STEERING_ANALOG;
     Step('C');
-}
-
-void UpdateCarBodyRoll(PlayerCarRuntime *car) {
-    (void)car;
     Step('D');
-}
-
-void UpdatePlayerSteeringTarget(PlayerCarRuntime *car) {
-    (void)car;
-    Step('E');
-}
-
-void ReadPlayerCarInput(GameCarDrive *drive) {
-    (void)drive;
+    if (car->verticalMotionState == CAR_VERTICAL_GROUNDED) Step('E');
     Step('F');
 }
 
@@ -59,8 +62,9 @@ void UpdateCarDrivetrain(PlayerCarRuntime *car) {
     Step('G');
 }
 
-void UpdatePlayerControlFeedback(PlayerCarRuntime *car) {
+void UpdateCarControlFeedback(PlayerCarRuntime *car, int analog) {
     (void)car;
+    if (analog != (g_PadType == PAD_TYPE_NEGCON)) s_failures++;
     Step('H');
 }
 
@@ -71,20 +75,23 @@ void CalculatePlayerBodyOffset(PlayerCarRuntime *car) {
     Step('I');
 }
 
-void AccumulateLapProgress(GameCarRuntime *car) {
+s32 FindCarTrackSegment(const GameCarRuntime *car, const TrackRoute *route, s32 start) {
+    (void)car; (void)route;
+    return start;
+}
+
+void MoveCarTrackProgress(GameCarRuntime *car, const TrackRoute *route, s32 target, int reverse) {
     (void)car;
+    (void)route; (void)target; (void)reverse;
     Step('J');
 }
 
-s32 ResolvePlayerTrackContact(PlayerCarRuntime *car) {
+s32 ResolveCarTrackContact(PlayerCarRuntime *car, const TrackRoute *route,
+                          const CarHullPoint *corners, int reverse) {
     (void)car;
+    (void)route; (void)corners; (void)reverse;
     Step('K');
     return s_skid;
-}
-
-s32 Random15(void) {
-    Step('L');
-    return 32767;
 }
 
 s32 CollidePlayerWithCars(PlayerCarRuntime *car) {
@@ -93,38 +100,63 @@ s32 CollidePlayerWithCars(PlayerCarRuntime *car) {
     return s_crash;
 }
 
-void StartCarBodyKick(GameCarRuntime *car, CarBodyKickMode mode) {
+void BeginCarBodyKick(GameCarRuntime *car, CarBodyKickMode mode, s32 heading, s32 random) {
     (void)car;
+    (void)heading;
+    (void)random;
     if (mode != CAR_BODY_KICK_CORNERING) {
         s_failures++;
     }
     Step('N');
 }
 
-void UpdatePlayerJump(PlayerCarRuntime *car, s32 groundHeight) {
+int StepPlayerJump(PlayerCarRuntime *car, const GameCarSpec *spec, s32 groundHeight) {
     (void)car;
+    (void)spec;
     s_jumpGround = groundHeight;
     Step('P');
+    return 0;
 }
 
-void UpdatePlayerTilt(PlayerCarRuntime *car) {
+void UpdateCarTilt(PlayerCarRuntime *car, const GameCarSpec *spec, int racing) {
     (void)car;
+    (void)spec;
+    (void)racing;
     Step('Q');
 }
 
-void UpdateCarCrestHop(GameCarRuntime *car) {
+void StepCarCrestHop(GameCarRuntime *car, const TrackEventData *events, s32 length, int reverse) {
     (void)car;
+    (void)events;
+    (void)length;
+    (void)reverse;
     Step('R');
 }
 
-void ApplyPlayerContactResponse(PlayerCarRuntime *car, s32 skid, s32 crash) {
+s32 ApplyCarContactResponse(PlayerCarRuntime *car, const GameTrackPoint *point, s32 skid, s32 crash) {
     (void)car;
+    (void)point;
     s_responseSkid = skid;
     s_responseCrash = crash;
     Step('S');
+    return 512;
 }
 
-void UpdatePlayerEnginePresentation(PlayerCarRuntime *car) {
+void PlayPlayerLandingCue(s32 frames, int audible) {
+    if (audible != (g_RacePhase <= RACE_PHASE_ACTIVE)) s_failures++;
+    if (frames != 0) s_failures++;
+    Step('U');
+}
+void PlayPlayerContactCue(const PlayerCarRuntime *car, s32 skid, s32 slip, int audible) {
+    if (audible != (g_RacePhase <= RACE_PHASE_ACTIVE)) s_failures++;
+    (void)car;
+    if (skid != s_responseSkid || slip != 512) s_failures++;
+    Step('V');
+}
+
+void UpdatePlayerEnginePresentation(const PlayerCarRuntime *car, const GameCarSpec *spec, int finished) {
+    if (finished != (g_RacePhase >= RACE_PHASE_FINISHED)) s_failures++;
+    if (spec != g_CarSpec) s_failures++;
     (void)car;
     Step('T');
 }
@@ -135,7 +167,8 @@ static void Reset(PlayerCarRuntime *car) {
     s_spec.revLimit = 8000;
     s_spec.redline = 6000;
     g_CarSpec = &s_spec;
-    g_ShiftTargetRpm = 7000;
+    g_RandomSeed = 24884;
+    car->drive.shiftTargetRpm = 7000;
     g_PadType = PAD_TYPE_DIGITAL;
     s_orderLength = 0;
     s_order[0] = '\0';
@@ -174,7 +207,7 @@ int main(void) {
     car.drive.accelPos = 640;
     car.drive.brakePos = 1280;
     UpdatePlayerCar(&car);
-    CheckOrder("BCDEFGHIJKMPQRST");
+    CheckOrder("BCDEFGHIJKMPQRSUVT");
     CHECK(car.facingBackwards == 1 && s_shiftMapping == 0);
     CHECK(car.x == 98 && car.z == 193);
     CHECK(car.y == 50 && car.positionW == 77);
@@ -185,11 +218,11 @@ int main(void) {
     g_PadType = PAD_TYPE_NEGCON;
     car.verticalMotionState = 1;
     car.drive.shiftRpmDelta = 1;
-    g_ShiftTargetRpm = 0;
+    car.drive.shiftTargetRpm = 0;
     s_skid = 3;
     s_crash = 1;
     UpdatePlayerCar(&car);
-    CheckOrder("BCDFGHIJKLMNPQRST");
+    CheckOrder("BCDFGHIJKMNPQRSUVT");
     CHECK(s_shiftMapping == 1);
     CHECK(car.bodyPitch > 0);
     CHECK(s_responseSkid == 3 && s_responseCrash == 1);
@@ -206,7 +239,7 @@ int main(void) {
     car.bodyPitch = INT_MAX;
     car.bodyRoll = INT_MAX;
     car.bodyRollVelocity = INT_MAX;
-    g_ShiftTargetRpm = -100000;
+    car.drive.shiftTargetRpm = -100000;
     UpdatePlayerCar(&car);
     CHECK(car.x == 6 && car.z == 6);
     CHECK(car.bodyPitch == 2147483407);

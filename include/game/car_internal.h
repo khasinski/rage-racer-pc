@@ -3,6 +3,8 @@
 
 #include "common.h"
 #include "game/car.h"
+#include "game/car_drive.h"
+#include "game/car_shift.h"
 #include "game/car_collision_internal.h"
 #include "game/car_motion_internal.h"
 #include "game/car_track_internal.h"
@@ -11,47 +13,9 @@
 #include "game/render.h"
 #include "game/vector.h"
 
-static inline s32 NormalizeCarLaunchThresholdIndex(s32 index) {
-    index %= CAR_LAUNCH_THRESHOLD_COUNT;
-    return index < 0 ? index + CAR_LAUNCH_THRESHOLD_COUNT : index;
-}
-
-static inline s32 CalculateAirborneEngineRpm(const GameCarSpec *spec,
-                                             s32 gear, s32 speed) {
-    s32 gearRatio = GetPositiveCarGearRatio(spec, gear);
-    s32 wheelRpm = WrapSigned32((int64_t)speed * 160) / 1168;
-
-    return WrapSigned32((int64_t)wheelRpm * 10000) / gearRatio;
-}
-
-static inline s16 CalculateCarRpmDelta(s32 targetRpm, s32 currentRpm) {
-    return WrapSigned16((u16)targetRpm - (u16)currentRpm);
-}
-
-static inline s16 ClampCarGear(s32 gear, s32 topGear) {
-    if (topGear < CAR_FIRST_FORWARD_GEAR) {
-        topGear = CAR_FIRST_FORWARD_GEAR;
-    } else if (topGear > CAR_FORWARD_GEAR_COUNT) {
-        topGear = CAR_FORWARD_GEAR_COUNT;
-    }
-    if (gear < CAR_FIRST_FORWARD_GEAR) {
-        return CAR_FIRST_FORWARD_GEAR;
-    }
-    return (s16)(gear > topGear ? topGear : gear);
-}
-
 extern LaunchSpeedThreshold
     g_LaunchSpeedThresholds[CAR_LAUNCH_THRESHOLD_COUNT];
-extern s16 g_TorqueBandEnd[CAR_TORQUE_BAND_COUNT];
-extern s16 g_TorqueLossBandEnd[CAR_TORQUE_BAND_COUNT];
 
-enum {
-    CAR_WHEEL_GROUND_OFFSET = 8,
-    CAR_JUMP_RISE_CURVE = 72,
-    CAR_JUMP_FALL_CURVE = 216,
-    CAR_JUMP_CURVE_SCALE = 100,
-    CAR_AIRBORNE_SHIFT_FRAMES = 20,
-};
 
 /* Final per-frame visual/vertical motion pass over the rival car slots. */
 void UpdateRivalBodyMotion(void);
@@ -81,45 +45,19 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex);
 void UpdateRivalRubberBand(void);
 /* Whether the player's heading differs from the local road direction by more
  * than a quarter turn. */
-s32 IsCarFacingBackwards(const PlayerCarRuntime *car);
-typedef struct {
-    s32 longitudinalResistance;
-    s32 motionResistance;
-    s32 throttleAcceleration;
-} CarDrivetrainLoads;
-
-void UpdateCarSteeringGrip(PlayerCarRuntime *car, const GameCarSpec *spec,
-                           s32 gripBudget);
-void AdvanceCarJumpArc(GameCarRuntime *car, s32 groundHeight);
-CarDrivetrainLoads CalculateCarDrivetrainLoads(
-    PlayerCarRuntime *car, const GameCarSpec *spec, s32 netTorque,
-    s32 bandScale, s32 initialAcceleration);
-void ReadCarEngineTorque(const GameCarDrive *drive, const GameCarSpec *spec,
-                         const s32 *gearCurve, s32 *netTorque,
-                         s32 *bandScale);
-s32 CalculateCarInitialAcceleration(const GameCarDrive *drive,
-                                    s32 gearRatio);
-void UpdateCarGearShiftState(PlayerCarRuntime *car, const GameCarSpec *spec,
-                             s32 *acceleration);
 void ReadPlayerCarInput(GameCarDrive *drive);
 /* Pick the player's gear for this frame. Alternate controllers keep their two
  * shift buttons in the second half of the mapping table. */
 void ShiftPlayerGears(PlayerCarRuntime *car, int useAlternateMapping);
 void UpdateCarDrivetrain(PlayerCarRuntime *car);
-void UpdateCarDriving(PlayerCarRuntime *car);
-void UpdateCarLaunch(PlayerCarRuntime *car);
-void UpdateCarAirborne(PlayerCarRuntime *car);
-void UpdateCarStandingStart(PlayerCarRuntime *car);
+void PlayCarDrivingVoice(const PlayerCarRuntime *car, const GameCarSpec *spec);
+void PlayCarLaunchVoice(const PlayerCarRuntime *car);
+void PlayCarAirborneVoice(const PlayerCarRuntime *car);
+void PlayCarStandingStartVoice(const PlayerCarRuntime *car);
 void UpdateCarTravelVelocity(GameCarRuntime *car);
-void UpdatePlayerJump(PlayerCarRuntime *car, s32 groundHeight);
-void UpdatePlayerEnginePresentation(PlayerCarRuntime *car);
-void MeasurePlayerTrackLimits(const Matrix *toTrack,
-                              CarTrackLimits *limits);
-void ApplyPlayerContactResponse(PlayerCarRuntime *car, s32 skid, s32 crash);
+void PlayPlayerLandingCue(s32 landingFrames, int audible);
+void PlayPlayerContactCue(const PlayerCarRuntime *car, s32 skid, s32 slip, int audible);
+void UpdatePlayerEnginePresentation(const PlayerCarRuntime *car, const GameCarSpec *spec, int finished);
 void UpdatePlayerSteeringTarget(PlayerCarRuntime *car);
-void UpdatePlayerControlFeedback(PlayerCarRuntime *car);
-void CalculatePlayerBodyOffset(PlayerCarRuntime *car);
-s32 ResolvePlayerTrackContact(PlayerCarRuntime *car);
-void PrepareAirborneDrivetrain(PlayerCarRuntime *car);
 
 #endif

@@ -12,6 +12,7 @@ add_executable(disc_stream_table_tests
     disc_stream_table_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/disc_iso.c
     ${CMAKE_SOURCE_DIR}/src/port/disc_stream_table.c
+    ${CMAKE_SOURCE_DIR}/src/port/disc_identity.c
 )
 target_include_directories(disc_stream_table_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port
@@ -31,6 +32,7 @@ add_executable(stream_table_disc_tests
     ${CMAKE_SOURCE_DIR}/src/port/disc_cue.c
     ${CMAKE_SOURCE_DIR}/src/port/disc_iso.c
     ${CMAKE_SOURCE_DIR}/src/port/disc_stream_table.c
+    ${CMAKE_SOURCE_DIR}/src/port/disc_identity.c
 )
 target_include_directories(stream_table_disc_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port
@@ -98,6 +100,7 @@ add_executable(mod_asset_fallback_tests
     ${CMAKE_SOURCE_DIR}/src/port/mod_assets.c)
 target_link_libraries(mod_asset_fallback_tests PRIVATE rage-rmesh)
 target_include_directories(mod_asset_fallback_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/src/port)
 if(MSVC)
     target_compile_options(mod_asset_fallback_tests PRIVATE /W4 /WX)

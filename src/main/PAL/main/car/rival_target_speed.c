@@ -1,7 +1,7 @@
 #include "game/car.h"
-#include "game/car_internal.h"
+#include "game/rival.h"
+#include "game/car_motion_internal.h"
 #include "game/integer.h"
-#include "game/race.h"
 #include "game/track.h"
 
 enum {
@@ -36,10 +36,10 @@ static s32 TargetSpeedAccelerationLimit(s32 targetSpeed) {
  * get no new limit this frame. Rivals behind the front four share fourth
  * place's target, tapered by their grid slot.
  */
-void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex) {
+void StepRivalTargetSpeed(GameCarRuntime *car, s32 carIndex,
+                            const TrackAiSpeedKey table[TRACK_AI_SPEED_KEY_COUNT], int reverse) {
     const TrackAiSpeedKey *lowKey;
     const TrackAiSpeedKey *highKey;
-    const TrackAiSpeedKey *table;
     s32 position;
     s32 keyIndex;
     s32 lowProgress;
@@ -48,7 +48,7 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex) {
     s32 highSpeed;
     s32 pitch = 0;
 
-    if (car == NULL || g_TrackEventData == NULL || carIndex < 0 ||
+    if (car == NULL || table == NULL || carIndex < 0 ||
         carIndex >= RACE_CAR_SLOT_COUNT) {
         return;
     }
@@ -66,7 +66,6 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex) {
         car->speedKeyIndex = 0;
     }
 
-    table = g_TrackEventData->aiSpeedKeys[g_RaceSeries != 0];
     lowKey = &table[keyIndex];
     highKey = &table[keyIndex + 1];
     lowProgress = lowKey->progress;
@@ -97,6 +96,6 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex) {
     }
 
     if (car->slideActive != 0) {
-        UpdateCarSlideAngle(car, (s16)pitch);
+        StepCarSlide(car, (s16)pitch, reverse);
     }
 }

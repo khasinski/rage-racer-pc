@@ -1,6 +1,4 @@
-#include "game/car.h"
-#include "game/car_internal.h"
-#include "game/integer.h"
+#include "game/car_shift.h"
 
 enum {
     AIRBORNE_BASE_SPEED_PERCENT = 100,
@@ -12,9 +10,8 @@ enum {
     ENGINE_LOAD_SCALE = 1000,
 };
 
-void PrepareAirborneDrivetrain(PlayerCarRuntime *car) {
+void PrepareAirborneDrivetrain(PlayerCarRuntime *car, const GameCarSpec *spec) {
     GameCarDrive *drive = &car->drive;
-    const GameCarSpec *spec = g_CarSpec;
     s32 speedScale;
     s32 rpm;
 
@@ -30,7 +27,7 @@ void PrepareAirborneDrivetrain(PlayerCarRuntime *car) {
 
     drive->jumpTimer = CAR_AIRBORNE_SHIFT_FRAMES;
     drive->motionState = CAR_MOTION_AIRBORNE;
-    g_ShiftTargetRpm = rpm;
+    drive->shiftTargetRpm = rpm;
     drive->shiftRpmDelta = CalculateCarRpmDelta(rpm, drive->engineRpm);
     drive->engineLoad = WrapSigned16(
         WrapSigned32((int64_t)rpm *

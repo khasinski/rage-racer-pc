@@ -18,12 +18,7 @@ static s32 g_SubmissionCount;
 static s32 g_Models[4];
 static u32 g_Entities[4];
 static s32 g_Positions[4][3];
-static s32 g_RandomValues[2];
-static s32 g_RandomIndex;
-
-s32 Random15(void) {
-    return g_RandomValues[g_RandomIndex++];
-}
+u32 g_RandomSeed;
 
 void BuildRotMatrixY(void *matrix, s32 angle) {
     (void)angle;
@@ -127,14 +122,20 @@ int main(void) {
         return 1;
     }
 
-    g_RandomValues[0] = 0x7F;
-    g_RandomValues[1] = 0xAA;
-    g_RandomIndex = 0;
+    g_RandomSeed = 123;
     ResetSubmissions();
     DrawSpinningScenery(512, 1);
-    if (g_RandomIndex != 2 || g_SpinningSceneryRate[0] != 0x1F ||
-        g_SpinningSceneryRate[1] != 0x2A) {
+    if (g_RandomSeed != 123 || g_SpinningSceneryRate[0] != 4 ||
+        g_SpinningSceneryRate[1] != 49) {
         puts("FAIL: periodic spinner rate update");
+        return 1;
+    }
+
+    ResetSubmissions();
+    DrawSpinningScenery(1024, 0);
+    if (g_RandomSeed != 123 || g_SpinningSceneryRate[0] != 4 ||
+        g_SpinningSceneryRate[1] != 49) {
+        puts("FAIL: frozen scenery changed rates or physics RNG");
         return 1;
     }
 

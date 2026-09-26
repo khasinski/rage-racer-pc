@@ -18,6 +18,7 @@ typedef struct ModernPreparedMaterialEntry {
     uint32_t assetKey;
     uint32_t material;
     RenderAssetSet assetSet;
+    RenderAssetSource assetSource;
     uint8_t variant;
     uint8_t hasCarPaint;
     uint8_t color1;

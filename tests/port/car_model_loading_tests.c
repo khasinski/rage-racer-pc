@@ -119,7 +119,7 @@ s32 IsValidCourseModelAsset(const CourseModelAssetHeader *models,
     (void)size;
     return 1;
 }
-s32 IsValidImageAsset(const GameImageAssetHeaderWord *image, size_t size) {
+s32 IsValidImageAsset(const void *image, size_t size) {
     (void)image;
     (void)size;
     return 1;

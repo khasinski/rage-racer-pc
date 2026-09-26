@@ -1,4 +1,4 @@
-#include "rage/track_lighting.h"
+#include "track_lighting.h"
 
 static float ZoneAmount(int blend) {
     if (blend < 0) blend = 0;

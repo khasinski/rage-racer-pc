@@ -1,7 +1,8 @@
 #include "game/angle.h"
-#include "game/audio.h"
+#include "game/car_drive.h"
 #include "game/car.h"
-#include "game/car_internal.h"
+#include "game/car_shift.h"
+#include "game/car_track_internal.h"
 #include "game/integer.h"
 #include "psyq/gte.h"
 
@@ -11,13 +12,6 @@ enum {
         LAUNCH_STEERING_CENTRE_LIMIT * 2 + 1,
     LAUNCH_SPIN_LIMIT = 0x3600,
     LAUNCH_RECOVERY_SPIN_THRESHOLD = 0x1000,
-    TYRE_SKID_PHASE_LIMIT = 513,
-    TYRE_SKID_PHASE_SCALE = 3,
-    TYRE_SKID_PHASE_BASE = 0x1800,
-    TYRE_SKID_PHASE_MAXIMUM = 0x1E00,
-    TYRE_SKID_VOLUME_DIVISOR = 8,
-    TYRE_SKID_VOLUME_BASE = 0x40,
-    TYRE_SKID_VOLUME_MAXIMUM = 0x7F,
     INITIAL_SKID_LIMIT = 0x80,
     LOW_SPIN_THRESHOLD = 0x800,
     INITIAL_SPIN_ENERGY_SCALE = 4000,
@@ -70,22 +64,6 @@ static s32 IsLaunchSteeringCentred(s32 steerPos) {
     return (u32)WrapSigned32(
                (int64_t)steerPos + LAUNCH_STEERING_CENTRE_LIMIT) <
            LAUNCH_STEERING_CENTRE_WIDTH;
-}
-
-static void UpdateLaunchTyreVoice(const PlayerCarRuntime *car, s32 skid) {
-    if (car->verticalMotionState != CAR_VERTICAL_GROUNDED) {
-        SetIndexedEffectVoice(-1, 0, 0);
-        return;
-    }
-
-    if (skid < TYRE_SKID_PHASE_LIMIT) {
-        SetIndexedEffectVoice(
-            0, skid * TYRE_SKID_PHASE_SCALE + TYRE_SKID_PHASE_BASE,
-            skid / TYRE_SKID_VOLUME_DIVISOR + TYRE_SKID_VOLUME_BASE);
-    } else {
-        SetIndexedEffectVoice(0, TYRE_SKID_PHASE_MAXIMUM,
-                              TYRE_SKID_VOLUME_MAXIMUM);
-    }
 }
 
 static void ConsumeInitialLaunchEnergy(PlayerCarRuntime *car, s32 skid,
@@ -196,7 +174,7 @@ static void UpdatePoweredLaunch(PlayerCarRuntime *car, s32 spinMagnitude) {
             PEDAL_SPEED_SCALE / PEDAL_SPEED_DIVISOR);
 }
 
-static void UpdateDepletedLaunch(PlayerCarRuntime *car, s32 spinMagnitude) {
+static void UpdateDepletedLaunch(PlayerCarRuntime *car, const GameCarSpec *spec, s32 spinMagnitude) {
     GameCarDrive *drive = &car->drive;
     s32 offAxis;
 
@@ -225,19 +203,19 @@ static void UpdateDepletedLaunch(PlayerCarRuntime *car, s32 spinMagnitude) {
         (int64_t)offAxis * car->speed) / LAUNCH_SPEED_NORMALIZER;
     drive->spinRate = 0;
 
-    PrepareAirborneDrivetrain(car);
-    g_ShiftSoundLevel =
+    PrepareAirborneDrivetrain(car, spec);
+    drive->shiftSoundLevel =
         drive->shiftRpmDelta >= -QUIET_SHIFT_RPM_DELTA &&
         drive->shiftRpmDelta <= QUIET_SHIFT_RPM_DELTA;
 }
 
-static void FinishLaunchFrame(PlayerCarRuntime *car, s32 spinMagnitude) {
+static void FinishLaunchFrame(PlayerCarRuntime *car, const GameCarSpec *spec, const TrackRoute *route, s32 spinMagnitude) {
     GameCarDrive *drive = &car->drive;
     s32 skid;
     s32 launchedHeading;
 
     drive->targetHeading = car->bodyYaw;
-    SteerCarToTrackLine(car);
+    SteerCarOnRoute(car, spec, route);
 
     skid = GetAngleDistance(car->bodyYaw, car->headingAngle);
     if (skid >= QUARTER_TURN_BOUNDARY) {
@@ -263,16 +241,16 @@ static void FinishLaunchFrame(PlayerCarRuntime *car, s32 spinMagnitude) {
     UpdateCarTravelVelocity(AsRivalCar(car));
     car->headingAngle = launchedHeading;
     drive->accelPos = WrapSigned32(
-        (int64_t)rsin(car->headingAngle) * car->speed) /
+        (int64_t)SinAngle(car->headingAngle) * car->speed) /
         VELOCITY_COMPONENT_DIVISOR;
     drive->brakePos = WrapSigned32(
-        (int64_t)rcos(car->headingAngle) * car->speed) /
+        (int64_t)CosAngle(car->headingAngle) * car->speed) /
         VELOCITY_COMPONENT_DIVISOR;
 }
 
 /* Update the takeoff state until its energy is spent, then hand the car to
  * UpdateCarAirborne. */
-void UpdateCarLaunch(PlayerCarRuntime *car) {
+void StepCarLaunch(PlayerCarRuntime *car, const GameCarSpec *spec, const TrackRoute *route) {
     GameCarDrive *drive = &car->drive;
     s32 startYaw = car->bodyYaw;
     s32 startHeading = car->headingAngle;
@@ -285,14 +263,13 @@ void UpdateCarLaunch(PlayerCarRuntime *car) {
             (int64_t)car->speed * SEVERE_SKID_SPEED_RETENTION) /
             PER_THOUSAND_SCALE;
     }
-    UpdateLaunchTyreVoice(car, skid);
     ConsumeInitialLaunchEnergy(car, skid, spinMagnitude);
 
     if (drive->launchEnergy > 0) {
         UpdatePoweredLaunch(car, spinMagnitude);
     } else {
-        UpdateDepletedLaunch(car, spinMagnitude);
+        UpdateDepletedLaunch(car, spec, spinMagnitude);
     }
 
-    FinishLaunchFrame(car, spinMagnitude);
+    FinishLaunchFrame(car, spec, route, spinMagnitude);
 }

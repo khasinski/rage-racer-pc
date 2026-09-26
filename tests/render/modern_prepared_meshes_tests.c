@@ -24,8 +24,8 @@ int main(void) {
         {.assetKey = 1, .pass = RAGE_RENDER_PASS_MIRROR},
     };
     RenderMeshInstance outsider = {.assetKey = 1};
-    RenderWorld first = {.instances = firstInstances, .instanceCount = 2};
-    RenderWorld second = {.instances = secondInstances, .instanceCount = 3};
+    RenderWorld first = {.instances = firstInstances, .instanceCount = 2, .instanceCapacity = 2};
+    RenderWorld second = {.instances = secondInstances, .instanceCount = 3, .instanceCapacity = 3};
 
     memset(s_meshes, 0, sizeof(s_meshes));
     assert(!ModernPreparedMeshesPrepare(NULL, &first, Resolve, NULL));
@@ -45,6 +45,12 @@ int main(void) {
            &s_meshes[2]);
     assert(ModernPreparedMeshesLookup(&cache, &secondInstances[2]) == NULL);
 
+RenderMeshInstance unrelated = {0};
+assert(ModernPreparedMeshesLookup(&cache, &unrelated) == NULL);
+RenderWorld invalid = {.instanceCount = 1, .instanceCapacity = 1};
+const RenderWorld *savedWorld = cache.world;
+assert(!ModernPreparedMeshesPrepare(&cache, &invalid, Resolve, NULL));
+assert(cache.world == savedWorld);
     ModernPreparedMeshesRelease(&cache);
     assert(cache.items == NULL && cache.world == NULL && cache.count == 0 &&
            cache.capacity == 0);

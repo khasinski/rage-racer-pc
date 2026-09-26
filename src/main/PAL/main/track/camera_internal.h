@@ -21,15 +21,15 @@ void CameraLoadViewPositionFromCar(GameViewWork *view,
 void CameraLoadViewPoseFromCar(GameViewWork *view,
                                const GameCarRuntime *car);
 void CameraBuildCarRotation(Matrix *rotation, const GameCarRuntime *car);
-void CameraViewFromCarBlock(Camera *camera, GameCarRuntime *car, GameViewWork *view);
-void CameraViewFromChaseCamera(Camera *camera, GameCarRuntime *car, GameViewWork *view);
-void CameraViewFromBlendedNode(Camera *camera, GameCarRuntime *car, GameViewWork *view,
+void CameraViewFromCarBlock(Camera *camera, const GameCarRuntime *car, GameViewWork *view);
+void CameraViewFromChaseCamera(Camera *camera, const GameCarRuntime *car, GameViewWork *view);
+void CameraViewFromBlendedNode(Camera *camera, const GameCarRuntime *car, GameViewWork *view,
                                s32 cameraNodeIndex);
-void CameraViewFromCamPath(Camera *camera, GameCarRuntime *car, GameViewWork *view,
+void CameraViewFromCamPath(Camera *camera, const GameCarRuntime *car, GameViewWork *view,
                            s32 cameraNodeIndex, int nodeChanged);
-void CameraViewFromSlidingNode(Camera *camera, GameCarRuntime *car, GameViewWork *view,
+void CameraViewFromSlidingNode(Camera *camera, const GameCarRuntime *car, GameViewWork *view,
                                s32 cameraNodeIndex, int nodeChanged);
-void CameraViewFromOrbit(Camera *camera, GameCarRuntime *car, GameViewWork *view);
-void CameraViewFromLookBehind(Camera *camera, GameCarRuntime *car, GameViewWork *view);
+void CameraViewFromOrbit(Camera *camera, const GameCarRuntime *car, GameViewWork *view);
+void CameraViewFromLookBehind(Camera *camera, const GameCarRuntime *car, GameViewWork *view);
 
 #endif

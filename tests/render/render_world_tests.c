@@ -603,6 +603,39 @@ static void test_synchronized_presentation_moves_matching_vehicle(void) {
 
 }
 
+static void test_human_cars_keep_seat_identity_when_crossing(void) {
+    RenderMeshInstance oldCars[2] = {0}, newCars[2] = {0}, shown[2] = {0};
+    RenderWorld previous, current;
+    RenderWorldInit(&previous, oldCars, 2);
+    RenderWorldInit(&current, newCars, 2);
+    previous.instanceCount = current.instanceCount = 2;
+    for (unsigned seat = 0; seat < 2; seat++) {
+        oldCars[seat].entity = seat;
+        oldCars[seat].assetSet = RAGE_RENDER_ASSET_MODEL_BANK;
+        oldCars[seat].assetKey = 12; /* both humans drive the same model */
+        oldCars[seat].hasCarPaint = 1;
+        oldCars[seat].carPaintColor1 = (uint8_t)(seat + 3);
+        oldCars[seat].carPaintColor2 = (uint8_t)(seat + 7);
+        oldCars[seat].transform.position.x = seat ? 100 : 0;
+        newCars[1 - seat] = oldCars[seat]; /* submission order changes */
+        newCars[1 - seat].transform.position.x = seat ? 0 : 100;
+        newCars[1 - seat].lamps.stop = (float)seat;
+        newCars[1 - seat].lamps.headlights = (float)seat;
+    }
+    EXPECT_EQ(2, RenderWorldBuildSynchronizedPresentation(
+        &previous, &current, 0.25f, shown, 2));
+    EXPECT_EQ(25, (int)shown[0].transform.position.x);
+    EXPECT_EQ(75, (int)shown[1].transform.position.x);
+    for (unsigned seat = 0; seat < 2; seat++) {
+        EXPECT_EQ(seat, shown[seat].entity);
+        EXPECT_EQ(1, shown[seat].hasCarPaint);
+        EXPECT_EQ(seat + 3, shown[seat].carPaintColor1);
+        EXPECT_EQ(seat + 7, shown[seat].carPaintColor2);
+        EXPECT_EQ(seat, (int)shown[seat].lamps.stop);
+        EXPECT_EQ(1, fabsf(shown[seat].lamps.headlights - seat * 0.25f) < 0.00001f);
+    }
+}
+
 static void test_synchronized_presentation_keeps_wheel_sides_paired(void) {
     RenderMeshInstance previousStorage[2] = {0};
     RenderMeshInstance currentStorage[2] = {0};
@@ -901,7 +934,45 @@ static void test_spot_lights_validate_and_reset(void) {
     EXPECT_EQ(1, !!(world.spotLightCount == 0));
 }
 
+static void test_explicit_car_field_replaces_only_main_car_seats(void) {
+    RenderMeshInstance storage[8];
+    RenderWorld world;
+    RenderWorldInit(&world, storage, 8);
+    RenderWorldBeginFrame(&world, 1);
+    RenderMeshInstance instance = {.entity = 0, .assetSet = RAGE_RENDER_ASSET_MODEL_BANK};
+    EXPECT_EQ(1, RenderWorldSubmitMesh(&world, &instance));
+    instance.entity = 11; instance.assetSet = RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
+    EXPECT_EQ(1, RenderWorldSubmitMesh(&world, &instance));
+    instance.entity = 12;
+    EXPECT_EQ(1, RenderWorldSubmitMesh(&world, &instance));
+    instance.entity = 3; instance.pass = RAGE_RENDER_PASS_MIRROR;
+    EXPECT_EQ(1, RenderWorldSubmitMesh(&world, &instance));
+    instance.entity = 0; instance.pass = RAGE_RENDER_PASS_MAIN;
+    instance.assetSet = RAGE_RENDER_ASSET_COURSE;
+    EXPECT_EQ(1, RenderWorldSubmitMesh(&world, &instance));
+    EXPECT_EQ(1, RenderWorldBeginCarField(&world, 12));
+    EXPECT_EQ(1, world.explicitCars);
+    EXPECT_EQ(3, world.instanceCount);
+    EXPECT_EQ(12, storage[0].entity);
+    EXPECT_EQ(RAGE_RENDER_PASS_MIRROR, storage[1].pass);
+    EXPECT_EQ(RAGE_RENDER_ASSET_COURSE, storage[2].assetSet);
+    /* A second explicit field replaces the first instead of duplicating it. */
+    instance.assetSet = RAGE_RENDER_ASSET_MODEL_BANK;
+    EXPECT_EQ(1, RenderWorldSubmitMesh(&world, &instance));
+    EXPECT_EQ(1, RenderWorldBeginCarField(&world, 12));
+    EXPECT_EQ(3, world.instanceCount);
+    RenderWorldBeginFrame(&world, 2);
+    EXPECT_EQ(0, world.explicitCars);
+    EXPECT_EQ(0, world.instanceCount);
+    EXPECT_EQ(0, RenderWorldBeginCarField(NULL, 12));
+    world.instanceCount = 9;
+    RenderWorld before = world;
+    EXPECT_EQ(0, RenderWorldBeginCarField(&world, 12));
+    EXPECT_EQ(0, memcmp(&world, &before, sizeof(world)));
+}
+
 int main(void) {
+    test_explicit_car_field_replaces_only_main_car_seats();
     test_spot_lights_validate_and_reset();
     test_frame_reset_preserves_storage_and_resets_overflow();
     test_mesh_submission_rejects_invalid_storage();
@@ -923,6 +994,7 @@ int main(void) {
     test_terrain_grid_places_adjacent_cells_without_overlap();
     test_synchronized_presentation_keeps_previous_vehicle_models();
     test_synchronized_presentation_moves_matching_vehicle();
+    test_human_cars_keep_seat_identity_when_crossing();
     test_synchronized_presentation_keeps_wheel_sides_paired();
     test_synchronized_presentation_matches_animated_wheel_mesh();
     test_synchronized_presentation_moves_dynamic_scenery();

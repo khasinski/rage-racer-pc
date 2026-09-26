@@ -322,7 +322,7 @@ static void FillCar(ForceFeedbackSample *sample) {
     sample->steerPos = car->drive.steerPos;
     sample->speed = car->speed;
     sample->steeringLoadAngle = car->drive.steeringLoadAngle;
-    sample->gripLossTimer = g_GripLossTimer;
+    sample->gripLossTimer = car->drive.gripLossTimer;
     if (car->motionActive) sample->collisionLateral = car->velocityX;
     sample->roadImpulse = car->bodyKickOffset;
     if (g_TrackPointCount > 0) {

@@ -2,6 +2,7 @@
 #include "game/asset_internal.h"
 #include "game/audio.h"
 #include "game/car.h"
+#include "game/car_asset.h"
 #include "game/race.h"
 #include "game/cd.h"
 #include "rage/render_world_game.h"
@@ -23,14 +24,6 @@ enum {
     GRAND_PRIX_SCREEN_LOAD_ASSET = 1,
     COURSE_LOAD_TEXTURE_ASSET = 1,
 };
-
-typedef struct RaceCarAssetHeader {
-    s32 specificationOffset;
-    s32 audioHeaderOffset;
-    s32 audioSequenceOffset;
-    s32 audioBodyOffset;
-    s32 imageOffset;
-} RaceCarAssetHeader;
 
 /* Performance setup derives gear loads and repairs invalid limits in-place.
  * Keep those runtime values out of the serialized car pack. */
@@ -80,7 +73,7 @@ static void LoadPlayerCarRaceAssets(void) {
     s32 carIndex = g_PlayerCarIndex;
     s32 carAsset;
     const RaceCarAssetHeader *pack;
-    const u8 *sourceSpec;
+    GameCarSpec specification;
     u8 *audioHeader;
     u8 *audioTable;
     u8 *audioBody;
@@ -107,17 +100,9 @@ static void LoadPlayerCarRaceAssets(void) {
     }
 
     pack = (const RaceCarAssetHeader *)(const void *)g_AssetLoadCursor;
-    if (loadedSize < (s32)sizeof(*pack) ||
-        pack->specificationOffset < (s32)sizeof(*pack) ||
-        pack->audioHeaderOffset <= pack->specificationOffset ||
-        pack->audioHeaderOffset - pack->specificationOffset <
-            (s32)sizeof(GameCarSpec) ||
-        pack->audioSequenceOffset <= pack->audioHeaderOffset ||
-        pack->audioBodyOffset <= pack->audioSequenceOffset ||
+    if (!ReadCarSpec(g_AssetLoadCursor, (size_t)loadedSize, &specification) ||
         pack->audioBodyOffset - pack->audioSequenceOffset <
-            ENGINE_SOUND_PARAMETER_TABLE_SIZE ||
-        pack->imageOffset <= pack->audioBodyOffset ||
-        pack->imageOffset >= loadedSize) {
+            ENGINE_SOUND_PARAMETER_TABLE_SIZE) {
         FailAssetLoad();
         return;
     }
@@ -126,7 +111,6 @@ static void LoadPlayerCarRaceAssets(void) {
     audioTable = g_AssetLoadCursor + pack->audioSequenceOffset;
     audioBody = g_AssetLoadCursor + pack->audioBodyOffset;
     carImage = g_AssetLoadCursor + pack->imageOffset;
-    sourceSpec = g_AssetLoadCursor + pack->specificationOffset;
     if (!IsValidImageAsset(
             GetImageAssetHeaderWords(carImage),
             (size_t)(loadedSize - pack->imageOffset))) {
@@ -152,7 +136,7 @@ static void LoadPlayerCarRaceAssets(void) {
         FailAssetLoad();
         return;
     }
-    memcpy(&s_RuntimeCarSpec, sourceSpec, sizeof(s_RuntimeCarSpec));
+    s_RuntimeCarSpec = specification;
     CarCatalogApplySpecification(carIndex, g_CarTable[carIndex].modelVariant,
                                  &s_RuntimeCarSpec);
     GameRenderWorldSetTrackCarAsset(carAsset);

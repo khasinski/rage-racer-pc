@@ -34,26 +34,16 @@ static char *mkdtemp(char *path) {
 
 #include "common.h"
 #include "game/diagnostics.h"
-#include "game/random.h"
 #include "game/track.h"
 #include "input_config.h"
 #include "port_config.h"
 #include "runtime_config.h"
 #include "platform_paths.h"
 
-/* Random15 stamps its trace with where the game had got to. The pure logic
- * library carries no scene state of its own, so the test supplies it. */
-int g_FrameCounter;
-int g_SceneId;
-int g_SceneTimer;
-
 s32 FramesToMilliseconds(s32 frames, s32 millis);
 s32 GetAngleDistance(s32 from, s32 to);
 s32 GetAngleDelta(s32 from, s32 to);
 
-u32 g_RandomSeed;
-const GameTrackPoint *g_TrackPoints;
-s32 g_TrackPointCount;
 
 static int failures;
 
@@ -76,51 +66,6 @@ static void test_time_conversion(void) {
     EXPECT_EQ(60000, FramesToMilliseconds(1500, 0));
     EXPECT_EQ(INT_MAX, FramesToMilliseconds(INT_MAX, INT_MAX));
     EXPECT_EQ(INT_MIN, FramesToMilliseconds(INT_MIN, INT_MIN));
-}
-
-static void test_random15(void) {
-    static const s32 expected[] = {
-        16838, 5758, 10113, 17515, 31051, 5627, 23010, 7419
-    };
-    size_t i;
-
-    g_RandomSeed = 1;
-    for (i = 0; i < sizeof(expected) / sizeof(expected[0]); i++) {
-        EXPECT_EQ(expected[i], Random15());
-    }
-    EXPECT_EQ((s32)0x9CFBAE39, (s32)g_RandomSeed);
-
-    g_RandomSeed = 0;
-    EXPECT_EQ(0, Random15());
-    EXPECT_EQ(0x3039, g_RandomSeed);
-}
-
-static void test_random_selection(void) {
-    u32 seed;
-
-    g_RandomSeed = 1;
-    EXPECT_EQ(54, RandomIndex(100));
-    EXPECT_EQ((s32)0x41C67EA6, (s32)g_RandomSeed);
-
-    seed = g_RandomSeed;
-    EXPECT_EQ(0, RandomIndex(0));
-    EXPECT_EQ(0, RandomIndex(-1));
-    EXPECT_EQ((s32)seed, (s32)g_RandomSeed);
-
-    g_RandomSeed = 1;
-    EXPECT_EQ(6, RandomRange(3, 13));
-    EXPECT_EQ((s32)0x41C67EA6, (s32)g_RandomSeed);
-
-    g_RandomSeed = 1;
-    EXPECT_EQ(7, RandomRange(7, 7));
-    EXPECT_EQ((s32)0x41C67EA6, (s32)g_RandomSeed);
-
-    seed = g_RandomSeed;
-    EXPECT_EQ(9, RandomRange(9, 4));
-    EXPECT_EQ((s32)seed, (s32)g_RandomSeed);
-
-    g_RandomSeed = 1;
-    EXPECT_EQ(INT_MIN + 454, RandomRange(INT_MIN, INT_MAX));
 }
 
 static void test_angle_math(void) {
@@ -147,83 +92,6 @@ static void test_angle_blending(void) {
     EXPECT_EQ(0, BlendAngle(0x100, 0xF00, 0x200));
     EXPECT_EQ(0x800, BlendAngle(0, 0x800, 0x400));
     EXPECT_EQ(0x123, BlendAngle(0x123, 0x123, INT_MIN));
-}
-
-static void test_track_angle_interpolation(void) {
-    GameTrackPoint points[5] = {0};
-
-    points[0].angle = 0xF00;
-    points[1].angle = 0x100;
-    points[2].angle = 0x500;
-    points[3].angle = 0x500;
-    points[4].angle = 0x700;
-    g_TrackPoints = points;
-    g_TrackPointCount = 3;
-
-    EXPECT_EQ(0, InterpolateTrackAngle(0, 0x200));
-    EXPECT_EQ(0x300, InterpolateTrackAngle(1, 0x200));
-    EXPECT_EQ(0x200, InterpolateTrackAngle(2, 0x200));
-    EXPECT_EQ(0x100, InterpolateTrackAngle(INT_MAX, 0x200));
-
-    g_TrackPointCount = 5;
-    points[2].angle = 0x300;
-    EXPECT_EQ(0x280, SmoothTrackAngle(0, 0x200));
-    EXPECT_EQ(0x4C0, SmoothTrackAngle(2, 0x200));
-
-    g_TrackPoints = NULL;
-    EXPECT_EQ(0, InterpolateTrackAngle(0, 0x200));
-    EXPECT_EQ(0, SmoothTrackAngle(0, 0x200));
-    g_TrackPoints = points;
-    g_TrackPointCount = 0;
-    EXPECT_EQ(0, InterpolateTrackAngle(0, 0x200));
-}
-
-static void test_track_point_interpolation(void) {
-    GameTrackPoint points[2] = {0};
-    LVec out = {99, 99, 99};
-
-    points[0].x = 10;
-    points[0].y = 20;
-    points[0].z = 30;
-    points[1].x = -10;
-    points[1].y = -20;
-    points[1].z = -30;
-    g_TrackPoints = points;
-    g_TrackPointCount = 2;
-
-    InterpolateTrackPoint(0, &out, 0x200);
-    EXPECT_EQ(0, out.x);
-    EXPECT_EQ(0, out.y);
-    EXPECT_EQ(0, out.z);
-
-    InterpolateTrackPoint(1, &out, 0x100);
-    EXPECT_EQ(-5, out.x);
-    EXPECT_EQ(-5, out.y);
-    EXPECT_EQ(-15, out.z);
-
-    points[0].x = INT_MAX;
-    points[0].y = SHRT_MIN;
-    points[0].z = INT_MAX;
-    points[1] = points[0];
-    InterpolateTrackPoint(INT_MAX, &out, INT_MAX);
-    EXPECT_EQ(-1, out.x);
-    EXPECT_EQ(-16384, out.y);
-    EXPECT_EQ(-1, out.z);
-
-    points[0].x = points[1].x = 10;
-    points[0].y = points[1].y = 20;
-    points[0].z = points[1].z = 30;
-    InterpolateTrackPoint(0, &out, INT_MIN);
-    EXPECT_EQ(10, out.x);
-    EXPECT_EQ(10, out.y);
-    EXPECT_EQ(30, out.z);
-
-    g_TrackPoints = NULL;
-    InterpolateTrackPoint(0, &out, 0x200);
-    EXPECT_EQ(0, out.x);
-    EXPECT_EQ(0, out.y);
-    EXPECT_EQ(0, out.z);
-    InterpolateTrackPoint(0, NULL, 0x200);
 }
 
 static void test_input_config(void) {
@@ -611,12 +479,8 @@ static void test_ensure_directory(void) {
 
 int main(void) {
     test_time_conversion();
-    test_random15();
-    test_random_selection();
     test_angle_math();
     test_angle_blending();
-    test_track_angle_interpolation();
-    test_track_point_interpolation();
     test_input_config();
     test_port_config();
     test_diagnostic_integer_values();

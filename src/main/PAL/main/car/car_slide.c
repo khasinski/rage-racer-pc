@@ -1,7 +1,6 @@
 #include "game/car.h"
 #include "game/car_motion_internal.h"
 #include "game/integer.h"
-#include "game/race.h"
 
 enum {
     SLIDE_START_SPEED = 0x3C1,
@@ -23,7 +22,7 @@ static void SettleSlide(GameCarRuntime *car) {
     }
 }
 
-void UpdateCarSlideAngle(GameCarRuntime *car, s32 slideScale) {
+void StepCarSlide(GameCarRuntime *car, s32 slideScale, int reverse) {
     s32 input;
     s32 rate;
 
@@ -34,7 +33,7 @@ void UpdateCarSlideAngle(GameCarRuntime *car, s32 slideScale) {
             }
             input = WrapSigned32((int64_t)slideScale * car->speed) /
                     SLIDE_INPUT_SPEED_SCALE;
-            car->slideInput = g_RaceSeries != 0
+            car->slideInput = reverse
                                         ? WrapSigned32(-(int64_t)input)
                                         : input;
             car->yawRate = 0;

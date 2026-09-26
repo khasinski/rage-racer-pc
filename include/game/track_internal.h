@@ -3,11 +3,8 @@
 
 #include "common.h"
 #include "game/track.h"
+#include "game/environment.h"
 #include "game/track_camera_internal.h"
-
-static inline s32 LerpColorChannel(s32 from, s32 to, s32 blend) {
-    return from + (((to - from) * blend) >> 12);
-}
 
 enum { COURSE_MODEL_FALLBACK = 1 };
 
@@ -67,7 +64,6 @@ static inline s16 PathSceneryHalfDelta(s32 start, s32 end) {
         : (s16)((s32)bits - 0x10000);
 }
 
-enum { SCENERY_MOTION_END = -1 };
 
 static inline s32 InterpolateSceneryMotionValue(s16 current, s16 next,
                                                 s32 elapsed, s16 duration) {

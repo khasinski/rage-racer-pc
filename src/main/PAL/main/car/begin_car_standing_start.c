@@ -1,4 +1,4 @@
-#include "game/car.h"
+#include "game/car_drive.h"
 #include "game/integer.h"
 
 enum {
@@ -14,10 +14,11 @@ enum {
 
 /* Seeds launch spin from revs above the power peak. Starting in second gear
  * or higher also begins with a short loss of grip. */
-void BeginCarStandingStart(PlayerCarRuntime *car) {
+void BeginCarStandingStart(PlayerCarRuntime *car, const GameCarSpec *spec,
+                           const CarPerformance *performance, s32 engineRpm) {
     s32 spin;
     s32 gear = car->drive.gear;
-    s32 revLimit = g_CarSpec->revLimit;
+    s32 revLimit = spec->revLimit;
 
     if (gear < CAR_FIRST_FORWARD_GEAR) {
         gear = CAR_FIRST_FORWARD_GEAR;
@@ -30,25 +31,25 @@ void BeginCarStandingStart(PlayerCarRuntime *car) {
     }
 
     spin = WrapSigned32(
-        (int64_t)g_EngineRpm - g_PeakOutputRpm);
+        (int64_t)engineRpm - performance->peakRpm);
     spin = WrapSigned32(
         (int64_t)spin * STANDING_START_SPIN_SCALE) / revLimit;
-    g_GripLossTimer = 0;
+    car->drive.gripLossTimer = 0;
 
     if (spin < 0) {
-        spin = g_EngineRpm < LOW_RPM_SPIN_CUTOFF
+        spin = engineRpm < LOW_RPM_SPIN_CUTOFF
                    ? 0
-                   : g_EngineRpm - LOW_RPM_SPIN_OFFSET;
+                   : engineRpm - LOW_RPM_SPIN_OFFSET;
     } else {
         spin = WrapSigned32(
             (int64_t)spin *
-            (g_PeakOutputValue /
+            (performance->peakOutput /
              (gear * OUTPUT_LOAD_PER_GEAR + OUTPUT_LOAD_BASE)));
         car->drive.drivetrainTorque /= gear;
         if (gear >= GRIP_LOSS_FIRST_GEAR) {
-            g_GripLossTimer = GRIP_LOSS_FRAMES;
+            car->drive.gripLossTimer = GRIP_LOSS_FRAMES;
         }
     }
 
-    g_StandingStartSpin = spin;
+    car->drive.standingStartSpin = spin;
 }

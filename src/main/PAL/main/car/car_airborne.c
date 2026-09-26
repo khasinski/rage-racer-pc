@@ -1,23 +1,13 @@
 #include "game/angle.h"
-#include "game/audio.h"
-#include "game/car.h"
-#include "game/car_internal.h"
+#include "game/car_drive.h"
 #include "game/integer.h"
-#include "psyq/gte.h"
 
 enum {
     AIRBORNE_YAW_RESPONSE = 5,
-    AIRBORNE_SKID_PHASE_LIMIT = 513,
     AIRBORNE_LARGE_YAW = 1537,
     AIRBORNE_INPUT_RELEASED = 128,
     AIRBORNE_DECAY_NUMERATOR = 31,
     AIRBORNE_DECAY_DENOMINATOR = 32,
-    AIRBORNE_SKID_PHASE_BASE = 0x1800,
-    AIRBORNE_SKID_PHASE_MAXIMUM = 0x1E00,
-    AIRBORNE_SKID_PHASE_PER_YAW = 3,
-    AIRBORNE_TIMER_VOLUME_SCALE = 2,
-    AIRBORNE_TIMER_VOLUME_BASE = 80,
-    AIRBORNE_SHIFT_VOLUME_BASE = 25,
     AIRBORNE_VELOCITY_SCALE = 256,
     FIXED_TRIG_SCALE = 4096,
     LARGE_YAW_SPEED_NUMERATOR = 4,
@@ -30,28 +20,6 @@ static s32 AbsoluteYawOffset(s32 yawOffset) {
     return yawOffset < 0
         ? WrapSigned32(-(int64_t)yawOffset)
         : yawOffset;
-}
-
-static void UpdateAirborneTyreVoice(const GameCarDrive *drive) {
-    if (g_ShiftSoundLevel == 0) {
-        s32 offAxis = AbsoluteYawOffset(drive->yawOffset);
-        s32 phase = offAxis < AIRBORNE_SKID_PHASE_LIMIT
-                        ? WrapSigned32(
-                              (int64_t)offAxis *
-                                  AIRBORNE_SKID_PHASE_PER_YAW +
-                              AIRBORNE_SKID_PHASE_BASE)
-                        : AIRBORNE_SKID_PHASE_MAXIMUM;
-
-        SetIndexedEffectVoice(
-            0, phase,
-            drive->jumpTimer * AIRBORNE_TIMER_VOLUME_SCALE +
-                AIRBORNE_TIMER_VOLUME_BASE);
-    } else {
-        SetIndexedEffectVoice(
-            0, AIRBORNE_SKID_PHASE_BASE,
-            WrapSigned32((int64_t)g_ShiftSoundLevel +
-                         AIRBORNE_SHIFT_VOLUME_BASE));
-    }
 }
 
 static s32 AirborneVelocityComponent(s32 trig, s32 speed) {
@@ -71,14 +39,14 @@ static void UpdateAirborneVelocity(PlayerCarRuntime *car) {
             AIRBORNE_YAW_RESPONSE);
     UpdateCarTravelVelocity(AsRivalCar(car));
 
-    bodySin = rsin(car->bodyYaw);
-    bodyCos = rcos(car->bodyYaw);
+    bodySin = SinAngle(car->bodyYaw);
+    bodyCos = CosAngle(car->bodyYaw);
     motionHeading = WrapSigned32(
         (int64_t)car->headingAngle + drive->yawOffset);
     drive->accelPos = AirborneVelocityComponent(
-        rsin(motionHeading), car->speed);
+        SinAngle(motionHeading), car->speed);
     drive->brakePos = AirborneVelocityComponent(
-        rcos(motionHeading), car->speed);
+        CosAngle(motionHeading), car->speed);
     alongBody = WrapSigned32(
         (int64_t)WrapSigned32((int64_t)bodySin * drive->accelPos) +
         WrapSigned32((int64_t)bodyCos * drive->brakePos)) /
@@ -86,11 +54,11 @@ static void UpdateAirborneVelocity(PlayerCarRuntime *car) {
 
     drive->accelPos = WrapSigned32(
         (int64_t)AirborneVelocityComponent(
-            rsin(drive->launchHeading), drive->launchSpeed) +
+            SinAngle(drive->launchHeading), drive->launchSpeed) +
         WrapSigned32((int64_t)bodySin * alongBody) / FIXED_TRIG_SCALE);
     drive->brakePos = WrapSigned32(
         (int64_t)AirborneVelocityComponent(
-            rcos(drive->launchHeading), drive->launchSpeed) +
+            CosAngle(drive->launchHeading), drive->launchSpeed) +
         WrapSigned32((int64_t)bodyCos * alongBody) / FIXED_TRIG_SCALE);
 }
 
@@ -122,10 +90,9 @@ static void DecayAirborneMotion(GameCarDrive *drive) {
 static void FinishAirborneMotion(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
 
-    SetIndexedEffectVoice(-1, 0, 0);
     car->bodyYaw = WrapSigned32(
         (int64_t)car->bodyYaw - drive->spinRate);
-    g_ShiftSoundLevel = 0;
+    drive->shiftSoundLevel = 0;
     drive->shiftRpmDelta = 0;
     drive->yawOffset = 0;
     drive->launchSpeed = 0;
@@ -133,10 +100,9 @@ static void FinishAirborneMotion(PlayerCarRuntime *car) {
     drive->bodyLiftOffset = 0;
 }
 
-void UpdateCarAirborne(PlayerCarRuntime *car) {
+int StepCarAirborne(PlayerCarRuntime *car) {
     GameCarDrive *drive = &car->drive;
 
-    UpdateAirborneTyreVoice(drive);
     UpdateAirborneVelocity(car);
     UpdateAirborneCoastFrames(drive);
     DecayAirborneMotion(drive);
@@ -148,5 +114,7 @@ void UpdateCarAirborne(PlayerCarRuntime *car) {
     }
     if (drive->jumpTimer <= 0) {
         FinishAirborneMotion(car);
+        return 1;
     }
+    return 0;
 }

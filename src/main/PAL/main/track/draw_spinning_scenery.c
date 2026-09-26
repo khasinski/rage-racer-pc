@@ -62,7 +62,8 @@ void DrawSpinningScenery(s32 timer, s32 animate) {
     }
 
     if ((timer & SPINNER_RATE_REFRESH_MASK) == 0 && animate != 0) {
-        g_SpinningSceneryRate[0] = Random15() & SINGLE_SPINNER_RATE_MASK;
-        g_SpinningSceneryRate[1] = Random15() & MULTIPLE_SPINNER_RATE_MASK;
+        u32 random = g_RandomSeed ^ (u32)timer;
+        g_SpinningSceneryRate[0] = RandomNext(&random) & SINGLE_SPINNER_RATE_MASK;
+        g_SpinningSceneryRate[1] = RandomNext(&random) & MULTIPLE_SPINNER_RATE_MASK;
     }
 }

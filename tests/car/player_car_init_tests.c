@@ -1,4 +1,4 @@
-#include "game/car.h"
+#include "game/driver.h"
 #include "game/car_internal.h"
 #include "game/race.h"
 #include "game/track.h"
@@ -8,29 +8,24 @@
 #include <stdio.h>
 #include <string.h>
 
+GameCarSpec *g_CarSpec;
+CarPerformance g_CarPerformance;
+
 CarEntry *g_CarTable;
 s32 g_PlayerCarIndex;
 s16 g_GrandPrixSeries;
 s32 g_RaceSeries;
 s16 g_RacePhase;
-s32 g_AutoShiftCooldown;
-s32 g_ShiftSoundLevel;
-s32 g_RoadGrade;
-s32 g_ShiftTargetRpm;
 s32 g_EngineRpmJitter;
 s32 g_EngineRpm;
-s32 g_EngineRpmSnapshot;
-s32 g_StandingStartSpin;
-s32 g_DriveBoostTimer;
-u16 g_HudGlyphClut;
-s16 g_DragScale;
-s16 g_SteerHoldFrames;
-s16 g_GripLossTimer;
+s32 g_TachoShiftLightOn;
 s16 g_WrongWayTimer;
 s16 g_PlayerAutoSteer;
 const TrackEventData *g_TrackEventData;
 const GameTrackPoint *g_TrackPoints;
 s32 g_TrackPointCount;
+s32 g_TrackLength;
+const GameTrackArcCenter *g_TrackArcCenters;
 
 static TrackEventData s_eventData;
 static GameTrackPoint s_points[2];
@@ -43,24 +38,31 @@ static int s_performanceCalls;
 static int s_failures;
 static s32 s_findResult;
 
-void BuildTachoNeedleQuad(void) { s_tachoCalls++; }
+void BuildTachometerFace(const CarTachometerSpec *spec) { (void)spec; s_tachoCalls++; }
 
-s32 FindTrackSegment(const GameCarRuntime *car, s32 pointIndex) {
+s32 FindCarTrackSegment(const GameCarRuntime *car, const TrackRoute *route, s32 pointIndex) {
     (void)car;
+    (void)route;
     (void)pointIndex;
     s_findCalls++;
     return s_findResult;
 }
 
-void SeedCarLapProgress(GameCarRuntime *car, s32 seedSelector) {
+void SeedCarTrackProgress(GameCarRuntime *car, const TrackRoute *route, s32 startIndex, s32 seedSelector, int reverse) {
+    (void)route;
+    (void)startIndex;
+    (void)reverse;
     (void)seedSelector;
     car->progressA = 123;
     s_seedCalls++;
 }
 
-s32 UpdateCarTrackState(GameCarRuntime *car, s32 pointIndex,
-                        const CarTrackLimits *limits) {
+s32 StepCarTrackState(GameCarRuntime *car, const TrackRoute *route, s32 pointIndex,
+                        const CarTrackLimits *limits, int reverse, int knockback) {
     (void)pointIndex;
+    (void)route;
+    (void)reverse;
+    (void)knockback;
     (void)limits;
     car->y = 40;
     car->trackProgress = 500;
@@ -75,12 +77,16 @@ void CalculatePlayerBodyOffset(PlayerCarRuntime *car) {
     s_offsetCalls++;
 }
 
-s32 IsCarFacingBackwards(const PlayerCarRuntime *car) {
+s32 CarFacesBackwards(const PlayerCarRuntime *car, const TrackRoute *route) {
     (void)car;
+    (void)route;
     return 1;
 }
 
-void PrepareCarPerformance(GameCarDrive *drive) {
+void PrepareCarPerformance(GameCarDrive *drive, GameCarSpec *spec,
+                           CarPerformance *performance) {
+    (void)spec;
+    (void)performance;
     if (drive->motionState != CAR_MOTION_STANDING_START ||
         drive->gear != 1 || drive->drivetrainCoupled != 1) {
         s_failures++;
@@ -101,20 +107,11 @@ static void ResetFixtures(void) {
     g_TrackEventData = &s_eventData;
     g_TrackPoints = s_points;
     g_TrackPointCount = 2;
+    g_TrackLength = 1000;
     g_GrandPrixSeries = 3;
-    g_AutoShiftCooldown = 99;
-    g_ShiftSoundLevel = 99;
-    g_RoadGrade = 99;
-    g_ShiftTargetRpm = 99;
     g_EngineRpmJitter = 99;
     g_EngineRpm = 99;
-    g_EngineRpmSnapshot = 99;
-    g_StandingStartSpin = 99;
-    g_DriveBoostTimer = 99;
-    g_HudGlyphClut = 0;
-    g_DragScale = 0;
-    g_SteerHoldFrames = 99;
-    g_GripLossTimer = 99;
+    g_TachoShiftLightOn = 1;
     g_WrongWayTimer = 99;
     g_PlayerAutoSteer = 99;
     s_tachoCalls = 0;
@@ -161,13 +158,13 @@ int main(void) {
     CHECK(car.positionW == 0 && car.bodyRotationW == 0 && car.reserved4C == 0);
     CHECK(car.lapTimes.words[11] == 0);
 
-    CHECK(g_AutoShiftCooldown == 0);
-    CHECK(g_ShiftSoundLevel == 0 && g_RoadGrade == 0 && g_ShiftTargetRpm == 0);
-    CHECK(g_EngineRpmJitter == 0 && g_EngineRpm == 0 &&
-          g_EngineRpmSnapshot == 0);
-    CHECK(g_StandingStartSpin == 0 && g_DriveBoostTimer == 0);
-    CHECK(g_HudGlyphClut == 0x7800 && g_DragScale == 1000);
-    CHECK(g_SteerHoldFrames == 0 && g_GripLossTimer == 0);
+    CHECK(car.drive.autoShiftCooldown == 0);
+    CHECK(car.drive.shiftSoundLevel == 0 && car.drive.roadGrade == 0 && car.drive.shiftTargetRpm == 0);
+    CHECK(car.drive.shiftTargetSpeed == 0);
+    CHECK(g_EngineRpmJitter == 0 && g_EngineRpm == 0 && g_TachoShiftLightOn == 0);
+    CHECK(car.drive.standingStartSpin == 0 && car.drive.driveBoostTimer == 0);
+    CHECK(car.drive.dragScale == 1000);
+    CHECK(car.drive.steerHoldFrames == 0 && car.drive.gripLossTimer == 0);
     CHECK(g_WrongWayTimer == 0 && g_PlayerAutoSteer == 0);
 
     ResetFixtures();
@@ -176,7 +173,6 @@ int main(void) {
     car.drive.launchThresholdIndex = 4;
     InitPlayerCar(&car);
     CHECK(car.drive.manual == 0 && car.drive.launchThresholdIndex == 4);
-    CHECK(g_HudGlyphClut == 0x78CF);
 
     ResetFixtures();
     memset(&car, 0x55, sizeof(car));
@@ -228,7 +224,6 @@ int main(void) {
         memset(&car, 0, sizeof(car));
         InitPlayerCar(&car);
         CHECK(car.drive.manual == 1);
-        CHECK(g_HudGlyphClut == 0x7800);
 
         ResetFixtures();
         cars[2].transmission = 0;
@@ -236,7 +231,6 @@ int main(void) {
         car.drive.manual = 1;
         InitPlayerCar(&car);
         CHECK(car.drive.manual == 0);
-        CHECK(g_HudGlyphClut == 0x78CF);
 
         ResetFixtures();
         g_PlayerCarIndex = GAME_CAR_COUNT;

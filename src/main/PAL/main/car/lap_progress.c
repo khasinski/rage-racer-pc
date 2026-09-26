@@ -1,16 +1,13 @@
-#include "game/car.h"
-#include "game/integer.h"
-#include "game/race.h"
-#include "game/track.h"
+#include "game/car_track_internal.h"
 
-static s32 TrackSegmentLength(s32 index) {
-    s32 length = (s16)g_TrackPoints[index].segmentLength;
+static s32 TrackSegmentLength(const TrackRoute *route, s32 index) {
+    s32 length = (s16)route->points[index].segmentLength;
 
     return length > 0 ? length : 0;
 }
 
-static s32 OffsetTrackPointIndex(s32 index, s32 offset) {
-    return WrapTrackPointIndex(
+static s32 OffsetTrackPointIndex(const TrackRoute *route, s32 index, s32 offset) {
+    return RouteIndex(route,
         WrapSigned32((int64_t)index + offset));
 }
 
@@ -24,35 +21,36 @@ static void AddLapProgress(GameCarRuntime *car, s32 distance) {
  * round to walk and the race direction decides the sign of the accumulated
  * distance.
  */
-void SeedCarLapProgress(GameCarRuntime *car, s32 seedSelector) {
+void SeedCarTrackProgress(GameCarRuntime *car, const TrackRoute *route,
+                          s32 startIndex, s32 seedSelector, int reverse) {
     s32 current;
     s32 index;
     s32 total = 0;
 
-    if (g_TrackPointCount <= 0 || g_TrackPoints == NULL ||
-        g_TrackEventData == NULL) {
+    if (car == NULL) return;
+    if (route == NULL || route->count <= 0 || route->points == NULL) {
         car->progressA = 0;
         return;
     }
 
-    current = WrapTrackPointIndex(car->trackPointIndex);
-    index = WrapTrackPointIndex(g_TrackEventData->trackWalkStart);
+    current = RouteIndex(route, car->trackPointIndex);
+    index = RouteIndex(route, startIndex);
 
-    if (g_RaceSeries != 0) {
+    if (reverse) {
         if (seedSelector == 1) {
             for (;;) {
-                index = WrapTrackPointIndex(index + 1);
+                index = RouteIndex(route, index + 1);
                 if (index == current) {
                     break;
                 }
                 total = WrapSigned32(
-                    (int64_t)total + TrackSegmentLength(index));
+                    (int64_t)total + TrackSegmentLength(route, index));
             }
         } else {
             for (;;) {
-                index = WrapTrackPointIndex(index);
+                index = RouteIndex(route, index);
                 total = WrapSigned32(
-                    (int64_t)total - TrackSegmentLength(index));
+                    (int64_t)total - TrackSegmentLength(route, index));
                 if (index == current) {
                     break;
                 }
@@ -62,14 +60,14 @@ void SeedCarLapProgress(GameCarRuntime *car, s32 seedSelector) {
     } else {
         if (seedSelector == 0) {
             do {
-                index = WrapTrackPointIndex(index + 1);
+                index = RouteIndex(route, index + 1);
                 total = WrapSigned32(
-                    (int64_t)total - TrackSegmentLength(index));
+                    (int64_t)total - TrackSegmentLength(route, index));
             } while (index != current);
         } else {
-            while ((index = WrapTrackPointIndex(index)) != current) {
+            while ((index = RouteIndex(route, index)) != current) {
                 total = WrapSigned32(
-                    (int64_t)total + TrackSegmentLength(index));
+                    (int64_t)total + TrackSegmentLength(route, index));
                 index--;
             }
         }
@@ -79,32 +77,31 @@ void SeedCarLapProgress(GameCarRuntime *car, s32 seedSelector) {
 
 
 /*
- * Lap-progress accumulator. Relocates the car's trackPointIndex to the segment
- * that now contains it (FindTrackSegment), then walks the intervening points and
+ * Advances trackPointIndex to the supplied segment, walks intervening points and
  * adds or subtracts their segmentLength into car->progressA. The race direction
  * controls which physical direction increases lap progress; equal-length paths
  * keep retail's tie-break (backward for series 0, forward otherwise).
  */
-void AccumulateLapProgress(GameCarRuntime *car) {
-    s32 target;
-    s32 current = car->trackPointIndex;
+void MoveCarTrackProgress(GameCarRuntime *car, const TrackRoute *route,
+                          s32 target, int reverse) {
+    s32 current;
     s32 forwardDistance;
     s32 backwardDistance;
     s32 moveForward;
     s32 i;
 
-    if (g_TrackPointCount <= 0 || g_TrackPoints == NULL) {
+    if (car == NULL) return;
+    if (route == NULL || route->count <= 0 || route->points == NULL) {
         car->activeFlag = -1;
         return;
     }
 
-    current = WrapTrackPointIndex(current);
-    target = FindTrackSegment(car, current);
+    current = RouteIndex(route, car->trackPointIndex);
     if (target < 0) {
         car->activeFlag = -1;
         return;
     }
-    target = WrapTrackPointIndex(target);
+    target = RouteIndex(route, target);
     if (target == current) {
         car->trackPointIndex = current;
         return;
@@ -112,41 +109,22 @@ void AccumulateLapProgress(GameCarRuntime *car) {
 
     forwardDistance = target >= current
                           ? target - current
-                          : g_TrackPointCount - (current - target);
+                          : route->count - (current - target);
     backwardDistance = current >= target
                            ? current - target
-                           : g_TrackPointCount - (target - current);
+                           : route->count - (target - current);
     moveForward = forwardDistance < backwardDistance ||
-                  (forwardDistance == backwardDistance && g_RaceSeries != 0);
+                  (forwardDistance == backwardDistance && reverse);
 
-    if (g_RaceSeries == 0) {
-        if (moveForward) {
-            for (i = 0; i < forwardDistance; i++) {
-                AddLapProgress(
-                    car, -TrackSegmentLength(
-                             OffsetTrackPointIndex(current, i + 1)));
-            }
-        } else {
-            for (i = 0; i < backwardDistance; i++) {
-                AddLapProgress(
-                    car, TrackSegmentLength(
-                             OffsetTrackPointIndex(current, -i)));
-            }
-        }
-    } else {
-        if (moveForward) {
-            for (i = 0; i < forwardDistance; i++) {
-                AddLapProgress(
-                    car, TrackSegmentLength(
-                             OffsetTrackPointIndex(current, i)));
-            }
-        } else {
-            for (i = 0; i < backwardDistance; i++) {
-                AddLapProgress(
-                    car, -TrackSegmentLength(
-                             OffsetTrackPointIndex(current, -(i + 1))));
-            }
-        }
+    /* Forward and backward walks use different endpoints for retail progress.
+     * Direction determines which endpoint counts and the sign of its length. */
+    s32 steps = moveForward ? forwardDistance : backwardDistance;
+    s32 firstOffset = moveForward ? (reverse ? 0 : 1) : (reverse ? -1 : 0);
+    s32 stride = moveForward ? 1 : -1;
+    s32 sign = moveForward ? (reverse ? 1 : -1) : (reverse ? -1 : 1);
+    for (i = 0; i < steps; i++) {
+        s32 index = OffsetTrackPointIndex(route, current, firstOffset + stride * i);
+        AddLapProgress(car, sign * TrackSegmentLength(route, index));
     }
     car->trackPointIndex = target;
 }

@@ -1,4 +1,5 @@
 #include "game/car.h"
+#include "game/player_car_internal.h"
 #include "game/integer.h"
 #include "game/track_internal.h"
 
@@ -33,6 +34,7 @@ void DrawPlayerTachometer(s32 zoneDark) {
 
     displayedRpm = WrapSigned32(
         (int64_t)g_EngineRpm + g_EngineRpmJitter);
-    DrawTachometer(displayedRpm, g_TachoShiftLightOn,
+    DrawTachometer(&g_CarSpec->tachometer, g_PlayerCar.drive.manual, g_PlayerCar.drive.gear, g_PlayerCar.speed,
+                   displayedRpm, g_TachoShiftLightOn,
                    lighting, blendAmount);
 }

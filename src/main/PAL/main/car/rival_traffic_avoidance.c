@@ -1,20 +1,9 @@
-#include "game/car_internal.h"
-#include "game/player_car_internal.h"
+#include "game/rival.h"
 #include "game/integer.h"
-#include "game/race.h"
-#include "game/state.h"
-#include "game/track.h"
 
 /* Rival traffic scanning and lateral avoidance decisions. */
 
-/*
- * Slot 11 holds the player; the rivals fill 0 to 10. Outside the race scene
- * the player is not on the road to be avoided, so the walk stops before it.
- */
 enum {
-    TRAFFIC_PLAYER_SLOT = RACE_CAR_SLOT_COUNT,
-    TRAFFIC_SLOT_COUNT = RACE_CAR_SLOT_COUNT + 1,
-    TRAFFIC_RACE_SCENE = 0xC,
     /* Half the width of the lane a car watches directly in front of itself. */
     TRAFFIC_LANE_HALF_WIDTH = 0x30,
     /* Beyond this to the side is not in the way, but is close enough to stop
@@ -90,8 +79,8 @@ static void SelectTrafficAvoidanceDirection(GameCarRuntime *car,
  * Nothing here moves the car: it leaves behind an offset to aim at and a step
  * to get there by, and the steering does the rest.
  */
-void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
-    s32 trackLength = g_TrackLength;
+void AvoidRivalTraffic(GameCarRuntime *car, s32 carIndex, s32 trackLength,
+                       const TrafficCar *field, s32 count) {
     s32 progress;
     s32 lateralOffset;
     s32 speed;
@@ -104,7 +93,8 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
     s32 crowding;
     s32 slot;
 
-    if (trackLength <= 0 || carIndex < 0 ||
+    if (car == NULL) return;
+    if (field == NULL || count < 0 || trackLength <= 0 || carIndex < 0 ||
         carIndex >= RACE_CAR_SLOT_COUNT) {
         ResetTrafficAvoidance(car);
         car->nearbyCarCount = 0;
@@ -127,7 +117,7 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
     car->avoidanceStep = 0;
     car->nearbyCarCount = 0;
 
-    for (slot = 0; slot < TRAFFIC_SLOT_COUNT; slot++) {
+    for (slot = 0; slot < count; slot++) {
         s32 otherOffset;
         s32 otherSpeed;
         s32 otherProgress;
@@ -137,38 +127,21 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
         s32 sideways;
         s32 gap;
 
-        if (g_SceneId != TRAFFIC_RACE_SCENE && slot == TRAFFIC_PLAYER_SLOT) {
-            break;
-        }
-        if (slot == carIndex) {
+        const GameCarRuntime *other = field[slot].car;
+        if (other == NULL || other == car || other->activeFlag == -1) {
             continue;
         }
-
-        if (slot == TRAFFIC_PLAYER_SLOT) {
-            otherProgress = WrapSigned32(
-                (int64_t)g_PlayerCar.trackProgress + trackLength);
-            otherOffset = g_PlayerCar.trackLateralOffset;
-            /* The four cars at the front of the field are not told how fast
-             * the player is going, so they never treat it as pulling away. */
-            otherSpeed = carIndex < RIVAL_CONTENDER_COUNT
-                ? 0
-                : (u16)g_PlayerCar.speed;
+        otherProgress = WrapSigned32(
+            (int64_t)other->trackProgress + trackLength);
+        otherOffset = other->trackLateralOffset;
+        otherSpeed = (u16)other->speed;
+        alreadyAvoiding = (u16)car->avoidanceActive;
+        if (field[slot].human) {
+            if (carIndex < RIVAL_CONTENDER_COUNT) otherSpeed = 0;
             alreadyAvoiding = 0;
-            /* The player is watched over a range of its own, and that range
-             * shrinks as the player speeds up rather than growing. */
             lookahead = WrapSigned32(
                 (int64_t)TRAFFIC_PLAYER_LOOKAHEAD -
-                WrapSigned32((int64_t)g_PlayerCar.speed * 2));
-        } else {
-            GameCarRuntime *other = &g_Cars[slot];
-            if (other->activeFlag == -1) {
-                continue;
-            }
-            otherProgress = WrapSigned32(
-                (int64_t)other->trackProgress + trackLength);
-            otherOffset = other->trackLateralOffset;
-            otherSpeed = (u16)other->speed;
-            alreadyAvoiding = (u16)car->avoidanceActive;
+                WrapSigned32((int64_t)other->speed * 2));
         }
 
         sideways = WrapSigned32((int64_t)otherOffset - lateralOffset);
@@ -202,7 +175,7 @@ void UpdateCarTrafficAvoidance(GameCarRuntime *car, s32 carIndex) {
                 s32 bucket = WrapSigned32(
                     (int64_t)sideways + TRAFFIC_LANE_HALF_WIDTH) >> 5;
                 car->avoidanceActive = 1;
-                if (slot == TRAFFIC_PLAYER_SLOT) {
+                if (field[slot].human) {
                     /* The player counts full weight outside the base
                      * lookahead; nearness only changes the weight within it. */
                     scan.lane[bucket] = WrapSigned32(

@@ -1,5 +1,5 @@
 #include "game/angle.h"
-#include "game/car.h"
+#include "game/rival.h"
 #include "game/integer.h"
 
 enum {
@@ -65,33 +65,14 @@ static void UpdateRaceRivalAcceleration(GameCarRuntime *car) {
     car->boostTimer--;
 }
 
-void AccelerateRaceRivals(void) {
-    s32 index;
-
-    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
-        GameCarRuntime *car = &g_Cars[index];
-
-        if (car->activeFlag == -1) {
-            continue;
-        }
-
+void StepRivalAcceleration(GameCarRuntime *car, int racing) {
+    if (car == NULL || car->activeFlag == -1) return;
+    if (racing) {
         UpdateRivalBrakeInput(car,
             car->boostTimer > car->boostAccelerationThreshold &&
             car->boostTimer > 0 && car->speed >= RIVAL_BOOST_COAST_SPEED);
         UpdateRaceRivalAcceleration(car);
-        AdvanceRivalSpeedAndYaw(car);
-    }
-}
-
-void AccelerateAttractRivals(void) {
-    s32 index;
-
-    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
-        GameCarRuntime *car = &g_Cars[index];
-
-        if (car->activeFlag == -1) {
-            continue;
-        }
+    } else {
         UpdateRivalBrakeInput(car, 0);
         if (car->acceleration < car->accelerationLimit) {
             car->acceleration = WrapSigned32(
@@ -99,6 +80,6 @@ void AccelerateAttractRivals(void) {
         } else {
             car->acceleration = car->accelerationLimit;
         }
-        AdvanceRivalSpeedAndYaw(car);
     }
+    AdvanceRivalSpeedAndYaw(car);
 }

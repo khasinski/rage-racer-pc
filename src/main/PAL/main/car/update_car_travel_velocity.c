@@ -1,7 +1,6 @@
-#include "game/car.h"
-#include "game/car_internal.h"
+#include "game/car_drive.h"
+#include "game/angle.h"
 #include "game/integer.h"
-#include "game/render.h"
 
 enum {
     TRAVEL_SPEED_SCALE = 4,
@@ -30,10 +29,10 @@ static s32 CalculateTravelAxis(s32 headingDirection, s32 bodyDirection,
  * only the component that lies along its existing travel direction.
  */
 void UpdateCarTravelVelocity(GameCarRuntime *car) {
-    const s32 headingSin = rsin(car->headingAngle);
-    const s32 headingCos = rcos(car->headingAngle);
-    const s32 bodySin = rsin(car->bodyYaw);
-    const s32 bodyCos = rcos(car->bodyYaw);
+    const s32 headingSin = SinAngle(car->headingAngle);
+    const s32 headingCos = CosAngle(car->headingAngle);
+    const s32 bodySin = SinAngle(car->bodyYaw);
+    const s32 bodyCos = CosAngle(car->bodyYaw);
     const s32 motionX = CalculateTravelAxis(
         headingSin, bodySin, car->speed, car->acceleration);
     const s32 motionZ = CalculateTravelAxis(

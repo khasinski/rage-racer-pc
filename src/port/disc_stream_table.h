@@ -2,6 +2,7 @@
 #define RAGE_DISC_STREAM_TABLE_H
 
 #include "disc_iso.h"
+#include "disc_identity.h"
 
 /* What a mounted disc says about itself.
  *

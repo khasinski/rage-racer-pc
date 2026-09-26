@@ -26,6 +26,11 @@ static s32 s_registerResult = 1;
 static size_t s_destinationRoom;
 static s32 s_failures;
 
+s32 FindCarModelSlot(const CarModelAsset *asset) {
+    /* The fixture installs its source in showroom slot 1. Lookup itself is
+     * tested with real installation by model_banks. */
+    return asset == &s_nativeAsset ? 1 : -1;
+}
 const CarModelAsset *FindSerializedCarModelAsset(
     const CarModelAsset *nativeAsset) {
     (void)nativeAsset;

@@ -30,13 +30,8 @@ typedef struct Submission {
 static Submission g_Submissions[4];
 static s32 g_SubmissionCount;
 static s32 g_Visible = 1;
-static s32 g_RandomValue;
-static s32 g_RandomCalls;
-
-s32 Random15(void) {
-    g_RandomCalls++;
-    return g_RandomValue;
-}
+u32 g_RandomSeed;
+static u32 s_seed;
 int TrackCellVisible(s32 x, s32 z) {
     (void)x;
     (void)z;
@@ -84,7 +79,7 @@ void GameRenderWorldSubmitDynamicCourseOverlay(
 
 static void Reset(void) {
     g_SubmissionCount = 0;
-    g_RandomCalls = 0;
+    s_seed = g_RandomSeed;
     memset(g_Submissions, 0, sizeof(g_Submissions));
 }
 
@@ -114,14 +109,14 @@ int main(void) {
     g_AnimSceneryPos[1] = (Vec4){110, 210, 310, 410};
     g_CourseModelCount = 64;
     g_GrandPrixClass = 0;
-    g_RandomValue = 5;
+    g_RandomSeed = ((5u << 16) - 0x3039u) * 0xEEB9EB65u;
 
     /* The race variant updates its state before the GP-mode draw guard. */
     g_GrandPrixMode = 0;
     g_PlayerCar.drive.racePosition = 2;
     Reset();
     DrawAnimatedScenery(0, 0);
-    if (g_SubmissionCount != 0 || g_RandomCalls != 1 ||
+    if (g_SubmissionCount != 0 || g_RandomSeed != s_seed ||
         g_SceneryAnimation.racePosition != 2 ||
         g_SceneryAnimation.raceVariant != 1) {
         puts("FAIL: race animation state-only update");
@@ -163,7 +158,7 @@ int main(void) {
     g_GrandPrixMode = 0;
     Reset();
     DrawPresentationAnimatedScenery(0, 0, 1, 1);
-    if (g_RandomCalls != 0 || g_SubmissionCount != 0) {
+    if (g_RandomSeed != s_seed || g_SubmissionCount != 0) {
         puts("FAIL: replay early GP-mode guard");
         return 1;
     }
@@ -172,7 +167,7 @@ int main(void) {
     Reset();
     DrawAnimatedScenery(0, -1);
     DrawPresentationAnimatedScenery(0, 2, 0, 1);
-    if (g_SubmissionCount != 0 || g_RandomCalls != 0) {
+    if (g_SubmissionCount != 0 || g_RandomSeed != s_seed) {
         puts("FAIL: animated scenery instance bounds");
         return 1;
     }
@@ -187,7 +182,7 @@ int main(void) {
     g_Visible = 0;
     Reset();
     DrawPresentationAnimatedScenery(8, 0, 0, 1);
-    if (g_SubmissionCount != 0 || g_RandomCalls != 0) {
+    if (g_SubmissionCount != 0 || g_RandomSeed != s_seed) {
         puts("FAIL: replay visibility culling");
         return 1;
     }
