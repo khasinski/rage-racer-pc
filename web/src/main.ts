@@ -1,5 +1,6 @@
 import './style.css';
 import type { RaceEvent, RoomState, RoomSummary, ServerMessage } from '../shared/protocol.ts';
+import { RaceAudio } from './audio';
 import { chooseDataTrack, droppedFiles } from './disc';
 import { clearKeyEdges, consumeKey, PAD, samplePad } from './input';
 import { Connection, FrameBuffer, Session } from './net';
@@ -28,6 +29,7 @@ const ragePromise = Rage.load();
 const session = new Session();
 let rageSync: Rage | null = null;
 let renderer: Renderer | null = null;
+let audio: RaceAudio | null = null;
 let screen: Screen = 'auth';
 let discLoaded = false;
 let automaticCars: boolean[] = [];
@@ -114,6 +116,7 @@ async function useFiles(files: File[]) {
     disc.dataset.state = '';
   }
   discLoaded = true;
+  void audio?.useDisc(files);
   automaticCars = rage.carAutomatic();
   fillPractice(rage);
   if (disc.dataset.state === 'error') {
@@ -335,10 +338,12 @@ function beginRace(rage: Rage) {
   $('standings').replaceChildren();
   $('standings').hidden = !online;
   racing = true;
+  audio?.startRace();
 }
 
 function stopRace() {
   racing = false;
+  audio?.stopRace();
   online = false;
   frames.reset();
 }
@@ -445,11 +450,13 @@ function frame(now: number) {
       show(room ? 'room' : 'lobby');
     } else {
       racing = false;
+      audio?.stopRace();
       show('setup');
       $('start').focus();
     }
     return;
   }
+  if (consumeKey('KeyM')) audio?.toggleMute();
   const pad = samplePad();
   const start = (pad.held & PAD.START) !== 0;
   if (!online && start && !startHeld && (phase === PHASE_COUNTDOWN || phase === PHASE_RACING)) paused = !paused;
@@ -482,7 +489,9 @@ function frame(now: number) {
   const t = Math.min(1, Math.max(0, (simTime + accumulator - currentStep) / interval));
   const vertices = rage.buildFrame(renderer.aspect, t);
   if (vertices >= 0) renderer.update(vertices);
-  drawHud(rage.hud());
+  const h = rage.hud();
+  audio?.update(h, paused);
+  drawHud(h);
   if (online && now - standingsAt > 250) {
     standingsAt = now;
     drawStandings(rage);
@@ -515,6 +524,7 @@ function drawStandings(rage: Rage) {
 
 void ragePromise.then(async (rage) => {
   rageSync = rage;
+  audio = new RaceAudio(rage);
   $('disc-status').dataset.ready = '1';
   if (await session.resume()) afterLogin();
   else show('auth');

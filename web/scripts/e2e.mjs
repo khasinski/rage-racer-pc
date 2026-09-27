@@ -43,6 +43,27 @@ async function player(name, password) {
   page.on('console', (message) => {
     if (message.type() === 'error') failures.push(`${name}: console: ${message.text()}`);
   });
+  // Tallies what the page hands its audio worklet (web/src/audio.ts): race
+  // effects PCM, streamed CD music, and whether the output is running.
+  await page.addInitScript(() => {
+    const tally = { sfxFrames: 0, sfxPeak: 0, musicFrames: 0, contexts: [] };
+    window.__audio = tally;
+    const post = MessagePort.prototype.postMessage;
+    MessagePort.prototype.postMessage = function (message, ...rest) {
+      if (message && (message.type === 'sfx' || message.type === 'music')) {
+        const pcm = message.pcm;
+        if (message.type === 'sfx') {
+          tally.sfxFrames += pcm.length / 2;
+          for (let i = 0; i < pcm.length; i++) tally.sfxPeak = Math.max(tally.sfxPeak, Math.abs(pcm[i]));
+        } else tally.musicFrames += pcm.length / 2;
+      }
+      return post.call(this, message, ...rest);
+    };
+    const Base = window.AudioContext;
+    window.AudioContext = class extends Base {
+      constructor(...args) { super(...args); tally.contexts.push(this); }
+    };
+  });
   await page.goto(`http://localhost:${port}/#e2e`);
   await page.waitForSelector('#auth:not([hidden])');
   await page.fill('#auth input[name=name]', name);
@@ -122,6 +143,14 @@ try {
   }
   if (hudAdmin.time === '0:00.00') failures.push('the race clock did not run');
   for (const [name, page] of [['admin', admin], ['rage', rage]]) if (await blank(page)) failures.push(`${name}'s race view is blank`);
+  const withMusic = discFiles.some((f) => /\.cue$/i.test(f)) && discFiles.length > 2;
+  for (const [name, page] of [['admin', admin], ['rage', rage]]) {
+    const sound = await page.evaluate(() => ({ ...window.__audio, contexts: window.__audio.contexts.map((c) => c.state) }));
+    step(`${name} audio: ${JSON.stringify(sound)}`);
+    if (!sound.contexts.includes('running')) failures.push(`${name}'s audio output is not running`);
+    if (!(sound.sfxFrames > 44100 * 4 && sound.sfxPeak > 1000)) failures.push(`${name} hears no race sound`);
+    if (withMusic && !(sound.musicFrames > 44100)) failures.push(`${name} hears no music`);
+  }
   await Promise.all([admin, rage].map((page) => page.keyboard.up('KeyX')));
 
   // Both leave the race; the server closes it and sends the results.

@@ -1,0 +1,16 @@
+#include "game/audio.h"
+#include "game/audio_internal.h"
+#include "game/sound.h"
+
+void SetLoadedTableVolumeScale(s32 scale) {
+    scale = ClampVoiceVolume(scale);
+    g_EngineSoundState.volumeScale = scale;
+}
+
+/* Set the effect master volume scale (g_SoundScale.scale) from a
+ * 0..15 level, mapping it onto the 0..0x80 fixed-point scale used by the
+ * effect-voice volume math. */
+void SetEffectVolumeSetting(s32 level) {
+    level = ClampAudioSetting(level);
+    g_SoundScale.scale = (level << 7) / AUDIO_SETTING_MAX;
+}

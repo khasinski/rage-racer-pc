@@ -181,7 +181,32 @@ set(CLIENT_SOURCES
     src/port/race_view.c
     src/port/sky_panorama_layout.c)
 
-foreach(list SIM_SOURCES DATA_SOURCES RMESH_SOURCES RENDER_WORLD_SOURCES CLIENT_SOURCES)
+# Race audio: the retail sound calls (engine layers, cues, effect voices) and
+# the player car's tyre, jump and contact sounds, driven by wasm/web_audio.c
+# over the software SPU in wasm/web_spu.c.
+set(AUDIO_SOURCES
+    src/main/PAL/main/audio/audio_parameter_table.c
+    src/main/PAL/main/audio/audio_runtime_control.c
+    src/main/PAL/main/audio/audio_settings.c
+    src/main/PAL/main/audio/effect_voice_runtime.c
+    src/main/PAL/main/audio/engine_sound_runtime.c
+    src/main/PAL/main/audio/forced_voice_playback.c
+    src/main/PAL/main/audio/interpolate_audio_parameter.c
+    src/main/PAL/main/audio/pitched_sound_cue.c
+    src/main/PAL/main/audio/reset_audio_voice_state.c
+    src/main/PAL/main/audio/sound_cues.c
+    src/main/PAL/main/audio/sound_runtime.c
+    src/main/PAL/main/audio/stereo_sound_cue.c
+    src/main/PAL/main/audio/update_effect_voice_states.c
+    src/main/PAL/main/car/car_airborne_audio.c
+    src/main/PAL/main/car/car_driving_audio.c
+    src/main/PAL/main/car/car_launch_audio.c
+    src/main/PAL/main/car/car_standing_start_audio.c
+    src/main/PAL/main/car/player_contact_audio.c
+    src/main/PAL/main/car/player_jump_audio.c
+    src/port/host_state_audio.c)
+
+foreach(list SIM_SOURCES DATA_SOURCES RMESH_SOURCES RENDER_WORLD_SOURCES CLIENT_SOURCES AUDIO_SOURCES)
     list(TRANSFORM ${list} PREPEND ${ENGINE}/)
 endforeach()
 
@@ -203,18 +228,25 @@ target_include_directories(web-render-world PUBLIC ${ENGINE}/src ${ENGINE}/src/p
 target_compile_options(web-render-world PRIVATE ${WARNINGS})
 target_link_libraries(web-render-world PUBLIC web-rmesh m)
 
+add_library(web-audio STATIC ${AUDIO_SOURCES})
+target_include_directories(web-audio PUBLIC ${ENGINE}/include)
+target_compile_options(web-audio PRIVATE -fno-strict-aliasing -fwrapv ${WARNINGS})
+target_link_libraries(web-audio PUBLIC web-sim)
+
 set(BRIDGE_INCLUDES
     ${ENGINE}/src/render
     ${ENGINE}/include
     ${ENGINE}/src/port
     ${ENGINE}/src/port/include
     ${ENGINE}/src)
-set(BRIDGE_LIBRARIES web-data web-render-world)
+set(BRIDGE_LIBRARIES web-data web-render-world web-audio)
+# The race audio driver and software SPU (browser and parity builds alike).
+set(AUDIO_BRIDGE_SOURCES wasm/web_audio.c wasm/web_spu.c)
 # Race rules shared by the browser module and the race server module.
 set(RULES_SOURCES wasm/web_rules.c wasm/web_rules_exports.c)
 
 if(EMSCRIPTEN)
-    add_executable(rage-web wasm/rage_web.c wasm/web_hud.c wasm/web_sky.c ${RULES_SOURCES} ${CLIENT_SOURCES})
+    add_executable(rage-web wasm/rage_web.c wasm/web_hud.c wasm/web_sky.c ${AUDIO_BRIDGE_SOURCES} ${RULES_SOURCES} ${CLIENT_SOURCES})
     target_include_directories(rage-web PRIVATE ${BRIDGE_INCLUDES})
     target_link_libraries(rage-web PRIVATE ${BRIDGE_LIBRARIES})
     set_target_properties(rage-web PROPERTIES SUFFIX ".mjs")
@@ -242,7 +274,7 @@ if(EMSCRIPTEN)
 else()
     # Native half of the physics parity check: the same bridge and engine
     # built by the host compiler, compared tick by tick with the WebAssembly.
-    add_executable(rage-web-parity wasm/parity_main.c wasm/rage_web.c wasm/web_hud.c wasm/web_sky.c ${RULES_SOURCES} ${CLIENT_SOURCES})
+    add_executable(rage-web-parity wasm/parity_main.c wasm/rage_web.c wasm/web_hud.c wasm/web_sky.c ${AUDIO_BRIDGE_SOURCES} ${RULES_SOURCES} ${CLIENT_SOURCES})
     target_include_directories(rage-web-parity PRIVATE wasm/native_stub ${BRIDGE_INCLUDES})
     target_link_libraries(rage-web-parity PRIVATE ${BRIDGE_LIBRARIES})
 endif()

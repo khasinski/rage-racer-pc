@@ -35,6 +35,7 @@
 #include "scene_matrix.h"
 #include "web_hud.h"
 #include "web_rules.h"
+#include "web_audio.h"
 #include "web_sky.h"
 
 enum {
@@ -124,6 +125,7 @@ static RenderCamera s_mirrorPrevious, s_mirrorCurrent;
 const RaceData *WebLoadedArchive(void) { return s_archive; }
 
 static void ReleaseRace(void) {
+    WebAudioStopRace();
     FreeClientRace(s_race);
     s_race = NULL;
 }
@@ -192,6 +194,8 @@ static int PrepareRace(int classIndex, int course, int reverse, int laps, int ri
     s_mirrorDraw = 0;
     s_haveStep = s_lastTickStepped = 0;
     s_shadowValid = 0;
+    /* Sound is presentation only: a race without its banks still runs. */
+    WebAudioStartRace(s_archive, &s_race->sim, localSeat, classIndex);
     return 1;
 }
 
@@ -424,6 +428,7 @@ EMSCRIPTEN_KEEPALIVE int rw_tick(void) {
     if (!TickClientScenery(s_race)) return -1;
     TickRaceView(s_race->view, &s_race->sim, Daylight(s_race));
     RecordPresentation();
+    WebAudioTick(&s_race->sim);
     return (int)s_race->sim.phase;
 }
 
@@ -1008,3 +1013,17 @@ EMSCRIPTEN_KEEPALIVE int rw_hud_atlas_width(void) { return WEB_HUD_ATLAS_WIDTH; 
 EMSCRIPTEN_KEEPALIVE int rw_hud_atlas_height(void) { return WEB_HUD_ATLAS_HEIGHT; }
 EMSCRIPTEN_KEEPALIVE const int32_t *rw_tachometer(void) { return WebHudTachometer(s_race, s_localSeat); }
 EMSCRIPTEN_KEEPALIVE int rw_tachometer_words(void) { return WEB_HUD_TACHO_WORDS; }
+
+/* ---- audio (web_audio.c) ---------------------------------------------------- */
+/* Turns the race's PCM output on once the page has an audio output. */
+EMSCRIPTEN_KEEPALIVE void rw_audio_enable(int enabled) { WebAudioEnable(enabled); }
+static const int16_t *s_audioPending;
+/* Frames (44.1 kHz interleaved stereo int16) rendered since the last call;
+ * rw_audio_data() points at them until the next tick. */
+EMSCRIPTEN_KEEPALIVE int rw_audio_take(void) {
+    int frames;
+    s_audioPending = WebAudioPending(&frames);
+    return frames;
+}
+EMSCRIPTEN_KEEPALIVE const int16_t *rw_audio_data(void) { return s_audioPending; }
+EMSCRIPTEN_KEEPALIVE int rw_audio_engine_rpm(void) { return WebAudioEngineRpm(); }

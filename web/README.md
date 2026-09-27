@@ -22,6 +22,14 @@ browser draws them with three.js.
   races, results, lap records and each player's history live in SQLite
   (`node:sqlite`).
 - **Practice offline** runs the same simulation locally against the rivals.
+- **Sound** is the retail race audio: the desktop's own sound code (engine
+  layers pitched from the car's curves, tyre, impact and landing cues, the
+  announcer, track ambience) runs on the simulation and is mixed in C by a
+  software SPU (`wasm/web_audio.c`, `wasm/web_spu.c`) from the disc's sample
+  banks; an AudioWorklet plays it. Online you also hear the other drivers'
+  engines. Choosing the CUE with its BINs (or the whole disc folder) adds the
+  race music from the CD audio tracks; with the Track 01 BIN alone there is
+  none. Audio starts with the first click or key press; M mutes.
 
 ## Running it
 
@@ -79,6 +87,7 @@ npm run test:server -- "<disc>"   # accounts, rooms, rules, a full race to resul
 npm run test:e2e -- "<disc>"      # two headless browsers race each other, then practice
 node scripts/grid-test.mjs "<disc>" # 8-player grid on every course variant
 node scripts/smoke.mjs "<disc>"   # the simulation module on its own
+node scripts/audio-check.mjs "<disc.cue>"  # engine sound follows rpm; race tunes found
 # Native vs WebAssembly physics, tick by tick:
 cmake -S . -B ../build/web-parity -DCMAKE_BUILD_TYPE=Release && cmake --build ../build/web-parity
 ../build/web-parity/rage-web-parity "<disc>" 2000 > native.txt
@@ -90,3 +99,6 @@ node scripts/parity.mjs "<disc>" 2000 > wasm.txt && cmp native.txt wasm.txt
 - **Latency on your own car:** there is no client-side prediction, so your
   own car responds after a round trip plus the 80 ms playback buffer.
 - **Reconnecting:** you cannot rejoin a race you disconnected from.
+- **Sound gaps:** no SPU reverb (the retail tunnels' echo), no announcer
+  lines about the rivals, no fly-by/shuttle scenery sounds, and no results
+  music after the finish.

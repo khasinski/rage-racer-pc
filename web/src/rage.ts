@@ -269,6 +269,17 @@ export class Rage {
     return new Int32Array(this.m.HEAPU8.buffer, this.call('rw_take_input'), 8).slice();
   }
 
+  // ---- race audio (web/wasm/web_audio.c) -----------------------------------
+  /** Starts or stops rendering the race's 44.1 kHz stereo output. */
+  audioEnable(enabled: boolean): void { this.m.ccall('rw_audio_enable', null, ['number'], [+enabled]); }
+
+  /** Interleaved stereo frames rendered by the ticks since the last call. */
+  audioTake(): Int16Array {
+    const frames = this.call('rw_audio_take');
+    if (!frames) return new Int16Array(0);
+    return new Int16Array(this.m.HEAPU8.buffer, this.call('rw_audio_data'), frames * 2).slice();
+  }
+
   hud(): Hud {
     const h = new Int32Array(this.m.HEAPU8.buffer, this.call('rw_hud'), 16);
     return { phase: h[0], countdown: h[1], lap: h[2], laps: h[3], place: h[4], entrants: h[5],
