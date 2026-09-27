@@ -214,7 +214,7 @@ set(BRIDGE_LIBRARIES web-data web-render-world)
 set(RULES_SOURCES wasm/web_rules.c wasm/web_rules_exports.c)
 
 if(EMSCRIPTEN)
-    add_executable(rage-web wasm/rage_web.c wasm/web_sky.c ${RULES_SOURCES} ${CLIENT_SOURCES})
+    add_executable(rage-web wasm/rage_web.c wasm/web_hud.c wasm/web_sky.c ${RULES_SOURCES} ${CLIENT_SOURCES})
     target_include_directories(rage-web PRIVATE ${BRIDGE_INCLUDES})
     target_link_libraries(rage-web PRIVATE ${BRIDGE_LIBRARIES})
     set_target_properties(rage-web PROPERTIES SUFFIX ".mjs")
@@ -242,7 +242,7 @@ if(EMSCRIPTEN)
 else()
     # Native half of the physics parity check: the same bridge and engine
     # built by the host compiler, compared tick by tick with the WebAssembly.
-    add_executable(rage-web-parity wasm/parity_main.c wasm/rage_web.c wasm/web_sky.c ${RULES_SOURCES} ${CLIENT_SOURCES})
+    add_executable(rage-web-parity wasm/parity_main.c wasm/rage_web.c wasm/web_hud.c wasm/web_sky.c ${RULES_SOURCES} ${CLIENT_SOURCES})
     target_include_directories(rage-web-parity PRIVATE wasm/native_stub ${BRIDGE_INCLUDES})
     target_link_libraries(rage-web-parity PRIVATE ${BRIDGE_LIBRARIES})
 endif()

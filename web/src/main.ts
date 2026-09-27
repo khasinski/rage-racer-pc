@@ -5,6 +5,7 @@ import { clearKeyEdges, consumeKey, PAD, samplePad } from './input';
 import { Connection, FrameBuffer, Session } from './net';
 import { PHASE_COUNTDOWN, PHASE_FINISHED, PHASE_RACING, Rage, type Hud, type RaceOptions } from './rage';
 import { Renderer } from './renderer';
+import { Tachometer } from './hud';
 import {
   $, appendChat, classCars, editSettings, fillClasses, fillCourses, formatTime, renderHistory,
   renderRecords, renderResults, renderRoom, renderRooms,
@@ -21,6 +22,7 @@ const setup = $<HTMLFormElement>('setup');
 const hud = $('hud');
 const canvas = $<HTMLCanvasElement>('view');
 const results = $('results');
+const tachometer = new Tachometer($<HTMLCanvasElement>('tacho'));
 
 const ragePromise = Rage.load();
 const session = new Session();
@@ -323,6 +325,7 @@ async function startOnlineRace(message: Extract<ServerMessage, { t: 'raceStart' 
 function beginRace(rage: Rage) {
   renderer ??= new Renderer(canvas, rage);
   resize();
+  tachometer.prepare(rage);
   last = performance.now();
   accumulator = simTime = previousStep = currentStep = 0;
   paused = startHeld = false;
@@ -485,6 +488,7 @@ function frame(now: number) {
     drawStandings(rage);
   }
   renderer.render();
+  tachometer.draw(rage);
 }
 
 /* The online players in race order, styled like the event feed. */

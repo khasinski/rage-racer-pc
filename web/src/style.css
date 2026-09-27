@@ -113,8 +113,9 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
   text-shadow: 0 2px 3px #000;
 }
 #hud .cell { display: grid; }
-#hud .cell.right { justify-items: end; }
-#hud .cell.right:first-of-type { grid-column: 5; }
+#hud .cell.data { display: none; }
+/* The retail tachometer (hud.ts), under the text HUD. */
+#tacho { position: absolute; inset: 0; width: 100%; height: 100%; }
 #hud span { font-size: 11px; letter-spacing: 0.12em; color: #ffd48a; }
 #hud b { font-size: 26px; font-style: italic; }
 #hud-banner {

@@ -134,11 +134,13 @@
 
   <canvas id="view" hidden></canvas>
   <div id="hud" hidden>
+    <canvas id="tacho"></canvas>
     <div class="cell"><span>POS</span><b id="hud-place"></b></div>
     <div class="cell"><span>LAP</span><b id="hud-lap"></b></div>
     <div class="cell"><span>TIME</span><b id="hud-time"></b></div>
-    <div class="cell right"><span>KM/H</span><b id="hud-speed"></b></div>
-    <div class="cell right"><span>GEAR</span><b id="hud-gear"></b></div>
+    <!-- The tachometer shows speed and gear; these stay as readable values. -->
+    <div class="cell data"><span>KM/H</span><b id="hud-speed"></b></div>
+    <div class="cell data"><span>GEAR</span><b id="hud-gear"></b></div>
     <div id="hud-banner"></div>
     <ol id="standings" hidden></ol>
     <ol id="feed"></ol>

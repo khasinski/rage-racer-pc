@@ -274,4 +274,16 @@ export class Rage {
     return { phase: h[0], countdown: h[1], lap: h[2], laps: h[3], place: h[4], entrants: h[5],
              timeMs: h[6], speed: h[7], gear: h[8], status: h[9], tick: h[11] };
   }
+
+  /** The retail tachometer's sprites for the prepared race (web_hud.c). */
+  hudAtlas(): TextureLevel | null {
+    const pointer = this.call('rw_hud_atlas');
+    const width = this.call('rw_hud_atlas_width'), height = this.call('rw_hud_atlas_height');
+    return pointer ? { data: this.m.HEAPU8.slice(pointer, pointer + width * height * 4), width, height } : null;
+  }
+
+  /** This game frame's tachometer packet fields (web_hud.c layout). */
+  tachometer(): Int32Array {
+    return new Int32Array(this.m.HEAPU8.buffer, this.call('rw_tachometer'), this.call('rw_tachometer_words')).slice();
+  }
 }

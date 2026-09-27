@@ -33,6 +33,7 @@
 #include "render/render_world_frame.h"
 #include "render/texture_mipmap.h"
 #include "scene_matrix.h"
+#include "web_hud.h"
 #include "web_rules.h"
 #include "web_sky.h"
 
@@ -158,6 +159,10 @@ static int PrepareRace(int classIndex, int course, int reverse, int laps, int ri
     for (int seat = 0; seat < humanCount; ++seat) setup.looks[seat].variant = humans[seat].variant;
     s_race = LoadClientRace(s_archive, &setup, NULL);
     if (!s_race) return 0;
+    if (!WebHudPrepare(s_archive, humans[localSeat].variant)) {
+        ReleaseRace();
+        return 0;
+    }
     if (!StartRaceSim(&s_race->sim, WEB_COUNTDOWN_TICKS)) {
         ReleaseRace();
         return 0;
@@ -995,3 +1000,11 @@ EMSCRIPTEN_KEEPALIVE int rw_seat_lap(int seat) {
 EMSCRIPTEN_KEEPALIVE int rw_seat_status(int seat) {
     return s_race && seat >= 0 && seat < DRIVER_SEAT_LIMIT ? (int)s_race->sim.drivers[seat].status : 0;
 }
+
+/* The retail tachometer (web_hud.c): its sprite atlas for the prepared race,
+ * and this game frame's packet fields for the local car. */
+EMSCRIPTEN_KEEPALIVE const uint8_t *rw_hud_atlas(void) { return WebHudAtlas(); }
+EMSCRIPTEN_KEEPALIVE int rw_hud_atlas_width(void) { return WEB_HUD_ATLAS_WIDTH; }
+EMSCRIPTEN_KEEPALIVE int rw_hud_atlas_height(void) { return WEB_HUD_ATLAS_HEIGHT; }
+EMSCRIPTEN_KEEPALIVE const int32_t *rw_tachometer(void) { return WebHudTachometer(s_race, s_localSeat); }
+EMSCRIPTEN_KEEPALIVE int rw_tachometer_words(void) { return WEB_HUD_TACHO_WORDS; }
