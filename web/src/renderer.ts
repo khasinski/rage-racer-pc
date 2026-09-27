@@ -34,6 +34,15 @@ const MIRROR_FRAME_HEIGHT = 0x28;
 interface View { camera: Float32Array; sky: Float32Array }
 
 type Uniform<T> = { value: T };
+interface Span { start: number; count: number; entry: MaterialEntry; vehicle: boolean }
+interface Group { start: number; count: number; material: number }
+
+/** Appends a draw range, extending the previous one when it continues it. */
+function addMerged(groups: Group[], start: number, count: number, material: number): void {
+  const last = groups[groups.length - 1];
+  if (last && last.material === material && last.start + last.count === start) last.count += count;
+  else groups.push({ start, count, material });
+}
 interface MaterialEntry {
   main: number; // index into the main material array
   shadow: number; // index into the shadow material array
@@ -307,16 +316,14 @@ export class Renderer {
     const mirror = this.rage.mirror();
     const totalVertices = vertexCount + (mirror ? mirror.vertexCount : 0);
     const packed = this.rage.packedVertices(totalVertices);
-    this.vertexData.set(packed);
-    this.vertexBuffer.clearUpdateRanges();
-    this.vertexBuffer.addUpdateRange(0, packed.length);
-    this.vertexBuffer.needsUpdate = true;
 
+    // Sort the spans into draw phases, then lay their vertices out in draw
+    // order so that neighbouring spans with the same material become one
+    // draw call (a frame has hundreds of spans of a few dozen vertices).
     const { fields: spans, mainSpans } = this.rage.spans();
     const spanCount = spans.length / SPAN_FIELDS;
-    const phases: [number, number, number][][] = [[], [], [], []];
-    const mirrorPhases: [number, number, number][][] = [[], [], [], []];
-    const casters: [number, number, number][] = [];
+    const phases: Span[][] = [[], [], [], []];
+    const mirrorPhases: Span[][] = [[], [], [], []];
     const budget = { decodes: DECODES_PER_FRAME };
     for (let span = 0; span < spanCount; span++) {
       const f = span * SPAN_FIELDS;
@@ -324,22 +331,39 @@ export class Renderer {
       if (!entry) continue;
       const vehicle = spans[f + 3] === ASSET_MODEL_BANK || spans[f + 3] === ASSET_TRACK_MODEL_BANK_1;
       const phase = entry.transparent ? 3 : spans[f + 12] ? 1 : vehicle ? 2 : 0;
-      if (span >= mainSpans) {
-        mirrorPhases[phase].push([spans[f], spans[f + 1], entry.main]);
-        continue;
-      }
-      phases[phase].push([spans[f], spans[f + 1], entry.main]);
-      if (vehicle) casters.push([spans[f], spans[f + 1], entry.shadow]);
+      (span >= mainSpans ? mirrorPhases : phases)[phase].push({ start: spans[f], count: spans[f + 1], entry, vehicle });
     }
+    const floats = this.rage.packedFloats;
+    let written = 0;
+    const layout = (list: Span[][], groups: Group[], casters: Group[] | null) => {
+      for (const phase of list) {
+        for (const span of phase) {
+          this.vertexData.set(packed.subarray(span.start * floats, (span.start + span.count) * floats), written * floats);
+          addMerged(groups, written, span.count, span.entry.main);
+          if (casters && span.vehicle) addMerged(casters, written, span.count, span.entry.shadow);
+          written += span.count;
+        }
+      }
+    };
+    const mainGroups: Group[] = [];
+    const casterGroups: Group[] = [];
+    const mirrorGroups: Group[] = [];
+    layout(phases, mainGroups, casterGroups);
+    const mainVertices = written;
+    layout(mirrorPhases, mirrorGroups, null);
+    this.vertexBuffer.clearUpdateRanges();
+    this.vertexBuffer.addUpdateRange(0, written * floats);
+    this.vertexBuffer.needsUpdate = true;
+
     this.geometry.clearGroups();
-    for (const phase of phases) for (const [start, count, material] of phase) this.geometry.addGroup(start, count, material);
+    for (const g of mainGroups) this.geometry.addGroup(g.start, g.count, g.material);
     this.shadowGeometry.clearGroups();
-    for (const [start, count, material] of casters) this.shadowGeometry.addGroup(start, count, material);
+    for (const g of casterGroups) this.shadowGeometry.addGroup(g.start, g.count, g.material);
     this.mirrorGeometry.clearGroups();
-    for (const phase of mirrorPhases) for (const [start, count, material] of phase) this.mirrorGeometry.addGroup(start, count, material);
-    this.geometry.setDrawRange(0, vertexCount);
-    this.shadowGeometry.setDrawRange(0, vertexCount);
-    this.mirrorGeometry.setDrawRange(0, totalVertices);
+    for (const g of mirrorGroups) this.mirrorGeometry.addGroup(g.start, g.count, g.material);
+    this.geometry.setDrawRange(0, mainVertices);
+    this.shadowGeometry.setDrawRange(0, mainVertices);
+    this.mirrorGeometry.setDrawRange(0, written);
 
     this.mainView.camera.set(this.rage.camera());
     this.mainView.sky.set(this.rage.sky());
