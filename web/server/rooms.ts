@@ -43,6 +43,7 @@ interface RaceRun {
   handle: number;
   seats: RaceSeat[];
   seatOf: Map<number, number>; // userId -> seat
+  acks: Uint32Array; // per player seat: last input sequence, then the tick that first used it
   viewers: Set<number>; // everyone receiving the race (players and spectators)
   humans: number;
   loaded: Set<number>;
@@ -364,6 +365,7 @@ export class Lobby {
     const run: RaceRun = {
       raceId: this.store.createRace(room.id, s), handle, seats,
       seatOf: new Map(members.map((m, seat) => [m.client.user.id, seat])),
+      acks: new Uint32Array(members.length * 2),
       viewers: new Set(room.members.keys()),
       humans: members.length, loaded: new Set(), loadDeadline: Date.now() + LOAD_TIMEOUT_MS, started: false,
       laps: seats.map(() => 0), status: seats.map(() => STATUS_DRIVING), finishDeadline: null, endAt: null,
@@ -403,10 +405,14 @@ export class Lobby {
     const room = this.roomOf(client);
     const run = room?.race;
     const seat = run?.seatOf.get(client.user.id);
-    if (!run || seat === undefined || data.length !== 1 + INPUT_WORDS * 4 || data[0] !== BINARY_INPUT) return;
+    if (!run || seat === undefined || data.length !== 5 + INPUT_WORDS * 4 || data[0] !== BINARY_INPUT) return;
+    const sequence = data.readUInt32LE(1);
+    if (sequence <= run.acks[seat * 2]) return; // late duplicate
     const words = new Int32Array(INPUT_WORDS);
-    for (let i = 0; i < INPUT_WORDS; i++) words[i] = data.readInt32LE(1 + i * 4);
-    this.sim.setInput(run.handle, seat, words);
+    for (let i = 0; i < INPUT_WORDS; i++) words[i] = data.readInt32LE(5 + i * 4);
+    if (!this.sim.setInput(run.handle, seat, words)) return;
+    run.acks[seat * 2] = sequence;
+    run.acks[seat * 2 + 1] = this.sim.simTick(run.handle) + 1; // used from the next tick
   }
 
   private ensureTimer(): void {
@@ -464,10 +470,13 @@ export class Lobby {
   private publishFrame(room: Room, run: RaceRun, serverTick: number): void {
     const frame = this.sim.frame(run.handle);
     if (!frame) return;
-    const packet = Buffer.allocUnsafe(5 + frame.length);
+    const header = 6 + run.acks.length * 4;
+    const packet = Buffer.allocUnsafe(header + frame.length);
     packet[0] = BINARY_FRAME;
     packet.writeUInt32LE(serverTick >>> 0, 1);
-    packet.set(frame, 5);
+    packet[5] = run.humans;
+    run.acks.forEach((value, i) => packet.writeUInt32LE(value, 6 + i * 4));
+    packet.set(frame, header);
     for (const id of run.viewers) {
       const member = room.members.get(id);
       if (member && member.client.ws.readyState === member.client.ws.OPEN) member.client.ws.send(packet);

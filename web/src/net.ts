@@ -78,11 +78,15 @@ export class Session {
 }
 
 /** A race frame as received: the server tick it describes and its bytes. */
-export interface Frame { tick: number; data: Uint8Array }
+export interface Frame {
+  tick: number;
+  data: Uint8Array;
+  acks: Uint32Array; // per player seat: last input sequence, tick that first used it
+}
 
 export class Connection {
   private readonly ws: WebSocket;
-  private readonly input = new DataView(new ArrayBuffer(1 + INPUT_WORDS * 4));
+  private readonly input = new DataView(new ArrayBuffer(5 + INPUT_WORDS * 4));
   onMessage: (message: ServerMessage) => void = () => {};
   onFrame: (frame: Frame) => void = () => {};
   onClose: (reason: string) => void = () => {};
@@ -99,8 +103,14 @@ export class Connection {
         return;
       }
       const bytes = new Uint8Array(event.data as ArrayBuffer);
-      if (bytes[0] !== BINARY_FRAME || bytes.length < 5) return;
-      this.onFrame({ tick: new DataView(bytes.buffer).getUint32(1, true), data: bytes.subarray(5) });
+      if (bytes[0] !== BINARY_FRAME || bytes.length < 6) return;
+      const view = new DataView(bytes.buffer);
+      const players = bytes[5];
+      const header = 6 + players * 8;
+      if (bytes.length < header) return;
+      const acks = new Uint32Array(players * 2);
+      for (let i = 0; i < acks.length; i++) acks[i] = view.getUint32(6 + i * 4, true);
+      this.onFrame({ tick: view.getUint32(1, true), data: bytes.subarray(header), acks });
     };
     this.ws.onclose = (event) => this.onClose(event.reason || 'The connection to the server closed.');
   }
@@ -109,10 +119,11 @@ export class Connection {
     if (this.ws.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(message));
   }
 
-  sendInput(words: Int32Array): void {
+  sendInput(words: Int32Array, sequence: number): void {
     if (this.ws.readyState !== WebSocket.OPEN) return;
     this.input.setUint8(0, BINARY_INPUT);
-    for (let i = 0; i < INPUT_WORDS; i++) this.input.setInt32(1 + i * 4, words[i], true);
+    this.input.setUint32(1, sequence, true);
+    for (let i = 0; i < INPUT_WORDS; i++) this.input.setInt32(5 + i * 4, words[i], true);
     this.ws.send(this.input.buffer);
   }
 
@@ -149,6 +160,14 @@ export class FrameBuffer {
     let due: Frame | null = null;
     while (this.frames.length && this.frames[0].tick <= this.play) due = this.frames.shift()!;
     return due;
+  }
+
+  /** The newest frame received since the last call, dropping older ones
+   *  (a predicting player only needs the latest authoritative state). */
+  takeLatest(): Frame | null {
+    const latest = this.frames.pop() ?? null;
+    this.frames = [];
+    return latest;
   }
 
   reset(): void {

@@ -70,6 +70,21 @@ typedef struct FinishRun {
     float ox, oy, oz;      /* distance travelled past the line */
 } FinishRun;
 static FinishRun s_run[DRIVER_SEAT_LIMIT];
+/* Client-side prediction. A player's client steps the race itself with its
+ * own controls, so its car answers at once; each server frame rewinds the
+ * race to the authoritative state and replays the controls the server had
+ * not consumed yet. The simulation is deterministic, so only other players'
+ * newer controls (and network timing) cause corrections. */
+enum { INPUT_HISTORY = 512 };
+typedef struct SentInput {
+    DriverInput input;
+    u32 tick; /* the local race tick it was used for */
+} SentInput;
+static SentInput s_sent[INPUT_HISTORY];
+static u32 s_inputSeq;         /* last sequence number handed out */
+static int s_predicting;       /* stepping locally since the first frame */
+static DriverInput s_tickInput;
+static int s_tickInputReady;
 static float s_lastMotion[DRIVER_SEAT_LIMIT][3];
 /* Per drawn span: 255 opaque, less while its car fades out. */
 static uint8_t s_spanAlpha[WEB_SPAN_CAPACITY];
@@ -190,6 +205,9 @@ static int PrepareRace(int classIndex, int course, int reverse, int laps, int ri
     s_viewCut = 0;
     memset(s_run, 0, sizeof(s_run));
     memset(s_lastMotion, 0, sizeof(s_lastMotion));
+    s_inputSeq = 0;
+    s_predicting = 0;
+    s_tickInputReady = 0;
     if (!s_instances) s_instances = calloc(WEB_INSTANCE_CAPACITY, sizeof(*s_instances));
     if (!s_vertices) s_vertices = calloc(WEB_VERTEX_CAPACITY, sizeof(*s_vertices));
     if (!s_spans) s_spans = calloc(WEB_SPAN_CAPACITY, sizeof(*s_spans));
@@ -249,8 +267,10 @@ EMSCRIPTEN_KEEPALIVE int rw_apply_frame(const uint8_t *wire, int size) {
 }
 EMSCRIPTEN_KEEPALIVE int rw_frame_size(void) { return RACE_FRAME_WIRE_SIZE; }
 
-/* The local controls to send (web_rules.h wire words); gear edges are handed
- * over once, as the server's simulation accumulates them. */
+/* The local controls for this tick, to send (web_rules.h wire words) under
+ * sequence number rw_input_seq(); gear edges are handed over once, as the
+ * server's simulation accumulates them. The same controls drive the local
+ * prediction on this tick. */
 EMSCRIPTEN_KEEPALIVE int32_t *rw_take_input(void) {
     static int32_t words[WEB_INPUT_WORDS];
     DriverInput input = s_input;
@@ -258,7 +278,44 @@ EMSCRIPTEN_KEEPALIVE int32_t *rw_take_input(void) {
     input.shiftDown = s_pendingShiftDown;
     s_pendingShiftUp = s_pendingShiftDown = 0;
     WebEncodeInput(&input, words);
+    if (s_race && s_net && s_localSeat >= 0) {
+        ++s_inputSeq;
+        s_sent[s_inputSeq % INPUT_HISTORY] = (SentInput){input, s_race->sim.tick + 1};
+        s_tickInput = input;
+        s_tickInputReady = 1;
+    }
     return words;
+}
+EMSCRIPTEN_KEEPALIVE uint32_t rw_input_seq(void) { return s_inputSeq; }
+
+/* Rewinds to the server's frame and replays the unconsumed controls up to
+ * the local present. ackSeq is the last input the server had received and
+ * arrivalTick the server tick that first used it. Returns how many ticks
+ * later than predicted that input was used (the client clock's error), or
+ * INT32_MIN when the frame does not fit the race. */
+EMSCRIPTEN_KEEPALIVE int32_t rw_apply_predicted(const uint8_t *wire, int size, uint32_t ackSeq,
+                                                uint32_t arrivalTick) {
+    static RaceFrame frame;
+    if (!s_race || !s_net || s_localSeat < 0 || !wire || size != RACE_FRAME_WIRE_SIZE ||
+        !DecodeRaceFrame(&s_race->sim, wire, (size_t)size, &frame)) return INT32_MIN;
+    const u32 present = s_race->sim.tick;
+    if (!RestoreRaceFrame(&s_race->sim, &frame)) return INT32_MIN;
+    const int known = ackSeq && ackSeq <= s_inputSeq && s_inputSeq - ackSeq < INPUT_HISTORY;
+    const int32_t error = known ? (int32_t)(arrivalTick - s_sent[ackSeq % INPUT_HISTORY].tick) : 0;
+    if (!s_predicting) {
+        s_predicting = 1; /* the local race starts at the server's present */
+        return error;
+    }
+    const u32 oldest = s_inputSeq >= INPUT_HISTORY ? s_inputSeq - INPUT_HISTORY + 1 : 1;
+    while (s_race->sim.tick < present) {
+        const u32 next = s_race->sim.tick + 1;
+        for (u32 seq = ackSeq + 1 > oldest ? ackSeq + 1 : oldest; seq <= s_inputSeq; ++seq) {
+            if (s_sent[seq % INPUT_HISTORY].tick == next)
+                SetRaceInput(&s_race->sim, s_localSeat, &s_sent[seq % INPUT_HISTORY].input);
+        }
+        if (!StepRaceSim(&s_race->sim)) break;
+    }
+    return error;
 }
 
 EMSCRIPTEN_KEEPALIVE int rw_local_seat(void) { return s_localSeat; }
@@ -441,6 +498,7 @@ static void RecordPresentation(void) {
         const SimDriver *driver = &sim->drivers[seat];
         PlayerCarRuntime pose = driver->car;
         FinishRun *run = &s_run[seat];
+        if (driver->status != SIM_DRIVER_FINISHED && run->steps) memset(run, 0, sizeof(*run));
         if (driver->status == SIM_DRIVER_FINISHED) {
             if (!run->steps) {
                 run->vx = s_lastMotion[seat][0];
@@ -494,9 +552,14 @@ EMSCRIPTEN_KEEPALIVE int rw_tick(void) {
     input = s_input;
     input.shiftUp = s_pendingShiftUp;
     input.shiftDown = s_pendingShiftDown;
-    /* Online the server steps the field; its frames arrive via rw_apply_frame. */
     if (!s_net) {
         if (SetRaceInput(&s_race->sim, s_localSeat, &input)) s_pendingShiftUp = s_pendingShiftDown = 0;
+        StepRaceSim(&s_race->sim);
+    } else if (s_predicting) {
+        /* A player predicts with this tick's controls (rw_take_input); a
+         * spectator only shows the server's frames (rw_apply_frame). */
+        if (s_tickInputReady) SetRaceInput(&s_race->sim, s_localSeat, &s_tickInput);
+        s_tickInputReady = 0;
         StepRaceSim(&s_race->sim);
     }
     if (!TickClientScenery(s_race)) return -1;

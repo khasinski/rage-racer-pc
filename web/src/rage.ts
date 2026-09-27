@@ -274,6 +274,19 @@ export class Rage {
              status: this.num('rw_seat_status', [seat]) };
   }
 
+  /** Sequence number of the controls rw_take_input just handed out. */
+  inputSeq(): number { return this.num('rw_input_seq', []) >>> 0; }
+
+  private predictBuffer = 0;
+  /** Rewinds to a server frame and replays the unconsumed controls; returns
+   *  how many ticks late the acknowledged input was used, or null. */
+  applyPredicted(frame: Uint8Array, ackSeq: number, arrivalTick: number): number | null {
+    if (!this.predictBuffer) this.predictBuffer = this.m._malloc(this.num('rw_frame_size', []));
+    this.m.HEAPU8.set(frame, this.predictBuffer);
+    const error = this.num('rw_apply_predicted', [this.predictBuffer, frame.length, ackSeq, arrivalTick]);
+    return error === -2147483648 ? null : error;
+  }
+
   /** The controls to send this tick (8 input words; gear edges consumed). */
   takeInput(): Int32Array {
     return new Int32Array(this.m.HEAPU8.buffer, this.call('rw_take_input'), 8).slice();

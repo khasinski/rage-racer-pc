@@ -47,6 +47,10 @@ let standingsAt = 0;
 let seatNames: string[] = [];
 /* performance.now() when the server closes the race, once somebody finished. */
 let deadlineAt: number | null = null;
+/* Prediction: whether the local race runs ahead of the server yet, and the
+ * smoothed clock error (ticks an input was used later than predicted). */
+let predicting = false;
+let clockError = 0;
 const frames = new FrameBuffer();
 
 function show(next: Screen) {
@@ -336,6 +340,8 @@ async function startOnlineRace(message: Extract<ServerMessage, { t: 'raceStart' 
   if (localSeat < 0) $('hud-hint').textContent = 'Watching the race…';
   online = true;
   frames.reset();
+  predicting = false;
+  clockError = 0;
   beginRace(rage);
 }
 
@@ -486,12 +492,18 @@ function frame(now: number) {
   accumulator = paused ? 0 : Math.min(accumulator + (now - last), 250);
   last = now;
   rage.setPad(pad);
+  if (online && localSeat >= 0) syncPrediction(rage);
   while (accumulator >= TICK_MS) {
     if (online) {
-      // Send this tick's controls, then show the server frame that is due.
-      if (localSeat >= 0) connection?.sendInput(rage.takeInput());
-      const due = frames.next();
-      if (due) rage.applyFrame(due.data);
+      if (localSeat >= 0) {
+        // A player predicts: this tick's controls drive the local race and go to the server.
+        const words = rage.takeInput();
+        connection?.sendInput(words, rage.inputSeq());
+      } else {
+        // A spectator shows the server's frames through the jitter buffer.
+        const due = frames.next();
+        if (due) rage.applyFrame(due.data);
+      }
     }
     phase = rage.tick();
     if (phase < 0) {
@@ -524,6 +536,32 @@ function frame(now: number) {
   drawDeadline(now);
   renderer.render();
   tachometer.draw(rage);
+}
+
+// ---- prediction ------------------------------------------------------------------
+
+/* Applies the newest server frame (rewind and replay) and keeps the local
+ * clock just far enough ahead that each input reaches the server a tick
+ * before it is needed: late inputs speed the clock up, early ones slow it. */
+function syncPrediction(rage: Rage) {
+  const latest = frames.takeLatest();
+  if (!latest || localSeat * 2 + 1 >= latest.acks.length) return;
+  const error = rage.applyPredicted(latest.data, latest.acks[localSeat * 2], latest.acks[localSeat * 2 + 1]);
+  if (error === null) return;
+  if (!predicting) {
+    predicting = true; // the first frame only sets the starting point
+    return;
+  }
+  const target = -1;
+  if (error > target + 3) {
+    // Far behind (start, or a network hiccup): catch up at once.
+    accumulator += (error - target) * TICK_MS;
+    clockError = target;
+    return;
+  }
+  clockError = clockError * 0.9 + error * 0.1;
+  if (clockError > target + 0.5) accumulator += TICK_MS * 0.05;
+  else if (clockError < target - 1.5) accumulator -= TICK_MS * 0.05;
 }
 
 // ---- spectating ----------------------------------------------------------------

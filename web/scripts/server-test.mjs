@@ -45,17 +45,24 @@ async function connect(name, password) {
   const p = { name, ws, token: body.token, user: body.user, messages: [], frames: 0, lastTick: 0 };
   ws.onmessage = (event) => {
     if (typeof event.data === 'string') p.messages.push(JSON.parse(event.data));
-    else { p.frames++; p.lastTick = new DataView(event.data).getUint32(1, true); }
+    else {
+      const view = new DataView(event.data);
+      p.frames++;
+      p.lastTick = view.getUint32(1, true);
+      p.acks = Array.from({ length: view.getUint8(5) * 2 }, (_, i) => view.getUint32(6 + i * 4, true));
+    }
   };
   await new Promise((r) => { ws.onopen = r; });
   p.send = (message) => ws.send(JSON.stringify(message));
   p.last = (type) => p.messages.filter((m) => m.t === type).at(-1);
   p.errors = () => p.messages.filter((m) => m.t === 'error').map((m) => m.message);
+  p.sequence = 0;
   p.input = (throttle) => {
-    const buffer = new ArrayBuffer(33);
+    const buffer = new ArrayBuffer(37);
     const view = new DataView(buffer);
     view.setUint8(0, 1);
-    [1, 0, 0, 0, throttle, 0, 0, 0].forEach((word, i) => view.setInt32(1 + i * 4, word, true));
+    view.setUint32(1, ++p.sequence, true);
+    [1, 0, 0, 0, throttle, 0, 0, 0].forEach((word, i) => view.setInt32(5 + i * 4, word, true));
     ws.send(buffer);
   };
   return p;
@@ -153,6 +160,9 @@ try {
   }
   const results = admin.last('results');
   const events = admin.messages.filter((m) => m.t === 'raceEvent').map((m) => m.event);
+  const seatOfRage = rage.last('raceStart').localSeat;
+  check(rage.acks?.[seatOfRage * 2] > 100 && rage.acks[seatOfRage * 2] <= rage.sequence && rage.acks[seatOfRage * 2 + 1] > 0,
+        `frames acknowledge each player's inputs (${rage.acks?.[seatOfRage * 2]} of ${rage.sequence})`);
   check(admin.frames > 100 && rage.frames > 100, `both players received the race stream (${admin.frames} frames)`);
   check(events.some((e) => e.kind === 'finish' && e.place === 1), 'the winner\'s finish is announced');
   const deadline = rage.last('finishDeadline');
