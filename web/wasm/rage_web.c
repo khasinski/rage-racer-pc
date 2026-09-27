@@ -867,3 +867,17 @@ EMSCRIPTEN_KEEPALIVE int32_t *rw_hud(void) {
 
 
 EMSCRIPTEN_KEEPALIVE int rw_car_variants(void) { return CAR_MODEL_VARIANT_COUNT; }
+
+/* Standings for any seat: place (1-based, 0 when out), current lap and
+ * SimDriverStatus. The HUD lists the online players with these. */
+EMSCRIPTEN_KEEPALIVE int rw_seat_place(int seat) {
+    return s_race && seat >= 0 && seat < DRIVER_SEAT_LIMIT ? RacePosition(&s_race->sim, seat) : 0;
+}
+EMSCRIPTEN_KEEPALIVE int rw_seat_lap(int seat) {
+    if (!s_race || seat < 0 || seat >= DRIVER_SEAT_LIMIT) return 0;
+    const int lap = s_race->sim.drivers[seat].car.lap;
+    return lap > s_race->sim.laps ? s_race->sim.laps : lap;
+}
+EMSCRIPTEN_KEEPALIVE int rw_seat_status(int seat) {
+    return s_race && seat >= 0 && seat < DRIVER_SEAT_LIMIT ? (int)s_race->sim.drivers[seat].status : 0;
+}

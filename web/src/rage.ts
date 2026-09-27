@@ -243,6 +243,12 @@ export class Rage {
     return this.num('rw_apply_frame', [this.frameBuffer, frame.length]) === 1;
   }
 
+  /** Place (0 when out of the race), lap and SimDriverStatus of a seat. */
+  standing(seat: number): { place: number; lap: number; status: number } {
+    return { place: this.num('rw_seat_place', [seat]), lap: this.num('rw_seat_lap', [seat]),
+             status: this.num('rw_seat_status', [seat]) };
+  }
+
   /** The controls to send this tick (8 input words; gear edges consumed). */
   takeInput(): Int32Array {
     return new Int32Array(this.m.HEAPU8.buffer, this.call('rw_take_input'), 8).slice();

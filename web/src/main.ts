@@ -35,6 +35,10 @@ let connection: Connection | null = null;
 let rooms: RoomSummary[] = [];
 let room: RoomState | null = null;
 let online = false; // the current race is driven by the server
+/* Online: the players' seats and names, for the standings in the HUD. */
+let players: { seat: number; name: string }[] = [];
+let localSeat = 0;
+let standingsAt = 0;
 const frames = new FrameBuffer();
 
 function show(next: Screen) {
@@ -307,6 +311,8 @@ async function startOnlineRace(message: Extract<ServerMessage, { t: 'raceStart' 
     return;
   }
   $('hud-hint').textContent = 'Waiting for the other players…';
+  players = message.seats.slice(0, message.humans).map((seat, index) => ({ seat: index, name: seat.name }));
+  localSeat = message.localSeat;
   online = true;
   frames.reset();
   beginRace(rage);
@@ -321,6 +327,8 @@ function beginRace(rage: Rage) {
   phase = 0;
   clearKeyEdges();
   $('feed').replaceChildren();
+  $('standings').replaceChildren();
+  $('standings').hidden = !online;
   racing = true;
 }
 
@@ -470,7 +478,31 @@ function frame(now: number) {
   const vertices = rage.buildFrame(renderer.aspect, t);
   if (vertices >= 0) renderer.update(vertices);
   drawHud(rage.hud());
+  if (online && now - standingsAt > 250) {
+    standingsAt = now;
+    drawStandings(rage);
+  }
   renderer.render();
+}
+
+/* The online players in race order, styled like the event feed. */
+function drawStandings(rage: Rage) {
+  const list = $<HTMLOListElement>('standings');
+  const rows = players.map((p) => ({ ...p, ...rage.standing(p.seat) }))
+    .sort((a, b) => (a.place || 99) - (b.place || 99) || a.seat - b.seat);
+  list.replaceChildren(...rows.map((row) => {
+    const item = document.createElement('li');
+    if (row.seat === localSeat) item.className = 'me';
+    const place = document.createElement('b');
+    place.textContent = row.status === 3 ? 'RET' : row.place ? String(row.place) : '–';
+    const name = document.createElement('span');
+    name.textContent = row.name;
+    const state = document.createElement('span');
+    state.className = 'dim';
+    state.textContent = row.status === 2 ? 'finished' : row.status === 3 ? '' : `lap ${Math.max(1, row.lap)}`;
+    item.append(place, name, state);
+    return item;
+  }));
 }
 
 // ---- start ------------------------------------------------------------------
