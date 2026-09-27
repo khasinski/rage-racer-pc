@@ -71,6 +71,17 @@ try {
   const unauthorized = await fetch(`${base}/api/me`);
   check(unauthorized.status === 401, 'the API needs a session');
 
+  // Guests: numbered accounts without a name or password.
+  const guestA = await post('/api/guest', {});
+  const guestB = await post('/api/guest', {});
+  check(guestA.status === 201 && guestA.body.user.name === 'Guest #1' && guestB.body.user.name === 'Guest #2',
+        `guests get the next number (${guestA.body.user?.name}, ${guestB.body.user?.name})`);
+  const guestWs = new WebSocket(`ws://localhost:${port}/ws?token=${guestB.body.token}`);
+  const guestWelcome = await new Promise((r) => { guestWs.onmessage = (e) => r(JSON.parse(e.data)); setTimeout(() => r(null), 5000); });
+  check(guestWelcome?.t === 'welcome' && guestWelcome.user.name === 'Guest #2', 'a guest joins the lobby');
+  guestWs.close();
+  check((await post('/api/register', { name: 'Guest #3', password: 'secret' })).status === 400, 'nobody can register a guest name');
+
   const admin = await connect('admin', 'admin');
   const rage = await connect('rage', 'racer');
   const newbie = await connect('newbie', 'secret');

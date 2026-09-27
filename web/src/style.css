@@ -49,6 +49,7 @@ label.check { display: flex; align-items: center; gap: 8px; color: var(--text); 
 #auth { display: grid; gap: 14px; }
 #auth h1 { margin: 0; }
 #auth .lead { color: var(--dim); font-size: 15px; }
+#auth .guest { justify-self: start; }
 #disc { border: 2px dashed var(--line); text-align: center; width: min(560px, calc(100% - 32px)); padding: 36px; }
 #disc[data-drag="on"] { border-color: var(--accent); }
 #disc[data-state="error"] .status { color: var(--error); }

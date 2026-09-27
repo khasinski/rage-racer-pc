@@ -84,6 +84,10 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string): Pro
     if (!user) return json(res, 401, { error: 'Wrong name or password.' });
     return json(res, 200, { token: store.createSession(user.id), user });
   }
+  if (path === '/api/guest' && req.method === 'POST') {
+    const guest = store.createGuest();
+    return json(res, 201, { token: store.createSession(guest.id), user: guest });
+  }
   if (path === '/api/records' && req.method === 'GET') return json(res, 200, { records: store.records() });
   const token = bearer(req);
   const user = token ? store.sessionUser(token) : null;

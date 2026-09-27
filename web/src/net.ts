@@ -54,6 +54,15 @@ export class Session {
     await this.resume();
   }
 
+  /** Plays as a new guest account ("Guest #n"). */
+  async guest(): Promise<void> {
+    const result = await request<{ token: string; user: UserInfo }>('api/guest', { method: 'POST' });
+    this.token = result.token;
+    this.user = result.user;
+    storeToken(result.token);
+    await this.resume();
+  }
+
   async logout(): Promise<void> {
     if (this.token) await request('api/logout', { method: 'POST' }, this.token).catch(() => undefined);
     this.forget();

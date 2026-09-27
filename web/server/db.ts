@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   password_salt TEXT NOT NULL,
   admin INTEGER NOT NULL DEFAULT 0,
+  guest INTEGER NOT NULL DEFAULT 0, -- guest number, 0 for a registered account
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS sessions (
@@ -73,6 +74,11 @@ export class Store {
     if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
     this.db = new DatabaseSync(path);
     this.db.exec(SCHEMA);
+    // Databases made before guest accounts existed.
+    const columns = this.db.prepare('PRAGMA table_info(users)').all() as Array<{ name: string }>;
+    if (!columns.some((c) => c.name === 'guest')) {
+      this.db.exec('ALTER TABLE users ADD COLUMN guest INTEGER NOT NULL DEFAULT 0');
+    }
     this.db.prepare(`DELETE FROM sessions WHERE expires_at < datetime('now')`).run();
     // Rooms live in memory; any left open by a previous run are over.
     this.db.prepare(`UPDATE rooms SET closed_at = datetime('now') WHERE closed_at IS NULL`).run();
@@ -89,6 +95,25 @@ export class Store {
     } catch (error) {
       if (String(error).includes('UNIQUE')) return null;
       throw error;
+    }
+  }
+
+  /** A new guest account, "Guest #<next number>", with an unusable password:
+   *  its session is the only way in. */
+  createGuest(): UserInfo {
+    const salt = randomBytes(16).toString('hex');
+    const password = hashPassword(randomBytes(32).toString('hex'), salt);
+    for (;;) {
+      const next = (this.db.prepare('SELECT COALESCE(MAX(guest), 0) + 1 AS n FROM users').get() as { n: number }).n;
+      const name = `Guest #${next}`;
+      try {
+        const result = this.db.prepare(
+          'INSERT INTO users (name, password_hash, password_salt, guest) VALUES (?, ?, ?, ?)')
+          .run(name, password, salt, next);
+        return { id: Number(result.lastInsertRowid), name, admin: false };
+      } catch (error) {
+        if (!String(error).includes('UNIQUE')) throw error; // taken meanwhile: next number
+      }
     }
   }
 

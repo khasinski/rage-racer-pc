@@ -60,11 +60,13 @@ function toast(message: string) {
 $<HTMLFormElement>('auth').addEventListener('submit', async (event) => {
   event.preventDefault();
   const form = event.target as HTMLFormElement;
-  const register = (event.submitter as HTMLButtonElement | null)?.value === 'register';
+  const action = (event.submitter as HTMLButtonElement | null)?.value;
+  const register = action === 'register';
   const value = (name: string) => (form.elements.namedItem(name) as HTMLInputElement).value;
-  $('auth-status').textContent = register ? 'Creating your account…' : 'Logging in…';
+  $('auth-status').textContent = action === 'guest' ? 'Joining as a guest…' : register ? 'Creating your account…' : 'Logging in…';
   try {
-    await session.login(value('name').trim(), value('password'), register);
+    if (action === 'guest') await session.guest();
+    else await session.login(value('name').trim(), value('password'), register);
     $('auth-status').textContent = '';
     afterLogin();
   } catch (error) {
