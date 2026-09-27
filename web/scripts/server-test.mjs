@@ -26,6 +26,12 @@ const base = `http://localhost:${port}`;
 const failures = [];
 const check = (ok, what) => { console.log(`${ok ? '✓' : '✗'} ${what}`); if (!ok) failures.push(what); };
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+/* Polls until a condition holds (messages arrive asynchronously). */
+const until = async (condition, ms = 10_000) => {
+  const t0 = Date.now();
+  while (!condition() && Date.now() - t0 < ms) await wait(20);
+  return Boolean(condition());
+};
 const post = async (path, body, token) => {
   const response = await fetch(base + path, { method: 'POST', body: JSON.stringify(body),
     headers: token ? { authorization: `Bearer ${token}` } : {} });
@@ -68,53 +74,45 @@ try {
   const admin = await connect('admin', 'admin');
   const rage = await connect('rage', 'racer');
   const newbie = await connect('newbie', 'secret');
-  await wait(200);
-  check(admin.last('welcome')?.user.admin === true && rage.last('welcome')?.user.admin === false, 'welcome carries the account and admin flag');
+  check(await until(() => admin.last('welcome')?.user.admin === true && rage.last('welcome')?.user.admin === false), 'welcome carries the account and admin flag');
 
   // Room rules come from the same compiled code the browser runs.
   const settings = { name: 'Test', classIndex: 0, course: 3, reverse: false, laps: 1, rivals: true, maxPlayers: 2 };
   admin.send({ t: 'createRoom', settings });
-  await wait(200);
-  check(admin.errors().some((e) => e.includes('not raced in this class')), 'the Extreme Oval is refused below class 3');
+  check(await until(() => admin.errors().some((e) => e.includes('not raced in this class'))), 'the Extreme Oval is refused below class 3');
   admin.send({ t: 'createRoom', settings: { ...settings, course: 0, maxPlayers: 40 } });
-  await wait(200);
-  check(admin.errors().some((e) => e.includes('starting places')), 'more players than grid places are refused');
+  check(await until(() => admin.errors().some((e) => e.includes('starting places'))), 'more players than grid places are refused');
   admin.send({ t: 'createRoom', settings: { ...settings, course: 0, classIndex: 2 } });
-  await wait(300);
+  await until(() => admin.last('room')?.room);
   const room = admin.last('room')?.room;
   check(room && room.members.length === 1 && room.members[0].host, 'the creator hosts the new room');
-  check(rage.last('rooms')?.rooms.some((r) => r.id === room.id), 'the room list reaches other players');
+  check(await until(() => rage.last('rooms')?.rooms.some((r) => r.id === room.id)), 'the room list reaches other players');
 
   rage.send({ t: 'joinRoom', roomId: room.id });
   newbie.send({ t: 'joinRoom', roomId: room.id });
-  await wait(300);
-  check(newbie.errors().some((e) => e.includes('full')), 'a full room refuses more players');
+  check(await until(() => newbie.errors().some((e) => e.includes('full'))), 'a full room refuses more players');
   rage.send({ t: 'setCar', variant: 9, manual: false }); // Esperanza I is a class 1 car
-  await wait(200);
-  check(rage.errors().some((e) => e.includes('not available')), 'a car from another class is refused');
+  check(await until(() => rage.errors().some((e) => e.includes('not available'))), 'a car from another class is refused');
   rage.send({ t: 'setCar', variant: 11, manual: false }); // Esperanza III, class 3
   admin.send({ t: 'startRace' });
-  await wait(200);
-  check(admin.errors().some((e) => e.includes('Waiting for rage')), 'the host waits for everyone to be ready');
+  check(await until(() => admin.errors().some((e) => e.includes('Waiting for rage'))), 'the host waits for everyone to be ready');
   rage.send({ t: 'chat', text: 'ready when you are' });
   rage.send({ t: 'setReady', ready: true });
-  await wait(200);
-  check(admin.messages.some((m) => m.t === 'chat' && m.from === 'rage'), 'chat reaches the room');
+  check(await until(() => admin.messages.some((m) => m.t === 'chat' && m.from === 'rage')), 'chat reaches the room');
 
   // Hand-over: the host leaves and comes back; rage now hosts.
   admin.send({ t: 'leaveRoom' });
-  await wait(200);
-  check(rage.last('room')?.room.members.find((m) => m.name === 'rage')?.host, 'the host role passes on when the host leaves');
+  check(await until(() => rage.last('room')?.room.members.find((m) => m.name === 'rage')?.host), 'the host role passes on when the host leaves');
   admin.send({ t: 'joinRoom', roomId: room.id });
-  await wait(200);
+  await until(() => rage.last('room')?.room.members.length === 2);
   admin.send({ t: 'setReady', ready: true });
-  await wait(200);
+  await until(() => rage.last('room')?.room.members.every((m) => m.ready));
 
   // A one-lap race on class 3 Mythical Coast with the retail rivals. The
   // players only hold the throttle; the rivals finish and the server closes
   // the race after the grace period.
   rage.send({ t: 'startRace' });
-  await wait(300);
+  await until(() => rage.last('raceStart') && admin.last('raceStart'));
   const start = rage.last('raceStart');
   check(start && start.seats.length === 12 && start.humans === 2 && start.localSeat === 0, 'the race starts with both players and ten rivals');
   check(admin.last('raceStart')?.localSeat === 1, 'each player learns its own seat');
@@ -154,11 +152,9 @@ try {
 
   // Closing: only the host or an admin.
   newbie.send({ t: 'closeRoom', roomId: room.id });
-  await wait(200);
-  check(newbie.errors().some((e) => e.includes('Only the host')), 'others cannot close a room');
+  check(await until(() => newbie.errors().some((e) => e.includes('Only the host'))), 'others cannot close a room');
   admin.send({ t: 'closeRoom', roomId: room.id });
-  await wait(300);
-  check(rage.last('room')?.room === null && rage.last('rooms')?.rooms.length === 0, 'an admin can close any room');
+  check(await until(() => rage.last('room')?.room === null && rage.last('rooms')?.rooms.length === 0), 'an admin can close any room');
   for (const p of [admin, rage, newbie]) p.ws.close();
 } catch (error) {
   failures.push(String(error));

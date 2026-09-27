@@ -7,8 +7,11 @@ browser draws them with three.js.
 
 - **Players** log in, choose their own Rage Racer disc (CUE or Track 01 BIN,
   read locally, never uploaded), then create or join rooms. A room fixes the
-  course, direction, class, laps, number of players and whether the retail
-  rivals fill the rest of the grid. The class decides which cars can be
+  course, direction, class, laps, number of players (up to 8) and whether the
+  retail rivals fill the rest of the field. Players start together on their
+  own grid: two lanes behind the retail player start, before the line. Rivals
+  keep their authored starts, which the original spreads along the course
+  ahead. The class decides which cars can be
   chosen, with the retail custom-race rule: every model the class has
   unlocked, at the grade that class buys. The Extreme Oval starts at class 3.
 - **The server** (`server/`) owns every race. It builds the field, runs the
@@ -58,6 +61,7 @@ network jitter.
 npm run typecheck
 npm run test:server -- "<disc>"   # accounts, rooms, rules, a full race to results
 npm run test:e2e -- "<disc>"      # two headless browsers race each other, then practice
+node scripts/grid-test.mjs "<disc>" # 8-player grid on every course variant
 node scripts/smoke.mjs "<disc>"   # the simulation module on its own
 # Native vs WebAssembly physics, tick by tick:
 cmake -S . -B ../build/web-parity -DCMAKE_BUILD_TYPE=Release && cmake --build ../build/web-parity

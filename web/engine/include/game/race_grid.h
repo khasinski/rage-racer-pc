@@ -12,6 +12,10 @@ typedef struct RaceEntrant {
     s32 rivalSlot;  /* Authored AI behavior slot. */
     s16 manual;
     u32 seed;
+    /* Web port: a human may start from an explicit place instead of the
+     * authored start at grid (hasStart set; activeFlag 0, as the player). */
+    int hasStart;
+    TrackRivalStart start;
 } RaceEntrant;
 
 /* Borrow track data for the resulting race's lifetime. Specifications and

@@ -152,3 +152,19 @@ EMSCRIPTEN_KEEPALIVE int rs_seat_lap_time(int handle, int seat, int lap) {
     ServerRace *race = Race(handle);
     return race ? RaceLapTime(&race->sim, seat, lap) : -1;
 }
+/* Race progress (CarRaceProgress: laps included), as the ranking uses it. */
+EMSCRIPTEN_KEEPALIVE int rs_seat_progress(int handle, int seat) {
+    ServerRace *race = Race(handle);
+    if (!race || seat < 0 || seat >= DRIVER_SEAT_LIMIT) return 0;
+    const PlayerCarRuntime *car = &race->sim.drivers[seat].car;
+    return (int)((uint32_t)car->progressA + (uint32_t)car->progressB);
+}
+/* World position of a seat's car (x, z), for checks of the starting grid. */
+EMSCRIPTEN_KEEPALIVE int rs_seat_x(int handle, int seat) {
+    ServerRace *race = Race(handle);
+    return race && seat >= 0 && seat < DRIVER_SEAT_LIMIT ? race->sim.drivers[seat].car.x : 0;
+}
+EMSCRIPTEN_KEEPALIVE int rs_seat_z(int handle, int seat) {
+    ServerRace *race = Race(handle);
+    return race && seat >= 0 && seat < DRIVER_SEAT_LIMIT ? race->sim.drivers[seat].car.z : 0;
+}

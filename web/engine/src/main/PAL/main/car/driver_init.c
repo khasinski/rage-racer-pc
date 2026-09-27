@@ -54,7 +54,10 @@ static void PlaceDriver(PlayerCarRuntime *car, const DriverStart *setup) {
     car->headingAngle = car->bodyYaw;
     car->drive.targetHeading = car->headingAngle;
 
-    SeedCarTrackProgress(AsRivalCar(car), route, setup->walkStart, 0, setup->reverse);
+    /* Web port: a start past the lap walk seeds the other way round, as
+     * rivals do (rival_car_init.c); the retail player start has flag 0. */
+    SeedCarTrackProgress(AsRivalCar(car), route, setup->walkStart,
+                         setup->position->activeFlag == 1 ? 1 : 0, setup->reverse);
     StepCarTrackState(AsRivalCar(car), route, car->trackPointIndex, &trackLimits, setup->reverse, 1);
     car->previousTrackProgress = car->trackProgress;
     CopyPlayerBodyRotationToModel(car);

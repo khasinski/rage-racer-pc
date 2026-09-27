@@ -17,7 +17,8 @@ int InitRaceGrid(RaceSim *race, const RaceData *archive, const TrackData *track,
         if ((u32)entrant->grid >= DRIVER_SEAT_LIMIT ||
             (usedGrid & (1u << entrant->grid))) return 0;
         usedGrid |= 1u << entrant->grid;
-        const TrackRivalStart *position = &track->events->rivalStarts[reverse][entrant->grid];
+        const TrackRivalStart *position = entrant->kind == RACE_SEAT_HUMAN && entrant->hasStart
+            ? &entrant->start : &track->events->rivalStarts[reverse][entrant->grid];
         if (entrant->kind == RACE_SEAT_HUMAN) {
             GameCarSpec spec;
             if (!ReadRaceCar(archive, entrant->model, &spec)) return 0;

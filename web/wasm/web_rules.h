@@ -12,6 +12,7 @@ enum {
     WEB_CLASS_COUNT = 6,
     WEB_COURSE_COUNT = 4,
     WEB_MAX_LAPS = 6,
+    WEB_MAX_PLAYERS = 8, /* two lanes, four rows */
     WEB_COUNTDOWN_TICKS = 3 * SIM_TICK_RATE,
 };
 
@@ -35,14 +36,15 @@ typedef struct WebSeat {
     int manual;  /* human transmission */
 } WebSeat;
 
-/* Builds the field for `humans` human seats (seats 0..humans-1, grid order)
- * and, when `rivals` is set, the retail AI in every remaining authored
- * active start (the final class is limited to its contenders). Returns the
+/* Builds the field: humans in seats 0..humanCount-1 on the players' grid
+ * (the retail player start, then two lanes behind it, all before the line)
+ * and, when `rivals` is set, the retail AI on their authored starts in the
+ * remaining seats (the final class races only its contenders). Returns the
  * entrant count, or 0 when the setup is invalid. */
 int WebBuildField(const RaceData *archive, int classIndex, int course, int reverse,
                   const WebSeat *humans, int humanCount, int rivals,
                   RaceEntrant entrants[DRIVER_SEAT_LIMIT]);
-/* Most human seats a course offers: its authored active starts. */
+/* Most players a course takes (WEB_MAX_PLAYERS), 0 when it is not raced. */
 int WebMaxHumans(const RaceData *archive, int classIndex, int course, int reverse);
 
 /* Driver commands on the wire: mode, left, right, angle, throttle, brake,

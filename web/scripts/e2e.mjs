@@ -104,13 +104,15 @@ try {
   await Promise.all([admin, rage].map((page) =>
     page.waitForFunction(() => document.getElementById('hud-banner')?.textContent !== '', null, { timeout: 120_000 })));
   await admin.screenshot({ path: join(out, '04-countdown-admin.png') });
+  // Once racing, rage switches to the chase view: both players start together.
+  await rage.waitForFunction(() => document.getElementById('hud-banner')?.textContent === '', null, { timeout: 60_000 });
+  await rage.keyboard.press('KeyS');
+  await rage.waitForTimeout(400);
+  await rage.screenshot({ path: join(out, '05-grid-rage.png') });
   await Promise.all([admin, rage].map((page) => page.keyboard.down('KeyX')));
-  await admin.waitForTimeout(7000);
-  await rage.keyboard.down('KeyS'); // chase camera for the second screenshot
-  await rage.keyboard.up('KeyS');
-  await admin.waitForTimeout(3000);
-  await admin.screenshot({ path: join(out, '05-race-admin.png') });
-  await rage.screenshot({ path: join(out, '06-race-rage.png') });
+  await admin.waitForTimeout(8000);
+  await admin.screenshot({ path: join(out, '06-race-admin.png') });
+  await rage.screenshot({ path: join(out, '07-race-rage.png') });
   const hudAdmin = await hud(admin);
   const hudRage = await hud(rage);
   console.log('hud admin', JSON.stringify(hudAdmin), 'rage', JSON.stringify(hudRage));
@@ -128,7 +130,7 @@ try {
   await Promise.all([admin, rage].map((page) => page.waitForSelector('#results:not([hidden])', { timeout: 30_000 })));
   const rows = await admin.$$eval('#results-table tr', (trs) => trs.length - 1);
   if (rows !== 12) failures.push(`results list ${rows} cars instead of 12`);
-  await admin.screenshot({ path: join(out, '07-results.png') });
+  await admin.screenshot({ path: join(out, '08-results.png') });
   step(`results arrived (${rows} cars)`);
   await admin.click('[data-action=results-done]');
   await admin.waitForSelector('#room:not([hidden])');
@@ -145,7 +147,7 @@ try {
   await rage.keyboard.down('KeyX');
   await rage.waitForTimeout(6000);
   await rage.keyboard.up('KeyX');
-  await rage.screenshot({ path: join(out, '08-practice.png') });
+  await rage.screenshot({ path: join(out, '09-practice.png') });
   const practice = await hud(rage);
   if (!(Number(practice.speed) > 0)) failures.push('the practice car did not move');
   step(`practice race ran (${JSON.stringify(practice)})`);
