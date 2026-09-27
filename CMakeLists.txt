@@ -511,6 +511,7 @@ if(RAGE_BUILD_PORT)
         src/port/mp_client.c
         src/port/mp_race_client.c
         src/port/mp_menu.c
+        src/port/keyboard_text.c
         src/port/force_feedback.c
         src/port/force_feedback_device.c
         src/port/axis_curve.c

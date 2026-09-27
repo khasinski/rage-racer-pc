@@ -7,14 +7,18 @@
 #include "game/race_sim.h"
 #include "game/state.h"
 #include "game/screens.h"
+#include "keyboard_text.h"
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
 
-/* Arcade-style cursor editor shared by name and server entry: LEFT-RIGHT
- * moves the cursor, UP-DOWN cycles the character under it through charset,
- * CONFIRM accepts (trimming trailing padding; empty input keeps editing).
- * text holds the initial value on entry and, on a 1 return, the result. */
+/* Arcade-style cursor editor shared by name and server entry. Two ways to
+ * edit the same fixed-width cell grid: LEFT-RIGHT moves the cursor and
+ * UP-DOWN cycles the character under it through charset (pad-friendly);
+ * typing a character in charset drops it in directly and advances the
+ * cursor, and backspace steps back and clears (keyboard-friendly). CONFIRM
+ * accepts (trimming trailing padding; empty input keeps editing). text
+ * holds the initial value on entry and, on a 1 return, the result. */
 static int EditText(const char *title, const char *charset, char *text, size_t capacity) {
     if (!title || !charset || !text || capacity < 2 || capacity > 32) return 0;
     size_t width = capacity - 1;
@@ -31,7 +35,8 @@ static int EditText(const char *title, const char *charset, char *text, size_t c
         for (size_t i = 0; i < width; ++i) pointer[i] = (i == (size_t)cursor) ? '^' : ' ';
         pointer[width] = '\0';
         DrawHostMenuFrame(title, working, pointer,
-                         "LEFT-RIGHT: CURSOR  UP-DOWN: CHARACTER  CONFIRM: ACCEPT");
+                         "TYPE DIRECTLY, OR LEFT-RIGHT/UP-DOWN  CONFIRM: ACCEPT");
+        char typed = PortConsumeTypedChar();
         if (g_PadPressed & PAD_CANCEL) return -1;
         if (g_PadPressed & PAD_CONFIRM) {
             char result[32];
@@ -42,6 +47,16 @@ static int EditText(const char *title, const char *charset, char *text, size_t c
             if (resultLength == 0) continue;
             snprintf(text, capacity, "%s", result);
             return 1;
+        }
+        if (typed == '\b') {
+            cursor = (int)((cursor + width - 1) % width);
+            working[cursor] = ' ';
+            continue;
+        }
+        if (typed && memchr(charset, typed, charsetLength)) {
+            working[cursor] = typed;
+            cursor = (int)((cursor + 1) % width);
+            continue;
         }
         if (g_PadPressedRepeat & PAD_LEFT) cursor = (int)((cursor + width - 1) % width);
         else if (g_PadPressedRepeat & PAD_RIGHT) cursor = (int)((cursor + 1) % width);

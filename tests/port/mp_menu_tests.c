@@ -26,6 +26,12 @@ static int hasLobby;
 static MpLobby visibleLobby;
 static int pickCalls, pickValues[8][2];
 static int startVariant, startManual;
+static const char *typedScript;
+static unsigned typedCount;
+char PortConsumeTypedChar(void) {
+    return frames > 0 && frames - 1 < typedCount ? typedScript[frames - 1] : 0;
+}
+static void SetTyped(const char *typed, unsigned count) { typedScript = typed; typedCount = count; }
 int MpClientPollPick(MpClient *client, int variant, int manual) {
     CHECK(client && pickCalls < 8);
     pickValues[pickCalls][0] = variant; pickValues[pickCalls++][1] = manual;
@@ -100,6 +106,8 @@ static void Script(const Action *script, unsigned count) {
     directoryCount = 2;
     directory[0] = (MpRoomInfo){.code = 7, .options = {0, 0, 3, 0}, .occupied = 3, .state = 2};
     directory[1] = (MpRoomInfo){.code = 8, .options = {5, 3, 6, 1}, .occupied = 1};
+    typedScript = NULL;
+    typedCount = 0;
 }
 
 int main(void) {
@@ -351,6 +359,30 @@ int main(void) {
     Script(serverEntry, 3);
     CHECK(MpEnterServer(server, sizeof(server)) == 1);
     CHECK(strcmp(server, ".") == 0);
+
+    /* Typing directly: each character drops in and advances the cursor. */
+    char name5[4] = "";
+    const Action typeThenConfirm[] = {{0, 0}, {0, 0}, {PAD_CONFIRM, 0}};
+    Script(typeThenConfirm, 3);
+    SetTyped("HI", 2);
+    CHECK(MpEnterName(name5, sizeof(name5)) == 1 && frames == 3);
+    CHECK(strcmp(name5, "HI") == 0);
+
+    /* Backspace steps the cursor back and clears that cell. */
+    char name6[4] = "";
+    const Action typeBackspaceConfirm[] = {{0, 0}, {0, 0}, {0, 0}, {PAD_CONFIRM, 0}};
+    Script(typeBackspaceConfirm, 4);
+    SetTyped("HI\b", 3);
+    CHECK(MpEnterName(name6, sizeof(name6)) == 1 && frames == 4);
+    CHECK(strcmp(name6, "H") == 0);
+
+    /* A typed character outside the field's charset is silently ignored. */
+    char server2[6] = "";
+    const Action typeIgnoredThenValid[] = {{0, 0}, {0, 0}, {PAD_CONFIRM, 0}};
+    Script(typeIgnoredThenValid, 3);
+    SetTyped("X3", 2);
+    CHECK(MpEnterServer(server2, sizeof(server2)) == 1 && frames == 3);
+    CHECK(strcmp(server2, "3") == 0);
 
     puts("mp_menu: selection, metadata failures, result acknowledgement and text entry pass");
     return 0;
