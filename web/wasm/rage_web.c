@@ -35,6 +35,7 @@ enum {
     WEB_SPAN_CAPACITY = 32768,
     WEB_SPAN_FIELDS = 12,
     WEB_TEXTURE_BYTES = 256 * 256 * 4,
+    WEB_PACKED_FLOATS = 21,
     WEB_COUNTDOWN_TICKS = 3 * SIM_TICK_RATE,
 };
 
@@ -55,12 +56,21 @@ static RageNativeDrawVertex *s_vertices;
 static RageNativeDrawSpan *s_spans;
 static uint32_t s_vertexCount, s_spanCount;
 static uint32_t s_spanFields[WEB_SPAN_CAPACITY * WEB_SPAN_FIELDS];
+static float *s_packed;
 static uint64_t s_frame;
 /* position, viewRow0, viewRow1, viewRow2, projection, fogColor, fogRange. */
 static float s_camera[28];
 /* direction, ambient, diffuse, skyTop, skyHorizon, skyBottom. */
 static float s_light[24];
 static int32_t s_hud[16];
+
+/* Retail chase camera state (see RetailChaseView). */
+typedef struct WebChase {
+    s32 previousYaw, rampNeg, rampPos, yawLag, damping, stepLimit, step;
+    int active;
+} WebChase;
+static WebChase s_chase;
+static int s_chasePreset;
 
 static void ReleaseRace(void) {
     FreeClientRace(s_race);
@@ -117,7 +127,8 @@ EMSCRIPTEN_KEEPALIVE int rw_start_race(int classIndex, int course, int car, int 
     if (!s_instances) s_instances = calloc(WEB_INSTANCE_CAPACITY, sizeof(*s_instances));
     if (!s_vertices) s_vertices = calloc(WEB_VERTEX_CAPACITY, sizeof(*s_vertices));
     if (!s_spans) s_spans = calloc(WEB_SPAN_CAPACITY, sizeof(*s_spans));
-    if (!s_instances || !s_vertices || !s_spans) {
+    if (!s_packed) s_packed = calloc((size_t)WEB_VERTEX_CAPACITY * WEB_PACKED_FLOATS, sizeof(*s_packed));
+    if (!s_instances || !s_vertices || !s_spans || !s_packed) {
         ReleaseRace();
         return 0;
     }
@@ -126,6 +137,7 @@ EMSCRIPTEN_KEEPALIVE int rw_start_race(int classIndex, int course, int car, int 
     s_input.steering.mode = STEERING_DIGITAL;
     s_pendingShiftUp = s_pendingShiftDown = 0;
     s_frame = 0;
+    memset(&s_chase, 0, sizeof(s_chase));
     return 1;
 }
 
@@ -164,26 +176,157 @@ EMSCRIPTEN_KEEPALIVE int rw_tick(void) {
     return (int)s_race->sim.phase;
 }
 
-/* The native multiplayer/single-player chase rig, with the same host
- * adjustments; it reads the car, never mutates it. */
+/* ---- Retail chase camera (track/camera_chase.c, mode 1) ------------------
+ * The yaw settling is the retail integer code verbatim. The eye/look-at
+ * geometry uses the same offsets, matrix order and angle formulas, evaluated
+ * in floats instead of GTE fixed point: the camera is presentation only and
+ * never feeds back into the simulation. */
+static s32 Word(int64_t value) { return (s32)(uint32_t)(uint64_t)value; }
+
+static s32 SquareRootInt(s32 value) {
+    uint32_t x = value > 0 ? (uint32_t)value : 0u, root = 0, bit = 1u << 30;
+    while (bit > x) bit >>= 2;
+    while (bit) {
+        if (x >= root + bit) { x -= root + bit; root = (root >> 1) + bit; }
+        else root >>= 1;
+        bit >>= 2;
+    }
+    return (s32)root;
+}
+
+static void SettleChaseYaw(WebChase *chase, s32 stepLimit, s32 acceleratedStep, int negative) {
+    if (stepLimit < acceleratedStep) {
+        chase->yawLag = negative ? -stepLimit : stepLimit;
+        if (negative) chase->rampNeg = SquareRootInt(Word((int64_t)stepLimit * chase->damping));
+        else chase->rampPos = SquareRootInt(Word((int64_t)stepLimit * chase->damping));
+    } else {
+        chase->yawLag = negative ? -acceleratedStep : acceleratedStep;
+    }
+}
+
+static void AdvanceChaseYawRamp(WebChase *chase, s32 stepLimit, int negative) {
+    s32 ramp, acceleratedStep;
+    if (stepLimit > 0x40) stepLimit = 0x40;
+    chase->stepLimit = stepLimit;
+    ramp = Word((int64_t)(negative ? chase->rampNeg : chase->rampPos) + 8);
+    acceleratedStep = Word((int64_t)ramp * ramp) / chase->damping;
+    if (negative) { chase->rampPos = 0; chase->rampNeg = Word((int64_t)chase->rampNeg + 8); }
+    else { chase->rampNeg = 0; chase->rampPos = Word((int64_t)chase->rampPos + 8); }
+    chase->step = acceleratedStep;
+    SettleChaseYaw(chase, stepLimit, acceleratedStep, negative);
+}
+
+static s32 ChaseYawDamping(s32 carSpeed) {
+    s32 difference = Word((int64_t)0x4E2 - carSpeed), damping;
+    if (carSpeed >= 0x321) {
+        if (difference < 6) difference = 6;
+        return ((((difference * 8) / 50) + 8) / 10) + 1;
+    }
+    damping = Word((int64_t)difference * 6);
+    damping = Word((int64_t)damping * difference) / 2500;
+    damping = Word((int64_t)damping - Word((int64_t)difference * 0x46) / 50);
+    damping = Word((int64_t)damping + 0xE0) / 10;
+    return damping > 0 ? damping : 1;
+}
+
+static void UpdateChaseYawStep(WebChase *chase, s32 targetYaw, s32 previousYaw) {
+    s32 error = Word((int64_t)targetYaw - previousYaw);
+    if (error >= 5) {
+        if (error >= 0x800) AdvanceChaseYawRamp(chase, (((0x1000 - error) / 17) * 2) & ANGLE_MASK, 1);
+        else AdvanceChaseYawRamp(chase, ((error / 17) * 2) & ANGLE_MASK, 0);
+    } else if (error < -4) {
+        if (error < -0x7FF) AdvanceChaseYawRamp(chase, (((0x1000 + error) / 17) * 2) & ANGLE_MASK, 0);
+        else AdvanceChaseYawRamp(chase, ((Word(-(int64_t)error) / 17) * 2) & ANGLE_MASK, 1);
+    } else {
+        chase->yawLag = chase->rampNeg = chase->rampPos = 0;
+    }
+}
+
+static Vec3 ApplyMatrix(SceneMat3 m, float x, float y, float z) {
+    return SceneRotatePoint(m, x, y, z);
+}
+
+/* Eye position and PS1 view angles, as CameraViewFromChaseCamera leaves them. */
+static void RetailChaseView(const PlayerCarRuntime *car, int preset, Vec3 *eye,
+                            s32 *pitch, s32 *yaw, s32 *roll) {
+    static const s32 eyeY[3] = {0x3A, 0x59, 0x97}, eyeZ[3] = {0x118, 0x140, 0x190};
+    WebChase *chase = &s_chase;
+    s32 target = car->bodyYaw & ANGLE_MASK, settled, lag;
+    SceneMat3 cameraRotation, object, inverseObject, work;
+    Vec3 focus, eyeWorld;
+    s32 ex, ey, ez, distance, angleX;
+
+    if (chase->active) {
+        chase->previousYaw &= ANGLE_MASK;
+        chase->rampNeg &= ANGLE_MASK;
+        chase->rampPos &= ANGLE_MASK;
+    } else {
+        chase->previousYaw = target;
+        chase->rampNeg = chase->rampPos = 0;
+        chase->active = 1;
+    }
+    chase->damping = ChaseYawDamping(car->speed);
+    UpdateChaseYawStep(chase, target, chase->previousYaw);
+    settled = Word((int64_t)chase->previousYaw + chase->yawLag) & ANGLE_MASK;
+    lag = Word((int64_t)target - settled);
+    if (target < settled) { if (lag < -0x7FF) lag = Word((int64_t)lag + 0x1000); }
+    else if (lag >= 0x800) lag = Word((int64_t)lag - 0x1000);
+    chase->yawLag = lag;
+    chase->previousYaw = settled;
+
+    cameraRotation = SceneMat3Multiply(SceneRotationX(-0x80), SceneRotationY(-lag));
+    object = SceneMat3Multiply(SceneRotationZ(car->bodyRoll),
+                               SceneMat3Multiply(SceneRotationX(car->bodyPitch),
+                                                 SceneRotationY(car->bodyYaw)));
+    inverseObject = SceneMat3Transpose(object);
+    work = SceneMat3Transpose(SceneMat3Multiply(cameraRotation, object));
+
+    focus = ApplyMatrix(inverseObject, 0.0f, -0x3C, 0x32);
+    eyeWorld = ApplyMatrix(work, 0.0f, (float)ChaseCameraHeight(eyeY[preset]),
+                           (float)ChaseCameraDistance(eyeZ[preset]));
+    eye->x = (float)car->x + focus.x - eyeWorld.x;
+    eye->y = (float)car->y + focus.y - eyeWorld.y;
+    eye->z = (float)car->z + focus.z - eyeWorld.z;
+
+    ex = (s32)lroundf(eyeWorld.x);
+    ey = (s32)lroundf(eyeWorld.y);
+    ez = (s32)lroundf(eyeWorld.z);
+    distance = SquareRootInt(Word((int64_t)ex * ex + (int64_t)ez * ez));
+    angleX = 0x400 - (Atan2(Word((int64_t)ey + 0x28), distance) & ANGLE_MASK);
+    *yaw = 0x400 - (Atan2(ex, ez) & ANGLE_MASK) + ChaseCameraYawOffset(car->steeringAngle);
+    *roll = Word((int64_t)car->bodyRoll - car->bodyRollVelocity);
+    *pitch = angleX - (preset == 0 ? 0x90 : 0x60) + ChaseCameraPitchOffset();
+}
+
+/* render_world_game.c's GameRenderWorldBuildCamera for the race view:
+ * PAL 320x240 projection, near 1, the verified race depth limit. */
 static RenderCamera BuildChaseCamera(const PlayerCarRuntime *car) {
     RenderCamera camera;
-    float yawRad = AngleToDegrees(car->bodyYaw) * 0.017453292519943295f;
-    float distance = (float)ChaseCameraDistance(2200);
+    Vec3 eye;
+    s32 pitch, yaw, roll;
+    SceneMat3 view, converted;
+
+    RetailChaseView(car, s_chasePreset, &eye, &pitch, &yaw, &roll);
     memset(&camera, 0, sizeof(camera));
-    camera.transform.position.x = (float)car->x - sinf(yawRad) * distance;
-    camera.transform.position.y = -(float)car->y + (float)ChaseCameraHeight(1400);
-    camera.transform.position.z = -(float)car->z + cosf(yawRad) * distance;
-    camera.transform.rotation.x = -22.0f - AngleToDegrees(ChaseCameraPitchOffset());
-    camera.transform.rotation.y = -AngleToDegrees(car->bodyYaw) -
-                                  AngleToDegrees(ChaseCameraYawOffset(car->steeringAngle));
-    camera.transform.scale.x = camera.transform.scale.y = camera.transform.scale.z = 1.0f;
-    camera.verticalFovDegrees = 65.0f;
-    camera.nearPlane = 16.0f;
-    camera.farPlane = 200000.0f;
-    camera.fogNear = 60000.0f;
-    camera.fogFar = 180000.0f;
+    camera.transform.position = (Vec3){eye.x, -eye.y, -eye.z};
+    view = SceneMat3Multiply(SceneMat3Multiply(SceneRotationZ(roll), SceneRotationX(pitch)),
+                             SceneRotationY(yaw));
+    RenderConvertPsxMatrix(view.m, converted.m);
+    camera.transform.orientation = SceneQuaternion(SceneMat3Transpose(converted));
+    camera.transform.hasOrientation = 1;
+    camera.transform.rotation = (Vec3){-AngleToDegrees(pitch), -AngleToDegrees(yaw),
+                                       -AngleToDegrees(roll)};
+    camera.transform.scale = (Vec3){1.0f, 1.0f, 1.0f};
+    camera.verticalFovDegrees = 41.112f;
+    camera.nearPlane = 1.0f;
+    camera.farPlane = 16384.0f;
     return camera;
+}
+
+/* Cycles the three retail chase distances (0 closest). */
+EMSCRIPTEN_KEEPALIVE int rw_cycle_camera(void) {
+    s_chasePreset = (s_chasePreset + 1) % 3;
+    return s_chasePreset;
 }
 
 /* Same rotation as modern_native_gpu.c's ModernNativeRotate. */
@@ -306,27 +449,31 @@ EMSCRIPTEN_KEEPALIVE int rw_build_frame(float aspect) {
     return (int)s_vertexCount;
 }
 
-EMSCRIPTEN_KEEPALIVE RageNativeDrawVertex *rw_vertices(void) { return s_vertices; }
 EMSCRIPTEN_KEEPALIVE uint32_t *rw_spans(void) { return s_spanFields; }
 EMSCRIPTEN_KEEPALIVE int rw_span_count(void) { return (int)s_spanCount; }
 EMSCRIPTEN_KEEPALIVE int rw_span_fields(void) { return WEB_SPAN_FIELDS; }
 EMSCRIPTEN_KEEPALIVE float *rw_camera(void) { return s_camera; }
 EMSCRIPTEN_KEEPALIVE float *rw_light(void) { return s_light; }
+EMSCRIPTEN_KEEPALIVE int rw_packed_floats(void) { return WEB_PACKED_FLOATS; }
 
-/* Vertex layout, so the browser never hard-codes the C struct. */
-EMSCRIPTEN_KEEPALIVE int rw_vertex_layout(int field) {
-    switch (field) {
-    case 0: return (int)sizeof(RageNativeDrawVertex);
-    case 1: return (int)offsetof(RageNativeDrawVertex, position);
-    case 2: return (int)offsetof(RageNativeDrawVertex, uv);
-    case 3: return (int)offsetof(RageNativeDrawVertex, color);
-    case 4: return (int)offsetof(RageNativeDrawVertex, normal);
-    case 5: return (int)offsetof(RageNativeDrawVertex, fog);
-    case 6: return (int)offsetof(RageNativeDrawVertex, lighting);
-    case 7: return (int)offsetof(RageNativeDrawVertex, environmentLight);
-    case 8: return (int)offsetof(RageNativeDrawVertex, depthBias);
-    default: return -1;
+/* The draw vertex mixes floats with a byte colour; WebGL wants one typed
+ * buffer per upload, so this repacks the frame into floats only:
+ * position 3, uv 2, colour 4 (0..255), normal 3, fog 4 (colour, weight),
+ * lighting 1, environment light 3, depth bias 1. */
+EMSCRIPTEN_KEEPALIVE float *rw_pack_vertices(void) {
+    for (uint32_t i = 0; i < s_vertexCount; ++i) {
+        const RageNativeDrawVertex *v = &s_vertices[i];
+        float *out = &s_packed[(size_t)i * WEB_PACKED_FLOATS];
+        memcpy(out, v->position, sizeof(v->position));
+        memcpy(out + 3, v->uv, sizeof(v->uv));
+        for (int c = 0; c < 4; ++c) out[5 + c] = (float)v->color[c];
+        memcpy(out + 9, v->normal, sizeof(v->normal));
+        memcpy(out + 12, v->fog, sizeof(v->fog));
+        out[16] = v->lighting;
+        memcpy(out + 17, v->environmentLight, sizeof(v->environmentLight));
+        out[20] = v->depthBias;
     }
+    return s_packed;
 }
 
 /* 256x256 RGBA for one span's material, exactly as the native backend
@@ -377,10 +524,10 @@ EMSCRIPTEN_KEEPALIVE int32_t *rw_hud(void) {
     s_hud[1] = (int32_t)s_race->sim.countdown;
     s_hud[2] = driver->car.lap > s_race->sim.laps ? s_race->sim.laps : driver->car.lap;
     s_hud[3] = s_race->sim.laps;
-    s_hud[4] = driver->place;
+    s_hud[4] = RacePosition(&s_race->sim, 0);
     s_hud[5] = entrants;
     s_hud[6] = RaceTime(&s_race->sim, 0);
-    s_hud[7] = driver->car.speed;
+    s_hud[7] = driver->car.speed * 160 / 1168; /* km/h, as the retail readout */
     s_hud[8] = driver->car.drive.gear;
     s_hud[9] = (int32_t)driver->status;
     s_hud[10] = driver->place;
@@ -391,3 +538,13 @@ EMSCRIPTEN_KEEPALIVE int32_t *rw_hud(void) {
     s_hud[15] = driver->car.bodyYaw;
     return s_hud;
 }
+
+/* 1 when the disc's car variant offers an automatic gearbox, 0 when it is
+ * manual only, -1 when the variant cannot be read. */
+EMSCRIPTEN_KEEPALIVE int rw_car_automatic(int variant) {
+    int automatic = 0;
+    if (!s_archive || !ReadRaceCarTransmission(s_archive, variant, &automatic)) return -1;
+    return automatic ? 1 : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int rw_car_variants(void) { return CAR_MODEL_VARIANT_COUNT; }

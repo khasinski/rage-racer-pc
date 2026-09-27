@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rage Racer</title>
+</head>
+<body>
+  <section id="disc" aria-live="polite">
+    <h1>RAGE RACER</h1>
+    <p class="lead">Drop your Rage Racer disc image here</p>
+    <p class="hint">A CUE file together with its BIN files, the Track 01 BIN on its own, or the whole disc folder.</p>
+    <label class="button" for="disc-input">Browse…</label>
+    <input id="disc-input" type="file" accept=".cue,.bin,.img" multiple hidden>
+    <p id="disc-status" class="status"></p>
+  </section>
+
+  <form id="setup" hidden>
+    <h2>Race</h2>
+    <label>Class
+      <select name="class">
+        <option value="0">Class 1</option><option value="1">Class 2</option><option value="2">Class 3</option>
+        <option value="3">Class 4</option><option value="4">Class 5</option><option value="5">Class 6</option>
+      </select>
+    </label>
+    <label>Course
+      <select name="course">
+        <option value="0">Course 1</option><option value="1">Course 2</option>
+        <option value="2">Course 3</option><option value="3">Course 4</option>
+      </select>
+    </label>
+    <label>Car
+      <select name="car" id="car"></select>
+    </label>
+    <label>Transmission
+      <select name="transmission"><option value="0">Automatic</option><option value="1">Manual</option></select>
+    </label>
+    <label>Laps
+      <select name="laps">
+        <option>1</option><option>2</option><option selected>3</option>
+        <option>4</option><option>5</option><option>6</option>
+      </select>
+    </label>
+    <label class="check"><input type="checkbox" name="reverse"> Reverse</label>
+    <label class="check"><input type="checkbox" name="rivals" checked> Rivals</label>
+    <button id="start" type="submit">Start race</button>
+    <p id="setup-status" class="status"></p>
+    <p class="hint">Arrows or WASD to drive · Q/E change gear (manual) · C camera · Esc returns here</p>
+  </form>
+
+  <canvas id="view" hidden></canvas>
+  <div id="hud" hidden>
+    <div class="cell"><span>POS</span><b id="hud-place"></b></div>
+    <div class="cell"><span>LAP</span><b id="hud-lap"></b></div>
+    <div class="cell"><span>TIME</span><b id="hud-time"></b></div>
+    <div class="cell right"><span>KM/H</span><b id="hud-speed"></b></div>
+    <div class="cell right"><span>GEAR</span><b id="hud-gear"></b></div>
+    <div id="hud-banner"></div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

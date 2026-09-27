@@ -104,3 +104,4 @@ markers/
 web/node_modules/
 web/dist/
 web/public/wasm/
+e2e-output/
