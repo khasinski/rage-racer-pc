@@ -7,14 +7,32 @@
 // the sky gradient with the retail cloud panorama grid. Left
 // out: ray-traced visibility, clear coat/specular, lamps and spot lights.
 
-/* WebGL cannot limit a texture to four mip levels, so the chain is padded
- * and the level of detail clamped here to the native RAGE_TEXTURE_ATLAS_MIP_LEVELS. */
+/* Every material is one layer of a texture array holding its premultiplied
+ * atlas mip chain (the native RAGE_TEXTURE_ATLAS_MIP_LEVELS = 4) side by
+ * side: level 0 at (0,0), 1 at (256,0), 2 at (256,128), 3 at (320,128) of a
+ * 384x256 layer. Sampling picks the level of detail as the hardware would,
+ * clamped to the four levels, and blends the two nearest levels (trilinear),
+ * keeping every bilinear footprint inside its level. One texture for every
+ * material lets a whole draw phase be one draw call, in native span order. */
+export const ATLAS_LAYER_WIDTH = 384;
+export const ATLAS_LAYER_HEIGHT = 256;
+export const ATLAS_LEVEL_ORIGINS: [number, number][] = [[0, 0], [256, 0], [256, 128], [320, 128]];
 const atlasSample = /* glsl */ `
-vec4 atlasTexel(sampler2D image, vec2 uv) {
+vec4 atlasLevel(highp sampler2DArray atlas, vec2 uv, float layer, int level) {
+    float size = 256.0 / float(1 << level);
+    vec2 origin = level == 0 ? vec2(0.0) : level == 1 ? vec2(256.0, 0.0)
+                : level == 2 ? vec2(256.0, 128.0) : vec2(320.0, 128.0);
+    vec2 texel = clamp(uv * size, vec2(0.5), vec2(size - 0.5)) + origin;
+    return textureLod(atlas, vec3(texel / vec2(384.0, 256.0), layer), 0.0);
+}
+vec4 atlasTexel(highp sampler2DArray atlas, vec2 uv, float layer) {
     vec2 texels = uv * 256.0;
     vec2 dx = dFdx(texels), dy = dFdy(texels);
-    float lod = 0.5 * log2(max(max(dot(dx, dx), dot(dy, dy)), 1e-8));
-    return textureLod(image, uv, clamp(lod, 0.0, 3.0));
+    float lod = clamp(0.5 * log2(max(max(dot(dx, dx), dot(dy, dy)), 1e-8)), 0.0, 3.0);
+    int level = int(floor(lod));
+    float blend = lod - float(level);
+    vec4 near = atlasLevel(atlas, uv, layer, level);
+    return level < 3 && blend > 0.0 ? mix(near, atlasLevel(atlas, uv, layer, level + 1), blend) : near;
 }
 `;
 
@@ -29,6 +47,7 @@ in float lighting;
 in vec3 environmentLight;
 in float depthBias;
 in float shadowReception;
+in float layer;
 uniform vec4 uCameraPosition;
 uniform vec4 uViewRow0;
 uniform vec4 uViewRow1;
@@ -47,6 +66,7 @@ out float vLighting;
 out vec3 vEnvironmentLight;
 out vec3 vShadowCoord;
 out float vShadowReception;
+flat out float vLayer;
 
 void main() {
     vec3 relative = position - uCameraPosition.xyz;
@@ -76,15 +96,15 @@ void main() {
     vShadowCoord = vec3(shadowX * 0.5 + 0.5, shadowY * 0.5 + 0.5,
                         shadowDepth * uShadowProjection.z + uShadowProjection.w);
     vShadowReception = shadowReception;
+    vLayer = layer;
 }
 `;
 
 export const worldFragment = /* glsl */ `
 precision highp float;
 precision highp sampler2D;
-uniform sampler2D uMaterial;
+uniform highp sampler2DArray uAtlas;
 uniform sampler2D uShadowMap;
-uniform float uTextured;
 uniform float uShadowEnabled;
 uniform float uShadowResolution;
 uniform vec4 uLightDirection;
@@ -98,6 +118,7 @@ in float vLighting;
 in vec3 vEnvironmentLight;
 in vec3 vShadowCoord;
 in float vShadowReception;
+flat in float vLayer;
 out vec4 outColor;
 ${atlasSample}
 float shadowVisibility(vec3 n) {
@@ -134,8 +155,8 @@ void main() {
     light *= mix(1.0, mix(0.35, 1.0, visibility), vLighting);
     light = mix(light, vec3(1.0), vFog.a);
     vec3 foggedColor = mix(vColor.rgb, vFog.rgb, vFog.a);
-    if (uTextured > 0.5) {
-        vec4 texel = atlasTexel(uMaterial, vUv);
+    if (vLayer >= 0.0) {
+        vec4 texel = atlasTexel(uAtlas, vUv, vLayer);
         if (texel.a <= 0.001) discard;
         texel.rgb /= texel.a;
         vec3 modulation = min(foggedColor * 2.0, vec3(1.0));
@@ -151,12 +172,14 @@ export const shadowVertex = /* glsl */ `
 precision highp float;
 in vec3 position;
 in vec2 uv;
+in float layer;
 uniform vec4 uShadowPosition;
 uniform vec4 uShadowRow0;
 uniform vec4 uShadowRow1;
 uniform vec4 uShadowRow2;
 uniform vec4 uShadowProjection;
 out vec2 vUv;
+flat out float vLayer;
 void main() {
     vec3 relative = position - uShadowPosition.xyz;
     float depth = -dot(uShadowRow2.xyz, relative);
@@ -165,18 +188,19 @@ void main() {
                        2.0 * (depth * uShadowProjection.z + uShadowProjection.w) - 1.0,
                        1.0);
     vUv = uv;
+    vLayer = layer;
 }
 `;
 
 export const shadowFragment = /* glsl */ `
 precision highp float;
-uniform sampler2D uMaterial;
-uniform float uTextured;
+uniform highp sampler2DArray uAtlas;
 in vec2 vUv;
+flat in float vLayer;
 out vec4 outColor;
 ${atlasSample}
 void main() {
-    if (uTextured > 0.5 && atlasTexel(uMaterial, vUv).a <= 0.5) discard;
+    if (vLayer >= 0.0 && atlasTexel(uAtlas, vUv, vLayer).a <= 0.5) discard;
     outColor = vec4(0.0);
 }
 `;

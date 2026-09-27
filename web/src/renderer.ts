@@ -9,12 +9,20 @@ import {
   ASSET_TRACK_MODEL_BANK_1, ASSET_TRACK_MODEL_BANK_2, MATERIAL_ENV_CLUT, NO_MATERIAL, Rage, SPAN_FIELDS, type DecodedTexture, type TextureLevel,
 } from './rage';
 import {
-  mirrorFragment, mirrorVertex, shadowFragment, shadowVertex, skyFragment, skyVertex, worldFragment, worldVertex,
+  ATLAS_LAYER_HEIGHT, ATLAS_LAYER_WIDTH, ATLAS_LEVEL_ORIGINS, mirrorFragment, mirrorVertex, shadowFragment, shadowVertex, skyFragment, skyVertex, worldFragment, worldVertex,
 } from './shaders';
 
 const VERTEX_CAPACITY = 600_000;
 /* Decoding is the expensive part of a palette change; spread it out. */
 const DECODES_PER_FRAME = 48;
+/* Texture array layers: grown by doubling, and least-recently-drawn
+ * materials give up their layer once the array is at its limit. */
+const ATLAS_INITIAL_LAYERS = 64;
+const ATLAS_MAX_LAYERS = 512;
+const ATLAS_LAYER_BYTES = ATLAS_LAYER_WIDTH * ATLAS_LAYER_HEIGHT * 4;
+/* Draw groups: the two world materials and the one shadow material. */
+const OPAQUE = 0;
+const TRANSPARENT = 1;
 /* render_world.h RenderAssetSet: vehicles are model-bank meshes. */
 const ASSET_MODEL_BANK = 0;
 
@@ -44,10 +52,9 @@ function addMerged(groups: Group[], start: number, count: number, material: numb
   else groups.push({ start, count, material });
 }
 interface MaterialEntry {
-  main: number; // index into the main material array
-  shadow: number; // index into the shadow material array
+  layer: number; // texture array layer, -1 when untextured
   transparent: boolean;
-  texture: THREE.Texture | null;
+  lastUsed: number; // frame number
 }
 
 const vec4 = () => ({ value: new THREE.Vector4() });
@@ -61,8 +68,17 @@ export class Renderer {
   private readonly shadowGeometry = new THREE.BufferGeometry();
   private readonly vertexData: Float32Array;
   private readonly vertexBuffer: THREE.InterleavedBuffer;
-  private readonly mainMaterials: THREE.RawShaderMaterial[] = [];
-  private readonly shadowMaterials: THREE.RawShaderMaterial[] = [];
+  private readonly layerData: Float32Array;
+  private readonly layerAttribute: THREE.BufferAttribute;
+  private readonly worldMaterials: THREE.RawShaderMaterial[];
+  private readonly shadowMaterial: THREE.RawShaderMaterial;
+  private readonly atlasUniform = { value: null } as Uniform<THREE.DataArrayTexture | null>;
+  private atlas: THREE.DataArrayTexture | null = null;
+  /* A new array uploads whole; per-layer updates only after that (three.js
+   * would otherwise upload just the queued layers of a fresh array). */
+  private atlasFresh = false;
+  private readonly freeLayers: number[] = [];
+  private frameNumber = 0;
   private readonly entries = new Map<string, MaterialEntry>();
   /* Last entry each material was drawn with, shown while a new page decodes. */
   private readonly shown = new Map<string, MaterialEntry>();
@@ -126,6 +142,12 @@ export class Renderer {
       this.mirrorGeometry.setAttribute(name, attribute);
       if (name === 'position' || name === 'uv') this.shadowGeometry.setAttribute(name, attribute);
     }
+    this.layerData = new Float32Array(VERTEX_CAPACITY);
+    this.layerAttribute = new THREE.BufferAttribute(this.layerData, 1);
+    this.layerAttribute.setUsage(THREE.DynamicDrawUsage);
+    for (const geometry of [this.geometry, this.shadowGeometry, this.mirrorGeometry]) {
+      geometry.setAttribute('layer', this.layerAttribute);
+    }
     for (const geometry of [this.geometry, this.shadowGeometry, this.mirrorGeometry])
       geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), Infinity);
 
@@ -138,10 +160,31 @@ export class Renderer {
     this.shared.uShadowMap.value = this.shadowTarget.depthTexture;
     this.shared.uShadowResolution.value = resolution;
 
-    this.untextured = this.addEntry(null, false);
-    const world = new THREE.Mesh(this.geometry, this.mainMaterials);
+    this.growAtlas(ATLAS_INITIAL_LAYERS);
+    const worldMaterial = (transparent: boolean) => new THREE.RawShaderMaterial({
+      glslVersion: THREE.GLSL3,
+      vertexShader: worldVertex,
+      fragmentShader: worldFragment,
+      uniforms: { ...this.shared, uAtlas: this.atlasUniform },
+      side: THREE.DoubleSide,
+      depthFunc: THREE.LessEqualDepth,
+      transparent,
+      blending: transparent ? THREE.NormalBlending : THREE.NoBlending,
+      depthWrite: !transparent,
+    });
+    this.worldMaterials = [worldMaterial(false), worldMaterial(true)];
+    this.shadowMaterial = new THREE.RawShaderMaterial({
+      glslVersion: THREE.GLSL3,
+      vertexShader: shadowVertex,
+      fragmentShader: shadowFragment,
+      uniforms: { ...this.shared, uAtlas: this.atlasUniform },
+      side: THREE.DoubleSide,
+      blending: THREE.NoBlending,
+    });
+    this.untextured = { layer: -1, transparent: false, lastUsed: 0 };
+    const world = new THREE.Mesh(this.geometry, this.worldMaterials);
     world.frustumCulled = false;
-    const casters = new THREE.Mesh(this.shadowGeometry, this.shadowMaterials);
+    const casters = new THREE.Mesh(this.shadowGeometry, [this.shadowMaterial]);
     casters.frustumCulled = false;
     this.shadowScene.add(casters);
 
@@ -158,7 +201,7 @@ export class Renderer {
 
     const mirrorSky = new THREE.Mesh(sky.geometry, sky.material);
     mirrorSky.frustumCulled = false;
-    const mirrorWorld = new THREE.Mesh(this.mirrorGeometry, this.mainMaterials);
+    const mirrorWorld = new THREE.Mesh(this.mirrorGeometry, this.worldMaterials);
     mirrorWorld.frustumCulled = false;
     this.mirrorScene.add(mirrorSky, mirrorWorld);
     const composite = new THREE.Mesh(
@@ -171,60 +214,60 @@ export class Renderer {
     this.compositeScene.add(composite);
   }
 
-  private addEntry(texture: THREE.Texture | null, transparent: boolean): MaterialEntry {
-    const textured = { value: texture ? 1 : 0 };
-    const main = new THREE.RawShaderMaterial({
-      glslVersion: THREE.GLSL3,
-      vertexShader: worldVertex,
-      fragmentShader: worldFragment,
-      uniforms: { ...this.shared, uMaterial: { value: texture }, uTextured: textured },
-      side: THREE.DoubleSide,
-      depthFunc: THREE.LessEqualDepth,
-      transparent,
-      blending: transparent ? THREE.NormalBlending : THREE.NoBlending,
-      depthWrite: !transparent,
-    });
-    const shadow = new THREE.RawShaderMaterial({
-      glslVersion: THREE.GLSL3,
-      vertexShader: shadowVertex,
-      fragmentShader: shadowFragment,
-      uniforms: { ...this.shared, uMaterial: { value: texture }, uTextured: textured },
-      side: THREE.DoubleSide,
-      blending: THREE.NoBlending,
-    });
-    this.mainMaterials.push(main);
-    this.shadowMaterials.push(shadow);
-    return {
-      main: this.mainMaterials.length - 1, shadow: this.shadowMaterials.length - 1,
-      transparent, texture,
-    };
+  /** Recreates the texture array with room for `layers`, keeping its contents. */
+  private growAtlas(layers: number) {
+    const previous = this.atlas;
+    const data = new Uint8Array(layers * ATLAS_LAYER_BYTES);
+    const oldLayers = previous ? previous.image.depth : 0;
+    if (previous) data.set(previous.image.data as Uint8Array);
+    const atlas = new THREE.DataArrayTexture(data, ATLAS_LAYER_WIDTH, ATLAS_LAYER_HEIGHT, layers);
+    atlas.format = THREE.RGBAFormat;
+    atlas.type = THREE.UnsignedByteType;
+    atlas.magFilter = THREE.LinearFilter;
+    atlas.minFilter = THREE.LinearFilter;
+    atlas.generateMipmaps = false;
+    atlas.colorSpace = THREE.NoColorSpace;
+    atlas.needsUpdate = true;
+    this.atlas = atlas;
+    this.atlasFresh = true;
+    this.atlasUniform.value = atlas;
+    for (let layer = layers - 1; layer >= oldLayers; layer--) this.freeLayers.push(layer);
+    previous?.dispose();
   }
 
-  /* WebGL needs a complete chain; levels past the native four are padded by
-   * averaging and never sampled (the shader clamps the level of detail). */
-  private static texture(decoded: DecodedTexture): THREE.DataTexture {
-    const mipmaps = decoded.levels.map((level) => ({ ...level })) as {
-      data: Uint8Array; width: number; height: number;
-    }[];
-    while (mipmaps[mipmaps.length - 1].width > 1) {
-      const source = mipmaps[mipmaps.length - 1];
-      const size = source.width >> 1;
-      const data = new Uint8Array(size * size * 4);
-      for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) for (let c = 0; c < 4; c++) {
-        const at = (sx: number, sy: number) => source.data[(sy * source.width + sx) * 4 + c];
-        data[(y * size + x) * 4 + c] =
-          (at(2 * x, 2 * y) + at(2 * x + 1, 2 * y) + at(2 * x, 2 * y + 1) + at(2 * x + 1, 2 * y + 1) + 2) >> 2;
-      }
-      mipmaps.push({ data, width: size, height: size });
+  /** A layer for a new material: a free one, a larger array, or the layer of
+   *  the material drawn longest ago (never one drawn this frame). */
+  private allocateLayer(): number {
+    if (!this.freeLayers.length) {
+      const layers = this.atlas!.image.depth;
+      if (layers < ATLAS_MAX_LAYERS) this.growAtlas(Math.min(ATLAS_MAX_LAYERS, layers * 2));
     }
-    const texture = new THREE.DataTexture(mipmaps[0].data, mipmaps[0].width, mipmaps[0].height, THREE.RGBAFormat);
-    texture.mipmaps = mipmaps as unknown as THREE.CompressedTextureMipmap[];
-    texture.generateMipmaps = false;
-    texture.magFilter = THREE.LinearFilter;
-    texture.minFilter = THREE.LinearMipmapLinearFilter;
-    texture.colorSpace = THREE.NoColorSpace;
-    texture.needsUpdate = true;
-    return texture;
+    const free = this.freeLayers.pop();
+    if (free !== undefined) return free;
+    let oldest: [string, MaterialEntry] | null = null;
+    for (const item of this.entries) {
+      if (item[1].layer >= 0 && item[1].lastUsed < this.frameNumber && (!oldest || item[1].lastUsed < oldest[1].lastUsed)) oldest = item;
+    }
+    if (!oldest) return -1;
+    this.entries.delete(oldest[0]);
+    for (const [identity, entry] of this.shown) if (entry === oldest[1]) this.shown.delete(identity);
+    return oldest[1].layer;
+  }
+
+  /** Writes a decoded mip chain into its layer and queues the upload. */
+  private writeLayer(layer: number, decoded: DecodedTexture) {
+    const atlas = this.atlas!;
+    const data = atlas.image.data as Uint8Array;
+    const base = layer * ATLAS_LAYER_BYTES;
+    decoded.levels.forEach((level, index) => {
+      const [ox, oy] = ATLAS_LEVEL_ORIGINS[index];
+      for (let y = 0; y < level.height; y++) {
+        data.set(level.data.subarray(y * level.width * 4, (y + 1) * level.width * 4),
+                 base + ((oy + y) * ATLAS_LAYER_WIDTH + ox) * 4);
+      }
+    });
+    if (!this.atlasFresh) atlas.addLayerUpdate(layer);
+    atlas.needsUpdate = true;
   }
 
   /* The cloud sheet repeats round the turn but never upwards, and is sampled
@@ -286,27 +329,29 @@ export class Renderer {
       this.entries.set(key, this.untextured);
       return this.show(identity, this.untextured);
     }
-    const texture = Renderer.texture(decoded);
-    if (existing && existing.texture) {
-      // Palette change: swap the image in place, keeping the material slots.
-      existing.texture.dispose();
-      existing.texture = texture;
-      (this.mainMaterials[existing.main].uniforms.uMaterial as Uniform<THREE.Texture>).value = texture;
-      (this.shadowMaterials[existing.shadow].uniforms.uMaterial as Uniform<THREE.Texture>).value = texture;
+    if (existing && existing.layer >= 0) {
+      // Palette change: redraw the image in place, in the same layer.
+      this.writeLayer(existing.layer, decoded);
+      existing.transparent = decoded.transparent;
       return this.show(identity, existing);
     }
-    const entry = this.addEntry(texture, decoded.transparent);
+    const layer = this.allocateLayer();
+    if (layer < 0) return this.show(identity, this.untextured);
+    this.writeLayer(layer, decoded);
+    const entry: MaterialEntry = { layer, transparent: decoded.transparent, lastUsed: this.frameNumber };
     this.entries.set(key, entry);
     return this.show(identity, entry);
   }
 
   private show(identity: string, entry: MaterialEntry): MaterialEntry {
+    entry.lastUsed = this.frameNumber;
     this.shown.set(identity, entry);
     return entry;
   }
 
   /** Uploads the frame the bridge just built with `vertexCount` vertices. */
   update(vertexCount: number) {
+    this.frameNumber++;
     this.page = this.rage.texturePage();
     const hash = this.rage.paletteHash();
     if (hash !== this.paletteHash) {
@@ -318,8 +363,8 @@ export class Renderer {
     const packed = this.rage.packedVertices(totalVertices);
 
     // Sort the spans into draw phases, then lay their vertices out in draw
-    // order so that neighbouring spans with the same material become one
-    // draw call (a frame has hundreds of spans of a few dozen vertices).
+    // order. Every span carries its texture layer, so each run of opaque or
+    // blended spans is one draw call, in native span order.
     const { fields: spans, mainSpans } = this.rage.spans();
     const spanCount = spans.length / SPAN_FIELDS;
     const phases: Span[][] = [[], [], [], []];
@@ -339,8 +384,9 @@ export class Renderer {
       for (const phase of list) {
         for (const span of phase) {
           this.vertexData.set(packed.subarray(span.start * floats, (span.start + span.count) * floats), written * floats);
-          addMerged(groups, written, span.count, span.entry.main);
-          if (casters && span.vehicle) addMerged(casters, written, span.count, span.entry.shadow);
+          this.layerData.fill(span.entry.layer, written, written + span.count);
+          addMerged(groups, written, span.count, span.entry.transparent ? TRANSPARENT : OPAQUE);
+          if (casters && span.vehicle) addMerged(casters, written, span.count, 0);
           written += span.count;
         }
       }
@@ -354,6 +400,9 @@ export class Renderer {
     this.vertexBuffer.clearUpdateRanges();
     this.vertexBuffer.addUpdateRange(0, written * floats);
     this.vertexBuffer.needsUpdate = true;
+    this.layerAttribute.clearUpdateRanges();
+    this.layerAttribute.addUpdateRange(0, written);
+    this.layerAttribute.needsUpdate = true;
 
     this.geometry.clearGroups();
     for (const g of mainGroups) this.geometry.addGroup(g.start, g.count, g.material);
@@ -430,6 +479,7 @@ export class Renderer {
     // gl_FragCoord is in drawing-buffer pixels.
     this.applyView(this.mainView, this.webgl.getContext().drawingBufferHeight);
     this.webgl.render(this.scene, this.camera);
+    this.atlasFresh = false; // uploaded whole by the pass above
     if (this.mirrorPanelY !== null) this.renderMirror(this.mirrorPanelY);
   }
 
