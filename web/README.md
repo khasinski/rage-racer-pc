@@ -86,6 +86,7 @@ npm run typecheck
 npm run test:server -- "<disc>"   # accounts, rooms, rules, a full race to results
 npm run test:e2e -- "<disc>"      # two headless browsers race each other, then practice
 node scripts/grid-test.mjs "<disc>" # 8-player grid on every course variant
+node scripts/finish-check.mjs "<disc>" # finish fade, spectator hand-over, finish deadline
 node scripts/smoke.mjs "<disc>"   # the simulation module on its own
 node scripts/audio-check.mjs "<disc.cue>"  # engine sound follows rpm; race tunes found
 # Native vs WebAssembly physics, tick by tick:

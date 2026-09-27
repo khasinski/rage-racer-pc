@@ -68,7 +68,7 @@
         <h2>Grid</h2>
         <table id="room-players" class="table"></table>
         <p id="room-fill" class="hint"></p>
-        <div class="car-picker">
+        <div class="car-picker" id="car-picker">
           <label>Your car <select id="car-model"></select></label>
           <label>Transmission
             <select id="car-transmission"><option value="auto">Automatic</option><option value="manual">Manual</option></select>
@@ -77,6 +77,8 @@
         <div class="row">
           <button type="button" id="ready-button">Ready</button>
           <button type="button" id="start-button" hidden>Start race</button>
+          <button type="button" id="spectate-button" class="secondary">Watch only</button>
+          <button type="button" id="watch-button" hidden>Watch the race</button>
         </div>
         <p id="room-status" class="status"></p>
         <p class="hint">Keys as on the desktop: ←/→ steer · X accelerate · Z brake · E/R shift up, Q/W shift down (manual) · S camera · hold ↓ to look back. A gamepad steers with the stick, RT/LT pedals, D-pad ↓/↑ shift, Y camera.</p>
@@ -143,6 +145,8 @@
     <div class="cell data"><span>GEAR</span><b id="hud-gear"></b></div>
     <div id="hud-banner"></div>
     <ol id="standings" hidden></ol>
+    <p id="spectating" hidden></p>
+    <p id="deadline" hidden></p>
     <ol id="feed"></ol>
     <p id="hud-hint"></p>
   </div>

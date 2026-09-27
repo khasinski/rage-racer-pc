@@ -30,6 +30,7 @@ export interface RoomPlayer {
   manual: boolean;
   ready: boolean;
   host: boolean;
+  spectator: boolean; // watches instead of racing
 }
 
 export interface RoomSummary {
@@ -37,7 +38,8 @@ export interface RoomSummary {
   settings: RoomSettings;
   status: RoomStatus;
   host: string;
-  players: number;
+  players: number; // racers
+  spectators: number;
 }
 
 export interface RoomState extends RoomSummary { members: RoomPlayer[] }
@@ -73,6 +75,8 @@ export type ClientMessage =
   | { t: 'leaveRoom' }
   | { t: 'setCar'; variant: number; manual: boolean }
   | { t: 'setReady'; ready: boolean }
+  | { t: 'setSpectator'; spectator: boolean }
+  | { t: 'watchRace' }
   | { t: 'startRace' }
   | { t: 'loaded'; ok: boolean }
   | { t: 'leaveRace' }
@@ -89,7 +93,10 @@ export type ServerMessage =
   | { t: 'rooms'; rooms: RoomSummary[] }
   | { t: 'room'; room: RoomState | null }
   | { t: 'chat'; roomId: number; from: string; text: string; at: number }
+  // localSeat is -1 for a spectator.
   | { t: 'raceStart'; raceId: number; settings: RoomSettings; seats: RaceSeat[]; humans: number; localSeat: number }
+  // The rest of the field has this long to finish once the first car is home.
+  | { t: 'finishDeadline'; remainingMs: number }
   | { t: 'raceGo' }
   | { t: 'raceEvent'; event: RaceEvent }
   | { t: 'results'; raceId: number; results: RaceResult[] }

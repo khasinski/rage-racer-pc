@@ -43,6 +43,10 @@ let online = false; // the current race is driven by the server
 let players: { seat: number; name: string }[] = [];
 let localSeat = 0;
 let standingsAt = 0;
+/* Every seat's name (players, then rivals), for spectating. */
+let seatNames: string[] = [];
+/* performance.now() when the server closes the race, once somebody finished. */
+let deadlineAt: number | null = null;
 const frames = new FrameBuffer();
 
 function show(next: Screen) {
@@ -207,6 +211,9 @@ function onMessage(message: ServerMessage) {
     case 'raceGo':
       $('hud-hint').textContent = '';
       break;
+    case 'finishDeadline':
+      deadlineAt = performance.now() + message.remainingMs;
+      break;
     case 'raceEvent':
       feed(describe(message.event));
       break;
@@ -265,6 +272,11 @@ $('ready-button').addEventListener('click', () => {
   send({ t: 'setReady', ready: !mine?.ready });
 });
 $('start-button').addEventListener('click', () => send({ t: 'startRace' }));
+$('spectate-button').addEventListener('click', () => {
+  const mine = room?.members.find((m) => m.userId === session.user?.id);
+  send({ t: 'setSpectator', spectator: !mine?.spectator });
+});
+$('watch-button').addEventListener('click', () => send({ t: 'watchRace' }));
 $<HTMLFormElement>('chat-form').addEventListener('submit', (event) => {
   event.preventDefault();
   const input = (event.target as HTMLFormElement).elements.namedItem('text') as HTMLInputElement;
@@ -319,7 +331,9 @@ async function startOnlineRace(message: Extract<ServerMessage, { t: 'raceStart' 
   }
   $('hud-hint').textContent = 'Waiting for the other players…';
   players = message.seats.slice(0, message.humans).map((seat, index) => ({ seat: index, name: seat.name }));
+  seatNames = message.seats.map((seat) => seat.name);
   localSeat = message.localSeat;
+  if (localSeat < 0) $('hud-hint').textContent = 'Watching the race…';
   online = true;
   frames.reset();
   beginRace(rage);
@@ -337,12 +351,20 @@ function beginRace(rage: Rage) {
   $('feed').replaceChildren();
   $('standings').replaceChildren();
   $('standings').hidden = !online;
+  $('spectating').hidden = true;
+  $('deadline').hidden = true;
+  if (!online) {
+    deadlineAt = null;
+    localSeat = 0;
+    seatNames = ['You', ...Array.from({ length: 11 }, (_, i) => `Rival ${i + 1}`)];
+  }
   racing = true;
   audio?.startRace();
 }
 
 function stopRace() {
   racing = false;
+  deadlineAt = null;
   audio?.stopRace();
   online = false;
   frames.reset();
@@ -467,7 +489,7 @@ function frame(now: number) {
   while (accumulator >= TICK_MS) {
     if (online) {
       // Send this tick's controls, then show the server frame that is due.
-      connection?.sendInput(rage.takeInput());
+      if (localSeat >= 0) connection?.sendInput(rage.takeInput());
       const due = frames.next();
       if (due) rage.applyFrame(due.data);
     }
@@ -490,14 +512,76 @@ function frame(now: number) {
   const vertices = rage.buildFrame(renderer.aspect, t);
   if (vertices >= 0) renderer.update(vertices);
   const h = rage.hud();
+  if (online && h.phase >= PHASE_RACING && $('hud-hint').textContent) $('hud-hint').textContent = '';
   audio?.update(h, paused);
   drawHud(h);
-  if (online && now - standingsAt > 250) {
+  if (now - standingsAt > 250) {
     standingsAt = now;
-    drawStandings(rage);
+    if (online) drawStandings(rage);
+    followRace(rage);
   }
+  spectateKeys(rage);
+  drawDeadline(now);
   renderer.render();
   tachometer.draw(rage);
+}
+
+// ---- spectating ----------------------------------------------------------------
+
+/* Cars still racing, in race order: players first when `playersFirst`. */
+function racingSeats(rage: Rage, playersFirst: boolean): { seat: number; place: number; player: boolean }[] {
+  const seats = [];
+  for (let seat = 0; seat < seatNames.length; seat++) {
+    const standing = rage.standing(seat);
+    if (standing.status !== 1 || rage.seatGone(seat)) continue;
+    seats.push({ seat, place: standing.place || 99, player: players.some((p) => p.seat === seat) || seat === localSeat });
+  }
+  return seats.sort((a, b) => (playersFirst ? Number(b.player) - Number(a.player) : 0) || a.place - b.place);
+}
+
+/* Once your car has finished and faded out (or retired, or you only watch),
+ * the camera follows the player nearest to you in the race; with no player
+ * left, the nearest rival. A followed car that leaves the picture hands over
+ * the same way. */
+function followRace(rage: Rage) {
+  const view = rage.viewSeat();
+  const own = localSeat >= 0 && !rage.seatGone(localSeat);
+  if (own) {
+    if (view !== localSeat) rage.setViewSeat(localSeat);
+  } else if (view === localSeat || rage.seatGone(view)) {
+    const reference = rage.standing(localSeat >= 0 ? localSeat : view).place || 1;
+    const candidates = racingSeats(rage, true);
+    const pool = candidates.some((c) => c.player) ? candidates.filter((c) => c.player) : candidates;
+    pool.sort((a, b) => Math.abs(a.place - reference) - Math.abs(b.place - reference));
+    if (pool.length) rage.setViewSeat(pool[0].seat);
+  }
+  const spectating = rage.viewSeat() !== localSeat;
+  const label = $('spectating');
+  label.hidden = !spectating;
+  if (spectating) {
+    const name = seatNames[rage.viewSeat()] ?? '';
+    label.replaceChildren(`Watching ${name}`, Object.assign(document.createElement('span'), { textContent: '  ← → switch car' }));
+  }
+}
+
+/* ←/→ (or the D-pad) pick the previous/next car in race order. */
+function spectateKeys(rage: Rage) {
+  const previous = consumeKey('ArrowLeft');
+  const next = consumeKey('ArrowRight');
+  if ((!previous && !next) || rage.viewSeat() === localSeat) return;
+  const order = racingSeats(rage, false);
+  if (!order.length) return;
+  const at = order.findIndex((c) => c.seat === rage.viewSeat());
+  const step = next ? 1 : -1;
+  rage.setViewSeat(order[(Math.max(at, 0) + step + order.length) % order.length].seat);
+  standingsAt = 0;
+}
+
+/* The race closes this long after the first car finished (bottom left). */
+function drawDeadline(now: number) {
+  const element = $('deadline');
+  element.hidden = deadlineAt === null;
+  if (deadlineAt !== null) element.textContent = `Race closes in ${formatTime(Math.max(0, deadlineAt - now)).slice(0, -3)}`;
 }
 
 /* The online players in race order, styled like the event feed. */
@@ -524,6 +608,8 @@ function drawStandings(rage: Rage) {
 
 void ragePromise.then(async (rage) => {
   rageSync = rage;
+  // The automated browser checks (scripts/e2e.mjs) inspect the race.
+  if (location.hash === '#e2e') Object.assign(window, { __race: { rage, names: () => seatNames } });
   audio = new RaceAudio(rage);
   $('disc-status').dataset.ready = '1';
   if (await session.resume()) afterLogin();

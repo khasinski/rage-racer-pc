@@ -101,7 +101,12 @@ try {
 
   rage.send({ t: 'joinRoom', roomId: room.id });
   newbie.send({ t: 'joinRoom', roomId: room.id });
-  check(await until(() => newbie.errors().some((e) => e.includes('full'))), 'a full room refuses more players');
+  check(await until(() => newbie.last('room')?.room?.members.find((m) => m.name === 'newbie')?.spectator === true),
+        'a full room takes a newcomer as a spectator');
+  newbie.send({ t: 'setSpectator', spectator: false });
+  check(await until(() => newbie.errors().some((e) => e.includes('grid is full'))), 'a spectator cannot take a place on a full grid');
+  newbie.send({ t: 'leaveRoom' });
+  await until(() => newbie.last('room')?.room === null);
   rage.send({ t: 'setCar', variant: 9, manual: false }); // Esperanza I is a class 1 car
   check(await until(() => rage.errors().some((e) => e.includes('not available'))), 'a car from another class is refused');
   rage.send({ t: 'setCar', variant: 11, manual: false }); // Esperanza III, class 3
@@ -135,6 +140,11 @@ try {
   check(seatsTaken === '0,1' && start.seats[start.localSeat].name === 'rage', 'each player learns its own seat');
   admin.send({ t: 'loaded', ok: true });
   rage.send({ t: 'loaded', ok: true });
+  // A spectator joins the running race: no seat, the same stream.
+  await until(() => admin.frames > 10);
+  newbie.send({ t: 'joinRoom', roomId: room.id });
+  check(await until(() => newbie.last('raceStart')?.localSeat === -1), 'a spectator joins the running race without a seat');
+  check(await until(() => newbie.frames > 20), 'the spectator receives the race stream');
   const t0 = Date.now();
   while (!admin.last('results') && Date.now() - t0 < 240_000) {
     admin.input(256);
@@ -145,6 +155,9 @@ try {
   const events = admin.messages.filter((m) => m.t === 'raceEvent').map((m) => m.event);
   check(admin.frames > 100 && rage.frames > 100, `both players received the race stream (${admin.frames} frames)`);
   check(events.some((e) => e.kind === 'finish' && e.place === 1), 'the winner\'s finish is announced');
+  const deadline = rage.last('finishDeadline');
+  check(deadline?.remainingMs > 0 && newbie.last('finishDeadline'), `the finish deadline is announced to players and spectators (${deadline?.remainingMs} ms)`);
+  check(newbie.last('results')?.results.length === 12, 'the spectator gets the results');
   check(results?.results.length === 12, 'results cover the whole field');
   const winner = results?.results[0];
   check(winner?.place === 1 && winner.status === 'finished' && winner.timeMs > 0, `the winner has a time (${winner?.name} ${winner?.timeMs} ms)`);

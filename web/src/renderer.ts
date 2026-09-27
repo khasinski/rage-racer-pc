@@ -42,7 +42,7 @@ const MIRROR_FRAME_HEIGHT = 0x28;
 interface View { camera: Float32Array; sky: Float32Array }
 
 type Uniform<T> = { value: T };
-interface Span { start: number; count: number; entry: MaterialEntry; vehicle: boolean }
+interface Span { start: number; count: number; entry: MaterialEntry; vehicle: boolean; blended: boolean }
 interface Group { start: number; count: number; material: number }
 
 /** Appends a draw range, extending the previous one when it continues it. */
@@ -375,8 +375,11 @@ export class Renderer {
       const entry = this.entryFor(spans, span, budget);
       if (!entry) continue;
       const vehicle = spans[f + 3] === ASSET_MODEL_BANK || spans[f + 3] === ASSET_TRACK_MODEL_BANK_1;
-      const phase = entry.transparent ? 3 : spans[f + 12] ? 1 : vehicle ? 2 : 0;
-      (span >= mainSpans ? mirrorPhases : phases)[phase].push({ start: spans[f], count: spans[f + 1], entry, vehicle });
+      // A car fading out past the finish is drawn blended and casts no shadow.
+      const fading = spans[f + 13] < 255;
+      const phase = entry.transparent || fading ? 3 : spans[f + 12] ? 1 : vehicle ? 2 : 0;
+      (span >= mainSpans ? mirrorPhases : phases)[phase].push({
+        start: spans[f], count: spans[f + 1], entry, vehicle: vehicle && !fading, blended: entry.transparent || fading });
     }
     const floats = this.rage.packedFloats;
     let written = 0;
@@ -385,7 +388,7 @@ export class Renderer {
         for (const span of phase) {
           this.vertexData.set(packed.subarray(span.start * floats, (span.start + span.count) * floats), written * floats);
           this.layerData.fill(span.entry.layer, written, written + span.count);
-          addMerged(groups, written, span.count, span.entry.transparent ? TRANSPARENT : OPAQUE);
+          addMerged(groups, written, span.count, span.blended ? TRANSPARENT : OPAQUE);
           if (casters && span.vehicle) addMerged(casters, written, span.count, 0);
           written += span.count;
         }

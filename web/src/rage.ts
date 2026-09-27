@@ -49,7 +49,7 @@ export interface DecodedTexture { levels: TextureLevel[]; transparent: boolean }
 export const PHASE_COUNTDOWN = 1;
 export const PHASE_RACING = 2;
 export const PHASE_FINISHED = 3;
-export const SPAN_FIELDS = 13;
+export const SPAN_FIELDS = 14;
 export const TEXTURE_SIZE = 256;
 export const NO_MATERIAL = 0xffffffff;
 /* rmesh.h RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT: decoded through the
@@ -257,6 +257,16 @@ export class Rage {
     this.m.HEAPU8.set(frame, this.frameBuffer);
     return this.num('rw_apply_frame', [this.frameBuffer, frame.length]) === 1;
   }
+
+  // ---- spectating ---------------------------------------------------------
+  /** The local car's seat, -1 for a spectator. */
+  localSeat(): number { return this.num('rw_local_seat', []); }
+  /** The seat the camera and HUD follow. */
+  viewSeat(): number { return this.num('rw_view_seat', []); }
+  /** Follows another car; false when the seat is empty. */
+  setViewSeat(seat: number): boolean { return this.num('rw_set_view_seat', [seat]) === 1; }
+  /** Whether a seat's car has left the picture (retired, or finished and faded out). */
+  seatGone(seat: number): boolean { return this.num('rw_seat_gone', [seat]) === 1; }
 
   /** Place (0 when out of the race), lap and SimDriverStatus of a seat. */
   standing(seat: number): { place: number; lap: number; status: number } {
