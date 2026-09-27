@@ -2,6 +2,7 @@
 // builds the field, steps it at 50 Hz, applies the players' inputs, streams
 // the complete RaceFrame to each player, reports race events and stores the
 // results.
+import { randomInt } from 'node:crypto';
 import type { WebSocket } from 'ws';
 import {
   BINARY_FRAME, BINARY_INPUT, INPUT_WORDS,
@@ -56,6 +57,14 @@ interface Room {
   hostId: number;
   members: Map<number, Member>; // insertion order is join order
   race: RaceRun | null;
+}
+
+function shuffle<T>(items: T[]): T[] {
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = randomInt(i + 1);
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+  return items;
 }
 
 const send = (client: Client, message: ServerMessage) => {
@@ -295,7 +304,8 @@ export class Lobby {
     if (!room) return;
     if (room.hostId !== client.user.id) return this.fail(client, 'Only the host starts the race.');
     if (room.race) return;
-    const members = [...room.members.values()];
+    // Grid places are drawn afresh for every race: nobody always starts behind.
+    const members = shuffle([...room.members.values()]);
     const unready = members.filter((m) => m.client.user.id !== room.hostId && !m.ready);
     if (unready.length) return this.fail(client, `Waiting for ${unready.map((m) => m.client.user.name).join(', ')}.`);
     if (members.some((m) => !this.carValid(room, m.variant, m.manual))) return this.fail(client, 'Every player needs a car for this class.');

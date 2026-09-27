@@ -69,10 +69,11 @@ int WebCourseAllowed(int classIndex, int course) {
 }
 
 /* Players' starting grid: two lanes of rows reaching back from the retail
- * player start, so every player starts together before the line. Rivals keep
- * their authored starts, which retail spreads along the course ahead. The
- * spacing clears the collision box (g_CarCollisionCorners: 192 x 640). */
-enum { GRID_ROW_SPACING = 1100, GRID_LANE_OFFSET = 225, GRID_EDGE_MARGIN = 100 };
+ * player start, so the players start together at the back of the field,
+ * before the line. Rivals keep their authored starts, which retail spreads
+ * along the course ahead. Rows are as tight as the collision box allows
+ * (g_CarCollisionCorners: 192 x 640), leaving a short gap between cars. */
+enum { GRID_ROW_SPACING = 760, GRID_LANE_OFFSET = 225, GRID_EDGE_MARGIN = 100 };
 
 typedef struct GridPlace {
     double x, z;

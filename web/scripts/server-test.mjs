@@ -119,8 +119,9 @@ try {
   rage.send({ t: 'startRace' });
   await until(() => rage.last('raceStart') && admin.last('raceStart'));
   const start = rage.last('raceStart');
-  check(start && start.seats.length === 12 && start.humans === 2 && start.localSeat === 0, 'the race starts with both players and ten rivals');
-  check(admin.last('raceStart')?.localSeat === 1, 'each player learns its own seat');
+  check(start && start.seats.length === 12 && start.humans === 2, 'the race starts with both players and ten rivals');
+  const seatsTaken = [start?.localSeat, admin.last('raceStart')?.localSeat].sort().join(',');
+  check(seatsTaken === '0,1' && start.seats[start.localSeat].name === 'rage', 'each player learns its own seat');
   admin.send({ t: 'loaded', ok: true });
   rage.send({ t: 'loaded', ok: true });
   const t0 = Date.now();

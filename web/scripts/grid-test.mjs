@@ -1,7 +1,8 @@
 // Starting-grid checks for online races:  node scripts/grid-test.mjs <disc>
 // For every class, course and direction, eight players must start together
-// behind the retail player start (before the line), apart from each other and
-// from the rivals, and stay put through the countdown.
+// at the back of the field (behind the retail player start and every rival,
+// before the line), apart from each other and from the rivals, and stay put
+// through the countdown.
 import { realpathSync } from 'node:fs';
 import { basename, dirname } from 'node:path';
 import createRaceServerModule from '../server/wasm/rage-server.mjs';
@@ -37,8 +38,13 @@ for (let classIndex = 0; classIndex < 6; classIndex++) {
       }
       const players = field.slice(0, PLAYERS);
       const pole = players[0].progress;
+      // Players start at the back: behind every rival.
+      const lastRival = Math.min(...field.slice(PLAYERS).map((r) => r.progress));
+      for (const p of players) {
+        if (field.length > PLAYERS && p.progress >= lastRival) failures.push(`${where}: player ${p.seat} is not behind the rivals`);
+      }
       for (const p of players.slice(1)) {
-        if (p.progress > pole + 1200 || p.progress < pole - 6000) failures.push(`${where}: player ${p.seat} is not on the grid (progress ${p.progress - pole})`);
+        if (p.progress > pole + 1200 || p.progress < pole - 4000) failures.push(`${where}: player ${p.seat} is not on the grid (progress ${p.progress - pole})`);
       }
       for (let a = 0; a < field.length; a++) for (let b = a + 1; b < field.length; b++) {
         const d = Math.hypot(field[a].x - field[b].x, field[a].z - field[b].z);
