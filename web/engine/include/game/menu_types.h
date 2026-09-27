@@ -1,0 +1,102 @@
+#ifndef GAME_MENU_TYPES_H
+#define GAME_MENU_TYPES_H
+
+#include "common.h"
+#include "game/vector.h"
+
+enum {
+    CLASS_RECORD_COUNT = 11,
+    TEAM_LOGO_WIDTH = 64,
+    TEAM_LOGO_HEIGHT = 64,
+    TEAM_LOGO_EDITOR_VIEW_SIZE = 32,
+    TEAM_LOGO_SAMPLE_RECORD_COUNT = 20,
+    TEAM_LOGO_SAMPLE_CHOICE_COUNT = TEAM_LOGO_SAMPLE_RECORD_COUNT,
+    TEAM_LOGO_BITS_PER_PIXEL = 4,
+    TEAM_LOGO_PIXELS_PER_HALFWORD = 4,
+    TEAM_LOGO_PIXELS_PER_WORD = 8,
+    TEAM_LOGO_HALFWORDS_PER_ROW =
+        TEAM_LOGO_WIDTH / TEAM_LOGO_PIXELS_PER_HALFWORD,
+    TEAM_LOGO_WORDS_PER_ROW =
+        TEAM_LOGO_WIDTH / TEAM_LOGO_PIXELS_PER_WORD,
+    TEAM_NAME_FONT_GLYPH_BYTES = 32,
+    TEAM_NAME_FONT_GLYPH_COUNT = 84,
+};
+
+typedef struct ScoreRecord {
+    s16 place;
+    u16 clears;
+} ScoreRecord;
+
+typedef struct RaceRecord {
+    char driverName[8];
+    s32 raceTime;
+    s16 carIndex;
+    s16 unused;
+} RaceRecord;
+
+typedef struct TeamLogoSample {
+    u16 clut[2][16];
+    u16 canvas[TEAM_LOGO_HEIGHT][TEAM_LOGO_HALFWORDS_PER_ROW];
+} TeamLogoSample;
+
+typedef union TeamLogoCanvas {
+    u8 bytes[TEAM_LOGO_WIDTH * TEAM_LOGO_HEIGHT / 2];
+    u16 halfwords[TEAM_LOGO_WIDTH * TEAM_LOGO_HEIGHT / 4];
+    u16 halfwordRows[TEAM_LOGO_HEIGHT][TEAM_LOGO_HALFWORDS_PER_ROW];
+    u32 words[TEAM_LOGO_HEIGHT][TEAM_LOGO_WORDS_PER_ROW];
+} TeamLogoCanvas;
+
+static inline u32 GetTeamLogoCanvasPixel(const TeamLogoCanvas *canvas, s32 x,
+                                         s32 y) {
+    s32 shift =
+        (x % TEAM_LOGO_PIXELS_PER_WORD) * TEAM_LOGO_BITS_PER_PIXEL;
+
+    return (canvas->words[y][x / TEAM_LOGO_PIXELS_PER_WORD] >> shift) & 0xF;
+}
+
+static inline void SetTeamLogoCanvasPixel(TeamLogoCanvas *canvas, s32 x,
+                                          s32 y, u32 color) {
+    s32 shift =
+        (x % TEAM_LOGO_PIXELS_PER_WORD) * TEAM_LOGO_BITS_PER_PIXEL;
+    u32 mask = 0xFu << shift;
+    u32 *word = &canvas->words[y][x / TEAM_LOGO_PIXELS_PER_WORD];
+
+    *word = (*word & ~mask) | ((color & 0xF) << shift);
+}
+
+enum { MENU_LIGHT_BURST_RAY_COUNT = 33 };
+
+enum MenuPalette {
+    MENU_PAINT_COLOR_COUNT = 18
+};
+
+enum MenuOptionHint {
+    MENU_OPTION_HINT_CLASS_RECORDS,
+    MENU_OPTION_HINT_CONTROLLER,
+    MENU_OPTION_HINT_SOUND,
+    MENU_OPTION_HINT_NEGCON_CALIBRATION,
+    MENU_OPTION_HINT_MEMORY_CARD_SAVE,
+    MENU_OPTION_HINT_MEMORY_CARD_LOAD,
+    MENU_OPTION_HINT_COUNT,
+};
+
+/* One entry in the setup-screen hint bar. */
+typedef struct OptionHintCaption {
+    u8 u;
+    u8 v;
+    u8 width;
+    u8 advance;
+} OptionHintCaption;
+
+typedef struct ClassRecordSprite {
+    u8 u1;
+    u8 v1;
+    u8 u2;
+    u8 v2;
+    u16 clut1;
+    u16 clut2;
+    u16 clut3;
+    u16 unused;
+} ClassRecordSprite;
+
+#endif

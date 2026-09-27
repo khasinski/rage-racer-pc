@@ -1,5 +1,5 @@
-// Builds the WebAssembly module (CMake target rage-web, via emcmake) and
-// copies it into web/public/wasm for Vite to serve.
+// Builds the WebAssembly module (web/CMakeLists.txt target rage-web, via
+// emcmake) and copies it into web/public/wasm for Vite to serve.
 //   npm run wasm
 import { copyFileSync, mkdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
@@ -17,8 +17,7 @@ const run = (command, args) => {
   if (result.status !== 0) process.exit(result.status ?? 1);
 };
 
-run('emcmake', ['cmake', '-S', '.', '-B', build, '-DRAGE_BUILD_PORT=OFF', '-DBUILD_TESTING=OFF',
-                '-DRAGE_EMBED_AUTHORED_CARS=OFF', '-DCMAKE_BUILD_TYPE=Release']);
+run('emcmake', ['cmake', '-S', web, '-B', build, '-DCMAKE_BUILD_TYPE=Release']);
 run('cmake', ['--build', build, '--target', 'rage-web', '-j8']);
 
 const out = join(web, 'public', 'wasm');

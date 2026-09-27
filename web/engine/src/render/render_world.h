@@ -1,0 +1,255 @@
+#ifndef RAGE_RENDER_WORLD_H
+#define RAGE_RENDER_WORLD_H
+
+/*
+ * Renderer-neutral scene data.  This is deliberately not a PS1 packet list:
+ * mesh/material handles name imported assets, transforms are world-space
+ * floats, and visibility is an ordinary scene property.  Classic and modern
+ * renderers will consume this representation through separate adapters.
+ */
+
+#include <stdint.h>
+#include "car_lights.h"
+#include "sky_layout.h"
+
+typedef struct Vec3 {
+    float x, y, z;
+} Vec3;
+
+/* A scene transform normally uses the friendly Euler form below.  Hierarchical
+ * animated objects may instead provide a unit quaternion: it represents one
+ * ordinary world-space rotation, rather than a renderer/backend matrix. */
+typedef struct Quaternion {
+    float x, y, z, w;
+} Quaternion;
+
+typedef struct RenderTransform {
+    Vec3 position;
+    Vec3 rotation;
+    Vec3 scale;
+    Quaternion orientation;
+    uint8_t hasOrientation;
+} RenderTransform;
+
+typedef struct RenderCamera {
+    RenderTransform transform;
+    float verticalFovDegrees;
+    float nearPlane;
+    float farPlane;
+    /* Perspective depth fog is semantic scene data. `fogNear` starts the
+     * blend and `fogFar` reaches the authored environment colour. */
+    Vec3 fogColor;
+    /* Renderer-neutral sky bands. Backends evaluate them against a world
+     * view ray, so the horizon follows camera pitch and roll without any
+     * screen-space PS1 sky geometry. `skyColor` is the central band retained
+     * for compatibility with version-1 frame snapshots. */
+    Vec3 skyTopColor;
+    Vec3 skyColor;
+    Vec3 skyHorizonColor;
+    Vec3 skyBottomColor;
+    /* Stable environment asset identity. Import providers may resolve it to
+     * the extracted panorama above the gradient or to a mod-supplied image. */
+    uint32_t skyAssetKey;
+    /* Which row of the cloud sheet the course asks for. The game reads it
+     * from the course's own camera script, so cloud is a property of the
+     * course rather than of the renderer. */
+    uint32_t skyCloudRow;
+    /* Discrete copied source layout. Zero flag preserves legacy captures that
+     * did not include this state; newly produced game cameras always set it. */
+    RageSkyPanoramaLayout skyLayout;
+    uint8_t hasSkyLayout;
+    /* The retail cloud layer is screen-space geometry. These three vectors
+     * preserve its measured origin and two tile axes for native backends. */
+    Vec3 skyGridOrigin;
+    Vec3 skyGridColumn;
+    Vec3 skyGridRow;
+    float fogNear;
+    float fogFar;
+} RenderCamera;
+
+/* One renderer-neutral sun and ambient environment. Both direct shading and
+ * shadow cameras consume this value, so a backend cannot silently use a
+ * different hard-coded light direction. Colours already include intensity. */
+typedef struct RenderDirectionalLight {
+    Vec3 direction;
+    Vec3 ambientColor;
+    Vec3 diffuseColor;
+} RenderDirectionalLight;
+
+typedef enum RenderPass {
+    RAGE_RENDER_PASS_MAIN = 0,
+    RAGE_RENDER_PASS_MIRROR = 1,
+} RenderPass;
+
+/* Which imported asset collection owns `mesh`.  A numeric mesh id is only
+ * meaningful inside one collection; making that explicit prevents a modern
+ * backend from falling back to the currently-selected PS1 model bank. */
+typedef enum RenderAssetSet {
+    RAGE_RENDER_ASSET_MODEL_BANK = 0,
+    RAGE_RENDER_ASSET_COURSE = 1,
+    RAGE_RENDER_ASSET_TERRAIN = 2,
+    /* Track packs contain two independent ordinary model banks.  They must
+     * not share the generic `model` key: doing so made the runtime index pick
+     * whichever duplicate happened to be listed first. */
+    RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 = 3,
+    RAGE_RENDER_ASSET_TRACK_MODEL_BANK_2 = 4,
+} RenderAssetSet;
+
+typedef enum RenderAssetSource {
+    RENDER_ASSET_DEFAULT, RENDER_ASSET_OWNED, RENDER_ASSET_SOURCE_COUNT
+} RenderAssetSource;
+
+typedef struct RenderMeshInstance {
+    uint32_t entity;
+    uint32_t mesh;
+    RenderAssetSet assetSet;
+    RenderAssetSource assetSource;
+    /* Stable game asset identity inside the asset set. It is never a pointer
+     * into a loaded PS1 bank, so streaming/replay and native cache lookup are
+     * deterministic. */
+    uint32_t assetKey;
+    uint32_t material;
+    /* Stable semantic slot inside a multipart entity. Vehicle wheel meshes
+     * can be identical on both sides or switch animation variants, so mesh
+     * identity alone cannot keep their presentation transforms paired. */
+    uint8_t component;
+    /* Renderer-neutral material variant selected by gameplay state. Course
+     * and terrain use the two track sections; track car models use the
+     * selected car asset whose race-load palette is resident. */
+    uint8_t materialVariant;
+    /* Player paint choices are semantic material parameters. Import providers
+     * may apply them through a source-specific mask; render backends never
+     * need the original palette or texture-page representation. */
+    uint8_t hasCarPaint;
+    uint8_t carPaintColor1;
+    uint8_t carPaintColor2;
+    /* Some authored course faces add the low seven bits of g_AnimTimer to
+     * their U coordinates before the PS1 texture window is applied.  The
+     * imported mesh marks only those faces; the instance supplies the current
+     * semantic texel offset without exposing a PS1 packet to the renderer. */
+    uint8_t textureScrollU;
+    /* Blend from authored material colour (0) to native scene lighting (1).
+     * A zero value with ENABLE_LIGHTING keeps backwards-compatible full
+     * lighting for existing producers and snapshots. */
+    float lightInfluence;
+    /* Semantic ambient light sampled from the track light volume. The modern
+     * backend combines it with its directional vehicle lighting. */
+    Vec3 environmentLight;
+    CarLights lamps;
+    /* Small post-projection ordering hint for independently submitted parts
+     * of one semantic object. It preserves authored overlap (for example a
+     * car body masking wheels inside its arches) without moving geometry. */
+    float depthBias;
+    RenderTransform transform;
+    RenderTransform previousTransform;
+    uint32_t flags;
+    RenderPass pass;
+} RenderMeshInstance;
+
+enum {
+    /* Bounds are optional imported metadata. Do not cull an instance until
+     * its producer has opted into the coordinate convention explicitly. */
+    RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL = 1u << 0,
+    /* The original course data chooses fogged and un-fogged model dispatches
+     * per object. Keep that authored choice in the scene, not the backend. */
+    RAGE_RENDER_INSTANCE_ENABLE_FOG = 1u << 1,
+    /* Apply the scene's renderer-neutral directional and ambient light. */
+    RAGE_RENDER_INSTANCE_ENABLE_LIGHTING = 1u << 2,
+    /* Terrain modes 0/1 choose the adjacent CLUT in environment mode 4. */
+    RAGE_RENDER_INSTANCE_ENVIRONMENT_MODE_4 = 1u << 3,
+    /* Animated course objects are authored as one-sided PS1 polygons. Their
+     * imported meshes also contain the reverse faces rejected by NCLIP; keep
+     * those from appearing through a rear camera as detached scenery. */
+    RAGE_RENDER_INSTANCE_CULL_BACKFACES = 1u << 4,
+    /* A semantic surface laid directly over other world geometry. The native
+     * backend applies a slope-aware depth offset instead of letting the two
+     * surfaces z-fight. */
+    RAGE_RENDER_INSTANCE_DEPTH_DECAL = 1u << 5,
+    /* Use geometry normals for deliberately flat-shaded imported meshes.
+     * This is ordinary material geometry semantics, not a source-format
+     * workaround: importers for richer formats can keep authored normals. */
+    RAGE_RENDER_INSTANCE_FLAT_SHADED = 1u << 6,
+    /* Occluder needed by ray queries but deliberately absent from raster
+     * visibility. This keeps the ray scene complete without reviving distant
+     * course geometry in the color pass. */
+    RAGE_RENDER_INSTANCE_RAY_ONLY = 1u << 7,
+    /* Keep rapidly rotating detail geometry in reflection queries while the
+     * stable body silhouette casts the vehicle's direct-light shadow. */
+    RAGE_RENDER_INSTANCE_RAY_NO_SHADOW = 1u << 8,
+    /* Published only for its lamps: neither drawn nor part of the ray scene.
+     * The in-car view keeps the player's headlights this way without the
+     * invisible body casting a shadow or showing up in reflections. */
+    RAGE_RENDER_INSTANCE_LAMPS_ONLY = 1u << 9,
+    /* Presentation subject selected by the producer, independent of seat or bank. */
+    RAGE_RENDER_INSTANCE_FOCUS = 1u << 10,
+};
+
+enum { RENDER_SPOT_LIGHT_CAPACITY = 72 }; /* Twelve cars, up to six lamps each. */
+
+typedef struct SpotLight {
+    Vec3 position;
+    float range;
+    Vec3 direction;
+    float outerCos;
+    Vec3 color;
+    float innerCos;
+} SpotLight;
+
+typedef struct RenderWorld {
+    uint64_t frame;
+    RenderDirectionalLight light;
+    RenderCamera camera;
+    RenderCamera previousCamera;
+    uint8_t hasCamera;
+    /* A rear-view mirror is an ordinary second camera in the native scene.
+     * Keeping it here prevents modern backends from depending on the PS1
+     * mirror ordering table, GTE matrix, or precomputed visibility list. */
+    RenderCamera mirrorCamera;
+    RenderCamera previousMirrorCamera;
+    float mirrorPanelY;
+    float previousMirrorPanelY;
+    uint8_t hasMirrorCamera;
+    uint8_t mirrorActive;
+    RenderMeshInstance *instances;
+    uint32_t instanceCapacity;
+    uint32_t instanceCount;
+    uint32_t overflowCount;
+    /* This frame's cars were supplied by an explicit race field. */
+    uint8_t explicitCars;
+    /* Shared by all views; colors include intensity in linear space. */
+    SpotLight spotLights[RENDER_SPOT_LIGHT_CAPACITY];
+    uint32_t spotLightCount;
+} RenderWorld;
+
+void RenderWorldInit(RenderWorld *world,
+                         RenderMeshInstance *instances,
+                         uint32_t capacity);
+void RenderWorldBeginFrame(RenderWorld *world, uint64_t frame);
+/* Replace main-view car submissions for seats below entityLimit, preserving
+ * scenery and other passes. Reject invalid storage before changing anything. */
+int RenderWorldCarFieldFits(const RenderWorld *world, uint32_t entityLimit, uint32_t count);
+int RenderWorldBeginCarField(RenderWorld *world, uint32_t entityLimit);
+int RenderWorldSubmitSpotLight(RenderWorld *world, const SpotLight *light);
+void RenderWorldSetDirectionalLight(
+    RenderWorld *world, const RenderDirectionalLight *light);
+void RenderDirectionalLightDefault(RenderDirectionalLight *light);
+void RenderDirectionalLightFromSky(const RenderCamera *camera,
+                                   RenderDirectionalLight *light);
+int32_t RenderClampCarToGround(int32_t carY, int32_t groundY);
+void RenderWorldSetCamera(RenderWorld *world,
+                              const RenderCamera *camera);
+void RenderWorldSetMirrorCamera(RenderWorld *world,
+                                    const RenderCamera *camera,
+                                    int active, float panelY);
+int RenderWorldSubmitMesh(RenderWorld *world,
+                              const RenderMeshInstance *instance);
+/* Select an existing main-view entity body. Failure preserves all flags. */
+int RenderWorldFocus(RenderWorld *world, uint32_t entity);
+void RenderWorldDiscardPass(RenderWorld *world, RenderPass pass);
+void RenderTerrainCellTransform(uint32_t grid_x, uint32_t grid_z,
+                                    RenderTransform *transform);
+/* Convert a PS1-space rotation into the conventional (+Y up, -Z forward)
+ * scene basis used by imported meshes and Render World positions. */
+void RenderConvertPsxMatrix(const float source[3][3], float out[3][3]);
+
+#endif
