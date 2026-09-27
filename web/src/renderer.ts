@@ -9,7 +9,7 @@ import {
   ASSET_TRACK_MODEL_BANK_1, ASSET_TRACK_MODEL_BANK_2, MATERIAL_ENV_CLUT, NO_MATERIAL, Rage, SPAN_FIELDS, type DecodedTexture, type TextureLevel,
 } from './rage';
 import {
-  shadowFragment, shadowVertex, skyFragment, skyVertex, worldFragment, worldVertex,
+  mirrorFragment, mirrorVertex, shadowFragment, shadowVertex, skyFragment, skyVertex, worldFragment, worldVertex,
 } from './shaders';
 
 const VERTEX_CAPACITY = 600_000;
@@ -17,6 +17,21 @@ const VERTEX_CAPACITY = 600_000;
 const DECODES_PER_FRAME = 48;
 /* render_world.h RenderAssetSet: vehicles are model-bank meshes. */
 const ASSET_MODEL_BANK = 0;
+
+/* The PAL screen layout the mirror is placed in (render/mirror_pass.c,
+ * render/rear_view_mirror.c): 240 lines tall, centred horizontally. */
+const PAL_WIDTH = 320;
+const PAL_HEIGHT = 240;
+const MIRROR_X = 0x56;
+const MIRROR_WIDTH = 0x94;
+const MIRROR_HEIGHT = 0x24;
+/* The black TILE behind it, two pixels wider on each side. */
+const MIRROR_FRAME_X = 0x54;
+const MIRROR_FRAME_WIDTH = 0x98;
+const MIRROR_FRAME_HEIGHT = 0x28;
+
+/* One camera's uniforms, copied out of the module for a pass. */
+interface View { camera: Float32Array; sky: Float32Array }
 
 type Uniform<T> = { value: T };
 interface MaterialEntry {
@@ -65,6 +80,16 @@ export class Renderer {
   private paletteHash = 0;
   private page = 0;
   private stale = new Set<string>();
+  /* Rear-view mirror: the same materials over its own span groups, drawn
+   * from the mirror camera into a small target, then flipped into the panel. */
+  private readonly mirrorScene = new THREE.Scene();
+  private readonly mirrorGeometry = new THREE.BufferGeometry();
+  private readonly compositeScene = new THREE.Scene();
+  private readonly compositeUniforms = { uMirror: { value: null } as Uniform<THREE.Texture | null> };
+  private mirrorTarget: THREE.WebGLRenderTarget | null = null;
+  private mainView: View = { camera: new Float32Array(28), sky: new Float32Array(28) };
+  private mirrorView: View = { camera: new Float32Array(28), sky: new Float32Array(28) };
+  private mirrorPanelY: number | null = null;
   shadows = true;
 
   constructor(canvas: HTMLCanvasElement, private readonly rage: Rage) {
@@ -89,9 +114,10 @@ export class Renderer {
     for (const [name, size, offset] of layout) {
       const attribute = new THREE.InterleavedBufferAttribute(this.vertexBuffer, size, offset);
       this.geometry.setAttribute(name, attribute);
+      this.mirrorGeometry.setAttribute(name, attribute);
       if (name === 'position' || name === 'uv') this.shadowGeometry.setAttribute(name, attribute);
     }
-    for (const geometry of [this.geometry, this.shadowGeometry])
+    for (const geometry of [this.geometry, this.shadowGeometry, this.mirrorGeometry])
       geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), Infinity);
 
     const resolution = rage.shadowResolution();
@@ -120,6 +146,20 @@ export class Renderer {
     this.sky.uPanorama.value = this.noPanorama;
     sky.frustumCulled = false;
     this.scene.add(sky, world);
+
+    const mirrorSky = new THREE.Mesh(sky.geometry, sky.material);
+    mirrorSky.frustumCulled = false;
+    const mirrorWorld = new THREE.Mesh(this.mirrorGeometry, this.mainMaterials);
+    mirrorWorld.frustumCulled = false;
+    this.mirrorScene.add(mirrorSky, mirrorWorld);
+    const composite = new THREE.Mesh(
+      new THREE.PlaneGeometry(2, 2),
+      new THREE.RawShaderMaterial({
+        glslVersion: THREE.GLSL3, vertexShader: mirrorVertex, fragmentShader: mirrorFragment,
+        uniforms: this.compositeUniforms, depthTest: false, depthWrite: false,
+      }));
+    composite.frustumCulled = false;
+    this.compositeScene.add(composite);
   }
 
   private addEntry(texture: THREE.Texture | null, transparent: boolean): MaterialEntry {
@@ -264,15 +304,18 @@ export class Renderer {
       this.paletteHash = hash;
       this.stale = new Set(this.entries.keys());
     }
-    const packed = this.rage.packedVertices(vertexCount);
+    const mirror = this.rage.mirror();
+    const totalVertices = vertexCount + (mirror ? mirror.vertexCount : 0);
+    const packed = this.rage.packedVertices(totalVertices);
     this.vertexData.set(packed);
     this.vertexBuffer.clearUpdateRanges();
     this.vertexBuffer.addUpdateRange(0, packed.length);
     this.vertexBuffer.needsUpdate = true;
 
-    const spans = this.rage.spans();
+    const { fields: spans, mainSpans } = this.rage.spans();
     const spanCount = spans.length / SPAN_FIELDS;
     const phases: [number, number, number][][] = [[], [], [], []];
+    const mirrorPhases: [number, number, number][][] = [[], [], [], []];
     const casters: [number, number, number][] = [];
     const budget = { decodes: DECODES_PER_FRAME };
     for (let span = 0; span < spanCount; span++) {
@@ -281,6 +324,10 @@ export class Renderer {
       if (!entry) continue;
       const vehicle = spans[f + 3] === ASSET_MODEL_BANK || spans[f + 3] === ASSET_TRACK_MODEL_BANK_1;
       const phase = entry.transparent ? 3 : spans[f + 12] ? 1 : vehicle ? 2 : 0;
+      if (span >= mainSpans) {
+        mirrorPhases[phase].push([spans[f], spans[f + 1], entry.main]);
+        continue;
+      }
       phases[phase].push([spans[f], spans[f + 1], entry.main]);
       if (vehicle) casters.push([spans[f], spans[f + 1], entry.shadow]);
     }
@@ -288,31 +335,24 @@ export class Renderer {
     for (const phase of phases) for (const [start, count, material] of phase) this.geometry.addGroup(start, count, material);
     this.shadowGeometry.clearGroups();
     for (const [start, count, material] of casters) this.shadowGeometry.addGroup(start, count, material);
+    this.mirrorGeometry.clearGroups();
+    for (const phase of mirrorPhases) for (const [start, count, material] of phase) this.mirrorGeometry.addGroup(start, count, material);
     this.geometry.setDrawRange(0, vertexCount);
     this.shadowGeometry.setDrawRange(0, vertexCount);
+    this.mirrorGeometry.setDrawRange(0, totalVertices);
 
+    this.mainView.camera.set(this.rage.camera());
+    this.mainView.sky.set(this.rage.sky());
+    this.mirrorPanelY = mirror ? mirror.panelY : null;
+    if (mirror) {
+      this.mirrorView.camera.set(this.rage.mirrorCamera());
+      this.mirrorView.sky.set(this.rage.mirrorSky());
+    }
     const s = this.shared;
-    const c = this.rage.camera();
-    s.uCameraPosition.value.fromArray(c, 0);
-    s.uViewRow0.value.fromArray(c, 4);
-    s.uViewRow1.value.fromArray(c, 8);
-    s.uViewRow2.value.fromArray(c, 12);
-    s.uProjection.value.fromArray(c, 16);
     const l = this.rage.light();
     s.uLightDirection.value.fromArray(l, 0);
     s.uAmbient.value.fromArray(l, 4);
     s.uDiffuse.value.fromArray(l, 8);
-    const sky = this.rage.sky();
-    const k = this.sky;
-    k.uSkyTop.value.fromArray(sky, 0);
-    k.uSkyMiddle.value.fromArray(sky, 4);
-    k.uSkyHorizon.value.fromArray(sky, 8);
-    k.uSkyBottom.value.fromArray(sky, 12);
-    k.uSkyGridOrigin.value.fromArray(sky, 16);
-    k.uSkyGridBasis.value.fromArray(sky, 20);
-    k.uSkyGridParams.value.fromArray(sky, 24);
-    // gl_FragCoord is in drawing-buffer pixels.
-    k.uSkyGridParams.value.w = this.webgl.getContext().drawingBufferHeight;
     this.updatePanorama();
     const shadow = this.shadows ? this.rage.shadow() : null;
     s.uShadowEnabled.value = shadow ? 1 : 0;
@@ -334,6 +374,28 @@ export class Renderer {
     return canvas.clientWidth / Math.max(1, canvas.clientHeight);
   }
 
+  /* Points the shared camera and sky uniforms at one view; `height` is the
+   * target's height in pixels, which the sky's screen-space grid scales by. */
+  private applyView(view: View, height: number) {
+    const s = this.shared;
+    const c = view.camera;
+    s.uCameraPosition.value.fromArray(c, 0);
+    s.uViewRow0.value.fromArray(c, 4);
+    s.uViewRow1.value.fromArray(c, 8);
+    s.uViewRow2.value.fromArray(c, 12);
+    s.uProjection.value.fromArray(c, 16);
+    const k = this.sky;
+    const sky = view.sky;
+    k.uSkyTop.value.fromArray(sky, 0);
+    k.uSkyMiddle.value.fromArray(sky, 4);
+    k.uSkyHorizon.value.fromArray(sky, 8);
+    k.uSkyBottom.value.fromArray(sky, 12);
+    k.uSkyGridOrigin.value.fromArray(sky, 16);
+    k.uSkyGridBasis.value.fromArray(sky, 20);
+    k.uSkyGridParams.value.fromArray(sky, 24);
+    k.uSkyGridParams.value.w = height;
+  }
+
   render() {
     if (this.shared.uShadowEnabled.value) {
       this.webgl.setRenderTarget(this.shadowTarget);
@@ -341,6 +403,54 @@ export class Renderer {
       this.webgl.render(this.shadowScene, this.camera);
       this.webgl.setRenderTarget(null);
     }
+    // gl_FragCoord is in drawing-buffer pixels.
+    this.applyView(this.mainView, this.webgl.getContext().drawingBufferHeight);
     this.webgl.render(this.scene, this.camera);
+    if (this.mirrorPanelY !== null) this.renderMirror(this.mirrorPanelY);
+  }
+
+  /* modern_renderer.c: the mirror view renders into its own 148x36 target
+   * (scaled like the 240-line screen), then ModernCompositeNativeMirror
+   * blits it flipped into the panel, clipped to the screen while it slides
+   * in from above. The black frame TILE of rear_view_mirror.c goes first. */
+  private renderMirror(panelY: number) {
+    const gl = this.webgl.getContext();
+    const width = gl.drawingBufferWidth, height = gl.drawingBufferHeight;
+    const scale = height / PAL_HEIGHT;
+    const targetWidth = Math.max(2, Math.round(MIRROR_WIDTH * scale) & ~1);
+    const targetHeight = Math.max(2, Math.round(MIRROR_HEIGHT * scale) & ~1);
+    if (!this.mirrorTarget || this.mirrorTarget.width !== targetWidth || this.mirrorTarget.height !== targetHeight) {
+      this.mirrorTarget?.dispose();
+      this.mirrorTarget = new THREE.WebGLRenderTarget(targetWidth, targetHeight, {
+        samples: 4, generateMipmaps: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
+      });
+      this.compositeUniforms.uMirror.value = this.mirrorTarget.texture;
+    }
+    this.applyView(this.mirrorView, targetHeight);
+    this.webgl.setRenderTarget(this.mirrorTarget);
+    this.webgl.render(this.mirrorScene, this.camera);
+    this.webgl.setRenderTarget(null);
+
+    // Screen rectangles in drawing-buffer pixels (bottom-left origin), from
+    // PAL coordinates on the centred 240-line screen.
+    const ratio = this.webgl.getPixelRatio();
+    const rect = (x: number, top: number, w: number, h: number): [number, number, number, number] => {
+      const left = width * 0.5 + (x - PAL_WIDTH / 2) * scale;
+      return [left / ratio, (height - (top + h) * scale) / ratio, (w * scale) / ratio, (h * scale) / ratio];
+    };
+    const autoClear = this.webgl.autoClear;
+    this.webgl.autoClear = false;
+    this.webgl.setScissorTest(true);
+    this.webgl.setScissor(...rect(MIRROR_FRAME_X, panelY - 2, MIRROR_FRAME_WIDTH, MIRROR_FRAME_HEIGHT));
+    this.webgl.setClearColor(0x000000, 1);
+    this.webgl.clear(true, false, false);
+    const panel = rect(MIRROR_X, panelY, MIRROR_WIDTH, MIRROR_HEIGHT);
+    this.webgl.setScissor(...panel);
+    this.webgl.setViewport(...panel);
+    this.webgl.render(this.compositeScene, this.camera);
+    this.webgl.setScissorTest(false);
+    const size = this.webgl.getSize(new THREE.Vector2());
+    this.webgl.setViewport(0, 0, size.x, size.y);
+    this.webgl.autoClear = autoClear;
   }
 }

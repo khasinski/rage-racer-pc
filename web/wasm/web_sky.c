@@ -21,15 +21,21 @@ static s32 SignedAngle12(s32 angle) {
     return angle >= 0x800 ? angle - 0x1000 : angle;
 }
 
-/* draw_sky_background.c MeasureSkyGridLayout for the main pass of a normal
- * (not mirrored) race: ordering flag and mirror mode are both zero. */
+/* draw_sky_background.c MeasureSkyGridLayout for a normal (not mirrored)
+ * course, so mirror mode is zero. The ordering flag is one only in the
+ * rear-view mirror pass, which measures the same camera angles with pitch and
+ * yaw negated and its panel origin at the top of the 36-line mirror. */
 typedef struct WebSkyGrid {
     s32 panelXFixed, panelYFixed, lowerPanelXFixed, lowerPanelYFixed;
     s32 columnStepX, columnStepY, rowStepX, rowStepY, textureColumn;
 } WebSkyGrid;
 
-static WebSkyGrid MeasureSkyGrid(s32 cameraY, s32 pitch, s32 yaw, s32 roll) {
+static WebSkyGrid MeasureSkyGrid(s32 cameraY, s32 pitch, s32 yaw, s32 roll, int mirrorPass) {
     WebSkyGrid grid;
+    if (mirrorPass) {
+        pitch = -pitch;
+        yaw = -yaw;
+    }
     const s32 cameraPitch = SignedAngle12(pitch) + 2 + DivideBy32TowardZero(Wrap((int64_t)cameraY - 6000));
     const s32 yawAngle = (yaw + 0x200) & ANGLE_MASK;
     const s32 nearVerticalFixed = (-0x80 - cameraPitch / 2) * 256;
@@ -43,7 +49,7 @@ static WebSkyGrid MeasureSkyGrid(s32 cameraY, s32 pitch, s32 yaw, s32 roll) {
     const s32 nearY = Wrap((int64_t)rotatedHorizontalY + (int64_t)cosRoll * nearVerticalFixed);
     const s32 farX = Wrap((int64_t)cosRoll * horizontalFixed + (int64_t)sinRoll * farVerticalFixed);
     const s32 farY = Wrap((int64_t)rotatedHorizontalY + (int64_t)cosRoll * farVerticalFixed);
-    const s32 verticalOrigin = 0x7800;
+    const s32 verticalOrigin = mirrorPass ? 0x2400 : 0x7800;
 
     grid.panelXFixed = nearX / 4096 + 0xA000;
     grid.panelYFixed = nearY / 4096 + verticalOrigin;
@@ -58,8 +64,8 @@ static WebSkyGrid MeasureSkyGrid(s32 cameraY, s32 pitch, s32 yaw, s32 roll) {
 }
 
 void WebSkySetCamera(RenderCamera *camera, const ClientRace *race, s32 cameraY,
-                     s32 pitch, s32 yaw, s32 roll) {
-    const WebSkyGrid grid = MeasureSkyGrid(cameraY, pitch, yaw, roll);
+                     s32 pitch, s32 yaw, s32 roll, int mirrorPass) {
+    const WebSkyGrid grid = MeasureSkyGrid(cameraY, pitch, yaw, roll, mirrorPass);
     if (!camera || !race) return;
     /* client_frame.c CaptureClientFrame: the client race's panorama identity. */
     camera->hasSkyLayout = (uint8_t)RetailSkyLayout(&camera->skyLayout, (int)race->env.skyRowBase);

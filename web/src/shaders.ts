@@ -262,3 +262,26 @@ void main() {
 }
 `;
 
+// modern_renderer.c ModernCompositeNativeMirror: the rear camera's picture
+// blitted into the mirror panel flipped left to right, as a real mirror is.
+export const mirrorVertex = /* glsl */ `
+precision highp float;
+in vec3 position;
+in vec2 uv;
+out vec2 vUv;
+void main() {
+    vUv = vec2(1.0 - uv.x, uv.y);
+    gl_Position = vec4(position.xy, 0.0, 1.0);
+}
+`;
+
+export const mirrorFragment = /* glsl */ `
+precision highp float;
+uniform sampler2D uMirror;
+in vec2 vUv;
+out vec4 outColor;
+void main() {
+    outColor = vec4(texture(uMirror, vUv).rgb, 1.0);
+}
+`;
+

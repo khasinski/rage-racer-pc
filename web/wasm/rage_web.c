@@ -106,6 +106,20 @@ static WebView s_selectedView, s_viewCurrent;
 static u16 s_padHeld;
 static int s_pendingCamera;
 
+/* Rear-view mirror (render/mirror_pass.c, render/rear_view_mirror.c). Its
+ * panel slides one PAL line per game frame between hidden and visible; the
+ * mirror draws in the car view while racing. R1/L1 pressed while the camera
+ * button is held switch it on/off (race_scene.c); finishing switches it off.
+ * Retail also waits for an unlock and Grand Prix mode; the browser does not. */
+enum { MIRROR_PANEL_HIDDEN_Y = -44, MIRROR_PANEL_VISIBLE_Y = 18 };
+#define MIRROR_FOV_DEGREES 20.0f
+/* 148x36 PAL pixels (mirror_pass.c MIRROR_WIDTH x MIRROR_HEIGHT). */
+#define MIRROR_ASPECT (148.0f / 36.0f)
+static int s_mirrorEnabled, s_pendingMirror;
+static s32 s_mirrorPanelPrevious, s_mirrorPanelCurrent;
+static int s_mirrorDraw;
+static RenderCamera s_mirrorPrevious, s_mirrorCurrent;
+
 const RaceData *WebLoadedArchive(void) { return s_archive; }
 
 static void ReleaseRace(void) {
@@ -166,6 +180,11 @@ static int PrepareRace(int classIndex, int course, int reverse, int laps, int ri
     s_selectedView = s_viewCurrent = WEB_VIEW_CAR;
     s_padHeld = 0;
     s_pendingCamera = 0;
+    /* mirror_pass.c ResetMirrorState. */
+    s_mirrorEnabled = 1;
+    s_pendingMirror = 0;
+    s_mirrorPanelPrevious = s_mirrorPanelCurrent = MIRROR_PANEL_HIDDEN_Y;
+    s_mirrorDraw = 0;
     s_haveStep = s_lastTickStepped = 0;
     s_shadowValid = 0;
     return 1;
@@ -285,6 +304,10 @@ EMSCRIPTEN_KEEPALIVE void rw_set_pad(int held, int stickX, int rightTrigger, int
     const u16 pressed = buttons & (u16)~s_padHeld;
     s_padHeld = buttons;
     if (pressed & CAMERA_BUTTON) s_pendingCamera = 1;
+    if (buttons & CAMERA_BUTTON) {
+        if (pressed & PAD_R1) s_pendingMirror = 1;
+        else if (pressed & PAD_L1) s_pendingMirror = -1;
+    }
     if (!gamepad) {
         s_input.steering.mode = STEERING_DIGITAL;
         s_input.steering.left = (buttons & PAD_LEFT) != 0;
@@ -322,7 +345,31 @@ static float Daylight(const ClientRace *race) {
     return CarLightDaylight(environment.skyTopColor, environment.skyHorizonColor);
 }
 
-static RenderCamera BuildRaceCamera(const PlayerCarRuntime *car, WebView view);
+static RenderCamera BuildRaceCamera(const PlayerCarRuntime *car, WebView view,
+                                    RenderCamera *mirror);
+
+/* One game frame of the mirror panel (car_render_rules.c AdvanceMirrorPanelY
+ * as rear_view_mirror.c drives it) and its on/off switches. */
+static void AdvanceMirror(const RaceSim *sim, WebView view) {
+    const int racing = sim->phase == SIM_RACING && sim->drivers[s_localSeat].status == SIM_DRIVING;
+    if (s_pendingMirror && racing && view == WEB_VIEW_CAR) s_mirrorEnabled = s_pendingMirror > 0;
+    s_pendingMirror = 0;
+    if (sim->phase >= SIM_RACING && !racing)
+        s_mirrorEnabled = 0; /* lap_and_finish.c: the finish turns it off. */
+    s_mirrorPanelPrevious = s_haveStep ? s_mirrorPanelCurrent : MIRROR_PANEL_HIDDEN_Y;
+    /* The panel starts moving with the race, as retail's unlock comes after
+     * the start; it is hidden behind the countdown otherwise. */
+    if (sim->phase >= SIM_RACING) {
+        if (s_mirrorEnabled) {
+            if (s_mirrorPanelCurrent < MIRROR_PANEL_VISIBLE_Y) ++s_mirrorPanelCurrent;
+        } else if (s_mirrorPanelCurrent > MIRROR_PANEL_HIDDEN_Y) {
+            --s_mirrorPanelCurrent;
+        }
+    }
+    /* mirror_pass.c MirrorPassIsAvailable, without the unlock and Grand Prix
+     * conditions. */
+    s_mirrorDraw = s_mirrorEnabled && view == WEB_VIEW_CAR && racing;
+}
 
 /* Snapshots poses and the race camera whenever the field physics stepped.
  * Retail reads the camera button and updates the camera once per game
@@ -333,7 +380,7 @@ static void RecordPresentation(void) {
     const u32 stepTick = sim->drivers[s_localSeat].stepTick;
     const int racing = sim->phase == SIM_RACING; /* CanToggleRaceCamera */
     WebView view;
-    RenderCamera camera;
+    RenderCamera camera, mirror;
     s_lastTickStepped = !s_haveStep || stepTick != s_lastStepTick;
     if (!s_lastTickStepped) return;
     for (int seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) {
@@ -345,10 +392,13 @@ static void RecordPresentation(void) {
     s_pendingCamera = 0;
     view = racing && s_selectedView == WEB_VIEW_CHASE && (s_padHeld & PAD_DOWN)
                ? WEB_VIEW_LOOK_BEHIND : s_selectedView;
-    camera = BuildRaceCamera(&s_poseCurrent[s_localSeat], view);
+    camera = BuildRaceCamera(&s_poseCurrent[s_localSeat], view, &mirror);
+    AdvanceMirror(sim, view);
     /* A new view cuts; only frames within one view are interpolated. */
     s_cameraPrevious = s_haveStep && view == s_viewCurrent ? s_cameraCurrent : camera;
     s_cameraCurrent = camera;
+    s_mirrorPrevious = s_haveStep && view == s_viewCurrent ? s_mirrorCurrent : mirror;
+    s_mirrorCurrent = mirror;
     s_viewCurrent = view;
     s_lastStepTick = stepTick;
     s_haveStep = 1;
@@ -526,15 +576,41 @@ static void RetailLookBehindView(const PlayerCarRuntime *car, Vec3 *eye, s32 *pi
     *roll = car->bodyRoll;
 }
 
-/* render_world_game.c's GameRenderWorldBuildCamera for the race view:
- * PAL 320x240 projection, near 1, the verified race depth limit. The chase
- * camera only settles while it is the view, as retail's previousMode check
- * restarts it otherwise. */
-static RenderCamera BuildRaceCamera(const PlayerCarRuntime *car, WebView selected) {
+/* render_world_game.c's GameRenderWorldBuildCamera: near 1, the verified
+ * race depth limit. A rear-facing (mirror) camera pre-rotates the view basis
+ * by 180 degrees in its own local space, like an attached camera rig. */
+static RenderCamera CameraFromView(Vec3 eye, s32 pitch, s32 yaw, s32 roll,
+                                   float verticalFovDegrees, int rearFacing) {
     RenderCamera camera;
+    SceneMat3 view, converted;
+
+    memset(&camera, 0, sizeof(camera));
+    camera.transform.position = (Vec3){eye.x, -eye.y, -eye.z};
+    view = SceneMat3Multiply(SceneMat3Multiply(SceneRotationZ(roll), SceneRotationX(pitch)),
+                             SceneRotationY(yaw));
+    if (rearFacing) view = SceneMat3Multiply(SceneRotationY(0x800), view);
+    RenderConvertPsxMatrix(view.m, converted.m);
+    camera.transform.orientation = SceneQuaternion(SceneMat3Transpose(converted));
+    camera.transform.hasOrientation = 1;
+    camera.transform.rotation = (Vec3){-AngleToDegrees(pitch), -AngleToDegrees(yaw),
+                                       -AngleToDegrees(roll)};
+    camera.transform.scale = (Vec3){1.0f, 1.0f, 1.0f};
+    camera.verticalFovDegrees = verticalFovDegrees;
+    camera.nearPlane = 1.0f;
+    camera.farPlane = 16384.0f;
+    WebSkySetCamera(&camera, s_race, (s32)lroundf(eye.y), pitch, yaw, roll, rearFacing);
+    return camera;
+}
+
+/* The race view with the PAL 320x240 projection (geom screen 320: 41.112
+ * degrees), plus the rear-view mirror camera render_world_game.c's
+ * GameRenderWorldPublishCurrentCamera derives from the same view: 20 degrees
+ * vertically on the wide mirror target. The chase camera only settles while
+ * it is the view, as retail's previousMode check restarts it otherwise. */
+static RenderCamera BuildRaceCamera(const PlayerCarRuntime *car, WebView selected,
+                                    RenderCamera *mirror) {
     Vec3 eye;
     s32 pitch, yaw, roll;
-    SceneMat3 view, converted;
 
     if (selected == WEB_VIEW_CHASE) {
         RetailChaseView(car, &eye, &pitch, &yaw, &roll);
@@ -543,21 +619,8 @@ static RenderCamera BuildRaceCamera(const PlayerCarRuntime *car, WebView selecte
         if (selected == WEB_VIEW_LOOK_BEHIND) RetailLookBehindView(car, &eye, &pitch, &yaw, &roll);
         else RetailCarView(car, &eye, &pitch, &yaw, &roll);
     }
-    memset(&camera, 0, sizeof(camera));
-    camera.transform.position = (Vec3){eye.x, -eye.y, -eye.z};
-    view = SceneMat3Multiply(SceneMat3Multiply(SceneRotationZ(roll), SceneRotationX(pitch)),
-                             SceneRotationY(yaw));
-    RenderConvertPsxMatrix(view.m, converted.m);
-    camera.transform.orientation = SceneQuaternion(SceneMat3Transpose(converted));
-    camera.transform.hasOrientation = 1;
-    camera.transform.rotation = (Vec3){-AngleToDegrees(pitch), -AngleToDegrees(yaw),
-                                       -AngleToDegrees(roll)};
-    camera.transform.scale = (Vec3){1.0f, 1.0f, 1.0f};
-    camera.verticalFovDegrees = 41.112f;
-    camera.nearPlane = 1.0f;
-    camera.farPlane = 16384.0f;
-    WebSkySetCamera(&camera, s_race, (s32)lroundf(eye.y), pitch, yaw, roll);
-    return camera;
+    *mirror = CameraFromView(eye, pitch, yaw, roll, MIRROR_FOV_DEGREES, 1);
+    return CameraFromView(eye, pitch, yaw, roll, 41.112f, 0);
 }
 
 /* Same rotation as modern_native_gpu.c's ModernNativeRotate. */
@@ -593,30 +656,30 @@ static void RotateByCamera(float out[3], const float in[3], const RenderCamera *
 }
 
 /* Same uniform block as modern_native_gpu.c's ModernNativeBuildCamera. */
-static int BuildCameraUniform(const RenderCamera *camera, float aspect) {
+static int BuildCameraUniform(const RenderCamera *camera, float aspect, float out[28]) {
     static const float axes[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
     float columns[3][3];
-    memset(s_camera, 0, sizeof(s_camera));
-    if (!RenderPerspectiveScales(camera, aspect, &s_camera[16], &s_camera[17]) ||
-        !RenderPerspectiveDepthTerms(camera, &s_camera[18], &s_camera[19])) return 0;
-    s_camera[0] = camera->transform.position.x;
-    s_camera[1] = camera->transform.position.y;
-    s_camera[2] = camera->transform.position.z;
+    memset(out, 0, 28 * sizeof(*out));
+    if (!RenderPerspectiveScales(camera, aspect, &out[16], &out[17]) ||
+        !RenderPerspectiveDepthTerms(camera, &out[18], &out[19])) return 0;
+    out[0] = camera->transform.position.x;
+    out[1] = camera->transform.position.y;
+    out[2] = camera->transform.position.z;
     for (int axis = 0; axis < 3; ++axis) {
         RotateByCamera(columns[axis], axes[axis], camera);
-        s_camera[4 + axis] = columns[axis][0];
-        s_camera[8 + axis] = columns[axis][1];
-        s_camera[12 + axis] = columns[axis][2];
+        out[4 + axis] = columns[axis][0];
+        out[8 + axis] = columns[axis][1];
+        out[12 + axis] = columns[axis][2];
     }
-    s_camera[20] = camera->fogColor.x;
-    s_camera[21] = camera->fogColor.y;
-    s_camera[22] = camera->fogColor.z;
+    out[20] = camera->fogColor.x;
+    out[21] = camera->fogColor.y;
+    out[22] = camera->fogColor.z;
     if (isfinite(camera->fogNear) && isfinite(camera->fogFar) &&
         camera->fogNear > 0.0f && camera->fogFar > camera->fogNear) {
-        s_camera[24] = camera->fogNear;
-        s_camera[25] = camera->fogFar;
-        s_camera[26] = 1.0f / camera->fogNear;
-        s_camera[27] = s_camera[26] - 1.0f / camera->fogFar;
+        out[24] = camera->fogNear;
+        out[25] = camera->fogFar;
+        out[26] = 1.0f / camera->fogNear;
+        out[27] = out[26] - 1.0f / camera->fogFar;
     }
     return 1;
 }
@@ -628,6 +691,47 @@ static const RageRuntimeMesh *ResolveMesh(void *context, const RenderMeshInstanc
 
 static void StoreVec3(float *out, Vec3 value) {
     out[0] = value.x; out[1] = value.y; out[2] = value.z; out[3] = 0.0f;
+}
+
+/* The rear-view mirror as the native modern renderer draws it
+ * (modern_native_gpu.c Prepare, modern_renderer.c ModernCompositeNativeMirror):
+ * the same world again from the rear camera, with the mirror's own aspect and
+ * doubled fog range, built after the main view in the same vertex and span
+ * buffers. The browser flips it into the 148x36 panel. */
+static uint32_t s_mirrorVertexCount, s_mirrorSpanCount;
+static float s_mirrorUniform[28], s_mirrorSky[WEB_SKY_FLOATS];
+/* drawn, panel top (PAL lines, may be negative), first vertex, vertex count. */
+static float s_mirrorState[4];
+
+static void BuildMirror(float t) {
+    RenderWorld mirrorWorld;
+    RenderCamera mirror;
+    s_mirrorVertexCount = s_mirrorSpanCount = 0;
+    memset(s_mirrorState, 0, sizeof(s_mirrorState));
+    if (!s_mirrorDraw) return;
+    RenderInterpolateCamera(&s_mirrorPrevious, &s_mirrorCurrent, t, &mirror);
+    ApplyEnvironment(&mirror, &s_race->env);
+    /* render_world_game.c: the tiny mirror keeps useful silhouettes by
+     * reaching twice as far into the fog as the main view. */
+    mirror.fogNear *= 2.0f;
+    mirror.fogFar *= 2.0f;
+    mirrorWorld = s_world;
+    mirrorWorld.camera = mirror;
+    s_mirrorVertexCount = RenderBuildNativePassDraws(
+        &mirrorWorld, RAGE_RENDER_PASS_MAIN, MIRROR_ASPECT, ResolveMesh, s_race,
+        s_vertices + s_vertexCount, WEB_VERTEX_CAPACITY - s_vertexCount,
+        s_spans + s_spanCount, WEB_SPAN_CAPACITY - s_spanCount, &s_mirrorSpanCount);
+    for (uint32_t i = 0; i < s_mirrorSpanCount; ++i) s_spans[s_spanCount + i].firstVertex += s_vertexCount;
+    if (!BuildCameraUniform(&mirror, MIRROR_ASPECT, s_mirrorUniform)) {
+        s_mirrorVertexCount = s_mirrorSpanCount = 0;
+        return;
+    }
+    WebSkyUniform(&mirror, MIRROR_ASPECT, s_mirrorSky);
+    s_mirrorState[0] = 1.0f;
+    s_mirrorState[1] = (float)s_mirrorPanelPrevious +
+                       (float)(s_mirrorPanelCurrent - s_mirrorPanelPrevious) * t;
+    s_mirrorState[2] = (float)s_vertexCount;
+    s_mirrorState[3] = (float)s_mirrorVertexCount;
 }
 
 /* Builds the scene presented `t` (0..1) of the way from the previous physics
@@ -689,7 +793,8 @@ EMSCRIPTEN_KEEPALIVE int rw_build_frame(float aspect, float t) {
     s_vertexCount = RenderBuildNativePassDraws(
         &s_world, RAGE_RENDER_PASS_MAIN, aspect, ResolveMesh, s_race,
         s_vertices, WEB_VERTEX_CAPACITY, s_spans, WEB_SPAN_CAPACITY, &s_spanCount);
-    for (uint32_t i = 0; i < s_spanCount; ++i) {
+    BuildMirror(t);
+    for (uint32_t i = 0; i < s_spanCount + s_mirrorSpanCount; ++i) {
         const RageNativeDrawSpan *span = &s_spans[i];
         uint32_t *out = &s_spanFields[i * WEB_SPAN_FIELDS];
         out[0] = span->firstVertex;
@@ -706,7 +811,7 @@ EMSCRIPTEN_KEEPALIVE int rw_build_frame(float aspect, float t) {
         out[11] = span->materialFlags;
         out[12] = span->depthDecal;
     }
-    if (!BuildCameraUniform(&s_world.camera, aspect)) return -1;
+    if (!BuildCameraUniform(&s_world.camera, aspect, s_camera)) return -1;
     StoreVec3(&s_light[0], s_world.light.direction);
     StoreVec3(&s_light[4], s_world.light.ambientColor);
     StoreVec3(&s_light[8], s_world.light.diffuseColor);
@@ -741,8 +846,16 @@ EMSCRIPTEN_KEEPALIVE uint32_t rw_sky_revision(void) {
 EMSCRIPTEN_KEEPALIVE int rw_sky_width(void) { return WEB_SKY_WIDTH; }
 EMSCRIPTEN_KEEPALIVE int rw_sky_height(void) { return WEB_SKY_HEIGHT; }
 
+/* Span fields of the main view, followed by the mirror's (rw_mirror_span_count;
+ * rw_decode_texture takes indices into both). */
 EMSCRIPTEN_KEEPALIVE uint32_t *rw_spans(void) { return s_spanFields; }
 EMSCRIPTEN_KEEPALIVE int rw_span_count(void) { return (int)s_spanCount; }
+EMSCRIPTEN_KEEPALIVE int rw_mirror_span_count(void) { return (int)s_mirrorSpanCount; }
+/* Mirror state of the last built frame (see s_mirrorState), its camera
+ * uniform (as rw_camera) and sky uniform (as rw_sky, for the mirror target). */
+EMSCRIPTEN_KEEPALIVE float *rw_mirror(void) { return s_mirrorState; }
+EMSCRIPTEN_KEEPALIVE float *rw_mirror_camera(void) { return s_mirrorUniform; }
+EMSCRIPTEN_KEEPALIVE float *rw_mirror_sky(void) { return s_mirrorSky; }
 EMSCRIPTEN_KEEPALIVE int rw_span_fields(void) { return WEB_SPAN_FIELDS; }
 EMSCRIPTEN_KEEPALIVE float *rw_camera(void) { return s_camera; }
 EMSCRIPTEN_KEEPALIVE float *rw_light(void) { return s_light; }
@@ -755,7 +868,7 @@ EMSCRIPTEN_KEEPALIVE int rw_shadow_resolution(void) { return RAGE_RENDER_VEHICLE
  * position 3, uv 2, colour 4 (0..255), normal 3, fog 4 (colour, weight),
  * lighting 1, environment light 3, depth bias 1, shadow reception 1. */
 EMSCRIPTEN_KEEPALIVE float *rw_pack_vertices(void) {
-    for (uint32_t i = 0; i < s_vertexCount; ++i) {
+    for (uint32_t i = 0; i < s_vertexCount + s_mirrorVertexCount; ++i) {
         const RageNativeDrawVertex *v = &s_vertices[i];
         float *out = &s_packed[(size_t)i * WEB_PACKED_FLOATS];
         memcpy(out, v->position, sizeof(v->position));
@@ -771,7 +884,7 @@ EMSCRIPTEN_KEEPALIVE float *rw_pack_vertices(void) {
     /* Vehicles cast the shadow map but do not sample it on themselves: the
      * native backend traces those rays instead, and a map lookup on their
      * low-poly surfaces is all acne (see RageNativeDrawVertex). */
-    for (uint32_t i = 0; i < s_spanCount; ++i) {
+    for (uint32_t i = 0; i < s_spanCount + s_mirrorSpanCount; ++i) {
         const RageNativeDrawSpan *span = &s_spans[i];
         if (span->assetSet != RAGE_RENDER_ASSET_MODEL_BANK &&
             span->assetSet != RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1) continue;
@@ -786,7 +899,8 @@ EMSCRIPTEN_KEEPALIVE float *rw_pack_vertices(void) {
 EMSCRIPTEN_KEEPALIVE int rw_decode_texture(int spanIndex, uint8_t *rgba) {
     RenderMeshInstance instance;
     const RageNativeDrawSpan *span;
-    if (!s_race || spanIndex < 0 || (uint32_t)spanIndex >= s_spanCount || !rgba) return 0;
+    if (!s_race || spanIndex < 0 || (uint32_t)spanIndex >= s_spanCount + s_mirrorSpanCount ||
+        !rgba) return 0;
     span = &s_spans[spanIndex];
     if (span->material == UINT32_MAX) return 0;
     memset(&instance, 0, sizeof(instance));

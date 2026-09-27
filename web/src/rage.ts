@@ -138,13 +138,28 @@ export class Rage {
     return new Float32Array(this.m.HEAPU8.buffer, pointer, count * this.packedFloats);
   }
 
-  spans(): Uint32Array {
-    const count = this.call('rw_span_count');
-    return new Uint32Array(this.m.HEAPU8.buffer, this.call('rw_spans'), count * SPAN_FIELDS);
+  /** The main view's spans, then the mirror's (`mainSpans` of them are main). */
+  spans(): { fields: Uint32Array; mainSpans: number } {
+    const main = this.call('rw_span_count');
+    const count = main + this.call('rw_mirror_span_count');
+    return { fields: new Uint32Array(this.m.HEAPU8.buffer, this.call('rw_spans'), count * SPAN_FIELDS), mainSpans: main };
   }
 
   /** position, viewRow0..2, projection, fogColor, fogRange (vec4 each). */
   camera(): Float32Array { return new Float32Array(this.m.HEAPU8.buffer, this.call('rw_camera'), 28); }
+
+  /** The rear-view mirror of the last frame, or null when it is not drawn:
+   *  its panel top in PAL lines and its vertices after the main view's. */
+  mirror(): { panelY: number; firstVertex: number; vertexCount: number } | null {
+    const m = new Float32Array(this.m.HEAPU8.buffer, this.call('rw_mirror'), 4);
+    return m[0] ? { panelY: m[1], firstVertex: m[2], vertexCount: m[3] } : null;
+  }
+
+  /** The mirror camera, laid out as camera(). */
+  mirrorCamera(): Float32Array { return new Float32Array(this.m.HEAPU8.buffer, this.call('rw_mirror_camera'), 28); }
+
+  /** The mirror's sky uniform block, laid out as sky(). */
+  mirrorSky(): Float32Array { return new Float32Array(this.m.HEAPU8.buffer, this.call('rw_mirror_sky'), 28); }
 
   /** light direction, ambient, diffuse, sky top, horizon, bottom. */
   light(): Float32Array { return new Float32Array(this.m.HEAPU8.buffer, this.call('rw_light'), 24); }

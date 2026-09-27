@@ -19,11 +19,12 @@ enum {
 };
 
 /* The panorama identity and the grid DrawSkyBackground measures for this
- * camera (main pass, no mirror mode), as render_world_game.c's
+ * camera (no mirrored course), as render_world_game.c's
  * GameRenderWorldBuildCamera publishes them. `cameraY` and the angles are
- * the PS1 view values. */
+ * the PS1 view values of the main camera; `mirrorPass` selects the grid the
+ * rear-view mirror pass measures from them. */
 void WebSkySetCamera(RenderCamera *camera, const ClientRace *race, s32 cameraY,
-                     s32 pitch, s32 yaw, s32 roll);
+                     s32 pitch, s32 yaw, s32 roll, int mirrorPass);
 
 /* ModernNativeBuildSky's uniform block; gridParams.w (the target height in
  * pixels) is left for the browser, which knows its drawing buffer. */
