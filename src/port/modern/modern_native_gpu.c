@@ -824,8 +824,10 @@ static void ModernNativeGpuClearTextures(void) {
                 SDL_ReleaseGPUTexture(s_device, s_textures[index].texture);
         }
     }
-    /* The uploads still in flight read these textures. */
-    if (s_device != NULL) SDL_WaitForGPUIdle(s_device);
+    /* Submitted textures are retired safely by SDL_ReleaseGPUTexture. Only
+     * the retained upload cleanup needs the existing synchronization path;
+     * palette changes with no pending uploads must not stall the GPU. */
+    if (s_device != NULL && s_pendingUploads.count) SDL_WaitForGPUIdle(s_device);
     ModernNativeReleasePendingUploads();
     memset(s_textures, 0, sizeof(s_textures));
     ModernTextureIndexClear(&s_textureIndex);

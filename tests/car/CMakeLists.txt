@@ -70,10 +70,13 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME chase_camera COMMAND chase_camera_tests)
 add_test(NAME chase_camera_invalid COMMAND chase_camera_tests)
+add_test(NAME chase_camera_defaults COMMAND chase_camera_tests)
+set_tests_properties(chase_camera_defaults PROPERTIES
+    ENVIRONMENT "CHASE_TEST_DEFAULTS=1")
 set_tests_properties(chase_camera_invalid PROPERTIES
     ENVIRONMENT "CHASE_TEST_VALUE=nan")
 
-set_tests_properties(chase_camera chase_camera_invalid PROPERTIES
+set_tests_properties(chase_camera chase_camera_invalid chase_camera_defaults PROPERTIES
     LABELS functional)
 
 add_executable(player_tachometer_tests
@@ -1247,6 +1250,7 @@ add_test(NAME rival_contact COMMAND rival_contact_tests)
 
 foreach(test IN ITEMS race_data race_disc)
     add_executable(${test}_tests ${test}_tests.c)
+    target_include_directories(${test}_tests PRIVATE ${CMAKE_SOURCE_DIR}/src/port)
     target_link_libraries(${test}_tests PRIVATE rage-data)
     target_compile_options(${test}_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
     add_test(NAME ${test} COMMAND ${test}_tests)

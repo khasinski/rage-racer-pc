@@ -26,8 +26,17 @@ typedef struct CarShape {
 
 /* Reads only the placement prefix, not the model stream or image payload. */
 int ReadCarShape(const void *data, size_t size, CarShape *shape);
+/* Retail model metadata: whether this variant offers automatic transmission.
+ * Invalid/truncated metadata preserves the output. */
+int ReadCarTransmission(const void *data, size_t size, int *automatic);
 
 /* Copy retail values before performance preparation or catalog overrides.
  * Failure leaves the destination unchanged. Audio/image contents are not parsed. */
 int ReadCarSpec(const void *data, size_t size, GameCarSpec *spec);
+/* Complete specification, before performance preparation. Explicit little-endian
+ * fields, no native padding. Packet versioning belongs to the caller. These
+ * codecs preserve numeric values; the race setup still validates physics. */
+enum { CAR_SPEC_WIRE_SIZE = 352 };
+int EncodeCarSpec(const GameCarSpec *spec, u8 *bytes, size_t size);
+int DecodeCarSpec(const u8 *bytes, size_t size, GameCarSpec *spec);
 #endif

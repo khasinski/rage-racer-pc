@@ -1,11 +1,21 @@
 #include "game/race_sim.h"
 #include "game/race_lap.h"
 #include "game/rival.h"
+#include "game/car_drive.h"
 #include <string.h>
 
 static int HasRoute(const TrackRoute *route) {
     return route != NULL && route->points != NULL &&
            route->count > 0 && route->length > 0;
+}
+
+int ConfigureRaceDriver(RaceSim *race, s32 slot, const GameCarSpec *spec) {
+    if (!race || !spec || race->phase != SIM_SETUP || (u32)slot >= DRIVER_SEAT_LIMIT ||
+        race->drivers[slot].status != SIM_DRIVING || race->drivers[slot].rival) return 0;
+    SimDriver *driver = &race->drivers[slot];
+    driver->spec = *spec;
+    PrepareCarPerformance(&driver->car.drive, &driver->spec, &driver->engine);
+    return 1;
 }
 
 int InitRaceSim(RaceSim *race, const TrackRoute *route,
@@ -91,19 +101,6 @@ int StartRaceSim(RaceSim *race, u32 countdownTicks) {
     return 1;
 }
 
-static int IsFlag(int value) {
-    return value == 0 || value == 1;
-}
-
-int ValidDriverInput(const DriverInput *input) {
-    return input != NULL && input->throttle >= 0 && input->throttle <= 256 &&
-        input->brake >= 0 && input->brake <= 256 &&
-        input->steering.mode >= STEERING_CENTER && input->steering.mode <= STEERING_ANALOG &&
-        input->steering.angle >= -(13 * 512) && input->steering.angle <= 13 * 512 &&
-        IsFlag(input->steering.left) && IsFlag(input->steering.right) &&
-        IsFlag(input->shiftUp) && IsFlag(input->shiftDown);
-}
-
 int SetRaceInput(RaceSim *race, s32 slot, const DriverInput *input) {
     if (race == NULL || (u32)slot >= DRIVER_SEAT_LIMIT || !ValidDriverInput(input) ||
         race->phase == SIM_FINISHED || race->drivers[slot].status != SIM_DRIVING ||
@@ -130,6 +127,7 @@ static void StepCountdown(RaceSim *race) {
         SimDriver *driver = &race->drivers[slot];
         if (driver->status != SIM_DRIVING || driver->rival) continue;
         ApplyDriverInput(&driver->car, &driver->spec, &driver->input);
+        driver->inputTick = race->tick;
         const DriveContext context = {
             .point = &race->route.points[driver->car.trackPointIndex],
             .nextPoint = &race->route.points[(driver->car.trackPointIndex + 1) % race->route.count],
@@ -179,6 +177,7 @@ int StepRaceSim(RaceSim *race) {
         if (driver->status != SIM_DRIVING) continue;
         driver->step = seats[i].step;
         driver->stepTick = race->tick;
+        if (!driver->rival) driver->inputTick = race->tick;
         driver->crashed = seats[i].crashed;
         /* Track search can deactivate a car without producing a lap event.
          * Such a seat must not keep the room racing indefinitely. */

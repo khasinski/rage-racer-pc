@@ -145,6 +145,7 @@ set(RAGE_SIM_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/math/cos_angle.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/math/hull_rotation.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/math/geometry.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/race/race_frame.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/race/race_sim.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/race/race_lap.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/driver_init.c
@@ -153,6 +154,7 @@ set(RAGE_SIM_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/driver.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/car_dynamics.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/engine_sound.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/driver_input_valid.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/driver_input.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/car_slide.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/car/car_facing_direction.c
@@ -237,10 +239,19 @@ target_include_directories(rage-data PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/port)
 target_compile_options(rage-data PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 
+add_library(rage-mp-protocol STATIC src/port/mp_protocol.c
+    src/port/mp_prediction.c
+    src/main/PAL/main/car/driver_input_valid.c
+    src/port/runtime_parse.c src/port/archive_index.c)
+target_include_directories(rage-mp-protocol PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_compile_options(rage-mp-protocol PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+target_link_libraries(rage-mp-protocol PUBLIC rage-sim)
+
 # The server simulation and import layer must be verifiable without the port.
 if(RAGE_ENABLE_SANITIZERS AND
    CMAKE_C_COMPILER_ID MATCHES "Clang|GNU" AND NOT WIN32)
-    foreach(RAGE_SANITIZER_TARGET rage-sim rage-data)
+    foreach(RAGE_SANITIZER_TARGET rage-sim rage-data rage-mp-protocol)
         target_compile_options(${RAGE_SANITIZER_TARGET} PUBLIC
             -fsanitize=address,undefined -fno-omit-frame-pointer)
         target_link_options(${RAGE_SANITIZER_TARGET} INTERFACE
@@ -283,7 +294,8 @@ target_include_directories(rage-rmesh PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 add_executable(rage-mesh-obj tools/rage_mesh_obj.c)
 target_link_libraries(rage-mesh-obj PRIVATE rage-rmesh)
 # Uses the game's protocol adapter without game/renderer dependencies.
-add_executable(rage-mp-test-client tools/rage_mp_test_client.c src/port/mp_client.c src/port/archive_index.c)
+add_executable(rage-mp-test-client tools/rage_mp_test_client.c src/port/mp_client.c)
+target_link_libraries(rage-mp-test-client PRIVATE rage-mp-protocol)
 target_include_directories(rage-mp-test-client PRIVATE include src)
 if(WIN32)
     target_link_libraries(rage-mp-test-client PRIVATE ws2_32)
@@ -498,6 +510,7 @@ if(RAGE_BUILD_PORT)
         src/port/multiplayer_net.c
         src/port/mp_client.c
         src/port/mp_race_client.c
+        src/port/mp_menu.c
         src/port/force_feedback.c
         src/port/force_feedback_device.c
         src/port/axis_curve.c
@@ -768,7 +781,7 @@ if(RAGE_BUILD_PORT)
             endif()
         endif()
         target_link_libraries(${RAGE_PORT_TARGET} PRIVATE
-            rage-data psyz rage-render-world rage-ray rage-content chdr-static miniz rage-json)
+            rage-data rage-mp-protocol psyz rage-render-world rage-ray rage-content chdr-static miniz rage-json)
         if(WIN32)
             target_link_libraries(${RAGE_PORT_TARGET} PRIVATE comdlg32 legacy_stdio_definitions ws2_32)
         endif()

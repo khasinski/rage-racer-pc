@@ -5,6 +5,8 @@
 
 #include <stdint.h>
 
+enum { MODERN_PIPE_2D, MODERN_PIPE_2D_SUB };
+
 typedef struct ModernVertex {
     float x, y, z, w;
     float u, v;
@@ -51,5 +53,9 @@ void ModernOverlayBatchesEmitQuad(ModernOverlayBatches *batches,
 void ModernOverlayBatchesEmitTriangle(ModernOverlayBatches *batches,
                                       ModernSpan *span,
                                       const ModernVertex corners[3]);
+/* Owned-frame HUD: two clipped 8x8 text lines with shadow, no GPU or atlas.
+ * Appends to the current layer/pass. Failure preserves published counts/spans. */
+int ModernOverlayHud(ModernOverlayBatches *batches, const char text[2][64],
+                      float logicalWidth, float overscanX);
 
 #endif

@@ -40,10 +40,58 @@ int main(void) {
         CHECK(AddRaceDriver(&first, i, &spec, &hull, roadCorners, &threshold, &position, 0, 1, 23, 123 + i));
         CHECK(AddRaceDriver(&second, i, &spec, &hull, roadCorners, &threshold, &position, 0, 1, 23, 456 + i));
     }
+    {
+        RaceSim configured = first, fresh;
+        GameCarSpec changed = spec;
+        changed.torqueCurve[0] += 1000;
+        changed.gearRatio[1] += 100;
+        changed.steeringGripResponse += 1;
+        CHECK(InitRaceSim(&fresh, &route, NULL, 1, 0));
+        CHECK(AddRaceDriver(&fresh, 0, &changed, &hull, roadCorners, &threshold, &position, 0, 1, 23, 123));
+        CHECK(ConfigureRaceDriver(&configured, 0, &changed));
+        CHECK(memcmp(&configured.drivers[0], &fresh.drivers[0], sizeof(SimDriver)) == 0);
+        CHECK(memcmp(&configured.drivers[1], &first.drivers[1], sizeof(SimDriver)) == 0);
+        RaceSim unchanged = configured;
+        CHECK(!ConfigureRaceDriver(NULL, 0, &changed));
+        CHECK(!ConfigureRaceDriver(&configured, 0, NULL));
+        CHECK(!ConfigureRaceDriver(&configured, -1, &changed));
+        CHECK(!ConfigureRaceDriver(&configured, DRIVER_SEAT_LIMIT, &changed));
+        CHECK(!ConfigureRaceDriver(&configured, 2, &changed));
+        CHECK(memcmp(&configured, &unchanged, sizeof(configured)) == 0);
+        configured.drivers[0].rival = 1;
+        unchanged = configured;
+        CHECK(!ConfigureRaceDriver(&configured, 0, &changed));
+        CHECK(memcmp(&configured, &unchanged, sizeof(configured)) == 0);
+        configured.drivers[0].rival = 0;
+        CHECK(StartRaceSim(&configured, 2));
+        unchanged = configured;
+        CHECK(!ConfigureRaceDriver(&configured, 0, &changed));
+        CHECK(memcmp(&configured, &unchanged, sizeof(configured)) == 0);
+    }
     const DriverInput input = {.steering.mode = STEERING_DIGITAL, .throttle = 256};
     CHECK(SetRaceInput(&first, 0, &input) && SetRaceInput(&first, 1, &input));
     CHECK(SetRaceInput(&second, 0, &input) && SetRaceInput(&second, 1, &input));
     CHECK(StartRaceSim(&first, 2) && StartRaceSim(&second, 2));
+    RaceFrame checkpoint;
+    CHECK(sizeof(checkpoint) < sizeof(first));
+    CHECK(SaveRaceFrame(&first, &checkpoint));
+    const RaceSim original = first;
+    first.drivers[0].car.x += 500;
+    first.drivers[0].random = 999;
+    first.drivers[0].input.throttle = 0;
+    first.tick = 42;
+    CHECK(RestoreRaceFrame(&first, &checkpoint));
+    CHECK(memcmp(&first, &original, sizeof(first)) == 0);
+    RaceFrame invalid = checkpoint;
+    invalid.drivers[0].car.x += 500;
+    invalid.drivers[DRIVER_SEAT_LIMIT - 1].variant++;
+    CHECK(!RestoreRaceFrame(&first, &invalid));
+    CHECK(memcmp(&first, &original, sizeof(first)) == 0);
+    invalid = checkpoint; invalid.track = raised;
+    CHECK(!RestoreRaceFrame(&first, &invalid));
+    invalid = checkpoint; invalid.elapsed = invalid.tick + 1;
+    CHECK(!RestoreRaceFrame(&first, &invalid));
+    CHECK(memcmp(&first, &original, sizeof(first)) == 0);
     alone = first;
     PlayerCarRuntime before = first.drivers[0].car;
     PlayerCarRuntime expectedCountdown = before;
@@ -57,6 +105,7 @@ int main(void) {
     for (int i = 0; i < 2; i++) {
         CHECK(StepRaceSim(&first) && StepRaceSim(&second) && StepRaceSim(&alone));
     }
+    CHECK(first.drivers[0].inputTick == 2 && first.drivers[1].inputTick == 2);
     CHECK(first.phase == SIM_RACING && first.elapsed == 0);
     CHECK(memcmp(&expectedCountdown, &first.drivers[0].car, sizeof(expectedCountdown)) == 0);
     CHECK(first.drivers[0].car.x == before.x && first.drivers[0].car.z == before.z);
@@ -69,11 +118,13 @@ int main(void) {
     CHECK(StepRaceSim(&first) && StepRaceSim(&alone));
     CHECK(memcmp(&before, &first.drivers[0].car, sizeof(before)) == 0);
     CHECK(first.elapsed == 1);
+    CHECK(first.drivers[0].inputTick == 2);
     for (int i = 0; i < 100; i++) {
         CHECK(StepRaceSim(&first) && StepRaceSim(&second) && StepRaceSim(&alone));
         CHECK(memcmp(&first, &alone, sizeof(first)) == 0);
     }
     CHECK(first.elapsed == 101);
+    CHECK(first.drivers[0].inputTick == first.tick - 1);
     CHECK(first.drivers[0].car.collisionFlag == 1);
     CHECK(first.drivers[0].car.x != before.x);
     CHECK(first.drivers[0].car.y == 0 && second.drivers[0].car.y == 50);

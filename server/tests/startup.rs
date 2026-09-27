@@ -17,6 +17,10 @@ fn invalid_arguments_fail_before_import_or_listening() {
     rejected(&["missing.cue", "0"], "port must");
     rejected(&["missing.cue", "65536"], "port must");
     rejected(&["missing.cue", "7878", "extra"], "usage:");
+    rejected(&["missing.cue", "--class=7"], "invalid race option");
+    rejected(&["missing.cue", "--course=5"], "invalid race option");
+    rejected(&["missing.cue", "--laps=0"], "invalid race option");
+    rejected(&["missing.cue", "--reverse", "--reverse"], "duplicate server option");
 }
 
 #[test]

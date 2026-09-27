@@ -5,6 +5,9 @@
 
 int HostInitDisc(void);
 const char *HostDiscRegion(void);
+struct RaceData;
+/* Owned copy from the mounted image, including source identity. */
+struct RaceData *HostCopyRaceData(void);
 int HostDumpArchive(const char *path);
 int HostLoadArchiveIndex(void *entries, int count);
 int HostLoadAsset(unsigned int byteOffset, unsigned int size,

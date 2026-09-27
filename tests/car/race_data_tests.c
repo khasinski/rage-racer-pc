@@ -39,18 +39,19 @@ int main(void) {
         2 * sizeof(GameTrackPoint) + sizeof(TrackEventData);
     const u32 lastSector = 3 + (u32)((trackSize + 2047) / 2048);
     const u32 shapeSector = lastSector + (u32)((trackSize + 2047) / 2048);
-    const size_t size = (shapeSector + 1) * 2048 + sizeof(CarShape);
+    const size_t size = (shapeSector + 1) * 2048 + sizeof(CarShape) + 1;
     u8 *data = calloc(1, size);
     CHECK(data != NULL && carSize < 2048);
     for (int variant = 0; variant < CAR_MODEL_VARIANT_COUNT; variant++) {
         Entry(data, 11 + variant * 2, variant == 31 ? 2 : 1, (u32)carSize);
         Entry(data, 10 + variant * 2,
-              variant == 31 ? shapeSector + 1 : shapeSector, sizeof(CarShape));
+              variant == 31 ? shapeSector + 1 : shapeSector, sizeof(CarShape) + 1);
     }
     const CarShape firstShape = {100, -20, 300, 40};
     const CarShape lastShape = {150, -30, 350, 50};
     memcpy(data + shapeSector * 2048, &firstShape, sizeof(firstShape));
     memcpy(data + (shapeSector + 1) * 2048, &lastShape, sizeof(lastShape));
+    data[shapeSector * 2048 + sizeof(CarShape)] = 1;
     RaceCarAssetHeader header = {sizeof(header), sizeof(header) + sizeof(GameCarSpec),
         sizeof(header) + sizeof(GameCarSpec) + 1, sizeof(header) + sizeof(GameCarSpec) + 2,
         sizeof(header) + sizeof(GameCarSpec) + 3};
@@ -70,6 +71,16 @@ int main(void) {
     RaceData archive, unchanged;
     CHECK(ReadRaceData(data, size, &archive));
     unchanged = archive;
+    int automatic = -1;
+    CHECK(ReadRaceCarTransmission(&archive, 0, &automatic) && automatic == 1);
+    CHECK(ReadRaceCarTransmission(&archive, 31, &automatic) && automatic == 0);
+    CHECK(!ReadRaceCarTransmission(&archive, -1, &automatic) && automatic == 0);
+    CHECK(!ReadRaceCarTransmission(&archive, CAR_MODEL_VARIANT_COUNT, &automatic) && automatic == 0);
+    CHECK(!ReadRaceCarTransmission(NULL, 0, &automatic) && automatic == 0);
+    CHECK(!ReadRaceCarTransmission(&archive, 0, NULL));
+    RaceData shortMetadata = archive;
+    shortMetadata.entries[10].size = sizeof(CarShape);
+    CHECK(!ReadRaceCarTransmission(&shortMetadata, 0, &automatic) && automatic == 0);
     size_t assetSize = 123;
     CHECK(RaceAsset(&archive, -1, &assetSize) == NULL && assetSize == 123);
     CHECK(RaceAsset(&archive, GAME_ASSET_COUNT, &assetSize) == NULL && assetSize == 123);
@@ -110,6 +121,8 @@ int main(void) {
     for (int variant = 0; variant < CAR_MODEL_VARIANT_COUNT; variant++) {
         CarShape shape;
         CHECK(ReadRaceCarShape(&archive, variant, &shape));
+        CHECK(ReadRaceCarTransmission(&archive, variant, &automatic));
+        CHECK(automatic == (variant != 31));
         CHECK(memcmp(&shape, variant == 31 ? &lastShape : &firstShape,
                      sizeof(shape)) == 0);
         CHECK(ReadRaceCar(&archive, variant, &spec));

@@ -42,13 +42,15 @@ endfunction()
 # CMake sorts strings lexically, so 10–12 follow 1 in the expected lists.
 run_sweep(RAGE_PORT_SMOKE_MENU_SWEEP "menu sweep [^\n]*screen=[0-9]+"
     "1;10;11;12;2;3;4;5;6;7;8;9" "400:START,500:DOWN,520:CROSS")
+# Two UPs from the default GRAND_PRIX selection: one wrap lands on the new
+# MULTIPLAYER item (now the last TitleMenuItem), the second reaches OPTIONS.
 run_sweep(RAGE_PORT_SMOKE_OPTION_SWEEP "option sweep [^\n]*mode=[0-9]+"
-    "1;10;11;2;3;4;5;6;7;8;9" "400:START,500:UP,520:CROSS")
+    "1;10;11;2;3;4;5;6;7;8;9" "400:START,500:UP,560:UP,620:CROSS")
 # Enter OPTION through real input: the entry scene arms a fade-in that must
 # finish and hand the root menu its cursor, otherwise the screen is a softlock.
 execute_process(COMMAND "${CMAKE_COMMAND}" -E env SDL_AUDIODRIVER=dummy
-    RAGE_PORT_SMOKE_FRAMES=900 RAGE_PORT_SCENE_TRACE=1
-    "RAGE_PORT_INPUT_SCRIPT=400:START,500:UP,520:CROSS,700:DOWN,760:DOWN,800:CROSS"
+    RAGE_PORT_SMOKE_FRAMES=1000 RAGE_PORT_SCENE_TRACE=1
+    "RAGE_PORT_INPUT_SCRIPT=400:START,500:UP,560:UP,620:CROSS,800:DOWN,860:DOWN,900:CROSS"
     "${GAME}"
     WORKING_DIRECTORY "${SOURCE}" TIMEOUT 135 RESULT_VARIABLE result
     OUTPUT_VARIABLE output ERROR_VARIABLE error)

@@ -22,6 +22,7 @@ typedef struct SimDriver {
      * Countdown/intermediate clock ticks retain the previous result. */
     DriverStep step;
     u32 stepTick;
+    u32 inputTick; /* Last tick that consumed human controls, including countdown. */
     int crashed;
     int rival;
     s32 variant; /* Retail human variant, -1 when setup used a standalone spec. */
@@ -50,6 +51,36 @@ typedef struct RaceSim {
     s32 finishCount;
 } RaceSim;
 
+/* Local rollback state; immutable specs/hulls/track stay owned by RaceSim.
+ * Identity pointers are borrowed guards, never a network serialization. */
+typedef struct DriverFrame {
+    PlayerCarRuntime car;
+    DriverInput input;
+    DriverStep step;
+    u32 stepTick, inputTick, random, lapStarted, lapTicks[PLAYER_LAP_TIME_CAPACITY], finishTick;
+    s32 crashed, rival, variant, rivalSlot, place, wrongWayFrames;
+    SimDriverStatus status;
+} DriverFrame;
+typedef struct RaceFrame {
+    const void *track, *events;
+    s32 laps, reverse, finishCount;
+    u32 tick, countdown, elapsed;
+    SimRacePhase phase;
+    DriverFrame drivers[DRIVER_SEAT_LIMIT];
+} RaceFrame;
+/* Checks the whole mutable frame against its owner without modifying either. */
+int ValidRaceFrame(const RaceSim *race, const RaceFrame *frame);
+int SaveRaceFrame(const RaceSim *race, RaceFrame *frame);
+/* Same owned track/configuration only. Invalid frames leave race unchanged. */
+int RestoreRaceFrame(RaceSim *race, const RaceFrame *frame);
+enum { RACE_FRAME_WIRE_VERSION = 1, RACE_FRAME_WIRE_SIZE = 1 + 7 * 4 + DRIVER_SEAT_LIMIT * (116 + 412) };
+/* Exact little-endian checkpoint schema. No pointers, enum layout or implicit
+ * padding on wire. Decode binds identity to the receiver's already-owned setup.
+ * Invalid input leaves output untouched. These bytes are not yet a TCP packet. */
+int EncodeRaceFrame(const RaceSim *race, uint8_t *wire, size_t size);
+int DecodeRaceFrame(const RaceSim *race, const uint8_t *wire, size_t size, RaceFrame *out);
+
+
 int InitRaceSim(RaceSim *race, const TrackRoute *route,
                   const struct TrackEventData *events, s32 laps, int reverse);
 /* hull describes car-to-car contact; roadCorners describes track contact.
@@ -67,12 +98,14 @@ int AddRaceRival(RaceSim *race, s32 slot, s32 rivalSlot, const DriverHull *hull,
                  s32 walkStart, u16 model);
 /* Start once from setup with at least one active seat. Zero skips countdown. */
 int StartRaceSim(RaceSim *race, u32 countdownTicks);
+/* Replace a human driver's specification before start and rebuild all derived
+ * engine/drive values. Does not move the car or change its model/input/seed.
+ * AI, empty seats and running races are rejected without mutation. */
+int ConfigureRaceDriver(RaceSim *race, s32 slot, const GameCarSpec *spec);
 /* Latest levels replace previous levels; gear edges accumulate until physics
  * consumes them, including inputs received between the two 50 Hz ticks.
  * Flags must be 0/1; pedals 0..256; steering center/digital/analog, with angle
  * within +/-13*512. Invalid commands leave the complete race unchanged. */
-/* Pure command validation, also used before accepting network input. */
-int ValidDriverInput(const DriverInput *input);
 int SetRaceInput(RaceSim *race, s32 slot, const DriverInput *input);
 /* Returns 1 for an advanced tick, 0 in setup/finished or at clock overflow.
  * Retiring the last driver closes the race on the next tick, without results. */

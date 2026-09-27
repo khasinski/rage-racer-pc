@@ -42,7 +42,8 @@ void DrawMainMenuRows(void) {
         if (height < 0) height = 0;
 
         packet = DrawTitleMenuLabel(
-            ot, packet, (TitleMenuItem)item, 0x68, 0x64 + row * 0x18,
+            ot, packet, (TitleMenuItem)item, 0x68,
+            g_ExtraGrandPrixUnlocked ? 0x58 + row * 0x16 : 0x64 + row * 0x18,
             height, clut == 0x7E86);
         item++;
         row++;
@@ -100,6 +101,11 @@ void UpdateMainMenuInput(void) {
 
     if (pressed & PAD_CONFIRM) {
         PlaySoundCue(2);
+        if (frontend->selection == TITLE_MENU_MULTIPLAYER) {
+            frontend->state = FRONTEND_STATE_MENU_EXIT;
+            DrawMainMenuRows();
+            return;
+        }
         if (!AssetLoadCompletedSuccessfully()) ResetAssetLoader();
         ShuffleBgmOrder();
         g_RaceSession.kind = RACE_SESSION_STANDARD;

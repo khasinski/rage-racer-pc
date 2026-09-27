@@ -2,6 +2,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
+#include "../../../external/psyz/external/SDL/src/render/SDL_render_debug_font.h"
 
 int ModernOverlayBatchesAllocate(ModernOverlayBatches *batches,
                                   int vertexCapacity, int spanCapacity) {
@@ -93,4 +95,51 @@ void ModernOverlayBatchesEmitTriangle(ModernOverlayBatches *batches,
                                       ModernSpan *span,
                                       const ModernVertex corners[3]) {
     (void)ModernOverlayBatchesPush(batches, span, corners, 3);
+}
+
+int ModernOverlayHud(ModernOverlayBatches *batches, const char text[2][64],
+                      float logicalWidth, float overscanX) {
+    if (!batches || !text || !batches->vertices || !batches->spans ||
+        !isfinite(logicalWidth) || logicalWidth <= 0 || !isfinite(overscanX) ||
+        batches->vertexCount < 0 || batches->vertexCount > batches->vertexCapacity ||
+        batches->spanCount < 0 || batches->spanCount > batches->spanCapacity) return 0;
+    const int vertices = batches->vertexCount, spans = batches->spanCount;
+    ModernSpan previous = {0};
+    if (spans) previous = batches->spans[spans - 1];
+    ModernSpan *span = NULL;
+    for (int shadow = 1; shadow >= 0; --shadow) {
+        for (int line = 0; line < 2; ++line) {
+            for (int letter = 0; letter < 36 && text[line][letter]; ++letter) {
+                unsigned glyph = (unsigned char)text[line][letter];
+                if (glyph < 33 || glyph > 126) continue;
+                const Uint8 *pixels = &SDL_RenderDebugTextFontData[(glyph - 33) * 8];
+                for (int y = 0; y < 8; ++y) for (int x = 0; x < 8;) {
+                    int first = x++;
+                    if (!(pixels[y] & (1u << (7 - first)))) continue;
+                    while (x < 8 && (pixels[y] & (1u << (7 - x)))) x++;
+                    if (!span) span = ModernOverlayBatchesBegin(batches, MODERN_PIPE_2D, NULL);
+                    if (!span || batches->vertexCount > batches->vertexCapacity - 6) goto failed;
+                    ModernVertex corners[4] = {0};
+                    for (int vertex = 0; vertex < 4; ++vertex) {
+                        ModernVertex *out = &corners[vertex];
+                        float px = (float)(16 + letter * 8 + shadow + ((vertex & 1) ? x : first));
+                        float py = (float)(16 + line * 12 + y + shadow + (vertex >> 1));
+                        out->x = (px + overscanX) / (logicalWidth * 0.5f) - 1.0f;
+                        out->y = -(py / 120.0f - 1.0f);
+                        out->w = 1.0f;
+                        out->color[0] = out->color[1] = out->color[2] = shadow ? 0 : 240;
+                        out->color[3] = 255;
+                        out->attr = 0x8000u;
+                    }
+                    ModernOverlayBatchesEmitQuad(batches, span, corners);
+                }
+            }
+        }
+    }
+    return 1;
+failed:
+    batches->vertexCount = vertices;
+    batches->spanCount = spans;
+    if (spans) batches->spans[spans - 1] = previous;
+    return 0;
 }

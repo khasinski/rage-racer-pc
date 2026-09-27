@@ -12,6 +12,7 @@ static int failures;
 } } while (0)
 
 const char *RuntimeConfigGet(const char *key) {
+    if (getenv("CHASE_TEST_DEFAULTS") != NULL) return NULL;
     const char *override = getenv("CHASE_TEST_VALUE");
     if (!strcmp(key, "camera.chase_turn_lookahead"))
         return override != NULL ? override : "0.5";
@@ -22,6 +23,13 @@ const char *RuntimeConfigGet(const char *key) {
 }
 
 int main(void) {
+    if (getenv("CHASE_TEST_DEFAULTS") != NULL) {
+        EXPECT_EQ(1400, ChaseCameraHeight(1400));
+        EXPECT_EQ(2200, ChaseCameraDistance(2200));
+        EXPECT_EQ(0, ChaseCameraPitchOffset());
+        EXPECT_EQ(0, ChaseCameraYawOffset(4096));
+        return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
     if (getenv("CHASE_TEST_VALUE") != NULL) {
         EXPECT_EQ(0, ChaseCameraYawOffset(4096));
         return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;

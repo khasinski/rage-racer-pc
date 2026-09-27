@@ -1,11 +1,15 @@
+#ifndef _WIN32
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200809L
+#endif
+#endif
 #include "mp_client.h"
-#include "game/race_sim.h"
-#include "client_race.h"
 
 #include <stdlib.h>
 #include <string.h>
 
 #include <limits.h>
+#include <time.h>
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -27,19 +31,38 @@ typedef ssize_t IoCount;
 #endif
 
 struct MpClient {
+    uint64_t room;
+    int listing;
+    int roomChosen;
+    MpLobby lobby;
     Socket fd;
-    uint8_t incoming[1 + MP_SNAPSHOT_HEADER_SIZE + MP_SEAT_LIMIT * MP_SNAPSHOT_SEAT_SIZE];
+    uint8_t incoming[MP_PUBLICATION_WIRE_SIZE];
     size_t received;
     size_t needed;
     int failed;
     int nonblocking;
-    uint8_t outgoing[MP_INPUT_WIRE_SIZE];
+    uint32_t sequence;
+    int seat, assigned;
+    MpCommands commands;
+    DriverInput transmitting;
+    uint32_t transmittingTick, latestTick;
+    uint32_t acknowledged[MP_SEAT_LIMIT];
+    struct { uint32_t tick, elapsed; uint8_t phase; int received; } correctionClock;
+    uint8_t outgoing[MP_COMMAND_WIRE_SIZE];
     size_t sent;
     int sending;
     DriverInput latest;
     int queued;
     MpResult result;
     int resultPending;
+    int raceStarted;
+    uint64_t setupDeadline;
+    int setupType;
+    uint64_t connectDeadline;
+    int connecting;
+    uint8_t setupWire[2 + MP_NAME_CAPACITY];
+    size_t setupSize, setupSent;
+    uint64_t writeDeadline;
 };
 
 static int StartSockets(void) {
@@ -97,226 +120,26 @@ static int Nonblocking(MpClient *client) {
     return 1;
 }
 
-static void PutLE16(uint8_t *out, int16_t v) {
-    out[0] = (uint8_t)v;
-    out[1] = (uint8_t)((uint16_t)v >> 8);
-}
-static uint32_t GetLE32(const uint8_t *in) {
-    return (uint32_t)in[0] | ((uint32_t)in[1] << 8) | ((uint32_t)in[2] << 16) |
-           ((uint32_t)in[3] << 24);
-}
-static int32_t GetLE32Signed(const uint8_t *in) { return (int32_t)GetLE32(in); }
-
-void MpEncodeInput(const DriverInput *input, uint8_t out[MP_INPUT_WIRE_SIZE]) {
-    out[0] = MP_C2S_INPUT;
-    out[1] = (uint8_t)input->steering.mode;
-    out[2] = input->steering.left ? 1 : 0;
-    out[3] = input->steering.right ? 1 : 0;
-    /* Steering angle can exceed +/-32767 in principle; the retail range
-     * (+/-13*512, see SetRaceInput) fits comfortably in 16 bits. */
-    PutLE16(out + 4, (int16_t)input->steering.angle);
-    PutLE16(out + 6, input->throttle);
-    PutLE16(out + 8, input->brake);
-    out[10] = input->shiftUp ? 1 : 0;
-    out[11] = input->shiftDown ? 1 : 0;
-    out[12] = 0; /* Reserved byte in the server's 12-byte input body. */
-}
-
-static int ValidStart(const MpStart *start) {
-    if (!start || start->course >= 4 || start->classIndex >= 6 ||
-        start->laps < 1 || start->laps > PLAYER_LAP_TIME_CAPACITY || start->reverse > 1 ||
-        !memchr(start->boot, 0, sizeof(start->boot))) return 0;
-    for (int seat = 0; seat < MP_SEAT_LIMIT; ++seat)
-        if (start->seats[seat].model >= CAR_MODEL_VARIANT_COUNT ||
-            start->seats[seat].manual > 1) return 0;
+static int Milliseconds(uint64_t *now) {
+#ifdef _WIN32
+    *now = GetTickCount64();
+#else
+    struct timespec stamp;
+    if (clock_gettime(CLOCK_MONOTONIC, &stamp)) return 0;
+    *now = (uint64_t)stamp.tv_sec * 1000 + (uint64_t)stamp.tv_nsec / 1000000;
+#endif
     return 1;
 }
 
-int MpDecodeStart(const uint8_t *body, size_t size, MpStart *out) {
-    if (!body || !out || size != MP_START_BODY_SIZE ||
-        body[0] != MP_PROTOCOL_VERSION || body[9] != MP_SEAT_LIMIT) return 0;
-    MpStart result = {.course = body[1], .classIndex = body[2],
-        .laps = body[3], .reverse = body[4], .countdown = GetLE32(body + 5)};
-    memcpy(result.boot, body + 10, sizeof(result.boot));
-    for (int seat = 0; seat < MP_SEAT_LIMIT; ++seat) {
-        const uint8_t *entry = body + 26 + seat * 6;
-        result.seats[seat] = (MpSeat){entry[0], entry[1], GetLE32(entry + 2)};
-    }
-    const uint8_t *hash = body + 26 + MP_SEAT_LIMIT * 6;
-    result.fingerprint = (uint64_t)GetLE32(hash) | ((uint64_t)GetLE32(hash + 4) << 32);
-    result.executable = (uint64_t)GetLE32(hash + 8) | ((uint64_t)GetLE32(hash + 12) << 32);
-    if (!ValidStart(&result)) return 0;
-    *out = result;
-    return 1;
-}
-
-int MpMatchesArchive(const MpStart *start, const RaceData *archive) {
-    return ValidStart(start) && archive && archive->data && archive->size &&
-        start->boot[0] && archive->boot[0] &&
-        memchr(archive->boot, 0, sizeof(archive->boot)) &&
-        strcmp(start->boot, archive->boot) == 0 &&
-        start->executable && start->executable == archive->executable &&
-        start->fingerprint == ArchiveFingerprint(archive->data, archive->size);
-}
-
-int MpBuildSetup(const MpStart *start, RaceSetup *out) {
-    if (!out || !ValidStart(start)) return 0;
-    RaceSetup setup = {.classIndex = start->classIndex, .courseIndex = start->course,
-                       .laps = start->laps, .reverse = start->reverse};
-    for (int seat = 0; seat < MP_SEAT_LIMIT; ++seat) {
-        const MpSeat *entry = &start->seats[seat];
-        setup.entrants[seat] = (RaceEntrant){.kind = RACE_SEAT_HUMAN, .grid = seat,
-            .model = entry->model, .manual = entry->manual, .seed = entry->seed};
-        setup.looks[seat].variant = entry->model;
-    }
-    *out = setup;
-    return 1;
-}
-
-int MpDecodeResult(const uint8_t *body, size_t size, MpResult *out) {
-    if (!body || !out || size != MP_RESULT_BODY_SIZE) return 0;
-    MpResult result = {0};
-    for (int seat = 0; seat < MP_SEAT_LIMIT; ++seat) {
-        const uint8_t *entry = body + seat * 6;
-        MpFinish finish = {entry[0], entry[1], GetLE32Signed(entry + 2)};
-        if (finish.finished > 1 || (finish.finished
-                ? finish.place < 1 || finish.place > DRIVER_SEAT_LIMIT || finish.milliseconds < 0
-                : finish.place != 0 || finish.milliseconds != -1)) return 0;
-        for (int earlier = 0; earlier < seat; ++earlier)
-            if (finish.finished && result.seats[earlier].finished &&
-                finish.place == result.seats[earlier].place) return 0;
-        result.seats[seat] = finish;
-    }
-    *out = result;
-    return 1;
-}
-
-static int ValidPose(const MpCarPose *pose) {
-    return pose->status >= 0 && pose->status <= MP_FINISHED && pose->brake >= 0 && pose->brake <= 256 &&
-        pose->throttle >= 0 && pose->throttle <= 256 &&
-        pose->clutch >= INT16_MIN && pose->clutch <= INT16_MAX &&
-        pose->gear >= 0 && pose->gear <= CAR_FORWARD_GEAR_COUNT;
-}
-
-static int32_t BlendValue(int32_t before, int32_t after, uint32_t fraction) {
-    return (int32_t)(before + ((int64_t)after - before) * fraction / 65536);
-}
-
-static int32_t BlendPoseAngle(int32_t before, int32_t after, uint32_t fraction) {
-    int64_t delta = ((int64_t)after - before) % 4096;
-    if (delta > 2048) delta -= 4096;
-    if (delta < -2048) delta += 4096;
-    return (int32_t)(((int64_t)before + delta * fraction / 65536) & 4095);
-}
-
-int MpBlendPose(const MpCarPose *before, const MpCarPose *after,
-                uint32_t fraction, MpCarPose *out) {
-    if (!before || !after || !out || fraction > 65536 ||
-        !ValidPose(before) || !ValidPose(after)) return 0;
-    MpCarPose pose = *after;
-    if (before->status == MP_DRIVING && after->status == MP_DRIVING) {
-        pose.x = BlendValue(before->x, after->x, fraction);
-        pose.y = BlendValue(before->y, after->y, fraction);
-        pose.z = BlendValue(before->z, after->z, fraction);
-        pose.ground = BlendValue(before->ground, after->ground, fraction);
-        pose.steering = BlendValue(before->steering, after->steering, fraction);
-        pose.rollSpeed = BlendValue(before->rollSpeed, after->rollSpeed, fraction);
-        pose.yaw = BlendPoseAngle(before->yaw, after->yaw, fraction);
-        pose.pitch = BlendPoseAngle(before->pitch, after->pitch, fraction);
-        pose.roll = BlendPoseAngle(before->roll, after->roll, fraction);
-        pose.wheels = BlendPoseAngle(before->wheels, after->wheels, fraction) |
-                      (after->wheels & CAR_WHEEL_BLUR_FLAG);
-    }
-    *out = pose;
-    return 1;
-}
-
-int MpDecodeSnapshot(const uint8_t *body, size_t size, MpSnapshot *out) {
-    if (!body || !out) return 0;
-    size_t expect = MP_SNAPSHOT_HEADER_SIZE + MP_SEAT_LIMIT * MP_SNAPSHOT_SEAT_SIZE;
-    if (size != expect || body[4] > SIM_FINISHED) return 0;
-    MpSnapshot result = {0};
-    result.tick = GetLE32(body);
-    result.phase = body[4];
-    const uint8_t *cursor = body + MP_SNAPSHOT_HEADER_SIZE;
-    for (int seat = 0; seat < MP_SEAT_LIMIT; ++seat) {
-        if (cursor[0] > MP_FINISHED) return 0;
-        result.seats[seat].status = cursor[0];
-        result.seats[seat].x = GetLE32Signed(cursor + 1);
-        result.seats[seat].y = GetLE32Signed(cursor + 5);
-        result.seats[seat].z = GetLE32Signed(cursor + 9);
-        result.seats[seat].yaw = GetLE32Signed(cursor + 13);
-        result.seats[seat].pitch = GetLE32Signed(cursor + 17);
-        result.seats[seat].roll = GetLE32Signed(cursor + 21);
-        result.seats[seat].steering = GetLE32Signed(cursor + 25);
-        result.seats[seat].wheels = GetLE32Signed(cursor + 29);
-        result.seats[seat].brake = GetLE32Signed(cursor + 33);
-        result.seats[seat].progress = GetLE32Signed(cursor + 37);
-        result.seats[seat].rpm = GetLE32Signed(cursor + 41);
-        result.seats[seat].throttle = GetLE32Signed(cursor + 45);
-        result.seats[seat].clutch = GetLE32Signed(cursor + 49);
-        result.seats[seat].gear = GetLE32Signed(cursor + 53);
-        result.seats[seat].ground = GetLE32Signed(cursor + 57);
-        result.seats[seat].rollSpeed = GetLE32Signed(cursor + 61);
-        if (!ValidPose(&result.seats[seat])) return 0;
-        cursor += MP_SNAPSHOT_SEAT_SIZE;
-    }
-    *out = result;
-    return 1;
-}
-
-int MpApplySnapshot(RaceSim *race, const MpSnapshot *snapshot) {
-    if (!race || !snapshot || snapshot->phase > SIM_FINISHED ||
-        snapshot->phase < race->phase || snapshot->tick <= race->tick) return 0;
-    for (int seat = 0; seat < MP_SEAT_LIMIT; ++seat) {
-        const SimDriver *driver = &race->drivers[seat];
-        const MpCarPose *pose = &snapshot->seats[seat];
-        if (!ValidPose(pose) || driver->rival ||
-            driver->status == SIM_EMPTY ||
-            (pose->status != MP_RETIRED && driver->status == SIM_RETIRED) ||
-            (driver->status == SIM_DRIVER_FINISHED && pose->status != MP_FINISHED)) return 0;
-    }
-    for (int seat = 0; seat < MP_SEAT_LIMIT; ++seat) {
-        SimDriver *driver = &race->drivers[seat];
-        const MpCarPose *pose = &snapshot->seats[seat];
-        if (!pose->status) {
-            driver->car.activeFlag = -1;
-            driver->status = SIM_RETIRED;
-            continue;
-        }
-        driver->status = pose->status == MP_FINISHED ? SIM_DRIVER_FINISHED : SIM_DRIVING;
-        driver->car.x = pose->x;
-        driver->car.y = pose->y;
-        driver->car.z = pose->z;
-        driver->car.bodyYaw = pose->yaw;
-        driver->car.bodyPitch = pose->pitch;
-        driver->car.bodyRoll = pose->roll;
-        driver->car.modelY = pose->ground;
-        driver->car.bodyRollVelocity = pose->rollSpeed;
-        driver->car.steeringAngle = pose->steering;
-        driver->car.wheelRotation = pose->wheels;
-        driver->car.drive.brakeInput = (s16)pose->brake;
-        driver->car.trackProgress = pose->progress;
-        driver->car.drive.engineRpm = pose->rpm;
-        driver->car.drive.acceleratorInput.value = (s16)pose->throttle;
-        driver->car.drive.clutch = (s16)pose->clutch;
-        driver->car.drive.gear = (s16)pose->gear;
-    }
-    race->tick = snapshot->tick;
-    race->phase = (SimRacePhase)snapshot->phase;
-    return 1;
-}
-
-static int ReadFull(Socket fd, void *buffer, size_t size) {
-    uint8_t *p = buffer;
-    size_t got = 0;
-    while (got < size) {
-        int chunk = size - got > INT_MAX ? INT_MAX : (int)(size - got);
-        IoCount n = recv(fd, (char *)p + got, chunk, 0);
-        if (n < 0 && Interrupted()) continue;
-        if (n <= 0) return 0;
-        got += (size_t)n;
-    }
+static int Blocking(MpClient *client) {
+#ifdef _WIN32
+    u_long enabled = 0;
+    if (ioctlsocket(client->fd, FIONBIO, &enabled) != 0) return 0;
+#else
+    int flags = fcntl(client->fd, F_GETFL);
+    if (flags < 0 || fcntl(client->fd, F_SETFL, flags & ~O_NONBLOCK) != 0) return 0;
+#endif
+    client->nonblocking = 0;
     return 1;
 }
 
@@ -346,7 +169,7 @@ static int ConfigureSocket(Socket fd) {
     return 1;
 }
 
-MpClient *MpClientConnect(const char *host, uint16_t port) {
+static MpClient *Connect(const char *host, uint16_t port, int asynchronous) {
     if (!host || !port || !StartSockets()) return NULL;
     Socket fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd == INVALID_FD) {
@@ -362,8 +185,7 @@ MpClient *MpClientConnect(const char *host, uint16_t port) {
     struct sockaddr_in addr = {0};
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
-    if (!ConfigureSocket(fd) || inet_pton(AF_INET, host, &addr.sin_addr) != 1 ||
-        connect(fd, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
+    if (!ConfigureSocket(fd) || inet_pton(AF_INET, host, &addr.sin_addr) != 1) {
         CloseSocket(fd);
         StopSockets();
         return NULL;
@@ -375,7 +197,68 @@ MpClient *MpClientConnect(const char *host, uint16_t port) {
         return NULL;
     }
     client->fd = fd;
+    if (asynchronous && (!Nonblocking(client) || !Milliseconds(&client->connectDeadline))) {
+        MpClientClose(client);
+        return NULL;
+    }
+    int result = connect(fd, (struct sockaddr *)&addr, sizeof(addr));
+    if (result != 0) {
+#ifdef _WIN32
+        int pending = WSAGetLastError() == WSAEWOULDBLOCK || WSAGetLastError() == WSAEINPROGRESS;
+#else
+        int pending = errno == EINPROGRESS || errno == EINTR;
+#endif
+        if (!asynchronous || !pending) {
+            MpClientClose(client);
+            return NULL;
+        }
+    }
+    if (asynchronous) {
+        client->connecting = 1;
+        client->connectDeadline += 5000;
+    }
     return client;
+}
+
+MpClient *MpClientConnect(const char *host, uint16_t port) {
+    return Connect(host, port, 0);
+}
+
+MpClient *MpClientBeginConnect(const char *host, uint16_t port) {
+    return Connect(host, port, 1);
+}
+
+int MpClientPollConnect(MpClient *client) {
+    if (!client || client->failed) return 0;
+    if (!client->connecting) return 1;
+    uint64_t now;
+    if (!Milliseconds(&now) || now >= client->connectDeadline) goto failed;
+    fd_set writes, errors;
+    FD_ZERO(&writes);
+    FD_ZERO(&errors);
+    FD_SET(client->fd, &writes);
+    FD_SET(client->fd, &errors);
+    struct timeval timeout = {0, 0};
+#ifdef _WIN32
+    int ready = select(0, NULL, &writes, &errors, &timeout);
+#else
+    int ready = select(client->fd + 1, NULL, &writes, &errors, &timeout);
+#endif
+    if (!ready || (ready < 0 && Interrupted())) return 3;
+    if (ready < 0) goto failed;
+    int error = 0;
+#ifdef _WIN32
+    int size = sizeof(error);
+#else
+    socklen_t size = sizeof(error);
+#endif
+    if (getsockopt(client->fd, SOL_SOCKET, SO_ERROR, (char *)&error, &size) ||
+        error || !Blocking(client)) goto failed;
+    client->connecting = 0;
+    return 1;
+failed:
+    client->failed = 1;
+    return 0;
 }
 
 void MpClientClose(MpClient *client) {
@@ -386,7 +269,8 @@ void MpClientClose(MpClient *client) {
 }
 
 int MpClientSendHello(MpClient *client, const char *name) {
-    if (!client || !name) return 0;
+    if (!client || !name || client->failed || client->nonblocking || client->connecting ||
+        client->setupType || client->setupSize || client->needed) return 0;
     size_t len = strlen(name);
     if (len > MP_NAME_CAPACITY) len = MP_NAME_CAPACITY;
     uint8_t hello[2 + MP_NAME_CAPACITY];
@@ -396,36 +280,372 @@ int MpClientSendHello(MpClient *client, const char *name) {
     return WriteFull(client->fd, hello, 2 + len);
 }
 
+static int ReadLimited(Socket fd, void *buffer, size_t size, uint32_t milliseconds) {
+    uint64_t now;
+    if (!Milliseconds(&now)) return 0;
+    uint64_t deadline = now + milliseconds;
+    uint8_t *cursor = buffer;
+    while (size) {
+        if (!Milliseconds(&now)) return 0;
+        if (now >= deadline) return 0;
+        uint64_t remaining = deadline - now;
+        struct timeval timeout = {(long)(remaining / 1000), (long)(remaining % 1000) * 1000};
+        fd_set reads;
+        FD_ZERO(&reads);
+        FD_SET(fd, &reads);
+#ifdef _WIN32
+        int ready = select(0, &reads, NULL, NULL, &timeout);
+#else
+        int ready = select(fd + 1, &reads, NULL, NULL, &timeout);
+#endif
+        if (ready < 0 && Interrupted()) continue;
+        if (ready <= 0) return 0;
+        IoCount received = recv(fd, (char *)cursor, size > INT_MAX ? INT_MAX : (int)size, 0);
+        if (received < 0 && Interrupted()) continue;
+        if (received <= 0) return 0;
+        cursor += received;
+        size -= (size_t)received;
+    }
+    return 1;
+}
+
 int MpClientRecvWelcome(MpClient *client, int *seat) {
-    if (!client || !seat) return 0;
-    uint8_t body[3];
-    if (!ReadFull(client->fd, body, sizeof(body)) || body[0] != MP_S2C_WELCOME ||
-        body[1] != MP_PROTOCOL_VERSION || body[2] >= MP_SEAT_LIMIT) return 0;
-    *seat = body[2];
+    if (!client || !seat || client->failed || client->nonblocking || client->connecting ||
+        client->setupType || client->setupSize || client->needed) return 0;
+    uint8_t body[11];
+    if (!ReadLimited(client->fd, body, sizeof(body), 5000) ||
+        !MpDecodeWelcome(body, seat, &client->room)) return 0;
+    client->seat = *seat;
+    client->assigned = 1;
+    return 1;
+}
+
+const MpCommands *MpClientCommands(const MpClient *client) { return client ? &client->commands : NULL; }
+
+unsigned MpClientPendingCommands(const MpClient *client, MpCommand out[2]) {
+    if (!client || !out || client->failed) return 0;
+    unsigned count = 0;
+    if (client->sending)
+        out[count++] = (MpCommand){client->sequence, client->transmittingTick, client->transmitting};
+    if (client->queued)
+        out[count++] = (MpCommand){0, client->latestTick, client->latest};
+    return count;
+}
+
+uint64_t MpClientRoom(const MpClient *client) { return client ? client->room : 0; }
+const MpLobby *MpClientLobby(const MpClient *client) {
+    return client && client->lobby.room.code ? &client->lobby : NULL;
+}
+
+static int AcceptLobby(MpClient *client, const uint8_t *wire) {
+    MpLobby lobby;
+    if (!MpDecodeLobby(wire, 53, &lobby) || lobby.room.code != client->room) return 0;
+    client->lobby = lobby;
     return 1;
 }
 
 int MpClientRecvStart(MpClient *client, MpStart *start) {
-    if (!client || !start) return 0;
+    if (!client || !start || client->failed || client->nonblocking || client->connecting ||
+        client->setupType || client->setupSize || client->needed) return 0;
     uint8_t body[1 + MP_START_BODY_SIZE];
-    if (!ReadFull(client->fd, body, sizeof(body)) || body[0] != MP_S2C_START) return 0;
-    return MpDecodeStart(body + 1, MP_START_BODY_SIZE, start);
+    uint64_t now;
+    if (!Milliseconds(&now)) return 0;
+    uint64_t deadline = now + 120000;
+    for (;;) {
+        if (!Milliseconds(&now) || now >= deadline ||
+            !ReadLimited(client->fd, body, 1, (uint32_t)(deadline - now))) return 0;
+        size_t size = body[0] == MP_S2C_START ? sizeof(body) : body[0] == MP_S2C_LOBBY ? 53 : 0;
+        if (!size || !Milliseconds(&now) || now >= deadline ||
+            !ReadLimited(client->fd, body + 1, size - 1, (uint32_t)(deadline - now))) return 0;
+        if (body[0] == MP_S2C_START) return MpDecodeStart(body + 1, MP_START_BODY_SIZE, start);
+        if (!AcceptLobby(client, body)) return 0;
+    }
+}
+
+static int PollSetup(MpClient *client, int type, size_t size, uint32_t budget) {
+    if (!client || client->failed || client->connecting || client->setupSize || client->needed ||
+        (client->listing && type != MP_S2C_LIST)) return 0;
+    uint64_t now;
+    if (!Milliseconds(&now)) { client->failed = 1; return 0; }
+    if (!client->setupType) {
+        client->setupType = type;
+        /* A room can wait for Ready indefinitely. Once Start bytes arrive,
+         * receiving that bounded packet still has an absolute deadline. */
+        client->setupDeadline = type == MP_S2C_START ? 0 : now + budget;
+    }
+    if (client->setupType != type || (client->setupDeadline && now >= client->setupDeadline)) {
+        client->failed = 1;
+        return 0;
+    }
+    while (client->received < size) {
+        fd_set reads;
+        FD_ZERO(&reads);
+        FD_SET(client->fd, &reads);
+        struct timeval timeout = {0, 0};
+#ifdef _WIN32
+        int ready = select(0, &reads, NULL, NULL, &timeout);
+#else
+        int ready = select(client->fd + 1, &reads, NULL, NULL, &timeout);
+#endif
+        if (ready == 0 || (ready < 0 && Interrupted())) return 3;
+        if (ready < 0) break;
+        IoCount n = recv(client->fd, (char *)client->incoming + client->received,
+                         (int)(size - client->received), 0);
+        if (n < 0 && (Interrupted() || WouldBlock())) return 3;
+        if (n <= 0) break;
+        if (!client->setupDeadline) client->setupDeadline = now + budget;
+        client->received += (size_t)n;
+    }
+    if (client->received == size && (client->incoming[0] == type ||
+        (type == MP_S2C_START && client->incoming[0] == MP_S2C_LOBBY))) return 1;
+    client->failed = 1;
+    return 0;
+}
+
+int MpClientRecvConfig(MpClient *client, MpCarConfig *config) {
+    if (!client || !config || client->failed || client->nonblocking || client->connecting ||
+        client->setupType || client->setupSize || client->needed) return 0;
+    uint8_t packet[MP_CONFIG_WIRE_SIZE];
+    if (!ReadLimited(client->fd, packet, sizeof(packet), 5000) ||
+        !MpDecodeConfig(packet, sizeof(packet), config)) {
+        client->failed = 1;
+        return 0;
+    }
+    return 1;
+}
+
+int MpClientRecvAvailability(MpClient *client, uint32_t *mask) {
+    if (!client || !mask || client->failed || client->nonblocking || client->connecting ||
+        client->setupType || client->setupSize || client->needed) return 0;
+    uint8_t packet[MP_AVAILABILITY_WIRE_SIZE];
+    if (!ReadLimited(client->fd, packet, sizeof(packet), 5000) ||
+        !MpDecodeAvailability(packet, sizeof(packet), mask)) {
+        client->failed = 1; return 0;
+    }
+    return 1;
+}
+int MpClientPollAvailability(MpClient *client, uint32_t *mask) {
+    if (!mask) return 0;
+    int state = PollSetup(client, 0x89, MP_AVAILABILITY_WIRE_SIZE, 5000);
+    if (state != 1) return state;
+    if (!MpDecodeAvailability(client->incoming, MP_AVAILABILITY_WIRE_SIZE, mask)) {
+        client->failed = 1; return 0;
+    }
+    client->received = client->setupType = 0;
+    client->setupDeadline = 0;
+    return 1;
+}
+
+int MpClientPollConfig(MpClient *client, MpCarConfig *config) {
+    if (!config) return 0;
+    int state = PollSetup(client, 0x88, MP_CONFIG_WIRE_SIZE, 5000);
+    if (state != 1) return state;
+    if (!MpDecodeConfig(client->incoming, MP_CONFIG_WIRE_SIZE, config)) {
+        client->failed = 1;
+        return 0;
+    }
+    client->received = client->setupType = 0;
+    client->setupDeadline = 0;
+    return 1;
+}
+
+int MpClientPollWelcome(MpClient *client, int *seat) {
+    if (!seat) return 0;
+    int state = PollSetup(client, MP_S2C_WELCOME, 11, 5000);
+    if (state != 1) return state;
+    if (!MpDecodeWelcome(client->incoming, seat, &client->room)) {
+        client->failed = 1;
+        return 0;
+    }
+    client->seat = *seat;
+    client->assigned = 1;
+    client->received = 0;
+    client->setupType = 0;
+    return 1;
+}
+
+int MpClientPollStart(MpClient *client, MpStart *start) {
+    if (!start) return 0;
+    int state;
+    if (!client || client->received == 0) {
+        state = PollSetup(client, MP_S2C_START, 1, 5000);
+        if (state != 1) return state;
+    }
+    size_t size = client->incoming[0] == MP_S2C_LOBBY ? 53 : 1 + MP_START_BODY_SIZE;
+    state = PollSetup(client, MP_S2C_START, size, 5000);
+    if (state != 1) return state;
+    if (client->incoming[0] == MP_S2C_LOBBY) {
+        if (!AcceptLobby(client, client->incoming)) { client->failed = 1; return 0; }
+        client->received = client->setupType = 0;
+        client->setupDeadline = 0;
+        return 2;
+    }
+    if (!MpDecodeStart(client->incoming + 1, MP_START_BODY_SIZE, start)) {
+        client->failed = 1;
+        return 0;
+    }
+    client->received = 0;
+    client->setupType = 0;
+    return 1;
 }
 
 int MpClientSendLoaded(MpClient *client) {
     const uint8_t message = MP_C2S_LOADED;
-    return client && WriteFull(client->fd, &message, 1);
+    return client && !client->failed && !client->nonblocking && !client->connecting &&
+           !client->setupType && !client->setupSize && !client->needed &&
+           WriteFull(client->fd, &message, 1);
 }
 
-int MpClientSendInput(MpClient *client, const DriverInput *input) {
-    if (!client || !input) return 0;
-    uint8_t wire[MP_INPUT_WIRE_SIZE];
-    MpEncodeInput(input, wire);
+int MpClientSendReady(MpClient *client, int ready) {
+    if (!client || client->failed || client->nonblocking || client->connecting ||
+        client->setupType || client->setupSize || client->needed || (unsigned)ready > 1) return 0;
+    const uint8_t wire[] = {MP_C2S_READY, (uint8_t)ready};
     return WriteFull(client->fd, wire, sizeof(wire));
 }
 
-int MpClientPollInput(MpClient *client, const DriverInput *input) {
-    if (!client || !input || client->failed) return 0;
+int MpClientSendPick(MpClient *client, int variant, int manual) {
+    if (!client || client->failed || client->nonblocking || client->connecting ||
+        client->setupType || client->setupSize || client->needed ||
+        (unsigned)variant >= CAR_MODEL_VARIANT_COUNT || (unsigned)manual > 1) return 0;
+    const uint8_t wire[] = {MP_C2S_PICK, (uint8_t)variant, (uint8_t)manual};
+    return WriteFull(client->fd, wire, sizeof(wire));
+}
+
+static int PollSetupWrite(MpClient *client, const uint8_t *wire, size_t size) {
+    if (!client || client->failed || client->connecting || client->needed ||
+        (client->listing && wire[0] != MP_C2S_LIST) ||
+        (client->setupType && !(client->setupType == MP_S2C_START &&
+            (wire[0] == MP_C2S_READY || wire[0] == MP_C2S_PICK)))) return 0;
+    uint64_t now;
+    if (!Milliseconds(&now) || !Nonblocking(client)) goto failed;
+    if (!client->setupSize) {
+        memcpy(client->setupWire, wire, size);
+        client->setupSize = size;
+        client->setupSent = 0;
+        client->writeDeadline = now + 5000;
+    }
+    if (client->setupWire[0] != wire[0] || now >= client->writeDeadline) goto failed;
+#ifdef MSG_NOSIGNAL
+    const int flags = MSG_NOSIGNAL;
+#else
+    const int flags = 0;
+#endif
+    IoCount n = send(client->fd, (const char *)client->setupWire + client->setupSent,
+                     (int)(client->setupSize - client->setupSent), flags);
+    if (n < 0 && (Interrupted() || WouldBlock())) return 3;
+    if (n <= 0) goto failed;
+    client->setupSent += (size_t)n;
+    if (client->setupSent < client->setupSize) return 3;
+    client->setupSize = 0;
+    return 1;
+failed:
+    client->failed = 1;
+    return 0;
+}
+
+int MpClientPollList(MpClient *client, MpRoomInfo rooms[MP_ROOM_LIMIT], size_t *count) {
+    if (!client || !rooms || !count || client->failed || client->roomChosen || client->connecting || client->needed) return 0;
+    if (!client->listing) {
+        if (client->setupType || client->setupSize) return 0;
+        client->listing = 1;
+    }
+    if (client->listing == 1) {
+        const uint8_t request = MP_C2S_LIST;
+        int sent = PollSetupWrite(client, &request, 1);
+        if (sent != 1) return sent;
+        client->listing = 2;
+    }
+    if (client->received < 3) {
+        int received = PollSetup(client, MP_S2C_LIST, 3, 5000);
+        if (received != 1) return received;
+    }
+    if (client->incoming[1] != MP_PROTOCOL_VERSION || client->incoming[2] > MP_ROOM_LIMIT) goto failed;
+    size_t size = 3 + (size_t)client->incoming[2] * 15;
+    int received = PollSetup(client, MP_S2C_LIST, size, 5000);
+    if (received != 1) return received;
+    if (!MpDecodeRoomList(client->incoming, size, rooms, count)) goto failed;
+    client->listing = client->setupType = 0;
+    client->received = 0;
+    return 1;
+failed:
+    client->failed = 1;
+    return 0;
+}
+
+int MpClientPollHello(MpClient *client, const char *name) {
+    if (!name) return 0;
+    size_t len = strlen(name);
+    if (len > MP_NAME_CAPACITY) len = MP_NAME_CAPACITY;
+    uint8_t wire[2 + MP_NAME_CAPACITY] = {MP_C2S_HELLO, (uint8_t)len};
+    memcpy(wire + 2, name, len);
+    return PollSetupWrite(client, wire, 2 + len);
+}
+
+int MpClientPollLoaded(MpClient *client) {
+    const uint8_t wire = MP_C2S_LOADED;
+    return PollSetupWrite(client, &wire, 1);
+}
+
+int MpClientPollReady(MpClient *client, int ready) {
+    if ((unsigned)ready > 1) return 0;
+    const uint8_t wire[] = {MP_C2S_READY, (uint8_t)ready};
+    return PollSetupWrite(client, wire, sizeof(wire));
+}
+
+int MpClientPollPick(MpClient *client, int variant, int manual) {
+    if ((unsigned)variant >= CAR_MODEL_VARIANT_COUNT || (unsigned)manual > 1) return 0;
+    const uint8_t wire[] = {MP_C2S_PICK, (uint8_t)variant, (uint8_t)manual};
+    return PollSetupWrite(client, wire, sizeof(wire));
+}
+
+int MpClientPollRace(MpClient *client, const MpRaceOptions *options) {
+    if (!MpValidRaceOptions(options)) return 0;
+    const uint8_t wire[] = {MP_C2S_RACE, options->classIndex, options->course,
+                           options->laps, options->reverse};
+    return PollSetupWrite(client, wire, sizeof(wire));
+}
+
+int MpClientPollRoom(MpClient *client, uint64_t code) {
+    if (!client || client->roomChosen || (code > INT64_MAX && code != UINT64_MAX)) return 0;
+    uint8_t wire[9] = {MP_C2S_ROOM};
+    for (int i = 0; i < 8; ++i) wire[i + 1] = (uint8_t)(code >> (i * 8));
+    int sent = PollSetupWrite(client, wire, sizeof(wire));
+    if (sent == 1) client->roomChosen = 1;
+    return sent;
+}
+
+int MpClientSendRoom(MpClient *client, uint64_t code) {
+    if (!client || client->failed || client->nonblocking || client->connecting ||
+        client->setupType || client->setupSize || client->needed ||
+        client->roomChosen || (code > INT64_MAX && code != UINT64_MAX)) return 0;
+    uint8_t wire[9] = {MP_C2S_ROOM};
+    for (int i = 0; i < 8; ++i) wire[i + 1] = (uint8_t)(code >> (i * 8));
+    int sent = WriteFull(client->fd, wire, sizeof(wire));
+    if (sent) client->roomChosen = 1;
+    return sent;
+}
+
+int MpClientSendInput(MpClient *client, const DriverInput *input) {
+    if (!client || !ValidDriverInput(input) || client->failed || client->nonblocking || client->connecting ||
+        client->setupType || client->setupSize) return 0;
+    if (client->sequence == UINT32_MAX || client->commands.count == MP_COMMAND_CAPACITY) return 0;
+    uint8_t wire[MP_COMMAND_WIRE_SIZE];
+    MpEncodeCommand(input, client->sequence + 1, wire);
+    if (!WriteFull(client->fd, wire, sizeof(wire))) {
+        client->failed = 1;
+        return 0;
+    }
+    if (!MpRememberCommand(&client->commands, ++client->sequence, 0, input)) {
+        client->failed = 1;
+        return 0;
+    }
+    return 1;
+}
+
+int MpClientPollInput(MpClient *client, const DriverInput *input, uint32_t tick) {
+    if (!client || !ValidDriverInput(input) || client->failed ||
+        tick < client->latestTick || tick < client->commands.lastTick) return 0;
+    if (client->connecting || client->setupType || client->setupSize) goto failed;
     if (!Nonblocking(client)) goto failed;
     DriverInput latest = *input;
     if (client->queued) {
@@ -433,13 +653,18 @@ int MpClientPollInput(MpClient *client, const DriverInput *input) {
         latest.shiftDown |= client->latest.shiftDown;
     }
     client->latest = latest;
+    client->latestTick = tick;
     client->queued = 1;
     /* At most the in-flight packet and one latest packet per call. Never
      * rewrite a packet prefix already on the wire or accumulate frame history. */
     for (int packet = 0; packet < 2; ++packet) {
         if (!client->sending) {
             if (!client->queued) break;
-            MpEncodeInput(&client->latest, client->outgoing);
+            if (client->sequence == UINT32_MAX) goto failed;
+            if (client->commands.count == MP_COMMAND_CAPACITY) return 1;
+            client->transmitting = client->latest;
+            client->transmittingTick = client->latestTick;
+            MpEncodeCommand(&client->latest, ++client->sequence, client->outgoing);
             client->queued = 0;
             client->sending = 1;
             client->sent = 0;
@@ -455,6 +680,7 @@ int MpClientPollInput(MpClient *client, const DriverInput *input) {
         if (sent <= 0) goto failed;
         client->sent += (size_t)sent;
         if (client->sent < sizeof(client->outgoing)) return 1;
+        if (!MpRememberCommand(&client->commands, client->sequence, client->transmittingTick, &client->transmitting)) goto failed;
         client->sending = 0;
     }
     return 1;
@@ -465,8 +691,10 @@ failed:
 
 /* Reads only available bytes. The header and body can arrive in separate
  * frames; decoded output remains untouched until a whole message is valid. */
-static int ReceiveMessage(MpClient *client, MpSnapshot *out, MpResult *result, int block) {
+static int ReceiveRaceState(MpClient *client, RaceSim *race, MpCorrection *correction,
+                            MpSnapshot *out, MpResult *result, int block, uint64_t deadline) {
     if (!client || client->failed) return 0;
+    if (client->connecting || client->setupType || client->setupSize) goto failed;
     if (client->resultPending) {
         if (result) *result = client->result;
         client->resultPending = 0;
@@ -478,13 +706,20 @@ read_more:;
     FD_ZERO(&readers);
     FD_SET(client->fd, &readers);
     struct timeval timeout = {0};
+    if (block) {
+        uint64_t now;
+        if (!Milliseconds(&now) || now >= deadline) goto failed;
+        uint64_t remaining = deadline - now;
+        timeout.tv_sec = (long)(remaining / 1000);
+        timeout.tv_usec = (long)(remaining % 1000) * 1000;
+    }
 #ifdef _WIN32
-    int count = select(0, &readers, NULL, NULL, block ? NULL : &timeout);
+    int count = select(0, &readers, NULL, NULL, &timeout);
 #else
-    int count = select(client->fd + 1, &readers, NULL, NULL, block ? NULL : &timeout);
+    int count = select(client->fd + 1, &readers, NULL, NULL, &timeout);
 #endif
     if (count < 0 && Interrupted()) return 3;
-    if (count == 0) return 3;
+    if (count == 0) { if (block) goto failed; return 3; }
     if (count < 0) goto failed;
     IoCount got = recv(client->fd, (char *)client->incoming + client->received,
                        (int)(client->needed - client->received), 0);
@@ -494,7 +729,9 @@ read_more:;
     if (client->received < client->needed) goto read_more;
     if (client->needed == 1) {
         if (client->incoming[0] == MP_S2C_RESULT) client->needed = 1 + MP_RESULT_BODY_SIZE;
-        else if (client->incoming[0] == MP_S2C_SNAPSHOT) client->needed = sizeof(client->incoming);
+        else if (client->incoming[0] == MP_S2C_SNAPSHOT) client->needed = 1 + MP_SNAPSHOT_BODY_SIZE;
+        else if (client->incoming[0] == MP_S2C_CORRECTION)
+            client->needed = MP_PUBLICATION_WIRE_SIZE;
         else goto failed;
         goto read_more;
     }
@@ -504,10 +741,48 @@ read_more:;
         if (!MpDecodeResult(client->incoming + 1, MP_RESULT_BODY_SIZE,
                             result ? result : &discarded)) goto failed;
         message = 2;
+    } else if (client->incoming[0] == MP_S2C_CORRECTION) {
+        MpCorrection decoded;
+        MpSnapshot poses;
+        if (race) {
+            if (!client->assigned || !MpDecodePublication(race, client->incoming, client->needed, &decoded, &poses)) goto failed;
+        } else {
+            if (!MpDecodePublicationSnapshot(client->incoming, client->needed, &poses)) goto failed;
+            memset(&decoded, 0, sizeof(decoded));
+            decoded.frame.tick = poses.tick;
+            decoded.frame.elapsed = poses.elapsed;
+            decoded.frame.phase = (SimRacePhase)poses.phase;
+            memcpy(decoded.acknowledged, poses.acknowledged, sizeof(decoded.acknowledged));
+        }
+        if (client->correctionClock.received &&
+            (decoded.frame.tick <= client->correctionClock.tick ||
+             decoded.frame.elapsed < client->correctionClock.elapsed ||
+             decoded.frame.phase < client->correctionClock.phase)) goto failed;
+        for (int seat = 0; seat < MP_SEAT_LIMIT; ++seat)
+            if (decoded.acknowledged[seat] < client->acknowledged[seat]) goto failed;
+        if (race) {
+            if (!MpApplyCorrection(race, &client->commands, client->seat, &decoded)) goto failed;
+        } else if (client->assigned && !MpAcknowledgeCommands(&client->commands,
+                    decoded.acknowledged[client->seat])) goto failed;
+        memcpy(client->acknowledged, decoded.acknowledged, sizeof(client->acknowledged));
+        client->correctionClock.tick = decoded.frame.tick;
+        client->correctionClock.elapsed = decoded.frame.elapsed;
+        client->correctionClock.phase = (uint8_t)decoded.frame.phase;
+        client->correctionClock.received = 1;
+        if (correction && race) *correction = decoded;
+        if (out) *out = poses;
+        client->raceStarted = 1;
+        message = race ? 4 : 1;
     } else {
-        MpSnapshot discarded;
-        if (!MpDecodeSnapshot(client->incoming + 1, sizeof(client->incoming) - 1,
-                              out ? out : &discarded)) goto failed;
+        MpSnapshot decoded;
+        if (!MpDecodeSnapshot(client->incoming + 1, MP_SNAPSHOT_BODY_SIZE, &decoded)) goto failed;
+        for (int seat = 0; seat < MP_SEAT_LIMIT; ++seat)
+            if (decoded.acknowledged[seat] < client->acknowledged[seat]) goto failed;
+        if (client->assigned && !MpAcknowledgeCommands(&client->commands,
+            decoded.acknowledged[client->seat])) goto failed;
+        memcpy(client->acknowledged, decoded.acknowledged, sizeof(client->acknowledged));
+        if (out) *out = decoded;
+        client->raceStarted = 1;
         message = 1;
     }
     client->received = client->needed = 0;
@@ -517,21 +792,30 @@ failed:
     return 0;
 }
 
-int MpClientPollMessage(MpClient *client, MpSnapshot *out, MpResult *result) {
+static int ReceiveMessage(MpClient *client, MpSnapshot *out, MpResult *result, int block, uint64_t deadline) {
+    return ReceiveRaceState(client, NULL, NULL, out, result, block, deadline);
+}
+
+static int PollMessages(MpClient *client, RaceSim *race, MpSnapshot *out,
+                         MpResult *result, MpCorrection *correction) {
     MpSnapshot latest = {0};
     int haveSnapshot = 0;
+    int applied = 0;
+    MpCorrection latestCorrection;
     /* Bound work per frame even when a peer continuously supplies data. */
     for (int messages = 0; messages < 32; ++messages) {
         MpSnapshot next;
         MpResult finish;
-        int message = ReceiveMessage(client, &next, &finish, 0);
+        MpCorrection nextCorrection;
+        int message = ReceiveRaceState(client, race, &nextCorrection, &next, &finish, 0, 0);
         if (!message) return 0;
-        if (message == 1) {
-            if (haveSnapshot && (next.tick <= latest.tick || next.phase < latest.phase)) {
+        if (message == 1 || message == 4) {
+            if (haveSnapshot && (next.tick <= latest.tick || next.phase < latest.phase ||
+                                 next.elapsed < latest.elapsed)) {
                 client->failed = 1;
                 return 0;
             }
-            for (int seat = 0; haveSnapshot && seat < MP_SEAT_LIMIT; ++seat) {
+            for (int seat = 0; haveSnapshot && seat < MP_FIELD_LIMIT; ++seat) {
                 if (latest.seats[seat].status != MP_DRIVING &&
                     next.seats[seat].status != latest.seats[seat].status) {
                     client->failed = 1;
@@ -540,6 +824,8 @@ int MpClientPollMessage(MpClient *client, MpSnapshot *out, MpResult *result) {
             }
             latest = next;
             haveSnapshot = 1;
+            applied = message == 4;
+            if (applied) latestCorrection = nextCorrection;
         } else if (message == 2) {
             if (!haveSnapshot) {
                 if (result) *result = finish;
@@ -553,11 +839,24 @@ int MpClientPollMessage(MpClient *client, MpSnapshot *out, MpResult *result) {
     }
     if (!haveSnapshot) return 3;
     if (out) *out = latest;
-    return 1;
+    if (applied && correction) *correction = latestCorrection;
+    return applied ? 4 : 1;
+}
+
+int MpClientPollRaceState(MpClient *client, RaceSim *race, MpSnapshot *out,
+                          MpResult *result, MpCorrection *correction) {
+    return PollMessages(client, race, out, result, correction);
+}
+
+int MpClientPollMessage(MpClient *client, MpSnapshot *out, MpResult *result) {
+    return PollMessages(client, NULL, out, result, NULL);
 }
 
 int MpClientRecvMessage(MpClient *client, MpSnapshot *out, MpResult *result) {
+    uint64_t now;
+    if (!client || !Milliseconds(&now)) return 0;
+    uint64_t deadline = now + (client->raceStarted ? 5000 : 65000);
     int message;
-    do { message = ReceiveMessage(client, out, result, 1); } while (message == 3);
+    do { message = ReceiveMessage(client, out, result, 1, deadline); } while (message == 3);
     return message;
 }

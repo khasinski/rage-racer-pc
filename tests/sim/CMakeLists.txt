@@ -4,7 +4,7 @@ foreach(test IN ITEMS
     car/crest_step car/jump_step car/track_contact_step car/contact_response_step
     car/collision_response car/car_contact car/route_interpolation car/route_steering
     car/driver_contact car/driver_init car/driver_step car/driver_field car/catalog_parse car/client_driver car/player_engine_presentation
-    race/race_lap race/race_sim race/race_mixed race/race_input race/race_lifecycle race/race_setup race/race_position race/race_time)
+    race/race_lap race/race_frame race/race_sim race/race_mixed race/race_input race/race_lifecycle race/race_setup race/race_position race/race_time)
     get_filename_component(name "${test}" NAME)
     add_executable(${name}_tests ${CMAKE_SOURCE_DIR}/tests/${test}_tests.c)
     target_include_directories(${name}_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
@@ -25,6 +25,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/retail_data.cmake)
 
 foreach(test IN ITEMS race_data race_disc)
     add_executable(${test}_tests ${CMAKE_SOURCE_DIR}/tests/car/${test}_tests.c)
+    target_include_directories(${test}_tests PRIVATE ${CMAKE_SOURCE_DIR}/src/port)
     target_link_libraries(${test}_tests PRIVATE rage-data)
     target_compile_options(${test}_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
     add_test(NAME ${test} COMMAND ${test}_tests)

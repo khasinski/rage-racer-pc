@@ -1,23 +1,207 @@
 # Multiplayer
 
-Status: multiplayer preparation includes a caller-owned human/AI race context
-and retained CPU/GPU resource interfaces. A Rust server prototype exists in
-`server/`: it accepts two human seats on a fixed race and steps the C simulation
-from TCP input. Lobby, SQLite and multiple rooms are not implemented there.
-A windowed C client prototype also exists and consumes server-selected race
-setup. Playable behavior, prediction and GPU output still require verification. Narrow protocol tests are not proof
-of a complete networked race.
-The prototype now prepares the simulation and start packet from one explicit
-`Plan`: class/course/laps/reverse/countdown and per-seat model/manual/seed.
-Invalid plans are rejected before source I/O or packet serialization. The CLI
-still supplies the original two-seat default; lobby selection is not connected.
-Narrow tests cover a nondefault reverse race with distinct models/transmissions
-and invalid bounds, without loading tracks or stepping simulation. Shared C
-constants define model/lap limits. The Rust race constructor also bounds its
-entrant slice before indexing the fixed C grid.
-The branch `poc/multiplayer` only
-shares a course, class and car between two processes. The cars do not see
-each other, and that branch is not the start of this plan.
+Status: an incomplete authoritative multiplayer prototype, not a verified
+playable multiplayer release. The target architecture and remaining scope below
+still apply in full.
+
+Implemented foundations:
+
+- Owned C human/AI race contexts and retained client assets/frames.
+- Rust server using the actual C simulation at 50 Hz, with independently owned
+  two-human room workers and owned completion records.
+- One validated Plan for class/course/laps/reverse/countdown and seat choices.
+  Client-selected car/transmission is frozen at ready and checked before loading.
+- Version 26 C/Rust wire protocol, source identity, bounded transport, results
+  validation and fixed-history remote interpolation. Two human connections share
+  the retail field with active AI, including the smaller final-class grid.
+- Main-menu `MULTIPLAYER` entry into the windowed prototype, using an INI server
+  address, create/auto/join-by-code/browser selection and a preliminary car/AT/MT picker
+  with connected Ready/revoke confirmation.
+  It shares the existing window/input configuration and
+  returns to the title; those visual transitions still need live verification.
+
+Local verification: 71 Rust unit tests, two startup tests and ten legal-PAL
+integrations pass. C protocol/connection/socket tests run headlessly in Release
+and ASan/UBSan. TCP process integration explicitly skips because this environment
+prohibits binding a port. The three-platform CI workflow is prepared but has not
+run on GitHub. These checks do not prove a playable networked race or GPU output.
+
+CPU asset integration remains separate: `client_race` covers retained ownership,
+all class/course packs and missing meshes; its `materials` mode checks decoded
+textures after releasing the import archive. Configure `RAGE_SIM_DISC_BIN` or
+`RAGE_RUNTIME_DISC` with a legal image; without one the integration skips with
+code 77. Material decoding, prepared-mesh lookup and upload-queue tests do not
+replace live visual/performance verification.
+
+The race stream publishes a 7317-byte correction/checkpoint + snapshot pair
+from one authoritative tick. The normal windowed client atomically validates
+and restores the full physics state and prunes confirmed local inputs. The
+diagnostic client checks envelope/clock/ack binding and reports poses/results,
+without interpreting or applying physics. Both receivers retain fragmented
+publications and coalesce bounded backlogs; results follow the final state.
+Legal-PAL forward/reverse integrations now deliver these full publications
+through both Unix streams, including either human disconnecting. This is not
+live TCP/GPU verification. Initial bounded local prediction is now enabled below.
+
+Protocol 26 requires a 708-byte car configuration packet (type 0x88, format 1)
+after Start and before Loaded. It carries the two human variant IDs and their
+complete 352-byte little-endian specifications. The server encodes its prepared
+specifications; the client verifies both variant IDs and human seats before
+applying either, rebuilds engine/drive values, then starts the simulation.
+The diagnostic client consumes and checks the same packet without running
+physics. Missing or malformed configuration fails setup. Local cars.toml is not
+read by this owned race path. The server optionally loads `--cars=path` once
+through the existing compiled catalog parser and passes its immutable overlay
+to each owned grid. Only present physics fields replace retail defaults;
+the source archive/cache remains unchanged. Invalid explicitly selected files
+fail startup before listening. Price/unlocks are not applied by this physics
+path. Server admission to race preparation respects `manual_only` when present,
+otherwise retaining disc availability. PAL coverage checks both forced-MT
+rejection of AT and restoration of AT, including unchanged loaded policy after
+a missing replacement file. After Welcome, before Pick/Ready, the server sends
+type 0x89, format 1 and a four-byte little-endian AT availability mask for all
+32 retail variants. The connected client picker and Ready screen use that mask;
+no local disc-based transmission gate runs before connecting. Missing/invalid
+availability fails setup. Packet and fragmented socket tests include bit 31.
+The diagnostic client also consumes the packet. Live picker appearance remains
+unverified.
+PAL integrations deliberately corrupt client specs/engine values before applying
+the packet and check restoration against the server. This is not live lobby proof.
+Another PAL integration checks partial catalog overrides, unchanged retail source
+identity/data, independent already-created races, and preservation of a loaded
+catalog when a replacement file is invalid or missing.
+
+Prediction stops on the tick when the local driver finishes or retires, including
+a transition inside the prediction horizon. It does not advance the other cars
+after that transition. The existing full-race PAL integration checks both human
+finishes against the complete native checkpoint in forward and reverse runs;
+it also asserts that both transition checks were actually exercised.
+
+Local presentation now blends native human poses from two bounded predictions,
+using the mapped host-clock fraction and the full 40 ms PAL motion interval
+rather than alternating a held tick with a 20 ms transition. The camera and
+speed display use this same presented pose. Physics/checkpoints remain untouched;
+terminal transitions snap to the newer state and the lead limit disables further
+interpolation. Narrow tests cover angle wrap, endpoints, discrete brake controls,
+model mismatch, terminal snapping and unchanged output on invalid data. Game
+builds and headless checks pass; smoothness and correction jumps still need live
+network/GPU verification.
+
+Still required: compiled-in
+SQLite persistence, verified local prediction/correction behavior and performance,
+verified shared races and results in two windows, live multi-room networking,
+and Linux/Windows/region compatibility checks. No live GPU performance improvement
+is claimed. The rest of this file contains the design and implementation history;
+older test counts there are historical, not the current verification total.
+
+Completion audit (current worktree; headless passes do not close live gates):
+
+| Requirement | Current evidence | Remaining gate |
+| --- | --- | --- |
+| Independent authoritative C rooms and AI | Rust unit tests and concurrent PAL traces | Live simultaneous TCP rooms |
+| Agreed effective human car data | Protocol 26, catalog/source isolation and C application tests | Live selection with server overrides |
+| Local prediction and corrections | Native checkpoint replay and bounded presentation tests | Two-window latency/collision/performance checks |
+| Main-menu lobby and same-window return | Client code and scripted menu tests; game builds | Actual windowed lobby/race/results/return |
+| Room/entrant/result persistence | No SQLite dependency or store in the server | Vendor and compile SQLite; implement and test transactions |
+| Linux/Windows/regions | Prepared CI; legal PAL headless integrations | Actual platform builds/runs and other-region sources |
+
+The TCP process fixture was rerun and returned explicit skip 77 because bind is
+denied (`Operation not permitted`). SSH to darwine was rerun and is also denied.
+The SQLite amalgamation is absent from the searched local dependency caches;
+the official download still fails DNS. Earlier Computer Use approval rejected
+launching Rage Racer, so no two-window/GPU observation is asserted. No live job
+is waiting to complete these checks. These are outstanding requirements, not
+alternative definitions of completion.
+
+AI snapshot preparation now reads RPM from the rival layout rather than the
+overlapping player drivetrain. AI has no player gearbox/clutch, so those pose
+fields are zero; the common pedal fields retain actual AI values. A narrow
+owned-race test distinguishes both layouts. A legal-PAL integration constructs
+two-human/AI fields across all six classes, four courses and both directions,
+steps 100 ticks, validates AI poses through Rust encoding and C decoding, and
+checks movement plus empty inactive seats. Version 16 also transmits the complete
+field: start carries ten optional AI descriptors after the two human choices and
+source hashes, and snapshots contain twelve poses. Server setup selects active
+retail starts; clients construct the same human/AI field from decoded metadata.
+AI retains its authored model/behavior/seed and inactive slots remain empty.
+Client application and interpolation use the correct human/rival drivetrain
+layout. The HUD counts configured entrants, including retired cars. Result packets
+still report the two human participants, with places in the complete field.
+The full forward/reverse wire integrations now compare every field seat through
+C application, including skipped packets and real Unix-stream delivery with
+either human disconnecting. This is shared simulation/transport evidence, not
+two live GPU windows or TCP verification.
+
+Room ownership now begins after the pair's hello, before Ready or asset loading.
+The room worker owns its session through setup, race and results; the listener
+can admit another pair while an earlier room is waiting/loading. Setup failures
+close their owned connections and are reaped through the same room manager.
+Capacity includes preparing rooms and their IDs are not recycled. Workers share
+an immutable imported archive through `Arc` only while constructing owned races.
+A socket-free test keeps one setup waiting while another worker starts, then
+checks owner cleanup. The PAL parallel trace test now performs asset/grid
+preparation concurrently as well as stepping, drops the source owners before
+stepping and compares the complete AI field against sequential runs. Both pass.
+Admission now keeps bounded owned pairs and polls their hello state without
+waiting on a peer. Each accepted seat retains a five-second absolute hello
+deadline; a greeted first seat waits at most 90 seconds for its partner. Timeout
+or disconnection drops only that pair. The 16-room limit includes both admission
+and preparing/running rooms. A failed newcomer attach preserves an earlier peer
+and its original deadline. Small clock-injected tests replace the removed
+blocking accept/hello loops and cover both boundaries, readiness preservation,
+independent pairs and cleanup without sleeping or opening a socket. The server
+automatic pairing described here predates the explicit routing below.
+SSH to darwine was rechecked and remains prohibited (`Operation not permitted`).
+
+The first participant now configures class/course/laps/reverse in the existing
+window after welcome. The screen edits a local choice, commits on confirmation
+and preserves the original on cancellation. Protocol 17 adds a five-byte creator
+settings message (type 0x06 plus four u8 fields), validated by the same compiled
+C rules on both sides. Only the creator's owned input accepts it; changing options
+revokes that participant's Ready. All seat locks freeze settings and car choices
+atomically before import/start, and the decoded Start carries the selected values.
+Guest and post-freeze changes are rejected. Ready now waits until confirmation or
+disconnection; the 60-second Loaded deadline remains. The windowed client likewise
+waits for Start without a room-decision timer. Once its first byte arrives, an
+absolute five-second receive deadline prevents stalled/trickled packets from
+holding the client indefinitely. A socket-pair test covers idle waiting, partial
+receive, unchanged deadline, expiry and disconnect with unchanged output. Game/
+smoke builds and Release/ASan/UBSan socket checks pass; no prolonged live TCP wait
+is claimed. The blocking diagnostic client's original two-minute Start wait is
+unchanged. Noninteractive startup keeps
+the server operator's command-line plan. Pure menu tests cover every field and
+cancel; socket tests check emitted bytes; narrow Rust tests check truncation,
+creator permissions and the complete settings-to-Start boundary. Release game/
+smoke builds, C Release/ASan/UBSan and 56 Rust unit plus two startup and seven PAL
+integration tests pass. Appearance and live TCP remain unverified. Room browsing,
+live lobby verification remains outstanding.
+
+Protocol 18 adds an explicit room request after Hello and before Welcome:
+type `0x07` followed by a little-endian u64. The INI setting
+`multiplayer.connect_room=create` (or `0`) creates a room; a positive decimal
+code joins that exact open room. Missing or `auto` selects a vacant room or
+creates one when capacity permits. Codes are bounded by signed 64-bit range;
+the wire value UINT64_MAX denotes auto. Invalid, missing or full explicit rooms
+are rejected without falling back to another room. Protocol 19 returns the
+assigned code in an eleven-byte Welcome: type, version, seat and little-endian
+u64 room code. Zero and out-of-range assigned codes are rejected atomically.
+The windowed waiting screen shows this code and HOST/GUEST; live appearance
+remains unverified. Returning to a full interactive lobby remains required.
+
+Admission owns at most 32 pending connections, each with one five-second
+Hello/room-request deadline. Open and preparing/running rooms share the
+16-room limit. Codes are allocated on creation and never recycled during the
+process lifetime. Explicit creators wait for a partner without a join timer;
+automatic pairing retains its 90-second partner deadline. Routing transfers
+the socket, reader, input and output ownership to the selected seat and binds
+creator permissions before Welcome. Narrow tests cover exact routing, capacity,
+truncated requests, deadline boundaries, guest permissions and worker cleanup.
+C socket-pair tests verify polling and blocking room-request bytes, while pure
+parser tests cover decimal bounds and unchanged output on rejection. Release
+and ASan/UBSan checks pass; this does not establish live TCP or lobby UI behavior.
+
+The separate `poc/multiplayer` branch only shares selections between processes;
+its cars do not see each other and it is not the implementation of this plan.
 
 ## Decision
 
@@ -54,6 +238,16 @@ single-player game.
 
 ## Binaries
 
+The windowed multiplayer client now copies its archive and source identity
+through the image already mounted by normal startup. It no longer re-selects
+disc configuration or falls back to a hardcoded PAL path. `LoadRaceIso` is the
+shared owned-copy loader for file-based server import and the host's mounted
+sector reader; the latter retains CUE offsets and can use its existing CHD
+backend. Synthetic Mode 1/2 tests compare bytes/boot/executable identity with
+file loading, then clear the reader/source bytes and read the independent copy.
+Release and ASan/UBSan disc tests pass; game and smoke builds pass. Mounted
+CHD and live GUI multiplayer remain unverified.
+
 | Binary | Role |
 | --- | --- |
 | `Rage Racer` | The game. Single-player as today. Multiplayer is a menu entry that connects out. |
@@ -73,9 +267,100 @@ server/src/             lobby, rooms, protocol, SQLite
 
 The Rust build consumes a static library produced by the existing CMake
 build. It does not reimplement the car.
+`.github/workflows/multiplayer-check.yml` now registers headless Release checks
+for Linux/macOS/Windows plus Linux C transport ASan/UBSan. CI installs libclang
+for bindgen and fetches the locked Rust build dependencies once, then CTest
+runs offline. No disc, SDL or authored-car generation is required. A fresh local
+macOS build using those same headless/embedding-off options passes all five C
+checks, 48 Rust unit tests and two startup tests; TCP integration explicitly
+skips due to the local bind restriction. Workflow YAML parses, but GitHub jobs
+and Linux/Windows execution are not yet verified. No release publishing step
+is included.
+The workflow also builds an optimized standalone server with the locked,
+offline dependencies. Its Windows job inspects PE imports through LLVM and
+rejects redistributable MSVC runtime DLLs, including debug/suffixed variants.
+A fresh macOS Release server builds, runs its normal usage/error entry point
+and imports only `libSystem` according to `otool -L`. The local Rust toolchain
+warned that its optional debug stripping tool could not load `libLLVM.dylib`;
+the server executable itself has no LLVM dependency and launches. Windows
+import inspection and the GitHub release-build steps remain unexecuted here.
+`mp_protocol` is registered in both full and headless builds, independently
+of Rust, SDL and legal-disc integration. Build `mp_protocol_tests`, then run
+`ctest --test-dir <build> -R '^mp_protocol$' --output-on-failure`. The same
+target is instrumented when `RAGE_ENABLE_SANITIZERS=ON`; no manual compiler
+command or full game build is needed. Full/headless Release and headless
+ASan/UBSan execution pass. `-L multiplayer` includes this C test as well as
+the optional Rust checks below.
+Connect/socket/transport fixtures and client argument checks now use the same
+headless registration, with common warnings/sanitizer setup rather than a
+second registration in the full game's test directory. Build
+`mp_connect_tests mp_socket_tests mp_transport_tests` alongside the protocol
+target; the transport target builds its compiled client dependency. Five C
+checks pass in full/headless Release and headless ASan/UBSan. TCP integration
+explicitly skips with code 77 when binding is prohibited; this remains the
+case in the current environment. Unix socket-pair fragmentation/cleanup tests
+execute normally. Socket/transport fixtures are Unix-only; connection and
+invalid-argument tests are also registered on Windows, but have not run there.
+To include server checks in CTest, configure a non-sanitized build with
+`-DRAGE_TEST_SERVER=ON` and Cargo/rustc installed, then build `rage-sim`,
+`rage-data` and `rage-mp-protocol`. `ctest --test-dir <build> -L multiplayer
+--output-on-failure` runs `server_unit`; configuring `RAGE_SIM_DISC_BIN` also
+registers `server_retail`, which runs only the four ignored disc integrations.
+Cargo uses that build's C libraries and a separate target directory inside it.
+The two CTest entries share a Cargo resource lock and never fetch dependencies
+(`--offline`); they use `--release --locked`, so the tests exercise optimized
+Rust code and cannot rewrite dependency selection. The Rust dependency cache
+must already be populated. All 48 unit tests, two startup tests and four PAL
+integrations pass with the optimized Rust/C boundary on macOS. Cargo and
+rustc paths can be supplied as `RAGE_CARGO_EXECUTABLE` and
+`RAGE_RUSTC_EXECUTABLE`. Rust remains optional for normal game builds.
+CTest supplies the actual archive output directory, including the selected
+configuration for multi-config generators (`ctest -C Release`). Cargo expects
+`rage-sim.lib`, `rage-data.lib`, `rage-mp-protocol.lib` for MSVC targets and
+`lib*.a` otherwise. Direct Cargo invocations must point `RAGE_SIM_LIB_DIR` at
+that same archive directory. macOS unit/startup/PAL checks pass after this
+build-path change; Windows linking/runtime are not yet verified.
+An independent Ninja Multi-Config headless build now verifies the configuration
+path: all three C archives were built under `Release/`, and CTest with
+`-C Release` linked those exact archives for 48 Rust unit tests, two startup
+tests and four PAL integrations. They pass on macOS. This validates
+multi-config directory selection, not the MSVC filename/linker branch.
+The repository's `.cargo/config.toml` enables `crt-static` only for MSVC,
+matching the C archives' Release `/MT` runtime and the standalone shipping
+contract. Use Release C archives for the Windows server; CMake Debug archives
+use `/MTd`, which is a different runtime. macOS Cargo/configuration and 48 unit
+plus two startup tests pass with the conditional config; actual Windows CRT
+linkage still needs the Windows CI run and binary dependency inspection.
+Pure C protocol operations are now built once as `rage-mp-protocol`, available
+in headless CMake builds and shared by the game, test client and C tests. The
+Rust integration links this same library. Build the server dependencies with
+`cmake --build build/sim-release --target rage-sim rage-data rage-mp-protocol`.
+The real PAL two-driver forward/reverse finish test now decodes server start
+metadata through C, verifies source identity and selected setup, and starts its
+client from the decoded race setup and countdown. Every simulated server tick is serialized,
+decoded and applied through the production C client API to a separately owned
+client race. Tick/elapsed/countdown, position, speed and entrant status match;
+final results also pass actual C decoding and final-state/time validation.
+An additional forward/reverse race delivers only the first, every 31st and final
+snapshot. Both cases compare every transmitted pose field after C application,
+plus countdown and authoritative clocks, and validate the final result. The
+two seats use distinct retail automatic variants and RNG seeds; decoded setup
+checks both selections and seeds before constructing the independent client.
+All 47 Rust tests and two startup tests pass with legal PAL integration enabled.
+Game/tool builds and five related C tests also pass. This establishes real simulation-to-client wire/state integration
+without sockets or GPU, not a playable TCP race. Pure-test symbol auditing
+still shows no socket/clock dependencies.
+Cargo now tracks all three external static-library files (`rage-sim`, `rage-data`
+and `rage-mp-protocol`)
+as build-script dependencies. Rebuilding either C library therefore relinks the
+server and Rust tests instead of silently retaining an older simulation/importer.
+Verification changed each library's modification time separately without changing
+its bytes: Cargo reported that exact dependency as dirty and rebuilt the package;
+39 unit tests and two startup tests passed after each change. CMake still builds
+the libraries explicitly; Cargo does not compile their C sources.
 
-Current startup: `rage-racer-server <CUE or Track 01 BIN or cache directory> [port] [--reimport]`. The default
-port is 7878; an explicitly invalid or zero port is rejected before importing
+Current startup: `rage-racer-server <CUE or Track 01 BIN or cache directory> [port] [--reimport] [--class=1..6] [--course=1..4] [--laps=1..6] [--reverse]`. The default
+port is 7243; an explicitly invalid or zero port is rejected before importing
 data. Missing/invalid source and listener failures report an error and exit
 unsuccessfully without a panic. The selected track and grid are prepared before
 opening the listener. Accept/socket-clone failures cancel existing seats;
@@ -89,6 +374,19 @@ not begin until both TCP connections existed. Reader thread-creation failures
 also cancel the session instead of panicking. Writer startup uses fallible
 socket cloning and thread creation, retains control sockets for cancellation
 and joins writers already created if a later writer cannot start.
+The hello wait now services the coordinator at bounded 10 ms intervals and
+checks previously admitted seats for disconnection, retaining its absolute
+five-second deadline. A narrow test covers coordinator-driven greeting,
+expired deadlines, earlier-seat loss and invalid seat indices without sockets.
+The listener now accepts without blocking the setup monitor. Once one seat
+has greeted, joining the next has a 90-second absolute deadline and cancels
+if any waiting seat closes. A failed welcome does not renew that deadline.
+An empty server can still wait indefinitely for its first participant. Accepted
+streams explicitly return to blocking mode for the existing worker adapters.
+Narrow accept-loop tests inject transient/fatal accept errors and seat loss,
+and use an already-expired deadline without a real TCP listener or a 90-second
+wait. All 29 Rust unit tests and two startup process tests pass; live TCP and
+Windows listener behavior remain unverified.
 A narrow readiness test verifies
 that an incomplete hello times out and cannot begin loading after cancellation.
 The prototype's `Session` owns control sockets, inputs, outboxes and all reader/
@@ -98,6 +396,20 @@ Normal completion drains result writers first, then shuts down and joins the
 readers. No reader is intentionally detached. A narrow ownership test starts
 workers waiting on input/output, drops their session and checks that both have
 completed while a separate session remains usable; it needs no TCP or assets.
+The running-room loop is now separate from process startup and consumes its
+own `Race` and `Session`. Archive import, listener and CLI configuration remain
+outside that ownership boundary. A failed C simulation step terminates the
+room instead of repeatedly publishing the same tick. Existing session,
+scheduler, protocol and cache coverage passes (25 Rust unit tests and two
+startup process tests); simultaneous running rooms and their dispatcher are
+not implemented or verified by this extraction.
+A narrow room-loop regression calls the real C simulation through Rust with
+setup phase and exhausted tick/elapsed counters. Each rejected step returns
+failure and closes every input/outbox belonging to that room, while another
+session remains usable. These states reject before route access, so the test
+needs neither imported assets nor sockets and introduces no mock simulation
+or test-only production API. All 26 Rust unit tests and two startup process
+tests pass. Running-race GPU/network behavior is outside this test's scope.
 Narrow argument tests and subprocess tests
 cover rejected arguments and unavailable source without running a race or
 binding a port. A disc start writes an immutable directory named by appending
@@ -115,6 +427,15 @@ opening the listener.
 
 
 ## Server data cache
+
+The Rust archive owner stores its content fingerprint once when loading either
+disc data or a cache. Start packets and cache identity comparisons reuse that
+value rather than rehashing the immutable RAGE.BIN for each room. Cache loading
+still hashes the newly loaded bytes and compares with validated metadata; this
+does not weaken file corruption/replacement checks. Existing cache round-trip,
+corruption and source-recovery tests plus both real PAL race integrations pass
+(42 Rust tests and two startup tests). No live startup-time improvement is
+claimed without measurement.
 
 Use an extracted `RAGE.BIN` as the server's persistent source archive, the same
 format the existing client export writes and `LoadRaceArchive` reads. Do not
@@ -169,6 +490,160 @@ preservation, pointer validation and cleanup when pointer publication fails.
 
 ## Lobby
 
+Driving-input admission now belongs to `SharedInput::publish` under the same
+lock as its stage, rather than only to a pre-read socket check. Waiting, ready,
+loading and closed seats cannot update controls or their input timestamp;
+loaded seats can queue controls for countdown/start. A narrow state test walks
+the actual hello/pick/ready/load transitions and verifies preserved choice,
+packet and timestamp on rejection. Control/concurrency fixtures now enter
+loaded state through the production transitions; unrelated-session ownership
+checks use lobby greeting rather than injecting driving input into waiting
+seats. All 46 Rust unit tests, two startup tests and four PAL integrations pass.
+
+Connection ownership is now indexed by seat rather than connection arrival:
+`Session` has optional stream/reader slots and `attach(seat, stream)` admits a
+connection only into an in-range vacant slot. Clone/thread failures publish no
+partial slot. Loading requires every slot, and dropping a sparse session shuts
+down present streams before joining its workers. The ownership regression uses
+a worker in seat one with seat zero empty, without sockets. Existing Rust unit,
+startup and PAL integration tests pass; TCP admission and interactive seat
+selection remain unverified/unimplemented respectively.
+
+Server admission and race loading now have separate ownership boundaries:
+`load_session` accepts/greetings seats, then transfers its `Session` to
+`start_session`. The latter has no listener and consumes the selected plan and
+connections through ready/load/start. An interactive room coordinator can
+reuse this loading path without accepting another pair or recreating their
+input state. Existing 43 unit tests, two startup tests and four PAL integrations
+pass; room creation/join messages and lobby UI remain unimplemented.
+The loading boundary rejects invalid plans and sessions without both owned
+connections/readers, or with writers already started, before waiting/freezing
+choices or copying assets. A socket-free regression checks that greeted/ready
+inputs alone cannot substitute for actual connections and remain ready until
+their owner is dropped. All 44 unit tests, two startup tests and four PAL
+integrations pass.
+
+The windowed client also checks its selected variant's retail transmission
+metadata before opening a connection. Missing/invalid metadata reports a data
+error; AT on a manual-only variant reports the specific car and the
+`multiplayer.connect_manual=1` setting, then releases the archive. Server-side
+validation remains authoritative. The synthetic archive unit fixture now
+contains independent first/last transmission flags and verifies all 32 mappings,
+invalid variants, NULL inputs and truncated metadata without importing a disc
+or running a race. Game build and race-data/car-asset tests pass in release and
+ASan/UBSan. The live GUI diagnostic remains unverified.
+
+Retail transmission availability now has an owned-data API separate from menu
+globals: `ReadCarTransmission` reads the bounded model metadata flag and
+`ReadRaceCarTransmission` resolves its variant through the archive. Invalid
+flags, truncated data or invalid variants fail without changing the output.
+The server checks that metadata before copying a track and rejects automatic
+selection for a manual-only variant; it does not silently change the selected
+transmission. Set `multiplayer.connect_manual=1` for those retail cars. Room
+overrides remain unimplemented, so this policy uses original disc metadata.
+The legal PAL integration checks manual/automatic admission for all 32 variants
+and confirms both kinds exist. Narrow C tests cover unaligned buffers, all
+truncations and every invalid flag. All 44 Rust tests including three legal-disc
+tests and two startup tests, C car-asset tests and reader ASan/UBSan pass.
+Only PAL was available in the inspected local image directories; NTSC behavior
+and cross-region room compatibility remain unverified.
+
+Operators can select the prototype's fixed race through startup options
+`--class=1..6`, `--course=1..4`, `--laps=1..6` and `--reverse`. Class/course use
+one-based CLI numbers and become zero-based selectors in the shared Plan.
+Defaults remain class/course one, three laps, forward. Options after source
+(and optional positional port) may appear in any order; duplicates, unknown
+options, malformed numbers and out-of-range plans fail before source I/O.
+The chosen Plan is used by preflight, every paired room and start metadata;
+this is operator configuration, not per-room interactive lobby selection.
+Narrow parser/wire tests and startup subprocess rejection tests pass. The
+legal PAL finish integration now obtains its forward/reverse one-lap plans
+from this same parser before running actual races. All 43 Rust tests including
+both disc integrations and two startup tests pass.
+
+Protocol version 11 adds pick (type 0x05, retail variant u8, manual boolean u8).
+Ready/loading waits now monitor every seat rather than waiting on seats in
+sequence. A previously ready/loaded seat disconnecting cancels setup even while
+another seat is pending. Existing per-seat condition waits are bounded to 10 ms
+between field checks, only during setup; the absolute 20/60-second deadlines
+are retained. A narrow asset/socket-free test covers incomplete fields, both
+completed fields and cancellation of a previously loaded seat. All 39 Rust unit
+tests and two startup tests pass without warnings. Live TCP cancellation remains
+unverified.
+A greeted waiting/ready seat can change its choice; each valid pick revokes
+ready. Invalid or truncated picks preserve choice/readiness. Entering loading
+freezes and returns that seat's choice, and the session builds one selected
+plan for both C race preparation and start metadata; server-owned seeds remain
+unchanged. The windowed prototype sends `multiplayer.connect_car` (0..31,
+default 0) and `multiplayer.connect_manual` (0/1, default 0) before automatic
+ready. Empty/default choices remain compatible with the updated headless tool.
+Narrow tests exercise the production plan-selection boundary with different
+cars/transmissions, revocation, truncation, bounds and post-freeze rejection.
+Client/tool builds, 33 Rust unit tests, two startup tests, C protocol/socket
+tests and socket ASan/UBSan pass. TCP integration remains skipped; interactive
+lobby UI, agreed overrides and manual-only policy remain outstanding.
+Numeric connection settings are now parsed once before opening a session:
+missing values keep defaults, but explicitly invalid port/car/transmission
+values return an error instead of silently selecting defaults. The pure parser
+uses the existing bounded integer parser and commits all three settings only
+on success. Narrow tests cover boundaries, empty/partial values and overflow
+with unchanged output on failure; client/tool builds, C protocol/socket/argument
+tests and protocol ASan/UBSan pass. This is configuration validation, not live
+network or UI verification.
+Freezing a selected plan now holds every seat lock in consistent grid order,
+validates all readiness before changing any stage, and then freezes the whole
+field. A regression first failed with the previous sequential loop: a late
+unready seat left an earlier seat loading. It now verifies unchanged seats on
+invalid plan/unready rejection and successful retry with changed selections.
+The state transition lives on Input, used by the coordinator and narrow tests;
+the unused single-seat locking entry point is removed. All 34 Rust unit tests
+and two startup tests pass without warnings. This does not implement lobby
+retry policy or persistence; the prototype still cancels failed setup.
+
+Protocol version 10 introduces explicit client ready (type 0x04 followed by
+boolean 0/1). Hello alone no longer starts loading. Ready may be revoked while
+waiting; loading/loaded/closed seats reject further changes. After both hello
+messages the prototype uses one shared 20-second ready deadline, then sends
+start and begins the existing loaded gate. The windowed and headless prototype
+clients currently confirm ready automatically after welcome. Interactive car
+selection and lobby UI remain unimplemented. Narrow Rust tests cover the gate,
+revocation, disconnect wake-up, malformed/truncated ready and late messages;
+C socket tests verify blocking/polling ready bytes and invalid flags. Client/
+tool builds, 31 Rust unit tests, two startup tests, C protocol/socket tests and
+socket ASan/UBSan pass. TCP integration remains explicitly skipped here.
+
+The prototype now retains each complete hello name in that seat's owned input
+state instead of only logging and discarding it. Presence of the name replaces
+both greeted flags as the handshake's source of truth. Raw protocol bytes
+(at most 15) are preserved; lossy UTF-8 conversion remains display-only and
+empty names retain existing compatibility. Disconnect retains identity for
+future results while clearing controls. Narrow reader tests cover every
+truncated hello, duplicate-name preservation, size bounds and independent
+seats. All 27 Rust unit tests and two startup process tests pass. Lobby display,
+name policy and SQLite persistence are not connected yet.
+Input readiness now uses one stage (waiting/loading/loaded/closed) instead of
+three independently mutable flags. Reader fixtures no longer force loading
+before hello: they decode hello, call the production begin-load gate and decode
+the continuation, including byte fragmentation and truncated input. Existing
+ordering, duplicate-loaded, disconnect and timeout coverage passes without
+adding a test-only state-setting API.
+
+The Rust simulation adapter can now construct mixed human/AI/empty grids.
+Its explicit rival entry separates authored grid position, logical model,
+behavior slot and RNG seed; the existing C InitRaceGrid remains responsible
+for retail validation and atomic construction. The pure grid mapper rejects
+too many seats before indexing fixed storage, with a narrow mixed-grid test.
+Human entries now explicitly carry authored grid position and a retail
+`variant`, distinct from the rival's logical `model`. A network seat's index
+therefore need not be its starting position. The mixed-grid fixture places
+human seat zero at grid five with variant 31, and rival seat two at grid seven
+with logical model nine/behavior slot three. Current network setup still
+assigns grid positions zero/one; transmitting a selected grid is future work.
+All 28 Rust unit tests and two startup tests pass, along with the C race-grid
+sanitizer test. That earlier prototype selected two humans and sent only their
+snapshots. Version 16 now includes the agreed AI start/snapshot data and client
+presentation described at the top of this file.
+
 A room is a name, a code, a course, a class, a seat count, and a state:
 open, racing, or finished. The player who creates it picks the course, the
 class and how many seats. Everyone else picks a car and marks ready. The
@@ -193,6 +668,204 @@ with the room. There is no password table.
 
 ## Menu
 
+Connected NOT READY seats can now select variants with left/right and toggle
+AT/MT with up; Ready seats must first revoke Ready before editing. Both screens
+reuse the same transmission metadata scan and pure `MpChangeCar` operation.
+The menu retains one in-flight Pick and commits its local choice only after
+the write completes. Pick, like Ready, may overlap the single Start receive.
+A valid Pick crossing the server's freeze is ignored without changing the plan
+or disconnecting the seat. The client retains a bounded bitset of choices it
+actually sent and accepts an earlier requested choice in authoritative Start;
+an unrequested car/transmission still fails rather than silently changing cars.
+Scripted tests cover variant wrap, AT/MT, Ready editing lock, successful changes,
+an earlier choice winning the freeze and an unrequested choice rejection.
+Socket tests check Pick during a partial Start receive; Rust reader tests check
+late Pick followed by Loaded and unchanged frozen choices. Release game/smoke,
+C Release/ASan/UBSan, 68 Rust unit, two startup and seven legal-PAL integrations
+pass. Live GUI/TCP behavior remains unverified.
+
+Protocol 21 adds owned lobby updates (`0x86`), sent only when the current room
+view differs from its last published packet. The waiting screen shows the peer's
+name, variant number, AT/MT and Ready, or waits for a vacant seat. Local Ready is
+shown in the title. The 53-byte packet has type/version, the existing 15-byte room
+record and two 18-byte seat records (variant/manual/name length/15 raw name bytes).
+Absent seats and unused name bytes are canonical zero. Names are retained as raw
+bounded protocol bytes; display replaces nonprintable bytes without changing them.
+Lobby and directory views use the same ordered-lock snapshot operation, with
+owned peer names and settings. Connection routing binds the actual room code
+before Welcome. Admission and Ready waiting publish changes through the session
+owner; no second socket reader or shared simulation state is introduced.
+The snapshot uses two fixed lock guards and 15-byte owned name buffers rather
+than allocating a guard vector and cloning names on each poll. Lobby encoding
+uses a fixed room record directly, sharing validation with directory encoding;
+it no longer constructs an intermediate directory Vec. Names retain explicit
+length and canonical zero padding, checked by both encoders/decoders. Existing
+Rust-to-C golden and owned-view checks pass after the change. This removes those
+allocations structurally; no measured live performance gain is claimed.
+
+The Start receive path accepts these updates before Start. Polling returns a
+distinct update status while preserving the Start output, then resets the packet
+deadline for the next message. The diagnostic blocking receiver retains one
+two-minute absolute decision deadline across lobby updates. Wrong room codes,
+invalid choices/masks/names/padding and incomplete packets cannot replace the
+previous view. Socket-pair tests cover fragmented lobby, Ready, Start and Loaded,
+blocking receipt and wrong-room rejection. Pure C truncation/validation tests,
+Rust-to-C encoding checks, owned view/cache tests and scripted peer-label tests
+pass, alongside Release game/smoke and ASan/UBSan checks. The TCP process fixture
+also includes lobby, but still skips here because binding is prohibited. This
+is implemented peer presentation, not live two-window/TCP verification.
+
+BROWSE ROOMS now connects, completes Hello and requests the directory before
+choosing a room. The existing font/input screen shows one selected room's code,
+class/course/direction/laps and OPEN/FULL/LOADING/RACING status. Up/down wraps
+the list, right refreshes and confirm selects only a vacant open room. Refresh
+preserves the selected code when it remains present; empty/disappearing lists
+are safe. Cancel leaves the original code unchanged and closes through the
+normal host cleanup. Car selection still precedes connection and the connected
+waiting screen follows admission and displays the shared peer update above.
+`MpClientPollList` owns one request and its header/body receive, with a fixed
+five-second deadline and bounded count before reading the body. Partial packets,
+invalid metadata, expiry and EOF preserve the visible list/count. Completing a
+room request prevents further browsing. Socket-pair tests deliver every byte,
+refresh to empty, verify no duplicate requests and room-request transition,
+and reject invalid version/count/ready mask and expiry. Scripted menu tests cover
+selection, unavailable races, empty lists, refresh, cancellation and failures.
+Release and ASan/UBSan checks plus game/smoke builds pass. TCP and live browser
+appearance remain unverified.
+
+Interactive entry now selects AUTO JOIN, CREATE ROOM or JOIN BY CODE before
+choosing a car and opening a connection. The code editor uses 19 decimal digits:
+left/right selects a digit, up/down changes it and confirm validates the full
+signed-64-bit positive range. Cancel first returns to the mode choice, then
+returns to the title; the original configured code is committed only on success.
+Zero and overflow remain on the editor with a visible error. The noninteractive
+startup path continues to use INI directly. Narrow scripted menu tests cover
+all modes, cancellation, invalid codes, maximum value, overflow, digit wrapping
+and cursor wrapping without sockets, SDL or assets. Release and ASan/UBSan pass;
+game/smoke builds pass. Live appearance and TCP remain unverified. This is the
+create/join entry, not a room browser.
+
+The connected waiting screen now starts NOT READY after Pick and toggles Ready
+on a fresh confirmation. Cancel leaves the room. Its owned local state lives in
+`MpWaitRoom` alongside the other menu screens; scripted tests call that production
+loop with bounded transport fixtures rather than constructing a race. They cover
+ready/revoke, blocked writes retaining their original value, cancellation,
+disconnect/send failure and Start winning over a same-frame confirmation.
+Noninteractive startup retains automatic Ready.
+
+Ready waiting and plan freezing now use one retrying gate. Each attempt locks
+all seats in order and either freezes the complete current field, keeps waiting,
+or reports a closed/invalid room. A readiness change between observations no
+longer cancels the room. Only a successfully frozen plan reaches asset loading.
+Two asset/socket-free tests exercise a revoke/change-car/ready sequence and
+closed/invalid cancellation, checking the latest choices and unchanged other
+seats. Release unit/startup and all seven legal-PAL integrations pass. This
+fixes the admission boundary independently of the shared peer display above.
+
+Only Ready writes may overlap an in-progress Start receive. Socket-pair tests
+verify bytes in both directions and preservation of the receive prefix/deadline;
+other setup writes remain rejected. Pending Ready is completed before consuming
+Start and transitioning to Loaded. A valid Ready arriving after the server froze
+the plan is ignored in Loading/Loaded, rather than disconnecting the player;
+the frozen choice and stage remain unchanged. Reader tests cover a late revoke
+followed by Loaded, while malformed booleans remain rejected. Release game/smoke,
+C Release/ASan/UBSan and the Rust unit/startup/PAL checks pass. Peer readiness,
+connected car changes and live two-window/TCP behavior are still outstanding.
+
+The windowed client's independent chase rig now uses the existing
+`camera.chase_height`, `camera.chase_distance`, `camera.chase_pitch` and
+`camera.chase_turn_lookahead` adjustments. It does not borrow the single-player
+camera state. Existing configured/invalid-value checks plus a new missing-settings
+default test pass, and game/smoke builds pass. The rig still differs from the
+retail chase geometry; live visual behavior remains unverified.
+
+`MainLoop` now has a host-activity boundary for `GAME_SCENE_MULTIPLAYER`:
+it calls `PortRunMultiplayer` between legacy frames, then returns to
+`GAME_SCENE_ENTER_TITLE` without booting again. The host entry no longer accepts
+an unused port-config argument. A narrow loop test requests that scene and
+checks one host call, return routing after failure and no extra boot; game and
+smoke builds pass. The main menu now includes `MULTIPLAYER`, with a built-in
+pixel label independent of disc textures. Selecting it preserves the current
+Grand Prix/Custom selection and save pointers, then enters this host activity.
+The prototype uses the INI server address. Main-menu entry now offers a preliminary
+text picker for all 32 retail variants: left/right selects, up/down toggles AT/MT
+when available, confirm joins and marks ready, and cancel returns without opening
+a connection. Transmission metadata is read once into a local availability mask;
+manual-only variants remain MT. `MpChangeCar` is pure, with headless tests for
+wraparound, all variants, transmission constraints and atomic rejection, also
+passing ASan/UBSan. The picker now shows variant number, catalog name, grade,
+AT/MT and the retail gear count. Cosmetic names are copied once from the host
+catalog; model/grade mapping uses `CarCatalogVariant`, independent of current
+owned grades or menu selection. Specifications are loaded only when the selected
+variant changes. Labels do not apply local physics overrides to the server race.
+There is no model preview yet. Game/smoke builds and seven relevant catalog,
+profile, race-data, protocol and frame checks pass; live appearance remains
+unverified.
+The initial implementation described here predates the create/join and connected
+Ready, browser and peer-state screens above.
+Connecting/waiting status remains in the same window.
+After a matching authoritative result, interactive entry now closes its socket
+and shows both seats' places/times or retired status until confirm/cancel.
+Times reuse `FormatLapTime`; no client finish calculation is introduced. The
+owned race GPU frame is cleared before menu text, since that dedicated present
+path otherwise hides overlays. Noninteractive startup retains automatic exit.
+Game/smoke builds plus protocol, host-frame and time-format unit checks pass.
+Live result presentation remains unverified: the attempted Time Attack GPU
+scenario failed during SDL display/GPU initialization in this environment.
+Interactive failures now show their reason in the game before returning to the
+title: settings, connection/handshake, archive/choice mismatch, load/presentation
+failure, invalid snapshots/results and input/send timeout. Cancellation remains
+a normal return. Session cleanup releases the queued frame, race, socket and
+archive and restores the previous renderer before acknowledging an error.
+Results and errors share one acknowledgement loop in the menu module; its
+scripted test verifies the error text and fresh confirmation, with no time
+formatting or network/GPU dependency. Game/smoke, menu/protocol/frame checks and
+menu ASan/UBSan pass; live appearance remains unverified.
+`DrawHostMenuFrame` reuses normal boot's frame buffers/font without dispatching
+scenes or ticking race/save/audio state; the frame test verifies that boundary.
+Selection/results now live in `src/port/mp_menu.c`, separate from network,
+race resources and GPU ownership. `mp_menu` runs those production screens with
+scripted frame/input and small metadata-reader fixtures, reusing the production
+catalog mapping and picker state operation. It checks wrapped car selection,
+labels/grades, AT/MT and manual-only behavior, one metadata scan, spec reads only
+on car changes, cancellation/invalid metadata, both local-seat result labels,
+retired rows, held-button rejection and explicit acknowledgement. The time
+formatter has its own existing unit test; this fixture checks the values passed
+to it. No socket, SDL, GPU or disc import is required. Full/headless Release and
+ASan/UBSan pass, and the prepared CI jobs now build this target. This tests menu
+behavior, not live rendering or the complete lobby.
+Startup's temporary INI command passes noninteractive mode because it has no
+booted menu assets; that path retains configured choices and automatic ready.
+Game/smoke builds and protocol/frame tests pass. Live picker appearance/input
+and renderer transitions remain unverified.
+It temporarily enables the modern
+renderer and restores the previous renderer during cleanup. Input is initialized
+by the caller rather than resetting controller state on menu entry.
+Returning consumes pressed/repeat edges from the session while retaining held
+buttons, so START+SELECT cannot immediately activate the title screen. The
+loop regression checks this boundary without loading a race or opening sockets.
+Five menu/navigation/loop tests pass, and the label's reveal bounds pass
+ASan/UBSan. Game and smoke builds pass; live appearance, return-to-title asset
+restoration and window/renderer transitions remain unverified. The temporary
+startup command below still exits after its run.
+CPU rasterization of the actual emitted label tiles exposed a low-contrast
+multiplayer glyph color. It now uses black like the existing rows; tests check
+both selection palettes and ASan/UBSan still passes. This verifies the label
+pixels, not its compositing over the live title background. All seven rows in
+both states emit 8492 tiles in total, well within the 8 MiB frame primitive
+buffer for a single menu state.
+
+The temporary windowed connection command can now be cancelled using the
+normal PAD_CANCEL mapping while connecting/handshaking or reporting loaded.
+START+SELECT exits the race without treating normal brake/steering controls as
+cancel. Cancellation uses the existing resource cleanup and returns success
+to process startup. This command still exits the game process; returning to
+the future lobby is not implemented. Six duplicate setup polling loops are now
+one explicit connect/hello/welcome/pick/ready/start sequence, retaining each
+transport operation's nonblocking state/deadline. Game build and existing
+protocol/socket tests pass. Input cancellation and GUI behavior are not yet
+verified in a live window; asset preparation remains synchronous.
+
 Multiplayer is a new screen in the C game, drawn with the port's existing
 8x8 font, the same way the force-feedback row was added. It does not need
 new art from the disc.
@@ -205,11 +878,204 @@ course and stops listening to local menu choices for the session.
 
 ## Race step
 
+The stream race fixture now also disconnects either seat after tick 100, in
+both forward and reverse races. Shutdown joins the actual input reader before
+the production room step observes the loss. Only present peers consume
+snapshots/results; the other seat retires, and the survivor finishes first.
+C result matching checks the retired sentinel and the final snapshot. Completion
+captures names from the actual stream session, including the disconnected seat.
+The closed writer reports failure without blocking the survivor's result.
+All 50 unit tests, two startup tests and six PAL integrations pass in Release.
+
+`step_room` now owns one production input/retirement/simulation/snapshot step;
+`run_room` handles the 50 Hz pacing; `finish_room` rejects unfinished races,
+captures the owned completion, publishes results and joins writers. The full socket-pair
+race integration calls this same step without pacing, rather than consuming
+inputs and stepping simulation through a parallel test implementation. Readers
+publish inputs, the production step consumes them and publishes snapshots, and
+clients receive those queued snapshots and results; the fixture no longer
+republishes either. Two asset-free tests cover loss of every input (one C step
+retires the field without track data) and refusal to publish unfinished results.
+All 52 unit tests, two startup tests and six PAL integrations pass in Release. This does not replace
+real-time network/window verification.
+
+On Unix, an additional legal-PAL integration sends driving inputs, every
+snapshot and final result of complete forward/reverse races through two
+actual socket pairs. Inputs use the production C encoder, `read_client`,
+SharedInput admission/consumption and the simulation's decoder. Header/payload
+are split across writes. A test-only Read adapter acknowledges at the next
+header read, after publication, so accelerated simulation needs no sleeps
+or state polling; received control bytes must match the encoded input.
+Each seat uses the production Outbox and `write_client`; both peers verify the
+received bytes, and the received packet is decoded/applied by the existing C
+client checks. Final writers must report success and join. Three-second I/O
+deadlines bound failures. This reuses the existing race fixture rather than
+duplicating its simulation loop. All 50 unit tests, two startup tests and five
+PAL integrations pass in Release. This does not prove real-time input pacing,
+TCP, lobby UI or
+two-window rendering. Windows does not register this Unix-stream integration.
+
+The bounded outgoing queue and its two lifecycle tests now live in
+`server/src/outbox.rs`, with no simulation/protocol/socket dependency. They
+can be compiled directly with `rustc --edition=2021 --test
+server/src/outbox.rs -o <test-binary>` and run without Cargo, bindgen or C
+libraries. The server uses that same implementation; the blocked-write adapter
+test remains alongside actual socket/session integration. Both standalone tests
+and all 48 server unit tests, two startup tests and four PAL integrations pass.
+
+Reader and result-writer ownership both use optional per-seat slots now;
+the session no longer allocates dynamic worker lists. Completion takes and
+joins each present writer exactly once, including sparse fields, and reports
+both I/O failure and panic before teardown. Previously an ordinary failed
+socket write ended the worker normally and was incorrectly counted as success.
+The worker now returns its write outcome. Socket/asset-free tests check success,
+failure, panic and repeated drain; a failing `Write` adapter exercises the actual
+result-writing path. Closing a queue before its result is consumed also reports
+failure; the writer succeeds only after consuming and writing the final result.
+A narrow in-memory test checks discarded and successfully written results.
+All 50 Rust unit tests, two startup tests and four PAL
+integrations pass in Release. This records local write completion, not peer
+receipt, and preserves authoritative race results even when sending fails.
+
+Input lifecycle now distinguishes loaded assets from a running session.
+`start` consumes the loaded stage once and starts the input-loss clock;
+repeated start/loaded/ready/pick operations cannot reset that clock or reopen
+the lobby. Buffered controls while another player loads are neither consumed
+nor expired as if the race were already running; `take` requires Racing and
+leaves pre-start shift edges intact. Reader fixtures now explicitly start the
+loaded input before consuming it, and malformed/truncated reader checks inspect
+the unchanged packet directly rather than obtaining fake waiting-state controls.
+Timestamp-driven tests check these boundaries without sleeping; 48 Rust unit
+tests, two startup tests and four PAL integrations pass.
+
+The coordinator assigns each started room a monotonic process-local identifier,
+retained in its completion record and worker name. Removing/reordering active
+rooms cannot change that identity; rejected admissions consume no identifier,
+and exhaustion fails rather than wrapping. Ownership/capacity tests cover
+completion identity, reuse prevention and exhaustion. This is not yet a room
+code on the wire or a persistent SQLite identifier across server restarts.
+
+Running-room workers return an owned `Finish` containing raw driver names and
+authoritative finish tuples and the frozen room Plan instead of a process exit
+code. `load_session` returns the exact Plan frozen from both clients' choices;
+that value travels with the room and completion, preserving course/class/laps/
+direction and actual car/transmission/seed selections. The same tuples
+build the result packet; writer failure is recorded separately and does not
+discard a completed race. `Rooms::reap` returns completed records exactly once
+to the coordinator after joining their workers; capacity checks are read-only.
+The coordinator reports them explicitly, including while accept/hello/ready/loaded
+gates are pending, so an idle listener does not indefinitely retain completed
+rooms. Setup polling calls the coordinator without holding seat locks and does
+not renew stage deadlines. Per-seat hello keeps its absolute five-second
+deadline while servicing the coordinator. Narrow tests cover hello/ready/loading/cancel
+and receiving an actual worker completion through the accept poll.
+Shutdown still cancels/joins remaining owners. An asset-free ownership/reaping
+test and the real forward/reverse
+race integrations verify that names/results survive releasing both race and
+session. SQLite persistence remains unimplemented; this is its completion-data
+boundary, not durable storage or proof of peer receipt. CTest passes 43 unit
+tests, two startup tests and four PAL integrations.
+
+Session input/outbox ownership and running-room inputs now use arrays sized by
+the protocol's seat count. They cannot represent a missing entrant merely by
+shrinking a Vec. Plan freezing also locks a fixed array in seat order instead
+of allocating a temporary guard Vec; redundant count checks are removed.
+Sockets and worker handles remain vectors because setup can be only partially
+connected/spawned, and the existing cleanup still owns those partial resources.
+Existing independent-seat, atomic-freeze, partial-session, capacity and worker
+shutdown tests pass, along with all three legal PAL integrations (44 Rust tests
+and two startup tests). No protocol or room-capacity change is implied.
+
+The windowed client now accepts decoded results only when they match its latest
+authoritative finished snapshot: every finished result must correspond to a
+finished car, and every non-finisher to a retired car. Results arriving before
+any snapshot, during racing, or contradicting either entrant cancel the session
+instead of reporting success. The comparison is a pure function separate from
+wire decoding and rendering. Narrow tests cover mixed finish/retirement,
+missing input and contradictory phase/status. Game builds, protocol/socket tests
+and protocol ASan/UBSan pass; live windowed TCP completion remains unverified.
+
+The windowed client now receives before sending input, and stops sending once
+an authoritative finished snapshot is applied. The server closes a connection
+after draining its result; writing first could fail and discard a result already
+waiting in the receive buffer. This also preserves the final-snapshot/result
+two-poll sequence. A local socket-pair regression sends both packets and closes
+the peer before polling, then verifies final state followed by the retained
+result. The game builds; protocol/socket tests and socket ASan/UBSan pass.
+The fixture verifies transfer behavior, not a live windowed TCP race.
+
+A Unix-only local stream-pair test exercises the production generic read/write
+adapters with actual OS I/O and bounded socket timeouts. Fragmented hello,
+pick and ready messages freeze the selected car/transmission through the real
+session gate; loaded enables input, whose exact decoded controls are observed
+at EOF before cancellation clears them. Independently, the writer drains an
+exact snapshot followed by the result over the other stream direction. This
+requires neither a bound port nor imported assets. It covers adapter transport,
+not the TCP worker cancellation wrapper or delivery to a disconnected client.
+All 42 Rust tests including both legal PAL tests, and two startup tests pass
+on macOS. Windows and live TCP/session integration remain unverified.
+
+Process startup/import/listener setup is separate from `load_session`, which
+owns one pair's handshake/loading resources and returns a prepared race/session.
+Failures drop that session and leave existing rooms running. `Rooms` retains
+worker handles, reaps completed workers and closes their inputs before joining
+on removal/shutdown. The prototype caps running rooms at 16 and checks capacity
+before accepting a new pair or preparing its assets. While full, it closes new
+connections before hello/start and polls completed rooms every 100 ms so capacity
+can recover without another connection. Starting a worker also checks the limit
+defensively. A narrow test fills the manager with owned waiting workers, verifies
+rejected-session cleanup and recovery after one worker completes, leaving other
+rooms usable. All 38 Rust unit tests and two startup tests pass. An explicit
+protocol-level busy response belongs to the future lobby; live TCP rejection is
+not verified by this manager test.
+Rooms are automatically paired, with fixed course settings; there is no room
+code/list/SQLite yet. Archive preparation stays on the listener thread; only
+independent copied simulations cross into workers, without sharing an archive
+through an unsafe Sync implementation. Narrow tests verify owner shutdown and
+reaping a failed real C step. All 37 Rust unit tests and two startup tests pass.
+An explicitly ignored integration test was also run with a legal PAL image:
+two distinct courses/classes/directions/models/transmissions/seeds produce the
+same 1000-tick snapshot/RNG traces in parallel as in separate sequential runs,
+after freeing the archive. This is CPU simulation evidence, not live TCP/GPU
+concurrency, complete races or a throughput guarantee.
+An additional explicitly ignored legal-disc integration test now completes
+one-lap, two-human races in both directions through the Rust adapter. It uses
+the existing C steering guidance on a copied car to produce validated human
+inputs, not direct position/lap changes. Both entrants finish with unique places,
+positive times and a winner time no greater than the runner-up's. The result
+packet's type, both statuses/places and little-endian times match actual C
+results; a further step is rejected and the serialized result remains unchanged.
+Run with `RAGE_SIM_DISC_BIN` set to a legal image and
+`cargo test --manifest-path server/Cargo.toml --offline -- --include-ignored`.
+All 41 Rust tests (including both legal PAL integration tests) and two startup
+tests pass. This verifies CPU race completion and serialization, not TCP
+delivery, client rendering or full multiplayer gameplay.
+The C result decoder also rejects finish times that contradict distinct places
+among finished entrants. C `RaceTime` uses the shared elapsed clock captured at
+finish, so a lower place cannot have a greater time. Equal times remain valid
+when multiple cars finish within the same tick. Narrow protocol tests cover
+both seat orders, equal-time acceptance and unchanged output on rejection;
+protocol/socket tests and protocol ASan/UBSan pass. Retired entries and future
+gaps in places are unaffected; this does not validate delivery against snapshots.
+
 The server advances each racing room's clock at 50 Hz. Current PAL physics
 runs every second tick (25 Hz); inputs retain their latest levels and pending
 gear edges until that physics step consumes them. A snapshot carries each
 car's position, heading, speed, and the race clock. Region normalization must
 be verified before sharing a room between clients from different regions.
+
+Snapshot encoding now fills a fixed stack packet instead of allocating a Vec
+and then copying it into Arc storage every tick. The immutable packet receives
+one shared allocation for every connected seat; finish results are also built
+once and shared. A narrow test checks the full header and both seat boundaries
+against explicit bytes, plus pointer identity through independent outboxes.
+Result encoding also uses a fixed stack packet instead of an intermediate
+Vec. Its pure encoder accepts finish values separately from Race; the narrow
+fixture feeds its bytes to the actual C decoder, covering both seat orders,
+retirement, distinct finish places and the saturated i32 time.
+The existing nonzero pose fixture remains unchanged. All 35 Rust unit tests
+and two startup tests pass. This proves wire/ownership behavior, not a measured
+server throughput or frame-rate improvement.
 
 Server packet validation and delivery use one `DriverInput` decoder instead
 of separately reconstructing controls through a ten-argument simulation
@@ -247,15 +1113,208 @@ keep a history for them.
 
 ### Current prototype wire
 
+Version 24 transmits a complete 7317-byte publication: a 6375-byte type 0x87
+correction envelope immediately followed by its 942-byte type 0x83 snapshot.
+The server owns/coalesces/writes the pair as one payload. The game receiver waits
+for both packets, cross-checks them and applies the checkpoint before returning
+the paired presentation snapshot. A malformed second packet cannot commit the
+checkpoint. Diagnostic receivers report the snapshot after envelope binding
+checks and never execute checkpoint physics. Polling drains at most 32 complete
+publications per call, retaining partial bytes and deferring results until the
+final accepted state has been returned. Initial bounded prediction is now enabled.
+
+Version 22 adds numbered driving commands: type `0x09`, a nonzero increasing
+little-endian u32 sequence and the existing twelve-byte input body (17 bytes
+including type). The normal and diagnostic clients use this packet. An input
+gets its sequence when it becomes the retained outgoing packet; replacing the
+newest queued controls does not consume sequence numbers or rewrite an in-flight
+prefix. Pending gear edges remain merged. Sequence exhaustion fails instead of
+wrapping to zero; a failed blocking write is terminal, preventing a retry after
+a partially written packet.
+
+Server admission validates the complete input and seat stage before advancing
+its sequence. Duplicate, regressing, zero, malformed and truncated commands
+cannot replace controls or refresh their timestamp. The old unnumbered input
+packet remains available for raw protocol fixtures, but is rejected after a
+numbered command has been accepted. Receipt and input sampling do not advance
+the applied sequence; the actual simulation step described below does.
+Pure byte fixtures, fragmented/blocked socket-pair tests and two narrow Rust
+handoff/reader tests cover this boundary without importing a disc or stepping
+physics. Release and ASan/UBSan pass; all 70 Rust units, two startup checks and
+eight legal-PAL integrations pass. Live TCP/GPU verification remains outstanding.
+
+Version 23 appends two little-endian u32 applied-input sequences after the
+snapshot's twelve poses. Zero means no numbered command has been consumed.
+Each owned human driver records `inputTick` when countdown drivetrain or racing
+physics actually consumes controls. Intermediate 50 Hz ticks retain the previous
+acknowledgement: PAL physics consumes inputs at 25 Hz. The server samples controls
+and their sequence together, then advances the acknowledgement only after a
+successful C step whose `inputTick` matches the resulting race tick. Commands
+received concurrently afterward cannot be acknowledged by that step. A retired
+or finished driver's rejected controls do not advance it; failed simulation
+publishes neither a new acknowledgement nor a snapshot.
+
+An acknowledgement covers the latest control levels and merged gear edges
+through that sequence, not a separate physics step for every received packet.
+The transport adapter and presentation history reject regressing acknowledgements
+without publishing caller output. The mutable local checkpoint saves/restores
+`inputTick` and rejects future values. Pure C fixtures and fragmented socket pairs
+cover trailer decoding and regression; a Rust-to-C golden uses two nonzero values.
+The PAL step integration covers odd/even countdown lengths, classes one/six,
+forward/reverse, retired seats and failed stepping. Game/smoke builds, C Release
+and ASan/UBSan, 70 Rust units, two startup tests and nine PAL integrations pass.
+The client now owns a 256-command ring of complete transmitted controls. Pending
+or partially written packets are not recorded, and coalesced input retains the
+exact levels/gear edges that were written. Local-seat acknowledgements remove
+only the acknowledged prefix; future or regressing values reject atomically.
+The Welcome assignment binds the local seat before acknowledgements can prune
+its history. When the ring is full, polling retains the newest queued controls
+and pending gear edges, and resumes transmission after acknowledgement. It
+never silently overwrites unacknowledged history or allocates per frame.
+
+Pure command-ring tests cover full capacity, repeated wrap, bounds, malformed
+controls, duplicate/future acknowledgements and u32 exhaustion. Socket-pair tests
+exercise 10,000 queued updates while full, partial transmission, resumption and
+rejection of an acknowledgement beyond the completed writes. Validation lives
+in a small shared C source, so protocol tests do not link the race step merely
+to check command bounds. Input sampling is rejected before any wire bytes or
+queue mutation when its native controls are invalid.
+
+Completed/retired drivers stop sending new controls while waiting for results.
+Their connected seat no longer expires for lack of driving input; explicit
+reader closure still closes it. A clock-injected Rust test covers waiting past
+the input deadline and disconnection without sleeping or importing a disc.
+C Release and ASan/UBSan, 71 Rust units, two startup checks and nine PAL
+integrations pass. This is transmitted-command history, not a client prediction
+clock or replay schedule. Full correction-state encoding and prediction are
+still missing; live TCP/GPU and other platforms/regions remain unverified.
+
+Current protocol is version 23. Version 16 added the complete field; version 17
+added creator-selected race options, version 18 added explicit room routing,
+and version 19 extends Welcome to eleven bytes with the assigned room code.
+Version 21 adds the lobby update described above. Version 20 added pre-join room listing: `0x08` requests a list after Hello,
+before the room request. Response `0x85`, version, count is followed by count
+15-byte records: u64 code, class/course/laps/reverse, occupied mask, ready mask,
+state (0 open, 1 preparing, 2 racing). Count is bounded at 16, codes are unique
+positive signed-64-bit values, and Ready is a subset of occupied seats.
+Settings/readiness are copied under the same ordered seat locks as plan freezing;
+no room lock is held during encoding or writing. Concurrent browse requests are
+coalesced into one pending response. Successfully browsing extends the owned
+decision deadline to 60 seconds; an already expired connection cannot renew it.
+Open and active rooms are listed in code order; active owners never advertise
+themselves as open, and completed rooms disappear when reaped. C decoding
+validates the full packet before committing any room/count. Narrow tests cover
+coherent owned views, readiness/loading/disconnect, request admission/coalescing,
+empty/full lists, duplicates, truncations and bounds; a Rust encoder test passes
+its actual packet through the compiled C decoder. Release and ASan/UBSan pass.
+The windowed browser and transport adapter are connected as described above;
+TCP and live directory browsing remain unverified.
+Start is 125 bytes including type: the previous
+55-byte human/source header followed by ten seven-byte AI descriptors
+(`active`, logical model, authored behavior slot, u32 seed). Inactive descriptors
+must be zero; active models/slots are bounded and behavior slots must be unique.
+Their field/grid positions are 2..11. Snapshot is 942 bytes including type:
+tick/elapsed/phase plus twelve 77-byte poses and two u32 input acknowledgements. The 13-byte two-human result packet is unchanged;
+input numbering is described above. Older versions are rejected.
+Small C tests cover a last-seat AI setup/application, preservation of overlapping
+AI storage, empty slots and atomic rejection of duplicate/invalid metadata.
+Rust/C golden packets include the last field seat. Game/smoke builds, Release
+and ASan/UBSan C multiplayer checks, 68 Rust unit tests, two startup tests and
+seven legal-PAL integrations pass. TCP integration skips because binding is
+prohibited here. The following version entries are implementation history.
+
+Protocol version 13 adds authoritative elapsed race ticks (u32) after the
+simulation tick in each snapshot header. Header body is tick/elapsed/phase
+(nine bytes); the two-seat packet is now 148 bytes including type and two
+69-byte poses. C applies elapsed directly to RaceSim rather than deriving race
+time from local countdown assumptions. Validation rejects elapsed greater than
+tick, nonzero elapsed in setup/countdown and regressing elapsed in history,
+state application or a coalesced receive batch.
+Final-result validation also rejects finish times beyond the final snapshot's
+elapsed clock. Conversion uses widened arithmetic and permits the C result
+clock's i32 saturation. Tests cover the exact boundary, one millisecond beyond
+it, a negative finish time and the saturated clock.
+Narrow tests cover actual
+nonzero clock application and atomic invalid-clock rejection; the Rust header
+golden includes distinct nonzero tick/elapsed bytes.
+Client snapshot application also advances its remaining countdown by received
+tick differences, including skipped snapshots, and clears it in racing/finished
+phases. A countdown-phase packet at or beyond the known start tick is rejected
+before any state changes. A narrow test covers skipped ticks, exact transition
+and subsequent authoritative elapsed time; no local simulation step is used.
+Game/tool builds, five
+related C tests, protocol/socket ASan/UBSan and all 44 Rust tests plus two startup
+tests pass, including all three PAL integrations. Older versions are rejected.
+
+Protocol version 12 adds signed longitudinal speed in simulation units as the
+last i32 of each pose. A seat is now 69 bytes (status plus seventeen i32 fields),
+and the two-seat snapshot is 144 bytes including type/tick/phase. The Rust server
+reads actual car speed; C decoding applies it to the authoritative car and remote
+presentation interpolates it without modifying simulation. Previously speed
+stayed at its local initial value, unsuitable for speed-based HUD/effects.
+Matching nonzero C/Rust fixtures cover signed bytes and both seat boundaries;
+C tests cover state application and interpolation. Game/tool builds, all five
+related C tests, protocol ASan/UBSan and all 44 Rust tests plus two startup tests
+(including three PAL integrations) pass. Older protocol versions are rejected;
+live HUD/GPU/network behavior still needs verification.
+
+Snapshot decoding, history insertion and authoritative-state application now
+share one pure payload validator. A finished race cannot contain a driving
+entrant; retired and finished entrants remain valid. Narrow tests inject that
+contradiction in either seat and verify unchanged decode output, history and
+simulation, then accept consistent final states through all three paths. The
+existing phase-acceptance fixture now uses a finished car in the finished phase
+instead of accepting the contradictory state. Game/tool builds, all five related
+C tests and protocol ASan/UBSan pass. This preserves the wire layout and does not
+add transport or simulation dependencies to the pure test binary.
+
+The headless driver now sends its initial input once, then receives before
+subsequent writes and stops sending after a finished snapshot. It applies the
+same history ordering and final-result consistency gates as the windowed client.
+Reaching its requested snapshot count explicitly reports sampling completion;
+only a validated result reports race completion. The TCP process fixture now
+includes final snapshot/result followed by peer close and a valid result that
+contradicts retired entrants. Tool and fixture build; five related unit tests
+pass. Re-running TCP integration still returns skip 77 (`Operation not permitted`
+at listener setup), so the added process scenarios are not runtime-verified.
+
+Pure packet/settings/setup validation and presentation-history operations now
+live in `src/port/mp_protocol.c`; socket lifecycle, transfers and deadlines stay
+in `mp_client.c`. Public APIs and wire bytes are unchanged. The protocol test
+links only the pure module, bounded parser and archive fingerprint helper; its
+undefined-symbol audit contains no socket, select or clock calls. Existing
+connection checks move intact to a separate `mp_connect` test (including Windows
+socket linking), while socket-pair fixtures link the pure module explicitly.
+Game/tool builds, all five related C tests and protocol/socket ASan/UBSan pass.
+This reduces unit-test dependencies without removing transport coverage or
+introducing a second implementation of decoding.
+
+Blocking race-message receive (used by the headless C client) now has one
+absolute deadline per complete packet: 65 seconds before the first decoded
+snapshot and five seconds thereafter. Partial reads and interrupted retries
+preserve that deadline; timeout is a terminal connection failure and leaves
+decoded output unchanged. Polling receive remains nonblocking and the windowed
+client keeps its existing snapshot watchdog. Narrow socket-pair tests inject an
+expired deadline after a partial header and exercise a two-millisecond select
+timeout without waiting for production limits. Client/tool builds, protocol/
+socket tests and socket ASan/UBSan pass. Actual TCP stalls remain unverified.
+
 The prototype has a versioned welcome and start; it does not implement the
-complete lobby message set above. All integers are little-endian. Version 9
-welcome is type/version/seat (3 bytes). Start is type plus a 54-byte body:
+complete lobby message set above. All integers are little-endian. Welcome is
+type/version/seat (3 bytes). Version 15 start was type plus a 54-byte body:
 version, course, class, laps, reverse (one byte each), countdown (u32), seat
 count (one byte), boot serial (16 bytes, NUL-terminated), then two entries
 containing model/manual (one byte each) and seed (u32), followed by a u64
 archive-content fingerprint and a u64 executable fingerprint. Unknown versions and
 invalid counts/selectors/flags are rejected without changing decoded state.
 Client and server use matching byte fixtures for this exact layout.
+The server encodes start into one fixed-size array, without growing a Vec.
+Its asset-free golden fixture also decodes that array through the production
+C API and checks both content identities and the boot serial.
+Rust packet encoders and their three narrow golden/decoder tests now live in
+`server/src/protocol.rs`, separate from connection and room coordination.
+The existing real-race and stream tests continue using these same encoders;
+this extraction changes neither wire bytes nor the available lobby messages.
 
 The windowed prototype builds its field through the pure `MpBuildSetup`
 adapter, sharing start validation with the wire decoder. Its narrow test checks
@@ -268,14 +1327,289 @@ both sides, and catches accidental source differences. It is not authentication
 or proof of agreed car overrides. An additional nonzero executable fingerprint
 is checked to distinguish source revisions; agreed car specifications still
 must precede prediction. The current server
-uses retail specifications with no room overrides. Input retains its prototype layout. A snapshot seat now occupies 65 bytes:
-status (u8: retired 0, driving 1, finished 2), followed by sixteen i32 values: X/Y/Z, yaw, pitch, roll, steering,
-wheel rotation, brake, track progress, RPM, throttle, clutch, gear, ground height and roll velocity. Brake/throttle are 0..256; clutch fits i16 and gear is 0..6. There is no compatibility
-fallback for the former unversioned handshake. Sixteen Rust unit tests, two server-startup process tests and the C
+uses retail specifications with no room overrides. Input retains its prototype layout. A snapshot seat now occupies 77 bytes:
+status (u8: retired 0, driving 1, finished 2), followed by nineteen i32 values: X/Y/Z, yaw, pitch, roll, steering,
+wheel rotation, brake, track progress, RPM, throttle, clutch, gear, ground height, roll velocity, speed, lap and place.
+Version 15's two-seat snapshot was 164 bytes including type; version 16 contains
+all twelve seats (934 bytes). Lap is authoritative
+and discrete in interpolation; applying it rejects negative/oversized values,
+regressing laps or laps beyond the configured race, atomically across both seats.
+Golden C/Rust packets and the real PAL race comparisons cover the new field;
+52 Rust unit tests, two startup tests and six integrations pass in Release.
+Place is calculated by the server's `RacePosition`, not reconstructed from
+the client's incomplete progress fields. It updates the client driver's place,
+including zero on retirement; a narrow transition test and complete stream
+races cover this. Retired poses must have zero place; all places are bounded
+by the retail field limit.
+The owned ClientFrame now carries two HUD text rows. The multiplayer presenter
+fills them from received rank/lap/gear and race elapsed time, using the existing
+disc-region speed conversion (NTSC-U MPH, otherwise KPH). The renderer submits
+solid bitmap-font pixels over the native world, independent of PS1 font atlases;
+font data comes from the vendored SDL public-domain bitmap font. It retains no
+race/menu globals for HUD presentation. The shader still needs a sampler binding;
+it reuses an owned snapshot texture, copying one only when absent, without font
+texture sampling. Frame resources own the text throughout presentation.
+Headless menu tests cover explicit rank, lap completion, gear/speed/time text,
+invalid/retired seats and both local-seat labels. HUD geometry uses the existing
+overlay batch module, combining horizontal glyph pixels into rectangles. A narrow
+CPU test reconstructs an actual glyph from emitted geometry, checks the 36-character
+limit and widescreen placement, and verifies atomic publication on buffer exhaustion.
+The tested exclamation glyph uses 72 vertices including shadow instead of 192
+for individual pixels; this is a geometry reduction, not a measured FPS improvement.
+Full game/smoke builds, overlay geometry tests and menu
+ASan/UBSan pass. Live composition, readability and FPS remain unverified; this
+does not provide individual lap times, audio or the full retail tachometer yet.
+Brake/throttle are 0..256; clutch fits i16 and gear is 0..6. There is no compatibility
+fallback for older protocol versions. Rust unit tests, server-startup process tests and the C
 protocol/argument tests pass; the loopback integration test remains skipped
 because binding a local port is denied. Builds do not prove a playable race.
 
 ## Simulation API
+
+Prediction prerequisite: `owned_race_checkpoint_replays_pending_inputs_and_the_full_field`
+encodes an owned RaceFrame between physics updates with an unconsumed gear edge,
+steps 200 ticks, decodes the bytes into a separately prepared race with independent
+track storage, restores it and replays the same inputs. Classes one/six and both
+directions include authored AI/empty seats. Every encoded mutable state byte
+matches at every subsequent tick, including RNG and hidden drivetrain/contact
+state. This uses the production C codec and physics through Rust FFI and passes
+on the legal PAL image; it is not client prediction or live network correction.
+
+`SaveRaceFrame`/`RestoreRaceFrame` capture only mutable clocks, car/input/step/RNG/
+status/lap state. Specifications, engine tables, hulls, thresholds and route data
+remain in the owning RaceSim. A frame is smaller than RaceSim and contains
+borrowed track/event identity guards: it is a local checkpoint, never wire bytes.
+The operations now live in `race_frame.c`, separate from the race step.
+`ValidRaceFrame` checks a complete frame without modifying it or its owner;
+Save and Restore share this validation and leave their destinations unchanged
+on rejection.
+
+The separate `race_frame` test constructs scalar owned state without car, track
+or engine initialization and never steps physics. Fifty malformed cases cover
+owner/configuration, route indices, clocks, immutable model/transmission, gearbox/
+motion/vertical states, pedal levels/latches, field roles, lifecycle flags and
+finish count/unique places. It explicitly distinguishes AI storage from the
+overlapping player gearbox. It checks exact whole-race restoration, unchanged
+immutable fields and late-seat atomic rejection. The linked test binary contains
+checkpoint/input validation operations, not StepRaceSim or InitDriver. This is a
+smaller test boundary rather than another mocked full-race fixture.
+
+An aborted countdown can legitimately finish with its unused countdown retained,
+zero elapsed/finish count and no driving seats; validation preserves that existing
+lifecycle. Racing still requires zero countdown. Per-seat lap/finish clocks and
+lap times cannot exceed elapsed race time. The real forward/reverse PAL wire
+integrations now save and validate every authoritative tick through complete
+races, including terminal and disconnected seats. The pending-input/full-field
+replay test still restores the C checkpoint and produces identical poses/RNG.
+Game/smoke builds, C Release/ASan/UBSan, 71 Rust units, two startup checks and all
+nine PAL integrations pass. Transmitted commands and their applied-sequence
+acknowledgements are retained as described above.
+
+`MpEncodeCorrection`/`MpDecodeCorrection` provide a 6375-byte
+correction envelope: type 0x87, envelope format 1, two little-endian u32
+applied-command sequences, and one complete checkpoint. Decoding binds the
+checkpoint to the receiving race's resources and commits the state and both
+acknowledgements together only after full validation. Nonzero acknowledgements
+require consumed human input in that checkpoint. This does not authenticate
+sequence values: the receiving session must also validate them against its
+transmitted-command history before restoring state or pruning commands.
+Narrow synthetic tests cover exact bytes, independent resource ownership,
+roundtrip restoration, every truncated size and atomic late-field rejection.
+Release and ASan/UBSan protocol/socket checks pass; game/smoke builds pass.
+`MpApplyCorrection` additionally validates the local acknowledgement against
+the transmitted-command ring before changing either the race or that ring.
+Future/regressing acknowledgements, invalid late-seat state, mismatched track
+ownership and malformed history reject without changing either destination.
+Confirmed commands are pruned; pending commands remain for replay. The legal-PAL
+integration now uses this correction envelope and application path for classes
+1/6 in both directions: command 38's pending gear edge survives acknowledgement
+37, and all encoded state matches for the next 200 ticks in an independently
+prepared race. It does not yet replay the command ring on a prediction clock.
+The socket adapter now uses `MpClientPollRaceState` reception in the windowed
+race loop. It retains a fragmented publication in bounded per-connection storage, validates the whole
+checkpoint, both acknowledgement directions and the local sent-command limit,
+then applies state and prunes history atomically. Its authoritative correction
+clock rejects duplicate/regressing ticks independently of the client's mutable
+simulation clock. It coalesces at most 32 publications per call (4 means an
+applied checkpoint plus its paired snapshot), preserving final-state/result
+ordering. The shared diagnostic receiver does not apply physics, and explicitly
+checks only envelope/clock/ack binding before reporting the paired snapshot.
+Socket-pair tests send all 7317 bytes separately and
+check unchanged output/race/commands until completion, plus terminal rejection
+of repeated ticks, future local acknowledgements, remote acknowledgement
+regression and invalid drivetrain. Release and ASan/UBSan checks pass.
+`Race::state_message` builds a single owned publication containing correction
+first and snapshot second from the same post-step race and acknowledgements.
+Its fallible checkpoint encoding completes before returning a publication.
+The PAL correction integration checks both packet clocks/acknowledgements and
+passes the complete publication through the production outbox and writer before
+results. `step_room` now publishes this payload, enabled by protocol 24.
+`MpDecodePublication` decodes both packets into temporary owned
+outputs and rejects mismatched clocks, acknowledgements, entrant status and
+transmitted car/drivetrain fields before publishing either output. Finished
+places must match the checkpoint; running HUD ranks remain snapshot values.
+Synthetic tests reject all truncated publication lengths and independently
+valid but inconsistent late-seat snapshot fields without changing either output.
+The PAL correction/replay integration now uses this complete-publication decoder
+on bytes produced by the real writer before applying its checkpoint.
+The outbox must replace the whole pair when coalescing slow clients;
+publishing its packets separately could pair different ticks or lose a checkpoint.
+Full PAL forward/reverse stream tests now decode/apply the production paired
+publication to the independently owned client, including either seat disconnecting.
+This is adapter/simulation coverage, not live TCP/GPU correction verification.
+Prediction/replay clocks remain outstanding.
+
+`MpClock` now maps explicitly supplied monotonic nanoseconds to fixed 50 Hz
+prediction targets. Ordinary authoritative observations retain the origin;
+an overtaking server reanchors it. Targets cannot trail the latest authority
+and freeze at ten ticks (200 ms) ahead during missing updates. The pure tests
+cover exact tick boundaries, 24/30/50/60/144/240 Hz sampling, delayed observations,
+clock regression, malformed state and saturating u32/u64 limits without sleeping.
+The windowed client observes accepted publication clocks and stamps each input
+with this mapped tick. Completed transmitted commands retain their sample tick;
+an in-flight packet keeps its original tick while the newest queued sample
+replaces older queued levels and merges gear edges. Ticks cannot regress even
+after acknowledgements empty the ring. The existing saturated socket fixture
+now checks original/latest ticks across 10,000 queued replacements and a partial
+packet prefix. This supplies replay timing, not yet predicted physics or replay
+execution. Tick stamps remain local; the authoritative server consumes controls
+according to its own receipt/step schedule, not a client-provided time.
+
+`MpReplayInput` supplies the fixed-step input selection: its local cursor starts
+at the acknowledged sequence after correction, selects due command levels in
+order, merges unconsumed gear edges and leaves future commands pending. It does
+not mutate transmitted history or consult a device/clock. The caller supplies
+the simulation's post-step input on the next call, so consumed edges cannot
+repeat; an edge retained by a skipped physics step remains pending. Complete
+history/cursor validation precedes either output change, including malformed
+future entries. Narrow tests cover ring wrap, overdue/same-tick/future samples,
+held levels, pending/consumed edges, acknowledgement resets and atomic rejection.
+The PAL correction test now advances the restored race for 200 ticks using this
+selector for the local human, comparing every encoded mutable field against
+direct input application in classes 1/6 and both directions. Release, sanitizers
+and server integrations pass. This proves controlled replay input selection;
+the windowed client still needs a separate predicted simulation and integration
+of replay with correction, sampled-but-unsent controls and presentation.
+
+`MpClientPendingCommands` now exposes copies of the at-most-two unsent samples
+without changing socket/history state: immutable in-flight command (including
+its original tick) followed by newest queued controls (sequence zero until
+assignment). The bounded accessor does not move unsent data into acknowledged
+history and reports nothing after terminal connection failure. The saturated
+socket test checks one/two/zero pending samples, retained gear edges across
+10,000 replacements, the original tick after a partial transmitted prefix and
+unchanged owner/output where applicable. This supplies the remaining local
+samples for prediction; the runtime still needs to consume them in its separate
+predicted simulation.
+
+`MpPredictRace` now rebuilds a separate caller-owned scratch simulation from
+the latest authority, replays unacknowledged commands and applies in-flight/
+queued samples once at their due ticks. It runs the actual complete C field
+(including AI/collisions), at most ten ticks ahead, without changing authority
+or command history. Track/events remain immutable borrows from the live race
+owner; scratch never frees them and is destroyed first. It is a separate static
+archive object, so pure protocol tests still do not link StepRaceSim/InitDriver.
+The windowed loop uses one allocated scratch context for predicted local car
+transforms, chase camera and displayed speed; remote cars retain delayed history,
+and status, timing and results remain authoritative. It advances one tick past
+the sampled clock within the lead limit to preview controls between updates.
+Every rendered frame currently rebuilds bounded prediction from authority:
+this is a simple first implementation, not a measured performance improvement.
+Lamp/presentation smoothing and live latency/performance still need validation.
+The PAL correction integration verifies byte-identical predicted next-step state
+with a pending gear edge and an unsent level sample in classes 1/6, both directions,
+and confirms authority remains unchanged. It now also compares every prediction
+lead from 1 through 10 ticks against a separate direct C simulation holding the
+same input: every encoded field, including AI/RNG/contact/drivetrain, matches.
+Repeated rebuilding preserves authority and all retained command ticks/inputs,
+and does not reapply consumed gear edges within a predicted trace.
+The lead-1..10 comparison now runs with either human seat as the local driver:
+seat zero uses the retail automatic car, seat one the selected manual car. The
+other human and AI remain in the complete physics comparison, so local-seat
+selection cannot accidentally become a hardcoded seat-one prediction path.
+The same matrix now includes both unsent samples together: in-flight throttle/
+upshift at the first future tick and queued brake/downshift at the third. All
+leads 1..10 match direct C input application, including held levels before the
+second sample and no repeated consumed gear edge after it.
+The matrix also starts from countdown tick zero and crosses the countdown-to-race
+boundary: either local seat receives throttle/upshift at tick 1 and brake/downshift
+at tick 4. Every target 1..10 is byte-identical to direct C stepping, including
+phase/countdown/elapsed clocks, complete field state and unchanged authority.
+This verifies simulation transition/replay policy, not countdown GPU presentation.
+Prediction now refuses an empty local seat and keeps the authoritative context
+unchanged once the local driver has finished or retired, even while other
+entrants are racing. There is no local motion to rebuild while waiting for
+results. Narrow synthetic `mp_prediction` cases cover both terminal statuses
+in a still-running race, alongside the already-finished whole-race case;
+Release and ASan/UBSan pass without assets or physics stepping.
+Countdown, held-input and two-unsent-sample cases now share one test-only direct
+simulation/comparison helper instead of three repeated lead loops. Each scenario
+still supplies its own initial state and samples. The common check additionally
+preserves all command-ring metadata as well as ticks/inputs for every lead;
+this strengthens the two-pending case rather than removing coverage. The nine
+PAL integrations pass after the test refactor.
+The existing 200-tick replay check
+still passes. `mp_prediction` separately covers scratch ownership, bounds,
+malformed pending samples/history and terminal-state preservation without disc
+import, stepping physics or SDL; Release and ASan/UBSan pass. CI now builds this
+registered target on all supported platforms, but the workflow has not run here.
+
+Optional CPU prediction measurement reuses the legal-PAL checkpoint integration:
+`RAGE_MP_PREDICTION_REPORT=/tmp/rage-prediction-cost.csv ctest --test-dir
+build/sim-release -R '^server_retail$' --output-on-failure` writes CSV only when
+that explicit report path is supplied. Each class-1/6 forward/reverse sample
+warms 50 calls then measures 500 calls at leads 0/1/5/10, using Release C/Rust,
+the real grid, a pending gear command and unsent controls. The native scratch
+context is 17488 bytes on this macOS build. Observed means were 0.52–11.86
+microseconds per rebuild; the largest individual measured sample was 59.63
+microseconds. This small early-race CPU sample does not establish whole-course,
+GPU/frame-rate, network-latency or other-platform performance, and maxima are
+observations rather than a worst-case bound. The ordinary integration run has
+no measurement loop or report file. The measured cost does not justify adding
+a prediction cache before live presentation/network tests provide evidence.
+
+SQLite persistence is still pending: the current local dependency cache and
+repository contain neither an SQLite amalgamation nor a cached bundled-SQLite
+Rust dependency. This does not change the requirement to compile SQLite into
+the standalone server; a platform-installed shared library is not a replacement.
+The latest download attempt for the official SQLite amalgamation failed DNS
+resolution. UI inventory is accessible, but selecting/launching the built Rage
+Racer app through the UI adapter was denied with "Computer Use was not approved
+to use Rage Racer". Neither event supplies the missing dependency or live visual
+evidence; SQLite and two-window GPU/TCP verification remain outstanding.
+
+`EncodeRaceFrame`/`DecodeRaceFrame` implement checkpoint format 1: 6365 bytes,
+with one format byte, seven u32/i32 frame fields, and twelve records containing
+116 bytes of input/step/status/clocks plus 412 bytes of car scalar state. Lists
+specify field order, width and count; compiled offsets locate native fields
+only and are never transmitted. Numeric values use explicit little-endian
+encoding, and unions select human or rival meanings rather than overlapping
+both. The common car prefix is one schema reused by both tables; shared lap
+storage uses typed fields even for AI. Explicit reserved fields/byte arrays are
+retained for complete restoration; implicit struct padding is not encoded.
+Specifications, engine tables, hulls, route/event pointers and local identity
+guards remain in the receiver's prepared owner. Decode binds those guards to
+that owner and validates the complete frame before publishing it. Encoding a
+malformed owner likewise leaves the destination byte buffer untouched.
+
+The narrow C test uses nonzero patterns across car storage plus signed values
+and a u16 golden, verifies byte-exact reconstruction under another route address,
+checks output canaries, every truncated length, extra bytes, every unknown format
+version and late-seat malformed car/role fields. Release/ASan/UBSan pass along
+with the PAL replay proof above. Protocol 24 binds these checkpoints and input
+acknowledgements to their paired snapshots on the transport. The next step is
+the client's prediction/replay clock. No cross-platform or live GPU/
+network correction claim is made.
+
+This is not implemented prediction. Current pose snapshots cannot restore a
+physics checkpoint: drivetrain acceleration, component velocity, collision/
+route history and RNG are not all transmitted. Prediction must also associate
+authoritative state with acknowledged input commands, then replay only the
+unacknowledged inputs through the existing C step. Adding speculative stepping
+to the current pose-application path alone would retain stale hidden state.
+The next implementation needs checkpoint delivery associated with applied
+input sequences and replay timing for retained commands, separate from
+interpolated remote presentation and authoritative results.
 
 
 Current preparation:
@@ -1777,6 +3111,75 @@ fresh mappings/calibration/edge state and buffer attachment; player-input and
 main-loop frame tests also pass. Live keyboard/controller behavior remains
 unverified while no display is available.
 
+Race input now expires after five seconds without a valid input packet, even
+if TCP has not reported a disconnect. The deadline is reset when the race
+starts, so loading does not consume it. Expiry clears held controls and gear
+edges, retires the seat and closes its output/socket to unblock its reader.
+The C race client already sends controls continuously, including unchanged
+controls. Malformed packets never refresh this deadline. Narrow tests supply
+timestamps directly to check the exact expiry boundary and late-packet
+rejection without waiting five seconds or running a race. Network loss timing
+on real platforms remains unverified.
+The windowed client's receive watchdog also stops a race when no complete
+snapshot arrives for five seconds, without relying on TCP EOF. Before the
+first snapshot it allows 65 seconds for the server's 60-second loaded gate.
+Partial packets do not renew the deadline. A pure nanosecond deadline test
+checks both exact boundaries, clock regression and large timestamps; socket
+and protocol tests pass. Live server-loss behavior remains unverified.
+
+Client setup reception also has absolute monotonic deadlines: five seconds for
+welcome and two minutes for start (allowing another seat to join). Interrupted
+reads and packet fragments do not restart these budgets. Failure preserves
+the public decoded output; callers must close the failed session. Socket-pair
+tests cover a silent peer, a partial message that stalls and a complete welcome
+without loading assets or waiting for the production deadlines. Client build,
+protocol/socket tests and socket ASan/UBSan pass. Connect and hello writes still
+block, and setup does not yet pump the window event loop; bounded reception is
+not an asynchronous connection flow. Windows runtime remains unverified.
+The windowed client now uses polling welcome/start reception and calls VSync
+between pending polls, allowing the host event loop to run while waiting for
+the second seat. Partial setup storage belongs to the connection; invalid
+versions, EOF and elapsed deadlines make polling failure terminal without
+publishing decoded output. Socket-pair tests cover every setup byte separately,
+unchanged deadlines/output, expiry without sleeping, malformed welcome and
+partial-message EOF. Client build and socket ASan/UBSan pass. Connect/hello
+remain blocking and live window responsiveness still requires GUI verification.
+
+The windowed client now also begins TCP connection in nonblocking mode and
+polls writability/error state between host presentations, checking SO_ERROR
+before declaring success. One five-second monotonic deadline covers the
+connection attempt. Completed connections restore the setup socket mode;
+the headless blocking connect API remains available. Clock conversion is
+shared by setup reads/polls and connection polling. Narrow socket-pair tests
+check successful readiness, socket-mode restoration, pending readiness without
+deadline renewal, terminal expiry and invalid addresses. They do not establish
+a TCP handshake: listener binding remains unavailable here. Client build,
+protocol/socket tests and socket ASan/UBSan pass; Winsock and live GUI behavior
+remain unverified. Hello and loaded writes still use the blocking adapter.
+
+Hello and client-loaded now also use bounded nonblocking writes in the windowed
+client, with host presentation between pending polls and a five-second absolute
+deadline. The connection owns one small setup packet; a partial prefix and the
+first supplied name remain unchanged while waiting for socket capacity. Setup
+receive accepts the resulting nonblocking socket. Socket-pair tests saturate
+the sender, verify unchanged deadline/name, resume after a transmitted prefix,
+receive welcome, send exactly one loaded byte and reject expired writes.
+Client build, protocol/socket tests and socket ASan/UBSan pass. This removes
+blocking network operations from the windowed setup flow, but disc import and
+asset preparation remain synchronous. Live GUI/TCP and Windows behavior are
+still unverified.
+
+The socket adapter now rejects race input/reception while connect or a setup
+transfer is pending, and rejects starting setup over a partial race message.
+Blocking setup APIs also refuse sockets already switched to polling mode.
+This protects the shared receive buffer: a partial welcome has received bytes
+but no race-message length, so crossing into the race parser could underflow
+its next receive-size calculation. A narrow socket-pair test reproduces this
+boundary, checks unchanged decoded output and no interleaved input bytes, and
+verifies setup cannot replace an incomplete snapshot. Client build,
+protocol/socket tests and socket ASan/UBSan pass. These transfer guards are not
+a complete lobby/session state machine.
+
 Before connecting, the windowed prototype now requests one host presentation
 (to initialize the lazily created window) and verifies that modern device and
 pipeline resources are ready. Missing GPU resources return failure without a
@@ -1797,6 +3200,28 @@ batches and output preservation under ASan/UBSan. Client build and protocol test
 pass; live network latency and prediction remain unverified/unimplemented.
 
 ## Order of work
+
+Authoritative application and interpolated car presentation share `MpApplyPose`,
+which copies only the eighteen wire fields and preserves model/ownership flags.
+Remote brake/drivetrain values now come from the same delayed history sample as
+their rendered position, instead of leaking the newest authoritative controls
+into an older pose. A car-only test covers this mismatch and atomic invalid/null
+rejection; existing snapshot tests still check race status/clocks independently.
+Protocol/connect/socket tests, game/smoke builds, standalone protocol ASan/UBSan,
+45 Rust unit tests, two startup tests and four PAL integrations pass. Visual
+lamp behavior and live networking remain unverified.
+
+Remote presentation now retains a fixed history of eight accepted snapshots
+with one host/server clock origin instead of restarting a two-pose blend on
+every arrival. The windowed prototype samples it with 100 ms delay; retained
+tick brackets determine interpolation and missing history clamps to the
+oldest/newest sample without extrapolation. The pure history API accepts
+timestamps directly. Tests cover irregular arrivals, unchanged pose when a
+new packet arrives at the same render time, bounded eviction, stale/invalid
+samples, regressing clocks and large timestamps. Client build and C protocol/
+socket tests pass. This is an initial fixed-delay buffer: adaptive latency,
+clock-drift correction, local prediction and live GPU/network verification
+remain outstanding. Latest authoritative status/model ownership is preserved.
 
 `MpBlendPose` provides pure presentation interpolation of position, ground,
 steering, roll velocity and cyclic body/wheel angles. It uses the shortest

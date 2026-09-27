@@ -51,25 +51,31 @@ RaceData *LoadRaceDisc(const char *path) {
     disc.file = fopen(image, "rb");
     if (disc.file == NULL) return NULL;
     DiscIsoReader reader;
+    RaceData *archive = DiscIsoOpen(&reader, DiscRawFileReadSector, &disc) ?
+                        LoadRaceIso(&reader) : NULL;
+    fclose(disc.file);
+    return archive;
+}
+
+RaceData *LoadRaceIso(DiscIsoReader *reader) {
+    if (!reader || !reader->read) return NULL;
     DiscIsoFile entry;
     u8 *data = NULL;
     size_t size = 0;
     char boot[16] = {0};
     uint64_t executable = 0;
-    if (DiscIsoOpen(&reader, DiscRawFileReadSector, &disc) &&
-        DiscIsoFindFile(&reader, "RAGE.BIN", &entry)) {
-        DiscReadBootName(&reader, boot, sizeof(boot));
-        data = DiscIsoReadWholeFile(&reader, &entry);
+    if (DiscIsoFindFile(reader, "RAGE.BIN", &entry)) {
+        DiscReadBootName(reader, boot, sizeof(boot));
+        data = DiscIsoReadWholeFile(reader, &entry);
         size = entry.size;
-        if (boot[0] && DiscIsoFindFile(&reader, boot, &entry)) {
-            u8 *code = DiscIsoReadWholeFile(&reader, &entry);
+        if (boot[0] && DiscIsoFindFile(reader, boot, &entry)) {
+            u8 *code = DiscIsoReadWholeFile(reader, &entry);
             if (code != NULL) {
                 executable = ArchiveFingerprint(code, entry.size);
                 free(code);
             }
         }
     }
-    fclose(disc.file);
     RaceData *archive = AdoptArchive(data, size);
     if (archive != NULL) {
         memcpy(archive->boot, boot, sizeof(boot));

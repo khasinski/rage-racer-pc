@@ -31,6 +31,21 @@ static const u16 s_CustomMenuPalettes[2][16] = {
 };
 
 static u8 PixelIndex(const u32 *texture, s32 x, s32 y) {
+    if (!texture) {
+        /* Built-in MULTIPLAYER glyphs: independent of the disc/VRAM atlas. */
+        static const u8 glyphs[11][7] = {
+            {17, 27, 21, 21, 17, 17, 17}, {17, 17, 17, 17, 17, 17, 14},
+            {16, 16, 16, 16, 16, 16, 31}, {31, 4, 4, 4, 4, 4, 4},
+            {14, 4, 4, 4, 4, 4, 14}, {30, 17, 17, 30, 16, 16, 16},
+            {16, 16, 16, 16, 16, 16, 31}, {14, 17, 17, 31, 17, 17, 17},
+            {17, 17, 10, 4, 4, 4, 4}, {31, 16, 16, 30, 16, 16, 31},
+            {30, 17, 17, 30, 20, 18, 17},
+        };
+        if (x < 12 || x >= 100 || y < 1 || y >= 15 || (x - 12) % 8 >= 5)
+            return CUSTOM_MENU_BACKGROUND_INDEX;
+        return glyphs[(x - 12) / 8][(y - 1) / 2] & (1 << (4 - (x - 12) % 8))
+            ? 0 : CUSTOM_MENU_BACKGROUND_INDEX;
+    }
     u32 word = texture[(y * CUSTOM_MENU_TEXTURE_WIDTH + x) / 8];
     return (word >> ((x & 7) * 4)) & 0xF;
 }
@@ -49,7 +64,9 @@ u8 *DrawTitleMenuLabel(GameOrderingTableEntry *ot, u8 *packet,
 
     if (item < 0 || item >= TITLE_MENU_ITEM_COUNT || visibleHeight <= 0)
         return packet;
-    if (item == TITLE_MENU_CUSTOM) {
+    if (item == TITLE_MENU_MULTIPLAYER) {
+        texture = NULL;
+    } else if (item == TITLE_MENU_CUSTOM) {
         texture = s_CustomMenuTexture;
     } else {
         s32 retailItem = item > TITLE_MENU_CUSTOM ? item - 1 : item;

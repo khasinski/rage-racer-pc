@@ -1169,6 +1169,17 @@ endif()
 add_test(NAME title_menu_navigation COMMAND title_menu_navigation_tests)
 set_tests_properties(title_menu_navigation PROPERTIES LABELS unit)
 
+add_executable(title_menu_labels_tests title_menu_labels_tests.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/title_menu_labels.c)
+target_include_directories(title_menu_labels_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(title_menu_labels_tests PRIVATE __psyz=1)
+target_compile_options(title_menu_labels_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+add_test(NAME title_menu_labels COMMAND title_menu_labels_tests)
+set_tests_properties(title_menu_labels PROPERTIES LABELS unit)
+
 add_executable(bgm_shuffle_tests
     bgm_shuffle_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/audio/bgm_shuffle.c

@@ -143,11 +143,6 @@ static uint32_t s_lastRenderedFrame = 0xFFFFFFFFu;
 static int s_haveRenderedFrame;
 static int s_waitClassicFrame;
 
-enum {
-    MODERN_PIPE_2D,
-    MODERN_PIPE_2D_SUB,
-};
-
 #define MODERN_MAX_VERTICES 400000
 #define MODERN_MAX_SPANS 16384
 static ModernOverlayBatches s_overlay;
@@ -1294,9 +1289,16 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
         profileTrace = RuntimeConfigEnabled("diagnostics.performance_trace");
     }
     if (profile) profileStart = SDL_GetTicksNS();
-    if (!snapshot) ModernOverlayBatchesReset(&s_overlay, 0, MODERN_LAYER_HUD);
+    if (!snapshot) {
+        ModernOverlayBatchesReset(&s_overlay, 0, MODERN_LAYER_HUD);
+        if (s_clientFrame && !ModernOverlayHud(&s_overlay, s_clientFrame->hud, s_logicalW, s_overscanX)) return 0;
+    }
     else if (s_enabled) ModernBuildOverlayFrame(snapshot);
     else ClassicBuildFrame(snapshot);
+    if (!snapshot && s_overlay.vertexCount) {
+        vram = s_ownedSampledVram ? s_ownedSampledVram : ModernCaptureVramSnapshot(NULL);
+        if (!vram) return 0;
+    }
     if (profile) profileBuilt = SDL_GetTicksNS();
     cmd = SDL_AcquireGPUCommandBuffer(s_device);
     if (cmd == NULL) return 0;
@@ -1332,6 +1334,8 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
         if (snapshot) ModernRenderOverlaySelection(cmd, vram, 0,
                                      1u << MODERN_LAYER_SKY, 1);
         ModernNativeGpuDraw(cmd, s_target, s_depth, snapshot == NULL, snapshot == NULL, s_targetH);
+        if (!snapshot && s_overlay.vertexCount)
+            ModernRenderOverlaySelection(cmd, vram, 0, 1u << MODERN_LAYER_HUD, 0);
         if (!ModernNativeGpuWorldComplete() &&
             reportedIncompleteFrame != frame) {
             reportedIncompleteFrame = frame;

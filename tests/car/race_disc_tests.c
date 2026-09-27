@@ -1,9 +1,15 @@
 #include "game/race_data.h"
+#include "disc_iso.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #define CHECK(c) do { if (!(c)) { fprintf(stderr, "line %d: %s\n", __LINE__, #c); return 1; } } while (0)
 enum { SECTOR_SIZE = 2352, USER_SIZE = 2048, SECTORS = 20 };
+static int MemorySector(void *context, unsigned int sector, unsigned char *raw) {
+    if (sector >= SECTORS) return 0;
+    memcpy(raw, (const u8 *)context + sector * SECTOR_SIZE, SECTOR_SIZE);
+    return 1;
+}
 static void Word(u8 *data, u32 value) {
     for (int i = 0; i < 4; i++) data[i] = (u8)(value >> (i * 8));
 }
@@ -78,8 +84,19 @@ int main(void) {
         const u8 code = 0x42;
         CHECK(first->executable == ArchiveFingerprint(&code, 1));
         CHECK(second->executable == first->executable);
+        DiscIsoReader reader;
+        CHECK(DiscIsoOpen(&reader, MemorySector, disc));
+        RaceData *mounted = LoadRaceIso(&reader);
+        CHECK(mounted && mounted->data != first->data && mounted->size == first->size);
+        CHECK(memcmp(mounted->data, first->data, first->size) == 0);
+        CHECK(strcmp(mounted->boot, first->boot) == 0 && mounted->executable == first->executable);
+        memset(&reader, 0, sizeof(reader)); /* Loader retains no reader/context. */
+        memset(disc, 0, SECTORS * SECTOR_SIZE); /* Nor the source bytes. */
         GameCarSpec spec;
         CHECK(ReadRaceCar(first, 0, &spec) && spec.topGear == 6);
+        CHECK(ReadRaceCar(mounted, 0, &spec) && spec.topGear == 6);
+        FreeRaceData(mounted);
+        BuildDisc(disc, mode == 1 ? 16 : 24);
         FreeRaceData(first);
         CHECK(ReadRaceCar(second, 0, &spec) && spec.topGear == 6);
         FreeRaceData(second);
@@ -123,6 +140,8 @@ int main(void) {
     CHECK(remove(bin) == 0);
     CHECK(LoadRaceDisc(bin) == NULL && LoadRaceDisc(cue) == NULL);
     CHECK(LoadRaceDisc(NULL) == NULL && LoadRaceDisc("invalid.txt") == NULL);
+    DiscIsoReader empty = {0};
+    CHECK(!LoadRaceIso(NULL) && !LoadRaceIso(&empty));
     FreeRaceData(NULL);
     free(disc);
     return 0;

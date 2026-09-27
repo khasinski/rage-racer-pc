@@ -28,6 +28,7 @@
 
 #include "host_disc.h"
 #include "game/archive_index.h"
+#include "game/race_data.h"
 #include "disc_cue.h"
 #include "disc_discovery.h"
 #include "disc_iso.h"
@@ -179,6 +180,12 @@ static int HostFindArchive(void) {
     g_RageHostDisc.archive = archive;
     g_RageHostDisc.stream = stream;
     return 1;
+}
+
+RaceData *HostCopyRaceData(void) {
+    if (!g_RageHostDisc.file && !g_RageHostDisc.chd) return NULL;
+    DiscIsoReader reader;
+    return DiscIsoOpen(&reader, HostReadRawSector, NULL) ? LoadRaceIso(&reader) : NULL;
 }
 
 /* How many sectors of RAGE.STR each movie occupies.  The retail PAL values

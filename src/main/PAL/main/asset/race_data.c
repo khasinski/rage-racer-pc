@@ -33,6 +33,14 @@ int ReadRaceCar(const RaceData *archive, s32 variant, GameCarSpec *spec) {
     return ReadCarSpec(data, size, spec);
 }
 
+int ReadRaceCarTransmission(const RaceData *archive, s32 variant, int *automatic) {
+    if ((u32)variant >= CAR_MODEL_VARIANT_COUNT) return 0;
+    size_t size = 0;
+    const void *data = RaceAsset(archive,
+        CarVariantAssetIndex(ASSET_CAR_1ST_BASE, variant), &size);
+    return ReadCarTransmission(data, size, automatic);
+}
+
 int ReadRaceCarShape(const RaceData *archive, s32 variant, CarShape *shape) {
     if ((u32)variant >= CAR_MODEL_VARIANT_COUNT) return 0;
     size_t size = 0;

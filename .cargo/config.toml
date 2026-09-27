@@ -1,0 +1,3 @@
+# Match the CMake port's /MT runtime and keep the Windows server standalone.
+[target.'cfg(target_env = "msvc")']
+rustflags = ["-C", "target-feature=+crt-static"]

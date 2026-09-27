@@ -29,6 +29,9 @@ typedef struct DriverInput {
     int shiftDown;
 } DriverInput;
 
+/* Pure command bounds, shared by simulation and network admission. */
+int ValidDriverInput(const DriverInput *input);
+
 void ApplyDriverInput(PlayerCarRuntime *car, const GameCarSpec *spec,
                        const DriverInput *input);
 DriverInput ReadDriverInput(void);

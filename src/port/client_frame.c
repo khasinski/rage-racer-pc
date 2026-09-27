@@ -25,11 +25,11 @@ ClientFrame *CaptureClientFrame(ClientRace *race, const RenderWorld *world, int 
     frame->references = 1;
     frame->race = RetainClientRace(race);
     if (!frame->race || !RenderWorldSnapshotCopy(&frame->scene, world)) goto fail;
+    if (!ModernPreparedMeshesPrepare(&frame->meshes, &frame->scene.world, Resolve, race)) goto fail;
     for (u32 i = 0; i < frame->scene.world.instanceCount; ++i) {
         const RenderMeshInstance *instance = &frame->scene.world.instances[i];
-        if (instance->pass == RAGE_RENDER_PASS_MAIN && !FindClientMesh(race, instance)) goto fail;
+        if (instance->pass == RAGE_RENDER_PASS_MAIN && !ModernPreparedMeshesLookup(&frame->meshes, instance)) goto fail;
     }
-    if (!ModernPreparedMeshesPrepare(&frame->meshes, &frame->scene.world, Resolve, race)) goto fail;
     if (!RetailSkyLayout(&frame->scene.world.camera.skyLayout, race->env.skyRowBase)) goto fail;
     frame->scene.world.camera.hasSkyLayout = 1;
     frame->scene.world.camera.skyAssetKey = race->primaryMesh.cached.assetKey;

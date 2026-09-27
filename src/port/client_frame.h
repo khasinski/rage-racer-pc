@@ -13,6 +13,7 @@ typedef struct ClientFrame {
     ModernPreparedMeshes meshes;
     u16 palette[16];
     int page;
+    char hud[2][64];
 } ClientFrame;
 /* Camera pose/clipping come from world; environment colors, fog and retail
  * sky layout come from race. Only prepared owned main-pass assets are accepted.

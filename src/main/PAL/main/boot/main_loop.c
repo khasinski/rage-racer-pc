@@ -84,11 +84,35 @@ static void PresentGameFrame(GameFrameContext *frame) {
     UpdatePadState();
 }
 
+void DrawHostMenuFrame(const char *title, const char *choice,
+                       const char *controls, const char *status) {
+    GameFrameContext *frame = BeginGameFrame();
+    DrawText8x8(24, 64, title, 0x78CC);
+    DrawText8x8(24, 96, choice, 0x78CC);
+    DrawText8x8(24, 128, controls, 0x78CC);
+    DrawText8x8(24, 160, status, 0x78CC);
+    DrawSolidRect(GamePrimaryOrderingTable(0), 0, 0, 320, 480, 12, 18, 32, 0);
+    DrawSync(0);
+    PortAfterFrameTransfers();
+    PresentGameFrame(frame);
+    g_FrameCounter = (s32)((u32)g_FrameCounter + 1U);
+}
+
 /* Boots the game and runs frames until the host requests shutdown. */
 void MainLoop(void) {
     InitializeGameLoop();
 
     for (;;) {
+        if (g_SceneId == GAME_SCENE_MULTIPLAYER) {
+            PortRunMultiplayer(1);
+            /* Consume the session's exit edge, retaining held buttons so
+             * returning to the title does not manufacture another press. */
+            g_PadPressed = 0;
+            g_PadPressedRepeat = 0;
+            g_SceneId = GAME_SCENE_ENTER_TITLE;
+            g_SceneTimer = 0;
+            continue;
+        }
         PortProfileFramePhase("service");
         GameFrameContext *frame = BeginGameFrame();
         s32 elapsed;

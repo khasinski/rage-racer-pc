@@ -146,9 +146,24 @@ int TickClientScenery(ClientRace *race) {
     Spinners spinners = race->spinners, previousSpinners = spinners;
     Environment environment = race->env;
     for (u32 step = 1; step <= elapsed; ++step) {
-        /* The prototype clock is 50 Hz; PAL environment advances at 25 Hz. */
-        if (((race->sceneryTick + step) & 1u) == 0 && environment.enabled &&
-            !TickEnvironment(&environment)) return 0;
+        /* The prototype clock is 50 Hz; PAL environment advances at 25 Hz.
+         * TickEnvironment's return is whether color state changed this tick,
+         * not whether the call failed: it also returns 0 routinely when fog
+         * is currently disabled (see its own test, environment_state_tests.c,
+         * which sets fogEnabled=0 and asserts the clock still advances on a
+         * false return). A resync failure here must instead mirror
+         * TickEnvironment's own structural-validity guard, so only a
+         * genuinely invalid environment (as opposed to one that is merely
+         * mid-cycle with fog off) rejects the scenery update. */
+        if (((race->sceneryTick + step) & 1u) == 0 && environment.enabled) {
+            if (!environment.palettes || !environment.cues || !environment.next ||
+                environment.length <= 0 || environment.clock < 0 ||
+                environment.clock >= environment.length || environment.mode < 0 ||
+                environment.mode >= ENVIRONMENT_PALETTE_COUNT || environment.previousMode < 0 ||
+                environment.previousMode >= ENVIRONMENT_PALETTE_COUNT ||
+                environment.next->mode >= ENVIRONMENT_PALETTE_COUNT) return 0;
+            TickEnvironment(&environment);
+        }
         memcpy(previous, next, sizeof(previous));
         previousSpinners = spinners;
         for (u32 i = 0; i < race->shuttleCount; ++i) {

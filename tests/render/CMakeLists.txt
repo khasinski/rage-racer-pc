@@ -2134,3 +2134,10 @@ target_link_libraries(spinners_tests PRIVATE rage-data)
 target_compile_options(spinners_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 add_test(NAME spinners COMMAND spinners_tests)
 set_tests_properties(spinners PROPERTIES LABELS unit)
+
+add_executable(modern_upload_queue_tests
+    ${CMAKE_SOURCE_DIR}/tests/disc/modern_upload_queue_tests.c)
+target_include_directories(modern_upload_queue_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_compile_options(modern_upload_queue_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+add_test(NAME modern_upload_queue COMMAND modern_upload_queue_tests)
+set_tests_properties(modern_upload_queue PROPERTIES LABELS unit)

@@ -1425,7 +1425,7 @@ target_include_directories(custom_race_tests PRIVATE ${CMAKE_SOURCE_DIR}/include
 target_compile_definitions(custom_race_tests PRIVATE __psyz=1)
 add_test(NAME custom_race COMMAND custom_race_tests)
 
-foreach(test IN ITEMS race_lap race_sim race_mixed race_input race_lifecycle race_setup race_position race_time)
+foreach(test IN ITEMS race_lap race_frame race_sim race_mixed race_input race_lifecycle race_setup race_position race_time)
     add_executable(${test}_tests ${test}_tests.c)
     target_include_directories(${test}_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
     target_compile_options(${test}_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})

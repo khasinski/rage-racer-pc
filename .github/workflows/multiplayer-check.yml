@@ -1,0 +1,118 @@
+name: Headless multiplayer
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - '.cargo/**'
+      - 'src/**'
+      - 'include/**'
+      - 'tests/port/mp_*'
+      - 'tests/multiplayer.cmake'
+      - 'tests/CMakeLists.txt'
+      - 'CMakeLists.txt'
+      - '.github/workflows/multiplayer-check.yml'
+  pull_request:
+    paths:
+      - 'server/**'
+      - '.cargo/**'
+      - 'src/**'
+      - 'include/**'
+      - 'tests/port/mp_*'
+      - 'tests/multiplayer.cmake'
+      - 'tests/CMakeLists.txt'
+      - 'CMakeLists.txt'
+      - '.github/workflows/multiplayer-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install libclang (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libclang-dev
+      - name: Install libclang (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install llvm
+          echo "LIBCLANG_PATH=$(brew --prefix llvm)/lib" >> "$GITHUB_ENV"
+      - name: Install libclang (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install llvm --no-progress -y
+          "LIBCLANG_PATH=C:\Program Files\LLVM\bin" >> $env:GITHUB_ENV
+      - name: Select Rust and fetch locked build dependencies
+        run: |
+          rustup default stable
+          cargo fetch --locked --manifest-path server/Cargo.toml
+      - name: Configure (Unix)
+        if: runner.os != 'Windows'
+        run: >-
+          cmake -S . -B build/multiplayer -DCMAKE_BUILD_TYPE=Release
+          -DRAGE_BUILD_PORT=OFF -DBUILD_TESTING=ON
+          -DRAGE_EMBED_AUTHORED_CARS=OFF -DRAGE_TEST_SERVER=ON
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
+        run: >-
+          cmake -S . -B build/multiplayer -G "Visual Studio 17 2022" -A x64 -T ClangCL
+          -DRAGE_BUILD_PORT=OFF -DBUILD_TESTING=ON
+          -DRAGE_EMBED_AUTHORED_CARS=OFF -DRAGE_TEST_SERVER=ON
+      - name: Build C libraries and narrow clients
+        run: >-
+          cmake --build build/multiplayer --config Release --parallel 4
+          --target rage-sim rage-data rage-mp-protocol mp_protocol_tests mp_prediction_tests mp_connect_tests mp_menu_tests rage-mp-test-client
+      - name: Build Unix transport fixtures
+        if: runner.os != 'Windows'
+        run: >-
+          cmake --build build/multiplayer --config Release --parallel 4
+          --target mp_socket_tests mp_transport_tests
+      - name: Test without SDL or game data
+        run: ctest --test-dir build/multiplayer -C Release -L multiplayer --output-on-failure --parallel 2
+      - name: Build standalone server
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/build/multiplayer/server-target
+          RAGE_SIM_LIB_DIR: ${{ github.workspace }}/build/multiplayer${{ runner.os == 'Windows' && '/Release' || '' }}
+        run: cargo build --release --locked --offline --manifest-path server/Cargo.toml
+      - name: Verify Windows runtime dependencies
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $binary = "build/multiplayer/server-target/release/rage-racer-server.exe"
+          $imports = & "$env:ProgramFiles/LLVM/bin/llvm-readobj.exe" --coff-imports $binary
+          if ($LASTEXITCODE -ne 0) { throw "Cannot inspect server imports" }
+          $imports
+          if ($imports -match '(?i)\b((msvcp|msvcr|vcruntime|concrt)\d+[a-z0-9_]*|ucrtbased)\.dll\b') {
+            throw "Server requires an external Visual C++ runtime"
+          }
+
+  sanitizers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: >-
+          cmake -S . -B build/multiplayer-asan -DCMAKE_BUILD_TYPE=Debug
+          -DRAGE_BUILD_PORT=OFF -DBUILD_TESTING=ON
+          -DRAGE_EMBED_AUTHORED_CARS=OFF -DRAGE_ENABLE_SANITIZERS=ON
+      - name: Build narrow protocol and transport tests
+        run: >-
+          cmake --build build/multiplayer-asan --parallel 4
+          --target mp_protocol_tests mp_prediction_tests mp_connect_tests mp_menu_tests mp_socket_tests mp_transport_tests
+      - name: Test ASan and UBSan
+        env:
+          ASAN_OPTIONS: detect_leaks=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: ctest --test-dir build/multiplayer-asan -L multiplayer --output-on-failure

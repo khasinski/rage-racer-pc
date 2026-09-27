@@ -1,8 +1,8 @@
 #include "client_race.h"
 #include "client_frame.h"
 #include "sky_panorama_layout.h"
-#include "render_mesh_build.h"
-#include "render_stage.h"
+#include "render/render_mesh_build.h"
+#include "render/render_stage.h"
 #include "game/asset_index.h"
 #include <stdio.h>
 #include <string.h>
@@ -29,11 +29,12 @@ static int CheckMaterials(const ClientRace *race) {
                                              &race->courseMesh, &race->terrainMesh};
     const unsigned variants[] = {3, 1, 8, 4};
     unsigned empty = 0, total = 0, missing = 0;
-    for (unsigned bank = 0; bank < 4; ++bank) {
-        const RageImportedMeshEntry *entry = entries[bank];
+    for (unsigned bank = 0; bank < 4 + race->carMeshCount; ++bank) {
+        const RageImportedMeshEntry *entry = bank < 4 ? entries[bank] : &race->carMeshes[bank - 4];
+        const unsigned variantCount = bank < 4 ? variants[bank] : 1;
         for (u32 material = 0; material < entry->materialCount; ++material) {
             int materialVisible = 0;
-            for (unsigned variant = 0; variant < variants[bank]; ++variant) {
+            for (unsigned variant = 0; variant < variantCount; ++variant) {
                 const RenderMeshInstance instance = {.assetKey = entry->cached.assetKey,
                     .assetSet = entry->cached.assetSet, .assetSource = RENDER_ASSET_OWNED,
                     .materialVariant = (u8)variant};
@@ -57,6 +58,10 @@ static int CheckMaterials(const ClientRace *race) {
 }
 
 int main(int argc, char **argv) {
+    if (argc == 1) {
+        fprintf(stderr, "SKIP: client race integration requires RAGE_RUNTIME_DISC\n");
+        return 77;
+    }
     if (argc != 2 && argc != 3) { fprintf(stderr, "usage: client_race_tests <CUE or Track 01 BIN> [materials]\n"); return 2; }
     RaceData *archive = LoadRaceDisc(argv[1]);
     CHECK(archive != NULL);
@@ -64,6 +69,15 @@ int main(int argc, char **argv) {
     setup.entrants[0] = (RaceEntrant){.kind = RACE_SEAT_HUMAN, .grid = 0, .model = 0, .manual = 1, .seed = 7};
     setup.entrants[11] = (RaceEntrant){.kind = RACE_SEAT_HUMAN, .grid = 11, .model = 31, .manual = 1, .seed = 9};
     setup.looks[11].variant = 31;
+    if (argc == 3) {
+        CHECK(strcmp(argv[2], "materials") == 0);
+        ClientRace *race = LoadClientRace(archive, &setup, NULL);
+        CHECK(race != NULL);
+        FreeRaceData(archive);
+        int result = CheckMaterials(race);
+        FreeClientRace(race);
+        return result;
+    }
     ClientRace *races[2];
     races[0] = LoadClientRace(archive, &setup, NULL);
     setup.reverse = 1;
@@ -99,14 +113,6 @@ int main(int argc, char **argv) {
     CHECK(races[0]->pixels != races[1]->pixels);
     CHECK(memcmp(races[0]->pixels, races[1]->pixels, sizeof(TrackPixels)) == 0);
     const u16 firstPixel = races[0]->pixels->pages[1][256 * 1024 + 576];
-    if (argc == 3) {
-        CHECK(strcmp(argv[2], "materials") == 0);
-        int result = CheckMaterials(races[0]);
-        FreeClientRace(races[0]);
-        FreeClientRace(races[1]);
-        FreeRaceData(archive);
-        return result;
-    }
     const RaceSim existing = races[0]->sim;
     setup.looks[11].variant = 0; /* Late model/physics mismatch. */
     CHECK(LoadClientRace(archive, &setup, NULL) == NULL);
@@ -130,6 +136,8 @@ int main(int argc, char **argv) {
             CHECK(candidate != NULL);
             CHECK(candidate->shuttleCount == (courseIndex == 2 ? 2u : (courseIndex == 1 ? 1u : 0u)));
             CHECK(candidate->freezeScenery == (classIndex == TRACK_CLASS_COUNT - 1));
+            const s32 environmentClock = candidate->env.clock;
+            const int environmentEnabled = candidate->env.enabled;
             CHECK(StartRaceSim(&candidate->sim, 0));
             for (unsigned tick = 0; tick < 2; ++tick) {
                 CHECK(StepRaceSim(&candidate->sim));
@@ -143,7 +151,7 @@ int main(int argc, char **argv) {
                 CHECK(candidate->spinners.angles[1] == (candidate->freezeScenery ? 64 : 192));
             if (candidate->shuttleCount)
                 CHECK(candidate->shuttles[0].travelStep == (candidate->freezeScenery ? 0 : 2));
-            CHECK(candidate->env.clock == EnvironmentTime(candidate->look.environmentStart + 1, candidate->env.length));
+            CHECK(candidate->env.clock == EnvironmentTime(environmentClock + environmentEnabled, candidate->env.length));
             for (s32 seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) {
                 const SimDriver *driver = &candidate->sim.drivers[seat];
                 if (!driver->rival || driver->status == SIM_EMPTY) continue;
@@ -251,9 +259,12 @@ int main(int argc, char **argv) {
     for (unsigned tick = 0; tick < 100; ++tick) {
         for (unsigned room = 0; room < 2; ++room) {
             CHECK(StepRaceSim(&races[room]->sim));
-            CHECK(TickClientScenery(races[room]));
+            const int scenery = TickClientScenery(races[room]);
+            if (!scenery) fprintf(stderr, "room=%u tick=%u env clock=%d length=%d mode=%d previous=%d next=%d\n",
+                room, races[room]->sim.tick, races[room]->env.clock, races[room]->env.length,
+                races[room]->env.mode, races[room]->env.previousMode, races[room]->env.next->mode);
+            CHECK(scenery);
             CHECK(TickRaceView(races[room]->view, &races[room]->sim, 1.0f));
-            TickEnvironment(&races[room]->env);
         }
     }
     enum { SCENE_CAPACITY = 4096 };

@@ -27,6 +27,7 @@ int ReadRaceData(const void *data, size_t size, RaceData *archive);
 const void *RaceAsset(const RaceData *archive, s32 index, size_t *size);
 int ReadRaceCar(const RaceData *archive, s32 variant, GameCarSpec *spec);
 int ReadRaceCarShape(const RaceData *archive, s32 variant, CarShape *shape);
+int ReadRaceCarTransmission(const RaceData *archive, s32 variant, int *automatic);
 CarModelData *CopyRaceCarModel(const RaceData *archive, s32 variant);
 /* classIndex is 0..5, courseIndex is the physical course slot 0..3.
  * Reverse uses the same pack; the race selects its reverse event tables. */
@@ -39,6 +40,10 @@ TrackData *CopyRaceTrack(const RaceData *archive, s32 classIndex, s32 courseInde
  * failure. FreeRaceData is only for objects returned by these loaders, not
  * caller-owned views constructed with ReadRaceData. */
 RaceData *LoadRaceDisc(const char *path);
+struct DiscIsoReader;
+/* Copy archive/source identity through an already opened ISO sector reader.
+ * No reader/context borrow remains. FreeRaceData owns the resulting copy. */
+RaceData *LoadRaceIso(struct DiscIsoReader *reader);
 RaceData *LoadRaceArchive(const char *path);
 void FreeRaceData(RaceData *archive);
 #endif
