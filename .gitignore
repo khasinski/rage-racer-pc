@@ -99,3 +99,8 @@ debug_source.c
 .visual-cache/
 rage-port.cfg
 markers/
+
+# Browser experiment
+web/node_modules/
+web/dist/
+web/public/wasm/

@@ -948,3 +948,65 @@ if(BUILD_TESTING)
         USES_TERMINAL
         COMMENT "Building all targets and running unit tests")
 endif()
+
+# Browser experiment (web/): the same headless disc, simulation, client-race
+# and draw-builder code compiled to WebAssembly. Only built by emcmake.
+if(EMSCRIPTEN)
+    add_executable(rage-web
+        web/wasm/rage_web.c
+        src/port/client_race.c
+        src/port/client_world.c
+        src/port/native_visibility.c
+        src/port/client_assets.c
+        src/port/native_sky.c
+        src/port/sky_panorama_layout.c
+        src/port/native_texture.c
+        src/port/native_mesh_writer.c
+        src/port/native_car_cache.c
+        src/port/race_view.c
+        src/port/car_parts.c
+        src/port/chase_camera.c)
+    target_include_directories(rage-web PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/render
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/port
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/port/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_link_libraries(rage-web PRIVATE rage-data rage-sim rage-rmesh rage-render-world)
+    set_target_properties(rage-web PROPERTIES SUFFIX ".mjs")
+    target_link_options(rage-web PRIVATE
+        -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=createRageModule
+        -sENVIRONMENT=web,worker,node
+        -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=268435456 -sMAXIMUM_MEMORY=4294967296
+        -sFORCE_FILESYSTEM=1
+        -sEXPORTED_FUNCTIONS=_malloc,_free
+        -sEXPORTED_RUNTIME_METHODS=FS,ccall,cwrap,HEAPU8,HEAPF32,HEAPU32,HEAP32,UTF8ToString)
+endif()
+
+# Native half of the web physics parity check: the same bridge and client-race
+# sources as rage-web, built against the native libraries.
+if(NOT EMSCRIPTEN)
+    add_executable(rage-web-parity
+        web/wasm/parity_main.c
+        web/wasm/rage_web.c
+        src/port/client_race.c
+        src/port/client_world.c
+        src/port/native_visibility.c
+        src/port/client_assets.c
+        src/port/native_sky.c
+        src/port/sky_panorama_layout.c
+        src/port/native_texture.c
+        src/port/native_mesh_writer.c
+        src/port/native_car_cache.c
+        src/port/race_view.c
+        src/port/car_parts.c
+        src/port/chase_camera.c)
+    target_include_directories(rage-web-parity PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/web/wasm/native_stub
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/render
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/port
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/port/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_link_libraries(rage-web-parity PRIVATE rage-data rage-sim rage-rmesh rage-render-world m)
+endif()
