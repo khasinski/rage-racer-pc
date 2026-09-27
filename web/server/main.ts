@@ -4,11 +4,12 @@
 //
 //   node server/main.ts --disc <CUE or Track 01 BIN> [--port 7243]
 //                       [--db server/data/rage.db] [--static dist]
+// RAGE_ADMIN_PASSWORD creates or updates the administrator account `admin`.
 import { readFile, stat } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { extname, join, normalize, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import { WebSocketServer } from 'ws';
+import { WebSocketServer, type WebSocket } from 'ws';
 import { DEFAULT_PORT } from '../shared/protocol.ts';
 import { Store } from './db.ts';
 import { Lobby, type Client } from './rooms.ts';
@@ -30,6 +31,8 @@ if (!options.disc) {
 }
 
 const store = new Store(options.db!);
+// Deployments set the administrator password here instead of running the seed.
+if (process.env.RAGE_ADMIN_PASSWORD) store.ensureUser('admin', process.env.RAGE_ADMIN_PASSWORD, true);
 const sim = await Simulation.load(options.disc);
 const lobby = new Lobby(sim, store);
 const staticRoot = resolve(options.static!);
@@ -124,6 +127,23 @@ const server = createServer((req, res) => {
 });
 
 const sockets = new WebSocketServer({ noServer: true, maxPayload: 64 * 1024, perMessageDeflate: true });
+
+/* Keep-alive: a quiet room sends nothing, and proxies (nginx in front of
+ * CapRover apps) close idle connections after about a minute. A ping every
+ * KEEPALIVE_MS keeps the connection open; a socket that has not answered the
+ * previous ping is dead and is closed, which also frees its seat. */
+const KEEPALIVE_MS = Number(process.env.RAGE_KEEPALIVE_MS ?? 20_000);
+const alive = new WeakMap<WebSocket, boolean>();
+setInterval(() => {
+  for (const ws of sockets.clients) {
+    if (alive.get(ws) === false) {
+      ws.terminate();
+      continue;
+    }
+    alive.set(ws, false);
+    ws.ping();
+  }
+}, KEEPALIVE_MS).unref();
 server.on('upgrade', (req, socket, head) => {
   const url = new URL(req.url ?? '/', 'http://localhost');
   const user = url.pathname === '/ws' ? store.sessionUser(url.searchParams.get('token') ?? '') : null;
@@ -134,6 +154,8 @@ server.on('upgrade', (req, socket, head) => {
   }
   sockets.handleUpgrade(req, socket, head, (ws) => {
     const client: Client = { ws, user, roomId: null };
+    alive.set(ws, true);
+    ws.on('pong', () => alive.set(ws, true));
     lobby.connect(client);
     ws.on('message', (data, binary) => lobby.message(client, data as Buffer, binary));
     ws.on('close', () => lobby.disconnect(client));

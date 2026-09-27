@@ -107,3 +107,4 @@ web/public/wasm/
 e2e-output/
 web/server/wasm/
 web/server/data/
+web/deploy.tar

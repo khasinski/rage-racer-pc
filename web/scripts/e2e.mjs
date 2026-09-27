@@ -1,7 +1,7 @@
 // End-to-end check of the whole app in real (headless) browsers:
 //   node scripts/e2e.mjs <disc file ...> [--out dir]
 // Starts the multiplayer server with a scratch database and the development
-// accounts, then two players (admin and rage) log in, choose the disc through
+// test accounts (on the scratch database only), then two players log in, choose the disc through
 // the page's file picker, meet in a room, race each other on the server, leave
 // and read the results; one of them then drives an offline practice race.
 // Fails on any page error, a blank frame or a step that does not happen.
@@ -23,7 +23,7 @@ mkdirSync(out, { recursive: true });
 const serverDisc = discFiles.find((f) => /\.cue$/i.test(f)) ?? discFiles[0];
 const db = join(out, 'e2e.db');
 for (const suffix of ['', '-wal', '-shm']) rmSync(db + suffix, { force: true });
-spawnSync(process.execPath, [join(web, 'server/seed.ts'), '--db', db], { stdio: 'inherit' });
+spawnSync(process.execPath, [join(web, 'server/seed.ts'), '--db', db, '--admin-password', 'admin', '--rage-password', 'racer'], { stdio: 'inherit' });
 const port = 4180;
 const server = spawn(process.execPath, [join(web, 'server/main.ts'), '--disc', serverDisc, '--port', String(port), '--db', db],
   { cwd: web, stdio: ['ignore', 'pipe', 'inherit'] });

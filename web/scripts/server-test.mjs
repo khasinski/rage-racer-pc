@@ -16,10 +16,10 @@ const disc = process.argv[2] && resolve(process.argv[2]);
 if (!disc) { console.error('usage: server-test.mjs <disc>'); process.exit(2); }
 const scratch = mkdtempSync(join(tmpdir(), 'rage-server-test-'));
 const db = join(scratch, 'test.db');
-spawnSync(process.execPath, [join(web, 'server/seed.ts'), '--db', db], { stdio: 'ignore' });
+spawnSync(process.execPath, [join(web, 'server/seed.ts'), '--db', db, '--admin-password', 'admin', '--rage-password', 'racer'], { stdio: 'ignore' });
 const port = 4181;
 const server = spawn(process.execPath, [join(web, 'server/main.ts'), '--disc', disc, '--port', String(port), '--db', db],
-  { cwd: web, stdio: ['ignore', 'pipe', 'inherit'], env: { ...process.env, RAGE_FINISH_GRACE_MS: '3000' } });
+  { cwd: web, stdio: ['ignore', 'pipe', 'inherit'], env: { ...process.env, RAGE_FINISH_GRACE_MS: '3000', RAGE_KEEPALIVE_MS: '500' } });
 await new Promise((ready) => server.stdout.on('data', (d) => String(d).includes('server on') && ready()));
 
 const base = `http://localhost:${port}`;
@@ -99,6 +99,11 @@ try {
   rage.send({ t: 'chat', text: 'ready when you are' });
   rage.send({ t: 'setReady', ready: true });
   check(await until(() => admin.messages.some((m) => m.t === 'chat' && m.from === 'rage')), 'chat reaches the room');
+
+  // Keep-alive: pings every 0.5 s here; players answering them stay put.
+  await wait(2000);
+  check(admin.ws.readyState === WebSocket.OPEN && rage.last('room')?.room.members.length === 2,
+        'connections answering the keep-alive stay in their room');
 
   // Hand-over: the host leaves and comes back; rage now hosts.
   admin.send({ t: 'leaveRoom' });

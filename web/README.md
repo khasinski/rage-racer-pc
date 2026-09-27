@@ -31,7 +31,7 @@ Requirements: Node 26 (see `mise.toml`), Emscripten 6 and CMake.
 npm install
 npm run wasm        # builds public/wasm/rage-web.* and server/wasm/rage-server.*
 npm run build       # typechecks and builds the client into dist/
-npm run seed        # development accounts: admin/admin (admin) and rage/racer
+npm run seed        # accounts admin (administrator) and rage, with generated passwords
 npm run server -- --disc "/path/to/Rage Racer (Europe) (Track 01).bin"
 ```
 
@@ -44,6 +44,22 @@ serial and a fingerprint of the game archive).
 
 For client development, `npm run dev` proxies `/api` and `/ws` to the server
 at `RAGE_SERVER` (default `http://localhost:7243`).
+
+## Deploying (CapRover)
+
+```sh
+npm run wasm && npm run build
+node scripts/package-deploy.mjs "/path/to/Track 01.bin" deploy.tar
+caprover deploy -n <machine> -a rageracer -t deploy.tar
+```
+
+The image (`deploy/Dockerfile`) runs the server on port 7243 with the disc
+inside the image and the SQLite database in `/data`. The CapRover app needs:
+- **Port and WebSockets:** container HTTP port 7243, with WebSocket support on.
+- **Storage:** a persistent volume at `/data`.
+- **HTTPS:** enabled, with HTTPS forced.
+- **Administrator:** `RAGE_ADMIN_PASSWORD` creates or updates the `admin`
+  account at start-up.
 
 ## Protocol
 
