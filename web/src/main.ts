@@ -1,64 +1,352 @@
 import './style.css';
+import type { RaceEvent, RoomState, RoomSummary, ServerMessage } from '../shared/protocol.ts';
 import { chooseDataTrack, droppedFiles } from './disc';
 import { clearKeyEdges, consumeKey, PAD, samplePad } from './input';
+import { Connection, FrameBuffer, Session } from './net';
 import { PHASE_COUNTDOWN, PHASE_FINISHED, PHASE_RACING, Rage, type Hud, type RaceOptions } from './rage';
 import { Renderer } from './renderer';
+import {
+  $, appendChat, classCars, editSettings, fillClasses, fillCourses, formatTime, renderHistory,
+  renderRecords, renderResults, renderRoom, renderRooms,
+} from './views';
 
 const TICK_MS = 1000 / 50; // the simulation's fixed 50 Hz clock
 
-const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-const disc = $('disc');
-const status = $('disc-status');
+type Screen = 'auth' | 'disc' | 'lobby' | 'room' | 'setup' | 'race';
+const SCREENS: Screen[] = ['auth', 'disc', 'lobby', 'room', 'setup'];
+
+const discStatus = $('disc-status');
 const picker = $<HTMLInputElement>('disc-input');
 const setup = $<HTMLFormElement>('setup');
 const hud = $('hud');
 const canvas = $<HTMLCanvasElement>('view');
+const results = $('results');
 
 const ragePromise = Rage.load();
+const session = new Session();
+let rageSync: Rage | null = null;
 let renderer: Renderer | null = null;
-let racing = false;
+let screen: Screen = 'auth';
+let discLoaded = false;
+let automaticCars: boolean[] = [];
 
-function show(screen: 'disc' | 'setup' | 'race') {
-  disc.hidden = screen !== 'disc';
-  setup.hidden = screen !== 'setup';
-  hud.hidden = screen !== 'race';
-  canvas.hidden = screen !== 'race';
-  racing = screen === 'race';
+// Online state.
+let connection: Connection | null = null;
+let rooms: RoomSummary[] = [];
+let room: RoomState | null = null;
+let online = false; // the current race is driven by the server
+const frames = new FrameBuffer();
+
+function show(next: Screen) {
+  screen = next;
+  for (const id of SCREENS) $(id).hidden = id !== next;
+  hud.hidden = canvas.hidden = next !== 'race';
+  if (next !== 'race') results.hidden = true;
 }
 
+function toast(message: string) {
+  const target = screen === 'room' ? 'room-status' : screen === 'setup' ? 'setup-status'
+    : screen === 'auth' ? 'auth-status' : screen === 'disc' ? 'disc-status' : 'lobby-status';
+  $(target).textContent = message;
+  if (screen === 'race') feed(message);
+}
+
+// ---- accounts ---------------------------------------------------------------
+
+$<HTMLFormElement>('auth').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const form = event.target as HTMLFormElement;
+  const register = (event.submitter as HTMLButtonElement | null)?.value === 'register';
+  const value = (name: string) => (form.elements.namedItem(name) as HTMLInputElement).value;
+  $('auth-status').textContent = register ? 'Creating your account…' : 'Logging in…';
+  try {
+    await session.login(value('name').trim(), value('password'), register);
+    $('auth-status').textContent = '';
+    afterLogin();
+  } catch (error) {
+    $('auth-status').textContent = (error as Error).message;
+  }
+});
+
+function afterLogin() {
+  $('lobby').querySelector('.who')!.textContent = `${session.user!.name}${session.user!.admin ? ' (admin)' : ''}`;
+  if (!discLoaded) {
+    show('disc');
+    return;
+  }
+  enterLobby();
+}
+
+// ---- disc -------------------------------------------------------------------
+
 async function useFiles(files: File[]) {
+  const disc = $('disc');
   const choice = await chooseDataTrack(files);
   if ('error' in choice) {
-    status.textContent = choice.error;
+    discStatus.textContent = choice.error;
     disc.dataset.state = 'error';
     return;
   }
   disc.dataset.state = 'busy';
-  status.textContent = `Reading ${choice.file.name}…`;
+  discStatus.textContent = `Reading ${choice.file.name}…`;
   const rage = await ragePromise;
   const ok = await rage.loadDisc(choice.file, (fraction) => {
-    status.textContent = `Reading ${choice.file.name}… ${Math.round(fraction * 100)}%`;
+    discStatus.textContent = `Reading ${choice.file.name}… ${Math.round(fraction * 100)}%`;
   });
   if (!ok) {
     disc.dataset.state = 'error';
-    status.textContent = `${choice.file.name} is not a Rage Racer disc image this build can read.`;
+    discStatus.textContent = `${choice.file.name} is not a Rage Racer disc image this build can read.`;
     return;
   }
-  disc.dataset.state = '';
-  fillCars(rage.carAutomatic());
-  show('setup');
-  $('start').focus();
+  if (session.discId && rage.discId() !== session.discId) {
+    disc.dataset.state = 'error';
+    discStatus.textContent = `This disc (${rage.discId()}) differs from the server's (${session.discId}). ` +
+      'Online races need the same release; practice still works offline.';
+  } else {
+    disc.dataset.state = '';
+  }
+  discLoaded = true;
+  automaticCars = rage.carAutomatic();
+  fillPractice(rage);
+  if (disc.dataset.state === 'error') {
+    setTimeout(() => show('setup'), 2500);
+    return;
+  }
+  enterLobby();
 }
 
-/* Car variants in disc order (model, then grade); a manual-only variant
- * cannot be driven with the automatic gearbox, as in the native menu. */
-let automaticCars: boolean[] = [];
-function fillCars(automatic: boolean[]) {
-  automaticCars = automatic;
-  const cars = $<HTMLSelectElement>('car');
-  cars.replaceChildren(...automatic.map((auto, variant) =>
-    new Option(`Car ${variant + 1}${auto ? '' : ' (manual only)'}`, String(variant))));
-  syncTransmission();
+picker.addEventListener('change', () => { if (picker.files?.length) void useFiles(Array.from(picker.files)); });
+addEventListener('dragover', (event) => { event.preventDefault(); $('disc').dataset.drag = 'on'; });
+addEventListener('dragleave', () => { $('disc').dataset.drag = ''; });
+addEventListener('drop', (event) => {
+  event.preventDefault();
+  $('disc').dataset.drag = '';
+  if (screen === 'disc' && event.dataTransfer) void droppedFiles(event.dataTransfer).then(useFiles);
+});
+
+// ---- lobby ------------------------------------------------------------------
+
+function enterLobby() {
+  connect();
+  show(room ? 'room' : 'lobby');
+  void refreshTables();
+}
+
+async function refreshTables() {
+  const rage = rageSync;
+  if (!rage) return;
+  try {
+    renderRecords(rage, (await session.records()).records);
+    const history = await fetch(new URL('api/history', document.baseURI),
+      { headers: { authorization: `Bearer ${session.token}` } }).then((r) => r.json());
+    renderHistory(rage, history.history ?? []);
+  } catch { /* tables stay as they were */ }
+}
+
+function connect() {
+  if (connection || !session.token) return;
+  connection = new Connection(session.token);
+  connection.onMessage = onMessage;
+  connection.onFrame = (frame) => { if (online) frames.push(frame); };
+  connection.onClose = (reason) => {
+    connection = null;
+    room = null;
+    if (online) stopRace();
+    if (!session.token) return;
+    toast(`${reason} Reconnecting…`);
+    if (screen === 'room') show('lobby');
+    setTimeout(() => { if (!connection && session.token && discLoaded) connect(); }, 3000);
+  };
+}
+
+function send(message: Parameters<Connection['send']>[0]) {
+  connection?.send(message);
+}
+
+function onMessage(message: ServerMessage) {
+  const rage = rageSync!;
+  switch (message.t) {
+    case 'welcome':
+      session.discId = message.discId;
+      $('lobby-status').textContent = '';
+      break;
+    case 'rooms':
+      rooms = message.rooms;
+      renderRooms(rage, rooms, (id) => send({ t: 'joinRoom', roomId: id }));
+      break;
+    case 'room':
+      if (!message.room) {
+        room = null;
+        $('chat-log').replaceChildren();
+        if (screen === 'room') show('lobby');
+        void refreshTables();
+        break;
+      }
+      if (!room || room.id !== message.room.id) $('chat-log').replaceChildren();
+      room = message.room;
+      renderRoom(rage, room, session.user!, automaticCars);
+      if (screen === 'lobby') show('room');
+      break;
+    case 'chat':
+      appendChat(message.from, message.text, message.at);
+      break;
+    case 'raceStart':
+      void startOnlineRace(message);
+      break;
+    case 'raceGo':
+      $('hud-hint').textContent = '';
+      break;
+    case 'raceEvent':
+      feed(describe(message.event));
+      break;
+    case 'results':
+      renderResults(rage, message.results, session.user!);
+      results.hidden = false;
+      if (screen !== 'race') show('room');
+      results.hidden = false;
+      void refreshTables();
+      break;
+    case 'error':
+      toast(message.message);
+      break;
+  }
+}
+
+$('lobby').addEventListener('click', async (event) => {
+  const action = (event.target as HTMLElement).closest<HTMLElement>('[data-action]')?.dataset.action;
+  if (action === 'logout') {
+    connection?.close();
+    connection = null;
+    await session.logout();
+    show('auth');
+  } else if (action === 'practice') {
+    show('setup');
+  } else if (action === 'create-room' && rageSync) {
+    const settings = await editSettings(rageSync, null, 1);
+    if (settings) send({ t: 'createRoom', settings });
+  }
+});
+
+// ---- room -------------------------------------------------------------------
+
+$('room').addEventListener('click', async (event) => {
+  const action = (event.target as HTMLElement).closest<HTMLElement>('[data-action]')?.dataset.action;
+  if (action === 'leave-room') send({ t: 'leaveRoom' });
+  else if (action === 'close-room' && room) send({ t: 'closeRoom', roomId: room.id });
+  else if (action === 'edit-room' && room && rageSync) {
+    const settings = await editSettings(rageSync, room.settings, room.members.length);
+    if (settings) send({ t: 'updateRoom', settings });
+  }
+});
+
+function sendCar() {
+  const variant = Number($<HTMLSelectElement>('car-model').value);
+  const transmission = $<HTMLSelectElement>('car-transmission');
+  const automatic = automaticCars[variant] !== false;
+  transmission.options[0].disabled = !automatic;
+  if (!automatic) transmission.value = 'manual';
+  send({ t: 'setCar', variant, manual: transmission.value === 'manual' });
+}
+$('car-model').addEventListener('change', sendCar);
+$('car-transmission').addEventListener('change', sendCar);
+$('ready-button').addEventListener('click', () => {
+  const mine = room?.members.find((m) => m.userId === session.user?.id);
+  send({ t: 'setReady', ready: !mine?.ready });
+});
+$('start-button').addEventListener('click', () => send({ t: 'startRace' }));
+$<HTMLFormElement>('chat-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+  const input = (event.target as HTMLFormElement).elements.namedItem('text') as HTMLInputElement;
+  if (input.value.trim()) send({ t: 'chat', text: input.value });
+  input.value = '';
+});
+results.querySelector('[data-action=results-done]')!.addEventListener('click', () => {
+  results.hidden = true;
+  if (online || screen === 'race') stopRace();
+  show(room ? 'room' : 'lobby');
+});
+
+// ---- race -------------------------------------------------------------------
+
+function describe(event: RaceEvent): string {
+  switch (event.kind) {
+    case 'lap': return `${event.name} · lap ${event.lap} ${formatTime(event.lapMs)}`;
+    case 'finish': return `${event.name} finished ${ordinal(event.place)} · ${formatTime(event.timeMs)}`;
+    case 'retire': return `${event.name} ${event.reason}`;
+  }
+}
+
+function ordinal(n: number): string {
+  const suffix = n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th';
+  return `${n}${suffix}`;
+}
+
+function feed(text: string) {
+  const list = $<HTMLOListElement>('feed');
+  const item = document.createElement('li');
+  item.textContent = text;
+  list.append(item);
+  setTimeout(() => item.remove(), 6000);
+  while (list.children.length > 5) list.firstElementChild!.remove();
+}
+
+async function startOnlineRace(message: Extract<ServerMessage, { t: 'raceStart' }>) {
+  const rage = rageSync!;
+  const s = message.settings;
+  results.hidden = true;
+  show('race');
+  $('hud-hint').textContent = 'Preparing the course…';
+  await new Promise(requestAnimationFrame);
+  const humans = message.seats.slice(0, message.humans).map((seat) => ({ variant: seat.variant, manual: seat.manual }));
+  const ok = rage.startNetRace({ classIndex: s.classIndex, course: s.course, reverse: s.reverse, laps: s.laps,
+                                 rivals: s.rivals }, humans, message.localSeat);
+  send({ t: 'loaded', ok });
+  if (!ok) {
+    show('room');
+    toast('This race could not be prepared from your disc.');
+    return;
+  }
+  $('hud-hint').textContent = 'Waiting for the other players…';
+  online = true;
+  frames.reset();
+  beginRace(rage);
+}
+
+function beginRace(rage: Rage) {
+  renderer ??= new Renderer(canvas, rage);
+  resize();
+  last = performance.now();
+  accumulator = simTime = previousStep = currentStep = 0;
+  paused = startHeld = false;
+  phase = 0;
+  clearKeyEdges();
+  $('feed').replaceChildren();
+  racing = true;
+}
+
+function stopRace() {
+  racing = false;
+  online = false;
+  frames.reset();
+}
+
+// Offline practice against the retail field.
+function fillPractice(rage: Rage) {
+  const classSelect = setup.elements.namedItem('class') as HTMLSelectElement;
+  const course = setup.elements.namedItem('course') as HTMLSelectElement;
+  fillClasses(classSelect);
+  classSelect.value = '2';
+  const sync = () => {
+    const classIndex = Number(classSelect.value);
+    fillCourses(rage, course, classIndex);
+    const cars = $<HTMLSelectElement>('car');
+    const current = cars.value;
+    cars.replaceChildren(...classCars(rage, classIndex).map((c) => new Option(c.label, String(c.variant))));
+    if ([...cars.options].some((o) => o.value === current)) cars.value = current;
+    syncTransmission();
+  };
+  classSelect.onchange = sync;
+  sync();
 }
 function syncTransmission() {
   const car = Number($<HTMLSelectElement>('car').value);
@@ -68,14 +356,9 @@ function syncTransmission() {
   if (automatic.disabled) transmission.value = '1';
 }
 $('car').addEventListener('change', syncTransmission);
-
-picker.addEventListener('change', () => { if (picker.files?.length) void useFiles(Array.from(picker.files)); });
-addEventListener('dragover', (event) => { event.preventDefault(); disc.dataset.drag = 'on'; });
-addEventListener('dragleave', () => { disc.dataset.drag = ''; });
-addEventListener('drop', (event) => {
-  event.preventDefault();
-  disc.dataset.drag = '';
-  if (!disc.hidden && event.dataTransfer) void droppedFiles(event.dataTransfer).then(useFiles);
+setup.querySelector('[data-action=back-to-lobby]')!.addEventListener('click', () => {
+  if (session.user) enterLobby();
+  else show('auth');
 });
 
 function readOptions(): RaceOptions {
@@ -98,30 +381,18 @@ setup.addEventListener('submit', async (event) => {
     return;
   }
   $('setup-status').textContent = '';
-  renderer ??= new Renderer(canvas, rage);
-  rage.setDrawDistance(Number((setup.elements.namedItem('drawDistance') as HTMLSelectElement).value));
-  renderer.shadows = (setup.elements.namedItem('shadows') as HTMLInputElement).checked;
+  $('hud-hint').textContent = '';
+  online = false;
   show('race');
-  resize();
-  last = performance.now();
-  accumulator = simTime = previousStep = currentStep = 0;
-  paused = startHeld = false;
-  phase = 0;
-  clearKeyEdges();
+  renderer ??= new Renderer(canvas, rage);
+  renderer.shadows = (setup.elements.namedItem('shadows') as HTMLInputElement).checked;
+  beginRace(rage);
 });
 
 function resize() {
   renderer?.resize(canvas.clientWidth, canvas.clientHeight);
 }
 addEventListener('resize', resize);
-
-function formatTime(ms: number): string {
-  if (ms < 0) return '--:--.--';
-  const minutes = Math.floor(ms / 60000);
-  const seconds = Math.floor(ms / 1000) % 60;
-  const hundredths = Math.floor(ms / 10) % 100;
-  return `${minutes}:${String(seconds).padStart(2, '0')}.${String(hundredths).padStart(2, '0')}`;
-}
 
 function drawHud(h: Hud) {
   $('hud-place').textContent = h.place > 0 ? `${h.place}/${h.entrants}` : `–/${h.entrants}`;
@@ -136,6 +407,7 @@ function drawHud(h: Hud) {
   else banner.textContent = '';
 }
 
+let racing = false;
 let last = 0;
 let accumulator = 0;
 /* Simulated time (ms) and the times of the last two physics steps: frames
@@ -143,32 +415,47 @@ let accumulator = 0;
 let simTime = 0;
 let previousStep = 0;
 let currentStep = 0;
-/* Start pauses during the countdown and the race (race_scene_rules.c CanPauseRace). */
+/* Offline, Start pauses during the countdown and the race (race_scene_rules.c
+ * CanPauseRace); online the server's clock does not stop. */
 let paused = false;
 let startHeld = false;
 let phase = 0;
 function frame(now: number) {
   requestAnimationFrame(frame);
-  if (!racing || !renderer) return;
+  if (!racing || !renderer || screen !== 'race') return;
+  const rage = rageSync;
+  if (!rage) return;
   if (consumeKey('Escape')) {
-    show('setup');
-    $('start').focus();
+    if (online) {
+      send({ t: 'leaveRace' });
+      stopRace();
+      show(room ? 'room' : 'lobby');
+    } else {
+      racing = false;
+      show('setup');
+      $('start').focus();
+    }
     return;
   }
   const pad = samplePad();
   const start = (pad.held & PAD.START) !== 0;
-  if (start && !startHeld && (phase === PHASE_COUNTDOWN || phase === PHASE_RACING)) paused = !paused;
+  if (!online && start && !startHeld && (phase === PHASE_COUNTDOWN || phase === PHASE_RACING)) paused = !paused;
   startHeld = start;
   accumulator = paused ? 0 : Math.min(accumulator + (now - last), 250);
   last = now;
-  const rage = rageSync;
-  if (!rage) return;
   rage.setPad(pad);
   while (accumulator >= TICK_MS) {
+    if (online) {
+      // Send this tick's controls, then show the server frame that is due.
+      connection?.sendInput(rage.takeInput());
+      const due = frames.next();
+      if (due) rage.applyFrame(due.data);
+    }
     phase = rage.tick();
     if (phase < 0) {
-      $('setup-status').textContent = 'The race stopped unexpectedly.';
-      show('setup');
+      stopRace();
+      toast('The race stopped unexpectedly.');
+      show(online ? 'room' : 'setup');
       return;
     }
     accumulator -= TICK_MS;
@@ -186,7 +473,14 @@ function frame(now: number) {
   renderer.render();
 }
 
-let rageSync: Rage | null = null;
-void ragePromise.then((rage) => { rageSync = rage; status.dataset.ready = '1'; });
-show('disc');
+// ---- start ------------------------------------------------------------------
+
+void ragePromise.then(async (rage) => {
+  rageSync = rage;
+  $('disc-status').dataset.ready = '1';
+  if (await session.resume()) afterLogin();
+  else show('auth');
+});
+show('auth');
+$('auth').hidden = true; // until the stored session has been checked
 requestAnimationFrame(frame);

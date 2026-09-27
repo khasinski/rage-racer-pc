@@ -6,7 +6,19 @@
   <title>Rage Racer</title>
 </head>
 <body>
-  <section id="disc" aria-live="polite">
+  <form id="auth" class="panel narrow" hidden>
+    <h1>RAGE RACER</h1>
+    <p class="lead">Online races on the original physics</p>
+    <label>Name <input name="name" autocomplete="username" required minlength="3" maxlength="20"></label>
+    <label>Password <input name="password" type="password" autocomplete="current-password" required minlength="4"></label>
+    <div class="row">
+      <button type="submit" value="login">Log in</button>
+      <button type="submit" value="register" class="secondary">Create account</button>
+    </div>
+    <p id="auth-status" class="status"></p>
+  </form>
+
+  <section id="disc" class="panel narrow" aria-live="polite" hidden>
     <h1>RAGE RACER</h1>
     <p class="lead">Drop your Rage Racer disc image here</p>
     <p class="hint">A CUE file together with its BIN files, the Track 01 BIN on its own, or the whole disc folder.</p>
@@ -15,23 +27,90 @@
     <p id="disc-status" class="status"></p>
   </section>
 
-  <form id="setup" hidden>
-    <h2>Race</h2>
-    <label>Class
-      <select name="class">
-        <option value="0">Class 1</option><option value="1">Class 2</option><option value="2">Class 3</option>
-        <option value="3">Class 4</option><option value="4">Class 5</option><option value="5">Class 6</option>
-      </select>
-    </label>
-    <label>Course
-      <select name="course">
-        <option value="0">Course 1</option><option value="1">Course 2</option>
-        <option value="2">Course 3</option><option value="3">Course 4</option>
-      </select>
-    </label>
-    <label>Car
-      <select name="car" id="car"></select>
-    </label>
+  <section id="lobby" class="page" hidden>
+    <header class="bar">
+      <h1>RAGE RACER</h1>
+      <span class="spacer"></span>
+      <span class="who"></span>
+      <button type="button" class="secondary" data-action="practice">Practice offline</button>
+      <button type="button" class="secondary" data-action="logout">Log out</button>
+    </header>
+    <div class="columns">
+      <section class="panel">
+        <div class="title-row">
+          <h2>Rooms</h2>
+          <button type="button" data-action="create-room">Create room</button>
+        </div>
+        <ul id="room-list" class="list"></ul>
+        <p id="lobby-status" class="status"></p>
+      </section>
+      <section class="panel">
+        <h2>Lap records</h2>
+        <table id="records" class="table"></table>
+        <h2>Your last races</h2>
+        <table id="history" class="table"></table>
+      </section>
+    </div>
+  </section>
+
+  <section id="room" class="page" hidden>
+    <header class="bar">
+      <h1 id="room-name"></h1>
+      <span id="room-summary" class="summary"></span>
+      <span class="spacer"></span>
+      <button type="button" class="secondary" data-action="edit-room" hidden>Room settings</button>
+      <button type="button" class="secondary danger" data-action="close-room" hidden>Close room</button>
+      <button type="button" class="secondary" data-action="leave-room">Leave</button>
+    </header>
+    <div class="columns">
+      <section class="panel">
+        <h2>Grid</h2>
+        <table id="room-players" class="table"></table>
+        <p id="room-fill" class="hint"></p>
+        <div class="car-picker">
+          <label>Your car <select id="car-model"></select></label>
+          <label>Transmission
+            <select id="car-transmission"><option value="auto">Automatic</option><option value="manual">Manual</option></select>
+          </label>
+        </div>
+        <div class="row">
+          <button type="button" id="ready-button">Ready</button>
+          <button type="button" id="start-button" hidden>Start race</button>
+        </div>
+        <p id="room-status" class="status"></p>
+        <p class="hint">Keys as on the desktop: ←/→ steer · X accelerate · Z brake · E/R shift up, Q/W shift down (manual) · S camera · hold ↓ to look back. A gamepad steers with the stick, RT/LT pedals, D-pad ↓/↑ shift, Y camera.</p>
+      </section>
+      <section class="panel chat">
+        <h2>Chat</h2>
+        <ol id="chat-log"></ol>
+        <form id="chat-form"><input name="text" maxlength="200" autocomplete="off" placeholder="Say something…"><button type="submit">Send</button></form>
+      </section>
+    </div>
+  </section>
+
+  <dialog id="settings-dialog">
+    <form id="settings-form" method="dialog">
+      <h2 id="settings-title">Create room</h2>
+      <label class="wide">Room name <input name="name" required maxlength="40"></label>
+      <label>Course <select name="course"></select></label>
+      <label>Direction <select name="reverse"><option value="0">Forward</option><option value="1">Reverse</option></select></label>
+      <label>Class <select name="class"></select></label>
+      <label>Laps <select name="laps"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option></select></label>
+      <label>Players <select name="maxPlayers"></select></label>
+      <label class="check"><input type="checkbox" name="rivals" checked> Fill the grid with rivals</label>
+      <p class="hint wide" id="settings-cars"></p>
+      <div class="row wide">
+        <button type="submit" value="ok" id="settings-submit">Create</button>
+        <button type="submit" value="cancel" class="secondary" formnovalidate>Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <form id="setup" class="panel" hidden>
+    <h2>Practice</h2>
+    <label>Class <select name="class"></select></label>
+    <label>Course <select name="course"></select></label>
+    <label>Car <select name="car" id="car"></select></label>
     <label>Transmission
       <select name="transmission"><option value="0">Automatic</option><option value="1">Manual</option></select>
     </label>
@@ -41,15 +120,13 @@
         <option>4</option><option>5</option><option>6</option>
       </select>
     </label>
-    <label>Draw distance
-      <select name="drawDistance">
-        <option value="1">Retail</option><option value="2" selected>Far</option><option value="4">Very far</option>
-      </select>
-    </label>
     <label class="check"><input type="checkbox" name="shadows" checked> Shadows</label>
     <label class="check"><input type="checkbox" name="reverse"> Reverse</label>
     <label class="check"><input type="checkbox" name="rivals" checked> Rivals</label>
-    <button id="start" type="submit">Start race</button>
+    <div class="row">
+      <button id="start" type="submit">Start race</button>
+      <button type="button" class="secondary" data-action="back-to-lobby">Back to the lobby</button>
+    </div>
     <p id="setup-status" class="status"></p>
     <p class="hint">Desktop controls: ←/→ steer · X accelerate · Z brake · E/R shift up, Q/W shift down (manual) · S camera · hold ↓ to look back · Enter pause · Esc returns here. A gamepad drives as on the desktop: stick steers, RT/A accelerate, LT/X brake, D-pad ↓/↑ shift, Y camera, Start pause.</p>
   </form>
@@ -62,7 +139,15 @@
     <div class="cell right"><span>KM/H</span><b id="hud-speed"></b></div>
     <div class="cell right"><span>GEAR</span><b id="hud-gear"></b></div>
     <div id="hud-banner"></div>
+    <ol id="feed"></ol>
+    <p id="hud-hint"></p>
   </div>
+
+  <section id="results" class="panel" hidden>
+    <h2>Results</h2>
+    <table id="results-table" class="table"></table>
+    <button type="button" data-action="results-done">Back to the room</button>
+  </section>
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

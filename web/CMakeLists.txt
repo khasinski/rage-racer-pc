@@ -210,9 +210,11 @@ set(BRIDGE_INCLUDES
     ${ENGINE}/src/port/include
     ${ENGINE}/src)
 set(BRIDGE_LIBRARIES web-data web-render-world)
+# Race rules shared by the browser module and the race server module.
+set(RULES_SOURCES wasm/web_rules.c wasm/web_rules_exports.c)
 
 if(EMSCRIPTEN)
-    add_executable(rage-web wasm/rage_web.c ${CLIENT_SOURCES})
+    add_executable(rage-web wasm/rage_web.c ${RULES_SOURCES} ${CLIENT_SOURCES})
     target_include_directories(rage-web PRIVATE ${BRIDGE_INCLUDES})
     target_link_libraries(rage-web PRIVATE ${BRIDGE_LIBRARIES})
     set_target_properties(rage-web PROPERTIES SUFFIX ".mjs")
@@ -223,10 +225,24 @@ if(EMSCRIPTEN)
         -sFORCE_FILESYSTEM=1
         -sEXPORTED_FUNCTIONS=_malloc,_free
         -sEXPORTED_RUNTIME_METHODS=FS,ccall,cwrap,HEAPU8,HEAPF32,HEAPU32,HEAP32,UTF8ToString)
+
+    # Authoritative simulation for the multiplayer server (web/server), run by
+    # Node; the disc is read in place through NODEFS.
+    add_executable(rage-server wasm/rage_server.c ${RULES_SOURCES})
+    target_include_directories(rage-server PRIVATE ${BRIDGE_INCLUDES})
+    target_link_libraries(rage-server PRIVATE web-data web-sim)
+    set_target_properties(rage-server PROPERTIES SUFFIX ".mjs")
+    target_link_options(rage-server PRIVATE
+        -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=createRaceServerModule
+        -sENVIRONMENT=node
+        -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=67108864 -sMAXIMUM_MEMORY=4294967296
+        -sFORCE_FILESYSTEM=1 -lnodefs.js
+        -sEXPORTED_FUNCTIONS=_malloc,_free
+        -sEXPORTED_RUNTIME_METHODS=FS,NODEFS,ccall,HEAPU8,HEAP32,UTF8ToString)
 else()
     # Native half of the physics parity check: the same bridge and engine
     # built by the host compiler, compared tick by tick with the WebAssembly.
-    add_executable(rage-web-parity wasm/parity_main.c wasm/rage_web.c ${CLIENT_SOURCES})
+    add_executable(rage-web-parity wasm/parity_main.c wasm/rage_web.c ${RULES_SOURCES} ${CLIENT_SOURCES})
     target_include_directories(rage-web-parity PRIVATE wasm/native_stub ${BRIDGE_INCLUDES})
     target_link_libraries(rage-web-parity PRIVATE ${BRIDGE_LIBRARIES})
 endif()

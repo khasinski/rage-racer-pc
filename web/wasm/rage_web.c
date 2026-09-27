@@ -33,6 +33,7 @@
 #include "render/render_world_frame.h"
 #include "render/texture_mipmap.h"
 #include "scene_matrix.h"
+#include "web_rules.h"
 
 enum {
     WEB_INSTANCE_CAPACITY = 8192,
@@ -41,7 +42,6 @@ enum {
     WEB_SPAN_FIELDS = 13,
     WEB_TEXTURE_BYTES = 256 * 256 * 4,
     WEB_PACKED_FLOATS = 22,
-    WEB_COUNTDOWN_TICKS = 3 * SIM_TICK_RATE,
 };
 
 /* chase_camera.c reads optional tuning from the runtime config; the browser
@@ -52,6 +52,8 @@ const char *RuntimeConfigGet(const char *key) { (void)key; return NULL; }
 int RuntimeConfigEnabled(const char *key) { (void)key; return 0; }
 
 static RaceData *s_archive;
+/* The seat this player drives, and whether a server steps the race. */
+static int s_localSeat, s_net;
 static ClientRace *s_race;
 static DriverInput s_input;
 static int s_pendingShiftUp, s_pendingShiftDown;
@@ -105,6 +107,8 @@ static WebView s_selectedView, s_viewCurrent;
 static u16 s_padHeld;
 static int s_pendingCamera;
 
+const RaceData *WebLoadedArchive(void) { return s_archive; }
+
 static void ReleaseRace(void) {
     FreeClientRace(s_race);
     s_race = NULL;
@@ -123,40 +127,29 @@ EMSCRIPTEN_KEEPALIVE void rw_release_disc(void) {
     s_archive = NULL;
 }
 
-EMSCRIPTEN_KEEPALIVE int rw_start_race(int classIndex, int course, int car, int manual,
-                                       int reverse, int laps, int rivals) {
+/* Loads the field in setup and prepares the local presentation. The server
+ * and every player build it from the same rules (web_rules.c WebBuildField). */
+static int PrepareRace(int classIndex, int course, int reverse, int laps, int rivals,
+                       const WebSeat *humans, int humanCount, int localSeat) {
     RaceSetup setup;
-    if (!s_archive || classIndex < 0 || classIndex >= TRACK_CLASS_COUNT || course < 0 ||
-        course > 3 || car < 0 || car >= CAR_MODEL_VARIANT_COUNT || laps < 1 ||
-        laps > PLAYER_LAP_TIME_CAPACITY) return 0;
+    if (!s_archive || laps < 1 || laps > WEB_MAX_LAPS || localSeat < 0 ||
+        localSeat >= humanCount) return 0;
     ReleaseRace();
     memset(&setup, 0, sizeof(setup));
     setup.classIndex = classIndex;
     setup.courseIndex = course;
     setup.laps = laps;
     setup.reverse = reverse ? 1 : 0;
-    setup.entrants[0] = (RaceEntrant){.kind = RACE_SEAT_HUMAN, .grid = 0, .model = car,
-                                      .manual = manual ? 1 : 0, .seed = 0x5eed};
-    setup.looks[0].variant = car;
-    if (rivals) {
-        /* Same field as the retail grid: every authored, active AI start,
-         * with the final class limited to the contenders. */
-        TrackData *track = CopyRaceTrack(s_archive, classIndex, course);
-        if (!track) return 0;
-        for (s32 seat = 1; seat < DRIVER_SEAT_LIMIT; ++seat) {
-            if ((classIndex != TRACK_CLASS_COUNT - 1 || seat <= RIVAL_CONTENDER_COUNT) &&
-                track->events->rivalStarts[setup.reverse][seat].activeFlag != -1)
-                setup.entrants[seat] = (RaceEntrant){.kind = RACE_SEAT_AI, .grid = seat,
-                                                     .model = seat - 1, .rivalSlot = seat - 1};
-        }
-        FreeTrackData(track);
-    }
+    if (!WebBuildField(s_archive, classIndex, course, reverse, humans, humanCount, rivals,
+                       setup.entrants)) return 0;
+    for (int seat = 0; seat < humanCount; ++seat) setup.looks[seat].variant = humans[seat].variant;
     s_race = LoadClientRace(s_archive, &setup, NULL);
     if (!s_race) return 0;
     if (!StartRaceSim(&s_race->sim, WEB_COUNTDOWN_TICKS)) {
         ReleaseRace();
         return 0;
     }
+    s_localSeat = localSeat;
     if (!s_instances) s_instances = calloc(WEB_INSTANCE_CAPACITY, sizeof(*s_instances));
     if (!s_vertices) s_vertices = calloc(WEB_VERTEX_CAPACITY, sizeof(*s_vertices));
     if (!s_spans) s_spans = calloc(WEB_SPAN_CAPACITY, sizeof(*s_spans));
@@ -178,6 +171,50 @@ EMSCRIPTEN_KEEPALIVE int rw_start_race(int classIndex, int course, int car, int 
     s_shadowValid = 0;
     return 1;
 }
+
+/* Offline race: the local player alone, with or without the retail AI. */
+EMSCRIPTEN_KEEPALIVE int rw_start_race(int classIndex, int course, int car, int manual,
+                                       int reverse, int laps, int rivals) {
+    const WebSeat human = {RACE_SEAT_HUMAN, car, manual ? 1 : 0};
+    s_net = 0;
+    return PrepareRace(classIndex, course, reverse, laps, rivals, &human, 1, 0);
+}
+
+/* Networked race as the server announced it: humanSeats holds (variant,
+ * manual) per human in seat order. The server's frames then drive it. */
+EMSCRIPTEN_KEEPALIVE int rw_start_net_race(int classIndex, int course, int reverse, int laps,
+                                           int rivals, int humanCount, const int32_t *humanSeats,
+                                           int localSeat) {
+    WebSeat humans[DRIVER_SEAT_LIMIT];
+    if (!humanSeats || humanCount < 1 || humanCount > DRIVER_SEAT_LIMIT) return 0;
+    for (int seat = 0; seat < humanCount; ++seat)
+        humans[seat] = (WebSeat){RACE_SEAT_HUMAN, humanSeats[seat * 2], humanSeats[seat * 2 + 1]};
+    s_net = 1;
+    return PrepareRace(classIndex, course, reverse, laps, rivals, humans, humanCount, localSeat);
+}
+
+/* Restores the server's authoritative RaceFrame into the local race. */
+EMSCRIPTEN_KEEPALIVE int rw_apply_frame(const uint8_t *wire, int size) {
+    static RaceFrame frame;
+    if (!s_race || !s_net || !wire || size != RACE_FRAME_WIRE_SIZE ||
+        !DecodeRaceFrame(&s_race->sim, wire, (size_t)size, &frame)) return 0;
+    return RestoreRaceFrame(&s_race->sim, &frame);
+}
+EMSCRIPTEN_KEEPALIVE int rw_frame_size(void) { return RACE_FRAME_WIRE_SIZE; }
+
+/* The local controls to send (web_rules.h wire words); gear edges are handed
+ * over once, as the server's simulation accumulates them. */
+EMSCRIPTEN_KEEPALIVE int32_t *rw_take_input(void) {
+    static int32_t words[WEB_INPUT_WORDS];
+    DriverInput input = s_input;
+    input.shiftUp = s_pendingShiftUp;
+    input.shiftDown = s_pendingShiftDown;
+    s_pendingShiftUp = s_pendingShiftDown = 0;
+    WebEncodeInput(&input, words);
+    return words;
+}
+
+EMSCRIPTEN_KEEPALIVE int rw_local_seat(void) { return s_localSeat; }
 
 /* Keyboard levels for the local seat. Gear requests are edges: they stay
  * pending until the next simulation tick consumes them. */
@@ -294,7 +331,7 @@ static RenderCamera BuildRaceCamera(const PlayerCarRuntime *car, WebView view);
  * it advances only here. */
 static void RecordPresentation(void) {
     const RaceSim *sim = &s_race->sim;
-    const u32 stepTick = sim->drivers[0].stepTick;
+    const u32 stepTick = sim->drivers[s_localSeat].stepTick;
     const int racing = sim->phase == SIM_RACING; /* CanToggleRaceCamera */
     WebView view;
     RenderCamera camera;
@@ -309,7 +346,7 @@ static void RecordPresentation(void) {
     s_pendingCamera = 0;
     view = racing && s_selectedView == WEB_VIEW_CHASE && (s_padHeld & PAD_DOWN)
                ? WEB_VIEW_LOOK_BEHIND : s_selectedView;
-    camera = BuildRaceCamera(&s_poseCurrent[0], view);
+    camera = BuildRaceCamera(&s_poseCurrent[s_localSeat], view);
     /* A new view cuts; only frames within one view are interpolated. */
     s_cameraPrevious = s_haveStep && view == s_viewCurrent ? s_cameraCurrent : camera;
     s_cameraCurrent = camera;
@@ -325,8 +362,11 @@ EMSCRIPTEN_KEEPALIVE int rw_tick(void) {
     input = s_input;
     input.shiftUp = s_pendingShiftUp;
     input.shiftDown = s_pendingShiftDown;
-    if (SetRaceInput(&s_race->sim, 0, &input)) s_pendingShiftUp = s_pendingShiftDown = 0;
-    StepRaceSim(&s_race->sim);
+    /* Online the server steps the field; its frames arrive via rw_apply_frame. */
+    if (!s_net) {
+        if (SetRaceInput(&s_race->sim, s_localSeat, &input)) s_pendingShiftUp = s_pendingShiftDown = 0;
+        StepRaceSim(&s_race->sim);
+    }
     if (!TickClientScenery(s_race)) return -1;
     TickRaceView(s_race->view, &s_race->sim, Daylight(s_race));
     RecordPresentation();
@@ -604,8 +644,8 @@ EMSCRIPTEN_KEEPALIVE int rw_build_frame(float aspect, float t) {
     Vec3 shadowCenter;
     int page;
     if (!s_race || !s_haveStep || !(aspect > 0.0f)) return -1;
-    page = s_poseCurrent[0].trackSection >= s_race->look.textureSectionLo &&
-           s_poseCurrent[0].trackSection < s_race->look.textureSectionHi;
+    page = s_poseCurrent[s_localSeat].trackSection >= s_race->look.textureSectionLo &&
+           s_poseCurrent[s_localSeat].trackSection < s_race->look.textureSectionHi;
     s_page = page;
     t = t < 0.0f ? 0.0f : t > 1.0f ? 1.0f : t;
     RenderWorldBeginFrame(&s_world, ++s_frame);
@@ -624,7 +664,7 @@ EMSCRIPTEN_KEEPALIVE int rw_build_frame(float aspect, float t) {
         !SubmitClientShuttles(s_race, page, &s_world) ||
         !SubmitClientSpinners(s_race, page, &s_world) ||
         !SubmitClientLandmarks(s_race, page, &s_world)) return -1;
-    RenderWorldFocus(&s_world, 0);
+    RenderWorldFocus(&s_world, (uint32_t)s_localSeat);
     for (uint32_t i = 0; i < s_world.instanceCount; ++i) {
         RenderMeshInstance *instance = &s_world.instances[i];
         if (instance->entity < DRIVER_SEAT_LIMIT) {
@@ -634,7 +674,7 @@ EMSCRIPTEN_KEEPALIVE int rw_build_frame(float aspect, float t) {
             RenderInterpolateTransform(&instance->previousTransform, &instance->transform, t, &mixed);
             instance->transform = mixed;
             /* update_camera.c draws the player's car only outside the car view. */
-            if (instance->entity == 0 && s_viewCurrent == WEB_VIEW_CAR)
+            if (instance->entity == (uint32_t)s_localSeat && s_viewCurrent == WEB_VIEW_CAR)
                 instance->flags |= RAGE_RENDER_INSTANCE_RAY_ONLY;
         } else if (s_drawDistance > 1.0f) {
             instance->flags &= ~RAGE_RENDER_INSTANCE_RAY_ONLY;
@@ -787,16 +827,16 @@ EMSCRIPTEN_KEEPALIVE int32_t *rw_hud(void) {
     const SimDriver *driver;
     int entrants = 0;
     if (!s_race) return NULL;
-    driver = &s_race->sim.drivers[0];
+    driver = &s_race->sim.drivers[s_localSeat];
     for (int seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat)
         entrants += s_race->sim.drivers[seat].status != SIM_EMPTY;
     s_hud[0] = (int32_t)s_race->sim.phase;
     s_hud[1] = (int32_t)s_race->sim.countdown;
     s_hud[2] = driver->car.lap > s_race->sim.laps ? s_race->sim.laps : driver->car.lap;
     s_hud[3] = s_race->sim.laps;
-    s_hud[4] = RacePosition(&s_race->sim, 0);
+    s_hud[4] = RacePosition(&s_race->sim, s_localSeat);
     s_hud[5] = entrants;
-    s_hud[6] = RaceTime(&s_race->sim, 0);
+    s_hud[6] = RaceTime(&s_race->sim, s_localSeat);
     s_hud[7] = driver->car.speed * 160 / 1168; /* km/h, as the retail readout */
     s_hud[8] = driver->car.drive.gear;
     s_hud[9] = (int32_t)driver->status;
@@ -809,12 +849,5 @@ EMSCRIPTEN_KEEPALIVE int32_t *rw_hud(void) {
     return s_hud;
 }
 
-/* 1 when the disc's car variant offers an automatic gearbox, 0 when it is
- * manual only, -1 when the variant cannot be read. */
-EMSCRIPTEN_KEEPALIVE int rw_car_automatic(int variant) {
-    int automatic = 0;
-    if (!s_archive || !ReadRaceCarTransmission(s_archive, variant, &automatic)) return -1;
-    return automatic ? 1 : 0;
-}
 
 EMSCRIPTEN_KEEPALIVE int rw_car_variants(void) { return CAR_MODEL_VARIANT_COUNT; }

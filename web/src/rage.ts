@@ -14,7 +14,7 @@ interface EmscriptenFs {
 interface EmscriptenModule {
   FS: EmscriptenFs;
   HEAPU8: Uint8Array;
-  ccall(name: string, returnType: 'number' | null, argTypes: ('number' | 'string')[], args: (number | string)[]): number;
+  ccall(name: string, returnType: 'number' | 'string' | null, argTypes: ('number' | 'string')[], args: (number | string)[]): number & string;
   _malloc(size: number): number;
   _free(pointer: number): void;
 }
@@ -184,6 +184,53 @@ export class Rage {
     const count = this.call('rw_car_variants');
     return Array.from({ length: count }, (_, variant) =>
       this.call('rw_car_automatic', ['number'], [variant]) === 1);
+  }
+
+  // ---- shared race rules (web/wasm/web_rules.c, also run by the server) ----
+  private num(name: string, args: number[]): number {
+    return this.call(name, args.map(() => 'number' as const), args);
+  }
+  private str(name: string, args: number[]): string {
+    return this.m.ccall(name, 'string', args.map(() => 'number' as const), args);
+  }
+  carModels(): number { return this.num('rw_car_models', []); }
+  /** The variant a class offers for a model, or -1. */
+  classCar(classIndex: number, model: number): number { return this.num('rw_class_car', [classIndex, model]); }
+  carModel(variant: number): number { return this.num('rw_car_model', [variant]); }
+  carGrade(variant: number): number { return this.num('rw_car_grade', [variant]); }
+  carName(variant: number): string { return this.str('rw_car_name', [this.carModel(variant)]); }
+  courseName(course: number): string { return this.str('rw_course_name', [course]); }
+  courseAllowed(classIndex: number, course: number): boolean { return this.num('rw_course_allowed', [classIndex, course]) === 1; }
+  maxHumans(classIndex: number, course: number, reverse: boolean): number {
+    return this.num('rw_max_humans', [classIndex, course, +reverse]);
+  }
+  /** Boot serial and archive fingerprint of the loaded disc. */
+  discId(): string { return this.str('rw_disc_id', []); }
+
+  // ---- networked race -----------------------------------------------------
+  /** Prepares the race the server announced; humans in seat order. */
+  startNetRace(o: { classIndex: number; course: number; reverse: boolean; laps: number; rivals: boolean },
+               humans: { variant: number; manual: boolean }[], localSeat: number): boolean {
+    const seats = this.m._malloc(humans.length * 8);
+    const words = new Int32Array(this.m.HEAPU8.buffer, seats, humans.length * 2);
+    humans.forEach((h, seat) => { words[seat * 2] = h.variant; words[seat * 2 + 1] = +h.manual; });
+    const ok = this.num('rw_start_net_race', [o.classIndex, o.course, +o.reverse, o.laps, +o.rivals,
+                                                humans.length, seats, localSeat]) === 1;
+    this.m._free(seats);
+    return ok;
+  }
+
+  private frameBuffer = 0;
+  /** Restores one authoritative RaceFrame from the server. */
+  applyFrame(frame: Uint8Array): boolean {
+    if (!this.frameBuffer) this.frameBuffer = this.m._malloc(this.num('rw_frame_size', []));
+    this.m.HEAPU8.set(frame, this.frameBuffer);
+    return this.num('rw_apply_frame', [this.frameBuffer, frame.length]) === 1;
+  }
+
+  /** The controls to send this tick (8 input words; gear edges consumed). */
+  takeInput(): Int32Array {
+    return new Int32Array(this.m.HEAPU8.buffer, this.call('rw_take_input'), 8).slice();
   }
 
   hud(): Hud {

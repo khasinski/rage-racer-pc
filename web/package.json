@@ -3,18 +3,23 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Browser experiment: Rage Racer running the native C simulation and scene pipeline as WebAssembly, drawn with three.js.",
+  "description": "Rage Racer in the browser (the native C simulation and scene pipeline as WebAssembly, drawn with three.js) and its multiplayer server.",
   "scripts": {
     "wasm": "node scripts/build-wasm.mjs",
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p server",
+    "server": "node server/main.ts",
+    "seed": "node server/seed.ts"
   },
   "dependencies": {
-    "three": "^0.186.1"
+    "three": "^0.186.1",
+    "ws": "^8.22.0"
   },
   "devDependencies": {
+    "@types/node": "^26.6.3",
     "@types/three": "^0.186.0",
+    "@types/ws": "^8.18.1",
     "playwright": "^1.63.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.1"

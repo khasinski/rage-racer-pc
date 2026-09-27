@@ -1,5 +1,6 @@
-// Builds the WebAssembly module (web/CMakeLists.txt target rage-web, via
-// emcmake) and copies it into web/public/wasm for Vite to serve.
+// Builds the WebAssembly modules (web/CMakeLists.txt, via emcmake): rage-web
+// into web/public/wasm for Vite to serve, and the race server's rage-server
+// into web/server/wasm.
 //   npm run wasm
 import { copyFileSync, mkdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
@@ -18,9 +19,10 @@ const run = (command, args) => {
 };
 
 run('emcmake', ['cmake', '-S', web, '-B', build, '-DCMAKE_BUILD_TYPE=Release']);
-run('cmake', ['--build', build, '--target', 'rage-web', '-j8']);
+run('cmake', ['--build', build, '--target', 'rage-web', 'rage-server', '-j8']);
 
-const out = join(web, 'public', 'wasm');
-mkdirSync(out, { recursive: true });
-for (const file of ['rage-web.mjs', 'rage-web.wasm']) copyFileSync(join(build, file), join(out, file));
-console.log(`copied rage-web.{mjs,wasm} to ${out}`);
+for (const [name, out] of [['rage-web', join(web, 'public', 'wasm')], ['rage-server', join(web, 'server', 'wasm')]]) {
+  mkdirSync(out, { recursive: true });
+  for (const extension of ['mjs', 'wasm']) copyFileSync(join(build, `${name}.${extension}`), join(out, `${name}.${extension}`));
+  console.log(`copied ${name}.{mjs,wasm} to ${out}`);
+}
